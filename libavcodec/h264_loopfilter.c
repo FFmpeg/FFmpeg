@@ -143,7 +143,7 @@ static av_always_inline void filter_mb_edgecv(uint8_t *pix, int stride,
 
 static av_always_inline void filter_mb_mbaff_edgev(const H264Context *h, uint8_t *pix,
                                                    int stride,
-                                                   const int16_t bS[7], int bsi,
+                                                   const int16_t bS[ /* 1 + 2 * bsi */ ], int bsi,
                                                    int qp, int a, int b,
                                                    int intra)
 {
@@ -166,7 +166,7 @@ static av_always_inline void filter_mb_mbaff_edgev(const H264Context *h, uint8_t
 
 static av_always_inline void filter_mb_mbaff_edgecv(const H264Context *h,
                                                     uint8_t *pix, int stride,
-                                                    const int16_t bS[7],
+                                                    const int16_t bS[ /* 1 + 2 * bsi */ ],
                                                     int bsi, int qp, int a,
                                                     int b, int intra)
 {
