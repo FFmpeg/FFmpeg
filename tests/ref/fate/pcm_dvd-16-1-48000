@@ -1,0 +1,11 @@
+af7b5ae365019ec64a9397bc6b33e18c *tests/data/fate/pcm_dvd-16-1-48000.vob
+8192 tests/data/fate/pcm_dvd-16-1-48000.vob
+#tb 0: 1/48000
+#media_type 0: audio
+#codec_id 0: pcm_s16le
+#sample_rate 0: 48000
+#channel_layout_name 0: mono
+0,          0,          0,      997,     1994, 0xd416def5
+0,       1004,       1004,     1006,     2012, 0xb492d66d
+0,       2008,       2008,     1006,     2012, 0x52d3f72e
+0,       3012,       3012,      995,     1990, 0xa23de22f
