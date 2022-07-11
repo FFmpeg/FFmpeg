@@ -198,11 +198,9 @@ static int cmap_read_palette(AVCodecContext *avctx, uint32_t *pal)
  * decoder structures.
  *
  * @param avctx the AVCodecContext where to extract extra context to
- * @param avpkt the AVPacket to extract extra context from or NULL to use avctx
  * @return >= 0 in case of success, a negative error code otherwise
  */
-static int extract_header(AVCodecContext *const avctx,
-                          const AVPacket *const avpkt)
+static int extract_header(AVCodecContext *const avctx)
 {
     IffContext *s = avctx->priv_data;
     const uint8_t *buf;
@@ -215,55 +213,6 @@ static int extract_header(AVCodecContext *const avctx,
     }
     palette_size = avctx->extradata_size - AV_RB16(avctx->extradata);
 
-    if (avpkt && avctx->codec_tag == MKTAG('A', 'N', 'I', 'M')) {
-        uint32_t chunk_id;
-        uint64_t data_size;
-        GetByteContext *gb = &s->gb;
-
-        bytestream2_skip(gb, 4);
-        while (bytestream2_get_bytes_left(gb) >= 1) {
-            chunk_id  = bytestream2_get_le32(gb);
-            data_size = bytestream2_get_be32(gb);
-
-            if (chunk_id == MKTAG('B', 'M', 'H', 'D')) {
-                bytestream2_skip(gb, data_size + (data_size & 1));
-            } else if (chunk_id == MKTAG('A', 'N', 'H', 'D')) {
-                unsigned extra;
-                if (data_size < 40)
-                    return AVERROR_INVALIDDATA;
-
-                s->compression = (bytestream2_get_byte(gb) << 8) | (s->compression & 0xFF);
-                bytestream2_skip(gb, 19);
-                extra = bytestream2_get_be32(gb);
-                s->is_short = !(extra & 1);
-                s->is_brush = extra == 2;
-                s->is_interlaced = !!(extra & 0x40);
-                data_size -= 24;
-                bytestream2_skip(gb, data_size + (data_size & 1));
-            } else if (chunk_id == MKTAG('D', 'L', 'T', 'A') ||
-                       chunk_id == MKTAG('B', 'O', 'D', 'Y')) {
-                if (chunk_id == MKTAG('B','O','D','Y'))
-                    s->compression &= 0xFF;
-                break;
-            } else if (chunk_id == MKTAG('C', 'M', 'A', 'P')) {
-                int count = data_size / 3;
-                uint32_t *pal = s->pal;
-
-                if (count > 256)
-                    return AVERROR_INVALIDDATA;
-                if (s->ham) {
-                    for (i = 0; i < count; i++)
-                        pal[i] = 0xFF000000 | bytestream2_get_le24(gb);
-                } else {
-                    for (i = 0; i < count; i++)
-                        pal[i] = 0xFF000000 | bytestream2_get_be24(gb);
-                }
-                bytestream2_skip(gb, data_size & 1);
-            } else {
-                bytestream2_skip(gb, data_size + (data_size&1));
-            }
-        }
-    } else if (!avpkt) {
         buf = avctx->extradata;
         buf_size = bytestream_get_be16(&buf);
         if (buf_size <= 1 || palette_size < 0) {
@@ -272,7 +221,6 @@ static int extract_header(AVCodecContext *const avctx,
                    buf_size, palette_size);
             return AVERROR_INVALIDDATA;
         }
-    }
 
     if (buf_size >= 41) {
         s->compression  = bytestream_get_byte(&buf);
@@ -448,7 +396,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
             return AVERROR(ENOMEM);
     }
 
-    if ((err = extract_header(avctx, NULL)) < 0)
+    if ((err = extract_header(avctx)) < 0)
         return err;
 
     return 0;
@@ -1524,6 +1472,64 @@ static int unsupported(AVCodecContext *avctx)
     return AVERROR_INVALIDDATA;
 }
 
+static int parse_packet_header(AVCodecContext *const avctx,
+                               GetByteContext *gb)
+{
+    IffContext *s = avctx->priv_data;
+    int i;
+
+    if (avctx->codec_tag == MKTAG('A', 'N', 'I', 'M')) {
+        uint32_t chunk_id;
+        uint64_t data_size;
+
+        bytestream2_skip(gb, 4);
+        while (bytestream2_get_bytes_left(gb) >= 1) {
+            chunk_id  = bytestream2_get_le32(gb);
+            data_size = bytestream2_get_be32(gb);
+
+            if (chunk_id == MKTAG('B', 'M', 'H', 'D')) {
+                bytestream2_skip(gb, data_size + (data_size & 1));
+            } else if (chunk_id == MKTAG('A', 'N', 'H', 'D')) {
+                unsigned extra;
+                if (data_size < 40)
+                    return AVERROR_INVALIDDATA;
+
+                s->compression = (bytestream2_get_byte(gb) << 8) | (s->compression & 0xFF);
+                bytestream2_skip(gb, 19);
+                extra = bytestream2_get_be32(gb);
+                s->is_short = !(extra & 1);
+                s->is_brush = extra == 2;
+                s->is_interlaced = !!(extra & 0x40);
+                data_size -= 24;
+                bytestream2_skip(gb, data_size + (data_size & 1));
+            } else if (chunk_id == MKTAG('D', 'L', 'T', 'A') ||
+                       chunk_id == MKTAG('B', 'O', 'D', 'Y')) {
+                if (chunk_id == MKTAG('B','O','D','Y'))
+                    s->compression &= 0xFF;
+                break;
+            } else if (chunk_id == MKTAG('C', 'M', 'A', 'P')) {
+                int count = data_size / 3;
+                uint32_t *pal = s->pal;
+
+                if (count > 256)
+                    return AVERROR_INVALIDDATA;
+                if (s->ham) {
+                    for (i = 0; i < count; i++)
+                        pal[i] = 0xFF000000 | bytestream2_get_le24(gb);
+                } else {
+                    for (i = 0; i < count; i++)
+                        pal[i] = 0xFF000000 | bytestream2_get_be24(gb);
+                }
+                bytestream2_skip(gb, data_size & 1);
+            } else {
+                bytestream2_skip(gb, data_size + (data_size&1));
+            }
+        }
+    }
+
+    return 0;
+}
+
 static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
                         int *got_frame, AVPacket *avpkt)
 {
@@ -1537,7 +1543,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
     bytestream2_init(gb, avpkt->data, avpkt->size);
 
-    if ((res = extract_header(avctx, avpkt)) < 0)
+    if ((res = parse_packet_header(avctx, gb)) < 0)
         return res;
 
     if ((res = ff_get_buffer(avctx, frame, 0)) < 0)
