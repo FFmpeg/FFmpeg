@@ -245,8 +245,6 @@ static int extract_header(AVCodecContext *const avctx)
         if (s->masking == MASK_HAS_MASK) {
             if (s->bpp >= 8 && !s->ham) {
                 avctx->pix_fmt = AV_PIX_FMT_RGB32;
-                av_freep(&s->mask_buf);
-                av_freep(&s->mask_palbuf);
                 if (s->bpp > 16) {
                     av_log(avctx, AV_LOG_ERROR, "bpp %d too large for palette\n", s->bpp);
                     return AVERROR(ENOMEM);
@@ -255,10 +253,8 @@ static int extract_header(AVCodecContext *const avctx)
                 if (!s->mask_buf)
                     return AVERROR(ENOMEM);
                 s->mask_palbuf = av_malloc((2 << s->bpp) * sizeof(uint32_t) + AV_INPUT_BUFFER_PADDING_SIZE);
-                if (!s->mask_palbuf) {
-                    av_freep(&s->mask_buf);
+                if (!s->mask_palbuf)
                     return AVERROR(ENOMEM);
-                }
             }
             s->bpp++;
         } else if (s->masking != MASK_NONE && s->masking != MASK_HAS_TRANSPARENT_COLOR) {
@@ -271,9 +267,6 @@ static int extract_header(AVCodecContext *const avctx)
         }
         if (s->video_size && s->planesize * s->bpp * avctx->height > s->video_size)
             return AVERROR_INVALIDDATA;
-
-        av_freep(&s->ham_buf);
-        av_freep(&s->ham_palbuf);
 
         if (s->ham) {
             int i, count = FFMIN(palette_size / 3, 1 << s->ham);
@@ -290,10 +283,8 @@ static int extract_header(AVCodecContext *const avctx)
 
             ham_count = 8 * (1 << s->ham);
             s->ham_palbuf = av_malloc(extra_space * (ham_count << !!(s->masking == MASK_HAS_MASK)) * sizeof (uint32_t) + AV_INPUT_BUFFER_PADDING_SIZE);
-            if (!s->ham_palbuf) {
-                av_freep(&s->ham_buf);
+            if (!s->ham_palbuf)
                 return AVERROR(ENOMEM);
-            }
 
             if (count) { // HAM with color palette attached
                 // prefill with black and palette and set HAM take direct value mask to zero
