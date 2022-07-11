@@ -604,13 +604,18 @@ typedef struct AVFrame {
      */
     int64_t pkt_pos;
 
+#if FF_API_PKT_DURATION
     /**
      * duration of the corresponding packet, expressed in
      * AVStream->time_base units, 0 if unknown.
      * - encoding: unused
      * - decoding: Read by user.
+     *
+     * @deprecated use duration instead
      */
+    attribute_deprecated
     int64_t pkt_duration;
+#endif
 
     /**
      * metadata.
@@ -702,6 +707,11 @@ typedef struct AVFrame {
      * Channel layout of the audio data.
      */
     AVChannelLayout ch_layout;
+
+    /**
+     * Duration of the frame, in the same units as pts. 0 if unknown.
+     */
+    int64_t duration;
 } AVFrame;
 
 

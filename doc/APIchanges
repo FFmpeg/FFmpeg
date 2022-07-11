@@ -14,6 +14,9 @@ libavutil:     2021-04-27
 
 API changes, most recent first:
 
+2022-07-xx - xxxxxxxxxx - lavu 57.30.100 - frame.h
+  Add AVFrame.duration, deprecate AVFrame.pkt_duration.
+
 -------- 8< --------- FFmpeg 5.1 was cut here -------- 8< ---------
 
 2022-06-12 - 7cae3d8b76 - lavf 59.25.100 - avio.h

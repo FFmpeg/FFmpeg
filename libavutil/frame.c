@@ -59,7 +59,12 @@ static void get_frame_defaults(AVFrame *frame)
     frame->pts                   =
     frame->pkt_dts               = AV_NOPTS_VALUE;
     frame->best_effort_timestamp = AV_NOPTS_VALUE;
+    frame->duration            = 0;
+#if FF_API_PKT_DURATION
+FF_DISABLE_DEPRECATION_WARNINGS
     frame->pkt_duration        = 0;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     frame->pkt_pos             = -1;
     frame->pkt_size            = -1;
     frame->time_base           = (AVRational){ 0, 1 };
@@ -283,6 +288,7 @@ static int frame_copy_props(AVFrame *dst, const AVFrame *src, int force_copy)
     dst->crop_left              = src->crop_left;
     dst->crop_right             = src->crop_right;
     dst->pts                    = src->pts;
+    dst->duration               = src->duration;
     dst->repeat_pict            = src->repeat_pict;
     dst->interlaced_frame       = src->interlaced_frame;
     dst->top_field_first        = src->top_field_first;
@@ -292,7 +298,11 @@ static int frame_copy_props(AVFrame *dst, const AVFrame *src, int force_copy)
     dst->pkt_dts                = src->pkt_dts;
     dst->pkt_pos                = src->pkt_pos;
     dst->pkt_size               = src->pkt_size;
+#if FF_API_PKT_DURATION
+FF_DISABLE_DEPRECATION_WARNINGS
     dst->pkt_duration           = src->pkt_duration;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     dst->time_base              = src->time_base;
     dst->reordered_opaque       = src->reordered_opaque;
     dst->quality                = src->quality;
