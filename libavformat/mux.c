@@ -1417,7 +1417,14 @@ static int write_uncoded_frame_internal(AVFormatContext *s, int stream_index,
         pkt->size         = sizeof(frame);
         pkt->pts          =
         pkt->dts          = frame->pts;
-        pkt->duration     = frame->pkt_duration;
+#if FF_API_PKT_DURATION
+FF_DISABLE_DEPRECATION_WARNINGS
+        if (frame->pkt_duration)
+            pkt->duration     = frame->pkt_duration;
+        else
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+        pkt->duration = frame->duration;
         pkt->stream_index = stream_index;
         pkt->flags |= AV_PKT_FLAG_UNCODED_FRAME;
     }
