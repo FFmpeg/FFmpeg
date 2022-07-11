@@ -29,6 +29,7 @@
 #define AVCODEC_AACSBRDATA_H
 
 #include <stdint.h>
+#include "libavutil/attributes_internal.h"
 #include "libavutil/mem_internal.h"
 #include "aac_defines.h"
 
@@ -268,7 +269,7 @@ static const int8_t sbr_offset[6][16] = {
 };
 
 /* First eight entries repeated at end to simplify SIMD implementations. */
-const DECLARE_ALIGNED(16, INTFLOAT, AAC_RENAME(ff_sbr_noise_table))[][2] = {
+const attribute_visibility_hidden DECLARE_ALIGNED(16, INTFLOAT, AAC_RENAME(ff_sbr_noise_table))[][2] = {
 {Q31(-0.99948153278296f), Q31(-0.59483417516607f)}, {Q31( 0.97113454393991f), Q31(-0.67528515225647f)},
 {Q31( 0.14130051758487f), Q31(-0.95090983575689f)}, {Q31(-0.47005496701697f), Q31(-0.37340549728647f)},
 {Q31( 0.80705063769351f), Q31( 0.29653668284408f)}, {Q31(-0.38981478896926f), Q31( 0.89572605717087f)},
