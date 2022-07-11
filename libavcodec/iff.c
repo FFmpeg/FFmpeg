@@ -44,7 +44,6 @@ typedef enum {
 } mask_type;
 
 typedef struct IffContext {
-    AVFrame *frame;
     int planesize;
     uint8_t * planebuf;
     uint8_t * ham_buf;      ///< temporary buffer for planar to chunky conversation
@@ -62,7 +61,6 @@ typedef struct IffContext {
     unsigned  masking;      ///< TODO: masking method used
     int init; // 1 if buffer and palette data already initialized, 0 otherwise
     int16_t   tvdc[16];     ///< TVDC lookup table
-    GetByteContext gb;
     uint8_t *video[2];
     unsigned video_size;
     uint32_t *pal;
@@ -1528,7 +1526,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     int buf_size           = avpkt->size;
     const uint8_t *buf_end = buf + buf_size;
     int y, plane, res;
-    GetByteContext *gb = &s->gb;
+    GetByteContext gb0, *const gb = &gb0;
     const AVPixFmtDescriptor *desc;
 
     bytestream2_init(gb, avpkt->data, avpkt->size);
@@ -1538,7 +1536,6 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
     if ((res = ff_get_buffer(avctx, frame, 0)) < 0)
         return res;
-    s->frame = frame;
 
     buf      += bytestream2_tell(gb);
     buf_size -= bytestream2_tell(gb);
@@ -1557,7 +1554,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
     if (s->compression <= 0xff && (avctx->codec_tag == MKTAG('A', 'N', 'I', 'M'))) {
         if (avctx->pix_fmt == AV_PIX_FMT_PAL8)
-            memcpy(s->pal, s->frame->data[1], 256 * 4);
+            memcpy(s->pal, frame->data[1], 256 * 4);
     }
 
     switch (s->compression) {
