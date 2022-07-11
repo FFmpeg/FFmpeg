@@ -156,7 +156,7 @@ static int compute_crc_of_packets(AVFormatContext *fmt_ctx, int video_stream,
             }
             av_frame_unref(fr);
         }
-    } while (result >= 0 && (no_seeking || (fr->pts + fr->pkt_duration <= ts_end)));
+    } while (result >= 0 && (no_seeking || (fr->pts + fr->duration <= ts_end)));
 
 finish:
     av_freep(&byte_buffer);
