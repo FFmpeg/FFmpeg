@@ -91,8 +91,11 @@ static const char *const var_names[] = {
     "y",
     "pict_type",
     "pkt_pos",
+#if FF_API_PKT_DURATION
     "pkt_duration",
+#endif
     "pkt_size",
+    "duration",
     NULL
 };
 
@@ -131,8 +134,11 @@ enum var_name {
     VAR_Y,
     VAR_PICT_TYPE,
     VAR_PKT_POS,
+#if FF_API_PKT_DURATION
     VAR_PKT_DURATION,
+#endif
     VAR_PKT_SIZE,
+    VAR_DURATION,
     VAR_VARS_NB
 };
 
@@ -1649,8 +1655,18 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
     s->var_values[VAR_PICT_TYPE] = frame->pict_type;
     s->var_values[VAR_PKT_POS] = frame->pkt_pos;
+#if FF_API_PKT_DURATION
+FF_DISABLE_DEPRECATION_WARNINGS
     s->var_values[VAR_PKT_DURATION] = frame->pkt_duration * av_q2d(inlink->time_base);
+
+    if (frame->pkt_duration)
+        s->var_values[VAR_DURATION] = frame->pkt_duration * av_q2d(inlink->time_base);
+    else
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+    s->var_values[VAR_DURATION] = frame->duration * av_q2d(inlink->time_base);
     s->var_values[VAR_PKT_SIZE] = frame->pkt_size;
+
     s->metadata = frame->metadata;
 
     for (int i = 0; i < loop; i++) {

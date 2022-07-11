@@ -243,6 +243,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
     }
 
+#if FF_API_PKT_DURATION
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (copy->pkt_duration && copy->pkt_duration != copy->duration)
+        copy->duration = copy->pkt_duration;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
     ret = ff_filter_frame(ctx->outputs[0], copy);
     if (ret < 0)
         return ret;

@@ -11842,7 +11842,7 @@ The current packet's position in the input file or stream
 (in bytes, from the start of the input). A value of -1 indicates
 this info is not available.
 
-@item pkt_duration
+@item duration
 The current packet's duration, in seconds.
 
 @item pkt_size

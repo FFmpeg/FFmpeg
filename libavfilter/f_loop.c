@@ -331,8 +331,15 @@ static int push_frame(AVFilterContext *ctx)
     if (!out)
         return AVERROR(ENOMEM);
     out->pts += s->duration - s->start_pts;
+#if FF_API_PKT_DURATION
+FF_DISABLE_DEPRECATION_WARNINGS
     if (out->pkt_duration)
         duration = out->pkt_duration;
+    else
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+    if (out->duration)
+        duration = out->duration;
     else
         duration = av_rescale_q(1, av_inv_q(outlink->frame_rate), outlink->time_base);
     pts = out->pts + duration;
@@ -368,8 +375,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
                 return AVERROR(ENOMEM);
             }
             s->nb_frames++;
+#if FF_API_PKT_DURATION
+FF_DISABLE_DEPRECATION_WARNINGS
             if (frame->pkt_duration)
                 duration = frame->pkt_duration;
+            else
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+            if (frame->duration)
+                duration = frame->duration;
             else
                 duration = av_rescale_q(1, av_inv_q(outlink->frame_rate), outlink->time_base);
             s->duration = frame->pts + duration;
