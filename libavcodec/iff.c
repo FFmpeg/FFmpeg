@@ -206,7 +206,7 @@ static int extract_header(AVCodecContext *const avctx,
     IffContext *s = avctx->priv_data;
     const uint8_t *buf = extradata;
     unsigned buf_size = 0;
-    int i, palette_size;
+    int palette_size;
 
     if (extradata_size < 2) {
         av_log(avctx, AV_LOG_ERROR, "not enough extradata\n");
@@ -214,109 +214,109 @@ static int extract_header(AVCodecContext *const avctx,
     }
     palette_size = extradata_size - AV_RB16(extradata);
 
-        buf_size = bytestream_get_be16(&buf);
-        if (buf_size <= 1 || palette_size < 0) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "Invalid palette size received: %u -> palette data offset: %d\n",
-                   buf_size, palette_size);
-            return AVERROR_INVALIDDATA;
-        }
+    buf_size = bytestream_get_be16(&buf);
+    if (buf_size <= 1 || palette_size < 0) {
+        av_log(avctx, AV_LOG_ERROR,
+                "Invalid palette size received: %u -> palette data offset: %d\n",
+                buf_size, palette_size);
+        return AVERROR_INVALIDDATA;
+    }
 
     if (buf_size < 41)
         return 0;
 
-        s->compression  = bytestream_get_byte(&buf);
-        s->bpp          = bytestream_get_byte(&buf);
-        s->ham          = bytestream_get_byte(&buf);
-        s->flags        = bytestream_get_byte(&buf);
-        s->transparency = bytestream_get_be16(&buf);
-        s->masking      = bytestream_get_byte(&buf);
-        for (i = 0; i < 16; i++)
-            s->tvdc[i] = bytestream_get_be16(&buf);
+    s->compression  = bytestream_get_byte(&buf);
+    s->bpp          = bytestream_get_byte(&buf);
+    s->ham          = bytestream_get_byte(&buf);
+    s->flags        = bytestream_get_byte(&buf);
+    s->transparency = bytestream_get_be16(&buf);
+    s->masking      = bytestream_get_byte(&buf);
+    for (int i = 0; i < 16; i++)
+        s->tvdc[i] = bytestream_get_be16(&buf);
 
-        if (s->ham) {
-            if (s->bpp > 8) {
-                av_log(avctx, AV_LOG_ERROR, "Invalid number of hold bits for HAM: %u\n", s->ham);
-                return AVERROR_INVALIDDATA;
-            } else if (s->ham != (s->bpp > 6 ? 6 : 4)) {
-                av_log(avctx, AV_LOG_ERROR, "Invalid number of hold bits for HAM: %u, BPP: %u\n", s->ham, s->bpp);
-                return AVERROR_INVALIDDATA;
+    if (s->ham) {
+        if (s->bpp > 8) {
+            av_log(avctx, AV_LOG_ERROR, "Invalid number of hold bits for HAM: %u\n", s->ham);
+            return AVERROR_INVALIDDATA;
+        } else if (s->ham != (s->bpp > 6 ? 6 : 4)) {
+            av_log(avctx, AV_LOG_ERROR, "Invalid number of hold bits for HAM: %u, BPP: %u\n", s->ham, s->bpp);
+            return AVERROR_INVALIDDATA;
+        }
+    }
+
+    if (s->masking == MASK_HAS_MASK) {
+        if (s->bpp >= 8 && !s->ham) {
+            avctx->pix_fmt = AV_PIX_FMT_RGB32;
+            if (s->bpp > 16) {
+                av_log(avctx, AV_LOG_ERROR, "bpp %d too large for palette\n", s->bpp);
+                return AVERROR(ENOMEM);
+            }
+            s->mask_buf = av_malloc((s->planesize * 32) + AV_INPUT_BUFFER_PADDING_SIZE);
+            if (!s->mask_buf)
+                return AVERROR(ENOMEM);
+            s->mask_palbuf = av_malloc((2 << s->bpp) * sizeof(uint32_t) + AV_INPUT_BUFFER_PADDING_SIZE);
+            if (!s->mask_palbuf)
+                return AVERROR(ENOMEM);
+        }
+        s->bpp++;
+    } else if (s->masking != MASK_NONE && s->masking != MASK_HAS_TRANSPARENT_COLOR) {
+        av_log(avctx, AV_LOG_ERROR, "Masking not supported\n");
+        return AVERROR_PATCHWELCOME;
+    }
+    if (!s->bpp || s->bpp > 32) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid number of bitplanes: %u\n", s->bpp);
+        return AVERROR_INVALIDDATA;
+    }
+    if (s->video_size && s->planesize * s->bpp * avctx->height > s->video_size)
+        return AVERROR_INVALIDDATA;
+
+    if (s->ham) {
+        int count = FFMIN(palette_size / 3, 1 << s->ham);
+        int ham_count;
+        const uint8_t *const palette = extradata + AV_RB16(extradata);
+        int extra_space = 1;
+
+        if (avctx->codec_tag == MKTAG('P', 'B', 'M', ' ') && s->ham == 4)
+            extra_space = 4;
+
+        s->ham_buf = av_malloc((s->planesize * 8) + AV_INPUT_BUFFER_PADDING_SIZE);
+        if (!s->ham_buf)
+            return AVERROR(ENOMEM);
+
+        ham_count = 8 * (1 << s->ham);
+        s->ham_palbuf = av_malloc(extra_space * (ham_count << !!(s->masking == MASK_HAS_MASK)) * sizeof (uint32_t) + AV_INPUT_BUFFER_PADDING_SIZE);
+        if (!s->ham_palbuf)
+            return AVERROR(ENOMEM);
+
+        if (count) { // HAM with color palette attached
+            // prefill with black and palette and set HAM take direct value mask to zero
+            memset(s->ham_palbuf, 0, (1 << s->ham) * 2 * sizeof (uint32_t));
+            for (int i = 0; i < count; i++) {
+                s->ham_palbuf[i*2+1] = 0xFF000000 | AV_RL24(palette + i*3);
+            }
+            count = 1 << s->ham;
+        } else { // HAM with grayscale color palette
+            count = 1 << s->ham;
+            for (int i = 0; i < count; i++) {
+                s->ham_palbuf[i*2]   = 0xFF000000; // take direct color value from palette
+                s->ham_palbuf[i*2+1] = 0xFF000000 | av_le2ne32(gray2rgb((i * 255) >> s->ham));
             }
         }
-
+        for (int i = 0; i < count; i++) {
+            uint32_t tmp = i << (8 - s->ham);
+            tmp |= tmp >> s->ham;
+            s->ham_palbuf[(i+count)*2]     = 0xFF00FFFF; // just modify blue color component
+            s->ham_palbuf[(i+count*2)*2]   = 0xFFFFFF00; // just modify red color component
+            s->ham_palbuf[(i+count*3)*2]   = 0xFFFF00FF; // just modify green color component
+            s->ham_palbuf[(i+count)*2+1]   = 0xFF000000 | tmp << 16;
+            s->ham_palbuf[(i+count*2)*2+1] = 0xFF000000 | tmp;
+            s->ham_palbuf[(i+count*3)*2+1] = 0xFF000000 | tmp << 8;
+        }
         if (s->masking == MASK_HAS_MASK) {
-            if (s->bpp >= 8 && !s->ham) {
-                avctx->pix_fmt = AV_PIX_FMT_RGB32;
-                if (s->bpp > 16) {
-                    av_log(avctx, AV_LOG_ERROR, "bpp %d too large for palette\n", s->bpp);
-                    return AVERROR(ENOMEM);
-                }
-                s->mask_buf = av_malloc((s->planesize * 32) + AV_INPUT_BUFFER_PADDING_SIZE);
-                if (!s->mask_buf)
-                    return AVERROR(ENOMEM);
-                s->mask_palbuf = av_malloc((2 << s->bpp) * sizeof(uint32_t) + AV_INPUT_BUFFER_PADDING_SIZE);
-                if (!s->mask_palbuf)
-                    return AVERROR(ENOMEM);
-            }
-            s->bpp++;
-        } else if (s->masking != MASK_NONE && s->masking != MASK_HAS_TRANSPARENT_COLOR) {
-            av_log(avctx, AV_LOG_ERROR, "Masking not supported\n");
-            return AVERROR_PATCHWELCOME;
+            for (int i = 0; i < ham_count; i++)
+                s->ham_palbuf[(1 << s->bpp) + i] = s->ham_palbuf[i] | 0xFF000000;
         }
-        if (!s->bpp || s->bpp > 32) {
-            av_log(avctx, AV_LOG_ERROR, "Invalid number of bitplanes: %u\n", s->bpp);
-            return AVERROR_INVALIDDATA;
-        }
-        if (s->video_size && s->planesize * s->bpp * avctx->height > s->video_size)
-            return AVERROR_INVALIDDATA;
-
-        if (s->ham) {
-            int i, count = FFMIN(palette_size / 3, 1 << s->ham);
-            int ham_count;
-            const uint8_t *const palette = extradata + AV_RB16(extradata);
-            int extra_space = 1;
-
-            if (avctx->codec_tag == MKTAG('P', 'B', 'M', ' ') && s->ham == 4)
-                extra_space = 4;
-
-            s->ham_buf = av_malloc((s->planesize * 8) + AV_INPUT_BUFFER_PADDING_SIZE);
-            if (!s->ham_buf)
-                return AVERROR(ENOMEM);
-
-            ham_count = 8 * (1 << s->ham);
-            s->ham_palbuf = av_malloc(extra_space * (ham_count << !!(s->masking == MASK_HAS_MASK)) * sizeof (uint32_t) + AV_INPUT_BUFFER_PADDING_SIZE);
-            if (!s->ham_palbuf)
-                return AVERROR(ENOMEM);
-
-            if (count) { // HAM with color palette attached
-                // prefill with black and palette and set HAM take direct value mask to zero
-                memset(s->ham_palbuf, 0, (1 << s->ham) * 2 * sizeof (uint32_t));
-                for (i=0; i < count; i++) {
-                    s->ham_palbuf[i*2+1] = 0xFF000000 | AV_RL24(palette + i*3);
-                }
-                count = 1 << s->ham;
-            } else { // HAM with grayscale color palette
-                count = 1 << s->ham;
-                for (i=0; i < count; i++) {
-                    s->ham_palbuf[i*2]   = 0xFF000000; // take direct color value from palette
-                    s->ham_palbuf[i*2+1] = 0xFF000000 | av_le2ne32(gray2rgb((i * 255) >> s->ham));
-                }
-            }
-            for (i=0; i < count; i++) {
-                uint32_t tmp = i << (8 - s->ham);
-                tmp |= tmp >> s->ham;
-                s->ham_palbuf[(i+count)*2]     = 0xFF00FFFF; // just modify blue color component
-                s->ham_palbuf[(i+count*2)*2]   = 0xFFFFFF00; // just modify red color component
-                s->ham_palbuf[(i+count*3)*2]   = 0xFFFF00FF; // just modify green color component
-                s->ham_palbuf[(i+count)*2+1]   = 0xFF000000 | tmp << 16;
-                s->ham_palbuf[(i+count*2)*2+1] = 0xFF000000 | tmp;
-                s->ham_palbuf[(i+count*3)*2+1] = 0xFF000000 | tmp << 8;
-            }
-            if (s->masking == MASK_HAS_MASK) {
-                for (i = 0; i < ham_count; i++)
-                    s->ham_palbuf[(1 << s->bpp) + i] = s->ham_palbuf[i] | 0xFF000000;
-            }
-        }
+    }
 
     return 0;
 }
@@ -1469,57 +1469,53 @@ static int parse_packet_header(AVCodecContext *const avctx,
                                GetByteContext *gb)
 {
     IffContext *s = avctx->priv_data;
-    int i;
-
-        uint32_t chunk_id;
-        uint64_t data_size;
 
     if (avctx->codec_tag != MKTAG('A', 'N', 'I', 'M'))
         return 0;
 
-        bytestream2_skip(gb, 4);
-        while (bytestream2_get_bytes_left(gb) >= 1) {
-            chunk_id  = bytestream2_get_le32(gb);
-            data_size = bytestream2_get_be32(gb);
+    bytestream2_skip(gb, 4);
+    while (bytestream2_get_bytes_left(gb) >= 1) {
+        uint32_t chunk_id  = bytestream2_get_le32(gb);
+        uint64_t data_size = bytestream2_get_be32(gb);
 
-            if (chunk_id == MKTAG('B', 'M', 'H', 'D')) {
-                bytestream2_skip(gb, data_size + (data_size & 1));
-            } else if (chunk_id == MKTAG('A', 'N', 'H', 'D')) {
-                unsigned extra;
-                if (data_size < 40)
-                    return AVERROR_INVALIDDATA;
+        if (chunk_id == MKTAG('B', 'M', 'H', 'D')) {
+            bytestream2_skip(gb, data_size + (data_size & 1));
+        } else if (chunk_id == MKTAG('A', 'N', 'H', 'D')) {
+            unsigned extra;
+            if (data_size < 40)
+                return AVERROR_INVALIDDATA;
 
-                s->compression = (bytestream2_get_byte(gb) << 8) | (s->compression & 0xFF);
-                bytestream2_skip(gb, 19);
-                extra = bytestream2_get_be32(gb);
-                s->is_short = !(extra & 1);
-                s->is_brush = extra == 2;
-                s->is_interlaced = !!(extra & 0x40);
-                data_size -= 24;
-                bytestream2_skip(gb, data_size + (data_size & 1));
-            } else if (chunk_id == MKTAG('D', 'L', 'T', 'A') ||
-                       chunk_id == MKTAG('B', 'O', 'D', 'Y')) {
-                if (chunk_id == MKTAG('B','O','D','Y'))
-                    s->compression &= 0xFF;
-                break;
-            } else if (chunk_id == MKTAG('C', 'M', 'A', 'P')) {
-                int count = data_size / 3;
-                uint32_t *pal = s->pal;
+            s->compression = (bytestream2_get_byte(gb) << 8) | (s->compression & 0xFF);
+            bytestream2_skip(gb, 19);
+            extra = bytestream2_get_be32(gb);
+            s->is_short = !(extra & 1);
+            s->is_brush = extra == 2;
+            s->is_interlaced = !!(extra & 0x40);
+            data_size -= 24;
+            bytestream2_skip(gb, data_size + (data_size & 1));
+        } else if (chunk_id == MKTAG('D', 'L', 'T', 'A') ||
+                    chunk_id == MKTAG('B', 'O', 'D', 'Y')) {
+            if (chunk_id == MKTAG('B','O','D','Y'))
+                s->compression &= 0xFF;
+            break;
+        } else if (chunk_id == MKTAG('C', 'M', 'A', 'P')) {
+            int count = data_size / 3;
+            uint32_t *pal = s->pal;
 
-                if (count > 256)
-                    return AVERROR_INVALIDDATA;
-                if (s->ham) {
-                    for (i = 0; i < count; i++)
-                        pal[i] = 0xFF000000 | bytestream2_get_le24(gb);
-                } else {
-                    for (i = 0; i < count; i++)
-                        pal[i] = 0xFF000000 | bytestream2_get_be24(gb);
-                }
-                bytestream2_skip(gb, data_size & 1);
+            if (count > 256)
+                return AVERROR_INVALIDDATA;
+            if (s->ham) {
+                for (int i = 0; i < count; i++)
+                    pal[i] = 0xFF000000 | bytestream2_get_le24(gb);
             } else {
-                bytestream2_skip(gb, data_size + (data_size&1));
+                for (int i = 0; i < count; i++)
+                    pal[i] = 0xFF000000 | bytestream2_get_be24(gb);
             }
+            bytestream2_skip(gb, data_size & 1);
+        } else {
+            bytestream2_skip(gb, data_size + (data_size&1));
         }
+    }
 
     return 0;
 }
