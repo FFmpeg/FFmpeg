@@ -222,7 +222,9 @@ static int extract_header(AVCodecContext *const avctx)
             return AVERROR_INVALIDDATA;
         }
 
-    if (buf_size >= 41) {
+    if (buf_size < 41)
+        return 0;
+
         s->compression  = bytestream_get_byte(&buf);
         s->bpp          = bytestream_get_byte(&buf);
         s->ham          = bytestream_get_byte(&buf);
@@ -315,7 +317,6 @@ static int extract_header(AVCodecContext *const avctx)
                     s->ham_palbuf[(1 << s->bpp) + i] = s->ham_palbuf[i] | 0xFF000000;
             }
         }
-    }
 
     return 0;
 }
@@ -1469,9 +1470,11 @@ static int parse_packet_header(AVCodecContext *const avctx,
     IffContext *s = avctx->priv_data;
     int i;
 
-    if (avctx->codec_tag == MKTAG('A', 'N', 'I', 'M')) {
         uint32_t chunk_id;
         uint64_t data_size;
+
+    if (avctx->codec_tag != MKTAG('A', 'N', 'I', 'M'))
+        return 0;
 
         bytestream2_skip(gb, 4);
         while (bytestream2_get_bytes_left(gb) >= 1) {
@@ -1516,7 +1519,6 @@ static int parse_packet_header(AVCodecContext *const avctx,
                 bytestream2_skip(gb, data_size + (data_size&1));
             }
         }
-    }
 
     return 0;
 }
