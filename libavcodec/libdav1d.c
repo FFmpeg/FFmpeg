@@ -415,7 +415,7 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
     frame->pkt_dts = p->m.timestamp;
     frame->pkt_pos = p->m.offset;
     frame->pkt_size = p->m.size;
-    frame->pkt_duration = p->m.duration;
+    frame->duration = p->m.duration;
     frame->key_frame = p->frame_hdr->frame_type == DAV1D_FRAME_TYPE_KEY;
 
     switch (p->frame_hdr->frame_type) {

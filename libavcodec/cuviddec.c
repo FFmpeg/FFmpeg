@@ -624,7 +624,7 @@ static int cuvid_output_frame(AVCodecContext *avctx, AVFrame *frame)
          * So set pkt_pts and clear all the other pkt_ fields.
          */
         frame->pkt_pos = -1;
-        frame->pkt_duration = 0;
+        frame->duration = 0;
         frame->pkt_size = -1;
 
         frame->interlaced_frame = !parsed_frame.is_deinterlacing && !parsed_frame.dispinfo.progressive_frame;

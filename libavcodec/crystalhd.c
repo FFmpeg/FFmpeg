@@ -546,7 +546,7 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
     frame->pts = pkt_pts;
 
     frame->pkt_pos = -1;
-    frame->pkt_duration = 0;
+    frame->duration = 0;
     frame->pkt_size = -1;
 
     if (!priv->need_second_field) {

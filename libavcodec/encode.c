@@ -339,7 +339,7 @@ static int encode_send_frame_internal(AVCodecContext *avctx, const AVFrame *src)
                     return ret;
 
                 avctx->internal->last_audio_frame = 1;
-                return 0;
+                goto finish;
             } else if (src->nb_samples > avctx->frame_size) {
                 av_log(avctx, AV_LOG_ERROR, "nb_samples (%d) != frame_size (%d)\n", src->nb_samples, avctx->frame_size);
                 return AVERROR(EINVAL);
@@ -350,6 +350,15 @@ static int encode_send_frame_internal(AVCodecContext *avctx, const AVFrame *src)
     ret = av_frame_ref(dst, src);
     if (ret < 0)
         return ret;
+
+finish:
+
+#if FF_API_PKT_DURATION
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (dst->pkt_duration && dst->pkt_duration != dst->duration)
+        dst->duration = dst->pkt_duration;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     return 0;
 }

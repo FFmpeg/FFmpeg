@@ -394,8 +394,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
                         frame->pts += diff_ts;
                     if(frame->pkt_dts!=AV_NOPTS_VALUE)
                         frame->pkt_dts += diff_ts;
-                    if (frame->pkt_duration >= diff_ts)
-                        frame->pkt_duration -= diff_ts;
+                    if (frame->duration >= diff_ts)
+                        frame->duration -= diff_ts;
                 } else {
                     av_log(avctx, AV_LOG_WARNING, "Could not update timestamps for skipped samples.\n");
                 }
@@ -417,7 +417,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                     int64_t diff_ts = av_rescale_q(frame->nb_samples - discard_padding,
                                                    (AVRational){1, avctx->sample_rate},
                                                    avctx->pkt_timebase);
-                    frame->pkt_duration = diff_ts;
+                    frame->duration = diff_ts;
                 } else {
                     av_log(avctx, AV_LOG_WARNING, "Could not update timestamps for discarded samples.\n");
                 }
@@ -548,6 +548,12 @@ static int decode_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
         frame->best_effort_timestamp = guess_correct_pts(avctx,
                                                          frame->pts,
                                                          frame->pkt_dts);
+
+#if FF_API_PKT_DURATION
+FF_DISABLE_DEPRECATION_WARNINGS
+        frame->pkt_duration = frame->duration;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
         /* the only case where decode data is not set should be decoders
          * that do not call ff_get_buffer() */
@@ -1267,7 +1273,7 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
     if (!(ffcodec(avctx->codec)->caps_internal & FF_CODEC_CAP_SETS_FRAME_PROPS)) {
         frame->pts = pkt->pts;
         frame->pkt_pos      = pkt->pos;
-        frame->pkt_duration = pkt->duration;
+        frame->duration     = pkt->duration;
         frame->pkt_size     = pkt->size;
 
         for (int i = 0; i < FF_ARRAY_ELEMS(sd); i++) {
