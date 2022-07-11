@@ -151,9 +151,10 @@ static av_always_inline uint32_t gray2rgb(const uint32_t x) {
 static int cmap_read_palette(AVCodecContext *avctx, uint32_t *pal)
 {
     IffContext *s = avctx->priv_data;
-    int count, i;
+    unsigned count, i;
     const uint8_t *const palette = avctx->extradata + AV_RB16(avctx->extradata);
-    int palette_size = avctx->extradata_size - AV_RB16(avctx->extradata);
+    /* extract_header() already checked that the RHS is >= 0. */
+    unsigned palette_size = avctx->extradata_size - AV_RB16(avctx->extradata);
 
     if (avctx->bits_per_coded_sample > 8) {
         av_log(avctx, AV_LOG_ERROR, "bits_per_coded_sample > 8 not supported\n");
