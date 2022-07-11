@@ -200,20 +200,20 @@ static int cmap_read_palette(AVCodecContext *avctx, uint32_t *pal)
  * @param avctx the AVCodecContext where to extract extra context to
  * @return >= 0 in case of success, a negative error code otherwise
  */
-static int extract_header(AVCodecContext *const avctx)
+static int extract_header(AVCodecContext *const avctx,
+                          const uint8_t *const extradata, int extradata_size)
 {
     IffContext *s = avctx->priv_data;
-    const uint8_t *buf;
+    const uint8_t *buf = extradata;
     unsigned buf_size = 0;
     int i, palette_size;
 
-    if (avctx->extradata_size < 2) {
+    if (extradata_size < 2) {
         av_log(avctx, AV_LOG_ERROR, "not enough extradata\n");
         return AVERROR_INVALIDDATA;
     }
-    palette_size = avctx->extradata_size - AV_RB16(avctx->extradata);
+    palette_size = extradata_size - AV_RB16(extradata);
 
-        buf = avctx->extradata;
         buf_size = bytestream_get_be16(&buf);
         if (buf_size <= 1 || palette_size < 0) {
             av_log(avctx, AV_LOG_ERROR,
@@ -273,7 +273,7 @@ static int extract_header(AVCodecContext *const avctx)
         if (s->ham) {
             int i, count = FFMIN(palette_size / 3, 1 << s->ham);
             int ham_count;
-            const uint8_t *const palette = avctx->extradata + AV_RB16(avctx->extradata);
+            const uint8_t *const palette = extradata + AV_RB16(extradata);
             int extra_space = 1;
 
             if (avctx->codec_tag == MKTAG('P', 'B', 'M', ' ') && s->ham == 4)
@@ -388,7 +388,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
             return AVERROR(ENOMEM);
     }
 
-    if ((err = extract_header(avctx)) < 0)
+    err = extract_header(avctx, avctx->extradata, avctx->extradata_size);
+    if (err < 0)
         return err;
 
     return 0;
