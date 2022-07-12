@@ -79,7 +79,8 @@ static void test_motion(const char *name, me_cmp_func test_func)
                 break;
             }
         }
-        // benchmark with the final value of ptr
+        // Test with a fixed offset, for benchmark stability
+        ptr = img2 + 3 * WIDTH + 3;
         bench_new(NULL, img1, ptr, WIDTH, 8);
     }
 }
