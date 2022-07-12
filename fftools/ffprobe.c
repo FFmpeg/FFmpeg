@@ -2874,9 +2874,10 @@ static int read_interval_packets(WriterContext *w, InputFile *ifile,
         }
         if (selected_streams[pkt->stream_index]) {
             AVRational tb = ifile->streams[pkt->stream_index].st->time_base;
+            int64_t pts = pkt->pts != AV_NOPTS_VALUE ? pkt->pts : pkt->dts;
 
-            if (pkt->pts != AV_NOPTS_VALUE)
-                *cur_ts = av_rescale_q(pkt->pts, tb, AV_TIME_BASE_Q);
+            if (pts != AV_NOPTS_VALUE)
+                *cur_ts = av_rescale_q(pts, tb, AV_TIME_BASE_Q);
 
             if (!has_start && *cur_ts != AV_NOPTS_VALUE) {
                 start = *cur_ts;
