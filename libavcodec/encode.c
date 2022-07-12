@@ -209,13 +209,13 @@ int ff_encode_encode_cb(AVCodecContext *avctx, AVPacket *avpkt,
             av_assert0(avpkt->buf);
         }
 
-        if (avctx->codec->type == AVMEDIA_TYPE_VIDEO &&
-            !(avctx->codec->capabilities & AV_CODEC_CAP_DELAY))
-            avpkt->pts = frame->pts;
+        // set the timestamps for the simple no-delay case
+        // encoders with delay have to set the timestamps themselves
         if (!(avctx->codec->capabilities & AV_CODEC_CAP_DELAY)) {
+            if (avpkt->pts == AV_NOPTS_VALUE)
+                avpkt->pts = frame->pts;
+
             if (avctx->codec->type == AVMEDIA_TYPE_AUDIO) {
-                if (avpkt->pts == AV_NOPTS_VALUE)
-                    avpkt->pts = frame->pts;
                 if (!avpkt->duration)
                     avpkt->duration = ff_samples_to_time_base(avctx,
                                                               frame->nb_samples);
