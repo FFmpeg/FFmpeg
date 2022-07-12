@@ -346,7 +346,7 @@ static int encode_frame(AVCodecContext* avc_context, AVPacket *pkt,
 
     // HACK: assumes no encoder delay, this is true until libtheora becomes
     // multithreaded (which will be disabled unless explicitly requested)
-    pkt->pts = pkt->dts = frame->pts;
+    pkt->pts = frame->pts;
     pkt->duration = frame->duration;
 
     ret = ff_encode_reordered_opaque(avc_context, pkt, frame);
