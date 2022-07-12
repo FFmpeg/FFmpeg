@@ -52,6 +52,7 @@
 typedef struct X264Opaque {
     int64_t reordered_opaque;
     int64_t wallclock;
+    int64_t duration;
 
     void        *frame_opaque;
     AVBufferRef *frame_opaque_ref;
@@ -459,6 +460,7 @@ static int setup_frame(AVCodecContext *ctx, const AVFrame *frame,
     }
 
     opaque->reordered_opaque = frame->reordered_opaque;
+    opaque->duration         = frame->duration;
     opaque->wallclock = wallclock;
     if (ctx->export_side_data & AV_CODEC_EXPORT_DATA_PRFT)
         opaque->wallclock = av_gettime();
@@ -612,6 +614,7 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
         out_opaque < &x4->reordered_opaque[x4->nb_reordered_opaque]) {
         ctx->reordered_opaque = out_opaque->reordered_opaque;
         wallclock = out_opaque->wallclock;
+        pkt->duration = out_opaque->duration;
 
         if (ctx->flags & AV_CODEC_FLAG_COPY_OPAQUE) {
             pkt->opaque                  = out_opaque->frame_opaque;
