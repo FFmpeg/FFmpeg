@@ -101,26 +101,32 @@ function ff_pix_abs16_xy2_neon, export=1
         ld1             {v6.16b}, [x5], x3          // load pix3
         ld1             {v16.16b}, [x1], x3         // load pix1
 
-        ldur            q19, [x5, #1]               // load pix3+1
-        ld1             {v18.16b}, [x5], x3         // load pix3
-        ld1             {v17.16b}, [x1], x3         // load pix1
-
-        ldur            q22, [x5, #1]               // load pix3+1
-        ld1             {v21.16b}, [x5], x3         // load pix3
-        ld1             {v20.16b}, [x1], x3         // load pix1
-
         // These blocks compute the average: avg(pix2[n], pix2[n+1], pix3[n], pix3[n+1])
         uaddl           v30.8h, v4.8b, v5.8b        // pix3 + pix3+1 0..7
         uaddl2          v31.8h, v4.16b, v5.16b      // pix3 + pix3+1 8..15
+
+        ldur            q19, [x5, #1]               // load pix3+1
+
         add             v23.8h, v2.8h, v30.8h       // add up 0..7, using pix2 + pix2+1 values from previous iteration
         add             v24.8h, v3.8h, v31.8h       // add up 8..15, using pix2 + pix2+1 values from previous iteration
+
+        ld1             {v18.16b}, [x5], x3         // load pix3
+        ld1             {v17.16b}, [x1], x3         // load pix1
+
         rshrn           v23.8b, v23.8h, #2          // shift right 2 0..7 (rounding shift right)
         rshrn2          v23.16b, v24.8h, #2         // shift right 2 8..15
 
         uaddl           v2.8h, v6.8b, v7.8b         // pix3 + pix3+1 0..7
         uaddl2          v3.8h, v6.16b, v7.16b       // pix3 + pix3+1 8..15
+
+        ldur            q22, [x5, #1]               // load pix3+1
+
         add             v26.8h, v30.8h, v2.8h       // add up 0..7, using pix2 + pix2+1 values from pix3 above
         add             v27.8h, v31.8h, v3.8h       // add up 8..15, using pix2 + pix2+1 values from pix3 above
+
+        ld1             {v21.16b}, [x5], x3         // load pix3
+        ld1             {v20.16b}, [x1], x3         // load pix1
+
         rshrn           v26.8b, v26.8h, #2          // shift right 2 0..7 (rounding shift right)
         rshrn2          v26.16b, v27.8h, #2         // shift right 2 8..15
 
