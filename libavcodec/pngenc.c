@@ -964,6 +964,11 @@ static int encode_apng(AVCodecContext *avctx, AVPacket *pkt,
 
         memcpy(pkt->data, s->last_frame_packet, s->last_frame_packet_size);
         pkt->pts = pkt->dts = s->last_frame->pts;
+        pkt->duration = s->last_frame->duration;
+
+        ret = ff_encode_reordered_opaque(avctx, pkt, s->last_frame);
+        if (ret < 0)
+            return ret;
     }
 
     if (pict) {
@@ -1206,7 +1211,8 @@ const FFCodec ff_apng_encoder = {
     CODEC_LONG_NAME("APNG (Animated Portable Network Graphics) image"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_APNG,
-    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
+                      AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_data_size = sizeof(PNGEncContext),
     .init           = png_enc_init,
     .close          = png_enc_close,
