@@ -408,6 +408,9 @@ output_zeros:
         if (zero_run) {
             zero_run = 0;
             i += esc_count;
+            if (i >  end - dst ||
+                i >= src_end - src)
+                return AVERROR_INVALIDDATA;
             memcpy(dst, src, i);
             dst += i;
             l->zeros_rem = lag_calc_zero_run(src[i]);
