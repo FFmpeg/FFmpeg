@@ -27,6 +27,8 @@ int ff_pix_abs16_neon(MpegEncContext *s, uint8_t *blk1, uint8_t *blk2,
                       ptrdiff_t stride, int h);
 int ff_pix_abs16_xy2_neon(MpegEncContext *s, uint8_t *blk1, uint8_t *blk2,
                       ptrdiff_t stride, int h);
+int ff_pix_abs16_x2_neon(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
+                      ptrdiff_t stride, int h);
 
 av_cold void ff_me_cmp_init_aarch64(MECmpContext *c, AVCodecContext *avctx)
 {
@@ -34,6 +36,7 @@ av_cold void ff_me_cmp_init_aarch64(MECmpContext *c, AVCodecContext *avctx)
 
     if (have_neon(cpu_flags)) {
         c->pix_abs[0][0] = ff_pix_abs16_neon;
+        c->pix_abs[0][1] = ff_pix_abs16_x2_neon;
         c->pix_abs[0][3] = ff_pix_abs16_xy2_neon;
 
         c->sad[0] = ff_pix_abs16_neon;
