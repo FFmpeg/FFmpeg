@@ -43,6 +43,7 @@
 
 typedef struct ReorderedData {
     int64_t reordered_opaque;
+    int64_t duration;
 
     void        *frame_opaque;
     AVBufferRef *frame_opaque_ref;
@@ -616,6 +617,7 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         }
         rd = &ctx->rd[rd_idx];
 
+        rd->duration         = pic->duration;
         rd->reordered_opaque = pic->reordered_opaque;
         if (avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE) {
             rd->frame_opaque = pic->opaque;
@@ -755,6 +757,7 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         ReorderedData *rd = &ctx->rd[idx];
 
         avctx->reordered_opaque = rd->reordered_opaque;
+        pkt->duration           = rd->duration;
 
         if (avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE) {
             pkt->opaque          = rd->frame_opaque;
