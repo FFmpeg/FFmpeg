@@ -189,11 +189,11 @@ function ff_pix_abs16_xy2_neon, export=1
         urshr           v16.8h, v16.8h, #2          // shift right by 2 0..7 (rounding shift right)
         urshr           v17.8h, v17.8h, #2          // shift right by 2 8..15
 
-        uxtl2           v8.8h, v1.16b               // 8->16 bits pix1 8..15
+        uxtl2           v7.8h, v1.16b               // 8->16 bits pix1 8..15
         uxtl            v1.8h, v1.8b                // 8->16 bits pix1 0..7
 
         uabd            v6.8h, v1.8h, v16.8h        // absolute difference 0..7
-        uaba            v6.8h, v8.8h, v17.8h        // absolute difference accumulate 8..15
+        uaba            v6.8h, v7.8h, v17.8h        // absolute difference accumulate 8..15
         mov             v2.16b, v18.16b             // pix3 -> pix2
         mov             v3.16b, v19.16b             // pix3+1 -> pix2+1
         uaddlv          s6, v6.8h                   // add up accumulator in v6
