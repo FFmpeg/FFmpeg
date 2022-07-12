@@ -433,7 +433,7 @@ static void slideleft##name##_transition(AVFilterContext *ctx,                  
             for (int x = 0; x < width; x++) {                                        \
                 const int zx = z + x;                                                \
                 const int zz = zx % width + width * (zx < 0);                        \
-                dst[x] = (zx > 0) && (zx < width) ? xf1[zz] : xf0[zz];               \
+                dst[x] = (zx >= 0) && (zx < width) ? xf1[zz] : xf0[zz];              \
             }                                                                        \
                                                                                      \
             dst += out->linesize[p] / div;                                           \
@@ -466,7 +466,7 @@ static void slideright##name##_transition(AVFilterContext *ctx,                 
             for (int x = 0; x < out->width; x++) {                                   \
                 const int zx = z + x;                                                \
                 const int zz = zx % width + width * (zx < 0);                        \
-                dst[x] = (zx > 0) && (zx < width) ? xf1[zz] : xf0[zz];               \
+                dst[x] = (zx >= 0) && (zx < width) ? xf1[zz] : xf0[zz];              \
             }                                                                        \
                                                                                      \
             dst += out->linesize[p] / div;                                           \
@@ -499,7 +499,7 @@ static void slideup##name##_transition(AVFilterContext *ctx,                    
             const type *xf1 = (const type *)(b->data[p] + zz * b->linesize[p]);     \
                                                                                     \
             for (int x = 0; x < out->width; x++) {                                  \
-                dst[x] = (zy > 0) && (zy < height) ? xf1[x] : xf0[x];               \
+                dst[x] = (zy >= 0) && (zy < height) ? xf1[x] : xf0[x];              \
             }                                                                       \
                                                                                     \
             dst += out->linesize[p] / div;                                          \
@@ -530,7 +530,7 @@ static void slidedown##name##_transition(AVFilterContext *ctx,                  
             const type *xf1 = (const type *)(b->data[p] + zz * b->linesize[p]);     \
                                                                                     \
             for (int x = 0; x < out->width; x++) {                                  \
-                dst[x] = (zy > 0) && (zy < height) ? xf1[x] : xf0[x];               \
+                dst[x] = (zy >= 0) && (zy < height) ? xf1[x] : xf0[x];              \
             }                                                                       \
                                                                                     \
             dst += out->linesize[p] / div;                                          \
