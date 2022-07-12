@@ -211,7 +211,7 @@ int ff_encode_encode_cb(AVCodecContext *avctx, AVPacket *avpkt,
 
         if (avctx->codec->type == AVMEDIA_TYPE_VIDEO &&
             !(avctx->codec->capabilities & AV_CODEC_CAP_DELAY))
-            avpkt->pts = avpkt->dts = frame->pts;
+            avpkt->pts = frame->pts;
         if (!(avctx->codec->capabilities & AV_CODEC_CAP_DELAY)) {
             if (avctx->codec->type == AVMEDIA_TYPE_AUDIO) {
                 if (avpkt->pts == AV_NOPTS_VALUE)
@@ -221,9 +221,12 @@ int ff_encode_encode_cb(AVCodecContext *avctx, AVPacket *avpkt,
                                                               frame->nb_samples);
             }
         }
-        if (avctx->codec->type == AVMEDIA_TYPE_AUDIO) {
+
+        // dts equals pts unless there is reordering
+        // there can be no reordering if there is no encoder delay
+        if (!(avctx->codec_descriptor->props & AV_CODEC_PROP_REORDER) ||
+            !(avctx->codec->capabilities & AV_CODEC_CAP_DELAY))
             avpkt->dts = avpkt->pts;
-        }
     } else {
 unref:
         av_packet_unref(avpkt);
