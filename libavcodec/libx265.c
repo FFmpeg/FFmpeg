@@ -28,6 +28,7 @@
 #include <float.h>
 
 #include "libavutil/avassert.h"
+#include "libavutil/buffer.h"
 #include "libavutil/internal.h"
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
@@ -42,6 +43,9 @@
 
 typedef struct ReorderedData {
     int64_t reordered_opaque;
+
+    void        *frame_opaque;
+    AVBufferRef *frame_opaque_ref;
 
     int in_use;
 } ReorderedData;
@@ -121,7 +125,7 @@ static int rd_get(libx265Context *ctx)
 static void rd_release(libx265Context *ctx, int idx)
 {
     av_assert0(idx >= 0 && idx < ctx->nb_rd);
-
+    av_buffer_unref(&ctx->rd[idx].frame_opaque_ref);
     memset(&ctx->rd[idx], 0, sizeof(ctx->rd[idx]));
 }
 
@@ -132,6 +136,8 @@ static av_cold int libx265_encode_close(AVCodecContext *avctx)
     ctx->api->param_free(ctx->params);
     av_freep(&ctx->sei_data);
 
+    for (int i = 0; i < ctx->nb_rd; i++)
+        rd_release(ctx, i);
     av_freep(&ctx->rd);
 
     if (ctx->encoder)
@@ -582,6 +588,9 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     sei->numPayloads = 0;
 
     if (pic) {
+        ReorderedData *rd;
+        int rd_idx;
+
         for (i = 0; i < 3; i++) {
            x265pic.planes[i] = pic->data[i];
            x265pic.stride[i] = pic->linesize[i];
@@ -600,20 +609,25 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         if (ret < 0)
             return ret;
 
-        if (pic->reordered_opaque) {
-            ReorderedData *rd;
-            int rd_idx = rd_get(ctx);
-
-            if (rd_idx < 0) {
-                free_picture(ctx, &x265pic);
-                return rd_idx;
-            }
-
-            x265pic.userData = (void*)(intptr_t)(rd_idx + 1);
-
-            rd = &ctx->rd[rd_idx];
-            rd->reordered_opaque = pic->reordered_opaque;
+        rd_idx = rd_get(ctx);
+        if (rd_idx < 0) {
+            free_picture(ctx, &x265pic);
+            return rd_idx;
         }
+        rd = &ctx->rd[rd_idx];
+
+        rd->reordered_opaque = pic->reordered_opaque;
+        if (avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE) {
+            rd->frame_opaque = pic->opaque;
+            ret = av_buffer_replace(&rd->frame_opaque_ref, pic->opaque_ref);
+            if (ret < 0) {
+                rd_release(ctx, rd_idx);
+                free_picture(ctx, &x265pic);
+                return ret;
+            }
+        }
+
+        x265pic.userData = (void*)(intptr_t)(rd_idx + 1);
 
         if (ctx->a53_cc) {
             void *sei_data;
@@ -741,6 +755,12 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         ReorderedData *rd = &ctx->rd[idx];
 
         avctx->reordered_opaque = rd->reordered_opaque;
+
+        if (avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE) {
+            pkt->opaque          = rd->frame_opaque;
+            pkt->opaque_ref      = rd->frame_opaque_ref;
+            rd->frame_opaque_ref = NULL;
+        }
 
         rd_release(ctx, idx);
     } else

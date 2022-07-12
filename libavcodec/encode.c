@@ -636,6 +636,13 @@ int ff_encode_preinit(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
+    if (avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE &&
+        !(avctx->codec->capabilities & AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE)) {
+        av_log(avctx, AV_LOG_ERROR, "The copy_opaque flag is set, but the "
+               "encoder does not support it.\n");
+        return AVERROR(EINVAL);
+    }
+
     switch (avctx->codec_type) {
     case AVMEDIA_TYPE_VIDEO: ret = encode_preinit_video(avctx); break;
     case AVMEDIA_TYPE_AUDIO: ret = encode_preinit_audio(avctx); break;

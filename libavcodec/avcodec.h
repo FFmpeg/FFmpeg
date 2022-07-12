@@ -242,6 +242,32 @@ typedef struct RcOverride{
  */
 #define AV_CODEC_FLAG_RECON_FRAME     (1 <<  6)
 /**
+ * Request the encoder to propagate each frame's AVFrame.opaque and
+ * AVFrame.opaque_ref values to its corresponding output AVPacket.
+ *
+ * May only be set on encoders that have the
+ * @ref AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE capability flag.
+ *
+ * @note
+ * While in typical cases one input frame produces exactly one output packet
+ * (perhaps after a delay), in general the mapping of frames to packets is
+ * M-to-N, so
+ * - Any number of input frames may be associated with any given output packet.
+ *   This includes zero - e.g. some encoders may output packets that carry only
+ *   metadata about the whole stream.
+ * - A given input frame may be associated with any number of output packets.
+ *   Again this includes zero - e.g. some encoders may drop frames under certain
+ *   conditions.
+ * .
+ * This implies that when using this flag, the caller must NOT assume that
+ * - a given input frame's opaques will necessarily appear on some output packet;
+ * - every output packet will have some non-NULL opaque value.
+ * .
+ * When an output packet contains multiple frames, the opaque values will be
+ * taken from the first of those.
+ */
+#define AV_CODEC_FLAG_COPY_OPAQUE     (1 <<  7)
+/**
  * Use internal 2pass ratecontrol in first pass mode.
  */
 #define AV_CODEC_FLAG_PASS1           (1 <<  9)
