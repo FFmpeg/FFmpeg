@@ -268,6 +268,13 @@ typedef struct RcOverride{
  */
 #define AV_CODEC_FLAG_COPY_OPAQUE     (1 <<  7)
 /**
+ * Signal to the encoder that the values of AVFrame.duration are valid and
+ * should be used (typically for transferring them to output packets).
+ *
+ * If this flag is not set, frame durations are ignored.
+ */
+#define AV_CODEC_FLAG_FRAME_DURATION  (1 <<  8)
+/**
  * Use internal 2pass ratecontrol in first pass mode.
  */
 #define AV_CODEC_FLAG_PASS1           (1 <<  9)

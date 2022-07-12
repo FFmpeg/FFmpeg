@@ -231,10 +231,13 @@ int ff_encode_encode_cb(AVCodecContext *avctx, AVPacket *avpkt,
             if (avpkt->pts == AV_NOPTS_VALUE)
                 avpkt->pts = frame->pts;
 
-            if (avctx->codec->type == AVMEDIA_TYPE_AUDIO) {
-                if (!avpkt->duration)
+            if (!avpkt->duration) {
+                if (frame->duration)
+                    avpkt->duration = frame->duration;
+                else if (avctx->codec->type == AVMEDIA_TYPE_AUDIO) {
                     avpkt->duration = ff_samples_to_time_base(avctx,
                                                               frame->nb_samples);
+                }
             }
 
             ret = ff_encode_reordered_opaque(avctx, avpkt, frame);
@@ -462,6 +465,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (ret < 0)
             return ret;
     }
+
+    // unset frame duration unless AV_CODEC_FLAG_FRAME_DURATION is set,
+    // since otherwise we cannot be sure that whatever value it has is in the
+    // right timebase, so we would produce an incorrect value, which is worse
+    // than none at all
+    if (!(avctx->flags & AV_CODEC_FLAG_FRAME_DURATION))
+        dst->duration = 0;
 
     return 0;
 }
