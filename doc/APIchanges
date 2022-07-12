@@ -1687,7 +1687,7 @@ API changes, most recent first:
 2014-04-15 - ef818d8 - lavf 55.37.101 - avformat.h
   Add av_format_inject_global_side_data()
 
-2014-04-12 - 4f698be - lavu 52.76.100 - log.h
+2014-04-12 - 4f698be8f - lavu 52.76.100 - log.h
   Add av_log_get_flags()
 
 2014-04-11 - 6db42a2b - lavd 55.12.100 - avdevice.h
