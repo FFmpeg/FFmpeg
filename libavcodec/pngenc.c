@@ -963,7 +963,7 @@ static int encode_apng(AVCodecContext *avctx, AVPacket *pkt,
             return ret;
 
         memcpy(pkt->data, s->last_frame_packet, s->last_frame_packet_size);
-        pkt->pts = pkt->dts = s->last_frame->pts;
+        pkt->pts = s->last_frame->pts;
         pkt->duration = s->last_frame->duration;
 
         ret = ff_encode_reordered_opaque(avctx, pkt, s->last_frame);
