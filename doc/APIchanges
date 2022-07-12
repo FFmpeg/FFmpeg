@@ -14,24 +14,24 @@ libavutil:     2021-04-27
 
 API changes, most recent first:
 
-2022-06-12 - xxxxxxxxxx - lavf 59.25.100 - avio.h
+2022-06-12 - 7cae3d8b76 - lavf 59.25.100 - avio.h
   Add avio_vprintf(), similar to avio_printf() but allow to use it
   from within a function taking a variable argument list as input.
 
-2022-06-12 - xxxxxxxxx - lavu 57.27.100 - uuid.h
+2022-06-12 - ff59ecc4de - lavu 57.27.100 - uuid.h
   Add UUID handling functions.
   Add av_uuid_parse(), av_uuid_urn_parse(), av_uuid_parse_range(),
   av_uuid_parse_range(), av_uuid_equal(), av_uuid_copy(), and av_uuid_nil().
 
-2022-06-01 - xxxxxxxxx - lavu 57.26.100 - csp.h
+2022-06-01 - d42b410e05 - lavu 57.26.100 - csp.h
   Add public API for colorspace structs.
   Add av_csp_luma_coeffs_from_avcsp(), av_csp_primaries_desc_from_id(),
   and av_csp_primaries_id_from_desc().
 
-2022-05-23 - xxxxxxxxx - lavu 57.25.100 - avutil.h
+2022-05-23 - 4cdc14aa95 - lavu 57.25.100 - avutil.h
   Deprecate av_fopen_utf8() without replacement.
 
-2022-03-16 - xxxxxxxxxx - all libraries - version_major.h
+2022-03-16 - f3a0e2ee2b - all libraries - version_major.h
   Add lib<name>/version_major.h as new installed headers, which only
   contain the major version number (and corresponding API deprecation
   defines).
@@ -73,10 +73,10 @@ API changes, most recent first:
   Update AVFrame for the new channel layout API: add ch_layout, deprecate
   channels/channel_layout.
 
-2022-03-10 - xxxxxxxxxx - lavu 57.23.100 - cpu.h
+2022-03-10 - f629ea2e18 - lavu 57.23.100 - cpu.h
   Add AV_CPU_FLAG_AVX512ICL.
 
-2022-02-07 - xxxxxxxxxx - lavu 57.21.100 - fifo.h
+2022-02-07 - a10f1aec1f - lavu 57.21.100 - fifo.h
   Deprecate AVFifoBuffer and the API around it, namely av_fifo_alloc(),
   av_fifo_alloc_array(), av_fifo_free(), av_fifo_freep(), av_fifo_reset(),
   av_fifo_size(), av_fifo_space(), av_fifo_generic_peek_at(),
@@ -84,7 +84,7 @@ API changes, most recent first:
   av_fifo_realloc2(), av_fifo_grow(), av_fifo_drain() and av_fifo_peek2().
   Users should switch to the AVFifo-API.
 
-2022-02-07 - xxxxxxxxxx - lavu 57.20.100 - fifo.h
+2022-02-07 - 7329b22c05 - lavu 57.20.100 - fifo.h
   Add a new FIFO API, which allows setting a FIFO element size.
   This API operates on these elements rather than on bytes.
   Add av_fifo_alloc2(), av_fifo_elem_size(), av_fifo_can_read(),
