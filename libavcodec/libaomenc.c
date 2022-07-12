@@ -23,6 +23,8 @@
  * AV1 encoder support via libaom
  */
 
+#include <limits.h>
+
 #define AOM_DISABLE_CTRL_TYPECHECKS 1
 #include <aom/aom_encoder.h>
 #include <aom/aomcx.h>
@@ -1094,6 +1096,7 @@ static int storeframe(AVCodecContext *avctx, struct FrameListData *cx_frame,
     }
     memcpy(pkt->data, cx_frame->buf, pkt->size);
     pkt->pts = pkt->dts = cx_frame->pts;
+    pkt->duration = cx_frame->duration;
 
     if (!!(cx_frame->flags & AOM_FRAME_IS_KEY)) {
         pkt->flags |= AV_PKT_FLAG_KEY;
@@ -1275,6 +1278,7 @@ static int aom_encode(AVCodecContext *avctx, AVPacket *pkt,
     AOMContext *ctx = avctx->priv_data;
     struct aom_image *rawimg = NULL;
     int64_t timestamp = 0;
+    unsigned long duration = 0;
     int res, coded_size;
     aom_enc_frame_flags_t flags = 0;
 
@@ -1287,6 +1291,13 @@ static int aom_encode(AVCodecContext *avctx, AVPacket *pkt,
         rawimg->stride[AOM_PLANE_U] = frame->linesize[1];
         rawimg->stride[AOM_PLANE_V] = frame->linesize[2];
         timestamp                   = frame->pts;
+
+        if (frame->duration > ULONG_MAX) {
+            av_log(avctx, AV_LOG_WARNING,
+                   "Frame duration too large: %"PRId64"\n", frame->duration);
+        } else
+            duration = frame->duration ? frame->duration : avctx->ticks_per_frame;
+
         switch (frame->color_range) {
         case AVCOL_RANGE_MPEG:
             rawimg->range = AOM_CR_STUDIO_RANGE;
@@ -1300,8 +1311,7 @@ static int aom_encode(AVCodecContext *avctx, AVPacket *pkt,
             flags |= AOM_EFLAG_FORCE_KF;
     }
 
-    res = aom_codec_encode(&ctx->encoder, rawimg, timestamp,
-                           avctx->ticks_per_frame, flags);
+    res = aom_codec_encode(&ctx->encoder, rawimg, timestamp, duration, flags);
     if (res != AOM_CODEC_OK) {
         log_encoder_error(avctx, "Error encoding frame");
         return AVERROR_INVALIDDATA;
