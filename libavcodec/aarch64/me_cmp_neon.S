@@ -124,6 +124,9 @@ function ff_pix_abs16_xy2_neon, export=1
         add             v26.8h, v30.8h, v2.8h       // add up 0..7, using pix2 + pix2+1 values from pix3 above
         add             v27.8h, v31.8h, v3.8h       // add up 8..15, using pix2 + pix2+1 values from pix3 above
 
+        uabdl           v24.8h, v1.8b,  v23.8b      // absolute difference 0..7, i=0
+        uabdl2          v23.8h, v1.16b, v23.16b     // absolute difference 8..15, i=0
+
         ld1             {v21.16b}, [x5], x3         // load pix3
         ld1             {v20.16b}, [x1], x3         // load pix1
 
@@ -137,6 +140,9 @@ function ff_pix_abs16_xy2_neon, export=1
         rshrn           v28.8b, v28.8h, #2          // shift right 2 0..7 (rounding shift right)
         rshrn2          v28.16b, v29.8h, #2         // shift right 2 8..15
 
+        uabal           v24.8h, v16.8b,  v26.8b     // absolute difference 0..7, i=1
+        uabal2          v23.8h, v16.16b, v26.16b    // absolute difference 8..15, i=1
+
         uaddl           v2.8h, v21.8b, v22.8b       // pix3 + pix3+1 0..7
         uaddl2          v3.8h, v21.16b, v22.16b     // pix3 + pix3+1 8..15
         add             v30.8h, v4.8h, v2.8h        // add up 0..7, using pix2 + pix2+1 values from pix3 above
@@ -144,33 +150,17 @@ function ff_pix_abs16_xy2_neon, export=1
         rshrn           v30.8b, v30.8h, #2          // shift right 2 0..7 (rounding shift right)
         rshrn2          v30.16b, v31.8h, #2         // shift right 2 8..15
 
-        // Averages are now stored in these registers:
-        // v23, v16, v28, v30
-        // pix1 values in these registers:
-        // v1, v16, v17, v20
-        // available:
-        // v4, v5, v7, v18, v19, v24, v25, v27, v29, v31
+        uabal           v24.8h, v17.8b,  v28.8b     // absolute difference 0..7, i=2
+        uabal2          v23.8h, v17.16b, v28.16b    // absolute difference 8..15, i=2
 
         sub             w4, w4, #4                  // h -= 4
 
-        // Using absolute-difference instructions instead of absolute-difference-accumulate allows
-        // us to keep the results in 16b vectors instead of widening values with twice the instructions.
-        // This approach also has fewer data dependencies, allowing better instruction level parallelism.
-        uabd            v4.16b, v1.16b, v23.16b     // absolute difference 0..15, i=0
-        uabd            v5.16b, v16.16b, v26.16b    // absolute difference 0..15, i=1
-        uabd            v6.16b, v17.16b, v28.16b    // absolute difference 0..15, i=2
-        uabd            v7.16b, v20.16b, v30.16b    // absolute difference 0..15, i=3
+        uabal           v24.8h, v20.8b,  v30.8b     // absolute difference 0..7, i=3
+        uabal2          v23.8h, v20.16b, v30.16b    // absolute difference 8..15, i=3
 
         cmp             w4, #4                      // loop if h >= 4
 
-        // Now add up all the values in each vector, v4-v7 with widening adds
-        uaddl           v19.8h, v4.8b, v5.8b
-        uaddl2          v18.8h, v4.16b, v5.16b
-        uaddl           v4.8h, v6.8b, v7.8b
-        uaddl2          v5.8h, v6.16b, v7.16b
-        add             v4.8h, v4.8h, v5.8h
-        add             v4.8h, v4.8h, v18.8h
-        add             v4.8h, v4.8h, v19.8h
+        add             v4.8h, v23.8h, v24.8h
         uaddlv          s4, v4.8h                   // finish adding up accumulated values
         add             d0, d0, d4                  // add the value to the top level accumulator
 
