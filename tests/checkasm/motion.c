@@ -45,7 +45,7 @@ static void test_motion(const char *name, me_cmp_func test_func)
     /* motion estimation can look up to 17 bytes ahead */
     static const int look_ahead = 17;
 
-    int i, x, y, d1, d2;
+    int i, x, y, h, d1, d2;
     uint8_t *ptr;
 
     LOCAL_ALIGNED_16(uint8_t, img1, [WIDTH * HEIGHT]);
@@ -68,14 +68,16 @@ static void test_motion(const char *name, me_cmp_func test_func)
         for (i = 0; i < ITERATIONS; i++) {
             x = rnd() % (WIDTH - look_ahead);
             y = rnd() % (HEIGHT - look_ahead);
+            // Pick a random h between 4 and 16; pick an even value.
+            h = 4 + ((rnd() % (16 + 1 - 4)) & ~1);
 
             ptr = img2 + y * WIDTH + x;
-            d2 = call_ref(NULL, img1, ptr, WIDTH, 8);
-            d1 = call_new(NULL, img1, ptr, WIDTH, 8);
+            d2 = call_ref(NULL, img1, ptr, WIDTH, h);
+            d1 = call_new(NULL, img1, ptr, WIDTH, h);
 
             if (d1 != d2) {
                 fail();
-                printf("func: %s, x=%d y=%d, error: asm=%d c=%d\n", name, x, y, d1, d2);
+                printf("func: %s, x=%d y=%d h=%d, error: asm=%d c=%d\n", name, x, y, h, d1, d2);
                 break;
             }
         }
