@@ -709,10 +709,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     }
 
     av_log(ctx, AV_LOG_INFO,
-           "n:%4"PRId64" pts:%7s pts_time:%-7s pos:%9"PRId64" "
+           "n:%4"PRId64" pts:%7s pts_time:%-7s duration:%7"PRId64
+           " duration_time:%-7s pos:%9"PRId64" "
            "fmt:%s sar:%d/%d s:%dx%d i:%c iskey:%d type:%c ",
            inlink->frame_count_out,
-           av_ts2str(frame->pts), av_ts2timestr(frame->pts, &inlink->time_base), frame->pkt_pos,
+           av_ts2str(frame->pts), av_ts2timestr(frame->pts, &inlink->time_base),
+           frame->duration, av_ts2timestr(frame->duration, &inlink->time_base),
+           frame->pkt_pos,
            desc->name,
            frame->sample_aspect_ratio.num, frame->sample_aspect_ratio.den,
            frame->width, frame->height,
