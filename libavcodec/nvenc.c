@@ -28,6 +28,7 @@
 #include "av1.h"
 #endif
 
+#include "libavutil/buffer.h"
 #include "libavutil/hwcontext_cuda.h"
 #include "libavutil/hwcontext.h"
 #include "libavutil/cuda_check.h"
@@ -160,6 +161,23 @@ static int nvenc_print_error(AVCodecContext *avctx, NVENCSTATUS err,
     av_log(avctx, AV_LOG_ERROR, "%s: %s (%d): %s\n", error_string, desc, err, details);
 
     return ret;
+}
+
+typedef struct FrameData {
+    int64_t pts;
+    int64_t duration;
+    int64_t reordered_opaque;
+
+    void        *frame_opaque;
+    AVBufferRef *frame_opaque_ref;
+} FrameData;
+
+static void reorder_queue_flush(AVFifo *queue)
+{
+    FrameData fd;
+
+    while (av_fifo_read(queue, &fd, 1) >= 0)
+        av_buffer_unref(&fd.frame_opaque_ref);
 }
 
 typedef struct GUIDTuple {
@@ -1748,8 +1766,8 @@ static av_cold int nvenc_setup_surfaces(AVCodecContext *avctx)
     if (!ctx->surfaces)
         return AVERROR(ENOMEM);
 
-    ctx->timestamp_list = av_fifo_alloc2(ctx->nb_surfaces, sizeof(int64_t), 0);
-    if (!ctx->timestamp_list)
+    ctx->reorder_queue = av_fifo_alloc2(ctx->nb_surfaces, sizeof(FrameData), 0);
+    if (!ctx->reorder_queue)
         return AVERROR(ENOMEM);
 
     ctx->unused_surface_queue = av_fifo_alloc2(ctx->nb_surfaces, sizeof(NvencSurface*), 0);
@@ -1833,7 +1851,8 @@ av_cold int ff_nvenc_encode_close(AVCodecContext *avctx)
         p_nvenc->nvEncEncodePicture(ctx->nvencoder, &params);
     }
 
-    av_fifo_freep2(&ctx->timestamp_list);
+    reorder_queue_flush(ctx->reorder_queue);
+    av_fifo_freep2(&ctx->reorder_queue);
     av_fifo_freep2(&ctx->output_surface_ready_queue);
     av_fifo_freep2(&ctx->output_surface_queue);
     av_fifo_freep2(&ctx->unused_surface_queue);
@@ -2177,18 +2196,45 @@ static void nvenc_codec_specific_pic_params(AVCodecContext *avctx,
     }
 }
 
-static inline void timestamp_queue_enqueue(AVFifo *queue, int64_t timestamp)
+static void reorder_queue_enqueue(AVFifo *queue, const AVCodecContext *avctx,
+                                  const AVFrame *frame, AVBufferRef **opaque_ref)
 {
-    av_fifo_write(queue, &timestamp, 1);
+    FrameData fd;
+
+    fd.pts              = frame->pts;
+    fd.duration         = frame->duration;
+    fd.reordered_opaque = frame->reordered_opaque;
+    fd.frame_opaque     = frame->opaque;
+    fd.frame_opaque_ref = *opaque_ref;
+
+    *opaque_ref = NULL;
+
+    av_fifo_write(queue, &fd, 1);
 }
 
-static inline int64_t timestamp_queue_dequeue(AVFifo *queue)
+static int64_t reorder_queue_dequeue(AVFifo *queue, AVCodecContext *avctx,
+                                     AVPacket *pkt)
 {
-    int64_t timestamp = AV_NOPTS_VALUE;
-    // The following call might fail if the queue is empty.
-    av_fifo_read(queue, &timestamp, 1);
+    FrameData fd;
 
-    return timestamp;
+    // The following call might fail if the queue is empty.
+    if (av_fifo_read(queue, &fd, 1) < 0)
+        return AV_NOPTS_VALUE;
+
+    if (pkt) {
+        avctx->reordered_opaque = fd.reordered_opaque;
+        pkt->duration           = fd.duration;
+
+        if (avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE) {
+            pkt->opaque             = fd.frame_opaque;
+            pkt->opaque_ref         = fd.frame_opaque_ref;
+            fd.frame_opaque_ref     = NULL;
+        }
+    }
+
+    av_buffer_unref(&fd.frame_opaque_ref);
+
+    return fd.pts;
 }
 
 static int nvenc_set_timestamp(AVCodecContext *avctx,
@@ -2196,12 +2242,14 @@ static int nvenc_set_timestamp(AVCodecContext *avctx,
                                AVPacket *pkt)
 {
     NvencContext *ctx = avctx->priv_data;
+    int64_t dts;
 
     pkt->pts = params->outputTimeStamp;
 
+    dts = reorder_queue_dequeue(ctx->reorder_queue, avctx, pkt);
+
     if (avctx->codec_descriptor->props & AV_CODEC_PROP_REORDER) {
-        pkt->dts = timestamp_queue_dequeue(ctx->timestamp_list);
-        pkt->dts -= FFMAX(ctx->encode_config.frameIntervalP - 1, 0) * FFMAX(avctx->ticks_per_frame, 1);
+        pkt->dts = dts - FFMAX(ctx->encode_config.frameIntervalP - 1, 0) * FFMAX(avctx->ticks_per_frame, 1);
     } else {
         pkt->dts = pkt->pts;
     }
@@ -2298,7 +2346,7 @@ static int process_output_surface(AVCodecContext *avctx, AVPacket *pkt, NvencSur
     return 0;
 
 error:
-    timestamp_queue_dequeue(ctx->timestamp_list);
+    reorder_queue_dequeue(ctx->reorder_queue, avctx, NULL);
 
 error2:
     return res;
@@ -2528,6 +2576,8 @@ static int nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
     int sei_count = 0;
     int i;
 
+    AVBufferRef *opaque_ref = NULL;
+
     NvencContext *ctx = avctx->priv_data;
     NvencDynLoadFunctions *dl_fn = &ctx->nvenc_dload_funcs;
     NV_ENCODE_API_FUNCTION_LIST *p_nvenc = &dl_fn->nvenc_funcs;
@@ -2595,9 +2645,17 @@ static int nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
         pic_params.encodePicFlags = NV_ENC_PIC_FLAG_EOS;
     }
 
+    // make a reference for enqueing in the reorder queue here,
+    // so that reorder_queue_enqueue() cannot fail
+    if (frame && frame->opaque_ref && avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE) {
+        opaque_ref = av_buffer_ref(frame->opaque_ref);
+        if (!opaque_ref)
+            return AVERROR(ENOMEM);
+    }
+
     res = nvenc_push_context(avctx);
     if (res < 0)
-        return res;
+        goto opaque_ref_fail;
 
     nv_status = p_nvenc->nvEncEncodePicture(ctx->nvencoder, &pic_params);
 
@@ -2606,17 +2664,17 @@ static int nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
 
     res = nvenc_pop_context(avctx);
     if (res < 0)
-        return res;
+        goto opaque_ref_fail;
 
     if (nv_status != NV_ENC_SUCCESS &&
-        nv_status != NV_ENC_ERR_NEED_MORE_INPUT)
-        return nvenc_print_error(avctx, nv_status, "EncodePicture failed!");
+        nv_status != NV_ENC_ERR_NEED_MORE_INPUT) {
+        res = nvenc_print_error(avctx, nv_status, "EncodePicture failed!");
+        goto opaque_ref_fail;
+    }
 
     if (frame && frame->buf[0]) {
         av_fifo_write(ctx->output_surface_queue, &in_surf, 1);
-
-        if (avctx->codec_descriptor->props & AV_CODEC_PROP_REORDER)
-            timestamp_queue_enqueue(ctx->timestamp_list, frame->pts);
+        reorder_queue_enqueue(ctx->reorder_queue, avctx, frame, &opaque_ref);
     }
 
     /* all the pending buffers are now ready for output */
@@ -2626,6 +2684,10 @@ static int nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
     }
 
     return 0;
+
+opaque_ref_fail:
+    av_buffer_unref(&opaque_ref);
+    return res;
 }
 
 int ff_nvenc_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
@@ -2684,5 +2746,5 @@ av_cold void ff_nvenc_encode_flush(AVCodecContext *avctx)
     NvencContext *ctx = avctx->priv_data;
 
     nvenc_send_frame(avctx, NULL);
-    av_fifo_reset2(ctx->timestamp_list);
+    reorder_queue_flush(ctx->reorder_queue);
 }

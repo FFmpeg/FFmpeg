@@ -232,7 +232,8 @@ const FFCodec ff_h264_nvenc_encoder = {
     .p.priv_class   = &h264_nvenc_class,
     .defaults       = defaults,
     .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE |
-                      AV_CODEC_CAP_ENCODER_FLUSH | AV_CODEC_CAP_DR1,
+                      AV_CODEC_CAP_ENCODER_FLUSH | AV_CODEC_CAP_DR1 |
+                      AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE |
                       FF_CODEC_CAP_INIT_CLEANUP,
     .p.pix_fmts     = ff_nvenc_pix_fmts,
