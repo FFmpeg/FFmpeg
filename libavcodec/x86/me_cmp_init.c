@@ -202,13 +202,12 @@ static inline int sum_mmx(void)
 static int sad8_xy2_ ## suf(MpegEncContext *v, const uint8_t *blk2,     \
                             const uint8_t *blk1, ptrdiff_t stride, int h) \
 {                                                                       \
-    av_assert2(h == 8);                                                     \
     __asm__ volatile (                                                  \
         "pxor %%mm7, %%mm7     \n\t"                                    \
         "pxor %%mm6, %%mm6     \n\t"                                    \
         ::);                                                            \
                                                                         \
-    sad8_4_ ## suf(blk1, blk2, stride, 8);                              \
+    sad8_4_ ## suf(blk1, blk2, stride, h);                              \
                                                                         \
     return sum_ ## suf();                                               \
 }                                                                       \
