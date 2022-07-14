@@ -735,6 +735,11 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
         q->param.mfx.QPI = av_clip(quant * fabs(avctx->i_quant_factor) + avctx->i_quant_offset, 0, 51);
         q->param.mfx.QPP = av_clip(quant, 0, 51);
         q->param.mfx.QPB = av_clip(quant * fabs(avctx->b_quant_factor) + avctx->b_quant_offset, 0, 51);
+        q->old_global_quality = avctx->global_quality;
+        q->old_i_quant_factor = avctx->i_quant_factor;
+        q->old_i_quant_offset = avctx->i_quant_offset;
+        q->old_b_quant_factor = avctx->b_quant_factor;
+        q->old_b_quant_offset = avctx->b_quant_offset;
 
         break;
 #if QSV_HAVE_AVBR
@@ -1618,38 +1623,31 @@ static int set_roi_encode_ctrl(AVCodecContext *avctx, const AVFrame *frame,
     return 0;
 }
 
-static int update_qp(AVCodecContext *avctx, QSVEncContext *q,
-                     const AVFrame *frame)
+static int update_qp(AVCodecContext *avctx, QSVEncContext *q)
 {
-    int updated = 0, qp = 0, new_qp;
-    char *tail;
-    AVDictionaryEntry *entry = NULL;
+    int updated = 0, new_qp = 0;
 
     if (avctx->codec_id != AV_CODEC_ID_H264 && avctx->codec_id != AV_CODEC_ID_HEVC)
         return 0;
 
-    entry = av_dict_get(frame->metadata, "qsv_config_qp", NULL, 0);
-    if (entry && q->param.mfx.RateControlMethod == MFX_RATECONTROL_CQP) {
-        qp = strtol(entry->value, &tail, 10);
-        if (*tail) {
-            av_log(avctx, AV_LOG_WARNING, "Invalid qsv_config_qp string. Ignore this metadata\n");
+    if (q->param.mfx.RateControlMethod == MFX_RATECONTROL_CQP) {
+        UPDATE_PARAM(q->old_global_quality, avctx->global_quality);
+        UPDATE_PARAM(q->old_i_quant_factor, avctx->i_quant_factor);
+        UPDATE_PARAM(q->old_i_quant_offset, avctx->i_quant_offset);
+        UPDATE_PARAM(q->old_b_quant_factor, avctx->b_quant_factor);
+        UPDATE_PARAM(q->old_b_quant_offset, avctx->b_quant_offset);
+        if (!updated)
             return 0;
-        }
-        if (qp < 0 || qp > 51) {
-            av_log(avctx, AV_LOG_WARNING, "Invalid qp, clip to 0 ~ 51\n");
-            qp = av_clip(qp, 0, 51);
-        }
-        av_log(avctx, AV_LOG_DEBUG, "Configure qp: %d\n",qp);
-        UPDATE_PARAM(q->param.mfx.QPP, qp);
-        new_qp = av_clip(qp * fabs(avctx->i_quant_factor) +
-                            avctx->i_quant_offset, 0, 51);
-        UPDATE_PARAM(q->param.mfx.QPI, new_qp);
-        new_qp = av_clip(qp * fabs(avctx->b_quant_factor) +
-                            avctx->b_quant_offset, 0, 51);
-        UPDATE_PARAM(q->param.mfx.QPB, new_qp);
+
+        new_qp = avctx->global_quality / FF_QP2LAMBDA;
+        q->param.mfx.QPI = av_clip(new_qp * fabs(avctx->i_quant_factor) +
+                                    avctx->i_quant_offset, 0, 51);
+        q->param.mfx.QPP = av_clip(new_qp, 0, 51);
+        q->param.mfx.QPB = av_clip(new_qp * fabs(avctx->b_quant_factor) +
+                                    avctx->b_quant_offset, 0, 51);
         av_log(avctx, AV_LOG_DEBUG,
-                "using fixed qp = %d/%d/%d for idr/p/b frames\n",
-                q->param.mfx.QPI, q->param.mfx.QPP, q->param.mfx.QPB);
+               "Reset qp = %d/%d/%d for idr/p/b frames\n",
+               q->param.mfx.QPI, q->param.mfx.QPP, q->param.mfx.QPB);
     }
     return updated;
 }
@@ -1662,7 +1660,7 @@ static int update_parameters(AVCodecContext *avctx, QSVEncContext *q,
     if (!frame)
         return 0;
 
-    needReset = update_qp(avctx, q, frame);
+    needReset = update_qp(avctx, q);
     if (!needReset)
         return 0;
 

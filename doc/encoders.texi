@@ -3337,10 +3337,13 @@ For encoders set this flag to ON to reduce power consumption and GPU usage.
 Following options can be used durning qsv encoding.
 
 @table @option
-@item @var{qsv_config_qp}
+@item @var{global_quality}
+@item @var{i_quant_factor}
+@item @var{i_quant_offset}
+@item @var{b_quant_factor}
+@item @var{b_quant_offset}
 Supported in h264_qsv and hevc_qsv.
-This option can be set in per-frame metadata. QP parameter can be dynamically
-changed when encoding in CQP mode.
+Change these value to reset qsv codec's qp configuration.
 @end table
 
 @subsection H264 options

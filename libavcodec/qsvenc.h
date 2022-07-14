@@ -224,6 +224,12 @@ typedef struct QSVEncContext {
     int min_qp_p;
     int max_qp_b;
     int min_qp_b;
+    // These are used for qp reset
+    int old_global_quality;
+    float old_i_quant_factor;
+    float old_i_quant_offset;
+    float old_b_quant_factor;
+    float old_b_quant_offset;
 } QSVEncContext;
 
 int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q);
