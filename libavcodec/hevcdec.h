@@ -395,6 +395,9 @@ typedef struct DBParams {
 #define HEVC_FRAME_FLAG_LONG_REF  (1 << 2)
 #define HEVC_FRAME_FLAG_BUMPING   (1 << 3)
 
+#define HEVC_SEQUENCE_COUNTER_MASK 0xff
+#define HEVC_SEQUENCE_COUNTER_INVALID (HEVC_SEQUENCE_COUNTER_MASK + 1)
+
 typedef struct HEVCFrame {
     AVFrame *frame;
     AVFrame *frame_grain;

@@ -570,7 +570,7 @@ static int hls_slice_header(HEVCContext *s)
     }
 
     if ((IS_IDR(s) || IS_BLA(s)) && sh->first_slice_in_pic_flag) {
-        s->seq_decode = (s->seq_decode + 1) & 0xff;
+        s->seq_decode = (s->seq_decode + 1) & HEVC_SEQUENCE_COUNTER_MASK;
         s->max_ra     = INT_MAX;
         if (IS_IDR(s))
             ff_hevc_clear_refs(s);
@@ -615,7 +615,7 @@ static int hls_slice_header(HEVCContext *s)
             return pix_fmt;
         s->avctx->pix_fmt = pix_fmt;
 
-        s->seq_decode = (s->seq_decode + 1) & 0xff;
+        s->seq_decode = (s->seq_decode + 1) & HEVC_SEQUENCE_COUNTER_MASK;
         s->max_ra     = INT_MAX;
     }
 
@@ -3254,7 +3254,7 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
         break;
     case HEVC_NAL_EOS_NUT:
     case HEVC_NAL_EOB_NUT:
-        s->seq_decode = (s->seq_decode + 1) & 0xff;
+        s->seq_decode = (s->seq_decode + 1) & HEVC_SEQUENCE_COUNTER_MASK;
         s->max_ra     = INT_MAX;
         break;
     case HEVC_NAL_AUD:
@@ -3718,7 +3718,7 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     s->threads_type        = s0->threads_type;
 
     if (s0->eos) {
-        s->seq_decode = (s->seq_decode + 1) & 0xff;
+        s->seq_decode = (s->seq_decode + 1) & HEVC_SEQUENCE_COUNTER_MASK;
         s->max_ra = INT_MAX;
     }
 
