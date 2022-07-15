@@ -190,7 +190,7 @@ static av_cold int libjxl_encode_init(AVCodecContext *avctx)
  * Populate a JxlColorEncoding with the given enum AVColorPrimaries.
  * @return < 0 upon failure, >= 0 upon success
  */
-static int libjxl_populate_primaries(JxlColorEncoding *jxl_color, enum AVColorPrimaries prm)
+static int libjxl_populate_primaries(void *avctx, JxlColorEncoding *jxl_color, enum AVColorPrimaries prm)
 {
     const AVColorPrimariesDesc *desc;
 
@@ -209,6 +209,11 @@ static int libjxl_populate_primaries(JxlColorEncoding *jxl_color, enum AVColorPr
         return 0;
     case AVCOL_PRI_SMPTE432:
         jxl_color->primaries = JXL_PRIMARIES_P3;
+        jxl_color->white_point = JXL_WHITE_POINT_D65;
+        return 0;
+    case AVCOL_PRI_UNSPECIFIED:
+        av_log(avctx, AV_LOG_WARNING, "Unknown primaries, assuming BT.709/sRGB. Colors may be wrong.\n");
+        jxl_color->primaries = JXL_PRIMARIES_SRGB;
         jxl_color->white_point = JXL_WHITE_POINT_D65;
         return 0;
     }
@@ -340,7 +345,7 @@ static int libjxl_encode_frame(AVCodecContext *avctx, AVPacket *pkt, const AVFra
     else
         jxl_color.color_space = JXL_COLOR_SPACE_RGB;
 
-    ret = libjxl_populate_primaries(&jxl_color,
+    ret = libjxl_populate_primaries(avctx, &jxl_color,
             frame->color_primaries && frame->color_primaries != AVCOL_PRI_UNSPECIFIED
             ? frame->color_primaries : avctx->color_primaries);
     if (ret < 0)
