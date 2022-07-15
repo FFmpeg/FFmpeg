@@ -329,7 +329,7 @@ static void check_hscale(void)
                 ff_sws_init_scale(ctx);
                 memcpy(filterAvx2, filter, sizeof(uint16_t) * (SRC_PIXELS * MAX_FILTER_WIDTH + MAX_FILTER_WIDTH));
                 if ((cpu_flags & AV_CPU_FLAG_AVX2) && !(cpu_flags & AV_CPU_FLAG_SLOW_GATHER))
-                    ff_shuffle_filter_coefficients(ctx, filterPosAvx, width, filterAvx2, SRC_PIXELS);
+                    ff_shuffle_filter_coefficients(ctx, filterPosAvx, width, filterAvx2, ctx->dstW);
 
                 if (check_func(ctx->hcScale, "hscale_%d_to_%d__fs_%d_dstW_%d", ctx->srcBpc, ctx->dstBpc + 1, width, ctx->dstW)) {
                     memset(dst0, 0, SRC_PIXELS * sizeof(dst0[0]));
