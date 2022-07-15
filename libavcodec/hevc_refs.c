@@ -175,20 +175,23 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
 
 int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
 {
+    if (IS_IRAP(s) && s->no_rasl_output_flag == 1) {
+        const static int mask = HEVC_FRAME_FLAG_BUMPING | HEVC_FRAME_FLAG_OUTPUT;
+        for (int i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
+            HEVCFrame *frame = &s->DPB[i];
+            if ((frame->flags & mask) == HEVC_FRAME_FLAG_OUTPUT &&
+                frame->sequence != s->seq_decode) {
+                if (s->sh.no_output_of_prior_pics_flag == 1)
+                    ff_hevc_unref_frame(s, frame, HEVC_FRAME_FLAG_OUTPUT);
+                else
+                    frame->flags |= HEVC_FRAME_FLAG_BUMPING;
+            }
+        }
+    }
     do {
         int nb_output = 0;
         int min_poc   = INT_MAX;
         int i, min_idx, ret;
-
-        if (s->sh.no_output_of_prior_pics_flag == 1 && s->no_rasl_output_flag == 1) {
-            for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
-                HEVCFrame *frame = &s->DPB[i];
-                if (!(frame->flags & HEVC_FRAME_FLAG_BUMPING) && frame->poc != s->poc &&
-                        frame->sequence == s->seq_output) {
-                    ff_hevc_unref_frame(s, frame, HEVC_FRAME_FLAG_OUTPUT);
-                }
-            }
-        }
 
         for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
             HEVCFrame *frame = &s->DPB[i];
