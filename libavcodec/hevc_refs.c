@@ -387,7 +387,7 @@ static HEVCFrame *find_ref_idx(HEVCContext *s, int poc, uint8_t use_msb)
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         HEVCFrame *ref = &s->DPB[i];
         if (ref->frame->buf[0] && ref->sequence == s->seq_decode) {
-            if ((ref->poc & mask) == poc)
+            if ((ref->poc & mask) == poc && (use_msb || ref->poc != s->poc))
                 return ref;
         }
     }
