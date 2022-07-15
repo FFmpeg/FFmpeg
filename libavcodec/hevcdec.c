@@ -595,15 +595,8 @@ static int hls_slice_header(HEVCContext *s)
 
     if (s->ps.sps != (HEVCSPS*)s->ps.sps_list[s->ps.pps->sps_id]->data) {
         const HEVCSPS *sps = (HEVCSPS*)s->ps.sps_list[s->ps.pps->sps_id]->data;
-        const HEVCSPS *last_sps = s->ps.sps;
         enum AVPixelFormat pix_fmt;
 
-        if (last_sps && IS_IRAP(s) && s->nal_unit_type != HEVC_NAL_CRA_NUT) {
-            if (sps->width != last_sps->width || sps->height != last_sps->height ||
-                sps->temporal_layer[sps->max_sub_layers - 1].max_dec_pic_buffering !=
-                last_sps->temporal_layer[last_sps->max_sub_layers - 1].max_dec_pic_buffering)
-                sh->no_output_of_prior_pics_flag = 0;
-        }
         ff_hevc_clear_refs(s);
 
         ret = set_sps(s, sps, sps->pix_fmt);
