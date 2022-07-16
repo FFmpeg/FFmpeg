@@ -27,6 +27,11 @@
 #include "packet.h"
 
 /**
+ * avcodec_receive_frame() implementation for encoders.
+ */
+int ff_encode_receive_frame(AVCodecContext *avctx, AVFrame *frame);
+
+/**
  * Called by encoders to get the next frame for encoding.
  *
  * @param frame An empty frame to be filled with data.

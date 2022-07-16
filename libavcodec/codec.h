@@ -183,6 +183,14 @@
 #define AV_CODEC_CAP_ENCODER_FLUSH   (1 << 21)
 
 /**
+ * The encoder is able to output reconstructed frame data, i.e. raw frames that
+ * would be produced by decoding the encoded bitstream.
+ *
+ * Reconstructed frame output is enabled by the AV_CODEC_FLAG_RECON_FRAME flag.
+ */
+#define AV_CODEC_CAP_ENCODER_RECON_FRAME (1 << 22)
+
+/**
  * AVProfile.
  */
 typedef struct AVProfile {

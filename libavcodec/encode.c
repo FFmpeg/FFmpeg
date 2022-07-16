@@ -656,6 +656,18 @@ int ff_encode_preinit(AVCodecContext *avctx)
             return AVERROR(ENOMEM);
     }
 
+    if ((avctx->flags & AV_CODEC_FLAG_RECON_FRAME)) {
+        if (!(avctx->codec->capabilities & AV_CODEC_CAP_ENCODER_RECON_FRAME)) {
+            av_log(avctx, AV_LOG_ERROR, "Reconstructed frame output requested "
+                   "from an encoder not supporting it\n");
+            return AVERROR(ENOSYS);
+        }
+
+        avci->recon_frame = av_frame_alloc();
+        if (!avci->recon_frame)
+            return AVERROR(ENOMEM);
+    }
+
     return 0;
 }
 
@@ -690,5 +702,18 @@ int ff_encode_alloc_frame(AVCodecContext *avctx, AVFrame *frame)
         return ret;
     }
 
+    return 0;
+}
+
+int ff_encode_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+{
+    AVCodecInternal *avci = avctx->internal;
+
+    if (!avci->recon_frame)
+        return AVERROR(EINVAL);
+    if (!avci->recon_frame->buf[0])
+        return avci->draining_done ? AVERROR_EOF : AVERROR(EAGAIN);
+
+    av_frame_move_ref(frame, avci->recon_frame);
     return 0;
 }
