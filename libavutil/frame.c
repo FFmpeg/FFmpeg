@@ -552,9 +552,6 @@ int av_frame_make_writable(AVFrame *frame)
     AVFrame tmp;
     int ret;
 
-    if (!frame->buf[0])
-        return AVERROR(EINVAL);
-
     if (av_frame_is_writable(frame))
         return 0;
 
