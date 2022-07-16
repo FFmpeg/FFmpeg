@@ -311,6 +311,28 @@ static void free_picture(AVCodecContext *ctx)
     pic->extra_sei.num_payloads = 0;
 }
 
+static enum AVPixelFormat csp_to_pixfmt(int csp)
+{
+    switch (csp) {
+#ifdef X264_CSP_I400
+    case X264_CSP_I400:                         return AV_PIX_FMT_GRAY8;
+    case X264_CSP_I400 | X264_CSP_HIGH_DEPTH:   return AV_PIX_FMT_GRAY10;
+#endif
+    case X264_CSP_I420:                         return AV_PIX_FMT_YUV420P;
+    case X264_CSP_I420 | X264_CSP_HIGH_DEPTH:   return AV_PIX_FMT_YUV420P10;
+    case X264_CSP_I422:                         return AV_PIX_FMT_YUV422P;
+    case X264_CSP_I422 | X264_CSP_HIGH_DEPTH:   return AV_PIX_FMT_YUV422P10;
+    case X264_CSP_I444:                         return AV_PIX_FMT_YUV444P;
+    case X264_CSP_I444 | X264_CSP_HIGH_DEPTH:   return AV_PIX_FMT_YUV444P10;
+    case X264_CSP_NV12:                         return AV_PIX_FMT_NV12;
+#ifdef X264_CSP_NV21
+    case X264_CSP_NV21:                         return AV_PIX_FMT_NV21;
+#endif
+    case X264_CSP_NV16:                         return AV_PIX_FMT_NV16;
+    };
+    return AV_PIX_FMT_NONE;
+}
+
 static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
                       int *got_packet)
 {
@@ -495,6 +517,33 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
     do {
         if (x264_encoder_encode(x4->enc, &nal, &nnal, frame? &x4->pic: NULL, &pic_out) < 0)
             return AVERROR_EXTERNAL;
+
+        if (nnal && (ctx->flags & AV_CODEC_FLAG_RECON_FRAME)) {
+            AVCodecInternal *avci = ctx->internal;
+
+            av_frame_unref(avci->recon_frame);
+
+            avci->recon_frame->format = csp_to_pixfmt(pic_out.img.i_csp);
+            if (avci->recon_frame->format == AV_PIX_FMT_NONE) {
+                av_log(ctx, AV_LOG_ERROR,
+                       "Unhandled reconstructed frame colorspace: %d\n",
+                       pic_out.img.i_csp);
+                return AVERROR(ENOSYS);
+            }
+
+            avci->recon_frame->width  = ctx->width;
+            avci->recon_frame->height = ctx->height;
+            for (int i = 0; i < pic_out.img.i_plane; i++) {
+                avci->recon_frame->data[i]     = pic_out.img.plane[i];
+                avci->recon_frame->linesize[i] = pic_out.img.i_stride[i];
+            }
+
+            ret = av_frame_make_writable(avci->recon_frame);
+            if (ret < 0) {
+                av_frame_unref(avci->recon_frame);
+                return ret;
+            }
+        }
 
         ret = encode_nals(ctx, pkt, nal, nnal);
         if (ret < 0)
@@ -928,6 +977,9 @@ static av_cold int X264_init(AVCodecContext *avctx)
     if (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER)
         x4->params.b_repeat_headers = 0;
 
+    if (avctx->flags & AV_CODEC_FLAG_RECON_FRAME)
+        x4->params.b_full_recon = 1;
+
     if(x4->x264opts){
         const char *p= x4->x264opts;
         while(p){
@@ -1223,7 +1275,8 @@ FFCodec ff_libx264_encoder = {
     .p.id             = AV_CODEC_ID_H264,
     .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
                         AV_CODEC_CAP_OTHER_THREADS |
-                        AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
+                        AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE |
+                        AV_CODEC_CAP_ENCODER_RECON_FRAME,
     .p.priv_class     = &x264_class,
     .p.wrapper_name   = "libx264",
     .priv_data_size   = sizeof(X264Context),
