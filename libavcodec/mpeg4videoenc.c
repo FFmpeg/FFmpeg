@@ -1081,8 +1081,8 @@ int ff_mpeg4_encode_picture_header(MpegEncContext *s, int picture_number)
     time_mod  = FFUMOD(s->time, s->avctx->time_base.den);
     time_incr = time_div - s->last_time_base;
 
-    // This limits the frame duration to max 1 hour
-    if (time_incr > 3600) {
+    // This limits the frame duration to max 1 day
+    if (time_incr > 3600*24) {
         av_log(s->avctx, AV_LOG_ERROR, "time_incr %"PRIu64" too large\n", time_incr);
         return AVERROR(EINVAL);
     }
