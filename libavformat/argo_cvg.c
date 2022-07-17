@@ -62,6 +62,8 @@ typedef struct ArgoCVGDemuxContext {
 typedef struct ArgoCVGMuxContext {
     const AVClass *class;
     int           skip_rate_check;
+    int           loop;
+    int           reverb;
     uint32_t      checksum;
     size_t        size;
 } ArgoCVGMuxContext;
@@ -301,10 +303,10 @@ static int argo_cvg_write_header(AVFormatContext *s)
     ArgoCVGMuxContext *ctx = s->priv_data;
 
     avio_wl32(s->pb, 0); /* Size, fixed later. */
-    avio_wl32(s->pb, 0);
-    avio_wl32(s->pb, 1);
+    avio_wl32(s->pb, !!ctx->loop);
+    avio_wl32(s->pb, !!ctx->reverb);
 
-    ctx->checksum = 1;
+    ctx->checksum = !!ctx->loop + !!ctx->reverb;
     ctx->size     = 8;
     return 0;
 }
@@ -359,6 +361,26 @@ static const AVOption argo_cvg_options[] = {
         .offset      = offsetof(ArgoCVGMuxContext, skip_rate_check),
         .type        = AV_OPT_TYPE_BOOL,
         .default_val = {.i64 = 0},
+        .min         = 0,
+        .max         = 1,
+        .flags       = AV_OPT_FLAG_ENCODING_PARAM
+    },
+    {
+        .name        = "loop",
+        .help        = "set loop flag",
+        .offset      = offsetof(ArgoCVGMuxContext, loop),
+        .type        = AV_OPT_TYPE_BOOL,
+        .default_val = {.i64 = 0},
+        .min         = 0,
+        .max         = 1,
+        .flags       = AV_OPT_FLAG_ENCODING_PARAM
+    },
+        {
+        .name        = "reverb",
+        .help        = "set reverb flag",
+        .offset      = offsetof(ArgoCVGMuxContext, reverb),
+        .type        = AV_OPT_TYPE_BOOL,
+        .default_val = {.i64 = 1},
         .min         = 0,
         .max         = 1,
         .flags       = AV_OPT_FLAG_ENCODING_PARAM
