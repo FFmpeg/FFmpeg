@@ -19,6 +19,8 @@
 #ifndef AVFILTER_VSRC_DDAGRAB_SHADERS_H
 #define AVFILTER_VSRC_DDAGRAB_SHADERS_H
 
+#include <stdint.h>
+
 #if 0
 
 cbuffer PARAMS : register ( b0 )
