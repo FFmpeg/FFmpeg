@@ -151,7 +151,7 @@ pts=149
 pts=150
 pts=151
 pts=152
-pts=153|tag:lavfi.freezedetect.freeze_start=4.12|tag:lavfi.freezedetect.freeze_duration=2|tag:lavfi.freezedetect.freeze_end=6.12
+pts=153|tag:lavfi.freezedetect.freeze_duration=2|tag:lavfi.freezedetect.freeze_start=4.12|tag:lavfi.freezedetect.freeze_end=6.12
 pts=154
 pts=155
 pts=156
@@ -202,7 +202,7 @@ pts=200
 pts=201
 pts=202
 pts=203
-pts=204|tag:lavfi.freezedetect.freeze_start=6.16|tag:lavfi.freezedetect.freeze_duration=2|tag:lavfi.freezedetect.freeze_end=8.16
+pts=204|tag:lavfi.freezedetect.freeze_duration=2|tag:lavfi.freezedetect.freeze_start=6.16|tag:lavfi.freezedetect.freeze_end=8.16
 pts=205
 pts=206
 pts=207
