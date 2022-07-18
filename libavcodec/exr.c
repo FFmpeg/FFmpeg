@@ -1241,7 +1241,8 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
         td->ysize = FFMIN(s->tile_attr.ySize, s->ydelta - tile_y * s->tile_attr.ySize);
         td->xsize = FFMIN(s->tile_attr.xSize, s->xdelta - tile_x * s->tile_attr.xSize);
 
-        if (td->xsize * (uint64_t)s->current_channel_offset > INT_MAX)
+        if (td->xsize * (uint64_t)s->current_channel_offset > INT_MAX ||
+            av_image_check_size2(td->xsize, td->ysize, s->avctx->max_pixels, AV_PIX_FMT_NONE, 0, s->avctx) < 0)
             return AVERROR_INVALIDDATA;
 
         td->channel_line_size = td->xsize * s->current_channel_offset;/* uncompress size of one line */
@@ -1265,7 +1266,8 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
         td->ysize          = FFMIN(s->scan_lines_per_block, s->ymax - line + 1); /* s->ydelta - line ?? */
         td->xsize          = s->xdelta;
 
-        if (td->xsize * (uint64_t)s->current_channel_offset > INT_MAX)
+        if (td->xsize * (uint64_t)s->current_channel_offset > INT_MAX ||
+            av_image_check_size2(td->xsize, td->ysize, s->avctx->max_pixels, AV_PIX_FMT_NONE, 0, s->avctx) < 0)
             return AVERROR_INVALIDDATA;
 
         td->channel_line_size = td->xsize * s->current_channel_offset;/* uncompress size of one line */
