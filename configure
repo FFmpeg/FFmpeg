@@ -2309,7 +2309,6 @@ SYSTEM_FUNCS="
     SetDllDirectory
     setmode
     setrlimit
-    SetThreadDpiAwarenessContext
     Sleep
     strerror_r
     sysconf
@@ -6401,7 +6400,6 @@ check_type "windows.h d3d11.h" "ID3D11VideoDecoder"
 check_type "windows.h d3d11.h" "ID3D11VideoContext"
 check_type "d3d9.h dxva2api.h" DXVA2_ConfigPictureDecode -D_WIN32_WINNT=0x0602
 check_func_headers mfapi.h MFCreateAlignedMemoryBuffer -lmfplat
-check_func_headers windows.h SetThreadDpiAwarenessContext -D_WIN32_WINNT=0x0A00
 
 check_type "vdpau/vdpau.h" "VdpPictureInfoHEVC"
 check_type "vdpau/vdpau.h" "VdpPictureInfoVP9"

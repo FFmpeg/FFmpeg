@@ -18,9 +18,9 @@
 
 #include "config.h"
 
-#if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0A00
+#if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0602
 #undef _WIN32_WINNT
-#define _WIN32_WINNT 0x0A00
+#define _WIN32_WINNT 0x0602
 #endif
 #define WIN32_LEAN_AND_MEAN
 
@@ -41,6 +41,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/hwcontext.h"
 #include "libavutil/hwcontext_d3d11va.h"
+#include "compat/w32dlfcn.h"
 #include "avfilter.h"
 #include "internal.h"
 #include "formats.h"
@@ -150,8 +151,12 @@ static av_cold int init_dxgi_dda(AVFilterContext *avctx)
     IDXGIAdapter *dxgi_adapter = NULL;
     IDXGIOutput *dxgi_output = NULL;
     IDXGIOutput1 *dxgi_output1 = NULL;
-#if HAVE_IDXGIOUTPUT5 && HAVE_SETTHREADDPIAWARENESSCONTEXT
+#if HAVE_IDXGIOUTPUT5
     IDXGIOutput5 *dxgi_output5 = NULL;
+
+    typedef DPI_AWARENESS_CONTEXT (*set_thread_dpi_t)(DPI_AWARENESS_CONTEXT);
+    set_thread_dpi_t set_thread_dpi;
+    HMODULE user32_module;
 #endif
     int w, h;
     HRESULT hr;
@@ -185,9 +190,19 @@ static av_cold int init_dxgi_dda(AVFilterContext *avctx)
         return AVERROR_EXTERNAL;
     }
 
-#if HAVE_IDXGIOUTPUT5 && HAVE_SETTHREADDPIAWARENESSCONTEXT
-    hr = IDXGIOutput_QueryInterface(dxgi_output, &IID_IDXGIOutput5, (void**)&dxgi_output5);
-    if (SUCCEEDED(hr)) {
+#if HAVE_IDXGIOUTPUT5
+    user32_module = dlopen("user32.dll", 0);
+    if (!user32_module) {
+        av_log(avctx, AV_LOG_ERROR, "Failed loading user32.dll\n");
+        return AVERROR_EXTERNAL;
+    }
+
+    set_thread_dpi = (set_thread_dpi_t)dlsym(user32_module, "SetThreadDpiAwarenessContext");
+
+    if (set_thread_dpi)
+        hr = IDXGIOutput_QueryInterface(dxgi_output, &IID_IDXGIOutput5, (void**)&dxgi_output5);
+
+    if (set_thread_dpi && SUCCEEDED(hr)) {
         DPI_AWARENESS_CONTEXT prev_dpi_ctx;
         DXGI_FORMAT formats[] = {
             DXGI_FORMAT_R10G10B10A2_UNORM,
@@ -197,7 +212,7 @@ static av_cold int init_dxgi_dda(AVFilterContext *avctx)
         IDXGIOutput_Release(dxgi_output);
         dxgi_output = NULL;
 
-        prev_dpi_ctx = SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+        prev_dpi_ctx = set_thread_dpi(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
         if (!prev_dpi_ctx)
             av_log(avctx, AV_LOG_WARNING, "Failed enabling DPI awareness for DDA\n");
 
@@ -211,8 +226,18 @@ static av_cold int init_dxgi_dda(AVFilterContext *avctx)
         dxgi_output5 = NULL;
 
         if (prev_dpi_ctx)
-            SetThreadDpiAwarenessContext(prev_dpi_ctx);
+            set_thread_dpi(prev_dpi_ctx);
+
+        dlclose(user32_module);
+        user32_module = NULL;
+        set_thread_dpi = NULL;
+
+        av_log(avctx, AV_LOG_DEBUG, "Using IDXGIOutput5 interface\n");
     } else {
+        dlclose(user32_module);
+        user32_module = NULL;
+        set_thread_dpi = NULL;
+
         av_log(avctx, AV_LOG_DEBUG, "Falling back to IDXGIOutput1\n");
 #else
     {
