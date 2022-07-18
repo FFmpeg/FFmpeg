@@ -92,7 +92,9 @@ static int wrapped_avframe_decode(AVCodecContext *avctx, AVFrame *out,
 
     in  = (AVFrame*)pkt->data;
 
-    av_frame_move_ref(out, in);
+    err = av_frame_ref(out, in);
+    if (err < 0)
+        return err;
 
     err = ff_decode_frame_props(avctx, out);
     if (err < 0)
