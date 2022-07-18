@@ -48,10 +48,14 @@ enum AVRoundedDirection {
  * @param src           data pointers to source image
  * @param src_linesize  linesizes for the source image
  */
-void ff_sobel(int w, int h,
-              uint16_t *dst, int dst_linesize,
-              int8_t *dir, int dir_linesize,
-              const uint8_t *src, int src_linesize);
+#define PROTO_SOBEL(depth) \
+void ff_sobel_##depth(int w, int h,                                          \
+                      uint16_t *dst, int dst_linesize,                       \
+                      int8_t *dir, int dir_linesize,                         \
+                      const uint8_t *src, int src_linesize, int src_stride);
+
+PROTO_SOBEL(8)
+PROTO_SOBEL(16)
 
 /**
  * Filters rounded gradients to drop all non-maxima pixels in the magnitude image
@@ -100,8 +104,12 @@ void ff_double_threshold(int low, int high, int w, int h,
  * @param src           data pointers to source image
  * @param src_linesize  linesizes for the source image
  */
-void ff_gaussian_blur(int w, int h,
-                      uint8_t *dst, int dst_linesize,
-                      const uint8_t *src, int src_linesize);
+#define PROTO_GAUSSIAN_BLUR(depth)                                                   \
+void ff_gaussian_blur_##depth(int w, int h,                                          \
+                              uint8_t *dst, int dst_linesize,                        \
+                              const uint8_t *src, int src_linesize, int src_stride);
+
+PROTO_GAUSSIAN_BLUR(8)
+PROTO_GAUSSIAN_BLUR(16)
 
 #endif

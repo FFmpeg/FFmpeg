@@ -283,12 +283,12 @@ static int blurdetect_filter_frame(AVFilterLink *inlink, AVFrame *in)
         nplanes++;
 
         // gaussian filter to reduce noise
-        ff_gaussian_blur(w, h,
-                         filterbuf,  w,
-                         in->data[plane], in->linesize[plane]);
+        ff_gaussian_blur_8(w, h,
+                           filterbuf,  w,
+                           in->data[plane], in->linesize[plane], 1);
 
         // compute the 16-bits gradients and directions for the next step
-        ff_sobel(w, h, gradients, w, directions, w, filterbuf, w);
+        ff_sobel_8(w, h, gradients, w, directions, w, filterbuf, w, 1);
 
         // non_maximum_suppression() will actually keep & clip what's necessary and
         // ignore the rest, so we need a clean output buffer

@@ -191,15 +191,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         }
 
         /* gaussian filter to reduce noise  */
-        ff_gaussian_blur(width, height,
-                         tmpbuf,      width,
-                         in->data[p], in->linesize[p]);
+        ff_gaussian_blur_8(width, height,
+                           tmpbuf,      width,
+                           in->data[p], in->linesize[p], 1);
 
         /* compute the 16-bits gradients and directions for the next step */
-        ff_sobel(width, height,
-              gradients, width,
-              directions,width,
-              tmpbuf,    width);
+        ff_sobel_8(width, height,
+                   gradients, width,
+                   directions,width,
+                   tmpbuf,    width, 1);
 
         /* non_maximum_suppression() will actually keep & clip what's necessary and
          * ignore the rest, so we need a clean output buffer */
