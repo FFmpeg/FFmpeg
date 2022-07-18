@@ -104,7 +104,7 @@ typedef struct ASFContext {
     int ts_is_pts;
     int packet_multi_size;
     int packet_time_delta;
-    int packet_time_start;
+    int64_t packet_time_start;
     int64_t packet_pos;
 
     int stream_index;
