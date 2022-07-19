@@ -359,7 +359,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
         side= av_packet_get_side_data(avci->last_pkt_props, AV_PKT_DATA_SKIP_SAMPLES, &side_size);
         if(side && side_size>=10) {
-            avci->skip_samples = AV_RL32(side) * avci->skip_samples_multiplier;
+            avci->skip_samples = AV_RL32(side);
             avci->skip_samples = FFMAX(0, avci->skip_samples);
             discard_padding = AV_RL32(side + 4);
             av_log(avctx, AV_LOG_DEBUG, "skip %d / discard %d samples due to side data\n",

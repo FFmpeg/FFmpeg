@@ -3418,9 +3418,6 @@ static int aac_decode_frame_int(AVCodecContext *avctx, AVFrame *frame,
         ac->oc[1].status = OC_LOCKED;
     }
 
-    if (multiplier)
-        avctx->internal->skip_samples_multiplier = 2;
-
     if (!ac->frame->data[0] && samples) {
         av_log(avctx, AV_LOG_ERROR, "no frame data found\n");
         err = AVERROR_INVALIDDATA;
