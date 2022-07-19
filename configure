@@ -2352,6 +2352,7 @@ TOOLCHAIN_FEATURES="
 "
 
 TYPES_LIST="
+    DPI_AWARENESS_CONTEXT
     IDXGIOutput5
     kCMVideoCodecType_HEVC
     kCMVideoCodecType_HEVCWithAlpha
@@ -6398,6 +6399,7 @@ check_type "windows.h dxgi1_2.h" "IDXGIOutput1"
 check_type "windows.h dxgi1_5.h" "IDXGIOutput5"
 check_type "windows.h d3d11.h" "ID3D11VideoDecoder"
 check_type "windows.h d3d11.h" "ID3D11VideoContext"
+check_type "windows.h" "DPI_AWARENESS_CONTEXT" -D_WIN32_WINNT=0x0A00
 check_type "d3d9.h dxva2api.h" DXVA2_ConfigPictureDecode -D_WIN32_WINNT=0x0602
 check_func_headers mfapi.h MFCreateAlignedMemoryBuffer -lmfplat
 

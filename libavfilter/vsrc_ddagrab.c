@@ -18,9 +18,9 @@
 
 #include "config.h"
 
-#if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0602
+#if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0A00
 #undef _WIN32_WINNT
-#define _WIN32_WINNT 0x0602
+#define _WIN32_WINNT 0x0A00
 #endif
 #define WIN32_LEAN_AND_MEAN
 
@@ -151,7 +151,7 @@ static av_cold int init_dxgi_dda(AVFilterContext *avctx)
     IDXGIAdapter *dxgi_adapter = NULL;
     IDXGIOutput *dxgi_output = NULL;
     IDXGIOutput1 *dxgi_output1 = NULL;
-#if HAVE_IDXGIOUTPUT5
+#if HAVE_IDXGIOUTPUT5 && HAVE_DPI_AWARENESS_CONTEXT
     IDXGIOutput5 *dxgi_output5 = NULL;
 
     typedef DPI_AWARENESS_CONTEXT (*set_thread_dpi_t)(DPI_AWARENESS_CONTEXT);
@@ -190,7 +190,7 @@ static av_cold int init_dxgi_dda(AVFilterContext *avctx)
         return AVERROR_EXTERNAL;
     }
 
-#if HAVE_IDXGIOUTPUT5
+#if HAVE_IDXGIOUTPUT5 && HAVE_DPI_AWARENESS_CONTEXT
     user32_module = dlopen("user32.dll", 0);
     if (!user32_module) {
         av_log(avctx, AV_LOG_ERROR, "Failed loading user32.dll\n");
