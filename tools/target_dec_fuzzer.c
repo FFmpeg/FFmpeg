@@ -338,7 +338,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         if ((flags & 0x10) && c->p.id != AV_CODEC_ID_H264)
             ctx->flags2 |= AV_CODEC_FLAG2_FAST;
         if (flags & 0x80)
-            ctx->flags2 |= AV_CODEC_FLAG2_EXPORT_MVS;
+            ctx->export_side_data |= AV_CODEC_EXPORT_DATA_MVS;
 
         if (flags & 0x40)
             av_force_cpu_flags(0);
@@ -406,6 +406,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
             ctx->debug |= FF_DEBUG_QP;
         if (flags64 &4)
             ctx->debug |= FF_DEBUG_MB_TYPE;
+        if (flags64 & 8)
+            ctx->export_side_data |= AV_CODEC_EXPORT_DATA_VIDEO_ENC_PARAMS;
 
         if (extradata_size < size) {
             ctx->extradata = av_mallocz(extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
