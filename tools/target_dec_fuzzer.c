@@ -411,6 +411,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         if (flags64 & 0x10)
             ctx->err_recognition |= AV_EF_CRCCHECK;
 
+        ctx->workaround_bugs = bytestream2_get_le32(&gbc);
+
         if (extradata_size < size) {
             ctx->extradata = av_mallocz(extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
             if (ctx->extradata) {
