@@ -107,7 +107,7 @@ static int hdr_decode_frame(AVCodecContext *avctx, AVFrame *p,
         hdr_get_line(&gb, line, sizeof(line));
         if (sscanf(line, "PIXASPECT=%f\n", &sar) == 1)
             avctx->sample_aspect_ratio = p->sample_aspect_ratio = av_inv_q(av_d2q(sar, 4096));
-    } while (line[0] != '\n');
+    } while (line[0] != '\n' && line[0]);
 
     hdr_get_line(&gb, line, sizeof(line));
     if (sscanf(line, "-Y %d +X %d\n", &height, &width) == 2) {
