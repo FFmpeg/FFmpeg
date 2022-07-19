@@ -408,6 +408,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
             ctx->debug |= FF_DEBUG_MB_TYPE;
         if (flags64 & 8)
             ctx->export_side_data |= AV_CODEC_EXPORT_DATA_VIDEO_ENC_PARAMS;
+        if (flags64 & 0x10)
+            ctx->err_recognition |= AV_EF_CRCCHECK;
 
         if (extradata_size < size) {
             ctx->extradata = av_mallocz(extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
