@@ -40,9 +40,9 @@
 #define ARGO_CVG_SAMPLES_PER_BLOCK  28
 
 typedef struct ArgoCVGHeader {
-    uint32_t size; /*< File size -8 (this + trailing checksum) */
-    uint32_t unk1; /*< Unknown. Always seems to be 0 or 1. */
-    uint32_t unk2; /*< Unknown. Always seems to be 0 or 1. */
+    uint32_t size;   /*< File size -8 (this + trailing checksum) */
+    uint32_t loop;   /*< Loop flag. */
+    uint32_t reverb; /*< Reverb flag. */
 } ArgoCVGHeader;
 
 typedef struct ArgoCVGOverride {
@@ -91,17 +91,17 @@ static int argo_cvg_probe(const AVProbeData *p)
     if (p->buf_size < ARGO_CVG_HEADER_SIZE)
         return 0;
 
-    cvg.size = AV_RL32(p->buf + 0);
-    cvg.unk1 = AV_RL32(p->buf + 4);
-    cvg.unk2 = AV_RL32(p->buf + 8);
+    cvg.size   = AV_RL32(p->buf + 0);
+    cvg.loop   = AV_RL32(p->buf + 4);
+    cvg.reverb = AV_RL32(p->buf + 8);
 
     if (cvg.size < 8)
         return 0;
 
-    if (cvg.unk1 != 0 && cvg.unk1 != 1)
+    if (cvg.loop != 0 && cvg.loop != 1)
         return 0;
 
-    if (cvg.unk2 != 0 && cvg.unk2 != 1)
+    if (cvg.reverb != 0 && cvg.reverb != 1)
         return 0;
 
     return AVPROBE_SCORE_MAX / 4 + 1;
@@ -150,15 +150,14 @@ static int argo_cvg_read_header(AVFormatContext *s)
     else if (ret != ARGO_CVG_HEADER_SIZE)
         return AVERROR(EIO);
 
-    ctx->header.size = AV_RL32(buf + 0);
-    ctx->header.unk1 = AV_RL32(buf + 4);
-    ctx->header.unk2 = AV_RL32(buf + 8);
+    ctx->header.size   = AV_RL32(buf + 0);
+    ctx->header.loop   = AV_RL32(buf + 4);
+    ctx->header.reverb = AV_RL32(buf + 8);
 
     if (ctx->header.size < 8)
         return AVERROR_INVALIDDATA;
 
     av_log(s, AV_LOG_TRACE, "size       = %u\n", ctx->header.size);
-    av_log(s, AV_LOG_TRACE, "unk        = %u, %u\n", ctx->header.unk1, ctx->header.unk2);
 
     if ((ret = argo_cvg_read_checksum(s->pb, &ctx->header, &ctx->checksum)) < 0)
         return ret;
@@ -172,10 +171,10 @@ static int argo_cvg_read_header(AVFormatContext *s)
 
     for (size_t i = 0; i < FF_ARRAY_ELEMS(overrides); i++) {
         const ArgoCVGOverride *ovr = overrides + i;
-        if (ovr->header.size != ctx->header.size ||
-            ovr->header.unk1 != ctx->header.unk1 ||
-            ovr->header.unk2 != ctx->header.unk2 ||
-            ovr->checksum    != ctx->checksum    ||
+        if (ovr->header.size   != ctx->header.size ||
+            ovr->header.loop   != ctx->header.loop ||
+            ovr->header.reverb != ctx->header.reverb ||
+            ovr->checksum      != ctx->checksum    ||
             av_strcasecmp(filename, ovr->name) != 0)
             continue;
 
