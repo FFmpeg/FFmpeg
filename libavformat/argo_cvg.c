@@ -159,12 +159,8 @@ static int argo_cvg_read_header(AVFormatContext *s)
     if (ctx->header.size < 8)
         return AVERROR_INVALIDDATA;
 
-    av_log(s, AV_LOG_TRACE, "size       = %u\n", ctx->header.size);
-
     if ((ret = argo_cvg_read_checksum(s->pb, &ctx->header, &ctx->checksum)) < 0)
         return ret;
-
-    av_log(s, AV_LOG_TRACE, "checksum   = %u\n", ctx->checksum);
 
     par                         = st->codecpar;
     par->codec_type             = AVMEDIA_TYPE_AUDIO;
