@@ -454,12 +454,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             av_log(ctx, AV_LOG_INFO, " %08"PRIX32, plane_checksum[plane]);
         av_log(ctx, AV_LOG_INFO, "] mean:[");
         for (plane = 0; plane < 4 && frame->data[plane] && frame->linesize[plane]; plane++)
-            av_log(ctx, AV_LOG_INFO, "%"PRId64" ", (sum[plane] + pixelcount[plane]/2) / pixelcount[plane]);
-        av_log(ctx, AV_LOG_INFO, "\b] stdev:[");
+            av_log(ctx, AV_LOG_INFO, "%s%"PRId64,
+                   plane ? " ":"",
+                   (sum[plane] + pixelcount[plane]/2) / pixelcount[plane]);
+        av_log(ctx, AV_LOG_INFO, "] stdev:[");
         for (plane = 0; plane < 4 && frame->data[plane] && frame->linesize[plane]; plane++)
-            av_log(ctx, AV_LOG_INFO, "%3.1f ",
+            av_log(ctx, AV_LOG_INFO, "%s%3.1f",
+                   plane ? " ":"",
                    sqrt((sum2[plane] - sum[plane]*(double)sum[plane]/pixelcount[plane])/pixelcount[plane]));
-        av_log(ctx, AV_LOG_INFO, "\b]");
+        av_log(ctx, AV_LOG_INFO, "]");
     }
     av_log(ctx, AV_LOG_INFO, "\n");
 
