@@ -977,6 +977,9 @@ static int dng_decode_tiles(AVCodecContext *avctx, AVFrame *frame,
     int pos_x = 0, pos_y = 0;
     int ret;
 
+    if (s->tile_width <= 0 || s->tile_length <= 0)
+        return AVERROR_INVALIDDATA;
+
     has_width_leftover = (s->width % s->tile_width != 0);
     has_height_leftover = (s->height % s->tile_length != 0);
 
