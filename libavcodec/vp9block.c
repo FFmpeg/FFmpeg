@@ -25,6 +25,7 @@
 
 #include "threadframe.h"
 #include "vp56.h"
+#include "vp89_rac.h"
 #include "vp9.h"
 #include "vp9data.h"
 #include "vp9dec.h"
@@ -100,7 +101,8 @@ static void decode_mode(VP9TileData *td)
         b->seg_id = 0;
     } else if (s->s.h.keyframe || s->s.h.intraonly) {
         b->seg_id = !s->s.h.segmentation.update_map ? 0 :
-                    vp8_rac_get_tree(td->c, ff_vp9_segmentation_tree, s->s.h.segmentation.prob);
+                    vp89_rac_get_tree(td->c, ff_vp9_segmentation_tree,
+                                      s->s.h.segmentation.prob);
     } else if (!s->s.h.segmentation.update_map ||
                (s->s.h.segmentation.temporal &&
                 vp56_rac_get_prob_branchy(td->c,
@@ -126,8 +128,8 @@ static void decode_mode(VP9TileData *td)
         memset(&s->above_segpred_ctx[col], 1, w4);
         memset(&td->left_segpred_ctx[row7], 1, h4);
     } else {
-        b->seg_id = vp8_rac_get_tree(td->c, ff_vp9_segmentation_tree,
-                                     s->s.h.segmentation.prob);
+        b->seg_id = vp89_rac_get_tree(td->c, ff_vp9_segmentation_tree,
+                                      s->s.h.segmentation.prob);
 
         memset(&s->above_segpred_ctx[col], 0, w4);
         memset(&td->left_segpred_ctx[row7], 0, h4);
@@ -221,11 +223,11 @@ static void decode_mode(VP9TileData *td)
             // necessary, they're just there to make the code slightly
             // simpler for now
             b->mode[0] =
-            a[0]       = vp8_rac_get_tree(td->c, ff_vp9_intramode_tree,
-                                          ff_vp9_default_kf_ymode_probs[a[0]][l[0]]);
+            a[0]       = vp89_rac_get_tree(td->c, ff_vp9_intramode_tree,
+                                           ff_vp9_default_kf_ymode_probs[a[0]][l[0]]);
             if (b->bs != BS_8x4) {
-                b->mode[1] = vp8_rac_get_tree(td->c, ff_vp9_intramode_tree,
-                                              ff_vp9_default_kf_ymode_probs[a[1]][b->mode[0]]);
+                b->mode[1] = vp89_rac_get_tree(td->c, ff_vp9_intramode_tree,
+                                               ff_vp9_default_kf_ymode_probs[a[1]][b->mode[0]]);
                 l[0]       =
                 a[1]       = b->mode[1];
             } else {
@@ -235,11 +237,11 @@ static void decode_mode(VP9TileData *td)
             }
             if (b->bs != BS_4x8) {
                 b->mode[2] =
-                a[0]       = vp8_rac_get_tree(td->c, ff_vp9_intramode_tree,
-                                              ff_vp9_default_kf_ymode_probs[a[0]][l[1]]);
+                a[0]       = vp89_rac_get_tree(td->c, ff_vp9_intramode_tree,
+                                               ff_vp9_default_kf_ymode_probs[a[0]][l[1]]);
                 if (b->bs != BS_8x4) {
-                    b->mode[3] = vp8_rac_get_tree(td->c, ff_vp9_intramode_tree,
-                                                  ff_vp9_default_kf_ymode_probs[a[1]][b->mode[2]]);
+                    b->mode[3] = vp89_rac_get_tree(td->c, ff_vp9_intramode_tree,
+                                                   ff_vp9_default_kf_ymode_probs[a[1]][b->mode[2]]);
                     l[1]       =
                     a[1]       = b->mode[3];
                 } else {
@@ -254,8 +256,8 @@ static void decode_mode(VP9TileData *td)
                 b->mode[3] = b->mode[1];
             }
         } else {
-            b->mode[0] = vp8_rac_get_tree(td->c, ff_vp9_intramode_tree,
-                                          ff_vp9_default_kf_ymode_probs[*a][*l]);
+            b->mode[0] = vp89_rac_get_tree(td->c, ff_vp9_intramode_tree,
+                                           ff_vp9_default_kf_ymode_probs[*a][*l]);
             b->mode[3] =
             b->mode[2] =
             b->mode[1] = b->mode[0];
@@ -263,28 +265,28 @@ static void decode_mode(VP9TileData *td)
             memset(a, b->mode[0], ff_vp9_bwh_tab[0][b->bs][0]);
             memset(l, b->mode[0], ff_vp9_bwh_tab[0][b->bs][1]);
         }
-        b->uvmode = vp8_rac_get_tree(td->c, ff_vp9_intramode_tree,
-                                     ff_vp9_default_kf_uvmode_probs[b->mode[3]]);
+        b->uvmode = vp89_rac_get_tree(td->c, ff_vp9_intramode_tree,
+                                      ff_vp9_default_kf_uvmode_probs[b->mode[3]]);
     } else if (b->intra) {
         b->comp = 0;
         if (b->bs > BS_8x8) {
-            b->mode[0] = vp8_rac_get_tree(td->c, ff_vp9_intramode_tree,
-                                          s->prob.p.y_mode[0]);
+            b->mode[0] = vp89_rac_get_tree(td->c, ff_vp9_intramode_tree,
+                                           s->prob.p.y_mode[0]);
             td->counts.y_mode[0][b->mode[0]]++;
             if (b->bs != BS_8x4) {
-                b->mode[1] = vp8_rac_get_tree(td->c, ff_vp9_intramode_tree,
-                                              s->prob.p.y_mode[0]);
+                b->mode[1] = vp89_rac_get_tree(td->c, ff_vp9_intramode_tree,
+                                               s->prob.p.y_mode[0]);
                 td->counts.y_mode[0][b->mode[1]]++;
             } else {
                 b->mode[1] = b->mode[0];
             }
             if (b->bs != BS_4x8) {
-                b->mode[2] = vp8_rac_get_tree(td->c, ff_vp9_intramode_tree,
-                                              s->prob.p.y_mode[0]);
+                b->mode[2] = vp89_rac_get_tree(td->c, ff_vp9_intramode_tree,
+                                               s->prob.p.y_mode[0]);
                 td->counts.y_mode[0][b->mode[2]]++;
                 if (b->bs != BS_8x4) {
-                    b->mode[3] = vp8_rac_get_tree(td->c, ff_vp9_intramode_tree,
-                                                  s->prob.p.y_mode[0]);
+                    b->mode[3] = vp89_rac_get_tree(td->c, ff_vp9_intramode_tree,
+                                                   s->prob.p.y_mode[0]);
                     td->counts.y_mode[0][b->mode[3]]++;
                 } else {
                     b->mode[3] = b->mode[2];
@@ -299,15 +301,15 @@ static void decode_mode(VP9TileData *td)
             };
             int sz = size_group[b->bs];
 
-            b->mode[0] = vp8_rac_get_tree(td->c, ff_vp9_intramode_tree,
-                                          s->prob.p.y_mode[sz]);
+            b->mode[0] = vp89_rac_get_tree(td->c, ff_vp9_intramode_tree,
+                                           s->prob.p.y_mode[sz]);
             b->mode[1] =
             b->mode[2] =
             b->mode[3] = b->mode[0];
             td->counts.y_mode[sz][b->mode[3]]++;
         }
-        b->uvmode = vp8_rac_get_tree(td->c, ff_vp9_intramode_tree,
-                                     s->prob.p.uv_mode[b->mode[3]]);
+        b->uvmode = vp89_rac_get_tree(td->c, ff_vp9_intramode_tree,
+                                      s->prob.p.uv_mode[b->mode[3]]);
         td->counts.uv_mode[b->mode[3]][b->uvmode]++;
     } else {
         static const uint8_t inter_mode_ctx_lut[14][14] = {
@@ -587,8 +589,8 @@ static void decode_mode(VP9TileData *td)
                 int c = inter_mode_ctx_lut[s->above_mode_ctx[col + off[b->bs]]]
                                           [td->left_mode_ctx[row7 + off[b->bs]]];
 
-                b->mode[0] = vp8_rac_get_tree(td->c, ff_vp9_inter_mode_tree,
-                                              s->prob.p.mv_mode[c]);
+                b->mode[0] = vp89_rac_get_tree(td->c, ff_vp9_inter_mode_tree,
+                                               s->prob.p.mv_mode[c]);
                 b->mode[1] =
                 b->mode[2] =
                 b->mode[3] = b->mode[0];
@@ -612,8 +614,8 @@ static void decode_mode(VP9TileData *td)
                 c = 3;
             }
 
-            filter_id = vp8_rac_get_tree(td->c, ff_vp9_filter_tree,
-                                         s->prob.p.filter[c]);
+            filter_id = vp89_rac_get_tree(td->c, ff_vp9_filter_tree,
+                                          s->prob.p.filter[c]);
             td->counts.filter[c][filter_id]++;
             b->filter = ff_vp9_filter_lut[filter_id];
         } else {
@@ -623,14 +625,14 @@ static void decode_mode(VP9TileData *td)
         if (b->bs > BS_8x8) {
             int c = inter_mode_ctx_lut[s->above_mode_ctx[col]][td->left_mode_ctx[row7]];
 
-            b->mode[0] = vp8_rac_get_tree(td->c, ff_vp9_inter_mode_tree,
-                                          s->prob.p.mv_mode[c]);
+            b->mode[0] = vp89_rac_get_tree(td->c, ff_vp9_inter_mode_tree,
+                                           s->prob.p.mv_mode[c]);
             td->counts.mv_mode[c][b->mode[0] - 10]++;
             ff_vp9_fill_mv(td, b->mv[0], b->mode[0], 0);
 
             if (b->bs != BS_8x4) {
-                b->mode[1] = vp8_rac_get_tree(td->c, ff_vp9_inter_mode_tree,
-                                              s->prob.p.mv_mode[c]);
+                b->mode[1] = vp89_rac_get_tree(td->c, ff_vp9_inter_mode_tree,
+                                               s->prob.p.mv_mode[c]);
                 td->counts.mv_mode[c][b->mode[1] - 10]++;
                 ff_vp9_fill_mv(td, b->mv[1], b->mode[1], 1);
             } else {
@@ -640,14 +642,14 @@ static void decode_mode(VP9TileData *td)
             }
 
             if (b->bs != BS_4x8) {
-                b->mode[2] = vp8_rac_get_tree(td->c, ff_vp9_inter_mode_tree,
-                                              s->prob.p.mv_mode[c]);
+                b->mode[2] = vp89_rac_get_tree(td->c, ff_vp9_inter_mode_tree,
+                                               s->prob.p.mv_mode[c]);
                 td->counts.mv_mode[c][b->mode[2] - 10]++;
                 ff_vp9_fill_mv(td, b->mv[2], b->mode[2], 2);
 
                 if (b->bs != BS_8x4) {
-                    b->mode[3] = vp8_rac_get_tree(td->c, ff_vp9_inter_mode_tree,
-                                                  s->prob.p.mv_mode[c]);
+                    b->mode[3] = vp89_rac_get_tree(td->c, ff_vp9_inter_mode_tree,
+                                                   s->prob.p.mv_mode[c]);
                     td->counts.mv_mode[c][b->mode[3] - 10]++;
                     ff_vp9_fill_mv(td, b->mv[3], b->mode[3], 3);
                 } else {
@@ -909,9 +911,9 @@ skip_eob:
         if (!--band_left)
             band_left = band_counts[++band];
         if (is_tx32x32)
-            STORE_COEF(coef, rc, (int)((vp8_rac_get(c) ? -val : val) * (unsigned)qmul[!!i]) / 2);
+            STORE_COEF(coef, rc, (int)((vp89_rac_get(c) ? -val : val) * (unsigned)qmul[!!i]) / 2);
         else
-            STORE_COEF(coef, rc, (vp8_rac_get(c) ? -val : val) * (unsigned)qmul[!!i]);
+            STORE_COEF(coef, rc, (vp89_rac_get(c) ? -val : val) * (unsigned)qmul[!!i]);
         nnz = (1 + cache[nb[i][0]] + cache[nb[i][1]]) >> 1;
         tp = p[band][nnz];
     } while (++i < n_coeffs);

@@ -35,6 +35,7 @@
 
 #include "videodsp.h"
 #include "vp56.h"
+#include "vp89_rac.h"
 #include "vp9.h"
 #include "vp9data.h"
 #include "vp9dec.h"
@@ -419,16 +420,16 @@ static int update_prob(VP56RangeCoder *c, int p)
      * updates vs. the 'fine, exact' updates further down the range, which
      * adds one extra dimension to this differential update model. */
 
-    if (!vp8_rac_get(c)) {
-        d = vp8_rac_get_uint(c, 4) + 0;
-    } else if (!vp8_rac_get(c)) {
-        d = vp8_rac_get_uint(c, 4) + 16;
-    } else if (!vp8_rac_get(c)) {
-        d = vp8_rac_get_uint(c, 5) + 32;
+    if (!vp89_rac_get(c)) {
+        d = vp89_rac_get_uint(c, 4) + 0;
+    } else if (!vp89_rac_get(c)) {
+        d = vp89_rac_get_uint(c, 4) + 16;
+    } else if (!vp89_rac_get(c)) {
+        d = vp89_rac_get_uint(c, 5) + 32;
     } else {
-        d = vp8_rac_get_uint(c, 7);
+        d = vp89_rac_get_uint(c, 7);
         if (d >= 65)
-            d = (d << 1) - 65 + vp8_rac_get(c);
+            d = (d << 1) - 65 + vp89_rac_get(c);
         d += 64;
         av_assert2(d < FF_ARRAY_ELEMS(inv_map_table));
     }
@@ -905,9 +906,9 @@ static int decode_frame_header(AVCodecContext *avctx,
     if (s->s.h.lossless) {
         s->s.h.txfmmode = TX_4X4;
     } else {
-        s->s.h.txfmmode = vp8_rac_get_uint(&s->c, 2);
+        s->s.h.txfmmode = vp89_rac_get_uint(&s->c, 2);
         if (s->s.h.txfmmode == 3)
-            s->s.h.txfmmode += vp8_rac_get(&s->c);
+            s->s.h.txfmmode += vp89_rac_get(&s->c);
 
         if (s->s.h.txfmmode == TX_SWITCHABLE) {
             for (i = 0; i < 2; i++)
@@ -929,7 +930,7 @@ static int decode_frame_header(AVCodecContext *avctx,
     // coef updates
     for (i = 0; i < 4; i++) {
         uint8_t (*ref)[2][6][6][3] = s->prob_ctx[c].coef[i];
-        if (vp8_rac_get(&s->c)) {
+        if (vp89_rac_get(&s->c)) {
             for (j = 0; j < 2; j++)
                 for (k = 0; k < 2; k++)
                     for (l = 0; l < 6; l++)
@@ -986,9 +987,9 @@ static int decode_frame_header(AVCodecContext *avctx,
                 s->prob.p.intra[i] = update_prob(&s->c, s->prob.p.intra[i]);
 
         if (s->s.h.allowcompinter) {
-            s->s.h.comppredmode = vp8_rac_get(&s->c);
+            s->s.h.comppredmode = vp89_rac_get(&s->c);
             if (s->s.h.comppredmode)
-                s->s.h.comppredmode += vp8_rac_get(&s->c);
+                s->s.h.comppredmode += vp89_rac_get(&s->c);
             if (s->s.h.comppredmode == PRED_SWITCHABLE)
                 for (i = 0; i < 5; i++)
                     if (vp56_rac_get_prob_branchy(&s->c, 252))
@@ -1033,26 +1034,26 @@ static int decode_frame_header(AVCodecContext *avctx,
         // mv fields don't use the update_prob subexp model for some reason
         for (i = 0; i < 3; i++)
             if (vp56_rac_get_prob_branchy(&s->c, 252))
-                s->prob.p.mv_joint[i] = (vp8_rac_get_uint(&s->c, 7) << 1) | 1;
+                s->prob.p.mv_joint[i] = (vp89_rac_get_uint(&s->c, 7) << 1) | 1;
 
         for (i = 0; i < 2; i++) {
             if (vp56_rac_get_prob_branchy(&s->c, 252))
                 s->prob.p.mv_comp[i].sign =
-                    (vp8_rac_get_uint(&s->c, 7) << 1) | 1;
+                    (vp89_rac_get_uint(&s->c, 7) << 1) | 1;
 
             for (j = 0; j < 10; j++)
                 if (vp56_rac_get_prob_branchy(&s->c, 252))
                     s->prob.p.mv_comp[i].classes[j] =
-                        (vp8_rac_get_uint(&s->c, 7) << 1) | 1;
+                        (vp89_rac_get_uint(&s->c, 7) << 1) | 1;
 
             if (vp56_rac_get_prob_branchy(&s->c, 252))
                 s->prob.p.mv_comp[i].class0 =
-                    (vp8_rac_get_uint(&s->c, 7) << 1) | 1;
+                    (vp89_rac_get_uint(&s->c, 7) << 1) | 1;
 
             for (j = 0; j < 10; j++)
                 if (vp56_rac_get_prob_branchy(&s->c, 252))
                     s->prob.p.mv_comp[i].bits[j] =
-                        (vp8_rac_get_uint(&s->c, 7) << 1) | 1;
+                        (vp89_rac_get_uint(&s->c, 7) << 1) | 1;
         }
 
         for (i = 0; i < 2; i++) {
@@ -1060,23 +1061,23 @@ static int decode_frame_header(AVCodecContext *avctx,
                 for (k = 0; k < 3; k++)
                     if (vp56_rac_get_prob_branchy(&s->c, 252))
                         s->prob.p.mv_comp[i].class0_fp[j][k] =
-                            (vp8_rac_get_uint(&s->c, 7) << 1) | 1;
+                            (vp89_rac_get_uint(&s->c, 7) << 1) | 1;
 
             for (j = 0; j < 3; j++)
                 if (vp56_rac_get_prob_branchy(&s->c, 252))
                     s->prob.p.mv_comp[i].fp[j] =
-                        (vp8_rac_get_uint(&s->c, 7) << 1) | 1;
+                        (vp89_rac_get_uint(&s->c, 7) << 1) | 1;
         }
 
         if (s->s.h.highprecisionmvs) {
             for (i = 0; i < 2; i++) {
                 if (vp56_rac_get_prob_branchy(&s->c, 252))
                     s->prob.p.mv_comp[i].class0_hp =
-                        (vp8_rac_get_uint(&s->c, 7) << 1) | 1;
+                        (vp89_rac_get_uint(&s->c, 7) << 1) | 1;
 
                 if (vp56_rac_get_prob_branchy(&s->c, 252))
                     s->prob.p.mv_comp[i].hp =
-                        (vp8_rac_get_uint(&s->c, 7) << 1) | 1;
+                        (vp89_rac_get_uint(&s->c, 7) << 1) | 1;
             }
         }
     }
@@ -1099,11 +1100,11 @@ static void decode_sb(VP9TileData *td, int row, int col, VP9Filter *lflvl,
     int bytesperpixel = s->bytesperpixel;
 
     if (bl == BL_8X8) {
-        bp = vp8_rac_get_tree(td->c, ff_vp9_partition_tree, p);
+        bp = vp89_rac_get_tree(td->c, ff_vp9_partition_tree, p);
         ff_vp9_decode_block(td, row, col, lflvl, yoff, uvoff, bl, bp);
     } else if (col + hbs < s->cols) { // FIXME why not <=?
         if (row + hbs < s->rows) { // FIXME why not <=?
-            bp = vp8_rac_get_tree(td->c, ff_vp9_partition_tree, p);
+            bp = vp89_rac_get_tree(td->c, ff_vp9_partition_tree, p);
             switch (bp) {
             case PARTITION_NONE:
                 ff_vp9_decode_block(td, row, col, lflvl, yoff, uvoff, bl, bp);

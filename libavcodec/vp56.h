@@ -322,29 +322,12 @@ static av_always_inline int vp56_rac_get(VP56RangeCoder *c)
     return bit;
 }
 
-// rounding is different than vp56_rac_get, is vp56_rac_get wrong?
-static av_always_inline int vp8_rac_get(VP56RangeCoder *c)
-{
-    return vp56_rac_get_prob(c, 128);
-}
-
 static int vp56_rac_gets(VP56RangeCoder *c, int bits)
 {
     int value = 0;
 
     while (bits--) {
         value = (value << 1) | vp56_rac_get(c);
-    }
-
-    return value;
-}
-
-static av_unused int vp8_rac_get_uint(VP56RangeCoder *c, int bits)
-{
-    int value = 0;
-
-    while (bits--) {
-        value = (value << 1) | vp8_rac_get(c);
     }
 
     return value;
@@ -369,20 +352,6 @@ int vp56_rac_get_tree(VP56RangeCoder *c,
             tree++;
     }
     return -tree->val;
-}
-
-// how probabilities are associated with decisions is different I think
-// well, the new scheme fits in the old but this way has one fewer branches per decision
-static av_always_inline int vp8_rac_get_tree(VP56RangeCoder *c, const int8_t (*tree)[2],
-                                   const uint8_t *probs)
-{
-    int i = 0;
-
-    do {
-        i = tree[i][vp56_rac_get_prob(c, probs[i])];
-    } while (i > 0);
-
-    return -i;
 }
 
 #endif /* AVCODEC_VP56_H */

@@ -38,6 +38,7 @@
 #include "thread.h"
 #include "threadframe.h"
 #include "vp8.h"
+#include "vp89_rac.h"
 #include "vp8data.h"
 
 #if ARCH_ARM
@@ -57,12 +58,12 @@ static int vp8_rac_get_sint(VP56RangeCoder *c, int bits)
 {
     int v;
 
-    if (!vp8_rac_get(c))
+    if (!vp89_rac_get(c))
         return 0;
 
-    v = vp8_rac_get_uint(c, bits);
+    v = vp89_rac_get_uint(c, bits);
 
-    if (vp8_rac_get(c))
+    if (vp89_rac_get(c))
         v = -v;
 
     return v;
@@ -70,7 +71,7 @@ static int vp8_rac_get_sint(VP56RangeCoder *c, int bits)
 
 static int vp8_rac_get_nn(VP56RangeCoder *c)
 {
-    int v = vp8_rac_get_uint(c, 7) << 1;
+    int v = vp89_rac_get_uint(c, 7) << 1;
     return v + !v;
 }
 
@@ -303,11 +304,11 @@ static void parse_segment_info(VP8Context *s)
     VP56RangeCoder *c = &s->c;
     int i;
 
-    s->segmentation.update_map = vp8_rac_get(c);
-    s->segmentation.update_feature_data = vp8_rac_get(c);
+    s->segmentation.update_map = vp89_rac_get(c);
+    s->segmentation.update_feature_data = vp89_rac_get(c);
 
     if (s->segmentation.update_feature_data) {
-        s->segmentation.absolute_vals = vp8_rac_get(c);
+        s->segmentation.absolute_vals = vp89_rac_get(c);
 
         for (i = 0; i < 4; i++)
             s->segmentation.base_quant[i]   = vp8_rac_get_sint(c, 7);
@@ -317,7 +318,7 @@ static void parse_segment_info(VP8Context *s)
     }
     if (s->segmentation.update_map)
         for (i = 0; i < 3; i++)
-            s->prob->segmentid[i] = vp8_rac_get(c) ? vp8_rac_get_uint(c, 8) : 255;
+            s->prob->segmentid[i] = vp89_rac_get(c) ? vp89_rac_get_uint(c, 8) : 255;
 }
 
 static void update_lf_deltas(VP8Context *s)
@@ -326,19 +327,19 @@ static void update_lf_deltas(VP8Context *s)
     int i;
 
     for (i = 0; i < 4; i++) {
-        if (vp8_rac_get(c)) {
-            s->lf_delta.ref[i] = vp8_rac_get_uint(c, 6);
+        if (vp89_rac_get(c)) {
+            s->lf_delta.ref[i] = vp89_rac_get_uint(c, 6);
 
-            if (vp8_rac_get(c))
+            if (vp89_rac_get(c))
                 s->lf_delta.ref[i] = -s->lf_delta.ref[i];
         }
     }
 
     for (i = MODE_I4x4; i <= VP8_MVMODE_SPLIT; i++) {
-        if (vp8_rac_get(c)) {
-            s->lf_delta.mode[i] = vp8_rac_get_uint(c, 6);
+        if (vp89_rac_get(c)) {
+            s->lf_delta.mode[i] = vp89_rac_get_uint(c, 6);
 
-            if (vp8_rac_get(c))
+            if (vp89_rac_get(c))
                 s->lf_delta.mode[i] = -s->lf_delta.mode[i];
         }
     }
@@ -350,7 +351,7 @@ static int setup_partitions(VP8Context *s, const uint8_t *buf, int buf_size)
     int i;
     int ret;
 
-    s->num_coeff_partitions = 1 << vp8_rac_get_uint(&s->c, 2);
+    s->num_coeff_partitions = 1 << vp89_rac_get_uint(&s->c, 2);
 
     buf      += 3 * (s->num_coeff_partitions - 1);
     buf_size -= 3 * (s->num_coeff_partitions - 1);
@@ -380,12 +381,12 @@ static void vp7_get_quants(VP8Context *s)
 {
     VP56RangeCoder *c = &s->c;
 
-    int yac_qi  = vp8_rac_get_uint(c, 7);
-    int ydc_qi  = vp8_rac_get(c) ? vp8_rac_get_uint(c, 7) : yac_qi;
-    int y2dc_qi = vp8_rac_get(c) ? vp8_rac_get_uint(c, 7) : yac_qi;
-    int y2ac_qi = vp8_rac_get(c) ? vp8_rac_get_uint(c, 7) : yac_qi;
-    int uvdc_qi = vp8_rac_get(c) ? vp8_rac_get_uint(c, 7) : yac_qi;
-    int uvac_qi = vp8_rac_get(c) ? vp8_rac_get_uint(c, 7) : yac_qi;
+    int yac_qi  = vp89_rac_get_uint(c, 7);
+    int ydc_qi  = vp89_rac_get(c) ? vp89_rac_get_uint(c, 7) : yac_qi;
+    int y2dc_qi = vp89_rac_get(c) ? vp89_rac_get_uint(c, 7) : yac_qi;
+    int y2ac_qi = vp89_rac_get(c) ? vp89_rac_get_uint(c, 7) : yac_qi;
+    int uvdc_qi = vp89_rac_get(c) ? vp89_rac_get_uint(c, 7) : yac_qi;
+    int uvac_qi = vp89_rac_get(c) ? vp89_rac_get_uint(c, 7) : yac_qi;
 
     s->qmat[0].luma_qmul[0]    =       vp7_ydc_qlookup[ydc_qi];
     s->qmat[0].luma_qmul[1]    =       vp7_yac_qlookup[yac_qi];
@@ -400,7 +401,7 @@ static void vp8_get_quants(VP8Context *s)
     VP56RangeCoder *c = &s->c;
     int i, base_qi;
 
-    s->quant.yac_qi     = vp8_rac_get_uint(c, 7);
+    s->quant.yac_qi     = vp89_rac_get_uint(c, 7);
     s->quant.ydc_delta  = vp8_rac_get_sint(c, 4);
     s->quant.y2dc_delta = vp8_rac_get_sint(c, 4);
     s->quant.y2ac_delta = vp8_rac_get_sint(c, 4);
@@ -448,7 +449,7 @@ static VP56Frame ref_to_update(VP8Context *s, int update, VP56Frame ref)
     if (update)
         return VP56_FRAME_CURRENT;
 
-    switch (vp8_rac_get_uint(c, 2)) {
+    switch (vp89_rac_get_uint(c, 2)) {
     case 1:
         return VP56_FRAME_PREVIOUS;
     case 2:
@@ -476,7 +477,7 @@ static void vp78_update_probability_tables(VP8Context *s)
             for (k = 0; k < 3; k++)
                 for (l = 0; l < NUM_DCT_TOKENS-1; l++)
                     if (vp56_rac_get_prob_branchy(c, vp8_token_update_probs[i][j][k][l])) {
-                        int prob = vp8_rac_get_uint(c, 8);
+                        int prob = vp89_rac_get_uint(c, 8);
                         for (m = 0; vp8_coeff_band_indexes[j][m] >= 0; m++)
                             s->prob->token[i][vp8_coeff_band_indexes[j][m]][k][l] = prob;
                     }
@@ -491,12 +492,12 @@ static void vp78_update_pred16x16_pred8x8_mvc_probabilities(VP8Context *s,
     VP56RangeCoder *c = &s->c;
     int i, j;
 
-    if (vp8_rac_get(c))
+    if (vp89_rac_get(c))
         for (i = 0; i < 4; i++)
-            s->prob->pred16x16[i] = vp8_rac_get_uint(c, 8);
-    if (vp8_rac_get(c))
+            s->prob->pred16x16[i] = vp89_rac_get_uint(c, 8);
+    if (vp89_rac_get(c))
         for (i = 0; i < 3; i++)
-            s->prob->pred8x8c[i]  = vp8_rac_get_uint(c, 8);
+            s->prob->pred8x8c[i]  = vp89_rac_get_uint(c, 8);
 
     // 17.2 MV probability update
     for (i = 0; i < 2; i++)
@@ -509,8 +510,8 @@ static void update_refs(VP8Context *s)
 {
     VP56RangeCoder *c = &s->c;
 
-    int update_golden = vp8_rac_get(c);
-    int update_altref = vp8_rac_get(c);
+    int update_golden = vp89_rac_get(c);
+    int update_altref = vp89_rac_get(c);
 
     s->update_golden = ref_to_update(s, update_golden, VP56_FRAME_GOLDEN);
     s->update_altref = ref_to_update(s, update_altref, VP56_FRAME_GOLDEN2);
@@ -621,10 +622,10 @@ static int vp7_decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_si
 
     /* A. Dimension information (keyframes only) */
     if (s->keyframe) {
-        width  = vp8_rac_get_uint(c, 12);
-        height = vp8_rac_get_uint(c, 12);
-        hscale = vp8_rac_get_uint(c, 2);
-        vscale = vp8_rac_get_uint(c, 2);
+        width  = vp89_rac_get_uint(c, 12);
+        height = vp89_rac_get_uint(c, 12);
+        hscale = vp89_rac_get_uint(c, 2);
+        vscale = vp89_rac_get_uint(c, 2);
         if (hscale || vscale)
             avpriv_request_sample(s->avctx, "Upscaling");
 
@@ -647,18 +648,18 @@ static int vp7_decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_si
 
     /* B. Decoding information for all four macroblock-level features */
     for (i = 0; i < 4; i++) {
-        s->feature_enabled[i] = vp8_rac_get(c);
+        s->feature_enabled[i] = vp89_rac_get(c);
         if (s->feature_enabled[i]) {
-             s->feature_present_prob[i] = vp8_rac_get_uint(c, 8);
+             s->feature_present_prob[i] = vp89_rac_get_uint(c, 8);
 
              for (j = 0; j < 3; j++)
                  s->feature_index_prob[i][j] =
-                     vp8_rac_get(c) ? vp8_rac_get_uint(c, 8) : 255;
+                     vp89_rac_get(c) ? vp89_rac_get_uint(c, 8) : 255;
 
              if (vp7_feature_value_size[s->profile][i])
                  for (j = 0; j < 4; j++)
                      s->feature_value[i][j] =
-                        vp8_rac_get(c) ? vp8_rac_get_uint(c, vp7_feature_value_size[s->profile][i]) : 0;
+                        vp89_rac_get(c) ? vp89_rac_get_uint(c, vp7_feature_value_size[s->profile][i]) : 0;
         }
     }
 
@@ -683,7 +684,7 @@ static int vp7_decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_si
 
     /* D. Golden frame update flag (a Flag) for interframes only */
     if (!s->keyframe) {
-        s->update_golden = vp8_rac_get(c) ? VP56_FRAME_CURRENT : VP56_FRAME_NONE;
+        s->update_golden = vp89_rac_get(c) ? VP56_FRAME_CURRENT : VP56_FRAME_NONE;
         s->sign_bias[VP56_FRAME_GOLDEN] = 0;
     }
 
@@ -692,36 +693,36 @@ static int vp7_decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_si
     s->fade_present         = 1;
 
     if (s->profile > 0) {
-        s->update_probabilities = vp8_rac_get(c);
+        s->update_probabilities = vp89_rac_get(c);
         if (!s->update_probabilities)
             s->prob[1] = s->prob[0];
 
         if (!s->keyframe)
-            s->fade_present = vp8_rac_get(c);
+            s->fade_present = vp89_rac_get(c);
     }
 
     if (vpX_rac_is_end(c))
         return AVERROR_INVALIDDATA;
     /* E. Fading information for previous frame */
-    if (s->fade_present && vp8_rac_get(c)) {
-        alpha = (int8_t) vp8_rac_get_uint(c, 8);
-        beta  = (int8_t) vp8_rac_get_uint(c, 8);
+    if (s->fade_present && vp89_rac_get(c)) {
+        alpha = (int8_t) vp89_rac_get_uint(c, 8);
+        beta  = (int8_t) vp89_rac_get_uint(c, 8);
     }
 
     /* F. Loop filter type */
     if (!s->profile)
-        s->filter.simple = vp8_rac_get(c);
+        s->filter.simple = vp89_rac_get(c);
 
     /* G. DCT coefficient ordering specification */
-    if (vp8_rac_get(c))
+    if (vp89_rac_get(c))
         for (i = 1; i < 16; i++)
-            s->prob[0].scan[i] = ff_zigzag_scan[vp8_rac_get_uint(c, 4)];
+            s->prob[0].scan[i] = ff_zigzag_scan[vp89_rac_get_uint(c, 4)];
 
     /* H. Loop filter levels  */
     if (s->profile > 0)
-        s->filter.simple = vp8_rac_get(c);
-    s->filter.level     = vp8_rac_get_uint(c, 6);
-    s->filter.sharpness = vp8_rac_get_uint(c, 3);
+        s->filter.simple = vp89_rac_get(c);
+    s->filter.level     = vp89_rac_get_uint(c, 6);
+    s->filter.sharpness = vp89_rac_get_uint(c, 3);
 
     /* I. DCT coefficient probability update; 13.3 Token Probability Updates */
     vp78_update_probability_tables(s);
@@ -730,8 +731,8 @@ static int vp7_decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_si
 
     /* J. The remaining frame header data occurs ONLY FOR INTERFRAMES */
     if (!s->keyframe) {
-        s->prob->intra  = vp8_rac_get_uint(c, 8);
-        s->prob->last   = vp8_rac_get_uint(c, 8);
+        s->prob->intra  = vp89_rac_get_uint(c, 8);
+        s->prob->last   = vp89_rac_get_uint(c, 8);
         vp78_update_pred16x16_pred8x8_mvc_probabilities(s, VP7_MVC_SIZE);
     }
 
@@ -815,23 +816,23 @@ static int vp8_decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_si
     buf_size -= header_size;
 
     if (s->keyframe) {
-        s->colorspace = vp8_rac_get(c);
+        s->colorspace = vp89_rac_get(c);
         if (s->colorspace)
             av_log(s->avctx, AV_LOG_WARNING, "Unspecified colorspace\n");
-        s->fullrange = vp8_rac_get(c);
+        s->fullrange = vp89_rac_get(c);
     }
 
-    if ((s->segmentation.enabled = vp8_rac_get(c)))
+    if ((s->segmentation.enabled = vp89_rac_get(c)))
         parse_segment_info(s);
     else
         s->segmentation.update_map = 0; // FIXME: move this to some init function?
 
-    s->filter.simple    = vp8_rac_get(c);
-    s->filter.level     = vp8_rac_get_uint(c, 6);
-    s->filter.sharpness = vp8_rac_get_uint(c, 3);
+    s->filter.simple    = vp89_rac_get(c);
+    s->filter.level     = vp89_rac_get_uint(c, 6);
+    s->filter.sharpness = vp89_rac_get_uint(c, 3);
 
-    if ((s->lf_delta.enabled = vp8_rac_get(c))) {
-        s->lf_delta.update = vp8_rac_get(c);
+    if ((s->lf_delta.enabled = vp89_rac_get(c))) {
+        s->lf_delta.update = vp89_rac_get(c);
         if (s->lf_delta.update)
             update_lf_deltas(s);
     }
@@ -851,26 +852,26 @@ static int vp8_decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_si
 
     if (!s->keyframe) {
         update_refs(s);
-        s->sign_bias[VP56_FRAME_GOLDEN]               = vp8_rac_get(c);
-        s->sign_bias[VP56_FRAME_GOLDEN2 /* altref */] = vp8_rac_get(c);
+        s->sign_bias[VP56_FRAME_GOLDEN]               = vp89_rac_get(c);
+        s->sign_bias[VP56_FRAME_GOLDEN2 /* altref */] = vp89_rac_get(c);
     }
 
     // if we aren't saving this frame's probabilities for future frames,
     // make a copy of the current probabilities
-    if (!(s->update_probabilities = vp8_rac_get(c)))
+    if (!(s->update_probabilities = vp89_rac_get(c)))
         s->prob[1] = s->prob[0];
 
-    s->update_last = s->keyframe || vp8_rac_get(c);
+    s->update_last = s->keyframe || vp89_rac_get(c);
 
     vp78_update_probability_tables(s);
 
-    if ((s->mbskip_enabled = vp8_rac_get(c)))
-        s->prob->mbskip = vp8_rac_get_uint(c, 8);
+    if ((s->mbskip_enabled = vp89_rac_get(c)))
+        s->prob->mbskip = vp89_rac_get_uint(c, 8);
 
     if (!s->keyframe) {
-        s->prob->intra  = vp8_rac_get_uint(c, 8);
-        s->prob->last   = vp8_rac_get_uint(c, 8);
-        s->prob->golden = vp8_rac_get_uint(c, 8);
+        s->prob->intra  = vp89_rac_get_uint(c, 8);
+        s->prob->last   = vp89_rac_get_uint(c, 8);
+        s->prob->golden = vp89_rac_get_uint(c, 8);
         vp78_update_pred16x16_pred8x8_mvc_probabilities(s, VP8_MVC_SIZE);
     }
 
@@ -1265,7 +1266,7 @@ void decode_intra4x4_modes(VP8Context *s, VP56RangeCoder *c, VP8Macroblock *mb,
             for (x = 0; x < 4; x++) {
                 const uint8_t *ctx;
                 ctx       = vp8_pred4x4_prob_intra[top[x]][left[y]];
-                *intra4x4 = vp8_rac_get_tree(c, vp8_pred4x4_tree, ctx);
+                *intra4x4 = vp89_rac_get_tree(c, vp8_pred4x4_tree, ctx);
                 left[y]   = top[x] = *intra4x4;
                 intra4x4++;
             }
@@ -1273,8 +1274,8 @@ void decode_intra4x4_modes(VP8Context *s, VP56RangeCoder *c, VP8Macroblock *mb,
     } else {
         int i;
         for (i = 0; i < 16; i++)
-            intra4x4[i] = vp8_rac_get_tree(c, vp8_pred4x4_tree,
-                                           vp8_pred4x4_prob_inter);
+            intra4x4[i] = vp89_rac_get_tree(c, vp8_pred4x4_tree,
+                                            vp8_pred4x4_prob_inter);
     }
 }
 
@@ -1294,8 +1295,8 @@ void decode_mb_mode(VP8Context *s, VP8mvbounds *mv_bounds,
         for (i = 0; i < 4; i++) {
             if (s->feature_enabled[i]) {
                 if (vp56_rac_get_prob_branchy(c, s->feature_present_prob[i])) {
-                      int index = vp8_rac_get_tree(c, vp7_feature_index_tree,
-                                                   s->feature_index_prob[i]);
+                      int index = vp89_rac_get_tree(c, vp7_feature_index_tree,
+                                                    s->feature_index_prob[i]);
                       av_log(s->avctx, AV_LOG_WARNING,
                              "Feature %s present in macroblock (value 0x%x)\n",
                              vp7_feature_name[i], s->feature_value[i][index]);
@@ -1312,8 +1313,8 @@ void decode_mb_mode(VP8Context *s, VP8mvbounds *mv_bounds,
     mb->skip = s->mbskip_enabled ? vp56_rac_get_prob(c, s->prob->mbskip) : 0;
 
     if (s->keyframe) {
-        mb->mode = vp8_rac_get_tree(c, vp8_pred16x16_tree_intra,
-                                    vp8_pred16x16_prob_intra);
+        mb->mode = vp89_rac_get_tree(c, vp8_pred16x16_tree_intra,
+                                     vp8_pred16x16_prob_intra);
 
         if (mb->mode == MODE_I4x4) {
             decode_intra4x4_modes(s, c, mb, mb_x, 1, layout);
@@ -1327,8 +1328,8 @@ void decode_mb_mode(VP8Context *s, VP8mvbounds *mv_bounds,
             AV_WN32A(s->intra4x4_pred_mode_left, modes);
         }
 
-        mb->chroma_pred_mode = vp8_rac_get_tree(c, vp8_pred8x8c_tree,
-                                                vp8_pred8x8c_prob_intra);
+        mb->chroma_pred_mode = vp89_rac_get_tree(c, vp8_pred8x8c_tree,
+                                                 vp8_pred8x8c_prob_intra);
         mb->ref_frame        = VP56_FRAME_CURRENT;
     } else if (vp56_rac_get_prob_branchy(c, s->prob->intra)) {
         // inter MB, 16.2
@@ -1347,13 +1348,14 @@ void decode_mb_mode(VP8Context *s, VP8mvbounds *mv_bounds,
             vp8_decode_mvs(s, mv_bounds, mb, mb_x, mb_y, layout);
     } else {
         // intra MB, 16.1
-        mb->mode = vp8_rac_get_tree(c, vp8_pred16x16_tree_inter, s->prob->pred16x16);
+        mb->mode = vp89_rac_get_tree(c, vp8_pred16x16_tree_inter,
+                                     s->prob->pred16x16);
 
         if (mb->mode == MODE_I4x4)
             decode_intra4x4_modes(s, c, mb, mb_x, 0, layout);
 
-        mb->chroma_pred_mode = vp8_rac_get_tree(c, vp8_pred8x8c_tree,
-                                                s->prob->pred8x8c);
+        mb->chroma_pred_mode = vp89_rac_get_tree(c, vp8_pred8x8c_tree,
+                                                 s->prob->pred8x8c);
         mb->ref_frame        = VP56_FRAME_CURRENT;
         mb->partitioning     = VP8_SPLITMVMODE_NONE;
         AV_ZERO32(&mb->bmv[0]);
@@ -1423,7 +1425,7 @@ skip_eob:
             }
             token_prob = probs[i + 1][2];
         }
-        block[scan[i]] = (vp8_rac_get(&c) ? -coeff : coeff) * qmul[!!i];
+        block[scan[i]] = (vp89_rac_get(&c) ? -coeff : coeff) * qmul[!!i];
     } while (++i < 16);
 
     *r = c;
