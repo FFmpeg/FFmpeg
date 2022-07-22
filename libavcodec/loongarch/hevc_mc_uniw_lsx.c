@@ -31,13 +31,13 @@ static const uint8_t ff_hevc_mask_arr[16 * 2] __attribute__((aligned(0x40))) = {
 };
 
 static av_always_inline
-void hevc_hv_8t_8x2_lsx(uint8_t *src, int32_t src_stride, uint8_t *dst,
+void hevc_hv_8t_8x2_lsx(const uint8_t *src, int32_t src_stride, uint8_t *dst,
                         int32_t dst_stride, const int8_t *filter_x,
                         const int8_t *filter_y, int32_t height, int32_t weight,
                         int32_t offset, int32_t rnd_val, int32_t width)
 {
     uint32_t loop_cnt, cnt;
-    uint8_t *src_tmp;
+    const uint8_t *src_tmp;
     uint8_t *dst_tmp;
     const int32_t src_stride_2x = (src_stride << 1);
     const int32_t dst_stride_2x = (dst_stride << 1);
@@ -207,7 +207,7 @@ void hevc_hv_8t_8x2_lsx(uint8_t *src, int32_t src_stride, uint8_t *dst,
 }
 
 static
-void hevc_hv_8t_8w_lsx(uint8_t *src, int32_t src_stride, uint8_t *dst,
+void hevc_hv_8t_8w_lsx(const uint8_t *src, int32_t src_stride, uint8_t *dst,
                        int32_t dst_stride, const int8_t *filter_x,
                        const int8_t *filter_y, int32_t height, int32_t weight,
                        int32_t offset, int32_t rnd_val)
@@ -217,7 +217,7 @@ void hevc_hv_8t_8w_lsx(uint8_t *src, int32_t src_stride, uint8_t *dst,
 }
 
 static
-void hevc_hv_8t_16w_lsx(uint8_t *src, int32_t src_stride, uint8_t *dst,
+void hevc_hv_8t_16w_lsx(const uint8_t *src, int32_t src_stride, uint8_t *dst,
                         int32_t dst_stride, const int8_t *filter_x,
                         const int8_t *filter_y, int32_t height, int32_t weight,
                         int32_t offset, int32_t rnd_val)
@@ -227,7 +227,7 @@ void hevc_hv_8t_16w_lsx(uint8_t *src, int32_t src_stride, uint8_t *dst,
 }
 
 static
-void hevc_hv_8t_24w_lsx(uint8_t *src, int32_t src_stride, uint8_t *dst,
+void hevc_hv_8t_24w_lsx(const uint8_t *src, int32_t src_stride, uint8_t *dst,
                         int32_t dst_stride, const int8_t *filter_x,
                         const int8_t *filter_y, int32_t height, int32_t weight,
                         int32_t offset, int32_t rnd_val)
@@ -237,7 +237,7 @@ void hevc_hv_8t_24w_lsx(uint8_t *src, int32_t src_stride, uint8_t *dst,
 }
 
 static
-void hevc_hv_8t_32w_lsx(uint8_t *src, int32_t src_stride, uint8_t *dst,
+void hevc_hv_8t_32w_lsx(const uint8_t *src, int32_t src_stride, uint8_t *dst,
                         int32_t dst_stride, const int8_t *filter_x,
                         const int8_t *filter_y, int32_t height, int32_t weight,
                         int32_t offset, int32_t rnd_val)
@@ -247,7 +247,7 @@ void hevc_hv_8t_32w_lsx(uint8_t *src, int32_t src_stride, uint8_t *dst,
 }
 
 static
-void hevc_hv_8t_48w_lsx(uint8_t *src, int32_t src_stride, uint8_t *dst,
+void hevc_hv_8t_48w_lsx(const uint8_t *src, int32_t src_stride, uint8_t *dst,
                         int32_t dst_stride, const int8_t *filter_x,
                         const int8_t *filter_y, int32_t height, int32_t weight,
                         int32_t offset, int32_t rnd_val)
@@ -257,7 +257,7 @@ void hevc_hv_8t_48w_lsx(uint8_t *src, int32_t src_stride, uint8_t *dst,
 }
 
 static
-void hevc_hv_8t_64w_lsx(uint8_t *src, int32_t src_stride, uint8_t *dst,
+void hevc_hv_8t_64w_lsx(const uint8_t *src, int32_t src_stride, uint8_t *dst,
                         int32_t dst_stride, const int8_t *filter_x,
                         const int8_t *filter_y, int32_t height, int32_t weight,
                         int32_t offset, int32_t rnd_val)
@@ -270,7 +270,7 @@ void hevc_hv_8t_64w_lsx(uint8_t *src, int32_t src_stride, uint8_t *dst,
 #define UNI_W_MC_HV(PEL, WIDTH, TAP)                                           \
 void ff_hevc_put_hevc_uni_w_##PEL##_hv##WIDTH##_8_lsx(uint8_t *dst,            \
                                                       ptrdiff_t dst_stride,    \
-                                                      uint8_t *src,            \
+                                                      const uint8_t *src,      \
                                                       ptrdiff_t src_stride,    \
                                                       int height,              \
                                                       int denom,               \

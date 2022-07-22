@@ -27,7 +27,7 @@
 
 #define MC(PEL, DIR, WIDTH)                                               \
 void ff_hevc_put_hevc_##PEL##_##DIR##WIDTH##_8_lsx(int16_t *dst,          \
-                                                   uint8_t *src,          \
+                                                   const uint8_t *src,    \
                                                    ptrdiff_t src_stride,  \
                                                    int height,            \
                                                    intptr_t mx,           \
@@ -88,9 +88,9 @@ MC(epel, hv, 32);
 #define BI_MC(PEL, DIR, WIDTH)                                               \
 void ff_hevc_put_hevc_bi_##PEL##_##DIR##WIDTH##_8_lsx(uint8_t *dst,          \
                                                       ptrdiff_t dst_stride,  \
-                                                      uint8_t *src,          \
+                                                      const uint8_t *src,    \
                                                       ptrdiff_t src_stride,  \
-                                                      int16_t *src_16bit,    \
+                                                      const int16_t *src_16bit, \
                                                       int height,            \
                                                       intptr_t mx,           \
                                                       intptr_t my,           \
@@ -145,7 +145,7 @@ BI_MC(epel, hv, 32);
 #define UNI_MC(PEL, DIR, WIDTH)                                              \
 void ff_hevc_put_hevc_uni_##PEL##_##DIR##WIDTH##_8_lsx(uint8_t *dst,         \
                                                        ptrdiff_t dst_stride, \
-                                                       uint8_t *src,         \
+                                                       const uint8_t *src,   \
                                                        ptrdiff_t src_stride, \
                                                        int height,           \
                                                        intptr_t mx,          \
@@ -181,7 +181,7 @@ UNI_MC(epel, hv, 32);
 void ff_hevc_put_hevc_uni_w_##PEL##_##DIR##WIDTH##_8_lsx(uint8_t *dst,  \
                                                          ptrdiff_t      \
                                                          dst_stride,    \
-                                                         uint8_t *src,  \
+                                                         const uint8_t *src,  \
                                                          ptrdiff_t      \
                                                          src_stride,    \
                                                          int height,    \
@@ -202,24 +202,24 @@ UNI_W_MC(qpel, hv, 64);
 #undef UNI_W_MC
 
 void ff_hevc_loop_filter_luma_h_8_lsx(uint8_t *src, ptrdiff_t stride,
-                                      int32_t beta, int32_t *tc,
-                                      uint8_t *p_is_pcm, uint8_t *q_is_pcm);
+                                      int32_t beta, const int32_t *tc,
+                                      const uint8_t *p_is_pcm, const uint8_t *q_is_pcm);
 
 void ff_hevc_loop_filter_luma_v_8_lsx(uint8_t *src, ptrdiff_t stride,
-                                      int32_t beta, int32_t *tc,
-                                      uint8_t *p_is_pcm, uint8_t *q_is_pcm);
+                                      int32_t beta, const int32_t *tc,
+                                      const uint8_t *p_is_pcm, const uint8_t *q_is_pcm);
 
 void ff_hevc_loop_filter_chroma_h_8_lsx(uint8_t *src, ptrdiff_t stride,
-                                        int32_t *tc, uint8_t *p_is_pcm,
-                                        uint8_t *q_is_pcm);
+                                        const int32_t *tc, const uint8_t *p_is_pcm,
+                                        const uint8_t *q_is_pcm);
 
 void ff_hevc_loop_filter_chroma_v_8_lsx(uint8_t *src, ptrdiff_t stride,
-                                        int32_t *tc, uint8_t *p_is_pcm,
-                                        uint8_t *q_is_pcm);
+                                        const int32_t *tc, const uint8_t *p_is_pcm,
+                                        const uint8_t *q_is_pcm);
 
-void ff_hevc_sao_edge_filter_8_lsx(uint8_t *dst, uint8_t *src,
+void ff_hevc_sao_edge_filter_8_lsx(uint8_t *dst, const uint8_t *src,
                                    ptrdiff_t stride_dst,
-                                   int16_t *sao_offset_val,
+                                   const int16_t *sao_offset_val,
                                    int eo, int width, int height);
 
 void ff_hevc_idct_4x4_lsx(int16_t *coeffs, int col_limit);

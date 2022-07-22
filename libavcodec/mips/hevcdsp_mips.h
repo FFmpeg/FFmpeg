@@ -25,7 +25,7 @@
 
 #define MC(PEL, DIR, WIDTH)                                                 \
 void ff_hevc_put_hevc_##PEL##_##DIR##WIDTH##_8_msa(int16_t *dst,            \
-                                                     uint8_t *src,          \
+                                                   const uint8_t *src,      \
                                                      ptrdiff_t src_stride,  \
                                                      int height,            \
                                                      intptr_t mx,           \
@@ -104,7 +104,7 @@ MC(epel, hv, 64);
 #define UNI_MC(PEL, DIR, WIDTH)                                                \
 void ff_hevc_put_hevc_uni_##PEL##_##DIR##WIDTH##_8_msa(uint8_t *dst,           \
                                                          ptrdiff_t dst_stride, \
-                                                         uint8_t *src,         \
+                                                         const uint8_t *src,   \
                                                          ptrdiff_t src_stride, \
                                                          int height,           \
                                                          intptr_t mx,          \
@@ -184,7 +184,7 @@ UNI_MC(epel, hv, 64);
 void ff_hevc_put_hevc_uni_w_##PEL##_##DIR##WIDTH##_8_msa(uint8_t *dst,    \
                                                            ptrdiff_t      \
                                                            dst_stride,    \
-                                                           uint8_t *src,  \
+                                                           const uint8_t *src,  \
                                                            ptrdiff_t      \
                                                            src_stride,    \
                                                            int height,    \
@@ -267,9 +267,9 @@ UNI_W_MC(epel, hv, 64);
 #define BI_MC(PEL, DIR, WIDTH)                                                 \
 void ff_hevc_put_hevc_bi_##PEL##_##DIR##WIDTH##_8_msa(uint8_t *dst,            \
                                                         ptrdiff_t dst_stride,  \
-                                                        uint8_t *src,          \
+                                                        const uint8_t *src,    \
                                                         ptrdiff_t src_stride,  \
-                                                        int16_t *src_16bit,    \
+                                                        const int16_t *src_16bit,    \
                                                         int height,            \
                                                         intptr_t mx,           \
                                                         intptr_t my,           \
@@ -348,10 +348,10 @@ BI_MC(epel, hv, 64);
 void ff_hevc_put_hevc_bi_w_##PEL##_##DIR##WIDTH##_8_msa(uint8_t *dst,          \
                                                           ptrdiff_t            \
                                                           dst_stride,          \
-                                                          uint8_t *src,        \
+                                                          const uint8_t *src,  \
                                                           ptrdiff_t            \
                                                           src_stride,          \
-                                                          int16_t *src_16bit,  \
+                                                          const int16_t *src_16bit, \
                                                           int height,          \
                                                           int denom,           \
                                                           int weight0,         \
@@ -433,32 +433,32 @@ BI_W_MC(epel, hv, 64);
 
 void ff_hevc_loop_filter_luma_h_8_msa(uint8_t *src,
                                       ptrdiff_t src_stride,
-                                      int32_t beta, int32_t *tc,
-                                      uint8_t *no_p, uint8_t *no_q);
+                                      int32_t beta, const int32_t *tc,
+                                      const uint8_t *no_p, const uint8_t *no_q);
 
 void ff_hevc_loop_filter_luma_v_8_msa(uint8_t *src,
                                       ptrdiff_t src_stride,
-                                      int32_t beta, int32_t *tc,
-                                      uint8_t *no_p, uint8_t *no_q);
+                                      int32_t beta, const int32_t *tc,
+                                      const uint8_t *no_p, const uint8_t *no_q);
 
 void ff_hevc_loop_filter_chroma_h_8_msa(uint8_t *src,
                                         ptrdiff_t src_stride,
-                                        int32_t *tc, uint8_t *no_p,
-                                        uint8_t *no_q);
+                                        const int32_t *tc, const uint8_t *no_p,
+                                        const uint8_t *no_q);
 
 void ff_hevc_loop_filter_chroma_v_8_msa(uint8_t *src,
                                         ptrdiff_t src_stride,
-                                        int32_t *tc, uint8_t *no_p,
-                                        uint8_t *no_q);
+                                        const int32_t *tc, const uint8_t *no_p,
+                                        const uint8_t *no_q);
 
-void ff_hevc_sao_band_filter_0_8_msa(uint8_t *dst, uint8_t *src,
+void ff_hevc_sao_band_filter_0_8_msa(uint8_t *dst, const uint8_t *src,
                                      ptrdiff_t stride_dst, ptrdiff_t stride_src,
-                                     int16_t *sao_offset_val, int sao_left_class,
+                                     const int16_t *sao_offset_val, int sao_left_class,
                                      int width, int height);
 
-void ff_hevc_sao_edge_filter_8_msa(uint8_t *dst, uint8_t *src,
+void ff_hevc_sao_edge_filter_8_msa(uint8_t *dst, const uint8_t *src,
                                    ptrdiff_t stride_dst,
-                                   int16_t *sao_offset_val,
+                                   const int16_t *sao_offset_val,
                                    int eo, int width, int height);
 
 void ff_hevc_idct_4x4_msa(int16_t *coeffs, int col_limit);
@@ -469,20 +469,20 @@ void ff_hevc_idct_dc_4x4_msa(int16_t *coeffs);
 void ff_hevc_idct_dc_8x8_msa(int16_t *coeffs);
 void ff_hevc_idct_dc_16x16_msa(int16_t *coeffs);
 void ff_hevc_idct_dc_32x32_msa(int16_t *coeffs);
-void ff_hevc_addblk_4x4_msa(uint8_t *dst, int16_t *pi16Coeffs,
+void ff_hevc_addblk_4x4_msa(uint8_t *dst, const int16_t *pi16Coeffs,
                             ptrdiff_t stride);
-void ff_hevc_addblk_8x8_msa(uint8_t *dst, int16_t *pi16Coeffs,
+void ff_hevc_addblk_8x8_msa(uint8_t *dst, const int16_t *pi16Coeffs,
                             ptrdiff_t stride);
-void ff_hevc_addblk_16x16_msa(uint8_t *dst, int16_t *pi16Coeffs,
+void ff_hevc_addblk_16x16_msa(uint8_t *dst, const int16_t *pi16Coeffs,
                               ptrdiff_t stride);
-void ff_hevc_addblk_32x32_msa(uint8_t *dst, int16_t *pi16Coeffs,
+void ff_hevc_addblk_32x32_msa(uint8_t *dst, const int16_t *pi16Coeffs,
                               ptrdiff_t stride);
 void ff_hevc_idct_luma_4x4_msa(int16_t *pi16Coeffs);
 
 /* Loongson optimization */
 #define L_MC(PEL, DIR, WIDTH, TYPE)                                          \
 void ff_hevc_put_hevc_##PEL##_##DIR##WIDTH##_8_##TYPE(int16_t *dst,          \
-                                                      uint8_t *src,          \
+                                                      const uint8_t *src,    \
                                                       ptrdiff_t src_stride,  \
                                                       int height,            \
                                                       intptr_t mx,           \
@@ -509,9 +509,9 @@ L_MC(qpel, hv, 64, mmi);
 #define L_BI_MC(PEL, DIR, WIDTH, TYPE)                                          \
 void ff_hevc_put_hevc_##PEL##_bi_##DIR##WIDTH##_8_##TYPE(uint8_t *dst,          \
                                                          ptrdiff_t dst_stride,  \
-                                                         uint8_t *src,          \
+                                                         const uint8_t *src,    \
                                                          ptrdiff_t src_stride,  \
-                                                         int16_t *src2,         \
+                                                         const int16_t *src2,   \
                                                          int height,            \
                                                          intptr_t mx,           \
                                                          intptr_t my,           \
@@ -553,7 +553,7 @@ L_BI_MC(epel, hv, 32, mmi);
 #define L_UNI_MC(PEL, DIR, WIDTH, TYPE)                                         \
 void ff_hevc_put_hevc_##PEL##_uni_##DIR##WIDTH##_8_##TYPE(uint8_t *dst,         \
                                                           ptrdiff_t dst_stride, \
-                                                          uint8_t *src,         \
+                                                          const uint8_t *src,   \
                                                           ptrdiff_t src_stride, \
                                                           int height,           \
                                                           intptr_t mx,          \

@@ -25,21 +25,21 @@
 #include "libavutil/aarch64/cpu.h"
 #include "libavcodec/hevcdsp.h"
 
-void ff_hevc_add_residual_4x4_8_neon(uint8_t *_dst, int16_t *coeffs,
+void ff_hevc_add_residual_4x4_8_neon(uint8_t *_dst, const int16_t *coeffs,
                                      ptrdiff_t stride);
-void ff_hevc_add_residual_4x4_10_neon(uint8_t *_dst, int16_t *coeffs,
+void ff_hevc_add_residual_4x4_10_neon(uint8_t *_dst, const int16_t *coeffs,
                                       ptrdiff_t stride);
-void ff_hevc_add_residual_8x8_8_neon(uint8_t *_dst, int16_t *coeffs,
+void ff_hevc_add_residual_8x8_8_neon(uint8_t *_dst, const int16_t *coeffs,
                                      ptrdiff_t stride);
-void ff_hevc_add_residual_8x8_10_neon(uint8_t *_dst, int16_t *coeffs,
+void ff_hevc_add_residual_8x8_10_neon(uint8_t *_dst, const int16_t *coeffs,
                                       ptrdiff_t stride);
-void ff_hevc_add_residual_16x16_8_neon(uint8_t *_dst, int16_t *coeffs,
+void ff_hevc_add_residual_16x16_8_neon(uint8_t *_dst, const int16_t *coeffs,
                                        ptrdiff_t stride);
-void ff_hevc_add_residual_16x16_10_neon(uint8_t *_dst, int16_t *coeffs,
+void ff_hevc_add_residual_16x16_10_neon(uint8_t *_dst, const int16_t *coeffs,
                                         ptrdiff_t stride);
-void ff_hevc_add_residual_32x32_8_neon(uint8_t *_dst, int16_t *coeffs,
+void ff_hevc_add_residual_32x32_8_neon(uint8_t *_dst, const int16_t *coeffs,
                                        ptrdiff_t stride);
-void ff_hevc_add_residual_32x32_10_neon(uint8_t *_dst, int16_t *coeffs,
+void ff_hevc_add_residual_32x32_10_neon(uint8_t *_dst, const int16_t *coeffs,
                                         ptrdiff_t stride);
 void ff_hevc_idct_8x8_8_neon(int16_t *coeffs, int col_limit);
 void ff_hevc_idct_8x8_10_neon(int16_t *coeffs, int col_limit);
@@ -53,14 +53,14 @@ void ff_hevc_idct_4x4_dc_10_neon(int16_t *coeffs);
 void ff_hevc_idct_8x8_dc_10_neon(int16_t *coeffs);
 void ff_hevc_idct_16x16_dc_10_neon(int16_t *coeffs);
 void ff_hevc_idct_32x32_dc_10_neon(int16_t *coeffs);
-void ff_hevc_sao_band_filter_8x8_8_neon(uint8_t *_dst, uint8_t *_src,
+void ff_hevc_sao_band_filter_8x8_8_neon(uint8_t *_dst, const uint8_t *_src,
                                   ptrdiff_t stride_dst, ptrdiff_t stride_src,
-                                  int16_t *sao_offset_val, int sao_left_class,
+                                  const int16_t *sao_offset_val, int sao_left_class,
                                   int width, int height);
-void ff_hevc_sao_edge_filter_16x16_8_neon(uint8_t *dst, uint8_t *src, ptrdiff_t stride_dst,
-                                          int16_t *sao_offset_val, int eo, int width, int height);
-void ff_hevc_sao_edge_filter_8x8_8_neon(uint8_t *dst, uint8_t *src, ptrdiff_t stride_dst,
-                                          int16_t *sao_offset_val, int eo, int width, int height);
+void ff_hevc_sao_edge_filter_16x16_8_neon(uint8_t *dst, const uint8_t *src, ptrdiff_t stride_dst,
+                                          const int16_t *sao_offset_val, int eo, int width, int height);
+void ff_hevc_sao_edge_filter_8x8_8_neon(uint8_t *dst, const uint8_t *src, ptrdiff_t stride_dst,
+                                        const int16_t *sao_offset_val, int eo, int width, int height);
 
 av_cold void ff_hevc_dsp_init_aarch64(HEVCDSPContext *c, const int bit_depth)
 {

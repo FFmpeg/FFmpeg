@@ -41,7 +41,7 @@ static void FUNC(put_pcm)(uint8_t *_dst, ptrdiff_t stride, int width, int height
     }
 }
 
-static av_always_inline void FUNC(add_residual)(uint8_t *_dst, int16_t *res,
+static av_always_inline void FUNC(add_residual)(uint8_t *_dst, const int16_t *res,
                                                 ptrdiff_t stride, int size)
 {
     int x, y;
@@ -58,25 +58,25 @@ static av_always_inline void FUNC(add_residual)(uint8_t *_dst, int16_t *res,
     }
 }
 
-static void FUNC(add_residual4x4)(uint8_t *_dst, int16_t *res,
+static void FUNC(add_residual4x4)(uint8_t *_dst, const int16_t *res,
                                   ptrdiff_t stride)
 {
     FUNC(add_residual)(_dst, res, stride, 4);
 }
 
-static void FUNC(add_residual8x8)(uint8_t *_dst, int16_t *res,
+static void FUNC(add_residual8x8)(uint8_t *_dst, const int16_t *res,
                                   ptrdiff_t stride)
 {
     FUNC(add_residual)(_dst, res, stride, 8);
 }
 
-static void FUNC(add_residual16x16)(uint8_t *_dst, int16_t *res,
+static void FUNC(add_residual16x16)(uint8_t *_dst, const int16_t *res,
                                     ptrdiff_t stride)
 {
     FUNC(add_residual)(_dst, res, stride, 16);
 }
 
-static void FUNC(add_residual32x32)(uint8_t *_dst, int16_t *res,
+static void FUNC(add_residual32x32)(uint8_t *_dst, const int16_t *res,
                                     ptrdiff_t stride)
 {
     FUNC(add_residual)(_dst, res, stride, 32);
@@ -295,13 +295,13 @@ IDCT_DC(32)
 #undef SET
 #undef SCALE
 
-static void FUNC(sao_band_filter)(uint8_t *_dst, uint8_t *_src,
+static void FUNC(sao_band_filter)(uint8_t *_dst, const uint8_t *_src,
                                   ptrdiff_t stride_dst, ptrdiff_t stride_src,
-                                  int16_t *sao_offset_val, int sao_left_class,
+                                  const int16_t *sao_offset_val, int sao_left_class,
                                   int width, int height)
 {
     pixel *dst = (pixel *)_dst;
-    pixel *src = (pixel *)_src;
+    const pixel *src = (const pixel *)_src;
     int offset_table[32] = { 0 };
     int k, y, x;
     int shift  = BIT_DEPTH - 5;
@@ -321,7 +321,7 @@ static void FUNC(sao_band_filter)(uint8_t *_dst, uint8_t *_src,
 
 #define CMP(a, b) (((a) > (b)) - ((a) < (b)))
 
-static void FUNC(sao_edge_filter)(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride_dst, int16_t *sao_offset_val,
+static void FUNC(sao_edge_filter)(uint8_t *_dst, const uint8_t *_src, ptrdiff_t stride_dst, const int16_t *sao_offset_val,
                                   int eo, int width, int height) {
 
     static const uint8_t edge_idx[] = { 1, 2, 0, 3, 4 };
@@ -332,7 +332,7 @@ static void FUNC(sao_edge_filter)(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride
         { {  1, -1 }, { -1, 1 } }, // 135 degree
     };
     pixel *dst = (pixel *)_dst;
-    pixel *src = (pixel *)_src;
+    const pixel *src = (const pixel *)_src;
     int a_stride, b_stride;
     int x, y;
     ptrdiff_t stride_src = (2*MAX_PB_SIZE + AV_INPUT_BUFFER_PADDING_SIZE) / sizeof(pixel);
@@ -352,16 +352,16 @@ static void FUNC(sao_edge_filter)(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride
     }
 }
 
-static void FUNC(sao_edge_restore_0)(uint8_t *_dst, uint8_t *_src,
-                                    ptrdiff_t stride_dst, ptrdiff_t stride_src, SAOParams *sao,
-                                    int *borders, int _width, int _height,
-                                    int c_idx, uint8_t *vert_edge,
-                                    uint8_t *horiz_edge, uint8_t *diag_edge)
+static void FUNC(sao_edge_restore_0)(uint8_t *_dst, const uint8_t *_src,
+                                    ptrdiff_t stride_dst, ptrdiff_t stride_src, const SAOParams *sao,
+                                    const int *borders, int _width, int _height,
+                                    int c_idx, const uint8_t *vert_edge,
+                                    const uint8_t *horiz_edge, const uint8_t *diag_edge)
 {
     int x, y;
     pixel *dst = (pixel *)_dst;
-    pixel *src = (pixel *)_src;
-    int16_t *sao_offset_val = sao->offset_val[c_idx];
+    const pixel *src = (const pixel *)_src;
+    const int16_t *sao_offset_val = sao->offset_val[c_idx];
     int sao_eo_class    = sao->eo_class[c_idx];
     int init_x = 0, width = _width, height = _height;
 
@@ -402,16 +402,16 @@ static void FUNC(sao_edge_restore_0)(uint8_t *_dst, uint8_t *_src,
     }
 }
 
-static void FUNC(sao_edge_restore_1)(uint8_t *_dst, uint8_t *_src,
-                                    ptrdiff_t stride_dst, ptrdiff_t stride_src, SAOParams *sao,
-                                    int *borders, int _width, int _height,
-                                    int c_idx, uint8_t *vert_edge,
-                                    uint8_t *horiz_edge, uint8_t *diag_edge)
+static void FUNC(sao_edge_restore_1)(uint8_t *_dst, const uint8_t *_src,
+                                    ptrdiff_t stride_dst, ptrdiff_t stride_src, const SAOParams *sao,
+                                    const int *borders, int _width, int _height,
+                                    int c_idx, const uint8_t *vert_edge,
+                                    const uint8_t *horiz_edge, const uint8_t *diag_edge)
 {
     int x, y;
     pixel *dst = (pixel *)_dst;
-    pixel *src = (pixel *)_src;
-    int16_t *sao_offset_val = sao->offset_val[c_idx];
+    const pixel *src = (const pixel *)_src;
+    const int16_t *sao_offset_val = sao->offset_val[c_idx];
     int sao_eo_class    = sao->eo_class[c_idx];
     int init_x = 0, init_y = 0, width = _width, height = _height;
 
@@ -494,11 +494,11 @@ static void FUNC(sao_edge_restore_1)(uint8_t *_dst, uint8_t *_src,
 //
 ////////////////////////////////////////////////////////////////////////////////
 static void FUNC(put_hevc_pel_pixels)(int16_t *dst,
-                                      uint8_t *_src, ptrdiff_t _srcstride,
+                                      const uint8_t *_src, ptrdiff_t _srcstride,
                                       int height, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    pixel *src          = (pixel *)_src;
+    const pixel *src    = (const pixel *)_src;
     ptrdiff_t srcstride = _srcstride / sizeof(pixel);
 
     for (y = 0; y < height; y++) {
@@ -509,11 +509,11 @@ static void FUNC(put_hevc_pel_pixels)(int16_t *dst,
     }
 }
 
-static void FUNC(put_hevc_pel_uni_pixels)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
+static void FUNC(put_hevc_pel_uni_pixels)(uint8_t *_dst, ptrdiff_t _dststride, const uint8_t *_src, ptrdiff_t _srcstride,
                                           int height, intptr_t mx, intptr_t my, int width)
 {
     int y;
-    pixel *src          = (pixel *)_src;
+    const pixel *src    = (const pixel *)_src;
     ptrdiff_t srcstride = _srcstride / sizeof(pixel);
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
@@ -525,12 +525,12 @@ static void FUNC(put_hevc_pel_uni_pixels)(uint8_t *_dst, ptrdiff_t _dststride, u
     }
 }
 
-static void FUNC(put_hevc_pel_bi_pixels)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                         int16_t *src2,
+static void FUNC(put_hevc_pel_bi_pixels)(uint8_t *_dst, ptrdiff_t _dststride, const uint8_t *_src, ptrdiff_t _srcstride,
+                                         const int16_t *src2,
                                          int height, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    pixel *src          = (pixel *)_src;
+    const pixel *src    = (const pixel *)_src;
     ptrdiff_t srcstride = _srcstride / sizeof(pixel);
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
@@ -551,11 +551,11 @@ static void FUNC(put_hevc_pel_bi_pixels)(uint8_t *_dst, ptrdiff_t _dststride, ui
     }
 }
 
-static void FUNC(put_hevc_pel_uni_w_pixels)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
+static void FUNC(put_hevc_pel_uni_w_pixels)(uint8_t *_dst, ptrdiff_t _dststride, const uint8_t *_src, ptrdiff_t _srcstride,
                                             int height, int denom, int wx, int ox, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    pixel *src          = (pixel *)_src;
+    const pixel *src    = (const pixel *)_src;
     ptrdiff_t srcstride = _srcstride / sizeof(pixel);
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
@@ -575,13 +575,13 @@ static void FUNC(put_hevc_pel_uni_w_pixels)(uint8_t *_dst, ptrdiff_t _dststride,
     }
 }
 
-static void FUNC(put_hevc_pel_bi_w_pixels)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                           int16_t *src2,
+static void FUNC(put_hevc_pel_bi_w_pixels)(uint8_t *_dst, ptrdiff_t _dststride, const uint8_t *_src, ptrdiff_t _srcstride,
+                                           const int16_t *src2,
                                            int height, int denom, int wx0, int wx1,
                                            int ox0, int ox1, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    pixel *src          = (pixel *)_src;
+    const pixel *src    = (const pixel *)_src;
     ptrdiff_t srcstride = _srcstride / sizeof(pixel);
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
@@ -615,11 +615,11 @@ static void FUNC(put_hevc_pel_bi_w_pixels)(uint8_t *_dst, ptrdiff_t _dststride, 
      filter[7] * src[x + 4 * stride])
 
 static void FUNC(put_hevc_qpel_h)(int16_t *dst,
-                                  uint8_t *_src, ptrdiff_t _srcstride,
+                                  const uint8_t *_src, ptrdiff_t _srcstride,
                                   int height, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    pixel        *src       = (pixel*)_src;
+    const pixel  *src       = (const pixel*)_src;
     ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
     const int8_t *filter    = ff_hevc_qpel_filters[mx - 1];
     for (y = 0; y < height; y++) {
@@ -631,11 +631,11 @@ static void FUNC(put_hevc_qpel_h)(int16_t *dst,
 }
 
 static void FUNC(put_hevc_qpel_v)(int16_t *dst,
-                                  uint8_t *_src, ptrdiff_t _srcstride,
+                                  const uint8_t *_src, ptrdiff_t _srcstride,
                                   int height, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    pixel        *src       = (pixel*)_src;
+    const pixel  *src       = (const pixel*)_src;
     ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
     const int8_t *filter    = ff_hevc_qpel_filters[my - 1];
     for (y = 0; y < height; y++)  {
@@ -647,14 +647,14 @@ static void FUNC(put_hevc_qpel_v)(int16_t *dst,
 }
 
 static void FUNC(put_hevc_qpel_hv)(int16_t *dst,
-                                   uint8_t *_src,
+                                   const uint8_t *_src,
                                    ptrdiff_t _srcstride,
                                    int height, intptr_t mx,
                                    intptr_t my, int width)
 {
     int x, y;
     const int8_t *filter;
-    pixel *src = (pixel*)_src;
+    const pixel *src = (const pixel*)_src;
     ptrdiff_t srcstride = _srcstride / sizeof(pixel);
     int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];
     int16_t *tmp = tmp_array;
@@ -679,11 +679,11 @@ static void FUNC(put_hevc_qpel_hv)(int16_t *dst,
 }
 
 static void FUNC(put_hevc_qpel_uni_h)(uint8_t *_dst,  ptrdiff_t _dststride,
-                                      uint8_t *_src, ptrdiff_t _srcstride,
+                                      const uint8_t *_src, ptrdiff_t _srcstride,
                                       int height, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    pixel        *src       = (pixel*)_src;
+    const pixel  *src       = (const pixel*)_src;
     ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
@@ -704,12 +704,12 @@ static void FUNC(put_hevc_qpel_uni_h)(uint8_t *_dst,  ptrdiff_t _dststride,
     }
 }
 
-static void FUNC(put_hevc_qpel_bi_h)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                     int16_t *src2,
+static void FUNC(put_hevc_qpel_bi_h)(uint8_t *_dst, ptrdiff_t _dststride, const uint8_t *_src, ptrdiff_t _srcstride,
+                                     const int16_t *src2,
                                      int height, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    pixel        *src       = (pixel*)_src;
+    const pixel  *src       = (const pixel*)_src;
     ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
@@ -733,11 +733,11 @@ static void FUNC(put_hevc_qpel_bi_h)(uint8_t *_dst, ptrdiff_t _dststride, uint8_
 }
 
 static void FUNC(put_hevc_qpel_uni_v)(uint8_t *_dst,  ptrdiff_t _dststride,
-                                     uint8_t *_src, ptrdiff_t _srcstride,
+                                      const uint8_t *_src, ptrdiff_t _srcstride,
                                      int height, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    pixel        *src       = (pixel*)_src;
+    const pixel  *src       = (const pixel*)_src;
     ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
@@ -759,12 +759,12 @@ static void FUNC(put_hevc_qpel_uni_v)(uint8_t *_dst,  ptrdiff_t _dststride,
 }
 
 
-static void FUNC(put_hevc_qpel_bi_v)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                     int16_t *src2,
+static void FUNC(put_hevc_qpel_bi_v)(uint8_t *_dst, ptrdiff_t _dststride,
+                                     const uint8_t *_src, ptrdiff_t _srcstride, const int16_t *src2,
                                      int height, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    pixel        *src       = (pixel*)_src;
+    const pixel  *src       = (const pixel*)_src;
     ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
@@ -788,12 +788,12 @@ static void FUNC(put_hevc_qpel_bi_v)(uint8_t *_dst, ptrdiff_t _dststride, uint8_
 }
 
 static void FUNC(put_hevc_qpel_uni_hv)(uint8_t *_dst,  ptrdiff_t _dststride,
-                                       uint8_t *_src, ptrdiff_t _srcstride,
+                                       const uint8_t *_src, ptrdiff_t _srcstride,
                                        int height, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
     const int8_t *filter;
-    pixel *src = (pixel*)_src;
+    const pixel *src = (const pixel*)_src;
     ptrdiff_t srcstride = _srcstride / sizeof(pixel);
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
@@ -827,13 +827,13 @@ static void FUNC(put_hevc_qpel_uni_hv)(uint8_t *_dst,  ptrdiff_t _dststride,
     }
 }
 
-static void FUNC(put_hevc_qpel_bi_hv)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                      int16_t *src2,
+static void FUNC(put_hevc_qpel_bi_hv)(uint8_t *_dst, ptrdiff_t _dststride,
+                                      const uint8_t *_src, ptrdiff_t _srcstride, const int16_t *src2,
                                       int height, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
     const int8_t *filter;
-    pixel *src = (pixel*)_src;
+    const pixel *src = (const pixel*)_src;
     ptrdiff_t srcstride = _srcstride / sizeof(pixel);
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
@@ -868,12 +868,12 @@ static void FUNC(put_hevc_qpel_bi_hv)(uint8_t *_dst, ptrdiff_t _dststride, uint8
 }
 
 static void FUNC(put_hevc_qpel_uni_w_h)(uint8_t *_dst,  ptrdiff_t _dststride,
-                                        uint8_t *_src, ptrdiff_t _srcstride,
+                                        const uint8_t *_src, ptrdiff_t _srcstride,
                                         int height, int denom, int wx, int ox,
                                         intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    pixel        *src       = (pixel*)_src;
+    const pixel  *src       = (const pixel*)_src;
     ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
@@ -894,13 +894,13 @@ static void FUNC(put_hevc_qpel_uni_w_h)(uint8_t *_dst,  ptrdiff_t _dststride,
     }
 }
 
-static void FUNC(put_hevc_qpel_bi_w_h)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                       int16_t *src2,
+static void FUNC(put_hevc_qpel_bi_w_h)(uint8_t *_dst, ptrdiff_t _dststride,
+                                       const uint8_t *_src, ptrdiff_t _srcstride, const int16_t *src2,
                                        int height, int denom, int wx0, int wx1,
                                        int ox0, int ox1, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    pixel        *src       = (pixel*)_src;
+    const pixel  *src       = (const pixel*)_src;
     ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
@@ -923,12 +923,12 @@ static void FUNC(put_hevc_qpel_bi_w_h)(uint8_t *_dst, ptrdiff_t _dststride, uint
 }
 
 static void FUNC(put_hevc_qpel_uni_w_v)(uint8_t *_dst,  ptrdiff_t _dststride,
-                                        uint8_t *_src, ptrdiff_t _srcstride,
+                                        const uint8_t *_src, ptrdiff_t _srcstride,
                                         int height, int denom, int wx, int ox,
                                         intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    pixel        *src       = (pixel*)_src;
+    const pixel  *src       = (const pixel*)_src;
     ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
@@ -949,13 +949,13 @@ static void FUNC(put_hevc_qpel_uni_w_v)(uint8_t *_dst,  ptrdiff_t _dststride,
     }
 }
 
-static void FUNC(put_hevc_qpel_bi_w_v)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                       int16_t *src2,
+static void FUNC(put_hevc_qpel_bi_w_v)(uint8_t *_dst, ptrdiff_t _dststride,
+                                       const uint8_t *_src, ptrdiff_t _srcstride, const int16_t *src2,
                                        int height, int denom, int wx0, int wx1,
                                        int ox0, int ox1, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    pixel        *src       = (pixel*)_src;
+    const pixel  *src       = (const pixel*)_src;
     ptrdiff_t     srcstride = _srcstride / sizeof(pixel);
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
@@ -978,13 +978,13 @@ static void FUNC(put_hevc_qpel_bi_w_v)(uint8_t *_dst, ptrdiff_t _dststride, uint
 }
 
 static void FUNC(put_hevc_qpel_uni_w_hv)(uint8_t *_dst,  ptrdiff_t _dststride,
-                                         uint8_t *_src, ptrdiff_t _srcstride,
+                                         const uint8_t *_src, ptrdiff_t _srcstride,
                                          int height, int denom, int wx, int ox,
                                          intptr_t mx, intptr_t my, int width)
 {
     int x, y;
     const int8_t *filter;
-    pixel *src = (pixel*)_src;
+    const pixel *src = (const pixel*)_src;
     ptrdiff_t srcstride = _srcstride / sizeof(pixel);
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
@@ -1018,14 +1018,14 @@ static void FUNC(put_hevc_qpel_uni_w_hv)(uint8_t *_dst,  ptrdiff_t _dststride,
     }
 }
 
-static void FUNC(put_hevc_qpel_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                        int16_t *src2,
+static void FUNC(put_hevc_qpel_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride,
+                                        const uint8_t *_src, ptrdiff_t _srcstride, const int16_t *src2,
                                         int height, int denom, int wx0, int wx1,
                                         int ox0, int ox1, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
     const int8_t *filter;
-    pixel *src = (pixel*)_src;
+    const pixel *src = (const pixel*)_src;
     ptrdiff_t srcstride = _srcstride / sizeof(pixel);
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
@@ -1068,11 +1068,11 @@ static void FUNC(put_hevc_qpel_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride, uin
      filter[3] * src[x + 2 * stride])
 
 static void FUNC(put_hevc_epel_h)(int16_t *dst,
-                                  uint8_t *_src, ptrdiff_t _srcstride,
+                                  const uint8_t *_src, ptrdiff_t _srcstride,
                                   int height, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    pixel *src = (pixel *)_src;
+    const pixel *src = (const pixel *)_src;
     ptrdiff_t srcstride  = _srcstride / sizeof(pixel);
     const int8_t *filter = ff_hevc_epel_filters[mx - 1];
     for (y = 0; y < height; y++) {
@@ -1084,11 +1084,11 @@ static void FUNC(put_hevc_epel_h)(int16_t *dst,
 }
 
 static void FUNC(put_hevc_epel_v)(int16_t *dst,
-                                  uint8_t *_src, ptrdiff_t _srcstride,
+                                  const uint8_t *_src, ptrdiff_t _srcstride,
                                   int height, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    pixel *src = (pixel *)_src;
+    const pixel *src = (const pixel *)_src;
     ptrdiff_t srcstride = _srcstride / sizeof(pixel);
     const int8_t *filter = ff_hevc_epel_filters[my - 1];
 
@@ -1101,11 +1101,11 @@ static void FUNC(put_hevc_epel_v)(int16_t *dst,
 }
 
 static void FUNC(put_hevc_epel_hv)(int16_t *dst,
-                                   uint8_t *_src, ptrdiff_t _srcstride,
+                                   const uint8_t *_src, ptrdiff_t _srcstride,
                                    int height, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    pixel *src = (pixel *)_src;
+    const pixel *src = (const pixel *)_src;
     ptrdiff_t srcstride = _srcstride / sizeof(pixel);
     const int8_t *filter = ff_hevc_epel_filters[mx - 1];
     int16_t tmp_array[(MAX_PB_SIZE + EPEL_EXTRA) * MAX_PB_SIZE];
@@ -1131,11 +1131,11 @@ static void FUNC(put_hevc_epel_hv)(int16_t *dst,
     }
 }
 
-static void FUNC(put_hevc_epel_uni_h)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
+static void FUNC(put_hevc_epel_uni_h)(uint8_t *_dst, ptrdiff_t _dststride, const uint8_t *_src, ptrdiff_t _srcstride,
                                       int height, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    pixel *src = (pixel *)_src;
+    const pixel *src = (const pixel *)_src;
     ptrdiff_t srcstride  = _srcstride / sizeof(pixel);
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
@@ -1155,12 +1155,12 @@ static void FUNC(put_hevc_epel_uni_h)(uint8_t *_dst, ptrdiff_t _dststride, uint8
     }
 }
 
-static void FUNC(put_hevc_epel_bi_h)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                     int16_t *src2,
+static void FUNC(put_hevc_epel_bi_h)(uint8_t *_dst, ptrdiff_t _dststride,
+                                     const uint8_t *_src, ptrdiff_t _srcstride, const int16_t *src2,
                                      int height, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    pixel *src = (pixel *)_src;
+    const pixel *src = (const pixel *)_src;
     ptrdiff_t srcstride  = _srcstride / sizeof(pixel);
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
@@ -1182,11 +1182,11 @@ static void FUNC(put_hevc_epel_bi_h)(uint8_t *_dst, ptrdiff_t _dststride, uint8_
     }
 }
 
-static void FUNC(put_hevc_epel_uni_v)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
+static void FUNC(put_hevc_epel_uni_v)(uint8_t *_dst, ptrdiff_t _dststride, const uint8_t *_src, ptrdiff_t _srcstride,
                                       int height, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    pixel *src = (pixel *)_src;
+    const pixel *src = (const pixel *)_src;
     ptrdiff_t srcstride  = _srcstride / sizeof(pixel);
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
@@ -1206,12 +1206,12 @@ static void FUNC(put_hevc_epel_uni_v)(uint8_t *_dst, ptrdiff_t _dststride, uint8
     }
 }
 
-static void FUNC(put_hevc_epel_bi_v)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                     int16_t *src2,
+static void FUNC(put_hevc_epel_bi_v)(uint8_t *_dst, ptrdiff_t _dststride,
+                                     const uint8_t *_src, ptrdiff_t _srcstride, const int16_t *src2,
                                      int height, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    pixel *src = (pixel *)_src;
+    const pixel *src = (const pixel *)_src;
     ptrdiff_t srcstride  = _srcstride / sizeof(pixel);
     const int8_t *filter = ff_hevc_epel_filters[my - 1];
     pixel *dst          = (pixel *)_dst;
@@ -1232,11 +1232,11 @@ static void FUNC(put_hevc_epel_bi_v)(uint8_t *_dst, ptrdiff_t _dststride, uint8_
     }
 }
 
-static void FUNC(put_hevc_epel_uni_hv)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
+static void FUNC(put_hevc_epel_uni_hv)(uint8_t *_dst, ptrdiff_t _dststride, const uint8_t *_src, ptrdiff_t _srcstride,
                                        int height, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    pixel *src = (pixel *)_src;
+    const pixel *src = (const pixel *)_src;
     ptrdiff_t srcstride = _srcstride / sizeof(pixel);
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
@@ -1270,12 +1270,12 @@ static void FUNC(put_hevc_epel_uni_hv)(uint8_t *_dst, ptrdiff_t _dststride, uint
     }
 }
 
-static void FUNC(put_hevc_epel_bi_hv)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                      int16_t *src2,
+static void FUNC(put_hevc_epel_bi_hv)(uint8_t *_dst, ptrdiff_t _dststride,
+                                      const uint8_t *_src, ptrdiff_t _srcstride, const int16_t *src2,
                                       int height, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    pixel *src = (pixel *)_src;
+    const pixel *src = (const pixel *)_src;
     ptrdiff_t srcstride = _srcstride / sizeof(pixel);
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
@@ -1310,11 +1310,11 @@ static void FUNC(put_hevc_epel_bi_hv)(uint8_t *_dst, ptrdiff_t _dststride, uint8
     }
 }
 
-static void FUNC(put_hevc_epel_uni_w_h)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
+static void FUNC(put_hevc_epel_uni_w_h)(uint8_t *_dst, ptrdiff_t _dststride, const uint8_t *_src, ptrdiff_t _srcstride,
                                         int height, int denom, int wx, int ox, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    pixel *src = (pixel *)_src;
+    const pixel *src = (const pixel *)_src;
     ptrdiff_t srcstride  = _srcstride / sizeof(pixel);
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
@@ -1336,13 +1336,13 @@ static void FUNC(put_hevc_epel_uni_w_h)(uint8_t *_dst, ptrdiff_t _dststride, uin
     }
 }
 
-static void FUNC(put_hevc_epel_bi_w_h)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                       int16_t *src2,
+static void FUNC(put_hevc_epel_bi_w_h)(uint8_t *_dst, ptrdiff_t _dststride,
+                                       const uint8_t *_src, ptrdiff_t _srcstride, const int16_t *src2,
                                        int height, int denom, int wx0, int wx1,
                                        int ox0, int ox1, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    pixel *src = (pixel *)_src;
+    const pixel *src = (const pixel *)_src;
     ptrdiff_t srcstride  = _srcstride / sizeof(pixel);
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
@@ -1362,11 +1362,11 @@ static void FUNC(put_hevc_epel_bi_w_h)(uint8_t *_dst, ptrdiff_t _dststride, uint
     }
 }
 
-static void FUNC(put_hevc_epel_uni_w_v)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
+static void FUNC(put_hevc_epel_uni_w_v)(uint8_t *_dst, ptrdiff_t _dststride, const uint8_t *_src, ptrdiff_t _srcstride,
                                         int height, int denom, int wx, int ox, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    pixel *src = (pixel *)_src;
+    const pixel *src = (const pixel *)_src;
     ptrdiff_t srcstride  = _srcstride / sizeof(pixel);
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
@@ -1388,13 +1388,13 @@ static void FUNC(put_hevc_epel_uni_w_v)(uint8_t *_dst, ptrdiff_t _dststride, uin
     }
 }
 
-static void FUNC(put_hevc_epel_bi_w_v)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                       int16_t *src2,
+static void FUNC(put_hevc_epel_bi_w_v)(uint8_t *_dst, ptrdiff_t _dststride,
+                                       const uint8_t *_src, ptrdiff_t _srcstride, const int16_t *src2,
                                        int height, int denom, int wx0, int wx1,
                                        int ox0, int ox1, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    pixel *src = (pixel *)_src;
+    const pixel *src = (const pixel *)_src;
     ptrdiff_t srcstride  = _srcstride / sizeof(pixel);
     const int8_t *filter = ff_hevc_epel_filters[my - 1];
     pixel *dst          = (pixel *)_dst;
@@ -1414,11 +1414,11 @@ static void FUNC(put_hevc_epel_bi_w_v)(uint8_t *_dst, ptrdiff_t _dststride, uint
     }
 }
 
-static void FUNC(put_hevc_epel_uni_w_hv)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
+static void FUNC(put_hevc_epel_uni_w_hv)(uint8_t *_dst, ptrdiff_t _dststride, const uint8_t *_src, ptrdiff_t _srcstride,
                                          int height, int denom, int wx, int ox, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    pixel *src = (pixel *)_src;
+    const pixel *src = (const pixel *)_src;
     ptrdiff_t srcstride = _srcstride / sizeof(pixel);
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
@@ -1453,13 +1453,13 @@ static void FUNC(put_hevc_epel_uni_w_hv)(uint8_t *_dst, ptrdiff_t _dststride, ui
     }
 }
 
-static void FUNC(put_hevc_epel_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride, uint8_t *_src, ptrdiff_t _srcstride,
-                                        int16_t *src2,
+static void FUNC(put_hevc_epel_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride,
+                                        const uint8_t *_src, ptrdiff_t _srcstride, const int16_t *src2,
                                         int height, int denom, int wx0, int wx1,
                                         int ox0, int ox1, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    pixel *src = (pixel *)_src;
+    const pixel *src = (const pixel *)_src;
     ptrdiff_t srcstride = _srcstride / sizeof(pixel);
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
@@ -1515,8 +1515,8 @@ static void FUNC(put_hevc_epel_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride, uin
 
 static void FUNC(hevc_loop_filter_luma)(uint8_t *_pix,
                                         ptrdiff_t _xstride, ptrdiff_t _ystride,
-                                        int beta, int *_tc,
-                                        uint8_t *_no_p, uint8_t *_no_q)
+                                        int beta, const int *_tc,
+                                        const uint8_t *_no_p, const uint8_t *_no_q)
 {
     int d, j;
     pixel *pix        = (pixel *)_pix;
@@ -1610,8 +1610,8 @@ static void FUNC(hevc_loop_filter_luma)(uint8_t *_pix,
 }
 
 static void FUNC(hevc_loop_filter_chroma)(uint8_t *_pix, ptrdiff_t _xstride,
-                                          ptrdiff_t _ystride, int *_tc,
-                                          uint8_t *_no_p, uint8_t *_no_q)
+                                          ptrdiff_t _ystride, const int *_tc,
+                                          const uint8_t *_no_p, const uint8_t *_no_q)
 {
     int d, j, no_p, no_q;
     pixel *pix        = (pixel *)_pix;
@@ -1644,30 +1644,30 @@ static void FUNC(hevc_loop_filter_chroma)(uint8_t *_pix, ptrdiff_t _xstride,
 }
 
 static void FUNC(hevc_h_loop_filter_chroma)(uint8_t *pix, ptrdiff_t stride,
-                                            int32_t *tc, uint8_t *no_p,
-                                            uint8_t *no_q)
+                                            const int32_t *tc, const uint8_t *no_p,
+                                            const uint8_t *no_q)
 {
     FUNC(hevc_loop_filter_chroma)(pix, stride, sizeof(pixel), tc, no_p, no_q);
 }
 
 static void FUNC(hevc_v_loop_filter_chroma)(uint8_t *pix, ptrdiff_t stride,
-                                            int32_t *tc, uint8_t *no_p,
-                                            uint8_t *no_q)
+                                            const int32_t *tc, const uint8_t *no_p,
+                                            const uint8_t *no_q)
 {
     FUNC(hevc_loop_filter_chroma)(pix, sizeof(pixel), stride, tc, no_p, no_q);
 }
 
 static void FUNC(hevc_h_loop_filter_luma)(uint8_t *pix, ptrdiff_t stride,
-                                          int beta, int32_t *tc, uint8_t *no_p,
-                                          uint8_t *no_q)
+                                          int beta, const int32_t *tc, const uint8_t *no_p,
+                                          const uint8_t *no_q)
 {
     FUNC(hevc_loop_filter_luma)(pix, stride, sizeof(pixel),
                                 beta, tc, no_p, no_q);
 }
 
 static void FUNC(hevc_v_loop_filter_luma)(uint8_t *pix, ptrdiff_t stride,
-                                          int beta, int32_t *tc, uint8_t *no_p,
-                                          uint8_t *no_q)
+                                          int beta, const int32_t *tc, const uint8_t *no_p,
+                                          const uint8_t *no_q)
 {
     FUNC(hevc_loop_filter_luma)(pix, sizeof(pixel), stride,
                                 beta, tc, no_p, no_q);

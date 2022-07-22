@@ -22,8 +22,8 @@
 #include "libavcodec/mips/hevcdsp_mips.h"
 
 static void hevc_loopfilter_luma_hor_msa(uint8_t *src, int32_t stride,
-                                         int32_t beta, int32_t *tc,
-                                         uint8_t *p_is_pcm, uint8_t *q_is_pcm)
+                                         int32_t beta, const int32_t *tc,
+                                         const uint8_t *p_is_pcm, const uint8_t *q_is_pcm)
 {
     uint8_t *p3 = src - (stride << 2);
     uint8_t *p2 = src - ((stride << 1) + stride);
@@ -448,8 +448,8 @@ static void hevc_loopfilter_luma_hor_msa(uint8_t *src, int32_t stride,
 }
 
 static void hevc_loopfilter_luma_ver_msa(uint8_t *src, int32_t stride,
-                                         int32_t beta, int32_t *tc,
-                                         uint8_t *p_is_pcm, uint8_t *q_is_pcm)
+                                         int32_t beta, const int32_t *tc,
+                                         const uint8_t *p_is_pcm, const uint8_t *q_is_pcm)
 {
     uint8_t *p3 = src;
     uint8_t *p2 = src + 3 * stride;
@@ -914,8 +914,8 @@ static void hevc_loopfilter_luma_ver_msa(uint8_t *src, int32_t stride,
 }
 
 static void hevc_loopfilter_chroma_hor_msa(uint8_t *src, int32_t stride,
-                                           int32_t *tc, uint8_t *p_is_pcm,
-                                           uint8_t *q_is_pcm)
+                                           const int32_t *tc, const uint8_t *p_is_pcm,
+                                           const uint8_t *q_is_pcm)
 {
     uint8_t *p1_ptr = src - (stride << 1);
     uint8_t *p0_ptr = src - stride;
@@ -977,8 +977,8 @@ static void hevc_loopfilter_chroma_hor_msa(uint8_t *src, int32_t stride,
 }
 
 static void hevc_loopfilter_chroma_ver_msa(uint8_t *src, int32_t stride,
-                                           int32_t *tc, uint8_t *p_is_pcm,
-                                           uint8_t *q_is_pcm)
+                                           const int32_t *tc, const uint8_t *p_is_pcm,
+                                           const uint8_t *q_is_pcm)
 {
     v2i64 cmp0, cmp1, p_is_pcm_vec, q_is_pcm_vec;
     v16u8 src0, src1, src2, src3, src4, src5, src6, src7;
@@ -1038,9 +1038,9 @@ static void hevc_loopfilter_chroma_ver_msa(uint8_t *src, int32_t stride,
 }
 
 static void hevc_sao_band_filter_4width_msa(uint8_t *dst, int32_t dst_stride,
-                                            uint8_t *src, int32_t src_stride,
+                                            const uint8_t *src, int32_t src_stride,
                                             int32_t sao_left_class,
-                                            int16_t *sao_offset_val,
+                                            const int16_t *sao_offset_val,
                                             int32_t height)
 {
     v16u8 src0, src1, src2, src3;
@@ -1100,9 +1100,9 @@ static void hevc_sao_band_filter_4width_msa(uint8_t *dst, int32_t dst_stride,
 }
 
 static void hevc_sao_band_filter_8width_msa(uint8_t *dst, int32_t dst_stride,
-                                            uint8_t *src, int32_t src_stride,
+                                            const uint8_t *src, int32_t src_stride,
                                             int32_t sao_left_class,
-                                            int16_t *sao_offset_val,
+                                            const int16_t *sao_offset_val,
                                             int32_t height)
 {
     v16u8 src0, src1, src2, src3;
@@ -1172,10 +1172,10 @@ static void hevc_sao_band_filter_8width_msa(uint8_t *dst, int32_t dst_stride,
 
 static void hevc_sao_band_filter_16multiple_msa(uint8_t *dst,
                                                 int32_t dst_stride,
-                                                uint8_t *src,
+                                                const uint8_t *src,
                                                 int32_t src_stride,
                                                 int32_t sao_left_class,
-                                                int16_t *sao_offset_val,
+                                                const int16_t *sao_offset_val,
                                                 int32_t width, int32_t height)
 {
     int32_t w_cnt;
@@ -1254,9 +1254,9 @@ static void hevc_sao_band_filter_16multiple_msa(uint8_t *dst,
 
 static void hevc_sao_edge_filter_0degree_4width_msa(uint8_t *dst,
                                                     int32_t dst_stride,
-                                                    uint8_t *src,
+                                                    const uint8_t *src,
                                                     int32_t src_stride,
-                                                    int16_t *sao_offset_val,
+                                                    const int16_t *sao_offset_val,
                                                     int32_t height)
 {
     uint32_t dst_val0, dst_val1;
@@ -1346,9 +1346,9 @@ static void hevc_sao_edge_filter_0degree_4width_msa(uint8_t *dst,
 
 static void hevc_sao_edge_filter_0degree_8width_msa(uint8_t *dst,
                                                     int32_t dst_stride,
-                                                    uint8_t *src,
+                                                    const uint8_t *src,
                                                     int32_t src_stride,
-                                                    int16_t *sao_offset_val,
+                                                    const int16_t *sao_offset_val,
                                                     int32_t height)
 {
     uint64_t dst_val0, dst_val1;
@@ -1440,13 +1440,14 @@ static void hevc_sao_edge_filter_0degree_8width_msa(uint8_t *dst,
 
 static void hevc_sao_edge_filter_0degree_16multiple_msa(uint8_t *dst,
                                                         int32_t dst_stride,
-                                                        uint8_t *src,
+                                                        const uint8_t *src,
                                                         int32_t src_stride,
-                                                        int16_t *sao_offset_val,
+                                                        const int16_t *sao_offset_val,
                                                         int32_t width,
                                                         int32_t height)
 {
-    uint8_t *dst_ptr, *src_minus1;
+    const uint8_t *src_minus1;
+    uint8_t *dst_ptr;
     int32_t v_cnt;
     v16i8 edge_idx = { 1, 2, 0, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     v16u8 const1 = (v16u8) __msa_ldi_b(1);
@@ -1556,9 +1557,9 @@ static void hevc_sao_edge_filter_0degree_16multiple_msa(uint8_t *dst,
 
 static void hevc_sao_edge_filter_90degree_4width_msa(uint8_t *dst,
                                                      int32_t dst_stride,
-                                                     uint8_t *src,
+                                                     const uint8_t *src,
                                                      int32_t src_stride,
-                                                     int16_t *sao_offset_val,
+                                                     const int16_t *sao_offset_val,
                                                      int32_t height)
 {
     uint32_t dst_val0, dst_val1;
@@ -1661,9 +1662,9 @@ static void hevc_sao_edge_filter_90degree_4width_msa(uint8_t *dst,
 
 static void hevc_sao_edge_filter_90degree_8width_msa(uint8_t *dst,
                                                      int32_t dst_stride,
-                                                     uint8_t *src,
+                                                     const uint8_t *src,
                                                      int32_t src_stride,
-                                                     int16_t *sao_offset_val,
+                                                     const int16_t *sao_offset_val,
                                                      int32_t height)
 {
     uint64_t dst_val0, dst_val1;
@@ -1763,14 +1764,14 @@ static void hevc_sao_edge_filter_90degree_8width_msa(uint8_t *dst,
 
 static void hevc_sao_edge_filter_90degree_16multiple_msa(uint8_t *dst,
                                                          int32_t dst_stride,
-                                                         uint8_t *src,
+                                                         const uint8_t *src,
                                                          int32_t src_stride,
-                                                         int16_t *
+                                                         const int16_t *
                                                          sao_offset_val,
                                                          int32_t width,
                                                          int32_t height)
 {
-    uint8_t *src_orig = src;
+    const uint8_t *src_orig = src;
     uint8_t *dst_orig = dst;
     int32_t h_cnt, v_cnt;
     v16i8 edge_idx = { 1, 2, 0, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -1865,12 +1866,12 @@ static void hevc_sao_edge_filter_90degree_16multiple_msa(uint8_t *dst,
 
 static void hevc_sao_edge_filter_45degree_4width_msa(uint8_t *dst,
                                                      int32_t dst_stride,
-                                                     uint8_t *src,
+                                                     const uint8_t *src,
                                                      int32_t src_stride,
-                                                     int16_t *sao_offset_val,
+                                                     const int16_t *sao_offset_val,
                                                      int32_t height)
 {
-    uint8_t *src_orig;
+    const uint8_t *src_orig;
     uint32_t dst_val0, dst_val1;
     v16i8 edge_idx = { 1, 2, 0, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     v16u8 const1 = (v16u8) __msa_ldi_b(1);
@@ -1978,12 +1979,12 @@ static void hevc_sao_edge_filter_45degree_4width_msa(uint8_t *dst,
 
 static void hevc_sao_edge_filter_45degree_8width_msa(uint8_t *dst,
                                                      int32_t dst_stride,
-                                                     uint8_t *src,
+                                                     const uint8_t *src,
                                                      int32_t src_stride,
-                                                     int16_t *sao_offset_val,
+                                                     const int16_t *sao_offset_val,
                                                      int32_t height)
 {
-    uint8_t *src_orig;
+    const uint8_t *src_orig;
     uint64_t dst_val0, dst_val1;
     v16i8 edge_idx = { 1, 2, 0, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     v16u8 const1 = (v16u8) __msa_ldi_b(1);
@@ -2094,14 +2095,14 @@ static void hevc_sao_edge_filter_45degree_8width_msa(uint8_t *dst,
 
 static void hevc_sao_edge_filter_45degree_16multiple_msa(uint8_t *dst,
                                                          int32_t dst_stride,
-                                                         uint8_t *src,
+                                                         const uint8_t *src,
                                                          int32_t src_stride,
-                                                         int16_t *
+                                                         const int16_t *
                                                          sao_offset_val,
                                                          int32_t width,
                                                          int32_t height)
 {
-    uint8_t *src_orig = src;
+    const uint8_t *src_orig = src;
     uint8_t *dst_orig = dst;
     int32_t v_cnt;
     v16i8 edge_idx = { 1, 2, 0, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -2214,12 +2215,12 @@ static void hevc_sao_edge_filter_45degree_16multiple_msa(uint8_t *dst,
 
 static void hevc_sao_edge_filter_135degree_4width_msa(uint8_t *dst,
                                                       int32_t dst_stride,
-                                                      uint8_t *src,
+                                                      const uint8_t *src,
                                                       int32_t src_stride,
-                                                      int16_t *sao_offset_val,
+                                                      const int16_t *sao_offset_val,
                                                       int32_t height)
 {
-    uint8_t *src_orig;
+    const uint8_t *src_orig;
     uint32_t dst_val0, dst_val1;
     v16i8 edge_idx = { 1, 2, 0, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     v16u8 const1 = (v16u8) __msa_ldi_b(1);
@@ -2329,12 +2330,12 @@ static void hevc_sao_edge_filter_135degree_4width_msa(uint8_t *dst,
 
 static void hevc_sao_edge_filter_135degree_8width_msa(uint8_t *dst,
                                                       int32_t dst_stride,
-                                                      uint8_t *src,
+                                                      const uint8_t *src,
                                                       int32_t src_stride,
-                                                      int16_t *sao_offset_val,
+                                                      const int16_t *sao_offset_val,
                                                       int32_t height)
 {
-    uint8_t *src_orig;
+    const uint8_t *src_orig;
     uint64_t dst_val0, dst_val1;
     v16i8 edge_idx = { 1, 2, 0, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     v16u8 const1 = (v16u8) __msa_ldi_b(1);
@@ -2441,14 +2442,15 @@ static void hevc_sao_edge_filter_135degree_8width_msa(uint8_t *dst,
 
 static void hevc_sao_edge_filter_135degree_16multiple_msa(uint8_t *dst,
                                                           int32_t dst_stride,
-                                                          uint8_t *src,
+                                                          const uint8_t *src,
                                                           int32_t src_stride,
-                                                          int16_t *
+                                                          const int16_t *
                                                           sao_offset_val,
                                                           int32_t width,
                                                           int32_t height)
 {
-    uint8_t *src_orig, *dst_orig;
+    const uint8_t *src_orig;
+    uint8_t *dst_orig;
     int32_t v_cnt;
     v16i8 edge_idx = { 1, 2, 0, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     v16u8 const1 = (v16u8) __msa_ldi_b(1);
@@ -2563,39 +2565,39 @@ static void hevc_sao_edge_filter_135degree_16multiple_msa(uint8_t *dst,
 
 void ff_hevc_loop_filter_luma_h_8_msa(uint8_t *src,
                                       ptrdiff_t src_stride,
-                                      int32_t beta, int32_t *tc,
-                                      uint8_t *no_p, uint8_t *no_q)
+                                      int32_t beta, const int32_t *tc,
+                                      const uint8_t *no_p, const uint8_t *no_q)
 {
     hevc_loopfilter_luma_hor_msa(src, src_stride, beta, tc, no_p, no_q);
 }
 
 void ff_hevc_loop_filter_luma_v_8_msa(uint8_t *src,
                                       ptrdiff_t src_stride,
-                                      int32_t beta, int32_t *tc,
-                                      uint8_t *no_p, uint8_t *no_q)
+                                      int32_t beta, const int32_t *tc,
+                                      const uint8_t *no_p, const uint8_t *no_q)
 {
     hevc_loopfilter_luma_ver_msa(src, src_stride, beta, tc, no_p, no_q);
 }
 
 void ff_hevc_loop_filter_chroma_h_8_msa(uint8_t *src,
                                         ptrdiff_t src_stride,
-                                        int32_t *tc, uint8_t *no_p,
-                                        uint8_t *no_q)
+                                        const int32_t *tc, const uint8_t *no_p,
+                                        const uint8_t *no_q)
 {
     hevc_loopfilter_chroma_hor_msa(src, src_stride, tc, no_p, no_q);
 }
 
 void ff_hevc_loop_filter_chroma_v_8_msa(uint8_t *src,
                                         ptrdiff_t src_stride,
-                                        int32_t *tc, uint8_t *no_p,
-                                        uint8_t *no_q)
+                                        const int32_t *tc, const uint8_t *no_p,
+                                        const uint8_t *no_q)
 {
     hevc_loopfilter_chroma_ver_msa(src, src_stride, tc, no_p, no_q);
 }
 
-void ff_hevc_sao_band_filter_0_8_msa(uint8_t *dst, uint8_t *src,
+void ff_hevc_sao_band_filter_0_8_msa(uint8_t *dst, const uint8_t *src,
                                      ptrdiff_t stride_dst, ptrdiff_t stride_src,
-                                     int16_t *sao_offset_val, int sao_left_class,
+                                     const int16_t *sao_offset_val, int sao_left_class,
                                      int width, int height)
 {
     if (width >> 4) {
@@ -2621,9 +2623,9 @@ void ff_hevc_sao_band_filter_0_8_msa(uint8_t *dst, uint8_t *src,
     }
 }
 
-void ff_hevc_sao_edge_filter_8_msa(uint8_t *dst, uint8_t *src,
+void ff_hevc_sao_edge_filter_8_msa(uint8_t *dst, const uint8_t *src,
                                    ptrdiff_t stride_dst,
-                                   int16_t *sao_offset_val,
+                                   const int16_t *sao_offset_val,
                                    int eo, int width, int height)
 {
     ptrdiff_t stride_src = (2 * MAX_PB_SIZE + AV_INPUT_BUFFER_PADDING_SIZE) / sizeof(uint8_t);

@@ -29,7 +29,7 @@ static const uint8_t ff_hevc_mask_arr[16 * 2] __attribute__((aligned(0x40))) = {
     0, 1, 1, 2, 2, 3, 3, 4, 16, 17, 17, 18, 18, 19, 19, 20
 };
 
-static void hevc_copy_4w_msa(uint8_t *src, int32_t src_stride,
+static void hevc_copy_4w_msa(const uint8_t *src, int32_t src_stride,
                              int16_t *dst, int32_t dst_stride,
                              int32_t height)
 {
@@ -77,7 +77,7 @@ static void hevc_copy_4w_msa(uint8_t *src, int32_t src_stride,
     }
 }
 
-static void hevc_copy_6w_msa(uint8_t *src, int32_t src_stride,
+static void hevc_copy_6w_msa(const uint8_t *src, int32_t src_stride,
                              int16_t *dst, int32_t dst_stride,
                              int32_t height)
 {
@@ -101,7 +101,7 @@ static void hevc_copy_6w_msa(uint8_t *src, int32_t src_stride,
     }
 }
 
-static void hevc_copy_8w_msa(uint8_t *src, int32_t src_stride,
+static void hevc_copy_8w_msa(const uint8_t *src, int32_t src_stride,
                              int16_t *dst, int32_t dst_stride,
                              int32_t height)
 {
@@ -162,7 +162,7 @@ static void hevc_copy_8w_msa(uint8_t *src, int32_t src_stride,
     }
 }
 
-static void hevc_copy_12w_msa(uint8_t *src, int32_t src_stride,
+static void hevc_copy_12w_msa(const uint8_t *src, int32_t src_stride,
                               int16_t *dst, int32_t dst_stride,
                               int32_t height)
 {
@@ -199,7 +199,7 @@ static void hevc_copy_12w_msa(uint8_t *src, int32_t src_stride,
     }
 }
 
-static void hevc_copy_16w_msa(uint8_t *src, int32_t src_stride,
+static void hevc_copy_16w_msa(const uint8_t *src, int32_t src_stride,
                               int16_t *dst, int32_t dst_stride,
                               int32_t height)
 {
@@ -290,7 +290,7 @@ static void hevc_copy_16w_msa(uint8_t *src, int32_t src_stride,
     }
 }
 
-static void hevc_copy_24w_msa(uint8_t *src, int32_t src_stride,
+static void hevc_copy_24w_msa(const uint8_t *src, int32_t src_stride,
                               int16_t *dst, int32_t dst_stride,
                               int32_t height)
 {
@@ -319,7 +319,7 @@ static void hevc_copy_24w_msa(uint8_t *src, int32_t src_stride,
     }
 }
 
-static void hevc_copy_32w_msa(uint8_t *src, int32_t src_stride,
+static void hevc_copy_32w_msa(const uint8_t *src, int32_t src_stride,
                               int16_t *dst, int32_t dst_stride,
                               int32_t height)
 {
@@ -357,7 +357,7 @@ static void hevc_copy_32w_msa(uint8_t *src, int32_t src_stride,
     }
 }
 
-static void hevc_copy_48w_msa(uint8_t *src, int32_t src_stride,
+static void hevc_copy_48w_msa(const uint8_t *src, int32_t src_stride,
                               int16_t *dst, int32_t dst_stride,
                               int32_t height)
 {
@@ -408,7 +408,7 @@ static void hevc_copy_48w_msa(uint8_t *src, int32_t src_stride,
     }
 }
 
-static void hevc_copy_64w_msa(uint8_t *src, int32_t src_stride,
+static void hevc_copy_64w_msa(const uint8_t *src, int32_t src_stride,
                               int16_t *dst, int32_t dst_stride,
                               int32_t height)
 {
@@ -445,7 +445,7 @@ static void hevc_copy_64w_msa(uint8_t *src, int32_t src_stride,
     }
 }
 
-static void hevc_hz_8t_4w_msa(uint8_t *src, int32_t src_stride,
+static void hevc_hz_8t_4w_msa(const uint8_t *src, int32_t src_stride,
                               int16_t *dst, int32_t dst_stride,
                               const int8_t *filter, int32_t height)
 {
@@ -500,7 +500,7 @@ static void hevc_hz_8t_4w_msa(uint8_t *src, int32_t src_stride,
     }
 }
 
-static void hevc_hz_8t_8w_msa(uint8_t *src, int32_t src_stride,
+static void hevc_hz_8t_8w_msa(const uint8_t *src, int32_t src_stride,
                               int16_t *dst, int32_t dst_stride,
                               const int8_t *filter, int32_t height)
 {
@@ -555,7 +555,7 @@ static void hevc_hz_8t_8w_msa(uint8_t *src, int32_t src_stride,
     }
 }
 
-static void hevc_hz_8t_12w_msa(uint8_t *src, int32_t src_stride,
+static void hevc_hz_8t_12w_msa(const uint8_t *src, int32_t src_stride,
                                int16_t *dst, int32_t dst_stride,
                                const int8_t *filter, int32_t height)
 {
@@ -630,7 +630,7 @@ static void hevc_hz_8t_12w_msa(uint8_t *src, int32_t src_stride,
     }
 }
 
-static void hevc_hz_8t_16w_msa(uint8_t *src, int32_t src_stride,
+static void hevc_hz_8t_16w_msa(const uint8_t *src, int32_t src_stride,
                                int16_t *dst, int32_t dst_stride,
                                const int8_t *filter, int32_t height)
 {
@@ -687,7 +687,7 @@ static void hevc_hz_8t_16w_msa(uint8_t *src, int32_t src_stride,
     }
 }
 
-static void hevc_hz_8t_24w_msa(uint8_t *src, int32_t src_stride,
+static void hevc_hz_8t_24w_msa(const uint8_t *src, int32_t src_stride,
                                int16_t *dst, int32_t dst_stride,
                                const int8_t *filter, int32_t height)
 {
@@ -762,7 +762,7 @@ static void hevc_hz_8t_24w_msa(uint8_t *src, int32_t src_stride,
     }
 }
 
-static void hevc_hz_8t_32w_msa(uint8_t *src, int32_t src_stride,
+static void hevc_hz_8t_32w_msa(const uint8_t *src, int32_t src_stride,
                                int16_t *dst, int32_t dst_stride,
                                const int8_t *filter, int32_t height)
 {
@@ -822,7 +822,7 @@ static void hevc_hz_8t_32w_msa(uint8_t *src, int32_t src_stride,
     }
 }
 
-static void hevc_hz_8t_48w_msa(uint8_t *src, int32_t src_stride,
+static void hevc_hz_8t_48w_msa(const uint8_t *src, int32_t src_stride,
                                int16_t *dst, int32_t dst_stride,
                                const int8_t *filter, int32_t height)
 {
@@ -893,7 +893,7 @@ static void hevc_hz_8t_48w_msa(uint8_t *src, int32_t src_stride,
     }
 }
 
-static void hevc_hz_8t_64w_msa(uint8_t *src, int32_t src_stride,
+static void hevc_hz_8t_64w_msa(const uint8_t *src, int32_t src_stride,
                                int16_t *dst, int32_t dst_stride,
                                const int8_t *filter, int32_t height)
 {
@@ -987,7 +987,7 @@ static void hevc_hz_8t_64w_msa(uint8_t *src, int32_t src_stride,
     }
 }
 
-static void hevc_vt_8t_4w_msa(uint8_t *src, int32_t src_stride,
+static void hevc_vt_8t_4w_msa(const uint8_t *src, int32_t src_stride,
                               int16_t *dst, int32_t dst_stride,
                               const int8_t *filter, int32_t height)
 {
@@ -1057,7 +1057,7 @@ static void hevc_vt_8t_4w_msa(uint8_t *src, int32_t src_stride,
     }
 }
 
-static void hevc_vt_8t_8w_msa(uint8_t *src, int32_t src_stride,
+static void hevc_vt_8t_8w_msa(const uint8_t *src, int32_t src_stride,
                               int16_t *dst, int32_t dst_stride,
                               const int8_t *filter, int32_t height)
 {
@@ -1120,7 +1120,7 @@ static void hevc_vt_8t_8w_msa(uint8_t *src, int32_t src_stride,
     }
 }
 
-static void hevc_vt_8t_12w_msa(uint8_t *src, int32_t src_stride,
+static void hevc_vt_8t_12w_msa(const uint8_t *src, int32_t src_stride,
                                int16_t *dst, int32_t dst_stride,
                                const int8_t *filter, int32_t height)
 {
@@ -1207,7 +1207,7 @@ static void hevc_vt_8t_12w_msa(uint8_t *src, int32_t src_stride,
     }
 }
 
-static void hevc_vt_8t_16multx4mult_msa(uint8_t *src,
+static void hevc_vt_8t_16multx4mult_msa(const uint8_t *src,
                                         int32_t src_stride,
                                         int16_t *dst,
                                         int32_t dst_stride,
@@ -1215,7 +1215,7 @@ static void hevc_vt_8t_16multx4mult_msa(uint8_t *src,
                                         int32_t height,
                                         int32_t width)
 {
-    uint8_t *src_tmp;
+    const uint8_t *src_tmp;
     int16_t *dst_tmp;
     int32_t loop_cnt, cnt;
     v16i8 src0, src1, src2, src3, src4, src5, src6, src7, src8, src9, src10;
@@ -1315,7 +1315,7 @@ static void hevc_vt_8t_16multx4mult_msa(uint8_t *src,
     }
 }
 
-static void hevc_vt_8t_16w_msa(uint8_t *src, int32_t src_stride,
+static void hevc_vt_8t_16w_msa(const uint8_t *src, int32_t src_stride,
                                int16_t *dst, int32_t dst_stride,
                                const int8_t *filter, int32_t height)
 {
@@ -1323,7 +1323,7 @@ static void hevc_vt_8t_16w_msa(uint8_t *src, int32_t src_stride,
                                 filter, height, 16);
 }
 
-static void hevc_vt_8t_24w_msa(uint8_t *src, int32_t src_stride,
+static void hevc_vt_8t_24w_msa(const uint8_t *src, int32_t src_stride,
                                int16_t *dst, int32_t dst_stride,
                                const int8_t *filter, int32_t height)
 {
@@ -1333,7 +1333,7 @@ static void hevc_vt_8t_24w_msa(uint8_t *src, int32_t src_stride,
                       filter, height);
 }
 
-static void hevc_vt_8t_32w_msa(uint8_t *src, int32_t src_stride,
+static void hevc_vt_8t_32w_msa(const uint8_t *src, int32_t src_stride,
                                int16_t *dst, int32_t dst_stride,
                                const int8_t *filter, int32_t height)
 {
@@ -1341,7 +1341,7 @@ static void hevc_vt_8t_32w_msa(uint8_t *src, int32_t src_stride,
                                 filter, height, 32);
 }
 
-static void hevc_vt_8t_48w_msa(uint8_t *src, int32_t src_stride,
+static void hevc_vt_8t_48w_msa(const uint8_t *src, int32_t src_stride,
                                int16_t *dst, int32_t dst_stride,
                                const int8_t *filter, int32_t height)
 {
@@ -1349,7 +1349,7 @@ static void hevc_vt_8t_48w_msa(uint8_t *src, int32_t src_stride,
                                 filter, height, 48);
 }
 
-static void hevc_vt_8t_64w_msa(uint8_t *src, int32_t src_stride,
+static void hevc_vt_8t_64w_msa(const uint8_t *src, int32_t src_stride,
                                int16_t *dst, int32_t dst_stride,
                                const int8_t *filter, int32_t height)
 {
@@ -1357,7 +1357,7 @@ static void hevc_vt_8t_64w_msa(uint8_t *src, int32_t src_stride,
                                 filter, height, 64);
 }
 
-static void hevc_hv_8t_4w_msa(uint8_t *src, int32_t src_stride,
+static void hevc_hv_8t_4w_msa(const uint8_t *src, int32_t src_stride,
                               int16_t *dst, int32_t dst_stride,
                               const int8_t *filter_x, const int8_t *filter_y,
                               int32_t height)
@@ -1464,7 +1464,7 @@ static void hevc_hv_8t_4w_msa(uint8_t *src, int32_t src_stride,
     }
 }
 
-static void hevc_hv_8t_8multx1mult_msa(uint8_t *src,
+static void hevc_hv_8t_8multx1mult_msa(const uint8_t *src,
                                        int32_t src_stride,
                                        int16_t *dst,
                                        int32_t dst_stride,
@@ -1473,7 +1473,7 @@ static void hevc_hv_8t_8multx1mult_msa(uint8_t *src,
                                        int32_t height, int32_t width)
 {
     uint32_t loop_cnt, cnt;
-    uint8_t *src_tmp;
+    const uint8_t *src_tmp;
     int16_t *dst_tmp;
     v16i8 src0, src1, src2, src3, src4, src5, src6, src7;
     v8i16 filt0, filt1, filt2, filt3;
@@ -1591,7 +1591,7 @@ static void hevc_hv_8t_8multx1mult_msa(uint8_t *src,
     }
 }
 
-static void hevc_hv_8t_8w_msa(uint8_t *src, int32_t src_stride,
+static void hevc_hv_8t_8w_msa(const uint8_t *src, int32_t src_stride,
                               int16_t *dst, int32_t dst_stride,
                               const int8_t *filter_x, const int8_t *filter_y,
                               int32_t height)
@@ -1600,13 +1600,13 @@ static void hevc_hv_8t_8w_msa(uint8_t *src, int32_t src_stride,
                                filter_x, filter_y, height, 8);
 }
 
-static void hevc_hv_8t_12w_msa(uint8_t *src, int32_t src_stride,
+static void hevc_hv_8t_12w_msa(const uint8_t *src, int32_t src_stride,
                                int16_t *dst, int32_t dst_stride,
                                const int8_t *filter_x, const int8_t *filter_y,
                                int32_t height)
 {
     uint32_t loop_cnt;
-    uint8_t *src_tmp;
+    const uint8_t *src_tmp;
     int16_t *dst_tmp;
     v16i8 src0, src1, src2, src3, src4, src5, src6, src7, src8, src9, src10;
     v16i8 mask0, mask1, mask2, mask3, mask4, mask5, mask6, mask7;
@@ -1795,7 +1795,7 @@ static void hevc_hv_8t_12w_msa(uint8_t *src, int32_t src_stride,
     }
 }
 
-static void hevc_hv_8t_16w_msa(uint8_t *src, int32_t src_stride,
+static void hevc_hv_8t_16w_msa(const uint8_t *src, int32_t src_stride,
                                int16_t *dst, int32_t dst_stride,
                                const int8_t *filter_x, const int8_t *filter_y,
                                int32_t height)
@@ -1804,7 +1804,7 @@ static void hevc_hv_8t_16w_msa(uint8_t *src, int32_t src_stride,
                                filter_x, filter_y, height, 16);
 }
 
-static void hevc_hv_8t_24w_msa(uint8_t *src, int32_t src_stride,
+static void hevc_hv_8t_24w_msa(const uint8_t *src, int32_t src_stride,
                                int16_t *dst, int32_t dst_stride,
                                const int8_t *filter_x, const int8_t *filter_y,
                                int32_t height)
@@ -1813,7 +1813,7 @@ static void hevc_hv_8t_24w_msa(uint8_t *src, int32_t src_stride,
                                filter_x, filter_y, height, 24);
 }
 
-static void hevc_hv_8t_32w_msa(uint8_t *src, int32_t src_stride,
+static void hevc_hv_8t_32w_msa(const uint8_t *src, int32_t src_stride,
                                int16_t *dst, int32_t dst_stride,
                                const int8_t *filter_x, const int8_t *filter_y,
                                int32_t height)
@@ -1822,7 +1822,7 @@ static void hevc_hv_8t_32w_msa(uint8_t *src, int32_t src_stride,
                                filter_x, filter_y, height, 32);
 }
 
-static void hevc_hv_8t_48w_msa(uint8_t *src, int32_t src_stride,
+static void hevc_hv_8t_48w_msa(const uint8_t *src, int32_t src_stride,
                                int16_t *dst, int32_t dst_stride,
                                const int8_t *filter_x, const int8_t *filter_y,
                                int32_t height)
@@ -1831,7 +1831,7 @@ static void hevc_hv_8t_48w_msa(uint8_t *src, int32_t src_stride,
                                filter_x, filter_y, height, 48);
 }
 
-static void hevc_hv_8t_64w_msa(uint8_t *src, int32_t src_stride,
+static void hevc_hv_8t_64w_msa(const uint8_t *src, int32_t src_stride,
                                int16_t *dst, int32_t dst_stride,
                                const int8_t *filter_x, const int8_t *filter_y,
                                int32_t height)
@@ -1840,7 +1840,7 @@ static void hevc_hv_8t_64w_msa(uint8_t *src, int32_t src_stride,
                                filter_x, filter_y, height, 64);
 }
 
-static void hevc_hz_4t_4x2_msa(uint8_t *src,
+static void hevc_hz_4t_4x2_msa(const uint8_t *src,
                                int32_t src_stride,
                                int16_t *dst,
                                int32_t dst_stride,
@@ -1873,7 +1873,7 @@ static void hevc_hz_4t_4x2_msa(uint8_t *src,
     ST_D2(dst0, 0, 1, dst, dst_stride);
 }
 
-static void hevc_hz_4t_4x4_msa(uint8_t *src,
+static void hevc_hz_4t_4x4_msa(const uint8_t *src,
                                int32_t src_stride,
                                int16_t *dst,
                                int32_t dst_stride,
@@ -1910,7 +1910,7 @@ static void hevc_hz_4t_4x4_msa(uint8_t *src,
     ST_D4(dst0, dst1, 0, 1, 0, 1, dst, dst_stride);
 }
 
-static void hevc_hz_4t_4x8multiple_msa(uint8_t *src,
+static void hevc_hz_4t_4x8multiple_msa(const uint8_t *src,
                                        int32_t src_stride,
                                        int16_t *dst,
                                        int32_t dst_stride,
@@ -1959,7 +1959,7 @@ static void hevc_hz_4t_4x8multiple_msa(uint8_t *src,
     }
 }
 
-static void hevc_hz_4t_4w_msa(uint8_t *src,
+static void hevc_hz_4t_4w_msa(const uint8_t *src,
                               int32_t src_stride,
                               int16_t *dst,
                               int32_t dst_stride,
@@ -1976,7 +1976,7 @@ static void hevc_hz_4t_4w_msa(uint8_t *src,
     }
 }
 
-static void hevc_hz_4t_6w_msa(uint8_t *src,
+static void hevc_hz_4t_6w_msa(const uint8_t *src,
                               int32_t src_stride,
                               int16_t *dst,
                               int32_t dst_stride,
@@ -2047,7 +2047,7 @@ static void hevc_hz_4t_6w_msa(uint8_t *src,
     }
 }
 
-static void hevc_hz_4t_8x2multiple_msa(uint8_t *src,
+static void hevc_hz_4t_8x2multiple_msa(const uint8_t *src,
                                        int32_t src_stride,
                                        int16_t *dst,
                                        int32_t dst_stride,
@@ -2091,7 +2091,7 @@ static void hevc_hz_4t_8x2multiple_msa(uint8_t *src,
     }
 }
 
-static void hevc_hz_4t_8x4multiple_msa(uint8_t *src,
+static void hevc_hz_4t_8x4multiple_msa(const uint8_t *src,
                                        int32_t src_stride,
                                        int16_t *dst,
                                        int32_t dst_stride,
@@ -2144,7 +2144,7 @@ static void hevc_hz_4t_8x4multiple_msa(uint8_t *src,
     }
 }
 
-static void hevc_hz_4t_8w_msa(uint8_t *src,
+static void hevc_hz_4t_8w_msa(const uint8_t *src,
                               int32_t src_stride,
                               int16_t *dst,
                               int32_t dst_stride,
@@ -2160,7 +2160,7 @@ static void hevc_hz_4t_8w_msa(uint8_t *src,
     }
 }
 
-static void hevc_hz_4t_12w_msa(uint8_t *src,
+static void hevc_hz_4t_12w_msa(const uint8_t *src,
                                int32_t src_stride,
                                int16_t *dst,
                                int32_t dst_stride,
@@ -2221,7 +2221,7 @@ static void hevc_hz_4t_12w_msa(uint8_t *src,
     }
 }
 
-static void hevc_hz_4t_16w_msa(uint8_t *src,
+static void hevc_hz_4t_16w_msa(const uint8_t *src,
                                int32_t src_stride,
                                int16_t *dst,
                                int32_t dst_stride,
@@ -2293,7 +2293,7 @@ static void hevc_hz_4t_16w_msa(uint8_t *src,
     }
 }
 
-static void hevc_hz_4t_24w_msa(uint8_t *src,
+static void hevc_hz_4t_24w_msa(const uint8_t *src,
                                int32_t src_stride,
                                int16_t *dst,
                                int32_t dst_stride,
@@ -2394,7 +2394,7 @@ static void hevc_hz_4t_24w_msa(uint8_t *src,
     }
 }
 
-static void hevc_hz_4t_32w_msa(uint8_t *src,
+static void hevc_hz_4t_32w_msa(const uint8_t *src,
                                int32_t src_stride,
                                int16_t *dst,
                                int32_t dst_stride,
@@ -2446,7 +2446,7 @@ static void hevc_hz_4t_32w_msa(uint8_t *src,
     }
 }
 
-static void hevc_vt_4t_4x2_msa(uint8_t *src,
+static void hevc_vt_4t_4x2_msa(const uint8_t *src,
                                int32_t src_stride,
                                int16_t *dst,
                                int32_t dst_stride,
@@ -2479,7 +2479,7 @@ static void hevc_vt_4t_4x2_msa(uint8_t *src,
     ST_D2(dst10, 0, 1, dst, dst_stride);
 }
 
-static void hevc_vt_4t_4x4_msa(uint8_t *src,
+static void hevc_vt_4t_4x4_msa(const uint8_t *src,
                                int32_t src_stride,
                                int16_t *dst,
                                int32_t dst_stride,
@@ -2516,7 +2516,7 @@ static void hevc_vt_4t_4x4_msa(uint8_t *src,
     ST_D4(dst10, dst32, 0, 1, 0, 1, dst, dst_stride);
 }
 
-static void hevc_vt_4t_4x8_msa(uint8_t *src,
+static void hevc_vt_4t_4x8_msa(const uint8_t *src,
                                int32_t src_stride,
                                int16_t *dst,
                                int32_t dst_stride,
@@ -2565,7 +2565,7 @@ static void hevc_vt_4t_4x8_msa(uint8_t *src,
     ST_D8(dst10, dst32, dst54, dst76, 0, 1, 0, 1, 0, 1, 0, 1, dst, dst_stride);
 }
 
-static void hevc_vt_4t_4x16_msa(uint8_t *src, int32_t src_stride,
+static void hevc_vt_4t_4x16_msa(const uint8_t *src, int32_t src_stride,
                                 int16_t *dst, int32_t dst_stride,
                                 const int8_t *filter, int32_t height)
 {
@@ -2635,7 +2635,7 @@ static void hevc_vt_4t_4x16_msa(uint8_t *src, int32_t src_stride,
     ST_D8(dst10, dst32, dst54, dst76, 0, 1, 0, 1, 0, 1, 0, 1, dst, dst_stride);
 }
 
-static void hevc_vt_4t_4w_msa(uint8_t *src,
+static void hevc_vt_4t_4w_msa(const uint8_t *src,
                               int32_t src_stride,
                               int16_t *dst,
                               int32_t dst_stride,
@@ -2653,7 +2653,7 @@ static void hevc_vt_4t_4w_msa(uint8_t *src,
     }
 }
 
-static void hevc_vt_4t_6w_msa(uint8_t *src,
+static void hevc_vt_4t_6w_msa(const uint8_t *src,
                               int32_t src_stride,
                               int16_t *dst,
                               int32_t dst_stride,
@@ -2727,7 +2727,7 @@ static void hevc_vt_4t_6w_msa(uint8_t *src,
     }
 }
 
-static void hevc_vt_4t_8x2_msa(uint8_t *src,
+static void hevc_vt_4t_8x2_msa(const uint8_t *src,
                                int32_t src_stride,
                                int16_t *dst,
                                int32_t dst_stride,
@@ -2762,7 +2762,7 @@ static void hevc_vt_4t_8x2_msa(uint8_t *src,
     ST_SH2(dst0_r, dst1_r, dst, dst_stride);
 }
 
-static void hevc_vt_4t_8x6_msa(uint8_t *src,
+static void hevc_vt_4t_8x6_msa(const uint8_t *src,
                                int32_t src_stride,
                                int16_t *dst,
                                int32_t dst_stride,
@@ -2824,7 +2824,7 @@ static void hevc_vt_4t_8x6_msa(uint8_t *src,
     ST_SH2(dst0_r, dst1_r, dst, dst_stride);
 }
 
-static void hevc_vt_4t_8x4multiple_msa(uint8_t *src,
+static void hevc_vt_4t_8x4multiple_msa(const uint8_t *src,
                                        int32_t src_stride,
                                        int16_t *dst,
                                        int32_t dst_stride,
@@ -2873,7 +2873,7 @@ static void hevc_vt_4t_8x4multiple_msa(uint8_t *src,
     }
 }
 
-static void hevc_vt_4t_8w_msa(uint8_t *src,
+static void hevc_vt_4t_8w_msa(const uint8_t *src,
                               int32_t src_stride,
                               int16_t *dst,
                               int32_t dst_stride,
@@ -2890,7 +2890,7 @@ static void hevc_vt_4t_8w_msa(uint8_t *src,
     }
 }
 
-static void hevc_vt_4t_12w_msa(uint8_t *src,
+static void hevc_vt_4t_12w_msa(const uint8_t *src,
                                int32_t src_stride,
                                int16_t *dst,
                                int32_t dst_stride,
@@ -2961,7 +2961,7 @@ static void hevc_vt_4t_12w_msa(uint8_t *src,
     }
 }
 
-static void hevc_vt_4t_16w_msa(uint8_t *src,
+static void hevc_vt_4t_16w_msa(const uint8_t *src,
                                int32_t src_stride,
                                int16_t *dst,
                                int32_t dst_stride,
@@ -3028,7 +3028,7 @@ static void hevc_vt_4t_16w_msa(uint8_t *src,
     }
 }
 
-static void hevc_vt_4t_24w_msa(uint8_t *src,
+static void hevc_vt_4t_24w_msa(const uint8_t *src,
                                int32_t src_stride,
                                int16_t *dst,
                                int32_t dst_stride,
@@ -3126,7 +3126,7 @@ static void hevc_vt_4t_24w_msa(uint8_t *src,
     }
 }
 
-static void hevc_vt_4t_32w_msa(uint8_t *src,
+static void hevc_vt_4t_32w_msa(const uint8_t *src,
                                int32_t src_stride,
                                int16_t *dst,
                                int32_t dst_stride,
@@ -3232,7 +3232,7 @@ static void hevc_vt_4t_32w_msa(uint8_t *src,
     }
 }
 
-static void hevc_hv_4t_4x2_msa(uint8_t *src,
+static void hevc_hv_4t_4x2_msa(const uint8_t *src,
                                int32_t src_stride,
                                int16_t *dst,
                                int32_t dst_stride,
@@ -3286,7 +3286,7 @@ static void hevc_hv_4t_4x2_msa(uint8_t *src,
     ST_D2(dst0, 0, 1, dst, dst_stride);
 }
 
-static void hevc_hv_4t_4x4_msa(uint8_t *src,
+static void hevc_hv_4t_4x4_msa(const uint8_t *src,
                                int32_t src_stride,
                                int16_t *dst,
                                int32_t dst_stride,
@@ -3349,7 +3349,7 @@ static void hevc_hv_4t_4x4_msa(uint8_t *src,
 }
 
 
-static void hevc_hv_4t_4multx8mult_msa(uint8_t *src,
+static void hevc_hv_4t_4multx8mult_msa(const uint8_t *src,
                                        int32_t src_stride,
                                        int16_t *dst,
                                        int32_t dst_stride,
@@ -3445,7 +3445,7 @@ static void hevc_hv_4t_4multx8mult_msa(uint8_t *src,
     }
 }
 
-static void hevc_hv_4t_4w_msa(uint8_t *src,
+static void hevc_hv_4t_4w_msa(const uint8_t *src,
                               int32_t src_stride,
                               int16_t *dst,
                               int32_t dst_stride,
@@ -3465,7 +3465,7 @@ static void hevc_hv_4t_4w_msa(uint8_t *src,
     }
 }
 
-static void hevc_hv_4t_6w_msa(uint8_t *src,
+static void hevc_hv_4t_6w_msa(const uint8_t *src,
                               int32_t src_stride,
                               int16_t *dst,
                               int32_t dst_stride,
@@ -3590,7 +3590,7 @@ static void hevc_hv_4t_6w_msa(uint8_t *src,
     ST_W4(tmp5, 0, 1, 2, 3, dst + 4, dst_stride);
 }
 
-static void hevc_hv_4t_8x2_msa(uint8_t *src,
+static void hevc_hv_4t_8x2_msa(const uint8_t *src,
                                int32_t src_stride,
                                int16_t *dst,
                                int32_t dst_stride,
@@ -3657,7 +3657,7 @@ static void hevc_hv_4t_8x2_msa(uint8_t *src,
     ST_SW2(dst0_r, dst1_r, dst, dst_stride);
 }
 
-static void hevc_hv_4t_8multx4_msa(uint8_t *src, int32_t src_stride,
+static void hevc_hv_4t_8multx4_msa(const uint8_t *src, int32_t src_stride,
                                    int16_t *dst, int32_t dst_stride,
                                    const int8_t *filter_x,
                                    const int8_t *filter_y, int32_t width8mult)
@@ -3741,7 +3741,7 @@ static void hevc_hv_4t_8multx4_msa(uint8_t *src, int32_t src_stride,
     }
 }
 
-static void hevc_hv_4t_8x6_msa(uint8_t *src,
+static void hevc_hv_4t_8x6_msa(const uint8_t *src,
                                int32_t src_stride,
                                int16_t *dst,
                                int32_t dst_stride,
@@ -3852,7 +3852,7 @@ static void hevc_hv_4t_8x6_msa(uint8_t *src,
     ST_SW2(dst4_r, dst5_r, dst, dst_stride);
 }
 
-static void hevc_hv_4t_8multx4mult_msa(uint8_t *src,
+static void hevc_hv_4t_8multx4mult_msa(const uint8_t *src,
                                        int32_t src_stride,
                                        int16_t *dst,
                                        int32_t dst_stride,
@@ -3862,7 +3862,7 @@ static void hevc_hv_4t_8multx4mult_msa(uint8_t *src,
                                        int32_t width8mult)
 {
     uint32_t loop_cnt, cnt;
-    uint8_t *src_tmp;
+    const uint8_t *src_tmp;
     int16_t *dst_tmp;
     v16i8 src0, src1, src2, src3, src4, src5, src6;
     v8i16 filt0, filt1;
@@ -3969,7 +3969,7 @@ static void hevc_hv_4t_8multx4mult_msa(uint8_t *src,
     }
 }
 
-static void hevc_hv_4t_8w_msa(uint8_t *src,
+static void hevc_hv_4t_8w_msa(const uint8_t *src,
                               int32_t src_stride,
                               int16_t *dst,
                               int32_t dst_stride,
@@ -3993,7 +3993,7 @@ static void hevc_hv_4t_8w_msa(uint8_t *src,
     }
 }
 
-static void hevc_hv_4t_12w_msa(uint8_t *src,
+static void hevc_hv_4t_12w_msa(const uint8_t *src,
                                int32_t src_stride,
                                int16_t *dst,
                                int32_t dst_stride,
@@ -4002,7 +4002,7 @@ static void hevc_hv_4t_12w_msa(uint8_t *src,
                                int32_t height)
 {
     uint32_t loop_cnt;
-    uint8_t *src_tmp;
+    const uint8_t *src_tmp;
     int16_t *dst_tmp;
     v16i8 src0, src1, src2, src3, src4, src5, src6, src7, src8, src9, src10;
     v16i8 vec0, vec1, vec2, vec3, vec4, vec5, vec6, vec7;
@@ -4166,7 +4166,7 @@ static void hevc_hv_4t_12w_msa(uint8_t *src,
     }
 }
 
-static void hevc_hv_4t_16w_msa(uint8_t *src,
+static void hevc_hv_4t_16w_msa(const uint8_t *src,
                                int32_t src_stride,
                                int16_t *dst,
                                int32_t dst_stride,
@@ -4183,7 +4183,7 @@ static void hevc_hv_4t_16w_msa(uint8_t *src,
     }
 }
 
-static void hevc_hv_4t_24w_msa(uint8_t *src,
+static void hevc_hv_4t_24w_msa(const uint8_t *src,
                                int32_t src_stride,
                                int16_t *dst,
                                int32_t dst_stride,
@@ -4195,7 +4195,7 @@ static void hevc_hv_4t_24w_msa(uint8_t *src,
                                filter_x, filter_y, height, 3);
 }
 
-static void hevc_hv_4t_32w_msa(uint8_t *src,
+static void hevc_hv_4t_32w_msa(const uint8_t *src,
                                int32_t src_stride,
                                int16_t *dst,
                                int32_t dst_stride,
@@ -4209,7 +4209,7 @@ static void hevc_hv_4t_32w_msa(uint8_t *src,
 
 #define MC_COPY(WIDTH)                                                    \
 void ff_hevc_put_hevc_pel_pixels##WIDTH##_8_msa(int16_t *dst,             \
-                                                uint8_t *src,             \
+                                                const uint8_t *src,       \
                                                 ptrdiff_t src_stride,     \
                                                 int height,               \
                                                 intptr_t mx,              \
@@ -4233,7 +4233,7 @@ MC_COPY(64);
 
 #define MC(PEL, DIR, WIDTH, TAP, DIR1, FILT_DIR)                          \
 void ff_hevc_put_hevc_##PEL##_##DIR##WIDTH##_8_msa(int16_t *dst,          \
-                                                   uint8_t *src,          \
+                                                   const uint8_t *src,    \
                                                    ptrdiff_t src_stride,  \
                                                    int height,            \
                                                    intptr_t mx,           \
@@ -4284,7 +4284,7 @@ MC(epel, v, 32, 4, vt, my);
 
 #define MC_HV(PEL, WIDTH, TAP)                                          \
 void ff_hevc_put_hevc_##PEL##_hv##WIDTH##_8_msa(int16_t *dst,           \
-                                                uint8_t *src,           \
+                                                const uint8_t *src,     \
                                                 ptrdiff_t src_stride,   \
                                                 int height,             \
                                                 intptr_t mx,            \

@@ -92,7 +92,7 @@ DEFINE_ARGS dst, src, dststride, srcstride, offset, height
     mov          heightd, r7m
 %endmacro
 
-;void ff_hevc_sao_band_filter_<width>_<depth>_<opt>(uint8_t *_dst, uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src,
+;void ff_hevc_sao_band_filter_<width>_<depth>_<opt>(uint8_t *_dst, const uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src,
 ;                                                   int16_t *sao_offset_val, int sao_left_class, int width, int height);
 %macro HEVC_SAO_BAND_FILTER 3
 cglobal hevc_sao_band_filter_%2_%1, 6, 6, 15, 7*mmsize*ARCH_X86_32, dst, src, dststride, srcstride, offset, left

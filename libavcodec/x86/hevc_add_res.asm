@@ -47,7 +47,7 @@ cextern pw_1023
 
 
 INIT_MMX mmxext
-; void ff_hevc_add_residual_4_8_mmxext(uint8_t *dst, int16_t *res, ptrdiff_t stride)
+; void ff_hevc_add_residual_4_8_mmxext(uint8_t *dst, const int16_t *res, ptrdiff_t stride)
 cglobal hevc_add_residual_4_8, 3, 3, 6
     pxor              m4, m4
     ADD_RES_MMX_4_8
@@ -118,7 +118,7 @@ cglobal hevc_add_residual_4_8, 3, 3, 6
 
 
 %macro TRANSFORM_ADD_8 0
-; void ff_hevc_add_residual_8_8_<opt>(uint8_t *dst, int16_t *res, ptrdiff_t stride)
+; void ff_hevc_add_residual_8_8_<opt>(uint8_t *dst, const int16_t *res, ptrdiff_t stride)
 cglobal hevc_add_residual_8_8, 3, 4, 8
     pxor              m4, m4
     lea               r3, [r2*3]
@@ -128,7 +128,7 @@ cglobal hevc_add_residual_8_8, 3, 4, 8
     ADD_RES_SSE_8_8
     RET
 
-; void ff_hevc_add_residual_16_8_<opt>(uint8_t *dst, int16_t *res, ptrdiff_t stride)
+; void ff_hevc_add_residual_16_8_<opt>(uint8_t *dst, const int16_t *res, ptrdiff_t stride)
 cglobal hevc_add_residual_16_8, 3, 5, 7
     pxor                m0, m0
     lea                 r3, [r2*3]
@@ -142,7 +142,7 @@ cglobal hevc_add_residual_16_8, 3, 5, 7
     jg .loop
     RET
 
-; void ff_hevc_add_residual_32_8_<opt>(uint8_t *dst, int16_t *res, ptrdiff_t stride)
+; void ff_hevc_add_residual_32_8_<opt>(uint8_t *dst, const int16_t *res, ptrdiff_t stride)
 cglobal hevc_add_residual_32_8, 3, 5, 7
     pxor                m0, m0
     mov                r4d, 16
@@ -163,7 +163,7 @@ TRANSFORM_ADD_8
 
 %if HAVE_AVX2_EXTERNAL
 INIT_YMM avx2
-; void ff_hevc_add_residual_32_8_avx2(uint8_t *dst, int16_t *res, ptrdiff_t stride)
+; void ff_hevc_add_residual_32_8_avx2(uint8_t *dst, const int16_t *res, ptrdiff_t stride)
 cglobal hevc_add_residual_32_8, 3, 5, 7
     pxor                 m0, m0
     lea                  r3, [r2*3]
@@ -289,7 +289,7 @@ cglobal hevc_add_residual_32_8, 3, 5, 7
     mova      [%1+%2+32], m3
 %endmacro
 
-; void ff_hevc_add_residual_<4|8|16|32>_10(pixel *dst, int16_t *block, ptrdiff_t stride)
+; void ff_hevc_add_residual_<4|8|16|32>_10(pixel *dst, const int16_t *block, ptrdiff_t stride)
 INIT_MMX mmxext
 cglobal hevc_add_residual_4_10, 3, 3, 6
     pxor              m2, m2
