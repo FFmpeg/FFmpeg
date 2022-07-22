@@ -339,7 +339,7 @@ static int vp56_rac_gets(VP56RangeCoder *c, int bits)
     return value;
 }
 
-static int vp8_rac_get_uint(VP56RangeCoder *c, int bits)
+static av_unused int vp8_rac_get_uint(VP56RangeCoder *c, int bits)
 {
     int value = 0;
 
@@ -350,32 +350,10 @@ static int vp8_rac_get_uint(VP56RangeCoder *c, int bits)
     return value;
 }
 
-// fixme: add 1 bit to all the calls to this?
-static av_unused int vp8_rac_get_sint(VP56RangeCoder *c, int bits)
-{
-    int v;
-
-    if (!vp8_rac_get(c))
-        return 0;
-
-    v = vp8_rac_get_uint(c, bits);
-
-    if (vp8_rac_get(c))
-        v = -v;
-
-    return v;
-}
-
 // P(7)
 static av_unused int vp56_rac_gets_nn(VP56RangeCoder *c, int bits)
 {
     int v = vp56_rac_gets(c, 7) << 1;
-    return v + !v;
-}
-
-static av_unused int vp8_rac_get_nn(VP56RangeCoder *c)
-{
-    int v = vp8_rac_get_uint(c, 7) << 1;
     return v + !v;
 }
 
@@ -405,18 +383,6 @@ static av_always_inline int vp8_rac_get_tree(VP56RangeCoder *c, const int8_t (*t
     } while (i > 0);
 
     return -i;
-}
-
-// DCTextra
-static av_always_inline int vp8_rac_get_coeff(VP56RangeCoder *c, const uint8_t *prob)
-{
-    int v = 0;
-
-    do {
-        v = (v<<1) + vp56_rac_get_prob(c, *prob++);
-    } while (*prob);
-
-    return v;
 }
 
 #endif /* AVCODEC_VP56_H */

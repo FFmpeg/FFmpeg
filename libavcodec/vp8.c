@@ -52,6 +52,40 @@
 #define VPX(vp7, f) vp8_ ## f
 #endif
 
+// fixme: add 1 bit to all the calls to this?
+static int vp8_rac_get_sint(VP56RangeCoder *c, int bits)
+{
+    int v;
+
+    if (!vp8_rac_get(c))
+        return 0;
+
+    v = vp8_rac_get_uint(c, bits);
+
+    if (vp8_rac_get(c))
+        v = -v;
+
+    return v;
+}
+
+static int vp8_rac_get_nn(VP56RangeCoder *c)
+{
+    int v = vp8_rac_get_uint(c, 7) << 1;
+    return v + !v;
+}
+
+// DCTextra
+static int vp8_rac_get_coeff(VP56RangeCoder *c, const uint8_t *prob)
+{
+    int v = 0;
+
+    do {
+        v = (v<<1) + vp56_rac_get_prob(c, *prob++);
+    } while (*prob);
+
+    return v;
+}
+
 static void free_buffers(VP8Context *s)
 {
     int i;
