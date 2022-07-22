@@ -455,18 +455,18 @@ void ff_hevc_save_states(HEVCLocalContext *lc, int ctb_addr_ts)
         (ctb_addr_ts % s->ps.sps->ctb_width == 2 ||
          (s->ps.sps->ctb_width == 2 &&
           ctb_addr_ts % s->ps.sps->ctb_width == 0))) {
-        memcpy(s->cabac->state, lc->cabac_state, HEVC_CONTEXTS);
+        memcpy(lc->common_cabac_state->state, lc->cabac_state, HEVC_CONTEXTS);
         if (s->ps.sps->persistent_rice_adaptation_enabled_flag) {
-            memcpy(s->cabac->stat_coeff, lc->stat_coeff, HEVC_STAT_COEFFS);
+            memcpy(lc->common_cabac_state->stat_coeff, lc->stat_coeff, HEVC_STAT_COEFFS);
         }
     }
 }
 
 static void load_states(HEVCLocalContext *lc, const HEVCContext *s)
 {
-    memcpy(lc->cabac_state, s->cabac->state, HEVC_CONTEXTS);
+    memcpy(lc->cabac_state, lc->common_cabac_state->state, HEVC_CONTEXTS);
     if (s->ps.sps->persistent_rice_adaptation_enabled_flag) {
-        memcpy(lc->stat_coeff, s->cabac->stat_coeff, HEVC_STAT_COEFFS);
+        memcpy(lc->stat_coeff, lc->common_cabac_state->stat_coeff, HEVC_STAT_COEFFS);
     }
 }
 

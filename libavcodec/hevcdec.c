@@ -2653,6 +2653,7 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
             return AVERROR(ENOMEM);
         s->HEVClcList[i]->logctx = s->avctx;
         s->HEVClcList[i]->parent = s;
+        s->HEVClcList[i]->common_cabac_state = &s->cabac;
     }
 
     offset = (lc->gb.index >> 3);
@@ -3582,8 +3583,6 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
 
     av_freep(&s->md5_ctx);
 
-    av_freep(&s->cabac);
-
     for (i = 0; i < 3; i++) {
         av_freep(&s->sao_pixel_buffer_h[i]);
         av_freep(&s->sao_pixel_buffer_v[i]);
@@ -3630,11 +3629,8 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
     s->HEVClc->parent = s;
     s->HEVClc->logctx = avctx;
+    s->HEVClc->common_cabac_state = &s->cabac;
     s->HEVClcList[0] = s->HEVClc;
-
-    s->cabac = av_malloc(sizeof(*s->cabac));
-    if (!s->cabac)
-        return AVERROR(ENOMEM);
 
     s->output_frame = av_frame_alloc();
     if (!s->output_frame)

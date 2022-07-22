@@ -439,6 +439,18 @@ typedef struct HEVCLocalContext {
     GetBitContext gb;
     CABACContext cc;
 
+    /**
+     * This is a pointer to the common CABAC state.
+     * In case entropy_coding_sync_enabled_flag is set,
+     * the CABAC state after decoding the second CTU in a row is
+     * stored here and used to initialize the CABAC state before
+     * decoding the first CTU in the next row.
+     * This is the basis for WPP and in case slice-threading is used,
+     * the next row is decoded by another thread making this state
+     * shared between threads.
+     */
+    HEVCCABACState *common_cabac_state;
+
     int8_t qp_y;
     int8_t curr_qp_y;
 
@@ -484,8 +496,6 @@ typedef struct HEVCContext {
 
     int                 width;
     int                 height;
-
-    HEVCCABACState *cabac;
 
     /** 1 if the independent slice segment header was successfully parsed */
     uint8_t slice_initialized;
@@ -558,6 +568,9 @@ typedef struct HEVCContext {
      */
     uint16_t seq_decode;
     uint16_t seq_output;
+
+    /** The target for the common_cabac_state of the local contexts. */
+    HEVCCABACState cabac;
 
     int enable_parallel_tiles;
     atomic_int wpp_err;
