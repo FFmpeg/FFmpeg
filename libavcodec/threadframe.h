@@ -56,7 +56,7 @@ void ff_thread_report_progress(ThreadFrame *f, int progress, int field);
  * @param field The field being referenced, for field-picture codecs.
  * 0 for top field or frame pictures, 1 for bottom field.
  */
-void ff_thread_await_progress(ThreadFrame *f, int progress, int field);
+void ff_thread_await_progress(const ThreadFrame *f, int progress, int field);
 
 /**
  * Wrapper around ff_get_buffer() for frame-multithreaded codecs.

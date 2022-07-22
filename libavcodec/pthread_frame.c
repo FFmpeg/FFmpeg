@@ -615,7 +615,7 @@ void ff_thread_report_progress(ThreadFrame *f, int n, int field)
     pthread_mutex_unlock(&p->progress_mutex);
 }
 
-void ff_thread_await_progress(ThreadFrame *f, int n, int field)
+void ff_thread_await_progress(const ThreadFrame *f, int n, int field)
 {
     PerThreadContext *p;
     atomic_int *progress = f->progress ? (atomic_int*)f->progress->data : NULL;

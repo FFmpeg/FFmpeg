@@ -949,7 +949,7 @@ void ff_thread_report_progress(ThreadFrame *f, int progress, int field)
 {
 }
 
-void ff_thread_await_progress(ThreadFrame *f, int progress, int field)
+void ff_thread_await_progress(const ThreadFrame *f, int progress, int field)
 {
 }
 
