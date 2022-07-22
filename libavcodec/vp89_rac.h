@@ -30,15 +30,15 @@
 
 #include "libavutil/attributes.h"
 
-#include "vp56.h"
+#include "vpx_rac.h"
 
-// rounding is different than vp56_rac_get, is vp56_rac_get wrong?
-static av_always_inline int vp89_rac_get(VP56RangeCoder *c)
+// rounding is different than vpx_rac_get, is vpx_rac_get wrong?
+static av_always_inline int vp89_rac_get(VPXRangeCoder *c)
 {
-    return vp56_rac_get_prob(c, 128);
+    return vpx_rac_get_prob(c, 128);
 }
 
-static av_unused int vp89_rac_get_uint(VP56RangeCoder *c, int bits)
+static av_unused int vp89_rac_get_uint(VPXRangeCoder *c, int bits)
 {
     int value = 0;
 
@@ -51,13 +51,13 @@ static av_unused int vp89_rac_get_uint(VP56RangeCoder *c, int bits)
 
 // how probabilities are associated with decisions is different I think
 // well, the new scheme fits in the old but this way has one fewer branches per decision
-static av_always_inline int vp89_rac_get_tree(VP56RangeCoder *c, const int8_t (*tree)[2],
+static av_always_inline int vp89_rac_get_tree(VPXRangeCoder *c, const int8_t (*tree)[2],
                                               const uint8_t *probs)
 {
     int i = 0;
 
     do {
-        i = tree[i][vp56_rac_get_prob(c, probs[i])];
+        i = tree[i][vpx_rac_get_prob(c, probs[i])];
     } while (i > 0);
 
     return -i;

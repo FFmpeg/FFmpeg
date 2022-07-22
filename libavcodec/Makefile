@@ -737,11 +737,11 @@ OBJS-$(CONFIG_VORBIS_DECODER)          += vorbisdec.o vorbisdsp.o vorbis.o \
 OBJS-$(CONFIG_VORBIS_ENCODER)          += vorbisenc.o vorbis.o \
                                           vorbis_data.o
 OBJS-$(CONFIG_VP3_DECODER)             += vp3.o
-OBJS-$(CONFIG_VP5_DECODER)             += vp5.o vp56.o vp56data.o vp56rac.o
+OBJS-$(CONFIG_VP5_DECODER)             += vp5.o vp56.o vp56data.o vpx_rac.o
 OBJS-$(CONFIG_VP6_DECODER)             += vp6.o vp56.o vp56data.o \
-                                          vp6dsp.o vp56rac.o
-OBJS-$(CONFIG_VP7_DECODER)             += vp8.o vp56rac.o
-OBJS-$(CONFIG_VP8_DECODER)             += vp8.o vp56rac.o
+                                          vp6dsp.o vpx_rac.o
+OBJS-$(CONFIG_VP7_DECODER)             += vp8.o vpx_rac.o
+OBJS-$(CONFIG_VP8_DECODER)             += vp8.o vpx_rac.o
 OBJS-$(CONFIG_VP8_CUVID_DECODER)       += cuviddec.o
 OBJS-$(CONFIG_VP8_MEDIACODEC_DECODER)  += mediacodecdec.o
 OBJS-$(CONFIG_VP8_QSV_DECODER)         += qsvdec.o
@@ -750,7 +750,7 @@ OBJS-$(CONFIG_VP8_VAAPI_ENCODER)       += vaapi_encode_vp8.o
 OBJS-$(CONFIG_VP8_V4L2M2M_DECODER)     += v4l2_m2m_dec.o
 OBJS-$(CONFIG_VP8_V4L2M2M_ENCODER)     += v4l2_m2m_enc.o
 OBJS-$(CONFIG_VP9_DECODER)             += vp9.o vp9data.o vp9dsp.o vp9lpf.o vp9recon.o \
-                                          vp9block.o vp9prob.o vp9mvs.o vp56rac.o \
+                                          vp9block.o vp9prob.o vp9mvs.o vpx_rac.o \
                                           vp9dsp_8bpp.o vp9dsp_10bpp.o vp9dsp_12bpp.o
 OBJS-$(CONFIG_VP9_CUVID_DECODER)       += cuviddec.o
 OBJS-$(CONFIG_VP9_MEDIACODEC_DECODER)  += mediacodecdec.o
@@ -1234,7 +1234,7 @@ SKIPHEADERS                            += %_tablegen.h                  \
                                           aaccoder_trellis.h            \
                                           aacenc_quantization.h         \
                                           aacenc_quantization_misc.h    \
-                                          $(ARCH)/vp56_arith.h          \
+                                          $(ARCH)/vpx_arith.h          \
 
 SKIPHEADERS-$(CONFIG_AMF)              += amfenc.h
 SKIPHEADERS-$(CONFIG_D3D11VA)          += d3d11va.h dxva2_internal.h

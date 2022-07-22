@@ -65,7 +65,7 @@ T       orrcs           \cw, \cw, \t1
 
 function ff_decode_block_coeffs_armv6, export=1
         push            {r0,r1,r4-r11,lr}
-        movrelx         lr,  X(ff_vp56_norm_shift)
+        movrelx         lr,  X(ff_vpx_norm_shift)
         ldrd            r4,  r5,  [sp, #44]             @ token_prob, qmul
         cmp             r3,  #0
         ldr             r11, [r5]

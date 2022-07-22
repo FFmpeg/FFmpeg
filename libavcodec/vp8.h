@@ -36,6 +36,7 @@
 #include "threadframe.h"
 #include "vp56.h"
 #include "vp8dsp.h"
+#include "vpx_rac.h"
 
 #define VP8_MAX_QUANT 127
 
@@ -245,7 +246,7 @@ typedef struct VP8Context {
     uint8_t (*top_border)[16 + 8 + 8];
     uint8_t (*top_nnz)[9];
 
-    VP56RangeCoder c;   ///< header context, includes mb modes and motion vectors
+    VPXRangeCoder c;   ///< header context, includes mb modes and motion vectors
 
     /* This contains the entropy coder state at the end of the header
      * block, in the form specified by the standard.  For use by
@@ -297,7 +298,7 @@ typedef struct VP8Context {
      * There can be 1, 2, 4, or 8 of these after the header context.
      */
     int num_coeff_partitions;
-    VP56RangeCoder coeff_partition[8];
+    VPXRangeCoder coeff_partition[8];
     int coeff_partition_size[8];
     VideoDSPContext vdsp;
     VP8DSPContext vp8dsp;

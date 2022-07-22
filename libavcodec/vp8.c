@@ -40,6 +40,7 @@
 #include "vp8.h"
 #include "vp89_rac.h"
 #include "vp8data.h"
+#include "vpx_rac.h"
 
 #if ARCH_ARM
 #   include "arm/vp8.h"
@@ -54,7 +55,7 @@
 #endif
 
 // fixme: add 1 bit to all the calls to this?
-static int vp8_rac_get_sint(VP56RangeCoder *c, int bits)
+static int vp8_rac_get_sint(VPXRangeCoder *c, int bits)
 {
     int v;
 
@@ -69,19 +70,19 @@ static int vp8_rac_get_sint(VP56RangeCoder *c, int bits)
     return v;
 }
 
-static int vp8_rac_get_nn(VP56RangeCoder *c)
+static int vp8_rac_get_nn(VPXRangeCoder *c)
 {
     int v = vp89_rac_get_uint(c, 7) << 1;
     return v + !v;
 }
 
 // DCTextra
-static int vp8_rac_get_coeff(VP56RangeCoder *c, const uint8_t *prob)
+static int vp8_rac_get_coeff(VPXRangeCoder *c, const uint8_t *prob)
 {
     int v = 0;
 
     do {
-        v = (v<<1) + vp56_rac_get_prob(c, *prob++);
+        v = (v<<1) + vpx_rac_get_prob(c, *prob++);
     } while (*prob);
 
     return v;
@@ -301,7 +302,7 @@ static int vp8_update_dimensions(VP8Context *s, int width, int height)
 
 static void parse_segment_info(VP8Context *s)
 {
-    VP56RangeCoder *c = &s->c;
+    VPXRangeCoder *c = &s->c;
     int i;
 
     s->segmentation.update_map = vp89_rac_get(c);
@@ -323,7 +324,7 @@ static void parse_segment_info(VP8Context *s)
 
 static void update_lf_deltas(VP8Context *s)
 {
-    VP56RangeCoder *c = &s->c;
+    VPXRangeCoder *c = &s->c;
     int i;
 
     for (i = 0; i < 4; i++) {
@@ -364,7 +365,7 @@ static int setup_partitions(VP8Context *s, const uint8_t *buf, int buf_size)
             return -1;
         s->coeff_partition_size[i] = size;
 
-        ret = ff_vp56_init_range_decoder(&s->coeff_partition[i], buf, size);
+        ret = ff_vpx_init_range_decoder(&s->coeff_partition[i], buf, size);
         if (ret < 0)
             return ret;
         buf      += size;
@@ -372,14 +373,14 @@ static int setup_partitions(VP8Context *s, const uint8_t *buf, int buf_size)
     }
 
     s->coeff_partition_size[i] = buf_size;
-    ff_vp56_init_range_decoder(&s->coeff_partition[i], buf, buf_size);
+    ff_vpx_init_range_decoder(&s->coeff_partition[i], buf, buf_size);
 
     return 0;
 }
 
 static void vp7_get_quants(VP8Context *s)
 {
-    VP56RangeCoder *c = &s->c;
+    VPXRangeCoder *c = &s->c;
 
     int yac_qi  = vp89_rac_get_uint(c, 7);
     int ydc_qi  = vp89_rac_get(c) ? vp89_rac_get_uint(c, 7) : yac_qi;
@@ -398,7 +399,7 @@ static void vp7_get_quants(VP8Context *s)
 
 static void vp8_get_quants(VP8Context *s)
 {
-    VP56RangeCoder *c = &s->c;
+    VPXRangeCoder *c = &s->c;
     int i, base_qi;
 
     s->quant.yac_qi     = vp89_rac_get_uint(c, 7);
@@ -444,7 +445,7 @@ static void vp8_get_quants(VP8Context *s)
  */
 static VP56Frame ref_to_update(VP8Context *s, int update, VP56Frame ref)
 {
-    VP56RangeCoder *c = &s->c;
+    VPXRangeCoder *c = &s->c;
 
     if (update)
         return VP56_FRAME_CURRENT;
@@ -469,14 +470,14 @@ static void vp78_reset_probability_tables(VP8Context *s)
 
 static void vp78_update_probability_tables(VP8Context *s)
 {
-    VP56RangeCoder *c = &s->c;
+    VPXRangeCoder *c = &s->c;
     int i, j, k, l, m;
 
     for (i = 0; i < 4; i++)
         for (j = 0; j < 8; j++)
             for (k = 0; k < 3; k++)
                 for (l = 0; l < NUM_DCT_TOKENS-1; l++)
-                    if (vp56_rac_get_prob_branchy(c, vp8_token_update_probs[i][j][k][l])) {
+                    if (vpx_rac_get_prob_branchy(c, vp8_token_update_probs[i][j][k][l])) {
                         int prob = vp89_rac_get_uint(c, 8);
                         for (m = 0; vp8_coeff_band_indexes[j][m] >= 0; m++)
                             s->prob->token[i][vp8_coeff_band_indexes[j][m]][k][l] = prob;
@@ -489,7 +490,7 @@ static void vp78_update_probability_tables(VP8Context *s)
 static void vp78_update_pred16x16_pred8x8_mvc_probabilities(VP8Context *s,
                                                             int mvc_size)
 {
-    VP56RangeCoder *c = &s->c;
+    VPXRangeCoder *c = &s->c;
     int i, j;
 
     if (vp89_rac_get(c))
@@ -502,13 +503,13 @@ static void vp78_update_pred16x16_pred8x8_mvc_probabilities(VP8Context *s,
     // 17.2 MV probability update
     for (i = 0; i < 2; i++)
         for (j = 0; j < mvc_size; j++)
-            if (vp56_rac_get_prob_branchy(c, vp8_mv_update_prob[i][j]))
+            if (vpx_rac_get_prob_branchy(c, vp8_mv_update_prob[i][j]))
                 s->prob->mvc[i][j] = vp8_rac_get_nn(c);
 }
 
 static void update_refs(VP8Context *s)
 {
-    VP56RangeCoder *c = &s->c;
+    VPXRangeCoder *c = &s->c;
 
     int update_golden = vp89_rac_get(c);
     int update_altref = vp89_rac_get(c);
@@ -583,7 +584,7 @@ static int vp7_fade_frame(VP8Context *s, int alpha, int beta)
 
 static int vp7_decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_size)
 {
-    VP56RangeCoder *c = &s->c;
+    VPXRangeCoder *c = &s->c;
     int part1_size, hscale, vscale, i, j, ret;
     int width  = s->avctx->width;
     int height = s->avctx->height;
@@ -614,7 +615,7 @@ static int vp7_decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_si
 
     memcpy(s->put_pixels_tab, s->vp8dsp.put_vp8_epel_pixels_tab, sizeof(s->put_pixels_tab));
 
-    ret = ff_vp56_init_range_decoder(c, buf, part1_size);
+    ret = ff_vpx_init_range_decoder(c, buf, part1_size);
     if (ret < 0)
         return ret;
     buf      += part1_size;
@@ -668,7 +669,7 @@ static int vp7_decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_si
     s->lf_delta.enabled        = 0;
 
     s->num_coeff_partitions = 1;
-    ret = ff_vp56_init_range_decoder(&s->coeff_partition[0], buf, buf_size);
+    ret = ff_vpx_init_range_decoder(&s->coeff_partition[0], buf, buf_size);
     if (ret < 0)
         return ret;
 
@@ -701,7 +702,7 @@ static int vp7_decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_si
             s->fade_present = vp89_rac_get(c);
     }
 
-    if (vpX_rac_is_end(c))
+    if (vpx_rac_is_end(c))
         return AVERROR_INVALIDDATA;
     /* E. Fading information for previous frame */
     if (s->fade_present && vp89_rac_get(c)) {
@@ -736,7 +737,7 @@ static int vp7_decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_si
         vp78_update_pred16x16_pred8x8_mvc_probabilities(s, VP7_MVC_SIZE);
     }
 
-    if (vpX_rac_is_end(c))
+    if (vpx_rac_is_end(c))
         return AVERROR_INVALIDDATA;
 
     if ((ret = vp7_fade_frame(s, alpha, beta)) < 0)
@@ -747,7 +748,7 @@ static int vp7_decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_si
 
 static int vp8_decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_size)
 {
-    VP56RangeCoder *c = &s->c;
+    VPXRangeCoder *c = &s->c;
     int header_size, hscale, vscale, ret;
     int width  = s->avctx->width;
     int height = s->avctx->height;
@@ -809,7 +810,7 @@ static int vp8_decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_si
         memset(&s->lf_delta, 0, sizeof(s->lf_delta));
     }
 
-    ret = ff_vp56_init_range_decoder(c, buf, header_size);
+    ret = ff_vpx_init_range_decoder(c, buf, header_size);
     if (ret < 0)
         return ret;
     buf      += header_size;
@@ -876,7 +877,7 @@ static int vp8_decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_si
     }
 
     // Record the entropy coder state here so that hwaccels can use it.
-    s->c.code_word = vp56_rac_renorm(&s->c);
+    s->c.code_word = vpx_rac_renorm(&s->c);
     s->coder_state_at_header_end.input     = s->c.buffer - (-s->c.bits / 8);
     s->coder_state_at_header_end.range     = s->c.high;
     s->coder_state_at_header_end.value     = s->c.code_word >> 16;
@@ -897,40 +898,40 @@ void clamp_mv(VP8mvbounds *s, VP56mv *dst, const VP56mv *src)
 /**
  * Motion vector coding, 17.1.
  */
-static av_always_inline int read_mv_component(VP56RangeCoder *c, const uint8_t *p, int vp7)
+static av_always_inline int read_mv_component(VPXRangeCoder *c, const uint8_t *p, int vp7)
 {
     int bit, x = 0;
 
-    if (vp56_rac_get_prob_branchy(c, p[0])) {
+    if (vpx_rac_get_prob_branchy(c, p[0])) {
         int i;
 
         for (i = 0; i < 3; i++)
-            x += vp56_rac_get_prob(c, p[9 + i]) << i;
+            x += vpx_rac_get_prob(c, p[9 + i]) << i;
         for (i = (vp7 ? 7 : 9); i > 3; i--)
-            x += vp56_rac_get_prob(c, p[9 + i]) << i;
-        if (!(x & (vp7 ? 0xF0 : 0xFFF0)) || vp56_rac_get_prob(c, p[12]))
+            x += vpx_rac_get_prob(c, p[9 + i]) << i;
+        if (!(x & (vp7 ? 0xF0 : 0xFFF0)) || vpx_rac_get_prob(c, p[12]))
             x += 8;
     } else {
         // small_mvtree
         const uint8_t *ps = p + 2;
-        bit = vp56_rac_get_prob(c, *ps);
+        bit = vpx_rac_get_prob(c, *ps);
         ps += 1 + 3 * bit;
         x  += 4 * bit;
-        bit = vp56_rac_get_prob(c, *ps);
+        bit = vpx_rac_get_prob(c, *ps);
         ps += 1 + bit;
         x  += 2 * bit;
-        x  += vp56_rac_get_prob(c, *ps);
+        x  += vpx_rac_get_prob(c, *ps);
     }
 
-    return (x && vp56_rac_get_prob(c, p[1])) ? -x : x;
+    return (x && vpx_rac_get_prob(c, p[1])) ? -x : x;
 }
 
-static int vp7_read_mv_component(VP56RangeCoder *c, const uint8_t *p)
+static int vp7_read_mv_component(VPXRangeCoder *c, const uint8_t *p)
 {
     return read_mv_component(c, p, 1);
 }
 
-static int vp8_read_mv_component(VP56RangeCoder *c, const uint8_t *p)
+static int vp8_read_mv_component(VPXRangeCoder *c, const uint8_t *p)
 {
     return read_mv_component(c, p, 0);
 }
@@ -953,7 +954,7 @@ const uint8_t *get_submv_prob(uint32_t left, uint32_t top, int is_vp7)
  * @returns the number of motion vectors parsed (2, 4 or 16)
  */
 static av_always_inline
-int decode_splitmvs(VP8Context *s, VP56RangeCoder *c, VP8Macroblock *mb,
+int decode_splitmvs(VP8Context *s, VPXRangeCoder *c, VP8Macroblock *mb,
                     int layout, int is_vp7)
 {
     int part_idx;
@@ -973,9 +974,9 @@ int decode_splitmvs(VP8Context *s, VP56RangeCoder *c, VP8Macroblock *mb,
     mbsplits_top = vp8_mbsplits[top_mb->partitioning];
     top_mv       = top_mb->bmv;
 
-    if (vp56_rac_get_prob_branchy(c, vp8_mbsplit_prob[0])) {
-        if (vp56_rac_get_prob_branchy(c, vp8_mbsplit_prob[1]))
-            part_idx = VP8_SPLITMVMODE_16x8 + vp56_rac_get_prob(c, vp8_mbsplit_prob[2]);
+    if (vpx_rac_get_prob_branchy(c, vp8_mbsplit_prob[0])) {
+        if (vpx_rac_get_prob_branchy(c, vp8_mbsplit_prob[1]))
+            part_idx = VP8_SPLITMVMODE_16x8 + vpx_rac_get_prob(c, vp8_mbsplit_prob[2]);
         else
             part_idx = VP8_SPLITMVMODE_8x8;
     } else {
@@ -1003,9 +1004,9 @@ int decode_splitmvs(VP8Context *s, VP56RangeCoder *c, VP8Macroblock *mb,
 
         submv_prob = get_submv_prob(left, above, is_vp7);
 
-        if (vp56_rac_get_prob_branchy(c, submv_prob[0])) {
-            if (vp56_rac_get_prob_branchy(c, submv_prob[1])) {
-                if (vp56_rac_get_prob_branchy(c, submv_prob[2])) {
+        if (vpx_rac_get_prob_branchy(c, submv_prob[0])) {
+            if (vpx_rac_get_prob_branchy(c, submv_prob[1])) {
+                if (vpx_rac_get_prob_branchy(c, submv_prob[2])) {
                     mb->bmv[n].y = mb->mv.y +
                                    read_mv_component(c, s->prob->mvc[0], is_vp7);
                     mb->bmv[n].x = mb->mv.x +
@@ -1063,7 +1064,7 @@ void vp7_decode_mvs(VP8Context *s, VP8Macroblock *mb,
     int idx = CNT_ZERO;
     VP56mv near_mv[3];
     uint8_t cnt[3] = { 0 };
-    VP56RangeCoder *c = &s->c;
+    VPXRangeCoder *c = &s->c;
     int i;
 
     AV_ZERO32(&near_mv[0]);
@@ -1109,19 +1110,19 @@ void vp7_decode_mvs(VP8Context *s, VP8Macroblock *mb,
 
     mb->partitioning = VP8_SPLITMVMODE_NONE;
 
-    if (vp56_rac_get_prob_branchy(c, vp7_mode_contexts[cnt[CNT_ZERO]][0])) {
+    if (vpx_rac_get_prob_branchy(c, vp7_mode_contexts[cnt[CNT_ZERO]][0])) {
         mb->mode = VP8_MVMODE_MV;
 
-        if (vp56_rac_get_prob_branchy(c, vp7_mode_contexts[cnt[CNT_NEAREST]][1])) {
+        if (vpx_rac_get_prob_branchy(c, vp7_mode_contexts[cnt[CNT_NEAREST]][1])) {
 
-            if (vp56_rac_get_prob_branchy(c, vp7_mode_contexts[cnt[CNT_NEAR]][2])) {
+            if (vpx_rac_get_prob_branchy(c, vp7_mode_contexts[cnt[CNT_NEAR]][2])) {
 
                 if (cnt[CNT_NEAREST] > cnt[CNT_NEAR])
                     AV_WN32A(&mb->mv, cnt[CNT_ZERO] > cnt[CNT_NEAREST] ? 0 : AV_RN32A(&near_mv[CNT_NEAREST]));
                 else
                     AV_WN32A(&mb->mv, cnt[CNT_ZERO] > cnt[CNT_NEAR]    ? 0 : AV_RN32A(&near_mv[CNT_NEAR]));
 
-                if (vp56_rac_get_prob_branchy(c, vp7_mode_contexts[cnt[CNT_NEAR]][3])) {
+                if (vpx_rac_get_prob_branchy(c, vp7_mode_contexts[cnt[CNT_NEAR]][3])) {
                     mb->mode = VP8_MVMODE_SPLIT;
                     mb->mv = mb->bmv[decode_splitmvs(s, c, mb, layout, IS_VP7) - 1];
                 } else {
@@ -1158,7 +1159,7 @@ void vp8_decode_mvs(VP8Context *s, VP8mvbounds *mv_bounds, VP8Macroblock *mb,
     int8_t *sign_bias = s->sign_bias;
     VP56mv near_mv[4];
     uint8_t cnt[4] = { 0 };
-    VP56RangeCoder *c = &s->c;
+    VPXRangeCoder *c = &s->c;
 
     if (!layout) { // layout is inlined (s->mb_layout is not)
         mb_edge[0] = mb + 2;
@@ -1199,7 +1200,7 @@ void vp8_decode_mvs(VP8Context *s, VP8mvbounds *mv_bounds, VP8Macroblock *mb,
     MV_EDGE_CHECK(2)
 
     mb->partitioning = VP8_SPLITMVMODE_NONE;
-    if (vp56_rac_get_prob_branchy(c, vp8_mode_contexts[cnt[CNT_ZERO]][0])) {
+    if (vpx_rac_get_prob_branchy(c, vp8_mode_contexts[cnt[CNT_ZERO]][0])) {
         mb->mode = VP8_MVMODE_MV;
 
         /* If we have three distinct MVs, merge first and last if they're the same */
@@ -1213,15 +1214,15 @@ void vp8_decode_mvs(VP8Context *s, VP8mvbounds *mv_bounds, VP8Macroblock *mb,
             FFSWAP( VP56mv, near_mv[CNT_NEAREST], near_mv[CNT_NEAR]);
         }
 
-        if (vp56_rac_get_prob_branchy(c, vp8_mode_contexts[cnt[CNT_NEAREST]][1])) {
-            if (vp56_rac_get_prob_branchy(c, vp8_mode_contexts[cnt[CNT_NEAR]][2])) {
+        if (vpx_rac_get_prob_branchy(c, vp8_mode_contexts[cnt[CNT_NEAREST]][1])) {
+            if (vpx_rac_get_prob_branchy(c, vp8_mode_contexts[cnt[CNT_NEAR]][2])) {
                 /* Choose the best mv out of 0,0 and the nearest mv */
                 clamp_mv(mv_bounds, &mb->mv, &near_mv[CNT_ZERO + (cnt[CNT_NEAREST] >= cnt[CNT_ZERO])]);
                 cnt[CNT_SPLITMV] = ((mb_edge[VP8_EDGE_LEFT]->mode    == VP8_MVMODE_SPLIT) +
                                     (mb_edge[VP8_EDGE_TOP]->mode     == VP8_MVMODE_SPLIT)) * 2 +
                                     (mb_edge[VP8_EDGE_TOPLEFT]->mode == VP8_MVMODE_SPLIT);
 
-                if (vp56_rac_get_prob_branchy(c, vp8_mode_contexts[cnt[CNT_SPLITMV]][3])) {
+                if (vpx_rac_get_prob_branchy(c, vp8_mode_contexts[cnt[CNT_SPLITMV]][3])) {
                     mb->mode = VP8_MVMODE_SPLIT;
                     mb->mv = mb->bmv[decode_splitmvs(s, c, mb, layout, IS_VP8) - 1];
                 } else {
@@ -1245,7 +1246,7 @@ void vp8_decode_mvs(VP8Context *s, VP8mvbounds *mv_bounds, VP8Macroblock *mb,
 }
 
 static av_always_inline
-void decode_intra4x4_modes(VP8Context *s, VP56RangeCoder *c, VP8Macroblock *mb,
+void decode_intra4x4_modes(VP8Context *s, VPXRangeCoder *c, VP8Macroblock *mb,
                            int mb_x, int keyframe, int layout)
 {
     uint8_t *intra4x4 = mb->intra4x4_pred_mode_mb;
@@ -1284,7 +1285,7 @@ void decode_mb_mode(VP8Context *s, VP8mvbounds *mv_bounds,
                     VP8Macroblock *mb, int mb_x, int mb_y,
                     uint8_t *segment, uint8_t *ref, int layout, int is_vp7)
 {
-    VP56RangeCoder *c = &s->c;
+    VPXRangeCoder *c = &s->c;
     static const char * const vp7_feature_name[] = { "q-index",
                                                      "lf-delta",
                                                      "partial-golden-update",
@@ -1294,7 +1295,7 @@ void decode_mb_mode(VP8Context *s, VP8mvbounds *mv_bounds,
         *segment = 0;
         for (i = 0; i < 4; i++) {
             if (s->feature_enabled[i]) {
-                if (vp56_rac_get_prob_branchy(c, s->feature_present_prob[i])) {
+                if (vpx_rac_get_prob_branchy(c, s->feature_present_prob[i])) {
                       int index = vp89_rac_get_tree(c, vp7_feature_index_tree,
                                                     s->feature_index_prob[i]);
                       av_log(s->avctx, AV_LOG_WARNING,
@@ -1304,13 +1305,13 @@ void decode_mb_mode(VP8Context *s, VP8mvbounds *mv_bounds,
            }
         }
     } else if (s->segmentation.update_map) {
-        int bit  = vp56_rac_get_prob(c, s->prob->segmentid[0]);
-        *segment = vp56_rac_get_prob(c, s->prob->segmentid[1+bit]) + 2*bit;
+        int bit  = vpx_rac_get_prob(c, s->prob->segmentid[0]);
+        *segment = vpx_rac_get_prob(c, s->prob->segmentid[1+bit]) + 2*bit;
     } else if (s->segmentation.enabled)
         *segment = ref ? *ref : *segment;
     mb->segment = *segment;
 
-    mb->skip = s->mbskip_enabled ? vp56_rac_get_prob(c, s->prob->mbskip) : 0;
+    mb->skip = s->mbskip_enabled ? vpx_rac_get_prob(c, s->prob->mbskip) : 0;
 
     if (s->keyframe) {
         mb->mode = vp89_rac_get_tree(c, vp8_pred16x16_tree_intra,
@@ -1331,11 +1332,11 @@ void decode_mb_mode(VP8Context *s, VP8mvbounds *mv_bounds,
         mb->chroma_pred_mode = vp89_rac_get_tree(c, vp8_pred8x8c_tree,
                                                  vp8_pred8x8c_prob_intra);
         mb->ref_frame        = VP56_FRAME_CURRENT;
-    } else if (vp56_rac_get_prob_branchy(c, s->prob->intra)) {
+    } else if (vpx_rac_get_prob_branchy(c, s->prob->intra)) {
         // inter MB, 16.2
-        if (vp56_rac_get_prob_branchy(c, s->prob->last))
+        if (vpx_rac_get_prob_branchy(c, s->prob->last))
             mb->ref_frame =
-                (!is_vp7 && vp56_rac_get_prob(c, s->prob->golden)) ? VP56_FRAME_GOLDEN2 /* altref */
+                (!is_vp7 && vpx_rac_get_prob(c, s->prob->golden)) ? VP56_FRAME_GOLDEN2 /* altref */
                                                                    : VP56_FRAME_GOLDEN;
         else
             mb->ref_frame = VP56_FRAME_PREVIOUS;
@@ -1373,21 +1374,21 @@ void decode_mb_mode(VP8Context *s, VP8mvbounds *mv_bounds,
  *         otherwise, the index of the last coeff decoded plus one
  */
 static av_always_inline
-int decode_block_coeffs_internal(VP56RangeCoder *r, int16_t block[16],
+int decode_block_coeffs_internal(VPXRangeCoder *r, int16_t block[16],
                                  uint8_t probs[16][3][NUM_DCT_TOKENS - 1],
                                  int i, uint8_t *token_prob, int16_t qmul[2],
                                  const uint8_t scan[16], int vp7)
 {
-    VP56RangeCoder c = *r;
+    VPXRangeCoder c = *r;
     goto skip_eob;
     do {
         int coeff;
 restart:
-        if (!vp56_rac_get_prob_branchy(&c, token_prob[0]))   // DCT_EOB
+        if (!vpx_rac_get_prob_branchy(&c, token_prob[0]))   // DCT_EOB
             break;
 
 skip_eob:
-        if (!vp56_rac_get_prob_branchy(&c, token_prob[1])) { // DCT_0
+        if (!vpx_rac_get_prob_branchy(&c, token_prob[1])) { // DCT_0
             if (++i == 16)
                 break; // invalid input; blocks should end with EOB
             token_prob = probs[i][0];
@@ -1396,28 +1397,28 @@ skip_eob:
             goto skip_eob;
         }
 
-        if (!vp56_rac_get_prob_branchy(&c, token_prob[2])) { // DCT_1
+        if (!vpx_rac_get_prob_branchy(&c, token_prob[2])) { // DCT_1
             coeff = 1;
             token_prob = probs[i + 1][1];
         } else {
-            if (!vp56_rac_get_prob_branchy(&c, token_prob[3])) { // DCT 2,3,4
-                coeff = vp56_rac_get_prob_branchy(&c, token_prob[4]);
+            if (!vpx_rac_get_prob_branchy(&c, token_prob[3])) { // DCT 2,3,4
+                coeff = vpx_rac_get_prob_branchy(&c, token_prob[4]);
                 if (coeff)
-                    coeff += vp56_rac_get_prob(&c, token_prob[5]);
+                    coeff += vpx_rac_get_prob(&c, token_prob[5]);
                 coeff += 2;
             } else {
                 // DCT_CAT*
-                if (!vp56_rac_get_prob_branchy(&c, token_prob[6])) {
-                    if (!vp56_rac_get_prob_branchy(&c, token_prob[7])) { // DCT_CAT1
-                        coeff = 5 + vp56_rac_get_prob(&c, vp8_dct_cat1_prob[0]);
+                if (!vpx_rac_get_prob_branchy(&c, token_prob[6])) {
+                    if (!vpx_rac_get_prob_branchy(&c, token_prob[7])) { // DCT_CAT1
+                        coeff = 5 + vpx_rac_get_prob(&c, vp8_dct_cat1_prob[0]);
                     } else {                                    // DCT_CAT2
                         coeff  = 7;
-                        coeff += vp56_rac_get_prob(&c, vp8_dct_cat2_prob[0]) << 1;
-                        coeff += vp56_rac_get_prob(&c, vp8_dct_cat2_prob[1]);
+                        coeff += vpx_rac_get_prob(&c, vp8_dct_cat2_prob[0]) << 1;
+                        coeff += vpx_rac_get_prob(&c, vp8_dct_cat2_prob[1]);
                     }
                 } else {    // DCT_CAT3 and up
-                    int a   = vp56_rac_get_prob(&c, token_prob[8]);
-                    int b   = vp56_rac_get_prob(&c, token_prob[9 + a]);
+                    int a   = vpx_rac_get_prob(&c, token_prob[8]);
+                    int b   = vpx_rac_get_prob(&c, token_prob[9 + a]);
                     int cat = (a << 1) + b;
                     coeff  = 3 + (8 << cat);
                     coeff += vp8_rac_get_coeff(&c, ff_vp8_dct_cat_prob[cat]);
@@ -1455,7 +1456,7 @@ int inter_predict_dc(int16_t block[16], int16_t pred[2])
     return ret;
 }
 
-static int vp7_decode_block_coeffs_internal(VP56RangeCoder *r,
+static int vp7_decode_block_coeffs_internal(VPXRangeCoder *r,
                                             int16_t block[16],
                                             uint8_t probs[16][3][NUM_DCT_TOKENS - 1],
                                             int i, uint8_t *token_prob,
@@ -1467,7 +1468,7 @@ static int vp7_decode_block_coeffs_internal(VP56RangeCoder *r,
 }
 
 #ifndef vp8_decode_block_coeffs_internal
-static int vp8_decode_block_coeffs_internal(VP56RangeCoder *r,
+static int vp8_decode_block_coeffs_internal(VPXRangeCoder *r,
                                             int16_t block[16],
                                             uint8_t probs[16][3][NUM_DCT_TOKENS - 1],
                                             int i, uint8_t *token_prob,
@@ -1492,13 +1493,13 @@ static int vp8_decode_block_coeffs_internal(VP56RangeCoder *r,
  *         otherwise, the index of the last coeff decoded plus one
  */
 static av_always_inline
-int decode_block_coeffs(VP56RangeCoder *c, int16_t block[16],
+int decode_block_coeffs(VPXRangeCoder *c, int16_t block[16],
                         uint8_t probs[16][3][NUM_DCT_TOKENS - 1],
                         int i, int zero_nhood, int16_t qmul[2],
                         const uint8_t scan[16], int vp7)
 {
     uint8_t *token_prob = probs[i][zero_nhood];
-    if (!vp56_rac_get_prob_branchy(c, token_prob[0]))   // DCT_EOB
+    if (!vpx_rac_get_prob_branchy(c, token_prob[0]))   // DCT_EOB
         return 0;
     return vp7 ? vp7_decode_block_coeffs_internal(c, block, probs, i,
                                                   token_prob, qmul, scan)
@@ -1507,7 +1508,7 @@ int decode_block_coeffs(VP56RangeCoder *c, int16_t block[16],
 }
 
 static av_always_inline
-void decode_mb_coeffs(VP8Context *s, VP8ThreadData *td, VP56RangeCoder *c,
+void decode_mb_coeffs(VP8Context *s, VP8ThreadData *td, VPXRangeCoder *c,
                       VP8Macroblock *mb, uint8_t t_nnz[9], uint8_t l_nnz[9],
                       int is_vp7)
 {
@@ -2334,7 +2335,7 @@ int vp78_decode_mv_mb_modes(AVCodecContext *avctx, VP8Frame *curframe,
         s->mv_bounds.mv_max.x = ((s->mb_width - 1) << 6) + MARGIN;
 
         for (mb_x = 0; mb_x < s->mb_width; mb_x++, mb_xy++, mb++) {
-            if (vpX_rac_is_end(&s->c)) {
+            if (vpx_rac_is_end(&s->c)) {
                 return AVERROR_INVALIDDATA;
             }
             if (mb_y == 0)
@@ -2411,7 +2412,7 @@ static av_always_inline int decode_mb_row_no_filter(AVCodecContext *avctx, void 
     int mb_x, mb_xy = mb_y * s->mb_width;
     int num_jobs = s->num_jobs;
     VP8Frame *curframe = s->curframe, *prev_frame = s->prev_frame;
-    VP56RangeCoder *c  = &s->coeff_partition[mb_y & (s->num_coeff_partitions - 1)];
+    VPXRangeCoder *c  = &s->coeff_partition[mb_y & (s->num_coeff_partitions - 1)];
     VP8Macroblock *mb;
     uint8_t *dst[3] = {
         curframe->tf.f->data[0] + 16 * mb_y * s->linesize,
@@ -2419,7 +2420,7 @@ static av_always_inline int decode_mb_row_no_filter(AVCodecContext *avctx, void 
         curframe->tf.f->data[2] +  8 * mb_y * s->uvlinesize
     };
 
-    if (vpX_rac_is_end(c))
+    if (vpx_rac_is_end(c))
          return AVERROR_INVALIDDATA;
 
     if (mb_y == 0)
@@ -2450,7 +2451,7 @@ static av_always_inline int decode_mb_row_no_filter(AVCodecContext *avctx, void 
     td->mv_bounds.mv_max.x = ((s->mb_width - 1) << 6) + MARGIN;
 
     for (mb_x = 0; mb_x < s->mb_width; mb_x++, mb_xy++, mb++) {
-        if (vpX_rac_is_end(c))
+        if (vpx_rac_is_end(c))
             return AVERROR_INVALIDDATA;
         // Wait for previous thread to read mb_x+2, and reach mb_y-1.
         if (prev_td != td) {

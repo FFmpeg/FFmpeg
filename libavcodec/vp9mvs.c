@@ -24,9 +24,9 @@
 #include "threadframe.h"
 #include "vp56.h"
 #include "vp89_rac.h"
-#include "vp9.h"
 #include "vp9data.h"
 #include "vp9dec.h"
+#include "vpx_rac.h"
 
 static av_always_inline void clamp_mv(VP56mv *dst, const VP56mv *src,
                                       VP9TileData *td)
@@ -237,7 +237,7 @@ static void find_ref_mvs(VP9TileData *td,
 static av_always_inline int read_mv_component(VP9TileData *td, int idx, int hp)
 {
     VP9Context *s = td->s;
-    int bit, sign = vp56_rac_get_prob(td->c, s->prob.p.mv_comp[idx].sign);
+    int bit, sign = vpx_rac_get_prob(td->c, s->prob.p.mv_comp[idx].sign);
     int n, c = vp89_rac_get_tree(td->c, ff_vp9_mv_class_tree,
                                  s->prob.p.mv_comp[idx].classes);
 
@@ -247,7 +247,7 @@ static av_always_inline int read_mv_component(VP9TileData *td, int idx, int hp)
         int m;
 
         for (n = 0, m = 0; m < c; m++) {
-            bit = vp56_rac_get_prob(td->c, s->prob.p.mv_comp[idx].bits[m]);
+            bit = vpx_rac_get_prob(td->c, s->prob.p.mv_comp[idx].bits[m]);
             n |= bit << m;
             td->counts.mv_comp[idx].bits[m][bit]++;
         }
@@ -257,7 +257,7 @@ static av_always_inline int read_mv_component(VP9TileData *td, int idx, int hp)
         n  |= bit << 1;
         td->counts.mv_comp[idx].fp[bit]++;
         if (hp) {
-            bit = vp56_rac_get_prob(td->c, s->prob.p.mv_comp[idx].hp);
+            bit = vpx_rac_get_prob(td->c, s->prob.p.mv_comp[idx].hp);
             td->counts.mv_comp[idx].hp[bit]++;
             n |= bit;
         } else {
@@ -268,14 +268,14 @@ static av_always_inline int read_mv_component(VP9TileData *td, int idx, int hp)
         }
         n += 8 << c;
     } else {
-        n = vp56_rac_get_prob(td->c, s->prob.p.mv_comp[idx].class0);
+        n = vpx_rac_get_prob(td->c, s->prob.p.mv_comp[idx].class0);
         td->counts.mv_comp[idx].class0[n]++;
         bit = vp89_rac_get_tree(td->c, ff_vp9_mv_fp_tree,
                                 s->prob.p.mv_comp[idx].class0_fp[n]);
         td->counts.mv_comp[idx].class0_fp[n][bit]++;
         n = (n << 3) | (bit << 1);
         if (hp) {
-            bit = vp56_rac_get_prob(td->c, s->prob.p.mv_comp[idx].class0_hp);
+            bit = vpx_rac_get_prob(td->c, s->prob.p.mv_comp[idx].class0_hp);
             td->counts.mv_comp[idx].class0_hp[bit]++;
             n |= bit;
         } else {

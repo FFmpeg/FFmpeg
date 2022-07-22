@@ -36,6 +36,7 @@
 #include "vp9.h"
 #include "vp9dsp.h"
 #include "vp9shared.h"
+#include "vpx_rac.h"
 
 #define REF_INVALID_SCALE 0xFFFF
 
@@ -98,7 +99,7 @@ typedef struct VP9Context {
     VP9DSPContext dsp;
     VideoDSPContext vdsp;
     GetBitContext gb;
-    VP56RangeCoder c;
+    VPXRangeCoder c;
     int pass, active_tile_cols;
 
 #if HAVE_THREADS
@@ -166,8 +167,8 @@ struct VP9TileData {
     //VP9Context should be const, but because of the threading API(generates
     //a lot of warnings) it's not.
     VP9Context *s;
-    VP56RangeCoder *c_b;
-    VP56RangeCoder *c;
+    VPXRangeCoder *c_b;
+    VPXRangeCoder *c;
     int row, row7, col, col7;
     uint8_t *dst[3];
     ptrdiff_t y_stride, uv_stride;

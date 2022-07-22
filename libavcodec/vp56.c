@@ -29,6 +29,7 @@
 #include "h264chroma.h"
 #include "vp56.h"
 #include "vp56data.h"
+#include "vpx_rac.h"
 
 
 void ff_vp56_init_dequant(VP56Context *s, int quantizer)
@@ -80,22 +81,22 @@ static int vp56_get_vectors_predictors(VP56Context *s, int row, int col,
 
 static void vp56_parse_mb_type_models(VP56Context *s)
 {
-    VP56RangeCoder *c = &s->c;
+    VPXRangeCoder *c = &s->c;
     VP56Model *model = s->modelp;
     int i, ctx, type;
 
     for (ctx=0; ctx<3; ctx++) {
-        if (vp56_rac_get_prob_branchy(c, 174)) {
+        if (vpx_rac_get_prob_branchy(c, 174)) {
             int idx = vp56_rac_gets(c, 4);
             memcpy(model->mb_types_stats[ctx],
                    ff_vp56_pre_def_mb_type_stats[idx][ctx],
                    sizeof(model->mb_types_stats[ctx]));
         }
-        if (vp56_rac_get_prob_branchy(c, 254)) {
+        if (vpx_rac_get_prob_branchy(c, 254)) {
             for (type=0; type<10; type++) {
                 for(i=0; i<2; i++) {
-                    if (vp56_rac_get_prob_branchy(c, 205)) {
-                        int delta, sign = vp56_rac_get(c);
+                    if (vpx_rac_get_prob_branchy(c, 205)) {
+                        int delta, sign = vpx_rac_get(c);
 
                         delta = vp56_rac_get_tree(c, ff_vp56_pmbtm_tree,
                                                   ff_vp56_mb_type_model_model);
@@ -153,9 +154,9 @@ static VP56mb vp56_parse_mb_type(VP56Context *s,
                                  VP56mb prev_type, int ctx)
 {
     uint8_t *mb_type_model = s->modelp->mb_type[ctx][prev_type];
-    VP56RangeCoder *c = &s->c;
+    VPXRangeCoder *c = &s->c;
 
-    if (vp56_rac_get_prob_branchy(c, mb_type_model[0]))
+    if (vpx_rac_get_prob_branchy(c, mb_type_model[0]))
         return prev_type;
     else
         return vp56_rac_get_tree(c, ff_vp56_pmbt_tree, mb_type_model);

@@ -29,6 +29,7 @@
 #include "vp9.h"
 #include "vp9data.h"
 #include "vp9dec.h"
+#include "vpx_rac.h"
 
 static av_always_inline void setctx_2d(uint8_t *ptr, int w, int h,
                                        ptrdiff_t stride, int v)
@@ -105,7 +106,7 @@ static void decode_mode(VP9TileData *td)
                                       s->s.h.segmentation.prob);
     } else if (!s->s.h.segmentation.update_map ||
                (s->s.h.segmentation.temporal &&
-                vp56_rac_get_prob_branchy(td->c,
+                vpx_rac_get_prob_branchy(td->c,
                     s->s.h.segmentation.pred_prob[s->above_segpred_ctx[col] +
                                     td->left_segpred_ctx[row7]]))) {
         if (!s->s.h.errorres && s->s.frames[REF_FRAME_SEGMAP].segmentation_map) {
@@ -144,7 +145,7 @@ static void decode_mode(VP9TileData *td)
         s->s.h.segmentation.feat[b->seg_id].skip_enabled;
     if (!b->skip) {
         int c = td->left_skip_ctx[row7] + s->above_skip_ctx[col];
-        b->skip = vp56_rac_get_prob(td->c, s->prob.p.skip[c]);
+        b->skip = vpx_rac_get_prob(td->c, s->prob.p.skip[c]);
         td->counts.skip[c][b->skip]++;
     }
 
@@ -162,7 +163,7 @@ static void decode_mode(VP9TileData *td)
             c = have_a ? 2 * s->above_intra_ctx[col] :
                 have_l ? 2 * td->left_intra_ctx[row7] : 0;
         }
-        bit = vp56_rac_get_prob(td->c, s->prob.p.intra[c]);
+        bit = vpx_rac_get_prob(td->c, s->prob.p.intra[c]);
         td->counts.intra[c][bit]++;
         b->intra = !bit;
     }
@@ -187,22 +188,22 @@ static void decode_mode(VP9TileData *td)
         }
         switch (max_tx) {
         case TX_32X32:
-            b->tx = vp56_rac_get_prob(td->c, s->prob.p.tx32p[c][0]);
+            b->tx = vpx_rac_get_prob(td->c, s->prob.p.tx32p[c][0]);
             if (b->tx) {
-                b->tx += vp56_rac_get_prob(td->c, s->prob.p.tx32p[c][1]);
+                b->tx += vpx_rac_get_prob(td->c, s->prob.p.tx32p[c][1]);
                 if (b->tx == 2)
-                    b->tx += vp56_rac_get_prob(td->c, s->prob.p.tx32p[c][2]);
+                    b->tx += vpx_rac_get_prob(td->c, s->prob.p.tx32p[c][2]);
             }
             td->counts.tx32p[c][b->tx]++;
             break;
         case TX_16X16:
-            b->tx = vp56_rac_get_prob(td->c, s->prob.p.tx16p[c][0]);
+            b->tx = vpx_rac_get_prob(td->c, s->prob.p.tx16p[c][0]);
             if (b->tx)
-                b->tx += vp56_rac_get_prob(td->c, s->prob.p.tx16p[c][1]);
+                b->tx += vpx_rac_get_prob(td->c, s->prob.p.tx16p[c][1]);
             td->counts.tx16p[c][b->tx]++;
             break;
         case TX_8X8:
-            b->tx = vp56_rac_get_prob(td->c, s->prob.p.tx8p[c]);
+            b->tx = vpx_rac_get_prob(td->c, s->prob.p.tx8p[c]);
             td->counts.tx8p[c][b->tx]++;
             break;
         case TX_4X4:
@@ -367,7 +368,7 @@ static void decode_mode(VP9TileData *td)
                 } else {
                     c = 1;
                 }
-                b->comp = vp56_rac_get_prob(td->c, s->prob.p.comp[c]);
+                b->comp = vpx_rac_get_prob(td->c, s->prob.p.comp[c]);
                 td->counts.comp[c][b->comp]++;
             }
 
@@ -439,7 +440,7 @@ static void decode_mode(VP9TileData *td)
                 } else {
                     c = 2;
                 }
-                bit = vp56_rac_get_prob(td->c, s->prob.p.comp_ref[c]);
+                bit = vpx_rac_get_prob(td->c, s->prob.p.comp_ref[c]);
                 b->ref[var_idx] = s->s.h.varcompref[bit];
                 td->counts.comp_ref[c][bit]++;
             } else /* single reference */ {
@@ -479,7 +480,7 @@ static void decode_mode(VP9TileData *td)
                 } else {
                     c = 2;
                 }
-                bit = vp56_rac_get_prob(td->c, s->prob.p.single_ref[c][0]);
+                bit = vpx_rac_get_prob(td->c, s->prob.p.single_ref[c][0]);
                 td->counts.single_ref[c][0][bit]++;
                 if (!bit) {
                     b->ref[0] = 0;
@@ -566,7 +567,7 @@ static void decode_mode(VP9TileData *td)
                     } else {
                         c = 2;
                     }
-                    bit = vp56_rac_get_prob(td->c, s->prob.p.single_ref[c][1]);
+                    bit = vpx_rac_get_prob(td->c, s->prob.p.single_ref[c][1]);
                     td->counts.single_ref[c][1][bit]++;
                     b->ref[0] = 1 + bit;
                 }
@@ -802,7 +803,7 @@ static void decode_mode(VP9TileData *td)
 
 // FIXME merge cnt/eob arguments?
 static av_always_inline int
-decode_coeffs_b_generic(VP56RangeCoder *c, int16_t *coef, int n_coeffs,
+decode_coeffs_b_generic(VPXRangeCoder *c, int16_t *coef, int n_coeffs,
                         int is_tx32x32, int is8bitsperpixel, int bpp, unsigned (*cnt)[6][3],
                         unsigned (*eob)[6][2], uint8_t (*p)[6][11],
                         int nnz, const int16_t *scan, const int16_t (*nb)[2],
@@ -815,13 +816,13 @@ decode_coeffs_b_generic(VP56RangeCoder *c, int16_t *coef, int n_coeffs,
     do {
         int val, rc;
 
-        val = vp56_rac_get_prob_branchy(c, tp[0]); // eob
+        val = vpx_rac_get_prob_branchy(c, tp[0]); // eob
         eob[band][nnz][val]++;
         if (!val)
             break;
 
 skip_eob:
-        if (!vp56_rac_get_prob_branchy(c, tp[1])) { // zero
+        if (!vpx_rac_get_prob_branchy(c, tp[1])) { // zero
             cnt[band][nnz][0]++;
             if (!--band_left)
                 band_left = band_counts[++band];
@@ -834,70 +835,70 @@ skip_eob:
         }
 
         rc = scan[i];
-        if (!vp56_rac_get_prob_branchy(c, tp[2])) { // one
+        if (!vpx_rac_get_prob_branchy(c, tp[2])) { // one
             cnt[band][nnz][1]++;
             val       = 1;
             cache[rc] = 1;
         } else {
             cnt[band][nnz][2]++;
-            if (!vp56_rac_get_prob_branchy(c, tp[3])) { // 2, 3, 4
-                if (!vp56_rac_get_prob_branchy(c, tp[4])) {
+            if (!vpx_rac_get_prob_branchy(c, tp[3])) { // 2, 3, 4
+                if (!vpx_rac_get_prob_branchy(c, tp[4])) {
                     cache[rc] = val = 2;
                 } else {
-                    val       = 3 + vp56_rac_get_prob(c, tp[5]);
+                    val       = 3 + vpx_rac_get_prob(c, tp[5]);
                     cache[rc] = 3;
                 }
-            } else if (!vp56_rac_get_prob_branchy(c, tp[6])) { // cat1/2
+            } else if (!vpx_rac_get_prob_branchy(c, tp[6])) { // cat1/2
                 cache[rc] = 4;
-                if (!vp56_rac_get_prob_branchy(c, tp[7])) {
-                    val  =  vp56_rac_get_prob(c, 159) + 5;
+                if (!vpx_rac_get_prob_branchy(c, tp[7])) {
+                    val  =  vpx_rac_get_prob(c, 159) + 5;
                 } else {
-                    val  = (vp56_rac_get_prob(c, 165) << 1) + 7;
-                    val +=  vp56_rac_get_prob(c, 145);
+                    val  = (vpx_rac_get_prob(c, 165) << 1) + 7;
+                    val +=  vpx_rac_get_prob(c, 145);
                 }
             } else { // cat 3-6
                 cache[rc] = 5;
-                if (!vp56_rac_get_prob_branchy(c, tp[8])) {
-                    if (!vp56_rac_get_prob_branchy(c, tp[9])) {
-                        val  = 11 + (vp56_rac_get_prob(c, 173) << 2);
-                        val +=      (vp56_rac_get_prob(c, 148) << 1);
-                        val +=       vp56_rac_get_prob(c, 140);
+                if (!vpx_rac_get_prob_branchy(c, tp[8])) {
+                    if (!vpx_rac_get_prob_branchy(c, tp[9])) {
+                        val  = 11 + (vpx_rac_get_prob(c, 173) << 2);
+                        val +=      (vpx_rac_get_prob(c, 148) << 1);
+                        val +=       vpx_rac_get_prob(c, 140);
                     } else {
-                        val  = 19 + (vp56_rac_get_prob(c, 176) << 3);
-                        val +=      (vp56_rac_get_prob(c, 155) << 2);
-                        val +=      (vp56_rac_get_prob(c, 140) << 1);
-                        val +=       vp56_rac_get_prob(c, 135);
+                        val  = 19 + (vpx_rac_get_prob(c, 176) << 3);
+                        val +=      (vpx_rac_get_prob(c, 155) << 2);
+                        val +=      (vpx_rac_get_prob(c, 140) << 1);
+                        val +=       vpx_rac_get_prob(c, 135);
                     }
-                } else if (!vp56_rac_get_prob_branchy(c, tp[10])) {
-                    val  = (vp56_rac_get_prob(c, 180) << 4) + 35;
-                    val += (vp56_rac_get_prob(c, 157) << 3);
-                    val += (vp56_rac_get_prob(c, 141) << 2);
-                    val += (vp56_rac_get_prob(c, 134) << 1);
-                    val +=  vp56_rac_get_prob(c, 130);
+                } else if (!vpx_rac_get_prob_branchy(c, tp[10])) {
+                    val  = (vpx_rac_get_prob(c, 180) << 4) + 35;
+                    val += (vpx_rac_get_prob(c, 157) << 3);
+                    val += (vpx_rac_get_prob(c, 141) << 2);
+                    val += (vpx_rac_get_prob(c, 134) << 1);
+                    val +=  vpx_rac_get_prob(c, 130);
                 } else {
                     val = 67;
                     if (!is8bitsperpixel) {
                         if (bpp == 12) {
-                            val += vp56_rac_get_prob(c, 255) << 17;
-                            val += vp56_rac_get_prob(c, 255) << 16;
+                            val += vpx_rac_get_prob(c, 255) << 17;
+                            val += vpx_rac_get_prob(c, 255) << 16;
                         }
-                        val +=  (vp56_rac_get_prob(c, 255) << 15);
-                        val +=  (vp56_rac_get_prob(c, 255) << 14);
+                        val +=  (vpx_rac_get_prob(c, 255) << 15);
+                        val +=  (vpx_rac_get_prob(c, 255) << 14);
                     }
-                    val += (vp56_rac_get_prob(c, 254) << 13);
-                    val += (vp56_rac_get_prob(c, 254) << 12);
-                    val += (vp56_rac_get_prob(c, 254) << 11);
-                    val += (vp56_rac_get_prob(c, 252) << 10);
-                    val += (vp56_rac_get_prob(c, 249) << 9);
-                    val += (vp56_rac_get_prob(c, 243) << 8);
-                    val += (vp56_rac_get_prob(c, 230) << 7);
-                    val += (vp56_rac_get_prob(c, 196) << 6);
-                    val += (vp56_rac_get_prob(c, 177) << 5);
-                    val += (vp56_rac_get_prob(c, 153) << 4);
-                    val += (vp56_rac_get_prob(c, 140) << 3);
-                    val += (vp56_rac_get_prob(c, 133) << 2);
-                    val += (vp56_rac_get_prob(c, 130) << 1);
-                    val +=  vp56_rac_get_prob(c, 129);
+                    val += (vpx_rac_get_prob(c, 254) << 13);
+                    val += (vpx_rac_get_prob(c, 254) << 12);
+                    val += (vpx_rac_get_prob(c, 254) << 11);
+                    val += (vpx_rac_get_prob(c, 252) << 10);
+                    val += (vpx_rac_get_prob(c, 249) << 9);
+                    val += (vpx_rac_get_prob(c, 243) << 8);
+                    val += (vpx_rac_get_prob(c, 230) << 7);
+                    val += (vpx_rac_get_prob(c, 196) << 6);
+                    val += (vpx_rac_get_prob(c, 177) << 5);
+                    val += (vpx_rac_get_prob(c, 153) << 4);
+                    val += (vpx_rac_get_prob(c, 140) << 3);
+                    val += (vpx_rac_get_prob(c, 133) << 2);
+                    val += (vpx_rac_get_prob(c, 130) << 1);
+                    val +=  vpx_rac_get_prob(c, 129);
                 }
             }
         }

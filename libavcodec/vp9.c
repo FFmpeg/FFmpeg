@@ -39,6 +39,7 @@
 #include "vp9.h"
 #include "vp9data.h"
 #include "vp9dec.h"
+#include "vpx_rac.h"
 #include "libavutil/avassert.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/video_enc_params.h"
@@ -380,7 +381,7 @@ static av_always_inline int inv_recenter_nonneg(int v, int m)
 }
 
 // differential forward probability updates
-static int update_prob(VP56RangeCoder *c, int p)
+static int update_prob(VPXRangeCoder *c, int p)
 {
     static const uint8_t inv_map_table[255] = {
           7,  20,  33,  46,  59,  72,  85,  98, 111, 124, 137, 150, 163, 176,
@@ -785,7 +786,7 @@ static int decode_frame_header(AVCodecContext *avctx,
     s->s.h.tiling.tile_rows = 1 << s->s.h.tiling.log2_tile_rows;
     if (s->s.h.tiling.tile_cols != (1 << s->s.h.tiling.log2_tile_cols)) {
         int n_range_coders;
-        VP56RangeCoder *rc;
+        VPXRangeCoder *rc;
 
         if (s->td) {
             for (i = 0; i < s->active_tile_cols; i++)
@@ -803,10 +804,10 @@ static int decode_frame_header(AVCodecContext *avctx,
             n_range_coders = s->s.h.tiling.tile_cols;
         }
         s->td = av_calloc(s->active_tile_cols, sizeof(VP9TileData) +
-                                 n_range_coders * sizeof(VP56RangeCoder));
+                                 n_range_coders * sizeof(VPXRangeCoder));
         if (!s->td)
             return AVERROR(ENOMEM);
-        rc = (VP56RangeCoder *) &s->td[s->active_tile_cols];
+        rc = (VPXRangeCoder *) &s->td[s->active_tile_cols];
         for (i = 0; i < s->active_tile_cols; i++) {
             s->td[i].s = s;
             s->td[i].c_b = rc;
@@ -878,11 +879,11 @@ static int decode_frame_header(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "Invalid compressed header size\n");
         return AVERROR_INVALIDDATA;
     }
-    ret = ff_vp56_init_range_decoder(&s->c, data2, size2);
+    ret = ff_vpx_init_range_decoder(&s->c, data2, size2);
     if (ret < 0)
         return ret;
 
-    if (vp56_rac_get_prob_branchy(&s->c, 128)) { // marker bit
+    if (vpx_rac_get_prob_branchy(&s->c, 128)) { // marker bit
         av_log(avctx, AV_LOG_ERROR, "Marker bit was set\n");
         return AVERROR_INVALIDDATA;
     }
@@ -912,16 +913,16 @@ static int decode_frame_header(AVCodecContext *avctx,
 
         if (s->s.h.txfmmode == TX_SWITCHABLE) {
             for (i = 0; i < 2; i++)
-                if (vp56_rac_get_prob_branchy(&s->c, 252))
+                if (vpx_rac_get_prob_branchy(&s->c, 252))
                     s->prob.p.tx8p[i] = update_prob(&s->c, s->prob.p.tx8p[i]);
             for (i = 0; i < 2; i++)
                 for (j = 0; j < 2; j++)
-                    if (vp56_rac_get_prob_branchy(&s->c, 252))
+                    if (vpx_rac_get_prob_branchy(&s->c, 252))
                         s->prob.p.tx16p[i][j] =
                             update_prob(&s->c, s->prob.p.tx16p[i][j]);
             for (i = 0; i < 2; i++)
                 for (j = 0; j < 3; j++)
-                    if (vp56_rac_get_prob_branchy(&s->c, 252))
+                    if (vpx_rac_get_prob_branchy(&s->c, 252))
                         s->prob.p.tx32p[i][j] =
                             update_prob(&s->c, s->prob.p.tx32p[i][j]);
         }
@@ -940,7 +941,7 @@ static int decode_frame_header(AVCodecContext *avctx,
                             if (m >= 3 && l == 0) // dc only has 3 pt
                                 break;
                             for (n = 0; n < 3; n++) {
-                                if (vp56_rac_get_prob_branchy(&s->c, 252))
+                                if (vpx_rac_get_prob_branchy(&s->c, 252))
                                     p[n] = update_prob(&s->c, r[n]);
                                 else
                                     p[n] = r[n];
@@ -966,24 +967,24 @@ static int decode_frame_header(AVCodecContext *avctx,
 
     // mode updates
     for (i = 0; i < 3; i++)
-        if (vp56_rac_get_prob_branchy(&s->c, 252))
+        if (vpx_rac_get_prob_branchy(&s->c, 252))
             s->prob.p.skip[i] = update_prob(&s->c, s->prob.p.skip[i]);
     if (!s->s.h.keyframe && !s->s.h.intraonly) {
         for (i = 0; i < 7; i++)
             for (j = 0; j < 3; j++)
-                if (vp56_rac_get_prob_branchy(&s->c, 252))
+                if (vpx_rac_get_prob_branchy(&s->c, 252))
                     s->prob.p.mv_mode[i][j] =
                         update_prob(&s->c, s->prob.p.mv_mode[i][j]);
 
         if (s->s.h.filtermode == FILTER_SWITCHABLE)
             for (i = 0; i < 4; i++)
                 for (j = 0; j < 2; j++)
-                    if (vp56_rac_get_prob_branchy(&s->c, 252))
+                    if (vpx_rac_get_prob_branchy(&s->c, 252))
                         s->prob.p.filter[i][j] =
                             update_prob(&s->c, s->prob.p.filter[i][j]);
 
         for (i = 0; i < 4; i++)
-            if (vp56_rac_get_prob_branchy(&s->c, 252))
+            if (vpx_rac_get_prob_branchy(&s->c, 252))
                 s->prob.p.intra[i] = update_prob(&s->c, s->prob.p.intra[i]);
 
         if (s->s.h.allowcompinter) {
@@ -992,7 +993,7 @@ static int decode_frame_header(AVCodecContext *avctx,
                 s->s.h.comppredmode += vp89_rac_get(&s->c);
             if (s->s.h.comppredmode == PRED_SWITCHABLE)
                 for (i = 0; i < 5; i++)
-                    if (vp56_rac_get_prob_branchy(&s->c, 252))
+                    if (vpx_rac_get_prob_branchy(&s->c, 252))
                         s->prob.p.comp[i] =
                             update_prob(&s->c, s->prob.p.comp[i]);
         } else {
@@ -1001,10 +1002,10 @@ static int decode_frame_header(AVCodecContext *avctx,
 
         if (s->s.h.comppredmode != PRED_COMPREF) {
             for (i = 0; i < 5; i++) {
-                if (vp56_rac_get_prob_branchy(&s->c, 252))
+                if (vpx_rac_get_prob_branchy(&s->c, 252))
                     s->prob.p.single_ref[i][0] =
                         update_prob(&s->c, s->prob.p.single_ref[i][0]);
-                if (vp56_rac_get_prob_branchy(&s->c, 252))
+                if (vpx_rac_get_prob_branchy(&s->c, 252))
                     s->prob.p.single_ref[i][1] =
                         update_prob(&s->c, s->prob.p.single_ref[i][1]);
             }
@@ -1012,46 +1013,46 @@ static int decode_frame_header(AVCodecContext *avctx,
 
         if (s->s.h.comppredmode != PRED_SINGLEREF) {
             for (i = 0; i < 5; i++)
-                if (vp56_rac_get_prob_branchy(&s->c, 252))
+                if (vpx_rac_get_prob_branchy(&s->c, 252))
                     s->prob.p.comp_ref[i] =
                         update_prob(&s->c, s->prob.p.comp_ref[i]);
         }
 
         for (i = 0; i < 4; i++)
             for (j = 0; j < 9; j++)
-                if (vp56_rac_get_prob_branchy(&s->c, 252))
+                if (vpx_rac_get_prob_branchy(&s->c, 252))
                     s->prob.p.y_mode[i][j] =
                         update_prob(&s->c, s->prob.p.y_mode[i][j]);
 
         for (i = 0; i < 4; i++)
             for (j = 0; j < 4; j++)
                 for (k = 0; k < 3; k++)
-                    if (vp56_rac_get_prob_branchy(&s->c, 252))
+                    if (vpx_rac_get_prob_branchy(&s->c, 252))
                         s->prob.p.partition[3 - i][j][k] =
                             update_prob(&s->c,
                                         s->prob.p.partition[3 - i][j][k]);
 
         // mv fields don't use the update_prob subexp model for some reason
         for (i = 0; i < 3; i++)
-            if (vp56_rac_get_prob_branchy(&s->c, 252))
+            if (vpx_rac_get_prob_branchy(&s->c, 252))
                 s->prob.p.mv_joint[i] = (vp89_rac_get_uint(&s->c, 7) << 1) | 1;
 
         for (i = 0; i < 2; i++) {
-            if (vp56_rac_get_prob_branchy(&s->c, 252))
+            if (vpx_rac_get_prob_branchy(&s->c, 252))
                 s->prob.p.mv_comp[i].sign =
                     (vp89_rac_get_uint(&s->c, 7) << 1) | 1;
 
             for (j = 0; j < 10; j++)
-                if (vp56_rac_get_prob_branchy(&s->c, 252))
+                if (vpx_rac_get_prob_branchy(&s->c, 252))
                     s->prob.p.mv_comp[i].classes[j] =
                         (vp89_rac_get_uint(&s->c, 7) << 1) | 1;
 
-            if (vp56_rac_get_prob_branchy(&s->c, 252))
+            if (vpx_rac_get_prob_branchy(&s->c, 252))
                 s->prob.p.mv_comp[i].class0 =
                     (vp89_rac_get_uint(&s->c, 7) << 1) | 1;
 
             for (j = 0; j < 10; j++)
-                if (vp56_rac_get_prob_branchy(&s->c, 252))
+                if (vpx_rac_get_prob_branchy(&s->c, 252))
                     s->prob.p.mv_comp[i].bits[j] =
                         (vp89_rac_get_uint(&s->c, 7) << 1) | 1;
         }
@@ -1059,23 +1060,23 @@ static int decode_frame_header(AVCodecContext *avctx,
         for (i = 0; i < 2; i++) {
             for (j = 0; j < 2; j++)
                 for (k = 0; k < 3; k++)
-                    if (vp56_rac_get_prob_branchy(&s->c, 252))
+                    if (vpx_rac_get_prob_branchy(&s->c, 252))
                         s->prob.p.mv_comp[i].class0_fp[j][k] =
                             (vp89_rac_get_uint(&s->c, 7) << 1) | 1;
 
             for (j = 0; j < 3; j++)
-                if (vp56_rac_get_prob_branchy(&s->c, 252))
+                if (vpx_rac_get_prob_branchy(&s->c, 252))
                     s->prob.p.mv_comp[i].fp[j] =
                         (vp89_rac_get_uint(&s->c, 7) << 1) | 1;
         }
 
         if (s->s.h.highprecisionmvs) {
             for (i = 0; i < 2; i++) {
-                if (vp56_rac_get_prob_branchy(&s->c, 252))
+                if (vpx_rac_get_prob_branchy(&s->c, 252))
                     s->prob.p.mv_comp[i].class0_hp =
                         (vp89_rac_get_uint(&s->c, 7) << 1) | 1;
 
-                if (vp56_rac_get_prob_branchy(&s->c, 252))
+                if (vpx_rac_get_prob_branchy(&s->c, 252))
                     s->prob.p.mv_comp[i].hp =
                         (vp89_rac_get_uint(&s->c, 7) << 1) | 1;
             }
@@ -1136,7 +1137,7 @@ static void decode_sb(VP9TileData *td, int row, int col, VP9Filter *lflvl,
             default:
                 av_assert0(0);
             }
-        } else if (vp56_rac_get_prob_branchy(td->c, p[1])) {
+        } else if (vpx_rac_get_prob_branchy(td->c, p[1])) {
             bp = PARTITION_SPLIT;
             decode_sb(td, row, col, lflvl, yoff, uvoff, bl + 1);
             decode_sb(td, row, col + hbs, lflvl,
@@ -1147,7 +1148,7 @@ static void decode_sb(VP9TileData *td, int row, int col, VP9Filter *lflvl,
             ff_vp9_decode_block(td, row, col, lflvl, yoff, uvoff, bl, bp);
         }
     } else if (row + hbs < s->rows) { // FIXME why not <=?
-        if (vp56_rac_get_prob_branchy(td->c, p[2])) {
+        if (vpx_rac_get_prob_branchy(td->c, p[2])) {
             bp = PARTITION_SPLIT;
             decode_sb(td, row, col, lflvl, yoff, uvoff, bl + 1);
             yoff  += hbs * 8 * y_stride;
@@ -1292,10 +1293,10 @@ static int decode_tiles(AVCodecContext *avctx,
                 ff_thread_report_progress(&s->s.frames[CUR_FRAME].tf, INT_MAX, 0);
                 return AVERROR_INVALIDDATA;
             }
-            ret = ff_vp56_init_range_decoder(&td->c_b[tile_col], data, tile_size);
+            ret = ff_vpx_init_range_decoder(&td->c_b[tile_col], data, tile_size);
             if (ret < 0)
                 return ret;
-            if (vp56_rac_get_prob_branchy(&td->c_b[tile_col], 128)) { // marker bit
+            if (vpx_rac_get_prob_branchy(&td->c_b[tile_col], 128)) { // marker bit
                 ff_thread_report_progress(&s->s.frames[CUR_FRAME].tf, INT_MAX, 0);
                 return AVERROR_INVALIDDATA;
             }
@@ -1341,7 +1342,7 @@ static int decode_tiles(AVCodecContext *avctx,
                         decode_sb_mem(td, row, col, lflvl_ptr,
                                       yoff2, uvoff2, BL_64X64);
                     } else {
-                        if (vpX_rac_is_end(td->c)) {
+                        if (vpx_rac_is_end(td->c)) {
                             return AVERROR_INVALIDDATA;
                         }
                         decode_sb(td, row, col, lflvl_ptr,
@@ -1715,10 +1716,10 @@ static int vp9_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                     }
                     if (tile_size > size)
                         return AVERROR_INVALIDDATA;
-                    ret = ff_vp56_init_range_decoder(&s->td[tile_col].c_b[tile_row], data, tile_size);
+                    ret = ff_vpx_init_range_decoder(&s->td[tile_col].c_b[tile_row], data, tile_size);
                     if (ret < 0)
                         return ret;
-                    if (vp56_rac_get_prob_branchy(&s->td[tile_col].c_b[tile_row], 128)) // marker bit
+                    if (vpx_rac_get_prob_branchy(&s->td[tile_col].c_b[tile_row], 128)) // marker bit
                         return AVERROR_INVALIDDATA;
                     data += tile_size;
                     size -= tile_size;

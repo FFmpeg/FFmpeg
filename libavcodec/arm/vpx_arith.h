@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_ARM_VP56_ARITH_H
-#define AVCODEC_ARM_VP56_ARITH_H
+#ifndef AVCODEC_ARM_VPX_ARITH_H
+#define AVCODEC_ARM_VPX_ARITH_H
 
 #if CONFIG_THUMB
 #   define A(x)
@@ -39,10 +39,10 @@
 
 #if HAVE_ARMV6_INLINE
 
-#define vp56_rac_get_prob vp56_rac_get_prob_armv6
-static inline int vp56_rac_get_prob_armv6(VP56RangeCoder *c, int pr)
+#define vpx_rac_get_prob vp56_rac_get_prob_armv6
+static inline int vp56_rac_get_prob_armv6(VPXRangeCoder *c, int pr)
 {
-    unsigned shift     = ff_vp56_norm_shift[c->high];
+    unsigned shift     = ff_vpx_norm_shift[c->high];
     unsigned code_word = c->code_word << shift;
     unsigned high      = c->high << shift;
     unsigned bit;
@@ -76,10 +76,10 @@ static inline int vp56_rac_get_prob_armv6(VP56RangeCoder *c, int pr)
     return bit;
 }
 
-#define vp56_rac_get_prob_branchy vp56_rac_get_prob_branchy_armv6
-static inline int vp56_rac_get_prob_branchy_armv6(VP56RangeCoder *c, int pr)
+#define vpx_rac_get_prob_branchy vp56_rac_get_prob_branchy_armv6
+static inline int vp56_rac_get_prob_branchy_armv6(VPXRangeCoder *c, int pr)
 {
-    unsigned shift     = ff_vp56_norm_shift[c->high];
+    unsigned shift     = ff_vpx_norm_shift[c->high];
     unsigned code_word = c->code_word << shift;
     unsigned high      = c->high << shift;
     unsigned low;
@@ -118,4 +118,4 @@ static inline int vp56_rac_get_prob_branchy_armv6(VP56RangeCoder *c, int pr)
 
 #endif
 
-#endif /* AVCODEC_ARM_VP56_ARITH_H */
+#endif /* AVCODEC_ARM_VPX_ARITH_H */

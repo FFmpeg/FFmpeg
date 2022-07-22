@@ -21,16 +21,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_X86_VP56_ARITH_H
-#define AVCODEC_X86_VP56_ARITH_H
+#ifndef AVCODEC_X86_VPX_ARITH_H
+#define AVCODEC_X86_VPX_ARITH_H
+
+#include "libavutil/x86/asm.h"
 
 #if HAVE_INLINE_ASM && HAVE_FAST_CMOV && HAVE_6REGS
 #include "libavutil/attributes.h"
 
-#define vp56_rac_get_prob vp56_rac_get_prob
-static av_always_inline int vp56_rac_get_prob(VP56RangeCoder *c, uint8_t prob)
+#define vpx_rac_get_prob vpx_rac_get_prob
+static av_always_inline int vpx_rac_get_prob(VPXRangeCoder *c, uint8_t prob)
 {
-    unsigned int code_word = vp56_rac_renorm(c);
+    unsigned int code_word = vpx_rac_renorm(c);
     unsigned int low = 1 + (((c->high - 1) * prob) >> 8);
     unsigned int low_shift = low << 16;
     int bit = 0;
@@ -50,4 +52,4 @@ static av_always_inline int vp56_rac_get_prob(VP56RangeCoder *c, uint8_t prob)
 }
 #endif
 
-#endif /* AVCODEC_X86_VP56_ARITH_H */
+#endif /* AVCODEC_X86_VPX_ARITH_H */

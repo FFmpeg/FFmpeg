@@ -31,11 +31,11 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "hpeldsp.h"
-#include "bytestream.h"
 #include "h264chroma.h"
 #include "videodsp.h"
 #include "vp3dsp.h"
 #include "vp56dsp.h"
+#include "vpx_rac.h"
 
 typedef struct vp56_context VP56Context;
 
@@ -84,16 +84,6 @@ typedef int  (*VP56ParseCoeffModels)(VP56Context *s);
 typedef int  (*VP56ParseHeader)(VP56Context *s, const uint8_t *buf,
                                 int buf_size);
 
-typedef struct VP56RangeCoder {
-    int high;
-    int bits; /* stored negated (i.e. negative "bits" is a positive number of
-                 bits left) in order to eliminate a negate in cache refilling */
-    const uint8_t *buffer;
-    const uint8_t *end;
-    unsigned int code_word;
-    int end_reached;
-} VP56RangeCoder;
-
 typedef struct VP56RefDc {
     uint8_t not_null_dc;
     VP56Frame ref_frame;
@@ -134,9 +124,9 @@ struct vp56_context {
     AVFrame *frames[4];
     uint8_t *edge_emu_buffer_alloc;
     uint8_t *edge_emu_buffer;
-    VP56RangeCoder c;
-    VP56RangeCoder cc;
-    VP56RangeCoder *ccp;
+    VPXRangeCoder c;
+    VPXRangeCoder cc;
+    VPXRangeCoder *ccp;
     int sub_version;
 
     /* frame info */
@@ -232,121 +222,31 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, AVFrame *frame,
  * vp56 specific range coder implementation
  */
 
-extern const uint8_t ff_vp56_norm_shift[256];
-int ff_vp56_init_range_decoder(VP56RangeCoder *c, const uint8_t *buf, int buf_size);
-
-/**
- * vp5689 returns 1 if the end of the stream has been reached, 0 otherwise.
- */
-static av_always_inline int vpX_rac_is_end(VP56RangeCoder *c)
-{
-    if (c->end <= c->buffer && c->bits >= 0)
-        c->end_reached ++;
-    return c->end_reached > 10;
-}
-
-static av_always_inline unsigned int vp56_rac_renorm(VP56RangeCoder *c)
-{
-    int shift = ff_vp56_norm_shift[c->high];
-    int bits = c->bits;
-    unsigned int code_word = c->code_word;
-
-    c->high   <<= shift;
-    code_word <<= shift;
-    bits       += shift;
-    if(bits >= 0 && c->buffer < c->end) {
-        code_word |= bytestream_get_be16(&c->buffer) << bits;
-        bits -= 16;
-    }
-    c->bits = bits;
-    return code_word;
-}
-
-#if   ARCH_ARM
-#include "arm/vp56_arith.h"
-#elif ARCH_X86
-#include "x86/vp56_arith.h"
-#endif
-
-#ifndef vp56_rac_get_prob
-#define vp56_rac_get_prob vp56_rac_get_prob
-static av_always_inline int vp56_rac_get_prob(VP56RangeCoder *c, uint8_t prob)
-{
-    unsigned int code_word = vp56_rac_renorm(c);
-    unsigned int low = 1 + (((c->high - 1) * prob) >> 8);
-    unsigned int low_shift = low << 16;
-    int bit = code_word >= low_shift;
-
-    c->high = bit ? c->high - low : low;
-    c->code_word = bit ? code_word - low_shift : code_word;
-
-    return bit;
-}
-#endif
-
-#ifndef vp56_rac_get_prob_branchy
-// branchy variant, to be used where there's a branch based on the bit decoded
-static av_always_inline int vp56_rac_get_prob_branchy(VP56RangeCoder *c, int prob)
-{
-    unsigned long code_word = vp56_rac_renorm(c);
-    unsigned low = 1 + (((c->high - 1) * prob) >> 8);
-    unsigned low_shift = low << 16;
-
-    if (code_word >= low_shift) {
-        c->high     -= low;
-        c->code_word = code_word - low_shift;
-        return 1;
-    }
-
-    c->high = low;
-    c->code_word = code_word;
-    return 0;
-}
-#endif
-
-static av_always_inline int vp56_rac_get(VP56RangeCoder *c)
-{
-    unsigned int code_word = vp56_rac_renorm(c);
-    /* equiprobable */
-    int low = (c->high + 1) >> 1;
-    unsigned int low_shift = low << 16;
-    int bit = code_word >= low_shift;
-    if (bit) {
-        c->high   -= low;
-        code_word -= low_shift;
-    } else {
-        c->high = low;
-    }
-
-    c->code_word = code_word;
-    return bit;
-}
-
-static int vp56_rac_gets(VP56RangeCoder *c, int bits)
+static int vp56_rac_gets(VPXRangeCoder *c, int bits)
 {
     int value = 0;
 
     while (bits--) {
-        value = (value << 1) | vp56_rac_get(c);
+        value = (value << 1) | vpx_rac_get(c);
     }
 
     return value;
 }
 
 // P(7)
-static av_unused int vp56_rac_gets_nn(VP56RangeCoder *c, int bits)
+static av_unused int vp56_rac_gets_nn(VPXRangeCoder *c, int bits)
 {
     int v = vp56_rac_gets(c, 7) << 1;
     return v + !v;
 }
 
 static av_always_inline
-int vp56_rac_get_tree(VP56RangeCoder *c,
+int vp56_rac_get_tree(VPXRangeCoder *c,
                       const VP56Tree *tree,
                       const uint8_t *probs)
 {
     while (tree->val > 0) {
-        if (vp56_rac_get_prob_branchy(c, probs[tree->prob_idx]))
+        if (vpx_rac_get_prob_branchy(c, probs[tree->prob_idx]))
             tree += tree->val;
         else
             tree++;
