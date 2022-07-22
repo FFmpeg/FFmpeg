@@ -61,6 +61,7 @@ static const char *const opt_name_enc_stats_pre_fmt[]         = {"enc_stats_pre_
 static const char *const opt_name_enc_stats_post_fmt[]        = {"enc_stats_post_fmt", NULL};
 static const char *const opt_name_filters[]                   = {"filter", "af", "vf", NULL};
 static const char *const opt_name_filter_scripts[]            = {"filter_script", NULL};
+static const char *const opt_name_fix_sub_duration_heartbeat[] = {"fix_sub_duration_heartbeat", NULL};
 static const char *const opt_name_fps_mode[]                  = {"fps_mode", NULL};
 static const char *const opt_name_force_fps[]                 = {"force_fps", NULL};
 static const char *const opt_name_forced_key_frames[]         = {"forced_key_frames", NULL};
@@ -612,6 +613,9 @@ static OutputStream *new_output_stream(Muxer *mux, const OptionsContext *o,
     MATCH_PER_STREAM_OPT(muxing_queue_data_threshold, i, ms->muxing_queue_data_threshold, oc, st);
 
     MATCH_PER_STREAM_OPT(bits_per_raw_sample, i, ost->bits_per_raw_sample,
+                         oc, st);
+
+    MATCH_PER_STREAM_OPT(fix_sub_duration_heartbeat, i, ost->fix_sub_duration_heartbeat,
                          oc, st);
 
     if (oc->oformat->flags & AVFMT_GLOBALHEADER && ost->enc_ctx)

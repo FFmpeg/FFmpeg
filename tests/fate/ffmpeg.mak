@@ -117,6 +117,21 @@ fate-ffmpeg-fix_sub_duration: CMD = fmtstdout srt -fix_sub_duration \
   -real_time 1 -f lavfi \
   -i "movie=$(TARGET_SAMPLES)/sub/Closedcaption_rollup.m2v[out0+subcc]"
 
+# Basic test for fix_sub_duration_heartbeat, which causes a buffered subtitle
+# to be pushed out when a video keyframe is received from an encoder.
+FATE_SAMPLES_FFMPEG-$(call FILTERDEMDECENCMUX, MOVIE, MPEGVIDEO, \
+                           MPEG2VIDEO, SUBRIP, SRT, LAVFI_INDEV  \
+                           MPEGVIDEO_PARSER CCAPTION_DECODER \
+                           MPEG2VIDEO_ENCODER NULL_MUXER PIPE_PROTOCOL) \
+                           += fate-ffmpeg-fix_sub_duration_heartbeat
+fate-ffmpeg-fix_sub_duration_heartbeat: CMD = fmtstdout srt -fix_sub_duration \
+  -real_time 1 -f lavfi \
+  -i "movie=$(TARGET_SAMPLES)/sub/Closedcaption_rollup.m2v[out0+subcc]" \
+  -map 0:v  -map 0:s -fix_sub_duration_heartbeat:v:0 \
+  -c:v mpeg2video -b:v 2M -g 30 -sc_threshold 1000000000 \
+  -c:s srt \
+  -f null -
+
 FATE_STREAMCOPY-$(call REMUX, MP4 MOV, EAC3_DEMUXER) += fate-copy-trac3074
 fate-copy-trac3074: CMD = transcode eac3 $(TARGET_SAMPLES)/eac3/csi_miami_stereo_128_spx.eac3\
                      mp4 "-codec copy -map 0" "-codec copy"
