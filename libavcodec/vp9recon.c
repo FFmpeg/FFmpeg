@@ -298,7 +298,7 @@ void ff_vp9_intra_recon_16bpp(VP9TileData *td, ptrdiff_t y_off, ptrdiff_t uv_off
 static av_always_inline void mc_luma_unscaled(VP9TileData *td, vp9_mc_func (*mc)[2],
                                               uint8_t *dst, ptrdiff_t dst_stride,
                                               const uint8_t *ref, ptrdiff_t ref_stride,
-                                              ThreadFrame *ref_frame,
+                                              const ThreadFrame *ref_frame,
                                               ptrdiff_t y, ptrdiff_t x, const VP9mv *mv,
                                               int bw, int bh, int w, int h, int bytesperpixel)
 {
@@ -336,7 +336,7 @@ static av_always_inline void mc_chroma_unscaled(VP9TileData *td, vp9_mc_func (*m
                                                 ptrdiff_t dst_stride,
                                                 const uint8_t *ref_u, ptrdiff_t src_stride_u,
                                                 const uint8_t *ref_v, ptrdiff_t src_stride_v,
-                                                ThreadFrame *ref_frame,
+                                                const ThreadFrame *ref_frame,
                                                 ptrdiff_t y, ptrdiff_t x, const VP9mv *mv,
                                                 int bw, int bh, int w, int h, int bytesperpixel)
 {
@@ -407,7 +407,7 @@ static av_always_inline void mc_luma_scaled(VP9TileData *td, vp9_scaled_mc_func 
                                             vp9_mc_func (*mc)[2],
                                             uint8_t *dst, ptrdiff_t dst_stride,
                                             const uint8_t *ref, ptrdiff_t ref_stride,
-                                            ThreadFrame *ref_frame,
+                                            const ThreadFrame *ref_frame,
                                             ptrdiff_t y, ptrdiff_t x, const VP9mv *in_mv,
                                             int px, int py, int pw, int ph,
                                             int bw, int bh, int w, int h, int bytesperpixel,
@@ -467,7 +467,7 @@ static av_always_inline void mc_chroma_scaled(VP9TileData *td, vp9_scaled_mc_fun
                                               ptrdiff_t dst_stride,
                                               const uint8_t *ref_u, ptrdiff_t src_stride_u,
                                               const uint8_t *ref_v, ptrdiff_t src_stride_v,
-                                              ThreadFrame *ref_frame,
+                                              const ThreadFrame *ref_frame,
                                               ptrdiff_t y, ptrdiff_t x, const VP9mv *in_mv,
                                               int px, int py, int pw, int ph,
                                               int bw, int bh, int w, int h, int bytesperpixel,

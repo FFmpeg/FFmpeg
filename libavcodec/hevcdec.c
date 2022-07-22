@@ -1799,7 +1799,7 @@ static void chroma_mc_bi(HEVCLocalContext *lc, uint8_t *dst0, ptrdiff_t dststrid
                                                          _mx1, _my1, block_w);
 }
 
-static void hevc_await_progress(const HEVCContext *s, HEVCFrame *ref,
+static void hevc_await_progress(const HEVCContext *s, const HEVCFrame *ref,
                                 const Mv *mv, int y0, int height)
 {
     if (s->threads_type == FF_THREAD_FRAME ) {
@@ -1869,7 +1869,7 @@ static void hls_prediction_unit(HEVCLocalContext *lc, int x0, int y0,
 
     MvField *tab_mvf = s->ref->tab_mvf;
     const RefPicList *refPicList = s->ref->refPicList;
-    HEVCFrame *ref0 = NULL, *ref1 = NULL;
+    const HEVCFrame *ref0 = NULL, *ref1 = NULL;
     uint8_t *dst0 = POS(0, x0, y0);
     uint8_t *dst1 = POS(1, x0, y0);
     uint8_t *dst2 = POS(2, x0, y0);

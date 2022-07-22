@@ -703,7 +703,7 @@ static inline void rv34_mc(RV34DecContext *r, const int block_type,
     if (HAVE_THREADS && (s->avctx->active_thread_type & FF_THREAD_FRAME)) {
         /* wait for the referenced mb row to be finished */
         int mb_row = s->mb_y + ((yoff + my + 5 + 8 * height) >> 4);
-        ThreadFrame *f = dir ? &s->next_picture_ptr->tf : &s->last_picture_ptr->tf;
+        const ThreadFrame *f = dir ? &s->next_picture_ptr->tf : &s->last_picture_ptr->tf;
         ff_thread_await_progress(f, mb_row, 0);
     }
 

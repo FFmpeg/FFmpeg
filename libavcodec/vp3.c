@@ -1950,7 +1950,7 @@ static void vp3_draw_horiz_band(Vp3DecodeContext *s, int y)
 static void await_reference_row(Vp3DecodeContext *s, Vp3Fragment *fragment,
                                 int motion_y, int y)
 {
-    ThreadFrame *ref_frame;
+    const ThreadFrame *ref_frame;
     int ref_row;
     int border = motion_y & 1;
 
