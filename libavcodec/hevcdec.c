@@ -26,6 +26,7 @@
 #include "config_components.h"
 
 #include "libavutil/attributes.h"
+#include "libavutil/avstring.h"
 #include "libavutil/common.h"
 #include "libavutil/display.h"
 #include "libavutil/film_grain_params.h"
@@ -3374,26 +3375,18 @@ fail:
     return ret;
 }
 
-static void print_md5(void *log_ctx, int level, uint8_t md5[16])
-{
-    int i;
-    for (i = 0; i < 16; i++)
-        av_log(log_ctx, level, "%02"PRIx8, md5[i]);
-}
-
 static int verify_md5(HEVCContext *s, AVFrame *frame)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
+    char msg_buf[4 * (50 + 2 * 2 * 16 /* MD5-size */)];
     int pixel_shift;
+    int err = 0;
     int i, j;
 
     if (!desc)
         return AVERROR(EINVAL);
 
     pixel_shift = desc->comp[0].depth > 8;
-
-    av_log(s->avctx, AV_LOG_DEBUG, "Verifying checksum for frame with POC %d: ",
-           s->poc);
 
     /* the checksums are LE, so we have to byteswap for >8bpp formats
      * on BE arches */
@@ -3407,6 +3400,7 @@ static int verify_md5(HEVCContext *s, AVFrame *frame)
     }
 #endif
 
+    msg_buf[0] = '\0';
     for (i = 0; frame->data[i]; i++) {
         int width  = s->avctx->coded_width;
         int height = s->avctx->coded_height;
@@ -3428,23 +3422,26 @@ static int verify_md5(HEVCContext *s, AVFrame *frame)
         }
         av_md5_final(s->md5_ctx, md5);
 
+#define MD5_PRI "%016" PRIx64 "%016" PRIx64
+#define MD5_PRI_ARG(buf) AV_RB64(buf), AV_RB64((const uint8_t*)(buf) + 8)
+
         if (!memcmp(md5, s->sei.picture_hash.md5[i], 16)) {
-            av_log   (s->avctx, AV_LOG_DEBUG, "plane %d - correct ", i);
-            print_md5(s->avctx, AV_LOG_DEBUG, md5);
-            av_log   (s->avctx, AV_LOG_DEBUG, "; ");
+            av_strlcatf(msg_buf, sizeof(msg_buf),
+                        "plane %d - correct " MD5_PRI "; ",
+                        i, MD5_PRI_ARG(md5));
         } else {
-            av_log   (s->avctx, AV_LOG_ERROR, "mismatching checksum of plane %d - ", i);
-            print_md5(s->avctx, AV_LOG_ERROR, md5);
-            av_log   (s->avctx, AV_LOG_ERROR, " != ");
-            print_md5(s->avctx, AV_LOG_ERROR, s->sei.picture_hash.md5[i]);
-            av_log   (s->avctx, AV_LOG_ERROR, "\n");
-            return AVERROR_INVALIDDATA;
+            av_strlcatf(msg_buf, sizeof(msg_buf),
+                       "mismatching checksum of plane %d - " MD5_PRI " != " MD5_PRI "; ",
+                        i, MD5_PRI_ARG(md5), MD5_PRI_ARG(s->sei.picture_hash.md5[i]));
+            err = AVERROR_INVALIDDATA;
         }
     }
 
-    av_log(s->avctx, AV_LOG_DEBUG, "\n");
+    av_log(s->avctx, err < 0 ? AV_LOG_ERROR : AV_LOG_DEBUG,
+           "Verifying checksum for frame with POC %d: %s\n",
+           s->poc, msg_buf);
 
-    return 0;
+    return err;
 }
 
 static int hevc_decode_extradata(HEVCContext *s, uint8_t *buf, int length, int first)
