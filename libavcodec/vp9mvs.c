@@ -65,7 +65,7 @@ static void find_ref_mvs(VP9TileData *td,
         [BS_4x4]   = { {  0, -1 }, { -1,  0 }, { -1, -1 }, {  0, -2 },
                        { -2,  0 }, { -1, -2 }, { -2, -1 }, { -2, -2 } },
     };
-    VP9Context *s = td->s;
+    const VP9Context *s = td->s;
     VP9Block *b = td->b;
     int row = td->row, col = td->col, row7 = td->row7;
     const int8_t (*p)[2] = mv_ref_blk_off[b->bs];
@@ -235,7 +235,7 @@ static void find_ref_mvs(VP9TileData *td,
 
 static av_always_inline int read_mv_component(VP9TileData *td, int idx, int hp)
 {
-    VP9Context *s = td->s;
+    const VP9Context *s = td->s;
     int bit, sign = vpx_rac_get_prob(td->c, s->prob.p.mv_comp[idx].sign);
     int n, c = vp89_rac_get_tree(td->c, ff_vp9_mv_class_tree,
                                  s->prob.p.mv_comp[idx].classes);
@@ -290,7 +290,7 @@ static av_always_inline int read_mv_component(VP9TileData *td, int idx, int hp)
 
 void ff_vp9_fill_mv(VP9TileData *td, VP9mv *mv, int mode, int sb)
 {
-    VP9Context *s = td->s;
+    const VP9Context *s = td->s;
     VP9Block *b = td->b;
 
     if (mode == ZEROMV) {

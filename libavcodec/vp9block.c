@@ -88,7 +88,7 @@ static void decode_mode(VP9TileData *td)
         TX_32X32, TX_32X32, TX_32X32, TX_32X32, TX_16X16, TX_16X16,
         TX_16X16, TX_8X8,   TX_8X8,   TX_8X8,   TX_4X4,   TX_4X4,  TX_4X4
     };
-    VP9Context *s = td->s;
+    const VP9Context *s = td->s;
     VP9Block *b = td->b;
     int row = td->row, col = td->col, row7 = td->row7;
     enum TxfmMode max_tx = max_tx_for_bl_bp[b->bs];
@@ -804,9 +804,9 @@ static void decode_mode(VP9TileData *td)
 static av_always_inline int
 decode_coeffs_b_generic(VPXRangeCoder *c, int16_t *coef, int n_coeffs,
                         int is_tx32x32, int is8bitsperpixel, int bpp, unsigned (*cnt)[6][3],
-                        unsigned (*eob)[6][2], uint8_t (*p)[6][11],
+                        unsigned (*eob)[6][2], const uint8_t (*p)[6][11],
                         int nnz, const int16_t *scan, const int16_t (*nb)[2],
-                        const int16_t *band_counts, int16_t *qmul)
+                        const int16_t *band_counts, const int16_t *qmul)
 {
     int i = 0, band = 0, band_left = band_counts[band];
     const uint8_t *tp = p[0][nnz];
@@ -923,9 +923,9 @@ skip_eob:
 
 static int decode_coeffs_b_8bpp(VP9TileData *td, int16_t *coef, int n_coeffs,
                                 unsigned (*cnt)[6][3], unsigned (*eob)[6][2],
-                                uint8_t (*p)[6][11], int nnz, const int16_t *scan,
+                                const uint8_t (*p)[6][11], int nnz, const int16_t *scan,
                                 const int16_t (*nb)[2], const int16_t *band_counts,
-                                int16_t *qmul)
+                                const int16_t *qmul)
 {
     return decode_coeffs_b_generic(td->c, coef, n_coeffs, 0, 1, 8, cnt, eob, p,
                                    nnz, scan, nb, band_counts, qmul);
@@ -933,9 +933,9 @@ static int decode_coeffs_b_8bpp(VP9TileData *td, int16_t *coef, int n_coeffs,
 
 static int decode_coeffs_b32_8bpp(VP9TileData *td, int16_t *coef, int n_coeffs,
                                   unsigned (*cnt)[6][3], unsigned (*eob)[6][2],
-                                  uint8_t (*p)[6][11], int nnz, const int16_t *scan,
+                                  const uint8_t (*p)[6][11], int nnz, const int16_t *scan,
                                   const int16_t (*nb)[2], const int16_t *band_counts,
-                                  int16_t *qmul)
+                                  const int16_t *qmul)
 {
     return decode_coeffs_b_generic(td->c, coef, n_coeffs, 1, 1, 8, cnt, eob, p,
                                    nnz, scan, nb, band_counts, qmul);
@@ -943,9 +943,9 @@ static int decode_coeffs_b32_8bpp(VP9TileData *td, int16_t *coef, int n_coeffs,
 
 static int decode_coeffs_b_16bpp(VP9TileData *td, int16_t *coef, int n_coeffs,
                                  unsigned (*cnt)[6][3], unsigned (*eob)[6][2],
-                                 uint8_t (*p)[6][11], int nnz, const int16_t *scan,
+                                 const uint8_t (*p)[6][11], int nnz, const int16_t *scan,
                                  const int16_t (*nb)[2], const int16_t *band_counts,
-                                 int16_t *qmul)
+                                 const int16_t *qmul)
 {
     return decode_coeffs_b_generic(td->c, coef, n_coeffs, 0, 0, td->s->s.h.bpp, cnt, eob, p,
                                    nnz, scan, nb, band_counts, qmul);
@@ -953,9 +953,9 @@ static int decode_coeffs_b_16bpp(VP9TileData *td, int16_t *coef, int n_coeffs,
 
 static int decode_coeffs_b32_16bpp(VP9TileData *td, int16_t *coef, int n_coeffs,
                                    unsigned (*cnt)[6][3], unsigned (*eob)[6][2],
-                                   uint8_t (*p)[6][11], int nnz, const int16_t *scan,
+                                   const uint8_t (*p)[6][11], int nnz, const int16_t *scan,
                                    const int16_t (*nb)[2], const int16_t *band_counts,
-                                   int16_t *qmul)
+                                   const int16_t *qmul)
 {
     return decode_coeffs_b_generic(td->c, coef, n_coeffs, 1, 0, td->s->s.h.bpp, cnt, eob, p,
                                    nnz, scan, nb, band_counts, qmul);
@@ -963,17 +963,17 @@ static int decode_coeffs_b32_16bpp(VP9TileData *td, int16_t *coef, int n_coeffs,
 
 static av_always_inline int decode_coeffs(VP9TileData *td, int is8bitsperpixel)
 {
-    VP9Context *s = td->s;
+    const VP9Context *s = td->s;
     VP9Block *b = td->b;
     int row = td->row, col = td->col;
-    uint8_t (*p)[6][11] = s->prob.coef[b->tx][0 /* y */][!b->intra];
+    const uint8_t (*p)[6][11] = s->prob.coef[b->tx][0 /* y */][!b->intra];
     unsigned (*c)[6][3] = td->counts.coef[b->tx][0 /* y */][!b->intra];
     unsigned (*e)[6][2] = td->counts.eob[b->tx][0 /* y */][!b->intra];
     int w4 = ff_vp9_bwh_tab[1][b->bs][0] << 1, h4 = ff_vp9_bwh_tab[1][b->bs][1] << 1;
     int end_x = FFMIN(2 * (s->cols - col), w4);
     int end_y = FFMIN(2 * (s->rows - row), h4);
     int n, pl, x, y, ret;
-    int16_t (*qmul)[2] = s->s.h.segmentation.feat[b->seg_id].qmul;
+    const int16_t (*qmul)[2] = s->s.h.segmentation.feat[b->seg_id].qmul;
     int tx = 4 * s->s.h.lossless + b->tx;
     const int16_t * const *yscans = ff_vp9_scans[tx];
     const int16_t (* const * ynbs)[2] = ff_vp9_scans_nb[tx];
@@ -1264,7 +1264,7 @@ void ff_vp9_decode_block(VP9TileData *td, int row, int col,
                          VP9Filter *lflvl, ptrdiff_t yoff, ptrdiff_t uvoff,
                          enum BlockLevel bl, enum BlockPartition bp)
 {
-    VP9Context *s = td->s;
+    const VP9Context *s = td->s;
     VP9Block *b = td->b;
     enum BlockSize bs = bl * 3 + bp;
     int bytesperpixel = s->bytesperpixel;
