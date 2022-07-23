@@ -61,8 +61,8 @@ static void half2float_table(uint32_t *mantissatable, uint32_t *exponenttable,
     offsettable[32] = 0;
 }
 
-static uint32_t half2float(uint16_t h, uint32_t *mantissatable, uint32_t *exponenttable,
-                           uint16_t *offsettable)
+static uint32_t half2float(uint16_t h, const uint32_t *mantissatable, const uint32_t *exponenttable,
+                           const uint16_t *offsettable)
 {
     uint32_t f;
 
