@@ -246,3 +246,4 @@ p216be          planes: 2, linesizes: 128 128   0   0, plane_sizes:  6144  6144 
 p216le          planes: 2, linesizes: 128 128   0   0, plane_sizes:  6144  6144     0     0, plane_offsets:  6144     0     0, total_size: 12288
 p416be          planes: 2, linesizes: 128 256   0   0, plane_sizes:  6144 12288     0     0, plane_offsets:  6144     0     0, total_size: 18432
 p416le          planes: 2, linesizes: 128 256   0   0, plane_sizes:  6144 12288     0     0, plane_offsets:  6144     0     0, total_size: 18432
+vuya            planes: 1, linesizes: 256   0   0   0, plane_sizes: 12288     0     0     0, plane_offsets:     0     0     0, total_size: 12288

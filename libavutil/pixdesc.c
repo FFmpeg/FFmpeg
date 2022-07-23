@@ -2491,6 +2491,19 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         },
         .flags = AV_PIX_FMT_FLAG_PLANAR,
     },
+    [AV_PIX_FMT_VUYA] = {
+        .name = "vuya",
+        .nb_components = 4,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 4, 2, 0, 8 },        /* Y */
+            { 0, 4, 1, 0, 8 },        /* U */
+            { 0, 4, 0, 0, 8 },        /* V */
+            { 0, 4, 3, 0, 8 },        /* A */
+        },
+        .flags = AV_PIX_FMT_FLAG_ALPHA,
+    },
 };
 
 static const char * const color_range_names[] = {

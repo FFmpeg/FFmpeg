@@ -215,6 +215,7 @@ isYUV:
   p416le
   uyvy422
   uyyvyy411
+  vuya
   xyz12be
   xyz12le
   y210be
@@ -654,6 +655,7 @@ ALPHA:
   rgb32_1
   rgba64be
   rgba64le
+  vuya
   ya16be
   ya16le
   ya8
@@ -739,6 +741,7 @@ Packed:
   rgba64le
   uyvy422
   uyyvyy411
+  vuya
   x2bgr10be
   x2bgr10le
   x2rgb10be
@@ -967,5 +970,6 @@ DataInHighBits:
 SwappedChroma:
   nv21
   nv42
+  vuya
   yvyu422
 
