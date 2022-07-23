@@ -101,11 +101,11 @@ static void *alloc_frame(void)
 
 static void reset_packet(void *obj)
 {
-    return av_packet_unref(obj);
+    av_packet_unref(obj);
 }
 static void reset_frame(void *obj)
 {
-    return av_frame_unref(obj);
+    av_frame_unref(obj);
 }
 
 static void free_packet(void **obj)
