@@ -500,7 +500,7 @@ static const uint8_t lev_to_cb[10] = { 0x04, 0x0A, 0x05, 0x06, 0x04, 0x28, 0x28,
 static av_always_inline int decode_ac_coeffs(AVCodecContext *avctx, GetBitContext *gb,
                                              int16_t *out, int blocks_per_slice)
 {
-    ProresContext *ctx = avctx->priv_data;
+    const ProresContext *ctx = avctx->priv_data;
     int block_mask, sign;
     unsigned pos, run, level;
     int max_coeffs, i, bits_left;
@@ -545,7 +545,7 @@ static int decode_slice_luma(AVCodecContext *avctx, SliceContext *slice,
                              const uint8_t *buf, unsigned buf_size,
                              const int16_t *qmat)
 {
-    ProresContext *ctx = avctx->priv_data;
+    const ProresContext *ctx = avctx->priv_data;
     LOCAL_ALIGNED_32(int16_t, blocks, [8*4*64]);
     int16_t *block;
     GetBitContext gb;
@@ -611,7 +611,7 @@ static int decode_slice_chroma(AVCodecContext *avctx, SliceContext *slice,
 /**
  * Decode alpha slice plane.
  */
-static void decode_slice_alpha(ProresContext *ctx,
+static void decode_slice_alpha(const ProresContext *ctx,
                                uint16_t *dst, int dst_stride,
                                const uint8_t *buf, int buf_size,
                                int blocks_per_slice)
@@ -643,7 +643,7 @@ static void decode_slice_alpha(ProresContext *ctx,
 
 static int decode_slice_thread(AVCodecContext *avctx, void *arg, int jobnr, int threadnr)
 {
-    ProresContext *ctx = avctx->priv_data;
+    const ProresContext *ctx = avctx->priv_data;
     SliceContext *slice = &ctx->slices[jobnr];
     const uint8_t *buf = slice->data;
     AVFrame *pic = ctx->frame;
