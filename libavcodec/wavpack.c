@@ -1616,7 +1616,7 @@ static void wavpack_decode_flush(AVCodecContext *avctx)
 
 static int dsd_channel(AVCodecContext *avctx, void *frmptr, int jobnr, int threadnr)
 {
-    WavpackContext *s  = avctx->priv_data;
+    const WavpackContext *s  = avctx->priv_data;
     AVFrame *frame = frmptr;
 
     ff_dsd2pcm_translate (&s->dsdctx [jobnr], s->samples, 0,
