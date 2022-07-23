@@ -76,7 +76,7 @@ static int64_t frame_ts(const SyncQueue *sq, SyncQueueFrame frame)
 {
     return (sq->type == SYNC_QUEUE_PACKETS) ?
            frame.p->pts + frame.p->duration :
-           frame.f->pts + frame.f->pkt_duration;
+           frame.f->pts + frame.f->duration;
 }
 
 static int frame_null(const SyncQueue *sq, SyncQueueFrame frame)
