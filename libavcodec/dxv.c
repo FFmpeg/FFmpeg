@@ -193,7 +193,7 @@ static int yao_block(uint8_t *plane0, ptrdiff_t stride0,
 static int decompress_texture_thread(AVCodecContext *avctx, void *arg,
                                      int slice, int thread_nb)
 {
-    DXVContext *ctx = avctx->priv_data;
+    const DXVContext *ctx = avctx->priv_data;
     AVFrame *frame = arg;
     const uint8_t *d = ctx->tex_data;
     int w_block = avctx->coded_width / ctx->texture_block_w;
