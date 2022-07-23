@@ -39,7 +39,7 @@ static int nvdec_vp8_start_frame(AVCodecContext *avctx, const uint8_t *buffer, u
     CUVIDPICPARAMS     *pp = &ctx->pic_params;
     FrameDecodeData *fdd;
     NVDECFrame *cf;
-    AVFrame *cur_frame = h->framep[VP56_FRAME_CURRENT]->tf.f;
+    AVFrame *cur_frame = h->framep[VP8_FRAME_CURRENT]->tf.f;
 
     int ret;
 
@@ -61,9 +61,9 @@ static int nvdec_vp8_start_frame(AVCodecContext *avctx, const uint8_t *buffer, u
 
             .first_partition_size        = h->header_partition_size,
 
-            .LastRefIdx                  = safe_get_ref_idx(h->framep[VP56_FRAME_PREVIOUS]),
-            .GoldenRefIdx                = safe_get_ref_idx(h->framep[VP56_FRAME_GOLDEN]),
-            .AltRefIdx                   = safe_get_ref_idx(h->framep[VP56_FRAME_GOLDEN2]),
+            .LastRefIdx                  = safe_get_ref_idx(h->framep[VP8_FRAME_PREVIOUS]),
+            .GoldenRefIdx                = safe_get_ref_idx(h->framep[VP8_FRAME_GOLDEN]),
+            .AltRefIdx                   = safe_get_ref_idx(h->framep[VP8_FRAME_ALTREF]),
             /*
              * Explicit braces for anonymous inners and unnamed fields
              * to work around limitations in ancient versions of gcc.

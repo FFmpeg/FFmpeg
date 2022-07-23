@@ -36,21 +36,21 @@ static int vaapi_vp8_start_frame(AVCodecContext          *avctx,
                                  av_unused uint32_t       size)
 {
     const VP8Context *s = avctx->priv_data;
-    VAAPIDecodePicture *pic = s->framep[VP56_FRAME_CURRENT]->hwaccel_picture_private;
+    VAAPIDecodePicture *pic = s->framep[VP8_FRAME_CURRENT]->hwaccel_picture_private;
     VAPictureParameterBufferVP8 pp;
     VAProbabilityDataBufferVP8 prob;
     VAIQMatrixBufferVP8 quant;
     int err, i, j, k;
 
-    pic->output_surface = vaapi_vp8_surface_id(s->framep[VP56_FRAME_CURRENT]);
+    pic->output_surface = vaapi_vp8_surface_id(s->framep[VP8_FRAME_CURRENT]);
 
     pp = (VAPictureParameterBufferVP8) {
         .frame_width                     = avctx->width,
         .frame_height                    = avctx->height,
 
-        .last_ref_frame                  = vaapi_vp8_surface_id(s->framep[VP56_FRAME_PREVIOUS]),
-        .golden_ref_frame                = vaapi_vp8_surface_id(s->framep[VP56_FRAME_GOLDEN]),
-        .alt_ref_frame                   = vaapi_vp8_surface_id(s->framep[VP56_FRAME_GOLDEN2]),
+        .last_ref_frame                  = vaapi_vp8_surface_id(s->framep[VP8_FRAME_PREVIOUS]),
+        .golden_ref_frame                = vaapi_vp8_surface_id(s->framep[VP8_FRAME_GOLDEN]),
+        .alt_ref_frame                   = vaapi_vp8_surface_id(s->framep[VP8_FRAME_ALTREF]),
         .out_of_loop_frame               = VA_INVALID_SURFACE,
 
         .pic_fields.bits = {
@@ -67,8 +67,8 @@ static int vaapi_vp8_start_frame(AVCodecContext          *avctx,
             .loop_filter_adj_enable      = s->lf_delta.enabled,
             .mode_ref_lf_delta_update    = s->lf_delta.update,
 
-            .sign_bias_golden            = s->sign_bias[VP56_FRAME_GOLDEN],
-            .sign_bias_alternate         = s->sign_bias[VP56_FRAME_GOLDEN2],
+            .sign_bias_golden            = s->sign_bias[VP8_FRAME_GOLDEN],
+            .sign_bias_alternate         = s->sign_bias[VP8_FRAME_ALTREF],
 
             .mb_no_coeff_skip            = s->mbskip_enabled,
             .loop_filter_disable         = s->filter.level == 0,
@@ -177,7 +177,7 @@ fail:
 static int vaapi_vp8_end_frame(AVCodecContext *avctx)
 {
     const VP8Context *s = avctx->priv_data;
-    VAAPIDecodePicture *pic = s->framep[VP56_FRAME_CURRENT]->hwaccel_picture_private;
+    VAAPIDecodePicture *pic = s->framep[VP8_FRAME_CURRENT]->hwaccel_picture_private;
 
     return ff_vaapi_decode_issue(avctx, pic);
 }
@@ -187,7 +187,7 @@ static int vaapi_vp8_decode_slice(AVCodecContext *avctx,
                                   uint32_t        size)
 {
     const VP8Context *s = avctx->priv_data;
-    VAAPIDecodePicture *pic = s->framep[VP56_FRAME_CURRENT]->hwaccel_picture_private;
+    VAAPIDecodePicture *pic = s->framep[VP8_FRAME_CURRENT]->hwaccel_picture_private;
     VASliceParameterBufferVP8 sp;
     int err, i;
 

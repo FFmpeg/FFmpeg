@@ -27,9 +27,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "libavutil/mem_internal.h"
+
 #include "vp9.h"
 #include "threadframe.h"
-#include "vp56.h"
 
 enum BlockPartition {
     PARTITION_NONE,    // [ ] <-.
@@ -51,8 +52,13 @@ enum CompPredMode {
     PRED_SWITCHABLE,
 };
 
+typedef struct VP9mv {
+    DECLARE_ALIGNED(4, int16_t, x);
+    int16_t y;
+} VP9mv;
+
 typedef struct VP9mvrefPair {
-    VP56mv mv[2];
+    VP9mv mv[2];
     int8_t ref[2];
 } VP9mvrefPair;
 

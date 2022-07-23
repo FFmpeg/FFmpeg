@@ -22,9 +22,9 @@
  */
 
 #define ROUNDED_DIV_MVx2(a, b) \
-    (VP56mv) { .x = ROUNDED_DIV(a.x + b.x, 2), .y = ROUNDED_DIV(a.y + b.y, 2) }
+    (VP9mv) { .x = ROUNDED_DIV(a.x + b.x, 2), .y = ROUNDED_DIV(a.y + b.y, 2) }
 #define ROUNDED_DIV_MVx4(a, b, c, d) \
-    (VP56mv) { .x = ROUNDED_DIV(a.x + b.x + c.x + d.x, 4), \
+    (VP9mv) { .x = ROUNDED_DIV(a.x + b.x + c.x + d.x, 4), \
                .y = ROUNDED_DIV(a.y + b.y + c.y + d.y, 4) }
 
 static void FN(inter_pred)(VP9TileData *td)
@@ -51,7 +51,7 @@ static void FN(inter_pred)(VP9TileData *td)
 
     // y inter pred
     if (b->bs > BS_8x8) {
-        VP56mv uvmv;
+        VP9mv uvmv;
 
 #if SCALED == 0
         if (b->bs == BS_8x4) {

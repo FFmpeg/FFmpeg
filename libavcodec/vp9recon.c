@@ -299,7 +299,7 @@ static av_always_inline void mc_luma_unscaled(VP9TileData *td, vp9_mc_func (*mc)
                                               uint8_t *dst, ptrdiff_t dst_stride,
                                               const uint8_t *ref, ptrdiff_t ref_stride,
                                               ThreadFrame *ref_frame,
-                                              ptrdiff_t y, ptrdiff_t x, const VP56mv *mv,
+                                              ptrdiff_t y, ptrdiff_t x, const VP9mv *mv,
                                               int bw, int bh, int w, int h, int bytesperpixel)
 {
     VP9Context *s = td->s;
@@ -337,7 +337,7 @@ static av_always_inline void mc_chroma_unscaled(VP9TileData *td, vp9_mc_func (*m
                                                 const uint8_t *ref_u, ptrdiff_t src_stride_u,
                                                 const uint8_t *ref_v, ptrdiff_t src_stride_v,
                                                 ThreadFrame *ref_frame,
-                                                ptrdiff_t y, ptrdiff_t x, const VP56mv *mv,
+                                                ptrdiff_t y, ptrdiff_t x, const VP9mv *mv,
                                                 int bw, int bh, int w, int h, int bytesperpixel)
 {
     VP9Context *s = td->s;
@@ -408,7 +408,7 @@ static av_always_inline void mc_luma_scaled(VP9TileData *td, vp9_scaled_mc_func 
                                             uint8_t *dst, ptrdiff_t dst_stride,
                                             const uint8_t *ref, ptrdiff_t ref_stride,
                                             ThreadFrame *ref_frame,
-                                            ptrdiff_t y, ptrdiff_t x, const VP56mv *in_mv,
+                                            ptrdiff_t y, ptrdiff_t x, const VP9mv *in_mv,
                                             int px, int py, int pw, int ph,
                                             int bw, int bh, int w, int h, int bytesperpixel,
                                             const uint16_t *scale, const uint8_t *step)
@@ -423,7 +423,7 @@ static av_always_inline void mc_luma_scaled(VP9TileData *td, vp9_scaled_mc_func 
     int mx, my;
     int refbw_m1, refbh_m1;
     int th;
-    VP56mv mv;
+    VP9mv mv;
 
     mv.x = av_clip(in_mv->x, -(x + pw - px + 4) * 8, (s->cols * 8 - x + px + 3) * 8);
     mv.y = av_clip(in_mv->y, -(y + ph - py + 4) * 8, (s->rows * 8 - y + py + 3) * 8);
@@ -468,7 +468,7 @@ static av_always_inline void mc_chroma_scaled(VP9TileData *td, vp9_scaled_mc_fun
                                               const uint8_t *ref_u, ptrdiff_t src_stride_u,
                                               const uint8_t *ref_v, ptrdiff_t src_stride_v,
                                               ThreadFrame *ref_frame,
-                                              ptrdiff_t y, ptrdiff_t x, const VP56mv *in_mv,
+                                              ptrdiff_t y, ptrdiff_t x, const VP9mv *in_mv,
                                               int px, int py, int pw, int ph,
                                               int bw, int bh, int w, int h, int bytesperpixel,
                                               const uint16_t *scale, const uint8_t *step)
@@ -483,7 +483,7 @@ static av_always_inline void mc_chroma_scaled(VP9TileData *td, vp9_scaled_mc_fun
     int mx, my;
     int refbw_m1, refbh_m1;
     int th;
-    VP56mv mv;
+    VP9mv mv;
 
     if (s->ss_h) {
         // BUG https://code.google.com/p/webm/issues/detail?id=820

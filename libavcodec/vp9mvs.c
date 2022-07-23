@@ -22,13 +22,12 @@
  */
 
 #include "threadframe.h"
-#include "vp56.h"
 #include "vp89_rac.h"
 #include "vp9data.h"
 #include "vp9dec.h"
 #include "vpx_rac.h"
 
-static av_always_inline void clamp_mv(VP56mv *dst, const VP56mv *src,
+static av_always_inline void clamp_mv(VP9mv *dst, const VP9mv *src,
                                       VP9TileData *td)
 {
     dst->x = av_clip(src->x, td->min_mv.x, td->max_mv.x);
@@ -36,7 +35,7 @@ static av_always_inline void clamp_mv(VP56mv *dst, const VP56mv *src,
 }
 
 static void find_ref_mvs(VP9TileData *td,
-                         VP56mv *pmv, int ref, int z, int idx, int sb)
+                         VP9mv *pmv, int ref, int z, int idx, int sb)
 {
     static const int8_t mv_ref_blk_off[N_BS_SIZES][8][2] = {
         [BS_64x64] = { {  3, -1 }, { -1,  3 }, {  4, -1 }, { -1,  4 },
@@ -100,7 +99,7 @@ static void find_ref_mvs(VP9TileData *td,
 #define RETURN_MV(mv)                                                  \
     do {                                                               \
         if (sb > 0) {                                                  \
-            VP56mv tmp;                                                \
+            VP9mv tmp;                                                 \
             uint32_t m;                                                \
             av_assert2(idx == 1);                                      \
             av_assert2(mem != INVALID_MV);                             \
@@ -186,7 +185,7 @@ static void find_ref_mvs(VP9TileData *td,
 #define RETURN_SCALE_MV(mv, scale)              \
     do {                                        \
         if (scale) {                            \
-            VP56mv mv_temp = { -mv.x, -mv.y };  \
+            VP9mv mv_temp = { -mv.x, -mv.y };   \
             RETURN_MV(mv_temp);                 \
         } else {                                \
             RETURN_MV(mv);                      \
@@ -289,7 +288,7 @@ static av_always_inline int read_mv_component(VP9TileData *td, int idx, int hp)
     return sign ? -(n + 1) : (n + 1);
 }
 
-void ff_vp9_fill_mv(VP9TileData *td, VP56mv *mv, int mode, int sb)
+void ff_vp9_fill_mv(VP9TileData *td, VP9mv *mv, int mode, int sb)
 {
     VP9Context *s = td->s;
     VP9Block *b = td->b;

@@ -34,7 +34,6 @@
 #include "pthread_internal.h"
 
 #include "videodsp.h"
-#include "vp56.h"
 #include "vp89_rac.h"
 #include "vp9.h"
 #include "vp9data.h"
@@ -276,7 +275,7 @@ static int update_size(AVCodecContext *avctx, int w, int h)
     assign(s->intra_pred_data[2],  uint8_t *,             64 * bytesperpixel);
     assign(s->above_y_nnz_ctx,     uint8_t *,             16);
     assign(s->above_mode_ctx,      uint8_t *,             16);
-    assign(s->above_mv_ctx,        VP56mv(*)[2],          16);
+    assign(s->above_mv_ctx,        VP9mv(*)[2],           16);
     assign(s->above_uv_nnz_ctx[0], uint8_t *,             16);
     assign(s->above_uv_nnz_ctx[1], uint8_t *,             16);
     assign(s->above_partition_ctx, uint8_t *,              8);
