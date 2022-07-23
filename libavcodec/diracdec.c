@@ -486,7 +486,7 @@ UNPACK_ARITH(10, int32_t)
  * Decode the coeffs in the rectangle defined by left, right, top, bottom
  * [DIRAC_STD] 13.4.3.2 Codeblock unpacking loop. codeblock()
  */
-static inline int codeblock(DiracContext *s, SubBand *b,
+static inline int codeblock(const DiracContext *s, SubBand *b,
                              GetBitContext *gb, DiracArith *c,
                              int left, int right, int top, int bottom,
                              int blockcnt_one, int is_arith)
@@ -596,7 +596,8 @@ INTRA_DC_PRED(10, uint32_t)
  * Dirac Specification ->
  * 13.4.2 Non-skipped subbands.  subband_coeffs()
  */
-static av_always_inline int decode_subband_internal(DiracContext *s, SubBand *b, int is_arith)
+static av_always_inline int decode_subband_internal(const DiracContext *s,
+                                                    SubBand *b, int is_arith)
 {
     int cb_x, cb_y, left, right, top, bottom;
     DiracArith c;
@@ -640,13 +641,13 @@ static av_always_inline int decode_subband_internal(DiracContext *s, SubBand *b,
 
 static int decode_subband_arith(AVCodecContext *avctx, void *b)
 {
-    DiracContext *s = avctx->priv_data;
+    const DiracContext *s = avctx->priv_data;
     return decode_subband_internal(s, b, 1);
 }
 
 static int decode_subband_golomb(AVCodecContext *avctx, void *arg)
 {
-    DiracContext *s = avctx->priv_data;
+    const DiracContext *s = avctx->priv_data;
     SubBand **b     = arg;
     return decode_subband_internal(s, *b, 0);
 }
@@ -721,9 +722,9 @@ static int decode_component(DiracContext *s, int comp)
             return; \
     } \
 
-static void decode_subband(DiracContext *s, GetBitContext *gb, int quant,
+static void decode_subband(const DiracContext *s, GetBitContext *gb, int quant,
                            int slice_x, int slice_y, int bits_end,
-                           SubBand *b1, SubBand *b2)
+                           const SubBand *b1, const SubBand *b2)
 {
     int left   = b1->width  * slice_x    / s->num_x;
     int right  = b1->width  *(slice_x+1) / s->num_x;
@@ -775,7 +776,7 @@ static void decode_subband(DiracContext *s, GetBitContext *gb, int quant,
  */
 static int decode_lowdelay_slice(AVCodecContext *avctx, void *arg)
 {
-    DiracContext *s = avctx->priv_data;
+    const DiracContext *s = avctx->priv_data;
     DiracSlice *slice = arg;
     GetBitContext *gb = &slice->gb;
     enum dirac_subband orientation;
@@ -819,13 +820,13 @@ typedef struct SliceCoeffs {
     int tot;
 } SliceCoeffs;
 
-static int subband_coeffs(DiracContext *s, int x, int y, int p,
+static int subband_coeffs(const DiracContext *s, int x, int y, int p,
                           SliceCoeffs c[MAX_DWT_LEVELS])
 {
     int level, coef = 0;
     for (level = 0; level < s->wavelet_depth; level++) {
         SliceCoeffs *o = &c[level];
-        SubBand *b = &s->plane[p].band[level][3]; /* orientation doens't matter */
+        const SubBand *b = &s->plane[p].band[level][3]; /* orientation doens't matter */
         o->top   = b->height * y / s->num_y;
         o->left  = b->width  * x / s->num_x;
         o->tot_h = ((b->width  * (x + 1)) / s->num_x) - o->left;
@@ -840,7 +841,7 @@ static int subband_coeffs(DiracContext *s, int x, int y, int p,
  * VC-2 Specification ->
  * 13.5.3 hq_slice(sx,sy)
  */
-static int decode_hq_slice(DiracContext *s, DiracSlice *slice, uint8_t *tmp_buf)
+static int decode_hq_slice(const DiracContext *s, DiracSlice *slice, uint8_t *tmp_buf)
 {
     int i, level, orientation, quant_idx;
     int qfactor[MAX_DWT_LEVELS][4], qoffset[MAX_DWT_LEVELS][4];
@@ -917,7 +918,7 @@ static int decode_hq_slice(DiracContext *s, DiracSlice *slice, uint8_t *tmp_buf)
 static int decode_hq_slice_row(AVCodecContext *avctx, void *arg, int jobnr, int threadnr)
 {
     int i;
-    DiracContext *s = avctx->priv_data;
+    const DiracContext *s = avctx->priv_data;
     DiracSlice *slices = ((DiracSlice *)arg) + s->num_x*jobnr;
     uint8_t *thread_buf = &s->thread_buf[s->thread_buf_size*threadnr];
     for (i = 0; i < s->num_x; i++)
