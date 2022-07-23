@@ -196,7 +196,7 @@ typedef struct EXRContext {
     uint16_t offsettable[64];
 } EXRContext;
 
-static int zip_uncompress(EXRContext *s, const uint8_t *src, int compressed_size,
+static int zip_uncompress(const EXRContext *s, const uint8_t *src, int compressed_size,
                           int uncompressed_size, EXRThreadData *td)
 {
     unsigned long dest_len = uncompressed_size;
@@ -255,7 +255,7 @@ static int rle(uint8_t *dst, const uint8_t *src,
     return 0;
 }
 
-static int rle_uncompress(EXRContext *ctx, const uint8_t *src, int compressed_size,
+static int rle_uncompress(const EXRContext *ctx, const uint8_t *src, int compressed_size,
                           int uncompressed_size, EXRThreadData *td)
 {
     rle(td->tmp, src, compressed_size, uncompressed_size);
@@ -365,7 +365,7 @@ static int huf_unpack_enc_table(GetByteContext *gb,
     return 0;
 }
 
-static int huf_build_dec_table(EXRContext *s,
+static int huf_build_dec_table(const EXRContext *s,
                                EXRThreadData *td, int im, int iM)
 {
     int j = 0;
@@ -440,7 +440,7 @@ static int huf_decode(VLC *vlc, GetByteContext *gb, int nbits, int run_sym,
     return 0;
 }
 
-static int huf_uncompress(EXRContext *s,
+static int huf_uncompress(const EXRContext *s,
                           EXRThreadData *td,
                           GetByteContext *gb,
                           uint16_t *dst, int dst_size)
@@ -588,7 +588,7 @@ static void wav_decode(uint16_t *in, int nx, int ox,
     }
 }
 
-static int piz_uncompress(EXRContext *s, const uint8_t *src, int ssize,
+static int piz_uncompress(const EXRContext *s, const uint8_t *src, int ssize,
                           int dsize, EXRThreadData *td)
 {
     GetByteContext gb;
@@ -674,7 +674,7 @@ static int piz_uncompress(EXRContext *s, const uint8_t *src, int ssize,
     return 0;
 }
 
-static int pxr24_uncompress(EXRContext *s, const uint8_t *src,
+static int pxr24_uncompress(const EXRContext *s, const uint8_t *src,
                             int compressed_size, int uncompressed_size,
                             EXRThreadData *td)
 {
@@ -809,7 +809,7 @@ static void unpack_3(const uint8_t b[3], uint16_t s[16])
 }
 
 
-static int b44_uncompress(EXRContext *s, const uint8_t *src, int compressed_size,
+static int b44_uncompress(const EXRContext *s, const uint8_t *src, int compressed_size,
                           int uncompressed_size, EXRThreadData *td) {
     const int8_t *sr = src;
     int stay_to_uncompress = compressed_size;
@@ -833,7 +833,7 @@ static int b44_uncompress(EXRContext *s, const uint8_t *src, int compressed_size
             for (iY = 0; iY < nb_b44_block_h; iY++) {
                 for (iX = 0; iX < nb_b44_block_w; iX++) {/* For each B44 block */
                     if (stay_to_uncompress < 3) {
-                        av_log(s, AV_LOG_ERROR, "Not enough data for B44A block: %d", stay_to_uncompress);
+                        av_log(s->avctx, AV_LOG_ERROR, "Not enough data for B44A block: %d", stay_to_uncompress);
                         return AVERROR_INVALIDDATA;
                     }
 
@@ -843,7 +843,7 @@ static int b44_uncompress(EXRContext *s, const uint8_t *src, int compressed_size
                         stay_to_uncompress -= 3;
                     }  else {/* B44 Block */
                         if (stay_to_uncompress < 14) {
-                            av_log(s, AV_LOG_ERROR, "Not enough data for B44 block: %d", stay_to_uncompress);
+                            av_log(s->avctx, AV_LOG_ERROR, "Not enough data for B44 block: %d", stay_to_uncompress);
                             return AVERROR_INVALIDDATA;
                         }
                         unpack_14(sr, tmp_buffer);
@@ -868,7 +868,7 @@ static int b44_uncompress(EXRContext *s, const uint8_t *src, int compressed_size
             target_channel_offset += 2;
         } else {/* Float or UINT 32 channel */
             if (stay_to_uncompress < td->ysize * td->xsize * 4) {
-                av_log(s, AV_LOG_ERROR, "Not enough data for uncompress channel: %d", stay_to_uncompress);
+                av_log(s->avctx, AV_LOG_ERROR, "Not enough data for uncompress channel: %d", stay_to_uncompress);
                 return AVERROR_INVALIDDATA;
             }
 
@@ -886,7 +886,7 @@ static int b44_uncompress(EXRContext *s, const uint8_t *src, int compressed_size
     return 0;
 }
 
-static int ac_uncompress(EXRContext *s, GetByteContext *gb, float *block)
+static int ac_uncompress(const EXRContext *s, GetByteContext *gb, float *block)
 {
     int ret = 0, n = 1;
 
@@ -986,7 +986,7 @@ static float to_linear(float x, float scale)
     }
 }
 
-static int dwa_uncompress(EXRContext *s, const uint8_t *src, int compressed_size,
+static int dwa_uncompress(const EXRContext *s, const uint8_t *src, int compressed_size,
                           int uncompressed_size, EXRThreadData *td)
 {
     int64_t version, lo_usize, lo_size;
@@ -1181,7 +1181,7 @@ static int dwa_uncompress(EXRContext *s, const uint8_t *src, int compressed_size
 static int decode_block(AVCodecContext *avctx, void *tdata,
                         int jobnr, int threadnr)
 {
-    EXRContext *s = avctx->priv_data;
+    const EXRContext *s = avctx->priv_data;
     AVFrame *const p = s->picture;
     EXRThreadData *td = &s->thread_data[threadnr];
     const uint8_t *channel_buffer[4] = { 0 };
