@@ -345,7 +345,7 @@ static av_always_inline void put_block_8x4(int16_t *block, uint8_t *av_restrict 
     }
 }
 
-static void dv100_idct_put_last_row_field_chroma(DVVideoContext *s, uint8_t *data,
+static void dv100_idct_put_last_row_field_chroma(const DVVideoContext *s, uint8_t *data,
                                                  int stride, int16_t *blocks)
 {
     s->idsp.idct(blocks + 0*64);
@@ -357,7 +357,7 @@ static void dv100_idct_put_last_row_field_chroma(DVVideoContext *s, uint8_t *dat
     put_block_8x4(blocks+1*64 + 4*8, data + 8 + stride, stride<<1);
 }
 
-static void dv100_idct_put_last_row_field_luma(DVVideoContext *s, uint8_t *data,
+static void dv100_idct_put_last_row_field_luma(const DVVideoContext *s, uint8_t *data,
                                                int stride, int16_t *blocks)
 {
     s->idsp.idct(blocks + 0*64);
@@ -378,7 +378,7 @@ static void dv100_idct_put_last_row_field_luma(DVVideoContext *s, uint8_t *data,
 /* mb_x and mb_y are in units of 8 pixels */
 static int dv_decode_video_segment(AVCodecContext *avctx, void *arg)
 {
-    DVVideoContext *s = avctx->priv_data;
+    const DVVideoContext *s = avctx->priv_data;
     DVwork_chunk *work_chunk = arg;
     int quant, dc, dct_mode, class1, j;
     int mb_index, mb_x, mb_y, last_index;
