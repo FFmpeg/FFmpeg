@@ -2635,80 +2635,80 @@ static void map_auto_data(OutputFile *of, AVFormatContext *oc,
 static void map_manual(OutputFile *of, AVFormatContext *oc,
                        OptionsContext *o, const StreamMap *map)
 {
-            InputStream *ist;
-            OutputStream *ost;
+    InputStream *ist;
+    OutputStream *ost;
 
-            if (map->disabled)
-                return;
+    if (map->disabled)
+        return;
 
-            if (map->linklabel) {
-                FilterGraph *fg;
-                OutputFilter *ofilter = NULL;
-                int j, k;
+    if (map->linklabel) {
+        FilterGraph *fg;
+        OutputFilter *ofilter = NULL;
+        int j, k;
 
-                for (j = 0; j < nb_filtergraphs; j++) {
-                    fg = filtergraphs[j];
-                    for (k = 0; k < fg->nb_outputs; k++) {
-                        AVFilterInOut *out = fg->outputs[k]->out_tmp;
-                        if (out && !strcmp(out->name, map->linklabel)) {
-                            ofilter = fg->outputs[k];
-                            goto loop_end;
-                        }
-                    }
+        for (j = 0; j < nb_filtergraphs; j++) {
+            fg = filtergraphs[j];
+            for (k = 0; k < fg->nb_outputs; k++) {
+                AVFilterInOut *out = fg->outputs[k]->out_tmp;
+                if (out && !strcmp(out->name, map->linklabel)) {
+                    ofilter = fg->outputs[k];
+                    goto loop_end;
                 }
-loop_end:
-                if (!ofilter) {
-                    av_log(NULL, AV_LOG_FATAL, "Output with label '%s' does not exist "
-                           "in any defined filter graph, or was already used elsewhere.\n", map->linklabel);
-                    exit_program(1);
-                }
-                init_output_filter(ofilter, o, oc);
-            } else {
-                int src_idx = input_files[map->file_index]->ist_index + map->stream_index;
-
-                ist = input_streams[input_files[map->file_index]->ist_index + map->stream_index];
-                if (ist->user_set_discard == AVDISCARD_ALL) {
-                    av_log(NULL, AV_LOG_FATAL, "Stream #%d:%d is disabled and cannot be mapped.\n",
-                           map->file_index, map->stream_index);
-                    exit_program(1);
-                }
-                if(o->subtitle_disable && ist->st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE)
-                    return;
-                if(o->   audio_disable && ist->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
-                    return;
-                if(o->   video_disable && ist->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
-                    return;
-                if(o->    data_disable && ist->st->codecpar->codec_type == AVMEDIA_TYPE_DATA)
-                    return;
-
-                ost = NULL;
-                switch (ist->st->codecpar->codec_type) {
-                case AVMEDIA_TYPE_VIDEO:      ost = new_video_stream     (o, oc, src_idx); break;
-                case AVMEDIA_TYPE_AUDIO:      ost = new_audio_stream     (o, oc, src_idx); break;
-                case AVMEDIA_TYPE_SUBTITLE:   ost = new_subtitle_stream  (o, oc, src_idx); break;
-                case AVMEDIA_TYPE_DATA:       ost = new_data_stream      (o, oc, src_idx); break;
-                case AVMEDIA_TYPE_ATTACHMENT: ost = new_attachment_stream(o, oc, src_idx); break;
-                case AVMEDIA_TYPE_UNKNOWN:
-                    if (copy_unknown_streams) {
-                        ost = new_unknown_stream   (o, oc, src_idx);
-                        break;
-                    }
-                default:
-                    av_log(NULL, ignore_unknown_streams ? AV_LOG_WARNING : AV_LOG_FATAL,
-                           "Cannot map stream #%d:%d - unsupported type.\n",
-                           map->file_index, map->stream_index);
-                    if (!ignore_unknown_streams) {
-                        av_log(NULL, AV_LOG_FATAL,
-                               "If you want unsupported types ignored instead "
-                               "of failing, please use the -ignore_unknown option\n"
-                               "If you want them copied, please use -copy_unknown\n");
-                        exit_program(1);
-                    }
-                }
-                if (ost)
-                    ost->sync_ist = input_streams[  input_files[map->sync_file_index]->ist_index
-                                                  + map->sync_stream_index];
             }
+        }
+loop_end:
+        if (!ofilter) {
+            av_log(NULL, AV_LOG_FATAL, "Output with label '%s' does not exist "
+                   "in any defined filter graph, or was already used elsewhere.\n", map->linklabel);
+            exit_program(1);
+        }
+        init_output_filter(ofilter, o, oc);
+    } else {
+        int src_idx = input_files[map->file_index]->ist_index + map->stream_index;
+
+        ist = input_streams[input_files[map->file_index]->ist_index + map->stream_index];
+        if (ist->user_set_discard == AVDISCARD_ALL) {
+            av_log(NULL, AV_LOG_FATAL, "Stream #%d:%d is disabled and cannot be mapped.\n",
+                   map->file_index, map->stream_index);
+            exit_program(1);
+        }
+        if(o->subtitle_disable && ist->st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE)
+            return;
+        if(o->   audio_disable && ist->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
+            return;
+        if(o->   video_disable && ist->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
+            return;
+        if(o->    data_disable && ist->st->codecpar->codec_type == AVMEDIA_TYPE_DATA)
+            return;
+
+        ost = NULL;
+        switch (ist->st->codecpar->codec_type) {
+        case AVMEDIA_TYPE_VIDEO:      ost = new_video_stream     (o, oc, src_idx); break;
+        case AVMEDIA_TYPE_AUDIO:      ost = new_audio_stream     (o, oc, src_idx); break;
+        case AVMEDIA_TYPE_SUBTITLE:   ost = new_subtitle_stream  (o, oc, src_idx); break;
+        case AVMEDIA_TYPE_DATA:       ost = new_data_stream      (o, oc, src_idx); break;
+        case AVMEDIA_TYPE_ATTACHMENT: ost = new_attachment_stream(o, oc, src_idx); break;
+        case AVMEDIA_TYPE_UNKNOWN:
+            if (copy_unknown_streams) {
+                ost = new_unknown_stream   (o, oc, src_idx);
+                break;
+            }
+        default:
+            av_log(NULL, ignore_unknown_streams ? AV_LOG_WARNING : AV_LOG_FATAL,
+                   "Cannot map stream #%d:%d - unsupported type.\n",
+                   map->file_index, map->stream_index);
+            if (!ignore_unknown_streams) {
+                av_log(NULL, AV_LOG_FATAL,
+                       "If you want unsupported types ignored instead "
+                       "of failing, please use the -ignore_unknown option\n"
+                       "If you want them copied, please use -copy_unknown\n");
+                exit_program(1);
+            }
+        }
+        if (ost)
+            ost->sync_ist = input_streams[  input_files[map->sync_file_index]->ist_index
+                                          + map->sync_stream_index];
+    }
 }
 
 static int open_output_file(OptionsContext *o, const char *filename)
