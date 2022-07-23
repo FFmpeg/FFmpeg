@@ -267,6 +267,7 @@ static const struct {
     MAP(422V, YUV440P),
     // 4:4:4
     MAP(444P, YUV444P),
+    MAP(AYUV, VUYA),
     // 4:2:0 10-bit
 #ifdef VA_FOURCC_P010
     MAP(P010, P010),
@@ -410,6 +411,7 @@ static const struct {
     MAP(VP9,         VP9_0,           VP9Profile0 ),
 #endif
 #if VA_CHECK_VERSION(0, 39, 0)
+    MAP(VP9,         VP9_1,           VP9Profile1 ),
     MAP(VP9,         VP9_2,           VP9Profile2 ),
 #endif
 #if VA_CHECK_VERSION(1, 8, 0)
