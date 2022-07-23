@@ -2619,7 +2619,7 @@ static av_always_inline
 int vp78_decode_mb_row_sliced(AVCodecContext *avctx, void *tdata, int jobnr,
                               int threadnr, int is_vp7)
 {
-    VP8Context *s = avctx->priv_data;
+    const VP8Context *s = avctx->priv_data;
     VP8ThreadData *td = &s->thread_data[jobnr];
     VP8ThreadData *next_td = NULL, *prev_td = NULL;
     VP8Frame *curframe = s->curframe;
