@@ -3,4 +3,4 @@ fate-imf-cpl-with-repeat: CMD = framecrc -f imf -i $(TARGET_SAMPLES)/imf/countdo
 
 FATE_SAMPLES_FFMPEG-$(CONFIG_IMF_DEMUXER) += $(FATE_IMF)
 
-fate-imf: $(FATE_IMF)
+fate-imfdec: $(FATE_IMF)
