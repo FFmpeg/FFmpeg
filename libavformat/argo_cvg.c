@@ -162,6 +162,15 @@ static int argo_cvg_read_header(AVFormatContext *s)
     if ((ret = argo_cvg_read_checksum(s->pb, &ctx->header, &ctx->checksum)) < 0)
         return ret;
 
+    if ((ret = av_dict_set_int(&st->metadata, "loop", ctx->header.loop, 0)) < 0)
+        return ret;
+
+    if ((ret = av_dict_set_int(&st->metadata, "reverb", ctx->header.reverb, 0)) < 0)
+        return ret;
+
+    if ((ret = av_dict_set_int(&st->metadata, "checksum", ctx->checksum, 0)) < 0)
+        return ret;
+
     par                         = st->codecpar;
     par->codec_type             = AVMEDIA_TYPE_AUDIO;
     par->codec_id               = AV_CODEC_ID_ADPCM_PSX;
