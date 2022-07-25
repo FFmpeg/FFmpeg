@@ -25,9 +25,9 @@
 #include "avcodec.h"
 
 typedef struct PNMContext {
-    uint8_t *bytestream;
-    uint8_t *bytestream_start;
-    uint8_t *bytestream_end;
+    const uint8_t *bytestream;
+    const uint8_t *bytestream_start;
+    const uint8_t *bytestream_end;
     int maxval;                 ///< maximum value of a pixel
     int type;
     int endian;

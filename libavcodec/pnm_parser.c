@@ -65,8 +65,8 @@ retry:
         pnmctx.bytestream_end   = pc->buffer + pc->index;
     } else {
         pnmctx.bytestream_start =
-        pnmctx.bytestream       = (uint8_t *) buf + skip; /* casts avoid warnings */
-        pnmctx.bytestream_end   = (uint8_t *) buf + buf_size - skip;
+        pnmctx.bytestream       = buf + skip;
+        pnmctx.bytestream_end   = buf + buf_size - skip;
     }
     if (ff_pnm_decode_header(avctx, &pnmctx) < 0) {
         if (pnmctx.bytestream < pnmctx.bytestream_end) {
@@ -81,9 +81,9 @@ retry:
             goto retry;
         }
     } else if (pnmctx.type < 4) {
-              uint8_t *bs  = pnmctx.bytestream;
+        const uint8_t *bs   = pnmctx.bytestream;
         const uint8_t *end = pnmctx.bytestream_end;
-        uint8_t *sync      = bs;
+        const uint8_t *sync = bs;
 
         if (pc->index) {
             av_assert0(pnmpc->ascii_scan <= end - bs);

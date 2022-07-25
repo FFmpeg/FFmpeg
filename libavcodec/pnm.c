@@ -38,7 +38,7 @@ static void pnm_get(PNMContext *sc, char *str, int buf_size)
 {
     char *s;
     int c;
-    uint8_t *bs  = sc->bytestream;
+    const uint8_t *bs  = sc->bytestream;
     const uint8_t *end = sc->bytestream_end;
 
     /* skip spaces and comments */

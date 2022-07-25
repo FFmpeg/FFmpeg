@@ -52,8 +52,8 @@ static int pnm_decode_frame(AVCodecContext *avctx, AVFrame *p,
     float scale;
 
     s->bytestream_start =
-    s->bytestream       = (uint8_t *)buf;
-    s->bytestream_end   = (uint8_t *)buf + buf_size;
+    s->bytestream       = buf;
+    s->bytestream_end   = buf + buf_size;
 
     if ((ret = ff_pnm_decode_header(avctx, s)) < 0)
         return ret;
