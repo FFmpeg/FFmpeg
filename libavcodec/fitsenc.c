@@ -36,9 +36,8 @@
 #include "encode.h"
 
 static int fits_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
-                            const AVFrame *pict, int *got_packet)
+                             const AVFrame *p, int *got_packet)
 {
-    AVFrame * const p = (AVFrame *)pict;
     uint8_t *bytestream, *ptr;
     const uint16_t flip = (1 << 15);
     uint64_t data_size = 0, padded_data_size = 0;
