@@ -139,7 +139,7 @@ ADD_OBMC(32)
 static void put_signed_rect_clamped_8bit_c(uint8_t *dst, int dst_stride, const uint8_t *_src, int src_stride, int width, int height)
 {
     int x, y;
-    int16_t *src = (int16_t *)_src;
+    const int16_t *src = (const int16_t *)_src;
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x+=4) {
             dst[x  ] = av_clip_uint8(src[x  ] + 128);
@@ -158,7 +158,7 @@ static void put_signed_rect_clamped_ ## PX ## bit_c(uint8_t *_dst, int dst_strid
 {                                                                                                       \
     int x, y;                                                                                           \
     uint16_t *dst = (uint16_t *)_dst;                                                                   \
-    int32_t *src = (int32_t *)_src;                                                                     \
+    const int32_t *src = (const int32_t *)_src;                                                         \
     for (y = 0; y < height; y++) {                                                                      \
         for (x = 0; x < width; x+=4) {                                                                  \
             dst[x  ] = av_clip_uintp2(src[x  ] + (1U << (PX - 1)), PX);                                  \
