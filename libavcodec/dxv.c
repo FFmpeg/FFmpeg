@@ -432,7 +432,7 @@ static int get_opcodes(GetByteContext *gb, uint32_t *table, uint8_t *dst, int op
     int64_t size_in_bits;
     unsigned endoffset, newoffset, offset;
     unsigned next;
-    uint8_t *src = (uint8_t *)gb->buffer;
+    const uint8_t *src = gb->buffer;
 
     ret = fill_optable(table, optable, nb_elements);
     if (ret < 0)
