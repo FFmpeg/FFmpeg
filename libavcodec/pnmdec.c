@@ -166,23 +166,23 @@ static int pnm_decode_frame(AVCodecContext *avctx, AVFrame *p,
                 ptr+= linesize;
             }
         }else{
-        for (i = 0; i < avctx->height; i++) {
-            if (!upgrade)
-                samplecpy(ptr, s->bytestream, n, s->maxval);
-            else if (upgrade == 1) {
-                unsigned int j, f = (255 * 128 + s->maxval / 2) / s->maxval;
-                for (j = 0; j < n; j++)
-                    ptr[j] = (s->bytestream[j] * f + 64) >> 7;
-            } else if (upgrade == 2) {
-                unsigned int j, v, f = (65535 * 32768 + s->maxval / 2) / s->maxval;
-                for (j = 0; j < n / 2; j++) {
-                    v = AV_RB16(s->bytestream + 2*j);
-                    ((uint16_t *)ptr)[j] = (v * f + 16384) >> 15;
+            for (int i = 0; i < avctx->height; i++) {
+                if (!upgrade)
+                    samplecpy(ptr, s->bytestream, n, s->maxval);
+                else if (upgrade == 1) {
+                    unsigned int f = (255 * 128 + s->maxval / 2) / s->maxval;
+                    for (unsigned j = 0; j < n; j++)
+                        ptr[j] = (s->bytestream[j] * f + 64) >> 7;
+                } else if (upgrade == 2) {
+                    unsigned int f = (65535 * 32768 + s->maxval / 2) / s->maxval;
+                    for (unsigned j = 0; j < n / 2; j++) {
+                        unsigned v = AV_RB16(s->bytestream + 2*j);
+                        ((uint16_t *)ptr)[j] = (v * f + 16384) >> 15;
+                    }
                 }
+                s->bytestream += n;
+                ptr           += linesize;
             }
-            s->bytestream += n;
-            ptr           += linesize;
-        }
         }
         break;
     case AV_PIX_FMT_YUV420P:
@@ -260,46 +260,46 @@ static int pnm_decode_frame(AVCodecContext *avctx, AVFrame *p,
         break;
     case AV_PIX_FMT_GBRPF32:
         if (!s->half) {
-        if (avctx->width * avctx->height * 12 > s->bytestream_end - s->bytestream)
-            return AVERROR_INVALIDDATA;
-        scale = 1.f / s->scale;
-        if (s->endian) {
-            float *r, *g, *b;
+            if (avctx->width * avctx->height * 12 > s->bytestream_end - s->bytestream)
+                return AVERROR_INVALIDDATA;
+            scale = 1.f / s->scale;
+            if (s->endian) {
+                float *r, *g, *b;
 
-            r = (float *)p->data[2];
-            g = (float *)p->data[0];
-            b = (float *)p->data[1];
-            for (int i = 0; i < avctx->height; i++) {
-                for (int j = 0; j < avctx->width; j++) {
-                    r[j] = av_int2float(AV_RL32(s->bytestream+0)) * scale;
-                    g[j] = av_int2float(AV_RL32(s->bytestream+4)) * scale;
-                    b[j] = av_int2float(AV_RL32(s->bytestream+8)) * scale;
-                    s->bytestream += 12;
+                r = (float *)p->data[2];
+                g = (float *)p->data[0];
+                b = (float *)p->data[1];
+                for (int i = 0; i < avctx->height; i++) {
+                    for (int j = 0; j < avctx->width; j++) {
+                        r[j] = av_int2float(AV_RL32(s->bytestream+0)) * scale;
+                        g[j] = av_int2float(AV_RL32(s->bytestream+4)) * scale;
+                        b[j] = av_int2float(AV_RL32(s->bytestream+8)) * scale;
+                        s->bytestream += 12;
+                    }
+
+                    r += p->linesize[2] / 4;
+                    g += p->linesize[0] / 4;
+                    b += p->linesize[1] / 4;
                 }
+            } else {
+                float *r, *g, *b;
 
-                r += p->linesize[2] / 4;
-                g += p->linesize[0] / 4;
-                b += p->linesize[1] / 4;
-            }
-        } else {
-            float *r, *g, *b;
+                r = (float *)p->data[2];
+                g = (float *)p->data[0];
+                b = (float *)p->data[1];
+                for (int i = 0; i < avctx->height; i++) {
+                    for (int j = 0; j < avctx->width; j++) {
+                        r[j] = av_int2float(AV_RB32(s->bytestream+0)) * scale;
+                        g[j] = av_int2float(AV_RB32(s->bytestream+4)) * scale;
+                        b[j] = av_int2float(AV_RB32(s->bytestream+8)) * scale;
+                        s->bytestream += 12;
+                    }
 
-            r = (float *)p->data[2];
-            g = (float *)p->data[0];
-            b = (float *)p->data[1];
-            for (int i = 0; i < avctx->height; i++) {
-                for (int j = 0; j < avctx->width; j++) {
-                    r[j] = av_int2float(AV_RB32(s->bytestream+0)) * scale;
-                    g[j] = av_int2float(AV_RB32(s->bytestream+4)) * scale;
-                    b[j] = av_int2float(AV_RB32(s->bytestream+8)) * scale;
-                    s->bytestream += 12;
+                    r += p->linesize[2] / 4;
+                    g += p->linesize[0] / 4;
+                    b += p->linesize[1] / 4;
                 }
-
-                r += p->linesize[2] / 4;
-                g += p->linesize[0] / 4;
-                b += p->linesize[1] / 4;
             }
-        }
         } else {
             if (avctx->width * avctx->height * 6 > s->bytestream_end - s->bytestream)
                 return AVERROR_INVALIDDATA;
@@ -358,32 +358,33 @@ static int pnm_decode_frame(AVCodecContext *avctx, AVFrame *p,
                     g += p->linesize[0] / 4;
                     b += p->linesize[1] / 4;
                 }
-            }        }
+            }
+        }
         break;
     case AV_PIX_FMT_GRAYF32:
         if (!s->half) {
-        if (avctx->width * avctx->height * 4 > s->bytestream_end - s->bytestream)
-            return AVERROR_INVALIDDATA;
-        scale = 1.f / s->scale;
-        if (s->endian) {
-            float *g = (float *)p->data[0];
-            for (int i = 0; i < avctx->height; i++) {
-                for (int j = 0; j < avctx->width; j++) {
-                    g[j] = av_int2float(AV_RL32(s->bytestream)) * scale;
-                    s->bytestream += 4;
+            if (avctx->width * avctx->height * 4 > s->bytestream_end - s->bytestream)
+                return AVERROR_INVALIDDATA;
+            scale = 1.f / s->scale;
+            if (s->endian) {
+                float *g = (float *)p->data[0];
+                for (int i = 0; i < avctx->height; i++) {
+                    for (int j = 0; j < avctx->width; j++) {
+                        g[j] = av_int2float(AV_RL32(s->bytestream)) * scale;
+                        s->bytestream += 4;
+                    }
+                    g += p->linesize[0] / 4;
                 }
-                g += p->linesize[0] / 4;
-            }
-        } else {
-            float *g = (float *)p->data[0];
-            for (int i = 0; i < avctx->height; i++) {
-                for (int j = 0; j < avctx->width; j++) {
-                    g[j] = av_int2float(AV_RB32(s->bytestream)) * scale;
-                    s->bytestream += 4;
+            } else {
+                float *g = (float *)p->data[0];
+                for (int i = 0; i < avctx->height; i++) {
+                    for (int j = 0; j < avctx->width; j++) {
+                        g[j] = av_int2float(AV_RB32(s->bytestream)) * scale;
+                        s->bytestream += 4;
+                    }
+                    g += p->linesize[0] / 4;
                 }
-                g += p->linesize[0] / 4;
             }
-        }
         } else {
             if (avctx->width * avctx->height * 2 > s->bytestream_end - s->bytestream)
                 return AVERROR_INVALIDDATA;
