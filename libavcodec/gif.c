@@ -508,7 +508,7 @@ static int gif_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     if (!s->image) {
         av_frame_unref(s->last_frame);
-        ret = av_frame_ref(s->last_frame, (AVFrame*)pict);
+        ret = av_frame_ref(s->last_frame, pict);
         if (ret < 0)
             return ret;
     }
