@@ -91,7 +91,6 @@ typedef struct ILBCContext {
     int              enhancer;
 
     int              mode;
-    GetBitContext    gb;
     ILBCFrame        frame;
 
     int              prev_enh_pl;
@@ -127,11 +126,14 @@ typedef struct ILBCContext {
     int16_t          hpimemy[4];
 } ILBCContext;
 
-static int unpack_frame(ILBCContext *s)
+static int unpack_frame(ILBCContext *s, const uint8_t *buf, int size)
 {
     ILBCFrame *frame = &s->frame;
-    GetBitContext *gb = &s->gb;
-    int j;
+    GetBitContext gb0, *const gb = &gb0;
+    int j, ret;
+
+    if ((ret = init_get_bits8(gb, buf, size)) < 0)
+        return ret;
 
     frame->lsf[0] = get_bits(gb, 6);
     frame->lsf[1] = get_bits(gb, 7);
@@ -1357,21 +1359,21 @@ static void hp_output(int16_t *signal, const int16_t *ba, int16_t *y,
 static int ilbc_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                              int *got_frame_ptr, AVPacket *avpkt)
 {
-    const uint8_t *buf = avpkt->data;
     ILBCContext *s     = avctx->priv_data;
     int mode = s->mode, ret;
     int16_t *plc_data = &s->plc_residual[LPC_FILTERORDER];
 
-    if ((ret = init_get_bits8(&s->gb, buf, avpkt->size)) < 0)
-        return ret;
     memset(&s->frame, 0, sizeof(ILBCFrame));
+    ret = unpack_frame(s, avpkt->data, avpkt->size);
+    if (ret < 0)
+        return ret;
+    if (ret)
+        mode = 0;
 
     frame->nb_samples = s->block_samples;
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
 
-    if (unpack_frame(s))
-        mode = 0;
     if (s->frame.start < 1 || s->frame.start > 5)
         mode = 0;
 
