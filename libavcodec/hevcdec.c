@@ -1201,7 +1201,7 @@ static int hls_transform_unit(HEVCLocalContext *lc, int x0, int y0,
                         ptrdiff_t stride = s->frame->linesize[1];
                         int hshift = s->ps.sps->hshift[1];
                         int vshift = s->ps.sps->vshift[1];
-                        int16_t *coeffs_y = (int16_t*)lc->edge_emu_buffer;
+                        const int16_t *coeffs_y = (int16_t*)lc->edge_emu_buffer;
                         int16_t *coeffs   = (int16_t*)lc->edge_emu_buffer2;
                         int size = 1 << log2_trafo_size_c;
 
@@ -1231,7 +1231,7 @@ static int hls_transform_unit(HEVCLocalContext *lc, int x0, int y0,
                         ptrdiff_t stride = s->frame->linesize[2];
                         int hshift = s->ps.sps->hshift[2];
                         int vshift = s->ps.sps->vshift[2];
-                        int16_t *coeffs_y = (int16_t*)lc->edge_emu_buffer;
+                        const int16_t *coeffs_y = (int16_t*)lc->edge_emu_buffer;
                         int16_t *coeffs   = (int16_t*)lc->edge_emu_buffer2;
                         int size = 1 << log2_trafo_size_c;
 
@@ -1495,11 +1495,11 @@ static int hls_pcm_sample(HEVCLocalContext *lc, int x0, int y0, int log2_cb_size
  */
 
 static void luma_mc_uni(HEVCLocalContext *lc, uint8_t *dst, ptrdiff_t dststride,
-                        AVFrame *ref, const Mv *mv, int x_off, int y_off,
+                        const AVFrame *ref, const Mv *mv, int x_off, int y_off,
                         int block_w, int block_h, int luma_weight, int luma_offset)
 {
     const HEVCContext *const s = lc->parent;
-    uint8_t *src         = ref->data[0];
+    const uint8_t *src   = ref->data[0];
     ptrdiff_t srcstride  = ref->linesize[0];
     int pic_width        = s->ps.sps->width;
     int pic_height       = s->ps.sps->height;
@@ -1556,8 +1556,9 @@ static void luma_mc_uni(HEVCLocalContext *lc, uint8_t *dst, ptrdiff_t dststride,
  * @param current_mv current motion vector structure
  */
  static void luma_mc_bi(HEVCLocalContext *lc, uint8_t *dst, ptrdiff_t dststride,
-                       AVFrame *ref0, const Mv *mv0, int x_off, int y_off,
-                       int block_w, int block_h, AVFrame *ref1, const Mv *mv1, struct MvField *current_mv)
+                        const AVFrame *ref0, const Mv *mv0, int x_off, int y_off,
+                        int block_w, int block_h, const AVFrame *ref1,
+                        const Mv *mv1, struct MvField *current_mv)
 {
     const HEVCContext *const s = lc->parent;
     ptrdiff_t src0stride  = ref0->linesize[0];
@@ -1576,8 +1577,8 @@ static void luma_mc_uni(HEVCLocalContext *lc, uint8_t *dst, ptrdiff_t dststride,
     int y_off1           = y_off + (mv1->y >> 2);
     int idx              = hevc_pel_weight[block_w];
 
-    uint8_t *src0  = ref0->data[0] + y_off0 * src0stride + (int)((unsigned)x_off0 << s->ps.sps->pixel_shift);
-    uint8_t *src1  = ref1->data[0] + y_off1 * src1stride + (int)((unsigned)x_off1 << s->ps.sps->pixel_shift);
+    const uint8_t *src0  = ref0->data[0] + y_off0 * src0stride + (int)((unsigned)x_off0 << s->ps.sps->pixel_shift);
+    const uint8_t *src1  = ref1->data[0] + y_off1 * src1stride + (int)((unsigned)x_off1 << s->ps.sps->pixel_shift);
 
     if (x_off0 < QPEL_EXTRA_BEFORE || y_off0 < QPEL_EXTRA_AFTER ||
         x_off0 >= pic_width - block_w - QPEL_EXTRA_AFTER ||
@@ -1647,7 +1648,7 @@ static void luma_mc_uni(HEVCLocalContext *lc, uint8_t *dst, ptrdiff_t dststride,
  */
 
 static void chroma_mc_uni(HEVCLocalContext *lc, uint8_t *dst0,
-                          ptrdiff_t dststride, uint8_t *src0, ptrdiff_t srcstride, int reflist,
+                          ptrdiff_t dststride, const uint8_t *src0, ptrdiff_t srcstride, int reflist,
                           int x_off, int y_off, int block_w, int block_h,
                           const struct MvField *current_mv, int chroma_weight, int chroma_offset)
 {
@@ -1712,12 +1713,13 @@ static void chroma_mc_uni(HEVCLocalContext *lc, uint8_t *dst0,
  * @param current_mv current motion vector structure
  * @param cidx chroma component(cb, cr)
  */
-static void chroma_mc_bi(HEVCLocalContext *lc, uint8_t *dst0, ptrdiff_t dststride, AVFrame *ref0, AVFrame *ref1,
+static void chroma_mc_bi(HEVCLocalContext *lc, uint8_t *dst0, ptrdiff_t dststride,
+                         const AVFrame *ref0, const AVFrame *ref1,
                          int x_off, int y_off, int block_w, int block_h, const MvField *current_mv, int cidx)
 {
     const HEVCContext *const s = lc->parent;
-    uint8_t *src1        = ref0->data[cidx+1];
-    uint8_t *src2        = ref1->data[cidx+1];
+    const uint8_t *src1  = ref0->data[cidx+1];
+    const uint8_t *src2  = ref1->data[cidx+1];
     ptrdiff_t src1stride = ref0->linesize[cidx+1];
     ptrdiff_t src2stride = ref1->linesize[cidx+1];
     int weight_flag      = (s->sh.slice_type == HEVC_SLICE_P && s->ps.pps->weighted_pred_flag) ||
