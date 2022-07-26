@@ -24,7 +24,7 @@
 %include "libavutil/x86/x86util.asm"
 
 SECTION .text
-; int ff_pix_sum16(uint8_t *pix, int line_size)
+; int ff_pix_sum16(const uint8_t *pix, int line_size)
 ; %1 = number of loops
 ; %2 = number of GPRs used
 %macro PIX_SUM16 3
@@ -72,7 +72,7 @@ INIT_XMM xop
 PIX_SUM16  4, 4, 4
 %endif
 
-; int ff_pix_norm1(uint8_t *pix, int line_size)
+; int ff_pix_norm1(const uint8_t *pix, int line_size)
 ; %1 = number of xmm registers used
 ; %2 = number of loops
 %macro PIX_NORM1 2

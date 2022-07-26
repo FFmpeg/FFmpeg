@@ -23,9 +23,9 @@
 #include "libavcodec/avcodec.h"
 #include "libavcodec/mpegvideoencdsp.h"
 
-int ff_pix_sum16_sse2(uint8_t *pix, int line_size);
-int ff_pix_sum16_xop(uint8_t *pix, int line_size);
-int ff_pix_norm1_sse2(uint8_t *pix, int line_size);
+int ff_pix_sum16_sse2(const uint8_t *pix, int line_size);
+int ff_pix_sum16_xop(const uint8_t *pix, int line_size);
+int ff_pix_norm1_sse2(const uint8_t *pix, int line_size);
 
 #if HAVE_INLINE_ASM
 
