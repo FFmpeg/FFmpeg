@@ -23,12 +23,12 @@
 #include <stdint.h>
 
 typedef struct CFHDEncDSPContext {
-    void (*horiz_filter)(int16_t *input, int16_t *low, int16_t *high,
+    void (*horiz_filter)(const int16_t *input, int16_t *low, int16_t *high,
                          ptrdiff_t in_stride, ptrdiff_t low_stride,
                          ptrdiff_t high_stride,
                          int width, int height);
 
-    void (*vert_filter)(int16_t *input, int16_t *low, int16_t *high,
+    void (*vert_filter)(const int16_t *input, int16_t *low, int16_t *high,
                         ptrdiff_t in_stride, ptrdiff_t low_stride,
                         ptrdiff_t high_stride,
                         int width, int height);

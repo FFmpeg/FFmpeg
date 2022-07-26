@@ -27,11 +27,11 @@
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/cfhdencdsp.h"
 
-void ff_cfhdenc_horiz_filter_sse2(int16_t *input, int16_t *low, int16_t *high,
+void ff_cfhdenc_horiz_filter_sse2(const int16_t *input, int16_t *low, int16_t *high,
                                   ptrdiff_t in_stride, ptrdiff_t low_stride,
                                   ptrdiff_t high_stride,
                                   int width, int height);
-void ff_cfhdenc_vert_filter_sse2(int16_t *input, int16_t *low, int16_t *high,
+void ff_cfhdenc_vert_filter_sse2(const int16_t *input, int16_t *low, int16_t *high,
                                  ptrdiff_t in_stride, ptrdiff_t low_stride,
                                  ptrdiff_t high_stride,
                                  int width, int height);
