@@ -75,7 +75,8 @@ static void mpeg_er_decode_mb(void *opaque, int ref, int mv_dir, int mv_type,
     memcpy(s->mv, mv, sizeof(*mv));
 
     ff_init_block_index(s);
-    ff_update_block_index(s);
+    ff_update_block_index(s, s->avctx->bits_per_raw_sample,
+                          s->avctx->lowres, s->chroma_x_shift);
 
     s->bdsp.clear_blocks(s->block[0]);
     if (!s->chroma_y_shift)

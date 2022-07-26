@@ -258,7 +258,8 @@ static int decode_slice(MpegEncContext *s)
         for (; s->mb_x < s->mb_width; s->mb_x++) {
             int ret;
 
-            ff_update_block_index(s);
+            ff_update_block_index(s, s->avctx->bits_per_raw_sample,
+                                  s->avctx->lowres, s->chroma_x_shift);
 
             if (s->resync_mb_x == s->mb_x && s->resync_mb_y + 1 == s->mb_y)
                 s->first_slice_line = 0;

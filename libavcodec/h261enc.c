@@ -139,7 +139,7 @@ void ff_h261_reorder_mb_index(MpegEncContext *s)
         s->mb_y += 3 * index;
 
         ff_init_block_index(s);
-        ff_update_block_index(s);
+        ff_update_block_index(s, 8, 0, 1);
     }
 }
 

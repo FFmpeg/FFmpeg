@@ -68,6 +68,13 @@ static inline void init_block_index(VC1Context *v)
     }
 }
 
+static inline void update_block_index(MpegEncContext *s)
+{
+    /* VC1 is always 420 except when using AV_CODEC_FLAG_GRAY
+     * (or a HWAccel). Shall we inline this value? */
+    ff_update_block_index(s, 8, 0, s->chroma_x_shift);
+}
+
 /** @} */ //Bitplane group
 
 static void vc1_put_blocks_clamped(VC1Context *v, int put_signed)
@@ -2570,7 +2577,7 @@ static void vc1_decode_i_blocks(VC1Context *v)
         s->mb_x = 0;
         init_block_index(v);
         for (; s->mb_x < v->end_mb_x; s->mb_x++) {
-            ff_update_block_index(s);
+            update_block_index(s);
             s->bdsp.clear_blocks(v->block[v->cur_blk_idx][0]);
             mb_pos = s->mb_x + s->mb_y * s->mb_width;
             s->current_picture.mb_type[mb_pos]                     = MB_TYPE_INTRA;
@@ -2705,7 +2712,7 @@ static int vc1_decode_i_blocks_adv(VC1Context *v)
         init_block_index(v);
         for (;s->mb_x < s->mb_width; s->mb_x++) {
             mquant = v->pq;
-            ff_update_block_index(s);
+            update_block_index(s);
             s->bdsp.clear_blocks(v->block[v->cur_blk_idx][0]);
             mb_pos = s->mb_x + s->mb_y * s->mb_stride;
             s->current_picture.mb_type[mb_pos + v->mb_off]                         = MB_TYPE_INTRA;
@@ -2830,7 +2837,7 @@ static void vc1_decode_p_blocks(VC1Context *v)
         s->mb_x = 0;
         init_block_index(v);
         for (; s->mb_x < s->mb_width; s->mb_x++) {
-            ff_update_block_index(s);
+            update_block_index(s);
 
             if (v->fcm == ILACE_FIELD || (v->fcm == PROGRESSIVE && v->mv_type_is_raw) || v->skip_is_raw)
                 if (get_bits_left(&v->s.gb) <= 1) {
@@ -2919,7 +2926,7 @@ static void vc1_decode_b_blocks(VC1Context *v)
         s->mb_x = 0;
         init_block_index(v);
         for (; s->mb_x < s->mb_width; s->mb_x++) {
-            ff_update_block_index(s);
+            update_block_index(s);
 
             if (v->fcm == ILACE_FIELD || v->skip_is_raw || v->dmb_is_raw)
                 if (get_bits_left(&v->s.gb) <= 1) {
@@ -2981,7 +2988,7 @@ static void vc1_decode_skip_blocks(VC1Context *v)
     for (s->mb_y = s->start_mb_y; s->mb_y < s->end_mb_y; s->mb_y++) {
         s->mb_x = 0;
         init_block_index(v);
-        ff_update_block_index(s);
+        update_block_index(s);
         memcpy(s->dest[0], s->last_picture.f->data[0] + s->mb_y * 16 * s->linesize,   s->linesize   * 16);
         memcpy(s->dest[1], s->last_picture.f->data[1] + s->mb_y *  8 * s->uvlinesize, s->uvlinesize *  8);
         memcpy(s->dest[2], s->last_picture.f->data[2] + s->mb_y *  8 * s->uvlinesize, s->uvlinesize *  8);

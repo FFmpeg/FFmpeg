@@ -214,7 +214,7 @@ static int h261_decode_mb_skipped(H261DecContext *h, int mba1, int mba2)
         s->mb_y = ((h->gob_number - 1) / 2) * 3 + i / 11;
         xy      = s->mb_x + s->mb_y * s->mb_stride;
         ff_init_block_index(s);
-        ff_update_block_index(s);
+        ff_update_block_index(s, 8, s->avctx->lowres, 1);
 
         for (j = 0; j < 6; j++)
             s->block_last_index[j] = -1;
@@ -400,7 +400,7 @@ static int h261_decode_mb(H261DecContext *h)
     s->mb_y = ((h->gob_number - 1) / 2) * 3 + ((h->current_mba - 1) / 11);
     xy      = s->mb_x + s->mb_y * s->mb_stride;
     ff_init_block_index(s);
-    ff_update_block_index(s);
+    ff_update_block_index(s, 8, s->avctx->lowres, 1);
 
     // Read mtype
     com->mtype = get_vlc2(&s->gb, h261_mtype_vlc.table, H261_MTYPE_VLC_BITS, 2);

@@ -2852,7 +2852,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
 
             s->mb_x = mb_x;
             s->mb_y = mb_y;  // moved into loop, can get changed by H.261
-            ff_update_block_index(s);
+            ff_update_block_index(s, 8, 0, s->chroma_x_shift);
 
             if(CONFIG_H261_ENCODER && s->codec_id == AV_CODEC_ID_H261){
                 ff_h261_reorder_mb_index(s);
