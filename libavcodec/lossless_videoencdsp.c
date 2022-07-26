@@ -74,7 +74,7 @@ static void sub_median_pred_c(uint8_t *dst, const uint8_t *src1,
     *left_top = lt;
 }
 
-static void sub_left_predict_c(uint8_t *dst, uint8_t *src,
+static void sub_left_predict_c(uint8_t *dst, const uint8_t *src,
                                ptrdiff_t stride, ptrdiff_t width, int height)
 {
     int i, j;

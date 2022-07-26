@@ -34,7 +34,7 @@ void ff_diff_bytes_sse2(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
 void ff_diff_bytes_avx2(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
                         intptr_t w);
 
-void ff_sub_left_predict_avx(uint8_t *dst, uint8_t *src,
+void ff_sub_left_predict_avx(uint8_t *dst, const uint8_t *src,
                             ptrdiff_t stride, ptrdiff_t width, int height);
 
 #if HAVE_INLINE_ASM

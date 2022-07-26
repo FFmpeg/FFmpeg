@@ -35,7 +35,7 @@ typedef struct LLVidEncDSPContext {
                             const uint8_t *src2, intptr_t w,
                             int *left, int *left_top);
 
-    void (*sub_left_predict)(uint8_t *dst, uint8_t *src,
+    void (*sub_left_predict)(uint8_t *dst, const uint8_t *src,
                           ptrdiff_t stride, ptrdiff_t width, int height);
 } LLVidEncDSPContext;
 

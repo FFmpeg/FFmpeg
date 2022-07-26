@@ -145,7 +145,7 @@ DIFF_BYTES_PROLOGUE
 
 
 ;--------------------------------------------------------------------------------------------------
-;void sub_left_predict(uint8_t *dst, uint8_t *src, ptrdiff_t stride, ptrdiff_t width, int height)
+;void sub_left_predict(uint8_t *dst, const uint8_t *src, ptrdiff_t stride, ptrdiff_t width, int height)
 ;--------------------------------------------------------------------------------------------------
 
 INIT_XMM avx
