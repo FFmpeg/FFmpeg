@@ -49,11 +49,11 @@ av_cold void ff_wmv2_common_init(MpegEncContext *s)
 
 void ff_mspel_motion(MpegEncContext *s, uint8_t *dest_y,
                      uint8_t *dest_cb, uint8_t *dest_cr,
-                     uint8_t **ref_picture, op_pixels_func (*pix_op)[4],
+                     uint8_t *const *ref_picture, op_pixels_func (*pix_op)[4],
                      int motion_x, int motion_y, int h)
 {
     WMV2Context *const w = s->private_ctx;
-    uint8_t *ptr;
+    const uint8_t *ptr;
     int dxy, mx, my, src_x, src_y, v_edge_pos;
     ptrdiff_t offset, linesize, uvlinesize;
     int emu = 0;

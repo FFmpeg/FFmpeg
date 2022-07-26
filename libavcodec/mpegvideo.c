@@ -916,12 +916,12 @@ void ff_mpv_common_end(MpegEncContext *s)
 
 
 static inline int hpel_motion_lowres(MpegEncContext *s,
-                                     uint8_t *dest, uint8_t *src,
+                                     uint8_t *dest, const uint8_t *src,
                                      int field_based, int field_select,
                                      int src_x, int src_y,
                                      int width, int height, ptrdiff_t stride,
                                      int h_edge_pos, int v_edge_pos,
-                                     int w, int h, h264_chroma_mc_func *pix_op,
+                                     int w, int h, const h264_chroma_mc_func *pix_op,
                                      int motion_x, int motion_y)
 {
     const int lowres   = s->avctx->lowres;
@@ -969,12 +969,12 @@ static av_always_inline void mpeg_motion_lowres(MpegEncContext *s,
                                                 int field_based,
                                                 int bottom_field,
                                                 int field_select,
-                                                uint8_t **ref_picture,
-                                                h264_chroma_mc_func *pix_op,
+                                                uint8_t *const *ref_picture,
+                                                const h264_chroma_mc_func *pix_op,
                                                 int motion_x, int motion_y,
                                                 int h, int mb_y)
 {
-    uint8_t *ptr_y, *ptr_cb, *ptr_cr;
+    const uint8_t *ptr_y, *ptr_cb, *ptr_cr;
     int mx, my, src_x, src_y, uvsrc_x, uvsrc_y, sx, sy, uvsx, uvsy;
     ptrdiff_t uvlinesize, linesize;
     const int lowres     = s->avctx->lowres;
@@ -1103,8 +1103,8 @@ static av_always_inline void mpeg_motion_lowres(MpegEncContext *s,
 
 static inline void chroma_4mv_motion_lowres(MpegEncContext *s,
                                             uint8_t *dest_cb, uint8_t *dest_cr,
-                                            uint8_t **ref_picture,
-                                            h264_chroma_mc_func * pix_op,
+                                            uint8_t *const *ref_picture,
+                                            const h264_chroma_mc_func * pix_op,
                                             int mx, int my)
 {
     const int lowres     = s->avctx->lowres;
@@ -1115,7 +1115,7 @@ static inline void chroma_4mv_motion_lowres(MpegEncContext *s,
     const int v_edge_pos = s->v_edge_pos >> lowres + 1;
     int emu = 0, src_x, src_y, sx, sy;
     ptrdiff_t offset;
-    uint8_t *ptr;
+    const uint8_t *ptr;
 
     if (s->quarter_sample) {
         mx /= 2;
@@ -1172,8 +1172,8 @@ static inline void chroma_4mv_motion_lowres(MpegEncContext *s,
 static inline void MPV_motion_lowres(MpegEncContext *s,
                                      uint8_t *dest_y, uint8_t *dest_cb,
                                      uint8_t *dest_cr,
-                                     int dir, uint8_t **ref_picture,
-                                     h264_chroma_mc_func *pix_op)
+                                     int dir, uint8_t *const *ref_picture,
+                                     const h264_chroma_mc_func *pix_op)
 {
     int mx, my;
     int mb_x, mb_y, i;
@@ -1242,7 +1242,7 @@ static inline void MPV_motion_lowres(MpegEncContext *s,
         break;
     case MV_TYPE_16X8:
         for (i = 0; i < 2; i++) {
-            uint8_t **ref2picture;
+            uint8_t *const *ref2picture;
 
             if (s->picture_structure == s->field_select[dir][i] + 1 ||
                 s->pict_type == AV_PICTURE_TYPE_B || s->first_field) {
@@ -1492,7 +1492,7 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
                 }
 
                 if(lowres_flag){
-                    h264_chroma_mc_func *op_pix = s->h264chroma.put_h264_chroma_pixels_tab;
+                    const h264_chroma_mc_func *op_pix = s->h264chroma.put_h264_chroma_pixels_tab;
 
                     if (s->mv_dir & MV_DIR_FORWARD) {
                         MPV_motion_lowres(s, dest_y, dest_cb, dest_cr, 0, s->last_picture.f->data, op_pix);
