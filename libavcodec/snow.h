@@ -127,7 +127,6 @@ typedef struct SnowContext{
     AVFrame *input_picture;              ///< new_picture with the internal linesizes
     AVFrame *current_picture;
     AVFrame *last_picture[MAX_REF_FRAMES];
-    uint8_t *halfpel_plane[MAX_REF_FRAMES][4][4];
     AVFrame *mconly_picture;
 //     uint8_t q_context[16];
     uint8_t header_state[32];
