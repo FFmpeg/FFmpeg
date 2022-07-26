@@ -40,14 +40,14 @@ static void op##_rv40_qpel##size##_mc33_##insn(uint8_t *dst, const uint8_t *src,
 }
 
 #if HAVE_X86ASM
-void ff_put_rv40_chroma_mc8_mmx  (uint8_t *dst, uint8_t *src,
+void ff_put_rv40_chroma_mc8_mmx  (uint8_t *dst, const uint8_t *src,
                                   ptrdiff_t stride, int h, int x, int y);
-void ff_avg_rv40_chroma_mc8_mmxext(uint8_t *dst, uint8_t *src,
+void ff_avg_rv40_chroma_mc8_mmxext(uint8_t *dst, const uint8_t *src,
                                    ptrdiff_t stride, int h, int x, int y);
 
-void ff_put_rv40_chroma_mc4_mmx  (uint8_t *dst, uint8_t *src,
+void ff_put_rv40_chroma_mc4_mmx  (uint8_t *dst, const uint8_t *src,
                                   ptrdiff_t stride, int h, int x, int y);
-void ff_avg_rv40_chroma_mc4_mmxext(uint8_t *dst, uint8_t *src,
+void ff_avg_rv40_chroma_mc4_mmxext(uint8_t *dst, const uint8_t *src,
                                    ptrdiff_t stride, int h, int x, int y);
 
 #define DECLARE_WEIGHT(opt) \

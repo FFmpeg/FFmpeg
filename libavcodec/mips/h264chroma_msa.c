@@ -29,7 +29,7 @@ static const uint8_t chroma_mask_arr[16 * 5] = {
     0, 1, 1, 2, 16, 17, 17, 18, 16, 17, 17, 18, 18, 19, 19, 20
 };
 
-static void avc_chroma_hz_2x2_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+static void avc_chroma_hz_2x2_msa(const uint8_t *src, uint8_t *dst, int32_t stride,
                                   uint32_t coeff0, uint32_t coeff1)
 {
     uint16_t out0, out1;
@@ -60,7 +60,7 @@ static void avc_chroma_hz_2x2_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     SH(out1, dst);
 }
 
-static void avc_chroma_hz_2x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+static void avc_chroma_hz_2x4_msa(const uint8_t *src, uint8_t *dst, int32_t stride,
                                   uint32_t coeff0, uint32_t coeff1)
 {
     v16u8 src0, src1, src2, src3;
@@ -88,7 +88,7 @@ static void avc_chroma_hz_2x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     ST_H4(res, 0, 1, 2, 3, dst, stride);
 }
 
-static void avc_chroma_hz_2w_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+static void avc_chroma_hz_2w_msa(const uint8_t *src, uint8_t *dst, int32_t stride,
                                  uint32_t coeff0, uint32_t coeff1,
                                  int32_t height)
 {
@@ -99,7 +99,7 @@ static void avc_chroma_hz_2w_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     }
 }
 
-static void avc_chroma_hz_4x2_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+static void avc_chroma_hz_4x2_msa(const uint8_t *src, uint8_t *dst, int32_t stride,
                                   uint32_t coeff0, uint32_t coeff1)
 {
     v16i8 src0, src1;
@@ -124,7 +124,7 @@ static void avc_chroma_hz_4x2_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     ST_W2(res, 0, 1, dst, stride);
 }
 
-static void avc_chroma_hz_4x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+static void avc_chroma_hz_4x4_msa(const uint8_t *src, uint8_t *dst, int32_t stride,
                                   uint32_t coeff0, uint32_t coeff1)
 {
     v16u8 src0, src1, src2, src3, out;
@@ -147,7 +147,7 @@ static void avc_chroma_hz_4x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     ST_W4(out, 0, 1, 2, 3, dst, stride);
 }
 
-static void avc_chroma_hz_4x8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+static void avc_chroma_hz_4x8_msa(const uint8_t *src, uint8_t *dst, int32_t stride,
                                   uint32_t coeff0, uint32_t coeff1)
 {
     v16u8 src0, src1, src2, src3, src4, src5, src6, src7, out0, out1;
@@ -171,7 +171,7 @@ static void avc_chroma_hz_4x8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     ST_W8(out0, out1, 0, 1, 2, 3, 0, 1, 2, 3, dst, stride);
 }
 
-static void avc_chroma_hz_4w_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+static void avc_chroma_hz_4w_msa(const uint8_t *src, uint8_t *dst, int32_t stride,
                                  uint32_t coeff0, uint32_t coeff1,
                                  int32_t height)
 {
@@ -184,7 +184,7 @@ static void avc_chroma_hz_4w_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     }
 }
 
-static void avc_chroma_hz_8x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+static void avc_chroma_hz_8x4_msa(const uint8_t *src, uint8_t *dst, int32_t stride,
                                   uint32_t coeff0, uint32_t coeff1)
 {
     v16u8 src0, src1, src2, src3, out0, out1;
@@ -207,7 +207,7 @@ static void avc_chroma_hz_8x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     ST_D4(out0, out1, 0, 1, 0, 1, dst, stride);
 }
 
-static void avc_chroma_hz_8x8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+static void avc_chroma_hz_8x8_msa(const uint8_t *src, uint8_t *dst, int32_t stride,
                                   uint32_t coeff0, uint32_t coeff1)
 {
     v16u8 src0, src1, src2, src3, src4, src5, src6, src7;
@@ -240,7 +240,7 @@ static void avc_chroma_hz_8x8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     ST_D8(out0, out1, out2, out3, 0, 1, 0, 1, 0, 1, 0, 1, dst, stride);
 }
 
-static void avc_chroma_hz_nonmult_msa(uint8_t *src, uint8_t *dst,
+static void avc_chroma_hz_nonmult_msa(const uint8_t *src, uint8_t *dst,
                                       int32_t stride, uint32_t coeff0,
                                       uint32_t coeff1, int32_t height)
 {
@@ -289,7 +289,7 @@ static void avc_chroma_hz_nonmult_msa(uint8_t *src, uint8_t *dst,
     }
 }
 
-static void avc_chroma_hz_8w_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+static void avc_chroma_hz_8w_msa(const uint8_t *src, uint8_t *dst, int32_t stride,
                                  uint32_t coeff0, uint32_t coeff1,
                                  int32_t height)
 {
@@ -302,7 +302,7 @@ static void avc_chroma_hz_8w_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     }
 }
 
-static void avc_chroma_vt_2x2_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+static void avc_chroma_vt_2x2_msa(const uint8_t *src, uint8_t *dst, int32_t stride,
                                   uint32_t coeff0, uint32_t coeff1)
 {
     uint16_t out0, out1;
@@ -334,7 +334,7 @@ static void avc_chroma_vt_2x2_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     SH(out1, dst);
 }
 
-static void avc_chroma_vt_2x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+static void avc_chroma_vt_2x4_msa(const uint8_t *src, uint8_t *dst, int32_t stride,
                                   uint32_t coeff0, uint32_t coeff1)
 {
     v16u8 src0, src1, src2, src3, src4;
@@ -362,7 +362,7 @@ static void avc_chroma_vt_2x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     ST_H4(res, 0, 1, 2, 3, dst, stride);
 }
 
-static void avc_chroma_vt_2w_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+static void avc_chroma_vt_2w_msa(const uint8_t *src, uint8_t *dst, int32_t stride,
                                  uint32_t coeff0, uint32_t coeff1,
                                  int32_t height)
 {
@@ -373,7 +373,7 @@ static void avc_chroma_vt_2w_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     }
 }
 
-static void avc_chroma_vt_4x2_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+static void avc_chroma_vt_4x2_msa(const uint8_t *src, uint8_t *dst, int32_t stride,
                                   uint32_t coeff0, uint32_t coeff1)
 {
     v16u8 src0, src1, src2;
@@ -397,7 +397,7 @@ static void avc_chroma_vt_4x2_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     ST_W2(res, 0, 1, dst, stride);
 }
 
-static void avc_chroma_vt_4x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+static void avc_chroma_vt_4x4_msa(const uint8_t *src, uint8_t *dst, int32_t stride,
                                   uint32_t coeff0, uint32_t coeff1)
 {
     v16u8 src0, src1, src2, src3, src4;
@@ -421,7 +421,7 @@ static void avc_chroma_vt_4x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     ST_W4(out, 0, 1, 2, 3, dst, stride);
 }
 
-static void avc_chroma_vt_4x8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+static void avc_chroma_vt_4x8_msa(const uint8_t *src, uint8_t *dst, int32_t stride,
                                   uint32_t coeff0, uint32_t coeff1)
 {
     v16u8 src0, src1, src2, src3, src4, src5, src6, src7, src8;
@@ -449,7 +449,7 @@ static void avc_chroma_vt_4x8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     ST_W8(out0, out1, 0, 1, 2, 3, 0, 1, 2, 3, dst, stride);
 }
 
-static void avc_chroma_vt_4w_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+static void avc_chroma_vt_4w_msa(const uint8_t *src, uint8_t *dst, int32_t stride,
                                  uint32_t coeff0, uint32_t coeff1,
                                  int32_t height)
 {
@@ -462,7 +462,7 @@ static void avc_chroma_vt_4w_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     }
 }
 
-static void avc_chroma_vt_8x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+static void avc_chroma_vt_8x4_msa(const uint8_t *src, uint8_t *dst, int32_t stride,
                                   uint32_t coeff0, uint32_t coeff1)
 {
     v16u8 src0, src1, src2, src3, src4, out0, out1;
@@ -483,7 +483,7 @@ static void avc_chroma_vt_8x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     ST_D4(out0, out1, 0, 1, 0, 1, dst, stride);
 }
 
-static void avc_chroma_vt_8x8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+static void avc_chroma_vt_8x8_msa(const uint8_t *src, uint8_t *dst, int32_t stride,
                                   uint32_t coeff0, uint32_t coeff1)
 {
     v16u8 src0, src1, src2, src3, src4, src5, src6, src7, src8;
@@ -515,7 +515,7 @@ static void avc_chroma_vt_8x8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     ST_D8(out0, out1, out2, out3, 0, 1, 0, 1, 0, 1, 0, 1, dst, stride);
 }
 
-static void avc_chroma_vt_8w_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+static void avc_chroma_vt_8w_msa(const uint8_t *src, uint8_t *dst, int32_t stride,
                                  uint32_t coeff0, uint32_t coeff1,
                                  int32_t height)
 {
@@ -526,7 +526,7 @@ static void avc_chroma_vt_8w_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     }
 }
 
-static void avc_chroma_hv_2x2_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+static void avc_chroma_hv_2x2_msa(const uint8_t *src, uint8_t *dst, int32_t stride,
                                   uint32_t coef_hor0, uint32_t coef_hor1,
                                   uint32_t coef_ver0, uint32_t coef_ver1)
 {
@@ -561,7 +561,7 @@ static void avc_chroma_hv_2x2_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     SH(out1, dst);
 }
 
-static void avc_chroma_hv_2x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+static void avc_chroma_hv_2x4_msa(const uint8_t *src, uint8_t *dst, int32_t stride,
                                   uint32_t coef_hor0, uint32_t coef_hor1,
                                   uint32_t coef_ver0, uint32_t coef_ver1)
 {
@@ -595,7 +595,7 @@ static void avc_chroma_hv_2x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     ST_H4(res, 0, 1, 2, 3, dst, stride);
 }
 
-static void avc_chroma_hv_2w_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+static void avc_chroma_hv_2w_msa(const uint8_t *src, uint8_t *dst, int32_t stride,
                                  uint32_t coef_hor0, uint32_t coef_hor1,
                                  uint32_t coef_ver0, uint32_t coef_ver1,
                                  int32_t height)
@@ -609,7 +609,7 @@ static void avc_chroma_hv_2w_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     }
 }
 
-static void avc_chroma_hv_4x2_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+static void avc_chroma_hv_4x2_msa(const uint8_t *src, uint8_t *dst, int32_t stride,
                                   uint32_t coef_hor0, uint32_t coef_hor1,
                                   uint32_t coef_ver0, uint32_t coef_ver1)
 {
@@ -637,7 +637,7 @@ static void avc_chroma_hv_4x2_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     ST_W2(res, 0, 1, dst, stride);
 }
 
-static void avc_chroma_hv_4x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+static void avc_chroma_hv_4x4_msa(const uint8_t *src, uint8_t *dst, int32_t stride,
                                   uint32_t coef_hor0, uint32_t coef_hor1,
                                   uint32_t coef_ver0, uint32_t coef_ver1)
 {
@@ -670,7 +670,7 @@ static void avc_chroma_hv_4x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     ST_W2(res1, 0, 1, dst + 2 * stride, stride);
 }
 
-static void avc_chroma_hv_4x8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+static void avc_chroma_hv_4x8_msa(const uint8_t *src, uint8_t *dst, int32_t stride,
                                   uint32_t coef_hor0, uint32_t coef_hor1,
                                   uint32_t coef_ver0, uint32_t coef_ver1)
 {
@@ -710,7 +710,7 @@ static void avc_chroma_hv_4x8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     ST_W8(res0, res1, 0, 1, 2, 3, 0, 1, 2, 3, dst, stride);
 }
 
-static void avc_chroma_hv_4w_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+static void avc_chroma_hv_4w_msa(const uint8_t *src, uint8_t *dst, int32_t stride,
                                  uint32_t coef_hor0, uint32_t coef_hor1,
                                  uint32_t coef_ver0, uint32_t coef_ver1,
                                  int32_t height)
@@ -727,7 +727,7 @@ static void avc_chroma_hv_4w_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     }
 }
 
-static void avc_chroma_hv_8x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+static void avc_chroma_hv_8x4_msa(const uint8_t *src, uint8_t *dst, int32_t stride,
                                   uint32_t coef_hor0, uint32_t coef_hor1,
                                   uint32_t coef_ver0, uint32_t coef_ver1)
 {
@@ -770,7 +770,7 @@ static void avc_chroma_hv_8x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     ST_D4(out0, out1, 0, 1, 0, 1, dst, stride);
 }
 
-static void avc_chroma_hv_8x8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+static void avc_chroma_hv_8x8_msa(const uint8_t *src, uint8_t *dst, int32_t stride,
                                   uint32_t coef_hor0, uint32_t coef_hor1,
                                   uint32_t coef_ver0, uint32_t coef_ver1)
 {
@@ -826,7 +826,7 @@ static void avc_chroma_hv_8x8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     ST_D8(out0, out1, out2, out3, 0, 1, 0, 1, 0, 1, 0, 1, dst, stride);
 }
 
-static void avc_chroma_hv_8w_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+static void avc_chroma_hv_8w_msa(const uint8_t *src, uint8_t *dst, int32_t stride,
                                  uint32_t coef_hor0, uint32_t coef_hor1,
                                  uint32_t coef_ver0, uint32_t coef_ver1,
                                  int32_t height)
@@ -840,7 +840,7 @@ static void avc_chroma_hv_8w_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     }
 }
 
-static void avc_chroma_hz_and_aver_dst_2x2_msa(uint8_t *src, uint8_t *dst,
+static void avc_chroma_hz_and_aver_dst_2x2_msa(const uint8_t *src, uint8_t *dst,
                                                int32_t stride, uint32_t coeff0,
                                                uint32_t coeff1)
 {
@@ -882,7 +882,7 @@ static void avc_chroma_hz_and_aver_dst_2x2_msa(uint8_t *src, uint8_t *dst,
     SH(out1, dst);
 }
 
-static void avc_chroma_hz_and_aver_dst_2x4_msa(uint8_t *src, uint8_t *dst,
+static void avc_chroma_hz_and_aver_dst_2x4_msa(const uint8_t *src, uint8_t *dst,
                                                int32_t stride, uint32_t coeff0,
                                                uint32_t coeff1)
 {
@@ -922,7 +922,7 @@ static void avc_chroma_hz_and_aver_dst_2x4_msa(uint8_t *src, uint8_t *dst,
     ST_H4(dst0, 0, 1, 2, 3, dst, stride);
 }
 
-static void avc_chroma_hz_and_aver_dst_2w_msa(uint8_t *src, uint8_t *dst,
+static void avc_chroma_hz_and_aver_dst_2w_msa(const uint8_t *src, uint8_t *dst,
                                               int32_t stride, uint32_t coeff0,
                                               uint32_t coeff1, int32_t height)
 {
@@ -933,7 +933,7 @@ static void avc_chroma_hz_and_aver_dst_2w_msa(uint8_t *src, uint8_t *dst,
     }
 }
 
-static void avc_chroma_hz_and_aver_dst_4x2_msa(uint8_t *src, uint8_t *dst,
+static void avc_chroma_hz_and_aver_dst_4x2_msa(const uint8_t *src, uint8_t *dst,
                                                int32_t stride, uint32_t coeff0,
                                                uint32_t coeff1)
 {
@@ -966,7 +966,7 @@ static void avc_chroma_hz_and_aver_dst_4x2_msa(uint8_t *src, uint8_t *dst,
     ST_W2(dst_data, 0, 1, dst, stride);
 }
 
-static void avc_chroma_hz_and_aver_dst_4x4_msa(uint8_t *src, uint8_t *dst,
+static void avc_chroma_hz_and_aver_dst_4x4_msa(const uint8_t *src, uint8_t *dst,
                                                int32_t stride, uint32_t coeff0,
                                                uint32_t coeff1)
 {
@@ -995,7 +995,7 @@ static void avc_chroma_hz_and_aver_dst_4x4_msa(uint8_t *src, uint8_t *dst,
     ST_W4(out, 0, 1, 2, 3, dst, stride);
 }
 
-static void avc_chroma_hz_and_aver_dst_4x8_msa(uint8_t *src, uint8_t *dst,
+static void avc_chroma_hz_and_aver_dst_4x8_msa(const uint8_t *src, uint8_t *dst,
                                                int32_t stride, uint32_t coeff0,
                                                uint32_t coeff1)
 {
@@ -1027,7 +1027,7 @@ static void avc_chroma_hz_and_aver_dst_4x8_msa(uint8_t *src, uint8_t *dst,
     ST_W8(out0, out1, 0, 1, 2, 3, 0, 1, 2, 3, dst, stride);
 }
 
-static void avc_chroma_hz_and_aver_dst_4w_msa(uint8_t *src, uint8_t *dst,
+static void avc_chroma_hz_and_aver_dst_4w_msa(const uint8_t *src, uint8_t *dst,
                                               int32_t stride, uint32_t coeff0,
                                               uint32_t coeff1, int32_t height)
 {
@@ -1040,7 +1040,7 @@ static void avc_chroma_hz_and_aver_dst_4w_msa(uint8_t *src, uint8_t *dst,
     }
 }
 
-static void avc_chroma_hz_and_aver_dst_8x4_msa(uint8_t *src, uint8_t *dst,
+static void avc_chroma_hz_and_aver_dst_8x4_msa(const uint8_t *src, uint8_t *dst,
                                                int32_t stride, uint32_t coeff0,
                                                uint32_t coeff1)
 {
@@ -1070,7 +1070,7 @@ static void avc_chroma_hz_and_aver_dst_8x4_msa(uint8_t *src, uint8_t *dst,
     ST_D4(dst0, dst1, 0, 1, 0, 1, dst, stride);
 }
 
-static void avc_chroma_hz_and_aver_dst_8x8_msa(uint8_t *src, uint8_t *dst,
+static void avc_chroma_hz_and_aver_dst_8x8_msa(const uint8_t *src, uint8_t *dst,
                                                int32_t stride, uint32_t coeff0,
                                                uint32_t coeff1)
 {
@@ -1114,7 +1114,7 @@ static void avc_chroma_hz_and_aver_dst_8x8_msa(uint8_t *src, uint8_t *dst,
     ST_D8(out0, out1, out2, out3, 0, 1, 0, 1, 0, 1, 0, 1, dst, stride);
 }
 
-static void avc_chroma_hz_and_aver_dst_8w_msa(uint8_t *src, uint8_t *dst,
+static void avc_chroma_hz_and_aver_dst_8w_msa(const uint8_t *src, uint8_t *dst,
                                               int32_t stride, uint32_t coeff0,
                                               uint32_t coeff1, int32_t height)
 {
@@ -1125,7 +1125,7 @@ static void avc_chroma_hz_and_aver_dst_8w_msa(uint8_t *src, uint8_t *dst,
     }
 }
 
-static void avc_chroma_vt_and_aver_dst_2x2_msa(uint8_t *src, uint8_t *dst,
+static void avc_chroma_vt_and_aver_dst_2x2_msa(const uint8_t *src, uint8_t *dst,
                                                int32_t stride, uint32_t coeff0,
                                                uint32_t coeff1)
 {
@@ -1162,7 +1162,7 @@ static void avc_chroma_vt_and_aver_dst_2x2_msa(uint8_t *src, uint8_t *dst,
     SH(out1, dst);
 }
 
-static void avc_chroma_vt_and_aver_dst_2x4_msa(uint8_t *src, uint8_t *dst,
+static void avc_chroma_vt_and_aver_dst_2x4_msa(const uint8_t *src, uint8_t *dst,
                                                int32_t stride, uint32_t coeff0,
                                                uint32_t coeff1)
 {
@@ -1204,7 +1204,7 @@ static void avc_chroma_vt_and_aver_dst_2x4_msa(uint8_t *src, uint8_t *dst,
     ST_H4(res, 0, 1, 2, 3, dst, stride);
 }
 
-static void avc_chroma_vt_and_aver_dst_2w_msa(uint8_t *src, uint8_t *dst,
+static void avc_chroma_vt_and_aver_dst_2w_msa(const uint8_t *src, uint8_t *dst,
                                               int32_t stride, uint32_t coeff0,
                                               uint32_t coeff1, int32_t height)
 {
@@ -1215,7 +1215,7 @@ static void avc_chroma_vt_and_aver_dst_2w_msa(uint8_t *src, uint8_t *dst,
     }
 }
 
-static void avc_chroma_vt_and_aver_dst_4x2_msa(uint8_t *src, uint8_t *dst,
+static void avc_chroma_vt_and_aver_dst_4x2_msa(const uint8_t *src, uint8_t *dst,
                                                int32_t stride, uint32_t coeff0,
                                                uint32_t coeff1)
 {
@@ -1247,7 +1247,7 @@ static void avc_chroma_vt_and_aver_dst_4x2_msa(uint8_t *src, uint8_t *dst,
     ST_W2(res, 0, 1, dst, stride);
 }
 
-static void avc_chroma_vt_and_aver_dst_4x4_msa(uint8_t *src, uint8_t *dst,
+static void avc_chroma_vt_and_aver_dst_4x4_msa(const uint8_t *src, uint8_t *dst,
                                                int32_t stride, uint32_t coeff0,
                                                uint32_t coeff1)
 {
@@ -1277,7 +1277,7 @@ static void avc_chroma_vt_and_aver_dst_4x4_msa(uint8_t *src, uint8_t *dst,
     ST_W4(out, 0, 1, 2, 3, dst, stride);
 }
 
-static void avc_chroma_vt_and_aver_dst_4x8_msa(uint8_t *src, uint8_t *dst,
+static void avc_chroma_vt_and_aver_dst_4x8_msa(const uint8_t *src, uint8_t *dst,
                                                int32_t stride, uint32_t coeff0,
                                                uint32_t coeff1)
 {
@@ -1313,7 +1313,7 @@ static void avc_chroma_vt_and_aver_dst_4x8_msa(uint8_t *src, uint8_t *dst,
     ST_W8(out0, out1, 0, 1, 2, 3, 0, 1, 2, 3, dst, stride);
 }
 
-static void avc_chroma_vt_and_aver_dst_4w_msa(uint8_t *src, uint8_t *dst,
+static void avc_chroma_vt_and_aver_dst_4w_msa(const uint8_t *src, uint8_t *dst,
                                               int32_t stride, uint32_t coeff0,
                                               uint32_t coeff1, int32_t height)
 {
@@ -1326,7 +1326,7 @@ static void avc_chroma_vt_and_aver_dst_4w_msa(uint8_t *src, uint8_t *dst,
     }
 }
 
-static void avc_chroma_vt_and_aver_dst_8x4_msa(uint8_t *src, uint8_t *dst,
+static void avc_chroma_vt_and_aver_dst_8x4_msa(const uint8_t *src, uint8_t *dst,
                                                int32_t stride, uint32_t coeff0,
                                                uint32_t coeff1)
 {
@@ -1355,7 +1355,7 @@ static void avc_chroma_vt_and_aver_dst_8x4_msa(uint8_t *src, uint8_t *dst,
     ST_D4(out0, out1, 0, 1, 0, 1, dst, stride);
 }
 
-static void avc_chroma_vt_and_aver_dst_8x8_msa(uint8_t *src, uint8_t *dst,
+static void avc_chroma_vt_and_aver_dst_8x8_msa(const uint8_t *src, uint8_t *dst,
                                                int32_t stride, uint32_t coeff0,
                                                uint32_t coeff1)
 {
@@ -1398,7 +1398,7 @@ static void avc_chroma_vt_and_aver_dst_8x8_msa(uint8_t *src, uint8_t *dst,
     ST_D8(out0, out1, out2, out3, 0, 1, 0, 1, 0, 1, 0, 1, dst, stride);
 }
 
-static void avc_chroma_vt_and_aver_dst_8w_msa(uint8_t *src, uint8_t *dst,
+static void avc_chroma_vt_and_aver_dst_8w_msa(const uint8_t *src, uint8_t *dst,
                                               int32_t stride, uint32_t coeff0,
                                               uint32_t coeff1, int32_t height)
 {
@@ -1409,7 +1409,7 @@ static void avc_chroma_vt_and_aver_dst_8w_msa(uint8_t *src, uint8_t *dst,
     }
 }
 
-static void avc_chroma_hv_and_aver_dst_2x2_msa(uint8_t *src, uint8_t *dst,
+static void avc_chroma_hv_and_aver_dst_2x2_msa(const uint8_t *src, uint8_t *dst,
                                                int32_t stride,
                                                uint32_t coef_hor0,
                                                uint32_t coef_hor1,
@@ -1451,7 +1451,7 @@ static void avc_chroma_hv_and_aver_dst_2x2_msa(uint8_t *src, uint8_t *dst,
     SH(out1, dst);
 }
 
-static void avc_chroma_hv_and_aver_dst_2x4_msa(uint8_t *src, uint8_t *dst,
+static void avc_chroma_hv_and_aver_dst_2x4_msa(const uint8_t *src, uint8_t *dst,
                                                int32_t stride,
                                                uint32_t coef_hor0,
                                                uint32_t coef_hor1,
@@ -1496,7 +1496,7 @@ static void avc_chroma_hv_and_aver_dst_2x4_msa(uint8_t *src, uint8_t *dst,
     ST_H4(dst0, 0, 1, 2, 3, dst, stride);
 }
 
-static void avc_chroma_hv_and_aver_dst_2w_msa(uint8_t *src, uint8_t *dst,
+static void avc_chroma_hv_and_aver_dst_2w_msa(const uint8_t *src, uint8_t *dst,
                                               int32_t stride,
                                               uint32_t coef_hor0,
                                               uint32_t coef_hor1,
@@ -1513,7 +1513,7 @@ static void avc_chroma_hv_and_aver_dst_2w_msa(uint8_t *src, uint8_t *dst,
     }
 }
 
-static void avc_chroma_hv_and_aver_dst_4x2_msa(uint8_t *src, uint8_t *dst,
+static void avc_chroma_hv_and_aver_dst_4x2_msa(const uint8_t *src, uint8_t *dst,
                                                int32_t stride,
                                                uint32_t coef_hor0,
                                                uint32_t coef_hor1,
@@ -1549,7 +1549,7 @@ static void avc_chroma_hv_and_aver_dst_4x2_msa(uint8_t *src, uint8_t *dst,
     ST_W2(dst0, 0, 1, dst, stride);
 }
 
-static void avc_chroma_hv_and_aver_dst_4x4_msa(uint8_t *src, uint8_t *dst,
+static void avc_chroma_hv_and_aver_dst_4x4_msa(const uint8_t *src, uint8_t *dst,
                                                int32_t stride,
                                                uint32_t coef_hor0,
                                                uint32_t coef_hor1,
@@ -1588,7 +1588,7 @@ static void avc_chroma_hv_and_aver_dst_4x4_msa(uint8_t *src, uint8_t *dst,
     ST_W4(out, 0, 1, 2, 3, dst, stride);
 }
 
-static void avc_chroma_hv_and_aver_dst_4x8_msa(uint8_t *src, uint8_t *dst,
+static void avc_chroma_hv_and_aver_dst_4x8_msa(const uint8_t *src, uint8_t *dst,
                                                int32_t stride,
                                                uint32_t coef_hor0,
                                                uint32_t coef_hor1,
@@ -1637,7 +1637,7 @@ static void avc_chroma_hv_and_aver_dst_4x8_msa(uint8_t *src, uint8_t *dst,
     ST_W8(res0, res1, 0, 1, 2, 3, 0, 1, 2, 3, dst, stride);
 }
 
-static void avc_chroma_hv_and_aver_dst_4w_msa(uint8_t *src, uint8_t *dst,
+static void avc_chroma_hv_and_aver_dst_4w_msa(const uint8_t *src, uint8_t *dst,
                                               int32_t stride,
                                               uint32_t coef_hor0,
                                               uint32_t coef_hor1,
@@ -1657,7 +1657,7 @@ static void avc_chroma_hv_and_aver_dst_4w_msa(uint8_t *src, uint8_t *dst,
     }
 }
 
-static void avc_chroma_hv_and_aver_dst_8x4_msa(uint8_t *src, uint8_t *dst,
+static void avc_chroma_hv_and_aver_dst_8x4_msa(const uint8_t *src, uint8_t *dst,
                                                int32_t stride,
                                                uint32_t coef_hor0,
                                                uint32_t coef_hor1,
@@ -1705,7 +1705,7 @@ static void avc_chroma_hv_and_aver_dst_8x4_msa(uint8_t *src, uint8_t *dst,
     ST_D4(out0, out1, 0, 1, 0, 1, dst, stride);
 }
 
-static void avc_chroma_hv_and_aver_dst_8x8_msa(uint8_t *src, uint8_t *dst,
+static void avc_chroma_hv_and_aver_dst_8x8_msa(const uint8_t *src, uint8_t *dst,
                                                int32_t stride,
                                                uint32_t coef_hor0,
                                                uint32_t coef_hor1,
@@ -1774,7 +1774,7 @@ static void avc_chroma_hv_and_aver_dst_8x8_msa(uint8_t *src, uint8_t *dst,
     ST_D8(out0, out1, out2, out3, 0, 1, 0, 1, 0, 1, 0, 1, dst, stride);
 }
 
-static void avc_chroma_hv_and_aver_dst_8w_msa(uint8_t *src, uint8_t *dst,
+static void avc_chroma_hv_and_aver_dst_8w_msa(const uint8_t *src, uint8_t *dst,
                                               int32_t stride,
                                               uint32_t coef_hor0,
                                               uint32_t coef_hor1,
@@ -1791,7 +1791,7 @@ static void avc_chroma_hv_and_aver_dst_8w_msa(uint8_t *src, uint8_t *dst,
     }
 }
 
-static void copy_width4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+static void copy_width4_msa(const uint8_t *src, uint8_t *dst, int32_t stride,
                             int32_t height)
 {
     uint32_t tp0, tp1, tp2, tp3, tp4, tp5, tp6, tp7;
@@ -1814,7 +1814,7 @@ static void copy_width4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     }
 }
 
-static void copy_width8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+static void copy_width8_msa(const uint8_t *src, uint8_t *dst, int32_t stride,
                             int32_t height)
 {
     uint64_t src0, src1, src2, src3, src4, src5, src6, src7;
@@ -1832,7 +1832,7 @@ static void copy_width8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     }
 }
 
-static void avg_width4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+static void avg_width4_msa(const uint8_t *src, uint8_t *dst, int32_t stride,
                            int32_t height)
 {
     uint32_t tp0, tp1, tp2, tp3;
@@ -1867,7 +1867,7 @@ static void avg_width4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     }
 }
 
-static void avg_width8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+static void avg_width8_msa(const uint8_t *src, uint8_t *dst, int32_t stride,
                            int32_t height)
 {
     uint64_t tp0, tp1, tp2, tp3, tp4, tp5, tp6, tp7;
@@ -1903,7 +1903,7 @@ static void avg_width8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     }
 }
 
-void ff_put_h264_chroma_mc8_msa(uint8_t *dst, uint8_t *src,
+void ff_put_h264_chroma_mc8_msa(uint8_t *dst, const uint8_t *src,
                                 ptrdiff_t stride, int height, int x, int y)
 {
     av_assert2(x < 8 && y < 8 && x >= 0 && y >= 0);
@@ -1919,7 +1919,7 @@ void ff_put_h264_chroma_mc8_msa(uint8_t *dst, uint8_t *src,
     }
 }
 
-void ff_put_h264_chroma_mc4_msa(uint8_t *dst, uint8_t *src,
+void ff_put_h264_chroma_mc4_msa(uint8_t *dst, const uint8_t *src,
                                 ptrdiff_t stride, int height, int x, int y)
 {
     av_assert2(x < 8 && y < 8 && x >= 0 && y >= 0);
@@ -1935,7 +1935,7 @@ void ff_put_h264_chroma_mc4_msa(uint8_t *dst, uint8_t *src,
     }
 }
 
-void ff_put_h264_chroma_mc2_msa(uint8_t *dst, uint8_t *src,
+void ff_put_h264_chroma_mc2_msa(uint8_t *dst, const uint8_t *src,
                                 ptrdiff_t stride, int height, int x, int y)
 {
     int32_t cnt;
@@ -1958,7 +1958,7 @@ void ff_put_h264_chroma_mc2_msa(uint8_t *dst, uint8_t *src,
     }
 }
 
-void ff_avg_h264_chroma_mc8_msa(uint8_t *dst, uint8_t *src,
+void ff_avg_h264_chroma_mc8_msa(uint8_t *dst, const uint8_t *src,
                                 ptrdiff_t stride, int height, int x, int y)
 {
     av_assert2(x < 8 && y < 8 && x >= 0 && y >= 0);
@@ -1976,7 +1976,7 @@ void ff_avg_h264_chroma_mc8_msa(uint8_t *dst, uint8_t *src,
     }
 }
 
-void ff_avg_h264_chroma_mc4_msa(uint8_t *dst, uint8_t *src,
+void ff_avg_h264_chroma_mc4_msa(uint8_t *dst, const uint8_t *src,
                                 ptrdiff_t stride, int height, int x, int y)
 {
     av_assert2(x < 8 && y < 8 && x >= 0 && y >= 0);
@@ -1993,7 +1993,7 @@ void ff_avg_h264_chroma_mc4_msa(uint8_t *dst, uint8_t *src,
     }
 }
 
-void ff_avg_h264_chroma_mc2_msa(uint8_t *dst, uint8_t *src,
+void ff_avg_h264_chroma_mc2_msa(uint8_t *dst, const uint8_t *src,
                                 ptrdiff_t stride, int height, int x, int y)
 {
     int32_t cnt;

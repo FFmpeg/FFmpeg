@@ -33,7 +33,7 @@ static const uint8_t chroma_mask_arr[64] = {
     0, 1, 1, 2, 2, 3, 3, 4, 16, 17, 17, 18, 18, 19, 19, 20
 };
 
-static av_always_inline void avc_chroma_hv_8x4_lasx(uint8_t *src, uint8_t *dst,
+static av_always_inline void avc_chroma_hv_8x4_lasx(const uint8_t *src, uint8_t *dst,
                              ptrdiff_t stride, uint32_t coef_hor0,
                              uint32_t coef_hor1, uint32_t coef_ver0,
                              uint32_t coef_ver1)
@@ -71,7 +71,7 @@ static av_always_inline void avc_chroma_hv_8x4_lasx(uint8_t *src, uint8_t *dst,
     __lasx_xvstelm_d(out, dst + stride_3x, 0, 3);
 }
 
-static av_always_inline void avc_chroma_hv_8x8_lasx(uint8_t *src, uint8_t *dst,
+static av_always_inline void avc_chroma_hv_8x8_lasx(const uint8_t *src, uint8_t *dst,
                              ptrdiff_t stride, uint32_t coef_hor0,
                              uint32_t coef_hor1, uint32_t coef_ver0,
                              uint32_t coef_ver1)
@@ -127,7 +127,7 @@ static av_always_inline void avc_chroma_hv_8x8_lasx(uint8_t *src, uint8_t *dst,
     __lasx_xvstelm_d(out1, dst + stride_3x, 0, 3);
 }
 
-static av_always_inline void avc_chroma_hz_8x4_lasx(uint8_t *src, uint8_t *dst,
+static av_always_inline void avc_chroma_hz_8x4_lasx(const uint8_t *src, uint8_t *dst,
                              ptrdiff_t stride, uint32_t coeff0, uint32_t coeff1)
 {
     ptrdiff_t stride_2x = stride << 1;
@@ -154,7 +154,7 @@ static av_always_inline void avc_chroma_hz_8x4_lasx(uint8_t *src, uint8_t *dst,
 
 }
 
-static av_always_inline void avc_chroma_hz_8x8_lasx(uint8_t *src, uint8_t *dst,
+static av_always_inline void avc_chroma_hz_8x8_lasx(const uint8_t *src, uint8_t *dst,
                              ptrdiff_t stride, uint32_t coeff0, uint32_t coeff1)
 {
     ptrdiff_t stride_2x = stride << 1;
@@ -193,7 +193,7 @@ static av_always_inline void avc_chroma_hz_8x8_lasx(uint8_t *src, uint8_t *dst,
     __lasx_xvstelm_d(out1, dst + stride_3x, 0, 3);
 }
 
-static av_always_inline void avc_chroma_hz_nonmult_lasx(uint8_t *src,
+static av_always_inline void avc_chroma_hz_nonmult_lasx(const uint8_t *src,
                              uint8_t *dst, ptrdiff_t stride, uint32_t coeff0,
                              uint32_t coeff1, int32_t height)
 {
@@ -239,7 +239,7 @@ static av_always_inline void avc_chroma_hz_nonmult_lasx(uint8_t *src,
     }
 }
 
-static av_always_inline void avc_chroma_vt_8x4_lasx(uint8_t *src, uint8_t *dst,
+static av_always_inline void avc_chroma_vt_8x4_lasx(const uint8_t *src, uint8_t *dst,
                              ptrdiff_t stride, uint32_t coeff0, uint32_t coeff1)
 {
     ptrdiff_t stride_2x = stride << 1;
@@ -266,7 +266,7 @@ static av_always_inline void avc_chroma_vt_8x4_lasx(uint8_t *src, uint8_t *dst,
     __lasx_xvstelm_d(out, dst + stride_3x, 0, 3);
 }
 
-static av_always_inline void avc_chroma_vt_8x8_lasx(uint8_t *src, uint8_t *dst,
+static av_always_inline void avc_chroma_vt_8x8_lasx(const uint8_t *src, uint8_t *dst,
                              ptrdiff_t stride, uint32_t coeff0, uint32_t coeff1)
 {
     ptrdiff_t stride_2x = stride << 1;
@@ -307,7 +307,7 @@ static av_always_inline void avc_chroma_vt_8x8_lasx(uint8_t *src, uint8_t *dst,
     __lasx_xvstelm_d(out1, dst + stride_3x, 0, 3);
 }
 
-static av_always_inline void copy_width8x8_lasx(uint8_t *src, uint8_t *dst,
+static av_always_inline void copy_width8x8_lasx(const uint8_t *src, uint8_t *dst,
                              ptrdiff_t stride)
 {
     uint64_t tmp[8];
@@ -347,7 +347,7 @@ static av_always_inline void copy_width8x8_lasx(uint8_t *src, uint8_t *dst,
     );
 }
 
-static av_always_inline void copy_width8x4_lasx(uint8_t *src, uint8_t *dst,
+static av_always_inline void copy_width8x4_lasx(const uint8_t *src, uint8_t *dst,
                              ptrdiff_t stride)
 {
     uint64_t tmp[4];
@@ -372,7 +372,7 @@ static av_always_inline void copy_width8x4_lasx(uint8_t *src, uint8_t *dst,
     );
 }
 
-static void avc_chroma_hv_8w_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
+static void avc_chroma_hv_8w_lasx(const uint8_t *src, uint8_t *dst, ptrdiff_t stride,
                                   uint32_t coef_hor0, uint32_t coef_hor1,
                                   uint32_t coef_ver0, uint32_t coef_ver1,
                                   int32_t height)
@@ -386,7 +386,7 @@ static void avc_chroma_hv_8w_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
     }
 }
 
-static void avc_chroma_hv_4x2_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
+static void avc_chroma_hv_4x2_lasx(const uint8_t *src, uint8_t *dst, ptrdiff_t stride,
                                    uint32_t coef_hor0, uint32_t coef_hor1,
                                    uint32_t coef_ver0, uint32_t coef_ver1)
 {
@@ -414,7 +414,7 @@ static void avc_chroma_hv_4x2_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
     __lasx_xvstelm_w(res_vt, dst + stride, 0, 1);
 }
 
-static void avc_chroma_hv_4x4_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
+static void avc_chroma_hv_4x4_lasx(const uint8_t *src, uint8_t *dst, ptrdiff_t stride,
                                    uint32_t coef_hor0, uint32_t coef_hor1,
                                    uint32_t coef_ver0, uint32_t coef_ver1)
 {
@@ -446,7 +446,7 @@ static void avc_chroma_hv_4x4_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
     __lasx_xvstelm_w(res_hz0, dst + stride_3, 0, 5);
 }
 
-static void avc_chroma_hv_4x8_lasx(uint8_t *src, uint8_t * dst, ptrdiff_t stride,
+static void avc_chroma_hv_4x8_lasx(const uint8_t *src, uint8_t * dst, ptrdiff_t stride,
                                    uint32_t coef_hor0, uint32_t coef_hor1,
                                    uint32_t coef_ver0, uint32_t coef_ver1)
 {
@@ -492,7 +492,7 @@ static void avc_chroma_hv_4x8_lasx(uint8_t *src, uint8_t * dst, ptrdiff_t stride
     __lasx_xvstelm_w(res_hz0, dst + stride_3, 0, 7);
 }
 
-static void avc_chroma_hv_4w_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
+static void avc_chroma_hv_4w_lasx(const uint8_t *src, uint8_t *dst, ptrdiff_t stride,
                                   uint32_t coef_hor0, uint32_t coef_hor1,
                                   uint32_t coef_ver0, uint32_t coef_ver1,
                                   int32_t height)
@@ -509,7 +509,7 @@ static void avc_chroma_hv_4w_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
     }
 }
 
-static void avc_chroma_hz_4x2_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
+static void avc_chroma_hz_4x2_lasx(const uint8_t *src, uint8_t *dst, ptrdiff_t stride,
                                    uint32_t coeff0, uint32_t coeff1)
 {
     __m256i src0, src1;
@@ -528,7 +528,7 @@ static void avc_chroma_hz_4x2_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
     __lasx_xvstelm_w(res, dst + stride, 0, 1);
 }
 
-static void avc_chroma_hz_4x4_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
+static void avc_chroma_hz_4x4_lasx(const uint8_t *src, uint8_t *dst, ptrdiff_t stride,
                                    uint32_t coeff0, uint32_t coeff1)
 {
     ptrdiff_t stride_2 = stride << 1;
@@ -553,7 +553,7 @@ static void avc_chroma_hz_4x4_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
     __lasx_xvstelm_w(res, dst + stride_3, 0, 5);
 }
 
-static void avc_chroma_hz_4x8_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
+static void avc_chroma_hz_4x8_lasx(const uint8_t *src, uint8_t *dst, ptrdiff_t stride,
                                    uint32_t coeff0, uint32_t coeff1)
 {
     ptrdiff_t stride_2 = stride << 1;
@@ -588,7 +588,7 @@ static void avc_chroma_hz_4x8_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
     __lasx_xvstelm_w(res0, dst + stride_3, 0, 7);
 }
 
-static void avc_chroma_hz_4w_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
+static void avc_chroma_hz_4w_lasx(const uint8_t *src, uint8_t *dst, ptrdiff_t stride,
                                   uint32_t coeff0, uint32_t coeff1,
                                   int32_t height)
 {
@@ -601,7 +601,7 @@ static void avc_chroma_hz_4w_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
     }
 }
 
-static void avc_chroma_hz_8w_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
+static void avc_chroma_hz_8w_lasx(const uint8_t *src, uint8_t *dst, ptrdiff_t stride,
                                   uint32_t coeff0, uint32_t coeff1,
                                   int32_t height)
 {
@@ -614,7 +614,7 @@ static void avc_chroma_hz_8w_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
     }
 }
 
-static void avc_chroma_vt_4x2_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
+static void avc_chroma_vt_4x2_lasx(const uint8_t *src, uint8_t *dst, ptrdiff_t stride,
                                    uint32_t coeff0, uint32_t coeff1)
 {
     __m256i src0, src1, src2;
@@ -635,7 +635,7 @@ static void avc_chroma_vt_4x2_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
     __lasx_xvstelm_w(res, dst + stride, 0, 1);
 }
 
-static void avc_chroma_vt_4x4_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
+static void avc_chroma_vt_4x4_lasx(const uint8_t *src, uint8_t *dst, ptrdiff_t stride,
                                    uint32_t coeff0, uint32_t coeff1)
 {
     ptrdiff_t stride_2 = stride << 1;
@@ -664,7 +664,7 @@ static void avc_chroma_vt_4x4_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
     __lasx_xvstelm_w(res, dst + stride_3, 0, 5);
 }
 
-static void avc_chroma_vt_4x8_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
+static void avc_chroma_vt_4x8_lasx(const uint8_t *src, uint8_t *dst, ptrdiff_t stride,
                                    uint32_t coeff0, uint32_t coeff1)
 {
     ptrdiff_t stride_2 = stride << 1;
@@ -705,7 +705,7 @@ static void avc_chroma_vt_4x8_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
     __lasx_xvstelm_w(res0, dst + stride_3, 0, 7);
 }
 
-static void avc_chroma_vt_4w_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
+static void avc_chroma_vt_4w_lasx(const uint8_t *src, uint8_t *dst, ptrdiff_t stride,
                                   uint32_t coeff0, uint32_t coeff1,
                                   int32_t height)
 {
@@ -718,7 +718,7 @@ static void avc_chroma_vt_4w_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
     }
 }
 
-static void avc_chroma_vt_8w_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
+static void avc_chroma_vt_8w_lasx(const uint8_t *src, uint8_t *dst, ptrdiff_t stride,
                                   uint32_t coeff0, uint32_t coeff1,
                                   int32_t height)
 {
@@ -729,7 +729,7 @@ static void avc_chroma_vt_8w_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
     }
 }
 
-static void copy_width4_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
+static void copy_width4_lasx(const uint8_t *src, uint8_t *dst, ptrdiff_t stride,
                              int32_t height)
 {
     uint32_t tp0, tp1, tp2, tp3, tp4, tp5, tp6, tp7;
@@ -799,7 +799,7 @@ static void copy_width4_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
     }
 }
 
-static void copy_width8_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
+static void copy_width8_lasx(const uint8_t *src, uint8_t *dst, ptrdiff_t stride,
                              int32_t height)
 {
     if (8 == height) {
@@ -809,7 +809,7 @@ static void copy_width8_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
     }
 }
 
-void ff_put_h264_chroma_mc4_lasx(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
+void ff_put_h264_chroma_mc4_lasx(uint8_t *dst, const uint8_t *src, ptrdiff_t stride,
                                  int height, int x, int y)
 {
     av_assert2(x < 8 && y < 8 && x >= 0 && y >= 0);
@@ -825,7 +825,7 @@ void ff_put_h264_chroma_mc4_lasx(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
     }
 }
 
-void ff_put_h264_chroma_mc8_lasx(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
+void ff_put_h264_chroma_mc8_lasx(uint8_t *dst, const uint8_t *src, ptrdiff_t stride,
                                  int height, int x, int y)
 {
     av_assert2(x < 8 && y < 8 && x >= 0 && y >= 0);
@@ -841,7 +841,7 @@ void ff_put_h264_chroma_mc8_lasx(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
     }
 }
 
-static av_always_inline void avc_chroma_hv_and_aver_dst_8x4_lasx(uint8_t *src,
+static av_always_inline void avc_chroma_hv_and_aver_dst_8x4_lasx(const uint8_t *src,
                              uint8_t *dst, ptrdiff_t stride, uint32_t coef_hor0,
                              uint32_t coef_hor1, uint32_t coef_ver0,
                              uint32_t coef_ver1)
@@ -885,7 +885,7 @@ static av_always_inline void avc_chroma_hv_and_aver_dst_8x4_lasx(uint8_t *src,
     __lasx_xvstelm_d(out, dst + stride_3x, 0, 3);
 }
 
-static av_always_inline void avc_chroma_hv_and_aver_dst_8x8_lasx(uint8_t *src,
+static av_always_inline void avc_chroma_hv_and_aver_dst_8x8_lasx(const uint8_t *src,
                              uint8_t *dst, ptrdiff_t stride, uint32_t coef_hor0,
                              uint32_t coef_hor1, uint32_t coef_ver0,
                              uint32_t coef_ver1)
@@ -957,7 +957,7 @@ static av_always_inline void avc_chroma_hv_and_aver_dst_8x8_lasx(uint8_t *src,
     __lasx_xvstelm_d(out1, dst + stride_3x, 0, 3);
 }
 
-static av_always_inline void avc_chroma_hz_and_aver_dst_8x4_lasx(uint8_t *src,
+static av_always_inline void avc_chroma_hz_and_aver_dst_8x4_lasx(const uint8_t *src,
                              uint8_t *dst, ptrdiff_t stride, uint32_t coeff0,
                              uint32_t coeff1)
 {
@@ -990,7 +990,7 @@ static av_always_inline void avc_chroma_hz_and_aver_dst_8x4_lasx(uint8_t *src,
     __lasx_xvstelm_d(out, dst + stride_3x, 0, 3);
 }
 
-static av_always_inline void avc_chroma_hz_and_aver_dst_8x8_lasx(uint8_t *src,
+static av_always_inline void avc_chroma_hz_and_aver_dst_8x8_lasx(const uint8_t *src,
                              uint8_t *dst, ptrdiff_t stride, uint32_t coeff0,
                              uint32_t coeff1)
 {
@@ -1043,7 +1043,7 @@ static av_always_inline void avc_chroma_hz_and_aver_dst_8x8_lasx(uint8_t *src,
     __lasx_xvstelm_d(out1, dst + stride_3x, 0, 3);
 }
 
-static av_always_inline void avc_chroma_vt_and_aver_dst_8x4_lasx(uint8_t *src,
+static av_always_inline void avc_chroma_vt_and_aver_dst_8x4_lasx(const uint8_t *src,
                              uint8_t *dst, ptrdiff_t stride, uint32_t coeff0,
                              uint32_t coeff1)
 {
@@ -1077,7 +1077,7 @@ static av_always_inline void avc_chroma_vt_and_aver_dst_8x4_lasx(uint8_t *src,
     __lasx_xvstelm_d(out, dst + stride_3x, 0, 3);
 }
 
-static av_always_inline void avc_chroma_vt_and_aver_dst_8x8_lasx(uint8_t *src,
+static av_always_inline void avc_chroma_vt_and_aver_dst_8x8_lasx(const uint8_t *src,
                              uint8_t *dst, ptrdiff_t stride, uint32_t coeff0,
                              uint32_t coeff1)
 {
@@ -1132,7 +1132,7 @@ static av_always_inline void avc_chroma_vt_and_aver_dst_8x8_lasx(uint8_t *src,
     __lasx_xvstelm_d(out1, dst + stride_3x, 0, 3);
 }
 
-static av_always_inline void avg_width8x8_lasx(uint8_t *src, uint8_t *dst,
+static av_always_inline void avg_width8x8_lasx(const uint8_t *src, uint8_t *dst,
                                                ptrdiff_t stride)
 {
     __m256i src0, src1, src2, src3;
@@ -1184,7 +1184,7 @@ static av_always_inline void avg_width8x8_lasx(uint8_t *src, uint8_t *dst,
     __lasx_xvstelm_d(dst0, dst + stride_3x, 0, 3);
 }
 
-static av_always_inline void avg_width8x4_lasx(uint8_t *src, uint8_t *dst,
+static av_always_inline void avg_width8x4_lasx(const uint8_t *src, uint8_t *dst,
                                                ptrdiff_t stride)
 {
     __m256i src0, src1, src2, src3;
@@ -1213,7 +1213,7 @@ static av_always_inline void avg_width8x4_lasx(uint8_t *src, uint8_t *dst,
     __lasx_xvstelm_d(dst0, dst + stride_3x, 0, 3);
 }
 
-static void avc_chroma_hv_and_aver_dst_8w_lasx(uint8_t *src, uint8_t *dst,
+static void avc_chroma_hv_and_aver_dst_8w_lasx(const uint8_t *src, uint8_t *dst,
                                                ptrdiff_t stride,
                                                uint32_t coef_hor0,
                                                uint32_t coef_hor1,
@@ -1230,7 +1230,7 @@ static void avc_chroma_hv_and_aver_dst_8w_lasx(uint8_t *src, uint8_t *dst,
     }
 }
 
-static void avc_chroma_hz_and_aver_dst_8w_lasx(uint8_t *src, uint8_t *dst,
+static void avc_chroma_hz_and_aver_dst_8w_lasx(const uint8_t *src, uint8_t *dst,
                                                ptrdiff_t stride, uint32_t coeff0,
                                                uint32_t coeff1, int32_t height)
 {
@@ -1241,7 +1241,7 @@ static void avc_chroma_hz_and_aver_dst_8w_lasx(uint8_t *src, uint8_t *dst,
     }
 }
 
-static void avc_chroma_vt_and_aver_dst_8w_lasx(uint8_t *src, uint8_t *dst,
+static void avc_chroma_vt_and_aver_dst_8w_lasx(const uint8_t *src, uint8_t *dst,
                                                ptrdiff_t stride, uint32_t coeff0,
                                                uint32_t coeff1, int32_t height)
 {
@@ -1252,7 +1252,7 @@ static void avc_chroma_vt_and_aver_dst_8w_lasx(uint8_t *src, uint8_t *dst,
     }
 }
 
-static void avg_width8_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
+static void avg_width8_lasx(const uint8_t *src, uint8_t *dst, ptrdiff_t stride,
                             int32_t height)
 {
     if (8 == height) {
@@ -1262,7 +1262,7 @@ static void avg_width8_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
     }
 }
 
-void ff_avg_h264_chroma_mc8_lasx(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
+void ff_avg_h264_chroma_mc8_lasx(uint8_t *dst, const uint8_t *src, ptrdiff_t stride,
                                  int height, int x, int y)
 {
     av_assert2(x < 8 && y < 8 && x >= 0 && y >= 0);

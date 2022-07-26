@@ -26,11 +26,11 @@
 #include <stddef.h>
 #include "libavcodec/h264.h"
 
-void ff_put_h264_chroma_mc4_lasx(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
+void ff_put_h264_chroma_mc4_lasx(uint8_t *dst, const uint8_t *src, ptrdiff_t stride,
         int h, int x, int y);
-void ff_put_h264_chroma_mc8_lasx(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
+void ff_put_h264_chroma_mc8_lasx(uint8_t *dst, const uint8_t *src, ptrdiff_t stride,
         int h, int x, int y);
-void ff_avg_h264_chroma_mc8_lasx(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
+void ff_avg_h264_chroma_mc8_lasx(uint8_t *dst, const uint8_t *src, ptrdiff_t stride,
         int h, int x, int y);
 
 #endif /* AVCODEC_LOONGARCH_H264CHROMA_LASX_H */

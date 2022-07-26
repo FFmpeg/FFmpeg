@@ -73,7 +73,7 @@ FF_PUT_VC1_MSPEL_MC_H_LASX(2);
 FF_PUT_VC1_MSPEL_MC_H_LASX(3);
 
 void ff_put_no_rnd_vc1_chroma_mc8_lasx(uint8_t *dst /* align 8 */,
-                                       uint8_t *src /* align 1 */,
+                                       const uint8_t *src /* align 1 */,
                                        ptrdiff_t stride, int h, int x, int y);
 
 #endif /* AVCODEC_LOONGARCH_VC1DSP_LOONGARCH_H */

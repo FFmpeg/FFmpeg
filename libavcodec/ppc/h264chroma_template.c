@@ -109,7 +109,7 @@
 #endif /* HAVE_BIGENDIAN */
 
 #ifdef PREFIX_h264_chroma_mc8_altivec
-static void PREFIX_h264_chroma_mc8_altivec(uint8_t * dst, uint8_t * src,
+static void PREFIX_h264_chroma_mc8_altivec(uint8_t * dst, const uint8_t * src,
                                            ptrdiff_t stride, int h,
                                            int x, int y)
 {
@@ -184,7 +184,7 @@ static void PREFIX_h264_chroma_mc8_altivec(uint8_t * dst, uint8_t * src,
 
 /* this code assume that stride % 16 == 0 */
 #ifdef PREFIX_no_rnd_vc1_chroma_mc8_altivec
-static void PREFIX_no_rnd_vc1_chroma_mc8_altivec(uint8_t *dst, uint8_t *src,
+static void PREFIX_no_rnd_vc1_chroma_mc8_altivec(uint8_t *dst, const uint8_t *src,
                                                  ptrdiff_t stride, int h,
                                                  int x, int y)
 {

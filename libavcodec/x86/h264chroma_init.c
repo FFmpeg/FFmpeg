@@ -24,35 +24,35 @@
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/h264chroma.h"
 
-void ff_put_h264_chroma_mc8_rnd_mmx  (uint8_t *dst, uint8_t *src,
+void ff_put_h264_chroma_mc8_rnd_mmx  (uint8_t *dst, const uint8_t *src,
                                       ptrdiff_t stride, int h, int x, int y);
-void ff_avg_h264_chroma_mc8_rnd_mmxext(uint8_t *dst, uint8_t *src,
+void ff_avg_h264_chroma_mc8_rnd_mmxext(uint8_t *dst, const uint8_t *src,
                                        ptrdiff_t stride, int h, int x, int y);
 
-void ff_put_h264_chroma_mc4_mmx      (uint8_t *dst, uint8_t *src,
+void ff_put_h264_chroma_mc4_mmx      (uint8_t *dst, const uint8_t *src,
                                       ptrdiff_t stride, int h, int x, int y);
-void ff_avg_h264_chroma_mc4_mmxext   (uint8_t *dst, uint8_t *src,
-                                      ptrdiff_t stride, int h, int x, int y);
-
-void ff_put_h264_chroma_mc2_mmxext   (uint8_t *dst, uint8_t *src,
-                                      ptrdiff_t stride, int h, int x, int y);
-void ff_avg_h264_chroma_mc2_mmxext   (uint8_t *dst, uint8_t *src,
+void ff_avg_h264_chroma_mc4_mmxext   (uint8_t *dst, const uint8_t *src,
                                       ptrdiff_t stride, int h, int x, int y);
 
-void ff_put_h264_chroma_mc8_rnd_ssse3(uint8_t *dst, uint8_t *src,
+void ff_put_h264_chroma_mc2_mmxext   (uint8_t *dst, const uint8_t *src,
                                       ptrdiff_t stride, int h, int x, int y);
-void ff_put_h264_chroma_mc4_ssse3    (uint8_t *dst, uint8_t *src,
+void ff_avg_h264_chroma_mc2_mmxext   (uint8_t *dst, const uint8_t *src,
                                       ptrdiff_t stride, int h, int x, int y);
 
-void ff_avg_h264_chroma_mc8_rnd_ssse3(uint8_t *dst, uint8_t *src,
+void ff_put_h264_chroma_mc8_rnd_ssse3(uint8_t *dst, const uint8_t *src,
                                       ptrdiff_t stride, int h, int x, int y);
-void ff_avg_h264_chroma_mc4_ssse3    (uint8_t *dst, uint8_t *src,
+void ff_put_h264_chroma_mc4_ssse3    (uint8_t *dst, const uint8_t *src,
+                                      ptrdiff_t stride, int h, int x, int y);
+
+void ff_avg_h264_chroma_mc8_rnd_ssse3(uint8_t *dst, const uint8_t *src,
+                                      ptrdiff_t stride, int h, int x, int y);
+void ff_avg_h264_chroma_mc4_ssse3    (uint8_t *dst, const uint8_t *src,
                                       ptrdiff_t stride, int h, int x, int y);
 
 #define CHROMA_MC(OP, NUM, DEPTH, OPT)                                  \
 void ff_ ## OP ## _h264_chroma_mc ## NUM ## _ ## DEPTH ## _ ## OPT      \
-                                      (uint8_t *dst, uint8_t *src,      \
-                                       ptrdiff_t stride, int h, int x, int y);
+                                     (uint8_t *dst, const uint8_t *src, \
+                                      ptrdiff_t stride, int h, int x, int y);
 
 CHROMA_MC(put, 2, 10, mmxext)
 CHROMA_MC(avg, 2, 10, mmxext)

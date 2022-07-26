@@ -26,7 +26,7 @@
 #include "constants.h"
 #include "libavutil/mips/mmiutils.h"
 
-void ff_put_h264_chroma_mc8_mmi(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
+void ff_put_h264_chroma_mc8_mmi(uint8_t *dst, const uint8_t *src, ptrdiff_t stride,
         int h, int x, int y)
 {
     double ftmp[12];
@@ -289,7 +289,7 @@ void ff_put_h264_chroma_mc8_mmi(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
     }
 }
 
-void ff_avg_h264_chroma_mc8_mmi(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
+void ff_avg_h264_chroma_mc8_mmi(uint8_t *dst, const uint8_t *src, ptrdiff_t stride,
         int h, int x, int y)
 {
     double ftmp[10];
@@ -497,7 +497,7 @@ void ff_avg_h264_chroma_mc8_mmi(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
     }
 }
 
-void ff_put_h264_chroma_mc4_mmi(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
+void ff_put_h264_chroma_mc4_mmi(uint8_t *dst, const uint8_t *src, ptrdiff_t stride,
         int h, int x, int y)
 {
     double ftmp[8];
@@ -618,7 +618,7 @@ void ff_put_h264_chroma_mc4_mmi(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
     }
 }
 
-void ff_avg_h264_chroma_mc4_mmi(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
+void ff_avg_h264_chroma_mc4_mmi(uint8_t *dst, const uint8_t *src, ptrdiff_t stride,
         int h, int x, int y)
 {
     double ftmp[8];

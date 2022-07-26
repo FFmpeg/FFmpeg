@@ -43,13 +43,13 @@ void ff_vc1_h_loop_filter8_neon(uint8_t *src, ptrdiff_t stride, int pq);
 void ff_vc1_v_loop_filter16_neon(uint8_t *src, ptrdiff_t stride, int pq);
 void ff_vc1_h_loop_filter16_neon(uint8_t *src, ptrdiff_t stride, int pq);
 
-void ff_put_vc1_chroma_mc8_neon(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
+void ff_put_vc1_chroma_mc8_neon(uint8_t *dst, const uint8_t *src, ptrdiff_t stride,
                                 int h, int x, int y);
-void ff_avg_vc1_chroma_mc8_neon(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
+void ff_avg_vc1_chroma_mc8_neon(uint8_t *dst, const uint8_t *src, ptrdiff_t stride,
                                 int h, int x, int y);
-void ff_put_vc1_chroma_mc4_neon(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
+void ff_put_vc1_chroma_mc4_neon(uint8_t *dst, const uint8_t *src, ptrdiff_t stride,
                                 int h, int x, int y);
-void ff_avg_vc1_chroma_mc4_neon(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
+void ff_avg_vc1_chroma_mc4_neon(uint8_t *dst, const uint8_t *src, ptrdiff_t stride,
                                 int h, int x, int y);
 
 int ff_vc1_unescape_buffer_helper_neon(const uint8_t *src, int size, uint8_t *dst);

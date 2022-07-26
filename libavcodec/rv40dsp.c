@@ -292,7 +292,7 @@ static const int rv40_bias[4][4] = {
 
 #define RV40_CHROMA_MC(OPNAME, OP)\
 static void OPNAME ## rv40_chroma_mc4_c(uint8_t *dst /*align 8*/,\
-                                        uint8_t *src /*align 1*/,\
+                                        const uint8_t *src /*align 1*/,\
                                         ptrdiff_t stride, int h, int x, int y)\
 {\
     const int A = (8-x) * (8-y);\
@@ -328,7 +328,7 @@ static void OPNAME ## rv40_chroma_mc4_c(uint8_t *dst /*align 8*/,\
 }\
 \
 static void OPNAME ## rv40_chroma_mc8_c(uint8_t *dst/*align 8*/,\
-                                        uint8_t *src/*align 1*/,\
+                                        const uint8_t *src/*align 1*/,\
                                         ptrdiff_t stride, int h, int x, int y)\
 {\
     const int A = (8-x) * (8-y);\

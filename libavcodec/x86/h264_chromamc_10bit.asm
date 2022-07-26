@@ -57,7 +57,7 @@ SECTION .text
 %endmacro
 
 ;-----------------------------------------------------------------------------
-; void ff_put/avg_h264_chroma_mc8(pixel *dst, pixel *src, ptrdiff_t stride,
+; void ff_put/avg_h264_chroma_mc8(pixel *dst, const pixel *src, ptrdiff_t stride,
 ;                                 int h, int mx, int my)
 ;-----------------------------------------------------------------------------
 %macro CHROMA_MC8 1
@@ -198,7 +198,7 @@ cglobal %1_h264_chroma_mc4_10, 6,6,7
 %endmacro
 
 ;-----------------------------------------------------------------------------
-; void ff_put/avg_h264_chroma_mc2(pixel *dst, pixel *src, ptrdiff_t stride,
+; void ff_put/avg_h264_chroma_mc2(pixel *dst, const pixel *src, ptrdiff_t stride,
 ;                                 int h, int mx, int my)
 ;-----------------------------------------------------------------------------
 %macro CHROMA_MC2 1

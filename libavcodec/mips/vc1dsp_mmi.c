@@ -2235,7 +2235,7 @@ DECLARE_FUNCTION(3, 3)
 
 
 void ff_put_no_rnd_vc1_chroma_mc8_mmi(uint8_t *dst /* align 8 */,
-                                      uint8_t *src /* align 1 */,
+                                      const uint8_t *src /* align 1 */,
                                       ptrdiff_t stride, int h, int x, int y)
 {
     union mmi_intfloat64 A, B, C, D;
@@ -2291,7 +2291,7 @@ void ff_put_no_rnd_vc1_chroma_mc8_mmi(uint8_t *dst /* align 8 */,
 }
 
 void ff_put_no_rnd_vc1_chroma_mc4_mmi(uint8_t *dst /* align 8 */,
-                                      uint8_t *src /* align 1 */,
+                                      const uint8_t *src /* align 1 */,
                                       ptrdiff_t stride, int h, int x, int y)
 {
     union mmi_intfloat64 A, B, C, D;
@@ -2345,7 +2345,7 @@ void ff_put_no_rnd_vc1_chroma_mc4_mmi(uint8_t *dst /* align 8 */,
 }
 
 void ff_avg_no_rnd_vc1_chroma_mc8_mmi(uint8_t *dst /* align 8 */,
-                                      uint8_t *src /* align 1 */,
+                                      const uint8_t *src /* align 1 */,
                                       ptrdiff_t stride, int h, int x, int y)
 {
     union mmi_intfloat64 A, B, C, D;
@@ -2404,7 +2404,7 @@ void ff_avg_no_rnd_vc1_chroma_mc8_mmi(uint8_t *dst /* align 8 */,
 }
 
 void ff_avg_no_rnd_vc1_chroma_mc4_mmi(uint8_t *dst /* align 8 */,
-                                      uint8_t *src /* align 1 */,
+                                      const uint8_t *src /* align 1 */,
                                       ptrdiff_t stride, int h, int x, int y)
 {
     union mmi_intfloat64 A, B, C, D;

@@ -179,16 +179,16 @@ void ff_vc1_v_loop_filter16_mmi(uint8_t *src, ptrdiff_t stride, int pq);
 void ff_vc1_h_loop_filter16_mmi(uint8_t *src, ptrdiff_t stride, int pq);
 
 void ff_put_no_rnd_vc1_chroma_mc8_mmi(uint8_t *dst /* align 8 */,
-                                      uint8_t *src /* align 1 */,
+                                      const uint8_t *src /* align 1 */,
                                       ptrdiff_t stride, int h, int x, int y);
 void ff_put_no_rnd_vc1_chroma_mc4_mmi(uint8_t *dst /* align 8 */,
-                                      uint8_t *src /* align 1 */,
+                                      const uint8_t *src /* align 1 */,
                                       ptrdiff_t stride, int h, int x, int y);
 void ff_avg_no_rnd_vc1_chroma_mc8_mmi(uint8_t *dst /* align 8 */,
-                                      uint8_t *src /* align 1 */,
+                                      const uint8_t *src /* align 1 */,
                                       ptrdiff_t stride, int h, int x, int y);
 void ff_avg_no_rnd_vc1_chroma_mc4_mmi(uint8_t *dst /* align 8 */,
-                                      uint8_t *src /* align 1 */,
+                                      const uint8_t *src /* align 1 */,
                                       ptrdiff_t stride, int h, int x, int y);
 
 void ff_vc1_inv_trans_8x8_msa(int16_t block[64]);
