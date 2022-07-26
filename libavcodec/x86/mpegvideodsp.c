@@ -25,7 +25,7 @@
 
 #if HAVE_INLINE_ASM
 
-static void gmc_mmx(uint8_t *dst, uint8_t *src,
+static void gmc_mmx(uint8_t *dst, const uint8_t *src,
                     int stride, int h, int ox, int oy,
                     int dxx, int dxy, int dyx, int dyy,
                     int shift, int r, int width, int height)

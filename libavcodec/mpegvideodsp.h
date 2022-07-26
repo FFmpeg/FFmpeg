@@ -21,7 +21,7 @@
 
 #include <stdint.h>
 
-void ff_gmc_c(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int oy,
+void ff_gmc_c(uint8_t *dst, const uint8_t *src, int stride, int h, int ox, int oy,
               int dxx, int dxy, int dyx, int dyy, int shift, int r,
               int width, int height);
 
@@ -29,12 +29,12 @@ typedef struct MpegVideoDSPContext {
     /**
      * translational global motion compensation.
      */
-    void (*gmc1)(uint8_t *dst /* align 8 */, uint8_t *src /* align 1 */,
+    void (*gmc1)(uint8_t *dst /* align 8 */, const uint8_t *src /* align 1 */,
                  int srcStride, int h, int x16, int y16, int rounder);
     /**
      * global motion compensation.
      */
-    void (*gmc)(uint8_t *dst /* align 8 */, uint8_t *src /* align 1 */,
+    void (*gmc)(uint8_t *dst /* align 8 */, const uint8_t *src /* align 1 */,
                 int stride, int h, int ox, int oy,
                 int dxx, int dxy, int dyx, int dyy,
                 int shift, int r, int width, int height);

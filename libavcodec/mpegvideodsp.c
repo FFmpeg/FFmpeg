@@ -21,7 +21,7 @@
 #include "libavutil/common.h"
 #include "mpegvideodsp.h"
 
-static void gmc1_c(uint8_t *dst, uint8_t *src, int stride, int h,
+static void gmc1_c(uint8_t *dst, const uint8_t *src, int stride, int h,
                    int x16, int y16, int rounder)
 {
     const int A = (16 - x16) * (16 - y16);
@@ -44,7 +44,7 @@ static void gmc1_c(uint8_t *dst, uint8_t *src, int stride, int h,
     }
 }
 
-void ff_gmc_c(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int oy,
+void ff_gmc_c(uint8_t *dst, const uint8_t *src, int stride, int h, int ox, int oy,
               int dxx, int dxy, int dyx, int dyy, int shift, int r,
               int width, int height)
 {
