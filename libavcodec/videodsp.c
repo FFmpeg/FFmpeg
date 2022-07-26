@@ -32,7 +32,7 @@
 #include "videodsp_template.c"
 #undef BIT_DEPTH
 
-static void just_return(uint8_t *buf, ptrdiff_t stride, int h)
+static void just_return(const uint8_t *buf, ptrdiff_t stride, int h)
 {
 }
 

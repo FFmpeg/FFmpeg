@@ -24,7 +24,7 @@
 #include "libavutil/mips/asmdefs.h"
 #include "libavcodec/videodsp.h"
 
-static void prefetch_mips(uint8_t *mem, ptrdiff_t stride, int h)
+static void prefetch_mips(const uint8_t *mem, ptrdiff_t stride, int h)
 {
     register const uint8_t *p = mem;
 

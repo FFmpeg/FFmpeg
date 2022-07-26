@@ -22,7 +22,7 @@
 #include "libavcodec/videodsp.h"
 #include "libavutil/attributes.h"
 
-static void prefetch_loongarch(uint8_t *mem, ptrdiff_t stride, int h)
+static void prefetch_loongarch(const uint8_t *mem, ptrdiff_t stride, int h)
 {
     register const uint8_t *p = mem;
 
