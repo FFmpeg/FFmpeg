@@ -277,7 +277,7 @@ static void mangle_rgb_planes(uint8_t *dst[4], ptrdiff_t dst_stride,
 #undef B
 
 /* Write data to a plane with median prediction */
-static void median_predict(UtvideoContext *c, uint8_t *src, uint8_t *dst,
+static void median_predict(UtvideoContext *c, const uint8_t *src, uint8_t *dst,
                            ptrdiff_t stride, int width, int height)
 {
     int i, j;
@@ -376,7 +376,7 @@ static int write_huff_codes(uint8_t *src, uint8_t *dst, int dst_size,
     return put_bytes_output(&pb);
 }
 
-static int encode_plane(AVCodecContext *avctx, uint8_t *src,
+static int encode_plane(AVCodecContext *avctx, const uint8_t *src,
                         uint8_t *dst, ptrdiff_t stride, int plane_no,
                         int width, int height, PutByteContext *pb)
 {

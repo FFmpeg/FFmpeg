@@ -66,16 +66,15 @@ typedef struct FlashSVContext {
     uint8_t         tmpblock[3 * 256 * 256];
 } FlashSVContext;
 
-static int copy_region_enc(uint8_t *sptr, uint8_t *dptr, int dx, int dy,
+static int copy_region_enc(const uint8_t *sptr, uint8_t *dptr, int dx, int dy,
                            int h, int w, int stride, uint8_t *pfptr)
 {
     int i, j;
-    uint8_t *nsptr;
     uint8_t *npfptr;
     int diff = 0;
 
     for (i = dx + h; i > dx; i--) {
-        nsptr  = sptr  + i * stride + dy * 3;
+        const uint8_t *nsptr = sptr + i * stride + dy * 3;
         npfptr = pfptr + i * stride + dy * 3;
         for (j = 0; j < w * 3; j++) {
             diff    |= npfptr[j] ^ nsptr[j];

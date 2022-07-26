@@ -28,7 +28,7 @@ static int yuv4_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                              const AVFrame *pic, int *got_packet)
 {
     uint8_t *dst;
-    uint8_t *y, *u, *v;
+    const uint8_t *y, *u, *v;
     int i, j, ret;
 
     ret = ff_get_encode_buffer(avctx, pkt, 6 * (avctx->width  + 1 >> 1)

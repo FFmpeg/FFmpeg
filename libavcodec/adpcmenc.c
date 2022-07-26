@@ -601,13 +601,13 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 {
     int st, pkt_size, ret;
     const int16_t *samples;
-    int16_t **samples_p;
+    const int16_t *const *samples_p;
     uint8_t *dst;
     ADPCMEncodeContext *c = avctx->priv_data;
     int channels = avctx->ch_layout.nb_channels;
 
     samples = (const int16_t *)frame->data[0];
-    samples_p = (int16_t **)frame->extended_data;
+    samples_p = (const int16_t *const *)frame->extended_data;
     st = channels == 2;
 
     if (avctx->codec_id == AV_CODEC_ID_ADPCM_IMA_SSI ||

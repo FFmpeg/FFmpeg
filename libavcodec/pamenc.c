@@ -28,7 +28,8 @@ static int pam_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                             const AVFrame *p, int *got_packet)
 {
     int i, h, w, n, linesize, depth, maxval, ret, header_size;
-    uint8_t *bytestream, *ptr;
+    uint8_t *bytestream;
+    const uint8_t *ptr;
     const char *tuple_type;
     char header[100];
 

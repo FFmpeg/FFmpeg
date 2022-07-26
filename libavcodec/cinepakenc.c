@@ -1019,7 +1019,7 @@ static int rd_frame(CinepakEncContext *s, const AVFrame *frame,
         // build a copy of the given frame in the correct colorspace
         for (y = 0; y < s->h; y += 2)
             for (x = 0; x < s->w; x += 2) {
-                uint8_t *ir[2];
+                const uint8_t *ir[2];
                 int32_t r, g, b, rr, gg, bb;
                 ir[0] = frame->data[0] + x * 3 + y * frame->linesize[0];
                 ir[1] = ir[0] + frame->linesize[0];

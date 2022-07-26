@@ -507,7 +507,7 @@ static int init_tiles(Jpeg2000EncoderContext *s)
     static void copy_frame_ ##D(Jpeg2000EncoderContext *s)                                                                  \
     {                                                                                                                       \
         int tileno, compno, i, y, x;                                                                                        \
-        PIXEL *line;                                                                                                        \
+        const PIXEL *line;                                                                                                  \
         for (tileno = 0; tileno < s->numXtiles * s->numYtiles; tileno++){                                                   \
             Jpeg2000Tile *tile = s->tile + tileno;                                                                          \
             if (s->planar){                                                                                                 \
@@ -515,23 +515,23 @@ static int init_tiles(Jpeg2000EncoderContext *s)
                     Jpeg2000Component *comp = tile->comp + compno;                                                          \
                     int *dst = comp->i_data;                                                                                \
                     int cbps = s->cbps[compno];                                                                             \
-                    line = (PIXEL*)s->picture->data[compno]                                                                 \
+                    line = (const PIXEL*)s->picture->data[compno]                                                           \
                            + comp->coord[1][0] * (s->picture->linesize[compno] / sizeof(PIXEL))                             \
                            + comp->coord[0][0];                                                                             \
                     for (y = comp->coord[1][0]; y < comp->coord[1][1]; y++){                                                \
-                        PIXEL *ptr = line;                                                                                  \
+                        const PIXEL *ptr = line;                                                                            \
                         for (x = comp->coord[0][0]; x < comp->coord[0][1]; x++)                                             \
                             *dst++ = *ptr++ - (1 << (cbps - 1));                                                            \
                         line += s->picture->linesize[compno] / sizeof(PIXEL);                                               \
                     }                                                                                                       \
                 }                                                                                                           \
             } else{                                                                                                         \
-                line = (PIXEL*)s->picture->data[0] + tile->comp[0].coord[1][0] * (s->picture->linesize[0] / sizeof(PIXEL))  \
+                line = (const PIXEL*)(s->picture->data[0] + tile->comp[0].coord[1][0] * s->picture->linesize[0])            \
                        + tile->comp[0].coord[0][0] * s->ncomponents;                                                        \
                                                                                                                             \
                 i = 0;                                                                                                      \
                 for (y = tile->comp[0].coord[1][0]; y < tile->comp[0].coord[1][1]; y++){                                    \
-                    PIXEL *ptr = line;                                                                                      \
+                    const PIXEL *ptr = line;                                                                                \
                     for (x = tile->comp[0].coord[0][0]; x < tile->comp[0].coord[0][1]; x++, i++){                           \
                         for (compno = 0; compno < s->ncomponents; compno++){                                                \
                             int cbps = s->cbps[compno];                                                                     \
@@ -1597,7 +1597,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         update_size(chunkstart, s->buf);
         if (avctx->pix_fmt == AV_PIX_FMT_PAL8) {
             int i;
-            uint8_t *palette = pict->data[1];
+            const uint8_t *palette = pict->data[1];
             chunkstart = s->buf;
             bytestream_put_be32(&s->buf, 0);
             bytestream_put_buffer(&s->buf, "pclr", 4);

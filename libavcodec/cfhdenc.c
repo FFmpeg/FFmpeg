@@ -437,7 +437,8 @@ static int cfhd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         int a_width = s->plane[plane].band[2][0].a_width;
         int height = s->plane[plane].band[2][0].height;
         int act_plane = plane == 1 ? 2 : plane == 2 ? 1 : plane;
-        int16_t *input = (int16_t *)frame->data[act_plane];
+        const int16_t *input = (int16_t *)frame->data[act_plane];
+        int16_t *buf;
         int16_t *low = s->plane[plane].l_h[6];
         int16_t *high = s->plane[plane].l_h[7];
         ptrdiff_t in_stride = frame->linesize[act_plane] / 2;
@@ -481,13 +482,13 @@ static int cfhd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         high = s->plane[plane].l_h[4];
         high_stride = s->plane[plane].band[1][0].a_width;
 
+        buf = s->plane[plane].l_h[7];
         for (int i = 0; i < height * 2; i++) {
             for (int j = 0; j < width * 2; j++)
-                input[j] /= 4;
-            input += a_width * 2;
+                buf[j] /= 4;
+            buf += a_width * 2;
         }
 
-        input = s->plane[plane].l_h[7];
         dsp->horiz_filter(input, low, high,
                           a_width * 2, low_stride, high_stride,
                           width * 2, height * 2);
@@ -518,14 +519,14 @@ static int cfhd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         high_stride = s->plane[plane].band[0][0].a_width;
 
         if (avctx->pix_fmt != AV_PIX_FMT_YUV422P10) {
+            int16_t *buf = s->plane[plane].l_h[4];
             for (int i = 0; i < height * 2; i++) {
                 for (int j = 0; j < width * 2; j++)
-                    input[j] /= 4;
-                input += a_width * 2;
+                    buf[j] /= 4;
+                buf += a_width * 2;
             }
         }
 
-        input = s->plane[plane].l_h[4];
         dsp->horiz_filter(input, low, high,
                           a_width * 2, low_stride, high_stride,
                           width * 2, height * 2);

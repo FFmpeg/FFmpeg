@@ -119,7 +119,7 @@ static inline void sub_left_prediction_bgr32(HYuvContext *s, uint8_t *dst,
 }
 
 static inline void sub_left_prediction_rgb24(HYuvContext *s, uint8_t *dst,
-                                             uint8_t *src, int w,
+                                             const uint8_t *src, int w,
                                              int *red, int *green, int *blue)
 {
     int i;
@@ -789,7 +789,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             y++; cy++;
 
             for (; y < height; y++,cy++) {
-                uint8_t *ydst, *udst, *vdst;
+                const uint8_t *ydst, *udst, *vdst;
 
                 if (s->bitstream_bpp == 12) {
                     while (2 * cy > y) {
@@ -812,7 +812,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             }
         } else {
             for (cy = y = 1; y < height; y++, cy++) {
-                uint8_t *ydst, *udst, *vdst;
+                const uint8_t *ydst, *udst, *vdst;
 
                 /* encode a luma only line & y++ */
                 if (s->bitstream_bpp == 12) {
@@ -852,7 +852,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             }
         }
     } else if(avctx->pix_fmt == AV_PIX_FMT_RGB32) {
-        uint8_t *data = p->data[0] + (height - 1) * p->linesize[0];
+        const uint8_t *data = p->data[0] + (height - 1) * p->linesize[0];
         const int stride = -p->linesize[0];
         const int fake_stride = -fake_ystride;
         int y;
@@ -868,7 +868,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         encode_bgra_bitstream(s, width - 1, 4);
 
         for (y = 1; y < s->height; y++) {
-            uint8_t *dst = data + y*stride;
+            const uint8_t *dst = data + y*stride;
             if (s->predictor == PLANE && s->interlaced < y) {
                 s->llvidencdsp.diff_bytes(s->temp[1], dst, dst - fake_stride, width * 4);
                 sub_left_prediction_bgr32(s, s->temp[0], s->temp[1], width,
@@ -880,7 +880,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             encode_bgra_bitstream(s, width, 4);
         }
     } else if (avctx->pix_fmt == AV_PIX_FMT_RGB24) {
-        uint8_t *data = p->data[0] + (height - 1) * p->linesize[0];
+        const uint8_t *data = p->data[0] + (height - 1) * p->linesize[0];
         const int stride = -p->linesize[0];
         const int fake_stride = -fake_ystride;
         int y;
@@ -896,7 +896,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         encode_bgra_bitstream(s, width-1, 3);
 
         for (y = 1; y < s->height; y++) {
-            uint8_t *dst = data + y * stride;
+            const uint8_t *dst = data + y * stride;
             if (s->predictor == PLANE && s->interlaced < y) {
                 s->llvidencdsp.diff_bytes(s->temp[1], dst, dst - fake_stride,
                                       width * 3);
@@ -939,7 +939,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 lefttop = p->data[plane][0];
 
                 for (; y < h; y++) {
-                    uint8_t *dst = p->data[plane] + p->linesize[plane] * y;
+                    const uint8_t *dst = p->data[plane] + p->linesize[plane] * y;
 
                     sub_median_prediction(s, s->temp[0], dst - fake_stride, dst, w , &left, &lefttop);
 
@@ -947,7 +947,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 }
             } else {
                 for (y = 1; y < h; y++) {
-                    uint8_t *dst = p->data[plane] + p->linesize[plane] * y;
+                    const uint8_t *dst = p->data[plane] + p->linesize[plane] * y;
 
                     if (s->predictor == PLANE && s->interlaced < y) {
                         diff_bytes(s, s->temp[1], dst, dst - fake_stride, w);

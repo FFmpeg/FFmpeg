@@ -151,7 +151,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 }
 
 //near copy & paste from dsputil, FIXME
-static int pix_sum(uint8_t * pix, int line_size, int w, int h)
+static int pix_sum(const uint8_t * pix, int line_size, int w, int h)
 {
     int s, i, j;
 
@@ -167,7 +167,7 @@ static int pix_sum(uint8_t * pix, int line_size, int w, int h)
 }
 
 //near copy & paste from dsputil, FIXME
-static int pix_norm1(uint8_t * pix, int line_size, int w)
+static int pix_norm1(const uint8_t * pix, int line_size, int w)
 {
     int s, i, j;
     const uint32_t *sq = ff_square_tab + 256;
@@ -245,7 +245,7 @@ static int encode_q_branch(SnowContext *s, int level, int x, int y){
     int l,cr,cb;
     const int stride= s->current_picture->linesize[0];
     const int uvstride= s->current_picture->linesize[1];
-    uint8_t *current_data[3]= { s->input_picture->data[0] + (x + y*  stride)*block_w,
+    const uint8_t *const current_data[3] = { s->input_picture->data[0] + (x + y*  stride)*block_w,
                                 s->input_picture->data[1] + ((x*block_w)>>s->chroma_h_shift) + ((y*uvstride*block_w)>>s->chroma_v_shift),
                                 s->input_picture->data[2] + ((x*block_w)>>s->chroma_h_shift) + ((y*uvstride*block_w)>>s->chroma_v_shift)};
     int P[10][2];
@@ -508,7 +508,7 @@ static int get_dc(SnowContext *s, int mb_x, int mb_y, int plane_index){
     const uint8_t *obmc  = plane_index ? ff_obmc_tab[s->block_max_depth+s->chroma_h_shift] : ff_obmc_tab[s->block_max_depth];
     const int obmc_stride= plane_index ? (2*block_size)>>s->chroma_h_shift : 2*block_size;
     const int ref_stride= s->current_picture->linesize[plane_index];
-    uint8_t *src= s-> input_picture->data[plane_index];
+    const uint8_t *src = s->input_picture->data[plane_index];
     IDWTELEM *dst= (IDWTELEM*)s->m.sc.obmc_scratchpad + plane_index*block_size*block_size*4; //FIXME change to unsigned
     const int b_stride = s->b_width << s->block_max_depth;
     const int w= p->width;
@@ -603,7 +603,7 @@ static int get_block_rd(SnowContext *s, int mb_x, int mb_y, int plane_index, uin
     const int obmc_stride= plane_index ? (2*block_size)>>s->chroma_h_shift : 2*block_size;
     const int ref_stride= s->current_picture->linesize[plane_index];
     uint8_t *dst= s->current_picture->data[plane_index];
-    uint8_t *src= s->  input_picture->data[plane_index];
+    const uint8_t *src = s->input_picture->data[plane_index];
     IDWTELEM *pred= (IDWTELEM*)s->m.sc.obmc_scratchpad + plane_index*block_size*block_size*4;
     uint8_t *cur = s->scratchbuf;
     uint8_t *tmp = s->emu_edge_buffer;
@@ -706,7 +706,7 @@ static int get_4block_rd(SnowContext *s, int mb_x, int mb_y, int plane_index){
     const int obmc_stride= plane_index ? (2*block_size)>>s->chroma_h_shift : 2*block_size;
     const int ref_stride= s->current_picture->linesize[plane_index];
     uint8_t *dst= s->current_picture->data[plane_index];
-    uint8_t *src= s-> input_picture->data[plane_index];
+    const uint8_t *src = s->input_picture->data[plane_index];
     //FIXME zero_dst is const but add_yblock changes dst if add is 0 (this is never the case for dst=zero_dst
     // const has only been removed from zero_dst to suppress a warning
     static IDWTELEM zero_dst[4096]; //FIXME
@@ -1076,7 +1076,7 @@ static void iterative_me(SnowContext *s){
 
                 //skip stuff outside the picture
                 if(mb_x==0 || mb_y==0 || mb_x==b_width-1 || mb_y==b_height-1){
-                    uint8_t *src= s->  input_picture->data[0];
+                    const uint8_t *src = s->input_picture->data[0];
                     uint8_t *dst= s->current_picture->data[0];
                     const int stride= s->current_picture->linesize[0];
                     const int block_w= MB_SIZE >> s->block_max_depth;

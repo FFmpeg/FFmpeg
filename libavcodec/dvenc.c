@@ -217,7 +217,7 @@ static av_always_inline PutBitContext *dv_encode_ac(EncBlockInfo *bi,
     return pb;
 }
 
-static av_always_inline int dv_guess_dct_mode(DVVideoContext *s, uint8_t *data,
+static av_always_inline int dv_guess_dct_mode(DVVideoContext *s, const uint8_t *data,
                                               ptrdiff_t linesize)
 {
     if (s->avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) {
@@ -506,7 +506,7 @@ static inline void dv_set_class_number_hd(DVVideoContext *s,
     bi->cno = 0;
 }
 
-static av_always_inline int dv_init_enc_block(EncBlockInfo* bi, uint8_t *data, int linesize,
+static av_always_inline int dv_init_enc_block(EncBlockInfo* bi, const uint8_t *data, int linesize,
                                               DVVideoContext *s, int chroma)
 {
     LOCAL_ALIGNED_16(int16_t, blk, [64]);
@@ -849,7 +849,7 @@ static int dv_encode_video_segment(AVCodecContext *avctx, void *arg)
     int mb_index, i, j;
     int mb_x, mb_y, c_offset;
     ptrdiff_t linesize, y_stride;
-    uint8_t *y_ptr;
+    const uint8_t *y_ptr;
     uint8_t *dif, *p;
     LOCAL_ALIGNED_8(uint8_t, scratch, [128]);
     EncBlockInfo enc_blks[5 * DV_MAX_BPM];
@@ -908,14 +908,13 @@ static int dv_encode_video_segment(AVCodecContext *avctx, void *arg)
         c_offset = ((mb_y >>  (s->sys->pix_fmt == AV_PIX_FMT_YUV420P)) * s->frame->linesize[1] +
                     (mb_x >> ((s->sys->pix_fmt == AV_PIX_FMT_YUV411P) ? 2 : 1))) * 8;
         for (j = 2; j; j--) {
-            uint8_t *c_ptr = s->frame->data[j] + c_offset;
+            const uint8_t *c_ptr = s->frame->data[j] + c_offset;
             linesize = s->frame->linesize[j];
             y_stride = (mb_y == 134) ? 8 : (s->frame->linesize[j] * (1 << (3*!enc_blk->dct_mode)));
             if (s->sys->pix_fmt == AV_PIX_FMT_YUV411P && mb_x >= (704 / 8)) {
-                uint8_t *d;
                 uint8_t *b = scratch;
                 for (i = 0; i < 8; i++) {
-                    d      = c_ptr + linesize * 8;
+                    const uint8_t *d = c_ptr + linesize * 8;
                     b[0]   = c_ptr[0];
                     b[1]   = c_ptr[1];
                     b[2]   = c_ptr[2];

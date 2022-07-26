@@ -32,7 +32,8 @@ static int xbm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                             const AVFrame *p, int *got_packet)
 {
     int i, j, l, commas, ret, size, linesize, lineout, rowsout;
-    uint8_t *ptr, *buf;
+    const uint8_t *ptr;
+    uint8_t *buf;
 
     linesize = lineout = (avctx->width + 7) / 8;
     commas   = avctx->height * linesize;

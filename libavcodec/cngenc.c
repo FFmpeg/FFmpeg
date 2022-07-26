@@ -67,7 +67,7 @@ static int cng_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     int ret, i;
     double energy = 0;
     int qdbov;
-    int16_t *samples = (int16_t*) frame->data[0];
+    const int16_t *samples = (const int16_t*) frame->data[0];
 
     if ((ret = ff_get_encode_buffer(avctx, avpkt, 1 + p->order, 0))) {
         av_log(avctx, AV_LOG_ERROR, "Error getting output packet\n");

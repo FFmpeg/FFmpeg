@@ -39,7 +39,8 @@ static int xwd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     uint32_t rgb[3] = { 0 }, bitorder = 0;
     uint32_t header_size;
     int i, out_size, ret;
-    uint8_t *ptr, *buf;
+    const uint8_t *ptr;
+    uint8_t *buf;
     uint32_t pal[256];
 
     pixdepth = av_get_bits_per_pixel(desc);

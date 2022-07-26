@@ -33,7 +33,8 @@ static int qoi_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     uint8_t px[4] = { 0, 0, 0, 255 };
     uint8_t index[64][4] = { 0 };
     int64_t packet_size;
-    uint8_t *buf, *src;
+    uint8_t *buf;
+    const uint8_t *src;
     int ret, run = 0;
 
     packet_size = avctx->width * avctx->height * (channels + 1LL) + 14LL + 8LL;

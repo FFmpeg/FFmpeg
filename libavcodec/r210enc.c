@@ -47,7 +47,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int aligned_width = FFALIGN(avctx->width,
                                 avctx->codec_id == AV_CODEC_ID_R10K ? 1 : 64);
     int pad = (aligned_width - avctx->width) * 4;
-    uint8_t *srcr_line, *srcg_line, *srcb_line;
+    const uint8_t *srcr_line, *srcg_line, *srcb_line;
     uint8_t *dst;
 
     ret = ff_get_encode_buffer(avctx, pkt, 4 * aligned_width * avctx->height, 0);
@@ -60,9 +60,9 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     dst = pkt->data;
 
     for (i = 0; i < avctx->height; i++) {
-        uint16_t *srcr = (uint16_t *)srcr_line;
-        uint16_t *srcg = (uint16_t *)srcg_line;
-        uint16_t *srcb = (uint16_t *)srcb_line;
+        const uint16_t *srcr = (const uint16_t *)srcr_line;
+        const uint16_t *srcg = (const uint16_t *)srcg_line;
+        const uint16_t *srcb = (const uint16_t *)srcb_line;
         for (j = 0; j < avctx->width; j++) {
             uint32_t pixel;
             unsigned r = *srcr++;

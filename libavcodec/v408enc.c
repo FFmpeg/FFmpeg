@@ -40,7 +40,7 @@ static int v408_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                              const AVFrame *pic, int *got_packet)
 {
     uint8_t *dst;
-    uint8_t *y, *u, *v, *a;
+    const uint8_t *y, *u, *v, *a;
     int i, j, ret;
 
     ret = ff_get_encode_buffer(avctx, pkt, avctx->width * avctx->height * 4, 0);

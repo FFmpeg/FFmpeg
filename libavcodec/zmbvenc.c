@@ -84,8 +84,8 @@ typedef struct ZmbvEncContext {
 /** Block comparing function
  * XXX should be optimized and moved to DSPContext
  */
-static inline int block_cmp(ZmbvEncContext *c, uint8_t *src, int stride,
-                            uint8_t *src2, int stride2, int bw, int bh,
+static inline int block_cmp(ZmbvEncContext *c, const uint8_t *src, int stride,
+                            const uint8_t *src2, int stride2, int bw, int bh,
                             int *xored)
 {
     int sum = 0;
@@ -119,7 +119,7 @@ static inline int block_cmp(ZmbvEncContext *c, uint8_t *src, int stride,
 /** Motion estimation function
  * TODO make better ME decisions
  */
-static int zmbv_me(ZmbvEncContext *c, uint8_t *src, int sstride, uint8_t *prev,
+static int zmbv_me(ZmbvEncContext *c, const uint8_t *src, int sstride, const uint8_t *prev,
                    int pstride, int x, int y, int *mx, int *my, int *xored)
 {
     int dx, dy, txored, tv, bv, bw, bh;
@@ -171,7 +171,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     ZmbvEncContext * const c = avctx->priv_data;
     z_stream  *const zstream = &c->zstream.zstream;
     const AVFrame * const p = pict;
-    uint8_t *src, *prev, *buf;
+    const uint8_t *src;
+    uint8_t *prev, *buf;
     uint32_t *palptr;
     int keyframe, chpal;
     int fl;
@@ -218,7 +219,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         }
     }else{
         int x, y, bh2, bw2, xored;
-        uint8_t *tsrc, *tprev;
+        const uint8_t *tsrc, *tprev;
         uint8_t *mv;
         int mx = 0, my = 0;
 

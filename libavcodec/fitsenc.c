@@ -38,7 +38,7 @@
 static int fits_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                              const AVFrame *p, int *got_packet)
 {
-    uint8_t *bytestream, *ptr;
+    uint8_t *bytestream;
     const uint16_t flip = (1 << 15);
     uint64_t data_size = 0, padded_data_size = 0;
     int ret, bitpix, naxis3 = 1, i, j, k, bytes_left;
@@ -87,7 +87,7 @@ static int fits_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     for (k = 0; k < naxis3; k++) {
         for (i = 0; i < avctx->height; i++) {
-            ptr = p->data[map[k]] + (avctx->height - i - 1) * p->linesize[map[k]];
+            const uint8_t *ptr = p->data[map[k]] + (avctx->height - i - 1) * p->linesize[map[k]];
             if (bitpix == 16) {
                 for (j = 0; j < avctx->width; j++) {
                     // subtracting bzero is equivalent to first bit flip

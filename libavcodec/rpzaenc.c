@@ -84,7 +84,7 @@ typedef struct BlockInfo {
     int total_blocks;
 } BlockInfo;
 
-static void get_colors(uint8_t *min, uint8_t *max, uint8_t color4[4][3])
+static void get_colors(const uint8_t *min, const uint8_t *max, uint8_t color4[4][3])
 {
     uint8_t step;
 
@@ -135,7 +135,7 @@ static int get_block_info(BlockInfo *bi, int block)
     return block ? (bi->col * 4) + (bi->row * bi->rowstride * 4) : 0;
 }
 
-static uint16_t rgb24_to_rgb555(uint8_t *rgb24)
+static uint16_t rgb24_to_rgb555(const uint8_t *rgb24)
 {
     uint16_t rgb555 = 0;
     uint32_t r, g, b;
@@ -154,7 +154,7 @@ static uint16_t rgb24_to_rgb555(uint8_t *rgb24)
 /*
  * Returns the total difference between two 24 bit color values
  */
-static int diff_colors(uint8_t *colorA, uint8_t *colorB)
+static int diff_colors(const uint8_t *colorA, const uint8_t *colorB)
 {
     int tot;
 
@@ -168,7 +168,7 @@ static int diff_colors(uint8_t *colorA, uint8_t *colorB)
 /*
  * Returns the maximum channel difference
  */
-static int max_component_diff(uint16_t *colorA, uint16_t *colorB)
+static int max_component_diff(const uint16_t *colorA, const uint16_t *colorB)
 {
     int diff, max = 0;
 
@@ -192,7 +192,7 @@ static int max_component_diff(uint16_t *colorA, uint16_t *colorB)
  * color values. Put the minimum value in min, maximum in max and the channel
  * in chan.
  */
-static void get_max_component_diff(BlockInfo *bi, uint16_t *block_ptr,
+static void get_max_component_diff(const BlockInfo *bi, const uint16_t *block_ptr,
                                    uint8_t *min, uint8_t *max, channel_offset *chan)
 {
     int x, y;
@@ -242,7 +242,8 @@ static void get_max_component_diff(BlockInfo *bi, uint16_t *block_ptr,
  * blocks is greater than the thresh parameter. Returns -1 if difference
  * exceeds threshold or zero otherwise.
  */
-static int compare_blocks(uint16_t *block1, uint16_t *block2, BlockInfo *bi, int thresh)
+static int compare_blocks(const uint16_t *block1, const uint16_t *block2,
+                          const BlockInfo *bi, int thresh)
 {
     int x, y, diff = 0;
     for (y = 0; y < bi->block_height; y++) {
@@ -262,7 +263,7 @@ static int compare_blocks(uint16_t *block1, uint16_t *block2, BlockInfo *bi, int
  * Determine the fit of one channel to another within a 4x4 block. This
  * is used to determine the best palette choices for 4-color encoding.
  */
-static int leastsquares(uint16_t *block_ptr, BlockInfo *bi,
+static int leastsquares(const uint16_t *block_ptr, const BlockInfo *bi,
                         channel_offset xchannel, channel_offset ychannel,
                         double *slope, double *y_intercept, double *correlation_coef)
 {
@@ -315,7 +316,7 @@ static int leastsquares(uint16_t *block_ptr, BlockInfo *bi,
 /*
  * Determine the amount of error in the leastsquares fit.
  */
-static int calc_lsq_max_fit_error(uint16_t *block_ptr, BlockInfo *bi,
+static int calc_lsq_max_fit_error(const uint16_t *block_ptr, const BlockInfo *bi,
                                   int min, int max, int tmp_min, int tmp_max,
                                   channel_offset xchannel, channel_offset ychannel)
 {
@@ -356,7 +357,7 @@ static int calc_lsq_max_fit_error(uint16_t *block_ptr, BlockInfo *bi,
 /*
  * Find the closest match to a color within the 4-color palette
  */
-static int match_color(uint16_t *color, uint8_t colors[4][3])
+static int match_color(const uint16_t *color, uint8_t colors[4][3])
 {
     int ret = 0;
     int smallest_variance = INT_MAX;
@@ -383,8 +384,8 @@ static int match_color(uint16_t *color, uint8_t colors[4][3])
  * blocks encoded (until we implement multi-block 4 color runs this will
  * always be 1)
  */
-static int encode_four_color_block(uint8_t *min_color, uint8_t *max_color,
-                                   PutBitContext *pb, uint16_t *block_ptr, BlockInfo *bi)
+static int encode_four_color_block(const uint8_t *min_color, const uint8_t *max_color,
+                                   PutBitContext *pb, const uint16_t *block_ptr, const BlockInfo *bi)
 {
     int x, y, idx;
     uint8_t color4[4][3];
@@ -441,7 +442,7 @@ static void update_block_in_prev_frame(const uint16_t *src_pixels,
  * the statistics of this block. Otherwise, the stats are unchanged
  * and don't include the current block.
  */
-static int update_block_stats(RpzaContext *s, BlockInfo *bi, uint16_t *block,
+static int update_block_stats(RpzaContext *s, const BlockInfo *bi, const uint16_t *block,
                               uint8_t min_color[3], uint8_t max_color[3],
                               int *total_rgb, int *total_pixels,
                               uint8_t avg_color[3], int first_block)
@@ -562,7 +563,7 @@ static void rpza_encode_stream(RpzaContext *s, const AVFrame *pict)
     int pixel_count;
     uint8_t min_color[3], max_color[3];
     double slope, y_intercept, correlation_coef;
-    uint16_t *src_pixels = (uint16_t *)pict->data[0];
+    const uint16_t *src_pixels = (const uint16_t *)pict->data[0];
     uint16_t *prev_pixels = (uint16_t *)s->prev_frame->data[0];
 
     /* Number of 4x4 blocks in frame. */
@@ -728,7 +729,7 @@ post_skip :
             }
 
             if (err > s->sixteen_color_thresh) { // DO SIXTEEN COLOR BLOCK
-                uint16_t *row_ptr;
+                const uint16_t *row_ptr;
                 int rgb555;
 
                 block_offset = get_block_info(&bi, block_counter);

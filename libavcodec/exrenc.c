@@ -253,7 +253,7 @@ static int encode_scanline_rle(EXRContext *s, const AVFrame *frame)
             for (int p = 0; p < s->planes; p++) {
                 int ch = s->ch_order[p];
                 uint16_t *dst = (uint16_t *)(scanline->uncompressed_data + frame->width * 2 * p);
-                uint32_t *src = (uint32_t *)(frame->data[ch] + y * frame->linesize[ch]);
+                const uint32_t *src = (const uint32_t *)(frame->data[ch] + y * frame->linesize[ch]);
 
                 for (int x = 0; x < frame->width; x++)
                     dst[x] = float2half(src[x], s->basetable, s->shifttable);
@@ -321,7 +321,7 @@ static int encode_scanline_zip(EXRContext *s, const AVFrame *frame)
                 for (int p = 0; p < s->planes; p++) {
                     int ch = s->ch_order[p];
                     uint16_t *dst = (uint16_t *)(scanline->uncompressed_data + scanline_size * l + p * frame->width * 2);
-                    uint32_t *src = (uint32_t *)(frame->data[ch] + (y * s->scanline_height + l) * frame->linesize[ch]);
+                    const uint32_t *src = (const uint32_t *)(frame->data[ch] + (y * s->scanline_height + l) * frame->linesize[ch]);
 
                     for (int x = 0; x < frame->width; x++)
                         dst[x] = float2half(src[x], s->basetable, s->shifttable);
@@ -479,7 +479,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 bytestream2_put_le32(pb, s->planes * avctx->width * 2);
                 for (int p = 0; p < s->planes; p++) {
                     int ch = s->ch_order[p];
-                    uint32_t *src = (uint32_t *)(frame->data[ch] + y * frame->linesize[ch]);
+                    const uint32_t *src = (const uint32_t *)(frame->data[ch] + y * frame->linesize[ch]);
 
                     for (int x = 0; x < frame->width; x++)
                         bytestream2_put_le16(pb, float2half(src[x], s->basetable, s->shifttable));

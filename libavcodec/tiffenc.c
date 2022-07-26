@@ -207,8 +207,8 @@ static void pack_yuv(TiffEncoderContext *s, const AVFrame *p,
 {
     int i, j, k;
     int w       = (s->width - 1) / s->subsampling[0] + 1;
-    uint8_t *pu = &p->data[1][lnum / s->subsampling[1] * p->linesize[1]];
-    uint8_t *pv = &p->data[2][lnum / s->subsampling[1] * p->linesize[2]];
+    const uint8_t *pu = &p->data[1][lnum / s->subsampling[1] * p->linesize[1]];
+    const uint8_t *pv = &p->data[2][lnum / s->subsampling[1] * p->linesize[2]];
     if (s->width % s->subsampling[0] || s->height % s->subsampling[1]) {
         for (i = 0; i < w; i++) {
             for (j = 0; j < s->subsampling[1]; j++)

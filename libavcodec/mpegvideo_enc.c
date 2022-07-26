@@ -953,7 +953,7 @@ av_cold int ff_mpv_encode_end(AVCodecContext *avctx)
     return 0;
 }
 
-static int get_sae(uint8_t *src, int ref, int stride)
+static int get_sae(const uint8_t *src, int ref, int stride)
 {
     int x,y;
     int acc = 0;
@@ -967,8 +967,8 @@ static int get_sae(uint8_t *src, int ref, int stride)
     return acc;
 }
 
-static int get_intra_count(MpegEncContext *s, uint8_t *src,
-                           uint8_t *ref, int stride)
+static int get_intra_count(MpegEncContext *s, const uint8_t *src,
+                           const uint8_t *ref, int stride)
 {
     int x, y, w, h;
     int acc = 0;
@@ -1087,7 +1087,7 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
                     int v_shift = i ? v_chroma_shift : 0;
                     int w = s->width  >> h_shift;
                     int h = s->height >> v_shift;
-                    uint8_t *src = pic_arg->data[i];
+                    const uint8_t *src = pic_arg->data[i];
                     uint8_t *dst = pic->f->data[i];
                     int vpad = 16;
 
@@ -1149,7 +1149,7 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
     return 0;
 }
 
-static int skip_check(MpegEncContext *s, Picture *p, Picture *ref)
+static int skip_check(MpegEncContext *s, const Picture *p, const Picture *ref)
 {
     int x, y, plane;
     int score = 0;
@@ -1161,8 +1161,8 @@ static int skip_check(MpegEncContext *s, Picture *p, Picture *ref)
         for (y = 0; y < s->mb_height * bw; y++) {
             for (x = 0; x < s->mb_width * bw; x++) {
                 int off = p->shared ? 0 : 16;
-                uint8_t *dptr = p->f->data[plane] + 8 * (x + y * stride) + off;
-                uint8_t *rptr = ref->f->data[plane] + 8 * (x + y * stride);
+                const uint8_t *dptr = p->f->data[plane] + 8 * (x + y * stride) + off;
+                const uint8_t *rptr = ref->f->data[plane] + 8 * (x + y * stride);
                 int v = s->mecc.frame_skip_cmp[1](s, dptr, rptr, stride, 8);
 
                 switch (FFABS(s->frame_skip_exp)) {
@@ -1190,7 +1190,7 @@ static int skip_check(MpegEncContext *s, Picture *p, Picture *ref)
     return 0;
 }
 
-static int encode_frame(AVCodecContext *c, AVFrame *frame, AVPacket *pkt)
+static int encode_frame(AVCodecContext *c, const AVFrame *frame, AVPacket *pkt)
 {
     int ret;
     int size = 0;
@@ -1990,7 +1990,7 @@ static inline void clip_coeffs(MpegEncContext *s, int16_t *block,
                overflow, minlevel, maxlevel);
 }
 
-static void get_visual_weight(int16_t *weight, uint8_t *ptr, int stride)
+static void get_visual_weight(int16_t *weight, const uint8_t *ptr, int stride)
 {
     int x, y;
     // FIXME optimize
@@ -2035,7 +2035,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
     int skip_dct[12];
     int dct_offset = s->linesize * 8; // default for progressive frames
     int uv_dct_offset = s->uvlinesize * 8;
-    uint8_t *ptr_y, *ptr_cb, *ptr_cr;
+    const uint8_t *ptr_y, *ptr_cb, *ptr_cr;
     ptrdiff_t wrap_y, wrap_c;
 
     for (i = 0; i < mb_block_count; i++)
@@ -2534,7 +2534,7 @@ static inline void encode_mb_hq(MpegEncContext *s, MpegEncContext *backup, MpegE
     }
 }
 
-static int sse(MpegEncContext *s, uint8_t *src1, uint8_t *src2, int w, int h, int stride){
+static int sse(MpegEncContext *s, const uint8_t *src1, const uint8_t *src2, int w, int h, int stride){
     const uint32_t *sq = ff_square_tab + 256;
     int acc=0;
     int x,y;
@@ -2641,7 +2641,7 @@ static int mb_var_thread(AVCodecContext *c, void *arg){
         for(mb_x=0; mb_x < s->mb_width; mb_x++) {
             int xx = mb_x * 16;
             int yy = mb_y * 16;
-            uint8_t *pix = s->new_picture->data[0] + (yy * s->linesize) + xx;
+            const uint8_t *pix = s->new_picture->data[0] + (yy * s->linesize) + xx;
             int varc;
             int sum = s->mpvencdsp.pix_sum(pix, s->linesize);
 

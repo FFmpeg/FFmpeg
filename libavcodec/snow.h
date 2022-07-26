@@ -486,7 +486,7 @@ static inline void set_blocks(SnowContext *s, int level, int x, int y, int l, in
     }
 }
 
-static inline void init_ref(MotionEstContext *c, uint8_t *src[3], uint8_t *ref[3], uint8_t *ref2[3], int x, int y, int ref_index){
+static inline void init_ref(MotionEstContext *c, const uint8_t *const src[3], uint8_t *const ref[3], uint8_t *const ref2[3], int x, int y, int ref_index){
     SnowContext *s = c->avctx->priv_data;
     const int offset[3]= {
           y*c->  stride + x,

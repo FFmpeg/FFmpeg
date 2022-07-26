@@ -44,7 +44,7 @@ static int v410_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                              const AVFrame *pic, int *got_packet)
 {
     uint8_t *dst;
-    uint16_t *y, *u, *v;
+    const uint16_t *y, *u, *v;
     uint32_t val;
     int i, j, ret;
 

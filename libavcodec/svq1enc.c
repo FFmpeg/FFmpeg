@@ -248,7 +248,7 @@ static void init_block_index(MpegEncContext *s){
 }
 
 static int svq1_encode_plane(SVQ1EncContext *s, int plane,
-                             unsigned char *src_plane,
+                             const unsigned char *src_plane,
                              unsigned char *ref_plane,
                              unsigned char *decoded_plane,
                              int width, int height, int src_stride, int stride)
@@ -371,7 +371,7 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
             int count[2][6];
             int offset       = y * 16 * stride + x * 16;
             uint8_t *decoded = decoded_plane + offset;
-            uint8_t *ref     = ref_plane + offset;
+            const uint8_t *ref = ref_plane + offset;
             int score[4]     = { 0, 0, 0, 0 }, best;
             uint8_t *temp    = s->scratchbuf;
 

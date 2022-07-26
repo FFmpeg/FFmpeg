@@ -190,9 +190,9 @@ static inline void dct_get(ASV1Context *a, const AVFrame *frame,
     int linesize = frame->linesize[0];
     int i;
 
-    uint8_t *ptr_y  = frame->data[0] + (mb_y * 16 * linesize)           + mb_x * 16;
-    uint8_t *ptr_cb = frame->data[1] + (mb_y *  8 * frame->linesize[1]) + mb_x *  8;
-    uint8_t *ptr_cr = frame->data[2] + (mb_y *  8 * frame->linesize[2]) + mb_x *  8;
+    const uint8_t *ptr_y  = frame->data[0] + (mb_y * 16 * linesize)           + mb_x * 16;
+    const uint8_t *ptr_cb = frame->data[1] + (mb_y *  8 * frame->linesize[1]) + mb_x *  8;
+    const uint8_t *ptr_cr = frame->data[2] + (mb_y *  8 * frame->linesize[2]) + mb_x *  8;
 
     a->pdsp.get_pixels(block[0], ptr_y,                    linesize);
     a->pdsp.get_pixels(block[1], ptr_y + 8,                linesize);

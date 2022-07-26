@@ -458,11 +458,12 @@ static int magy_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     if (s->correlate) {
-        uint8_t *r, *g, *b, *decorrelated[2] = { s->decorrelate_buf[0],
+        uint8_t *decorrelated[2] = { s->decorrelate_buf[0],
                                                  s->decorrelate_buf[1] };
         const int decorrelate_linesize = FFALIGN(width, 16);
         const uint8_t *const data[4] = { decorrelated[0], frame->data[0],
                                          decorrelated[1], frame->data[3] };
+        const uint8_t *r, *g, *b;
         const int linesize[4]  = { decorrelate_linesize, frame->linesize[0],
                                    decorrelate_linesize, frame->linesize[3] };
 

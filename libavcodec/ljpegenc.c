@@ -78,7 +78,7 @@ static int ljpeg_encode_bgr(AVCodecContext *avctx, PutBitContext *pb,
 
     for (y = 0; y < height; y++) {
         const int modified_predictor = y ? s->pred : 1;
-        uint8_t *ptr = frame->data[0] + (linesize * y);
+        const uint8_t *ptr = frame->data[0] + (linesize * y);
 
         if (put_bytes_left(pb, 0) < width * 4 * 4) {
             av_log(avctx, AV_LOG_ERROR, "encoded frame too large\n");
@@ -132,7 +132,7 @@ static inline void ljpeg_encode_yuv_mb(LJpegEncContext *s, PutBitContext *pb,
 
     if (mb_x == 0 || mb_y == 0) {
         for (i = 0; i < 3; i++) {
-            uint8_t *ptr;
+            const uint8_t *ptr;
             int x, y, h, v, linesize;
             h = s->hsample[i];
             v = s->vsample[i];
@@ -166,7 +166,7 @@ static inline void ljpeg_encode_yuv_mb(LJpegEncContext *s, PutBitContext *pb,
         }
     } else {
         for (i = 0; i < 3; i++) {
-            uint8_t *ptr;
+            const uint8_t *ptr;
             int x, y, h, v, linesize;
             h = s->hsample[i];
             v = s->vsample[i];
