@@ -77,8 +77,8 @@ typedef struct MotionEstContext {
     int ymax;
     int pred_x;
     int pred_y;
-    uint8_t *src[4][4];
-    uint8_t *ref[4][4];
+    const uint8_t *src[4][4];
+    const uint8_t *ref[4][4];
     int stride;
     int uvstride;
     /* temp variables for picture complexity calculation */

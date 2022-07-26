@@ -79,7 +79,10 @@ static int minima_cmp(const void *a, const void *b){
 #define FLAG_CHROMA 2
 #define FLAG_DIRECT 4
 
-static inline void init_ref(MotionEstContext *c, uint8_t *src[3], uint8_t *ref[3], uint8_t *ref2[3], int x, int y, int ref_index){
+static inline void init_ref(MotionEstContext *c, uint8_t *const src[3],
+                            uint8_t *const ref[3], uint8_t *const ref2[3],
+                            int x, int y, int ref_index)
+{
     const int offset[3]= {
           y*c->  stride + x,
         ((y*c->uvstride + x)>>1),
@@ -110,8 +113,8 @@ static av_always_inline int cmp_direct_inline(MpegEncContext *s, const int x, co
     const int stride= c->stride;
     const int hx = subx + x * (1 << (1 + qpel));
     const int hy = suby + y * (1 << (1 + qpel));
-    uint8_t * const * const ref= c->ref[ref_index];
-    uint8_t * const * const src= c->src[src_index];
+    const uint8_t * const * const ref = c->ref[ref_index];
+    const uint8_t * const * const src = c->src[src_index];
     int d;
     //FIXME check chroma 4mv, (no crashes ...)
         av_assert2(x >= c->xmin && hx <= c->xmax<<(qpel+1) && y >= c->ymin && hy <= c->ymax<<(qpel+1));
@@ -184,8 +187,8 @@ static av_always_inline int cmp_inline(MpegEncContext *s, const int x, const int
     const int dxy= subx + (suby<<(1+qpel)); //FIXME log2_subpel?
     const int hx= subx + x*(1<<(1+qpel));
     const int hy= suby + y*(1<<(1+qpel));
-    uint8_t * const * const ref= c->ref[ref_index];
-    uint8_t * const * const src= c->src[src_index];
+    const uint8_t * const * const ref = c->ref[ref_index];
+    const uint8_t * const * const src = c->src[src_index];
     int d;
     //FIXME check chroma 4mv, (no crashes ...)
         int uvdxy;              /* no, it might not be used uninitialized */
@@ -396,7 +399,7 @@ static int sad_hpel_motion_search(MpegEncContext * s,
     MotionEstContext * const c= &s->me;
     const int penalty_factor= c->sub_penalty_factor;
     int mx, my, dminh;
-    uint8_t *pix, *ptr;
+    const uint8_t *pix, *ptr;
     int stride= c->stride;
     LOAD_COMMON
 
@@ -641,7 +644,7 @@ static inline int h263_mv4_search(MpegEncContext *s, int mx, int my, int shift)
             const int offset= ((block&1) + (block>>1)*stride)*8;
             uint8_t *dest_y = c->scratchpad + offset;
             if(s->quarter_sample){
-                uint8_t *ref= c->ref[block][0] + (mx4>>2) + (my4>>2)*stride;
+                const uint8_t *ref = c->ref[block][0] + (mx4>>2) + (my4>>2)*stride;
                 dxy = ((my4 & 3) << 2) | (mx4 & 3);
 
                 if(s->no_rounding)
@@ -649,7 +652,7 @@ static inline int h263_mv4_search(MpegEncContext *s, int mx, int my, int shift)
                 else
                     s->qdsp.put_qpel_pixels_tab[1][dxy](dest_y, ref, stride);
             }else{
-                uint8_t *ref= c->ref[block][0] + (mx4>>1) + (my4>>1)*stride;
+                const uint8_t *ref = c->ref[block][0] + (mx4>>1) + (my4>>1)*stride;
                 dxy = ((my4 & 1) << 1) | (mx4 & 1);
 
                 if(s->no_rounding)
@@ -805,7 +808,7 @@ static int interlaced_search(MpegEncContext *s, int ref_index,
                 int dxy;
 
                 //FIXME chroma ME
-                uint8_t *ref= c->ref[field_select+ref_index][0] + (mx_i>>1) + (my_i>>1)*stride;
+                const uint8_t *ref = c->ref[field_select+ref_index][0] + (mx_i>>1) + (my_i>>1)*stride;
                 dxy = ((my_i & 1) << 1) | (mx_i & 1);
 
                 if(s->no_rounding){
@@ -885,7 +888,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
                                 int mb_x, int mb_y)
 {
     MotionEstContext * const c= &s->me;
-    uint8_t *pix, *ppix;
+    const uint8_t *pix, *ppix;
     int sum, mx = 0, my = 0, dmin = 0;
     int varc;            ///< the variance of the block (sum of squared (p[y][x]-average))
     int vard;            ///< sum of squared differences with the estimated motion vector
@@ -1187,13 +1190,13 @@ static inline int check_bidir_mv(MpegEncContext * s,
     const uint8_t * const mv_penalty_b = c->mv_penalty[s->b_code] + MAX_DMV; // f_code of the prev frame
     int stride= c->stride;
     uint8_t *dest_y = c->scratchpad;
-    uint8_t *ptr;
+    const uint8_t *ptr;
     int dxy;
     int src_x, src_y;
     int fbmin;
-    uint8_t **src_data= c->src[0];
-    uint8_t **ref_data= c->ref[0];
-    uint8_t **ref2_data= c->ref[2];
+    const uint8_t *const *src_data  = c->src[0];
+    const uint8_t *const *ref_data  = c->ref[0];
+    const uint8_t *const *ref2_data = c->ref[2];
 
     if(s->quarter_sample){
         dxy = ((motion_fy & 3) << 2) | (motion_fx & 3);
