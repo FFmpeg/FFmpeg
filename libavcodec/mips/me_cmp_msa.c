@@ -21,8 +21,8 @@
 #include "libavutil/mips/generic_macros_msa.h"
 #include "me_cmp_mips.h"
 
-static uint32_t sad_8width_msa(uint8_t *src, int32_t src_stride,
-                               uint8_t *ref, int32_t ref_stride,
+static uint32_t sad_8width_msa(const uint8_t *src, int32_t src_stride,
+                               const uint8_t *ref, int32_t ref_stride,
                                int32_t height)
 {
     int32_t ht_cnt;
@@ -43,8 +43,8 @@ static uint32_t sad_8width_msa(uint8_t *src, int32_t src_stride,
     return (HADD_UH_U32(sad));
 }
 
-static uint32_t sad_16width_msa(uint8_t *src, int32_t src_stride,
-                                uint8_t *ref, int32_t ref_stride,
+static uint32_t sad_16width_msa(const uint8_t *src, int32_t src_stride,
+                                const uint8_t *ref, int32_t ref_stride,
                                 int32_t height)
 {
     int32_t ht_cnt;
@@ -68,9 +68,9 @@ static uint32_t sad_16width_msa(uint8_t *src, int32_t src_stride,
     return (HADD_UH_U32(sad));
 }
 
-static uint32_t sad_horiz_bilinear_filter_8width_msa(uint8_t *src,
+static uint32_t sad_horiz_bilinear_filter_8width_msa(const uint8_t *src,
                                                      int32_t src_stride,
-                                                     uint8_t *ref,
+                                                     const uint8_t *ref,
                                                      int32_t ref_stride,
                                                      int32_t height)
 {
@@ -110,9 +110,9 @@ static uint32_t sad_horiz_bilinear_filter_8width_msa(uint8_t *src,
     return (HADD_UH_U32(sad));
 }
 
-static uint32_t sad_horiz_bilinear_filter_16width_msa(uint8_t *src,
+static uint32_t sad_horiz_bilinear_filter_16width_msa(const uint8_t *src,
                                                       int32_t src_stride,
-                                                      uint8_t *ref,
+                                                      const uint8_t *ref,
                                                       int32_t ref_stride,
                                                       int32_t height)
 {
@@ -148,9 +148,9 @@ static uint32_t sad_horiz_bilinear_filter_16width_msa(uint8_t *src,
     return (HADD_UH_U32(sad));
 }
 
-static uint32_t sad_vert_bilinear_filter_8width_msa(uint8_t *src,
+static uint32_t sad_vert_bilinear_filter_8width_msa(const uint8_t *src,
                                                     int32_t src_stride,
-                                                    uint8_t *ref,
+                                                    const uint8_t *ref,
                                                     int32_t ref_stride,
                                                     int32_t height)
 {
@@ -186,9 +186,9 @@ static uint32_t sad_vert_bilinear_filter_8width_msa(uint8_t *src,
     return (HADD_UH_U32(sad));
 }
 
-static uint32_t sad_vert_bilinear_filter_16width_msa(uint8_t *src,
+static uint32_t sad_vert_bilinear_filter_16width_msa(const uint8_t *src,
                                                      int32_t src_stride,
-                                                     uint8_t *ref,
+                                                     const uint8_t *ref,
                                                      int32_t ref_stride,
                                                      int32_t height)
 {
@@ -224,9 +224,9 @@ static uint32_t sad_vert_bilinear_filter_16width_msa(uint8_t *src,
     return (HADD_UH_U32(sad));
 }
 
-static uint32_t sad_hv_bilinear_filter_8width_msa(uint8_t *src,
+static uint32_t sad_hv_bilinear_filter_8width_msa(const uint8_t *src,
                                                   int32_t src_stride,
-                                                  uint8_t *ref,
+                                                  const uint8_t *ref,
                                                   int32_t ref_stride,
                                                   int32_t height)
 {
@@ -280,9 +280,9 @@ static uint32_t sad_hv_bilinear_filter_8width_msa(uint8_t *src,
     return (HADD_UH_U32(sad));
 }
 
-static uint32_t sad_hv_bilinear_filter_16width_msa(uint8_t *src,
+static uint32_t sad_hv_bilinear_filter_16width_msa(const uint8_t *src,
                                                    int32_t src_stride,
-                                                   uint8_t *ref,
+                                                   const uint8_t *ref,
                                                    int32_t ref_stride,
                                                    int32_t height)
 {
@@ -403,8 +403,8 @@ static uint32_t sad_hv_bilinear_filter_16width_msa(uint8_t *src,
     DPADD_SH2_SW(res_l0_m, res_l1_m, res_l0_m, res_l1_m, var, var);  \
 }
 
-static uint32_t sse_4width_msa(uint8_t *src_ptr, int32_t src_stride,
-                               uint8_t *ref_ptr, int32_t ref_stride,
+static uint32_t sse_4width_msa(const uint8_t *src_ptr, int32_t src_stride,
+                               const uint8_t *ref_ptr, int32_t ref_stride,
                                int32_t height)
 {
     int32_t ht_cnt;
@@ -431,8 +431,8 @@ static uint32_t sse_4width_msa(uint8_t *src_ptr, int32_t src_stride,
     return sse;
 }
 
-static uint32_t sse_8width_msa(uint8_t *src_ptr, int32_t src_stride,
-                               uint8_t *ref_ptr, int32_t ref_stride,
+static uint32_t sse_8width_msa(const uint8_t *src_ptr, int32_t src_stride,
+                               const uint8_t *ref_ptr, int32_t ref_stride,
                                int32_t height)
 {
     int32_t ht_cnt;
@@ -458,8 +458,8 @@ static uint32_t sse_8width_msa(uint8_t *src_ptr, int32_t src_stride,
     return sse;
 }
 
-static uint32_t sse_16width_msa(uint8_t *src_ptr, int32_t src_stride,
-                                uint8_t *ref_ptr, int32_t ref_stride,
+static uint32_t sse_16width_msa(const uint8_t *src_ptr, int32_t src_stride,
+                                const uint8_t *ref_ptr, int32_t ref_stride,
                                 int32_t height)
 {
     int32_t ht_cnt;
@@ -498,8 +498,8 @@ static uint32_t sse_16width_msa(uint8_t *src_ptr, int32_t src_stride,
     return sse;
 }
 
-static int32_t hadamard_diff_8x8_msa(uint8_t *src, int32_t src_stride,
-                                     uint8_t *ref, int32_t ref_stride)
+static int32_t hadamard_diff_8x8_msa(const uint8_t *src, int32_t src_stride,
+                                     const uint8_t *ref, int32_t ref_stride)
 {
     v16u8 src0, src1, src2, src3, src4, src5, src6, src7;
     v16u8 ref0, ref1, ref2, ref3, ref4, ref5, ref6, ref7;
@@ -543,8 +543,8 @@ static int32_t hadamard_diff_8x8_msa(uint8_t *src, int32_t src_stride,
     return (HADD_UH_U32(sum));
 }
 
-static int32_t hadamard_intra_8x8_msa(uint8_t *src, int32_t src_stride,
-                                      uint8_t *ref, int32_t ref_stride)
+static int32_t hadamard_intra_8x8_msa(const uint8_t *src, int32_t src_stride,
+                                      const uint8_t *ref, int32_t ref_stride)
 {
     int32_t sum_res = 0;
     v16u8 src0, src1, src2, src3, src4, src5, src6, src7;
@@ -587,79 +587,79 @@ static int32_t hadamard_intra_8x8_msa(uint8_t *src, int32_t src_stride,
     return sum_res;
 }
 
-int ff_pix_abs16_msa(MpegEncContext *v, uint8_t *src, uint8_t *ref,
+int ff_pix_abs16_msa(MpegEncContext *v, const uint8_t *src, const uint8_t *ref,
                      ptrdiff_t stride, int height)
 {
     return sad_16width_msa(src, stride, ref, stride, height);
 }
 
-int ff_pix_abs8_msa(MpegEncContext *v, uint8_t *src, uint8_t *ref,
+int ff_pix_abs8_msa(MpegEncContext *v, const uint8_t *src, const uint8_t *ref,
                     ptrdiff_t stride, int height)
 {
     return sad_8width_msa(src, stride, ref, stride, height);
 }
 
-int ff_pix_abs16_x2_msa(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
+int ff_pix_abs16_x2_msa(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                         ptrdiff_t stride, int h)
 {
     return sad_horiz_bilinear_filter_16width_msa(pix1, stride, pix2, stride, h);
 }
 
-int ff_pix_abs16_y2_msa(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
+int ff_pix_abs16_y2_msa(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                         ptrdiff_t stride, int h)
 {
     return sad_vert_bilinear_filter_16width_msa(pix1, stride, pix2, stride, h);
 }
 
-int ff_pix_abs16_xy2_msa(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
+int ff_pix_abs16_xy2_msa(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                          ptrdiff_t stride, int h)
 {
     return sad_hv_bilinear_filter_16width_msa(pix1, stride, pix2, stride, h);
 }
 
-int ff_pix_abs8_x2_msa(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
+int ff_pix_abs8_x2_msa(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                        ptrdiff_t stride, int h)
 {
     return sad_horiz_bilinear_filter_8width_msa(pix1, stride, pix2, stride, h);
 }
 
-int ff_pix_abs8_y2_msa(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
+int ff_pix_abs8_y2_msa(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                        ptrdiff_t stride, int h)
 {
     return sad_vert_bilinear_filter_8width_msa(pix1, stride, pix2, stride, h);
 }
 
-int ff_pix_abs8_xy2_msa(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
+int ff_pix_abs8_xy2_msa(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                         ptrdiff_t stride, int h)
 {
     return sad_hv_bilinear_filter_8width_msa(pix1, stride, pix2, stride, h);
 }
 
-int ff_sse16_msa(MpegEncContext *v, uint8_t *src, uint8_t *ref,
+int ff_sse16_msa(MpegEncContext *v, const uint8_t *src, const uint8_t *ref,
                  ptrdiff_t stride, int height)
 {
     return sse_16width_msa(src, stride, ref, stride, height);
 }
 
-int ff_sse8_msa(MpegEncContext *v, uint8_t *src, uint8_t *ref,
+int ff_sse8_msa(MpegEncContext *v, const uint8_t *src, const uint8_t *ref,
                 ptrdiff_t stride, int height)
 {
     return sse_8width_msa(src, stride, ref, stride, height);
 }
 
-int ff_sse4_msa(MpegEncContext *v, uint8_t *src, uint8_t *ref,
+int ff_sse4_msa(MpegEncContext *v, const uint8_t *src, const uint8_t *ref,
                 ptrdiff_t stride, int height)
 {
     return sse_4width_msa(src, stride, ref, stride, height);
 }
 
-int ff_hadamard8_diff8x8_msa(MpegEncContext *s, uint8_t *dst, uint8_t *src,
+int ff_hadamard8_diff8x8_msa(MpegEncContext *s, const uint8_t *dst, const uint8_t *src,
                              ptrdiff_t stride, int h)
 {
     return hadamard_diff_8x8_msa(src, stride, dst, stride);
 }
 
-int ff_hadamard8_intra8x8_msa(MpegEncContext *s, uint8_t *dst, uint8_t *src,
+int ff_hadamard8_intra8x8_msa(MpegEncContext *s, const uint8_t *dst, const uint8_t *src,
                               ptrdiff_t stride, int h)
 {
     return hadamard_intra_8x8_msa(src, stride, dst, stride);
@@ -667,7 +667,7 @@ int ff_hadamard8_intra8x8_msa(MpegEncContext *s, uint8_t *dst, uint8_t *src,
 
 /* Hadamard Transform functions */
 #define WRAPPER8_16_SQ(name8, name16)                      \
-int name16(MpegEncContext *s, uint8_t *dst, uint8_t *src,  \
+int name16(MpegEncContext *s, const uint8_t *dst, const uint8_t *src,  \
            ptrdiff_t stride, int h)                        \
 {                                                          \
     int score = 0;                                         \

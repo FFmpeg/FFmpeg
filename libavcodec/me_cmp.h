@@ -46,12 +46,12 @@ struct MpegEncContext;
  * Although currently h < 4 is not used as functions with
  * width < 8 are neither used nor implemented. */
 typedef int (*me_cmp_func)(struct MpegEncContext *c,
-                           uint8_t *blk1 /* align width (8 or 16) */,
-                           uint8_t *blk2 /* align 1 */, ptrdiff_t stride,
+                           const uint8_t *blk1 /* align width (8 or 16) */,
+                           const uint8_t *blk2 /* align 1 */, ptrdiff_t stride,
                            int h);
 
 typedef struct MECmpContext {
-    int (*sum_abs_dctelem)(int16_t *block /* align 16 */);
+    int (*sum_abs_dctelem)(const int16_t *block /* align 16 */);
 
     me_cmp_func sad[6]; /* identical to pix_absAxA except additional void * */
     me_cmp_func sse[6];

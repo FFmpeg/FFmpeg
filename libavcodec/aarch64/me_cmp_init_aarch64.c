@@ -23,11 +23,11 @@
 #include "libavutil/aarch64/cpu.h"
 #include "libavcodec/mpegvideo.h"
 
-int ff_pix_abs16_neon(MpegEncContext *s, uint8_t *blk1, uint8_t *blk2,
+int ff_pix_abs16_neon(MpegEncContext *s, const uint8_t *blk1, const uint8_t *blk2,
                       ptrdiff_t stride, int h);
-int ff_pix_abs16_xy2_neon(MpegEncContext *s, uint8_t *blk1, uint8_t *blk2,
+int ff_pix_abs16_xy2_neon(MpegEncContext *s, const uint8_t *blk1, const uint8_t *blk2,
                       ptrdiff_t stride, int h);
-int ff_pix_abs16_x2_neon(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
+int ff_pix_abs16_x2_neon(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                       ptrdiff_t stride, int h);
 
 av_cold void ff_me_cmp_init_aarch64(MECmpContext *c, AVCodecContext *avctx)

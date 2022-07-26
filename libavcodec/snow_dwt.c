@@ -740,7 +740,7 @@ void ff_spatial_idwt(IDWTELEM *buffer, IDWTELEM *temp, int width, int height,
                               decomposition_count, y);
 }
 
-static inline int w_c(struct MpegEncContext *v, uint8_t *pix1, uint8_t *pix2, ptrdiff_t line_size,
+static inline int w_c(struct MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2, ptrdiff_t line_size,
                       int w, int h, int type)
 {
     int s, i, j;
@@ -809,32 +809,32 @@ static inline int w_c(struct MpegEncContext *v, uint8_t *pix1, uint8_t *pix2, pt
     return s >> 9;
 }
 
-static int w53_8_c(struct MpegEncContext *v, uint8_t *pix1, uint8_t *pix2, ptrdiff_t line_size, int h)
+static int w53_8_c(struct MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2, ptrdiff_t line_size, int h)
 {
     return w_c(v, pix1, pix2, line_size, 8, h, 1);
 }
 
-static int w97_8_c(struct MpegEncContext *v, uint8_t *pix1, uint8_t *pix2, ptrdiff_t line_size, int h)
+static int w97_8_c(struct MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2, ptrdiff_t line_size, int h)
 {
     return w_c(v, pix1, pix2, line_size, 8, h, 0);
 }
 
-static int w53_16_c(struct MpegEncContext *v, uint8_t *pix1, uint8_t *pix2, ptrdiff_t line_size, int h)
+static int w53_16_c(struct MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2, ptrdiff_t line_size, int h)
 {
     return w_c(v, pix1, pix2, line_size, 16, h, 1);
 }
 
-static int w97_16_c(struct MpegEncContext *v, uint8_t *pix1, uint8_t *pix2, ptrdiff_t line_size, int h)
+static int w97_16_c(struct MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2, ptrdiff_t line_size, int h)
 {
     return w_c(v, pix1, pix2, line_size, 16, h, 0);
 }
 
-int ff_w53_32_c(struct MpegEncContext *v, uint8_t *pix1, uint8_t *pix2, ptrdiff_t line_size, int h)
+int ff_w53_32_c(struct MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2, ptrdiff_t line_size, int h)
 {
     return w_c(v, pix1, pix2, line_size, 32, h, 1);
 }
 
-int ff_w97_32_c(struct MpegEncContext *v, uint8_t *pix1, uint8_t *pix2, ptrdiff_t line_size, int h)
+int ff_w97_32_c(struct MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2, ptrdiff_t line_size, int h)
 {
     return w_c(v, pix1, pix2, line_size, 32, h, 0);
 }

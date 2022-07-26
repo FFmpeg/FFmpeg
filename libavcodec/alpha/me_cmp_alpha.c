@@ -23,7 +23,7 @@
 #include "libavcodec/me_cmp.h"
 #include "asm.h"
 
-int pix_abs16x16_mvi_asm(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h);
+int pix_abs16x16_mvi_asm(void *v, const uint8_t *pix1, const uint8_t *pix2, int line_size, int h);
 
 static inline uint64_t avg2(uint64_t a, uint64_t b)
 {
@@ -44,7 +44,7 @@ static inline uint64_t avg4(uint64_t l1, uint64_t l2, uint64_t l3, uint64_t l4)
     return r1 + r2;
 }
 
-static int pix_abs8x8_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
+static int pix_abs8x8_mvi(void *v, const uint8_t *pix1, const uint8_t *pix2, int line_size, int h)
 {
     int result = 0;
 
@@ -77,7 +77,7 @@ static int pix_abs8x8_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, 
 }
 
 #if 0                           /* now done in assembly */
-int pix_abs16x16_mvi(uint8_t *pix1, uint8_t *pix2, int line_size)
+int pix_abs16x16_mvi(const uint8_t *pix1, const uint8_t *pix2, int line_size)
 {
     int result = 0;
     int h = 16;
@@ -119,7 +119,7 @@ int pix_abs16x16_mvi(uint8_t *pix1, uint8_t *pix2, int line_size)
 }
 #endif
 
-static int pix_abs16x16_x2_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
+static int pix_abs16x16_x2_mvi(void *v, const uint8_t *pix1, const uint8_t *pix2, int line_size, int h)
 {
     int result = 0;
     uint64_t disalign = (size_t) pix2 & 0x7;
@@ -192,7 +192,7 @@ static int pix_abs16x16_x2_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_s
     return result;
 }
 
-static int pix_abs16x16_y2_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
+static int pix_abs16x16_y2_mvi(void *v, const uint8_t *pix1, const uint8_t *pix2, int line_size, int h)
 {
     int result = 0;
 
@@ -245,7 +245,7 @@ static int pix_abs16x16_y2_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_s
     return result;
 }
 
-static int pix_abs16x16_xy2_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
+static int pix_abs16x16_xy2_mvi(void *v, const uint8_t *pix1, const uint8_t *pix2, int line_size, int h)
 {
     int result = 0;
 

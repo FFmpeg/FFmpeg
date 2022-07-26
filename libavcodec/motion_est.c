@@ -293,7 +293,7 @@ static int cmp_qpel(MpegEncContext *s, const int x, const int y, const int subx,
 
 #include "motion_est_template.c"
 
-static int zero_cmp(MpegEncContext *s, uint8_t *a, uint8_t *b,
+static int zero_cmp(MpegEncContext *s, const uint8_t *a, const uint8_t *b,
                     ptrdiff_t stride, int h)
 {
     return 0;

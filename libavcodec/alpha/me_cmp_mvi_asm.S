@@ -38,7 +38,7 @@
         .text
 
 /*****************************************************************************
- * int pix_abs16x16_mvi_asm(uint8_t *pix1, uint8_t *pix2, int line_size)
+ * int pix_abs16x16_mvi_asm(const uint8_t *pix1, const uint8_t *pix2, int line_size)
  *
  * This code is written with a pca56 in mind. For ev6, one should
  * really take the increased latency of 3 cycles for MVI instructions
