@@ -1011,6 +1011,7 @@ static int v4l2_read_close(AVFormatContext *ctx)
 
     mmap_close(s);
 
+    ff_timefilter_destroy(s->timefilter);
     v4l2_close(s->fd);
     return 0;
 }
