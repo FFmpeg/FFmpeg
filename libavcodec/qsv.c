@@ -125,6 +125,8 @@ static const struct {
     { MFX_ERR_INVALID_VIDEO_PARAM,      AVERROR(EINVAL), "invalid video parameters"             },
     { MFX_ERR_UNDEFINED_BEHAVIOR,       AVERROR_BUG,     "undefined behavior"                   },
     { MFX_ERR_DEVICE_FAILED,            AVERROR(EIO),    "device failed"                        },
+    { MFX_ERR_GPU_HANG,                 AVERROR(EIO),    "GPU Hang"                             },
+    { MFX_ERR_REALLOC_SURFACE,          AVERROR_UNKNOWN, "need bigger surface for output"       },
     { MFX_ERR_INCOMPATIBLE_AUDIO_PARAM, AVERROR(EINVAL), "incompatible audio parameters"        },
     { MFX_ERR_INVALID_AUDIO_PARAM,      AVERROR(EINVAL), "invalid audio parameters"             },
 
@@ -137,6 +139,10 @@ static const struct {
     { MFX_WRN_OUT_OF_RANGE,             0,               "value out of range"                   },
     { MFX_WRN_FILTER_SKIPPED,           0,               "filter skipped"                       },
     { MFX_WRN_INCOMPATIBLE_AUDIO_PARAM, 0,               "incompatible audio parameters"        },
+
+#if QSV_VERSION_ATLEAST(1, 31)
+    { MFX_ERR_NONE_PARTIAL_OUTPUT,      0,               "partial output"                       },
+#endif
 };
 
 /**
