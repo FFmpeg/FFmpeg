@@ -392,6 +392,10 @@ fate-png-side-data: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_frames \
 FATE_PNG_TRANSCODE-$(call TRANSCODE, PNG, IMAGE2 IMAGE_PNG_PIPE) += fate-png-icc
 fate-png-icc: CMD = transcode png_pipe $(TARGET_SAMPLES)/png1/lena-int_rgb24.png image2 "-c png" "" "-show_frames"
 
+FATE_PNG_PROBE-$(call ALLYES, LCMS2) += fate-png-icc-parse
+fate-png-icc-parse: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_frames \
+    -flags2 icc_profiles $(TARGET_SAMPLES)/png1/lena-int_rgb24.png
+
 FATE_PNG-$(call DEMDEC, IMAGE2, PNG) += $(FATE_PNG)
 FATE_PNG_PROBE-$(call DEMDEC, IMAGE2, PNG) += $(FATE_PNG_PROBE)
 FATE_IMAGE_FRAMECRC += $(FATE_PNG-yes)
