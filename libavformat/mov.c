@@ -3949,8 +3949,11 @@ static int build_open_gop_key_points(AVStream *st)
 
     /* Build an unrolled index of the samples */
     sc->sample_offsets_count = 0;
-    for (uint32_t i = 0; i < sc->ctts_count; i++)
+    for (uint32_t i = 0; i < sc->ctts_count; i++) {
+        if (sc->ctts_data[i].count > INT_MAX - sc->sample_offsets_count)
+            return AVERROR(ENOMEM);
         sc->sample_offsets_count += sc->ctts_data[i].count;
+    }
     av_freep(&sc->sample_offsets);
     sc->sample_offsets = av_calloc(sc->sample_offsets_count, sizeof(*sc->sample_offsets));
     if (!sc->sample_offsets)
@@ -3969,8 +3972,11 @@ static int build_open_gop_key_points(AVStream *st)
     /* Build a list of open-GOP key samples */
     sc->open_key_samples_count = 0;
     for (uint32_t i = 0; i < sc->sync_group_count; i++)
-        if (sc->sync_group[i].index == cra_index)
+        if (sc->sync_group[i].index == cra_index) {
+            if (sc->sync_group[i].count > INT_MAX - sc->open_key_samples_count)
+                return AVERROR(ENOMEM);
             sc->open_key_samples_count += sc->sync_group[i].count;
+        }
     av_freep(&sc->open_key_samples);
     sc->open_key_samples = av_calloc(sc->open_key_samples_count, sizeof(*sc->open_key_samples));
     if (!sc->open_key_samples)
@@ -3981,6 +3987,8 @@ static int build_open_gop_key_points(AVStream *st)
         if (sg->index == cra_index)
             for (uint32_t j = 0; j < sg->count; j++)
                 sc->open_key_samples[k++] = sample_id;
+        if (sg->count > INT_MAX - sample_id)
+            return AVERROR_PATCHWELCOME;
         sample_id += sg->count;
     }
 
