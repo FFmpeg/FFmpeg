@@ -366,6 +366,7 @@ struct AACContext {
     int warned_960_sbr;
     unsigned warned_71_wide;
     int warned_gain_control;
+    int warned_he_aac_mono;
 
     /* aacdec functions pointers */
     void (*imdct_and_windowing)(AACContext *ac, SingleChannelElement *sce);

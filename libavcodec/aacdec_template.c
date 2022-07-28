@@ -2584,6 +2584,10 @@ static int decode_extension_payload(AACContext *ac, GetBitContext *gb, int cnt,
             ac->avctx->profile = FF_PROFILE_AAC_HE;
         }
         res = AAC_RENAME(ff_decode_sbr_extension)(ac, &che->sbr, gb, crc_flag, cnt, elem_type);
+        if (ac->oc[1].m4ac.ps == 1 && !ac->warned_he_aac_mono) {
+            av_log(ac->avctx, AV_LOG_VERBOSE, "Treating HE-AAC mono as stereo.\n");
+            ac->warned_he_aac_mono = 1;
+        }
         break;
     case EXT_DYNAMIC_RANGE:
         res = decode_dynamic_range(&ac->che_drc, gb);
