@@ -135,6 +135,32 @@ static const uint8_t prores_quant_matrices[][64] = {
     },
 };
 
+static const uint8_t prores_dc_codebook[4] = {
+    0x04, // rice_order = 0, exp_golomb_order = 1, switch_bits = 0
+    0x28, // rice_order = 1, exp_golomb_order = 2, switch_bits = 0
+    0x4D, // rice_order = 2, exp_golomb_order = 3, switch_bits = 1
+    0x70  // rice_order = 3, exp_golomb_order = 4, switch_bits = 0
+};
+
+static const uint8_t prores_ac_codebook[7] = {
+    0x04, // rice_order = 0, exp_golomb_order = 1, switch_bits = 0
+    0x28, // rice_order = 1, exp_golomb_order = 2, switch_bits = 0
+    0x4C, // rice_order = 2, exp_golomb_order = 3, switch_bits = 0
+    0x05, // rice_order = 0, exp_golomb_order = 1, switch_bits = 1
+    0x29, // rice_order = 1, exp_golomb_order = 2, switch_bits = 1
+    0x06, // rice_order = 0, exp_golomb_order = 1, switch_bits = 2
+    0x0A, // rice_order = 0, exp_golomb_order = 2, switch_bits = 2
+};
+
+/**
+ * Lookup tables for adaptive switching between codebooks
+ * according with previous run/level value.
+ */
+static const uint8_t prores_run_to_cb_index[16] =
+    { 5, 5, 3, 3, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 2 };
+
+static const uint8_t prores_lev_to_cb_index[10] = { 0, 6, 3, 5, 0, 1, 1, 1, 1, 2 };
+
 #define NUM_MB_LIMITS 4
 static const int prores_mb_limits[NUM_MB_LIMITS] = {
     1620, // up to 720x576
@@ -423,7 +449,7 @@ static void encode_dcs(PutBitContext *pb, int16_t *blocks,
         new_sign = GET_SIGN(delta);
         delta    = (delta ^ sign) - sign;
         code     = MAKE_CODE(delta);
-        encode_vlc_codeword(pb, ff_prores_dc_codebook[codebook], code);
+        encode_vlc_codeword(pb, prores_dc_codebook[codebook], code);
         codebook = (code + (code & 1)) >> 1;
         codebook = FFMIN(codebook, 3);
         sign     = new_sign;
@@ -441,8 +467,8 @@ static void encode_acs(PutBitContext *pb, int16_t *blocks,
     int max_coeffs, abs_level;
 
     max_coeffs = blocks_per_slice << 6;
-    run_cb     = ff_prores_run_to_cb_index[4];
-    lev_cb     = ff_prores_lev_to_cb_index[2];
+    run_cb     = prores_run_to_cb_index[4];
+    lev_cb     = prores_lev_to_cb_index[2];
     run        = 0;
 
     for (i = 1; i < 64; i++) {
@@ -450,13 +476,13 @@ static void encode_acs(PutBitContext *pb, int16_t *blocks,
             level = blocks[idx] / qmat[scan[i]];
             if (level) {
                 abs_level = FFABS(level);
-                encode_vlc_codeword(pb, ff_prores_ac_codebook[run_cb], run);
-                encode_vlc_codeword(pb, ff_prores_ac_codebook[lev_cb],
+                encode_vlc_codeword(pb, prores_ac_codebook[run_cb], run);
+                encode_vlc_codeword(pb, prores_ac_codebook[lev_cb],
                                     abs_level - 1);
                 put_sbits(pb, 1, GET_SIGN(level));
 
-                run_cb = ff_prores_run_to_cb_index[FFMIN(run, 15)];
-                lev_cb = ff_prores_lev_to_cb_index[FFMIN(abs_level, 9)];
+                run_cb = prores_run_to_cb_index[FFMIN(run, 15)];
+                lev_cb = prores_lev_to_cb_index[FFMIN(abs_level, 9)];
                 run    = 0;
             } else {
                 run++;
@@ -667,7 +693,7 @@ static int estimate_dcs(int *error, int16_t *blocks, int blocks_per_slice,
         new_sign = GET_SIGN(delta);
         delta    = (delta ^ sign) - sign;
         code     = MAKE_CODE(delta);
-        bits    += estimate_vlc(ff_prores_dc_codebook[codebook], code);
+        bits    += estimate_vlc(prores_dc_codebook[codebook], code);
         codebook = (code + (code & 1)) >> 1;
         codebook = FFMIN(codebook, 3);
         sign     = new_sign;
@@ -687,8 +713,8 @@ static int estimate_acs(int *error, int16_t *blocks, int blocks_per_slice,
     int bits = 0;
 
     max_coeffs = blocks_per_slice << 6;
-    run_cb     = ff_prores_run_to_cb_index[4];
-    lev_cb     = ff_prores_lev_to_cb_index[2];
+    run_cb     = prores_run_to_cb_index[4];
+    lev_cb     = prores_lev_to_cb_index[2];
     run        = 0;
 
     for (i = 1; i < 64; i++) {
@@ -697,12 +723,12 @@ static int estimate_acs(int *error, int16_t *blocks, int blocks_per_slice,
             *error += FFABS(blocks[idx]) % qmat[scan[i]];
             if (level) {
                 abs_level = FFABS(level);
-                bits += estimate_vlc(ff_prores_ac_codebook[run_cb], run);
-                bits += estimate_vlc(ff_prores_ac_codebook[lev_cb],
+                bits += estimate_vlc(prores_ac_codebook[run_cb], run);
+                bits += estimate_vlc(prores_ac_codebook[lev_cb],
                                      abs_level - 1) + 1;
 
-                run_cb = ff_prores_run_to_cb_index[FFMIN(run, 15)];
-                lev_cb = ff_prores_lev_to_cb_index[FFMIN(abs_level, 9)];
+                run_cb = prores_run_to_cb_index[FFMIN(run, 15)];
+                lev_cb = prores_lev_to_cb_index[FFMIN(abs_level, 9)];
                 run    = 0;
             } else {
                 run++;
