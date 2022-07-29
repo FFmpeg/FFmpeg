@@ -993,12 +993,9 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
                 flv->videosize += (avio_tell(pb) - cur_offset);
                 flv->lasttimestamp = pkt->dts / 1000.0;
                 if (pkt->flags & AV_PKT_FLAG_KEY) {
-                    double ts = flv->lasttimestamp;
-                    int64_t pos = cur_offset;
-
-                    flv->lastkeyframetimestamp = ts;
-                    flv->lastkeyframelocation = pos;
-                    ret = flv_append_keyframe_info(s, flv, ts, pos);
+                    flv->lastkeyframetimestamp = flv->lasttimestamp;
+                    flv->lastkeyframelocation = cur_offset;
+                    ret = flv_append_keyframe_info(s, flv, flv->lasttimestamp, cur_offset);
                     if (ret < 0)
                         goto fail;
                 }
