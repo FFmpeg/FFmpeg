@@ -104,7 +104,6 @@ typedef struct FLVContext {
     int64_t lastkeyframelocation_offset;
     int64_t lastkeyframelocation;
 
-    int acurframeindex;
     int64_t keyframes_info_offset;
 
     int64_t filepositions_count;
@@ -391,7 +390,6 @@ static void write_metadata(AVFormatContext *s, unsigned int ts)
     }
 
     if (flv->flags & FLV_ADD_KEYFRAME_INDEX) {
-        flv->acurframeindex = 0;
         flv->keyframe_index_size = 0;
 
         put_amf_string(pb, "hasVideo");
@@ -993,8 +991,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
         switch (par->codec_type) {
             case AVMEDIA_TYPE_VIDEO:
                 flv->videosize += (avio_tell(pb) - cur_offset);
-                flv->lasttimestamp = flv->acurframeindex / flv->framerate;
-                flv->acurframeindex++;
+                flv->lasttimestamp = pkt->dts / 1000.0;
                 if (pkt->flags & AV_PKT_FLAG_KEY) {
                     double ts = flv->lasttimestamp;
                     int64_t pos = cur_offset;
