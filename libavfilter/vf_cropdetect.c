@@ -204,7 +204,6 @@ static int config_input(AVFilterLink *inlink)
     CropDetectContext *s = ctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     const int bufsize = inlink->w * inlink->h;
-    int bpp;
 
     av_image_fill_max_pixsteps(s->max_pixsteps, NULL, desc);
 
@@ -216,7 +215,6 @@ static int config_input(AVFilterLink *inlink)
     s->x2 = 0;
     s->y2 = 0;
 
-    bpp            = s->max_pixsteps[0];
     s->window_size = FFMAX(s->reset_count, 15);
     s->tmpbuf      = av_malloc(bufsize);
     s->filterbuf   = av_malloc(bufsize * s->max_pixsteps[0]);
