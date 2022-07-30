@@ -1369,6 +1369,7 @@ static int update_frag_index(MOVContext *c, int64_t offset)
         frag_stream_info[i].tfdt_dts = AV_NOPTS_VALUE;
         frag_stream_info[i].next_trun_dts = AV_NOPTS_VALUE;
         frag_stream_info[i].first_tfra_pts = AV_NOPTS_VALUE;
+        frag_stream_info[i].index_base = -1;
         frag_stream_info[i].index_entry = -1;
         frag_stream_info[i].encryption_index = NULL;
     }
@@ -5202,8 +5203,11 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     sc->ctts_count = sti->nb_index_entries;
 
     // Record the index_entry position in frag_index of this fragment
-    if (frag_stream_info)
+    if (frag_stream_info) {
         frag_stream_info->index_entry = index_entry_pos;
+        if (frag_stream_info->index_base < 0)
+            frag_stream_info->index_base = index_entry_pos;
+    }
 
     if (index_entry_pos > 0)
         prev_dts = sti->index_entries[index_entry_pos-1].timestamp;
@@ -7211,9 +7215,7 @@ static int cenc_filter(MOVContext *mov, AVStream* st, MOVStreamContext *sc, AVPa
         // Note this only supports encryption info in the first sample descriptor.
         if (mov->fragment.stsd_id == 1) {
             if (frag_stream_info->encryption_index) {
-                if (!current_index && frag_stream_info->index_entry)
-                    sc->cenc.frag_index_entry_base = frag_stream_info->index_entry;
-                encrypted_index = current_index - (frag_stream_info->index_entry - sc->cenc.frag_index_entry_base);
+                encrypted_index = current_index - frag_stream_info->index_base;
                 encryption_index = frag_stream_info->encryption_index;
             } else {
                 encryption_index = sc->cenc.encryption_index;
