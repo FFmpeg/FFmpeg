@@ -10138,11 +10138,22 @@ Auto-detect the crop size.
 
 It calculates the necessary cropping parameters and prints the
 recommended parameters via the logging system. The detected dimensions
-correspond to the non-black area of the input video.
+correspond to the non-black or video area of the input video according to @var{mode}.
 
 It accepts the following parameters:
 
 @table @option
+
+@item mode
+Depending on @var{mode} crop detection is based on either the mere black value of surrounding pixels or a combination of motion vectors and edge pixels.
+
+@table @samp
+@item black
+Detect black pixels surrounding the playing video. For fine control use option @var{limit}.
+
+@item mvedges
+Detect the playing video by the motion vectors inside the video and scanning for edge pixels typically forming the border of a playing video.
+@end table
 
 @item limit
 Set higher black value threshold, which can be optionally specified
@@ -10169,7 +10180,47 @@ detect the current optimal crop area. Default value is 0.
 This can be useful when channel logos distort the video area. 0
 indicates 'never reset', and returns the largest area encountered during
 playback.
+
+@item mv_threshold
+Set motion in pixel units as threshold for motion detection. It defaults to 8.
+
+@item low
+@item high
+Set low and high threshold values used by the Canny thresholding
+algorithm.
+
+The high threshold selects the "strong" edge pixels, which are then
+connected through 8-connectivity with the "weak" edge pixels selected
+by the low threshold.
+
+@var{low} and @var{high} threshold values must be chosen in the range
+[0,1], and @var{low} should be lesser or equal to @var{high}.
+
+Default value for @var{low} is @code{5/255}, and default value for @var{high}
+is @code{15/255}.
 @end table
+
+@subsection Examples
+
+@itemize
+@item
+Find video area surrounded by black borders:
+@example
+ffmpeg -i file.mp4 -vf cropdetect,metadata=mode=print -f null -
+@end example
+
+@item
+Find an embedded video area, generate motion vectors beforehand:
+@example
+ffmpeg -i file.mp4 -vf mestimate,cropdetect=mode=mvedges,metadata=mode=print -f null -
+@end example
+
+@item
+Find an embedded video area, use motion vectors from decoder:
+@example
+ffmpeg -flags2 +export_mvs -i file.mp4 -vf cropdetect=mode=mvedges,metadata=mode=print -f null -
+@end example
+@end itemize
 
 @anchor{cue}
 @section cue
