@@ -7,6 +7,7 @@ version <next>:
 - ffmpeg -shortest_buf_duration option
 - ffmpeg now requires threading to be built
 - ffmpeg now runs every muxer in a separate thread
+- Add new mode to cropdetect filter to detect crop-area based on motion vectors and edges
 
 
 version 5.1:
