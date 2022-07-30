@@ -468,6 +468,7 @@ const FFCodec ff_aac_fixed_decoder = {
     .p.channel_layouts = aac_channel_layout,
 #endif
     .p.ch_layouts    = aac_ch_layout,
+    .p.priv_class    = &aac_decoder_class,
     .p.profiles      = NULL_IF_CONFIG_SMALL(ff_aac_profiles),
     .flush = flush,
 };
