@@ -3095,7 +3095,7 @@ static void spectral_to_sample(AACContext *ac, int samples)
                     /* preparation for resampler */
                     for(j = 0; j<samples; j++){
                         che->ch[0].ret[j] = (int32_t)av_clip64((int64_t)che->ch[0].ret[j]*128, INT32_MIN, INT32_MAX-0x8000)+0x8000;
-                        if(type == TYPE_CPE)
+                        if (type == TYPE_CPE || (type == TYPE_SCE && ac->oc[1].m4ac.ps == 1))
                             che->ch[1].ret[j] = (int32_t)av_clip64((int64_t)che->ch[1].ret[j]*128, INT32_MIN, INT32_MAX-0x8000)+0x8000;
                     }
                 }
