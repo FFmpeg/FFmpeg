@@ -290,10 +290,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         }
 
         if (s->mode == MODE_BLACK) {
-        FIND(s->y1,                 0,               y < s->y1, +1, frame->linesize[0], bpp, frame->width);
-        FIND(s->y2, frame->height - 1, y > FFMAX(s->y2, s->y1), -1, frame->linesize[0], bpp, frame->width);
-        FIND(s->x1,                 0,               y < s->x1, +1, bpp, frame->linesize[0], frame->height);
-        FIND(s->x2,  frame->width - 1, y > FFMAX(s->x2, s->x1), -1, bpp, frame->linesize[0], frame->height);
+            FIND(s->y1,                 0,               y < s->y1, +1, frame->linesize[0], bpp, frame->width);
+            FIND(s->y2, frame->height - 1, y > FFMAX(s->y2, s->y1), -1, frame->linesize[0], bpp, frame->width);
+            FIND(s->x1,                 0,               y < s->x1, +1, bpp, frame->linesize[0], frame->height);
+            FIND(s->x2,  frame->width - 1, y > FFMAX(s->x2, s->x1), -1, bpp, frame->linesize[0], frame->height);
         } else { // MODE_MV_EDGES
             sd = av_frame_get_side_data(frame, AV_FRAME_DATA_MOTION_VECTORS);
             s->x1 = 0;
