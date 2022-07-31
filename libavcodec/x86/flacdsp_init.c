@@ -52,8 +52,7 @@ DECORRELATE_FUNCS(16,  avx);
 DECORRELATE_FUNCS(32, sse2);
 DECORRELATE_FUNCS(32,  avx);
 
-av_cold void ff_flacdsp_init_x86(FLACDSPContext *c, enum AVSampleFormat fmt, int channels,
-                                 int bps)
+av_cold void ff_flacdsp_init_x86(FLACDSPContext *c, enum AVSampleFormat fmt, int channels)
 {
 #if HAVE_X86ASM
     int cpu_flags = av_get_cpu_flags();

@@ -76,12 +76,12 @@ void checkasm_check_flacdsp(void)
     int i, j;
 
     for (i = 0; i < 2; i++) {
-        ff_flacdsp_init(&h, fmts[i].fmt, 2, 0);
+        ff_flacdsp_init(&h, fmts[i].fmt, 2);
         for (j = 0; j < 3; j++)
             if (check_func(h.decorrelate[j], "flac_decorrelate_%s_%d", names[j], fmts[i].bits))
                 check_decorrelate(&ref_dst, ref_src, &new_dst, new_src, 2, fmts[i].bits);
         for (j = 2; j <= MAX_CHANNELS; j += 2) {
-            ff_flacdsp_init(&h, fmts[i].fmt, j, 0);
+            ff_flacdsp_init(&h, fmts[i].fmt, j);
             if (check_func(h.decorrelate[0], "flac_decorrelate_indep%d_%d", j, fmts[i].bits))
                 check_decorrelate(&ref_dst, ref_src, &new_dst, new_src, j, fmts[i].bits);
         }

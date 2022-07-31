@@ -36,8 +36,8 @@ typedef struct FLACDSPContext {
                          const int32_t coefs[32], int shift);
 } FLACDSPContext;
 
-void ff_flacdsp_init(FLACDSPContext *c, enum AVSampleFormat fmt, int channels, int bps);
-void ff_flacdsp_init_arm(FLACDSPContext *c, enum AVSampleFormat fmt, int channels, int bps);
-void ff_flacdsp_init_x86(FLACDSPContext *c, enum AVSampleFormat fmt, int channels, int bps);
+void ff_flacdsp_init(FLACDSPContext *c, enum AVSampleFormat fmt, int channels);
+void ff_flacdsp_init_arm(FLACDSPContext *c, enum AVSampleFormat fmt, int channels);
+void ff_flacdsp_init_x86(FLACDSPContext *c, enum AVSampleFormat fmt, int channels);
 
 #endif /* AVCODEC_FLACDSP_H */

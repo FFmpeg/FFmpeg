@@ -425,8 +425,7 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
                       s->options.max_prediction_order, FF_LPC_TYPE_LEVINSON);
 
     ff_bswapdsp_init(&s->bdsp);
-    ff_flacdsp_init(&s->flac_dsp, avctx->sample_fmt, channels,
-                    avctx->bits_per_raw_sample);
+    ff_flacdsp_init(&s->flac_dsp, avctx->sample_fmt, channels);
 
     dprint_compression_options(s);
 

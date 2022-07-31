@@ -86,8 +86,7 @@ static void flac_lpc_32_c(int32_t *decoded, const int coeffs[32],
 
 }
 
-av_cold void ff_flacdsp_init(FLACDSPContext *c, enum AVSampleFormat fmt, int channels,
-                             int bps)
+av_cold void ff_flacdsp_init(FLACDSPContext *c, enum AVSampleFormat fmt, int channels)
 {
     c->lpc16        = flac_lpc_16_c;
     c->lpc32        = flac_lpc_32_c;
@@ -125,8 +124,8 @@ av_cold void ff_flacdsp_init(FLACDSPContext *c, enum AVSampleFormat fmt, int cha
     }
 
 #if ARCH_ARM
-    ff_flacdsp_init_arm(c, fmt, channels, bps);
+    ff_flacdsp_init_arm(c, fmt, channels);
 #elif ARCH_X86
-    ff_flacdsp_init_x86(c, fmt, channels, bps);
+    ff_flacdsp_init_x86(c, fmt, channels);
 #endif
 }
