@@ -78,49 +78,6 @@ static int pix_abs8x8_mvi(struct MpegEncContext *v, const uint8_t *pix1, const u
     return result;
 }
 
-#if 0                           /* now done in assembly */
-int pix_abs16x16_mvi(const uint8_t *pix1, const uint8_t *pix2, int line_size)
-{
-    int result = 0;
-    int h = 16;
-
-    if ((size_t) pix2 & 0x7) {
-        /* works only when pix2 is actually unaligned */
-        do {                    /* do 16 pixel a time */
-            uint64_t p1_l, p1_r, p2_l, p2_r;
-            uint64_t t;
-
-            p1_l  = ldq(pix1);
-            p1_r  = ldq(pix1 + 8);
-            t     = ldq_u(pix2 + 8);
-            p2_l  = extql(ldq_u(pix2), pix2) | extqh(t, pix2);
-            p2_r  = extql(t, pix2) | extqh(ldq_u(pix2 + 16), pix2);
-            pix1 += line_size;
-            pix2 += line_size;
-
-            result += perr(p1_l, p2_l)
-                    + perr(p1_r, p2_r);
-        } while (--h);
-    } else {
-        do {
-            uint64_t p1_l, p1_r, p2_l, p2_r;
-
-            p1_l = ldq(pix1);
-            p1_r = ldq(pix1 + 8);
-            p2_l = ldq(pix2);
-            p2_r = ldq(pix2 + 8);
-            pix1 += line_size;
-            pix2 += line_size;
-
-            result += perr(p1_l, p2_l)
-                    + perr(p1_r, p2_r);
-        } while (--h);
-    }
-
-    return result;
-}
-#endif
-
 static int pix_abs16x16_x2_mvi(struct MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                                ptrdiff_t line_size, int h)
 {
