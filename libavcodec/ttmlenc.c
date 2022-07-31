@@ -315,7 +315,7 @@ static int ttml_write_header_content(AVCodecContext *avctx)
     }
 
     // write the first string in extradata, attributes in the base "tt" element.
-    av_bprintf(&s->buffer, ttml_default_namespacing);
+    av_bprintf(&s->buffer, TTML_DEFAULT_NAMESPACING);
     // the cell resolution is in character cells, so not exactly 1:1 against
     // a pixel based resolution, but as the tts:extent in the root
     // "tt" element is frowned upon (and disallowed in the EBU-TT profile),

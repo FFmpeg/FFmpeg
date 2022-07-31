@@ -91,7 +91,7 @@ static int ttml_set_header_values_from_extradata(
     if (!additional_data_size) {
         // simple case, we don't have to go through local_params and just
         // set default fall-back values (for old extradata format).
-        header_params->tt_element_params = ttml_default_namespacing;
+        header_params->tt_element_params = TTML_DEFAULT_NAMESPACING;
         header_params->pre_body_elements = "";
 
         return 0;
