@@ -578,7 +578,7 @@ static av_cold int wmv2_decode_init(AVCodecContext *avctx)
     ff_init_scantable(s->idsp.idct_permutation, &w->abt_scantable[1],
                       ff_wmv2_scantableB);
 
-    return ff_intrax8_common_init(avctx, &w->x8, &w->s.idsp,
+    return ff_intrax8_common_init(avctx, &w->x8,
                                   w->s.block, w->s.block_last_index,
                                   w->s.mb_width, w->s.mb_height);
 }

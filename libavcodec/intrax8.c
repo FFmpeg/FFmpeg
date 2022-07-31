@@ -25,7 +25,6 @@
 #include "libavutil/thread.h"
 #include "avcodec.h"
 #include "get_bits.h"
-#include "idctdsp.h"
 #include "msmpeg4data.h"
 #include "intrax8huf.h"
 #include "intrax8.h"
@@ -692,7 +691,7 @@ static void x8_init_block_index(IntraX8Context *w, AVFrame *frame)
 }
 
 av_cold int ff_intrax8_common_init(AVCodecContext *avctx,
-                                   IntraX8Context *w, IDCTDSPContext *idsp,
+                                   IntraX8Context *w,
                                    int16_t (*block)[64],
                                    int block_last_index[12],
                                    int mb_width, int mb_height)
@@ -700,7 +699,6 @@ av_cold int ff_intrax8_common_init(AVCodecContext *avctx,
     static AVOnce init_static_once = AV_ONCE_INIT;
 
     w->avctx = avctx;
-    w->idsp = *idsp;
     w->mb_width  = mb_width;
     w->mb_height = mb_height;
     w->block = block;
