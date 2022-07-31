@@ -17,6 +17,7 @@
  */
 
 #include "libavutil/avstring.h"
+#include "libavutil/log.h"
 #include "libavutil/mem.h"
 
 #include "url.h"

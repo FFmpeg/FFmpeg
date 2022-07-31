@@ -22,7 +22,6 @@
 #ifndef AVCODEC_MSMPEG4ENC_H
 #define AVCODEC_MSMPEG4ENC_H
 
-#include "config.h"
 #include "mpegvideo.h"
 #include "put_bits.h"
 #include "rl.h"
@@ -44,10 +43,5 @@ void ff_msmpeg4_handle_slices(MpegEncContext *s);
 void ff_msmpeg4_encode_motion(MpegEncContext * s, int mx, int my);
 
 void ff_msmpeg4_code012(PutBitContext *pb, int n);
-
-#define CONFIG_MSMPEG4_ENCODER (CONFIG_MSMPEG4V2_ENCODER || \
-                                CONFIG_MSMPEG4V3_ENCODER || \
-                                CONFIG_WMV1_ENCODER      || \
-                                CONFIG_WMV2_ENCODER)
 
 #endif

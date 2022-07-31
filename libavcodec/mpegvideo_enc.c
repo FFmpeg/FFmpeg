@@ -852,7 +852,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         ff_mpeg1_encode_init(s);
     } else if (CONFIG_H263_ENCODER && s->out_format == FMT_H263) {
         ff_h263_encode_init(s);
-        if (CONFIG_MSMPEG4_ENCODER && s->msmpeg4_version)
+        if (CONFIG_MSMPEG4ENC && s->msmpeg4_version)
             ff_msmpeg4_encode_init(s);
     }
 
@@ -2372,7 +2372,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
     case AV_CODEC_ID_MSMPEG4V2:
     case AV_CODEC_ID_MSMPEG4V3:
     case AV_CODEC_ID_WMV1:
-        if (CONFIG_MSMPEG4_ENCODER)
+        if (CONFIG_MSMPEG4ENC)
             ff_msmpeg4_encode_mb(s, s->block, motion_x, motion_y);
         break;
     case AV_CODEC_ID_WMV2:
@@ -3381,7 +3381,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
     }
 
     //not beautiful here but we must write it before flushing so it has to be here
-    if (CONFIG_MSMPEG4_ENCODER && s->msmpeg4_version && s->msmpeg4_version<4 && s->pict_type == AV_PICTURE_TYPE_I)
+    if (CONFIG_MSMPEG4ENC && s->msmpeg4_version && s->msmpeg4_version<4 && s->pict_type == AV_PICTURE_TYPE_I)
         ff_msmpeg4_encode_ext_header(s);
 
     write_slice_end(s);
@@ -3716,7 +3716,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
     case FMT_H263:
         if (CONFIG_WMV2_ENCODER && s->codec_id == AV_CODEC_ID_WMV2)
             ff_wmv2_encode_picture_header(s, picture_number);
-        else if (CONFIG_MSMPEG4_ENCODER && s->msmpeg4_version)
+        else if (CONFIG_MSMPEG4ENC && s->msmpeg4_version)
             ff_msmpeg4_encode_picture_header(s, picture_number);
         else if (CONFIG_MPEG4_ENCODER && s->h263_pred) {
             ret = ff_mpeg4_encode_picture_header(s, picture_number);
