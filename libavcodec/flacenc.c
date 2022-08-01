@@ -36,7 +36,7 @@
 #include "lpc.h"
 #include "flac.h"
 #include "flacdata.h"
-#include "flacdsp.h"
+#include "flacencdsp.h"
 
 #define FLAC_SUBFRAME_CONSTANT  0
 #define FLAC_SUBFRAME_VERBATIM  1
@@ -125,7 +125,7 @@ typedef struct FlacEncodeContext {
     uint8_t *md5_buffer;
     unsigned int md5_buffer_size;
     BswapDSPContext bdsp;
-    FLACDSPContext flac_dsp;
+    FLACEncDSPContext flac_dsp;
 
     int flushed;
     int64_t next_pts;
@@ -425,7 +425,7 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
                       s->options.max_prediction_order, FF_LPC_TYPE_LEVINSON);
 
     ff_bswapdsp_init(&s->bdsp);
-    ff_flacdsp_init(&s->flac_dsp, avctx->sample_fmt, channels);
+    ff_flacencdsp_init(&s->flac_dsp);
 
     dprint_compression_options(s);
 

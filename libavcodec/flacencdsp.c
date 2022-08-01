@@ -18,13 +18,23 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/attributes.h"
-#include "libavcodec/flacdsp.h"
+#include "config.h"
+#include "flacencdsp.h"
 
-void ff_flac_lpc_16_arm(int32_t *samples, const int coeffs[32], int order,
-                        int qlevel, int len);
+#define SAMPLE_SIZE 16
+#include "flacdsp_lpc_template.c"
 
-av_cold void ff_flacdsp_init_arm(FLACDSPContext *c, enum AVSampleFormat fmt, int channels)
+#undef  SAMPLE_SIZE
+#define SAMPLE_SIZE 32
+#include "flacdsp_lpc_template.c"
+
+
+av_cold void ff_flacencdsp_init(FLACEncDSPContext *c)
 {
-    c->lpc16 = ff_flac_lpc_16_arm;
+    c->lpc16_encode = flac_lpc_encode_c_16;
+    c->lpc32_encode = flac_lpc_encode_c_32;
+
+#if ARCH_X86
+    ff_flacencdsp_init_x86(c);
+#endif
 }

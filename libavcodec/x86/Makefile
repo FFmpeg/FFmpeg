@@ -10,7 +10,6 @@ OBJS-$(CONFIG_DIRAC_DECODER)           += x86/diracdsp_init.o           \
                                           x86/dirac_dwt_init.o
 OBJS-$(CONFIG_FDCTDSP)                 += x86/fdctdsp_init.o
 OBJS-$(CONFIG_FFT)                     += x86/fft_init.o
-OBJS-$(CONFIG_FLACDSP)                 += x86/flacdsp_init.o
 OBJS-$(CONFIG_FMTCONVERT)              += x86/fmtconvert_init.o
 OBJS-$(CONFIG_H263DSP)                 += x86/h263dsp_init.o
 OBJS-$(CONFIG_H264CHROMA)              += x86/h264chroma_init.o
@@ -55,6 +54,8 @@ OBJS-$(CONFIG_CFHD_ENCODER)            += x86/cfhdencdsp_init.o
 OBJS-$(CONFIG_DCA_DECODER)             += x86/dcadsp_init.o x86/synth_filter_init.o
 OBJS-$(CONFIG_DNXHD_ENCODER)           += x86/dnxhdenc_init.o
 OBJS-$(CONFIG_EXR_DECODER)             += x86/exrdsp_init.o
+OBJS-$(CONFIG_FLAC_DECODER)            += x86/flacdsp_init.o
+OBJS-$(CONFIG_FLAC_ENCODER)            += x86/flacencdsp_init.o
 OBJS-$(CONFIG_OPUS_DECODER)            += x86/opusdsp_init.o
 OBJS-$(CONFIG_OPUS_ENCODER)            += x86/celt_pvq_init.o
 OBJS-$(CONFIG_HEVC_DECODER)            += x86/hevcdsp_init.o

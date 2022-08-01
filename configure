@@ -2449,7 +2449,6 @@ CONFIG_EXTRA="
     faandct
     faanidct
     fdctdsp
-    flacdsp
     fmtconvert
     frame_thread_encoder
     g722dsp
@@ -2821,8 +2820,7 @@ ffv1_encoder_select="rangecoder"
 ffvhuff_decoder_select="huffyuv_decoder"
 ffvhuff_encoder_select="huffyuv_encoder"
 fic_decoder_select="golomb"
-flac_decoder_select="flacdsp"
-flac_encoder_select="bswapdsp flacdsp lpc"
+flac_encoder_select="bswapdsp lpc"
 flashsv2_decoder_select="inflate_wrapper"
 flashsv2_encoder_select="deflate_wrapper"
 flashsv_decoder_select="inflate_wrapper"

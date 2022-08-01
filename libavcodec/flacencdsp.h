@@ -1,6 +1,4 @@
 /*
- * Copyright (c) 2012 Mans Rullgard <mans@mansr.com>
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -18,13 +16,19 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/attributes.h"
-#include "libavcodec/flacdsp.h"
+#ifndef AVCODEC_FLACENCDSP_H
+#define AVCODEC_FLACENCDSP_H
 
-void ff_flac_lpc_16_arm(int32_t *samples, const int coeffs[32], int order,
-                        int qlevel, int len);
+#include <stdint.h>
 
-av_cold void ff_flacdsp_init_arm(FLACDSPContext *c, enum AVSampleFormat fmt, int channels)
-{
-    c->lpc16 = ff_flac_lpc_16_arm;
-}
+typedef struct FLACEncDSPContext {
+    void (*lpc16_encode)(int32_t *res, const int32_t *smp, int len, int order,
+                         const int32_t coefs[32], int shift);
+    void (*lpc32_encode)(int32_t *res, const int32_t *smp, int len, int order,
+                         const int32_t coefs[32], int shift);
+} FLACEncDSPContext;
+
+void ff_flacencdsp_init(FLACEncDSPContext *c);
+void ff_flacencdsp_init_x86(FLACEncDSPContext *c);
+
+#endif /* AVCODEC_FLACDSP_H */

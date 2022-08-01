@@ -6,8 +6,6 @@ OBJS-$(CONFIG_AC3DSP)                  += arm/ac3dsp_init_arm.o         \
 OBJS-$(CONFIG_AUDIODSP)                += arm/audiodsp_init_arm.o
 OBJS-$(CONFIG_BLOCKDSP)                += arm/blockdsp_init_arm.o
 OBJS-$(CONFIG_FFT)                     += arm/fft_init_arm.o
-OBJS-$(CONFIG_FLACDSP)                 += arm/flacdsp_init_arm.o        \
-                                          arm/flacdsp_arm.o
 OBJS-$(CONFIG_FMTCONVERT)              += arm/fmtconvert_init_arm.o
 OBJS-$(CONFIG_G722DSP)                 += arm/g722dsp_init_arm.o
 OBJS-$(CONFIG_H264CHROMA)              += arm/h264chroma_init_arm.o
@@ -38,6 +36,8 @@ OBJS-$(CONFIG_VP8DSP)                  += arm/vp8dsp_init_arm.o
 OBJS-$(CONFIG_AAC_DECODER)             += arm/aacpsdsp_init_arm.o       \
                                           arm/sbrdsp_init_arm.o
 OBJS-$(CONFIG_DCA_DECODER)             += arm/synth_filter_init_arm.o
+OBJS-$(CONFIG_FLAC_DECODER)            += arm/flacdsp_init_arm.o        \
+                                          arm/flacdsp_arm.o
 OBJS-$(CONFIG_HEVC_DECODER)            += arm/hevcdsp_init_arm.o
 OBJS-$(CONFIG_MLP_DECODER)             += arm/mlpdsp_init_arm.o
 OBJS-$(CONFIG_RV40_DECODER)            += arm/rv40dsp_init_arm.o

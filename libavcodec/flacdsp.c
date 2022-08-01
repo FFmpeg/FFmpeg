@@ -27,7 +27,6 @@
 #define SAMPLE_SIZE 16
 #define PLANAR 0
 #include "flacdsp_template.c"
-#include "flacdsp_lpc_template.c"
 
 #undef  PLANAR
 #define PLANAR 1
@@ -38,7 +37,6 @@
 #define SAMPLE_SIZE 32
 #define PLANAR 0
 #include "flacdsp_template.c"
-#include "flacdsp_lpc_template.c"
 
 #undef  PLANAR
 #define PLANAR 1
@@ -90,8 +88,6 @@ av_cold void ff_flacdsp_init(FLACDSPContext *c, enum AVSampleFormat fmt, int cha
 {
     c->lpc16        = flac_lpc_16_c;
     c->lpc32        = flac_lpc_32_c;
-    c->lpc16_encode = flac_lpc_encode_c_16;
-    c->lpc32_encode = flac_lpc_encode_c_32;
 
     switch (fmt) {
     case AV_SAMPLE_FMT_S32:

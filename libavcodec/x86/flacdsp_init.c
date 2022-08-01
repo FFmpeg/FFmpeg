@@ -22,14 +22,11 @@
 #include "libavcodec/flacdsp.h"
 #include "libavutil/x86/cpu.h"
 #include "config.h"
-#include "config_components.h"
 
 void ff_flac_lpc_32_sse4(int32_t *samples, const int coeffs[32], int order,
                          int qlevel, int len);
 void ff_flac_lpc_32_xop(int32_t *samples, const int coeffs[32], int order,
                         int qlevel, int len);
-
-void ff_flac_enc_lpc_16_sse4(int32_t *, const int32_t *, int, int, const int32_t *,int);
 
 #define DECORRELATE_FUNCS(fmt, opt)                                                      \
 void ff_flac_decorrelate_ls_##fmt##_##opt(uint8_t **out, int32_t **in, int channels,     \
@@ -57,7 +54,6 @@ av_cold void ff_flacdsp_init_x86(FLACDSPContext *c, enum AVSampleFormat fmt, int
 #if HAVE_X86ASM
     int cpu_flags = av_get_cpu_flags();
 
-#if CONFIG_FLAC_DECODER
     if (EXTERNAL_SSE2(cpu_flags)) {
         if (fmt == AV_SAMPLE_FMT_S16) {
             if (channels == 2)
@@ -104,13 +100,5 @@ av_cold void ff_flacdsp_init_x86(FLACDSPContext *c, enum AVSampleFormat fmt, int
     if (EXTERNAL_XOP(cpu_flags)) {
         c->lpc32 = ff_flac_lpc_32_xop;
     }
-#endif
-
-#if CONFIG_FLAC_ENCODER
-    if (EXTERNAL_SSE4(cpu_flags)) {
-        if (CONFIG_GPL)
-            c->lpc16_encode = ff_flac_enc_lpc_16_sse4;
-    }
-#endif
 #endif /* HAVE_X86ASM */
 }

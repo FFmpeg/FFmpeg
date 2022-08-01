@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Mans Rullgard <mans@mansr.com>
+ * Copyright (c) 2014 James Almer
  *
  * This file is part of FFmpeg.
  *
@@ -18,13 +18,21 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
 #include "libavutil/attributes.h"
-#include "libavcodec/flacdsp.h"
+#include "libavutil/x86/cpu.h"
+#include "libavcodec/flacencdsp.h"
 
-void ff_flac_lpc_16_arm(int32_t *samples, const int coeffs[32], int order,
-                        int qlevel, int len);
+void ff_flac_enc_lpc_16_sse4(int32_t *, const int32_t *, int, int, const int32_t *,int);
 
-av_cold void ff_flacdsp_init_arm(FLACDSPContext *c, enum AVSampleFormat fmt, int channels)
+av_cold void ff_flacencdsp_init_x86(FLACEncDSPContext *c)
 {
-    c->lpc16 = ff_flac_lpc_16_arm;
+#if HAVE_X86ASM && CONFIG_GPL
+    int cpu_flags = av_get_cpu_flags();
+
+    if (EXTERNAL_SSE4(cpu_flags)) {
+        if (CONFIG_GPL)
+            c->lpc16_encode = ff_flac_enc_lpc_16_sse4;
+    }
+#endif /* HAVE_X86ASM */
 }
