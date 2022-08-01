@@ -23,7 +23,6 @@
 
 #include <stdint.h>
 #include "aac_defines.h"
-#include "libavutil/softfloat.h"
 
 typedef struct SBRDSPContext {
     void (*sum64x5)(INTFLOAT *z);
