@@ -250,20 +250,20 @@ static float (*const quantize_and_encode_band_cost_rtz_arr[])(
 static inline float quantize_band_cost(struct AACEncContext *s, const float *in,
                                 const float *scaled, int size, int scale_idx,
                                 int cb, const float lambda, const float uplim,
-                                int *bits, float *energy, int rtz)
+                                int *bits, float *energy)
 {
     return quantize_and_encode_band_cost(s, NULL, in, NULL, scaled, size, scale_idx,
-                                         cb, lambda, uplim, bits, energy, rtz);
+                                         cb, lambda, uplim, bits, energy, 0);
 }
 
 static inline int quantize_band_cost_bits(struct AACEncContext *s, const float *in,
                                 const float *scaled, int size, int scale_idx,
                                 int cb, const float lambda, const float uplim,
-                                int *bits, float *energy, int rtz)
+                                int *bits, float *energy)
 {
     int auxbits;
     quantize_and_encode_band_cost(s, NULL, in, NULL, scaled, size, scale_idx,
-                                         cb, 0.0f, uplim, &auxbits, energy, rtz);
+                                         cb, 0.0f, uplim, &auxbits, energy, 0);
     if (bits) {
         *bits = auxbits;
     }

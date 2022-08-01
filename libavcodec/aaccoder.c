@@ -123,7 +123,7 @@ static void encode_window_bands_info(AACEncContext *s, SingleChannelElement *sce
                     rd += quantize_band_cost(s, &sce->coeffs[start + w*128],
                                              &s->scoefs[start + w*128], size,
                                              sce->sf_idx[(win+w)*16+swb], aac_cb_out_map[cb],
-                                             lambda / band->threshold, INFINITY, NULL, NULL, 0);
+                                             lambda / band->threshold, INFINITY, NULL, NULL);
                 }
                 cost_stay_here = path[swb][cb].cost + rd;
                 cost_get_here  = minrd              + rd + run_bits + 4;
@@ -346,7 +346,7 @@ static void search_for_quantizers_anmr(AVCodecContext *avctx, AACEncContext *s,
                     for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
                         FFPsyBand *band = &s->psy.ch[s->cur_channel].psy_bands[(w+w2)*16+g];
                         dist += quantize_band_cost(s, coefs + w2*128, s->scoefs + start + w2*128, sce->ics.swb_sizes[g],
-                                                   q + q0, cb, lambda / band->threshold, INFINITY, NULL, NULL, 0);
+                                                   q + q0, cb, lambda / band->threshold, INFINITY, NULL, NULL);
                     }
                     minrd = FFMIN(minrd, dist);
 
@@ -658,7 +658,7 @@ static void search_for_pns(AACEncContext *s, AVCodecContext *avctx, SingleChanne
                                             sce->ics.swb_sizes[g],
                                             sce->sf_idx[(w+w2)*16+g],
                                             sce->band_alt[(w+w2)*16+g],
-                                            lambda/band->threshold, INFINITY, NULL, NULL, 0);
+                                            lambda/band->threshold, INFINITY, NULL, NULL);
                 /* Estimate rd on average as 5 bits for SF, 4 for the CB, plus spread energy * lambda/thr */
                 dist2 += band->energy/(band->spread*band->spread)*lambda*dist_thresh/band->threshold;
             }
@@ -842,25 +842,25 @@ static void search_for_ms(AACEncContext *s, ChannelElement *cpe)
                                                     sce0->ics.swb_sizes[g],
                                                     sce0->sf_idx[w*16+g],
                                                     sce0->band_type[w*16+g],
-                                                    lambda / (band0->threshold + FLT_MIN), INFINITY, &b1, NULL, 0);
+                                                    lambda / (band0->threshold + FLT_MIN), INFINITY, &b1, NULL);
                         dist1 += quantize_band_cost(s, &sce1->coeffs[start + (w+w2)*128],
                                                     R34,
                                                     sce1->ics.swb_sizes[g],
                                                     sce1->sf_idx[w*16+g],
                                                     sce1->band_type[w*16+g],
-                                                    lambda / (band1->threshold + FLT_MIN), INFINITY, &b2, NULL, 0);
+                                                    lambda / (band1->threshold + FLT_MIN), INFINITY, &b2, NULL);
                         dist2 += quantize_band_cost(s, M,
                                                     M34,
                                                     sce0->ics.swb_sizes[g],
                                                     mididx,
                                                     midcb,
-                                                    lambda / (minthr + FLT_MIN), INFINITY, &b3, NULL, 0);
+                                                    lambda / (minthr + FLT_MIN), INFINITY, &b3, NULL);
                         dist2 += quantize_band_cost(s, S,
                                                     S34,
                                                     sce1->ics.swb_sizes[g],
                                                     sididx,
                                                     sidcb,
-                                                    mslambda / (minthr * bmax + FLT_MIN), INFINITY, &b4, NULL, 0);
+                                                    mslambda / (minthr * bmax + FLT_MIN), INFINITY, &b4, NULL);
                         B0 += b1+b2;
                         B1 += b3+b4;
                         dist1 -= b1+b2;

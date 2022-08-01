@@ -38,7 +38,7 @@ static inline float quantize_band_cost_cached(struct AACEncContext *s, int w, in
     entry = &s->quantize_band_cost_cache[scale_idx][w*16+g];
     if (entry->generation != s->quantize_band_cost_cache_generation || entry->cb != cb || entry->rtz != rtz) {
         entry->rd = quantize_band_cost(s, in, scaled, size, scale_idx,
-                                       cb, lambda, uplim, &entry->bits, &entry->energy, rtz);
+                                       cb, lambda, uplim, &entry->bits, &entry->energy);
         entry->cb = cb;
         entry->rtz = rtz;
         entry->generation = s->quantize_band_cost_cache_generation;

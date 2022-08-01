@@ -68,15 +68,15 @@ struct AACISError ff_aac_is_encoding_err(AACEncContext *s, ChannelElement *cpe,
                                     sce0->ics.swb_sizes[g],
                                     sce0->sf_idx[w*16+g],
                                     sce0->band_type[w*16+g],
-                                    s->lambda / band0->threshold, INFINITY, NULL, NULL, 0);
+                                    s->lambda / band0->threshold, INFINITY, NULL, NULL);
         dist1 += quantize_band_cost(s, &R[start + (w+w2)*128], R34,
                                     sce1->ics.swb_sizes[g],
                                     sce1->sf_idx[w*16+g],
                                     sce1->band_type[w*16+g],
-                                    s->lambda / band1->threshold, INFINITY, NULL, NULL, 0);
+                                    s->lambda / band1->threshold, INFINITY, NULL, NULL);
         dist2 += quantize_band_cost(s, IS, I34, sce0->ics.swb_sizes[g],
                                     is_sf_idx, is_band_type,
-                                    s->lambda / minthr, INFINITY, NULL, NULL, 0);
+                                    s->lambda / minthr, INFINITY, NULL, NULL);
         for (i = 0; i < sce0->ics.swb_sizes[g]; i++) {
             dist_spec_err += (L34[i] - I34[i])*(L34[i] - I34[i]);
             dist_spec_err += (R34[i] - I34[i]*e01_34)*(R34[i] - I34[i]*e01_34);
