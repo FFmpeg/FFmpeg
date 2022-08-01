@@ -226,8 +226,6 @@ int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags);
  */
 int ff_reget_buffer(AVCodecContext *avctx, AVFrame *frame, int flags);
 
-int ff_thread_can_start_frame(AVCodecContext *avctx);
-
 int avpriv_h264_has_num_reorder_frames(AVCodecContext *avctx);
 
 int avpriv_codec_get_cap_skip_frame_fill_param(const AVCodec *codec);
