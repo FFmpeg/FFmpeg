@@ -1748,6 +1748,9 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     ost->last_mux_dts = AV_NOPTS_VALUE;
     ost->last_filter_pts = AV_NOPTS_VALUE;
 
+    MATCH_PER_STREAM_OPT(copy_initial_nonkeyframes, i,
+                         ost->copy_initial_nonkeyframes, oc, st);
+
     return ost;
 }
 
