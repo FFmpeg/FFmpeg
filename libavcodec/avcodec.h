@@ -348,13 +348,6 @@ typedef struct RcOverride{
  */
 #define AV_CODEC_FLAG2_ICC_PROFILES   (1U << 31)
 
-/* Unsupported options :
- *              Syntax Arithmetic coding (SAC)
- *              Reference Picture Selection
- *              Independent Segment Decoding */
-/* /Fx */
-/* codec capabilities */
-
 /* Exported side data.
    These flags can be passed in AVCodecContext.export_side_data before initialization.
 */
