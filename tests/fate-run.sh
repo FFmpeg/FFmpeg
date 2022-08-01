@@ -362,6 +362,7 @@ lavf_container_fate()
 }
 
 lavf_image(){
+    no_file_checksums="$3"
     nb_frames=13
     t="${test#lavf-}"
     outdir="tests/data/images/$t"
@@ -374,9 +375,11 @@ lavf_image(){
         done
     fi
     run_avconv $DEC_OPTS -f image2 -c:v pgmyuv -i $raw_src $1 "$ENC_OPTS -metadata title=lavftest" -vf scale -frames $nb_frames -y -qscale 10 $target_path/$file
-    do_md5sum ${outdir}/02.$t
+    if [ -z "$no_file_checksums" ]; then
+        do_md5sum ${outdir}/02.$t
+        echo $(wc -c ${outdir}/02.$t)
+    fi
     do_avconv_crc $file -auto_conversion_filters $DEC_OPTS $2 -i $target_path/$file $2
-    echo $(wc -c ${outdir}/02.$t)
 }
 
 lavf_image2pipe(){
