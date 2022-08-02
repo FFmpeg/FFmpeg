@@ -339,7 +339,7 @@ int hw_device_setup_for_decode(InputStream *ist)
             if (ist->hwaccel_id == HWACCEL_AUTO) {
                 ist->hwaccel_device_type = dev->type;
             } else if (ist->hwaccel_device_type != dev->type) {
-                av_log(ist->dec_ctx, AV_LOG_ERROR, "Invalid hwaccel device "
+                av_log(NULL, AV_LOG_ERROR, "Invalid hwaccel device "
                        "specified for decoder: device %s of type %s is not "
                        "usable with hwaccel %s.\n", dev->name,
                        av_hwdevice_get_type_name(dev->type),
@@ -390,7 +390,7 @@ int hw_device_setup_for_decode(InputStream *ist)
             type = config->device_type;
             dev = hw_device_get_by_type(type);
             if (dev) {
-                av_log(ist->dec_ctx, AV_LOG_INFO, "Using auto "
+                av_log(NULL, AV_LOG_INFO, "Using auto "
                        "hwaccel type %s with existing device %s.\n",
                        av_hwdevice_get_type_name(type), dev->name);
             }
@@ -408,12 +408,12 @@ int hw_device_setup_for_decode(InputStream *ist)
                 continue;
             }
             if (ist->hwaccel_device) {
-                av_log(ist->dec_ctx, AV_LOG_INFO, "Using auto "
+                av_log(NULL, AV_LOG_INFO, "Using auto "
                        "hwaccel type %s with new device created "
                        "from %s.\n", av_hwdevice_get_type_name(type),
                        ist->hwaccel_device);
             } else {
-                av_log(ist->dec_ctx, AV_LOG_INFO, "Using auto "
+                av_log(NULL, AV_LOG_INFO, "Using auto "
                        "hwaccel type %s with new default device.\n",
                        av_hwdevice_get_type_name(type));
             }
@@ -421,7 +421,7 @@ int hw_device_setup_for_decode(InputStream *ist)
         if (dev) {
             ist->hwaccel_device_type = type;
         } else {
-            av_log(ist->dec_ctx, AV_LOG_INFO, "Auto hwaccel "
+            av_log(NULL, AV_LOG_INFO, "Auto hwaccel "
                    "disabled: no device found.\n");
             ist->hwaccel_id = HWACCEL_NONE;
             return 0;
@@ -429,7 +429,7 @@ int hw_device_setup_for_decode(InputStream *ist)
     }
 
     if (!dev) {
-        av_log(ist->dec_ctx, AV_LOG_ERROR, "No device available "
+        av_log(NULL, AV_LOG_ERROR, "No device available "
                "for decoder: device type %s needed for codec %s.\n",
                av_hwdevice_get_type_name(type), ist->dec->name);
         return err;
