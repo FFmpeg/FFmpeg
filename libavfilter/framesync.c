@@ -42,6 +42,13 @@ static const AVOption framesync_options[] = {
         { "pass",   "Pass through the main input.", 0, AV_OPT_TYPE_CONST, { .i64 = EOF_ACTION_PASS },   .flags = FLAGS, "eof_action" },
     { "shortest", "force termination when the shortest input terminates", OFFSET(opt_shortest), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
     { "repeatlast", "extend last frame of secondary streams beyond EOF", OFFSET(opt_repeatlast), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, FLAGS },
+    { "ts_sync_mode", "How strictly to sync streams based on secondary input timestamps",
+        OFFSET(opt_ts_sync_mode), AV_OPT_TYPE_INT, { .i64 = TS_DEFAULT },
+        TS_DEFAULT, TS_NEAREST, .flags = FLAGS, "ts_sync_mode" },
+        { "default", "Frame from secondary input with the nearest lower or equal timestamp to the primary input frame",
+            0, AV_OPT_TYPE_CONST, { .i64 = TS_DEFAULT }, .flags = FLAGS, "ts_sync_mode" },
+        { "nearest", "Frame from secondary input with the absolute nearest timestamp to the primary input frame",
+            0, AV_OPT_TYPE_CONST, { .i64 = TS_NEAREST }, .flags = FLAGS, "ts_sync_mode" },
     { NULL }
 };
 static const AVClass framesync_class = {
@@ -110,6 +117,14 @@ static void framesync_sync_level_update(FFFrameSync *fs)
     av_assert0(level <= fs->sync_level);
     if (level < fs->sync_level)
         av_log(fs, AV_LOG_VERBOSE, "Sync level %u\n", level);
+    if (fs->opt_ts_sync_mode > TS_DEFAULT) {
+        for (i = 0; i < fs->nb_in; i++) {
+            if (fs->in[i].sync < level)
+                fs->in[i].ts_mode = fs->opt_ts_sync_mode;
+            else
+                fs->in[i].ts_mode = TS_DEFAULT;
+        }
+    }
     if (level)
         fs->sync_level = level;
     else
@@ -187,6 +202,10 @@ static int framesync_advance(FFFrameSync *fs)
         }
         for (i = 0; i < fs->nb_in; i++) {
             if (fs->in[i].pts_next == pts ||
+                (fs->in[i].ts_mode == TS_NEAREST &&
+                 fs->in[i].have_next &&
+                 fs->in[i].pts_next != INT64_MAX && fs->in[i].pts != AV_NOPTS_VALUE &&
+                 fs->in[i].pts_next - pts < pts - fs->in[i].pts) ||
                 (fs->in[i].before == EXT_INFINITY &&
                  fs->in[i].state == STATE_BOF)) {
                 av_frame_free(&fs->in[i].frame);
