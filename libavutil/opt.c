@@ -1329,17 +1329,18 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 av_log(av_log_obj, AV_LOG_INFO, "%-12s ", "");
                 break;
         }
-        av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_ENCODING_PARAM) ? 'E' : '.');
-        av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_DECODING_PARAM) ? 'D' : '.');
-        av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_FILTERING_PARAM)? 'F' : '.');
-        av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_VIDEO_PARAM   ) ? 'V' : '.');
-        av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_AUDIO_PARAM   ) ? 'A' : '.');
-        av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_SUBTITLE_PARAM) ? 'S' : '.');
-        av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_EXPORT)         ? 'X' : '.');
-        av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_READONLY)       ? 'R' : '.');
-        av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_BSF_PARAM)      ? 'B' : '.');
-        av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_RUNTIME_PARAM)  ? 'T' : '.');
-        av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_DEPRECATED)     ? 'P' : '.');
+        av_log(av_log_obj, AV_LOG_INFO, "%c%c%c%c%c%c%c%c%c%c%c",
+               (opt->flags & AV_OPT_FLAG_ENCODING_PARAM)  ? 'E' : '.',
+               (opt->flags & AV_OPT_FLAG_DECODING_PARAM)  ? 'D' : '.',
+               (opt->flags & AV_OPT_FLAG_FILTERING_PARAM) ? 'F' : '.',
+               (opt->flags & AV_OPT_FLAG_VIDEO_PARAM)     ? 'V' : '.',
+               (opt->flags & AV_OPT_FLAG_AUDIO_PARAM)     ? 'A' : '.',
+               (opt->flags & AV_OPT_FLAG_SUBTITLE_PARAM)  ? 'S' : '.',
+               (opt->flags & AV_OPT_FLAG_EXPORT)          ? 'X' : '.',
+               (opt->flags & AV_OPT_FLAG_READONLY)        ? 'R' : '.',
+               (opt->flags & AV_OPT_FLAG_BSF_PARAM)       ? 'B' : '.',
+               (opt->flags & AV_OPT_FLAG_RUNTIME_PARAM)   ? 'T' : '.',
+               (opt->flags & AV_OPT_FLAG_DEPRECATED)      ? 'P' : '.');
 
         if (opt->help)
             av_log(av_log_obj, AV_LOG_INFO, " %s", opt->help);
