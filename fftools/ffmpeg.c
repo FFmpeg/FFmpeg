@@ -3409,10 +3409,6 @@ static int transcode_init(void)
                input_streams[ost->source_index]->st->index,
                ost->file_index,
                ost->index);
-        if (ost->sync_ist != input_streams[ost->source_index])
-            av_log(NULL, AV_LOG_INFO, " [sync #%d:%d]",
-                   ost->sync_ist->file_index,
-                   ost->sync_ist->st->index);
         if (ost->enc_ctx) {
             const AVCodec *in_codec    = input_streams[ost->source_index]->dec;
             const AVCodec *out_codec   = ost->enc;

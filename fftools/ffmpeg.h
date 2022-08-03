@@ -468,7 +468,6 @@ typedef struct OutputStream {
     int64_t vsync_frame_number;
     /* input pts and corresponding output pts
        for A/V sync */
-    struct InputStream *sync_ist; /* input stream to sync against */
     int64_t sync_opts;       /* output frame counter, could be changed to some true timestamp */ // FIXME look at frame_number
     /* pts of the first frame encoded for this stream, used for limiting
      * recording time */

@@ -1757,7 +1757,6 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
 
     ost->source_index = source_index;
     if (source_index >= 0) {
-        ost->sync_ist = input_streams[source_index];
         input_streams[source_index]->discard = 0;
         input_streams[source_index]->st->discard = input_streams[source_index]->user_set_discard;
     }
@@ -2650,7 +2649,6 @@ static void map_manual(OutputFile *of, AVFormatContext *oc,
                        OptionsContext *o, const StreamMap *map)
 {
     InputStream *ist;
-    OutputStream *ost;
 
     if (map->disabled)
         return;
@@ -2695,16 +2693,15 @@ loop_end:
         if(o->    data_disable && ist->st->codecpar->codec_type == AVMEDIA_TYPE_DATA)
             return;
 
-        ost = NULL;
         switch (ist->st->codecpar->codec_type) {
-        case AVMEDIA_TYPE_VIDEO:      ost = new_video_stream     (o, oc, src_idx); break;
-        case AVMEDIA_TYPE_AUDIO:      ost = new_audio_stream     (o, oc, src_idx); break;
-        case AVMEDIA_TYPE_SUBTITLE:   ost = new_subtitle_stream  (o, oc, src_idx); break;
-        case AVMEDIA_TYPE_DATA:       ost = new_data_stream      (o, oc, src_idx); break;
-        case AVMEDIA_TYPE_ATTACHMENT: ost = new_attachment_stream(o, oc, src_idx); break;
+        case AVMEDIA_TYPE_VIDEO:      new_video_stream     (o, oc, src_idx); break;
+        case AVMEDIA_TYPE_AUDIO:      new_audio_stream     (o, oc, src_idx); break;
+        case AVMEDIA_TYPE_SUBTITLE:   new_subtitle_stream  (o, oc, src_idx); break;
+        case AVMEDIA_TYPE_DATA:       new_data_stream      (o, oc, src_idx); break;
+        case AVMEDIA_TYPE_ATTACHMENT: new_attachment_stream(o, oc, src_idx); break;
         case AVMEDIA_TYPE_UNKNOWN:
             if (copy_unknown_streams) {
-                ost = new_unknown_stream   (o, oc, src_idx);
+                new_unknown_stream   (o, oc, src_idx);
                 break;
             }
         default:
@@ -2719,9 +2716,6 @@ loop_end:
                 exit_program(1);
             }
         }
-        if (ost)
-            ost->sync_ist = input_streams[  input_files[map->sync_file_index]->ist_index
-                                          + map->sync_stream_index];
     }
 }
 
