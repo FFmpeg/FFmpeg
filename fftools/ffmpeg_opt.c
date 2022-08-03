@@ -1559,10 +1559,6 @@ static int choose_encoder(OptionsContext *o, AVFormatContext *s, OutputStream *o
             ost->enc = find_codec_or_die(codec_name, ost->st->codecpar->codec_type, 1);
             ost->st->codecpar->codec_id = ost->enc->id;
         }
-        ost->encoding_needed = !!ost->enc;
-    } else {
-        /* no encoding supported for other media types */
-        ost->encoding_needed = 0;
     }
 
     return 0;
@@ -2433,7 +2429,7 @@ static int setup_sync_queues(OutputFile *of, AVFormatContext *oc, int64_t buf_si
     int limit_frames = 0, limit_frames_av_enc = 0;
 
 #define IS_AV_ENC(ost, type)  \
-    (ost->encoding_needed && (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO))
+    (ost->enc_ctx && (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO))
 #define IS_INTERLEAVED(type) (type != AVMEDIA_TYPE_ATTACHMENT)
 
     for (int i = 0; i < oc->nb_streams; i++) {
@@ -3043,7 +3039,7 @@ static int open_output_file(OptionsContext *o, const char *filename)
     for (i = of->ost_index; i < nb_output_streams; i++) {
         OutputStream *ost = output_streams[i];
 
-        if (ost->encoding_needed && ost->source_index >= 0) {
+        if (ost->enc_ctx && ost->source_index >= 0) {
             InputStream *ist = input_streams[ost->source_index];
             ist->decoding_needed |= DECODING_FOR_OST;
             ist->processing_needed = 1;

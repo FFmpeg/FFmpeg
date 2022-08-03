@@ -1536,7 +1536,7 @@ static void print_final_stats(int64_t total_size)
 
             av_log(NULL, AV_LOG_VERBOSE, "  Output stream #%d:%d (%s): ",
                    i, j, av_get_media_type_string(type));
-            if (ost->encoding_needed) {
+            if (ost->enc_ctx) {
                 av_log(NULL, AV_LOG_VERBOSE, "%"PRIu64" frames encoded",
                        ost->frames_encoded);
                 if (type == AVMEDIA_TYPE_AUDIO)
@@ -1788,7 +1788,7 @@ static void flush_encoders(void)
         AVCodecContext *enc = ost->enc_ctx;
         OutputFile      *of = output_files[ost->file_index];
 
-        if (!ost->encoding_needed)
+        if (!enc)
             continue;
 
         // Try to enable encoding with no input frames.
@@ -2359,7 +2359,7 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output,
     for (i = 0; i < nb_output_streams; i++) {
         OutputStream *ost = output_streams[i];
 
-        if (!check_output_constraints(ist, ost) || !ost->encoding_needed
+        if (!check_output_constraints(ist, ost) || !ost->enc_ctx
             || ost->enc->type != AVMEDIA_TYPE_SUBTITLE)
             continue;
 
@@ -2568,7 +2568,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
     for (i = 0; i < nb_output_streams; i++) {
         OutputStream *ost = output_streams[i];
 
-        if (!check_output_constraints(ist, ost) || ost->encoding_needed ||
+        if (!check_output_constraints(ist, ost) || ost->enc_ctx ||
             (!pkt && no_eof))
             continue;
 
@@ -3137,7 +3137,7 @@ static int init_output_stream(OutputStream *ost, AVFrame *frame,
     OutputFile *of = output_files[ost->file_index];
     int ret = 0;
 
-    if (ost->encoding_needed) {
+    if (ost->enc_ctx) {
         const AVCodec *codec = ost->enc;
         AVCodecContext *dec = NULL;
         InputStream *ist;
