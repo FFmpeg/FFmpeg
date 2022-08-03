@@ -1413,14 +1413,16 @@ Set the size of the canvas used to render subtitles.
 @table @option
 @item -map [-]@var{input_file_id}[:@var{stream_specifier}][?] | @var{[linklabel]} (@emph{output})
 
-Designate one or more input streams as a source for the output file. Each input
-stream is identified by the input file index @var{input_file_id} and
-the input stream index @var{input_stream_id} within the input
-file. Both indices start at 0.
+Create one or more streams in the output file. This option has two forms for
+specifying the data source(s): the first selects one or more streams from some
+input file (specified with @code{-i}), the second takes an output from some
+complex filtergraph (specified with @code{-filter_complex} or
+@code{-filter_complex_script}).
 
-The first @code{-map} option on the command line specifies the
-source for output stream 0, the second @code{-map} option specifies
-the source for output stream 1, etc.
+In the first form, an output stream is created for every stream from the input
+file with the index @var{input_file_id}. If @var{stream_specifier} is given,
+only those streams that match the specifier are used (see the
+@ref{Stream specifiers} section for the @var{stream_specifier} syntax).
 
 A @code{-} character before the stream identifier creates a "negative" mapping.
 It disables matching streams from already created mappings.
@@ -1434,39 +1436,56 @@ An alternative @var{[linklabel]} form will map outputs from complex filter
 graphs (see the @option{-filter_complex} option) to the output file.
 @var{linklabel} must correspond to a defined output link label in the graph.
 
-For example, to map ALL streams from the first input file to output
+This option may be specified multiple times, each adding more streams to the
+output file. Any given input stream may also be mapped any number of times as a
+source for different output streams, e.g. in order to use different encoding
+options and/or filters. The streams are created in the output in the same order
+in which the @code{-map} options are given on the commandline.
+
+Using this option disables the default mappings for this output file.
+
+Examples:
+
+@table @emph
+
+@item map everything
+To map ALL streams from the first input file to output
 @example
 ffmpeg -i INPUT -map 0 output
 @end example
 
-For example, if you have two audio streams in the first input file,
-these streams are identified by "0:0" and "0:1". You can use
-@code{-map} to select which streams to place in an output file. For
-example:
+@item select specific stream
+If you have two audio streams in the first input file, these streams are
+identified by @var{0:0} and @var{0:1}. You can use @code{-map} to select which
+streams to place in an output file. For example:
 @example
 ffmpeg -i INPUT -map 0:1 out.wav
 @end example
-will map the input stream in @file{INPUT} identified by "0:1" to
-the (single) output stream in @file{out.wav}.
+will map the second input stream in @file{INPUT} to the (single) output stream
+in @file{out.wav}.
 
-For example, to select the stream with index 2 from input file
-@file{a.mov} (specified by the identifier "0:2"), and stream with
-index 6 from input @file{b.mov} (specified by the identifier "1:6"),
-and copy them to the output file @file{out.mov}:
+@item create multiple streams
+To select the stream with index 2 from input file @file{a.mov} (specified by the
+identifier @var{0:2}), and stream with index 6 from input @file{b.mov}
+(specified by the identifier @var{1:6}), and copy them to the output file
+@file{out.mov}:
 @example
 ffmpeg -i a.mov -i b.mov -c copy -map 0:2 -map 1:6 out.mov
 @end example
 
+@item create multiple streams 2
 To select all video and the third audio stream from an input file:
 @example
 ffmpeg -i INPUT -map 0:v -map 0:a:2 OUTPUT
 @end example
 
+@item negative map
 To map all the streams except the second audio, use negative mappings
 @example
 ffmpeg -i INPUT -map 0 -map -0:a:1 OUTPUT
 @end example
 
+@item optional map
 To map the video and audio streams from the first input, and using the
 trailing @code{?}, ignore the audio mapping if no audio streams exist in
 the first input:
@@ -1474,12 +1493,13 @@ the first input:
 ffmpeg -i INPUT -map 0:v -map 0:a? OUTPUT
 @end example
 
+@item map by language
 To pick the English audio stream:
 @example
 ffmpeg -i INPUT -map 0:m:language:eng OUTPUT
 @end example
 
-Note that using this option disables the default mappings for this output file.
+@end table
 
 @item -ignore_unknown
 Ignore input streams with unknown type instead of failing if copying
