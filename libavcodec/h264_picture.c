@@ -154,8 +154,7 @@ int ff_h264_replace_picture(H264Context *h, H264Picture *dst, const H264Picture 
     av_assert0(src->tf.f == src->f);
 
     dst->tf.f = dst->f;
-    ff_thread_release_ext_buffer(h->avctx, &dst->tf);
-    ret = ff_thread_ref_frame(&dst->tf, &src->tf);
+    ret = ff_thread_replace_frame(h->avctx, &dst->tf, &src->tf);
     if (ret < 0)
         goto fail;
 
