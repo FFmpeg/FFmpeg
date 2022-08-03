@@ -710,4 +710,9 @@ int64_t of_filesize(OutputFile *of);
 AVChapter * const *
 of_get_chapters(OutputFile *of, unsigned int *nb_chapters);
 
+int init_input_threads(void);
+int init_input_thread(int i);
+void free_input_threads(void);
+void free_input_thread(int i);
+
 #endif /* FFTOOLS_FFMPEG_H */
