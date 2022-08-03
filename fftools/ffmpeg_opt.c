@@ -1078,9 +1078,6 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
 
         switch (par->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
-            if(!ist->dec)
-                ist->dec = avcodec_find_decoder(par->codec_id);
-
             // avformat_find_stream_info() doesn't set this for us anymore.
             ist->dec_ctx->framerate = st->avg_frame_rate;
 
@@ -1104,8 +1101,6 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
         case AVMEDIA_TYPE_DATA:
         case AVMEDIA_TYPE_SUBTITLE: {
             char *canvas_size = NULL;
-            if(!ist->dec)
-                ist->dec = avcodec_find_decoder(par->codec_id);
             MATCH_PER_STREAM_OPT(fix_sub_duration, i, ist->fix_sub_duration, ic, st);
             MATCH_PER_STREAM_OPT(canvas_sizes, str, canvas_size, ic, st);
             if (canvas_size &&
