@@ -52,6 +52,7 @@
 // deprecated features
 #define FFMPEG_OPT_PSNR 1
 #define FFMPEG_OPT_MAP_CHANNEL 1
+#define FFMPEG_OPT_MAP_SYNC 1
 
 enum VideoSyncMethod {
     VSYNC_AUTO = -1,
@@ -81,8 +82,6 @@ typedef struct StreamMap {
     int disabled;           /* 1 is this mapping is disabled by a negative map */
     int file_index;
     int stream_index;
-    int sync_file_index;
-    int sync_stream_index;
     char *linklabel;       /* name of an output link, for mapping lavfi outputs */
 } StreamMap;
 

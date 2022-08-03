@@ -1411,14 +1411,12 @@ Set the size of the canvas used to render subtitles.
 @section Advanced options
 
 @table @option
-@item -map [-]@var{input_file_id}[:@var{stream_specifier}][?][,@var{sync_file_id}[:@var{stream_specifier}]] | @var{[linklabel]} (@emph{output})
+@item -map [-]@var{input_file_id}[:@var{stream_specifier}][?] | @var{[linklabel]} (@emph{output})
 
 Designate one or more input streams as a source for the output file. Each input
 stream is identified by the input file index @var{input_file_id} and
 the input stream index @var{input_stream_id} within the input
-file. Both indices start at 0. If specified,
-@var{sync_file_id}:@var{stream_specifier} sets which input stream
-is used as a presentation sync reference.
+file. Both indices start at 0.
 
 The first @code{-map} option on the command line specifies the
 source for output stream 0, the second @code{-map} option specifies

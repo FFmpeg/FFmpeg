@@ -415,9 +415,10 @@ static int opt_map(void *optctx, const char *opt, const char *arg)
     OptionsContext *o = optctx;
     StreamMap *m = NULL;
     int i, negative = 0, file_idx, disabled = 0;
-    int sync_file_idx = -1, sync_stream_idx = 0;
-    char *p, *sync;
-    char *map;
+#if FFMPEG_OPT_MAP_SYNC
+    char *sync;
+#endif
+    char *map, *p;
     char *allow_unused;
 
     if (*arg == '-') {
@@ -428,33 +429,13 @@ static int opt_map(void *optctx, const char *opt, const char *arg)
     if (!map)
         return AVERROR(ENOMEM);
 
+#if FFMPEG_OPT_MAP_SYNC
     /* parse sync stream first, just pick first matching stream */
     if (sync = strchr(map, ',')) {
         *sync = 0;
-        sync_file_idx = strtol(sync + 1, &sync, 0);
-        if (sync_file_idx >= nb_input_files || sync_file_idx < 0) {
-            av_log(NULL, AV_LOG_FATAL, "Invalid sync file index: %d.\n", sync_file_idx);
-            exit_program(1);
-        }
-        if (*sync)
-            sync++;
-        for (i = 0; i < input_files[sync_file_idx]->nb_streams; i++)
-            if (check_stream_specifier(input_files[sync_file_idx]->ctx,
-                                       input_files[sync_file_idx]->ctx->streams[i], sync) == 1) {
-                sync_stream_idx = i;
-                break;
-            }
-        if (i == input_files[sync_file_idx]->nb_streams) {
-            av_log(NULL, AV_LOG_FATAL, "Sync stream specification in map %s does not "
-                                       "match any streams.\n", arg);
-            exit_program(1);
-        }
-        if (input_streams[input_files[sync_file_idx]->ist_index + sync_stream_idx]->user_set_discard == AVDISCARD_ALL) {
-            av_log(NULL, AV_LOG_FATAL, "Sync stream specification in map %s matches a disabled input "
-                                       "stream.\n", arg);
-            exit_program(1);
-        }
+        av_log(NULL, AV_LOG_WARNING, "Specifying a sync stream is deprecated and has no effect\n");
     }
+#endif
 
 
     if (map[0] == '[') {
@@ -499,14 +480,6 @@ static int opt_map(void *optctx, const char *opt, const char *arg)
 
                 m->file_index   = file_idx;
                 m->stream_index = i;
-
-                if (sync_file_idx >= 0) {
-                    m->sync_file_index   = sync_file_idx;
-                    m->sync_stream_index = sync_stream_idx;
-                } else {
-                    m->sync_file_index   = file_idx;
-                    m->sync_stream_index = i;
-                }
             }
     }
 
