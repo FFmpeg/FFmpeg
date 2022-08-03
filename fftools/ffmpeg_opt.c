@@ -2742,6 +2742,48 @@ loop_end:
     }
 }
 
+static void of_add_attachments(AVFormatContext *oc, OptionsContext *o)
+{
+    OutputStream *ost;
+    int err;
+
+    for (int i = 0; i < o->nb_attachments; i++) {
+        AVIOContext *pb;
+        uint8_t *attachment;
+        const char *p;
+        int64_t len;
+
+        if ((err = avio_open2(&pb, o->attachments[i], AVIO_FLAG_READ, &int_cb, NULL)) < 0) {
+            av_log(NULL, AV_LOG_FATAL, "Could not open attachment file %s.\n",
+                   o->attachments[i]);
+            exit_program(1);
+        }
+        if ((len = avio_size(pb)) <= 0) {
+            av_log(NULL, AV_LOG_FATAL, "Could not get size of the attachment %s.\n",
+                   o->attachments[i]);
+            exit_program(1);
+        }
+        if (len > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE ||
+            !(attachment = av_malloc(len + AV_INPUT_BUFFER_PADDING_SIZE))) {
+            av_log(NULL, AV_LOG_FATAL, "Attachment %s too large.\n",
+                   o->attachments[i]);
+            exit_program(1);
+        }
+        avio_read(pb, attachment, len);
+        memset(attachment + len, 0, AV_INPUT_BUFFER_PADDING_SIZE);
+
+        ost = new_attachment_stream(o, oc, -1);
+        ost->stream_copy               = 0;
+        ost->attachment_filename       = o->attachments[i];
+        ost->st->codecpar->extradata      = attachment;
+        ost->st->codecpar->extradata_size = len;
+
+        p = strrchr(o->attachments[i], '/');
+        av_dict_set(&ost->st->metadata, "filename", (p && *p) ? p + 1 : o->attachments[i], AV_DICT_DONT_OVERWRITE);
+        avio_closep(&pb);
+    }
+}
+
 static int open_output_file(OptionsContext *o, const char *filename)
 {
     AVFormatContext *oc;
@@ -2831,42 +2873,7 @@ static int open_output_file(OptionsContext *o, const char *filename)
             map_manual(of, oc, o, &o->stream_maps[i]);
     }
 
-    /* handle attached files */
-    for (i = 0; i < o->nb_attachments; i++) {
-        AVIOContext *pb;
-        uint8_t *attachment;
-        const char *p;
-        int64_t len;
-
-        if ((err = avio_open2(&pb, o->attachments[i], AVIO_FLAG_READ, &int_cb, NULL)) < 0) {
-            av_log(NULL, AV_LOG_FATAL, "Could not open attachment file %s.\n",
-                   o->attachments[i]);
-            exit_program(1);
-        }
-        if ((len = avio_size(pb)) <= 0) {
-            av_log(NULL, AV_LOG_FATAL, "Could not get size of the attachment %s.\n",
-                   o->attachments[i]);
-            exit_program(1);
-        }
-        if (len > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE ||
-            !(attachment = av_malloc(len + AV_INPUT_BUFFER_PADDING_SIZE))) {
-            av_log(NULL, AV_LOG_FATAL, "Attachment %s too large.\n",
-                   o->attachments[i]);
-            exit_program(1);
-        }
-        avio_read(pb, attachment, len);
-        memset(attachment + len, 0, AV_INPUT_BUFFER_PADDING_SIZE);
-
-        ost = new_attachment_stream(o, oc, -1);
-        ost->stream_copy               = 0;
-        ost->attachment_filename       = o->attachments[i];
-        ost->st->codecpar->extradata      = attachment;
-        ost->st->codecpar->extradata_size = len;
-
-        p = strrchr(o->attachments[i], '/');
-        av_dict_set(&ost->st->metadata, "filename", (p && *p) ? p + 1 : o->attachments[i], AV_DICT_DONT_OVERWRITE);
-        avio_closep(&pb);
-    }
+    of_add_attachments(oc, o);
 
     if (!oc->nb_streams && !(oc->oformat->flags & AVFMT_NOSTREAMS)) {
         av_dump_format(oc, nb_output_files - 1, oc->url, 1);
