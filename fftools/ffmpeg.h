@@ -710,6 +710,7 @@ int64_t of_filesize(OutputFile *of);
 AVChapter * const *
 of_get_chapters(OutputFile *of, unsigned int *nb_chapters);
 
+int ifile_get_packet(InputFile *f, AVPacket **pkt);
 int init_input_threads(void);
 int init_input_thread(int i);
 void free_input_threads(void);

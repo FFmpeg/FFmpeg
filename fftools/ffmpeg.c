@@ -3610,32 +3610,6 @@ static int check_keyboard_interaction(int64_t cur_time)
     return 0;
 }
 
-static int get_input_packet(InputFile *f, AVPacket **pkt)
-{
-    if (f->readrate || f->rate_emu) {
-        int i;
-        int64_t file_start = copy_ts * (
-                              (f->ctx->start_time != AV_NOPTS_VALUE ? f->ctx->start_time * !start_at_zero : 0) +
-                              (f->start_time != AV_NOPTS_VALUE ? f->start_time : 0)
-                             );
-        float scale = f->rate_emu ? 1.0 : f->readrate;
-        for (i = 0; i < f->nb_streams; i++) {
-            InputStream *ist = input_streams[f->ist_index + i];
-            int64_t stream_ts_offset, pts, now;
-            if (!ist->nb_packets || (ist->decoding_needed && !ist->got_output)) continue;
-            stream_ts_offset = FFMAX(ist->first_dts != AV_NOPTS_VALUE ? ist->first_dts : 0, file_start);
-            pts = av_rescale(ist->dts, 1000000, AV_TIME_BASE);
-            now = (av_gettime_relative() - ist->start) * scale + stream_ts_offset;
-            if (pts > now)
-                return AVERROR(EAGAIN);
-        }
-    }
-
-    return av_thread_message_queue_recv(f->in_thread_queue, pkt,
-                                        f->non_blocking ?
-                                        AV_THREAD_MESSAGE_NONBLOCK : 0);
-}
-
 static int got_eagain(void)
 {
     int i;
@@ -3752,7 +3726,7 @@ static int process_input(int file_index)
     int disable_discontinuity_correction = copy_ts;
 
     is  = ifile->ctx;
-    ret = get_input_packet(ifile, &pkt);
+    ret = ifile_get_packet(ifile, &pkt);
 
     if (ret == AVERROR(EAGAIN)) {
         ifile->eagain = 1;
@@ -3777,7 +3751,7 @@ static int process_input(int file_index)
         if (ret < 0)
             av_log(NULL, AV_LOG_WARNING, "Seek to start failed.\n");
         else
-            ret = get_input_packet(ifile, &pkt);
+            ret = ifile_get_packet(ifile, &pkt);
         if (ret == AVERROR(EAGAIN)) {
             ifile->eagain = 1;
             return ret;
