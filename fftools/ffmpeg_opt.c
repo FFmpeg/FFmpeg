@@ -2853,12 +2853,73 @@ static void of_add_programs(AVFormatContext *oc, const OptionsContext *o)
     }
 }
 
+static void of_add_metadata(AVFormatContext *oc, const OptionsContext *o)
+{
+    for (int i = 0; i < o->nb_metadata; i++) {
+        AVDictionary **m;
+        char type, *val;
+        const char *stream_spec;
+        int index = 0, ret = 0;
+
+        val = strchr(o->metadata[i].u.str, '=');
+        if (!val) {
+            av_log(NULL, AV_LOG_FATAL, "No '=' character in metadata string %s.\n",
+                   o->metadata[i].u.str);
+            exit_program(1);
+        }
+        *val++ = 0;
+
+        parse_meta_type(o->metadata[i].specifier, &type, &index, &stream_spec);
+        if (type == 's') {
+            for (int j = 0; j < oc->nb_streams; j++) {
+                OutputStream *ost = output_streams[nb_output_streams - oc->nb_streams + j];
+                if ((ret = check_stream_specifier(oc, oc->streams[j], stream_spec)) > 0) {
+                    if (!strcmp(o->metadata[i].u.str, "rotate")) {
+                        char *tail;
+                        double theta = av_strtod(val, &tail);
+                        if (!*tail) {
+                            ost->rotate_overridden = 1;
+                            ost->rotate_override_value = theta;
+                        }
+                    } else {
+                        av_dict_set(&oc->streams[j]->metadata, o->metadata[i].u.str, *val ? val : NULL, 0);
+                    }
+                } else if (ret < 0)
+                    exit_program(1);
+            }
+        } else {
+            switch (type) {
+            case 'g':
+                m = &oc->metadata;
+                break;
+            case 'c':
+                if (index < 0 || index >= oc->nb_chapters) {
+                    av_log(NULL, AV_LOG_FATAL, "Invalid chapter index %d in metadata specifier.\n", index);
+                    exit_program(1);
+                }
+                m = &oc->chapters[index]->metadata;
+                break;
+            case 'p':
+                if (index < 0 || index >= oc->nb_programs) {
+                    av_log(NULL, AV_LOG_FATAL, "Invalid program index %d in metadata specifier.\n", index);
+                    exit_program(1);
+                }
+                m = &oc->programs[index]->metadata;
+                break;
+            default:
+                av_log(NULL, AV_LOG_FATAL, "Invalid metadata specifier %s.\n", o->metadata[i].specifier);
+                exit_program(1);
+            }
+            av_dict_set(m, o->metadata[i].u.str, *val ? val : NULL, 0);
+        }
+    }
+}
+
 static int open_output_file(OptionsContext *o, const char *filename)
 {
     AVFormatContext *oc;
     int i, j, err;
     OutputFile *of;
-    OutputStream *ost;
     AVDictionary *unused_opts = NULL, *format_opts = NULL;
     const AVDictionaryEntry *e = NULL;
 
@@ -3143,67 +3204,7 @@ static int open_output_file(OptionsContext *o, const char *filename)
         }
 
     of_add_programs(oc, o);
-
-    /* process manually set metadata */
-    for (i = 0; i < o->nb_metadata; i++) {
-        AVDictionary **m;
-        char type, *val;
-        const char *stream_spec;
-        int index = 0, j, ret = 0;
-
-        val = strchr(o->metadata[i].u.str, '=');
-        if (!val) {
-            av_log(NULL, AV_LOG_FATAL, "No '=' character in metadata string %s.\n",
-                   o->metadata[i].u.str);
-            exit_program(1);
-        }
-        *val++ = 0;
-
-        parse_meta_type(o->metadata[i].specifier, &type, &index, &stream_spec);
-        if (type == 's') {
-            for (j = 0; j < oc->nb_streams; j++) {
-                ost = output_streams[nb_output_streams - oc->nb_streams + j];
-                if ((ret = check_stream_specifier(oc, oc->streams[j], stream_spec)) > 0) {
-                    if (!strcmp(o->metadata[i].u.str, "rotate")) {
-                        char *tail;
-                        double theta = av_strtod(val, &tail);
-                        if (!*tail) {
-                            ost->rotate_overridden = 1;
-                            ost->rotate_override_value = theta;
-                        }
-                    } else {
-                        av_dict_set(&oc->streams[j]->metadata, o->metadata[i].u.str, *val ? val : NULL, 0);
-                    }
-                } else if (ret < 0)
-                    exit_program(1);
-            }
-        }
-        else {
-            switch (type) {
-            case 'g':
-                m = &oc->metadata;
-                break;
-            case 'c':
-                if (index < 0 || index >= oc->nb_chapters) {
-                    av_log(NULL, AV_LOG_FATAL, "Invalid chapter index %d in metadata specifier.\n", index);
-                    exit_program(1);
-                }
-                m = &oc->chapters[index]->metadata;
-                break;
-            case 'p':
-                if (index < 0 || index >= oc->nb_programs) {
-                    av_log(NULL, AV_LOG_FATAL, "Invalid program index %d in metadata specifier.\n", index);
-                    exit_program(1);
-                }
-                m = &oc->programs[index]->metadata;
-                break;
-            default:
-                av_log(NULL, AV_LOG_FATAL, "Invalid metadata specifier %s.\n", o->metadata[i].specifier);
-                exit_program(1);
-            }
-            av_dict_set(m, o->metadata[i].u.str, *val ? val : NULL, 0);
-        }
-    }
+    of_add_metadata(oc, o);
 
     err = set_dispositions(of, oc);
     if (err < 0) {
