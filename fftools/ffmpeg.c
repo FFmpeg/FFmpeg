@@ -1566,9 +1566,7 @@ static void print_final_stats(int64_t total_size)
 static void print_report(int is_last_report, int64_t timer_start, int64_t cur_time)
 {
     AVBPrint buf, buf_script;
-    OutputStream *ost;
     int64_t total_size = of_filesize(output_files[0]);
-    AVCodecContext *enc;
     int vid, i;
     double bitrate;
     double speed;
@@ -1600,11 +1598,9 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_AUTOMATIC);
     av_bprint_init(&buf_script, 0, AV_BPRINT_SIZE_AUTOMATIC);
     for (i = 0; i < nb_output_streams; i++) {
-        float q = -1;
-        ost = output_streams[i];
-        enc = ost->enc_ctx;
-        if (!ost->stream_copy)
-            q = ost->quality / (float) FF_QP2LAMBDA;
+        OutputStream         * const ost = output_streams[i];
+        const AVCodecContext * const enc = ost->enc_ctx;
+        const float q = enc ? ost->quality / (float) FF_QP2LAMBDA : -1;
 
         if (vid && ost->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
             av_bprintf(&buf, "q=%2.1f ", q);
@@ -3258,7 +3254,7 @@ static int init_output_stream(OutputStream *ost, AVFrame *frame,
         // copy estimated duration as a hint to the muxer
         if (ost->st->duration <= 0 && ist && ist->st->duration > 0)
             ost->st->duration = av_rescale_q(ist->st->duration, ist->st->time_base, ost->st->time_base);
-    } else if (ost->stream_copy) {
+    } else if (ost->source_index >= 0) {
         ret = init_output_stream_streamcopy(ost);
         if (ret < 0)
             return ret;
@@ -3343,7 +3339,7 @@ static int transcode_init(void)
      *   known after the encoder is initialized.
      */
     for (i = 0; i < nb_output_streams; i++) {
-        if (!output_streams[i]->stream_copy &&
+        if (output_streams[i]->enc_ctx &&
             (output_streams[i]->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO ||
              output_streams[i]->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO))
             continue;
@@ -3417,9 +3413,7 @@ static int transcode_init(void)
             av_log(NULL, AV_LOG_INFO, " [sync #%d:%d]",
                    ost->sync_ist->file_index,
                    ost->sync_ist->st->index);
-        if (ost->stream_copy)
-            av_log(NULL, AV_LOG_INFO, " (copy)");
-        else {
+        if (ost->enc_ctx) {
             const AVCodec *in_codec    = input_streams[ost->source_index]->dec;
             const AVCodec *out_codec   = ost->enc;
             const char *decoder_name   = "?";
@@ -3449,7 +3443,8 @@ static int transcode_init(void)
             av_log(NULL, AV_LOG_INFO, " (%s (%s) -> %s (%s))",
                    in_codec_name, decoder_name,
                    out_codec_name, encoder_name);
-        }
+        } else
+            av_log(NULL, AV_LOG_INFO, " (copy)");
         av_log(NULL, AV_LOG_INFO, "\n");
     }
 
@@ -3959,7 +3954,7 @@ static int process_input(int file_index)
                 OutputStream *ost = output_streams[j];
 
                 if (ost->source_index == ifile->ist_index + i &&
-                    (ost->stream_copy || ost->enc->type == AVMEDIA_TYPE_SUBTITLE)) {
+                    (!ost->enc_ctx || ost->enc->type == AVMEDIA_TYPE_SUBTITLE)) {
                     OutputFile *of = output_files[ost->file_index];
                     output_packet(of, ost->pkt, ost, 1);
                 }

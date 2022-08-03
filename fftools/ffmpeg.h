@@ -540,7 +540,6 @@ typedef struct OutputStream {
     char *apad;
     OSTFinished finished;        /* no more packets should be written for this stream */
     int unavailable;                     /* true if the steram is unavailable (possibly temporarily) */
-    int stream_copy;
 
     // init_output_stream() has been called for this stream
     // The encoder and the bitstream filters have been initialized and the stream

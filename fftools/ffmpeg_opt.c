@@ -1555,16 +1555,13 @@ static int choose_encoder(OptionsContext *o, AVFormatContext *s, OutputStream *o
                        avcodec_get_name(ost->st->codecpar->codec_id));
                 return AVERROR_ENCODER_NOT_FOUND;
             }
-        } else if (!strcmp(codec_name, "copy"))
-            ost->stream_copy = 1;
-        else {
+        } else if (strcmp(codec_name, "copy")) {
             ost->enc = find_codec_or_die(codec_name, ost->st->codecpar->codec_type, 1);
             ost->st->codecpar->codec_id = ost->enc->id;
         }
-        ost->encoding_needed = !ost->stream_copy;
+        ost->encoding_needed = !!ost->enc;
     } else {
         /* no encoding supported for other media types */
-        ost->stream_copy     = 1;
         ost->encoding_needed = 0;
     }
 
@@ -1898,7 +1895,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
     MATCH_PER_STREAM_OPT(filter_scripts, str, ost->filters_script, oc, st);
     MATCH_PER_STREAM_OPT(filters,        str, ost->filters,        oc, st);
 
-    if (!ost->stream_copy) {
+    if (ost->enc_ctx) {
         AVCodecContext *video_enc = ost->enc_ctx;
         const char *p = NULL;
         char *frame_size = NULL;
@@ -2087,9 +2084,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
         ost->last_frame = av_frame_alloc();
         if (!ost->last_frame)
             exit_program(1);
-    }
-
-    if (ost->stream_copy)
+    } else
         check_streamcopy_filters(o, oc, ost, AVMEDIA_TYPE_VIDEO);
 
     return ost;
@@ -2107,7 +2102,7 @@ static OutputStream *new_audio_stream(OptionsContext *o, AVFormatContext *oc, in
     MATCH_PER_STREAM_OPT(filter_scripts, str, ost->filters_script, oc, st);
     MATCH_PER_STREAM_OPT(filters,        str, ost->filters,        oc, st);
 
-    if (!ost->stream_copy) {
+    if (ost->enc_ctx) {
         AVCodecContext *audio_enc = ost->enc_ctx;
         int channels = 0;
         char *layout = NULL;
@@ -2186,9 +2181,7 @@ static OutputStream *new_audio_stream(OptionsContext *o, AVFormatContext *oc, in
             }
         }
 #endif
-    }
-
-    if (ost->stream_copy)
+    } else
         check_streamcopy_filters(o, oc, ost, AVMEDIA_TYPE_AUDIO);
 
     return ost;
@@ -2199,7 +2192,7 @@ static OutputStream *new_data_stream(OptionsContext *o, AVFormatContext *oc, int
     OutputStream *ost;
 
     ost = new_output_stream(o, oc, AVMEDIA_TYPE_DATA, source_index);
-    if (!ost->stream_copy) {
+    if (ost->enc_ctx) {
         av_log(NULL, AV_LOG_FATAL, "Data stream encoding not supported yet (only streamcopy)\n");
         exit_program(1);
     }
@@ -2212,7 +2205,7 @@ static OutputStream *new_unknown_stream(OptionsContext *o, AVFormatContext *oc, 
     OutputStream *ost;
 
     ost = new_output_stream(o, oc, AVMEDIA_TYPE_UNKNOWN, source_index);
-    if (!ost->stream_copy) {
+    if (ost->enc_ctx) {
         av_log(NULL, AV_LOG_FATAL, "Unknown stream encoding not supported yet (only streamcopy)\n");
         exit_program(1);
     }
@@ -2223,7 +2216,6 @@ static OutputStream *new_unknown_stream(OptionsContext *o, AVFormatContext *oc, 
 static OutputStream *new_attachment_stream(OptionsContext *o, AVFormatContext *oc, int source_index)
 {
     OutputStream *ost = new_output_stream(o, oc, AVMEDIA_TYPE_ATTACHMENT, source_index);
-    ost->stream_copy = 1;
     ost->finished    = 1;
     return ost;
 }
@@ -2236,7 +2228,7 @@ static OutputStream *new_subtitle_stream(OptionsContext *o, AVFormatContext *oc,
     ost = new_output_stream(o, oc, AVMEDIA_TYPE_SUBTITLE, source_index);
     st  = ost->st;
 
-    if (!ost->stream_copy) {
+    if (ost->enc_ctx) {
         AVCodecContext *subtitle_enc = ost->enc_ctx;
         char *frame_size = NULL;
 
@@ -2401,7 +2393,7 @@ static void init_output_filter(OutputFilter *ofilter, OptionsContext *o,
     ofilter->ost      = ost;
     ofilter->format   = -1;
 
-    if (ost->stream_copy) {
+    if (!ost->enc_ctx) {
         av_log(NULL, AV_LOG_ERROR, "Streamcopy requested for output stream %d:%d, "
                "which is fed from a complex filtergraph. Filtering and streamcopy "
                "cannot be used together.\n", ost->file_index, ost->index);
@@ -2768,7 +2760,6 @@ static void of_add_attachments(AVFormatContext *oc, OptionsContext *o)
         memset(attachment + len, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
         ost = new_attachment_stream(o, oc, -1);
-        ost->stream_copy               = 0;
         ost->attachment_filename       = o->attachments[i];
         ost->st->codecpar->extradata      = attachment;
         ost->st->codecpar->extradata_size = len;
@@ -3068,7 +3059,7 @@ static int open_output_file(OptionsContext *o, const char *filename)
                     exit_program(1);
                 }
             }
-        } else if (ost->stream_copy && ost->source_index >= 0) {
+        } else if (ost->source_index >= 0) {
             InputStream *ist = input_streams[ost->source_index];
             ist->processing_needed = 1;
         }
@@ -3193,7 +3184,7 @@ static int open_output_file(OptionsContext *o, const char *filename)
                 continue;
             ist = input_streams[output_streams[i]->source_index];
             av_dict_copy(&output_streams[i]->st->metadata, ist->st->metadata, AV_DICT_DONT_OVERWRITE);
-            if (!output_streams[i]->stream_copy) {
+            if (output_streams[i]->enc_ctx) {
                 av_dict_set(&output_streams[i]->st->metadata, "encoder", NULL, 0);
             }
         }
