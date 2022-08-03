@@ -915,6 +915,27 @@ int ff_thread_ref_frame(ThreadFrame *dst, const ThreadFrame *src)
     return 0;
 }
 
+int ff_thread_replace_frame(AVCodecContext *avctx, ThreadFrame *dst,
+                            const ThreadFrame *src)
+{
+    int ret;
+
+    dst->owner[0] = src->owner[0];
+    dst->owner[1] = src->owner[1];
+
+    ret = av_frame_replace(dst->f, src->f);
+    if (ret < 0)
+        return ret;
+
+    ret = av_buffer_replace(&dst->progress, src->progress);
+    if (ret < 0) {
+        ff_thread_release_ext_buffer(dst->owner[0], dst);
+        return ret;
+    }
+
+    return 0;
+}
+
 #if !HAVE_THREADS
 
 int ff_thread_get_buffer(AVCodecContext *avctx, AVFrame *f, int flags)

@@ -84,6 +84,9 @@ void ff_thread_release_ext_buffer(AVCodecContext *avctx, ThreadFrame *f);
 
 int ff_thread_ref_frame(ThreadFrame *dst, const ThreadFrame *src);
 
+int ff_thread_replace_frame(AVCodecContext *avctx, ThreadFrame *dst,
+                            const ThreadFrame *src);
+
 int ff_thread_can_start_frame(AVCodecContext *avctx);
 
 #endif
