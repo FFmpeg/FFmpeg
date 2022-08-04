@@ -521,7 +521,7 @@ static int mxf_get_eia608_packet(AVFormatContext *s, AVStream *st, AVPacket *pkt
     int did, sdid, data_length;
     int i, ret;
 
-    if (count != 1)
+    if (count > 1)
         av_log(s, AV_LOG_WARNING, "unsupported multiple ANC packets (%d) per KLV packet\n", count);
 
     for (i = 0; i < count; i++) {
