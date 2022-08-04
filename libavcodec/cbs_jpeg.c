@@ -82,27 +82,6 @@
 #undef xu
 
 
-static void cbs_jpeg_free_application_data(void *opaque, uint8_t *content)
-{
-    JPEGRawApplicationData *ad = (JPEGRawApplicationData*)content;
-    av_buffer_unref(&ad->Ap_ref);
-    av_freep(&content);
-}
-
-static void cbs_jpeg_free_comment(void *opaque, uint8_t *content)
-{
-    JPEGRawComment *comment = (JPEGRawComment*)content;
-    av_buffer_unref(&comment->Cm_ref);
-    av_freep(&content);
-}
-
-static void cbs_jpeg_free_scan(void *opaque, uint8_t *content)
-{
-    JPEGRawScan *scan = (JPEGRawScan*)content;
-    av_buffer_unref(&scan->data_ref);
-    av_freep(&content);
-}
-
 static int cbs_jpeg_split_fragment(CodedBitstreamContext *ctx,
                                    CodedBitstreamFragment *frag,
                                    int header)
@@ -248,40 +227,25 @@ static int cbs_jpeg_read_unit(CodedBitstreamContext *ctx,
     if (err < 0)
         return err;
 
+    err = ff_cbs_alloc_unit_content2(ctx, unit);
+    if (err < 0)
+        return err;
+
     if (unit->type >= JPEG_MARKER_SOF0 &&
         unit->type <= JPEG_MARKER_SOF3) {
-        err = ff_cbs_alloc_unit_content(unit,
-                                        sizeof(JPEGRawFrameHeader),
-                                        NULL);
-        if (err < 0)
-            return err;
-
         err = cbs_jpeg_read_frame_header(ctx, &gbc, unit->content);
         if (err < 0)
             return err;
 
     } else if (unit->type >= JPEG_MARKER_APPN &&
                unit->type <= JPEG_MARKER_APPN + 15) {
-        err = ff_cbs_alloc_unit_content(unit,
-                                        sizeof(JPEGRawApplicationData),
-                                        &cbs_jpeg_free_application_data);
-        if (err < 0)
-            return err;
-
         err = cbs_jpeg_read_application_data(ctx, &gbc, unit->content);
         if (err < 0)
             return err;
 
     } else if (unit->type == JPEG_MARKER_SOS) {
-        JPEGRawScan *scan;
+        JPEGRawScan *scan = unit->content;
         int pos;
-
-        err = ff_cbs_alloc_unit_content(unit,
-                                        sizeof(JPEGRawScan),
-                                        &cbs_jpeg_free_scan);
-        if (err < 0)
-            return err;
-        scan = unit->content;
 
         err = cbs_jpeg_read_scan_header(ctx, &gbc, &scan->header);
         if (err < 0)
@@ -299,21 +263,17 @@ static int cbs_jpeg_read_unit(CodedBitstreamContext *ctx,
 
     } else {
         switch (unit->type) {
-#define SEGMENT(marker, type, func, free) \
+#define SEGMENT(marker, func) \
         case JPEG_MARKER_ ## marker: \
             { \
-                err = ff_cbs_alloc_unit_content(unit, \
-                                                sizeof(type), free); \
-                if (err < 0) \
-                    return err; \
                 err = cbs_jpeg_read_ ## func(ctx, &gbc, unit->content); \
                 if (err < 0) \
                     return err; \
             } \
             break
-            SEGMENT(DQT, JPEGRawQuantisationTableSpecification, dqt, NULL);
-            SEGMENT(DHT, JPEGRawHuffmanTableSpecification,      dht, NULL);
-            SEGMENT(COM, JPEGRawComment,  comment, &cbs_jpeg_free_comment);
+            SEGMENT(DQT, dqt);
+            SEGMENT(DHT, dht);
+            SEGMENT(COM, comment);
 #undef SEGMENT
         default:
             return AVERROR(ENOSYS);
@@ -456,8 +416,26 @@ static int cbs_jpeg_assemble_fragment(CodedBitstreamContext *ctx,
     return 0;
 }
 
+static const CodedBitstreamUnitTypeDescriptor cbs_jpeg_unit_types[] = {
+    CBS_UNIT_RANGE_POD(JPEG_MARKER_SOF0, JPEG_MARKER_SOF3, JPEGRawFrameHeader),
+
+    CBS_UNIT_RANGE_INTERNAL_REF(JPEG_MARKER_APPN, JPEG_MARKER_APPN + 15,
+                                JPEGRawApplicationData, Ap),
+
+    CBS_UNIT_TYPE_INTERNAL_REF(JPEG_MARKER_SOS, JPEGRawScan, data),
+
+    CBS_UNIT_TYPE_POD(JPEG_MARKER_DQT, JPEGRawQuantisationTableSpecification),
+    CBS_UNIT_TYPE_POD(JPEG_MARKER_DHT, JPEGRawHuffmanTableSpecification),
+
+    CBS_UNIT_TYPE_INTERNAL_REF(JPEG_MARKER_COM, JPEGRawComment, Cm),
+
+    CBS_UNIT_TYPE_END_OF_LIST
+};
+
 const CodedBitstreamType ff_cbs_type_jpeg = {
     .codec_id          = AV_CODEC_ID_MJPEG,
+
+    .unit_types        = cbs_jpeg_unit_types,
 
     .split_fragment    = &cbs_jpeg_split_fragment,
     .read_unit         = &cbs_jpeg_read_unit,

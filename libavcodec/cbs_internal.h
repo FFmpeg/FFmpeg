@@ -197,6 +197,13 @@ int ff_cbs_write_signed(CodedBitstreamContext *ctx, PutBitContext *pbc,
         .content_type   = CBS_CONTENT_TYPE_POD, \
         .content_size   = sizeof(structure), \
     }
+#define CBS_UNIT_RANGE_POD(range_start, range_end, structure) { \
+        .nb_unit_types         = CBS_UNIT_TYPE_RANGE, \
+        .unit_type.range.start = range_start, \
+        .unit_type.range.end   = range_end, \
+        .content_type          = CBS_CONTENT_TYPE_POD, \
+        .content_size          = sizeof(structure), \
+    }
 
 #define CBS_UNIT_TYPES_INTERNAL_REF(types, structure, ref_field) { \
         .nb_unit_types  = FF_ARRAY_ELEMS((CodedBitstreamUnitType[])TYPE_LIST types), \
