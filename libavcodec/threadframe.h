@@ -27,9 +27,7 @@
 typedef struct ThreadFrame {
     AVFrame *f;
     AVCodecContext *owner[2];
-    // progress->data is an array of 2 ints holding progress for top/bottom
-    // fields
-    AVBufferRef *progress;
+    struct ThreadFrameProgress *progress;
 } ThreadFrame;
 
 /**

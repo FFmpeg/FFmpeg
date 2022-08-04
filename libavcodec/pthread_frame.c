@@ -66,6 +66,10 @@ enum {
     INITIALIZED,    ///< Thread has been properly set up
 };
 
+typedef struct ThreadFrameProgress {
+    atomic_int progress[2];
+} ThreadFrameProgress;
+
 /**
  * Context used by codec threads and stored in their AVCodecInternal thread_ctx.
  */
@@ -585,7 +589,7 @@ finish:
 void ff_thread_report_progress(ThreadFrame *f, int n, int field)
 {
     PerThreadContext *p;
-    atomic_int *progress = f->progress ? (atomic_int*)f->progress->data : NULL;
+    atomic_int *progress = f->progress ? f->progress->progress : NULL;
 
     if (!progress ||
         atomic_load_explicit(&progress[field], memory_order_relaxed) >= n)
@@ -608,7 +612,7 @@ void ff_thread_report_progress(ThreadFrame *f, int n, int field)
 void ff_thread_await_progress(const ThreadFrame *f, int n, int field)
 {
     PerThreadContext *p;
-    atomic_int *progress = f->progress ? (atomic_int*)f->progress->data : NULL;
+    atomic_int *progress = f->progress ? f->progress->progress : NULL;
 
     if (!progress ||
         atomic_load_explicit(&progress[field], memory_order_acquire) >= n)
@@ -991,20 +995,17 @@ int ff_thread_get_ext_buffer(AVCodecContext *avctx, ThreadFrame *f, int flags)
         return ff_get_buffer(avctx, f->f, flags);
 
     if (ffcodec(avctx->codec)->caps_internal & FF_CODEC_CAP_ALLOCATE_PROGRESS) {
-        atomic_int *progress;
-        f->progress = av_buffer_alloc(2 * sizeof(*progress));
-        if (!f->progress) {
+        f->progress = ff_refstruct_allocz(sizeof(*f->progress));
+        if (!f->progress)
             return AVERROR(ENOMEM);
-        }
-        progress = (atomic_int*)f->progress->data;
 
-        atomic_init(&progress[0], -1);
-        atomic_init(&progress[1], -1);
+        atomic_init(&f->progress->progress[0], -1);
+        atomic_init(&f->progress->progress[1], -1);
     }
 
     ret = ff_thread_get_buffer(avctx, f->f, flags);
     if (ret)
-        av_buffer_unref(&f->progress);
+        ff_refstruct_unref(&f->progress);
     return ret;
 }
 
@@ -1021,7 +1022,7 @@ void ff_thread_release_buffer(AVCodecContext *avctx, AVFrame *f)
 
 void ff_thread_release_ext_buffer(AVCodecContext *avctx, ThreadFrame *f)
 {
-    av_buffer_unref(&f->progress);
+    ff_refstruct_unref(&f->progress);
     f->owner[0] = f->owner[1] = NULL;
     ff_thread_release_buffer(avctx, f->f);
 }
