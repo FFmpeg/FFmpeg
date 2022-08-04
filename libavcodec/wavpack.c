@@ -28,6 +28,7 @@
 #include "bytestream.h"
 #include "codec_internal.h"
 #include "get_bits.h"
+#include "refstruct.h"
 #include "thread.h"
 #include "threadframe.h"
 #include "unary.h"
@@ -110,8 +111,7 @@ typedef struct WavpackContext {
     ThreadFrame curr_frame, prev_frame;
     Modulation modulation;
 
-    AVBufferRef *dsd_ref;
-    DSDContext *dsdctx;
+    DSDContext *dsdctx; ///< RefStruct reference
     int dsd_channels;
 } WavpackContext;
 
@@ -990,9 +990,8 @@ static int wv_dsd_reset(WavpackContext *s, int channels)
 {
     int i;
 
-    s->dsdctx = NULL;
     s->dsd_channels = 0;
-    av_buffer_unref(&s->dsd_ref);
+    ff_refstruct_unref(&s->dsdctx);
 
     if (!channels)
         return 0;
@@ -1000,10 +999,9 @@ static int wv_dsd_reset(WavpackContext *s, int channels)
     if (channels > INT_MAX / sizeof(*s->dsdctx))
         return AVERROR(EINVAL);
 
-    s->dsd_ref = av_buffer_allocz(channels * sizeof(*s->dsdctx));
-    if (!s->dsd_ref)
+    s->dsdctx = ff_refstruct_allocz(channels * sizeof(*s->dsdctx));
+    if (!s->dsdctx)
         return AVERROR(ENOMEM);
-    s->dsdctx = (DSDContext*)s->dsd_ref->data;
     s->dsd_channels = channels;
 
     for (i = 0; i < channels; i++)
@@ -1028,15 +1026,8 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
             return ret;
     }
 
-    fdst->dsdctx = NULL;
-    fdst->dsd_channels = 0;
-    ret = av_buffer_replace(&fdst->dsd_ref, fsrc->dsd_ref);
-    if (ret < 0)
-        return ret;
-    if (fsrc->dsd_ref) {
-        fdst->dsdctx = (DSDContext*)fdst->dsd_ref->data;
-        fdst->dsd_channels = fsrc->dsd_channels;
-    }
+    ff_refstruct_replace(&fdst->dsdctx, fsrc->dsdctx);
+    fdst->dsd_channels = fsrc->dsd_channels;
 
     return 0;
 }
@@ -1076,7 +1067,7 @@ static av_cold int wavpack_decode_end(AVCodecContext *avctx)
     ff_thread_release_ext_buffer(avctx, &s->prev_frame);
     av_frame_free(&s->prev_frame.f);
 
-    av_buffer_unref(&s->dsd_ref);
+    ff_refstruct_unref(&s->dsdctx);
 
     return 0;
 }
