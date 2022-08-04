@@ -146,14 +146,14 @@ static int h264_set_extradata(AVCodecContext *avctx, FFAMediaFormat *format)
 
     for (i = 0; i < MAX_PPS_COUNT; i++) {
         if (ps.pps_list[i]) {
-            pps = (const PPS*)ps.pps_list[i]->data;
+            pps = ps.pps_list[i];
             break;
         }
     }
 
     if (pps) {
         if (ps.sps_list[pps->sps_id]) {
-            sps = (const SPS*)ps.sps_list[pps->sps_id]->data;
+            sps = ps.sps_list[pps->sps_id];
         }
     }
 

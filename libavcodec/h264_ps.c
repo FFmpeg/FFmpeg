@@ -34,6 +34,7 @@
 #include "h2645_vui.h"
 #include "h264_ps.h"
 #include "golomb.h"
+#include "refstruct.h"
 
 #define MIN_LOG2_MAX_FRAME_NUM    4
 
@@ -85,7 +86,7 @@ static const int level_max_dpb_mbs[][2] = {
 
 static void remove_pps(H264ParamSets *s, int id)
 {
-    av_buffer_unref(&s->pps_list[id]);
+    ff_refstruct_unref(&s->pps_list[id]);
 }
 
 static void remove_sps(H264ParamSets *s, int id)
@@ -95,11 +96,11 @@ static void remove_sps(H264ParamSets *s, int id)
     if (s->sps_list[id]) {
         /* drop all PPS that depend on this SPS */
         for (i = 0; i < FF_ARRAY_ELEMS(s->pps_list); i++)
-            if (s->pps_list[i] && ((PPS*)s->pps_list[i]->data)->sps_id == id)
+            if (s->pps_list[i] && s->pps_list[i]->sps_id == id)
                 remove_pps(s, i);
     }
 #endif
-    av_buffer_unref(&s->sps_list[id]);
+    ff_refstruct_unref(&s->sps_list[id]);
 }
 
 static inline int decode_hrd_parameters(GetBitContext *gb, void *logctx,
@@ -271,31 +272,27 @@ void ff_h264_ps_uninit(H264ParamSets *ps)
     int i;
 
     for (i = 0; i < MAX_SPS_COUNT; i++)
-        av_buffer_unref(&ps->sps_list[i]);
+        ff_refstruct_unref(&ps->sps_list[i]);
 
     for (i = 0; i < MAX_PPS_COUNT; i++)
-        av_buffer_unref(&ps->pps_list[i]);
+        ff_refstruct_unref(&ps->pps_list[i]);
 
-    av_buffer_unref(&ps->pps_ref);
-
-    ps->pps = NULL;
+    ff_refstruct_unref(&ps->pps);
     ps->sps = NULL;
 }
 
 int ff_h264_decode_seq_parameter_set(GetBitContext *gb, AVCodecContext *avctx,
                                      H264ParamSets *ps, int ignore_truncation)
 {
-    AVBufferRef *sps_buf;
     int profile_idc, level_idc, constraint_set_flags = 0;
     unsigned int sps_id;
     int i, log2_max_frame_num_minus4;
     SPS *sps;
     int ret;
 
-    sps_buf = av_buffer_allocz(sizeof(*sps));
-    if (!sps_buf)
+    sps = ff_refstruct_allocz(sizeof(*sps));
+    if (!sps)
         return AVERROR(ENOMEM);
-    sps = (SPS*)sps_buf->data;
 
     sps->data_size = gb->buffer_end - gb->buffer;
     if (sps->data_size > sizeof(sps->data)) {
@@ -580,17 +577,17 @@ int ff_h264_decode_seq_parameter_set(GetBitContext *gb, AVCodecContext *avctx,
      * original one.
      * otherwise drop all PPSes that depend on it */
     if (ps->sps_list[sps_id] &&
-        !memcmp(ps->sps_list[sps_id]->data, sps_buf->data, sps_buf->size)) {
-        av_buffer_unref(&sps_buf);
+        !memcmp(ps->sps_list[sps_id], sps, sizeof(*sps))) {
+        ff_refstruct_unref(&sps);
     } else {
         remove_sps(ps, sps_id);
-        ps->sps_list[sps_id] = sps_buf;
+        ps->sps_list[sps_id] = sps;
     }
 
     return 0;
 
 fail:
-    av_buffer_unref(&sps_buf);
+    ff_refstruct_unref(&sps);
     return AVERROR_INVALIDDATA;
 }
 
@@ -689,19 +686,16 @@ static int more_rbsp_data_in_pps(const SPS *sps, void *logctx)
     return 1;
 }
 
-static void pps_free(void *opaque, uint8_t *data)
+static void pps_free(FFRefStructOpaque unused, void *obj)
 {
-    PPS *pps = (PPS*)data;
+    PPS *pps = obj;
 
-    av_buffer_unref(&pps->sps_ref);
-
-    av_freep(&data);
+    ff_refstruct_unref(&pps->sps);
 }
 
 int ff_h264_decode_picture_parameter_set(GetBitContext *gb, AVCodecContext *avctx,
                                          H264ParamSets *ps, int bit_length)
 {
-    AVBufferRef *pps_buf;
     const SPS *sps;
     unsigned int pps_id = get_ue_golomb(gb);
     PPS *pps;
@@ -714,15 +708,9 @@ int ff_h264_decode_picture_parameter_set(GetBitContext *gb, AVCodecContext *avct
         return AVERROR_INVALIDDATA;
     }
 
-    pps = av_mallocz(sizeof(*pps));
+    pps = ff_refstruct_alloc_ext(sizeof(*pps), 0, NULL, pps_free);
     if (!pps)
         return AVERROR(ENOMEM);
-    pps_buf = av_buffer_create((uint8_t*)pps, sizeof(*pps),
-                               pps_free, NULL, 0);
-    if (!pps_buf) {
-        av_freep(&pps);
-        return AVERROR(ENOMEM);
-    }
 
     pps->data_size = gb->buffer_end - gb->buffer;
     if (pps->data_size > sizeof(pps->data)) {
@@ -745,12 +733,7 @@ int ff_h264_decode_picture_parameter_set(GetBitContext *gb, AVCodecContext *avct
         ret = AVERROR_INVALIDDATA;
         goto fail;
     }
-    pps->sps_ref = av_buffer_ref(ps->sps_list[pps->sps_id]);
-    if (!pps->sps_ref) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
-    pps->sps = (const SPS*)pps->sps_ref->data;
+    pps->sps = ff_refstruct_ref_c(ps->sps_list[pps->sps_id]);
     sps      = pps->sps;
 
     if (sps->bit_depth_luma > 14) {
@@ -852,11 +835,11 @@ int ff_h264_decode_picture_parameter_set(GetBitContext *gb, AVCodecContext *avct
     }
 
     remove_pps(ps, pps_id);
-    ps->pps_list[pps_id] = pps_buf;
+    ps->pps_list[pps_id] = pps;
 
     return 0;
 
 fail:
-    av_buffer_unref(&pps_buf);
+    ff_refstruct_unref(&pps);
     return ret;
 }

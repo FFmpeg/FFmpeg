@@ -32,6 +32,7 @@
 #include "h264dec.h"
 #include "hwaccel_internal.h"
 #include "mpegutils.h"
+#include "refstruct.h"
 #include "thread.h"
 #include "threadframe.h"
 
@@ -49,7 +50,7 @@ void ff_h264_unref_picture(H264Context *h, H264Picture *pic)
 
     av_buffer_unref(&pic->qscale_table_buf);
     av_buffer_unref(&pic->mb_type_buf);
-    av_buffer_unref(&pic->pps_buf);
+    ff_refstruct_unref(&pic->pps);
     for (i = 0; i < 2; i++) {
         av_buffer_unref(&pic->motion_val_buf[i]);
         av_buffer_unref(&pic->ref_index_buf[i]);
@@ -61,9 +62,10 @@ void ff_h264_unref_picture(H264Context *h, H264Picture *pic)
 
 static void h264_copy_picture_params(H264Picture *dst, const H264Picture *src)
 {
+    ff_refstruct_replace(&dst->pps, src->pps);
+
     dst->qscale_table = src->qscale_table;
     dst->mb_type      = src->mb_type;
-    dst->pps          = src->pps;
 
     for (int i = 0; i < 2; i++) {
         dst->motion_val[i] = src->motion_val[i];
@@ -113,8 +115,7 @@ int ff_h264_ref_picture(H264Context *h, H264Picture *dst, H264Picture *src)
 
     dst->qscale_table_buf = av_buffer_ref(src->qscale_table_buf);
     dst->mb_type_buf      = av_buffer_ref(src->mb_type_buf);
-    dst->pps_buf          = av_buffer_ref(src->pps_buf);
-    if (!dst->qscale_table_buf || !dst->mb_type_buf || !dst->pps_buf) {
+    if (!dst->qscale_table_buf || !dst->mb_type_buf) {
         ret = AVERROR(ENOMEM);
         goto fail;
     }
@@ -174,7 +175,6 @@ int ff_h264_replace_picture(H264Context *h, H264Picture *dst, const H264Picture 
 
     ret  = av_buffer_replace(&dst->qscale_table_buf, src->qscale_table_buf);
     ret |= av_buffer_replace(&dst->mb_type_buf, src->mb_type_buf);
-    ret |= av_buffer_replace(&dst->pps_buf, src->pps_buf);
     if (ret < 0)
         goto fail;
 

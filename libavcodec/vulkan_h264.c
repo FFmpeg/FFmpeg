@@ -321,7 +321,7 @@ static int vk_h264_create_params(AVCodecContext *avctx, AVBufferRef **buf)
     /* SPS list */
     for (int i = 0; i < FF_ARRAY_ELEMS(h->ps.sps_list); i++) {
         if (h->ps.sps_list[i]) {
-            const SPS *sps_l = (const SPS *)h->ps.sps_list[i]->data;
+            const SPS *sps_l = h->ps.sps_list[i];
             int idx = h264_params_info.stdSPSCount;
             set_sps(sps_l, &vksps_scaling[idx], &vksps_vui_header[idx], &vksps_vui[idx], &vksps[idx]);
             h264_params_info.stdSPSCount++;
@@ -331,7 +331,7 @@ static int vk_h264_create_params(AVCodecContext *avctx, AVBufferRef **buf)
     /* PPS list */
     for (int i = 0; i < FF_ARRAY_ELEMS(h->ps.pps_list); i++) {
         if (h->ps.pps_list[i]) {
-            const PPS *pps_l = (const PPS *)h->ps.pps_list[i]->data;
+            const PPS *pps_l = h->ps.pps_list[i];
             int idx = h264_params_info.stdPPSCount;
             set_pps(pps_l, pps_l->sps, &vkpps_scaling[idx], &vkpps[idx]);
             h264_params_info.stdPPSCount++;

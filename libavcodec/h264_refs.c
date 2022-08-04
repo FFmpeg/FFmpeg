@@ -807,7 +807,7 @@ int ff_h264_execute_ref_pic_marking(H264Context *h)
 
     for (i = 0; i < FF_ARRAY_ELEMS(h->ps.pps_list); i++) {
         if (h->ps.pps_list[i]) {
-            const PPS *pps = (const PPS *)h->ps.pps_list[i]->data;
+            const PPS *pps = h->ps.pps_list[i];
             pps_ref_count[0] = FFMAX(pps_ref_count[0], pps->ref_count[0]);
             pps_ref_count[1] = FFMAX(pps_ref_count[1], pps->ref_count[1]);
         }

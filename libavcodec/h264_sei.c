@@ -179,7 +179,7 @@ static int decode_buffering_period(H264SEIBufferingPeriod *h, GetBitContext *gb,
                "non-existing SPS %d referenced in buffering period\n", sps_id);
         return sps_id > 31 ? AVERROR_INVALIDDATA : AVERROR_PS_NOT_FOUND;
     }
-    sps = (const SPS*)ps->sps_list[sps_id]->data;
+    sps = ps->sps_list[sps_id];
 
     // NOTE: This is really so duplicated in the standard... See H.264, D.1.1
     if (sps->nal_hrd_parameters_present_flag) {

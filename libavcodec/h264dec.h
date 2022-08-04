@@ -147,7 +147,6 @@ typedef struct H264Picture {
     int sei_recovery_frame_cnt;
     int needs_fg;           ///< whether picture needs film grain synthesis (see `f_grain`)
 
-    AVBufferRef *pps_buf;
     const PPS   *pps;
 
     int mb_width, mb_height;

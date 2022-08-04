@@ -47,6 +47,7 @@
 #include "h264data.h"
 #include "mpegutils.h"
 #include "parser.h"
+#include "refstruct.h"
 #include "startcode.h"
 
 typedef struct H264ParseContext {
@@ -373,13 +374,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
                 goto fail;
             }
 
-            av_buffer_unref(&p->ps.pps_ref);
-            p->ps.pps = NULL;
-            p->ps.sps = NULL;
-            p->ps.pps_ref = av_buffer_ref(p->ps.pps_list[pps_id]);
-            if (!p->ps.pps_ref)
-                goto fail;
-            p->ps.pps = (const PPS*)p->ps.pps_ref->data;
+            ff_refstruct_replace(&p->ps.pps, p->ps.pps_list[pps_id]);
             p->ps.sps = p->ps.pps->sps;
             sps       = p->ps.sps;
 
