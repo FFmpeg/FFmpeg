@@ -142,4 +142,13 @@ const void *ff_refstruct_ref_c(const void *obj);
  */
 void ff_refstruct_replace(void *dstp, const void *src);
 
+/**
+ * Check whether the reference count of an object managed
+ * via this API is 1.
+ *
+ * @param obj A pointer to an object managed via this API.
+ * @return 1 if the reference count of obj is 1; 0 otherwise.
+ */
+int ff_refstruct_exclusive(const void *obj);
+
 #endif /* AVCODEC_REFSTRUCT_H */

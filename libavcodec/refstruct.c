@@ -71,6 +71,13 @@ static RefCount *get_refcount(void *obj)
     return ref;
 }
 
+static const RefCount *cget_refcount(const void *obj)
+{
+    const RefCount *ref = (const RefCount*)((const char*)obj - REFCOUNT_OFFSET);
+    ff_assert(ref->cookie == REFSTRUCT_COOKIE);
+    return ref;
+}
+
 static void *get_userdata(void *buf)
 {
     return (char*)buf + REFCOUNT_OFFSET;
@@ -163,4 +170,13 @@ void ff_refstruct_replace(void *dstp, const void *src)
         dst = ff_refstruct_ref_c(src);
         memcpy(dstp, &dst, sizeof(dst));
     }
+}
+
+int ff_refstruct_exclusive(const void *obj)
+{
+    const RefCount *ref = cget_refcount(obj);
+    /* Casting const away here is safe, because it is a load.
+     * It is necessary because atomic_load_explicit() does not
+     * accept const atomics in C11 (see also N1807). */
+    return atomic_load_explicit((atomic_uintptr_t*)&ref->refcount, memory_order_acquire) == 1;
 }
