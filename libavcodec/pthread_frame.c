@@ -35,6 +35,7 @@
 #include "hwconfig.h"
 #include "internal.h"
 #include "pthread_internal.h"
+#include "refstruct.h"
 #include "thread.h"
 #include "threadframe.h"
 #include "version_major.h"
@@ -329,9 +330,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
         dst->hwaccel_flags = src->hwaccel_flags;
 
-        err = av_buffer_replace(&dst->internal->pool, src->internal->pool);
-        if (err < 0)
-            return err;
+        ff_refstruct_replace(&dst->internal->pool, src->internal->pool);
     }
 
     if (for_user) {
@@ -740,7 +739,7 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
                 av_freep(&ctx->priv_data);
             }
 
-            av_buffer_unref(&ctx->internal->pool);
+            ff_refstruct_unref(&ctx->internal->pool);
             av_packet_free(&ctx->internal->last_pkt_props);
             av_freep(&ctx->internal);
             av_buffer_unref(&ctx->hw_frames_ctx);

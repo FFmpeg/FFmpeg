@@ -44,6 +44,7 @@
 #include "frame_thread_encoder.h"
 #include "hwconfig.h"
 #include "internal.h"
+#include "refstruct.h"
 #include "thread.h"
 
 /**
@@ -459,7 +460,7 @@ av_cold int avcodec_close(AVCodecContext *avctx)
         av_frame_free(&avci->in_frame);
         av_frame_free(&avci->recon_frame);
 
-        av_buffer_unref(&avci->pool);
+        ff_refstruct_unref(&avci->pool);
 
         ff_hwaccel_uninit(avctx);
 

@@ -32,6 +32,7 @@
 
 #include "avcodec.h"
 #include "internal.h"
+#include "refstruct.h"
 
 typedef struct FramePool {
     /**
@@ -52,40 +53,18 @@ typedef struct FramePool {
     int samples;
 } FramePool;
 
-static void frame_pool_free(void *opaque, uint8_t *data)
+static void frame_pool_free(FFRefStructOpaque unused, void *obj)
 {
-    FramePool *pool = (FramePool*)data;
+    FramePool *pool = obj;
     int i;
 
     for (i = 0; i < FF_ARRAY_ELEMS(pool->pools); i++)
         av_buffer_pool_uninit(&pool->pools[i]);
-
-    av_freep(&data);
-}
-
-static AVBufferRef *frame_pool_alloc(void)
-{
-    FramePool *pool = av_mallocz(sizeof(*pool));
-    AVBufferRef *buf;
-
-    if (!pool)
-        return NULL;
-
-    buf = av_buffer_create((uint8_t*)pool, sizeof(*pool),
-                           frame_pool_free, NULL, 0);
-    if (!buf) {
-        av_freep(&pool);
-        return NULL;
-    }
-
-    return buf;
 }
 
 static int update_frame_pool(AVCodecContext *avctx, AVFrame *frame)
 {
-    FramePool *pool = avctx->internal->pool ?
-                      (FramePool*)avctx->internal->pool->data : NULL;
-    AVBufferRef *pool_buf;
+    FramePool *pool = avctx->internal->pool;
     int i, ret, ch, planes;
 
     if (avctx->codec_type == AVMEDIA_TYPE_AUDIO) {
@@ -109,10 +88,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
             return 0;
     }
 
-    pool_buf = frame_pool_alloc();
-    if (!pool_buf)
+    pool = ff_refstruct_alloc_ext(sizeof(*pool), 0, NULL, frame_pool_free);
+    if (!pool)
         return AVERROR(ENOMEM);
-    pool = (FramePool*)pool_buf->data;
 
     switch (avctx->codec_type) {
     case AVMEDIA_TYPE_VIDEO: {
@@ -189,18 +167,18 @@ FF_ENABLE_DEPRECATION_WARNINGS
     default: av_assert0(0);
     }
 
-    av_buffer_unref(&avctx->internal->pool);
-    avctx->internal->pool = pool_buf;
+    ff_refstruct_unref(&avctx->internal->pool);
+    avctx->internal->pool = pool;
 
     return 0;
 fail:
-    av_buffer_unref(&pool_buf);
+    ff_refstruct_unref(&pool);
     return ret;
 }
 
 static int audio_get_buffer(AVCodecContext *avctx, AVFrame *frame)
 {
-    FramePool *pool = (FramePool*)avctx->internal->pool->data;
+    FramePool *pool = avctx->internal->pool;
     int planes = pool->planes;
     int i;
 
@@ -245,7 +223,7 @@ fail:
 
 static int video_get_buffer(AVCodecContext *s, AVFrame *pic)
 {
-    FramePool *pool = (FramePool*)s->internal->pool->data;
+    FramePool *pool = s->internal->pool;
     int i;
 
     if (pic->data[0] || pic->data[1] || pic->data[2] || pic->data[3]) {

@@ -62,7 +62,7 @@ typedef struct AVCodecInternal {
      */
     int pad_samples;
 
-    AVBufferRef *pool;
+    struct FramePool *pool;
 
     void *thread_ctx;
 
