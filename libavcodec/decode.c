@@ -28,18 +28,13 @@
 #endif
 
 #include "libavutil/avassert.h"
-#include "libavutil/avstring.h"
-#include "libavutil/bprint.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "libavutil/emms.h"
-#include "libavutil/fifo.h"
 #include "libavutil/frame.h"
 #include "libavutil/hwcontext.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
-#include "libavutil/intmath.h"
-#include "libavutil/opt.h"
 
 #include "avcodec.h"
 #include "avcodec_internal.h"
@@ -52,6 +47,7 @@
 #include "hwconfig.h"
 #include "internal.h"
 #include "packet_internal.h"
+#include "refstruct.h"
 #include "thread.h"
 
 typedef struct DecodeContext {
@@ -1839,34 +1835,22 @@ int ff_copy_palette(void *dst, const AVPacket *src, void *logctx)
     return 0;
 }
 
-int ff_hwaccel_frame_priv_alloc(AVCodecContext *avctx, void **hwaccel_picture_private,
-                                AVBufferRef **hwaccel_priv_buf)
+int ff_hwaccel_frame_priv_alloc(AVCodecContext *avctx, void **hwaccel_picture_private)
 {
     const FFHWAccel *hwaccel = ffhwaccel(avctx->hwaccel);
-    AVBufferRef *ref;
     AVHWFramesContext *frames_ctx;
-    uint8_t *data;
 
     if (!hwaccel || !hwaccel->frame_priv_data_size)
         return 0;
 
     av_assert0(!*hwaccel_picture_private);
-    data       = av_mallocz(hwaccel->frame_priv_data_size);
-    if (!data)
-        return AVERROR(ENOMEM);
 
     frames_ctx = (AVHWFramesContext *)avctx->hw_frames_ctx->data;
-
-    ref = av_buffer_create(data, hwaccel->frame_priv_data_size,
-                           hwaccel->free_frame_priv,
-                           frames_ctx->device_ctx, 0);
-    if (!ref) {
-        av_free(data);
+    *hwaccel_picture_private = ff_refstruct_alloc_ext(hwaccel->frame_priv_data_size, 0,
+                                                      frames_ctx->device_ctx,
+                                                      hwaccel->free_frame_priv);
+    if (!*hwaccel_picture_private)
         return AVERROR(ENOMEM);
-    }
-
-    *hwaccel_priv_buf        = ref;
-    *hwaccel_picture_private = ref->data;
 
     return 0;
 }

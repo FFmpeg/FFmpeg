@@ -27,6 +27,7 @@
 #include "thread.h"
 #include "hevc.h"
 #include "hevcdec.h"
+#include "refstruct.h"
 #include "threadframe.h"
 
 void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags)
@@ -51,8 +52,7 @@ void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags)
 
         frame->collocated_ref = NULL;
 
-        av_buffer_unref(&frame->hwaccel_priv_buf);
-        frame->hwaccel_picture_private = NULL;
+        ff_refstruct_unref(&frame->hwaccel_picture_private);
     }
 }
 
@@ -118,8 +118,7 @@ static HEVCFrame *alloc_frame(HEVCContext *s)
             (s->sei.picture_timing.picture_struct == AV_PICTURE_STRUCTURE_BOTTOM_FIELD))
             frame->frame->flags |= AV_FRAME_FLAG_INTERLACED;
 
-        ret = ff_hwaccel_frame_priv_alloc(s->avctx, &frame->hwaccel_picture_private,
-                                          &frame->hwaccel_priv_buf);
+        ret = ff_hwaccel_frame_priv_alloc(s->avctx, &frame->hwaccel_picture_private);
         if (ret < 0)
             goto fail;
 

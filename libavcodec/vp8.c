@@ -108,8 +108,7 @@ static int vp8_alloc_frame(VP8Context *s, VP8Frame *f, int ref)
         return ret;
     if (!(f->seg_map = ff_refstruct_allocz(s->mb_width * s->mb_height)))
         goto fail;
-    ret = ff_hwaccel_frame_priv_alloc(s->avctx, &f->hwaccel_picture_private,
-                                      &f->hwaccel_priv_buf);
+    ret = ff_hwaccel_frame_priv_alloc(s->avctx, &f->hwaccel_picture_private);
     if (ret < 0)
         goto fail;
 
@@ -124,8 +123,7 @@ fail:
 static void vp8_release_frame(VP8Context *s, VP8Frame *f)
 {
     ff_refstruct_unref(&f->seg_map);
-    av_buffer_unref(&f->hwaccel_priv_buf);
-    f->hwaccel_picture_private = NULL;
+    ff_refstruct_unref(&f->hwaccel_picture_private);
     ff_thread_release_ext_buffer(s->avctx, &f->tf);
 }
 
@@ -139,12 +137,8 @@ static int vp8_ref_frame(VP8Context *s, VP8Frame *dst, const VP8Frame *src)
     if ((ret = ff_thread_ref_frame(&dst->tf, &src->tf)) < 0)
         return ret;
     ff_refstruct_replace(&dst->seg_map, src->seg_map);
-    if (src->hwaccel_picture_private) {
-        dst->hwaccel_priv_buf = av_buffer_ref(src->hwaccel_priv_buf);
-        if (!dst->hwaccel_priv_buf)
-            return AVERROR(ENOMEM);
-        dst->hwaccel_picture_private = dst->hwaccel_priv_buf->data;
-    }
+    ff_refstruct_replace(&dst->hwaccel_picture_private,
+                          src->hwaccel_picture_private);
 
     return 0;
 }

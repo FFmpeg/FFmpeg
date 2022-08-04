@@ -66,8 +66,8 @@ typedef struct Picture {
     int alloc_mb_height;        ///< mb_height used to allocate tables
     int alloc_mb_stride;        ///< mb_stride used to allocate tables
 
-    AVBufferRef *hwaccel_priv_buf;
-    void *hwaccel_picture_private; ///< Hardware accelerator private data
+    /// RefStruct reference for hardware accelerator private data
+    void *hwaccel_picture_private;
 
     int field_picture;          ///< whether or not the picture was encoded in separate fields
 

@@ -30,6 +30,7 @@
 #include "hwaccel_internal.h"
 #include "hwconfig.h"
 #include "profiles.h"
+#include "refstruct.h"
 #include "thread.h"
 #include "threadframe.h"
 #include "pthread_internal.h"
@@ -100,9 +101,8 @@ static void vp9_frame_unref(AVCodecContext *avctx, VP9Frame *f)
 {
     ff_thread_release_ext_buffer(avctx, &f->tf);
     av_buffer_unref(&f->extradata);
-    av_buffer_unref(&f->hwaccel_priv_buf);
+    ff_refstruct_unref(&f->hwaccel_picture_private);
     f->segmentation_map = NULL;
-    f->hwaccel_picture_private = NULL;
 }
 
 static int vp9_frame_alloc(AVCodecContext *avctx, VP9Frame *f)
@@ -135,8 +135,7 @@ static int vp9_frame_alloc(AVCodecContext *avctx, VP9Frame *f)
     f->segmentation_map = f->extradata->data;
     f->mv = (VP9mvrefPair *) (f->extradata->data + sz);
 
-    ret = ff_hwaccel_frame_priv_alloc(avctx, &f->hwaccel_picture_private,
-                                      &f->hwaccel_priv_buf);
+    ret = ff_hwaccel_frame_priv_alloc(avctx, &f->hwaccel_picture_private);
     if (ret < 0)
         goto fail;
 
@@ -163,12 +162,8 @@ static int vp9_frame_ref(AVCodecContext *avctx, VP9Frame *dst, VP9Frame *src)
     dst->mv = src->mv;
     dst->uses_2pass = src->uses_2pass;
 
-    if (src->hwaccel_picture_private) {
-        dst->hwaccel_priv_buf = av_buffer_ref(src->hwaccel_priv_buf);
-        if (!dst->hwaccel_priv_buf)
-            goto fail;
-        dst->hwaccel_picture_private = dst->hwaccel_priv_buf->data;
-    }
+    ff_refstruct_replace(&dst->hwaccel_picture_private,
+                          src->hwaccel_picture_private);
 
     return 0;
 

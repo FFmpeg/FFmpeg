@@ -27,7 +27,6 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "av1_parse.h"
-#include "decode.h"
 #include "av1dec.h"
 #include "atsc_a53.h"
 #include "bytestream.h"
@@ -640,8 +639,7 @@ static int get_pixel_format(AVCodecContext *avctx)
 static void av1_frame_unref(AVCodecContext *avctx, AV1Frame *f)
 {
     ff_thread_release_buffer(avctx, f->f);
-    av_buffer_unref(&f->hwaccel_priv_buf);
-    f->hwaccel_picture_private = NULL;
+    ff_refstruct_unref(&f->hwaccel_picture_private);
     ff_refstruct_unref(&f->header_ref);
     f->raw_frame_header = NULL;
     f->spatial_id = f->temporal_id = 0;
@@ -666,12 +664,8 @@ static int av1_frame_ref(AVCodecContext *avctx, AV1Frame *dst, const AV1Frame *s
     if (ret < 0)
         goto fail;
 
-    if (src->hwaccel_picture_private) {
-        dst->hwaccel_priv_buf = av_buffer_ref(src->hwaccel_priv_buf);
-        if (!dst->hwaccel_priv_buf)
-            goto fail;
-        dst->hwaccel_picture_private = dst->hwaccel_priv_buf->data;
-    }
+    ff_refstruct_replace(&dst->hwaccel_picture_private,
+                          src->hwaccel_picture_private);
 
     dst->spatial_id = src->spatial_id;
     dst->temporal_id = src->temporal_id;
@@ -915,8 +909,7 @@ static int av1_frame_alloc(AVCodecContext *avctx, AV1Frame *f)
         break;
     }
 
-    ret = ff_hwaccel_frame_priv_alloc(avctx, &f->hwaccel_picture_private,
-                                      &f->hwaccel_priv_buf);
+    ret = ff_hwaccel_frame_priv_alloc(avctx, &f->hwaccel_picture_private);
     if (ret < 0)
         goto fail;
 

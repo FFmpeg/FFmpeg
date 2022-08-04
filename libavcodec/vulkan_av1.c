@@ -536,10 +536,10 @@ static int vk_av1_end_frame(AVCodecContext *avctx)
     return ff_vk_decode_frame(avctx, pic->f, vp, rav, rvp);
 }
 
-static void vk_av1_free_frame_priv(void *_hwctx, uint8_t *data)
+static void vk_av1_free_frame_priv(FFRefStructOpaque _hwctx, void *data)
 {
-    AVHWDeviceContext *hwctx = _hwctx;
-    AV1VulkanDecodePicture *ap = (AV1VulkanDecodePicture *)data;
+    AVHWDeviceContext *hwctx = _hwctx.nc;
+    AV1VulkanDecodePicture *ap = data;
 
     /* Workaround for a spec issue. */
     if (ap->frame_id_set)
@@ -547,9 +547,6 @@ static void vk_av1_free_frame_priv(void *_hwctx, uint8_t *data)
 
     /* Free frame resources, this also destroys the session parameters. */
     ff_vk_decode_free_frame(hwctx, &ap->vp);
-
-    /* Free frame context */
-    av_free(ap);
 }
 
 const FFHWAccel ff_av1_vulkan_hwaccel = {

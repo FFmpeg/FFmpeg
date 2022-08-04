@@ -28,7 +28,6 @@
 #include "libavutil/attributes.h"
 #include "libavutil/avstring.h"
 #include "libavutil/common.h"
-#include "libavutil/display.h"
 #include "libavutil/film_grain_params.h"
 #include "libavutil/internal.h"
 #include "libavutil/md5.h"
@@ -37,13 +36,11 @@
 #include "libavutil/timecode.h"
 
 #include "bswapdsp.h"
-#include "bytestream.h"
 #include "cabac_functions.h"
 #include "codec_internal.h"
 #include "decode.h"
 #include "golomb.h"
 #include "hevc.h"
-#include "hevc_data.h"
 #include "hevc_parse.h"
 #include "hevcdec.h"
 #include "hwaccel_internal.h"
@@ -3426,12 +3423,8 @@ static int hevc_ref_frame(HEVCContext *s, HEVCFrame *dst, HEVCFrame *src)
     dst->flags      = src->flags;
     dst->sequence   = src->sequence;
 
-    if (src->hwaccel_picture_private) {
-        dst->hwaccel_priv_buf = av_buffer_ref(src->hwaccel_priv_buf);
-        if (!dst->hwaccel_priv_buf)
-            goto fail;
-        dst->hwaccel_picture_private = dst->hwaccel_priv_buf->data;
-    }
+    ff_refstruct_replace(&dst->hwaccel_picture_private,
+                          src->hwaccel_picture_private);
 
     return 0;
 fail:

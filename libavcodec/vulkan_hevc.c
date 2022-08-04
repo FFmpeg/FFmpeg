@@ -909,16 +909,13 @@ static int vk_hevc_end_frame(AVCodecContext *avctx)
     return ff_vk_decode_frame(avctx, pic->frame, vp, rav, rvp);
 }
 
-static void vk_hevc_free_frame_priv(void *_hwctx, uint8_t *data)
+static void vk_hevc_free_frame_priv(FFRefStructOpaque _hwctx, void *data)
 {
-    AVHWDeviceContext *hwctx = _hwctx;
-    HEVCVulkanDecodePicture *hp = (HEVCVulkanDecodePicture *)data;
+    AVHWDeviceContext *hwctx = _hwctx.nc;
+    HEVCVulkanDecodePicture *hp = data;
 
     /* Free frame resources */
     ff_vk_decode_free_frame(hwctx, &hp->vp);
-
-    /* Free frame context */
-    av_free(hp);
 }
 
 const FFHWAccel ff_hevc_vulkan_hwaccel = {

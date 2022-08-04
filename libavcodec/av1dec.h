@@ -24,7 +24,6 @@
 #include <stdint.h>
 
 #include "libavutil/fifo.h"
-#include "libavutil/buffer.h"
 #include "libavutil/frame.h"
 #include "libavutil/pixfmt.h"
 #include "avcodec.h"
@@ -35,8 +34,7 @@
 typedef struct AV1Frame {
     AVFrame *f;
 
-    AVBufferRef *hwaccel_priv_buf;
-    void *hwaccel_picture_private;
+    void *hwaccel_picture_private; ///< RefStruct reference
 
     AV1RawOBU *header_ref; ///< RefStruct reference backing raw_frame_header.
     AV1RawFrameHeader *raw_frame_header;

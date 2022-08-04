@@ -69,8 +69,7 @@ typedef struct VP9Frame {
     VP9mvrefPair *mv;
     int uses_2pass;
 
-    AVBufferRef *hwaccel_priv_buf;
-    void *hwaccel_picture_private;
+    void *hwaccel_picture_private; ///< RefStruct reference
 } VP9Frame;
 
 enum BlockLevel {

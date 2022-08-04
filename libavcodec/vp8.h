@@ -28,7 +28,6 @@
 
 #include <stdatomic.h>
 
-#include "libavutil/buffer.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/thread.h"
 
@@ -154,8 +153,7 @@ typedef struct VP8Frame {
     ThreadFrame tf;
     uint8_t *seg_map; ///< RefStruct reference
 
-    AVBufferRef *hwaccel_priv_buf;
-    void *hwaccel_picture_private;
+    void *hwaccel_picture_private; ///< RefStruct reference
 } VP8Frame;
 
 #define MAX_THREADS 8

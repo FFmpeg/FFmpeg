@@ -27,11 +27,11 @@
 
 #include "avcodec.h"
 #include "encode.h"
-#include "internal.h"
 #include "decode.h"
 #include "motion_est.h"
 #include "mpegpicture.h"
 #include "mpegutils.h"
+#include "refstruct.h"
 #include "threadframe.h"
 
 static void av_noinline free_picture_tables(Picture *pic)
@@ -171,8 +171,7 @@ static int alloc_frame_buffer(AVCodecContext *avctx,  Picture *pic,
         pic->f->height = avctx->height;
     }
 
-    ret = ff_hwaccel_frame_priv_alloc(avctx, &pic->hwaccel_picture_private,
-                                      &pic->hwaccel_priv_buf);
+    ret = ff_hwaccel_frame_priv_alloc(avctx, &pic->hwaccel_picture_private);
     if (ret < 0)
         return ret;
 
@@ -316,12 +315,11 @@ void ff_mpeg_unref_picture(AVCodecContext *avctx, Picture *pic)
     else if (pic->f)
         av_frame_unref(pic->f);
 
-    av_buffer_unref(&pic->hwaccel_priv_buf);
+    ff_refstruct_unref(&pic->hwaccel_picture_private);
 
     if (pic->needs_realloc)
         free_picture_tables(pic);
 
-    pic->hwaccel_picture_private = NULL;
     pic->field_picture = 0;
     pic->b_frame_score = 0;
     pic->needs_realloc = 0;
@@ -380,14 +378,8 @@ int ff_mpeg_ref_picture(AVCodecContext *avctx, Picture *dst, Picture *src)
     if (ret < 0)
         goto fail;
 
-    if (src->hwaccel_picture_private) {
-        dst->hwaccel_priv_buf = av_buffer_ref(src->hwaccel_priv_buf);
-        if (!dst->hwaccel_priv_buf) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
-        dst->hwaccel_picture_private = dst->hwaccel_priv_buf->data;
-    }
+    ff_refstruct_replace(&dst->hwaccel_picture_private,
+                          src->hwaccel_picture_private);
 
     dst->field_picture           = src->field_picture;
     dst->b_frame_score           = src->b_frame_score;

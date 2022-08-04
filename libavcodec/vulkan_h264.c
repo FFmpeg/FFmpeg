@@ -530,16 +530,13 @@ static int vk_h264_end_frame(AVCodecContext *avctx)
     return ff_vk_decode_frame(avctx, pic->f, vp, rav, rvp);
 }
 
-static void vk_h264_free_frame_priv(void *_hwctx, uint8_t *data)
+static void vk_h264_free_frame_priv(FFRefStructOpaque _hwctx, void *data)
 {
-    AVHWDeviceContext *hwctx = _hwctx;
-    H264VulkanDecodePicture *hp = (H264VulkanDecodePicture *)data;
+    AVHWDeviceContext *hwctx = _hwctx.nc;
+    H264VulkanDecodePicture *hp = data;
 
     /* Free frame resources, this also destroys the session parameters. */
     ff_vk_decode_free_frame(hwctx, &hp->vp);
-
-    /* Free frame context */
-    av_free(hp);
 }
 
 const FFHWAccel ff_h264_vulkan_hwaccel = {

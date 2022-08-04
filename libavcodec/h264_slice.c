@@ -206,8 +206,7 @@ static int alloc_picture(H264Context *h, H264Picture *pic)
             goto fail;
     }
 
-    ret = ff_hwaccel_frame_priv_alloc(h->avctx, &pic->hwaccel_picture_private,
-                                      &pic->hwaccel_priv_buf);
+    ret = ff_hwaccel_frame_priv_alloc(h->avctx, &pic->hwaccel_picture_private);
     if (ret < 0)
         goto fail;
 
