@@ -3596,9 +3596,7 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     if (ret < 0)
         return ret;
 
-    ret = ff_dovi_ctx_replace(&s->dovi_ctx, &s0->dovi_ctx);
-    if (ret < 0)
-        return ret;
+    ff_dovi_ctx_replace(&s->dovi_ctx, &s0->dovi_ctx);
 
     ret = av_buffer_replace(&s->sei.common.dynamic_hdr_vivid.info,
                             s0->sei.common.dynamic_hdr_vivid.info);

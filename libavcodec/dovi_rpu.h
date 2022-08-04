@@ -47,12 +47,12 @@ typedef struct DOVIContext {
     /**
      * Private fields internal to dovi_rpu.c
      */
-    AVBufferRef *vdr_ref[DOVI_MAX_DM_ID+1];
+    struct DOVIVdr *vdr[DOVI_MAX_DM_ID+1]; ///< RefStruct references
     uint8_t dv_profile;
 
 } DOVIContext;
 
-int ff_dovi_ctx_replace(DOVIContext *s, const DOVIContext *s0);
+void ff_dovi_ctx_replace(DOVIContext *s, const DOVIContext *s0);
 
 /**
  * Completely reset a DOVIContext, preserving only logctx.

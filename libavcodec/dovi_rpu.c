@@ -26,6 +26,7 @@
 #include "dovi_rpu.h"
 #include "golomb.h"
 #include "get_bits.h"
+#include "refstruct.h"
 
 enum {
     RPU_COEFF_FIXED = 0,
@@ -33,17 +34,17 @@ enum {
 };
 
 /**
- * Private contents of vdr_ref.
+ * Private contents of vdr.
  */
-typedef struct DOVIVdrRef {
+typedef struct DOVIVdr {
     AVDOVIDataMapping mapping;
     AVDOVIColorMetadata color;
-} DOVIVdrRef;
+} DOVIVdr;
 
 void ff_dovi_ctx_unref(DOVIContext *s)
 {
-    for (int i = 0; i < FF_ARRAY_ELEMS(s->vdr_ref); i++)
-        av_buffer_unref(&s->vdr_ref[i]);
+    for (int i = 0; i < FF_ARRAY_ELEMS(s->vdr); i++)
+        ff_refstruct_unref(&s->vdr[i]);
 
     *s = (DOVIContext) {
         .logctx = s->logctx,
@@ -52,8 +53,8 @@ void ff_dovi_ctx_unref(DOVIContext *s)
 
 void ff_dovi_ctx_flush(DOVIContext *s)
 {
-    for (int i = 0; i < FF_ARRAY_ELEMS(s->vdr_ref); i++)
-        av_buffer_unref(&s->vdr_ref[i]);
+    for (int i = 0; i < FF_ARRAY_ELEMS(s->vdr); i++)
+        ff_refstruct_unref(&s->vdr[i]);
 
     *s = (DOVIContext) {
         .logctx = s->logctx,
@@ -61,23 +62,14 @@ void ff_dovi_ctx_flush(DOVIContext *s)
     };
 }
 
-int ff_dovi_ctx_replace(DOVIContext *s, const DOVIContext *s0)
+void ff_dovi_ctx_replace(DOVIContext *s, const DOVIContext *s0)
 {
-    int ret;
     s->logctx = s0->logctx;
     s->mapping = s0->mapping;
     s->color = s0->color;
     s->dv_profile = s0->dv_profile;
-    for (int i = 0; i < DOVI_MAX_DM_ID; i++) {
-        if ((ret = av_buffer_replace(&s->vdr_ref[i], s0->vdr_ref[i])) < 0)
-            goto fail;
-    }
-
-    return 0;
-
-fail:
-    ff_dovi_ctx_unref(s);
-    return ret;
+    for (int i = 0; i < DOVI_MAX_DM_ID; i++)
+        ff_refstruct_replace(&s->vdr[i], s0->vdr[i]);
 }
 
 void ff_dovi_update_cfg(DOVIContext *s, const AVDOVIDecoderConfigurationRecord *cfg)
@@ -195,7 +187,7 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size)
 {
     AVDOVIRpuDataHeader *hdr = &s->header;
     GetBitContext *gb = &(GetBitContext){0};
-    DOVIVdrRef *vdr;
+    DOVIVdr *vdr;
     int ret;
 
     uint8_t nal_prefix;
@@ -278,23 +270,23 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size)
     if (use_prev_vdr_rpu) {
         int prev_vdr_rpu_id = get_ue_golomb_31(gb);
         VALIDATE(prev_vdr_rpu_id, 0, DOVI_MAX_DM_ID);
-        if (!s->vdr_ref[prev_vdr_rpu_id]) {
+        if (!s->vdr[prev_vdr_rpu_id]) {
             av_log(s->logctx, AV_LOG_ERROR, "Unknown previous RPU ID: %u\n",
                    prev_vdr_rpu_id);
             goto fail;
         }
-        vdr = (DOVIVdrRef *) s->vdr_ref[prev_vdr_rpu_id]->data;
+        vdr = s->vdr[prev_vdr_rpu_id];
         s->mapping = &vdr->mapping;
     } else {
         int vdr_rpu_id = get_ue_golomb_31(gb);
         VALIDATE(vdr_rpu_id, 0, DOVI_MAX_DM_ID);
-        if (!s->vdr_ref[vdr_rpu_id]) {
-            s->vdr_ref[vdr_rpu_id] = av_buffer_allocz(sizeof(DOVIVdrRef));
-            if (!s->vdr_ref[vdr_rpu_id])
+        if (!s->vdr[vdr_rpu_id]) {
+            s->vdr[vdr_rpu_id] = ff_refstruct_allocz(sizeof(DOVIVdr));
+            if (!s->vdr[vdr_rpu_id])
                 return AVERROR(ENOMEM);
         }
 
-        vdr = (DOVIVdrRef *) s->vdr_ref[vdr_rpu_id]->data;
+        vdr = s->vdr[vdr_rpu_id];
         s->mapping = &vdr->mapping;
 
         vdr->mapping.vdr_rpu_id = vdr_rpu_id;
@@ -390,24 +382,24 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size)
         int current_dm_id = get_ue_golomb_31(gb);
         VALIDATE(affected_dm_id, 0, DOVI_MAX_DM_ID);
         VALIDATE(current_dm_id, 0, DOVI_MAX_DM_ID);
-        if (!s->vdr_ref[affected_dm_id]) {
-            s->vdr_ref[affected_dm_id] = av_buffer_allocz(sizeof(DOVIVdrRef));
-            if (!s->vdr_ref[affected_dm_id])
+        if (!s->vdr[affected_dm_id]) {
+            s->vdr[affected_dm_id] = ff_refstruct_allocz(sizeof(DOVIVdr));
+            if (!s->vdr[affected_dm_id])
                 return AVERROR(ENOMEM);
         }
 
-        if (!s->vdr_ref[current_dm_id]) {
+        if (!s->vdr[current_dm_id]) {
             av_log(s->logctx, AV_LOG_ERROR, "Unknown previous RPU DM ID: %u\n",
                    current_dm_id);
             goto fail;
         }
 
         /* Update current pointer based on current_dm_id */
-        vdr = (DOVIVdrRef *) s->vdr_ref[current_dm_id]->data;
+        vdr = s->vdr[current_dm_id];
         s->color = &vdr->color;
 
         /* Update values of affected_dm_id */
-        vdr = (DOVIVdrRef *) s->vdr_ref[affected_dm_id]->data;
+        vdr = s->vdr[affected_dm_id];
         color = &vdr->color;
         color->dm_metadata_id = affected_dm_id;
         color->scene_refresh_flag = get_ue_golomb_31(gb);
