@@ -955,17 +955,11 @@ static int cbs_clone_internal_refs_unit_content(AVBufferRef **clone_ref,
             goto fail;
         }
 
-        // src_ptr is required to point somewhere inside src_buf.  If it
-        // doesn't, there is a bug somewhere.
-        av_assert0(*src_ptr >= (*src_buf)->data &&
-                   *src_ptr <  (*src_buf)->data + (*src_buf)->size);
-
         *copy_buf = av_buffer_ref(*src_buf);
         if (!*copy_buf) {
             err = AVERROR(ENOMEM);
             goto fail;
         }
-        *copy_ptr = (*copy_buf)->data + (*src_ptr - (*src_buf)->data);
     }
 
     *clone_ref = av_buffer_create(copy, desc->content_size,
