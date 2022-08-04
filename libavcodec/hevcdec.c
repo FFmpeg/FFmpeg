@@ -3414,9 +3414,8 @@ static int hevc_ref_frame(HEVCContext *s, HEVCFrame *dst, HEVCFrame *src)
         goto fail;
     dst->rpl_tab = src->rpl_tab;
 
-    dst->rpl_buf = av_buffer_ref(src->rpl_buf);
-    if (!dst->rpl_buf)
-        goto fail;
+    dst->rpl = ff_refstruct_ref(src->rpl);
+    dst->nb_rpl_elems = src->nb_rpl_elems;
 
     dst->poc        = src->poc;
     dst->ctb_count  = src->ctb_count;

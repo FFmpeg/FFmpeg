@@ -417,7 +417,8 @@ typedef struct HEVCFrame {
 
     AVBufferRef *tab_mvf_buf;
     AVBufferRef *rpl_tab_buf;
-    AVBufferRef *rpl_buf;
+    RefPicListTab *rpl;            ///< RefStruct reference
+    int nb_rpl_elems;
 
     void *hwaccel_picture_private; ///< RefStruct reference
 
