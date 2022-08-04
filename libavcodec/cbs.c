@@ -921,9 +921,9 @@ int ff_cbs_alloc_unit_content2(CodedBitstreamContext *ctx,
     return 0;
 }
 
-static int cbs_clone_unit_content(AVBufferRef **clone_ref,
-                                  CodedBitstreamUnit *unit,
-                                  const CodedBitstreamUnitTypeDescriptor *desc)
+static int cbs_clone_internal_refs_unit_content(AVBufferRef **clone_ref,
+                                                const CodedBitstreamUnit *unit,
+                                                const CodedBitstreamUnitTypeDescriptor *desc)
 {
     uint8_t *src, *copy;
     uint8_t **src_ptr, **copy_ptr;
@@ -987,18 +987,17 @@ fail:
     return err;
 }
 
-int ff_cbs_make_unit_refcounted(CodedBitstreamContext *ctx,
-                                CodedBitstreamUnit *unit)
+/*
+ * On success, unit->content and unit->content_ref are updated with
+ * the new content; unit is untouched on failure.
+ * Any old content_ref is simply overwritten and not freed.
+ */
+static int cbs_clone_unit_content(CodedBitstreamContext *ctx,
+                                  CodedBitstreamUnit *unit)
 {
     const CodedBitstreamUnitTypeDescriptor *desc;
     AVBufferRef *ref;
     int err;
-
-    av_assert0(unit->content);
-    if (unit->content_ref) {
-        // Already refcounted, nothing to do.
-        return 0;
-    }
 
     desc = cbs_find_unit_type_desc(ctx, unit);
     if (!desc)
@@ -1014,7 +1013,7 @@ int ff_cbs_make_unit_refcounted(CodedBitstreamContext *ctx,
         break;
 
     case CBS_CONTENT_TYPE_INTERNAL_REFS:
-        err = cbs_clone_unit_content(&ref, unit, desc);
+        err = cbs_clone_internal_refs_unit_content(&ref, unit, desc);
         break;
 
     case CBS_CONTENT_TYPE_COMPLEX:
@@ -1035,51 +1034,28 @@ int ff_cbs_make_unit_refcounted(CodedBitstreamContext *ctx,
     return 0;
 }
 
+int ff_cbs_make_unit_refcounted(CodedBitstreamContext *ctx,
+                                CodedBitstreamUnit *unit)
+{
+    av_assert0(unit->content);
+    if (unit->content_ref)
+        return 0;
+    return cbs_clone_unit_content(ctx, unit);
+}
+
 int ff_cbs_make_unit_writable(CodedBitstreamContext *ctx,
                               CodedBitstreamUnit *unit)
 {
-    const CodedBitstreamUnitTypeDescriptor *desc;
-    AVBufferRef *ref;
+    AVBufferRef *ref = unit->content_ref;
     int err;
 
-    // This can only be applied to refcounted units.
-    err = ff_cbs_make_unit_refcounted(ctx, unit);
-    if (err < 0)
-        return err;
-    av_assert0(unit->content && unit->content_ref);
-
-    if (av_buffer_is_writable(unit->content_ref))
+    av_assert0(unit->content);
+    if (ref && av_buffer_is_writable(ref))
         return 0;
 
-    desc = cbs_find_unit_type_desc(ctx, unit);
-    if (!desc)
-        return AVERROR(ENOSYS);
-
-    switch (desc->content_type) {
-    case CBS_CONTENT_TYPE_POD:
-        err = av_buffer_make_writable(&unit->content_ref);
-        break;
-
-    case CBS_CONTENT_TYPE_INTERNAL_REFS:
-        err = cbs_clone_unit_content(&ref, unit, desc);
-        break;
-
-    case CBS_CONTENT_TYPE_COMPLEX:
-        if (!desc->content_clone)
-            return AVERROR_PATCHWELCOME;
-        err = desc->content_clone(&ref, unit);
-        break;
-
-    default:
-        av_assert0(0 && "Invalid content type.");
-    }
+    err = cbs_clone_unit_content(ctx, unit);
     if (err < 0)
         return err;
-
-    if (desc->content_type != CBS_CONTENT_TYPE_POD) {
-        av_buffer_unref(&unit->content_ref);
-        unit->content_ref = ref;
-    }
-    unit->content = unit->content_ref->data;
+    av_buffer_unref(&ref);
     return 0;
 }
