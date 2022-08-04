@@ -666,13 +666,7 @@ static int cbs_h26 ## h26n ## _replace_ ## ps_var(CodedBitstreamContext *ctx, \
     CodedBitstreamH26 ## h26n ## Context *priv = ctx->priv_data; \
     H26 ## h26n ## Raw ## ps_name *ps_var = unit->content; \
     unsigned int id = ps_var->id_element; \
-    int err; \
-    if (id >= FF_ARRAY_ELEMS(priv->ps_var)) { \
-        av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid " #ps_name \
-               " id : %d.\n", id); \
-        return AVERROR_INVALIDDATA; \
-    } \
-    err = ff_cbs_make_unit_refcounted(ctx, unit); \
+    int err = ff_cbs_make_unit_refcounted(ctx, unit); \
     if (err < 0) \
         return err; \
     if (priv->ps_var[id] == priv->active_ ## ps_var) \
