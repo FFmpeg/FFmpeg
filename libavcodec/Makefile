@@ -1234,6 +1234,7 @@ SKIPHEADERS-$(CONFIG_D3D11VA)          += d3d11va.h dxva2_internal.h
 SKIPHEADERS-$(CONFIG_DXVA2)            += dxva2.h dxva2_internal.h
 SKIPHEADERS-$(CONFIG_JNI)              += ffjni.h
 SKIPHEADERS-$(CONFIG_LCMS2)            += fflcms2.h
+SKIPHEADERS-$(CONFIG_LIBAOM)           += libaom.h
 SKIPHEADERS-$(CONFIG_LIBJXL)           += libjxl.h
 SKIPHEADERS-$(CONFIG_LIBVPX)           += libvpx.h
 SKIPHEADERS-$(CONFIG_LIBWEBP_ENCODER)  += libwebpenc_common.h
@@ -1248,6 +1249,7 @@ SKIPHEADERS-$(CONFIG_VAAPI)            += vaapi_decode.h vaapi_hevc.h vaapi_enco
 SKIPHEADERS-$(CONFIG_VDPAU)            += vdpau.h vdpau_internal.h
 SKIPHEADERS-$(CONFIG_VIDEOTOOLBOX)     += videotoolbox.h vt_internal.h
 SKIPHEADERS-$(CONFIG_V4L2_M2M)         += v4l2_buffers.h v4l2_context.h v4l2_m2m.h
+SKIPHEADERS-$(CONFIG_ZLIB)             += zlib_wrapper.h
 
 TESTPROGS = avcodec                                                     \
             avpacket                                                    \
