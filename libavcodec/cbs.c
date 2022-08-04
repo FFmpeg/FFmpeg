@@ -925,9 +925,8 @@ static int cbs_clone_internal_refs_unit_content(AVBufferRef **clone_ref,
                                                 const CodedBitstreamUnit *unit,
                                                 const CodedBitstreamUnitTypeDescriptor *desc)
 {
-    uint8_t *src, *copy;
-    uint8_t **src_ptr, **copy_ptr;
-    AVBufferRef **src_buf, **copy_buf;
+    const uint8_t *src;
+    uint8_t *copy;
     int err, i;
 
     av_assert0(unit->content);
@@ -938,16 +937,16 @@ static int cbs_clone_internal_refs_unit_content(AVBufferRef **clone_ref,
         return AVERROR(ENOMEM);
 
     for (i = 0; i < desc->nb_ref_offsets; i++) {
-        src_ptr  = (uint8_t**)(src + desc->ref_offsets[i]);
-        src_buf  = (AVBufferRef**)(src_ptr + 1);
-        copy_ptr = (uint8_t**)(copy + desc->ref_offsets[i]);
-        copy_buf = (AVBufferRef**)(copy_ptr + 1);
+        const uint8_t *const *src_ptr = (const uint8_t* const*)(src + desc->ref_offsets[i]);
+        const AVBufferRef *src_buf = *(AVBufferRef**)(src_ptr + 1);
+        uint8_t **copy_ptr = (uint8_t**)(copy + desc->ref_offsets[i]);
+        AVBufferRef **copy_buf = (AVBufferRef**)(copy_ptr + 1);
 
         if (!*src_ptr) {
-            av_assert0(!*src_buf);
+            av_assert0(!src_buf);
             continue;
         }
-        if (!*src_buf) {
+        if (!src_buf) {
             // We can't handle a non-refcounted pointer here - we don't
             // have enough information to handle whatever structure lies
             // at the other end of it.
@@ -955,7 +954,7 @@ static int cbs_clone_internal_refs_unit_content(AVBufferRef **clone_ref,
             goto fail;
         }
 
-        *copy_buf = av_buffer_ref(*src_buf);
+        *copy_buf = av_buffer_ref(src_buf);
         if (!*copy_buf) {
             err = AVERROR(ENOMEM);
             goto fail;
