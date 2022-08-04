@@ -437,7 +437,8 @@ typedef struct CodedBitstreamAV1Context {
     const AVClass *class;
 
     AV1RawSequenceHeader *sequence_header;
-    AVBufferRef          *sequence_header_ref;
+    /** A RefStruct reference backing sequence_header. */
+    AV1RawOBU            *sequence_header_ref;
 
     int     seen_frame_header;
     AVBufferRef *frame_header_ref;

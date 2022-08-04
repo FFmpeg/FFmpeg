@@ -867,14 +867,11 @@ typedef struct CodedBitstreamH266Context {
 
     // All currently available parameter sets.  These are updated when
     // any parameter set NAL unit is read/written with this context.
-    AVBufferRef *vps_ref[VVC_MAX_VPS_COUNT];
-    AVBufferRef *sps_ref[VVC_MAX_SPS_COUNT];
-    AVBufferRef *pps_ref[VVC_MAX_PPS_COUNT];
-    AVBufferRef *ph_ref;
-    H266RawVPS  *vps[VVC_MAX_VPS_COUNT];
-    H266RawSPS  *sps[VVC_MAX_SPS_COUNT];
-    H266RawPPS  *pps[VVC_MAX_PPS_COUNT];
+    H266RawVPS  *vps[VVC_MAX_VPS_COUNT]; ///< RefStruct references
+    H266RawSPS  *sps[VVC_MAX_SPS_COUNT]; ///< RefStruct references
+    H266RawPPS  *pps[VVC_MAX_PPS_COUNT]; ///< RefStruct references
     H266RawPictureHeader *ph;
+    void *ph_ref; ///< RefStruct reference backing ph above
 } CodedBitstreamH266Context;
 
 #endif /* AVCODEC_CBS_H266_H */

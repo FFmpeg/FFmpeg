@@ -37,6 +37,7 @@
 #include "internal.h"
 #include "hwconfig.h"
 #include "profiles.h"
+#include "refstruct.h"
 #include "thread.h"
 
 /**< same with Div_Lut defined in spec 7.11.3.7 */
@@ -641,7 +642,7 @@ static void av1_frame_unref(AVCodecContext *avctx, AV1Frame *f)
     ff_thread_release_buffer(avctx, f->f);
     av_buffer_unref(&f->hwaccel_priv_buf);
     f->hwaccel_picture_private = NULL;
-    av_buffer_unref(&f->header_ref);
+    ff_refstruct_unref(&f->header_ref);
     f->raw_frame_header = NULL;
     f->spatial_id = f->temporal_id = 0;
     memset(f->skip_mode_frame_idx, 0,
@@ -654,9 +655,7 @@ static int av1_frame_ref(AVCodecContext *avctx, AV1Frame *dst, const AV1Frame *s
 {
     int ret;
 
-    ret = av_buffer_replace(&dst->header_ref, src->header_ref);
-    if (ret < 0)
-        return ret;
+    ff_refstruct_replace(&dst->header_ref, src->header_ref);
 
     dst->raw_frame_header = src->raw_frame_header;
 
@@ -712,10 +711,10 @@ static av_cold int av1_decode_free(AVCodecContext *avctx)
     av1_frame_unref(avctx, &s->cur_frame);
     av_frame_free(&s->cur_frame.f);
 
-    av_buffer_unref(&s->seq_ref);
-    av_buffer_unref(&s->header_ref);
-    av_buffer_unref(&s->cll_ref);
-    av_buffer_unref(&s->mdcv_ref);
+    ff_refstruct_unref(&s->seq_ref);
+    ff_refstruct_unref(&s->header_ref);
+    ff_refstruct_unref(&s->cll_ref);
+    ff_refstruct_unref(&s->mdcv_ref);
     av_freep(&s->tile_group_info);
 
     while (s->itut_t35_fifo && av_fifo_read(s->itut_t35_fifo, &itut_t35, 1) >= 0)
@@ -1160,9 +1159,7 @@ static int get_current_frame(AVCodecContext *avctx)
 
     av1_frame_unref(avctx, &s->cur_frame);
 
-    s->cur_frame.header_ref = av_buffer_ref(s->header_ref);
-    if (!s->cur_frame.header_ref)
-        return AVERROR(ENOMEM);
+    s->cur_frame.header_ref = ff_refstruct_ref(s->header_ref);
 
     s->cur_frame.raw_frame_header = s->raw_frame_header;
 
@@ -1214,12 +1211,7 @@ static int av1_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
 
         switch (unit->type) {
         case AV1_OBU_SEQUENCE_HEADER:
-            av_buffer_unref(&s->seq_ref);
-            s->seq_ref = av_buffer_ref(unit->content_ref);
-            if (!s->seq_ref) {
-                ret = AVERROR(ENOMEM);
-                goto end;
-            }
+            ff_refstruct_replace(&s->seq_ref, unit->content_ref);
 
             s->raw_seq = &obu->obu.sequence_header;
 
@@ -1264,12 +1256,7 @@ static int av1_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
                 goto end;
             }
 
-            av_buffer_unref(&s->header_ref);
-            s->header_ref = av_buffer_ref(unit->content_ref);
-            if (!s->header_ref) {
-                ret = AVERROR(ENOMEM);
-                goto end;
-            }
+            ff_refstruct_replace(&s->header_ref, unit->content_ref);
 
             if (unit->type == AV1_OBU_FRAME)
                 s->raw_frame_header = &obu->obu.frame.header;
@@ -1356,23 +1343,11 @@ static int av1_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
         case AV1_OBU_METADATA:
             switch (obu->obu.metadata.metadata_type) {
             case AV1_METADATA_TYPE_HDR_CLL:
-                av_buffer_unref(&s->cll_ref);
-                s->cll_ref = av_buffer_ref(unit->content_ref);
-                if (!s->cll_ref) {
-                    s->cll = NULL;
-                    ret = AVERROR(ENOMEM);
-                    goto end;
-                }
+                ff_refstruct_replace(&s->cll_ref, unit->content_ref);
                 s->cll = &obu->obu.metadata.metadata.hdr_cll;
                 break;
             case AV1_METADATA_TYPE_HDR_MDCV:
-                av_buffer_unref(&s->mdcv_ref);
-                s->mdcv_ref = av_buffer_ref(unit->content_ref);
-                if (!s->mdcv_ref) {
-                    s->mdcv = NULL;
-                    ret = AVERROR(ENOMEM);
-                    goto end;
-                }
+                ff_refstruct_replace(&s->mdcv_ref, unit->content_ref);
                 s->mdcv = &obu->obu.metadata.metadata.hdr_mdcv;
                 break;
             case AV1_METADATA_TYPE_ITUT_T35: {

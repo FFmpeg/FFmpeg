@@ -1074,17 +1074,13 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
 
     ub(4, sps_seq_parameter_set_id);
     ub(4, sps_video_parameter_set_id);
-    if (current->sps_video_parameter_set_id == 0 && !h266->vps_ref[0]) {
-        H266RawVPS *vps;
-        AVBufferRef *ref = av_buffer_allocz(sizeof(H266RawVPS));
-        if (!ref) {
+    if (current->sps_video_parameter_set_id == 0 && !h266->vps[0]) {
+        H266RawVPS *vps = ff_refstruct_allocz(sizeof(*vps));
+        if (!vps)
             return AVERROR(ENOMEM);
-        }
-        vps = (H266RawVPS *) ref->data;
         vps->vps_max_layers_minus1 = 0;
         vps->vps_independent_layer_flag[0] = 1;
         vps->vps_layer_id[0] = current->nal_unit_header.nuh_layer_id;
-        h266->vps_ref[0] = ref;
         h266->vps[0] = vps;
     }
 

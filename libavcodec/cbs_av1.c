@@ -24,6 +24,7 @@
 #include "cbs_internal.h"
 #include "cbs_av1.h"
 #include "defs.h"
+#include "refstruct.h"
 
 
 static int cbs_av1_read_uvlc(CodedBitstreamContext *ctx, GetBitContext *gbc,
@@ -869,12 +870,7 @@ static int cbs_av1_read_unit(CodedBitstreamContext *ctx,
                 priv->operating_point_idc = sequence_header->operating_point_idc[priv->operating_point];
             }
 
-            av_buffer_unref(&priv->sequence_header_ref);
-            priv->sequence_header = NULL;
-
-            priv->sequence_header_ref = av_buffer_ref(unit->content_ref);
-            if (!priv->sequence_header_ref)
-                return AVERROR(ENOMEM);
+            ff_refstruct_replace(&priv->sequence_header_ref, unit->content_ref);
             priv->sequence_header = &obu->obu.sequence_header;
         }
         break;
@@ -993,9 +989,7 @@ static int cbs_av1_write_obu(CodedBitstreamContext *ctx,
     av1ctx = *priv;
 
     if (priv->sequence_header_ref) {
-        av1ctx.sequence_header_ref = av_buffer_ref(priv->sequence_header_ref);
-        if (!av1ctx.sequence_header_ref)
-            return AVERROR(ENOMEM);
+        av1ctx.sequence_header_ref = ff_refstruct_ref(priv->sequence_header_ref);
     }
 
     if (priv->frame_header_ref) {
@@ -1033,19 +1027,14 @@ static int cbs_av1_write_obu(CodedBitstreamContext *ctx,
             if (err < 0)
                 goto error;
 
-            av_buffer_unref(&priv->sequence_header_ref);
+            ff_refstruct_unref(&priv->sequence_header_ref);
             priv->sequence_header = NULL;
 
             err = ff_cbs_make_unit_refcounted(ctx, unit);
             if (err < 0)
                 goto error;
 
-            priv->sequence_header_ref = av_buffer_ref(unit->content_ref);
-            if (!priv->sequence_header_ref) {
-                err = AVERROR(ENOMEM);
-                goto error;
-            }
-
+            priv->sequence_header_ref = ff_refstruct_ref(unit->content_ref);
             priv->sequence_header = &obu->obu.sequence_header;
         }
         break;
@@ -1149,7 +1138,7 @@ static int cbs_av1_write_obu(CodedBitstreamContext *ctx,
     av_assert0(data_pos <= start_pos);
 
     if (8 * obu->obu_size > put_bits_left(pbc)) {
-        av_buffer_unref(&priv->sequence_header_ref);
+        ff_refstruct_unref(&priv->sequence_header_ref);
         av_buffer_unref(&priv->frame_header_ref);
         *priv = av1ctx;
 
@@ -1178,7 +1167,7 @@ static int cbs_av1_write_obu(CodedBitstreamContext *ctx,
     err = 0;
 
 error:
-    av_buffer_unref(&av1ctx.sequence_header_ref);
+    ff_refstruct_unref(&av1ctx.sequence_header_ref);
     av_buffer_unref(&av1ctx.frame_header_ref);
 
     return err;
@@ -1230,13 +1219,13 @@ static void cbs_av1_close(CodedBitstreamContext *ctx)
 {
     CodedBitstreamAV1Context *priv = ctx->priv_data;
 
-    av_buffer_unref(&priv->sequence_header_ref);
+    ff_refstruct_unref(&priv->sequence_header_ref);
     av_buffer_unref(&priv->frame_header_ref);
 }
 
-static void cbs_av1_free_metadata(void *unit, uint8_t *content)
+static void cbs_av1_free_metadata(FFRefStructOpaque unused, void *content)
 {
-    AV1RawOBU *obu = (AV1RawOBU*)content;
+    AV1RawOBU *obu = content;
     AV1RawMetadata *md;
 
     av_assert0(obu->header.obu_type == AV1_OBU_METADATA);
@@ -1254,7 +1243,6 @@ static void cbs_av1_free_metadata(void *unit, uint8_t *content)
     default:
         av_buffer_unref(&md->metadata.unknown.payload_ref);
     }
-    av_free(content);
 }
 
 static const CodedBitstreamUnitTypeDescriptor cbs_av1_unit_types[] = {
