@@ -28,6 +28,7 @@
 #include "h2645_vui.h"
 #include "hevc_data.h"
 #include "hevc_ps.h"
+#include "refstruct.h"
 
 static const uint8_t default_scaling_list_intra[] = {
     16, 16, 16, 16, 17, 18, 21, 24,
@@ -61,40 +62,40 @@ static const uint8_t hevc_sub_height_c[] = {
 
 static void remove_pps(HEVCParamSets *s, int id)
 {
-    if (s->pps_list[id] && s->pps == (const HEVCPPS*)s->pps_list[id]->data)
+    if (s->pps == s->pps_list[id])
         s->pps = NULL;
-    av_buffer_unref(&s->pps_list[id]);
+    ff_refstruct_unref(&s->pps_list[id]);
 }
 
 static void remove_sps(HEVCParamSets *s, int id)
 {
     int i;
     if (s->sps_list[id]) {
-        if (s->sps == (const HEVCSPS*)s->sps_list[id]->data)
+        if (s->sps == s->sps_list[id])
             s->sps = NULL;
 
         /* drop all PPS that depend on this SPS */
         for (i = 0; i < FF_ARRAY_ELEMS(s->pps_list); i++)
-            if (s->pps_list[i] && ((HEVCPPS*)s->pps_list[i]->data)->sps_id == id)
+            if (s->pps_list[i] && s->pps_list[i]->sps_id == id)
                 remove_pps(s, i);
 
-        av_assert0(!(s->sps_list[id] && s->sps == (HEVCSPS*)s->sps_list[id]->data));
+        av_assert0(!(s->sps_list[id] && s->sps == s->sps_list[id]));
+        ff_refstruct_unref(&s->sps_list[id]);
     }
-    av_buffer_unref(&s->sps_list[id]);
 }
 
 static void remove_vps(HEVCParamSets *s, int id)
 {
     int i;
     if (s->vps_list[id]) {
-        if (s->vps == (const HEVCVPS*)s->vps_list[id]->data)
+        if (s->vps == s->vps_list[id])
             s->vps = NULL;
 
         for (i = 0; i < FF_ARRAY_ELEMS(s->sps_list); i++)
-            if (s->sps_list[i] && ((HEVCSPS*)s->sps_list[i]->data)->vps_id == id)
+            if (s->sps_list[i] && s->sps_list[i]->vps_id == id)
                 remove_sps(s, i);
+        ff_refstruct_unref(&s->vps_list[id]);
     }
-    av_buffer_unref(&s->vps_list[id]);
 }
 
 int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
@@ -442,12 +443,10 @@ int ff_hevc_decode_nal_vps(GetBitContext *gb, AVCodecContext *avctx,
     int i,j;
     int vps_id = 0;
     ptrdiff_t nal_size;
-    HEVCVPS *vps;
-    AVBufferRef *vps_buf = av_buffer_allocz(sizeof(*vps));
+    HEVCVPS *vps = ff_refstruct_allocz(sizeof(*vps));
 
-    if (!vps_buf)
+    if (!vps)
         return AVERROR(ENOMEM);
-    vps = (HEVCVPS*)vps_buf->data;
 
     av_log(avctx, AV_LOG_DEBUG, "Decoding VPS\n");
 
@@ -553,17 +552,17 @@ int ff_hevc_decode_nal_vps(GetBitContext *gb, AVCodecContext *avctx,
     }
 
     if (ps->vps_list[vps_id] &&
-        !memcmp(ps->vps_list[vps_id]->data, vps_buf->data, vps_buf->size)) {
-        av_buffer_unref(&vps_buf);
+        !memcmp(ps->vps_list[vps_id], vps, sizeof(*vps))) {
+        ff_refstruct_unref(&vps);
     } else {
         remove_vps(ps, vps_id);
-        ps->vps_list[vps_id] = vps_buf;
+        ps->vps_list[vps_id] = vps;
     }
 
     return 0;
 
 err:
-    av_buffer_unref(&vps_buf);
+    ff_refstruct_unref(&vps);
     return AVERROR_INVALIDDATA;
 }
 
@@ -851,7 +850,8 @@ static int map_pixel_format(AVCodecContext *avctx, HEVCSPS *sps)
 }
 
 int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
-                      int apply_defdispwin, AVBufferRef **vps_list, AVCodecContext *avctx)
+                      int apply_defdispwin, const HEVCVPS * const *vps_list,
+                      AVCodecContext *avctx)
 {
     HEVCWindow *ow;
     int ret = 0;
@@ -1269,15 +1269,13 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
 int ff_hevc_decode_nal_sps(GetBitContext *gb, AVCodecContext *avctx,
                            HEVCParamSets *ps, int apply_defdispwin)
 {
-    HEVCSPS *sps;
-    AVBufferRef *sps_buf = av_buffer_allocz(sizeof(*sps));
+    HEVCSPS *sps = ff_refstruct_allocz(sizeof(*sps));
     unsigned int sps_id;
     int ret;
     ptrdiff_t nal_size;
 
-    if (!sps_buf)
+    if (!sps)
         return AVERROR(ENOMEM);
-    sps = (HEVCSPS*)sps_buf->data;
 
     av_log(avctx, AV_LOG_DEBUG, "Decoding SPS\n");
 
@@ -1296,7 +1294,7 @@ int ff_hevc_decode_nal_sps(GetBitContext *gb, AVCodecContext *avctx,
                             apply_defdispwin,
                             ps->vps_list, avctx);
     if (ret < 0) {
-        av_buffer_unref(&sps_buf);
+        ff_refstruct_unref(&sps);
         return ret;
     }
 
@@ -1314,19 +1312,19 @@ int ff_hevc_decode_nal_sps(GetBitContext *gb, AVCodecContext *avctx,
      * original one.
      * otherwise drop all PPSes that depend on it */
     if (ps->sps_list[sps_id] &&
-        !memcmp(ps->sps_list[sps_id]->data, sps_buf->data, sps_buf->size)) {
-        av_buffer_unref(&sps_buf);
+        !memcmp(ps->sps_list[sps_id], sps, sizeof(*sps))) {
+        ff_refstruct_unref(&sps);
     } else {
         remove_sps(ps, sps_id);
-        ps->sps_list[sps_id] = sps_buf;
+        ps->sps_list[sps_id] = sps;
     }
 
     return 0;
 }
 
-static void hevc_pps_free(void *opaque, uint8_t *data)
+static void hevc_pps_free(FFRefStructOpaque unused, void *obj)
 {
-    HEVCPPS *pps = (HEVCPPS*)data;
+    HEVCPPS *pps = obj;
 
     av_freep(&pps->column_width);
     av_freep(&pps->row_height);
@@ -1338,8 +1336,6 @@ static void hevc_pps_free(void *opaque, uint8_t *data)
     av_freep(&pps->tile_pos_rs);
     av_freep(&pps->tile_id);
     av_freep(&pps->min_tb_addr_zs_tab);
-
-    av_freep(&pps);
 }
 
 static void colour_mapping_octants(GetBitContext *gb, HEVCPPS *pps, int inp_depth,
@@ -1742,18 +1738,10 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
     ptrdiff_t nal_size;
     unsigned log2_parallel_merge_level_minus2;
 
-    AVBufferRef *pps_buf;
-    HEVCPPS *pps = av_mallocz(sizeof(*pps));
+    HEVCPPS *pps = ff_refstruct_alloc_ext(sizeof(*pps), 0, NULL, hevc_pps_free);
 
     if (!pps)
         return AVERROR(ENOMEM);
-
-    pps_buf = av_buffer_create((uint8_t *)pps, sizeof(*pps),
-                               hevc_pps_free, NULL, 0);
-    if (!pps_buf) {
-        av_freep(&pps);
-        return AVERROR(ENOMEM);
-    }
 
     av_log(avctx, AV_LOG_DEBUG, "Decoding PPS\n");
 
@@ -1796,8 +1784,8 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
         ret = AVERROR_INVALIDDATA;
         goto err;
     }
-    sps = (HEVCSPS *)ps->sps_list[pps->sps_id]->data;
-    vps = (HEVCVPS *)ps->vps_list[sps->vps_id]->data;
+    sps = ps->sps_list[pps->sps_id];
+    vps = ps->vps_list[sps->vps_id];
 
     pps->dependent_slice_segments_enabled_flag = get_bits1(gb);
     pps->output_flag_present_flag              = get_bits1(gb);
@@ -1998,12 +1986,12 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
     }
 
     remove_pps(ps, pps_id);
-    ps->pps_list[pps_id] = pps_buf;
+    ps->pps_list[pps_id] = pps;
 
     return 0;
 
 err:
-    av_buffer_unref(&pps_buf);
+    ff_refstruct_unref(&pps);
     return ret;
 }
 
@@ -2012,11 +2000,11 @@ void ff_hevc_ps_uninit(HEVCParamSets *ps)
     int i;
 
     for (i = 0; i < FF_ARRAY_ELEMS(ps->vps_list); i++)
-        av_buffer_unref(&ps->vps_list[i]);
+        ff_refstruct_unref(&ps->vps_list[i]);
     for (i = 0; i < FF_ARRAY_ELEMS(ps->sps_list); i++)
-        av_buffer_unref(&ps->sps_list[i]);
+        ff_refstruct_unref(&ps->sps_list[i]);
     for (i = 0; i < FF_ARRAY_ELEMS(ps->pps_list); i++)
-        av_buffer_unref(&ps->pps_list[i]);
+        ff_refstruct_unref(&ps->pps_list[i]);
 
     ps->sps = NULL;
     ps->pps = NULL;

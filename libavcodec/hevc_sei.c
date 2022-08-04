@@ -53,11 +53,10 @@ static int decode_nal_sei_pic_timing(HEVCSEI *s, GetBitContext *gb,
                                      const HEVCParamSets *ps, void *logctx)
 {
     HEVCSEIPictureTiming *h = &s->picture_timing;
-    HEVCSPS *sps;
+    const HEVCSPS *sps = ps->sps_list[s->active_seq_parameter_set_id];
 
-    if (!ps->sps_list[s->active_seq_parameter_set_id])
+    if (!sps)
         return(AVERROR(ENOMEM));
-    sps = (HEVCSPS*)ps->sps_list[s->active_seq_parameter_set_id]->data;
 
     if (sps->vui.frame_field_info_present_flag) {
         int pic_struct = get_bits(gb, 4);

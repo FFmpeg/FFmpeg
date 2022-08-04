@@ -50,6 +50,7 @@
 #include "hwconfig.h"
 #include "internal.h"
 #include "profiles.h"
+#include "refstruct.h"
 #include "thread.h"
 #include "threadframe.h"
 
@@ -326,7 +327,7 @@ static void export_stream_params(HEVCContext *s, const HEVCSPS *sps)
 {
     AVCodecContext *avctx = s->avctx;
     const HEVCParamSets *ps = &s->ps;
-    const HEVCVPS *vps = (const HEVCVPS*)ps->vps_list[sps->vps_id]->data;
+    const HEVCVPS *vps = ps->vps_list[sps->vps_id];
     const HEVCWindow *ow = &sps->output_window;
     unsigned int num = 0, den = 0;
 
@@ -573,7 +574,7 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps,
     }
 
     s->ps.sps = sps;
-    s->ps.vps = (HEVCVPS*) s->ps.vps_list[s->ps.sps->vps_id]->data;
+    s->ps.vps = s->ps.vps_list[s->ps.sps->vps_id];
 
     return 0;
 
@@ -616,16 +617,16 @@ static int hls_slice_header(HEVCContext *s)
         return AVERROR_INVALIDDATA;
     }
     if (!sh->first_slice_in_pic_flag &&
-        s->ps.pps != (HEVCPPS*)s->ps.pps_list[sh->pps_id]->data) {
+        s->ps.pps != s->ps.pps_list[sh->pps_id]) {
         av_log(s->avctx, AV_LOG_ERROR, "PPS changed between slices.\n");
         return AVERROR_INVALIDDATA;
     }
-    s->ps.pps = (HEVCPPS*)s->ps.pps_list[sh->pps_id]->data;
+    s->ps.pps = s->ps.pps_list[sh->pps_id];
     if (s->nal_unit_type == HEVC_NAL_CRA_NUT && s->last_eos == 1)
         sh->no_output_of_prior_pics_flag = 1;
 
-    if (s->ps.sps != (HEVCSPS*)s->ps.sps_list[s->ps.pps->sps_id]->data) {
-        const HEVCSPS *sps = (HEVCSPS*)s->ps.sps_list[s->ps.pps->sps_id]->data;
+    if (s->ps.sps != s->ps.sps_list[s->ps.pps->sps_id]) {
+        const HEVCSPS *sps = s->ps.sps_list[s->ps.pps->sps_id];
         enum AVPixelFormat pix_fmt;
 
         ff_hevc_clear_refs(s);
@@ -3304,7 +3305,7 @@ static int hevc_decode_extradata(HEVCContext *s, uint8_t *buf, int length, int f
     /* export stream parameters from the first SPS */
     for (i = 0; i < FF_ARRAY_ELEMS(s->ps.sps_list); i++) {
         if (first && s->ps.sps_list[i]) {
-            const HEVCSPS *sps = (const HEVCSPS*)s->ps.sps_list[i]->data;
+            const HEVCSPS *sps = s->ps.sps_list[i];
             export_stream_params(s, sps);
             break;
         }
@@ -3549,23 +3550,14 @@ static int hevc_update_thread_context(AVCodecContext *dst,
 
     if (s->ps.sps != s0->ps.sps)
         s->ps.sps = NULL;
-    for (i = 0; i < FF_ARRAY_ELEMS(s->ps.vps_list); i++) {
-        ret = av_buffer_replace(&s->ps.vps_list[i], s0->ps.vps_list[i]);
-        if (ret < 0)
-            return ret;
-    }
+    for (int i = 0; i < FF_ARRAY_ELEMS(s->ps.vps_list); i++)
+        ff_refstruct_replace(&s->ps.vps_list[i], s0->ps.vps_list[i]);
 
-    for (i = 0; i < FF_ARRAY_ELEMS(s->ps.sps_list); i++) {
-        ret = av_buffer_replace(&s->ps.sps_list[i], s0->ps.sps_list[i]);
-        if (ret < 0)
-            return ret;
-    }
+    for (int i = 0; i < FF_ARRAY_ELEMS(s->ps.sps_list); i++)
+        ff_refstruct_replace(&s->ps.sps_list[i], s0->ps.sps_list[i]);
 
-    for (i = 0; i < FF_ARRAY_ELEMS(s->ps.pps_list); i++) {
-        ret = av_buffer_replace(&s->ps.pps_list[i], s0->ps.pps_list[i]);
-        if (ret < 0)
-            return ret;
-    }
+    for (int i = 0; i < FF_ARRAY_ELEMS(s->ps.pps_list); i++)
+        ff_refstruct_replace(&s->ps.pps_list[i], s0->ps.pps_list[i]);
 
     if (s->ps.sps != s0->ps.sps)
         if ((ret = set_sps(s, s0->ps.sps, src->pix_fmt)) < 0)
