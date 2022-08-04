@@ -857,8 +857,8 @@ static void cbs_default_free_unit_content(void *opaque, uint8_t *data)
     const CodedBitstreamUnitTypeDescriptor *desc = opaque;
     if (desc->content_type == CBS_CONTENT_TYPE_INTERNAL_REFS) {
         int i;
-        for (i = 0; i < desc->nb_ref_offsets; i++) {
-            void **ptr = (void**)(data + desc->ref_offsets[i]);
+        for (i = 0; i < desc->type.ref.nb_offsets; i++) {
+            void **ptr = (void**)(data + desc->type.ref.offsets[i]);
             av_buffer_unref((AVBufferRef**)(ptr + 1));
         }
     }
@@ -880,12 +880,12 @@ static const CodedBitstreamUnitTypeDescriptor
         if (desc->nb_unit_types == 0)
             break;
         if (desc->nb_unit_types == CBS_UNIT_TYPE_RANGE) {
-            if (unit->type >= desc->unit_type_range_start &&
-                unit->type <= desc->unit_type_range_end)
+            if (unit->type >= desc->unit_type.range.start &&
+                unit->type <= desc->unit_type.range.end)
                 return desc;
         } else {
             for (j = 0; j < desc->nb_unit_types; j++) {
-                if (desc->unit_types[j] == unit->type)
+                if (desc->unit_type.list[j] == unit->type)
                     return desc;
             }
         }
@@ -910,7 +910,8 @@ int ff_cbs_alloc_unit_content2(CodedBitstreamContext *ctx,
 
     unit->content_ref =
         av_buffer_create(unit->content, desc->content_size,
-                         desc->content_free ? desc->content_free
+                         desc->content_type == CBS_CONTENT_TYPE_COMPLEX
+                                            ? desc->type.complex.content_free
                                             : cbs_default_free_unit_content,
                          (void*)desc, 0);
     if (!unit->content_ref) {
@@ -936,10 +937,10 @@ static int cbs_clone_internal_refs_unit_content(AVBufferRef **clone_ref,
     if (!copy)
         return AVERROR(ENOMEM);
 
-    for (i = 0; i < desc->nb_ref_offsets; i++) {
-        const uint8_t *const *src_ptr = (const uint8_t* const*)(src + desc->ref_offsets[i]);
+    for (i = 0; i < desc->type.ref.nb_offsets; i++) {
+        const uint8_t *const *src_ptr = (const uint8_t* const*)(src + desc->type.ref.offsets[i]);
         const AVBufferRef *src_buf = *(AVBufferRef**)(src_ptr + 1);
-        uint8_t **copy_ptr = (uint8_t**)(copy + desc->ref_offsets[i]);
+        uint8_t **copy_ptr = (uint8_t**)(copy + desc->type.ref.offsets[i]);
         AVBufferRef **copy_buf = (AVBufferRef**)(copy_ptr + 1);
 
         if (!*src_ptr) {
@@ -962,7 +963,6 @@ static int cbs_clone_internal_refs_unit_content(AVBufferRef **clone_ref,
     }
 
     *clone_ref = av_buffer_create(copy, desc->content_size,
-                                  desc->content_free ? desc->content_free :
                                   cbs_default_free_unit_content,
                                   (void*)desc, 0);
     if (!*clone_ref) {
@@ -974,7 +974,7 @@ static int cbs_clone_internal_refs_unit_content(AVBufferRef **clone_ref,
 
 fail:
     for (--i; i >= 0; i--)
-        av_buffer_unref((AVBufferRef**)(copy + desc->ref_offsets[i]));
+        av_buffer_unref((AVBufferRef**)(copy + desc->type.ref.offsets[i]));
     av_freep(&copy);
     *clone_ref = NULL;
     return err;
@@ -1010,9 +1010,9 @@ static int cbs_clone_unit_content(CodedBitstreamContext *ctx,
         break;
 
     case CBS_CONTENT_TYPE_COMPLEX:
-        if (!desc->content_clone)
+        if (!desc->type.complex.content_clone)
             return AVERROR_PATCHWELCOME;
-        err = desc->content_clone(&ref, unit);
+        err = desc->type.complex.content_clone(&ref, unit);
         break;
 
     default:

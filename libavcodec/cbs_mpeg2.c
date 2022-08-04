@@ -392,14 +392,14 @@ static const CodedBitstreamUnitTypeDescriptor cbs_mpeg2_unit_types[] = {
 
     {
         .nb_unit_types         = CBS_UNIT_TYPE_RANGE,
-        .unit_type_range_start = 0x01,
-        .unit_type_range_end   = 0xaf,
+        .unit_type.range.start = 0x01,
+        .unit_type.range.end   = 0xaf,
 
         .content_type   = CBS_CONTENT_TYPE_INTERNAL_REFS,
         .content_size   = sizeof(MPEG2RawSlice),
-        .nb_ref_offsets = 2,
-        .ref_offsets    = { offsetof(MPEG2RawSlice, header.extra_information_slice.extra_information),
-                            offsetof(MPEG2RawSlice, data) },
+        .type.ref = { .nb_offsets = 2,
+                      .offsets    = { offsetof(MPEG2RawSlice, header.extra_information_slice.extra_information),
+                                      offsetof(MPEG2RawSlice, data) } },
     },
 
     CBS_UNIT_TYPE_INTERNAL_REF(MPEG2_START_USER_DATA, MPEG2RawUserData,
