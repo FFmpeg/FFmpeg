@@ -23,6 +23,7 @@
 
 #include <VideoToolbox/VideoToolbox.h>
 
+#include "frame.h"
 #include "pixfmt.h"
 
 /**
