@@ -204,7 +204,7 @@ static int cbs_mpeg2_read_unit(CodedBitstreamContext *ctx,
     if (err < 0)
         return err;
 
-    err = ff_cbs_alloc_unit_content2(ctx, unit);
+    err = ff_cbs_alloc_unit_content(ctx, unit);
     if (err < 0)
         return err;
 

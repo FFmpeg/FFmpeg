@@ -179,7 +179,7 @@ static int cbs_sei_get_unit(CodedBitstreamContext *ctx,
     unit = &au->units[position];
     unit->type = sei_type;
 
-    err = ff_cbs_alloc_unit_content2(ctx, unit);
+    err = ff_cbs_alloc_unit_content(ctx, unit);
     if (err < 0)
         return err;
 

@@ -695,26 +695,6 @@ int ff_cbs_write_signed(CodedBitstreamContext *ctx, PutBitContext *pbc,
 }
 
 
-int ff_cbs_alloc_unit_content(CodedBitstreamUnit *unit,
-                              size_t size,
-                              void (*free)(void *opaque, uint8_t *data))
-{
-    av_assert0(!unit->content && !unit->content_ref);
-
-    unit->content = av_mallocz(size);
-    if (!unit->content)
-        return AVERROR(ENOMEM);
-
-    unit->content_ref = av_buffer_create(unit->content, size,
-                                         free, NULL, 0);
-    if (!unit->content_ref) {
-        av_freep(&unit->content);
-        return AVERROR(ENOMEM);
-    }
-
-    return 0;
-}
-
 static int cbs_insert_unit(CodedBitstreamFragment *frag,
                            int position)
 {
@@ -893,8 +873,8 @@ static const CodedBitstreamUnitTypeDescriptor
     return NULL;
 }
 
-int ff_cbs_alloc_unit_content2(CodedBitstreamContext *ctx,
-                               CodedBitstreamUnit *unit)
+int ff_cbs_alloc_unit_content(CodedBitstreamContext *ctx,
+                              CodedBitstreamUnit *unit)
 {
     const CodedBitstreamUnitTypeDescriptor *desc;
 

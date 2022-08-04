@@ -364,21 +364,12 @@ void ff_cbs_fragment_reset(CodedBitstreamFragment *frag);
 void ff_cbs_fragment_free(CodedBitstreamFragment *frag);
 
 /**
- * Allocate a new internal content buffer of the given size in the unit.
- *
- * The content will be zeroed.
- */
-int ff_cbs_alloc_unit_content(CodedBitstreamUnit *unit,
-                              size_t size,
-                              void (*free)(void *opaque, uint8_t *content));
-
-/**
  * Allocate a new internal content buffer matching the type of the unit.
  *
  * The content will be zeroed.
  */
-int ff_cbs_alloc_unit_content2(CodedBitstreamContext *ctx,
-                               CodedBitstreamUnit *unit);
+int ff_cbs_alloc_unit_content(CodedBitstreamContext *ctx,
+                              CodedBitstreamUnit *unit);
 
 /**
  * Insert a new unit into a fragment with the given content.
