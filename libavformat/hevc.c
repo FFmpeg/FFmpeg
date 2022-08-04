@@ -924,31 +924,31 @@ static int hvcc_write(AVIOContext *pb, HEVCDecoderConfigurationRecord *hvcc)
     avio_w8(pb, hvcc->general_level_idc);
 
     /*
-     * bit(4) reserved = ‘1111’b;
+     * bit(4) reserved = '1111'b;
      * unsigned int(12) min_spatial_segmentation_idc;
      */
     avio_wb16(pb, hvcc->min_spatial_segmentation_idc | 0xf000);
 
     /*
-     * bit(6) reserved = ‘111111’b;
+     * bit(6) reserved = '111111'b;
      * unsigned int(2) parallelismType;
      */
     avio_w8(pb, hvcc->parallelismType | 0xfc);
 
     /*
-     * bit(6) reserved = ‘111111’b;
+     * bit(6) reserved = '111111'b;
      * unsigned int(2) chromaFormat;
      */
     avio_w8(pb, hvcc->chromaFormat | 0xfc);
 
     /*
-     * bit(5) reserved = ‘11111’b;
+     * bit(5) reserved = '11111'b;
      * unsigned int(3) bitDepthLumaMinus8;
      */
     avio_w8(pb, hvcc->bitDepthLumaMinus8 | 0xf8);
 
     /*
-     * bit(5) reserved = ‘11111’b;
+     * bit(5) reserved = '11111'b;
      * unsigned int(3) bitDepthChromaMinus8;
      */
     avio_w8(pb, hvcc->bitDepthChromaMinus8 | 0xf8);
