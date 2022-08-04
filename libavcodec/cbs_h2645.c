@@ -1396,18 +1396,9 @@ static const CodedBitstreamUnitTypeDescriptor cbs_h264_unit_types[] = {
 
     CBS_UNIT_TYPE_INTERNAL_REF(H264_NAL_PPS, H264RawPPS, slice_group_id),
 
-    {
-        .nb_unit_types  = 3,
-        .unit_types     = {
-            H264_NAL_IDR_SLICE,
-            H264_NAL_SLICE,
-            H264_NAL_AUXILIARY_SLICE,
-        },
-        .content_type   = CBS_CONTENT_TYPE_INTERNAL_REFS,
-        .content_size   = sizeof(H264RawSlice),
-        .nb_ref_offsets = 1,
-        .ref_offsets    = { offsetof(H264RawSlice, data) },
-    },
+    CBS_UNIT_TYPES_INTERNAL_REF((H264_NAL_IDR_SLICE,
+                                 H264_NAL_SLICE,
+                                 H264_NAL_AUXILIARY_SLICE), H264RawSlice, data),
 
     CBS_UNIT_TYPE_POD(H264_NAL_AUD,          H264RawAUD),
     CBS_UNIT_TYPE_POD(H264_NAL_FILLER_DATA,  H264RawFiller),
@@ -1433,40 +1424,15 @@ static const CodedBitstreamUnitTypeDescriptor cbs_h265_unit_types[] = {
 
     CBS_UNIT_TYPE_POD(HEVC_NAL_AUD, H265RawAUD),
 
-    {
-        // Slices of non-IRAP pictures.
-        .nb_unit_types         = CBS_UNIT_TYPE_RANGE,
-        .unit_type_range_start = HEVC_NAL_TRAIL_N,
-        .unit_type_range_end   = HEVC_NAL_RASL_R,
+    // Slices of non-IRAP pictures.
+    CBS_UNIT_RANGE_INTERNAL_REF(HEVC_NAL_TRAIL_N, HEVC_NAL_RASL_R,
+                                H265RawSlice, data),
+    // Slices of IRAP pictures.
+    CBS_UNIT_RANGE_INTERNAL_REF(HEVC_NAL_BLA_W_LP, HEVC_NAL_CRA_NUT,
+                                H265RawSlice, data),
 
-        .content_type   = CBS_CONTENT_TYPE_INTERNAL_REFS,
-        .content_size   = sizeof(H265RawSlice),
-        .nb_ref_offsets = 1,
-        .ref_offsets    = { offsetof(H265RawSlice, data) },
-    },
-
-    {
-        // Slices of IRAP pictures.
-        .nb_unit_types         = CBS_UNIT_TYPE_RANGE,
-        .unit_type_range_start = HEVC_NAL_BLA_W_LP,
-        .unit_type_range_end   = HEVC_NAL_CRA_NUT,
-
-        .content_type   = CBS_CONTENT_TYPE_INTERNAL_REFS,
-        .content_size   = sizeof(H265RawSlice),
-        .nb_ref_offsets = 1,
-        .ref_offsets    = { offsetof(H265RawSlice, data) },
-    },
-
-    {
-        .nb_unit_types  = 2,
-        .unit_types     = {
-            HEVC_NAL_SEI_PREFIX,
-            HEVC_NAL_SEI_SUFFIX
-        },
-        .content_type   = CBS_CONTENT_TYPE_COMPLEX,
-        .content_size   = sizeof(H265RawSEI),
-        .content_free   = &cbs_h265_free_sei,
-    },
+    CBS_UNIT_TYPES_COMPLEX((HEVC_NAL_SEI_PREFIX, HEVC_NAL_SEI_SUFFIX),
+                           H265RawSEI, cbs_h265_free_sei),
 
     CBS_UNIT_TYPE_END_OF_LIST
 };

@@ -181,28 +181,45 @@ int ff_cbs_write_signed(CodedBitstreamContext *ctx, PutBitContext *pbc,
 // range_min in the above functions.
 #define MIN_INT_BITS(length) (-(INT64_C(1) << ((length) - 1)))
 
-
+#define TYPE_LIST(...) { __VA_ARGS__ }
 #define CBS_UNIT_TYPE_POD(type, structure) { \
         .nb_unit_types  = 1, \
         .unit_types     = { type }, \
         .content_type   = CBS_CONTENT_TYPE_POD, \
         .content_size   = sizeof(structure), \
     }
-#define CBS_UNIT_TYPE_INTERNAL_REF(type, structure, ref_field) { \
-        .nb_unit_types  = 1, \
-        .unit_types     = { type }, \
+
+#define CBS_UNIT_TYPES_INTERNAL_REF(types, structure, ref_field) { \
+        .nb_unit_types  = FF_ARRAY_ELEMS((CodedBitstreamUnitType[])TYPE_LIST types), \
+        .unit_types     = TYPE_LIST types, \
         .content_type   = CBS_CONTENT_TYPE_INTERNAL_REFS, \
         .content_size   = sizeof(structure), \
         .nb_ref_offsets = 1, \
         .ref_offsets    = { offsetof(structure, ref_field) }, \
     }
-#define CBS_UNIT_TYPE_COMPLEX(type, structure, free_func) { \
-        .nb_unit_types  = 1, \
-        .unit_types     = { type }, \
+#define CBS_UNIT_TYPE_INTERNAL_REF(type, structure, ref_field) \
+    CBS_UNIT_TYPES_INTERNAL_REF((type), structure, ref_field)
+
+#define CBS_UNIT_RANGE_INTERNAL_REF(range_start, range_end, structure, ref_field) { \
+        .nb_unit_types  = CBS_UNIT_TYPE_RANGE, \
+        .unit_type_range_start = range_start, \
+        .unit_type_range_end   = range_end, \
+        .content_type          = CBS_CONTENT_TYPE_INTERNAL_REFS, \
+        .content_size          = sizeof(structure), \
+        .nb_ref_offsets        = 1, \
+        .ref_offsets           = { offsetof(structure, ref_field) }, \
+    }
+
+#define CBS_UNIT_TYPES_COMPLEX(types, structure, free_func) { \
+        .nb_unit_types  = FF_ARRAY_ELEMS((CodedBitstreamUnitType[])TYPE_LIST types), \
+        .unit_types     = TYPE_LIST types, \
         .content_type   = CBS_CONTENT_TYPE_COMPLEX, \
         .content_size   = sizeof(structure), \
         .content_free   = free_func, \
     }
+#define CBS_UNIT_TYPE_COMPLEX(type, structure, free_func) \
+    CBS_UNIT_TYPES_COMPLEX((type), structure, free_func)
+
 #define CBS_UNIT_TYPE_END_OF_LIST { .nb_unit_types = 0 }
 
 
