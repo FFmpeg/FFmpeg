@@ -42,13 +42,11 @@ void ff_hevc_unref_frame(HEVCFrame *frame, int flags)
         av_frame_unref(frame->frame_grain);
         frame->needs_fg = 0;
 
-        av_buffer_unref(&frame->tab_mvf_buf);
-        frame->tab_mvf = NULL;
+        ff_refstruct_unref(&frame->tab_mvf);
 
         ff_refstruct_unref(&frame->rpl);
         frame->nb_rpl_elems = 0;
-        av_buffer_unref(&frame->rpl_tab_buf);
-        frame->rpl_tab    = NULL;
+        ff_refstruct_unref(&frame->rpl_tab);
         frame->refPicList = NULL;
 
         ff_refstruct_unref(&frame->hwaccel_picture_private);
@@ -99,15 +97,13 @@ static HEVCFrame *alloc_frame(HEVCContext *s)
             goto fail;
         frame->nb_rpl_elems = s->pkt.nb_nals;
 
-        frame->tab_mvf_buf = av_buffer_pool_get(s->tab_mvf_pool);
-        if (!frame->tab_mvf_buf)
+        frame->tab_mvf = ff_refstruct_pool_get(s->tab_mvf_pool);
+        if (!frame->tab_mvf)
             goto fail;
-        frame->tab_mvf = (MvField *)frame->tab_mvf_buf->data;
 
-        frame->rpl_tab_buf = av_buffer_pool_get(s->rpl_tab_pool);
-        if (!frame->rpl_tab_buf)
+        frame->rpl_tab = ff_refstruct_pool_get(s->rpl_tab_pool);
+        if (!frame->rpl_tab)
             goto fail;
-        frame->rpl_tab   = (RefPicListTab **)frame->rpl_tab_buf->data;
         frame->ctb_count = s->ps.sps->ctb_width * s->ps.sps->ctb_height;
         for (j = 0; j < frame->ctb_count; j++)
             frame->rpl_tab[j] = frame->rpl;
