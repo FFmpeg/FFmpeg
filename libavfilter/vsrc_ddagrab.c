@@ -435,12 +435,6 @@ static av_cold int ddagrab_init(AVFilterContext *avctx)
     dda->mouse_x = -1;
     dda->mouse_y = -1;
 
-    if (dda->draw_mouse) {
-        ret = init_render_resources(avctx);
-        if (ret < 0)
-            goto fail;
-    }
-
     return 0;
 fail:
     ddagrab_uninit(avctx);
@@ -722,6 +716,12 @@ static int ddagrab_config_props(AVFilterLink *outlink)
 
     dda->width -= FFMAX(dda->width - dda->raw_width + dda->offset_x, 0);
     dda->height -= FFMAX(dda->height - dda->raw_height + dda->offset_y, 0);
+
+    if (dda->draw_mouse) {
+        ret = init_render_resources(avctx);
+        if (ret < 0)
+            return ret;
+    }
 
     ret = init_hwframes_ctx(avctx);
     if (ret < 0)
