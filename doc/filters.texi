@@ -26183,7 +26183,7 @@ Default value is the height of input overlay video.
 @item alpha
 Set transparency of overlaid video. Allowed range is 0.0 to 1.0.
 Higher value means lower transparency.
-Default value is @code{0.0}.
+Default value is @code{1.0}.
 
 @end table
 

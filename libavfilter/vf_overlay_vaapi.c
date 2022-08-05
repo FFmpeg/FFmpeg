@@ -380,7 +380,7 @@ static const AVOption overlay_vaapi_options[] = {
     { "h", "Overlay height",
       OFFSET(overlay_oh), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, .flags = FLAGS },
     { "alpha", "Overlay global alpha",
-      OFFSET(alpha), AV_OPT_TYPE_FLOAT, { .dbl = 0.0}, 0.0, 1.0, .flags = FLAGS},
+      OFFSET(alpha), AV_OPT_TYPE_FLOAT, { .dbl = 1.0}, 0.0, 1.0, .flags = FLAGS},
     { NULL },
 };
 
