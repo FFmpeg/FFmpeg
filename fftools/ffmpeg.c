@@ -2341,8 +2341,6 @@ static int process_subtitle(InputStream *ist, AVSubtitle *subtitle, int *got_out
     if (!subtitle->num_rects)
         goto out;
 
-    ist->frames_decoded++;
-
     for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
         if (!check_output_constraints(ist, ost) || !ost->enc_ctx
             || ost->enc_ctx->codec_type != AVMEDIA_TYPE_SUBTITLE)
@@ -2372,6 +2370,8 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output,
             sub2video_flush(ist);
         return ret;
     }
+
+    ist->frames_decoded++;
 
     return process_subtitle(ist, &subtitle, got_output);
 }
