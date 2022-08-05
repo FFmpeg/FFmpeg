@@ -26181,8 +26181,8 @@ Set the height of the overlaid video on the main video.
 Default value is the height of input overlay video.
 
 @item alpha
-Set blocking detection thresholds. Allowed range is 0.0 to 1.0, it
-requires an input video with alpha channel.
+Set transparency of overlaid video. Allowed range is 0.0 to 1.0.
+Higher value means lower transparency.
 Default value is @code{0.0}.
 
 @end table
