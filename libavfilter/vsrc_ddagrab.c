@@ -389,56 +389,15 @@ static av_cold int init_render_resources(AVFilterContext *avctx)
 static av_cold int ddagrab_init(AVFilterContext *avctx)
 {
     DdagrabContext *dda = avctx->priv;
-    int ret = 0;
-
-    if (avctx->hw_device_ctx) {
-        dda->device_ctx = (AVHWDeviceContext*)avctx->hw_device_ctx->data;
-
-        if (dda->device_ctx->type != AV_HWDEVICE_TYPE_D3D11VA) {
-            av_log(avctx, AV_LOG_ERROR, "Non-D3D11VA input hw_device_ctx\n");
-            return AVERROR(EINVAL);
-        }
-
-        dda->device_ref = av_buffer_ref(avctx->hw_device_ctx);
-        if (!dda->device_ref)
-            return AVERROR(ENOMEM);
-
-        av_log(avctx, AV_LOG_VERBOSE, "Using provided hw_device_ctx\n");
-    } else {
-        ret = av_hwdevice_ctx_create(&dda->device_ref, AV_HWDEVICE_TYPE_D3D11VA, NULL, NULL, 0);
-        if (ret < 0) {
-            av_log(avctx, AV_LOG_ERROR, "Failed to create D3D11VA device.\n");
-            return ret;
-        }
-
-        dda->device_ctx = (AVHWDeviceContext*)dda->device_ref->data;
-
-        av_log(avctx, AV_LOG_VERBOSE, "Created internal hw_device_ctx\n");
-    }
-
-    dda->device_hwctx = (AVD3D11VADeviceContext*)dda->device_ctx->hwctx;
-
-    ret = init_dxgi_dda(avctx);
-    if (ret < 0)
-        goto fail;
-
-    dda->time_base  = av_inv_q(dda->framerate);
-    dda->time_frame = av_gettime_relative() / av_q2d(dda->time_base);
-    dda->time_timeout = av_rescale_q(1, dda->time_base, (AVRational) { 1, 1000 }) / 2;
 
     dda->last_frame = av_frame_alloc();
-    if (!dda->last_frame) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
+    if (!dda->last_frame)
+        return AVERROR(ENOMEM);
 
     dda->mouse_x = -1;
     dda->mouse_y = -1;
 
     return 0;
-fail:
-    ddagrab_uninit(avctx);
-    return ret;
 }
 
 static int create_d3d11_pointer_tex(AVFilterContext *avctx,
@@ -710,12 +669,47 @@ static int ddagrab_config_props(AVFilterLink *outlink)
     DdagrabContext *dda = avctx->priv;
     int ret;
 
+    if (avctx->hw_device_ctx) {
+        dda->device_ctx = (AVHWDeviceContext*)avctx->hw_device_ctx->data;
+
+        if (dda->device_ctx->type != AV_HWDEVICE_TYPE_D3D11VA) {
+            av_log(avctx, AV_LOG_ERROR, "Non-D3D11VA input hw_device_ctx\n");
+            return AVERROR(EINVAL);
+        }
+
+        dda->device_ref = av_buffer_ref(avctx->hw_device_ctx);
+        if (!dda->device_ref)
+            return AVERROR(ENOMEM);
+
+        av_log(avctx, AV_LOG_VERBOSE, "Using provided hw_device_ctx\n");
+    } else {
+        ret = av_hwdevice_ctx_create(&dda->device_ref, AV_HWDEVICE_TYPE_D3D11VA, NULL, NULL, 0);
+        if (ret < 0) {
+            av_log(avctx, AV_LOG_ERROR, "Failed to create D3D11VA device.\n");
+            return ret;
+        }
+
+        dda->device_ctx = (AVHWDeviceContext*)dda->device_ref->data;
+
+        av_log(avctx, AV_LOG_VERBOSE, "Created internal hw_device_ctx\n");
+    }
+
+    dda->device_hwctx = (AVD3D11VADeviceContext*)dda->device_ctx->hwctx;
+
+    ret = init_dxgi_dda(avctx);
+    if (ret < 0)
+        return ret;
+
     ret = probe_output_format(avctx);
     if (ret < 0)
         return ret;
 
     dda->width -= FFMAX(dda->width - dda->raw_width + dda->offset_x, 0);
     dda->height -= FFMAX(dda->height - dda->raw_height + dda->offset_y, 0);
+
+    dda->time_base  = av_inv_q(dda->framerate);
+    dda->time_frame = av_gettime_relative() / av_q2d(dda->time_base);
+    dda->time_timeout = av_rescale_q(1, dda->time_base, (AVRational) { 1, 1000 }) / 2;
 
     if (dda->draw_mouse) {
         ret = init_render_resources(avctx);
