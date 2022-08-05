@@ -358,6 +358,8 @@ static int vaapi_decode_find_best_format(AVCodecContext *avctx,
 
         ctx->pixel_format_attribute = (VASurfaceAttrib) {
             .type          = VASurfaceAttribPixelFormat,
+            .flags         = VA_SURFACE_ATTRIB_SETTABLE,
+            .value.type    = VAGenericValueTypeInteger,
             .value.value.i = best_fourcc,
         };
 
