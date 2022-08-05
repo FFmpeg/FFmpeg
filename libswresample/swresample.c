@@ -83,8 +83,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
 int swr_alloc_set_opts2(struct SwrContext **ps,
-                        AVChannelLayout *out_ch_layout, enum AVSampleFormat out_sample_fmt, int out_sample_rate,
-                        AVChannelLayout *in_ch_layout, enum AVSampleFormat  in_sample_fmt, int  in_sample_rate,
+                        const AVChannelLayout *out_ch_layout, enum AVSampleFormat out_sample_fmt, int out_sample_rate,
+                        const AVChannelLayout *in_ch_layout, enum AVSampleFormat  in_sample_fmt, int  in_sample_rate,
                         int log_offset, void *log_ctx) {
     struct SwrContext *s = *ps;
     int ret;
