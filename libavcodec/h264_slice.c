@@ -165,20 +165,19 @@ static int init_table_pools(H264Context *h)
     const int b4_stride     = h->mb_width * 4 + 1;
     const int b4_array_size = b4_stride * h->mb_height * 4;
 
-    h->qscale_table_pool = av_buffer_pool_init(big_mb_num + h->mb_stride,
-                                               av_buffer_allocz);
-    h->mb_type_pool      = av_buffer_pool_init((big_mb_num + h->mb_stride) *
-                                               sizeof(uint32_t), av_buffer_allocz);
-    h->motion_val_pool   = av_buffer_pool_init(2 * (b4_array_size + 4) *
-                                               sizeof(int16_t), av_buffer_allocz);
-    h->ref_index_pool    = av_buffer_pool_init(4 * mb_array_size, av_buffer_allocz);
+    h->qscale_table_pool = ff_refstruct_pool_alloc(big_mb_num + h->mb_stride, 0);
+    h->mb_type_pool      = ff_refstruct_pool_alloc((big_mb_num + h->mb_stride) *
+                                                   sizeof(uint32_t), 0);
+    h->motion_val_pool   = ff_refstruct_pool_alloc(2 * (b4_array_size + 4) *
+                                                   sizeof(int16_t), 0);
+    h->ref_index_pool    = ff_refstruct_pool_alloc(4 * mb_array_size, 0);
 
     if (!h->qscale_table_pool || !h->mb_type_pool || !h->motion_val_pool ||
         !h->ref_index_pool) {
-        av_buffer_pool_uninit(&h->qscale_table_pool);
-        av_buffer_pool_uninit(&h->mb_type_pool);
-        av_buffer_pool_uninit(&h->motion_val_pool);
-        av_buffer_pool_uninit(&h->ref_index_pool);
+        ff_refstruct_pool_uninit(&h->qscale_table_pool);
+        ff_refstruct_pool_uninit(&h->mb_type_pool);
+        ff_refstruct_pool_uninit(&h->motion_val_pool);
+        ff_refstruct_pool_uninit(&h->ref_index_pool);
         return AVERROR(ENOMEM);
     }
 
@@ -211,10 +210,10 @@ static int alloc_picture(H264Context *h, H264Picture *pic)
         goto fail;
 
     if (h->decode_error_flags_pool) {
-        pic->decode_error_flags = av_buffer_pool_get(h->decode_error_flags_pool);
+        pic->decode_error_flags = ff_refstruct_pool_get(h->decode_error_flags_pool);
         if (!pic->decode_error_flags)
             goto fail;
-        atomic_init((atomic_int*)pic->decode_error_flags->data, 0);
+        atomic_init(pic->decode_error_flags, 0);
     }
 
     if (CONFIG_GRAY && !h->avctx->hwaccel && h->flags & AV_CODEC_FLAG_GRAY && pic->f->data[2]) {
@@ -236,22 +235,21 @@ static int alloc_picture(H264Context *h, H264Picture *pic)
             goto fail;
     }
 
-    pic->qscale_table_buf = av_buffer_pool_get(h->qscale_table_pool);
-    pic->mb_type_buf      = av_buffer_pool_get(h->mb_type_pool);
-    if (!pic->qscale_table_buf || !pic->mb_type_buf)
+    pic->qscale_table_base = ff_refstruct_pool_get(h->qscale_table_pool);
+    pic->mb_type_base      = ff_refstruct_pool_get(h->mb_type_pool);
+    if (!pic->qscale_table_base || !pic->mb_type_base)
         goto fail;
 
-    pic->mb_type      = (uint32_t*)pic->mb_type_buf->data + 2 * h->mb_stride + 1;
-    pic->qscale_table = pic->qscale_table_buf->data + 2 * h->mb_stride + 1;
+    pic->mb_type      = pic->mb_type_base + 2 * h->mb_stride + 1;
+    pic->qscale_table = pic->qscale_table_base + 2 * h->mb_stride + 1;
 
     for (i = 0; i < 2; i++) {
-        pic->motion_val_buf[i] = av_buffer_pool_get(h->motion_val_pool);
-        pic->ref_index_buf[i]  = av_buffer_pool_get(h->ref_index_pool);
-        if (!pic->motion_val_buf[i] || !pic->ref_index_buf[i])
+        pic->motion_val_base[i] = ff_refstruct_pool_get(h->motion_val_pool);
+        pic->ref_index[i]       = ff_refstruct_pool_get(h->ref_index_pool);
+        if (!pic->motion_val_base[i] || !pic->ref_index[i])
             goto fail;
 
-        pic->motion_val[i] = (int16_t (*)[2])pic->motion_val_buf[i]->data + 4;
-        pic->ref_index[i]  = pic->ref_index_buf[i]->data;
+        pic->motion_val[i] = pic->motion_val_base[i] + 4;
     }
 
     pic->pps = ff_refstruct_ref_c(h->ps.pps);

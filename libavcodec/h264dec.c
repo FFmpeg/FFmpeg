@@ -51,6 +51,7 @@
 #include "mpegutils.h"
 #include "profiles.h"
 #include "rectangle.h"
+#include "refstruct.h"
 #include "thread.h"
 #include "threadframe.h"
 
@@ -151,10 +152,10 @@ void ff_h264_free_tables(H264Context *h)
     av_freep(&h->mb2b_xy);
     av_freep(&h->mb2br_xy);
 
-    av_buffer_pool_uninit(&h->qscale_table_pool);
-    av_buffer_pool_uninit(&h->mb_type_pool);
-    av_buffer_pool_uninit(&h->motion_val_pool);
-    av_buffer_pool_uninit(&h->ref_index_pool);
+    ff_refstruct_pool_uninit(&h->qscale_table_pool);
+    ff_refstruct_pool_uninit(&h->mb_type_pool);
+    ff_refstruct_pool_uninit(&h->motion_val_pool);
+    ff_refstruct_pool_uninit(&h->ref_index_pool);
 
 #if CONFIG_ERROR_RESILIENCE
     av_freep(&h->er.mb_index2xy);
@@ -308,7 +309,7 @@ static int h264_init_context(AVCodecContext *avctx, H264Context *h)
     ff_h264_sei_uninit(&h->sei);
 
     if (avctx->active_thread_type & FF_THREAD_FRAME) {
-        h->decode_error_flags_pool = av_buffer_pool_init(sizeof(atomic_int), NULL);
+        h->decode_error_flags_pool = ff_refstruct_pool_alloc(sizeof(atomic_int), 0);
         if (!h->decode_error_flags_pool)
             return AVERROR(ENOMEM);
     }
@@ -359,7 +360,7 @@ static av_cold int h264_decode_end(AVCodecContext *avctx)
 
     h->cur_pic_ptr = NULL;
 
-    av_buffer_pool_uninit(&h->decode_error_flags_pool);
+    ff_refstruct_pool_uninit(&h->decode_error_flags_pool);
 
     av_freep(&h->slice_ctx);
     h->nb_slice_ctx = 0;
@@ -749,7 +750,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
     if ((ret < 0 || h->er.error_occurred) && h->cur_pic_ptr) {
         if (h->cur_pic_ptr->decode_error_flags) {
             /* Frame-threading in use */
-            atomic_int *decode_error = (atomic_int*)h->cur_pic_ptr->decode_error_flags->data;
+            atomic_int *decode_error = h->cur_pic_ptr->decode_error_flags;
             /* Using atomics here is not supposed to provide syncronisation;
              * they are merely used to allow to set decode_error from both
              * decoding threads in case of coded slices. */
@@ -800,7 +801,7 @@ end:
         ff_er_frame_end(&h->er, &decode_error_flags);
         if (decode_error_flags) {
             if (h->cur_pic_ptr->decode_error_flags) {
-                atomic_int *decode_error = (atomic_int*)h->cur_pic_ptr->decode_error_flags->data;
+                atomic_int *decode_error = h->cur_pic_ptr->decode_error_flags;
                 atomic_fetch_or_explicit(decode_error, decode_error_flags,
                                          memory_order_relaxed);
             } else
@@ -878,7 +879,7 @@ static int output_frame(H264Context *h, AVFrame *dst, H264Picture *srcp)
         return ret;
 
     if (srcp->decode_error_flags) {
-        atomic_int *decode_error = (atomic_int*)srcp->decode_error_flags->data;
+        atomic_int *decode_error = srcp->decode_error_flags;
         /* The following is not supposed to provide synchronisation at all:
          * given that srcp has already finished decoding, decode_error
          * has already been set to its final value. */
