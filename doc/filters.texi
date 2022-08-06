@@ -26531,6 +26531,22 @@ Horizontal offset of the captured video.
 @item offset_y
 Vertical offset of the captured video.
 
+@item output_fmt
+Desired filter output format.
+Defaults to 8 Bit BGRA.
+
+It accepts the following values:
+@table @samp
+@item auto
+Passes all supported output formats to DDA and returns what DDA decides to use.
+@item 8bit
+@item bgra
+8 Bit formats always work, and DDA will convert to them if neccesary.
+@item 10bit
+@item x2bgr10
+Filter initialization will fail if 10 bit format is requested but unavailable.
+@end table
+
 @end table
 
 @subsection Examples
