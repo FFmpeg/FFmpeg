@@ -114,15 +114,6 @@ int ff_format_shift_data(AVFormatContext *s, int64_t read_start, int shift_size)
 int ff_format_output_open(AVFormatContext *s, const char *url, AVDictionary **options);
 
 /**
- * Copy encoding parameters from source to destination stream
- *
- * @param dst pointer to destination AVStream
- * @param src pointer to source AVStream
- * @return >=0 on success, AVERROR code on error
- */
-int ff_stream_encode_params_copy(AVStream *dst, const AVStream *src);
-
-/**
  * Parse creation_time in AVFormatContext metadata if exists and warn if the
  * parsing fails.
  *

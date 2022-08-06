@@ -626,6 +626,17 @@ enum AVCodecID ff_get_pcm_codec_id(int bps, int flt, int be, int sflags);
 int ff_stream_side_data_copy(AVStream *dst, const AVStream *src);
 
 /**
+ * Create a new stream and copy to it all parameters from a source stream, with
+ * the exception of the index field, which is set when the new stream is
+ * created.
+ *
+ * @param dst_ctx pointer to the context in which the new stream is created
+ * @param src pointer to source AVStream
+ * @return pointer to the new stream or NULL on error
+ */
+AVStream *ff_stream_clone(AVFormatContext *dst_ctx, const AVStream *src);
+
+/**
  * Wrap ffurl_move() and log if error happens.
  *
  * @param url_src source path

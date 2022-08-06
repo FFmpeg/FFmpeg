@@ -235,6 +235,72 @@ int ff_stream_side_data_copy(AVStream *dst, const AVStream *src)
     return 0;
 }
 
+/**
+ * Copy all stream parameters from source to destination stream, with the
+ * exception of the index field, which is usually set by avformat_new_stream().
+ *
+ * @param dst pointer to destination AVStream
+ * @param src pointer to source AVStream
+ * @return >=0 on success, AVERROR code on error
+ */
+static int stream_params_copy(AVStream *dst, const AVStream *src)
+{
+    int ret;
+
+    dst->id                  = src->id;
+    dst->time_base           = src->time_base;
+    dst->start_time          = src->start_time;
+    dst->duration            = src->duration;
+    dst->nb_frames           = src->nb_frames;
+    dst->disposition         = src->disposition;
+    dst->discard             = src->discard;
+    dst->sample_aspect_ratio = src->sample_aspect_ratio;
+    dst->avg_frame_rate      = src->avg_frame_rate;
+    dst->event_flags         = src->event_flags;
+    dst->r_frame_rate        = src->r_frame_rate;
+    dst->pts_wrap_bits       = src->pts_wrap_bits;
+
+    av_dict_free(&dst->metadata);
+    ret = av_dict_copy(&dst->metadata, src->metadata, 0);
+    if (ret < 0)
+        return ret;
+
+    ret = avcodec_parameters_copy(dst->codecpar, src->codecpar);
+    if (ret < 0)
+        return ret;
+
+    ret = ff_stream_side_data_copy(dst, src);
+    if (ret < 0)
+        return ret;
+
+    av_packet_unref(&dst->attached_pic);
+    if (src->attached_pic.data) {
+        ret = av_packet_ref(&dst->attached_pic, &src->attached_pic);
+        if (ret < 0)
+            return ret;
+    }
+
+    return 0;
+}
+
+AVStream *ff_stream_clone(AVFormatContext *dst_ctx, const AVStream *src)
+{
+    AVStream *st;
+    int ret;
+
+    st = avformat_new_stream(dst_ctx, NULL);
+    if (!st)
+        return NULL;
+
+    ret = stream_params_copy(st, src);
+    if (ret < 0) {
+        ff_remove_stream(dst_ctx, st);
+        return NULL;
+    }
+
+    return st;
+}
+
 AVProgram *av_new_program(AVFormatContext *ac, int id)
 {
     AVProgram *program = NULL;

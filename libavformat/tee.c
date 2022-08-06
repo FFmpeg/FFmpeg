@@ -284,14 +284,11 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
         }
         tee_slave->stream_map[i] = stream_count++;
 
-        if (!(st2 = avformat_new_stream(avf2, NULL))) {
+        st2 = ff_stream_clone(avf2, st);
+        if (!st2) {
             ret = AVERROR(ENOMEM);
             goto end;
         }
-
-        ret = ff_stream_encode_params_copy(st2, st);
-        if (ret < 0)
-            goto end;
     }
 
     ret = ff_format_output_open(avf2, filename, &options);
