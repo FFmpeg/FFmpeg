@@ -204,8 +204,8 @@ static int nvdec_hevc_start_frame(AVCodecContext *avctx,
         ppc->row_height_minus1[i] = pps->row_height[i] - 1;
 
 #if NVDECAPI_CHECK_VERSION(9, 0)
-    if (pps->chroma_qp_offset_list_len_minus1 > FF_ARRAY_ELEMS(ppc->cb_qp_offset_list) ||
-        pps->chroma_qp_offset_list_len_minus1 > FF_ARRAY_ELEMS(ppc->cr_qp_offset_list)) {
+    if (pps->chroma_qp_offset_list_len_minus1 >= FF_ARRAY_ELEMS(ppc->cb_qp_offset_list) ||
+        pps->chroma_qp_offset_list_len_minus1 >= FF_ARRAY_ELEMS(ppc->cr_qp_offset_list)) {
         av_log(avctx, AV_LOG_ERROR, "Too many chroma_qp_offsets\n");
         return AVERROR(ENOSYS);
     }
