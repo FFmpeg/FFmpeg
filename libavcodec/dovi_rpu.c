@@ -110,7 +110,7 @@ int ff_dovi_attach_side_data(DOVIContext *s, AVFrame *frame)
     /* Copy only the parts of these structs known to us at compiler-time. */
 #define COPY(t, a, b, last) memcpy(a, b, offsetof(t, last) + sizeof((b)->last))
     COPY(AVDOVIRpuDataHeader, av_dovi_get_header(dovi), &s->header, disable_residual_flag);
-    COPY(AVDOVIDataMapping, av_dovi_get_mapping(dovi), s->mapping, nlq[2].linear_deadzone_threshold);
+    COPY(AVDOVIDataMapping, av_dovi_get_mapping(dovi), s->mapping, nlq_pivots);
     COPY(AVDOVIColorMetadata, av_dovi_get_color(dovi), s->color, source_diagonal);
     return 0;
 }
@@ -347,7 +347,14 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size)
         }
 
         if (use_nlq) {
+            int nlq_pivot = 0;
             vdr->mapping.nlq_method_idc = get_bits(gb, 3);
+
+            for (int i = 0; i < 2; i++) {
+                nlq_pivot += get_bits(gb, hdr->bl_bit_depth);
+                vdr->mapping.nlq_pivots[i] = av_clip_uint16(nlq_pivot);
+            }
+
             /**
              * The patent mentions another legal value, NLQ_MU_LAW, but it's
              * not documented anywhere how to parse or apply that type of NLQ.

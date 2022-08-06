@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2024-03-07
 
 API changes, most recent first:
 
+2024-04-xx - xxxxxxxxxx - lavu 59.11.100 - dovi_meta.h
+  Add AVDOVIDataMapping.nlq_pivots.
+
 2024-03-29 - xxxxxxxxxx - lavf 61.3.100 - avformat.h
   Add AVFormatContext.duration_probesize.
 

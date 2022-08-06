@@ -147,6 +147,7 @@ typedef struct AVDOVIDataMapping {
     uint32_t num_x_partitions;
     uint32_t num_y_partitions;
     AVDOVINLQParams nlq[3]; /* per component */
+    uint16_t nlq_pivots[2];
 } AVDOVIDataMapping;
 
 /**
