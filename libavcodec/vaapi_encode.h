@@ -103,7 +103,8 @@ typedef struct VAAPIEncodePicture {
     int          nb_param_buffers;
     VABufferID     *param_buffers;
 
-    AVBufferRef    *output_buffer_ref;
+    /* Refcounted via the refstruct-API */
+    VABufferID     *output_buffer_ref;
     VABufferID      output_buffer;
 
     void           *priv_data;
@@ -275,7 +276,7 @@ typedef struct VAAPIEncodeContext {
     AVHWFramesContext *recon_frames;
 
     // Pool of (reusable) bitstream output buffers.
-    AVBufferPool   *output_buffer_pool;
+    struct FFRefStructPool *output_buffer_pool;
 
     // Global parameters which will be applied at the start of the
     // sequence (includes rate control parameters below).
@@ -383,8 +384,11 @@ typedef struct VAAPIEncodeContext {
     //void  *header_data;
     //size_t header_data_size;
 
-    /** Buffered coded data of a pic if it is an non-independent frame. */
-    AVBufferRef     *coded_buffer_ref;
+    /**
+     * Buffered coded data of a pic if it is an non-independent frame.
+     * This is a RefStruct reference.
+     */
+    VABufferID     *coded_buffer_ref;
 
     /** Tail data of a pic, now only used for av1 repeat frame header. */
     AVPacket        *tail_pkt;
