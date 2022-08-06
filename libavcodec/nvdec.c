@@ -532,8 +532,11 @@ static int nvdec_retrieve_data(void *logctx, AVFrame *frame)
     }
 
     unmap_data->idx = cf->idx;
-    unmap_data->idx_ref = av_buffer_ref(cf->idx_ref);
-    unmap_data->decoder_ref = av_buffer_ref(cf->decoder_ref);
+    if (!(unmap_data->idx_ref     = av_buffer_ref(cf->idx_ref)) ||
+        !(unmap_data->decoder_ref = av_buffer_ref(cf->decoder_ref))) {
+        ret = AVERROR(ENOMEM);
+        goto copy_fail;
+    }
 
     av_pix_fmt_get_chroma_sub_sample(hwctx->sw_format, &shift_h, &shift_v);
     for (i = 0; frame->linesize[i]; i++) {
