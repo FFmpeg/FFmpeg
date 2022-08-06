@@ -61,7 +61,6 @@ const AVCodecTag ff_mp4_obj_type[] = {
     { AV_CODEC_ID_DTS         , 0xA9 }, /* mp4ra.org */
     { AV_CODEC_ID_OPUS        , 0xAD }, /* mp4ra.org */
     { AV_CODEC_ID_VP9         , 0xB1 }, /* mp4ra.org */
-    { AV_CODEC_ID_FLAC        , 0xC1 }, /* nonstandard, update when there is a standard value */
     { AV_CODEC_ID_TSCC2       , 0xD0 }, /* nonstandard, camtasia uses it */
     { AV_CODEC_ID_EVRC        , 0xD1 }, /* nonstandard, pvAuthor uses it */
     { AV_CODEC_ID_VORBIS      , 0xDD }, /* nonstandard, gpac uses it */
