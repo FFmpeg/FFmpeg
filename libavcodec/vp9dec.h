@@ -28,7 +28,6 @@
 #include <stdint.h>
 #include <stdatomic.h>
 
-#include "libavutil/buffer.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/thread.h"
 #include "libavutil/internal.h"
@@ -161,7 +160,7 @@ typedef struct VP9Context {
     uint8_t mvstep[3][2];
 
     // frame specific buffer pools
-    AVBufferPool *frame_extradata_pool;
+    struct FFRefStructPool *frame_extradata_pool;
     int frame_extradata_pool_size;
 } VP9Context;
 
