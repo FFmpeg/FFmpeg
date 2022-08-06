@@ -983,6 +983,18 @@ static int ddagrab_request_frame(AVFilterLink *outlink)
 
     frame->sample_aspect_ratio = (AVRational){1, 1};
 
+    if (desc.Format == DXGI_FORMAT_B8G8R8A8_UNORM ||
+        desc.Format == DXGI_FORMAT_R10G10B10A2_UNORM) {
+        // According to MSDN, all integer formats contain sRGB image data
+        frame->color_range     = AVCOL_RANGE_JPEG;
+        frame->color_primaries = AVCOL_PRI_BT709;
+        frame->color_trc       = AVCOL_TRC_IEC61966_2_1;
+        frame->colorspace      = AVCOL_SPC_RGB;
+    } else {
+        ret = AVERROR_BUG;
+        goto fail;
+    }
+
     av_frame_unref(dda->last_frame);
     ret = av_frame_ref(dda->last_frame, frame);
     if (ret < 0)
