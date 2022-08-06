@@ -524,12 +524,9 @@ static int nvdec_retrieve_data(void *logctx, AVFrame *frame)
         goto copy_fail;
     }
 
-    av_buffer_unref(&frame->hw_frames_ctx);
-    frame->hw_frames_ctx = av_buffer_ref(decoder->real_hw_frames_ref);
-    if (!frame->hw_frames_ctx) {
-        ret = AVERROR(ENOMEM);
+    ret = av_buffer_replace(&frame->hw_frames_ctx, decoder->real_hw_frames_ref);
+    if (ret < 0)
         goto copy_fail;
-    }
 
     unmap_data->idx = cf->idx;
     if (!(unmap_data->idx_ref     = av_buffer_ref(cf->idx_ref)) ||
