@@ -1096,11 +1096,20 @@ static av_cold int nvenc_setup_h264_config(AVCodecContext *avctx)
     NV_ENC_CONFIG_H264 *h264               = &cc->encodeCodecConfig.h264Config;
     NV_ENC_CONFIG_H264_VUI_PARAMETERS *vui = &h264->h264VUIParameters;
 
-    vui->colourMatrix = IS_GBRP(ctx->data_pix_fmt) ? AVCOL_SPC_RGB : avctx->colorspace;
-    vui->colourPrimaries = avctx->color_primaries;
-    vui->transferCharacteristics = avctx->color_trc;
-    vui->videoFullRangeFlag = (avctx->color_range == AVCOL_RANGE_JPEG
-        || ctx->data_pix_fmt == AV_PIX_FMT_YUVJ420P || ctx->data_pix_fmt == AV_PIX_FMT_YUVJ422P || ctx->data_pix_fmt == AV_PIX_FMT_YUVJ444P);
+    const AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(ctx->data_pix_fmt);
+
+    if ((pixdesc->flags & AV_PIX_FMT_FLAG_RGB) && !IS_GBRP(ctx->data_pix_fmt)) {
+        vui->colourMatrix = AVCOL_SPC_BT470BG;
+        vui->colourPrimaries = avctx->color_primaries;
+        vui->transferCharacteristics = avctx->color_trc;
+        vui->videoFullRangeFlag = 0;
+    } else {
+        vui->colourMatrix = IS_GBRP(ctx->data_pix_fmt) ? AVCOL_SPC_RGB : avctx->colorspace;
+        vui->colourPrimaries = avctx->color_primaries;
+        vui->transferCharacteristics = avctx->color_trc;
+        vui->videoFullRangeFlag = (avctx->color_range == AVCOL_RANGE_JPEG
+            || ctx->data_pix_fmt == AV_PIX_FMT_YUVJ420P || ctx->data_pix_fmt == AV_PIX_FMT_YUVJ422P || ctx->data_pix_fmt == AV_PIX_FMT_YUVJ444P);
+    }
 
     vui->colourDescriptionPresentFlag =
         (vui->colourMatrix != 2 || vui->colourPrimaries != 2 || vui->transferCharacteristics != 2);
@@ -1208,11 +1217,20 @@ static av_cold int nvenc_setup_hevc_config(AVCodecContext *avctx)
     NV_ENC_CONFIG_HEVC *hevc               = &cc->encodeCodecConfig.hevcConfig;
     NV_ENC_CONFIG_HEVC_VUI_PARAMETERS *vui = &hevc->hevcVUIParameters;
 
-    vui->colourMatrix = IS_GBRP(ctx->data_pix_fmt) ? AVCOL_SPC_RGB : avctx->colorspace;
-    vui->colourPrimaries = avctx->color_primaries;
-    vui->transferCharacteristics = avctx->color_trc;
-    vui->videoFullRangeFlag = (avctx->color_range == AVCOL_RANGE_JPEG
-        || ctx->data_pix_fmt == AV_PIX_FMT_YUVJ420P || ctx->data_pix_fmt == AV_PIX_FMT_YUVJ422P || ctx->data_pix_fmt == AV_PIX_FMT_YUVJ444P);
+    const AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(ctx->data_pix_fmt);
+
+    if ((pixdesc->flags & AV_PIX_FMT_FLAG_RGB) && !IS_GBRP(ctx->data_pix_fmt)) {
+        vui->colourMatrix = AVCOL_SPC_BT470BG;
+        vui->colourPrimaries = avctx->color_primaries;
+        vui->transferCharacteristics = avctx->color_trc;
+        vui->videoFullRangeFlag = 0;
+    } else {
+        vui->colourMatrix = IS_GBRP(ctx->data_pix_fmt) ? AVCOL_SPC_RGB : avctx->colorspace;
+        vui->colourPrimaries = avctx->color_primaries;
+        vui->transferCharacteristics = avctx->color_trc;
+        vui->videoFullRangeFlag = (avctx->color_range == AVCOL_RANGE_JPEG
+            || ctx->data_pix_fmt == AV_PIX_FMT_YUVJ420P || ctx->data_pix_fmt == AV_PIX_FMT_YUVJ422P || ctx->data_pix_fmt == AV_PIX_FMT_YUVJ444P);
+    }
 
     vui->colourDescriptionPresentFlag =
         (vui->colourMatrix != 2 || vui->colourPrimaries != 2 || vui->transferCharacteristics != 2);
