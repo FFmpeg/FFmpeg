@@ -285,6 +285,10 @@ static int refstruct_pool_get_ext(void *datap, FFRefStructPool *pool)
         }
     }
     atomic_fetch_add_explicit(&pool->refcount, 1, memory_order_relaxed);
+
+    if (pool->pool_flags & FF_REFSTRUCT_POOL_FLAG_ZERO_EVERY_TIME)
+        memset(ret, 0, pool->size);
+
     memcpy(datap, &ret, sizeof(ret));
 
     return 0;
@@ -356,6 +360,12 @@ FFRefStructPool *ff_refstruct_pool_alloc_ext_c(size_t size, unsigned flags,
     if (!pool->free_entry_cb)
         flags &= ~FF_REFSTRUCT_POOL_FLAG_FREE_ON_INIT_ERROR;
     pool->pool_flags    = flags;
+
+    if (flags & FF_REFSTRUCT_POOL_FLAG_ZERO_EVERY_TIME) {
+        // We will zero the buffer before every use, so zeroing
+        // upon allocating the buffer is unnecessary.
+        pool->entry_flags |= FF_REFSTRUCT_FLAG_NO_ZEROING;
+    }
 
     atomic_init(&pool->refcount, 1);
 

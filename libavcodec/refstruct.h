@@ -211,6 +211,14 @@ typedef struct FFRefStructPool FFRefStructPool;
  * the callbacks applied earlier (init_cb potentially followed by reset_cb).
  */
 #define FF_REFSTRUCT_POOL_FLAG_FREE_ON_INIT_ERROR                    (1 << 17)
+/**
+ * If this flag is set, the entries will be zeroed before
+ * being returned to the user (after the init or reset callbacks
+ * have been called (if provided)). Furthermore, to avoid zeroing twice
+ * it also makes the pool behave as if the FF_REFSTRUCT_POOL_FLAG_NO_ZEROING
+ * flag had been provided.
+ */
+#define FF_REFSTRUCT_POOL_FLAG_ZERO_EVERY_TIME                       (1 << 18)
 
 /**
  * Equivalent to ff_refstruct_pool_alloc(size, flags, NULL, NULL, NULL, NULL, NULL)
