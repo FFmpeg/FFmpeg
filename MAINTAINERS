@@ -40,7 +40,8 @@ Miscellaneous Areas
 ===================
 
 documentation                           Stefano Sabatini, Mike Melanson, Timothy Gu, Gyan Doshi
-project server                          Árpád Gereöffy, Michael Niedermayer, Reimar Doeffinger, Alexander Strasser, Nikolay Aleksandrov
+project server day to day operations    Árpád Gereöffy, Michael Niedermayer, Reimar Doeffinger, Alexander Strasser, Nikolay Aleksandrov
+project server emergencies              Árpád Gereöffy, Reimar Doeffinger, Alexander Strasser, Nikolay Aleksandrov
 presets                                 Robert Swain
 metadata subsystem                      Aurelien Jacobs
 release management                      Michael Niedermayer
