@@ -98,6 +98,8 @@ typedef struct DdagrabContext {
     int        offset_x;
     int        offset_y;
     int        out_fmt;
+    int        allow_fallback;
+    int        force_fmt;
 } DdagrabContext;
 
 #define OFFSET(x) offsetof(DdagrabContext, x)
@@ -117,6 +119,10 @@ static const AVOption ddagrab_options[] = {
     { "x2bgr10",    "only output 10 Bit X2BGR10",        0,            AV_OPT_TYPE_CONST,      { .i64 = DXGI_FORMAT_R10G10B10A2_UNORM }, 0, INT_MAX, FLAGS, "output_fmt" },
     { "16bit",      "only output default 16 Bit format", 0,            AV_OPT_TYPE_CONST,      { .i64 = DXGI_FORMAT_R16G16B16A16_FLOAT },0, INT_MAX, FLAGS, "output_fmt" },
     { "rgbaf16",    "only output 16 Bit RGBAF16",        0,            AV_OPT_TYPE_CONST,      { .i64 = DXGI_FORMAT_R16G16B16A16_FLOAT },0, INT_MAX, FLAGS, "output_fmt" },
+    { "allow_fallback", "don't error on fallback to default 8 Bit format",
+                                                   OFFSET(allow_fallback), AV_OPT_TYPE_BOOL,   { .i64 = 0    },       0,       1, FLAGS },
+    { "force_fmt",  "exclude BGRA from format list (experimental, discouraged by Microsoft)",
+                                                   OFFSET(force_fmt),  AV_OPT_TYPE_BOOL,       { .i64 = 0    },       0,       1, FLAGS },
     { NULL }
 };
 
@@ -226,7 +232,7 @@ static av_cold int init_dxgi_dda(AVFilterContext *avctx)
         } else if (dda->out_fmt) {
             formats[0] = dda->out_fmt;
             formats[1] = DXGI_FORMAT_B8G8R8A8_UNORM;
-            nb_formats = 2;
+            nb_formats = dda->force_fmt ? 1 : 2;
         }
 
         IDXGIOutput_Release(dxgi_output);
@@ -262,7 +268,7 @@ static av_cold int init_dxgi_dda(AVFilterContext *avctx)
 #else
     {
 #endif
-        if (dda->out_fmt && dda->out_fmt != DXGI_FORMAT_B8G8R8A8_UNORM) {
+        if (dda->out_fmt && dda->out_fmt != DXGI_FORMAT_B8G8R8A8_UNORM && (!dda->allow_fallback || dda->force_fmt)) {
             av_log(avctx, AV_LOG_ERROR, "Only 8 bit output supported with legacy API\n");
             return AVERROR(ENOTSUP);
         }
@@ -733,7 +739,7 @@ static int ddagrab_config_props(AVFilterLink *outlink)
     if (ret < 0)
         return ret;
 
-    if (dda->out_fmt && dda->raw_format != dda->out_fmt) {
+    if (dda->out_fmt && dda->raw_format != dda->out_fmt && (!dda->allow_fallback || dda->force_fmt)) {
         av_log(avctx, AV_LOG_ERROR, "Requested output format unavailable.\n");
         return AVERROR(ENOTSUP);
     }
