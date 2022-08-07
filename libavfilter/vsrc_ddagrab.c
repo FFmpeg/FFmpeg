@@ -115,6 +115,8 @@ static const AVOption ddagrab_options[] = {
     { "bgra",       "only output 8 Bit BGRA",            0,            AV_OPT_TYPE_CONST,      { .i64 = DXGI_FORMAT_B8G8R8A8_UNORM },    0, INT_MAX, FLAGS, "output_fmt" },
     { "10bit",      "only output default 10 Bit format", 0,            AV_OPT_TYPE_CONST,      { .i64 = DXGI_FORMAT_R10G10B10A2_UNORM }, 0, INT_MAX, FLAGS, "output_fmt" },
     { "x2bgr10",    "only output 10 Bit X2BGR10",        0,            AV_OPT_TYPE_CONST,      { .i64 = DXGI_FORMAT_R10G10B10A2_UNORM }, 0, INT_MAX, FLAGS, "output_fmt" },
+    { "16bit",      "only output default 16 Bit format", 0,            AV_OPT_TYPE_CONST,      { .i64 = DXGI_FORMAT_R16G16B16A16_FLOAT },0, INT_MAX, FLAGS, "output_fmt" },
+    { "rgbaf16",    "only output 16 Bit RGBAF16",        0,            AV_OPT_TYPE_CONST,      { .i64 = DXGI_FORMAT_R16G16B16A16_FLOAT },0, INT_MAX, FLAGS, "output_fmt" },
     { NULL }
 };
 
@@ -212,6 +214,7 @@ static av_cold int init_dxgi_dda(AVFilterContext *avctx)
     if (set_thread_dpi && SUCCEEDED(hr)) {
         DPI_AWARENESS_CONTEXT prev_dpi_ctx;
         DXGI_FORMAT formats[] = {
+            DXGI_FORMAT_R16G16B16A16_FLOAT,
             DXGI_FORMAT_R10G10B10A2_UNORM,
             DXGI_FORMAT_B8G8R8A8_UNORM
         };
@@ -665,6 +668,10 @@ static av_cold int init_hwframes_ctx(AVFilterContext *avctx)
         av_log(avctx, AV_LOG_VERBOSE, "Probed 10 bit RGB frame format\n");
         dda->frames_ctx->sw_format = AV_PIX_FMT_X2BGR10;
         break;
+    case DXGI_FORMAT_R16G16B16A16_FLOAT:
+        av_log(avctx, AV_LOG_VERBOSE, "Probed 16 bit float RGB frame format\n");
+        dda->frames_ctx->sw_format = AV_PIX_FMT_RGBAF16;
+        break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unexpected texture output format!\n");
         return AVERROR_BUG;
@@ -989,6 +996,12 @@ static int ddagrab_request_frame(AVFilterLink *outlink)
         frame->color_range     = AVCOL_RANGE_JPEG;
         frame->color_primaries = AVCOL_PRI_BT709;
         frame->color_trc       = AVCOL_TRC_IEC61966_2_1;
+        frame->colorspace      = AVCOL_SPC_RGB;
+    } else if(desc.Format == DXGI_FORMAT_R16G16B16A16_FLOAT) {
+        // According to MSDN, all floating point formats contain sRGB image data with linear 1.0 gamma.
+        frame->color_range     = AVCOL_RANGE_JPEG;
+        frame->color_primaries = AVCOL_PRI_BT709;
+        frame->color_trc       = AVCOL_TRC_LINEAR;
         frame->colorspace      = AVCOL_SPC_RGB;
     } else {
         ret = AVERROR_BUG;
