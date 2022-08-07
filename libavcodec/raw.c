@@ -72,6 +72,7 @@ static const PixelFormatTag raw_pix_fmt_tags[] = {
     { AV_PIX_FMT_GRAY8,   MKTAG('G', 'R', 'E', 'Y') },
     { AV_PIX_FMT_NV12,    MKTAG('N', 'V', '1', '2') },
     { AV_PIX_FMT_NV21,    MKTAG('N', 'V', '2', '1') },
+    { AV_PIX_FMT_VUYA,    MKTAG('A', 'Y', 'U', 'V') }, /* MS 4:4:4:4 */
 
     /* nut */
     { AV_PIX_FMT_RGB555LE, MKTAG('R', 'G', 'B', 15) },
