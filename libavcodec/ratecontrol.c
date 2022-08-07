@@ -751,15 +751,14 @@ static void adaptive_quantization(MpegEncContext *s, double q)
     float *bits_tab                  = s->bits_tab;
     const int qmin                   = s->avctx->mb_lmin;
     const int qmax                   = s->avctx->mb_lmax;
-    Picture *const pic               = &s->current_picture;
     const int mb_width               = s->mb_width;
     const int mb_height              = s->mb_height;
 
     for (i = 0; i < s->mb_num; i++) {
         const int mb_xy = s->mb_index2xy[i];
-        float temp_cplx = sqrt(pic->mc_mb_var[mb_xy]); // FIXME merge in pow()
-        float spat_cplx = sqrt(pic->mb_var[mb_xy]);
-        const int lumi  = pic->mb_mean[mb_xy];
+        float temp_cplx = sqrt(s->mc_mb_var[mb_xy]); // FIXME merge in pow()
+        float spat_cplx = sqrt(s->mb_var[mb_xy]);
+        const int lumi  = s->mb_mean[mb_xy];
         float bits, cplx, factor;
         int mb_x = mb_xy % s->mb_stride;
         int mb_y = mb_xy / s->mb_stride;

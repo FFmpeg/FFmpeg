@@ -235,6 +235,12 @@ typedef struct MpegEncContext {
     int16_t (*b_field_mv_table[2][2][2])[2];///< MV table (4MV per MB) interlaced B-frame encoding
     uint8_t (*p_field_select_table[2]);  ///< Only the first element is allocated
     uint8_t (*b_field_select_table[2][2]); ///< Only the first element is allocated
+
+    /* The following three arrays are encoder-only */
+    uint16_t *mb_var;           ///< Table for MB variances
+    uint16_t *mc_mb_var;        ///< Table for motion compensated MB variances
+    uint8_t *mb_mean;           ///< Table for MB luminance
+
     int motion_est;                      ///< ME algorithm
     int me_penalty_compensation;
     int me_pre;                          ///< prepass for motion estimation

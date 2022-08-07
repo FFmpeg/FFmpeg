@@ -313,6 +313,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     MpegEncContext *s = avctx->priv_data;
     AVCPBProperties *cpb_props;
     int i, ret;
+    int mb_array_size;
 
     mpv_encode_defaults(s);
 
@@ -823,6 +824,12 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         !FF_ALLOCZ_TYPED_ARRAY(s->reordered_input_picture, MAX_PICTURE_COUNT))
         return AVERROR(ENOMEM);
 
+    mb_array_size = s->mb_stride * s->mb_height;
+    if (!FF_ALLOCZ_TYPED_ARRAY(s->mc_mb_var, mb_array_size) ||
+        !FF_ALLOCZ_TYPED_ARRAY(s->mb_var, mb_array_size) ||
+        !(s->mb_mean = av_mallocz(mb_array_size)))
+        return AVERROR(ENOMEM);
+
     if (s->noise_reduction) {
         if (!FF_ALLOCZ_TYPED_ARRAY(s->dct_offset, 2))
             return AVERROR(ENOMEM);
@@ -949,6 +956,9 @@ av_cold int ff_mpv_encode_end(AVCodecContext *avctx)
     av_freep(&s->input_picture);
     av_freep(&s->reordered_input_picture);
     av_freep(&s->dct_offset);
+    av_freep(&s->mb_var);
+    av_freep(&s->mc_mb_var);
+    av_freep(&s->mb_mean);
 
     return 0;
 }
@@ -2235,8 +2245,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
             }
         }
         /* pre quantization */
-        if (s->current_picture.mc_mb_var[s->mb_stride * mb_y + mb_x] <
-                2 * s->qscale * s->qscale) {
+        if (s->mc_mb_var[s->mb_stride * mb_y + mb_x] < 2 * s->qscale * s->qscale) {
             // FIXME optimize
             if (s->mecc.sad[1](NULL, ptr_y, dest_y, wrap_y, 8) < 20 * s->qscale)
                 skip_dct[0] = 1;
@@ -2648,8 +2657,8 @@ static int mb_var_thread(AVCodecContext *c, void *arg){
             varc = (s->mpvencdsp.pix_norm1(pix, s->linesize) -
                     (((unsigned) sum * sum) >> 8) + 500 + 128) >> 8;
 
-            s->current_picture.mb_var [s->mb_stride * mb_y + mb_x] = varc;
-            s->current_picture.mb_mean[s->mb_stride * mb_y + mb_x] = (sum+128)>>8;
+            s->mb_var [s->mb_stride * mb_y + mb_x] = varc;
+            s->mb_mean[s->mb_stride * mb_y + mb_x] = (sum+128)>>8;
             s->me.mb_var_sum_temp    += varc;
         }
     }

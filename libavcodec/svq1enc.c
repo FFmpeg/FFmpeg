@@ -313,9 +313,9 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
         s->m.mb_type = s->mb_type;
 
         // dummies, to avoid segfaults
-        s->m.current_picture.mb_mean   = (uint8_t *)s->dummy;
-        s->m.current_picture.mb_var    = (uint16_t *)s->dummy;
-        s->m.current_picture.mc_mb_var = (uint16_t *)s->dummy;
+        s->m.mb_mean   = (uint8_t *)s->dummy;
+        s->m.mb_var    = (uint16_t *)s->dummy;
+        s->m.mc_mb_var = (uint16_t *)s->dummy;
         s->m.current_picture.mb_type = s->dummy;
 
         s->m.current_picture.motion_val[0]   = s->motion_val8[plane] + 2;
