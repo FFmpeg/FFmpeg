@@ -605,7 +605,7 @@ OBJS-$(CONFIG_MOVIE_FILTER)                  += src_movie.o
 SHLIBOBJS                                    += log2_tab.o
 
 # Windows resource file
-SLIBOBJS-$(HAVE_GNU_WINDRES)                 += avfilterres.o
+SHLIBOBJS-$(HAVE_GNU_WINDRES)                += avfilterres.o
 
 SKIPHEADERS-$(CONFIG_LCMS2)                  += fflcms2.h
 SKIPHEADERS-$(CONFIG_LIBVIDSTAB)             += vidstabutils.h

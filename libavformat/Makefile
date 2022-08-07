@@ -714,7 +714,7 @@ SHLIBOBJS-$(CONFIG_SPDIF_MUXER)          += dca_sample_rate_tab.o
 OBJS-$(CONFIG_IEC61883_INDEV)            += dv.o
 
 # Windows resource file
-SLIBOBJS-$(HAVE_GNU_WINDRES)             += avformatres.o
+SHLIBOBJS-$(HAVE_GNU_WINDRES)            += avformatres.o
 
 SKIPHEADERS-$(CONFIG_IMF_DEMUXER)        += imf.h
 SKIPHEADERS-$(CONFIG_FFRTMPCRYPT_PROTOCOL) += rtmpdh.h
