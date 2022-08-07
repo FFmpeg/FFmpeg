@@ -4371,6 +4371,7 @@ case "$toolchain" in
             die "Unsupported MSVC version (2013 or newer required)"
         fi
         ld_default="$source_path/compat/windows/mslink"
+        windres_default="$source_path/compat/windows/mswindres"
         nm_default="dumpbin.exe -symbols"
         ar_default="lib.exe"
         case "${arch:-$arch_default}" in
@@ -5621,6 +5622,7 @@ case $target_os in
             # Cannot build both shared and static libs with MSVC or icl.
             disable static
         fi
+        ! enabled small && test_cmd $windres --version && enable gnu_windres
         enabled x86_32 && check_ldflags -LARGEADDRESSAWARE
         shlibdir_default="$bindir_default"
         SLIBPREF=""
