@@ -21,6 +21,9 @@ OBJS-ffmpeg +=                  \
 
 define DOFFTOOL
 OBJS-$(1) += fftools/cmdutils.o fftools/opt_common.o fftools/$(1).o $(OBJS-$(1)-yes)
+ifdef HAVE_GNU_WINDRES
+OBJS-$(1) += fftools/fftoolsres.o
+endif
 $(1)$(PROGSSUF)_g$(EXESUF): $$(OBJS-$(1))
 $$(OBJS-$(1)): | fftools
 $$(OBJS-$(1)): CFLAGS  += $(CFLAGS-$(1))
