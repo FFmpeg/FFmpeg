@@ -1900,6 +1900,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("HDR (Radiance RGBE format) image"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
+    {
+        .id        = AV_CODEC_ID_WBMP,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "wbmp",
+        .long_name = NULL_IF_CONFIG_SMALL("WBMP (Wireless Application Protocol Bitmap) image"),
+        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+    },
 
     /* various PCM "codecs" */
     {

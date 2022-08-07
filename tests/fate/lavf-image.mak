@@ -43,6 +43,7 @@ FATE_LAVF_IMAGES-$(call LAVF_IMAGES,     SUNRAST) += sun
 FATE_LAVF_IMAGES-$(call LAVF_IMAGES,       TARGA) += tga
 FATE_LAVF_IMAGES-$(call LAVF_IMAGES,        TIFF) += tiff
 FATE_LAVF_IMAGES-$(call LAVF_IMAGES,         QOI) += qoi
+FATE_LAVF_IMAGES-$(call LAVF_IMAGES,        WBMP) += wbmp
 FATE_LAVF_IMAGES-$(call LAVF_IMAGES,         XBM) += xbm
 FATE_LAVF_IMAGES-$(call LAVF_IMAGES,         XWD) += xwd
 FATE_LAVF_IMAGES-$(call LAVF_IMAGES,         XWD) += rgba.xwd
