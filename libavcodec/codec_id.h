@@ -24,6 +24,8 @@
 #include "libavutil/avutil.h"
 #include "libavutil/samplefmt.h"
 
+#include "version_major.h"
+
 /**
  * @addtogroup lavc_core
  * @{
@@ -251,7 +253,9 @@ enum AVCodecID {
     AV_CODEC_ID_AVRP,
     AV_CODEC_ID_012V,
     AV_CODEC_ID_AVUI,
+#if FF_API_AYUV_CODECID
     AV_CODEC_ID_AYUV,
+#endif
     AV_CODEC_ID_TARGA_Y216,
     AV_CODEC_ID_V308,
     AV_CODEC_ID_V408,

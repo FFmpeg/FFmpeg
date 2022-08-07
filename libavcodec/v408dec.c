@@ -29,6 +29,10 @@ static av_cold int v408_decode_init(AVCodecContext *avctx)
 {
     avctx->pix_fmt = AV_PIX_FMT_YUVA444P;
 
+#if FF_API_AYUV_CODECID
+    if (avctx->codec_id==AV_CODEC_ID_AYUV)
+        av_log(avctx, AV_LOG_WARNING, "This decoder is deprecated and will be removed.\n");
+#endif
     return 0;
 }
 
@@ -57,12 +61,15 @@ static int v408_decode_frame(AVCodecContext *avctx, AVFrame *pic,
 
     for (i = 0; i < avctx->height; i++) {
         for (j = 0; j < avctx->width; j++) {
+#if FF_API_AYUV_CODECID
             if (avctx->codec_id==AV_CODEC_ID_AYUV) {
                 v[j] = *src++;
                 u[j] = *src++;
                 y[j] = *src++;
                 a[j] = *src++;
-            } else {
+            } else
+#endif
+            {
                 u[j] = *src++;
                 y[j] = *src++;
                 v[j] = *src++;
@@ -81,6 +88,7 @@ static int v408_decode_frame(AVCodecContext *avctx, AVFrame *pic,
     return avpkt->size;
 }
 
+#if FF_API_AYUV_CODECID
 #if CONFIG_AYUV_DECODER
 const FFCodec ff_ayuv_decoder = {
     .p.name       = "ayuv",
@@ -91,6 +99,7 @@ const FFCodec ff_ayuv_decoder = {
     FF_CODEC_DECODE_CB(v408_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
 };
+#endif
 #endif
 #if CONFIG_V408_DECODER
 const FFCodec ff_v408_decoder = {
