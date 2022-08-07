@@ -2504,6 +2504,34 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         },
         .flags = AV_PIX_FMT_FLAG_ALPHA,
     },
+    [AV_PIX_FMT_RGBAF16BE] = {
+        .name = "rgbaf16be",
+        .nb_components = 4,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 8, 0, 0, 16 },       /* R */
+            { 0, 8, 2, 0, 16 },       /* G */
+            { 0, 8, 4, 0, 16 },       /* B */
+            { 0, 8, 6, 0, 16 },       /* A */
+        },
+        .flags = AV_PIX_FMT_FLAG_BE | AV_PIX_FMT_FLAG_RGB |
+                 AV_PIX_FMT_FLAG_ALPHA | AV_PIX_FMT_FLAG_FLOAT,
+    },
+    [AV_PIX_FMT_RGBAF16LE] = {
+        .name = "rgbaf16le",
+        .nb_components = 4,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 8, 0, 0, 16 },       /* R */
+            { 0, 8, 2, 0, 16 },       /* G */
+            { 0, 8, 4, 0, 16 },       /* B */
+            { 0, 8, 6, 0, 16 },       /* A */
+        },
+        .flags = AV_PIX_FMT_FLAG_RGB | AV_PIX_FMT_FLAG_ALPHA |
+                 AV_PIX_FMT_FLAG_FLOAT,
+    },
 };
 
 static const char * const color_range_names[] = {
