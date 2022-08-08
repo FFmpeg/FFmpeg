@@ -35,6 +35,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/slicethread.h"
 #include "libavutil/ppc/util_altivec.h"
+#include "libavutil/half2float.h"
 
 #define STR(s) AV_TOSTRING(s) // AV_STRINGIFY is too long
 
@@ -679,6 +680,8 @@ typedef struct SwsContext {
     unsigned int dst_slice_align;
     atomic_int   stride_unaligned_warned;
     atomic_int   data_unaligned_warned;
+
+    Half2FloatTables *h2f_tables;
 } SwsContext;
 //FIXME check init (where 0)
 
@@ -838,6 +841,13 @@ static av_always_inline int isFloat(enum AVPixelFormat pix_fmt)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     av_assert0(desc);
     return desc->flags & AV_PIX_FMT_FLAG_FLOAT;
+}
+
+static av_always_inline int isFloat16(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return (desc->flags & AV_PIX_FMT_FLAG_FLOAT) && desc->comp[0].depth == 16;
 }
 
 static av_always_inline int isALPHA(enum AVPixelFormat pix_fmt)
