@@ -245,6 +245,10 @@ int ff_alloc_picture(AVCodecContext *avctx, Picture *pic, MotionEstContext *me,
         for (i = 0; i < 2; i++) {
             pic->motion_val[i] = (int16_t (*)[2])pic->motion_val_buf[i]->data + 4;
             pic->ref_index[i]  = pic->ref_index_buf[i]->data;
+            /* FIXME: The output of H.263 with OBMC depends upon
+             * the earlier content of the buffer; therefore we
+             * reset it here. */
+            memset(pic->motion_val_buf[i]->data, 0, pic->motion_val_buf[i]->size);
         }
     }
 
