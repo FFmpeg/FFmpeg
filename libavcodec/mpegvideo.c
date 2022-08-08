@@ -526,6 +526,11 @@ int ff_mpv_init_context_frame(MpegEncContext *s)
 {
     int y_size, c_size, yc_size, i, mb_array_size, mv_table_size, x, y;
 
+    if (s->codec_id == AV_CODEC_ID_MPEG2VIDEO && !s->progressive_sequence)
+        s->mb_height = (s->height + 31) / 32 * 2;
+    else
+        s->mb_height = (s->height + 15) / 16;
+
     s->mb_width   = (s->width + 15) / 16;
     s->mb_stride  = s->mb_width + 1;
     s->b8_stride  = s->mb_width * 2 + 1;
@@ -747,26 +752,10 @@ av_cold int ff_mpv_common_init(MpegEncContext *s)
     if (s->encoding && s->avctx->slices)
         nb_slices = s->avctx->slices;
 
-    if (s->codec_id == AV_CODEC_ID_MPEG2VIDEO && !s->progressive_sequence)
-        s->mb_height = (s->height + 31) / 32 * 2;
-    else
-        s->mb_height = (s->height + 15) / 16;
-
     if (s->avctx->pix_fmt == AV_PIX_FMT_NONE) {
         av_log(s->avctx, AV_LOG_ERROR,
                "decoding to AV_PIX_FMT_NONE is not supported.\n");
         return AVERROR(EINVAL);
-    }
-
-    if (nb_slices > MAX_THREADS || (nb_slices > s->mb_height && s->mb_height)) {
-        int max_slices;
-        if (s->mb_height)
-            max_slices = FFMIN(MAX_THREADS, s->mb_height);
-        else
-            max_slices = MAX_THREADS;
-        av_log(s->avctx, AV_LOG_WARNING, "too many threads/slices (%d),"
-               " reducing to %d\n", nb_slices, max_slices);
-        nb_slices = max_slices;
     }
 
     if ((s->width || s->height) &&
@@ -798,6 +787,17 @@ av_cold int ff_mpv_common_init(MpegEncContext *s)
 
     if ((ret = ff_mpv_init_context_frame(s)))
         goto fail;
+
+    if (nb_slices > MAX_THREADS || (nb_slices > s->mb_height && s->mb_height)) {
+        int max_slices;
+        if (s->mb_height)
+            max_slices = FFMIN(MAX_THREADS, s->mb_height);
+        else
+            max_slices = MAX_THREADS;
+        av_log(s->avctx, AV_LOG_WARNING, "too many threads/slices (%d),"
+               " reducing to %d\n", nb_slices, max_slices);
+        nb_slices = max_slices;
+    }
 
 #if FF_API_FLAG_TRUNCATED
     s->parse_context.state = -1;

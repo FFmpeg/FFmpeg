@@ -208,12 +208,6 @@ int ff_mpv_common_frame_size_change(MpegEncContext *s)
     s->next_picture_ptr         =
     s->current_picture_ptr      = NULL;
 
-    // init
-    if (s->codec_id == AV_CODEC_ID_MPEG2VIDEO && !s->progressive_sequence)
-        s->mb_height = (s->height + 31) / 32 * 2;
-    else
-        s->mb_height = (s->height + 15) / 16;
-
     if ((s->width || s->height) &&
         (err = av_image_check_size(s->width, s->height, 0, s->avctx)) < 0)
         goto fail;
