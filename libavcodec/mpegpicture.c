@@ -292,12 +292,9 @@ fail:
 
 int ff_find_unused_picture(AVCodecContext *avctx, Picture *picture, int shared)
 {
-    int i;
-
-        for (i = 0; i < MAX_PICTURE_COUNT; i++) {
-            if (!picture[i].f->buf[0])
-                return i;
-        }
+    for (int i = 0; i < MAX_PICTURE_COUNT; i++)
+        if (!picture[i].f->buf[0])
+            return i;
 
     av_log(avctx, AV_LOG_FATAL,
            "Internal error, picture buffer overflow\n");
