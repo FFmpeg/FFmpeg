@@ -2602,10 +2602,10 @@ yuv2vuya_X_c(SwsContext *c, const int16_t *lumFilter,
         for (j = 0; j < lumFilterSize; j++)
             Y += lumSrc[j][i] * lumFilter[j];
 
-        for (j = 0; j < lumFilterSize; j++)
+        for (j = 0; j < chrFilterSize; j++)
             U += chrUSrc[j][i] * chrFilter[j];
 
-        for (j = 0; j < lumFilterSize; j++)
+        for (j = 0; j < chrFilterSize; j++)
             V += chrVSrc[j][i] * chrFilter[j];
 
         Y >>= 19;
