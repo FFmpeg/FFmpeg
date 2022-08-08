@@ -47,11 +47,25 @@ static void av_noinline free_picture_tables(Picture *pic)
     }
 }
 
+static int make_table_writable(AVBufferRef **ref)
+{
+    AVBufferRef *old = *ref, *new;
+
+    if (av_buffer_is_writable(old))
+        return 0;
+    new = av_buffer_allocz(old->size);
+    if (!new)
+        return AVERROR(ENOMEM);
+    av_buffer_unref(ref);
+    *ref = new;
+    return 0;
+}
+
 static int make_tables_writable(Picture *pic)
 {
 #define MAKE_WRITABLE(table) \
 do {\
-    int ret = av_buffer_make_writable(&pic->table); \
+    int ret = make_table_writable(&pic->table); \
     if (ret < 0) \
         return ret; \
 } while (0)
