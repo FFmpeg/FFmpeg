@@ -534,8 +534,19 @@ void ff_mpv_common_defaults(MpegEncContext *s)
     s->slice_context_count   = 1;
 }
 
+static void free_buffer_pools(BufferPoolContext *pools)
+{
+    av_buffer_pool_uninit(&pools->mbskip_table_pool);
+    av_buffer_pool_uninit(&pools->qscale_table_pool);
+    av_buffer_pool_uninit(&pools->mb_type_pool);
+    av_buffer_pool_uninit(&pools->motion_val_pool);
+    av_buffer_pool_uninit(&pools->ref_index_pool);
+    pools->alloc_mb_height = pools->alloc_mb_width = pools->alloc_mb_stride = 0;
+}
+
 int ff_mpv_init_context_frame(MpegEncContext *s)
 {
+    BufferPoolContext *const pools = &s->buffer_pools;
     int y_size, c_size, yc_size, i, mb_array_size, mv_table_size, x, y;
     int mb_height;
 
@@ -630,11 +641,36 @@ int ff_mpv_init_context_frame(MpegEncContext *s)
         return AVERROR(ENOMEM);
     memset(s->mbintra_table, 1, mb_array_size);
 
+#define ALLOC_POOL(name, size) do { \
+    pools->name ##_pool = av_buffer_pool_init((size), av_buffer_allocz); \
+    if (!pools->name ##_pool) \
+        return AVERROR(ENOMEM); \
+} while (0)
+
+    ALLOC_POOL(mbskip_table, mb_array_size + 2);
+    ALLOC_POOL(qscale_table, mv_table_size);
+    ALLOC_POOL(mb_type, mv_table_size * sizeof(uint32_t));
+
+    if (s->out_format == FMT_H263 || s->encoding ||
+        (s->avctx->export_side_data & AV_CODEC_EXPORT_DATA_MVS)) {
+        const int b8_array_size = s->b8_stride * mb_height * 2;
+        int mv_size        = 2 * (b8_array_size + 4) * sizeof(int16_t);
+        int ref_index_size = 4 * mb_array_size;
+
+        ALLOC_POOL(motion_val, mv_size);
+        ALLOC_POOL(ref_index, ref_index_size);
+    }
+#undef ALLOC_POOL
+    pools->alloc_mb_width  = s->mb_width;
+    pools->alloc_mb_height = mb_height;
+    pools->alloc_mb_stride = s->mb_stride;
+
     return !CONFIG_MPEGVIDEODEC || s->encoding ? 0 : ff_mpeg_er_init(s);
 }
 
 static void clear_context(MpegEncContext *s)
 {
+    memset(&s->buffer_pools, 0, sizeof(s->buffer_pools));
     memset(&s->next_picture, 0, sizeof(s->next_picture));
     memset(&s->last_picture, 0, sizeof(s->last_picture));
     memset(&s->current_picture, 0, sizeof(s->current_picture));
@@ -762,6 +798,7 @@ void ff_mpv_free_context_frame(MpegEncContext *s)
 {
     free_duplicate_contexts(s);
 
+    free_buffer_pools(&s->buffer_pools);
     av_freep(&s->p_field_mv_table_base);
     for (int i = 0; i < 2; i++)
         for (int j = 0; j < 2; j++)

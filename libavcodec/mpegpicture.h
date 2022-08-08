@@ -23,6 +23,7 @@
 
 #include <stdint.h>
 
+#include "libavutil/buffer.h"
 #include "libavutil/frame.h"
 
 #include "avcodec.h"
@@ -40,6 +41,17 @@ typedef struct ScratchpadContext {
     uint8_t *b_scratchpad;        ///< scratchpad used for writing into write only buffers
     int      linesize;            ///< linesize that the buffers in this context have been allocated for
 } ScratchpadContext;
+
+typedef struct BufferPoolContext {
+    AVBufferPool *mbskip_table_pool;
+    AVBufferPool *qscale_table_pool;
+    AVBufferPool *mb_type_pool;
+    AVBufferPool *motion_val_pool;
+    AVBufferPool *ref_index_pool;
+    int alloc_mb_width;                         ///< mb_width  used to allocate tables
+    int alloc_mb_height;                        ///< mb_height used to allocate tables
+    int alloc_mb_stride;                        ///< mb_stride used to allocate tables
+} BufferPoolContext;
 
 /**
  * Picture.
@@ -63,18 +75,17 @@ typedef struct Picture {
     AVBufferRef *ref_index_buf[2];
     int8_t *ref_index[2];
 
-    int alloc_mb_width;         ///< mb_width used to allocate tables
-    int alloc_mb_height;        ///< mb_height used to allocate tables
-    int alloc_mb_stride;        ///< mb_stride used to allocate tables
-
     /// RefStruct reference for hardware accelerator private data
     void *hwaccel_picture_private;
+
+    int mb_width;               ///< mb_width  of the tables
+    int mb_height;              ///< mb_height of the tables
+    int mb_stride;              ///< mb_stride of the tables
 
     int dummy;                  ///< Picture is a dummy and should not be output
     int field_picture;          ///< whether or not the picture was encoded in separate fields
 
     int b_frame_score;
-    int needs_realloc;          ///< Picture needs to be reallocated (eg due to a frame size change)
 
     int reference;
     int shared;
@@ -87,9 +98,8 @@ typedef struct Picture {
  * Allocate a Picture's accessories, but not the AVFrame's buffer itself.
  */
 int ff_alloc_picture(AVCodecContext *avctx, Picture *pic, MotionEstContext *me,
-                     ScratchpadContext *sc, int encoding, int out_format,
-                     int mb_stride, int mb_width, int mb_height, int b8_stride,
-                     ptrdiff_t *linesize, ptrdiff_t *uvlinesize);
+                     ScratchpadContext *sc, BufferPoolContext *pools,
+                     int mb_height, ptrdiff_t *linesize, ptrdiff_t *uvlinesize);
 
 int ff_mpeg_framesize_alloc(AVCodecContext *avctx, MotionEstContext *me,
                             ScratchpadContext *sc, int linesize);
@@ -98,7 +108,6 @@ int ff_mpeg_ref_picture(Picture *dst, Picture *src);
 void ff_mpeg_unref_picture(Picture *picture);
 
 void ff_mpv_picture_free(Picture *pic);
-int ff_update_picture_tables(Picture *dst, const Picture *src);
 
 int ff_find_unused_picture(AVCodecContext *avctx, Picture *picture, int shared);
 

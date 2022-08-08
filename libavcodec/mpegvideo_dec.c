@@ -115,12 +115,11 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
 #define UPDATE_PICTURE(pic)\
 do {\
     ff_mpeg_unref_picture(&s->pic);\
-    if (s1->pic.f && s1->pic.f->buf[0])\
+    if (s1->pic.f && s1->pic.f->buf[0]) {\
         ret = ff_mpeg_ref_picture(&s->pic, &s1->pic);\
-    else\
-        ret = ff_update_picture_tables(&s->pic, &s1->pic);\
-    if (ret < 0)\
-        return ret;\
+        if (ret < 0)\
+            return ret;\
+    }\
 } while (0)
 
     UPDATE_PICTURE(current_picture);
@@ -194,10 +193,6 @@ int ff_mpv_common_frame_size_change(MpegEncContext *s)
 
     ff_mpv_free_context_frame(s);
 
-    if (s->picture)
-        for (int i = 0; i < MAX_PICTURE_COUNT; i++)
-            s->picture[i].needs_realloc = 1;
-
     s->last_picture_ptr         =
     s->next_picture_ptr         =
     s->current_picture_ptr      = NULL;
@@ -268,9 +263,12 @@ static int alloc_picture(MpegEncContext *s, Picture **picp, int reference)
     if (ret < 0)
         goto fail;
 
-    ret = ff_alloc_picture(s->avctx, pic, &s->me, &s->sc, 0, s->out_format,
-                           s->mb_stride, s->mb_width, s->mb_height, s->b8_stride,
-                           &s->linesize, &s->uvlinesize);
+    av_assert1(s->mb_width  == s->buffer_pools.alloc_mb_width);
+    av_assert1(s->mb_height == s->buffer_pools.alloc_mb_height ||
+               FFALIGN(s->mb_height, 2) == s->buffer_pools.alloc_mb_height);
+    av_assert1(s->mb_stride == s->buffer_pools.alloc_mb_stride);
+    ret = ff_alloc_picture(s->avctx, pic, &s->me, &s->sc, &s->buffer_pools,
+                           s->mb_height, &s->linesize, &s->uvlinesize);
     if (ret < 0)
         goto fail;
     *picp = pic;
@@ -388,8 +386,7 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     for (int i = 0; i < MAX_PICTURE_COUNT; i++) {
         if (!s->picture[i].reference ||
             (&s->picture[i] != s->last_picture_ptr &&
-             &s->picture[i] != s->next_picture_ptr &&
-             !s->picture[i].needs_realloc)) {
+             &s->picture[i] != s->next_picture_ptr)) {
             ff_mpeg_unref_picture(&s->picture[i]);
         }
     }
@@ -487,7 +484,7 @@ int ff_mpv_export_qp_table(const MpegEncContext *s, AVFrame *f, const Picture *p
 {
     AVVideoEncParams *par;
     int mult = (qp_type == FF_MPV_QSCALE_TYPE_MPEG1) ? 2 : 1;
-    unsigned int nb_mb = p->alloc_mb_height * p->alloc_mb_width;
+    unsigned int nb_mb = p->mb_height * p->mb_width;
 
     if (!(s->avctx->export_side_data & AV_CODEC_EXPORT_DATA_VIDEO_ENC_PARAMS))
         return 0;
@@ -496,10 +493,10 @@ int ff_mpv_export_qp_table(const MpegEncContext *s, AVFrame *f, const Picture *p
     if (!par)
         return AVERROR(ENOMEM);
 
-    for (unsigned y = 0; y < p->alloc_mb_height; y++)
-        for (unsigned x = 0; x < p->alloc_mb_width; x++) {
-            const unsigned int block_idx = y * p->alloc_mb_width + x;
-            const unsigned int     mb_xy = y * p->alloc_mb_stride + x;
+    for (unsigned y = 0; y < p->mb_height; y++)
+        for (unsigned x = 0; x < p->mb_width; x++) {
+            const unsigned int block_idx = y * p->mb_width + x;
+            const unsigned int     mb_xy = y * p->mb_stride + x;
             AVVideoBlockParams *const b = av_video_enc_params_block(par, block_idx);
 
             b->src_x = x * 16;

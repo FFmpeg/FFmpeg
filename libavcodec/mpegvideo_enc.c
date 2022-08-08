@@ -1112,9 +1112,11 @@ static int alloc_picture(MpegEncContext *s, Picture *pic)
     pic->f->width  = avctx->width;
     pic->f->height = avctx->height;
 
-    return ff_alloc_picture(s->avctx, pic, &s->me, &s->sc, 1, s->out_format,
-                            s->mb_stride, s->mb_width, s->mb_height, s->b8_stride,
-                            &s->linesize, &s->uvlinesize);
+    av_assert1(s->mb_width  == s->buffer_pools.alloc_mb_width);
+    av_assert1(s->mb_height == s->buffer_pools.alloc_mb_height);
+    av_assert1(s->mb_stride == s->buffer_pools.alloc_mb_stride);
+    return ff_alloc_picture(s->avctx, pic, &s->me, &s->sc, &s->buffer_pools,
+                            s->mb_height, &s->linesize, &s->uvlinesize);
 }
 
 static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
@@ -1480,7 +1482,7 @@ static int select_input_picture(MpegEncContext *s)
                 s->next_picture_ptr &&
                 skip_check(s, s->input_picture[0], s->next_picture_ptr)) {
                 // FIXME check that the gop check above is +-1 correct
-                av_frame_unref(s->input_picture[0]->f);
+                ff_mpeg_unref_picture(s->input_picture[0]);
 
                 ff_vbv_update(s, 0);
 
@@ -1627,8 +1629,7 @@ no_output_pic:
             pic->display_picture_number = s->reordered_input_picture[0]->display_picture_number;
 
             /* mark us unused / free shared pic */
-            av_frame_unref(s->reordered_input_picture[0]->f);
-            s->reordered_input_picture[0]->shared = 0;
+            ff_mpeg_unref_picture(s->reordered_input_picture[0]);
 
             s->current_picture_ptr = pic;
         } else {

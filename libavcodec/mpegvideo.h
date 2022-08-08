@@ -132,6 +132,8 @@ typedef struct MpegEncContext {
     Picture **input_picture;   ///< next pictures on display order for encoding
     Picture **reordered_input_picture; ///< pointer to the next pictures in coded order for encoding
 
+    BufferPoolContext buffer_pools;
+
     int64_t user_specified_pts; ///< last non-zero pts from AVFrame which was passed into avcodec_send_frame()
     /**
      * pts difference between the first and second input frame, used for
