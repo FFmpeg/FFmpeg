@@ -752,7 +752,7 @@ static int avisynth_create_stream_audio(AVFormatContext *s, AVStream *st)
 
     st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
     st->codecpar->sample_rate = avs->vi->audio_samples_per_second;
-    st->codecpar->channels    = avs->vi->nchannels;
+    st->codecpar->ch_layout.nb_channels    = avs->vi->nchannels;
     st->duration              = avs->vi->num_audio_samples;
     avpriv_set_pts_info(st, 64, 1, avs->vi->audio_samples_per_second);
 
