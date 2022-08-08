@@ -20,6 +20,8 @@ tools/target_io_dem_fuzzer.o: tools/target_dem_fuzzer.c
 tools/venc_data_dump$(EXESUF): tools/decode_simple.o
 tools/scale_slice_test$(EXESUF): tools/decode_simple.o
 
+tools/decode_simple.o: | tools
+
 OUTDIRS += tools
 
 clean::
