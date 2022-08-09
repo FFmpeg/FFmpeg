@@ -97,8 +97,10 @@ static int write_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
 
     fs = filesize(s->pb);
     atomic_store(&of->mux->last_filesize, fs);
-    if (fs >= of->mux->limit_filesize)
-        return AVERROR_EOF;
+    if (fs >= of->mux->limit_filesize) {
+        ret = AVERROR_EOF;
+        goto fail;
+    }
 
     if ((st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && ost->vsync_method == VSYNC_DROP) ||
         (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && audio_sync_method < 0))
@@ -138,8 +140,11 @@ static int write_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
                 av_log(s, loglevel, "Non-monotonous DTS in output stream "
                        "%d:%d; previous: %"PRId64", current: %"PRId64"; ",
                        ost->file_index, ost->st->index, ms->last_mux_dts, pkt->dts);
-                if (exit_on_error)
-                    return AVERROR(EINVAL);
+                if (exit_on_error) {
+                    ret = AVERROR(EINVAL);
+                    goto fail;
+                }
+
                 av_log(s, loglevel, "changing to %"PRId64". This may result "
                        "in incorrect timestamps in the output file.\n",
                        max);
@@ -170,10 +175,13 @@ static int write_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
     ret = av_interleaved_write_frame(s, pkt);
     if (ret < 0) {
         print_error("av_interleaved_write_frame()", ret);
-        return ret;
+        goto fail;
     }
 
     return 0;
+fail:
+    av_packet_unref(pkt);
+    return ret;
 }
 
 static int sync_queue_process(OutputFile *of, OutputStream *ost, AVPacket *pkt)
