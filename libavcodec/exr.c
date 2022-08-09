@@ -41,6 +41,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "libavutil/color_utils.h"
+#include "libavutil/half2float.h"
 
 #include "avcodec.h"
 #include "bytestream.h"
@@ -53,7 +54,6 @@
 #include "exrdsp.h"
 #include "get_bits.h"
 #include "internal.h"
-#include "half2float.h"
 #include "mathops.h"
 #include "thread.h"
 

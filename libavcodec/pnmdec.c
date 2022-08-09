@@ -21,12 +21,13 @@
 
 #include "config_components.h"
 
+#include "libavutil/half2float.h"
+
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "internal.h"
 #include "put_bits.h"
 #include "pnm.h"
-#include "half2float.h"
 
 static void samplecpy(uint8_t *dst, const uint8_t *src, int n, int maxval)
 {

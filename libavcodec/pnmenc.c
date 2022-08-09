@@ -24,10 +24,10 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/float2half.h"
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "encode.h"
-#include "float2half.h"
 
 typedef struct PHMEncContext {
     uint16_t basetable[512];

@@ -16,8 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_FLOAT2HALF_H
-#define AVCODEC_FLOAT2HALF_H
+#ifndef AVUTIL_FLOAT2HALF_H
+#define AVUTIL_FLOAT2HALF_H
 
 #include <stdint.h>
 
@@ -64,4 +64,4 @@ static uint16_t float2half(uint32_t f, uint16_t *basetable, uint8_t *shifttable)
     return h;
 }
 
-#endif /* AVCODEC_FLOAT2HALF_H */
+#endif /* AVUTIL_FLOAT2HALF_H */
