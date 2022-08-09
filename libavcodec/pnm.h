@@ -34,7 +34,7 @@ typedef struct PNMContext {
     int half;
     float scale;
 
-    uint32_t mantissatable[2048];
+    uint32_t mantissatable[3072];
     uint32_t exponenttable[64];
     uint16_t offsettable[64];
 } PNMContext;

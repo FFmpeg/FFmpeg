@@ -45,6 +45,9 @@ static void half2float_table(uint32_t *mantissatable, uint32_t *exponenttable,
         mantissatable[i] = convertmantissa(i);
     for (int i = 1024; i < 2048; i++)
         mantissatable[i] = 0x38000000UL + ((i - 1024) << 13UL);
+    for (int i = 2048; i < 3072; i++)
+        mantissatable[i] = mantissatable[i - 1024] | 0x400000UL;
+    mantissatable[2048] = mantissatable[1024];
 
     exponenttable[0] = 0;
     for (int i = 1; i < 31; i++)
@@ -58,7 +61,9 @@ static void half2float_table(uint32_t *mantissatable, uint32_t *exponenttable,
     offsettable[0] = 0;
     for (int i = 1; i < 64; i++)
         offsettable[i] = 1024;
+    offsettable[31] = 2048;
     offsettable[32] = 0;
+    offsettable[63] = 2048;
 }
 
 static uint32_t half2float(uint16_t h, const uint32_t *mantissatable, const uint32_t *exponenttable,
