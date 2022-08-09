@@ -1527,11 +1527,11 @@ static int ratecontrol_1pass(SnowContext *s, AVFrame *pict)
     coef_sum = (uint64_t)coef_sum * coef_sum >> 16;
 
     if(pict->pict_type == AV_PICTURE_TYPE_I){
-        s->m.current_picture.mb_var_sum= coef_sum;
-        s->m.current_picture.mc_mb_var_sum= 0;
+        s->m.mb_var_sum    = coef_sum;
+        s->m.mc_mb_var_sum = 0;
     }else{
-        s->m.current_picture.mc_mb_var_sum= coef_sum;
-        s->m.current_picture.mb_var_sum= 0;
+        s->m.mc_mb_var_sum = coef_sum;
+        s->m.mb_var_sum    = 0;
     }
 
     pict->quality= ff_rate_estimate_qscale(&s->m, 1);

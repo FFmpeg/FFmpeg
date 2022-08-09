@@ -1783,11 +1783,10 @@ vbv_retry:
             ff_write_pass1_stats(s);
 
         for (i = 0; i < 4; i++) {
-            s->current_picture_ptr->encoding_error[i] = s->current_picture.encoding_error[i];
-            avctx->error[i] += s->current_picture_ptr->encoding_error[i];
+            avctx->error[i] += s->encoding_error[i];
         }
         ff_side_data_set_encoder_stats(pkt, s->current_picture.f->quality,
-                                       s->current_picture_ptr->encoding_error,
+                                       s->encoding_error,
                                        (avctx->flags&AV_CODEC_FLAG_PSNR) ? MPEGVIDEO_MAX_PLANES : 0,
                                        s->pict_type);
 
@@ -2792,7 +2791,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
         /* note: quant matrix value (8) is implied here */
         s->last_dc[i] = 128 << s->intra_dc_precision;
 
-        s->current_picture.encoding_error[i] = 0;
+        s->encoding_error[i] = 0;
     }
     if(s->codec_id==AV_CODEC_ID_AMV){
         s->last_dc[0] = 128*8/13;
@@ -3370,13 +3369,13 @@ static int encode_thread(AVCodecContext *c, void *arg){
                 if(s->mb_x*16 + 16 > s->width ) w= s->width - s->mb_x*16;
                 if(s->mb_y*16 + 16 > s->height) h= s->height- s->mb_y*16;
 
-                s->current_picture.encoding_error[0] += sse(
+                s->encoding_error[0] += sse(
                     s, s->new_picture->data[0] + s->mb_x*16 + s->mb_y*s->linesize*16,
                     s->dest[0], w, h, s->linesize);
-                s->current_picture.encoding_error[1] += sse(
+                s->encoding_error[1] += sse(
                     s, s->new_picture->data[1] + s->mb_x*8  + s->mb_y*s->uvlinesize*chr_h,
                     s->dest[1], w>>1, h>>s->chroma_y_shift, s->uvlinesize);
-                s->current_picture.encoding_error[2] += sse(
+                s->encoding_error[2] += sse(
                     s, s->new_picture->data[2] + s->mb_x*8  + s->mb_y*s->uvlinesize*chr_h,
                     s->dest[2], w>>1, h>>s->chroma_y_shift, s->uvlinesize);
             }
@@ -3416,9 +3415,9 @@ static void merge_context_after_encode(MpegEncContext *dst, MpegEncContext *src)
     MERGE(i_count);
     MERGE(skip_count);
     MERGE(misc_bits);
-    MERGE(current_picture.encoding_error[0]);
-    MERGE(current_picture.encoding_error[1]);
-    MERGE(current_picture.encoding_error[2]);
+    MERGE(encoding_error[0]);
+    MERGE(encoding_error[1]);
+    MERGE(encoding_error[2]);
 
     if (dst->noise_reduction){
         for(i=0; i<64; i++){
@@ -3570,8 +3569,8 @@ static int encode_picture(MpegEncContext *s, int picture_number)
     for(i=1; i<context_count; i++){
         merge_context_after_me(s, s->thread_context[i]);
     }
-    s->current_picture.mc_mb_var_sum= s->current_picture_ptr->mc_mb_var_sum= s->me.mc_mb_var_sum_temp;
-    s->current_picture.   mb_var_sum= s->current_picture_ptr->   mb_var_sum= s->me.   mb_var_sum_temp;
+    s->mc_mb_var_sum = s->me.mc_mb_var_sum_temp;
+    s->mb_var_sum    = s->me.   mb_var_sum_temp;
     emms_c();
 
     if (s->me.scene_change_score > s->scenechange_threshold &&
@@ -3582,7 +3581,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
         if(s->msmpeg4_version >= 3)
             s->no_rounding=1;
         ff_dlog(s, "Scene change detected, encoding as I Frame %"PRId64" %"PRId64"\n",
-                s->current_picture.mb_var_sum, s->current_picture.mc_mb_var_sum);
+                s->mb_var_sum, s->mc_mb_var_sum);
     }
 
     if(!s->umvplus){

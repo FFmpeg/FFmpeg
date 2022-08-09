@@ -71,16 +71,11 @@ typedef struct Picture {
 
     int field_picture;          ///< whether or not the picture was encoded in separate fields
 
-    int64_t mb_var_sum;         ///< sum of MB variance for current frame
-    int64_t mc_mb_var_sum;      ///< motion compensated MB variance for current frame
-
     int b_frame_score;
     int needs_realloc;          ///< Picture needs to be reallocated (eg due to a frame size change)
 
     int reference;
     int shared;
-
-    uint64_t encoding_error[MPEGVIDEO_MAX_PLANES];
 } Picture;
 
 /**

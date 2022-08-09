@@ -376,15 +376,10 @@ int ff_mpeg_ref_picture(AVCodecContext *avctx, Picture *dst, Picture *src)
     }
 
     dst->field_picture           = src->field_picture;
-    dst->mb_var_sum              = src->mb_var_sum;
-    dst->mc_mb_var_sum           = src->mc_mb_var_sum;
     dst->b_frame_score           = src->b_frame_score;
     dst->needs_realloc           = src->needs_realloc;
     dst->reference               = src->reference;
     dst->shared                  = src->shared;
-
-    memcpy(dst->encoding_error, src->encoding_error,
-           sizeof(dst->encoding_error));
 
     return 0;
 fail:

@@ -49,8 +49,8 @@ void ff_write_pass1_stats(MpegEncContext *s)
              s->misc_bits,
              s->f_code,
              s->b_code,
-             s->current_picture.mc_mb_var_sum,
-             s->current_picture.mb_var_sum,
+             s->mc_mb_var_sum,
+             s->mb_var_sum,
              s->i_count, s->skip_count,
              s->header_bits);
 }
@@ -880,7 +880,6 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
     double rate_factor;
     int64_t var;
     const int pict_type = s->pict_type;
-    Picture * const pic = &s->current_picture;
     emms_c();
 
     get_qminmax(&qmin, &qmax, s, pict_type);
@@ -929,7 +928,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
     if (br_compensation <= 0.0)
         br_compensation = 0.001;
 
-    var = pict_type == AV_PICTURE_TYPE_I ? pic->mb_var_sum : pic->mc_mb_var_sum;
+    var = pict_type == AV_PICTURE_TYPE_I ? s->mb_var_sum : s->mc_mb_var_sum;
 
     short_term_q = 0; /* avoid warning */
     if (s->avctx->flags & AV_CODEC_FLAG_PASS2) {
@@ -942,8 +941,8 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
     } else {
         rce->pict_type     =
         rce->new_pict_type = pict_type;
-        rce->mc_mb_var_sum = pic->mc_mb_var_sum;
-        rce->mb_var_sum    = pic->mb_var_sum;
+        rce->mc_mb_var_sum = s->mc_mb_var_sum;
+        rce->mb_var_sum    = s->mb_var_sum;
         rce->qscale        = FF_QP2LAMBDA * 2;
         rce->f_code        = s->f_code;
         rce->b_code        = s->b_code;
@@ -1003,7 +1002,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
                qmin, q, qmax, picture_number,
                wanted_bits / 1000, s->total_bits / 1000,
                br_compensation, short_term_q, s->frame_bits,
-               pic->mb_var_sum, pic->mc_mb_var_sum,
+               s->mb_var_sum, s->mc_mb_var_sum,
                s->bit_rate / 1000, (int)fps);
     }
 
@@ -1019,8 +1018,8 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
 
     if (!dry_run) {
         rcc->last_qscale        = q;
-        rcc->last_mc_mb_var_sum = pic->mc_mb_var_sum;
-        rcc->last_mb_var_sum    = pic->mb_var_sum;
+        rcc->last_mc_mb_var_sum = s->mc_mb_var_sum;
+        rcc->last_mb_var_sum    = s->mb_var_sum;
     }
     return q;
 }

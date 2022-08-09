@@ -236,10 +236,13 @@ typedef struct MpegEncContext {
     uint8_t (*p_field_select_table[2]);  ///< Only the first element is allocated
     uint8_t (*b_field_select_table[2][2]); ///< Only the first element is allocated
 
-    /* The following three arrays are encoder-only */
+    /* The following fields are encoder-only */
     uint16_t *mb_var;           ///< Table for MB variances
     uint16_t *mc_mb_var;        ///< Table for motion compensated MB variances
     uint8_t *mb_mean;           ///< Table for MB luminance
+    int64_t mb_var_sum;         ///< sum of MB variance for current frame
+    int64_t mc_mb_var_sum;      ///< motion compensated MB variance for current frame
+    uint64_t encoding_error[MPEGVIDEO_MAX_PLANES];
 
     int motion_est;                      ///< ME algorithm
     int me_penalty_compensation;
