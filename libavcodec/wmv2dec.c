@@ -242,6 +242,10 @@ int ff_wmv2_decode_secondary_picture_header(MpegEncContext *s)
     WMV2DecContext *const w = (WMV2DecContext *) s;
 
     if (s->pict_type == AV_PICTURE_TYPE_I) {
+        /* Is filling with zeroes really the right thing to do? */
+        memset(s->current_picture_ptr->mb_type, 0,
+               sizeof(*s->current_picture_ptr->mb_type) *
+               s->mb_height * s->mb_stride);
         if (w->j_type_bit)
             w->j_type = get_bits1(&s->gb);
         else
