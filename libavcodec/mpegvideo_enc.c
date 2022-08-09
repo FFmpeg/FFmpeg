@@ -1154,7 +1154,7 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
     for (i = flush_offset; i < MAX_PICTURE_COUNT /*s->encoding_delay + 1*/; i++)
         s->input_picture[i - flush_offset] = s->input_picture[i];
 
-    s->input_picture[encoding_delay] = (Picture*) pic;
+    s->input_picture[encoding_delay] = pic;
 
     return 0;
 }
