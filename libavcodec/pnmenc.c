@@ -30,8 +30,7 @@
 #include "encode.h"
 
 typedef struct PHMEncContext {
-    uint16_t basetable[512];
-    uint8_t shifttable[512];
+    Float2HalfTables f2h_tables;
 } PHMEncContext;
 
 static int pnm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
@@ -169,9 +168,9 @@ static int pnm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
         for (int i = 0; i < avctx->height; i++) {
             for (int j = 0; j < avctx->width; j++) {
-                AV_WN16(bytestream + 0, float2half(av_float2int(r[j]), s->basetable, s->shifttable));
-                AV_WN16(bytestream + 2, float2half(av_float2int(g[j]), s->basetable, s->shifttable));
-                AV_WN16(bytestream + 4, float2half(av_float2int(b[j]), s->basetable, s->shifttable));
+                AV_WN16(bytestream + 0, float2half(av_float2int(r[j]), &s->f2h_tables));
+                AV_WN16(bytestream + 2, float2half(av_float2int(g[j]), &s->f2h_tables));
+                AV_WN16(bytestream + 4, float2half(av_float2int(b[j]), &s->f2h_tables));
                 bytestream += 6;
             }
 
@@ -184,7 +183,7 @@ static int pnm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
         for (int i = 0; i < avctx->height; i++) {
             for (int j = 0; j < avctx->width; j++) {
-                AV_WN16(bytestream, float2half(av_float2int(g[j]), s->basetable, s->shifttable));
+                AV_WN16(bytestream, float2half(av_float2int(g[j]), &s->f2h_tables));
                 bytestream += 2;
             }
 
@@ -295,7 +294,7 @@ static av_cold int phm_enc_init(AVCodecContext *avctx)
 {
     PHMEncContext *s = avctx->priv_data;
 
-    float2half_tables(s->basetable, s->shifttable);
+    init_float2half_tables(&s->f2h_tables);
 
     return 0;
 }

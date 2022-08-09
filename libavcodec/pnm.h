@@ -22,6 +22,7 @@
 #ifndef AVCODEC_PNM_H
 #define AVCODEC_PNM_H
 
+#include "libavutil/half2float.h"
 #include "avcodec.h"
 
 typedef struct PNMContext {
@@ -34,9 +35,7 @@ typedef struct PNMContext {
     int half;
     float scale;
 
-    uint32_t mantissatable[3072];
-    uint32_t exponenttable[64];
-    uint16_t offsettable[64];
+    Half2FloatTables h2f_tables;
 } PNMContext;
 
 int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s);

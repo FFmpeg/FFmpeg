@@ -191,9 +191,7 @@ typedef struct EXRContext {
     float gamma;
     union av_intfloat32 gamma_table[65536];
 
-    uint32_t mantissatable[3072];
-    uint32_t exponenttable[64];
-    uint16_t offsettable[64];
+    Half2FloatTables h2f_tables;
 } EXRContext;
 
 static int zip_uncompress(const EXRContext *s, const uint8_t *src, int compressed_size,
@@ -899,10 +897,7 @@ static int ac_uncompress(const EXRContext *s, GetByteContext *gb, float *block)
             n += val & 0xff;
         } else {
             ret = n;
-            block[ff_zigzag_direct[n]] = av_int2float(half2float(val,
-                                                      s->mantissatable,
-                                                      s->exponenttable,
-                                                      s->offsettable));
+            block[ff_zigzag_direct[n]] = av_int2float(half2float(val, &s->h2f_tables));
             n++;
         }
     }
@@ -1120,8 +1115,7 @@ static int dwa_uncompress(const EXRContext *s, const uint8_t *src, int compresse
                 uint16_t *dc = (uint16_t *)td->dc_data;
                 union av_intfloat32 dc_val;
 
-                dc_val.i = half2float(dc[idx], s->mantissatable,
-                                      s->exponenttable, s->offsettable);
+                dc_val.i = half2float(dc[idx], &s->h2f_tables);
 
                 block[0] = dc_val.f;
                 ac_uncompress(s, &agb, block);
@@ -1171,7 +1165,7 @@ static int dwa_uncompress(const EXRContext *s, const uint8_t *src, int compresse
         for (int x = 0; x < td->xsize; x++) {
             uint16_t ha = ai0[x] | (ai1[x] << 8);
 
-            ao[x] = half2float(ha, s->mantissatable, s->exponenttable, s->offsettable);
+            ao[x] = half2float(ha, &s->h2f_tables);
         }
     }
 
@@ -1427,10 +1421,7 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
                         }
                     } else {
                         for (x = 0; x < xsize; x++) {
-                            ptr_x[0].i = half2float(bytestream_get_le16(&src),
-                                                    s->mantissatable,
-                                                    s->exponenttable,
-                                                    s->offsettable);
+                            ptr_x[0].i = half2float(bytestream_get_le16(&src), &s->h2f_tables);
                             ptr_x++;
                         }
                     }
@@ -2217,7 +2208,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     float one_gamma = 1.0f / s->gamma;
     avpriv_trc_function trc_func = NULL;
 
-    half2float_table(s->mantissatable, s->exponenttable, s->offsettable);
+    init_half2float_tables(&s->h2f_tables);
 
     s->avctx              = avctx;
 
@@ -2230,18 +2221,18 @@ static av_cold int decode_init(AVCodecContext *avctx)
     trc_func = avpriv_get_trc_function_from_trc(s->apply_trc_type);
     if (trc_func) {
         for (i = 0; i < 65536; ++i) {
-            t.i = half2float(i, s->mantissatable, s->exponenttable, s->offsettable);
+            t.i = half2float(i, &s->h2f_tables);
             t.f = trc_func(t.f);
             s->gamma_table[i] = t;
         }
     } else {
         if (one_gamma > 0.9999f && one_gamma < 1.0001f) {
             for (i = 0; i < 65536; ++i) {
-                s->gamma_table[i].i = half2float(i, s->mantissatable, s->exponenttable, s->offsettable);
+                s->gamma_table[i].i = half2float(i, &s->h2f_tables);
             }
         } else {
             for (i = 0; i < 65536; ++i) {
-                t.i = half2float(i, s->mantissatable, s->exponenttable, s->offsettable);
+                t.i = half2float(i, &s->h2f_tables);
                 /* If negative value we reuse half value */
                 if (t.f <= 0.0f) {
                     s->gamma_table[i] = t;

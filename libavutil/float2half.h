@@ -21,45 +21,50 @@
 
 #include <stdint.h>
 
-static void float2half_tables(uint16_t *basetable, uint8_t *shifttable)
+typedef struct Float2HalfTables {
+    uint16_t basetable[512];
+    uint8_t shifttable[512];
+} Float2HalfTables;
+
+static void init_float2half_tables(Float2HalfTables *t)
 {
     for (int i = 0; i < 256; i++) {
         int e = i - 127;
 
         if (e < -24) { // Very small numbers map to zero
-            basetable[i|0x000]  = 0x0000;
-            basetable[i|0x100]  = 0x8000;
-            shifttable[i|0x000] = 24;
-            shifttable[i|0x100] = 24;
+            t->basetable[i|0x000]  = 0x0000;
+            t->basetable[i|0x100]  = 0x8000;
+            t->shifttable[i|0x000] = 24;
+            t->shifttable[i|0x100] = 24;
         } else if (e < -14) { // Small numbers map to denorms
-            basetable[i|0x000] = (0x0400>>(-e-14));
-            basetable[i|0x100] = (0x0400>>(-e-14)) | 0x8000;
-            shifttable[i|0x000] = -e-1;
-            shifttable[i|0x100] = -e-1;
+            t->basetable[i|0x000] = (0x0400>>(-e-14));
+            t->basetable[i|0x100] = (0x0400>>(-e-14)) | 0x8000;
+            t->shifttable[i|0x000] = -e-1;
+            t->shifttable[i|0x100] = -e-1;
         } else if (e <= 15) { // Normal numbers just lose precision
-            basetable[i|0x000] = ((e + 15) << 10);
-            basetable[i|0x100] = ((e + 15) << 10) | 0x8000;
-            shifttable[i|0x000] = 13;
-            shifttable[i|0x100] = 13;
+            t->basetable[i|0x000] = ((e + 15) << 10);
+            t->basetable[i|0x100] = ((e + 15) << 10) | 0x8000;
+            t->shifttable[i|0x000] = 13;
+            t->shifttable[i|0x100] = 13;
         } else if (e < 128) { // Large numbers map to Infinity
-            basetable[i|0x000]  = 0x7C00;
-            basetable[i|0x100]  = 0xFC00;
-            shifttable[i|0x000] = 24;
-            shifttable[i|0x100] = 24;
+            t->basetable[i|0x000]  = 0x7C00;
+            t->basetable[i|0x100]  = 0xFC00;
+            t->shifttable[i|0x000] = 24;
+            t->shifttable[i|0x100] = 24;
         } else { // Infinity and NaN's stay Infinity and NaN's
-            basetable[i|0x000]  = 0x7C00;
-            basetable[i|0x100]  = 0xFC00;
-            shifttable[i|0x000] = 13;
-            shifttable[i|0x100] = 13;
+            t->basetable[i|0x000]  = 0x7C00;
+            t->basetable[i|0x100]  = 0xFC00;
+            t->shifttable[i|0x000] = 13;
+            t->shifttable[i|0x100] = 13;
         }
     }
 }
 
-static uint16_t float2half(uint32_t f, uint16_t *basetable, uint8_t *shifttable)
+static uint16_t float2half(uint32_t f, const Float2HalfTables *t)
 {
     uint16_t h;
 
-    h = basetable[(f >> 23) & 0x1ff] + ((f & 0x007fffff) >> shifttable[(f >> 23) & 0x1ff]);
+    h = t->basetable[(f >> 23) & 0x1ff] + ((f & 0x007fffff) >> t->shifttable[(f >> 23) & 0x1ff]);
 
     return h;
 }

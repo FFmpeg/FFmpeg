@@ -87,15 +87,14 @@ typedef struct EXRContext {
 
     EXRScanlineData *scanline;
 
-    uint16_t basetable[512];
-    uint8_t shifttable[512];
+    Float2HalfTables f2h_tables;
 } EXRContext;
 
 static av_cold int encode_init(AVCodecContext *avctx)
 {
     EXRContext *s = avctx->priv_data;
 
-    float2half_tables(s->basetable, s->shifttable);
+    init_float2half_tables(&s->f2h_tables);
 
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_GBRPF32:
@@ -256,7 +255,7 @@ static int encode_scanline_rle(EXRContext *s, const AVFrame *frame)
                 const uint32_t *src = (const uint32_t *)(frame->data[ch] + y * frame->linesize[ch]);
 
                 for (int x = 0; x < frame->width; x++)
-                    dst[x] = float2half(src[x], s->basetable, s->shifttable);
+                    dst[x] = float2half(src[x], &s->f2h_tables);
             }
             break;
         }
@@ -324,7 +323,7 @@ static int encode_scanline_zip(EXRContext *s, const AVFrame *frame)
                     const uint32_t *src = (const uint32_t *)(frame->data[ch] + (y * s->scanline_height + l) * frame->linesize[ch]);
 
                     for (int x = 0; x < frame->width; x++)
-                        dst[x] = float2half(src[x], s->basetable, s->shifttable);
+                        dst[x] = float2half(src[x], &s->f2h_tables);
                 }
             }
             break;
@@ -482,7 +481,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                     const uint32_t *src = (const uint32_t *)(frame->data[ch] + y * frame->linesize[ch]);
 
                     for (int x = 0; x < frame->width; x++)
-                        bytestream2_put_le16(pb, float2half(src[x], s->basetable, s->shifttable));
+                        bytestream2_put_le16(pb, float2half(src[x], &s->f2h_tables));
                 }
             }
         }
