@@ -1249,15 +1249,14 @@ static int estimate_best_b_count(MpegEncContext *s)
                FF_LAMBDA_SHIFT;
 
     for (i = 0; i < s->max_b_frames + 2; i++) {
-        Picture pre_input, *pre_input_ptr = i ? s->input_picture[i - 1] :
-                                                s->next_picture_ptr;
-        uint8_t *data[4];
+        const Picture *pre_input_ptr = i ? s->input_picture[i - 1] :
+                                           s->next_picture_ptr;
 
         if (pre_input_ptr && (!i || s->input_picture[i - 1])) {
-            pre_input = *pre_input_ptr;
+            const uint8_t *data[4];
             memcpy(data, pre_input_ptr->f->data, sizeof(data));
 
-            if (!pre_input.shared && i) {
+            if (!pre_input_ptr->shared && i) {
                 data[0] += INPLACE_OFFSET;
                 data[1] += INPLACE_OFFSET;
                 data[2] += INPLACE_OFFSET;
@@ -1266,17 +1265,17 @@ static int estimate_best_b_count(MpegEncContext *s)
             s->mpvencdsp.shrink[scale](s->tmp_frames[i]->data[0],
                                        s->tmp_frames[i]->linesize[0],
                                        data[0],
-                                       pre_input.f->linesize[0],
+                                       pre_input_ptr->f->linesize[0],
                                        width, height);
             s->mpvencdsp.shrink[scale](s->tmp_frames[i]->data[1],
                                        s->tmp_frames[i]->linesize[1],
                                        data[1],
-                                       pre_input.f->linesize[1],
+                                       pre_input_ptr->f->linesize[1],
                                        width >> 1, height >> 1);
             s->mpvencdsp.shrink[scale](s->tmp_frames[i]->data[2],
                                        s->tmp_frames[i]->linesize[2],
                                        data[2],
-                                       pre_input.f->linesize[2],
+                                       pre_input_ptr->f->linesize[2],
                                        width >> 1, height >> 1);
         }
     }
