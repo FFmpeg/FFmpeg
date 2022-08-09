@@ -49,11 +49,11 @@ DECL_QPEL_Y(1);
 DECL_QPEL_Y(2);
 DECL_QPEL_Y(3);
 
-void ff_put_rv40_chroma_mc8_neon(uint8_t *, const uint8_t *, int, int, int, int);
-void ff_put_rv40_chroma_mc4_neon(uint8_t *, const uint8_t *, int, int, int, int);
+void ff_put_rv40_chroma_mc8_neon(uint8_t *, const uint8_t *, ptrdiff_t, int, int, int);
+void ff_put_rv40_chroma_mc4_neon(uint8_t *, const uint8_t *, ptrdiff_t, int, int, int);
 
-void ff_avg_rv40_chroma_mc8_neon(uint8_t *, const uint8_t *, int, int, int, int);
-void ff_avg_rv40_chroma_mc4_neon(uint8_t *, const uint8_t *, int, int, int, int);
+void ff_avg_rv40_chroma_mc8_neon(uint8_t *, const uint8_t *, ptrdiff_t, int, int, int);
+void ff_avg_rv40_chroma_mc4_neon(uint8_t *, const uint8_t *, ptrdiff_t, int, int, int);
 
 void ff_rv40_weight_func_16_neon(uint8_t *, uint8_t *, uint8_t *, int, int, ptrdiff_t);
 void ff_rv40_weight_func_8_neon(uint8_t *, uint8_t *, uint8_t *, int, int, ptrdiff_t);
