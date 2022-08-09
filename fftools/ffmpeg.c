@@ -1782,6 +1782,13 @@ static void flush_encoders(void)
 
     for (i = 0; i < nb_output_streams; i++) {
         OutputStream   *ost = output_streams[i];
+        OutputFile      *of = output_files[ost->file_index];
+        if (ost->sq_idx_encode >= 0)
+            sq_send(of->sq_encode, ost->sq_idx_encode, SQFRAME(NULL));
+    }
+
+    for (i = 0; i < nb_output_streams; i++) {
+        OutputStream   *ost = output_streams[i];
         AVCodecContext *enc = ost->enc_ctx;
         OutputFile      *of = output_files[ost->file_index];
 
