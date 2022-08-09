@@ -1044,7 +1044,7 @@ ALIGN 16
     add lutq, (mmsize/2)*8
 %endif
     cmp tgtq, 64
-    je .deinterleave
+    je .64pt_deint
 
     SPLIT_RADIX_COMBINE_64
 
@@ -1190,9 +1190,6 @@ FFT_SPLIT_RADIX_DEF 131072
 ; Final synthesis + deinterleaving code
 ;===============================================================================
 .deinterleave:
-    cmp lenq, 64
-    je .64pt_deint
-
     imul tmpq, lenq, 2
     lea lutq, [4*lenq + tmpq]
 
