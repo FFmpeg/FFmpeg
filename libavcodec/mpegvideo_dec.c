@@ -279,12 +279,12 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
         ff_mpeg_unref_picture(s->avctx, s->last_picture_ptr);
     }
 
-    /* release forgotten pictures */
-    /* if (MPEG-124 / H.263) */
+    /* release non reference/forgotten frames */
     for (int i = 0; i < MAX_PICTURE_COUNT; i++) {
-        if (&s->picture[i] != s->last_picture_ptr &&
-            &s->picture[i] != s->next_picture_ptr &&
-            s->picture[i].reference && !s->picture[i].needs_realloc) {
+        if (!s->picture[i].reference ||
+            (&s->picture[i] != s->last_picture_ptr &&
+             &s->picture[i] != s->next_picture_ptr &&
+             !s->picture[i].needs_realloc)) {
             ff_mpeg_unref_picture(s->avctx, &s->picture[i]);
         }
     }
@@ -292,12 +292,6 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     ff_mpeg_unref_picture(s->avctx, &s->current_picture);
     ff_mpeg_unref_picture(s->avctx, &s->last_picture);
     ff_mpeg_unref_picture(s->avctx, &s->next_picture);
-
-    /* release non reference frames */
-    for (int i = 0; i < MAX_PICTURE_COUNT; i++) {
-        if (!s->picture[i].reference)
-            ff_mpeg_unref_picture(s->avctx, &s->picture[i]);
-    }
 
     if (s->current_picture_ptr && !s->current_picture_ptr->f->buf[0]) {
         // we already have an unused image
