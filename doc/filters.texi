@@ -2236,8 +2236,10 @@ The transition time, in seconds, for volume renormalization when an input
 stream ends. The default value is 2 seconds.
 
 @item weights
-Specify weight of each input audio stream as sequence.
-Each weight is separated by space. By default all inputs have same weight.
+Specify weight of each input audio stream as a sequence of numbers separated
+by a space. If fewer weights are specified compared to number of inputs, the
+last weight is assigned to the remaining inputs.
+Default weight for each input is 1.
 
 @item normalize
 Always scale inputs instead of only doing summation of samples.
