@@ -187,11 +187,18 @@ to make sure you don't have untracked files or deletions.
 git add [-i|-p|-A] <filenames/dirnames>
 @end example
 
-Make sure you have told Git your name and email address
+Make sure you have told Git your name, email address and GPG key
 
 @example
 git config --global user.name "My Name"
 git config --global user.email my@@email.invalid
+git config --global user.signingkey ABCDEF0123245
+@end example
+
+Enable signing all commits or use -S
+
+@example
+git config --global commit.gpgsign true
 @end example
 
 Use @option{--global} to set the global configuration for all your Git checkouts.
@@ -392,6 +399,19 @@ git checkout -b svn_23456 $SHA1
 
 where @var{$SHA1} is the commit hash from the @command{git log} output.
 
+
+@chapter gpg key generation
+
+If you have no gpg key yet, we recommend that you create a ed25519 based key as it
+is small, fast and secure. Especially it results in small signatures in git.
+
+@example
+gpg --default-new-key-algo "ed25519/cert,sign+cv25519/encr" --quick-generate-key "human@@server.com"
+@end example
+
+When generating a key, make sure the email specified matches the email used in git as some sites like
+github consider mismatches a reason to declare such commits unverified. After generating a key you
+can add it to the MAINTAINER file and upload it to a keyserver.
 
 @chapter Pre-push checklist
 
