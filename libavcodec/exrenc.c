@@ -94,7 +94,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 {
     EXRContext *s = avctx->priv_data;
 
-    init_float2half_tables(&s->f2h_tables);
+    ff_init_float2half_tables(&s->f2h_tables);
 
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_GBRPF32:

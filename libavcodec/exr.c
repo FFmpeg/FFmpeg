@@ -2208,7 +2208,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     float one_gamma = 1.0f / s->gamma;
     avpriv_trc_function trc_func = NULL;
 
-    init_half2float_tables(&s->h2f_tables);
+    ff_init_half2float_tables(&s->h2f_tables);
 
     s->avctx              = avctx;
 

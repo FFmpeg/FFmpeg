@@ -294,7 +294,7 @@ static av_cold int phm_enc_init(AVCodecContext *avctx)
 {
     PHMEncContext *s = avctx->priv_data;
 
-    init_float2half_tables(&s->f2h_tables);
+    ff_init_float2half_tables(&s->f2h_tables);
 
     return 0;
 }

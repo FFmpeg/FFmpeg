@@ -16,25 +16,4 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVUTIL_FLOAT2HALF_H
-#define AVUTIL_FLOAT2HALF_H
-
-#include <stdint.h>
-
-typedef struct Float2HalfTables {
-    uint16_t basetable[512];
-    uint8_t shifttable[512];
-} Float2HalfTables;
-
-void ff_init_float2half_tables(Float2HalfTables *t);
-
-static inline uint16_t float2half(uint32_t f, const Float2HalfTables *t)
-{
-    uint16_t h;
-
-    h = t->basetable[(f >> 23) & 0x1ff] + ((f & 0x007fffff) >> t->shifttable[(f >> 23) & 0x1ff]);
-
-    return h;
-}
-
-#endif /* AVUTIL_FLOAT2HALF_H */
+#include "libavutil/float2half.c"
