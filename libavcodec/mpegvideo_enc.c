@@ -1252,7 +1252,7 @@ static int estimate_best_b_count(MpegEncContext *s)
         const Picture *pre_input_ptr = i ? s->input_picture[i - 1] :
                                            s->next_picture_ptr;
 
-        if (pre_input_ptr && (!i || s->input_picture[i - 1])) {
+        if (pre_input_ptr) {
             const uint8_t *data[4];
             memcpy(data, pre_input_ptr->f->data, sizeof(data));
 
