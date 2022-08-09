@@ -2210,13 +2210,6 @@ and @var{pan} audio filters support many formats). If the @var{amix}
 input has integer samples then @ref{aresample} will be automatically
 inserted to perform the conversion to float samples.
 
-For example
-@example
-ffmpeg -i INPUT1 -i INPUT2 -i INPUT3 -filter_complex amix=inputs=3:duration=first:dropout_transition=3 OUTPUT
-@end example
-will mix 3 input audio streams to a single output with the same duration as the
-first input and a dropout transition time of 3 seconds.
-
 It accepts the following parameters:
 @table @option
 
@@ -2251,6 +2244,26 @@ Always scale inputs instead of only doing summation of samples.
 Beware of heavy clipping if inputs are not normalized prior or after filtering
 by this filter if this option is disabled. By default is enabled.
 @end table
+
+@subsection Examples
+
+@itemize
+
+@item
+This will mix 3 input audio streams to a single output with the same duration as the
+first input and a dropout transition time of 3 seconds:
+@example
+ffmpeg -i INPUT1 -i INPUT2 -i INPUT3 -filter_complex amix=inputs=3:duration=first:dropout_transition=3 OUTPUT
+@end example
+
+@item
+This will mix one vocal and one music input audio stream to a single output with the same duration as the
+longest input. The music will have quarter the weight as the vocals, and the inputs are not normalized:
+@example
+ffmpeg -i VOCALS -i MUSIC -filter_complex amix=inputs=2:duration=longest:dropout_transition=0:weights="1 0.25":normalize=0 OUTPUT
+@end example
+
+@end itemize
 
 @subsection Commands
 
