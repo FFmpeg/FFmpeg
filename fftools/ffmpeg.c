@@ -3792,7 +3792,6 @@ static int process_input(int file_index)
     InputStream *ist;
     AVPacket *pkt;
     int ret, i, j;
-    int64_t duration;
 
     is  = ifile->ctx;
     ret = ifile_get_packet(ifile, &pkt);
@@ -3847,37 +3846,6 @@ static int process_input(int file_index)
     if (ist->discard)
         goto discard_packet;
 
-    if (debug_ts) {
-        av_log(NULL, AV_LOG_INFO, "demuxer -> ist_index:%d type:%s "
-               "next_dts:%s next_dts_time:%s next_pts:%s next_pts_time:%s pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s duration:%s duration_time:%s off:%s off_time:%s\n",
-               ifile->ist_index + pkt->stream_index,
-               av_get_media_type_string(ist->st->codecpar->codec_type),
-               av_ts2str(ist->next_dts), av_ts2timestr(ist->next_dts, &AV_TIME_BASE_Q),
-               av_ts2str(ist->next_pts), av_ts2timestr(ist->next_pts, &AV_TIME_BASE_Q),
-               av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &ist->st->time_base),
-               av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &ist->st->time_base),
-               av_ts2str(pkt->duration), av_ts2timestr(pkt->duration, &ist->st->time_base),
-               av_ts2str(input_files[ist->file_index]->ts_offset),
-               av_ts2timestr(input_files[ist->file_index]->ts_offset, &AV_TIME_BASE_Q));
-    }
-
-    if(!ist->wrap_correction_done && is->start_time != AV_NOPTS_VALUE && ist->st->pts_wrap_bits < 64){
-        int64_t stime, stime2;
-
-        stime = av_rescale_q(is->start_time, AV_TIME_BASE_Q, ist->st->time_base);
-        stime2= stime + (1ULL<<ist->st->pts_wrap_bits);
-        ist->wrap_correction_done = 1;
-
-        if(stime2 > stime && pkt->dts != AV_NOPTS_VALUE && pkt->dts > stime + (1LL<<(ist->st->pts_wrap_bits-1))) {
-            pkt->dts -= 1ULL<<ist->st->pts_wrap_bits;
-            ist->wrap_correction_done = 0;
-        }
-        if(stime2 > stime && pkt->pts != AV_NOPTS_VALUE && pkt->pts > stime + (1LL<<(ist->st->pts_wrap_bits-1))) {
-            pkt->pts -= 1ULL<<ist->st->pts_wrap_bits;
-            ist->wrap_correction_done = 0;
-        }
-    }
-
     /* add the stream-global side data to the first packet */
     if (ist->nb_packets == 1) {
         for (i = 0; i < ist->st->nb_side_data; i++) {
@@ -3897,26 +3865,6 @@ static int process_input(int file_index)
             memcpy(dst_data, src_sd->data, src_sd->size);
         }
     }
-
-    if (pkt->dts != AV_NOPTS_VALUE)
-        pkt->dts += av_rescale_q(ifile->ts_offset, AV_TIME_BASE_Q, ist->st->time_base);
-    if (pkt->pts != AV_NOPTS_VALUE)
-        pkt->pts += av_rescale_q(ifile->ts_offset, AV_TIME_BASE_Q, ist->st->time_base);
-
-    if (pkt->pts != AV_NOPTS_VALUE)
-        pkt->pts *= ist->ts_scale;
-    if (pkt->dts != AV_NOPTS_VALUE)
-        pkt->dts *= ist->ts_scale;
-
-    duration = av_rescale_q(ifile->duration, ifile->time_base, ist->st->time_base);
-    if (pkt->pts != AV_NOPTS_VALUE) {
-        pkt->pts += duration;
-        ist->max_pts = FFMAX(pkt->pts, ist->max_pts);
-        ist->min_pts = FFMIN(pkt->pts, ist->min_pts);
-    }
-
-    if (pkt->dts != AV_NOPTS_VALUE)
-        pkt->dts += duration;
 
     // detect and try to correct for timestamp discontinuities
     ts_discontinuity_process(ifile, ist, pkt);
