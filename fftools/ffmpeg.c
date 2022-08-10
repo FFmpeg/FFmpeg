@@ -1879,12 +1879,9 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
         return;
 
     if (!ost->streamcopy_started && !ost->copy_prior_start) {
-        int64_t comp_start = start_time;
-        if (copy_ts && f->start_time != AV_NOPTS_VALUE)
-            comp_start = FFMAX(start_time, f->start_time + f->ts_offset);
         if (pkt->pts == AV_NOPTS_VALUE ?
-            ist->pts < comp_start :
-            pkt->pts < av_rescale_q(comp_start, AV_TIME_BASE_Q, ist->st->time_base))
+            ist->pts < ost->ts_copy_start :
+            pkt->pts < av_rescale_q(ost->ts_copy_start, AV_TIME_BASE_Q, ist->st->time_base))
             return;
     }
 
@@ -2741,6 +2738,7 @@ static int init_output_stream_streamcopy(OutputStream *ost)
 {
     OutputFile *of = output_files[ost->file_index];
     InputStream *ist = get_input_stream(ost);
+    InputFile *ifile = input_files[ist->file_index];
     AVCodecParameters *par = ost->st->codecpar;
     AVCodecContext *codec_ctx;
     AVRational sar;
@@ -2804,6 +2802,15 @@ static int init_output_stream_streamcopy(OutputStream *ost)
     // copy estimated duration as a hint to the muxer
     if (ost->st->duration <= 0 && ist->st->duration > 0)
         ost->st->duration = av_rescale_q(ist->st->duration, ist->st->time_base, ost->st->time_base);
+
+    if (!ost->copy_prior_start) {
+        ost->ts_copy_start = (of->start_time == AV_NOPTS_VALUE) ?
+                             0 : of->start_time;
+        if (copy_ts && ifile->start_time != AV_NOPTS_VALUE) {
+            ost->ts_copy_start = FFMAX(ost->ts_copy_start,
+                                       ifile->start_time + ifile->ts_offset);
+        }
+    }
 
     if (ist->st->nb_side_data) {
         for (i = 0; i < ist->st->nb_side_data; i++) {

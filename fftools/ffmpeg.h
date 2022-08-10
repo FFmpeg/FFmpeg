@@ -484,6 +484,12 @@ typedef struct OutputStream {
     int64_t last_mux_dts;
     /* pts of the last frame received from the filters, in AV_TIME_BASE_Q */
     int64_t last_filter_pts;
+
+    // timestamp from which the streamcopied streams should start,
+    // in AV_TIME_BASE_Q;
+    // everything before it should be discarded
+    int64_t ts_copy_start;
+
     // the timebase of the packets sent to the muxer
     AVRational mux_timebase;
     AVRational enc_timebase;
