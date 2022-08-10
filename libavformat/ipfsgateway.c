@@ -240,13 +240,8 @@ static int translate_ipfs_to_http(URLContext *h, const char *uri, int flags, AVD
         ret = populate_ipfs_gateway(h);
 
         if (ret < 1) {
-            // We fallback on dweb.link (managed by Protocol Labs).
-            snprintf(c->gateway_buffer, sizeof(c->gateway_buffer), "https://dweb.link");
-
-            av_log(h, AV_LOG_WARNING,
-                   "IPFS does not appear to be running. "
-                   "You’re now using the public gateway at dweb.link.\n");
-            av_log(h, AV_LOG_INFO,
+            av_log(h, AV_LOG_ERROR,
+                   "IPFS does not appear to be running.\n\n"
                    "Installing IPFS locally is recommended to "
                    "improve performance and reliability, "
                    "and not share all your activity with a single IPFS gateway.\n"
@@ -259,6 +254,8 @@ static int translate_ipfs_to_http(URLContext *h, const char *uri, int flags, AVD
                    "3. Define an $IPFS_PATH environment variable "
                    "and point it to the IPFS data path "
                    "- this is typically ~/.ipfs\n");
+            ret = AVERROR(EINVAL);
+            goto err;
         }
     }
 
