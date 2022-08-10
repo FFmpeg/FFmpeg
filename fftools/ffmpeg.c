@@ -3714,8 +3714,7 @@ static void ts_discontinuity_process(InputFile *ifile, InputStream *ist,
     if (ist->next_dts != AV_NOPTS_VALUE && !disable_discontinuity_correction) {
         int64_t delta = pkt_dts - ist->next_dts;
         if (fmt_is_discont) {
-            if (delta < -1LL*dts_delta_threshold*AV_TIME_BASE ||
-                delta >  1LL*dts_delta_threshold*AV_TIME_BASE ||
+            if (FFABS(delta) > 1LL * dts_delta_threshold * AV_TIME_BASE ||
                 pkt_dts + AV_TIME_BASE/10 < FFMAX(ist->pts, ist->dts)) {
                 ifile->ts_offset -= delta;
                 av_log(NULL, AV_LOG_DEBUG,
@@ -3729,16 +3728,14 @@ static void ts_discontinuity_process(InputFile *ifile, InputStream *ist,
                     pkt->pts -= av_rescale_q(delta, AV_TIME_BASE_Q, ist->st->time_base);
             }
         } else {
-            if (delta < -1LL*dts_error_threshold*AV_TIME_BASE ||
-                delta >  1LL*dts_error_threshold*AV_TIME_BASE) {
+            if (FFABS(delta) > 1LL * dts_error_threshold * AV_TIME_BASE) {
                 av_log(NULL, AV_LOG_WARNING, "DTS %"PRId64", next:%"PRId64" st:%d invalid dropping\n", pkt->dts, ist->next_dts, pkt->stream_index);
                 pkt->dts = AV_NOPTS_VALUE;
             }
             if (pkt->pts != AV_NOPTS_VALUE){
                 int64_t pkt_pts = av_rescale_q(pkt->pts, ist->st->time_base, AV_TIME_BASE_Q);
                 delta = pkt_pts - ist->next_dts;
-                if (delta < -1LL*dts_error_threshold*AV_TIME_BASE ||
-                    delta >  1LL*dts_error_threshold*AV_TIME_BASE) {
+                if (FFABS(delta) > 1LL * dts_error_threshold * AV_TIME_BASE) {
                     av_log(NULL, AV_LOG_WARNING, "PTS %"PRId64", next:%"PRId64" invalid dropping st:%d\n", pkt->pts, ist->next_dts, pkt->stream_index);
                     pkt->pts = AV_NOPTS_VALUE;
                 }
@@ -3747,8 +3744,7 @@ static void ts_discontinuity_process(InputFile *ifile, InputStream *ist,
     } else if (ist->next_dts == AV_NOPTS_VALUE && !copy_ts &&
                fmt_is_discont && ifile->last_ts != AV_NOPTS_VALUE) {
         int64_t delta = pkt_dts - ifile->last_ts;
-        if (delta < -1LL*dts_delta_threshold*AV_TIME_BASE ||
-            delta >  1LL*dts_delta_threshold*AV_TIME_BASE) {
+        if (FFABS(delta) > 1LL * dts_delta_threshold * AV_TIME_BASE) {
             ifile->ts_offset -= delta;
             av_log(NULL, AV_LOG_DEBUG,
                    "Inter stream timestamp discontinuity %"PRId64", new offset= %"PRId64"\n",
