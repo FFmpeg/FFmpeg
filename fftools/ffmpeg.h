@@ -427,6 +427,10 @@ typedef struct InputFile {
     int input_sync_ref;
 
     int64_t ts_offset;
+    /**
+     * Extra timestamp offset added by discontinuity handling.
+     */
+    int64_t ts_offset_discont;
     int64_t last_ts;
     int64_t start_time;   /* user-specified start time in AV_TIME_BASE or AV_NOPTS_VALUE */
     int64_t recording_time;
