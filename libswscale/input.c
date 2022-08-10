@@ -88,7 +88,7 @@ rgb64ToUV_half_c_template(uint16_t *dstU, uint16_t *dstV,
 
 #define rgb64funcs(pattern, BE_LE, origin) \
 static void pattern ## 64 ## BE_LE ## ToY_c(uint8_t *_dst, const uint8_t *_src, const uint8_t *unused0, const uint8_t *unused1,\
-                                    int width, uint32_t *rgb2yuv) \
+                                    int width, uint32_t *rgb2yuv, void *opq) \
 { \
     const uint16_t *src = (const uint16_t *) _src; \
     uint16_t *dst = (uint16_t *) _dst; \
@@ -97,7 +97,7 @@ static void pattern ## 64 ## BE_LE ## ToY_c(uint8_t *_dst, const uint8_t *_src, 
  \
 static void pattern ## 64 ## BE_LE ## ToUV_c(uint8_t *_dstU, uint8_t *_dstV, \
                                     const uint8_t *unused0, const uint8_t *_src1, const uint8_t *_src2, \
-                                    int width, uint32_t *rgb2yuv) \
+                                    int width, uint32_t *rgb2yuv, void *opq) \
 { \
     const uint16_t *src1 = (const uint16_t *) _src1, \
                    *src2 = (const uint16_t *) _src2; \
@@ -107,7 +107,7 @@ static void pattern ## 64 ## BE_LE ## ToUV_c(uint8_t *_dstU, uint8_t *_dstV, \
  \
 static void pattern ## 64 ## BE_LE ## ToUV_half_c(uint8_t *_dstU, uint8_t *_dstV, \
                                     const uint8_t *unused0, const uint8_t *_src1, const uint8_t *_src2, \
-                                    int width, uint32_t *rgb2yuv) \
+                                    int width, uint32_t *rgb2yuv, void *opq) \
 { \
     const uint16_t *src1 = (const uint16_t *) _src1, \
                    *src2 = (const uint16_t *) _src2; \
@@ -192,7 +192,8 @@ static void pattern ## 48 ## BE_LE ## ToY_c(uint8_t *_dst,              \
                                             const uint8_t *_src,        \
                                             const uint8_t *unused0, const uint8_t *unused1,\
                                             int width,                  \
-                                            uint32_t *rgb2yuv)          \
+                                            uint32_t *rgb2yuv,          \
+                                            void *opq)                  \
 {                                                                       \
     const uint16_t *src = (const uint16_t *)_src;                       \
     uint16_t *dst       = (uint16_t *)_dst;                             \
@@ -205,7 +206,8 @@ static void pattern ## 48 ## BE_LE ## ToUV_c(uint8_t *_dstU,            \
                                              const uint8_t *_src1,      \
                                              const uint8_t *_src2,      \
                                              int width,                 \
-                                             uint32_t *rgb2yuv)         \
+                                             uint32_t *rgb2yuv,         \
+                                             void *opq)                 \
 {                                                                       \
     const uint16_t *src1 = (const uint16_t *)_src1,                     \
                    *src2 = (const uint16_t *)_src2;                     \
@@ -220,7 +222,8 @@ static void pattern ## 48 ## BE_LE ## ToUV_half_c(uint8_t *_dstU,       \
                                                   const uint8_t *_src1, \
                                                   const uint8_t *_src2, \
                                                   int width,            \
-                                                  uint32_t *rgb2yuv)    \
+                                                  uint32_t *rgb2yuv,    \
+                                                  void *opq)            \
 {                                                                       \
     const uint16_t *src1 = (const uint16_t *)_src1,                     \
                    *src2 = (const uint16_t *)_src2;                     \
@@ -345,7 +348,7 @@ static av_always_inline void rgb16_32ToUV_half_c_template(int16_t *dstU,
 #define rgb16_32_wrapper(fmt, name, shr, shg, shb, shp, maskr,          \
                          maskg, maskb, rsh, gsh, bsh, S)                \
 static void name ## ToY_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2,            \
-                          int width, uint32_t *tab)                     \
+                          int width, uint32_t *tab, void *opq)          \
 {                                                                       \
     rgb16_32ToY_c_template((int16_t*)dst, src, width, fmt, shr, shg, shb, shp,    \
                            maskr, maskg, maskb, rsh, gsh, bsh, S, tab); \
@@ -353,7 +356,7 @@ static void name ## ToY_c(uint8_t *dst, const uint8_t *src, const uint8_t *unuse
                                                                         \
 static void name ## ToUV_c(uint8_t *dstU, uint8_t *dstV,                \
                            const uint8_t *unused0, const uint8_t *src, const uint8_t *dummy,    \
-                           int width, uint32_t *tab)                    \
+                           int width, uint32_t *tab, void *opq)         \
 {                                                                       \
     rgb16_32ToUV_c_template((int16_t*)dstU, (int16_t*)dstV, src, width, fmt,                \
                             shr, shg, shb, shp,                         \
@@ -363,7 +366,7 @@ static void name ## ToUV_c(uint8_t *dstU, uint8_t *dstV,                \
 static void name ## ToUV_half_c(uint8_t *dstU, uint8_t *dstV,           \
                                 const uint8_t *unused0, const uint8_t *src,                     \
                                 const uint8_t *dummy,                   \
-                                int width, uint32_t *tab)               \
+                                int width, uint32_t *tab, void *opq)    \
 {                                                                       \
     rgb16_32ToUV_half_c_template((int16_t*)dstU, (int16_t*)dstV, src, width, fmt,           \
                                  shr, shg, shb, shp,                    \
@@ -392,7 +395,7 @@ rgb16_32_wrapper(AV_PIX_FMT_X2BGR10LE, bgr30le, 0, 6, 16, 0, 0x3FF, 0xFFC00, 0x3
 
 static void gbr24pToUV_half_c(uint8_t *_dstU, uint8_t *_dstV,
                          const uint8_t *gsrc, const uint8_t *bsrc, const uint8_t *rsrc,
-                         int width, uint32_t *rgb2yuv)
+                         int width, uint32_t *rgb2yuv, void *opq)
 {
     uint16_t *dstU = (uint16_t *)_dstU;
     uint16_t *dstV = (uint16_t *)_dstV;
@@ -411,7 +414,7 @@ static void gbr24pToUV_half_c(uint8_t *_dstU, uint8_t *_dstV,
 }
 
 static void rgba64leToA_c(uint8_t *_dst, const uint8_t *_src, const uint8_t *unused1,
-                          const uint8_t *unused2, int width, uint32_t *unused)
+                          const uint8_t *unused2, int width, uint32_t *unused, void *opq)
 {
     int16_t *dst = (int16_t *)_dst;
     const uint16_t *src = (const uint16_t *)_src;
@@ -421,7 +424,7 @@ static void rgba64leToA_c(uint8_t *_dst, const uint8_t *_src, const uint8_t *unu
 }
 
 static void rgba64beToA_c(uint8_t *_dst, const uint8_t *_src, const uint8_t *unused1,
-                          const uint8_t *unused2, int width, uint32_t *unused)
+                          const uint8_t *unused2, int width, uint32_t *unused, void *opq)
 {
     int16_t *dst = (int16_t *)_dst;
     const uint16_t *src = (const uint16_t *)_src;
@@ -430,7 +433,8 @@ static void rgba64beToA_c(uint8_t *_dst, const uint8_t *_src, const uint8_t *unu
         dst[i] = AV_RB16(src + 4 * i + 3);
 }
 
-static void abgrToA_c(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2, int width, uint32_t *unused)
+static void abgrToA_c(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1,
+                      const uint8_t *unused2, int width, uint32_t *unused, void *opq)
 {
     int16_t *dst = (int16_t *)_dst;
     int i;
@@ -439,7 +443,8 @@ static void abgrToA_c(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1,
     }
 }
 
-static void rgbaToA_c(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2, int width, uint32_t *unused)
+static void rgbaToA_c(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1,
+                      const uint8_t *unused2, int width, uint32_t *unused, void *opq)
 {
     int16_t *dst = (int16_t *)_dst;
     int i;
@@ -448,7 +453,8 @@ static void rgbaToA_c(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1,
     }
 }
 
-static void palToA_c(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2, int width, uint32_t *pal)
+static void palToA_c(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1,
+                     const uint8_t *unused2, int width, uint32_t *pal, void *opq)
 {
     int16_t *dst = (int16_t *)_dst;
     int i;
@@ -459,7 +465,8 @@ static void palToA_c(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1, 
     }
 }
 
-static void palToY_c(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2, int width, uint32_t *pal)
+static void palToY_c(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1,
+                     const uint8_t *unused2, int width, uint32_t *pal, void *opq)
 {
     int16_t *dst = (int16_t *)_dst;
     int i;
@@ -471,8 +478,8 @@ static void palToY_c(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1, 
 }
 
 static void palToUV_c(uint8_t *_dstU, uint8_t *_dstV,
-                           const uint8_t *unused0, const uint8_t *src1, const uint8_t *src2,
-                      int width, uint32_t *pal)
+                      const uint8_t *unused0, const uint8_t *src1, const uint8_t *src2,
+                      int width, uint32_t *pal, void *opq)
 {
     uint16_t *dstU = (uint16_t *)_dstU;
     int16_t *dstV = (int16_t *)_dstV;
@@ -486,7 +493,8 @@ static void palToUV_c(uint8_t *_dstU, uint8_t *_dstV,
     }
 }
 
-static void monowhite2Y_c(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2,  int width, uint32_t *unused)
+static void monowhite2Y_c(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1,
+                          const uint8_t *unused2,  int width, uint32_t *unused, void *opq)
 {
     int16_t *dst = (int16_t *)_dst;
     int i, j;
@@ -503,7 +511,8 @@ static void monowhite2Y_c(uint8_t *_dst, const uint8_t *src, const uint8_t *unus
     }
 }
 
-static void monoblack2Y_c(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2,  int width, uint32_t *unused)
+static void monoblack2Y_c(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1,
+                          const uint8_t *unused2,  int width, uint32_t *unused, void *opq)
 {
     int16_t *dst = (int16_t *)_dst;
     int i, j;
@@ -520,8 +529,8 @@ static void monoblack2Y_c(uint8_t *_dst, const uint8_t *src, const uint8_t *unus
     }
 }
 
-static void yuy2ToY_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2,  int width,
-                      uint32_t *unused)
+static void yuy2ToY_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2, int width,
+                      uint32_t *unused, void *opq)
 {
     int i;
     for (i = 0; i < width; i++)
@@ -529,7 +538,7 @@ static void yuy2ToY_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused1, 
 }
 
 static void yuy2ToUV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, const uint8_t *src1,
-                       const uint8_t *src2, int width, uint32_t *unused)
+                       const uint8_t *src2, int width, uint32_t *unused, void *opq)
 {
     int i;
     for (i = 0; i < width; i++) {
@@ -540,7 +549,7 @@ static void yuy2ToUV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, con
 }
 
 static void yvy2ToUV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, const uint8_t *src1,
-                       const uint8_t *src2, int width, uint32_t *unused)
+                       const uint8_t *src2, int width, uint32_t *unused, void *opq)
 {
     int i;
     for (i = 0; i < width; i++) {
@@ -551,7 +560,7 @@ static void yvy2ToUV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, con
 }
 
 static void y210le_UV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, const uint8_t *src,
-                        const uint8_t *unused1, int width, uint32_t *unused2)
+                        const uint8_t *unused1, int width, uint32_t *unused2, void *opq)
 {
     int i;
     for (i = 0; i < width; i++) {
@@ -561,7 +570,7 @@ static void y210le_UV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, co
 }
 
 static void y210le_Y_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused0,
-                       const uint8_t *unused1, int width, uint32_t *unused2)
+                       const uint8_t *unused1, int width, uint32_t *unused2, void *opq)
 {
     int i;
     for (i = 0; i < width; i++)
@@ -569,7 +578,7 @@ static void y210le_Y_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused0,
 }
 
 static void bswap16Y_c(uint8_t *_dst, const uint8_t *_src, const uint8_t *unused1, const uint8_t *unused2, int width,
-                       uint32_t *unused)
+                       uint32_t *unused, void *opq)
 {
     int i;
     const uint16_t *src = (const uint16_t *)_src;
@@ -579,7 +588,7 @@ static void bswap16Y_c(uint8_t *_dst, const uint8_t *_src, const uint8_t *unused
 }
 
 static void bswap16UV_c(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *unused0, const uint8_t *_src1,
-                        const uint8_t *_src2, int width, uint32_t *unused)
+                        const uint8_t *_src2, int width, uint32_t *unused, void *opq)
 {
     int i;
     const uint16_t *src1 = (const uint16_t *)_src1,
@@ -592,7 +601,7 @@ static void bswap16UV_c(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *unused0, 
 }
 
 static void read_ya16le_gray_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2, int width,
-                               uint32_t *unused)
+                               uint32_t *unused, void *opq)
 {
     int i;
     for (i = 0; i < width; i++)
@@ -600,7 +609,7 @@ static void read_ya16le_gray_c(uint8_t *dst, const uint8_t *src, const uint8_t *
 }
 
 static void read_ya16le_alpha_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2, int width,
-                                uint32_t *unused)
+                                uint32_t *unused, void *opq)
 {
     int i;
     for (i = 0; i < width; i++)
@@ -608,7 +617,7 @@ static void read_ya16le_alpha_c(uint8_t *dst, const uint8_t *src, const uint8_t 
 }
 
 static void read_ya16be_gray_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2, int width,
-                               uint32_t *unused)
+                               uint32_t *unused, void *opq)
 {
     int i;
     for (i = 0; i < width; i++)
@@ -616,7 +625,7 @@ static void read_ya16be_gray_c(uint8_t *dst, const uint8_t *src, const uint8_t *
 }
 
 static void read_ya16be_alpha_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2, int width,
-                                uint32_t *unused)
+                                uint32_t *unused, void *opq)
 {
     int i;
     for (i = 0; i < width; i++)
@@ -624,7 +633,7 @@ static void read_ya16be_alpha_c(uint8_t *dst, const uint8_t *src, const uint8_t 
 }
 
 static void read_ayuv64le_Y_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused0, const uint8_t *unused1, int width,
-                               uint32_t *unused2)
+                               uint32_t *unused2, void *opq)
 {
     int i;
     for (i = 0; i < width; i++)
@@ -633,7 +642,7 @@ static void read_ayuv64le_Y_c(uint8_t *dst, const uint8_t *src, const uint8_t *u
 
 
 static void read_ayuv64le_UV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, const uint8_t *src,
-                               const uint8_t *unused1, int width, uint32_t *unused2)
+                               const uint8_t *unused1, int width, uint32_t *unused2, void *opq)
 {
     int i;
     for (i = 0; i < width; i++) {
@@ -643,7 +652,7 @@ static void read_ayuv64le_UV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *unus
 }
 
 static void read_ayuv64le_A_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused0, const uint8_t *unused1, int width,
-                                uint32_t *unused2)
+                              uint32_t *unused2, void *opq)
 {
     int i;
     for (i = 0; i < width; i++)
@@ -651,7 +660,7 @@ static void read_ayuv64le_A_c(uint8_t *dst, const uint8_t *src, const uint8_t *u
 }
 
 static void read_vuya_UV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, const uint8_t *src,
-                           const uint8_t *unused1, int width, uint32_t *unused2)
+                           const uint8_t *unused1, int width, uint32_t *unused2, void *opq)
 {
     int i;
     for (i = 0; i < width; i++) {
@@ -661,7 +670,7 @@ static void read_vuya_UV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0,
 }
 
 static void read_vuya_Y_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused0, const uint8_t *unused1, int width,
-                          uint32_t *unused2)
+                          uint32_t *unused2, void *opq)
 {
     int i;
     for (i = 0; i < width; i++)
@@ -669,7 +678,7 @@ static void read_vuya_Y_c(uint8_t *dst, const uint8_t *src, const uint8_t *unuse
 }
 
 static void read_vuya_A_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused0, const uint8_t *unused1, int width,
-                          uint32_t *unused2)
+                          uint32_t *unused2, void *opq)
 {
     int i;
     for (i = 0; i < width; i++)
@@ -679,7 +688,7 @@ static void read_vuya_A_c(uint8_t *dst, const uint8_t *src, const uint8_t *unuse
 /* This is almost identical to the previous, end exists only because
  * yuy2ToY/UV)(dst, src + 1, ...) would have 100% unaligned accesses. */
 static void uyvyToY_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2,  int width,
-                      uint32_t *unused)
+                      uint32_t *unused, void *opq)
 {
     int i;
     for (i = 0; i < width; i++)
@@ -687,7 +696,7 @@ static void uyvyToY_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused1, 
 }
 
 static void uyvyToUV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, const uint8_t *src1,
-                       const uint8_t *src2, int width, uint32_t *unused)
+                       const uint8_t *src2, int width, uint32_t *unused, void *opq)
 {
     int i;
     for (i = 0; i < width; i++) {
@@ -709,20 +718,20 @@ static av_always_inline void nvXXtoUV_c(uint8_t *dst1, uint8_t *dst2,
 
 static void nv12ToUV_c(uint8_t *dstU, uint8_t *dstV,
                        const uint8_t *unused0, const uint8_t *src1, const uint8_t *src2,
-                       int width, uint32_t *unused)
+                       int width, uint32_t *unused, void *opq)
 {
     nvXXtoUV_c(dstU, dstV, src1, width);
 }
 
 static void nv21ToUV_c(uint8_t *dstU, uint8_t *dstV,
                        const uint8_t *unused0, const uint8_t *src1, const uint8_t *src2,
-                       int width, uint32_t *unused)
+                       int width, uint32_t *unused, void *opq)
 {
     nvXXtoUV_c(dstV, dstU, src1, width);
 }
 
 static void p010LEToY_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused1,
-                        const uint8_t *unused2, int width, uint32_t *unused)
+                        const uint8_t *unused2, int width, uint32_t *unused, void *opq)
 {
     int i;
     for (i = 0; i < width; i++) {
@@ -731,7 +740,7 @@ static void p010LEToY_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused1
 }
 
 static void p010BEToY_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused1,
-                        const uint8_t *unused2, int width, uint32_t *unused)
+                        const uint8_t *unused2, int width, uint32_t *unused, void *opq)
 {
     int i;
     for (i = 0; i < width; i++) {
@@ -741,7 +750,7 @@ static void p010BEToY_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused1
 
 static void p010LEToUV_c(uint8_t *dstU, uint8_t *dstV,
                        const uint8_t *unused0, const uint8_t *src1, const uint8_t *src2,
-                       int width, uint32_t *unused)
+                       int width, uint32_t *unused, void *opq)
 {
     int i;
     for (i = 0; i < width; i++) {
@@ -751,8 +760,8 @@ static void p010LEToUV_c(uint8_t *dstU, uint8_t *dstV,
 }
 
 static void p010BEToUV_c(uint8_t *dstU, uint8_t *dstV,
-                       const uint8_t *unused0, const uint8_t *src1, const uint8_t *src2,
-                       int width, uint32_t *unused)
+                         const uint8_t *unused0, const uint8_t *src1, const uint8_t *src2,
+                         int width, uint32_t *unused, void *opq)
 {
     int i;
     for (i = 0; i < width; i++) {
@@ -762,8 +771,8 @@ static void p010BEToUV_c(uint8_t *dstU, uint8_t *dstV,
 }
 
 static void p016LEToUV_c(uint8_t *dstU, uint8_t *dstV,
-                       const uint8_t *unused0, const uint8_t *src1, const uint8_t *src2,
-                       int width, uint32_t *unused)
+                         const uint8_t *unused0, const uint8_t *src1, const uint8_t *src2,
+                         int width, uint32_t *unused, void *opq)
 {
     int i;
     for (i = 0; i < width; i++) {
@@ -773,8 +782,8 @@ static void p016LEToUV_c(uint8_t *dstU, uint8_t *dstV,
 }
 
 static void p016BEToUV_c(uint8_t *dstU, uint8_t *dstV,
-                       const uint8_t *unused0, const uint8_t *src1, const uint8_t *src2,
-                       int width, uint32_t *unused)
+                         const uint8_t *unused0, const uint8_t *src1, const uint8_t *src2,
+                         int width, uint32_t *unused, void *opq)
 {
     int i;
     for (i = 0; i < width; i++) {
@@ -786,7 +795,7 @@ static void p016BEToUV_c(uint8_t *dstU, uint8_t *dstV,
 #define input_pixel(pos) (isBE(origin) ? AV_RB16(pos) : AV_RL16(pos))
 
 static void bgr24ToY_c(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2,
-                       int width, uint32_t *rgb2yuv)
+                       int width, uint32_t *rgb2yuv, void *opq)
 {
     int16_t *dst = (int16_t *)_dst;
     int32_t ry = rgb2yuv[RY_IDX], gy = rgb2yuv[GY_IDX], by = rgb2yuv[BY_IDX];
@@ -801,7 +810,7 @@ static void bgr24ToY_c(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1
 }
 
 static void bgr24ToUV_c(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *unused0, const uint8_t *src1,
-                        const uint8_t *src2, int width, uint32_t *rgb2yuv)
+                        const uint8_t *src2, int width, uint32_t *rgb2yuv, void *opq)
 {
     int16_t *dstU = (int16_t *)_dstU;
     int16_t *dstV = (int16_t *)_dstV;
@@ -820,7 +829,7 @@ static void bgr24ToUV_c(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *unused0, 
 }
 
 static void bgr24ToUV_half_c(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *unused0, const uint8_t *src1,
-                             const uint8_t *src2, int width, uint32_t *rgb2yuv)
+                             const uint8_t *src2, int width, uint32_t *rgb2yuv, void *opq)
 {
     int16_t *dstU = (int16_t *)_dstU;
     int16_t *dstV = (int16_t *)_dstV;
@@ -839,7 +848,7 @@ static void bgr24ToUV_half_c(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *unus
 }
 
 static void rgb24ToY_c(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2, int width,
-                       uint32_t *rgb2yuv)
+                       uint32_t *rgb2yuv, void *opq)
 {
     int16_t *dst = (int16_t *)_dst;
     int32_t ry = rgb2yuv[RY_IDX], gy = rgb2yuv[GY_IDX], by = rgb2yuv[BY_IDX];
@@ -854,7 +863,7 @@ static void rgb24ToY_c(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1
 }
 
 static void rgb24ToUV_c(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *unused0, const uint8_t *src1,
-                        const uint8_t *src2, int width, uint32_t *rgb2yuv)
+                        const uint8_t *src2, int width, uint32_t *rgb2yuv, void *opq)
 {
     int16_t *dstU = (int16_t *)_dstU;
     int16_t *dstV = (int16_t *)_dstV;
@@ -873,7 +882,7 @@ static void rgb24ToUV_c(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *unused0, 
 }
 
 static void rgb24ToUV_half_c(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *unused0, const uint8_t *src1,
-                             const uint8_t *src2, int width, uint32_t *rgb2yuv)
+                             const uint8_t *src2, int width, uint32_t *rgb2yuv, void *opq)
 {
     int16_t *dstU = (int16_t *)_dstU;
     int16_t *dstV = (int16_t *)_dstV;
@@ -891,7 +900,7 @@ static void rgb24ToUV_half_c(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *unus
     }
 }
 
-static void planar_rgb_to_y(uint8_t *_dst, const uint8_t *src[4], int width, int32_t *rgb2yuv)
+static void planar_rgb_to_y(uint8_t *_dst, const uint8_t *src[4], int width, int32_t *rgb2yuv, void *opq)
 {
     uint16_t *dst = (uint16_t *)_dst;
     int32_t ry = rgb2yuv[RY_IDX], gy = rgb2yuv[GY_IDX], by = rgb2yuv[BY_IDX];
@@ -905,7 +914,7 @@ static void planar_rgb_to_y(uint8_t *_dst, const uint8_t *src[4], int width, int
     }
 }
 
-static void planar_rgb_to_a(uint8_t *_dst, const uint8_t *src[4], int width, int32_t *unused)
+static void planar_rgb_to_a(uint8_t *_dst, const uint8_t *src[4], int width, int32_t *unused, void *opq)
 {
     uint16_t *dst = (uint16_t *)_dst;
     int i;
@@ -913,7 +922,7 @@ static void planar_rgb_to_a(uint8_t *_dst, const uint8_t *src[4], int width, int
         dst[i] = src[3][i] << 6;
 }
 
-static void planar_rgb_to_uv(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *src[4], int width, int32_t *rgb2yuv)
+static void planar_rgb_to_uv(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *src[4], int width, int32_t *rgb2yuv, void *opq)
 {
     uint16_t *dstU = (uint16_t *)_dstU;
     uint16_t *dstV = (uint16_t *)_dstV;
@@ -1049,24 +1058,27 @@ static av_always_inline void grayf32ToY16_c(uint8_t *_dst, const uint8_t *_src, 
 
 #define rgb9plus_planar_funcs_endian(nbits, endian_name, endian)                                    \
 static void planar_rgb##nbits##endian_name##_to_y(uint8_t *dst, const uint8_t *src[4],              \
-                                                  int w, int32_t *rgb2yuv)                          \
+                                                  int w, int32_t *rgb2yuv, void *opq)               \
 {                                                                                                   \
     planar_rgb16_to_y(dst, src, w, nbits, endian, rgb2yuv);                                         \
 }                                                                                                   \
 static void planar_rgb##nbits##endian_name##_to_uv(uint8_t *dstU, uint8_t *dstV,                    \
-                                                   const uint8_t *src[4], int w, int32_t *rgb2yuv)  \
+                                                   const uint8_t *src[4], int w, int32_t *rgb2yuv,  \
+                                                   void *opq)                                       \
 {                                                                                                   \
     planar_rgb16_to_uv(dstU, dstV, src, w, nbits, endian, rgb2yuv);                                 \
 }                                                                                                   \
 
 #define rgb9plus_planar_transparency_funcs(nbits)                           \
 static void planar_rgb##nbits##le_to_a(uint8_t *dst, const uint8_t *src[4], \
-                                       int w, int32_t *rgb2yuv)             \
+                                       int w, int32_t *rgb2yuv,             \
+                                       void *opq)                           \
 {                                                                           \
     planar_rgb16_to_a(dst, src, w, nbits, 0, rgb2yuv);                      \
 }                                                                           \
 static void planar_rgb##nbits##be_to_a(uint8_t *dst, const uint8_t *src[4], \
-                                       int w, int32_t *rgb2yuv)             \
+                                       int w, int32_t *rgb2yuv,             \
+                                       void *opq)                           \
 {                                                                           \
     planar_rgb16_to_a(dst, src, w, nbits, 1, rgb2yuv);                      \
 }
@@ -1087,23 +1099,24 @@ rgb9plus_planar_transparency_funcs(16)
 
 #define rgbf32_planar_funcs_endian(endian_name, endian)                                             \
 static void planar_rgbf32##endian_name##_to_y(uint8_t *dst, const uint8_t *src[4],                  \
-                                                  int w, int32_t *rgb2yuv)                          \
+                                                  int w, int32_t *rgb2yuv, void *opq)               \
 {                                                                                                   \
     planar_rgbf32_to_y(dst, src, w, endian, rgb2yuv);                                               \
 }                                                                                                   \
 static void planar_rgbf32##endian_name##_to_uv(uint8_t *dstU, uint8_t *dstV,                        \
-                                                   const uint8_t *src[4], int w, int32_t *rgb2yuv)  \
+                                               const uint8_t *src[4], int w, int32_t *rgb2yuv,      \
+                                               void *opq)                                           \
 {                                                                                                   \
     planar_rgbf32_to_uv(dstU, dstV, src, w, endian, rgb2yuv);                                       \
 }                                                                                                   \
 static void planar_rgbf32##endian_name##_to_a(uint8_t *dst, const uint8_t *src[4],                  \
-                                              int w, int32_t *rgb2yuv)                              \
+                                              int w, int32_t *rgb2yuv, void *opq)                   \
 {                                                                                                   \
     planar_rgbf32_to_a(dst, src, w, endian, rgb2yuv);                                               \
 }                                                                                                   \
 static void grayf32##endian_name##ToY16_c(uint8_t *dst, const uint8_t *src,                         \
                                           const uint8_t *unused1, const uint8_t *unused2,           \
-                                          int width, uint32_t *unused)                              \
+                                          int width, uint32_t *unused, void *opq)                   \
 {                                                                                                   \
     grayf32ToY16_c(dst, src, unused1, unused2, width, endian, unused);                              \
 }

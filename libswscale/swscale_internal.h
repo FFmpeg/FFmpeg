@@ -559,26 +559,31 @@ typedef struct SwsContext {
     yuv2packedX_fn yuv2packedX;
     yuv2anyX_fn yuv2anyX;
 
+    /// Opaque data pointer passed to all input functions.
+    void *input_opaque;
+
     /// Unscaled conversion of luma plane to YV12 for horizontal scaler.
     void (*lumToYV12)(uint8_t *dst, const uint8_t *src, const uint8_t *src2, const uint8_t *src3,
-                      int width, uint32_t *pal);
+                      int width, uint32_t *pal, void *opq);
     /// Unscaled conversion of alpha plane to YV12 for horizontal scaler.
     void (*alpToYV12)(uint8_t *dst, const uint8_t *src, const uint8_t *src2, const uint8_t *src3,
-                      int width, uint32_t *pal);
+                      int width, uint32_t *pal, void *opq);
     /// Unscaled conversion of chroma planes to YV12 for horizontal scaler.
     void (*chrToYV12)(uint8_t *dstU, uint8_t *dstV,
                       const uint8_t *src1, const uint8_t *src2, const uint8_t *src3,
-                      int width, uint32_t *pal);
+                      int width, uint32_t *pal, void *opq);
 
     /**
      * Functions to read planar input, such as planar RGB, and convert
      * internally to Y/UV/A.
      */
     /** @{ */
-    void (*readLumPlanar)(uint8_t *dst, const uint8_t *src[4], int width, int32_t *rgb2yuv);
+    void (*readLumPlanar)(uint8_t *dst, const uint8_t *src[4], int width, int32_t *rgb2yuv,
+                          void *opq);
     void (*readChrPlanar)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src[4],
-                          int width, int32_t *rgb2yuv);
-    void (*readAlpPlanar)(uint8_t *dst, const uint8_t *src[4], int width, int32_t *rgb2yuv);
+                          int width, int32_t *rgb2yuv, void *opq);
+    void (*readAlpPlanar)(uint8_t *dst, const uint8_t *src[4], int width, int32_t *rgb2yuv,
+                          void *opq);
     /** @} */
 
     /**

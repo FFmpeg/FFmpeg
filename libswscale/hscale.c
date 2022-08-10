@@ -105,18 +105,18 @@ static int lum_convert(SwsContext *c, SwsFilterDescriptor *desc, int sliceY, int
         uint8_t * dst = desc->dst->plane[0].line[i];
 
         if (c->lumToYV12) {
-            c->lumToYV12(dst, src[0], src[1], src[2], srcW, pal);
+            c->lumToYV12(dst, src[0], src[1], src[2], srcW, pal, c->input_opaque);
         } else if (c->readLumPlanar) {
-            c->readLumPlanar(dst, src, srcW, c->input_rgb2yuv_table);
+            c->readLumPlanar(dst, src, srcW, c->input_rgb2yuv_table, c->input_opaque);
         }
 
 
         if (desc->alpha) {
             dst = desc->dst->plane[3].line[i];
             if (c->alpToYV12) {
-                c->alpToYV12(dst, src[3], src[1], src[2], srcW, pal);
+                c->alpToYV12(dst, src[3], src[1], src[2], srcW, pal, c->input_opaque);
             } else if (c->readAlpPlanar) {
-                c->readAlpPlanar(dst, src, srcW, NULL);
+                c->readAlpPlanar(dst, src, srcW, NULL, c->input_opaque);
             }
         }
     }
@@ -224,9 +224,9 @@ static int chr_convert(SwsContext *c, SwsFilterDescriptor *desc, int sliceY, int
         uint8_t * dst1 = desc->dst->plane[1].line[i];
         uint8_t * dst2 = desc->dst->plane[2].line[i];
         if (c->chrToYV12) {
-            c->chrToYV12(dst1, dst2, src[0], src[1], src[2], srcW, pal);
+            c->chrToYV12(dst1, dst2, src[0], src[1], src[2], srcW, pal, c->input_opaque);
         } else if (c->readChrPlanar) {
-            c->readChrPlanar(dst1, dst2, src, srcW, c->input_rgb2yuv_table);
+            c->readChrPlanar(dst1, dst2, src, srcW, c->input_rgb2yuv_table, c->input_opaque);
         }
     }
     return sliceH;

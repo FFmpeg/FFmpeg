@@ -296,13 +296,13 @@ VSCALE_FUNCS(avx, avx);
 #define INPUT_Y_FUNC(fmt, opt) \
 void ff_ ## fmt ## ToY_  ## opt(uint8_t *dst, const uint8_t *src, \
                                 const uint8_t *unused1, const uint8_t *unused2, \
-                                int w, uint32_t *unused)
+                                int w, uint32_t *unused, void *opq)
 #define INPUT_UV_FUNC(fmt, opt) \
 void ff_ ## fmt ## ToUV_ ## opt(uint8_t *dstU, uint8_t *dstV, \
                                 const uint8_t *unused0, \
                                 const uint8_t *src1, \
                                 const uint8_t *src2, \
-                                int w, uint32_t *unused)
+                                int w, uint32_t *unused, void *opq)
 #define INPUT_FUNC(fmt, opt) \
     INPUT_Y_FUNC(fmt, opt); \
     INPUT_UV_FUNC(fmt, opt)
@@ -370,15 +370,18 @@ YUV2GBRP_DECL(avx2);
 
 #define INPUT_PLANAR_RGB_Y_FN_DECL(fmt, opt)                               \
 void ff_planar_##fmt##_to_y_##opt(uint8_t *dst,                            \
-                           const uint8_t *src[4], int w, int32_t *rgb2yuv)
+                           const uint8_t *src[4], int w, int32_t *rgb2yuv, \
+                           void *opq)
 
 #define INPUT_PLANAR_RGB_UV_FN_DECL(fmt, opt)                              \
 void ff_planar_##fmt##_to_uv_##opt(uint8_t *dstU, uint8_t *dstV,           \
-                           const uint8_t *src[4], int w, int32_t *rgb2yuv)
+                           const uint8_t *src[4], int w, int32_t *rgb2yuv, \
+                           void *opq)
 
 #define INPUT_PLANAR_RGB_A_FN_DECL(fmt, opt)                               \
 void ff_planar_##fmt##_to_a_##opt(uint8_t *dst,                            \
-                           const uint8_t *src[4], int w, int32_t *rgb2yuv)
+                           const uint8_t *src[4], int w, int32_t *rgb2yuv, \
+                           void *opq)
 
 
 #define INPUT_PLANAR_RGBXX_A_DECL(fmt, opt) \
