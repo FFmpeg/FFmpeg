@@ -18,6 +18,7 @@
 
 #include "libavutil/half2float.h"
 
+#if !HAVE_FAST_FLOAT16
 static uint32_t convertmantissa(uint32_t i)
 {
     int32_t m = i << 13; // Zero pad mantissa bits
@@ -33,9 +34,11 @@ static uint32_t convertmantissa(uint32_t i)
 
     return m | e; // Return combined number
 }
+#endif
 
 void ff_init_half2float_tables(Half2FloatTables *t)
 {
+#if !HAVE_FAST_FLOAT16
     t->mantissatable[0] = 0;
     for (int i = 1; i < 1024; i++)
         t->mantissatable[i] = convertmantissa(i);
@@ -60,4 +63,5 @@ void ff_init_half2float_tables(Half2FloatTables *t)
     t->offsettable[31] = 2048;
     t->offsettable[32] = 0;
     t->offsettable[63] = 2048;
+#endif
 }

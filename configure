@@ -2145,6 +2145,7 @@ ARCH_FEATURES="
     fast_64bit
     fast_clz
     fast_cmov
+    fast_float16
     local_aligned
     simd_align_16
     simd_align_32
@@ -5127,6 +5128,8 @@ elif enabled arm; then
             ;;
     esac
 
+    test_cflags -mfp16-format=ieee && add_cflags -mfp16-format=ieee
+
 elif enabled avr32; then
 
     case $cpu in
@@ -6230,6 +6233,15 @@ check_builtin MemoryBarrier windows.h "MemoryBarrier()"
 check_builtin sync_val_compare_and_swap "" "int *ptr; int oldval, newval; __sync_val_compare_and_swap(ptr, oldval, newval)"
 check_builtin gmtime_r time.h "time_t *time; struct tm *tm; gmtime_r(time, tm)"
 check_builtin localtime_r time.h "time_t *time; struct tm *tm; localtime_r(time, tm)"
+
+check_builtin float16 "" "_Float16 f16var"
+if enabled float16; then
+    if enabled x86; then
+        test_cpp_condition stddef.h "defined(__F16C__)" && enable fast_float16
+    elif enabled arm || enabled aarch64; then
+        enable fast_float16
+    fi
+fi
 
 case "$custom_allocator" in
     jemalloc)

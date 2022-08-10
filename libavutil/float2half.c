@@ -20,6 +20,7 @@
 
 void ff_init_float2half_tables(Float2HalfTables *t)
 {
+#if !HAVE_FAST_FLOAT16
     for (int i = 0; i < 256; i++) {
         int e = i - 127;
 
@@ -50,4 +51,5 @@ void ff_init_float2half_tables(Float2HalfTables *t)
             t->shifttable[i|0x100] = 13;
         }
     }
+#endif
 }
