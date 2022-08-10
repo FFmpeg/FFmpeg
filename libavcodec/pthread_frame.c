@@ -970,7 +970,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     pthread_mutex_lock(&p->parent->buffer_mutex);
 #if !FF_API_THREAD_SAFE_CALLBACKS
-    err = ff_get_buffer(avctx, f->f, flags);
+    err = ff_get_buffer(avctx, f, flags);
 #else
 FF_DISABLE_DEPRECATION_WARNINGS
     if (THREAD_SAFE_CALLBACKS(avctx)) {
@@ -1091,7 +1091,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         av_log(avctx, AV_LOG_DEBUG, "thread_release_buffer called on pic %p\n", f);
 
 #if !FF_API_THREAD_SAFE_CALLBACKS
-    av_frame_unref(f->f);
+    av_frame_unref(f);
 #else
     // when the frame buffers are not allocated, just reset it to clean state
     if (can_direct_free || !f->buf[0]) {
