@@ -2757,9 +2757,9 @@ static int vp3_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             ff_thread_report_progress(&s->last_frame, INT_MAX, 0);
         }
     }
+    ff_thread_finish_setup(avctx);
 
     memset(s->all_fragments, 0, s->fragment_count * sizeof(Vp3Fragment));
-    ff_thread_finish_setup(avctx);
 
     if (s->version < 2) {
         if ((ret = unpack_superblocks(s, &gb)) < 0) {
