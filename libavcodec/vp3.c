@@ -472,7 +472,7 @@ static void init_loop_filter(Vp3DecodeContext *s)
  */
 static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
 {
-    int superblock_starts[3] = {
+    const int superblock_starts[3] = {
         0, s->u_superblock_start, s->v_superblock_start
     };
     int bit = 0;
@@ -1182,7 +1182,7 @@ static inline int get_coeff(GetBitContext *gb, int token, int16_t *coeff)
  * be passed into the next call to this same function.
  */
 static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
-                       VLC *table, int coeff_index,
+                       const VLC *table, int coeff_index,
                        int plane,
                        int eob_run)
 {
@@ -1196,7 +1196,7 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
     int16_t *dct_tokens = s->dct_tokens[plane][coeff_index];
 
     /* local references to structure members to avoid repeated dereferences */
-    int *coded_fragment_list   = s->coded_fragment_list[plane];
+    const int *coded_fragment_list = s->coded_fragment_list[plane];
     Vp3Fragment *all_fragments = s->all_fragments;
     const VLCElem *vlc_table = table->table;
 
@@ -1407,7 +1407,7 @@ static int unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
  * @return < 0 on error
  */
 static int vp4_unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
-                       VLC *vlc_tables[64],
+                           const VLC *vlc_tables[64],
                        int plane, int eob_tracker[64], int fragment)
 {
     int token;
@@ -1537,7 +1537,7 @@ static int vp4_unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
     int dc_c_table;
     int ac_y_table;
     int ac_c_table;
-    VLC *tables[2][64];
+    const VLC *tables[2][64];
     int plane, sb_y, sb_x;
     int eob_tracker[64];
     VP4Predictor dc_pred[6][6];
@@ -1861,11 +1861,11 @@ static void apply_loop_filter(Vp3DecodeContext *s, int plane,
  * Pull DCT tokens from the 64 levels to decode and dequant the coefficients
  * for the next block in coding order
  */
-static inline int vp3_dequant(Vp3DecodeContext *s, Vp3Fragment *frag,
+static inline int vp3_dequant(Vp3DecodeContext *s, const Vp3Fragment *frag,
                               int plane, int inter, int16_t block[64])
 {
-    int16_t *dequantizer = s->qmat[frag->qpi][inter][plane];
-    uint8_t *perm = s->idct_scantable;
+    const int16_t *dequantizer = s->qmat[frag->qpi][inter][plane];
+    const uint8_t *perm = s->idct_scantable;
     int i = 0;
 
     do {
@@ -1948,7 +1948,7 @@ static void vp3_draw_horiz_band(Vp3DecodeContext *s, int y)
  * Wait for the reference frame of the current fragment.
  * The progress value is in luma pixel rows.
  */
-static void await_reference_row(Vp3DecodeContext *s, Vp3Fragment *fragment,
+static void await_reference_row(Vp3DecodeContext *s, const Vp3Fragment *fragment,
                                 int motion_y, int y)
 {
     const ThreadFrame *ref_frame;
@@ -1972,7 +1972,8 @@ static void await_reference_row(Vp3DecodeContext *s, Vp3Fragment *fragment,
  * @return non-zero if temp (edge_emu_buffer) was populated
  */
 static int vp4_mc_loop_filter(Vp3DecodeContext *s, int plane, int motion_x, int motion_y, int bx, int by,
-       uint8_t * motion_source, int stride, int src_x, int src_y, uint8_t *temp)
+                              const uint8_t *motion_source, int stride,
+                              int src_x, int src_y, uint8_t *temp)
 {
     int motion_shift = plane ? 4 : 2;
     int subpel_mask = plane ? 3 : 1;
@@ -2076,7 +2077,6 @@ static void render_slice(Vp3DecodeContext *s, int slice)
     int16_t *block = s->block;
     int motion_x = 0xdeadbeef, motion_y = 0xdeadbeef;
     int motion_halfpel_index;
-    uint8_t *motion_source;
     int plane, first_pixel;
 
     if (slice >= s->c_superblock_height)
@@ -2085,14 +2085,14 @@ static void render_slice(Vp3DecodeContext *s, int slice)
     for (plane = 0; plane < 3; plane++) {
         uint8_t *output_plane = s->current_frame.f->data[plane] +
                                 s->data_offset[plane];
-        uint8_t *last_plane = s->last_frame.f->data[plane] +
+        const uint8_t *last_plane = s->last_frame.f->data[plane] +
                               s->data_offset[plane];
-        uint8_t *golden_plane = s->golden_frame.f->data[plane] +
+        const uint8_t *golden_plane = s->golden_frame.f->data[plane] +
                                 s->data_offset[plane];
         ptrdiff_t stride = s->current_frame.f->linesize[plane];
         int plane_width  = s->width  >> (plane && s->chroma_x_shift);
         int plane_height = s->height >> (plane && s->chroma_y_shift);
-        int8_t(*motion_val)[2] = s->motion_val[!!plane];
+        const int8_t (*motion_val)[2] = s->motion_val[!!plane];
 
         int sb_x, sb_y = slice << (!plane && s->chroma_y_shift);
         int slice_height = sb_y + 1 + (!plane && s->chroma_y_shift);
@@ -2137,6 +2137,7 @@ static void render_slice(Vp3DecodeContext *s, int slice)
 
                     /* transform if this block was coded */
                     if (s->all_fragments[i].coding_method != MODE_COPY) {
+                        const uint8_t *motion_source;
                         if ((s->all_fragments[i].coding_method == MODE_USING_GOLDEN) ||
                             (s->all_fragments[i].coding_method == MODE_GOLDEN_MV))
                             motion_source = golden_plane;
@@ -2529,7 +2530,7 @@ fail:
 }
 
 #if HAVE_THREADS
-static int ref_frame(Vp3DecodeContext *s, ThreadFrame *dst, ThreadFrame *src)
+static int ref_frame(Vp3DecodeContext *s, ThreadFrame *dst, const ThreadFrame *src)
 {
     ff_thread_release_ext_buffer(s->avctx, dst);
     if (src->f->data[0])
@@ -2537,7 +2538,7 @@ static int ref_frame(Vp3DecodeContext *s, ThreadFrame *dst, ThreadFrame *src)
     return 0;
 }
 
-static int ref_frames(Vp3DecodeContext *dst, Vp3DecodeContext *src)
+static int ref_frames(Vp3DecodeContext *dst, const Vp3DecodeContext *src)
 {
     int ret;
     if ((ret = ref_frame(dst, &dst->current_frame, &src->current_frame)) < 0 ||
@@ -2549,7 +2550,8 @@ static int ref_frames(Vp3DecodeContext *dst, Vp3DecodeContext *src)
 
 static int vp3_update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
 {
-    Vp3DecodeContext *s = dst->priv_data, *s1 = src->priv_data;
+    Vp3DecodeContext *s = dst->priv_data;
+    const Vp3DecodeContext *s1 = src->priv_data;
     int qps_changed = 0, i, err;
 
     if (!s1->current_frame.f->data[0] ||
