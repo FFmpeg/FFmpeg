@@ -268,8 +268,9 @@ static int decode(MimicContext *ctx, int quality, int num_coeffs,
         const int qscale    = av_clip(10000 - quality, is_chroma ? 1000 : 2000,
                                       10000) << 2;
         const int stride    = ctx->frames[ctx->cur_index ].f->linesize[plane];
-        const uint8_t *src  = ctx->frames[ctx->prev_index].f->data[plane];
         uint8_t       *dst  = ctx->frames[ctx->cur_index ].f->data[plane];
+        /* src is unused for I frames; set to avoid UB pointer arithmetic. */
+        const uint8_t *src  = is_iframe ? dst : ctx->frames[ctx->prev_index].f->data[plane];
 
         for (y = 0; y < ctx->num_vblocks[plane]; y++) {
             for (x = 0; x < ctx->num_hblocks[plane]; x++) {
