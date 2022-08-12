@@ -283,8 +283,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (ret < 0)
         goto free_and_end;
 
-    if (HAVE_THREADS
-        && !(avci->frame_thread_encoder && (avctx->active_thread_type&FF_THREAD_FRAME))) {
+    if (HAVE_THREADS && !avci->frame_thread_encoder) {
         /* Frame-threaded decoders call FFCodec.init for their child contexts. */
         lock_avcodec(codec2);
         ret = ff_thread_init(avctx);
