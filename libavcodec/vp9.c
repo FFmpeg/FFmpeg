@@ -1566,6 +1566,8 @@ static int vp9_decode_frame(AVCodecContext *avctx, void *frame,
             av_log(avctx, AV_LOG_ERROR, "Requested reference %d not available\n", ref);
             return AVERROR_INVALIDDATA;
         }
+        ff_thread_await_progress(&s->s.refs[ref], INT_MAX, 0);
+
         if ((ret = av_frame_ref(frame, s->s.refs[ref].f)) < 0)
             return ret;
         ((AVFrame *)frame)->pts = pkt->pts;
@@ -1732,10 +1734,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
         {
             ret = decode_tiles(avctx, data, size);
-            if (ret < 0) {
-                ff_thread_report_progress(&s->s.frames[CUR_FRAME].tf, INT_MAX, 0);
-                return ret;
-            }
+            if (ret < 0)
+                goto fail;
         }
 
         // Sum all counts fields into td[0].counts for tile threading
@@ -1749,18 +1749,19 @@ FF_ENABLE_DEPRECATION_WARNINGS
             ff_thread_finish_setup(avctx);
         }
     } while (s->pass++ == 1);
-    ff_thread_report_progress(&s->s.frames[CUR_FRAME].tf, INT_MAX, 0);
 
     if (s->td->error_info < 0) {
         av_log(avctx, AV_LOG_ERROR, "Failed to decode tile data\n");
         s->td->error_info = 0;
-        return AVERROR_INVALIDDATA;
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
     }
     if (avctx->export_side_data & AV_CODEC_EXPORT_DATA_VIDEO_ENC_PARAMS) {
         ret = vp9_export_enc_params(s, &s->s.frames[CUR_FRAME]);
         if (ret < 0)
-            return ret;
+            goto fail;
     }
+    ff_thread_report_progress(&s->s.frames[CUR_FRAME].tf, INT_MAX, 0);
 
 finish:
     // ref frame setup
@@ -1779,6 +1780,9 @@ finish:
     }
 
     return pkt->size;
+fail:
+    ff_thread_report_progress(&s->s.frames[CUR_FRAME].tf, INT_MAX, 0);
+    return ret;
 }
 
 static void vp9_decode_flush(AVCodecContext *avctx)
