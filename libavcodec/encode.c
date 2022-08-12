@@ -668,6 +668,12 @@ int ff_encode_preinit(AVCodecContext *avctx)
             return AVERROR(ENOMEM);
     }
 
+    if (CONFIG_FRAME_THREAD_ENCODER) {
+        ret = ff_frame_thread_encoder_init(avctx);
+        if (ret < 0)
+            return ret;
+    }
+
     return 0;
 }
 
