@@ -21,6 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "avcodec.h"
 #include "vp9dec.h"
 
 static av_always_inline void filter_plane_cols(VP9Context *s, int col, int ss_h, int ss_v,

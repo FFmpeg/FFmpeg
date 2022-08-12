@@ -21,7 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "threadframe.h"
+#include "progressframe.h"
 #include "vp89_rac.h"
 #include "vp9data.h"
 #include "vp9dec.h"
@@ -175,7 +175,7 @@ static void find_ref_mvs(VP9TileData *td,
         VP9mvrefPair *mv = &s->s.frames[REF_FRAME_MVPAIR].mv[row * s->sb_cols * 8 + col];
 
         if (!s->s.frames[REF_FRAME_MVPAIR].uses_2pass)
-            ff_thread_await_progress(&s->s.frames[REF_FRAME_MVPAIR].tf, row >> 3, 0);
+            ff_progress_frame_await(&s->s.frames[REF_FRAME_MVPAIR].tf, row >> 3);
         if (mv->ref[0] == ref)
             RETURN_MV(mv->mv[0]);
         else if (mv->ref[1] == ref)

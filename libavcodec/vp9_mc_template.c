@@ -36,7 +36,7 @@ static void FN(inter_pred)(VP9TileData *td)
     const VP9Context *s = td->s;
     VP9Block *b = td->b;
     int row = td->row, col = td->col;
-    const ThreadFrame *tref1 = &s->s.refs[s->s.h.refidx[b->ref[0]]], *tref2;
+    const ProgressFrame *tref1 = &s->s.refs[s->s.h.refidx[b->ref[0]]], *tref2;
     const AVFrame *ref1 = tref1->f, *ref2;
     int w1 = ref1->width, h1 = ref1->height, w2, h2;
     ptrdiff_t ls_y = td->y_stride, ls_uv = td->uv_stride;

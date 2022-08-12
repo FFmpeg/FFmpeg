@@ -29,8 +29,8 @@
 #include <stdatomic.h>
 
 #include "libavutil/mem_internal.h"
+#include "libavutil/pixfmt.h"
 #include "libavutil/thread.h"
-#include "libavutil/internal.h"
 
 #include "get_bits.h"
 #include "videodsp.h"
@@ -120,7 +120,7 @@ typedef struct VP9Context {
     int w, h;
     enum AVPixelFormat pix_fmt, last_fmt, gf_fmt;
     unsigned sb_cols, sb_rows, rows, cols;
-    ThreadFrame next_refs[8];
+    ProgressFrame next_refs[8];
 
     struct {
         uint8_t lim_lut[64];
@@ -245,7 +245,7 @@ void ff_vp9_decode_block(VP9TileData *td, int row, int col,
                          VP9Filter *lflvl, ptrdiff_t yoff, ptrdiff_t uvoff,
                          enum BlockLevel bl, enum BlockPartition bp);
 
-void ff_vp9_loopfilter_sb(AVCodecContext *avctx, VP9Filter *lflvl,
+void ff_vp9_loopfilter_sb(struct AVCodecContext *avctx, VP9Filter *lflvl,
                           int row, int col, ptrdiff_t yoff, ptrdiff_t uvoff);
 
 void ff_vp9_intra_recon_8bpp(VP9TileData *td,
