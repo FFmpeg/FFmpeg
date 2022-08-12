@@ -56,6 +56,7 @@ OBJS = ac3_parser.o                                                     \
        qsv_api.o                                                        \
        raw.o                                                            \
        refstruct.o                                                      \
+       threadprogress.o                                                 \
        utils.o                                                          \
        version.o                                                        \
        vlc.o                                                            \

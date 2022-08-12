@@ -49,8 +49,10 @@
 #include "hwconfig.h"
 #include "internal.h"
 #include "packet_internal.h"
+#include "progressframe.h"
 #include "refstruct.h"
 #include "thread.h"
+#include "threadprogress.h"
 
 typedef struct DecodeContext {
     AVCodecInternal avci;
@@ -1668,6 +1670,116 @@ int ff_reget_buffer(AVCodecContext *avctx, AVFrame *frame, int flags)
     return ret;
 }
 
+typedef struct ProgressInternal {
+    ThreadProgress progress;
+    struct AVFrame *f;
+} ProgressInternal;
+
+static void check_progress_consistency(const ProgressFrame *f)
+{
+    av_assert1(!!f->f == !!f->progress);
+    av_assert1(!f->progress || f->progress->f == f->f);
+}
+
+static int progress_frame_get(AVCodecContext *avctx, ProgressFrame *f)
+{
+    FFRefStructPool *pool = avctx->internal->progress_frame_pool;
+
+    av_assert1(!f->f && !f->progress);
+
+    f->progress = ff_refstruct_pool_get(pool);
+    if (!f->progress)
+        return AVERROR(ENOMEM);
+
+    f->f = f->progress->f;
+    return 0;
+}
+
+int ff_progress_frame_get_buffer(AVCodecContext *avctx, ProgressFrame *f, int flags)
+{
+    int ret;
+
+    ret = progress_frame_get(avctx, f);
+    if (ret < 0)
+        return ret;
+
+    ret = ff_thread_get_buffer(avctx, f->progress->f, flags);
+    if (ret < 0) {
+        f->f = NULL;
+        ff_refstruct_unref(&f->progress);
+        return ret;
+    }
+    return 0;
+}
+
+void ff_progress_frame_ref(ProgressFrame *dst, const ProgressFrame *src)
+{
+    av_assert1(src->progress && src->f && src->f == src->progress->f);
+    av_assert1(!dst->f && !dst->progress);
+    dst->f = src->f;
+    dst->progress = ff_refstruct_ref(src->progress);
+}
+
+void ff_progress_frame_unref(ProgressFrame *f)
+{
+    check_progress_consistency(f);
+    f->f = NULL;
+    ff_refstruct_unref(&f->progress);
+}
+
+void ff_progress_frame_replace(ProgressFrame *dst, const ProgressFrame *src)
+{
+    if (dst == src)
+        return;
+    ff_progress_frame_unref(dst);
+    check_progress_consistency(src);
+    if (src->f)
+        ff_progress_frame_ref(dst, src);
+}
+
+void ff_progress_frame_report(ProgressFrame *f, int n)
+{
+    ff_thread_progress_report(&f->progress->progress, n);
+}
+
+void ff_progress_frame_await(const ProgressFrame *f, int n)
+{
+    ff_thread_progress_await(&f->progress->progress, n);
+}
+
+static av_cold int progress_frame_pool_init_cb(FFRefStructOpaque opaque, void *obj)
+{
+    const AVCodecContext *avctx = opaque.nc;
+    ProgressInternal *progress = obj;
+    int ret;
+
+    ret = ff_thread_progress_init(&progress->progress, avctx->active_thread_type & FF_THREAD_FRAME);
+    if (ret < 0)
+        return ret;
+
+    progress->f = av_frame_alloc();
+    if (!progress->f)
+        return AVERROR(ENOMEM);
+
+    return 0;
+}
+
+static void progress_frame_pool_reset_cb(FFRefStructOpaque unused, void *obj)
+{
+    ProgressInternal *progress = obj;
+
+    ff_thread_progress_reset(&progress->progress);
+    av_frame_unref(progress->f);
+}
+
+static av_cold void progress_frame_pool_free_entry_cb(FFRefStructOpaque opaque, void *obj)
+{
+    ProgressInternal *progress = obj;
+
+    ff_thread_progress_destroy(&progress->progress);
+    av_frame_free(&progress->f);
+}
+
 int ff_decode_preinit(AVCodecContext *avctx)
 {
     AVCodecInternal *avci = avctx->internal;
@@ -1766,6 +1878,16 @@ int ff_decode_preinit(AVCodecContext *avctx)
     if (!avci->in_pkt || !avci->last_pkt_props)
         return AVERROR(ENOMEM);
 
+    if (ffcodec(avctx->codec)->caps_internal & FF_CODEC_CAP_USES_PROGRESSFRAMES) {
+        avci->progress_frame_pool =
+            ff_refstruct_pool_alloc_ext(sizeof(ProgressInternal),
+                                        FF_REFSTRUCT_POOL_FLAG_FREE_ON_INIT_ERROR,
+                                        avctx, progress_frame_pool_init_cb,
+                                        progress_frame_pool_reset_cb,
+                                        progress_frame_pool_free_entry_cb, NULL);
+        if (!avci->progress_frame_pool)
+            return AVERROR(ENOMEM);
+    }
     ret = decode_bsfs_init(avctx);
     if (ret < 0)
         return ret;

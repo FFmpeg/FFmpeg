@@ -781,6 +781,7 @@ static av_cold int init_thread(PerThreadContext *p, int *threads_to_free,
     if (!copy->internal)
         return AVERROR(ENOMEM);
     copy->internal->thread_ctx = p;
+    copy->internal->progress_frame_pool = avctx->internal->progress_frame_pool;
 
     copy->delay = avctx->delay;
 

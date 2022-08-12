@@ -141,7 +141,8 @@ int main(void){
                     ret = 1;
                 }
             }
-            if (codec2->caps_internal & (FF_CODEC_CAP_ALLOCATE_PROGRESS |
+            if (codec2->caps_internal & (FF_CODEC_CAP_USES_PROGRESSFRAMES |
+                                         FF_CODEC_CAP_ALLOCATE_PROGRESS |
                                         FF_CODEC_CAP_SETS_PKT_DTS |
                                         FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM |
                                         FF_CODEC_CAP_EXPORTS_CROPPING |
