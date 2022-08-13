@@ -950,9 +950,11 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *picture,
     } else if (frame_4cc == AV_RL32("snd_")) {
         av_log(avctx, AV_LOG_ERROR, "ignoring snd_ chunk length:%d\n",
                buf_size);
+        return AVERROR_INVALIDDATA;
     } else {
         av_log(avctx, AV_LOG_ERROR, "ignoring unknown chunk length:%d\n",
                buf_size);
+        return AVERROR_INVALIDDATA;
     }
 
     picture->key_frame = picture->pict_type == AV_PICTURE_TYPE_I;
