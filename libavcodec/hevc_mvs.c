@@ -23,7 +23,7 @@
 
 #include "hevc.h"
 #include "hevcdec.h"
-#include "threadframe.h"
+#include "progressframe.h"
 
 static const uint8_t l0_l1_cand_idx[12][2] = {
     { 0, 1, },
@@ -248,7 +248,7 @@ static int temporal_luma_motion_vector(const HEVCContext *s, int x0, int y0,
         x                 &= ~15;
         y                 &= ~15;
         if (s->threads_type == FF_THREAD_FRAME)
-            ff_thread_await_progress(&ref->tf, y, 0);
+            ff_progress_frame_await(&ref->tf, y);
         x_pu               = x >> s->ps.sps->log2_min_pu_size;
         y_pu               = y >> s->ps.sps->log2_min_pu_size;
         temp_col           = TAB_MVF(x_pu, y_pu);
@@ -262,7 +262,7 @@ static int temporal_luma_motion_vector(const HEVCContext *s, int x0, int y0,
         x                 &= ~15;
         y                 &= ~15;
         if (s->threads_type == FF_THREAD_FRAME)
-            ff_thread_await_progress(&ref->tf, y, 0);
+            ff_progress_frame_await(&ref->tf, y);
         x_pu               = x >> s->ps.sps->log2_min_pu_size;
         y_pu               = y >> s->ps.sps->log2_min_pu_size;
         temp_col           = TAB_MVF(x_pu, y_pu);

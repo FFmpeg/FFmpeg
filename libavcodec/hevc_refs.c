@@ -26,18 +26,15 @@
 #include "decode.h"
 #include "hevc.h"
 #include "hevcdec.h"
+#include "progressframe.h"
 #include "refstruct.h"
-#include "threadframe.h"
 
 void ff_hevc_unref_frame(HEVCFrame *frame, int flags)
 {
-    /* frame->frame can be NULL if context init failed */
-    if (!frame->frame || !frame->frame->buf[0])
-        return;
-
     frame->flags &= ~flags;
     if (!frame->flags) {
-        ff_thread_release_ext_buffer(&frame->tf);
+        ff_progress_frame_unref(&frame->tf);
+        frame->frame = NULL;
         av_frame_unref(frame->frame_grain);
         frame->needs_fg = 0;
 
@@ -83,13 +80,14 @@ static HEVCFrame *alloc_frame(HEVCContext *s)
     int i, j, ret;
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         HEVCFrame *frame = &s->DPB[i];
-        if (frame->frame->buf[0])
+        if (frame->frame)
             continue;
 
-        ret = ff_thread_get_ext_buffer(s->avctx, &frame->tf,
-                                       AV_GET_BUFFER_FLAG_REF);
+        ret = ff_progress_frame_get_buffer(s->avctx, &frame->tf,
+                                           AV_GET_BUFFER_FLAG_REF);
         if (ret < 0)
             return NULL;
+        frame->frame = frame->tf.f;
 
         frame->rpl = ff_refstruct_allocz(s->pkt.nb_nals * sizeof(*frame->rpl));
         if (!frame->rpl)
@@ -135,7 +133,7 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         HEVCFrame *frame = &s->DPB[i];
 
-        if (frame->frame->buf[0] && frame->sequence == s->seq_decode &&
+        if (frame->frame && frame->sequence == s->seq_decode &&
             frame->poc == poc) {
             av_log(s->avctx, AV_LOG_ERROR, "Duplicate POC in a sequence: %d.\n",
                    poc);
@@ -394,7 +392,7 @@ static HEVCFrame *find_ref_idx(HEVCContext *s, int poc, uint8_t use_msb)
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         HEVCFrame *ref = &s->DPB[i];
-        if (ref->frame->buf[0] && ref->sequence == s->seq_decode) {
+        if (ref->frame && ref->sequence == s->seq_decode) {
             if ((ref->poc & mask) == poc && (use_msb || ref->poc != s->poc))
                 return ref;
         }
@@ -441,7 +439,7 @@ static HEVCFrame *generate_missing_ref(HEVCContext *s, int poc)
     frame->flags    = 0;
 
     if (s->threads_type == FF_THREAD_FRAME)
-        ff_thread_report_progress(&frame->tf, INT_MAX, 0);
+        ff_progress_frame_report(&frame->tf, INT_MAX);
 
     return frame;
 }
