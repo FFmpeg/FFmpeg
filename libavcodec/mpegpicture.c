@@ -311,8 +311,6 @@ fail:
  */
 void ff_mpeg_unref_picture(AVCodecContext *avctx, Picture *pic)
 {
-    int off = offsetof(Picture, hwaccel_priv_buf) + sizeof(pic->hwaccel_priv_buf);
-
     pic->tf.f = pic->f;
     /* WM Image / Screen codecs allocate internal buffers with different
      * dimensions / colorspaces; ignore user-defined callbacks for these. */
@@ -328,7 +326,12 @@ void ff_mpeg_unref_picture(AVCodecContext *avctx, Picture *pic)
     if (pic->needs_realloc)
         free_picture_tables(pic);
 
-    memset((uint8_t*)pic + off, 0, sizeof(*pic) - off);
+    pic->hwaccel_picture_private = NULL;
+    pic->field_picture = 0;
+    pic->b_frame_score = 0;
+    pic->needs_realloc = 0;
+    pic->reference     = 0;
+    pic->shared        = 0;
 }
 
 int ff_update_picture_tables(Picture *dst, const Picture *src)
