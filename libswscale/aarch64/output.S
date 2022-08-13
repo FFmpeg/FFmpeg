@@ -34,16 +34,15 @@ function ff_yuv2planeX_8_neon, export=1
         mov                 x9, x2                          // srcp    = src
         mov                 x10, x0                         // filterp = filter
 3:      ldp                 x11, x12, [x9], #16             // get 2 pointers: src[j] and src[j+1]
+        ldr                 s7, [x10], #4                   // read 2x16-bit coeff X and Y at filter[j] and filter[j+1]
         add                 x11, x11, x7, lsl #1            // &src[j  ][i]
         add                 x12, x12, x7, lsl #1            // &src[j+1][i]
         ld1                 {v5.8H}, [x11]                  // read 8x16-bit @ src[j  ][i + {0..7}]: A,B,C,D,E,F,G,H
         ld1                 {v6.8H}, [x12]                  // read 8x16-bit @ src[j+1][i + {0..7}]: I,J,K,L,M,N,O,P
-        ld1r                {v7.8H}, [x10], #2              // read 1x16-bit coeff X at filter[j  ] and duplicate across lanes
-        ld1r                {v16.8H}, [x10], #2             // read 1x16-bit coeff Y at filter[j+1] and duplicate across lanes
-        smlal               v3.4S, v5.4H, v7.4H             // val0 += {A,B,C,D} * X
-        smlal2              v4.4S, v5.8H, v7.8H             // val1 += {E,F,G,H} * X
-        smlal               v3.4S, v6.4H, v16.4H            // val0 += {I,J,K,L} * Y
-        smlal2              v4.4S, v6.8H, v16.8H            // val1 += {M,N,O,P} * Y
+        smlal               v3.4S, v5.4H, v7.H[0]           // val0 += {A,B,C,D} * X
+        smlal2              v4.4S, v5.8H, v7.H[0]           // val1 += {E,F,G,H} * X
+        smlal               v3.4S, v6.4H, v7.H[1]           // val0 += {I,J,K,L} * Y
+        smlal2              v4.4S, v6.8H, v7.H[1]           // val1 += {M,N,O,P} * Y
         subs                w8, w8, #2                      // tmpfilterSize -= 2
         b.gt                3b                              // loop until filterSize consumed
 
