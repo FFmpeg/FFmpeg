@@ -40,6 +40,12 @@ ALL_SCALE_FUNCS(neon);
 void ff_yuv2planeX_8_neon(const int16_t *filter, int filterSize,
                           const int16_t **src, uint8_t *dest, int dstW,
                           const uint8_t *dither, int offset);
+void ff_yuv2plane1_8_neon(
+        const int16_t *src,
+        uint8_t *dest,
+        int dstW,
+        const uint8_t *dither,
+        int offset);
 
 #define ASSIGN_SCALE_FUNC2(hscalefn, filtersize, opt) do {              \
     if (c->srcBpc == 8 && c->dstBpc <= 14) {                            \
@@ -57,6 +63,12 @@ void ff_yuv2planeX_8_neon(const int16_t *filter, int filterSize,
         ASSIGN_SCALE_FUNC2(hscalefn, X4, opt);                          \
 } while (0)
 
+#define ASSIGN_VSCALE_FUNC(vscalefn, opt)                               \
+    switch (c->dstBpc) {                                                \
+    case 8: vscalefn = ff_yuv2plane1_8_  ## opt;  break;                \
+    default: break;                                                     \
+    }
+
 av_cold void ff_sws_init_swscale_aarch64(SwsContext *c)
 {
     int cpu_flags = av_get_cpu_flags();
@@ -64,6 +76,7 @@ av_cold void ff_sws_init_swscale_aarch64(SwsContext *c)
     if (have_neon(cpu_flags)) {
         ASSIGN_SCALE_FUNC(c->hyScale, c->hLumFilterSize, neon);
         ASSIGN_SCALE_FUNC(c->hcScale, c->hChrFilterSize, neon);
+        ASSIGN_VSCALE_FUNC(c->yuv2plane1, neon);
         if (c->dstBpc == 8) {
             c->yuv2planeX = ff_yuv2planeX_8_neon;
         }
