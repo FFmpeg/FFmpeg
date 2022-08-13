@@ -534,7 +534,8 @@ switch(c->dstBpc){ \
         ASSIGN_SSE_SCALE_FUNC(c->hcScale, c->hChrFilterSize, sse2, sse2);
         ASSIGN_VSCALEX_FUNC(c->yuv2planeX, sse2, ,
                             HAVE_ALIGNED_STACK || ARCH_X86_64);
-        ASSIGN_VSCALE_FUNC(c->yuv2plane1, sse2);
+        if (!(c->flags & SWS_ACCURATE_RND))
+            ASSIGN_VSCALE_FUNC(c->yuv2plane1, sse2);
 
         switch (c->srcFormat) {
         case AV_PIX_FMT_YA8:
@@ -583,14 +584,15 @@ switch(c->dstBpc){ \
         ASSIGN_VSCALEX_FUNC(c->yuv2planeX, sse4,
                             if (!isBE(c->dstFormat)) c->yuv2planeX = ff_yuv2planeX_16_sse4,
                             HAVE_ALIGNED_STACK || ARCH_X86_64);
-        if (c->dstBpc == 16 && !isBE(c->dstFormat))
+        if (c->dstBpc == 16 && !isBE(c->dstFormat) && !(c->flags & SWS_ACCURATE_RND))
             c->yuv2plane1 = ff_yuv2plane1_16_sse4;
     }
 
     if (EXTERNAL_AVX(cpu_flags)) {
         ASSIGN_VSCALEX_FUNC(c->yuv2planeX, avx, ,
                             HAVE_ALIGNED_STACK || ARCH_X86_64);
-        ASSIGN_VSCALE_FUNC(c->yuv2plane1, avx);
+        if (!(c->flags & SWS_ACCURATE_RND))
+            ASSIGN_VSCALE_FUNC(c->yuv2plane1, avx);
 
         switch (c->srcFormat) {
         case AV_PIX_FMT_YUYV422:
