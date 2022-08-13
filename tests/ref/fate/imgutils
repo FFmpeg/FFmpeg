@@ -250,3 +250,11 @@ vuya            planes: 1, linesizes: 256   0   0   0, plane_sizes: 12288     0 
 rgbaf16be       planes: 1, linesizes: 512   0   0   0, plane_sizes: 24576     0     0     0, plane_offsets:     0     0     0, total_size: 24576
 rgbaf16le       planes: 1, linesizes: 512   0   0   0, plane_sizes: 24576     0     0     0, plane_offsets:     0     0     0, total_size: 24576
 vuyx            planes: 1, linesizes: 256   0   0   0, plane_sizes: 12288     0     0     0, plane_offsets:     0     0     0, total_size: 12288
+p012le          planes: 2, linesizes: 128 128   0   0, plane_sizes:  6144  3072     0     0, plane_offsets:  6144     0     0, total_size: 9216
+p012be          planes: 2, linesizes: 128 128   0   0, plane_sizes:  6144  3072     0     0, plane_offsets:  6144     0     0, total_size: 9216
+y212be          planes: 1, linesizes: 256   0   0   0, plane_sizes: 12288     0     0     0, plane_offsets:     0     0     0, total_size: 12288
+y212le          planes: 1, linesizes: 256   0   0   0, plane_sizes: 12288     0     0     0, plane_offsets:     0     0     0, total_size: 12288
+xv30be          planes: 1, linesizes: 256   0   0   0, plane_sizes: 12288     0     0     0, plane_offsets:     0     0     0, total_size: 12288
+xv30le          planes: 1, linesizes: 256   0   0   0, plane_sizes: 12288     0     0     0, plane_offsets:     0     0     0, total_size: 12288
+xv36be          planes: 1, linesizes: 512   0   0   0, plane_sizes: 24576     0     0     0, plane_offsets:     0     0     0, total_size: 24576
+xv36le          planes: 1, linesizes: 512   0   0   0, plane_sizes: 24576     0     0     0, plane_offsets:     0     0     0, total_size: 24576

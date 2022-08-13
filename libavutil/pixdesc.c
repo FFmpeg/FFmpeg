@@ -2147,6 +2147,30 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         },
         .flags = AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_BE,
     },
+    [AV_PIX_FMT_P012LE] = {
+        .name = "p012le",
+        .nb_components = 3,
+        .log2_chroma_w = 1,
+        .log2_chroma_h = 1,
+        .comp = {
+            { 0, 2, 0, 4, 12 },        /* Y */
+            { 1, 4, 0, 4, 12 },        /* U */
+            { 1, 4, 2, 4, 12 },        /* V */
+        },
+        .flags = AV_PIX_FMT_FLAG_PLANAR,
+    },
+    [AV_PIX_FMT_P012BE] = {
+        .name = "p012be",
+        .nb_components = 3,
+        .log2_chroma_w = 1,
+        .log2_chroma_h = 1,
+        .comp = {
+            { 0, 2, 0, 4, 12 },        /* Y */
+            { 1, 4, 0, 4, 12 },        /* U */
+            { 1, 4, 2, 4, 12 },        /* V */
+        },
+        .flags = AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_BE,
+    },
     [AV_PIX_FMT_P016LE] = {
         .name = "p016le",
         .nb_components = 3,
@@ -2543,6 +2567,75 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         .flags = AV_PIX_FMT_FLAG_RGB | AV_PIX_FMT_FLAG_ALPHA |
                  AV_PIX_FMT_FLAG_FLOAT,
     },
+    [AV_PIX_FMT_Y212LE] = {
+        .name = "y212le",
+        .nb_components = 3,
+        .log2_chroma_w = 1,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 4, 0, 4, 12 },        /* Y */
+            { 0, 8, 2, 4, 12 },        /* U */
+            { 0, 8, 6, 4, 12 },        /* V */
+        },
+    },
+    [AV_PIX_FMT_Y212BE] = {
+        .name = "y212be",
+        .nb_components = 3,
+        .log2_chroma_w = 1,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 4, 0, 4, 12 },        /* Y */
+            { 0, 8, 2, 4, 12 },        /* U */
+            { 0, 8, 6, 4, 12 },        /* V */
+        },
+        .flags = AV_PIX_FMT_FLAG_BE,
+    },
+    [AV_PIX_FMT_XV30LE] = {
+        .name = "xv30le",
+        .nb_components= 3,
+        .log2_chroma_w= 0,
+        .log2_chroma_h= 0,
+        .comp = {
+            { 0, 4, 1, 2, 10 },       /* Y */
+            { 0, 4, 0, 0, 10 },       /* U */
+            { 0, 4, 2, 4, 10 },       /* V */
+        },
+    },
+    [AV_PIX_FMT_XV30BE] = {
+        .name = "xv30be",
+        .nb_components= 3,
+        .log2_chroma_w= 0,
+        .log2_chroma_h= 0,
+        .comp = {
+            { 0, 32, 10, 0, 10 },       /* Y */
+            { 0, 32,  0, 0, 10 },       /* U */
+            { 0, 32, 20, 0, 10 },       /* V */
+        },
+        .flags = AV_PIX_FMT_FLAG_BE | AV_PIX_FMT_FLAG_BITSTREAM,
+    },
+    [AV_PIX_FMT_XV36LE] = {
+        .name = "xv36le",
+        .nb_components= 3,
+        .log2_chroma_w= 0,
+        .log2_chroma_h= 0,
+        .comp = {
+            { 0, 8, 2, 4, 12 },       /* Y */
+            { 0, 8, 0, 4, 12 },       /* U */
+            { 0, 8, 4, 4, 12 },       /* V */
+        },
+    },
+    [AV_PIX_FMT_XV36BE] = {
+        .name = "xv36be",
+        .nb_components= 3,
+        .log2_chroma_w= 0,
+        .log2_chroma_h= 0,
+        .comp = {
+            { 0, 8, 2, 4, 12 },       /* Y */
+            { 0, 8, 0, 4, 12 },       /* U */
+            { 0, 8, 4, 4, 12 },       /* V */
+        },
+        .flags = AV_PIX_FMT_FLAG_BE,
+    },
 };
 
 static const char * const color_range_names[] = {
@@ -2778,7 +2871,7 @@ void ff_check_pixfmt_descriptors(void){
 
         if (!d->name && !d->nb_components && !d->log2_chroma_w && !d->log2_chroma_h && !d->flags)
             continue;
-//         av_log(NULL, AV_LOG_DEBUG, "Checking: %s\n", d->name);
+        av_log(NULL, AV_LOG_INFO, "Checking: %s\n", d->name);
         av_assert0(d->log2_chroma_w <= 3);
         av_assert0(d->log2_chroma_h <= 3);
         av_assert0(d->nb_components <= 4);
