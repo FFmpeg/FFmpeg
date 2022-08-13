@@ -323,6 +323,12 @@ typedef struct InputStream {
 #define DECODING_FOR_FILTER 2
     int processing_needed;   /* non zero if the packets must be processed */
 
+    /**
+     * Codec parameters - to be used by the decoding/streamcopy code.
+     * st->codecpar should not be accessed, because it may be modified
+     * concurrently by the demuxing thread.
+     */
+    AVCodecParameters *par;
     AVCodecContext *dec_ctx;
     const AVCodec *dec;
     AVFrame *decoded_frame;

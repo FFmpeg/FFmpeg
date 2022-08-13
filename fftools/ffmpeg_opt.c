@@ -1090,7 +1090,11 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
             abort();
         }
 
-        ret = avcodec_parameters_from_context(par, ist->dec_ctx);
+        ist->par = avcodec_parameters_alloc();
+        if (!ist->par)
+            exit_program(1);
+
+        ret = avcodec_parameters_from_context(ist->par, ist->dec_ctx);
         if (ret < 0) {
             av_log(NULL, AV_LOG_ERROR, "Error initializing the decoder context.\n");
             exit_program(1);

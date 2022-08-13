@@ -608,6 +608,7 @@ static void ffmpeg_cleanup(int ret)
         av_freep(&ist->dts_buffer);
 
         avcodec_free_context(&ist->dec_ctx);
+        avcodec_parameters_free(&ist->par);
 
         av_freep(&input_streams[i]);
     }
@@ -1492,7 +1493,7 @@ static void print_final_stats(int64_t total_size)
 
         for (j = 0; j < f->nb_streams; j++) {
             InputStream *ist = input_streams[f->ist_index + j];
-            enum AVMediaType type = ist->st->codecpar->codec_type;
+            enum AVMediaType type = ist->par->codec_type;
 
             total_size    += ist->data_size;
             total_packets += ist->nb_packets;
@@ -1809,7 +1810,7 @@ static void flush_encoders(void)
                 for (x = 0; x < fg->nb_inputs; x++) {
                     InputFilter *ifilter = fg->inputs[x];
                     if (ifilter->format < 0 &&
-                        ifilter_parameters_from_codecpar(ifilter, ifilter->ist->st->codecpar) < 0) {
+                        ifilter_parameters_from_codecpar(ifilter, ifilter->ist->par) < 0) {
                         av_log(NULL, AV_LOG_ERROR, "Error copying paramerets from input stream\n");
                         exit_program(1);
                     }
@@ -1912,11 +1913,11 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
     if (pkt->dts == AV_NOPTS_VALUE) {
         opkt->dts = av_rescale_q(ist->dts, AV_TIME_BASE_Q, ost->mux_timebase);
     } else if (ost->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-        int duration = av_get_audio_frame_duration2(ist->st->codecpar, pkt->size);
+        int duration = av_get_audio_frame_duration2(ist->par, pkt->size);
         if(!duration)
-            duration = ist->st->codecpar->frame_size;
+            duration = ist->par->frame_size;
         opkt->dts = av_rescale_delta(ist->st->time_base, pkt->dts,
-                                    (AVRational){1, ist->st->codecpar->sample_rate}, duration,
+                                    (AVRational){1, ist->par->sample_rate}, duration,
                                     &ist->filter_in_rescale_delta_last, ost->mux_timebase);
         /* dts will be set immediately afterwards to what pts is now */
         opkt->pts = opkt->dts - ost_tb_start_time;
@@ -1976,7 +1977,7 @@ static int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame, int keep_ref
     /* determine if the parameters for this input changed */
     need_reinit = ifilter->format != frame->format;
 
-    switch (ifilter->ist->st->codecpar->codec_type) {
+    switch (ifilter->ist->par->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
         need_reinit |= ifilter->sample_rate    != frame->sample_rate ||
                        av_channel_layout_compare(&ifilter->ch_layout, &frame->ch_layout);
@@ -2056,7 +2057,7 @@ static int ifilter_send_eof(InputFilter *ifilter, int64_t pts)
     } else {
         // the filtergraph was never configured
         if (ifilter->format < 0) {
-            ret = ifilter_parameters_from_codecpar(ifilter, ifilter->ist->st->codecpar);
+            ret = ifilter_parameters_from_codecpar(ifilter, ifilter->ist->par);
             if (ret < 0)
                 return ret;
         }
@@ -2212,9 +2213,9 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output, int64_
 
     // The following line may be required in some cases where there is no parser
     // or the parser does not has_b_frames correctly
-    if (ist->st->codecpar->video_delay < ist->dec_ctx->has_b_frames) {
+    if (ist->par->video_delay < ist->dec_ctx->has_b_frames) {
         if (ist->dec_ctx->codec_id == AV_CODEC_ID_H264) {
-            ist->st->codecpar->video_delay = ist->dec_ctx->has_b_frames;
+            ist->par->video_delay = ist->dec_ctx->has_b_frames;
         } else
             av_log(ist->dec_ctx, AV_LOG_WARNING,
                    "video_delay is larger in decoder than demuxer %d > %d.\n"
@@ -2222,7 +2223,7 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output, int64_
                    "of this file to https://streams.videolan.org/upload/ "
                    "and contact the ffmpeg-devel mailing list. (ffmpeg-devel@ffmpeg.org)\n",
                    ist->dec_ctx->has_b_frames,
-                   ist->st->codecpar->video_delay);
+                   ist->par->video_delay);
     }
 
     if (ret != AVERROR_EOF)
@@ -2391,7 +2392,7 @@ static int send_filter_eof(InputStream *ist)
 /* pkt = NULL means EOF (needed to flush decoder buffers) */
 static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eof)
 {
-    const AVCodecParameters *par = ist->st->codecpar;
+    const AVCodecParameters *par = ist->par;
     int ret = 0, i;
     int repeating = 0;
     int eof_reached = 0;
@@ -2751,7 +2752,7 @@ static int init_output_stream_streamcopy(OutputStream *ost)
     if (!codec_ctx)
         return AVERROR(ENOMEM);
 
-    ret = avcodec_parameters_to_context(codec_ctx, ist->st->codecpar);
+    ret = avcodec_parameters_to_context(codec_ctx, ist->par);
     if (ret >= 0)
         ret = av_opt_set_dict(codec_ctx, &ost->encoder_opts);
     if (ret < 0) {
@@ -3120,8 +3121,8 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
     case AVMEDIA_TYPE_SUBTITLE:
         enc_ctx->time_base = AV_TIME_BASE_Q;
         if (!enc_ctx->width) {
-            enc_ctx->width     = input_streams[ost->source_index]->st->codecpar->width;
-            enc_ctx->height    = input_streams[ost->source_index]->st->codecpar->height;
+            enc_ctx->width     = input_streams[ost->source_index]->par->width;
+            enc_ctx->height    = input_streams[ost->source_index]->par->height;
         }
         break;
     case AVMEDIA_TYPE_DATA:
@@ -3678,7 +3679,7 @@ static void decode_flush(InputFile *ifile)
 
         if (ist->decoding_needed) {
             /* report last frame duration to the demuxer thread */
-            if (ist->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+            if (ist->par->codec_type == AVMEDIA_TYPE_AUDIO) {
                 LastFrameDuration dur;
 
                 dur.stream_idx = i;
@@ -3721,7 +3722,7 @@ static void ts_discontinuity_detect(InputFile *ifile, InputStream *ist,
                        "timestamp discontinuity for stream #%d:%d "
                        "(id=%d, type=%s): %"PRId64", new offset= %"PRId64"\n",
                        ist->file_index, ist->st->index, ist->st->id,
-                       av_get_media_type_string(ist->st->codecpar->codec_type),
+                       av_get_media_type_string(ist->par->codec_type),
                        delta, ifile->ts_offset_discont);
                 pkt->dts -= av_rescale_q(delta, AV_TIME_BASE_Q, ist->st->time_base);
                 if (pkt->pts != AV_NOPTS_VALUE)
@@ -3772,8 +3773,8 @@ static void ts_discontinuity_process(InputFile *ifile, InputStream *ist,
         pkt->pts += offset;
 
     // detect timestamp discontinuities for audio/video
-    if ((ist->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO ||
-         ist->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) &&
+    if ((ist->par->codec_type == AVMEDIA_TYPE_VIDEO ||
+         ist->par->codec_type == AVMEDIA_TYPE_AUDIO) &&
         pkt->dts != AV_NOPTS_VALUE)
         ts_discontinuity_detect(ifile, ist, pkt);
 }
@@ -3872,7 +3873,7 @@ static int process_input(int file_index)
     if (debug_ts) {
         av_log(NULL, AV_LOG_INFO, "demuxer+ffmpeg -> ist_index:%d type:%s pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s duration:%s duration_time:%s off:%s off_time:%s\n",
                ifile->ist_index + pkt->stream_index,
-               av_get_media_type_string(ist->st->codecpar->codec_type),
+               av_get_media_type_string(ist->par->codec_type),
                av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &ist->st->time_base),
                av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &ist->st->time_base),
                av_ts2str(pkt->duration), av_ts2timestr(pkt->duration, &ist->st->time_base),
