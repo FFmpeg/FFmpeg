@@ -986,7 +986,7 @@ int ff_thread_get_ext_buffer(AVCodecContext *avctx, ThreadFrame *f, int flags)
     /* Hint: It is possible for this function to be called with codecs
      * that don't support frame threading at all, namely in case
      * a frame-threaded decoder shares code with codecs that are not.
-     * This currently affects non-MPEG-4 mpegvideo codecs and and VP7.
+     * This currently affects non-MPEG-4 mpegvideo codecs.
      * The following check will always be true for them. */
     if (!(avctx->active_thread_type & FF_THREAD_FRAME))
         return ff_get_buffer(avctx, f->f, flags);
