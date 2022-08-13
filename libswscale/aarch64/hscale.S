@@ -91,6 +91,113 @@ function ff_hscale8to15_X8_neon, export=1
         ret
 endfunc
 
+function ff_hscale8to15_X4_neon, export=1
+// x0  SwsContext *c (not used)
+// x1  int16_t *dst
+// w2  int dstW
+// x3  const uint8_t *src
+// x4  const int16_t *filter
+// x5  const int32_t *filterPos
+// w6  int filterSize
+
+// This function for filter sizes that are 4 mod 8. In other words, anything that's 0 mod 4 but not
+// 0 mod 8. It also assumes that dstW is 0 mod 4.
+
+        lsl                 w7, w6, #1                  // w7 = filterSize * 2
+1:
+        ldp                 w8, w9,  [x5]               // filterPos[idx + 0], [idx + 1]
+        ldp                 w10, w11, [x5, #8]          // filterPos[idx + 2], [idx + 3]
+
+        movi                v16.2d, #0                  // initialize accumulator for idx + 0
+        movi                v17.2d, #0                  // initialize accumulator for idx + 1
+        movi                v18.2d, #0                  // initialize accumulator for idx + 2
+        movi                v19.2d, #0                  // initialize accumulator for idx + 3
+
+        mov                 x12, x4                     // filter pointer for idx + 0
+        add                 x13, x4, x7                 // filter pointer for idx + 1
+        add                 x8, x3, w8, uxtw            // srcp + filterPos[idx + 0]
+        add                 x9, x3, w9, uxtw            // srcp + filterPos[idx + 1]
+
+        add                 x14, x13, x7                // filter pointer for idx + 2
+        add                 x10, x3, w10, uxtw          // srcp + filterPos[idx + 2]
+        add                 x11, x3, w11, uxtw          // srcp + filterPos[idx + 3]
+
+        mov                 w0, w6                      // copy filterSize to a temp register, w0
+        add                 x5, x5, #16                 // advance the filterPos pointer
+        add                 x15, x14, x7                // filter pointer for idx + 3
+        mov                 x16, xzr                    // temp register for offsetting filter pointers
+
+2:
+        // This section loops over 8-wide chunks of filter size
+        ldr                 d4, [x8], #8                // load 8 bytes from srcp for idx + 0
+        ldr                 q0, [x12, x16]              // load 8 values, 16 bytes from filter for idx + 0
+
+        ldr                 d5, [x9], #8                // load 8 bytes from srcp for idx + 1
+        ldr                 q1, [x13, x16]              // load 8 values, 16 bytes from filter for idx + 1
+
+        uxtl                v4.8h, v4.8b                // unsigned extend long for idx + 0
+        uxtl                v5.8h, v5.8b                // unsigned extend long for idx + 1
+
+        ldr                 d6, [x10], #8               // load 8 bytes from srcp for idx + 2
+        ldr                 q2, [x14, x16]              // load 8 values, 16 bytes from filter for idx + 2
+
+        smlal               v16.4s, v0.4h, v4.4h        // val += src[srcPos + j + 0..3] * filter[fs * i + j + 0..3], idx + 0
+        smlal               v17.4s, v1.4h, v5.4h        // val += src[srcPos + j + 0..3] * filter[fs * i + j + 0..3], idx + 1
+
+        ldr                 d7, [x11], #8               // load 8 bytes from srcp for idx + 3
+        ldr                 q3, [x15, x16]              // load 8 values, 16 bytes from filter for idx + 3
+
+        sub                 w0, w0, #8                  // decrement the remaining filterSize counter
+        smlal2              v16.4s, v0.8h, v4.8h        // val += src[srcPos + j + 4..7] * filter[fs * i + j + 4..7], idx + 0
+        smlal2              v17.4s, v1.8h, v5.8h        // val += src[srcPos + j + 4..7] * filter[fs * i + j + 4..7], idx + 1
+        uxtl                v6.8h, v6.8b                // unsigned extend long for idx + 2
+        uxtl                v7.8h, v7.8b                // unsigned extend long for idx + 3
+        smlal               v18.4s, v2.4h, v6.4h        // val += src[srcPos + j + 0..3] * filter[fs * i + j + 0..3], idx + 2
+        smlal               v19.4s, v3.4h, v7.4h        // val += src[srcPos + j + 0..3] * filter[fs * i + j + 0..3], idx + 3
+
+        cmp                 w0, #8                      // are there at least 8 more elements in filter to consume?
+        add                 x16, x16, #16               // advance the offsetting register for filter values
+
+        smlal2              v18.4s, v2.8h, v6.8h        // val += src[srcPos + j + 4..7] * filter[fs * i + j + 4..7], idx + 2
+        smlal2              v19.4s, v3.8h, v7.8h        // val += src[srcPos + j + 4..7] * filter[fs * i + j + 4..7], idx + 3
+
+        b.ge                2b                          // branch back to inner loop
+
+        // complete the remaining 4 filter elements
+        sub                 x17, x7, #8                 // calculate the offset of the filter pointer for the remaining 4 elements
+
+        ldr                 s4, [x8]                    // load 4 bytes from srcp for idx + 0
+        ldr                 d0, [x12, x17]              // load 4 values, 8 bytes from filter for idx + 0
+        ldr                 s5, [x9]                    // load 4 bytes from srcp for idx + 1
+        ldr                 d1, [x13, x17]              // load 4 values, 8 bytes from filter for idx + 1
+
+        uxtl                v4.8h, v4.8b                // unsigned extend long for idx + 0
+        uxtl                v5.8h, v5.8b                // unsigned extend long for idx + 1
+
+        ldr                 s6, [x10]                   // load 4 bytes from srcp for idx + 2
+        ldr                 d2, [x14, x17]              // load 4 values, 8 bytes from filter for idx + 2
+        smlal               v16.4s, v0.4h, v4.4h        // val += src[srcPos + j + 0..3] * filter[fs * i + j + 0..3], idx + 0
+        smlal               v17.4s, v1.4h, v5.4h        // val += src[srcPos + j + 0..3] * filter[fs * i + j + 0..3], idx + 1
+        ldr                 s7, [x11]                   // load 4 bytes from srcp for idx + 3
+        ldr                 d3, [x15, x17]              // load 4 values, 8 bytes from filter for idx + 3
+
+        uxtl                v6.8h, v6.8b                // unsigned extend long for idx + 2
+        uxtl                v7.8h, v7.8b                // unsigned extend long for idx + 3
+        addp                v16.4s, v16.4s, v17.4s      // horizontal pair adding for idx 0,1
+        smlal               v18.4s, v2.4h, v6.4h        // val += src[srcPos + j + 0..3] * filter[fs * i + j + 0..3], idx + 2
+        smlal               v19.4s, v3.4h, v7.4h        // val += src[srcPos + j + 0..3] * filter[fs * i + j + 0..3], idx + 3
+
+        addp                v18.4s, v18.4s, v19.4s      // horizontal pair adding for idx 2,3
+        addp                v16.4s, v16.4s, v18.4s      // final horizontal pair adding producing one vector with results for idx = 0..3
+
+        subs                w2, w2, #4                  // dstW -= 4
+        sqshrn              v0.4h, v16.4s, #7           // shift and clip the 2x16-bit final values
+        st1                 {v0.4h}, [x1], #8           // write to destination idx 0..3
+        add                 x4, x4, x7, lsl #2          // filter += (filterSize*2) * 4
+        b.gt                1b                          // loop until end of line
+        ret
+endfunc
+
 function ff_hscale8to15_4_neon, export=1
 // x0  SwsContext *c (not used)
 // x1  int16_t *dst
