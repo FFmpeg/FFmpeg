@@ -543,13 +543,6 @@ retry:
             return ret;
     }
 
-    if (!s->current_picture_ptr || s->current_picture_ptr->f->data[0]) {
-        int i = ff_find_unused_picture(s->avctx, s->picture, 0);
-        if (i < 0)
-            return i;
-        s->current_picture_ptr = &s->picture[i];
-    }
-
     avctx->has_b_frames = !s->low_delay;
 
     if (CONFIG_MPEG4_DECODER && avctx->codec_id == AV_CODEC_ID_MPEG4) {

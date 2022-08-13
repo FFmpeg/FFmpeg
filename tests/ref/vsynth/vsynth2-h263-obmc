@@ -1,4 +1,4 @@
 2d8a58b295e03f94e6a41468b2d3909e *tests/data/fate/vsynth2-h263-obmc.avi
 208522 tests/data/fate/vsynth2-h263-obmc.avi
-4a939ef99fc759293f2e609bfcacd2a4 *tests/data/fate/vsynth2-h263-obmc.out.rawvideo
-stddev:    6.10 PSNR: 32.41 MAXDIFF:   90 bytes:  7603200/  7603200
+3500b4227c1e6309ca5213414599266f *tests/data/fate/vsynth2-h263-obmc.out.rawvideo
+stddev:    6.19 PSNR: 32.29 MAXDIFF:  111 bytes:  7603200/  7603200
