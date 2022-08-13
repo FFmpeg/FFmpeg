@@ -583,10 +583,6 @@ retry:
         s->codec_id == AV_CODEC_ID_H263I)
         s->gob_index = H263_GOB_HEIGHT(s->height);
 
-    // for skipping the frame
-    s->current_picture.f->pict_type = s->pict_type;
-    s->current_picture.f->key_frame = s->pict_type == AV_PICTURE_TYPE_I;
-
     /* skip B-frames if we don't have reference frames */
     if (!s->last_picture_ptr &&
         (s->pict_type == AV_PICTURE_TYPE_B || s->droppable))
