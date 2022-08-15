@@ -127,6 +127,9 @@ do {\
     UPDATE_PICTURE(last_picture);
     UPDATE_PICTURE(next_picture);
 
+    s->linesize   = s1->linesize;
+    s->uvlinesize = s1->uvlinesize;
+
 #define REBASE_PICTURE(pic, new_ctx, old_ctx)                                 \
     ((pic && pic >= old_ctx->picture &&                                       \
       pic < old_ctx->picture + MAX_PICTURE_COUNT) ?                           \
