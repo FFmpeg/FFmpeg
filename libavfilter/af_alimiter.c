@@ -194,10 +194,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             } else {
                 for (i = s->nextiter; i < s->nextiter + s->nextlen; i++) {
                     int j = i % buffer_size;
-                    double ppeak, pdelta;
+                    double ppeak = 0, pdelta;
 
-                    ppeak = fabs(buffer[nextpos[j]]) > fabs(buffer[nextpos[j] + 1]) ?
-                            fabs(buffer[nextpos[j]]) : fabs(buffer[nextpos[j] + 1]);
+                    for (c = 0; c < channels; c++) {
+                        ppeak = FFMAX(ppeak, fabs(buffer[nextpos[j] + c]));
+                    }
                     pdelta = (limit / peak - limit / ppeak) / (((buffer_size - nextpos[j] + s->pos) % buffer_size) / channels);
                     if (pdelta < nextdelta[j]) {
                         nextdelta[j] = pdelta;
@@ -241,14 +242,16 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 s->delta = get_rdelta(s, release, inlink->sample_rate,
                                       peak, limit, s->att, 1);
                 if (s->nextlen > 1) {
+                    double ppeak = 0, pdelta;
                     int pnextpos = nextpos[(s->nextiter + 1) % buffer_size];
-                    double ppeak = fabs(buffer[pnextpos]) > fabs(buffer[pnextpos + 1]) ?
-                                                            fabs(buffer[pnextpos]) :
-                                                            fabs(buffer[pnextpos + 1]);
-                    double pdelta = (limit / ppeak - s->att) /
-                                    (((buffer_size + pnextpos -
-                                    ((s->pos + channels) % buffer_size)) %
-                                    buffer_size) / channels);
+
+                    for (c = 0; c < channels; c++) {
+                        ppeak = FFMAX(ppeak, fabs(buffer[pnextpos + c]));
+                    }
+                    pdelta = (limit / ppeak - s->att) /
+                             (((buffer_size + pnextpos -
+                             ((s->pos + channels) % buffer_size)) %
+                             buffer_size) / channels);
                     if (pdelta < s->delta)
                         s->delta = pdelta;
                 }
