@@ -297,10 +297,13 @@ void ff_tx_init_tabs_float (int len);
 void ff_tx_init_tabs_double(int len);
 void ff_tx_init_tabs_int32 (int len);
 
-/* Typed init function to initialize an MDCT exptab in a context. */
-int  ff_tx_mdct_gen_exp_float (AVTXContext *s);
-int  ff_tx_mdct_gen_exp_double(AVTXContext *s);
-int  ff_tx_mdct_gen_exp_int32 (AVTXContext *s);
+/* Typed init function to initialize an MDCT exptab in a context.
+ * If pre_tab is set, duplicates the entire table, with the first
+ * copy being shuffled according to pre_tab, and the second copy
+ * being the original. */
+int ff_tx_mdct_gen_exp_float (AVTXContext *s, int *pre_tab);
+int ff_tx_mdct_gen_exp_double(AVTXContext *s, int *pre_tab);
+int ff_tx_mdct_gen_exp_int32 (AVTXContext *s, int *pre_tab);
 
 /* Lists of codelets */
 extern const FFTXCodelet * const ff_tx_codelet_list_float_c       [];

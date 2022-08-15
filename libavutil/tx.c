@@ -44,7 +44,6 @@ int ff_tx_gen_compound_mapping(AVTXContext *s, int n, int m)
     int *in_map, *out_map;
     const int inv = s->inv;
     const int len = n*m;    /* Will not be equal to s->len for MDCTs */
-    const int mdct = TYPE_IS(MDCT, s->type);
     int m_inv, n_inv;
 
     /* Make sure the numbers are coprime */
@@ -63,8 +62,7 @@ int ff_tx_gen_compound_mapping(AVTXContext *s, int n, int m)
     /* Ruritanian map for input, CRT map for output, can be swapped */
     for (int j = 0; j < m; j++) {
         for (int i = 0; i < n; i++) {
-            /* Shifted by 1 to simplify MDCTs */
-            in_map[j*n + i] = ((i*m + j*n) % len) << mdct;
+            in_map[j*n + i] = (i*m + j*n) % len;
             out_map[(i*m*m_inv + j*n*n_inv) % len] = i*m + j;
         }
     }

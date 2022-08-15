@@ -948,7 +948,7 @@ static av_cold int TX_NAME(ff_tx_mdct_sr_init)(AVTXContext *s,
                                                const void *scale)
 {
     int ret;
-    FFTXCodeletOptions sub_opts = { .invert_lookup = 0 };
+    FFTXCodeletOptions sub_opts = { .invert_lookup = inv };
 
     s->scale_d = *((SCALE_TYPE *)scale);
     s->scale_f = s->scale_d;
@@ -961,8 +961,13 @@ static av_cold int TX_NAME(ff_tx_mdct_sr_init)(AVTXContext *s,
                                 inv, scale)))
         return ret;
 
-    if ((ret = TX_TAB(ff_tx_mdct_gen_exp)(s)))
+    if ((ret = TX_TAB(ff_tx_mdct_gen_exp)(s, inv ? s->sub->map : NULL)))
         return ret;
+
+    /* Saves a multiply in a hot path. */
+    if (inv)
+        for (int i = 0; i < (s->len >> 1); i++)
+            s->sub->map[i] <<= 1;
 
     return 0;
 }
@@ -1020,12 +1025,14 @@ static void TX_NAME(ff_tx_mdct_sr_inv)(AVTXContext *s, void *_dst, void *_src,
     in2 = src + ((len2*2) - 1) * stride;
 
     for (int i = 0; i < len2; i++) {
-        TXComplex tmp = { in2[-2*i*stride], in1[2*i*stride] };
-        CMUL3(z[sub_map[i]], tmp, exp[i]);
+        int k = sub_map[i];
+        TXComplex tmp = { in2[-k*stride], in1[k*stride] };
+        CMUL3(z[i], tmp, exp[i]);
     }
 
     s->fn[0](&s->sub[0], z, z, sizeof(TXComplex));
 
+    exp += len2;
     for (int i = 0; i < len4; i++) {
         const int i0 = len4 + i, i1 = len4 - i - 1;
         TXComplex src1 = { z[i1].im, z[i1].re };
@@ -1141,8 +1148,12 @@ static av_cold int TX_NAME(ff_tx_mdct_pfa_init)(AVTXContext *s,
     if ((ret = ff_tx_gen_compound_mapping(s, cd->factors[0], sub_len)))
         return ret;
 
-    if ((ret = TX_TAB(ff_tx_mdct_gen_exp)(s)))
+    if ((ret = TX_TAB(ff_tx_mdct_gen_exp)(s, inv ? s->map : NULL)))
         return ret;
+
+    /* Saves multiplies in loops. */
+    for (int i = 0; i < len; i++)
+        s->map[i] <<= 1;
 
     if (!(s->tmp = av_malloc(len*sizeof(*s->tmp))))
         return AVERROR(ENOMEM);
@@ -1160,6 +1171,7 @@ static void TX_NAME(ff_tx_mdct_pfa_##N##xM_inv)(AVTXContext *s, void *_dst,    \
     TXComplex *z = _dst, *exp = s->exp;                                        \
     const TXSample *src = _src, *in1, *in2;                                    \
     const int len4 = s->len >> 2;                                              \
+    const int len2 = s->len >> 1;                                              \
     const int m = s->sub->len;                                                 \
     const int *in_map = s->map, *out_map = in_map + N*m;                       \
     const int *sub_map = s->sub->map;                                          \
@@ -1168,13 +1180,15 @@ static void TX_NAME(ff_tx_mdct_pfa_##N##xM_inv)(AVTXContext *s, void *_dst,    \
     in1 = src;                                                                 \
     in2 = src + ((N*m*2) - 1) * stride;                                        \
                                                                                \
-    for (int i = 0; i < m; i++) {                                              \
+    for (int i = 0; i < len2; i += N) {                                        \
         for (int j = 0; j < N; j++) {                                          \
-            const int k = in_map[i*N + j];                                     \
+            const int k = in_map[j];                                           \
             TXComplex tmp = { in2[-k*stride], in1[k*stride] };                 \
-            CMUL3(fft##N##in[j], tmp, exp[k >> 1]);                            \
+            CMUL3(fft##N##in[j], tmp, exp[j]);                                 \
         }                                                                      \
-        fft##N(s->tmp + sub_map[i], fft##N##in, m);                            \
+        fft##N(s->tmp + *(sub_map++), fft##N##in, m);                          \
+        exp += N;                                                              \
+        in_map += N;                                                           \
     }                                                                          \
                                                                                \
     for (int i = 0; i < N; i++)                                                \
@@ -1405,21 +1419,31 @@ static const FFTXCodelet TX_NAME(ff_tx_rdft_c2r_def) = {
     .prio       = FF_TX_PRIO_BASE,
 };
 
-int TX_TAB(ff_tx_mdct_gen_exp)(AVTXContext *s)
+int TX_TAB(ff_tx_mdct_gen_exp)(AVTXContext *s, int *pre_tab)
 {
+    int off = 0;
     int len4 = s->len >> 1;
     double scale = s->scale_d;
     const double theta = (scale < 0 ? len4 : 0) + 1.0/8.0;
+    size_t alloc = pre_tab ? 2*len4 : len4;
 
-    if (!(s->exp = av_malloc_array(len4, sizeof(*s->exp))))
+    if (!(s->exp = av_malloc_array(alloc, sizeof(*s->exp))))
         return AVERROR(ENOMEM);
 
     scale = sqrt(fabs(scale));
+
+    if (pre_tab)
+        off = len4;
+
     for (int i = 0; i < len4; i++) {
         const double alpha = M_PI_2 * (i + theta) / len4;
-        s->exp[i].re = RESCALE(cos(alpha) * scale);
-        s->exp[i].im = RESCALE(sin(alpha) * scale);
+        s->exp[off + i] = (TXComplex){ RESCALE(cos(alpha) * scale),
+                                       RESCALE(sin(alpha) * scale) };
     }
+
+    if (pre_tab)
+        for (int i = 0; i < len4; i++)
+            s->exp[i] = s->exp[len4 + pre_tab[i]];
 
     return 0;
 }
