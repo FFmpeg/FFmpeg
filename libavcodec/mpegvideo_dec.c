@@ -73,8 +73,6 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
         s->bitstream_buffer_size = s->allocated_bitstream_buffer_size = 0;
 
         if (s1->context_initialized) {
-//             s->picture_range_start  += MAX_PICTURE_COUNT;
-//             s->picture_range_end    += MAX_PICTURE_COUNT;
             ff_mpv_idct_init(s);
             if ((err = ff_mpv_common_init(s)) < 0) {
                 memset(s, 0, sizeof(*s));
