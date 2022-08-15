@@ -90,11 +90,6 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
             return ret;
     }
 
-    s->avctx->coded_height  = s1->avctx->coded_height;
-    s->avctx->coded_width   = s1->avctx->coded_width;
-    s->avctx->width         = s1->avctx->width;
-    s->avctx->height        = s1->avctx->height;
-
     s->quarter_sample       = s1->quarter_sample;
 
     s->coded_picture_number = s1->coded_picture_number;
