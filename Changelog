@@ -16,6 +16,7 @@ version <next>:
 - LAF demuxer
 - APAC decoder and demuxer
 - Media 100i decoders
+- DTS to PTS reorder bsf
 
 
 version 5.1:
