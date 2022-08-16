@@ -327,6 +327,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         AVFrame *clone;
 
         s->out->pts = in->pts;
+        s->out->duration = av_rescale_q(1, av_inv_q(outlink->frame_rate), outlink->time_base);
+
         clone = av_frame_clone(s->out);
         if (!clone)
             return AVERROR(ENOMEM);
