@@ -245,6 +245,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         memset(s->out->data[3] + n * s->out->linesize[0], 0, w);
     }
     s->out->pts = av_rescale_q(in->pts, inlink->time_base, outlink->time_base);
+    s->out->duration = 1;
 
     s->first = s->frame_count;
 
