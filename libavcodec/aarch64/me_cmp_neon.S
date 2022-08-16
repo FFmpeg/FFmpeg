@@ -271,6 +271,81 @@ function ff_pix_abs16_x2_neon, export=1
         ret
 endfunc
 
+function ff_pix_abs16_y2_neon, export=1
+        // x0           unused
+        // x1           uint8_t *pix1
+        // x2           uint8_t *pix2
+        // x3           ptrdiff_t stride
+        // w4           int h
+
+        // initialize buffers
+        movi            v29.8h, #0                      // clear the accumulator
+        movi            v28.8h, #0                      // clear the accumulator
+        movi            d18, #0
+        add             x5, x2, x3                      // pix2 + stride
+        cmp             w4, #4
+        b.lt            2f
+
+// make 4 iterations at once
+1:
+
+        // abs(pix1[0], avg2(pix2[0], pix2[0 + stride]))
+        // avg2(a, b) = (((a) + (b) + 1) >> 1)
+        // abs(x) = (x < 0 ? (-x) : (x))
+
+        ld1             {v1.16b}, [x2], x3              // Load pix2 for first iteration
+        ld1             {v2.16b}, [x5], x3              // Load pix3 for first iteration
+        ld1             {v0.16b}, [x1], x3              // Load pix1 for first iteration
+        urhadd          v30.16b, v1.16b, v2.16b         // Rounding halving add, first iteration
+        ld1             {v4.16b}, [x2], x3              // Load pix2 for second iteration
+        ld1             {v5.16b}, [x5], x3              // Load pix3 for second iteartion
+        uabal           v29.8h, v0.8b, v30.8b           // Absolute difference of lower half, first iteration
+        uabal2          v28.8h, v0.16b, v30.16b         // Absolute difference of upper half, first iteration
+        ld1             {v3.16b}, [x1], x3              // Load pix1 for second iteration
+        urhadd          v27.16b, v4.16b, v5.16b         // Rounding halving add, second iteration
+        ld1             {v7.16b}, [x2], x3              // Load pix2 for third iteration
+        ld1             {v20.16b}, [x5], x3             // Load pix3 for third iteration
+        uabal           v29.8h, v3.8b, v27.8b           // Absolute difference of lower half for second iteration
+        uabal2          v28.8h, v3.16b, v27.16b         // Absolute difference of upper half for second iteration
+        ld1             {v6.16b}, [x1], x3              // Load pix1 for third iteration
+        urhadd          v26.16b, v7.16b, v20.16b        // Rounding halving add, third iteration
+        ld1             {v22.16b}, [x2], x3             // Load pix2 for fourth iteration
+        ld1             {v23.16b}, [x5], x3             // Load pix3 for fourth iteration
+        uabal           v29.8h, v6.8b, v26.8b           // Absolute difference of lower half for third iteration
+        uabal2          v28.8h, v6.16b, v26.16b         // Absolute difference of upper half for third iteration
+        ld1             {v21.16b}, [x1], x3             // Load pix1 for fourth iteration
+        sub             w4, w4, #4                      // h-= 4
+        urhadd          v25.16b, v22.16b, v23.16b       // Rounding halving add
+        cmp             w4, #4
+        uabal           v29.8h, v21.8b, v25.8b          // Absolute difference of lower half for fourth iteration
+        uabal2          v28.8h, v21.16b, v25.16b        // Absolute difference of upper half for fourth iteration
+
+        b.ge            1b
+        cbz             w4, 3f
+
+// iterate by one
+2:
+
+        ld1             {v1.16b}, [x2], x3              // Load pix2
+        ld1             {v2.16b}, [x5], x3              // Load pix3
+        subs            w4, w4, #1
+        ld1             {v0.16b}, [x1], x3              // Load pix1
+        urhadd          v30.16b, v1.16b, v2.16b         // Rounding halving add
+        uabal           v29.8h, v30.8b, v0.8b
+        uabal2          v28.8h, v30.16b, v0.16b
+
+        b.ne            2b
+
+3:
+        add             v29.8h, v29.8h, v28.8h          // Add vectors together
+        uaddlv          s16, v29.8h                     // Add up vector values
+        add             d18, d18, d16
+
+        fmov            w0, s18
+
+        ret
+endfunc
+
 function sse16_neon, export=1
         // x0 - unused
         // x1 - pix1
