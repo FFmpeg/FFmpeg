@@ -1845,6 +1845,8 @@ static int vp9_decode_update_thread_context(AVCodecContext *dst, const AVCodecCo
                 return ret;
         }
     }
+    ff_refstruct_replace(&s->frame_extradata_pool, ssrc->frame_extradata_pool);
+    s->frame_extradata_pool_size = ssrc->frame_extradata_pool_size;
 
     s->s.h.invisible = ssrc->s.h.invisible;
     s->s.h.keyframe = ssrc->s.h.keyframe;
