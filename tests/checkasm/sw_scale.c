@@ -114,9 +114,9 @@ static void check_yuv2yuv1(int accurate)
                       const int16_t *src, uint8_t *dest,
                       int dstW, const uint8_t *dither, int offset);
 
-    LOCAL_ALIGNED_8(int16_t, src_pixels, [LARGEST_INPUT_SIZE]);
-    LOCAL_ALIGNED_8(uint8_t, dst0, [LARGEST_INPUT_SIZE]);
-    LOCAL_ALIGNED_8(uint8_t, dst1, [LARGEST_INPUT_SIZE]);
+    LOCAL_ALIGNED_16(int16_t, src_pixels, [LARGEST_INPUT_SIZE]);
+    LOCAL_ALIGNED_16(uint8_t, dst0, [LARGEST_INPUT_SIZE]);
+    LOCAL_ALIGNED_16(uint8_t, dst1, [LARGEST_INPUT_SIZE]);
     LOCAL_ALIGNED_8(uint8_t, dither, [8]);
 
     randomize_buffers((uint8_t*)dither, 8);
