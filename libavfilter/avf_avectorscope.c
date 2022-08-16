@@ -275,6 +275,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             memset(s->outpicref->data[0] + i * s->outpicref->linesize[0], 0, outlink->w * 4);
     }
     s->outpicref->pts = av_rescale_q(insamples->pts, inlink->time_base, outlink->time_base);
+    s->outpicref->duration = 1;
 
     av_frame_make_writable(s->outpicref);
     ff_filter_execute(ctx, fade, NULL, NULL, FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
