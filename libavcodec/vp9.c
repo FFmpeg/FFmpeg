@@ -1569,14 +1569,15 @@ static int vp9_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             av_log(avctx, AV_LOG_ERROR, "Requested reference %d not available\n", ref);
             return AVERROR_INVALIDDATA;
         }
+        for (int i = 0; i < 8; i++)
+            ff_progress_frame_replace(&s->next_refs[i], &s->s.refs[i]);
+        ff_thread_finish_setup(avctx);
         ff_progress_frame_await(&s->s.refs[ref], INT_MAX);
 
         if ((ret = av_frame_ref(frame, s->s.refs[ref].f)) < 0)
             return ret;
         frame->pts     = pkt->pts;
         frame->pkt_dts = pkt->dts;
-        for (int i = 0; i < 8; i++)
-            ff_progress_frame_replace(&s->next_refs[i], &s->s.refs[i]);
         *got_frame = 1;
         return pkt->size;
     }
