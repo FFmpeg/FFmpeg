@@ -210,7 +210,7 @@ static void pool_free(FFRefStructPool *pool)
     ff_mutex_destroy(&pool->mutex);
     if (pool->free_cb)
         pool->free_cb(pool->opaque);
-    av_free(pool);
+    av_free(get_refcount(pool));
 }
 
 static void pool_free_entry(FFRefStructPool *pool, RefCount *ref)
@@ -301,13 +301,22 @@ void *ff_refstruct_pool_get(FFRefStructPool *pool)
     return ret;
 }
 
-void ff_refstruct_pool_uninit(FFRefStructPool **poolp)
+/**
+ * Hint: The content of pool_unref() and refstruct_pool_uninit()
+ * could currently be merged; they are only separate functions
+ * in case we would ever introduce weak references.
+ */
+static void pool_unref(void *ref)
 {
-    FFRefStructPool *pool = *poolp;
-    RefCount *entry;
+    FFRefStructPool *pool = get_userdata(ref);
+    if (atomic_fetch_sub_explicit(&pool->refcount, 1, memory_order_acq_rel) == 1)
+        pool_free(pool);
+}
 
-    if (!pool)
-        return;
+static void refstruct_pool_uninit(FFRefStructOpaque unused, void *obj)
+{
+    FFRefStructPool *pool = obj;
+    RefCount *entry;
 
     ff_mutex_lock(&pool->mutex);
     ff_assert(!pool->uninited);
@@ -321,11 +330,6 @@ void ff_refstruct_pool_uninit(FFRefStructPool **poolp)
         pool_free_entry(pool, entry);
         entry = next;
     }
-
-    if (atomic_fetch_sub_explicit(&pool->refcount, 1, memory_order_acq_rel) == 1)
-        pool_free(pool);
-
-    *poolp = NULL;
 }
 
 FFRefStructPool *ff_refstruct_pool_alloc(size_t size, unsigned flags)
@@ -340,11 +344,13 @@ FFRefStructPool *ff_refstruct_pool_alloc_ext_c(size_t size, unsigned flags,
                                                void (*free_entry_cb)(FFRefStructOpaque opaque, void *obj),
                                                void (*free_cb)(FFRefStructOpaque opaque))
 {
-    FFRefStructPool *pool = av_mallocz(sizeof(*pool));
+    FFRefStructPool *pool = ff_refstruct_alloc_ext(sizeof(*pool), 0, NULL,
+                                                   refstruct_pool_uninit);
     int err;
 
     if (!pool)
         return NULL;
+    get_refcount(pool)->free = pool_unref;
 
     pool->size          = size;
     pool->opaque        = opaque;
@@ -371,7 +377,9 @@ FFRefStructPool *ff_refstruct_pool_alloc_ext_c(size_t size, unsigned flags,
 
     err = ff_mutex_init(&pool->mutex, NULL);
     if (err) {
-        av_free(pool);
+        // Don't call ff_refstruct_uninit() on pool, as it hasn't been properly
+        // set up and is just a POD right now.
+        av_free(get_refcount(pool));
         return NULL;
     }
     return pool;

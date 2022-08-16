@@ -289,6 +289,9 @@ void *ff_refstruct_pool_get(FFRefStructPool *pool);
  * @param poolp pointer to a pointer to either NULL or a pool to be freed.
  *              `*poolp` will be set to NULL.
  */
-void ff_refstruct_pool_uninit(FFRefStructPool **poolp);
+static inline void ff_refstruct_pool_uninit(FFRefStructPool **poolp)
+{
+    ff_refstruct_unref(poolp);
+}
 
 #endif /* AVCODEC_REFSTRUCT_H */
