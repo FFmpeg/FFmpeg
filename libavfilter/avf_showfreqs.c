@@ -469,6 +469,7 @@ static int plot_freqs(AVFilterLink *inlink, int64_t pts)
 
     av_free(colors);
     out->pts = s->pts;
+    out->duration = 1;
     out->sample_aspect_ratio = (AVRational){1,1};
     return ff_filter_frame(outlink, out);
 }
