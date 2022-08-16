@@ -32,6 +32,8 @@ int ff_pix_abs16_x2_neon(MpegEncContext *v, const uint8_t *pix1, const uint8_t *
 
 int sse16_neon(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                ptrdiff_t stride, int h);
+int sse4_neon(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+              ptrdiff_t stride, int h);
 
 av_cold void ff_me_cmp_init_aarch64(MECmpContext *c, AVCodecContext *avctx)
 {
@@ -44,5 +46,6 @@ av_cold void ff_me_cmp_init_aarch64(MECmpContext *c, AVCodecContext *avctx)
 
         c->sad[0] = ff_pix_abs16_neon;
         c->sse[0] = sse16_neon;
+        c->sse[2] = sse4_neon;
     }
 }
