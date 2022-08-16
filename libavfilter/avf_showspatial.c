@@ -62,6 +62,8 @@ static const AVOption showspatial_options[] = {
     { "win_size", "set window size", OFFSET(win_size), AV_OPT_TYPE_INT, {.i64 = 4096}, 1024, 65536, FLAGS },
     WIN_FUNC_OPTION("win_func", OFFSET(win_func), FLAGS, WFUNC_HANNING),
     { "overlap", "set window overlap", OFFSET(overlap), AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0, 1, FLAGS },
+    { "rate", "set video rate", OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str="25"}, 0, INT_MAX, FLAGS },
+    { "r",    "set video rate", OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str="25"}, 0, INT_MAX, FLAGS },
     { NULL }
 };
 
@@ -187,6 +189,7 @@ static int config_output(AVFilterLink *outlink)
         }
     }
 
+    outlink->frame_rate = s->frame_rate;
     outlink->time_base = av_inv_q(outlink->frame_rate);
 
     av_audio_fifo_free(s->fifo);
@@ -253,6 +256,7 @@ static int draw_spatial(AVFilterLink *inlink, AVFrame *insamples)
     }
 
     outpicref->pts = av_rescale_q(insamples->pts, inlink->time_base, outlink->time_base);
+    outpicref->duration = 1;
 
     return ff_filter_frame(outlink, outpicref);
 }

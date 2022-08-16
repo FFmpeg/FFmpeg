@@ -29337,6 +29337,9 @@ Default value is @code{hann}.
 Set ratio of overlap window. Default value is @code{0.5}.
 When value is @code{1} overlap is set to recommended size for specific
 window function currently used.
+
+@item rate, r
+Set output framerate.
 @end table
 
 @anchor{showspectrum}
