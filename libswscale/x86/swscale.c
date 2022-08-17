@@ -205,20 +205,17 @@ static void yuv2yuvX_ ##opt(const int16_t *filter, int filterSize, \
     int remainder = (dstW % step); \
     int pixelsProcessed = dstW - remainder; \
     if(((uintptr_t)dest) & 15){ \
-        yuv2yuvX_mmx(filter, filterSize, src, dest, dstW, dither, offset); \
+        yuv2yuvX_mmxext(filter, filterSize, src, dest, dstW, dither, offset); \
         return; \
     } \
     if(pixelsProcessed > 0) \
         ff_yuv2yuvX_ ##opt(filter, filterSize - 1, 0, dest - offset, pixelsProcessed + offset, dither, offset); \
     if(remainder > 0){ \
-      ff_yuv2yuvX_mmx(filter, filterSize - 1, pixelsProcessed, dest - offset, pixelsProcessed + remainder + offset, dither, offset); \
+      ff_yuv2yuvX_mmxext(filter, filterSize - 1, pixelsProcessed, dest - offset, pixelsProcessed + remainder + offset, dither, offset); \
     } \
     return; \
 }
 
-#if HAVE_MMX_EXTERNAL
-YUV2YUVX_FUNC_MMX(mmx, 16)
-#endif
 #if HAVE_MMXEXT_EXTERNAL
 YUV2YUVX_FUNC_MMX(mmxext, 16)
 #endif
