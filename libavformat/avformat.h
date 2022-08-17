@@ -1121,12 +1121,15 @@ typedef struct AVStream {
 
 struct AVCodecParserContext *av_stream_get_parser(const AVStream *s);
 
+#if FF_API_GET_END_PTS
 /**
  * Returns the pts of the last muxed packet + its duration
  *
  * the retuned value is undefined when used with a demuxer.
  */
+attribute_deprecated
 int64_t    av_stream_get_end_pts(const AVStream *st);
+#endif
 
 #define AV_PROGRAM_RUNNING 1
 

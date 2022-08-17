@@ -29,6 +29,7 @@
 #include "internal.h"
 #include "mux.h"
 
+#if FF_API_GET_END_PTS
 int64_t av_stream_get_end_pts(const AVStream *st)
 {
     if (cffstream(st)->priv_pts) {
@@ -36,6 +37,7 @@ int64_t av_stream_get_end_pts(const AVStream *st)
     } else
         return AV_NOPTS_VALUE;
 }
+#endif
 
 int avformat_query_codec(const AVOutputFormat *ofmt, enum AVCodecID codec_id,
                          int std_compliance)
