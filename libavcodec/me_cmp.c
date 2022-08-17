@@ -558,8 +558,6 @@ static int hadamard8_diff8x8_c(MpegEncContext *s, const uint8_t *dst,
 {
     int i, temp[64], sum = 0;
 
-    av_assert2(h == 8);
-
     for (i = 0; i < 8; i++) {
         // FIXME: try pointer walks
         BUTTERFLY2(temp[8 * i + 0], temp[8 * i + 1],
@@ -610,8 +608,6 @@ static int hadamard8_intra8x8_c(MpegEncContext *s, const uint8_t *src,
 {
     int i, temp[64], sum = 0;
 
-    av_assert2(h == 8);
-
     for (i = 0; i < 8; i++) {
         // FIXME: try pointer walks
         BUTTERFLY2(temp[8 * i + 0], temp[8 * i + 1],
@@ -661,8 +657,6 @@ static int dct_sad8x8_c(MpegEncContext *s, const uint8_t *src1,
                         const uint8_t *src2, ptrdiff_t stride, int h)
 {
     LOCAL_ALIGNED_16(int16_t, temp, [64]);
-
-    av_assert2(h == 8);
 
     s->pdsp.diff_pixels_unaligned(temp, src1, src2, stride);
     s->fdsp.fdct(temp);
@@ -729,8 +723,6 @@ static int dct_max8x8_c(MpegEncContext *s, const uint8_t *src1,
     LOCAL_ALIGNED_16(int16_t, temp, [64]);
     int sum = 0, i;
 
-    av_assert2(h == 8);
-
     s->pdsp.diff_pixels_unaligned(temp, src1, src2, stride);
     s->fdsp.fdct(temp);
 
@@ -747,7 +739,6 @@ static int quant_psnr8x8_c(MpegEncContext *s, const uint8_t *src1,
     int16_t *const bak = temp + 64;
     int sum = 0, i;
 
-    av_assert2(h == 8);
     s->mb_intra = 0;
 
     s->pdsp.diff_pixels_unaligned(temp, src1, src2, stride);
@@ -775,8 +766,6 @@ static int rd8x8_c(MpegEncContext *s, const uint8_t *src1, const uint8_t *src2,
     int i, last, run, bits, level, distortion, start_i;
     const int esc_length = s->ac_esc_length;
     uint8_t *length, *last_length;
-
-    av_assert2(h == 8);
 
     copy_block8(lsrc1, src1, 8, stride, 8);
     copy_block8(lsrc2, src2, 8, stride, 8);
@@ -850,8 +839,6 @@ static int bit8x8_c(MpegEncContext *s, const uint8_t *src1, const uint8_t *src2,
     int i, last, run, bits, level, start_i;
     const int esc_length = s->ac_esc_length;
     uint8_t *length, *last_length;
-
-    av_assert2(h == 8);
 
     s->pdsp.diff_pixels_unaligned(temp, src1, src2, stride);
 
