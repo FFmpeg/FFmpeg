@@ -233,6 +233,8 @@ static const AVOption options[] = {
     QSV_OPTION_DBLK_IDC
     QSV_OPTION_LOW_DELAY_BRC
     QSV_OPTION_MAX_MIN_QP
+    QSV_OPTION_ADAPTIVE_I
+    QSV_OPTION_ADAPTIVE_B
 
     { "idr_interval", "Distance (in I-frames) between IDR frames", OFFSET(qsv.idr_interval), AV_OPT_TYPE_INT, { .i64 = 0 }, -1, INT_MAX, VE, "idr_interval" },
     { "begin_only", "Output an IDR-frame only at the beginning of the stream", 0, AV_OPT_TYPE_CONST, { .i64 = -1 }, 0, 0, VE, "idr_interval" },

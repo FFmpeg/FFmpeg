@@ -3543,6 +3543,13 @@ Setting this flag turns on or off LowDelayBRC feautre in qsv plugin, which provi
 more accurate bitrate control to minimize the variance of bitstream size frame
 by frame. Value: -1-default 0-off 1-on
 
+@item @var{adaptive_i}
+This flag controls insertion of I frames by the QSV encoder. Turn ON this flag
+to allow changing of frame type from P and B to I.
+
+@item @var{adaptive_b}
+This flag controls changing of frame type from B to P.
+
 @item @var{p_strategy}
 Enable P-pyramid: 0-default 1-simple 2-pyramid(bf need to be set to 0).
 

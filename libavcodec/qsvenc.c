@@ -816,11 +816,6 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
 
             q->extco2.LookAheadDS = q->look_ahead_downsampling;
             q->extco2.RepeatPPS   = q->repeat_pps ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
-
-            if (q->adaptive_i >= 0)
-                q->extco2.AdaptiveI = q->adaptive_i ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
-            if (q->adaptive_b >= 0)
-                q->extco2.AdaptiveB = q->adaptive_b ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
         }
 
         if (avctx->codec_id == AV_CODEC_ID_H264 || avctx->codec_id == AV_CODEC_ID_HEVC) {
@@ -840,6 +835,10 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
 
             if (q->b_strategy >= 0)
                 q->extco2.BRefType = q->b_strategy ? MFX_B_REF_PYRAMID : MFX_B_REF_OFF;
+            if (q->adaptive_i >= 0)
+                q->extco2.AdaptiveI = q->adaptive_i ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
+            if (q->adaptive_b >= 0)
+                q->extco2.AdaptiveB = q->adaptive_b ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
             if ((avctx->qmin >= 0 && avctx->qmax >= 0 && avctx->qmin > avctx->qmax) ||
                 (q->max_qp_i >= 0 && q->min_qp_i >= 0 && q->min_qp_i > q->max_qp_i) ||
                 (q->max_qp_p >= 0 && q->min_qp_p >= 0 && q->min_qp_p > q->max_qp_p) ||
