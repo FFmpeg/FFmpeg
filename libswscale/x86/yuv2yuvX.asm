@@ -124,8 +124,6 @@ cglobal yuv2yuvX, 7, 7, 8, filter, filterSize, src, dest, dstW, dither, offset
     REP_RET
 %endmacro
 
-INIT_MMX mmx
-YUV2YUVX_FUNC
 INIT_MMX mmxext
 YUV2YUVX_FUNC
 INIT_XMM sse3
