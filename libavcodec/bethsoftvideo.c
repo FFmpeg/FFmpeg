@@ -79,6 +79,11 @@ static int bethsoftvid_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     int code, ret;
     int yoffset;
 
+    bytestream2_init(&vid->g, avpkt->data, avpkt->size);
+    block_type = bytestream2_get_byte(&vid->g);
+    if (block_type < 1 || block_type > 4)
+        return AVERROR_INVALIDDATA;
+
     if ((ret = ff_reget_buffer(avctx, vid->frame, 0)) < 0)
         return ret;
     wrap_to_next_line = vid->frame->linesize[0] - avctx->width;
@@ -92,11 +97,10 @@ static int bethsoftvid_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
             return ret;
     }
 
-    bytestream2_init(&vid->g, avpkt->data, avpkt->size);
     dst = vid->frame->data[0];
     frame_end = vid->frame->data[0] + vid->frame->linesize[0] * avctx->height;
 
-    switch(block_type = bytestream2_get_byte(&vid->g)){
+    switch(block_type){
         case PALETTE_BLOCK: {
             *got_frame = 0;
             if ((ret = set_palette(vid, &vid->g)) < 0) {
