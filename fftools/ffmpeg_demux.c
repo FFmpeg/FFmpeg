@@ -32,6 +32,9 @@
 typedef struct DemuxMsg {
     AVPacket *pkt;
     int looping;
+
+    // repeat_pict from the demuxer-internal parser
+    int repeat_pict;
 } DemuxMsg;
 
 static void report_new_stream(InputFile *file, const AVPacket *pkt)
@@ -114,7 +117,7 @@ static int seek_to_start(InputFile *ifile)
     return ret;
 }
 
-static void ts_fixup(InputFile *ifile, AVPacket *pkt)
+static void ts_fixup(InputFile *ifile, AVPacket *pkt, int *repeat_pict)
 {
     InputStream *ist = input_streams[ifile->ist_index + pkt->stream_index];
     const int64_t start_time = ifile->ctx->start_time;
@@ -167,6 +170,11 @@ static void ts_fixup(InputFile *ifile, AVPacket *pkt)
 
     if (pkt->dts != AV_NOPTS_VALUE)
         pkt->dts += duration;
+
+    *repeat_pict = -1;
+    if (ist->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
+        av_stream_get_parser(ist->st))
+        *repeat_pict = av_stream_get_parser(ist->st)->repeat_pict;
 }
 
 static void *input_thread(void *arg)
@@ -231,7 +239,7 @@ static void *input_thread(void *arg)
             }
         }
 
-        ts_fixup(f, pkt);
+        ts_fixup(f, pkt, &msg.repeat_pict);
 
         msg.pkt = av_packet_alloc();
         if (!msg.pkt) {
@@ -352,6 +360,7 @@ int init_input_threads(void)
 
 int ifile_get_packet(InputFile *f, AVPacket **pkt)
 {
+    InputStream *ist;
     DemuxMsg msg;
     int ret;
 
@@ -381,6 +390,9 @@ int ifile_get_packet(InputFile *f, AVPacket **pkt)
         return ret;
     if (msg.looping)
         return 1;
+
+    ist = input_streams[f->ist_index + msg.pkt->stream_index];
+    ist->last_pkt_repeat_pict = msg.repeat_pict;
 
     *pkt = msg.pkt;
     return 0;
