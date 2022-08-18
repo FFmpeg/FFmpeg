@@ -738,7 +738,7 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
     }
 
     if (!fr.num)
-        fr = av_guess_frame_rate(input_files[ist->file_index]->ctx, ist->st, NULL);
+        fr = ist->framerate_guessed;
 
     if (ist->dec_ctx->codec_type == AVMEDIA_TYPE_SUBTITLE) {
         ret = sub2video_prepare(ist, ifilter);

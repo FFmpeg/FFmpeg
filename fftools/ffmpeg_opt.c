@@ -1065,6 +1065,8 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
             ist->top_field_first = -1;
             MATCH_PER_STREAM_OPT(top_field_first, i, ist->top_field_first, ic, st);
 
+            ist->framerate_guessed = av_guess_frame_rate(ic, st, NULL);
+
             break;
         case AVMEDIA_TYPE_AUDIO:
             ist->guess_layout_max = INT_MAX;

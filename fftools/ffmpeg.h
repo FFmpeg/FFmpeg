@@ -334,6 +334,8 @@ typedef struct InputStream {
     AVFrame *decoded_frame;
     AVPacket *pkt;
 
+    AVRational framerate_guessed;
+
     int64_t       prev_pkt_pts;
     int64_t       start;     /* time when read started */
     /* predicted dts of the next packet read for this stream or (when there are
