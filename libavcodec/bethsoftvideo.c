@@ -51,16 +51,16 @@ static av_cold int bethsoftvid_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int set_palette(BethsoftvidContext *ctx)
+static int set_palette(BethsoftvidContext *ctx, GetByteContext *g)
 {
     uint32_t *palette = (uint32_t *)ctx->frame->data[1];
     int a;
 
-    if (bytestream2_get_bytes_left(&ctx->g) < 256*3)
+    if (bytestream2_get_bytes_left(g) < 256*3)
         return AVERROR_INVALIDDATA;
 
     for(a = 0; a < 256; a++){
-        palette[a] = 0xFFU << 24 | bytestream2_get_be24u(&ctx->g) * 4;
+        palette[a] = 0xFFU << 24 | bytestream2_get_be24u(g) * 4;
         palette[a] |= palette[a] >> 6 & 0x30303;
     }
     ctx->frame->palette_has_changed = 1;
@@ -85,9 +85,10 @@ static int bethsoftvid_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
 
     if (avpkt->side_data_elems > 0 &&
         avpkt->side_data[0].type == AV_PKT_DATA_PALETTE) {
-        bytestream2_init(&vid->g, avpkt->side_data[0].data,
+        GetByteContext g;
+        bytestream2_init(&g, avpkt->side_data[0].data,
                          avpkt->side_data[0].size);
-        if ((ret = set_palette(vid)) < 0)
+        if ((ret = set_palette(vid, &g)) < 0)
             return ret;
     }
 
@@ -98,7 +99,7 @@ static int bethsoftvid_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     switch(block_type = bytestream2_get_byte(&vid->g)){
         case PALETTE_BLOCK: {
             *got_frame = 0;
-            if ((ret = set_palette(vid)) < 0) {
+            if ((ret = set_palette(vid, &vid->g)) < 0) {
                 av_log(avctx, AV_LOG_ERROR, "error reading palette\n");
                 return ret;
             }
