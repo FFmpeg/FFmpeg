@@ -328,7 +328,6 @@ function ff_pix_abs16_y2_neon, export=1
         // initialize buffers
         movi            v29.8h, #0                      // clear the accumulator
         movi            v28.8h, #0                      // clear the accumulator
-        movi            d18, #0
         add             x5, x2, x3                      // pix2 + stride
         cmp             w4, #4
         b.lt            2f
@@ -386,9 +385,8 @@ function ff_pix_abs16_y2_neon, export=1
 3:
         add             v29.8h, v29.8h, v28.8h          // Add vectors together
         uaddlv          s16, v29.8h                     // Add up vector values
-        add             d18, d18, d16
 
-        fmov            w0, s18
+        fmov            w0, s16
 
         ret
 endfunc
