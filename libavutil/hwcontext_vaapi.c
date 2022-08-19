@@ -125,7 +125,9 @@ static const VAAPIFormatDescriptor vaapi_format_map[] = {
     MAP(411P, YUV411,  YUV411P, 0),
     MAP(422V, YUV422,  YUV440P, 0),
     MAP(444P, YUV444,  YUV444P, 0),
-    MAP(AYUV, YUV444,  VUYA,    0),
+#ifdef VA_FOURCC_XYUV
+    MAP(XYUV, YUV444,  VUYX,    0),
+#endif
     MAP(Y800, YUV400,  GRAY8,   0),
 #ifdef VA_FOURCC_P010
     MAP(P010, YUV420_10BPP, P010, 0),
@@ -1009,6 +1011,9 @@ static const struct {
 #endif
     DRM_MAP(ARGB, 1, DRM_FORMAT_BGRA8888),
     DRM_MAP(XRGB, 1, DRM_FORMAT_BGRX8888),
+#if defined(VA_FOURCC_XYUV) && defined(DRM_FORMAT_XYUV8888)
+    DRM_MAP(XYUV, 1, DRM_FORMAT_XYUV8888),
+#endif
 };
 #undef DRM_MAP
 

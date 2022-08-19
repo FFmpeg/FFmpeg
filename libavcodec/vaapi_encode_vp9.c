@@ -228,8 +228,7 @@ static av_cold int vaapi_encode_vp9_configure(AVCodecContext *avctx)
 
 static const VAAPIEncodeProfile vaapi_encode_vp9_profiles[] = {
     { FF_PROFILE_VP9_0,  8, 3, 1, 1, VAProfileVP9Profile0 },
-    // Four channels because this uses the AYUV format which has Alpha
-    { FF_PROFILE_VP9_1,  8, 4, 0, 0, VAProfileVP9Profile1 },
+    { FF_PROFILE_VP9_1,  8, 3, 0, 0, VAProfileVP9Profile1 },
     { FF_PROFILE_VP9_2, 10, 3, 1, 1, VAProfileVP9Profile2 },
     { FF_PROFILE_UNKNOWN }
 };
