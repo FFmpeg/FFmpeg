@@ -659,7 +659,7 @@ static void read_ayuv64le_A_c(uint8_t *dst, const uint8_t *src, const uint8_t *u
         AV_WN16(dst + i * 2, AV_RL16(src + i * 8));
 }
 
-static void read_vuya_UV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, const uint8_t *src,
+static void read_vuyx_UV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, const uint8_t *src,
                            const uint8_t *unused1, int width, uint32_t *unused2, void *opq)
 {
     int i;
@@ -669,7 +669,7 @@ static void read_vuya_UV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0,
     }
 }
 
-static void read_vuya_Y_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused0, const uint8_t *unused1, int width,
+static void read_vuyx_Y_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused0, const uint8_t *unused1, int width,
                           uint32_t *unused2, void *opq)
 {
     int i;
@@ -1375,7 +1375,8 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
         break;
 #endif
     case AV_PIX_FMT_VUYA:
-        c->chrToYV12 = read_vuya_UV_c;
+    case AV_PIX_FMT_VUYX:
+        c->chrToYV12 = read_vuyx_UV_c;
         break;
     case AV_PIX_FMT_AYUV64LE:
         c->chrToYV12 = read_ayuv64le_UV_c;
@@ -1752,7 +1753,8 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
         c->lumToYV12 = read_ya16be_gray_c;
         break;
     case AV_PIX_FMT_VUYA:
-        c->lumToYV12 = read_vuya_Y_c;
+    case AV_PIX_FMT_VUYX:
+        c->lumToYV12 = read_vuyx_Y_c;
         break;
     case AV_PIX_FMT_AYUV64LE:
         c->lumToYV12 = read_ayuv64le_Y_c;

@@ -259,6 +259,7 @@ static const FormatEntry format_entries[] = {
     [AV_PIX_FMT_P416LE]      = { 1, 1 },
     [AV_PIX_FMT_NV16]        = { 1, 1 },
     [AV_PIX_FMT_VUYA]        = { 1, 1 },
+    [AV_PIX_FMT_VUYX]        = { 1, 1 },
     [AV_PIX_FMT_RGBAF16BE]   = { 1, 0 },
     [AV_PIX_FMT_RGBAF16LE]   = { 1, 0 },
 };

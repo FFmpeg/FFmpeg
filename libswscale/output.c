@@ -2585,13 +2585,14 @@ yuv2ayuv64le_X_c(SwsContext *c, const int16_t *lumFilter,
 }
 
 static void
-yuv2vuya_X_c(SwsContext *c, const int16_t *lumFilter,
+yuv2vuyX_X_c(SwsContext *c, const int16_t *lumFilter,
              const int16_t **lumSrc, int lumFilterSize,
              const int16_t *chrFilter, const int16_t **chrUSrc,
              const int16_t **chrVSrc, int chrFilterSize,
-             const int16_t **alpSrc, uint8_t *dest, int dstW, int y)
+             const int16_t **alpSrc, uint8_t *dest, int dstW, int y,
+             int destHasAlpha)
 {
-    int hasAlpha = !!alpSrc;
+    int hasAlpha = destHasAlpha && (!!alpSrc);
     int i;
 
     for (i = 0; i < dstW; i++) {
@@ -2634,8 +2635,31 @@ yuv2vuya_X_c(SwsContext *c, const int16_t *lumFilter,
         dest[4 * i    ] = V;
         dest[4 * i + 1] = U;
         dest[4 * i + 2] = Y;
-        dest[4 * i + 3] = A;
+        if (destHasAlpha)
+            dest[4 * i + 3] = A;
     }
+}
+
+static void
+yuv2vuya_X_c(SwsContext *c, const int16_t *lumFilter,
+             const int16_t **lumSrc, int lumFilterSize,
+             const int16_t *chrFilter, const int16_t **chrUSrc,
+             const int16_t **chrVSrc, int chrFilterSize,
+             const int16_t **alpSrc, uint8_t *dest, int dstW, int y)
+{
+    yuv2vuyX_X_c(c, lumFilter, lumSrc, lumFilterSize, chrFilter,
+                 chrUSrc, chrVSrc, chrFilterSize, alpSrc, dest, dstW, y, 1);
+}
+
+static void
+yuv2vuyx_X_c(SwsContext *c, const int16_t *lumFilter,
+             const int16_t **lumSrc, int lumFilterSize,
+             const int16_t *chrFilter, const int16_t **chrUSrc,
+             const int16_t **chrVSrc, int chrFilterSize,
+             const int16_t **alpSrc, uint8_t *dest, int dstW, int y)
+{
+    yuv2vuyX_X_c(c, lumFilter, lumSrc, lumFilterSize, chrFilter,
+                 chrUSrc, chrVSrc, chrFilterSize, alpSrc, dest, dstW, y, 0);
 }
 
 av_cold void ff_sws_init_output_funcs(SwsContext *c,
@@ -3142,6 +3166,9 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
         break;
     case AV_PIX_FMT_VUYA:
         *yuv2packedX = yuv2vuya_X_c;
+        break;
+    case AV_PIX_FMT_VUYX:
+        *yuv2packedX = yuv2vuyx_X_c;
         break;
     }
 }
