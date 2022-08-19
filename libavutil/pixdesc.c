@@ -2504,6 +2504,17 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         },
         .flags = AV_PIX_FMT_FLAG_ALPHA,
     },
+    [AV_PIX_FMT_VUYX] = {
+        .name = "vuyx",
+        .nb_components = 3,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 4, 2, 0, 8 },        /* Y */
+            { 0, 4, 1, 0, 8 },        /* U */
+            { 0, 4, 0, 0, 8 },        /* V */
+        },
+    },
     [AV_PIX_FMT_RGBAF16BE] = {
         .name = "rgbaf16be",
         .nb_components = 4,

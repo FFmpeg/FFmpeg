@@ -372,6 +372,8 @@ enum AVPixelFormat {
     AV_PIX_FMT_RGBAF16BE,   ///< IEEE-754 half precision packed RGBA 16:16:16:16, 64bpp, RGBARGBA..., big-endian
     AV_PIX_FMT_RGBAF16LE,   ///< IEEE-754 half precision packed RGBA 16:16:16:16, 64bpp, RGBARGBA..., little-endian
 
+    AV_PIX_FMT_VUYX,        ///< packed VUYX 4:4:4, 32bpp, Variant of VUYA where alpha channel is left undefined
+
     AV_PIX_FMT_NB         ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
 };
 

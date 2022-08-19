@@ -84,6 +84,7 @@ int main(void)
     TEST(AV_PIX_FMT_GBRP,      AV_PIX_FMT_RGB24);
     TEST(AV_PIX_FMT_0RGB,      AV_PIX_FMT_RGB24);
     TEST(AV_PIX_FMT_GBRP16,    AV_PIX_FMT_RGB48);
+    TEST(AV_PIX_FMT_VUYX,      AV_PIX_FMT_YUV444P);
 
     // Formats additionally containing alpha (here ignored).
     TEST(AV_PIX_FMT_YA8,       AV_PIX_FMT_GRAY8);
