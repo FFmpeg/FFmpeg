@@ -1305,7 +1305,11 @@ static const VAAPIEncodeRTFormat vaapi_encode_rt_formats[] = {
     { "YUV420",    VA_RT_FORMAT_YUV420,        8, 3, 1, 1 },
     { "YUV422",    VA_RT_FORMAT_YUV422,        8, 3, 1, 0 },
 #if VA_CHECK_VERSION(1, 2, 0)
+    { "YUV420_12", VA_RT_FORMAT_YUV420_12,    12, 3, 1, 1 },
     { "YUV422_10", VA_RT_FORMAT_YUV422_10,    10, 3, 1, 0 },
+    { "YUV422_12", VA_RT_FORMAT_YUV422_12,    12, 3, 1, 0 },
+    { "YUV444_10", VA_RT_FORMAT_YUV444_10,    10, 3, 0, 0 },
+    { "YUV444_12", VA_RT_FORMAT_YUV444_12,    12, 3, 0, 0 },
 #endif
     { "YUV444",    VA_RT_FORMAT_YUV444,        8, 3, 0, 0 },
     { "XYUV",      VA_RT_FORMAT_YUV444,        8, 3, 0, 0 },

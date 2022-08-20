@@ -235,6 +235,8 @@ static int update_size(AVCodecContext *avctx, int w, int h)
 #endif
             break;
         case AV_PIX_FMT_YUV444P:
+        case AV_PIX_FMT_YUV444P10:
+        case AV_PIX_FMT_YUV444P12:
 #if CONFIG_VP9_VAAPI_HWACCEL
             *fmtp++ = AV_PIX_FMT_VAAPI;
 #endif

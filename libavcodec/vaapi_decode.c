@@ -263,6 +263,9 @@ static const struct {
 #ifdef VA_FOURCC_Y210
     MAP(Y210,    Y210),
 #endif
+#ifdef VA_FOURCC_Y212
+    MAP(Y212,    Y212),
+#endif
     // 4:4:0
     MAP(422V, YUV440P),
     // 4:4:4
@@ -270,9 +273,18 @@ static const struct {
 #ifdef VA_FOURCC_XYUV
     MAP(XYUV, VUYX),
 #endif
+#ifdef VA_FOURCC_Y410
+    MAP(Y410,    XV30),
+#endif
+#ifdef VA_FOURCC_Y412
+    MAP(Y412,    XV36),
+#endif
     // 4:2:0 10-bit
 #ifdef VA_FOURCC_P010
     MAP(P010, P010),
+#endif
+#ifdef VA_FOURCC_P012
+    MAP(P012, P012),
 #endif
 #ifdef VA_FOURCC_I010
     MAP(I010, YUV420P10),
@@ -417,6 +429,7 @@ static const struct {
 #if VA_CHECK_VERSION(0, 39, 0)
     MAP(VP9,         VP9_1,           VP9Profile1 ),
     MAP(VP9,         VP9_2,           VP9Profile2 ),
+    MAP(VP9,         VP9_3,           VP9Profile3 ),
 #endif
 #if VA_CHECK_VERSION(1, 8, 0)
     MAP(AV1,         AV1_MAIN,        AV1Profile0),

@@ -122,6 +122,9 @@ static const VAAPIFormatDescriptor vaapi_format_map[] = {
 #ifdef VA_FOURCC_Y210
     MAP(Y210, YUV422_10,  Y210, 0),
 #endif
+#ifdef VA_FOURCC_Y212
+    MAP(Y212, YUV422_12,  Y212, 0),
+#endif
     MAP(411P, YUV411,  YUV411P, 0),
     MAP(422V, YUV422,  YUV440P, 0),
     MAP(444P, YUV444,  YUV444P, 0),
@@ -131,6 +134,9 @@ static const VAAPIFormatDescriptor vaapi_format_map[] = {
     MAP(Y800, YUV400,  GRAY8,   0),
 #ifdef VA_FOURCC_P010
     MAP(P010, YUV420_10BPP, P010, 0),
+#endif
+#ifdef VA_FOURCC_P012
+    MAP(P012, YUV420_12, P012, 0),
 #endif
     MAP(BGRA, RGB32,   BGRA, 0),
     MAP(BGRX, RGB32,   BGR0, 0),
@@ -144,6 +150,16 @@ static const VAAPIFormatDescriptor vaapi_format_map[] = {
     MAP(XRGB, RGB32,   0RGB, 0),
 #ifdef VA_FOURCC_X2R10G10B10
     MAP(X2R10G10B10, RGB32_10, X2RGB10, 0),
+#endif
+#ifdef VA_FOURCC_Y410
+    // libva doesn't include a fourcc for XV30 and the driver only declares
+    // support for Y410, so we must fudge the mapping here.
+    MAP(Y410, YUV444_10,  XV30, 0),
+#endif
+#ifdef VA_FOURCC_Y412
+    // libva doesn't include a fourcc for XV36 and the driver only declares
+    // support for Y412, so we must fudge the mapping here.
+    MAP(Y412, YUV444_12,  XV36, 0),
 #endif
 };
 #undef MAP
@@ -1001,6 +1017,9 @@ static const struct {
 #if defined(VA_FOURCC_P010) && defined(DRM_FORMAT_R16)
     DRM_MAP(P010, 2, DRM_FORMAT_R16, DRM_FORMAT_RG1616),
 #endif
+#if defined(VA_FOURCC_P012) && defined(DRM_FORMAT_R16)
+    DRM_MAP(P012, 2, DRM_FORMAT_R16, DRM_FORMAT_RG1616),
+#endif
     DRM_MAP(BGRA, 1, DRM_FORMAT_ARGB8888),
     DRM_MAP(BGRX, 1, DRM_FORMAT_XRGB8888),
     DRM_MAP(RGBA, 1, DRM_FORMAT_ABGR8888),
@@ -1013,6 +1032,12 @@ static const struct {
     DRM_MAP(XRGB, 1, DRM_FORMAT_BGRX8888),
 #if defined(VA_FOURCC_XYUV) && defined(DRM_FORMAT_XYUV8888)
     DRM_MAP(XYUV, 1, DRM_FORMAT_XYUV8888),
+#endif
+#if defined(VA_FOURCC_Y412) && defined(DRM_FORMAT_XVYU2101010)
+    DRM_MAP(Y410, 1, DRM_FORMAT_XVYU2101010),
+#endif
+#if defined(VA_FOURCC_Y412) && defined(DRM_FORMAT_XVYU12_16161616)
+    DRM_MAP(Y412, 1, DRM_FORMAT_XVYU12_16161616),
 #endif
 };
 #undef DRM_MAP

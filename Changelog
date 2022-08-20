@@ -8,7 +8,7 @@ version <next>:
 - ffmpeg now requires threading to be built
 - ffmpeg now runs every muxer in a separate thread
 - Add new mode to cropdetect filter to detect crop-area based on motion vectors and edges
-- VAAPI decoding and encoding for 8bit 444 HEVC and VP9
+- VAAPI decoding and encoding for 10/12bit 422, 10/12bit 444 HEVC and VP9
 - WBMP (Wireless Application Protocol Bitmap) image format
 - a3dscope filter
 
