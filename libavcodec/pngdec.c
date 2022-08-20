@@ -78,11 +78,8 @@ typedef struct PNGDecContext {
     enum PNGImageState pic_state;
     int width, height;
     int cur_w, cur_h;
-    int last_w, last_h;
     int x_offset, y_offset;
-    int last_x_offset, last_y_offset;
     uint8_t dispose_op, blend_op;
-    uint8_t last_dispose_op;
     int bit_depth;
     int color_type;
     int compression_type;
@@ -94,8 +91,6 @@ typedef struct PNGDecContext {
     int has_trns;
     uint8_t transparent_color_be[6];
 
-    uint8_t *background_buf;
-    unsigned background_buf_allocated;
     uint32_t palette[256];
     uint8_t *crow_buf;
     uint8_t *last_row;
@@ -725,9 +720,30 @@ static int decode_idat_chunk(AVCodecContext *avctx, PNGDecContext *s,
         }
 
         ff_thread_release_ext_buffer(avctx, &s->picture);
-        if ((ret = ff_thread_get_ext_buffer(avctx, &s->picture,
-                                            AV_GET_BUFFER_FLAG_REF)) < 0)
-            return ret;
+        if (s->dispose_op == APNG_DISPOSE_OP_PREVIOUS) {
+            /* We only need a buffer for the current picture. */
+            ret = ff_thread_get_buffer(avctx, p, 0);
+            if (ret < 0)
+                return ret;
+        } else if (s->dispose_op == APNG_DISPOSE_OP_BACKGROUND) {
+            /* We need a buffer for the current picture as well as
+             * a buffer for the reference to retain. */
+            ret = ff_thread_get_ext_buffer(avctx, &s->picture,
+                                           AV_GET_BUFFER_FLAG_REF);
+            if (ret < 0)
+                return ret;
+            ret = ff_thread_get_buffer(avctx, p, 0);
+            if (ret < 0)
+                return ret;
+        } else {
+            /* The picture output this time and the reference to retain coincide. */
+            if ((ret = ff_thread_get_ext_buffer(avctx, &s->picture,
+                                                AV_GET_BUFFER_FLAG_REF)) < 0)
+                return ret;
+            ret = av_frame_ref(p, s->picture.f);
+            if (ret < 0)
+                return ret;
+        }
 
         p->pict_type        = AV_PICTURE_TYPE_I;
         p->key_frame        = 1;
@@ -985,12 +1001,6 @@ static int decode_fctl_chunk(AVCodecContext *avctx, PNGDecContext *s,
         return AVERROR_INVALIDDATA;
     }
 
-    s->last_w = s->cur_w;
-    s->last_h = s->cur_h;
-    s->last_x_offset = s->x_offset;
-    s->last_y_offset = s->y_offset;
-    s->last_dispose_op = s->dispose_op;
-
     sequence_number = bytestream2_get_be32(gb);
     cur_w           = bytestream2_get_be32(gb);
     cur_h           = bytestream2_get_be32(gb);
@@ -1086,23 +1096,6 @@ static int handle_p_frame_apng(AVCodecContext *avctx, PNGDecContext *s,
 
     ff_thread_await_progress(&s->last_picture, INT_MAX, 0);
 
-    // need to reset a rectangle to background:
-    if (s->last_dispose_op == APNG_DISPOSE_OP_BACKGROUND) {
-        av_fast_malloc(&s->background_buf, &s->background_buf_allocated,
-                       src_stride * p->height);
-        if (!s->background_buf)
-            return AVERROR(ENOMEM);
-
-        memcpy(s->background_buf, src, src_stride * p->height);
-
-        for (y = s->last_y_offset; y < s->last_y_offset + s->last_h; y++) {
-            memset(s->background_buf + src_stride * y +
-                   bpp * s->last_x_offset, 0, bpp * s->last_w);
-        }
-
-        src = s->background_buf;
-    }
-
     // copy unchanged rectangles from the last frame
     for (y = 0; y < s->y_offset; y++)
         memcpy(dst + y * dst_stride, src + y * src_stride, p->width * bpp);
@@ -1169,6 +1162,22 @@ static int handle_p_frame_apng(AVCodecContext *avctx, PNGDecContext *s,
     }
 
     return 0;
+}
+
+static void apng_reset_background(PNGDecContext *s, const AVFrame *p)
+{
+    // need to reset a rectangle to black
+    av_unused int ret = av_frame_copy(s->picture.f, p);
+    const int bpp = s->color_type == PNG_COLOR_TYPE_PALETTE ? 4 : s->bpp;
+    const ptrdiff_t dst_stride = s->picture.f->linesize[0];
+    uint8_t *dst = s->picture.f->data[0] + s->y_offset * dst_stride + bpp * s->x_offset;
+
+    av_assert1(ret >= 0);
+
+    for (size_t y = 0; y < s->cur_h; y++) {
+        memset(dst, 0, bpp * s->cur_w);
+        dst += dst_stride;
+    }
 }
 
 static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
@@ -1434,6 +1443,9 @@ exit_loop:
                 goto fail;
         }
     }
+    if (CONFIG_APNG_DECODER && s->dispose_op == APNG_DISPOSE_OP_BACKGROUND)
+        apng_reset_background(s, p);
+
     ff_thread_report_progress(&s->picture, INT_MAX, 0);
 
     return 0;
@@ -1456,14 +1468,9 @@ static void clear_frame_metadata(PNGDecContext *s)
     av_dict_free(&s->frame_metadata);
 }
 
-static int output_frame(PNGDecContext *s, AVFrame *f,
-                        const AVFrame *src)
+static int output_frame(PNGDecContext *s, AVFrame *f)
 {
     int ret;
-
-    ret = av_frame_ref(f, src);
-    if (ret < 0)
-        return ret;
 
     if (s->iccp_data) {
         AVFrameSideData *sd = av_frame_new_side_data(f, AV_FRAME_DATA_ICC_PROFILE, s->iccp_data_len);
@@ -1515,13 +1522,12 @@ fail:
 }
 
 #if CONFIG_PNG_DECODER
-static int decode_frame_png(AVCodecContext *avctx, AVFrame *dst_frame,
+static int decode_frame_png(AVCodecContext *avctx, AVFrame *p,
                             int *got_frame, AVPacket *avpkt)
 {
     PNGDecContext *const s = avctx->priv_data;
     const uint8_t *buf     = avpkt->data;
     int buf_size           = avpkt->size;
-    AVFrame *p = s->picture.f;
     int64_t sig;
     int ret;
 
@@ -1555,7 +1561,7 @@ static int decode_frame_png(AVCodecContext *avctx, AVFrame *dst_frame,
         goto the_end;
     }
 
-    ret = output_frame(s, dst_frame, s->picture.f);
+    ret = output_frame(s, p);
     if (ret < 0)
         goto the_end;
 
@@ -1574,12 +1580,11 @@ the_end:
 #endif
 
 #if CONFIG_APNG_DECODER
-static int decode_frame_apng(AVCodecContext *avctx, AVFrame *dst_frame,
+static int decode_frame_apng(AVCodecContext *avctx, AVFrame *p,
                              int *got_frame, AVPacket *avpkt)
 {
     PNGDecContext *const s = avctx->priv_data;
     int ret;
-    AVFrame *p = s->picture.f;
 
     clear_frame_metadata(s);
 
@@ -1608,7 +1613,7 @@ static int decode_frame_apng(AVCodecContext *avctx, AVFrame *dst_frame,
     if (!(s->pic_state & (PNG_ALLIMAGE|PNG_IDAT)))
         return AVERROR_INVALIDDATA;
 
-    ret = output_frame(s, dst_frame, s->picture.f);
+    ret = output_frame(s, p);
     if (ret < 0)
         return ret;
 
@@ -1646,14 +1651,8 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
         pdst->compression_type  = psrc->compression_type;
         pdst->interlace_type    = psrc->interlace_type;
         pdst->filter_type       = psrc->filter_type;
-        pdst->cur_w = psrc->cur_w;
-        pdst->cur_h = psrc->cur_h;
-        pdst->x_offset = psrc->x_offset;
-        pdst->y_offset = psrc->y_offset;
         pdst->has_trns = psrc->has_trns;
         memcpy(pdst->transparent_color_be, psrc->transparent_color_be, sizeof(pdst->transparent_color_be));
-
-        pdst->dispose_op = psrc->dispose_op;
 
         memcpy(pdst->palette, psrc->palette, sizeof(pdst->palette));
 
@@ -1705,7 +1704,6 @@ static av_cold int png_dec_end(AVCodecContext *avctx)
     s->last_row_size = 0;
     av_freep(&s->tmp_row);
     s->tmp_row_size = 0;
-    av_freep(&s->background_buf);
 
     av_freep(&s->iccp_data);
     av_dict_free(&s->frame_metadata);
