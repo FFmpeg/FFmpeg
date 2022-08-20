@@ -14,7 +14,7 @@ libavutil:     2021-04-27
 
 API changes, most recent first:
 
-2022-08-xx - xxxxxxxxxx - lavc 59.42.101 - codec_id.h
+2022-08-19 - 352799dca8 - lavc 59.42.102 - codec_id.h
   Deprecate AV_CODEC_ID_AYUV and ayuv decoder/encoder. The rawvideo codec
   and vuya pixel format combination will be used instead from now on.
 
