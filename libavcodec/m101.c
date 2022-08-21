@@ -53,11 +53,6 @@ static int m101_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     int min_stride = 2 * avctx->width;
     int bits = avctx->extradata[2*4];
 
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
-        return ret;
-    frame->pict_type = AV_PICTURE_TYPE_I;
-    frame->key_frame = 1;
-
     stride = AV_RL32(avctx->extradata + 5*4);
 
     if (avctx->pix_fmt == AV_PIX_FMT_YUV422P10)
@@ -69,6 +64,10 @@ static int m101_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         return AVERROR_INVALIDDATA;
     }
 
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
+        return ret;
+    frame->pict_type = AV_PICTURE_TYPE_I;
+    frame->key_frame = 1;
     frame->interlaced_frame = ((avctx->extradata[3*4] & 3) != 3);
     if (frame->interlaced_frame)
         frame->top_field_first = avctx->extradata[3*4] & 1;
