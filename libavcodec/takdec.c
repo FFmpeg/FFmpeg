@@ -502,8 +502,6 @@ static int decode_subframe(TAKDecContext *s, int32_t *decoded,
             memcpy(s->residues, &s->residues[y], 2 * filter_order);
     }
 
-    emms_c();
-
     return 0;
 }
 
@@ -660,8 +658,6 @@ static int decorrelate(TAKDecContext *s, int c1, int c2, int length)
 
             memmove(s->residues, &s->residues[tmp], 2 * filter_order);
         }
-
-        emms_c();
         break;
     }
     }
