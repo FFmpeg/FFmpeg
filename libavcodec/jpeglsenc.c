@@ -413,8 +413,6 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
     /* End of image */
     put_marker_byteu(&pb, EOI);
 
-    emms_c();
-
     av_shrink_packet(pkt, bytestream2_tell_p(&pb));
     *got_packet = 1;
     return 0;
