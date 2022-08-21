@@ -496,20 +496,20 @@ fail:
     return ret;
 }
 
-static uint8_t *iso88591_to_utf8(const uint8_t *in, size_t size_in)
+static char *iso88591_to_utf8(const char *in, size_t size_in)
 {
     size_t extra = 0, i;
-    uint8_t *out, *q;
+    char *out, *q;
 
     for (i = 0; i < size_in; i++)
-        extra += in[i] >= 0x80;
+        extra += !!(in[i] & 0x80);
     if (size_in == SIZE_MAX || extra > SIZE_MAX - size_in - 1)
         return NULL;
     q = out = av_malloc(size_in + extra + 1);
     if (!out)
         return NULL;
     for (i = 0; i < size_in; i++) {
-        if (in[i] >= 0x80) {
+        if (in[i] & 0x80) {
             *(q++) = 0xC0 | (in[i] >> 6);
             *(q++) = 0x80 | (in[i] & 0x3F);
         } else {
@@ -525,9 +525,10 @@ static int decode_text_chunk(PNGDecContext *s, GetByteContext *gb, int compresse
     int ret, method;
     const uint8_t *data        = gb->buffer;
     const uint8_t *data_end    = gb->buffer_end;
-    const uint8_t *keyword     = data;
-    const uint8_t *keyword_end = memchr(keyword, 0, data_end - keyword);
-    uint8_t *kw_utf8 = NULL, *text, *txt_utf8 = NULL;
+    const char *keyword     = data;
+    const char *keyword_end = memchr(keyword, 0, data_end - data);
+    char *kw_utf8 = NULL, *txt_utf8 = NULL;
+    const char *text;
     unsigned text_len;
     AVBPrint bp;
 
@@ -546,8 +547,8 @@ static int decode_text_chunk(PNGDecContext *s, GetByteContext *gb, int compresse
         text     = bp.str;
         text_len = bp.len;
     } else {
-        text = (uint8_t *)data;
-        text_len = data_end - text;
+        text     = data;
+        text_len = data_end - data;
     }
 
     kw_utf8  = iso88591_to_utf8(keyword, keyword_end - keyword);
