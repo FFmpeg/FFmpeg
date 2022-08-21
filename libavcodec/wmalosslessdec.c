@@ -783,7 +783,6 @@ static void revert_cdlms ## bits (WmallDecodeCtx *s, int ch, \
             s->channel_residues[ch][icoef] = input; \
         } \
     } \
-    if (bits <= 16) emms_c(); \
 }
 
 CD_LMS(16, WMALL_COEFF_PAD_SIZE)
