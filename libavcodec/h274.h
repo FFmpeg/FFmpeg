@@ -40,11 +40,26 @@ typedef struct H274FilmGrainDatabase {
     int16_t slice_tmp[64][64];
 } H274FilmGrainDatabase;
 
+/**
+ * Check whether ff_h274_apply_film_grain() supports the given parameter combination.
+ *
+ * @param model_id model_id from AVFilmGrainParams to be supplied
+ * @param pix_fmt  pixel format of the frames to be supplied
+ */
+static inline int ff_h274_film_grain_params_supported(int model_id, enum AVPixelFormat pix_fmt)
+{
+    return model_id == 0 && pix_fmt == AV_PIX_FMT_YUV420P;
+}
+
 // Synthesizes film grain on top of `in` and stores the result to `out`. `out`
 // must already have been allocated and set to the same size and format as
 // `in`.
 //
 // Returns a negative error code on error, such as invalid params.
+// If ff_h274_film_grain_params_supported() indicated that the parameters
+// are supported, no error will be returned if the arguments given to
+// ff_h274_film_grain_params_supported() coincide with actual values
+// from the frames and params.
 int ff_h274_apply_film_grain(AVFrame *out, const AVFrame *in,
                              H274FilmGrainDatabase *db,
                              const AVFilmGrainParams *params);

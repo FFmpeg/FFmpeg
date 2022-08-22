@@ -2884,6 +2884,14 @@ static int hevc_frame_start(HEVCContext *s)
         !(s->avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN) &&
         !s->avctx->hwaccel;
 
+    if (s->ref->needs_fg &&
+        !ff_h274_film_grain_params_supported(s->sei.common.film_grain_characteristics.model_id,
+                                             s->ref->frame->format)) {
+        av_log_once(s->avctx, AV_LOG_WARNING, AV_LOG_DEBUG, &s->film_grain_warning_shown,
+                    "Unsupported film grain parameters. Ignoring film grain.\n");
+        s->ref->needs_fg = 0;
+    }
+
     if (s->ref->needs_fg) {
         s->ref->frame_grain->format = s->ref->frame->format;
         s->ref->frame_grain->width = s->ref->frame->width;
@@ -2922,19 +2930,14 @@ static int hevc_frame_end(HEVCContext *s)
 {
     HEVCFrame *out = s->ref;
     const AVFrameSideData *sd;
-    int ret;
+    av_unused int ret;
 
     if (out->needs_fg) {
         sd = av_frame_get_side_data(out->frame, AV_FRAME_DATA_FILM_GRAIN_PARAMS);
         av_assert0(out->frame_grain->buf[0] && sd);
         ret = ff_h274_apply_film_grain(out->frame_grain, out->frame, &s->h274db,
                                        (AVFilmGrainParams *) sd->data);
-
-        if (ret < 0) {
-            av_log(s->avctx, AV_LOG_WARNING, "Failed synthesizing film "
-                   "grain, ignoring: %s\n", av_err2str(ret));
-            out->needs_fg = 0;
-        }
+        av_assert1(ret >= 0);
     }
 
     return 0;
@@ -3573,6 +3576,8 @@ static int hevc_update_thread_context(AVCodecContext *dst,
 
     s->threads_number      = s0->threads_number;
     s->threads_type        = s0->threads_type;
+
+    s->film_grain_warning_shown = s0->film_grain_warning_shown;
 
     if (s0->eos) {
         s->seq_decode = (s->seq_decode + 1) & HEVC_SEQUENCE_COUNTER_MASK;

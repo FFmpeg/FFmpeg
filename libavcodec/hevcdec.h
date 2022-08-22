@@ -596,6 +596,8 @@ typedef struct HEVCContext {
     int nal_length_size;    ///< Number of bytes used for nal length (1, 2 or 4)
     int nuh_layer_id;
 
+    int film_grain_warning_shown;
+
     AVBufferRef *rpu_buf;       ///< 0 or 1 Dolby Vision RPUs.
     DOVIContext dovi_ctx;       ///< Dolby Vision decoding context
 } HEVCContext;
