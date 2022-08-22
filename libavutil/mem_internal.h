@@ -25,7 +25,8 @@
 
 #include <stdint.h>
 
-#include "avassert.h"
+#include "attributes.h"
+#include "macros.h"
 #include "mem.h"
 #include "version.h"
 
