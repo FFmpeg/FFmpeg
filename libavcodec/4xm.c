@@ -966,8 +966,6 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *picture,
 
     *got_frame = 1;
 
-    emms_c();
-
     return buf_size;
 }
 
