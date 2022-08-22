@@ -501,6 +501,9 @@ static int iff_read_header(AVFormatContext *s)
         case ID_DST:
         case ID_MDAT:
             iff->body_pos = avio_tell(pb);
+            if (iff->body_pos < 0 || iff->body_pos + data_size > INT64_MAX)
+                return AVERROR_INVALIDDATA;
+
             iff->body_end = iff->body_pos + data_size;
             iff->body_size = data_size;
             if (chunk_id == ID_DST) {
