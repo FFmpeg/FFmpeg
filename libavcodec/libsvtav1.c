@@ -424,11 +424,8 @@ static int eb_send_frame(AVCodecContext *avctx, const AVFrame *frame)
         if (svt_enc->eos_flag == EOS_SENT)
             return 0;
 
-        headerPtrLast.n_alloc_len   = 0;
-        headerPtrLast.n_filled_len  = 0;
-        headerPtrLast.n_tick_count  = 0;
-        headerPtrLast.p_app_private = NULL;
-        headerPtrLast.p_buffer      = NULL;
+        memset(&headerPtrLast, 0, sizeof(headerPtrLast));
+        headerPtrLast.pic_type      = EB_AV1_INVALID_PICTURE;
         headerPtrLast.flags         = EB_BUFFERFLAG_EOS;
 
         svt_av1_enc_send_picture(svt_enc->svt_handle, &headerPtrLast);
