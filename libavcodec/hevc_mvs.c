@@ -227,7 +227,7 @@ static int temporal_luma_motion_vector(const HEVCContext *s, int x0, int y0,
     int availableFlagLXCol = 0;
     int colPic;
 
-    const HEVCFrame *ref = s->ref->collocated_ref;
+    const HEVCFrame *ref = s->collocated_ref;
 
     if (!ref) {
         memset(mvLXCol, 0, sizeof(*mvLXCol));
