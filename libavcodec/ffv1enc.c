@@ -1076,7 +1076,6 @@ retry:
     } else {
         ret = encode_rgb_frame(fs, planes, width, height, p->linesize);
     }
-    emms_c();
 
     if (ret < 0) {
         av_assert0(fs->slice_coding_mode == 0);

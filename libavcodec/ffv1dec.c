@@ -360,8 +360,6 @@ static int decode_slice(AVCodecContext *c, void *arg)
         }
     }
 
-    emms_c();
-
     ff_thread_report_progress(&f->picture, si, 0);
 
     return 0;
