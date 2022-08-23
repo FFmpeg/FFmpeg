@@ -30,17 +30,13 @@
  * @see http://www.w3.org/Graphics/GIF/spec-gif89a.txt
  */
 
-#define BITSTREAM_WRITER_LE
 #include "libavutil/opt.h"
-#include "libavutil/imgutils.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "codec_internal.h"
 #include "encode.h"
 #include "lzw.h"
 #include "gif.h"
-
-#include "put_bits.h"
 
 #define DEFAULT_TRANSPARENCY_INDEX 0x1f
 
