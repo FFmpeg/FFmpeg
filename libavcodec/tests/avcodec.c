@@ -155,6 +155,9 @@ int main(void){
             if (codec->capabilities & AV_CODEC_CAP_FRAME_THREADS &&
                 codec->capabilities & AV_CODEC_CAP_ENCODER_FLUSH)
                 ERR("Frame-threaded encoder %s claims to support flushing\n");
+            if (codec->capabilities & AV_CODEC_CAP_FRAME_THREADS &&
+                codec->capabilities & AV_CODEC_CAP_DELAY)
+                ERR("Frame-threaded encoder %s claims to have delay\n");
         } else {
             if ((codec->type == AVMEDIA_TYPE_SUBTITLE) != (codec2->cb_type == FF_CODEC_CB_TYPE_DECODE_SUB))
                 ERR("Subtitle decoder %s does not implement decode_sub callback\n");
