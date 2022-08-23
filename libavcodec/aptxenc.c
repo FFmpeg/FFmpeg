@@ -24,8 +24,14 @@
 
 #include "libavutil/channel_layout.h"
 #include "aptx.h"
+#include "audio_frame_queue.h"
 #include "codec_internal.h"
 #include "encode.h"
+
+typedef struct AptXEncContext {
+    AptXContext common;
+    AudioFrameQueue afq;
+} AptXEncContext;
 
 /*
  * Half-band QMF analysis filter realized with a polyphase FIR filter.
@@ -212,10 +218,11 @@ static void aptx_encode_samples(AptXContext *ctx,
 static int aptx_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                              const AVFrame *frame, int *got_packet_ptr)
 {
-    AptXContext *s = avctx->priv_data;
+    AptXEncContext *const s0 = avctx->priv_data;
+    AptXContext *const s = &s0->common;
     int pos, ipos, channel, sample, output_size, ret;
 
-    if ((ret = ff_af_queue_add(&s->afq, frame)) < 0)
+    if ((ret = ff_af_queue_add(&s0->afq, frame)) < 0)
         return ret;
 
     output_size = s->block_size * frame->nb_samples/4;
@@ -232,16 +239,25 @@ static int aptx_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         aptx_encode_samples(s, samples, avpkt->data + pos);
     }
 
-    ff_af_queue_remove(&s->afq, frame->nb_samples, &avpkt->pts, &avpkt->duration);
+    ff_af_queue_remove(&s0->afq, frame->nb_samples, &avpkt->pts, &avpkt->duration);
     *got_packet_ptr = 1;
     return 0;
 }
 
 static av_cold int aptx_close(AVCodecContext *avctx)
 {
-    AptXContext *s = avctx->priv_data;
+    AptXEncContext *const s = avctx->priv_data;
     ff_af_queue_close(&s->afq);
     return 0;
+}
+
+static av_cold int aptx_encode_init(AVCodecContext *avctx)
+{
+    AptXEncContext *const s = avctx->priv_data;
+
+    ff_af_queue_init(avctx, &s->afq);
+
+    return ff_aptx_init(avctx);
 }
 
 #if CONFIG_APTX_ENCODER
@@ -251,8 +267,8 @@ const FFCodec ff_aptx_encoder = {
     .p.type                = AVMEDIA_TYPE_AUDIO,
     .p.id                  = AV_CODEC_ID_APTX,
     .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SMALL_LAST_FRAME,
-    .priv_data_size        = sizeof(AptXContext),
-    .init                  = ff_aptx_init,
+    .priv_data_size        = sizeof(AptXEncContext),
+    .init                  = aptx_encode_init,
     FF_CODEC_ENCODE_CB(aptx_encode_frame),
     .close                 = aptx_close,
 #if FF_API_OLD_CHANNEL_LAYOUT
@@ -272,8 +288,8 @@ const FFCodec ff_aptx_hd_encoder = {
     .p.type                = AVMEDIA_TYPE_AUDIO,
     .p.id                  = AV_CODEC_ID_APTX_HD,
     .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SMALL_LAST_FRAME,
-    .priv_data_size        = sizeof(AptXContext),
-    .init                  = ff_aptx_init,
+    .priv_data_size        = sizeof(AptXEncContext),
+    .init                  = aptx_encode_init,
     FF_CODEC_ENCODE_CB(aptx_encode_frame),
     .close                 = aptx_close,
 #if FF_API_OLD_CHANNEL_LAYOUT

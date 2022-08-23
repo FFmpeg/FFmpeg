@@ -534,6 +534,5 @@ av_cold int ff_aptx_init(AVCodecContext *avctx)
         }
     }
 
-    ff_af_queue_init(avctx, &s->afq);
     return 0;
 }
