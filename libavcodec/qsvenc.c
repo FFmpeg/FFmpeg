@@ -1064,7 +1064,7 @@ static int qsv_retrieve_enc_params(AVCodecContext *avctx, QSVEncContext *q)
 {
     AVCPBProperties *cpb_props;
 
-    uint8_t sps_buf[128];
+    uint8_t sps_buf[512];
     uint8_t pps_buf[128];
 
     mfxExtCodingOptionSPSPPS extradata = {
