@@ -970,7 +970,7 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
         q->extvsi.MatrixCoefficients = avctx->colorspace;
     }
 
-    if (q->extvsi.VideoFullRange || q->extvsi.ColourDescriptionPresent) {
+    if ((avctx->codec_id != AV_CODEC_ID_VP9) && (q->extvsi.VideoFullRange || q->extvsi.ColourDescriptionPresent)) {
         q->extvsi.Header.BufferId = MFX_EXTBUFF_VIDEO_SIGNAL_INFO;
         q->extvsi.Header.BufferSz = sizeof(q->extvsi);
         q->extparam_internal[q->nb_extparam_internal++] = (mfxExtBuffer *)&q->extvsi;
