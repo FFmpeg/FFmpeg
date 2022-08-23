@@ -107,7 +107,8 @@ static inline int dv_work_pool_size(const AVDVProfile *d)
     return size;
 }
 
-static inline void dv_calculate_mb_xy(const DVVideoContext *s,
+static inline void dv_calculate_mb_xy(const AVDVProfile *sys,
+                                      const uint8_t *buf,
                                       const DVwork_chunk *work_chunk,
                                       int m, int *mb_x, int *mb_y)
 {
@@ -116,7 +117,7 @@ static inline void dv_calculate_mb_xy(const DVVideoContext *s,
 
     /* We work with 720p frames split in half.
      * The odd half-frame (chan == 2,3) is displaced :-( */
-    if (s->sys->height == 720 && !(s->buf[1] & 0x0C))
+    if (sys->height == 720 && !(buf[1] & 0x0C))
         /* shifting the Y coordinate down by 72/2 macro blocks */
         *mb_y -= (*mb_y > 17) ? 18 : -72;
 }

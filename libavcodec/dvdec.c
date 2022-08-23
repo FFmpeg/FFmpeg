@@ -533,7 +533,7 @@ retry:
     block = &sblock[0][0];
     mb    = mb_data;
     for (mb_index = 0; mb_index < 5; mb_index++) {
-        dv_calculate_mb_xy(s, work_chunk, mb_index, &mb_x, &mb_y);
+        dv_calculate_mb_xy(s->sys, s->buf, work_chunk, mb_index, &mb_x, &mb_y);
 
         /* idct_put'ting luminance */
         if ((s->sys->pix_fmt == AV_PIX_FMT_YUV420P)                      ||

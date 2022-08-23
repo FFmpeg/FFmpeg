@@ -873,7 +873,7 @@ static int dv_encode_video_segment(AVCodecContext *avctx, void *arg)
     p = dif = &s->buf[work_chunk->buf_offset * 80];
     enc_blk = &enc_blks[0];
     for (mb_index = 0; mb_index < 5; mb_index++) {
-        dv_calculate_mb_xy(s, work_chunk, mb_index, &mb_x, &mb_y);
+        dv_calculate_mb_xy(s->sys, s->buf, work_chunk, mb_index, &mb_x, &mb_y);
 
         qnos[mb_index] = DV_PROFILE_IS_HD(s->sys) ? 1 : 15;
 
