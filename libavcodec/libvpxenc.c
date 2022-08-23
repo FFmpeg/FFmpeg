@@ -80,6 +80,7 @@ typedef struct VPxEncoderContext {
     struct vpx_image rawimg_alpha;
     uint8_t is_alpha;
     struct vpx_fixed_buf twopass_stats;
+    unsigned twopass_stats_size;
     int deadline; //i.e., RT/GOOD/BEST
     uint64_t sse[4];
     int have_sse; /**< true if we have pending sse[] */
@@ -1356,16 +1357,20 @@ static int queue_frames(AVCodecContext *avctx, struct vpx_codec_ctx *encoder,
             break;
         case VPX_CODEC_STATS_PKT: {
             struct vpx_fixed_buf *stats = &ctx->twopass_stats;
-            int err;
+            uint8_t *tmp;
             if (!pkt_out)
                 break;
-            if ((err = av_reallocp(&stats->buf,
-                                   stats->sz +
-                                   pkt->data.twopass_stats.sz)) < 0) {
+            tmp = av_fast_realloc(stats->buf,
+                                  &ctx->twopass_stats_size,
+                                  stats->sz +
+                                  pkt->data.twopass_stats.sz);
+            if (!tmp) {
+                av_freep(&stats->buf);
                 stats->sz = 0;
                 av_log(avctx, AV_LOG_ERROR, "Stat buffer realloc failed\n");
-                return err;
+                return AVERROR(ENOMEM);
             }
+            stats->buf = tmp;
             memcpy((uint8_t*)stats->buf + stats->sz,
                    pkt->data.twopass_stats.buf, pkt->data.twopass_stats.sz);
             stats->sz += pkt->data.twopass_stats.sz;
