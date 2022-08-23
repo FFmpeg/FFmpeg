@@ -43,7 +43,7 @@
 
 #define MAX_AUDIO_FRAME_SIZE 192000 // 1 second of 48khz 32-bit audio
 
-struct DVMuxContext {
+typedef struct DVMuxContext {
     AVClass          *av_class;
     const AVDVProfile*  sys;           /* current DV profile, e.g.: 525/60, 625/50 */
     int               n_ast;         /* number of stereo audio streams (up to 2) */
@@ -55,7 +55,7 @@ struct DVMuxContext {
     int               has_video;     /* frame under construction has video */
     uint8_t           frame_buf[DV_MAX_FRAME_SIZE]; /* frame under construction */
     AVTimecode        tc;            /* timecode context */
-};
+} DVMuxContext;
 
 static const int dv_aaux_packs_dist[12][9] = {
     { 0xff, 0xff, 0xff, 0x50, 0x51, 0x52, 0x53, 0xff, 0xff },
