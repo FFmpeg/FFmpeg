@@ -119,7 +119,7 @@ typedef struct WavpackContext {
 
 #define LEVEL_DECAY(a)  (((a) + 0x80) >> 8)
 
-static av_always_inline unsigned get_tail(GetBitContext *gb, int k)
+static av_always_inline unsigned get_tail(GetBitContext *gb, unsigned k)
 {
     int p, e, res;
 
@@ -127,7 +127,7 @@ static av_always_inline unsigned get_tail(GetBitContext *gb, int k)
         return 0;
     p   = av_log2(k);
     e   = (1 << (p + 1)) - k - 1;
-    res = get_bitsz(gb, p);
+    res = get_bits_long(gb, p);
     if (res >= e)
         res = (res << 1) - e + get_bits1(gb);
     return res;
@@ -266,10 +266,6 @@ static int wv_get_value(WavpackFrameContext *ctx, GetBitContext *gb,
         INC_MED(2);
     }
     if (!c->error_limit) {
-        if (add >= 0x2000000U) {
-            av_log(ctx->avctx, AV_LOG_ERROR, "k %d is too large\n", add);
-            goto error;
-        }
         ret = base + get_tail(gb, add);
         if (get_bits_left(gb) <= 0)
             goto error;
