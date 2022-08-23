@@ -278,6 +278,8 @@ static int dv_extract_audio_info(DVDemuxContext *c, const uint8_t *frame)
             avpriv_set_pts_info(c->ast[i], 64, c->sys->time_base.num, c->sys->time_base.den);
             c->ast[i]->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
             c->ast[i]->codecpar->codec_id   = AV_CODEC_ID_PCM_S16LE;
+            c->ast[i]->codecpar->ch_layout  = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
+            c->ast[i]->start_time           = 0;
 
             c->audio_pkt[i].size         = 0;
             c->audio_pkt[i].data         = c->audio_buf[i];
@@ -288,9 +290,7 @@ static int dv_extract_audio_info(DVDemuxContext *c, const uint8_t *frame)
             c->audio_pkt[i].pos          = -1;
         }
         c->ast[i]->codecpar->sample_rate    = dv_audio_frequency[freq];
-        c->ast[i]->codecpar->ch_layout      = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
         c->ast[i]->codecpar->bit_rate       = 2 * dv_audio_frequency[freq] * 16;
-        c->ast[i]->start_time            = 0;
     }
     c->ach = ach;
 
