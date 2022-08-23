@@ -184,13 +184,3 @@ int ff_dv_init_dynamic_tables(DVVideoContext *ctx, const AVDVProfile *d)
 
     return 0;
 }
-
-av_cold int ff_dvvideo_init(AVCodecContext *avctx)
-{
-    DVVideoContext *s = avctx->priv_data;
-
-    s->avctx = avctx;
-    avctx->chroma_sample_location = AVCHROMA_LOC_TOPLEFT;
-
-    return 0;
-}

@@ -55,6 +55,16 @@ static av_cold int dvvideo_encode_init(AVCodecContext *avctx)
     PixblockDSPContext pdsp;
     int ret;
 
+    s->avctx = avctx;
+
+    if (avctx->chroma_sample_location != AVCHROMA_LOC_TOPLEFT) {
+        const char *name = av_chroma_location_name(avctx->chroma_sample_location);
+        av_log(avctx, AV_LOG_WARNING, "Only top-left chroma location is supported "
+               "in DV, input value is: %s\n", name ? name : "unknown");
+        if (avctx->strict_std_compliance > FF_COMPLIANCE_NORMAL)
+            return AVERROR(EINVAL);
+    }
+
     s->sys = av_dv_codec_profile2(avctx->width, avctx->height, avctx->pix_fmt, avctx->time_base);
     if (!s->sys) {
         av_log(avctx, AV_LOG_ERROR, "Found no DV profile for %ix%i %s video. "
@@ -91,7 +101,7 @@ static av_cold int dvvideo_encode_init(AVCodecContext *avctx)
     }
 #endif
 
-    return ff_dvvideo_init(avctx);
+    return 0;
 }
 
 /* bit budget for AC only in 5 MBs */

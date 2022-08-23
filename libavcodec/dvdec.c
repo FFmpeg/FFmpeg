@@ -238,6 +238,8 @@ static av_cold int dvvideo_decode_init(AVCodecContext *avctx)
     DVVideoContext *s = avctx->priv_data;
     int i;
 
+    avctx->chroma_sample_location = AVCHROMA_LOC_TOPLEFT;
+
     ff_idctdsp_init(&s->idsp, avctx);
 
     for (i = 0; i < 64; i++)
@@ -256,7 +258,7 @@ static av_cold int dvvideo_decode_init(AVCodecContext *avctx)
 
     ff_thread_once(&init_static_once, dv_init_static);
 
-    return ff_dvvideo_init(avctx);
+    return 0;
 }
 
 /* decode AC coefficients */

@@ -97,8 +97,6 @@ enum dv_pack_type {
 
 int ff_dv_init_dynamic_tables(DVVideoContext *s, const AVDVProfile *d);
 
-int ff_dvvideo_init(AVCodecContext *avctx);
-
 static inline int dv_work_pool_size(const AVDVProfile *d)
 {
     int size = d->n_difchan * d->difseg_size * 27;
