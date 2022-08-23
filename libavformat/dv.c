@@ -404,7 +404,7 @@ int avpriv_dv_produce_packet(DVDemuxContext *c, AVPacket *pkt,
     if (buf_size < DV_PROFILE_BYTES ||
         !(c->sys = av_dv_frame_profile(c->sys, buf, buf_size)) ||
         buf_size < c->sys->frame_size) {
-        return -1;   /* Broken frame, or not enough data */
+        return AVERROR_INVALIDDATA;
     }
 
     /* Queueing audio packet */
