@@ -192,7 +192,7 @@ static int encode_simple_internal(AVCodecContext *avctx, AVPacket *avpkt)
 
     if (!frame->buf[0]) {
         if (!(avctx->codec->capabilities & AV_CODEC_CAP_DELAY ||
-              (avci->frame_thread_encoder && avctx->active_thread_type & FF_THREAD_FRAME)))
+              avci->frame_thread_encoder))
             return AVERROR_EOF;
 
         // Flushing is signaled with a NULL frame
@@ -203,8 +203,7 @@ static int encode_simple_internal(AVCodecContext *avctx, AVPacket *avpkt)
 
     av_assert0(codec->cb_type == FF_CODEC_CB_TYPE_ENCODE);
 
-    if (CONFIG_FRAME_THREAD_ENCODER &&
-        avci->frame_thread_encoder && (avctx->active_thread_type & FF_THREAD_FRAME))
+    if (CONFIG_FRAME_THREAD_ENCODER && avci->frame_thread_encoder)
         /* This might modify frame, but it doesn't matter, because
          * the frame properties used below are not used for video
          * (due to the delay inherent in frame threaded encoding, it makes
