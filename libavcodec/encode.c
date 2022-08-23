@@ -240,7 +240,6 @@ static int encode_simple_internal(AVCodecContext *avctx, AVPacket *avpkt)
         if (avctx->codec->type == AVMEDIA_TYPE_AUDIO) {
             avpkt->dts = avpkt->pts;
         }
-        avpkt->flags |= avci->intra_only_flag;
     }
 
     if (avci->draining && !got_packet)
@@ -301,6 +300,8 @@ static int encode_receive_packet_internal(AVCodecContext *avctx, AVPacket *avpkt
             av_assert0(!avpkt->data || avpkt->buf);
     } else
         ret = encode_simple_receive_packet(avctx, avpkt);
+    if (ret >= 0)
+        avpkt->flags |= avci->intra_only_flag;
 
     if (ret == AVERROR_EOF)
         avci->draining_done = 1;
