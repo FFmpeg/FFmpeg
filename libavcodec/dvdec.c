@@ -47,6 +47,7 @@
 #include "dv_profile_internal.h"
 #include "dvdata.h"
 #include "get_bits.h"
+#include "idctdsp.h"
 #include "put_bits.h"
 #include "simple_idct.h"
 #include "thread.h"
@@ -60,6 +61,19 @@ typedef struct BlockInfo {
     uint32_t partial_bit_buffer;
     int shift_offset;
 } BlockInfo;
+
+typedef struct DVDecContext {
+    const AVDVProfile *sys;
+    const AVFrame     *frame;
+    const uint8_t     *buf;
+
+    uint8_t      dv_zigzag[2][64];
+    DVwork_chunk work_chunks[4 * 12 * 27];
+    uint32_t     idct_factor[2 * 4 * 16 * 64];
+    void       (*idct_put[2])(uint8_t *dest, ptrdiff_t stride, int16_t *block);
+
+    IDCTDSPContext idsp;
+} DVDecContext;
 
 static const int dv_iweight_bits = 14;
 
@@ -186,7 +200,7 @@ static void dv_init_static(void)
     }
 }
 
-static void dv_init_weight_tables(DVVideoContext *ctx, const AVDVProfile *d)
+static void dv_init_weight_tables(DVDecContext *ctx, const AVDVProfile *d)
 {
     int j, i, c, s;
     uint32_t *factor1 = &ctx->idct_factor[0],
@@ -235,7 +249,7 @@ static void dv_init_weight_tables(DVVideoContext *ctx, const AVDVProfile *d)
 static av_cold int dvvideo_decode_init(AVCodecContext *avctx)
 {
     static AVOnce init_static_once = AV_ONCE_INIT;
-    DVVideoContext *s = avctx->priv_data;
+    DVDecContext *s = avctx->priv_data;
     int i;
 
     avctx->chroma_sample_location = AVCHROMA_LOC_TOPLEFT;
@@ -345,7 +359,7 @@ static av_always_inline void put_block_8x4(int16_t *block, uint8_t *av_restrict 
     }
 }
 
-static void dv100_idct_put_last_row_field_chroma(const DVVideoContext *s, uint8_t *data,
+static void dv100_idct_put_last_row_field_chroma(const DVDecContext *s, uint8_t *data,
                                                  int stride, int16_t *blocks)
 {
     s->idsp.idct(blocks + 0*64);
@@ -357,7 +371,7 @@ static void dv100_idct_put_last_row_field_chroma(const DVVideoContext *s, uint8_
     put_block_8x4(blocks+1*64 + 4*8, data + 8 + stride, stride<<1);
 }
 
-static void dv100_idct_put_last_row_field_luma(const DVVideoContext *s, uint8_t *data,
+static void dv100_idct_put_last_row_field_luma(const DVDecContext *s, uint8_t *data,
                                                int stride, int16_t *blocks)
 {
     s->idsp.idct(blocks + 0*64);
@@ -378,7 +392,7 @@ static void dv100_idct_put_last_row_field_luma(const DVVideoContext *s, uint8_t 
 /* mb_x and mb_y are in units of 8 pixels */
 static int dv_decode_video_segment(AVCodecContext *avctx, void *arg)
 {
-    const DVVideoContext *s = avctx->priv_data;
+    const DVDecContext *s = avctx->priv_data;
     DVwork_chunk *work_chunk = arg;
     int quant, dc, dct_mode, class1, j;
     int mb_index, mb_x, mb_y, last_index;
@@ -612,7 +626,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 {
     uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
-    DVVideoContext *s = avctx->priv_data;
+    DVDecContext *s = avctx->priv_data;
     const uint8_t *vsc_pack;
     int apt, is16_9, ret;
     const AVDVProfile *sys;
@@ -686,7 +700,7 @@ const FFCodec ff_dvvideo_decoder = {
     CODEC_LONG_NAME("DV (Digital Video)"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_DVVIDEO,
-    .priv_data_size = sizeof(DVVideoContext),
+    .priv_data_size = sizeof(DVDecContext),
     .init           = dvvideo_decode_init,
     FF_CODEC_DECODE_CB(dvvideo_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_SLICE_THREADS,
