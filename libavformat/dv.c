@@ -268,11 +268,13 @@ static int dv_extract_audio_info(DVDemuxContext *c, const uint8_t *frame)
         ach = 2;
 
     /* Dynamic handling of the audio streams in DV */
+    c->ach = 0;
     for (i = 0; i < ach; i++) {
         if (!c->ast[i]) {
             c->ast[i] = avformat_new_stream(c->fctx, NULL);
             if (!c->ast[i])
-                break;
+                return AVERROR(ENOMEM);
+
             avpriv_set_pts_info(c->ast[i], 64, c->sys->time_base.num, c->sys->time_base.den);
             c->ast[i]->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
             c->ast[i]->codecpar->codec_id   = AV_CODEC_ID_PCM_S16LE;
@@ -290,7 +292,7 @@ static int dv_extract_audio_info(DVDemuxContext *c, const uint8_t *frame)
         c->ast[i]->codecpar->bit_rate       = 2 * dv_audio_frequency[freq] * 16;
         c->ast[i]->start_time            = 0;
     }
-    c->ach = i;
+    c->ach = ach;
 
     return (c->sys->audio_min_samples[freq] + smpls) * 4; /* 2ch, 2bytes */
 }
@@ -410,6 +412,9 @@ int avpriv_dv_produce_packet(DVDemuxContext *c, AVPacket *pkt,
     /* Queueing audio packet */
     /* FIXME: in case of no audio/bad audio we have to do something */
     size = dv_extract_audio_info(c, buf);
+    if (size < 0)
+        return size;
+
     for (i = 0; i < c->ach; i++) {
         c->audio_pkt[i].pos  = pos;
         c->audio_pkt[i].size = size;
