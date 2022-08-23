@@ -70,6 +70,7 @@ typedef struct AOMEncoderContext {
     struct aom_codec_ctx encoder;
     struct aom_image rawimg;
     struct aom_fixed_buf twopass_stats;
+    unsigned twopass_stats_size;
     struct FrameListData *coded_frame_list;
     int cpu_used;
     int auto_alt_ref;
@@ -1200,14 +1201,17 @@ static int queue_frames(AVCodecContext *avctx, AVPacket *pkt_out)
         case AOM_CODEC_STATS_PKT:
         {
             struct aom_fixed_buf *stats = &ctx->twopass_stats;
-            int err;
-            if ((err = av_reallocp(&stats->buf,
-                                   stats->sz +
-                                   pkt->data.twopass_stats.sz)) < 0) {
+            uint8_t *tmp = av_fast_realloc(stats->buf,
+                                           &ctx->twopass_stats_size,
+                                           stats->sz +
+                                           pkt->data.twopass_stats.sz);
+            if (!tmp) {
+                av_freep(&stats->buf);
                 stats->sz = 0;
                 av_log(avctx, AV_LOG_ERROR, "Stat buffer realloc failed\n");
-                return err;
+                return AVERROR(ENOMEM);
             }
+            stats->buf = tmp;
             memcpy((uint8_t *)stats->buf + stats->sz,
                    pkt->data.twopass_stats.buf, pkt->data.twopass_stats.sz);
             stats->sz += pkt->data.twopass_stats.sz;
