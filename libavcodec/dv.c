@@ -162,7 +162,7 @@ static inline void dv_calc_mb_coordinates(const AVDVProfile *d, int chan,
     }
 }
 
-int ff_dv_init_dynamic_tables(DVVideoContext *ctx, const AVDVProfile *d)
+int ff_dv_init_dynamic_tables(DVwork_chunk *work_chunks, const AVDVProfile *d)
 {
     int j, i, c, s, p;
 
@@ -174,8 +174,8 @@ int ff_dv_init_dynamic_tables(DVVideoContext *ctx, const AVDVProfile *d)
                 p += !(j % 3);
                 if (!(DV_PROFILE_IS_1080i50(d) && c != 0 && s == 11) &&
                     !(DV_PROFILE_IS_720p50(d) && s > 9)) {
-                    dv_calc_mb_coordinates(d, c, s, j, &ctx->work_chunks[i].mb_coordinates[0]);
-                    ctx->work_chunks[i++].buf_offset = p;
+                    dv_calc_mb_coordinates(d, c, s, j, &work_chunks[i].mb_coordinates[0]);
+                    work_chunks[i++].buf_offset = p;
                 }
                 p += 5;
             }

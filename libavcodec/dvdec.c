@@ -624,7 +624,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     }
 
     if (sys != s->sys) {
-        ret = ff_dv_init_dynamic_tables(s, sys);
+        ret = ff_dv_init_dynamic_tables(s->work_chunks, sys);
         if (ret < 0) {
             av_log(avctx, AV_LOG_ERROR, "Error initializing the work tables.\n");
             return ret;

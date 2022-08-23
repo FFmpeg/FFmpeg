@@ -95,7 +95,7 @@ enum dv_pack_type {
  */
 #define DV_MAX_BPM 8
 
-int ff_dv_init_dynamic_tables(DVVideoContext *s, const AVDVProfile *d);
+int ff_dv_init_dynamic_tables(DVwork_chunk *work_chunks, const AVDVProfile *d);
 
 static inline int dv_work_pool_size(const AVDVProfile *d)
 {
