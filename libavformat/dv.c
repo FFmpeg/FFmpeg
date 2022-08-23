@@ -33,6 +33,7 @@
 
 #include <time.h>
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "libavcodec/dv_profile.h"
 #include "libavcodec/dv.h"
@@ -46,7 +47,7 @@
 #if CONFIG_DV_DEMUXER
 
 // Must be kept in sync with AVPacket
-struct DVPacket {
+typedef struct DVPacket {
     int64_t  pts;
     uint8_t *data;
     int      size;
@@ -54,7 +55,10 @@ struct DVPacket {
     int      flags;
     int64_t  pos;
     int64_t  duration;
-};
+
+    int sample_rate;
+    int last_sample_rate;
+} DVPacket;
 
 struct DVDemuxContext {
     const AVDVProfile*  sys;    /* Current DV profile. E.g.: 525/60, 625/50 */
@@ -237,7 +241,7 @@ static int dv_extract_audio(const uint8_t *frame, uint8_t **ppcm,
 static int dv_extract_audio_info(DVDemuxContext *c, const uint8_t *frame)
 {
     const uint8_t *as_pack;
-    int freq, stype, smpls, quant, i, ach;
+    int freq, stype, smpls, quant, i, ach, sr;
 
     as_pack = dv_extract_pack(frame, DV_AUDIO_SOURCE);
     if (!as_pack || !c->sys) {    /* No audio ? */
@@ -255,6 +259,7 @@ static int dv_extract_audio_info(DVDemuxContext *c, const uint8_t *frame)
                "Unrecognized audio sample rate index (%d)\n", freq);
         return 0;
     }
+    sr = dv_audio_frequency[freq];
 
     if (stype > 3) {
         av_log(c->fctx, AV_LOG_ERROR, "stype %d is invalid\n", stype);
@@ -280,7 +285,10 @@ static int dv_extract_audio_info(DVDemuxContext *c, const uint8_t *frame)
             c->ast[i]->codecpar->codec_id   = AV_CODEC_ID_PCM_S16LE;
             c->ast[i]->codecpar->ch_layout  = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
             c->ast[i]->start_time           = 0;
-            c->ast[i]->codecpar->bit_rate   = 2 * dv_audio_frequency[freq] * 16;
+            c->ast[i]->codecpar->bit_rate   = 2 * sr * 16;
+
+            c->ast[i]->codecpar->sample_rate = sr;
+            c->audio_pkt[i].last_sample_rate = sr;
 
             c->audio_pkt[i].size         = 0;
             c->audio_pkt[i].data         = c->audio_buf[i];
@@ -290,7 +298,8 @@ static int dv_extract_audio_info(DVDemuxContext *c, const uint8_t *frame)
             c->audio_pkt[i].duration     = 0;
             c->audio_pkt[i].pos          = -1;
         }
-        c->ast[i]->codecpar->sample_rate    = dv_audio_frequency[freq];
+
+        c->audio_pkt[i].sample_rate = sr;
     }
     c->ach = ach;
 
@@ -380,16 +389,26 @@ int avpriv_dv_get_packet(DVDemuxContext *c, AVPacket *pkt)
 
     for (i = 0; i < c->ach; i++) {
         if (c->ast[i] && c->audio_pkt[i].size) {
-            pkt->size         = c->audio_pkt[i].size;
-            pkt->data         = c->audio_pkt[i].data;
-            pkt->stream_index = c->audio_pkt[i].stream_index;
-            pkt->flags        = c->audio_pkt[i].flags;
-            pkt->pts          = c->audio_pkt[i].pts;
-            pkt->duration     = c->audio_pkt[i].duration;
-            pkt->pos          = c->audio_pkt[i].pos;
+            DVPacket *dpkt = &c->audio_pkt[i];
 
-            c->audio_pkt[i].size = 0;
-            size                 = pkt->size;
+            pkt->size         = dpkt->size;
+            pkt->data         = dpkt->data;
+            pkt->stream_index = dpkt->stream_index;
+            pkt->flags        = dpkt->flags;
+            pkt->pts          = dpkt->pts;
+            pkt->duration     = dpkt->duration;
+            pkt->pos          = dpkt->pos;
+
+            dpkt->size = 0;
+            size       = pkt->size;
+
+            if (dpkt->last_sample_rate != dpkt->sample_rate) {
+                int ret = ff_add_param_change(pkt, 0, 0, dpkt->sample_rate, 0, 0);
+                if (ret < 0)
+                    return ret;
+                dpkt->last_sample_rate = dpkt->sample_rate;
+            }
+
             break;
         }
     }
