@@ -38,8 +38,12 @@
  * DV codec.
  */
 
-#include "avcodec.h"
-#include "dv.h"
+#include <stdint.h>
+
+#include "libavutil/pixfmt.h"
+
+#include "dv_internal.h"
+#include "dv_profile.h"
 
 static inline void dv_calc_mb_coordinates(const AVDVProfile *d, int chan,
                                           int seq, int slot, uint16_t *tbl)

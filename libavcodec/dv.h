@@ -27,13 +27,6 @@
 #ifndef AVCODEC_DV_H
 #define AVCODEC_DV_H
 
-#include "dv_profile.h"
-
-typedef struct DVwork_chunk {
-    uint16_t buf_offset;
-    uint16_t mb_coordinates[5];
-} DVwork_chunk;
-
 enum dv_section_type {
     dv_sect_header  = 0x1f,
     dv_sect_subcode = 0x3f,
@@ -71,32 +64,5 @@ enum dv_pack_type {
  * maximum number of blocks per macroblock in any DV format
  */
 #define DV_MAX_BPM 8
-
-int ff_dv_init_dynamic_tables(DVwork_chunk *work_chunks, const AVDVProfile *d);
-
-static inline int dv_work_pool_size(const AVDVProfile *d)
-{
-    int size = d->n_difchan * d->difseg_size * 27;
-    if (DV_PROFILE_IS_1080i50(d))
-        size -= 3 * 27;
-    if (DV_PROFILE_IS_720p50(d))
-        size -= 4 * 27;
-    return size;
-}
-
-static inline void dv_calculate_mb_xy(const AVDVProfile *sys,
-                                      const uint8_t *buf,
-                                      const DVwork_chunk *work_chunk,
-                                      int m, int *mb_x, int *mb_y)
-{
-    *mb_x = work_chunk->mb_coordinates[m] & 0xff;
-    *mb_y = work_chunk->mb_coordinates[m] >> 8;
-
-    /* We work with 720p frames split in half.
-     * The odd half-frame (chan == 2,3) is displaced :-( */
-    if (sys->height == 720 && !(buf[1] & 0x0C))
-        /* shifting the Y coordinate down by 72/2 macro blocks */
-        *mb_y -= (*mb_y > 17) ? 18 : -72;
-}
 
 #endif /* AVCODEC_DV_H */
