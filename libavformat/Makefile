@@ -13,6 +13,7 @@ OBJS = allformats.o         \
        demux.o              \
        demux_utils.o        \
        dump.o               \
+       dv.o                 \
        format.o             \
        id3v1.o              \
        id3v2.o              \
@@ -184,7 +185,6 @@ OBJS-$(CONFIG_DSS_DEMUXER)               += dss.o
 OBJS-$(CONFIG_DTSHD_DEMUXER)             += dtshddec.o
 OBJS-$(CONFIG_DTS_DEMUXER)               += dtsdec.o rawdec.o
 OBJS-$(CONFIG_DTS_MUXER)                 += rawenc.o
-OBJS-$(CONFIG_DV_DEMUXER)                += dv.o
 OBJS-$(CONFIG_DV_MUXER)                  += dvenc.o
 OBJS-$(CONFIG_DVBSUB_DEMUXER)            += dvbsub.o rawdec.o
 OBJS-$(CONFIG_DVBTXT_DEMUXER)            += dvbtxt.o rawdec.o
@@ -711,7 +711,6 @@ SHLIBOBJS-$(CONFIG_RTP_MUXER)            += golomb_tab.o jpegtables.o \
 SHLIBOBJS-$(CONFIG_SPDIF_MUXER)          += dca_sample_rate_tab.o
 
 # libavdevice dependencies
-OBJS-$(CONFIG_IEC61883_INDEV)            += dv.o
 
 # Windows resource file
 SHLIBOBJS-$(HAVE_GNU_WINDRES)            += avformatres.o

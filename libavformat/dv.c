@@ -28,6 +28,9 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+#include "config_components.h"
+
 #include <time.h>
 #include "avformat.h"
 #include "internal.h"
@@ -39,6 +42,8 @@
 #include "libavutil/timecode.h"
 #include "dv.h"
 #include "libavutil/avassert.h"
+
+#if CONFIG_DV_DEMUXER
 
 // Must be kept in sync with AVPacket
 struct DVPacket {
@@ -647,3 +652,21 @@ const AVInputFormat ff_dv_demuxer = {
     .read_seek      = dv_read_seek,
     .extensions     = "dv,dif",
 };
+
+#else // CONFIG_DV_DEMUXER
+DVDemuxContext *avpriv_dv_init_demux(AVFormatContext *s)
+{
+    return NULL;
+}
+
+int avpriv_dv_get_packet(DVDemuxContext *c, AVPacket *pkt)
+{
+    return AVERROR(ENOSYS);
+}
+
+int avpriv_dv_produce_packet(DVDemuxContext *c, AVPacket *pkt,
+                             uint8_t *buf, int buf_size, int64_t pos)
+{
+    return AVERROR(ENOSYS);
+}
+#endif // CONFIG_DV_DEMUXER
