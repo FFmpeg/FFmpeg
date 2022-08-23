@@ -39,8 +39,6 @@
 #include "dcaenc.h"
 #include "encode.h"
 #include "fft.h"
-#include "internal.h"
-#include "mathops.h"
 #include "put_bits.h"
 
 #define MAX_CHANNELS 6
@@ -1215,8 +1213,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     flush_put_bits(&c->pb);
     memset(put_bits_ptr(&c->pb), 0, put_bytes_left(&c->pb, 0));
 
-    avpkt->pts      = frame->pts;
-    avpkt->duration = ff_samples_to_time_base(avctx, frame->nb_samples);
     *got_packet_ptr = 1;
     return 0;
 }

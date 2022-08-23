@@ -26,7 +26,6 @@
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "encode.h"
-#include "internal.h"
 #include "put_bits.h"
 #include "bytestream.h"
 #include "wavpackenc.h"
@@ -2905,9 +2904,7 @@ static int wavpack_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     }
     s->sample_index += frame->nb_samples;
 
-    avpkt->pts      = frame->pts;
     avpkt->size     = buf - avpkt->data;
-    avpkt->duration = ff_samples_to_time_base(avctx, frame->nb_samples);
     *got_packet_ptr = 1;
     return 0;
 }

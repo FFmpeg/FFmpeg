@@ -25,7 +25,6 @@
 #include "codec_internal.h"
 #include "encode.h"
 #include "put_bits.h"
-#include "internal.h"
 #include "libavutil/crc.h"
 
 typedef struct TTAEncContext {
@@ -188,9 +187,7 @@ pkt_alloc:
     put_bits32(&pb, av_crc(s->crc_table, UINT32_MAX, avpkt->data, out_bytes) ^ UINT32_MAX);
     flush_put_bits(&pb);
 
-    avpkt->pts      = frame->pts;
     avpkt->size     = out_bytes + 4;
-    avpkt->duration = ff_samples_to_time_base(avctx, frame->nb_samples);
     *got_packet_ptr = 1;
     return 0;
 }

@@ -23,7 +23,6 @@
 #include "bytestream.h"
 #include "codec_internal.h"
 #include "encode.h"
-#include "internal.h"
 
 typedef struct BlurayPCMEncContext {
     uint16_t header;      // Header added to every frame
@@ -266,8 +265,6 @@ static int pcm_bluray_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         return AVERROR_BUG;
     }
 
-    avpkt->pts = frame->pts;
-    avpkt->duration = ff_samples_to_time_base(avctx, frame->nb_samples);
     *got_packet_ptr = 1;
 
     return 0;

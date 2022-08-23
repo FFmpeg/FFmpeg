@@ -24,7 +24,6 @@
 #include "bytestream.h"
 #include "codec_internal.h"
 #include "encode.h"
-#include "internal.h"
 
 typedef struct PCMDVDContext {
     uint8_t header[3];       // Header added to every frame
@@ -167,8 +166,6 @@ static int pcm_dvd_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         break;
     }
 
-    avpkt->pts      = frame->pts;
-    avpkt->duration = ff_samples_to_time_base(avctx, frame->nb_samples);
     *got_packet_ptr = 1;
 
     return 0;
