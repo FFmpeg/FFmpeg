@@ -430,14 +430,17 @@ int avpriv_dv_produce_packet(DVDemuxContext *c, AVPacket *pkt,
         }
     }
 
-    /* Now it's time to return video packet */
-    size = dv_extract_video_info(c, buf);
-    pkt->data         = buf;
-    pkt->pos          = pos;
-    pkt->size         = size;
-    pkt->flags       |= AV_PKT_FLAG_KEY;
-    pkt->stream_index = c->vst->index;
-    pkt->pts          = c->frames;
+    /* return the video packet, if the caller wants it */
+    if (pkt) {
+        size = dv_extract_video_info(c, buf);
+
+        pkt->data         = buf;
+        pkt->pos          = pos;
+        pkt->size         = size;
+        pkt->flags       |= AV_PKT_FLAG_KEY;
+        pkt->stream_index = c->vst->index;
+        pkt->pts          = c->frames;
+    }
 
     c->frames++;
 
