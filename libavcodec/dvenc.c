@@ -47,9 +47,26 @@
 #include "pixblockdsp.h"
 #include "put_bits.h"
 
+typedef struct DVEncContext {
+    const AVClass     *class;
+    const AVDVProfile *sys;
+    const AVFrame     *frame;
+    AVCodecContext    *avctx;
+    uint8_t           *buf;
+
+    void (*get_pixels)(int16_t *block, const uint8_t *pixels, ptrdiff_t linesize);
+    void (*fdct[2])(int16_t *block);
+
+    me_cmp_func  ildct_cmp;
+    DVwork_chunk work_chunks[4 * 12 * 27];
+
+    int quant_deadzone;
+} DVEncContext;
+
+
 static av_cold int dvvideo_encode_init(AVCodecContext *avctx)
 {
-    DVVideoContext *s = avctx->priv_data;
+    DVEncContext *s = avctx->priv_data;
     FDCTDSPContext fdsp;
     MECmpContext mecc;
     PixblockDSPContext pdsp;
@@ -227,7 +244,7 @@ static av_always_inline PutBitContext *dv_encode_ac(EncBlockInfo *bi,
     return pb;
 }
 
-static av_always_inline int dv_guess_dct_mode(DVVideoContext *s, const uint8_t *data,
+static av_always_inline int dv_guess_dct_mode(DVEncContext *s, const uint8_t *data,
                                               ptrdiff_t linesize)
 {
     if (s->avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) {
@@ -375,7 +392,7 @@ static const int dv_weight_720[2][64] = {
       2661, 2583, 2509, 2394, 2509, 2260, 2260, 2131, }
 };
 
-static av_always_inline int dv_set_class_number_sd(DVVideoContext *s,
+static av_always_inline int dv_set_class_number_sd(DVEncContext *s,
                                                    int16_t *blk, EncBlockInfo *bi,
                                                    const uint8_t *zigzag_scan,
                                                    const int *weight, int bias)
@@ -459,7 +476,7 @@ static av_always_inline int dv_set_class_number_sd(DVVideoContext *s,
 
 /* this function just copies the DCT coefficients and performs
    the initial (non-)quantization. */
-static inline void dv_set_class_number_hd(DVVideoContext *s,
+static inline void dv_set_class_number_hd(DVEncContext *s,
                                           int16_t *blk, EncBlockInfo *bi,
                                           const uint8_t *zigzag_scan,
                                           const int *weight, int bias)
@@ -517,7 +534,7 @@ static inline void dv_set_class_number_hd(DVVideoContext *s,
 }
 
 static av_always_inline int dv_init_enc_block(EncBlockInfo* bi, const uint8_t *data, int linesize,
-                                              DVVideoContext *s, int chroma)
+                                              DVEncContext *s, int chroma)
 {
     LOCAL_ALIGNED_16(int16_t, blk, [64]);
 
@@ -854,7 +871,7 @@ static inline void dv_revise_cnos(uint8_t *dif, EncBlockInfo *blk, const AVDVPro
 
 static int dv_encode_video_segment(AVCodecContext *avctx, void *arg)
 {
-    DVVideoContext *s = avctx->priv_data;
+    DVEncContext *s = avctx->priv_data;
     DVwork_chunk *work_chunk = arg;
     int mb_index, i, j;
     int mb_x, mb_y, c_offset;
@@ -1002,7 +1019,7 @@ static int dv_encode_video_segment(AVCodecContext *avctx, void *arg)
     return 0;
 }
 
-static inline int dv_write_pack(enum dv_pack_type pack_id, DVVideoContext *c,
+static inline int dv_write_pack(enum dv_pack_type pack_id, DVEncContext *c,
                                 uint8_t *buf)
 {
     /*
@@ -1122,7 +1139,7 @@ static inline int dv_write_ssyb_id(uint8_t syb_num, uint8_t fr, uint8_t *buf)
     return 3;
 }
 
-static void dv_format_frame(DVVideoContext *c, uint8_t *buf)
+static void dv_format_frame(DVEncContext *c, uint8_t *buf)
 {
     int chan, i, j, k;
     /* We work with 720p frames split in half. The odd half-frame is chan 2,3 */
@@ -1177,7 +1194,7 @@ static void dv_format_frame(DVVideoContext *c, uint8_t *buf)
 static int dvvideo_encode_frame(AVCodecContext *c, AVPacket *pkt,
                                 const AVFrame *frame, int *got_packet)
 {
-    DVVideoContext *s = c->priv_data;
+    DVEncContext *s = c->priv_data;
     int ret;
 
     if ((ret = ff_get_encode_buffer(c, pkt, s->sys->frame_size, 0)) < 0)
@@ -1202,7 +1219,7 @@ static int dvvideo_encode_frame(AVCodecContext *c, AVPacket *pkt,
 }
 
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
-#define OFFSET(x) offsetof(DVVideoContext, x)
+#define OFFSET(x) offsetof(DVEncContext, x)
 static const AVOption dv_options[] = {
     { "quant_deadzone",        "Quantizer dead zone",    OFFSET(quant_deadzone),       AV_OPT_TYPE_INT, { .i64 = 7 }, 0, 1024, VE },
     { NULL },
@@ -1222,7 +1239,7 @@ const FFCodec ff_dvvideo_encoder = {
     .p.id           = AV_CODEC_ID_DVVIDEO,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS |
                       AV_CODEC_CAP_SLICE_THREADS,
-    .priv_data_size = sizeof(DVVideoContext),
+    .priv_data_size = sizeof(DVEncContext),
     .init           = dvvideo_encode_init,
     FF_CODEC_ENCODE_CB(dvvideo_encode_frame),
     .p.pix_fmts     = (const enum AVPixelFormat[]) {
