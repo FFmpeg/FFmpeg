@@ -194,7 +194,7 @@ int ff_encode_encode_cb(AVCodecContext *avctx, AVPacket *avpkt,
         if (avctx->codec->type == AVMEDIA_TYPE_VIDEO &&
             !(avctx->codec->capabilities & AV_CODEC_CAP_DELAY))
             avpkt->pts = avpkt->dts = frame->pts;
-        if (frame && !(avctx->codec->capabilities & AV_CODEC_CAP_DELAY)) {
+        if (!(avctx->codec->capabilities & AV_CODEC_CAP_DELAY)) {
             if (avctx->codec->type == AVMEDIA_TYPE_AUDIO) {
                 if (avpkt->pts == AV_NOPTS_VALUE)
                     avpkt->pts = frame->pts;
