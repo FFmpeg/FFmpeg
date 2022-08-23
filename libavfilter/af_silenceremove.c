@@ -481,10 +481,12 @@ static int config_input(AVFilterLink *inlink)
     s->stop_holdoff_end    = 0;
     s->stop_found_periods  = 0;
 
-    if (s->start_periods)
+    if (s->start_periods) {
         s->mode = SILENCE_TRIM;
-    else
+        s->one_period = 1;
+    } else {
         s->mode = SILENCE_COPY;
+    }
 
     switch (inlink->format) {
     case AV_SAMPLE_FMT_DBL:
