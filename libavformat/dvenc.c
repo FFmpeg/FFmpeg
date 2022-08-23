@@ -94,7 +94,7 @@ static int dv_audio_frame_size(const AVDVProfile* sys, int frame, int sample_rat
                                             sizeof(sys->audio_samples_dist[0]))];
 }
 
-static int dv_write_pack(enum dv_pack_type pack_id, DVMuxContext *c, uint8_t* buf, int channel, int seq)
+static int dv_write_pack(enum DVPackType pack_id, DVMuxContext *c, uint8_t* buf, int channel, int seq)
 {
     struct tm tc;
     time_t ct;
@@ -103,12 +103,12 @@ static int dv_write_pack(enum dv_pack_type pack_id, DVMuxContext *c, uint8_t* bu
 
     buf[0] = (uint8_t)pack_id;
     switch (pack_id) {
-    case dv_timecode:
+    case DV_TIMECODE:
         timecode  = av_timecode_get_smpte_from_framenum(&c->tc, c->frames);
         timecode |= 1<<23 | 1<<15 | 1<<7 | 1<<6; // biphase and binary group flags
         AV_WB32(buf + 1, timecode);
         break;
-    case dv_audio_source:  /* AAUX source pack */
+    case DV_AUDIO_SOURCE:  /* AAUX source pack */
         if (c->ast[channel]->codecpar->sample_rate == 44100) {
             audio_type = 1;
         } else if (c->ast[channel]->codecpar->sample_rate == 32000)
@@ -132,7 +132,7 @@ static int dv_write_pack(enum dv_pack_type pack_id, DVMuxContext *c, uint8_t* bu
                   0;        /* quantization: 0 -- 16-bit linear, 1 -- 12-bit nonlinear */
 
         break;
-    case dv_audio_control:
+    case DV_AUDIO_CONTROL:
         buf[1] = (0 << 6) | /* copy protection: 0 -- unrestricted */
                  (1 << 4) | /* input source: 1 -- digital input */
                  (3 << 2) | /* compression: 3 -- no information */
@@ -147,8 +147,8 @@ static int dv_write_pack(enum dv_pack_type pack_id, DVMuxContext *c, uint8_t* bu
         buf[4] = (1 << 7) | /* reserved -- always 1 */
                   0x7f;     /* genre category */
         break;
-    case dv_audio_recdate:
-    case dv_video_recdate:  /* VAUX recording date */
+    case DV_AUDIO_RECDATE:
+    case DV_VIDEO_RECDATE:  /* VAUX recording date */
         ct = c->start_time + av_rescale_rnd(c->frames, c->sys->time_base.num,
                                             c->sys->time_base.den, AV_ROUND_DOWN);
         brktimegm(ct, &tc);
@@ -163,8 +163,8 @@ static int dv_write_pack(enum dv_pack_type pack_id, DVMuxContext *c, uint8_t* bu
         buf[4] = (((tc.tm_year % 100) / 10) << 4) | /* Tens of year */
                  (tc.tm_year % 10);                 /* Units of year */
         break;
-    case dv_audio_rectime:  /* AAUX recording time */
-    case dv_video_rectime:  /* VAUX recording time */
+    case DV_AUDIO_RECTIME:  /* AAUX recording time */
+    case DV_VIDEO_RECTIME:  /* VAUX recording time */
         ct = c->start_time + av_rescale_rnd(c->frames, c->sys->time_base.num,
                                                        c->sys->time_base.den, AV_ROUND_DOWN);
         brktimegm(ct, &tc);
@@ -219,22 +219,22 @@ static void dv_inject_metadata(DVMuxContext *c, uint8_t* frame)
         /* DV subcode: 2nd and 3d DIFs */
         for (j = 80; j < 80 * 3; j += 80) {
             for (k = 6; k < 6 * 8; k += 8)
-                dv_write_pack(dv_timecode, c, &buf[j+k], 0, seq);
+                dv_write_pack(DV_TIMECODE, c, &buf[j+k], 0, seq);
 
             if (((long)(buf-frame)/(c->sys->frame_size/(c->sys->difseg_size*c->sys->n_difchan))%c->sys->difseg_size) > 5) { /* FIXME: is this really needed ? */
-                dv_write_pack(dv_video_recdate, c, &buf[j+14], 0, seq);
-                dv_write_pack(dv_video_rectime, c, &buf[j+22], 0, seq);
-                dv_write_pack(dv_video_recdate, c, &buf[j+38], 0, seq);
-                dv_write_pack(dv_video_rectime, c, &buf[j+46], 0, seq);
+                dv_write_pack(DV_VIDEO_RECDATE, c, &buf[j+14], 0, seq);
+                dv_write_pack(DV_VIDEO_RECTIME, c, &buf[j+22], 0, seq);
+                dv_write_pack(DV_VIDEO_RECDATE, c, &buf[j+38], 0, seq);
+                dv_write_pack(DV_VIDEO_RECTIME, c, &buf[j+46], 0, seq);
             }
         }
 
         /* DV VAUX: 4th, 5th and 6th 3DIFs */
         for (j = 80*3 + 3; j < 80*6; j += 80) {
-            dv_write_pack(dv_video_recdate, c, &buf[j+5* 2], 0, seq);
-            dv_write_pack(dv_video_rectime, c, &buf[j+5* 3], 0, seq);
-            dv_write_pack(dv_video_recdate, c, &buf[j+5*11], 0, seq);
-            dv_write_pack(dv_video_rectime, c, &buf[j+5*12], 0, seq);
+            dv_write_pack(DV_VIDEO_RECDATE, c, &buf[j+5* 2], 0, seq);
+            dv_write_pack(DV_VIDEO_RECTIME, c, &buf[j+5* 3], 0, seq);
+            dv_write_pack(DV_VIDEO_RECDATE, c, &buf[j+5*11], 0, seq);
+            dv_write_pack(DV_VIDEO_RECTIME, c, &buf[j+5*12], 0, seq);
         }
     }
 }

@@ -27,27 +27,27 @@
 #ifndef AVCODEC_DV_H
 #define AVCODEC_DV_H
 
-enum dv_section_type {
-    dv_sect_header  = 0x1f,
-    dv_sect_subcode = 0x3f,
-    dv_sect_vaux    = 0x56,
-    dv_sect_audio   = 0x76,
-    dv_sect_video   = 0x96,
+enum DVSectionType {
+    DV_SECT_HEADER  = 0x1f,
+    DV_SECT_SUBCODE = 0x3f,
+    DV_SECT_VAUX    = 0x56,
+    DV_SECT_AUDIO   = 0x76,
+    DV_SECT_VIDEO   = 0x96,
 };
 
-enum dv_pack_type {
-    dv_header525     = 0x3f,  /* see dv_write_pack for important details on */
-    dv_header625     = 0xbf,  /* these two packs */
-    dv_timecode      = 0x13,
-    dv_audio_source  = 0x50,
-    dv_audio_control = 0x51,
-    dv_audio_recdate = 0x52,
-    dv_audio_rectime = 0x53,
-    dv_video_source  = 0x60,
-    dv_video_control = 0x61,
-    dv_video_recdate = 0x62,
-    dv_video_rectime = 0x63,
-    dv_unknown_pack  = 0xff,
+enum DVPackType {
+    DV_HEADER525     = 0x3f,  /* see dv_write_pack for important details on */
+    DV_HEADER625     = 0xbf,  /* these two packs */
+    DV_TIMECODE      = 0x13,
+    DV_AUDIO_SOURCE  = 0x50,
+    DV_AUDIO_CONTROL = 0x51,
+    DV_AUDIO_RECDATE = 0x52,
+    DV_AUDIO_RECTIME = 0x53,
+    DV_VIDEO_SOURCE  = 0x60,
+    DV_VIDEO_CONTROL = 0x61,
+    DV_VIDEO_RECDATE = 0x62,
+    DV_VIDEO_RECTIME = 0x63,
+    DV_UNKNOWN_PACK  = 0xff,
 };
 
 #define DV_PROFILE_IS_HD(p) ((p)->video_stype & 0x10)

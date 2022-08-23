@@ -1020,7 +1020,7 @@ static int dv_encode_video_segment(AVCodecContext *avctx, void *arg)
     return 0;
 }
 
-static inline int dv_write_pack(enum dv_pack_type pack_id, DVEncContext *c,
+static inline int dv_write_pack(enum DVPackType pack_id, DVEncContext *c,
                                 uint8_t *buf)
 {
     /*
@@ -1058,8 +1058,8 @@ static inline int dv_write_pack(enum dv_pack_type pack_id, DVEncContext *c,
 
     buf[0] = (uint8_t) pack_id;
     switch (pack_id) {
-    case dv_header525: /* I can't imagine why these two weren't defined as real */
-    case dv_header625: /* packs in SMPTE314M -- they definitely look like ones */
+    case DV_HEADER525: /* I can't imagine why these two weren't defined as real */
+    case DV_HEADER625: /* packs in SMPTE314M -- they definitely look like ones */
         buf[1] =  0xf8       | /* reserved -- always 1 */
                  (apt & 0x07); /* APT: Track application ID */
         buf[2] = (0    << 7) | /* TF1: audio data is 0 - valid; 1 - invalid */
@@ -1072,7 +1072,7 @@ static inline int dv_write_pack(enum dv_pack_type pack_id, DVEncContext *c,
                  (0x0f << 3) | /* reserved -- always 1 */
                  (apt & 0x07); /* AP3: Subcode application ID */
         break;
-    case dv_video_source:
+    case DV_VIDEO_SOURCE:
         buf[1] = 0xff;         /* reserved -- always 1 */
         buf[2] = (1 << 7) |    /* B/W: 0 - b/w, 1 - color */
                  (1 << 6) |    /* following CLF is valid - 0, invalid - 1 */
@@ -1083,7 +1083,7 @@ static inline int dv_write_pack(enum dv_pack_type pack_id, DVEncContext *c,
                  c->sys->video_stype; /* signal type video compression */
         buf[4] = 0xff;         /* VISC: 0xff -- no information */
         break;
-    case dv_video_control:
+    case DV_VIDEO_CONTROL:
         buf[1] = (0 << 6) |    /* Copy generation management (CGMS) 0 -- free */
                  0x3f;         /* reserved -- always 1 */
         buf[2] = 0xc8 |        /* reserved -- always b11001xxx */
@@ -1104,7 +1104,7 @@ static inline int dv_write_pack(enum dv_pack_type pack_id, DVEncContext *c,
     return 5;
 }
 
-static inline int dv_write_dif_id(enum dv_section_type t, uint8_t chan_num,
+static inline int dv_write_dif_id(enum DVSectionType t, uint8_t chan_num,
                                   uint8_t seq_num, uint8_t dif_num,
                                   uint8_t *buf)
 {
@@ -1151,14 +1151,14 @@ static void dv_format_frame(DVEncContext *c, uint8_t *buf)
             memset(buf, 0xff, 80 * 6); /* first 6 DIF blocks are for control data */
 
             /* DV header: 1DIF */
-            buf += dv_write_dif_id(dv_sect_header, chan+chan_offset, i, 0, buf);
-            buf += dv_write_pack((c->sys->dsf ? dv_header625 : dv_header525),
+            buf += dv_write_dif_id(DV_SECT_HEADER, chan+chan_offset, i, 0, buf);
+            buf += dv_write_pack((c->sys->dsf ? DV_HEADER625 : DV_HEADER525),
                                  c, buf);
             buf += 72; /* unused bytes */
 
             /* DV subcode: 2DIFs */
             for (j = 0; j < 2; j++) {
-                buf += dv_write_dif_id(dv_sect_subcode, chan+chan_offset, i, j, buf);
+                buf += dv_write_dif_id(DV_SECT_SUBCODE, chan+chan_offset, i, j, buf);
                 for (k = 0; k < 6; k++)
                     buf += dv_write_ssyb_id(k, (i < c->sys->difseg_size / 2), buf) + 5;
                 buf += 29; /* unused bytes */
@@ -1166,12 +1166,12 @@ static void dv_format_frame(DVEncContext *c, uint8_t *buf)
 
             /* DV VAUX: 3DIFS */
             for (j = 0; j < 3; j++) {
-                buf += dv_write_dif_id(dv_sect_vaux, chan+chan_offset, i, j, buf);
-                buf += dv_write_pack(dv_video_source,  c, buf);
-                buf += dv_write_pack(dv_video_control, c, buf);
+                buf += dv_write_dif_id(DV_SECT_VAUX, chan+chan_offset, i, j, buf);
+                buf += dv_write_pack(DV_VIDEO_SOURCE,  c, buf);
+                buf += dv_write_pack(DV_VIDEO_CONTROL, c, buf);
                 buf += 7 * 5;
-                buf += dv_write_pack(dv_video_source,  c, buf);
-                buf += dv_write_pack(dv_video_control, c, buf);
+                buf += dv_write_pack(DV_VIDEO_SOURCE,  c, buf);
+                buf += dv_write_pack(DV_VIDEO_CONTROL, c, buf);
                 buf += 4 * 5 + 2; /* unused bytes */
             }
 
@@ -1179,10 +1179,10 @@ static void dv_format_frame(DVEncContext *c, uint8_t *buf)
             for (j = 0; j < 135; j++) {
                 if (j % 15 == 0) {
                     memset(buf, 0xff, 80);
-                    buf += dv_write_dif_id(dv_sect_audio, chan+chan_offset, i, j/15, buf);
+                    buf += dv_write_dif_id(DV_SECT_AUDIO, chan+chan_offset, i, j/15, buf);
                     buf += 77; /* audio control & shuffled PCM audio */
                 }
-                buf += dv_write_dif_id(dv_sect_video, chan+chan_offset, i, j, buf);
+                buf += dv_write_dif_id(DV_SECT_VIDEO, chan+chan_offset, i, j, buf);
                 buf += 77; /* 1 video macroblock: 1 bytes control
                             * 4 * 14 bytes Y 8x8 data
                             * 10 bytes Cr 8x8 data

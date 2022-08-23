@@ -87,26 +87,26 @@ static inline uint16_t dv_audio_12to16(uint16_t sample)
     return result;
 }
 
-static const uint8_t *dv_extract_pack(const uint8_t *frame, enum dv_pack_type t)
+static const uint8_t *dv_extract_pack(const uint8_t *frame, enum DVPackType t)
 {
     int offs;
     int c;
 
     for (c = 0; c < 10; c++) {
         switch (t) {
-        case dv_audio_source:
+        case DV_AUDIO_SOURCE:
             if (c&1)    offs = (80 * 6 + 80 * 16 * 0 + 3 + c*12000);
             else        offs = (80 * 6 + 80 * 16 * 3 + 3 + c*12000);
             break;
-        case dv_audio_control:
+        case DV_AUDIO_CONTROL:
             if (c&1)    offs = (80 * 6 + 80 * 16 * 1 + 3 + c*12000);
             else        offs = (80 * 6 + 80 * 16 * 4 + 3 + c*12000);
             break;
-        case dv_video_control:
+        case DV_VIDEO_CONTROL:
             if (c&1)    offs = (80 * 3 + 8      + c*12000);
             else        offs = (80 * 5 + 48 + 5 + c*12000);
             break;
-        case dv_timecode:
+        case DV_TIMECODE:
             offs = (80*1 + 3 + 3);
             break;
         default:
@@ -139,7 +139,7 @@ static int dv_extract_audio(const uint8_t *frame, uint8_t **ppcm,
     const uint8_t *as_pack;
     uint8_t *pcm, ipcm;
 
-    as_pack = dv_extract_pack(frame, dv_audio_source);
+    as_pack = dv_extract_pack(frame, DV_AUDIO_SOURCE);
     if (!as_pack)    /* No audio ? */
         return 0;
 
@@ -239,7 +239,7 @@ static int dv_extract_audio_info(DVDemuxContext *c, const uint8_t *frame)
     const uint8_t *as_pack;
     int freq, stype, smpls, quant, i, ach;
 
-    as_pack = dv_extract_pack(frame, dv_audio_source);
+    as_pack = dv_extract_pack(frame, DV_AUDIO_SOURCE);
     if (!as_pack || !c->sys) {    /* No audio ? */
         c->ach = 0;
         return 0;
@@ -308,7 +308,7 @@ static int dv_extract_video_info(DVDemuxContext *c, const uint8_t *frame)
     c->vst->avg_frame_rate = av_inv_q(c->vst->time_base);
 
     /* finding out SAR is a little bit messy */
-    vsc_pack = dv_extract_pack(frame, dv_video_control);
+    vsc_pack = dv_extract_pack(frame, DV_VIDEO_CONTROL);
     apt      = frame[4] & 0x07;
     is16_9   = (vsc_pack && ((vsc_pack[2] & 0x07) == 0x02 ||
                              (!apt && (vsc_pack[2] & 0x07) == 0x07)));
@@ -328,7 +328,7 @@ static int dv_extract_timecode(DVDemuxContext* c, const uint8_t* frame, char *tc
     // is only relevant for NTSC systems.
     int prevent_df = c->sys->ltc_divisor == 25 || c->sys->ltc_divisor == 50;
 
-    tc_pack = dv_extract_pack(frame, dv_timecode);
+    tc_pack = dv_extract_pack(frame, DV_TIMECODE);
     if (!tc_pack)
         return 0;
     av_timecode_make_smpte_tc_string2(tc, av_inv_q(c->sys->time_base), AV_RB32(tc_pack + 1), prevent_df, 1);

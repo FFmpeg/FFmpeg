@@ -660,7 +660,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
     /* Determine the codec's sample_aspect ratio from the packet */
     vsc_pack = buf + 80 * 5 + 48 + 5;
-    if (*vsc_pack == dv_video_control) {
+    if (*vsc_pack == DV_VIDEO_CONTROL) {
         apt    = buf[4] & 0x07;
         is16_9 = (vsc_pack[2] & 0x07) == 0x02 ||
                  (!apt && (vsc_pack[2] & 0x07) == 0x07);
@@ -671,7 +671,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         return ret;
 
     /* Determine the codec's field order from the packet */
-    if ( *vsc_pack == dv_video_control ) {
+    if ( *vsc_pack == DV_VIDEO_CONTROL ) {
         if (avctx->height == 720) {
             frame->interlaced_frame = 0;
             frame->top_field_first = 0;
