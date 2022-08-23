@@ -45,6 +45,7 @@ typedef struct{
     AVPacket *outdata;
     int       return_code;
     int       finished;
+    int       got_packet;
 } Task;
 
 typedef struct{
@@ -110,10 +111,8 @@ static void * attribute_align_arg worker(void *v){
             if (ret >= 0 && ret2 < 0)
                 ret = ret2;
             pkt->pts = pkt->dts = frame->pts;
-        } else {
-            pkt->data = NULL;
-            pkt->size = 0;
         }
+        task->got_packet = got_packet;
         pthread_mutex_lock(&c->buffer_mutex);
         av_frame_unref(frame);
         pthread_mutex_unlock(&c->buffer_mutex);
@@ -315,8 +314,7 @@ int ff_thread_video_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
      * because there is no outstanding task with this index. */
     outtask->finished = 0;
     av_packet_move_ref(pkt, outtask->outdata);
-    if(pkt->data)
-        *got_packet_ptr = 1;
+    *got_packet_ptr = outtask->got_packet;
     c->finished_task_index = (c->finished_task_index + 1) % c->max_tasks;
 
     return outtask->return_code;
