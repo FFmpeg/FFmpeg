@@ -29,7 +29,6 @@
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "encode.h"
-#include "internal.h"
 
 #define MAX_PACKET_SIZE  (1 + (477 + 7) / 8)
 

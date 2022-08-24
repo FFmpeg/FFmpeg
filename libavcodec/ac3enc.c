@@ -30,7 +30,6 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
-#include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/crc.h"
 #include "libavutil/internal.h"
@@ -41,7 +40,6 @@
 #include "codec_internal.h"
 #include "config_components.h"
 #include "encode.h"
-#include "internal.h"
 #include "me_cmp.h"
 #include "put_bits.h"
 #include "audiodsp.h"

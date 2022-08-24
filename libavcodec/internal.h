@@ -182,18 +182,6 @@ void ff_color_frame(AVFrame *frame, const int color[4]);
 #define FF_MAX_EXTRADATA_SIZE ((1 << 28) - AV_INPUT_BUFFER_PADDING_SIZE)
 
 /**
- * Rescale from sample rate to AVCodecContext.time_base.
- */
-static av_always_inline int64_t ff_samples_to_time_base(AVCodecContext *avctx,
-                                                        int64_t samples)
-{
-    if(samples == AV_NOPTS_VALUE)
-        return AV_NOPTS_VALUE;
-    return av_rescale_q(samples, (AVRational){ 1, avctx->sample_rate },
-                        avctx->time_base);
-}
-
-/**
  * 2^(x) for integer x
  * @return correctly rounded float
  */

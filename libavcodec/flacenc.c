@@ -32,7 +32,6 @@
 #include "encode.h"
 #include "put_bits.h"
 #include "put_golomb.h"
-#include "internal.h"
 #include "lpc.h"
 #include "flac.h"
 #include "flacdata.h"

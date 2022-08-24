@@ -22,7 +22,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "audio_frame_queue.h"
-#include "internal.h"
+#include "encode.h"
 #include "libavutil/avassert.h"
 
 av_cold void ff_af_queue_init(AVCodecContext *avctx, AudioFrameQueue *afq)

@@ -32,7 +32,6 @@
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "encode.h"
-#include "internal.h"
 #include "g722.h"
 #include "libavutil/common.h"
 

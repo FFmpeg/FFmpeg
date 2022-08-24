@@ -28,7 +28,6 @@
 #include "audio_frame_queue.h"
 #include "codec_internal.h"
 #include "encode.h"
-#include "internal.h"
 #include "version.h"
 #include "vorbis.h"
 #include "vorbis_parser.h"

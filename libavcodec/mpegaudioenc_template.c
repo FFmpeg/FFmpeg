@@ -28,7 +28,6 @@
 
 #include "avcodec.h"
 #include "encode.h"
-#include "internal.h"
 #include "put_bits.h"
 
 #define FRAC_BITS   15   /* fractional bits for sb_samples and dct */
