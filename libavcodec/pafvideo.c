@@ -25,7 +25,7 @@
 #include "bytestream.h"
 #include "copy_block.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 
 
 static const uint8_t block_sequences[16][8] = {

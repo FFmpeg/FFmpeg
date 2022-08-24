@@ -30,6 +30,7 @@
 #include "avcodec.h"
 #include "blockdsp.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "get_bits.h"
 #include "internal.h"
 

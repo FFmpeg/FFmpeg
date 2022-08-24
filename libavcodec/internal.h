@@ -219,13 +219,6 @@ static av_always_inline float ff_exp2fi(int x) {
  */
 int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags);
 
-#define FF_REGET_BUFFER_FLAG_READONLY 1 ///< the returned buffer does not need to be writable
-/**
- * Identical in function to ff_get_buffer(), except it reuses the existing buffer
- * if available.
- */
-int ff_reget_buffer(AVCodecContext *avctx, AVFrame *frame, int flags);
-
 int avpriv_h264_has_num_reorder_frames(AVCodecContext *avctx);
 
 int avpriv_codec_get_cap_skip_frame_fill_param(const AVCodec *codec);

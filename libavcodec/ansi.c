@@ -31,6 +31,7 @@
 #include "avcodec.h"
 #include "cga_data.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "internal.h"
 
 #define ATTR_BOLD         0x01  /**< Bold/Bright-foreground (mode 1) */

@@ -24,13 +24,11 @@
  * Autodesk RLE Video Decoder by Konstantin Shishkov
  */
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "avcodec.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 #include "msrledec.h"
 
 typedef struct AascContext {

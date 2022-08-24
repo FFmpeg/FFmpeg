@@ -25,14 +25,10 @@
  * As Alex Beregszaszi discovered, this is effectively RFB data dump
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "libavutil/common.h"
-#include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 #include "bytestream.h"
 
 enum EncTypes {

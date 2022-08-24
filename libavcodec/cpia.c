@@ -22,10 +22,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "codec_internal.h"
-#include "get_bits.h"
-#include "internal.h"
+#include "decode.h"
 
 
 #define FRAME_HEADER_SIZE 64

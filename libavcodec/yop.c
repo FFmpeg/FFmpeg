@@ -26,11 +26,10 @@
 
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
-#include "libavutil/intreadwrite.h"
 
 #include "avcodec.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 
 typedef struct YopDecContext {
     AVCodecContext *avctx;

@@ -26,8 +26,6 @@
  *   http://www.pcisys.net/~melanson/codecs/
  */
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "libavutil/internal.h"
@@ -35,7 +33,6 @@
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "decode.h"
-#include "internal.h"
 
 #define PALETTE_COUNT 256
 #define CHECK_STREAM_PTR(n) \

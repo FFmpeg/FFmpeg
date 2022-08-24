@@ -26,7 +26,7 @@
 
 #include "avcodec.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 #include "mss12.h"
 
 typedef struct MSS1Context {

@@ -28,14 +28,11 @@
  * The MS RLE decoder outputs PAL8 colorspace data.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "decode.h"
-#include "internal.h"
 #include "msrledec.h"
 #include "libavutil/imgutils.h"
 

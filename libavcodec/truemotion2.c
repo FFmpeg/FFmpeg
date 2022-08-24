@@ -30,8 +30,8 @@
 #include "bswapdsp.h"
 #include "bytestream.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "get_bits.h"
-#include "internal.h"
 
 #define TM2_ESCAPE 0x80000000
 #define TM2_DELTAS 64

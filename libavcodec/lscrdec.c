@@ -29,7 +29,7 @@
 #include "bytestream.h"
 #include "codec.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 #include "packet.h"
 #include "png.h"
 #include "pngdsp.h"

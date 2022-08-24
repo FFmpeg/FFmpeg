@@ -26,12 +26,11 @@
  */
 
 #include "libavutil/avassert.h"
-#include "libavutil/imgutils.h"
 
 #include "avcodec.h"
 #include "bytestream.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 #include "roqvideo.h"
 
 static void roqvideo_decode_frame(RoqContext *ri, GetByteContext *gb)

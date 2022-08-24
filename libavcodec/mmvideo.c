@@ -35,7 +35,7 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 
 #define MM_PREAMBLE_SIZE    6
 

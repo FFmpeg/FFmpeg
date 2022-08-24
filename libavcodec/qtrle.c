@@ -31,15 +31,12 @@
  * data. 24-bit data is RGB24 and 32-bit data is RGB32.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "avcodec.h"
 #include "decode.h"
 #include "bytestream.h"
 #include "codec_internal.h"
-#include "internal.h"
 
 typedef struct QtrleContext {
     AVCodecContext *avctx;

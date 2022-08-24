@@ -112,4 +112,11 @@ int ff_decode_preinit(AVCodecContext *avctx);
  */
 int ff_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt);
 
+#define FF_REGET_BUFFER_FLAG_READONLY 1 ///< the returned buffer does not need to be writable
+/**
+ * Identical in function to ff_get_buffer(), except it reuses the existing buffer
+ * if available.
+ */
+int ff_reget_buffer(AVCodecContext *avctx, AVFrame *frame, int flags);
+
 #endif /* AVCODEC_DECODE_H */

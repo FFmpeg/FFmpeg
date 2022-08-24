@@ -34,7 +34,6 @@
  */
 
 #include <stdint.h>
-#include <string.h>
 #include <zlib.h>
 
 #include "libavutil/imgutils.h"
@@ -43,7 +42,7 @@
 
 #include "avcodec.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 
 typedef struct ScreenpressoContext {
     AVFrame *current;
