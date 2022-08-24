@@ -44,6 +44,7 @@
 
 #include "avcodec.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "dv.h"
 #include "dv_profile_internal.h"
 #include "dvdata.h"

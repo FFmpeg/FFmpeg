@@ -51,6 +51,7 @@
 #endif
 
 #include "codec_internal.h"
+#include "decode.h"
 #include "exrdsp.h"
 #include "get_bits.h"
 #include "internal.h"

@@ -36,6 +36,7 @@
 #include "internal.h"
 #include "cabac.h"
 #include "cabac_functions.h"
+#include "decode.h"
 #include "error_resilience.h"
 #include "avcodec.h"
 #include "h264.h"

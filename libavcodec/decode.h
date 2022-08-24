@@ -100,6 +100,12 @@ int ff_copy_palette(void *dst, const AVPacket *src, void *logctx);
 int ff_decode_preinit(AVCodecContext *avctx);
 
 /**
+ * Check that the provided sample aspect ratio is valid and set it on the codec
+ * context.
+ */
+int ff_set_sar(AVCodecContext *avctx, AVRational sar);
+
+/**
  * Select the (possibly hardware accelerated) pixel format.
  * This is a wrapper around AVCodecContext.get_format() and should be used
  * instead of calling get_format() directly.

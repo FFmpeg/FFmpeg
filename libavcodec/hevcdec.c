@@ -42,6 +42,7 @@
 #include "bytestream.h"
 #include "cabac_functions.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "golomb.h"
 #include "hevc.h"
 #include "hevc_data.h"
