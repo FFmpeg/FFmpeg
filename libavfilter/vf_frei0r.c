@@ -359,14 +359,17 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     Frei0rContext *s = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
-    AVFrame *out = ff_default_get_video_buffer2(outlink, outlink->w, outlink->h, 16);
+    /* align parameter is the line alignment, not the buffer alignment.
+     * frei0r expects line size to be width*4 so we want an align of 1
+     * to ensure lines aren't padded out. */
+    AVFrame *out = ff_default_get_video_buffer2(outlink, outlink->w, outlink->h, 1);
     if (!out)
         goto fail;
 
     av_frame_copy_props(out, in);
 
     if (in->linesize[0] != out->linesize[0]) {
-        AVFrame *in2 = ff_default_get_video_buffer2(outlink, outlink->w, outlink->h, 16);
+        AVFrame *in2 = ff_default_get_video_buffer2(outlink, outlink->w, outlink->h, 1);
         if (!in2)
             goto fail;
         av_frame_copy(in2, in);
@@ -481,7 +484,7 @@ static int source_config_props(AVFilterLink *outlink)
 static int source_request_frame(AVFilterLink *outlink)
 {
     Frei0rContext *s = outlink->src->priv;
-    AVFrame *frame = ff_default_get_video_buffer2(outlink, outlink->w, outlink->h, 16);
+    AVFrame *frame = ff_default_get_video_buffer2(outlink, outlink->w, outlink->h, 1);
 
     if (!frame)
         return AVERROR(ENOMEM);
