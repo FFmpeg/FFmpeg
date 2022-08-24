@@ -1869,13 +1869,20 @@ static int avi_read_seek(AVFormatContext *s, int stream_index,
     st    = s->streams[stream_index];
     sti   = ffstream(st);
     ast   = st->priv_data;
-    index = av_index_search_timestamp(st,
-                                      timestamp * FFMAX(ast->sample_size, 1),
-                                      flags);
+
+    if (avi->dv_demux) {
+        // index entries are in the AVI scale/rate timebase, which does
+        // not match DV demuxer's stream timebase
+        timestamp = av_rescale_q(timestamp, st->time_base,
+                                 (AVRational){ ast->scale, ast->rate });
+    } else
+        timestamp *= FFMAX(ast->sample_size, 1);
+
+    index = av_index_search_timestamp(st, timestamp, flags);
     if (index < 0) {
         if (sti->nb_index_entries > 0)
             av_log(s, AV_LOG_DEBUG, "Failed to find timestamp %"PRId64 " in index %"PRId64 " .. %"PRId64 "\n",
-                   timestamp * FFMAX(ast->sample_size, 1),
+                   timestamp,
                    sti->index_entries[0].timestamp,
                    sti->index_entries[sti->nb_index_entries - 1].timestamp);
         return AVERROR_INVALIDDATA;
@@ -1883,7 +1890,7 @@ static int avi_read_seek(AVFormatContext *s, int stream_index,
 
     /* find the position */
     pos       = sti->index_entries[index].pos;
-    timestamp = sti->index_entries[index].timestamp / FFMAX(ast->sample_size, 1);
+    timestamp = sti->index_entries[index].timestamp;
 
     av_log(s, AV_LOG_TRACE, "XX %"PRId64" %d %"PRId64"\n",
             timestamp, index, sti->index_entries[index].timestamp);
@@ -1898,11 +1905,14 @@ static int avi_read_seek(AVFormatContext *s, int stream_index,
 
         /* Feed the DV video stream version of the timestamp to the */
         /* DV demux so it can synthesize correct timestamps.        */
-        ff_dv_offset_reset(avi->dv_demux, timestamp);
+        ff_dv_ts_reset(avi->dv_demux,
+                           av_rescale_q(timestamp, (AVRational){ ast->scale, ast->rate },
+                                        st->time_base));
 
         avi->stream_index = -1;
         return 0;
     }
+    timestamp /= FFMAX(ast->sample_size, 1);
 
     pos_min = pos;
     for (i = 0; i < s->nb_streams; i++) {
