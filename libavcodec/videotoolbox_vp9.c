@@ -24,6 +24,7 @@
 #include "videotoolbox.h"
 #include "libavutil/hwcontext_videotoolbox.h"
 #include "vt_internal.h"
+#include "libavutil/avassert.h"
 #include "libavutil/avutil.h"
 #include "libavutil/frame.h"
 #include "libavutil/hwcontext.h"
