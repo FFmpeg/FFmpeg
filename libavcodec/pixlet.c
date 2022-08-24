@@ -21,15 +21,13 @@
 
 #include <stdint.h>
 
-#include "libavutil/imgutils.h"
 #include "libavutil/intmath.h"
-#include "libavutil/opt.h"
 
 #include "avcodec.h"
 #include "bytestream.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "get_bits.h"
-#include "internal.h"
 #include "thread.h"
 #include "unary.h"
 

@@ -25,9 +25,9 @@
 
 #include "avcodec.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "get_bits.h"
 #include "hwconfig.h"
-#include "internal.h"
 #include "profiles.h"
 #include "thread.h"
 #include "threadframe.h"

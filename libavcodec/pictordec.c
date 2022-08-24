@@ -30,7 +30,6 @@
 #include "cga_data.h"
 #include "codec_internal.h"
 #include "decode.h"
-#include "internal.h"
 
 typedef struct PicContext {
     int width, height;

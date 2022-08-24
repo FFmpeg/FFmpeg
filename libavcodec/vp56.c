@@ -26,7 +26,6 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "decode.h"
-#include "internal.h"
 #include "h264chroma.h"
 #include "vp56.h"
 #include "vp56data.h"

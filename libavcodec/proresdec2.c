@@ -35,12 +35,11 @@
 
 #include "avcodec.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "get_bits.h"
 #include "hwconfig.h"
 #include "idctdsp.h"
-#include "internal.h"
 #include "profiles.h"
-#include "simple_idct.h"
 #include "proresdec.h"
 #include "proresdata.h"
 #include "thread.h"

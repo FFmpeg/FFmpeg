@@ -32,7 +32,7 @@
 
 #include "avcodec.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 #include "thread.h"
 
 #include <openjpeg.h>

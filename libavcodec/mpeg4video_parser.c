@@ -22,7 +22,7 @@
 
 #define UNCHECKED_BITSTREAM_READER 1
 
-#include "internal.h"
+#include "decode.h"
 #include "parser.h"
 #include "mpegvideo.h"
 #include "mpeg4video.h"

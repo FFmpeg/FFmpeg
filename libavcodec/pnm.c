@@ -26,7 +26,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/avstring.h"
 #include "avcodec.h"
-#include "internal.h"
+#include "decode.h"
 #include "pnm.h"
 
 static inline int pnm_space(int c)

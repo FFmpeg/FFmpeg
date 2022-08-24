@@ -31,9 +31,9 @@
 
 #include "avcodec.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "get_bits.h"
 #include "huffman.h"
-#include "internal.h"
 
 #include "vp56.h"
 #include "vp56data.h"

@@ -54,7 +54,6 @@
 #include "decode.h"
 #include "exrdsp.h"
 #include "get_bits.h"
-#include "internal.h"
 #include "mathops.h"
 #include "thread.h"
 

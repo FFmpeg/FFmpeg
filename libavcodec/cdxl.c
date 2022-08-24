@@ -28,13 +28,11 @@
 #define UNCHECKED_BITSTREAM_READER 1
 
 #include "libavutil/intreadwrite.h"
-#include "libavutil/imgutils.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "codec_internal.h"
 #include "decode.h"
 #include "get_bits.h"
-#include "internal.h"
 
 #define BIT_PLANAR   0x00
 #define CHUNKY       0x20

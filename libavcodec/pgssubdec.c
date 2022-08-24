@@ -27,11 +27,10 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 #include "mathops.h"
 
 #include "libavutil/colorspace.h"
-#include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 
 #define RGBA(r,g,b,a) (((unsigned)(a) << 24) | ((r) << 16) | ((g) << 8) | (b))

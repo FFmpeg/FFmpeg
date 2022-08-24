@@ -19,8 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <stdlib.h>
-#include <string.h>
 #include <stdint.h>
 
 #include "libavutil/mem_internal.h"
@@ -29,7 +27,7 @@
 #include "avcodec.h"
 #include "blockdsp.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 #include "get_bits.h"
 #include "bytestream.h"
 #include "bswapdsp.h"

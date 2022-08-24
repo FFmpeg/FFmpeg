@@ -28,7 +28,6 @@
  * http://wiki.multimedia.cx/index.php?title=Electronic_Arts_TGV
  */
 
-#include "libavutil/imgutils.h"
 #include "libavutil/mem.h"
 
 #define BITSTREAM_READER_LE
@@ -36,7 +35,6 @@
 #include "get_bits.h"
 #include "codec_internal.h"
 #include "decode.h"
-#include "internal.h"
 
 #define EA_PREAMBLE_SIZE    8
 #define kVGT_TAG MKTAG('k', 'V', 'G', 'T')

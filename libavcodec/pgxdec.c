@@ -20,7 +20,6 @@
  */
 
 #include "avcodec.h"
-#include "internal.h"
 #include "bytestream.h"
 #include "codec_internal.h"
 #include "decode.h"

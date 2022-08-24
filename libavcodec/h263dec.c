@@ -40,7 +40,6 @@
 #include "h263_parser.h"
 #endif
 #include "hwconfig.h"
-#include "internal.h"
 #include "mpeg_er.h"
 #include "mpeg4video.h"
 #include "mpeg4videodec.h"

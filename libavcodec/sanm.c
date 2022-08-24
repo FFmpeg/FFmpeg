@@ -21,15 +21,12 @@
  */
 
 #include "libavutil/avassert.h"
-#include "libavutil/bswap.h"
-#include "libavutil/imgutils.h"
 
 #include "avcodec.h"
 #include "bytestream.h"
 #include "copy_block.h"
 #include "codec_internal.h"
 #include "decode.h"
-#include "internal.h"
 
 #define NGLYPHS 256
 #define GLYPH_COORD_VECT_SIZE 16

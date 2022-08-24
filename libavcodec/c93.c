@@ -23,7 +23,6 @@
 #include "bytestream.h"
 #include "codec_internal.h"
 #include "decode.h"
-#include "internal.h"
 
 typedef struct C93DecoderContext {
     AVFrame *pictures[2];

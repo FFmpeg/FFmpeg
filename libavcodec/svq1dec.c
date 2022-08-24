@@ -41,7 +41,6 @@
 #include "get_bits.h"
 #include "h263data.h"
 #include "hpeldsp.h"
-#include "internal.h"
 #include "mathops.h"
 #include "svq1.h"
 

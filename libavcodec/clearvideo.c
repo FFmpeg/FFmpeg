@@ -33,7 +33,6 @@
 #include "decode.h"
 #include "get_bits.h"
 #include "idctdsp.h"
-#include "internal.h"
 #include "mathops.h"
 #include "clearvideodata.h"
 

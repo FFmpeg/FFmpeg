@@ -21,11 +21,9 @@
 
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
-#include "libavutil/imgutils.h"
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "decode.h"
-#include "internal.h"
 #include "sunrast.h"
 
 static int sunrast_decode_frame(AVCodecContext *avctx, AVFrame *p,

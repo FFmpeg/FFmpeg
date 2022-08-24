@@ -32,7 +32,6 @@
 #include "cavs.h"
 #include "codec_internal.h"
 #include "decode.h"
-#include "internal.h"
 #include "mathops.h"
 #include "mpeg12data.h"
 #include "startcode.h"

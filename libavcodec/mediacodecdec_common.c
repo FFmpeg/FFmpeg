@@ -33,7 +33,6 @@
 
 #include "avcodec.h"
 #include "decode.h"
-#include "internal.h"
 
 #include "mediacodec.h"
 #include "mediacodec_surface.h"

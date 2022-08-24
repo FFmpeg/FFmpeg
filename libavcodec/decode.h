@@ -100,6 +100,12 @@ int ff_copy_palette(void *dst, const AVPacket *src, void *logctx);
 int ff_decode_preinit(AVCodecContext *avctx);
 
 /**
+ * Check that the provided frame dimensions are valid and set them on the codec
+ * context.
+ */
+int ff_set_dimensions(AVCodecContext *s, int width, int height);
+
+/**
  * Check that the provided sample aspect ratio is valid and set it on the codec
  * context.
  */

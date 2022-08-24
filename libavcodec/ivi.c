@@ -36,7 +36,6 @@
 #include "avcodec.h"
 #include "decode.h"
 #include "get_bits.h"
-#include "internal.h"
 #include "ivi.h"
 #include "ivi_dsp.h"
 

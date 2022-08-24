@@ -39,7 +39,6 @@
 #include "bytestream.h"
 #include "get_bits.h"
 #include "hpeldsp.h"
-#include "internal.h"
 
 #include "indeo3data.h"
 

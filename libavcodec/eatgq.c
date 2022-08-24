@@ -40,7 +40,6 @@
 #include "eaidct.h"
 #include "get_bits.h"
 #include "idctdsp.h"
-#include "internal.h"
 
 typedef struct TgqContext {
     AVCodecContext *avctx;

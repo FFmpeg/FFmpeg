@@ -23,12 +23,11 @@
  * VP5 compatible video decoder
  */
 
-#include <stdlib.h>
 #include <string.h>
 
 #include "avcodec.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 
 #include "vp56.h"
 #include "vp56data.h"

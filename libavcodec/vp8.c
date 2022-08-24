@@ -26,16 +26,13 @@
 
 #include "config_components.h"
 
-#include "libavutil/imgutils.h"
 #include "libavutil/mem_internal.h"
 
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "decode.h"
 #include "hwconfig.h"
-#include "internal.h"
 #include "mathops.h"
-#include "rectangle.h"
 #include "thread.h"
 #include "threadframe.h"
 #include "vp8.h"

@@ -40,7 +40,6 @@
 #include "aandcttab.h"
 #include "eaidct.h"
 #include "idctdsp.h"
-#include "internal.h"
 #include "mpeg12data.h"
 #include "mpeg12vlc.h"
 

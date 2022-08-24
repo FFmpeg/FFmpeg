@@ -32,8 +32,7 @@
 
 #include "config_components.h"
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <stddef.h>
 #include <string.h>
 
 #include "libavutil/imgutils.h"
@@ -44,7 +43,6 @@
 #include "decode.h"
 #include "get_bits.h"
 #include "hpeldsp.h"
-#include "internal.h"
 #include "mathops.h"
 #include "thread.h"
 #include "threadframe.h"

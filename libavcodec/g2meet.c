@@ -29,7 +29,6 @@
 #include <zlib.h>
 
 #include "libavutil/imgutils.h"
-#include "libavutil/intreadwrite.h"
 #include "libavutil/mem_internal.h"
 
 #include "avcodec.h"
@@ -40,9 +39,7 @@
 #include "elsdec.h"
 #include "get_bits.h"
 #include "idctdsp.h"
-#include "internal.h"
 #include "jpegtables.h"
-#include "mjpeg.h"
 #include "mjpegdec.h"
 
 #define EPIC_PIX_STACK_SIZE 1024

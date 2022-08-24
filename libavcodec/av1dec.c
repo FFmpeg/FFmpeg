@@ -29,7 +29,6 @@
 #include "codec_internal.h"
 #include "decode.h"
 #include "hwconfig.h"
-#include "internal.h"
 #include "profiles.h"
 #include "thread.h"
 

@@ -24,17 +24,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/imgutils.h"
 #include "libavutil/mem_internal.h"
+#include "libavutil/pixdesc.h"
 
 #include "avcodec.h"
 #include "blockdsp.h"
 #include "codec_internal.h"
+#include "decode.h"
 #define  UNCHECKED_BITSTREAM_READER 1
 #include "get_bits.h"
 #include "dnxhddata.h"
 #include "idctdsp.h"
-#include "internal.h"
 #include "profiles.h"
 #include "thread.h"
 

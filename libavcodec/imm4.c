@@ -20,8 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <stddef.h>
 #include <string.h>
 
 #include "libavutil/mem_internal.h"
@@ -34,7 +33,6 @@
 #include "copy_block.h"
 #include "get_bits.h"
 #include "idctdsp.h"
-#include "internal.h"
 
 #define CBPLO_VLC_BITS   6
 #define CBPHI_VLC_BITS   6
