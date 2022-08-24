@@ -57,7 +57,7 @@ int ff_encode_alloc_frame(AVCodecContext *avctx, AVFrame *frame);
 /**
  * Check AVPacket size and allocate data.
  *
- * Encoders supporting FFCodec.encode2() can use this as a convenience to
+ * Encoders of type FF_CODEC_CB_TYPE_ENCODE can use this as a convenience to
  * obtain a big enough buffer for the encoded bitstream.
  *
  * @param avctx   the AVCodecContext of the encoder
