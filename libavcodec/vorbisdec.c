@@ -35,9 +35,9 @@
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "fft.h"
 #include "get_bits.h"
-#include "internal.h"
 #include "vorbis.h"
 #include "vorbisdsp.h"
 #include "xiph.h"

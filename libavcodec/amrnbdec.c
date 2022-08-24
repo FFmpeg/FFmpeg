@@ -44,7 +44,6 @@
 #include <math.h>
 
 #include "libavutil/channel_layout.h"
-#include "libavutil/float_dsp.h"
 #include "avcodec.h"
 #include "libavutil/common.h"
 #include "libavutil/avassert.h"
@@ -56,7 +55,7 @@
 #include "lsp.h"
 #include "amr.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 
 #include "amrnbdata.h"
 

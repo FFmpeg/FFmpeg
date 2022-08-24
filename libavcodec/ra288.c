@@ -28,8 +28,8 @@
 #include "avcodec.h"
 #include "celp_filters.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "get_bits.h"
-#include "internal.h"
 #include "lpc.h"
 #include "ra288.h"
 

@@ -21,6 +21,7 @@
 
 #include "avcodec.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "internal.h"
 #include "libavutil/opt.h"
 #include "librsvg-2.0/librsvg/rsvg.h"

@@ -23,7 +23,7 @@
 #include <celt/celt_header.h>
 #include "avcodec.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 #include "libavutil/intreadwrite.h"
 
 struct libcelt_context {

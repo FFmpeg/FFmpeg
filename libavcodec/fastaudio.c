@@ -21,13 +21,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/intreadwrite.h"
-
 #include "avcodec.h"
 #include "bytestream.h"
 #include "codec_internal.h"
-#include "internal.h"
-#include "mathops.h"
+#include "decode.h"
 
 typedef struct ChannelItems {
     float f[8];

@@ -29,7 +29,7 @@
 #include "avcodec.h"
 #include "codec_id.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 
 typedef struct {
     int fq, q, s, lt;

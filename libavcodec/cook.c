@@ -52,8 +52,8 @@
 #include "get_bits.h"
 #include "bytestream.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "fft.h"
-#include "internal.h"
 #include "sinewin.h"
 #include "unary.h"
 

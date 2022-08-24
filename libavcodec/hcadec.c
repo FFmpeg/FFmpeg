@@ -18,15 +18,14 @@
 
 #include "libavutil/crc.h"
 #include "libavutil/float_dsp.h"
-#include "libavutil/intreadwrite.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/tx.h"
 
 #include "avcodec.h"
 #include "bytestream.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "get_bits.h"
-#include "internal.h"
 #include "hca_data.h"
 
 typedef struct ChannelContext {

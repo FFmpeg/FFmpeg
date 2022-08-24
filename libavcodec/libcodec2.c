@@ -24,8 +24,8 @@
 #include "avcodec.h"
 #include "libavutil/opt.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "encode.h"
-#include "internal.h"
 #include "codec2utils.h"
 
 typedef struct {

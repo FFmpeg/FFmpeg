@@ -28,7 +28,6 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
-#include "internal.h"
 #include "scpr.h"
 
 static void renew_table3(uint32_t nsym, uint32_t *cntsum,

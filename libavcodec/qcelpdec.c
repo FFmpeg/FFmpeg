@@ -27,14 +27,12 @@
  * @remark Development mentored by Benjamin Larson
  */
 
-#include <stddef.h>
-
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/float_dsp.h"
 #include "avcodec.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 #include "get_bits.h"
 #include "qcelpdata.h"
 #include "celp_filters.h"

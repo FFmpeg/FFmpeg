@@ -34,6 +34,7 @@
 #include "libavutil/thread.h"
 #include "avcodec.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "copy_block.h"
 #include "bytestream.h"
 #include "get_bits.h"

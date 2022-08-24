@@ -36,8 +36,8 @@
 #include "libavutil/thread.h"
 
 #include "avcodec.h"
+#include "decode.h"
 #include "get_bits.h"
-#include "internal.h"
 #include "mathops.h"
 #include "mpegaudiodsp.h"
 

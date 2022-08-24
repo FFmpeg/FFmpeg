@@ -23,6 +23,7 @@
 #include "dcadata.h"
 #include "dcamath.h"
 #include "dca_syncwords.h"
+#include "decode.h"
 #include "internal.h"
 #include "unary.h"
 

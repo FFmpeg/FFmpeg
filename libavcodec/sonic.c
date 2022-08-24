@@ -23,10 +23,10 @@
 
 #include "avcodec.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "encode.h"
 #include "get_bits.h"
 #include "golomb.h"
-#include "internal.h"
 #include "put_golomb.h"
 #include "rangecoder.h"
 

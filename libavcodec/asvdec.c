@@ -32,8 +32,8 @@
 #include "blockdsp.h"
 #include "codec_internal.h"
 #include "config_components.h"
+#include "decode.h"
 #include "idctdsp.h"
-#include "internal.h"
 #include "mpeg12data.h"
 
 #define CCP_VLC_BITS         5

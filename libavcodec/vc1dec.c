@@ -34,7 +34,6 @@
 #include "decode.h"
 #include "get_bits.h"
 #include "hwconfig.h"
-#include "internal.h"
 #include "mpeg_er.h"
 #include "mpegvideo.h"
 #include "mpegvideodec.h"

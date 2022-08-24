@@ -29,17 +29,15 @@
 /* Many thanks to Tim Craig for all the help! */
 
 #include <math.h>
-#include <stddef.h>
-#include <stdio.h>
 
 #include "libavutil/float_dsp.h"
 #include "libavutil/mem_internal.h"
 
 #include "avcodec.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "get_bits.h"
 #include "fft.h"
-#include "internal.h"
 #include "sinewin.h"
 
 #include "atrac.h"

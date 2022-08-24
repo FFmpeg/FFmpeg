@@ -44,9 +44,7 @@
 
 #include "avcodec.h"
 #include "codec_internal.h"
-#include "get_bits.h"
-#include "internal.h"
-#include "mathops.h"
+#include "decode.h"
 #include "opus.h"
 #include "opustab.h"
 #include "opus_celt.h"

@@ -27,8 +27,7 @@
 #include "libavutil/reverse.h"
 #include "avcodec.h"
 #include "codec_internal.h"
-#include "internal.h"
-#include "mathops.h"
+#include "decode.h"
 
 #define AES3_HEADER_LEN 4
 

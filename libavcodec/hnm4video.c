@@ -29,7 +29,7 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 
 #define HNM4_CHUNK_ID_PL 19536
 #define HNM4_CHUNK_ID_IZ 23113

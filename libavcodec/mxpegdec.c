@@ -26,7 +26,7 @@
  */
 
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 #include "mjpeg.h"
 #include "mjpegdec.h"
 

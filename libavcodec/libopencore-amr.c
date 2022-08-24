@@ -30,8 +30,8 @@
 #include "avcodec.h"
 #include "audio_frame_queue.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "encode.h"
-#include "internal.h"
 
 #if CONFIG_LIBOPENCORE_AMRNB_DECODER || CONFIG_LIBOPENCORE_AMRWB_DECODER
 static int amr_decode_fix_avctx(AVCodecContext *avctx)

@@ -31,8 +31,8 @@
 #include "adpcm_data.h"
 #include "avcodec.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "get_bits.h"
-#include "internal.h"
 
 static uint16_t predict_table[5786 * 2];
 

@@ -28,8 +28,6 @@
  * The xan_wc3 decoder outputs PAL8 data.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "libavutil/intreadwrite.h"
@@ -39,8 +37,8 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "get_bits.h"
-#include "internal.h"
 
 #define RUNTIME_GAMMA 0
 

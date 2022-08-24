@@ -20,14 +20,13 @@
  */
 
 #include "libavutil/channel_layout.h"
-#include "libavutil/intreadwrite.h"
 #include "libavutil/mem_internal.h"
 
 #include "avcodec.h"
 #include "bswapdsp.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "get_bits.h"
-#include "internal.h"
 
 #include "truespeech_data.h"
 /**

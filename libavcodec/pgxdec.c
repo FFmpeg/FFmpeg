@@ -23,7 +23,7 @@
 #include "internal.h"
 #include "bytestream.h"
 #include "codec_internal.h"
-#include "libavutil/imgutils.h"
+#include "decode.h"
 
 static int pgx_get_number(AVCodecContext *avctx, GetByteContext *g, int *number) {
     int ret = AVERROR_INVALIDDATA;

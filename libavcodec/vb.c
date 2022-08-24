@@ -24,13 +24,10 @@
  * VB Video decoder
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "avcodec.h"
 #include "bytestream.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 
 enum VBFlags {
     VB_HAS_GMC     = 0x01,

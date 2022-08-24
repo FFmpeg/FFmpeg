@@ -36,6 +36,7 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "eaidct.h"
 #include "get_bits.h"
 #include "idctdsp.h"

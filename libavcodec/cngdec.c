@@ -27,6 +27,7 @@
 #include "avcodec.h"
 #include "celp_filters.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "internal.h"
 #include "libavutil/lfg.h"
 

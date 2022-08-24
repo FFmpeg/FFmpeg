@@ -20,18 +20,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #define CACHED_BITSTREAM_READER !ARCH_X86_32
 #include "libavutil/intreadwrite.h"
 
 #include "avcodec.h"
-#include "bytestream.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "get_bits.h"
-#include "internal.h"
 #include "lossless_videodsp.h"
 #include "zlib_wrapper.h"
 

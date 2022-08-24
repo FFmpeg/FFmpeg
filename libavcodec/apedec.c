@@ -31,7 +31,7 @@
 #include "bswapdsp.h"
 #include "bytestream.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 #include "get_bits.h"
 #include "unary.h"
 

@@ -33,8 +33,8 @@
 
 #include "avcodec.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "get_bits.h"
-#include "internal.h"
 #include "mpegaudiodsp.h"
 
 #include "mpc.h"

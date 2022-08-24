@@ -20,8 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <stddef.h>
 #include <string.h>
 
 #include "libavutil/thread.h"
@@ -30,10 +29,10 @@
 #include "bytestream.h"
 #include "codec_internal.h"
 #include "copy_block.h"
+#include "decode.h"
 #include "mathops.h"
 #include "blockdsp.h"
 #include "get_bits.h"
-#include "internal.h"
 #include "aandcttab.h"
 
 #define CBP_VLC_BITS  9

@@ -25,7 +25,7 @@
 
 #include "avcodec.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 #include "libavutil/internal.h"
 
 static av_cold int aura_decode_init(AVCodecContext *avctx)

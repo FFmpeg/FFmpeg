@@ -20,7 +20,7 @@
 
 #include "avcodec.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 #include "zlib_wrapper.h"
 #include "libavutil/common.h"
 

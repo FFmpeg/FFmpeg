@@ -28,7 +28,7 @@
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 
 static const int xl_table[32] = {
    0,   1,   2,   3,   4,   5,   6,   7,

@@ -24,15 +24,14 @@
  * Zip Motion Blocks Video decoder
  */
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <stddef.h>
 
 #include "libavutil/common.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 #include "zlib_wrapper.h"
 
 #include <zlib.h>

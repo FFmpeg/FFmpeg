@@ -18,20 +18,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/intmath.h"
 #include "libavutil/log.h"
-#include "libavutil/opt.h"
 #include "libavutil/thread.h"
 #include "avcodec.h"
+#include "decode.h"
 #include "encode.h"
 #include "me_cmp.h"
 #include "snow_dwt.h"
-#include "internal.h"
 #include "snow.h"
 #include "snowdata.h"
-
-#include "rangecoder.h"
-#include "mathops.h"
 
 
 void ff_snow_inner_add_yblock(const uint8_t *obmc, const int obmc_stride, uint8_t * * block, int b_w, int b_h,

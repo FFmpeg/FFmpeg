@@ -21,13 +21,12 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "avcodec.h"
 #include "bytestream.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 
 #define BLOCK_HEIGHT 112u
 #define BLOCK_WIDTH  84u

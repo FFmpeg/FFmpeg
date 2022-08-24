@@ -30,16 +30,13 @@
  *         : RGB32 (RGB 32bpp, 4th plane is alpha)
  */
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
+#include "libavutil/bswap.h"
 #include "libavutil/internal.h"
-#include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "decode.h"
-#include "internal.h"
 
 
 static const enum AVPixelFormat pixfmt_rgb24[] = {

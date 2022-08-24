@@ -23,7 +23,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
@@ -31,7 +30,7 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 
 typedef struct ProSumerContext {
     GetByteContext gb;

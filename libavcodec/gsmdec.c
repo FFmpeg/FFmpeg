@@ -29,8 +29,8 @@
 #include "libavutil/channel_layout.h"
 #include "avcodec.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "get_bits.h"
-#include "internal.h"
 #include "msgsmdec.h"
 
 #include "gsmdec_template.c"

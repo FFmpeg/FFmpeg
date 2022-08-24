@@ -30,8 +30,8 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "encode.h"
-#include "internal.h"
 #include "get_bits.h"
 #include "put_bits.h"
 

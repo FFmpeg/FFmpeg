@@ -30,11 +30,10 @@
 
 #include "avcodec.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 #include "get_bits.h"
 #include "put_bits.h"
 #include "lossless_audiodsp.h"
-#include "wma.h"
 #include "wma_common.h"
 
 /** current decoder limitations */

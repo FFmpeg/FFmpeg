@@ -44,14 +44,12 @@
  * decoding algorithm and it worked fine on much lower spec machines.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <stddef.h>
 #include <string.h>
 
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "decode.h"
-#include "internal.h"
 #include "libavutil/internal.h"
 
 #define HUFFMAN_TABLE_SIZE 64 * 1024

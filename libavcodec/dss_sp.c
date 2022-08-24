@@ -22,12 +22,11 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "libavutil/mem_internal.h"
-#include "libavutil/opt.h"
 
 #include "avcodec.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "get_bits.h"
-#include "internal.h"
 
 #define SUBFRAMES 4
 #define PULSE_MAX 8

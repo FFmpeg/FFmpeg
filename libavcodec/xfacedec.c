@@ -24,11 +24,9 @@
  * X-Face decoder, based on libcompface, by James Ashton.
  */
 
-#include "libavutil/pixdesc.h"
 #include "avcodec.h"
-#include "bytestream.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 #include "xface.h"
 
 static int pop_integer(BigInt *b, const ProbRange *pranges)

@@ -29,6 +29,7 @@
 #include "libavcodec/internal.h"
 #include "avcodec.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "dsd.h"
 
 #define DSD_SILENCE 0x69

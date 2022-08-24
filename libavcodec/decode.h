@@ -112,6 +112,13 @@ int ff_decode_preinit(AVCodecContext *avctx);
  */
 int ff_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt);
 
+/**
+ * Get a buffer for a frame. This is a wrapper around
+ * AVCodecContext.get_buffer() and should be used instead calling get_buffer()
+ * directly.
+ */
+int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags);
+
 #define FF_REGET_BUFFER_FLAG_READONLY 1 ///< the returned buffer does not need to be writable
 /**
  * Identical in function to ff_get_buffer(), except it reuses the existing buffer

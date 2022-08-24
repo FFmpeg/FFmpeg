@@ -33,7 +33,6 @@
 
 #include <math.h>
 #include <stddef.h>
-#include <stdio.h>
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/ffmath.h"
@@ -45,9 +44,9 @@
 #include "avcodec.h"
 #include "bswapdsp.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "get_bits.h"
 #include "fft.h"
-#include "internal.h"
 #include "sinewin.h"
 
 #include "imcdata.h"

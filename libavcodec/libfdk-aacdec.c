@@ -24,7 +24,7 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 
 #ifdef AACDECODER_LIB_VL0
 #define FDKDEC_VER_AT_LEAST(vl0, vl1) \

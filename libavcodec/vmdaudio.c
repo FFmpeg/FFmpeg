@@ -42,7 +42,7 @@
 
 #include "avcodec.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 
 #define BLOCK_TYPE_AUDIO    1
 #define BLOCK_TYPE_INITIAL  2

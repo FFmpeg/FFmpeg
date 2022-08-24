@@ -33,9 +33,8 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "encode.h"
-#include "internal.h"
-#include "mathops.h"
 #include "pcm_tablegen.h"
 
 static av_cold int pcm_encode_init(AVCodecContext *avctx)

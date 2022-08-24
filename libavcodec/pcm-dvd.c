@@ -27,7 +27,7 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 
 typedef struct PCMDVDContext {
     uint32_t last_header;    // Cached header to see if parsing is needed

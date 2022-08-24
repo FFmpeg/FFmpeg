@@ -28,6 +28,7 @@
 #include "bytestream.h"
 #include "copy_block.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "internal.h"
 
 #define NGLYPHS 256

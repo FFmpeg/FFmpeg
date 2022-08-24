@@ -29,8 +29,8 @@
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "get_bits.h"
-#include "internal.h"
 
 static const uint8_t code_tab[16][2] = {
     {  7, 1 }, {  8, 3 }, {  6, 3 }, { 9, 4 }, {  5, 4 }, { 10, 5 }, {  4, 5 },

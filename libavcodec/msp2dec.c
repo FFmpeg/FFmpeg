@@ -27,7 +27,7 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 
 static int msp2_decode_frame(AVCodecContext *avctx, AVFrame *p,
                              int *got_frame, AVPacket *avpkt)

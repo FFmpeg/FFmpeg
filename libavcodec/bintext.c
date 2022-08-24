@@ -36,7 +36,7 @@
 #include "cga_data.h"
 #include "bintext.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 
 #define FONT_WIDTH 8
 

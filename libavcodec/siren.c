@@ -28,9 +28,8 @@
 
 #include "avcodec.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "get_bits.h"
-#include "internal.h"
-#include "mathops.h"
 
 static const uint8_t index_table[8] = {4, 4, 3, 3, 2, 2, 1, 0};
 static const uint8_t vector_dimension[8] = { 2, 2, 2, 4, 4, 5, 5, 1 };

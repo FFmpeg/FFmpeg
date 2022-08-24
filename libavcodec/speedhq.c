@@ -26,7 +26,6 @@
 
 #define BITSTREAM_READER_LE
 
-#include "config.h"
 #include "config_components.h"
 #include "libavutil/attributes.h"
 #include "libavutil/mem_internal.h"
@@ -34,9 +33,9 @@
 #include "avcodec.h"
 #include "blockdsp.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "get_bits.h"
 #include "idctdsp.h"
-#include "internal.h"
 #include "libavutil/thread.h"
 #include "mathops.h"
 #include "mpeg12dec.h"

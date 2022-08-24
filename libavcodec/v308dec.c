@@ -21,7 +21,7 @@
 
 #include "avcodec.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 
 static av_cold int v308_decode_init(AVCodecContext *avctx)
 {

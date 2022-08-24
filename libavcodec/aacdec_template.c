@@ -91,6 +91,7 @@
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/thread.h"
+#include "decode.h"
 #include "internal.h"
 
 static VLC vlc_scalefactors;

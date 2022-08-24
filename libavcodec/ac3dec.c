@@ -44,6 +44,7 @@
 #include "ac3dec.h"
 #include "ac3dec_data.h"
 #include "ac3defs.h"
+#include "decode.h"
 #include "kbdwin.h"
 
 /**

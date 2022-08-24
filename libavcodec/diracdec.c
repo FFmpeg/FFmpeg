@@ -33,6 +33,7 @@
 #include "get_bits.h"
 #include "bytestream.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "internal.h"
 #include "golomb.h"
 #include "dirac_arith.h"

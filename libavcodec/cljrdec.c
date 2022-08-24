@@ -26,8 +26,8 @@
 
 #include "avcodec.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "get_bits.h"
-#include "internal.h"
 
 static int decode_frame(AVCodecContext *avctx, AVFrame *p,
                         int *got_frame, AVPacket *avpkt)

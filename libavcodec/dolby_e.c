@@ -26,7 +26,7 @@
 #include "libavutil/opt.h"
 
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 #include "get_bits.h"
 #include "dolby_e.h"
 #include "kbdwin.h"

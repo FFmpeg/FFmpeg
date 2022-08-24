@@ -30,6 +30,7 @@
 #include "avcodec.h"
 #include "avs3.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "internal.h"
 #include "uavs3d.h"
 

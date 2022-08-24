@@ -28,7 +28,7 @@
 #include "ac3_parser_internal.h"
 #include "bytestream.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 #include "mpegaudiodecheader.h"
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"

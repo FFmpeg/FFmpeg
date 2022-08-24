@@ -40,6 +40,7 @@
 
 #include "avcodec.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "error_resilience.h"
 #include "hwconfig.h"
 #include "idctdsp.h"

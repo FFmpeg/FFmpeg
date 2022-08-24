@@ -27,12 +27,11 @@
 #include "get_bits.h"
 #include "audiodsp.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 
 
 #include "g729.h"
 #include "lsp.h"
-#include "celp_math.h"
 #include "celp_filters.h"
 #include "acelp_filters.h"
 #include "acelp_pitch_delay.h"

@@ -35,6 +35,7 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "internal.h"
 
 #define EA_PREAMBLE_SIZE    8

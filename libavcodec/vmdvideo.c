@@ -40,7 +40,7 @@
 
 #include "avcodec.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 #include "bytestream.h"
 
 #define VMD_HEADER_SIZE 0x330

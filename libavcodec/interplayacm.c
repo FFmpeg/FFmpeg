@@ -24,8 +24,8 @@
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "get_bits.h"
-#include "internal.h"
 
 static const int8_t map_1bit[]      = { -1, +1 };
 static const int8_t map_2bit_near[] = { -2, -1, +1, +2 };

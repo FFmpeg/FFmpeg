@@ -30,9 +30,9 @@
 #include "bswapdsp.h"
 #include "bytestream.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "get_bits.h"
 #include "golomb.h"
-#include "internal.h"
 
 #define MAX_CHANNELS 8
 #define MAX_BLOCKSIZE 65535

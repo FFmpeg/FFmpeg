@@ -33,7 +33,6 @@
 
 #include <math.h>
 #include <stddef.h>
-#include <stdio.h>
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/mem_internal.h"
@@ -44,7 +43,7 @@
 #include "get_bits.h"
 #include "bytestream.h"
 #include "codec_internal.h"
-#include "internal.h"
+#include "decode.h"
 #include "mpegaudio.h"
 #include "mpegaudiodsp.h"
 #include "rdft.h"

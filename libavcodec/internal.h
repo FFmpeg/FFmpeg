@@ -212,13 +212,6 @@ static av_always_inline float ff_exp2fi(int x) {
         return 0;
 }
 
-/**
- * Get a buffer for a frame. This is a wrapper around
- * AVCodecContext.get_buffer() and should be used instead calling get_buffer()
- * directly.
- */
-int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags);
-
 int avpriv_h264_has_num_reorder_frames(AVCodecContext *avctx);
 
 int avpriv_codec_get_cap_skip_frame_fill_param(const AVCodec *codec);

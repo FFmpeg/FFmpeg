@@ -26,8 +26,8 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "encode.h"
-#include "internal.h"
 
 #ifndef LIBILBC_VERSION_MAJOR
 #define LIBILBC_VERSION_MAJOR 2
