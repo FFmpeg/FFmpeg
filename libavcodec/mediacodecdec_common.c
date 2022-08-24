@@ -32,6 +32,7 @@
 #include "libavutil/timestamp.h"
 
 #include "avcodec.h"
+#include "decode.h"
 #include "internal.h"
 
 #include "mediacodec.h"
