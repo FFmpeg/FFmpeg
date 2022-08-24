@@ -64,7 +64,6 @@
 #include "codec_internal.h"
 #include "elbg.h"
 #include "encode.h"
-#include "internal.h"
 #include "mathops.h"
 
 #define CHROMA_BIAS 1
