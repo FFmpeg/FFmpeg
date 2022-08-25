@@ -1307,6 +1307,8 @@ static int aom_encode(AVCodecContext *avctx, AVPacket *pkt,
         return AVERROR_INVALIDDATA;
     }
     coded_size = queue_frames(avctx, pkt);
+    if (coded_size < 0)
+        return coded_size;
 
     if (!frame && avctx->flags & AV_CODEC_FLAG_PASS1) {
         size_t b64_size = AV_BASE64_SIZE(ctx->twopass_stats.sz);
