@@ -1513,18 +1513,21 @@ static int get_preset_file_2(const char *preset_name, const char *codec_name, AV
     return ret;
 }
 
-static int choose_encoder(OptionsContext *o, AVFormatContext *s, OutputStream *ost)
+static int choose_encoder(OptionsContext *o, AVFormatContext *s,
+                          OutputStream *ost, const AVCodec **enc)
 {
     enum AVMediaType type = ost->st->codecpar->codec_type;
     char *codec_name = NULL;
+
+    *enc = NULL;
 
     if (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO || type == AVMEDIA_TYPE_SUBTITLE) {
         MATCH_PER_STREAM_OPT(codec_names, str, codec_name, s, ost->st);
         if (!codec_name) {
             ost->st->codecpar->codec_id = av_guess_codec(s->oformat, NULL, s->url,
                                                          NULL, ost->st->codecpar->codec_type);
-            ost->enc = avcodec_find_encoder(ost->st->codecpar->codec_id);
-            if (!ost->enc) {
+            *enc = avcodec_find_encoder(ost->st->codecpar->codec_id);
+            if (!*enc) {
                 av_log(NULL, AV_LOG_FATAL, "Automatic encoder selection failed for "
                        "output stream #%d:%d. Default encoder for format %s (codec %s) is "
                        "probably disabled. Please choose an encoder manually.\n",
@@ -1533,8 +1536,8 @@ static int choose_encoder(OptionsContext *o, AVFormatContext *s, OutputStream *o
                 return AVERROR_ENCODER_NOT_FOUND;
             }
         } else if (strcmp(codec_name, "copy")) {
-            ost->enc = find_codec_or_die(codec_name, ost->st->codecpar->codec_type, 1);
-            ost->st->codecpar->codec_id = ost->enc->id;
+            *enc = find_codec_or_die(codec_name, ost->st->codecpar->codec_type, 1);
+            ost->st->codecpar->codec_id = (*enc)->id;
         }
     }
 
@@ -1560,6 +1563,7 @@ static int check_opt_bitexact(void *ctx, const AVDictionary *opts,
 static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, enum AVMediaType type, int source_index)
 {
     OutputStream *ost;
+    const AVCodec *enc;
     AVStream *st = avformat_new_stream(oc, NULL);
     int idx      = oc->nb_streams - 1, ret = 0;
     const char *bsfs = NULL, *time_base = NULL;
@@ -1583,15 +1587,15 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     ost->forced_kf_ref_pts = AV_NOPTS_VALUE;
     st->codecpar->codec_type = type;
 
-    ret = choose_encoder(o, oc, ost);
+    ret = choose_encoder(o, oc, ost, &enc);
     if (ret < 0) {
         av_log(NULL, AV_LOG_FATAL, "Error selecting an encoder for stream "
                "%d:%d\n", ost->file_index, ost->index);
         exit_program(1);
     }
 
-    if (ost->enc) {
-        ost->enc_ctx = avcodec_alloc_context3(ost->enc);
+    if (enc) {
+        ost->enc_ctx = avcodec_alloc_context3(enc);
         if (!ost->enc_ctx) {
             av_log(NULL, AV_LOG_ERROR, "Error allocating the encoding context.\n");
             exit_program(1);
@@ -1606,16 +1610,18 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     if (!ost->pkt)
         exit_program(1);
 
-    if (ost->enc) {
+    if (ost->enc_ctx) {
+        AVCodecContext *enc = ost->enc_ctx;
         AVIOContext *s = NULL;
         char *buf = NULL, *arg = NULL, *preset = NULL;
 
-        ost->encoder_opts  = filter_codec_opts(o->g->codec_opts, ost->enc->id, oc, st, ost->enc);
+        ost->encoder_opts = filter_codec_opts(o->g->codec_opts, enc->codec_id,
+                                              oc, st, enc->codec);
 
         MATCH_PER_STREAM_OPT(presets, str, preset, oc, st);
         ost->autoscale = 1;
         MATCH_PER_STREAM_OPT(autoscale, i, ost->autoscale, oc, st);
-        if (preset && (!(ret = get_preset_file_2(preset, ost->enc->name, &s)))) {
+        if (preset && (!(ret = get_preset_file_2(preset, enc->codec->name, &s)))) {
             AVBPrint bprint;
             av_bprint_init(&bprint, 0, AV_BPRINT_SIZE_UNLIMITED);
             do  {
@@ -1729,7 +1735,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     av_dict_copy(&ost->sws_dict, o->g->sws_dict, 0);
 
     av_dict_copy(&ost->swr_opts, o->g->swr_opts, 0);
-    if (ost->enc && av_get_exact_bits_per_sample(ost->enc->id) == 24)
+    if (ost->enc_ctx && av_get_exact_bits_per_sample(ost->enc_ctx->codec_id) == 24)
         av_dict_set(&ost->swr_opts, "output_sample_bits", "24", 0);
 
     ost->source_index = source_index;
@@ -1985,7 +1991,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
                      ost->logfile_prefix ? ost->logfile_prefix :
                                            DEFAULT_PASS_LOGFILENAME_PREFIX,
                      nb_output_streams - 1);
-            if (!strcmp(ost->enc->name, "libx264")) {
+            if (!strcmp(ost->enc_ctx->codec->name, "libx264")) {
                 av_dict_set(&ost->encoder_opts, "stats", logfilename, AV_DICT_DONT_OVERWRITE);
             } else {
                 if (video_enc->flags & AV_CODEC_FLAG_PASS2) {
@@ -2869,6 +2875,7 @@ static void of_add_metadata(AVFormatContext *oc, const OptionsContext *o)
 }
 static void set_channel_layout(OutputFilter *f, OutputStream *ost)
 {
+    const AVCodec *c = ost->enc_ctx->codec;
     int i, err;
 
     if (ost->enc_ctx->ch_layout.order != AV_CHANNEL_ORDER_UNSPEC) {
@@ -2880,7 +2887,7 @@ static void set_channel_layout(OutputFilter *f, OutputStream *ost)
     }
 
     /* Requested layout is of order UNSPEC */
-    if (!ost->enc->ch_layouts) {
+    if (!c->ch_layouts) {
         /* Use the default native layout for the requested amount of channels when the
            encoder doesn't have a list of supported layouts */
         av_channel_layout_default(&f->ch_layout, ost->enc_ctx->ch_layout.nb_channels);
@@ -2888,13 +2895,13 @@ static void set_channel_layout(OutputFilter *f, OutputStream *ost)
     }
     /* Encoder has a list of supported layouts. Pick the first layout in it with the
        same amount of channels as the requested layout */
-    for (i = 0; ost->enc->ch_layouts[i].nb_channels; i++) {
-        if (ost->enc->ch_layouts[i].nb_channels == ost->enc_ctx->ch_layout.nb_channels)
+    for (i = 0; c->ch_layouts[i].nb_channels; i++) {
+        if (c->ch_layouts[i].nb_channels == ost->enc_ctx->ch_layout.nb_channels)
             break;
     }
-    if (ost->enc->ch_layouts[i].nb_channels) {
+    if (c->ch_layouts[i].nb_channels) {
         /* Use it if one is found */
-        err = av_channel_layout_copy(&f->ch_layout, &ost->enc->ch_layouts[i]);
+        err = av_channel_layout_copy(&f->ch_layout, &c->ch_layouts[i]);
         if (err < 0)
             exit_program(1);
         return;
@@ -3069,6 +3076,7 @@ static int open_output_file(OptionsContext *o, const char *filename)
 
         /* set the filter output constraints */
         if (ost->filter) {
+            const AVCodec *c = ost->enc_ctx->codec;
             OutputFilter *f = ost->filter;
             switch (ost->enc_ctx->codec_type) {
             case AVMEDIA_TYPE_VIDEO:
@@ -3078,24 +3086,24 @@ static int open_output_file(OptionsContext *o, const char *filename)
                 if (ost->enc_ctx->pix_fmt != AV_PIX_FMT_NONE) {
                     f->format = ost->enc_ctx->pix_fmt;
                 } else {
-                    f->formats = ost->enc->pix_fmts;
+                    f->formats = c->pix_fmts;
                 }
                 break;
             case AVMEDIA_TYPE_AUDIO:
                 if (ost->enc_ctx->sample_fmt != AV_SAMPLE_FMT_NONE) {
                     f->format = ost->enc_ctx->sample_fmt;
                 } else {
-                    f->formats = ost->enc->sample_fmts;
+                    f->formats = c->sample_fmts;
                 }
                 if (ost->enc_ctx->sample_rate) {
                     f->sample_rate = ost->enc_ctx->sample_rate;
                 } else {
-                    f->sample_rates = ost->enc->supported_samplerates;
+                    f->sample_rates = c->supported_samplerates;
                 }
                 if (ost->enc_ctx->ch_layout.nb_channels) {
                     set_channel_layout(f, ost);
-                } else if (ost->enc->ch_layouts) {
-                    f->ch_layouts = ost->enc->ch_layouts;
+                } else if (c->ch_layouts) {
+                    f->ch_layouts = c->ch_layouts;
                 }
                 break;
             }

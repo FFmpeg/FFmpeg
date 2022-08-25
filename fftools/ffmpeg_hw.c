@@ -461,7 +461,7 @@ int hw_device_setup_for_encode(OutputStream *ost)
     }
 
     for (i = 0;; i++) {
-        config = avcodec_get_hw_config(ost->enc, i);
+        config = avcodec_get_hw_config(ost->enc_ctx->codec, i);
         if (!config)
             break;
 
@@ -472,7 +472,7 @@ int hw_device_setup_for_encode(OutputStream *ost)
             av_log(ost->enc_ctx, AV_LOG_VERBOSE, "Using input "
                    "frames context (format %s) with %s encoder.\n",
                    av_get_pix_fmt_name(ost->enc_ctx->pix_fmt),
-                   ost->enc->name);
+                   ost->enc_ctx->codec->name);
             ost->enc_ctx->hw_frames_ctx = av_buffer_ref(frames_ref);
             if (!ost->enc_ctx->hw_frames_ctx)
                 return AVERROR(ENOMEM);
@@ -487,7 +487,7 @@ int hw_device_setup_for_encode(OutputStream *ost)
     if (dev) {
         av_log(ost->enc_ctx, AV_LOG_VERBOSE, "Using device %s "
                "(type %s) with %s encoder.\n", dev->name,
-               av_hwdevice_get_type_name(dev->type), ost->enc->name);
+               av_hwdevice_get_type_name(dev->type), ost->enc_ctx->codec->name);
         ost->enc_ctx->hw_device_ctx = av_buffer_ref(dev->device_ref);
         if (!ost->enc_ctx->hw_device_ctx)
             return AVERROR(ENOMEM);

@@ -90,6 +90,7 @@ choose_pixel_fmt(const AVCodec *codec, enum AVPixelFormat target,
 static const char *choose_pix_fmts(OutputFilter *ofilter, AVBPrint *bprint)
 {
     OutputStream *ost = ofilter->ost;
+    AVCodecContext *enc = ost->enc_ctx;
     const AVDictionaryEntry *strict_dict = av_dict_get(ost->encoder_opts, "strict", NULL, 0);
     if (strict_dict)
         // used by choose_pixel_fmt() and below
@@ -103,14 +104,14 @@ static const char *choose_pix_fmts(OutputFilter *ofilter, AVBPrint *bprint)
         return av_get_pix_fmt_name(ost->enc_ctx->pix_fmt);
     }
     if (ost->enc_ctx->pix_fmt != AV_PIX_FMT_NONE) {
-        return av_get_pix_fmt_name(choose_pixel_fmt(ost->enc, ost->enc_ctx->pix_fmt,
+        return av_get_pix_fmt_name(choose_pixel_fmt(enc->codec, enc->pix_fmt,
                                                     ost->enc_ctx->strict_std_compliance));
-    } else if (ost->enc->pix_fmts) {
+    } else if (enc->codec->pix_fmts) {
         const enum AVPixelFormat *p;
 
-        p = ost->enc->pix_fmts;
+        p = enc->codec->pix_fmts;
         if (ost->enc_ctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL) {
-            p = get_compliance_normal_pix_fmts(ost->enc, p);
+            p = get_compliance_normal_pix_fmts(enc->codec, p);
         }
 
         for (; *p != AV_PIX_FMT_NONE; p++) {
@@ -1095,8 +1096,8 @@ int configure_filtergraph(FilterGraph *fg)
 
     for (i = 0; i < fg->nb_outputs; i++) {
         OutputStream *ost = fg->outputs[i]->ost;
-        if (ost->enc->type == AVMEDIA_TYPE_AUDIO &&
-            !(ost->enc->capabilities & AV_CODEC_CAP_VARIABLE_FRAME_SIZE))
+        if (ost->enc_ctx->codec_type == AVMEDIA_TYPE_AUDIO &&
+            !(ost->enc_ctx->codec->capabilities & AV_CODEC_CAP_VARIABLE_FRAME_SIZE))
             av_buffersink_set_frame_size(ost->filter->filter,
                                          ost->enc_ctx->frame_size);
     }

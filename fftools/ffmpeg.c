@@ -2362,7 +2362,7 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output,
         OutputStream *ost = output_streams[i];
 
         if (!check_output_constraints(ist, ost) || !ost->enc_ctx
-            || ost->enc->type != AVMEDIA_TYPE_SUBTITLE)
+            || ost->enc_ctx->codec_type != AVMEDIA_TYPE_SUBTITLE)
             continue;
 
         do_subtitle_out(output_files[ost->file_index], ost, &subtitle);
@@ -2869,13 +2869,14 @@ static int init_output_stream_streamcopy(OutputStream *ost)
 
 static void set_encoder_id(OutputFile *of, OutputStream *ost)
 {
+    const char *cname = ost->enc_ctx->codec->name;
     uint8_t *encoder_string;
     int encoder_string_len;
 
     if (av_dict_get(ost->st->metadata, "encoder",  NULL, 0))
         return;
 
-    encoder_string_len = sizeof(LIBAVCODEC_IDENT) + strlen(ost->enc->name) + 2;
+    encoder_string_len = sizeof(LIBAVCODEC_IDENT) + strlen(cname) + 2;
     encoder_string     = av_mallocz(encoder_string_len);
     if (!encoder_string)
         exit_program(1);
@@ -2884,7 +2885,7 @@ static void set_encoder_id(OutputFile *of, OutputStream *ost)
         av_strlcpy(encoder_string, LIBAVCODEC_IDENT " ", encoder_string_len);
     else
         av_strlcpy(encoder_string, "Lavc ", encoder_string_len);
-    av_strlcat(encoder_string, ost->enc->name, encoder_string_len);
+    av_strlcat(encoder_string, cname, encoder_string_len);
     av_dict_set(&ost->st->metadata, "encoder",  encoder_string,
                 AV_DICT_DONT_STRDUP_VAL | AV_DICT_DONT_OVERWRITE);
 }
@@ -3011,9 +3012,9 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
             !ost->frame_rate.den))
             ost->frame_rate = ost->max_frame_rate;
 
-        if (ost->enc->supported_framerates && !ost->force_fps) {
-            int idx = av_find_nearest_q_idx(ost->frame_rate, ost->enc->supported_framerates);
-            ost->frame_rate = ost->enc->supported_framerates[idx];
+        if (enc_ctx->codec->supported_framerates && !ost->force_fps) {
+            int idx = av_find_nearest_q_idx(ost->frame_rate, enc_ctx->codec->supported_framerates);
+            ost->frame_rate = enc_ctx->codec->supported_framerates[idx];
         }
         // reduce frame rate for mpeg4 to be within the spec limits
         if (enc_ctx->codec_id == AV_CODEC_ID_MPEG4) {
@@ -3154,7 +3155,7 @@ static int init_output_stream(OutputStream *ost, AVFrame *frame,
     int ret = 0;
 
     if (ost->enc_ctx) {
-        const AVCodec *codec = ost->enc;
+        const AVCodec *codec = ost->enc_ctx->codec;
         AVCodecContext *dec = NULL;
         InputStream *ist;
 
@@ -3183,7 +3184,7 @@ static int init_output_stream(OutputStream *ost, AVFrame *frame,
             return ret;
         }
 
-        if (ist && ist->dec->type == AVMEDIA_TYPE_SUBTITLE && ost->enc->type == AVMEDIA_TYPE_SUBTITLE) {
+        if (ist && ist->dec->type == AVMEDIA_TYPE_SUBTITLE && codec->type == AVMEDIA_TYPE_SUBTITLE) {
             int input_props = 0, output_props = 0;
             AVCodecDescriptor const *input_descriptor =
                 avcodec_descriptor_get(dec->codec_id);
@@ -3210,8 +3211,8 @@ static int init_output_stream(OutputStream *ost, AVFrame *frame,
                     ost->file_index, ost->index);
             return ret;
         }
-        if (ost->enc->type == AVMEDIA_TYPE_AUDIO &&
-            !(ost->enc->capabilities & AV_CODEC_CAP_VARIABLE_FRAME_SIZE))
+        if (codec->type == AVMEDIA_TYPE_AUDIO &&
+            !(codec->capabilities & AV_CODEC_CAP_VARIABLE_FRAME_SIZE))
             av_buffersink_set_frame_size(ost->filter->filter,
                                             ost->enc_ctx->frame_size);
         assert_avoptions(ost->encoder_opts);
@@ -3423,7 +3424,7 @@ static int transcode_init(void)
                 av_log(NULL, AV_LOG_INFO, " (graph %d)", ost->filter->graph->index);
 
             av_log(NULL, AV_LOG_INFO, " -> Stream #%d:%d (%s)\n", ost->file_index,
-                   ost->index, ost->enc ? ost->enc->name : "?");
+                   ost->index, ost->enc_ctx->codec->name);
             continue;
         }
 
@@ -3434,7 +3435,7 @@ static int transcode_init(void)
                ost->index);
         if (ost->enc_ctx) {
             const AVCodec *in_codec    = input_streams[ost->source_index]->dec;
-            const AVCodec *out_codec   = ost->enc;
+            const AVCodec *out_codec   = ost->enc_ctx->codec;
             const char *decoder_name   = "?";
             const char *in_codec_name  = "?";
             const char *encoder_name   = "?";
@@ -3830,7 +3831,7 @@ static int process_input(int file_index)
                 OutputStream *ost = output_streams[j];
 
                 if (ost->source_index == ifile->ist_index + i &&
-                    (!ost->enc_ctx || ost->enc->type == AVMEDIA_TYPE_SUBTITLE)) {
+                    (!ost->enc_ctx || ost->enc_ctx->codec_type == AVMEDIA_TYPE_SUBTITLE)) {
                     OutputFile *of = output_files[ost->file_index];
                     output_packet(of, ost->pkt, ost, 1);
                 }

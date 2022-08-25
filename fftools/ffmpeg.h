@@ -515,7 +515,6 @@ typedef struct OutputStream {
     AVBSFContext            *bsf_ctx;
 
     AVCodecContext *enc_ctx;
-    const AVCodec *enc;
     int64_t max_frames;
     AVFrame *filtered_frame;
     AVFrame *last_frame;
