@@ -50,7 +50,7 @@ void ff_metadata_conv(AVDictionary **pm, const AVMetadataConv *d_conv,
                     key = dc->native;
                     break;
                 }
-        av_dict_set(&dst, key, mtag->value, 0);
+        av_dict_set(&dst, key, mtag->value, AV_DICT_MULTIKEY | AV_DICT_DEDUP);
     }
     av_dict_free(pm);
     *pm = dst;
