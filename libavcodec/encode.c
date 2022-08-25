@@ -263,17 +263,16 @@ static int encode_simple_internal(AVCodecContext *avctx, AVPacket *avpkt)
     av_assert0(codec->cb_type == FF_CODEC_CB_TYPE_ENCODE);
 
     if (CONFIG_FRAME_THREAD_ENCODER && avci->frame_thread_encoder)
-        /* This might unref frame. */
+        /* This will unref frame. */
         ret = ff_thread_video_encode_frame(avctx, avpkt, frame, &got_packet);
     else {
         ret = ff_encode_encode_cb(avctx, avpkt, frame, &got_packet);
+        if (frame)
+            av_frame_unref(frame);
     }
 
     if (avci->draining && !got_packet)
         avci->draining_done = 1;
-
-    if (frame)
-        av_frame_unref(frame);
 
     return ret;
 }
