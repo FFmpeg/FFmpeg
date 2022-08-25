@@ -585,8 +585,10 @@ typedef struct OutputStream {
     int keep_pix_fmt;
 
     /* stats */
-    // combined size of all the packets written
-    uint64_t data_size;
+    // combined size of all the packets sent to the muxer
+    uint64_t data_size_mux;
+    // combined size of all the packets received from the encoder
+    uint64_t data_size_enc;
     // number of packets send to the muxer
     atomic_uint_least64_t packets_written;
     // number of frames/samples sent to the encoder

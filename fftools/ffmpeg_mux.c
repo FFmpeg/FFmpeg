@@ -156,7 +156,7 @@ static int write_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
     }
     ms->last_mux_dts = pkt->dts;
 
-    ost->data_size += pkt->size;
+    ost->data_size_mux += pkt->size;
     atomic_fetch_add(&ost->packets_written, 1);
 
     pkt->stream_index = ost->index;
