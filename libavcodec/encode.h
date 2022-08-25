@@ -76,7 +76,7 @@ int ff_alloc_packet(AVCodecContext *avctx, AVPacket *avpkt, int64_t size);
 int ff_encode_preinit(AVCodecContext *avctx);
 
 int ff_encode_encode_cb(AVCodecContext *avctx, AVPacket *avpkt,
-                        const AVFrame *frame, int *got_packet);
+                        AVFrame *frame, int *got_packet);
 
 /**
  * Rescale from sample rate to AVCodecContext.time_base.
