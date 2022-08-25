@@ -82,6 +82,7 @@
 #define AV_DICT_APPEND         32   /**< If the entry already exists, append to it.  Note that no
                                          delimiter is added, the strings are simply concatenated. */
 #define AV_DICT_MULTIKEY       64   /**< Allow to store several equal keys in the dictionary */
+#define AV_DICT_DEDUP         128   /**< If inserting a value that already exists for a key, do nothing. Only relevant with AV_DICT_MULTIKEY. */
 /**
  * @}
  */
