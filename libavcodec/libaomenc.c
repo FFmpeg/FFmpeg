@@ -400,7 +400,7 @@ static av_cold int aom_free(AVCodecContext *avctx)
 #if defined(AOM_CTRL_AV1E_GET_NUM_OPERATING_POINTS) && \
     defined(AOM_CTRL_AV1E_GET_SEQ_LEVEL_IDX) && \
     defined(AOM_CTRL_AV1E_GET_TARGET_SEQ_LEVEL_IDX)
-    if (ctx->encoder->iface && !(avctx->flags & AV_CODEC_FLAG_PASS1)) {
+    if (ctx->encoder.iface && !(avctx->flags & AV_CODEC_FLAG_PASS1)) {
         int num_operating_points;
         int levels[32];
         int target_levels[32];
