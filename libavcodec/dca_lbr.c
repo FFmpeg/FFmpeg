@@ -29,7 +29,6 @@
 #include "dca_syncwords.h"
 #include "bytestream.h"
 #include "decode.h"
-#include "internal.h"
 
 #define AMP_MAX     56
 

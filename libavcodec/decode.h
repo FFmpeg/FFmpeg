@@ -138,4 +138,10 @@ int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags);
  */
 int ff_reget_buffer(AVCodecContext *avctx, AVFrame *frame, int flags);
 
+/**
+ * Add or update AV_FRAME_DATA_MATRIXENCODING side data.
+ */
+int ff_side_data_update_matrix_encoding(AVFrame *frame,
+                                        enum AVMatrixEncoding matrix_encoding);
+
 #endif /* AVCODEC_DECODE_H */

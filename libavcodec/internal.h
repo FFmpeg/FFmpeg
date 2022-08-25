@@ -205,12 +205,6 @@ int avpriv_h264_has_num_reorder_frames(AVCodecContext *avctx);
 int avpriv_codec_get_cap_skip_frame_fill_param(const AVCodec *codec);
 
 /**
- * Add or update AV_FRAME_DATA_MATRIXENCODING side data.
- */
-int ff_side_data_update_matrix_encoding(AVFrame *frame,
-                                        enum AVMatrixEncoding matrix_encoding);
-
-/**
  * Add a CPB properties side data to an encoding context.
  */
 AVCPBProperties *ff_add_cpb_side_data(AVCodecContext *avctx);
