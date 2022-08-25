@@ -1,7 +1,4 @@
 /*
- * DVD subtitle decoding/encoding
- * Copyright (c) 2005 Fabrice Bellard
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -19,16 +16,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/avstring.h"
-#include <stdlib.h>
+#ifndef AVCODEC_DVDSUB_H
+#define AVCODEC_DVDSUB_H
 
-#include "dvdsub.h"
+#include <stdint.h>
 
-void ff_dvdsub_parse_palette(uint32_t *palette, const char *p)
-{
-    for (int i = 0; i < 16; i++) {
-        palette[i] = strtoul(p, (char **)&p, 16);
-        while (*p == ',' || av_isspace(*p))
-            p++;
-    }
-}
+void ff_dvdsub_parse_palette(uint32_t *palette, const char *p);
+
+#endif /* AVCODEC_DVDSUB_H */
