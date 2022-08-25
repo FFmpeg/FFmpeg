@@ -105,7 +105,7 @@ static const char *choose_pix_fmts(OutputFilter *ofilter, AVBPrint *bprint)
     if (ost->enc_ctx->pix_fmt != AV_PIX_FMT_NONE) {
         return av_get_pix_fmt_name(choose_pixel_fmt(ost->enc, ost->enc_ctx->pix_fmt,
                                                     ost->enc_ctx->strict_std_compliance));
-    } else if (ost->enc && ost->enc->pix_fmts) {
+    } else if (ost->enc->pix_fmts) {
         const enum AVPixelFormat *p;
 
         p = ost->enc->pix_fmts;
