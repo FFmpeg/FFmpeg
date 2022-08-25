@@ -338,10 +338,9 @@ static int test_cpl_parsing(void)
     return 0;
 }
 
-static int test_bad_cpl_parsing(void)
+static int test_bad_cpl_parsing(FFIMFCPL **cpl)
 {
     xmlDocPtr doc;
-    FFIMFCPL *cpl;
     int ret;
 
     doc = xmlReadMemory(cpl_bad_doc, strlen(cpl_bad_doc), NULL, NULL, 0);
@@ -350,7 +349,7 @@ static int test_bad_cpl_parsing(void)
         return 1;
     }
 
-    ret = ff_imf_parse_cpl_from_xml_dom(doc, &cpl);
+    ret = ff_imf_parse_cpl_from_xml_dom(doc, cpl);
     xmlFreeDoc(doc);
     if (ret) {
         printf("CPL parsing failed.\n");
@@ -506,6 +505,7 @@ fail:
 
 int main(int argc, char *argv[])
 {
+    FFIMFCPL *cpl;
     int ret = 0;
 
     if (test_cpl_parsing() != 0)
@@ -518,8 +518,12 @@ int main(int argc, char *argv[])
         ret = 1;
 
     printf("#### The following should fail ####\n");
-    if (test_bad_cpl_parsing() == 0)
+    if (test_bad_cpl_parsing(&cpl) == 0) {
         ret = 1;
+    } else if (cpl) {
+        printf("Improper cleanup after failed CPL parsing\n");
+        ret = 1;
+    }
     printf("#### End failing test ####\n");
 
     return ret;
