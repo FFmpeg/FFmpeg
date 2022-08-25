@@ -253,49 +253,48 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
         }
     }
 
-        if (compr & TGA_RLE) {
-            int res = targa_decode_rle(avctx, s, dst, w, h, stride, bpp, interleave);
-            if (res < 0)
-                return res;
-        } else {
-            uint8_t *line;
-            if (bytestream2_get_bytes_left(&s->gb) < img_size * h) {
-                av_log(avctx, AV_LOG_ERROR,
-                       "Not enough data available for image\n");
-                return AVERROR_INVALIDDATA;
-            }
-
-            line = dst;
-            y = 0;
-            do {
-                bytestream2_get_buffer(&s->gb, line, img_size);
-                line = advance_line(dst, line, stride, &y, h, interleave);
-            } while (line);
+    if (compr & TGA_RLE) {
+        int res = targa_decode_rle(avctx, s, dst, w, h, stride, bpp, interleave);
+        if (res < 0)
+            return res;
+    } else {
+        uint8_t *line;
+        if (bytestream2_get_bytes_left(&s->gb) < img_size * h) {
+            av_log(avctx, AV_LOG_ERROR,
+                    "Not enough data available for image\n");
+            return AVERROR_INVALIDDATA;
         }
 
-        if (flags & TGA_RIGHTTOLEFT) { // right-to-left, needs horizontal flip
-            int x;
-            for (y = 0; y < h; y++) {
-                void *line = &p->data[0][y * p->linesize[0]];
-                for (x = 0; x < w >> 1; x++) {
-                    switch (bpp) {
-                    case 32:
-                        FFSWAP(uint32_t, ((uint32_t *)line)[x], ((uint32_t *)line)[w - x - 1]);
-                        break;
-                    case 24:
-                        FFSWAP(uint8_t, ((uint8_t *)line)[3 * x    ], ((uint8_t *)line)[3 * w - 3 * x - 3]);
-                        FFSWAP(uint8_t, ((uint8_t *)line)[3 * x + 1], ((uint8_t *)line)[3 * w - 3 * x - 2]);
-                        FFSWAP(uint8_t, ((uint8_t *)line)[3 * x + 2], ((uint8_t *)line)[3 * w - 3 * x - 1]);
-                        break;
-                    case 16:
-                        FFSWAP(uint16_t, ((uint16_t *)line)[x], ((uint16_t *)line)[w - x - 1]);
-                        break;
-                    case 8:
-                        FFSWAP(uint8_t, ((uint8_t *)line)[x], ((uint8_t *)line)[w - x - 1]);
-                    }
+        line = dst;
+        y = 0;
+        do {
+            bytestream2_get_buffer(&s->gb, line, img_size);
+            line = advance_line(dst, line, stride, &y, h, interleave);
+        } while (line);
+    }
+
+    if (flags & TGA_RIGHTTOLEFT) { // right-to-left, needs horizontal flip
+        for (int y = 0; y < h; y++) {
+            void *line = &p->data[0][y * p->linesize[0]];
+            for (int x = 0; x < w >> 1; x++) {
+                switch (bpp) {
+                case 32:
+                    FFSWAP(uint32_t, ((uint32_t *)line)[x], ((uint32_t *)line)[w - x - 1]);
+                    break;
+                case 24:
+                    FFSWAP(uint8_t, ((uint8_t *)line)[3 * x    ], ((uint8_t *)line)[3 * w - 3 * x - 3]);
+                    FFSWAP(uint8_t, ((uint8_t *)line)[3 * x + 1], ((uint8_t *)line)[3 * w - 3 * x - 2]);
+                    FFSWAP(uint8_t, ((uint8_t *)line)[3 * x + 2], ((uint8_t *)line)[3 * w - 3 * x - 1]);
+                    break;
+                case 16:
+                    FFSWAP(uint16_t, ((uint16_t *)line)[x], ((uint16_t *)line)[w - x - 1]);
+                    break;
+                case 8:
+                    FFSWAP(uint8_t, ((uint8_t *)line)[x], ((uint8_t *)line)[w - x - 1]);
                 }
             }
         }
+    }
 
 
     *got_frame = 1;
