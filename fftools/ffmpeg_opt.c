@@ -1875,7 +1875,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
 
     if (ost->enc_ctx) {
         AVCodecContext *video_enc = ost->enc_ctx;
-        const char *p = NULL;
+        const char *p = NULL, *fps_mode = NULL;
         char *frame_size = NULL;
         char *frame_pix_fmt = NULL;
         char *intra_matrix = NULL, *inter_matrix = NULL;
@@ -2027,9 +2027,9 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
         MATCH_PER_STREAM_OPT(top_field_first, i, ost->top_field_first, oc, st);
 
         ost->vsync_method = video_sync_method;
-        MATCH_PER_STREAM_OPT(fps_mode, str, ost->fps_mode, oc, st);
-        if (ost->fps_mode)
-            parse_and_set_vsync(ost->fps_mode, &ost->vsync_method, ost->file_index, ost->index, 0);
+        MATCH_PER_STREAM_OPT(fps_mode, str, fps_mode, oc, st);
+        if (fps_mode)
+            parse_and_set_vsync(fps_mode, &ost->vsync_method, ost->file_index, ost->index, 0);
 
         if (ost->vsync_method == VSYNC_AUTO) {
             if (!strcmp(oc->oformat->name, "avi")) {

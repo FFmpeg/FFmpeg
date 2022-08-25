@@ -528,7 +528,6 @@ typedef struct OutputStream {
     AVRational max_frame_rate;
     enum VideoSyncMethod vsync_method;
     int is_cfr;
-    const char *fps_mode;
     int force_fps;
     int top_field_first;
     int rotate_overridden;
