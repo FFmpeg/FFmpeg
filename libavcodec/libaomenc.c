@@ -400,7 +400,7 @@ static av_cold int aom_free(AVCodecContext *avctx)
 #if defined(AOM_CTRL_AV1E_GET_NUM_OPERATING_POINTS) && \
     defined(AOM_CTRL_AV1E_GET_SEQ_LEVEL_IDX) && \
     defined(AOM_CTRL_AV1E_GET_TARGET_SEQ_LEVEL_IDX)
-    if (!(avctx->flags & AV_CODEC_FLAG_PASS1)) {
+    if (ctx->encoder->iface && !(avctx->flags & AV_CODEC_FLAG_PASS1)) {
         int num_operating_points;
         int levels[32];
         int target_levels[32];
@@ -1544,6 +1544,7 @@ FFCodec ff_libaom_av1_encoder = {
     FF_CODEC_ENCODE_CB(aom_encode),
     .close          = aom_free,
     .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE |
+                      FF_CODEC_CAP_INIT_CLEANUP |
                       FF_CODEC_CAP_AUTO_THREADS,
     .defaults       = defaults,
     .init_static_data = av1_init_static,
