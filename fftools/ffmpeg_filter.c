@@ -1095,14 +1095,6 @@ int configure_filtergraph(FilterGraph *fg)
 
     for (i = 0; i < fg->nb_outputs; i++) {
         OutputStream *ost = fg->outputs[i]->ost;
-        if (!ost->enc) {
-            /* identical to the same check in ffmpeg.c, needed because
-               complex filter graphs are initialized earlier */
-            av_log(NULL, AV_LOG_ERROR, "Encoder (codec %s) not found for output stream #%d:%d\n",
-                     avcodec_get_name(ost->st->codecpar->codec_id), ost->file_index, ost->index);
-            ret = AVERROR(EINVAL);
-            goto fail;
-        }
         if (ost->enc->type == AVMEDIA_TYPE_AUDIO &&
             !(ost->enc->capabilities & AV_CODEC_CAP_VARIABLE_FRAME_SIZE))
             av_buffersink_set_frame_size(ost->filter->filter,
