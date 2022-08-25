@@ -2759,6 +2759,8 @@ static void of_add_programs(AVFormatContext *oc, const OptionsContext *o)
         }
 
         program = av_new_program(oc, progid);
+        if (!program)
+            report_and_exit(AVERROR(ENOMEM));
 
         p = o->program[i].u.str;
         while(*p) {
