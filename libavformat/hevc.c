@@ -728,18 +728,18 @@ static int hvcc_add_nal_unit(uint8_t *nal_buf, uint32_t nal_size,
     ret = hvcc_array_add_nal_unit(nal_buf, nal_size, nal_type,
                                   ps_array_completeness,
                                   &hvcc->arrays[array_idx]);
-        if (ret < 0)
-            goto end;
+    if (ret < 0)
+        goto end;
     if (hvcc->arrays[array_idx].numNalus == 1)
         hvcc->numOfArrays++;
     if (nal_type == HEVC_NAL_VPS)
-            ret = hvcc_parse_vps(&gbc, hvcc);
-        else if (nal_type == HEVC_NAL_SPS)
-            ret = hvcc_parse_sps(&gbc, hvcc);
-        else if (nal_type == HEVC_NAL_PPS)
-            ret = hvcc_parse_pps(&gbc, hvcc);
-        if (ret < 0)
-            goto end;
+        ret = hvcc_parse_vps(&gbc, hvcc);
+    else if (nal_type == HEVC_NAL_SPS)
+        ret = hvcc_parse_sps(&gbc, hvcc);
+    else if (nal_type == HEVC_NAL_PPS)
+        ret = hvcc_parse_pps(&gbc, hvcc);
+    if (ret < 0)
+        goto end;
 
 end:
     av_free(rbsp_buf);
