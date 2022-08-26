@@ -233,7 +233,12 @@ static int parse_imf_asset_map_from_xml_dom(AVFormatContext *s,
 
         asset = &(asset_map->assets[asset_map->asset_count]);
 
-        if (ff_imf_xml_read_uuid(ff_imf_xml_get_child_element_by_name(asset_element, "Id"), asset->uuid)) {
+        if (!(node = ff_imf_xml_get_child_element_by_name(asset_element, "Id"))) {
+            av_log(s, AV_LOG_ERROR, "Unable to parse asset map XML - missing Id node\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        if (ff_imf_xml_read_uuid(node, asset->uuid)) {
             av_log(s, AV_LOG_ERROR, "Could not parse UUID from asset in asset map.\n");
             return AVERROR_INVALIDDATA;
         }
