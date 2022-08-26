@@ -29,6 +29,15 @@
 
 #define MAX_SPATIAL_SEGMENTATION 4096 // max. value of u(12) field
 
+enum {
+    VPS_INDEX,
+    SPS_INDEX,
+    PPS_INDEX,
+    SEI_PREFIX_INDEX,
+    SEI_SUFFIX_INDEX,
+    NB_ARRAYS
+};
+
 typedef struct HVCCNALUnitArray {
     uint8_t  array_completeness;
     uint8_t  NAL_unit_type;
@@ -56,7 +65,7 @@ typedef struct HEVCDecoderConfigurationRecord {
     uint8_t  temporalIdNested;
     uint8_t  lengthSizeMinusOne;
     uint8_t  numOfArrays;
-    HVCCNALUnitArray *array;
+    HVCCNALUnitArray arrays[NB_ARRAYS];
 } HEVCDecoderConfigurationRecord;
 
 typedef struct HVCCProfileTierLevel {
@@ -658,31 +667,10 @@ static void nal_unit_parse_header(GetBitContext *gb, uint8_t *nal_type)
 
 static int hvcc_array_add_nal_unit(uint8_t *nal_buf, uint32_t nal_size,
                                    uint8_t nal_type, int ps_array_completeness,
-                                   HEVCDecoderConfigurationRecord *hvcc)
+                                   HVCCNALUnitArray *array)
 {
     int ret;
-    uint8_t index;
-    uint16_t numNalus;
-    HVCCNALUnitArray *array;
-
-    for (index = 0; index < hvcc->numOfArrays; index++)
-        if (hvcc->array[index].NAL_unit_type == nal_type)
-            break;
-
-    if (index >= hvcc->numOfArrays) {
-        uint8_t i;
-
-        ret = av_reallocp_array(&hvcc->array, index + 1, sizeof(HVCCNALUnitArray));
-        if (ret < 0)
-            return ret;
-
-        for (i = hvcc->numOfArrays; i <= index; i++)
-            memset(&hvcc->array[i], 0, sizeof(HVCCNALUnitArray));
-        hvcc->numOfArrays = index + 1;
-    }
-
-    array    = &hvcc->array[index];
-    numNalus = array->numNalus;
+    uint16_t numNalus = array->numNalus;
 
     ret = av_reallocp_array(&array->nalUnit, numNalus + 1, sizeof(uint8_t*));
     if (ret < 0)
@@ -711,7 +699,8 @@ static int hvcc_array_add_nal_unit(uint8_t *nal_buf, uint32_t nal_size,
 
 static int hvcc_add_nal_unit(uint8_t *nal_buf, uint32_t nal_size,
                              int ps_array_completeness,
-                             HEVCDecoderConfigurationRecord *hvcc)
+                             HEVCDecoderConfigurationRecord *hvcc,
+                             unsigned array_idx)
 {
     int ret = 0;
     GetBitContext gbc;
@@ -736,17 +725,14 @@ static int hvcc_add_nal_unit(uint8_t *nal_buf, uint32_t nal_size,
      * hvcC. Perhaps the SEI playload type should be checked
      * and non-declarative SEI messages discarded?
      */
-    switch (nal_type) {
-    case HEVC_NAL_VPS:
-    case HEVC_NAL_SPS:
-    case HEVC_NAL_PPS:
-    case HEVC_NAL_SEI_PREFIX:
-    case HEVC_NAL_SEI_SUFFIX:
-        ret = hvcc_array_add_nal_unit(nal_buf, nal_size, nal_type,
-                                      ps_array_completeness, hvcc);
+    ret = hvcc_array_add_nal_unit(nal_buf, nal_size, nal_type,
+                                  ps_array_completeness,
+                                  &hvcc->arrays[array_idx]);
         if (ret < 0)
             goto end;
-        else if (nal_type == HEVC_NAL_VPS)
+    if (hvcc->arrays[array_idx].numNalus == 1)
+        hvcc->numOfArrays++;
+    if (nal_type == HEVC_NAL_VPS)
             ret = hvcc_parse_vps(&gbc, hvcc);
         else if (nal_type == HEVC_NAL_SPS)
             ret = hvcc_parse_sps(&gbc, hvcc);
@@ -754,11 +740,6 @@ static int hvcc_add_nal_unit(uint8_t *nal_buf, uint32_t nal_size,
             ret = hvcc_parse_pps(&gbc, hvcc);
         if (ret < 0)
             goto end;
-        break;
-    default:
-        ret = AVERROR_INVALIDDATA;
-        goto end;
-    }
 
 end:
     av_free(rbsp_buf);
@@ -787,22 +768,17 @@ static void hvcc_init(HEVCDecoderConfigurationRecord *hvcc)
 
 static void hvcc_close(HEVCDecoderConfigurationRecord *hvcc)
 {
-    uint8_t i;
-
-    for (i = 0; i < hvcc->numOfArrays; i++) {
-        hvcc->array[i].numNalus = 0;
-        av_freep(&hvcc->array[i].nalUnit);
-        av_freep(&hvcc->array[i].nalUnitLength);
+    for (unsigned i = 0; i < FF_ARRAY_ELEMS(hvcc->arrays); i++) {
+        HVCCNALUnitArray *const array = &hvcc->arrays[i];
+        array->numNalus = 0;
+        av_freep(&array->nalUnit);
+        av_freep(&array->nalUnitLength);
     }
-
-    hvcc->numOfArrays = 0;
-    av_freep(&hvcc->array);
 }
 
 static int hvcc_write(AVIOContext *pb, HEVCDecoderConfigurationRecord *hvcc)
 {
-    uint8_t i;
-    uint16_t j, vps_count = 0, sps_count = 0, pps_count = 0;
+    uint16_t vps_count, sps_count, pps_count;
 
     /*
      * We only support writing HEVCDecoderConfigurationRecord version 1.
@@ -866,36 +842,31 @@ static int hvcc_write(AVIOContext *pb, HEVCDecoderConfigurationRecord *hvcc)
             hvcc->lengthSizeMinusOne);
     av_log(NULL, AV_LOG_TRACE,  "numOfArrays:                         %"PRIu8"\n",
             hvcc->numOfArrays);
-    for (i = 0; i < hvcc->numOfArrays; i++) {
+    for (unsigned i = 0, j = 0; i < FF_ARRAY_ELEMS(hvcc->arrays); i++) {
+        const HVCCNALUnitArray *const array = &hvcc->arrays[i];
+
+        if (array->numNalus == 0)
+            continue;
+
         av_log(NULL, AV_LOG_TRACE, "array_completeness[%"PRIu8"]:               %"PRIu8"\n",
-                i, hvcc->array[i].array_completeness);
+               j, array->array_completeness);
         av_log(NULL, AV_LOG_TRACE, "NAL_unit_type[%"PRIu8"]:                    %"PRIu8"\n",
-                i, hvcc->array[i].NAL_unit_type);
+               j, array->NAL_unit_type);
         av_log(NULL, AV_LOG_TRACE, "numNalus[%"PRIu8"]:                         %"PRIu16"\n",
-                i, hvcc->array[i].numNalus);
-        for (j = 0; j < hvcc->array[i].numNalus; j++)
+               j, array->numNalus);
+        for (unsigned k = 0; k < array->numNalus; k++)
             av_log(NULL, AV_LOG_TRACE,
                     "nalUnitLength[%"PRIu8"][%"PRIu16"]:                 %"PRIu16"\n",
-                    i, j, hvcc->array[i].nalUnitLength[j]);
+                   j, k, array->nalUnitLength[k]);
+        j++;
     }
 
     /*
      * We need at least one of each: VPS, SPS and PPS.
      */
-    for (i = 0; i < hvcc->numOfArrays; i++)
-        switch (hvcc->array[i].NAL_unit_type) {
-        case HEVC_NAL_VPS:
-            vps_count += hvcc->array[i].numNalus;
-            break;
-        case HEVC_NAL_SPS:
-            sps_count += hvcc->array[i].numNalus;
-            break;
-        case HEVC_NAL_PPS:
-            pps_count += hvcc->array[i].numNalus;
-            break;
-        default:
-            break;
-        }
+    vps_count = hvcc->arrays[VPS_INDEX].numNalus;
+    sps_count = hvcc->arrays[SPS_INDEX].numNalus;
+    pps_count = hvcc->arrays[PPS_INDEX].numNalus;
     if (!vps_count || vps_count > HEVC_MAX_VPS_COUNT ||
         !sps_count || sps_count > HEVC_MAX_SPS_COUNT ||
         !pps_count || pps_count > HEVC_MAX_PPS_COUNT)
@@ -970,25 +941,29 @@ static int hvcc_write(AVIOContext *pb, HEVCDecoderConfigurationRecord *hvcc)
     /* unsigned int(8) numOfArrays; */
     avio_w8(pb, hvcc->numOfArrays);
 
-    for (i = 0; i < hvcc->numOfArrays; i++) {
+    for (unsigned i = 0; i < FF_ARRAY_ELEMS(hvcc->arrays); i++) {
+        const HVCCNALUnitArray *const array = &hvcc->arrays[i];
+
+        if (!array->numNalus)
+            continue;
         /*
          * bit(1) array_completeness;
          * unsigned int(1) reserved = 0;
          * unsigned int(6) NAL_unit_type;
          */
-        avio_w8(pb, hvcc->array[i].array_completeness << 7 |
-                    hvcc->array[i].NAL_unit_type & 0x3f);
+        avio_w8(pb, array->array_completeness << 7 |
+                    array->NAL_unit_type & 0x3f);
 
         /* unsigned int(16) numNalus; */
-        avio_wb16(pb, hvcc->array[i].numNalus);
+        avio_wb16(pb, array->numNalus);
 
-        for (j = 0; j < hvcc->array[i].numNalus; j++) {
+        for (unsigned j = 0; j < array->numNalus; j++) {
             /* unsigned int(16) nalUnitLength; */
-            avio_wb16(pb, hvcc->array[i].nalUnitLength[j]);
+            avio_wb16(pb, array->nalUnitLength[j]);
 
             /* bit(8*nalUnitLength) nalUnit; */
-            avio_write(pb, hvcc->array[i].nalUnit[j],
-                       hvcc->array[i].nalUnitLength[j]);
+            avio_write(pb, array->nalUnit[j],
+                       array->nalUnitLength[j]);
         }
     }
 
@@ -1098,18 +1073,18 @@ int ff_isom_write_hvcc(AVIOContext *pb, const uint8_t *data,
 
         buf += 4;
 
-        switch (type) {
-        case HEVC_NAL_VPS:
-        case HEVC_NAL_SPS:
-        case HEVC_NAL_PPS:
-        case HEVC_NAL_SEI_PREFIX:
-        case HEVC_NAL_SEI_SUFFIX:
-            ret = hvcc_add_nal_unit(buf, len, ps_array_completeness, &hvcc);
-            if (ret < 0)
-                goto end;
-            break;
-        default:
-            break;
+        for (unsigned i = 0; i < FF_ARRAY_ELEMS(hvcc.arrays); i++) {
+            static const uint8_t array_idx_to_type[] =
+                { HEVC_NAL_VPS, HEVC_NAL_SPS, HEVC_NAL_PPS,
+                  HEVC_NAL_SEI_PREFIX, HEVC_NAL_SEI_SUFFIX };
+
+            if (type == array_idx_to_type[i]) {
+                ret = hvcc_add_nal_unit(buf, len, ps_array_completeness,
+                                        &hvcc, i);
+                if (ret < 0)
+                    goto end;
+                break;
+            }
         }
 
         buf += len;
