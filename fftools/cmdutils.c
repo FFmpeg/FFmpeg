@@ -656,7 +656,7 @@ static void init_parse_context(OptionParseContext *octx,
     octx->nb_groups = nb_groups;
     octx->groups    = av_calloc(octx->nb_groups, sizeof(*octx->groups));
     if (!octx->groups)
-        exit_program(1);
+        report_and_exit(AVERROR(ENOMEM));
 
     for (i = 0; i < octx->nb_groups; i++)
         octx->groups[i].group_def = &groups[i];
@@ -964,11 +964,8 @@ AVDictionary **setup_find_stream_info_opts(AVFormatContext *s,
     if (!s->nb_streams)
         return NULL;
     opts = av_calloc(s->nb_streams, sizeof(*opts));
-    if (!opts) {
-        av_log(NULL, AV_LOG_ERROR,
-               "Could not alloc memory for stream options.\n");
-        exit_program(1);
-    }
+    if (!opts)
+        report_and_exit(AVERROR(ENOMEM));
     for (i = 0; i < s->nb_streams; i++)
         opts[i] = filter_codec_opts(codec_opts, s->streams[i]->codecpar->codec_id,
                                     s, s->streams[i], NULL);
@@ -983,10 +980,8 @@ void *grow_array(void *array, int elem_size, int *size, int new_size)
     }
     if (*size < new_size) {
         uint8_t *tmp = av_realloc_array(array, new_size, elem_size);
-        if (!tmp) {
-            av_log(NULL, AV_LOG_ERROR, "Could not alloc buffer.\n");
-            exit_program(1);
-        }
+        if (!tmp)
+            report_and_exit(AVERROR(ENOMEM));
         memset(tmp + *size*elem_size, 0, (new_size-*size) * elem_size);
         *size = new_size;
         return tmp;
@@ -999,10 +994,8 @@ void *allocate_array_elem(void *ptr, size_t elem_size, int *nb_elems)
     void *new_elem;
 
     if (!(new_elem = av_mallocz(elem_size)) ||
-        av_dynarray_add_nofree(ptr, nb_elems, new_elem) < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Could not alloc buffer.\n");
-        exit_program(1);
-    }
+        av_dynarray_add_nofree(ptr, nb_elems, new_elem) < 0)
+        report_and_exit(AVERROR(ENOMEM));
     return new_elem;
 }
 

@@ -996,7 +996,7 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
             if (hwaccel_device) {
                 ist->hwaccel_device = av_strdup(hwaccel_device);
                 if (!ist->hwaccel_device)
-                    exit_program(1);
+                    report_and_exit(AVERROR(ENOMEM));
             }
 
             ist->hwaccel_pix_fmt = AV_PIX_FMT_NONE;
@@ -1027,10 +1027,8 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
         ist->prev_pkt_pts = AV_NOPTS_VALUE;
 
         ist->dec_ctx = avcodec_alloc_context3(ist->dec);
-        if (!ist->dec_ctx) {
-            av_log(NULL, AV_LOG_ERROR, "Error allocating the decoder context.\n");
-            exit_program(1);
-        }
+        if (!ist->dec_ctx)
+            report_and_exit(AVERROR(ENOMEM));
 
         ret = avcodec_parameters_to_context(ist->dec_ctx, par);
         if (ret < 0) {
@@ -1040,11 +1038,11 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
 
         ist->decoded_frame = av_frame_alloc();
         if (!ist->decoded_frame)
-            exit_program(1);
+            report_and_exit(AVERROR(ENOMEM));
 
         ist->pkt = av_packet_alloc();
         if (!ist->pkt)
-            exit_program(1);
+            report_and_exit(AVERROR(ENOMEM));
 
         if (o->bitexact)
             ist->dec_ctx->flags |= AV_CODEC_FLAG_BITEXACT;
@@ -1094,7 +1092,7 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
 
         ist->par = avcodec_parameters_alloc();
         if (!ist->par)
-            exit_program(1);
+            report_and_exit(AVERROR(ENOMEM));
 
         ret = avcodec_parameters_from_context(ist->par, ist->dec_ctx);
         if (ret < 0) {
@@ -1224,10 +1222,8 @@ static int open_input_file(OptionsContext *o, const char *filename)
 
     /* get default parameters from command line */
     ic = avformat_alloc_context();
-    if (!ic) {
-        print_error(filename, AVERROR(ENOMEM));
-        exit_program(1);
-    }
+    if (!ic)
+        report_and_exit(AVERROR(ENOMEM));
     if (o->nb_audio_sample_rate) {
         av_dict_set_int(&o->g->format_opts, "sample_rate", o->audio_sample_rate[o->nb_audio_sample_rate - 1].u.i, 0);
     }
@@ -1476,10 +1472,8 @@ static char *get_line(AVIOContext *s, AVBPrint *bprint)
     while ((c = avio_r8(s)) && c != '\n')
         av_bprint_chars(bprint, c, 1);
 
-    if (!av_bprint_is_complete(bprint)) {
-        av_log(NULL, AV_LOG_FATAL, "Could not alloc buffer for reading preset.\n");
-        exit_program(1);
-    }
+    if (!av_bprint_is_complete(bprint))
+        report_and_exit(AVERROR(ENOMEM));
     return bprint->str;
 }
 
@@ -1571,10 +1565,8 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     double qscale = -1;
     int i;
 
-    if (!st) {
-        av_log(NULL, AV_LOG_FATAL, "Could not alloc stream.\n");
-        exit_program(1);
-    }
+    if (!st)
+        report_and_exit(AVERROR(ENOMEM));
 
     if (oc->nb_streams - 1 < o->nb_streamid_map)
         st->id = o->streamid_map[oc->nb_streams - 1];
@@ -1596,19 +1588,17 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
 
     if (enc) {
         ost->enc_ctx = avcodec_alloc_context3(enc);
-        if (!ost->enc_ctx) {
-            av_log(NULL, AV_LOG_ERROR, "Error allocating the encoding context.\n");
-            exit_program(1);
-        }
+        if (!ost->enc_ctx)
+            report_and_exit(AVERROR(ENOMEM));
     }
 
     ost->filtered_frame = av_frame_alloc();
     if (!ost->filtered_frame)
-        exit_program(1);
+        report_and_exit(AVERROR(ENOMEM));
 
     ost->pkt = av_packet_alloc();
     if (!ost->pkt)
-        exit_program(1);
+        report_and_exit(AVERROR(ENOMEM));
 
     if (ost->enc_ctx) {
         AVCodecContext *enc = ost->enc_ctx;
@@ -1903,28 +1893,22 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
 
         MATCH_PER_STREAM_OPT(intra_matrices, str, intra_matrix, oc, st);
         if (intra_matrix) {
-            if (!(video_enc->intra_matrix = av_mallocz(sizeof(*video_enc->intra_matrix) * 64))) {
-                av_log(NULL, AV_LOG_FATAL, "Could not allocate memory for intra matrix.\n");
-                exit_program(1);
-            }
+            if (!(video_enc->intra_matrix = av_mallocz(sizeof(*video_enc->intra_matrix) * 64)))
+                report_and_exit(AVERROR(ENOMEM));
             parse_matrix_coeffs(video_enc->intra_matrix, intra_matrix);
         }
         MATCH_PER_STREAM_OPT(chroma_intra_matrices, str, chroma_intra_matrix, oc, st);
         if (chroma_intra_matrix) {
             uint16_t *p = av_mallocz(sizeof(*video_enc->chroma_intra_matrix) * 64);
-            if (!p) {
-                av_log(NULL, AV_LOG_FATAL, "Could not allocate memory for intra matrix.\n");
-                exit_program(1);
-            }
+            if (!p)
+                report_and_exit(AVERROR(ENOMEM));
             video_enc->chroma_intra_matrix = p;
             parse_matrix_coeffs(p, chroma_intra_matrix);
         }
         MATCH_PER_STREAM_OPT(inter_matrices, str, inter_matrix, oc, st);
         if (inter_matrix) {
-            if (!(video_enc->inter_matrix = av_mallocz(sizeof(*video_enc->inter_matrix) * 64))) {
-                av_log(NULL, AV_LOG_FATAL, "Could not allocate memory for inter matrix.\n");
-                exit_program(1);
-            }
+            if (!(video_enc->inter_matrix = av_mallocz(sizeof(*video_enc->inter_matrix) * 64)))
+                report_and_exit(AVERROR(ENOMEM));
             parse_matrix_coeffs(video_enc->inter_matrix, inter_matrix);
         }
 
@@ -1981,7 +1965,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
         MATCH_PER_STREAM_OPT(passlogfiles, str, ost->logfile_prefix, oc, st);
         if (ost->logfile_prefix &&
             !(ost->logfile_prefix = av_strdup(ost->logfile_prefix)))
-            exit_program(1);
+            report_and_exit(AVERROR(ENOMEM));
 
         if (do_pass) {
             char logfilename[1024];
@@ -2061,7 +2045,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
 
         ost->last_frame = av_frame_alloc();
         if (!ost->last_frame)
-            exit_program(1);
+            report_and_exit(AVERROR(ENOMEM));
     } else
         check_streamcopy_filters(o, oc, ost, AVMEDIA_TYPE_VIDEO);
 
@@ -2152,7 +2136,7 @@ static OutputStream *new_audio_stream(OptionsContext *o, AVFormatContext *oc, in
                                           ost->audio_channels_mapped + 1,
                                           sizeof(*ost->audio_channels_map)
                                           ) < 0 )
-                        exit_program(1);
+                        report_and_exit(AVERROR(ENOMEM));
 
                     ost->audio_channels_map[ost->audio_channels_mapped++] = map->channel_idx;
                 }
@@ -2882,7 +2866,7 @@ static void set_channel_layout(OutputFilter *f, OutputStream *ost)
         /* Pass the layout through for all orders but UNSPEC */
         err = av_channel_layout_copy(&f->ch_layout, &ost->enc_ctx->ch_layout);
         if (err < 0)
-            exit_program(1);
+            report_and_exit(AVERROR(ENOMEM));
         return;
     }
 
@@ -2903,7 +2887,7 @@ static void set_channel_layout(OutputFilter *f, OutputStream *ost)
         /* Use it if one is found */
         err = av_channel_layout_copy(&f->ch_layout, &c->ch_layouts[i]);
         if (err < 0)
-            exit_program(1);
+            report_and_exit(AVERROR(ENOMEM));
         return;
     }
     /* If no layout for the amount of channels requested was found, use the default

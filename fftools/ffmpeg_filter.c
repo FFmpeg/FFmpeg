@@ -119,7 +119,7 @@ static const char *choose_pix_fmts(OutputFilter *ofilter, AVBPrint *bprint)
             av_bprintf(bprint, "%s%c", name, p[1] == AV_PIX_FMT_NONE ? '\0' : '|');
         }
         if (!av_bprint_is_complete(bprint))
-            exit_program(1);
+            report_and_exit(AVERROR(ENOMEM));
         return bprint->str;
     } else
         return NULL;
@@ -183,7 +183,7 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost)
     InputFilter  *ifilter;
 
     if (!fg)
-        exit_program(1);
+        report_and_exit(AVERROR(ENOMEM));
     fg->index = nb_filtergraphs;
 
     ofilter = ALLOC_ARRAY_ELEM(fg->outputs, fg->nb_outputs);
@@ -200,7 +200,7 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost)
 
     ifilter->frame_queue = av_fifo_alloc2(8, sizeof(AVFrame*), AV_FIFO_FLAG_AUTO_GROW);
     if (!ifilter->frame_queue)
-        exit_program(1);
+        report_and_exit(AVERROR(ENOMEM));
 
     GROW_ARRAY(ist->filters, ist->nb_filters);
     ist->filters[ist->nb_filters - 1] = ifilter;
@@ -224,7 +224,7 @@ static char *describe_filter_link(FilterGraph *fg, AVFilterInOut *inout, int in)
         res = av_asprintf("%s:%s", ctx->filter->name,
                           avfilter_pad_get_name(pads, inout->pad_idx));
     if (!res)
-        exit_program(1);
+        report_and_exit(AVERROR(ENOMEM));
     return res;
 }
 
@@ -309,7 +309,7 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
 
     ifilter->frame_queue = av_fifo_alloc2(8, sizeof(AVFrame*), AV_FIFO_FLAG_AUTO_GROW);
     if (!ifilter->frame_queue)
-        exit_program(1);
+        report_and_exit(AVERROR(ENOMEM));
 
     GROW_ARRAY(ist->filters, ist->nb_filters);
     ist->filters[ist->nb_filters - 1] = ifilter;

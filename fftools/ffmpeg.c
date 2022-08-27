@@ -1096,10 +1096,8 @@ static void do_subtitle_out(OutputFile *of,
             return;
 
         ret = av_new_packet(pkt, subtitle_out_max_size);
-        if (ret < 0) {
-            av_log(NULL, AV_LOG_FATAL, "Failed to allocate subtitle encode buffer\n");
-            exit_program(1);
-        }
+        if (ret < 0)
+            report_and_exit(AVERROR(ENOMEM));
 
         sub->pts = pts;
         // start_display_time is required to be 0
@@ -2349,7 +2347,7 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output,
         if (!ist->sub2video.sub_queue)
             ist->sub2video.sub_queue = av_fifo_alloc2(8, sizeof(AVSubtitle), AV_FIFO_FLAG_AUTO_GROW);
         if (!ist->sub2video.sub_queue)
-            exit_program(1);
+            report_and_exit(AVERROR(ENOMEM));
 
         ret = av_fifo_write(ist->sub2video.sub_queue, &subtitle, 1);
         if (ret < 0)
@@ -2883,7 +2881,7 @@ static void set_encoder_id(OutputFile *of, OutputStream *ost)
     encoder_string_len = sizeof(LIBAVCODEC_IDENT) + strlen(cname) + 2;
     encoder_string     = av_mallocz(encoder_string_len);
     if (!encoder_string)
-        exit_program(1);
+        report_and_exit(AVERROR(ENOMEM));
 
     if (!of->bitexact && !ost->bitexact)
         av_strlcpy(encoder_string, LIBAVCODEC_IDENT " ", encoder_string_len);
@@ -2906,10 +2904,8 @@ static void parse_forced_key_frames(char *kf, OutputStream *ost,
             n++;
     size = n;
     pts = av_malloc_array(size, sizeof(*pts));
-    if (!pts) {
-        av_log(NULL, AV_LOG_FATAL, "Could not allocate forced key frames array.\n");
-        exit_program(1);
-    }
+    if (!pts)
+        report_and_exit(AVERROR(ENOMEM));
 
     p = kf;
     for (i = 0; i < n; i++) {
@@ -2928,11 +2924,8 @@ static void parse_forced_key_frames(char *kf, OutputStream *ost,
 
             if (nb_ch > INT_MAX - size ||
                 !(pts = av_realloc_f(pts, size += nb_ch - 1,
-                                     sizeof(*pts)))) {
-                av_log(NULL, AV_LOG_FATAL,
-                       "Could not allocate forced key frames array.\n");
-                exit_program(1);
-            }
+                                     sizeof(*pts))))
+                report_and_exit(AVERROR(ENOMEM));
             t = p[8] ? parse_time_or_die("force_key_frames", p + 8, 1) : 0;
             t = av_rescale_q(t, AV_TIME_BASE_Q, avctx->time_base);
 
@@ -3870,7 +3863,7 @@ static int process_input(int file_index)
 
             dst_data = av_packet_new_side_data(pkt, src_sd->type, src_sd->size);
             if (!dst_data)
-                exit_program(1);
+                report_and_exit(AVERROR(ENOMEM));
 
             memcpy(dst_data, src_sd->data, src_sd->size);
         }
