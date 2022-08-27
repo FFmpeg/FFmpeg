@@ -55,6 +55,17 @@ extern int hide_banner;
 void register_exit(void (*cb)(int ret));
 
 /**
+ * Reports an error corresponding to the provided
+ * AVERROR code and calls exit_program() with the
+ * corresponding POSIX error code.
+ * @note ret must be an AVERROR-value of a POSIX error code
+ *       (i.e. AVERROR(EFOO) and not AVERROR_FOO).
+ *       library functions can return both, so call this only
+ *       with AVERROR(EFOO) of your own.
+ */
+void report_and_exit(int ret) av_noreturn;
+
+/**
  * Wraps exit with a program-specific cleanup routine.
  */
 void exit_program(int ret) av_noreturn;
