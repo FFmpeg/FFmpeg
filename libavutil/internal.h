@@ -41,7 +41,6 @@
 #include "config.h"
 #include "attributes.h"
 #include "timer.h"
-#include "dict.h"
 #include "macros.h"
 #include "pixfmt.h"
 
@@ -229,16 +228,5 @@ static av_always_inline av_const int avpriv_mirror(int x, int w)
 }
 
 void ff_check_pixfmt_descriptors(void);
-
-/**
- * Set a dictionary value to an ISO-8601 compliant timestamp string.
- *
- * @param dict pointer to a pointer to a dictionary struct. If *dict is NULL
- *             a dictionary struct is allocated and put in *dict.
- * @param key metadata key
- * @param timestamp unix timestamp in microseconds
- * @return <0 on error
- */
-int avpriv_dict_set_timestamp(AVDictionary **dict, const char *key, int64_t timestamp);
 
 #endif /* AVUTIL_INTERNAL_H */

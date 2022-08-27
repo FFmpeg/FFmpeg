@@ -22,6 +22,7 @@
 
 #include "avstring.h"
 #include "dict.h"
+#include "dict_internal.h"
 #include "internal.h"
 #include "mem.h"
 #include "time_internal.h"

@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/dict.h"
+#include "libavutil/dict_internal.h"
 #include "libavutil/internal.h"
 #include "libavutil/log.h"
 #include "libavutil/mem.h"

@@ -53,6 +53,7 @@
 #include "libavcodec/bytestream.h"
 #include "libavcodec/internal.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/dict_internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/timecode.h"

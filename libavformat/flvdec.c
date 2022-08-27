@@ -28,6 +28,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/dict.h"
+#include "libavutil/dict_internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/internal.h"
 #include "libavutil/intfloat.h"
