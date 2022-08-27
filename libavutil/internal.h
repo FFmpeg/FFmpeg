@@ -118,34 +118,6 @@
 #endif
 
 /**
- * Define a function with only the non-default version specified.
- *
- * On systems with ELF shared libraries, all symbols exported from
- * FFmpeg libraries are tagged with the name and major version of the
- * library to which they belong.  If a function is moved from one
- * library to another, a wrapper must be retained in the original
- * location to preserve binary compatibility.
- *
- * Functions defined with this macro will never be used to resolve
- * symbols by the build-time linker.
- *
- * @param type return type of function
- * @param name name of function
- * @param args argument list of function
- * @param ver  version tag to assign function
- */
-#if HAVE_SYMVER_ASM_LABEL
-#   define FF_SYMVER(type, name, args, ver)                     \
-    type ff_##name args __asm__ (EXTERN_PREFIX #name "@" ver);  \
-    type ff_##name args
-#elif HAVE_SYMVER_GNU_ASM
-#   define FF_SYMVER(type, name, args, ver)                             \
-    __asm__ (".symver ff_" #name "," EXTERN_PREFIX #name "@" ver);      \
-    type ff_##name args;                                                \
-    type ff_##name args
-#endif
-
-/**
  * Return NULL if a threading library has not been enabled.
  * Used to disable threading functions in AVCodec definitions
  * when not needed.
