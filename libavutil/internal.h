@@ -155,10 +155,6 @@ void avpriv_request_sample(void *avc,
 #pragma comment(linker, "/include:" EXTERN_PREFIX "avpriv_snprintf")
 #endif
 
-#define avpriv_fopen_utf8 ff_fopen_utf8
-#define avpriv_open ff_open
-#define avpriv_tempfile ff_tempfile
-
 #define PTRDIFF_SPECIFIER "Id"
 #define SIZE_SPECIFIER "Iu"
 #else
@@ -187,30 +183,6 @@ void avpriv_request_sample(void *avc,
 #define SUINT   unsigned
 #define SUINT32 uint32_t
 #endif
-
-/**
- * A wrapper for open() setting O_CLOEXEC.
- */
-av_warn_unused_result
-int avpriv_open(const char *filename, int flags, ...);
-
-/**
- * Open a file using a UTF-8 filename.
- */
-FILE *avpriv_fopen_utf8(const char *path, const char *mode);
-
-/**
- * Wrapper to work around the lack of mkstemp() on mingw.
- * Also, tries to create file in /tmp first, if possible.
- * *prefix can be a character constant; *filename will be allocated internally.
- * @return file descriptor of opened file (or negative value corresponding to an
- * AVERROR code on error)
- * and opened file name in **filename.
- * @note On very old libcs it is necessary to set a secure umask before
- *       calling this, av_tempfile() can't call umask itself as it is used in
- *       libraries and could interfere with the calling application.
- */
-int avpriv_tempfile(const char *prefix, char **filename, int log_offset, void *log_ctx);
 
 int avpriv_set_systematic_pal2(uint32_t pal[256], enum AVPixelFormat pix_fmt);
 

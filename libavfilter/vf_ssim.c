@@ -35,15 +35,14 @@
  */
 
 #include "libavutil/avstring.h"
+#include "libavutil/file_open.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "drawutils.h"
-#include "formats.h"
 #include "framesync.h"
 #include "internal.h"
 #include "ssim.h"
-#include "video.h"
 
 typedef struct SSIMContext {
     const AVClass *class;

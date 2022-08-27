@@ -23,6 +23,7 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <linux/fb.h>
+#include "libavutil/file_open.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"

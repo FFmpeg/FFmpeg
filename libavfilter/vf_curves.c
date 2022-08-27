@@ -22,12 +22,12 @@
 #include "libavutil/bprint.h"
 #include "libavutil/eval.h"
 #include "libavutil/file.h"
+#include "libavutil/file_open.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avassert.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "drawutils.h"
-#include "formats.h"
 #include "internal.h"
 #include "video.h"
 

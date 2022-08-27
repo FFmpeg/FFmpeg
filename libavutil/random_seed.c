@@ -35,6 +35,7 @@
 #include <time.h>
 #include <string.h>
 #include "avassert.h"
+#include "file_open.h"
 #include "internal.h"
 #include "intreadwrite.h"
 #include "timer.h"

@@ -25,6 +25,7 @@
  */
 
 #include "libavformat/internal.h"
+#include "libavutil/file_open.h"
 #include "libavutil/internal.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"

@@ -18,6 +18,7 @@
 
 #include "config.h"
 #include "file.h"
+#include "file_open.h"
 #include "internal.h"
 #include "log.h"
 #include "mem.h"

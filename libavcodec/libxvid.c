@@ -30,7 +30,7 @@
 #include <xvid.h>
 
 #include "libavutil/avassert.h"
-#include "libavutil/file.h"
+#include "libavutil/file_open.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"

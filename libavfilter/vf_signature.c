@@ -24,13 +24,11 @@
  * @see http://epubs.surrey.ac.uk/531590/1/MPEG-7%20Video%20Signature%20Author%27s%20Copy.pdf
  */
 
-#include <float.h>
 #include "libavcodec/put_bits.h"
 #include "libavformat/avformat.h"
 #include "libavutil/opt.h"
 #include "libavutil/avstring.h"
-#include "libavutil/intreadwrite.h"
-#include "libavutil/timestamp.h"
+#include "libavutil/file_open.h"
 #include "avfilter.h"
 #include "internal.h"
 #include "signature.h"

@@ -21,14 +21,10 @@
  * implementing an object detecting filter using deep learning networks.
  */
 
-#include "libavformat/avio.h"
+#include "libavutil/file_open.h"
 #include "libavutil/opt.h"
-#include "libavutil/pixdesc.h"
-#include "libavutil/avassert.h"
-#include "libavutil/imgutils.h"
 #include "filters.h"
 #include "dnn_filter_common.h"
-#include "formats.h"
 #include "internal.h"
 #include "libavutil/time.h"
 #include "libavutil/avstring.h"

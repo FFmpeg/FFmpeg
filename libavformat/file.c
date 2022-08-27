@@ -22,9 +22,10 @@
 #include "config_components.h"
 
 #include "libavutil/avstring.h"
+#include "libavutil/file_open.h"
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
-#include "avformat.h"
+#include "avio.h"
 #if HAVE_DIRENT_H
 #include <dirent.h>
 #endif
