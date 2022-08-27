@@ -155,6 +155,8 @@ void av_file_unmap(uint8_t *bufptr, size_t size)
 #endif
 }
 
+#if FF_API_AV_FOPEN_UTF8
 int av_tempfile(const char *prefix, char **filename, int log_offset, void *log_ctx) {
     return avpriv_tempfile(prefix, filename, log_offset, log_ctx);
 }
+#endif

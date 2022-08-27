@@ -22,6 +22,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "version.h"
 #include "attributes.h"
 
 /**
@@ -55,6 +56,7 @@ int av_file_map(const char *filename, uint8_t **bufptr, size_t *size,
  */
 void av_file_unmap(uint8_t *bufptr, size_t size);
 
+#if FF_API_AV_FOPEN_UTF8
 /**
  * Wrapper to work around the lack of mkstemp() on mingw.
  * Also, tries to create file in /tmp first, if possible.
@@ -67,6 +69,8 @@ void av_file_unmap(uint8_t *bufptr, size_t size);
  *       libraries and could interfere with the calling application.
  * @deprecated as fd numbers cannot be passed saftely between libs on some platforms
  */
+attribute_deprecated
 int av_tempfile(const char *prefix, char **filename, int log_offset, void *log_ctx);
+#endif
 
 #endif /* AVUTIL_FILE_H */
