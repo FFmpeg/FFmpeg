@@ -21,7 +21,7 @@
 
 #include "bsf.h"
 #include "bsf_internal.h"
-#include "mpeg4video.h"
+#include "mpeg4videodefs.h"
 #include "startcode.h"
 
 typedef struct UnpackBFramesBSFContext {

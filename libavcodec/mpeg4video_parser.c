@@ -25,8 +25,8 @@
 #include "decode.h"
 #include "parser.h"
 #include "mpegvideo.h"
-#include "mpeg4video.h"
 #include "mpeg4videodec.h"
+#include "mpeg4videodefs.h"
 #if FF_API_FLAG_TRUNCATED
 /* Nuke this header when removing FF_API_FLAG_TRUNCATED */
 #include "mpeg4video_parser.h"

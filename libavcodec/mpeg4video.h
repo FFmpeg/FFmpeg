@@ -27,48 +27,6 @@
 
 #include "mpegvideo.h"
 
-// shapes
-#define RECT_SHAPE       0
-#define BIN_SHAPE        1
-#define BIN_ONLY_SHAPE   2
-#define GRAY_SHAPE       3
-
-#define SIMPLE_VO_TYPE           1
-#define CORE_VO_TYPE             3
-#define MAIN_VO_TYPE             4
-#define NBIT_VO_TYPE             5
-#define ARTS_VO_TYPE            10
-#define ACE_VO_TYPE             12
-#define SIMPLE_STUDIO_VO_TYPE   14
-#define CORE_STUDIO_VO_TYPE     15
-#define ADV_SIMPLE_VO_TYPE      17
-
-#define VOT_VIDEO_ID 1
-#define VOT_STILL_TEXTURE_ID 2
-
-// aspect_ratio_info
-#define EXTENDED_PAR 15
-
-//vol_sprite_usage / sprite_enable
-#define STATIC_SPRITE 1
-#define GMC_SPRITE 2
-
-#define MOTION_MARKER 0x1F001
-#define DC_MARKER     0x6B001
-
-#define VOS_STARTCODE        0x1B0
-#define USER_DATA_STARTCODE  0x1B2
-#define GOP_STARTCODE        0x1B3
-#define VISUAL_OBJ_STARTCODE 0x1B5
-#define VOP_STARTCODE        0x1B6
-#define SLICE_STARTCODE      0x1B7
-#define EXT_STARTCODE        0x1B8
-
-#define QUANT_MATRIX_EXT_ID  0x3
-
-/* smaller packets likely don't contain a real frame */
-#define MAX_NVOP_SIZE 19
-
 void ff_mpeg4_clean_buffers(MpegEncContext *s);
 int ff_mpeg4_get_video_packet_prefix_length(MpegEncContext *s);
 void ff_mpeg4_init_direct_mv(MpegEncContext *s);

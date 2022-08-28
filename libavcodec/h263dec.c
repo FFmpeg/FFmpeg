@@ -43,6 +43,7 @@
 #include "mpeg_er.h"
 #include "mpeg4video.h"
 #include "mpeg4videodec.h"
+#include "mpeg4videodefs.h"
 #if FF_API_FLAG_TRUNCATED
 #include "mpeg4video_parser.h"
 #endif

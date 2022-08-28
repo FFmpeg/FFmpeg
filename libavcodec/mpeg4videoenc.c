@@ -31,6 +31,7 @@
 #include "h263enc.h"
 #include "mpeg4video.h"
 #include "mpeg4videodata.h"
+#include "mpeg4videodefs.h"
 #include "mpeg4videoenc.h"
 #include "mpegvideoenc.h"
 #include "profiles.h"
