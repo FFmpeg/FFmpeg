@@ -44,6 +44,7 @@
 #include "flac.h"
 #include "flacdata.h"
 #include "flacdsp.h"
+#include "flac_parse.h"
 #include "thread.h"
 #include "unary.h"
 

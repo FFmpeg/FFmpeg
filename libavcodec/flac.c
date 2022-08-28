@@ -26,6 +26,7 @@
 #include "get_bits.h"
 #include "flac.h"
 #include "flacdata.h"
+#include "flac_parse.h"
 
 static const int8_t sample_size_table[] = { 0, 8, 12, 0, 16, 20, 24, 0 };
 

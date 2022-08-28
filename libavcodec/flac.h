@@ -1,5 +1,5 @@
 /*
- * FLAC (Free Lossless Audio Codec) decoder/demuxer common functions
+ * FLAC (Free Lossless Audio Codec) common stuff
  * Copyright (c) 2008 Justin Ruggles
  *
  * This file is part of FFmpeg.
@@ -21,15 +21,13 @@
 
 /**
  * @file
- * FLAC (Free Lossless Audio Codec) decoder/demuxer common functions
+ * FLAC (Free Lossless Audio Codec) common stuff
  */
 
 #ifndef AVCODEC_FLAC_H
 #define AVCODEC_FLAC_H
 
-#include "avcodec.h"
 #include "bytestream.h"
-#include "get_bits.h"
 
 #define FLAC_STREAMINFO_SIZE   34
 #define FLAC_MAX_CHANNELS       8
@@ -54,66 +52,6 @@ enum {
     FLAC_METADATA_TYPE_PICTURE,
     FLAC_METADATA_TYPE_INVALID = 127
 };
-
-/**
- * Data needed from the Streaminfo header for use by the raw FLAC demuxer
- * and/or the FLAC decoder.
- */
-typedef struct FLACStreaminfo {
-    int samplerate;         /**< sample rate                             */
-    int channels;           /**< number of channels                      */
-    int bps;                /**< bits-per-sample                         */
-    int max_blocksize;      /**< maximum block size, in samples          */
-    int max_framesize;      /**< maximum frame size, in bytes            */
-    int64_t samples;        /**< total number of samples                 */
-} FLACStreaminfo;
-
-typedef struct FLACFrameInfo {
-    int samplerate;         /**< sample rate                             */
-    int channels;           /**< number of channels                      */
-    int bps;                /**< bits-per-sample                         */
-    int blocksize;          /**< block size of the frame                 */
-    int ch_mode;            /**< channel decorrelation mode              */
-    int64_t frame_or_sample_num;    /**< frame number or sample number   */
-    int is_var_size;                /**< specifies if the stream uses variable
-                                         block sizes or a fixed block size;
-                                         also determines the meaning of
-                                         frame_or_sample_num             */
-} FLACFrameInfo;
-
-/**
- * Parse the Streaminfo metadata block
- * @param[out] avctx   codec context to set basic stream parameters
- * @param[out] s       where parsed information is stored
- * @param[in]  buffer  pointer to start of 34-byte streaminfo data
- *
- * @return negative error code on faiure or >= 0 on success
- */
-int ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
-                              const uint8_t *buffer);
-
-/**
- * Validate the FLAC extradata.
- * @param[in]  avctx codec context containing the extradata.
- * @param[out] format extradata format.
- * @param[out] streaminfo_start pointer to start of 34-byte STREAMINFO data.
- * @return 1 if valid, 0 if not valid.
- */
-int ff_flac_is_extradata_valid(AVCodecContext *avctx,
-                               uint8_t **streaminfo_start);
-
-/**
- * Validate and decode a frame header.
- * @param      avctx AVCodecContext to use as av_log() context
- * @param      gb    GetBitContext from which to read frame header
- * @param[out] fi    frame information
- * @param      log_level_offset  log level offset. can be used to silence error messages.
- * @return non-zero on error, 0 if ok
- */
-int ff_flac_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
-                                FLACFrameInfo *fi, int log_level_offset);
-
-void ff_flac_set_channel_layout(AVCodecContext *avctx, int channels);
 
 /**
  * Parse the metadata block parameters from the header.

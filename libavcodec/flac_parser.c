@@ -36,7 +36,7 @@
 #include "libavutil/crc.h"
 #include "bytestream.h"
 #include "parser.h"
-#include "flac.h"
+#include "flac_parse.h"
 
 /** maximum number of adjacent headers that compare CRCs against each other   */
 #define FLAC_MAX_SEQUENTIAL_HEADERS 4
