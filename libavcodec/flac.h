@@ -55,24 +55,23 @@ enum {
     FLAC_METADATA_TYPE_INVALID = 127
 };
 
-#define FLACCOMMONINFO \
-    int samplerate;         /**< sample rate                             */\
-    int channels;           /**< number of channels                      */\
-    int bps;                /**< bits-per-sample                         */\
-
 /**
  * Data needed from the Streaminfo header for use by the raw FLAC demuxer
  * and/or the FLAC decoder.
  */
 typedef struct FLACStreaminfo {
-    FLACCOMMONINFO
+    int samplerate;         /**< sample rate                             */
+    int channels;           /**< number of channels                      */
+    int bps;                /**< bits-per-sample                         */
     int max_blocksize;      /**< maximum block size, in samples          */
     int max_framesize;      /**< maximum frame size, in bytes            */
     int64_t samples;        /**< total number of samples                 */
 } FLACStreaminfo;
 
 typedef struct FLACFrameInfo {
-    FLACCOMMONINFO
+    int samplerate;         /**< sample rate                             */
+    int channels;           /**< number of channels                      */
+    int bps;                /**< bits-per-sample                         */
     int blocksize;          /**< block size of the frame                 */
     int ch_mode;            /**< channel decorrelation mode              */
     int64_t frame_or_sample_num;    /**< frame number or sample number   */
