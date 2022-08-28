@@ -30,6 +30,7 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
+#include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/crc.h"
 #include "libavutil/internal.h"
