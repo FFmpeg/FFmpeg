@@ -158,6 +158,34 @@ static void write_streaminfo(FlacEncodeContext *s, uint8_t *header)
 
 
 /**
+ * Calculate an estimate for the maximum frame size based on verbatim mode.
+ * @param blocksize block size, in samples
+ * @param ch number of channels
+ * @param bps bits-per-sample
+ */
+static int flac_get_max_frame_size(int blocksize, int ch, int bps)
+{
+    /* Technically, there is no limit to FLAC frame size, but an encoder
+       should not write a frame that is larger than if verbatim encoding mode
+       were to be used. */
+
+    int count;
+
+    count = 16;                  /* frame header */
+    count += ch * ((7+bps+7)/8); /* subframe headers */
+    if (ch == 2) {
+        /* for stereo, need to account for using decorrelation */
+        count += (( 2*bps+1) * blocksize + 7) / 8;
+    } else {
+        count += ( ch*bps    * blocksize + 7) / 8;
+    }
+    count += 2; /* frame footer */
+
+    return count;
+}
+
+
+/**
  * Set blocksize based on samplerate.
  * Choose the closest predefined blocksize >= BLOCK_TIME_MS milliseconds.
  */
@@ -378,9 +406,9 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
     s->max_blocksize = s->avctx->frame_size;
 
     /* set maximum encoded frame size in verbatim mode */
-    s->max_framesize = ff_flac_get_max_frame_size(s->avctx->frame_size,
-                                                  s->channels,
-                                                  s->avctx->bits_per_raw_sample);
+    s->max_framesize = flac_get_max_frame_size(s->avctx->frame_size,
+                                               s->channels,
+                                               s->avctx->bits_per_raw_sample);
 
     /* initialize MD5 context */
     s->md5ctx = av_md5_alloc();
@@ -1353,9 +1381,9 @@ static int flac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     /* change max_framesize for small final frame */
     if (frame->nb_samples < s->frame.blocksize) {
-        s->max_framesize = ff_flac_get_max_frame_size(frame->nb_samples,
-                                                      s->channels,
-                                                      avctx->bits_per_raw_sample);
+        s->max_framesize = flac_get_max_frame_size(frame->nb_samples,
+                                                   s->channels,
+                                                   avctx->bits_per_raw_sample);
     }
 
     init_frame(s, frame->nb_samples);

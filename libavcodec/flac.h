@@ -110,14 +110,6 @@ int ff_flac_is_extradata_valid(AVCodecContext *avctx,
                                uint8_t **streaminfo_start);
 
 /**
- * Calculate an estimate for the maximum frame size based on verbatim mode.
- * @param blocksize block size, in samples
- * @param ch number of channels
- * @param bps bits-per-sample
- */
-int ff_flac_get_max_frame_size(int blocksize, int ch, int bps);
-
-/**
  * Validate and decode a frame header.
  * @param      avctx AVCodecContext to use as av_log() context
  * @param      gb    GetBitContext from which to read frame header
