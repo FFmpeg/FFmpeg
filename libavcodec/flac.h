@@ -27,7 +27,7 @@
 #ifndef AVCODEC_FLAC_H
 #define AVCODEC_FLAC_H
 
-#include "bytestream.h"
+#include "libavutil/intreadwrite.h"
 
 #define FLAC_STREAMINFO_SIZE   34
 #define FLAC_MAX_CHANNELS       8
@@ -63,13 +63,13 @@ enum {
 static av_always_inline void flac_parse_block_header(const uint8_t *block_header,
                                                       int *last, int *type, int *size)
 {
-    int tmp = bytestream_get_byte(&block_header);
+    int tmp = *block_header;
     if (last)
         *last = tmp & 0x80;
     if (type)
         *type = tmp & 0x7F;
     if (size)
-        *size = bytestream_get_be24(&block_header);
+        *size = AV_RB24(block_header + 1);
 }
 
 #endif /* AVCODEC_FLAC_H */
