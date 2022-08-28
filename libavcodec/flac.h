@@ -69,14 +69,11 @@ enum FLACExtradataFormat {
  * Data needed from the Streaminfo header for use by the raw FLAC demuxer
  * and/or the FLAC decoder.
  */
-#define FLACSTREAMINFO \
-    FLACCOMMONINFO \
-    int max_blocksize;      /**< maximum block size, in samples          */\
-    int max_framesize;      /**< maximum frame size, in bytes            */\
-    int64_t samples;        /**< total number of samples                 */\
-
 typedef struct FLACStreaminfo {
-    FLACSTREAMINFO
+    FLACCOMMONINFO
+    int max_blocksize;      /**< maximum block size, in samples          */
+    int max_framesize;      /**< maximum frame size, in bytes            */
+    int64_t samples;        /**< total number of samples                 */
 } FLACStreaminfo;
 
 typedef struct FLACFrameInfo {
