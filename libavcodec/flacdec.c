@@ -565,12 +565,6 @@ static int flac_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
     *got_frame_ptr = 0;
 
-    if (s->stream_info.max_framesize == 0) {
-        s->stream_info.max_framesize =
-            ff_flac_get_max_frame_size(s->stream_info.max_blocksize ? s->stream_info.max_blocksize : FLAC_MAX_BLOCKSIZE,
-                                       FLAC_MAX_CHANNELS, 32);
-    }
-
     if (buf_size > 5 && !memcmp(buf, "\177FLAC", 5)) {
         av_log(s->avctx, AV_LOG_DEBUG, "skipping flac header packet 1\n");
         return buf_size;
