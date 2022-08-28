@@ -251,6 +251,8 @@ static int avisynth_create_stream_video(AVFormatContext *s, AVStream *st)
     AVS_VideoFrame *frame;
     int error;
     int planar = 0; // 0: packed, 1: YUV, 2: Y8, 3: Planar RGB, 4: YUVA, 5: Planar RGBA
+    int sar_num = 1;
+    int sar_den = 1;
 
     st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codecpar->codec_id   = AV_CODEC_ID_RAWVIDEO;
@@ -728,6 +730,12 @@ static int avisynth_create_stream_video(AVFormatContext *s, AVStream *st)
                 st->codecpar->chroma_location = AVCHROMA_LOC_UNSPECIFIED;
             }
         }
+
+        /* Sample aspect ratio */
+        sar_num = avs_library.avs_prop_get_int(avs->env, avsmap, "_SARNum", 0, &error);
+        sar_den = avs_library.avs_prop_get_int(avs->env, avsmap, "_SARDen", 0, &error);
+        st->sample_aspect_ratio = (AVRational){ sar_num, sar_den };
+
         avs_library.avs_release_video_frame(frame);
     } else {
         st->codecpar->field_order = AV_FIELD_UNKNOWN;
