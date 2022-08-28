@@ -94,7 +94,6 @@ static void flac_set_bps(FLACContext *s)
 
 static av_cold int flac_decode_init(AVCodecContext *avctx)
 {
-    enum FLACExtradataFormat format;
     uint8_t *streaminfo;
     int ret;
     FLACContext *s = avctx->priv_data;
@@ -105,7 +104,7 @@ static av_cold int flac_decode_init(AVCodecContext *avctx)
     if (!avctx->extradata)
         return 0;
 
-    if (!ff_flac_is_extradata_valid(avctx, &format, &streaminfo))
+    if (!ff_flac_is_extradata_valid(avctx, &streaminfo))
         return AVERROR_INVALIDDATA;
 
     /* initialize based on the demuxer-supplied streamdata header */

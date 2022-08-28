@@ -146,7 +146,6 @@ int ff_flac_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
 }
 
 int ff_flac_is_extradata_valid(AVCodecContext *avctx,
-                               enum FLACExtradataFormat *format,
                                uint8_t **streaminfo_start)
 {
     if (!avctx->extradata || avctx->extradata_size < FLAC_STREAMINFO_SIZE) {
@@ -159,14 +158,12 @@ int ff_flac_is_extradata_valid(AVCodecContext *avctx,
             av_log(avctx, AV_LOG_WARNING, "extradata contains %d bytes too many.\n",
                    FLAC_STREAMINFO_SIZE-avctx->extradata_size);
         }
-        *format = FLAC_EXTRADATA_FORMAT_STREAMINFO;
         *streaminfo_start = avctx->extradata;
     } else {
         if (avctx->extradata_size < 8+FLAC_STREAMINFO_SIZE) {
             av_log(avctx, AV_LOG_ERROR, "extradata too small.\n");
             return 0;
         }
-        *format = FLAC_EXTRADATA_FORMAT_FULL_HEADER;
         *streaminfo_start = &avctx->extradata[8];
     }
     return 1;
