@@ -1298,7 +1298,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
 
 const FFCodec ff_cook_decoder = {
     .p.name         = "cook",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Cook / Cooker / Gecko (RealAudio G2)"),
+    CODEC_LONG_NAME("Cook / Cooker / Gecko (RealAudio G2)"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_COOK,
     .priv_data_size = sizeof(COOKContext),

@@ -260,7 +260,7 @@ static av_cold int ir2_decode_end(AVCodecContext *avctx)
 
 const FFCodec ff_indeo2_decoder = {
     .p.name         = "indeo2",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Intel Indeo 2"),
+    CODEC_LONG_NAME("Intel Indeo 2"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_INDEO2,
     .priv_data_size = sizeof(Ir2Context),

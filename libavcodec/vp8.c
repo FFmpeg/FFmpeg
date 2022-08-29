@@ -2977,7 +2977,7 @@ static int vp8_decode_update_thread_context(AVCodecContext *dst,
 #if CONFIG_VP7_DECODER
 const FFCodec ff_vp7_decoder = {
     .p.name                = "vp7",
-    .p.long_name           = NULL_IF_CONFIG_SMALL("On2 VP7"),
+    CODEC_LONG_NAME("On2 VP7"),
     .p.type                = AVMEDIA_TYPE_VIDEO,
     .p.id                  = AV_CODEC_ID_VP7,
     .priv_data_size        = sizeof(VP8Context),
@@ -2992,7 +2992,7 @@ const FFCodec ff_vp7_decoder = {
 #if CONFIG_VP8_DECODER
 const FFCodec ff_vp8_decoder = {
     .p.name                = "vp8",
-    .p.long_name           = NULL_IF_CONFIG_SMALL("On2 VP8"),
+    CODEC_LONG_NAME("On2 VP8"),
     .p.type                = AVMEDIA_TYPE_VIDEO,
     .p.id                  = AV_CODEC_ID_VP8,
     .priv_data_size        = sizeof(VP8Context),

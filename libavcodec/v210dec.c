@@ -233,7 +233,7 @@ static const AVClass v210dec_class = {
 
 const FFCodec ff_v210_decoder = {
     .p.name         = "v210",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Uncompressed 4:2:2 10-bit"),
+    CODEC_LONG_NAME("Uncompressed 4:2:2 10-bit"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_V210,
     .priv_data_size = sizeof(V210DecContext),

@@ -533,7 +533,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
 
 const FFCodec ff_imm4_decoder = {
     .p.name           = "imm4",
-    .p.long_name      = NULL_IF_CONFIG_SMALL("Infinity IMM4"),
+    CODEC_LONG_NAME("Infinity IMM4"),
     .p.type           = AVMEDIA_TYPE_VIDEO,
     .p.id             = AV_CODEC_ID_IMM4,
     .priv_data_size   = sizeof(IMM4Context),

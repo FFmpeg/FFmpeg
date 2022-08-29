@@ -1052,7 +1052,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 const FFCodec ff_utvideo_decoder = {
     .p.name         = "utvideo",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Ut Video"),
+    CODEC_LONG_NAME("Ut Video"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_UTVIDEO,
     .priv_data_size = sizeof(UtvideoContext),

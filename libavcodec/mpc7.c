@@ -311,7 +311,7 @@ static av_cold int mpc7_decode_close(AVCodecContext *avctx)
 
 const FFCodec ff_mpc7_decoder = {
     .p.name         = "mpc7",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Musepack SV7"),
+    CODEC_LONG_NAME("Musepack SV7"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_MUSEPACK7,
     .priv_data_size = sizeof(MPCContext),

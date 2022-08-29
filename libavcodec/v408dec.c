@@ -92,7 +92,7 @@ static int v408_decode_frame(AVCodecContext *avctx, AVFrame *pic,
 #if CONFIG_AYUV_DECODER
 const FFCodec ff_ayuv_decoder = {
     .p.name       = "ayuv",
-    .p.long_name  = NULL_IF_CONFIG_SMALL("Uncompressed packed MS 4:4:4:4"),
+    CODEC_LONG_NAME("Uncompressed packed MS 4:4:4:4"),
     .p.type       = AVMEDIA_TYPE_VIDEO,
     .p.id         = AV_CODEC_ID_AYUV,
     .init         = v408_decode_init,
@@ -104,7 +104,7 @@ const FFCodec ff_ayuv_decoder = {
 #if CONFIG_V408_DECODER
 const FFCodec ff_v408_decoder = {
     .p.name       = "v408",
-    .p.long_name  = NULL_IF_CONFIG_SMALL("Uncompressed packed QT 4:4:4:4"),
+    CODEC_LONG_NAME("Uncompressed packed QT 4:4:4:4"),
     .p.type       = AVMEDIA_TYPE_VIDEO,
     .p.id         = AV_CODEC_ID_V408,
     .init         = v408_decode_init,

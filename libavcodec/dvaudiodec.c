@@ -120,7 +120,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
 const FFCodec ff_dvaudio_decoder = {
     .p.name         = "dvaudio",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Ulead DV Audio"),
+    CODEC_LONG_NAME("Ulead DV Audio"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_DVAUDIO,
     .init           = decode_init,

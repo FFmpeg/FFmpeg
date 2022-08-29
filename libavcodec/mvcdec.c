@@ -257,7 +257,7 @@ static int mvc_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 #if CONFIG_MVC1_DECODER
 const FFCodec ff_mvc1_decoder = {
     .p.name         = "mvc1",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Silicon Graphics Motion Video Compressor 1"),
+    CODEC_LONG_NAME("Silicon Graphics Motion Video Compressor 1"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_MVC1,
     .priv_data_size = sizeof(MvcContext),
@@ -270,7 +270,7 @@ const FFCodec ff_mvc1_decoder = {
 #if CONFIG_MVC2_DECODER
 const FFCodec ff_mvc2_decoder = {
     .p.name         = "mvc2",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Silicon Graphics Motion Video Compressor 2"),
+    CODEC_LONG_NAME("Silicon Graphics Motion Video Compressor 2"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_MVC2,
     .priv_data_size = sizeof(MvcContext),

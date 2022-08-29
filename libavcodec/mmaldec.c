@@ -831,7 +831,7 @@ static const AVClass ffmmal_dec_class = {
 #define FFMMAL_DEC(NAME, ID) \
     const FFCodec ff_##NAME##_mmal_decoder = { \
         .p.name         = #NAME "_mmal", \
-        .p.long_name    = NULL_IF_CONFIG_SMALL(#NAME " (mmal)"), \
+        CODEC_LONG_NAME(#NAME " (mmal)"), \
         .p.type         = AVMEDIA_TYPE_VIDEO, \
         .p.id           = ID, \
         .priv_data_size = sizeof(MMALDecodeContext), \

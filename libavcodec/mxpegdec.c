@@ -344,7 +344,7 @@ the_end:
 
 const FFCodec ff_mxpeg_decoder = {
     .p.name         = "mxpeg",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Mobotix MxPEG video"),
+    CODEC_LONG_NAME("Mobotix MxPEG video"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_MXPEG,
     .priv_data_size = sizeof(MXpegDecodeContext),

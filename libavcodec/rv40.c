@@ -576,7 +576,7 @@ static av_cold int rv40_decode_init(AVCodecContext *avctx)
 
 const FFCodec ff_rv40_decoder = {
     .p.name                = "rv40",
-    .p.long_name           = NULL_IF_CONFIG_SMALL("RealVideo 4.0"),
+    CODEC_LONG_NAME("RealVideo 4.0"),
     .p.type                = AVMEDIA_TYPE_VIDEO,
     .p.id                  = AV_CODEC_ID_RV40,
     .priv_data_size        = sizeof(RV34DecContext),

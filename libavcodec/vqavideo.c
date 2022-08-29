@@ -846,7 +846,7 @@ static const FFCodecDefault vqa_defaults[] = {
 
 const FFCodec ff_vqa_decoder = {
     .p.name         = "vqavideo",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Westwood Studios VQA (Vector Quantized Animation) video"),
+    CODEC_LONG_NAME("Westwood Studios VQA (Vector Quantized Animation) video"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_WS_VQA,
     .priv_data_size = sizeof(VqaContext),

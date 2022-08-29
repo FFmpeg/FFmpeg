@@ -305,7 +305,7 @@ static av_cold int vp56_free(AVCodecContext *avctx)
 
 const FFCodec ff_vp5_decoder = {
     .p.name         = "vp5",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("On2 VP5"),
+    CODEC_LONG_NAME("On2 VP5"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_VP5,
     .priv_data_size = sizeof(VP56Context),

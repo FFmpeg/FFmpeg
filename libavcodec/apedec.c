@@ -1659,7 +1659,7 @@ static const AVClass ape_decoder_class = {
 
 const FFCodec ff_ape_decoder = {
     .p.name         = "ape",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Monkey's Audio"),
+    CODEC_LONG_NAME("Monkey's Audio"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_APE,
     .priv_data_size = sizeof(APEContext),

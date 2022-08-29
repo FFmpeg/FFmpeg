@@ -1907,7 +1907,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
 const FFCodec ff_iff_ilbm_decoder = {
     .p.name         = "iff",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("IFF ACBM/ANIM/DEEP/ILBM/PBM/RGB8/RGBN"),
+    CODEC_LONG_NAME("IFF ACBM/ANIM/DEEP/ILBM/PBM/RGB8/RGBN"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_IFF_ILBM,
     .priv_data_size = sizeof(IffContext),

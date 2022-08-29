@@ -756,7 +756,7 @@ static const AVClass openjpeg_class = {
 
 const FFCodec ff_libopenjpeg_encoder = {
     .p.name         = "libopenjpeg",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("OpenJPEG JPEG 2000"),
+    CODEC_LONG_NAME("OpenJPEG JPEG 2000"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_JPEG2000,
     .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE,

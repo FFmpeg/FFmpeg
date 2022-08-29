@@ -153,7 +153,7 @@ static av_cold int encode_end(AVCodecContext *avctx)
 
 const FFCodec ff_zlib_encoder = {
     .p.name         = "zlib",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("LCL (LossLess Codec Library) ZLIB"),
+    CODEC_LONG_NAME("LCL (LossLess Codec Library) ZLIB"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_ZLIB,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,

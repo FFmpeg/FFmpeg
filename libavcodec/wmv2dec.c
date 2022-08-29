@@ -597,7 +597,7 @@ static av_cold int wmv2_decode_end(AVCodecContext *avctx)
 
 const FFCodec ff_wmv2_decoder = {
     .p.name         = "wmv2",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Windows Media Video 8"),
+    CODEC_LONG_NAME("Windows Media Video 8"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_WMV2,
     .priv_data_size = sizeof(WMV2DecContext),

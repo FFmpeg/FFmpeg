@@ -122,7 +122,7 @@ static av_cold int ac3_fixed_encode_init(AVCodecContext *avctx)
 FF_DISABLE_DEPRECATION_WARNINGS
 const FFCodec ff_ac3_fixed_encoder = {
     .p.name          = "ac3_fixed",
-    .p.long_name     = NULL_IF_CONFIG_SMALL("ATSC A/52A (AC-3)"),
+    CODEC_LONG_NAME("ATSC A/52A (AC-3)"),
     .p.type          = AVMEDIA_TYPE_AUDIO,
     .p.id            = AV_CODEC_ID_AC3,
     .p.capabilities  = AV_CODEC_CAP_DR1,

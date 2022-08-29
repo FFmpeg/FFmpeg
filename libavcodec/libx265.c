@@ -743,7 +743,7 @@ static const FFCodecDefault x265_defaults[] = {
 
 FFCodec ff_libx265_encoder = {
     .p.name           = "libx265",
-    .p.long_name      = NULL_IF_CONFIG_SMALL("libx265 H.265 / HEVC"),
+    CODEC_LONG_NAME("libx265 H.265 / HEVC"),
     .p.type           = AVMEDIA_TYPE_VIDEO,
     .p.id             = AV_CODEC_ID_HEVC,
     .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |

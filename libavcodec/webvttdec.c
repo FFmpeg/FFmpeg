@@ -100,7 +100,7 @@ static int webvtt_decode_frame(AVCodecContext *avctx, AVSubtitle *sub,
 
 const FFCodec ff_webvtt_decoder = {
     .p.name         = "webvtt",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("WebVTT subtitle"),
+    CODEC_LONG_NAME("WebVTT subtitle"),
     .p.type         = AVMEDIA_TYPE_SUBTITLE,
     .p.id           = AV_CODEC_ID_WEBVTT,
     FF_CODEC_DECODE_SUB_CB(webvtt_decode_frame),

@@ -89,7 +89,7 @@ static int libwebp_encode_close(AVCodecContext *avctx)
 
 const FFCodec ff_libwebp_encoder = {
     .p.name         = "libwebp",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("libwebp WebP image"),
+    CODEC_LONG_NAME("libwebp WebP image"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_WEBP,
     .p.capabilities = AV_CODEC_CAP_DR1,

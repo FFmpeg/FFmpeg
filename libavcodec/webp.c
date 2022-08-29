@@ -1557,7 +1557,7 @@ static av_cold int webp_decode_close(AVCodecContext *avctx)
 
 const FFCodec ff_webp_decoder = {
     .p.name         = "webp",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("WebP image"),
+    CODEC_LONG_NAME("WebP image"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_WEBP,
     .priv_data_size = sizeof(WebPContext),

@@ -380,7 +380,7 @@ dsd:
 
 const FFCodec ff_dst_decoder = {
     .p.name         = "dst",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("DST (Digital Stream Transfer)"),
+    CODEC_LONG_NAME("DST (Digital Stream Transfer)"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_DST,
     .priv_data_size = sizeof(DSTContext),

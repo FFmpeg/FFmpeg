@@ -667,7 +667,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
 
 const FFCodec ff_scpr_decoder = {
     .p.name           = "scpr",
-    .p.long_name      = NULL_IF_CONFIG_SMALL("ScreenPressor"),
+    CODEC_LONG_NAME("ScreenPressor"),
     .p.type           = AVMEDIA_TYPE_VIDEO,
     .p.id             = AV_CODEC_ID_SCPR,
     .priv_data_size   = sizeof(SCPRContext),

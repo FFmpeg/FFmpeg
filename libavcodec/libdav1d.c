@@ -576,7 +576,7 @@ static const AVClass libdav1d_class = {
 
 const FFCodec ff_libdav1d_decoder = {
     .p.name         = "libdav1d",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("dav1d AV1 decoder by VideoLAN"),
+    CODEC_LONG_NAME("dav1d AV1 decoder by VideoLAN"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_AV1,
     .priv_data_size = sizeof(Libdav1dContext),

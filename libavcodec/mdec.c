@@ -251,7 +251,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 const FFCodec ff_mdec_decoder = {
     .p.name           = "mdec",
-    .p.long_name      = NULL_IF_CONFIG_SMALL("Sony PlayStation MDEC (Motion DECoder)"),
+    CODEC_LONG_NAME("Sony PlayStation MDEC (Motion DECoder)"),
     .p.type           = AVMEDIA_TYPE_VIDEO,
     .p.id             = AV_CODEC_ID_MDEC,
     .priv_data_size   = sizeof(MDECContext),

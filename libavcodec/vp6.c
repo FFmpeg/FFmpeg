@@ -715,7 +715,7 @@ static av_cold void vp6_decode_free_context(VP56Context *s)
 
 const FFCodec ff_vp6_decoder = {
     .p.name         = "vp6",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("On2 VP6"),
+    CODEC_LONG_NAME("On2 VP6"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_VP6,
     .priv_data_size = sizeof(VP56Context),
@@ -729,7 +729,7 @@ const FFCodec ff_vp6_decoder = {
 /* flash version, not flipped upside-down */
 const FFCodec ff_vp6f_decoder = {
     .p.name         = "vp6f",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("On2 VP6 (Flash version)"),
+    CODEC_LONG_NAME("On2 VP6 (Flash version)"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_VP6F,
     .priv_data_size = sizeof(VP56Context),
@@ -743,7 +743,7 @@ const FFCodec ff_vp6f_decoder = {
 /* flash version, not flipped upside-down, with alpha channel */
 const FFCodec ff_vp6a_decoder = {
     .p.name         = "vp6a",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("On2 VP6 (Flash version, with alpha channel)"),
+    CODEC_LONG_NAME("On2 VP6 (Flash version, with alpha channel)"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_VP6A,
     .priv_data_size = 2 /* Main context + alpha context */ * sizeof(VP56Context),

@@ -2287,7 +2287,7 @@ static const enum AVSampleFormat sample_fmts_both[] = { AV_SAMPLE_FMT_S16,
 #define ADPCM_DECODER_1(id_, sample_fmts_, name_, long_name_) \
 const FFCodec ff_ ## name_ ## _decoder = {                  \
     .p.name         = #name_,                               \
-    .p.long_name    = NULL_IF_CONFIG_SMALL(long_name_),     \
+    CODEC_LONG_NAME(long_name_),                            \
     .p.type         = AVMEDIA_TYPE_AUDIO,                   \
     .p.id           = id_,                                  \
     .p.capabilities = AV_CODEC_CAP_DR1,                     \

@@ -1006,7 +1006,7 @@ static av_cold int on2avc_decode_close(AVCodecContext *avctx)
 
 const FFCodec ff_on2avc_decoder = {
     .p.name         = "on2avc",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("On2 Audio for Video Codec"),
+    CODEC_LONG_NAME("On2 Audio for Video Codec"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_ON2AVC,
     .priv_data_size = sizeof(On2AVCContext),

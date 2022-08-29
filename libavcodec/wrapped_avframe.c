@@ -106,7 +106,7 @@ static int wrapped_avframe_decode(AVCodecContext *avctx, AVFrame *out,
 
 const FFCodec ff_wrapped_avframe_encoder = {
     .p.name         = "wrapped_avframe",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("AVFrame to AVPacket passthrough"),
+    CODEC_LONG_NAME("AVFrame to AVPacket passthrough"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_WRAPPED_AVFRAME,
     FF_CODEC_ENCODE_CB(wrapped_avframe_encode),
@@ -114,7 +114,7 @@ const FFCodec ff_wrapped_avframe_encoder = {
 
 const FFCodec ff_wrapped_avframe_decoder = {
     .p.name         = "wrapped_avframe",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("AVPacket to AVFrame passthrough"),
+    CODEC_LONG_NAME("AVPacket to AVFrame passthrough"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_WRAPPED_AVFRAME,
     FF_CODEC_DECODE_CB(wrapped_avframe_decode),

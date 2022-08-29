@@ -566,7 +566,7 @@ static const AVClass vaapi_encode_mjpeg_class = {
 
 const FFCodec ff_mjpeg_vaapi_encoder = {
     .p.name         = "mjpeg_vaapi",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("MJPEG (VAAPI)"),
+    CODEC_LONG_NAME("MJPEG (VAAPI)"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_MJPEG,
     .priv_data_size = sizeof(VAAPIEncodeMJPEGContext),

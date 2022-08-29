@@ -64,7 +64,7 @@ void ff_rv20_encode_picture_header(MpegEncContext *s, int picture_number){
 
 const FFCodec ff_rv20_encoder = {
     .p.name         = "rv20",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("RealVideo 2.0"),
+    CODEC_LONG_NAME("RealVideo 2.0"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_RV20,
     .p.priv_class   = &ff_mpv_enc_class,

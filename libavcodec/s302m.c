@@ -228,7 +228,7 @@ static const AVClass s302m_class = {
 
 const FFCodec ff_s302m_decoder = {
     .p.name         = "s302m",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("SMPTE 302M"),
+    CODEC_LONG_NAME("SMPTE 302M"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_S302M,
     .p.priv_class   = &s302m_class,

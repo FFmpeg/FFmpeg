@@ -692,7 +692,7 @@ static int pixlet_decode_frame(AVCodecContext *avctx, AVFrame *p,
 
 const FFCodec ff_pixlet_decoder = {
     .p.name           = "pixlet",
-    .p.long_name      = NULL_IF_CONFIG_SMALL("Apple Pixlet"),
+    CODEC_LONG_NAME("Apple Pixlet"),
     .p.type           = AVMEDIA_TYPE_VIDEO,
     .p.id             = AV_CODEC_ID_PIXLET,
     .init             = pixlet_init,

@@ -1327,7 +1327,7 @@ static const AVClass vaapi_encode_h264_class = {
 
 const FFCodec ff_h264_vaapi_encoder = {
     .p.name         = "h264_vaapi",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("H.264/AVC (VAAPI)"),
+    CODEC_LONG_NAME("H.264/AVC (VAAPI)"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_H264,
     .priv_data_size = sizeof(VAAPIEncodeH264Context),

@@ -1068,7 +1068,7 @@ static const AVClass h264_class = {
 
 const FFCodec ff_h264_decoder = {
     .p.name                = "h264",
-    .p.long_name           = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
+    CODEC_LONG_NAME("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
     .p.type                = AVMEDIA_TYPE_VIDEO,
     .p.id                  = AV_CODEC_ID_H264,
     .priv_data_size        = sizeof(H264Context),

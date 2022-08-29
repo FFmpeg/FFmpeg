@@ -189,7 +189,7 @@ static int roq_dpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
 const FFCodec ff_roq_dpcm_encoder = {
     .p.name         = "roq_dpcm",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("id RoQ DPCM"),
+    CODEC_LONG_NAME("id RoQ DPCM"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_ROQ_DPCM,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,

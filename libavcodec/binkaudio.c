@@ -367,7 +367,7 @@ static void decode_flush(AVCodecContext *avctx)
 
 const FFCodec ff_binkaudio_rdft_decoder = {
     .p.name         = "binkaudio_rdft",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Bink Audio (RDFT)"),
+    CODEC_LONG_NAME("Bink Audio (RDFT)"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_BINKAUDIO_RDFT,
     .priv_data_size = sizeof(BinkAudioContext),
@@ -381,7 +381,7 @@ const FFCodec ff_binkaudio_rdft_decoder = {
 
 const FFCodec ff_binkaudio_dct_decoder = {
     .p.name         = "binkaudio_dct",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Bink Audio (DCT)"),
+    CODEC_LONG_NAME("Bink Audio (DCT)"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_BINKAUDIO_DCT,
     .priv_data_size = sizeof(BinkAudioContext),

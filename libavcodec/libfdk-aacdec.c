@@ -478,7 +478,7 @@ static av_cold void fdk_aac_decode_flush(AVCodecContext *avctx)
 
 const FFCodec ff_libfdk_aac_decoder = {
     .p.name         = "libfdk_aac",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Fraunhofer FDK AAC"),
+    CODEC_LONG_NAME("Fraunhofer FDK AAC"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_AAC,
     .priv_data_size = sizeof(FDKAACDecContext),

@@ -412,7 +412,7 @@ static const AVClass dcadec_class = {
 
 const FFCodec ff_dca_decoder = {
     .p.name         = "dca",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("DCA (DTS Coherent Acoustics)"),
+    CODEC_LONG_NAME("DCA (DTS Coherent Acoustics)"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_DTS,
     .priv_data_size = sizeof(DCAContext),

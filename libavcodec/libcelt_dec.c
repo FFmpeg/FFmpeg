@@ -129,7 +129,7 @@ static int libcelt_dec_decode(AVCodecContext *c, AVFrame *frame,
 
 const FFCodec ff_libcelt_decoder = {
     .p.name         = "libcelt",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Xiph CELT decoder using libcelt"),
+    CODEC_LONG_NAME("Xiph CELT decoder using libcelt"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_CELT,
     .p.capabilities = AV_CODEC_CAP_DR1,

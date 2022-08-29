@@ -1299,7 +1299,7 @@ static const AVClass dolby_e_decoder_class = {
 
 const FFCodec ff_dolby_e_decoder = {
     .p.name         = "dolby_e",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Dolby E"),
+    CODEC_LONG_NAME("Dolby E"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_DOLBY_E,
     .priv_data_size = sizeof(DBEDecodeContext),

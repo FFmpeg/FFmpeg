@@ -1356,7 +1356,7 @@ static av_cold int ipvideo_decode_end(AVCodecContext *avctx)
 
 const FFCodec ff_interplay_video_decoder = {
     .p.name         = "interplayvideo",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Interplay MVE video"),
+    CODEC_LONG_NAME("Interplay MVE video"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_INTERPLAY_VIDEO,
     .priv_data_size = sizeof(IpvideoContext),

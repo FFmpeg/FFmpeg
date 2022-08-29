@@ -1578,7 +1578,7 @@ static av_cold int speex_decode_close(AVCodecContext *avctx)
 
 const FFCodec ff_speex_decoder = {
     .p.name         = "speex",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Speex"),
+    CODEC_LONG_NAME("Speex"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_SPEEX,
     .init           = speex_decode_init,

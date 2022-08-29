@@ -1104,7 +1104,7 @@ static av_cold int flic_decode_end(AVCodecContext *avctx)
 
 const FFCodec ff_flic_decoder = {
     .p.name         = "flic",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Autodesk Animator Flic video"),
+    CODEC_LONG_NAME("Autodesk Animator Flic video"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_FLIC,
     .priv_data_size = sizeof(FlicDecodeContext),

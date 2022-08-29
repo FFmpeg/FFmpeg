@@ -110,7 +110,7 @@ static const AVClass cljr_class = {
 
 const FFCodec ff_cljr_encoder = {
     .p.name         = "cljr",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Cirrus Logic AccuPak"),
+    CODEC_LONG_NAME("Cirrus Logic AccuPak"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_CLJR,
     .p.capabilities = AV_CODEC_CAP_DR1,

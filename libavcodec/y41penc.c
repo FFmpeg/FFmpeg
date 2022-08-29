@@ -79,7 +79,7 @@ static int y41p_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 const FFCodec ff_y41p_encoder = {
     .p.name       = "y41p",
-    .p.long_name  = NULL_IF_CONFIG_SMALL("Uncompressed YUV 4:1:1 12-bit"),
+    CODEC_LONG_NAME("Uncompressed YUV 4:1:1 12-bit"),
     .p.type       = AVMEDIA_TYPE_VIDEO,
     .p.id         = AV_CODEC_ID_Y41P,
     .p.capabilities = AV_CODEC_CAP_DR1,

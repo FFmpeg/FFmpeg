@@ -83,7 +83,7 @@ static int y41p_decode_frame(AVCodecContext *avctx, AVFrame *pic,
 
 const FFCodec ff_y41p_decoder = {
     .p.name       = "y41p",
-    .p.long_name  = NULL_IF_CONFIG_SMALL("Uncompressed YUV 4:1:1 12-bit"),
+    CODEC_LONG_NAME("Uncompressed YUV 4:1:1 12-bit"),
     .p.type       = AVMEDIA_TYPE_VIDEO,
     .p.id         = AV_CODEC_ID_Y41P,
     .init         = y41p_decode_init,

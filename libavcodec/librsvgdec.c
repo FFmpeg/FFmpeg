@@ -120,7 +120,7 @@ static const AVClass librsvg_decoder_class = {
 
 const FFCodec ff_librsvg_decoder = {
     .p.name         = "librsvg",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Librsvg rasterizer"),
+    CODEC_LONG_NAME("Librsvg rasterizer"),
     .p.priv_class   = &librsvg_decoder_class,
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_SVG,

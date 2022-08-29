@@ -106,7 +106,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 const FFCodec ff_bitpacked_encoder = {
     .p.name         = "bitpacked",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Bitpacked"),
+    CODEC_LONG_NAME("Bitpacked"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_BITPACKED,
     .priv_data_size = sizeof(struct BitpackedContext),

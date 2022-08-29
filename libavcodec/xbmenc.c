@@ -79,7 +79,7 @@ static int xbm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 const FFCodec ff_xbm_encoder = {
     .p.name       = "xbm",
-    .p.long_name  = NULL_IF_CONFIG_SMALL("XBM (X BitMap) image"),
+    CODEC_LONG_NAME("XBM (X BitMap) image"),
     .p.type       = AVMEDIA_TYPE_VIDEO,
     .p.id         = AV_CODEC_ID_XBM,
     .p.capabilities = AV_CODEC_CAP_DR1,

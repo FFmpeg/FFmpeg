@@ -92,7 +92,7 @@ static int srt_decode_frame(AVCodecContext *avctx, AVSubtitle *sub,
 /* deprecated decoder */
 const FFCodec ff_srt_decoder = {
     .p.name       = "srt",
-    .p.long_name  = NULL_IF_CONFIG_SMALL("SubRip subtitle"),
+    CODEC_LONG_NAME("SubRip subtitle"),
     .p.type       = AVMEDIA_TYPE_SUBTITLE,
     .p.id         = AV_CODEC_ID_SUBRIP,
     .init         = ff_ass_subtitle_header_default,
@@ -105,7 +105,7 @@ const FFCodec ff_srt_decoder = {
 #if CONFIG_SUBRIP_DECODER
 const FFCodec ff_subrip_decoder = {
     .p.name       = "subrip",
-    .p.long_name  = NULL_IF_CONFIG_SMALL("SubRip subtitle"),
+    CODEC_LONG_NAME("SubRip subtitle"),
     .p.type       = AVMEDIA_TYPE_SUBTITLE,
     .p.id         = AV_CODEC_ID_SUBRIP,
     .init         = ff_ass_subtitle_header_default,

@@ -611,7 +611,7 @@ static av_cold int mss4_decode_init(AVCodecContext *avctx)
 
 const FFCodec ff_mts2_decoder = {
     .p.name         = "mts2",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("MS Expression Encoder Screen"),
+    CODEC_LONG_NAME("MS Expression Encoder Screen"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_MTS2,
     .priv_data_size = sizeof(MSS4Context),

@@ -385,7 +385,7 @@ static av_cold void mpc8_decode_flush(AVCodecContext *avctx)
 
 const FFCodec ff_mpc8_decoder = {
     .p.name         = "mpc8",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Musepack SV8"),
+    CODEC_LONG_NAME("Musepack SV8"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_MUSEPACK8,
     .priv_data_size = sizeof(MPCContext),

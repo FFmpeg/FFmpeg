@@ -776,7 +776,7 @@ static int crystalhd_receive_frame(AVCodecContext *avctx, AVFrame *frame)
     }; \
     const FFCodec ff_##x##_crystalhd_decoder = { \
         .p.name         = #x "_crystalhd", \
-        .p.long_name    = NULL_IF_CONFIG_SMALL("CrystalHD " #X " decoder"), \
+        CODEC_LONG_NAME("CrystalHD " #X " decoder"), \
         .p.type         = AVMEDIA_TYPE_VIDEO, \
         .p.id           = AV_CODEC_ID_##X, \
         .priv_data_size = sizeof(CHDContext), \

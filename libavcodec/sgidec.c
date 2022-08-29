@@ -287,7 +287,7 @@ static av_cold int sgi_decode_init(AVCodecContext *avctx)
 
 const FFCodec ff_sgi_decoder = {
     .p.name         = "sgi",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("SGI image"),
+    CODEC_LONG_NAME("SGI image"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_SGI,
     .priv_data_size = sizeof(SgiState),

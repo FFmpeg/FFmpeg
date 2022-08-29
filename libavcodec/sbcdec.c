@@ -367,7 +367,7 @@ static int sbc_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
 const FFCodec ff_sbc_decoder = {
     .p.name                = "sbc",
-    .p.long_name           = NULL_IF_CONFIG_SMALL("SBC (low-complexity subband codec)"),
+    CODEC_LONG_NAME("SBC (low-complexity subband codec)"),
     .p.type                = AVMEDIA_TYPE_AUDIO,
     .p.id                  = AV_CODEC_ID_SBC,
     .priv_data_size        = sizeof(SBCDecContext),

@@ -497,7 +497,7 @@ static av_cold int aic_decode_close(AVCodecContext *avctx)
 
 const FFCodec ff_aic_decoder = {
     .p.name         = "aic",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Apple Intermediate Codec"),
+    CODEC_LONG_NAME("Apple Intermediate Codec"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_AIC,
     .priv_data_size = sizeof(AICContext),

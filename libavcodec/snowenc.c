@@ -1930,7 +1930,7 @@ static const AVClass snowenc_class = {
 
 const FFCodec ff_snow_encoder = {
     .p.name         = "snow",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Snow"),
+    CODEC_LONG_NAME("Snow"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_SNOW,
     .p.capabilities = AV_CODEC_CAP_DR1,

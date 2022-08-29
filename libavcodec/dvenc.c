@@ -1207,7 +1207,7 @@ static const AVClass dvvideo_encode_class = {
 
 const FFCodec ff_dvvideo_encoder = {
     .p.name         = "dvvideo",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("DV (Digital Video)"),
+    CODEC_LONG_NAME("DV (Digital Video)"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_DVVIDEO,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS |

@@ -158,7 +158,7 @@ read_header:
 
 const FFCodec ff_mjpegb_decoder = {
     .p.name         = "mjpegb",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Apple MJPEG-B"),
+    CODEC_LONG_NAME("Apple MJPEG-B"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_MJPEGB,
     .priv_data_size = sizeof(MJpegDecodeContext),

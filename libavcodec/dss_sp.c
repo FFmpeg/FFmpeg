@@ -773,7 +773,7 @@ static int dss_sp_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
 const FFCodec ff_dss_sp_decoder = {
     .p.name         = "dss_sp",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Digital Speech Standard - Standard Play mode (DSS SP)"),
+    CODEC_LONG_NAME("Digital Speech Standard - Standard Play mode (DSS SP)"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_DSS_SP,
     .priv_data_size = sizeof(DssSpContext),

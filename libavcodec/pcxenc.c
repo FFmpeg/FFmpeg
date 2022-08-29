@@ -194,7 +194,7 @@ static int pcx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 const FFCodec ff_pcx_encoder = {
     .p.name         = "pcx",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("PC Paintbrush PCX image"),
+    CODEC_LONG_NAME("PC Paintbrush PCX image"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_PCX,
     .p.capabilities = AV_CODEC_CAP_DR1,

@@ -258,7 +258,7 @@ static int flashsv_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 const FFCodec ff_flashsv_encoder = {
     .p.name         = "flashsv",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Flash Screen Video"),
+    CODEC_LONG_NAME("Flash Screen Video"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_FLASHSV,
     .p.capabilities = AV_CODEC_CAP_DR1,

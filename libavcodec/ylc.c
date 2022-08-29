@@ -451,7 +451,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 const FFCodec ff_ylc_decoder = {
     .p.name         = "ylc",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("YUY2 Lossless Codec"),
+    CODEC_LONG_NAME("YUY2 Lossless Codec"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_YLC,
     .priv_data_size = sizeof(YLCContext),

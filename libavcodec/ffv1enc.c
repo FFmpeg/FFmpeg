@@ -1268,7 +1268,7 @@ static const AVClass ffv1_class = {
 
 const FFCodec ff_ffv1_encoder = {
     .p.name         = "ffv1",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("FFmpeg video codec #1"),
+    CODEC_LONG_NAME("FFmpeg video codec #1"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_FFV1,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |

@@ -177,7 +177,7 @@ static av_cold int bfi_decode_close(AVCodecContext *avctx)
 
 const FFCodec ff_bfi_decoder = {
     .p.name         = "bfi",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Brute Force & Ignorance"),
+    CODEC_LONG_NAME("Brute Force & Ignorance"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_BFI,
     .priv_data_size = sizeof(BFIContext),

@@ -178,7 +178,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 const FFCodec ff_kgv1_decoder = {
     .p.name         = "kgv1",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Kega Game Video"),
+    CODEC_LONG_NAME("Kega Game Video"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_KGV1,
     .priv_data_size = sizeof(KgvContext),

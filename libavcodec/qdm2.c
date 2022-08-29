@@ -1870,7 +1870,7 @@ static int qdm2_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
 const FFCodec ff_qdm2_decoder = {
     .p.name           = "qdm2",
-    .p.long_name      = NULL_IF_CONFIG_SMALL("QDesign Music Codec 2"),
+    CODEC_LONG_NAME("QDesign Music Codec 2"),
     .p.type           = AVMEDIA_TYPE_AUDIO,
     .p.id             = AV_CODEC_ID_QDM2,
     .priv_data_size   = sizeof(QDM2Context),

@@ -552,7 +552,7 @@ end:
 
 const FFCodec ff_jpegls_decoder = {
     .p.name         = "jpegls",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("JPEG-LS"),
+    CODEC_LONG_NAME("JPEG-LS"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_JPEGLS,
     .priv_data_size = sizeof(MJpegDecodeContext),

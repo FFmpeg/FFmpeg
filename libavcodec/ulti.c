@@ -416,7 +416,7 @@ err:
 
 const FFCodec ff_ulti_decoder = {
     .p.name         = "ultimotion",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("IBM UltiMotion"),
+    CODEC_LONG_NAME("IBM UltiMotion"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_ULTI,
     .priv_data_size = sizeof(UltimotionDecodeContext),

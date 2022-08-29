@@ -274,7 +274,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
 
 const FFCodec ff_mvdv_decoder = {
     .p.name         = "mvdv",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("MidiVid VQ"),
+    CODEC_LONG_NAME("MidiVid VQ"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_MVDV,
     .priv_data_size = sizeof(MidiVidContext),

@@ -742,7 +742,7 @@ error:
 
 const FFCodec ff_smacker_decoder = {
     .p.name         = "smackvid",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Smacker video"),
+    CODEC_LONG_NAME("Smacker video"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_SMACKVIDEO,
     .priv_data_size = sizeof(SmackVContext),
@@ -755,7 +755,7 @@ const FFCodec ff_smacker_decoder = {
 
 const FFCodec ff_smackaud_decoder = {
     .p.name         = "smackaud",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Smacker audio"),
+    CODEC_LONG_NAME("Smacker audio"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_SMACKAUDIO,
     .init           = smka_decode_init,

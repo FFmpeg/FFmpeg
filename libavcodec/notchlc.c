@@ -535,7 +535,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 const FFCodec ff_notchlc_decoder = {
     .p.name           = "notchlc",
-    .p.long_name      = NULL_IF_CONFIG_SMALL("NotchLC"),
+    CODEC_LONG_NAME("NotchLC"),
     .p.type           = AVMEDIA_TYPE_VIDEO,
     .p.id             = AV_CODEC_ID_NOTCHLC,
     .priv_data_size   = sizeof(NotchLCContext),

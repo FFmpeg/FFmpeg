@@ -301,7 +301,7 @@ static int pcm_bluray_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
 const FFCodec ff_pcm_bluray_decoder = {
     .p.name         = "pcm_bluray",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("PCM signed 16|20|24-bit big-endian for Blu-ray media"),
+    CODEC_LONG_NAME("PCM signed 16|20|24-bit big-endian for Blu-ray media"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_PCM_BLURAY,
     FF_CODEC_DECODE_CB(pcm_bluray_decode_frame),

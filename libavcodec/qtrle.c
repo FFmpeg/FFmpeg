@@ -580,7 +580,7 @@ static av_cold int qtrle_decode_end(AVCodecContext *avctx)
 
 const FFCodec ff_qtrle_decoder = {
     .p.name         = "qtrle",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("QuickTime Animation (RLE) video"),
+    CODEC_LONG_NAME("QuickTime Animation (RLE) video"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_QTRLE,
     .priv_data_size = sizeof(QtrleContext),

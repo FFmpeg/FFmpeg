@@ -898,7 +898,7 @@ static const AVClass h263_class = {
 
 const FFCodec ff_h263_encoder = {
     .p.name         = "h263",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("H.263 / H.263-1996"),
+    CODEC_LONG_NAME("H.263 / H.263-1996"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_H263,
     .p.pix_fmts = (const enum AVPixelFormat[]){AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE},
@@ -928,7 +928,7 @@ static const AVClass h263p_class = {
 
 const FFCodec ff_h263p_encoder = {
     .p.name         = "h263p",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("H.263+ / H.263-1998 / H.263 version 2"),
+    CODEC_LONG_NAME("H.263+ / H.263-1998 / H.263 version 2"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_H263P,
     .p.pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },

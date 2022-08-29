@@ -123,7 +123,7 @@ static int vcr1_decode_frame(AVCodecContext *avctx, AVFrame *p,
 
 const FFCodec ff_vcr1_decoder = {
     .p.name         = "vcr1",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("ATI VCR1"),
+    CODEC_LONG_NAME("ATI VCR1"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_VCR1,
     .priv_data_size = sizeof(VCR1Context),

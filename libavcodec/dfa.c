@@ -423,7 +423,7 @@ static av_cold int dfa_decode_end(AVCodecContext *avctx)
 
 const FFCodec ff_dfa_decoder = {
     .p.name         = "dfa",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Chronomaster DFA"),
+    CODEC_LONG_NAME("Chronomaster DFA"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_DFA,
     .priv_data_size = sizeof(DfaContext),

@@ -1078,7 +1078,7 @@ static int sonic_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
 const FFCodec ff_sonic_decoder = {
     .p.name         = "sonic",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Sonic"),
+    CODEC_LONG_NAME("Sonic"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_SONIC,
     .priv_data_size = sizeof(SonicContext),
@@ -1093,7 +1093,7 @@ const FFCodec ff_sonic_decoder = {
 #if CONFIG_SONIC_ENCODER
 const FFCodec ff_sonic_encoder = {
     .p.name         = "sonic",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Sonic"),
+    CODEC_LONG_NAME("Sonic"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_SONIC,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_EXPERIMENTAL,
@@ -1109,7 +1109,7 @@ const FFCodec ff_sonic_encoder = {
 #if CONFIG_SONIC_LS_ENCODER
 const FFCodec ff_sonic_ls_encoder = {
     .p.name         = "sonicls",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Sonic lossless"),
+    CODEC_LONG_NAME("Sonic lossless"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_SONIC_LS,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_EXPERIMENTAL,

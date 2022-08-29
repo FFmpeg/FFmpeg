@@ -1226,7 +1226,7 @@ static const enum AVPixelFormat allowed_pix_fmts[] = {
 
 const FFCodec ff_vc2_encoder = {
     .p.name         = "vc2",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("SMPTE VC-2"),
+    CODEC_LONG_NAME("SMPTE VC-2"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_DIRAC,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS,

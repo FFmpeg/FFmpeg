@@ -679,7 +679,7 @@ static const AVClass svq1enc_class = {
 
 const FFCodec ff_svq1_encoder = {
     .p.name         = "svq1",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Sorenson Vector Quantizer 1 / Sorenson Video 1 / SVQ1"),
+    CODEC_LONG_NAME("Sorenson Vector Quantizer 1 / Sorenson Video 1 / SVQ1"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_SVQ1,
     .p.capabilities = AV_CODEC_CAP_DR1,

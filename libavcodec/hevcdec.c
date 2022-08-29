@@ -3845,7 +3845,7 @@ static const AVClass hevc_decoder_class = {
 
 const FFCodec ff_hevc_decoder = {
     .p.name                = "hevc",
-    .p.long_name           = NULL_IF_CONFIG_SMALL("HEVC (High Efficiency Video Coding)"),
+    CODEC_LONG_NAME("HEVC (High Efficiency Video Coding)"),
     .p.type                = AVMEDIA_TYPE_VIDEO,
     .p.id                  = AV_CODEC_ID_HEVC,
     .priv_data_size        = sizeof(HEVCContext),

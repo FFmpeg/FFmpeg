@@ -184,7 +184,7 @@ static int screenpresso_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
 const FFCodec ff_screenpresso_decoder = {
     .p.name         = "screenpresso",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Screenpresso"),
+    CODEC_LONG_NAME("Screenpresso"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_SCREENPRESSO,
     .init           = screenpresso_init,

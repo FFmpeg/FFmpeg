@@ -753,7 +753,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
 
 const FFCodec ff_g729_decoder = {
     .p.name         = "g729",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("G.729"),
+    CODEC_LONG_NAME("G.729"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_G729,
     .priv_data_size = sizeof(G729Context),
@@ -765,7 +765,7 @@ const FFCodec ff_g729_decoder = {
 
 const FFCodec ff_acelp_kelvin_decoder = {
     .p.name         = "acelp.kelvin",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Sipro ACELP.KELVIN"),
+    CODEC_LONG_NAME("Sipro ACELP.KELVIN"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_ACELP_KELVIN,
     .priv_data_size = sizeof(G729Context),

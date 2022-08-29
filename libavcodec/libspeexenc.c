@@ -350,7 +350,7 @@ static const FFCodecDefault defaults[] = {
 
 const FFCodec ff_libspeex_encoder = {
     .p.name         = "libspeex",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("libspeex Speex"),
+    CODEC_LONG_NAME("libspeex Speex"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_SPEEX,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,

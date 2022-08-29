@@ -241,7 +241,7 @@ static const FFCodecDefault idcin_defaults[] = {
 
 const FFCodec ff_idcin_decoder = {
     .p.name         = "idcinvideo",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("id Quake II CIN video"),
+    CODEC_LONG_NAME("id Quake II CIN video"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_IDCIN,
     .priv_data_size = sizeof(IdcinContext),

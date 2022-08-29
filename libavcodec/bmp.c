@@ -366,7 +366,7 @@ static int bmp_decode_frame(AVCodecContext *avctx, AVFrame *p,
 
 const FFCodec ff_bmp_decoder = {
     .p.name         = "bmp",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("BMP (Windows and OS/2 bitmap)"),
+    CODEC_LONG_NAME("BMP (Windows and OS/2 bitmap)"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_BMP,
     .p.capabilities = AV_CODEC_CAP_DR1,

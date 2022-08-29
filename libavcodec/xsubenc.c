@@ -213,7 +213,7 @@ static av_cold int xsub_encoder_init(AVCodecContext *avctx)
 
 const FFCodec ff_xsub_encoder = {
     .p.name     = "xsub",
-    .p.long_name = NULL_IF_CONFIG_SMALL("DivX subtitles (XSUB)"),
+    CODEC_LONG_NAME("DivX subtitles (XSUB)"),
     .p.type     = AVMEDIA_TYPE_SUBTITLE,
     .p.id       = AV_CODEC_ID_XSUB,
     .init       = xsub_encoder_init,

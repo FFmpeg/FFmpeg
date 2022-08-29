@@ -1420,7 +1420,7 @@ static void flush(AVCodecContext *avctx)
 
 const FFCodec ff_bink_decoder = {
     .p.name         = "binkvideo",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Bink video"),
+    CODEC_LONG_NAME("Bink video"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_BINKVIDEO,
     .priv_data_size = sizeof(BinkContext),

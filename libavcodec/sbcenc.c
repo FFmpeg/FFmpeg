@@ -345,7 +345,7 @@ static const AVClass sbc_class = {
 
 const FFCodec ff_sbc_encoder = {
     .p.name                = "sbc",
-    .p.long_name           = NULL_IF_CONFIG_SMALL("SBC (low-complexity subband codec)"),
+    CODEC_LONG_NAME("SBC (low-complexity subband codec)"),
     .p.type                = AVMEDIA_TYPE_AUDIO,
     .p.id                  = AV_CODEC_ID_SBC,
     .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SMALL_LAST_FRAME,

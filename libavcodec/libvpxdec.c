@@ -356,7 +356,7 @@ static av_cold int vp8_init(AVCodecContext *avctx)
 
 const FFCodec ff_libvpx_vp8_decoder = {
     .p.name         = "libvpx",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("libvpx VP8"),
+    CODEC_LONG_NAME("libvpx VP8"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_VP8,
     .p.capabilities = AV_CODEC_CAP_OTHER_THREADS | AV_CODEC_CAP_DR1,
@@ -379,7 +379,7 @@ static av_cold int vp9_init(AVCodecContext *avctx)
 
 FFCodec ff_libvpx_vp9_decoder = {
     .p.name         = "libvpx-vp9",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("libvpx VP9"),
+    CODEC_LONG_NAME("libvpx VP9"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_VP9,
     .p.capabilities = AV_CODEC_CAP_OTHER_THREADS,

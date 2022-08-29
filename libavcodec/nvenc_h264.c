@@ -221,7 +221,7 @@ static const AVClass h264_nvenc_class = {
 
 const FFCodec ff_h264_nvenc_encoder = {
     .p.name         = "h264_nvenc",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("NVIDIA NVENC H.264 encoder"),
+    CODEC_LONG_NAME("NVIDIA NVENC H.264 encoder"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_H264,
     .init           = ff_nvenc_encode_init,

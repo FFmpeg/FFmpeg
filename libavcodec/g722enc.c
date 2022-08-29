@@ -372,7 +372,7 @@ static int g722_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
 const FFCodec ff_adpcm_g722_encoder = {
     .p.name          = "g722",
-    .p.long_name     = NULL_IF_CONFIG_SMALL("G.722 ADPCM"),
+    CODEC_LONG_NAME("G.722 ADPCM"),
     .p.type          = AVMEDIA_TYPE_AUDIO,
     .p.id            = AV_CODEC_ID_ADPCM_G722,
     .p.capabilities  = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SMALL_LAST_FRAME,

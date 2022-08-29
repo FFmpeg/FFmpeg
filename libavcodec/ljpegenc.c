@@ -325,7 +325,7 @@ static const AVClass ljpeg_class = {
 
 const FFCodec ff_ljpeg_encoder = {
     .p.name         = "ljpeg",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Lossless JPEG"),
+    CODEC_LONG_NAME("Lossless JPEG"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_LJPEG,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,

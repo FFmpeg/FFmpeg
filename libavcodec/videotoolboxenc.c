@@ -2759,7 +2759,7 @@ static const AVClass h264_videotoolbox_class = {
 
 const FFCodec ff_h264_videotoolbox_encoder = {
     .p.name           = "h264_videotoolbox",
-    .p.long_name      = NULL_IF_CONFIG_SMALL("VideoToolbox H.264 Encoder"),
+    CODEC_LONG_NAME("VideoToolbox H.264 Encoder"),
     .p.type           = AVMEDIA_TYPE_VIDEO,
     .p.id             = AV_CODEC_ID_H264,
     .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
@@ -2794,7 +2794,7 @@ static const AVClass hevc_videotoolbox_class = {
 
 const FFCodec ff_hevc_videotoolbox_encoder = {
     .p.name           = "hevc_videotoolbox",
-    .p.long_name      = NULL_IF_CONFIG_SMALL("VideoToolbox H.265 Encoder"),
+    CODEC_LONG_NAME("VideoToolbox H.265 Encoder"),
     .p.type           = AVMEDIA_TYPE_VIDEO,
     .p.id             = AV_CODEC_ID_HEVC,
     .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
@@ -2832,7 +2832,7 @@ static const AVClass prores_videotoolbox_class = {
 
 const FFCodec ff_prores_videotoolbox_encoder = {
     .p.name           = "prores_videotoolbox",
-    .p.long_name      = NULL_IF_CONFIG_SMALL("VideoToolbox ProRes Encoder"),
+    CODEC_LONG_NAME("VideoToolbox ProRes Encoder"),
     .p.type           = AVMEDIA_TYPE_VIDEO,
     .p.id             = AV_CODEC_ID_PRORES,
     .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |

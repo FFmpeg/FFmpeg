@@ -83,7 +83,7 @@ static int raw_encode(AVCodecContext *avctx, AVPacket *pkt,
 
 const FFCodec ff_rawvideo_encoder = {
     .p.name         = "rawvideo",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("raw video"),
+    CODEC_LONG_NAME("raw video"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_RAWVIDEO,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,

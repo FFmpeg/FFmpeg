@@ -260,7 +260,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
 
 const FFCodec ff_c93_decoder = {
     .p.name         = "c93",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Interplay C93"),
+    CODEC_LONG_NAME("Interplay C93"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_C93,
     .priv_data_size = sizeof(C93DecoderContext),

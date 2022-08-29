@@ -103,7 +103,7 @@ static const FFCodecDefault qsv_enc_defaults[] = {
 
 const FFCodec ff_vp9_qsv_encoder = {
     .p.name         = "vp9_qsv",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("VP9 video (Intel Quick Sync Video acceleration)"),
+    CODEC_LONG_NAME("VP9 video (Intel Quick Sync Video acceleration)"),
     .priv_data_size = sizeof(QSVVP9EncContext),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_VP9,

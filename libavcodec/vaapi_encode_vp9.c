@@ -298,7 +298,7 @@ static const AVClass vaapi_encode_vp9_class = {
 
 const FFCodec ff_vp9_vaapi_encoder = {
     .p.name         = "vp9_vaapi",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("VP9 (VAAPI)"),
+    CODEC_LONG_NAME("VP9 (VAAPI)"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_VP9,
     .priv_data_size = sizeof(VAAPIEncodeVP9Context),

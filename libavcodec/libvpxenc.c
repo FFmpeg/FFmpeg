@@ -1944,7 +1944,7 @@ static const AVClass class_vp8 = {
 
 const FFCodec ff_libvpx_vp8_encoder = {
     .p.name         = "libvpx",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("libvpx VP8"),
+    CODEC_LONG_NAME("libvpx VP8"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_VP8,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
@@ -1977,7 +1977,7 @@ static const AVClass class_vp9 = {
 
 FFCodec ff_libvpx_vp9_encoder = {
     .p.name         = "libvpx-vp9",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("libvpx VP9"),
+    CODEC_LONG_NAME("libvpx VP9"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_VP9,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |

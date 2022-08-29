@@ -277,7 +277,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 const FFCodec ff_vb_decoder = {
     .p.name         = "vb",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Beam Software VB"),
+    CODEC_LONG_NAME("Beam Software VB"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_VB,
     .priv_data_size = sizeof(VBDecContext),

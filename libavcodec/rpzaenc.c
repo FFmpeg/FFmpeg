@@ -846,7 +846,7 @@ static const AVClass rpza_class = {
 
 const FFCodec ff_rpza_encoder = {
     .p.name         = "rpza",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("QuickTime video (RPZA)"),
+    CODEC_LONG_NAME("QuickTime video (RPZA)"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_RPZA,
     .p.capabilities = AV_CODEC_CAP_DR1,

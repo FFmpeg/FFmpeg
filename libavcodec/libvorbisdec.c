@@ -212,7 +212,7 @@ static int oggvorbis_decode_close(AVCodecContext *avccontext) {
 
 const FFCodec ff_libvorbis_decoder = {
     .p.name         = "libvorbis",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("libvorbis"),
+    CODEC_LONG_NAME("libvorbis"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_VORBIS,
     .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_CHANNEL_CONF,

@@ -240,7 +240,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
 
 const FFCodec ff_wcmv_decoder = {
     .p.name           = "wcmv",
-    .p.long_name      = NULL_IF_CONFIG_SMALL("WinCAM Motion Video"),
+    CODEC_LONG_NAME("WinCAM Motion Video"),
     .p.type           = AVMEDIA_TYPE_VIDEO,
     .p.id             = AV_CODEC_ID_WCMV,
     .priv_data_size   = sizeof(WCMVContext),

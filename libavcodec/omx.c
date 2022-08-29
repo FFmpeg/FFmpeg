@@ -938,7 +938,7 @@ static const AVClass omx_mpeg4enc_class = {
 };
 const FFCodec ff_mpeg4_omx_encoder = {
     .p.name           = "mpeg4_omx",
-    .p.long_name      = NULL_IF_CONFIG_SMALL("OpenMAX IL MPEG-4 video encoder"),
+    CODEC_LONG_NAME("OpenMAX IL MPEG-4 video encoder"),
     .p.type           = AVMEDIA_TYPE_VIDEO,
     .p.id             = AV_CODEC_ID_MPEG4,
     .priv_data_size   = sizeof(OMXCodecContext),
@@ -959,7 +959,7 @@ static const AVClass omx_h264enc_class = {
 };
 const FFCodec ff_h264_omx_encoder = {
     .p.name           = "h264_omx",
-    .p.long_name      = NULL_IF_CONFIG_SMALL("OpenMAX IL H.264 video encoder"),
+    CODEC_LONG_NAME("OpenMAX IL H.264 video encoder"),
     .p.type           = AVMEDIA_TYPE_VIDEO,
     .p.id             = AV_CODEC_ID_H264,
     .priv_data_size   = sizeof(OMXCodecContext),

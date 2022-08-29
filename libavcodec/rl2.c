@@ -217,7 +217,7 @@ static av_cold int rl2_decode_end(AVCodecContext *avctx)
 
 const FFCodec ff_rl2_decoder = {
     .p.name         = "rl2",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("RL2 video"),
+    CODEC_LONG_NAME("RL2 video"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_RL2,
     .priv_data_size = sizeof(Rl2Context),

@@ -219,7 +219,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
 #if CONFIG_BINTEXT_DECODER
 const FFCodec ff_bintext_decoder = {
     .p.name         = "bintext",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Binary text"),
+    CODEC_LONG_NAME("Binary text"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_BINTEXT,
     .priv_data_size = sizeof(XbinContext),
@@ -231,7 +231,7 @@ const FFCodec ff_bintext_decoder = {
 #if CONFIG_XBIN_DECODER
 const FFCodec ff_xbin_decoder = {
     .p.name         = "xbin",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("eXtended BINary text"),
+    CODEC_LONG_NAME("eXtended BINary text"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_XBIN,
     .priv_data_size = sizeof(XbinContext),
@@ -243,7 +243,7 @@ const FFCodec ff_xbin_decoder = {
 #if CONFIG_IDF_DECODER
 const FFCodec ff_idf_decoder = {
     .p.name         = "idf",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("iCEDraw text"),
+    CODEC_LONG_NAME("iCEDraw text"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_IDF,
     .priv_data_size = sizeof(XbinContext),

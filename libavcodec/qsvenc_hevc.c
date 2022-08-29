@@ -299,7 +299,7 @@ static const FFCodecDefault qsv_enc_defaults[] = {
 
 const FFCodec ff_hevc_qsv_encoder = {
     .p.name         = "hevc_qsv",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("HEVC (Intel Quick Sync Video acceleration)"),
+    CODEC_LONG_NAME("HEVC (Intel Quick Sync Video acceleration)"),
     .priv_data_size = sizeof(QSVHEVCEncContext),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_HEVC,

@@ -358,7 +358,7 @@ static av_cold int tscc2_decode_init(AVCodecContext *avctx)
 
 const FFCodec ff_tscc2_decoder = {
     .p.name         = "tscc2",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("TechSmith Screen Codec 2"),
+    CODEC_LONG_NAME("TechSmith Screen Codec 2"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_TSCC2,
     .priv_data_size = sizeof(TSCC2Context),

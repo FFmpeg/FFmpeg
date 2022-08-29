@@ -252,7 +252,7 @@ void ff_eac3_output_frame_header(AC3EncodeContext *s)
 FF_DISABLE_DEPRECATION_WARNINGS
 const FFCodec ff_eac3_encoder = {
     .p.name          = "eac3",
-    .p.long_name     = NULL_IF_CONFIG_SMALL("ATSC A/52 E-AC-3"),
+    CODEC_LONG_NAME("ATSC A/52 E-AC-3"),
     .p.type          = AVMEDIA_TYPE_AUDIO,
     .p.id            = AV_CODEC_ID_EAC3,
     .p.capabilities  = AV_CODEC_CAP_DR1,

@@ -181,7 +181,7 @@ static int imx_decode_close(AVCodecContext *avctx)
 
 const FFCodec ff_simbiosis_imx_decoder = {
     .p.name         = "simbiosis_imx",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Simbiosis Interactive IMX Video"),
+    CODEC_LONG_NAME("Simbiosis Interactive IMX Video"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_SIMBIOSIS_IMX,
     .priv_data_size = sizeof(SimbiosisIMXContext),

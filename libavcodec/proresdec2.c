@@ -871,7 +871,7 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
 
 const FFCodec ff_prores_decoder = {
     .p.name         = "prores",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Apple ProRes (iCodec Pro)"),
+    CODEC_LONG_NAME("Apple ProRes (iCodec Pro)"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_PRORES,
     .priv_data_size = sizeof(ProresContext),

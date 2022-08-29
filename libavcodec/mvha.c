@@ -295,7 +295,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
 
 const FFCodec ff_mvha_decoder = {
     .p.name           = "mvha",
-    .p.long_name      = NULL_IF_CONFIG_SMALL("MidiVid Archive Codec"),
+    CODEC_LONG_NAME("MidiVid Archive Codec"),
     .p.type           = AVMEDIA_TYPE_VIDEO,
     .p.id             = AV_CODEC_ID_MVHA,
     .priv_data_size   = sizeof(MVHAContext),

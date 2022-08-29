@@ -380,7 +380,7 @@ static const AVClass h264_amf_class = {
 
 const FFCodec ff_h264_amf_encoder = {
     .p.name         = "h264_amf",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("AMD AMF H.264 Encoder"),
+    CODEC_LONG_NAME("AMD AMF H.264 Encoder"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_H264,
     .init           = amf_encode_init_h264,

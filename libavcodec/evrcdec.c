@@ -931,7 +931,7 @@ static const AVClass evrcdec_class = {
 
 const FFCodec ff_evrc_decoder = {
     .p.name         = "evrc",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("EVRC (Enhanced Variable Rate Codec)"),
+    CODEC_LONG_NAME("EVRC (Enhanced Variable Rate Codec)"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_EVRC,
     .init           = evrc_decode_init,

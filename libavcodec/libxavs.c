@@ -423,7 +423,7 @@ static const FFCodecDefault xavs_defaults[] = {
 
 const FFCodec ff_libxavs_encoder = {
     .p.name         = "libxavs",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("libxavs Chinese AVS (Audio Video Standard)"),
+    CODEC_LONG_NAME("libxavs Chinese AVS (Audio Video Standard)"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_CAVS,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |

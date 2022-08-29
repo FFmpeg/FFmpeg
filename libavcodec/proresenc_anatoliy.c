@@ -942,7 +942,7 @@ static const enum AVPixelFormat pix_fmts[] = {
 
 const FFCodec ff_prores_aw_encoder = {
     .p.name         = "prores_aw",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Apple ProRes"),
+    CODEC_LONG_NAME("Apple ProRes"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_PRORES,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
@@ -958,7 +958,7 @@ const FFCodec ff_prores_aw_encoder = {
 
 const FFCodec ff_prores_encoder = {
     .p.name         = "prores",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Apple ProRes"),
+    CODEC_LONG_NAME("Apple ProRes"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_PRORES,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,

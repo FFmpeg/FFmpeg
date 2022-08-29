@@ -224,7 +224,7 @@ static av_cold int cpia_decode_end(AVCodecContext *avctx)
 
 const FFCodec ff_cpia_decoder = {
     .p.name         = "cpia",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("CPiA video format"),
+    CODEC_LONG_NAME("CPiA video format"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_CPIA,
     .priv_data_size = sizeof(CpiaContext),

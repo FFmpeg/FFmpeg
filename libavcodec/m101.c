@@ -106,7 +106,7 @@ static int m101_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
 const FFCodec ff_m101_decoder = {
     .p.name         = "m101",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Matrox Uncompressed SD"),
+    CODEC_LONG_NAME("Matrox Uncompressed SD"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_M101,
     .init           = m101_decode_init,

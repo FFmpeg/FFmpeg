@@ -117,7 +117,7 @@ static const AVClass frwu_class = {
 
 const FFCodec ff_frwu_decoder = {
     .p.name         = "frwu",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Forward Uncompressed"),
+    CODEC_LONG_NAME("Forward Uncompressed"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_FRWU,
     .priv_data_size = sizeof(FRWUContext),

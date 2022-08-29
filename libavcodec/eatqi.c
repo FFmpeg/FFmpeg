@@ -183,7 +183,7 @@ static av_cold int tqi_decode_end(AVCodecContext *avctx)
 
 const FFCodec ff_eatqi_decoder = {
     .p.name         = "eatqi",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Electronic Arts TQI Video"),
+    CODEC_LONG_NAME("Electronic Arts TQI Video"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_TQI,
     .priv_data_size = sizeof(TqiContext),

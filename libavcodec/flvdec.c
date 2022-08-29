@@ -115,7 +115,7 @@ int ff_flv_decode_picture_header(MpegEncContext *s)
 
 const FFCodec ff_flv_decoder = {
     .p.name         = "flv",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("FLV / Sorenson Spark / Sorenson H.263 (Flash Video)"),
+    CODEC_LONG_NAME("FLV / Sorenson Spark / Sorenson H.263 (Flash Video)"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_FLV1,
     .priv_data_size = sizeof(MpegEncContext),

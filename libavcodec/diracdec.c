@@ -2357,7 +2357,7 @@ static int dirac_decode_frame(AVCodecContext *avctx, AVFrame *picture,
 
 const FFCodec ff_dirac_decoder = {
     .p.name         = "dirac",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("BBC Dirac VC-2"),
+    CODEC_LONG_NAME("BBC Dirac VC-2"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_DIRAC,
     .priv_data_size = sizeof(DiracContext),

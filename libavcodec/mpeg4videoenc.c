@@ -1394,7 +1394,7 @@ static const AVClass mpeg4enc_class = {
 
 const FFCodec ff_mpeg4_encoder = {
     .p.name         = "mpeg4",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("MPEG-4 part 2"),
+    CODEC_LONG_NAME("MPEG-4 part 2"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_MPEG4,
     .priv_data_size = sizeof(MpegEncContext),

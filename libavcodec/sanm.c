@@ -1516,7 +1516,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
 const FFCodec ff_sanm_decoder = {
     .p.name         = "sanm",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("LucasArts SANM/Smush video"),
+    CODEC_LONG_NAME("LucasArts SANM/Smush video"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_SANM,
     .priv_data_size = sizeof(SANMVideoContext),

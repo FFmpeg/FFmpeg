@@ -150,7 +150,7 @@ static const AVClass vbnenc_class = {
 
 const FFCodec ff_vbn_encoder = {
     .p.name         = "vbn",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Vizrt Binary Image"),
+    CODEC_LONG_NAME("Vizrt Binary Image"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_VBN,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS,

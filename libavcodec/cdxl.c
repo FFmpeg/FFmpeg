@@ -337,7 +337,7 @@ static av_cold int cdxl_decode_end(AVCodecContext *avctx)
 
 const FFCodec ff_cdxl_decoder = {
     .p.name         = "cdxl",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Commodore CDXL video"),
+    CODEC_LONG_NAME("Commodore CDXL video"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_CDXL,
     .priv_data_size = sizeof(CDXLVideoContext),

@@ -286,7 +286,7 @@ static int pix_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
 const FFCodec ff_brender_pix_decoder = {
     .p.name         = "brender_pix",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("BRender PIX image"),
+    CODEC_LONG_NAME("BRender PIX image"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_BRENDER_PIX,
     .p.capabilities = AV_CODEC_CAP_DR1,

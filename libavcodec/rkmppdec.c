@@ -563,7 +563,7 @@ static const AVCodecHWConfigInternal *const rkmpp_hw_configs[] = {
     RKMPP_DEC_CLASS(NAME) \
     const FFCodec ff_##NAME##_rkmpp_decoder = { \
         .p.name         = #NAME "_rkmpp", \
-        .p.long_name    = NULL_IF_CONFIG_SMALL(#NAME " (rkmpp)"), \
+        CODEC_LONG_NAME(#NAME " (rkmpp)"), \
         .p.type         = AVMEDIA_TYPE_VIDEO, \
         .p.id           = ID, \
         .priv_data_size = sizeof(RKMPPDecodeContext), \

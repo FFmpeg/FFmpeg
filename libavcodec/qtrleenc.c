@@ -401,7 +401,7 @@ static int qtrle_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 const FFCodec ff_qtrle_encoder = {
     .p.name         = "qtrle",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("QuickTime Animation (RLE) video"),
+    CODEC_LONG_NAME("QuickTime Animation (RLE) video"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_QTRLE,
     .p.capabilities = AV_CODEC_CAP_DR1,

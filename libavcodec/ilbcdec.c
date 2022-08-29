@@ -1480,7 +1480,7 @@ static av_cold int ilbc_decode_init(AVCodecContext *avctx)
 
 const FFCodec ff_ilbc_decoder = {
     .p.name         = "ilbc",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("iLBC (Internet Low Bitrate Codec)"),
+    CODEC_LONG_NAME("iLBC (Internet Low Bitrate Codec)"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_ILBC,
     .init           = ilbc_decode_init,

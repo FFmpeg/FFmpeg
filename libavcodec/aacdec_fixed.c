@@ -452,7 +452,7 @@ static void apply_independent_coupling_fixed(AACContext *ac,
 
 const FFCodec ff_aac_fixed_decoder = {
     .p.name          = "aac_fixed",
-    .p.long_name     = NULL_IF_CONFIG_SMALL("AAC (Advanced Audio Coding)"),
+    CODEC_LONG_NAME("AAC (Advanced Audio Coding)"),
     .p.type          = AVMEDIA_TYPE_AUDIO,
     .p.id            = AV_CODEC_ID_AAC,
     .priv_data_size  = sizeof(AACContext),

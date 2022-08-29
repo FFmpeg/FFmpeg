@@ -1230,7 +1230,7 @@ static int mf_init(AVCodecContext *avctx)
     const FFCodec ff_ ## NAME ## _mf_encoder = {                               \
         .p.priv_class   = &ff_ ## NAME ## _mf_encoder_class,                   \
         .p.name         = #NAME "_mf",                                         \
-        .p.long_name    = NULL_IF_CONFIG_SMALL(#ID " via MediaFoundation"),    \
+        CODEC_LONG_NAME(#ID " via MediaFoundation"),                           \
         .p.type         = AVMEDIA_TYPE_ ## MEDIATYPE,                          \
         .p.id           = AV_CODEC_ID_ ## ID,                                  \
         .priv_data_size = sizeof(MFContext),                                   \

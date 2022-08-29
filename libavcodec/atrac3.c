@@ -1016,7 +1016,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
 
 const FFCodec ff_atrac3_decoder = {
     .p.name           = "atrac3",
-    .p.long_name      = NULL_IF_CONFIG_SMALL("ATRAC3 (Adaptive TRansform Acoustic Coding 3)"),
+    CODEC_LONG_NAME("ATRAC3 (Adaptive TRansform Acoustic Coding 3)"),
     .p.type           = AVMEDIA_TYPE_AUDIO,
     .p.id             = AV_CODEC_ID_ATRAC3,
     .priv_data_size   = sizeof(ATRAC3Context),
@@ -1031,7 +1031,7 @@ const FFCodec ff_atrac3_decoder = {
 
 const FFCodec ff_atrac3al_decoder = {
     .p.name           = "atrac3al",
-    .p.long_name      = NULL_IF_CONFIG_SMALL("ATRAC3 AL (Adaptive TRansform Acoustic Coding 3 Advanced Lossless)"),
+    CODEC_LONG_NAME("ATRAC3 AL (Adaptive TRansform Acoustic Coding 3 Advanced Lossless)"),
     .p.type           = AVMEDIA_TYPE_AUDIO,
     .p.id             = AV_CODEC_ID_ATRAC3AL,
     .priv_data_size   = sizeof(ATRAC3Context),

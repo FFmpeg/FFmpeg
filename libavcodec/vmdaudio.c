@@ -230,7 +230,7 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
 const FFCodec ff_vmdaudio_decoder = {
     .p.name         = "vmdaudio",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Sierra VMD audio"),
+    CODEC_LONG_NAME("Sierra VMD audio"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_VMDAUDIO,
     .priv_data_size = sizeof(VmdAudioContext),

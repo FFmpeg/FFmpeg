@@ -1355,7 +1355,7 @@ static const FFCodecDefault dnxhd_defaults[] = {
 
 const FFCodec ff_dnxhd_encoder = {
     .p.name         = "dnxhd",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("VC3/DNxHD"),
+    CODEC_LONG_NAME("VC3/DNxHD"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_DNXHD,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS |

@@ -83,7 +83,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
 const FFCodec ff_cljr_decoder = {
     .p.name         = "cljr",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Cirrus Logic AccuPak"),
+    CODEC_LONG_NAME("Cirrus Logic AccuPak"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_CLJR,
     .init           = decode_init,

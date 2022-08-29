@@ -91,7 +91,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
 
 const FFCodec ff_avrn_decoder = {
     .p.name         = "avrn",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Avid AVI Codec"),
+    CODEC_LONG_NAME("Avid AVI Codec"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_AVRN,
     .priv_data_size = sizeof(AVRnContext),

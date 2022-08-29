@@ -363,7 +363,7 @@ end:
 
 const FFCodec ff_rscc_decoder = {
     .p.name         = "rscc",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("innoHeim/Rsupport Screen Capture Codec"),
+    CODEC_LONG_NAME("innoHeim/Rsupport Screen Capture Codec"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_RSCC,
     .init           = rscc_init,

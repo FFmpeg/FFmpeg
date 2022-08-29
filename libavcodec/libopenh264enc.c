@@ -453,7 +453,7 @@ static const FFCodecDefault svc_enc_defaults[] = {
 
 const FFCodec ff_libopenh264_encoder = {
     .p.name         = "libopenh264",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("OpenH264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
+    CODEC_LONG_NAME("OpenH264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_H264,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_OTHER_THREADS,

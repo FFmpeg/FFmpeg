@@ -482,7 +482,7 @@ static av_cold int raw_close_decoder(AVCodecContext *avctx)
 
 const FFCodec ff_rawvideo_decoder = {
     .p.name         = "rawvideo",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("raw video"),
+    CODEC_LONG_NAME("raw video"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_RAWVIDEO,
     .priv_data_size = sizeof(RawVideoContext),

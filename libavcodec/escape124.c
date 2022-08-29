@@ -377,7 +377,7 @@ static int escape124_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
 const FFCodec ff_escape124_decoder = {
     .p.name         = "escape124",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Escape 124"),
+    CODEC_LONG_NAME("Escape 124"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_ESCAPE124,
     .priv_data_size = sizeof(Escape124Context),

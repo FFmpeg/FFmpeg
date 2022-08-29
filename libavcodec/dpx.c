@@ -761,7 +761,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
 
 const FFCodec ff_dpx_decoder = {
     .p.name         = "dpx",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("DPX (Digital Picture Exchange) image"),
+    CODEC_LONG_NAME("DPX (Digital Picture Exchange) image"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_DPX,
     FF_CODEC_DECODE_CB(decode_frame),

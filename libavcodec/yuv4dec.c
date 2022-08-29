@@ -75,7 +75,7 @@ static int yuv4_decode_frame(AVCodecContext *avctx, AVFrame *pic,
 
 const FFCodec ff_yuv4_decoder = {
     .p.name       = "yuv4",
-    .p.long_name  = NULL_IF_CONFIG_SMALL("Uncompressed packed 4:2:0"),
+    CODEC_LONG_NAME("Uncompressed packed 4:2:0"),
     .p.type       = AVMEDIA_TYPE_VIDEO,
     .p.id         = AV_CODEC_ID_YUV4,
     .init         = yuv4_decode_init,

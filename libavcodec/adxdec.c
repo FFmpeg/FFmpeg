@@ -192,7 +192,7 @@ static void adx_decode_flush(AVCodecContext *avctx)
 
 const FFCodec ff_adpcm_adx_decoder = {
     .p.name         = "adpcm_adx",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("SEGA CRI ADX ADPCM"),
+    CODEC_LONG_NAME("SEGA CRI ADX ADPCM"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_ADPCM_ADX,
     .priv_data_size = sizeof(ADXContext),

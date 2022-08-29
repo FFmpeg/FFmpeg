@@ -84,7 +84,7 @@ static int wbmp_decode_frame(AVCodecContext *avctx, AVFrame *p,
 
 const FFCodec ff_wbmp_decoder = {
     .p.name         = "wbmp",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("WBMP (Wireless Application Protocol Bitmap) image"),
+    CODEC_LONG_NAME("WBMP (Wireless Application Protocol Bitmap) image"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_WBMP,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,

@@ -616,7 +616,7 @@ static const AVClass class = {
 
 const FFCodec ff_librav1e_encoder = {
     .p.name         = "librav1e",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("librav1e AV1"),
+    CODEC_LONG_NAME("librav1e AV1"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_AV1,
     .init           = librav1e_encode_init,

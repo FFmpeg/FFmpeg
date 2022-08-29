@@ -689,7 +689,7 @@ static const AVClass vaapi_encode_mpeg2_class = {
 
 const FFCodec ff_mpeg2_vaapi_encoder = {
     .p.name         = "mpeg2_vaapi",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("MPEG-2 (VAAPI)"),
+    CODEC_LONG_NAME("MPEG-2 (VAAPI)"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_MPEG2VIDEO,
     .priv_data_size = sizeof(VAAPIEncodeMPEG2Context),

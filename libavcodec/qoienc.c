@@ -128,7 +128,7 @@ static int qoi_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 const FFCodec ff_qoi_encoder = {
     .p.name         = "qoi",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("QOI (Quite OK Image format) image"),
+    CODEC_LONG_NAME("QOI (Quite OK Image format) image"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_QOI,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,

@@ -694,7 +694,7 @@ static av_cold int magy_decode_end(AVCodecContext *avctx)
 
 const FFCodec ff_magicyuv_decoder = {
     .p.name           = "magicyuv",
-    .p.long_name      = NULL_IF_CONFIG_SMALL("MagicYUV video"),
+    CODEC_LONG_NAME("MagicYUV video"),
     .p.type           = AVMEDIA_TYPE_VIDEO,
     .p.id             = AV_CODEC_ID_MAGICYUV,
     .priv_data_size   = sizeof(MagicYUVContext),

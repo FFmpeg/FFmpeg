@@ -312,7 +312,7 @@ static const AVClass hevc_amf_class = {
 
 const FFCodec ff_hevc_amf_encoder = {
     .p.name         = "hevc_amf",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("AMD AMF HEVC encoder"),
+    CODEC_LONG_NAME("AMD AMF HEVC encoder"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_HEVC,
     .init           = amf_encode_init_hevc,

@@ -805,7 +805,7 @@ static av_cold int shorten_decode_close(AVCodecContext *avctx)
 
 const FFCodec ff_shorten_decoder = {
     .p.name         = "shorten",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Shorten"),
+    CODEC_LONG_NAME("Shorten"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_SHORTEN,
     .priv_data_size = sizeof(ShortenContext),

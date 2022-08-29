@@ -195,7 +195,7 @@ end:
 
 const FFCodec ff_jacosub_decoder = {
     .p.name         = "jacosub",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("JACOsub subtitle"),
+    CODEC_LONG_NAME("JACOsub subtitle"),
     .p.type         = AVMEDIA_TYPE_SUBTITLE,
     .p.id           = AV_CODEC_ID_JACOSUB,
     .init           = ff_ass_subtitle_header_default,

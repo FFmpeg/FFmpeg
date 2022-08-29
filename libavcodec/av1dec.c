@@ -1247,7 +1247,7 @@ static const AVClass av1_class = {
 
 const FFCodec ff_av1_decoder = {
     .p.name                = "av1",
-    .p.long_name           = NULL_IF_CONFIG_SMALL("Alliance for Open Media AV1"),
+    CODEC_LONG_NAME("Alliance for Open Media AV1"),
     .p.type                = AVMEDIA_TYPE_VIDEO,
     .p.id                  = AV_CODEC_ID_AV1,
     .priv_data_size        = sizeof(AV1DecContext),

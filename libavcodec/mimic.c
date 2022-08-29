@@ -438,7 +438,7 @@ static int mimic_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
 
 const FFCodec ff_mimic_decoder = {
     .p.name                = "mimic",
-    .p.long_name           = NULL_IF_CONFIG_SMALL("Mimic"),
+    CODEC_LONG_NAME("Mimic"),
     .p.type                = AVMEDIA_TYPE_VIDEO,
     .p.id                  = AV_CODEC_ID_MIMIC,
     .priv_data_size        = sizeof(MimicContext),

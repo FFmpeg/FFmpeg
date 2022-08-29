@@ -121,7 +121,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *pic,
 
 const FFCodec ff_v210x_decoder = {
     .p.name         = "v210x",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Uncompressed 4:2:2 10-bit"),
+    CODEC_LONG_NAME("Uncompressed 4:2:2 10-bit"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_V210X,
     .init           = decode_init,

@@ -67,7 +67,7 @@ int ff_rv10_encode_picture_header(MpegEncContext *s, int picture_number)
 
 const FFCodec ff_rv10_encoder = {
     .p.name         = "rv10",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("RealVideo 1.0"),
+    CODEC_LONG_NAME("RealVideo 1.0"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_RV10,
     .p.priv_class   = &ff_mpv_enc_class,

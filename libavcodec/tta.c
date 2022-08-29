@@ -422,7 +422,7 @@ static const AVClass tta_decoder_class = {
 
 const FFCodec ff_tta_decoder = {
     .p.name         = "tta",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("TTA (True Audio)"),
+    CODEC_LONG_NAME("TTA (True Audio)"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_TTA,
     .priv_data_size = sizeof(TTAContext),

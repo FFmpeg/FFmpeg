@@ -74,7 +74,7 @@ static int v308_decode_frame(AVCodecContext *avctx, AVFrame *pic,
 
 const FFCodec ff_v308_decoder = {
     .p.name       = "v308",
-    .p.long_name  = NULL_IF_CONFIG_SMALL("Uncompressed packed 4:4:4"),
+    CODEC_LONG_NAME("Uncompressed packed 4:4:4"),
     .p.type       = AVMEDIA_TYPE_VIDEO,
     .p.id         = AV_CODEC_ID_V308,
     .init         = v308_decode_init,

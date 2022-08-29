@@ -1270,7 +1270,7 @@ const
 #endif
 FFCodec ff_libx264_encoder = {
     .p.name           = "libx264",
-    .p.long_name      = NULL_IF_CONFIG_SMALL("libx264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
+    CODEC_LONG_NAME("libx264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
     .p.type           = AVMEDIA_TYPE_VIDEO,
     .p.id             = AV_CODEC_ID_H264,
     .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
@@ -1307,7 +1307,7 @@ static const AVClass rgbclass = {
 
 const FFCodec ff_libx264rgb_encoder = {
     .p.name         = "libx264rgb",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("libx264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 RGB"),
+    CODEC_LONG_NAME("libx264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 RGB"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_H264,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
@@ -1339,7 +1339,7 @@ static const AVClass X262_class = {
 
 const FFCodec ff_libx262_encoder = {
     .p.name           = "libx262",
-    .p.long_name      = NULL_IF_CONFIG_SMALL("libx262 MPEG2VIDEO"),
+    CODEC_LONG_NAME("libx262 MPEG2VIDEO"),
     .p.type           = AVMEDIA_TYPE_VIDEO,
     .p.id             = AV_CODEC_ID_MPEG2VIDEO,
     .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |

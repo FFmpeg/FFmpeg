@@ -178,7 +178,7 @@ static int libcodec2_encode(AVCodecContext *avctx, AVPacket *avpkt,
 
 const FFCodec ff_libcodec2_decoder = {
     .p.name                 = "libcodec2",
-    .p.long_name            = NULL_IF_CONFIG_SMALL("codec2 decoder using libcodec2"),
+    CODEC_LONG_NAME("codec2 decoder using libcodec2"),
     .p.type                 = AVMEDIA_TYPE_AUDIO,
     .p.id                   = AV_CODEC_ID_CODEC2,
     .p.capabilities         = AV_CODEC_CAP_CHANNEL_CONF,
@@ -197,7 +197,7 @@ const FFCodec ff_libcodec2_decoder = {
 
 const FFCodec ff_libcodec2_encoder = {
     .p.name                 = "libcodec2",
-    .p.long_name            = NULL_IF_CONFIG_SMALL("codec2 encoder using libcodec2"),
+    CODEC_LONG_NAME("codec2 encoder using libcodec2"),
     .p.type                 = AVMEDIA_TYPE_AUDIO,
     .p.id                   = AV_CODEC_ID_CODEC2,
     .p.capabilities         = AV_CODEC_CAP_DR1,

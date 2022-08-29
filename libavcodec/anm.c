@@ -191,7 +191,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 const FFCodec ff_anm_decoder = {
     .p.name         = "anm",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Deluxe Paint Animation"),
+    CODEC_LONG_NAME("Deluxe Paint Animation"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_ANM,
     .priv_data_size = sizeof(AnmContext),

@@ -441,7 +441,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
 
 const FFCodec ff_hca_decoder = {
     .p.name         = "hca",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("CRI HCA"),
+    CODEC_LONG_NAME("CRI HCA"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_HCA,
     .priv_data_size = sizeof(HCAContext),

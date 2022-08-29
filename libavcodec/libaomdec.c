@@ -227,7 +227,7 @@ static av_cold int av1_init(AVCodecContext *avctx)
 
 const FFCodec ff_libaom_av1_decoder = {
     .p.name         = "libaom-av1",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("libaom AV1"),
+    CODEC_LONG_NAME("libaom AV1"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_AV1,
     .priv_data_size = sizeof(AV1DecodeContext),

@@ -221,7 +221,7 @@ static int pnm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 #if CONFIG_PGM_ENCODER
 const FFCodec ff_pgm_encoder = {
     .p.name         = "pgm",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("PGM (Portable GrayMap) image"),
+    CODEC_LONG_NAME("PGM (Portable GrayMap) image"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_PGM,
     .p.capabilities = AV_CODEC_CAP_DR1,
@@ -235,7 +235,7 @@ const FFCodec ff_pgm_encoder = {
 #if CONFIG_PGMYUV_ENCODER
 const FFCodec ff_pgmyuv_encoder = {
     .p.name         = "pgmyuv",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("PGMYUV (Portable GrayMap YUV) image"),
+    CODEC_LONG_NAME("PGMYUV (Portable GrayMap YUV) image"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_PGMYUV,
     .p.capabilities = AV_CODEC_CAP_DR1,
@@ -249,7 +249,7 @@ const FFCodec ff_pgmyuv_encoder = {
 #if CONFIG_PPM_ENCODER
 const FFCodec ff_ppm_encoder = {
     .p.name         = "ppm",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("PPM (Portable PixelMap) image"),
+    CODEC_LONG_NAME("PPM (Portable PixelMap) image"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_PPM,
     .p.capabilities = AV_CODEC_CAP_DR1,
@@ -263,7 +263,7 @@ const FFCodec ff_ppm_encoder = {
 #if CONFIG_PBM_ENCODER
 const FFCodec ff_pbm_encoder = {
     .p.name         = "pbm",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("PBM (Portable BitMap) image"),
+    CODEC_LONG_NAME("PBM (Portable BitMap) image"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_PBM,
     .p.capabilities = AV_CODEC_CAP_DR1,
@@ -276,7 +276,7 @@ const FFCodec ff_pbm_encoder = {
 #if CONFIG_PFM_ENCODER
 const FFCodec ff_pfm_encoder = {
     .p.name         = "pfm",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("PFM (Portable FloatMap) image"),
+    CODEC_LONG_NAME("PFM (Portable FloatMap) image"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_PFM,
     .p.capabilities = AV_CODEC_CAP_DR1,
@@ -301,7 +301,7 @@ static av_cold int phm_enc_init(AVCodecContext *avctx)
 
 const FFCodec ff_phm_encoder = {
     .p.name         = "phm",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("PHM (Portable HalfFloatMap) image"),
+    CODEC_LONG_NAME("PHM (Portable HalfFloatMap) image"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_PHM,
     .p.capabilities = AV_CODEC_CAP_DR1,

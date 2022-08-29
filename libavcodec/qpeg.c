@@ -352,7 +352,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
 
 const FFCodec ff_qpeg_decoder = {
     .p.name         = "qpeg",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Q-team QPEG"),
+    CODEC_LONG_NAME("Q-team QPEG"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_QPEG,
     .priv_data_size = sizeof(QpegContext),

@@ -361,7 +361,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 const FFCodec ff_nuv_decoder = {
     .p.name         = "nuv",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("NuppelVideo/RTJPEG"),
+    CODEC_LONG_NAME("NuppelVideo/RTJPEG"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_NUV,
     .priv_data_size = sizeof(NuvContext),

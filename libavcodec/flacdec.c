@@ -653,7 +653,7 @@ static const AVClass flac_decoder_class = {
 
 const FFCodec ff_flac_decoder = {
     .p.name         = "flac",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("FLAC (Free Lossless Audio Codec)"),
+    CODEC_LONG_NAME("FLAC (Free Lossless Audio Codec)"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_FLAC,
     .priv_data_size = sizeof(FLACContext),

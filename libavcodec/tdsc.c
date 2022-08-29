@@ -623,7 +623,7 @@ static int tdsc_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
 const FFCodec ff_tdsc_decoder = {
     .p.name         = "tdsc",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("TDSC"),
+    CODEC_LONG_NAME("TDSC"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_TDSC,
     .init           = tdsc_init,

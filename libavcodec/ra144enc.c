@@ -537,7 +537,7 @@ static int ra144_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
 const FFCodec ff_ra_144_encoder = {
     .p.name         = "real_144",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("RealAudio 1.0 (14.4K)"),
+    CODEC_LONG_NAME("RealAudio 1.0 (14.4K)"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_RA_144,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |

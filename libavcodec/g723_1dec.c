@@ -1112,7 +1112,7 @@ static const AVClass g723_1dec_class = {
 
 const FFCodec ff_g723_1_decoder = {
     .p.name         = "g723_1",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("G.723.1"),
+    CODEC_LONG_NAME("G.723.1"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_G723_1,
     .priv_data_size = sizeof(G723_1_Context),

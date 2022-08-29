@@ -447,7 +447,7 @@ static av_cold int libjxl_decode_close(AVCodecContext *avctx)
 
 const FFCodec ff_libjxl_decoder = {
     .p.name           = "libjxl",
-    .p.long_name      = NULL_IF_CONFIG_SMALL("libjxl JPEG XL"),
+    CODEC_LONG_NAME("libjxl JPEG XL"),
     .p.type           = AVMEDIA_TYPE_VIDEO,
     .p.id             = AV_CODEC_ID_JPEGXL,
     .priv_data_size   = sizeof(LibJxlDecodeContext),

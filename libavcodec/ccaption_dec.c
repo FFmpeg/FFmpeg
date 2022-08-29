@@ -946,7 +946,7 @@ static const AVClass ccaption_dec_class = {
 
 const FFCodec ff_ccaption_decoder = {
     .p.name         = "cc_dec",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Closed Caption (EIA-608 / CEA-708)"),
+    CODEC_LONG_NAME("Closed Caption (EIA-608 / CEA-708)"),
     .p.type         = AVMEDIA_TYPE_SUBTITLE,
     .p.id           = AV_CODEC_ID_EIA_608,
     .p.priv_class   = &ccaption_dec_class,

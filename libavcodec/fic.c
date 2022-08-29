@@ -486,7 +486,7 @@ static const AVClass fic_decoder_class = {
 
 const FFCodec ff_fic_decoder = {
     .p.name         = "fic",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Mirillis FIC"),
+    CODEC_LONG_NAME("Mirillis FIC"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_FIC,
     .priv_data_size = sizeof(FICContext),

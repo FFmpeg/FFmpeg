@@ -1699,7 +1699,7 @@ error:
 
 const FFCodec ff_wavpack_decoder = {
     .p.name         = "wavpack",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("WavPack"),
+    CODEC_LONG_NAME("WavPack"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_WAVPACK,
     .priv_data_size = sizeof(WavpackContext),

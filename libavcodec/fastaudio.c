@@ -186,7 +186,7 @@ static av_cold int fastaudio_close(AVCodecContext *avctx)
 
 const FFCodec ff_fastaudio_decoder = {
     .p.name         = "fastaudio",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("MobiClip FastAudio"),
+    CODEC_LONG_NAME("MobiClip FastAudio"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_FASTAUDIO,
     .priv_data_size = sizeof(FastAudioContext),

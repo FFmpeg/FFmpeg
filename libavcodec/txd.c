@@ -164,7 +164,7 @@ unsupported:
 
 const FFCodec ff_txd_decoder = {
     .p.name         = "txd",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Renderware TXD (TeXture Dictionary) image"),
+    CODEC_LONG_NAME("Renderware TXD (TeXture Dictionary) image"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_TXD,
     .p.capabilities = AV_CODEC_CAP_DR1,

@@ -304,7 +304,7 @@ static av_cold int encode_end(AVCodecContext *avctx)
 
 const FFCodec ff_msvideo1_encoder = {
     .p.name         = "msvideo1",
-    .p.long_name = NULL_IF_CONFIG_SMALL("Microsoft Video-1"),
+    CODEC_LONG_NAME("Microsoft Video-1"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_MSVIDEO1,
     .priv_data_size = sizeof(Msvideo1EncContext),

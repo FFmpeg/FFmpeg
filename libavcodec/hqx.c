@@ -536,7 +536,7 @@ static av_cold int hqx_decode_init(AVCodecContext *avctx)
 
 const FFCodec ff_hqx_decoder = {
     .p.name         = "hqx",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Canopus HQX"),
+    CODEC_LONG_NAME("Canopus HQX"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_HQX,
     .priv_data_size = sizeof(HQXContext),

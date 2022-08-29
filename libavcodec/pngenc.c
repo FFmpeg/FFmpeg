@@ -1193,7 +1193,7 @@ static const AVClass pngenc_class = {
 
 const FFCodec ff_png_encoder = {
     .p.name         = "png",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("PNG (Portable Network Graphics) image"),
+    CODEC_LONG_NAME("PNG (Portable Network Graphics) image"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_PNG,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
@@ -1215,7 +1215,7 @@ const FFCodec ff_png_encoder = {
 
 const FFCodec ff_apng_encoder = {
     .p.name         = "apng",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("APNG (Animated Portable Network Graphics) image"),
+    CODEC_LONG_NAME("APNG (Animated Portable Network Graphics) image"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_APNG,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,

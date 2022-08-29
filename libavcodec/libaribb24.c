@@ -383,7 +383,7 @@ static const AVClass aribb24_class = {
 
 const FFCodec ff_libaribb24_decoder = {
     .p.name         = "libaribb24",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("libaribb24 ARIB STD-B24 caption decoder"),
+    CODEC_LONG_NAME("libaribb24 ARIB STD-B24 caption decoder"),
     .p.type         = AVMEDIA_TYPE_SUBTITLE,
     .p.id           = AV_CODEC_ID_ARIB_CAPTION,
     .p.priv_class   = &aribb24_class,

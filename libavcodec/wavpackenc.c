@@ -2960,7 +2960,7 @@ static const AVClass wavpack_encoder_class = {
 
 const FFCodec ff_wavpack_encoder = {
     .p.name         = "wavpack",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("WavPack"),
+    CODEC_LONG_NAME("WavPack"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_WAVPACK,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SMALL_LAST_FRAME,

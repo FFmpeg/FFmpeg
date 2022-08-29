@@ -94,7 +94,7 @@ int ff_sp5x_process_packet(AVCodecContext *avctx, AVPacket *avpkt)
 #if CONFIG_SP5X_DECODER
 const FFCodec ff_sp5x_decoder = {
     .p.name         = "sp5x",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Sunplus JPEG (SP5X)"),
+    CODEC_LONG_NAME("Sunplus JPEG (SP5X)"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_SP5X,
     .priv_data_size = sizeof(MJpegDecodeContext),
@@ -110,7 +110,7 @@ const FFCodec ff_sp5x_decoder = {
 #if CONFIG_AMV_DECODER
 const FFCodec ff_amv_decoder = {
     .p.name         = "amv",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("AMV Video"),
+    CODEC_LONG_NAME("AMV Video"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_AMV,
     .priv_data_size = sizeof(MJpegDecodeContext),

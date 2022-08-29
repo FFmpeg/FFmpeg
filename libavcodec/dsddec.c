@@ -118,7 +118,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
 #define DSD_DECODER(id_, name_, long_name_) \
 const FFCodec ff_ ## name_ ## _decoder = { \
     .p.name       = #name_, \
-    .p.long_name  = NULL_IF_CONFIG_SMALL(long_name_), \
+    CODEC_LONG_NAME(long_name_), \
     .p.type       = AVMEDIA_TYPE_AUDIO, \
     .p.id         = AV_CODEC_ID_##id_, \
     .init         = decode_init, \

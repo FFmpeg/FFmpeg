@@ -460,7 +460,7 @@ static const AVClass libjxl_encode_class = {
 
 const FFCodec ff_libjxl_encoder = {
     .p.name           = "libjxl",
-    .p.long_name      = NULL_IF_CONFIG_SMALL("libjxl JPEG XL"),
+    CODEC_LONG_NAME("libjxl JPEG XL"),
     .p.type           = AVMEDIA_TYPE_VIDEO,
     .p.id             = AV_CODEC_ID_JPEGXL,
     .priv_data_size   = sizeof(LibJxlEncodeContext),

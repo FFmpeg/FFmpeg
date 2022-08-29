@@ -165,7 +165,7 @@ static int cng_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
 const FFCodec ff_comfortnoise_decoder = {
     .p.name         = "comfortnoise",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("RFC 3389 comfort noise generator"),
+    CODEC_LONG_NAME("RFC 3389 comfort noise generator"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_COMFORT_NOISE,
     .priv_data_size = sizeof(CNGContext),

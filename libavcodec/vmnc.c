@@ -571,7 +571,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 const FFCodec ff_vmnc_decoder = {
     .p.name         = "vmnc",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("VMware Screen Codec / VMware Video"),
+    CODEC_LONG_NAME("VMware Screen Codec / VMware Video"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_VMNC,
     .priv_data_size = sizeof(VmncContext),

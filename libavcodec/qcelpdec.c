@@ -790,7 +790,7 @@ erasure:
 
 const FFCodec ff_qcelp_decoder = {
     .p.name         = "qcelp",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("QCELP / PureVoice"),
+    CODEC_LONG_NAME("QCELP / PureVoice"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_QCELP,
     .init           = qcelp_decode_init,

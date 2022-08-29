@@ -644,7 +644,7 @@ static const AVClass mjpeg_class = {
 
 const FFCodec ff_mjpeg_encoder = {
     .p.name         = "mjpeg",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("MJPEG (Motion JPEG)"),
+    CODEC_LONG_NAME("MJPEG (Motion JPEG)"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_MJPEG,
     .priv_data_size = sizeof(MJPEGEncContext),
@@ -673,7 +673,7 @@ static const AVClass amv_class = {
 
 const FFCodec ff_amv_encoder = {
     .p.name         = "amv",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("AMV Video"),
+    CODEC_LONG_NAME("AMV Video"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_AMV,
     .priv_data_size = sizeof(MJPEGEncContext),

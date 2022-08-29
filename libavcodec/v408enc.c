@@ -91,7 +91,7 @@ static const enum AVPixelFormat pix_fmt[] = { AV_PIX_FMT_YUVA444P, AV_PIX_FMT_NO
 #if CONFIG_AYUV_ENCODER
 const FFCodec ff_ayuv_encoder = {
     .p.name       = "ayuv",
-    .p.long_name  = NULL_IF_CONFIG_SMALL("Uncompressed packed MS 4:4:4:4"),
+    CODEC_LONG_NAME("Uncompressed packed MS 4:4:4:4"),
     .p.type       = AVMEDIA_TYPE_VIDEO,
     .p.id         = AV_CODEC_ID_AYUV,
     .p.capabilities = AV_CODEC_CAP_DR1,
@@ -104,7 +104,7 @@ const FFCodec ff_ayuv_encoder = {
 #if CONFIG_V408_ENCODER
 const FFCodec ff_v408_encoder = {
     .p.name       = "v408",
-    .p.long_name  = NULL_IF_CONFIG_SMALL("Uncompressed packed QT 4:4:4:4"),
+    CODEC_LONG_NAME("Uncompressed packed QT 4:4:4:4"),
     .p.type       = AVMEDIA_TYPE_VIDEO,
     .p.id         = AV_CODEC_ID_V408,
     .p.capabilities = AV_CODEC_CAP_DR1,

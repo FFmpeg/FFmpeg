@@ -177,7 +177,7 @@ static int cyuv_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 #if CONFIG_AURA_DECODER
 const FFCodec ff_aura_decoder = {
     .p.name         = "aura",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Auravision AURA"),
+    CODEC_LONG_NAME("Auravision AURA"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_AURA,
     .priv_data_size = sizeof(CyuvDecodeContext),
@@ -190,7 +190,7 @@ const FFCodec ff_aura_decoder = {
 #if CONFIG_CYUV_DECODER
 const FFCodec ff_cyuv_decoder = {
     .p.name         = "cyuv",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Creative YUV (CYUV)"),
+    CODEC_LONG_NAME("Creative YUV (CYUV)"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_CYUV,
     .priv_data_size = sizeof(CyuvDecodeContext),

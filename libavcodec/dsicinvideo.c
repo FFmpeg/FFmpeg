@@ -323,7 +323,7 @@ static av_cold int cinvideo_decode_end(AVCodecContext *avctx)
 
 const FFCodec ff_dsicinvideo_decoder = {
     .p.name         = "dsicinvideo",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Delphine Software International CIN video"),
+    CODEC_LONG_NAME("Delphine Software International CIN video"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_DSICINVIDEO,
     .priv_data_size = sizeof(CinVideoContext),

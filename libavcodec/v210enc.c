@@ -109,7 +109,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 const FFCodec ff_v210_encoder = {
     .p.name         = "v210",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Uncompressed 4:2:2 10-bit"),
+    CODEC_LONG_NAME("Uncompressed 4:2:2 10-bit"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_V210,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,

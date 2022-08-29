@@ -111,7 +111,7 @@ static int fits_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 const FFCodec ff_fits_encoder = {
     .p.name         = "fits",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Flexible Image Transport System"),
+    CODEC_LONG_NAME("Flexible Image Transport System"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_FITS,
     .p.capabilities = AV_CODEC_CAP_DR1,

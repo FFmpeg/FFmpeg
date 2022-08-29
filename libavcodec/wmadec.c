@@ -1002,7 +1002,7 @@ static av_cold void flush(AVCodecContext *avctx)
 #if CONFIG_WMAV1_DECODER
 const FFCodec ff_wmav1_decoder = {
     .p.name         = "wmav1",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Windows Media Audio 1"),
+    CODEC_LONG_NAME("Windows Media Audio 1"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_WMAV1,
     .priv_data_size = sizeof(WMACodecContext),
@@ -1019,7 +1019,7 @@ const FFCodec ff_wmav1_decoder = {
 #if CONFIG_WMAV2_DECODER
 const FFCodec ff_wmav2_decoder = {
     .p.name         = "wmav2",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Windows Media Audio 2"),
+    CODEC_LONG_NAME("Windows Media Audio 2"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_WMAV2,
     .priv_data_size = sizeof(WMACodecContext),

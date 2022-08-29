@@ -123,7 +123,7 @@ static int cinaudio_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
 const FFCodec ff_dsicinaudio_decoder = {
     .p.name         = "dsicinaudio",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Delphine Software International CIN audio"),
+    CODEC_LONG_NAME("Delphine Software International CIN audio"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_DSICINAUDIO,
     .priv_data_size = sizeof(CinAudioContext),

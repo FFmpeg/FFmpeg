@@ -352,7 +352,7 @@ static av_cold int gem_close(AVCodecContext *avctx)
 
 const FFCodec ff_gem_decoder = {
     .p.name         = "gem",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("GEM Raster image"),
+    CODEC_LONG_NAME("GEM Raster image"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_GEM,
     .p.capabilities = AV_CODEC_CAP_DR1,

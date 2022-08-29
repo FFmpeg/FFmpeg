@@ -410,7 +410,7 @@ static int paf_video_decode(AVCodecContext *avctx, AVFrame *rframe,
 
 const FFCodec ff_paf_video_decoder = {
     .p.name         = "paf_video",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Amazing Studio Packed Animation File Video"),
+    CODEC_LONG_NAME("Amazing Studio Packed Animation File Video"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_PAF_VIDEO,
     .priv_data_size = sizeof(PAFVideoDecContext),

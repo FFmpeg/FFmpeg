@@ -208,7 +208,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
 
 const FFCodec ff_arbc_decoder = {
     .p.name         = "arbc",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Gryphon's Anim Compressor"),
+    CODEC_LONG_NAME("Gryphon's Anim Compressor"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_ARBC,
     .priv_data_size = sizeof(ARBCContext),

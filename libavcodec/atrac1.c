@@ -384,7 +384,7 @@ static av_cold int atrac1_decode_init(AVCodecContext *avctx)
 
 const FFCodec ff_atrac1_decoder = {
     .p.name         = "atrac1",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("ATRAC1 (Adaptive TRansform Acoustic Coding)"),
+    CODEC_LONG_NAME("ATRAC1 (Adaptive TRansform Acoustic Coding)"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_ATRAC1,
     .priv_data_size = sizeof(AT1Ctx),

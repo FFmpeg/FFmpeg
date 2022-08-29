@@ -2335,7 +2335,7 @@ static const AVClass exr_class = {
 
 const FFCodec ff_exr_decoder = {
     .p.name           = "exr",
-    .p.long_name      = NULL_IF_CONFIG_SMALL("OpenEXR image"),
+    CODEC_LONG_NAME("OpenEXR image"),
     .p.type           = AVMEDIA_TYPE_VIDEO,
     .p.id             = AV_CODEC_ID_EXR,
     .priv_data_size   = sizeof(EXRContext),

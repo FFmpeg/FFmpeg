@@ -727,7 +727,7 @@ static const FFCodecDefault opusenc_defaults[] = {
 
 const FFCodec ff_opus_encoder = {
     .p.name         = "opus",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Opus"),
+    CODEC_LONG_NAME("Opus"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_OPUS,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |

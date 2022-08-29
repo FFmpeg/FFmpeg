@@ -939,7 +939,7 @@ static av_cold int tak_decode_close(AVCodecContext *avctx)
 
 const FFCodec ff_tak_decoder = {
     .p.name           = "tak",
-    .p.long_name      = NULL_IF_CONFIG_SMALL("TAK (Tom's lossless Audio Kompressor)"),
+    CODEC_LONG_NAME("TAK (Tom's lossless Audio Kompressor)"),
     .p.type           = AVMEDIA_TYPE_AUDIO,
     .p.id             = AV_CODEC_ID_TAK,
     .priv_data_size   = sizeof(TAKDecContext),

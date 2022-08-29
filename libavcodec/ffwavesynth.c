@@ -461,7 +461,7 @@ static av_cold int wavesynth_close(AVCodecContext *avc)
 
 const FFCodec ff_ffwavesynth_decoder = {
     .p.name         = "wavesynth",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Wave synthesis pseudo-codec"),
+    CODEC_LONG_NAME("Wave synthesis pseudo-codec"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_FFWAVESYNTH,
     .priv_data_size = sizeof(struct wavesynth_context),

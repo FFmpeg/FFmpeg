@@ -414,7 +414,7 @@ static av_cold int hap_close(AVCodecContext *avctx)
 
 const FFCodec ff_hap_decoder = {
     .p.name         = "hap",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Vidvox Hap"),
+    CODEC_LONG_NAME("Vidvox Hap"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_HAP,
     .init           = hap_init,

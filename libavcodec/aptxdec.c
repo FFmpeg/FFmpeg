@@ -176,7 +176,7 @@ static int aptx_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 #if CONFIG_APTX_DECODER
 const FFCodec ff_aptx_decoder = {
     .p.name                = "aptx",
-    .p.long_name           = NULL_IF_CONFIG_SMALL("aptX (Audio Processing Technology for Bluetooth)"),
+    CODEC_LONG_NAME("aptX (Audio Processing Technology for Bluetooth)"),
     .p.type                = AVMEDIA_TYPE_AUDIO,
     .p.id                  = AV_CODEC_ID_APTX,
     .priv_data_size        = sizeof(AptXContext),
@@ -195,7 +195,7 @@ const FFCodec ff_aptx_decoder = {
 #if CONFIG_APTX_HD_DECODER
 const FFCodec ff_aptx_hd_decoder = {
     .p.name                = "aptx_hd",
-    .p.long_name           = NULL_IF_CONFIG_SMALL("aptX HD (Audio Processing Technology for Bluetooth)"),
+    CODEC_LONG_NAME("aptX HD (Audio Processing Technology for Bluetooth)"),
     .p.type                = AVMEDIA_TYPE_AUDIO,
     .p.id                  = AV_CODEC_ID_APTX_HD,
     .priv_data_size        = sizeof(AptXContext),

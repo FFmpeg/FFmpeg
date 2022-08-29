@@ -201,7 +201,7 @@ static av_cold int tta_encode_close(AVCodecContext *avctx)
 
 const FFCodec ff_tta_encoder = {
     .p.name         = "tta",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("TTA (True Audio)"),
+    CODEC_LONG_NAME("TTA (True Audio)"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_TTA,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SMALL_LAST_FRAME,

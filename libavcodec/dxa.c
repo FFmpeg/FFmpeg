@@ -360,7 +360,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 const FFCodec ff_dxa_decoder = {
     .p.name         = "dxa",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Feeble Files/ScummVM DXA"),
+    CODEC_LONG_NAME("Feeble Files/ScummVM DXA"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_DXA,
     .priv_data_size = sizeof(DxaDecContext),

@@ -246,7 +246,7 @@ static void lscr_decode_flush(AVCodecContext *avctx)
 
 const FFCodec ff_lscr_decoder = {
     .p.name         = "lscr",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("LEAD Screen Capture"),
+    CODEC_LONG_NAME("LEAD Screen Capture"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_LSCR,
     .p.capabilities = AV_CODEC_CAP_DR1,

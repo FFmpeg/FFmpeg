@@ -94,7 +94,7 @@ void ff_flv2_encode_ac_esc(PutBitContext *pb, int slevel, int level,
 
 const FFCodec ff_flv_encoder = {
     .p.name         = "flv",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("FLV / Sorenson Spark / Sorenson H.263 (Flash Video)"),
+    CODEC_LONG_NAME("FLV / Sorenson Spark / Sorenson H.263 (Flash Video)"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_FLV1,
     .p.priv_class   = &ff_mpv_enc_class,

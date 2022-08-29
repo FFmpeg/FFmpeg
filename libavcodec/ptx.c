@@ -87,7 +87,7 @@ static int ptx_decode_frame(AVCodecContext *avctx, AVFrame *p,
 
 const FFCodec ff_ptx_decoder = {
     .p.name         = "ptx",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("V.Flash PTX image"),
+    CODEC_LONG_NAME("V.Flash PTX image"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_PTX,
     .p.capabilities = AV_CODEC_CAP_DR1,

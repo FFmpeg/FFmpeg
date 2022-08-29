@@ -989,7 +989,7 @@ static av_cold int atrac9_decode_init(AVCodecContext *avctx)
 
 const FFCodec ff_atrac9_decoder = {
     .p.name         = "atrac9",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("ATRAC9 (Adaptive TRansform Acoustic Coding 9)"),
+    CODEC_LONG_NAME("ATRAC9 (Adaptive TRansform Acoustic Coding 9)"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_ATRAC9,
     .priv_data_size = sizeof(ATRAC9Context),

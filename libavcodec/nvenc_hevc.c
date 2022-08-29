@@ -202,7 +202,7 @@ static const AVClass hevc_nvenc_class = {
 
 const FFCodec ff_hevc_nvenc_encoder = {
     .p.name         = "hevc_nvenc",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("NVIDIA NVENC hevc encoder"),
+    CODEC_LONG_NAME("NVIDIA NVENC hevc encoder"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_HEVC,
     .init           = ff_nvenc_encode_init,

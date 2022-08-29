@@ -263,7 +263,7 @@ static av_cold int aptx_encode_init(AVCodecContext *avctx)
 #if CONFIG_APTX_ENCODER
 const FFCodec ff_aptx_encoder = {
     .p.name                = "aptx",
-    .p.long_name           = NULL_IF_CONFIG_SMALL("aptX (Audio Processing Technology for Bluetooth)"),
+    CODEC_LONG_NAME("aptX (Audio Processing Technology for Bluetooth)"),
     .p.type                = AVMEDIA_TYPE_AUDIO,
     .p.id                  = AV_CODEC_ID_APTX,
     .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SMALL_LAST_FRAME,
@@ -284,7 +284,7 @@ const FFCodec ff_aptx_encoder = {
 #if CONFIG_APTX_HD_ENCODER
 const FFCodec ff_aptx_hd_encoder = {
     .p.name                = "aptx_hd",
-    .p.long_name           = NULL_IF_CONFIG_SMALL("aptX HD (Audio Processing Technology for Bluetooth)"),
+    CODEC_LONG_NAME("aptX HD (Audio Processing Technology for Bluetooth)"),
     .p.type                = AVMEDIA_TYPE_AUDIO,
     .p.id                  = AV_CODEC_ID_APTX_HD,
     .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SMALL_LAST_FRAME,

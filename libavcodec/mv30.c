@@ -703,7 +703,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
 
 const FFCodec ff_mv30_decoder = {
     .p.name           = "mv30",
-    .p.long_name      = NULL_IF_CONFIG_SMALL("MidiVid 3.0"),
+    CODEC_LONG_NAME("MidiVid 3.0"),
     .p.type           = AVMEDIA_TYPE_VIDEO,
     .p.id             = AV_CODEC_ID_MV30,
     .priv_data_size   = sizeof(MV30Context),

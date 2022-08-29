@@ -571,7 +571,7 @@ static const AVClass tiffenc_class = {
 
 const FFCodec ff_tiff_encoder = {
     .p.name         = "tiff",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("TIFF image"),
+    CODEC_LONG_NAME("TIFF image"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_TIFF,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,

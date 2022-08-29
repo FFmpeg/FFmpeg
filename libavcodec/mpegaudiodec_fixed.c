@@ -63,7 +63,7 @@ static const int32_t csa_table[8][4] = {
 #if CONFIG_MP1_DECODER
 const FFCodec ff_mp1_decoder = {
     .p.name         = "mp1",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("MP1 (MPEG audio layer 1)"),
+    CODEC_LONG_NAME("MP1 (MPEG audio layer 1)"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_MP1,
     .priv_data_size = sizeof(MPADecodeContext),
@@ -80,7 +80,7 @@ const FFCodec ff_mp1_decoder = {
 #if CONFIG_MP2_DECODER
 const FFCodec ff_mp2_decoder = {
     .p.name         = "mp2",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("MP2 (MPEG audio layer 2)"),
+    CODEC_LONG_NAME("MP2 (MPEG audio layer 2)"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_MP2,
     .priv_data_size = sizeof(MPADecodeContext),
@@ -97,7 +97,7 @@ const FFCodec ff_mp2_decoder = {
 #if CONFIG_MP3_DECODER
 const FFCodec ff_mp3_decoder = {
     .p.name         = "mp3",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("MP3 (MPEG audio layer 3)"),
+    CODEC_LONG_NAME("MP3 (MPEG audio layer 3)"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_MP3,
     .priv_data_size = sizeof(MPADecodeContext),
@@ -114,7 +114,7 @@ const FFCodec ff_mp3_decoder = {
 #if CONFIG_MP3ADU_DECODER
 const FFCodec ff_mp3adu_decoder = {
     .p.name         = "mp3adu",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("ADU (Application Data Unit) MP3 (MPEG audio layer 3)"),
+    CODEC_LONG_NAME("ADU (Application Data Unit) MP3 (MPEG audio layer 3)"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_MP3ADU,
     .priv_data_size = sizeof(MPADecodeContext),
@@ -131,7 +131,7 @@ const FFCodec ff_mp3adu_decoder = {
 #if CONFIG_MP3ON4_DECODER
 const FFCodec ff_mp3on4_decoder = {
     .p.name         = "mp3on4",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("MP3onMP4"),
+    CODEC_LONG_NAME("MP3onMP4"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_MP3ON4,
     .priv_data_size = sizeof(MP3On4DecodeContext),

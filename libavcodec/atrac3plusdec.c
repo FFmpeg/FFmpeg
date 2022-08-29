@@ -392,7 +392,7 @@ static int atrac3p_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
 const FFCodec ff_atrac3p_decoder = {
     .p.name         = "atrac3plus",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("ATRAC3+ (Adaptive TRansform Acoustic Coding 3+)"),
+    CODEC_LONG_NAME("ATRAC3+ (Adaptive TRansform Acoustic Coding 3+)"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_ATRAC3P,
     .p.capabilities = AV_CODEC_CAP_DR1,
@@ -405,7 +405,7 @@ const FFCodec ff_atrac3p_decoder = {
 
 const FFCodec ff_atrac3pal_decoder = {
     .p.name         = "atrac3plusal",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("ATRAC3+ AL (Adaptive TRansform Acoustic Coding 3+ Advanced Lossless)"),
+    CODEC_LONG_NAME("ATRAC3+ AL (Adaptive TRansform Acoustic Coding 3+ Advanced Lossless)"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_ATRAC3PAL,
     .p.capabilities = AV_CODEC_CAP_DR1,

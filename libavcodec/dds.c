@@ -710,7 +710,7 @@ static int dds_decode(AVCodecContext *avctx, AVFrame *frame,
 
 const FFCodec ff_dds_decoder = {
     .p.name         = "dds",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("DirectDraw Surface image decoder"),
+    CODEC_LONG_NAME("DirectDraw Surface image decoder"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_DDS,
     FF_CODEC_DECODE_CB(dds_decode),

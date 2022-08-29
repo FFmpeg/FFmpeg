@@ -726,7 +726,7 @@ static av_cold int dnxhd_decode_close(AVCodecContext *avctx)
 
 const FFCodec ff_dnxhd_decoder = {
     .p.name         = "dnxhd",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("VC3/DNxHD"),
+    CODEC_LONG_NAME("VC3/DNxHD"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_DNXHD,
     .priv_data_size = sizeof(DNXHDContext),

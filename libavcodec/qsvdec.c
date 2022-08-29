@@ -1026,7 +1026,7 @@ static const AVClass x##_qsv_class = { \
 }; \
 const FFCodec ff_##x##_qsv_decoder = { \
     .p.name         = #x "_qsv", \
-    .p.long_name    = NULL_IF_CONFIG_SMALL(#X " video (Intel Quick Sync Video acceleration)"), \
+    CODEC_LONG_NAME(#X " video (Intel Quick Sync Video acceleration)"), \
     .priv_data_size = sizeof(QSVDecContext), \
     .p.type         = AVMEDIA_TYPE_VIDEO, \
     .p.id           = AV_CODEC_ID_##X, \

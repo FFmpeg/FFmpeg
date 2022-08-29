@@ -466,7 +466,7 @@ static int vmdvideo_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
 const FFCodec ff_vmdvideo_decoder = {
     .p.name         = "vmdvideo",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Sierra VMD video"),
+    CODEC_LONG_NAME("Sierra VMD video"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_VMDVIDEO,
     .priv_data_size = sizeof(VmdVideoContext),

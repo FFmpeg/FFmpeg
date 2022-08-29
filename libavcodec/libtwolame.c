@@ -210,7 +210,7 @@ static const int twolame_samplerates[] = {
 
 const FFCodec ff_libtwolame_encoder = {
     .p.name         = "libtwolame",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("libtwolame MP2 (MPEG audio layer 2)"),
+    CODEC_LONG_NAME("libtwolame MP2 (MPEG audio layer 2)"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_MP2,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,

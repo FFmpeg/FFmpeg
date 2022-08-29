@@ -235,7 +235,7 @@ void ff_wmv2_encode_mb(MpegEncContext *s, int16_t block[6][64],
 
 const FFCodec ff_wmv2_encoder = {
     .p.name         = "wmv2",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Windows Media Video 8"),
+    CODEC_LONG_NAME("Windows Media Video 8"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_WMV2,
     .p.priv_class   = &ff_mpv_enc_class,

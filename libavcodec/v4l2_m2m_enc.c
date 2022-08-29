@@ -423,7 +423,7 @@ static const FFCodecDefault v4l2_m2m_defaults[] = {
     M2MENC_CLASS(NAME, OPTIONS_NAME) \
     const FFCodec ff_ ## NAME ## _v4l2m2m_encoder = { \
         .p.name         = #NAME "_v4l2m2m" , \
-        .p.long_name    = NULL_IF_CONFIG_SMALL("V4L2 mem2mem " LONGNAME " encoder wrapper"), \
+        CODEC_LONG_NAME("V4L2 mem2mem " LONGNAME " encoder wrapper"), \
         .p.type         = AVMEDIA_TYPE_VIDEO, \
         .p.id           = CODEC , \
         .priv_data_size = sizeof(V4L2m2mPriv), \

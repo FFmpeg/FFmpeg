@@ -152,7 +152,7 @@ static int pgx_decode_frame(AVCodecContext *avctx, AVFrame *p,
 
 const FFCodec ff_pgx_decoder = {
     .p.name         = "pgx",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("PGX (JPEG2000 Test Format)"),
+    CODEC_LONG_NAME("PGX (JPEG2000 Test Format)"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_PGX,
     .p.capabilities = AV_CODEC_CAP_DR1,

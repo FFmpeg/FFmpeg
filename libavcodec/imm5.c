@@ -179,7 +179,7 @@ static av_cold int imm5_close(AVCodecContext *avctx)
 
 const FFCodec ff_imm5_decoder = {
     .p.name         = "imm5",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Infinity IMM5"),
+    CODEC_LONG_NAME("Infinity IMM5"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_IMM5,
     .init           = imm5_init,

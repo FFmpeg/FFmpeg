@@ -76,7 +76,7 @@ static int realtext_decode_frame(AVCodecContext *avctx, AVSubtitle *sub,
 
 const FFCodec ff_realtext_decoder = {
     .p.name         = "realtext",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("RealText subtitle"),
+    CODEC_LONG_NAME("RealText subtitle"),
     .p.type         = AVMEDIA_TYPE_SUBTITLE,
     .p.id           = AV_CODEC_ID_REALTEXT,
     FF_CODEC_DECODE_SUB_CB(realtext_decode_frame),

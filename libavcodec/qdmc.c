@@ -729,7 +729,7 @@ static int qdmc_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
 const FFCodec ff_qdmc_decoder = {
     .p.name           = "qdmc",
-    .p.long_name      = NULL_IF_CONFIG_SMALL("QDesign Music Codec 1"),
+    CODEC_LONG_NAME("QDesign Music Codec 1"),
     .p.type           = AVMEDIA_TYPE_AUDIO,
     .p.id             = AV_CODEC_ID_QDMC,
     .priv_data_size   = sizeof(QDMCContext),

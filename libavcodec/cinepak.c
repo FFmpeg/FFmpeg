@@ -506,7 +506,7 @@ static av_cold int cinepak_decode_end(AVCodecContext *avctx)
 
 const FFCodec ff_cinepak_decoder = {
     .p.name         = "cinepak",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Cinepak"),
+    CODEC_LONG_NAME("Cinepak"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_CINEPAK,
     .priv_data_size = sizeof(CinepakContext),

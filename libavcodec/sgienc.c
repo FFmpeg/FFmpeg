@@ -272,7 +272,7 @@ static const AVClass sgi_class = {
 
 const FFCodec ff_sgi_encoder = {
     .p.name    = "sgi",
-    .p.long_name = NULL_IF_CONFIG_SMALL("SGI image"),
+    CODEC_LONG_NAME("SGI image"),
     .p.type    = AVMEDIA_TYPE_VIDEO,
     .p.id      = AV_CODEC_ID_SGI,
     .p.capabilities = AV_CODEC_CAP_DR1,

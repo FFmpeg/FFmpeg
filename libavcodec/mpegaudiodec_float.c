@@ -76,7 +76,7 @@ static const float csa_table[8][4] = {
 #if CONFIG_MP1FLOAT_DECODER
 const FFCodec ff_mp1float_decoder = {
     .p.name         = "mp1float",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("MP1 (MPEG audio layer 1)"),
+    CODEC_LONG_NAME("MP1 (MPEG audio layer 1)"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_MP1,
     .priv_data_size = sizeof(MPADecodeContext),
@@ -93,7 +93,7 @@ const FFCodec ff_mp1float_decoder = {
 #if CONFIG_MP2FLOAT_DECODER
 const FFCodec ff_mp2float_decoder = {
     .p.name         = "mp2float",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("MP2 (MPEG audio layer 2)"),
+    CODEC_LONG_NAME("MP2 (MPEG audio layer 2)"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_MP2,
     .priv_data_size = sizeof(MPADecodeContext),
@@ -110,7 +110,7 @@ const FFCodec ff_mp2float_decoder = {
 #if CONFIG_MP3FLOAT_DECODER
 const FFCodec ff_mp3float_decoder = {
     .p.name         = "mp3float",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("MP3 (MPEG audio layer 3)"),
+    CODEC_LONG_NAME("MP3 (MPEG audio layer 3)"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_MP3,
     .priv_data_size = sizeof(MPADecodeContext),
@@ -127,7 +127,7 @@ const FFCodec ff_mp3float_decoder = {
 #if CONFIG_MP3ADUFLOAT_DECODER
 const FFCodec ff_mp3adufloat_decoder = {
     .p.name         = "mp3adufloat",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("ADU (Application Data Unit) MP3 (MPEG audio layer 3)"),
+    CODEC_LONG_NAME("ADU (Application Data Unit) MP3 (MPEG audio layer 3)"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_MP3ADU,
     .priv_data_size = sizeof(MPADecodeContext),
@@ -144,7 +144,7 @@ const FFCodec ff_mp3adufloat_decoder = {
 #if CONFIG_MP3ON4FLOAT_DECODER
 const FFCodec ff_mp3on4float_decoder = {
     .p.name         = "mp3on4float",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("MP3onMP4"),
+    CODEC_LONG_NAME("MP3onMP4"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_MP3ON4,
     .priv_data_size = sizeof(MP3On4DecodeContext),

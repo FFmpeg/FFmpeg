@@ -123,7 +123,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *f,
 
 const FFCodec ff_alias_pix_decoder = {
     .p.name         = "alias_pix",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Alias/Wavefront PIX image"),
+    CODEC_LONG_NAME("Alias/Wavefront PIX image"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_ALIAS_PIX,
     .p.capabilities = AV_CODEC_CAP_DR1,

@@ -566,7 +566,7 @@ static const AVClass magicyuv_class = {
 
 const FFCodec ff_magicyuv_encoder = {
     .p.name           = "magicyuv",
-    .p.long_name      = NULL_IF_CONFIG_SMALL("MagicYUV video"),
+    CODEC_LONG_NAME("MagicYUV video"),
     .p.type           = AVMEDIA_TYPE_VIDEO,
     .p.id             = AV_CODEC_ID_MAGICYUV,
     .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,

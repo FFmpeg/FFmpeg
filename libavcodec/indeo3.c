@@ -1135,7 +1135,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
 
 const FFCodec ff_indeo3_decoder = {
     .p.name         = "indeo3",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Intel Indeo 3"),
+    CODEC_LONG_NAME("Intel Indeo 3"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_INDEO3,
     .priv_data_size = sizeof(Indeo3DecodeContext),

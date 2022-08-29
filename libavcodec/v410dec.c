@@ -116,7 +116,7 @@ static int v410_decode_frame(AVCodecContext *avctx, AVFrame *pic,
 
 const FFCodec ff_v410_decoder = {
     .p.name       = "v410",
-    .p.long_name  = NULL_IF_CONFIG_SMALL("Uncompressed 4:4:4 10-bit"),
+    CODEC_LONG_NAME("Uncompressed 4:4:4 10-bit"),
     .p.type       = AVMEDIA_TYPE_VIDEO,
     .p.id         = AV_CODEC_ID_V410,
     .init         = v410_decode_init,

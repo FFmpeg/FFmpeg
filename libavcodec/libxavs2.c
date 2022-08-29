@@ -288,7 +288,7 @@ static const FFCodecDefault xavs2_defaults[] = {
 
 const FFCodec ff_libxavs2_encoder = {
     .p.name         = "libxavs2",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("libxavs2 AVS2-P2/IEEE1857.4"),
+    CODEC_LONG_NAME("libxavs2 AVS2-P2/IEEE1857.4"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_AVS2,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |

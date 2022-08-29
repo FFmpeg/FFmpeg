@@ -912,7 +912,7 @@ static av_cold int truemotion1_decode_end(AVCodecContext *avctx)
 
 const FFCodec ff_truemotion1_decoder = {
     .p.name         = "truemotion1",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Duck TrueMotion 1.0"),
+    CODEC_LONG_NAME("Duck TrueMotion 1.0"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_TRUEMOTION1,
     .priv_data_size = sizeof(TrueMotion1Context),

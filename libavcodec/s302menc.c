@@ -172,7 +172,7 @@ static int s302m_encode2_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
 const FFCodec ff_s302m_encoder = {
     .p.name                = "s302m",
-    .p.long_name           = NULL_IF_CONFIG_SMALL("SMPTE 302M"),
+    CODEC_LONG_NAME("SMPTE 302M"),
     .p.type                = AVMEDIA_TYPE_AUDIO,
     .p.id                  = AV_CODEC_ID_S302M,
     .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_EXPERIMENTAL |

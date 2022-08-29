@@ -683,7 +683,7 @@ static int rv10_decode_frame(AVCodecContext *avctx, AVFrame *pict,
 
 const FFCodec ff_rv10_decoder = {
     .p.name         = "rv10",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("RealVideo 1.0"),
+    CODEC_LONG_NAME("RealVideo 1.0"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_RV10,
     .priv_data_size = sizeof(RVDecContext),
@@ -700,7 +700,7 @@ const FFCodec ff_rv10_decoder = {
 
 const FFCodec ff_rv20_decoder = {
     .p.name         = "rv20",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("RealVideo 2.0"),
+    CODEC_LONG_NAME("RealVideo 2.0"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_RV20,
     .priv_data_size = sizeof(RVDecContext),

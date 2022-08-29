@@ -213,7 +213,7 @@ static av_cold int webvtt_encode_init(AVCodecContext *avctx)
 
 const FFCodec ff_webvtt_encoder = {
     .p.name         = "webvtt",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("WebVTT subtitle"),
+    CODEC_LONG_NAME("WebVTT subtitle"),
     .p.type         = AVMEDIA_TYPE_SUBTITLE,
     .p.id           = AV_CODEC_ID_WEBVTT,
     .priv_data_size = sizeof(WebVTTContext),

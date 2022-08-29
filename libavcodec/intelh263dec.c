@@ -132,7 +132,7 @@ int ff_intel_h263_decode_picture_header(MpegEncContext *s)
 
 const FFCodec ff_h263i_decoder = {
     .p.name         = "h263i",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Intel H.263"),
+    CODEC_LONG_NAME("Intel H.263"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_H263I,
     .priv_data_size = sizeof(MpegEncContext),

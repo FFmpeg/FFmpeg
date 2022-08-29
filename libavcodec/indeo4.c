@@ -705,7 +705,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
 const FFCodec ff_indeo4_decoder = {
     .p.name         = "indeo4",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Intel Indeo Video Interactive 4"),
+    CODEC_LONG_NAME("Intel Indeo Video Interactive 4"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_INDEO4,
     .priv_data_size = sizeof(IVI45DecContext),

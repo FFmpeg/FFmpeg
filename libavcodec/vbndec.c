@@ -175,7 +175,7 @@ out:
 
 const FFCodec ff_vbn_decoder = {
     .p.name         = "vbn",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Vizrt Binary Image"),
+    CODEC_LONG_NAME("Vizrt Binary Image"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_VBN,
     .init           = vbn_init,

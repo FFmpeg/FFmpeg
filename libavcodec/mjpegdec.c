@@ -3020,7 +3020,7 @@ static const AVClass mjpegdec_class = {
 
 const FFCodec ff_mjpeg_decoder = {
     .p.name         = "mjpeg",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("MJPEG (Motion JPEG)"),
+    CODEC_LONG_NAME("MJPEG (Motion JPEG)"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_MJPEG,
     .priv_data_size = sizeof(MJpegDecodeContext),
@@ -3050,7 +3050,7 @@ const FFCodec ff_mjpeg_decoder = {
 #if CONFIG_THP_DECODER
 const FFCodec ff_thp_decoder = {
     .p.name         = "thp",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Nintendo Gamecube THP video"),
+    CODEC_LONG_NAME("Nintendo Gamecube THP video"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_THP,
     .priv_data_size = sizeof(MJpegDecodeContext),
@@ -3068,7 +3068,7 @@ const FFCodec ff_thp_decoder = {
 #if CONFIG_SMVJPEG_DECODER
 const FFCodec ff_smvjpeg_decoder = {
     .p.name         = "smvjpeg",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("SMV JPEG"),
+    CODEC_LONG_NAME("SMV JPEG"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_SMVJPEG,
     .priv_data_size = sizeof(MJpegDecodeContext),

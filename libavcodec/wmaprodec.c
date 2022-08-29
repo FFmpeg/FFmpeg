@@ -2083,7 +2083,7 @@ static void xma_flush(AVCodecContext *avctx)
  */
 const FFCodec ff_wmapro_decoder = {
     .p.name         = "wmapro",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Windows Media Audio 9 Professional"),
+    CODEC_LONG_NAME("Windows Media Audio 9 Professional"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_WMAPRO,
     .priv_data_size = sizeof(WMAProDecodeCtx),
@@ -2099,7 +2099,7 @@ const FFCodec ff_wmapro_decoder = {
 
 const FFCodec ff_xma1_decoder = {
     .p.name         = "xma1",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Xbox Media Audio 1"),
+    CODEC_LONG_NAME("Xbox Media Audio 1"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_XMA1,
     .priv_data_size = sizeof(XMADecodeCtx),
@@ -2114,7 +2114,7 @@ const FFCodec ff_xma1_decoder = {
 
 const FFCodec ff_xma2_decoder = {
     .p.name         = "xma2",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Xbox Media Audio 2"),
+    CODEC_LONG_NAME("Xbox Media Audio 2"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_XMA2,
     .priv_data_size = sizeof(XMADecodeCtx),

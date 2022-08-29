@@ -1532,7 +1532,7 @@ static const AVClass class_aom = {
 
 FFCodec ff_libaom_av1_encoder = {
     .p.name         = "libaom-av1",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("libaom AV1"),
+    CODEC_LONG_NAME("libaom AV1"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_AV1,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |

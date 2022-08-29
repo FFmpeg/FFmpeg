@@ -370,7 +370,7 @@ static int microdvd_init(AVCodecContext *avctx)
 
 const FFCodec ff_microdvd_decoder = {
     .p.name       = "microdvd",
-    .p.long_name  = NULL_IF_CONFIG_SMALL("MicroDVD subtitle"),
+    CODEC_LONG_NAME("MicroDVD subtitle"),
     .p.type       = AVMEDIA_TYPE_SUBTITLE,
     .p.id         = AV_CODEC_ID_MICRODVD,
     .init         = microdvd_init,

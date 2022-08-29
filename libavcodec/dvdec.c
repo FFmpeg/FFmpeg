@@ -681,7 +681,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
 const FFCodec ff_dvvideo_decoder = {
     .p.name         = "dvvideo",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("DV (Digital Video)"),
+    CODEC_LONG_NAME("DV (Digital Video)"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_DVVIDEO,
     .priv_data_size = sizeof(DVVideoContext),

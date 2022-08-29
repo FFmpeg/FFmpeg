@@ -234,7 +234,7 @@ static av_cold int roq_decode_end(AVCodecContext *avctx)
 
 const FFCodec ff_roq_decoder = {
     .p.name         = "roqvideo",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("id RoQ video"),
+    CODEC_LONG_NAME("id RoQ video"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_ROQ,
     .priv_data_size = sizeof(RoqContext),

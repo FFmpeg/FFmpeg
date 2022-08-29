@@ -1083,7 +1083,7 @@ static av_cold void flush(AVCodecContext *avctx)
 #if CONFIG_IMC_DECODER
 const FFCodec ff_imc_decoder = {
     .p.name         = "imc",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("IMC (Intel Music Coder)"),
+    CODEC_LONG_NAME("IMC (Intel Music Coder)"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_IMC,
     .priv_data_size = sizeof(IMCContext),
@@ -1099,7 +1099,7 @@ const FFCodec ff_imc_decoder = {
 #if CONFIG_IAC_DECODER
 const FFCodec ff_iac_decoder = {
     .p.name         = "iac",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("IAC (Indeo Audio Coder)"),
+    CODEC_LONG_NAME("IAC (Indeo Audio Coder)"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_IAC,
     .priv_data_size = sizeof(IMCContext),

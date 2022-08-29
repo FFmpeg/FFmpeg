@@ -130,7 +130,7 @@ static int pam_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 const FFCodec ff_pam_encoder = {
     .p.name         = "pam",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("PAM (Portable AnyMap) image"),
+    CODEC_LONG_NAME("PAM (Portable AnyMap) image"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_PAM,
     .p.capabilities = AV_CODEC_CAP_DR1,

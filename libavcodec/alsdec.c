@@ -2181,7 +2181,7 @@ static av_cold void flush(AVCodecContext *avctx)
 
 const FFCodec ff_als_decoder = {
     .p.name         = "als",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("MPEG-4 Audio Lossless Coding (ALS)"),
+    CODEC_LONG_NAME("MPEG-4 Audio Lossless Coding (ALS)"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_MP4ALS,
     .priv_data_size = sizeof(ALSDecContext),

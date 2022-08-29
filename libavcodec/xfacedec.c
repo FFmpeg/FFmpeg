@@ -175,7 +175,7 @@ static int xface_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
 const FFCodec ff_xface_decoder = {
     .p.name         = "xface",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("X-face image"),
+    CODEC_LONG_NAME("X-face image"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_XFACE,
     .p.capabilities = AV_CODEC_CAP_DR1,

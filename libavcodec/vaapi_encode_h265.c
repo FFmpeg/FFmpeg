@@ -1447,7 +1447,7 @@ static const AVClass vaapi_encode_h265_class = {
 
 const FFCodec ff_hevc_vaapi_encoder = {
     .p.name         = "hevc_vaapi",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("H.265/HEVC (VAAPI)"),
+    CODEC_LONG_NAME("H.265/HEVC (VAAPI)"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_HEVC,
     .priv_data_size = sizeof(VAAPIEncodeH265Context),

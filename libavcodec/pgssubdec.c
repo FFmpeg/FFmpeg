@@ -691,7 +691,7 @@ static const AVClass pgsdec_class = {
 
 const FFCodec ff_pgssub_decoder = {
     .p.name         = "pgssub",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("HDMV Presentation Graphic Stream subtitles"),
+    CODEC_LONG_NAME("HDMV Presentation Graphic Stream subtitles"),
     .p.type         = AVMEDIA_TYPE_SUBTITLE,
     .p.id           = AV_CODEC_ID_HDMV_PGS_SUBTITLE,
     .priv_data_size = sizeof(PGSSubContext),

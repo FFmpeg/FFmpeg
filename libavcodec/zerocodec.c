@@ -136,7 +136,7 @@ static void zerocodec_decode_flush(AVCodecContext *avctx)
 const FFCodec ff_zerocodec_decoder = {
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.name         = "zerocodec",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("ZeroCodec Lossless Video"),
+    CODEC_LONG_NAME("ZeroCodec Lossless Video"),
     .p.id           = AV_CODEC_ID_ZEROCODEC,
     .priv_data_size = sizeof(ZeroCodecContext),
     .init           = zerocodec_decode_init,

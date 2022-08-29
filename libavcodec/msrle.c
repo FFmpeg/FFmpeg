@@ -158,7 +158,7 @@ static av_cold int msrle_decode_end(AVCodecContext *avctx)
 
 const FFCodec ff_msrle_decoder = {
     .p.name         = "msrle",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Microsoft RLE"),
+    CODEC_LONG_NAME("Microsoft RLE"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_MSRLE,
     .priv_data_size = sizeof(MsrleContext),

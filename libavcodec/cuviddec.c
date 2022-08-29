@@ -1118,7 +1118,7 @@ static const AVCodecHWConfigInternal *const cuvid_hw_configs[] = {
     }; \
     const FFCodec ff_##x##_cuvid_decoder = { \
         .p.name         = #x "_cuvid", \
-        .p.long_name    = NULL_IF_CONFIG_SMALL("Nvidia CUVID " #X " decoder"), \
+        CODEC_LONG_NAME("Nvidia CUVID " #X " decoder"), \
         .p.type         = AVMEDIA_TYPE_VIDEO, \
         .p.id           = AV_CODEC_ID_##X, \
         .priv_data_size = sizeof(CuvidContext), \

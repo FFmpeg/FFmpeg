@@ -136,7 +136,7 @@ static av_cold int hcom_close(AVCodecContext *avctx)
 
 const FFCodec ff_hcom_decoder = {
     .p.name         = "hcom",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("HCOM Audio"),
+    CODEC_LONG_NAME("HCOM Audio"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_HCOM,
     .priv_data_size = sizeof(HCOMContext),

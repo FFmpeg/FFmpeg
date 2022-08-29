@@ -146,7 +146,7 @@ static int zero12v_decode_frame(AVCodecContext *avctx, AVFrame *pic,
 
 const FFCodec ff_zero12v_decoder = {
     .p.name         = "012v",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Uncompressed 4:2:2 10-bit"),
+    CODEC_LONG_NAME("Uncompressed 4:2:2 10-bit"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_012V,
     .init           = zero12v_decode_init,

@@ -82,7 +82,7 @@ static const AVClass textsub_decoder_class = {
 #if CONFIG_TEXT_DECODER
 const FFCodec ff_text_decoder = {
     .p.name         = "text",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Raw text subtitle"),
+    CODEC_LONG_NAME("Raw text subtitle"),
     .priv_data_size = sizeof(TextContext),
     .p.type         = AVMEDIA_TYPE_SUBTITLE,
     .p.id           = AV_CODEC_ID_TEXT,
@@ -105,7 +105,7 @@ static int linebreak_init(AVCodecContext *avctx)
 #if CONFIG_VPLAYER_DECODER
 const FFCodec ff_vplayer_decoder = {
     .p.name         = "vplayer",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("VPlayer subtitle"),
+    CODEC_LONG_NAME("VPlayer subtitle"),
     .priv_data_size = sizeof(TextContext),
     .p.type         = AVMEDIA_TYPE_SUBTITLE,
     .p.id           = AV_CODEC_ID_VPLAYER,
@@ -119,7 +119,7 @@ const FFCodec ff_vplayer_decoder = {
 #if CONFIG_STL_DECODER
 const FFCodec ff_stl_decoder = {
     .p.name         = "stl",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Spruce subtitle format"),
+    CODEC_LONG_NAME("Spruce subtitle format"),
     .priv_data_size = sizeof(TextContext),
     .p.type         = AVMEDIA_TYPE_SUBTITLE,
     .p.id           = AV_CODEC_ID_STL,
@@ -133,7 +133,7 @@ const FFCodec ff_stl_decoder = {
 #if CONFIG_PJS_DECODER
 const FFCodec ff_pjs_decoder = {
     .p.name         = "pjs",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("PJS subtitle"),
+    CODEC_LONG_NAME("PJS subtitle"),
     .priv_data_size = sizeof(TextContext),
     .p.type         = AVMEDIA_TYPE_SUBTITLE,
     .p.id           = AV_CODEC_ID_PJS,
@@ -147,7 +147,7 @@ const FFCodec ff_pjs_decoder = {
 #if CONFIG_SUBVIEWER1_DECODER
 const FFCodec ff_subviewer1_decoder = {
     .p.name         = "subviewer1",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("SubViewer1 subtitle"),
+    CODEC_LONG_NAME("SubViewer1 subtitle"),
     .priv_data_size = sizeof(TextContext),
     .p.type         = AVMEDIA_TYPE_SUBTITLE,
     .p.id           = AV_CODEC_ID_SUBVIEWER1,

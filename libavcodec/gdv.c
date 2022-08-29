@@ -561,7 +561,7 @@ static av_cold int gdv_decode_close(AVCodecContext *avctx)
 
 const FFCodec ff_gdv_decoder = {
     .p.name         = "gdv",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Gremlin Digital Video"),
+    CODEC_LONG_NAME("Gremlin Digital Video"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_GDV,
     .priv_data_size = sizeof(GDVContext),
