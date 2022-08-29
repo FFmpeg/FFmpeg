@@ -48,8 +48,10 @@ av_cold void ff_fft_init_arm(FFTContext *s)
 
     if (have_neon(cpu_flags)) {
 #if CONFIG_FFT
-        s->fft_permute  = ff_fft_permute_neon;
-        s->fft_calc     = ff_fft_calc_neon;
+        if (s->nbits < 17) {
+            s->fft_permute = ff_fft_permute_neon;
+            s->fft_calc    = ff_fft_calc_neon;
+        }
 #endif
 #if CONFIG_MDCT
         s->imdct_calc   = ff_imdct_calc_neon;
