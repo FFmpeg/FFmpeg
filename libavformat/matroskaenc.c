@@ -1830,7 +1830,7 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
     case AVMEDIA_TYPE_AUDIO:
         if (par->initial_padding && par->codec_id == AV_CODEC_ID_OPUS) {
             int64_t codecdelay = av_rescale_q(par->initial_padding,
-                                              (AVRational){ 1, 48000 },
+                                              (AVRational){ 1, par->sample_rate },
                                               (AVRational){ 1, 1000000000 });
             if (codecdelay < 0) {
                 av_log(s, AV_LOG_ERROR, "Initial padding is invalid\n");
