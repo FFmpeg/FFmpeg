@@ -3854,7 +3854,7 @@ const FFCodec ff_hevc_decoder = {
     .close                 = hevc_decode_free,
     FF_CODEC_DECODE_CB(hevc_decode_frame),
     .flush                 = hevc_decode_flush,
-    .update_thread_context = ONLY_IF_THREADS_ENABLED(hevc_update_thread_context),
+    UPDATE_THREAD_CONTEXT(hevc_update_thread_context),
     .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
                              AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS,
     .caps_internal         = FF_CODEC_CAP_EXPORTS_CROPPING |

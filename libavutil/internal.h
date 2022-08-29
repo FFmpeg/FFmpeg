@@ -116,17 +116,6 @@
 #endif
 
 /**
- * Return NULL if a threading library has not been enabled.
- * Used to disable threading functions in AVCodec definitions
- * when not needed.
- */
-#if HAVE_THREADS
-#   define ONLY_IF_THREADS_ENABLED(x) x
-#else
-#   define ONLY_IF_THREADS_ENABLED(x) NULL
-#endif
-
-/**
  * Log a generic warning message about a missing feature.
  *
  * @param[in] avc a pointer to an arbitrary struct of which the first

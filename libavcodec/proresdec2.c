@@ -878,7 +878,7 @@ const FFCodec ff_prores_decoder = {
     .init           = decode_init,
     .close          = decode_close,
     FF_CODEC_DECODE_CB(decode_frame),
-    .update_thread_context = ONLY_IF_THREADS_ENABLED(update_thread_context),
+    UPDATE_THREAD_CONTEXT(update_thread_context),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS,
     .p.profiles     = NULL_IF_CONFIG_SMALL(ff_prores_profiles),
     .hw_configs     = (const AVCodecHWConfigInternal *const []) {

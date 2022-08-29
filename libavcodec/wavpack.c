@@ -1707,7 +1707,7 @@ const FFCodec ff_wavpack_decoder = {
     .close          = wavpack_decode_end,
     FF_CODEC_DECODE_CB(wavpack_decode_frame),
     .flush          = wavpack_decode_flush,
-    .update_thread_context = ONLY_IF_THREADS_ENABLED(update_thread_context),
+    UPDATE_THREAD_CONTEXT(update_thread_context),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS |
                       AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_CHANNEL_CONF,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP |

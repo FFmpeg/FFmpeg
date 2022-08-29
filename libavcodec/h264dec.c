@@ -1105,8 +1105,8 @@ const FFCodec ff_h264_decoder = {
     .caps_internal         = FF_CODEC_CAP_EXPORTS_CROPPING |
                              FF_CODEC_CAP_ALLOCATE_PROGRESS | FF_CODEC_CAP_INIT_CLEANUP,
     .flush                 = h264_decode_flush,
-    .update_thread_context = ONLY_IF_THREADS_ENABLED(ff_h264_update_thread_context),
-    .update_thread_context_for_user = ONLY_IF_THREADS_ENABLED(ff_h264_update_thread_context_for_user),
+    UPDATE_THREAD_CONTEXT(ff_h264_update_thread_context),
+    UPDATE_THREAD_CONTEXT_FOR_USER(ff_h264_update_thread_context_for_user),
     .p.profiles            = NULL_IF_CONFIG_SMALL(ff_h264_profiles),
     .p.priv_class          = &h264_class,
 };

@@ -3179,7 +3179,7 @@ const FFCodec ff_theora_decoder = {
     .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DRAW_HORIZ_BAND |
                              AV_CODEC_CAP_FRAME_THREADS,
     .flush                 = vp3_decode_flush,
-    .update_thread_context = ONLY_IF_THREADS_ENABLED(vp3_update_thread_context),
+    UPDATE_THREAD_CONTEXT(vp3_update_thread_context),
     .caps_internal         = FF_CODEC_CAP_INIT_CLEANUP |
                              FF_CODEC_CAP_EXPORTS_CROPPING | FF_CODEC_CAP_ALLOCATE_PROGRESS,
 };
@@ -3197,7 +3197,7 @@ const FFCodec ff_vp3_decoder = {
     .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DRAW_HORIZ_BAND |
                              AV_CODEC_CAP_FRAME_THREADS,
     .flush                 = vp3_decode_flush,
-    .update_thread_context = ONLY_IF_THREADS_ENABLED(vp3_update_thread_context),
+    UPDATE_THREAD_CONTEXT(vp3_update_thread_context),
     .caps_internal         = FF_CODEC_CAP_INIT_CLEANUP |
                              FF_CODEC_CAP_ALLOCATE_PROGRESS,
 };
@@ -3215,7 +3215,7 @@ const FFCodec ff_vp4_decoder = {
     .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DRAW_HORIZ_BAND |
                              AV_CODEC_CAP_FRAME_THREADS,
     .flush                 = vp3_decode_flush,
-    .update_thread_context = ONLY_IF_THREADS_ENABLED(vp3_update_thread_context),
+    UPDATE_THREAD_CONTEXT(vp3_update_thread_context),
     .caps_internal         = FF_CODEC_CAP_INIT_CLEANUP |
                              FF_CODEC_CAP_ALLOCATE_PROGRESS,
 };

@@ -307,6 +307,6 @@ const FFCodec ff_rv30_decoder = {
         AV_PIX_FMT_YUV420P,
         AV_PIX_FMT_NONE
     },
-    .update_thread_context = ONLY_IF_THREADS_ENABLED(ff_rv34_decode_update_thread_context),
+    UPDATE_THREAD_CONTEXT(ff_rv34_decode_update_thread_context),
     .caps_internal         = FF_CODEC_CAP_ALLOCATE_PROGRESS,
 };
