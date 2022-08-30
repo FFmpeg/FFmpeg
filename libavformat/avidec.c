@@ -923,6 +923,7 @@ static int avi_read_header(AVFormatContext *s)
                         ast->dshow_block_align = 0;
                     }
                     if ((st->codecpar->codec_id == AV_CODEC_ID_AAC  ||
+                         st->codecpar->codec_id == AV_CODEC_ID_FTR  ||
                          st->codecpar->codec_id == AV_CODEC_ID_FLAC ||
                          st->codecpar->codec_id == AV_CODEC_ID_MP2 ) && ast->dshow_block_align <= 4 && ast->dshow_block_align) {
                         av_log(s, AV_LOG_DEBUG, "overriding invalid dshow_block_align of %d\n", ast->dshow_block_align);

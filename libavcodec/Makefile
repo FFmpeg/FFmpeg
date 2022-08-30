@@ -361,6 +361,7 @@ OBJS-$(CONFIG_FMVC_DECODER)            += fmvc.o
 OBJS-$(CONFIG_FOURXM_DECODER)          += 4xm.o
 OBJS-$(CONFIG_FRAPS_DECODER)           += fraps.o
 OBJS-$(CONFIG_FRWU_DECODER)            += frwu.o
+OBJS-$(CONFIG_FTR_DECODER)             += ftr.o
 OBJS-$(CONFIG_G2M_DECODER)             += g2meet.o elsdec.o mjpegdec_common.o
 OBJS-$(CONFIG_G723_1_DECODER)          += g723_1dec.o g723_1.o \
                                           acelp_vectors.o celp_filters.o celp_math.o
@@ -1133,6 +1134,7 @@ OBJS-$(CONFIG_DVBSUB_PARSER)           += dvbsub_parser.o
 OBJS-$(CONFIG_DVD_NAV_PARSER)          += dvd_nav_parser.o
 OBJS-$(CONFIG_DVDSUB_PARSER)           += dvdsub_parser.o
 OBJS-$(CONFIG_FLAC_PARSER)             += flac_parser.o flacdata.o flac.o
+OBJS-$(CONFIG_FTR_PARSER)              += ftr_parser.o
 OBJS-$(CONFIG_G723_1_PARSER)           += g723_1_parser.o
 OBJS-$(CONFIG_G729_PARSER)             += g729_parser.o
 OBJS-$(CONFIG_GIF_PARSER)              += gif_parser.o

@@ -468,6 +468,7 @@ extern const FFCodec ff_fastaudio_decoder;
 extern const FFCodec ff_ffwavesynth_decoder;
 extern const FFCodec ff_flac_encoder;
 extern const FFCodec ff_flac_decoder;
+extern const FFCodec ff_ftr_decoder;
 extern const FFCodec ff_g723_1_encoder;
 extern const FFCodec ff_g723_1_decoder;
 extern const FFCodec ff_g729_decoder;
