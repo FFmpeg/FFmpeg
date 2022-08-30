@@ -37,6 +37,7 @@ version 5.1:
 - PHM image format support
 - remap_opencl filter
 - added chromakey_cuda filter
+- added bilateral_cuda filter
 
 
 version 5.0:

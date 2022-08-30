@@ -182,6 +182,7 @@ static inline __device__ float fabsf(float a) { return __builtin_fabsf(a); }
 static inline __device__ float fabs(float a) { return __builtin_fabsf(a); }
 static inline __device__ double fabs(double a) { return __builtin_fabs(a); }
 static inline __device__ float sqrtf(float a) { return __builtin_sqrtf(a); }
+static inline __device__ float powf(float a, float  y) { return __builtin_powf(a,y); }
 
 static inline __device__ float __saturatef(float a) { return __nvvm_saturate_f(a); }
 static inline __device__ float __sinf(float a) { return __nvvm_sin_approx_f(a); }

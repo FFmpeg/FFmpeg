@@ -180,6 +180,7 @@ extern const AVFilter ff_vf_avgblur_vulkan;
 extern const AVFilter ff_vf_bbox;
 extern const AVFilter ff_vf_bench;
 extern const AVFilter ff_vf_bilateral;
+extern const AVFilter ff_vf_bilateral_cuda;
 extern const AVFilter ff_vf_bitplanenoise;
 extern const AVFilter ff_vf_blackdetect;
 extern const AVFilter ff_vf_blackframe;
