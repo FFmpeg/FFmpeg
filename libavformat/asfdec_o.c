@@ -109,6 +109,7 @@ typedef struct ASFContext {
     int64_t data_offset;
     int64_t first_packet_offset; // packet offset
     int64_t unknown_offset;   // for top level header objects or subobjects without specified behavior
+    int in_asf_read_unknown;
 
     // ASF file must not contain more than 128 streams according to the specification
     ASFStream *asf_st[ASF_MAX_STREAMS];
@@ -173,7 +174,7 @@ static int asf_read_unknown(AVFormatContext *s, const GUIDParseTable *g)
     uint64_t size   = avio_rl64(pb);
     int ret;
 
-    if (size > INT64_MAX)
+    if (size > INT64_MAX || asf->in_asf_read_unknown > 5)
         return AVERROR_INVALIDDATA;
 
     if (asf->is_header)
@@ -182,8 +183,11 @@ static int asf_read_unknown(AVFormatContext *s, const GUIDParseTable *g)
     if (!g->is_subobject) {
         if (!(ret = strcmp(g->name, "Header Extension")))
             avio_skip(pb, 22); // skip reserved fields and Data Size
-        if ((ret = detect_unknown_subobject(s, asf->unknown_offset,
-                                            asf->unknown_size)) < 0)
+        asf->in_asf_read_unknown ++;
+        ret = detect_unknown_subobject(s, asf->unknown_offset,
+                                            asf->unknown_size);
+        asf->in_asf_read_unknown --;
+        if (ret < 0)
             return ret;
     } else {
         if (size < 24) {
