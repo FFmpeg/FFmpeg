@@ -1697,18 +1697,6 @@ The default is -1.1. One possible usecase is to avoid framedrops in case
 of noisy timestamps or to increase frame drop precision in case of exact
 timestamps.
 
-@item -async @var{samples_per_second}
-Audio sync method. "Stretches/squeezes" the audio stream to match the timestamps,
-the parameter is the maximum samples per second by which the audio is changed.
--async 1 is a special case where only the start of the audio stream is corrected
-without any later correction.
-
-Note that the timestamps may be further modified by the muxer, after this.
-For example, in the case that the format option @option{avoid_negative_ts}
-is enabled.
-
-This option has been deprecated. Use the @code{aresample} audio filter instead.
-
 @item -adrift_threshold @var{time}
 Set the minimum difference between timestamps and audio data (in seconds) to trigger
 adding/dropping samples to make it match the timestamps. This option effectively is

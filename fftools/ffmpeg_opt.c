@@ -157,7 +157,6 @@ float audio_drift_threshold = 0.1;
 float dts_delta_threshold   = 10;
 float dts_error_threshold   = 3600*30;
 
-int audio_sync_method = 0;
 enum VideoSyncMethod video_sync_method = VSYNC_AUTO;
 float frame_drop_threshold = 0;
 int do_benchmark      = 0;
@@ -3910,8 +3909,6 @@ const OptionDef options[] = {
         "set video sync method globally; deprecated, use -fps_mode", "" },
     { "frame_drop_threshold", HAS_ARG | OPT_FLOAT | OPT_EXPERT,      { &frame_drop_threshold },
         "frame drop threshold", "" },
-    { "async",          HAS_ARG | OPT_INT | OPT_EXPERT,              { &audio_sync_method },
-        "audio sync method", "" },
     { "adrift_threshold", HAS_ARG | OPT_FLOAT | OPT_EXPERT,          { &audio_drift_threshold },
         "audio drift threshold", "threshold" },
     { "copyts",         OPT_BOOL | OPT_EXPERT,                       { &copy_ts },

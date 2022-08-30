@@ -1048,7 +1048,7 @@ static void do_audio_out(OutputFile *of, OutputStream *ost,
     if (!check_recording_time(ost))
         return;
 
-    if (frame->pts == AV_NOPTS_VALUE || audio_sync_method < 0)
+    if (frame->pts == AV_NOPTS_VALUE)
         frame->pts = ost->sync_opts;
     ost->sync_opts = frame->pts + frame->nb_samples;
 

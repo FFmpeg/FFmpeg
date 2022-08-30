@@ -892,16 +892,6 @@ static int configure_input_audio_filter(FilterGraph *fg, InputFilter *ifilter,
     last_filter = filt_ctx;                                                 \
 } while (0)
 
-    if (audio_sync_method > 0) {
-        char args[256] = {0};
-
-        av_strlcatf(args, sizeof(args), "async=%d", audio_sync_method);
-        av_strlcatf(args, sizeof(args), ":min_hard_comp=%f", audio_drift_threshold);
-        if (!fg->reconfiguration)
-            av_strlcatf(args, sizeof(args), ":first_pts=0");
-        AUTO_INSERT_FILTER_INPUT("-async", "aresample", args);
-    }
-
     snprintf(name, sizeof(name), "trim for input stream %d:%d",
              ist->file_index, ist->st->index);
     if (copy_ts) {

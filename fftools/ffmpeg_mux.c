@@ -102,8 +102,7 @@ static int write_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
         goto fail;
     }
 
-    if ((st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && ost->vsync_method == VSYNC_DROP) ||
-        (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && audio_sync_method < 0))
+    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && ost->vsync_method == VSYNC_DROP)
         pkt->pts = pkt->dts = AV_NOPTS_VALUE;
 
     if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
