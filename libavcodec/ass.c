@@ -24,6 +24,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 #include "libavutil/common.h"
+#include "version.h"
 
 int ff_ass_subtitle_header_full(AVCodecContext *avctx,
                                 int play_res_x, int play_res_y,
