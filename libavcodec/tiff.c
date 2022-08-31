@@ -1367,7 +1367,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         } else
             s->strippos = off;
         s->strips = count;
-        if (s->strips == 1)
+        if (s->strips == s->bppcount)
             s->rps = s->height;
         s->sot = type;
         break;
