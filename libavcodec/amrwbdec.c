@@ -1288,7 +1288,7 @@ static int amrwb_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
     *got_frame_ptr = 1;
 
-    return avpkt->size;
+    return buf - avpkt->data;
 }
 
 const FFCodec ff_amrwb_decoder = {
