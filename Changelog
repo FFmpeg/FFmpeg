@@ -1,6 +1,37 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 5.1.1:
+- avformat/asfdec_o: limit recursion depth in asf_read_unknown()
+- avformat/mov: Check count sums in build_open_gop_key_points()
+- doc/git-howto.texi: Document commit signing
+- libavcodec/8bps: Check that line lengths fit within the buffer
+- avcodec/midivid: Perform lzss_uncompress() before ff_reget_buffer()
+- libavformat/iff: Check for overflow in body_end calculation
+- avformat/avidec: Prevent entity expansion attacks
+- avcodec/h263dec: Sanity check against minimal I/P frame size
+- avcodec/hevcdec: Check s->ref in the md5 path similar to hwaccel
+- avcodec/mpegaudiodec_template: use unsigned shift in handle_crc()
+- avformat/subviewerdec: Make read_ts() more flexible
+- avcodec/mjpegdec: bayer and rct are incompatible
+- MAINTAINERS: Add ED25519 key for signing my commits in the future
+- avcodec/pngdec: Fix APNG_DISPOSE_OP_BACKGROUND
+- avcodec/libvpx: fix assembling vp9 packets with alpha channel
+- fftools/ffmpeg_opt: try to propagate the requested output channel layout
+- avcodec/libsvtav1: properly initialize the flush EbBufferHeaderType struct
+- configure: enable the av1_frame_split bsf for the av1 decoder
+- swresample/swresample: fill the correct buffer to print the output layout string
+- ffprobe: restore reporting error code for failed inputs
+- ipfsgateway: Remove default gateway
+- avcodec/libspeexdec: Fix use of uninitialized value
+- avformat/avisynth: use ch_layout.nb_channels for channel count
+- fate/lavf-image: Disable file checksums for exr tests
+- tests/fate-run: Allow to skip file checksums for lavf_image
+- fate/imf: Rename IMF fate-target
+- avcodec/alac: don't fail if channels aren't set during init() when extradata is valid
+- configure: properly require libx264 if enabled
+
+
 version 5.1:
 - add ipfs/ipns protocol support
 - dialogue enhance audio filter
