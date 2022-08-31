@@ -2431,6 +2431,11 @@ static int mov_finalize_stsd_codec(MOVContext *c, AVIOContext *pb,
     switch (st->codecpar->codec_id) {
 #if CONFIG_DV_DEMUXER
     case AV_CODEC_ID_DVAUDIO:
+        if (c->dv_fctx) {
+            avpriv_request_sample(c->fc, "multiple DV audio streams");
+            return AVERROR(ENOSYS);
+        }
+
         c->dv_fctx = avformat_alloc_context();
         if (!c->dv_fctx) {
             av_log(c->fc, AV_LOG_ERROR, "dv demux context alloc error\n");
