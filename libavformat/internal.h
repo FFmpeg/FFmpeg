@@ -311,6 +311,13 @@ typedef struct FFStream {
     int64_t mux_ts_offset;
 
     /**
+     * This is the lowest ts allowed in this track; it may be set by the muxer
+     * during init or write_header and influences the automatic timestamp
+     * shifting code.
+     */
+    int64_t lowest_ts_allowed;
+
+    /**
      * Internal data to check for wrapping of the time stamp
      */
     int64_t pts_wrap_reference;
