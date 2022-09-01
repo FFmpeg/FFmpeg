@@ -139,6 +139,7 @@ typedef struct MOVFragmentStreamInfo {
     int index_base;
     int index_entry;
     MOVEncryptionIndex *encryption_index;
+    int stsd_id; // current fragment stsd_id
 } MOVFragmentStreamInfo;
 
 typedef struct MOVFragmentIndexItem {
