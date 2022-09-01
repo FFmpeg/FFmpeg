@@ -26,7 +26,7 @@ packet,video,1,6144,0.120000,6144,0.120000,2048,0.040000,230400,793142,K_
 frame,video,1,1,6144,0.120000,6144,0.120000,6144,0.120000,2048,0.040000,2048,0.040000,793142,230400,320,240,rgb24,1:1,I,0,0,0,0,0,unknown,unknown,unknown,unknown,unspecified
 packet,video,2,6144,0.120000,6144,0.120000,2048,0.040000,30000,1023566,K_
 frame,video,2,1,6144,0.120000,6144,0.120000,6144,0.120000,2048,0.040000,2048,0.040000,1023566,30000,100,100,rgb24,1:1,I,0,0,0,0,0,unknown,unknown,unknown,unknown,unspecified
-stream,0,pcm_s16le,unknown,audio,PSD[16],0x10445350,s16,44100,1,unknown,16,N/A,0/0,0/0,1/44100,0,0.000000,N/A,N/A,705600,N/A,N/A,N/A,6,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,mc²,Lavc pcm_s16le
+stream,0,pcm_s16le,unknown,audio,PSD[16],0x10445350,s16,44100,1,unknown,16,0,N/A,0/0,0/0,1/44100,0,0.000000,N/A,N/A,705600,N/A,N/A,N/A,6,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,mc²,Lavc pcm_s16le
 stream,1,rawvideo,unknown,video,RGB[24],0x18424752,320,240,320,240,0,0,0,1:1,4:3,rgb24,-99,unknown,unknown,unknown,unknown,unspecified,unknown,1,N/A,25/1,25/1,1/51200,0,0.000000,N/A,N/A,N/A,N/A,N/A,N/A,4,4,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,foobar,field-and-tags-conflict-attempt,Lavc rawvideo
 stream,2,rawvideo,unknown,video,RGB[24],0x18424752,100,100,100,100,0,0,0,1:1,1:1,rgb24,-99,unknown,unknown,unknown,unknown,unspecified,unknown,1,N/A,25/1,25/1,1/51200,0,0.000000,N/A,N/A,N/A,N/A,N/A,N/A,4,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,Lavc rawvideo
 format,tests/data/ffprobe-test.nut,3,0,nut,0.000000,0.120000,1053646,70243066,100,ffprobe test file,"'A comment with CSV, XML & JSON special chars': <tag value=""x"">",I ♥ Üñîçød€

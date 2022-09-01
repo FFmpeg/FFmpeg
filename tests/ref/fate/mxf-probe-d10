@@ -77,6 +77,7 @@ sample_rate=48000
 channels=8
 channel_layout=unknown
 bits_per_sample=16
+initial_padding=0
 id=N/A
 r_frame_rate=0/0
 avg_frame_rate=0/0

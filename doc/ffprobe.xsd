@@ -246,6 +246,7 @@
       <xsd:attribute name="channels"         type="xsd:int"/>
       <xsd:attribute name="channel_layout"   type="xsd:string"/>
       <xsd:attribute name="bits_per_sample"  type="xsd:int"/>
+      <xsd:attribute name="initial_padding"  type="xsd:int"/>
 
       <xsd:attribute name="id"               type="xsd:string"/>
       <xsd:attribute name="r_frame_rate"     type="xsd:string" use="required"/>

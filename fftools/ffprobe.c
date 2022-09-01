@@ -3044,6 +3044,8 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
         }
 
         print_int("bits_per_sample", av_get_bits_per_sample(par->codec_id));
+
+        print_int("initial_padding", par->initial_padding);
         break;
 
     case AVMEDIA_TYPE_SUBTITLE:
