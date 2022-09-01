@@ -3244,9 +3244,9 @@ the average bitrate.
 than the average bitrate.
 
 @item
-@var{AVBR} - average VBR mode, when @option{maxrate} is not specified. This mode
-is further configured by the @option{avbr_accuracy} and
-@option{avbr_convergence} options.
+@var{AVBR} - average VBR mode, when @option{maxrate} is not specified, both
+@option{avbr_accuracy} and @option{avbr_convergence} are set to non-zero. This
+mode is available for H264 and HEVC on Windows.
 @end itemize
 @end itemize
 
@@ -3299,19 +3299,6 @@ Following options are used by all qsv encoders.
 Specifies how many asynchronous operations an application performs
 before the application explicitly synchronizes the result. If zero,
 the value is not specified.
-
-@item @var{avbr_accuracy}
-Accuracy of the AVBR ratecontrol (unit of tenth of percent).
-
-@item @var{avbr_convergence}
-Convergence of the AVBR ratecontrol (unit of 100 frames)
-
-The parameters @var{avbr_accuracy} and @var{avbr_convergence} are for the
-average variable bitrate control (AVBR) algorithm.
-The algorithm focuses on overall encoding quality while meeting the specified
-bitrate, @var{target_bitrate}, within the accuracy range @var{avbr_accuracy},
-after a @var{avbr_Convergence} period. This method does not follow HRD and the
-instant bitrate is not capped or padded.
 
 @item @var{preset}
 This option itemizes a range of choices from veryfast (best speed) to veryslow
@@ -3518,6 +3505,19 @@ Provides a hint to encoder about the scenario for the encoding session.
 @item remotegaming
 @end table
 
+@item @var{avbr_accuracy}
+Accuracy of the AVBR ratecontrol (unit of tenth of percent).
+
+@item @var{avbr_convergence}
+Convergence of the AVBR ratecontrol (unit of 100 frames)
+
+The parameters @var{avbr_accuracy} and @var{avbr_convergence} are for the
+average variable bitrate control (AVBR) algorithm.
+The algorithm focuses on overall encoding quality while meeting the specified
+bitrate, @var{target_bitrate}, within the accuracy range @var{avbr_accuracy},
+after a @var{avbr_Convergence} period. This method does not follow HRD and the
+instant bitrate is not capped or padded.
+
 @end table
 
 @subsection HEVC Options
@@ -3680,6 +3680,19 @@ Provides a hint to encoder about the scenario for the encoding session.
 @item gamestreaming
 @item remotegaming
 @end table
+
+@item @var{avbr_accuracy}
+Accuracy of the AVBR ratecontrol (unit of tenth of percent).
+
+@item @var{avbr_convergence}
+Convergence of the AVBR ratecontrol (unit of 100 frames)
+
+The parameters @var{avbr_accuracy} and @var{avbr_convergence} are for the
+average variable bitrate control (AVBR) algorithm.
+The algorithm focuses on overall encoding quality while meeting the specified
+bitrate, @var{target_bitrate}, within the accuracy range @var{avbr_accuracy},
+after a @var{avbr_Convergence} period. This method does not follow HRD and the
+instant bitrate is not capped or padded.
 
 @end table
 

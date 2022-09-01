@@ -479,7 +479,10 @@ static int select_rc_mode(AVCodecContext *avctx, QSVEncContext *q)
         rc_desc = "constant bitrate (CBR)";
     }
 #if QSV_HAVE_AVBR
-    else if (!avctx->rc_max_rate) {
+    else if (!avctx->rc_max_rate &&
+             (avctx->codec_id == AV_CODEC_ID_H264 || avctx->codec_id == AV_CODEC_ID_HEVC) &&
+             q->avbr_accuracy &&
+             q->avbr_convergence) {
         rc_mode = MFX_RATECONTROL_AVBR;
         rc_desc = "average variable bitrate (AVBR)";
     }

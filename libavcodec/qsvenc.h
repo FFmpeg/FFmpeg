@@ -52,8 +52,6 @@
 
 #define QSV_COMMON_OPTS \
 { "async_depth", "Maximum processing parallelism", OFFSET(qsv.async_depth), AV_OPT_TYPE_INT, { .i64 = ASYNC_DEPTH_DEFAULT }, 1, INT_MAX, VE },                          \
-{ "avbr_accuracy",    "Accuracy of the AVBR ratecontrol (unit of tenth of percent)",    OFFSET(qsv.avbr_accuracy),    AV_OPT_TYPE_INT, { .i64 = 1 }, 1, UINT16_MAX, VE }, \
-{ "avbr_convergence", "Convergence of the AVBR ratecontrol (unit of 100 frames)", OFFSET(qsv.avbr_convergence), AV_OPT_TYPE_INT, { .i64 = 1 }, 1, UINT16_MAX, VE },     \
 { "preset", NULL, OFFSET(qsv.preset), AV_OPT_TYPE_INT, { .i64 = MFX_TARGETUSAGE_BALANCED }, MFX_TARGETUSAGE_BEST_QUALITY, MFX_TARGETUSAGE_BEST_SPEED,   VE, "preset" }, \
 { "veryfast",    NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_TARGETUSAGE_BEST_SPEED  },   INT_MIN, INT_MAX, VE, "preset" },                                                \
 { "faster",      NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_TARGETUSAGE_6  },            INT_MIN, INT_MAX, VE, "preset" },                                                \
@@ -123,6 +121,10 @@
 { "videosurveillance",  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_SCENARIO_VIDEO_SURVEILLANCE }, .flags = VE, "scenario" },                                      \
 { "gamestreaming",      NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_SCENARIO_GAME_STREAMING },     .flags = VE, "scenario" },                                      \
 { "remotegaming",       NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_SCENARIO_REMOTE_GAMING },      .flags = VE, "scenario" },
+
+#define QSV_OPTION_AVBR \
+{ "avbr_accuracy",    "Accuracy of the AVBR ratecontrol (unit of tenth of percent)",    OFFSET(qsv.avbr_accuracy),    AV_OPT_TYPE_INT, { .i64 = 0 }, 0, UINT16_MAX, VE }, \
+{ "avbr_convergence", "Convergence of the AVBR ratecontrol (unit of 100 frames)", OFFSET(qsv.avbr_convergence), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, UINT16_MAX, VE },
 
 extern const AVCodecHWConfigInternal *const ff_qsv_enc_hw_configs[];
 
