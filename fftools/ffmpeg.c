@@ -3256,7 +3256,7 @@ static int init_output_stream(OutputStream *ost, AVFrame *frame,
                         return AVERROR(ENOMEM);
                     memcpy(dst, sd->data, sd->size);
                     if (ist->autorotate && sd->type == AV_PKT_DATA_DISPLAYMATRIX)
-                        av_display_rotation_set((uint32_t *)dst, 0);
+                        av_display_rotation_set((int32_t *)dst, 0);
                 }
             }
         }
