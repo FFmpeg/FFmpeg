@@ -119,7 +119,7 @@ static int get_stats(AVCodecContext *avctx, int eos)
     return 0;
 #else
     av_log(avctx, AV_LOG_ERROR, "libtheora too old to support 2pass\n");
-    return AVERROR(ENOSUP);
+    return AVERROR(ENOTSUP);
 #endif
 }
 
@@ -158,7 +158,7 @@ static int submit_stats(AVCodecContext *avctx)
     return 0;
 #else
     av_log(avctx, AV_LOG_ERROR, "libtheora too old to support 2pass\n");
-    return AVERROR(ENOSUP);
+    return AVERROR(ENOTSUP);
 #endif
 }
 
