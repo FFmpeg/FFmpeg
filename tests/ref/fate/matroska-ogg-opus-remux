@@ -1,0 +1,92 @@
+605e8e89efb3028e261dd10255c7f59a *tests/data/fate/matroska-ogg-opus-remux.matroska
+10207 tests/data/fate/matroska-ogg-opus-remux.matroska
+#extradata 0:       19, 0x399c0471
+#tb 0: 1/1000
+#media_type 0: audio
+#codec_id 0: opus
+#sample_rate 0: 48000
+#channel_layout_name 0: stereo
+0,         -7,         -7,       20,      402, 0x89b1c40f
+0,         13,         13,       20,      216, 0x7bf97146
+0,         33,         33,       20,      215, 0x6cb86d8b
+0,         53,         53,       20,      218, 0x9cfd691c
+0,         73,         73,       20,      218, 0xd7fe6a94
+0,         93,         93,       20,      194, 0x35735de6
+0,        113,        113,       20,      216, 0x3ee6705a
+0,        133,        133,       20,      218, 0x67eb6cb1
+0,        153,        153,       20,      218, 0x32d0700d
+0,        173,        173,       20,      219, 0xcb7f6c60
+0,        193,        193,       20,      218, 0x9c866b33
+0,        213,        213,       20,      217, 0xfe3e6a53
+0,        233,        233,       20,      218, 0x13586833
+0,        253,        253,       20,      222, 0xbcb2669e
+0,        273,        273,       20,      218, 0x8dfc6e33
+0,        293,        293,       20,      217, 0xf5957051
+0,        313,        313,       20,      210, 0xed126e6b
+0,        333,        333,       20,      216, 0xbf947249
+0,        353,        353,       20,      203, 0x6c7e680a
+0,        373,        373,       20,      209, 0xf78f6af4
+0,        393,        393,       20,      217, 0xd60c684d
+0,        413,        413,       20,      218, 0x89056a7a
+0,        433,        433,       20,      219, 0x0bc674ad
+0,        453,        453,       20,      217, 0xb1d86d1a
+0,        473,        473,       20,      220, 0x433d685a
+0,        493,        493,       20,      364, 0x0c88be84
+0,        513,        513,       20,      221, 0x804a733d
+0,        533,        533,       20,      215, 0x6e9d6e9b
+0,        553,        553,       20,      215, 0x63016a83
+0,        573,        573,       20,      218, 0xf9a46fbe
+0,        593,        593,       20,      216, 0xa0d66c08
+0,        613,        613,       20,      216, 0xa2ca6d0a
+0,        633,        633,       20,      216, 0xf50e6f1d
+0,        653,        653,       20,      215, 0x6aaa70b6
+0,        673,        673,       20,      219, 0x7ceb6ba0
+0,        693,        693,       20,      220, 0x398d6ca9
+0,        713,        713,       20,      218, 0x7bd06ed5
+0,        733,        733,       20,      219, 0xe2906c62
+0,        753,        753,       20,      217, 0xcf316ba1
+0,        773,        773,       20,      217, 0x470b6eea
+0,        793,        793,       20,      359, 0x36c2a18a, S=1,       10
+[PACKET]
+codec_type=audio
+stream_index=0
+pts=-7
+pts_time=-0.007000
+dts=-7
+dts_time=-0.007000
+duration=20
+duration_time=0.020000
+size=402
+pos=543
+flags=K_
+[/PACKET]
+[PACKET]
+codec_type=audio
+stream_index=0
+pts=13
+pts_time=0.013000
+dts=13
+dts_time=0.013000
+duration=20
+duration_time=0.020000
+size=216
+pos=956
+flags=K_
+[/PACKET]
+[PACKET]
+codec_type=audio
+stream_index=0
+pts=33
+pts_time=0.033000
+dts=33
+dts_time=0.033000
+duration=20
+duration_time=0.020000
+size=215
+pos=1179
+flags=K_
+[/PACKET]
+[STREAM]
+codec_name=opus
+initial_padding=356
+[/STREAM]
