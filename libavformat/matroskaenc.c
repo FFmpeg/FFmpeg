@@ -1841,6 +1841,7 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
             track->ts_offset = av_rescale_q(par->initial_padding,
                                             (AVRational){ 1, par->sample_rate },
                                             st->time_base);
+            ffstream(st)->lowest_ts_allowed = -track->ts_offset;
         }
         if (par->codec_id == AV_CODEC_ID_OPUS)
             put_ebml_uint(pb, MATROSKA_ID_SEEKPREROLL, OPUS_SEEK_PREROLL);

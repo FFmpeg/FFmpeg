@@ -166,7 +166,7 @@ fate-matroska-mpegts-remux: CMD = transcode mpegts $(TARGET_SAMPLES)/mpegts/pmtc
 # Tests maintaining codec delay while remuxing from Matroska.
 # For some reason, ffmpeg shifts the timestamps of the input file
 # to make them zero before reaching the muxer while it does not
-# for the ogg-opus-remux test.
+# for the ogg-opus-remux test. -avoid_negative_ts make_zero counters this.
 FATE_MATROSKA_FFMPEG_FFPROBE-$(call REMUX, MATROSKA, OPUS_PARSER OPUS_DECODER) += fate-matroska-opus-remux
 fate-matroska-opus-remux: CMD = transcode matroska $(TARGET_SAMPLES)/mkv/codec_delay_opus.mkv matroska "-avoid_negative_ts make_zero -c copy" "-copyts -c copy" "-show_packets -show_entries stream=codec_name,initial_padding -read_intervals %0.05"
 

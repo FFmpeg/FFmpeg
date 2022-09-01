@@ -127,6 +127,7 @@ fail:
     ffformatcontext(s)->avoid_negative_ts_use_pts =
         ffformatcontext(oc)->avoid_negative_ts_use_pts;
     oc->avoid_negative_ts = AVFMT_AVOID_NEG_TS_DISABLED;
+    ffformatcontext(oc)->avoid_negative_ts_status = AVOID_NEGATIVE_TS_DISABLED;
 
     return 0;
 }
@@ -149,10 +150,13 @@ static int webm_chunk_write_header(AVFormatContext *s)
 {
     WebMChunkContext *wc = s->priv_data;
     AVFormatContext *oc = wc->avf;
+    AVStream *st = s->streams[0], *ost = oc->streams[0];
     int ret;
 
     ret = avformat_write_header(oc, NULL);
     ff_format_io_close(s, &oc->pb);
+    ffstream(st)->lowest_ts_allowed = ffstream(ost)->lowest_ts_allowed;
+    ffstream(ost)->lowest_ts_allowed = 0;
     wc->header_written = 1;
     if (ret < 0)
         return ret;
