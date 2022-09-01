@@ -1,5 +1,5 @@
-df0524cac5393212ee103c1d1221f4b3 *tests/data/fate/matroska-encoding-delay.matroska
-961215 tests/data/fate/matroska-encoding-delay.matroska
+b933b7b94de55ae029369312d48d8649 *tests/data/fate/matroska-encoding-delay.matroska
+961221 tests/data/fate/matroska-encoding-delay.matroska
 #extradata 0:       22, 0x32ea0490
 #tb 0: 1/1000
 #media_type 0: video
@@ -11,67 +11,80 @@ df0524cac5393212ee103c1d1221f4b3 *tests/data/fate/matroska-encoding-delay.matros
 #codec_id 1: mp2
 #sample_rate 1: 48000
 #channel_layout_name 1: stereo
-1,          0,          0,       24,     1152, 0x724077b8
-0,         10,         10,       40,   237628, 0xeff25579, S=1,       40
-1,         24,         24,       24,     1152, 0x80625572
-1,         48,         48,       24,     1152, 0x7d7f4dce
-0,         50,         50,       40,   238066, 0xb2265f41
-1,         72,         72,       24,     1152, 0xa6725739
-0,         90,         90,       40,   237723, 0x00d7cd24
-1,         96,         96,       24,     1152, 0xc9e85398
-1,        120,        120,       24,     1152, 0xda1287d3
-0,        130,        130,       40,   238290, 0xbe18b18f
-1,        144,        144,       24,     1152, 0x1c9a6102
+1,        -10,        -10,       24,     1152, 0x724077b8
+0,          0,          0,       40,   237628, 0xeff25579, S=1,       40
+1,         14,         14,       24,     1152, 0x80625572
+1,         38,         38,       24,     1152, 0x7d7f4dce
+0,         40,         40,       40,   238066, 0xb2265f41
+1,         62,         62,       24,     1152, 0xa6725739
+0,         80,         80,       40,   237723, 0x00d7cd24
+1,         86,         86,       24,     1152, 0xc9e85398
+1,        110,        110,       24,     1152, 0xda1287d3
+0,        120,        120,       40,   238290, 0xbe18b18f
+1,        134,        134,       24,     1152, 0x1c9a6102
 [PACKET]
 codec_type=audio
 stream_index=1
-pts=0
-pts_time=0.000000
-dts=0
-dts_time=0.000000
+pts=-10
+pts_time=-0.010000
+dts=-10
+dts_time=-0.010000
 duration=24
 duration_time=0.024000
 size=1152
-pos=1232
+pos=1238
 flags=K_
 [/PACKET]
 [PACKET]
 codec_type=video
 stream_index=0
-pts=10
-pts_time=0.010000
-dts=10
-dts_time=0.010000
+pts=0
+pts_time=0.000000
+dts=0
+dts_time=0.000000
 duration=40
 duration_time=0.040000
 size=237628
-pos=2392
+pos=2398
 flags=K_
 [/PACKET]
 [PACKET]
 codec_type=audio
 stream_index=1
-pts=24
-pts_time=0.024000
-dts=24
-dts_time=0.024000
+pts=14
+pts_time=0.014000
+dts=14
+dts_time=0.014000
 duration=24
 duration_time=0.024000
 size=1152
-pos=240027
+pos=240033
 flags=K_
 [/PACKET]
 [PACKET]
 codec_type=audio
 stream_index=1
-pts=48
-pts_time=0.048000
-dts=48
-dts_time=0.048000
+pts=38
+pts_time=0.038000
+dts=38
+dts_time=0.038000
 duration=24
 duration_time=0.024000
 size=1152
-pos=241202
+pos=241208
+flags=K_
+[/PACKET]
+[PACKET]
+codec_type=video
+stream_index=0
+pts=40
+pts_time=0.040000
+dts=40
+dts_time=0.040000
+duration=40
+duration_time=0.040000
+size=238066
+pos=242368
 flags=K_
 [/PACKET]
 [STREAM]
@@ -81,5 +94,5 @@ codec_name=mpeg2video
 [/STREAM]
 [STREAM]
 codec_name=mp2
-initial_padding=0
+initial_padding=481
 [/STREAM]

@@ -1828,7 +1828,7 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
         break;
 
     case AVMEDIA_TYPE_AUDIO:
-        if (par->initial_padding && par->codec_id == AV_CODEC_ID_OPUS) {
+        if (par->initial_padding) {
             int64_t codecdelay = av_rescale_q(par->initial_padding,
                                               (AVRational){ 1, par->sample_rate },
                                               (AVRational){ 1, 1000000000 });
