@@ -135,6 +135,12 @@ typedef struct FrameThreadContext {
                                     * Set for the first N packets, where N is the number of threads.
                                     * While it is set, ff_thread_en/decode_frame won't return any results.
                                     */
+
+    /* hwaccel state is temporarily stored here in order to transfer its ownership
+     * to the next decoding thread without the need for extra synchronization */
+    const AVHWAccel *stash_hwaccel;
+    void            *stash_hwaccel_context;
+    void            *stash_hwaccel_priv;
 } FrameThreadContext;
 
 #define THREAD_SAFE_CALLBACKS(avctx) \
@@ -211,9 +217,17 @@ static attribute_align_arg void *frame_worker_thread(void *arg)
             ff_thread_finish_setup(avctx);
 
         if (p->hwaccel_serializing) {
+            /* wipe hwaccel state to avoid stale pointers lying around;
+             * the state was transferred to FrameThreadContext in
+             * ff_thread_finish_setup(), so nothing is leaked */
+            avctx->hwaccel                     = NULL;
+            avctx->hwaccel_context             = NULL;
+            avctx->internal->hwaccel_priv_data = NULL;
+
             p->hwaccel_serializing = 0;
             pthread_mutex_unlock(&p->parent->hwaccel_mutex);
         }
+        av_assert0(!avctx->hwaccel);
 
         if (p->async_serializing) {
             p->async_serializing = 0;
@@ -275,14 +289,10 @@ static int update_context_from_thread(AVCodecContext *dst, AVCodecContext *src, 
         dst->color_range = src->color_range;
         dst->chroma_sample_location = src->chroma_sample_location;
 
-        dst->hwaccel = src->hwaccel;
-        dst->hwaccel_context = src->hwaccel_context;
-
         dst->channels       = src->channels;
         dst->sample_rate    = src->sample_rate;
         dst->sample_fmt     = src->sample_fmt;
         dst->channel_layout = src->channel_layout;
-        dst->internal->hwaccel_priv_data = src->internal->hwaccel_priv_data;
 
         if (!!dst->hw_frames_ctx != !!src->hw_frames_ctx ||
             (dst->hw_frames_ctx && dst->hw_frames_ctx->data != src->hw_frames_ctx->data)) {
@@ -426,6 +436,12 @@ static int submit_packet(PerThreadContext *p, AVCodecContext *user_avctx,
             pthread_mutex_unlock(&p->mutex);
             return err;
         }
+
+        /* transfer hwaccel state stashed from previous thread, if any */
+        av_assert0(!p->avctx->hwaccel);
+        FFSWAP(const AVHWAccel*, p->avctx->hwaccel,                     fctx->stash_hwaccel);
+        FFSWAP(void*,            p->avctx->hwaccel_context,             fctx->stash_hwaccel_context);
+        FFSWAP(void*,            p->avctx->internal->hwaccel_priv_data, fctx->stash_hwaccel_priv);
     }
 
     av_packet_unref(&p->avpkt);
@@ -627,6 +643,14 @@ void ff_thread_finish_setup(AVCodecContext *avctx) {
         async_lock(p->parent);
     }
 
+    /* save hwaccel state for passing to the next thread;
+     * this is done here so that this worker thread can wipe its own hwaccel
+     * state after decoding, without requiring synchronization */
+    av_assert0(!p->parent->stash_hwaccel);
+    p->parent->stash_hwaccel         = avctx->hwaccel;
+    p->parent->stash_hwaccel_context = avctx->hwaccel_context;
+    p->parent->stash_hwaccel_priv    = avctx->internal->hwaccel_priv_data;
+
     pthread_mutex_lock(&p->progress_mutex);
     if(atomic_load(&p->state) == STATE_SETUP_FINISHED){
         av_log(avctx, AV_LOG_WARNING, "Multiple ff_thread_finish_setup() calls\n");
@@ -667,13 +691,6 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
     int i, j;
 
     park_frame_worker_threads(fctx, thread_count);
-
-    if (fctx->prev_thread && avctx->internal->hwaccel_priv_data !=
-                             fctx->prev_thread->avctx->internal->hwaccel_priv_data) {
-        if (update_context_from_thread(avctx, fctx->prev_thread->avctx, 1) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "Failed to update user thread.\n");
-        }
-    }
 
     if (fctx->prev_thread && fctx->prev_thread != fctx->threads)
         if (update_context_from_thread(fctx->threads->avctx, fctx->prev_thread->avctx, 0) < 0) {
@@ -737,6 +754,13 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
     pthread_mutex_destroy(&fctx->hwaccel_mutex);
     pthread_mutex_destroy(&fctx->async_mutex);
     pthread_cond_destroy(&fctx->async_cond);
+
+    /* if we have stashed hwaccel state, move it to the user-facing context,
+     * so it will be freed in avcodec_close() */
+    av_assert0(!avctx->hwaccel);
+    FFSWAP(const AVHWAccel*, avctx->hwaccel,                     fctx->stash_hwaccel);
+    FFSWAP(void*,            avctx->hwaccel_context,             fctx->stash_hwaccel_context);
+    FFSWAP(void*,            avctx->internal->hwaccel_priv_data, fctx->stash_hwaccel_priv);
 
     av_freep(&avctx->internal->thread_ctx);
 
