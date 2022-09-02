@@ -37,8 +37,8 @@
 #include "golomb.h"
 #include "mathops.h"
 #include "ffv1.h"
+#include "progressframe.h"
 #include "thread.h"
-#include "threadframe.h"
 
 static inline av_flatten int get_symbol_inline(RangeCoder *c, uint8_t *state,
                                                int is_signed)
@@ -264,8 +264,8 @@ static int decode_slice(AVCodecContext *c, void *arg)
     for( si=0; fs != f->slice_context[si]; si ++)
         ;
 
-    if(f->fsrc && !(p->flags & AV_FRAME_FLAG_KEY))
-        ff_thread_await_progress(&f->last_picture, si, 0);
+    if (f->fsrc && !(p->flags & AV_FRAME_FLAG_KEY) && f->last_picture.f)
+        ff_progress_frame_await(&f->last_picture, si);
 
     if(f->fsrc && !(p->flags & AV_FRAME_FLAG_KEY)) {
         FFV1Context *fssrc = f->fsrc->slice_context[si];
@@ -370,7 +370,7 @@ static int decode_slice(AVCodecContext *c, void *arg)
         }
     }
 
-    ff_thread_report_progress(&f->picture, si, 0);
+    ff_progress_frame_report(&f->picture, si);
 
     return 0;
 }
@@ -858,11 +858,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     if ((ret = ff_ffv1_common_init(avctx)) < 0)
         return ret;
 
-    f->picture.f      = av_frame_alloc();
-    f->last_picture.f = av_frame_alloc();
-    if (!f->picture.f || !f->last_picture.f)
-        return AVERROR(ENOMEM);
-
     if (avctx->extradata_size > 0 && (ret = read_extra_header(f)) < 0)
         return ret;
 
@@ -879,31 +874,21 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     int buf_size        = avpkt->size;
     FFV1Context *f      = avctx->priv_data;
     RangeCoder *const c = &f->slice_context[0]->c;
-    int i, ret;
+    int i, ret, key_frame;
     uint8_t keystate = 128;
     uint8_t *buf_p;
     AVFrame *p;
 
-    if (f->last_picture.f)
-        ff_thread_release_ext_buffer(&f->last_picture);
-    FFSWAP(ThreadFrame, f->picture, f->last_picture);
+    ff_progress_frame_unref(&f->last_picture);
+    FFSWAP(ProgressFrame, f->picture, f->last_picture);
 
-    f->cur = p = f->picture.f;
-
-    if (f->version < 3 && avctx->field_order > AV_FIELD_PROGRESSIVE) {
-        /* we have interlaced material flagged in container */
-        p->flags |= AV_FRAME_FLAG_INTERLACED;
-        if (avctx->field_order == AV_FIELD_TT || avctx->field_order == AV_FIELD_TB)
-            p->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
-    }
 
     f->avctx = avctx;
     ff_init_range_decoder(c, buf, buf_size);
     ff_build_rac_states(c, 0.05 * (1LL << 32), 256 - 8);
 
-    p->pict_type = AV_PICTURE_TYPE_I; //FIXME I vs. P
     if (get_rac(c, &keystate)) {
-        p->flags |= AV_FRAME_FLAG_KEY;
+        key_frame = AV_FRAME_FLAG_KEY;
         f->key_frame_ok = 0;
         if ((ret = read_header(f)) < 0)
             return ret;
@@ -914,7 +899,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                    "Cannot decode non-keyframe without valid keyframe\n");
             return AVERROR_INVALIDDATA;
         }
-        p->flags &= ~AV_FRAME_FLAG_KEY;
+        key_frame = 0;
     }
 
     if (f->ac != AC_GOLOMB_RICE) {
@@ -932,9 +917,22 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
             return AVERROR_INVALIDDATA;
     }
 
-    ret = ff_thread_get_ext_buffer(avctx, &f->picture, AV_GET_BUFFER_FLAG_REF);
+    ret = ff_progress_frame_get_buffer(avctx, &f->picture,
+                                       AV_GET_BUFFER_FLAG_REF);
     if (ret < 0)
         return ret;
+
+    f->cur = p = f->picture.f;
+
+    p->pict_type = AV_PICTURE_TYPE_I; //FIXME I vs. P
+    p->flags     = (p->flags & ~AV_FRAME_FLAG_KEY) | key_frame;
+
+    if (f->version < 3 && avctx->field_order > AV_FIELD_PROGRESSIVE) {
+        /* we have interlaced material flagged in container */
+        p->flags |= AV_FRAME_FLAG_INTERLACED;
+        if (avctx->field_order == AV_FIELD_TT || avctx->field_order == AV_FIELD_TB)
+            p->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
+    }
 
     if (avctx->debug & FF_DEBUG_PICT_INFO)
         av_log(avctx, AV_LOG_DEBUG, "ver:%d keyframe:%d coder:%d ec:%d slices:%d bps:%d\n",
@@ -954,7 +952,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
         } else                         v = buf_p - c->bytestream_start;
         if (buf_p - c->bytestream_start < v) {
             av_log(avctx, AV_LOG_ERROR, "Slice pointer chain broken\n");
-            ff_thread_report_progress(&f->picture, INT_MAX, 0);
+            ff_progress_frame_report(&f->picture, INT_MAX);
             return AVERROR_INVALIDDATA;
         }
         buf_p -= v;
@@ -996,11 +994,11 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     for (i = f->slice_count - 1; i >= 0; i--) {
         FFV1Context *fs = f->slice_context[i];
         int j;
-        if (fs->slice_damaged && f->last_picture.f->data[0]) {
+        if (fs->slice_damaged && f->last_picture.f) {
             const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
             const uint8_t *src[4];
             uint8_t *dst[4];
-            ff_thread_await_progress(&f->last_picture, INT_MAX, 0);
+            ff_progress_frame_await(&f->last_picture, INT_MAX);
             for (j = 0; j < desc->nb_components; j++) {
                 int pixshift = desc->comp[j].depth > 8;
                 int sh = (j == 1 || j == 2) ? f->chroma_h_shift : 0;
@@ -1022,10 +1020,9 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                           fs->slice_height);
         }
     }
-    ff_thread_report_progress(&f->picture, INT_MAX, 0);
+    ff_progress_frame_report(&f->picture, INT_MAX);
 
-    if (f->last_picture.f)
-        ff_thread_release_ext_buffer(&f->last_picture);
+    ff_progress_frame_unref(&f->last_picture);
     if ((ret = av_frame_ref(rframe, f->picture.f)) < 0)
         return ret;
 
@@ -1067,7 +1064,7 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
 {
     FFV1Context *fsrc = src->priv_data;
     FFV1Context *fdst = dst->priv_data;
-    int i, ret;
+    int i;
 
     if (dst == src)
         return 0;
@@ -1088,12 +1085,7 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
 
     av_assert1(fdst->max_slice_count == fsrc->max_slice_count);
 
-
-    ff_thread_release_ext_buffer(&fdst->picture);
-    if (fsrc->picture.f->data[0]) {
-        if ((ret = ff_thread_ref_frame(&fdst->picture, &fsrc->picture)) < 0)
-            return ret;
-    }
+    ff_progress_frame_replace(&fdst->picture, &fsrc->picture);
 
     fdst->fsrc = fsrc;
 
@@ -1105,15 +1097,9 @@ static av_cold int ffv1_decode_close(AVCodecContext *avctx)
 {
     FFV1Context *const s = avctx->priv_data;
 
-    if (s->picture.f) {
-        ff_thread_release_ext_buffer(&s->picture);
-        av_frame_free(&s->picture.f);
-    }
+    ff_progress_frame_unref(&s->picture);
+    ff_progress_frame_unref(&s->last_picture);
 
-    if (s->last_picture.f) {
-        ff_thread_release_ext_buffer(&s->last_picture);
-        av_frame_free(&s->last_picture.f);
-    }
     return ff_ffv1_close(avctx);
 }
 
@@ -1129,5 +1115,6 @@ const FFCodec ff_ffv1_decoder = {
     UPDATE_THREAD_CONTEXT(update_thread_context),
     .p.capabilities = AV_CODEC_CAP_DR1 |
                       AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_SLICE_THREADS,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP |
+                      FF_CODEC_CAP_USES_PROGRESSFRAMES,
 };

@@ -28,13 +28,12 @@
  * FF Video Codec 1 (a lossless codec)
  */
 
-#include "libavutil/imgutils.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "mathops.h"
+#include "progressframe.h"
 #include "put_bits.h"
 #include "rangecoder.h"
-#include "threadframe.h"
 
 #ifdef __INTEL_COMPILER
 #undef av_flatten
@@ -87,7 +86,7 @@ typedef struct FFV1Context {
     int flags;
     int64_t picture_number;
     int key_frame;
-    ThreadFrame picture, last_picture;
+    ProgressFrame picture, last_picture;
     struct FFV1Context *fsrc;
 
     AVFrame *cur;
