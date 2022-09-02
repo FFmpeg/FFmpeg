@@ -848,15 +848,15 @@ static int hvcc_write(AVIOContext *pb, HEVCDecoderConfigurationRecord *hvcc)
         if (array->numNalus == 0)
             continue;
 
-        av_log(NULL, AV_LOG_TRACE, "array_completeness[%"PRIu8"]:               %"PRIu8"\n",
+        av_log(NULL, AV_LOG_TRACE, "array_completeness[%u]:               %"PRIu8"\n",
                j, array->array_completeness);
-        av_log(NULL, AV_LOG_TRACE, "NAL_unit_type[%"PRIu8"]:                    %"PRIu8"\n",
+        av_log(NULL, AV_LOG_TRACE, "NAL_unit_type[%u]:                    %"PRIu8"\n",
                j, array->NAL_unit_type);
-        av_log(NULL, AV_LOG_TRACE, "numNalus[%"PRIu8"]:                         %"PRIu16"\n",
+        av_log(NULL, AV_LOG_TRACE, "numNalus[%u]:                         %"PRIu16"\n",
                j, array->numNalus);
         for (unsigned k = 0; k < array->numNalus; k++)
             av_log(NULL, AV_LOG_TRACE,
-                    "nalUnitLength[%"PRIu8"][%"PRIu16"]:                 %"PRIu16"\n",
+                    "nalUnitLength[%u][%u]:                 %"PRIu16"\n",
                    j, k, array->nalUnitLength[k]);
         j++;
     }
