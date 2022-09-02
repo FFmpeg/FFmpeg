@@ -42,8 +42,8 @@
 #include "apng.h"
 #include "png.h"
 #include "pngdsp.h"
+#include "progressframe.h"
 #include "thread.h"
-#include "threadframe.h"
 #include "zlib_wrapper.h"
 
 #include <zlib.h>
@@ -63,8 +63,8 @@ typedef struct PNGDecContext {
     AVCodecContext *avctx;
 
     GetByteContext gb;
-    ThreadFrame last_picture;
-    ThreadFrame picture;
+    ProgressFrame last_picture;
+    ProgressFrame picture;
 
     AVDictionary *frame_metadata;
 
@@ -874,7 +874,7 @@ static int decode_idat_chunk(AVCodecContext *avctx, PNGDecContext *s,
             s->bpp += byte_depth;
         }
 
-        ff_thread_release_ext_buffer(&s->picture);
+        ff_progress_frame_unref(&s->picture);
         if (s->dispose_op == APNG_DISPOSE_OP_PREVIOUS) {
             /* We only need a buffer for the current picture. */
             ret = ff_thread_get_buffer(avctx, p, 0);
@@ -883,8 +883,8 @@ static int decode_idat_chunk(AVCodecContext *avctx, PNGDecContext *s,
         } else if (s->dispose_op == APNG_DISPOSE_OP_BACKGROUND) {
             /* We need a buffer for the current picture as well as
              * a buffer for the reference to retain. */
-            ret = ff_thread_get_ext_buffer(avctx, &s->picture,
-                                           AV_GET_BUFFER_FLAG_REF);
+            ret = ff_progress_frame_get_buffer(avctx, &s->picture,
+                                               AV_GET_BUFFER_FLAG_REF);
             if (ret < 0)
                 return ret;
             ret = ff_thread_get_buffer(avctx, p, 0);
@@ -892,8 +892,9 @@ static int decode_idat_chunk(AVCodecContext *avctx, PNGDecContext *s,
                 return ret;
         } else {
             /* The picture output this time and the reference to retain coincide. */
-            if ((ret = ff_thread_get_ext_buffer(avctx, &s->picture,
-                                                AV_GET_BUFFER_FLAG_REF)) < 0)
+            ret = ff_progress_frame_get_buffer(avctx, &s->picture,
+                                                AV_GET_BUFFER_FLAG_REF);
+            if (ret < 0)
                 return ret;
             ret = av_frame_ref(p, s->picture.f);
             if (ret < 0)
@@ -1254,7 +1255,7 @@ static void handle_p_frame_png(PNGDecContext *s, AVFrame *p)
 
     ls = FFMIN(ls, s->width * s->bpp);
 
-    ff_thread_await_progress(&s->last_picture, INT_MAX, 0);
+    ff_progress_frame_await(&s->last_picture, INT_MAX);
     for (j = 0; j < s->height; j++) {
         for (i = 0; i < ls; i++)
             pd[i] += pd_last[i];
@@ -1286,7 +1287,7 @@ static int handle_p_frame_apng(AVCodecContext *avctx, PNGDecContext *s,
         return AVERROR_PATCHWELCOME;
     }
 
-    ff_thread_await_progress(&s->last_picture, INT_MAX, 0);
+    ff_progress_frame_await(&s->last_picture, INT_MAX);
 
     // copy unchanged rectangles from the last frame
     for (y = 0; y < s->y_offset; y++)
@@ -1674,7 +1675,7 @@ exit_loop:
     }
 
     /* handle P-frames only if a predecessor frame is available */
-    if (s->last_picture.f->data[0]) {
+    if (s->last_picture.f) {
         if (   !(avpkt->flags & AV_PKT_FLAG_KEY) && avctx->codec_tag != AV_RL32("MPNG")
             && s->last_picture.f->width == p->width
             && s->last_picture.f->height== p->height
@@ -1691,12 +1692,11 @@ exit_loop:
     if (CONFIG_APNG_DECODER && s->dispose_op == APNG_DISPOSE_OP_BACKGROUND)
         apng_reset_background(s, p);
 
-    ff_thread_report_progress(&s->picture, INT_MAX, 0);
-
-    return 0;
-
+    ret = 0;
 fail:
-    ff_thread_report_progress(&s->picture, INT_MAX, 0);
+    if (s->picture.f)
+        ff_progress_frame_report(&s->picture, INT_MAX);
+
     return ret;
 }
 
@@ -1783,8 +1783,8 @@ static int decode_frame_png(AVCodecContext *avctx, AVFrame *p,
         goto the_end;
 
     if (!(avctx->active_thread_type & FF_THREAD_FRAME)) {
-        ff_thread_release_ext_buffer(&s->last_picture);
-        FFSWAP(ThreadFrame, s->picture, s->last_picture);
+        ff_progress_frame_unref(&s->last_picture);
+        FFSWAP(ProgressFrame, s->picture, s->last_picture);
     }
 
     *got_frame = 1;
@@ -1835,12 +1835,9 @@ static int decode_frame_apng(AVCodecContext *avctx, AVFrame *p,
         return ret;
 
     if (!(avctx->active_thread_type & FF_THREAD_FRAME)) {
-        if (s->dispose_op == APNG_DISPOSE_OP_PREVIOUS) {
-            ff_thread_release_ext_buffer(&s->picture);
-        } else {
-            ff_thread_release_ext_buffer(&s->last_picture);
-            FFSWAP(ThreadFrame, s->picture, s->last_picture);
-        }
+        if (s->dispose_op != APNG_DISPOSE_OP_PREVIOUS)
+            FFSWAP(ProgressFrame, s->picture, s->last_picture);
+        ff_progress_frame_unref(&s->picture);
     }
 
     *got_frame = 1;
@@ -1853,8 +1850,7 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
 {
     PNGDecContext *psrc = src->priv_data;
     PNGDecContext *pdst = dst->priv_data;
-    ThreadFrame *src_frame = NULL;
-    int ret;
+    const ProgressFrame *src_frame;
 
     if (dst == src)
         return 0;
@@ -1879,12 +1875,7 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
     src_frame = psrc->dispose_op == APNG_DISPOSE_OP_PREVIOUS ?
                 &psrc->last_picture : &psrc->picture;
 
-    ff_thread_release_ext_buffer(&pdst->last_picture);
-    if (src_frame && src_frame->f->data[0]) {
-        ret = ff_thread_ref_frame(&pdst->last_picture, src_frame);
-        if (ret < 0)
-            return ret;
-    }
+    ff_progress_frame_replace(&pdst->last_picture, src_frame);
 
     return 0;
 }
@@ -1895,10 +1886,6 @@ static av_cold int png_dec_init(AVCodecContext *avctx)
     PNGDecContext *s = avctx->priv_data;
 
     s->avctx = avctx;
-    s->last_picture.f = av_frame_alloc();
-    s->picture.f = av_frame_alloc();
-    if (!s->last_picture.f || !s->picture.f)
-        return AVERROR(ENOMEM);
 
     ff_pngdsp_init(&s->dsp);
 
@@ -1909,10 +1896,8 @@ static av_cold int png_dec_end(AVCodecContext *avctx)
 {
     PNGDecContext *s = avctx->priv_data;
 
-    ff_thread_release_ext_buffer(&s->last_picture);
-    av_frame_free(&s->last_picture.f);
-    ff_thread_release_ext_buffer(&s->picture);
-    av_frame_free(&s->picture.f);
+    ff_progress_frame_unref(&s->last_picture);
+    ff_progress_frame_unref(&s->picture);
     av_freep(&s->buffer);
     s->buffer_size = 0;
     av_freep(&s->last_row);
@@ -1940,6 +1925,7 @@ const FFCodec ff_apng_decoder = {
     UPDATE_THREAD_CONTEXT(update_thread_context),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP |
+                      FF_CODEC_CAP_USES_PROGRESSFRAMES |
                       FF_CODEC_CAP_ICC_PROFILES,
 };
 #endif
@@ -1958,6 +1944,7 @@ const FFCodec ff_png_decoder = {
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM |
                       FF_CODEC_CAP_INIT_CLEANUP |
+                      FF_CODEC_CAP_USES_PROGRESSFRAMES |
                       FF_CODEC_CAP_ICC_PROFILES,
 };
 #endif
