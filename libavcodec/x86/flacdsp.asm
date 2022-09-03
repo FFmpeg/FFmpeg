@@ -23,6 +23,10 @@
 
 %include "libavutil/x86/x86util.asm"
 
+SECTION_RODATA
+
+vector:  db 0,1,4,5,8,9,12,13,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,0,1,4,5,8,9,12,13,
+
 SECTION .text
 
 %macro PMACSDQL 5
@@ -89,6 +93,9 @@ LPC_32 sse4
 ;----------------------------------------------------------------------------------
 %macro FLAC_DECORRELATE_16 3-4
 cglobal flac_decorrelate_%1_16, 2, 4, 4, out, in0, in1, len
+%ifidn %1, indep2
+    VBROADCASTI128 m2, [vector]
+%endif
 %if ARCH_X86_32
     mov      lend, lenm
 %endif
@@ -112,11 +119,17 @@ align 16
 %endif
 %ifnidn %1, indep2
     p%4d       m2, m0, m1
+    packssdw   m%2, m%2
+    packssdw   m%3, m%3
+    punpcklwd  m%2, m%3
+    psllw      m%2, m3
+%else
+    pslld      m%2, m3
+    pslld      m%3, m3
+    pshufb     m%2, m%2, m2
+    pshufb     m%3, m%3, m2
+    punpcklwd  m%2, m%3
 %endif
-    packssdw  m%2, m%2
-    packssdw  m%3, m%3
-    punpcklwd m%2, m%3
-    psllw     m%2, m3
     mova [outq + lenq], m%2
     add      lenq, 16
     jl .loop
@@ -292,7 +305,7 @@ align 16
     REP_RET
 %endmacro
 
-INIT_XMM sse2
+INIT_XMM ssse3
 FLAC_DECORRELATE_16 indep2, 0, 1 ; Reuse stereo 16bits macro
 FLAC_DECORRELATE_INDEP 32, 2, 3, d
 FLAC_DECORRELATE_INDEP 16, 4, 3, w
