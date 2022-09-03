@@ -1462,7 +1462,7 @@ static av_cold int speex_decode_init(AVCodecContext *avctx)
         default: s->mode = 2;
         }
 
-        s->frames_per_packet = 1;
+        s->frames_per_packet = 64;
         s->frame_size = NB_FRAME_SIZE << s->mode;
     }
 
@@ -1537,6 +1537,7 @@ static int speex_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                               int *got_frame_ptr, AVPacket *avpkt)
 {
     SpeexContext *s = avctx->priv_data;
+    int frames_per_packet = s->frames_per_packet;
     const float scale = 1.f / 32768.f;
     int buf_size = avpkt->size;
     float *dst;
@@ -1547,26 +1548,31 @@ static int speex_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     if ((ret = init_get_bits8(&s->gb, avpkt->data, buf_size)) < 0)
         return ret;
 
-    frame->nb_samples = FFALIGN(s->frame_size * s->frames_per_packet, 4);
+    frame->nb_samples = FFALIGN(s->frame_size * frames_per_packet, 4);
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
 
     dst = (float *)frame->extended_data[0];
-    for (int i = 0; i < s->frames_per_packet; i++) {
+    for (int i = 0; i < frames_per_packet; i++) {
         ret = speex_modes[s->mode].decode(avctx, &s->st[s->mode], &s->gb, dst + i * s->frame_size);
         if (ret < 0)
             return ret;
         if (avctx->ch_layout.nb_channels == 2)
             speex_decode_stereo(dst + i * s->frame_size, s->frame_size, &s->stereo);
+        if (get_bits_left(&s->gb) < 5 ||
+            show_bits(&s->gb, 5) == 15) {
+            frames_per_packet = i + 1;
+            break;
+        }
     }
 
     dst = (float *)frame->extended_data[0];
     s->fdsp->vector_fmul_scalar(dst, dst, scale, frame->nb_samples * frame->ch_layout.nb_channels);
-    frame->nb_samples = s->frame_size * s->frames_per_packet;
+    frame->nb_samples = s->frame_size * frames_per_packet;
 
     *got_frame_ptr = 1;
 
-    return buf_size;
+    return (get_bits_count(&s->gb) + 7) >> 3;
 }
 
 static av_cold int speex_decode_close(AVCodecContext *avctx)
