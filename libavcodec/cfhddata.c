@@ -23,6 +23,7 @@
 #include "libavutil/attributes.h"
 
 #include "cfhd.h"
+#include "vlc.h"
 
 #define NB_VLC_TABLE_9   (71 + 3)
 #define NB_VLC_TABLE_18 (263 + 1)
@@ -126,11 +127,12 @@ static const CFHD_RL_ELEM table_18_vlc[NB_VLC_TABLE_18] = {
 
 static av_cold int cfhd_init_vlc(CFHD_RL_VLC_ELEM out[], unsigned out_size,
                                  const CFHD_RL_ELEM table_vlc[], unsigned table_size,
-                                 VLC *vlc, void *logctx)
+                                 void *logctx)
 {
     uint8_t  new_cfhd_vlc_len[NB_VLC_TABLE_18 * 2];
     uint16_t new_cfhd_vlc_run[NB_VLC_TABLE_18 * 2];
     int16_t  new_cfhd_vlc_level[NB_VLC_TABLE_18 * 2];
+    VLC vlc;
     unsigned j;
     int ret;
 
@@ -151,15 +153,15 @@ static av_cold int cfhd_init_vlc(CFHD_RL_VLC_ELEM out[], unsigned out_size,
         }
     }
 
-    ret = ff_init_vlc_from_lengths(vlc, VLC_BITS, j, new_cfhd_vlc_len,
+    ret = ff_init_vlc_from_lengths(&vlc, VLC_BITS, j, new_cfhd_vlc_len,
                                    1, NULL, 0, 0, 0, 0, logctx);
     if (ret < 0)
         return ret;
-    av_assert0(vlc->table_size == out_size);
+    av_assert0(vlc.table_size == out_size);
 
     for (unsigned i = 0; i < out_size; i++) {
-        int code = vlc->table[i].sym;
-        int len  = vlc->table[i].len;
+        int code = vlc.table[i].sym;
+        int len  = vlc.table[i].len;
         int level, run;
 
         if (len < 0) { // more bits needed
@@ -173,6 +175,7 @@ static av_cold int cfhd_init_vlc(CFHD_RL_VLC_ELEM out[], unsigned out_size,
         out[i].level = level;
         out[i].run   = run;
     }
+    ff_free_vlc(&vlc);
 
     return 0;
 }
@@ -184,13 +187,13 @@ av_cold int ff_cfhd_init_vlcs(CFHDContext *s)
     /* Table 9 */
     ret = cfhd_init_vlc(s->table_9_rl_vlc, FF_ARRAY_ELEMS(s->table_9_rl_vlc),
                         table_9_vlc,       FF_ARRAY_ELEMS(table_9_vlc),
-                        &s->vlc_9, s->avctx);
+                        s->avctx);
     if (ret < 0)
         return ret;
     /* Table 18 */
     ret = cfhd_init_vlc(s->table_18_rl_vlc, FF_ARRAY_ELEMS(s->table_18_rl_vlc),
                         table_18_vlc,       FF_ARRAY_ELEMS(table_18_vlc),
-                        &s->vlc_18, s->avctx);
+                        s->avctx);
     if (ret < 0)
         return ret;
     return 0;

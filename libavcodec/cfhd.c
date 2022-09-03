@@ -1404,9 +1404,6 @@ static av_cold int cfhd_close(AVCodecContext *avctx)
 
     free_buffers(s);
 
-    ff_free_vlc(&s->vlc_9);
-    ff_free_vlc(&s->vlc_18);
-
     return 0;
 }
 

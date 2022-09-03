@@ -26,7 +26,6 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "get_bits.h"
-#include "vlc.h"
 #include "cfhddsp.h"
 
 enum CFHDParam {
@@ -141,10 +140,7 @@ typedef struct CFHDContext {
     AVCodecContext *avctx;
 
     CFHD_RL_VLC_ELEM table_9_rl_vlc[2088];
-    VLC vlc_9;
-
     CFHD_RL_VLC_ELEM table_18_rl_vlc[4572];
-    VLC vlc_18;
 
     int lut[2][256];
 
