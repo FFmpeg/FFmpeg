@@ -72,7 +72,7 @@ static const uint16_t table_9_vlc_run[NB_VLC_TABLE_9] = {
     1,    1,    1,    1,    1,    1,    1,    1,
     1,    1,    1,    1,    1,    1,    1,    1,
     1,    1,    1,    1,    1,    1,    1,    1,
-    1,    1
+    1,    2,
 };
 
 static const uint8_t table_9_vlc_level[NB_VLC_TABLE_9] = {
