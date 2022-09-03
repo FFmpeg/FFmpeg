@@ -43,6 +43,8 @@ TX_DECL_FN(fft_sr_ns, fma3)
 TX_DECL_FN(fft_sr,    avx2)
 TX_DECL_FN(fft_sr_ns, avx2)
 
+TX_DECL_FN(mdct_sr_inv, avx2)
+
 TX_DECL_FN(fft8_asm, sse3)
 TX_DECL_FN(fft8_asm, avx)
 TX_DECL_FN(fft16_asm, avx)
@@ -65,12 +67,37 @@ static av_cold int b ##basis## _i ##interleave(AVTXContext *s,                 \
     if (cd->max_len == 2)                                                      \
         return ff_tx_gen_ptwo_revtab(s, inv_lookup);                           \
     else                                                                       \
-        return ff_tx_gen_split_radix_parity_revtab(s, inv_lookup,              \
+        return ff_tx_gen_split_radix_parity_revtab(s, len, inv, inv_lookup,    \
                                                    basis, interleave);         \
 }
 
 DECL_INIT_FN(8, 0)
 DECL_INIT_FN(8, 2)
+
+static av_cold int m_inv_init(AVTXContext *s, const FFTXCodelet *cd,
+                              uint64_t flags, FFTXCodeletOptions *opts,
+                              int len, int inv, const void *scale)
+{
+    int ret;
+    FFTXCodeletOptions sub_opts = { .invert_lookup = -1 };
+
+    s->scale_d = *((SCALE_TYPE *)scale);
+    s->scale_f = s->scale_d;
+
+    flags &= ~FF_TX_OUT_OF_PLACE; /* We want the subtransform to be */
+    flags |=  AV_TX_INPLACE;      /* in-place */
+    flags |=  FF_TX_PRESHUFFLE;   /* This function handles the permute step */
+    flags |=  FF_TX_ASM_CALL;     /* We want an assembly function, not C */
+
+    if ((ret = ff_tx_init_subtx(s, TX_TYPE(FFT), flags, &sub_opts, len >> 1,
+                                inv, scale)))
+        return ret;
+
+    if ((ret = ff_tx_mdct_gen_exp_float(s, s->sub->map)))
+        return ret;
+
+    return 0;
+}
 
 const FFTXCodelet * const ff_tx_codelet_list_float_x86[] = {
     TX_DEF(fft2,     FFT,  2,  2, 2, 0, 128, NULL,  sse3, SSE3, AV_TX_INPLACE, 0),
@@ -121,6 +148,9 @@ const FFTXCodelet * const ff_tx_codelet_list_float_x86[] = {
            AV_TX_INPLACE | FF_TX_PRESHUFFLE | FF_TX_ASM_CALL, AV_CPU_FLAG_AVXSLOW | AV_CPU_FLAG_SLOW_GATHER),
     TX_DEF(fft_sr_ns, FFT, 64, 131072, 2, 0, 384, b8_i2, avx2, AVX2, AV_TX_INPLACE | FF_TX_PRESHUFFLE,
            AV_CPU_FLAG_AVXSLOW | AV_CPU_FLAG_SLOW_GATHER),
+
+    TX_DEF(mdct_sr_inv, MDCT, 16, TX_LEN_UNLIMITED, 2, TX_FACTOR_ANY, 384, m_inv_init, avx2, AVX2,
+           FF_TX_INVERSE_ONLY, AV_CPU_FLAG_AVXSLOW | AV_CPU_FLAG_SLOW_GATHER),
 #endif
 #endif
 

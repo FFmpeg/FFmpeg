@@ -1355,3 +1355,188 @@ FFT_SPLIT_RADIX_FN avx2, 0
 FFT_SPLIT_RADIX_FN avx2, 1
 %endif
 %endif
+
+%macro IMDCT_FN 1
+INIT_YMM %1
+cglobal mdct_sr_inv_float, 4, 12, 16, 288, ctx, out, in, stride, len, lut, exp, t1, t2, t3, t4, t5
+    movsxd lenq, dword [ctxq + AVTXContext.len]
+    mov expq, [ctxq + AVTXContext.exp]
+
+    lea t1d, [lend - 1]
+    imul t1d, strided
+
+    PUSH outq                          ; backup original output
+    mov t5q, [ctxq + AVTXContext.fn]   ; subtransform's jump point
+    PUSH ctxq                          ; backup original context
+    mov ctxq, [ctxq + AVTXContext.sub] ; load subtransform's context
+    mov lutq, [ctxq + AVTXContext.map] ; load subtransform's map
+
+    cmp strideq, 4
+    je .stride4
+
+    shl strideq, 1
+    movd xm4, strided
+    vpbroadcastd m4, xm4             ; stride splatted
+    movd xm5, t1d
+    vpbroadcastd m5, xm5             ; offset splatted
+
+    mov t2q, outq                    ; don't modify the original output
+    pcmpeqd m15, m15                 ; set all bits to 1
+
+.stridex_pre:
+    pmulld m2, m4, [lutq]            ; multiply by stride
+    movaps m0, m15
+    psubd m3, m5, m2                 ; subtract from offset
+    movaps m1, m15
+    vgatherdps m6, [inq + m2], m0    ; im
+    vgatherdps m7, [inq + m3], m1    ; re
+
+    movaps m8, [expq + 0*mmsize]     ; tab 1
+    movaps m9, [expq + 1*mmsize]     ; tab 2
+
+    unpcklps m0, m7, m6              ; re, im, re, im
+    unpckhps m1, m7, m6              ; re, im, re, im
+
+    vperm2f128 m2, m1, m0, 0x02      ; output order
+    vperm2f128 m3, m1, m0, 0x13      ; output order
+
+    movshdup m10, m8                 ; tab 1 imim
+    movshdup m11, m9                 ; tab 2 imim
+    movsldup m12, m8                 ; tab 1 rere
+    movsldup m13, m9                 ; tab 2 rere
+
+    mulps m10, m2                    ; 1 reim * imim
+    mulps m11, m3                    ; 2 reim * imim
+
+    shufps m10, m10, q2301
+    shufps m11, m11, q2301
+
+    fmaddsubps m10, m12, m2, m10
+    fmaddsubps m11, m13, m3, m11
+
+    mova [t2q + 0*mmsize], m10
+    mova [t2q + 1*mmsize], m11
+
+    add expq, mmsize*2
+    add lutq, mmsize
+    add t2q, mmsize*2
+    sub lenq, mmsize/2
+    jg .stridex_pre
+    jmp .transform
+
+.stride4:
+    lea expq, [expq + lenq*4]
+    lea lutq, [lutq + lenq*2]
+    lea t1q, [inq + t1q]
+    lea t1q, [t1q + strideq - mmsize]
+    lea t2q, [lenq*2 - mmsize/2]
+
+.stride4_pre:
+    movaps       m4, [inq]
+    movaps       m3, [t1q]
+
+    movsldup     m1, m4              ; im im, im im
+    movshdup     m0, m3              ; re re, re re
+    movshdup     m4, m4              ; re re, re re (2)
+    movsldup     m3, m3              ; im im, im im (2)
+
+    movaps       m2, [expq]          ; tab
+    movaps       m5, [expq + 2*t2q]  ; tab (2)
+
+    vpermpd      m0, m0, q0123       ; flip
+    shufps       m7, m2, m2, q2301
+    vpermpd      m4, m4, q0123       ; flip (2)
+    shufps       m8, m5, m5, q2301
+
+    mulps        m1, m7              ; im im * tab.reim
+    mulps        m3, m8              ; im im * tab.reim (2)
+
+    fmaddsubps   m0, m0, m2, m1
+    fmaddsubps   m4, m4, m5, m3
+
+    vextractf128 xm3, m0, 1
+    vextractf128 xm6, m4, 1
+
+    ; scatter
+    movsxd strideq, dword [lutq + 0*4]
+    movsxd lenq,    dword [lutq + 1*4]
+    movsxd t3q,     dword [lutq + 2*4]
+    movsxd t4q,     dword [lutq + 3*4]
+
+    movlps [outq + strideq*8], xm0
+    movhps [outq + lenq*8],    xm0
+    movlps [outq + t3q*8],     xm3
+    movhps [outq + t4q*8],     xm3
+
+    movsxd strideq, dword [lutq + 0*4 + t2q]
+    movsxd lenq,    dword [lutq + 1*4 + t2q]
+    movsxd t3q,     dword [lutq + 2*4 + t2q]
+    movsxd t4q,     dword [lutq + 3*4 + t2q]
+
+    movlps [outq + strideq*8], xm4
+    movhps [outq + lenq*8],    xm4
+    movlps [outq + t3q*8],     xm6
+    movhps [outq + t4q*8],     xm6
+
+    add lutq, mmsize/2
+    add expq, mmsize
+    add inq, mmsize
+    sub t1q, mmsize
+    sub t2q, mmsize
+    jg .stride4_pre
+
+.transform:
+    movsxd lenq, dword [ctxq + AVTXContext.len]
+    mov t2q, lenq                    ; target length (for ptwo transforms)
+    mov inq, outq                    ; in-place transform
+    call t5q                         ; call the FFT
+
+    POP ctxq                         ; restore original context
+    movsxd lenq, dword [ctxq + AVTXContext.len]
+    mov expq, [ctxq + AVTXContext.exp]
+    lea expq, [expq + lenq*4]
+
+    lea t1q, [lenq*2]                ; high
+    lea t2q, [lenq*2 - mmsize]       ; low
+
+    POP outq
+
+.post:
+    movaps m2, [expq + t1q]          ; tab h
+    movaps m3, [expq + t2q]          ; tab l
+    movaps m0, [outq + t1q]          ; in h
+    movaps m1, [outq + t2q]          ; in l
+
+    movshdup m4, m2                  ; tab h imim
+    movshdup m5, m3                  ; tab l imim
+    movsldup m6, m2                  ; tab h rere
+    movsldup m7, m3                  ; tab l rere
+
+    shufps m2, m0, m0, q2301         ; in h imre
+    shufps m3, m1, m1, q2301         ; in l imre
+
+    mulps m6, m0
+    mulps m7, m1
+
+    fmaddsubps m4, m4, m2, m6
+    fmaddsubps m5, m5, m3, m7
+
+    vpermpd m3, m5, q0123            ; flip
+    vpermpd m2, m4, q0123            ; flip
+
+    blendps m1, m2, m5, 01010101b
+    blendps m0, m3, m4, 01010101b
+
+    movaps [outq + t2q], m1
+    movaps [outq + t1q], m0
+
+    add t1q, mmsize
+    sub t2q, mmsize
+    jge .post
+
+    RET
+%endmacro
+
+%if ARCH_X86_64
+IMDCT_FN avx2
+%endif

@@ -206,23 +206,24 @@ static void parity_revtab_generator(int *revtab, int n, int inv, int offset,
                             1, 1, len >> 1, basis, dual_stride, inv_lookup);
 }
 
-int ff_tx_gen_split_radix_parity_revtab(AVTXContext *s, int invert_lookup,
-                                        int basis, int dual_stride)
+int ff_tx_gen_split_radix_parity_revtab(AVTXContext *s, int len, int inv,
+                                        int inv_lookup, int basis, int dual_stride)
 {
-    int len = s->len;
-    int inv = s->inv;
-
-    if (!(s->map = av_mallocz(len*sizeof(*s->map))))
-        return AVERROR(ENOMEM);
-
     basis >>= 1;
     if (len < basis)
         return AVERROR(EINVAL);
 
+    if (!(s->map = av_mallocz((inv_lookup == -1 ? 2 : 1)*len*sizeof(*s->map))))
+        return AVERROR(ENOMEM);
+
     av_assert0(!dual_stride || !(dual_stride & (dual_stride - 1)));
     av_assert0(dual_stride <= basis);
+
     parity_revtab_generator(s->map, len, inv, 0, 0, 0, len,
-                            basis, dual_stride, invert_lookup);
+                            basis, dual_stride, inv_lookup != 0);
+    if (inv_lookup == -1)
+        parity_revtab_generator(s->map + len, len, inv, 0, 0, 0, len,
+                                basis, dual_stride, 0);
 
     return 0;
 }
