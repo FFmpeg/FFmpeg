@@ -707,20 +707,21 @@ cglobal fft4_ %+ %1 %+ _float, 4, 4, 3, ctx, out, in, stride
 FFT4 fwd, 0
 FFT4 inv, 1
 
-%macro FFT8_SSE_FN 2
+%macro FFT8_SSE_FN 1
 INIT_XMM sse3
-cglobal fft8_ %+ %1, 4, 4, 6, ctx, out, in, tmp
-%if %2
+%if %1
+cglobal fft8_asm_float, 0, 0, 0, ctx, out, in, tmp
+    movaps m0, [inq + 0*mmsize]
+    movaps m1, [inq + 1*mmsize]
+    movaps m2, [inq + 2*mmsize]
+    movaps m3, [inq + 3*mmsize]
+%else
+cglobal fft8_float, 4, 4, 6, ctx, out, in, tmp
     mov ctxq, [ctxq + AVTXContext.map]
     LOAD64_LUT m0, inq, ctxq, (mmsize/2)*0, tmpq
     LOAD64_LUT m1, inq, ctxq, (mmsize/2)*1, tmpq
     LOAD64_LUT m2, inq, ctxq, (mmsize/2)*2, tmpq
     LOAD64_LUT m3, inq, ctxq, (mmsize/2)*3, tmpq
-%else
-    movaps m0, [inq + 0*mmsize]
-    movaps m1, [inq + 1*mmsize]
-    movaps m2, [inq + 2*mmsize]
-    movaps m3, [inq + 3*mmsize]
 %endif
 
     FFT8 m0, m1, m2, m3, m4, m5
@@ -735,22 +736,33 @@ cglobal fft8_ %+ %1, 4, 4, 6, ctx, out, in, tmp
     movups [outq + 2*mmsize], m5
     movups [outq + 3*mmsize], m1
 
+%if %1
+    ret
+%else
     RET
+%endif
+
+%if %1
+cglobal fft8_ns_float, 4, 4, 6, ctx, out, in, tmp
+    call ff_tx_fft8_asm_float_sse3
+    RET
+%endif
 %endmacro
 
-FFT8_SSE_FN float,    1
-FFT8_SSE_FN ns_float, 0
+FFT8_SSE_FN 0
+FFT8_SSE_FN 1
 
-%macro FFT8_AVX_FN 2
+%macro FFT8_AVX_FN 1
 INIT_YMM avx
-cglobal fft8_ %+ %1, 4, 4, 4, ctx, out, in, tmp
-%if %2
+%if %1
+cglobal fft8_asm_float, 0, 0, 0, ctx, out, in, tmp
+    movaps m0, [inq + 0*mmsize]
+    movaps m1, [inq + 1*mmsize]
+%else
+cglobal fft8_float, 4, 4, 4, ctx, out, in, tmp
     mov ctxq, [ctxq + AVTXContext.map]
     LOAD64_LUT m0, inq, ctxq, (mmsize/2)*0, tmpq, m2
     LOAD64_LUT m1, inq, ctxq, (mmsize/2)*1, tmpq, m3
-%else
-    movaps m0, [inq + 0*mmsize]
-    movaps m1, [inq + 1*mmsize]
 %endif
 
     FFT8_AVX m0, m1, m2, m3
@@ -764,21 +776,32 @@ cglobal fft8_ %+ %1, 4, 4, 4, ctx, out, in, tmp
     vextractf128 [outq + 16*2], m2, 1
     vextractf128 [outq + 16*3], m0, 1
 
+%if %1
+    ret
+%else
     RET
+%endif
+
+%if %1
+cglobal fft8_ns_float, 4, 4, 4, ctx, out, in, tmp
+    call ff_tx_fft8_asm_float_avx
+    RET
+%endif
 %endmacro
 
-FFT8_AVX_FN float,    1
-FFT8_AVX_FN ns_float, 0
+FFT8_AVX_FN 0
+FFT8_AVX_FN 1
 
-%macro FFT16_FN 3
+%macro FFT16_FN 2
 INIT_YMM %1
-cglobal fft16_ %+ %2, 4, 4, 8, ctx, out, in, tmp
-%if %3
+%if %2
+cglobal fft16_asm_float, 0, 0, 0, ctx, out, in, tmp
     movaps m0, [inq + 0*mmsize]
     movaps m1, [inq + 1*mmsize]
     movaps m2, [inq + 2*mmsize]
     movaps m3, [inq + 3*mmsize]
 %else
+cglobal fft16_float, 4, 4, 8, ctx, out, in, tmp
     mov ctxq, [ctxq + AVTXContext.map]
     LOAD64_LUT m0, inq, ctxq, (mmsize/2)*0, tmpq, m4
     LOAD64_LUT m1, inq, ctxq, (mmsize/2)*1, tmpq, m5
@@ -802,23 +825,34 @@ cglobal fft16_ %+ %2, 4, 4, 8, ctx, out, in, tmp
     vextractf128 [outq + 16*6], m5, 1
     vextractf128 [outq + 16*7], m1, 1
 
+%if %2
+    ret
+%else
     RET
+%endif
+
+%if %2
+cglobal fft16_ns_float, 4, 4, 8, ctx, out, in, tmp
+    call ff_tx_fft16_asm_float_ %+ %1
+    RET
+%endif
 %endmacro
 
-FFT16_FN avx,  float,    0
-FFT16_FN avx,  ns_float, 1
-FFT16_FN fma3, float,    0
-FFT16_FN fma3, ns_float, 1
+FFT16_FN avx,  0
+FFT16_FN avx,  1
+FFT16_FN fma3, 0
+FFT16_FN fma3, 1
 
-%macro FFT32_FN 3
+%macro FFT32_FN 2
 INIT_YMM %1
-cglobal fft32_ %+ %2, 4, 4, 16, ctx, out, in, tmp
-%if %3
+%if %2
+cglobal fft32_asm_float, 0, 0, 0, ctx, out, in, tmp
     movaps m4, [inq + 4*mmsize]
     movaps m5, [inq + 5*mmsize]
     movaps m6, [inq + 6*mmsize]
     movaps m7, [inq + 7*mmsize]
 %else
+cglobal fft32_float, 4, 4, 16, ctx, out, in, tmp
     mov ctxq, [ctxq + AVTXContext.map]
     LOAD64_LUT m4, inq, ctxq, (mmsize/2)*4, tmpq,  m8, m12
     LOAD64_LUT m5, inq, ctxq, (mmsize/2)*5, tmpq,  m9, m13
@@ -828,7 +862,7 @@ cglobal fft32_ %+ %2, 4, 4, 16, ctx, out, in, tmp
 
     FFT8 m4, m5, m6, m7, m8, m9
 
-%if %3
+%if %2
     movaps m0, [inq + 0*mmsize]
     movaps m1, [inq + 1*mmsize]
     movaps m2, [inq + 2*mmsize]
@@ -875,14 +909,24 @@ cglobal fft32_ %+ %2, 4, 4, 16, ctx, out, in, tmp
     vextractf128 [outq + 16*14], m10, 1
     vextractf128 [outq + 16*15],  m5, 1
 
+%if %2
+    ret
+%else
     RET
+%endif
+
+%if %2
+cglobal fft32_ns_float, 4, 4, 16, ctx, out, in, tmp
+    call ff_tx_fft32_asm_float_ %+ %1
+    RET
+%endif
 %endmacro
 
 %if ARCH_X86_64
-FFT32_FN avx,  float,    0
-FFT32_FN avx,  ns_float, 1
-FFT32_FN fma3, float,    0
-FFT32_FN fma3, ns_float, 1
+FFT32_FN avx,  0
+FFT32_FN avx,  1
+FFT32_FN fma3, 0
+FFT32_FN fma3, 1
 %endif
 
 %macro FFT_SPLIT_RADIX_DEF 1-2
@@ -923,17 +967,21 @@ ALIGN 16
 %endif
 %endmacro
 
-%macro FFT_SPLIT_RADIX_FN 3
+%macro FFT_SPLIT_RADIX_FN 2
 INIT_YMM %1
-cglobal fft_sr_ %+ %2, 4, 8, 16, 272, lut, out, in, len, tmp, itab, rtab, tgt
-    movsxd lenq, dword [lutq + AVTXContext.len]
-    mov lutq, [lutq + AVTXContext.map]
+%if %2
+cglobal fft_sr_asm_float, 0, 0, 0, ctx, out, in, tmp, len, lut, itab, rtab, tgt
+%else
+cglobal fft_sr_float, 4, 9, 16, 272, ctx, out, in, tmp, len, lut, itab, rtab, tgt
+    movsxd lenq, dword [ctxq + AVTXContext.len]
+    mov lutq, [ctxq + AVTXContext.map]
     mov tgtq, lenq
+%endif
 
 ; Bottom-most/32-point transform ===============================================
 ALIGN 16
 .32pt:
-%if %3
+%if %2
     movaps m4, [inq + 4*mmsize]
     movaps m5, [inq + 5*mmsize]
     movaps m6, [inq + 6*mmsize]
@@ -947,7 +995,7 @@ ALIGN 16
 
     FFT8 m4, m5, m6, m7, m8, m9
 
-%if %3
+%if %2
     movaps m0, [inq + 0*mmsize]
     movaps m1, [inq + 1*mmsize]
     movaps m2, [inq + 2*mmsize]
@@ -972,7 +1020,7 @@ ALIGN 16
     movaps [outq + 5*mmsize], m5
     movaps [outq + 7*mmsize], m7
 
-%if %3
+%if %2
     add inq, 8*mmsize
 %else
     add lutq, (mmsize/2)*8
@@ -1007,7 +1055,7 @@ ALIGN 16
     SWAP m4, m1
     SWAP m6, m3
 
-%if %3
+%if %2
     movaps tx1_e0, [inq + 0*mmsize]
     movaps tx1_e1, [inq + 1*mmsize]
     movaps tx1_o0, [inq + 2*mmsize]
@@ -1021,7 +1069,7 @@ ALIGN 16
 
     FFT16 tx1_e0, tx1_e1, tx1_o0, tx1_o1, tw_e, tw_o, tx2_o0, tx2_o1
 
-%if %3
+%if %2
     movaps tx2_e0, [inq + 4*mmsize]
     movaps tx2_e1, [inq + 5*mmsize]
     movaps tx2_o0, [inq + 6*mmsize]
@@ -1038,7 +1086,7 @@ ALIGN 16
     movaps tw_e,           [tab_64_float]
     vperm2f128 tw_o, tw_o, [tab_64_float + 64 - 4*7], 0x23
 
-%if %3
+%if %2
     add inq, 8*mmsize
 %else
     add lutq, (mmsize/2)*8
@@ -1201,7 +1249,11 @@ FFT_SPLIT_RADIX_DEF 131072
     sub lenq, 4*mmsize
     jg .synth_deinterleave
 
+%if %2
+    ret
+%else
     RET
+%endif
 
 ; 64-point deinterleave which only has to load 4 registers =====================
 .64pt_deint:
@@ -1278,14 +1330,28 @@ FFT_SPLIT_RADIX_DEF 131072
     vextractf128 [outq + 15*mmsize +  0], tw_o,   1
     vextractf128 [outq + 15*mmsize + 16], tx2_e1, 1
 
+%if %2
+    ret
+%else
     RET
+%endif
+
+%if %2
+cglobal fft_sr_ns_float, 4, 9, 16, 272, ctx, out, in, tmp, len, lut, itab, rtab, tgt
+    movsxd lenq, dword [ctxq + AVTXContext.len]
+    mov lutq, [ctxq + AVTXContext.map]
+    mov tgtq, lenq
+
+    call ff_tx_fft_sr_asm_float_ %+ %1
+    RET
+%endif
 %endmacro
 
 %if ARCH_X86_64
-FFT_SPLIT_RADIX_FN fma3, float,    0
-FFT_SPLIT_RADIX_FN fma3, ns_float, 1
+FFT_SPLIT_RADIX_FN fma3, 0
+FFT_SPLIT_RADIX_FN fma3, 1
 %if HAVE_AVX2_EXTERNAL
-FFT_SPLIT_RADIX_FN avx2, float,    0
-FFT_SPLIT_RADIX_FN avx2, ns_float, 1
+FFT_SPLIT_RADIX_FN avx2, 0
+FFT_SPLIT_RADIX_FN avx2, 1
 %endif
 %endif

@@ -145,6 +145,7 @@ typedef void TXComplex;
 #define FF_TX_PRESHUFFLE   (1ULL << 61) /* Codelet expects permuted coeffs            */
 #define FF_TX_INVERSE_ONLY (1ULL << 60) /* For non-orthogonal inverse-only transforms */
 #define FF_TX_FORWARD_ONLY (1ULL << 59) /* For non-orthogonal forward-only transforms */
+#define FF_TX_ASM_CALL     (1ULL << 58) /* For asm->asm functions only                */
 
 typedef enum FFTXCodeletPriority {
     FF_TX_PRIO_BASE = 0,               /* Baseline priority */

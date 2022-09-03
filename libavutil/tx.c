@@ -313,6 +313,8 @@ static void print_flags(AVBPrint *bp, uint64_t f)
         av_bprintf(bp, "%spreshuf", prev > 1 ? sep : "");
     if ((f & AV_TX_FULL_IMDCT) && ++prev)
         av_bprintf(bp, "%simdct_full", prev > 1 ? sep : "");
+    if ((f & FF_TX_ASM_CALL) && ++prev)
+        av_bprintf(bp, "%sasm_call", prev > 1 ? sep : "");
     av_bprintf(bp, "]");
 }
 
@@ -484,7 +486,7 @@ av_cold int ff_tx_init_subtx(AVTXContext *s, enum AVTXType type,
     uint64_t req_flags = flags;
 
     /* Flags the codelet may require to be present */
-    uint64_t inv_req_mask = AV_TX_FULL_IMDCT | FF_TX_PRESHUFFLE;
+    uint64_t inv_req_mask = AV_TX_FULL_IMDCT | FF_TX_PRESHUFFLE | FF_TX_ASM_CALL;
 
     /* Unaligned codelets are compatible with the aligned flag */
     if (req_flags & FF_TX_ALIGNED)
