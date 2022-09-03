@@ -51,7 +51,7 @@ static struct dv_vlc_pair dv_vlc_map[DV_VLC_MAP_RUN_SIZE][DV_VLC_MAP_LEV_SIZE];
 static av_cold void dv_vlc_map_tableinit(void)
 {
     int i, j;
-    for (i = 0; i < NB_DV_VLC - 1; i++) {
+    for (int i = 0; i < NB_DV_VLC; i++) {
         if (ff_dv_vlc_run[i] >= DV_VLC_MAP_RUN_SIZE)
             continue;
 #if CONFIG_SMALL
