@@ -124,90 +124,74 @@ static const CFHD_RL_ELEM table_18_vlc[NB_VLC_TABLE_18] = {
     {   1,  29, 12 }, {   1,  18, 10 }, {   1,   8,  7 }, {   1,   2,  3 },
 };
 
-av_cold int ff_cfhd_init_vlcs(CFHDContext *s)
+static av_cold int cfhd_init_vlc(CFHD_RL_VLC_ELEM out[], unsigned out_size,
+                                 const CFHD_RL_ELEM table_vlc[], unsigned table_size,
+                                 VLC *vlc, void *logctx)
 {
-    int i, j, ret = 0;
     uint8_t  new_cfhd_vlc_len[NB_VLC_TABLE_18 * 2];
     uint16_t new_cfhd_vlc_run[NB_VLC_TABLE_18 * 2];
     int16_t  new_cfhd_vlc_level[NB_VLC_TABLE_18 * 2];
+    unsigned j;
+    int ret;
 
     /** Similar to dv.c, generate signed VLC tables **/
 
+    for (unsigned i = j = 0; i < table_size; i++, j++) {
+        new_cfhd_vlc_len[j]   = table_vlc[i].len;
+        new_cfhd_vlc_run[j]   = table_vlc[i].run;
+        new_cfhd_vlc_level[j] = table_vlc[i].level;
+
+        /* Don't include the zero level nor escape bits */
+        if (table_vlc[i].level && table_vlc[i].run) {
+            new_cfhd_vlc_len[j]++;
+            j++;
+            new_cfhd_vlc_len[j]   =  table_vlc[i].len + 1;
+            new_cfhd_vlc_run[j]   =  table_vlc[i].run;
+            new_cfhd_vlc_level[j] = -table_vlc[i].level;
+        }
+    }
+
+    ret = ff_init_vlc_from_lengths(vlc, VLC_BITS, j, new_cfhd_vlc_len,
+                                   1, NULL, 0, 0, 0, 0, logctx);
+    if (ret < 0)
+        return ret;
+    av_assert0(vlc->table_size == out_size);
+
+    for (unsigned i = 0; i < out_size; i++) {
+        int code = vlc->table[i].sym;
+        int len  = vlc->table[i].len;
+        int level, run;
+
+        if (len < 0) { // more bits needed
+            run   = 0;
+            level = code;
+        } else {
+            run   = new_cfhd_vlc_run[code];
+            level = new_cfhd_vlc_level[code];
+        }
+        out[i].len   = len;
+        out[i].level = level;
+        out[i].run   = run;
+    }
+
+    return 0;
+}
+
+av_cold int ff_cfhd_init_vlcs(CFHDContext *s)
+{
+    int ret;
+
     /* Table 9 */
-    for (i = 0, j = 0; i < NB_VLC_TABLE_9; i++, j++) {
-        new_cfhd_vlc_len[j]   = table_9_vlc[i].len;
-        new_cfhd_vlc_run[j]   = table_9_vlc[i].run;
-        new_cfhd_vlc_level[j] = table_9_vlc[i].level;
-
-        /* Don't include the zero level nor escape bits */
-        if (table_9_vlc[i].level && table_9_vlc[i].run) {
-            new_cfhd_vlc_len[j]++;
-            j++;
-            new_cfhd_vlc_len[j]   =  table_9_vlc[i].len + 1;
-            new_cfhd_vlc_run[j]   =  table_9_vlc[i].run;
-            new_cfhd_vlc_level[j] = -table_9_vlc[i].level;
-        }
-    }
-
-    ret = ff_init_vlc_from_lengths(&s->vlc_9, VLC_BITS, j, new_cfhd_vlc_len,
-                                   1, NULL, 0, 0, 0, 0, s->avctx);
+    ret = cfhd_init_vlc(s->table_9_rl_vlc, FF_ARRAY_ELEMS(s->table_9_rl_vlc),
+                        table_9_vlc,       FF_ARRAY_ELEMS(table_9_vlc),
+                        &s->vlc_9, s->avctx);
     if (ret < 0)
         return ret;
-    for (i = 0; i < s->vlc_9.table_size; i++) {
-        int code = s->vlc_9.table[i].sym;
-        int len  = s->vlc_9.table[i].len;
-        int level, run;
-
-        if (len < 0) { // more bits needed
-            run   = 0;
-            level = code;
-        } else {
-            run   = new_cfhd_vlc_run[code];
-            level = new_cfhd_vlc_level[code];
-        }
-        s->table_9_rl_vlc[i].len   = len;
-        s->table_9_rl_vlc[i].level = level;
-        s->table_9_rl_vlc[i].run   = run;
-    }
-
     /* Table 18 */
-    for (i = 0, j = 0; i < NB_VLC_TABLE_18; i++, j++) {
-        new_cfhd_vlc_len[j]   = table_18_vlc[i].len;
-        new_cfhd_vlc_run[j]   = table_18_vlc[i].run;
-        new_cfhd_vlc_level[j] = table_18_vlc[i].level;
-
-        /* Don't include the zero level nor escape bits */
-        if (table_18_vlc[i].level && table_18_vlc[i].run) {
-            new_cfhd_vlc_len[j]++;
-            j++;
-            new_cfhd_vlc_len[j]   =  table_18_vlc[i].len + 1;
-            new_cfhd_vlc_run[j]   =  table_18_vlc[i].run;
-            new_cfhd_vlc_level[j] = -table_18_vlc[i].level;
-        }
-    }
-
-    ret = ff_init_vlc_from_lengths(&s->vlc_18, VLC_BITS, j, new_cfhd_vlc_len,
-                                   1, NULL, 0, 0, 0, 0, s->avctx);
+    ret = cfhd_init_vlc(s->table_18_rl_vlc, FF_ARRAY_ELEMS(s->table_18_rl_vlc),
+                        table_18_vlc,       FF_ARRAY_ELEMS(table_18_vlc),
+                        &s->vlc_18, s->avctx);
     if (ret < 0)
         return ret;
-    av_assert0(s->vlc_18.table_size == 4572);
-
-    for (i = 0; i < s->vlc_18.table_size; i++) {
-        int code = s->vlc_18.table[i].sym;
-        int len  = s->vlc_18.table[i].len;
-        int level, run;
-
-        if (len < 0) { // more bits needed
-            run   = 0;
-            level = code;
-        } else {
-            run   = new_cfhd_vlc_run[code];
-            level = new_cfhd_vlc_level[code];
-        }
-        s->table_18_rl_vlc[i].len   = len;
-        s->table_18_rl_vlc[i].level = level;
-        s->table_18_rl_vlc[i].run   = run;
-    }
-
-    return ret;
+    return 0;
 }
