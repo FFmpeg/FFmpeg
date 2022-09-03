@@ -152,7 +152,6 @@ static void dv_init_static(void)
 {
     VLCElem vlc_buf[FF_ARRAY_ELEMS(dv_rl_vlc)] = { 0 };
     VLC dv_vlc = { .table = vlc_buf, .table_allocated = FF_ARRAY_ELEMS(vlc_buf) };
-    uint16_t  new_dv_vlc_bits[NB_DV_VLC * 2];
     uint8_t    new_dv_vlc_len[NB_DV_VLC * 2];
     uint8_t    new_dv_vlc_run[NB_DV_VLC * 2];
     int16_t  new_dv_vlc_level[NB_DV_VLC * 2];
@@ -160,17 +159,14 @@ static void dv_init_static(void)
 
     /* it's faster to include sign bit in a generic VLC parsing scheme */
     for (i = 0, j = 0; i < NB_DV_VLC; i++, j++) {
-        new_dv_vlc_bits[j]  = ff_dv_vlc_bits[i];
         new_dv_vlc_len[j]   = ff_dv_vlc_len[i];
         new_dv_vlc_run[j]   = ff_dv_vlc_run[i];
         new_dv_vlc_level[j] = ff_dv_vlc_level[i];
 
         if (ff_dv_vlc_level[i]) {
-            new_dv_vlc_bits[j] <<= 1;
             new_dv_vlc_len[j]++;
 
             j++;
-            new_dv_vlc_bits[j]  = (ff_dv_vlc_bits[i] << 1) | 1;
             new_dv_vlc_len[j]   =  ff_dv_vlc_len[i] + 1;
             new_dv_vlc_run[j]   =  ff_dv_vlc_run[i];
             new_dv_vlc_level[j] = -ff_dv_vlc_level[i];
@@ -179,8 +175,9 @@ static void dv_init_static(void)
 
     /* NOTE: as a trick, we use the fact the no codes are unused
      * to accelerate the parsing of partial codes */
-    init_vlc(&dv_vlc, TEX_VLC_BITS, j, new_dv_vlc_len,
-             1, 1, new_dv_vlc_bits, 2, 2, INIT_VLC_USE_NEW_STATIC);
+    ff_init_vlc_from_lengths(&dv_vlc, TEX_VLC_BITS, j,
+                             new_dv_vlc_len, 1,
+                             NULL, 0, 0, 0, INIT_VLC_USE_NEW_STATIC, NULL);
     av_assert1(dv_vlc.table_size == 1664);
 
     for (int i = 0; i < dv_vlc.table_size; i++) {
