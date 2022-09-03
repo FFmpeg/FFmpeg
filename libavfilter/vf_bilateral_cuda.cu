@@ -33,11 +33,10 @@ extern "C"
  */
 __device__ static inline float norm_squared(float4 first_yuv, float4 second_yuv)
 {
-    float ans = 0;
-    ans += __powf(first_yuv.x - second_yuv.x, 2);
-    ans += __powf(first_yuv.y - second_yuv.y, 2);
-    ans += __powf(first_yuv.z - second_yuv.z, 2);
-    return ans;
+    float x = first_yuv.x - second_yuv.x;
+    float y = first_yuv.y - second_yuv.y;
+    float z = first_yuv.z - second_yuv.z;
+    return (x*x) + (y*y) + (z*z);
 }
 
 /**
@@ -52,7 +51,7 @@ __device__ static inline float calculate_w(int x, int y, int r, int c,
                                            float sigma_space, float sigma_color)
 {
     float first_term, second_term;
-    first_term = (__powf(x - r, 2) + __powf(y - c, 2)) / (2 * sigma_space * sigma_space);
+    first_term = (((x - r) * (x - r)) + ((y - c) * (y - c))) / (2 * sigma_space * sigma_space);
     second_term = norm_squared(pixel_value, neighbor_value) / (2 * sigma_color * sigma_color);
     return __expf(-first_term - second_term);
 }
