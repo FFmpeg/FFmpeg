@@ -318,27 +318,27 @@ static av_cold int get_rate(AVCodecContext *avctx)
 
 static av_cold void decode_init_static(void)
 {
-    INIT_VLC_STATIC(&sf_vlc, SCALEVLCBITS, HUFF_SCALE_SIZE,
-                    scale_huffbits, 1, 1,
-                    scale_huffcodes, 2, 2, 616);
-    INIT_VLC_STATIC(&sf_rl_vlc, VLCBITS, HUFF_SCALE_RL_SIZE,
-                    scale_rl_huffbits, 1, 1,
-                    scale_rl_huffcodes, 4, 4, 1406);
-    INIT_VLC_STATIC(&coef_vlc[0], VLCBITS, HUFF_COEF0_SIZE,
-                    coef0_huffbits, 1, 1,
-                    coef0_huffcodes, 4, 4, 2108);
-    INIT_VLC_STATIC(&coef_vlc[1], VLCBITS, HUFF_COEF1_SIZE,
-                    coef1_huffbits, 1, 1,
-                    coef1_huffcodes, 4, 4, 3912);
-    INIT_VLC_STATIC(&vec4_vlc, VLCBITS, HUFF_VEC4_SIZE,
-                    vec4_huffbits, 1, 1,
-                    vec4_huffcodes, 2, 2, 604);
-    INIT_VLC_STATIC(&vec2_vlc, VLCBITS, HUFF_VEC2_SIZE,
-                    vec2_huffbits, 1, 1,
-                    vec2_huffcodes, 2, 2, 562);
-    INIT_VLC_STATIC(&vec1_vlc, VLCBITS, HUFF_VEC1_SIZE,
-                    vec1_huffbits, 1, 1,
-                    vec1_huffcodes, 2, 2, 562);
+    INIT_VLC_STATIC_FROM_LENGTHS(&sf_vlc, SCALEVLCBITS, HUFF_SCALE_SIZE,
+                                 &scale_table[0][1], 2,
+                                 &scale_table[0][0], 2, 1, 0, 0, 616);
+    INIT_VLC_STATIC_FROM_LENGTHS(&sf_rl_vlc, VLCBITS, HUFF_SCALE_RL_SIZE,
+                                 &scale_rl_table[0][1], 2,
+                                 &scale_rl_table[0][0], 2, 1, 0, 0, 1406);
+    INIT_VLC_STATIC_FROM_LENGTHS(&coef_vlc[0], VLCBITS, HUFF_COEF0_SIZE,
+                                 coef0_lens, 1,
+                                 coef0_syms, 2, 2, 0, 0, 2108);
+    INIT_VLC_STATIC_FROM_LENGTHS(&coef_vlc[1], VLCBITS, HUFF_COEF1_SIZE,
+                                 &coef1_table[0][1], 2,
+                                 &coef1_table[0][0], 2, 1, 0, 0, 3912);
+    INIT_VLC_STATIC_FROM_LENGTHS(&vec4_vlc, VLCBITS, HUFF_VEC4_SIZE,
+                                 &vec4_table[0][1], 2,
+                                 &vec4_table[0][0], 2, 1, 0, 0, 604);
+    INIT_VLC_STATIC_FROM_LENGTHS(&vec2_vlc, VLCBITS, HUFF_VEC2_SIZE,
+                                 &vec2_table[0][1], 2,
+                                 &vec2_table[0][0], 2, 1, 0, 0, 562);
+    INIT_VLC_STATIC_FROM_LENGTHS(&vec1_vlc, VLCBITS, HUFF_VEC1_SIZE,
+                                 &vec1_table[0][1], 2,
+                                 &vec1_table[0][0], 2, 1, 0, 0, 562);
 
     /** calculate sine values for the decorrelation matrix */
     for (int i = 0; i < 33; i++)
