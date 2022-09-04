@@ -148,7 +148,7 @@ static const uint16_t dv_iweight_720_c[64] = {
 /* XXX: also include quantization */
 static RL_VLC_ELEM dv_rl_vlc[1664];
 
-static void dv_init_static(void)
+static av_cold void dv_init_static(void)
 {
     VLCElem vlc_buf[FF_ARRAY_ELEMS(dv_rl_vlc)] = { 0 };
     VLC dv_vlc = { .table = vlc_buf, .table_allocated = FF_ARRAY_ELEMS(vlc_buf) };
