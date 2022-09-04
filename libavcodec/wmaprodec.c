@@ -320,7 +320,7 @@ static av_cold void decode_init_static(void)
 {
     INIT_VLC_STATIC_FROM_LENGTHS(&sf_vlc, SCALEVLCBITS, HUFF_SCALE_SIZE,
                                  &scale_table[0][1], 2,
-                                 &scale_table[0][0], 2, 1, 0, 0, 616);
+                                 &scale_table[0][0], 2, 1, -60, 0, 616);
     INIT_VLC_STATIC_FROM_LENGTHS(&sf_rl_vlc, VLCBITS, HUFF_SCALE_RL_SIZE,
                                  &scale_rl_table[0][1], 2,
                                  &scale_rl_table[0][0], 2, 1, 0, 0, 1406);
@@ -1056,7 +1056,7 @@ static int decode_scale_factors(WMAProDecodeCtx* s)
                 s->channel[c].scale_factor_step = get_bits(&s->gb, 2) + 1;
                 val = 45 / s->channel[c].scale_factor_step;
                 for (sf = s->channel[c].scale_factors; sf < sf_end; sf++) {
-                    val += get_vlc2(&s->gb, sf_vlc.table, SCALEVLCBITS, SCALEMAXDEPTH) - 60;
+                    val += get_vlc2(&s->gb, sf_vlc.table, SCALEVLCBITS, SCALEMAXDEPTH);
                     *sf = val;
                 }
             } else {
