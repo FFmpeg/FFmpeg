@@ -1291,12 +1291,10 @@ static void do_video_out(OutputFile *of,
         in_picture->quality = enc->global_quality;
         in_picture->pict_type = 0;
 
-        if (ost->forced_kf_ref_pts == AV_NOPTS_VALUE &&
-            in_picture->pts != AV_NOPTS_VALUE)
+        if (ost->forced_kf_ref_pts == AV_NOPTS_VALUE)
             ost->forced_kf_ref_pts = in_picture->pts;
 
-        pts_time = in_picture->pts != AV_NOPTS_VALUE ?
-            (in_picture->pts - ost->forced_kf_ref_pts) * av_q2d(enc->time_base) : NAN;
+        pts_time = (in_picture->pts - ost->forced_kf_ref_pts) * av_q2d(enc->time_base);
         if (ost->forced_kf_index < ost->forced_kf_count &&
             in_picture->pts >= ost->forced_kf_pts[ost->forced_kf_index]) {
             ost->forced_kf_index++;
