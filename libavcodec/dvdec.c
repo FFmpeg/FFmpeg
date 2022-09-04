@@ -152,31 +152,30 @@ static av_cold void dv_init_static(void)
 {
     VLCElem vlc_buf[FF_ARRAY_ELEMS(dv_rl_vlc)] = { 0 };
     VLC dv_vlc = { .table = vlc_buf, .table_allocated = FF_ARRAY_ELEMS(vlc_buf) };
-    uint8_t    new_dv_vlc_len[NB_DV_VLC * 2];
-    uint8_t    new_dv_vlc_run[NB_DV_VLC * 2];
-    int16_t  new_dv_vlc_level[NB_DV_VLC * 2];
+    const unsigned offset = FF_ARRAY_ELEMS(dv_rl_vlc) - (2 * NB_DV_VLC - NB_DV_ZERO_LEVEL_ENTRIES);
+    RL_VLC_ELEM *tmp = dv_rl_vlc + offset;
     int i, j;
 
     /* it's faster to include sign bit in a generic VLC parsing scheme */
     for (i = 0, j = 0; i < NB_DV_VLC; i++, j++) {
-        new_dv_vlc_len[j]   = ff_dv_vlc_len[i];
-        new_dv_vlc_run[j]   = ff_dv_vlc_run[i];
-        new_dv_vlc_level[j] = ff_dv_vlc_level[i];
+        tmp[j].len   = ff_dv_vlc_len[i];
+        tmp[j].run   = ff_dv_vlc_run[i];
+        tmp[j].level = ff_dv_vlc_level[i];
 
         if (ff_dv_vlc_level[i]) {
-            new_dv_vlc_len[j]++;
+            tmp[j].len++;
 
             j++;
-            new_dv_vlc_len[j]   =  ff_dv_vlc_len[i] + 1;
-            new_dv_vlc_run[j]   =  ff_dv_vlc_run[i];
-            new_dv_vlc_level[j] = -ff_dv_vlc_level[i];
+            tmp[j].len   =  ff_dv_vlc_len[i] + 1;
+            tmp[j].run   =  ff_dv_vlc_run[i];
+            tmp[j].level = -ff_dv_vlc_level[i];
         }
     }
 
     /* NOTE: as a trick, we use the fact the no codes are unused
      * to accelerate the parsing of partial codes */
     ff_init_vlc_from_lengths(&dv_vlc, TEX_VLC_BITS, j,
-                             new_dv_vlc_len, 1,
+                             &tmp[0].len, sizeof(tmp[0]),
                              NULL, 0, 0, 0, INIT_VLC_USE_NEW_STATIC, NULL);
     av_assert1(dv_vlc.table_size == 1664);
 
@@ -189,8 +188,9 @@ static av_cold void dv_init_static(void)
             run   = 0;
             level = code;
         } else {
-            run   = new_dv_vlc_run[code] + 1;
-            level = new_dv_vlc_level[code];
+            av_assert1(i <= code + offset);
+            run   = tmp[code].run + 1;
+            level = tmp[code].level;
         }
         dv_rl_vlc[i].len   = len;
         dv_rl_vlc[i].level = level;

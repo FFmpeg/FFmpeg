@@ -27,6 +27,8 @@ extern const uint8_t ff_dv_quant_shifts[22][4];
 extern const uint8_t ff_dv_quant_offset[4];
 
 #define NB_DV_VLC 409
+/* The number of entries with value zero in ff_dv_vlc_level. */
+#define NB_DV_ZERO_LEVEL_ENTRIES 72
 
 extern const uint8_t ff_dv_vlc_len[NB_DV_VLC];
 extern const uint8_t ff_dv_vlc_run[NB_DV_VLC];
