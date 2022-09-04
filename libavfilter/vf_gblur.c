@@ -207,6 +207,12 @@ static void set_params(float sigma, int steps, float *postscale, float *boundary
     *postscale = pow(dnu / lambda, steps);
     *boundaryscale = 1.0 / (1.0 - dnu);
     *nu = (float)dnu;
+    if (!isnormal(*postscale))
+        *postscale = 1.f;
+    if (!isnormal(*boundaryscale))
+        *boundaryscale = 1.f;
+    if (!isnormal(*nu))
+        *nu = 0.f;
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
