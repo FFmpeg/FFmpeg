@@ -331,11 +331,11 @@ static av_cold void decode_init_static(void)
                                  &coef1_table[0][1], 2,
                                  &coef1_table[0][0], 2, 1, 0, 0, 3912);
     INIT_VLC_STATIC_FROM_LENGTHS(&vec4_vlc, VLCBITS, HUFF_VEC4_SIZE,
-                                 &vec4_table[0][1], 2,
-                                 &vec4_table[0][0], 2, 1, 0, 0, 604);
+                                 vec4_lens, 1,
+                                 vec4_syms, 2, 2, -1, 0, 604);
     INIT_VLC_STATIC_FROM_LENGTHS(&vec2_vlc, VLCBITS, HUFF_VEC2_SIZE,
                                  &vec2_table[0][1], 2,
-                                 &vec2_table[0][0], 2, 1, 0, 0, 562);
+                                 &vec2_table[0][0], 2, 1, -1, 0, 562);
     INIT_VLC_STATIC_FROM_LENGTHS(&vec1_vlc, VLCBITS, HUFF_VEC1_SIZE,
                                  &vec1_table[0][1], 2,
                                  &vec1_table[0][0], 2, 1, 0, 0, 562);
@@ -957,10 +957,10 @@ static int decode_coeffs(WMAProDecodeCtx *s, int c)
 
         idx = get_vlc2(&s->gb, vec4_vlc.table, VLCBITS, VEC4MAXDEPTH);
 
-        if (idx == HUFF_VEC4_SIZE - 1) {
+        if ((int)idx < 0) {
             for (i = 0; i < 4; i += 2) {
                 idx = get_vlc2(&s->gb, vec2_vlc.table, VLCBITS, VEC2MAXDEPTH);
-                if (idx == HUFF_VEC2_SIZE - 1) {
+                if ((int)idx < 0) {
                     uint32_t v0, v1;
                     v0 = get_vlc2(&s->gb, vec1_vlc.table, VLCBITS, VEC1MAXDEPTH);
                     if (v0 == HUFF_VEC1_SIZE - 1)
@@ -971,15 +971,15 @@ static int decode_coeffs(WMAProDecodeCtx *s, int c)
                     vals[i  ] = av_float2int(v0);
                     vals[i+1] = av_float2int(v1);
                 } else {
-                    vals[i]   = fval_tab[symbol_to_vec2[idx] >> 4 ];
-                    vals[i+1] = fval_tab[symbol_to_vec2[idx] & 0xF];
+                    vals[i]   = fval_tab[idx >> 4 ];
+                    vals[i+1] = fval_tab[idx & 0xF];
                 }
             }
         } else {
-            vals[0] = fval_tab[ symbol_to_vec4[idx] >> 12      ];
-            vals[1] = fval_tab[(symbol_to_vec4[idx] >> 8) & 0xF];
-            vals[2] = fval_tab[(symbol_to_vec4[idx] >> 4) & 0xF];
-            vals[3] = fval_tab[ symbol_to_vec4[idx]       & 0xF];
+            vals[0] = fval_tab[ idx >> 12      ];
+            vals[1] = fval_tab[(idx >> 8) & 0xF];
+            vals[2] = fval_tab[(idx >> 4) & 0xF];
+            vals[3] = fval_tab[ idx       & 0xF];
         }
 
         /** decode sign */
