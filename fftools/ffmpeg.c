@@ -3129,6 +3129,34 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
             enc_ctx->width     = input_streams[ost->source_index]->par->width;
             enc_ctx->height    = input_streams[ost->source_index]->par->height;
         }
+        if (dec_ctx && dec_ctx->subtitle_header) {
+            /* ASS code assumes this buffer is null terminated so add extra byte. */
+            ost->enc_ctx->subtitle_header = av_mallocz(dec_ctx->subtitle_header_size + 1);
+            if (!ost->enc_ctx->subtitle_header)
+                return AVERROR(ENOMEM);
+            memcpy(ost->enc_ctx->subtitle_header, dec_ctx->subtitle_header,
+                   dec_ctx->subtitle_header_size);
+            ost->enc_ctx->subtitle_header_size = dec_ctx->subtitle_header_size;
+        }
+        if (ist && ist->dec->type == AVMEDIA_TYPE_SUBTITLE &&
+            enc_ctx->codec_type == AVMEDIA_TYPE_SUBTITLE) {
+            int input_props = 0, output_props = 0;
+            AVCodecDescriptor const *input_descriptor =
+                avcodec_descriptor_get(ist->dec->id);
+            AVCodecDescriptor const *output_descriptor =
+                avcodec_descriptor_get(ost->enc_ctx->codec_id);
+            if (input_descriptor)
+                input_props = input_descriptor->props & (AV_CODEC_PROP_TEXT_SUB | AV_CODEC_PROP_BITMAP_SUB);
+            if (output_descriptor)
+                output_props = output_descriptor->props & (AV_CODEC_PROP_TEXT_SUB | AV_CODEC_PROP_BITMAP_SUB);
+            if (input_props && output_props && input_props != output_props) {
+                av_log(NULL, AV_LOG_ERROR,
+                       "Subtitle encoding currently only possible from text to text "
+                       "or bitmap to bitmap");
+                return AVERROR_INVALIDDATA;
+            }
+        }
+
         break;
     case AVMEDIA_TYPE_DATA:
         break;
@@ -3156,23 +3184,13 @@ static int init_output_stream(OutputStream *ost, AVFrame *frame,
 
     if (ost->enc_ctx) {
         const AVCodec *codec = ost->enc_ctx->codec;
-        AVCodecContext *dec = NULL;
         InputStream *ist;
 
         ret = init_output_stream_encode(ost, frame);
         if (ret < 0)
             return ret;
 
-        if ((ist = get_input_stream(ost)))
-            dec = ist->dec_ctx;
-        if (dec && dec->subtitle_header) {
-            /* ASS code assumes this buffer is null terminated so add extra byte. */
-            ost->enc_ctx->subtitle_header = av_mallocz(dec->subtitle_header_size + 1);
-            if (!ost->enc_ctx->subtitle_header)
-                return AVERROR(ENOMEM);
-            memcpy(ost->enc_ctx->subtitle_header, dec->subtitle_header, dec->subtitle_header_size);
-            ost->enc_ctx->subtitle_header_size = dec->subtitle_header_size;
-        }
+        ist = get_input_stream(ost);
         if (!av_dict_get(ost->encoder_opts, "threads", NULL, 0))
             av_dict_set(&ost->encoder_opts, "threads", "auto", 0);
 
@@ -3182,24 +3200,6 @@ static int init_output_stream(OutputStream *ost, AVFrame *frame,
                      "encoder on output stream #%d:%d : %s",
                      ost->file_index, ost->index, av_err2str(ret));
             return ret;
-        }
-
-        if (ist && ist->dec->type == AVMEDIA_TYPE_SUBTITLE && codec->type == AVMEDIA_TYPE_SUBTITLE) {
-            int input_props = 0, output_props = 0;
-            AVCodecDescriptor const *input_descriptor =
-                avcodec_descriptor_get(dec->codec_id);
-            AVCodecDescriptor const *output_descriptor =
-                avcodec_descriptor_get(ost->enc_ctx->codec_id);
-            if (input_descriptor)
-                input_props = input_descriptor->props & (AV_CODEC_PROP_TEXT_SUB | AV_CODEC_PROP_BITMAP_SUB);
-            if (output_descriptor)
-                output_props = output_descriptor->props & (AV_CODEC_PROP_TEXT_SUB | AV_CODEC_PROP_BITMAP_SUB);
-            if (input_props && output_props && input_props != output_props) {
-                snprintf(error, error_len,
-                         "Subtitle encoding currently only possible from text to text "
-                         "or bitmap to bitmap");
-                return AVERROR_INVALIDDATA;
-            }
         }
 
         if ((ret = avcodec_open2(ost->enc_ctx, codec, &ost->encoder_opts)) < 0) {
