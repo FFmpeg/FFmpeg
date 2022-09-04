@@ -1137,51 +1137,50 @@ static enum AVPictureType forced_kf_apply(OutputStream *ost,
                                           const AVFrame *in_picture, int dup_idx)
 {
     AVCodecContext *enc = ost->enc_ctx;
-        double pts_time;
+    double pts_time;
 
-        if (ost->forced_kf_ref_pts == AV_NOPTS_VALUE)
-            ost->forced_kf_ref_pts = in_picture->pts;
+    if (ost->forced_kf_ref_pts == AV_NOPTS_VALUE)
+        ost->forced_kf_ref_pts = in_picture->pts;
 
-        pts_time = (in_picture->pts - ost->forced_kf_ref_pts) * av_q2d(enc->time_base);
-        if (ost->forced_kf_index < ost->forced_kf_count &&
-            in_picture->pts >= ost->forced_kf_pts[ost->forced_kf_index]) {
-            ost->forced_kf_index++;
+    pts_time = (in_picture->pts - ost->forced_kf_ref_pts) * av_q2d(enc->time_base);
+    if (ost->forced_kf_index < ost->forced_kf_count &&
+        in_picture->pts >= ost->forced_kf_pts[ost->forced_kf_index]) {
+        ost->forced_kf_index++;
+        goto force_keyframe;
+    } else if (ost->forced_keyframes_pexpr) {
+        double res;
+        ost->forced_keyframes_expr_const_values[FKF_T] = pts_time;
+        res = av_expr_eval(ost->forced_keyframes_pexpr,
+                           ost->forced_keyframes_expr_const_values, NULL);
+        ff_dlog(NULL, "force_key_frame: n:%f n_forced:%f prev_forced_n:%f t:%f prev_forced_t:%f -> res:%f\n",
+                ost->forced_keyframes_expr_const_values[FKF_N],
+                ost->forced_keyframes_expr_const_values[FKF_N_FORCED],
+                ost->forced_keyframes_expr_const_values[FKF_PREV_FORCED_N],
+                ost->forced_keyframes_expr_const_values[FKF_T],
+                ost->forced_keyframes_expr_const_values[FKF_PREV_FORCED_T],
+                res);
+
+        ost->forced_keyframes_expr_const_values[FKF_N] += 1;
+
+        if (res) {
+            ost->forced_keyframes_expr_const_values[FKF_PREV_FORCED_N] =
+                ost->forced_keyframes_expr_const_values[FKF_N] - 1;
+            ost->forced_keyframes_expr_const_values[FKF_PREV_FORCED_T] =
+                ost->forced_keyframes_expr_const_values[FKF_T];
+            ost->forced_keyframes_expr_const_values[FKF_N_FORCED] += 1;
             goto force_keyframe;
-        } else if (ost->forced_keyframes_pexpr) {
-            double res;
-            ost->forced_keyframes_expr_const_values[FKF_T] = pts_time;
-            res = av_expr_eval(ost->forced_keyframes_pexpr,
-                               ost->forced_keyframes_expr_const_values, NULL);
-            ff_dlog(NULL, "force_key_frame: n:%f n_forced:%f prev_forced_n:%f t:%f prev_forced_t:%f -> res:%f\n",
-                    ost->forced_keyframes_expr_const_values[FKF_N],
-                    ost->forced_keyframes_expr_const_values[FKF_N_FORCED],
-                    ost->forced_keyframes_expr_const_values[FKF_PREV_FORCED_N],
-                    ost->forced_keyframes_expr_const_values[FKF_T],
-                    ost->forced_keyframes_expr_const_values[FKF_PREV_FORCED_T],
-                    res);
-
-            ost->forced_keyframes_expr_const_values[FKF_N] += 1;
-
-            if (res) {
-                ost->forced_keyframes_expr_const_values[FKF_PREV_FORCED_N] =
-                    ost->forced_keyframes_expr_const_values[FKF_N] - 1;
-                ost->forced_keyframes_expr_const_values[FKF_PREV_FORCED_T] =
-                    ost->forced_keyframes_expr_const_values[FKF_T];
-                ost->forced_keyframes_expr_const_values[FKF_N_FORCED] += 1;
-                goto force_keyframe;
-            }
-        } else if (   ost->forced_keyframes
-                   && !strncmp(ost->forced_keyframes, "source", 6)
-                   && in_picture->key_frame==1
-                   && !dup_idx) {
-            goto force_keyframe;
-        } else if (   ost->forced_keyframes
-                   && !strncmp(ost->forced_keyframes, "source_no_drop", 14)
-                   && !dup_idx) {
-            ost->dropped_keyframe = 0;
-            if ((in_picture->key_frame == 1) || ost->dropped_keyframe)
-                goto force_keyframe;
         }
+    } else if (ost->forced_keyframes                        &&
+               !strncmp(ost->forced_keyframes, "source", 6) &&
+               in_picture->key_frame == 1 && !dup_idx) {
+            goto force_keyframe;
+    } else if (ost->forced_keyframes                                 &&
+               !strncmp(ost->forced_keyframes, "source_no_drop", 14) &&
+               !dup_idx) {
+        ost->dropped_keyframe = 0;
+        if ((in_picture->key_frame == 1) || ost->dropped_keyframe)
+            goto force_keyframe;
+    }
 
     return AV_PICTURE_TYPE_NONE;
 
