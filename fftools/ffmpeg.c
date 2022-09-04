@@ -1934,8 +1934,6 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
 
     opkt->duration = av_rescale_q(pkt->duration, ist->st->time_base, ost->mux_timebase);
 
-    ost->sync_opts += opkt->duration;
-
     output_packet(of, opkt, ost, 0);
 
     ost->streamcopy_started = 1;
