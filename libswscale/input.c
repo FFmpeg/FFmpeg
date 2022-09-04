@@ -749,67 +749,60 @@ static void nv21ToUV_c(uint8_t *dstU, uint8_t *dstV,
     nvXXtoUV_c(dstV, dstU, src1, width);
 }
 
-static void p010LEToY_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused1,
-                        const uint8_t *unused2, int width, uint32_t *unused, void *opq)
-{
-    int i;
-    for (i = 0; i < width; i++) {
-        AV_WN16(dst + i * 2, AV_RL16(src + i * 2) >> 6);
+#define p01x_uv_wrapper(bits, shift) \
+    static void p0 ## bits ## LEToUV_c(uint8_t *dstU, uint8_t *dstV,     \
+                                       const uint8_t *unused0,           \
+                                       const uint8_t *src1,              \
+                                       const uint8_t *src2, int width,   \
+                                       uint32_t *unused, void *opq)      \
+    {                                                                    \
+        int i;                                                           \
+        for (i = 0; i < width; i++) {                                    \
+            AV_WN16(dstU + i * 2, AV_RL16(src1 + i * 4 + 0) >> shift);   \
+            AV_WN16(dstV + i * 2, AV_RL16(src1 + i * 4 + 2) >> shift);   \
+        }                                                                \
+    }                                                                    \
+                                                                         \
+    static void p0 ## bits ## BEToUV_c(uint8_t *dstU, uint8_t *dstV,     \
+                                       const uint8_t *unused0,           \
+                                       const uint8_t *src1,              \
+                                       const uint8_t *src2, int width,   \
+                                       uint32_t *unused, void *opq)      \
+    {                                                                    \
+        int i;                                                           \
+        for (i = 0; i < width; i++) {                                    \
+            AV_WN16(dstU + i * 2, AV_RB16(src1 + i * 4 + 0) >> shift);   \
+            AV_WN16(dstV + i * 2, AV_RB16(src1 + i * 4 + 2) >> shift);   \
+        }                                                                \
     }
-}
 
-static void p010BEToY_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused1,
-                        const uint8_t *unused2, int width, uint32_t *unused, void *opq)
-{
-    int i;
-    for (i = 0; i < width; i++) {
-        AV_WN16(dst + i * 2, AV_RB16(src + i * 2) >> 6);
-    }
-}
+#define p01x_wrapper(bits, shift) \
+    static void p0 ## bits ## LEToY_c(uint8_t *dst, const uint8_t *src,  \
+                                      const uint8_t *unused1,            \
+                                      const uint8_t *unused2, int width, \
+                                      uint32_t *unused, void *opq)       \
+    {                                                                    \
+        int i;                                                           \
+        for (i = 0; i < width; i++) {                                    \
+            AV_WN16(dst + i * 2, AV_RL16(src + i * 2) >> shift);         \
+        }                                                                \
+    }                                                                    \
+                                                                         \
+    static void p0 ## bits ## BEToY_c(uint8_t *dst, const uint8_t *src,  \
+                                      const uint8_t *unused1,            \
+                                      const uint8_t *unused2, int width, \
+                                      uint32_t *unused, void *opq)       \
+    {                                                                    \
+        int i;                                                           \
+        for (i = 0; i < width; i++) {                                    \
+            AV_WN16(dst + i * 2, AV_RB16(src + i * 2) >> shift);         \
+        }                                                                \
+    }                                                                    \
+    p01x_uv_wrapper(bits, shift)
 
-static void p010LEToUV_c(uint8_t *dstU, uint8_t *dstV,
-                       const uint8_t *unused0, const uint8_t *src1, const uint8_t *src2,
-                       int width, uint32_t *unused, void *opq)
-{
-    int i;
-    for (i = 0; i < width; i++) {
-        AV_WN16(dstU + i * 2, AV_RL16(src1 + i * 4 + 0) >> 6);
-        AV_WN16(dstV + i * 2, AV_RL16(src1 + i * 4 + 2) >> 6);
-    }
-}
-
-static void p010BEToUV_c(uint8_t *dstU, uint8_t *dstV,
-                         const uint8_t *unused0, const uint8_t *src1, const uint8_t *src2,
-                         int width, uint32_t *unused, void *opq)
-{
-    int i;
-    for (i = 0; i < width; i++) {
-        AV_WN16(dstU + i * 2, AV_RB16(src1 + i * 4 + 0) >> 6);
-        AV_WN16(dstV + i * 2, AV_RB16(src1 + i * 4 + 2) >> 6);
-    }
-}
-
-static void p016LEToUV_c(uint8_t *dstU, uint8_t *dstV,
-                         const uint8_t *unused0, const uint8_t *src1, const uint8_t *src2,
-                         int width, uint32_t *unused, void *opq)
-{
-    int i;
-    for (i = 0; i < width; i++) {
-        AV_WN16(dstU + i * 2, AV_RL16(src1 + i * 4 + 0));
-        AV_WN16(dstV + i * 2, AV_RL16(src1 + i * 4 + 2));
-    }
-}
-
-static void p016BEToUV_c(uint8_t *dstU, uint8_t *dstV,
-                         const uint8_t *unused0, const uint8_t *src1, const uint8_t *src2,
-                         int width, uint32_t *unused, void *opq)
-{
-    int i;
-    for (i = 0; i < width; i++) {
-        AV_WN16(dstU + i * 2, AV_RB16(src1 + i * 4 + 0));
-        AV_WN16(dstV + i * 2, AV_RB16(src1 + i * 4 + 2));
-    }
-}
+p01x_wrapper(10, 6);
+p01x_wrapper(12, 4);
+p01x_uv_wrapper(16, 0);
 
 #define input_pixel(pos) (isBE(origin) ? AV_RB16(pos) : AV_RL16(pos))
 
@@ -1413,6 +1406,12 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     case AV_PIX_FMT_P410BE:
         c->chrToYV12 = p010BEToUV_c;
         break;
+    case AV_PIX_FMT_P012LE:
+        c->chrToYV12 = p012LEToUV_c;
+        break;
+    case AV_PIX_FMT_P012BE:
+        c->chrToYV12 = p012BEToUV_c;
+        break;
     case AV_PIX_FMT_P016LE:
     case AV_PIX_FMT_P216LE:
     case AV_PIX_FMT_P416LE:
@@ -1892,6 +1891,12 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     case AV_PIX_FMT_P210BE:
     case AV_PIX_FMT_P410BE:
         c->lumToYV12 = p010BEToY_c;
+        break;
+    case AV_PIX_FMT_P012LE:
+        c->lumToYV12 = p012LEToY_c;
+        break;
+    case AV_PIX_FMT_P012BE:
+        c->lumToYV12 = p012BEToY_c;
         break;
     case AV_PIX_FMT_GRAYF32LE:
         c->lumToYV12 = grayf32leToY16_c;
