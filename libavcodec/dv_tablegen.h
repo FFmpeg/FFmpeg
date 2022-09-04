@@ -50,8 +50,11 @@ static struct dv_vlc_pair dv_vlc_map[DV_VLC_MAP_RUN_SIZE][DV_VLC_MAP_LEV_SIZE];
 
 static av_cold void dv_vlc_map_tableinit(void)
 {
+    uint32_t code = 0;
     int i, j;
     for (int i = 0; i < NB_DV_VLC; i++) {
+        uint32_t cur_code = code >> (32 - ff_dv_vlc_len[i]);
+        code += 1U << (32 - ff_dv_vlc_len[i]);
         if (ff_dv_vlc_run[i] >= DV_VLC_MAP_RUN_SIZE)
             continue;
 #if CONFIG_SMALL
@@ -63,7 +66,7 @@ static av_cold void dv_vlc_map_tableinit(void)
             continue;
 
         dv_vlc_map[ff_dv_vlc_run[i]][ff_dv_vlc_level[i]].vlc  =
-            ff_dv_vlc_bits[i] << (!!ff_dv_vlc_level[i]);
+            cur_code << (!!ff_dv_vlc_level[i]);
         dv_vlc_map[ff_dv_vlc_run[i]][ff_dv_vlc_level[i]].size =
             ff_dv_vlc_len[i]   + (!!ff_dv_vlc_level[i]);
     }
