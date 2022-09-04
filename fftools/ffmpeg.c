@@ -1044,12 +1044,12 @@ static void do_audio_out(OutputFile *of, OutputStream *ost,
 
     adjust_frame_pts_to_encoder_tb(of, ost, frame);
 
-    if (!check_recording_time(ost, ost->sync_opts, ost->enc_ctx->time_base))
+    if (!check_recording_time(ost, ost->next_pts, ost->enc_ctx->time_base))
         return;
 
     if (frame->pts == AV_NOPTS_VALUE)
-        frame->pts = ost->sync_opts;
-    ost->sync_opts = frame->pts + frame->nb_samples;
+        frame->pts = ost->next_pts;
+    ost->next_pts = frame->pts + frame->nb_samples;
 
     ret = submit_encode_frame(of, ost, frame);
     if (ret < 0 && ret != AVERROR_EOF)
@@ -1230,7 +1230,9 @@ static void do_video_out(OutputFile *of,
                                           ost->last_nb0_frames[1],
                                           ost->last_nb0_frames[2]);
     } else {
-        delta0 = sync_ipts - ost->sync_opts; // delta0 is the "drift" between the input frame (next_picture) and where it would fall in the output.
+        /* delta0 is the "drift" between the input frame (next_picture) and
+         * where it would fall in the output. */
+        delta0 = sync_ipts - ost->next_pts;
         delta  = delta0 + duration;
 
         /* by default, we output a single frame */
@@ -1245,7 +1247,7 @@ static void do_video_out(OutputFile *of,
                 av_log(NULL, AV_LOG_VERBOSE, "Past duration %f too large\n", -delta0);
             } else
                 av_log(NULL, AV_LOG_DEBUG, "Clipping frame in rate conversion by %f\n", -delta0);
-            sync_ipts = ost->sync_opts;
+            sync_ipts = ost->next_pts;
             duration += delta0;
             delta0 = 0;
         }
@@ -1256,7 +1258,7 @@ static void do_video_out(OutputFile *of,
                 av_log(NULL, AV_LOG_DEBUG, "Not duplicating %d initial frames\n", (int)lrintf(delta0));
                 delta = duration;
                 delta0 = 0;
-                ost->sync_opts = llrint(sync_ipts);
+                ost->next_pts = llrint(sync_ipts);
             }
         case VSYNC_CFR:
             // FIXME set to 0.5 after we fix some dts/pts bugs like in avidec.c
@@ -1275,13 +1277,13 @@ static void do_video_out(OutputFile *of,
             if (delta <= -0.6)
                 nb_frames = 0;
             else if (delta > 0.6)
-                ost->sync_opts = llrint(sync_ipts);
+                ost->next_pts = llrint(sync_ipts);
             next_picture->duration = duration;
             break;
         case VSYNC_DROP:
         case VSYNC_PASSTHROUGH:
             next_picture->duration = duration;
-            ost->sync_opts = llrint(sync_ipts);
+            ost->next_pts = llrint(sync_ipts);
             break;
         default:
             av_assert0(0);
@@ -1335,7 +1337,7 @@ static void do_video_out(OutputFile *of,
         if (!in_picture)
             return;
 
-        in_picture->pts = ost->sync_opts;
+        in_picture->pts = ost->next_pts;
 
         if (!check_recording_time(ost, in_picture->pts, ost->enc_ctx->time_base))
             return;
@@ -1347,7 +1349,7 @@ static void do_video_out(OutputFile *of,
         if (ret < 0 && ret != AVERROR_EOF)
             exit_program(1);
 
-        ost->sync_opts++;
+        ost->next_pts++;
         ost->vsync_frame_number++;
     }
 
