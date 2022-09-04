@@ -758,13 +758,12 @@ fail:
 
 }
 
-static int check_recording_time(OutputStream *ost)
+static int check_recording_time(OutputStream *ost, int64_t ts, AVRational tb)
 {
     OutputFile *of = output_files[ost->file_index];
 
     if (of->recording_time != INT64_MAX &&
-        av_compare_ts(ost->sync_opts, ost->enc_ctx->time_base, of->recording_time,
-                      AV_TIME_BASE_Q) >= 0) {
+        av_compare_ts(ts, tb, of->recording_time, AV_TIME_BASE_Q) >= 0) {
         close_output_stream(ost);
         return 0;
     }
@@ -1045,7 +1044,7 @@ static void do_audio_out(OutputFile *of, OutputStream *ost,
 
     adjust_frame_pts_to_encoder_tb(of, ost, frame);
 
-    if (!check_recording_time(ost))
+    if (!check_recording_time(ost, ost->sync_opts, ost->enc_ctx->time_base))
         return;
 
     if (frame->pts == AV_NOPTS_VALUE)
@@ -1091,8 +1090,7 @@ static void do_subtitle_out(OutputFile *of,
     for (i = 0; i < nb; i++) {
         unsigned save_num_rects = sub->num_rects;
 
-        ost->sync_opts = av_rescale_q(pts, AV_TIME_BASE_Q, enc->time_base);
-        if (!check_recording_time(ost))
+        if (!check_recording_time(ost, pts, AV_TIME_BASE_Q))
             return;
 
         ret = av_new_packet(pkt, subtitle_out_max_size);
@@ -1339,7 +1337,7 @@ static void do_video_out(OutputFile *of,
 
         in_picture->pts = ost->sync_opts;
 
-        if (!check_recording_time(ost))
+        if (!check_recording_time(ost, in_picture->pts, ost->enc_ctx->time_base))
             return;
 
         in_picture->quality = enc->global_quality;
