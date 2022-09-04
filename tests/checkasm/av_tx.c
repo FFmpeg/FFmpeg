@@ -43,35 +43,36 @@ static const int check_lens[] = {
     2, 4, 8, 16, 32, 64, 1024, 16384,
 };
 
-static AVTXContext *tx_refs[6 /*AVTXType*/][FF_ARRAY_ELEMS(check_lens)];
+static AVTXContext *tx_refs[AV_TX_NB][2 /* Direction */][FF_ARRAY_ELEMS(check_lens)] = { 0 };
 static int init = 0;
 
 static void free_tx_refs(void)
 {
     for (int i = 0; i < FF_ARRAY_ELEMS(tx_refs); i++)
         for (int j = 0; j < FF_ARRAY_ELEMS(*tx_refs); j++)
-            av_tx_uninit(&tx_refs[i][j]);
+            for (int k = 0; k < FF_ARRAY_ELEMS(**tx_refs); k++)
+                av_tx_uninit(&tx_refs[i][j][k]);
 }
 
-#define CHECK_TEMPLATE(PREFIX, TYPE, DATA_TYPE, SCALE, LENGTHS, CHECK_EXPRESSION) \
+#define CHECK_TEMPLATE(PREFIX, TYPE, DIR, DATA_TYPE, SCALE_TYPE, LENGTHS, CHECK_EXPRESSION) \
     do {                                                                          \
         int err;                                                                  \
         AVTXContext *tx;                                                          \
         av_tx_fn fn;                                                              \
         int num_checks = 0;                                                       \
         int last_check = 0;                                                       \
-        const void *scale = &SCALE;                                               \
                                                                                   \
         for (int i = 0; i < FF_ARRAY_ELEMS(LENGTHS); i++) {                       \
             int len = LENGTHS[i];                                                 \
+            const SCALE_TYPE scale = 1.0 / len;                                   \
                                                                                   \
-            if ((err = av_tx_init(&tx, &fn, TYPE, 0, len, &scale, 0x0)) < 0) {    \
+            if ((err = av_tx_init(&tx, &fn, TYPE, DIR, len, &scale, 0x0)) < 0) {  \
                 fprintf(stderr, "av_tx: %s\n", av_err2str(err));                  \
                 return;                                                           \
             }                                                                     \
                                                                                   \
             if (check_func(fn, PREFIX "_%i", len)) {                              \
-                AVTXContext *tx_ref = tx_refs[TYPE][i];                           \
+                AVTXContext *tx_ref = tx_refs[TYPE][DIR][i];                      \
                 if (!tx_ref)                                                      \
                     tx_ref = tx;                                                  \
                 num_checks++;                                                     \
@@ -84,8 +85,8 @@ static void free_tx_refs(void)
                     break;                                                        \
                 }                                                                 \
                 bench_new(tx, out_new, in, sizeof(DATA_TYPE));                    \
-                av_tx_uninit(&tx_refs[TYPE][i]);                                  \
-                tx_refs[TYPE][i] = tx;                                            \
+                av_tx_uninit(&tx_refs[TYPE][DIR][i]);                             \
+                tx_refs[TYPE][DIR][i] = tx;                                       \
             } else {                                                              \
                 av_tx_uninit(&tx);                                                \
             }                                                                     \
@@ -99,9 +100,6 @@ static void free_tx_refs(void)
 
 void checkasm_check_av_tx(void)
 {
-    const float scale_float = 1.0f;
-    const double scale_double = 1.0f;
-
     declare_func(void, AVTXContext *tx, void *out, void *in, ptrdiff_t stride);
 
     void *in      = av_malloc(16384*2*8);
@@ -109,11 +107,14 @@ void checkasm_check_av_tx(void)
     void *out_new = av_malloc(16384*2*8);
 
     randomize_complex(in, 16384, AVComplexFloat, SCALE_NOOP);
-    CHECK_TEMPLATE("float_fft", AV_TX_FLOAT_FFT, AVComplexFloat, scale_float, check_lens,
+    CHECK_TEMPLATE("float_fft", AV_TX_FLOAT_FFT, 0, AVComplexFloat, float, check_lens,
                    !float_near_abs_eps_array(out_ref, out_new, EPS, len*2));
 
+    CHECK_TEMPLATE("float_imdct", AV_TX_FLOAT_MDCT, 1, float, float, check_lens,
+                   !float_near_abs_eps_array(out_ref, out_new, EPS, len));
+
     randomize_complex(in, 16384, AVComplexDouble, SCALE_NOOP);
-    CHECK_TEMPLATE("double_fft", AV_TX_DOUBLE_FFT, AVComplexDouble, scale_double, check_lens,
+    CHECK_TEMPLATE("double_fft", AV_TX_DOUBLE_FFT, 0, AVComplexDouble, double, check_lens,
                    !double_near_abs_eps_array(out_ref, out_new, EPS, len*2));
 
     av_free(in);
