@@ -34,7 +34,7 @@ void ff_flac_decorrelate_ls_##fmt##_##opt(uint8_t **out, int32_t **in, int chann
 void ff_flac_decorrelate_rs_##fmt##_##opt(uint8_t **out, int32_t **in, int channels,     \
                                           int len, int shift);                           \
 void ff_flac_decorrelate_ms_##fmt##_##opt(uint8_t **out, int32_t **in, int channels,     \
-                                          int len, int shift);
+                                          int len, int shift)
 
 #define DECORRELATE_IFUNCS(fmt, opt)                                                     \
 void ff_flac_decorrelate_indep2_##fmt##_##opt(uint8_t **out, int32_t **in, int channels, \
