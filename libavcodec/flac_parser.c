@@ -600,7 +600,7 @@ static int score_header(FLACParseContext *fpc, FLACHeaderMarker *header)
 static void score_sequences(FLACParseContext *fpc)
 {
     FLACHeaderMarker *curr;
-    int best_score = 0;//FLAC_HEADER_NOT_SCORED_YET;
+    int best_score = FLAC_HEADER_NOT_SCORED_YET;
     /* First pass to clear all old scores. */
     for (curr = fpc->headers; curr; curr = curr->next)
         curr->max_score = FLAC_HEADER_NOT_SCORED_YET;
@@ -682,7 +682,7 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
     }
 
     fpc->avctx = avctx;
-    if (fpc->best_header_valid)
+    if (fpc->best_header_valid && fpc->nb_headers_buffered >= FLAC_MIN_HEADERS)
         return get_best_header(fpc, poutbuf, poutbuf_size);
 
     /* If a best_header was found last call remove it with the buffer data. */
