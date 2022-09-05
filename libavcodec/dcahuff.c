@@ -1232,17 +1232,6 @@ static const uint8_t rsd_bitvals[18] = {
      6,  4,
 };
 
-static const uint16_t vlc_offs[80] = {
-        0,   512,   640,   768,  1282,  1794,  2436,  3080,  3770,  4454,  5364,
-     5372,  5380,  5388,  5392,  5396,  5412,  5420,  5428,  5460,  5492,  5508,
-     5572,  5604,  5668,  5796,  5860,  5892,  6412,  6668,  6796,  7308,  7564,
-     7820,  8076,  8620,  9132,  9388,  9910, 10166, 10680, 11196, 11726, 12240,
-    12752, 13298, 13810, 14326, 14840, 15500, 16022, 16540, 17158, 17678, 18264,
-    18796, 19352, 19926, 20468, 21472, 22398, 23014, 23622, 24200, 24748, 25276,
-    25792, 26306, 26826, 26890, 26954, 27468, 27500, 28038, 28554, 29086, 29630,
-    30150, 30214
-};
-
 DCAVLC  ff_dca_vlc_bit_allocation;
 DCAVLC  ff_dca_vlc_transition_mode;
 DCAVLC  ff_dca_vlc_scale_factor;
@@ -1264,14 +1253,15 @@ VLC     ff_dca_vlc_rsd;
 av_cold void ff_dca_init_vlcs(void)
 {
     static VLCElem dca_table[30214];
-    int i, j, k = 0;
+    unsigned offset = 0;
+    int i, j;
 
 #define DCA_INIT_VLC(vlc, a, b, c, d)                                       \
     do {                                                                    \
-        vlc.table           = &dca_table[vlc_offs[k]];                      \
-        vlc.table_allocated = vlc_offs[k + 1] - vlc_offs[k];                \
-        init_vlc(&vlc, a, b, c, 1, 1, d, 2, 2, INIT_VLC_USE_NEW_STATIC);    \
-        k++;                                                                \
+        vlc.table           = &dca_table[offset];                           \
+        vlc.table_allocated = FF_ARRAY_ELEMS(dca_table) - offset;           \
+        init_vlc(&vlc, a, b, c, 1, 1, d, 2, 2, INIT_VLC_STATIC_OVERLONG);   \
+        offset += vlc.table_size;                                           \
     } while (0)
 
     ff_dca_vlc_bit_allocation.offset    = 1;
@@ -1302,14 +1292,14 @@ av_cold void ff_dca_init_vlcs(void)
 
 #define LBR_INIT_VLC(vlc, tab, nb_bits)                                 \
     do {                                                                \
-        vlc.table           = &dca_table[vlc_offs[k]];                  \
-        vlc.table_allocated = vlc_offs[k + 1] - vlc_offs[k];            \
+        vlc.table           = &dca_table[offset];                       \
+        vlc.table_allocated = FF_ARRAY_ELEMS(dca_table) - offset;       \
         ff_init_vlc_sparse(&vlc, nb_bits, FF_ARRAY_ELEMS(tab##_codes),  \
                            &tab##_bitvals[0], 2, 1,                     \
                            tab##_codes, 2, 2,                           \
                            &tab##_bitvals[1], 2, 1,                     \
-                           INIT_VLC_LE | INIT_VLC_USE_NEW_STATIC);      \
-        k++;                                                            \
+                           INIT_VLC_LE | INIT_VLC_STATIC_OVERLONG);     \
+        offset += vlc.table_size;                                       \
     } while (0)
 
     LBR_INIT_VLC(ff_dca_vlc_tnl_grp[0],  tnl_grp_0,   9);
