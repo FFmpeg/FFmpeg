@@ -27,11 +27,13 @@
 
 #include "libavutil/attributes.h"
 
-#include "put_bits.h"
 #include "vlc.h"
 
 #define DCA_CODE_BOOKS      10
 #define DCA_BITALLOC_12_COUNT    5
+#define DCA_NUM_BITALLOC_CODES (1 * 3 + \
+                                3 * (5 + 7 + 9 + 13) \
+                                + 7 * (17 + 25 + 33 + 65 + 129))
 
 typedef struct DCAVLC {
     int offset;         ///< Code values offset
@@ -58,10 +60,14 @@ extern VLC  ff_dca_vlc_grid_2;
 extern VLC  ff_dca_vlc_grid_3;
 extern VLC  ff_dca_vlc_rsd;
 
+extern const int8_t  ff_dca_bitalloc_offsets[DCA_CODE_BOOKS];
+extern const uint8_t ff_dca_bitalloc_sizes[DCA_CODE_BOOKS];
+extern const uint16_t *const ff_dca_bitalloc_codes[DCA_CODE_BOOKS][8];
+extern const uint8_t  *const ff_dca_bitalloc_bits[DCA_CODE_BOOKS][8];
+
+extern const uint8_t  ff_dca_bitalloc_12_bits[DCA_BITALLOC_12_COUNT][12];
+extern const uint16_t ff_dca_bitalloc_12_codes[DCA_BITALLOC_12_COUNT][12];
+
 av_cold void ff_dca_init_vlcs(void);
-uint32_t ff_dca_vlc_calc_quant_bits(int *values, uint8_t n, uint8_t sel, uint8_t abits);
-void ff_dca_vlc_enc_quant(PutBitContext *pb, int *values, uint8_t n, uint8_t sel, uint8_t abits);
-uint32_t ff_dca_vlc_calc_alloc_bits(int *values, uint8_t n, uint8_t sel);
-void ff_dca_vlc_enc_alloc(PutBitContext *pb, int *values, uint8_t n, uint8_t sel);
 
 #endif /* AVCODEC_DCAHUFF_H */

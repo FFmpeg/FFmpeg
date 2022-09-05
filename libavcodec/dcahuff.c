@@ -22,11 +22,9 @@
 
 #include <stddef.h>
 
-#include "libavutil/avassert.h"
 #include "libavutil/macros.h"
 
 #include "dcahuff.h"
-#include "put_bits.h"
 
 #define TMODE_COUNT 4
 static const uint16_t tmode_codes[TMODE_COUNT][4] = {
@@ -47,7 +45,7 @@ static const uint8_t bitalloc_12_vlc_bits[DCA_BITALLOC_12_COUNT] = {
     9, 7, 7, 9, 9
 };
 
-static const uint16_t bitalloc_12_codes[DCA_BITALLOC_12_COUNT][12] = {
+const uint16_t ff_dca_bitalloc_12_codes[DCA_BITALLOC_12_COUNT][12] = {
     { 0x0000, 0x0002, 0x0006, 0x000E, 0x001E, 0x003E, 0x00FF, 0x00FE,
       0x01FB, 0x01FA, 0x01F9, 0x01F8, },
     { 0x0001, 0x0000, 0x0002, 0x000F, 0x000C, 0x001D, 0x0039, 0x0038,
@@ -60,7 +58,7 @@ static const uint16_t bitalloc_12_codes[DCA_BITALLOC_12_COUNT][12] = {
       0x0079, 0x0078, 0x00FB, 0x00FA, }
 };
 
-static const uint8_t bitalloc_12_bits[DCA_BITALLOC_12_COUNT][12] = {
+const uint8_t ff_dca_bitalloc_12_bits[DCA_BITALLOC_12_COUNT][12] = {
     { 1, 2, 3, 4, 5, 6, 8, 8, 9, 9,  9,  9 },
     { 1, 2, 3, 5, 5, 6, 7, 7, 7, 7,  7,  7 },
     { 2, 3, 3, 3, 3, 4, 4, 4, 5, 6,  7,  7 },
@@ -980,11 +978,11 @@ static const uint8_t bitalloc_129_bits_g[129] = {
     13,
 };
 
-static const uint8_t bitalloc_sizes[DCA_CODE_BOOKS] = {
+const uint8_t ff_dca_bitalloc_sizes[DCA_CODE_BOOKS] = {
     3, 5, 7, 9, 13, 17, 25, 33, 65, 129
 };
 
-static const int8_t bitalloc_offsets[DCA_CODE_BOOKS] = {
+const int8_t ff_dca_bitalloc_offsets[DCA_CODE_BOOKS] = {
     -1, -2, -3, -4, -6, -8, -12, -16, -32, -64
 };
 
@@ -1001,7 +999,7 @@ static const uint8_t bitalloc_maxbits[DCA_CODE_BOOKS][7] = {
     { 9, 9, 9, 9, 9, 9, 9 }
 };
 
-static const uint16_t *const bitalloc_codes[DCA_CODE_BOOKS][8] = {
+const uint16_t *const ff_dca_bitalloc_codes[DCA_CODE_BOOKS][8] = {
     { bitalloc_3_codes,     NULL },
     { bitalloc_5_codes_a,   bitalloc_5_codes_b,   bitalloc_5_codes_c,   NULL },
     { bitalloc_7_codes_a,   bitalloc_7_codes_b,   bitalloc_7_codes_c,   NULL },
@@ -1019,7 +1017,7 @@ static const uint16_t *const bitalloc_codes[DCA_CODE_BOOKS][8] = {
       bitalloc_129_codes_e, bitalloc_129_codes_f, bitalloc_129_codes_g, NULL }
 };
 
-static const uint8_t *const bitalloc_bits[DCA_CODE_BOOKS][8] = {
+const uint8_t *const ff_dca_bitalloc_bits[DCA_CODE_BOOKS][8] = {
     { bitalloc_3_bits,     NULL },
     { bitalloc_5_bits_a,   bitalloc_5_bits_b,   bitalloc_5_bits_c,   NULL },
     { bitalloc_7_bits_a,   bitalloc_7_bits_b,   bitalloc_7_bits_c,   NULL },
@@ -1267,7 +1265,7 @@ av_cold void ff_dca_init_vlcs(void)
     ff_dca_vlc_bit_allocation.max_depth = 2;
     for (i = 0; i < 5; i++)
         DCA_INIT_VLC(ff_dca_vlc_bit_allocation.vlc[i], bitalloc_12_vlc_bits[i], 12,
-                     bitalloc_12_bits[i], bitalloc_12_codes[i]);
+                     ff_dca_bitalloc_12_bits[i], ff_dca_bitalloc_12_codes[i]);
 
     ff_dca_vlc_scale_factor.offset    = -64;
     ff_dca_vlc_scale_factor.max_depth = 2;
@@ -1280,11 +1278,11 @@ av_cold void ff_dca_init_vlcs(void)
                      tmode_bits[i], tmode_codes[i]);
 
     for (i = 0; i < DCA_CODE_BOOKS; i++) {
-        ff_dca_vlc_quant_index[i].offset    = bitalloc_offsets[i];
+        ff_dca_vlc_quant_index[i].offset    = ff_dca_bitalloc_offsets[i];
         ff_dca_vlc_quant_index[i].max_depth = 1 + (i > 4);
-        for (j = 0; bitalloc_codes[i][j]; j++)
+        for (j = 0; ff_dca_bitalloc_codes[i][j]; j++)
             DCA_INIT_VLC(ff_dca_vlc_quant_index[i].vlc[j], bitalloc_maxbits[i][j],
-                         bitalloc_sizes[i], bitalloc_bits[i][j], bitalloc_codes[i][j]);
+                         ff_dca_bitalloc_sizes[i], ff_dca_bitalloc_bits[i][j], ff_dca_bitalloc_codes[i][j]);
     }
 
 #define LBR_INIT_VLC(vlc, tab, nb_bits)                                 \
@@ -1315,46 +1313,4 @@ av_cold void ff_dca_init_vlcs(void)
     LBR_INIT_VLC(ff_dca_vlc_grid_2,      grid_2,      9);
     LBR_INIT_VLC(ff_dca_vlc_grid_3,      grid_3,      9);
     LBR_INIT_VLC(ff_dca_vlc_rsd,         rsd,         6);
-}
-
-uint32_t ff_dca_vlc_calc_quant_bits(int *values, uint8_t n, uint8_t sel, uint8_t table)
-{
-    uint8_t i, id;
-    uint32_t sum = 0;
-    for (i = 0; i < n; i++) {
-        id = values[i] - bitalloc_offsets[table];
-        av_assert0(id < bitalloc_sizes[table]);
-        sum += bitalloc_bits[table][sel][id];
-    }
-    return sum;
-}
-
-void ff_dca_vlc_enc_quant(PutBitContext *pb, int *values, uint8_t n, uint8_t sel, uint8_t table)
-{
-    uint8_t i, id;
-    for (i = 0; i < n; i++) {
-        id = values[i] - bitalloc_offsets[table];
-        av_assert0(id < bitalloc_sizes[table]);
-        put_bits(pb, bitalloc_bits[table][sel][id], bitalloc_codes[table][sel][id]);
-    }
-}
-
-uint32_t ff_dca_vlc_calc_alloc_bits(int *values, uint8_t n, uint8_t sel)
-{
-    uint8_t i, id;
-    uint32_t sum = 0;
-    for (i = 0; i < n; i++) {
-        id = values[i] - 1;
-        sum += bitalloc_12_bits[sel][id];
-    }
-    return sum;
-}
-
-void ff_dca_vlc_enc_alloc(PutBitContext *pb, int *values, uint8_t n, uint8_t sel)
-{
-    uint8_t i, id;
-    for (i = 0; i < n; i++) {
-        id = values[i] - 1;
-        put_bits(pb, bitalloc_12_bits[sel][id], bitalloc_12_codes[sel][id]);
-    }
 }
