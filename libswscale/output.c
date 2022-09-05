@@ -460,17 +460,18 @@ static void yuv2nv12cX_c(enum AVPixelFormat dstFormat, const uint8_t *chrDither,
 
 #define output_pixel(pos, val) \
     if (big_endian) { \
-        AV_WB16(pos, av_clip_uintp2(val >> shift, 10) << 6); \
+        AV_WB16(pos, av_clip_uintp2(val >> shift, output_bits) << output_shift); \
     } else { \
-        AV_WL16(pos, av_clip_uintp2(val >> shift, 10) << 6); \
+        AV_WL16(pos, av_clip_uintp2(val >> shift, output_bits) << output_shift); \
     }
 
-static void yuv2p010l1_c(const int16_t *src,
+static void yuv2p01xl1_c(const int16_t *src,
                          uint16_t *dest, int dstW,
-                         int big_endian)
+                         int big_endian, int output_bits)
 {
     int i;
-    int shift = 5;
+    int shift = 15 - output_bits;
+    int output_shift = 16 - output_bits;
 
     for (i = 0; i < dstW; i++) {
         int val = src[i] + (1 << (shift - 1));
@@ -478,12 +479,13 @@ static void yuv2p010l1_c(const int16_t *src,
     }
 }
 
-static void yuv2p010lX_c(const int16_t *filter, int filterSize,
+static void yuv2p01xlX_c(const int16_t *filter, int filterSize,
                          const int16_t **src, uint16_t *dest, int dstW,
-                         int big_endian)
+                         int big_endian, int output_bits)
 {
     int i, j;
-    int shift = 17;
+    int shift = 11 + 16 - output_bits;
+    int output_shift = 16 - output_bits;
 
     for (i = 0; i < dstW; i++) {
         int val = 1 << (shift - 1);
@@ -495,14 +497,15 @@ static void yuv2p010lX_c(const int16_t *filter, int filterSize,
     }
 }
 
-static void yuv2p010cX_c(int big_endian, const uint8_t *chrDither,
+static void yuv2p01xcX_c(int big_endian, const uint8_t *chrDither,
                          const int16_t *chrFilter, int chrFilterSize,
                          const int16_t **chrUSrc, const int16_t **chrVSrc,
-                         uint8_t *dest8, int chrDstW)
+                         uint8_t *dest8, int chrDstW, int output_bits)
 {
     uint16_t *dest = (uint16_t*)dest8;
-    int shift = 17;
     int i, j;
+    int shift = 11 + 16 - output_bits;
+    int output_shift = 16 - output_bits;
 
     for (i = 0; i < chrDstW; i++) {
         int u = 1 << (shift - 1);
@@ -518,52 +521,65 @@ static void yuv2p010cX_c(int big_endian, const uint8_t *chrDither,
     }
 }
 
-static void yuv2p010l1_LE_c(const int16_t *src,
-                            uint8_t *dest, int dstW,
-                            const uint8_t *dither, int offset)
-{
-    yuv2p010l1_c(src, (uint16_t*)dest, dstW, 0);
-}
-
-static void yuv2p010l1_BE_c(const int16_t *src,
-                            uint8_t *dest, int dstW,
-                            const uint8_t *dither, int offset)
-{
-    yuv2p010l1_c(src, (uint16_t*)dest, dstW, 1);
-}
-
-static void yuv2p010lX_LE_c(const int16_t *filter, int filterSize,
-                            const int16_t **src, uint8_t *dest, int dstW,
-                            const uint8_t *dither, int offset)
-{
-    yuv2p010lX_c(filter, filterSize, src, (uint16_t*)dest, dstW, 0);
-}
-
-static void yuv2p010lX_BE_c(const int16_t *filter, int filterSize,
-                            const int16_t **src, uint8_t *dest, int dstW,
-                            const uint8_t *dither, int offset)
-{
-    yuv2p010lX_c(filter, filterSize, src, (uint16_t*)dest, dstW, 1);
-}
-
-static void yuv2p010cX_LE_c(enum AVPixelFormat dstFormat, const uint8_t *chrDither,
-                            const int16_t *chrFilter, int chrFilterSize,
-                            const int16_t **chrUSrc, const int16_t **chrVSrc,
-                            uint8_t *dest8, int chrDstW)
-{
-    yuv2p010cX_c(0, chrDither, chrFilter, chrFilterSize, chrUSrc, chrVSrc, dest8, chrDstW);
-}
-
-static void yuv2p010cX_BE_c(enum AVPixelFormat dstFormat, const uint8_t *chrDither,
-                            const int16_t *chrFilter, int chrFilterSize,
-                            const int16_t **chrUSrc, const int16_t **chrVSrc,
-                            uint8_t *dest8, int chrDstW)
-{
-    yuv2p010cX_c(1, chrDither, chrFilter, chrFilterSize, chrUSrc, chrVSrc, dest8, chrDstW);
-}
-
 #undef output_pixel
 
+#define yuv2p01x_wrapper(bits)                                                 \
+    static void yuv2p0 ## bits ## l1_LE_c(const int16_t *src,                  \
+                                          uint8_t *dest, int dstW,             \
+                                          const uint8_t *dither, int offset)   \
+    {                                                                          \
+        yuv2p01xl1_c(src, (uint16_t*)dest, dstW, 0, bits);                     \
+    }                                                                          \
+                                                                               \
+    static void yuv2p0 ## bits ## l1_BE_c(const int16_t *src,                  \
+                                          uint8_t *dest, int dstW,             \
+                                          const uint8_t *dither, int offset)   \
+    {                                                                          \
+        yuv2p01xl1_c(src, (uint16_t*)dest, dstW, 1, bits);                     \
+    }                                                                          \
+                                                                               \
+    static void yuv2p0 ## bits ## lX_LE_c(const int16_t *filter,               \
+                                          int filterSize, const int16_t **src, \
+                                          uint8_t *dest, int dstW,             \
+                                          const uint8_t *dither, int offset)   \
+    {                                                                          \
+        yuv2p01xlX_c(filter, filterSize, src, (uint16_t*)dest, dstW, 0, bits); \
+    }                                                                          \
+                                                                               \
+    static void yuv2p0 ## bits ## lX_BE_c(const int16_t *filter,               \
+                                          int filterSize, const int16_t **src, \
+                                          uint8_t *dest, int dstW,             \
+                                          const uint8_t *dither, int offset)   \
+    {                                                                          \
+        yuv2p01xlX_c(filter, filterSize, src, (uint16_t*)dest, dstW, 1, bits); \
+    }                                                                          \
+                                                                               \
+    static void yuv2p0 ## bits ## cX_LE_c(enum AVPixelFormat dstFormat,        \
+                                          const uint8_t *chrDither,            \
+                                          const int16_t *chrFilter,            \
+                                          int chrFilterSize,                   \
+                                          const int16_t **chrUSrc,             \
+                                          const int16_t **chrVSrc,             \
+                                          uint8_t *dest8, int chrDstW)         \
+    {                                                                          \
+        yuv2p01xcX_c(0, chrDither, chrFilter, chrFilterSize, chrUSrc, chrVSrc, \
+                     dest8, chrDstW, bits);                                    \
+    }                                                                          \
+                                                                               \
+    static void yuv2p0 ## bits ## cX_BE_c(enum AVPixelFormat dstFormat,        \
+                                          const uint8_t *chrDither,            \
+                                          const int16_t *chrFilter,            \
+                                          int chrFilterSize,                   \
+                                          const int16_t **chrUSrc,             \
+                                          const int16_t **chrVSrc,             \
+                                          uint8_t *dest8, int chrDstW)         \
+    {                                                                          \
+        yuv2p01xcX_c(1, chrDither, chrFilter, chrFilterSize, chrUSrc, chrVSrc, \
+                     dest8, chrDstW, bits);                                    \
+    }
+
+yuv2p01x_wrapper(10)
+yuv2p01x_wrapper(12)
 
 #define accumulate_bit(acc, val) \
     acc <<= 1; \
@@ -2675,10 +2691,16 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(dstFormat);
 
     if (isSemiPlanarYUV(dstFormat) && isDataInHighBits(dstFormat)) {
-        av_assert0(desc->comp[0].depth == 10);
-        *yuv2plane1 = isBE(dstFormat) ? yuv2p010l1_BE_c : yuv2p010l1_LE_c;
-        *yuv2planeX = isBE(dstFormat) ? yuv2p010lX_BE_c : yuv2p010lX_LE_c;
-        *yuv2nv12cX = isBE(dstFormat) ? yuv2p010cX_BE_c : yuv2p010cX_LE_c;
+        if (desc->comp[0].depth == 10) {
+            *yuv2plane1 = isBE(dstFormat) ? yuv2p010l1_BE_c : yuv2p010l1_LE_c;
+            *yuv2planeX = isBE(dstFormat) ? yuv2p010lX_BE_c : yuv2p010lX_LE_c;
+            *yuv2nv12cX = isBE(dstFormat) ? yuv2p010cX_BE_c : yuv2p010cX_LE_c;
+        } else if (desc->comp[0].depth == 12) {
+            *yuv2plane1 = isBE(dstFormat) ? yuv2p012l1_BE_c : yuv2p012l1_LE_c;
+            *yuv2planeX = isBE(dstFormat) ? yuv2p012lX_BE_c : yuv2p012lX_LE_c;
+            *yuv2nv12cX = isBE(dstFormat) ? yuv2p012cX_BE_c : yuv2p012cX_LE_c;
+        } else
+            av_assert0(0);
     } else if (is16BPS(dstFormat)) {
         *yuv2planeX = isBE(dstFormat) ? yuv2planeX_16BE_c  : yuv2planeX_16LE_c;
         *yuv2plane1 = isBE(dstFormat) ? yuv2plane1_16BE_c  : yuv2plane1_16LE_c;
