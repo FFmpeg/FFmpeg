@@ -24,6 +24,8 @@
 #include "thread.h"
 #include "avassert.h"
 
+#define MAX_AUTO_THREADS 16
+
 #if HAVE_PTHREADS || HAVE_W32THREADS || HAVE_OS2THREADS
 
 typedef struct WorkerContext {
@@ -105,7 +107,7 @@ int avpriv_slicethread_create(AVSliceThread **pctx, void *priv,
     if (!nb_threads) {
         int nb_cpus = av_cpu_count();
         if (nb_cpus > 1)
-            nb_threads = nb_cpus + 1;
+            nb_threads = FFMIN(nb_cpus + 1, MAX_AUTO_THREADS);
         else
             nb_threads = 1;
     }
