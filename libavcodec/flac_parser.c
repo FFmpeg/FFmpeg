@@ -455,7 +455,7 @@ static int check_header_mismatch(FLACParseContext  *fpc,
                                  int                log_level_offset)
 {
     FLACFrameInfo  *header_fi = &header->fi, *child_fi = &child->fi;
-    int deduction, deduction_expected = 0, i;
+    int check_crc, deduction, deduction_expected = 0, i;
     deduction = check_header_fi_mismatch(fpc, header_fi, child_fi,
                                          log_level_offset);
     /* Check sample and frame numbers. */
@@ -491,8 +491,22 @@ static int check_header_mismatch(FLACParseContext  *fpc,
                    "sample/frame number mismatch in adjacent frames\n");
     }
 
+    if (fpc->last_fi.is_var_size == header_fi->is_var_size) {
+        if (fpc->last_fi.is_var_size &&
+            fpc->last_fi.frame_or_sample_num + fpc->last_fi.blocksize == header_fi->frame_or_sample_num) {
+            check_crc = 0;
+        } else if (!fpc->last_fi.is_var_size &&
+                   fpc->last_fi.frame_or_sample_num + 1 == header_fi->frame_or_sample_num) {
+            check_crc = 0;
+        } else {
+            check_crc = !deduction && !deduction_expected;
+        }
+    } else {
+        check_crc = !deduction && !deduction_expected;
+    }
+
     /* If we have suspicious headers, check the CRC between them */
-    if (deduction && !deduction_expected) {
+    if (check_crc || (deduction && !deduction_expected)) {
         FLACHeaderMarker *curr;
         int read_len;
         uint8_t *buf;
