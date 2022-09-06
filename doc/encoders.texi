@@ -3441,8 +3441,10 @@ Specifies intra refresh type. The major goal of intra refresh is improvement of
 error resilience without significant impact on encoded bitstream size caused by
 I frames. The SDK encoder achieves this by encoding part of each frame in
 refresh cycle using intra MBs. @var{none} means no refresh. @var{vertical} means
-vertical refresh, by column of MBs. To enable intra refresh, B frame should be
-set to 0.
+vertical refresh, by column of MBs. @var{horizontal} means horizontal refresh,
+by rows of MBs. @var{slice} means horizontal refresh by slices without
+overlapping. In case of @var{slice}, in_ref_cycle_size is ignored. To enable
+intra refresh, B frame should be set to 0.
 
 @item @var{int_ref_cycle_size}
 Specifies number of pictures within refresh cycle starting from 2. 0 and 1 are
@@ -3641,8 +3643,10 @@ Specifies intra refresh type. The major goal of intra refresh is improvement of
 error resilience without significant impact on encoded bitstream size caused by
 I frames. The SDK encoder achieves this by encoding part of each frame in
 refresh cycle using intra MBs. @var{none} means no refresh. @var{vertical} means
-vertical refresh, by column of MBs. To enable intra refresh, B frame should be
-set to 0.
+vertical refresh, by column of MBs. @var{horizontal} means horizontal refresh,
+by rows of MBs. @var{slice} means horizontal refresh by slices without
+overlapping. In case of @var{slice}, in_ref_cycle_size is ignored. To enable
+intra refresh, B frame should be set to 0.
 
 @item @var{int_ref_cycle_size}
 Specifies number of pictures within refresh cycle starting from 2. 0 and 1 are
