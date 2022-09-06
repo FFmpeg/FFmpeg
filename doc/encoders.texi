@@ -3338,6 +3338,13 @@ Change this value to reset qsv codec's MaxFrameSize configuration.
 
 @item @var{gop_size}
 Change this value to reset qsv codec's gop configuration.
+
+@item @var{int_ref_type}
+@item @var{int_ref_cycle_size}
+@item @var{int_ref_qp_delta}
+@item @var{int_ref_cycle_dist}
+Supported in h264_qsv and hevc_qsv.
+Change these value to reset qsv codec's Intra Refresh configuration.
 @end table
 
 @subsection H264 options

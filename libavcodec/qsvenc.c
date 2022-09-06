@@ -831,10 +831,13 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
             q->old_max_frame_size = q->max_frame_size;
             if (q->int_ref_type >= 0)
                 q->extco2.IntRefType = q->int_ref_type;
+            q->old_int_ref_type = q->int_ref_type;
             if (q->int_ref_cycle_size >= 0)
                 q->extco2.IntRefCycleSize = q->int_ref_cycle_size;
+            q->old_int_ref_cycle_size = q->int_ref_cycle_size;
             if (q->int_ref_qp_delta != INT16_MIN)
                 q->extco2.IntRefQPDelta = q->int_ref_qp_delta;
+            q->old_int_ref_qp_delta = q->int_ref_qp_delta;
             if (q->max_slice_size >= 0)
                 q->extco2.MaxSliceSize = q->max_slice_size;
             q->extco2.DisableDeblockingIdc = q->dblk_idc;
@@ -923,6 +926,7 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
             }
             if (q->int_ref_cycle_dist >= 0)
                 q->extco3.IntRefCycleDist = q->int_ref_cycle_dist;
+            q->old_int_ref_cycle_dist = q->int_ref_cycle_dist;
             if (q->low_delay_brc >= 0)
                 q->extco3.LowDelayBRC = q->low_delay_brc ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
             if (q->max_frame_size_i >= 0)
@@ -1712,6 +1716,34 @@ static int update_gop_size(AVCodecContext *avctx, QSVEncContext *q)
     return updated;
 }
 
+static int update_rir(AVCodecContext *avctx, QSVEncContext *q)
+{
+    int updated = 0;
+
+    if (avctx->codec_id != AV_CODEC_ID_H264 && avctx->codec_id != AV_CODEC_ID_HEVC)
+        return 0;
+
+    UPDATE_PARAM(q->old_int_ref_type, q->int_ref_type);
+    UPDATE_PARAM(q->old_int_ref_cycle_size, q->int_ref_cycle_size);
+    UPDATE_PARAM(q->old_int_ref_qp_delta, q->int_ref_qp_delta);
+    UPDATE_PARAM(q->old_int_ref_cycle_dist, q->int_ref_cycle_dist);
+    if (!updated)
+        return 0;
+
+    q->extco2.IntRefType      = FFMAX(0, q->int_ref_type);
+    q->extco2.IntRefCycleSize = FFMAX(0, q->int_ref_cycle_size);
+    q->extco2.IntRefQPDelta   =
+        q->int_ref_qp_delta != INT16_MIN ? q->int_ref_qp_delta : 0;
+    q->extco3.IntRefCycleDist = FFMAX(0, q->int_ref_cycle_dist);
+    av_log(avctx, AV_LOG_DEBUG,
+           "Reset IntRefType: %d; IntRefCycleSize: %d; "
+           "IntRefQPDelta: %d; IntRefCycleDist: %d\n",
+           q->extco2.IntRefType, q->extco2.IntRefCycleSize,
+           q->extco2.IntRefQPDelta, q->extco3.IntRefCycleDist);
+
+    return updated;
+}
+
 static int update_parameters(AVCodecContext *avctx, QSVEncContext *q,
                              const AVFrame *frame)
 {
@@ -1723,6 +1755,7 @@ static int update_parameters(AVCodecContext *avctx, QSVEncContext *q,
     needReset = update_qp(avctx, q);
     needReset |= update_max_frame_size(avctx, q);
     needReset |= update_gop_size(avctx, q);
+    needReset |= update_rir(avctx, q);
     if (!needReset)
         return 0;
 

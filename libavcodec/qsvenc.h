@@ -255,6 +255,11 @@ typedef struct QSVEncContext {
     int old_max_frame_size;
     // This is used for gop reset
     int old_gop_size;
+    // These are used for intra refresh reset
+    int old_int_ref_type;
+    int old_int_ref_cycle_size;
+    int old_int_ref_qp_delta;
+    int old_int_ref_cycle_dist;
 } QSVEncContext;
 
 int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q);
