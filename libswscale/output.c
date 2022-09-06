@@ -2601,6 +2601,34 @@ yuv2ayuv64le_X_c(SwsContext *c, const int16_t *lumFilter,
 }
 
 static void
+yuv2xv30le_X_c(SwsContext *c, const int16_t *lumFilter,
+               const int16_t **lumSrc, int lumFilterSize,
+               const int16_t *chrFilter, const int16_t **chrUSrc,
+               const int16_t **chrVSrc, int chrFilterSize,
+               const int16_t **alpSrc, uint8_t *dest, int dstW, int y)
+{
+    int i;
+    for (i = 0; i < dstW; i++) {
+        int Y = 1 << 16, U = 1 << 16, V = 1 << 16;
+        int j;
+
+        for (j = 0; j < lumFilterSize; j++)
+            Y += lumSrc[j][i] * lumFilter[j];
+
+        for (j = 0; j < chrFilterSize; j++) {
+            U += chrUSrc[j][i] * chrFilter[j];
+            V += chrVSrc[j][i] * chrFilter[j];
+        }
+
+        Y = av_clip_uintp2(Y >> 17, 10);
+        U = av_clip_uintp2(U >> 17, 10);
+        V = av_clip_uintp2(V >> 17, 10);
+
+        AV_WL32(dest + 4 * i, U | Y << 10 | V << 20);
+    }
+}
+
+static void
 yuv2xv36le_X_c(SwsContext *c, const int16_t *lumFilter,
                const int16_t **lumSrc, int lumFilterSize,
                const int16_t *chrFilter, const int16_t **chrUSrc,
@@ -3217,6 +3245,9 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
         break;
     case AV_PIX_FMT_VUYX:
         *yuv2packedX = yuv2vuyx_X_c;
+        break;
+    case AV_PIX_FMT_XV30LE:
+        *yuv2packedX = yuv2xv30le_X_c;
         break;
     case AV_PIX_FMT_XV36LE:
         *yuv2packedX = yuv2xv36le_X_c;
