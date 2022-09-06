@@ -35,17 +35,12 @@
                                 3 * (5 + 7 + 9 + 13) \
                                 + 7 * (17 + 25 + 33 + 65 + 129))
 
-typedef struct DCAVLC {
-    int max_depth;      ///< Parameter for get_vlc2()
-    VLC vlc[7];         ///< Actual codes
-} DCAVLC;
-
-extern DCAVLC   ff_dca_vlc_bit_allocation;
+extern VLC  ff_dca_vlc_bit_allocation[5];
 #define DCA_TMODE_VLC_BITS 3
 extern VLC  ff_dca_vlc_transition_mode[4];
 #define DCA_SCALES_VLC_BITS 9
 extern VLC  ff_dca_vlc_scale_factor[5];
-extern DCAVLC   ff_dca_vlc_quant_index[DCA_CODE_BOOKS];
+extern VLC  ff_dca_vlc_quant_index[DCA_CODE_BOOKS][7];
 
 extern VLC  ff_dca_vlc_tnl_grp[5];
 extern VLC  ff_dca_vlc_tnl_scf;

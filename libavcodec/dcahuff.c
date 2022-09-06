@@ -768,10 +768,10 @@ const uint8_t ff_dca_vlc_src_tables[][2] = {
     {   4,   3 }, {   0,   3 }, {   2,   2 }, {   3,   2 },
 };
 
-DCAVLC  ff_dca_vlc_bit_allocation;
+VLC     ff_dca_vlc_bit_allocation[5];
 VLC     ff_dca_vlc_transition_mode[4];
 VLC     ff_dca_vlc_scale_factor[5];
-DCAVLC  ff_dca_vlc_quant_index[DCA_CODE_BOOKS];
+VLC     ff_dca_vlc_quant_index[DCA_CODE_BOOKS][7];
 
 VLC     ff_dca_vlc_tnl_grp[5];
 VLC     ff_dca_vlc_tnl_scf;
@@ -791,7 +791,6 @@ av_cold void ff_dca_init_vlcs(void)
     static VLCElem dca_table[30218];
     const uint8_t (*src_table)[2] = ff_dca_vlc_src_tables;
     unsigned offset = 0;
-    int i;
 
 #define DCA_INIT_VLC(vlc, nb_bits, nb_codes, entry_offset)                  \
     do {                                                                    \
@@ -805,15 +804,13 @@ av_cold void ff_dca_init_vlcs(void)
     } while (0)
 
     for (unsigned i = 0; i < DCA_CODE_BOOKS; i++) {
-        ff_dca_vlc_quant_index[i].max_depth = 1 + (i > 4);
         for (unsigned j = 0; j < ff_dca_quant_index_group_size[i]; j++)
-            DCA_INIT_VLC(ff_dca_vlc_quant_index[i].vlc[j], bitalloc_maxbits[i][j],
+            DCA_INIT_VLC(ff_dca_vlc_quant_index[i][j], bitalloc_maxbits[i][j],
                          ff_dca_bitalloc_sizes[i], ff_dca_bitalloc_offsets[i]);
     }
 
-    ff_dca_vlc_bit_allocation.max_depth = 2;
-    for (i = 0; i < 5; i++)
-        DCA_INIT_VLC(ff_dca_vlc_bit_allocation.vlc[i], bitalloc_12_vlc_bits[i], 12, 1);
+    for (unsigned i = 0; i < FF_ARRAY_ELEMS(ff_dca_vlc_bit_allocation); i++)
+        DCA_INIT_VLC(ff_dca_vlc_bit_allocation[i], bitalloc_12_vlc_bits[i], 12, 1);
 
     for (unsigned i = 0; i < FF_ARRAY_ELEMS(ff_dca_vlc_scale_factor); i++)
         DCA_INIT_VLC(ff_dca_vlc_scale_factor[i], DCA_SCALES_VLC_BITS, 129, -64);

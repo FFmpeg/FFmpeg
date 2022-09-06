@@ -67,9 +67,9 @@ static const uint8_t block_code_nbits[7] = {
     7, 10, 12, 13, 15, 17, 19
 };
 
-static int dca_get_vlc(GetBitContext *s, DCAVLC *v, int i)
+static int dca_get_vlc(GetBitContext *s, const VLC *vlc)
 {
-    return get_vlc2(s, v->vlc[i].table, v->vlc[i].bits, 2);
+    return get_vlc2(s, vlc->table, vlc->bits, 2);
 }
 
 static void get_array(GetBitContext *s, int32_t *array, int size, int n)
@@ -435,7 +435,7 @@ static int parse_subframe_header(DCACoreDecoder *s, int sf,
             int abits;
 
             if (sel < 5)
-                abits = dca_get_vlc(&s->gb, &ff_dca_vlc_bit_allocation, sel);
+                abits = dca_get_vlc(&s->gb, &ff_dca_vlc_bit_allocation[sel]);
             else
                 abits = get_bits(&s->gb, sel - 1);
 
@@ -570,7 +570,7 @@ static inline int parse_huffman_codes(DCACoreDecoder *s, int32_t *audio, int abi
 
     // Extract Huffman codes from the bit stream
     for (i = 0; i < DCA_SUBBAND_SAMPLES; i++)
-        audio[i] = dca_get_vlc(&s->gb, &ff_dca_vlc_quant_index[abits - 1], sel);
+        audio[i] = dca_get_vlc(&s->gb, &ff_dca_vlc_quant_index[abits - 1][sel]);
 
     return 1;
 }
@@ -1340,7 +1340,7 @@ static int parse_x96_subframe_header(DCACoreDecoder *s, int xch_base)
         for (band = s->x96_subband_start; band < s->nsubbands[ch]; band++) {
             // If Huffman code was used, the difference of abits was encoded
             if (sel < 7)
-                abits += dca_get_vlc(&s->gb, &ff_dca_vlc_quant_index[5 + 2 * s->x96_high_res], sel);
+                abits += dca_get_vlc(&s->gb, &ff_dca_vlc_quant_index[5 + 2 * s->x96_high_res][sel]);
             else
                 abits = get_bits(&s->gb, 3 + s->x96_high_res);
 
