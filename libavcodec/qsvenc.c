@@ -937,6 +937,7 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
             q->old_int_ref_cycle_dist = q->int_ref_cycle_dist;
             if (q->low_delay_brc >= 0)
                 q->extco3.LowDelayBRC = q->low_delay_brc ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
+            q->old_low_delay_brc = q->low_delay_brc;
             if (q->max_frame_size_i >= 0)
                 q->extco3.MaxFrameSizeI = q->max_frame_size_i;
             if (q->max_frame_size_p >= 0)
@@ -1817,6 +1818,26 @@ static int update_min_max_qp(AVCodecContext *avctx, QSVEncContext *q)
     return updated;
 }
 
+static int update_low_delay_brc(AVCodecContext *avctx, QSVEncContext *q)
+{
+    int updated = 0;
+
+    if (avctx->codec_id != AV_CODEC_ID_H264 && avctx->codec_id != AV_CODEC_ID_HEVC)
+        return 0;
+
+    UPDATE_PARAM(q->old_low_delay_brc, q->low_delay_brc);
+    if (!updated)
+        return 0;
+
+    q->extco3.LowDelayBRC = MFX_CODINGOPTION_UNKNOWN;
+    if (q->low_delay_brc >= 0)
+        q->extco3.LowDelayBRC = q->low_delay_brc ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
+    av_log(avctx, AV_LOG_DEBUG, "Reset LowDelayBRC: %s\n",
+           print_threestate(q->extco3.LowDelayBRC));
+
+    return updated;
+}
+
 static int update_parameters(AVCodecContext *avctx, QSVEncContext *q,
                              const AVFrame *frame)
 {
@@ -1829,7 +1850,7 @@ static int update_parameters(AVCodecContext *avctx, QSVEncContext *q,
     needReset |= update_max_frame_size(avctx, q);
     needReset |= update_gop_size(avctx, q);
     needReset |= update_rir(avctx, q);
-
+    needReset |= update_low_delay_brc(avctx, q);
     ret = update_min_max_qp(avctx, q);
     if (ret < 0)
         return ret;

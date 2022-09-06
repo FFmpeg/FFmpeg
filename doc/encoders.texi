@@ -3356,6 +3356,10 @@ Change these value to reset qsv codec's Intra Refresh configuration.
 @item @var{min_qp_b}
 Supported in h264_qsv.
 Change these value to reset qsv codec's max/min qp configuration.
+
+@item @var{low_delay_brc}
+Supported in h264_qsv and hevc_qsv.
+Change this value to reset qsv codec's low_delay_brc configuration.
 @end table
 
 @subsection H264 options
