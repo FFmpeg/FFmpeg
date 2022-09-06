@@ -253,6 +253,8 @@ typedef struct QSVEncContext {
     float old_b_quant_offset;
     // This is used for max_frame_size reset
     int old_max_frame_size;
+    // This is used for gop reset
+    int old_gop_size;
 } QSVEncContext;
 
 int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q);

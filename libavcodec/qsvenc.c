@@ -639,6 +639,7 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
     q->param.mfx.CodecProfile       = q->profile;
     q->param.mfx.TargetUsage        = avctx->compression_level;
     q->param.mfx.GopPicSize         = FFMAX(0, avctx->gop_size);
+    q->old_gop_size                 = avctx->gop_size;
     q->param.mfx.GopRefDist         = FFMAX(-1, avctx->max_b_frames) + 1;
     q->param.mfx.GopOptFlag         = avctx->flags & AV_CODEC_FLAG_CLOSED_GOP ?
                                       MFX_GOP_CLOSED : MFX_GOP_STRICT;
@@ -1697,6 +1698,20 @@ static int update_max_frame_size(AVCodecContext *avctx, QSVEncContext *q)
     return updated;
 }
 
+static int update_gop_size(AVCodecContext *avctx, QSVEncContext *q)
+{
+    int updated = 0;
+    UPDATE_PARAM(q->old_gop_size, avctx->gop_size);
+    if (!updated)
+        return 0;
+
+    q->param.mfx.GopPicSize = FFMAX(0, avctx->gop_size);
+    av_log(avctx, AV_LOG_DEBUG, "reset GopPicSize to %d\n",
+           q->param.mfx.GopPicSize);
+
+    return updated;
+}
+
 static int update_parameters(AVCodecContext *avctx, QSVEncContext *q,
                              const AVFrame *frame)
 {
@@ -1707,6 +1722,7 @@ static int update_parameters(AVCodecContext *avctx, QSVEncContext *q,
 
     needReset = update_qp(avctx, q);
     needReset |= update_max_frame_size(avctx, q);
+    needReset |= update_gop_size(avctx, q);
     if (!needReset)
         return 0;
 

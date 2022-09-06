@@ -3335,6 +3335,9 @@ Change these value to reset qsv codec's qp configuration.
 @item @var{max_frame_size}
 Supported in h264_qsv and hevc_qsv.
 Change this value to reset qsv codec's MaxFrameSize configuration.
+
+@item @var{gop_size}
+Change this value to reset qsv codec's gop configuration.
 @end table
 
 @subsection H264 options
