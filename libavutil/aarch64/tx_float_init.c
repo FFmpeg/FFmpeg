@@ -42,7 +42,7 @@ static av_cold int neon_init(AVTXContext *s, const FFTXCodelet *cd,
     if (cd->max_len == 2)
         return ff_tx_gen_ptwo_revtab(s, inv_lookup);
     else
-        return ff_tx_gen_split_radix_parity_revtab(s, inv_lookup, 8, 0);
+        return ff_tx_gen_split_radix_parity_revtab(s, len, inv, inv_lookup, 8, 0);
 }
 
 const FFTXCodelet * const ff_tx_codelet_list_float_aarch64[] = {
