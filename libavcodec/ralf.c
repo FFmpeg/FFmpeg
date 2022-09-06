@@ -451,12 +451,6 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
         src_size = avpkt->size;
     }
 
-    frame->nb_samples = ctx->max_frame_size;
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
-        return ret;
-    samples0 = (int16_t *)frame->data[0];
-    samples1 = (int16_t *)frame->data[1];
-
     if (src_size < 5) {
         av_log(avctx, AV_LOG_ERROR, "too short packets are too short!\n");
         return AVERROR_INVALIDDATA;
@@ -481,6 +475,11 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
         ctx->num_blocks++;
     }
 
+    frame->nb_samples = ctx->max_frame_size;
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
+        return ret;
+    samples0 = (int16_t *)frame->data[0];
+    samples1 = (int16_t *)frame->data[1];
     block_pointer = src      + table_bytes + 2;
     bytes_left    = src_size - table_bytes - 2;
     ctx->sample_offset = 0;
