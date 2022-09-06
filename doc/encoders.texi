@@ -3331,6 +3331,10 @@ Following options can be used durning qsv encoding.
 @item @var{b_quant_offset}
 Supported in h264_qsv and hevc_qsv.
 Change these value to reset qsv codec's qp configuration.
+
+@item @var{max_frame_size}
+Supported in h264_qsv and hevc_qsv.
+Change this value to reset qsv codec's MaxFrameSize configuration.
 @end table
 
 @subsection H264 options

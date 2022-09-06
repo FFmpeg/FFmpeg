@@ -827,6 +827,7 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
                 q->extco2.ExtBRC = q->extbrc ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
             if (q->max_frame_size >= 0)
                 q->extco2.MaxFrameSize = q->max_frame_size;
+            q->old_max_frame_size = q->max_frame_size;
             if (q->int_ref_type >= 0)
                 q->extco2.IntRefType = q->int_ref_type;
             if (q->int_ref_cycle_size >= 0)
@@ -1678,6 +1679,24 @@ static int update_qp(AVCodecContext *avctx, QSVEncContext *q)
     return updated;
 }
 
+static int update_max_frame_size(AVCodecContext *avctx, QSVEncContext *q)
+{
+    int updated = 0;
+
+    if (avctx->codec_id != AV_CODEC_ID_H264 && avctx->codec_id != AV_CODEC_ID_HEVC)
+        return 0;
+
+    UPDATE_PARAM(q->old_max_frame_size, q->max_frame_size);
+    if (!updated)
+        return 0;
+
+    q->extco2.MaxFrameSize  = FFMAX(0, q->max_frame_size);
+    av_log(avctx, AV_LOG_DEBUG,
+           "Reset MaxFrameSize: %d;\n", q->extco2.MaxFrameSize);
+
+    return updated;
+}
+
 static int update_parameters(AVCodecContext *avctx, QSVEncContext *q,
                              const AVFrame *frame)
 {
@@ -1687,6 +1706,7 @@ static int update_parameters(AVCodecContext *avctx, QSVEncContext *q,
         return 0;
 
     needReset = update_qp(avctx, q);
+    needReset |= update_max_frame_size(avctx, q);
     if (!needReset)
         return 0;
 
