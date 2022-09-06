@@ -1408,8 +1408,8 @@ cglobal mdct_sr_inv_float, 4, 12, 16, 288, ctx, out, in, stride, len, lut, exp, 
     mulps m10, m2                    ; 1 reim * imim
     mulps m11, m3                    ; 2 reim * imim
 
-    shufps m10, m10, q2301
-    shufps m11, m11, q2301
+    shufps m10, m10, m10, q2301
+    shufps m11, m11, m11, q2301
 
     fmaddsubps m10, m12, m2, m10
     fmaddsubps m11, m13, m3, m11
