@@ -1683,7 +1683,7 @@ static int update_parameters(AVCodecContext *avctx, QSVEncContext *q,
 {
     int needReset = 0, ret = 0;
 
-    if (!frame)
+    if (!frame || avctx->codec_id == AV_CODEC_ID_MJPEG)
         return 0;
 
     needReset = update_qp(avctx, q);
