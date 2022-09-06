@@ -43,7 +43,8 @@ typedef struct DCAVLC {
 extern DCAVLC   ff_dca_vlc_bit_allocation;
 #define DCA_TMODE_VLC_BITS 3
 extern VLC  ff_dca_vlc_transition_mode[4];
-extern DCAVLC   ff_dca_vlc_scale_factor;
+#define DCA_SCALES_VLC_BITS 9
+extern VLC  ff_dca_vlc_scale_factor[5];
 extern DCAVLC   ff_dca_vlc_quant_index[DCA_CODE_BOOKS];
 
 extern VLC  ff_dca_vlc_tnl_grp[5];

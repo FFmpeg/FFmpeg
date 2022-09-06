@@ -362,7 +362,8 @@ static inline int parse_scale(DCACoreDecoder *s, int *scale_index, int sel)
 
     // If Huffman code was used, the difference of scales was encoded
     if (sel < 5)
-        *scale_index += dca_get_vlc(&s->gb, &ff_dca_vlc_scale_factor, sel);
+        *scale_index += get_vlc2(&s->gb, ff_dca_vlc_scale_factor[sel].table,
+                                 DCA_SCALES_VLC_BITS, 2);
     else
         *scale_index = get_bits(&s->gb, sel + 1);
 
@@ -381,7 +382,8 @@ static inline int parse_joint_scale(DCACoreDecoder *s, int sel)
 
     // Absolute value was encoded even when Huffman code was used
     if (sel < 5)
-        scale_index = dca_get_vlc(&s->gb, &ff_dca_vlc_scale_factor, sel);
+        scale_index = get_vlc2(&s->gb, ff_dca_vlc_scale_factor[sel].table,
+                               DCA_SCALES_VLC_BITS, 2);
     else
         scale_index = get_bits(&s->gb, sel + 1);
 

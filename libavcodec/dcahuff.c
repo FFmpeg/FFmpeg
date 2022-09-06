@@ -770,7 +770,7 @@ const uint8_t ff_dca_vlc_src_tables[][2] = {
 
 DCAVLC  ff_dca_vlc_bit_allocation;
 VLC     ff_dca_vlc_transition_mode[4];
-DCAVLC  ff_dca_vlc_scale_factor;
+VLC     ff_dca_vlc_scale_factor[5];
 DCAVLC  ff_dca_vlc_quant_index[DCA_CODE_BOOKS];
 
 VLC     ff_dca_vlc_tnl_grp[5];
@@ -815,9 +815,8 @@ av_cold void ff_dca_init_vlcs(void)
     for (i = 0; i < 5; i++)
         DCA_INIT_VLC(ff_dca_vlc_bit_allocation.vlc[i], bitalloc_12_vlc_bits[i], 12, 1);
 
-    ff_dca_vlc_scale_factor.max_depth = 2;
-    for (i = 0; i < 5; i++)
-        DCA_INIT_VLC(ff_dca_vlc_scale_factor.vlc[i], SCALES_VLC_BITS, 129, -64);
+    for (unsigned i = 0; i < FF_ARRAY_ELEMS(ff_dca_vlc_scale_factor); i++)
+        DCA_INIT_VLC(ff_dca_vlc_scale_factor[i], DCA_SCALES_VLC_BITS, 129, -64);
 
     for (unsigned i = 0; i < FF_ARRAY_ELEMS(ff_dca_vlc_transition_mode); i++)
         DCA_INIT_VLC(ff_dca_vlc_transition_mode[i], DCA_TMODE_VLC_BITS, 4, 0);
