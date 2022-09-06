@@ -29,7 +29,6 @@
 #include "put_bits.h"
 
 #define TMODE_COUNT 4
-static const uint8_t tmode_vlc_bits[TMODE_COUNT] = { 3, 3, 3, 2 };
 static const uint16_t tmode_codes[TMODE_COUNT][4] = {
     { 0x0000, 0x0002, 0x0006, 0x0007 },
     { 0x0002, 0x0006, 0x0007, 0x0000 },
@@ -1252,7 +1251,7 @@ VLC     ff_dca_vlc_rsd;
 
 av_cold void ff_dca_init_vlcs(void)
 {
-    static VLCElem dca_table[30214];
+    static VLCElem dca_table[30218];
     unsigned offset = 0;
     int i, j;
 
@@ -1277,7 +1276,7 @@ av_cold void ff_dca_init_vlcs(void)
                      scales_bits[i], scales_codes[i]);
 
     for (unsigned i = 0; i < FF_ARRAY_ELEMS(ff_dca_vlc_transition_mode); i++)
-        DCA_INIT_VLC(ff_dca_vlc_transition_mode[i], tmode_vlc_bits[i], 4,
+        DCA_INIT_VLC(ff_dca_vlc_transition_mode[i], DCA_TMODE_VLC_BITS, 4,
                      tmode_bits[i], tmode_codes[i]);
 
     for (i = 0; i < DCA_CODE_BOOKS; i++) {
