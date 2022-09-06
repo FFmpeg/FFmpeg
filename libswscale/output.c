@@ -2732,6 +2732,48 @@ yuv2vuyx_X_c(SwsContext *c, const int16_t *lumFilter,
                  chrUSrc, chrVSrc, chrFilterSize, alpSrc, dest, dstW, y, 0);
 }
 
+#define output_pixel(pos, val, bits) \
+    AV_WL16(pos, av_clip_uintp2(val >> shift, bits) << output_shift);
+
+#define yuv2y2xx_wrapper(bits)                                          \
+    static void                                                         \
+    yuv2y2 ## bits ## le_X_c(SwsContext *c, const int16_t *lumFilter,   \
+                            const int16_t **lumSrc, int lumFilterSize,  \
+                            const int16_t *chrFilter,                   \
+                            const int16_t **chrUSrc,                    \
+                            const int16_t **chrVSrc, int chrFilterSize, \
+                            const int16_t **alpSrc,                     \
+                            uint8_t *dest, int dstW, int y)             \
+    {                                                                   \
+        int i, j;                                                       \
+        int shift = 11 + 16 - bits;                                     \
+        int output_shift = 16 - bits;                                   \
+        for (i = 0; i < ((dstW + 1) >> 1); i++) {                       \
+            int Y1 = 1 << (shift - 1), Y2 = 1 << (shift - 1);           \
+            int U  = 1 << (shift - 1), V  = 1 << (shift - 1);           \
+                                                                        \
+            for (j = 0; j < lumFilterSize; j++) {                       \
+                Y1 += lumSrc[j][i * 2]     * lumFilter[j];              \
+                Y2 += lumSrc[j][i * 2 + 1] * lumFilter[j];              \
+            }                                                           \
+                                                                        \
+            for (j = 0; j < chrFilterSize; j++) {                       \
+                U += chrUSrc[j][i] * chrFilter[j];                      \
+                V += chrVSrc[j][i] * chrFilter[j];                      \
+            }                                                           \
+                                                                        \
+            output_pixel(dest + 8 * i + 0, Y1, bits);                   \
+            output_pixel(dest + 8 * i + 2,  U, bits);                   \
+            output_pixel(dest + 8 * i + 4, Y2, bits);                   \
+            output_pixel(dest + 8 * i + 6,  V, bits);                   \
+        }                                                               \
+    }
+
+yuv2y2xx_wrapper(10)
+yuv2y2xx_wrapper(12)
+
+#undef output_pixel
+
 av_cold void ff_sws_init_output_funcs(SwsContext *c,
                                       yuv2planar1_fn *yuv2plane1,
                                       yuv2planarX_fn *yuv2planeX,
@@ -3251,6 +3293,12 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
         break;
     case AV_PIX_FMT_XV36LE:
         *yuv2packedX = yuv2xv36le_X_c;
+        break;
+    case AV_PIX_FMT_Y210LE:
+        *yuv2packedX = yuv2y210le_X_c;
+        break;
+    case AV_PIX_FMT_Y212LE:
+        *yuv2packedX = yuv2y212le_X_c;
         break;
     }
 }
