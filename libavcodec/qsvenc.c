@@ -861,22 +861,30 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
                 q->extco2.MinQPI = avctx->qmin > 51 ? 51 : avctx->qmin;
                 q->extco2.MinQPP = q->extco2.MinQPB = q->extco2.MinQPI;
             }
+            q->old_qmin = avctx->qmin;
             if (avctx->qmax >= 0) {
                 q->extco2.MaxQPI = avctx->qmax > 51 ? 51 : avctx->qmax;
                 q->extco2.MaxQPP = q->extco2.MaxQPB = q->extco2.MaxQPI;
             }
+            q->old_qmax = avctx->qmax;
             if (q->min_qp_i >= 0)
                 q->extco2.MinQPI = q->min_qp_i > 51 ? 51 : q->min_qp_i;
+            q->old_min_qp_i = q->min_qp_i;
             if (q->max_qp_i >= 0)
                 q->extco2.MaxQPI = q->max_qp_i > 51 ? 51 : q->max_qp_i;
+            q->old_max_qp_i = q->max_qp_i;
             if (q->min_qp_p >= 0)
                 q->extco2.MinQPP = q->min_qp_p > 51 ? 51 : q->min_qp_p;
+            q->old_min_qp_p = q->min_qp_p;
             if (q->max_qp_p >= 0)
                 q->extco2.MaxQPP = q->max_qp_p > 51 ? 51 : q->max_qp_p;
+            q->old_max_qp_p = q->max_qp_p;
             if (q->min_qp_b >= 0)
                 q->extco2.MinQPB = q->min_qp_b > 51 ? 51 : q->min_qp_b;
+            q->old_min_qp_b = q->min_qp_b;
             if (q->max_qp_b >= 0)
                 q->extco2.MaxQPB = q->max_qp_b > 51 ? 51 : q->max_qp_b;
+            q->old_max_qp_b = q->max_qp_b;
             if (q->mbbrc >= 0)
                 q->extco2.MBBRC = q->mbbrc ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
 
@@ -1744,6 +1752,71 @@ static int update_rir(AVCodecContext *avctx, QSVEncContext *q)
     return updated;
 }
 
+static int update_min_max_qp(AVCodecContext *avctx, QSVEncContext *q)
+{
+    int updated = 0;
+
+    if (avctx->codec_id != AV_CODEC_ID_H264)
+        return 0;
+
+    UPDATE_PARAM(q->old_qmax, avctx->qmin);
+    UPDATE_PARAM(q->old_qmax, avctx->qmin);
+    UPDATE_PARAM(q->old_min_qp_i, q->min_qp_i);
+    UPDATE_PARAM(q->old_max_qp_i, q->max_qp_i);
+    UPDATE_PARAM(q->old_min_qp_p, q->min_qp_p);
+    UPDATE_PARAM(q->old_max_qp_p, q->max_qp_p);
+    UPDATE_PARAM(q->old_min_qp_b, q->min_qp_b);
+    UPDATE_PARAM(q->old_max_qp_b, q->max_qp_b);
+    if (!updated)
+        return 0;
+
+    if ((avctx->qmin >= 0 && avctx->qmax >= 0 && avctx->qmin > avctx->qmax) ||
+        (q->max_qp_i >= 0 && q->min_qp_i >= 0 && q->min_qp_i > q->max_qp_i) ||
+        (q->max_qp_p >= 0 && q->min_qp_p >= 0 && q->min_qp_p > q->max_qp_p) ||
+        (q->max_qp_b >= 0 && q->min_qp_b >= 0 && q->min_qp_b > q->max_qp_b)) {
+        av_log(avctx, AV_LOG_ERROR,
+                "qmin and or qmax are set but invalid,"
+                " please make sure min <= max\n");
+        return AVERROR(EINVAL);
+    }
+
+    q->extco2.MinQPI = 0;
+    q->extco2.MaxQPI = 0;
+    q->extco2.MinQPP = 0;
+    q->extco2.MaxQPP = 0;
+    q->extco2.MinQPB = 0;
+    q->extco2.MaxQPB = 0;
+    if (avctx->qmin >= 0) {
+        q->extco2.MinQPI = avctx->qmin > 51 ? 51 : avctx->qmin;
+        q->extco2.MinQPB = q->extco2.MinQPP = q->extco2.MinQPI;
+    }
+    if (avctx->qmax >= 0) {
+        q->extco2.MaxQPI = avctx->qmax > 51 ? 51 : avctx->qmax;
+        q->extco2.MaxQPB = q->extco2.MaxQPP = q->extco2.MaxQPI;
+    }
+    if (q->min_qp_i >= 0)
+        q->extco2.MinQPI = q->min_qp_i > 51 ? 51 : q->min_qp_i;
+    if (q->max_qp_i >= 0)
+        q->extco2.MaxQPI = q->max_qp_i > 51 ? 51 : q->max_qp_i;
+    if (q->min_qp_p >= 0)
+        q->extco2.MinQPP = q->min_qp_p > 51 ? 51 : q->min_qp_p;
+    if (q->max_qp_p >= 0)
+        q->extco2.MaxQPP = q->max_qp_p > 51 ? 51 : q->max_qp_p;
+    if (q->min_qp_b >= 0)
+        q->extco2.MinQPB = q->min_qp_b > 51 ? 51 : q->min_qp_b;
+    if (q->max_qp_b >= 0)
+        q->extco2.MaxQPB = q->max_qp_b > 51 ? 51 : q->max_qp_b;
+
+    av_log(avctx, AV_LOG_VERBOSE, "Reset MinQPI: %d; MaxQPI: %d; "
+        "MinQPP: %d; MaxQPP: %d; "
+        "MinQPB: %d; MaxQPB: %d\n",
+        q->extco2.MinQPI, q->extco2.MaxQPI,
+        q->extco2.MinQPP, q->extco2.MaxQPP,
+        q->extco2.MinQPB, q->extco2.MaxQPB);
+
+    return updated;
+}
+
 static int update_parameters(AVCodecContext *avctx, QSVEncContext *q,
                              const AVFrame *frame)
 {
@@ -1756,6 +1829,11 @@ static int update_parameters(AVCodecContext *avctx, QSVEncContext *q,
     needReset |= update_max_frame_size(avctx, q);
     needReset |= update_gop_size(avctx, q);
     needReset |= update_rir(avctx, q);
+
+    ret = update_min_max_qp(avctx, q);
+    if (ret < 0)
+        return ret;
+    needReset |= ret;
     if (!needReset)
         return 0;
 

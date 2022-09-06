@@ -260,6 +260,15 @@ typedef struct QSVEncContext {
     int old_int_ref_cycle_size;
     int old_int_ref_qp_delta;
     int old_int_ref_cycle_dist;
+    // These are used for max/min qp reset;
+    int old_qmax;
+    int old_qmin;
+    int old_max_qp_i;
+    int old_min_qp_i;
+    int old_max_qp_p;
+    int old_min_qp_p;
+    int old_max_qp_b;
+    int old_min_qp_b;
 } QSVEncContext;
 
 int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q);

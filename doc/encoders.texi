@@ -3345,6 +3345,17 @@ Change this value to reset qsv codec's gop configuration.
 @item @var{int_ref_cycle_dist}
 Supported in h264_qsv and hevc_qsv.
 Change these value to reset qsv codec's Intra Refresh configuration.
+
+@item @var{qmax}
+@item @var{qmin}
+@item @var{max_qp_i}
+@item @var{min_qp_i}
+@item @var{max_qp_p}
+@item @var{min_qp_p}
+@item @var{max_qp_b}
+@item @var{min_qp_b}
+Supported in h264_qsv.
+Change these value to reset qsv codec's max/min qp configuration.
 @end table
 
 @subsection H264 options
