@@ -456,7 +456,8 @@ static int parse_subframe_header(DCACoreDecoder *s, int sf,
             int sel = s->transition_mode_sel[ch];
             for (band = 0; band < s->subband_vq_start[ch]; band++)
                 if (s->bit_allocation[ch][band])
-                    s->transition_mode[sf][ch][band] = dca_get_vlc(&s->gb, &ff_dca_vlc_transition_mode, sel);
+                    s->transition_mode[sf][ch][band] = get_vlc2(&s->gb, ff_dca_vlc_transition_mode[sel].table,
+                                                                ff_dca_vlc_transition_mode[sel].bits,1);
         }
     }
 

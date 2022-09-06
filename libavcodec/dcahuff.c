@@ -1233,7 +1233,7 @@ static const uint8_t rsd_bitvals[18] = {
 };
 
 DCAVLC  ff_dca_vlc_bit_allocation;
-DCAVLC  ff_dca_vlc_transition_mode;
+VLC     ff_dca_vlc_transition_mode[4];
 DCAVLC  ff_dca_vlc_scale_factor;
 DCAVLC  ff_dca_vlc_quant_index[DCA_CODE_BOOKS];
 
@@ -1276,10 +1276,8 @@ av_cold void ff_dca_init_vlcs(void)
         DCA_INIT_VLC(ff_dca_vlc_scale_factor.vlc[i], SCALES_VLC_BITS, 129,
                      scales_bits[i], scales_codes[i]);
 
-    ff_dca_vlc_transition_mode.offset    = 0;
-    ff_dca_vlc_transition_mode.max_depth = 1;
-    for (i = 0; i < 4; i++)
-        DCA_INIT_VLC(ff_dca_vlc_transition_mode.vlc[i], tmode_vlc_bits[i], 4,
+    for (unsigned i = 0; i < FF_ARRAY_ELEMS(ff_dca_vlc_transition_mode); i++)
+        DCA_INIT_VLC(ff_dca_vlc_transition_mode[i], tmode_vlc_bits[i], 4,
                      tmode_bits[i], tmode_codes[i]);
 
     for (i = 0; i < DCA_CODE_BOOKS; i++) {
