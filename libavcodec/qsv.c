@@ -211,6 +211,7 @@ enum AVPixelFormat ff_qsv_map_fourcc(uint32_t fourcc)
 #if CONFIG_VAAPI
     case MFX_FOURCC_YUY2: return AV_PIX_FMT_YUYV422;
     case MFX_FOURCC_Y210: return AV_PIX_FMT_Y210;
+    case MFX_FOURCC_AYUV: return AV_PIX_FMT_VUYX;
 #endif
     }
     return AV_PIX_FMT_NONE;
@@ -243,6 +244,9 @@ int ff_qsv_map_pixfmt(enum AVPixelFormat format, uint32_t *fourcc)
     case AV_PIX_FMT_Y210:
         *fourcc = MFX_FOURCC_Y210;
         return AV_PIX_FMT_Y210;
+    case AV_PIX_FMT_VUYX:
+        *fourcc = MFX_FOURCC_AYUV;
+        return AV_PIX_FMT_VUYX;
 #endif
     default:
         return AVERROR(ENOSYS);
@@ -277,6 +281,16 @@ int ff_qsv_map_frame_to_surface(const AVFrame *frame, mfxFrameSurface1 *surface)
         surface->Data.U16 = (mfxU16 *)frame->data[0] + 1;
         surface->Data.V16 = (mfxU16 *)frame->data[0] + 3;
         break;
+
+    case AV_PIX_FMT_VUYX:
+        surface->Data.V = frame->data[0];
+        surface->Data.U = frame->data[0] + 1;
+        surface->Data.Y = frame->data[0] + 2;
+        // Only set Data.A to a valid address, the SDK doesn't
+        // use the value from the frame.
+        surface->Data.A = frame->data[0] + 3;
+        break;
+
     default:
         return AVERROR(ENOSYS);
     }
