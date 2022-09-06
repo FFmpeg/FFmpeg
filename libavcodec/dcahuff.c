@@ -793,44 +793,41 @@ av_cold void ff_dca_init_vlcs(void)
     unsigned offset = 0;
     int i;
 
-#define DCA_INIT_VLC(vlc, nb_bits, nb_codes)                                \
+#define DCA_INIT_VLC(vlc, nb_bits, nb_codes, entry_offset)                  \
     do {                                                                    \
         vlc.table           = &dca_table[offset];                           \
         vlc.table_allocated = FF_ARRAY_ELEMS(dca_table) - offset;           \
         ff_init_vlc_from_lengths(&vlc, nb_bits, nb_codes, &src_table[0][1], 2, \
-                                 &src_table[0][0], 2, 1,                    \
-                                 0, INIT_VLC_STATIC_OVERLONG, NULL);        \
+                                 &src_table[0][0], 2, 1, entry_offset,      \
+                                 INIT_VLC_STATIC_OVERLONG, NULL);           \
         offset += vlc.table_size;                                           \
         src_table += nb_codes;                                              \
     } while (0)
 
     for (unsigned i = 0; i < DCA_CODE_BOOKS; i++) {
-        ff_dca_vlc_quant_index[i].offset    = ff_dca_bitalloc_offsets[i];
         ff_dca_vlc_quant_index[i].max_depth = 1 + (i > 4);
         for (unsigned j = 0; j < ff_dca_quant_index_group_size[i]; j++)
             DCA_INIT_VLC(ff_dca_vlc_quant_index[i].vlc[j], bitalloc_maxbits[i][j],
-                         ff_dca_bitalloc_sizes[i]);
+                         ff_dca_bitalloc_sizes[i], ff_dca_bitalloc_offsets[i]);
     }
 
-    ff_dca_vlc_bit_allocation.offset    = 1;
     ff_dca_vlc_bit_allocation.max_depth = 2;
     for (i = 0; i < 5; i++)
-        DCA_INIT_VLC(ff_dca_vlc_bit_allocation.vlc[i], bitalloc_12_vlc_bits[i], 12);
+        DCA_INIT_VLC(ff_dca_vlc_bit_allocation.vlc[i], bitalloc_12_vlc_bits[i], 12, 1);
 
-    ff_dca_vlc_scale_factor.offset    = -64;
     ff_dca_vlc_scale_factor.max_depth = 2;
     for (i = 0; i < 5; i++)
-        DCA_INIT_VLC(ff_dca_vlc_scale_factor.vlc[i], SCALES_VLC_BITS, 129);
+        DCA_INIT_VLC(ff_dca_vlc_scale_factor.vlc[i], SCALES_VLC_BITS, 129, -64);
 
     for (unsigned i = 0; i < FF_ARRAY_ELEMS(ff_dca_vlc_transition_mode); i++)
-        DCA_INIT_VLC(ff_dca_vlc_transition_mode[i], DCA_TMODE_VLC_BITS, 4);
+        DCA_INIT_VLC(ff_dca_vlc_transition_mode[i], DCA_TMODE_VLC_BITS, 4, 0);
 
-#define LBR_INIT_VLC(vlc, nb_bits, nb_codes)                            \
+#define LBR_INIT_VLC(vlc, nb_bits, nb_codes, entry_offset)              \
     do {                                                                \
         vlc.table           = &dca_table[offset];                       \
         vlc.table_allocated = FF_ARRAY_ELEMS(dca_table) - offset;       \
         ff_init_vlc_from_lengths(&vlc, nb_bits, nb_codes, &src_table[0][1], 2, \
-                                 &src_table[0][0], 2, 1, 0,             \
+                                 &src_table[0][0], 2, 1, entry_offset,  \
                                  INIT_VLC_STATIC_OVERLONG | INIT_VLC_LE,\
                                  NULL);                                 \
         offset += vlc.table_size;                                       \
@@ -838,16 +835,16 @@ av_cold void ff_dca_init_vlcs(void)
     } while (0)
 
     for (unsigned i = 0; i < FF_ARRAY_ELEMS(ff_dca_vlc_tnl_grp); i++)
-        LBR_INIT_VLC(ff_dca_vlc_tnl_grp[i], 9, tnl_grp_sizes[i]);
-    LBR_INIT_VLC(ff_dca_vlc_tnl_scf,     9,  20);
-    LBR_INIT_VLC(ff_dca_vlc_damp,        6,   7);
-    LBR_INIT_VLC(ff_dca_vlc_dph,         6,   9);
-    LBR_INIT_VLC(ff_dca_vlc_fst_rsd_amp, 9,  24);
-    LBR_INIT_VLC(ff_dca_vlc_rsd_apprx,   5,   6);
-    LBR_INIT_VLC(ff_dca_vlc_rsd_amp,     9,  33);
-    LBR_INIT_VLC(ff_dca_vlc_avg_g3,      9,  18);
-    LBR_INIT_VLC(ff_dca_vlc_st_grid,     9,  22);
-    LBR_INIT_VLC(ff_dca_vlc_grid_2,      9,  20);
-    LBR_INIT_VLC(ff_dca_vlc_grid_3,      9,  13);
-    LBR_INIT_VLC(ff_dca_vlc_rsd,         6,   9);
+        LBR_INIT_VLC(ff_dca_vlc_tnl_grp[i], 9, tnl_grp_sizes[i], -1);
+    LBR_INIT_VLC(ff_dca_vlc_tnl_scf,     9,  20, -1);
+    LBR_INIT_VLC(ff_dca_vlc_damp,        6,   7, -1);
+    LBR_INIT_VLC(ff_dca_vlc_dph,         6,   9, -1);
+    LBR_INIT_VLC(ff_dca_vlc_fst_rsd_amp, 9,  24, -1);
+    LBR_INIT_VLC(ff_dca_vlc_rsd_apprx,   5,   6, -1);
+    LBR_INIT_VLC(ff_dca_vlc_rsd_amp,     9,  33, -1);
+    LBR_INIT_VLC(ff_dca_vlc_avg_g3,      9,  18, -1);
+    LBR_INIT_VLC(ff_dca_vlc_st_grid,     9,  22, -1);
+    LBR_INIT_VLC(ff_dca_vlc_grid_2,      9,  20, -1);
+    LBR_INIT_VLC(ff_dca_vlc_grid_3,      9,  13, -1);
+    LBR_INIT_VLC(ff_dca_vlc_rsd,         6,   9,  0);
 }

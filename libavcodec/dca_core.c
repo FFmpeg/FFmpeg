@@ -69,7 +69,7 @@ static const uint8_t block_code_nbits[7] = {
 
 static int dca_get_vlc(GetBitContext *s, DCAVLC *v, int i)
 {
-    return get_vlc2(s, v->vlc[i].table, v->vlc[i].bits, v->max_depth) + v->offset;
+    return get_vlc2(s, v->vlc[i].table, v->vlc[i].bits, v->max_depth);
 }
 
 static void get_array(GetBitContext *s, int32_t *array, int size, int n)

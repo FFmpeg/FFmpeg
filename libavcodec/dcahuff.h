@@ -36,7 +36,6 @@
                                 + 7 * (17 + 25 + 33 + 65 + 129))
 
 typedef struct DCAVLC {
-    int offset;         ///< Code values offset
     int max_depth;      ///< Parameter for get_vlc2()
     VLC vlc[7];         ///< Actual codes
 } DCAVLC;

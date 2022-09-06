@@ -263,8 +263,8 @@ static int parse_lfe_chunk(DCALbrDecoder *s, LBRChunk *chunk)
 static inline int parse_vlc(GetBitContext *s, VLC *vlc, int max_depth)
 {
     int v = get_vlc2(s, vlc->table, vlc->bits, max_depth);
-    if (v > 0)
-        return v - 1;
+    if (v >= 0)
+        return v;
     // Rare value
     return get_bits(s, get_bits(s, 3) + 1);
 }
