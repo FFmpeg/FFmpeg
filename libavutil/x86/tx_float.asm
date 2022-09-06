@@ -744,7 +744,7 @@ cglobal fft8_float, 4, 4, 6, ctx, out, in, tmp
 
 %if %1
 cglobal fft8_ns_float, 4, 4, 6, ctx, out, in, tmp
-    call ff_tx_fft8_asm_float_sse3
+    call mangle(ff_tx_fft8_asm_float_sse3)
     RET
 %endif
 %endmacro
@@ -784,7 +784,7 @@ cglobal fft8_float, 4, 4, 4, ctx, out, in, tmp
 
 %if %1
 cglobal fft8_ns_float, 4, 4, 4, ctx, out, in, tmp
-    call ff_tx_fft8_asm_float_avx
+    call mangle(ff_tx_fft8_asm_float_avx)
     RET
 %endif
 %endmacro
@@ -833,7 +833,7 @@ cglobal fft16_float, 4, 4, 8, ctx, out, in, tmp
 
 %if %2
 cglobal fft16_ns_float, 4, 4, 8, ctx, out, in, tmp
-    call ff_tx_fft16_asm_float_ %+ %1
+    call mangle(ff_tx_fft16_asm_float_ %+ %1)
     RET
 %endif
 %endmacro
@@ -917,7 +917,7 @@ cglobal fft32_float, 4, 4, 16, ctx, out, in, tmp
 
 %if %2
 cglobal fft32_ns_float, 4, 4, 16, ctx, out, in, tmp
-    call ff_tx_fft32_asm_float_ %+ %1
+    call mangle(ff_tx_fft32_asm_float_ %+ %1)
     RET
 %endif
 %endmacro
@@ -1342,7 +1342,7 @@ cglobal fft_sr_ns_float, 4, 9, 16, 272, ctx, out, in, tmp, len, lut, itab, rtab,
     mov lutq, [ctxq + AVTXContext.map]
     mov tgtq, lenq
 
-    call ff_tx_fft_sr_asm_float_ %+ %1
+    call mangle(ff_tx_fft_sr_asm_float_ %+ %1)
     RET
 %endif
 %endmacro
