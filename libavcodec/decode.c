@@ -735,12 +735,6 @@ int ff_decode_receive_frame(AVCodecContext *avctx, AVFrame *frame)
             case AVMEDIA_TYPE_AUDIO:
                 avci->initial_sample_rate = frame->sample_rate ? frame->sample_rate :
                                                                  avctx->sample_rate;
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-                avci->initial_channels       = frame->ch_layout.nb_channels;
-                avci->initial_channel_layout = frame->channel_layout;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
                 ret = av_channel_layout_copy(&avci->initial_ch_layout, &frame->ch_layout);
                 if (ret < 0) {
                     av_frame_unref(frame);
@@ -759,15 +753,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
                            avci->initial_height != frame->height;
                 break;
             case AVMEDIA_TYPE_AUDIO:
-FF_DISABLE_DEPRECATION_WARNINGS
                 changed |= avci->initial_sample_rate    != frame->sample_rate ||
                            avci->initial_sample_rate    != avctx->sample_rate ||
-#if FF_API_OLD_CHANNEL_LAYOUT
-                           avci->initial_channels       != frame->channels ||
-                           avci->initial_channel_layout != frame->channel_layout ||
-#endif
                            av_channel_layout_compare(&avci->initial_ch_layout, &frame->ch_layout);
-FF_ENABLE_DEPRECATION_WARNINGS
                 break;
             }
 
