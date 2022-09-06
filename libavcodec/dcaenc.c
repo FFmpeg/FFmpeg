@@ -166,30 +166,38 @@ static uint16_t bitalloc_table[DCA_NUM_BITALLOC_CODES][2];
 static const uint16_t (*bitalloc_tables[DCA_CODE_BOOKS][8])[2];
 
 static av_cold void create_enc_table(uint16_t dst[][2], unsigned count,
-                                     const uint8_t len[], const uint16_t codes[])
+                                     const uint8_t (**src_tablep)[2])
 {
+    const uint8_t (*src_table)[2] = *src_tablep;
+    uint16_t code = 0;
+
     for (unsigned i = 0; i < count; i++) {
-        dst[i][0] = codes[i];
-        dst[i][1] = len[i];
+        unsigned dst_idx = src_table[i][0];
+
+        dst[dst_idx][0] = code >> (16 - src_table[i][1]);
+        dst[dst_idx][1] = src_table[i][1];
+
+        code += 1 << (16 - src_table[i][1]);
     }
+    *src_tablep += count;
 }
 
 static av_cold void dcaenc_init_static_tables(void)
 {
     uint16_t (*bitalloc_dst)[2] = bitalloc_table;
+    const uint8_t (*src_table)[2] = ff_dca_vlc_src_tables;
 
     for (unsigned i = 0; i < DCA_CODE_BOOKS; i++) {
-        for (unsigned j = 0; ff_dca_bitalloc_codes[i][j]; j++) {
+        for (unsigned j = 0; j < ff_dca_quant_index_group_size[i]; j++) {
             create_enc_table(bitalloc_dst, ff_dca_bitalloc_sizes[i],
-                             ff_dca_bitalloc_bits[i][j], ff_dca_bitalloc_codes[i][j]);
+                             &src_table);
             bitalloc_tables[i][j] = bitalloc_dst - ff_dca_bitalloc_offsets[i];
             bitalloc_dst += ff_dca_bitalloc_sizes[i];
         }
     }
 
     for (unsigned i = 0; i < DCA_BITALLOC_12_COUNT; i++)
-        create_enc_table(&bitalloc_12_table[i][1], 12,
-                         ff_dca_bitalloc_12_bits[i], ff_dca_bitalloc_12_codes[i]);
+        create_enc_table(&bitalloc_12_table[i][1], 12, &src_table);
 }
 
 static int encode_init(AVCodecContext *avctx)

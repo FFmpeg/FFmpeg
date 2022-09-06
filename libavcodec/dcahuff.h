@@ -62,11 +62,7 @@ extern VLC  ff_dca_vlc_rsd;
 
 extern const int8_t  ff_dca_bitalloc_offsets[DCA_CODE_BOOKS];
 extern const uint8_t ff_dca_bitalloc_sizes[DCA_CODE_BOOKS];
-extern const uint16_t *const ff_dca_bitalloc_codes[DCA_CODE_BOOKS][8];
-extern const uint8_t  *const ff_dca_bitalloc_bits[DCA_CODE_BOOKS][8];
-
-extern const uint8_t  ff_dca_bitalloc_12_bits[DCA_BITALLOC_12_COUNT][12];
-extern const uint16_t ff_dca_bitalloc_12_codes[DCA_BITALLOC_12_COUNT][12];
+extern const uint8_t ff_dca_vlc_src_tables[][2];
 
 av_cold void ff_dca_init_vlcs(void);
 
