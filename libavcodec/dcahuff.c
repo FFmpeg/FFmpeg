@@ -44,7 +44,6 @@ static const uint8_t tmode_bits[TMODE_COUNT][4] = {
     { 2, 2, 2, 2 }
 };
 
-#define BITALLOC_12_VLC_BITS 9
 static const uint8_t bitalloc_12_vlc_bits[DCA_BITALLOC_12_COUNT] = {
     9, 7, 7, 9, 9
 };
