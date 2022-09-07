@@ -247,12 +247,13 @@ transcode(){
     ffprobe_opts=$6
     additional_input=$7
     final_decode=$8
+    enc_opt_in=$9
     test -z "$additional_input" || additional_input="$DEC_OPTS $additional_input"
     encfile="${outdir}/${test}.${enc_fmt}"
     test $keep -ge 1 || cleanfiles="$cleanfiles $encfile"
     tsrcfile=$(target_path $srcfile)
     tencfile=$(target_path $encfile)
-    ffmpeg -f $src_fmt $DEC_OPTS -i $tsrcfile $additional_input \
+    ffmpeg -f $src_fmt $DEC_OPTS $enc_opt_in -i $tsrcfile $additional_input \
            $ENC_OPTS $enc_opt $FLAGS -f $enc_fmt -y $tencfile || return
     do_md5sum $encfile
     echo $(wc -c $encfile)
