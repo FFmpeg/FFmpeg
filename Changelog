@@ -11,6 +11,7 @@ version <next>:
 - VAAPI decoding and encoding for 10/12bit 422, 10/12bit 444 HEVC and VP9
 - WBMP (Wireless Application Protocol Bitmap) image format
 - a3dscope filter
+- bonk decoder
 
 
 version 5.1:
