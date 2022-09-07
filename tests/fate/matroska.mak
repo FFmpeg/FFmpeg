@@ -49,6 +49,12 @@ FATE_MATROSKA-$(call ALLYES, FLAC_DECODER FLAC_ENCODER FLAC_PARSER \
 fate-matroska-flac-extradata-update: CMD = transcode matroska $(TARGET_SAMPLES)/mkv/flac_channel_layouts.mka \
                                            matroska "-map 0 -map 0:0 -c flac -frames:a:2 8" "-map 0 -c copy"
 
+# This tests that the Matroska/WebM muxer writes the AV1 CodecPrivate
+# via extradata obtained from packet side data. It also tests that
+# the aspect ratio is only written with pixels as DisplayUnit for WebM.
+FATE_MATROSKA-$(call REMUX, WEBM MATROSKA, IVF_DEMUXER AV1_PARSER EXTRACT_EXTRADATA_BSF) += fate-webm-av1-extradata-update
+fate-webm-av1-extradata-update: CMD = transcode ivf $(TARGET_SAMPLES)/av1/decode_model.ivf webm "-c copy -bsf extract_extradata -sar 3:1" "-c copy" "" "" "-nofind_stream_info" "-nofind_stream_info"
+
 # This test tests demuxing Vorbis and chapters from ogg and muxing it in and
 # demuxing it from Matroska/WebM. It furthermore tests the WebM muxer, in
 # particular its DASH mode. Finally, it tests writing the Cues at the front.
