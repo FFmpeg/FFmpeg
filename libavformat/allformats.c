@@ -102,6 +102,7 @@ extern const AVInputFormat  ff_bmv_demuxer;
 extern const AVInputFormat  ff_bfstm_demuxer;
 extern const AVInputFormat  ff_brstm_demuxer;
 extern const AVInputFormat  ff_boa_demuxer;
+extern const AVInputFormat  ff_bonk_demuxer;
 extern const AVInputFormat  ff_c93_demuxer;
 extern const AVInputFormat  ff_caf_demuxer;
 extern const AVOutputFormat ff_caf_muxer;
