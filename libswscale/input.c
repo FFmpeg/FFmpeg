@@ -583,8 +583,8 @@ static void yvy2ToUV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, con
             AV_WN16(dst + i * 2, AV_RL16(src + i * 4) >> shift);         \
     }
 
-y21xle_wrapper(10, 6);
-y21xle_wrapper(12, 4);
+y21xle_wrapper(10, 6)
+y21xle_wrapper(12, 4)
 
 static void bswap16Y_c(uint8_t *_dst, const uint8_t *_src, const uint8_t *unused1, const uint8_t *unused2, int width,
                        uint32_t *unused, void *opq)
@@ -828,9 +828,9 @@ static void nv21ToUV_c(uint8_t *dstU, uint8_t *dstV,
     }                                                                    \
     p01x_uv_wrapper(bits, shift)
 
-p01x_wrapper(10, 6);
-p01x_wrapper(12, 4);
-p01x_uv_wrapper(16, 0);
+p01x_wrapper(10, 6)
+p01x_wrapper(12, 4)
+p01x_uv_wrapper(16, 0)
 
 #define input_pixel(pos) (isBE(origin) ? AV_RB16(pos) : AV_RL16(pos))
 
