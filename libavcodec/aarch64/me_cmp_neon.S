@@ -584,3 +584,68 @@ function sse4_neon, export=1
 
         ret
 endfunc
+
+function vsad16_neon, export=1
+        // x0           unused
+        // x1           uint8_t *pix1
+        // x2           uint8_t *pix2
+        // x3           ptrdiff_t stride
+        // w4           int h
+
+        ld1             {v0.16b}, [x1], x3              // Load pix1[0], first iteration
+        ld1             {v1.16b}, [x2], x3              // Load pix2[0], first iteration
+
+        sub             w4, w4, #1                      // we need to make h-1 iterations
+        movi            v16.8h, #0
+
+        cmp             w4, #3                          // check if we can make 3 iterations at once
+        usubl           v31.8h, v0.8b, v1.8b            // Signed difference pix1[0] - pix2[0], first iteration
+        usubl2          v30.8h, v0.16b, v1.16b          // Signed difference pix1[0] - pix2[0], first iteration
+
+        b.lt            2f
+
+1:
+        // abs(pix1[0] - pix2[0] - pix1[0 + stride] + pix2[0 + stride])
+        ld1             {v0.16b}, [x1], x3              // Load pix1[0 + stride], first iteration
+        ld1             {v1.16b}, [x2], x3              // Load pix2[0 + stride], first iteration
+        ld1             {v2.16b}, [x1], x3              // Load pix1[0 + stride], second iteration
+        ld1             {v3.16b}, [x2], x3              // Load pix2[0 + stride], second iteration
+        usubl           v29.8h, v0.8b,  v1.8b           // Signed difference pix1[0 + stride] - pix2[0 + stride], first iteration
+        usubl2          v28.8h, v0.16b, v1.16b          // Signed difference pix1[0 + stride] - pix2[0 + stride], first iteration
+        ld1             {v4.16b}, [x1], x3              // Load pix1[0 + stride], third iteration
+        ld1             {v5.16b}, [x2], x3              // Load pix2[0 + stride], third iteration
+        usubl           v27.8h, v2.8b,  v3.8b           // Signed difference pix1[0 + stride] - pix2[0 + stride], second iteration
+        saba            v16.8h, v31.8h, v29.8h          // Signed absolute difference and accumulate the result. first iteration
+        usubl2          v26.8h, v2.16b, v3.16b          // Signed difference pix1[0 + stride] - pix2[0 + stride], second iteration
+        saba            v16.8h, v30.8h, v28.8h          // Signed absolute difference and accumulate the result. first iteration
+        usubl           v25.8h, v4.8b,  v5.8b           // Signed difference pix1[0 + stride] - pix2[0 + stride], third iteration
+        usubl2          v24.8h, v4.16b, v5.16b          // Signed difference pix1[0 + stride] - pix2[0 + stride], third iteration
+        saba            v16.8h, v29.8h, v27.8h          // Signed absolute difference and accumulate the result. second iteration
+        mov             v31.16b, v25.16b
+        saba            v16.8h, v28.8h, v26.8h          // Signed absolute difference and accumulate the result. second iteration
+        sub             w4, w4, #3                      // h -= 3
+        mov             v30.16b, v24.16b
+        saba            v16.8h, v27.8h, v25.8h          // Signed absolute difference and accumulate the result. third iteration
+        cmp             w4, #3
+        saba            v16.8h, v26.8h, v24.8h          // Signed absolute difference and accumulate the result. third iteration
+
+        b.ge            1b
+        cbz             w4, 3f
+2:
+        ld1             {v0.16b}, [x1], x3
+        ld1             {v1.16b}, [x2], x3
+        subs            w4, w4, #1
+        usubl           v29.8h,  v0.8b,   v1.8b
+        usubl2          v28.8h,  v0.16b,  v1.16b
+        saba            v16.8h,  v31.8h,  v29.8h
+        mov             v31.16b, v29.16b
+        saba            v16.8h,  v30.8h,  v28.8h
+        mov             v30.16b, v28.16b
+
+        b.ne            2b
+3:
+        uaddlv          s17, v16.8h
+        fmov            w0, s17
+
+        ret
+endfunc
