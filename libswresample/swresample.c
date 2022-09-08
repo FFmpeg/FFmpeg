@@ -227,7 +227,7 @@ av_cold int swr_init(struct SwrContext *s){
             s->in_ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
             s->in_ch_layout.nb_channels = s->user_in_ch_count;
         }
-    } else
+    } else if (av_channel_layout_check(&s->user_in_chlayout))
         av_channel_layout_copy(&s->in_ch_layout, &s->user_in_chlayout);
 
     if ((s->user_out_ch_count && s->user_out_ch_count != s->user_out_chlayout.nb_channels) ||
@@ -240,16 +240,44 @@ av_cold int swr_init(struct SwrContext *s){
             s->out_ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
             s->out_ch_layout.nb_channels = s->user_out_ch_count;
         }
-    } else
+    } else if (av_channel_layout_check(&s->user_out_chlayout))
         av_channel_layout_copy(&s->out_ch_layout, &s->user_out_chlayout);
 
     if (!s->out.ch_count && !s->user_out_ch_layout)
         s->out.ch_count  = s->out_ch_layout.nb_channels;
     if (!s-> in.ch_count && !s-> user_in_ch_layout)
         s-> in.ch_count  = s->in_ch_layout.nb_channels;
+
+    if (!(ret = av_channel_layout_check(&s->in_ch_layout)) || s->in_ch_layout.nb_channels > SWR_CH_MAX) {
+        if (ret)
+            av_channel_layout_describe(&s->in_ch_layout, l1, sizeof(l1));
+        av_log(s, AV_LOG_WARNING, "Input channel layout \"%s\" is invalid or unsupported.\n", ret ? l1 : "");
+        return AVERROR(EINVAL);
+    }
+
+    if (!(ret = av_channel_layout_check(&s->out_ch_layout)) || s->out_ch_layout.nb_channels > SWR_CH_MAX) {
+        if (ret)
+            av_channel_layout_describe(&s->out_ch_layout, l2, sizeof(l2));
+        av_log(s, AV_LOG_WARNING, "Output channel layout \"%s\" is invalid or unsupported.\n", ret ? l2 : "");
+        return AVERROR(EINVAL);
+    }
 #else
     s->out.ch_count  = s-> user_out_chlayout.nb_channels;
     s-> in.ch_count  = s->  user_in_chlayout.nb_channels;
+
+    if (!(ret = av_channel_layout_check(&s->user_in_chlayout)) || s->user_in_chlayout.nb_channels > SWR_CH_MAX) {
+        if (ret)
+            av_channel_layout_describe(&s->user_in_chlayout, l1, sizeof(l1));
+        av_log(s, AV_LOG_WARNING, "Input channel layout \"%s\" is invalid or unsupported.\n", ret ? l1 : "");
+        return AVERROR(EINVAL);
+    }
+
+    if (!(ret = av_channel_layout_check(&s->user_out_chlayout)) || s->user_out_chlayout.nb_channels > SWR_CH_MAX) {
+        if (ret)
+            av_channel_layout_describe(&s->user_out_chlayout, l2, sizeof(l2));
+        av_log(s, AV_LOG_WARNING, "Output channel layout \"%s\" is invalid or unsupported.\n", ret ? l2 : "");
+        return AVERROR(EINVAL);
+    }
 
     ret  = av_channel_layout_copy(&s->in_ch_layout, &s->user_in_chlayout);
     ret |= av_channel_layout_copy(&s->out_ch_layout, &s->user_out_chlayout);
@@ -260,18 +288,6 @@ av_cold int swr_init(struct SwrContext *s){
     s->int_sample_fmt= s->user_int_sample_fmt;
 
     s->dither.method = s->user_dither_method;
-
-    if (!av_channel_layout_check(&s->in_ch_layout) || s->in_ch_layout.nb_channels > SWR_CH_MAX) {
-        av_channel_layout_describe(&s->in_ch_layout, l1, sizeof(l1));
-        av_log(s, AV_LOG_WARNING, "Input channel layout \"%s\" is invalid or unsupported.\n", l1);
-        av_channel_layout_uninit(&s->in_ch_layout);
-    }
-
-    if (!av_channel_layout_check(&s->out_ch_layout) || s->out_ch_layout.nb_channels > SWR_CH_MAX) {
-        av_channel_layout_describe(&s->out_ch_layout, l2, sizeof(l2));
-        av_log(s, AV_LOG_WARNING, "Output channel layout \"%s\" is invalid or unsupported.\n", l2);
-        av_channel_layout_uninit(&s->out_ch_layout);
-    }
 
     switch(s->engine){
 #if CONFIG_LIBSOXR
@@ -291,9 +307,9 @@ av_cold int swr_init(struct SwrContext *s){
         av_channel_layout_uninit(&s->in_ch_layout);
     }
 
-    if (!s->in_ch_layout.nb_channels || s->in_ch_layout.order == AV_CHANNEL_ORDER_UNSPEC)
+    if (s->in_ch_layout.order == AV_CHANNEL_ORDER_UNSPEC)
         av_channel_layout_default(&s->in_ch_layout, s->used_ch_count);
-    if (!s->out_ch_layout.nb_channels || s->out_ch_layout.order == AV_CHANNEL_ORDER_UNSPEC)
+    if (s->out_ch_layout.order == AV_CHANNEL_ORDER_UNSPEC)
         av_channel_layout_default(&s->out_ch_layout, s->out.ch_count);
 
     s->rematrix = av_channel_layout_compare(&s->out_ch_layout, &s->in_ch_layout) ||
