@@ -39,32 +39,74 @@ static const enum AVPixelFormat pixfmt_list[] = {
     AV_PIX_FMT_VAAPI,
 };
 
-static enum AVPixelFormat find_best(enum AVPixelFormat pixfmt)
+static const enum AVPixelFormat semiplanar_list[] = {
+    AV_PIX_FMT_P016,
+    AV_PIX_FMT_P012,
+    AV_PIX_FMT_P010,
+    AV_PIX_FMT_NV12,
+};
+
+static const enum AVPixelFormat packed_list[] = {
+    AV_PIX_FMT_XV36,
+    AV_PIX_FMT_XV30,
+    AV_PIX_FMT_VUYX,
+    AV_PIX_FMT_Y212,
+    AV_PIX_FMT_Y210,
+    AV_PIX_FMT_YUYV422,
+};
+
+static const enum AVPixelFormat subsampled_list[] = {
+    AV_PIX_FMT_YUV411P,
+    AV_PIX_FMT_YUV420P,
+    AV_PIX_FMT_YUV422P,
+    AV_PIX_FMT_YUV444P,
+};
+
+static const enum AVPixelFormat depthchroma_list[] = {
+    AV_PIX_FMT_YUV420P14,
+    AV_PIX_FMT_YUV422P14,
+    AV_PIX_FMT_YUV444P16,
+};
+
+typedef enum AVPixelFormat (*find_best_t)(enum AVPixelFormat pixfmt);
+
+#define find_best_wrapper(name, list) \
+static enum AVPixelFormat find_best_ ## name (enum AVPixelFormat pixfmt)    \
+{                                                                           \
+    enum AVPixelFormat best = AV_PIX_FMT_NONE;                              \
+    int i;                                                                  \
+    for (i = 0; i < FF_ARRAY_ELEMS(list); i++)                              \
+        best = av_find_best_pix_fmt_of_2(best, list[i],                     \
+                                         pixfmt, 0, NULL);                  \
+    return best;                                                            \
+}
+
+find_best_wrapper(base, pixfmt_list)
+find_best_wrapper(seminplanar, semiplanar_list)
+find_best_wrapper(packed, packed_list)
+find_best_wrapper(subsampled, subsampled_list)
+find_best_wrapper(depthchroma, depthchroma_list)
+
+static void test(enum AVPixelFormat input, enum AVPixelFormat expected,
+                 int *pass, int *fail, find_best_t find_best_fn)
 {
-    enum AVPixelFormat best = AV_PIX_FMT_NONE;
-    int i;
-    for (i = 0; i < FF_ARRAY_ELEMS(pixfmt_list); i++)
-        best = av_find_best_pix_fmt_of_2(best, pixfmt_list[i],
-                                         pixfmt, 0, NULL);
-    return best;
+        enum AVPixelFormat output = find_best_fn(input);
+        if (output != expected) {
+            printf("Matching %s: got %s, expected %s\n",
+                   av_get_pix_fmt_name(input),
+                   av_get_pix_fmt_name(output),
+                   av_get_pix_fmt_name(expected));
+            ++(*fail);
+        } else
+            ++(*pass);
 }
 
 int main(void)
 {
-    enum AVPixelFormat output;
     int i, pass = 0, fail = 0;
 
-#define TEST(input, expected) do {                              \
-        output = find_best(input);                              \
-        if (output != expected) {                               \
-            printf("Matching %s: got %s, expected %s\n",        \
-                   av_get_pix_fmt_name(input),                  \
-                   av_get_pix_fmt_name(output),                 \
-                   av_get_pix_fmt_name(expected));              \
-            ++fail;                                             \
-        } else                                                  \
-            ++pass;                                             \
-    } while (0)
+#define TEST(input, expected) \
+    test(input, expected, &pass, &fail, find_best_base)
 
     // Same formats.
     for (i = 0; i < FF_ARRAY_ELEMS(pixfmt_list); i++)
@@ -136,6 +178,55 @@ int main(void)
 
     // Opaque formats are least unlike each other.
     TEST(AV_PIX_FMT_DXVA2_VLD, AV_PIX_FMT_VDPAU);
+
+#define TEST_SEMIPLANAR(input, expected) \
+    test(input, expected, &pass, &fail, find_best_seminplanar)
+
+    // Same formats.
+    for (i = 0; i < FF_ARRAY_ELEMS(semiplanar_list); i++)
+        TEST_SEMIPLANAR(semiplanar_list[i], semiplanar_list[i]);
+
+    // Formats containing the same data in different layouts.
+    TEST_SEMIPLANAR(AV_PIX_FMT_YUV420P, AV_PIX_FMT_NV12);
+    TEST_SEMIPLANAR(AV_PIX_FMT_YUV420P10, AV_PIX_FMT_P010);
+    TEST_SEMIPLANAR(AV_PIX_FMT_YUV420P12, AV_PIX_FMT_P012);
+    TEST_SEMIPLANAR(AV_PIX_FMT_YUV420P16, AV_PIX_FMT_P016);
+    TEST_SEMIPLANAR(AV_PIX_FMT_YUV420P9, AV_PIX_FMT_P010);
+
+#define TEST_PACKED(input, expected) \
+    test(input, expected, &pass, &fail, find_best_packed)
+
+    // Same formats.
+    for (i = 0; i < FF_ARRAY_ELEMS(packed_list); i++)
+        TEST_PACKED(packed_list[i], packed_list[i]);
+
+    // Formats containing the same data in different layouts.
+    TEST_PACKED(AV_PIX_FMT_YUV444P, AV_PIX_FMT_VUYX);
+    TEST_PACKED(AV_PIX_FMT_YUV444P10, AV_PIX_FMT_XV30);
+    TEST_PACKED(AV_PIX_FMT_YUV444P12, AV_PIX_FMT_XV36);
+    TEST_PACKED(AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUYV422);
+    TEST_PACKED(AV_PIX_FMT_YUV422P10, AV_PIX_FMT_Y210);
+    TEST_PACKED(AV_PIX_FMT_YUV422P12, AV_PIX_FMT_Y212);
+
+#define TEST_SUBSAMPLED(input, expected) \
+    test(input, expected, &pass, &fail, find_best_subsampled)
+
+    // Same formats.
+    for (i = 0; i < FF_ARRAY_ELEMS(subsampled_list); i++)
+        TEST_SUBSAMPLED(subsampled_list[i], subsampled_list[i]);
+
+    TEST_SUBSAMPLED(AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV420P);
+
+#define TEST_DEPTH_CHROMA(input, expected) \
+    test(input, expected, &pass, &fail, find_best_depthchroma)
+
+    // Same formats.
+    for (i = 0; i < FF_ARRAY_ELEMS(depthchroma_list); i++)
+        TEST_DEPTH_CHROMA(depthchroma_list[i], depthchroma_list[i]);
+
+    TEST_DEPTH_CHROMA(AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUV444P16);
+    TEST_DEPTH_CHROMA(AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16);
+
 
     printf("%d tests passed, %d tests failed.\n", pass, fail);
     return !!fail;

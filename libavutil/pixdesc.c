@@ -3013,9 +3013,16 @@ static int get_pix_fmt_score(enum AVPixelFormat dst_pix_fmt,
 
     for (i = 0; i < nb_components; i++) {
         int depth_minus1 = (dst_pix_fmt == AV_PIX_FMT_PAL8) ? 7/nb_components : (dst_desc->comp[i].depth - 1);
-        if (src_desc->comp[i].depth - 1 > depth_minus1 && (consider & FF_LOSS_DEPTH)) {
+        int depth_delta = src_desc->comp[i].depth - 1 - depth_minus1;
+        if (depth_delta > 0 && (consider & FF_LOSS_DEPTH)) {
             loss |= FF_LOSS_DEPTH;
             score -= 65536 >> depth_minus1;
+        } else if (depth_delta < 0 && (consider & FF_LOSS_EXCESS_DEPTH)) {
+            // Favour formats where bit depth exactly matches. If all other
+            // scoring is equal, we'd rather use the bit depth that most closely
+            // matches the source.
+            loss |= FF_LOSS_EXCESS_DEPTH;
+            score += depth_delta;
         }
     }
 
@@ -3033,6 +3040,28 @@ static int get_pix_fmt_score(enum AVPixelFormat dst_pix_fmt,
             dst_desc->log2_chroma_h == 1 && src_desc->log2_chroma_h == 0 ) {
             score += 512;
         }
+    }
+
+    if (consider & FF_LOSS_EXCESS_RESOLUTION) {
+        // Favour formats where chroma subsampling exactly matches. If all other
+        // scoring is equal, we'd rather use the subsampling that most closely
+        // matches the source.
+        if (dst_desc->log2_chroma_w < src_desc->log2_chroma_w) {
+            loss |= FF_LOSS_EXCESS_RESOLUTION;
+            score -= 1 << (src_desc->log2_chroma_w - dst_desc->log2_chroma_w);
+        }
+
+        if (dst_desc->log2_chroma_h < src_desc->log2_chroma_h) {
+            loss |= FF_LOSS_EXCESS_RESOLUTION;
+            score -= 1 << (src_desc->log2_chroma_h - dst_desc->log2_chroma_h);
+        }
+
+        // don't favour 411 over 420, because 420 has much better support on the
+        // decoder side.
+        if (dst_desc->log2_chroma_w == 1 && src_desc->log2_chroma_w == 2 &&
+            dst_desc->log2_chroma_h == 1 && src_desc->log2_chroma_h == 2) {
+                score += 4;
+            }
     }
 
     if(consider & FF_LOSS_COLORSPACE)
