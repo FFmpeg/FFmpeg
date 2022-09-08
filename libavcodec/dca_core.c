@@ -767,7 +767,9 @@ static void erase_adpcm_history(DCACoreDecoder *s)
         for (band = 0; band < DCA_SUBBANDS; band++)
             AV_ZERO128(s->subband_samples[ch][band] - DCA_ADPCM_COEFFS);
 
+#ifdef FF_COPY_SWAP_ZERO_USES_MMX
     emms_c();
+#endif
 }
 
 static int alloc_sample_buffer(DCACoreDecoder *s)
@@ -831,7 +833,9 @@ static int parse_frame_data(DCACoreDecoder *s, enum HeaderType header, int xch_b
         }
     }
 
+#ifdef FF_COPY_SWAP_ZERO_USES_MMX
     emms_c();
+#endif
 
     return 0;
 }
@@ -1276,7 +1280,9 @@ static void erase_x96_adpcm_history(DCACoreDecoder *s)
         for (band = 0; band < DCA_SUBBANDS_X96; band++)
             AV_ZERO128(s->x96_subband_samples[ch][band] - DCA_ADPCM_COEFFS);
 
+#ifdef FF_COPY_SWAP_ZERO_USES_MMX
     emms_c();
+#endif
 }
 
 static int alloc_x96_sample_buffer(DCACoreDecoder *s)
@@ -1506,7 +1512,9 @@ static int parse_x96_frame_data(DCACoreDecoder *s, int exss, int xch_base)
         }
     }
 
+#ifdef FF_COPY_SWAP_ZERO_USES_MMX
     emms_c();
+#endif
 
     return 0;
 }
