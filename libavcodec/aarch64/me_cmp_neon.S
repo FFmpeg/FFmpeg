@@ -736,3 +736,51 @@ function vsse16_neon, export=1
 
         ret
 endfunc
+
+function vsad_intra16_neon, export=1
+        // x0           unused
+        // x1           uint8_t *pix1
+        // x2           uint8_t *dummy
+        // x3           ptrdiff_t stride
+        // w4           int h
+
+        ld1             {v0.16b}, [x1], x3
+        sub             w4, w4, #1 // we need to make h-1 iterations
+        cmp             w4, #3
+        movi            v16.8h, #0
+        b.lt            2f
+
+// make 4 iterations at once
+1:
+        // v = abs( pix1[0] - pix1[0 + stride] )
+        // score = sum(v)
+        ld1             {v1.16b}, [x1], x3
+        ld1             {v2.16b}, [x1], x3
+        uabal           v16.8h, v0.8b, v1.8b
+        ld1             {v3.16b}, [x1], x3
+        uabal2          v16.8h, v0.16b, v1.16b
+        sub             w4, w4, #3
+        uabal           v16.8h, v1.8b, v2.8b
+        cmp             w4, #3
+        uabal2          v16.8h, v1.16b, v2.16b
+        mov             v0.16b, v3.16b
+        uabal           v16.8h, v2.8b, v3.8b
+        uabal2          v16.8h, v2.16b, v3.16b
+        b.ge            1b
+        cbz             w4, 3f
+
+// iterate by one
+2:
+        ld1             {v1.16b}, [x1], x3
+        subs            w4, w4, #1
+        uabal           v16.8h, v0.8b, v1.8b
+        uabal2          v16.8h, v0.16b, v1.16b
+        mov             v0.16b, v1.16b
+        cbnz            w4, 2b
+
+3:
+        uaddlv          s17, v16.8h
+        fmov            w0, s17
+
+        ret
+endfunc
