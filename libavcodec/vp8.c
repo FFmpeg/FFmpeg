@@ -44,14 +44,6 @@
 #   include "arm/vp8.h"
 #endif
 
-#if CONFIG_VP7_DECODER && CONFIG_VP8_DECODER
-#define VPX(vp7, f) (vp7 ? vp7_ ## f : vp8_ ## f)
-#elif CONFIG_VP7_DECODER
-#define VPX(vp7, f) vp7_ ## f
-#else // CONFIG_VP8_DECODER
-#define VPX(vp7, f) vp8_ ## f
-#endif
-
 // fixme: add 1 bit to all the calls to this?
 static int vp8_rac_get_sint(VPXRangeCoder *c, int bits)
 {
