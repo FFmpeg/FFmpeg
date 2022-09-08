@@ -29,6 +29,8 @@
 
 #if !HAVE_FAST_64BIT && defined(__MMX__)
 
+#define FF_COPY_SWAP_ZERO_USES_MMX
+
 #define AV_COPY64 AV_COPY64
 static av_always_inline void AV_COPY64(void *d, const void *s)
 {
