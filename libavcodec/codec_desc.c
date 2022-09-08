@@ -3297,6 +3297,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("Bonk audio"),
         .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
+    {
+        .id        = AV_CODEC_ID_MISC4,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "misc4",
+        .long_name = NULL_IF_CONFIG_SMALL("Micronas SC-4 Audio"),
+        .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_INTRA_ONLY,
+    },
 
     /* subtitle codecs */
     {

@@ -483,6 +483,7 @@ extern const FFCodec ff_interplay_acm_decoder;
 extern const FFCodec ff_mace3_decoder;
 extern const FFCodec ff_mace6_decoder;
 extern const FFCodec ff_metasound_decoder;
+extern const FFCodec ff_misc4_decoder;
 extern const FFCodec ff_mlp_encoder;
 extern const FFCodec ff_mlp_decoder;
 extern const FFCodec ff_mp1_decoder;
