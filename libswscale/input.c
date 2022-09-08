@@ -28,14 +28,21 @@
 #include "config.h"
 #include "swscale_internal.h"
 
-#define input_pixel(pos) (isBE(origin) ? AV_RB16(pos) : AV_RL16(pos))
+#define input_pixel(pos) (is_be ? AV_RB16(pos) : AV_RL16(pos))
+
+#define IS_BE_LE 0
+#define IS_BE_BE 1
+#define IS_BE_   0
+/* ENDIAN_IDENTIFIER needs to be "BE", "LE" or "". The latter is intended
+ * for single-byte cases where the concept of endianness does not apply. */
+#define IS_BE(ENDIAN_IDENTIFIER) IS_BE_ ## ENDIAN_IDENTIFIER
 
 #define r ((origin == AV_PIX_FMT_BGR48BE || origin == AV_PIX_FMT_BGR48LE || origin == AV_PIX_FMT_BGRA64BE || origin == AV_PIX_FMT_BGRA64LE) ? b_r : r_b)
 #define b ((origin == AV_PIX_FMT_BGR48BE || origin == AV_PIX_FMT_BGR48LE || origin == AV_PIX_FMT_BGRA64BE || origin == AV_PIX_FMT_BGRA64LE) ? r_b : b_r)
 
 static av_always_inline void
 rgb64ToY_c_template(uint16_t *dst, const uint16_t *src, int width,
-                    enum AVPixelFormat origin, int32_t *rgb2yuv)
+                    enum AVPixelFormat origin, int32_t *rgb2yuv, int is_be)
 {
     int32_t ry = rgb2yuv[RY_IDX], gy = rgb2yuv[GY_IDX], by = rgb2yuv[BY_IDX];
     int i;
@@ -51,7 +58,7 @@ rgb64ToY_c_template(uint16_t *dst, const uint16_t *src, int width,
 static av_always_inline void
 rgb64ToUV_c_template(uint16_t *dstU, uint16_t *dstV,
                     const uint16_t *src1, const uint16_t *src2,
-                    int width, enum AVPixelFormat origin, int32_t *rgb2yuv)
+                    int width, enum AVPixelFormat origin, int32_t *rgb2yuv, int is_be)
 {
     int i;
     int32_t ru = rgb2yuv[RU_IDX], gu = rgb2yuv[GU_IDX], bu = rgb2yuv[BU_IDX];
@@ -70,7 +77,7 @@ rgb64ToUV_c_template(uint16_t *dstU, uint16_t *dstV,
 static av_always_inline void
 rgb64ToUV_half_c_template(uint16_t *dstU, uint16_t *dstV,
                           const uint16_t *src1, const uint16_t *src2,
-                          int width, enum AVPixelFormat origin, int32_t *rgb2yuv)
+                          int width, enum AVPixelFormat origin, int32_t *rgb2yuv, int is_be)
 {
     int i;
     int32_t ru = rgb2yuv[RU_IDX], gu = rgb2yuv[GU_IDX], bu = rgb2yuv[BU_IDX];
@@ -86,13 +93,13 @@ rgb64ToUV_half_c_template(uint16_t *dstU, uint16_t *dstV,
     }
 }
 
-#define rgb64funcs(pattern, BE_LE, origin) \
+#define RGB64FUNCS_EXT(pattern, BE_LE, origin, is_be) \
 static void pattern ## 64 ## BE_LE ## ToY_c(uint8_t *_dst, const uint8_t *_src, const uint8_t *unused0, const uint8_t *unused1,\
                                     int width, uint32_t *rgb2yuv, void *opq) \
 { \
     const uint16_t *src = (const uint16_t *) _src; \
     uint16_t *dst = (uint16_t *) _dst; \
-    rgb64ToY_c_template(dst, src, width, origin, rgb2yuv); \
+    rgb64ToY_c_template(dst, src, width, origin, rgb2yuv, is_be); \
 } \
  \
 static void pattern ## 64 ## BE_LE ## ToUV_c(uint8_t *_dstU, uint8_t *_dstV, \
@@ -102,7 +109,7 @@ static void pattern ## 64 ## BE_LE ## ToUV_c(uint8_t *_dstU, uint8_t *_dstV, \
     const uint16_t *src1 = (const uint16_t *) _src1, \
                    *src2 = (const uint16_t *) _src2; \
     uint16_t *dstU = (uint16_t *) _dstU, *dstV = (uint16_t *) _dstV; \
-    rgb64ToUV_c_template(dstU, dstV, src1, src2, width, origin, rgb2yuv); \
+    rgb64ToUV_c_template(dstU, dstV, src1, src2, width, origin, rgb2yuv, is_be); \
 } \
  \
 static void pattern ## 64 ## BE_LE ## ToUV_half_c(uint8_t *_dstU, uint8_t *_dstV, \
@@ -112,18 +119,20 @@ static void pattern ## 64 ## BE_LE ## ToUV_half_c(uint8_t *_dstU, uint8_t *_dstV
     const uint16_t *src1 = (const uint16_t *) _src1, \
                    *src2 = (const uint16_t *) _src2; \
     uint16_t *dstU = (uint16_t *) _dstU, *dstV = (uint16_t *) _dstV; \
-    rgb64ToUV_half_c_template(dstU, dstV, src1, src2, width, origin, rgb2yuv); \
+    rgb64ToUV_half_c_template(dstU, dstV, src1, src2, width, origin, rgb2yuv, is_be); \
 }
+#define RGB64FUNCS(pattern, endianness, base_fmt) \
+        RGB64FUNCS_EXT(pattern, endianness, base_fmt ## endianness, IS_BE(endianness))
 
-rgb64funcs(rgb, LE, AV_PIX_FMT_RGBA64LE)
-rgb64funcs(rgb, BE, AV_PIX_FMT_RGBA64BE)
-rgb64funcs(bgr, LE, AV_PIX_FMT_BGRA64LE)
-rgb64funcs(bgr, BE, AV_PIX_FMT_BGRA64BE)
+RGB64FUNCS(rgb, LE, AV_PIX_FMT_RGBA64)
+RGB64FUNCS(rgb, BE, AV_PIX_FMT_RGBA64)
+RGB64FUNCS(bgr, LE, AV_PIX_FMT_BGRA64)
+RGB64FUNCS(bgr, BE, AV_PIX_FMT_BGRA64)
 
 static av_always_inline void rgb48ToY_c_template(uint16_t *dst,
                                                  const uint16_t *src, int width,
                                                  enum AVPixelFormat origin,
-                                                 int32_t *rgb2yuv)
+                                                 int32_t *rgb2yuv, int is_be)
 {
     int32_t ry = rgb2yuv[RY_IDX], gy = rgb2yuv[GY_IDX], by = rgb2yuv[BY_IDX];
     int i;
@@ -142,7 +151,7 @@ static av_always_inline void rgb48ToUV_c_template(uint16_t *dstU,
                                                   const uint16_t *src2,
                                                   int width,
                                                   enum AVPixelFormat origin,
-                                                  int32_t *rgb2yuv)
+                                                  int32_t *rgb2yuv, int is_be)
 {
     int i;
     int32_t ru = rgb2yuv[RU_IDX], gu = rgb2yuv[GU_IDX], bu = rgb2yuv[BU_IDX];
@@ -164,7 +173,7 @@ static av_always_inline void rgb48ToUV_half_c_template(uint16_t *dstU,
                                                        const uint16_t *src2,
                                                        int width,
                                                        enum AVPixelFormat origin,
-                                                       int32_t *rgb2yuv)
+                                                       int32_t *rgb2yuv, int is_be)
 {
     int i;
     int32_t ru = rgb2yuv[RU_IDX], gu = rgb2yuv[GU_IDX], bu = rgb2yuv[BU_IDX];
@@ -187,7 +196,7 @@ static av_always_inline void rgb48ToUV_half_c_template(uint16_t *dstU,
 #undef b
 #undef input_pixel
 
-#define rgb48funcs(pattern, BE_LE, origin)                              \
+#define RGB48FUNCS_EXT(pattern, BE_LE, origin, is_be)                   \
 static void pattern ## 48 ## BE_LE ## ToY_c(uint8_t *_dst,              \
                                             const uint8_t *_src,        \
                                             const uint8_t *unused0, const uint8_t *unused1,\
@@ -197,7 +206,7 @@ static void pattern ## 48 ## BE_LE ## ToY_c(uint8_t *_dst,              \
 {                                                                       \
     const uint16_t *src = (const uint16_t *)_src;                       \
     uint16_t *dst       = (uint16_t *)_dst;                             \
-    rgb48ToY_c_template(dst, src, width, origin, rgb2yuv);              \
+    rgb48ToY_c_template(dst, src, width, origin, rgb2yuv, is_be);       \
 }                                                                       \
                                                                         \
 static void pattern ## 48 ## BE_LE ## ToUV_c(uint8_t *_dstU,            \
@@ -213,7 +222,7 @@ static void pattern ## 48 ## BE_LE ## ToUV_c(uint8_t *_dstU,            \
                    *src2 = (const uint16_t *)_src2;                     \
     uint16_t *dstU = (uint16_t *)_dstU,                                 \
              *dstV = (uint16_t *)_dstV;                                 \
-    rgb48ToUV_c_template(dstU, dstV, src1, src2, width, origin, rgb2yuv);        \
+    rgb48ToUV_c_template(dstU, dstV, src1, src2, width, origin, rgb2yuv, is_be); \
 }                                                                       \
                                                                         \
 static void pattern ## 48 ## BE_LE ## ToUV_half_c(uint8_t *_dstU,       \
@@ -229,13 +238,15 @@ static void pattern ## 48 ## BE_LE ## ToUV_half_c(uint8_t *_dstU,       \
                    *src2 = (const uint16_t *)_src2;                     \
     uint16_t *dstU = (uint16_t *)_dstU,                                 \
              *dstV = (uint16_t *)_dstV;                                 \
-    rgb48ToUV_half_c_template(dstU, dstV, src1, src2, width, origin, rgb2yuv);   \
+    rgb48ToUV_half_c_template(dstU, dstV, src1, src2, width, origin, rgb2yuv, is_be); \
 }
+#define RGB48FUNCS(pattern, endianness, base_fmt) \
+        RGB48FUNCS_EXT(pattern, endianness, base_fmt ## endianness, IS_BE(endianness))
 
-rgb48funcs(rgb, LE, AV_PIX_FMT_RGB48LE)
-rgb48funcs(rgb, BE, AV_PIX_FMT_RGB48BE)
-rgb48funcs(bgr, LE, AV_PIX_FMT_BGR48LE)
-rgb48funcs(bgr, BE, AV_PIX_FMT_BGR48BE)
+RGB48FUNCS(rgb, LE, AV_PIX_FMT_RGB48)
+RGB48FUNCS(rgb, BE, AV_PIX_FMT_RGB48)
+RGB48FUNCS(bgr, LE, AV_PIX_FMT_BGR48)
+RGB48FUNCS(bgr, BE, AV_PIX_FMT_BGR48)
 
 #define input_pixel(i) ((origin == AV_PIX_FMT_RGBA ||                      \
                          origin == AV_PIX_FMT_BGRA ||                      \
@@ -245,7 +256,7 @@ rgb48funcs(bgr, BE, AV_PIX_FMT_BGR48BE)
                         : ((origin == AV_PIX_FMT_X2RGB10LE ||              \
                             origin == AV_PIX_FMT_X2BGR10LE)                \
                            ? AV_RL32(&src[(i) * 4])                        \
-                           : (isBE(origin) ? AV_RB16(&src[(i) * 2])        \
+                           : (is_be ? AV_RB16(&src[(i) * 2])               \
                               : AV_RL16(&src[(i) * 2]))))
 
 static av_always_inline void rgb16_32ToY_c_template(int16_t *dst,
@@ -257,7 +268,7 @@ static av_always_inline void rgb16_32ToY_c_template(int16_t *dst,
                                                     int maskr, int maskg,
                                                     int maskb, int rsh,
                                                     int gsh, int bsh, int S,
-                                                    int32_t *rgb2yuv)
+                                                    int32_t *rgb2yuv, int is_be)
 {
     const int ry       = rgb2yuv[RY_IDX]<<rsh, gy = rgb2yuv[GY_IDX]<<gsh, by = rgb2yuv[BY_IDX]<<bsh;
     const unsigned rnd = (32<<((S)-1)) + (1<<(S-7));
@@ -283,7 +294,7 @@ static av_always_inline void rgb16_32ToUV_c_template(int16_t *dstU,
                                                      int maskr, int maskg,
                                                      int maskb, int rsh,
                                                      int gsh, int bsh, int S,
-                                                     int32_t *rgb2yuv)
+                                                     int32_t *rgb2yuv, int is_be)
 {
     const int ru       = rgb2yuv[RU_IDX] * (1 << rsh), gu = rgb2yuv[GU_IDX] * (1 << gsh), bu = rgb2yuv[BU_IDX] * (1 << bsh),
               rv       = rgb2yuv[RV_IDX] * (1 << rsh), gv = rgb2yuv[GV_IDX] * (1 << gsh), bv = rgb2yuv[BV_IDX] * (1 << bsh);
@@ -311,7 +322,7 @@ static av_always_inline void rgb16_32ToUV_half_c_template(int16_t *dstU,
                                                           int maskr, int maskg,
                                                           int maskb, int rsh,
                                                           int gsh, int bsh, int S,
-                                                          int32_t *rgb2yuv)
+                                                          int32_t *rgb2yuv, int is_be)
 {
     const int ru       = rgb2yuv[RU_IDX] * (1 << rsh), gu = rgb2yuv[GU_IDX] * (1 << gsh), bu = rgb2yuv[BU_IDX] * (1 << bsh),
               rv       = rgb2yuv[RV_IDX] * (1 << rsh), gv = rgb2yuv[GV_IDX] * (1 << gsh), bv = rgb2yuv[BV_IDX] * (1 << bsh),
@@ -345,13 +356,13 @@ static av_always_inline void rgb16_32ToUV_half_c_template(int16_t *dstU,
 
 #undef input_pixel
 
-#define rgb16_32_wrapper(fmt, name, shr, shg, shb, shp, maskr,          \
-                         maskg, maskb, rsh, gsh, bsh, S)                \
+#define RGB16_32FUNCS_EXT(fmt, name, shr, shg, shb, shp, maskr,         \
+                          maskg, maskb, rsh, gsh, bsh, S, is_be)        \
 static void name ## ToY_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2,            \
                           int width, uint32_t *tab, void *opq)          \
 {                                                                       \
     rgb16_32ToY_c_template((int16_t*)dst, src, width, fmt, shr, shg, shb, shp,    \
-                           maskr, maskg, maskb, rsh, gsh, bsh, S, tab); \
+                           maskr, maskg, maskb, rsh, gsh, bsh, S, tab, is_be); \
 }                                                                       \
                                                                         \
 static void name ## ToUV_c(uint8_t *dstU, uint8_t *dstV,                \
@@ -360,7 +371,7 @@ static void name ## ToUV_c(uint8_t *dstU, uint8_t *dstV,                \
 {                                                                       \
     rgb16_32ToUV_c_template((int16_t*)dstU, (int16_t*)dstV, src, width, fmt,                \
                             shr, shg, shb, shp,                         \
-                            maskr, maskg, maskb, rsh, gsh, bsh, S, tab);\
+                            maskr, maskg, maskb, rsh, gsh, bsh, S, tab, is_be); \
 }                                                                       \
                                                                         \
 static void name ## ToUV_half_c(uint8_t *dstU, uint8_t *dstV,           \
@@ -371,27 +382,32 @@ static void name ## ToUV_half_c(uint8_t *dstU, uint8_t *dstV,           \
     rgb16_32ToUV_half_c_template((int16_t*)dstU, (int16_t*)dstV, src, width, fmt,           \
                                  shr, shg, shb, shp,                    \
                                  maskr, maskg, maskb,                   \
-                                 rsh, gsh, bsh, S, tab);                \
+                                 rsh, gsh, bsh, S, tab, is_be);         \
 }
 
-rgb16_32_wrapper(AV_PIX_FMT_BGR32,    bgr32,  16, 0,  0, 0, 0xFF0000, 0xFF00,   0x00FF,  8, 0,  8, RGB2YUV_SHIFT + 8)
-rgb16_32_wrapper(AV_PIX_FMT_BGR32_1,  bgr321, 16, 0,  0, 8, 0xFF0000, 0xFF00,   0x00FF,  8, 0,  8, RGB2YUV_SHIFT + 8)
-rgb16_32_wrapper(AV_PIX_FMT_RGB32,    rgb32,   0, 0, 16, 0,   0x00FF, 0xFF00, 0xFF0000,  8, 0,  8, RGB2YUV_SHIFT + 8)
-rgb16_32_wrapper(AV_PIX_FMT_RGB32_1,  rgb321,  0, 0, 16, 8,   0x00FF, 0xFF00, 0xFF0000,  8, 0,  8, RGB2YUV_SHIFT + 8)
-rgb16_32_wrapper(AV_PIX_FMT_BGR565LE, bgr16le, 0, 0,  0, 0,   0x001F, 0x07E0,   0xF800, 11, 5,  0, RGB2YUV_SHIFT + 8)
-rgb16_32_wrapper(AV_PIX_FMT_BGR555LE, bgr15le, 0, 0,  0, 0,   0x001F, 0x03E0,   0x7C00, 10, 5,  0, RGB2YUV_SHIFT + 7)
-rgb16_32_wrapper(AV_PIX_FMT_BGR444LE, bgr12le, 0, 0,  0, 0,   0x000F, 0x00F0,   0x0F00,  8, 4,  0, RGB2YUV_SHIFT + 4)
-rgb16_32_wrapper(AV_PIX_FMT_RGB565LE, rgb16le, 0, 0,  0, 0,   0xF800, 0x07E0,   0x001F,  0, 5, 11, RGB2YUV_SHIFT + 8)
-rgb16_32_wrapper(AV_PIX_FMT_RGB555LE, rgb15le, 0, 0,  0, 0,   0x7C00, 0x03E0,   0x001F,  0, 5, 10, RGB2YUV_SHIFT + 7)
-rgb16_32_wrapper(AV_PIX_FMT_RGB444LE, rgb12le, 0, 0,  0, 0,   0x0F00, 0x00F0,   0x000F,  0, 4,  8, RGB2YUV_SHIFT + 4)
-rgb16_32_wrapper(AV_PIX_FMT_BGR565BE, bgr16be, 0, 0,  0, 0,   0x001F, 0x07E0,   0xF800, 11, 5,  0, RGB2YUV_SHIFT + 8)
-rgb16_32_wrapper(AV_PIX_FMT_BGR555BE, bgr15be, 0, 0,  0, 0,   0x001F, 0x03E0,   0x7C00, 10, 5,  0, RGB2YUV_SHIFT + 7)
-rgb16_32_wrapper(AV_PIX_FMT_BGR444BE, bgr12be, 0, 0,  0, 0,   0x000F, 0x00F0,   0x0F00,  8, 4,  0, RGB2YUV_SHIFT + 4)
-rgb16_32_wrapper(AV_PIX_FMT_RGB565BE, rgb16be, 0, 0,  0, 0,   0xF800, 0x07E0,   0x001F,  0, 5, 11, RGB2YUV_SHIFT + 8)
-rgb16_32_wrapper(AV_PIX_FMT_RGB555BE, rgb15be, 0, 0,  0, 0,   0x7C00, 0x03E0,   0x001F,  0, 5, 10, RGB2YUV_SHIFT + 7)
-rgb16_32_wrapper(AV_PIX_FMT_RGB444BE, rgb12be, 0, 0,  0, 0,   0x0F00, 0x00F0,   0x000F,  0, 4,  8, RGB2YUV_SHIFT + 4)
-rgb16_32_wrapper(AV_PIX_FMT_X2RGB10LE, rgb30le, 16, 6, 0, 0, 0x3FF00000, 0xFFC00, 0x3FF, 0, 0, 4, RGB2YUV_SHIFT + 6)
-rgb16_32_wrapper(AV_PIX_FMT_X2BGR10LE, bgr30le, 0, 6, 16, 0, 0x3FF, 0xFFC00, 0x3FF00000, 4, 0, 0, RGB2YUV_SHIFT + 6)
+#define RGB16_32FUNCS(base_fmt, endianness, name, shr, shg, shb, shp, maskr, \
+                      maskg, maskb, rsh, gsh, bsh, S) \
+    RGB16_32FUNCS_EXT(base_fmt ## endianness, name, shr, shg, shb, shp, maskr, \
+                      maskg, maskb, rsh, gsh, bsh, S, IS_BE(endianness))
+
+RGB16_32FUNCS(AV_PIX_FMT_BGR32,     , bgr32,  16, 0,  0, 0, 0xFF0000, 0xFF00,   0x00FF,  8, 0,  8, RGB2YUV_SHIFT + 8)
+RGB16_32FUNCS(AV_PIX_FMT_BGR32_1,   , bgr321, 16, 0,  0, 8, 0xFF0000, 0xFF00,   0x00FF,  8, 0,  8, RGB2YUV_SHIFT + 8)
+RGB16_32FUNCS(AV_PIX_FMT_RGB32,     , rgb32,   0, 0, 16, 0,   0x00FF, 0xFF00, 0xFF0000,  8, 0,  8, RGB2YUV_SHIFT + 8)
+RGB16_32FUNCS(AV_PIX_FMT_RGB32_1,   , rgb321,  0, 0, 16, 8,   0x00FF, 0xFF00, 0xFF0000,  8, 0,  8, RGB2YUV_SHIFT + 8)
+RGB16_32FUNCS(AV_PIX_FMT_BGR565,  LE, bgr16le, 0, 0,  0, 0,   0x001F, 0x07E0,   0xF800, 11, 5,  0, RGB2YUV_SHIFT + 8)
+RGB16_32FUNCS(AV_PIX_FMT_BGR555,  LE, bgr15le, 0, 0,  0, 0,   0x001F, 0x03E0,   0x7C00, 10, 5,  0, RGB2YUV_SHIFT + 7)
+RGB16_32FUNCS(AV_PIX_FMT_BGR444,  LE, bgr12le, 0, 0,  0, 0,   0x000F, 0x00F0,   0x0F00,  8, 4,  0, RGB2YUV_SHIFT + 4)
+RGB16_32FUNCS(AV_PIX_FMT_RGB565,  LE, rgb16le, 0, 0,  0, 0,   0xF800, 0x07E0,   0x001F,  0, 5, 11, RGB2YUV_SHIFT + 8)
+RGB16_32FUNCS(AV_PIX_FMT_RGB555,  LE, rgb15le, 0, 0,  0, 0,   0x7C00, 0x03E0,   0x001F,  0, 5, 10, RGB2YUV_SHIFT + 7)
+RGB16_32FUNCS(AV_PIX_FMT_RGB444,  LE, rgb12le, 0, 0,  0, 0,   0x0F00, 0x00F0,   0x000F,  0, 4,  8, RGB2YUV_SHIFT + 4)
+RGB16_32FUNCS(AV_PIX_FMT_BGR565,  BE, bgr16be, 0, 0,  0, 0,   0x001F, 0x07E0,   0xF800, 11, 5,  0, RGB2YUV_SHIFT + 8)
+RGB16_32FUNCS(AV_PIX_FMT_BGR555,  BE, bgr15be, 0, 0,  0, 0,   0x001F, 0x03E0,   0x7C00, 10, 5,  0, RGB2YUV_SHIFT + 7)
+RGB16_32FUNCS(AV_PIX_FMT_BGR444,  BE, bgr12be, 0, 0,  0, 0,   0x000F, 0x00F0,   0x0F00,  8, 4,  0, RGB2YUV_SHIFT + 4)
+RGB16_32FUNCS(AV_PIX_FMT_RGB565,  BE, rgb16be, 0, 0,  0, 0,   0xF800, 0x07E0,   0x001F,  0, 5, 11, RGB2YUV_SHIFT + 8)
+RGB16_32FUNCS(AV_PIX_FMT_RGB555,  BE, rgb15be, 0, 0,  0, 0,   0x7C00, 0x03E0,   0x001F,  0, 5, 10, RGB2YUV_SHIFT + 7)
+RGB16_32FUNCS(AV_PIX_FMT_RGB444,  BE, rgb12be, 0, 0,  0, 0,   0x0F00, 0x00F0,   0x000F,  0, 4,  8, RGB2YUV_SHIFT + 4)
+RGB16_32FUNCS(AV_PIX_FMT_X2RGB10, LE, rgb30le, 16, 6, 0, 0, 0x3FF00000, 0xFFC00, 0x3FF, 0, 0, 4, RGB2YUV_SHIFT + 6)
+RGB16_32FUNCS(AV_PIX_FMT_X2BGR10, LE, bgr30le, 0, 6, 16, 0, 0x3FF, 0xFFC00, 0x3FF00000, 4, 0, 0, RGB2YUV_SHIFT + 6)
 
 static void gbr24pToUV_half_c(uint8_t *_dstU, uint8_t *_dstV,
                          const uint8_t *gsrc, const uint8_t *bsrc, const uint8_t *rsrc,
@@ -831,8 +847,6 @@ static void nv21ToUV_c(uint8_t *dstU, uint8_t *dstV,
 p01x_wrapper(10, 6)
 p01x_wrapper(12, 4)
 p01x_uv_wrapper(16, 0)
-
-#define input_pixel(pos) (isBE(origin) ? AV_RB16(pos) : AV_RL16(pos))
 
 static void bgr24ToY_c(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2,
                        int width, uint32_t *rgb2yuv, void *opq)
