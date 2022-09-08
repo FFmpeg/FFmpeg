@@ -847,3 +847,125 @@ function vsse_intra16_neon, export=1
 
         ret
 endfunc
+
+function nsse16_neon, export=1
+        // x0           multiplier
+        // x1           uint8_t *pix1
+        // x2           uint8_t *pix2
+        // x3           ptrdiff_t stride
+        // w4           int h
+
+        str             x0, [sp, #-0x40]!
+        stp             x1, x2, [sp, #0x10]
+        stp             x3, x4, [sp, #0x20]
+        str             x30, [sp, #0x30]
+        bl              X(sse16_neon)
+        ldr             x30, [sp, #0x30]
+        mov             w9, w0                                  // here we store score1
+        ldr             x5, [sp]
+        ldp             x1, x2, [sp, #0x10]
+        ldp             x3, x4, [sp, #0x20]
+        add             sp, sp, #0x40
+
+        movi            v16.8h, #0
+        movi            v17.8h, #0
+        movi            v18.8h, #0
+        movi            v19.8h, #0
+
+        ld1             {v0.16b}, [x1], x3
+        subs            w4, w4, #1                              // we need to make h-1 iterations
+        ld1             {v2.16b}, [x2], x3
+        ext             v1.16b, v0.16b, v0.16b, #1              // x1 + 1
+        cmp             w4, #2
+        ext             v3.16b, v2.16b, v2.16b, #1              // x2 + 1
+
+        b.lt            2f
+
+// make 2 iterations at once
+1:
+        ld1             {v4.16b}, [x1], x3
+        ld1             {v6.16b}, [x2], x3
+        ld1             {v20.16b}, [x1], x3
+        ext             v5.16b, v4.16b, v4.16b, #1              // x1 + stride + 1
+        usubl           v31.8h, v0.8b, v4.8b
+        usubl2          v30.8h, v0.16b, v4.16b
+        ld1             {v22.16b}, [x2], x3
+        usubl           v29.8h, v1.8b, v5.8b
+        usubl2          v28.8h, v1.16b, v5.16b
+        ext             v7.16b, v6.16b, v6.16b, #1              // x2 + stride + 1
+        saba            v16.8h, v31.8h, v29.8h
+        ext             v21.16b, v20.16b, v20.16b, #1
+        saba            v17.8h, v30.8h, v28.8h
+        usubl           v27.8h, v2.8b, v6.8b
+        usubl2          v26.8h, v2.16b, v6.16b
+        ext             v23.16b, v22.16b, v22.16b, #1
+        usubl           v25.8h, v3.8b, v7.8b
+        usubl2          v24.8h, v3.16b, v7.16b
+        saba            v18.8h, v27.8h, v25.8h
+        saba            v19.8h, v26.8h, v24.8h
+
+        usubl           v31.8h, v4.8b, v20.8b
+        usubl2          v30.8h, v4.16b, v20.16b
+        usubl           v29.8h, v5.8b, v21.8b
+        usubl2          v28.8h, v5.16b, v21.16b
+        saba            v16.8h, v31.8h, v29.8h
+        saba            v17.8h, v30.8h, v28.8h
+        usubl           v27.8h, v6.8b, v22.8b
+        usubl2          v26.8h, v6.16b, v22.16b
+        usubl           v25.8h, v7.8b, v23.8b
+        usubl2          v24.8h, v7.16b, v23.16b
+        saba            v18.8h, v27.8h, v25.8h
+        saba            v19.8h, v26.8h, v24.8h
+        sub             w4, w4, #2
+
+        mov             v0.16b, v20.16b
+        mov             v1.16b, v21.16b
+        cmp             w4, #2
+        mov             v2.16b, v22.16b
+        mov             v3.16b, v23.16b
+
+        b.ge            1b
+        cbz             w4, 3f
+
+// iterate by one
+2:
+        ld1             {v4.16b}, [x1], x3
+        subs            w4, w4, #1
+        ld1             {v6.16b}, [x2], x3
+        ext             v5.16b, v4.16b, v4.16b, #1              // x1 + stride + 1
+        usubl           v31.8h, v0.8b, v4.8b
+        ext             v7.16b, v6.16b, v6.16b, #1              // x2 + stride + 1
+
+        usubl2          v30.8h, v0.16b, v4.16b
+        usubl           v29.8h, v1.8b, v5.8b
+        usubl2          v28.8h, v1.16b, v5.16b
+        saba            v16.8h, v31.8h, v29.8h
+        saba            v17.8h, v30.8h, v28.8h
+        usubl           v27.8h, v2.8b, v6.8b
+        usubl2          v26.8h, v2.16b, v6.16b
+        usubl           v25.8h, v3.8b, v7.8b
+        usubl2          v24.8h, v3.16b, v7.16b
+        saba            v18.8h, v27.8h, v25.8h
+        saba            v19.8h, v26.8h, v24.8h
+
+        mov             v0.16b, v4.16b
+        mov             v1.16b, v5.16b
+        mov             v2.16b, v6.16b
+        mov             v3.16b, v7.16b
+
+        cbnz            w4, 2b
+
+3:
+        sqsub           v17.8h, v17.8h, v19.8h
+        sqsub           v16.8h, v16.8h, v18.8h
+        ins             v17.h[7], wzr
+        sqadd           v16.8h, v16.8h, v17.8h
+        saddlv          s16, v16.8h
+        sqabs           s16, s16
+        fmov            w0, s16
+
+        mul             w0, w0, w5
+        add             w0, w0, w9
+
+        ret
+endfunc
