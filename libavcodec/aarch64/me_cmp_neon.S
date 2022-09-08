@@ -784,3 +784,66 @@ function vsad_intra16_neon, export=1
 
         ret
 endfunc
+
+function vsse_intra16_neon, export=1
+        // x0           unused
+        // x1           uint8_t *pix1
+        // x2           uint8_t *dummy
+        // x3           ptrdiff_t stride
+        // w4           int h
+
+        ld1             {v0.16b}, [x1], x3
+        movi            v16.4s, #0
+        movi            v17.4s, #0
+
+        sub             w4, w4, #1 // we need to make h-1 iterations
+        cmp             w4, #3
+        b.lt            2f
+
+1:
+        // v = abs( pix1[0] - pix1[0 + stride] )
+        // score = sum( v * v )
+        ld1             {v1.16b}, [x1], x3
+        ld1             {v2.16b}, [x1], x3
+        uabd            v30.16b, v0.16b, v1.16b
+        ld1             {v3.16b}, [x1], x3
+        umull           v29.8h, v30.8b, v30.8b
+        umull2          v28.8h, v30.16b, v30.16b
+        uabd            v27.16b, v1.16b, v2.16b
+        uadalp          v16.4s, v29.8h
+        umull           v26.8h, v27.8b, v27.8b
+        umull2          v27.8h, v27.16b, v27.16b
+        uadalp          v17.4s, v28.8h
+        uabd            v25.16b, v2.16b, v3.16b
+        uadalp          v16.4s, v26.8h
+        umull           v24.8h, v25.8b, v25.8b
+        umull2          v25.8h, v25.16b, v25.16b
+        uadalp          v17.4s, v27.8h
+        sub             w4, w4, #3
+        uadalp          v16.4s, v24.8h
+        cmp             w4, #3
+        uadalp          v17.4s, v25.8h
+        mov             v0.16b, v3.16b
+
+        b.ge            1b
+        cbz             w4, 3f
+
+// iterate by one
+2:
+        ld1             {v1.16b}, [x1], x3
+        subs            w4, w4, #1
+        uabd            v30.16b, v0.16b, v1.16b
+        mov             v0.16b, v1.16b
+        umull           v29.8h, v30.8b, v30.8b
+        umull2          v30.8h, v30.16b, v30.16b
+        uadalp          v16.4s, v29.8h
+        uadalp          v17.4s, v30.8h
+        cbnz            w4, 2b
+
+3:
+        add             v16.4s, v16.4s, v17.4S
+        uaddlv          d17, v16.4s
+        fmov            w0, s17
+
+        ret
+endfunc
