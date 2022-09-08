@@ -663,8 +663,11 @@ static int get_best_header(FLACParseContext *fpc, const uint8_t **poutbuf,
 
     /* Return the negative overread index so the client can compute pos.
        This should be the amount overread to the beginning of the child */
-    if (child)
-        return child->offset - flac_fifo_size(&fpc->fifo_buf);
+    if (child) {
+        int64_t offset = child->offset - flac_fifo_size(&fpc->fifo_buf);
+        if (offset > -(1 << 28))
+            return offset;
+    }
     return 0;
 }
 
