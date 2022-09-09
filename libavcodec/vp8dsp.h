@@ -81,13 +81,6 @@ typedef struct VP8DSPContext {
     vp8_mc_func put_vp8_bilinear_pixels_tab[3][3][3];
 } VP8DSPContext;
 
-void ff_put_vp8_pixels16_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
-                           int h, int x, int y);
-void ff_put_vp8_pixels8_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
-                          int h, int x, int y);
-void ff_put_vp8_pixels4_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
-                          int h, int x, int y);
-
 void ff_vp7dsp_init(VP8DSPContext *c);
 
 void ff_vp78dsp_init(VP8DSPContext *c);
