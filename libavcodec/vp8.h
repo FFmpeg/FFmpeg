@@ -336,11 +336,6 @@ typedef struct VP8Context {
     int vp7;
 
     /**
-     * Fade bit present in bitstream (VP7)
-     */
-    int fade_present;
-
-    /**
      * Interframe DC prediction (VP7)
      * [0] VP8_FRAME_PREVIOUS
      * [1] VP8_FRAME_GOLDEN
