@@ -89,11 +89,6 @@
 
 #ifdef __loongarch_sx
 #include <lsxintrin.h>
-
-/* __lsx_vldx() from lsxintrin.h does not accept a const void*;
- * remove the following once it does. */
-#define LSX_VLDX(cptr, stride) __lsx_vldx((void*)(cptr), (stride))
-
 /*
  * =============================================================================
  * Description : Dot product & addition of byte vector elements

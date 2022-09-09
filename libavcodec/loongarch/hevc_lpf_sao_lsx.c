@@ -1202,17 +1202,17 @@ static void hevc_sao_edge_filter_0degree_16multiple_lsx(uint8_t *dst,
     for (; height; height -= 4) {
         src_minus1 = src - 1;
         src_minus10 = __lsx_vld(src_minus1, 0);
-        DUP2_ARG2(LSX_VLDX, src_minus1, src_stride, src_minus1,
+        DUP2_ARG2(__lsx_vldx, src_minus1, src_stride, src_minus1,
                   src_stride_2x, src_minus11, src_minus12);
-        src_minus13 = LSX_VLDX(src_minus1, src_stride_3x);
+        src_minus13 = __lsx_vldx(src_minus1, src_stride_3x);
 
         for (v_cnt = 0; v_cnt < width; v_cnt += 16) {
             src_minus1 += 16;
             dst_ptr = dst + v_cnt;
             src10 = __lsx_vld(src_minus1, 0);
-            DUP2_ARG2(LSX_VLDX, src_minus1, src_stride, src_minus1,
+            DUP2_ARG2(__lsx_vldx, src_minus1, src_stride, src_minus1,
                       src_stride_2x, src11, src12);
-            src13 = LSX_VLDX(src_minus1, src_stride_3x);
+            src13 = __lsx_vldx(src_minus1, src_stride_3x);
             DUP4_ARG3(__lsx_vshuf_b, src10, src_minus10, shuf1, src11,
                       src_minus11, shuf1, src12, src_minus12, shuf1, src13,
                       src_minus13, shuf1, src_zero0, src_zero1,
@@ -1359,7 +1359,7 @@ static void hevc_sao_edge_filter_90degree_4width_lsx(uint8_t *dst,
         src_minus11 = src11;
 
         /* load in advance */
-        DUP2_ARG2(LSX_VLDX, src, src_stride, src, src_stride_2x,
+        DUP2_ARG2(__lsx_vldx, src, src_stride, src, src_stride_2x,
                   src10, src11);
 
         __lsx_vstelm_w(dst0, dst, 0, 0);
@@ -1418,7 +1418,7 @@ static void hevc_sao_edge_filter_90degree_8width_lsx(uint8_t *dst,
 
     /* load in advance */
     DUP2_ARG2(__lsx_vld, src - src_stride, 0, src, 0, src_minus10, src_minus11);
-    DUP2_ARG2(LSX_VLDX, src, src_stride, src, src_stride_2x, src10, src11);
+    DUP2_ARG2(__lsx_vldx, src, src_stride, src, src_stride_2x, src10, src11);
 
     for (height -= 2; height; height -= 2) {
         src += src_stride_2x;
@@ -1452,7 +1452,7 @@ static void hevc_sao_edge_filter_90degree_8width_lsx(uint8_t *dst,
         src_minus11 = src11;
 
         /* load in advance */
-        DUP2_ARG2(LSX_VLDX, src, src_stride, src, src_stride_2x,
+        DUP2_ARG2(__lsx_vldx, src, src_stride, src, src_stride_2x,
                   src10, src11);
 
         __lsx_vstelm_d(dst0, dst, 0, 0);
@@ -1529,7 +1529,7 @@ static void hevc_sao_edge_filter_90degree_16multiple_lsx(uint8_t *dst,
                   src_minus10, src_minus11);
 
         for (h_cnt = (height >> 2); h_cnt--;) {
-            DUP4_ARG2(LSX_VLDX, src, src_stride, src, src_stride_2x,
+            DUP4_ARG2(__lsx_vldx, src, src_stride, src, src_stride_2x,
                       src, src_stride_3x, src, src_stride_4x,
                       src10, src11, src12, src13);
             DUP4_ARG2(__lsx_vseq_b, src_minus11, src_minus10, src_minus11,
@@ -1636,7 +1636,7 @@ static void hevc_sao_edge_filter_45degree_4width_lsx(uint8_t *dst,
     /* load in advance */
     DUP2_ARG2(__lsx_vld, src_orig - src_stride, 0, src_orig, 0,
               src_minus10, src_minus11);
-    DUP2_ARG2(LSX_VLDX, src_orig, src_stride, src_orig, src_stride_2x,
+    DUP2_ARG2(__lsx_vldx, src_orig, src_stride, src_orig, src_stride_2x,
               src10, src11);
 
     for (height -= 2; height; height -= 2) {
@@ -1678,7 +1678,7 @@ static void hevc_sao_edge_filter_45degree_4width_lsx(uint8_t *dst,
         src_minus11 = src11;
 
         /* load in advance */
-        DUP2_ARG2(LSX_VLDX, src_orig, src_stride, src_orig, src_stride_2x,
+        DUP2_ARG2(__lsx_vldx, src_orig, src_stride, src_orig, src_stride_2x,
                   src10, src11);
 
         __lsx_vstelm_w(dst0, dst, 0, 0);
@@ -1749,7 +1749,7 @@ static void hevc_sao_edge_filter_45degree_8width_lsx(uint8_t *dst,
     /* load in advance */
     DUP2_ARG2(__lsx_vld, src_orig - src_stride, 0, src_orig, 0, src_minus10,
               src_minus11);
-    DUP2_ARG2(LSX_VLDX, src_orig, src_stride, src_orig, src_stride_2x,
+    DUP2_ARG2(__lsx_vldx, src_orig, src_stride, src_orig, src_stride_2x,
               src10, src11);
 
     for (height -= 2; height; height -= 2) {
@@ -1791,7 +1791,7 @@ static void hevc_sao_edge_filter_45degree_8width_lsx(uint8_t *dst,
         src_minus11 = src11;
 
         /* load in advance */
-        DUP2_ARG2(LSX_VLDX, src_orig, src_stride, src_orig, src_stride_2x,
+        DUP2_ARG2(__lsx_vldx, src_orig, src_stride, src_orig, src_stride_2x,
                   src10, src11)
         __lsx_vstelm_d(dst0, dst, 0, 0);
         __lsx_vstelm_d(dst0, dst + dst_stride, 0, 1);
@@ -1834,7 +1834,7 @@ static void hevc_sao_edge_filter_45degree_8width_lsx(uint8_t *dst,
     src_minus11 = src11;
 
     /* load in advance */
-    DUP2_ARG2(LSX_VLDX, src_orig, src_stride, src_orig, src_stride_2x,
+    DUP2_ARG2(__lsx_vldx, src_orig, src_stride, src_orig, src_stride_2x,
               src10, src11);
 
     __lsx_vstelm_d(dst0, dst, 0, 0);
@@ -1881,17 +1881,17 @@ static void hevc_sao_edge_filter_45degree_16multiple_lsx(uint8_t *dst,
         src_orig = src - 1;
         dst_orig = dst;
         src_minus11 = __lsx_vld(src_orig, 0);
-        DUP2_ARG2(LSX_VLDX, src_orig, src_stride, src_orig, src_stride_2x,
+        DUP2_ARG2(__lsx_vldx, src_orig, src_stride, src_orig, src_stride_2x,
                   src_minus12, src_minus13);
-        src_minus14 = LSX_VLDX(src_orig, src_stride_3x);
+        src_minus14 = __lsx_vldx(src_orig, src_stride_3x);
 
         for (v_cnt = 0; v_cnt < width; v_cnt += 16) {
             src_minus10 = __lsx_vld(src_orig - src_stride, 0);
             src_orig += 16;
             src10 = __lsx_vld(src_orig, 0);
-            DUP2_ARG2(LSX_VLDX, src_orig, src_stride, src_orig,
+            DUP2_ARG2(__lsx_vldx, src_orig, src_stride, src_orig,
                       src_stride_2x, src11, src12);
-            src13 = LSX_VLDX(src_orig, src_stride_3x);
+            src13 = __lsx_vldx(src_orig, src_stride_3x);
             src_plus13 = __lsx_vld(src + v_cnt + src_stride_4x, 1);
 
             DUP4_ARG3(__lsx_vshuf_b, src10, src_minus11, shuf1, src11,
@@ -2017,7 +2017,7 @@ static void hevc_sao_edge_filter_135degree_4width_lsx(uint8_t *dst,
     /* load in advance */
     DUP2_ARG2(__lsx_vld, src_orig - src_stride, 0, src_orig, 0,
               src_minus10, src_minus11);
-    DUP2_ARG2(LSX_VLDX, src_orig, src_stride, src_orig, src_stride_2x,
+    DUP2_ARG2(__lsx_vldx, src_orig, src_stride, src_orig, src_stride_2x,
               src10, src11);
 
     for (height -= 2; height; height -= 2) {
@@ -2059,7 +2059,7 @@ static void hevc_sao_edge_filter_135degree_4width_lsx(uint8_t *dst,
         src_minus11 = src11;
 
         /* load in advance */
-        DUP2_ARG2(LSX_VLDX, src_orig, src_stride, src_orig, src_stride_2x,
+        DUP2_ARG2(__lsx_vldx, src_orig, src_stride, src_orig, src_stride_2x,
                   src10, src11);
 
         __lsx_vstelm_w(dst0, dst, 0, 0);
@@ -2132,7 +2132,7 @@ static void hevc_sao_edge_filter_135degree_8width_lsx(uint8_t *dst,
     /* load in advance */
     DUP2_ARG2(__lsx_vld, src_orig - src_stride, 0, src_orig, 0,
               src_minus10, src_minus11);
-    DUP2_ARG2(LSX_VLDX, src_orig, src_stride, src_orig, src_stride_2x,
+    DUP2_ARG2(__lsx_vldx, src_orig, src_stride, src_orig, src_stride_2x,
               src10, src11);
 
     for (height -= 2; height; height -= 2) {
@@ -2174,7 +2174,7 @@ static void hevc_sao_edge_filter_135degree_8width_lsx(uint8_t *dst,
         src_minus11 = src11;
 
         /* load in advance */
-        DUP2_ARG2(LSX_VLDX, src_orig, src_stride, src_orig, src_stride_2x,
+        DUP2_ARG2(__lsx_vldx, src_orig, src_stride, src_orig, src_stride_2x,
                   src10, src11);
 
         __lsx_vstelm_d(dst0, dst, 0, 0);
@@ -2257,18 +2257,18 @@ static void hevc_sao_edge_filter_135degree_16multiple_lsx(uint8_t *dst,
         dst_orig = dst;
 
         src_minus11 = __lsx_vld(src_orig, 0);
-        DUP2_ARG2(LSX_VLDX, src_orig, src_stride, src_orig, src_stride_2x,
+        DUP2_ARG2(__lsx_vldx, src_orig, src_stride, src_orig, src_stride_2x,
                   src_plus10, src_plus11);
-        src_plus12 = LSX_VLDX(src_orig, src_stride_3x);
+        src_plus12 = __lsx_vldx(src_orig, src_stride_3x);
 
         for (v_cnt = 0; v_cnt < width; v_cnt += 16) {
             src_minus10 = __lsx_vld(src_orig - src_stride, 2);
-            src_plus13 = LSX_VLDX(src_orig, src_stride_4x);
+            src_plus13 = __lsx_vldx(src_orig, src_stride_4x);
             src_orig += 16;
             src10 = __lsx_vld(src_orig, 0);
-            DUP2_ARG2(LSX_VLDX, src_orig, src_stride, src_orig, src_stride_2x,
+            DUP2_ARG2(__lsx_vldx, src_orig, src_stride, src_orig, src_stride_2x,
                       src11, src12);
-            src13 =LSX_VLDX(src_orig, src_stride_3x);
+            src13 =__lsx_vldx(src_orig, src_stride_3x);
 
             DUP4_ARG3(__lsx_vshuf_b, src10, src_minus11, shuf1, src11,
                       src_plus10,  shuf1, src12, src_plus11, shuf1, src13,
