@@ -831,20 +831,20 @@ static void put_vc1_mspel_mc_h_lasx(uint8_t *dst, const uint8_t *src,
     const_para1_2 = __lasx_xvreplgr2vr_h(*(para_v + 1));
 
     in0 = __lasx_xvld(_src, 0);
-    DUP2_ARG2(LASX_XVLDX, _src, stride, _src, stride2, in1, in2);
-    in3 = LASX_XVLDX(_src, stride3);
+    DUP2_ARG2(__lasx_xvldx, _src, stride, _src, stride2, in1, in2);
+    in3 = __lasx_xvldx(_src, stride3);
     _src += stride4;
     in4 = __lasx_xvld(_src, 0);
-    DUP2_ARG2(LASX_XVLDX, _src, stride, _src, stride2, in5, in6);
-    in7 = LASX_XVLDX(_src, stride3);
+    DUP2_ARG2(__lasx_xvldx, _src, stride, _src, stride2, in5, in6);
+    in7 = __lasx_xvldx(_src, stride3);
     _src += stride4;
     in8 = __lasx_xvld(_src, 0);
-    DUP2_ARG2(LASX_XVLDX, _src, stride, _src, stride2, in9, in10);
-    in11 = LASX_XVLDX(_src, stride3);
+    DUP2_ARG2(__lasx_xvldx, _src, stride, _src, stride2, in9, in10);
+    in11 = __lasx_xvldx(_src, stride3);
     _src += stride4;
     in12 = __lasx_xvld(_src, 0);
-    DUP2_ARG2(LASX_XVLDX, _src, stride, _src, stride2, in13, in14);
-    in15 = LASX_XVLDX(_src, stride3);
+    DUP2_ARG2(__lasx_xvldx, _src, stride, _src, stride2, in13, in14);
+    in15 = __lasx_xvldx(_src, stride3);
     DUP4_ARG2(__lasx_xvilvl_b, in2, in0, in3, in1, in6, in4, in7, in5,
               tmp0_m, tmp1_m, tmp2_m, tmp3_m);
     DUP4_ARG2(__lasx_xvilvl_b, in10, in8, in11, in9, in14, in12, in15, in13,

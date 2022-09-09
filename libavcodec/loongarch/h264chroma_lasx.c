@@ -51,7 +51,7 @@ static av_always_inline void avc_chroma_hv_8x4_lasx(const uint8_t *src, uint8_t 
     __m256i coeff_vt_vec1 = __lasx_xvreplgr2vr_h(coef_ver1);
 
     DUP2_ARG2(__lasx_xvld, chroma_mask_arr, 0, src, 0, mask, src0);
-    DUP4_ARG2(LASX_XVLDX, src, stride, src, stride_2x, src, stride_3x, src, stride_4x,
+    DUP4_ARG2(__lasx_xvldx, src, stride, src, stride_2x, src, stride_3x, src, stride_4x,
               src1, src2, src3, src4);
     DUP2_ARG3(__lasx_xvpermi_q, src2, src1, 0x20, src4, src3, 0x20, src1, src3);
     src0 = __lasx_xvshuf_b(src0, src0, mask);
@@ -91,10 +91,10 @@ static av_always_inline void avc_chroma_hv_8x8_lasx(const uint8_t *src, uint8_t 
     __m256i coeff_vt_vec1 = __lasx_xvreplgr2vr_h(coef_ver1);
 
     DUP2_ARG2(__lasx_xvld, chroma_mask_arr, 0, src, 0, mask, src0);
-    DUP4_ARG2(LASX_XVLDX, src, stride, src, stride_2x, src, stride_3x, src, stride_4x,
+    DUP4_ARG2(__lasx_xvldx, src, stride, src, stride_2x, src, stride_3x, src, stride_4x,
               src1, src2, src3, src4);
     src += stride_4x;
-    DUP4_ARG2(LASX_XVLDX, src, stride, src, stride_2x, src, stride_3x, src, stride_4x,
+    DUP4_ARG2(__lasx_xvldx, src, stride, src, stride_2x, src, stride_3x, src, stride_4x,
               src5, src6, src7, src8);
     DUP4_ARG3(__lasx_xvpermi_q, src2, src1, 0x20, src4, src3, 0x20, src6, src5, 0x20,
               src8, src7, 0x20, src1, src3, src5, src7);
@@ -141,8 +141,8 @@ static av_always_inline void avc_chroma_hz_8x4_lasx(const uint8_t *src, uint8_t 
 
     coeff_vec = __lasx_xvslli_b(coeff_vec, 3);
     DUP2_ARG2(__lasx_xvld, chroma_mask_arr, 0, src, 0, mask, src0);
-    DUP2_ARG2(LASX_XVLDX, src, stride, src, stride_2x, src1, src2);
-    src3 = LASX_XVLDX(src, stride_3x);
+    DUP2_ARG2(__lasx_xvldx, src, stride, src, stride_2x, src1, src2);
+    src3 = __lasx_xvldx(src, stride_3x);
     DUP2_ARG3(__lasx_xvpermi_q, src1, src0, 0x20, src3, src2, 0x20, src0, src2);
     DUP2_ARG3(__lasx_xvshuf_b, src0, src0, mask, src2, src2, mask, src0, src2);
     DUP2_ARG2(__lasx_xvdp2_h_bu, src0, coeff_vec, src2, coeff_vec, res0, res1);
@@ -170,11 +170,11 @@ static av_always_inline void avc_chroma_hz_8x8_lasx(const uint8_t *src, uint8_t 
 
     coeff_vec = __lasx_xvslli_b(coeff_vec, 3);
     DUP2_ARG2(__lasx_xvld, chroma_mask_arr, 0, src, 0, mask, src0);
-    DUP4_ARG2(LASX_XVLDX, src, stride, src, stride_2x, src, stride_3x, src, stride_4x,
+    DUP4_ARG2(__lasx_xvldx, src, stride, src, stride_2x, src, stride_3x, src, stride_4x,
               src1, src2, src3, src4);
     src += stride_4x;
-    DUP2_ARG2(LASX_XVLDX, src, stride, src, stride_2x, src5, src6);
-    src7 = LASX_XVLDX(src, stride_3x);
+    DUP2_ARG2(__lasx_xvldx, src, stride, src, stride_2x, src5, src6);
+    src7 = __lasx_xvldx(src, stride_3x);
     DUP4_ARG3(__lasx_xvpermi_q, src1, src0, 0x20, src3, src2, 0x20, src5, src4, 0x20,
               src7, src6, 0x20, src0, src2, src4, src6);
     DUP4_ARG3(__lasx_xvshuf_b, src0, src0, mask, src2, src2, mask, src4, src4, mask,
@@ -212,7 +212,7 @@ static av_always_inline void avc_chroma_hz_nonmult_lasx(const uint8_t *src,
     coeff_vec = __lasx_xvslli_b(coeff_vec, 3);
 
     for (row = height >> 2; row--;) {
-        DUP4_ARG2(LASX_XVLDX, src, 0, src, stride, src, stride_2x, src, stride_3x,
+        DUP4_ARG2(__lasx_xvldx, src, 0, src, stride, src, stride_2x, src, stride_3x,
                   src0, src1, src2, src3);
         src += stride_4x;
         DUP2_ARG3(__lasx_xvpermi_q, src1, src0, 0x20, src3, src2, 0x20, src0, src2);
@@ -228,7 +228,7 @@ static av_always_inline void avc_chroma_hz_nonmult_lasx(const uint8_t *src,
 
     if ((height & 3)) {
         src0 = __lasx_xvld(src, 0);
-        src1 = LASX_XVLDX(src, stride);
+        src1 = __lasx_xvldx(src, stride);
         src1 = __lasx_xvpermi_q(src1, src0, 0x20);
         src0 = __lasx_xvshuf_b(src1, src1, mask);
         res0 = __lasx_xvdp2_h_bu(src0, coeff_vec);
@@ -253,7 +253,7 @@ static av_always_inline void avc_chroma_vt_8x4_lasx(const uint8_t *src, uint8_t 
     coeff_vec = __lasx_xvslli_b(coeff_vec, 3);
     src0 = __lasx_xvld(src, 0);
     src += stride;
-    DUP4_ARG2(LASX_XVLDX, src, 0, src, stride, src, stride_2x, src, stride_3x,
+    DUP4_ARG2(__lasx_xvldx, src, 0, src, stride, src, stride_2x, src, stride_3x,
               src1, src2, src3, src4);
     DUP4_ARG3(__lasx_xvpermi_q, src1, src0, 0x20, src2, src1, 0x20, src3, src2, 0x20,
               src4, src3, 0x20, src0, src1, src2, src3);
@@ -282,10 +282,10 @@ static av_always_inline void avc_chroma_vt_8x8_lasx(const uint8_t *src, uint8_t 
     coeff_vec = __lasx_xvslli_b(coeff_vec, 3);
     src0 = __lasx_xvld(src, 0);
     src += stride;
-    DUP4_ARG2(LASX_XVLDX, src, 0, src, stride, src, stride_2x, src, stride_3x,
+    DUP4_ARG2(__lasx_xvldx, src, 0, src, stride, src, stride_2x, src, stride_3x,
               src1, src2, src3, src4);
     src += stride_4x;
-    DUP4_ARG2(LASX_XVLDX, src, 0, src, stride, src, stride_2x, src, stride_3x,
+    DUP4_ARG2(__lasx_xvldx, src, 0, src, stride, src, stride_2x, src, stride_3x,
               src5, src6, src7, src8);
     DUP4_ARG3(__lasx_xvpermi_q, src1, src0, 0x20, src2, src1, 0x20, src3, src2, 0x20,
               src4, src3, 0x20, src0, src1, src2, src3);
@@ -402,7 +402,7 @@ static void avc_chroma_hv_4x2_lasx(const uint8_t *src, uint8_t *dst, ptrdiff_t s
     __m256i coeff_vt_vec  = __lasx_xvpermi_q(coeff_vt_vec1, coeff_vt_vec0, 0x02);
 
     DUP2_ARG2(__lasx_xvld, chroma_mask_arr, 32, src, 0, mask, src0);
-    DUP2_ARG2(LASX_XVLDX, src, stride, src, stride_2, src1, src2);
+    DUP2_ARG2(__lasx_xvldx, src, stride, src, stride_2, src1, src2);
     DUP2_ARG3(__lasx_xvshuf_b, src1, src0, mask, src2, src1, mask, src0, src1);
     src0 = __lasx_xvpermi_q(src0, src1, 0x02);
     res_hz = __lasx_xvdp2_h_bu(src0, coeff_hz_vec);
@@ -431,7 +431,7 @@ static void avc_chroma_hv_4x4_lasx(const uint8_t *src, uint8_t *dst, ptrdiff_t s
     __m256i coeff_vt_vec1 = __lasx_xvreplgr2vr_h(coef_ver1);
 
     DUP2_ARG2(__lasx_xvld, chroma_mask_arr, 32, src, 0, mask, src0);
-    DUP4_ARG2(LASX_XVLDX, src, stride, src, stride_2, src, stride_3,
+    DUP4_ARG2(__lasx_xvldx, src, stride, src, stride_2, src, stride_3,
               src, stride_4, src1, src2, src3, src4);
     DUP4_ARG3(__lasx_xvshuf_b, src1, src0, mask, src2, src1, mask, src3, src2, mask,
               src4, src3, mask, src0, src1, src2, src3);
@@ -464,10 +464,10 @@ static void avc_chroma_hv_4x8_lasx(const uint8_t *src, uint8_t * dst, ptrdiff_t 
     __m256i coeff_vt_vec1 = __lasx_xvreplgr2vr_h(coef_ver1);
 
     DUP2_ARG2(__lasx_xvld, chroma_mask_arr, 32, src, 0, mask, src0);
-    DUP4_ARG2(LASX_XVLDX, src, stride, src, stride_2, src, stride_3,
+    DUP4_ARG2(__lasx_xvldx, src, stride, src, stride_2, src, stride_3,
               src, stride_4, src1, src2, src3, src4);
     src += stride_4;
-    DUP4_ARG2(LASX_XVLDX, src, stride, src, stride_2, src, stride_3,
+    DUP4_ARG2(__lasx_xvldx, src, stride, src, stride_2, src, stride_3,
               src, stride_4, src5, src6, src7, src8);
     DUP4_ARG3(__lasx_xvshuf_b, src1, src0, mask, src2, src1, mask, src3, src2, mask,
               src4, src3, mask, src0, src1, src2, src3);
@@ -519,7 +519,7 @@ static void avc_chroma_hz_4x2_lasx(const uint8_t *src, uint8_t *dst, ptrdiff_t s
     __m256i coeff_vec  = __lasx_xvilvl_b(coeff_vec0, coeff_vec1);
 
     DUP2_ARG2(__lasx_xvld, chroma_mask_arr, 32, src, 0, mask, src0);
-    src1 = LASX_XVLDX(src, stride);
+    src1 = __lasx_xvldx(src, stride);
     src0 = __lasx_xvshuf_b(src1, src0, mask);
     res = __lasx_xvdp2_h_bu(src0, coeff_vec);
     res = __lasx_xvslli_h(res, 3);
@@ -540,8 +540,8 @@ static void avc_chroma_hz_4x4_lasx(const uint8_t *src, uint8_t *dst, ptrdiff_t s
     __m256i coeff_vec  = __lasx_xvilvl_b(coeff_vec0, coeff_vec1);
 
     DUP2_ARG2(__lasx_xvld, chroma_mask_arr, 32, src, 0, mask, src0);
-    DUP2_ARG2(LASX_XVLDX, src, stride, src, stride_2, src1, src2);
-    src3 = LASX_XVLDX(src, stride_3);
+    DUP2_ARG2(__lasx_xvldx, src, stride, src, stride_2, src1, src2);
+    src3 = __lasx_xvldx(src, stride_3);
     DUP2_ARG3(__lasx_xvshuf_b, src1, src0, mask, src3, src2, mask, src0, src2);
     src0 = __lasx_xvpermi_q(src0, src2, 0x02);
     res = __lasx_xvdp2_h_bu(src0, coeff_vec);
@@ -567,11 +567,11 @@ static void avc_chroma_hz_4x8_lasx(const uint8_t *src, uint8_t *dst, ptrdiff_t s
 
     coeff_vec = __lasx_xvslli_b(coeff_vec, 3);
     DUP2_ARG2(__lasx_xvld, chroma_mask_arr, 32, src, 0, mask, src0);
-    DUP4_ARG2(LASX_XVLDX, src, stride, src, stride_2, src, stride_3,
+    DUP4_ARG2(__lasx_xvldx, src, stride, src, stride_2, src, stride_3,
               src, stride_4, src1, src2, src3, src4);
     src += stride_4;
-    DUP2_ARG2(LASX_XVLDX, src, stride, src, stride_2, src5, src6);
-    src7 = LASX_XVLDX(src, stride_3);
+    DUP2_ARG2(__lasx_xvldx, src, stride, src, stride_2, src5, src6);
+    src7 = __lasx_xvldx(src, stride_3);
     DUP4_ARG3(__lasx_xvshuf_b, src1, src0, mask, src3, src2, mask, src5, src4, mask,
               src7, src6, mask, src0, src2, src4, src6);
     DUP2_ARG3(__lasx_xvpermi_q, src0, src2, 0x02, src4, src6, 0x02, src0, src4);
@@ -625,7 +625,7 @@ static void avc_chroma_vt_4x2_lasx(const uint8_t *src, uint8_t *dst, ptrdiff_t s
     __m256i coeff_vec  = __lasx_xvilvl_b(coeff_vec0, coeff_vec1);
 
     src0 = __lasx_xvld(src, 0);
-    DUP2_ARG2(LASX_XVLDX, src, stride, src, stride << 1, src1, src2);
+    DUP2_ARG2(__lasx_xvldx, src, stride, src, stride << 1, src1, src2);
     DUP2_ARG2(__lasx_xvilvl_b, src1, src0, src2, src1, tmp0, tmp1);
     tmp0 = __lasx_xvilvl_d(tmp1, tmp0);
     res  = __lasx_xvdp2_h_bu(tmp0, coeff_vec);
@@ -649,7 +649,7 @@ static void avc_chroma_vt_4x4_lasx(const uint8_t *src, uint8_t *dst, ptrdiff_t s
     __m256i coeff_vec  = __lasx_xvilvl_b(coeff_vec0, coeff_vec1);
 
     src0 = __lasx_xvld(src, 0);
-    DUP4_ARG2(LASX_XVLDX, src, stride, src, stride_2, src, stride_3,
+    DUP4_ARG2(__lasx_xvldx, src, stride, src, stride_2, src, stride_3,
               src, stride_4, src1, src2, src3, src4);
     DUP4_ARG2(__lasx_xvilvl_b, src1, src0, src2, src1, src3, src2, src4, src3,
               tmp0, tmp1, tmp2, tmp3);
@@ -679,10 +679,10 @@ static void avc_chroma_vt_4x8_lasx(const uint8_t *src, uint8_t *dst, ptrdiff_t s
 
     coeff_vec = __lasx_xvslli_b(coeff_vec, 3);
     src0 = __lasx_xvld(src, 0);
-    DUP4_ARG2(LASX_XVLDX, src, stride, src, stride_2, src, stride_3,
+    DUP4_ARG2(__lasx_xvldx, src, stride, src, stride_2, src, stride_3,
               src, stride_4, src1, src2, src3, src4);
     src += stride_4;
-    DUP4_ARG2(LASX_XVLDX, src, stride, src, stride_2, src, stride_3,
+    DUP4_ARG2(__lasx_xvldx, src, stride, src, stride_2, src, stride_3,
               src, stride_4, src5, src6, src7, src8);
     DUP4_ARG2(__lasx_xvilvl_b, src1, src0, src2, src1, src3, src2, src4, src3,
               tmp0, tmp1, tmp2, tmp3);
@@ -860,7 +860,7 @@ static av_always_inline void avc_chroma_hv_and_aver_dst_8x4_lasx(const uint8_t *
     __m256i coeff_vt_vec1 = __lasx_xvreplgr2vr_h(coef_ver1);
 
     DUP2_ARG2(__lasx_xvld, chroma_mask_arr, 0, src, 0, mask, src0);
-    DUP4_ARG2(LASX_XVLDX, src, stride, src, stride_2x, src, stride_3x, src, stride_4x,
+    DUP4_ARG2(__lasx_xvldx, src, stride, src, stride_2x, src, stride_3x, src, stride_4x,
               src1, src2, src3, src4);
     DUP2_ARG3(__lasx_xvpermi_q, src2, src1, 0x20, src4, src3, 0x20, src1, src3);
     src0 = __lasx_xvshuf_b(src0, src0, mask);
@@ -874,7 +874,7 @@ static av_always_inline void avc_chroma_hv_and_aver_dst_8x4_lasx(const uint8_t *
     res_vt0 = __lasx_xvmadd_h(res_vt0, res_hz0, coeff_vt_vec1);
     res_vt1 = __lasx_xvmadd_h(res_vt1, res_hz1, coeff_vt_vec1);
     out = __lasx_xvssrarni_bu_h(res_vt1, res_vt0, 6);
-    DUP4_ARG2(LASX_XVLDX, dst, 0, dst, stride, dst, stride_2x, dst, stride_3x,
+    DUP4_ARG2(__lasx_xvldx, dst, 0, dst, stride, dst, stride_2x, dst, stride_3x,
               tp0, tp1, tp2, tp3);
     DUP2_ARG2(__lasx_xvilvl_d, tp2, tp0, tp3, tp1, tp0, tp2);
     tp0 = __lasx_xvpermi_q(tp2, tp0, 0x20);
@@ -907,10 +907,10 @@ static av_always_inline void avc_chroma_hv_and_aver_dst_8x8_lasx(const uint8_t *
 
     DUP2_ARG2(__lasx_xvld, chroma_mask_arr, 0, src, 0, mask, src0);
     src += stride;
-    DUP4_ARG2(LASX_XVLDX, src, 0, src, stride, src, stride_2x, src, stride_3x,
+    DUP4_ARG2(__lasx_xvldx, src, 0, src, stride, src, stride_2x, src, stride_3x,
               src1, src2, src3, src4);
     src += stride_4x;
-    DUP4_ARG2(LASX_XVLDX, src, 0, src, stride, src, stride_2x, src, stride_3x,
+    DUP4_ARG2(__lasx_xvldx, src, 0, src, stride, src, stride_2x, src, stride_3x,
               src5, src6, src7, src8);
     DUP4_ARG3(__lasx_xvpermi_q, src2, src1, 0x20, src4, src3, 0x20, src6, src5, 0x20,
               src8, src7, 0x20, src1, src3, src5, src7);
@@ -934,12 +934,12 @@ static av_always_inline void avc_chroma_hv_and_aver_dst_8x8_lasx(const uint8_t *
     res_vt3 = __lasx_xvmadd_h(res_vt3, res_hz3, coeff_vt_vec1);
     DUP2_ARG3(__lasx_xvssrarni_bu_h, res_vt1, res_vt0, 6, res_vt3, res_vt2, 6,
               out0, out1);
-    DUP4_ARG2(LASX_XVLDX, dst, 0, dst, stride, dst, stride_2x, dst, stride_3x,
+    DUP4_ARG2(__lasx_xvldx, dst, 0, dst, stride, dst, stride_2x, dst, stride_3x,
               tp0, tp1, tp2, tp3);
     DUP2_ARG2(__lasx_xvilvl_d, tp2, tp0, tp3, tp1, tp0, tp2);
     dst0 = __lasx_xvpermi_q(tp2, tp0, 0x20);
     dst += stride_4x;
-    DUP4_ARG2(LASX_XVLDX, dst, 0, dst, stride, dst, stride_2x, dst, stride_3x,
+    DUP4_ARG2(__lasx_xvldx, dst, 0, dst, stride, dst, stride_2x, dst, stride_3x,
               tp0, tp1, tp2, tp3);
     dst -= stride_4x;
     DUP2_ARG2(__lasx_xvilvl_d, tp2, tp0, tp3, tp1, tp0, tp2);
@@ -973,13 +973,13 @@ static av_always_inline void avc_chroma_hz_and_aver_dst_8x4_lasx(const uint8_t *
 
     coeff_vec = __lasx_xvslli_b(coeff_vec, 3);
     mask = __lasx_xvld(chroma_mask_arr, 0);
-    DUP4_ARG2(LASX_XVLDX, src, 0, src, stride, src, stride_2x, src, stride_3x,
+    DUP4_ARG2(__lasx_xvldx, src, 0, src, stride, src, stride_2x, src, stride_3x,
               src0, src1, src2, src3);
     DUP2_ARG3(__lasx_xvpermi_q, src1, src0, 0x20, src3, src2, 0x20, src0, src2);
     DUP2_ARG3(__lasx_xvshuf_b, src0, src0, mask, src2, src2, mask, src0, src2);
     DUP2_ARG2(__lasx_xvdp2_h_bu, src0, coeff_vec, src2, coeff_vec, res0, res1);
     out = __lasx_xvssrarni_bu_h(res1, res0, 6);
-    DUP4_ARG2(LASX_XVLDX, dst, 0, dst, stride, dst, stride_2x, dst, stride_3x,
+    DUP4_ARG2(__lasx_xvldx, dst, 0, dst, stride, dst, stride_2x, dst, stride_3x,
               tp0, tp1, tp2, tp3);
     DUP2_ARG2(__lasx_xvilvl_d, tp2, tp0, tp3, tp1, tp0, tp2);
     tp0 = __lasx_xvpermi_q(tp2, tp0, 0x20);
@@ -1008,10 +1008,10 @@ static av_always_inline void avc_chroma_hz_and_aver_dst_8x8_lasx(const uint8_t *
 
     coeff_vec = __lasx_xvslli_b(coeff_vec, 3);
     mask = __lasx_xvld(chroma_mask_arr, 0);
-    DUP4_ARG2(LASX_XVLDX, src, 0, src, stride, src, stride_2x, src, stride_3x,
+    DUP4_ARG2(__lasx_xvldx, src, 0, src, stride, src, stride_2x, src, stride_3x,
               src0, src1, src2, src3);
     src += stride_4x;
-    DUP4_ARG2(LASX_XVLDX, src, 0, src, stride, src, stride_2x, src, stride_3x,
+    DUP4_ARG2(__lasx_xvldx, src, 0, src, stride, src, stride_2x, src, stride_3x,
               src4, src5, src6, src7);
     DUP4_ARG3(__lasx_xvpermi_q, src1, src0, 0x20, src3, src2, 0x20, src5, src4, 0x20,
               src7, src6, 0x20, src0, src2, src4, src6);
@@ -1020,12 +1020,12 @@ static av_always_inline void avc_chroma_hz_and_aver_dst_8x8_lasx(const uint8_t *
     DUP4_ARG2(__lasx_xvdp2_h_bu, src0, coeff_vec, src2, coeff_vec, src4, coeff_vec, src6,
               coeff_vec, res0, res1, res2, res3);
     DUP2_ARG3(__lasx_xvssrarni_bu_h, res1, res0, 6, res3, res2, 6, out0, out1);
-    DUP4_ARG2(LASX_XVLDX, dst, 0, dst, stride, dst, stride_2x, dst, stride_3x,
+    DUP4_ARG2(__lasx_xvldx, dst, 0, dst, stride, dst, stride_2x, dst, stride_3x,
               tp0, tp1, tp2, tp3);
     DUP2_ARG2(__lasx_xvilvl_d, tp2, tp0, tp3, tp1, tp0, tp2);
     dst0 = __lasx_xvpermi_q(tp2, tp0, 0x20);
     dst += stride_4x;
-    DUP4_ARG2(LASX_XVLDX, dst, 0, dst, stride, dst, stride_2x, dst, stride_3x,
+    DUP4_ARG2(__lasx_xvldx, dst, 0, dst, stride, dst, stride_2x, dst, stride_3x,
               tp0, tp1, tp2, tp3);
     dst -= stride_4x;
     DUP2_ARG2(__lasx_xvilvl_d, tp2, tp0, tp3, tp1, tp0, tp2);
@@ -1059,14 +1059,14 @@ static av_always_inline void avc_chroma_vt_and_aver_dst_8x4_lasx(const uint8_t *
 
     coeff_vec = __lasx_xvslli_b(coeff_vec, 3);
     src0 = __lasx_xvld(src, 0);
-    DUP4_ARG2(LASX_XVLDX, src, stride, src, stride_2x, src, stride_3x, src, stride_4x,
+    DUP4_ARG2(__lasx_xvldx, src, stride, src, stride_2x, src, stride_3x, src, stride_4x,
               src1, src2, src3, src4);
     DUP4_ARG3(__lasx_xvpermi_q, src1, src0, 0x20, src2, src1, 0x20, src3, src2, 0x20,
               src4, src3, 0x20, src0, src1, src2, src3);
     DUP2_ARG2(__lasx_xvilvl_b, src1, src0, src3, src2, src0, src2);
     DUP2_ARG2(__lasx_xvdp2_h_bu, src0, coeff_vec, src2, coeff_vec, res0, res1);
     out = __lasx_xvssrarni_bu_h(res1, res0, 6);
-    DUP4_ARG2(LASX_XVLDX, dst, 0, dst, stride, dst, stride_2x, dst, stride_3x,
+    DUP4_ARG2(__lasx_xvldx, dst, 0, dst, stride, dst, stride_2x, dst, stride_3x,
               tp0, tp1, tp2, tp3);
     DUP2_ARG2(__lasx_xvilvl_d, tp2, tp0, tp3, tp1, tp0, tp2);
     tp0 = __lasx_xvpermi_q(tp2, tp0, 0x20);
@@ -1095,10 +1095,10 @@ static av_always_inline void avc_chroma_vt_and_aver_dst_8x8_lasx(const uint8_t *
     coeff_vec = __lasx_xvslli_b(coeff_vec, 3);
     src0 = __lasx_xvld(src, 0);
     src += stride;
-    DUP4_ARG2(LASX_XVLDX, src, 0, src, stride, src, stride_2x, src, stride_3x,
+    DUP4_ARG2(__lasx_xvldx, src, 0, src, stride, src, stride_2x, src, stride_3x,
               src1, src2, src3, src4);
     src += stride_4x;
-    DUP4_ARG2(LASX_XVLDX, src, 0, src, stride, src, stride_2x, src, stride_3x,
+    DUP4_ARG2(__lasx_xvldx, src, 0, src, stride, src, stride_2x, src, stride_3x,
               src5, src6, src7, src8);
     DUP4_ARG3(__lasx_xvpermi_q, src1, src0, 0x20, src2, src1, 0x20, src3, src2, 0x20,
               src4, src3, 0x20, src0, src1, src2, src3);
@@ -1109,12 +1109,12 @@ static av_always_inline void avc_chroma_vt_and_aver_dst_8x8_lasx(const uint8_t *
     DUP4_ARG2(__lasx_xvdp2_h_bu, src0, coeff_vec, src2, coeff_vec, src4, coeff_vec, src6,
               coeff_vec, res0, res1, res2, res3);
     DUP2_ARG3(__lasx_xvssrarni_bu_h, res1, res0, 6, res3, res2, 6, out0, out1);
-    DUP4_ARG2(LASX_XVLDX, dst, 0, dst, stride, dst, stride_2x, dst, stride_3x,
+    DUP4_ARG2(__lasx_xvldx, dst, 0, dst, stride, dst, stride_2x, dst, stride_3x,
               tp0, tp1, tp2, tp3);
     DUP2_ARG2(__lasx_xvilvl_d, tp2, tp0, tp3, tp1, tp0, tp2);
     dst0 = __lasx_xvpermi_q(tp2, tp0, 0x20);
     dst += stride_4x;
-    DUP4_ARG2(LASX_XVLDX, dst, 0, dst, stride, dst, stride_2x, dst, stride_3x,
+    DUP4_ARG2(__lasx_xvldx, dst, 0, dst, stride, dst, stride_2x, dst, stride_3x,
               tp0, tp1, tp2, tp3);
     dst -= stride_4x;
     DUP2_ARG2(__lasx_xvilvl_d, tp2, tp0, tp3, tp1, tp0, tp2);
