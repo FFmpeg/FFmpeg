@@ -94,7 +94,7 @@ static void parse_waveformatex(AVFormatContext *s, AVIOContext *pb, AVCodecParam
 int ff_get_wav_header(AVFormatContext *s, AVIOContext *pb,
                       AVCodecParameters *par, int size, int big_endian)
 {
-    int id, channels;
+    int id, channels = 0;
     uint64_t bitrate = 0;
 
     if (size < 14) {
