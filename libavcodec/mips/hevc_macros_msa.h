@@ -52,6 +52,15 @@
     out_m;                                                       \
 } )
 
+#define HEVC_FILT_4TAP_SW(in0, in1, filt0, filt1)                \
+( {                                                              \
+    v4i32 out_m;                                                 \
+                                                                 \
+    out_m = __msa_dotp_s_w((v8i16) in0, (v8i16) filt0);          \
+    out_m = __msa_dpadd_s_w(out_m, (v8i16) in1, (v8i16) filt1);  \
+    out_m;                                                       \
+} )
+
 #define HEVC_FILT_4TAP(in0, in1, filt0, filt1)           \
 ( {                                                      \
     v4i32 out_m;                                         \
