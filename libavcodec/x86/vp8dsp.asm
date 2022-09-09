@@ -157,7 +157,7 @@ SECTION .text
 ; subpel MC functions:
 ;
 ; void ff_put_vp8_epel<size>_h<htap>v<vtap>_<opt>(uint8_t *dst, ptrdiff_t deststride,
-;                                                 uint8_t *src, ptrdiff_t srcstride,
+;                                                 const uint8_t *src, ptrdiff_t srcstride,
 ;                                                 int height,   int mx, int my);
 ;-------------------------------------------------------------------------------
 

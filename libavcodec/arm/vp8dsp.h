@@ -58,7 +58,7 @@ void ff_vp8dsp_init_neon(VP8DSPContext *dsp);
 
 #define VP8_MC(n, opt)                                                  \
     void ff_put_vp8_##n##_##opt(uint8_t *dst, ptrdiff_t dststride,      \
-                                uint8_t *src, ptrdiff_t srcstride,      \
+                                const uint8_t *src, ptrdiff_t srcstride,\
                                 int h, int x, int y)
 
 #define VP8_EPEL(w, opt)                        \

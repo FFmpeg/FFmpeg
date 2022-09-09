@@ -1113,7 +1113,7 @@ endfunc
 
 @ MC
 
-@ void put_vp8_pixels16(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+@ void put_vp8_pixels16(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
 @                       ptrdiff_t srcstride, int h, int mx, int my)
 function ff_put_vp8_pixels16_armv6, export=1
         push            {r4-r11}
@@ -1137,7 +1137,7 @@ function ff_put_vp8_pixels16_armv6, export=1
         bx              lr
 endfunc
 
-@ void put_vp8_pixels8(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+@ void put_vp8_pixels8(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
 @                      ptrdiff_t srcstride, int h, int mx, int my)
 function ff_put_vp8_pixels8_armv6, export=1
         push            {r4-r11}
@@ -1161,7 +1161,7 @@ function ff_put_vp8_pixels8_armv6, export=1
         bx              lr
 endfunc
 
-@ void put_vp8_pixels4(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+@ void put_vp8_pixels4(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
 @                      ptrdiff_t srcstride, int h, int mx, int my)
 function ff_put_vp8_pixels4_armv6, export=1
         ldr             r12, [sp, #0]           @ h

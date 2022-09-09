@@ -96,7 +96,7 @@ static const vec_s8 h_subpel_filters_outer[3] =
 
 static av_always_inline
 void put_vp8_epel_h_altivec_core(uint8_t *dst, ptrdiff_t dst_stride,
-                                 uint8_t *src, ptrdiff_t src_stride,
+                                 const uint8_t *src, ptrdiff_t src_stride,
                                  int h, int mx, int w, int is6tap)
 {
     LOAD_H_SUBPEL_FILTER(mx-1);
@@ -193,7 +193,7 @@ static const vec_u8 v_subpel_filters[7] =
 
 static av_always_inline
 void put_vp8_epel_v_altivec_core(uint8_t *dst, ptrdiff_t dst_stride,
-                                 uint8_t *src, ptrdiff_t src_stride,
+                                 const uint8_t *src, ptrdiff_t src_stride,
                                  int h, int my, int w, int is6tap)
 {
     LOAD_V_SUBPEL_FILTER(my-1);
@@ -259,19 +259,19 @@ void put_vp8_epel_v_altivec_core(uint8_t *dst, ptrdiff_t dst_stride,
 
 #define EPEL_FUNCS(WIDTH, TAPS) \
 static av_noinline \
-void put_vp8_epel ## WIDTH ## _h ## TAPS ## _altivec(uint8_t *dst, ptrdiff_t dst_stride, uint8_t *src, ptrdiff_t src_stride, int h, int mx, int my) \
+void put_vp8_epel ## WIDTH ## _h ## TAPS ## _altivec(uint8_t *dst, ptrdiff_t dst_stride, const uint8_t *src, ptrdiff_t src_stride, int h, int mx, int my) \
 { \
     put_vp8_epel_h_altivec_core(dst, dst_stride, src, src_stride, h, mx, WIDTH, TAPS == 6); \
 } \
 \
 static av_noinline \
-void put_vp8_epel ## WIDTH ## _v ## TAPS ## _altivec(uint8_t *dst, ptrdiff_t dst_stride, uint8_t *src, ptrdiff_t src_stride, int h, int mx, int my) \
+void put_vp8_epel ## WIDTH ## _v ## TAPS ## _altivec(uint8_t *dst, ptrdiff_t dst_stride, const uint8_t *src, ptrdiff_t src_stride, int h, int mx, int my) \
 { \
     put_vp8_epel_v_altivec_core(dst, dst_stride, src, src_stride, h, my, WIDTH, TAPS == 6); \
 }
 
 #define EPEL_HV(WIDTH, HTAPS, VTAPS) \
-static void put_vp8_epel ## WIDTH ## _h ## HTAPS ## v ## VTAPS ## _altivec(uint8_t *dst, ptrdiff_t dstride, uint8_t *src, ptrdiff_t sstride, int h, int mx, int my) \
+static void put_vp8_epel ## WIDTH ## _h ## HTAPS ## v ## VTAPS ## _altivec(uint8_t *dst, ptrdiff_t dstride, const uint8_t *src, ptrdiff_t sstride, int h, int mx, int my) \
 { \
     DECLARE_ALIGNED(16, uint8_t, tmp)[(2*WIDTH+5)*16]; \
     if (VTAPS == 6) { \
@@ -299,7 +299,7 @@ EPEL_HV(4,  4,6)
 EPEL_HV(4,  6,4)
 EPEL_HV(4,  4,4)
 
-static void put_vp8_pixels16_altivec(uint8_t *dst, ptrdiff_t dstride, uint8_t *src, ptrdiff_t sstride, int h, int mx, int my)
+static void put_vp8_pixels16_altivec(uint8_t *dst, ptrdiff_t dstride, const uint8_t *src, ptrdiff_t sstride, int h, int mx, int my)
 {
     register vector unsigned char perm;
     int i;

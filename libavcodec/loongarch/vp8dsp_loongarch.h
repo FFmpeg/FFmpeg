@@ -25,49 +25,49 @@
 #include "libavcodec/vp8dsp.h"
 
 void ff_put_vp8_pixels8_lsx(uint8_t *dst, ptrdiff_t dst_stride,
-                            uint8_t *src, ptrdiff_t src_stride,
+                            const uint8_t *src, ptrdiff_t src_stride,
                             int h, int x, int y);
 void ff_put_vp8_pixels16_lsx(uint8_t *dst, ptrdiff_t dst_stride,
-                             uint8_t *src, ptrdiff_t src_stride,
+                             const uint8_t *src, ptrdiff_t src_stride,
                              int h, int x, int y);
 
 void ff_put_vp8_epel16_h6_lsx(uint8_t *dst, ptrdiff_t dst_stride,
-                              uint8_t *src, ptrdiff_t src_stride,
+                              const uint8_t *src, ptrdiff_t src_stride,
                               int h, int mx, int my);
 void ff_put_vp8_epel16_v4_lsx(uint8_t *dst, ptrdiff_t dst_stride,
-                              uint8_t *src, ptrdiff_t src_stride,
+                              const uint8_t *src, ptrdiff_t src_stride,
                               int h, int mx, int my);
 void ff_put_vp8_epel16_v6_lsx(uint8_t *dst, ptrdiff_t dst_stride,
-                              uint8_t *src, ptrdiff_t src_stride,
+                              const uint8_t *src, ptrdiff_t src_stride,
                               int h, int mx, int my);
 void ff_put_vp8_epel16_h6v4_lsx(uint8_t *dst, ptrdiff_t dst_stride,
-                                uint8_t *src, ptrdiff_t src_stride,
+                                const uint8_t *src, ptrdiff_t src_stride,
                                 int h, int mx, int my);
 void ff_put_vp8_epel16_h4v6_lsx(uint8_t *dst, ptrdiff_t dst_stride,
-                                uint8_t *src, ptrdiff_t src_stride,
+                                const uint8_t *src, ptrdiff_t src_stride,
                                 int h, int mx, int my);
 void ff_put_vp8_epel16_h6v6_lsx(uint8_t *dst, ptrdiff_t dst_stride,
-                                uint8_t *src, ptrdiff_t src_stride,
+                                const uint8_t *src, ptrdiff_t src_stride,
                                 int h, int mx, int my);
 
 void ff_put_vp8_epel8_v4_lsx(uint8_t *dst, ptrdiff_t dst_stride,
-                             uint8_t *src, ptrdiff_t src_stride,
+                             const uint8_t *src, ptrdiff_t src_stride,
                              int h, int mx, int my);
 void ff_put_vp8_epel8_v6_lsx(uint8_t *dst, ptrdiff_t dst_stride,
-                             uint8_t *src, ptrdiff_t src_stride,
+                             const uint8_t *src, ptrdiff_t src_stride,
                              int h, int mx, int my);
 void ff_put_vp8_epel8_h6v4_lsx(uint8_t *dst, ptrdiff_t dst_stride,
-                               uint8_t *src, ptrdiff_t src_stride,
+                               const uint8_t *src, ptrdiff_t src_stride,
                                int h, int mx, int my);
 void ff_put_vp8_epel8_h4v6_lsx(uint8_t *dst, ptrdiff_t dst_stride,
-                               uint8_t *src, ptrdiff_t src_stride,
+                               const uint8_t *src, ptrdiff_t src_stride,
                                int h, int mx, int my);
 void ff_put_vp8_epel8_h6v6_lsx(uint8_t *dst, ptrdiff_t dst_stride,
-                               uint8_t *src, ptrdiff_t src_stride,
+                               const uint8_t *src, ptrdiff_t src_stride,
                                int h, int mx, int my);
 
 void ff_put_vp8_epel8_h6_lsx(uint8_t *dst, ptrdiff_t dst_stride,
-                             uint8_t *src, ptrdiff_t src_stride,
+                             const uint8_t *src, ptrdiff_t src_stride,
                              int h, int mx, int my);
 
 /* loop filter */

@@ -32,93 +32,93 @@
  * MC functions
  */
 void ff_put_vp8_epel4_h4_mmxext(uint8_t *dst, ptrdiff_t dststride,
-                                uint8_t *src, ptrdiff_t srcstride,
+                                const uint8_t *src, ptrdiff_t srcstride,
                                 int height, int mx, int my);
 void ff_put_vp8_epel4_h6_mmxext(uint8_t *dst, ptrdiff_t dststride,
-                                uint8_t *src, ptrdiff_t srcstride,
+                                const uint8_t *src, ptrdiff_t srcstride,
                                 int height, int mx, int my);
 void ff_put_vp8_epel4_v4_mmxext(uint8_t *dst, ptrdiff_t dststride,
-                                uint8_t *src, ptrdiff_t srcstride,
+                                const uint8_t *src, ptrdiff_t srcstride,
                                 int height, int mx, int my);
 void ff_put_vp8_epel4_v6_mmxext(uint8_t *dst, ptrdiff_t dststride,
-                                uint8_t *src, ptrdiff_t srcstride,
+                                const uint8_t *src, ptrdiff_t srcstride,
                                 int height, int mx, int my);
 
 void ff_put_vp8_epel8_h4_sse2  (uint8_t *dst, ptrdiff_t dststride,
-                                uint8_t *src, ptrdiff_t srcstride,
+                                const uint8_t *src, ptrdiff_t srcstride,
                                 int height, int mx, int my);
 void ff_put_vp8_epel8_h6_sse2  (uint8_t *dst, ptrdiff_t dststride,
-                                uint8_t *src, ptrdiff_t srcstride,
+                                const uint8_t *src, ptrdiff_t srcstride,
                                 int height, int mx, int my);
 void ff_put_vp8_epel8_v4_sse2  (uint8_t *dst, ptrdiff_t dststride,
-                                uint8_t *src, ptrdiff_t srcstride,
+                                const uint8_t *src, ptrdiff_t srcstride,
                                 int height, int mx, int my);
 void ff_put_vp8_epel8_v6_sse2  (uint8_t *dst, ptrdiff_t dststride,
-                                uint8_t *src, ptrdiff_t srcstride,
+                                const uint8_t *src, ptrdiff_t srcstride,
                                 int height, int mx, int my);
 
 void ff_put_vp8_epel4_h4_ssse3 (uint8_t *dst, ptrdiff_t dststride,
-                                uint8_t *src, ptrdiff_t srcstride,
+                                const uint8_t *src, ptrdiff_t srcstride,
                                 int height, int mx, int my);
 void ff_put_vp8_epel4_h6_ssse3 (uint8_t *dst, ptrdiff_t dststride,
-                                uint8_t *src, ptrdiff_t srcstride,
+                                const uint8_t *src, ptrdiff_t srcstride,
                                 int height, int mx, int my);
 void ff_put_vp8_epel4_v4_ssse3 (uint8_t *dst, ptrdiff_t dststride,
-                                uint8_t *src, ptrdiff_t srcstride,
+                                const uint8_t *src, ptrdiff_t srcstride,
                                 int height, int mx, int my);
 void ff_put_vp8_epel4_v6_ssse3 (uint8_t *dst, ptrdiff_t dststride,
-                                uint8_t *src, ptrdiff_t srcstride,
+                                const uint8_t *src, ptrdiff_t srcstride,
                                 int height, int mx, int my);
 void ff_put_vp8_epel8_h4_ssse3 (uint8_t *dst, ptrdiff_t dststride,
-                                uint8_t *src, ptrdiff_t srcstride,
+                                const uint8_t *src, ptrdiff_t srcstride,
                                 int height, int mx, int my);
 void ff_put_vp8_epel8_h6_ssse3 (uint8_t *dst, ptrdiff_t dststride,
-                                uint8_t *src, ptrdiff_t srcstride,
+                                const uint8_t *src, ptrdiff_t srcstride,
                                 int height, int mx, int my);
 void ff_put_vp8_epel8_v4_ssse3 (uint8_t *dst, ptrdiff_t dststride,
-                                uint8_t *src, ptrdiff_t srcstride,
+                                const uint8_t *src, ptrdiff_t srcstride,
                                 int height, int mx, int my);
 void ff_put_vp8_epel8_v6_ssse3 (uint8_t *dst, ptrdiff_t dststride,
-                                uint8_t *src, ptrdiff_t srcstride,
+                                const uint8_t *src, ptrdiff_t srcstride,
                                 int height, int mx, int my);
 
 void ff_put_vp8_bilinear4_h_mmxext(uint8_t *dst, ptrdiff_t dststride,
-                                   uint8_t *src, ptrdiff_t srcstride,
+                                   const uint8_t *src, ptrdiff_t srcstride,
                                    int height, int mx, int my);
 void ff_put_vp8_bilinear8_h_sse2  (uint8_t *dst, ptrdiff_t dststride,
-                                   uint8_t *src, ptrdiff_t srcstride,
+                                   const uint8_t *src, ptrdiff_t srcstride,
                                    int height, int mx, int my);
 void ff_put_vp8_bilinear4_h_ssse3 (uint8_t *dst, ptrdiff_t dststride,
-                                   uint8_t *src, ptrdiff_t srcstride,
+                                   const uint8_t *src, ptrdiff_t srcstride,
                                    int height, int mx, int my);
 void ff_put_vp8_bilinear8_h_ssse3 (uint8_t *dst, ptrdiff_t dststride,
-                                   uint8_t *src, ptrdiff_t srcstride,
+                                   const uint8_t *src, ptrdiff_t srcstride,
                                    int height, int mx, int my);
 
 void ff_put_vp8_bilinear4_v_mmxext(uint8_t *dst, ptrdiff_t dststride,
-                                   uint8_t *src, ptrdiff_t srcstride,
+                                   const uint8_t *src, ptrdiff_t srcstride,
                                    int height, int mx, int my);
 void ff_put_vp8_bilinear8_v_sse2  (uint8_t *dst, ptrdiff_t dststride,
-                                   uint8_t *src, ptrdiff_t srcstride,
+                                   const uint8_t *src, ptrdiff_t srcstride,
                                    int height, int mx, int my);
 void ff_put_vp8_bilinear4_v_ssse3 (uint8_t *dst, ptrdiff_t dststride,
-                                   uint8_t *src, ptrdiff_t srcstride,
+                                   const uint8_t *src, ptrdiff_t srcstride,
                                    int height, int mx, int my);
 void ff_put_vp8_bilinear8_v_ssse3 (uint8_t *dst, ptrdiff_t dststride,
-                                   uint8_t *src, ptrdiff_t srcstride,
+                                   const uint8_t *src, ptrdiff_t srcstride,
                                    int height, int mx, int my);
 
 
 void ff_put_vp8_pixels8_mmx (uint8_t *dst, ptrdiff_t dststride,
-                             uint8_t *src, ptrdiff_t srcstride,
+                             const uint8_t *src, ptrdiff_t srcstride,
                              int height, int mx, int my);
 void ff_put_vp8_pixels16_sse(uint8_t *dst, ptrdiff_t dststride,
-                             uint8_t *src, ptrdiff_t srcstride,
+                             const uint8_t *src, ptrdiff_t srcstride,
                              int height, int mx, int my);
 
 #define TAP_W16(OPT, FILTERTYPE, TAPTYPE) \
 static void ff_put_vp8_ ## FILTERTYPE ## 16_ ## TAPTYPE ## _ ## OPT( \
-    uint8_t *dst,  ptrdiff_t dststride, uint8_t *src, \
+    uint8_t *dst,  ptrdiff_t dststride, const uint8_t *src, \
     ptrdiff_t srcstride, int height, int mx, int my) \
 { \
     ff_put_vp8_ ## FILTERTYPE ## 8_ ## TAPTYPE ## _ ## OPT( \
@@ -149,7 +149,7 @@ TAP_W16(ssse3, bilinear, v)
 
 #define HVTAP(OPT, ALIGN, TAPNUMX, TAPNUMY, SIZE, MAXHEIGHT) \
 static void ff_put_vp8_epel ## SIZE ## _h ## TAPNUMX ## v ## TAPNUMY ## _ ## OPT( \
-    uint8_t *dst, ptrdiff_t dststride, uint8_t *src, \
+    uint8_t *dst, ptrdiff_t dststride, const uint8_t *src, \
     ptrdiff_t srcstride, int height, int mx, int my) \
 { \
     LOCAL_ALIGNED(ALIGN, uint8_t, tmp, [SIZE * (MAXHEIGHT + TAPNUMY - 1)]); \
@@ -186,7 +186,7 @@ HVTAP(ssse3, 16, 6, 6, 4, 8)
 
 #define HVBILIN(OPT, ALIGN, SIZE, MAXHEIGHT) \
 static void ff_put_vp8_bilinear ## SIZE ## _hv_ ## OPT( \
-    uint8_t *dst, ptrdiff_t dststride, uint8_t *src, \
+    uint8_t *dst, ptrdiff_t dststride, const uint8_t *src, \
     ptrdiff_t srcstride, int height, int mx, int my) \
 { \
     LOCAL_ALIGNED(ALIGN, uint8_t, tmp, [SIZE * (MAXHEIGHT + 2)]); \

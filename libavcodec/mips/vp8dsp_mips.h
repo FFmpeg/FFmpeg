@@ -28,118 +28,118 @@
 #include "constants.h"
 
 void ff_put_vp8_pixels4_msa(uint8_t *dst, ptrdiff_t dststride,
-                            uint8_t *src, ptrdiff_t srcstride,
+                            const uint8_t *src, ptrdiff_t srcstride,
                             int h, int x, int y);
 void ff_put_vp8_pixels8_msa(uint8_t *dst, ptrdiff_t dststride,
-                            uint8_t *src, ptrdiff_t srcstride,
+                            const uint8_t *src, ptrdiff_t srcstride,
                             int h, int x, int y);
 void ff_put_vp8_pixels16_msa(uint8_t *dst, ptrdiff_t dststride,
-                             uint8_t *src, ptrdiff_t srcstride,
+                             const uint8_t *src, ptrdiff_t srcstride,
                              int h, int x, int y);
 
 void ff_put_vp8_epel16_h4_msa(uint8_t *dst, ptrdiff_t dststride,
-                              uint8_t *src, ptrdiff_t srcstride,
+                              const uint8_t *src, ptrdiff_t srcstride,
                               int h, int mx, int my);
 void ff_put_vp8_epel16_h6_msa(uint8_t *dst, ptrdiff_t dststride,
-                              uint8_t *src, ptrdiff_t srcstride,
+                              const uint8_t *src, ptrdiff_t srcstride,
                               int h, int mx, int my);
 void ff_put_vp8_epel16_v4_msa(uint8_t *dst, ptrdiff_t dststride,
-                              uint8_t *src, ptrdiff_t srcstride,
+                              const uint8_t *src, ptrdiff_t srcstride,
                               int h, int mx, int my);
 void ff_put_vp8_epel16_v6_msa(uint8_t *dst, ptrdiff_t dststride,
-                              uint8_t *src, ptrdiff_t srcstride,
+                              const uint8_t *src, ptrdiff_t srcstride,
                               int h, int mx, int my);
 void ff_put_vp8_epel16_h4v4_msa(uint8_t *dst, ptrdiff_t dststride,
-                                uint8_t *src, ptrdiff_t srcstride,
+                                const uint8_t *src, ptrdiff_t srcstride,
                                 int h, int mx, int my);
 void ff_put_vp8_epel16_h6v4_msa(uint8_t *dst, ptrdiff_t dststride,
-                                uint8_t *src, ptrdiff_t srcstride,
+                                const uint8_t *src, ptrdiff_t srcstride,
                                 int h, int mx, int my);
 void ff_put_vp8_epel16_h4v6_msa(uint8_t *dst, ptrdiff_t dststride,
-                                uint8_t *src, ptrdiff_t srcstride,
+                                const uint8_t *src, ptrdiff_t srcstride,
                                 int h, int mx, int my);
 void ff_put_vp8_epel16_h6v6_msa(uint8_t *dst, ptrdiff_t dststride,
-                                uint8_t *src, ptrdiff_t srcstride,
+                                const uint8_t *src, ptrdiff_t srcstride,
                                 int h, int mx, int my);
 
 void ff_put_vp8_epel8_h4_msa(uint8_t *dst, ptrdiff_t dststride,
-                             uint8_t *src, ptrdiff_t srcstride,
+                             const uint8_t *src, ptrdiff_t srcstride,
                              int h, int mx, int my);
 void ff_put_vp8_epel8_h6_msa(uint8_t *dst, ptrdiff_t dststride,
-                             uint8_t *src, ptrdiff_t srcstride,
+                             const uint8_t *src, ptrdiff_t srcstride,
                              int h, int mx, int my);
 void ff_put_vp8_epel8_v4_msa(uint8_t *dst, ptrdiff_t dststride,
-                             uint8_t *src, ptrdiff_t srcstride,
+                             const uint8_t *src, ptrdiff_t srcstride,
                              int h, int mx, int my);
 void ff_put_vp8_epel8_v6_msa(uint8_t *dst, ptrdiff_t dststride,
-                             uint8_t *src, ptrdiff_t srcstride,
+                             const uint8_t *src, ptrdiff_t srcstride,
                              int h, int mx, int my);
 void ff_put_vp8_epel8_h4v4_msa(uint8_t *dst, ptrdiff_t dststride,
-                               uint8_t *src, ptrdiff_t srcstride,
+                               const uint8_t *src, ptrdiff_t srcstride,
                                int h, int mx, int my);
 void ff_put_vp8_epel8_h6v4_msa(uint8_t *dst, ptrdiff_t dststride,
-                               uint8_t *src, ptrdiff_t srcstride,
+                               const uint8_t *src, ptrdiff_t srcstride,
                                int h, int mx, int my);
 void ff_put_vp8_epel8_h4v6_msa(uint8_t *dst, ptrdiff_t dststride,
-                               uint8_t *src, ptrdiff_t srcstride,
+                               const uint8_t *src, ptrdiff_t srcstride,
                                int h, int mx, int my);
 void ff_put_vp8_epel8_h6v6_msa(uint8_t *dst, ptrdiff_t dststride,
-                               uint8_t *src, ptrdiff_t srcstride,
+                               const uint8_t *src, ptrdiff_t srcstride,
                                int h, int mx, int my);
 
 void ff_put_vp8_epel4_h4_msa(uint8_t *dst, ptrdiff_t dststride,
-                             uint8_t *src, ptrdiff_t srcstride,
+                             const uint8_t *src, ptrdiff_t srcstride,
                              int h, int mx, int my);
 void ff_put_vp8_epel4_h6_msa(uint8_t *dst, ptrdiff_t dststride,
-                             uint8_t *src, ptrdiff_t srcstride,
+                             const uint8_t *src, ptrdiff_t srcstride,
                              int h, int mx, int my);
 void ff_put_vp8_epel4_v4_msa(uint8_t *dst, ptrdiff_t dststride,
-                             uint8_t *src, ptrdiff_t srcstride,
+                             const uint8_t *src, ptrdiff_t srcstride,
                              int h, int mx, int my);
 void ff_put_vp8_epel4_v6_msa(uint8_t *dst, ptrdiff_t dststride,
-                             uint8_t *src, ptrdiff_t srcstride,
+                             const uint8_t *src, ptrdiff_t srcstride,
                              int h, int mx, int my);
 void ff_put_vp8_epel4_h4v4_msa(uint8_t *dst, ptrdiff_t dststride,
-                               uint8_t *src, ptrdiff_t srcstride,
+                               const uint8_t *src, ptrdiff_t srcstride,
                                int h, int mx, int my);
 void ff_put_vp8_epel4_h6v4_msa(uint8_t *dst, ptrdiff_t dststride,
-                               uint8_t *src, ptrdiff_t srcstride,
+                               const uint8_t *src, ptrdiff_t srcstride,
                                int h, int mx, int my);
 void ff_put_vp8_epel4_h4v6_msa(uint8_t *dst, ptrdiff_t dststride,
-                               uint8_t *src, ptrdiff_t srcstride,
+                               const uint8_t *src, ptrdiff_t srcstride,
                                int h, int mx, int my);
 void ff_put_vp8_epel4_h6v6_msa(uint8_t *dst, ptrdiff_t dststride,
-                               uint8_t *src, ptrdiff_t srcstride,
+                               const uint8_t *src, ptrdiff_t srcstride,
                                int h, int mx, int my);
 
 void ff_put_vp8_bilinear16_h_msa(uint8_t *dst, ptrdiff_t dststride,
-                                 uint8_t *src, ptrdiff_t srcstride,
+                                 const uint8_t *src, ptrdiff_t srcstride,
                                  int h, int mx, int my);
 void ff_put_vp8_bilinear16_v_msa(uint8_t *dst, ptrdiff_t dststride,
-                                 uint8_t *src, ptrdiff_t srcstride,
+                                 const uint8_t *src, ptrdiff_t srcstride,
                                  int h, int mx, int my);
 void ff_put_vp8_bilinear16_hv_msa(uint8_t *dst, ptrdiff_t dststride,
-                                  uint8_t *src, ptrdiff_t srcstride,
+                                  const uint8_t *src, ptrdiff_t srcstride,
                                   int h, int mx, int my);
 
 void ff_put_vp8_bilinear8_h_msa(uint8_t *dst, ptrdiff_t dststride,
-                                uint8_t *src, ptrdiff_t srcstride,
+                                const uint8_t *src, ptrdiff_t srcstride,
                                 int h, int mx, int my);
 void ff_put_vp8_bilinear8_v_msa(uint8_t *dst, ptrdiff_t dststride,
-                                uint8_t *src, ptrdiff_t srcstride,
+                                const uint8_t *src, ptrdiff_t srcstride,
                                 int h, int mx, int my);
 void ff_put_vp8_bilinear8_hv_msa(uint8_t *dst, ptrdiff_t dststride,
-                                 uint8_t *src, ptrdiff_t srcstride,
+                                 const uint8_t *src, ptrdiff_t srcstride,
                                  int h, int mx, int my);
 
 void ff_put_vp8_bilinear4_h_msa(uint8_t *dst, ptrdiff_t dststride,
-                                uint8_t *src, ptrdiff_t srcstride,
+                                const uint8_t *src, ptrdiff_t srcstride,
                                 int h, int mx, int my);
 void ff_put_vp8_bilinear4_v_msa(uint8_t *dst, ptrdiff_t dststride,
-                                uint8_t *src, ptrdiff_t srcstride,
+                                const uint8_t *src, ptrdiff_t srcstride,
                                 int h, int mx, int my);
 void ff_put_vp8_bilinear4_hv_msa(uint8_t *dst, ptrdiff_t dststride,
-                                 uint8_t *src, ptrdiff_t srcstride,
+                                 const uint8_t *src, ptrdiff_t srcstride,
                                  int h, int mx, int my);
 
 /* loop filter */
@@ -184,84 +184,84 @@ void ff_vp8_idct_dc_add4y_mmi(uint8_t *dst, int16_t block[4][16],
 void ff_vp8_idct_dc_add4uv_mmi(uint8_t *dst, int16_t block[4][16],
         ptrdiff_t stride);
 
-void ff_put_vp8_pixels4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+void ff_put_vp8_pixels4_mmi(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
         ptrdiff_t srcstride, int h, int x, int y);
-void ff_put_vp8_pixels8_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+void ff_put_vp8_pixels8_mmi(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
         ptrdiff_t srcstride, int h, int x, int y);
-void ff_put_vp8_pixels16_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+void ff_put_vp8_pixels16_mmi(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
         ptrdiff_t srcstride, int h, int x, int y);
 
-void ff_put_vp8_epel16_h4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+void ff_put_vp8_epel16_h4_mmi(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
         ptrdiff_t srcstride, int h, int mx, int my);
-void ff_put_vp8_epel16_h6_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+void ff_put_vp8_epel16_h6_mmi(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
         ptrdiff_t srcstride, int h, int mx, int my);
-void ff_put_vp8_epel16_v4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+void ff_put_vp8_epel16_v4_mmi(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
         ptrdiff_t srcstride, int h, int mx, int my);
-void ff_put_vp8_epel16_v6_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+void ff_put_vp8_epel16_v6_mmi(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
         ptrdiff_t srcstride, int h, int mx, int my);
 void ff_put_vp8_epel16_h4v4_mmi(uint8_t *dst, ptrdiff_t dststride,
-        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+        const uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
 void ff_put_vp8_epel16_h6v4_mmi(uint8_t *dst, ptrdiff_t dststride,
-        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+        const uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
 void ff_put_vp8_epel16_h4v6_mmi(uint8_t *dst, ptrdiff_t dststride,
-        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+        const uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
 void ff_put_vp8_epel16_h6v6_mmi(uint8_t *dst, ptrdiff_t dststride,
-        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+        const uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
 
 void ff_put_vp8_epel8_h4_mmi(uint8_t *dst, ptrdiff_t dststride,
-        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+        const uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
 void ff_put_vp8_epel8_h6_mmi(uint8_t *dst, ptrdiff_t dststride,
-        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+        const uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
 void ff_put_vp8_epel8_v4_mmi(uint8_t *dst, ptrdiff_t dststride,
-        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+        const uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
 void ff_put_vp8_epel8_v6_mmi(uint8_t *dst, ptrdiff_t dststride,
-        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+        const uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
 void ff_put_vp8_epel8_h4v4_mmi(uint8_t *dst, ptrdiff_t dststride,
-        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+        const uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
 void ff_put_vp8_epel8_h6v4_mmi(uint8_t *dst, ptrdiff_t dststride,
-        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+        const uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
 void ff_put_vp8_epel8_h4v6_mmi(uint8_t *dst, ptrdiff_t dststride,
-        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+        const uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
 void ff_put_vp8_epel8_h6v6_mmi(uint8_t *dst, ptrdiff_t dststride,
-        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+        const uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
 
 void ff_put_vp8_epel4_h4_mmi(uint8_t *dst, ptrdiff_t dststride,
-        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+        const uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
 void ff_put_vp8_epel4_h6_mmi(uint8_t *dst, ptrdiff_t dststride,
-        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+        const uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
 void ff_put_vp8_epel4_v4_mmi(uint8_t *dst, ptrdiff_t dststride,
-        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+        const uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
 void ff_put_vp8_epel4_v6_mmi(uint8_t *dst, ptrdiff_t dststride,
-        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+        const uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
 void ff_put_vp8_epel4_h4v4_mmi(uint8_t *dst, ptrdiff_t dststride,
-        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+        const uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
 void ff_put_vp8_epel4_h6v4_mmi(uint8_t *dst, ptrdiff_t dststride,
-        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+        const uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
 void ff_put_vp8_epel4_h4v6_mmi(uint8_t *dst, ptrdiff_t dststride,
-        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+        const uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
 void ff_put_vp8_epel4_h6v6_mmi(uint8_t *dst, ptrdiff_t dststride,
-        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+        const uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
 
 void ff_put_vp8_bilinear16_h_mmi(uint8_t *dst, ptrdiff_t dststride,
-        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+        const uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
 void ff_put_vp8_bilinear16_v_mmi(uint8_t *dst, ptrdiff_t dststride,
-        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+        const uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
 void ff_put_vp8_bilinear16_hv_mmi(uint8_t *dst, ptrdiff_t dststride,
-        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+        const uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
 
 void ff_put_vp8_bilinear8_h_mmi(uint8_t *dst, ptrdiff_t dststride,
-        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+        const uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
 void ff_put_vp8_bilinear8_v_mmi(uint8_t *dst, ptrdiff_t dststride,
-        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+        const uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
 void ff_put_vp8_bilinear8_hv_mmi(uint8_t *dst, ptrdiff_t dststride,
-        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+        const uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
 
 void ff_put_vp8_bilinear4_h_mmi(uint8_t *dst, ptrdiff_t dststride,
-        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+        const uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
 void ff_put_vp8_bilinear4_v_mmi(uint8_t *dst, ptrdiff_t dststride,
-        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+        const uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
 void ff_put_vp8_bilinear4_hv_mmi(uint8_t *dst, ptrdiff_t dststride,
-        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+        const uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
 
 // loop filter applied to edges between macroblocks
 void ff_vp8_v_loop_filter16_mmi(uint8_t *dst, ptrdiff_t stride, int flim_E,

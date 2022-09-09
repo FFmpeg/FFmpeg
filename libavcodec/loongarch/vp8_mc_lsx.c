@@ -122,7 +122,7 @@ static const int8_t subpel_filters_lsx[7][8] = {
 } )
 
 void ff_put_vp8_epel8_h6_lsx(uint8_t *dst, ptrdiff_t dst_stride,
-                             uint8_t *src, ptrdiff_t src_stride,
+                             const uint8_t *src, ptrdiff_t src_stride,
                              int height, int mx, int my)
 {
     uint32_t loop_cnt;
@@ -187,7 +187,7 @@ void ff_put_vp8_epel8_h6_lsx(uint8_t *dst, ptrdiff_t dst_stride,
 }
 
 void ff_put_vp8_epel16_h6_lsx(uint8_t *dst, ptrdiff_t dst_stride,
-                              uint8_t *src, ptrdiff_t src_stride,
+                              const uint8_t *src, ptrdiff_t src_stride,
                               int height, int mx, int my)
 {
     uint32_t loop_cnt;
@@ -241,7 +241,7 @@ void ff_put_vp8_epel16_h6_lsx(uint8_t *dst, ptrdiff_t dst_stride,
 }
 
 void ff_put_vp8_epel8_v6_lsx(uint8_t *dst, ptrdiff_t dst_stride,
-                             uint8_t *src, ptrdiff_t src_stride,
+                             const uint8_t *src, ptrdiff_t src_stride,
                              int height, int mx, int my)
 {
     uint32_t loop_cnt;
@@ -308,7 +308,7 @@ void ff_put_vp8_epel8_v6_lsx(uint8_t *dst, ptrdiff_t dst_stride,
 }
 
 void ff_put_vp8_epel16_v6_lsx(uint8_t *dst, ptrdiff_t dst_stride,
-                              uint8_t *src, ptrdiff_t src_stride,
+                              const uint8_t *src, ptrdiff_t src_stride,
                               int height, int mx, int my)
 {
     uint32_t loop_cnt;
@@ -389,7 +389,7 @@ void ff_put_vp8_epel16_v6_lsx(uint8_t *dst, ptrdiff_t dst_stride,
 }
 
 void ff_put_vp8_epel8_h6v6_lsx(uint8_t *dst, ptrdiff_t dst_stride,
-                               uint8_t *src, ptrdiff_t src_stride,
+                               const uint8_t *src, ptrdiff_t src_stride,
                                int height, int mx, int my)
 {
     uint32_t loop_cnt;
@@ -491,7 +491,7 @@ void ff_put_vp8_epel8_h6v6_lsx(uint8_t *dst, ptrdiff_t dst_stride,
 }
 
 void ff_put_vp8_epel16_h6v6_lsx(uint8_t *dst, ptrdiff_t dst_stride,
-                                uint8_t *src, ptrdiff_t src_stride,
+                                const uint8_t *src, ptrdiff_t src_stride,
                                 int height, int mx, int my)
 {
     int32_t multiple8_cnt;
@@ -504,7 +504,7 @@ void ff_put_vp8_epel16_h6v6_lsx(uint8_t *dst, ptrdiff_t dst_stride,
 }
 
 void ff_put_vp8_epel8_v4_lsx(uint8_t *dst, ptrdiff_t dst_stride,
-                             uint8_t *src, ptrdiff_t src_stride,
+                             const uint8_t *src, ptrdiff_t src_stride,
                              int height, int mx, int my)
 {
     uint32_t loop_cnt;
@@ -561,7 +561,7 @@ void ff_put_vp8_epel8_v4_lsx(uint8_t *dst, ptrdiff_t dst_stride,
 }
 
 void ff_put_vp8_epel16_v4_lsx(uint8_t *dst, ptrdiff_t dst_stride,
-                              uint8_t *src, ptrdiff_t src_stride,
+                              const uint8_t *src, ptrdiff_t src_stride,
                               int height, int mx, int my)
 {
     uint32_t loop_cnt;
@@ -631,7 +631,7 @@ void ff_put_vp8_epel16_v4_lsx(uint8_t *dst, ptrdiff_t dst_stride,
 }
 
 void ff_put_vp8_epel8_h6v4_lsx(uint8_t *dst, ptrdiff_t dst_stride,
-                               uint8_t *src, ptrdiff_t src_stride,
+                               const uint8_t *src, ptrdiff_t src_stride,
                                int height, int mx, int my)
 {
     uint32_t loop_cnt;
@@ -714,7 +714,7 @@ void ff_put_vp8_epel8_h6v4_lsx(uint8_t *dst, ptrdiff_t dst_stride,
 }
 
 void ff_put_vp8_epel16_h6v4_lsx(uint8_t *dst, ptrdiff_t dst_stride,
-                                uint8_t *src, ptrdiff_t src_stride,
+                                const uint8_t *src, ptrdiff_t src_stride,
                                 int height, int mx, int my)
 {
     int32_t multiple8_cnt;
@@ -728,7 +728,7 @@ void ff_put_vp8_epel16_h6v4_lsx(uint8_t *dst, ptrdiff_t dst_stride,
 }
 
 void ff_put_vp8_epel8_h4v6_lsx(uint8_t *dst, ptrdiff_t dst_stride,
-                               uint8_t *src, ptrdiff_t src_stride,
+                               const uint8_t *src, ptrdiff_t src_stride,
                                int height, int mx, int my)
 {
     uint32_t loop_cnt;
@@ -818,7 +818,7 @@ void ff_put_vp8_epel8_h4v6_lsx(uint8_t *dst, ptrdiff_t dst_stride,
 }
 
 void ff_put_vp8_epel16_h4v6_lsx(uint8_t *dst, ptrdiff_t dst_stride,
-                                uint8_t *src, ptrdiff_t src_stride,
+                                const uint8_t *src, ptrdiff_t src_stride,
                                 int height, int mx, int my)
 {
     int32_t multiple8_cnt;
@@ -832,7 +832,7 @@ void ff_put_vp8_epel16_h4v6_lsx(uint8_t *dst, ptrdiff_t dst_stride,
 }
 
 void ff_put_vp8_pixels8_lsx(uint8_t *dst, ptrdiff_t dst_stride,
-                            uint8_t *src, ptrdiff_t src_stride,
+                            const uint8_t *src, ptrdiff_t src_stride,
                             int height, int mx, int my)
 {
     int32_t cnt;
@@ -889,12 +889,13 @@ void ff_put_vp8_pixels8_lsx(uint8_t *dst, ptrdiff_t dst_stride,
 }
 
 void ff_put_vp8_pixels16_lsx(uint8_t *dst, ptrdiff_t dst_stride,
-                             uint8_t *src, ptrdiff_t src_stride,
+                             const uint8_t *src, ptrdiff_t src_stride,
                              int height, int mx, int my)
 {
     int32_t width = 16;
     int32_t cnt, loop_cnt;
-    uint8_t *src_tmp, *dst_tmp;
+    const uint8_t *src_tmp;
+    uint8_t *dst_tmp;
     __m128i src0, src1, src2, src3, src4, src5, src6, src7;
 
     ptrdiff_t src_stride2 = src_stride << 1;

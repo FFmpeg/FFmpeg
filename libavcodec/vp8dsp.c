@@ -468,7 +468,7 @@ static const uint8_t subpel_filters[7][6] = {
 
 #define PUT_PIXELS(WIDTH)                                                     \
 static void put_vp8_pixels ## WIDTH ## _c(uint8_t *dst, ptrdiff_t dststride,  \
-                                          uint8_t *src, ptrdiff_t srcstride,  \
+                                          const uint8_t *src, ptrdiff_t srcstride, \
                                           int h, int x, int y)                \
 {                                                                             \
     int i;                                                                    \
@@ -492,7 +492,7 @@ PUT_PIXELS(4)
 #define VP8_EPEL_H(SIZE, TAPS)                                                \
 static void put_vp8_epel ## SIZE ## _h ## TAPS ## _c(uint8_t *dst,            \
                                                      ptrdiff_t dststride,     \
-                                                     uint8_t *src,            \
+                                                     const uint8_t *src,      \
                                                      ptrdiff_t srcstride,     \
                                                      int h, int mx, int my)   \
 {                                                                             \
@@ -510,7 +510,7 @@ static void put_vp8_epel ## SIZE ## _h ## TAPS ## _c(uint8_t *dst,            \
 #define VP8_EPEL_V(SIZE, TAPS)                                                \
 static void put_vp8_epel ## SIZE ## _v ## TAPS ## _c(uint8_t *dst,            \
                                                      ptrdiff_t dststride,     \
-                                                     uint8_t *src,            \
+                                                     const uint8_t *src,      \
                                                      ptrdiff_t srcstride,     \
                                                      int h, int mx, int my)   \
 {                                                                             \
@@ -529,7 +529,7 @@ static void put_vp8_epel ## SIZE ## _v ## TAPS ## _c(uint8_t *dst,            \
 static void                                                                   \
 put_vp8_epel ## SIZE ## _h ## HTAPS ## v ## VTAPS ## _c(uint8_t *dst,         \
                                                         ptrdiff_t dststride,  \
-                                                        uint8_t *src,         \
+                                                        const uint8_t *src,   \
                                                         ptrdiff_t srcstride,  \
                                                         int h, int mx,        \
                                                         int my)               \
@@ -586,7 +586,7 @@ VP8_EPEL_HV(4,  6, 6)
 
 #define VP8_BILINEAR(SIZE)                                                    \
 static void put_vp8_bilinear ## SIZE ## _h_c(uint8_t *dst, ptrdiff_t dstride, \
-                                             uint8_t *src, ptrdiff_t sstride, \
+                                             const uint8_t *src, ptrdiff_t sstride, \
                                              int h, int mx, int my)           \
 {                                                                             \
     int a = 8 - mx, b = mx;                                                   \
@@ -600,7 +600,7 @@ static void put_vp8_bilinear ## SIZE ## _h_c(uint8_t *dst, ptrdiff_t dstride, \
 }                                                                             \
                                                                               \
 static void put_vp8_bilinear ## SIZE ## _v_c(uint8_t *dst, ptrdiff_t dstride, \
-                                             uint8_t *src, ptrdiff_t sstride, \
+                                             const uint8_t *src, ptrdiff_t sstride, \
                                              int h, int mx, int my)           \
 {                                                                             \
     int c = 8 - my, d = my;                                                   \
@@ -615,7 +615,7 @@ static void put_vp8_bilinear ## SIZE ## _v_c(uint8_t *dst, ptrdiff_t dstride, \
                                                                               \
 static void put_vp8_bilinear ## SIZE ## _hv_c(uint8_t *dst,                   \
                                               ptrdiff_t dstride,              \
-                                              uint8_t *src,                   \
+                                              const uint8_t *src,             \
                                               ptrdiff_t sstride,              \
                                               int h, int mx, int my)          \
 {                                                                             \
