@@ -47,4 +47,26 @@ void planar_rgb_to_uv_lasx(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *src[4]
 void planar_rgb_to_y_lasx(uint8_t *_dst, const uint8_t *src[4], int width,
                           int32_t *rgb2yuv, void *opq);
 
+int yuv420_rgb24_lasx(SwsContext *c, const uint8_t *src[], int srcStride[],
+                      int srcSliceY, int srcSliceH, uint8_t *dst[], int dstStride[]);
+
+int yuv420_bgr24_lasx(SwsContext *c, const uint8_t *src[], int srcStride[],
+                      int srcSliceY, int srcSliceH, uint8_t *dst[], int dstStride[]);
+
+int yuv420_rgba32_lasx(SwsContext *c, const uint8_t *src[], int srcStride[],
+                       int srcSliceY, int srcSliceH, uint8_t *dst[], int dstStride[]);
+
+int yuv420_bgra32_lasx(SwsContext *c, const uint8_t *src[], int srcStride[],
+                       int srcSliceY, int srcSliceH, uint8_t *dst[], int dstStride[]);
+
+int yuv420_argb32_lasx(SwsContext *c, const uint8_t *src[], int srcStride[],
+                       int srcSliceY, int srcSliceH, uint8_t *dst[], int dstStride[]);
+
+int yuv420_abgr32_lasx(SwsContext *c, const uint8_t *src[], int srcStride[],
+                       int srcSliceY, int srcSliceH, uint8_t *dst[], int dstStride[]);
+
+void ff_interleave_bytes_lasx(const uint8_t *src1, const uint8_t *src2,
+                              uint8_t *dest, int width, int height,
+                              int src1Stride, int src2Stride, int dstStride);
+
 #endif /* SWSCALE_LOONGARCH_SWSCALE_LOONGARCH_H */
