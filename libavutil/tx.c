@@ -620,7 +620,7 @@ av_cold int ff_tx_init_subtx(AVTXContext *s, enum AVTXType type,
         sctx->len        = len;
         sctx->inv        = inv;
         sctx->type       = type;
-        sctx->flags      = flags;
+        sctx->flags      = cd->flags | flags;
         sctx->cd_self    = cd;
 
         s->fn[s->nb_sub] = cd->function;
