@@ -50,6 +50,11 @@ fate-sub-mpsub: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/MPSub_capability_te
 FATE_SUBTITLES_ASS-$(call DEMDEC, MPSUB, TEXT) += fate-sub-mpsub-frames
 fate-sub-mpsub-frames: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/MPSub_capability_tester_frames.sub
 
+# FIXME?: The dts in the input file are not monotonous and so the
+# timestamps of the remuxed file have been fixed up.
+FATE_SUBTITLES-$(call REMUX, SUP) += fate-sub-pgs-remux
+fate-sub-pgs-remux: CMD = transcode sup $(TARGET_SAMPLES)/sub/pgs_sub.sup sup "-copyts -c:s copy" "-copyts -c:s copy"
+
 FATE_SUBTITLES_ASS-$(call DEMDEC, PJS, PJS) += fate-sub-pjs
 fate-sub-pjs: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/PJS_capability_tester.pjs
 
