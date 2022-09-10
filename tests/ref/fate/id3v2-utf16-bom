@@ -1,0 +1,42 @@
+9b8bfdf87a8d3d089819ef9f6f264ec4 *tests/data/fate/id3v2-utf16-bom.aiff
+885482 tests/data/fate/id3v2-utf16-bom.aiff
+#tb 0: 1/90000
+#media_type 0: video
+#codec_id 0: mjpeg
+#dimensions 0: 350x350
+#sar 0: 1/1
+#tb 1: 1/48000
+#media_type 1: audio
+#codec_id 1: pcm_s24be
+#sample_rate 1: 48000
+#channel_layout_name 1: hexagonal
+0,          0,          0,        0,    19650, 0xd5662610
+1,          0,          0,      227,     4086, 0x00000000
+1,        227,        227,      227,     4086, 0x00000000
+1,        454,        454,      227,     4086, 0x00000000
+1,        681,        681,      227,     4086, 0x667b2643
+1,        908,        908,      227,     4086, 0x9a09957d
+1,       1135,       1135,      227,     4086, 0x763e27c5
+1,       1362,       1362,      227,     4086, 0x2a47f536
+1,       1589,       1589,      227,     4086, 0xed32e5f2
+1,       1816,       1816,      227,     4086, 0x2e96c720
+1,       2043,       2043,      227,     4086, 0x84c5b5f0
+1,       2270,       2270,      227,     4086, 0xe3dfeefc
+[STREAM]
+channel_layout=hexagonal
+[/STREAM]
+[STREAM]
+TAG:title=Дороги
+TAG:comment=Other
+[/STREAM]
+[FORMAT]
+TAG:artist=Мельница
+TAG:RATING=0
+TAG:album=Ангелофрения
+TAG:title=Дороги
+TAG:tracktotal=11
+TAG:totaltracks=11
+TAG:genre=Folk
+TAG:track=2
+TAG:date=2012
+[/FORMAT]
