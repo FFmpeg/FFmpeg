@@ -329,7 +329,7 @@ static av_cold int mobiclip_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int setup_qtables(AVCodecContext *avctx, int quantizer)
+static int setup_qtables(AVCodecContext *avctx, int64_t quantizer)
 {
     MobiClipContext *s = avctx->priv_data;
     int qx, qy;
@@ -1256,7 +1256,7 @@ static int mobiclip_decode(AVCodecContext *avctx, void *data,
         frame->key_frame = 0;
         s->dct_tab_idx = 0;
 
-        ret = setup_qtables(avctx, s->quantizer + get_se_golomb(gb));
+        ret = setup_qtables(avctx, s->quantizer + (int64_t)get_se_golomb(gb));
         if (ret < 0)
             return ret;
 
