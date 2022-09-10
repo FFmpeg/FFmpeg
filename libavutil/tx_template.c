@@ -109,11 +109,11 @@ static av_cold void TX_TAB(ff_tx_init_tab_53)(void)
     TX_TAB(ff_tx_tab_53)[0] = RESCALE(cos(2 * M_PI / 12));
     TX_TAB(ff_tx_tab_53)[1] = RESCALE(cos(2 * M_PI / 12));
     TX_TAB(ff_tx_tab_53)[2] = RESCALE(cos(2 * M_PI /  6));
-    TX_TAB(ff_tx_tab_53)[3] = RESCALE(cos(2 * M_PI /  6));
+    TX_TAB(ff_tx_tab_53)[3] = RESCALE(cos(8 * M_PI /  6));
     TX_TAB(ff_tx_tab_53)[4] = RESCALE(cos(2 * M_PI /  5));
-    TX_TAB(ff_tx_tab_53)[5] = RESCALE(sin(2 * M_PI /  5));
+    TX_TAB(ff_tx_tab_53)[5] = RESCALE(sin(8 * M_PI /  5));
     TX_TAB(ff_tx_tab_53)[6] = RESCALE(cos(2 * M_PI / 10));
-    TX_TAB(ff_tx_tab_53)[7] = RESCALE(sin(2 * M_PI / 10));
+    TX_TAB(ff_tx_tab_53)[7] = RESCALE(sin(6 * M_PI /  5));
 }
 
 static av_cold void TX_TAB(ff_tx_init_tab_7)(void)
@@ -226,8 +226,8 @@ static av_always_inline void NAME(TXComplex *out, TXComplex *in,    \
                                                                     \
     SMUL(t[4].re, t[0].re, tab[4], tab[6], t[2].re, t[0].re);       \
     SMUL(t[4].im, t[0].im, tab[4], tab[6], t[2].im, t[0].im);       \
-    CMUL(t[5].re, t[1].re, tab[5], tab[7], t[3].re, t[1].re);       \
-    CMUL(t[5].im, t[1].im, tab[5], tab[7], t[3].im, t[1].im);       \
+    CMUL(t[5].re, t[1].re, -tab[5], -tab[7], t[3].re, t[1].re);     \
+    CMUL(t[5].im, t[1].im, -tab[5], -tab[7], t[3].im, t[1].im);     \
                                                                     \
     BF(z0[0].re, z0[3].re, t[0].re, t[1].re);                       \
     BF(z0[0].im, z0[3].im, t[0].im, t[1].im);                       \
