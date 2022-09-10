@@ -1951,9 +1951,12 @@ static int decode_header(EXRContext *s, AVFrame *frame)
                                                      "preview", 16)) >= 0) {
             uint32_t pw = bytestream2_get_le32(gb);
             uint32_t ph = bytestream2_get_le32(gb);
-            int64_t psize = 4LL * pw * ph;
+            uint64_t psize = pw * ph;
+            if (psize > INT64_MAX / 4)
+                return AVERROR_INVALIDDATA;
+            psize *= 4;
 
-            if (psize >= bytestream2_get_bytes_left(gb))
+            if ((int64_t)psize >= bytestream2_get_bytes_left(gb))
                 return AVERROR_INVALIDDATA;
 
             bytestream2_skip(gb, psize);
