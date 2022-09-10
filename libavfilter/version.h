@@ -31,7 +31,7 @@
 
 #include "version_major.h"
 
-#define LIBAVFILTER_VERSION_MINOR  48
+#define LIBAVFILTER_VERSION_MINOR  49
 #define LIBAVFILTER_VERSION_MICRO 100
 
 

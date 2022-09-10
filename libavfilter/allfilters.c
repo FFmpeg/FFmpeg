@@ -213,6 +213,7 @@ extern const AVFilter ff_vf_colorlevels;
 extern const AVFilter ff_vf_colormap;
 extern const AVFilter ff_vf_colormatrix;
 extern const AVFilter ff_vf_colorspace;
+extern const AVFilter ff_vf_colorspace_cuda;
 extern const AVFilter ff_vf_colortemperature;
 extern const AVFilter ff_vf_convolution;
 extern const AVFilter ff_vf_convolution_opencl;
