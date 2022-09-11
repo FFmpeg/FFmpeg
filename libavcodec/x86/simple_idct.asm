@@ -25,9 +25,9 @@
 
 %include "libavutil/x86/x86util.asm"
 
-%if ARCH_X86_32
 SECTION_RODATA
 
+%if ARCH_X86_32
 cextern pb_80
 
 wm1010: dw 0, 0xffff, 0, 0xffff
