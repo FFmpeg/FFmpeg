@@ -104,7 +104,7 @@ static FFSRTabsInitOnce sr_tabs_init_once[] = {
     { TX_TAB(ff_tx_init_tab_131072), AV_ONCE_INIT },
 };
 
-static av_cold void TX_TAB(ff_tx_init_tab_53)(void)
+static void TX_TAB(ff_tx_init_tab_53)(void)
 {
     TX_TAB(ff_tx_tab_53)[0] = RESCALE(cos(2 * M_PI / 12));
     TX_TAB(ff_tx_tab_53)[1] = RESCALE(cos(2 * M_PI / 12));
@@ -116,7 +116,7 @@ static av_cold void TX_TAB(ff_tx_init_tab_53)(void)
     TX_TAB(ff_tx_tab_53)[7] = RESCALE(sin(6 * M_PI /  5));
 }
 
-static av_cold void TX_TAB(ff_tx_init_tab_7)(void)
+static void TX_TAB(ff_tx_init_tab_7)(void)
 {
     TX_TAB(ff_tx_tab_7)[0] = RESCALE(cos(2 * M_PI /  7));
     TX_TAB(ff_tx_tab_7)[1] = RESCALE(sin(2 * M_PI /  7));
@@ -126,7 +126,7 @@ static av_cold void TX_TAB(ff_tx_init_tab_7)(void)
     TX_TAB(ff_tx_tab_7)[5] = RESCALE(sin(2 * M_PI / 14));
 }
 
-static av_cold void TX_TAB(ff_tx_init_tab_9)(void)
+static void TX_TAB(ff_tx_init_tab_9)(void)
 {
     TX_TAB(ff_tx_tab_9)[0] = RESCALE(cos(2 * M_PI /  3));
     TX_TAB(ff_tx_tab_9)[1] = RESCALE(sin(2 * M_PI /  3));
