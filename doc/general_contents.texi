@@ -510,6 +510,8 @@ library:
     @tab A format used by libvpx
 @item Internet Video Recording  @tab   @tab X
 @item IRCAM                     @tab X @tab X
+@item LAF                       @tab   @tab X
+    @tab Limitless Audio Format
 @item LATM                      @tab X @tab X
 @item LMLM4                     @tab   @tab X
     @tab Used by Linux Media Labs MPEG-4 PCI boards
