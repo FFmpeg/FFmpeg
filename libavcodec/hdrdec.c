@@ -70,8 +70,8 @@ static int decompress(uint8_t *scanline, int w, GetByteContext *gb, const uint8_
             for (int i = run << rshift; i > 0 && w > 0 && scanline >= start + 4; i--) {
                 memcpy(scanline, scanline - 4, 4);
                 scanline += 4;
+                w -= 4;
             }
-            w -= run << rshift;
             rshift += 8;
             if (rshift > 16)
                 break;
