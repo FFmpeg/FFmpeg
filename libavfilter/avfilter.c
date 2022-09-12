@@ -381,6 +381,7 @@ int avfilter_config_links(AVFilterContext *filter)
     return 0;
 }
 
+#ifdef TRACE
 void ff_tlog_link(void *ctx, AVFilterLink *link, int end)
 {
     if (link->type == AVMEDIA_TYPE_VIDEO) {
@@ -404,6 +405,7 @@ void ff_tlog_link(void *ctx, AVFilterLink *link, int end)
                 end ? "\n" : "");
     }
 }
+#endif
 
 int ff_request_frame(AVFilterLink *link)
 {

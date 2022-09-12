@@ -268,7 +268,11 @@ void ff_command_queue_pop(AVFilterContext *filter);
 
 char *ff_get_ref_perms_string(char *buf, size_t buf_size, int perms);
 
+#ifdef TRACE
 void ff_tlog_link(void *ctx, AVFilterLink *link, int end);
+#else
+#define ff_tlog_link(ctx, link, end) do { } while(0)
+#endif
 
 /**
  * Append a new input/output pad to the filter's list of such pads.
