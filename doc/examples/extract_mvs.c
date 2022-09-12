@@ -61,10 +61,11 @@ static int decode_packet(const AVPacket *pkt)
                 const AVMotionVector *mvs = (const AVMotionVector *)sd->data;
                 for (i = 0; i < sd->size / sizeof(*mvs); i++) {
                     const AVMotionVector *mv = &mvs[i];
-                    printf("%d,%2d,%2d,%2d,%4d,%4d,%4d,%4d,0x%"PRIx64"\n",
+                    printf("%d,%2d,%2d,%2d,%4d,%4d,%4d,%4d,0x%"PRIx64",%4d,%4d,%4d\n",
                         video_frame_count, mv->source,
                         mv->w, mv->h, mv->src_x, mv->src_y,
-                        mv->dst_x, mv->dst_y, mv->flags);
+                        mv->dst_x, mv->dst_y, mv->flags,
+                        mv->motion_x, mv->motion_y, mv->motion_scale);
                 }
             }
             av_frame_unref(frame);
@@ -166,7 +167,7 @@ int main(int argc, char **argv)
         goto end;
     }
 
-    printf("framenum,source,blockw,blockh,srcx,srcy,dstx,dsty,flags\n");
+    printf("framenum,source,blockw,blockh,srcx,srcy,dstx,dsty,flags,motion_x,motion_y,motion_scale\n");
 
     /* read frames from the file */
     while (av_read_frame(fmt_ctx, pkt) >= 0) {
