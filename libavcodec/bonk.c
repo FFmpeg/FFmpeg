@@ -280,7 +280,7 @@ static int predictor_calc_error(int *k, int *state, int order, int error)
     }
 
     // don't drift too far, to avoid overflows
-    av_clip(x, -(SAMPLE_FACTOR << 16), SAMPLE_FACTOR << 16);
+    x = av_clip(x, -(SAMPLE_FACTOR << 16), SAMPLE_FACTOR << 16);
 
     state[0] = x;
 
