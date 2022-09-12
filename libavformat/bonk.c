@@ -79,7 +79,6 @@ static int bonk_read_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     st->duration              = AV_RL32(st->codecpar->extradata + 1) / st->codecpar->ch_layout.nb_channels;
     avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
-    ffformatcontext(s)->data_offset = avio_tell(s->pb);
 
     return 0;
 }
