@@ -5334,6 +5334,12 @@ elif enabled ppc; then
         ;;
     esac
 
+elif enabled riscv; then
+
+    if test_cpp_condition stddef.h "__riscv_zbb"; then
+        enable fast_clz
+    fi
+
 elif enabled sparc; then
 
     case $cpu in
