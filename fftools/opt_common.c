@@ -335,9 +335,12 @@ static void print_codec(const AVCodec *c)
         printf("    Supported hardware devices: ");
         for (int i = 0;; i++) {
             const AVCodecHWConfig *config = avcodec_get_hw_config(c, i);
+            const char *name;
             if (!config)
                 break;
-            printf("%s ", av_hwdevice_get_type_name(config->device_type));
+            name = av_hwdevice_get_type_name(config->device_type);
+            if (name)
+                printf("%s ", name);
         }
         printf("\n");
     }
