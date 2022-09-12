@@ -44,6 +44,24 @@ cglobal scalarproduct_int16, 3,3,3, v1, v2, order
     movd   eax, m2
     RET
 
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+cglobal scalarproduct_int16, 3,3,2, v1, v2, order
+    add orderd, orderd
+    add v1q, orderq
+    add v2q, orderq
+    neg orderq
+    pxor    m1, m1
+.loop:
+    movu    m0, [v1q + orderq]
+    pmaddwd m0, [v2q + orderq]
+    paddd   m1, m0
+    add     orderq, mmsize
+    jl .loop
+    HADDD   m1, m0
+    movd   eax, xm1
+    RET
+%endif
 
 ;-----------------------------------------------------------------------------
 ; void ff_vector_clip_int32(int32_t *dst, const int32_t *src, int32_t min,
