@@ -42,17 +42,28 @@ extern VLC  ff_dca_vlc_transition_mode[4];
 extern VLC  ff_dca_vlc_scale_factor[5];
 extern VLC  ff_dca_vlc_quant_index[DCA_CODE_BOOKS][7];
 
+#define DCA_TNL_GRP_VLC_BITS 9
 extern VLC  ff_dca_vlc_tnl_grp[5];
+#define DCA_TNL_SCF_VLC_BITS 9
 extern VLC  ff_dca_vlc_tnl_scf;
+#define DCA_DAMP_VLC_BITS 6
 extern VLC  ff_dca_vlc_damp;
+#define DCA_DPH_VLC_BITS 6
 extern VLC  ff_dca_vlc_dph;
+#define DCA_FST_RSD_VLC_BITS 9
 extern VLC  ff_dca_vlc_fst_rsd_amp;
+#define DCA_RSD_APPRX_VLC_BITS 5
 extern VLC  ff_dca_vlc_rsd_apprx;
+#define DCA_RSD_AMP_VLC_BITS 9
 extern VLC  ff_dca_vlc_rsd_amp;
+#define DCA_AVG_G3_VLC_BITS 9
 extern VLC  ff_dca_vlc_avg_g3;
+#define DCA_ST_GRID_VLC_BITS 9
 extern VLC  ff_dca_vlc_st_grid;
+#define DCA_GRID_VLC_BITS 9
 extern VLC  ff_dca_vlc_grid_2;
 extern VLC  ff_dca_vlc_grid_3;
+#define DCA_RSD_VLC_BITS 6
 extern VLC  ff_dca_vlc_rsd;
 
 extern const int8_t  ff_dca_bitalloc_offsets[DCA_CODE_BOOKS];
