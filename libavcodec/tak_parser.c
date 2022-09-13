@@ -24,6 +24,7 @@
  * TAK parser
  **/
 
+#define CACHED_BITSTREAM_READER !ARCH_X86_32
 #define BITSTREAM_READER_LE
 #include "parser.h"
 #include "tak.h"

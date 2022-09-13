@@ -23,6 +23,7 @@
 #include "libavutil/crc.h"
 #include "libavutil/intreadwrite.h"
 
+#define CACHED_BITSTREAM_READER !ARCH_X86_32
 #define BITSTREAM_READER_LE
 #include "tak.h"
 

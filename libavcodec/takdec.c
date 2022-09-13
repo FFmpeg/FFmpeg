@@ -29,6 +29,7 @@
 #include "libavutil/mem_internal.h"
 #include "libavutil/samplefmt.h"
 
+#define CACHED_BITSTREAM_READER !ARCH_X86_32
 #define BITSTREAM_READER_LE
 #include "audiodsp.h"
 #include "thread.h"
