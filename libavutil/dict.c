@@ -98,16 +98,17 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value,
             return 0;
         }
         if (copy_value && flags & AV_DICT_APPEND) {
-            size_t len = strlen(tag->value) + strlen(copy_value) + 1;
-            char *newval = av_mallocz(len);
+            size_t oldlen = strlen(tag->value);
+            size_t new_part_len = strlen(copy_value);
+            size_t len = oldlen + new_part_len + 1;
+            char *newval = av_realloc(tag->value, len);
             if (!newval)
                 goto err_out;
-            av_strlcat(newval, tag->value, len);
-            av_strlcat(newval, copy_value, len);
+            memcpy(newval + oldlen, copy_value, new_part_len + 1);
             av_freep(&copy_value);
             copy_value = newval;
-        }
-        av_free(tag->value);
+        } else
+            av_free(tag->value);
         av_free(tag->key);
         *tag = m->elems[--m->count];
     } else if (copy_value) {
