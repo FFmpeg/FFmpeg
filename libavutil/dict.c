@@ -126,11 +126,11 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value,
         }
         m->count++;
     } else {
+        if (!m->count) {
+            av_freep(&m->elems);
+            av_freep(pm);
+        }
         av_freep(&copy_key);
-    }
-    if (!m->count) {
-        av_freep(&m->elems);
-        av_freep(pm);
     }
 
     return 0;
