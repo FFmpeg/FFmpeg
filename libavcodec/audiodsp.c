@@ -22,36 +22,36 @@
 #include "libavutil/common.h"
 #include "audiodsp.h"
 
-static inline uint32_t clipf_c_one(uint32_t a, uint32_t mini,
-                                   uint32_t maxi, uint32_t maxisign)
+static inline float clipf_c_one(float a, uint32_t mini,
+                                uint32_t maxi, uint32_t maxisign)
 {
-    if (a > mini)
-        return mini;
-    else if ((a ^ (1U << 31)) > maxisign)
-        return maxi;
+    uint32_t ai = av_float2int(a);
+
+    if (ai > mini)
+        return av_int2float(mini);
+    else if ((ai ^ (1U << 31)) > maxisign)
+        return av_int2float(maxi);
     else
         return a;
 }
 
 static void vector_clipf_c_opposite_sign(float *dst, const float *src,
-                                         float *min, float *max, int len)
+                                         float min, float max, int len)
 {
     int i;
-    uint32_t mini        = *(uint32_t *) min;
-    uint32_t maxi        = *(uint32_t *) max;
+    uint32_t mini        = av_float2int(min);
+    uint32_t maxi        = av_float2int(max);
     uint32_t maxisign    = maxi ^ (1U << 31);
-    uint32_t *dsti       = (uint32_t *) dst;
-    const uint32_t *srci = (const uint32_t *) src;
 
     for (i = 0; i < len; i += 8) {
-        dsti[i + 0] = clipf_c_one(srci[i + 0], mini, maxi, maxisign);
-        dsti[i + 1] = clipf_c_one(srci[i + 1], mini, maxi, maxisign);
-        dsti[i + 2] = clipf_c_one(srci[i + 2], mini, maxi, maxisign);
-        dsti[i + 3] = clipf_c_one(srci[i + 3], mini, maxi, maxisign);
-        dsti[i + 4] = clipf_c_one(srci[i + 4], mini, maxi, maxisign);
-        dsti[i + 5] = clipf_c_one(srci[i + 5], mini, maxi, maxisign);
-        dsti[i + 6] = clipf_c_one(srci[i + 6], mini, maxi, maxisign);
-        dsti[i + 7] = clipf_c_one(srci[i + 7], mini, maxi, maxisign);
+        dst[i + 0] = clipf_c_one(src[i + 0], mini, maxi, maxisign);
+        dst[i + 1] = clipf_c_one(src[i + 1], mini, maxi, maxisign);
+        dst[i + 2] = clipf_c_one(src[i + 2], mini, maxi, maxisign);
+        dst[i + 3] = clipf_c_one(src[i + 3], mini, maxi, maxisign);
+        dst[i + 4] = clipf_c_one(src[i + 4], mini, maxi, maxisign);
+        dst[i + 5] = clipf_c_one(src[i + 5], mini, maxi, maxisign);
+        dst[i + 6] = clipf_c_one(src[i + 6], mini, maxi, maxisign);
+        dst[i + 7] = clipf_c_one(src[i + 7], mini, maxi, maxisign);
     }
 }
 
@@ -61,7 +61,7 @@ static void vector_clipf_c(float *dst, const float *src, int len,
     int i;
 
     if (min < 0 && max > 0) {
-        vector_clipf_c_opposite_sign(dst, src, &min, &max, len);
+        vector_clipf_c_opposite_sign(dst, src, min, max, len);
     } else {
         for (i = 0; i < len; i += 8) {
             dst[i]     = av_clipf(src[i], min, max);
