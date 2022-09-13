@@ -443,19 +443,19 @@ cglobal scalarproduct_float, 3,3,2, v1, v2, offset
 INIT_YMM fma3
 cglobal scalarproduct_float, 3,5,8, v1, v2, size, len, offset
     xor   offsetq, offsetq
-    xorps      m0, m0
+    xorps      m0, m0, m0
     shl     sized, 2
     mov      lenq, sizeq
     cmp      lenq, 32
     jl   .l16
     cmp      lenq, 64
     jl   .l32
-    xorps    m1, m1
+    xorps    m1, m1, m1
     cmp      lenq, 128
     jl   .l64
     and    lenq, ~127
-    xorps    m2, m2
-    xorps    m3, m3
+    xorps    m2, m2, m2
+    xorps    m3, m3, m3
 .loop128:
     movups   m4, [v1q+offsetq]
     movups   m5, [v1q+offsetq + 32]
@@ -468,13 +468,13 @@ cglobal scalarproduct_float, 3,5,8, v1, v2, size, len, offset
     add   offsetq, 128
     cmp   offsetq, lenq
     jl .loop128
-    addps    m0, m2
-    addps    m1, m3
+    addps    m0, m0, m2
+    addps    m1, m1, m3
     mov      lenq, sizeq
     and      lenq, 127
     cmp      lenq, 64
     jge .l64
-    addps    m0, m1
+    addps    m0, m0, m1
     cmp      lenq, 32
     jge .l32
     vextractf128 xmm2, m0, 1
@@ -502,7 +502,7 @@ cglobal scalarproduct_float, 3,5,8, v1, v2, size, len, offset
     add   offsetq, 64
     cmp   offsetq, lenq
     jl .loop64
-    addps    m0, m1
+    addps    m0, m0, m1
     mov      lenq, sizeq
     and      lenq, 63
     cmp      lenq, 32
