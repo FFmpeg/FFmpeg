@@ -108,6 +108,7 @@ static enum VmafPixelFormat pix_fmt_map(enum AVPixelFormat av_pix_fmt)
 
 static int copy_picture_data(AVFrame *src, VmafPicture *dst, unsigned bpc)
 {
+    const int bytes_per_value = bpc > 8 ? 2 : 1;
     int err = vmaf_picture_alloc(dst, pix_fmt_map(src->format), bpc,
                                  src->width, src->height);
     if (err)
@@ -117,7 +118,7 @@ static int copy_picture_data(AVFrame *src, VmafPicture *dst, unsigned bpc)
         uint8_t *src_data = src->data[i];
         uint8_t *dst_data = dst->data[i];
         for (unsigned j = 0; j < dst->h[i]; j++) {
-            memcpy(dst_data, src_data, sizeof(*dst_data) * dst->w[i]);
+            memcpy(dst_data, src_data, bytes_per_value * dst->w[i]);
             src_data += src->linesize[i];
             dst_data += dst->stride[i];
         }
