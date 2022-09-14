@@ -41,10 +41,10 @@ static av_always_inline av_const int8_t av_clip_int8_rvi(int a)
 #define av_clip_int16 av_clip_int16_rvi
 static av_always_inline av_const int16_t av_clip_int16_rvi(int a)
 {
-    union { uint8_t u; int8_t s; } u = { .u = a };
+    union { uint16_t u; int16_t s; } u = { .u = a };
 
     if (a != u.s)
-        a = ((a >> 31) ^ 0x7F);
+        a = ((a >> 31) ^ 0x7FFF);
     return a;
 }
 
