@@ -124,6 +124,7 @@ AVFILTER_DEFINE_CLASS(extractplanes);
 
 #define FLOAT_FORMATS(suf)                                     \
         AV_PIX_FMT_GRAYF32##suf,                               \
+        AV_PIX_FMT_RGBF32##suf, AV_PIX_FMT_RGBAF32##suf,       \
         AV_PIX_FMT_GBRPF32##suf, AV_PIX_FMT_GBRAPF32##suf      \
 
 static int query_formats(AVFilterContext *ctx)
@@ -282,6 +283,13 @@ static void extract_from_packed(uint8_t *dst, int dst_linesize,
             for (x = 0; x < width; x++) {
                 dst[x * 2    ] = src[x * step + comp * 2    ];
                 dst[x * 2 + 1] = src[x * step + comp * 2 + 1];
+            }
+        case 4:
+            for (x = 0; x < width; x++) {
+                dst[x * 4    ] = src[x * step + comp * 4    ];
+                dst[x * 4 + 1] = src[x * step + comp * 4 + 1];
+                dst[x * 4 + 2] = src[x * step + comp * 4 + 2];
+                dst[x * 4 + 3] = src[x * step + comp * 4 + 3];
             }
             break;
         }
