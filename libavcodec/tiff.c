@@ -1026,14 +1026,14 @@ static int init_image(TiffContext *s, AVFrame *frame)
     int create_gray_palette = 0;
 
     // make sure there is no aliasing in the following switch
-    if (s->bpp >= 100 || s->bppcount >= 10) {
+    if (s->bpp > 128 || s->bppcount >= 10) {
         av_log(s->avctx, AV_LOG_ERROR,
                "Unsupported image parameters: bpp=%d, bppcount=%d\n",
                s->bpp, s->bppcount);
         return AVERROR_INVALIDDATA;
     }
 
-    switch (s->planar * 1000 + s->bpp * 10 + s->bppcount + s->is_bayer * 10000) {
+    switch (s->planar * 10000 + s->bpp * 10 + s->bppcount + s->is_bayer * 100000) {
     case 11:
         if (!s->palette_is_set) {
             s->avctx->pix_fmt = AV_PIX_FMT_MONOBLACK;
@@ -1052,7 +1052,7 @@ static int init_image(TiffContext *s, AVFrame *frame)
     case 121:
         s->avctx->pix_fmt = AV_PIX_FMT_GRAY12;
         break;
-    case 10081:
+    case 100081:
         switch (AV_RL32(s->pattern)) {
         case 0x02010100:
             s->avctx->pix_fmt = AV_PIX_FMT_BAYER_RGGB8;
@@ -1072,10 +1072,10 @@ static int init_image(TiffContext *s, AVFrame *frame)
             return AVERROR_PATCHWELCOME;
         }
         break;
-    case 10101:
-    case 10121:
-    case 10141:
-    case 10161:
+    case 100101:
+    case 100121:
+    case 100141:
+    case 100161:
         switch (AV_RL32(s->pattern)) {
         case 0x02010100:
             s->avctx->pix_fmt = AV_PIX_FMT_BAYER_RGGB16;
@@ -1143,17 +1143,29 @@ static int init_image(TiffContext *s, AVFrame *frame)
     case 644:
         s->avctx->pix_fmt = s->le ? AV_PIX_FMT_RGBA64LE  : AV_PIX_FMT_RGBA64BE;
         break;
-    case 1243:
+    case 10243:
         s->avctx->pix_fmt = AV_PIX_FMT_GBRP;
         break;
-    case 1324:
+    case 10324:
         s->avctx->pix_fmt = AV_PIX_FMT_GBRAP;
         break;
-    case 1483:
+    case 10483:
         s->avctx->pix_fmt = s->le ? AV_PIX_FMT_GBRP16LE : AV_PIX_FMT_GBRP16BE;
         break;
-    case 1644:
+    case 10644:
         s->avctx->pix_fmt = s->le ? AV_PIX_FMT_GBRAP16LE : AV_PIX_FMT_GBRAP16BE;
+        break;
+    case 963:
+        s->avctx->pix_fmt = s->le ? AV_PIX_FMT_RGBF32LE : AV_PIX_FMT_RGBF32BE;
+        break;
+    case 1284:
+        s->avctx->pix_fmt = s->le ? AV_PIX_FMT_RGBAF32LE : AV_PIX_FMT_RGBAF32BE;
+        break;
+    case 10963:
+        s->avctx->pix_fmt = s->le ? AV_PIX_FMT_GBRPF32LE : AV_PIX_FMT_GBRPF32BE;
+        break;
+    case 11284:
+        s->avctx->pix_fmt = s->le ? AV_PIX_FMT_GBRAPF32LE : AV_PIX_FMT_GBRAPF32BE;
         break;
     default:
         av_log(s->avctx, AV_LOG_ERROR,
@@ -1732,7 +1744,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         }
     }
 end:
-    if (s->bpp > 64U) {
+    if (s->bpp > 128U) {
         av_log(s->avctx, AV_LOG_ERROR,
                 "This format is not supported (bpp=%d, %d components)\n",
                 s->bpp, count);
