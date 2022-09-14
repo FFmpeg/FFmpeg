@@ -169,6 +169,7 @@ isBE:
   rgb565be
   rgba64be
   rgbaf16be
+  rgbaf32be
   rgbf32be
   x2bgr10be
   x2rgb10be
@@ -510,6 +511,8 @@ isRGB:
   rgba64le
   rgbaf16be
   rgbaf16le
+  rgbaf32be
+  rgbaf32le
   rgbf32be
   rgbf32le
   x2bgr10be
@@ -664,6 +667,8 @@ AnyRGB:
   rgba64le
   rgbaf16be
   rgbaf16le
+  rgbaf32be
+  rgbaf32le
   rgbf32be
   rgbf32le
   x2bgr10be
@@ -694,6 +699,8 @@ ALPHA:
   rgba64le
   rgbaf16be
   rgbaf16le
+  rgbaf32be
+  rgbaf32le
   vuya
   ya16be
   ya16le
@@ -780,6 +787,8 @@ Packed:
   rgba64le
   rgbaf16be
   rgbaf16le
+  rgbaf32be
+  rgbaf32le
   rgbf32be
   rgbf32le
   uyvy422
@@ -972,6 +981,8 @@ PackedRGB:
   rgba64le
   rgbaf16be
   rgbaf16le
+  rgbaf32be
+  rgbaf32le
   rgbf32be
   rgbf32le
   x2bgr10be
