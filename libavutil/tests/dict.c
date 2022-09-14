@@ -91,14 +91,20 @@ int main(void)
     av_dict_set(&dict, "f", NULL, 0);
     av_dict_set(&dict, "ff", "f", 0);
     av_dict_set(&dict, "ff", "f", AV_DICT_APPEND);
+    if (av_dict_get(dict, NULL, NULL, 0))
+        printf("av_dict_get() does not correctly handle NULL key.\n");
     e = NULL;
     while ((e = av_dict_get(dict, "", e, AV_DICT_IGNORE_SUFFIX)))
         printf("%s %s\n", e->key, e->value);
     av_dict_free(&dict);
 
-    av_dict_set(&dict, NULL, "a", 0);
-    av_dict_set(&dict, NULL, "b", 0);
-    av_dict_get(dict, NULL, NULL, 0);
+    if (av_dict_set(&dict, NULL, "a", 0) >= 0 ||
+        av_dict_set(&dict, NULL, "b", 0) >= 0 ||
+        av_dict_set(&dict, NULL, NULL, AV_DICT_DONT_STRDUP_KEY) >= 0 ||
+        av_dict_set(&dict, NULL, av_strdup("b"), AV_DICT_DONT_STRDUP_VAL) >= 0 ||
+        av_dict_count(dict))
+        printf("av_dict_set does not correctly handle NULL key\n");
+
     e = NULL;
     while ((e = av_dict_get(dict, "", e, AV_DICT_IGNORE_SUFFIX)))
         printf("'%s' '%s'\n", e->key, e->value);

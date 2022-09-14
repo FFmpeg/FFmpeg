@@ -43,7 +43,7 @@ AVDictionaryEntry *av_dict_get(const AVDictionary *m, const char *key,
 {
     unsigned int i, j;
 
-    if (!m)
+    if (!m || !key)
         return NULL;
 
     if (prev)
@@ -74,7 +74,16 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value,
     AVDictionary *m = *pm;
     AVDictionaryEntry *tag = NULL;
     char *copy_key = NULL, *copy_value = NULL;
+    int err;
 
+    if (flags & AV_DICT_DONT_STRDUP_VAL)
+        copy_value = (void *)value;
+    else if (value)
+        copy_value = av_strdup(value);
+    if (!key) {
+        err = AVERROR(EINVAL);
+        goto err_out;
+    }
     if (!(flags & AV_DICT_MULTIKEY)) {
         tag = av_dict_get(m, key, NULL, flags);
     }
@@ -82,14 +91,10 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value,
         copy_key = (void *)key;
     else
         copy_key = av_strdup(key);
-    if (flags & AV_DICT_DONT_STRDUP_VAL)
-        copy_value = (void *)value;
-    else if (copy_key)
-        copy_value = av_strdup(value);
     if (!m)
         m = *pm = av_mallocz(sizeof(*m));
-    if (!m || (key && !copy_key) || (value && !copy_value))
-        goto err_out;
+    if (!m || !copy_key || (value && !copy_value))
+        goto enomem;
 
     if (tag) {
         if (flags & AV_DICT_DONT_OVERWRITE) {
@@ -103,7 +108,7 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value,
             size_t len = oldlen + new_part_len + 1;
             char *newval = av_realloc(tag->value, len);
             if (!newval)
-                goto err_out;
+                goto enomem;
             memcpy(newval + oldlen, copy_value, new_part_len + 1);
             av_freep(&copy_value);
             copy_value = newval;
@@ -115,7 +120,7 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value,
         AVDictionaryEntry *tmp = av_realloc_array(m->elems,
                                                   m->count + 1, sizeof(*m->elems));
         if (!tmp)
-            goto err_out;
+            goto enomem;
         m->elems = tmp;
     }
     if (copy_value) {
@@ -132,6 +137,8 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value,
 
     return 0;
 
+enomem:
+    err = AVERROR(ENOMEM);
 err_out:
     if (m && !m->count) {
         av_freep(&m->elems);
@@ -139,7 +146,7 @@ err_out:
     }
     av_free(copy_key);
     av_free(copy_value);
-    return AVERROR(ENOMEM);
+    return err;
 }
 
 int av_dict_set_int(AVDictionary **pm, const char *key, int64_t value,
