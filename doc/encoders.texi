@@ -2176,6 +2176,8 @@ Set altref noise reduction filter type: backward, forward, centered.
 Set altref noise reduction filter strength.
 @item rc-lookahead, lag-in-frames (@emph{lag-in-frames})
 Set number of frames to look ahead for frametype and ratecontrol.
+@item min-gf-interval
+Set minimum golden/alternate reference frame interval (VP9 only).
 @end table
 
 @item error-resilient

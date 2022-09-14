@@ -131,6 +131,7 @@ typedef struct VPxEncoderContext {
     int tune_content;
     int corpus_complexity;
     int tpl_model;
+    int min_gf_interval;
     AVFifo *hdr10_plus_fifo;
     /**
      * If the driver does not support ROI then warn the first time we
@@ -185,6 +186,9 @@ static const char *const ctlidstr[] = {
 #endif
 #ifdef VPX_CTRL_VP9E_SET_TPL
     [VP9E_SET_TPL]                     = "VP9E_SET_TPL",
+#endif
+#ifdef VPX_CTRL_VP9E_SET_MIN_GF_INTERVAL
+    [VP9E_SET_MIN_GF_INTERVAL]         = "VP9E_SET_MIN_GF_INTERVAL",
 #endif
 #endif
 };
@@ -1174,6 +1178,10 @@ static av_cold int vpx_init(AVCodecContext *avctx,
         if (ctx->tpl_model >= 0)
             codecctl_int(avctx, VP9E_SET_TPL, ctx->tpl_model);
 #endif
+#ifdef VPX_CTRL_VP9E_SET_MIN_GF_INTERVAL
+        if (ctx->min_gf_interval >= 0)
+            codecctl_int(avctx, VP9E_SET_MIN_GF_INTERVAL, ctx->min_gf_interval);
+#endif
     }
 #endif
 
@@ -1911,6 +1919,9 @@ static const AVOption vp9_options[] = {
 #endif
 #ifdef VPX_CTRL_VP9E_SET_TPL
     { "enable-tpl",      "Enable temporal dependency model", OFFSET(tpl_model), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE },
+#endif
+#ifdef VPX_CTRL_VP9E_SET_MIN_GF_INTERVAL
+    { "min-gf-interval", "Minimum golden/alternate reference frame interval", OFFSET(min_gf_interval), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, VE },
 #endif
     LEGACY_OPTIONS
     { NULL }
