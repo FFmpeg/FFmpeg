@@ -258,3 +258,5 @@ xv30be          planes: 1, linesizes: 256   0   0   0, plane_sizes: 12288     0 
 xv30le          planes: 1, linesizes: 256   0   0   0, plane_sizes: 12288     0     0     0, plane_offsets:     0     0     0, total_size: 12288
 xv36be          planes: 1, linesizes: 512   0   0   0, plane_sizes: 24576     0     0     0, plane_offsets:     0     0     0, total_size: 24576
 xv36le          planes: 1, linesizes: 512   0   0   0, plane_sizes: 24576     0     0     0, plane_offsets:     0     0     0, total_size: 24576
+rgbf32be        planes: 1, linesizes: 768   0   0   0, plane_sizes: 36864     0     0     0, plane_offsets:     0     0     0, total_size: 36864
+rgbf32le        planes: 1, linesizes: 768   0   0   0, plane_sizes: 36864     0     0     0, plane_offsets:     0     0     0, total_size: 36864
