@@ -427,6 +427,7 @@ Muxers/Demuxers:
   idcin.c                               Mike Melanson
   idroqdec.c                            Mike Melanson
   iff.c                                 Jaikrishnan Menon
+  imf*                                  Pierre-Anthony Lemieux
   img2*.c                               Michael Niedermayer
   ipmovie.c                             Mike Melanson
   ircam*                                Paul B Mahol
@@ -624,6 +625,7 @@ Nikolay Aleksandrov           8978 1D8C FB71 588E 4B27 EAA8 C4F0 B5FC E011 13B1
 Panagiotis Issaris            6571 13A3 33D9 3726 F728 AA98 F643 B12E ECF3 E029
 Peter Ross                    A907 E02F A6E5 0CD2 34CD 20D2 6760 79C5 AC40 DD6B
 Philip Langdale               5DC5 8D66 5FBA 3A43 18EC 045E F8D6 B194 6A75 682E
+Pierre-Anthony Lemieux (pal)  F4B3 9492 E6F2 E4AF AEC8 46CB 698F A1F0 F8D4 EED4
 Ramiro Polla                  7859 C65B 751B 1179 792E DAE8 8E95 8B2F 9B6C 5700
 Reimar Doeffinger             C61D 16E5 9E2C D10C 8958 38A4 0899 A2B9 06D4 D9C7
 Reinhard Tartler              9300 5DC2 7E87 6C37 ED7B CA9A 9808 3544 9453 48A4
