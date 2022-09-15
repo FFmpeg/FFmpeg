@@ -494,7 +494,7 @@ int avdevice_list_devices(struct AVFormatContext *s, AVDeviceInfoList **device_l
 /**
  * Convenient function to free result of avdevice_list_devices().
  *
- * @param devices device list to be freed.
+ * @param device_list device list to be freed.
  */
 void avdevice_free_list_devices(AVDeviceInfoList **device_list);
 
