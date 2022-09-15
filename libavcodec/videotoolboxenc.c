@@ -1440,7 +1440,7 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
 static int vtenc_configure_encoder(AVCodecContext *avctx)
 {
     CFMutableDictionaryRef enc_info;
-    CFMutableDictionaryRef pixel_buffer_info;
+    CFMutableDictionaryRef pixel_buffer_info = NULL;
     CMVideoCodecType       codec_type;
     VTEncContext           *vtctx = avctx->priv_data;
     CFStringRef            profile_level = NULL;
@@ -1517,8 +1517,6 @@ static int vtenc_configure_encoder(AVCodecContext *avctx)
         status = create_cv_pixel_buffer_info(avctx, &pixel_buffer_info);
         if (status)
             goto init_cleanup;
-    } else {
-        pixel_buffer_info = NULL;
     }
 
     vtctx->dts_delta = vtctx->has_b_frames ? -1 : 0;
