@@ -77,7 +77,6 @@ typedef struct IntraX8Context {
  * Initialize IntraX8 frame decoder.
  * @param avctx pointer to AVCodecContext
  * @param w pointer to IntraX8Context
- * @param idsp pointer to IDCTDSPContext
  * @param block pointer to block array
  * @param block_last_index pointer to index array
  * @param mb_width macroblock width
