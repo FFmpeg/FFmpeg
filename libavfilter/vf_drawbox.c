@@ -162,7 +162,7 @@ static void draw_region(AVFrame *frame, DrawBoxContext *ctx, int left, int top, 
     row[2] = frame->data[0] + y * frame->linesize[0] + ctx->rgba_map[2];
 
 #define ASSIGN_FOUR_CHANNELS_PACKED                   \
-    ASSIGN_THREE_CHANNELS                             \
+    ASSIGN_THREE_CHANNELS_PACKED                      \
     row[3] = frame->data[0] + y * frame->linesize[0] + ctx->rgba_map[3];
 
 static void draw_region_rgb_packed(AVFrame *frame, DrawBoxContext *ctx, int left, int top, int right, int down,
