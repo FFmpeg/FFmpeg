@@ -667,7 +667,8 @@ void *av_dynarray2_add(void **tab_ptr, int *nb_ptr, size_t elem_size,
 /**
  * Multiply two `size_t` values checking for overflow.
  *
- * @param[in]  a,b Operands of multiplication
+ * @param[in]  a   Operand of multiplication
+ * @param[in]  b   Operand of multiplication
  * @param[out] r   Pointer to the result of the operation
  * @return 0 on success, AVERROR(EINVAL) on overflow
  */

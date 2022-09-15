@@ -111,7 +111,8 @@ enum AVRounding {
 /**
  * Compute the greatest common divisor of two integer operands.
  *
- * @param a,b Operands
+ * @param a Operand
+ * @param b Operand
  * @return GCD of a and b up to sign; if a >= 0 and b >= 0, return value is >= 0;
  * if a == 0 and b == 0, returns 0.
  */
@@ -186,7 +187,8 @@ int av_compare_ts(int64_t ts_a, AVRational tb_a, int64_t ts_b, AVRational tb_b);
  * av_compare_mod(0x11, 0x02, 0x20) > 0 // since 0x11 % 0x20 (0x11) > 0x02 % 0x20 (0x02)
  * @endcode
  *
- * @param a,b Operands
+ * @param a Operand
+ * @param b Operand
  * @param mod Divisor; must be a power of 2
  * @return
  *         - a negative value if `a % mod < b % mod`
