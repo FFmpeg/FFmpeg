@@ -62,6 +62,12 @@ typedef struct AVCodecInternal {
      */
     int last_audio_frame;
 
+    /**
+     * Audio encoders can set this flag during init to indicate that they
+     * want the small last frame to be padded to a multiple of pad_samples.
+     */
+    int pad_samples;
+
     AVBufferRef *pool;
 
     void *thread_ctx;

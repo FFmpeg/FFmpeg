@@ -127,12 +127,12 @@ static int encode_make_refcounted(AVCodecContext *avctx, AVPacket *avpkt)
 /**
  * Pad last frame with silence.
  */
-static int pad_last_frame(AVCodecContext *s, AVFrame *frame, const AVFrame *src)
+static int pad_last_frame(AVCodecContext *s, AVFrame *frame, const AVFrame *src, int out_samples)
 {
     int ret;
 
     frame->format         = src->format;
-    frame->nb_samples     = s->frame_size;
+    frame->nb_samples     = out_samples;
     ret = av_channel_layout_copy(&frame->ch_layout, &s->ch_layout);
     if (ret < 0)
         goto fail;
@@ -406,10 +406,15 @@ static int encode_send_frame_internal(AVCodecContext *avctx, const AVFrame *src)
             if (src->nb_samples < avctx->frame_size) {
                 avctx->internal->last_audio_frame = 1;
                 if (!(avctx->codec->capabilities & AV_CODEC_CAP_SMALL_LAST_FRAME)) {
-                ret = pad_last_frame(avctx, dst, src);
-                if (ret < 0)
-                    return ret;
-                goto finish;
+                    int pad_samples = avci->pad_samples ? avci->pad_samples : avctx->frame_size;
+                    int out_samples = (src->nb_samples + pad_samples - 1) / pad_samples * pad_samples;
+
+                    if (out_samples != src->nb_samples) {
+                        ret = pad_last_frame(avctx, dst, src, out_samples);
+                        if (ret < 0)
+                            return ret;
+                        goto finish;
+                    }
                 }
             }
         }
