@@ -61,8 +61,8 @@ static av_always_inline av_const int32_t av_clipl_int32_rvi(int64_t a)
 #define av_clip_intp2 av_clip_intp2_rvi
 static av_always_inline av_const int av_clip_intp2_rvi(int a, int p)
 {
-    const int shift = 32 - p;
-    int b = (a << shift) >> shift;
+    const int shift = 31 - p;
+    int b = ((int)(((unsigned)a) << shift)) >> shift;
 
     if (a != b)
         b = (a >> 31) ^ ((1 << p) - 1);
