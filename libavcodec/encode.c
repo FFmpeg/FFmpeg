@@ -157,6 +157,7 @@ static int pad_last_frame(AVCodecContext *s, AVFrame *frame, const AVFrame *src)
 
 fail:
     av_frame_unref(frame);
+    s->internal->last_audio_frame = 0;
     return ret;
 }
 
@@ -392,28 +393,24 @@ static int encode_send_frame_internal(AVCodecContext *avctx, const AVFrame *src)
             avctx->audio_service_type = *(enum AVAudioServiceType*)sd->data;
 
         /* check for valid frame size */
-        if (avctx->codec->capabilities & AV_CODEC_CAP_SMALL_LAST_FRAME) {
-            if (src->nb_samples > avctx->frame_size) {
-                av_log(avctx, AV_LOG_ERROR, "more samples than frame size\n");
-                return AVERROR(EINVAL);
-            }
-        } else if (!(avctx->codec->capabilities & AV_CODEC_CAP_VARIABLE_FRAME_SIZE)) {
+        if (!(avctx->codec->capabilities & AV_CODEC_CAP_VARIABLE_FRAME_SIZE)) {
             /* if we already got an undersized frame, that must have been the last */
             if (avctx->internal->last_audio_frame) {
                 av_log(avctx, AV_LOG_ERROR, "frame_size (%d) was not respected for a non-last frame\n", avctx->frame_size);
                 return AVERROR(EINVAL);
             }
-
+            if (src->nb_samples > avctx->frame_size) {
+                av_log(avctx, AV_LOG_ERROR, "nb_samples (%d) > frame_size (%d)\n", src->nb_samples, avctx->frame_size);
+                return AVERROR(EINVAL);
+            }
             if (src->nb_samples < avctx->frame_size) {
+                avctx->internal->last_audio_frame = 1;
+                if (!(avctx->codec->capabilities & AV_CODEC_CAP_SMALL_LAST_FRAME)) {
                 ret = pad_last_frame(avctx, dst, src);
                 if (ret < 0)
                     return ret;
-
-                avctx->internal->last_audio_frame = 1;
                 goto finish;
-            } else if (src->nb_samples > avctx->frame_size) {
-                av_log(avctx, AV_LOG_ERROR, "nb_samples (%d) != frame_size (%d)\n", src->nb_samples, avctx->frame_size);
-                return AVERROR(EINVAL);
+                }
             }
         }
     }
