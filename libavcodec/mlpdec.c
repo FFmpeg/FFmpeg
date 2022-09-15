@@ -67,6 +67,8 @@ typedef struct SubStream {
     uint8_t     min_channel;
     /// The index of the last channel coded in this substream.
     uint8_t     max_channel;
+    /// The coded channels mask in this substream.
+    uint64_t    coded_channels;
     /// The number of channels input into the rematrix stage.
     uint8_t     max_matrix_channel;
     /// For each channel output by the matrix, the output channel to map it to
@@ -563,6 +565,7 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
 
     s->min_channel        = min_channel;
     s->max_channel        = max_channel;
+    s->coded_channels     = ((1LL << (max_channel - min_channel + 1)) - 1) << min_channel;
     s->max_matrix_channel = max_matrix_channel;
     s->noise_type         = noise_type;
 
@@ -1272,11 +1275,6 @@ static int read_access_unit(AVCodecContext *avctx, AVFrame *frame,
     for (substr = 0; substr <= m->max_decoded_substream; substr++) {
         SubStream *s = &m->substream[substr];
 
-        if (substr != m->max_decoded_substream &&
-            m->substream[m->max_decoded_substream].min_channel == 0 &&
-            m->substream[m->max_decoded_substream].max_channel == avctx->ch_layout.nb_channels - 1)
-            goto skip_substr;
-
         init_get_bits(&gb, buf, substream_data_len[substr] * 8);
 
         m->matrix_changed = 0;
@@ -1300,6 +1298,22 @@ static int read_access_unit(AVCodecContext *avctx, AVFrame *frame,
 
             if (!s->restart_seen)
                 goto next_substr;
+
+            if (substr > 0 && substr < m->max_decoded_substream &&
+                (s->min_channel <= m->substream[substr - 1].max_channel)) {
+                av_log(avctx, AV_LOG_DEBUG,
+                       "Previous substream(%d) channels overlaps current substream(%d) channels, skipping.\n",
+                       substr - 1, substr);
+                goto next_substr;
+            }
+
+            if (substr != m->max_decoded_substream &&
+                ((s->coded_channels & m->substream[m->max_decoded_substream].coded_channels) != 0)) {
+                av_log(avctx, AV_LOG_DEBUG,
+                       "Current substream(%d) channels overlaps final substream(%d) channels, skipping.\n",
+                       substr, m->max_decoded_substream);
+                goto next_substr;
+            }
 
             if ((ret = read_block_data(m, &gb, substr)) < 0)
                 return ret;
@@ -1350,7 +1364,6 @@ next_substr:
             av_log(m->avctx, AV_LOG_ERROR,
                    "No restart header present in substream %d.\n", substr);
 
-skip_substr:
         buf += substream_data_len[substr];
     }
 
