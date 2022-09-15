@@ -614,7 +614,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         avctx->codec_id == AV_CODEC_ID_ADPCM_IMA_ALP ||
         avctx->codec_id == AV_CODEC_ID_ADPCM_IMA_APM ||
         avctx->codec_id == AV_CODEC_ID_ADPCM_IMA_WS)
-        pkt_size = (frame->nb_samples * channels) / 2;
+        pkt_size = (frame->nb_samples * channels + 1) / 2;
     else
         pkt_size = avctx->block_align;
     if ((ret = ff_get_encode_buffer(avctx, avpkt, pkt_size, 0)) < 0)
