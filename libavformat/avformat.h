@@ -2003,7 +2003,7 @@ AVProgram *av_new_program(AVFormatContext *s, int id);
  * avformat_free_context() can be used to free the context and
  * everything allocated by the framework within it.
  *
- * @param *ctx is set to the created format context, or to NULL in
+ * @param ctx pointee is set to the created format context, or to NULL in
  * case of failure
  * @param oformat format to use for allocating the context, if NULL
  * format_name and filename are used instead
@@ -2656,7 +2656,7 @@ const AVIndexEntry *avformat_index_get_entry(AVStream *st, int idx);
  * Get the AVIndexEntry corresponding to the given timestamp.
  *
  * @param st          Stream containing the requested AVIndexEntry.
- * @param timestamp   Timestamp to retrieve the index entry for.
+ * @param wanted_timestamp   Timestamp to retrieve the index entry for.
  * @param flags       If AVSEEK_FLAG_BACKWARD then the returned entry will correspond
  *                    to the timestamp which is <= the requested one, if backward
  *                    is 0, then it will be >=
