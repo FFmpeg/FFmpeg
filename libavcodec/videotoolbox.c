@@ -690,8 +690,7 @@ static void videotoolbox_decoder_callback(void *opaque,
                                           CMTime pts,
                                           CMTime duration)
 {
-    AVCodecContext *avctx = opaque;
-    VTContext *vtctx = avctx->internal->hwaccel_priv_data;
+    VTContext *vtctx = opaque;
 
     if (vtctx->frame) {
         CVPixelBufferRelease(vtctx->frame);
@@ -699,7 +698,8 @@ static void videotoolbox_decoder_callback(void *opaque,
     }
 
     if (!image_buffer) {
-        av_log(avctx, status ? AV_LOG_WARNING : AV_LOG_DEBUG, "vt decoder cb: output image buffer is null: %i\n", status);
+        av_log(vtctx->logctx, status ? AV_LOG_WARNING : AV_LOG_DEBUG,
+               "vt decoder cb: output image buffer is null: %i\n", status);
         return;
     }
 
@@ -949,7 +949,7 @@ static int videotoolbox_start(AVCodecContext *avctx)
                                                      videotoolbox->cv_pix_fmt_type);
 
     decoder_cb.decompressionOutputCallback = videotoolbox_decoder_callback;
-    decoder_cb.decompressionOutputRefCon   = avctx;
+    decoder_cb.decompressionOutputRefCon   = avctx->internal->hwaccel_priv_data;
 
     status = VTDecompressionSessionCreate(NULL,                      // allocator
                                           videotoolbox->cm_fmt_desc, // videoFormatDescription
@@ -1178,6 +1178,8 @@ int ff_videotoolbox_common_init(AVCodecContext *avctx)
     VTContext *vtctx = avctx->internal->hwaccel_priv_data;
     AVHWFramesContext *hw_frames;
     int err;
+
+    vtctx->logctx = avctx;
 
     // Old API - do nothing.
     if (avctx->hwaccel_context)
