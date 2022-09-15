@@ -1499,7 +1499,7 @@ typedef struct AVCodecContext {
      *   libavcodec will behave as if this field was always set to 1.
      *   Callers that want to be forward compatible with future libavcodec
      *   versions should wrap access to this field in
-     *     #if LIBAVCODEC_VERSION_MAJOR < 60
+     *     `#if LIBAVCODEC_VERSION_MAJOR < 60`
      */
     attribute_deprecated
     int thread_safe_callbacks;
