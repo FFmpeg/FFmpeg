@@ -1377,8 +1377,6 @@ static AVVideotoolboxContext *av_videotoolbox_alloc_context_with_pix_fmt(enum AV
     AVVideotoolboxContext *ret = av_mallocz(sizeof(*ret));
 
     if (ret) {
-        ret->output_callback = videotoolbox_decoder_callback;
-
         OSType cv_pix_fmt_type = av_map_videotoolbox_format_from_pixfmt2(pix_fmt, full_range);
         if (cv_pix_fmt_type == 0) {
             cv_pix_fmt_type = kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange;

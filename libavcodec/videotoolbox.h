@@ -37,6 +37,8 @@
 
 #include "libavcodec/avcodec.h"
 
+#include "libavutil/attributes.h"
+
 /**
  * This struct holds all the information that needs to be passed
  * between the caller and libavcodec for initializing Videotoolbox decoding.
@@ -50,11 +52,14 @@ typedef struct AVVideotoolboxContext {
      */
     VTDecompressionSessionRef session;
 
+#if FF_API_VT_OUTPUT_CALLBACK
     /**
      * The output callback that must be passed to the session.
      * Set by av_videottoolbox_default_init()
      */
+    attribute_deprecated
     VTDecompressionOutputCallback output_callback;
+#endif
 
     /**
      * CVPixelBuffer Format Type that Videotoolbox will use for decoded frames.
