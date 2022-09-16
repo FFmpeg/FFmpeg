@@ -14,6 +14,7 @@ FATE_LAVF_AUDIO-$(call ENCDEC,  PCM_S16LE,    W64)              += w64
 FATE_LAVF_AUDIO-$(call ENCDEC,  TTA,          TTA)              += tta
 FATE_LAVF_AUDIO-$(call ENCMUX,  TTA,          MATROSKA_AUDIO)   += mka
 FATE_LAVF_AUDIO_RESAMPLE-$(call ENCDEC,  PCM_S16BE_PLANAR, AST) += ast
+FATE_LAVF_AUDIO_RESAMPLE-$(call ENCDEC,  DFPWM,          DFPWM) += dfpwm
 FATE_LAVF_AUDIO_RESAMPLE-$(call ENCDEC,  PCM_U8,           RSO) += rso
 FATE_LAVF_AUDIO_RESAMPLE-$(call ENCDEC,  PCM_S16LE,        SOX) += sox
 FATE_LAVF_AUDIO_RESAMPLE-$(call ENCDEC,  PCM_U8,           VOC) += voc
@@ -28,6 +29,7 @@ $(FATE_LAVF_AUDIO): REF = $(SRC_PATH)/tests/ref/lavf/$(@:fate-lavf-%=%)
 $(FATE_LAVF_AUDIO): $(AREF)
 
 fate-lavf-al fate-lavf-ul: CMD = lavf_audio "" "" "-ar 44100"
+fate-lavf-dfpwm: CMD = lavf_audio "" "" "-sample_rate 44100"
 fate-lavf-ogg: CMD = lavf_audio "" "-c:a flac"
 fate-lavf-s16.voc: CMD = lavf_audio "-ac 2" "-c:a pcm_s16le"
 fate-lavf-ast: CMD = lavf_audio "-ac 2" "-loopstart 1 -loopend 10"
