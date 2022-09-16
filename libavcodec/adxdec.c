@@ -35,15 +35,78 @@
  * adx2wav & wav2adx http://www.geocities.co.jp/Playtown/2004/
  */
 
+/**
+ * Decode ADX stream header.
+ * Sets avctx->channels and avctx->sample_rate.
+ *
+ * @param      avctx        codec context
+ * @param      buf          header data
+ * @param      bufsize      data size, should be at least 24 bytes
+ * @param[out] header_size  size of ADX header
+ * @param[out] coeff        2 LPC coefficients, can be NULL
+ * @return data offset or negative error code if header is invalid
+ */
+static int adx_decode_header(AVCodecContext *avctx, const uint8_t *buf,
+                             int bufsize, int *header_size, int *coeff)
+{
+    int offset, cutoff, channels;
+
+    if (bufsize < 24)
+        return AVERROR_INVALIDDATA;
+
+    if (AV_RB16(buf) != 0x8000)
+        return AVERROR_INVALIDDATA;
+    offset = AV_RB16(buf + 2) + 4;
+
+    /* if copyright string is within the provided data, validate it */
+    if (bufsize >= offset && offset >= 6 && memcmp(buf + offset - 6, "(c)CRI", 6))
+        return AVERROR_INVALIDDATA;
+
+    /* check for encoding=3 block_size=18, sample_size=4 */
+    if (buf[4] != 3 || buf[5] != 18 || buf[6] != 4) {
+        avpriv_request_sample(avctx, "Support for this ADX format");
+        return AVERROR_PATCHWELCOME;
+    }
+
+    /* channels */
+    channels = buf[7];
+    if (channels <= 0 || channels > 2)
+        return AVERROR_INVALIDDATA;
+
+    if (avctx->ch_layout.nb_channels != channels) {
+        av_channel_layout_uninit(&avctx->ch_layout);
+        avctx->ch_layout.order = AV_CHANNEL_ORDER_UNSPEC;
+        avctx->ch_layout.nb_channels = channels;
+    }
+
+    /* sample rate */
+    avctx->sample_rate = AV_RB32(buf + 8);
+    if (avctx->sample_rate < 1 ||
+        avctx->sample_rate > INT_MAX / (channels * BLOCK_SIZE * 8))
+        return AVERROR_INVALIDDATA;
+
+    /* bit rate */
+    avctx->bit_rate = avctx->sample_rate * channels * BLOCK_SIZE * 8 / BLOCK_SAMPLES;
+
+    /* LPC coefficients */
+    if (coeff) {
+        cutoff = AV_RB16(buf + 16);
+        ff_adx_calculate_coeffs(cutoff, avctx->sample_rate, COEFF_BITS, coeff);
+    }
+
+    *header_size = offset;
+    return 0;
+}
+
 static av_cold int adx_decode_init(AVCodecContext *avctx)
 {
     ADXContext *c = avctx->priv_data;
     int ret, header_size;
 
     if (avctx->extradata_size >= 24) {
-        if ((ret = ff_adx_decode_header(avctx, avctx->extradata,
-                                        avctx->extradata_size, &header_size,
-                                        c->coeff)) < 0) {
+        if ((ret = adx_decode_header(avctx, avctx->extradata,
+                                     avctx->extradata_size, &header_size,
+                                     c->coeff)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "error parsing ADX header\n");
             return AVERROR_INVALIDDATA;
         }
@@ -110,9 +173,9 @@ static int adx_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                                             &new_extradata_size);
     if (new_extradata && new_extradata_size > 0) {
         int header_size;
-        if ((ret = ff_adx_decode_header(avctx, new_extradata,
-                                        new_extradata_size, &header_size,
-                                        c->coeff)) < 0) {
+        if ((ret = adx_decode_header(avctx, new_extradata,
+                                     new_extradata_size, &header_size,
+                                     c->coeff)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "error parsing new ADX extradata\n");
             return AVERROR_INVALIDDATA;
         }
@@ -127,8 +190,8 @@ static int adx_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
     if (!c->header_parsed && buf_size >= 2 && AV_RB16(buf) == 0x8000) {
         int header_size;
-        if ((ret = ff_adx_decode_header(avctx, buf, buf_size, &header_size,
-                                        c->coeff)) < 0) {
+        if ((ret = adx_decode_header(avctx, buf, buf_size, &header_size,
+                                     c->coeff)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "error parsing ADX header\n");
             return AVERROR_INVALIDDATA;
         }

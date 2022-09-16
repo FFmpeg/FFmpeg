@@ -31,10 +31,6 @@
 #ifndef AVCODEC_ADX_H
 #define AVCODEC_ADX_H
 
-#include <stdint.h>
-
-#include "avcodec.h"
-
 typedef struct ADXChannelState {
     int s1,s2;
 } ADXChannelState;
@@ -62,19 +58,5 @@ typedef struct ADXContext {
  * @param[out] coeff   2 quantized LPC coefficients
  */
 void ff_adx_calculate_coeffs(int cutoff, int sample_rate, int bits, int *coeff);
-
-/**
- * Decode ADX stream header.
- * Sets avctx->channels and avctx->sample_rate.
- *
- * @param      avctx        codec context
- * @param      buf          header data
- * @param      bufsize      data size, should be at least 24 bytes
- * @param[out] header_size  size of ADX header
- * @param[out] coeff        2 LPC coefficients, can be NULL
- * @return data offset or negative error code if header is invalid
- */
-int ff_adx_decode_header(AVCodecContext *avctx, const uint8_t *buf,
-                         int bufsize, int *header_size, int *coeff);
 
 #endif /* AVCODEC_ADX_H */
