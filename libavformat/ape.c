@@ -411,6 +411,7 @@ static int ape_read_packet(AVFormatContext * s, AVPacket * pkt)
     /* note: we need to modify the packet size here to handle the last
        packet */
     pkt->size = ret + extra_size;
+    pkt->duration = nblocks;
 
     ape->currentframe++;
 
