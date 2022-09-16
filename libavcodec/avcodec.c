@@ -246,6 +246,20 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
+    /* AV_CODEC_CAP_CHANNEL_CONF is a decoder-only flag; so the code below
+     * in particular checks that nb_channels is set for all audio encoders. */
+    if (avctx->codec_type == AVMEDIA_TYPE_AUDIO && !avctx->ch_layout.nb_channels
+        && !(codec->capabilities & AV_CODEC_CAP_CHANNEL_CONF)) {
+        av_log(avctx, AV_LOG_ERROR, "%s requires channel layout to be set\n",
+               av_codec_is_decoder(codec) ? "Decoder" : "Encoder");
+        ret = AVERROR(EINVAL);
+        goto free_and_end;
+    }
+    if (avctx->ch_layout.nb_channels && !av_channel_layout_check(&avctx->ch_layout)) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid channel layout\n");
+        ret = AVERROR(EINVAL);
+        goto free_and_end;
+    }
     if (avctx->ch_layout.nb_channels > FF_SANE_NB_CHANNELS) {
         av_log(avctx, AV_LOG_ERROR, "Too many channels: %d\n", avctx->ch_layout.nb_channels);
         ret = AVERROR(EINVAL);

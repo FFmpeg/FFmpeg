@@ -602,11 +602,6 @@ static int encode_preinit_audio(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
     if (avctx->codec->ch_layouts) {
-        if (!av_channel_layout_check(&avctx->ch_layout)) {
-            av_log(avctx, AV_LOG_WARNING, "Channel layout not specified correctly\n");
-            return AVERROR(EINVAL);
-        }
-
         for (i = 0; avctx->codec->ch_layouts[i].nb_channels; i++) {
             if (!av_channel_layout_compare(&avctx->ch_layout, &avctx->codec->ch_layouts[i]))
                 break;
