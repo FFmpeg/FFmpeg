@@ -85,11 +85,6 @@ static av_cold int dfpwm_dec_init(struct AVCodecContext *ctx)
 {
     DFPWMState *state = ctx->priv_data;
 
-    if (ctx->ch_layout.nb_channels <= 0) {
-        av_log(ctx, AV_LOG_ERROR, "Invalid number of channels\n");
-        return AVERROR(EINVAL);
-    }
-
     state->fq = 0;
     state->q = 0;
     state->s = 0;
