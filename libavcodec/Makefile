@@ -1170,6 +1170,7 @@ OBJS-$(CONFIG_VP9_PARSER)              += vp9_parser.o
 OBJS-$(CONFIG_WEBP_PARSER)             += webp_parser.o
 OBJS-$(CONFIG_XBM_PARSER)              += xbm_parser.o
 OBJS-$(CONFIG_XMA_PARSER)              += xma_parser.o
+OBJS-$(CONFIG_XWD_PARSER)              += xwd_parser.o
 
 # bitstream filters
 OBJS-$(CONFIG_AAC_ADTSTOASC_BSF)          += aac_adtstoasc_bsf.o

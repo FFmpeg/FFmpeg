@@ -76,6 +76,7 @@ extern const AVCodecParser ff_vp9_parser;
 extern const AVCodecParser ff_webp_parser;
 extern const AVCodecParser ff_xbm_parser;
 extern const AVCodecParser ff_xma_parser;
+extern const AVCodecParser ff_xwd_parser;
 
 #include "libavcodec/parser_list.c"
 
