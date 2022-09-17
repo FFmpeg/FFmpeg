@@ -153,8 +153,8 @@ typedef struct MLPEncodeContext {
     unsigned int    min_restart_interval;   ///< Min interval of access units in between two major frames.
     unsigned int    restart_intervals;      ///< Number of possible major frame sizes.
 
-    uint16_t        timestamp;              ///< Timestamp of current access unit.
-    uint16_t        dts;                    ///< Decoding timestamp of current access unit.
+    uint16_t        output_timing;          ///< Timestamp of current access unit.
+    uint16_t        input_timing;           ///< Decoding timestamp of current access unit.
 
     uint8_t         channel_arrangement;    ///< channel arrangement for MLP streams
 
@@ -559,7 +559,7 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
     }
     ctx->coded_sample_fmt[1] = -1 & 0xf;
 
-    ctx->dts = -avctx->frame_size;
+    ctx->input_timing = -avctx->frame_size;
 
     ctx->num_channels = avctx->ch_layout.nb_channels + 2; /* +2 noise channels */
     ctx->one_sample_buffer_size = avctx->frame_size
@@ -765,7 +765,7 @@ static void write_restart_header(MLPEncodeContext *ctx, PutBitContext *pb)
     uint8_t checksum;
 
     put_bits(pb, 14, 0x31ea                ); /* TODO 0x31eb */
-    put_bits(pb, 16, ctx->timestamp        );
+    put_bits(pb, 16, ctx->output_timing    );
     put_bits(pb,  4, rh->min_channel       );
     put_bits(pb,  4, rh->max_channel       );
     put_bits(pb,  4, rh->max_matrix_channel);
@@ -1092,7 +1092,7 @@ static void write_frame_headers(MLPEncodeContext *ctx, uint8_t *frame_header,
     uint16_t access_unit_header = 0;
     uint16_t parity_nibble = 0;
 
-    parity_nibble  = ctx->dts;
+    parity_nibble  = ctx->input_timing;
     parity_nibble ^= length;
 
     for (unsigned int substr = 0; substr < ctx->num_substreams; substr++) {
@@ -1118,7 +1118,7 @@ static void write_frame_headers(MLPEncodeContext *ctx, uint8_t *frame_header,
     access_unit_header |= length & 0xFFF;
 
     AV_WB16(frame_header  , access_unit_header);
-    AV_WB16(frame_header+2, ctx->dts          );
+    AV_WB16(frame_header+2, ctx->input_timing );
 }
 
 /** Writes an entire access unit to the bitstream. */
@@ -2117,8 +2117,8 @@ static int mlp_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     bytes_written = write_access_unit(ctx, avpkt->data, avpkt->size, restart_frame);
 
-    ctx->timestamp += avctx->frame_size;
-    ctx->dts       += avctx->frame_size;
+    ctx->output_timing += avctx->frame_size;
+    ctx->input_timing  += avctx->frame_size;
 
 input_and_return:
 
