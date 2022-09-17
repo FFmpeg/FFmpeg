@@ -148,7 +148,7 @@ static int apm_read_header(AVFormatContext *s)
     par->codec_id              = AV_CODEC_ID_ADPCM_IMA_APM;
     par->format                = AV_SAMPLE_FMT_S16;
     par->bit_rate              = par->ch_layout.nb_channels *
-                                 par->sample_rate *
+                                 (int64_t)par->sample_rate *
                                  par->bits_per_coded_sample;
 
     if ((ret = avio_read(s->pb, buf, APM_FILE_EXTRADATA_SIZE)) < 0)
