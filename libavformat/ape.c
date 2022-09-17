@@ -298,6 +298,8 @@ static int ape_read_header(AVFormatContext * s)
             ape->frames[i].pos  -= ape->frames[i].skip;
             ape->frames[i].size += ape->frames[i].skip;
         }
+        if (ape->frames[i].size > INT_MAX - 3)
+            return AVERROR_INVALIDDATA;
         ape->frames[i].size = (ape->frames[i].size + 3) & ~3;
     }
     if (ape->fileversion < 3810) {
