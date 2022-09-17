@@ -105,7 +105,7 @@ FATE_SAMPLES_FFMPEG-$(call ALLYES, COLOR_FILTER, VOBSUB_DEMUXER, MATROSKA_DEMUXE
 fate-shortest-sub: CMD = transcode                                                                    \
         vobsub $(TARGET_SAMPLES)/sub/vobsub.idx matroska                                              \
         "-filter_complex 'color=s=1x1:rate=1:duration=400' -pix_fmt rgb24 -allow_raw_vfw 1 -c:s copy -c:v rawvideo"  \
-        "-map 0 -c copy -shortest -shortest_buf_duration 40"
+        "-map 0 -c copy -shortest -shortest_buf_duration 40 -max_delay 1"
 
 # Basic test for fix_sub_duration, which calculates duration based on the
 # following subtitle's pts.
