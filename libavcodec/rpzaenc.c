@@ -773,10 +773,9 @@ static int rpza_encode_init(AVCodecContext *avctx)
 }
 
 static int rpza_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
-                                const AVFrame *frame, int *got_packet)
+                             const AVFrame *pict, int *got_packet)
 {
     RpzaContext *s = avctx->priv_data;
-    const AVFrame *pict = frame;
     uint8_t *buf;
     int ret = ff_alloc_packet(avctx, pkt, 6LL * avctx->height * avctx->width);
 
