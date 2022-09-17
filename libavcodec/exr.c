@@ -191,6 +191,8 @@ typedef struct EXRContext {
     float gamma;
     union av_intfloat32 gamma_table[65536];
 
+    uint8_t *offset_table;
+
     Half2FloatTables h2f_tables;
 } EXRContext;
 
@@ -2026,7 +2028,6 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *picture,
     int nb_blocks;   /* nb scanline or nb tile */
     uint64_t start_offset_table;
     uint64_t start_next_scanline;
-    PutByteContext offset_table_writer;
 
     bytestream2_init(gb, avpkt->data, avpkt->size);
 
@@ -2146,11 +2147,17 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *picture,
 
     // check offset table and recreate it if need
     if (!s->is_tile && bytestream2_peek_le64(gb) == 0) {
+        PutByteContext offset_table_writer;
+
         av_log(s->avctx, AV_LOG_DEBUG, "recreating invalid scanline offset table\n");
+
+        s->offset_table = av_realloc_f(s->offset_table, nb_blocks, 8);
+        if (!s->offset_table)
+            return AVERROR(ENOMEM);
 
         start_offset_table = bytestream2_tell(gb);
         start_next_scanline = start_offset_table + nb_blocks * 8;
-        bytestream2_init_writer(&offset_table_writer, &avpkt->data[start_offset_table], nb_blocks * 8);
+        bytestream2_init_writer(&offset_table_writer, s->offset_table, nb_blocks * 8);
 
         for (y = 0; y < nb_blocks; y++) {
             /* write offset of prev scanline in offset table */
@@ -2160,7 +2167,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *picture,
             bytestream2_seek(gb, start_next_scanline + 4, SEEK_SET);/* skip line number */
             start_next_scanline += (bytestream2_get_le32(gb) + 8);
         }
-        bytestream2_seek(gb, start_offset_table, SEEK_SET);
+        bytestream2_init(gb, s->offset_table, nb_blocks * 8);
     }
 
     // save pointer we are going to use in decode_block
@@ -2270,6 +2277,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
     av_freep(&s->thread_data);
     av_freep(&s->channels);
+    av_freep(&s->offset_table);
 
     return 0;
 }
