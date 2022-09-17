@@ -896,8 +896,7 @@ static int configure_input_audio_filter(FilterGraph *fg, InputFilter *ifilter,
         char args[256] = {0};
 
         av_strlcatf(args, sizeof(args), "async=%d", audio_sync_method);
-        if (audio_drift_threshold != 0.1)
-            av_strlcatf(args, sizeof(args), ":min_hard_comp=%f", audio_drift_threshold);
+        av_strlcatf(args, sizeof(args), ":min_hard_comp=%f", audio_drift_threshold);
         if (!fg->reconfiguration)
             av_strlcatf(args, sizeof(args), ":first_pts=0");
         AUTO_INSERT_FILTER_INPUT("-async", "aresample", args);
