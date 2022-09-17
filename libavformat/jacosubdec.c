@@ -152,7 +152,7 @@ static int get_shift(int timeres, const char *buf)
     ret = 0;
     switch (n) {
     case 4:
-        ret = sign * (((int64_t)a*3600 + b*60 + c) * timeres + d);
+        ret = sign * (((int64_t)a*3600 + (int64_t)b*60 + c) * timeres + d);
         break;
     case 3:
         ret = sign * ((         (int64_t)a*60 + b) * timeres + c);
