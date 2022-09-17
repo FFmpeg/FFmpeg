@@ -78,6 +78,8 @@ static int genh_read_header(AVFormatContext *s)
     case  0: st->codecpar->codec_id = AV_CODEC_ID_ADPCM_PSX;        break;
     case  1:
     case 11: st->codecpar->bits_per_coded_sample = 4;
+             if (st->codecpar->ch_layout.nb_channels > INT_MAX / 36)
+                return AVERROR_INVALIDDATA;
              st->codecpar->block_align = 36 * st->codecpar->ch_layout.nb_channels;
              st->codecpar->codec_id = AV_CODEC_ID_ADPCM_IMA_WAV;    break;
     case  2: st->codecpar->codec_id = AV_CODEC_ID_ADPCM_DTK;        break;
