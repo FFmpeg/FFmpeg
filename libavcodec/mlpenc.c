@@ -628,14 +628,14 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
             ctx->channel_arrangement = 1;
             ctx->thd_substream_info  = 0x14;
         } else if (!av_channel_layout_compare(&avctx->ch_layout,
-                                              &(AVChannelLayout)AV_CHANNEL_LAYOUT_5POINT0_BACK)) {
+                                              &(AVChannelLayout)AV_CHANNEL_LAYOUT_5POINT0)) {
             ctx->ch_modifier_thd0    = 1;
             ctx->ch_modifier_thd1    = 1;
             ctx->ch_modifier_thd2    = 1;
             ctx->channel_arrangement = 11;
             ctx->thd_substream_info  = 0x104;
         } else if (!av_channel_layout_compare(&avctx->ch_layout,
-                                              &(AVChannelLayout)AV_CHANNEL_LAYOUT_5POINT1_BACK)) {
+                                              &(AVChannelLayout)AV_CHANNEL_LAYOUT_5POINT1)) {
             ctx->ch_modifier_thd0    = 2;
             ctx->ch_modifier_thd1    = 1;
             ctx->ch_modifier_thd2    = 2;
@@ -2278,13 +2278,13 @@ const FFCodec ff_truehd_encoder = {
     .p.sample_fmts          = (const enum AVSampleFormat[]) {AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S32, AV_SAMPLE_FMT_NONE},
     .p.supported_samplerates = (const int[]) {44100, 48000, 88200, 96000, 176400, 192000, 0},
 #if FF_API_OLD_CHANNEL_LAYOUT
-    .p.channel_layouts      = (const uint64_t[]) {AV_CH_LAYOUT_MONO, AV_CH_LAYOUT_STEREO, AV_CH_LAYOUT_5POINT0_BACK, AV_CH_LAYOUT_5POINT1_BACK, 0},
+    .p.channel_layouts      = (const uint64_t[]) { AV_CH_LAYOUT_MONO, AV_CH_LAYOUT_STEREO, AV_CH_LAYOUT_5POINT0, AV_CH_LAYOUT_5POINT1, 0 },
 #endif
     .p.ch_layouts           = (const AVChannelLayout[]) {
                                   AV_CHANNEL_LAYOUT_MONO,
                                   AV_CHANNEL_LAYOUT_STEREO,
-                                  AV_CHANNEL_LAYOUT_5POINT0_BACK,
-                                  AV_CHANNEL_LAYOUT_5POINT1_BACK,
+                                  AV_CHANNEL_LAYOUT_5POINT0,
+                                  AV_CHANNEL_LAYOUT_5POINT1,
                                   { 0 }
                               },
     .caps_internal          = FF_CODEC_CAP_INIT_CLEANUP,
