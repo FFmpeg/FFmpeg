@@ -203,6 +203,9 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
             AV_WL32(buf + 32, image->nb_pal);
         }
 
+        if (image->nb_pal > INT_MAX / 4 - 14 - 40)
+            return AVERROR_INVALIDDATA;
+
         AV_WL32(buf - 4, 14 + 40 + image->nb_pal * 4);
         AV_WL32(buf + 8, AV_RL32(buf + 8) / 2);
     }
