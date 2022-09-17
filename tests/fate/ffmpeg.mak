@@ -102,10 +102,10 @@ fate-shortest: CMD = framecrc -auto_conversion_filters -f lavfi -i "sine=3000:d=
 # test interleaving video with a sparse subtitle stream
 FATE_SAMPLES_FFMPEG-$(call ALLYES, COLOR_FILTER, VOBSUB_DEMUXER, MATROSKA_DEMUXER,, \
                            RAWVIDEO_ENCODER, MATROSKA_MUXER, FRAMECRC_MUXER) += fate-shortest-sub
-fate-shortest-sub: CMD = enc_dec                                                                      \
+fate-shortest-sub: CMD = transcode                                                                    \
         vobsub $(TARGET_SAMPLES)/sub/vobsub.idx matroska                                              \
         "-filter_complex 'color=s=1x1:rate=1:duration=400' -pix_fmt rgb24 -allow_raw_vfw 1 -c:s copy -c:v rawvideo"  \
-        framecrc "-map 0 -c copy -shortest -shortest_buf_duration 40"
+        "-map 0 -c copy -shortest -shortest_buf_duration 40"
 
 # Basic test for fix_sub_duration, which calculates duration based on the
 # following subtitle's pts.
