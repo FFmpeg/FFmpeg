@@ -372,6 +372,8 @@ got_sound:
         av_log(s, AV_LOG_ERROR, "could not find COMM tag or invalid block_align value\n");
         return AVERROR_INVALIDDATA;
     }
+    if (aiff->block_duration < 0)
+        return AVERROR_INVALIDDATA;
 
     /* Now positioned, get the sound data start and end */
     avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
