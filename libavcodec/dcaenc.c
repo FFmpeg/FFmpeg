@@ -222,13 +222,6 @@ static int encode_init(AVCodecContext *avctx)
     if (ff_dcaadpcm_init(&c->adpcm_ctx))
         return AVERROR(ENOMEM);
 
-    if (layout.order == AV_CHANNEL_ORDER_UNSPEC) {
-        av_log(avctx, AV_LOG_WARNING, "No channel layout specified. The "
-                                      "encoder will guess the layout, but it "
-                                      "might be incorrect.\n");
-        av_channel_layout_default(&layout, layout.nb_channels);
-    }
-
     if (!av_channel_layout_compare(&layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_MONO))
         c->channel_config = 0;
     else if (!av_channel_layout_compare(&layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO))
@@ -239,10 +232,6 @@ static int encode_init(AVCodecContext *avctx)
         c->channel_config = 9;
     else if (!av_channel_layout_compare(&layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_5POINT1))
         c->channel_config = 9;
-    else {
-        av_log(avctx, AV_LOG_ERROR, "Unsupported channel layout!\n");
-        return AVERROR_PATCHWELCOME;
-    }
 
     if (c->lfe_channel) {
         c->fullband_channels--;
