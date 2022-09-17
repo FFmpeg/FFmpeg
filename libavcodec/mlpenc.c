@@ -480,6 +480,7 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
     static AVOnce init_static_once = AV_ONCE_INIT;
     MLPEncodeContext *ctx = avctx->priv_data;
     RestartHeader *const rh = &ctx->restart_header;
+    uint64_t channels_present;
     unsigned int sum = 0;
     size_t size;
     int ret;
@@ -589,19 +590,20 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
 
     ctx->num_substreams = 1; // TODO: change this after adding multi-channel support for TrueHD
 
+    channels_present = av_channel_layout_subset(&avctx->ch_layout, ~(uint64_t)0);
     if (ctx->avctx->codec_id == AV_CODEC_ID_MLP) {
-        static const AVChannelLayout layout_arrangement[] = {
-            AV_CHANNEL_LAYOUT_MONO,         AV_CHANNEL_LAYOUT_STEREO,
-            AV_CHANNEL_LAYOUT_2_1,          AV_CHANNEL_LAYOUT_QUAD,
-            AV_CHANNEL_LAYOUT_2POINT1,      { 0 }, { 0 },
-            AV_CHANNEL_LAYOUT_SURROUND,     AV_CHANNEL_LAYOUT_4POINT0,
-            AV_CHANNEL_LAYOUT_5POINT0_BACK, AV_CHANNEL_LAYOUT_3POINT1,
-            AV_CHANNEL_LAYOUT_4POINT1,      AV_CHANNEL_LAYOUT_5POINT1_BACK,
+        static const uint64_t layout_arrangement[] = {
+            AV_CH_LAYOUT_MONO,         AV_CH_LAYOUT_STEREO,
+            AV_CH_LAYOUT_2_1,          AV_CH_LAYOUT_QUAD,
+            AV_CH_LAYOUT_2POINT1,      0, 0,
+            AV_CH_LAYOUT_SURROUND,     AV_CH_LAYOUT_4POINT0,
+            AV_CH_LAYOUT_5POINT0_BACK, AV_CH_LAYOUT_3POINT1,
+            AV_CH_LAYOUT_4POINT1,      AV_CH_LAYOUT_5POINT1_BACK,
         };
         int i;
 
         for (i = 0; i < FF_ARRAY_ELEMS(layout_arrangement); i++)
-            if (!av_channel_layout_compare(&avctx->ch_layout, &layout_arrangement[i]))
+            if (channels_present == layout_arrangement[i])
                 break;
         if (i == FF_ARRAY_ELEMS(layout_arrangement)) {
             av_log(avctx, AV_LOG_ERROR, "Unsupported channel arrangement\n");
@@ -613,29 +615,25 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
         ctx->summary_info      = ff_mlp_ch_info[ctx->channel_arrangement].summary_info     ;
     } else {
         /* TrueHD */
-        if (!av_channel_layout_compare(&avctx->ch_layout,
-                                       &(AVChannelLayout)AV_CHANNEL_LAYOUT_MONO)) {
+        if (channels_present == AV_CH_LAYOUT_MONO) {
             ctx->ch_modifier_thd0    = 3;
             ctx->ch_modifier_thd1    = 3;
             ctx->ch_modifier_thd2    = 3;
             ctx->channel_arrangement = 2;
             ctx->thd_substream_info  = 0x14;
-        } else if (!av_channel_layout_compare(&avctx->ch_layout,
-                                       &(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO)) {
+        } else if (channels_present == AV_CH_LAYOUT_STEREO) {
             ctx->ch_modifier_thd0    = 1;
             ctx->ch_modifier_thd1    = 1;
             ctx->ch_modifier_thd2    = 1;
             ctx->channel_arrangement = 1;
             ctx->thd_substream_info  = 0x14;
-        } else if (!av_channel_layout_compare(&avctx->ch_layout,
-                                              &(AVChannelLayout)AV_CHANNEL_LAYOUT_5POINT0)) {
+        } else if (channels_present == AV_CH_LAYOUT_5POINT0) {
             ctx->ch_modifier_thd0    = 1;
             ctx->ch_modifier_thd1    = 1;
             ctx->ch_modifier_thd2    = 1;
             ctx->channel_arrangement = 11;
             ctx->thd_substream_info  = 0x104;
-        } else if (!av_channel_layout_compare(&avctx->ch_layout,
-                                              &(AVChannelLayout)AV_CHANNEL_LAYOUT_5POINT1)) {
+        } else if (channels_present == AV_CH_LAYOUT_5POINT1) {
             ctx->ch_modifier_thd0    = 2;
             ctx->ch_modifier_thd1    = 1;
             ctx->ch_modifier_thd2    = 2;
