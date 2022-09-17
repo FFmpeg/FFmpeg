@@ -27,6 +27,7 @@
 #include "encode.h"
 #include "put_bits.h"
 #include "audio_frame_queue.h"
+#include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/crc.h"
 #include "libavutil/avstring.h"
@@ -602,12 +603,11 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
         };
         int i;
 
-        for (i = 0; i < FF_ARRAY_ELEMS(layout_arrangement); i++)
+        for (i = 0;; i++) {
+            av_assert1(i < FF_ARRAY_ELEMS(layout_arrangement) ||
+                       !"Impossible channel layout");
             if (channels_present == layout_arrangement[i])
                 break;
-        if (i == FF_ARRAY_ELEMS(layout_arrangement)) {
-            av_log(avctx, AV_LOG_ERROR, "Unsupported channel arrangement\n");
-            return AVERROR(EINVAL);
         }
         ctx->channel_arrangement = i;
         ctx->flags = FLAGS_DVDA;
@@ -640,8 +640,7 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
             ctx->channel_arrangement = 15;
             ctx->thd_substream_info  = 0x104;
         } else {
-            av_log(avctx, AV_LOG_ERROR, "Unsupported channel arrangement\n");
-            return AVERROR(EINVAL);
+            av_assert1(!"AVCodec.ch_layouts needs to be updated");
         }
         ctx->flags = 0;
         ctx->channel_occupancy = 0;
