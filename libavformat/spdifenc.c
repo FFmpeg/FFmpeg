@@ -410,8 +410,8 @@ static const uint8_t mat_end_code[16] = {
 
 static const struct {
     unsigned int pos;
-    const uint8_t *code;
     unsigned int len;
+    const uint8_t *code;
 } mat_codes[] = {
     MAT_CODE(0, mat_start_code),
     MAT_CODE(30708, mat_middle_code),
