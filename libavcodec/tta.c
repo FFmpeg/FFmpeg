@@ -364,28 +364,24 @@ static int tta_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     switch (s->bps) {
     case 1: {
         uint8_t *samples = (uint8_t *)frame->data[0];
-        for (p = s->decode_buffer; (int32_t*)p < s->decode_buffer + (framelen * s->channels); p++)
-            *samples++ = *p + 0x80;
+        p = s->decode_buffer;
+        for (i = 0; i < framelen * s->channels; i++)
+            samples[i] = p[i] + 0x80;
         break;
         }
     case 2: {
         int16_t *samples = (int16_t *)frame->data[0];
-        for (p = s->decode_buffer; (int32_t*)p < s->decode_buffer + (framelen * s->channels); p++)
-            *samples++ = *p;
+        p = s->decode_buffer;
+        for (i = 0; i < framelen * s->channels; i++)
+            samples[i] = p[i];
         break;
         }
     case 3: {
         // shift samples for 24-bit sample format
         int32_t *samples = (int32_t *)frame->data[0];
-        int overflow = 0;
 
-        for (i = 0; i < framelen * s->channels; i++) {
-            int scaled = *samples * 256U;
-            overflow += (scaled >> 8 != *samples);
-            *samples++ = scaled;
-        }
-        if (overflow)
-            av_log(avctx, AV_LOG_WARNING, "%d overflows occurred on 24bit upscale\n", overflow);
+        for (i = 0; i < framelen * s->channels; i++)
+            samples[i] = samples[i] * 256U;
         // reset decode buffer
         s->decode_buffer = NULL;
         break;
