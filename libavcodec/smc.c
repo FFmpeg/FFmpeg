@@ -46,8 +46,6 @@ typedef struct SmcContext {
     AVCodecContext *avctx;
     AVFrame *frame;
 
-    GetByteContext gb;
-
     /* SMC color tables */
     uint8_t color_pairs[COLORS_PER_TABLE * CPAIR];
     uint8_t color_quads[COLORS_PER_TABLE * CQUAD];
@@ -75,9 +73,8 @@ typedef struct SmcContext {
     } \
 }
 
-static int smc_decode_stream(SmcContext *s)
+static int smc_decode_stream(SmcContext *s, GetByteContext *gb)
 {
-    GetByteContext *gb = &s->gb;
     int width = s->avctx->width;
     int height = s->avctx->height;
     int stride = s->frame->linesize[0];
@@ -430,20 +427,20 @@ static int smc_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     SmcContext *s = avctx->priv_data;
+    GetByteContext gb;
     int ret;
     int total_blocks = ((s->avctx->width + 3) / 4) * ((s->avctx->height + 3) / 4);
 
     if (total_blocks / 1024 > avpkt->size)
         return AVERROR_INVALIDDATA;
 
-    bytestream2_init(&s->gb, buf, buf_size);
-
     if ((ret = ff_reget_buffer(avctx, s->frame, 0)) < 0)
         return ret;
 
     s->frame->palette_has_changed = ff_copy_palette(s->pal, avpkt, avctx);
 
-    ret = smc_decode_stream(s);
+    bytestream2_init(&gb, buf, buf_size);
+    ret = smc_decode_stream(s, &gb);
     if (ret < 0)
         return ret;
 
