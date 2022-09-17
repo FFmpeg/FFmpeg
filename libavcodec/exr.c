@@ -830,20 +830,16 @@ static int b44_uncompress(const EXRContext *s, const uint8_t *src, int compresse
         if (s->channels[c].pixel_type == EXR_HALF) {/* B44 only compress half float data */
             for (iY = 0; iY < nb_b44_block_h; iY++) {
                 for (iX = 0; iX < nb_b44_block_w; iX++) {/* For each B44 block */
-                    if (stay_to_uncompress < 3) {
-                        av_log(s->avctx, AV_LOG_ERROR, "Not enough data for B44A block: %d", stay_to_uncompress);
+                    if (stay_to_uncompress < 3)
                         return AVERROR_INVALIDDATA;
-                    }
 
                     if (src[compressed_size - stay_to_uncompress + 2] == 0xfc) { /* B44A block */
                         unpack_3(sr, tmp_buffer);
                         sr += 3;
                         stay_to_uncompress -= 3;
                     }  else {/* B44 Block */
-                        if (stay_to_uncompress < 14) {
-                            av_log(s->avctx, AV_LOG_ERROR, "Not enough data for B44 block: %d", stay_to_uncompress);
+                        if (stay_to_uncompress < 14)
                             return AVERROR_INVALIDDATA;
-                        }
                         unpack_14(sr, tmp_buffer);
                         sr += 14;
                         stay_to_uncompress -= 14;
@@ -865,10 +861,8 @@ static int b44_uncompress(const EXRContext *s, const uint8_t *src, int compresse
             }
             target_channel_offset += 2;
         } else {/* Float or UINT 32 channel */
-            if (stay_to_uncompress < td->ysize * td->xsize * 4) {
-                av_log(s->avctx, AV_LOG_ERROR, "Not enough data for uncompress channel: %d", stay_to_uncompress);
+            if (stay_to_uncompress < td->ysize * td->xsize * 4)
                 return AVERROR_INVALIDDATA;
-            }
 
             for (y = 0; y < td->ysize; y++) {
                 index_out = target_channel_offset * td->xsize + y * td->channel_line_size;
