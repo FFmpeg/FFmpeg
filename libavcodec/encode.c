@@ -631,8 +631,6 @@ FF_DISABLE_DEPRECATION_WARNINGS
                    buf, channels, avctx->channels);
             return AVERROR(EINVAL);
         }
-    } else if (avctx->channel_layout) {
-        avctx->channels = av_get_channel_layout_nb_channels(avctx->channel_layout);
     }
     if (avctx->channels < 0) {
         av_log(avctx, AV_LOG_ERROR, "Specified number of channels %d is not supported\n",
