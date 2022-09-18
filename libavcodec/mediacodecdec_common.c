@@ -265,8 +265,7 @@ static void mediacodec_buffer_release(void *opaque, uint8_t *data)
         ff_AMediaCodec_releaseOutputBuffer(ctx->codec, buffer->index, 0);
     }
 
-    if (ctx->delay_flush)
-        ff_mediacodec_dec_unref(ctx);
+    ff_mediacodec_dec_unref(ctx);
     av_freep(&buffer);
 }
 
@@ -321,8 +320,7 @@ static int mediacodec_wrap_hw_buffer(AVCodecContext *avctx,
 
     buffer->ctx = s;
     buffer->serial = atomic_load(&s->serial);
-    if (s->delay_flush)
-        ff_mediacodec_dec_ref(s);
+    ff_mediacodec_dec_ref(s);
 
     buffer->index = index;
     buffer->pts = info->presentationTimeUs;
@@ -872,7 +870,7 @@ int ff_mediacodec_dec_receive(AVCodecContext *avctx, MediaCodecDecContext *s,
 */
 int ff_mediacodec_dec_flush(AVCodecContext *avctx, MediaCodecDecContext *s)
 {
-    if (!s->surface || atomic_load(&s->refcount) == 1) {
+    if (!s->surface || !s->delay_flush || atomic_load(&s->refcount) == 1) {
         int ret;
 
         /* No frames (holding a reference to the codec) are retained by the
