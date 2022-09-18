@@ -44,11 +44,6 @@ static av_cold int libshine_encode_init(AVCodecContext *avctx)
 {
     SHINEContext *s = avctx->priv_data;
 
-    if (avctx->ch_layout.nb_channels <= 0 || avctx->ch_layout.nb_channels > 2){
-        av_log(avctx, AV_LOG_ERROR, "only mono or stereo is supported\n");
-        return AVERROR(EINVAL);
-    }
-
     shine_set_config_mpeg_defaults(&s->config.mpeg);
     if (avctx->bit_rate)
         s->config.mpeg.bitr = avctx->bit_rate / 1000;
