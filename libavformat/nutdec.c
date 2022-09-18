@@ -245,6 +245,11 @@ static int decode_main_header(NUTContext *nut)
     for (i = 0; i < 256;) {
         int tmp_flags  = ffio_read_varlen(bc);
         int tmp_fields = ffio_read_varlen(bc);
+        if (tmp_fields < 0) {
+            av_log(s, AV_LOG_ERROR, "fields %d is invalid\n", tmp_fields);
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
+        }
 
         if (tmp_fields > 0)
             tmp_pts = get_s(bc);
