@@ -1478,7 +1478,7 @@ static int sbg_read_packet(AVFormatContext *avf, AVPacket *packet)
     int ret;
 
     ts = ffstream(avf->streams[0])->cur_dts;
-    end_ts = ts + avf->streams[0]->codecpar->frame_size;
+    end_ts = av_sat_add64(ts, avf->streams[0]->codecpar->frame_size);
     if (avf->streams[0]->duration != AV_NOPTS_VALUE)
         end_ts = FFMIN(avf->streams[0]->start_time + avf->streams[0]->duration,
                        end_ts);
