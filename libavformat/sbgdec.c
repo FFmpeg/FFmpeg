@@ -1316,6 +1316,8 @@ static int generate_intervals(void *log, struct sbg_script *s, int sample_rate,
 
     /* Pseudo event before the first one */
     ev0 = s->events[s->nb_events - 1];
+    if (av_sat_sub64(ev0.ts_int, period) != (uint64_t)ev0.ts_int - period)
+        return AVERROR_INVALIDDATA;
     ev0.ts_int   -= period;
     ev0.ts_trans -= period;
     ev0.ts_next  -= period;
