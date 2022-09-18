@@ -6330,6 +6330,40 @@ is enabled the minimum of all possible gains for each filtered channel is used.
 
 This filter supports the all above options as @ref{commands}.
 
+@subsection Examples
+
+@itemize
+@item
+Weak and slow amplification:
+@example
+speechnorm=e=3:r=0.00001:l=1
+@end example
+
+@item
+Moderate and slow amplification:
+@example
+speechnorm=e=6.25:r=0.00001:l=1
+@end example
+
+@item
+Strong and fast amplification:
+@example
+speechnorm=e=12.5:r=0.0001:l=1
+@end example
+
+@item
+Very strong and fast amplification:
+@example
+speechnorm=e=25:r=0.0001:l=1
+@end example
+
+@item
+Extreme and fast amplification:
+@example
+speechnorm=e=50:r=0.0001:l=1
+@end example
+@end itemize
+
 @section stereotools
 
 This filter has some handy utilities to manage stereo signals, for converting
