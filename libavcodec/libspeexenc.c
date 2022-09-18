@@ -152,13 +152,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
     int header_size;
     int32_t complexity;
 
-    /* channels */
-    if (channels < 1 || channels > 2) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid channels (%d). Only stereo and "
-               "mono are supported\n", channels);
-        return AVERROR(EINVAL);
-    }
-
     /* sample rate and encoding mode */
     switch (avctx->sample_rate) {
     case  8000: mode = speex_lib_get_mode(SPEEX_MODEID_NB);  break;
