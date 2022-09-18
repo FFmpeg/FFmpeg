@@ -4009,7 +4009,8 @@ typedef struct {
 
 /* This function searches all the Cues and returns the CueDesc corresponding to
  * the timestamp ts. Returned CueDesc will be such that start_time_ns <= ts <
- * end_time_ns. All 4 fields will be set to -1 if ts >= file's duration.
+ * end_time_ns. All 4 fields will be set to -1 if ts >= file's duration or
+ * if an error occurred.
  */
 static CueDesc get_cue_desc(AVFormatContext *s, int64_t ts, int64_t cues_start) {
     MatroskaDemuxContext *matroska = s->priv_data;
@@ -4028,6 +4029,8 @@ static CueDesc get_cue_desc(AVFormatContext *s, int64_t ts, int64_t cues_start) 
         }
     }
     --i;
+    if (index_entries[i].timestamp > matroska->duration)
+        return (CueDesc) {-1, -1, -1, -1};
     cue_desc.start_time_ns = index_entries[i].timestamp * matroska->time_scale;
     cue_desc.start_offset = index_entries[i].pos - matroska->segment_start;
     if (i != nb_index_entries - 1) {
