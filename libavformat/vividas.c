@@ -683,6 +683,7 @@ static int viv_read_packet(AVFormatContext *s,
 
     if (viv->sb_entries[viv->current_sb_entry].flag == 0) {
         uint64_t v_size = ffio_read_varlen(pb);
+        int last = 0, last_start;
 
         if (!viv->num_audio)
             return AVERROR_INVALIDDATA;
@@ -706,12 +707,18 @@ static int viv_read_packet(AVFormatContext *s,
 
             if (i > 0 && start == 0)
                 break;
+            if (start < last)
+                return AVERROR_INVALIDDATA;
 
             viv->n_audio_subpackets = i + 1;
+            last =
             viv->audio_subpackets[i].start = start;
             viv->audio_subpackets[i].pcm_bytes = pcm_bytes;
         }
+        last_start =
         viv->audio_subpackets[viv->n_audio_subpackets].start = (int)(off - avio_tell(pb));
+        if (last_start < last)
+            return AVERROR_INVALIDDATA;
         viv->current_audio_subpacket = 0;
 
     } else {
