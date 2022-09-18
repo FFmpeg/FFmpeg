@@ -63,7 +63,7 @@ static av_cold int pcm_bluray_encode_init(AVCodecContext *avctx)
         return AVERROR_BUG;
     }
 
-    switch (avctx->ch_layout.u.mask) {
+    switch (av_channel_layout_subset(&avctx->ch_layout, ~(uint64_t)0)) {
     case AV_CH_LAYOUT_MONO:
         ch_layout = 1;
         break;
