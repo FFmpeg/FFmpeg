@@ -254,11 +254,6 @@ static av_cold int pcm_decode_init(AVCodecContext *avctx)
     AVFloatDSPContext *fdsp;
     int i;
 
-    if (avctx->ch_layout.nb_channels <= 0) {
-        av_log(avctx, AV_LOG_ERROR, "PCM channels out of bounds\n");
-        return AVERROR(EINVAL);
-    }
-
     switch (avctx->codec_id) {
     case AV_CODEC_ID_PCM_ALAW:
         for (i = 0; i < 256; i++)
