@@ -65,7 +65,7 @@ typedef struct FLVContext {
     uint8_t resync_buffer[2*RESYNC_BUFFER_SIZE];
 
     int broken_sizes;
-    int sum_flv_tag_size;
+    int64_t sum_flv_tag_size;
 
     int last_keyframe_stream_index;
     int keyframe_count;
@@ -1030,7 +1030,7 @@ retry:
     type = (avio_r8(s->pb) & 0x1F);
     orig_size =
     size = avio_rb24(s->pb);
-    flv->sum_flv_tag_size += size + 11;
+    flv->sum_flv_tag_size += size + 11LL;
     dts  = avio_rb24(s->pb);
     dts |= (unsigned)avio_r8(s->pb) << 24;
     av_log(s, AV_LOG_TRACE, "type:%d, size:%d, last:%d, dts:%"PRId64" pos:%"PRId64"\n", type, size, last, dts, avio_tell(s->pb));
@@ -1330,7 +1330,7 @@ leave:
             !avio_feof(s->pb) &&
             (last != orig_size || !last) && last != flv->sum_flv_tag_size &&
             !flv->broken_sizes) {
-            av_log(s, AV_LOG_ERROR, "Packet mismatch %d %d %d\n", last, orig_size + 11, flv->sum_flv_tag_size);
+            av_log(s, AV_LOG_ERROR, "Packet mismatch %d %d %"PRId64"\n", last, orig_size + 11, flv->sum_flv_tag_size);
             avio_seek(s->pb, pos + 1, SEEK_SET);
             ret = resync(s);
             av_packet_unref(pkt);
