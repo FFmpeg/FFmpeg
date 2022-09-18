@@ -235,6 +235,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
     if ((avctx->channels > 0 && avctx->ch_layout.nb_channels != avctx->channels) ||
         (avctx->channel_layout && (avctx->ch_layout.order != AV_CHANNEL_ORDER_NATIVE ||
                                    avctx->ch_layout.u.mask != avctx->channel_layout))) {
+        av_channel_layout_uninit(&avctx->ch_layout);
         if (avctx->channel_layout) {
             av_channel_layout_from_mask(&avctx->ch_layout, avctx->channel_layout);
         } else {
