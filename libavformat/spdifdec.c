@@ -226,7 +226,7 @@ int ff_spdif_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (!s->bit_rate && s->streams[0]->codecpar->sample_rate)
         /* stream bitrate matches 16-bit stereo PCM bitrate for currently
            supported codecs */
-        s->bit_rate = 2 * 16 * s->streams[0]->codecpar->sample_rate;
+        s->bit_rate = 2 * 16LL * s->streams[0]->codecpar->sample_rate;
 
     return 0;
 }
