@@ -707,7 +707,7 @@ static int analyze_frame(DynamicAudioNormalizerContext *s, AVFilterLink *outlink
         analyze_frame = s->window;
     } else {
         av_samples_copy(s->window->extended_data, (*frame)->extended_data, 0, 0,
-                        s->frame_len, (*frame)->ch_layout.nb_channels, (*frame)->format);
+                        FFMIN(s->frame_len, (*frame)->nb_samples), (*frame)->ch_layout.nb_channels, (*frame)->format);
         analyze_frame = *frame;
     }
 
