@@ -614,26 +614,6 @@ static int encode_preinit_audio(AVCodecContext *avctx)
             return AVERROR(EINVAL);
         }
     }
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->channel_layout && avctx->channels) {
-        int channels = av_get_channel_layout_nb_channels(avctx->channel_layout);
-        if (channels != avctx->channels) {
-            char buf[512];
-            av_get_channel_layout_string(buf, sizeof(buf), -1, avctx->channel_layout);
-            av_log(avctx, AV_LOG_ERROR,
-                   "Channel layout '%s' with %d channels does not match number of specified channels %d\n",
-                   buf, channels, avctx->channels);
-            return AVERROR(EINVAL);
-        }
-    }
-    if (avctx->channels < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Specified number of channels %d is not supported\n",
-                avctx->channels);
-        return AVERROR(EINVAL);
-    }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     if (!avctx->bits_per_raw_sample)
         avctx->bits_per_raw_sample = 8 * av_get_bytes_per_sample(avctx->sample_fmt);
