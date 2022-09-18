@@ -278,7 +278,7 @@ static int xwma_read_header(AVFormatContext *s)
          * the total duration using the average bits per sample and the
          * total data length.
          */
-        st->duration = (size<<3) * st->codecpar->sample_rate / st->codecpar->bit_rate;
+        st->duration = av_rescale((size<<3), st->codecpar->sample_rate, st->codecpar->bit_rate);
     }
 
 fail:
