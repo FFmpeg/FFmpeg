@@ -1,7 +1,8 @@
 LAVF_IMAGE2PIPE = $(call ALLYES, $(1)_DECODER $(1)_ENCODER $(2)      \
                                  IMAGE2_DEMUXER PGMYUV_DECODER       \
                                  IMAGE2PIPE_MUXER IMAGE2PIPE_DEMUXER \
-                                 RAWVIDEO_ENCODER CRC_MUXER FILE_PROTOCOL)
+                                 RAWVIDEO_ENCODER CRC_MUXER          \
+                                 FILE_PROTOCOL PIPE_PROTOCOL)
 
 FATE_LAVF_IMAGE2PIPE-$(call LAVF_IMAGE2PIPE, PBM, PNM_PARSER SCALE_FILTER)  += pbmpipe
 FATE_LAVF_IMAGE2PIPE-$(call LAVF_IMAGE2PIPE, PGM, PNM_PARSER SCALE_FILTER)  += pgmpipe

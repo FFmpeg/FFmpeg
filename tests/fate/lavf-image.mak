@@ -1,6 +1,6 @@
 LAVF_IMAGES = $(call ALLYES, FILE_PROTOCOL IMAGE2_DEMUXER PGMYUV_DECODER \
                              SCALE_FILTER $(1)_ENCODER IMAGE2_MUXER      \
-                             $(1)_DECODER RAWVIDEO_ENCODER CRC_MUXER)
+                             $(1)_DECODER RAWVIDEO_ENCODER CRC_MUXER PIPE_PROTOCOL)
 
 FATE_LAVF_IMAGES-$(call LAVF_IMAGES,         BMP) += bmp
 FATE_LAVF_IMAGES-$(call LAVF_IMAGES,         DPX) += dpx
