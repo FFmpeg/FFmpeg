@@ -1212,6 +1212,8 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int nb_components, int p
                 ptr[3*mb_x + 2] = buffer[mb_x][2] + ptr[3*mb_x + 1];
             }
         } else if (s->bayer) {
+            if (s->bits <= 8)
+                return AVERROR_PATCHWELCOME;
             if (nb_components == 1) {
                 /* Leave decoding to the TIFF/DNG decoder (see comment in ff_mjpeg_decode_sof) */
                 for (mb_x = 0; mb_x < width; mb_x++)
