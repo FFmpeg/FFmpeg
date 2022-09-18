@@ -565,6 +565,8 @@ static int rm_read_header(AVFormatContext *s)
     }
 
     tag_size = avio_rb32(pb);
+    if (tag_size < 0)
+        return AVERROR_INVALIDDATA;
     avio_skip(pb, tag_size - 8);
 
     for(;;) {
