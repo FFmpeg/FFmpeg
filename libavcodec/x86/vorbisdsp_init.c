@@ -25,7 +25,7 @@
 #include "libavcodec/vorbisdsp.h"
 
 void ff_vorbis_inverse_coupling_sse(float *mag, float *ang,
-                                    intptr_t blocksize);
+                                    ptrdiff_t blocksize);
 
 av_cold void ff_vorbisdsp_init_x86(VorbisDSPContext *dsp)
 {

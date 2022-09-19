@@ -19,12 +19,12 @@
 #ifndef AVCODEC_VORBISDSP_H
 #define AVCODEC_VORBISDSP_H
 
-#include <stdint.h>
+#include <stddef.h>
 
 typedef struct VorbisDSPContext {
     /* assume len is a multiple of 4, and arrays are 16-byte aligned */
     void (*vorbis_inverse_coupling)(float *mag, float *ang,
-                                    intptr_t blocksize);
+                                    ptrdiff_t blocksize);
 } VorbisDSPContext;
 
 void ff_vorbisdsp_init(VorbisDSPContext *dsp);
