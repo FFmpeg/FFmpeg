@@ -459,13 +459,13 @@ static int submit_packet(PerThreadContext *p, AVCodecContext *user_avctx,
             pthread_mutex_unlock(&p->mutex);
             return err;
         }
-
-        /* transfer hwaccel state stashed from previous thread, if any */
-        av_assert0(!p->avctx->hwaccel);
-        FFSWAP(const AVHWAccel*, p->avctx->hwaccel,                     fctx->stash_hwaccel);
-        FFSWAP(void*,            p->avctx->hwaccel_context,             fctx->stash_hwaccel_context);
-        FFSWAP(void*,            p->avctx->internal->hwaccel_priv_data, fctx->stash_hwaccel_priv);
     }
+
+    /* transfer the stashed hwaccel state, if any */
+    av_assert0(!p->avctx->hwaccel);
+    FFSWAP(const AVHWAccel*, p->avctx->hwaccel,                     fctx->stash_hwaccel);
+    FFSWAP(void*,            p->avctx->hwaccel_context,             fctx->stash_hwaccel_context);
+    FFSWAP(void*,            p->avctx->internal->hwaccel_priv_data, fctx->stash_hwaccel_priv);
 
     av_packet_unref(p->avpkt);
     ret = av_packet_ref(p->avpkt, avpkt);
