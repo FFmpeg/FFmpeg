@@ -682,15 +682,27 @@ SECTION .text
 %endmacro
 
 INIT_XMM sse3
+cglobal fft2_asm_float, 0, 0, 0, ctx, out, in, stride
+    movaps m0, [inq]
+    FFT2 m0, m1
+    movaps [outq], m0
+    add inq, mmsize*1
+    add outq, mmsize*1
+    ret
+
 cglobal fft2_float, 4, 4, 2, ctx, out, in, stride
     movaps m0, [inq]
     FFT2 m0, m1
     movaps [outq], m0
     RET
 
-%macro FFT4 2
+%macro FFT4_FN 3
 INIT_XMM sse2
+%if %3
+cglobal fft4_ %+ %1 %+ _asm_float, 0, 0, 0, ctx, out, in, stride
+%else
 cglobal fft4_ %+ %1 %+ _float, 4, 4, 3, ctx, out, in, stride
+%endif
     movaps m0, [inq + 0*mmsize]
     movaps m1, [inq + 1*mmsize]
 
@@ -708,11 +720,19 @@ cglobal fft4_ %+ %1 %+ _float, 4, 4, 3, ctx, out, in, stride
     movaps [outq + 0*mmsize], m2
     movaps [outq + 1*mmsize], m0
 
+%if %3
+    add inq, mmsize*2
+    add outq, mmsize*2
+    ret
+%else
     RET
+%endif
 %endmacro
 
-FFT4 fwd, 0
-FFT4 inv, 1
+FFT4_FN fwd, 0, 0
+FFT4_FN fwd, 0, 1
+FFT4_FN inv, 1, 0
+FFT4_FN inv, 1, 1
 
 %macro FFT8_SSE_FN 1
 INIT_XMM sse3

@@ -45,6 +45,9 @@ TX_DECL_FN(fft_sr_ns, avx2)
 
 TX_DECL_FN(mdct_sr_inv, avx2)
 
+TX_DECL_FN(fft2_asm, sse3)
+TX_DECL_FN(fft4_fwd_asm, sse2)
+TX_DECL_FN(fft4_inv_asm, sse2)
 TX_DECL_FN(fft8_asm, sse3)
 TX_DECL_FN(fft8_asm, avx)
 TX_DECL_FN(fft16_asm, avx)
@@ -101,8 +104,14 @@ static av_cold int m_inv_init(AVTXContext *s, const FFTXCodelet *cd,
 
 const FFTXCodelet * const ff_tx_codelet_list_float_x86[] = {
     TX_DEF(fft2,     FFT,  2,  2, 2, 0, 128, NULL,  sse3, SSE3, AV_TX_INPLACE, 0),
+    TX_DEF(fft2_asm, FFT,  2,  2, 2, 0, 192, b8_i0, sse3, SSE3,
+           AV_TX_INPLACE | FF_TX_PRESHUFFLE | FF_TX_ASM_CALL, 0),
     TX_DEF(fft2,     FFT,  2,  2, 2, 0, 192, b8_i0, sse3, SSE3, AV_TX_INPLACE | FF_TX_PRESHUFFLE, 0),
     TX_DEF(fft4_fwd, FFT,  4,  4, 2, 0, 128, NULL,  sse2, SSE2, AV_TX_INPLACE | FF_TX_FORWARD_ONLY, 0),
+    TX_DEF(fft4_fwd_asm, FFT,  4,  4, 2, 0, 192, b8_i0, sse2, SSE2,
+           AV_TX_INPLACE | FF_TX_PRESHUFFLE | FF_TX_ASM_CALL, 0),
+    TX_DEF(fft4_inv_asm, FFT,  4,  4, 2, 0, 128, NULL,  sse2, SSE2,
+           AV_TX_INPLACE | FF_TX_INVERSE_ONLY | FF_TX_ASM_CALL, 0),
     TX_DEF(fft4_fwd, FFT,  4,  4, 2, 0, 192, b8_i0, sse2, SSE2, AV_TX_INPLACE | FF_TX_PRESHUFFLE, 0),
     TX_DEF(fft4_inv, FFT,  4,  4, 2, 0, 128, NULL,  sse2, SSE2, AV_TX_INPLACE | FF_TX_INVERSE_ONLY, 0),
     TX_DEF(fft8,     FFT,  8,  8, 2, 0, 128, b8_i0, sse3, SSE3, AV_TX_INPLACE, 0),
