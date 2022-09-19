@@ -19,11 +19,33 @@
 #include "config.h"
 #include "libavutil/attributes.h"
 #include "vorbisdsp.h"
-#include "vorbis.h"
+
+static void vorbis_inverse_coupling_c(float *mag, float *ang, ptrdiff_t blocksize)
+{
+    for (ptrdiff_t i = 0;  i < blocksize;  i++) {
+        float angi = ang[i], magi = mag[i];
+
+        if (magi > 0.f) {
+            if (angi > 0.f) {
+                ang[i] = magi - angi;
+            } else {
+                ang[i] = magi;
+                mag[i] = magi + angi;
+            }
+        } else {
+            if (angi > 0.f) {
+                ang[i] = magi + angi;
+            } else {
+                ang[i] = magi;
+                mag[i] = magi - angi;
+            }
+        }
+    }
+}
 
 av_cold void ff_vorbisdsp_init(VorbisDSPContext *dsp)
 {
-    dsp->vorbis_inverse_coupling = ff_vorbis_inverse_coupling;
+    dsp->vorbis_inverse_coupling = vorbis_inverse_coupling_c;
 
 #if ARCH_AARCH64
     ff_vorbisdsp_init_aarch64(dsp);
