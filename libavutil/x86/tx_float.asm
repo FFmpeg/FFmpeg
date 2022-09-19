@@ -107,19 +107,19 @@ SECTION .text
 ; %7 - temporary register (for avx only, enables vgatherdpd (AVX2) if FMA3 is set)
 %macro LOAD64_LUT 5-7
 %if %0 > 6 && cpuflag(avx2)
-    pcmpeqd %6, %6 ; pcmpeqq has a 0.5 throughput on Zen 3, this has 0.25
-    movapd xmm%7, [%3 + %4] ; float mov since vgatherdpd is a float instruction
-    vgatherdpd %1, [%2 + xmm%7*8], %6 ; must use separate registers for args
+    pcmpeqd %7, %7 ; pcmpeqq has a 0.5 throughput on Zen 3, this has 0.25
+    movupd xmm%6, [%3 + %4] ; float mov since vgatherdpd is a float instruction
+    vgatherdpd %1, [%2 + xmm%6*8], %7 ; must use separate registers for args
 %else
     mov      %5d, [%3 + %4 + 0]
     movsd  xmm%1, [%2 + %5q*8]
-%if mmsize == 32
+%if sizeof%1 > 16 && %0 > 5
     mov      %5d, [%3 + %4 + 8]
     movsd  xmm%6, [%2 + %5q*8]
 %endif
     mov      %5d, [%3 + %4 + 4]
     movhps xmm%1, [%2 + %5q*8]
-%if mmsize == 32
+%if sizeof%1 > 16 && %0 > 5
     mov      %5d, [%3 + %4 + 12]
     movhps xmm%6, [%2 + %5q*8]
     vinsertf128 %1, %1, xmm%6, 1
