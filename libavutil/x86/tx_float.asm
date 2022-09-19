@@ -21,6 +21,13 @@
 ; Open `doc/transforms.md` to see the code upon which the transforms here were
 ; based upon and compare.
 
+; Intra-asm call convention:
+;       272 bytes of stack available
+;       First 10 GPRs available
+;       All vector regs available
+;       Don't clobber ctx, len, lut
+;       in and out must point to the end
+
 ; TODO:
 ;       carry over registers from smaller transforms to save on ~8 loads/stores
 ;       check if vinsertf could be faster than verpm2f128 for duplication
@@ -737,6 +744,8 @@ cglobal fft8_float, 4, 4, 6, ctx, out, in, tmp
     movups [outq + 3*mmsize], m1
 
 %if %1
+    add inq, mmsize*4
+    add outq, mmsize*4
     ret
 %else
     RET
@@ -777,6 +786,8 @@ cglobal fft8_float, 4, 4, 4, ctx, out, in, tmp
     vextractf128 [outq + 16*3], m0, 1
 
 %if %1
+    add inq, mmsize*2
+    add outq, mmsize*2
     ret
 %else
     RET
@@ -826,6 +837,8 @@ cglobal fft16_float, 4, 4, 8, ctx, out, in, tmp
     vextractf128 [outq + 16*7], m1, 1
 
 %if %2
+    add inq, mmsize*4
+    add outq, mmsize*4
     ret
 %else
     RET
@@ -910,6 +923,8 @@ cglobal fft32_float, 4, 4, 16, ctx, out, in, tmp
     vextractf128 [outq + 16*15],  m5, 1
 
 %if %2
+    add inq, mmsize*8
+    add outq, mmsize*8
     ret
 %else
     RET
@@ -970,13 +985,13 @@ ALIGN 16
 %macro FFT_SPLIT_RADIX_FN 2
 INIT_YMM %1
 %if %2
-cglobal fft_sr_asm_float, 0, 0, 0, ctx, out, in, tmp, len, lut, itab, rtab, tgt
+cglobal fft_sr_asm_float, 0, 0, 0, ctx, out, in, tmp, len, lut, itab, rtab, tgt, off
 %else
-cglobal fft_sr_float, 4, 9, 16, 272, ctx, out, in, tmp, len, lut, itab, rtab, tgt
+cglobal fft_sr_float, 4, 10, 16, 272, ctx, out, in, tmp, len, lut, itab, rtab, tgt, off
     movsxd lenq, dword [ctxq + AVTXContext.len]
     mov lutq, [ctxq + AVTXContext.map]
-    mov tgtq, lenq
 %endif
+    mov tgtq, lenq
 
 ; Bottom-most/32-point transform ===============================================
 ALIGN 16
@@ -1238,11 +1253,12 @@ FFT_SPLIT_RADIX_DEF 131072
 ; Final synthesis + deinterleaving code
 ;===============================================================================
 .deinterleave:
+    mov tgtq, lenq
     imul tmpq, lenq, 2
-    lea lutq, [4*lenq + tmpq]
+    lea offq, [4*lenq + tmpq]
 
 .synth_deinterleave:
-    SPLIT_RADIX_COMBINE_DEINTERLEAVE_FULL tmpq, lutq
+    SPLIT_RADIX_COMBINE_DEINTERLEAVE_FULL tmpq, offq
     add outq, 8*mmsize
     add rtabq, 4*mmsize
     sub itabq, 4*mmsize
@@ -1250,6 +1266,8 @@ FFT_SPLIT_RADIX_DEF 131072
     jg .synth_deinterleave
 
 %if %2
+    mov lenq, tgtq
+    add outq, offq
     ret
 %else
     RET
@@ -1331,16 +1349,16 @@ FFT_SPLIT_RADIX_DEF 131072
     vextractf128 [outq + 15*mmsize + 16], tx2_e1, 1
 
 %if %2
+    add outq, 16*mmsize
     ret
 %else
     RET
 %endif
 
 %if %2
-cglobal fft_sr_ns_float, 4, 9, 16, 272, ctx, out, in, tmp, len, lut, itab, rtab, tgt
+cglobal fft_sr_ns_float, 4, 10, 16, 272, ctx, out, in, tmp, len, lut, itab, rtab, tgt, off
     movsxd lenq, dword [ctxq + AVTXContext.len]
     mov lutq, [ctxq + AVTXContext.map]
-    mov tgtq, lenq
 
     call mangle(ff_tx_fft_sr_asm_float_ %+ %1)
     RET
@@ -1358,16 +1376,15 @@ FFT_SPLIT_RADIX_FN avx2, 1
 
 %macro IMDCT_FN 1
 INIT_YMM %1
-cglobal mdct_sr_inv_float, 4, 12, 16, 288, ctx, out, in, stride, len, lut, exp, t1, t2, t3, t4, t5
+cglobal mdct_sr_inv_float, 4, 13, 16, 272, ctx, out, in, stride, len, lut, exp, t1, t2, t3, t4, t5, bctx
     movsxd lenq, dword [ctxq + AVTXContext.len]
     mov expq, [ctxq + AVTXContext.exp]
 
     lea t1d, [lend - 1]
     imul t1d, strided
 
-    PUSH outq                          ; backup original output
+    mov bctxq, ctxq                    ; backup original context
     mov t5q, [ctxq + AVTXContext.fn]   ; subtransform's jump point
-    PUSH ctxq                          ; backup original context
     mov ctxq, [ctxq + AVTXContext.sub] ; load subtransform's context
     mov lutq, [ctxq + AVTXContext.map] ; load subtransform's map
 
@@ -1487,11 +1504,10 @@ cglobal mdct_sr_inv_float, 4, 12, 16, 288, ctx, out, in, stride, len, lut, exp, 
 
 .transform:
     movsxd lenq, dword [ctxq + AVTXContext.len]
-    mov t2q, lenq                    ; target length (for ptwo transforms)
     mov inq, outq                    ; in-place transform
     call t5q                         ; call the FFT
 
-    POP ctxq                         ; restore original context
+    mov ctxq, bctxq                  ; restore original context
     movsxd lenq, dword [ctxq + AVTXContext.len]
     mov expq, [ctxq + AVTXContext.exp]
     lea expq, [expq + lenq*4]
@@ -1499,7 +1515,8 @@ cglobal mdct_sr_inv_float, 4, 12, 16, 288, ctx, out, in, stride, len, lut, exp, 
     lea t1q, [lenq*2]                ; high
     lea t2q, [lenq*2 - mmsize]       ; low
 
-    POP outq
+    neg lenq
+    lea outq, [outq + lenq*4]
 
 .post:
     movaps m2, [expq + t1q]          ; tab h
