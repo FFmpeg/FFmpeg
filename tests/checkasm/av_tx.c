@@ -24,7 +24,7 @@
 
 #include <stdlib.h>
 
-#define EPS 0.00005
+#define EPS 0.0005
 
 #define SCALE_NOOP(x) (x)
 #define SCALE_INT20(x) (av_clip64(lrintf((x) * 2147483648.0), INT32_MIN, INT32_MAX) >> 12)
@@ -40,7 +40,7 @@
     } while (0)
 
 static const int check_lens[] = {
-    2, 4, 8, 16, 32, 64, 1024, 16384,
+    2, 4, 8, 16, 32, 64, 120, 960, 1024, 1920, 16384,
 };
 
 static AVTXContext *tx_refs[AV_TX_NB][2 /* Direction */][FF_ARRAY_ELEMS(check_lens)] = { 0 };

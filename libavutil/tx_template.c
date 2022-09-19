@@ -48,9 +48,9 @@ SR_TABLE(65536);
 SR_TABLE(131072);
 
 /* Other factors' tables */
-TABLE_DEF(53, 8);
-TABLE_DEF( 7, 6);
-TABLE_DEF( 9, 8);
+TABLE_DEF(53, 12);
+TABLE_DEF( 7,  6);
+TABLE_DEF( 9,  8);
 
 typedef struct FFSRTabsInitOnce {
     void (*func)(void);
@@ -104,19 +104,26 @@ static FFSRTabsInitOnce sr_tabs_init_once[] = {
     { TX_TAB(ff_tx_init_tab_131072), AV_ONCE_INIT },
 };
 
-static void TX_TAB(ff_tx_init_tab_53)(void)
+static av_cold void TX_TAB(ff_tx_init_tab_53)(void)
 {
-    TX_TAB(ff_tx_tab_53)[0] = RESCALE(cos(2 * M_PI / 12));
-    TX_TAB(ff_tx_tab_53)[1] = RESCALE(cos(2 * M_PI / 12));
-    TX_TAB(ff_tx_tab_53)[2] = RESCALE(cos(2 * M_PI /  6));
-    TX_TAB(ff_tx_tab_53)[3] = RESCALE(cos(8 * M_PI /  6));
-    TX_TAB(ff_tx_tab_53)[4] = RESCALE(cos(2 * M_PI /  5));
-    TX_TAB(ff_tx_tab_53)[5] = RESCALE(sin(8 * M_PI /  5));
-    TX_TAB(ff_tx_tab_53)[6] = RESCALE(cos(2 * M_PI / 10));
-    TX_TAB(ff_tx_tab_53)[7] = RESCALE(sin(6 * M_PI /  5));
+    /* 5pt, doubled to eliminate AVX lane shuffles */
+    TX_TAB(ff_tx_tab_53)[0] = RESCALE(cos(2 * M_PI /  5));
+    TX_TAB(ff_tx_tab_53)[1] = RESCALE(cos(2 * M_PI /  5));
+    TX_TAB(ff_tx_tab_53)[2] = RESCALE(cos(2 * M_PI / 10));
+    TX_TAB(ff_tx_tab_53)[3] = RESCALE(cos(2 * M_PI / 10));
+    TX_TAB(ff_tx_tab_53)[4] = RESCALE(sin(2 * M_PI /  5));
+    TX_TAB(ff_tx_tab_53)[5] = RESCALE(sin(2 * M_PI /  5));
+    TX_TAB(ff_tx_tab_53)[6] = RESCALE(sin(2 * M_PI / 10));
+    TX_TAB(ff_tx_tab_53)[7] = RESCALE(sin(2 * M_PI / 10));
+
+    /* 3pt */
+    TX_TAB(ff_tx_tab_53)[ 8] = RESCALE(cos(2 * M_PI / 12));
+    TX_TAB(ff_tx_tab_53)[ 9] = RESCALE(cos(2 * M_PI / 12));
+    TX_TAB(ff_tx_tab_53)[10] = RESCALE(cos(2 * M_PI /  6));
+    TX_TAB(ff_tx_tab_53)[11] = RESCALE(cos(8 * M_PI /  6));
 }
 
-static void TX_TAB(ff_tx_init_tab_7)(void)
+static av_cold void TX_TAB(ff_tx_init_tab_7)(void)
 {
     TX_TAB(ff_tx_tab_7)[0] = RESCALE(cos(2 * M_PI /  7));
     TX_TAB(ff_tx_tab_7)[1] = RESCALE(sin(2 * M_PI /  7));
@@ -126,7 +133,7 @@ static void TX_TAB(ff_tx_init_tab_7)(void)
     TX_TAB(ff_tx_tab_7)[5] = RESCALE(sin(2 * M_PI / 14));
 }
 
-static void TX_TAB(ff_tx_init_tab_9)(void)
+static av_cold void TX_TAB(ff_tx_init_tab_9)(void)
 {
     TX_TAB(ff_tx_tab_9)[0] = RESCALE(cos(2 * M_PI /  3));
     TX_TAB(ff_tx_tab_9)[1] = RESCALE(sin(2 * M_PI /  3));
@@ -189,19 +196,19 @@ static av_always_inline void fft3(TXComplex *out, TXComplex *in,
     out[0*stride].im = in[0].im + tmp[1].im;
 
 #ifdef TX_INT32
-    mtmp[0] = (int64_t)tab[0] * tmp[0].re;
-    mtmp[1] = (int64_t)tab[1] * tmp[0].im;
-    mtmp[2] = (int64_t)tab[2] * tmp[1].re;
-    mtmp[3] = (int64_t)tab[2] * tmp[1].im;
+    mtmp[0] = (int64_t)tab[ 8] * tmp[0].re;
+    mtmp[1] = (int64_t)tab[ 9] * tmp[0].im;
+    mtmp[2] = (int64_t)tab[10] * tmp[1].re;
+    mtmp[3] = (int64_t)tab[10] * tmp[1].im;
     out[1*stride].re = in[0].re - (mtmp[2] + mtmp[0] + 0x40000000 >> 31);
     out[1*stride].im = in[0].im - (mtmp[3] - mtmp[1] + 0x40000000 >> 31);
     out[2*stride].re = in[0].re - (mtmp[2] - mtmp[0] + 0x40000000 >> 31);
     out[2*stride].im = in[0].im - (mtmp[3] + mtmp[1] + 0x40000000 >> 31);
 #else
-    tmp[0].re = tab[0] * tmp[0].re;
-    tmp[0].im = tab[1] * tmp[0].im;
-    tmp[1].re = tab[2] * tmp[1].re;
-    tmp[1].im = tab[2] * tmp[1].im;
+    tmp[0].re = tab[ 8] * tmp[0].re;
+    tmp[0].im = tab[ 9] * tmp[0].im;
+    tmp[1].re = tab[10] * tmp[1].re;
+    tmp[1].im = tab[10] * tmp[1].im;
     out[1*stride].re = in[0].re - tmp[1].re + tmp[0].re;
     out[1*stride].im = in[0].im - tmp[1].im - tmp[0].im;
     out[2*stride].re = in[0].re - tmp[1].re - tmp[0].re;
@@ -224,10 +231,10 @@ static av_always_inline void NAME(TXComplex *out, TXComplex *in,    \
     out[D0*stride].re = in[0].re + t[0].re + t[2].re;               \
     out[D0*stride].im = in[0].im + t[0].im + t[2].im;               \
                                                                     \
-    SMUL(t[4].re, t[0].re, tab[4], tab[6], t[2].re, t[0].re);       \
-    SMUL(t[4].im, t[0].im, tab[4], tab[6], t[2].im, t[0].im);       \
-    CMUL(t[5].re, t[1].re, -tab[5], -tab[7], t[3].re, t[1].re);     \
-    CMUL(t[5].im, t[1].im, -tab[5], -tab[7], t[3].im, t[1].im);     \
+    SMUL(t[4].re, t[0].re, tab[0], tab[2], t[2].re, t[0].re);       \
+    SMUL(t[4].im, t[0].im, tab[0], tab[2], t[2].im, t[0].im);       \
+    CMUL(t[5].re, t[1].re, tab[4], tab[6], t[3].re, t[1].re);       \
+    CMUL(t[5].im, t[1].im, tab[4], tab[6], t[3].im, t[1].im);       \
                                                                     \
     BF(z0[0].re, z0[3].re, t[0].re, t[1].re);                       \
     BF(z0[0].im, z0[3].im, t[0].im, t[1].im);                       \

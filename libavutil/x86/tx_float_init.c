@@ -43,6 +43,9 @@ TX_DECL_FN(fft_sr_ns, fma3)
 TX_DECL_FN(fft_sr,    avx2)
 TX_DECL_FN(fft_sr_ns, avx2)
 
+TX_DECL_FN(fft_pfa_15xM, avx2)
+TX_DECL_FN(fft_pfa_15xM_ns, avx2)
+
 TX_DECL_FN(mdct_sr_inv, avx2)
 
 TX_DECL_FN(fft2_asm, sse3)
@@ -56,6 +59,8 @@ TX_DECL_FN(fft32_asm, avx)
 TX_DECL_FN(fft32_asm, fma3)
 TX_DECL_FN(fft_sr_asm, fma3)
 TX_DECL_FN(fft_sr_asm, avx2)
+
+TX_DECL_FN(fft_pfa_15xM_asm, avx2)
 
 #define DECL_INIT_FN(basis, interleave)                                        \
 static av_cold int b ##basis## _i ##interleave(AVTXContext *s,                 \
@@ -98,6 +103,61 @@ static av_cold int m_inv_init(AVTXContext *s, const FFTXCodelet *cd,
 
     if ((ret = ff_tx_mdct_gen_exp_float(s, s->sub->map)))
         return ret;
+
+    return 0;
+}
+
+static av_cold int fft_pfa_init(AVTXContext *s,
+                                const FFTXCodelet *cd,
+                                uint64_t flags,
+                                FFTXCodeletOptions *opts,
+                                int len, int inv,
+                                const void *scale)
+{
+    int ret;
+    int sub_len = len / cd->factors[0];
+    FFTXCodeletOptions sub_opts = { .invert_lookup = 0 };
+
+    flags &= ~FF_TX_OUT_OF_PLACE; /* We want the subtransform to be */
+    flags |=  AV_TX_INPLACE;      /* in-place */
+    flags |=  FF_TX_PRESHUFFLE;   /* This function handles the permute step */
+    flags |=  FF_TX_ASM_CALL;     /* We want an assembly function, not C */
+
+    if ((ret = ff_tx_init_subtx(s, TX_TYPE(FFT), flags, &sub_opts,
+                                sub_len, inv, scale)))
+        return ret;
+
+    if ((ret = ff_tx_gen_compound_mapping(s, cd->factors[0], sub_len)))
+        return ret;
+
+    if (cd->factors[0] == 15) {
+        for (int k = 0; k < s->sub[0].len; k++) {
+            int cnt = 0;
+            int tmp[15];
+            memcpy(tmp, &s->map[k*15], 15*sizeof(*tmp));
+            for (int i = 1; i < 15; i += 3) {
+                s->map[k*15 + cnt] = tmp[i];
+                cnt++;
+            }
+            for (int i = 2; i < 15; i += 3) {
+                s->map[k*15 + cnt] = tmp[i];
+                cnt++;
+            }
+            for (int i = 0; i < 15; i += 3) {
+                s->map[k*15 + cnt] = tmp[i];
+                cnt++;
+            }
+            memmove(&s->map[k*15 + 7], &s->map[k*15 + 6], 4*sizeof(int));
+            memmove(&s->map[k*15 + 3], &s->map[k*15 + 1], 4*sizeof(int));
+            s->map[k*15 + 1] = tmp[2];
+            s->map[k*15 + 2] = tmp[0];
+        }
+    }
+
+    if (!(s->tmp = av_malloc(len*sizeof(*s->tmp))))
+        return AVERROR(ENOMEM);
+
+    TX_TAB(ff_tx_init_tabs)(len / sub_len);
 
     return 0;
 }
@@ -150,6 +210,7 @@ const FFTXCodelet * const ff_tx_codelet_list_float_x86[] = {
            AV_TX_INPLACE | FF_TX_PRESHUFFLE | FF_TX_ASM_CALL, AV_CPU_FLAG_AVXSLOW),
     TX_DEF(fft_sr_ns, FFT, 64, 131072, 2, 0, 352, b8_i2, fma3,  FMA3,  AV_TX_INPLACE | FF_TX_PRESHUFFLE,
            AV_CPU_FLAG_AVXSLOW),
+
 #if HAVE_AVX2_EXTERNAL
     TX_DEF(fft_sr,    FFT, 64, 131072, 2, 0, 320, b8_i2, avx2, AVX2, 0,
            AV_CPU_FLAG_AVXSLOW | AV_CPU_FLAG_SLOW_GATHER),
@@ -157,6 +218,13 @@ const FFTXCodelet * const ff_tx_codelet_list_float_x86[] = {
            AV_TX_INPLACE | FF_TX_PRESHUFFLE | FF_TX_ASM_CALL, AV_CPU_FLAG_AVXSLOW | AV_CPU_FLAG_SLOW_GATHER),
     TX_DEF(fft_sr_ns, FFT, 64, 131072, 2, 0, 384, b8_i2, avx2, AVX2, AV_TX_INPLACE | FF_TX_PRESHUFFLE,
            AV_CPU_FLAG_AVXSLOW | AV_CPU_FLAG_SLOW_GATHER),
+
+    TX_DEF(fft_pfa_15xM, FFT, 60, TX_LEN_UNLIMITED, 15, TX_FACTOR_ANY, 320, fft_pfa_init, avx2, AVX2,
+           AV_TX_INPLACE, AV_CPU_FLAG_AVXSLOW | AV_CPU_FLAG_SLOW_GATHER),
+    TX_DEF(fft_pfa_15xM_asm, FFT, 60, TX_LEN_UNLIMITED, 15, TX_FACTOR_ANY, 384, fft_pfa_init, avx2, AVX2,
+           AV_TX_INPLACE | FF_TX_PRESHUFFLE | FF_TX_ASM_CALL, AV_CPU_FLAG_AVXSLOW | AV_CPU_FLAG_SLOW_GATHER),
+    TX_DEF(fft_pfa_15xM_ns, FFT, 60, TX_LEN_UNLIMITED, 15, TX_FACTOR_ANY, 384, fft_pfa_init, avx2, AVX2,
+           AV_TX_INPLACE | FF_TX_PRESHUFFLE, AV_CPU_FLAG_AVXSLOW | AV_CPU_FLAG_SLOW_GATHER),
 
     TX_DEF(mdct_sr_inv, MDCT, 16, TX_LEN_UNLIMITED, 2, TX_FACTOR_ANY, 384, m_inv_init, avx2, AVX2,
            FF_TX_INVERSE_ONLY, AV_CPU_FLAG_AVXSLOW | AV_CPU_FLAG_SLOW_GATHER),

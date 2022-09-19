@@ -704,3 +704,326 @@ Also note that this function requires a special iteration way, due to coefficien
 beginning to overlap, particularly `[o1]` with `[0]` after the second iteration.
 To iterate further, set `z = &z[16]` via `z += 8` for the second iteration. After
 the 4th iteration, the layout resets, so repeat the same.
+
+
+# 15-point AVX FFT transform
+The 15-point transform is based on the following unrolling. The input
+must be permuted via the following loop:
+
+``` C
+    for (int k = 0; k < s->sub[0].len; k++) {
+        int cnt = 0;
+        int tmp[15];
+        memcpy(tmp, &s->map[k*15], 15*sizeof(*tmp));
+        for (int i = 1; i < 15; i += 3) {
+            s->map[k*15 + cnt] = tmp[i];
+            cnt++;
+        }
+        for (int i = 2; i < 15; i += 3) {
+            s->map[k*15 + cnt] = tmp[i];
+            cnt++;
+        }
+        for (int i = 0; i < 15; i += 3) {
+            s->map[k*15 + cnt] = tmp[i];
+            cnt++;
+        }
+        memmove(&s->map[k*15 + 7], &s->map[k*15 + 6], 4*sizeof(int));
+        memmove(&s->map[k*15 + 3], &s->map[k*15 + 1], 4*sizeof(int));
+        s->map[k*15 + 1] = tmp[2];
+        s->map[k*15 + 2] = tmp[0];
+    }
+
+```
+
+This separates the ACs from the DCs and flips the SIMD direction to
+performing 5x3pt transforms at once, followed by 3x5pt transforms.
+
+``` C
+static av_always_inline void fft15(TXComplex *out, TXComplex *in,
+                                   ptrdiff_t stride)
+{
+    const TXSample *tab = TX_TAB(ff_tx_tab_53);
+    TXComplex q[20];
+    TXComplex dc[3], pc[32];
+    TXComplex y[32], k[32];
+    TXComplex t[32];
+    TXComplex r[32];
+    TXComplex z0[32];
+
+    /* DC */
+    pc[0].re = in[ 1].im - in[ 0].im;
+    pc[0].im = in[ 1].re - in[ 0].re;
+    pc[1].re = in[ 1].re + in[ 0].re;
+    pc[1].im = in[ 1].im + in[ 0].im;
+
+    dc[0].re = in[2].re + pc[1].re;
+    dc[0].im = in[2].im + pc[1].im;
+
+    pc[0].re = tab[ 8] * pc[0].re;
+    pc[0].im = tab[ 9] * pc[0].im;
+    pc[1].re = tab[10] * pc[1].re;
+    pc[1].im = tab[11] * pc[1].im;
+
+    dc[1].re = pc[0].re + pc[1].re;
+    dc[1].im = pc[0].im + pc[1].im;
+    dc[2].re = pc[1].re - pc[0].re;
+    dc[2].im = pc[1].im - pc[0].im;
+
+    dc[1].re = in[2].re - dc[1].re;
+    dc[1].im = in[2].im + dc[1].im;
+    dc[2].re = in[2].re - dc[2].re;
+    dc[2].im = in[2].im + dc[2].im;
+
+    /* ACs */
+    q[0].im = in[ 3].re - in[ 7].re; // NOTE THE ORDER
+    q[0].re = in[ 3].im - in[ 7].im;
+    q[1].im = in[ 4].re - in[ 8].re;
+    q[1].re = in[ 4].im - in[ 8].im;
+    q[2].im = in[ 5].re - in[ 9].re;
+    q[2].re = in[ 5].im - in[ 9].im;
+    q[3].re = in[ 6].im - in[10].im;
+    q[3].im = in[ 6].re - in[10].re;
+
+    q[4].re = in[ 3].re + in[ 7].re;
+    q[4].im = in[ 3].im + in[ 7].im;
+    q[5].re = in[ 4].re + in[ 8].re;
+    q[5].im = in[ 4].im + in[ 8].im;
+    q[6].re = in[ 5].re + in[ 9].re;
+    q[6].im = in[ 5].im + in[ 9].im;
+    q[7].re = in[ 6].re + in[10].re;
+    q[7].im = in[ 6].im + in[10].im;
+
+    y[0].re = in[11].re + q[4].re;
+    y[0].im = in[11].im + q[4].im;
+    y[1].re = in[12].re + q[5].re;
+    y[1].im = in[12].im + q[5].im;
+    y[2].re = in[13].re + q[6].re;
+    y[2].im = in[13].im + q[6].im;
+    y[3].re = in[14].re + q[7].re;
+    y[3].im = in[14].im + q[7].im;
+
+    q[0].re = tab[ 8] * q[0].re;
+    q[0].im = tab[ 9] * q[0].im;
+    q[1].re = tab[ 8] * q[1].re;
+    q[1].im = tab[ 9] * q[1].im;
+    q[2].re = tab[ 8] * q[2].re;
+    q[2].im = tab[ 9] * q[2].im;
+    q[3].re = tab[ 8] * q[3].re;
+    q[3].im = tab[ 9] * q[3].im;
+
+    q[4].re = tab[10] * q[4].re;
+    q[4].im = tab[11] * q[4].im;
+    q[5].re = tab[10] * q[5].re;
+    q[5].im = tab[11] * q[5].im;
+    q[6].re = tab[10] * q[6].re;
+    q[6].im = tab[11] * q[6].im;
+    q[7].re = tab[10] * q[7].re;
+    q[7].im = tab[11] * q[7].im;
+
+    k[0].re = q[4].re - q[0].re;
+    k[0].im = q[4].im - q[0].im;
+    k[1].re = q[5].re - q[1].re;
+    k[1].im = q[5].im - q[1].im;
+    k[2].re = q[6].re - q[2].re;
+    k[2].im = q[6].im - q[2].im;
+    k[3].re = q[7].re - q[3].re;
+    k[3].im = q[7].im - q[3].im;
+
+    k[4].re = q[4].re + q[0].re;
+    k[4].im = q[4].im + q[0].im;
+    k[5].re = q[5].re + q[1].re;
+    k[5].im = q[5].im + q[1].im;
+    k[6].re = q[6].re + q[2].re;
+    k[6].im = q[6].im + q[2].im;
+    k[7].re = q[7].re + q[3].re;
+    k[7].im = q[7].im + q[3].im;
+
+    k[0].re = in[11].re - k[0].re;
+    k[0].im = in[11].im + k[0].im;
+    k[1].re = in[12].re - k[1].re;
+    k[1].im = in[12].im + k[1].im;
+    k[2].re = in[13].re - k[2].re;
+    k[2].im = in[13].im + k[2].im;
+    k[3].re = in[14].re - k[3].re;
+    k[3].im = in[14].im + k[3].im;
+
+    k[4].re = in[11].re - k[4].re;
+    k[4].im = in[11].im + k[4].im;
+    k[5].re = in[12].re - k[5].re;
+    k[5].im = in[12].im + k[5].im;
+    k[6].re = in[13].re - k[6].re;
+    k[6].im = in[13].im + k[6].im;
+    k[7].re = in[14].re - k[7].re;
+    k[7].im = in[14].im + k[7].im;
+
+    /* 15pt start here */
+    t[0].re = y[3].re + y[0].re;
+    t[0].im = y[3].im + y[0].im;
+    t[1].re = y[2].re + y[1].re;
+    t[1].im = y[2].im + y[1].im;
+    t[2].re = y[1].re - y[2].re;
+    t[2].im = y[1].im - y[2].im;
+    t[3].re = y[0].re - y[3].re;
+    t[3].im = y[0].im - y[3].im;
+
+    t[4].re = k[3].re + k[0].re;
+    t[4].im = k[3].im + k[0].im;
+    t[5].re = k[2].re + k[1].re;
+    t[5].im = k[2].im + k[1].im;
+    t[6].re = k[1].re - k[2].re;
+    t[6].im = k[1].im - k[2].im;
+    t[7].re = k[0].re - k[3].re;
+    t[7].im = k[0].im - k[3].im;
+
+    t[ 8].re = k[7].re + k[4].re;
+    t[ 8].im = k[7].im + k[4].im;
+    t[ 9].re = k[6].re + k[5].re;
+    t[ 9].im = k[6].im + k[5].im;
+    t[10].re = k[5].re - k[6].re;
+    t[10].im = k[5].im - k[6].im;
+    t[11].re = k[4].re - k[7].re;
+    t[11].im = k[4].im - k[7].im;
+
+    out[ 0*stride].re = dc[0].re + t[0].re + t[ 1].re;
+    out[ 0*stride].im = dc[0].im + t[0].im + t[ 1].im;
+    out[10*stride].re = dc[1].re + t[4].re + t[ 5].re;
+    out[10*stride].im = dc[1].im + t[4].im + t[ 5].im;
+    out[ 5*stride].re = dc[2].re + t[8].re + t[ 9].re;
+    out[ 5*stride].im = dc[2].im + t[8].im + t[ 9].im;
+
+    r[0].re = t[0].re * tab[0];
+    r[0].im = t[0].im * tab[1];
+    r[1].re = t[1].re * tab[0];
+    r[1].im = t[1].im * tab[1];
+    r[2].re = t[2].re * tab[4];
+    r[2].im = t[2].im * tab[5];
+    r[3].re = t[3].re * tab[4];
+    r[3].im = t[3].im * tab[5];
+
+    r[4].re = t[4].re * tab[0];
+    r[4].im = t[4].im * tab[1];
+    r[5].re = t[5].re * tab[0];
+    r[5].im = t[5].im * tab[1];
+    r[6].re = t[6].re * tab[4];
+    r[6].im = t[6].im * tab[5];
+    r[7].re = t[7].re * tab[4];
+    r[7].im = t[7].im * tab[5];
+
+    r[ 8].re = t[ 8].re * tab[0];
+    r[ 8].im = t[ 8].im * tab[1];
+    r[ 9].re = t[ 9].re * tab[0];
+    r[ 9].im = t[ 9].im * tab[1];
+    r[10].re = t[10].re * tab[4];
+    r[10].im = t[10].im * tab[5];
+    r[11].re = t[11].re * tab[4];
+    r[11].im = t[11].im * tab[5];
+
+    t[0].re = t[0].re * tab[2];
+    t[0].im = t[0].im * tab[3];
+    t[1].re = t[1].re * tab[2];
+    t[1].im = t[1].im * tab[3];
+    t[2].re = t[2].re * tab[6];
+    t[2].im = t[2].im * tab[7];
+    t[3].re = t[3].re * tab[6];
+    t[3].im = t[3].im * tab[7];
+
+    t[4].re = t[4].re * tab[2];
+    t[4].im = t[4].im * tab[3];
+    t[5].re = t[5].re * tab[2];
+    t[5].im = t[5].im * tab[3];
+    t[6].re = t[6].re * tab[6];
+    t[6].im = t[6].im * tab[7];
+    t[7].re = t[7].re * tab[6];
+    t[7].im = t[7].im * tab[7];
+
+    t[ 8].re = t[ 8].re * tab[2];
+    t[ 8].im = t[ 8].im * tab[3];
+    t[ 9].re = t[ 9].re * tab[2];
+    t[ 9].im = t[ 9].im * tab[3];
+    t[10].re = t[10].re * tab[6];
+    t[10].im = t[10].im * tab[7];
+    t[11].re = t[11].re * tab[6];
+    t[11].im = t[11].im * tab[7];
+
+    r[0].re = r[0].re - t[1].re;
+    r[0].im = r[0].im - t[1].im;
+    r[1].re = r[1].re - t[0].re;
+    r[1].im = r[1].im - t[0].im;
+    r[2].re = r[2].re - t[3].re;
+    r[2].im = r[2].im - t[3].im;
+    r[3].re = r[3].re + t[2].re;
+    r[3].im = r[3].im + t[2].im;
+
+    r[4].re = r[4].re - t[5].re;
+    r[4].im = r[4].im - t[5].im;
+    r[5].re = r[5].re - t[4].re;
+    r[5].im = r[5].im - t[4].im;
+    r[6].re = r[6].re - t[7].re;
+    r[6].im = r[6].im - t[7].im;
+    r[7].re = r[7].re + t[6].re;
+    r[7].im = r[7].im + t[6].im;
+
+    r[ 8].re = r[ 8].re - t[ 9].re;
+    r[ 8].im = r[ 8].im - t[ 9].im;
+    r[ 9].re = r[ 9].re - t[ 8].re;
+    r[ 9].im = r[ 9].im - t[ 8].im;
+    r[10].re = r[10].re - t[11].re;
+    r[10].im = r[10].im - t[11].im;
+    r[11].re = r[11].re + t[10].re;
+    r[11].im = r[11].im + t[10].im;
+
+    z0[ 0].re = r[ 3].im + r[ 0].re;
+    z0[ 0].im = r[ 3].re + r[ 0].im;
+    z0[ 1].re = r[ 2].im + r[ 1].re;
+    z0[ 1].im = r[ 2].re + r[ 1].im;
+    z0[ 2].re = r[ 1].im - r[ 2].re;
+    z0[ 2].im = r[ 1].re - r[ 2].im;
+    z0[ 3].re = r[ 0].im - r[ 3].re;
+    z0[ 3].im = r[ 0].re - r[ 3].im;
+
+    z0[ 4].re = r[ 7].im + r[ 4].re;
+    z0[ 4].im = r[ 7].re + r[ 4].im;
+    z0[ 5].re = r[ 6].im + r[ 5].re;
+    z0[ 5].im = r[ 6].re + r[ 5].im;
+    z0[ 6].re = r[ 5].im - r[ 6].re;
+    z0[ 6].im = r[ 5].re - r[ 6].im;
+    z0[ 7].re = r[ 4].im - r[ 7].re;
+    z0[ 7].im = r[ 4].re - r[ 7].im;
+
+    z0[ 8].re = r[11].im + r[ 8].re;
+    z0[ 8].im = r[11].re + r[ 8].im;
+    z0[ 9].re = r[10].im + r[ 9].re;
+    z0[ 9].im = r[10].re + r[ 9].im;
+    z0[10].re = r[ 9].im - r[10].re;
+    z0[10].im = r[ 9].re - r[10].im;
+    z0[11].re = r[ 8].im - r[11].re;
+    z0[11].im = r[ 8].re - r[11].im;
+
+    out[ 6*stride].re = dc[0].re + z0[0].re;
+    out[ 6*stride].im = dc[0].im + z0[3].re;
+    out[12*stride].re = dc[0].re + z0[2].im;
+    out[12*stride].im = dc[0].im + z0[1].im;
+    out[ 3*stride].re = dc[0].re + z0[1].re;
+    out[ 3*stride].im = dc[0].im + z0[2].re;
+    out[ 9*stride].re = dc[0].re + z0[3].im;
+    out[ 9*stride].im = dc[0].im + z0[0].im;
+
+    out[ 1*stride].re = dc[1].re + z0[4].re;
+    out[ 1*stride].im = dc[1].im + z0[7].re;
+    out[ 7*stride].re = dc[1].re + z0[6].im;
+    out[ 7*stride].im = dc[1].im + z0[5].im;
+    out[13*stride].re = dc[1].re + z0[5].re;
+    out[13*stride].im = dc[1].im + z0[6].re;
+    out[ 4*stride].re = dc[1].re + z0[7].im;
+    out[ 4*stride].im = dc[1].im + z0[4].im;
+
+    out[11*stride].re = dc[2].re + z0[8].re;
+    out[11*stride].im = dc[2].im + z0[11].re;
+    out[ 2*stride].re = dc[2].re + z0[10].im;
+    out[ 2*stride].im = dc[2].im + z0[9].im;
+    out[ 8*stride].re = dc[2].re + z0[9].re;
+    out[ 8*stride].im = dc[2].im + z0[10].re;
+    out[14*stride].re = dc[2].re + z0[11].im;
+    out[14*stride].im = dc[2].im + z0[8].im;
+}
+```
