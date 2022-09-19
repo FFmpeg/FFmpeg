@@ -165,6 +165,9 @@ static const struct {
     #if CONFIG_VIDEODSP
         { "videodsp", checkasm_check_videodsp },
     #endif
+    #if CONFIG_VORBIS_DECODER
+        { "vorbisdsp", checkasm_check_vorbisdsp },
+    #endif
 #endif
 #if CONFIG_AVFILTER
     #if CONFIG_AFIR_FILTER
