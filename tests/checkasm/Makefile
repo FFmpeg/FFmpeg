@@ -11,6 +11,7 @@ AVCODECOBJS-$(CONFIG_H264QPEL)          += h264qpel.o
 AVCODECOBJS-$(CONFIG_IDCTDSP)           += idctdsp.o
 AVCODECOBJS-$(CONFIG_LLVIDDSP)          += llviddsp.o
 AVCODECOBJS-$(CONFIG_LLVIDENCDSP)       += llviddspenc.o
+AVCODECOBJS-$(CONFIG_LPC)               += lpc.o
 AVCODECOBJS-$(CONFIG_ME_CMP)            += motion.o
 AVCODECOBJS-$(CONFIG_VC1DSP)            += vc1dsp.o
 AVCODECOBJS-$(CONFIG_VP8DSP)            += vp8dsp.o
