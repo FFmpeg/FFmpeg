@@ -52,6 +52,7 @@ extern const AVInputFormat  ff_amrnb_demuxer;
 extern const AVInputFormat  ff_amrwb_demuxer;
 extern const AVOutputFormat ff_amv_muxer;
 extern const AVInputFormat  ff_anm_demuxer;
+extern const AVInputFormat  ff_apac_demuxer;
 extern const AVInputFormat  ff_apc_demuxer;
 extern const AVInputFormat  ff_ape_demuxer;
 extern const AVInputFormat  ff_apm_demuxer;

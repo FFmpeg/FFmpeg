@@ -14,7 +14,7 @@ version <next>:
 - bonk decoder and demuxer
 - Micronas SC-4 audio decoder
 - LAF demuxer
-- APAC decoder
+- APAC decoder and demuxer
 
 
 version 5.1:
