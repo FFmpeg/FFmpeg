@@ -432,6 +432,7 @@ extern const FFCodec ff_alac_decoder;
 extern const FFCodec ff_als_decoder;
 extern const FFCodec ff_amrnb_decoder;
 extern const FFCodec ff_amrwb_decoder;
+extern const FFCodec ff_apac_decoder;
 extern const FFCodec ff_ape_decoder;
 extern const FFCodec ff_aptx_encoder;
 extern const FFCodec ff_aptx_decoder;
