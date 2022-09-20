@@ -382,9 +382,6 @@ This applies a specific fixup to some Blu-ray streams which contain
 redundant PPSs modifying irrelevant parameters of the stream which
 confuse other transformations which require correct extradata.
 
-A new single global PPS is created, and all of the redundant PPSs
-within the stream are removed.
-
 @section hevc_metadata
 
 Modify metadata embedded in an HEVC stream.

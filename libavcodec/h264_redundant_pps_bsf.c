@@ -80,26 +80,15 @@ static int h264_redundant_pps_update_fragment(AVBSFContext *bsf,
                                               CodedBitstreamFragment *au)
 {
     H264RedundantPPSContext *ctx = bsf->priv_data;
-    int au_has_sps;
     int err, i;
 
-    au_has_sps = 0;
     for (i = 0; i < au->nb_units; i++) {
         CodedBitstreamUnit *nal = &au->units[i];
 
-        if (nal->type == H264_NAL_SPS)
-            au_has_sps = 1;
         if (nal->type == H264_NAL_PPS) {
             err = h264_redundant_pps_fixup_pps(ctx, nal);
             if (err < 0)
                 return err;
-            if (!au_has_sps) {
-                av_log(bsf, AV_LOG_VERBOSE, "Deleting redundant PPS "
-                       "at %"PRId64".\n", pkt->pts);
-                ff_cbs_delete_unit(au, i);
-                i--;
-                continue;
-            }
         }
         if (nal->type == H264_NAL_SLICE ||
             nal->type == H264_NAL_IDR_SLICE) {
