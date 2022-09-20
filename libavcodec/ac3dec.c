@@ -230,7 +230,7 @@ static av_cold int ac3_decode_init(AVCodecContext *avctx)
 #if (USE_FIXED)
     s->fdsp = avpriv_alloc_fixed_dsp(avctx->flags & AV_CODEC_FLAG_BITEXACT);
 #else
-    ff_fmt_convert_init(&s->fmt_conv, avctx);
+    ff_fmt_convert_init(&s->fmt_conv);
     s->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
 #endif
     if (!s->fdsp)

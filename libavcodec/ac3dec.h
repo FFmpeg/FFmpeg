@@ -57,6 +57,7 @@
 
 #include "ac3.h"
 #include "ac3dsp.h"
+#include "avcodec.h"
 #include "bswapdsp.h"
 #include "get_bits.h"
 #include "fft.h"

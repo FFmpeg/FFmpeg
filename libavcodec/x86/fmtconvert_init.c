@@ -35,7 +35,7 @@ void ff_int32_to_float_fmul_array8_sse2(FmtConvertContext *c, float *dst, const 
 
 #endif /* HAVE_X86ASM */
 
-av_cold void ff_fmt_convert_init_x86(FmtConvertContext *c, AVCodecContext *avctx)
+av_cold void ff_fmt_convert_init_x86(FmtConvertContext *c)
 {
 #if HAVE_X86ASM
     int cpu_flags = av_get_cpu_flags();

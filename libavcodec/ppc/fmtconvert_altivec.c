@@ -54,8 +54,7 @@ static void int32_to_float_fmul_scalar_altivec(float *dst, const int32_t *src,
 
 #endif /* HAVE_ALTIVEC */
 
-av_cold void ff_fmt_convert_init_ppc(FmtConvertContext *c,
-                                     AVCodecContext *avctx)
+av_cold void ff_fmt_convert_init_ppc(FmtConvertContext *c)
 {
 #if HAVE_ALTIVEC
     if (!PPC_ALTIVEC(av_get_cpu_flags()))
