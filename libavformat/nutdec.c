@@ -1132,7 +1132,6 @@ static int decode_frame(NUTContext *nut, AVPacket *pkt, int frame_code)
         }
         sm_size = avio_tell(bc) - pkt->pos;
         size      -= sm_size;
-        pkt->size -= sm_size;
     }
 
     ret = avio_read(bc, pkt->data + nut->header_len[header_idx], size);
