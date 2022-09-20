@@ -1012,7 +1012,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
 
     f->version = AV_RL32(avctx->extradata) >> 16;
-    ff_blockdsp_init(&f->bdsp, avctx);
+    ff_blockdsp_init(&f->bdsp);
     ff_bswapdsp_init(&f->bbdsp);
     f->avctx = avctx;
 

@@ -29,7 +29,7 @@ av_cold void ff_wmv2_common_init(MpegEncContext *s)
 {
     WMV2Context *const w = s->private_ctx;
 
-    ff_blockdsp_init(&s->bdsp, s->avctx);
+    ff_blockdsp_init(&s->bdsp);
     ff_wmv2dsp_init(&w->wdsp);
     s->idsp.perm_type = w->wdsp.idct_perm;
     ff_init_scantable_permutation(s->idsp.idct_permutation,

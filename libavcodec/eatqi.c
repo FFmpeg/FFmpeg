@@ -62,7 +62,7 @@ static av_cold int tqi_decode_init(AVCodecContext *avctx)
 {
     TqiContext *t = avctx->priv_data;
 
-    ff_blockdsp_init(&t->bdsp, avctx);
+    ff_blockdsp_init(&t->bdsp);
     ff_bswapdsp_init(&t->bsdsp);
     ff_idctdsp_init(&t->idsp, avctx);
     ff_init_scantable_permutation(t->idsp.idct_permutation, FF_IDCT_PERM_NONE);

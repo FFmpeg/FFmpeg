@@ -180,7 +180,7 @@ static av_cold int jpg_init(AVCodecContext *avctx, JPGContext *c)
     if (ret)
         return ret;
 
-    ff_blockdsp_init(&c->bdsp, avctx);
+    ff_blockdsp_init(&c->bdsp);
     ff_idctdsp_init(&c->idsp, avctx);
     ff_init_scantable(c->idsp.idct_permutation, &c->scantable,
                       ff_zigzag_direct);

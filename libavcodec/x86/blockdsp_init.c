@@ -29,8 +29,7 @@ void ff_clear_block_avx(int16_t *block);
 void ff_clear_blocks_sse(int16_t *blocks);
 void ff_clear_blocks_avx(int16_t *blocks);
 
-av_cold void ff_blockdsp_init_x86(BlockDSPContext *c,
-                                  AVCodecContext *avctx)
+av_cold void ff_blockdsp_init_x86(BlockDSPContext *c)
 {
 #if HAVE_X86ASM
     int cpu_flags = av_get_cpu_flags();

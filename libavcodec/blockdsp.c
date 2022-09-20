@@ -21,7 +21,6 @@
 
 #include "config.h"
 #include "libavutil/attributes.h"
-#include "avcodec.h"
 #include "blockdsp.h"
 
 static void clear_block_c(int16_t *block)
@@ -56,7 +55,7 @@ static void fill_block8_c(uint8_t *block, uint8_t value, ptrdiff_t line_size,
     }
 }
 
-av_cold void ff_blockdsp_init(BlockDSPContext *c, AVCodecContext *avctx)
+av_cold void ff_blockdsp_init(BlockDSPContext *c)
 {
     c->clear_block  = clear_block_c;
     c->clear_blocks = clear_blocks_c;
@@ -71,7 +70,7 @@ av_cold void ff_blockdsp_init(BlockDSPContext *c, AVCodecContext *avctx)
 #elif ARCH_PPC
     ff_blockdsp_init_ppc(c);
 #elif ARCH_X86
-    ff_blockdsp_init_x86(c, avctx);
+    ff_blockdsp_init_x86(c);
 #elif ARCH_MIPS
     ff_blockdsp_init_mips(c);
 #endif

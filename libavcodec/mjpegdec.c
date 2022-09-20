@@ -134,7 +134,7 @@ av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
     s->pkt = avctx->internal->in_pkt;
 
     s->avctx = avctx;
-    ff_blockdsp_init(&s->bdsp, avctx);
+    ff_blockdsp_init(&s->bdsp);
     ff_hpeldsp_init(&s->hdsp, avctx->flags);
     init_idct(avctx);
     s->buffer_size   = 0;

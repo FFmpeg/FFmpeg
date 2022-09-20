@@ -722,7 +722,7 @@ av_cold int ff_intrax8_common_init(AVCodecContext *avctx,
                       ff_wmv1_scantable[3]);
 
     ff_intrax8dsp_init(&w->dsp);
-    ff_blockdsp_init(&w->bdsp, avctx);
+    ff_blockdsp_init(&w->bdsp);
 
     ff_thread_once(&init_static_once, x8_vlc_init);
 

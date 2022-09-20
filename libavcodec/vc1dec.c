@@ -540,7 +540,7 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
     // That this is necessary might indicate a bug.
     ff_vc1_decode_end(avctx);
 
-    ff_blockdsp_init(&s->bdsp, avctx);
+    ff_blockdsp_init(&s->bdsp);
     ff_h264chroma_init(&v->h264chroma, 8);
     ff_qpeldsp_init(&s->qdsp);
 

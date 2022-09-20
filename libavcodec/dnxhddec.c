@@ -273,7 +273,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
 
     ctx->avctx->bits_per_raw_sample = ctx->bit_depth = bitdepth;
     if (ctx->bit_depth != old_bit_depth) {
-        ff_blockdsp_init(&ctx->bdsp, ctx->avctx);
+        ff_blockdsp_init(&ctx->bdsp);
         ff_idctdsp_init(&ctx->idsp, ctx->avctx);
         ff_init_scantable(ctx->idsp.idct_permutation, &ctx->scantable,
                           ff_zigzag_direct);
