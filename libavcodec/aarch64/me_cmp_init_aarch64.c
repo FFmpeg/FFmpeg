@@ -45,6 +45,8 @@ int vsad16_neon(MpegEncContext *c, const uint8_t *s1, const uint8_t *s2,
                 ptrdiff_t stride, int h);
 int vsad_intra16_neon(MpegEncContext *c, const uint8_t *s, const uint8_t *dummy,
                       ptrdiff_t stride, int h) ;
+int vsad_intra8_neon(MpegEncContext *c, const uint8_t *s, const uint8_t *dummy,
+                     ptrdiff_t stride, int h) ;
 int vsse16_neon(MpegEncContext *c, const uint8_t *s1, const uint8_t *s2,
                 ptrdiff_t stride, int h);
 int vsse_intra16_neon(MpegEncContext *c, const uint8_t *s, const uint8_t *dummy,
@@ -75,6 +77,7 @@ av_cold void ff_me_cmp_init_aarch64(MECmpContext *c, AVCodecContext *avctx)
 
         c->vsad[0] = vsad16_neon;
         c->vsad[4] = vsad_intra16_neon;
+        c->vsad[5] = vsad_intra8_neon;
 
         c->vsse[0] = vsse16_neon;
         c->vsse[4] = vsse_intra16_neon;
