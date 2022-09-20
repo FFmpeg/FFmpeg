@@ -1,0 +1,11 @@
+dd953f8d95d2927703ce9593a07fe2e7 *tests/data/fate/h264_redundant_pps-side_data2.nut
+5162 tests/data/fate/h264_redundant_pps-side_data2.nut
+#tb 0: 1/25
+#media_type 0: video
+#codec_id 0: rawvideo
+#dimensions 0: 256x128
+#sar 0: 1/1
+0,          0,          0,        1,    49152, 0x08745db9
+0,          1,          1,        1,    49152, 0x96bf5e58
+0,          2,          2,        1,    49152, 0x8fe31b6d
+0,          3,          3,        1,    49152, 0x0b621cc3
