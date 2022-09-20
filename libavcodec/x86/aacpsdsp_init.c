@@ -33,7 +33,7 @@ void ff_ps_mul_pair_single_sse (float (*dst)[2], float (*src0)[2],
 void ff_ps_hybrid_analysis_sse (float (*out)[2], float (*in)[2],
                                 const float (*filter)[8][2],
                                 ptrdiff_t stride, int n);
-void ff_ps_hybrid_analysis_sse3(float (*out)[2], float (*in)[2],
+void ff_ps_hybrid_analysis_fma3(float (*out)[2], float (*in)[2],
                                 const float (*filter)[8][2],
                                 ptrdiff_t stride, int n);
 void ff_ps_stereo_interpolate_sse3(float (*l)[2], float (*r)[2],
@@ -64,9 +64,11 @@ av_cold void ff_psdsp_init_x86(PSDSPContext *s)
         s->add_squares            = ff_ps_add_squares_sse3;
         s->stereo_interpolate[0]  = ff_ps_stereo_interpolate_sse3;
         s->stereo_interpolate[1]  = ff_ps_stereo_interpolate_ipdopd_sse3;
-        s->hybrid_analysis        = ff_ps_hybrid_analysis_sse3;
     }
     if (EXTERNAL_SSE4(cpu_flags)) {
         s->hybrid_synthesis_deint = ff_ps_hybrid_synthesis_deint_sse4;
+    }
+    if (EXTERNAL_FMA3(cpu_flags)) {
+        s->hybrid_analysis        = ff_ps_hybrid_analysis_fma3;
     }
 }
