@@ -2179,6 +2179,16 @@ static int mov_write_ccst_tag(AVIOContext *pb)
     return update_size(pb, pos);
 }
 
+static int mov_write_aux_tag(AVIOContext *pb, const char *aux_type)
+{
+    int64_t pos = avio_tell(pb);
+    avio_wb32(pb, 0); /* size */
+    ffio_wfourcc(pb, aux_type);
+    avio_wb32(pb, 0); /* Version & flags */
+    avio_write(pb, "urn:mpeg:mpegB:cicp:systems:auxiliary:alpha\0", 44);
+    return update_size(pb, pos);
+}
+
 static int mov_write_video_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContext *mov, MOVTrack *track)
 {
     int ret = AVERROR_BUG;
@@ -2363,8 +2373,11 @@ static int mov_write_video_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
     if (avid)
         avio_wb32(pb, 0);
 
-    if (track->mode == MODE_AVIF)
+    if (track->mode == MODE_AVIF) {
         mov_write_ccst_tag(pb);
+        if (s->nb_streams > 0 && track == &mov->tracks[1])
+            mov_write_aux_tag(pb, "auxi");
+    }
 
     return update_size(pb, pos);
 }
@@ -3044,16 +3057,6 @@ static int mov_write_pixi_tag(AVIOContext *pb, MOVMuxContext *mov, AVFormatConte
     return update_size(pb, pos);
 }
 
-static int mov_write_auxC_tag(AVIOContext *pb)
-{
-    int64_t pos = avio_tell(pb);
-    avio_wb32(pb, 0); /* size */
-    ffio_wfourcc(pb, "auxC");
-    avio_wb32(pb, 0); /* Version & flags */
-    avio_write(pb, "urn:mpeg:mpegB:cicp:systems:auxiliary:alpha\0", 44);
-    return update_size(pb, pos);
-}
-
 static int mov_write_ipco_tag(AVIOContext *pb, MOVMuxContext *mov, AVFormatContext *s)
 {
     int64_t pos = avio_tell(pb);
@@ -3066,7 +3069,7 @@ static int mov_write_ipco_tag(AVIOContext *pb, MOVMuxContext *mov, AVFormatConte
         if (!i)
             mov_write_colr_tag(pb, &mov->tracks[0], 0);
         else
-            mov_write_auxC_tag(pb);
+            mov_write_aux_tag(pb, "auxC");
     }
     return update_size(pb, pos);
 }
