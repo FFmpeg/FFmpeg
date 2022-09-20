@@ -438,6 +438,10 @@ int ff_cbs_write_extradata(CodedBitstreamContext *ctx,
         return err;
 
     av_freep(&par->extradata);
+    par->extradata_size = 0;
+
+    if (!frag->data_size)
+        return 0;
 
     par->extradata = av_malloc(frag->data_size +
                                AV_INPUT_BUFFER_PADDING_SIZE);
