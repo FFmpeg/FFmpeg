@@ -21,7 +21,7 @@ Applications
 ============
 
 ffmpeg:
-  ffmpeg.c                              Michael Niedermayer
+  ffmpeg.c                              Michael Niedermayer, Anton Khirnov
 
 ffplay:
   ffplay.c                              Marton Balint
