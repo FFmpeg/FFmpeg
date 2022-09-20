@@ -956,7 +956,11 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
             xmlFree(val);
         }
         if (adaptionset_supplementalproperty_node) {
-            if (!av_strcasecmp(xmlGetProp(adaptionset_supplementalproperty_node,"schemeIdUri"), "http://dashif.org/guidelines/last-segment-number")) {
+            char *scheme_id_uri = xmlGetProp(adaptionset_supplementalproperty_node, "schemeIdUri");
+            if (scheme_id_uri) {
+                int is_last_segment_number = !av_strcasecmp(scheme_id_uri, "http://dashif.org/guidelines/last-segment-number");
+                xmlFree(scheme_id_uri);
+                if (is_last_segment_number) {
                 val = xmlGetProp(adaptionset_supplementalproperty_node,"value");
                 if (!val) {
                     av_log(s, AV_LOG_ERROR, "Missing value attribute in adaptionset_supplementalproperty_node\n");
@@ -964,6 +968,7 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
                     rep->last_seq_no =(int64_t) strtoll(val, NULL, 10) - 1;
                     xmlFree(val);
                 }
+            }
             }
         }
 
