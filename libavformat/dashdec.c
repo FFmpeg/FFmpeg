@@ -961,14 +961,14 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
                 int is_last_segment_number = !av_strcasecmp(scheme_id_uri, "http://dashif.org/guidelines/last-segment-number");
                 xmlFree(scheme_id_uri);
                 if (is_last_segment_number) {
-                val = xmlGetProp(adaptionset_supplementalproperty_node,"value");
-                if (!val) {
-                    av_log(s, AV_LOG_ERROR, "Missing value attribute in adaptionset_supplementalproperty_node\n");
-                } else {
-                    rep->last_seq_no =(int64_t) strtoll(val, NULL, 10) - 1;
-                    xmlFree(val);
+                    val = xmlGetProp(adaptionset_supplementalproperty_node, "value");
+                    if (!val) {
+                        av_log(s, AV_LOG_ERROR, "Missing value attribute in adaptionset_supplementalproperty_node\n");
+                    } else {
+                        rep->last_seq_no = (int64_t)strtoll(val, NULL, 10) - 1;
+                        xmlFree(val);
+                    }
                 }
-            }
             }
         }
 
