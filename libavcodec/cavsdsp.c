@@ -22,8 +22,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <stdio.h>
-
 #include "idctdsp.h"
 #include "mathops.h"
 #include "cavsdsp.h"
@@ -548,7 +546,8 @@ CAVS_MC(avg_, 16)
 #define put_cavs_qpel16_mc00_c ff_put_pixels16x16_c
 #define avg_cavs_qpel16_mc00_c ff_avg_pixels16x16_c
 
-av_cold void ff_cavsdsp_init(CAVSDSPContext* c, AVCodecContext *avctx) {
+av_cold void ff_cavsdsp_init(CAVSDSPContext* c)
+{
 #define dspfunc(PFX, IDX, NUM) \
     c->PFX ## _pixels_tab[IDX][ 0] = PFX ## NUM ## _mc00_c; \
     c->PFX ## _pixels_tab[IDX][ 1] = PFX ## NUM ## _mc10_c; \
@@ -578,6 +577,6 @@ av_cold void ff_cavsdsp_init(CAVSDSPContext* c, AVCodecContext *avctx) {
     c->idct_perm = FF_IDCT_PERM_NONE;
 
 #if ARCH_X86
-    ff_cavsdsp_init_x86(c, avctx);
+    ff_cavsdsp_init_x86(c);
 #endif
 }
