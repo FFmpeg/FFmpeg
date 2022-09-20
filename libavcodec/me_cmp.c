@@ -1048,6 +1048,9 @@ av_cold void ff_me_cmp_init(MECmpContext *c, AVCodecContext *avctx)
     ff_dsputil_init_dwt(c);
 #endif
 
+    c->median_sad[0] = pix_median_abs16_c;
+    c->median_sad[1] = pix_median_abs8_c;
+
 #if ARCH_AARCH64
     ff_me_cmp_init_aarch64(c, avctx);
 #elif ARCH_ALPHA
@@ -1062,6 +1065,4 @@ av_cold void ff_me_cmp_init(MECmpContext *c, AVCodecContext *avctx)
     ff_me_cmp_init_mips(c, avctx);
 #endif
 
-    c->median_sad[0] = pix_median_abs16_c;
-    c->median_sad[1] = pix_median_abs8_c;
 }

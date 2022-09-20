@@ -969,3 +969,81 @@ function nsse16_neon, export=1
 
         ret
 endfunc
+
+function pix_median_abs16_neon, export=1
+        // x0           unused
+        // x1           uint8_t *pix1
+        // x2           uint8_t *pix2
+        // x3           ptrdiff_t stride
+        // w4           int h
+
+        ld1             {v2.16b}, [x1], x3
+        ld1             {v3.16b}, [x2], x3
+        movi            v31.8h, #0
+        movi            v16.8h, #0
+        ext             v0.16b, v2.16b, v2.16b, #1
+        ext             v1.16b, v3.16b, v3.16b, #1
+        usubl           v28.8h, v2.8b, v3.8b
+        usubl2          v27.8h, v2.16b, v3.16b
+        usubl           v26.8h, v0.8b, v1.8b
+        usubl2          v25.8h, v0.16b, v1.16b
+        sub             w4, w4, #1                              // we need to make h-1 iterations
+        saba            v31.8h, v26.8h, v28.8h
+        saba            v16.8h, v25.8h, v27.8h
+        mov             h18, v28.h[0]
+        cmp             w4, #1
+        sqabs           h18, h18
+        movi            v0.8h, #0
+
+        b.lt            2f
+1:
+
+        ld1             {v6.16b}, [x1], x3                      // pix1 vector for V(j-1)
+        ld1             {v7.16b}, [x2], x3                      // pix2 vector for V(j-1)
+        subs            w4, w4, #1
+        ext             v4.16b, v6.16b, v6.16b, #1              // pix1 vector for V(j)
+        ext             v5.16b, v7.16b, v7.16b, #1              // pix2 vector for V(j)
+
+        // protected registers: v30, v29, v28, v27, v26, v25, v24, v23
+        // scratch registers: v22, v21, v20, v19, v17
+
+        // To find median of three values, calculate sum of them
+        // and subtract max and min value from it.
+        usubl           v30.8h, v6.8b, v7.8b                    // V(j-1)
+        usubl2          v29.8h, v6.16b, v7.16b                  // V(j-1)
+        usubl           v24.8h, v4.8b, v5.8b                    // V(j)
+        usubl2          v23.8h, v4.16b, v5.16b                  // V(j)
+        saba            v0.8h, v30.8h, v28.8h
+        add             v22.8h, v26.8h, v30.8h
+        smin            v20.8h, v26.8h, v30.8h
+        add             v21.8h, v25.8h, v29.8h
+        smax            v19.8h, v26.8h, v30.8h
+        sub             v22.8h, v22.8h, v28.8h
+        sub             v21.8h, v21.8h, v27.8h
+        smin            v17.8h, v19.8h, v22.8h
+        smin            v22.8h, v25.8h, v29.8h
+        mov             v28.16b, v30.16b
+        smax            v20.8h, v20.8h, v17.8h                  // median values lower half
+        smax            v19.8h, v25.8h, v29.8h
+        saba            v31.8h, v24.8h, v20.8h
+        mov             v27.16b, v29.16b
+        smin            v19.8h, v19.8h, v21.8h
+        mov             v26.16b, v24.16b
+        smax            v17.8h, v22.8h, v19.8h                  // median values upper half
+        mov             v25.16b, v23.16b
+        saba            v16.8h, v23.8h, v17.8h
+
+        b.ne            1b
+
+2:
+        mov             h17, v0.h[0]
+        ins             v16.h[7], wzr
+        add             d18, d18, d17
+        add             v31.8h, v31.8h, v16.8h
+        uaddlv          s17, v31.8h
+        add             d18, d18, d17
+        fmov            w0, s18
+
+        ret
+
+endfunc
