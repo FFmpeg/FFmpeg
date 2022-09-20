@@ -40,6 +40,28 @@
 #define AV_INPUT_BUFFER_PADDING_SIZE 64
 
 /**
+ * Verify checksums embedded in the bitstream (could be of either encoded or
+ * decoded data, depending on the format) and print an error message on mismatch.
+ * If AV_EF_EXPLODE is also set, a mismatching checksum will result in the
+ * decoder/demuxer returning an error.
+ */
+#define AV_EF_CRCCHECK       (1<<0)
+#define AV_EF_BITSTREAM      (1<<1)   ///< detect bitstream specification deviations
+#define AV_EF_BUFFER         (1<<2)   ///< detect improper bitstream length
+#define AV_EF_EXPLODE        (1<<3)   ///< abort decoding on minor error detection
+
+#define AV_EF_IGNORE_ERR     (1<<15)  ///< ignore errors and continue
+#define AV_EF_CAREFUL        (1<<16)  ///< consider things that violate the spec, are fast to calculate and have not been seen in the wild as errors
+#define AV_EF_COMPLIANT      (1<<17)  ///< consider all spec non compliances as errors
+#define AV_EF_AGGRESSIVE     (1<<18)  ///< consider things that a sane encoder/muxer should not do as an error
+
+#define FF_COMPLIANCE_VERY_STRICT   2 ///< Strictly conform to an older more strict version of the spec or reference software.
+#define FF_COMPLIANCE_STRICT        1 ///< Strictly conform to all the things in the spec no matter what consequences.
+#define FF_COMPLIANCE_NORMAL        0
+#define FF_COMPLIANCE_UNOFFICIAL   -1 ///< Allow unofficial extensions
+#define FF_COMPLIANCE_EXPERIMENTAL -2 ///< Allow nonstandardized experimental things.
+
+/**
  * @ingroup lavc_decoding
  */
 enum AVDiscard{
