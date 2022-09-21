@@ -266,8 +266,6 @@ void ff_command_queue_pop(AVFilterContext *filter);
 
 #define FF_TPRINTF_START(ctx, func) ff_tlog(NULL, "%-16s: ", #func)
 
-char *ff_get_ref_perms_string(char *buf, size_t buf_size, int perms);
-
 #ifdef TRACE
 void ff_tlog_link(void *ctx, AVFilterLink *link, int end);
 #else
