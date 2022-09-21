@@ -353,29 +353,17 @@ void avcodec_align_dimensions(AVCodecContext *s, int *width, int *height)
     align               = FFMAX3(align, linesize_align[1], linesize_align[2]);
     *width              = FFALIGN(*width, align);
 }
-
+#if FF_API_AVCODEC_CHROMA_POS
 int avcodec_enum_to_chroma_pos(int *xpos, int *ypos, enum AVChromaLocation pos)
 {
-    if (pos <= AVCHROMA_LOC_UNSPECIFIED || pos >= AVCHROMA_LOC_NB)
-        return AVERROR(EINVAL);
-    pos--;
-
-    *xpos = (pos&1) * 128;
-    *ypos = ((pos>>1)^(pos<4)) * 128;
-
-    return 0;
+    return av_chroma_location_enum_to_pos(xpos, ypos, pos);
 }
 
 enum AVChromaLocation avcodec_chroma_pos_to_enum(int xpos, int ypos)
 {
-    int pos, xout, yout;
-
-    for (pos = AVCHROMA_LOC_UNSPECIFIED + 1; pos < AVCHROMA_LOC_NB; pos++) {
-        if (avcodec_enum_to_chroma_pos(&xout, &yout, pos) == 0 && xout == xpos && yout == ypos)
-            return pos;
-    }
-    return AVCHROMA_LOC_UNSPECIFIED;
+    return av_chroma_location_pos_to_enum(xpos, ypos);
 }
+#endif
 
 int avcodec_fill_audio_frame(AVFrame *frame, int nb_channels,
                              enum AVSampleFormat sample_fmt, const uint8_t *buf,
