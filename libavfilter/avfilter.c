@@ -78,7 +78,7 @@ static void tlog_ref(void *ctx, AVFrame *ref, int end)
 #endif
 }
 
-void ff_command_queue_pop(AVFilterContext *filter)
+static void command_queue_pop(AVFilterContext *filter)
 {
     AVFilterCommand *c= filter->command_queue;
     av_freep(&c->arg);
@@ -780,7 +780,7 @@ void avfilter_free(AVFilterContext *filter)
     av_freep(&filter->outputs);
     av_freep(&filter->priv);
     while(filter->command_queue){
-        ff_command_queue_pop(filter);
+        command_queue_pop(filter);
     }
     av_opt_free(filter);
     av_expr_free(filter->enable);
@@ -1494,7 +1494,7 @@ int ff_inlink_process_commands(AVFilterLink *link, const AVFrame *frame)
                "Processing command time:%f command:%s arg:%s\n",
                cmd->time, cmd->command, cmd->arg);
         avfilter_process_command(link->dst, cmd->command, cmd->arg, 0, 0, cmd->flags);
-        ff_command_queue_pop(link->dst);
+        command_queue_pop(link->dst);
         cmd= link->dst->command_queue;
     }
     return 0;
