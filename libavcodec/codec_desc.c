@@ -1909,6 +1909,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("WBMP (Wireless Application Protocol Bitmap) image"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
+    {
+        .id        = AV_CODEC_ID_MEDIA100,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "media100",
+        .long_name = NULL_IF_CONFIG_SMALL("Media 100i"),
+        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+    },
 
     /* various PCM "codecs" */
     {

@@ -274,6 +274,13 @@ const AVCodecTag ff_codec_movvideo_tags[] = {
 
     { AV_CODEC_ID_RAWVIDEO, MKTAG('B', 'G', 'G', 'R') }, /* ASC Bayer BGGR */
 
+    { AV_CODEC_ID_MEDIA100, MKTAG('6', '0', '1', 'N') },
+    { AV_CODEC_ID_MEDIA100, MKTAG('6', '0', '1', 'P') },
+    { AV_CODEC_ID_MEDIA100, MKTAG('d', 't', 'n', 't') },
+    { AV_CODEC_ID_MEDIA100, MKTAG('d', 't', 'N', 'T') },
+    { AV_CODEC_ID_MEDIA100, MKTAG('d', 't', 'p', 'a') },
+    { AV_CODEC_ID_MEDIA100, MKTAG('d', 't', 'P', 'A') },
+
     { AV_CODEC_ID_NONE, 0 },
 };
 

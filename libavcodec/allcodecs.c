@@ -194,6 +194,7 @@ extern const FFCodec ff_m101_decoder;
 extern const FFCodec ff_magicyuv_encoder;
 extern const FFCodec ff_magicyuv_decoder;
 extern const FFCodec ff_mdec_decoder;
+extern const FFCodec ff_media100_decoder;
 extern const FFCodec ff_mimic_decoder;
 extern const FFCodec ff_mjpeg_encoder;
 extern const FFCodec ff_mjpeg_decoder;
