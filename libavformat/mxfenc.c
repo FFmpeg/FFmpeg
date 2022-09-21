@@ -47,6 +47,7 @@
 #include "libavutil/mastering_display_metadata.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/time_internal.h"
+#include "libavcodec/avcodec.h"
 #include "libavcodec/golomb.h"
 #include "libavcodec/h264.h"
 #include "libavcodec/packet_internal.h"

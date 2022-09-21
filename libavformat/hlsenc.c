@@ -43,6 +43,8 @@
 #include "libavutil/time.h"
 #include "libavutil/time_internal.h"
 
+#include "libavcodec/avcodec.h"
+
 #include "avformat.h"
 #include "avio_internal.h"
 #include "avc.h"

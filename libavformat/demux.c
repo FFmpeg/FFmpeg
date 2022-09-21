@@ -34,6 +34,7 @@
 #include "libavutil/time.h"
 #include "libavutil/timestamp.h"
 
+#include "libavcodec/avcodec.h"
 #include "libavcodec/bsf.h"
 #include "libavcodec/internal.h"
 #include "libavcodec/packet_internal.h"

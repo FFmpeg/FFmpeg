@@ -19,11 +19,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "config.h"
 #include "config_components.h"
 
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
+#include "libavcodec/avcodec.h"
 #include "libavcodec/av1_parse.h"
 #include "libavcodec/bsf.h"
 #include "avformat.h"

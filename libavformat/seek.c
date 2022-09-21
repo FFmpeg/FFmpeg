@@ -25,6 +25,8 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/timestamp.h"
 
+#include "libavcodec/avcodec.h"
+
 #include "avformat.h"
 #include "avio_internal.h"
 #include "demux.h"

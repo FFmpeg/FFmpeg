@@ -23,7 +23,6 @@
 
 #include <stdint.h>
 
-#include "libavcodec/avcodec.h"
 #include "libavcodec/packet_internal.h"
 
 #include "avformat.h"
@@ -221,7 +220,7 @@ typedef struct FFStream {
     /**
      * The codec context used by avformat_find_stream_info, the parser, etc.
      */
-    AVCodecContext *avctx;
+    struct AVCodecContext *avctx;
     /**
      * 1 if avctx has been initialized with the values from the codec parameters
      */
