@@ -2189,7 +2189,8 @@ input_and_return:
 
             input_to_sample_buffer(ctx);
 
-            analyze_sample_buffer(ctx);
+            if (number_of_samples > 0)
+                analyze_sample_buffer(ctx);
         }
 
         if (ctx->frame_index == (ctx->max_restart_interval - 1)) {
