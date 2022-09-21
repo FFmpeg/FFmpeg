@@ -38,6 +38,11 @@ static void lpc_apply_welch_window_c(const int32_t *data, int len,
     double w;
     double c;
 
+    if (len == 1) {
+        w_data[0] = 0.0;
+        return;
+    }
+
     n2 = (len >> 1);
     c = 2.0 / (len - 1.0);
 
