@@ -64,10 +64,8 @@ read_header:
     s->restart_count = 0;
     s->mjpb_skiptosod = 0;
 
-    if (buf_end - buf_ptr >= 1 << 28)
-        return AVERROR_INVALIDDATA;
-
-    init_get_bits(&hgb, buf_ptr, /*buf_size*/(buf_end - buf_ptr)*8);
+    if ((ret = init_get_bits8(&hgb, buf_ptr, /*buf_size*/(buf_end - buf_ptr))) < 0)
+        return ret;
 
     skip_bits(&hgb, 32); /* reserved zeros */
 
