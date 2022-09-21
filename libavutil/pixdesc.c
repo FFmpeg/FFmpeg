@@ -3315,3 +3315,26 @@ int av_chroma_location_from_name(const char *name)
 
     return AVERROR(EINVAL);
 }
+
+int av_chroma_location_enum_to_pos(int *xpos, int *ypos, enum AVChromaLocation pos)
+{
+    if (pos <= AVCHROMA_LOC_UNSPECIFIED || pos >= AVCHROMA_LOC_NB)
+        return AVERROR(EINVAL);
+    pos--;
+
+    *xpos = (pos&1) * 128;
+    *ypos = ((pos>>1)^(pos<4)) * 128;
+
+    return 0;
+}
+
+enum AVChromaLocation av_chroma_location_pos_to_enum(int xpos, int ypos)
+{
+    int pos, xout, yout;
+
+    for (pos = AVCHROMA_LOC_UNSPECIFIED + 1; pos < AVCHROMA_LOC_NB; pos++) {
+        if (av_chroma_location_enum_to_pos(&xout, &yout, pos) == 0 && xout == xpos && yout == ypos)
+            return pos;
+    }
+    return AVCHROMA_LOC_UNSPECIFIED;
+}

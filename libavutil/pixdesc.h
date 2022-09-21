@@ -265,6 +265,28 @@ const char *av_chroma_location_name(enum AVChromaLocation location);
 int av_chroma_location_from_name(const char *name);
 
 /**
+ * Converts AVChromaLocation to swscale x/y chroma position.
+ *
+ * The positions represent the chroma (0,0) position in a coordinates system
+ * with luma (0,0) representing the origin and luma(1,1) representing 256,256
+ *
+ * @param xpos  horizontal chroma sample position
+ * @param ypos  vertical   chroma sample position
+ */
+int av_chroma_location_enum_to_pos(int *xpos, int *ypos, enum AVChromaLocation pos);
+
+/**
+ * Converts swscale x/y chroma position to AVChromaLocation.
+ *
+ * The positions represent the chroma (0,0) position in a coordinates system
+ * with luma (0,0) representing the origin and luma(1,1) representing 256,256
+ *
+ * @param xpos  horizontal chroma sample position
+ * @param ypos  vertical   chroma sample position
+ */
+enum AVChromaLocation av_chroma_location_pos_to_enum(int xpos, int ypos);
+
+/**
  * Return the pixel format corresponding to name.
  *
  * If there is no pixel format with name name, then looks for a
