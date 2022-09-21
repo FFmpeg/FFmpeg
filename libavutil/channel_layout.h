@@ -290,6 +290,9 @@ typedef struct AVChannelCustom {
 typedef struct AVChannelLayout {
     /**
      * Channel order used in this layout.
+     * Any value not defined in the AVChannelOrder enum in a layout that
+     * av_channel_layout_check() doesn't reject must be treated as if it was
+     * AV_CHANNEL_ORDER_UNSPEC.
      * This is a mandatory field.
      */
     enum AVChannelOrder order;
