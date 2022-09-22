@@ -164,13 +164,15 @@ static int wsvqa_read_packet(AVFormatContext *s,
     int ret = -1;
     uint8_t preamble[VQA_PREAMBLE_SIZE];
     uint32_t chunk_type;
-    uint32_t chunk_size;
-    int skip_byte;
+    int chunk_size;
+    unsigned skip_byte;
 
     while (avio_read(pb, preamble, VQA_PREAMBLE_SIZE) == VQA_PREAMBLE_SIZE) {
         chunk_type = AV_RB32(&preamble[0]);
         chunk_size = AV_RB32(&preamble[4]);
 
+        if (chunk_size < 0)
+            return AVERROR_INVALIDDATA;
         skip_byte = chunk_size & 0x01;
 
         if ((chunk_type == SND0_TAG) || (chunk_type == SND1_TAG) ||
