@@ -54,31 +54,18 @@ static void test_window(int len)
 void checkasm_check_lpc(void)
 {
     LPCContext ctx;
+    int len = rnd() % 5000;
     ff_lpc_init(&ctx, 32, 16, FF_LPC_TYPE_DEFAULT);
 
     if (check_func(ctx.lpc_apply_welch_window, "apply_welch_window_even")) {
-        for (int i = 0; i < 64; i += 2)
-            test_window(i);
+        test_window(len & ~1);
     }
     report("apply_welch_window_even");
 
     if (check_func(ctx.lpc_apply_welch_window, "apply_welch_window_odd")) {
-        for (int i = 1; i < 64; i += 2)
-            test_window(i);
+        test_window(len | 1);
     }
     report("apply_welch_window_odd");
-
-    if (check_func(ctx.lpc_apply_welch_window, "apply_welch_window_2560"))
-        test_window(2560);
-    report("apply_welch_window_2560");
-
-    if (check_func(ctx.lpc_apply_welch_window, "apply_welch_window_4096"))
-        test_window(4096);
-    report("apply_welch_window_4096");
-
-    if (check_func(ctx.lpc_apply_welch_window, "apply_welch_window_4097"))
-        test_window(4097);
-    report("apply_welch_window_4097");
 
     ff_lpc_end(&ctx);
 }
