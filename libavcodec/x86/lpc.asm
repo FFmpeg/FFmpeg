@@ -36,6 +36,7 @@ SECTION .text
 
 %macro APPLY_WELCH_FN 0
 cglobal lpc_apply_welch_window, 3, 5, 8, data, len, out, off1, off2
+    movsxdifnidn lenq, lend
     cmp lenq, 0
     je .end
     cmp lenq, 2
