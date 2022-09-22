@@ -37,7 +37,7 @@ SECTION .text
 %macro APPLY_WELCH_FN 0
 cglobal lpc_apply_welch_window, 3, 5, 8, data, len, out, off1, off2
     cmp lenq, 0
-    je .end
+    je .end_e
     cmp lenq, 2
     je .two
     cmp lenq, 1
@@ -104,7 +104,7 @@ cglobal lpc_apply_welch_window, 3, 5, 8, data, len, out, off1, off2
 
     add lend, (mmsize/4 - 1)
     cmp lend, 0
-    je .end
+    je .end_o
     sub lenq, (mmsize/4 - 1)
 
 .scalar_o:
@@ -135,6 +135,10 @@ cglobal lpc_apply_welch_window, 3, 5, 8, data, len, out, off1, off2
 
     sub lenq, 2
     jg .loop_o_scalar
+
+.end_o:
+    xorpd xm3, xm3
+    movlpd [outq + off1q*2], xm3
     RET
 
 .even:
@@ -233,7 +237,7 @@ cglobal lpc_apply_welch_window, 3, 5, 8, data, len, out, off1, off2
 .one:
     xorpd xm0, xm0
     movhpd [outq], xm0
-.end:
+.end_e:
     RET
 %endmacro
 

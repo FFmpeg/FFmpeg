@@ -53,6 +53,7 @@ static void lpc_apply_welch_window_c(const int32_t *data, ptrdiff_t len,
             w_data[i] = data[i] * w;
             w_data[len-1-i] = data[len-1-i] * w;
         }
+        w_data[n2] = 0.0;
         return;
     }
 
