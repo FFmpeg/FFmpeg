@@ -23,6 +23,7 @@ FATE_CHECKASM = fate-checkasm-aacpsdsp                                  \
                 fate-checkasm-jpeg2000dsp                               \
                 fate-checkasm-llviddsp                                  \
                 fate-checkasm-llviddspenc                               \
+                fate-checkasm-lpc                                       \
                 fate-checkasm-motion                                    \
                 fate-checkasm-opusdsp                                   \
                 fate-checkasm-pixblockdsp                               \
