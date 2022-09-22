@@ -27,6 +27,7 @@
 #include "libavutil/ffversion.h"
 
 #include <string.h>
+#include <math.h>
 
 #include "libavformat/avformat.h"
 #include "libavformat/version.h"
@@ -2282,8 +2283,11 @@ static void print_pkt_side_data(WriterContext *w,
         writer_print_section_header(w, id_data);
         print_str("side_data_type", name ? name : "unknown");
         if (sd->type == AV_PKT_DATA_DISPLAYMATRIX && sd->size >= 9*4) {
+            double rotation = av_display_rotation_get((int32_t *)sd->data);
+            if (isnan(rotation))
+                rotation = 0;
             writer_print_integers(w, "displaymatrix", sd->data, 9, " %11d", 3, 4, 1);
-            print_int("rotation", av_display_rotation_get((int32_t *)sd->data));
+            print_int("rotation", rotation);
         } else if (sd->type == AV_PKT_DATA_STEREO3D) {
             const AVStereo3D *stereo = (AVStereo3D *)sd->data;
             print_str("type", av_stereo3d_type_name(stereo->type));
@@ -2639,8 +2643,11 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
             name = av_frame_side_data_name(sd->type);
             print_str("side_data_type", name ? name : "unknown");
             if (sd->type == AV_FRAME_DATA_DISPLAYMATRIX && sd->size >= 9*4) {
+                double rotation = av_display_rotation_get((int32_t *)sd->data);
+                if (isnan(rotation))
+                    rotation = 0;
                 writer_print_integers(w, "displaymatrix", sd->data, 9, " %11d", 3, 4, 1);
-                print_int("rotation", av_display_rotation_get((int32_t *)sd->data));
+                print_int("rotation", rotation);
             } else if (sd->type == AV_FRAME_DATA_AFD && sd->size > 0) {
                 print_int("active_format", *sd->data);
             } else if (sd->type == AV_FRAME_DATA_GOP_TIMECODE && sd->size >= 8) {
