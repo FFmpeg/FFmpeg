@@ -31,7 +31,7 @@
 /**
  * Apply Welch window function to audio block
  */
-static void lpc_apply_welch_window_c(const int32_t *data, int len,
+static void lpc_apply_welch_window_c(const int32_t *data, ptrdiff_t len,
                                      double *w_data)
 {
     int i, n2;
@@ -70,7 +70,7 @@ static void lpc_apply_welch_window_c(const int32_t *data, int len,
  * Calculate autocorrelation data from audio samples
  * A Welch window function is applied before calculation.
  */
-static void lpc_compute_autocorr_c(const double *data, int len, int lag,
+static void lpc_compute_autocorr_c(const double *data, ptrdiff_t len, int lag,
                                    double *autoc)
 {
     int i, j;

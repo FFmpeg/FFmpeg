@@ -38,7 +38,7 @@ static void test_window(int len)
     LOCAL_ALIGNED(16, double, dst0, [5000]);
     LOCAL_ALIGNED(16, double, dst1, [5000]);
 
-    declare_func(void, int32_t *in, int len, double *out);
+    declare_func(void, const int32_t *in, ptrdiff_t len, double *out);
 
     randomize_int32(src, len);
 

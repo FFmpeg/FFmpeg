@@ -24,16 +24,16 @@
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/lpc.h"
 
-void ff_lpc_apply_welch_window_sse2(const int32_t *data, int len,
+void ff_lpc_apply_welch_window_sse2(const int32_t *data, ptrdiff_t len,
                                     double *w_data);
-void ff_lpc_apply_welch_window_avx2(const int32_t *data, int len,
+void ff_lpc_apply_welch_window_avx2(const int32_t *data, ptrdiff_t len,
                                     double *w_data);
 
 DECLARE_ASM_CONST(16, double, pd_1)[2] = { 1.0, 1.0 };
 
 #if HAVE_SSE2_INLINE
 
-static void lpc_compute_autocorr_sse2(const double *data, int len, int lag,
+static void lpc_compute_autocorr_sse2(const double *data, ptrdiff_t len, int lag,
                                       double *autoc)
 {
     int j;
