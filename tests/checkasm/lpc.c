@@ -22,12 +22,12 @@
 
 #include "checkasm.h"
 
-#define randomize_int32(buf, len)                          \
-    do {                                                   \
-        for (int i = 0; i < len; i++) {                    \
-            int32_t f = (UINT32_MAX >> 8) - (rnd() >> 16); \
-            buf[i] = f;                                    \
-        }                                                  \
+#define randomize_int32(buf, len)                                         \
+    do {                                                                  \
+        for (int i = 0; i < len; i++) {                                   \
+            int32_t f = ((int)(UINT32_MAX >> 17)) - ((int)(rnd() >> 16)); \
+            buf[i] = f;                                                   \
+        }                                                                 \
     } while (0)
 
 #define EPS 0.005
