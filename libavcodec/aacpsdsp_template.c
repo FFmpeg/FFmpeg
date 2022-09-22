@@ -26,24 +26,25 @@
 #include "libavutil/attributes.h"
 #include "aacpsdsp.h"
 
-static void ps_add_squares_c(INTFLOAT *dst, const INTFLOAT (*src)[2], int n)
+static void ps_add_squares_c(INTFLOAT *av_restrict dst,
+                             const INTFLOAT (*src)[2], int n)
 {
-    int i;
-    for (i = 0; i < n; i++)
+    for (int i = 0; i < n; i++)
         dst[i] += (UINTFLOAT)AAC_MADD28(src[i][0], src[i][0], src[i][1], src[i][1]);
 }
 
-static void ps_mul_pair_single_c(INTFLOAT (*dst)[2], INTFLOAT (*src0)[2], INTFLOAT *src1,
+static void ps_mul_pair_single_c(INTFLOAT (*av_restrict dst)[2],
+                                 INTFLOAT (*src0)[2], INTFLOAT *src1,
                                  int n)
 {
-    int i;
-    for (i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
         dst[i][0] = AAC_MUL16(src0[i][0], src1[i]);
         dst[i][1] = AAC_MUL16(src0[i][1], src1[i]);
     }
 }
 
-static void ps_hybrid_analysis_c(INTFLOAT (*out)[2], INTFLOAT (*in)[2],
+static void ps_hybrid_analysis_c(INTFLOAT (*av_restrict out)[2],
+                                 INTFLOAT (*in)[2],
                                  const INTFLOAT (*filter)[8][2],
                                  ptrdiff_t stride, int n)
 {
@@ -76,13 +77,12 @@ static void ps_hybrid_analysis_c(INTFLOAT (*out)[2], INTFLOAT (*in)[2],
     }
 }
 
-static void ps_hybrid_analysis_ileave_c(INTFLOAT (*out)[32][2], INTFLOAT L[2][38][64],
-                                      int i, int len)
+static void ps_hybrid_analysis_ileave_c(INTFLOAT (*av_restrict out)[32][2],
+                                        INTFLOAT L[2][38][64],
+                                        int i, int len)
 {
-    int j;
-
     for (; i < 64; i++) {
-        for (j = 0; j < len; j++) {
+        for (int j = 0; j < len; j++) {
             out[i][j][0] = L[0][j][i];
             out[i][j][1] = L[1][j][i];
         }
@@ -90,13 +90,11 @@ static void ps_hybrid_analysis_ileave_c(INTFLOAT (*out)[32][2], INTFLOAT L[2][38
 }
 
 static void ps_hybrid_synthesis_deint_c(INTFLOAT out[2][38][64],
-                                      INTFLOAT (*in)[32][2],
-                                      int i, int len)
+                                        INTFLOAT (*av_restrict in)[32][2],
+                                        int i, int len)
 {
-    int n;
-
     for (; i < 64; i++) {
-        for (n = 0; n < len; n++) {
+        for (int n = 0; n < len; n++) {
             out[0][n][i] = in[i][n][0];
             out[1][n][i] = in[i][n][1];
         }
