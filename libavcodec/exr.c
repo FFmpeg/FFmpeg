@@ -1962,7 +1962,7 @@ static int decode_header(EXRContext *s, AVFrame *frame)
         {
             uint8_t name[256] = { 0 };
             uint8_t type[256] = { 0 };
-            uint8_t value[256] = { 0 };
+            uint8_t value[8192] = { 0 };
             int i = 0, size;
 
             while (bytestream2_get_bytes_left(gb) > 0 &&
@@ -1980,6 +1980,8 @@ static int decode_header(EXRContext *s, AVFrame *frame)
             size = bytestream2_get_le32(gb);
 
             bytestream2_get_buffer(gb, value, FFMIN(sizeof(value) - 1, size));
+            if (size > sizeof(value) - 1)
+                bytestream2_skip(gb, size - (sizeof(value) - 1));
             if (!strcmp(type, "string"))
                 av_dict_set(&metadata, name, value, 0);
         }
