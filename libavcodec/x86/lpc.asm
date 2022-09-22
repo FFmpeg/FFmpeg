@@ -79,11 +79,12 @@ cglobal lpc_apply_welch_window, 3, 5, 8, data, len, out, off1, off2
 
 .loop_o:
     movapd m1, m6
-    mulpd m2, m0, m0
-    subpd m1, m2
 %if cpuflag(avx2)
+    fnmaddpd m1, m0, m0, m1
     vpermpd m2, m1, q0123
 %else
+    mulpd m2, m0, m0
+    subpd m1, m2
     shufpd m2, m1, m1, 01b
 %endif
 
@@ -116,8 +117,12 @@ cglobal lpc_apply_welch_window, 3, 5, 8, data, len, out, off1, off2
 
 .loop_o_scalar:
     movapd xm1, xm6
+%if cpuflag(avx2)
+    fnmaddpd xm1, xm0, xm0, xm1
+%else
     mulpd xm2, xm0, xm0
     subpd xm1, xm2
+%endif
 
     cvtdq2pd xm3, [dataq + off1q]
     cvtdq2pd xm4, [dataq + off2q]
@@ -174,8 +179,12 @@ cglobal lpc_apply_welch_window, 3, 5, 8, data, len, out, off1, off2
 
 .loop_e:
     movapd m1, m6
+%if cpuflag(avx2)
+    fnmaddpd m1, m0, m0, m1
+%else
     mulpd m2, m0, m0
     subpd m1, m2
+%endif
 %if cpuflag(avx2)
     vpermpd m2, m1, q0123
 %else
@@ -210,8 +219,12 @@ cglobal lpc_apply_welch_window, 3, 5, 8, data, len, out, off1, off2
 
 .loop_e_scalar:
     movapd xm1, xm6
+%if cpuflag(avx2)
+    fnmaddpd xm1, xm0, xm0, xm1
+%else
     mulpd xm2, xm0, xm0
     subpd xm1, xm2
+%endif
 
     cvtdq2pd xm3, [dataq + off1q]
     cvtdq2pd xm4, [dataq + off2q]
