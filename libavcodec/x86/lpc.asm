@@ -38,6 +38,8 @@ SECTION .text
 cglobal lpc_apply_welch_window, 3, 5, 8, data, len, out, off1, off2
     cmp lenq, 0
     je .end
+    cmp lenq, 2
+    je .two
     cmp lenq, 1
     je .one
 
@@ -192,14 +194,13 @@ cglobal lpc_apply_welch_window, 3, 5, 8, data, len, out, off1, off2
     jge .loop_e
 
 .scalar_e:
-    subpd m0, m7
-    movapd m7, [dec_tab_scalar]
-    subpd m0, m7
-    subpd m0, m7
-    subpd m0, m7
+    subpd xm0, xm7
+    movapd xm7, [dec_tab_scalar]
+    subpd xm0, xm7
 
     add off1q, (mmsize/2)
-    sub off2q, (mmsize/2) - 4 - 8*cpuflag(avx2)
+    sub off2q, (mmsize/2) - 8*cpuflag(avx2)
+    add lenq, 6 + 4*cpuflag(avx2)
 
     addpd xm0, [sub_tab]
 
@@ -208,22 +209,27 @@ cglobal lpc_apply_welch_window, 3, 5, 8, data, len, out, off1, off2
     mulpd xm2, xm0, xm0
     subpd xm1, xm2
 
-    cvtdq2pd m3, [dataq + off1q - 4]
-    cvtdq2pd m4, [dataq + off2q - 4]
+    cvtdq2pd xm3, [dataq + off1q]
+    cvtdq2pd xm4, [dataq + off2q]
 
-    mulpd m3, m1
-    mulpd m4, m1
+    mulpd xm3, xm1
+    shufpd xm1, xm1, 00b
+    mulpd xm4, xm1
 
-    movhpd [outq + off1q*2], xm3
-    movhpd [outq + off2q*2], xm4
+    movlpd [outq + off1q*2], xm3
+    movhpd [outq + off2q*2 + 8], xm4
 
     subpd xm0, xm7
 
     add off2q, 4
     sub off1q, 4
-    jge .loop_e_scalar
+    sub lenq, 2
+    jg .loop_e_scalar
     RET
 
+.two:
+    xorpd xm0, xm0
+    movhpd [outq + 8], xm0
 .one:
     xorpd xm0, xm0
     movhpd [outq], xm0

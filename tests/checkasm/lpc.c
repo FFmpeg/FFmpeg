@@ -68,6 +68,10 @@ void checkasm_check_lpc(void)
     }
     report("apply_welch_window_odd");
 
+    if (check_func(ctx.lpc_apply_welch_window, "apply_welch_window_2560"))
+        test_window(2560);
+    report("apply_welch_window_2560");
+
     if (check_func(ctx.lpc_apply_welch_window, "apply_welch_window_4096"))
         test_window(4096);
     report("apply_welch_window_4096");
