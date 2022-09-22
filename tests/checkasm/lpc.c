@@ -45,8 +45,14 @@ static void test_window(int len)
     call_ref(src, len, dst0);
     call_new(src, len, dst1);
 
-    if (!double_near_abs_eps_array(dst0, dst1, EPS, len))
-        fail();
+    for (int i = 0; i < len; i++) {
+        if (!double_near_abs_eps(dst0[i], dst1[i], EPS)) {
+            fprintf(stderr, "%d: %- .12f - %- .12f = % .12g\n",
+                    i, dst0[i], dst1[i], dst0[i] - dst1[i]);
+            fail();
+            break;
+        }
+    }
 
     bench_new(src, len, dst1);
 }
