@@ -178,13 +178,15 @@ static int wsvqa_read_packet(AVFormatContext *s,
     int ret = -1;
     uint8_t preamble[VQA_PREAMBLE_SIZE];
     uint32_t chunk_type;
-    uint32_t chunk_size;
-    int skip_byte;
+    int chunk_size;
+    unsigned skip_byte;
 
     while (avio_read(pb, preamble, VQA_PREAMBLE_SIZE) == VQA_PREAMBLE_SIZE) {
         chunk_type = AV_RB32(&preamble[0]);
         chunk_size = AV_RB32(&preamble[4]);
 
+        if (chunk_size < 0)
+            return AVERROR_INVALIDDATA;
         skip_byte = chunk_size & 0x01;
 
         if (chunk_type == VQFL_TAG) {
@@ -193,9 +195,9 @@ static int wsvqa_read_packet(AVFormatContext *s,
              * so it can be combined with the next VQFR packet. This way each packet
              * includes a whole frame as expected. */
             wsvqa->vqfl_chunk_pos = avio_tell(pb);
-            wsvqa->vqfl_chunk_size = (int)(chunk_size);
-            if (wsvqa->vqfl_chunk_size < 0 || wsvqa->vqfl_chunk_size > 3 * (1 << 20))
+            if (chunk_size > 3 * (1 << 20))
                 return AVERROR_INVALIDDATA;
+            wsvqa->vqfl_chunk_size = chunk_size;
             /* We need a big seekback buffer because there can be SNxx, VIEW and ZBUF
              * chunks (<512 KiB total) in the stream before we read VQFR (<256 KiB) and
              * seek back here. */
