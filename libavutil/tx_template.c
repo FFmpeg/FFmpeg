@@ -965,15 +965,14 @@ static av_cold int TX_NAME(ff_tx_mdct_init)(AVTXContext *s,
             return ret;
     }
 
-    /* If we need to preshuffle just steal the map from the subcontext */
-    if (s->sub[0].flags & FF_TX_PRESHUFFLE) {
-        s->map = s->sub[0].map;
-        s->sub[0].map = NULL;
-    } else {
-        s->map = av_malloc((len >> 1)*sizeof(*s->map));
-        if (!s->map)
-            return AVERROR(ENOMEM);
+    s->map = av_malloc((len >> 1)*sizeof(*s->map));
+    if (!s->map)
+        return AVERROR(ENOMEM);
 
+    /* If we need to preshuffle copy the map from the subcontext */
+    if (s->sub[0].flags & FF_TX_PRESHUFFLE) {
+        memcpy(s->map, s->sub->map, (len >> 1)*sizeof(*s->map));
+    } else {
         for (int i = 0; i < len >> 1; i++)
             s->map[i] = i;
     }
