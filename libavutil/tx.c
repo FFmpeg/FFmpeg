@@ -213,7 +213,7 @@ int ff_tx_gen_split_radix_parity_revtab(AVTXContext *s, int len, int inv,
     if (len < basis)
         return AVERROR(EINVAL);
 
-    if (!(s->map = av_mallocz((inv_lookup == -1 ? 2 : 1)*len*sizeof(*s->map))))
+    if (!(s->map = av_mallocz(len*sizeof(*s->map))))
         return AVERROR(ENOMEM);
 
     av_assert0(!dual_stride || !(dual_stride & (dual_stride - 1)));
@@ -221,9 +221,6 @@ int ff_tx_gen_split_radix_parity_revtab(AVTXContext *s, int len, int inv,
 
     parity_revtab_generator(s->map, len, inv, 0, 0, 0, len,
                             basis, dual_stride, inv_lookup != 0);
-    if (inv_lookup == -1)
-        parity_revtab_generator(s->map + len, len, inv, 0, 0, 0, len,
-                                basis, dual_stride, 0);
 
     return 0;
 }

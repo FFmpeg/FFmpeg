@@ -290,8 +290,7 @@ int ff_tx_gen_ptwo_inplace_revtab_idx(AVTXContext *s);
  * If length is smaller than basis/2 this function will not do anything.
  *
  * If inv_lookup is set to 1, it will flip the lookup from out[map[i]] = src[i]
- * to out[i] = src[map[i]]. If set to -1, will generate 2 maps, the first one
- * flipped, the second one regular.
+ * to out[i] = src[map[i]].
  */
 int ff_tx_gen_split_radix_parity_revtab(AVTXContext *s, int len, int inv,
                                         int inv_lookup, int basis, int dual_stride);
