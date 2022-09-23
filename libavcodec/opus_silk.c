@@ -833,6 +833,8 @@ int ff_silk_decode_superframe(SilkContext *s, OpusRangeCoder *rc,
                 int active1 = (j == 0 && !(redundancy[1] & (1 << i))) ? 0 : 1;
                 silk_decode_frame(s, rc, i, j, coded_channels, 1, active1, 1);
             }
+
+        s->midonly = 0;
     }
 
     for (i = 0; i < nb_frames; i++) {
