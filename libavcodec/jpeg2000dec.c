@@ -2519,6 +2519,10 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, AVFrame *picture,
     if (ret = jpeg2000_read_main_headers(s))
         goto end;
 
+    if (s->sar.num && s->sar.den)
+        avctx->sample_aspect_ratio = s->sar;
+    s->sar.num = s->sar.den = 0;
+
     /* get picture buffer */
     if ((ret = ff_thread_get_buffer(avctx, picture, 0)) < 0)
         goto end;
@@ -2547,9 +2551,6 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, AVFrame *picture,
 
     if (s->avctx->pix_fmt == AV_PIX_FMT_PAL8)
         memcpy(picture->data[1], s->palette, 256 * sizeof(uint32_t));
-    if (s->sar.num && s->sar.den)
-        avctx->sample_aspect_ratio = s->sar;
-    s->sar.num = s->sar.den = 0;
 
     return bytestream2_tell(&s->g);
 
