@@ -30,10 +30,10 @@
 #include "opus_pvq.h"
 #include "opusdsp.h"
 
-#include "mdct15.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/libm.h"
 #include "libavutil/mem_internal.h"
+#include "libavutil/tx.h"
 
 #define CELT_VECTORS                 11
 #define CELT_ALLOC_STEPS             6
@@ -93,7 +93,8 @@ typedef struct CeltBlock {
 struct CeltFrame {
     // constant values that do not change during context lifetime
     AVCodecContext      *avctx;
-    MDCT15Context       *imdct[4];
+    AVTXContext        *tx[4];
+    av_tx_fn            tx_fn[4];
     AVFloatDSPContext   *dsp;
     CeltBlock           block[2];
     CeltPVQ             *pvq;

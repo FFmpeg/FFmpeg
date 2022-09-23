@@ -22,7 +22,6 @@
 #include "opusenc_psy.h"
 #include "opus_pvq.h"
 #include "opustab.h"
-#include "mdct15.h"
 #include "libavutil/qsort.h"
 
 static float pvq_band_cost(CeltPVQ *pvq, CeltFrame *f, OpusRangeCoder *rc, int band,
@@ -99,7 +98,8 @@ static void step_collect_psy_metrics(OpusPsyContext *s, int index)
         s->dsp->vector_fmul(s->scratch, s->scratch, s->window[s->bsize_analysis],
                             (OPUS_BLOCK_SIZE(s->bsize_analysis) << 1));
 
-        s->mdct[s->bsize_analysis]->mdct(s->mdct[s->bsize_analysis], st->coeffs[ch], s->scratch, 1);
+        s->mdct_fn[s->bsize_analysis](s->mdct[s->bsize_analysis], st->coeffs[ch],
+                                      s->scratch, sizeof(float));
 
         for (i = 0; i < CELT_MAX_BANDS; i++)
             st->bands[ch][i] = &st->coeffs[ch][ff_celt_freq_bands[i] << s->bsize_analysis];
@@ -558,13 +558,16 @@ av_cold int ff_opus_psy_init(OpusPsyContext *s, AVCodecContext *avctx,
     for (i = 0; i < CELT_BLOCK_NB; i++) {
         float tmp;
         const int len = OPUS_BLOCK_SIZE(i);
+        const float scale = 68 << (CELT_BLOCK_NB - 1 - i);
         s->window[i] = av_malloc(2*len*sizeof(float));
         if (!s->window[i]) {
             ret = AVERROR(ENOMEM);
             goto fail;
         }
         generate_window_func(s->window[i], 2*len, WFUNC_SINE, &tmp);
-        if ((ret = ff_mdct15_init(&s->mdct[i], 0, i + 3, 68 << (CELT_BLOCK_NB - 1 - i))))
+        ret = av_tx_init(&s->mdct[i], &s->mdct_fn[i], AV_TX_FLOAT_MDCT,
+                         0, 15 << (i + 3), &scale, 0);
+        if (ret < 0)
             goto fail;
     }
 
@@ -575,7 +578,7 @@ fail:
     av_freep(&s->dsp);
 
     for (i = 0; i < CELT_BLOCK_NB; i++) {
-        ff_mdct15_uninit(&s->mdct[i]);
+        av_tx_uninit(&s->mdct[i]);
         av_freep(&s->window[i]);
     }
 
@@ -598,7 +601,7 @@ av_cold int ff_opus_psy_end(OpusPsyContext *s)
     av_freep(&s->dsp);
 
     for (i = 0; i < CELT_BLOCK_NB; i++) {
-        ff_mdct15_uninit(&s->mdct[i]);
+        av_tx_uninit(&s->mdct[i]);
         av_freep(&s->window[i]);
     }
 

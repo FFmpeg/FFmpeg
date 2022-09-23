@@ -22,6 +22,7 @@
 #ifndef AVCODEC_OPUSENC_PSY_H
 #define AVCODEC_OPUSENC_PSY_H
 
+#include "libavutil/tx.h"
 #include "libavutil/mem_internal.h"
 
 #include "opusenc.h"
@@ -70,7 +71,8 @@ typedef struct OpusPsyContext {
     int max_steps;
 
     float *window[CELT_BLOCK_NB];
-    MDCT15Context *mdct[CELT_BLOCK_NB];
+    AVTXContext *mdct[CELT_BLOCK_NB];
+    av_tx_fn mdct_fn[CELT_BLOCK_NB];
     int bsize_analysis;
 
     DECLARE_ALIGNED(32, float, scratch)[2048];

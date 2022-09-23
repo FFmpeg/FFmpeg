@@ -323,7 +323,8 @@ int ff_celt_decode_frame(CeltFrame *f, OpusRangeCoder *rc,
 {
     int i, j, downmix = 0;
     int consumed;           // bits of entropy consumed thus far for this frame
-    MDCT15Context *imdct;
+    AVTXContext *imdct;
+    av_tx_fn imdct_fn;
 
     if (channels != 1 && channels != 2) {
         av_log(f->avctx, AV_LOG_ERROR, "Invalid number of coded channels: %d\n",
@@ -385,7 +386,8 @@ int ff_celt_decode_frame(CeltFrame *f, OpusRangeCoder *rc,
     f->blocks    = f->transient ? 1 << f->size : 1;
     f->blocksize = frame_size / f->blocks;
 
-    imdct = f->imdct[f->transient ? 0 : f->size];
+    imdct = f->tx[f->transient ? 0 : f->size];
+    imdct_fn = f->tx_fn[f->transient ? 0 : f->size];
 
     if (channels == 1) {
         for (i = 0; i < CELT_MAX_BANDS; i++)
@@ -440,8 +442,8 @@ int ff_celt_decode_frame(CeltFrame *f, OpusRangeCoder *rc,
         for (j = 0; j < f->blocks; j++) {
             float *dst  = block->buf + 1024 + j * f->blocksize;
 
-            imdct->imdct_half(imdct, dst + CELT_OVERLAP / 2, f->block[i].coeffs + j,
-                              f->blocks);
+            imdct_fn(imdct, dst + CELT_OVERLAP / 2, f->block[i].coeffs + j,
+                     sizeof(float)*f->blocks);
             f->dsp->vector_fmul_window(dst, dst, dst + CELT_OVERLAP / 2,
                                        ff_celt_window, CELT_OVERLAP / 2);
         }
@@ -526,8 +528,8 @@ void ff_celt_free(CeltFrame **f)
     if (!frm)
         return;
 
-    for (i = 0; i < FF_ARRAY_ELEMS(frm->imdct); i++)
-        ff_mdct15_uninit(&frm->imdct[i]);
+    for (i = 0; i < FF_ARRAY_ELEMS(frm->tx); i++)
+        av_tx_uninit(&frm->tx[i]);
 
     ff_celt_pvq_uninit(&frm->pvq);
 
@@ -555,9 +557,11 @@ int ff_celt_init(AVCodecContext *avctx, CeltFrame **f, int output_channels,
     frm->output_channels = output_channels;
     frm->apply_phase_inv = apply_phase_inv;
 
-    for (i = 0; i < FF_ARRAY_ELEMS(frm->imdct); i++)
-        if ((ret = ff_mdct15_init(&frm->imdct[i], 1, i + 3, -1.0f/32768)) < 0)
+    for (i = 0; i < FF_ARRAY_ELEMS(frm->tx); i++) {
+        const float scale = -1.0f/32768;
+        if ((ret = av_tx_init(&frm->tx[i], &frm->tx_fn[i], AV_TX_FLOAT_MDCT, 1, 15 << (i + 3), &scale, 0)) < 0)
             goto fail;
+    }
 
     if ((ret = ff_celt_pvq_init(&frm->pvq, 0)) < 0)
         goto fail;
