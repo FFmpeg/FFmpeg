@@ -3371,6 +3371,10 @@ Change this value to reset qsv codec's framerate configuration.
 @item @var{rc_initial_buffer_occupancy}
 @item @var{rc_max_rate}
 Change these value to reset qsv codec's bitrate control configuration.
+
+@item @var{pic_timing_sei}
+Supported in h264_qsv and hevc_qsv.
+Change this value to reset qsv codec's pic_timing_sei configuration.
 @end table
 
 @subsection H264 options

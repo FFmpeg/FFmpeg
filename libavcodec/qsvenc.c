@@ -784,6 +784,7 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
 
         q->extco.PicTimingSEI         = q->pic_timing_sei ?
                                         MFX_CODINGOPTION_ON : MFX_CODINGOPTION_UNKNOWN;
+        q->old_pic_timing_sei = q->pic_timing_sei;
 
         if (q->rdo >= 0)
             q->extco.RateDistortionOpt = q->rdo > 0 ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
@@ -1900,6 +1901,25 @@ static int update_bitrate(AVCodecContext *avctx, QSVEncContext *q)
     return updated;
 }
 
+static int update_pic_timing_sei(AVCodecContext *avctx, QSVEncContext *q)
+{
+    int updated = 0;
+
+    if (avctx->codec_id != AV_CODEC_ID_H264 && avctx->codec_id != AV_CODEC_ID_HEVC)
+        return 0;
+
+    UPDATE_PARAM(q->old_pic_timing_sei, q->pic_timing_sei);
+    if (!updated)
+        return 0;
+
+    q->extco.PicTimingSEI = q->pic_timing_sei ?
+                            MFX_CODINGOPTION_ON : MFX_CODINGOPTION_UNKNOWN;
+    av_log(avctx, AV_LOG_DEBUG, "Reset PicTimingSEI: %s\n",
+           print_threestate(q->extco.PicTimingSEI));
+
+    return updated;
+}
+
 static int update_parameters(AVCodecContext *avctx, QSVEncContext *q,
                              const AVFrame *frame)
 {
@@ -1915,6 +1935,7 @@ static int update_parameters(AVCodecContext *avctx, QSVEncContext *q,
     needReset |= update_low_delay_brc(avctx, q);
     needReset |= update_frame_rate(avctx, q);
     needReset |= update_bitrate(avctx, q);
+    needReset |= update_pic_timing_sei(avctx, q);
     ret = update_min_max_qp(avctx, q);
     if (ret < 0)
         return ret;
