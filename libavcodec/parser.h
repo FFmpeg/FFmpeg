@@ -45,8 +45,6 @@ typedef struct ParseContext{
  *         AVERROR(ENOMEM) if there was a memory allocation error
  */
 int ff_combine_frame(ParseContext *pc, int next, const uint8_t **buf, int *buf_size);
-int ff_mpeg4video_split(AVCodecContext *avctx, const uint8_t *buf,
-                        int buf_size);
 void ff_parse_close(AVCodecParserContext *s);
 
 /**
