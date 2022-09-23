@@ -705,6 +705,7 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
         q->param.mfx.FrameInfo.FrameRateExtN  = avctx->time_base.den;
         q->param.mfx.FrameInfo.FrameRateExtD  = avctx->time_base.num;
     }
+    q->old_framerate = avctx->framerate;
 
     ret = select_rc_mode(avctx, q);
     if (ret < 0)
@@ -1838,6 +1839,30 @@ static int update_low_delay_brc(AVCodecContext *avctx, QSVEncContext *q)
     return updated;
 }
 
+static int update_frame_rate(AVCodecContext *avctx, QSVEncContext *q)
+{
+    int updated = 0;
+
+    UPDATE_PARAM(q->old_framerate.num, avctx->framerate.num);
+    UPDATE_PARAM(q->old_framerate.den, avctx->framerate.den);
+    if (!updated)
+        return 0;
+
+    if (avctx->framerate.den > 0 && avctx->framerate.num > 0) {
+        q->param.mfx.FrameInfo.FrameRateExtN = avctx->framerate.num;
+        q->param.mfx.FrameInfo.FrameRateExtD = avctx->framerate.den;
+    } else {
+        q->param.mfx.FrameInfo.FrameRateExtN = avctx->time_base.den;
+        q->param.mfx.FrameInfo.FrameRateExtD = avctx->time_base.num;
+    }
+    av_log(avctx, AV_LOG_DEBUG, "Reset framerate: %d/%d (%.2f fps).\n",
+           q->param.mfx.FrameInfo.FrameRateExtN,
+           q->param.mfx.FrameInfo.FrameRateExtD,
+           (double)q->param.mfx.FrameInfo.FrameRateExtN / q->param.mfx.FrameInfo.FrameRateExtD);
+
+    return updated;
+}
+
 static int update_parameters(AVCodecContext *avctx, QSVEncContext *q,
                              const AVFrame *frame)
 {
@@ -1851,6 +1876,7 @@ static int update_parameters(AVCodecContext *avctx, QSVEncContext *q,
     needReset |= update_gop_size(avctx, q);
     needReset |= update_rir(avctx, q);
     needReset |= update_low_delay_brc(avctx, q);
+    needReset |= update_frame_rate(avctx, q);
     ret = update_min_max_qp(avctx, q);
     if (ret < 0)
         return ret;

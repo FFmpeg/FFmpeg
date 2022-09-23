@@ -271,6 +271,8 @@ typedef struct QSVEncContext {
     int old_min_qp_b;
     // This is used for low_delay_brc reset
     int old_low_delay_brc;
+    // This is used for framerate reset
+    AVRational old_framerate;
 } QSVEncContext;
 
 int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q);
