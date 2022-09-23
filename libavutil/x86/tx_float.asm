@@ -1594,7 +1594,7 @@ cglobal fft_pfa_15xM_float, 4, 14, 16, 320, ctx, out, in, stride, len, lut, buf,
     mov btmpq, outq
 
     mov outq, [ctxq + AVTXContext.tmp]
-%if !%2
+%if %2 == 0
     movsxd lenq, dword [ctxq + AVTXContext.len]
     mov lutq, [ctxq + AVTXContext.map]
 %endif
