@@ -718,6 +718,10 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
     max_bitrate_kbps           = avctx->rc_max_rate / 1000;
     brc_param_multiplier       = (FFMAX(FFMAX3(target_bitrate_kbps, max_bitrate_kbps, buffer_size_in_kilobytes),
                                   initial_delay_in_kilobytes) + 0x10000) / 0x10000;
+    q->old_rc_buffer_size = avctx->rc_buffer_size;
+    q->old_rc_initial_buffer_occupancy = avctx->rc_initial_buffer_occupancy;
+    q->old_bit_rate = avctx->bit_rate;
+    q->old_rc_max_rate = avctx->rc_max_rate;
 
     switch (q->param.mfx.RateControlMethod) {
     case MFX_RATECONTROL_CBR:
@@ -1863,6 +1867,39 @@ static int update_frame_rate(AVCodecContext *avctx, QSVEncContext *q)
     return updated;
 }
 
+static int update_bitrate(AVCodecContext *avctx, QSVEncContext *q)
+{
+    int updated = 0;
+    int target_bitrate_kbps, max_bitrate_kbps, brc_param_multiplier;
+    int buffer_size_in_kilobytes, initial_delay_in_kilobytes;
+
+    UPDATE_PARAM(q->old_rc_buffer_size, avctx->rc_buffer_size);
+    UPDATE_PARAM(q->old_rc_initial_buffer_occupancy, avctx->rc_initial_buffer_occupancy);
+    UPDATE_PARAM(q->old_bit_rate, avctx->bit_rate);
+    UPDATE_PARAM(q->old_rc_max_rate, avctx->rc_max_rate);
+    if (!updated)
+        return 0;
+
+    buffer_size_in_kilobytes   = avctx->rc_buffer_size / 8000;
+    initial_delay_in_kilobytes = avctx->rc_initial_buffer_occupancy / 8000;
+    target_bitrate_kbps        = avctx->bit_rate / 1000;
+    max_bitrate_kbps           = avctx->rc_max_rate / 1000;
+    brc_param_multiplier       = (FFMAX(FFMAX3(target_bitrate_kbps, max_bitrate_kbps, buffer_size_in_kilobytes),
+                                    initial_delay_in_kilobytes) + 0x10000) / 0x10000;
+
+    q->param.mfx.BufferSizeInKB = buffer_size_in_kilobytes / brc_param_multiplier;
+    q->param.mfx.InitialDelayInKB = initial_delay_in_kilobytes / brc_param_multiplier;
+    q->param.mfx.TargetKbps = target_bitrate_kbps / brc_param_multiplier;
+    q->param.mfx.MaxKbps = max_bitrate_kbps / brc_param_multiplier;
+    q->param.mfx.BRCParamMultiplier = brc_param_multiplier;
+    av_log(avctx, AV_LOG_VERBOSE,
+            "Reset BufferSizeInKB: %d; InitialDelayInKB: %d; "
+            "TargetKbps: %d; MaxKbps: %d; BRCParamMultiplier: %d\n",
+            q->param.mfx.BufferSizeInKB, q->param.mfx.InitialDelayInKB,
+            q->param.mfx.TargetKbps, q->param.mfx.MaxKbps, q->param.mfx.BRCParamMultiplier);
+    return updated;
+}
+
 static int update_parameters(AVCodecContext *avctx, QSVEncContext *q,
                              const AVFrame *frame)
 {
@@ -1877,6 +1914,7 @@ static int update_parameters(AVCodecContext *avctx, QSVEncContext *q,
     needReset |= update_rir(avctx, q);
     needReset |= update_low_delay_brc(avctx, q);
     needReset |= update_frame_rate(avctx, q);
+    needReset |= update_bitrate(avctx, q);
     ret = update_min_max_qp(avctx, q);
     if (ret < 0)
         return ret;
