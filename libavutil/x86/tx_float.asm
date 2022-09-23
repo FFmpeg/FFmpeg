@@ -22,11 +22,10 @@
 ; based upon and compare.
 
 ; Intra-asm call convention:
-;       272 bytes of stack available
-;       First 10 GPRs available
+;       320 bytes of stack available
+;       14 GPRs available (last 4 must not be clobbered)
+;       Additionally, don't clobber ctx, in, out, len, lut
 ;       All vector regs available
-;       Don't clobber ctx, len, lut
-;       in and out must point to the end
 
 ; TODO:
 ;       carry over registers from smaller transforms to save on ~8 loads/stores
@@ -686,8 +685,6 @@ cglobal fft2_asm_float, 0, 0, 0, ctx, out, in, stride
     movaps m0, [inq]
     FFT2 m0, m1
     movaps [outq], m0
-    add inq, mmsize*1
-    add outq, mmsize*1
     ret
 
 cglobal fft2_float, 4, 4, 2, ctx, out, in, stride
@@ -721,8 +718,6 @@ cglobal fft4_ %+ %1 %+ _float, 4, 4, 3, ctx, out, in, stride
     movaps [outq + 1*mmsize], m0
 
 %if %3
-    add inq, mmsize*2
-    add outq, mmsize*2
     ret
 %else
     RET
@@ -764,8 +759,6 @@ cglobal fft8_float, 4, 4, 6, ctx, out, in, tmp
     movups [outq + 3*mmsize], m1
 
 %if %1
-    add inq, mmsize*4
-    add outq, mmsize*4
     ret
 %else
     RET
@@ -806,8 +799,6 @@ cglobal fft8_float, 4, 4, 4, ctx, out, in, tmp
     vextractf128 [outq + 16*3], m0, 1
 
 %if %1
-    add inq, mmsize*2
-    add outq, mmsize*2
     ret
 %else
     RET
@@ -857,8 +848,6 @@ cglobal fft16_float, 4, 4, 8, ctx, out, in, tmp
     vextractf128 [outq + 16*7], m1, 1
 
 %if %2
-    add inq, mmsize*4
-    add outq, mmsize*4
     ret
 %else
     RET
@@ -943,8 +932,6 @@ cglobal fft32_float, 4, 4, 16, ctx, out, in, tmp
     vextractf128 [outq + 16*15],  m5, 1
 
 %if %2
-    add inq, mmsize*8
-    add outq, mmsize*8
     ret
 %else
     RET
@@ -1282,12 +1269,13 @@ FFT_SPLIT_RADIX_DEF 131072
     add outq, 8*mmsize
     add rtabq, 4*mmsize
     sub itabq, 4*mmsize
-    sub lenq, 4*mmsize
+    sub tgtq, 4*mmsize
     jg .synth_deinterleave
 
 %if %2
-    mov lenq, tgtq
-    add outq, offq
+    sub outq, tmpq
+    neg tmpq
+    lea inq, [inq + tmpq*4]
     ret
 %else
     RET
@@ -1369,7 +1357,7 @@ FFT_SPLIT_RADIX_DEF 131072
     vextractf128 [outq + 15*mmsize + 16], tx2_e1, 1
 
 %if %2
-    add outq, 16*mmsize
+    sub inq, 16*mmsize
     ret
 %else
     RET
