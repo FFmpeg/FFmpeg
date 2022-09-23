@@ -66,6 +66,7 @@ enum TiffTags {
     TIFF_PAGE_NAME          = 0x11D,
     TIFF_XPOS               = 0x11E,
     TIFF_YPOS               = 0x11F,
+    TIFF_GRAY_RESPONSE_CURVE= 0x123,
     TIFF_T4OPTIONS          = 0x124,
     TIFF_T6OPTIONS,
     TIFF_RES_UNIT           = 0x128,

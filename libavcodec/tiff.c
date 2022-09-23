@@ -283,16 +283,15 @@ static uint16_t av_always_inline dng_process_color16(uint16_t value,
     float value_norm;
 
     // Lookup table lookup
-    if (lut)
-        value = lut[value];
+    value = lut[value];
 
     // Black level subtraction
     value = av_clip_uint16_c((unsigned)value - black_level);
 
     // Color scaling
-    value_norm = (float)value * scale_factor;
+    value_norm = (float)value * scale_factor * 65535.f;
 
-    value = av_clip_uint16_c(value_norm * 65535);
+    value = av_clip_uint16_c(lrintf(value_norm));
 
     return value;
 }
@@ -1414,6 +1413,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         else if (count > 1)
             s->sub_ifd = ff_tget(&s->gb, TIFF_LONG, s->le); /** Only get the first SubIFD */
         break;
+    case TIFF_GRAY_RESPONSE_CURVE:
     case DNG_LINEARIZATION_TABLE:
         if (count > FF_ARRAY_ELEMS(s->dng_lut))
             return AVERROR_INVALIDDATA;
