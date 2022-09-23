@@ -640,7 +640,7 @@ static av_cold int opus_decode_init(AVCodecContext *avctx)
 
     for (i = 0; i < c->nb_streams; i++) {
         OpusStreamContext *s = &c->streams[i];
-        uint64_t layout;
+        AVChannelLayout layout;
 
         s->output_channels = (i < c->nb_stereo_streams) ? 2 : 1;
 
@@ -658,11 +658,12 @@ static av_cold int opus_decode_init(AVCodecContext *avctx)
         if (!s->swr)
             return AVERROR(ENOMEM);
 
-        layout = (s->output_channels == 1) ? AV_CH_LAYOUT_MONO : AV_CH_LAYOUT_STEREO;
+        layout = (s->output_channels == 1) ? (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO :
+                                             (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
         av_opt_set_int(s->swr, "in_sample_fmt",      avctx->sample_fmt,  0);
         av_opt_set_int(s->swr, "out_sample_fmt",     avctx->sample_fmt,  0);
-        av_opt_set_int(s->swr, "in_channel_layout",  layout,             0);
-        av_opt_set_int(s->swr, "out_channel_layout", layout,             0);
+        av_opt_set_chlayout(s->swr, "in_chlayout",   &layout,            0);
+        av_opt_set_chlayout(s->swr, "out_chlayout",  &layout,            0);
         av_opt_set_int(s->swr, "out_sample_rate",    avctx->sample_rate, 0);
         av_opt_set_int(s->swr, "filter_size",        16,                 0);
 
