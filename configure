@@ -2218,6 +2218,7 @@ ARCH_EXT_LIST_PPC="
 ARCH_EXT_LIST_RISCV="
     rv
     rvv
+    rv_zicbop
     rv_zvbb
 "
 
@@ -2763,6 +2764,7 @@ power8_deps="vsx"
 
 rv_deps="riscv"
 rvv_deps="rv"
+rv_zicbop="riscv"
 rv_zvbb_deps="rvv"
 
 loongson2_deps="mips"
@@ -6366,6 +6368,7 @@ elif enabled riscv; then
 
     enabled rv && check_inline_asm rv '".option arch, +zbb\nrev8 t0, t1"'
     enabled rvv && check_inline_asm rvv '".option arch, +v\nvsetivli zero, 0, e8, m1, ta, ma"'
+    enabled rv_zicbop && check_inline_asm rv_zicbop '".option arch, +zicbop\nprefetch.r 64(a0)"'
     enabled rv_zvbb && check_inline_asm rv_zvbb '".option arch, +zvbb\nvclz.v v0, v8"'
 
 elif enabled x86; then
@@ -7922,6 +7925,7 @@ if enabled loongarch; then
     echo "LASX enabled              ${lasx-no}"
 fi
 if enabled riscv; then
+    echo "RISC-V CBO Prefetch       ${rv_zicbop-no}"
     echo "RISC-V Vector enabled     ${rvv-no}"
 fi
 echo "debug symbols             ${debug-no}"
