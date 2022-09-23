@@ -46,7 +46,7 @@ TX_DECL_FN(fft_sr_ns, avx2)
 TX_DECL_FN(fft_pfa_15xM, avx2)
 TX_DECL_FN(fft_pfa_15xM_ns, avx2)
 
-TX_DECL_FN(mdct_sr_inv, avx2)
+TX_DECL_FN(mdct_inv, avx2)
 
 TX_DECL_FN(fft2_asm, sse3)
 TX_DECL_FN(fft4_fwd_asm, sse2)
@@ -87,7 +87,7 @@ static av_cold int m_inv_init(AVTXContext *s, const FFTXCodelet *cd,
                               int len, int inv, const void *scale)
 {
     int ret;
-    FFTXCodeletOptions sub_opts = { .invert_lookup = -1 };
+    FFTXCodeletOptions sub_opts = { .invert_lookup = 1 };
 
     s->scale_d = *((SCALE_TYPE *)scale);
     s->scale_f = s->scale_d;
@@ -101,7 +101,16 @@ static av_cold int m_inv_init(AVTXContext *s, const FFTXCodelet *cd,
                                 inv, scale)))
         return ret;
 
-    if ((ret = ff_tx_mdct_gen_exp_float(s, s->sub->map)))
+    s->map = av_malloc(len*sizeof(*s->map));
+    if (!s->map)
+        return AVERROR(ENOMEM);
+
+    memcpy(s->map, s->sub->map, (len >> 1)*sizeof(*s->map));
+    /* Invert lookup table for unstrided path */
+    for (int i = 0; i < (len >> 1); i++)
+       s->map[(len >> 1) + s->map[i]] = i;
+
+    if ((ret = ff_tx_mdct_gen_exp_float(s, s->map)))
         return ret;
 
     return 0;
@@ -226,7 +235,7 @@ const FFTXCodelet * const ff_tx_codelet_list_float_x86[] = {
     TX_DEF(fft_pfa_15xM_ns, FFT, 60, TX_LEN_UNLIMITED, 15, TX_FACTOR_ANY, 384, fft_pfa_init, avx2, AVX2,
            AV_TX_INPLACE | FF_TX_PRESHUFFLE, AV_CPU_FLAG_AVXSLOW | AV_CPU_FLAG_SLOW_GATHER),
 
-    TX_DEF(mdct_sr_inv, MDCT, 16, TX_LEN_UNLIMITED, 2, TX_FACTOR_ANY, 384, m_inv_init, avx2, AVX2,
+    TX_DEF(mdct_inv, MDCT, 16, TX_LEN_UNLIMITED, 2, TX_FACTOR_ANY, 384, m_inv_init, avx2, AVX2,
            FF_TX_INVERSE_ONLY, AV_CPU_FLAG_AVXSLOW | AV_CPU_FLAG_SLOW_GATHER),
 #endif
 #endif

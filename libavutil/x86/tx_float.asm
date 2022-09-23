@@ -1389,17 +1389,16 @@ FFT_SPLIT_RADIX_FN avx2, 1
 
 %macro IMDCT_FN 1
 INIT_YMM %1
-cglobal mdct_sr_inv_float, 4, 13, 16, 272, ctx, out, in, stride, len, lut, exp, t1, t2, t3, t4, t5, bctx
+cglobal mdct_inv_float, 4, 14, 16, 320, ctx, out, in, stride, len, lut, exp, t1, t2, t3, \
+                                        t4, t5, btmp
     movsxd lenq, dword [ctxq + AVTXContext.len]
     mov expq, [ctxq + AVTXContext.exp]
 
     lea t1d, [lend - 1]
     imul t1d, strided
 
-    mov bctxq, ctxq                    ; backup original context
-    mov t5q, [ctxq + AVTXContext.fn]   ; subtransform's jump point
-    mov ctxq, [ctxq + AVTXContext.sub] ; load subtransform's context
-    mov lutq, [ctxq + AVTXContext.map] ; load subtransform's map
+    mov btmpq, ctxq                    ; backup original context
+    mov lutq, [ctxq + AVTXContext.map] ; load map
 
     cmp strideq, 4
     je .stride4
@@ -1444,8 +1443,8 @@ cglobal mdct_sr_inv_float, 4, 13, 16, 272, ctx, out, in, stride, len, lut, exp, 
     fmaddsubps m10, m12, m2, m10
     fmaddsubps m11, m13, m3, m11
 
-    mova [t2q + 0*mmsize], m10
-    mova [t2q + 1*mmsize], m11
+    movups [t2q + 0*mmsize], m10
+    movups [t2q + 1*mmsize], m11
 
     add expq, mmsize*2
     add lutq, mmsize
@@ -1462,16 +1461,16 @@ cglobal mdct_sr_inv_float, 4, 13, 16, 272, ctx, out, in, stride, len, lut, exp, 
     lea t2q, [lenq*2 - mmsize/2]
 
 .stride4_pre:
-    movaps       m4, [inq]
-    movaps       m3, [t1q]
+    movups       m4, [inq]
+    movups       m3, [t1q]
 
     movsldup     m1, m4              ; im im, im im
     movshdup     m0, m3              ; re re, re re
     movshdup     m4, m4              ; re re, re re (2)
     movsldup     m3, m3              ; im im, im im (2)
 
-    movaps       m2, [expq]          ; tab
-    movaps       m5, [expq + 2*t2q]  ; tab (2)
+    movups       m2, [expq]          ; tab
+    movups       m5, [expq + 2*t2q]  ; tab (2)
 
     vpermpd      m0, m0, q0123       ; flip
     shufps       m7, m2, m2, q2301
@@ -1513,29 +1512,31 @@ cglobal mdct_sr_inv_float, 4, 13, 16, 272, ctx, out, in, stride, len, lut, exp, 
     add inq, mmsize
     sub t1q, mmsize
     sub t2q, mmsize
-    jg .stride4_pre
+    jge .stride4_pre
 
 .transform:
+    mov t4q, ctxq                      ; backup original context
+    mov t5q, [ctxq + AVTXContext.fn]   ; subtransform's jump point
+    mov ctxq, [ctxq + AVTXContext.sub]
+    mov lutq, [ctxq + AVTXContext.map]
     movsxd lenq, dword [ctxq + AVTXContext.len]
+
     mov inq, outq                    ; in-place transform
     call t5q                         ; call the FFT
 
-    mov ctxq, bctxq                  ; restore original context
+    mov ctxq, t4q                    ; restore original context
     movsxd lenq, dword [ctxq + AVTXContext.len]
     mov expq, [ctxq + AVTXContext.exp]
     lea expq, [expq + lenq*4]
 
-    lea t1q, [lenq*2]                ; high
-    lea t2q, [lenq*2 - mmsize]       ; low
-
-    neg lenq
-    lea outq, [outq + lenq*4]
+    xor t1q, t1q                     ; low
+    lea t2q, [lenq*4 - mmsize]       ; high
 
 .post:
-    movaps m2, [expq + t1q]          ; tab h
-    movaps m3, [expq + t2q]          ; tab l
-    movaps m0, [outq + t1q]          ; in h
-    movaps m1, [outq + t2q]          ; in l
+    movaps m2, [expq + t2q]          ; tab h
+    movaps m3, [expq + t1q]          ; tab l
+    movups m0, [outq + t2q]          ; in h
+    movups m1, [outq + t1q]          ; in l
 
     movshdup m4, m2                  ; tab h imim
     movshdup m5, m3                  ; tab l imim
@@ -1557,12 +1558,13 @@ cglobal mdct_sr_inv_float, 4, 13, 16, 272, ctx, out, in, stride, len, lut, exp, 
     blendps m1, m2, m5, 01010101b
     blendps m0, m3, m4, 01010101b
 
-    movaps [outq + t2q], m1
-    movaps [outq + t1q], m0
+    movups [outq + t2q], m0
+    movups [outq + t1q], m1
 
     add t1q, mmsize
     sub t2q, mmsize
-    jge .post
+    sub lenq, mmsize/2
+    jg .post
 
     RET
 %endmacro
