@@ -1843,7 +1843,7 @@ cglobal fft_pfa_15xM_ns_float, 4, 14, 16, 320, ctx, out, in, stride, len, lut, b
 %endif
 %endmacro
 
-%if ARCH_X86_64
+%if ARCH_X86_64 && HAVE_AVX2_EXTERNAL
 PFA_15_FN avx2, 0
 PFA_15_FN avx2, 1
 %endif
