@@ -1760,8 +1760,8 @@ static int update_min_max_qp(AVCodecContext *avctx, QSVEncContext *q)
     if (avctx->codec_id != AV_CODEC_ID_H264)
         return 0;
 
-    UPDATE_PARAM(q->old_qmax, avctx->qmin);
-    UPDATE_PARAM(q->old_qmax, avctx->qmin);
+    UPDATE_PARAM(q->old_qmin, avctx->qmin);
+    UPDATE_PARAM(q->old_qmax, avctx->qmax);
     UPDATE_PARAM(q->old_min_qp_i, q->min_qp_i);
     UPDATE_PARAM(q->old_max_qp_i, q->max_qp_i);
     UPDATE_PARAM(q->old_min_qp_p, q->min_qp_p);
