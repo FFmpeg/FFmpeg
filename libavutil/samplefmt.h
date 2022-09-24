@@ -213,6 +213,7 @@ int av_samples_fill_arrays(uint8_t **audio_data, int *linesize,
  * @param[out] linesize    aligned size for audio buffer(s), may be NULL
  * @param nb_channels      number of audio channels
  * @param nb_samples       number of samples per channel
+ * @param sample_fmt       the sample format
  * @param align            buffer size alignment (0 = default, 1 = no alignment)
  * @return                 >=0 on success or a negative error code on failure
  * @todo return the size of the allocated buffer in case of success at the next bump
