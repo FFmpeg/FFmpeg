@@ -164,6 +164,8 @@ int av_bsf_alloc(const AVBitStreamFilter *filter, AVBSFContext **ctx);
 /**
  * Prepare the filter for use, after all the parameters and options have been
  * set.
+ *
+ * @param ctx a AVBSFContext previously allocated with av_bsf_alloc()
  */
 int av_bsf_init(AVBSFContext *ctx);
 
@@ -174,6 +176,7 @@ int av_bsf_init(AVBSFContext *ctx);
  * av_bsf_receive_packet() repeatedly until it returns AVERROR(EAGAIN) or
  * AVERROR_EOF.
  *
+ * @param ctx an initialized AVBSFContext
  * @param pkt the packet to filter. The bitstream filter will take ownership of
  * the packet and reset the contents of pkt. pkt is not touched if an error occurs.
  * If pkt is empty (i.e. NULL, or pkt->data is NULL and pkt->side_data_elems zero),
@@ -192,6 +195,7 @@ int av_bsf_send_packet(AVBSFContext *ctx, AVPacket *pkt);
 /**
  * Retrieve a filtered packet.
  *
+ * @param ctx an initialized AVBSFContext
  * @param[out] pkt this struct will be filled with the contents of the filtered
  *                 packet. It is owned by the caller and must be freed using
  *                 av_packet_unref() when it is no longer needed.
