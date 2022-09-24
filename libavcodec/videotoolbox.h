@@ -29,6 +29,15 @@
  * Public libavcodec Videotoolbox header.
  */
 
+/**
+ * @defgroup lavc_codec_hwaccel_videotoolbox VideoToolbox Decoder
+ * @ingroup lavc_codec_hwaccel
+ *
+ * Hardware accelerated decoding using VideoToolbox on Apple Platforms
+ *
+ * @{
+ */
+
 #include <stdint.h>
 
 #define Picture QuickdrawPicture
