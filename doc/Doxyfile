@@ -1980,6 +1980,7 @@ PREDEFINED             = __attribute__(x)= \
                          av_alloc_size(...)= \
                          AV_GCC_VERSION_AT_LEAST(x,y)=1 \
                          AV_GCC_VERSION_AT_MOST(x,y)=0 \
+                         "FF_PAD_STRUCTURE(name,size,...)=typedef struct name { __VA_ARGS__ } name;" \
                          __GNUC__
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then this
