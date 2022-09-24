@@ -32,6 +32,7 @@
 
 /**
  * @addtogroup lavc_core
+ * @{
  */
 
 enum AVFieldOrder {
