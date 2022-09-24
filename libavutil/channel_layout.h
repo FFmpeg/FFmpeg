@@ -90,9 +90,9 @@ enum AVChannel {
      * Range of channels between AV_CHAN_AMBISONIC_BASE and
      * AV_CHAN_AMBISONIC_END represent Ambisonic components using the ACN system.
      *
-     * Given a channel id <i> between AV_CHAN_AMBISONIC_BASE and
-     * AV_CHAN_AMBISONIC_END (inclusive), the ACN index of the channel <n> is
-     * <n> = <i> - AV_CHAN_AMBISONIC_BASE.
+     * Given a channel id `<i>` between AV_CHAN_AMBISONIC_BASE and
+     * AV_CHAN_AMBISONIC_END (inclusive), the ACN index of the channel `<n>` is
+     * `<n> = <i> - AV_CHAN_AMBISONIC_BASE`.
      *
      * @note these values are only used for AV_CHANNEL_ORDER_CUSTOM channel
      * orderings, the AV_CHANNEL_ORDER_AMBISONIC ordering orders the channels
