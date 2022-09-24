@@ -44,17 +44,23 @@ struct AVAESCTR *av_aes_ctr_alloc(void);
 
 /**
  * Initialize an AVAESCTR context.
+ *
+ * @param a The AVAESCTR context to initialize
  * @param key encryption key, must have a length of AES_CTR_KEY_SIZE
  */
 int av_aes_ctr_init(struct AVAESCTR *a, const uint8_t *key);
 
 /**
  * Release an AVAESCTR context.
+ *
+ * @param a The AVAESCTR context
  */
 void av_aes_ctr_free(struct AVAESCTR *a);
 
 /**
  * Process a buffer using a previously initialized context.
+ *
+ * @param a The AVAESCTR context
  * @param dst destination array, can be equal to src
  * @param src source array, can be equal to dst
  * @param size the size of src and dst
