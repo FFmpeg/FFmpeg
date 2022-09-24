@@ -152,6 +152,6 @@ int av_vdpau_get_surface_parameters(AVCodecContext *avctx, VdpChromaType *type,
  */
 AVVDPAUContext *av_vdpau_alloc_context(void);
 
-/* @}*/
+/** @} */
 
 #endif /* AVCODEC_VDPAU_H */
