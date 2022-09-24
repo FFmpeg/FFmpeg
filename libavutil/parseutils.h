@@ -79,6 +79,8 @@ int av_parse_video_rate(AVRational *rate, const char *str);
 /**
  * Put the RGBA values that correspond to color_string in rgba_color.
  *
+ * @param rgba_color 4-elements array of uint8_t values, where the respective
+ * red, green, blue and alpha component values are written.
  * @param color_string a string specifying a color. It can be the name of
  * a color (case insensitive match) or a [0x|#]RRGGBB[AA] sequence,
  * possibly followed by "@" and a string representing the alpha
@@ -92,6 +94,8 @@ int av_parse_video_rate(AVRational *rate, const char *str);
  * @param slen length of the initial part of color_string containing the
  * color. It can be set to -1 if color_string is a null terminated string
  * containing nothing else than the color.
+ * @param log_ctx a pointer to an arbitrary struct of which the first field
+ * is a pointer to an AVClass struct (used for av_log()). Can be NULL.
  * @return >= 0 in case of success, a negative value in case of
  * failure (for example if color_string cannot be parsed).
  */
@@ -106,7 +110,7 @@ int av_parse_color(uint8_t *rgba_color, const char *color_string, int slen,
  * av_parse_color().
  *
  * @param color_idx index of the requested color, starting from 0
- * @param rgbp      if not NULL, will point to a 3-elements array with the color value in RGB
+ * @param rgb      if not NULL, will point to a 3-elements array with the color value in RGB
  * @return the color name string or NULL if color_idx is not in the array
  */
 const char *av_get_known_color_name(int color_idx, const uint8_t **rgb);
