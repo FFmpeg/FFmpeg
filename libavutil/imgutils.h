@@ -48,6 +48,7 @@
  * component in the plane with the max pixel step.
  * @param max_pixstep_comps an array which is filled with the component
  * for each plane which has the max pixel step. May be NULL.
+ * @param pixdesc the AVPixFmtDescriptor for the image, describing its format
  */
 void av_image_fill_max_pixsteps(int max_pixsteps[4], int max_pixstep_comps[4],
                                 const AVPixFmtDescriptor *pixdesc);
@@ -65,6 +66,8 @@ int av_image_get_linesize(enum AVPixelFormat pix_fmt, int width, int plane);
  * width width.
  *
  * @param linesizes array to be filled with the linesize for each plane
+ * @param pix_fmt the AVPixelFormat of the image
+ * @param width width of the image in pixels
  * @return >= 0 in case of success, a negative error code otherwise
  */
 int av_image_fill_linesizes(int linesizes[4], enum AVPixelFormat pix_fmt, int width);
@@ -73,6 +76,8 @@ int av_image_fill_linesizes(int linesizes[4], enum AVPixelFormat pix_fmt, int wi
  * Fill plane sizes for an image with pixel format pix_fmt and height height.
  *
  * @param size the array to be filled with the size of each image plane
+ * @param pix_fmt the AVPixelFormat of the image
+ * @param height height of the image in pixels
  * @param linesizes the array containing the linesize for each
  *        plane, should be filled by av_image_fill_linesizes()
  * @return >= 0 in case of success, a negative error code otherwise
@@ -88,6 +93,8 @@ int av_image_fill_plane_sizes(size_t size[4], enum AVPixelFormat pix_fmt,
  * height height.
  *
  * @param data pointers array to be filled with the pointer for each image plane
+ * @param pix_fmt the AVPixelFormat of the image
+ * @param height height of the image in pixels
  * @param ptr the pointer to a buffer which will contain the image
  * @param linesizes the array containing the linesize for each
  * plane, should be filled by av_image_fill_linesizes()
@@ -103,6 +110,11 @@ int av_image_fill_pointers(uint8_t *data[4], enum AVPixelFormat pix_fmt, int hei
  * The allocated image buffer has to be freed by using
  * av_freep(&pointers[0]).
  *
+ * @param pointers array to be filled with the pointer for each image plane
+ * @param linesizes the array filled with the linesize for each plane
+ * @param w width of the image in pixels
+ * @param h height of the image in pixels
+ * @param pix_fmt the AVPixelFormat of the image
  * @param align the value to use for buffer size alignment
  * @return the size in bytes required for the image buffer, a negative
  * error code in case of failure
@@ -119,8 +131,11 @@ int av_image_alloc(uint8_t *pointers[4], int linesizes[4],
  * bytewidth must be contained by both absolute values of dst_linesize
  * and src_linesize, otherwise the function behavior is undefined.
  *
+ * @param dst          destination plane to copy to
  * @param dst_linesize linesize for the image plane in dst
+ * @param src          source plane to copy from
  * @param src_linesize linesize for the image plane in src
+ * @param height       height (number of lines) of the plane
  */
 void av_image_copy_plane(uint8_t       *dst, int dst_linesize,
                          const uint8_t *src, int src_linesize,
@@ -147,8 +162,13 @@ void av_image_copy_plane_uc_from(uint8_t       *dst, ptrdiff_t dst_linesize,
 /**
  * Copy image in src_data to dst_data.
  *
+ * @param dst_data      destination image data buffer to copy to
  * @param dst_linesizes linesizes for the image in dst_data
+ * @param src_data      source image data buffer to copy from
  * @param src_linesizes linesizes for the image in src_data
+ * @param pix_fmt       the AVPixelFormat of the image
+ * @param width         width of the image in pixels
+ * @param height        height of the image in pixels
  */
 void av_image_copy(uint8_t *dst_data[4], int dst_linesizes[4],
                    const uint8_t *src_data[4], const int src_linesizes[4],
