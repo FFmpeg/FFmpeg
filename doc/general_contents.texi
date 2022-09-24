@@ -584,8 +584,10 @@ library:
 @item raw AC-3                  @tab X @tab X
 @item raw AMR-NB                @tab   @tab X
 @item raw AMR-WB                @tab   @tab X
+@item raw APAC                  @tab   @tab X
 @item raw aptX                  @tab X @tab X
 @item raw aptX HD               @tab X @tab X
+@item raw Bonk                  @tab   @tab X
 @item raw Chinese AVS video     @tab X @tab X
 @item raw DFPWM                 @tab X @tab X
 @item raw Dirac                 @tab X @tab X
@@ -1207,6 +1209,7 @@ following image formats are supported:
 @item ATRAC9                 @tab     @tab  X
 @item Bink Audio             @tab     @tab  X
     @tab Used in Bink and Smacker files in many games.
+@item Bonk audio             @tab     @tab  X
 @item CELT                   @tab     @tab  E
     @tab decoding supported through external library libcelt
 @item codec2                 @tab  E  @tab  E
@@ -1245,6 +1248,7 @@ following image formats are supported:
 @item Enhanced AC-3          @tab  X  @tab  X
 @item EVRC (Enhanced Variable Rate Codec) @tab     @tab  X
 @item FLAC (Free Lossless Audio Codec)  @tab  X  @tab  IX
+@item FTR Voice              @tab     @tab  X
 @item G.723.1                @tab X   @tab  X
 @item G.729                  @tab     @tab  X
 @item GSM                    @tab  E  @tab  X
@@ -1258,6 +1262,7 @@ following image formats are supported:
 @item Interplay ACM            @tab     @tab  X
 @item MACE (Macintosh Audio Compression/Expansion) 3:1  @tab     @tab  X
 @item MACE (Macintosh Audio Compression/Expansion) 6:1  @tab     @tab  X
+@item Marian's A-pac audio     @tab     @tab  X
 @item MI-SC4 (Micronas SC-4 Audio)  @tab     @tab  X
 @item MLP (Meridian Lossless Packing)  @tab  X  @tab  X
     @tab Used in DVD-Audio discs.
