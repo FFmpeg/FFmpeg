@@ -313,13 +313,20 @@ typedef struct AVFilter {
          * and outputs are fixed), shortly before the format negotiation. This
          * callback may be called more than once.
          *
-         * This callback must set AVFilterLink.outcfg.formats on every input link
-         * and AVFilterLink.incfg.formats on every output link to a list of
-         * pixel/sample formats that the filter supports on that link. For audio
-         * links, this filter must also set @ref AVFilterLink.incfg.samplerates
-         * "in_samplerates" / @ref AVFilterLink.outcfg.samplerates "out_samplerates"
-         * and @ref AVFilterLink.incfg.channel_layouts "in_channel_layouts" /
-         * @ref AVFilterLink.outcfg.channel_layouts "out_channel_layouts" analogously.
+         * This callback must set ::AVFilterLink's
+         * @ref AVFilterFormatsConfig.formats "outcfg.formats"
+         * on every input link and
+         * @ref AVFilterFormatsConfig.formats "incfg.formats"
+         * on every output link to a list of pixel/sample formats that the filter
+         * supports on that link.
+         * For audio links, this filter must also set
+         * @ref AVFilterFormatsConfig.samplerates "incfg.samplerates"
+         *  /
+         * @ref AVFilterFormatsConfig.samplerates "outcfg.samplerates"
+         * and @ref AVFilterFormatsConfig.channel_layouts "incfg.channel_layouts"
+         *  /
+         * @ref AVFilterFormatsConfig.channel_layouts "outcfg.channel_layouts"
+         * analogously.
          *
          * This callback must never be NULL if the union is in this state.
          *
