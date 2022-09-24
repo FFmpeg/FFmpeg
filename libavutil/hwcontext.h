@@ -591,6 +591,7 @@ int av_hwframe_map(AVFrame *dst, const AVFrame *src, int flags);
  *
  * @param derived_frame_ctx  On success, a reference to the newly created
  *                           AVHWFramesContext.
+ * @param format             The AVPixelFormat for the derived context.
  * @param derived_device_ctx A reference to the device to create the new
  *                           AVHWFramesContext on.
  * @param source_frame_ctx   A reference to an existing AVHWFramesContext
