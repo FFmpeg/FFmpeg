@@ -20,6 +20,7 @@
 
 /**
  * @file
+ * @ingroup lavu_video_display
  * Display matrix
  */
 
