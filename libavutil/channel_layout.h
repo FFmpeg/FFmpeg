@@ -359,6 +359,10 @@ typedef struct AVChannelLayout {
 #define AV_CHANNEL_LAYOUT_MASK(nb, m) \
     { .order = AV_CHANNEL_ORDER_NATIVE, .nb_channels = (nb), .u = { .mask = (m) }}
 
+/**
+ * @name Common pre-defined channel layouts
+ * @{
+ */
 #define AV_CHANNEL_LAYOUT_MONO              AV_CHANNEL_LAYOUT_MASK(1,  AV_CH_LAYOUT_MONO)
 #define AV_CHANNEL_LAYOUT_STEREO            AV_CHANNEL_LAYOUT_MASK(2,  AV_CH_LAYOUT_STEREO)
 #define AV_CHANNEL_LAYOUT_2POINT1           AV_CHANNEL_LAYOUT_MASK(3,  AV_CH_LAYOUT_2POINT1)
@@ -390,6 +394,7 @@ typedef struct AVChannelLayout {
 #define AV_CHANNEL_LAYOUT_22POINT2          AV_CHANNEL_LAYOUT_MASK(24, AV_CH_LAYOUT_22POINT2)
 #define AV_CHANNEL_LAYOUT_AMBISONIC_FIRST_ORDER \
     { .order = AV_CHANNEL_ORDER_AMBISONIC, .nb_channels = 4, .u = { .mask = 0 }}
+/** @} */
 
 struct AVBPrint;
 
