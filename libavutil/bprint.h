@@ -18,6 +18,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/**
+ * @file
+ * @ingroup lavu_avbprint
+ * AVBPrint public header
+ */
+
 #ifndef AVUTIL_BPRINT_H
 #define AVUTIL_BPRINT_H
 
@@ -25,6 +31,14 @@
 
 #include "attributes.h"
 #include "avstring.h"
+
+/**
+ * @defgroup lavu_avbprint AVBPrint
+ * @ingroup lavu_data
+ *
+ * A buffer to print data progressively
+ * @{
+ */
 
 /**
  * Define a structure with extra padding to a fixed size
@@ -48,14 +62,14 @@ typedef struct name { \
  * Small buffers are kept in the structure itself, and thus require no
  * memory allocation at all (unless the contents of the buffer is needed
  * after the structure goes out of scope). This is almost as lightweight as
- * declaring a local "char buf[512]".
+ * declaring a local `char buf[512]`.
  *
  * The length of the string can go beyond the allocated size: the buffer is
  * then truncated, but the functions still keep account of the actual total
  * length.
  *
- * In other words, buf->len can be greater than buf->size and records the
- * total length of what would have been to the buffer if there had been
+ * In other words, AVBPrint.len can be greater than AVBPrint.size and records
+ * the total length of what would have been to the buffer if there had been
  * enough memory.
  *
  * Append operations do not need to be tested for failure: if a memory
@@ -63,20 +77,17 @@ typedef struct name { \
  * is still updated. This situation can be tested with
  * av_bprint_is_complete().
  *
- * The size_max field determines several possible behaviours:
- *
- * size_max = -1 (= UINT_MAX) or any large value will let the buffer be
- * reallocated as necessary, with an amortized linear cost.
- *
- * size_max = 0 prevents writing anything to the buffer: only the total
- * length is computed. The write operations can then possibly be repeated in
- * a buffer with exactly the necessary size
- * (using size_init = size_max = len + 1).
- *
- * size_max = 1 is automatically replaced by the exact size available in the
- * structure itself, thus ensuring no dynamic memory allocation. The
- * internal buffer is large enough to hold a reasonable paragraph of text,
- * such as the current paragraph.
+ * The AVBPrint.size_max field determines several possible behaviours:
+ * - `size_max = -1` (= `UINT_MAX`) or any large value will let the buffer be
+ *   reallocated as necessary, with an amortized linear cost.
+ * - `size_max = 0` prevents writing anything to the buffer: only the total
+ *   length is computed. The write operations can then possibly be repeated in
+ *   a buffer with exactly the necessary size
+ *   (using `size_init = size_max = len + 1`).
+ * - `size_max = 1` is automatically replaced by the exact size available in the
+ *   structure itself, thus ensuring no dynamic memory allocation. The
+ *   internal buffer is large enough to hold a reasonable paragraph of text,
+ *   such as the current paragraph.
  */
 
 FF_PAD_STRUCTURE(AVBPrint, 1024,
@@ -88,12 +99,31 @@ FF_PAD_STRUCTURE(AVBPrint, 1024,
 )
 
 /**
+ * @name Max size special values
  * Convenience macros for special values for av_bprint_init() size_max
  * parameter.
+ * @{
+ */
+
+/**
+ * Buffer will be reallocated as necessary, with an amortized linear cost.
  */
 #define AV_BPRINT_SIZE_UNLIMITED  ((unsigned)-1)
+/**
+ * Use the exact size available in the AVBPrint structure itself.
+ *
+ * Thus ensuring no dynamic memory allocation. The internal buffer is large
+ * enough to hold a reasonable paragraph of text, such as the current paragraph.
+ */
 #define AV_BPRINT_SIZE_AUTOMATIC  1
+/**
+ * Do not write anything to the buffer, only calculate the total length.
+ *
+ * The write operations can then possibly be repeated in a buffer with
+ * exactly the necessary size (using `size_init = size_max = AVBPrint.len + 1`).
+ */
 #define AV_BPRINT_SIZE_COUNT_ONLY 0
+/** @} */
 
 /**
  * Init a print buffer.
@@ -101,12 +131,12 @@ FF_PAD_STRUCTURE(AVBPrint, 1024,
  * @param buf        buffer to init
  * @param size_init  initial size (including the final 0)
  * @param size_max   maximum size;
- *                   0 means do not write anything, just count the length;
- *                   1 is replaced by the maximum value for automatic storage;
- *                   any large value means that the internal buffer will be
- *                   reallocated as needed up to that limit; -1 is converted to
- *                   UINT_MAX, the largest limit possible.
- *                   Check also AV_BPRINT_SIZE_* macros.
+ *                   - `0` means do not write anything, just count the length
+ *                   - `1` is replaced by the maximum value for automatic storage
+ *                       any large value means that the internal buffer will be
+ *                       reallocated as needed up to that limit
+ *                   - `-1` is converted to `UINT_MAX`, the largest limit possible.
+ *                   Check also `AV_BPRINT_SIZE_*` macros.
  */
 void av_bprint_init(AVBPrint *buf, unsigned size_init, unsigned size_max);
 
@@ -215,5 +245,7 @@ int av_bprint_finalize(AVBPrint *buf, char **ret_str);
  */
 void av_bprint_escape(AVBPrint *dstbuf, const char *src, const char *special_chars,
                       enum AVEscapeMode mode, int flags);
+
+/** @} */
 
 #endif /* AVUTIL_BPRINT_H */
