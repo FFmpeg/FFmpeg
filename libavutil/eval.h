@@ -42,6 +42,7 @@ typedef struct AVExpr AVExpr;
  * @param func2_names NULL terminated array of zero terminated strings of funcs2 identifiers
  * @param funcs2 NULL terminated array of function pointers for functions which take 2 arguments
  * @param opaque a pointer which will be passed to all functions from funcs1 and funcs2
+ * @param log_offset log level offset, can be used to silence error messages
  * @param log_ctx parent logging context
  * @return >= 0 in case of success, a negative value corresponding to an
  * AVERROR code otherwise
@@ -65,6 +66,7 @@ int av_expr_parse_and_eval(double *res, const char *s,
  * @param funcs1 NULL terminated array of function pointers for functions which take 1 argument
  * @param func2_names NULL terminated array of zero terminated strings of funcs2 identifiers
  * @param funcs2 NULL terminated array of function pointers for functions which take 2 arguments
+ * @param log_offset log level offset, can be used to silence error messages
  * @param log_ctx parent logging context
  * @return >= 0 in case of success, a negative value corresponding to an
  * AVERROR code otherwise
@@ -78,6 +80,7 @@ int av_expr_parse(AVExpr **expr, const char *s,
 /**
  * Evaluate a previously parsed expression.
  *
+ * @param e the AVExpr to evaluate
  * @param const_values a zero terminated array of values for the identifiers from av_expr_parse() const_names
  * @param opaque a pointer which will be passed to all functions from funcs1 and funcs2
  * @return the value of the expression
@@ -87,6 +90,7 @@ double av_expr_eval(AVExpr *e, const double *const_values, void *opaque);
 /**
  * Track the presence of variables and their number of occurrences in a parsed expression
  *
+ * @param e the AVExpr to track variables in
  * @param counter a zero-initialized array where the count of each variable will be stored
  * @param size size of array
  * @return 0 on success, a negative value indicates that no expression or array was passed
@@ -98,6 +102,7 @@ int av_expr_count_vars(AVExpr *e, unsigned *counter, int size);
  * Track the presence of user provided functions and their number of occurrences
  * in a parsed expression.
  *
+ * @param e the AVExpr to track user provided functions in
  * @param counter a zero-initialized array where the count of each function will be stored
  *                if you passed 5 functions with 2 arguments to av_expr_parse()
  *                then for arg=2 this will use upto 5 entries.
