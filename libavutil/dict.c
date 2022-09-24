@@ -20,6 +20,7 @@
 
 #include <string.h>
 
+#include "avassert.h"
 #include "avstring.h"
 #include "dict.h"
 #include "dict_internal.h"
@@ -36,6 +37,24 @@ struct AVDictionary {
 int av_dict_count(const AVDictionary *m)
 {
     return m ? m->count : 0;
+}
+
+const AVDictionaryEntry *av_dict_iterate(const AVDictionary *m,
+                                         const AVDictionaryEntry *prev)
+{
+    int i = 0;
+
+    if (!m)
+        return NULL;
+
+    if (prev)
+        i = prev - m->elems + 1;
+
+    av_assert2(i >= 0);
+    if (i >= m->count)
+        return NULL;
+
+    return &m->elems[i];
 }
 
 AVDictionaryEntry *av_dict_get(const AVDictionary *m, const char *key,

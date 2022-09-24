@@ -43,9 +43,9 @@
  * an AVDictionary, simply pass an address of a NULL pointer to
  * av_dict_set(). NULL can be used as an empty dictionary wherever
  * a pointer to an AVDictionary is required.
- * Use av_dict_get() to retrieve an entry or iterate over all
- * entries and finally av_dict_free() to free the dictionary
- * and all its contents.
+ * Use av_dict_get() to retrieve an entry and av_dict_iterate() to
+ * iterate over all entries and finally av_dict_free() to free the
+ * dictionary and all its contents.
  *
  @code
    AVDictionary *d = NULL;           // "create" an empty dictionary
@@ -57,8 +57,8 @@
    char *v = av_strdup("value");     // you can avoid copying them like this
    av_dict_set(&d, k, v, AV_DICT_DONT_STRDUP_KEY | AV_DICT_DONT_STRDUP_VAL);
 
-   while (t = av_dict_get(d, "", t, AV_DICT_IGNORE_SUFFIX)) {
-       <....>                             // iterate over all entries in d
+   while (t = av_dict_iterate(d, t)) {
+       <....>                        // iterate over all entries in d
    }
    av_dict_free(&d);
  @endcode
@@ -89,9 +89,6 @@ typedef struct AVDictionary AVDictionary;
  * The returned entry key or value must not be changed, or it will
  * cause undefined behavior.
  *
- * To iterate through all the dictionary entries, you can set the matching key
- * to the null string "" and set the AV_DICT_IGNORE_SUFFIX flag.
- *
  * @param prev Set to the previous matching element to find the next.
  *             If set to NULL the first matching element is returned.
  * @param key matching key
@@ -100,6 +97,33 @@ typedef struct AVDictionary AVDictionary;
  */
 AVDictionaryEntry *av_dict_get(const AVDictionary *m, const char *key,
                                const AVDictionaryEntry *prev, int flags);
+
+/**
+ * Iterate over a dictionary
+ *
+ * Iterates through all entries in the dictionary.
+ *
+ * @warning The returned AVDictionaryEntry key/value must not be changed.
+ *
+ * @warning As av_dict_set() invalidates all previous entries returned
+ * by this function, it must not be called while iterating over the dict.
+ *
+ * Typical usage:
+ * @code
+ * const AVDictionaryEntry *e = NULL;
+ * while ((e = av_dict_iterate(m, e))) {
+ *     // ...
+ * }
+ * @endcode
+ *
+ * @param m     The dictionary to iterate over
+ * @param prev  Pointer to the previous AVDictionaryEntry, NULL initially
+ *
+ * @retval AVDictionaryEntry* The next element in the dictionary
+ * @retval NULL               No more elements in the dictionary
+ */
+const AVDictionaryEntry *av_dict_iterate(const AVDictionary *m,
+                                         const AVDictionaryEntry *prev);
 
 /**
  * Get number of entries in dictionary.
@@ -115,8 +139,8 @@ int av_dict_count(const AVDictionary *m);
  * Note: If AV_DICT_DONT_STRDUP_KEY or AV_DICT_DONT_STRDUP_VAL is set,
  * these arguments will be freed on error.
  *
- * Warning: Adding a new entry to a dictionary invalidates all existing entries
- * previously returned with av_dict_get.
+ * @warning Adding a new entry to a dictionary invalidates all existing entries
+ * previously returned with av_dict_get() or av_dict_iterate().
  *
  * @param pm pointer to a pointer to a dictionary struct. If *pm is NULL
  * a dictionary struct is allocated and put in *pm.
