@@ -448,6 +448,8 @@ int av_get_extended_channel_layout(const char *name, uint64_t* channel_layout, i
  *
  * @param buf put here the string containing the channel layout
  * @param buf_size size in bytes of the buffer
+ * @param nb_channels number of channels
+ * @param channel_layout channel layout bitset
  * @deprecated use av_channel_layout_describe()
  */
 attribute_deprecated
@@ -478,6 +480,7 @@ int64_t av_get_default_channel_layout(int nb_channels);
 /**
  * Get the index of a channel in channel_layout.
  *
+ * @param channel_layout channel layout bitset
  * @param channel a channel layout describing exactly one channel which must be
  *                present in channel_layout.
  *
@@ -541,6 +544,7 @@ int av_get_standard_channel_layout(unsigned index, uint64_t *layout,
  *
  * @param buf pre-allocated buffer where to put the generated string
  * @param buf_size size in bytes of the buffer.
+ * @param channel the AVChannel whose name to get
  * @return amount of bytes needed to hold the output string, or a negative AVERROR
  *         on failure. If the returned value is bigger than buf_size, then the
  *         string was truncated.
@@ -559,6 +563,7 @@ void av_channel_name_bprint(struct AVBPrint *bp, enum AVChannel channel_id);
  *
  * @param buf pre-allocated buffer where to put the generated string
  * @param buf_size size in bytes of the buffer.
+ * @param channel the AVChannel whose description to get
  * @return amount of bytes needed to hold the output string, or a negative AVERROR
  *         on failure. If the returned value is bigger than buf_size, then the
  *         string was truncated.
@@ -615,7 +620,7 @@ int av_channel_layout_from_string(AVChannelLayout *channel_layout,
 /**
  * Get the default channel layout for a given number of channels.
  *
- * @param channel_layout the layout structure to be initialized
+ * @param ch_layout the layout structure to be initialized
  * @param nb_channels number of channels
  */
 void av_channel_layout_default(AVChannelLayout *ch_layout, int nb_channels);
@@ -680,6 +685,7 @@ int av_channel_layout_describe_bprint(const AVChannelLayout *channel_layout,
  * Get the channel with the given index in a channel layout.
  *
  * @param channel_layout input channel layout
+ * @param idx index of the channel
  * @return channel with the index idx in channel_layout on success or
  *         AV_CHAN_NONE on failure (if idx is not valid or the channel order is
  *         unspecified)
@@ -692,6 +698,7 @@ av_channel_layout_channel_from_index(const AVChannelLayout *channel_layout, unsi
  * channels are found, only the first match will be returned.
  *
  * @param channel_layout input channel layout
+ * @param channel the channel whose index to obtain
  * @return index of channel in channel_layout on success or a negative number if
  *         channel is not present in channel_layout.
  */
@@ -706,6 +713,7 @@ int av_channel_layout_index_from_channel(const AVChannelLayout *channel_layout,
  * @ref av_channel_from_string().
  *
  * @param channel_layout input channel layout
+ * @param name string describing the channel whose index to obtain
  * @return a channel index described by the given string, or a negative AVERROR
  *         value.
  */
@@ -719,6 +727,7 @@ int av_channel_layout_index_from_string(const AVChannelLayout *channel_layout,
  * @ref av_channel_from_string().
  *
  * @param channel_layout input channel layout
+ * @param name string describing the channel to obtain
  * @return a channel described by the given string in channel_layout on success
  *         or AV_CHAN_NONE on failure (if the string is not valid or the channel
  *         order is unspecified)
