@@ -686,9 +686,6 @@ extern int auto_conversion_filters;
 extern const AVIOInterruptCB int_cb;
 
 extern const OptionDef options[];
-#if CONFIG_QSV
-extern char *qsv_device;
-#endif
 extern HWDevice *filter_hw_device;
 
 extern unsigned nb_output_dumped;
@@ -716,7 +713,6 @@ int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *frame);
 int ffmpeg_parse_options(int argc, char **argv);
 
 int videotoolbox_init(AVCodecContext *s);
-int qsv_init(AVCodecContext *s);
 
 HWDevice *hw_device_get_by_name(const char *name);
 int hw_device_init_from_string(const char *arg, HWDevice **dev);
