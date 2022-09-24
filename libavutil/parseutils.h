@@ -166,19 +166,19 @@ int av_find_info_tag(char *arg, int arg_size, const char *tag1, const char *info
  * by the standard strptime().
  *
  * The supported input field descriptors are listed below.
- * - %H: the hour as a decimal number, using a 24-hour clock, in the
+ * - `%%H`: the hour as a decimal number, using a 24-hour clock, in the
  *   range '00' through '23'
- * - %J: hours as a decimal number, in the range '0' through INT_MAX
- * - %M: the minute as a decimal number, using a 24-hour clock, in the
+ * - `%%J`: hours as a decimal number, in the range '0' through INT_MAX
+ * - `%%M`: the minute as a decimal number, using a 24-hour clock, in the
  *   range '00' through '59'
- * - %S: the second as a decimal number, using a 24-hour clock, in the
+ * - `%%S`: the second as a decimal number, using a 24-hour clock, in the
  *   range '00' through '59'
- * - %Y: the year as a decimal number, using the Gregorian calendar
- * - %m: the month as a decimal number, in the range '1' through '12'
- * - %d: the day of the month as a decimal number, in the range '1'
+ * - `%%Y`: the year as a decimal number, using the Gregorian calendar
+ * - `%%m`: the month as a decimal number, in the range '1' through '12'
+ * - `%%d`: the day of the month as a decimal number, in the range '1'
  *   through '31'
- * - %T: alias for '%H:%M:%S'
- * - %%: a literal '%'
+ * - `%%T`: alias for `%%H:%%M:%%S`
+ * - `%%`: a literal `%`
  *
  * @return a pointer to the first character not processed in this function
  *         call. In case the input string contains more characters than
