@@ -30,11 +30,17 @@
 
 /**
  * @file
- * audio channel layout utility functions
+ * @ingroup lavu_audio_channels
+ * Public libavutil channel layout APIs header.
  */
 
+
 /**
- * @addtogroup lavu_audio
+ * @defgroup lavu_audio_channels Audio channels
+ * @ingroup lavu_audio
+ *
+ * Audio channel layout utility functions
+ *
  * @{
  */
 
