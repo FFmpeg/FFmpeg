@@ -121,9 +121,9 @@ int ff_tx_gen_ptwo_revtab(AVTXContext *s, int invert_lookup)
     return 0;
 }
 
-int ff_tx_gen_ptwo_inplace_revtab_idx(AVTXContext *s)
+int ff_tx_gen_inplace_map(AVTXContext *s, int len)
 {
-    int *src_map, out_map_idx = 0, len = s->len;
+    int *src_map, out_map_idx = 0;
 
     if (!s->sub || !s->sub->map)
         return AVERROR(EINVAL);

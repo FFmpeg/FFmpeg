@@ -650,12 +650,12 @@ DECL_SR_CODELET(32768,16384,8192)
 DECL_SR_CODELET(65536,32768,16384)
 DECL_SR_CODELET(131072,65536,32768)
 
-static av_cold int TX_NAME(ff_tx_fft_sr_init)(AVTXContext *s,
-                                              const FFTXCodelet *cd,
-                                              uint64_t flags,
-                                              FFTXCodeletOptions *opts,
-                                              int len, int inv,
-                                              const void *scale)
+static av_cold int TX_NAME(ff_tx_fft_init)(AVTXContext *s,
+                                           const FFTXCodelet *cd,
+                                           uint64_t flags,
+                                           FFTXCodeletOptions *opts,
+                                           int len, int inv,
+                                           const void *scale)
 {
     int ret;
     int is_inplace = !!(flags & AV_TX_INPLACE);
@@ -668,14 +668,14 @@ static av_cold int TX_NAME(ff_tx_fft_sr_init)(AVTXContext *s,
     if ((ret = ff_tx_init_subtx(s, TX_TYPE(FFT), flags, &sub_opts, len, inv, scale)))
         return ret;
 
-    if (is_inplace && (ret = ff_tx_gen_ptwo_inplace_revtab_idx(s)))
+    if (is_inplace && (ret = ff_tx_gen_inplace_map(s, len)))
         return ret;
 
     return 0;
 }
 
-static void TX_NAME(ff_tx_fft_sr)(AVTXContext *s, void *_dst,
-                                  void *_src, ptrdiff_t stride)
+static void TX_NAME(ff_tx_fft)(AVTXContext *s, void *_dst,
+                               void *_src, ptrdiff_t stride)
 {
     TXComplex *src = _src;
     TXComplex *dst = _dst;
@@ -690,8 +690,8 @@ static void TX_NAME(ff_tx_fft_sr)(AVTXContext *s, void *_dst,
     s->fn[0](&s->sub[0], dst, dst, stride);
 }
 
-static void TX_NAME(ff_tx_fft_sr_inplace)(AVTXContext *s, void *_dst,
-                                          void *_src, ptrdiff_t stride)
+static void TX_NAME(ff_tx_fft_inplace)(AVTXContext *s, void *_dst,
+                                       void *_src, ptrdiff_t stride)
 {
     TXComplex *dst = _dst;
     TXComplex tmp;
@@ -713,28 +713,28 @@ static void TX_NAME(ff_tx_fft_sr_inplace)(AVTXContext *s, void *_dst,
     s->fn[0](&s->sub[0], dst, dst, stride);
 }
 
-static const FFTXCodelet TX_NAME(ff_tx_fft_sr_def) = {
-    .name       = TX_NAME_STR("fft_sr"),
-    .function   = TX_NAME(ff_tx_fft_sr),
+static const FFTXCodelet TX_NAME(ff_tx_fft_def) = {
+    .name       = TX_NAME_STR("fft"),
+    .function   = TX_NAME(ff_tx_fft),
     .type       = TX_TYPE(FFT),
     .flags      = AV_TX_UNALIGNED | FF_TX_OUT_OF_PLACE,
-    .factors[0] = 2,
+    .factors[0] = TX_FACTOR_ANY,
     .min_len    = 2,
     .max_len    = TX_LEN_UNLIMITED,
-    .init       = TX_NAME(ff_tx_fft_sr_init),
+    .init       = TX_NAME(ff_tx_fft_init),
     .cpu_flags  = FF_TX_CPU_FLAGS_ALL,
     .prio       = FF_TX_PRIO_BASE,
 };
 
-static const FFTXCodelet TX_NAME(ff_tx_fft_sr_inplace_def) = {
-    .name       = TX_NAME_STR("fft_sr_inplace"),
-    .function   = TX_NAME(ff_tx_fft_sr_inplace),
+static const FFTXCodelet TX_NAME(ff_tx_fft_inplace_def) = {
+    .name       = TX_NAME_STR("fft_inplace"),
+    .function   = TX_NAME(ff_tx_fft_inplace),
     .type       = TX_TYPE(FFT),
     .flags      = AV_TX_UNALIGNED | AV_TX_INPLACE,
-    .factors[0] = 2,
+    .factors[0] = TX_FACTOR_ANY,
     .min_len    = 2,
     .max_len    = TX_LEN_UNLIMITED,
-    .init       = TX_NAME(ff_tx_fft_sr_init),
+    .init       = TX_NAME(ff_tx_fft_init),
     .cpu_flags  = FF_TX_CPU_FLAGS_ALL,
     .prio       = FF_TX_PRIO_BASE,
 };
@@ -1484,8 +1484,8 @@ const FFTXCodelet * const TX_NAME(ff_tx_codelet_list)[] = {
     &TX_NAME(ff_tx_fft131072_ns_def),
 
     /* Standalone transforms */
-    &TX_NAME(ff_tx_fft_sr_def),
-    &TX_NAME(ff_tx_fft_sr_inplace_def),
+    &TX_NAME(ff_tx_fft_def),
+    &TX_NAME(ff_tx_fft_inplace_def),
     &TX_NAME(ff_tx_fft_pfa_3xM_def),
     &TX_NAME(ff_tx_fft_pfa_5xM_def),
     &TX_NAME(ff_tx_fft_pfa_7xM_def),

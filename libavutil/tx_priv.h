@@ -259,7 +259,7 @@ int ff_tx_gen_ptwo_revtab(AVTXContext *s, int invert_lookup);
  * specific order, allows the revtab to be done in-place. The sub-transform
  * and its map should already be initialized.
  */
-int ff_tx_gen_ptwo_inplace_revtab_idx(AVTXContext *s);
+int ff_tx_gen_inplace_map(AVTXContext *s, int len);
 
 /*
  * This generates a parity-based revtab of length len and direction inv.
