@@ -29,15 +29,9 @@
 #include <stdint.h>
 
 /**
- * @addtogroup lavu_video
- * @{
- *
  * @defgroup lavu_video_display Display transformation matrix functions
- * @{
- */
-
-/**
- * @addtogroup lavu_video_display
+ * @ingroup lavu_video
+ *
  * The display transformation matrix specifies an affine transformation that
  * should be applied to video frames for correct presentation. It is compatible
  * with the matrices stored in the ISO/IEC 14496-12 container format.
@@ -71,6 +65,8 @@
  *   q' = (b * p + d * q + y) / z;
  *   z  =  u * p + v * q + w
  * @endcode
+ *
+ * @{
  */
 
 /**
@@ -106,7 +102,6 @@ void av_display_rotation_set(int32_t matrix[9], double angle);
 void av_display_matrix_flip(int32_t matrix[9], int hflip, int vflip);
 
 /**
- * @}
  * @}
  */
 
