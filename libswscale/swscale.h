@@ -234,6 +234,7 @@ int sws_scale(struct SwsContext *c, const uint8_t *const srcSlice[],
  * - sws_receive_slice(0, dst->height)
  * - sws_frame_end()
  *
+ * @param c   The scaling context
  * @param dst The destination frame. See documentation for sws_frame_start() for
  *            more details.
  * @param src The source frame.
@@ -249,6 +250,7 @@ int sws_scale_frame(struct SwsContext *c, AVFrame *dst, const AVFrame *src);
  * This function will retain references to src and dst, so they must both use
  * refcounted buffers (if allocated by the caller, in case of dst).
  *
+ * @param c   The scaling context
  * @param dst The destination frame.
  *
  *            The data buffers may either be already allocated by the caller or
@@ -273,6 +275,8 @@ int sws_frame_start(struct SwsContext *c, AVFrame *dst, const AVFrame *src);
  * submitted with sws_frame_start(). Must be called after all sws_send_slice()
  * and sws_receive_slice() calls are done, before any new sws_frame_start()
  * calls.
+ *
+ * @param c   The scaling context
  */
 void sws_frame_end(struct SwsContext *c);
 
@@ -282,6 +286,7 @@ void sws_frame_end(struct SwsContext *c);
  * any order, but may not overlap. For vertically subsampled pixel formats, the
  * slices must be aligned according to subsampling.
  *
+ * @param c   The scaling context
  * @param slice_start first row of the slice
  * @param slice_height number of rows in the slice
  *
@@ -294,6 +299,7 @@ int sws_send_slice(struct SwsContext *c, unsigned int slice_start,
  * Request a horizontal slice of the output data to be written into the frame
  * previously provided to sws_frame_start().
  *
+ * @param c   The scaling context
  * @param slice_start first row of the slice; must be a multiple of
  *                    sws_receive_slice_alignment()
  * @param slice_height number of rows in the slice; must be a multiple of
@@ -310,6 +316,9 @@ int sws_receive_slice(struct SwsContext *c, unsigned int slice_start,
                       unsigned int slice_height);
 
 /**
+ * Get the alignment required for slices
+ *
+ * @param c   The scaling context
  * @return alignment required for output slices requested with sws_receive_slice().
  *         Slice offsets and sizes passed to sws_receive_slice() must be
  *         multiples of the value returned from this function.
@@ -317,6 +326,7 @@ int sws_receive_slice(struct SwsContext *c, unsigned int slice_start,
 unsigned int sws_receive_slice_alignment(const struct SwsContext *c);
 
 /**
+ * @param c the scaling context
  * @param dstRange flag indicating the while-black range of the output (1=jpeg / 0=mpeg)
  * @param srcRange flag indicating the while-black range of the input (1=jpeg / 0=mpeg)
  * @param table the yuv2rgb coefficients describing the output yuv space, normally ff_yuv2rgb_coeffs[x]
