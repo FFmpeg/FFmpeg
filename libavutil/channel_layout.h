@@ -395,6 +395,11 @@ struct AVBPrint;
 
 #if FF_API_OLD_CHANNEL_LAYOUT
 /**
+ * @name Deprecated Functions
+ * @{
+ */
+
+/**
  * Return a channel layout id that matches name, or 0 if no match is found.
  *
  * name can be one or several of the following notations,
@@ -520,6 +525,9 @@ const char *av_get_channel_description(uint64_t channel);
 attribute_deprecated
 int av_get_standard_channel_layout(unsigned index, uint64_t *layout,
                                    const char **name);
+/**
+ * @}
+ */
 #endif
 
 /**
