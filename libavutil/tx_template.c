@@ -472,6 +472,81 @@ static av_always_inline void fft15(TXComplex *out, TXComplex *in,
     fft5_m3(out, tmp + 10, stride);
 }
 
+static av_cold int TX_NAME(ff_tx_fft_factor_init)(AVTXContext *s,
+                                                  const FFTXCodelet *cd,
+                                                  uint64_t flags,
+                                                  FFTXCodeletOptions *opts,
+                                                  int len, int inv,
+                                                  const void *scale)
+{
+    TX_TAB(ff_tx_init_tabs)(len);
+
+    if (flags & FF_TX_PRESHUFFLE) {
+        s->map = av_malloc(len*sizeof(s->map));
+        s->map[0] = 0; /* DC is always at the start */
+        if (inv) /* Reversing the ACs flips the transform direction */
+            for (int i = 1; i < len; i++)
+                s->map[i] = len - i;
+        else
+            for (int i = 1; i < len; i++)
+                s->map[i] = i;
+    }
+
+    /* Our 15-point transform is actually a 5x3 PFA, so embed its input map. */
+    if (len == 15) {
+        int tmp[15];
+        memcpy(tmp, s->map, 15*sizeof(*tmp));
+        for (int i = 0; i < 5; i++) {
+            for (int j = 0; j < 3; j++)
+                s->map[i*3 + j] = tmp[(i*3 + j*5) % 15];
+        }
+    }
+
+    return 0;
+}
+
+#define DECL_FACTOR_S(n)                                                       \
+static void TX_NAME(ff_tx_fft##n)(AVTXContext *s, void *dst,                   \
+                                  void *src, ptrdiff_t stride)                 \
+{                                                                              \
+    fft##n((TXComplex *)dst, (TXComplex *)src, stride / sizeof(TXComplex));    \
+}                                                                              \
+static const FFTXCodelet TX_NAME(ff_tx_fft##n##_ns_def) = {                    \
+    .name       = TX_NAME_STR("fft" #n "_ns"),                                 \
+    .function   = TX_NAME(ff_tx_fft##n),                                       \
+    .type       = TX_TYPE(FFT),                                                \
+    .flags      = AV_TX_INPLACE | FF_TX_OUT_OF_PLACE |                         \
+                  AV_TX_UNALIGNED | FF_TX_PRESHUFFLE,                          \
+    .factors[0] = n,                                                           \
+    .min_len    = n,                                                           \
+    .max_len    = n,                                                           \
+    .init       = TX_NAME(ff_tx_fft_factor_init),                              \
+    .cpu_flags  = FF_TX_CPU_FLAGS_ALL,                                         \
+    .prio       = FF_TX_PRIO_BASE,                                             \
+};
+
+#define DECL_FACTOR_F(n)                                                       \
+DECL_FACTOR_S(n)                                                               \
+static const FFTXCodelet TX_NAME(ff_tx_fft##n##_fwd_def) = {                   \
+    .name       = TX_NAME_STR("fft" #n "_fwd"),                                \
+    .function   = TX_NAME(ff_tx_fft##n),                                       \
+    .type       = TX_TYPE(FFT),                                                \
+    .flags      = AV_TX_INPLACE | FF_TX_OUT_OF_PLACE |                         \
+                  AV_TX_UNALIGNED | FF_TX_FORWARD_ONLY,                        \
+    .factors[0] = n,                                                           \
+    .min_len    = n,                                                           \
+    .max_len    = n,                                                           \
+    .init       = TX_NAME(ff_tx_fft_factor_init),                              \
+    .cpu_flags  = FF_TX_CPU_FLAGS_ALL,                                         \
+    .prio       = FF_TX_PRIO_BASE,                                             \
+};
+
+DECL_FACTOR_F(3)
+DECL_FACTOR_F(5)
+DECL_FACTOR_F(7)
+DECL_FACTOR_F(9)
+DECL_FACTOR_S(15)
+
 #define BUTTERFLIES(a0, a1, a2, a3)            \
     do {                                       \
         r0=a0.re;                              \
@@ -1482,6 +1557,19 @@ const FFTXCodelet * const TX_NAME(ff_tx_codelet_list)[] = {
     &TX_NAME(ff_tx_fft32768_ns_def),
     &TX_NAME(ff_tx_fft65536_ns_def),
     &TX_NAME(ff_tx_fft131072_ns_def),
+
+    /* Prime factor codelets */
+    &TX_NAME(ff_tx_fft3_ns_def),
+    &TX_NAME(ff_tx_fft5_ns_def),
+    &TX_NAME(ff_tx_fft7_ns_def),
+    &TX_NAME(ff_tx_fft9_ns_def),
+    &TX_NAME(ff_tx_fft15_ns_def),
+
+    /* We get these for free */
+    &TX_NAME(ff_tx_fft3_fwd_def),
+    &TX_NAME(ff_tx_fft5_fwd_def),
+    &TX_NAME(ff_tx_fft7_fwd_def),
+    &TX_NAME(ff_tx_fft9_fwd_def),
 
     /* Standalone transforms */
     &TX_NAME(ff_tx_fft_def),
