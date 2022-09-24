@@ -324,22 +324,17 @@ unsigned int sws_receive_slice_alignment(const struct SwsContext *c);
  * @param brightness 16.16 fixed point brightness correction
  * @param contrast 16.16 fixed point contrast correction
  * @param saturation 16.16 fixed point saturation correction
-#if LIBSWSCALE_VERSION_MAJOR > 6
- * @return negative error code on error, non negative otherwise
-#else
- * @return -1 if not supported
-#endif
+ *
+ * @return A negative error code on error, non negative otherwise.
+ *         If `LIBSWSCALE_VERSION_MAJOR < 7`, returns -1 if not supported.
  */
 int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4],
                              int srcRange, const int table[4], int dstRange,
                              int brightness, int contrast, int saturation);
 
 /**
-#if LIBSWSCALE_VERSION_MAJOR > 6
- * @return negative error code on error, non negative otherwise
-#else
- * @return -1 if not supported
-#endif
+ * @return A negative error code on error, non negative otherwise.
+ *         If `LIBSWSCALE_VERSION_MAJOR < 7`, returns -1 if not supported.
  */
 int sws_getColorspaceDetails(struct SwsContext *c, int **inv_table,
                              int *srcRange, int **table, int *dstRange,
