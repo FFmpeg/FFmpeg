@@ -171,36 +171,37 @@ av_cold void TX_TAB(ff_tx_init_tabs)(int len)
 static av_always_inline void fft3(TXComplex *out, TXComplex *in,
                                   ptrdiff_t stride)
 {
-    TXComplex tmp[2];
+    TXComplex tmp[3];
     const TXSample *tab = TX_TAB(ff_tx_tab_53);
 #ifdef TX_INT32
     int64_t mtmp[4];
 #endif
 
-    BF(tmp[0].re, tmp[1].im, in[1].im, in[2].im);
-    BF(tmp[0].im, tmp[1].re, in[1].re, in[2].re);
+    tmp[0] = in[0];
+    BF(tmp[1].re, tmp[2].im, in[1].im, in[2].im);
+    BF(tmp[1].im, tmp[2].re, in[1].re, in[2].re);
 
-    out[0*stride].re = in[0].re + tmp[1].re;
-    out[0*stride].im = in[0].im + tmp[1].im;
+    out[0*stride].re = tmp[0].re + tmp[2].re;
+    out[0*stride].im = tmp[0].im + tmp[2].im;
 
 #ifdef TX_INT32
-    mtmp[0] = (int64_t)tab[ 8] * tmp[0].re;
-    mtmp[1] = (int64_t)tab[ 9] * tmp[0].im;
-    mtmp[2] = (int64_t)tab[10] * tmp[1].re;
-    mtmp[3] = (int64_t)tab[10] * tmp[1].im;
-    out[1*stride].re = in[0].re - (mtmp[2] + mtmp[0] + 0x40000000 >> 31);
-    out[1*stride].im = in[0].im - (mtmp[3] - mtmp[1] + 0x40000000 >> 31);
-    out[2*stride].re = in[0].re - (mtmp[2] - mtmp[0] + 0x40000000 >> 31);
-    out[2*stride].im = in[0].im - (mtmp[3] + mtmp[1] + 0x40000000 >> 31);
+    mtmp[0] = (int64_t)tab[ 8] * tmp[1].re;
+    mtmp[1] = (int64_t)tab[ 9] * tmp[1].im;
+    mtmp[2] = (int64_t)tab[10] * tmp[2].re;
+    mtmp[3] = (int64_t)tab[10] * tmp[2].im;
+    out[1*stride].re = tmp[0].re - (mtmp[2] + mtmp[0] + 0x40000000 >> 31);
+    out[1*stride].im = tmp[0].im - (mtmp[3] - mtmp[1] + 0x40000000 >> 31);
+    out[2*stride].re = tmp[0].re - (mtmp[2] - mtmp[0] + 0x40000000 >> 31);
+    out[2*stride].im = tmp[0].im - (mtmp[3] + mtmp[1] + 0x40000000 >> 31);
 #else
-    tmp[0].re = tab[ 8] * tmp[0].re;
-    tmp[0].im = tab[ 9] * tmp[0].im;
-    tmp[1].re = tab[10] * tmp[1].re;
-    tmp[1].im = tab[10] * tmp[1].im;
-    out[1*stride].re = in[0].re - tmp[1].re + tmp[0].re;
-    out[1*stride].im = in[0].im - tmp[1].im - tmp[0].im;
-    out[2*stride].re = in[0].re - tmp[1].re - tmp[0].re;
-    out[2*stride].im = in[0].im - tmp[1].im + tmp[0].im;
+    tmp[1].re = tab[ 8] * tmp[1].re;
+    tmp[1].im = tab[ 9] * tmp[1].im;
+    tmp[2].re = tab[10] * tmp[2].re;
+    tmp[2].im = tab[10] * tmp[2].im;
+    out[1*stride].re = tmp[0].re - tmp[2].re + tmp[1].re;
+    out[1*stride].im = tmp[0].im - tmp[2].im - tmp[1].im;
+    out[2*stride].re = tmp[0].re - tmp[2].re - tmp[1].re;
+    out[2*stride].im = tmp[0].im - tmp[2].im + tmp[1].im;
 #endif
 }
 
@@ -208,16 +209,17 @@ static av_always_inline void fft3(TXComplex *out, TXComplex *in,
 static av_always_inline void NAME(TXComplex *out, TXComplex *in,    \
                                   ptrdiff_t stride)                 \
 {                                                                   \
-    TXComplex z0[4], t[6];                                          \
+    TXComplex dc, z0[4], t[6];                                      \
     const TXSample *tab = TX_TAB(ff_tx_tab_53);                     \
                                                                     \
+    dc = in[0];                                                     \
     BF(t[1].im, t[0].re, in[1].re, in[4].re);                       \
     BF(t[1].re, t[0].im, in[1].im, in[4].im);                       \
     BF(t[3].im, t[2].re, in[2].re, in[3].re);                       \
     BF(t[3].re, t[2].im, in[2].im, in[3].im);                       \
                                                                     \
-    out[D0*stride].re = in[0].re + t[0].re + t[2].re;               \
-    out[D0*stride].im = in[0].im + t[0].im + t[2].im;               \
+    out[D0*stride].re = dc.re + t[0].re + t[2].re;                  \
+    out[D0*stride].im = dc.im + t[0].im + t[2].im;                  \
                                                                     \
     SMUL(t[4].re, t[0].re, tab[0], tab[2], t[2].re, t[0].re);       \
     SMUL(t[4].im, t[0].im, tab[0], tab[2], t[2].im, t[0].im);       \
@@ -229,14 +231,14 @@ static av_always_inline void NAME(TXComplex *out, TXComplex *in,    \
     BF(z0[2].re, z0[1].re, t[4].re, t[5].re);                       \
     BF(z0[2].im, z0[1].im, t[4].im, t[5].im);                       \
                                                                     \
-    out[D1*stride].re = in[0].re + z0[3].re;                        \
-    out[D1*stride].im = in[0].im + z0[0].im;                        \
-    out[D2*stride].re = in[0].re + z0[2].re;                        \
-    out[D2*stride].im = in[0].im + z0[1].im;                        \
-    out[D3*stride].re = in[0].re + z0[1].re;                        \
-    out[D3*stride].im = in[0].im + z0[2].im;                        \
-    out[D4*stride].re = in[0].re + z0[0].re;                        \
-    out[D4*stride].im = in[0].im + z0[3].im;                        \
+    out[D1*stride].re = dc.re + z0[3].re;                           \
+    out[D1*stride].im = dc.im + z0[0].im;                           \
+    out[D2*stride].re = dc.re + z0[2].re;                           \
+    out[D2*stride].im = dc.im + z0[1].im;                           \
+    out[D3*stride].re = dc.re + z0[1].re;                           \
+    out[D3*stride].im = dc.im + z0[2].im;                           \
+    out[D4*stride].re = dc.re + z0[0].re;                           \
+    out[D4*stride].im = dc.im + z0[3].im;                           \
 }
 
 DECL_FFT5(fft5,     0,  1,  2,  3,  4)
@@ -247,12 +249,13 @@ DECL_FFT5(fft5_m3,  5, 11,  2,  8, 14)
 static av_always_inline void fft7(TXComplex *out, TXComplex *in,
                                   ptrdiff_t stride)
 {
-    TXComplex t[6], z[3];
+    TXComplex dc, t[6], z[3];
     const TXComplex *tab = (const TXComplex *)TX_TAB(ff_tx_tab_7);
 #ifdef TX_INT32
     int64_t mtmp[12];
 #endif
 
+    dc = in[0];
     BF(t[1].re, t[0].re, in[1].re, in[6].re);
     BF(t[1].im, t[0].im, in[1].im, in[6].im);
     BF(t[3].re, t[2].re, in[2].re, in[5].re);
@@ -260,8 +263,8 @@ static av_always_inline void fft7(TXComplex *out, TXComplex *in,
     BF(t[5].re, t[4].re, in[3].re, in[4].re);
     BF(t[5].im, t[4].im, in[3].im, in[4].im);
 
-    out[0*stride].re = in[0].re + t[0].re + t[2].re + t[4].re;
-    out[0*stride].im = in[0].im + t[0].im + t[2].im + t[4].im;
+    out[0*stride].re = dc.re + t[0].re + t[2].re + t[4].re;
+    out[0*stride].im = dc.im + t[0].im + t[2].im + t[4].im;
 
 #ifdef TX_INT32 /* NOTE: it's possible to do this with 16 mults but 72 adds */
     mtmp[ 0] = ((int64_t)tab[0].re)*t[0].re - ((int64_t)tab[2].re)*t[4].re;
@@ -317,29 +320,30 @@ static av_always_inline void fft7(TXComplex *out, TXComplex *in,
     BF(t[3].im, z[1].im, z[1].im, t[2].im);
     BF(t[5].im, z[2].im, z[2].im, t[4].im);
 
-    out[1*stride].re = in[0].re + z[0].re;
-    out[1*stride].im = in[0].im + t[1].im;
-    out[2*stride].re = in[0].re + t[3].re;
-    out[2*stride].im = in[0].im + z[1].im;
-    out[3*stride].re = in[0].re + z[2].re;
-    out[3*stride].im = in[0].im + t[5].im;
-    out[4*stride].re = in[0].re + t[5].re;
-    out[4*stride].im = in[0].im + z[2].im;
-    out[5*stride].re = in[0].re + z[1].re;
-    out[5*stride].im = in[0].im + t[3].im;
-    out[6*stride].re = in[0].re + t[1].re;
-    out[6*stride].im = in[0].im + z[0].im;
+    out[1*stride].re = dc.re + z[0].re;
+    out[1*stride].im = dc.im + t[1].im;
+    out[2*stride].re = dc.re + t[3].re;
+    out[2*stride].im = dc.im + z[1].im;
+    out[3*stride].re = dc.re + z[2].re;
+    out[3*stride].im = dc.im + t[5].im;
+    out[4*stride].re = dc.re + t[5].re;
+    out[4*stride].im = dc.im + z[2].im;
+    out[5*stride].re = dc.re + z[1].re;
+    out[5*stride].im = dc.im + t[3].im;
+    out[6*stride].re = dc.re + t[1].re;
+    out[6*stride].im = dc.im + z[0].im;
 }
 
 static av_always_inline void fft9(TXComplex *out, TXComplex *in,
                                   ptrdiff_t stride)
 {
     const TXComplex *tab = (const TXComplex *)TX_TAB(ff_tx_tab_9);
-    TXComplex t[16], w[4], x[5], y[5], z[2];
+    TXComplex dc, t[16], w[4], x[5], y[5], z[2];
 #ifdef TX_INT32
     int64_t mtmp[12];
 #endif
 
+    dc = in[0];
     BF(t[1].re, t[0].re, in[1].re, in[8].re);
     BF(t[1].im, t[0].im, in[1].im, in[8].im);
     BF(t[3].re, t[2].re, in[2].re, in[7].re);
@@ -358,8 +362,8 @@ static av_always_inline void fft9(TXComplex *out, TXComplex *in,
     w[3].re = t[3].re + t[7].re;
     w[3].im = t[3].im + t[7].im;
 
-    z[0].re = in[0].re + t[4].re;
-    z[0].im = in[0].im + t[4].im;
+    z[0].re = dc.re + t[4].re;
+    z[0].im = dc.im + t[4].im;
 
     z[1].re = t[0].re + t[2].re + t[6].re;
     z[1].im = t[0].im + t[2].im + t[6].im;
@@ -411,8 +415,8 @@ static av_always_inline void fft9(TXComplex *out, TXComplex *in,
 
     x[3].re = z[0].re  + tab[0].re*z[1].re;
     x[3].im = z[0].im  + tab[0].re*z[1].im;
-    z[0].re = in[0].re + tab[0].re*t[4].re;
-    z[0].im = in[0].im + tab[0].re*t[4].im;
+    z[0].re = dc.re + tab[0].re*t[4].re;
+    z[0].im = dc.im + tab[0].re*t[4].im;
 
     x[1].re = tab[1].re*w[0].re + tab[2].im*w[1].re;
     x[1].im = tab[1].re*w[0].im + tab[2].im*w[1].im;
