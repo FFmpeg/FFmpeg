@@ -746,7 +746,6 @@ int av_channel_layout_compare(const AVChannelLayout *chl, const AVChannelLayout 
 
 /**
  * @}
- * @}
  */
 
 #endif /* AVUTIL_CHANNEL_LAYOUT_H */
