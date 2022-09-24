@@ -73,7 +73,7 @@
  *
  * Once all values have been set, it must be initialized with swr_init(). If
  * you need to change the conversion parameters, you can change the parameters
- * using @ref AVOptions, as described above in the first example; or by using
+ * using @ref avoptions, as described above in the first example; or by using
  * swr_alloc_set_opts2(), but with the first argument the allocated context.
  * You must then call swr_init() again.
  *
