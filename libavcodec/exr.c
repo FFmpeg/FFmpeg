@@ -2121,6 +2121,9 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *picture,
 
     ff_set_sar(s->avctx, av_d2q(av_int2float(s->sar), 255));
 
+    if (avctx->skip_frame >= AVDISCARD_ALL)
+        return avpkt->size;
+
     s->desc          = av_pix_fmt_desc_get(avctx->pix_fmt);
     if (!s->desc)
         return AVERROR_INVALIDDATA;
@@ -2351,5 +2354,6 @@ const FFCodec ff_exr_decoder = {
     FF_CODEC_DECODE_CB(decode_frame),
     .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS |
                         AV_CODEC_CAP_SLICE_THREADS,
+    .caps_internal    = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .p.priv_class     = &exr_class,
 };
