@@ -250,7 +250,7 @@ int av_dict_copy(AVDictionary **dst, const AVDictionary *src, int flags)
 int av_dict_get_string(const AVDictionary *m, char **buffer,
                        const char key_val_sep, const char pairs_sep)
 {
-    AVDictionaryEntry *t = NULL;
+    const AVDictionaryEntry *t = NULL;
     AVBPrint bprint;
     int cnt = 0;
     char special_chars[] = {pairs_sep, key_val_sep, '\0'};
@@ -265,7 +265,7 @@ int av_dict_get_string(const AVDictionary *m, char **buffer,
     }
 
     av_bprint_init(&bprint, 64, AV_BPRINT_SIZE_UNLIMITED);
-    while ((t = av_dict_get(m, "", t, AV_DICT_IGNORE_SUFFIX))) {
+    while ((t = av_dict_iterate(m, t))) {
         if (cnt++)
             av_bprint_append_data(&bprint, &pairs_sep, 1);
         av_bprint_escape(&bprint, t->key, special_chars, AV_ESCAPE_MODE_BACKSLASH, 0);
