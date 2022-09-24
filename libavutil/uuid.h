@@ -106,7 +106,6 @@ int av_uuid_parse_range(const char *in_start, const char *in_end, AVUUID uu);
  *
  * @param[in]  uu  AVUUID
  * @param[out] out Pointer to an array of no less than 37 characters.
- * @return         A non-zero value in case of an error.
  */
 void av_uuid_unparse(const AVUUID uu, char *out);
 
