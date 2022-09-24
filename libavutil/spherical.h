@@ -20,6 +20,7 @@
 
 /**
  * @file
+ * @ingroup lavu_video_spherical
  * Spherical video
  */
 
