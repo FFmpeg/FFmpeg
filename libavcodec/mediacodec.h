@@ -88,9 +88,9 @@ int av_mediacodec_release_buffer(AVMediaCodecBuffer *buffer, int render);
 /**
  * Release a MediaCodec buffer and render it at the given time to the surface
  * that is associated with the decoder. The timestamp must be within one second
- * of the current java/lang/System#nanoTime() (which is implemented using
- * CLOCK_MONOTONIC on Android). See the Android MediaCodec documentation
- * of android/media/MediaCodec#releaseOutputBuffer(int,long) for more details.
+ * of the current `java/lang/System#nanoTime()` (which is implemented using
+ * `CLOCK_MONOTONIC` on Android). See the Android MediaCodec documentation
+ * of `android/media/MediaCodec#releaseOutputBuffer(int,long)` for more details.
  *
  * @param buffer the buffer to render
  * @param time timestamp in nanoseconds of when to render the buffer
