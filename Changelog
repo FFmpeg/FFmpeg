@@ -1,6 +1,52 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 5.1.2:
+- avcodec/dstdec: Check for overflow in build_filter()
+- avformat/spdifdec: Use 64bit to compute bit rate
+- avformat/rpl: Use 64bit for duration computation
+- avformat/xwma: Use av_rescale() for duration computation
+- avformat/sdsdec: Use av_rescale() to avoid intermediate overflow in duration calculation
+- avformat/sbgdec: Check ts_int in genrate_intervals
+- avformat/sbgdec: clamp end_ts
+- avformat/rmdec: check tag_size
+- avformat/nutdec: Check fields
+- avformat/flvdec: Use 64bit for sum_flv_tag_size
+- avformat/jacosubdec: Fix overflow in get_shift()
+- avformat/genh: Check nb_channels for IMA ADPCM
+- avformat/dxa: avoid bpc overflows
+- avformat/dhav: Use 64bit seek_back
+- avformat/cafdec: Check that nb_frasmes fits within 64bit
+- avformat/asfdec_o: Limit packet offset
+- avformat/apm: Use 64bit for bit_rate computation
+- avformat/ape: Check frames size
+- avformat/icodec: Check nb_pal
+- avformat/aiffdec: Use 64bit for block_duration use
+- avformat/aiffdec: Check block_duration
+- avformat/mxfdec: only probe max run in
+- avformat/mxfdec: Check run_in is within 65536
+- avcodec/mjpegdec: Check for unsupported bayer case
+- avcodec/apedec: Fix integer overflow in filter_3800()
+- avcodec/tta: Check 24bit scaling for overflow
+- avcodec/mobiclip: Check quantizer for overflow
+- avcodec/exr: Check preview psize
+- avcodec/tiff: Fix loop detection
+- libavformat/hls: Free keys
+- avcodec/fmvc: Move frame allocation to a later stage
+- avfilter/vf_showinfo: remove backspaces
+- avcodec/speedhq: Check width
+- avcodec/bink: disallow odd positioned scaled blocks
+- avformat/cafenc: derive Opus frame size from the relevant stream parameters
+- avformat/dashdec: Fix crash on invalid input/ENOMEM, fix leak
+- lavc/videotoolbox: do not pass AVCodecContext to decoder output callback
+- lavc/pthread_frame: always transfer stashed hwaccel state
+- avcodec/arm/sbcenc: avoid callee preserved vfp registers
+- avformat/riffdec: don't unconditionally overwrite WAVEFORMATEXTENSIBLE layout
+- avfilter/vf_scale: overwrite the width and height expressions with the original values
+- lavc/pthread_frame: avoid leaving stale hwaccel state in worker threads
+- avutil/tests/.gitignore: Add channel_layout testtool
+
+
 version 5.1.1:
 - avformat/asfdec_o: limit recursion depth in asf_read_unknown()
 - avformat/mov: Check count sums in build_open_gop_key_points()
