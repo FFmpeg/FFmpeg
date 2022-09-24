@@ -32,8 +32,6 @@
 static int xwd_decode_frame(AVCodecContext *avctx, AVFrame *p,
                             int *got_frame, AVPacket *avpkt)
 {
-    const uint8_t *buf = avpkt->data;
-    int i, ret, buf_size = avpkt->size;
     uint32_t version, header_size, vclass, ncolors;
     uint32_t xoffset, be, bpp, lsize, rsize;
     uint32_t pixformat, pixdepth, bunit, bitorder, bpad;
@@ -41,11 +39,12 @@ static int xwd_decode_frame(AVCodecContext *avctx, AVFrame *p,
     uint8_t *ptr;
     int width, height;
     GetByteContext gb;
+    int ret;
 
-    if (buf_size < XWD_HEADER_SIZE)
+    if (avpkt->size < XWD_HEADER_SIZE)
         return AVERROR_INVALIDDATA;
 
-    bytestream2_init(&gb, buf, buf_size);
+    bytestream2_init(&gb, avpkt->data, avpkt->size);
     header_size = bytestream2_get_be32u(&gb);
 
     version = bytestream2_get_be32u(&gb);
@@ -54,7 +53,7 @@ static int xwd_decode_frame(AVCodecContext *avctx, AVFrame *p,
         return AVERROR_INVALIDDATA;
     }
 
-    if (buf_size < header_size || header_size < XWD_HEADER_SIZE) {
+    if (avpkt->size < header_size || header_size < XWD_HEADER_SIZE) {
         av_log(avctx, AV_LOG_ERROR, "invalid header size\n");
         return AVERROR_INVALIDDATA;
     }
@@ -211,6 +210,9 @@ static int xwd_decode_frame(AVCodecContext *avctx, AVFrame *p,
         return AVERROR_PATCHWELCOME;
     }
 
+    if (avctx->skip_frame >= AVDISCARD_ALL)
+        return avpkt->size;
+
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
         return ret;
 
@@ -221,8 +223,7 @@ static int xwd_decode_frame(AVCodecContext *avctx, AVFrame *p,
         uint32_t *dst = (uint32_t *)p->data[1];
         uint8_t red, green, blue;
 
-        for (i = 0; i < ncolors; i++) {
-
+        for (int i = 0; i < ncolors; i++) {
             bytestream2_skipu(&gb, 4); // skip colormap entry number
             red    = bytestream2_get_byteu(&gb);
             bytestream2_skipu(&gb, 1);
@@ -236,7 +237,7 @@ static int xwd_decode_frame(AVCodecContext *avctx, AVFrame *p,
     }
 
     ptr = p->data[0];
-    for (i = 0; i < avctx->height; i++) {
+    for (int i = 0; i < avctx->height; i++) {
         bytestream2_get_bufferu(&gb, ptr, rsize);
         bytestream2_skipu(&gb, lsize - rsize);
         ptr += p->linesize[0];
@@ -244,7 +245,7 @@ static int xwd_decode_frame(AVCodecContext *avctx, AVFrame *p,
 
     *got_frame       = 1;
 
-    return buf_size;
+    return avpkt->size;
 }
 
 const FFCodec ff_xwd_decoder = {
@@ -253,5 +254,6 @@ const FFCodec ff_xwd_decoder = {
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_XWD,
     .p.capabilities = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     FF_CODEC_DECODE_CB(xwd_decode_frame),
 };
