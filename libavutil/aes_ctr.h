@@ -22,6 +22,12 @@
 #ifndef AVUTIL_AES_CTR_H
 #define AVUTIL_AES_CTR_H
 
+/**
+ * @defgroup lavu_aes_ctr AES-CTR
+ * @ingroup lavu_crypto
+ * @{
+ */
+
 #include <stdint.h>
 
 #include "attributes.h"
