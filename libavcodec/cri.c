@@ -317,6 +317,9 @@ skip:
     if (!s->data || !s->data_size)
         return AVERROR_INVALIDDATA;
 
+    if (avctx->skip_frame >= AVDISCARD_ALL)
+        return avpkt->size;
+
     if ((ret = ff_thread_get_buffer(avctx, p, 0)) < 0)
         return ret;
 
@@ -432,6 +435,7 @@ const FFCodec ff_cri_decoder = {
     FF_CODEC_DECODE_CB(cri_decode_frame),
     .close          = cri_decode_close,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP |
+                      FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     CODEC_LONG_NAME("Cintel RAW"),
 };
