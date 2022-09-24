@@ -1379,6 +1379,8 @@ cglobal fft_sr_ns_float, 4, 10, 16, 272, ctx, out, in, tmp, len, lut, itab, rtab
 %endmacro
 
 %if ARCH_X86_64
+FFT_SPLIT_RADIX_FN avx, 0
+FFT_SPLIT_RADIX_FN avx, 1
 FFT_SPLIT_RADIX_FN fma3, 0
 FFT_SPLIT_RADIX_FN fma3, 1
 %if HAVE_AVX2_EXTERNAL
