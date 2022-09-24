@@ -84,7 +84,10 @@ const AVCRC *av_crc_get_table(AVCRCId crc_id);
 
 /**
  * Calculate the CRC of a block.
+ * @param ctx initialized AVCRC array (see av_crc_init())
  * @param crc CRC of previous blocks if any or initial value for CRC
+ * @param buffer buffer whose CRC to calculate
+ * @param length length of the buffer
  * @return CRC updated with the data from the given block
  *
  * @see av_crc_init() "le" parameter
