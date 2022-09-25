@@ -93,8 +93,8 @@ typedef struct TiffContext {
     float   color_matrix[3][4];
     float   camera_calibration[4][4];
     float   premultiply[4];
+    float   black_level[4];
 
-    unsigned black_level;
     unsigned white_level;
     uint16_t dng_lut[65536];
 
@@ -290,7 +290,7 @@ static int add_metadata(int count, int type,
  */
 static uint16_t av_always_inline dng_process_color16(uint16_t value,
                                                      const uint16_t *lut,
-                                                     uint16_t black_level,
+                                                     float black_level,
                                                      float scale_factor)
 {
     float value_norm;
@@ -299,10 +299,8 @@ static uint16_t av_always_inline dng_process_color16(uint16_t value,
     value = lut[value];
 
     // Black level subtraction
-    value = av_clip_uint16((unsigned)value - black_level);
-
     // Color scaling
-    value_norm = (float)value * scale_factor;
+    value_norm = ((float)value - black_level) * scale_factor;
 
     value = av_clip_uint16(lrintf(value_norm));
 
@@ -311,7 +309,7 @@ static uint16_t av_always_inline dng_process_color16(uint16_t value,
 
 static uint16_t av_always_inline dng_process_color8(uint16_t value,
                                                     const uint16_t *lut,
-                                                    uint16_t black_level,
+                                                    float black_level,
                                                     float scale_factor)
 {
     return dng_process_color16(value, lut, black_level, scale_factor) >> 8;
@@ -326,10 +324,10 @@ static void av_always_inline dng_blit(TiffContext *s, uint8_t *dst, int dst_stri
 
     if (s->is_bayer) {
         for (int i = 0; i < 4; i++)
-            scale_factor[i] = s->premultiply[s->pattern[i]] * 65535.f / (s->white_level - s->black_level);
+            scale_factor[i] = s->premultiply[s->pattern[i]] * 65535.f / (s->white_level - s->black_level[i]);
     } else {
         for (int i = 0; i < 4; i++)
-            scale_factor[i] = 65535.f * s->premultiply[i] / (s->white_level - s->black_level);
+            scale_factor[i] = 65535.f * s->premultiply[i] / (s->white_level - s->black_level[i]);
     }
 
     if (is_single_comp) {
@@ -344,7 +342,7 @@ static void av_always_inline dng_blit(TiffContext *s, uint8_t *dst, int dst_stri
 
             /* Blit first half of input row row to initial row of output */
             for (col = 0; col < width; col++)
-                *dst_u16++ = dng_process_color16(*src_u16++, s->dng_lut, s->black_level, scale_factor[col&1]);
+                *dst_u16++ = dng_process_color16(*src_u16++, s->dng_lut, s->black_level[col&1], scale_factor[col&1]);
 
             /* Advance the destination pointer by a row (source pointer remains in the same place) */
             dst += dst_stride * sizeof(uint16_t);
@@ -352,7 +350,7 @@ static void av_always_inline dng_blit(TiffContext *s, uint8_t *dst, int dst_stri
 
             /* Blit second half of input row row to next row of output */
             for (col = 0; col < width; col++)
-                *dst_u16++ = dng_process_color16(*src_u16++, s->dng_lut, s->black_level, scale_factor[(col&1) + 2]);
+                *dst_u16++ = dng_process_color16(*src_u16++, s->dng_lut, s->black_level[(col&1) + 2], scale_factor[(col&1) + 2]);
 
             dst += dst_stride * sizeof(uint16_t);
             src += src_stride * sizeof(uint16_t);
@@ -366,7 +364,9 @@ static void av_always_inline dng_blit(TiffContext *s, uint8_t *dst, int dst_stri
                 uint16_t *src_u16 = (uint16_t *)src;
 
                 for (col = 0; col < width; col++)
-                    *dst_u16++ = dng_process_color16(*src_u16++, s->dng_lut, s->black_level, scale_factor[(col&1) + 2 * ((line&1) + odd_line)]);
+                    *dst_u16++ = dng_process_color16(*src_u16++, s->dng_lut,
+                                                     s->black_level[(col&1) + 2 * ((line&1) + odd_line)],
+                                                     scale_factor[(col&1) + 2 * ((line&1) + odd_line)]);
 
                 dst += dst_stride * sizeof(uint16_t);
                 src += src_stride * sizeof(uint16_t);
@@ -377,7 +377,9 @@ static void av_always_inline dng_blit(TiffContext *s, uint8_t *dst, int dst_stri
                 const uint8_t *src_u8 = src;
 
                 for (col = 0; col < width; col++)
-                    *dst_u8++ = dng_process_color8(*src_u8++, s->dng_lut, s->black_level, scale_factor[(col&1) + 2 * ((line&1) + odd_line)]);
+                    *dst_u8++ = dng_process_color8(*src_u8++, s->dng_lut,
+                                                   s->black_level[(col&1) + 2 * ((line&1) + odd_line)],
+                                                   scale_factor[(col&1) + 2 * ((line&1) + odd_line)]);
 
                 dst += dst_stride;
                 src += src_stride;
@@ -1458,22 +1460,34 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         s->white_level = s->dng_lut[count-1];
         break;
     case DNG_BLACK_LEVEL:
-        if (count > 1) {    /* Use the first value in the pattern (assume they're all the same) */
+        if (count > FF_ARRAY_ELEMS(s->black_level))
+            return AVERROR_INVALIDDATA;
+        s->black_level[0] = value / (float)value2;
+        for (int i = 0; i < count && count > 1; i++) {
             if (type == TIFF_RATIONAL) {
                 value  = ff_tget(&s->gb, TIFF_LONG, s->le);
                 value2 = ff_tget(&s->gb, TIFF_LONG, s->le);
                 if (!value2) {
-                    av_log(s->avctx, AV_LOG_WARNING, "Invalid black level denominator\n");
+                    av_log(s->avctx, AV_LOG_WARNING, "Invalid denominator\n");
                     value2 = 1;
                 }
 
-                s->black_level = value / value2;
-            } else
-                s->black_level = ff_tget(&s->gb, type, s->le);
-            av_log(s->avctx, AV_LOG_WARNING, "Assuming black level pattern values are identical\n");
-        } else {
-            s->black_level = value / value2;
+                s->black_level[i] = value / (float)value2;
+            } else if (type == TIFF_SRATIONAL) {
+                int value  = ff_tget(&s->gb, TIFF_LONG, s->le);
+                int value2 = ff_tget(&s->gb, TIFF_LONG, s->le);
+                if (!value2) {
+                    av_log(s->avctx, AV_LOG_WARNING, "Invalid denominator\n");
+                    value2 = 1;
+                }
+
+                s->black_level[i] = value / (float)value2;
+            } else {
+                s->black_level[i] = ff_tget(&s->gb, type, s->le);
+            }
         }
+        for (int i = count; i < 4 && count > 0; i++)
+            s->black_level[i] = s->black_level[count - 1];
         break;
     case DNG_WHITE_LEVEL:
         s->white_level = value;
@@ -1939,6 +1953,9 @@ again:
     for (i = 0; i < 65536; i++)
         s->dng_lut[i] = i;
 
+    for (i = 0; i < FF_ARRAY_ELEMS(s->black_level); i++)
+        s->black_level[i] = 0.f;
+
     for (i = 0; i < FF_ARRAY_ELEMS(s->as_shot_neutral); i++)
         s->as_shot_neutral[i] = 0.f;
 
@@ -2067,9 +2084,9 @@ again:
         if (s->white_level == 0)
             s->white_level = (1LL << bps) - 1; /* Default value as per the spec */
 
-        if (s->white_level <= s->black_level) {
-            av_log(avctx, AV_LOG_ERROR, "BlackLevel (%"PRId32") must be less than WhiteLevel (%"PRId32")\n",
-                s->black_level, s->white_level);
+        if (s->white_level <= s->black_level[0]) {
+            av_log(avctx, AV_LOG_ERROR, "BlackLevel (%g) must be less than WhiteLevel (%"PRId32")\n",
+                s->black_level[0], s->white_level);
             return AVERROR_INVALIDDATA;
         }
 
