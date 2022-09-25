@@ -90,8 +90,8 @@ double av_display_rotation_get(const int32_t matrix[9]);
  * Initialize a transformation matrix describing a pure clockwise
  * rotation by the specified angle (in degrees).
  *
- * @param matrix an allocated transformation matrix (will be fully overwritten
- *               by this function)
+ * @param[out] matrix a transformation matrix (will be fully overwritten
+ *                    by this function)
  * @param angle rotation angle in degrees.
  */
 void av_display_rotation_set(int32_t matrix[9], double angle);
@@ -99,7 +99,7 @@ void av_display_rotation_set(int32_t matrix[9], double angle);
 /**
  * Flip the input matrix horizontally and/or vertically.
  *
- * @param matrix an allocated transformation matrix
+ * @param[in,out] matrix a transformation matrix
  * @param hflip whether the matrix should be flipped horizontally
  * @param vflip whether the matrix should be flipped vertically
  */
