@@ -1882,7 +1882,7 @@ static void camera_xyz_coeff(TiffContext *s,
                              float rgb2cam[3][4],
                              double cam2xyz[4][3])
 {
-    double cam2rgb[4][3], inverse[4][3], num;
+    double cam2rgb[4][3], num;
     int i, j, k;
 
     for (i = 0; i < 3; i++) {
@@ -1900,11 +1900,6 @@ static void camera_xyz_coeff(TiffContext *s,
             cam2rgb[i][j] /= num;
         s->premultiply[i] = 1.f / num;
     }
-
-//    pseudoinverse(cam2rgb, inverse, colors);
-//    for (i = 0; i < 3; i++)
-//        for (j = 0; j < 3; j++)
-//            rgb2cam[i][j] = inverse[j][i];
 }
 
 static int decode_frame(AVCodecContext *avctx, AVFrame *p,
