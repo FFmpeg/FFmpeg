@@ -33,6 +33,8 @@
 #include <lzma.h>
 #endif
 
+#include <float.h>
+
 #include "libavutil/attributes.h"
 #include "libavutil/error.h"
 #include "libavutil/intreadwrite.h"
@@ -82,7 +84,16 @@ typedef struct TiffContext {
     unsigned last_tag;
 
     int is_bayer;
+    int use_color_matrix;
     uint8_t pattern[4];
+
+    float   analog_balance[4];
+    float   as_shot_neutral[4];
+    float   as_shot_white[4];
+    float   color_matrix[3][4];
+    float   camera_calibration[4][4];
+    float   premultiply[4];
+
     unsigned black_level;
     unsigned white_level;
     uint16_t dng_lut[65536];
@@ -111,6 +122,8 @@ typedef struct TiffContext {
     int geotag_count;
     TiffGeoTag *geotags;
 } TiffContext;
+
+static const float d65_white[3] = { 0.950456f, 1.f, 1.088754f };
 
 static void tiff_set_type(TiffContext *s, enum TiffType tiff_type) {
     if (s->tiff_type < tiff_type) // Prioritize higher-valued entries
@@ -286,12 +299,12 @@ static uint16_t av_always_inline dng_process_color16(uint16_t value,
     value = lut[value];
 
     // Black level subtraction
-    value = av_clip_uint16_c((unsigned)value - black_level);
+    value = av_clip_uint16((unsigned)value - black_level);
 
     // Color scaling
-    value_norm = (float)value * scale_factor * 65535.f;
+    value_norm = (float)value * scale_factor;
 
-    value = av_clip_uint16_c(lrintf(value_norm));
+    value = av_clip_uint16(lrintf(value_norm));
 
     return value;
 }
@@ -306,12 +319,18 @@ static uint16_t av_always_inline dng_process_color8(uint16_t value,
 
 static void av_always_inline dng_blit(TiffContext *s, uint8_t *dst, int dst_stride,
                                       const uint8_t *src, int src_stride, int width, int height,
-                                      int is_single_comp, int is_u16)
+                                      int is_single_comp, int is_u16, int odd_line)
 {
+    float scale_factor[4];
     int line, col;
-    float scale_factor;
 
-    scale_factor = 1.0f / (s->white_level - s->black_level);
+    if (s->is_bayer) {
+        for (int i = 0; i < 4; i++)
+            scale_factor[i] = s->premultiply[s->pattern[i]] * 65535.f / (s->white_level - s->black_level);
+    } else {
+        for (int i = 0; i < 4; i++)
+            scale_factor[i] = 65535.f * s->premultiply[i] / (s->white_level - s->black_level);
+    }
 
     if (is_single_comp) {
         if (!is_u16)
@@ -325,7 +344,7 @@ static void av_always_inline dng_blit(TiffContext *s, uint8_t *dst, int dst_stri
 
             /* Blit first half of input row row to initial row of output */
             for (col = 0; col < width; col++)
-                *dst_u16++ = dng_process_color16(*src_u16++, s->dng_lut, s->black_level, scale_factor);
+                *dst_u16++ = dng_process_color16(*src_u16++, s->dng_lut, s->black_level, scale_factor[col&1]);
 
             /* Advance the destination pointer by a row (source pointer remains in the same place) */
             dst += dst_stride * sizeof(uint16_t);
@@ -333,7 +352,7 @@ static void av_always_inline dng_blit(TiffContext *s, uint8_t *dst, int dst_stri
 
             /* Blit second half of input row row to next row of output */
             for (col = 0; col < width; col++)
-                *dst_u16++ = dng_process_color16(*src_u16++, s->dng_lut, s->black_level, scale_factor);
+                *dst_u16++ = dng_process_color16(*src_u16++, s->dng_lut, s->black_level, scale_factor[(col&1) + 2]);
 
             dst += dst_stride * sizeof(uint16_t);
             src += src_stride * sizeof(uint16_t);
@@ -347,7 +366,7 @@ static void av_always_inline dng_blit(TiffContext *s, uint8_t *dst, int dst_stri
                 uint16_t *src_u16 = (uint16_t *)src;
 
                 for (col = 0; col < width; col++)
-                    *dst_u16++ = dng_process_color16(*src_u16++, s->dng_lut, s->black_level, scale_factor);
+                    *dst_u16++ = dng_process_color16(*src_u16++, s->dng_lut, s->black_level, scale_factor[(col&1) + 2 * ((line&1) + odd_line)]);
 
                 dst += dst_stride * sizeof(uint16_t);
                 src += src_stride * sizeof(uint16_t);
@@ -358,7 +377,7 @@ static void av_always_inline dng_blit(TiffContext *s, uint8_t *dst, int dst_stri
                 const uint8_t *src_u8 = src;
 
                 for (col = 0; col < width; col++)
-                    *dst_u8++ = dng_process_color8(*src_u8++, s->dng_lut, s->black_level, scale_factor);
+                    *dst_u8++ = dng_process_color8(*src_u8++, s->dng_lut, s->black_level, scale_factor[(col&1) + 2 * ((line&1) + odd_line)]);
 
                 dst += dst_stride;
                 src += src_stride;
@@ -712,7 +731,7 @@ static int dng_decode_jpeg(AVCodecContext *avctx, AVFrame *frame,
              w,
              h,
              is_single_comp,
-             is_u16);
+             is_u16, 0);
 
     av_frame_unref(s->jpgframe);
 
@@ -892,7 +911,8 @@ static int tiff_unpack_strip(TiffContext *s, AVFrame *p, uint8_t *dst, int strid
                          elements,
                          1,
                          0, // single-component variation is only preset in JPEG-encoded DNGs
-                         is_u16);
+                         is_u16,
+                         (line + strip_start)&1);
             }
 
             src += width;
@@ -1431,6 +1451,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
             return AVERROR_INVALIDDATA;
         for (int i = 0; i < count; i++)
             s->dng_lut[i] = ff_tget(&s->gb, type, s->le);
+        s->white_level = s->dng_lut[count-1];
         break;
     case DNG_BLACK_LEVEL:
         if (count > 1) {    /* Use the first value in the pattern (assume they're all the same) */
@@ -1728,6 +1749,84 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
             tiff_set_type(s, TIFF_TYPE_DNG);
         }
         break;
+    case DNG_ANALOG_BALANCE:
+        if (type != TIFF_RATIONAL)
+            break;
+
+        for (int i = 0; i < 3; i++) {
+            value  = ff_tget(&s->gb, TIFF_LONG, s->le);
+            value2 = ff_tget(&s->gb, TIFF_LONG, s->le);
+            if (!value2) {
+                av_log(s->avctx, AV_LOG_WARNING, "Invalid denominator\n");
+                value2 = 1;
+            }
+
+            s->analog_balance[i] = value / (float)value2;
+        }
+        break;
+    case DNG_AS_SHOT_NEUTRAL:
+        if (type != TIFF_RATIONAL)
+            break;
+
+        for (int i = 0; i < 3; i++) {
+            value  = ff_tget(&s->gb, TIFF_LONG, s->le);
+            value2 = ff_tget(&s->gb, TIFF_LONG, s->le);
+            if (!value2) {
+                av_log(s->avctx, AV_LOG_WARNING, "Invalid denominator\n");
+                value2 = 1;
+            }
+
+            s->as_shot_neutral[i] = value / (float)value2;
+        }
+        break;
+    case DNG_AS_SHOT_WHITE_XY:
+        if (type != TIFF_RATIONAL)
+            break;
+
+        for (int i = 0; i < 2; i++) {
+            value  = ff_tget(&s->gb, TIFF_LONG, s->le);
+            value2 = ff_tget(&s->gb, TIFF_LONG, s->le);
+            if (!value2) {
+                av_log(s->avctx, AV_LOG_WARNING, "Invalid denominator\n");
+                value2 = 1;
+            }
+
+            s->as_shot_white[i] = value / (float)value2;
+        }
+        s->as_shot_white[2] = 1.f - s->as_shot_white[0] - s->as_shot_white[1];
+        for (int i = 0; i < 3; i++) {
+            s->as_shot_white[i] /= d65_white[i];
+        }
+        break;
+    case DNG_COLOR_MATRIX1:
+    case DNG_COLOR_MATRIX2:
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                int value  = ff_tget(&s->gb, TIFF_LONG, s->le);
+                int value2 = ff_tget(&s->gb, TIFF_LONG, s->le);
+                if (!value2) {
+                    av_log(s->avctx, AV_LOG_WARNING, "Invalid denominator\n");
+                    value2 = 1;
+                }
+                s->color_matrix[i][j] = value / (float)value2;
+            }
+            s->use_color_matrix = 1;
+        }
+        break;
+    case DNG_CAMERA_CALIBRATION1:
+    case DNG_CAMERA_CALIBRATION2:
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                int value  = ff_tget(&s->gb, TIFF_LONG, s->le);
+                int value2 = ff_tget(&s->gb, TIFF_LONG, s->le);
+                if (!value2) {
+                    av_log(s->avctx, AV_LOG_WARNING, "Invalid denominator\n");
+                    value2 = 1;
+                }
+                s->camera_calibration[i][j] = value / (float)value2;
+            }
+        }
+        break;
     case CINEMADNG_TIME_CODES:
     case CINEMADNG_FRAME_RATE:
     case CINEMADNG_T_STOP:
@@ -1753,6 +1852,41 @@ end:
     }
     bytestream2_seek(&s->gb, start, SEEK_SET);
     return 0;
+}
+
+static const float xyz2rgb[3][3] = {
+    { 0.412453f, 0.357580f, 0.180423f },
+    { 0.212671f, 0.715160f, 0.072169f },
+    { 0.019334f, 0.119193f, 0.950227f },
+};
+
+static void camera_xyz_coeff(TiffContext *s,
+                             float rgb2cam[3][4],
+                             double cam2xyz[4][3])
+{
+    double cam2rgb[4][3], inverse[4][3], num;
+    int i, j, k;
+
+    for (i = 0; i < 3; i++) {
+        for (j = 0; j < 3; j++) {
+            cam2rgb[i][j] = 0.;
+            for (k = 0; k < 3; k++)
+                cam2rgb[i][j] += cam2xyz[i][k] * xyz2rgb[k][j];
+        }
+    }
+
+    for (i = 0; i < 3; i++) {
+        for (num = j = 0; j < 3; j++)
+            num += cam2rgb[i][j];
+        for (j = 0; j < 3; j++)
+            cam2rgb[i][j] /= num;
+        s->premultiply[i] = 1.f / num;
+    }
+
+//    pseudoinverse(cam2rgb, inverse, colors);
+//    for (i = 0; i < 3; i++)
+//        for (j = 0; j < 3; j++)
+//            rgb2cam[i][j] = inverse[j][i];
 }
 
 static int decode_frame(AVCodecContext *avctx, AVFrame *p,
@@ -1784,6 +1918,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
     // TIFF_BPP is not a required tag and defaults to 1
 
     s->tiff_type   = TIFF_TYPE_TIFF;
+    s->use_color_matrix = 0;
 again:
     s->is_thumbnail = 0;
     s->bppcount    = s->bpp = 1;
@@ -1799,6 +1934,22 @@ again:
 
     for (i = 0; i < 65536; i++)
         s->dng_lut[i] = i;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(s->as_shot_neutral); i++)
+        s->as_shot_neutral[i] = 0.f;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(s->as_shot_white); i++)
+        s->as_shot_white[i] = 1.f;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(s->analog_balance); i++)
+        s->analog_balance[i] = 1.f;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(s->premultiply); i++)
+        s->premultiply[i] = 1.f;
+
+    for (i = 0; i < 4; i++)
+        for (j = 0; j < 4; j++)
+            s->camera_calibration[i][j] = i == j;
 
     free_geotags(s);
 
@@ -1872,7 +2023,36 @@ again:
     }
 
     if (is_dng) {
+        double cam2xyz[4][3];
+        float cmatrix[3][4];
+        float pmin = FLT_MAX;
         int bps;
+
+        for (i = 0; i < 3; i++) {
+            for (j = 0; j < 3; j++)
+                s->camera_calibration[i][j] *= s->analog_balance[i];
+        }
+
+        if (!s->use_color_matrix) {
+            for (i = 0; i < 3; i++)
+                s->premultiply[i] /= s->camera_calibration[i][i];
+        } else {
+            for (int c = 0; c < 3; c++) {
+                for (i = 0; i < 3; i++) {
+                    cam2xyz[c][i] = 0.;
+                    for (j = 0; j < 3; j++)
+                        cam2xyz[c][i] += s->camera_calibration[c][j] * s->color_matrix[j][i] * s->as_shot_white[i];
+                }
+            }
+
+            camera_xyz_coeff(s, cmatrix, cam2xyz);
+        }
+
+        for (int c = 0; c < 3; c++)
+            pmin = fminf(pmin, s->premultiply[c]);
+
+        for (int c = 0; c < 3; c++)
+            s->premultiply[c] /= pmin;
 
         if (s->bpp % s->bppcount)
             return AVERROR_INVALIDDATA;
