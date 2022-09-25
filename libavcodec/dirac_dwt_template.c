@@ -338,8 +338,8 @@ static void RENAME(vertical_compose_daub97iL1)(uint8_t *_b0, uint8_t *_b1, uint8
 
 static void RENAME(spatial_compose_dd97i_dy)(DWTContext *d, int level, int width, int height, int stride)
 {
-    vertical_compose_3tap vertical_compose_l0 = (void*)d->vertical_compose_l0;
-    vertical_compose_5tap vertical_compose_h0 = (void*)d->vertical_compose_h0;
+    vertical_compose_3tap vertical_compose_l0 = d->vertical_compose_l0.tap3;
+    vertical_compose_5tap vertical_compose_h0 = d->vertical_compose_h0.tap5;
     DWTCompose *cs = d->cs + level;
 
     int i, y = cs->y;
@@ -362,8 +362,8 @@ static void RENAME(spatial_compose_dd97i_dy)(DWTContext *d, int level, int width
 
 static void RENAME(spatial_compose_dirac53i_dy)(DWTContext *d, int level, int width, int height, int stride)
 {
-    vertical_compose_3tap vertical_compose_l0 = (void*)d->vertical_compose_l0;
-    vertical_compose_3tap vertical_compose_h0 = (void*)d->vertical_compose_h0;
+    vertical_compose_3tap vertical_compose_l0 = d->vertical_compose_l0.tap3;
+    vertical_compose_3tap vertical_compose_h0 = d->vertical_compose_h0.tap3;
     DWTCompose *cs = d->cs + level;
 
     int y= cs->y;
@@ -384,8 +384,8 @@ static void RENAME(spatial_compose_dirac53i_dy)(DWTContext *d, int level, int wi
 
 static void RENAME(spatial_compose_dd137i_dy)(DWTContext *d, int level, int width, int height, int stride)
 {
-    vertical_compose_5tap vertical_compose_l0 = (void*)d->vertical_compose_l0;
-    vertical_compose_5tap vertical_compose_h0 = (void*)d->vertical_compose_h0;
+    vertical_compose_5tap vertical_compose_l0 = d->vertical_compose_l0.tap5;
+    vertical_compose_5tap vertical_compose_h0 = d->vertical_compose_h0.tap5;
     DWTCompose *cs = d->cs + level;
 
     int i, y = cs->y;
@@ -409,7 +409,7 @@ static void RENAME(spatial_compose_dd137i_dy)(DWTContext *d, int level, int widt
 // haar makes the assumption that height is even (always true for dirac)
 static void RENAME(spatial_compose_haari_dy)(DWTContext *d, int level, int width, int height, int stride)
 {
-    vertical_compose_2tap vertical_compose = (void*)d->vertical_compose;
+    vertical_compose_2tap vertical_compose = d->vertical_compose;
     int y = d->cs[level].y;
     uint8_t *b0 = d->buffer + (y-1)*stride;
     uint8_t *b1 = d->buffer + (y  )*stride;
@@ -425,8 +425,8 @@ static void RENAME(spatial_compose_haari_dy)(DWTContext *d, int level, int width
 // Fortunately, this filter isn't used in practice.
 static void RENAME(spatial_compose_fidelity)(DWTContext *d, int level, int width, int height, int stride)
 {
-    vertical_compose_9tap vertical_compose_l0 = (void*)d->vertical_compose_l0;
-    vertical_compose_9tap vertical_compose_h0 = (void*)d->vertical_compose_h0;
+    vertical_compose_9tap vertical_compose_l0 = d->vertical_compose_l0.tap9;
+    vertical_compose_9tap vertical_compose_h0 = d->vertical_compose_h0.tap9;
     int i, y;
     uint8_t *b[8];
 
@@ -450,10 +450,10 @@ static void RENAME(spatial_compose_fidelity)(DWTContext *d, int level, int width
 
 static void RENAME(spatial_compose_daub97i_dy)(DWTContext *d, int level, int width, int height, int stride)
 {
-    vertical_compose_3tap vertical_compose_l0 = (void*)d->vertical_compose_l0;
-    vertical_compose_3tap vertical_compose_h0 = (void*)d->vertical_compose_h0;
-    vertical_compose_3tap vertical_compose_l1 = (void*)d->vertical_compose_l1;
-    vertical_compose_3tap vertical_compose_h1 = (void*)d->vertical_compose_h1;
+    vertical_compose_3tap vertical_compose_l0 = d->vertical_compose_l0.tap3;
+    vertical_compose_3tap vertical_compose_h0 = d->vertical_compose_h0.tap3;
+    vertical_compose_3tap vertical_compose_l1 = d->vertical_compose_l1;
+    vertical_compose_3tap vertical_compose_h1 = d->vertical_compose_h1;
     DWTCompose *cs = d->cs + level;
 
     int i, y = cs->y;
@@ -552,29 +552,29 @@ static int RENAME(spatial_idwt_init)(DWTContext *d, enum dwt_type type)
     switch (type) {
         case DWT_DIRAC_DD9_7:
             d->spatial_compose = RENAME(spatial_compose_dd97i_dy);
-            d->vertical_compose_l0 = (void*)RENAME(vertical_compose53iL0);
-            d->vertical_compose_h0 = (void*)RENAME(vertical_compose_dd97iH0);
+            d->vertical_compose_l0.tap3 = RENAME(vertical_compose53iL0);
+            d->vertical_compose_h0.tap5 = RENAME(vertical_compose_dd97iH0);
             d->horizontal_compose = RENAME(horizontal_compose_dd97i);
             d->support = 7;
             break;
         case DWT_DIRAC_LEGALL5_3:
             d->spatial_compose = RENAME(spatial_compose_dirac53i_dy);
-            d->vertical_compose_l0 = (void*)RENAME(vertical_compose53iL0);
-            d->vertical_compose_h0 = (void*)RENAME(vertical_compose_dirac53iH0);
+            d->vertical_compose_l0.tap3 = RENAME(vertical_compose53iL0);
+            d->vertical_compose_h0.tap3 = RENAME(vertical_compose_dirac53iH0);
             d->horizontal_compose = RENAME(horizontal_compose_dirac53i);
             d->support = 3;
             break;
         case DWT_DIRAC_DD13_7:
             d->spatial_compose = RENAME(spatial_compose_dd137i_dy);
-            d->vertical_compose_l0 = (void*)RENAME(vertical_compose_dd137iL0);
-            d->vertical_compose_h0 = (void*)RENAME(vertical_compose_dd97iH0);
+            d->vertical_compose_l0.tap5 = RENAME(vertical_compose_dd137iL0);
+            d->vertical_compose_h0.tap5 = RENAME(vertical_compose_dd97iH0);
             d->horizontal_compose = RENAME(horizontal_compose_dd137i);
             d->support = 7;
             break;
         case DWT_DIRAC_HAAR0:
         case DWT_DIRAC_HAAR1:
             d->spatial_compose = RENAME(spatial_compose_haari_dy);
-            d->vertical_compose = (void*)RENAME(vertical_compose_haar);
+            d->vertical_compose = RENAME(vertical_compose_haar);
             if (type == DWT_DIRAC_HAAR0)
                 d->horizontal_compose = RENAME(horizontal_compose_haar0i);
             else
@@ -583,17 +583,17 @@ static int RENAME(spatial_idwt_init)(DWTContext *d, enum dwt_type type)
             break;
         case DWT_DIRAC_FIDELITY:
             d->spatial_compose = RENAME(spatial_compose_fidelity);
-            d->vertical_compose_l0 = (void*)RENAME(vertical_compose_fidelityiL0);
-            d->vertical_compose_h0 = (void*)RENAME(vertical_compose_fidelityiH0);
+            d->vertical_compose_l0.tap9 = RENAME(vertical_compose_fidelityiL0);
+            d->vertical_compose_h0.tap9 = RENAME(vertical_compose_fidelityiH0);
             d->horizontal_compose = RENAME(horizontal_compose_fidelityi);
             d->support = 0; // not really used
             break;
         case DWT_DIRAC_DAUB9_7:
             d->spatial_compose = RENAME(spatial_compose_daub97i_dy);
-            d->vertical_compose_l0 = (void*)RENAME(vertical_compose_daub97iL0);
-            d->vertical_compose_h0 = (void*)RENAME(vertical_compose_daub97iH0);
-            d->vertical_compose_l1 = (void*)RENAME(vertical_compose_daub97iL1);
-            d->vertical_compose_h1 = (void*)RENAME(vertical_compose_daub97iH1);
+            d->vertical_compose_l0.tap3 = RENAME(vertical_compose_daub97iL0);
+            d->vertical_compose_h0.tap3 = RENAME(vertical_compose_daub97iH0);
+            d->vertical_compose_l1 = RENAME(vertical_compose_daub97iL1);
+            d->vertical_compose_h1 = RENAME(vertical_compose_daub97iH1);
             d->horizontal_compose = RENAME(horizontal_compose_daub97i);
             d->support = 5;
             break;

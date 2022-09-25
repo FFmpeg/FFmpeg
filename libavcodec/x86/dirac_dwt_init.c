@@ -165,23 +165,23 @@ void ff_spatial_idwt_init_x86(DWTContext *d, enum dwt_type type)
 
     switch (type) {
     case DWT_DIRAC_DD9_7:
-        d->vertical_compose_l0 = (void*)vertical_compose53iL0_sse2;
-        d->vertical_compose_h0 = (void*)vertical_compose_dd97iH0_sse2;
+        d->vertical_compose_l0.tap3 = vertical_compose53iL0_sse2;
+        d->vertical_compose_h0.tap5 = vertical_compose_dd97iH0_sse2;
         break;
     case DWT_DIRAC_LEGALL5_3:
-        d->vertical_compose_l0 = (void*)vertical_compose53iL0_sse2;
-        d->vertical_compose_h0 = (void*)vertical_compose_dirac53iH0_sse2;
+        d->vertical_compose_l0.tap3 = vertical_compose53iL0_sse2;
+        d->vertical_compose_h0.tap3 = vertical_compose_dirac53iH0_sse2;
         break;
     case DWT_DIRAC_DD13_7:
-        d->vertical_compose_l0 = (void*)vertical_compose_dd137iL0_sse2;
-        d->vertical_compose_h0 = (void*)vertical_compose_dd97iH0_sse2;
+        d->vertical_compose_l0.tap5 = vertical_compose_dd137iL0_sse2;
+        d->vertical_compose_h0.tap5 = vertical_compose_dd97iH0_sse2;
         break;
     case DWT_DIRAC_HAAR0:
-        d->vertical_compose   = (void*)vertical_compose_haar_sse2;
+        d->vertical_compose   = vertical_compose_haar_sse2;
         d->horizontal_compose = horizontal_compose_haar0i_sse2;
         break;
     case DWT_DIRAC_HAAR1:
-        d->vertical_compose   = (void*)vertical_compose_haar_sse2;
+        d->vertical_compose   = vertical_compose_haar_sse2;
         d->horizontal_compose = horizontal_compose_haar1i_sse2;
         break;
     }
