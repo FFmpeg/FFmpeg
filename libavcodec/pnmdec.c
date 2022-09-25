@@ -59,6 +59,9 @@ static int pnm_decode_frame(AVCodecContext *avctx, AVFrame *p,
     if ((ret = ff_pnm_decode_header(avctx, s)) < 0)
         return ret;
 
+    if (avctx->skip_frame >= AVDISCARD_ALL)
+        return avpkt->size;
+
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
         return ret;
     p->pict_type = AV_PICTURE_TYPE_I;
@@ -408,6 +411,7 @@ const FFCodec ff_pgm_decoder = {
     .p.id           = AV_CODEC_ID_PGM,
     .p.capabilities = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(PNMContext),
+    .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     FF_CODEC_DECODE_CB(pnm_decode_frame),
 };
 #endif
@@ -420,6 +424,7 @@ const FFCodec ff_pgmyuv_decoder = {
     .p.id           = AV_CODEC_ID_PGMYUV,
     .p.capabilities = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(PNMContext),
+    .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     FF_CODEC_DECODE_CB(pnm_decode_frame),
 };
 #endif
@@ -432,6 +437,7 @@ const FFCodec ff_ppm_decoder = {
     .p.id           = AV_CODEC_ID_PPM,
     .p.capabilities = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(PNMContext),
+    .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     FF_CODEC_DECODE_CB(pnm_decode_frame),
 };
 #endif
@@ -444,6 +450,7 @@ const FFCodec ff_pbm_decoder = {
     .p.id           = AV_CODEC_ID_PBM,
     .p.capabilities = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(PNMContext),
+    .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     FF_CODEC_DECODE_CB(pnm_decode_frame),
 };
 #endif
@@ -456,6 +463,7 @@ const FFCodec ff_pam_decoder = {
     .p.id           = AV_CODEC_ID_PAM,
     .p.capabilities = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(PNMContext),
+    .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     FF_CODEC_DECODE_CB(pnm_decode_frame),
 };
 #endif
@@ -468,6 +476,7 @@ const FFCodec ff_pfm_decoder = {
     .p.id           = AV_CODEC_ID_PFM,
     .p.capabilities = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(PNMContext),
+    .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     FF_CODEC_DECODE_CB(pnm_decode_frame),
 };
 #endif
@@ -490,6 +499,7 @@ const FFCodec ff_phm_decoder = {
     .p.capabilities = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(PNMContext),
     .init           = phm_dec_init,
+    .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     FF_CODEC_DECODE_CB(pnm_decode_frame),
 };
 #endif
