@@ -184,9 +184,4 @@ const FFCodec ff_s302m_encoder = {
                                                             AV_SAMPLE_FMT_S16,
                                                             AV_SAMPLE_FMT_NONE },
     .p.supported_samplerates = (const int[]) { 48000, 0 },
- /* .p.channel_layouts     = (const uint64_t[]) { AV_CH_LAYOUT_STEREO,
-                                                  AV_CH_LAYOUT_QUAD,
-                                                  AV_CH_LAYOUT_5POINT1_BACK,
-                                                  AV_CH_LAYOUT_5POINT1_BACK | AV_CH_LAYOUT_STEREO_DOWNMIX,
-                                                  0 }, */
 };

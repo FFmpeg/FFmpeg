@@ -494,8 +494,6 @@ const FFCodec ff_libfdk_aac_encoder = {
     .p.profiles            = profiles,
     .p.supported_samplerates = aac_sample_rates,
     .p.wrapper_name        = "libfdk",
-#if FF_API_OLD_CHANNEL_LAYOUT
-    .p.channel_layouts     = aac_channel_layout,
-#endif
+    CODEC_OLD_CHANNEL_LAYOUTS_ARRAY(aac_channel_layout)
     .p.ch_layouts          = aac_ch_layouts,
 };

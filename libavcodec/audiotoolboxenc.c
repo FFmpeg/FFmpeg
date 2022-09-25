@@ -627,7 +627,7 @@ static const AVOption options[] = {
         .p.priv_class   = &ffat_##NAME##_enc_class, \
         .p.capabilities = AV_CODEC_CAP_DELAY | \
                           AV_CODEC_CAP_ENCODER_FLUSH CAPS, \
-        .p.channel_layouts = CHANNEL_LAYOUTS, \
+        CODEC_OLD_CHANNEL_LAYOUTS_ARRAY(CHANNEL_LAYOUTS) \
         .p.ch_layouts   = CH_LAYOUTS, \
         .p.sample_fmts  = (const enum AVSampleFormat[]) { \
             AV_SAMPLE_FMT_S16, \

@@ -648,7 +648,6 @@ static const AVClass alacenc_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-FF_DISABLE_DEPRECATION_WARNINGS
 const FFCodec ff_alac_encoder = {
     .p.name         = "alac",
     CODEC_LONG_NAME("ALAC (Apple Lossless Audio Codec)"),
@@ -660,12 +659,9 @@ const FFCodec ff_alac_encoder = {
     .init           = alac_encode_init,
     FF_CODEC_ENCODE_CB(alac_encode_frame),
     .close          = alac_encode_close,
-#if FF_API_OLD_CHANNEL_LAYOUT
-    .p.channel_layouts = alac_channel_layouts,
-#endif
+    CODEC_OLD_CHANNEL_LAYOUTS_ARRAY(alac_channel_layouts)
     .p.ch_layouts   = ff_alac_ch_layouts,
     .p.sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S32P,
                                                      AV_SAMPLE_FMT_S16P,
                                                      AV_SAMPLE_FMT_NONE },
 };
-FF_ENABLE_DEPRECATION_WARNINGS

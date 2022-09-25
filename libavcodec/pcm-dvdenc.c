@@ -181,13 +181,8 @@ const FFCodec ff_pcm_dvd_encoder = {
     .init           = pcm_dvd_encode_init,
     FF_CODEC_ENCODE_CB(pcm_dvd_encode_frame),
     .p.supported_samplerates = (const int[]) { 48000, 96000, 0},
-#if FF_API_OLD_CHANNEL_LAYOUT
-    .p.channel_layouts = (const uint64_t[]) { AV_CH_LAYOUT_MONO,
-                                            AV_CH_LAYOUT_STEREO,
-                                            AV_CH_LAYOUT_5POINT1,
-                                            AV_CH_LAYOUT_7POINT1,
-                                            0 },
-#endif
+    CODEC_OLD_CHANNEL_LAYOUTS(AV_CH_LAYOUT_MONO, AV_CH_LAYOUT_STEREO,
+                              AV_CH_LAYOUT_5POINT1, AV_CH_LAYOUT_7POINT1)
     .p.ch_layouts   = (const AVChannelLayout[]) { AV_CHANNEL_LAYOUT_MONO,
                                                   AV_CHANNEL_LAYOUT_STEREO,
                                                   AV_CHANNEL_LAYOUT_5POINT1,

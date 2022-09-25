@@ -1324,14 +1324,9 @@ const FFCodec ff_dca_encoder = {
     .p.sample_fmts         = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S32,
                                                             AV_SAMPLE_FMT_NONE },
     .p.supported_samplerates = sample_rates,
-#if FF_API_OLD_CHANNEL_LAYOUT
-    .p.channel_layouts     = (const uint64_t[]) { AV_CH_LAYOUT_MONO,
-                                                  AV_CH_LAYOUT_STEREO,
-                                                  AV_CH_LAYOUT_2_2,
-                                                  AV_CH_LAYOUT_5POINT0,
-                                                  AV_CH_LAYOUT_5POINT1,
-                                                  0 },
-#endif
+    CODEC_OLD_CHANNEL_LAYOUTS(AV_CH_LAYOUT_MONO, AV_CH_LAYOUT_STEREO,
+                              AV_CH_LAYOUT_2_2,  AV_CH_LAYOUT_5POINT0,
+                              AV_CH_LAYOUT_5POINT1)
     .p.ch_layouts     = (const AVChannelLayout[]){
         AV_CHANNEL_LAYOUT_MONO,
         AV_CHANNEL_LAYOUT_STEREO,

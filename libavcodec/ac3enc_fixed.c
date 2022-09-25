@@ -119,7 +119,6 @@ static av_cold int ac3_fixed_encode_init(AVCodecContext *avctx)
 }
 
 
-FF_DISABLE_DEPRECATION_WARNINGS
 const FFCodec ff_ac3_fixed_encoder = {
     .p.name          = "ac3_fixed",
     CODEC_LONG_NAME("ATSC A/52A (AC-3)"),
@@ -135,10 +134,7 @@ const FFCodec ff_ac3_fixed_encoder = {
     .p.priv_class    = &ff_ac3enc_class,
     .caps_internal   = FF_CODEC_CAP_INIT_CLEANUP,
     .p.supported_samplerates = ff_ac3_sample_rate_tab,
-#if FF_API_OLD_CHANNEL_LAYOUT
-    .p.channel_layouts = ff_ac3_channel_layouts,
-#endif
+    CODEC_OLD_CHANNEL_LAYOUTS_ARRAY(ff_ac3_channel_layouts)
     .p.ch_layouts    = ff_ac3_ch_layouts,
     .defaults        = ff_ac3_enc_defaults,
 };
-FF_ENABLE_DEPRECATION_WARNINGS

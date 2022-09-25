@@ -38,11 +38,7 @@ const FFCodec ff_mp2_encoder = {
     .p.supported_samplerates = (const int[]){
         44100, 48000,  32000, 22050, 24000, 16000, 0
     },
-#if FF_API_OLD_CHANNEL_LAYOUT
-    .p.channel_layouts     = (const uint64_t[]){ AV_CH_LAYOUT_MONO,
-                                                 AV_CH_LAYOUT_STEREO,
-                                                 0 },
-#endif
+    CODEC_OLD_CHANNEL_LAYOUTS(AV_CH_LAYOUT_MONO, AV_CH_LAYOUT_STEREO)
     .p.ch_layouts          = (const AVChannelLayout[]){ AV_CHANNEL_LAYOUT_MONO,
                                                         AV_CHANNEL_LAYOUT_STEREO,
                                                         { 0 } },
