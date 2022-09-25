@@ -408,18 +408,11 @@ static int mp3_read_header(AVFormatContext *s)
             ffio_ensure_seekback(s->pb, i + 1024 + 4);
         frame_size = check(s->pb, off + i, &header);
         if (frame_size > 0) {
-            ret = avio_seek(s->pb, off, SEEK_SET);
-            if (ret < 0)
-                return ret;
             ffio_ensure_seekback(s->pb, i + 1024 + frame_size + 4);
             ret = check(s->pb, off + i + frame_size, &header2);
             if (ret >= 0 &&
                 (header & MP3_MASK) == (header2 & MP3_MASK))
             {
-                av_log(s, i > 0 ? AV_LOG_INFO : AV_LOG_VERBOSE, "Skipping %d bytes of junk at %"PRId64".\n", i, off);
-                ret = avio_seek(s->pb, off + i, SEEK_SET);
-                if (ret < 0)
-                    return ret;
                 break;
             } else if (ret == CHECK_SEEK_FAILED) {
                 av_log(s, AV_LOG_ERROR, "Invalid frame size (%d): Could not seek to %"PRId64".\n", frame_size, off + i + frame_size);
@@ -429,10 +422,15 @@ static int mp3_read_header(AVFormatContext *s)
             av_log(s, AV_LOG_ERROR, "Failed to read frame size: Could not seek to %"PRId64".\n", (int64_t) (i + 1024 + frame_size + 4));
             return AVERROR(EINVAL);
         }
-        ret = avio_seek(s->pb, off, SEEK_SET);
-        if (ret < 0)
-            return ret;
     }
+    if (i == 64 * 1024) {
+        ret = avio_seek(s->pb, off, SEEK_SET);
+    } else {
+        av_log(s, i > 0 ? AV_LOG_INFO : AV_LOG_VERBOSE, "Skipping %d bytes of junk at %"PRId64".\n", i, off);
+        ret = avio_seek(s->pb, off + i, SEEK_SET);
+    }
+    if (ret < 0)
+        return ret;
 
     off = avio_tell(s->pb);
     // the seek index is relative to the end of the xing vbr headers
