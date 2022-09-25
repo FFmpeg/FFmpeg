@@ -1209,6 +1209,10 @@ static int init_image(TiffContext *s, AVFrame *frame)
         if (ret < 0)
             return ret;
     }
+
+    if (s->avctx->skip_frame >= AVDISCARD_ALL)
+        return 0;
+
     if ((ret = ff_thread_get_buffer(s->avctx, frame, 0)) < 0)
         return ret;
     if (s->avctx->pix_fmt == AV_PIX_FMT_PAL8) {
@@ -1222,7 +1226,7 @@ static int init_image(TiffContext *s, AVFrame *frame)
                 pal[i] = 0xFFU << 24 | i * 255 / ((1<<s->bpp) - 1) * 0x010101;
         }
     }
-    return 0;
+    return 1;
 }
 
 static void set_sar(TiffContext *s, unsigned tag, unsigned num, unsigned den)
@@ -2089,7 +2093,7 @@ again:
     }
 
     /* now we have the data and may start decoding */
-    if ((ret = init_image(s, p)) < 0)
+    if ((ret = init_image(s, p)) <= 0)
         return ret;
 
     if (!s->is_tiled || has_strip_bits) {
@@ -2382,6 +2386,7 @@ const FFCodec ff_tiff_decoder = {
     .close          = tiff_end,
     FF_CODEC_DECODE_CB(decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_ICC_PROFILES,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_ICC_PROFILES |
+                      FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .p.priv_class   = &tiff_decoder_class,
 };
