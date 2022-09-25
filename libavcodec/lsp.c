@@ -124,6 +124,22 @@ static void lsp2poly(int* f, const int16_t* lsp, int lp_half_order)
     }
 }
 
+#ifndef ff_lsp2polyf
+void ff_lsp2polyf(const double *lsp, double *f, int lp_half_order)
+{
+    f[0] = 1.0;
+    f[1] = -2 * lsp[0];
+    lsp -= 2;
+    for (int i = 2; i <= lp_half_order; i++) {
+        double val = -2 * lsp[2*i];
+        f[i] = val * f[i-1] + 2*f[i-2];
+        for (int j = i-1; j > 1; j--)
+            f[j] += f[j-1] * val + f[j-2];
+        f[1] += val;
+    }
+}
+#endif /* ff_lsp2polyf */
+
 void ff_acelp_lsp2lpc(int16_t* lp, const int16_t* lsp, int lp_half_order)
 {
     int i;
@@ -190,25 +206,6 @@ void ff_acelp_lp_decode(int16_t* lp_1st, int16_t* lp_2nd, const int16_t* lsp_2nd
     /* LSP values for second subframe (3.2.5 of G.729)*/
     ff_acelp_lsp2lpc(lp_2nd, lsp_2nd, lp_order >> 1);
 }
-
-#ifndef ff_lsp2polyf
-void ff_lsp2polyf(const double *lsp, double *f, int lp_half_order)
-{
-    int i, j;
-
-    f[0] = 1.0;
-    f[1] = -2 * lsp[0];
-    lsp -= 2;
-    for(i=2; i<=lp_half_order; i++)
-    {
-        double val = -2 * lsp[2*i];
-        f[i] = val * f[i-1] + 2*f[i-2];
-        for(j=i-1; j>1; j--)
-            f[j] += f[j-1] * val + f[j-2];
-        f[1] += val;
-    }
-}
-#endif /* ff_lsp2polyf */
 
 void ff_acelp_lspd2lpc(const double *lsp, float *lpc, int lp_half_order)
 {
