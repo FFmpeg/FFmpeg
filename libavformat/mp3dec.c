@@ -424,15 +424,14 @@ static int mp3_read_header(AVFormatContext *s)
         }
     }
     if (i == 64 * 1024) {
-        ret = avio_seek(s->pb, off, SEEK_SET);
+        off = avio_seek(s->pb, off, SEEK_SET);
     } else {
         av_log(s, i > 0 ? AV_LOG_INFO : AV_LOG_VERBOSE, "Skipping %d bytes of junk at %"PRId64".\n", i, off);
-        ret = avio_seek(s->pb, off + i, SEEK_SET);
+        off = avio_seek(s->pb, off + i, SEEK_SET);
     }
-    if (ret < 0)
-        return ret;
+    if (off < 0)
+        return off;
 
-    off = avio_tell(s->pb);
     // the seek index is relative to the end of the xing vbr headers
     for (int i = 0; i < sti->nb_index_entries; i++)
         sti->index_entries[i].pos += off;
