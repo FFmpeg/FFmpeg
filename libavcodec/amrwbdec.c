@@ -24,6 +24,8 @@
  * AMR wideband decoder
  */
 
+#include "config.h"
+
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "libavutil/lfg.h"
@@ -42,7 +44,9 @@
 #include "amr.h"
 
 #include "amrwbdata.h"
+#if ARCH_MIPS
 #include "mips/amrwbdec_mips.h"
+#endif /* ARCH_MIPS */
 
 typedef struct AMRWBContext {
     AMRWBFrame                             frame; ///< AMRWB parameters decoded from bitstream

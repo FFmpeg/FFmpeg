@@ -23,11 +23,15 @@
 
 #include <math.h>
 
+#include "config.h"
+
 #define FRAC_BITS 14
 #include "libavutil/macros.h"
 #include "mathops.h"
 #include "lsp.h"
+#if ARCH_MIPS
 #include "libavcodec/mips/lsp_mips.h"
+#endif /* ARCH_MIPS */
 #include "libavutil/avassert.h"
 
 void ff_acelp_reorder_lsf(int16_t* lsfq, int lsfq_min_distance, int lsfq_min, int lsfq_max, int lp_order)
