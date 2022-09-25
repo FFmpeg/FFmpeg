@@ -516,7 +516,7 @@ static void RENAME(spatial_compose_dd137i_init)(DWTCompose *cs, uint8_t *buffer,
     cs->y = -5;
 }
 
-static int RENAME(ff_spatial_idwt_init)(DWTContext *d, enum dwt_type type)
+static int RENAME(spatial_idwt_init)(DWTContext *d, enum dwt_type type)
 {
     int level;
 
