@@ -814,6 +814,31 @@ static const FFTXCodelet TX_NAME(ff_tx_fft_inplace_def) = {
     .prio       = FF_TX_PRIO_BASE,
 };
 
+static av_cold int TX_NAME(ff_tx_fft_init_naive_small)(AVTXContext *s,
+                                                       const FFTXCodelet *cd,
+                                                       uint64_t flags,
+                                                       FFTXCodeletOptions *opts,
+                                                       int len, int inv,
+                                                       const void *scale)
+{
+    const double phase = s->inv ? 2.0*M_PI/len : -2.0*M_PI/len;
+
+    if (!(s->exp = av_malloc(len*len*sizeof(*s->exp))))
+        return AVERROR(ENOMEM);
+
+    for (int i = 0; i < len; i++) {
+        for (int j = 0; j < len; j++) {
+            const double factor = phase*i*j;
+            s->exp[i*j] = (TXComplex){
+                RESCALE(cos(factor)),
+                RESCALE(sin(factor)),
+            };
+        }
+    }
+
+    return 0;
+}
+
 static void TX_NAME(ff_tx_fft_naive)(AVTXContext *s, void *_dst, void *_src,
                                      ptrdiff_t stride)
 {
@@ -822,9 +847,9 @@ static void TX_NAME(ff_tx_fft_naive)(AVTXContext *s, void *_dst, void *_src,
     const int n = s->len;
     double phase = s->inv ? 2.0*M_PI/n : -2.0*M_PI/n;
 
-    for(int i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
         TXComplex tmp = { 0 };
-        for(int j = 0; j < n; j++) {
+        for (int j = 0; j < n; j++) {
             const double factor = phase*i*j;
             const TXComplex mult = {
                 RESCALE(cos(factor)),
@@ -838,6 +863,39 @@ static void TX_NAME(ff_tx_fft_naive)(AVTXContext *s, void *_dst, void *_src,
         dst[i] = tmp;
     }
 }
+
+static void TX_NAME(ff_tx_fft_naive_small)(AVTXContext *s, void *_dst, void *_src,
+                                           ptrdiff_t stride)
+{
+    TXComplex *src = _src;
+    TXComplex *dst = _dst;
+    const int n = s->len;
+
+    for (int i = 0; i < n; i++) {
+        TXComplex tmp = { 0 };
+        for (int j = 0; j < n; j++) {
+            TXComplex res;
+            const TXComplex mult = s->exp[i*j];
+            CMUL3(res, src[j], mult);
+            tmp.re += res.re;
+            tmp.im += res.im;
+        }
+        dst[i] = tmp;
+    }
+}
+
+static const FFTXCodelet TX_NAME(ff_tx_fft_naive_small_def) = {
+    .name       = TX_NAME_STR("fft_naive_small"),
+    .function   = TX_NAME(ff_tx_fft_naive_small),
+    .type       = TX_TYPE(FFT),
+    .flags      = AV_TX_UNALIGNED | FF_TX_OUT_OF_PLACE,
+    .factors[0] = TX_FACTOR_ANY,
+    .min_len    = 2,
+    .max_len    = 1024,
+    .init       = TX_NAME(ff_tx_fft_init_naive_small),
+    .cpu_flags  = FF_TX_CPU_FLAGS_ALL,
+    .prio       = FF_TX_PRIO_MIN/2,
+};
 
 static const FFTXCodelet TX_NAME(ff_tx_fft_naive_def) = {
     .name       = TX_NAME_STR("fft_naive"),
@@ -1580,6 +1638,7 @@ const FFTXCodelet * const TX_NAME(ff_tx_codelet_list)[] = {
     &TX_NAME(ff_tx_fft_pfa_9xM_def),
     &TX_NAME(ff_tx_fft_pfa_15xM_def),
     &TX_NAME(ff_tx_fft_naive_def),
+    &TX_NAME(ff_tx_fft_naive_small_def),
     &TX_NAME(ff_tx_mdct_fwd_def),
     &TX_NAME(ff_tx_mdct_inv_def),
     &TX_NAME(ff_tx_mdct_pfa_3xM_fwd_def),
