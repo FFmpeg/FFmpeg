@@ -1,6 +1,7 @@
 /*
  * RTP Depacketization of Opus, RFC 7587
  * Copyright (c) 2025 Jonathan Baudanza <jon@jonb.org>
+ * Copyright (c) 2022 Erik Linge
  *
  * This file is part of FFmpeg.
  *
@@ -21,6 +22,7 @@
 
 #include "libavcodec/bytestream.h"
 #include "libavutil/mem.h"
+#include "libavutil/avstring.h"
 #include "rtpdec_formats.h"
 #include "internal.h"
 
@@ -108,10 +110,42 @@ static int opus_parse_packet(AVFormatContext *ctx, PayloadContext *data,
     return 0;
 }
 
+static int parse_fmtp(AVFormatContext *s,
+                      AVStream *stream, PayloadContext *data,
+                      const char *attr, const char *value)
+{
+    if (!strcmp(attr, "sprop-maxcapturerate")) {
+        int rate = atoi(value);
+        if (rate < 8000 || rate > 48000) {
+            av_log(s, AV_LOG_ERROR,
+                   "fmtp field 'sprop-maxcapturerate' must be between 8000 to 48000 (provided value: %s)",
+                   value);
+            return AVERROR_INVALIDDATA;
+        }
+        stream->codecpar->sample_rate = rate;
+    }
+    return 0;
+}
+
+static int opus_parse_sdp_line(AVFormatContext *s, int st_index,
+                               PayloadContext *data, const char *line)
+{
+    const char *p;
+
+    if (st_index < 0)
+        return 0;
+
+    if (av_strstart(line, "fmtp:", &p)) {
+        return ff_parse_fmtp(s, s->streams[st_index], data, p, parse_fmtp);
+    }
+    return 0;
+}
+
 const RTPDynamicProtocolHandler ff_opus_dynamic_handler = {
     .enc_name     = "opus",
     .codec_type   = AVMEDIA_TYPE_AUDIO,
     .codec_id     = AV_CODEC_ID_OPUS,
     .parse_packet = opus_parse_packet,
     .init         = opus_init,
+    .parse_sdp_a_line = opus_parse_sdp_line,
 };
