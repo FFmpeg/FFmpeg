@@ -34,6 +34,9 @@ void ff_ps_hybrid_analysis_ileave_rvv(float (*out)[32][2], float L[2][38][64],
 void ff_ps_hybrid_synthesis_deint_rvv(float out[2][38][64], float (*in)[32][2],
                                       int i, int len);
 
+void ff_ps_stereo_interpolate_rvv(float (*l)[2], float (*r)[2],
+                                  float h[2][4], float h_step[2][4], int len);
+
 av_cold void ff_psdsp_init_riscv(PSDSPContext *c)
 {
 #if HAVE_RVV
@@ -43,6 +46,7 @@ av_cold void ff_psdsp_init_riscv(PSDSPContext *c)
         c->add_squares = ff_ps_add_squares_rvv;
         c->mul_pair_single = ff_ps_mul_pair_single_rvv;
         c->hybrid_analysis = ff_ps_hybrid_analysis_rvv;
+        c->stereo_interpolate[0] = ff_ps_stereo_interpolate_rvv;
     }
 
     if (flags & AV_CPU_FLAG_RVV_I32) {

@@ -219,3 +219,59 @@ func ff_ps_hybrid_synthesis_deint_rvv, zve32x
 3:
         ret
 endfunc
+
+func ff_ps_stereo_interpolate_rvv, zve32f
+        vsetvli      t0, zero, e32, m1, ta, ma
+        vid.v        v24
+        flw          ft0,   (a2)
+        vadd.vi      v24, v24, 1   // v24[i] = i + 1
+        flw          ft1,  4(a2)
+        vfcvt.f.xu.v v24, v24
+        flw          ft2,  8(a2)
+        vfmv.v.f     v16, ft0
+        flw          ft3, 12(a2)
+        vfmv.v.f     v17, ft1
+        flw          ft0,   (a3)
+        vfmv.v.f     v18, ft2
+        flw          ft1,  4(a3)
+        vfmv.v.f     v19, ft3
+        flw          ft2,  8(a3)
+        vfmv.v.f     v20, ft0
+        flw          ft3, 12(a3)
+        vfmv.v.f     v21, ft1
+        fcvt.s.wu    ft4, t0       // (float)(vlenb / sizeof (float))
+        vfmv.v.f     v22, ft2
+        fmul.s       ft0, ft0, ft4
+        vfmv.v.f     v23, ft3
+        fmul.s       ft1, ft1, ft4
+        vfmacc.vv    v16, v24, v20 // h0 += (i + 1) * h0_step
+        fmul.s       ft2, ft2, ft4
+        vfmacc.vv    v17, v24, v21
+        fmul.s       ft3, ft3, ft4
+        vfmacc.vv    v18, v24, v22
+        vfmacc.vv    v19, v24, v23
+1:
+        vsetvli   t0, a4, e32, m1, ta, ma
+        vlseg2e32.v v8, (a0)     // v8:l_re, v9:l_im
+        sub       a4, a4, t0
+        vlseg2e32.v v10, (a1)    // v10:r_re, v11:r_im
+        vfmul.vv  v12, v8, v16
+        vfmul.vv  v13, v9, v16
+        vfmul.vv  v14, v8, v17
+        vfmul.vv  v15, v9, v17
+        vfmacc.vv v12, v10, v18
+        vfmacc.vv v13, v11, v18
+        vfmacc.vv v14, v10, v19
+        vfmacc.vv v15, v11, v19
+        vsseg2e32.v v12, (a0)
+        sh3add    a0, t0, a0
+        vsseg2e32.v v14, (a1)
+        sh3add    a1, t0, a1
+        vfadd.vf  v16, v16, ft0 // h0 += (vlenb / sizeof (float)) * h0_step
+        vfadd.vf  v17, v17, ft1
+        vfadd.vf  v18, v18, ft2
+        vfadd.vf  v19, v19, ft3
+        bnez      a4, 1b
+
+        ret
+endfunc
