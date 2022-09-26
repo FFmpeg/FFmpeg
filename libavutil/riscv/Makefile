@@ -1,0 +1,1 @@
+OBJS += riscv/cpu.o

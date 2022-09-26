@@ -232,6 +232,10 @@ static const struct {
     { "ALTIVEC",  "altivec",  AV_CPU_FLAG_ALTIVEC },
     { "VSX",      "vsx",      AV_CPU_FLAG_VSX },
     { "POWER8",   "power8",   AV_CPU_FLAG_POWER8 },
+#elif ARCH_RISCV
+    { "RVI",      "rvi",      AV_CPU_FLAG_RVI },
+    { "RVF",      "rvf",      AV_CPU_FLAG_RVF },
+    { "RVD",      "rvd",      AV_CPU_FLAG_RVD },
 #elif ARCH_MIPS
     { "MMI",      "mmi",      AV_CPU_FLAG_MMI },
     { "MSA",      "msa",      AV_CPU_FLAG_MSA },

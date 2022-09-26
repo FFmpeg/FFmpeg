@@ -62,6 +62,8 @@ static int get_cpu_flags(void)
     return ff_get_cpu_flags_arm();
 #elif ARCH_PPC
     return ff_get_cpu_flags_ppc();
+#elif ARCH_RISCV
+    return ff_get_cpu_flags_riscv();
 #elif ARCH_X86
     return ff_get_cpu_flags_x86();
 #elif ARCH_LOONGARCH
@@ -178,6 +180,10 @@ int av_parse_cpu_caps(unsigned *flags, const char *s)
 #elif ARCH_LOONGARCH
         { "lsx",      NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_LSX      },    .unit = "flags" },
         { "lasx",     NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_LASX     },    .unit = "flags" },
+#elif ARCH_RISCV
+        { "rvi",      NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_RVI      },    .unit = "flags" },
+        { "rvf",      NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_RVF      },    .unit = "flags" },
+        { "rvd",      NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_RVD      },    .unit = "flags" },
 #endif
         { NULL },
     };

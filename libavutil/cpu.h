@@ -78,6 +78,11 @@
 #define AV_CPU_FLAG_LSX          (1 << 0)
 #define AV_CPU_FLAG_LASX         (1 << 1)
 
+// RISC-V extensions
+#define AV_CPU_FLAG_RVI          (1 << 0) ///< I (full GPR bank)
+#define AV_CPU_FLAG_RVF          (1 << 1) ///< F (single precision FP)
+#define AV_CPU_FLAG_RVD          (1 << 2) ///< D (double precision FP)
+
 /**
  * Return the flags which specify extensions supported by the CPU.
  * The returned value is affected by av_force_cpu_flags() if that was used
