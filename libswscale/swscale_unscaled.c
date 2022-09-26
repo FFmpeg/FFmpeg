@@ -2095,6 +2095,7 @@ void ff_get_unscaled_swscale(SwsContext *c)
         c->convert_unscaled = rgbToPlanarRgbWrapper;
 
     if (isBayer(srcFormat)) {
+        c->dst_slice_align = 2;
         if (dstFormat == AV_PIX_FMT_RGB24)
             c->convert_unscaled = bayer_to_rgb24_wrapper;
         else if (dstFormat == AV_PIX_FMT_RGB48)
