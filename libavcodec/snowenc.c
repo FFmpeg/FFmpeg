@@ -1814,7 +1814,7 @@ redo_frame:
             if(s->qlog == LOSSLESS_QLOG){
                 for(y=0; y<h; y++){
                     for(x=0; x<w; x++){
-                        s->spatial_idwt_buffer[y*w + x]<<=FRAC_BITS;
+                        s->spatial_idwt_buffer[y*w + x] *= 1 << FRAC_BITS;
                     }
                 }
             }
