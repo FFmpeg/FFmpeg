@@ -236,7 +236,7 @@ static av_cold int ac3_decode_init(AVCodecContext *avctx)
     if (!s->fdsp)
         return AVERROR(ENOMEM);
 
-    ff_ac3dsp_init(&s->ac3dsp, avctx->flags & AV_CODEC_FLAG_BITEXACT);
+    ff_ac3dsp_init(&s->ac3dsp);
     av_lfg_init(&s->dith_state, 0);
 
     if (USE_FIXED)

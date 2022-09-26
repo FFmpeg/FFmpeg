@@ -401,7 +401,8 @@ static void ac3_downmix_mips(float **samples, float (*matrix)[2],
 #endif /* HAVE_MIPSFPU */
 #endif /* HAVE_INLINE_ASM */
 
-void ff_ac3dsp_init_mips(AC3DSPContext *c, int bit_exact) {
+void ff_ac3dsp_init_mips(AC3DSPContext *c)
+{
 #if HAVE_INLINE_ASM
 #if HAVE_MIPSDSP
     c->bit_alloc_calc_bap = ac3_bit_alloc_calc_bap_mips;

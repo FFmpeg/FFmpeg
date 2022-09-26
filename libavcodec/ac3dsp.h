@@ -105,10 +105,10 @@ typedef struct AC3DSPContext {
     void (*downmix_fixed)(int32_t **samples, int16_t **matrix, int len);
 } AC3DSPContext;
 
-void ff_ac3dsp_init    (AC3DSPContext *c, int bit_exact);
-void ff_ac3dsp_init_arm(AC3DSPContext *c, int bit_exact);
-void ff_ac3dsp_init_x86(AC3DSPContext *c, int bit_exact);
-void ff_ac3dsp_init_mips(AC3DSPContext *c, int bit_exact);
+void ff_ac3dsp_init    (AC3DSPContext *c);
+void ff_ac3dsp_init_arm(AC3DSPContext *c);
+void ff_ac3dsp_init_x86(AC3DSPContext *c);
+void ff_ac3dsp_init_mips(AC3DSPContext *c);
 
 void ff_ac3dsp_downmix(AC3DSPContext *c, float **samples, float **matrix,
                        int out_ch, int in_ch, int len);

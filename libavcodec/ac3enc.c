@@ -2613,7 +2613,7 @@ av_cold int ff_ac3_encode_init(AVCodecContext *avctx)
 
     ff_audiodsp_init(&s->adsp);
     ff_me_cmp_init(&s->mecc, avctx);
-    ff_ac3dsp_init(&s->ac3dsp, avctx->flags & AV_CODEC_FLAG_BITEXACT);
+    ff_ac3dsp_init(&s->ac3dsp);
 
     dprint_options(s);
 

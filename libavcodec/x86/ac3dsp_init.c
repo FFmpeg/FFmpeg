@@ -33,7 +33,7 @@ int ff_ac3_compute_mantissa_size_sse2(uint16_t mant_cnt[6][16]);
 void ff_ac3_extract_exponents_sse2 (uint8_t *exp, int32_t *coef, int nb_coefs);
 void ff_ac3_extract_exponents_ssse3(uint8_t *exp, int32_t *coef, int nb_coefs);
 
-av_cold void ff_ac3dsp_init_x86(AC3DSPContext *c, int bit_exact)
+av_cold void ff_ac3dsp_init_x86(AC3DSPContext *c)
 {
     int cpu_flags = av_get_cpu_flags();
 

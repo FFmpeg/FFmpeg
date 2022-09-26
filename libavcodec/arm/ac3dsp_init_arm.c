@@ -44,7 +44,7 @@ void ff_ac3_bit_alloc_calc_bap_armv6(int16_t *mask, int16_t *psd,
 
 void ff_ac3_update_bap_counts_arm(uint16_t mant_cnt[16], uint8_t *bap, int len);
 
-av_cold void ff_ac3dsp_init_arm(AC3DSPContext *c, int bit_exact)
+av_cold void ff_ac3dsp_init_arm(AC3DSPContext *c)
 {
     int cpu_flags = av_get_cpu_flags();
 
