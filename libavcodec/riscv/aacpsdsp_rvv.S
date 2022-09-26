@@ -52,3 +52,100 @@ func ff_ps_mul_pair_single_rvv, zve32f
 
         ret
 endfunc
+
+func ff_ps_hybrid_analysis_rvv, zve32f
+        /* We need 26 FP registers, for 20 scratch ones. Spill fs0-fs5. */
+        addi    sp, sp, -32
+        .irp n, 0, 1, 2, 3, 4, 5
+        fsw     fs\n, (4 * \n)(sp)
+        .endr
+
+        .macro input, j, fd0, fd1, fd2, fd3
+        flw     \fd0, (4 * ((\j * 2) + 0))(a1)
+        flw     fs4, (4 * (((12 - \j) * 2) + 0))(a1)
+        flw     \fd1, (4 * ((\j * 2) + 1))(a1)
+        fsub.s  \fd3, \fd0, fs4
+        flw     fs5, (4 * (((12 - \j) * 2) + 1))(a1)
+        fadd.s  \fd2, \fd1, fs5
+        fadd.s  \fd0, \fd0, fs4
+        fsub.s  \fd1, \fd1, fs5
+        .endm
+
+        //         re0, re1, im0, im1
+        input   0, ft0, ft1, ft2, ft3
+        input   1, ft4, ft5, ft6, ft7
+        input   2, ft8, ft9, ft10, ft11
+        input   3, fa0, fa1, fa2, fa3
+        input   4, fa4, fa5, fa6, fa7
+        input   5, fs0, fs1, fs2, fs3
+        flw     fs4, (4 * ((6 * 2) + 0))(a1)
+        flw     fs5, (4 * ((6 * 2) + 1))(a1)
+
+        add        a2, a2, 6 * 2 * 4 // point to filter[i][6][0]
+        li         t4, 8 * 2 * 4 // filter byte stride
+        slli       a3, a3, 3 // output byte stride
+1:
+        .macro filter, vs0, vs1, fo0, fo1, fo2, fo3
+        vfmacc.vf  v8, \fo0, \vs0
+        vfmacc.vf  v9, \fo2, \vs0
+        vfnmsac.vf v8, \fo1, \vs1
+        vfmacc.vf  v9, \fo3, \vs1
+        .endm
+
+        vsetvli    t0, a4, e32, m1, ta, ma
+        /*
+         * The filter (a2) has 16 segments, of which 13 need to be extracted.
+         * R-V V supports only up to 8 segments, so unrolling is unavoidable.
+         */
+        addi       t1, a2, -48
+        vlse32.v   v22, (a2), t4
+        addi       t2, a2, -44
+        vlse32.v   v16, (t1), t4
+        addi       t1, a2, -40
+        vfmul.vf   v8, v22, fs4
+        vlse32.v   v24, (t2), t4
+        addi       t2, a2, -36
+        vfmul.vf   v9, v22, fs5
+        vlse32.v   v17, (t1), t4
+        addi       t1, a2, -32
+        vlse32.v   v25, (t2), t4
+        addi       t2, a2, -28
+        filter     v16, v24, ft0, ft1, ft2, ft3
+        vlse32.v   v18, (t1), t4
+        addi       t1, a2, -24
+        vlse32.v   v26, (t2), t4
+        addi       t2, a2, -20
+        filter     v17, v25, ft4, ft5, ft6, ft7
+        vlse32.v   v19, (t1), t4
+        addi       t1, a2, -16
+        vlse32.v   v27, (t2), t4
+        addi       t2, a2, -12
+        filter     v18, v26, ft8, ft9, ft10, ft11
+        vlse32.v   v20, (t1), t4
+        addi       t1, a2, -8
+        vlse32.v   v28, (t2), t4
+        addi       t2, a2, -4
+        filter     v19, v27, fa0, fa1, fa2, fa3
+        vlse32.v   v21, (t1), t4
+        sub        a4, a4, t0
+        vlse32.v   v29, (t2), t4
+        slli       t1, t0, 3 + 1 + 2 // ctz(8 * 2 * 4)
+        add        a2, a2, t1
+        filter     v20, v28, fa4, fa5, fa6, fa7
+        filter     v21, v29, fs0, fs1, fs2, fs3
+
+        add        t2, a0, 4
+        vsse32.v   v8, (a0), a3
+        mul        t0, t0, a3
+        vsse32.v   v9, (t2), a3
+        add        a0, a0, t0
+        bnez       a4, 1b
+
+        .irp n, 5, 4, 3, 2, 1, 0
+        flw     fs\n, (4 * \n)(sp)
+        .endr
+        addi    sp, sp, 32
+        ret
+        .purgem input
+        .purgem filter
+endfunc
