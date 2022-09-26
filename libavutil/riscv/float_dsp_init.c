@@ -31,6 +31,8 @@ void ff_vector_fmac_scalar_rvv(float *dst, const float *src, float mul,
                                 int len);
 void ff_vector_fmul_scalar_rvv(float *dst, const float *src, float mul,
                                 int len);
+void ff_vector_fmul_add_rvv(float *dst, const float *src0, const float *src1,
+                             const float *src2, int len);
 
 void ff_vector_dmul_rvv(double *dst, const double *src0, const double *src1,
                          int len);
@@ -48,6 +50,7 @@ av_cold void ff_float_dsp_init_riscv(AVFloatDSPContext *fdsp)
         fdsp->vector_fmul = ff_vector_fmul_rvv;
         fdsp->vector_fmac_scalar = ff_vector_fmac_scalar_rvv;
         fdsp->vector_fmul_scalar = ff_vector_fmul_scalar_rvv;
+        fdsp->vector_fmul_add = ff_vector_fmul_add_rvv;
     }
 
     if (flags & AV_CPU_FLAG_RVV_F64) {

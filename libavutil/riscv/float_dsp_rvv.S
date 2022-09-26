@@ -74,6 +74,25 @@ NOHWF   mv       a2, a3
         ret
 endfunc
 
+// (a0) = (a1) * (a2) + (a3) [0..a4-1]
+func ff_vector_fmul_add_rvv, zve32f
+1:
+        vsetvli   t0, a4, e32, m1, ta, ma
+        vle32.v   v8, (a1)
+        sub       a4, a4, t0
+        vle32.v   v16, (a2)
+        sh2add    a1, t0, a1
+        vle32.v   v24, (a3)
+        sh2add    a2, t0, a2
+        vfmadd.vv v8, v16, v24
+        sh2add    a3, t0, a3
+        vse32.v   v8, (a0)
+        sh2add    a0, t0, a0
+        bnez      a4, 1b
+
+        ret
+endfunc
+
 // (a0) = (a1) * (a2) [0..a3-1]
 func ff_vector_dmul_rvv, zve64d
 1:
