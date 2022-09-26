@@ -38,6 +38,25 @@ func ff_vector_fmul_rvv, zve32f
         ret
 endfunc
 
+// (a0) += (a1) * fa0 [0..a2-1]
+func ff_vector_fmac_scalar_rvv, zve32f
+NOHWF   fmv.w.x   fa0, a2
+NOHWF   mv        a2, a3
+1:
+        vsetvli   t0, a2, e32, m1, ta, ma
+        slli      t1, t0, 2
+        vle32.v   v24, (a1)
+        sub       a2, a2, t0
+        vle32.v   v16, (a0)
+        sh2add    a1, t0, a1
+        vfmacc.vf v16, fa0, v24
+        vse32.v   v16, (a0)
+        sh2add    a0, t0, a0
+        bnez      a2, 1b
+
+        ret
+endfunc
+
 // (a0) = (a1) * fa0 [0..a2-1]
 func ff_vector_fmul_scalar_rvv, zve32f
 NOHWF   fmv.w.x  fa0, a2
