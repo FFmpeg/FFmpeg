@@ -22,12 +22,10 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "avassert.h"
 #include "avstring.h"
 #include "common.h"
 #include "pixfmt.h"
 #include "pixdesc.h"
-#include "internal.h"
 #include "intreadwrite.h"
 
 void av_read_image_line2(void *dst,
@@ -2911,53 +2909,6 @@ int av_pix_fmt_count_planes(enum AVPixelFormat pix_fmt)
         ret += planes[i];
     return ret;
 }
-
-void ff_check_pixfmt_descriptors(void){
-    const AVPixFmtDescriptor *d, *last = NULL;
-    int i;
-
-    for (i = AV_PIX_FMT_NONE, d = NULL; i++, d = av_pix_fmt_desc_next(d);) {
-        uint8_t fill[4][8+6+3] = {{0}};
-        uint8_t *data[4] = {fill[0], fill[1], fill[2], fill[3]};
-        int linesize[4] = {0,0,0,0};
-        uint16_t tmp[2];
-
-        av_assert0(d->name && d->name[0]);
-        av_log(NULL, AV_LOG_INFO, "Checking: %s\n", d->name);
-        av_assert0(d->log2_chroma_w <= 3);
-        av_assert0(d->log2_chroma_h <= 3);
-        av_assert0(d->nb_components <= 4);
-        av_assert2(av_get_pix_fmt(d->name) == av_pix_fmt_desc_get_id(d));
-
-        /* The following two checks as well as the one after the loop
-         * would need to be changed if we changed the way the descriptors
-         * are stored. */
-        av_assert0(i == av_pix_fmt_desc_get_id(d));
-        av_assert0(!last || last + 1 == d);
-
-        for (int j = 0; j < FF_ARRAY_ELEMS(d->comp); j++) {
-            const AVComponentDescriptor *c = &d->comp[j];
-            if(j>=d->nb_components) {
-                av_assert0(!c->plane && !c->step && !c->offset && !c->shift && !c->depth);
-                continue;
-            }
-            if (d->flags & AV_PIX_FMT_FLAG_BITSTREAM) {
-                av_assert0(c->step >= c->depth);
-            } else {
-                av_assert0(8*c->step >= c->depth);
-            }
-            if (d->flags & AV_PIX_FMT_FLAG_BAYER)
-                continue;
-            av_read_image_line(tmp, (void*)data, linesize, d, 0, 0, j, 2, 0);
-            av_assert0(tmp[0] == 0 && tmp[1] == 0);
-            tmp[0] = tmp[1] = (1ULL << c->depth) - 1;
-            av_write_image_line(tmp, data, linesize, d, 0, 0, j, 2);
-        }
-        last = d;
-    }
-    av_assert0(i == AV_PIX_FMT_NB);
-}
-
 
 enum AVPixelFormat av_pix_fmt_swap_endianness(enum AVPixelFormat pix_fmt)
 {
