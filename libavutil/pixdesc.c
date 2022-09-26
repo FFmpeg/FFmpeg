@@ -2913,10 +2913,10 @@ int av_pix_fmt_count_planes(enum AVPixelFormat pix_fmt)
 }
 
 void ff_check_pixfmt_descriptors(void){
-    int i, j;
+    const AVPixFmtDescriptor *d, *last = NULL;
+    int i;
 
-    for (i=0; i<FF_ARRAY_ELEMS(av_pix_fmt_descriptors); i++) {
-        const AVPixFmtDescriptor *d = &av_pix_fmt_descriptors[i];
+    for (i = AV_PIX_FMT_NONE, d = NULL; i++, d = av_pix_fmt_desc_next(d);) {
         uint8_t fill[4][8+6+3] = {{0}};
         uint8_t *data[4] = {fill[0], fill[1], fill[2], fill[3]};
         int linesize[4] = {0,0,0,0};
@@ -2927,9 +2927,15 @@ void ff_check_pixfmt_descriptors(void){
         av_assert0(d->log2_chroma_w <= 3);
         av_assert0(d->log2_chroma_h <= 3);
         av_assert0(d->nb_components <= 4);
-        av_assert2(av_get_pix_fmt(d->name) == i);
+        av_assert2(av_get_pix_fmt(d->name) == av_pix_fmt_desc_get_id(d));
 
-        for (j=0; j<FF_ARRAY_ELEMS(d->comp); j++) {
+        /* The following two checks as well as the one after the loop
+         * would need to be changed if we changed the way the descriptors
+         * are stored. */
+        av_assert0(i == av_pix_fmt_desc_get_id(d));
+        av_assert0(!last || last + 1 == d);
+
+        for (int j = 0; j < FF_ARRAY_ELEMS(d->comp); j++) {
             const AVComponentDescriptor *c = &d->comp[j];
             if(j>=d->nb_components) {
                 av_assert0(!c->plane && !c->step && !c->offset && !c->shift && !c->depth);
@@ -2947,7 +2953,9 @@ void ff_check_pixfmt_descriptors(void){
             tmp[0] = tmp[1] = (1ULL << c->depth) - 1;
             av_write_image_line(tmp, data, linesize, d, 0, 0, j, 2);
         }
+        last = d;
     }
+    av_assert0(i == AV_PIX_FMT_NB);
 }
 
 
