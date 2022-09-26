@@ -2922,13 +2922,11 @@ void ff_check_pixfmt_descriptors(void){
         int linesize[4] = {0,0,0,0};
         uint16_t tmp[2];
 
-        if (!d->name && !d->nb_components && !d->log2_chroma_w && !d->log2_chroma_h && !d->flags)
-            continue;
+        av_assert0(d->name && d->name[0]);
         av_log(NULL, AV_LOG_INFO, "Checking: %s\n", d->name);
         av_assert0(d->log2_chroma_w <= 3);
         av_assert0(d->log2_chroma_h <= 3);
         av_assert0(d->nb_components <= 4);
-        av_assert0(d->name && d->name[0]);
         av_assert2(av_get_pix_fmt(d->name) == i);
 
         for (j=0; j<FF_ARRAY_ELEMS(d->comp); j++) {
