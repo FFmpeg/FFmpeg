@@ -38,7 +38,8 @@ int ff_scale_eval_dimensions(void *ctx,
  * Transform evaluated width and height obtained from ff_scale_eval_dimensions
  * into actual target width and height for scaling. Adjustment can occur if one
  * or both of the evaluated values are of the form '-n' or if
- * force_original_aspect_ratio is set.
+ * force_original_aspect_ratio is set. force_divisible_by is used only when
+ * force_original_aspect_ratio is set and must be at least 1.
  *
  * Returns 0.
  */
