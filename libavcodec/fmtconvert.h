@@ -61,6 +61,7 @@ void ff_fmt_convert_init(FmtConvertContext *c);
 void ff_fmt_convert_init_aarch64(FmtConvertContext *c);
 void ff_fmt_convert_init_arm(FmtConvertContext *c);
 void ff_fmt_convert_init_ppc(FmtConvertContext *c);
+void ff_fmt_convert_init_riscv(FmtConvertContext *c);
 void ff_fmt_convert_init_x86(FmtConvertContext *c);
 void ff_fmt_convert_init_mips(FmtConvertContext *c);
 

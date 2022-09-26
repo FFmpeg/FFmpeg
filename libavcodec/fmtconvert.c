@@ -52,6 +52,8 @@ av_cold void ff_fmt_convert_init(FmtConvertContext *c)
     ff_fmt_convert_init_arm(c);
 #elif ARCH_PPC
     ff_fmt_convert_init_ppc(c);
+#elif ARCH_RISCV
+    ff_fmt_convert_init_riscv(c);
 #elif ARCH_X86
     ff_fmt_convert_init_x86(c);
 #endif
