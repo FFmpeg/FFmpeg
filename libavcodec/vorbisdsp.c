@@ -53,6 +53,8 @@ av_cold void ff_vorbisdsp_init(VorbisDSPContext *dsp)
     ff_vorbisdsp_init_arm(dsp);
 #elif ARCH_PPC
     ff_vorbisdsp_init_ppc(dsp);
+#elif ARCH_RISCV
+    ff_vorbisdsp_init_riscv(dsp);
 #elif ARCH_X86
     ff_vorbisdsp_init_x86(dsp);
 #endif

@@ -5,3 +5,5 @@ OBJS-$(CONFIG_FMTCONVERT) += riscv/fmtconvert_init.o
 RVV-OBJS-$(CONFIG_FMTCONVERT) += riscv/fmtconvert_rvv.o
 OBJS-$(CONFIG_PIXBLOCKDSP) += riscv/pixblockdsp_init.o \
                               riscv/pixblockdsp_rvi.o
+OBJS-$(CONFIG_VORBIS_DECODER) += riscv/vorbisdsp_init.o
+RVV-OBJS-$(CONFIG_VORBIS_DECODER) += riscv/vorbisdsp_rvv.o
