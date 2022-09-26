@@ -37,3 +37,31 @@ NOHWF   mv          a2, a3
 
         ret
 endfunc
+
+func ff_int32_to_float_fmul_array8_rvv, zve32f
+        srai        a4, a4, 3
+
+1:      vsetvli     t0, a4, e32, m1, ta, ma
+        vle32.v     v24, (a3)
+        slli        t2, t0, 2 + 3
+        vlseg8e32.v v16, (a2)
+        vsetvli     t3, zero, e32, m8, ta, ma
+        vfcvt.f.x.v v16, v16
+        vsetvli     zero, a4, e32, m1, ta, ma
+        vfmul.vv    v16, v16, v24
+        sub         a4, a4, t0
+        vfmul.vv    v17, v17, v24
+        sh2add      a3, t0, a3
+        vfmul.vv    v18, v18, v24
+        add         a2, a2, t2
+        vfmul.vv    v19, v19, v24
+        vfmul.vv    v20, v20, v24
+        vfmul.vv    v21, v21, v24
+        vfmul.vv    v22, v22, v24
+        vfmul.vv    v23, v23, v24
+        vsseg8e32.v v16, (a1)
+        add         a1, a1, t2
+        bnez        a4, 1b
+
+        ret
+endfunc

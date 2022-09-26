@@ -27,13 +27,18 @@
 
 void ff_int32_to_float_fmul_scalar_rvv(float *dst, const int32_t *src,
                                        float mul, int len);
+void ff_int32_to_float_fmul_array8_rvv(FmtConvertContext *c, float *dst,
+                                       const int32_t *src, const float *mul,
+                                       int len);
 
 av_cold void ff_fmt_convert_init_riscv(FmtConvertContext *c)
 {
 #ifdef HAVE_RVV
     int flags = av_get_cpu_flags();
 
-    if (flags & AV_CPU_FLAG_RVV_F32)
+    if (flags & AV_CPU_FLAG_RVV_F32) {
         c->int32_to_float_fmul_scalar = ff_int32_to_float_fmul_scalar_rvv;
+        c->int32_to_float_fmul_array8 = ff_int32_to_float_fmul_array8_rvv;
+    }
 #endif
 }
