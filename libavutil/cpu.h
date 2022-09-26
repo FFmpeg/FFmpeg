@@ -82,6 +82,10 @@
 #define AV_CPU_FLAG_RVI          (1 << 0) ///< I (full GPR bank)
 #define AV_CPU_FLAG_RVF          (1 << 1) ///< F (single precision FP)
 #define AV_CPU_FLAG_RVD          (1 << 2) ///< D (double precision FP)
+#define AV_CPU_FLAG_RVV_I32      (1 << 3) ///< Vectors of 8/16/32-bit int's */
+#define AV_CPU_FLAG_RVV_F32      (1 << 4) ///< Vectors of float's */
+#define AV_CPU_FLAG_RVV_I64      (1 << 5) ///< Vectors of 64-bit int's */
+#define AV_CPU_FLAG_RVV_F64      (1 << 6) ///< Vectors of double's
 
 /**
  * Return the flags which specify extensions supported by the CPU.
