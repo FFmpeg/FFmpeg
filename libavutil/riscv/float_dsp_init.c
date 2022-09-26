@@ -38,6 +38,7 @@ void ff_vector_fmul_add_rvv(float *dst, const float *src0, const float *src1,
 void ff_vector_fmul_reverse_rvv(float *dst, const float *src0,
                                  const float *src1, int len);
 void ff_butterflies_float_rvv(float *v1, float *v2, int len);
+float ff_scalarproduct_float_rvv(const float *v1, const float *v2, int len);
 
 void ff_vector_dmul_rvv(double *dst, const double *src0, const double *src1,
                          int len);
@@ -59,6 +60,7 @@ av_cold void ff_float_dsp_init_riscv(AVFloatDSPContext *fdsp)
         fdsp->vector_fmul_add = ff_vector_fmul_add_rvv;
         fdsp->vector_fmul_reverse = ff_vector_fmul_reverse_rvv;
         fdsp->butterflies_float = ff_butterflies_float_rvv;
+        fdsp->scalarproduct_float = ff_scalarproduct_float_rvv;
     }
 
     if (flags & AV_CPU_FLAG_RVV_F64) {
