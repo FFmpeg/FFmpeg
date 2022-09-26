@@ -184,3 +184,38 @@ func ff_ps_hybrid_analysis_ileave_rvv, zve32x /* no needs for zve32f here */
 3:
         ret
 endfunc
+
+func ff_ps_hybrid_synthesis_deint_rvv, zve32x
+        slli        t1, a2, 5 + 1 + 2
+        sh2add      a0, a2, a0
+        add         a1, a1, t1
+        addi        a2, a2, -64
+        li          t1, 38 * 64 * 4
+        li          t6, 64 * 4
+        add         a4, a0, t1
+        beqz        a2, 3f
+1:
+        mv          t0, a0
+        mv          t1, a1
+        mv          t3, a3
+        mv          t4, a4
+        addi        a2, a2, 1
+2:
+        vsetvli     t5, t3, e32, m1, ta, ma
+        vlseg2e32.v v16, (t1)
+        sub         t3, t3, t5
+        vsse32.v    v16, (t0), t6
+        mul         t2, t5, t6
+        vsse32.v    v17, (t4), t6
+        sh3add      t1, t5, t1
+        add         t0, t0, t2
+        add         t4, t4, t2
+        bnez        t3, 2b
+
+        add         a0, a0, 4
+        add         a1, a1, 32 * 2 * 4
+        add         a4, a4, 4
+        bnez        a2, 1b
+3:
+        ret
+endfunc
