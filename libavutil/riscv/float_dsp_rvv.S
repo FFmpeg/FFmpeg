@@ -91,6 +91,24 @@ func ff_vector_dmul_rvv, zve64d
         ret
 endfunc
 
+// (a0) += (a1) * fa0 [0..a2-1]
+func ff_vector_dmac_scalar_rvv, zve64d
+NOHWD   fmv.d.x   fa0, a2
+NOHWD   mv        a2, a3
+1:
+        vsetvli   t0, a2, e64, m1, ta, ma
+        vle64.v   v24, (a1)
+        sub       a2, a2, t0
+        vle64.v   v16, (a0)
+        sh3add    a1, t0, a1
+        vfmacc.vf v16, fa0, v24
+        vse64.v   v16, (a0)
+        sh3add    a0, t0, a0
+        bnez      a2, 1b
+
+        ret
+endfunc
+
 // (a0) = (a1) * fa0 [0..a2-1]
 func ff_vector_dmul_scalar_rvv, zve64d
 NOHWD   fmv.d.x  fa0, a2
