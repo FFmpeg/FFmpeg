@@ -20,6 +20,25 @@
 
 #include "libavutil/riscv/asm.S"
 
+func ff_scalarproduct_int16_rvv, zve32x
+        vsetvli     zero, zero, e16, m1, ta, ma
+        vmv.s.x     v8, zero
+1:
+        vsetvli     t0, a2, e16, m1, ta, ma
+        vle16.v     v16, (a0)
+        sub         a2, a2, t0
+        vle16.v     v24, (a1)
+        sh1add      a0, t0, a0
+        vwmul.vv    v0, v16, v24
+        sh1add      a1, t0, a1
+        vsetvli     zero, t0, e32, m2, ta, ma
+        vredsum.vs  v8, v0, v8
+        bnez        a2, 1b
+
+        vmv.x.s     a0, v8
+        ret
+endfunc
+
 func ff_vector_clip_int32_rvv, zve32x
 1:
         vsetvli t0, a4, e32, m1, ta, ma
