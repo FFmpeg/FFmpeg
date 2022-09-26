@@ -28,6 +28,9 @@
 void ff_vector_fmul_scalar_rvv(float *dst, const float *src, float mul,
                                 int len);
 
+void ff_vector_dmul_scalar_rvv(double *dst, const double *src, double mul,
+                                int len);
+
 av_cold void ff_float_dsp_init_riscv(AVFloatDSPContext *fdsp)
 {
 #if HAVE_RVV
@@ -35,5 +38,8 @@ av_cold void ff_float_dsp_init_riscv(AVFloatDSPContext *fdsp)
 
     if (flags & AV_CPU_FLAG_RVV_F32)
         fdsp->vector_fmul_scalar = ff_vector_fmul_scalar_rvv;
+
+    if (flags & AV_CPU_FLAG_RVV_F64)
+        fdsp->vector_dmul_scalar = ff_vector_dmul_scalar_rvv;
 #endif
 }
