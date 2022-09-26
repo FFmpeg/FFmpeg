@@ -113,6 +113,8 @@ av_cold void ff_audiodsp_init(AudioDSPContext *c)
     ff_audiodsp_init_arm(c);
 #elif ARCH_PPC
     ff_audiodsp_init_ppc(c);
+#elif ARCH_RISCV
+    ff_audiodsp_init_riscv(c);
 #elif ARCH_X86
     ff_audiodsp_init_x86(c);
 #endif

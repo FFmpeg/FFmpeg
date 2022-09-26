@@ -55,6 +55,7 @@ typedef struct AudioDSPContext {
 void ff_audiodsp_init(AudioDSPContext *c);
 void ff_audiodsp_init_arm(AudioDSPContext *c);
 void ff_audiodsp_init_ppc(AudioDSPContext *c);
+void ff_audiodsp_init_riscv(AudioDSPContext *c);
 void ff_audiodsp_init_x86(AudioDSPContext *c);
 
 #endif /* AVCODEC_AUDIODSP_H */
