@@ -21,6 +21,23 @@
 #include "config.h"
 #include "asm.S"
 
+// (a0) = (a1) * (a2) [0..a3-1]
+func ff_vector_fmul_rvv, zve32f
+1:
+        vsetvli  t0, a3, e32, m1, ta, ma
+        vle32.v  v16, (a1)
+        sub      a3, a3, t0
+        vle32.v  v24, (a2)
+        sh2add   a1, t0, a1
+        vfmul.vv v16, v16, v24
+        sh2add   a2, t0, a2
+        vse32.v  v16, (a0)
+        sh2add   a0, t0, a0
+        bnez     a3, 1b
+
+        ret
+endfunc
+
 // (a0) = (a1) * fa0 [0..a2-1]
 func ff_vector_fmul_scalar_rvv, zve32f
 NOHWF   fmv.w.x  fa0, a2
