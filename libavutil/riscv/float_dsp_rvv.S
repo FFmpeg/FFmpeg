@@ -93,6 +93,24 @@ func ff_vector_fmul_add_rvv, zve32f
         ret
 endfunc
 
+// (a0) = (a0) + (a1), (a1) = (a0) - (a1) [0..a2-1]
+func ff_butterflies_float_rvv, zve32f
+1:
+        vsetvli  t0, a2, e32, m1, ta, ma
+        vle32.v  v16, (a0)
+        sub      a2, a2, t0
+        vle32.v  v24, (a1)
+        vfadd.vv v0, v16, v24
+        vfsub.vv v8, v16, v24
+        vse32.v  v0, (a0)
+        sh2add   a0, t0, a0
+        vse32.v  v8, (a1)
+        sh2add   a1, t0, a1
+        bnez     a2, 1b
+
+        ret
+endfunc
+
 // (a0) = (a1) * (a2) [0..a3-1]
 func ff_vector_dmul_rvv, zve64d
 1:
