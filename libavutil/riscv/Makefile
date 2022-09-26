@@ -1,1 +1,3 @@
-OBJS += riscv/cpu.o
+OBJS +=     riscv/float_dsp_init.o \
+            riscv/cpu.o
+RVV-OBJS += riscv/float_dsp_rvv.o
