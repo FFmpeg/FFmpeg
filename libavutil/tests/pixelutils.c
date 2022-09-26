@@ -47,7 +47,7 @@ static void check_pixfmt_descriptors(void)
         av_assert0(d->log2_chroma_w <= 3);
         av_assert0(d->log2_chroma_h <= 3);
         av_assert0(d->nb_components <= 4);
-        av_assert2(av_get_pix_fmt(d->name) == av_pix_fmt_desc_get_id(d));
+        av_assert0(av_get_pix_fmt(d->name) == av_pix_fmt_desc_get_id(d));
 
         /* The following two checks as well as the one after the loop
          * would need to be changed if we changed the way the descriptors
