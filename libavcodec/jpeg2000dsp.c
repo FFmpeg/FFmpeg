@@ -76,14 +76,13 @@ static void ict_int(void *_src0, void *_src1, void *_src2, int csize)
 
 static void rct_int(void *_src0, void *_src1, void *_src2, int csize)
 {
-    int32_t *src0 = _src0, *src1 = _src1, *src2 = _src2;
-    int32_t i0, i1, i2;
+    uint32_t *src0 = _src0, *src1 = _src1, *src2 = _src2;
     int i;
 
     for (i = 0; i < csize; i++) {
-        i1 = *src0 - (*src2 + *src1 >> 2);
-        i0 = i1 + *src2;
-        i2 = i1 + *src1;
+        uint32_t i1 = *src0 - ((int32_t)(*src2 + *src1) >> 2);
+        int32_t i0 = i1 + *src2;
+        int32_t i2 = i1 + *src1;
         *src0++ = i0;
         *src1++ = i1;
         *src2++ = i2;
