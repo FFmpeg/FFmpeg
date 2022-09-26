@@ -25,13 +25,17 @@
 #include "libavcodec/aacpsdsp.h"
 
 void ff_ps_add_squares_rvv(float *dst, const float (*src)[2], int n);
+void ff_ps_mul_pair_single_rvv(float (*dst)[2], float (*src0)[2], float *src1,
+                               int n);
 
 av_cold void ff_psdsp_init_riscv(PSDSPContext *c)
 {
 #if HAVE_RVV
     int flags = av_get_cpu_flags();
 
-    if (flags & AV_CPU_FLAG_RVV_F32)
+    if (flags & AV_CPU_FLAG_RVV_F32) {
         c->add_squares = ff_ps_add_squares_rvv;
+        c->mul_pair_single = ff_ps_mul_pair_single_rvv;
+    }
 #endif
 }

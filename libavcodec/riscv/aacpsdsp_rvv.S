@@ -35,3 +35,20 @@ func ff_ps_add_squares_rvv, zve32f
 
         ret
 endfunc
+
+func ff_ps_mul_pair_single_rvv, zve32f
+1:
+        vsetvli     t0, a3, e32, m1, ta, ma
+        vlseg2e32.v v24, (a1)
+        sub         a3, a3, t0
+        vle32.v     v16, (a2)
+        sh3add      a1, t0, a1
+        vfmul.vv    v24, v24, v16
+        sh2add      a2, t0, a2
+        vfmul.vv    v25, v25, v16
+        vsseg2e32.v v24, (a0)
+        sh3add      a0, t0, a0
+        bnez        a3, 1b
+
+        ret
+endfunc
