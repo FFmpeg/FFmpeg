@@ -18,25 +18,19 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "config.h"
+#include "libavutil/riscv/asm.S"
 
-#include "libavutil/attributes.h"
-#include "libavutil/cpu.h"
-#include "libavcodec/audiodsp.h"
+func ff_vector_clip_int32_rvv, zve32x
+1:
+        vsetvli t0, a4, e32, m1, ta, ma
+        vle32.v v8, (a1)
+        sub     a4, a4, t0
+        vmax.vx v8, v8, a2
+        sh2add  a1, t0, a1
+        vmin.vx v8, v8, a3
+        vse32.v v8, (a0)
+        sh2add  a0, t0, a0
+        bnez    a4, 1b
 
-void ff_vector_clipf_rvf(float *dst, const float *src, int len, float min, float max);
-
-void ff_vector_clip_int32_rvv(int32_t *dst, const int32_t *src, int32_t min,
-                              int32_t max, unsigned int len);
-
-av_cold void ff_audiodsp_init_riscv(AudioDSPContext *c)
-{
-    int flags = av_get_cpu_flags();
-
-    if (flags & AV_CPU_FLAG_RVF)
-        c->vector_clipf = ff_vector_clipf_rvf;
-#if HAVE_RVV
-    if (flags & AV_CPU_FLAG_RVV_I32)
-        c->vector_clip_int32 = ff_vector_clip_int32_rvv;
-#endif
-}
+        ret
+endfunc
