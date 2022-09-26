@@ -38,6 +38,7 @@
 
 /** Structure listing useful vars to parse RTP packet payload */
 struct PayloadContext {
+    int bitrate;
     int sizelength;
     int indexlength;
     int indexdeltalength;
@@ -83,6 +84,9 @@ typedef struct AttrNameMap {
 #define ATTR_NAME_TYPE_INT 0
 #define ATTR_NAME_TYPE_STR 1
 static const AttrNameMap attr_names[] = {
+    { "bitrate",       ATTR_NAME_TYPE_INT,
+      offsetof(PayloadContext, bitrate),
+      {0, INT32_MAX} },
     { "SizeLength",       ATTR_NAME_TYPE_INT,
       offsetof(PayloadContext, sizelength),
       {0, 32} }, // SizeLength number of bits used to encode AU-size integer value
@@ -331,6 +335,9 @@ static int parse_fmtp(AVFormatContext *s,
                         attr_names[i].offset) = val;
                 }
             }
+        }
+        if (!strcmp(attr, "bitrate")) {
+            par->bit_rate = data->bitrate;
         }
     }
     return 0;
