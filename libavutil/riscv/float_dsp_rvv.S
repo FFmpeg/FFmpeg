@@ -74,6 +74,39 @@ NOHWF   mv       a2, a3
         ret
 endfunc
 
+func ff_vector_fmul_window_rvv, zve32f
+        // a0: dst, a1: src0, a2: src1, a3: window, a4: length
+        addi       t0, a4, -1
+        add        t1, t0, a4
+        sh2add     a2, t0, a2
+        sh2add     t0, t1, a0
+        sh2add     t3, t1, a3
+        li         t1, -4 // byte stride
+1:
+        vsetvli    t2, a4, e32, m1, ta, ma
+        vle32.v    v16, (a1)
+        slli       t4, t2, 2
+        vlse32.v   v20, (a2), t1
+        sub        a4, a4, t2
+        vle32.v    v24, (a3)
+        add        a1, a1, t4
+        vlse32.v   v28, (t3), t1
+        sub        a2, a2, t4
+        vfmul.vv   v0, v16, v28
+        add        a3, a3, t4
+        vfmul.vv   v8, v16, v24
+        sub        t3, t3, t4
+        vfnmsac.vv v0, v20, v24
+        vfmacc.vv  v8, v20, v28
+        vse32.v    v0, (a0)
+        add        a0, a0, t4
+        vsse32.v   v8, (t0), t1
+        sub        t0, t0, t4
+        bnez       a4, 1b
+
+        ret
+endfunc
+
 // (a0) = (a1) * (a2) + (a3) [0..a4-1]
 func ff_vector_fmul_add_rvv, zve32f
 1:
