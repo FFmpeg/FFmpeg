@@ -101,9 +101,13 @@ typedef struct AVIODirEntry {
     int64_t filemode;                     /**< Unix file mode, -1 if unknown. */
 } AVIODirEntry;
 
+#if FF_API_AVIODIRCONTEXT
 typedef struct AVIODirContext {
     struct URLContext *url_context;
 } AVIODirContext;
+#else
+typedef struct AVIODirContext AVIODirContext;
+#endif
 
 /**
  * Different data types that can be returned via the AVIO

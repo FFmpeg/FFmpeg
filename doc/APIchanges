@@ -14,6 +14,9 @@ libavutil:     2021-04-27
 
 API changes, most recent first:
 
+2022-10-03 - xxxxxxxxxx - lavf 59.34.100 - avio.h
+  Make AVIODirContext an opaque type in a future major version bump.
+
 2022-09-27 - 0c0a3deb18 - lavu 57.38.100 - cpu.h
   Add CPU flags for RISC-V vector extensions:
   AV_CPU_FLAG_RVV_I32, AV_CPU_FLAG_RVV_F32, AV_CPU_FLAG_RVV_I64,
