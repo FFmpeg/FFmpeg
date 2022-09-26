@@ -149,3 +149,38 @@ func ff_ps_hybrid_analysis_rvv, zve32f
         .purgem input
         .purgem filter
 endfunc
+
+func ff_ps_hybrid_analysis_ileave_rvv, zve32x /* no needs for zve32f here */
+        slli        t0, a2, 5 + 1 + 2 // ctz(32 * 2 * 4)
+        sh2add      a1, a2, a1
+        add         a0, a0, t0
+        addi        a2, a2, -64
+        li          t1, 38 * 64 * 4
+        li          t6, 64 * 4 // (uint8_t *)L[x][j+1][i] - L[x][j][i]
+        add         a4, a1, t1 // &L[1]
+        beqz        a2, 3f
+1:
+        mv          t0, a0
+        mv          t1, a1
+        mv          t3, a3
+        mv          t4, a4
+        addi        a2, a2, 1
+2:
+        vsetvli     t5, t3, e32, m1, ta, ma
+        vlse32.v    v16, (t1), t6
+        sub         t3, t3, t5
+        vlse32.v    v17, (t4), t6
+        mul         t2, t5, t6
+        vsseg2e32.v v16, (t0)
+        sh3add      t0, t5, t0
+        add         t1, t1, t2
+        add         t4, t4, t2
+        bnez        t3, 2b
+
+        add         a0, a0, 32 * 2 * 4
+        add         a1, a1, 4
+        add         a4, a4, 4
+        bnez        a2, 1b
+3:
+        ret
+endfunc

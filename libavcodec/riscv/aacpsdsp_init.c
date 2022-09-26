@@ -29,6 +29,8 @@ void ff_ps_mul_pair_single_rvv(float (*dst)[2], float (*src0)[2], float *src1,
                                int n);
 void ff_ps_hybrid_analysis_rvv(float (*out)[2], float (*in)[2],
                                const float (*filter)[8][2], ptrdiff_t, int n);
+void ff_ps_hybrid_analysis_ileave_rvv(float (*out)[32][2], float L[2][38][64],
+                                      int i, int len);
 
 av_cold void ff_psdsp_init_riscv(PSDSPContext *c)
 {
@@ -40,5 +42,8 @@ av_cold void ff_psdsp_init_riscv(PSDSPContext *c)
         c->mul_pair_single = ff_ps_mul_pair_single_rvv;
         c->hybrid_analysis = ff_ps_hybrid_analysis_rvv;
     }
+
+    if (flags & AV_CPU_FLAG_RVV_I32)
+        c->hybrid_analysis_ileave = ff_ps_hybrid_analysis_ileave_rvv;
 #endif
 }
