@@ -176,9 +176,8 @@ static const AVClass class = {
 static const FFCodecDefault qsv_enc_defaults[] = {
     { "b",         "1M"    },
     { "refs",      "0"     },
-    // same as the x264 default
-    { "g",         "250"   },
-    { "bf",        "3"     },
+    { "g",         "-1"    },
+    { "bf",        "-1"    },
     { "qmin",      "-1"    },
     { "qmax",      "-1"    },
     { "trellis",   "-1"    },
