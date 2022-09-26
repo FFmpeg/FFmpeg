@@ -75,3 +75,22 @@
                 .purgem endconst
             .endm
         .endm
+
+#if !defined (__riscv_zba)
+        /* SH{1,2,3}ADD definitions for pre-Zba assemblers */
+        .macro  shnadd n, rd, rs1, rs2
+        .insn r OP, 2 * \n, 16, \rd, \rs1, \rs2
+        .endm
+
+        .macro  sh1add rd, rs1, rs2
+        shnadd  1, \rd, \rs1, \rs2
+        .endm
+
+        .macro  sh2add rd, rs1, rs2
+        shnadd  2, \rd, \rs1, \rs2
+        .endm
+
+        .macro  sh3add rd, rs1, rs2
+        shnadd  3, \rd, \rs1, \rs2
+        .endm
+#endif
