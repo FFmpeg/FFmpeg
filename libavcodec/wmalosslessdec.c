@@ -1192,15 +1192,14 @@ static int decode_packet(AVCodecContext *avctx, AVFrame *rframe,
 
     s->frame->nb_samples = 0;
 
-    if (!buf_size && s->num_saved_bits > get_bits_count(&s->gb)) {
+    if (!buf_size) {
         s->packet_done = 0;
+        if (s->num_saved_bits <= get_bits_count(&s->gb))
+            return 0;
         if (!decode_frame(s))
             s->num_saved_bits = 0;
     } else if (s->packet_done || s->packet_loss) {
         s->packet_done = 0;
-
-        if (!buf_size)
-            return 0;
 
         s->next_packet_start = buf_size - FFMIN(avctx->block_align, buf_size);
         buf_size             = FFMIN(avctx->block_align, buf_size);
@@ -1299,7 +1298,7 @@ static int decode_packet(AVCodecContext *avctx, AVFrame *rframe,
 
     s->packet_offset = get_bits_count(gb) & 7;
 
-    return (s->packet_loss) ? AVERROR_INVALIDDATA : buf_size ? get_bits_count(gb) >> 3 : 0;
+    return (s->packet_loss) ? AVERROR_INVALIDDATA : get_bits_count(gb) >> 3;
 }
 
 static void flush(AVCodecContext *avctx)
