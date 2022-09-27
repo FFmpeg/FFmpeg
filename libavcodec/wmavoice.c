@@ -1911,7 +1911,9 @@ static int wmavoice_decode_packet(AVCodecContext *ctx, AVFrame *frame,
      * capping the packet size at ctx->block_align. */
     for (size = avpkt->size; size > ctx->block_align; size -= ctx->block_align);
     buf = size ? buf : dummy;
-    init_get_bits8(&s->gb, buf, size);
+    res = init_get_bits8(&s->gb, buf, size);
+    if (res < 0)
+        return res;
 
     /* size == ctx->block_align is used to indicate whether we are dealing with
      * a new packet or a packet of which we already read the packet header
