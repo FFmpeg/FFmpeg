@@ -20,8 +20,10 @@
 
 #include <stdint.h>
 
+#include "config.h"
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
+#include "libavutil/riscv/cpu.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/pixblockdsp.h"
 
@@ -29,6 +31,9 @@ void ff_get_pixels_8_rvi(int16_t *block, const uint8_t *pixels,
                          ptrdiff_t stride);
 void ff_get_pixels_16_rvi(int16_t *block, const uint8_t *pixels,
                           ptrdiff_t stride);
+
+void ff_get_pixels_8_rvv(int16_t *block, const uint8_t *pixels,
+                         ptrdiff_t stride);
 
 av_cold void ff_pixblockdsp_init_riscv(PixblockDSPContext *c,
                                        AVCodecContext *avctx,
@@ -42,4 +47,11 @@ av_cold void ff_pixblockdsp_init_riscv(PixblockDSPContext *c,
         else
             c->get_pixels = ff_get_pixels_8_rvi;
     }
+
+#if HAVE_RVV
+    if ((cpu_flags & AV_CPU_FLAG_RVV_I32) && ff_get_rv_vlenb() >= 16) {
+        if (!high_bit_depth)
+            c->get_pixels_unaligned = c->get_pixels = ff_get_pixels_8_rvv;
+    }
+#endif
 }

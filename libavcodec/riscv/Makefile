@@ -9,5 +9,6 @@ OBJS-$(CONFIG_IDCTDSP) += riscv/idctdsp_init.o
 RVV-OBJS-$(CONFIG_IDCTDSP) += riscv/idctdsp_rvv.o
 OBJS-$(CONFIG_PIXBLOCKDSP) += riscv/pixblockdsp_init.o \
                               riscv/pixblockdsp_rvi.o
+RVV-OBJS-$(CONFIG_PIXBLOCKDSP) += riscv/pixblockdsp_rvv.o
 OBJS-$(CONFIG_VORBIS_DECODER) += riscv/vorbisdsp_init.o
 RVV-OBJS-$(CONFIG_VORBIS_DECODER) += riscv/vorbisdsp_rvv.o

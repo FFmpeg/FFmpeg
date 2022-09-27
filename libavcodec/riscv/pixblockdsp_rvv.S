@@ -1,0 +1,37 @@
+/*
+ * Copyright © 2022 Rémi Denis-Courmont.
+ *
+ * This file is part of FFmpeg.
+ *
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * FFmpeg is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+#include "config.h"
+#include "libavutil/riscv/asm.S"
+
+func ff_get_pixels_8_rvv, zve32x
+        vsetivli     zero, 8, e8, mf2, ta, ma
+        vlsseg8e8.v  v16, (a1), a2
+        vwcvtu.x.x.v v8, v16
+        vwcvtu.x.x.v v9, v17
+        vwcvtu.x.x.v v10, v18
+        vwcvtu.x.x.v v11, v19
+        vwcvtu.x.x.v v12, v20
+        vwcvtu.x.x.v v13, v21
+        vwcvtu.x.x.v v14, v22
+        vwcvtu.x.x.v v15, v23
+        vsseg8e16.v  v8, (a0)
+        ret
+endfunc
