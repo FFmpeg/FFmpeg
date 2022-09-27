@@ -151,7 +151,7 @@ static void vc2_subband_dwt_53(VC2TransformContext *t, dwtcoef *data,
      */
     for (y = 0; y < synth_height; y++) {
         for (x = 0; x < synth_width; x++)
-            synthl[x] = datal[x] << 1;
+            synthl[x] = datal[x] * 2;
         synthl += synth_width;
         datal  += stride;
     }
@@ -223,9 +223,8 @@ static av_always_inline void dwt_haar(VC2TransformContext *t, dwtcoef *data,
     /* Horizontal synthesis. */
     for (y = 0; y < synth_height; y++) {
         for (x = 0; x < synth_width; x += 2) {
-            synthl[y*synth_width + x + 1] = (datal[y*stride + x + 1] << s) -
-                                            (datal[y*stride + x] << s);
-            synthl[y*synth_width + x] = (datal[y*stride + x + 0] << s) +
+            synthl[y*synth_width + x + 1] = (datal[y*stride + x + 1] - datal[y*stride + x]) * (1 << s);
+            synthl[y*synth_width + x] = datal[y*stride + x + 0] * (1 << s) +
                                         ((synthl[y*synth_width + x + 1] + 1) >> 1);
         }
     }
