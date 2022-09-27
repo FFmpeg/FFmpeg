@@ -84,11 +84,12 @@ static int zerocodec_decode_frame(AVCodecContext *avctx, AVFrame *pic,
             return AVERROR_INVALIDDATA;
         }
 
-        if (!(avpkt->flags & AV_PKT_FLAG_KEY))
+        if (!(avpkt->flags & AV_PKT_FLAG_KEY)) {
             for (j = 0; j < avctx->width << 1; j++)
                 dst[j] += prev[j] & -!dst[j];
+            prev -= prev_pic->linesize[0];
+        }
 
-        prev -= prev_pic->linesize[0];
         dst  -= pic->linesize[0];
     }
 
