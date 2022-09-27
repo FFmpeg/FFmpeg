@@ -42,3 +42,19 @@ func ff_get_pixels_16_rvv, zve32x
         vsseg8e16.v  v0, (a0)
         ret
 endfunc
+
+func ff_diff_pixels_rvv, zve32x
+        vsetivli    zero, 8, e8, mf2, ta, ma
+        vlsseg8e8.v v16, (a1), a3
+        vlsseg8e8.v v24, (a2), a3
+        vwsubu.vv   v8, v16, v24
+        vwsubu.vv   v9, v17, v25
+        vwsubu.vv   v10, v18, v26
+        vwsubu.vv   v11, v19, v27
+        vwsubu.vv   v12, v20, v28
+        vwsubu.vv   v13, v21, v29
+        vwsubu.vv   v14, v22, v30
+        vwsubu.vv   v15, v23, v31
+        vsseg8e16.v v8, (a0)
+        ret
+endfunc
