@@ -312,6 +312,8 @@ av_cold void ff_idctdsp_init(IDCTDSPContext *c, AVCodecContext *avctx)
     ff_idctdsp_init_arm(c, avctx, high_bit_depth);
 #elif ARCH_PPC
     ff_idctdsp_init_ppc(c, avctx, high_bit_depth);
+#elif ARCH_RISCV
+    ff_idctdsp_init_riscv(c, avctx, high_bit_depth);
 #elif ARCH_X86
     ff_idctdsp_init_x86(c, avctx, high_bit_depth);
 #elif ARCH_MIPS

@@ -114,6 +114,8 @@ void ff_idctdsp_init_arm(IDCTDSPContext *c, AVCodecContext *avctx,
                          unsigned high_bit_depth);
 void ff_idctdsp_init_ppc(IDCTDSPContext *c, AVCodecContext *avctx,
                          unsigned high_bit_depth);
+void ff_idctdsp_init_riscv(IDCTDSPContext *c, AVCodecContext *avctx,
+                           unsigned high_bit_depth);
 void ff_idctdsp_init_x86(IDCTDSPContext *c, AVCodecContext *avctx,
                          unsigned high_bit_depth);
 void ff_idctdsp_init_mips(IDCTDSPContext *c, AVCodecContext *avctx,
