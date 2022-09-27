@@ -43,6 +43,27 @@ func ff_put_pixels_clamped_rvv, zve32x
         ret
 endfunc
 
+func ff_put_signed_pixels_clamped_rvv, zve32x
+        vsetivli    zero, 8, e16, m1, ta, ma
+        vlseg8e16.v v24, (a0)
+
+        li          t1, 128
+        vsetivli    zero, 8, e8, mf2, ta, ma
+        vnclip.wi   v16, v24, 0
+        vnclip.wi   v17, v25, 0
+        vnclip.wi   v18, v26, 0
+        vnclip.wi   v19, v27, 0
+        vnclip.wi   v20, v28, 0
+        vnclip.wi   v21, v29, 0
+        vnclip.wi   v22, v30, 0
+        vnclip.wi   v23, v31, 0
+        vsetvli     t0, zero, e8, m8, ta, ma
+        vadd.vx     v16, v16, t1
+        vsetivli    zero, 8, e8, mf2, ta, ma
+        vssseg8e8.v v16, (a1), a2
+        ret
+endfunc
+
 func ff_add_pixels_clamped_rvv, zve32x
         vsetivli    zero, 8, e8, mf2, ta, ma
         vlseg8e16.v v24, (a0)
