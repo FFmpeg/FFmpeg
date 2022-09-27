@@ -284,6 +284,7 @@ static void extract_from_packed(uint8_t *dst, int dst_linesize,
                 dst[x * 2    ] = src[x * step + comp * 2    ];
                 dst[x * 2 + 1] = src[x * step + comp * 2 + 1];
             }
+            break;
         case 4:
             for (x = 0; x < width; x++) {
                 dst[x * 4    ] = src[x * step + comp * 4    ];
