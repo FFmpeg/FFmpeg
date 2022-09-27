@@ -1900,6 +1900,8 @@ static int wmavoice_decode_packet(AVCodecContext *ctx, AVFrame *frame,
 {
     WMAVoiceContext *s = ctx->priv_data;
     GetBitContext *gb = &s->gb;
+    const uint8_t *buf = avpkt->data;
+    uint8_t dummy[1];
     int size, res, pos;
 
     /* Packets are sometimes a multiple of ctx->block_align, with a packet
@@ -1908,7 +1910,8 @@ static int wmavoice_decode_packet(AVCodecContext *ctx, AVFrame *frame,
      * in a single "muxer" packet, so we artificially emulate that by
      * capping the packet size at ctx->block_align. */
     for (size = avpkt->size; size > ctx->block_align; size -= ctx->block_align);
-    init_get_bits8(&s->gb, avpkt->data, size);
+    buf = size ? buf : dummy;
+    init_get_bits8(&s->gb, buf, size);
 
     /* size == ctx->block_align is used to indicate whether we are dealing with
      * a new packet or a packet of which we already read the packet header
@@ -1931,7 +1934,7 @@ static int wmavoice_decode_packet(AVCodecContext *ctx, AVFrame *frame,
             if (cnt + s->spillover_nbits > avpkt->size * 8) {
                 s->spillover_nbits = avpkt->size * 8 - cnt;
             }
-            copy_bits(&s->pb, avpkt->data, size, gb, s->spillover_nbits);
+            copy_bits(&s->pb, buf, size, gb, s->spillover_nbits);
             flush_put_bits(&s->pb);
             s->sframe_cache_size += s->spillover_nbits;
             if ((res = synth_superframe(ctx, frame, got_frame_ptr)) == 0 &&
@@ -1968,7 +1971,7 @@ static int wmavoice_decode_packet(AVCodecContext *ctx, AVFrame *frame,
     } else if ((s->sframe_cache_size = pos) > 0) {
         /* ... cache it for spillover in next packet */
         init_put_bits(&s->pb, s->sframe_cache, SFRAME_CACHE_MAXSIZE);
-        copy_bits(&s->pb, avpkt->data, size, gb, s->sframe_cache_size);
+        copy_bits(&s->pb, buf, size, gb, s->sframe_cache_size);
         // FIXME bad - just copy bytes as whole and add use the
         // skip_bits_next field
     }
