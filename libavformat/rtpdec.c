@@ -556,6 +556,13 @@ RTPDemuxContext *ff_rtp_parse_open(AVFormatContext *s1, AVStream *st,
             if (st->codecpar->sample_rate == 8000)
                 st->codecpar->sample_rate = 16000;
             break;
+        case AV_CODEC_ID_PCM_MULAW: {
+            AVCodecParameters *par = st->codecpar;
+            par->bits_per_coded_sample = av_get_bits_per_sample(par->codec_id);
+            par->block_align           = par->ch_layout.nb_channels * par->bits_per_coded_sample / 8;
+            par->bit_rate              = par->block_align * 8LL * par->sample_rate;
+            break;
+        }
         default:
             break;
         }
