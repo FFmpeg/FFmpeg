@@ -91,7 +91,7 @@ s16_perm:      dd 0, 1, 2, 3, 1, 0, 3, 2
 
 s15_perm:      dd 0, 6, 5, 3, 2, 4, 7, 1
 
-mask_mmmmmmpp: dd NEG, NEG, NEG, NEG, NEG, NEG, POS, POS
+mask_mmppmmmm: dd NEG, NEG, POS, POS, NEG, NEG, NEG, NEG
 mask_mmmmpppm: dd NEG, NEG, NEG, NEG, POS, POS, POS, NEG
 mask_ppmpmmpm: dd POS, POS, NEG, POS, NEG, NEG, POS, NEG
 mask_mppmmpmp: dd NEG, POS, POS, NEG, NEG, POS, NEG, POS
@@ -305,6 +305,132 @@ SECTION .text
     addps      %1, %1, %5                   ; even part 1
 %undef mask
 %undef perm
+%endmacro
+
+; Single 15-point complex FFT
+; Input:
+; xm0 must contain in[0,1].reim
+; m2 - in[3-6].reim
+; m3 - in[7-11].reim
+; m4 - in[12-15].reim
+; xm5 must contain in[2].reimreim
+;
+; Output:
+; m0, m1, m2 - ACs
+; xm14 - out[0]
+; xm15 - out[10, 5]
+%macro FFT15 0
+    shufps xm1, xm0, xm0, q3223      ; in[1].imrereim
+    shufps xm0, xm0, xm0, q1001      ; in[0].imrereim
+
+    xorps xm1, xm11
+    addps xm1, xm0                   ; pc[0,1].imre
+
+    shufps xm0, xm1, xm1, q3232      ; pc[1].reimreim
+    addps xm0, xm5                   ; dc[0].reimreim
+
+    mulps xm1, xm9                   ; tab[0123]*pc[01]
+
+    shufpd xm6, xm1, xm1, 01b        ; pc[1,0].reim
+    xorps xm1, xm11
+    addps xm1, xm1, xm6
+    addsubps xm1, xm5, xm1           ; dc[1,2].reim
+
+    subps m7, m2, m3                 ; q[0-3].imre
+    addps m6, m2, m3                 ; q[4-7]
+    shufps m7, m7, m7, q2301         ; q[0-3].reim
+
+    addps m5, m4, m6                 ; y[0-3]
+
+    vperm2f128 m14, m9, m9, 0x11     ; tab[23232323]
+    vbroadcastsd m15, xm9            ; tab[01010101]
+
+    mulps m6, m14
+    mulps m7, m15
+
+    subps m2, m6, m7                 ; k[0-3]
+    addps m3, m6, m7                 ; k[4-7]
+
+    shufps m12, m11, m11, q3232      ; ppppmmmm
+
+    addsubps m6, m4, m2              ; k[0-3]
+    addsubps m7, m4, m3              ; k[4-7]
+
+    ; 15pt from here on
+    vpermpd m2, m5, q0123            ; y[3-0]
+    vpermpd m3, m6, q0123            ; k[3-0]
+    vpermpd m4, m7, q0123            ; k[7-4]
+
+    xorps m5, m12
+    xorps m6, m12
+    xorps m7, m12
+
+    addps m2, m5                     ; t[0-3]
+    addps m3, m6                     ; t[4-7]
+    addps m4, m7                     ; t[8-11]
+
+    movlhps xm14, xm2                ; out[0]
+    unpcklpd xm15, xm3, xm4          ; out[10,5]
+    unpckhpd xm5, xm3, xm4           ; out[10,5]
+
+    addps xm14, xm2                  ; out[0]
+    addps xm15, xm5                  ; out[10,5]
+    addps xm14, xm0                  ; out[0]
+    addps xm15, xm1                  ; out[10,5]
+
+    shufps m12, m10, m10, q3232      ; tab5 4 5 4 5  8  9  8  9
+    shufps m13, m10, m10, q1010      ; tab5 6 7 6 7 10 11 10 11
+
+    mulps m5, m2, m12                ; t[0-3]
+    mulps m6, m3, m12                ; t[4-7]
+    mulps m7, m4, m12                ; t[8-11]
+
+    mulps m2, m13                    ; r[0-3]
+    mulps m3, m13                    ; r[4-7]
+    mulps m4, m13                    ; r[8-11]
+
+    shufps m5, m5, m5, q1032         ; t[1,0,3,2].reim
+    shufps m6, m6, m6, q1032         ; t[5,4,7,6].reim
+    shufps m7, m7, m7, q1032         ; t[9,8,11,10].reim
+
+    vperm2f128 m13, m11, m11, 0x01   ; mmmmmmpp
+    shufps m12, m11, m11, q3232      ; ppppmmmm
+
+    xorps m5, m13
+    xorps m6, m13
+    xorps m7, m13
+
+    addps m2, m5                     ; r[0,1,2,3]
+    addps m3, m6                     ; r[4,5,6,7]
+    addps m4, m7                     ; r[8,9,10,11]
+
+    shufps m5, m2, m2, q2301
+    shufps m6, m3, m3, q2301
+    shufps m7, m4, m4, q2301
+
+    xorps m2, m12
+    xorps m3, m12
+    xorps m4, m12
+
+    vpermpd m5, m5, q0123
+    vpermpd m6, m6, q0123
+    vpermpd m7, m7, q0123
+
+    addps m5, m2
+    addps m6, m3
+    addps m7, m4
+
+    vpermps m5, m8, m5
+    vpermps m6, m8, m6
+    vpermps m7, m8, m7
+
+    vbroadcastsd m0, xm0             ; dc[0]
+    vpermpd m2, m1, q1111            ; dc[2]
+    vbroadcastsd m1, xm1             ; dc[1]
+
+    addps m0, m5
+    addps m1, m6
+    addps m2, m7
 %endmacro
 
 ; Cobmines m0...m8 (tx1[even, even, odd, odd], tx2,3[even], tx2,3[odd]) coeffs
@@ -1610,11 +1736,10 @@ cglobal fft_pfa_15xM_float, 4, 14, 16, 320, ctx, out, in, stride, len, lut, buf,
     imul stride3q, strideq, 3
     imul stride5q, strideq, 5
 
-    movaps m13, [mask_mmmmmmpp]      ; mmmmmmpp
-    vpermpd m12, m13, q0033          ; ppppmmmm
-    vextractf128 xm11, m13, 1        ; mmpp
+    movaps m11, [mask_mmppmmmm]      ; mmppmmmm
     movaps m10, [tab_53_float]       ; tab5
     movaps xm9, [tab_53_float + 32]  ; tab3
+    vpermpd m9, m9, q1110            ; tab[23232323]
     movaps m8, [s15_perm]
 
 .dim1:
@@ -1622,144 +1747,28 @@ cglobal fft_pfa_15xM_float, 4, 14, 16, 320, ctx, out, in, stride, len, lut, buf,
     lea tgtq, [outq + tmpq*8]
 
 %if %2
-    movups xm0, [inq]
+    movups  xm0, [inq]                                            ; in[0,1].reim
+    movddup xm5, [inq + 16]                                       ; in[2].reimreim
+    movups  m2, [inq + mmsize*0 + 24]                             ; in[3-6].reim
+    movups  m3, [inq + mmsize*1 + 24]                             ; in[7-11].reim
+    movups  m4, [inq + mmsize*2 + 24]                             ; in[12-15].reim
 %else
-    LOAD64_LUT xm0, inq, lutq, 0, tmpq, m14, xm15 ; in[0,1].reim
-%endif
-
-    shufps xm1, xm0, xm0, q3223      ; in[1].imrereim
-    shufps xm0, xm0, xm0, q1001      ; in[0].imrereim
-
-    xorps xm1, xm11
-    addps xm1, xm0                   ; pc[0,1].imre
-
-%if %2
-    movddup xm14, [inq + 16]         ; in[2].reimreim
-%else
+    LOAD64_LUT xm0, inq, lutq, 0, tmpq, m14, xm15                 ; in[0,1].reim
+    LOAD64_LUT  m2, inq, lutq, (mmsize/2)*0 + 12, tmpq, m6, m7
+    LOAD64_LUT  m3, inq, lutq, (mmsize/2)*1 + 12, tmpq, m14, m15
+    LOAD64_LUT  m4, inq, lutq, (mmsize/2)*2 + 12, tmpq, m6, m7
     mov tmpd, [lutq + 8]
-    movddup xm14, [inq + tmpq*8]     ; in[2].reimreim
-%endif
-    shufps xm0, xm1, xm1, q3232      ; pc[1].reimreim
-    addps xm0, xm14                  ; dc[0].reimreim
-
-    mulps xm1, xm9                   ; tab[0123]*pc[01]
-
-    shufpd xm5, xm1, xm1, 01b        ; pc[1,0].reim
-    xorps xm1, xm11
-    addps xm1, xm1, xm5
-    addsubps xm1, xm14, xm1          ; dc[1,2].reim
-
-%if %2
-    movups m2, [inq + mmsize*0 + 24]
-    movups m3, [inq + mmsize*1 + 24]
-%else
-    LOAD64_LUT m2, inq, lutq, (mmsize/2)*0 + 12, tmpq, m14, m15
-    LOAD64_LUT m3, inq, lutq, (mmsize/2)*1 + 12, tmpq, m14, m15
+    movddup xm5, [inq + tmpq*8]     ; in[2].reimreim
 %endif
 
-    subps m7, m2, m3                 ; q[0-3].imre
-    addps m6, m2, m3                 ; q[4-7]
-    shufps m7, m7, m7, q2301         ; q[0-3].reim
-
-%if %2
-    movups m4, [inq + mmsize*2 + 24]
-%else
-    LOAD64_LUT m4, inq, lutq, (mmsize/2)*2 + 12, tmpq, m14, m15
-%endif
-
-    addps m5, m4, m6                 ; y[0-3]
-
-    vpermpd m14, m9, q1111           ; tab[23232323]
-    vbroadcastsd m15, xm9            ; tab[01010101]
-
-    mulps m6, m14
-    mulps m7, m15
-
-    subps m2, m6, m7                 ; k[0-3]
-    addps m3, m6, m7                 ; k[4-7]
-
-    addsubps m6, m4, m2              ; k[0-3]
-    addsubps m7, m4, m3              ; k[4-7]
-
-    ; 15pt from here on
-    vpermpd m2, m5, q0123            ; y[3-0]
-    vpermpd m3, m6, q0123            ; k[3-0]
-    vpermpd m4, m7, q0123            ; k[7-4]
-
-    xorps m5, m12
-    xorps m6, m12
-    xorps m7, m12
-
-    addps m2, m5                     ; t[0-3]
-    addps m3, m6                     ; t[4-7]
-    addps m4, m7                     ; t[8-11]
-
-    movlhps xm14, xm2                ; out[0]
-    unpcklpd xm7, xm3, xm4           ; out[10,5]
-    unpckhpd xm5, xm3, xm4           ; out[10,5]
-
-    addps xm14, xm2                  ; out[0]
-    addps xm7, xm5                   ; out[10,5]
-    addps xm14, xm0                  ; out[0]
-    addps xm7, xm1                   ; out[10,5]
-
-    movhps [tgtq], xm14              ; out[0]
-    movhps [tgtq + stride5q*1], xm7  ; out[5]
-    movlps [tgtq + stride5q*2], xm7  ; out[10]
-
-    shufps m14, m10, m10, q3232      ; tab5 4 5 4 5  8  9  8  9
-    shufps m15, m10, m10, q1010      ; tab5 6 7 6 7 10 11 10 11
-
-    mulps m5, m2, m14                ; t[0-3]
-    mulps m6, m3, m14                ; t[4-7]
-    mulps m7, m4, m14                ; t[8-11]
-
-    mulps m2, m15                    ; r[0-3]
-    mulps m3, m15                    ; r[4-7]
-    mulps m4, m15                    ; r[8-11]
-
-    shufps m5, m5, m5, q1032         ; t[1,0,3,2].reim
-    shufps m6, m6, m6, q1032         ; t[5,4,7,6].reim
-    shufps m7, m7, m7, q1032         ; t[9,8,11,10].reim
+    FFT15
 
     lea tgt5q, [tgtq + stride5q]
     lea tmpq,  [tgtq + stride5q*2]
 
-    xorps m5, m13
-    xorps m6, m13
-    xorps m7, m13
-
-    addps m2, m5                     ; r[0,1,2,3]
-    addps m3, m6                     ; r[4,5,6,7]
-    addps m4, m7                     ; r[8,9,10,11]
-
-    shufps m5, m2, m2, q2301
-    shufps m6, m3, m3, q2301
-    shufps m7, m4, m4, q2301
-
-    xorps m2, m12
-    xorps m3, m12
-    xorps m4, m12
-
-    vpermpd m5, m5, q0123
-    vpermpd m6, m6, q0123
-    vpermpd m7, m7, q0123
-
-    addps m5, m2
-    addps m6, m3
-    addps m7, m4
-
-    vpermps m5, m8, m5
-    vpermps m6, m8, m6
-    vpermps m7, m8, m7
-
-    vbroadcastsd m0, xm0             ; dc[0]
-    vpermpd m2, m1, q1111            ; dc[2]
-    vbroadcastsd m1, xm1             ; dc[1]
-
-    addps m0, m5
-    addps m1, m6
-    addps m2, m7
+    movhps [tgtq], xm14              ; out[0]
+    movhps [tgtq + stride5q*1], xm15 ; out[5]
+    movlps [tgtq + stride5q*2], xm15 ; out[10]
 
     vextractf128 xm3, m0, 1
     vextractf128 xm4, m1, 1
