@@ -76,3 +76,29 @@ func ff_shuffle_bytes_3210_rvv, zve32x
         addi    a0, a0, 3
         j       1b
 endfunc
+
+func ff_interleave_bytes_rvv, zve32x
+1:
+        mv      t0, a0
+        mv      t1, a1
+        mv      t2, a2
+        mv      t3, a3
+        addi    a4, a4, -1
+2:
+        vsetvli    t4, t3, e8, ta, ma
+        sub        t3, t3, t4
+        vle8.v     v8, (t0)
+        add        t0, t4, t0
+        vle8.v     v9, (t1)
+        add        t1, t4, t1
+        vsseg2e8.v v8, (t2)
+        sh1add     t2, t4, t2
+        bnez       t4, 2b
+
+        add     a0, a0, a5
+        add     a1, a1, a6
+        add     a2, a2, a7
+        bnez    a4, 1b
+
+        ret
+endfunc

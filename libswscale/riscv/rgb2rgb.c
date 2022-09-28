@@ -30,6 +30,9 @@ void ff_shuffle_bytes_2103_rvv(const uint8_t *src, uint8_t *dst, int src_len);
 void ff_shuffle_bytes_1230_rvv(const uint8_t *src, uint8_t *dst, int src_len);
 void ff_shuffle_bytes_3012_rvv(const uint8_t *src, uint8_t *dst, int src_len);
 void ff_shuffle_bytes_3210_rvv(const uint8_t *src, uint8_t *dst, int src_len);
+void ff_interleave_bytes_rvv(const uint8_t *src1, const uint8_t *src2,
+                             uint8_t *dst, int width, int height, int s1stride,
+                             int s2stride, int dstride);
 
 av_cold void rgb2rgb_init_riscv(void)
 {
@@ -42,6 +45,7 @@ av_cold void rgb2rgb_init_riscv(void)
         shuffle_bytes_1230 = ff_shuffle_bytes_1230_rvv;
         shuffle_bytes_3012 = ff_shuffle_bytes_3012_rvv;
         shuffle_bytes_3210 = ff_shuffle_bytes_3210_rvv;
+        interleaveBytes = ff_interleave_bytes_rvv;
     }
 #endif
 }
