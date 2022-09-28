@@ -200,8 +200,7 @@ static void levinson_durbin(int16_t *lpc, int16_t *autocorr, int16_t error)
 
         partial_corr = temp / (error << 1);
 
-        lpc[i] = av_clipl_int32((int64_t) (partial_corr << 14) +
-                                (1 << 15)) >> 16;
+        lpc[i] = (partial_corr + (1 << 1)) >> 2;
 
         /* Update the prediction error */
         temp  = MULL2(temp, partial_corr);
