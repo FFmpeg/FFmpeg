@@ -19,8 +19,10 @@ API changes, most recent first:
   Use av_chroma_location_enum_to_pos() or av_chroma_location_pos_to_enum()
   instead.
 
-2022-09-26 - xxxxxxxxxx - lavu 57.37.100 - pixdesc.h
+2022-09-26 - xxxxxxxxxx - lavu 57.37.100 - pixdesc.h pixfmt.h
   Add av_chroma_location_enum_to_pos() and av_chroma_location_pos_to_enum().
+  Add AV_PIX_FMT_RGBF32BE, AV_PIX_FMT_RGBF32LE, AV_PIX_FMT_RGBAF32BE,
+  AV_PIX_FMT_RGBAF32LE.
 
 2022-09-26 - xxxxxxxxxx - lavc 59.47.100 - avcodec.h defs.h
   Move the AV_EF_* and FF_COMPLIANCE_* defines from avcodec.h to defs.h.
