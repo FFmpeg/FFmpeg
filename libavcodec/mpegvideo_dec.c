@@ -446,8 +446,8 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     if (s->picture_structure != PICT_FRAME) {
         for (int i = 0; i < 4; i++) {
             if (s->picture_structure == PICT_BOTTOM_FIELD) {
-                s->current_picture.f->data[i] +=
-                    s->current_picture.f->linesize[i];
+                s->current_picture.f->data[i] = FF_PTR_ADD(s->current_picture.f->data[i],
+                                                           s->current_picture.f->linesize[i]);
             }
             s->current_picture.f->linesize[i] *= 2;
             s->last_picture.f->linesize[i]    *= 2;
