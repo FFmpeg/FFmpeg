@@ -126,7 +126,7 @@ static void highpass_filter(int16_t *buf, int16_t *fir, int *iir)
 {
     int i;
     for (i = 0; i < FRAME_LEN; i++) {
-        *iir   = (buf[i] << 15) + ((-*fir) << 15) + MULL2(*iir, 0x7f00);
+        *iir   = (buf[i] - *fir) * (1 << 15) + MULL2(*iir, 0x7f00);
         *fir   = buf[i];
         buf[i] = av_clipl_int32((int64_t)*iir + (1 << 15)) >> 16;
     }
@@ -166,7 +166,7 @@ static void comp_autocorr(int16_t *buf, int16_t *autocorr)
     } else {
         for (i = 1; i <= LPC_ORDER; i++) {
             temp        = ff_dot_product(vector, vector + i, LPC_FRAME - i);
-            temp        = MULL2((temp << scale), binomial_window[i - 1]);
+            temp        = MULL2(temp * (1 << scale), binomial_window[i - 1]);
             autocorr[i] = av_clipl_int32((int64_t) temp + (1 << 15)) >> 16;
         }
     }
@@ -193,7 +193,7 @@ static void levinson_durbin(int16_t *lpc, int16_t *autocorr, int16_t error)
         temp = 0;
         for (j = 0; j < i; j++)
             temp -= lpc[j] * autocorr[i - j - 1];
-        temp = ((autocorr[i] << 13) + temp) << 3;
+        temp = (autocorr[i] * (1 << 13) + temp) * (1 << 3);
 
         if (FFABS(temp) >= (error << 16))
             break;
@@ -209,8 +209,8 @@ static void levinson_durbin(int16_t *lpc, int16_t *autocorr, int16_t error)
 
         memcpy(vector, lpc, i * sizeof(int16_t));
         for (j = 0; j < i; j++) {
-            temp   = partial_corr * vector[i - j - 1] << 1;
-            lpc[j] = av_clipl_int32((int64_t) (lpc[j] << 16) - temp +
+            temp   = partial_corr * vector[i - j - 1] * 2;
+            lpc[j] = av_clipl_int32((int64_t) (lpc[j] * (1 << 16)) - temp +
                                     (1 << 15)) >> 16;
         }
     }
@@ -259,9 +259,9 @@ static void lpc2lsp(int16_t *lpc, int16_t *prev_lsp, int16_t *lsp)
     /* Compute the remaining coefficients */
     for (i = 0; i < LPC_ORDER / 2; i++) {
         /* f1 */
-        f[2 * i + 2] = -f[2 * i] - ((lsp[i] + lsp[LPC_ORDER - 1 - i]) << 12);
+        f[2 * i + 2] = -f[2 * i]    - (lsp[i] + lsp[LPC_ORDER - 1 - i]) * (1 << 12);
         /* f2 */
-        f[2 * i + 3] = f[2 * i + 1] - ((lsp[i] - lsp[LPC_ORDER - 1 - i]) << 12);
+        f[2 * i + 3] = f[2 * i + 1] - (lsp[i] - lsp[LPC_ORDER - 1 - i]) * (1 << 12);
     }
 
     /* Divide f1[5] and f2[5] by 2 for use in polynomial evaluation */
@@ -276,7 +276,7 @@ static void lpc2lsp(int16_t *lpc, int16_t *prev_lsp, int16_t *lsp)
     shift = ff_g723_1_normalize_bits(max, 31);
 
     for (i = 0; i < LPC_ORDER + 2; i++)
-        f[i] = av_clipl_int32((int64_t) (f[i] << shift) + (1 << 15)) >> 16;
+        f[i] = av_clipl_int32((int64_t) (f[i] * (1 << shift)) + (1 << 15)) >> 16;
 
     /**
      * Evaluate F1 and F2 at uniform intervals of pi/256 along the
@@ -293,7 +293,7 @@ static void lpc2lsp(int16_t *lpc, int16_t *prev_lsp, int16_t *lsp)
         temp = 0;
         for (j = 0; j <= LPC_ORDER / 2; j++)
             temp += f[LPC_ORDER - 2 * j + p] * ff_g723_1_cos_tab[i * j % COS_TBL_SIZE];
-        cur_val = av_clipl_int32(temp << 1);
+        cur_val = av_clipl_int32(temp * 2);
 
         /* Check for sign change, indicating a zero crossing */
         if ((cur_val ^ prev_val) < 0) {
@@ -317,7 +317,7 @@ static void lpc2lsp(int16_t *lpc, int16_t *prev_lsp, int16_t *lsp)
             for (j = 0; j <= LPC_ORDER / 2; j++)
                 temp += f[LPC_ORDER - 2 * j + p] *
                         ff_g723_1_cos_tab[i * j % COS_TBL_SIZE];
-            cur_val = av_clipl_int32(temp << 1);
+            cur_val = av_clipl_int32(temp * 2);
         }
         prev_val = cur_val;
     }
@@ -344,7 +344,7 @@ static void lpc2lsp(int16_t *lpc, int16_t *prev_lsp, int16_t *lsp)
             temp[j] = (weight[j + (offset)] * ff_g723_1_lsp_band##num[i][j] + \
                       (1 << 14)) >> 15;                                       \
         }                                                                     \
-        error  = ff_g723_1_dot_product(lsp + (offset), temp, size) << 1;      \
+        error  = ff_g723_1_dot_product(lsp + (offset), temp, size) * 2;       \
         error -= ff_g723_1_dot_product(ff_g723_1_lsp_band##num[i], temp, size); \
         if (error > max) {                                                    \
             max = error;                                                      \
@@ -419,7 +419,7 @@ static void iir_filter(int16_t *fir_coef, int16_t *iir_coef,
                       iir_coef[n - 1] * dest[m - n];
         }
 
-        dest[m] = av_clipl_int32((src[m] << 16) + (filter << 3) +
+        dest[m] = av_clipl_int32(src[m] * (1 << 16) + filter * (1 << 3) +
                                  (1 << 15)) >> 16;
     }
 }
@@ -559,7 +559,7 @@ static void comp_harmonic_coeff(int16_t *buf, int16_t pitch_lag, HFParam *hf)
 
     exp = ff_g723_1_normalize_bits(max, 31);
     for (i = 0; i < 15; i++) {
-        energy[i] = av_clipl_int32((int64_t)(energy[i] << exp) +
+        energy[i] = av_clipl_int32((int64_t)(energy[i] * (1 << exp)) +
                                    (1 << 15)) >> 16;
     }
 
@@ -613,8 +613,8 @@ static void harmonic_filter(HFParam *hf, const int16_t *src, int16_t *dest)
     int i;
 
     for (i = 0; i < SUBFRAME_LEN; i++) {
-        int64_t temp = hf->gain * src[i - hf->index] << 1;
-        dest[i] = av_clipl_int32((src[i] << 16) - temp + (1 << 15)) >> 16;
+        int64_t temp = hf->gain * src[i - hf->index] * 2;
+        dest[i] = av_clipl_int32(src[i] * (1 << 16) - temp + (1 << 15)) >> 16;
     }
 }
 
@@ -622,8 +622,8 @@ static void harmonic_noise_sub(HFParam *hf, const int16_t *src, int16_t *dest)
 {
     int i;
     for (i = 0; i < SUBFRAME_LEN; i++) {
-        int64_t temp = hf->gain * src[i - hf->index] << 1;
-        dest[i] = av_clipl_int32(((dest[i] - src[i]) << 16) + temp +
+        int64_t temp = hf->gain * src[i - hf->index] * 2;
+        dest[i] = av_clipl_int32((dest[i] - src[i]) * (1 << 16) + temp +
                                  (1 << 15)) >> 16;
     }
 }
@@ -655,7 +655,7 @@ static void synth_percept_filter(int16_t *qnt_lpc, int16_t *perf_lpc,
         for (j = 1; j <= LPC_ORDER; j++)
             temp -= qnt_lpc[j - 1] * bptr_16[i - j];
 
-        buf[i]     = (src[i] << 15) + (temp << 3);
+        buf[i]     = src[i] * (1 << 15) + temp * (1 << 3);
         bptr_16[i] = av_clipl_int32(buf[i] + (1 << 15)) >> 16;
     }
 
@@ -665,7 +665,7 @@ static void synth_percept_filter(int16_t *qnt_lpc, int16_t *perf_lpc,
             fir -= perf_lpc[j - 1] * bptr_16[i - j];
             iir += perf_lpc[j + LPC_ORDER - 1] * dest[i - j];
         }
-        dest[i] = av_clipl_int32(((buf[i] + (fir << 3)) << scale) + (iir << 3) +
+        dest[i] = av_clipl_int32((buf[i] + fir * (1 << 3)) * (1 << scale) + iir * (1 << 3) +
                                  (1 << 15)) >> 16;
     }
     memcpy(perf_fir, buf_16 + SUBFRAME_LEN, sizeof(int16_t) * LPC_ORDER);
@@ -714,23 +714,22 @@ static void acb_search(G723_1_ChannelContext *p, int16_t *residual,
             temp = 0;
             for (k = 0; k <= j; k++)
                 temp += residual[PITCH_ORDER - 1 + k] * impulse_resp[j - k];
-            flt_buf[PITCH_ORDER - 1][j] = av_clipl_int32((temp << 1) +
-                                                         (1 << 15)) >> 16;
+            flt_buf[PITCH_ORDER - 1][j] = av_clipl_int32(temp * 2 + (1 << 15)) >> 16;
         }
 
         for (j = PITCH_ORDER - 2; j >= 0; j--) {
-            flt_buf[j][0] = ((residual[j] << 13) + (1 << 14)) >> 15;
+            flt_buf[j][0] = (residual[j] + (1 << 1)) >> 2;
             for (k = 1; k < SUBFRAME_LEN; k++) {
-                temp = (flt_buf[j + 1][k - 1] << 15) +
+                temp = flt_buf[j + 1][k - 1] * (1 << 15) +
                        residual[j] * impulse_resp[k];
-                flt_buf[j][k] = av_clipl_int32((temp << 1) + (1 << 15)) >> 16;
+                flt_buf[j][k] = av_clipl_int32(temp * 2 + (1 << 15)) >> 16;
             }
         }
 
         /* Compute crosscorrelation with the signal */
         for (j = 0; j < PITCH_ORDER; j++) {
             temp             = ff_dot_product(buf, flt_buf[j], SUBFRAME_LEN);
-            ccr_buf[count++] = av_clipl_int32(temp << 1);
+            ccr_buf[count++] = av_clipl_int32(temp * 2);
         }
 
         /* Compute energies */
@@ -742,7 +741,7 @@ static void acb_search(G723_1_ChannelContext *p, int16_t *residual,
         for (j = 1; j < PITCH_ORDER; j++) {
             for (k = 0; k < j; k++) {
                 temp             = ff_dot_product(flt_buf[j], flt_buf[k], SUBFRAME_LEN);
-                ccr_buf[count++] = av_clipl_int32(temp << 2);
+                ccr_buf[count++] = av_clipl_int32(temp * (1 << 2));
             }
         }
     }
@@ -755,7 +754,7 @@ static void acb_search(G723_1_ChannelContext *p, int16_t *residual,
     temp = ff_g723_1_normalize_bits(max, 31);
 
     for (i = 0; i < 20 * iter; i++)
-        ccr_buf[i] = av_clipl_int32((int64_t) (ccr_buf[i] << temp) +
+        ccr_buf[i] = av_clipl_int32((int64_t) (ccr_buf[i] * (1 << temp)) +
                                     (1 << 15)) >> 16;
 
     max = 0;
@@ -803,11 +802,11 @@ static void sub_acb_contrib(const int16_t *residual, const int16_t *impulse_resp
     int i, j;
     /* Subtract adaptive CB contribution to obtain the residual */
     for (i = 0; i < SUBFRAME_LEN; i++) {
-        int64_t temp = buf[i] << 14;
+        int64_t temp = buf[i] * (1 << 14);
         for (j = 0; j <= i; j++)
             temp -= residual[j] * impulse_resp[i - j];
 
-        buf[i] = av_clipl_int32((temp << 2) + (1 << 15)) >> 16;
+        buf[i] = av_clipl_int32(temp * (1 << 2) + (1 << 15)) >> 16;
     }
 }
 
@@ -851,7 +850,7 @@ static void get_fcb_param(FCBParam *optim, int16_t *impulse_resp,
     for (i = 1; i < SUBFRAME_LEN; i++) {
         temp = ff_g723_1_dot_product(temp_corr + i, temp_corr,
                                      SUBFRAME_LEN - i);
-        impulse_corr[i] = av_clipl_int32((temp << scale) + (1 << 15)) >> 16;
+        impulse_corr[i] = av_clipl_int32(temp * (1 << scale) + (1 << 15)) >> 16;
     }
 
     /* Compute crosscorrelation of impulse response with residual signal */
@@ -861,7 +860,7 @@ static void get_fcb_param(FCBParam *optim, int16_t *impulse_resp,
         if (scale < 0)
             ccr1[i] = temp >> -scale;
         else
-            ccr1[i] = av_clipl_int32(temp << scale);
+            ccr1[i] = av_clipl_int32(temp * (1 << scale));
     }
 
     /* Search loop */
@@ -910,7 +909,7 @@ static void get_fcb_param(FCBParam *optim, int16_t *impulse_resp,
                         continue;
                     temp = impulse_corr[FFABS(l - param.pulse_pos[k - 1])];
                     temp = av_clipl_int32((int64_t) temp *
-                                          param.pulse_sign[k - 1] << 1);
+                                          param.pulse_sign[k - 1] * 2);
                     ccr2[l] -= temp;
                     temp     = FFABS(ccr2[l]);
                     if (temp > max) {
@@ -934,17 +933,17 @@ static void get_fcb_param(FCBParam *optim, int16_t *impulse_resp,
                 temp = 0;
                 for (l = 0; l <= k; l++) {
                     int prod = av_clipl_int32((int64_t) temp_corr[l] *
-                                              impulse_r[k - l] << 1);
+                                              impulse_r[k - l] * 2);
                     temp = av_clipl_int32(temp + prod);
                 }
-                temp_corr[k] = temp << 2 >> 16;
+                temp_corr[k] = temp >> 14;
             }
 
             /* Compute square of error */
             err = 0;
             for (k = 0; k < SUBFRAME_LEN; k++) {
                 int64_t prod;
-                prod = av_clipl_int32((int64_t) buf[k] * temp_corr[k] << 1);
+                prod = av_clipl_int32((int64_t) buf[k] * temp_corr[k] * 2);
                 err  = av_clipl_int32(err - prod);
                 prod = av_clipl_int32((int64_t) temp_corr[k] * temp_corr[k]);
                 err  = av_clipl_int32(err + prod);
@@ -1204,7 +1203,7 @@ static int g723_1_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         memmove(p->prev_excitation, p->prev_excitation + SUBFRAME_LEN,
                 sizeof(int16_t) * (PITCH_MAX - SUBFRAME_LEN));
         for (j = 0; j < SUBFRAME_LEN; j++)
-            in[j] = av_clip_int16((in[j] << 1) + impulse_resp[j]);
+            in[j] = av_clip_int16(in[j] * 2 + impulse_resp[j]);
         memcpy(p->prev_excitation + PITCH_MAX - SUBFRAME_LEN, in,
                sizeof(int16_t) * SUBFRAME_LEN);
 
