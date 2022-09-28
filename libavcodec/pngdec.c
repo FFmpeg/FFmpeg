@@ -1387,7 +1387,7 @@ exit_loop:
     if (s->has_trns && s->color_type != PNG_COLOR_TYPE_PALETTE) {
         size_t byte_depth = s->bit_depth > 8 ? 2 : 1;
         size_t raw_bpp = s->bpp - byte_depth;
-        unsigned x, y;
+        ptrdiff_t x, y;
 
         av_assert0(s->bit_depth > 1);
 
