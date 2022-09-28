@@ -57,11 +57,11 @@ typedef struct Rl2Context {
  * @param video_base offset of the rle data inside the frame
  */
 static void rl2_rle_decode(Rl2Context *s, const uint8_t *in, int size,
-                               uint8_t *out, int stride, int video_base)
+                           uint8_t *out, ptrdiff_t stride, int video_base)
 {
     int base_x = video_base % s->avctx->width;
     int base_y = video_base / s->avctx->width;
-    int stride_adj = stride - s->avctx->width;
+    ptrdiff_t stride_adj = stride - s->avctx->width;
     int i;
     const uint8_t *back_frame = s->back_frame;
     const uint8_t *in_end     = in + size;
