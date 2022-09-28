@@ -91,9 +91,6 @@ static void rl2_rle_decode(Rl2Context *s, const uint8_t *in, int size,
                 break;
         }
 
-        if (len >= out_end - out)
-            break;
-
         if (s->back_frame)
             val |= 0x80;
         else
@@ -106,7 +103,7 @@ static void rl2_rle_decode(Rl2Context *s, const uint8_t *in, int size,
                  out      += stride_adj;
                  line_end += stride;
                  if (len >= out_end - out)
-                     break;
+                    return;
             }
         }
     }
