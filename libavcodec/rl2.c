@@ -65,7 +65,7 @@ static void rl2_rle_decode(Rl2Context *s, const uint8_t *in, int size,
     int i;
     const uint8_t *back_frame = s->back_frame;
     const uint8_t *in_end     = in + size;
-    const uint8_t *out_end    = out + stride * s->avctx->height;
+    const uint8_t *out_end    = out + stride * s->avctx->height - stride_adj;
     uint8_t *line_end;
 
     /** copy start of the background frame */
@@ -100,18 +100,20 @@ static void rl2_rle_decode(Rl2Context *s, const uint8_t *in, int size,
             *out++ = (val == 0x80) ? *back_frame : val;
             back_frame++;
             if (out == line_end) {
+                if (out == out_end)
+                    return;
                  out      += stride_adj;
                  line_end += stride;
-                 if (len >= out_end - out)
-                    return;
             }
         }
     }
 
     /** copy the rest from the background frame */
     if (s->back_frame) {
-        while (out < out_end) {
+        while (1) {
             memcpy(out, back_frame, line_end - out);
+            if (line_end == out_end)
+                break;
             back_frame += line_end - out;
             out         = line_end + stride_adj;
             line_end   += stride;
