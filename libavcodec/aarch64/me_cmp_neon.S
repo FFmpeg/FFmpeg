@@ -471,7 +471,7 @@ function sse8_neon, export=1
         movi            v21.4s, #0
         movi            v20.4s, #0
         cmp             w4, #4
-        b.le            2f
+        b.lt            2f
 
 // make 4 iterations at once
 1:
@@ -534,7 +534,7 @@ function sse4_neon, export=1
 
         movi            v16.4s, #0                      // clear the result accumulator
         cmp             w4, #4
-        b.le            2f
+        b.lt            2f
 
 // make 4 iterations at once
 1:
@@ -663,7 +663,7 @@ function vsse16_neon, export=1
         cmp             w4, #3                          // check if we can make 3 iterations at once
         usubl           v31.8h, v0.8b, v1.8b            // Signed difference of pix1[0] - pix2[0], first iteration
         usubl2          v30.8h, v0.16b, v1.16b          // Signed difference of pix1[0] - pix2[0], first iteration
-        b.le            2f
+        b.lt            2f
 
 
 1:
