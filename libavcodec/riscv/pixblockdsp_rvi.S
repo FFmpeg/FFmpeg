@@ -19,7 +19,7 @@
  */
 
 #include "config.h"
-#include "../libavutil/riscv/asm.S"
+#include "libavutil/riscv/asm.S"
 
 func ff_get_pixels_8_rvi
 .irp row, 0, 1, 2, 3, 4, 5, 6, 7

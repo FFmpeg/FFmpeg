@@ -19,7 +19,7 @@
  */
 
 #include "config.h"
-#include "../libavutil/riscv/asm.S"
+#include "libavutil/riscv/asm.S"
 
 func ff_int32_to_float_fmul_scalar_rvv, zve32f
 NOHWF   fmv.w.x     fa0, a2

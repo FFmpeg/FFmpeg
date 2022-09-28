@@ -19,7 +19,7 @@
  */
 
 #include "config.h"
-#include "../libavutil/riscv/asm.S"
+#include "libavutil/riscv/asm.S"
 
 func ff_vorbis_inverse_coupling_rvv, zve32f
         fmv.w.x   ft0, zero
