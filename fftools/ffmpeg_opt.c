@@ -189,7 +189,6 @@ static int input_stream_potentially_available = 0;
 static int ignore_unknown_streams = 0;
 static int copy_unknown_streams = 0;
 static int recast_media = 0;
-static int find_stream_info = 1;
 
 static void uninit_options(OptionsContext *o)
 {
@@ -239,6 +238,7 @@ static void init_options(OptionsContext *o)
     o->accurate_seek  = 1;
     o->thread_queue_size = -1;
     o->input_sync_ref = -1;
+    o->find_stream_info = 1;
     o->shortest_buf_duration = 10.f;
 }
 
@@ -1306,7 +1306,7 @@ static int open_input_file(OptionsContext *o, const char *filename)
     for (i = 0; i < ic->nb_streams; i++)
         choose_decoder(o, ic, ic->streams[i], HWACCEL_NONE, AV_HWDEVICE_TYPE_NONE);
 
-    if (find_stream_info) {
+    if (o->find_stream_info) {
         AVDictionary **opts = setup_find_stream_info_opts(ic, o->g->codec_opts);
         int orig_nb_streams = ic->nb_streams;
 
@@ -3997,7 +3997,7 @@ const OptionDef options[] = {
     { "thread_queue_size", HAS_ARG | OPT_INT | OPT_OFFSET | OPT_EXPERT | OPT_INPUT | OPT_OUTPUT,
                                                                      { .off = OFFSET(thread_queue_size) },
         "set the maximum number of queued packets from the demuxer" },
-    { "find_stream_info", OPT_BOOL | OPT_PERFILE | OPT_INPUT | OPT_EXPERT, { &find_stream_info },
+    { "find_stream_info", OPT_BOOL | OPT_INPUT | OPT_EXPERT | OPT_OFFSET, { .off = OFFSET(find_stream_info) },
         "read and decode the streams to fill missing information with heuristics" },
     { "bits_per_raw_sample", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_SPEC | OPT_OUTPUT,
         { .off = OFFSET(bits_per_raw_sample) },

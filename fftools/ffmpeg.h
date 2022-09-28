@@ -126,6 +126,7 @@ typedef struct OptionsContext {
     int accurate_seek;
     int thread_queue_size;
     int input_sync_ref;
+    int find_stream_info;
 
     SpecifierOpt *ts_scale;
     int        nb_ts_scale;
