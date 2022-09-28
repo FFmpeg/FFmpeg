@@ -14,6 +14,11 @@ libavutil:     2021-04-27
 
 API changes, most recent first:
 
+2022-09-27 - 0c0a3deb18 - lavu 57.38.100 - cpu.h
+  Add CPU flags for RISC-V vector extensions:
+  AV_CPU_FLAG_RVV_I32, AV_CPU_FLAG_RVV_F32, AV_CPU_FLAG_RVV_I64,
+  AV_CPU_FLAG_RVV_F64
+
 2022-09-26 - xxxxxxxxxx - lavc 59.48.100 - avcodec.h
   Deprecate avcodec_enum_to_chroma_pos() and avcodec_chroma_pos_to_enum().
   Use av_chroma_location_enum_to_pos() or av_chroma_location_pos_to_enum()
