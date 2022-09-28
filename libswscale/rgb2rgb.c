@@ -139,6 +139,8 @@ av_cold void ff_sws_rgb2rgb_init(void)
     rgb2rgb_init_c();
 #if ARCH_AARCH64
     rgb2rgb_init_aarch64();
+#elif ARCH_RISCV
+    rgb2rgb_init_riscv();
 #elif ARCH_X86
     rgb2rgb_init_x86();
 #elif ARCH_LOONGARCH64
