@@ -880,6 +880,8 @@ static void TX_NAME(ff_tx_fft_naive)(AVTXContext *s, void *_dst, void *_src,
     const int n = s->len;
     double phase = s->inv ? 2.0*M_PI/n : -2.0*M_PI/n;
 
+    stride /= sizeof(*dst);
+
     for (int i = 0; i < n; i++) {
         TXComplex tmp = { 0 };
         for (int j = 0; j < n; j++) {
@@ -893,7 +895,7 @@ static void TX_NAME(ff_tx_fft_naive)(AVTXContext *s, void *_dst, void *_src,
             tmp.re += res.re;
             tmp.im += res.im;
         }
-        dst[i] = tmp;
+        dst[i*stride] = tmp;
     }
 }
 
@@ -904,6 +906,8 @@ static void TX_NAME(ff_tx_fft_naive_small)(AVTXContext *s, void *_dst, void *_sr
     TXComplex *dst = _dst;
     const int n = s->len;
 
+    stride /= sizeof(*dst);
+
     for (int i = 0; i < n; i++) {
         TXComplex tmp = { 0 };
         for (int j = 0; j < n; j++) {
@@ -913,7 +917,7 @@ static void TX_NAME(ff_tx_fft_naive_small)(AVTXContext *s, void *_dst, void *_sr
             tmp.re += res.re;
             tmp.im += res.im;
         }
-        dst[i] = tmp;
+        dst[i*stride] = tmp;
     }
 }
 
