@@ -231,12 +231,14 @@ void ffio_fill(AVIOContext *s, int b, int64_t count)
 
 void avio_write(AVIOContext *s, const unsigned char *buf, int size)
 {
+    if (size <= 0)
+        return;
     if (s->direct && !s->update_checksum) {
         avio_flush(s);
         writeout(s, buf, size);
         return;
     }
-    while (size > 0) {
+    do {
         int len = FFMIN(s->buf_end - s->buf_ptr, size);
         memcpy(s->buf_ptr, buf, len);
         s->buf_ptr += len;
@@ -246,7 +248,7 @@ void avio_write(AVIOContext *s, const unsigned char *buf, int size)
 
         buf += len;
         size -= len;
-    }
+    } while (size > 0);
 }
 
 void avio_flush(AVIOContext *s)
