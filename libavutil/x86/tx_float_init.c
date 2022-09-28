@@ -30,6 +30,8 @@ TX_DECL_FN(fft8,      sse3)
 TX_DECL_FN(fft8_ns,   sse3)
 TX_DECL_FN(fft8,      avx)
 TX_DECL_FN(fft8_ns,   avx)
+TX_DECL_FN(fft15,     avx2)
+TX_DECL_FN(fft15_ns,  avx2)
 TX_DECL_FN(fft16,     avx)
 TX_DECL_FN(fft16_ns,  avx)
 TX_DECL_FN(fft16,     fma3)
@@ -84,6 +86,53 @@ static av_cold int b ##basis## _i ##interleave(AVTXContext *s,                 \
 
 DECL_INIT_FN(8, 0)
 DECL_INIT_FN(8, 2)
+
+static av_cold int factor_init(AVTXContext *s, const FFTXCodelet *cd,
+                               uint64_t flags, FFTXCodeletOptions *opts,
+                               int len, int inv, const void *scale)
+{
+    TX_TAB(ff_tx_init_tabs)(len);
+
+    s->map = av_malloc(len*sizeof(s->map));
+    s->map[0] = 0; /* DC is always at the start */
+    if (inv) /* Reversing the ACs flips the transform direction */
+        for (int i = 1; i < len; i++)
+            s->map[i] = len - i;
+    else
+        for (int i = 1; i < len; i++)
+            s->map[i] = i;
+
+    if (len == 15) {
+        int cnt = 0, tmp[15];
+
+        /* Our 15-point transform is actually a 5x3 PFA, so embed its input map. */
+        memcpy(tmp, s->map, 15*sizeof(*tmp));
+        for (int i = 0; i < 5; i++)
+            for (int j = 0; j < 3; j++)
+                s->map[i*3 + j] = tmp[(i*3 + j*5) % 15];
+
+        /* Special 15-point assembly permutation */
+        memcpy(tmp, s->map, 15*sizeof(*tmp));
+        for (int i = 1; i < 15; i += 3) {
+            s->map[cnt] = tmp[i];
+            cnt++;
+        }
+        for (int i = 2; i < 15; i += 3) {
+            s->map[cnt] = tmp[i];
+            cnt++;
+        }
+        for (int i = 0; i < 15; i += 3) {
+            s->map[cnt] = tmp[i];
+            cnt++;
+        }
+        memmove(&s->map[7], &s->map[6], 4*sizeof(int));
+        memmove(&s->map[3], &s->map[1], 4*sizeof(int));
+        s->map[1] = tmp[2];
+        s->map[2] = tmp[0];
+    }
+
+    return 0;
+}
 
 static av_cold int m_inv_init(AVTXContext *s, const FFTXCodelet *cd,
                               uint64_t flags, FFTXCodeletOptions *opts,
@@ -229,6 +278,11 @@ const FFTXCodelet * const ff_tx_codelet_list_float_x86[] = {
            AV_CPU_FLAG_AVXSLOW),
 
 #if HAVE_AVX2_EXTERNAL
+    TX_DEF(fft15, FFT, 15, 15, 15, 0, 320, factor_init, avx2, AVX2,
+           AV_TX_INPLACE, AV_CPU_FLAG_AVXSLOW),
+    TX_DEF(fft15_ns, FFT, 15, 15, 15, 0, 384, factor_init, avx2, AVX2,
+           AV_TX_INPLACE | FF_TX_PRESHUFFLE, AV_CPU_FLAG_AVXSLOW),
+
     TX_DEF(fft_sr,    FFT, 64, 131072, 2, 0, 320, b8_i2, avx2, AVX2, 0,
            AV_CPU_FLAG_AVXSLOW | AV_CPU_FLAG_SLOW_GATHER),
     TX_DEF(fft_sr_asm, FFT, 64, 131072, 2, 0, 384, b8_i2, avx2, AVX2,

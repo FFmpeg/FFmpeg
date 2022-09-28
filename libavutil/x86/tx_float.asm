@@ -1515,6 +1515,69 @@ FFT_SPLIT_RADIX_FN avx2, 1
 %endif
 %endif
 
+%macro FFT15_FN 2
+INIT_YMM avx2
+cglobal fft15_ %+ %2, 4, 10, 16, ctx, out, in, stride, len, lut, tmp, tgt5, stride3, stride5
+    mov lutq, [ctxq + AVTXContext.map]
+
+    imul stride3q, strideq, 3
+    imul stride5q, strideq, 5
+
+    movaps m11, [mask_mmppmmmm]      ; mmppmmmm
+    movaps m10, [tab_53_float]       ; tab5
+    movaps xm9, [tab_53_float + 32]  ; tab3
+    vpermpd m9, m9, q1110            ; tab[23232323]
+    movaps m8, [s15_perm]
+
+%if %1
+    movups  xm0, [inq]
+    movddup xm5, [inq + 16]
+    movups  m2, [inq + mmsize*0 + 24]
+    movups  m3, [inq + mmsize*1 + 24]
+    movups  m4, [inq + mmsize*2 + 24]
+%else
+    LOAD64_LUT xm0, inq, lutq, 0, tmpq, m14, xm15
+    LOAD64_LUT  m2, inq, lutq, (mmsize/2)*0 + 12, tmpq, m6, m7
+    LOAD64_LUT  m3, inq, lutq, (mmsize/2)*1 + 12, tmpq, m14, m15
+    LOAD64_LUT  m4, inq, lutq, (mmsize/2)*2 + 12, tmpq, m6, m7
+    mov tmpd, [lutq + 8]
+    movddup xm5, [inq + tmpq*8]
+%endif
+
+    FFT15
+
+    lea tgt5q, [outq + stride5q]
+    lea tmpq,  [outq + stride5q*2]
+
+    movhps [outq], xm14              ; out[0]
+    movhps [outq + stride5q*1], xm15 ; out[5]
+    movlps [outq + stride5q*2], xm15 ; out[10]
+
+    vextractf128 xm3, m0, 1
+    vextractf128 xm4, m1, 1
+    vextractf128 xm5, m2, 1
+
+    movlps [outq  + strideq*1],  xm1
+    movhps [outq  + strideq*2],  xm2
+    movlps [outq  + stride3q*1], xm3
+    movhps [outq  + strideq*4],  xm4
+    movlps [outq  + stride3q*2], xm0
+    movlps [outq  + strideq*8],  xm5
+    movhps [outq  + stride3q*4], xm0
+    movhps [tgt5q + strideq*2],  xm1
+    movhps [tgt5q + strideq*4],  xm3
+    movlps [tmpq  + strideq*1],  xm2
+    movlps [tmpq  + stride3q*1], xm4
+    movhps [tmpq  + strideq*4],  xm5
+
+    RET
+%endmacro
+
+%if ARCH_X86_64 && HAVE_AVX2_EXTERNAL
+FFT15_FN 0, float
+FFT15_FN 1, ns_float
+%endif
+
 %macro IMDCT_FN 1
 INIT_YMM %1
 cglobal mdct_inv_float, 4, 14, 16, 320, ctx, out, in, stride, len, lut, exp, t1, t2, t3, \
