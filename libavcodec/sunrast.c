@@ -31,7 +31,8 @@ static int sunrast_decode_frame(AVCodecContext *avctx, AVFrame *p,
 {
     const uint8_t *buf       = avpkt->data;
     const uint8_t *buf_end   = avpkt->data + avpkt->size;
-    unsigned int w, h, depth, type, maptype, maplength, stride, x, y, len, alen;
+    unsigned int w, h, depth, type, maptype, maplength, x, y, len, alen;
+    ptrdiff_t stride;
     uint8_t *ptr, *ptr2 = NULL;
     const uint8_t *bufstart = buf;
     int ret;
@@ -141,7 +142,7 @@ static int sunrast_decode_frame(AVCodecContext *avctx, AVFrame *p,
 
     if (type == RT_BYTE_ENCODED) {
         int value, run;
-        uint8_t *end = ptr + h * stride;
+        uint8_t *end = ptr + (ptrdiff_t)h * stride;
 
         x = 0;
         while (ptr != end && buf < buf_end) {
