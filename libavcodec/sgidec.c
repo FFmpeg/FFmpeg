@@ -30,17 +30,15 @@
  * @param logctx a logcontext
  * @param out_buf Points to one line after the output buffer.
  * @param g   GetByteContext used to read input from
- * @param len length of out_buf in bytes
- * @param pixelstride pixel stride of input buffer
- * @return size of output in bytes, else return error code.
+ * @param width length of out_buf in nb of elements
+ * @return nb of elements written, else return error code.
  */
 static int expand_rle_row8(void *logctx, uint8_t *out_buf,
-                           GetByteContext *g,
-                           int len, int pixelstride)
+                           GetByteContext *g, unsigned width)
 {
     unsigned char pixel, count;
     unsigned char *orig = out_buf;
-    uint8_t *out_end = out_buf + len;
+    uint8_t *out_end = out_buf + width;
 
     while (out_buf < out_end) {
         if (bytestream2_get_bytes_left(g) < 1)
@@ -51,36 +49,31 @@ static int expand_rle_row8(void *logctx, uint8_t *out_buf,
         }
 
         /* Check for buffer overflow. */
-        if (out_end - out_buf <= pixelstride * (count - 1)) {
+        if (out_end - out_buf < count) {
             av_log(logctx, AV_LOG_ERROR, "Invalid pixel count.\n");
             return AVERROR_INVALIDDATA;
         }
 
         if (pixel & 0x80) {
-            while (count--) {
-                *out_buf = bytestream2_get_byte(g);
-                out_buf += pixelstride;
-            }
+            while (count--)
+                *out_buf++ = bytestream2_get_byte(g);
         } else {
             pixel = bytestream2_get_byte(g);
 
-            while (count--) {
-                *out_buf = pixel;
-                out_buf += pixelstride;
-            }
+            while (count--)
+                *out_buf++ = pixel;
         }
     }
-    return (out_buf - orig) / pixelstride;
+    return out_buf - orig;
 }
 
 static int expand_rle_row16(void *logctx, uint16_t *out_buf,
-                            GetByteContext *g,
-                            int len, int pixelstride)
+                            GetByteContext *g, unsigned width)
 {
     unsigned short pixel;
     unsigned char count;
     unsigned short *orig = out_buf;
-    uint16_t *out_end = out_buf + len;
+    uint16_t *out_end = out_buf + width;
 
     while (out_buf < out_end) {
         if (bytestream2_get_bytes_left(g) < 2)
@@ -90,7 +83,7 @@ static int expand_rle_row16(void *logctx, uint16_t *out_buf,
             break;
 
         /* Check for buffer overflow. */
-        if (out_end - out_buf <= pixelstride * (count - 1)) {
+        if (out_end - out_buf < count) {
             av_log(logctx, AV_LOG_ERROR, "Invalid pixel count.\n");
             return AVERROR_INVALIDDATA;
         }
@@ -99,18 +92,18 @@ static int expand_rle_row16(void *logctx, uint16_t *out_buf,
             while (count--) {
                 pixel = bytestream2_get_ne16(g);
                 AV_WN16A(out_buf, pixel);
-                out_buf += pixelstride;
+                out_buf++;
             }
         } else {
             pixel = bytestream2_get_ne16(g);
 
             while (count--) {
                 AV_WN16A(out_buf, pixel);
-                out_buf += pixelstride;
+                out_buf++;
             }
         }
     }
-    return (out_buf - orig) / pixelstride;
+    return out_buf - orig;
 }
 
 
@@ -120,15 +113,14 @@ static int expand_rle_row16(void *logctx, uint16_t *out_buf,
  * @param s the current image state
  * @return 0 if no error, else return error code.
  */
-static int read_rle_sgi(void *logctx, uint8_t *last_line, GetByteContext *g,
-                        ptrdiff_t stride, unsigned width, unsigned height,
+static int read_rle_sgi(void *logctx, uint8_t *out[4], ptrdiff_t stride[4],
+                        GetByteContext *g, unsigned width, int height,
                         unsigned nb_components, unsigned bytes_per_channel)
 {
-    uint8_t *dest_row;
     unsigned int len = height * nb_components * 4;
     GetByteContext g_table = *g;
     unsigned int start_offset;
-    int linesize, ret;
+    int ret;
 
     /* size of  RLE offset and length tables */
     if (len * 2 > bytestream2_get_bytes_left(g)) {
@@ -136,22 +128,19 @@ static int read_rle_sgi(void *logctx, uint8_t *last_line, GetByteContext *g,
     }
 
     for (unsigned z = 0; z < nb_components; z++) {
-        dest_row = last_line;
-        for (unsigned remaining_lines = height;;) {
-            linesize = width * nb_components;
+        uint8_t *dest_row = out[z] + (height - 1) * stride[z];
+        while (1) {
             start_offset = bytestream2_get_be32(&g_table);
             bytestream2_seek(g, start_offset, SEEK_SET);
             if (bytes_per_channel == 1)
-                ret = expand_rle_row8(logctx, dest_row + z, g,
-                                      linesize, nb_components);
+                ret = expand_rle_row8(logctx, dest_row, g, width);
             else
-                ret = expand_rle_row16(logctx, (uint16_t *)dest_row + z, g,
-                                       linesize, nb_components);
+                ret = expand_rle_row16(logctx, (uint16_t *)dest_row, g, width);
             if (ret != width)
                 return AVERROR_INVALIDDATA;
-            if (--remaining_lines == 0)
+            if (dest_row == out[z])
                 break;
-            dest_row -= stride;
+            dest_row -= stride[z];
         }
     }
     return 0;
@@ -163,35 +152,23 @@ static int read_rle_sgi(void *logctx, uint8_t *last_line, GetByteContext *g,
  * @param s the current image state
  * @return 0 if read success, else return error code.
  */
-static int read_uncompressed_sgi(unsigned char *out_buf, GetByteContext *g,
-                                 ptrdiff_t stride, unsigned width, unsigned height,
+static int read_uncompressed_sgi(uint8_t *const out[4], const ptrdiff_t stride[4],
+                                 GetByteContext *g, unsigned width, int height,
                                  unsigned nb_components, unsigned bytes_per_channel)
 {
-    unsigned int offset = height * width * bytes_per_channel;
-    GetByteContext gp[4];
-    uint8_t *out_end;
+    unsigned rowsize = width * bytes_per_channel;
 
     /* Test buffer size. */
-    if (offset * nb_components > bytestream2_get_bytes_left(g))
+    if (rowsize * (int64_t)height > bytestream2_get_bytes_left(g))
         return AVERROR_INVALIDDATA;
 
-    /* Create a reader for each plane */
     for (unsigned z = 0; z < nb_components; z++) {
-        gp[z] = *g;
-        bytestream2_skip(&gp[z], z * offset);
-    }
-
-    for (int y = height - 1; y >= 0; y--) {
-        out_end = out_buf + y * stride;
-        if (bytes_per_channel == 1) {
-            for (unsigned x = width; x > 0; x--)
-                for (unsigned z = 0; z < nb_components; z++)
-                    *out_end++ = bytestream2_get_byteu(&gp[z]);
-        } else {
-            uint16_t *out16 = (uint16_t *)out_end;
-            for (unsigned x = width; x > 0; x--)
-                for (unsigned z = 0; z < nb_components; z++)
-                    *out16++ = bytestream2_get_ne16u(&gp[z]);
+        uint8_t *cur_row = out[z] + (height - 1) * stride[z];
+        while (1) {
+            bytestream2_get_bufferu(g, cur_row, rowsize);
+            if (cur_row == out[z])
+                break;
+            cur_row -= stride[z];
         }
     }
     return 0;
@@ -202,9 +179,10 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
 {
     GetByteContext g;
     unsigned int bytes_per_channel, nb_components, dimension, rle, width;
+    uint8_t *out[4];
+    ptrdiff_t linesize[4];
     int height;
     int ret = 0;
-    uint8_t *out_buf, *last_line;
 
     bytestream2_init(&g, avpkt->data, avpkt->size);
     if (bytestream2_get_bytes_left(&g) < SGI_HEADER_SIZE) {
@@ -239,9 +217,9 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
     if (nb_components == SGI_GRAYSCALE) {
         avctx->pix_fmt = bytes_per_channel == 2 ? AV_PIX_FMT_GRAY16BE : AV_PIX_FMT_GRAY8;
     } else if (nb_components == SGI_RGB) {
-        avctx->pix_fmt = bytes_per_channel == 2 ? AV_PIX_FMT_RGB48BE : AV_PIX_FMT_RGB24;
+        avctx->pix_fmt = bytes_per_channel == 2 ? AV_PIX_FMT_GBRP16BE : AV_PIX_FMT_GBRP;
     } else if (nb_components == SGI_RGBA) {
-        avctx->pix_fmt = bytes_per_channel == 2 ? AV_PIX_FMT_RGBA64BE : AV_PIX_FMT_RGBA;
+        avctx->pix_fmt = bytes_per_channel == 2 ? AV_PIX_FMT_GBRAP16BE : AV_PIX_FMT_GBRAP;
     } else {
         av_log(avctx, AV_LOG_ERROR, "wrong picture format\n");
         return AVERROR_INVALIDDATA;
@@ -254,19 +232,32 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
         return ret;
 
+    switch (nb_components) {
+#define MAP(in_idx, out_idx) \
+    out[(in_idx)]      = p->data[(out_idx)]; \
+    linesize[(in_idx)] = p->linesize[(out_idx)]
+    case SGI_GRAYSCALE:
+        MAP(0, 0);
+        break;
+    case SGI_RGBA:
+        MAP(3, 3);
+        /* fallthrough */
+    case SGI_RGB:
+        MAP(0, 2);
+        MAP(1, 0);
+        MAP(2, 1);
+        break;
+    }
     p->pict_type = AV_PICTURE_TYPE_I;
     p->key_frame = 1;
-    out_buf = p->data[0];
-
-    last_line = out_buf + p->linesize[0] * (height - 1);
 
     /* Skip header. */
     bytestream2_seek(&g, SGI_HEADER_SIZE, SEEK_SET);
     if (rle) {
-        ret = read_rle_sgi(avctx, last_line, &g, p->linesize[0],
+        ret = read_rle_sgi(avctx, out, linesize, &g,
                            width, height, nb_components, bytes_per_channel);
     } else {
-        ret = read_uncompressed_sgi(out_buf, &g, p->linesize[0],
+        ret = read_uncompressed_sgi(out, linesize, &g,
                                     width, height, nb_components, bytes_per_channel);
     }
     if (ret)
