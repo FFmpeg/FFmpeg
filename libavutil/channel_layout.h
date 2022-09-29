@@ -270,7 +270,7 @@ typedef struct AVChannelCustom {
  * ignoring everything but the channel count, as long as av_channel_layout_check()
  * considers they are valid.
  *
- * Unlike most structures in Libav, sizeof(AVChannelLayout) is a part of the
+ * Unlike most structures in FFmpeg, sizeof(AVChannelLayout) is a part of the
  * public ABI and may be used by the caller. E.g. it may be allocated on stack
  * or embedded in caller-defined structs.
  *
