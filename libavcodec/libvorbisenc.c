@@ -29,7 +29,6 @@
 #include "codec_internal.h"
 #include "encode.h"
 #include "version.h"
-#include "vorbis.h"
 #include "vorbis_parser.h"
 
 

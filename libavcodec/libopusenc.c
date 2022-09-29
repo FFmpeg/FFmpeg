@@ -29,8 +29,8 @@
 #include "codec_internal.h"
 #include "encode.h"
 #include "libopus.h"
-#include "vorbis.h"
 #include "audio_frame_queue.h"
+#include "vorbis_data.h"
 
 typedef struct LibopusEncOpts {
     int vbr;

@@ -33,7 +33,7 @@
 #include "opus_celt.h"
 #include "opustab.h"
 #include "internal.h"
-#include "vorbis.h"
+#include "vorbis_data.h"
 
 static const uint16_t opus_frame_duration[32] = {
     480, 960, 1920, 2880,

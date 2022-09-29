@@ -31,9 +31,9 @@
 #include "codec_internal.h"
 #include "decode.h"
 #include "internal.h"
-#include "vorbis.h"
 #include "mathops.h"
 #include "libopus.h"
+#include "vorbis_data.h"
 
 struct libopus_context {
     AVClass *class;

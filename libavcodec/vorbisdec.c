@@ -40,6 +40,7 @@
 #include "get_bits.h"
 #include "vorbis.h"
 #include "vorbisdsp.h"
+#include "vorbis_data.h"
 #include "xiph.h"
 
 #define V_NB_BITS 8
