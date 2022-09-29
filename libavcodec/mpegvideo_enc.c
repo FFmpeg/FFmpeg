@@ -46,7 +46,7 @@
 #include "dct.h"
 #include "encode.h"
 #include "idctdsp.h"
-#include "mpeg12.h"
+#include "mpeg12codecs.h"
 #include "mpeg12data.h"
 #include "mpeg12enc.h"
 #include "mpegvideo.h"

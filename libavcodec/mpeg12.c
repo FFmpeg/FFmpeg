@@ -34,6 +34,7 @@
 #include "avcodec.h"
 #include "mpegvideo.h"
 #include "mpeg12.h"
+#include "mpeg12codecs.h"
 #include "mpeg12data.h"
 #include "mpeg12dec.h"
 #include "startcode.h"
