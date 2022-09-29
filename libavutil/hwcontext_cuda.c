@@ -45,6 +45,8 @@ static const enum AVPixelFormat supported_formats[] = {
     AV_PIX_FMT_YUV444P16,
     AV_PIX_FMT_0RGB32,
     AV_PIX_FMT_0BGR32,
+    AV_PIX_FMT_RGB32,
+    AV_PIX_FMT_BGR32,
 #if CONFIG_VULKAN
     AV_PIX_FMT_VULKAN,
 #endif
