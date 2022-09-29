@@ -1452,7 +1452,7 @@ static av_cold int speex_decode_init(AVCodecContext *avctx)
             return AVERROR_INVALIDDATA;
 
         s->nb_channels = avctx->ch_layout.nb_channels;
-        if (s->nb_channels <= 0)
+        if (s->nb_channels <= 0 || s->nb_channels > 2)
             return AVERROR_INVALIDDATA;
 
         switch (s->rate) {
