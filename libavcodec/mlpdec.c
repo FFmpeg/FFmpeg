@@ -563,6 +563,10 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
         return AVERROR_INVALIDDATA;
     }
 
+    if (max_channel + 1 > MAX_CHANNELS || max_channel + 1 < min_channel)
+        return AVERROR_INVALIDDATA;
+
+
     s->min_channel        = min_channel;
     s->max_channel        = max_channel;
     s->max_matrix_channel = max_matrix_channel;
