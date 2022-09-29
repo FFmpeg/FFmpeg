@@ -112,6 +112,7 @@ typedef struct MpegTSWrite {
 #define MPEGTS_FLAG_SYSTEM_B        0x08
 #define MPEGTS_FLAG_DISCONT         0x10
 #define MPEGTS_FLAG_NIT             0x20
+#define MPEGTS_FLAG_OMIT_RAI        0x40
     int flags;
     int copyts;
     int tables_version;
@@ -1566,7 +1567,8 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
             q = get_ts_payload_start(buf);
             ts_st->discontinuity = 0;
         }
-        if (key && is_start && pts != AV_NOPTS_VALUE &&
+        if (!(ts->flags & MPEGTS_FLAG_OMIT_RAI) &&
+            key && is_start && pts != AV_NOPTS_VALUE &&
             !is_dvb_teletext /* adaptation+payload forbidden for teletext (ETSI EN 300 472 V1.3.1 4.1) */) {
             // set Random Access for key frames
             if (ts_st->pcr_period)
@@ -2282,6 +2284,8 @@ static const AVOption options[] = {
       0, AV_OPT_TYPE_CONST, { .i64 = MPEGTS_FLAG_DISCONT }, 0, INT_MAX, ENC, "mpegts_flags" },
     { "nit", "Enable NIT transmission",
       0, AV_OPT_TYPE_CONST, { .i64 = MPEGTS_FLAG_NIT}, 0, INT_MAX, ENC, "mpegts_flags" },
+    { "omit_rai", "Disable writing of random access indicator",
+      0, AV_OPT_TYPE_CONST, { .i64 = MPEGTS_FLAG_OMIT_RAI }, 0, INT_MAX, ENC, "mpegts_flags" },
     { "mpegts_copyts", "don't offset dts/pts", OFFSET(copyts), AV_OPT_TYPE_BOOL, { .i64 = -1 }, -1, 1, ENC },
     { "tables_version", "set PAT, PMT, SDT and NIT version", OFFSET(tables_version), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 31, ENC },
     { "omit_video_pes_length", "Omit the PES packet length for video packets",

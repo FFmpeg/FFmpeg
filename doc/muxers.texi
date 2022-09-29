@@ -1915,6 +1915,8 @@ Conform to System B (DVB) instead of System A (ATSC).
 Mark the initial packet of each stream as discontinuity.
 @item nit
 Emit NIT table.
+@item omit_rai
+Disable writing of random access indicator.
 @end table
 
 @item mpegts_copyts @var{boolean}
