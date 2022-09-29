@@ -28,7 +28,7 @@
 typedef struct SgiState {
     AVCodecContext *avctx;
     unsigned int width;
-    unsigned int height;
+    int height;
     unsigned int depth;
     unsigned int bytes_per_channel;
     int linesize;
@@ -127,12 +127,11 @@ static int expand_rle_row16(SgiState *s, uint16_t *out_buf,
  * @param s the current image state
  * @return 0 if no error, else return error code.
  */
-static int read_rle_sgi(uint8_t *out_buf, SgiState *s)
+static int read_rle_sgi(uint8_t *last_line, SgiState *s)
 {
     uint8_t *dest_row;
     unsigned int len = s->height * s->depth * 4;
     GetByteContext g_table = s->g;
-    unsigned int y, z;
     unsigned int start_offset;
     int linesize, ret;
 
@@ -141,11 +140,10 @@ static int read_rle_sgi(uint8_t *out_buf, SgiState *s)
         return AVERROR_INVALIDDATA;
     }
 
-    for (z = 0; z < s->depth; z++) {
-        dest_row = out_buf;
-        for (y = 0; y < s->height; y++) {
+    for (unsigned z = 0; z < s->depth; z++) {
+        dest_row = last_line;
+        for (int remaining_lines = s->height;;) {
             linesize = s->width * s->depth;
-            dest_row -= s->linesize;
             start_offset = bytestream2_get_be32(&g_table);
             bytestream2_seek(&s->g, start_offset, SEEK_SET);
             if (s->bytes_per_channel == 1)
@@ -154,6 +152,9 @@ static int read_rle_sgi(uint8_t *out_buf, SgiState *s)
                 ret = expand_rle_row16(s, (uint16_t *)dest_row + z, linesize, s->depth);
             if (ret != s->width)
                 return AVERROR_INVALIDDATA;
+            if (--remaining_lines == 0)
+                break;
+            dest_row -= s->linesize;
         }
     }
     return 0;
@@ -204,7 +205,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
     SgiState *s = avctx->priv_data;
     unsigned int dimension, rle;
     int ret = 0;
-    uint8_t *out_buf, *out_end;
+    uint8_t *out_buf, *last_line;
 
     bytestream2_init(&s->g, avpkt->data, avpkt->size);
     if (bytestream2_get_bytes_left(&s->g) < SGI_HEADER_SIZE) {
@@ -258,14 +259,14 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
     p->key_frame = 1;
     out_buf = p->data[0];
 
-    out_end = out_buf + p->linesize[0] * s->height;
+    last_line = out_buf + p->linesize[0] * (s->height - 1);
 
     s->linesize = p->linesize[0];
 
     /* Skip header. */
     bytestream2_seek(&s->g, SGI_HEADER_SIZE, SEEK_SET);
     if (rle) {
-        ret = read_rle_sgi(out_end, s);
+        ret = read_rle_sgi(last_line, s);
     } else {
         ret = read_uncompressed_sgi(out_buf, s);
     }
