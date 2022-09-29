@@ -24,16 +24,6 @@
 
 #include "get_bits.h"
 #include "mpeg12vlc.h"
-#include "rl.h"
-
-#define INIT_2D_VLC_RL(rl, static_size, flags)\
-{\
-    static RL_VLC_ELEM rl_vlc_table[static_size];\
-    rl.rl_vlc[0] = rl_vlc_table;\
-    ff_init_2d_vlc_rl(&rl, static_size, flags);\
-}
-
-void ff_init_2d_vlc_rl(RLTable *rl, unsigned static_size, int flags);
 
 static inline int decode_dc(GetBitContext *gb, int component)
 {

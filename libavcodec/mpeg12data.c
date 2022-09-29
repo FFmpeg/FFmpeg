@@ -26,6 +26,7 @@
  */
 
 #include "mpeg12data.h"
+#include "mpeg12vlc.h"
 
 const uint16_t ff_mpeg1_default_intra_matrix[256] = {
         8, 16, 19, 22, 26, 27, 29, 34,

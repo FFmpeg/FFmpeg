@@ -34,7 +34,7 @@
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "mpeg12data.h"
-#include "mpeg12enc.h"
+#include "mpeg12vlc.h"
 #include "mpegvideo.h"
 #include "mpegvideoenc.h"
 #include "speedhqenc.h"

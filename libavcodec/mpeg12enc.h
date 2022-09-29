@@ -25,9 +25,6 @@
 #include <stdint.h>
 
 #include "mpegvideo.h"
-#include "rl.h"
-
-void ff_mpeg1_init_uni_ac_vlc(const RLTable *rl, uint8_t *uni_ac_vlc_len);
 
 void ff_mpeg1_encode_picture_header(MpegEncContext *s, int picture_number);
 void ff_mpeg1_encode_mb(MpegEncContext *s, int16_t block[8][64],

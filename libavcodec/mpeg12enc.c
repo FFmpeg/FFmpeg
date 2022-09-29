@@ -43,6 +43,7 @@
 #include "mpeg12.h"
 #include "mpeg12data.h"
 #include "mpeg12enc.h"
+#include "mpeg12vlc.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
 #include "mpegvideoenc.h"

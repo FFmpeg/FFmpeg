@@ -38,9 +38,9 @@
 #include "idctdsp.h"
 #include "libavutil/thread.h"
 #include "mathops.h"
-#include "mpeg12dec.h"
 #include "mpeg12data.h"
 #include "mpeg12vlc.h"
+#include "rl.h"
 
 #define MAX_INDEX (64 - 1)
 
