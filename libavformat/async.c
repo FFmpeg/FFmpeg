@@ -144,8 +144,14 @@ static int wrapped_url_read(void *src, void *dst, size_t *size)
 
 static int ring_write(RingBuffer *ring, URLContext *h, size_t size)
 {
+    int ret;
+
     av_assert2(size <= ring_space(ring));
-    return av_fifo_write_from_cb(ring->fifo, wrapped_url_read, h, &size);
+    ret = av_fifo_write_from_cb(ring->fifo, wrapped_url_read, h, &size);
+    if (ret < 0)
+        return ret;
+
+    return size;
 }
 
 static int ring_size_of_read_back(RingBuffer *ring)
