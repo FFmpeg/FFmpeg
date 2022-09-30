@@ -13,5 +13,10 @@ fate-truehd-core-bsf: CMD = md5pipe -i $(TARGET_SAMPLES)/truehd/atmos.thd -c:a c
 fate-truehd-core-bsf: CMP = oneline
 fate-truehd-core-bsf: REF = 3aa5d0c7825051f3657b71fd6135183b
 
+FATE_TRUEHD-$(call DEMDEC, TRUEHD, TRUEHD) += fate-truehd-mono1726
+fate-truehd-mono1726: CMD = md5pipe -f truehd -i $(TARGET_SAMPLES)/truehd/ticket-1726-monocut.thd -f s32le
+fate-truehd-mono1726: CMP = oneline
+fate-truehd-mono1726: REF = 9be9551fac418440bb02101bfdb11df9
+
 FATE_SAMPLES_AUDIO += $(FATE_TRUEHD-yes)
 fate-truehd: $(FATE_TRUEHD-yes)
