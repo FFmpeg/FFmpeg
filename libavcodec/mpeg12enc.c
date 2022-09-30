@@ -46,6 +46,7 @@
 #include "mpeg12vlc.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
+#include "mpegvideodata.h"
 #include "mpegvideoenc.h"
 #include "profiles.h"
 
@@ -1133,7 +1134,8 @@ av_cold void ff_mpeg1_encode_init(MpegEncContext *s)
 {
     static AVOnce init_static_once = AV_ONCE_INIT;
 
-    ff_mpeg12_common_init(s);
+    s->y_dc_scale_table =
+    s->c_dc_scale_table = ff_mpeg2_dc_scale_table[s->intra_dc_precision];
 
     s->me.mv_penalty = mv_penalty;
     s->fcode_tab     = fcode_tab;

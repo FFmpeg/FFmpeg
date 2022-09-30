@@ -36,7 +36,6 @@
 #include "mpeg12.h"
 #include "mpeg12data.h"
 #include "mpeg12dec.h"
-#include "mpegvideodata.h"
 #include "startcode.h"
 
 static const uint8_t table_mb_ptype[7][2] = {
@@ -98,14 +97,6 @@ av_cold void ff_init_2d_vlc_rl(RLTable *rl, unsigned static_size, int flags)
         rl->rl_vlc[0][i].level = level;
         rl->rl_vlc[0][i].run   = run;
     }
-}
-
-av_cold void ff_mpeg12_common_init(MpegEncContext *s)
-{
-
-    s->y_dc_scale_table =
-    s->c_dc_scale_table = ff_mpeg2_dc_scale_table[s->intra_dc_precision];
-
 }
 
 void ff_mpeg1_clean_buffers(MpegEncContext *s)

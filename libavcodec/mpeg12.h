@@ -34,8 +34,6 @@
 #define EXT_START_CODE          0x000001b5
 #define USER_START_CODE         0x000001b2
 
-void ff_mpeg12_common_init(MpegEncContext *s);
-
 void ff_mpeg1_clean_buffers(MpegEncContext *s);
 #if FF_API_FLAG_TRUNCATED
 int ff_mpeg1_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size, AVCodecParserContext *s);
