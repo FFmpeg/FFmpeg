@@ -24,7 +24,7 @@
 ; Intra-asm call convention:
 ;       320 bytes of stack available
 ;       14 GPRs available (last 4 must not be clobbered)
-;       Additionally, don't clobber ctx, in, out, len, lut
+;       Additionally, don't clobber ctx, in, out, stride, len, lut
 ;       All vector regs available
 
 ; TODO:
@@ -863,7 +863,7 @@ FFT4_FN inv, 1, 1
 %macro FFT8_SSE_FN 1
 INIT_XMM sse3
 %if %1
-cglobal fft8_asm_float, 0, 0, 0, ctx, out, in, tmp
+cglobal fft8_asm_float, 0, 0, 0, ctx, out, in, stride, tmp
     movaps m0, [inq + 0*mmsize]
     movaps m1, [inq + 1*mmsize]
     movaps m2, [inq + 2*mmsize]
@@ -896,7 +896,7 @@ cglobal fft8_float, 4, 4, 6, ctx, out, in, tmp
 %endif
 
 %if %1
-cglobal fft8_ns_float, 4, 4, 6, ctx, out, in, tmp
+cglobal fft8_ns_float, 4, 5, 6, ctx, out, in, stride, tmp
     call mangle(ff_tx_fft8_asm_float_sse3)
     RET
 %endif
@@ -908,7 +908,7 @@ FFT8_SSE_FN 1
 %macro FFT8_AVX_FN 1
 INIT_YMM avx
 %if %1
-cglobal fft8_asm_float, 0, 0, 0, ctx, out, in, tmp
+cglobal fft8_asm_float, 0, 0, 0, ctx, out, in, stride, tmp
     movaps m0, [inq + 0*mmsize]
     movaps m1, [inq + 1*mmsize]
 %else
@@ -936,7 +936,7 @@ cglobal fft8_float, 4, 4, 4, ctx, out, in, tmp
 %endif
 
 %if %1
-cglobal fft8_ns_float, 4, 4, 4, ctx, out, in, tmp
+cglobal fft8_ns_float, 4, 5, 4, ctx, out, in, stride, tmp
     call mangle(ff_tx_fft8_asm_float_avx)
     RET
 %endif
@@ -948,7 +948,7 @@ FFT8_AVX_FN 1
 %macro FFT16_FN 2
 INIT_YMM %1
 %if %2
-cglobal fft16_asm_float, 0, 0, 0, ctx, out, in, tmp
+cglobal fft16_asm_float, 0, 0, 0, ctx, out, in, stride, tmp
     movaps m0, [inq + 0*mmsize]
     movaps m1, [inq + 1*mmsize]
     movaps m2, [inq + 2*mmsize]
@@ -985,7 +985,7 @@ cglobal fft16_float, 4, 4, 8, ctx, out, in, tmp
 %endif
 
 %if %2
-cglobal fft16_ns_float, 4, 4, 8, ctx, out, in, tmp
+cglobal fft16_ns_float, 4, 5, 8, ctx, out, in, stride, tmp
     call mangle(ff_tx_fft16_asm_float_ %+ %1)
     RET
 %endif
@@ -999,7 +999,7 @@ FFT16_FN fma3, 1
 %macro FFT32_FN 2
 INIT_YMM %1
 %if %2
-cglobal fft32_asm_float, 0, 0, 0, ctx, out, in, tmp
+cglobal fft32_asm_float, 0, 0, 0, ctx, out, in, stride, tmp
     movaps m4, [inq + 4*mmsize]
     movaps m5, [inq + 5*mmsize]
     movaps m6, [inq + 6*mmsize]
@@ -1069,7 +1069,7 @@ cglobal fft32_float, 4, 4, 16, ctx, out, in, tmp
 %endif
 
 %if %2
-cglobal fft32_ns_float, 4, 4, 16, ctx, out, in, tmp
+cglobal fft32_ns_float, 4, 5, 16, ctx, out, in, stride, tmp
     call mangle(ff_tx_fft32_asm_float_ %+ %1)
     RET
 %endif
@@ -1123,9 +1123,9 @@ ALIGN 16
 %macro FFT_SPLIT_RADIX_FN 2
 INIT_YMM %1
 %if %2
-cglobal fft_sr_asm_float, 0, 0, 0, ctx, out, in, tmp, len, lut, itab, rtab, tgt, off
+cglobal fft_sr_asm_float, 0, 0, 0, ctx, out, in, stride, len, lut, itab, rtab, tgt, tmp
 %else
-cglobal fft_sr_float, 4, 10, 16, 272, ctx, out, in, tmp, len, lut, itab, rtab, tgt, off
+cglobal fft_sr_float, 4, 10, 16, 272, ctx, out, in, stride, len, lut, itab, rtab, tgt, tmp
     movsxd lenq, dword [ctxq + AVTXContext.len]
     mov lutq, [ctxq + AVTXContext.map]
 %endif
@@ -1391,12 +1391,15 @@ FFT_SPLIT_RADIX_DEF 131072
 ; Final synthesis + deinterleaving code
 ;===============================================================================
 .deinterleave:
+%if %2
+    PUSH strideq
+%endif
     mov tgtq, lenq
     imul tmpq, lenq, 2
-    lea offq, [4*lenq + tmpq]
+    lea strideq, [4*lenq + tmpq]
 
 .synth_deinterleave:
-    SPLIT_RADIX_COMBINE_DEINTERLEAVE_FULL tmpq, offq
+    SPLIT_RADIX_COMBINE_DEINTERLEAVE_FULL tmpq, strideq
     add outq, 8*mmsize
     add rtabq, 4*mmsize
     sub itabq, 4*mmsize
@@ -1404,6 +1407,7 @@ FFT_SPLIT_RADIX_DEF 131072
     jg .synth_deinterleave
 
 %if %2
+    POP strideq
     sub outq, tmpq
     neg tmpq
     lea inq, [inq + tmpq*4]
@@ -1706,6 +1710,7 @@ cglobal mdct_inv_float, 4, 14, 16, 320, ctx, out, in, stride, len, lut, exp, t1,
     jge .stride4_pre
 
 .transform:
+    mov strideq, 2*4
     mov t4q, ctxq                      ; backup original context
     mov t5q, [ctxq + AVTXContext.fn]   ; subtransform's jump point
     mov ctxq, [ctxq + AVTXContext.sub]
@@ -1767,7 +1772,7 @@ IMDCT_FN avx2
 %macro PFA_15_FN 2
 INIT_YMM %1
 %if %2
-cglobal fft_pfa_15xM_asm_float, 0, 0, 0, ctx, out, in, stride, len, lut, buf, map, tgt, tmp, \
+cglobal fft_pfa_15xM_asm_float, 0, 8, 0, ctx, out, in, stride, len, lut, buf, map, tgt, tmp, \
                                          tgt5, stride3, stride5, btmp
 %else
 cglobal fft_pfa_15xM_float, 4, 14, 16, 320, ctx, out, in, stride, len, lut, buf, map, tgt, tmp, \
@@ -1781,6 +1786,8 @@ cglobal fft_pfa_15xM_float, 4, 14, 16, 320, ctx, out, in, stride, len, lut, buf,
     PUSH stride5q
     PUSH btmpq
 %endif
+
+    PUSH strideq
 
     mov btmpq, outq
 
@@ -1884,12 +1891,18 @@ cglobal fft_pfa_15xM_float, 4, 14, 16, 320, ctx, out, in, stride, len, lut, buf,
     lea stride3q, [lutq + lenq*4]                   ; second part of the LUT
     mov stride5q, lenq
     mov tgt5q, btmpq
+    POP strideq
+    imul tmpq, strideq, 3
 
 .post:
     LOAD64_LUT m0, inq, stride3q, 0, tmpq, m8, m9
-    movups [tgt5q], m0
+    vextractf128 xm1, m0, 1
+    movlps [tgt5q], xm0
+    movhps [tgt5q + strideq], xm0
+    movlps [tgt5q + strideq*2], xm1
+    movhps [tgt5q + tmpq], xm1
 
-    add tgt5q, mmsize
+    lea tgt5q, [tgt5q + 4*strideq]
     add stride3q, mmsize/2
     sub stride5q, mmsize/8
     jg .post
