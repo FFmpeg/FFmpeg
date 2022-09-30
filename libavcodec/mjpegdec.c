@@ -596,7 +596,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         case 0x14111100:
         case 0x22211100:
         case 0x22112100:
-            if (s->component_id[0] == 'R' && s->component_id[1] == 'G' && s->component_id[B] == 'B') {
+            if (s->component_id[0] == 'R' && s->component_id[1] == 'G' && s->component_id[2] == 'B') {
                 if (s->bits <= 8) s->avctx->pix_fmt = AV_PIX_FMT_GBRP;
                 else
                     goto unk_pixfmt;
