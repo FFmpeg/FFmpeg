@@ -310,12 +310,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
 
     if (avctx->codec->id == AV_CODEC_ID_HUFFYUV) {
-        if (avctx->pix_fmt == AV_PIX_FMT_YUV420P) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "Error: YV12 is not supported by huffyuv; use "
-                   "vcodec=ffvhuff or format=422p\n");
-            return AVERROR(EINVAL);
-        }
         if (s->interlaced != ( s->height > 288 ))
             av_log(avctx, AV_LOG_INFO,
                    "using huffyuv 2.2.0 or newer interlacing flag\n");
