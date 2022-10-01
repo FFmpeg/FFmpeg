@@ -209,6 +209,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     int ret;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
 
+    s->avctx = avctx;
     ff_huffyuv_common_init(avctx);
     ff_huffyuvencdsp_init(&s->hencdsp, avctx->pix_fmt);
     ff_llvidencdsp_init(&s->llvidencdsp);

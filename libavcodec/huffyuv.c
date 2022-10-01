@@ -72,7 +72,6 @@ av_cold void ff_huffyuv_common_init(AVCodecContext *avctx)
 {
     HYuvContext *s = avctx->priv_data;
 
-    s->avctx = avctx;
     s->flags = avctx->flags;
 
     ff_bswapdsp_init(&s->bdsp);

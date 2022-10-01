@@ -813,12 +813,12 @@ static void decode_bgr_bitstream(HYuvContext *s, int count)
     }
 }
 
-static void draw_slice(HYuvContext *s, AVFrame *frame, int y)
+static void draw_slice(HYuvContext *s, AVCodecContext *avctx, AVFrame *frame, int y)
 {
     int h, cy, i;
     int offset[AV_NUM_DATA_POINTERS];
 
-    if (!s->avctx->draw_horiz_band)
+    if (!avctx->draw_horiz_band)
         return;
 
     h  = y - s->last_slice_end;
@@ -836,7 +836,7 @@ static void draw_slice(HYuvContext *s, AVFrame *frame, int y)
         offset[i] = 0;
     emms_c();
 
-    s->avctx->draw_horiz_band(s->avctx, frame, offset, y, 3, h);
+    avctx->draw_horiz_band(avctx, frame, offset, y, 3, h);
 
     s->last_slice_end = y + h;
 }
@@ -952,7 +952,7 @@ static int decode_slice(AVCodecContext *avctx, AVFrame *p, int height,
                 break;
             }
         }
-        draw_slice(s, p, height);
+        draw_slice(s, avctx, p, height);
     } else if (s->bitstream_bpp < 24) {
         int y, cy;
         int lefty, leftu, leftv;
@@ -1006,7 +1006,7 @@ static int decode_slice(AVCodecContext *avctx, AVFrame *p, int height,
                             break;
                     }
 
-                    draw_slice(s, p, y);
+                    draw_slice(s, avctx, p, y);
 
                     ydst = p->data[0] + p->linesize[0] * (y  + y_offset);
                     udst = p->data[1] + p->linesize[1] * (cy + y_offset);
@@ -1029,7 +1029,7 @@ static int decode_slice(AVCodecContext *avctx, AVFrame *p, int height,
                         }
                     }
                 }
-                draw_slice(s, p, height);
+                draw_slice(s, avctx, p, height);
 
                 break;
             case MEDIAN:
@@ -1100,7 +1100,7 @@ static int decode_slice(AVCodecContext *avctx, AVFrame *p, int height,
                         if (y >= height)
                             break;
                     }
-                    draw_slice(s, p, y);
+                    draw_slice(s, avctx, p, y);
 
                     decode_422_bitstream(s, width);
 
@@ -1117,7 +1117,7 @@ static int decode_slice(AVCodecContext *avctx, AVFrame *p, int height,
                     }
                 }
 
-                draw_slice(s, p, height);
+                draw_slice(s, avctx, p, height);
                 break;
             }
         }
@@ -1163,7 +1163,7 @@ static int decode_slice(AVCodecContext *avctx, AVFrame *p, int height,
                     }
                 }
                 // just 1 large slice as this is not possible in reverse order
-                draw_slice(s, p, height);
+                draw_slice(s, avctx, p, height);
                 break;
             default:
                 av_log(avctx, AV_LOG_ERROR,
