@@ -230,9 +230,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
     s->yuv = !(desc->flags & AV_PIX_FMT_FLAG_RGB) && desc->nb_components >= 2;
     s->chroma = desc->nb_components > 2;
     s->alpha = !!(desc->flags & AV_PIX_FMT_FLAG_ALPHA);
-    av_pix_fmt_get_chroma_sub_sample(avctx->pix_fmt,
-                                     &s->chroma_h_shift,
-                                     &s->chroma_v_shift);
+    s->chroma_h_shift = desc->log2_chroma_w;
+    s->chroma_v_shift = desc->log2_chroma_h;
 
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_YUV420P:
