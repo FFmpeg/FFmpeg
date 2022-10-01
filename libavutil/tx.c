@@ -343,7 +343,7 @@ static void print_type(AVBPrint *bp, enum AVTXType type)
                "unknown");
 }
 
-static void print_cd_info(const FFTXCodelet *cd, int prio, int print_prio)
+static void print_cd_info(const FFTXCodelet *cd, int prio, int len, int print_prio)
 {
     AVBPrint bp = { 0 };
     av_bprint_init(&bp, 0, AV_BPRINT_SIZE_AUTOMATIC);
@@ -353,27 +353,41 @@ static void print_cd_info(const FFTXCodelet *cd, int prio, int print_prio)
     print_type(&bp, cd->type);
 
     av_bprintf(&bp, ", len: ");
-    if (cd->min_len != cd->max_len)
-        av_bprintf(&bp, "[%i, ", cd->min_len);
+    if (!len) {
+        if (cd->min_len != cd->max_len)
+            av_bprintf(&bp, "[%i, ", cd->min_len);
 
-    if (cd->max_len == TX_LEN_UNLIMITED)
-        av_bprintf(&bp, "∞");
-    else
-        av_bprintf(&bp, "%i", cd->max_len);
-
-    av_bprintf(&bp, "%s, factors: [", cd->min_len != cd->max_len ? "]" : "");
-    for (int i = 0; i < TX_MAX_SUB; i++) {
-        if (i && cd->factors[i])
-            av_bprintf(&bp, ", ");
-        if (cd->factors[i] == TX_FACTOR_ANY)
-            av_bprintf(&bp, "any");
-        else if (cd->factors[i])
-            av_bprintf(&bp, "%i", cd->factors[i]);
+        if (cd->max_len == TX_LEN_UNLIMITED)
+            av_bprintf(&bp, "∞");
         else
-            break;
+            av_bprintf(&bp, "%i", cd->max_len);
+    } else {
+        av_bprintf(&bp, "%i", len);
     }
 
-    av_bprintf(&bp, "], ");
+    if (cd->factors[1]) {
+        av_bprintf(&bp, "%s, factors", !len && cd->min_len != cd->max_len ? "]" : "");
+        if (!cd->nb_factors)
+            av_bprintf(&bp, ": [");
+        else
+            av_bprintf(&bp, "[%i]: [", cd->nb_factors);
+
+        for (int i = 0; i < TX_MAX_FACTORS; i++) {
+            if (i && cd->factors[i])
+                av_bprintf(&bp, ", ");
+            if (cd->factors[i] == TX_FACTOR_ANY)
+                av_bprintf(&bp, "any");
+            else if (cd->factors[i])
+                av_bprintf(&bp, "%i", cd->factors[i]);
+            else
+                break;
+        }
+
+        av_bprintf(&bp, "], ");
+    } else {
+        av_bprintf(&bp, "%s, factor: %i, ",
+                   !len && cd->min_len != cd->max_len ? "]" : "", cd->factors[0]);
+    }
     print_flags(&bp, cd->flags);
 
     if (print_prio)
@@ -389,7 +403,7 @@ static void print_tx_structure(AVTXContext *s, int depth)
     for (int i = 0; i <= depth; i++)
         av_log(NULL, AV_LOG_DEBUG, "    ");
 
-    print_cd_info(cd, cd->prio, 0);
+    print_cd_info(cd, cd->prio, s->len, 0);
 
     for (int i = 0; i < s->nb_sub; i++)
         print_tx_structure(&s->sub[i], depth + 1);
@@ -604,7 +618,7 @@ av_cold int ff_tx_init_subtx(AVTXContext *s, enum AVTXType type,
 
     for (int i = 0; i < nb_cd_matches; i++) {
         av_log(NULL, AV_LOG_DEBUG, "    %i: ", i + 1);
-        print_cd_info(cd_matches[i].cd, cd_matches[i].prio, 1);
+        print_cd_info(cd_matches[i].cd, cd_matches[i].prio, 0, 1);
     }
 #endif
 
