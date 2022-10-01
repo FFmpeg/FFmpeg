@@ -300,6 +300,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
     if (ret < 0)
         return ret;
 
+    s->flags = avctx->flags;
+
+    ff_bswapdsp_init(&s->bdsp);
     ff_huffyuvdsp_init(&s->hdsp, avctx->pix_fmt);
     ff_llviddsp_init(&s->llviddsp);
     memset(s->vlc, 0, 4 * sizeof(VLC));
@@ -544,8 +547,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
             return AVERROR_INVALIDDATA;
         }
     }
-
-    ff_huffyuv_common_init(avctx);
 
     if ((avctx->pix_fmt == AV_PIX_FMT_YUV422P || avctx->pix_fmt == AV_PIX_FMT_YUV420P) && avctx->width & 1) {
         av_log(avctx, AV_LOG_ERROR, "width must be even for this colorspace\n");

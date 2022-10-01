@@ -68,15 +68,6 @@ av_cold int ff_huffyuv_alloc_temp(HYuvContext *s, int width)
     return 0;
 }
 
-av_cold void ff_huffyuv_common_init(AVCodecContext *avctx)
-{
-    HYuvContext *s = avctx->priv_data;
-
-    s->flags = avctx->flags;
-
-    ff_bswapdsp_init(&s->bdsp);
-}
-
 av_cold void ff_huffyuv_common_end(HYuvContext *s)
 {
     int i;

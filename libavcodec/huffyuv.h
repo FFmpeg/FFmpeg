@@ -93,7 +93,6 @@ typedef struct HYuvContext {
     int non_determ; // non-deterministic, multi-threaded encoder allowed
 } HYuvContext;
 
-void ff_huffyuv_common_init(AVCodecContext *s);
 void ff_huffyuv_common_end(HYuvContext *s);
 int  ff_huffyuv_alloc_temp(HYuvContext *s, int width);
 int ff_huffyuv_generate_bits_table(uint32_t *dst, const uint8_t *len_table, int n);
