@@ -348,7 +348,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
             avctx->extradata[2] |= 4;
         avctx->extradata[3] = 1;
     }
-    s->avctx->extradata_size = 4;
+    avctx->extradata_size = 4;
 
     if (avctx->stats_in) {
         char *p = avctx->stats_in;
@@ -378,10 +378,10 @@ static av_cold int encode_init(AVCodecContext *avctx)
             }
     }
 
-    ret = store_huffman_tables(s, s->avctx->extradata + s->avctx->extradata_size);
+    ret = store_huffman_tables(s, avctx->extradata + avctx->extradata_size);
     if (ret < 0)
         return ret;
-    s->avctx->extradata_size += ret;
+    avctx->extradata_size += ret;
 
     if (s->context) {
         for (i = 0; i < 4; i++) {
