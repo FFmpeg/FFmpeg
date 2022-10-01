@@ -2244,6 +2244,74 @@ again:
             }
         }
 
+        /* Floating point predictor
+           TIFF Technical Note 3 http://chriscox.org/TIFFTN3d1.pdf */
+        if (s->predictor == 3) {
+            int channels = s->bppcount;
+            int group_size;
+            uint8_t *tmpbuf;
+            int bpc;
+
+            dst   = five_planes ? five_planes : p->data[plane];
+            soff  = s->bpp >> 3;
+            if (s->planar) {
+                soff  = FFMAX(soff / s->bppcount, 1);
+                channels = 1;
+            }
+            ssize = s->width * soff;
+            bpc = FFMAX(soff / s->bppcount, 1); /* Bytes per component */
+            group_size = s->width * channels;
+
+            tmpbuf = av_malloc(ssize);
+            if (!tmpbuf)
+                return AVERROR(ENOMEM);
+
+            if (s->avctx->pix_fmt == AV_PIX_FMT_RGBF32LE ||
+                s->avctx->pix_fmt == AV_PIX_FMT_RGBAF32LE) {
+                for (i = 0; i < decoded_height; i++) {
+                    /* Copy first sample byte for each channel */
+                    for (j = 0; j < channels; j++)
+                        tmpbuf[j] = dst[j];
+
+                    /* Decode horizontal differences */
+                    for (j = channels; j < ssize; j++)
+                        tmpbuf[j] = dst[j] + tmpbuf[j-channels];
+
+                    /* Combine shuffled bytes from their separate groups. Each
+                       byte of every floating point value in a row of pixels is
+                       split and combined into separate groups. A group of all
+                       the sign/exponents bytes in the row and groups for each
+                       of the upper, mid, and lower mantissa bytes in the row. */
+                    for (j = 0; j < group_size; j++) {
+                        for (int k = 0; k < bpc; k++) {
+                            dst[bpc * j + k] = tmpbuf[(bpc - k - 1) * group_size + j];
+                        }
+                    }
+                    dst += stride;
+                }
+            } else if (s->avctx->pix_fmt == AV_PIX_FMT_RGBF32BE ||
+                       s->avctx->pix_fmt == AV_PIX_FMT_RGBAF32BE) {
+                /* Same as LE only the shuffle at the end is reversed */
+                for (i = 0; i < decoded_height; i++) {
+                    for (j = 0; j < channels; j++)
+                        tmpbuf[j] = dst[j];
+
+                    for (j = channels; j < ssize; j++)
+                        tmpbuf[j] = dst[j] + tmpbuf[j-channels];
+
+                    for (j = 0; j < group_size; j++) {
+                        for (int k = 0; k < bpc; k++) {
+                            dst[bpc * j + k] = tmpbuf[k * group_size + j];
+                        }
+                    }
+                    dst += stride;
+                }
+            } else {
+                av_log(s->avctx, AV_LOG_ERROR, "unsupported floating point pixel format\n");
+            }
+            av_free(tmpbuf);
+        }
+
         if (s->photometric == TIFF_PHOTOMETRIC_WHITE_IS_ZERO) {
             int c = (s->avctx->pix_fmt == AV_PIX_FMT_PAL8 ? (1<<s->bpp) - 1 : 255);
             dst = p->data[plane];
