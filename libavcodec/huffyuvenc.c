@@ -207,7 +207,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     HYuvContext *s = avctx->priv_data;
     int i, j;
     int ret;
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
+    const AVPixFmtDescriptor *desc;
 
     s->avctx = avctx;
     ff_huffyuv_common_init(avctx);
@@ -215,6 +215,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
     ff_llvidencdsp_init(&s->llvidencdsp);
 
     avctx->extradata = av_mallocz(3*MAX_N + 4);
+    if (!avctx->extradata)
+        return AVERROR(ENOMEM);
     if (s->flags&AV_CODEC_FLAG_PASS1) {
 #define STATS_OUT_SIZE 21*MAX_N*3 + 4
         avctx->stats_out = av_mallocz(STATS_OUT_SIZE); // 21*256*3(%llu ) + 3(\n) + 1(0) = 16132
@@ -223,9 +225,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
     s->version = 2;
 
-    if (!avctx->extradata)
-        return AVERROR(ENOMEM);
-
+    desc   = av_pix_fmt_desc_get(avctx->pix_fmt);
     s->bps = desc->comp[0].depth;
     s->yuv = !(desc->flags & AV_PIX_FMT_FLAG_RGB) && desc->nb_components >= 2;
     s->chroma = desc->nb_components > 2;
