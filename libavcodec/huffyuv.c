@@ -55,12 +55,12 @@ int ff_huffyuv_generate_bits_table(uint32_t *dst, const uint8_t *len_table, int 
     return 0;
 }
 
-av_cold int ff_huffyuv_alloc_temp(HYuvContext *s)
+av_cold int ff_huffyuv_alloc_temp(HYuvContext *s, int width)
 {
     int i;
 
     for (i=0; i<3; i++) {
-        s->temp[i]= av_malloc(4*s->width + 16);
+        s->temp[i] = av_malloc(4 * width + 16);
         if (!s->temp[i])
             return AVERROR(ENOMEM);
         s->temp16[i] = (uint16_t*)s->temp[i];
@@ -75,11 +75,6 @@ av_cold void ff_huffyuv_common_init(AVCodecContext *avctx)
     s->flags = avctx->flags;
 
     ff_bswapdsp_init(&s->bdsp);
-
-    s->width = avctx->width;
-    s->height = avctx->height;
-
-    av_assert1(s->width > 0 && s->height > 0);
 }
 
 av_cold void ff_huffyuv_common_end(HYuvContext *s)

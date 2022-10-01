@@ -72,7 +72,6 @@ typedef struct HYuvContext {
     int yuv;
     int chroma_h_shift;
     int chroma_v_shift;
-    int width, height;
     int flags;
     int context;
     int picture_number;
@@ -96,7 +95,7 @@ typedef struct HYuvContext {
 
 void ff_huffyuv_common_init(AVCodecContext *s);
 void ff_huffyuv_common_end(HYuvContext *s);
-int  ff_huffyuv_alloc_temp(HYuvContext *s);
+int  ff_huffyuv_alloc_temp(HYuvContext *s, int width);
 int ff_huffyuv_generate_bits_table(uint32_t *dst, const uint8_t *len_table, int n);
 
 #endif /* AVCODEC_HUFFYUV_H */

@@ -236,7 +236,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_YUV420P:
     case AV_PIX_FMT_YUV422P:
-        if (s->width & 1) {
+        if (avctx->width & 1) {
             av_log(avctx, AV_LOG_ERROR, "Width must be even for this colorspace.\n");
             return AVERROR(EINVAL);
         }
@@ -310,7 +310,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
 
     if (avctx->codec->id == AV_CODEC_ID_HUFFYUV) {
-        if (s->interlaced != ( s->height > 288 ))
+        if (s->interlaced != ( avctx->height > 288 ))
             av_log(avctx, AV_LOG_INFO,
                    "using huffyuv 2.2.0 or newer interlacing flag\n");
     }
@@ -379,7 +379,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     if (s->context) {
         for (i = 0; i < 4; i++) {
-            int pels = s->width * s->height / (i ? 40 : 10);
+            int pels = avctx->width * avctx->height / (i ? 40 : 10);
             for (j = 0; j < s->vlc_n; j++) {
                 int d = FFMIN(j, s->vlc_n - j);
                 s->stats[i][j] = pels/(d*d + 1);
@@ -391,7 +391,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
                 s->stats[i][j]= 0;
     }
 
-    ret = ff_huffyuv_alloc_temp(s);
+    ret = ff_huffyuv_alloc_temp(s, avctx->width);
     if (ret < 0)
         return ret;
 
@@ -715,9 +715,9 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                         const AVFrame *pict, int *got_packet)
 {
     HYuvContext *s = avctx->priv_data;
-    const int width = s->width;
-    const int width2 = s->width>>1;
-    const int height = s->height;
+    const int width = avctx->width;
+    const int width2 = avctx->width >> 1;
+    const int height = avctx->height;
     const int fake_ystride = s->interlaced ? pict->linesize[0]*2  : pict->linesize[0];
     const int fake_ustride = s->interlaced ? pict->linesize[1]*2  : pict->linesize[1];
     const int fake_vstride = s->interlaced ? pict->linesize[2]*2  : pict->linesize[2];
@@ -848,7 +848,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         const uint8_t *data = p->data[0] + (height - 1) * p->linesize[0];
         const int stride = -p->linesize[0];
         const int fake_stride = -fake_ystride;
-        int y;
         int leftr, leftg, leftb, lefta;
 
         put_bits(&s->pb, 8, lefta = data[A]);
@@ -860,7 +859,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                                   &leftr, &leftg, &leftb, &lefta);
         encode_bgra_bitstream(s, width - 1, 4);
 
-        for (y = 1; y < s->height; y++) {
+        for (int y = 1; y < height; y++) {
             const uint8_t *dst = data + y*stride;
             if (s->predictor == PLANE && s->interlaced < y) {
                 s->llvidencdsp.diff_bytes(s->temp[1], dst, dst - fake_stride, width * 4);
@@ -876,7 +875,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         const uint8_t *data = p->data[0] + (height - 1) * p->linesize[0];
         const int stride = -p->linesize[0];
         const int fake_stride = -fake_ystride;
-        int y;
         int leftr, leftg, leftb;
 
         put_bits(&s->pb, 8, leftr = data[0]);
@@ -888,7 +886,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                                   &leftr, &leftg, &leftb);
         encode_bgra_bitstream(s, width-1, 3);
 
-        for (y = 1; y < s->height; y++) {
+        for (int y = 1; y < height; y++) {
             const uint8_t *dst = data + y * stride;
             if (s->predictor == PLANE && s->interlaced < y) {
                 s->llvidencdsp.diff_bytes(s->temp[1], dst, dst - fake_stride,

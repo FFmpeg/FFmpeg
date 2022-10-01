@@ -558,7 +558,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    if ((ret = ff_huffyuv_alloc_temp(s)) < 0)
+    if ((ret = ff_huffyuv_alloc_temp(s, avctx->width)) < 0)
         return ret;
 
     return 0;
@@ -873,8 +873,8 @@ static int decode_slice(AVCodecContext *avctx, AVFrame *p, int height,
 {
     HYuvContext *s = avctx->priv_data;
     int fake_ystride, fake_ustride, fake_vstride;
-    const int width  = s->width;
-    const int width2 = s->width >> 1;
+    const int width  = avctx->width;
+    const int width2 = avctx->width >> 1;
     int ret;
 
     if ((ret = init_get_bits8(&s->gb, s->bitstream_buffer + table_size, buf_size - table_size)) < 0)
@@ -1185,8 +1185,8 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     HYuvContext *s = avctx->priv_data;
-    const int width  = s->width;
-    const int height = s->height;
+    const int width  = avctx->width;
+    const int height = avctx->height;
     int slice, table_size = 0, ret, nb_slices;
     unsigned slices_info_offset;
     int slice_height;
