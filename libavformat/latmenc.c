@@ -25,6 +25,7 @@
 #include "libavcodec/codec_par.h"
 #include "libavcodec/packet.h"
 #include "libavcodec/mpeg4audio.h"
+#include "libavcodec/mpeg4audio_copy_pce.h"
 #include "libavutil/opt.h"
 #include "avformat.h"
 #include "internal.h"

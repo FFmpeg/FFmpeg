@@ -26,6 +26,7 @@
 #include "put_bits.h"
 #include "get_bits.h"
 #include "mpeg4audio.h"
+#include "mpeg4audio_copy_pce.h"
 
 typedef struct AACBSFContext {
     int first_frame_done;
