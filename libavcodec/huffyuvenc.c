@@ -391,9 +391,9 @@ static av_cold int encode_init(AVCodecContext *avctx)
                 s->stats[i][j]= 0;
     }
 
-    if (ff_huffyuv_alloc_temp(s)) {
-        return AVERROR(ENOMEM);
-    }
+    ret = ff_huffyuv_alloc_temp(s);
+    if (ret < 0)
+        return ret;
 
     s->picture_number=0;
 
