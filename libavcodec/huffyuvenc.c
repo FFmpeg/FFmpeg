@@ -333,20 +333,20 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    ((uint8_t*)avctx->extradata)[0] = s->predictor | (s->decorrelate << 6);
-    ((uint8_t*)avctx->extradata)[2] = s->interlaced ? 0x10 : 0x20;
+    avctx->extradata[0] = s->predictor | (s->decorrelate << 6);
+    avctx->extradata[2] = s->interlaced ? 0x10 : 0x20;
     if (s->context)
-        ((uint8_t*)avctx->extradata)[2] |= 0x40;
+        avctx->extradata[2] |= 0x40;
     if (s->version < 3) {
-        ((uint8_t*)avctx->extradata)[1] = s->bitstream_bpp;
-        ((uint8_t*)avctx->extradata)[3] = 0;
+        avctx->extradata[1] = s->bitstream_bpp;
+        avctx->extradata[3] = 0;
     } else {
-        ((uint8_t*)avctx->extradata)[1] = ((s->bps-1)<<4) | s->chroma_h_shift | (s->chroma_v_shift<<2);
+        avctx->extradata[1] = ((s->bps-1)<<4) | s->chroma_h_shift | (s->chroma_v_shift<<2);
         if (s->chroma)
-            ((uint8_t*)avctx->extradata)[2] |= s->yuv ? 1 : 2;
+            avctx->extradata[2] |= s->yuv ? 1 : 2;
         if (s->alpha)
-            ((uint8_t*)avctx->extradata)[2] |= 4;
-        ((uint8_t*)avctx->extradata)[3] = 1;
+            avctx->extradata[2] |= 4;
+        avctx->extradata[3] = 1;
     }
     s->avctx->extradata_size = 4;
 
