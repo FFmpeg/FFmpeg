@@ -21,7 +21,7 @@
 
 #include <stdint.h>
 
-#include "avcodec.h"
+#include "libavutil/pixfmt.h"
 
 typedef struct HuffYUVEncDSPContext {
     void (*diff_int16)(uint16_t *dst /* align 16 */,
@@ -34,7 +34,7 @@ typedef struct HuffYUVEncDSPContext {
                                        int w, int *left, int *left_top);
 } HuffYUVEncDSPContext;
 
-void ff_huffyuvencdsp_init(HuffYUVEncDSPContext *c, AVCodecContext *avctx);
-void ff_huffyuvencdsp_init_x86(HuffYUVEncDSPContext *c, AVCodecContext *avctx);
+void ff_huffyuvencdsp_init(HuffYUVEncDSPContext *c, enum AVPixelFormat pix_fmt);
+void ff_huffyuvencdsp_init_x86(HuffYUVEncDSPContext *c, enum AVPixelFormat pix_fmt);
 
 #endif /* AVCODEC_HUFFYUVENCDSP_H */
