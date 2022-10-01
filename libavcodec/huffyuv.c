@@ -39,19 +39,23 @@
 
 int ff_huffyuv_generate_bits_table(uint32_t *dst, const uint8_t *len_table, int n)
 {
-    int len, index;
-    uint32_t bits = 0;
+    int lens[33] = { 0 };
+    uint32_t codes[33];
 
-    for (len = 32; len > 0; len--) {
-        for (index = 0; index < n; index++) {
-            if (len_table[index] == len)
-                dst[index] = bits++;
-        }
-        if (bits & 1) {
+    for (int i = 0; i < n; i++)
+        lens[len_table[i]]++;
+
+    codes[32] = 0;
+    for (int i = FF_ARRAY_ELEMS(lens) - 1; i > 0; i--) {
+        if ((lens[i] + codes[i]) & 1) {
             av_log(NULL, AV_LOG_ERROR, "Error generating huffman table\n");
             return -1;
         }
-        bits >>= 1;
+        codes[i - 1] = (lens[i] + codes[i]) >> 1;
+    }
+    for (int i = 0; i < n; i++) {
+        if (len_table[i])
+            dst[i] = codes[len_table[i]]++;
     }
     return 0;
 }
