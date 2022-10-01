@@ -343,9 +343,6 @@ static int sbc_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     SBCDecContext *sbc = avctx->priv_data;
     int ret, frame_length;
 
-    if (!sbc)
-        return AVERROR(EIO);
-
     frame_length = sbc_unpack_frame(avpkt->data, &sbc->frame, avpkt->size);
     if (frame_length <= 0)
         return frame_length;
