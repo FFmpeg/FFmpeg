@@ -31,6 +31,7 @@
 #include "config_components.h"
 
 #include "avcodec.h"
+#include "bswapdsp.h"
 #include "codec_internal.h"
 #include "encode.h"
 #include "huffyuv.h"
@@ -41,7 +42,39 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 
-static inline void diff_bytes(HYuvContext *s, uint8_t *dst,
+typedef struct HYuvEncContext {
+    AVClass *class;
+    AVCodecContext *avctx;
+    PutBitContext pb;
+    Predictor predictor;
+    int interlaced;
+    int decorrelate;
+    int bitstream_bpp;
+    int version;
+    int bps;
+    int n;                                  // 1<<bps
+    int vlc_n;                              // number of vlc codes (FFMIN(1<<bps, MAX_VLC_N))
+    int alpha;
+    int chroma;
+    int yuv;
+    int chroma_h_shift;
+    int chroma_v_shift;
+    int flags;
+    int context;
+    int picture_number;
+
+    uint8_t *temp[3];
+    uint16_t *temp16[3];                    ///< identical to temp but 16bit type
+    uint64_t stats[4][MAX_VLC_N];
+    uint8_t len[4][MAX_VLC_N];
+    uint32_t bits[4][MAX_VLC_N];
+    BswapDSPContext bdsp;
+    HuffYUVEncDSPContext hencdsp;
+    LLVidEncDSPContext llvidencdsp;
+    int non_determ; // non-deterministic, multi-threaded encoder allowed
+} HYuvEncContext;
+
+static inline void diff_bytes(HYuvEncContext *s, uint8_t *dst,
                               const uint8_t *src0, const uint8_t *src1, int w)
 {
     if (s->bps <= 8) {
@@ -51,7 +84,7 @@ static inline void diff_bytes(HYuvContext *s, uint8_t *dst,
     }
 }
 
-static inline int sub_left_prediction(HYuvContext *s, uint8_t *dst,
+static inline int sub_left_prediction(HYuvEncContext *s, uint8_t *dst,
                                       const uint8_t *src, int w, int left)
 {
     int i;
@@ -82,7 +115,7 @@ static inline int sub_left_prediction(HYuvContext *s, uint8_t *dst,
     }
 }
 
-static inline void sub_left_prediction_bgr32(HYuvContext *s, uint8_t *dst,
+static inline void sub_left_prediction_bgr32(HYuvEncContext *s, uint8_t *dst,
                                              const uint8_t *src, int w,
                                              int *red, int *green, int *blue,
                                              int *alpha)
@@ -118,7 +151,7 @@ static inline void sub_left_prediction_bgr32(HYuvContext *s, uint8_t *dst,
     *alpha = src[(w - 1) * 4 + A];
 }
 
-static inline void sub_left_prediction_rgb24(HYuvContext *s, uint8_t *dst,
+static inline void sub_left_prediction_rgb24(HYuvEncContext *s, uint8_t *dst,
                                              const uint8_t *src, int w,
                                              int *red, int *green, int *blue)
 {
@@ -146,7 +179,9 @@ static inline void sub_left_prediction_rgb24(HYuvContext *s, uint8_t *dst,
     *blue  = src[(w - 1) * 3 + 2];
 }
 
-static void sub_median_prediction(HYuvContext *s, uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int w, int *left, int *left_top)
+static void sub_median_prediction(HYuvEncContext *s, uint8_t *dst,
+                                  const uint8_t *src1, const uint8_t *src2,
+                                  int w, int *left, int *left_top)
 {
     if (s->bps <= 8) {
         s->llvidencdsp.sub_median_pred(dst, src1, src2, w , left, left_top);
@@ -155,7 +190,7 @@ static void sub_median_prediction(HYuvContext *s, uint8_t *dst, const uint8_t *s
     }
 }
 
-static int store_table(HYuvContext *s, const uint8_t *len, uint8_t *buf)
+static int store_table(HYuvEncContext *s, const uint8_t *len, uint8_t *buf)
 {
     int i;
     int index = 0;
@@ -180,7 +215,7 @@ static int store_table(HYuvContext *s, const uint8_t *len, uint8_t *buf)
     return index;
 }
 
-static int store_huffman_tables(HYuvContext *s, uint8_t *buf)
+static int store_huffman_tables(HYuvEncContext *s, uint8_t *buf)
 {
     int i, ret;
     int size = 0;
@@ -204,7 +239,7 @@ static int store_huffman_tables(HYuvContext *s, uint8_t *buf)
 
 static av_cold int encode_init(AVCodecContext *avctx)
 {
-    HYuvContext *s = avctx->priv_data;
+    HYuvEncContext *s = avctx->priv_data;
     int i, j;
     int ret;
     const AVPixFmtDescriptor *desc;
@@ -393,7 +428,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
                 s->stats[i][j]= 0;
     }
 
-    ret = ff_huffyuv_alloc_temp(s, avctx->width);
+    ret = ff_huffyuv_alloc_temp(s->temp, s->temp16, avctx->width);
     if (ret < 0)
         return ret;
 
@@ -401,7 +436,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     return 0;
 }
-static int encode_422_bitstream(HYuvContext *s, int offset, int count)
+static int encode_422_bitstream(HYuvEncContext *s, int offset, int count)
 {
     int i;
     const uint8_t *y = s->temp[0] + offset;
@@ -456,7 +491,7 @@ static int encode_422_bitstream(HYuvContext *s, int offset, int count)
     return 0;
 }
 
-static int encode_plane_bitstream(HYuvContext *s, int width, int plane)
+static int encode_plane_bitstream(HYuvEncContext *s, int width, int plane)
 {
     int i, count = width/2;
 
@@ -618,7 +653,7 @@ static int encode_plane_bitstream(HYuvContext *s, int width, int plane)
     return 0;
 }
 
-static int encode_gray_bitstream(HYuvContext *s, int count)
+static int encode_gray_bitstream(HYuvEncContext *s, int count)
 {
     int i;
 
@@ -663,7 +698,7 @@ static int encode_gray_bitstream(HYuvContext *s, int count)
     return 0;
 }
 
-static inline int encode_bgra_bitstream(HYuvContext *s, int count, int planes)
+static inline int encode_bgra_bitstream(HYuvEncContext *s, int count, int planes)
 {
     int i;
 
@@ -716,7 +751,7 @@ static inline int encode_bgra_bitstream(HYuvContext *s, int count, int planes)
 static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                         const AVFrame *pict, int *got_packet)
 {
-    HYuvContext *s = avctx->priv_data;
+    HYuvEncContext *s = avctx->priv_data;
     const int width = avctx->width;
     const int width2 = avctx->width >> 1;
     const int height = avctx->height;
@@ -996,16 +1031,16 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 static av_cold int encode_end(AVCodecContext *avctx)
 {
-    HYuvContext *s = avctx->priv_data;
+    HYuvEncContext *s = avctx->priv_data;
 
-    ff_huffyuv_common_end(s);
+    ff_huffyuv_common_end(s->temp, s->temp16);
 
     av_freep(&avctx->stats_out);
 
     return 0;
 }
 
-#define OFFSET(x) offsetof(HYuvContext, x)
+#define OFFSET(x) offsetof(HYuvEncContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 
 #define COMMON_OPTIONS \
@@ -1048,7 +1083,7 @@ const FFCodec ff_huffyuv_encoder = {
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_HUFFYUV,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
-    .priv_data_size = sizeof(HYuvContext),
+    .priv_data_size = sizeof(HYuvEncContext),
     .init           = encode_init,
     FF_CODEC_ENCODE_CB(encode_frame),
     .close          = encode_end,
@@ -1067,7 +1102,7 @@ const FFCodec ff_ffvhuff_encoder = {
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_FFVHUFF,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
-    .priv_data_size = sizeof(HYuvContext),
+    .priv_data_size = sizeof(HYuvEncContext),
     .init           = encode_init,
     FF_CODEC_ENCODE_CB(encode_frame),
     .close          = encode_end,

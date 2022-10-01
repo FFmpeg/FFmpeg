@@ -21,6 +21,7 @@
 #include "config.h"
 #include "libavutil/attributes.h"
 #include "mathops.h"
+#include "huffyuv.h"
 #include "huffyuvdsp.h"
 
 // 0x00010001 or 0x0001000100010001 or whatever, depending on the cpu's native arithmetic size

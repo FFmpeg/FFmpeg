@@ -35,6 +35,7 @@
 #include "config_components.h"
 
 #include "avcodec.h"
+#include "bswapdsp.h"
 #include "codec_internal.h"
 #include "get_bits.h"
 #include "huffyuv.h"
@@ -43,6 +44,43 @@
 #include "thread.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
+
+#define VLC_BITS 12
+
+typedef struct HYuvDecContext {
+    GetBitContext gb;
+    Predictor predictor;
+    int interlaced;
+    int decorrelate;
+    int bitstream_bpp;
+    int version;
+    int yuy2;                               //use yuy2 instead of 422P
+    int bgr32;                              //use bgr32 instead of bgr24
+    int bps;
+    int n;                                  // 1<<bps
+    int vlc_n;                              // number of vlc codes (FFMIN(1<<bps, MAX_VLC_N))
+    int alpha;
+    int chroma;
+    int yuv;
+    int chroma_h_shift;
+    int chroma_v_shift;
+    int flags;
+    int context;
+    int last_slice_end;
+
+    uint8_t *temp[3];
+    uint16_t *temp16[3];                    ///< identical to temp but 16bit type
+    uint8_t len[4][MAX_VLC_N];
+    uint32_t bits[4][MAX_VLC_N];
+    uint32_t pix_bgr_map[1<<VLC_BITS];
+    VLC vlc[8];                             //Y,U,V,A,YY,YU,YV,AA
+    uint8_t *bitstream_buffer;
+    unsigned int bitstream_buffer_size;
+    BswapDSPContext bdsp;
+    HuffYUVDSPContext hdsp;
+    LLVidDSPContext llviddsp;
+} HYuvDecContext;
+
 
 #define classic_shift_luma_table_size 42
 static const unsigned char classic_shift_luma[classic_shift_luma_table_size + AV_INPUT_BUFFER_PADDING_SIZE] = {
@@ -118,7 +156,7 @@ static int read_len_table(uint8_t *dst, GetBitContext *gb, int n)
     return 0;
 }
 
-static int generate_joint_tables(HYuvContext *s)
+static int generate_joint_tables(HYuvDecContext *s)
 {
     int ret;
     uint16_t *symbols = av_mallocz(5 << VLC_BITS);
@@ -208,7 +246,7 @@ out:
     return ret;
 }
 
-static int read_huffman_tables(HYuvContext *s, const uint8_t *src, int length)
+static int read_huffman_tables(HYuvDecContext *s, const uint8_t *src, int length)
 {
     GetBitContext gb;
     int i, ret;
@@ -237,7 +275,7 @@ static int read_huffman_tables(HYuvContext *s, const uint8_t *src, int length)
     return (get_bits_count(&gb) + 7) / 8;
 }
 
-static int read_old_huffman_tables(HYuvContext *s)
+static int read_old_huffman_tables(HYuvDecContext *s)
 {
     GetBitContext gb;
     int i, ret;
@@ -279,10 +317,10 @@ static int read_old_huffman_tables(HYuvContext *s)
 
 static av_cold int decode_end(AVCodecContext *avctx)
 {
-    HYuvContext *s = avctx->priv_data;
+    HYuvDecContext *s = avctx->priv_data;
     int i;
 
-    ff_huffyuv_common_end(s);
+    ff_huffyuv_common_end(s->temp, s->temp16);
     av_freep(&s->bitstream_buffer);
 
     for (i = 0; i < 8; i++)
@@ -293,7 +331,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 static av_cold int decode_init(AVCodecContext *avctx)
 {
-    HYuvContext *s = avctx->priv_data;
+    HYuvDecContext *s = avctx->priv_data;
     int ret;
 
     ret = av_image_check_size(avctx->width, avctx->height, 0, avctx);
@@ -559,7 +597,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    if ((ret = ff_huffyuv_alloc_temp(s, avctx->width)) < 0)
+    if ((ret = ff_huffyuv_alloc_temp(s->temp, s->temp16, avctx->width)) < 0)
         return ret;
 
     return 0;
@@ -618,7 +656,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     GET_VLC_DUAL(dst0, dst1, re, &s->gb, s->vlc[4+plane1].table,        \
                  s->vlc[0].table, s->vlc[plane1].table, VLC_BITS, 3, OP8bits)
 
-static void decode_422_bitstream(HYuvContext *s, int count)
+static void decode_422_bitstream(HYuvDecContext *s, int count)
 {
     int i, icount;
     OPEN_READER(re, &s->gb);
@@ -662,7 +700,7 @@ static void decode_422_bitstream(HYuvContext *s, int count)
     dst1 = get_vlc2(&s->gb, s->vlc[plane].table, VLC_BITS, 3)<<2;\
     dst1 += get_bits(&s->gb, 2);\
 }
-static void decode_plane_bitstream(HYuvContext *s, int width, int plane)
+static void decode_plane_bitstream(HYuvDecContext *s, int width, int plane)
 {
     int i, count = width/2;
 
@@ -723,7 +761,7 @@ static void decode_plane_bitstream(HYuvContext *s, int width, int plane)
     }
 }
 
-static void decode_gray_bitstream(HYuvContext *s, int count)
+static void decode_gray_bitstream(HYuvDecContext *s, int count)
 {
     int i;
     OPEN_READER(re, &s->gb);
@@ -741,7 +779,7 @@ static void decode_gray_bitstream(HYuvContext *s, int count)
     CLOSE_READER(re, &s->gb);
 }
 
-static av_always_inline void decode_bgr_1(HYuvContext *s, int count,
+static av_always_inline void decode_bgr_1(HYuvDecContext *s, int count,
                                           int decorrelate, int alpha)
 {
     int i;
@@ -799,7 +837,7 @@ static av_always_inline void decode_bgr_1(HYuvContext *s, int count,
     CLOSE_READER(re, &s->gb);
 }
 
-static void decode_bgr_bitstream(HYuvContext *s, int count)
+static void decode_bgr_bitstream(HYuvDecContext *s, int count)
 {
     if (s->decorrelate) {
         if (s->bitstream_bpp == 24)
@@ -814,7 +852,7 @@ static void decode_bgr_bitstream(HYuvContext *s, int count)
     }
 }
 
-static void draw_slice(HYuvContext *s, AVCodecContext *avctx, AVFrame *frame, int y)
+static void draw_slice(HYuvDecContext *s, AVCodecContext *avctx, AVFrame *frame, int y)
 {
     int h, cy, i;
     int offset[AV_NUM_DATA_POINTERS];
@@ -842,7 +880,7 @@ static void draw_slice(HYuvContext *s, AVCodecContext *avctx, AVFrame *frame, in
     s->last_slice_end = y + h;
 }
 
-static int left_prediction(HYuvContext *s, uint8_t *dst, const uint8_t *src, int w, int acc)
+static int left_prediction(HYuvDecContext *s, uint8_t *dst, const uint8_t *src, int w, int acc)
 {
     if (s->bps <= 8) {
         return s->llviddsp.add_left_pred(dst, src, w, acc);
@@ -851,7 +889,7 @@ static int left_prediction(HYuvContext *s, uint8_t *dst, const uint8_t *src, int
     }
 }
 
-static void add_bytes(HYuvContext *s, uint8_t *dst, uint8_t *src, int w)
+static void add_bytes(HYuvDecContext *s, uint8_t *dst, uint8_t *src, int w)
 {
     if (s->bps <= 8) {
         s->llviddsp.add_bytes(dst, src, w);
@@ -860,7 +898,7 @@ static void add_bytes(HYuvContext *s, uint8_t *dst, uint8_t *src, int w)
     }
 }
 
-static void add_median_prediction(HYuvContext *s, uint8_t *dst, const uint8_t *src, const uint8_t *diff, int w, int *left, int *left_top)
+static void add_median_prediction(HYuvDecContext *s, uint8_t *dst, const uint8_t *src, const uint8_t *diff, int w, int *left, int *left_top)
 {
     if (s->bps <= 8) {
         s->llviddsp.add_median_pred(dst, src, diff, w, left, left_top);
@@ -872,7 +910,7 @@ static void add_median_prediction(HYuvContext *s, uint8_t *dst, const uint8_t *s
 static int decode_slice(AVCodecContext *avctx, AVFrame *p, int height,
                         int buf_size, int y_offset, int table_size)
 {
-    HYuvContext *s = avctx->priv_data;
+    HYuvDecContext *s = avctx->priv_data;
     int fake_ystride, fake_ustride, fake_vstride;
     const int width  = avctx->width;
     const int width2 = avctx->width >> 1;
@@ -1185,7 +1223,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
 {
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
-    HYuvContext *s = avctx->priv_data;
+    HYuvDecContext *s = avctx->priv_data;
     const int width  = avctx->width;
     const int height = avctx->height;
     int slice, table_size = 0, ret, nb_slices;
@@ -1268,7 +1306,7 @@ const FFCodec ff_huffyuv_decoder = {
     CODEC_LONG_NAME("Huffyuv / HuffYUV"),
     .p.type           = AVMEDIA_TYPE_VIDEO,
     .p.id             = AV_CODEC_ID_HUFFYUV,
-    .priv_data_size   = sizeof(HYuvContext),
+    .priv_data_size   = sizeof(HYuvDecContext),
     .init             = decode_init,
     .close            = decode_end,
     FF_CODEC_DECODE_CB(decode_frame),
@@ -1283,7 +1321,7 @@ const FFCodec ff_ffvhuff_decoder = {
     CODEC_LONG_NAME("Huffyuv FFmpeg variant"),
     .p.type           = AVMEDIA_TYPE_VIDEO,
     .p.id             = AV_CODEC_ID_FFVHUFF,
-    .priv_data_size   = sizeof(HYuvContext),
+    .priv_data_size   = sizeof(HYuvDecContext),
     .init             = decode_init,
     .close            = decode_end,
     FF_CODEC_DECODE_CB(decode_frame),
@@ -1299,7 +1337,7 @@ const FFCodec ff_hymt_decoder = {
     CODEC_LONG_NAME("HuffYUV MT"),
     .p.type           = AVMEDIA_TYPE_VIDEO,
     .p.id             = AV_CODEC_ID_HYMT,
-    .priv_data_size   = sizeof(HYuvContext),
+    .priv_data_size   = sizeof(HYuvDecContext),
     .init             = decode_init,
     .close            = decode_end,
     FF_CODEC_DECODE_CB(decode_frame),

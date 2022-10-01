@@ -30,10 +30,11 @@
 
 #include <stdint.h>
 
+#include "libavutil/attributes.h"
+#include "libavutil/error.h"
+#include "libavutil/log.h"
 #include "libavutil/mem.h"
 
-#include "avcodec.h"
-#include "bswapdsp.h"
 #include "huffyuv.h"
 
 int ff_huffyuv_generate_bits_table(uint32_t *dst, const uint8_t *len_table, int n)
@@ -55,25 +56,25 @@ int ff_huffyuv_generate_bits_table(uint32_t *dst, const uint8_t *len_table, int 
     return 0;
 }
 
-av_cold int ff_huffyuv_alloc_temp(HYuvContext *s, int width)
+av_cold int ff_huffyuv_alloc_temp(uint8_t *temp[3], uint16_t *temp16[3], int width)
 {
     int i;
 
     for (i=0; i<3; i++) {
-        s->temp[i] = av_malloc(4 * width + 16);
-        if (!s->temp[i])
+        temp[i] = av_malloc(4 * width + 16);
+        if (!temp[i])
             return AVERROR(ENOMEM);
-        s->temp16[i] = (uint16_t*)s->temp[i];
+        temp16[i] = (uint16_t*)temp[i];
     }
     return 0;
 }
 
-av_cold void ff_huffyuv_common_end(HYuvContext *s)
+av_cold void ff_huffyuv_common_end(uint8_t *temp[3], uint16_t *temp16[3])
 {
     int i;
 
     for(i = 0; i < 3; i++) {
-        av_freep(&s->temp[i]);
-        s->temp16[i] = NULL;
+        av_freep(&temp[i]);
+        temp16[i] = NULL;
     }
 }
