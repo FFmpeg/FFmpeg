@@ -409,42 +409,38 @@ static int cmp_matches(TXCodeletMatch *a, TXCodeletMatch *b)
 /* We want all factors to completely cover the length */
 static inline int check_cd_factors(const FFTXCodelet *cd, int len)
 {
-    int all_flag = 0;
+    int matches = 0, any_flag = 0;
 
-    for (int i = 0; i < TX_MAX_SUB; i++) {
+    for (int i = 0; i < TX_MAX_FACTORS; i++) {
         int factor = cd->factors[i];
 
-        /* Conditions satisfied */
-        if (len == 1)
-            return 1;
-
-        /* No more factors */
-        if (!factor) {
-            break;
-        } else if (factor == TX_FACTOR_ANY) {
-            all_flag = 1;
+        if (factor == TX_FACTOR_ANY) {
+            any_flag = 1;
+            matches++;
             continue;
-        }
-
-        if (factor == 2) { /* Fast path */
+        } else if (len <= 1 || !factor) {
+            break;
+        } else if (factor == 2) { /* Fast path */
             int bits_2 = ff_ctz(len);
             if (!bits_2)
-                return 0; /* Factor not supported */
+                continue; /* Factor not supported */
 
             len >>= bits_2;
+            matches++;
         } else {
             int res = len % factor;
             if (res)
-                return 0; /* Factor not supported */
+                continue; /* Factor not supported */
 
             while (!res) {
                 len /= factor;
                 res = len % factor;
             }
+            matches++;
         }
     }
 
-    return all_flag || (len == 1);
+    return (cd->nb_factors <= matches) && (any_flag || len == 1);
 }
 
 av_cold int ff_tx_init_subtx(AVTXContext *s, enum AVTXType type,

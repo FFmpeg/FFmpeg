@@ -71,7 +71,8 @@ typedef void TXComplex;
         .function   = TX_FN_NAME(fn, suffix),                                  \
         .type       = TX_TYPE(tx_type),                                        \
         .flags      = FF_TX_ALIGNED | FF_TX_OUT_OF_PLACE | cd_flags,           \
-        .factors    = { f1, f2 },                                              \
+        .factors    = { (f1), (f2) },                                          \
+        .nb_factors = !!(f1) + !!(f2),                                         \
         .min_len    = len_min,                                                 \
         .max_len    = len_max,                                                 \
         .init       = init_fn,                                                 \
@@ -163,6 +164,9 @@ typedef struct FFTXCodeletOptions {
                               invert the lookup direction for the map generated */
 } FFTXCodeletOptions;
 
+/* Maximum number of factors a codelet may have. Arbitrary. */
+#define TX_MAX_FACTORS 16
+
 /* Maximum amount of subtransform functions, subtransforms and factors. Arbitrary. */
 #define TX_MAX_SUB 4
 
@@ -175,12 +179,15 @@ typedef struct FFTXCodelet {
     uint64_t flags;               /* A combination of AVTXFlags and codelet
                                    * flags that describe its properties. */
 
-    int factors[TX_MAX_SUB];      /* Length factors */
+    int factors[TX_MAX_FACTORS];  /* Length factors. MUST be coprime. */
 #define TX_FACTOR_ANY -1          /* When used alone, signals that the codelet
                                    * supports all factors. Otherwise, if other
                                    * factors are present, it signals that whatever
                                    * remains will be supported, as long as the
                                    * other factors are a component of the length */
+
+    int nb_factors;               /* Minimum number of factors that have to
+                                   * be a modulo of the length. Must not be 0. */
 
     int min_len;                  /* Minimum length of transform, must be >= 1 */
     int max_len;                  /* Maximum length of transform */
