@@ -225,24 +225,35 @@ int ff_tx_gen_split_radix_parity_revtab(AVTXContext *s, int len, int inv,
     return 0;
 }
 
-static void reset_ctx(AVTXContext *s)
+static void reset_ctx(AVTXContext *s, int free_sub)
 {
     if (!s)
         return;
 
     if (s->sub)
-        for (int i = 0; i < s->nb_sub; i++)
-            reset_ctx(&s->sub[i]);
+        for (int i = 0; i < TX_MAX_SUB; i++)
+            reset_ctx(&s->sub[i], free_sub + 1);
 
-    if (s->cd_self->uninit)
+    if (s->cd_self && s->cd_self->uninit)
         s->cd_self->uninit(s);
 
-    av_freep(&s->sub);
+    if (free_sub)
+        av_freep(&s->sub);
+
     av_freep(&s->map);
     av_freep(&s->exp);
     av_freep(&s->tmp);
 
-    memset(s, 0, sizeof(*s));
+    /* Nothing else needs to be reset, it gets overwritten if another
+     * ff_tx_init_subtx() call is made. */
+    s->nb_sub = 0;
+    s->opaque = NULL;
+    memset(s->fn, 0, sizeof(*s->fn));
+}
+
+void ff_tx_clear_ctx(AVTXContext *s)
+{
+    reset_ctx(s, 0);
 }
 
 av_cold void av_tx_uninit(AVTXContext **ctx)
@@ -250,7 +261,7 @@ av_cold void av_tx_uninit(AVTXContext **ctx)
     if (!(*ctx))
         return;
 
-    reset_ctx(*ctx);
+    reset_ctx(*ctx, 1);
     av_freep(ctx);
 }
 
@@ -635,7 +646,7 @@ av_cold int ff_tx_init_subtx(AVTXContext *s, enum AVTXType type,
         s->fn[s->nb_sub] = NULL;
         s->cd[s->nb_sub] = NULL;
 
-        reset_ctx(sctx);
+        reset_ctx(sctx, 0);
         if (ret == AVERROR(ENOMEM))
             break;
     }

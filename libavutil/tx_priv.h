@@ -240,6 +240,9 @@ int ff_tx_init_subtx(AVTXContext *s, enum AVTXType type,
                      uint64_t flags, FFTXCodeletOptions *opts,
                      int len, int inv, const void *scale);
 
+/* Clear the context by freeing all tables, maps and subtransforms. */
+void ff_tx_clear_ctx(AVTXContext *s);
+
 /*
  * Generates the PFA permutation table into AVTXContext->pfatab. The end table
  * is appended to the start table.
