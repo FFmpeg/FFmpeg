@@ -392,7 +392,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
 
     if (ff_huffyuv_alloc_temp(s)) {
-        ff_huffyuv_common_end(s);
         return AVERROR(ENOMEM);
     }
 
