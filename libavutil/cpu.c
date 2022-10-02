@@ -188,6 +188,7 @@ int av_parse_cpu_caps(unsigned *flags, const char *s)
         { "rvv-f32",  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_RVV_F32 },     .unit = "flags" },
         { "rvv-i64",  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_RVV_I64 },     .unit = "flags" },
         { "rvv",      NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_RVV_F64 },     .unit = "flags" },
+        { "rvb-basic",NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_RVB_BASIC },   .unit = "flags" },
 #endif
         { NULL },
     };

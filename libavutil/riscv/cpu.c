@@ -40,6 +40,8 @@ int ff_get_cpu_flags_riscv(void)
         ret |= AV_CPU_FLAG_RVF;
     if (hwcap & HWCAP_RV('D'))
         ret |= AV_CPU_FLAG_RVD;
+    if (hwcap & HWCAP_RV('B'))
+        ret |= AV_CPU_FLAG_RVB_BASIC;
 
     /* The V extension implies all Zve* functional subsets */
     if (hwcap & HWCAP_RV('V'))
@@ -55,6 +57,10 @@ int ff_get_cpu_flags_riscv(void)
 #if (__riscv_flen >= 64)
     ret |= AV_CPU_FLAG_RVD;
 #endif
+#endif
+
+#ifdef __riscv_zbb
+    ret |= AV_CPU_FLAG_RVB_BASIC;
 #endif
 
     /* If RV-V is enabled statically at compile-time, check the details. */

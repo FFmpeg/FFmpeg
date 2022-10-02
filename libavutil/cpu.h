@@ -86,6 +86,7 @@
 #define AV_CPU_FLAG_RVV_F32      (1 << 4) ///< Vectors of float's */
 #define AV_CPU_FLAG_RVV_I64      (1 << 5) ///< Vectors of 64-bit int's */
 #define AV_CPU_FLAG_RVV_F64      (1 << 6) ///< Vectors of double's
+#define AV_CPU_FLAG_RVB_BASIC    (1 << 7) ///< Basic bit-manipulations
 
 /**
  * Return the flags which specify extensions supported by the CPU.
