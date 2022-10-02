@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2002-2014 Michael Niedermayer <michaelni@gmx.at>
  *
- * see http://www.pcisys.net/~melanson/codecs/huffyuv.txt for a description of
+ * see https://multimedia.cx/huffyuv.txt for a description of
  * the algorithm used
  *
  * This file is part of FFmpeg.
