@@ -647,17 +647,17 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     s->time_increment_bits = av_log2(avctx->time_base.den - 1) + 1;
 
     switch (avctx->codec->id) {
+#if CONFIG_MPEG1VIDEO_ENCODER || CONFIG_MPEG2VIDEO_ENCODER
+    case AV_CODEC_ID_MPEG2VIDEO:
+        s->rtp_mode   = 1;
+        /* fallthrough */
     case AV_CODEC_ID_MPEG1VIDEO:
         s->out_format = FMT_MPEG1;
         s->low_delay  = !!(avctx->flags & AV_CODEC_FLAG_LOW_DELAY);
         avctx->delay  = s->low_delay ? 0 : (s->max_b_frames + 1);
+        ff_mpeg1_encode_init(s);
         break;
-    case AV_CODEC_ID_MPEG2VIDEO:
-        s->out_format = FMT_MPEG1;
-        s->low_delay  = !!(avctx->flags & AV_CODEC_FLAG_LOW_DELAY);
-        avctx->delay  = s->low_delay ? 0 : (s->max_b_frames + 1);
-        s->rtp_mode   = 1;
-        break;
+#endif
 #if CONFIG_MJPEG_ENCODER || CONFIG_AMV_ENCODER
     case AV_CODEC_ID_MJPEG:
     case AV_CODEC_ID_AMV:
@@ -895,10 +895,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     ff_set_cmp(&s->mecc, s->mecc.ildct_cmp,      avctx->ildct_cmp);
     ff_set_cmp(&s->mecc, s->mecc.frame_skip_cmp, s->frame_skip_cmp);
 
-    if ((CONFIG_MPEG1VIDEO_ENCODER || CONFIG_MPEG2VIDEO_ENCODER)
-               && s->out_format == FMT_MPEG1) {
-        ff_mpeg1_encode_init(s);
-    } else if (CONFIG_H263_ENCODER && s->out_format == FMT_H263) {
+    if (CONFIG_H263_ENCODER && s->out_format == FMT_H263) {
         ff_h263_encode_init(s);
         if (CONFIG_MSMPEG4ENC && s->msmpeg4_version)
             ff_msmpeg4_encode_init(s);
