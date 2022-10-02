@@ -279,15 +279,15 @@ void ff_msmpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
 
 void ff_msmpeg4_encode_ext_header(MpegEncContext * s)
 {
-        unsigned fps = s->avctx->time_base.den / s->avctx->time_base.num / FFMAX(s->avctx->ticks_per_frame, 1);
-        put_bits(&s->pb, 5, FFMIN(fps, 31)); //yes 29.97 -> 29
+    unsigned fps = s->avctx->time_base.den / s->avctx->time_base.num / FFMAX(s->avctx->ticks_per_frame, 1);
+    put_bits(&s->pb, 5, FFMIN(fps, 31)); //yes 29.97 -> 29
 
-        put_bits(&s->pb, 11, FFMIN(s->bit_rate/1024, 2047));
+    put_bits(&s->pb, 11, FFMIN(s->bit_rate / 1024, 2047));
 
-        if(s->msmpeg4_version>=3)
-            put_bits(&s->pb, 1, s->flipflop_rounding);
-        else
-            av_assert0(s->flipflop_rounding==0);
+    if (s->msmpeg4_version >= 3)
+        put_bits(&s->pb, 1, s->flipflop_rounding);
+    else
+        av_assert0(!s->flipflop_rounding);
 }
 
 void ff_msmpeg4_encode_motion(MpegEncContext * s,
