@@ -3753,9 +3753,6 @@ static int encode_picture(MpegEncContext *s, int picture_number)
                               s->chroma_intra_matrix, s->intra_quant_bias, 8, 8, 1);
             s->qscale = 8;
         }
-    } else if (s->out_format == FMT_SPEEDHQ) {
-        s->y_dc_scale_table=
-        s->c_dc_scale_table= ff_mpeg2_dc_scale_table[3];
     }
 
     //FIXME var duplication

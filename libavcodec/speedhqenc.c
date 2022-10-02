@@ -36,6 +36,7 @@
 #include "mpeg12data.h"
 #include "mpeg12vlc.h"
 #include "mpegvideo.h"
+#include "mpegvideodata.h"
 #include "mpegvideoenc.h"
 #include "speedhqenc.h"
 
@@ -110,6 +111,9 @@ av_cold int ff_speedhq_encode_init(MpegEncContext *s)
     s->intra_ac_vlc_last_length =
     s->intra_chroma_ac_vlc_length      =
     s->intra_chroma_ac_vlc_last_length = uni_speedhq_ac_vlc_len;
+
+    s->y_dc_scale_table =
+    s->c_dc_scale_table = ff_mpeg2_dc_scale_table[3];
 
     switch (s->avctx->pix_fmt) {
     case AV_PIX_FMT_YUV420P:
