@@ -689,6 +689,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
                     s->width, s->height);
             return AVERROR(EINVAL);
         }
+        ff_h261_encode_init(s);
         s->out_format = FMT_H261;
         avctx->delay  = 0;
         s->low_delay  = 1;
@@ -899,9 +900,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     ff_set_cmp(&s->mecc, s->mecc.ildct_cmp,      avctx->ildct_cmp);
     ff_set_cmp(&s->mecc, s->mecc.frame_skip_cmp, s->frame_skip_cmp);
 
-    if (CONFIG_H261_ENCODER && s->out_format == FMT_H261) {
-        ff_h261_encode_init(s);
-    } else if ((CONFIG_MPEG1VIDEO_ENCODER || CONFIG_MPEG2VIDEO_ENCODER)
+    if ((CONFIG_MPEG1VIDEO_ENCODER || CONFIG_MPEG2VIDEO_ENCODER)
                && s->out_format == FMT_MPEG1) {
         ff_mpeg1_encode_init(s);
     } else if (CONFIG_H263_ENCODER && s->out_format == FMT_H263) {
