@@ -1,4 +1,6 @@
 /*
+ * Copyright © 2022 Rémi Denis-Courmont.
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -16,18 +18,21 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_BSWAPDSP_H
-#define AVCODEC_BSWAPDSP_H
-
 #include <stdint.h>
 
-typedef struct BswapDSPContext {
-    void (*bswap_buf)(uint32_t *dst, const uint32_t *src, int w);
-    void (*bswap16_buf)(uint16_t *dst, const uint16_t *src, int len);
-} BswapDSPContext;
+#include "config.h"
+#include "libavutil/attributes.h"
+#include "libavutil/cpu.h"
+#include "libavcodec/bswapdsp.h"
 
-void ff_bswapdsp_init(BswapDSPContext *c);
-void ff_bswapdsp_init_riscv(BswapDSPContext *c);
-void ff_bswapdsp_init_x86(BswapDSPContext *c);
+void ff_bswap32_buf_rvb(uint32_t *dst, const uint32_t *src, int len);
 
-#endif /* AVCODEC_BSWAPDSP_H */
+av_cold void ff_bswapdsp_init_riscv(BswapDSPContext *c)
+{
+#if (__riscv_xlen >= 64)
+    int cpu_flags = av_get_cpu_flags();
+
+    if (cpu_flags & AV_CPU_FLAG_RVB_BASIC)
+        c->bswap_buf = ff_bswap32_buf_rvb;
+#endif
+}

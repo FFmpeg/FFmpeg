@@ -5,6 +5,8 @@ RVV-OBJS-$(CONFIG_ALAC_DECODER) += riscv/alacdsp_rvv.o
 OBJS-$(CONFIG_AUDIODSP) += riscv/audiodsp_init.o \
                            riscv/audiodsp_rvf.o
 RVV-OBJS-$(CONFIG_AUDIODSP) += riscv/audiodsp_rvv.o
+OBJS-$(CONFIG_BSWAPDSP) += riscv/bswapdsp_init.o \
+                           riscv/bswapdsp_rvb.o
 OBJS-$(CONFIG_FMTCONVERT) += riscv/fmtconvert_init.o
 RVV-OBJS-$(CONFIG_FMTCONVERT) += riscv/fmtconvert_rvv.o
 OBJS-$(CONFIG_IDCTDSP) += riscv/idctdsp_init.o
