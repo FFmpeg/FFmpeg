@@ -70,6 +70,11 @@ const char *cpl_doc =
     "    <Id>urn:uuid:8e097bb0-cff7-4969-a692-bad47bfb528f</Id>"
     "  </EssenceDescriptor>"
     "</EssenceDescriptorList>"
+    "<CompositionTimecode>"
+    "<TimecodeDropFrame>false</TimecodeDropFrame>"
+    "<TimecodeRate>24</TimecodeRate>"
+    "<TimecodeStartAddress>02:10:01.23</TimecodeStartAddress>"
+    "</CompositionTimecode>"
     "<EditRate>24000 1001</EditRate>"
     "<SegmentList>"
     "<Segment>"
@@ -288,6 +293,7 @@ static int test_cpl_parsing(void)
 {
     xmlDocPtr doc;
     FFIMFCPL *cpl;
+    char tc_buf[AV_TIMECODE_STR_SIZE];
     int ret;
 
     doc = xmlReadMemory(cpl_doc, strlen(cpl_doc), NULL, NULL, 0);
@@ -306,6 +312,7 @@ static int test_cpl_parsing(void)
     printf("%s\n", cpl->content_title_utf8);
     printf(AV_PRI_URN_UUID "\n", AV_UUID_ARG(cpl->id_uuid));
     printf("%i %i\n", cpl->edit_rate.num, cpl->edit_rate.den);
+    printf("%s\n", av_timecode_make_string(cpl->tc, tc_buf, 0));
 
     printf("Marker resource count: %" PRIu32 "\n", cpl->main_markers_track->resource_count);
     for (uint32_t i = 0; i < cpl->main_markers_track->resource_count; i++) {
