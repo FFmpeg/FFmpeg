@@ -30,7 +30,6 @@
 
 #include "mpegvideo.h"
 
-int ff_h261_get_picture_format(int width, int height);
 void ff_h261_reorder_mb_index(MpegEncContext *s);
 void ff_h261_encode_mb(MpegEncContext *s, int16_t block[6][64],
                        int motion_x, int motion_y);

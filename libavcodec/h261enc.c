@@ -46,25 +46,16 @@ typedef struct H261EncContext {
     H261Context common;
 
     int gob_number;
+    enum {
+        H261_QCIF = 0,
+        H261_CIF  = 1,
+    } format;
 } H261EncContext;
-
-int ff_h261_get_picture_format(int width, int height)
-{
-    // QCIF
-    if (width == 176 && height == 144)
-        return 0;
-    // CIF
-    else if (width == 352 && height == 288)
-        return 1;
-    // ERROR
-    else
-        return AVERROR(EINVAL);
-}
 
 void ff_h261_encode_picture_header(MpegEncContext *s, int picture_number)
 {
     H261EncContext *const h = (H261EncContext *)s;
-    int format, temp_ref;
+    int temp_ref;
 
     align_put_bits(&s->pb);
 
@@ -81,18 +72,13 @@ void ff_h261_encode_picture_header(MpegEncContext *s, int picture_number)
     put_bits(&s->pb, 1, 0); /* camera  off */
     put_bits(&s->pb, 1, s->pict_type == AV_PICTURE_TYPE_I); /* freeze picture release on/off */
 
-    format = ff_h261_get_picture_format(s->width, s->height);
-
-    put_bits(&s->pb, 1, format); /* 0 == QCIF, 1 == CIF */
+    put_bits(&s->pb, 1, h->format); /* 0 == QCIF, 1 == CIF */
 
     put_bits(&s->pb, 1, 1); /* still image mode */
     put_bits(&s->pb, 1, 1); /* reserved */
 
     put_bits(&s->pb, 1, 0); /* no PEI */
-    if (format == 0)
-        h->gob_number = -1;
-    else
-        h->gob_number = 0;
+    h->gob_number = h->format - 1;
     s->mb_skip_run = 0;
 }
 
@@ -102,7 +88,7 @@ void ff_h261_encode_picture_header(MpegEncContext *s, int picture_number)
 static void h261_encode_gob_header(MpegEncContext *s, int mb_line)
 {
     H261EncContext *const h = (H261EncContext *)s;
-    if (ff_h261_get_picture_format(s->width, s->height) == 0) {
+    if (h->format == H261_QCIF) {
         h->gob_number += 2; // QCIF
     } else {
         h->gob_number++;    // CIF
@@ -118,6 +104,7 @@ static void h261_encode_gob_header(MpegEncContext *s, int mb_line)
 
 void ff_h261_reorder_mb_index(MpegEncContext *s)
 {
+    const H261EncContext *const h = (H261EncContext*)s;
     int index = s->mb_x + s->mb_y * s->mb_width;
 
     if (index % 11 == 0) {
@@ -129,7 +116,7 @@ void ff_h261_reorder_mb_index(MpegEncContext *s)
 
     /* for CIF the GOB's are fragmented in the middle of a scanline
      * that's why we need to adjust the x and y index of the macroblocks */
-    if (ff_h261_get_picture_format(s->width, s->height) == 1) { // CIF
+    if (h->format == H261_CIF) {
         s->mb_x  = index % 11;
         index   /= 11;
         s->mb_y  = index % 3;
@@ -387,7 +374,11 @@ av_cold int ff_h261_encode_init(MpegEncContext *s)
     H261EncContext *const h = (H261EncContext*)s;
     static AVOnce init_static_once = AV_ONCE_INIT;
 
-    if (ff_h261_get_picture_format(s->width, s->height) < 0) {
+    if (s->width == 176 && s->height == 144) {
+        h->format = H261_QCIF;
+    } else if (s->width == 352 && s->height == 288) {
+        h->format = H261_CIF;
+    } else {
         av_log(s->avctx, AV_LOG_ERROR,
                 "The specified picture size of %dx%d is not valid for the "
                 "H.261 codec.\nValid sizes are 176x144, 352x288\n",
