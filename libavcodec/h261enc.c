@@ -382,11 +382,18 @@ static av_cold void h261_encode_init_static(void)
     init_uni_h261_rl_tab(&ff_h261_rl_tcoeff, uni_h261_rl_len);
 }
 
-av_cold void ff_h261_encode_init(MpegEncContext *s)
+av_cold int ff_h261_encode_init(MpegEncContext *s)
 {
     H261EncContext *const h = (H261EncContext*)s;
     static AVOnce init_static_once = AV_ONCE_INIT;
 
+    if (ff_h261_get_picture_format(s->width, s->height) < 0) {
+        av_log(s->avctx, AV_LOG_ERROR,
+                "The specified picture size of %dx%d is not valid for the "
+                "H.261 codec.\nValid sizes are 176x144, 352x288\n",
+                s->width, s->height);
+        return AVERROR(EINVAL);
+    }
     s->private_ctx = &h->common;
 
     s->min_qcoeff       = -127;
@@ -398,6 +405,8 @@ av_cold void ff_h261_encode_init(MpegEncContext *s)
     s->intra_ac_vlc_length      = s->inter_ac_vlc_length      = uni_h261_rl_len;
     s->intra_ac_vlc_last_length = s->inter_ac_vlc_last_length = uni_h261_rl_len + 128*64;
     ff_thread_once(&init_static_once, h261_encode_init_static);
+
+    return 0;
 }
 
 const FFCodec ff_h261_encoder = {

@@ -682,14 +682,9 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     case AV_CODEC_ID_H261:
         if (!CONFIG_H261_ENCODER)
             return AVERROR_ENCODER_NOT_FOUND;
-        if (ff_h261_get_picture_format(s->width, s->height) < 0) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "The specified picture size of %dx%d is not valid for the "
-                   "H.261 codec.\nValid sizes are 176x144, 352x288\n",
-                    s->width, s->height);
-            return AVERROR(EINVAL);
-        }
-        ff_h261_encode_init(s);
+        ret = ff_h261_encode_init(s);
+        if (ret < 0)
+            return ret;
         s->out_format = FMT_H261;
         avctx->delay  = 0;
         s->low_delay  = 1;
