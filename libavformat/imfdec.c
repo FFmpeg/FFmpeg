@@ -627,6 +627,8 @@ static int imf_read_header(AVFormatContext *s)
     IMFContext *c = s->priv_data;
     char *asset_map_path;
     char *tmp_str;
+    AVDictionaryEntry* tcr;
+    char tc_buf[AV_TIMECODE_STR_SIZE];
     int ret = 0;
 
     c->interrupt_callback = &s->interrupt_callback;
@@ -645,6 +647,15 @@ static int imf_read_header(AVFormatContext *s)
 
     if ((ret = ff_imf_parse_cpl(s->pb, &c->cpl)) < 0)
         return ret;
+
+    tcr = av_dict_get(s->metadata, "timecode", NULL, 0);
+    if (!tcr && c->cpl->tc) {
+        ret = av_dict_set(&s->metadata, "timecode",
+                          av_timecode_make_string(c->cpl->tc, tc_buf, 0), 0);
+        if (ret)
+            return ret;
+        av_log(s, AV_LOG_INFO, "Setting timecode to IMF CPL timecode %s\n", tc_buf);
+    }
 
     av_log(s,
            AV_LOG_DEBUG,

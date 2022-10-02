@@ -59,6 +59,7 @@
 #include "libavformat/avio.h"
 #include "libavutil/rational.h"
 #include "libavutil/uuid.h"
+#include "libavutil/timecode.h"
 #include <libxml/tree.h>
 
 /**
@@ -130,6 +131,7 @@ typedef struct FFIMFCPL {
     AVUUID id_uuid;                               /**< CompositionPlaylist/Id element */
     xmlChar *content_title_utf8;                     /**< CompositionPlaylist/ContentTitle element */
     AVRational edit_rate;                            /**< CompositionPlaylist/EditRate element */
+    AVTimecode *tc;                                  /**< CompositionPlaylist/CompositionTimecode element */
     FFIMFMarkerVirtualTrack *main_markers_track;     /**< Main Marker Virtual Track */
     FFIMFTrackFileVirtualTrack *main_image_2d_track; /**< Main Image Virtual Track */
     uint32_t main_audio_track_count;                 /**< Number of Main Audio Virtual Tracks */

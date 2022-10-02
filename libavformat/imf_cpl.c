@@ -116,6 +116,22 @@ int ff_imf_xml_read_uint32(xmlNodePtr element, uint32_t *number)
     return ret;
 }
 
+static int ff_imf_xml_read_boolean(xmlNodePtr element, int *value)
+{
+    int ret = 0;
+
+    xmlChar *element_text = xmlNodeListGetString(element->doc, element->xmlChildrenNode, 1);
+    if (xmlStrcmp(element_text, "true") == 0 || xmlStrcmp(element_text, "1") == 0)
+        *value = 1;
+    else if (xmlStrcmp(element_text, "false") == 0 || xmlStrcmp(element_text, "0") == 0)
+        *value = 0;
+    else
+        ret = 1;
+    xmlFree(element_text);
+
+    return ret;
+}
+
 static void imf_base_virtual_track_init(FFIMFBaseVirtualTrack *track)
 {
     memset(track->id_uuid, 0, sizeof(track->id_uuid));
@@ -177,6 +193,90 @@ static int fill_content_title(xmlNodePtr cpl_element, FFIMFCPL *cpl)
                                                    1);
 
     return 0;
+}
+
+static int digit_to_int(char digit)
+{
+    if (digit >= '0' && digit <= '9')
+        return digit - '0';
+    return -1;
+}
+
+/**
+ * Parses a string that conform to the TimecodeType used in IMF CPL and defined
+ * in SMPTE ST 2067-3.
+ * @param[in] s string to parse
+ * @param[out] tc_comps pointer to an array of 4 integers where the parsed HH,
+ *                      MM, SS and FF fields of the timecode are returned.
+ * @return 0 on success, < 0 AVERROR code on error.
+ */
+static int parse_cpl_tc_type(const char *s, int *tc_comps)
+{
+    if (av_strnlen(s, 11) != 11)
+        return AVERROR(EINVAL);
+
+    for (int i = 0; i < 4; i++) {
+        int hi;
+        int lo;
+
+        hi = digit_to_int(s[i * 3]);
+        lo = digit_to_int(s[i * 3 + 1]);
+
+        if (hi == -1 || lo == -1)
+            return AVERROR(EINVAL);
+
+        tc_comps[i] = 10 * hi + lo;
+    }
+
+    return 0;
+}
+
+static int fill_timecode(xmlNodePtr cpl_element, FFIMFCPL *cpl)
+{
+    xmlNodePtr tc_element = NULL;
+    xmlNodePtr element = NULL;
+    xmlChar *tc_str = NULL;
+    int df = 0;
+    int comps[4];
+    int ret = 0;
+
+    tc_element = ff_imf_xml_get_child_element_by_name(cpl_element, "CompositionTimecode");
+    if (!tc_element)
+       return 0;
+
+    element = ff_imf_xml_get_child_element_by_name(tc_element, "TimecodeDropFrame");
+    if (!element) {
+        av_log(NULL, AV_LOG_ERROR, "CompositionTimecode element is missing\
+                                    a TimecodeDropFrame child element\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    if (ff_imf_xml_read_boolean(element, &df)) {
+        av_log(NULL, AV_LOG_ERROR, "TimecodeDropFrame element is invalid\n");
+        return AVERROR_INVALIDDATA;
+    }
+    element = ff_imf_xml_get_child_element_by_name(tc_element, "TimecodeStartAddress");
+    if (!element) {
+        av_log(NULL, AV_LOG_ERROR, "CompositionTimecode element is missing\
+                                    a TimecodeStartAddress child element\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    tc_str = xmlNodeListGetString(element->doc, element->xmlChildrenNode, 1);
+    ret = parse_cpl_tc_type(tc_str, comps);
+    xmlFree(tc_str);
+    if (ret)
+        return ret;
+
+    cpl->tc = av_malloc(sizeof(AVTimecode));
+    if (!cpl->tc)
+        return AVERROR(ENOMEM);
+    ret = av_timecode_init_from_components(cpl->tc, cpl->edit_rate,
+                                           df ? AV_TIMECODE_FLAG_DROPFRAME : 0,
+                                           comps[0], comps[1], comps[2], comps[3],
+                                           NULL);
+
+    return ret;
 }
 
 static int fill_edit_rate(xmlNodePtr cpl_element, FFIMFCPL *cpl)
@@ -682,6 +782,8 @@ int ff_imf_parse_cpl_from_xml_dom(xmlDocPtr doc, FFIMFCPL **cpl)
         goto cleanup;
     if ((ret = fill_edit_rate(cpl_element, *cpl)))
         goto cleanup;
+    if ((ret = fill_timecode(cpl_element, *cpl)))
+        goto cleanup;
     if ((ret = fill_virtual_tracks(cpl_element, *cpl)))
         goto cleanup;
 
@@ -731,6 +833,7 @@ static void imf_cpl_init(FFIMFCPL *cpl)
     av_uuid_nil(cpl->id_uuid);
     cpl->content_title_utf8 = NULL;
     cpl->edit_rate = av_make_q(0, 1);
+    cpl->tc = NULL;
     cpl->main_markers_track = NULL;
     cpl->main_image_2d_track = NULL;
     cpl->main_audio_track_count = 0;
@@ -752,6 +855,9 @@ void ff_imf_cpl_free(FFIMFCPL *cpl)
 {
     if (!cpl)
         return;
+
+    if (cpl->tc)
+        av_freep(&cpl->tc);
 
     xmlFree(cpl->content_title_utf8);
 
