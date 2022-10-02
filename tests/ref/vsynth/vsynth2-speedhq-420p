@@ -1,0 +1,4 @@
+41795a070c6a13727cd1de7c65abd121 *tests/data/fate/vsynth2-speedhq-420p.avi
+570618 tests/data/fate/vsynth2-speedhq-420p.avi
+9f76f7f523a1b1efa99e55ebc874b58d *tests/data/fate/vsynth2-speedhq-420p.out.rawvideo
+stddev:    8.67 PSNR: 29.37 MAXDIFF:  142 bytes:  7603200/  7603200

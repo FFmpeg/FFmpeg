@@ -1,0 +1,4 @@
+36bfdfdaecbf2938358137a598841377 *tests/data/fate/vsynth2-speedhq-422p.avi
+622790 tests/data/fate/vsynth2-speedhq-422p.avi
+3858c3c1524385150b2cff31cdb72e09 *tests/data/fate/vsynth2-speedhq-422p.out.rawvideo
+stddev:    8.62 PSNR: 29.42 MAXDIFF:  142 bytes:  7603200/  7603200

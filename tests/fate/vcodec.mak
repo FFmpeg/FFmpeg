@@ -413,6 +413,12 @@ FATE_VCODEC-$(call ENCDEC, SNOW, AVI) += snow-ll
 fate-vsynth%-snow-ll:            ENCOPTS = -qscale .001 -pred 1 \
                                            -flags +mv4+qpel
 
+FATE_VCODEC-$(call ENCDEC, SPEEDHQ, AVI)      += speedhq-420p
+FATE_VCODEC_SCALE-$(call ENCDEC, SPEEDHQ, AVI) += speedhq-422p speedhq-444p
+fate-vsynth%-speedhq-420p:       ENCOPTS = -pix_fmt yuv420p -b 600k
+fate-vsynth%-speedhq-422p:       ENCOPTS = -pix_fmt yuv422p -noise_reduction 1000
+fate-vsynth%-speedhq-444p:       ENCOPTS = -pix_fmt yuv444p
+
 FATE_VCODEC_SCALE-$(call ENCDEC, SVQ1, MOV)   += svq1
 fate-vsynth%-svq1:               ENCOPTS = -qscale 3 -pix_fmt yuv410p
 fate-vsynth%-svq1:               FMT     = mov
@@ -466,7 +472,8 @@ RESIZE_OFF   = dnxhd-720p dnxhd-720p-rd dnxhd-720p-10bit dnxhd-1080i \
                vc2-444p vc2-444p10 vc2-444p12 vc2-thaar vc2-t5_3
 # Incorrect parameters - usually size or color format restrictions
 INC_PAR_OFF  = cinepak h261 h261-trellis h263 h263p h263-obmc msvideo1 \
-               roqvideo rv10 rv20 y41p qtrlegray
+               roqvideo rv10 rv20 speedhq-420p speedhq-422p speedhq-444p \
+               y41p qtrlegray
 VSYNTH3_OFF  = $(RESIZE_OFF) $(INC_PAR_OFF)
 
 FATE_VCODEC3 = $(filter-out $(VSYNTH3_OFF),$(FATE_VCODEC))

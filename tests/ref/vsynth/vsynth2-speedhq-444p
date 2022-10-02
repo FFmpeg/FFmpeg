@@ -1,0 +1,4 @@
+62e4caac219e2d79d0c7a8b34b66d4ae *tests/data/fate/vsynth2-speedhq-444p.avi
+813586 tests/data/fate/vsynth2-speedhq-444p.avi
+c3fe2a70c17979dbf08100aba9c05934 *tests/data/fate/vsynth2-speedhq-444p.out.rawvideo
+stddev:    8.35 PSNR: 29.69 MAXDIFF:  142 bytes:  7603200/  7603200

@@ -1,0 +1,4 @@
+ce099dfae05cd224ef94c89476176a1c *tests/data/fate/vsynth_lena-speedhq-444p.avi
+702980 tests/data/fate/vsynth_lena-speedhq-444p.avi
+e2661cb41d9f59cd1a62b49b3a058e74 *tests/data/fate/vsynth_lena-speedhq-444p.out.rawvideo
+stddev:    7.23 PSNR: 30.94 MAXDIFF:  125 bytes:  7603200/  7603200
