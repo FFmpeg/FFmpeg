@@ -18,26 +18,28 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <stdint.h>
-
 #include "config.h"
-#include "libavutil/attributes.h"
-#include "libavutil/cpu.h"
-#include "libavcodec/bswapdsp.h"
+#include "libavutil/riscv/asm.S"
 
-void ff_bswap32_buf_rvb(uint32_t *dst, const uint32_t *src, int len);
-void ff_bswap32_buf_rvv(uint32_t *dst, const uint32_t *src, int len);
+func ff_bswap32_buf_rvv, zve32x
+        li      t4, 4
+        addi    t1, a0, 1
+        addi    t2, a0, 2
+        addi    t3, a0, 3
+1:
+        vsetvli    t0, a2, e8, m1, ta, ma
+        vlseg4e8.v v8, (a1)
+        sub        a2, a2, t0
+        sh2add     a1, t0, a1
+        vsse8.v    v8, (t3), t4
+        sh2add     t3, t0, t3
+        vsse8.v    v9, (t2), t4
+        sh2add     t2, t0, t2
+        vsse8.v    v10, (t1), t4
+        sh2add     t1, t0, t1
+        vsse8.v    v11, (a0), t4
+        sh2add     a0, t0, a0
+        bnez       a2, 1b
 
-av_cold void ff_bswapdsp_init_riscv(BswapDSPContext *c)
-{
-    int cpu_flags = av_get_cpu_flags();
-
-#if (__riscv_xlen >= 64)
-    if (cpu_flags & AV_CPU_FLAG_RVB_BASIC)
-        c->bswap_buf = ff_bswap32_buf_rvb;
-#endif
-#if HAVE_RVV
-    if (cpu_flags & AV_CPU_FLAG_RVV_I32)
-        c->bswap_buf = ff_bswap32_buf_rvv;
-#endif
-}
+        ret
+endfunc
