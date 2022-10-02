@@ -58,6 +58,12 @@ enum preset {
     NB_PRESETS,
 };
 
+enum interp {
+    INTERP_NATURAL,
+    INTERP_PCHIP,
+    NB_INTERPS,
+};
+
 typedef struct CurvesContext {
     const AVClass *class;
     int preset;
@@ -73,6 +79,7 @@ typedef struct CurvesContext {
     int is_16bit;
     int depth;
     int parsed_psfile;
+    int interp;
 
     int (*filter_slice)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 } CurvesContext;
@@ -107,6 +114,9 @@ static const AVOption curves_options[] = {
     { "all",   "set points coordinates for all components", OFFSET(comp_points_str_all), AV_OPT_TYPE_STRING, {.str=NULL}, .flags = FLAGS },
     { "psfile", "set Photoshop curves file name", OFFSET(psfile), AV_OPT_TYPE_STRING, {.str=NULL}, .flags = FLAGS },
     { "plot", "save Gnuplot script of the curves in specified file", OFFSET(plot_filename), AV_OPT_TYPE_STRING, {.str=NULL}, .flags = FLAGS },
+    { "interp", "specify the kind of interpolation", OFFSET(interp), AV_OPT_TYPE_INT, {.i64=INTERP_NATURAL}, INTERP_NATURAL, NB_INTERPS-1, FLAGS, "interp_name" },
+        { "natural", "natural cubic spline", 0, AV_OPT_TYPE_CONST, {.i64=INTERP_NATURAL}, 0, 0, FLAGS, "interp_name" },
+        { "pchip",   "monotonically cubic interpolation", 0, AV_OPT_TYPE_CONST, {.i64=INTERP_PCHIP},   0, 0, FLAGS, "interp_name" },
     { NULL }
 };
 
@@ -336,21 +346,239 @@ end:
     av_free(h);
     av_free(r);
     return ret;
+
 }
 
-#define DECLARE_INTERPOLATE_FUNC(nbits)                                     \
-static int interpolate##nbits(void *log_ctx, uint16_t *y,                   \
-                              const struct keypoint *points)                \
-{                                                                           \
-    return interpolate(log_ctx, y, points, nbits);                          \
+#define SIGN(x) (x > 0.0 ? 1 : x < 0.0 ? -1 : 0)
+
+/**
+ * Evalaute the derivative of an edge endpoint
+ *
+ * @param h0 input interval of the interval closest to the edge
+ * @param h1 input interval of the interval next to the closest
+ * @param m0 linear slope of the interval closest to the edge
+ * @param m1 linear slope of the intervalnext to the closest
+ * @return edge endpoint derivative
+ *
+ * Based on scipy.interpolate._edge_case()
+ *    https://github.com/scipy/scipy/blob/2e5883ef7af4f5ed4a5b80a1759a45e43163bf3f/scipy/interpolate/_cubic.py#L239
+ *    which is a python implementation of the special case endpoints, as suggested in
+ *    Cleve Moler, Numerical Computing with MATLAB, Chap 3.6 (pchiptx.m)
+*/
+static double pchip_edge_case(double h0, double h1, double m0, double m1)
+{
+    int mask, mask2;
+    double d;
+
+    d = ((2 * h0 + h1) * m0 - h0 * m1) / (h0 + h1);
+
+    mask = SIGN(d) != SIGN(m0);
+    mask2 = (SIGN(m0) != SIGN(m1)) && (fabs(d) > 3. * fabs(m0));
+
+    if (mask) d = 0.0;
+    else if (mask2) d = 3.0 * m0;
+
+    return d;
 }
 
-DECLARE_INTERPOLATE_FUNC(8)
-DECLARE_INTERPOLATE_FUNC(9)
-DECLARE_INTERPOLATE_FUNC(10)
-DECLARE_INTERPOLATE_FUNC(12)
-DECLARE_INTERPOLATE_FUNC(14)
-DECLARE_INTERPOLATE_FUNC(16)
+/**
+ * Evalaute the piecewise polynomial derivatives at endpoints
+ *
+ * @param n input interval of the interval closest to the edge
+ * @param hk input intervals
+ * @param mk linear slopes over intervals
+ * @param dk endpoint derivatives (output)
+ * @return 0 success
+ *
+ * Based on scipy.interpolate._find_derivatives()
+ *    https://github.com/scipy/scipy/blob/2e5883ef7af4f5ed4a5b80a1759a45e43163bf3f/scipy/interpolate/_cubic.py#L254
+*/
+
+static int pchip_find_derivatives(const int n, const double *hk, const double *mk, double *dk)
+{
+    int ret = 0;
+    const int m = n - 1;
+    int8_t *smk;
+
+    smk = av_malloc(n);
+    if (!smk) {
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
+
+    /* smk = sgn(mk) */
+    for (int i = 0; i < n; i++) smk[i] = SIGN(mk[i]);
+
+    /* check the strict monotonicity */
+    for (int i = 0; i < m; i++) {
+        int8_t condition = (smk[i + 1] != smk[i]) || (mk[i + 1] == 0) || (mk[i] == 0);
+        if (condition) {
+            dk[i + 1] = 0.0;
+        } else {
+            double w1 = 2 * hk[i + 1] + hk[i];
+            double w2 = hk[i + 1] + 2 * hk[i];
+            dk[i + 1] = (w1 + w2) / (w1 / mk[i] + w2 / mk[i + 1]);
+        }
+    }
+
+    dk[0] = pchip_edge_case(hk[0], hk[1], mk[0], mk[1]);
+    dk[n] = pchip_edge_case(hk[n - 1], hk[n - 2], mk[n - 1], mk[n - 2]);
+
+end:
+    av_free(smk);
+
+    return ret;
+}
+
+/**
+ * Evalaute half of the cubic hermite interpolation expression, wrt one interval endpoint
+ *
+ * @param x normalized input value at the endpoint
+ * @param f output value at the endpoint
+ * @param d derivative at the endpoint: normalized to the interval, and properly sign adjusted
+ * @return half of the interpolated value
+*/
+static inline double interp_cubic_hermite_half(const double x, const double f,
+                                               const double d)
+{
+    double x2 = x * x, x3 = x2 * x;
+    return f * (3.0 * x2 - 2.0 * x3) + d * (x3 - x2);
+}
+
+/**
+ * Prepare the lookup table by piecewise monotonic cubic interpolation (PCHIP)
+ *
+ * @param log_ctx for logging
+ * @param y output lookup table (output)
+ * @param points user-defined control points/endpoints
+ * @param nbits bitdepth
+ * @return 0 success
+ *
+ * References:
+ *    [1] F. N. Fritsch and J. Butland, A method for constructing local monotone piecewise
+ *        cubic interpolants, SIAM J. Sci. Comput., 5(2), 300-304 (1984). DOI:10.1137/0905021.
+ *    [2] scipy.interpolate: https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.PchipInterpolator.html
+*/
+static inline int interpolate_pchip(void *log_ctx, uint16_t *y,
+                                    const struct keypoint *points, int nbits)
+{
+    const struct keypoint *point = points;
+    const int lut_size = 1<<nbits;
+    const int n = get_nb_points(points); // number of endpoints
+    double *xi, *fi, *di, *hi, *mi;
+    const int scale = lut_size - 1; // white value
+    uint16_t x; /* input index/value */
+    int ret = 0;
+
+    /* no change for n = 0 or 1 */
+    if (n == 0) {
+        /* no points, no change */
+        for (int i = 0; i < lut_size; i++) y[i] = i;
+        return 0;
+    }
+
+    if (n == 1) {
+        /* 1 point - 1 color everywhere */
+        const uint16_t yval = CLIP(point->y * scale);
+        for (int i = 0; i < lut_size; i++) y[i] = yval;
+        return 0;
+    }
+
+    xi = av_calloc(3*n + 2*(n-1), sizeof(double)); /* output values at interval endpoints */
+    if (!xi) {
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
+
+    fi = xi + n;     /* output values at inteval endpoints */
+    di = fi + n;     /* output slope wrt normalized input at interval endpoints */
+    hi = di + n;     /* interval widths */
+    mi = hi + n - 1; /* linear slope over intervals */
+
+    /* scale endpoints and store them in a contiguous memory block */
+    for (int i = 0; i < n; i++) {
+        xi[i] = point->x * scale;
+        fi[i] = point->y * scale;
+        point = point->next;
+    }
+
+    /* h(i) = x(i+1) - x(i); mi(i) = (f(i+1)-f(i))/h(i) */
+    for (int i = 0; i < n - 1; i++) {
+        const double val = (xi[i+1]-xi[i]);
+        hi[i] = val;
+        mi[i] = (fi[i+1]-fi[i]) / val;
+    }
+
+    if (n == 2) {
+        /* edge case, use linear interpolation */
+        const double m = mi[0], b = fi[0] - xi[0]*m;
+        for (int i = 0; i < lut_size; i++) y[i] = CLIP(i*m + b);
+        goto end;
+    }
+
+    /* compute the derivatives at the endpoints*/
+    ret = pchip_find_derivatives(n-1, hi, mi, di);
+    if (ret)
+        goto end;
+
+    /* interpolate/extrapolate */
+    x = 0;
+    if (xi[0] > 0) {
+        /* below first endpoint, use the first endpoint value*/
+        const double xi0 = xi[0];
+        const double yi0 = fi[0];
+        const uint16_t yval = CLIP(yi0);
+        for (; x < xi0; x++) {
+            y[x] = yval;
+            av_log(log_ctx, AV_LOG_TRACE, "f(%f)=%f -> y[%d]=%d\n", xi0, yi0, x, y[x]);
+        }
+        av_log(log_ctx, AV_LOG_DEBUG, "Interval -1: [0, %d] -> %d\n", x - 1, yval);
+    }
+
+    /* for each interval */
+    for (int i = 0, x0 = x; i < n-1; i++, x0 = x) {
+        const double xi0 = xi[i];     /* start-of-interval input value */
+        const double xi1 = xi[i + 1]; /* end-of-interval input value */
+        const double h = hi[i];       /* interval width */
+        const double f0 = fi[i];      /* start-of-interval output value */
+        const double f1 = fi[i + 1];  /* end-of-interval output value */
+        const double d0 = di[i];      /* start-of-interval derivative */
+        const double d1 = di[i + 1];  /* end-of-interval derivative */
+
+        /* fill the lut over the interval */
+        for (; x < xi1; x++) { /* safe not to check j < lut_size */
+            const double xx = (x - xi0) / h; /* normalize input */
+            const double yy = interp_cubic_hermite_half(1 - xx, f0, -h * d0)
+                            + interp_cubic_hermite_half(xx, f1, h * d1);
+            y[x] = CLIP(yy);
+            av_log(log_ctx, AV_LOG_TRACE, "f(%f)=%f -> y[%d]=%d\n", xx, yy, x, y[x]);
+        }
+
+        if (x > x0)
+            av_log(log_ctx, AV_LOG_DEBUG, "Interval %d: [%d, %d] -> [%d, %d]\n",
+                                                    i, x0, x-1, y[x0], y[x-1]);
+        else
+            av_log(log_ctx, AV_LOG_DEBUG, "Interval %d: empty\n", i);
+    }
+
+    if (x && x < lut_size) {
+        /* above the last endpoint, use the last endpoint value*/
+        const double xi1 = xi[n - 1];
+        const double yi1 = fi[n - 1];
+        const uint16_t yval = CLIP(yi1);
+        av_log(log_ctx, AV_LOG_DEBUG, "Interval %d: [%d, %d] -> %d\n",
+                                                n-1, x, lut_size - 1, yval);
+        for (; x && x < lut_size; x++) { /* loop until int overflow */
+            y[x] = yval;
+            av_log(log_ctx, AV_LOG_TRACE, "f(%f)=%f -> y[%d]=%d\n", xi1, yi1, x, yval);
+        }
+    }
+
+end:
+    av_free(xi);
+    return ret;
+}
+
 
 static int parse_psfile(AVFilterContext *ctx, const char *fname)
 {
@@ -651,14 +879,10 @@ static int config_input(AVFilterLink *inlink)
         ret = parse_points_str(ctx, comp_points + i, curves->comp_points_str[i], curves->lut_size);
         if (ret < 0)
             return ret;
-        switch (curves->depth) {
-        case  8: ret = interpolate8 (ctx, curves->graph[i], comp_points[i]); break;
-        case  9: ret = interpolate9 (ctx, curves->graph[i], comp_points[i]); break;
-        case 10: ret = interpolate10(ctx, curves->graph[i], comp_points[i]); break;
-        case 12: ret = interpolate12(ctx, curves->graph[i], comp_points[i]); break;
-        case 14: ret = interpolate14(ctx, curves->graph[i], comp_points[i]); break;
-        case 16: ret = interpolate16(ctx, curves->graph[i], comp_points[i]); break;
-        }
+        if (curves->interp == INTERP_PCHIP)
+            ret = interpolate_pchip(ctx, curves->graph[i], comp_points[i], curves->depth);
+        else
+            ret = interpolate(ctx, curves->graph[i], comp_points[i], curves->depth);
         if (ret < 0)
             return ret;
     }
@@ -735,7 +959,7 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
 
     if (!strcmp(cmd, "plot")) {
         curves->saved_plot = 0;
-    } else if (!strcmp(cmd, "all") || !strcmp(cmd, "preset") || !strcmp(cmd, "psfile")) {
+    } else if (!strcmp(cmd, "all") || !strcmp(cmd, "preset") || !strcmp(cmd, "psfile")  || !strcmp(cmd, "interp")) {
         if (!strcmp(cmd, "psfile"))
             curves->parsed_psfile = 0;
         av_freep(&curves->comp_points_str_all);

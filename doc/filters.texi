@@ -10404,11 +10404,15 @@ By default, a component curve is defined by the two points @var{(0;0)} and
 "adjusted" to its own value, which means no change to the image.
 
 The filter allows you to redefine these two points and add some more. A new
-curve (using a natural cubic spline interpolation) will be define to pass
-smoothly through all these new coordinates. The new defined points needs to be
-strictly increasing over the x-axis, and their @var{x} and @var{y} values must
-be in the @var{[0;1]} interval.  If the computed curves happened to go outside
-the vector spaces, the values will be clipped accordingly.
+curve will be define to pass smoothly through all these new coordinates. The
+new defined points needs to be strictly increasing over the x-axis, and their
+@var{x} and @var{y} values must be in the @var{[0;1]} interval. The curve is
+formed by using a natural or monotonic cubic spline interpolation, depending
+on the @var{interp} option (default: @code{natural}). The @code{natural}
+spline produces a smoother curve in general while the monotonic (@code{pchip})
+spline guarantees the transitions between the specified points to be
+monotonic. If the computed curves happened to go outside the vector spaces,
+the values will be clipped accordingly.
 
 The filter accepts the following options:
 
@@ -10452,6 +10456,15 @@ options. In this case, the unset component(s) will fallback on this
 Specify a Photoshop curves file (@code{.acv}) to import the settings from.
 @item plot
 Save Gnuplot script of the curves in specified file.
+@item interp
+Specify the kind of interpolation. Available algorithms are:
+@table @samp
+@item natural
+Natural cubic spline using a piece-wise cubic polynomial that is twice continuously differentiable.
+@item pchip
+Monotonic cubic spline using a piecewise cubic Hermite interpolating polynomial (PCHIP).
+@end table
+
 @end table
 
 To avoid some filtergraph syntax conflicts, each key points list need to be
