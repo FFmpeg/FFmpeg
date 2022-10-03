@@ -1106,6 +1106,59 @@ function vsse_intra16_neon, export=1
         ret
 endfunc
 
+function vsse_intra8_neon, export=1
+        // x0           unused
+        // x1           uint8_t *pix1
+        // x2           uint8_t *dummy
+        // x3           ptrdiff_t stride
+        // w4           int h
+
+        sub             w4, w4, #1 // we need to make h-1 iterations
+        ld1             {v0.8b}, [x1], x3
+        cmp             w4, #3
+        movi            v16.4s, #0
+
+        b.lt            2f
+
+1:
+        // v = abs( pix1[0] - pix1[0 + stride] )
+        // score = sum( v * v )
+        ld1             {v1.8b}, [x1], x3
+        ld1             {v2.8b}, [x1], x3
+        uabd            v30.8b, v0.8b, v1.8b
+        ld1             {v3.8b}, [x1], x3
+        uabd            v27.8b, v1.8b, v2.8b
+        umull           v29.8h, v30.8b, v30.8b
+        uabd            v25.8b, v2.8b, v3.8b
+        umull           v26.8h, v27.8b, v27.8b
+        uadalp          v16.4s, v29.8h
+        umull           v24.8h, v25.8b, v25.8b
+        uadalp          v16.4s, v26.8h
+        sub             w4, w4, #3
+        uadalp          v16.4s, v24.8h
+        cmp             w4, #3
+        mov             v0.8b, v3.8b
+
+        b.ge            1b
+        cbz             w4, 3f
+
+// iterate by one
+2:
+        ld1             {v1.8b}, [x1], x3
+        subs            w4, w4, #1
+        uabd            v30.8b, v0.8b, v1.8b
+        mov             v0.8b, v1.8b
+        umull           v29.8h, v30.8b, v30.8b
+        uadalp          v16.4s, v29.8h
+        cbnz            w4, 2b
+
+3:
+        uaddlv          d17, v16.4s
+        fmov            w0, s17
+
+        ret
+endfunc
+
 function nsse16_neon, export=1
         // x0           multiplier
         // x1           uint8_t *pix1
