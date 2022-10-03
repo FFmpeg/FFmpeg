@@ -161,7 +161,7 @@ enum AVPacketSideDataType {
      * the packet may contain "dual mono" audio specific to Japanese DTV
      * and if it is true, recommends only the selected channel to be used.
      * @code
-     * u8    selected channels (0=mail/left, 1=sub/right, 2=both)
+     * u8    selected channels (0=main/left, 1=sub/right, 2=both)
      * @endcode
      */
     AV_PKT_DATA_JP_DUALMONO,
