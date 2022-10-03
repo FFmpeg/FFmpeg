@@ -19,10 +19,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <float.h>
+
 #include "opusenc_psy.h"
+#include "opus_celt.h"
 #include "opus_pvq.h"
 #include "opustab.h"
-#include "libavutil/qsort.h"
+#include "libavfilter/window_func.h"
 
 static float pvq_band_cost(CeltPVQ *pvq, CeltFrame *f, OpusRangeCoder *rc, int band,
                            float *bits, float lambda)

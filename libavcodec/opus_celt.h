@@ -24,9 +24,9 @@
 #ifndef AVCODEC_OPUS_CELT_H
 #define AVCODEC_OPUS_CELT_H
 
-#include <float.h>
+#include <stdint.h>
 
-#include "opus.h"
+#include "avcodec.h"
 #include "opusdsp.h"
 #include "opus_rc.h"
 
@@ -34,6 +34,12 @@
 #include "libavutil/libm.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/tx.h"
+
+#define CELT_SHORT_BLOCKSIZE         120
+#define CELT_OVERLAP                 CELT_SHORT_BLOCKSIZE
+#define CELT_MAX_LOG_BLOCKS          3
+#define CELT_MAX_FRAME_SIZE          (CELT_SHORT_BLOCKSIZE * (1 << CELT_MAX_LOG_BLOCKS))
+#define CELT_MAX_BANDS               21
 
 #define CELT_VECTORS                 11
 #define CELT_ALLOC_STEPS             6

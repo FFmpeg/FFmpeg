@@ -25,6 +25,8 @@
  * Opus CELT decoder
  */
 
+#include <float.h>
+
 #include "opus_celt.h"
 #include "opustab.h"
 #include "opus_pvq.h"

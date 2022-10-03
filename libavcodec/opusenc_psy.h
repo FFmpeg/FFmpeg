@@ -26,8 +26,8 @@
 #include "libavutil/mem_internal.h"
 
 #include "opusenc.h"
+#include "opus_celt.h"
 #include "opusenc_utils.h"
-#include "libavfilter/window_func.h"
 
 /* Each step is 2.5ms */
 typedef struct OpusPsyStep {

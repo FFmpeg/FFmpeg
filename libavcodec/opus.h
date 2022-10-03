@@ -32,17 +32,8 @@
 #define MAX_FRAMES                   48
 #define MAX_PACKET_DUR               5760
 
-#define CELT_SHORT_BLOCKSIZE         120
-#define CELT_OVERLAP                 CELT_SHORT_BLOCKSIZE
-#define CELT_MAX_LOG_BLOCKS          3
-#define CELT_MAX_FRAME_SIZE          (CELT_SHORT_BLOCKSIZE * (1 << CELT_MAX_LOG_BLOCKS))
-#define CELT_MAX_BANDS               21
-
 #define SILK_HISTORY                 322
 #define SILK_MAX_LPC                 16
-
-#define ROUND_MULL(a,b,s) (((MUL64(a, b) >> ((s) - 1)) + 1) >> 1)
-#define ROUND_MUL16(a,b)  ((MUL16(a, b) + 16384) >> 15)
 
 #define OPUS_TS_HEADER     0x7FE0        // 0x3ff (11 bits)
 #define OPUS_TS_MASK       0xFFE0        // top 11 bits

@@ -23,10 +23,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <float.h>
+
 #include "config_components.h"
 
+#include "mathops.h"
 #include "opustab.h"
 #include "opus_pvq.h"
+
+#define ROUND_MUL16(a,b)  ((MUL16(a, b) + 16384) >> 15)
 
 #define CELT_PVQ_U(n, k) (ff_celt_pvq_u_row[FFMIN(n, k)][FFMAX(n, k)])
 #define CELT_PVQ_V(n, k) (CELT_PVQ_U(n, k) + CELT_PVQ_U(n, (k) + 1))
