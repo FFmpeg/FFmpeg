@@ -27,7 +27,6 @@
 #include <float.h>
 
 #include "opus.h"
-#include "opus_pvq.h"
 #include "opusdsp.h"
 
 #include "libavutil/float_dsp.h"
