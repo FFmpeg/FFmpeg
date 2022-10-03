@@ -22,6 +22,9 @@
 #ifndef AVCODEC_OPUSENC_UTILS_H
 #define AVCODEC_OPUSENC_UTILS_H
 
+#include <math.h>
+#include <string.h>
+
 #include "opus.h"
 
 typedef struct FFBesselFilter {

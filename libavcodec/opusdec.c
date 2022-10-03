@@ -53,6 +53,8 @@
 #include "opustab.h"
 #include "opus_celt.h"
 #include "opus_parse.h"
+#include "opus_rc.h"
+#include "opus_silk.h"
 
 static const uint16_t silk_frame_duration_ms[16] = {
     10, 20, 40, 60,

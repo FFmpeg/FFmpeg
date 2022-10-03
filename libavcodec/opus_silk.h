@@ -1,5 +1,5 @@
 /*
- * Opus common header
+ * Opus Silk functions/definitions
  * Copyright (c) 2012 Andrew D'Addesio
  * Copyright (c) 2013-2014 Mozilla Corporation
  *
@@ -20,40 +20,29 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_OPUS_H
-#define AVCODEC_OPUS_H
+#ifndef AVCODEC_OPUS_SILK_H
+#define AVCODEC_OPUS_SILK_H
 
-#include <stdint.h>
+#include "avcodec.h"
+#include "opus.h"
+#include "opus_rc.h"
 
-#define MAX_FRAME_SIZE               1275
-#define MAX_FRAMES                   48
-#define MAX_PACKET_DUR               5760
+#define SILK_HISTORY                 322
+#define SILK_MAX_LPC                 16
 
-#define OPUS_TS_HEADER     0x7FE0        // 0x3ff (11 bits)
-#define OPUS_TS_MASK       0xFFE0        // top 11 bits
+typedef struct SilkContext SilkContext;
 
-static const uint8_t opus_default_extradata[30] = {
-    'O', 'p', 'u', 's', 'H', 'e', 'a', 'd',
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-};
+int ff_silk_init(AVCodecContext *avctx, SilkContext **ps, int output_channels);
+void ff_silk_free(SilkContext **ps);
+void ff_silk_flush(SilkContext *s);
 
-enum OpusMode {
-    OPUS_MODE_SILK,
-    OPUS_MODE_HYBRID,
-    OPUS_MODE_CELT,
+/**
+ * Decode the LP layer of one Opus frame (which may correspond to several SILK
+ * frames).
+ */
+int ff_silk_decode_superframe(SilkContext *s, OpusRangeCoder *rc,
+                              float *output[2],
+                              enum OpusBandwidth bandwidth, int coded_channels,
+                              int duration_ms);
 
-    OPUS_MODE_NB
-};
-
-enum OpusBandwidth {
-    OPUS_BANDWIDTH_NARROWBAND,
-    OPUS_BANDWIDTH_MEDIUMBAND,
-    OPUS_BANDWIDTH_WIDEBAND,
-    OPUS_BANDWIDTH_SUPERWIDEBAND,
-    OPUS_BANDWIDTH_FULLBAND,
-
-    OPUS_BANDWITH_NB
-};
-
-#endif /* AVCODEC_OPUS_H */
+#endif /* AVCODEC_OPUS_SILK_H */
