@@ -119,6 +119,198 @@ function ff_pix_abs8_neon, export=1
         ret
 endfunc
 
+function ff_pix_abs8_x2_neon, export=1
+        // x0           unused
+        // x1           uint8_t *pix1
+        // x2           uint8_t *pix2
+        // x3           ptrdiff_t stride
+        // w4           int h
+
+        cmp             w4, #4
+        movi            v26.8h, #0
+        add             x5, x2, #1 // pix2 + 1
+        b.lt            2f
+
+// make 4 iterations at once
+1:
+        ld1             {v1.8b}, [x2], x3
+        ld1             {v2.8b}, [x5], x3
+        ld1             {v0.8b}, [x1], x3
+        ld1             {v4.8b}, [x2], x3
+        urhadd          v30.8b, v1.8b, v2.8b
+        ld1             {v5.8b}, [x5], x3
+        uabal           v26.8h, v0.8b, v30.8b
+        ld1             {v6.8b}, [x1], x3
+        urhadd          v29.8b, v4.8b, v5.8b
+        ld1             {v7.8b}, [x2], x3
+        ld1             {v20.8b}, [x5], x3
+        uabal           v26.8h, v6.8b, v29.8b
+        ld1             {v21.8b}, [x1], x3
+        urhadd          v28.8b, v7.8b, v20.8b
+        ld1             {v22.8b}, [x2], x3
+        ld1             {v23.8b}, [x5], x3
+        uabal           v26.8h, v21.8b, v28.8b
+        sub             w4, w4, #4
+        ld1             {v24.8b}, [x1], x3
+        urhadd          v27.8b, v22.8b, v23.8b
+        cmp             w4, #4
+        uabal           v26.8h, v24.8b, v27.8b
+
+        b.ge            1b
+        cbz             w4, 3f
+
+// iterate by one
+2:
+        ld1             {v1.8b}, [x2], x3
+        ld1             {v2.8b}, [x5], x3
+        ld1             {v0.8b}, [x1], x3
+        urhadd          v30.8b, v1.8b, v2.8b
+        subs            w4, w4, #1
+        uabal           v26.8h, v0.8b, v30.8b
+
+        b.ne            2b
+3:
+        uaddlv          s20, v26.8h
+        fmov            w0, s20
+
+        ret
+
+endfunc
+
+function ff_pix_abs8_y2_neon, export=1
+        // x0           unused
+        // x1           uint8_t *pix1
+        // x2           uint8_t *pix2
+        // x3           ptrdiff_t stride
+        // w4           int h
+
+        cmp             w4, #4
+        movi            v26.8h, #0
+        ld1             {v1.8b}, [x2], x3
+        b.lt            2f
+
+// make 4 iterations at once
+1:
+        ld1             {v2.8b}, [x2], x3
+        ld1             {v0.8b}, [x1], x3
+        urhadd          v30.8b, v1.8b, v2.8b
+        ld1             {v5.8b}, [x2], x3
+        ld1             {v6.8b}, [x1], x3
+        uabal           v26.8h, v0.8b, v30.8b
+        urhadd          v29.8b, v2.8b, v5.8b
+        ld1             {v20.8b}, [x2], x3
+        ld1             {v21.8b}, [x1], x3
+        uabal           v26.8h, v6.8b, v29.8b
+        urhadd          v28.8b, v5.8b, v20.8b
+        ld1             {v1.8b},  [x2], x3
+        ld1             {v24.8b}, [x1], x3
+        urhadd          v27.8b, v20.8b, v1.8b
+        sub             w4, w4, #4
+        uabal           v26.8h, v21.8b, v28.8b
+        cmp             w4, #4
+        uabal           v26.8h, v24.8b, v27.8b
+
+        b.ge            1b
+        cbz             w4, 3f
+
+// iterate by one
+2:
+        ld1             {v0.8b}, [x1], x3
+        ld1             {v2.8b}, [x2], x3
+        urhadd          v30.8b, v1.8b, v2.8b
+        subs            w4, w4, #1
+        uabal           v26.8h, v0.8b, v30.8b
+        mov             v1.8b, v2.8b
+
+        b.ne            2b
+3:
+        uaddlv          s20, v26.8h
+        fmov            w0, s20
+
+        ret
+
+endfunc
+
+function ff_pix_abs8_xy2_neon, export=1
+        // x0           unused
+        // x1           uint8_t *pix1
+        // x2           uint8_t *pix2
+        // x3           ptrdiff_t stride
+        // w4           int h
+
+        movi            v31.8h, #0
+        add             x0, x2, 1  // pix2 + 1
+
+        add             x5, x2, x3 // pix2 + stride = pix3
+        cmp             w4, #4
+        add             x6, x5, 1 // pix3 + stride + 1
+
+        ld1             {v0.8b}, [x2], x3
+        ld1             {v1.8b}, [x0], x3
+        uaddl           v2.8h, v0.8b, v1.8b
+
+        b.lt            2f
+
+// make 4 iterations at once
+1:
+        ld1             {v4.8b}, [x5], x3
+        ld1             {v5.8b}, [x6], x3
+        ld1             {v7.8b}, [x5], x3
+        uaddl           v0.8h, v4.8b, v5.8b
+        ld1             {v16.8b}, [x6], x3
+        add             v4.8h, v0.8h, v2.8h
+        ld1             {v5.8b}, [x1], x3
+        rshrn           v4.8b, v4.8h, #2
+        uaddl           v7.8h, v7.8b, v16.8b
+        uabal           v31.8h, v5.8b, v4.8b
+        add             v2.8h, v0.8h, v7.8h
+        ld1             {v17.8b}, [x1], x3
+        rshrn           v2.8b, v2.8h, #2
+        ld1             {v20.8b}, [x5], x3
+        uabal           v31.8h, v17.8b, v2.8b
+        ld1             {v21.8b}, [x6], x3
+        ld1             {v25.8b}, [x5], x3
+        uaddl           v20.8h, v20.8b, v21.8b
+        ld1             {v26.8b}, [x6], x3
+        add             v7.8h, v7.8h, v20.8h
+        uaddl           v25.8h, v25.8b, v26.8b
+        rshrn           v7.8b, v7.8h, #2
+        ld1             {v22.8b}, [x1], x3
+        mov             v2.16b, v25.16b
+        uabal           v31.8h, v22.8b, v7.8b
+        add             v20.8h, v20.8h, v25.8h
+        ld1             {v27.8b}, [x1], x3
+        sub             w4, w4, #4
+        rshrn           v20.8b, v20.8h, #2
+        cmp             w4, #4
+        uabal           v31.8h, v27.8b, v20.8b
+
+        b.ge            1b
+
+        cbz             w4, 3f
+
+// iterate by one
+2:
+        ld1             {v0.8b}, [x5], x3
+        ld1             {v1.8b}, [x6], x3
+        ld1             {v4.8b}, [x1], x3
+        uaddl           v21.8h, v0.8b, v1.8b
+        subs            w4, w4, #1
+        add             v3.8h, v2.8h, v21.8h
+        mov             v2.16b, v21.16b
+        rshrn           v3.8b, v3.8h, #2
+        uabal           v31.8h, v4.8b, v3.8b
+        b.ne            2b
+
+3:
+        uaddlv          s18, v31.8h
+        fmov            w0, s18
+
+        ret
+
+endfunc
+
+
 function ff_pix_abs16_xy2_neon, export=1
         // x0           unused
         // x1           uint8_t *pix1

@@ -59,6 +59,12 @@ int pix_median_abs16_neon(MpegEncContext *v, const uint8_t *pix1, const uint8_t 
                           ptrdiff_t stride, int h);
 int pix_median_abs8_neon(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                          ptrdiff_t stride, int h);
+int ff_pix_abs8_x2_neon(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+                        ptrdiff_t stride, int h);
+int ff_pix_abs8_y2_neon(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+                        ptrdiff_t stride, int h);
+int ff_pix_abs8_xy2_neon(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+                         ptrdiff_t stride, int h);
 
 av_cold void ff_me_cmp_init_aarch64(MECmpContext *c, AVCodecContext *avctx)
 {
@@ -70,6 +76,9 @@ av_cold void ff_me_cmp_init_aarch64(MECmpContext *c, AVCodecContext *avctx)
         c->pix_abs[0][2] = ff_pix_abs16_y2_neon;
         c->pix_abs[0][3] = ff_pix_abs16_xy2_neon;
         c->pix_abs[1][0] = ff_pix_abs8_neon;
+        c->pix_abs[1][1] = ff_pix_abs8_x2_neon;
+        c->pix_abs[1][2] = ff_pix_abs8_y2_neon;
+        c->pix_abs[1][3] = ff_pix_abs8_xy2_neon;
 
         c->sad[0] = ff_pix_abs16_neon;
         c->sad[1] = ff_pix_abs8_neon;
