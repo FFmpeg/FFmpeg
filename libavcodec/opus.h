@@ -25,12 +25,7 @@
 
 #include <stdint.h>
 
-#include "libavutil/audio_fifo.h"
 #include "libavutil/float_dsp.h"
-#include "libavutil/frame.h"
-#include "libavutil/mem_internal.h"
-
-#include "libswresample/swresample.h"
 
 #include "avcodec.h"
 #include "opus_rc.h"
@@ -98,51 +93,6 @@ typedef struct OpusPacket {
     enum OpusBandwidth bandwidth;   /**< bandwidth */
 } OpusPacket;
 
-typedef struct OpusStreamContext {
-    AVCodecContext *avctx;
-    int output_channels;
-
-    /* number of decoded samples for this stream */
-    int decoded_samples;
-    /* current output buffers for this stream */
-    float *out[2];
-    int out_size;
-    /* Buffer with samples from this stream for synchronizing
-     * the streams when they have different resampling delays */
-    AVAudioFifo *sync_buffer;
-
-    OpusRangeCoder rc;
-    OpusRangeCoder redundancy_rc;
-    SilkContext *silk;
-    CeltFrame *celt;
-    AVFloatDSPContext *fdsp;
-
-    float silk_buf[2][960];
-    float *silk_output[2];
-    DECLARE_ALIGNED(32, float, celt_buf)[2][960];
-    float *celt_output[2];
-
-    DECLARE_ALIGNED(32, float, redundancy_buf)[2][960];
-    float *redundancy_output[2];
-
-    /* buffers for the next samples to be decoded */
-    float *cur_out[2];
-    int remaining_out_size;
-
-    float *out_dummy;
-    int    out_dummy_allocated_size;
-
-    SwrContext *swr;
-    AVAudioFifo *celt_delay;
-    int silk_samplerate;
-    /* number of samples we still want to get from the resampler */
-    int delayed_samples;
-
-    OpusPacket packet;
-
-    int redundancy_idx;
-} OpusStreamContext;
-
 // a mapping between an opus stream and an output channel
 typedef struct ChannelMap {
     int stream_idx;
@@ -161,7 +111,7 @@ typedef struct ChannelMap {
 
 typedef struct OpusContext {
     AVClass *av_class;
-    OpusStreamContext *streams;
+    struct OpusStreamContext *streams;
     int apply_phase_inv;
 
     int             nb_streams;

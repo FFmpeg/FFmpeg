@@ -38,6 +38,8 @@
 #include "libavutil/attributes.h"
 #include "libavutil/audio_fifo.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/frame.h"
+#include "libavutil/mem_internal.h"
 #include "libavutil/opt.h"
 
 #include "libswresample/swresample.h"
@@ -62,6 +64,51 @@ static const uint16_t silk_frame_duration_ms[16] = {
 static const int silk_resample_delay[] = {
     4, 8, 11, 11, 11
 };
+
+typedef struct OpusStreamContext {
+    AVCodecContext *avctx;
+    int output_channels;
+
+    /* number of decoded samples for this stream */
+    int decoded_samples;
+    /* current output buffers for this stream */
+    float *out[2];
+    int out_size;
+    /* Buffer with samples from this stream for synchronizing
+     * the streams when they have different resampling delays */
+    AVAudioFifo *sync_buffer;
+
+    OpusRangeCoder rc;
+    OpusRangeCoder redundancy_rc;
+    SilkContext *silk;
+    CeltFrame *celt;
+    AVFloatDSPContext *fdsp;
+
+    float silk_buf[2][960];
+    float *silk_output[2];
+    DECLARE_ALIGNED(32, float, celt_buf)[2][960];
+    float *celt_output[2];
+
+    DECLARE_ALIGNED(32, float, redundancy_buf)[2][960];
+    float *redundancy_output[2];
+
+    /* buffers for the next samples to be decoded */
+    float *cur_out[2];
+    int remaining_out_size;
+
+    float *out_dummy;
+    int    out_dummy_allocated_size;
+
+    SwrContext *swr;
+    AVAudioFifo *celt_delay;
+    int silk_samplerate;
+    /* number of samples we still want to get from the resampler */
+    int delayed_samples;
+
+    OpusPacket packet;
+
+    int redundancy_idx;
+} OpusStreamContext;
 
 static int get_silk_samplerate(int config)
 {
