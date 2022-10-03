@@ -28,15 +28,16 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "opus.h"
+#include "opus_parse.h"
 #include "parser.h"
 
-typedef struct OpusParseContext {
+typedef struct OpusParserContext {
     ParseContext pc;
-    OpusContext ctx;
+    OpusParseContext ctx;
     OpusPacket pkt;
     int extradata_parsed;
     int ts_framing;
-} OpusParseContext;
+} OpusParserContext;
 
 static const uint8_t *parse_opus_ts_header(const uint8_t *start, int *payload_len, int buf_len)
 {
@@ -83,7 +84,7 @@ static const uint8_t *parse_opus_ts_header(const uint8_t *start, int *payload_le
 static int opus_find_frame_end(AVCodecParserContext *ctx, AVCodecContext *avctx,
                                const uint8_t *buf, int buf_size, int *header_len)
 {
-    OpusParseContext *s = ctx->priv_data;
+    OpusParserContext *s = ctx->priv_data;
     ParseContext *pc    = &s->pc;
     int ret, start_found, i = 0, payload_len = 0;
     const uint8_t *payload;
@@ -166,7 +167,7 @@ static int opus_parse(AVCodecParserContext *ctx, AVCodecContext *avctx,
                        const uint8_t **poutbuf, int *poutbuf_size,
                        const uint8_t *buf, int buf_size)
 {
-    OpusParseContext *s = ctx->priv_data;
+    OpusParserContext *s = ctx->priv_data;
     ParseContext *pc    = &s->pc;
     int next, header_len;
 
@@ -192,7 +193,7 @@ static int opus_parse(AVCodecParserContext *ctx, AVCodecContext *avctx,
 
 const AVCodecParser ff_opus_parser = {
     .codec_ids      = { AV_CODEC_ID_OPUS },
-    .priv_data_size = sizeof(OpusParseContext),
+    .priv_data_size = sizeof(OpusParserContext),
     .parser_parse   = opus_parse,
     .parser_close   = ff_parse_close
 };

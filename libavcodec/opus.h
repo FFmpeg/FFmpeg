@@ -1,5 +1,5 @@
 /*
- * Opus decoder/demuxer common functions
+ * Opus common header
  * Copyright (c) 2012 Andrew D'Addesio
  * Copyright (c) 2013-2014 Mozilla Corporation
  *
@@ -24,8 +24,6 @@
 #define AVCODEC_OPUS_H
 
 #include <stdint.h>
-
-#include "libavutil/float_dsp.h"
 
 #include "avcodec.h"
 #include "opus_rc.h"
@@ -76,58 +74,6 @@ enum OpusBandwidth {
 typedef struct SilkContext SilkContext;
 
 typedef struct CeltFrame CeltFrame;
-
-typedef struct OpusPacket {
-    int packet_size;                /**< packet size */
-    int data_size;                  /**< size of the useful data -- packet size - padding */
-    int code;                       /**< packet code: specifies the frame layout */
-    int stereo;                     /**< whether this packet is mono or stereo */
-    int vbr;                        /**< vbr flag */
-    int config;                     /**< configuration: tells the audio mode,
-                                     **                bandwidth, and frame duration */
-    int frame_count;                /**< frame count */
-    int frame_offset[MAX_FRAMES];   /**< frame offsets */
-    int frame_size[MAX_FRAMES];     /**< frame sizes */
-    int frame_duration;             /**< frame duration, in samples @ 48kHz */
-    enum OpusMode mode;             /**< mode */
-    enum OpusBandwidth bandwidth;   /**< bandwidth */
-} OpusPacket;
-
-// a mapping between an opus stream and an output channel
-typedef struct ChannelMap {
-    int stream_idx;
-    int channel_idx;
-
-    // when a single decoded channel is mapped to multiple output channels, we
-    // write to the first output directly and copy from it to the others
-    // this field is set to 1 for those copied output channels
-    int copy;
-    // this is the index of the output channel to copy from
-    int copy_idx;
-
-    // this channel is silent
-    int silence;
-} ChannelMap;
-
-typedef struct OpusContext {
-    AVClass *av_class;
-    struct OpusStreamContext *streams;
-    int apply_phase_inv;
-
-    int             nb_streams;
-    int      nb_stereo_streams;
-
-    AVFloatDSPContext *fdsp;
-    int16_t gain_i;
-    float   gain;
-
-    ChannelMap *channel_maps;
-} OpusContext;
-
-int ff_opus_parse_packet(OpusPacket *pkt, const uint8_t *buf, int buf_size,
-                         int self_delimited);
-
-int ff_opus_parse_extradata(AVCodecContext *avctx, OpusContext *s);
 
 int ff_silk_init(AVCodecContext *avctx, SilkContext **ps, int output_channels);
 void ff_silk_free(SilkContext **ps);

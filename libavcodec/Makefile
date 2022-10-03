@@ -556,9 +556,9 @@ OBJS-$(CONFIG_NUV_DECODER)             += nuv.o rtjpeg.o
 OBJS-$(CONFIG_ON2AVC_DECODER)          += on2avc.o on2avcdata.o
 OBJS-$(CONFIG_OPUS_DECODER)            += opusdec.o opus.o opus_celt.o opus_rc.o \
                                           opus_pvq.o opus_silk.o opustab.o vorbis_data.o \
-                                          opusdsp.o
+                                          opusdsp.o opus_parse.o
 OBJS-$(CONFIG_OPUS_ENCODER)            += opusenc.o opus.o opus_rc.o opustab.o opus_pvq.o \
-                                          opusenc_psy.o vorbis_data.o
+                                          opusenc_psy.o
 OBJS-$(CONFIG_PAF_AUDIO_DECODER)       += pafaudio.o
 OBJS-$(CONFIG_PAF_VIDEO_DECODER)       += pafvideo.o
 OBJS-$(CONFIG_PAM_DECODER)             += pnmdec.o pnm.o
@@ -1156,8 +1156,8 @@ OBJS-$(CONFIG_MPEG4VIDEO_PARSER)       += mpeg4video_parser.o h263.o \
 OBJS-$(CONFIG_MPEGAUDIO_PARSER)        += mpegaudio_parser.o
 OBJS-$(CONFIG_MPEGVIDEO_PARSER)        += mpegvideo_parser.o    \
                                           mpeg12.o mpeg12data.o
-OBJS-$(CONFIG_OPUS_PARSER)             += opus_parser.o opus.o opustab.o \
-                                          opus_rc.o vorbis_data.o
+OBJS-$(CONFIG_OPUS_PARSER)             += opus_parser.o opus_parse.o \
+                                          vorbis_data.o
 OBJS-$(CONFIG_PNG_PARSER)              += png_parser.o
 OBJS-$(CONFIG_PNM_PARSER)              += pnm_parser.o pnm.o
 OBJS-$(CONFIG_QOI_PARSER)              += qoi_parser.o
