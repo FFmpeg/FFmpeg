@@ -66,6 +66,11 @@ int ff_pix_abs8_y2_neon(MpegEncContext *v, const uint8_t *pix1, const uint8_t *p
 int ff_pix_abs8_xy2_neon(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                          ptrdiff_t stride, int h);
 
+int nsse8_neon(int multiplier, const uint8_t *s, const uint8_t *s2,
+               ptrdiff_t stride, int h);
+int nsse8_neon_wrapper(MpegEncContext *c, const uint8_t *s1, const uint8_t *s2,
+                       ptrdiff_t stride, int h);
+
 av_cold void ff_me_cmp_init_aarch64(MECmpContext *c, AVCodecContext *avctx)
 {
     int cpu_flags = av_get_cpu_flags();
@@ -94,6 +99,7 @@ av_cold void ff_me_cmp_init_aarch64(MECmpContext *c, AVCodecContext *avctx)
         c->vsse[4] = vsse_intra16_neon;
 
         c->nsse[0] = nsse16_neon_wrapper;
+        c->nsse[1] = nsse8_neon_wrapper;
 
         c->median_sad[0] = pix_median_abs16_neon;
         c->median_sad[1] = pix_median_abs8_neon;
@@ -107,4 +113,13 @@ int nsse16_neon_wrapper(MpegEncContext *c, const uint8_t *s1, const uint8_t *s2,
         return nsse16_neon(c->avctx->nsse_weight, s1, s2, stride, h);
     else
         return nsse16_neon(8, s1, s2, stride, h);
+}
+
+int nsse8_neon_wrapper(MpegEncContext *c, const uint8_t *s1, const uint8_t *s2,
+                       ptrdiff_t stride, int h)
+{
+    if (c)
+        return nsse8_neon(c->avctx->nsse_weight, s1, s2, stride, h);
+    else
+        return nsse8_neon(8, s1, s2, stride, h);
 }

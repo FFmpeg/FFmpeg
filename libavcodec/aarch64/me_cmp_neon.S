@@ -1158,6 +1158,105 @@ function nsse16_neon, export=1
         ret
 endfunc
 
+function nsse8_neon, export=1
+        // x0           multiplier
+        // x1           uint8_t *pix1
+        // x2           uint8_t *pix2
+        // x3           ptrdiff_t stride
+        // w4           int h
+
+        str             x0, [sp, #-0x40]!
+        stp             x1, x2, [sp, #0x10]
+        stp             x3, x4, [sp, #0x20]
+        str             x30, [sp, #0x30]
+        bl              X(sse8_neon)
+        ldr             x30, [sp, #0x30]
+        mov             w9, w0                                  // here we store score1
+        ldr             x5, [sp]
+        ldp             x1, x2, [sp, #0x10]
+        ldp             x3, x4, [sp, #0x20]
+        add             sp, sp, #0x40
+
+        movi            v16.8h, #0
+        movi            v17.8h, #0
+        movi            v18.8h, #0
+        movi            v19.8h, #0
+
+        ld1             {v0.8b}, [x1], x3
+        subs            w4, w4, #1                              // we need to make h-1 iterations
+        ext             v1.8b, v0.8b, v0.8b, #1                 // x1 + 1
+        ld1             {v2.8b}, [x2], x3
+        cmp             w4, #2
+        ext             v3.8b, v2.8b, v2.8b, #1                 // x2 + 1
+
+        b.lt            2f
+
+// make 2 iterations at once
+1:
+        ld1             {v4.8b}, [x1], x3
+        ld1             {v20.8b}, [x1], x3
+        ld1             {v6.8b}, [x2], x3
+        ext             v5.8b, v4.8b, v4.8b, #1                 // x1 + stride + 1
+        ext             v21.8b, v20.8b, v20.8b, #1
+        ld1             {v22.8b}, [x2], x3
+        ext             v7.8b, v6.8b, v6.8b, #1                 // x2 + stride + 1
+        usubl           v31.8h, v0.8b, v4.8b
+        ext             v23.8b, v22.8b, v22.8b, #1
+        usubl           v29.8h, v1.8b, v5.8b
+        usubl           v27.8h, v2.8b, v6.8b
+        usubl           v25.8h, v3.8b, v7.8b
+        saba            v16.8h, v31.8h, v29.8h
+        usubl           v31.8h, v4.8b, v20.8b
+        saba            v18.8h, v27.8h, v25.8h
+        sub             w4, w4, #2
+        usubl           v29.8h, v5.8b, v21.8b
+        mov             v0.16b, v20.16b
+        mov             v1.16b, v21.16b
+        saba            v16.8h, v31.8h, v29.8h
+        usubl           v27.8h, v6.8b, v22.8b
+        usubl           v25.8h, v7.8b, v23.8b
+        mov             v2.16b, v22.16b
+        mov             v3.16b, v23.16b
+        cmp             w4, #2
+        saba            v18.8h, v27.8h, v25.8h
+        b.ge            1b
+        cbz             w4, 3f
+
+// iterate by one
+2:
+        ld1             {v4.8b}, [x1], x3
+        subs            w4, w4, #1
+        ext             v5.8b, v4.8b, v4.8b, #1                 // x1 + stride + 1
+        ld1             {v6.8b}, [x2], x3
+        usubl           v31.8h, v0.8b, v4.8b
+        ext             v7.8b, v6.8b, v6.8b, #1                 // x2 + stride + 1
+
+        usubl           v29.8h, v1.8b, v5.8b
+        saba            v16.8h, v31.8h, v29.8h
+        usubl           v27.8h, v2.8b, v6.8b
+        usubl           v25.8h, v3.8b, v7.8b
+        saba            v18.8h, v27.8h, v25.8h
+
+        mov             v0.16b, v4.16b
+        mov             v1.16b, v5.16b
+        mov             v2.16b, v6.16b
+        mov             v3.16b, v7.16b
+
+        cbnz            w4, 2b
+
+3:
+        sqsub           v16.8h, v16.8h, v18.8h
+        ins             v16.h[7], wzr
+        saddlv          s16, v16.8h
+        sqabs           s16, s16
+        fmov            w0, s16
+
+        mul             w0, w0, w5
+        add             w0, w0, w9
+
+        ret
+endfunc
+
 function pix_median_abs16_neon, export=1
         // x0           unused
         // x1           uint8_t *pix1
