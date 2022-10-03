@@ -23,8 +23,12 @@
 
 #if (AV_GCC_VERSION_AT_LEAST(4,0) || defined(__clang__)) && (defined(__ELF__) || defined(__MACH__))
 #    define attribute_visibility_hidden __attribute__((visibility("hidden")))
+#    define FF_VISIBILITY_PUSH_HIDDEN   _Pragma("GCC visibility push(hidden)")
+#    define FF_VISIBILITY_POP_HIDDEN    _Pragma("GCC visibility pop")
 #else
 #    define attribute_visibility_hidden
+#    define FF_VISIBILITY_PUSH_HIDDEN
+#    define FF_VISIBILITY_POP_HIDDEN
 #endif
 
 #endif /* AVUTIL_ATTRIBUTES_INTERNAL_H */
