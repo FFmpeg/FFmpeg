@@ -44,8 +44,6 @@
 #define CELT_POSTFILTER_MINPERIOD    15
 #define CELT_ENERGY_SILENCE          (-28.0f)
 
-typedef struct CeltPVQ CeltPVQ;
-
 enum CeltSpread {
     CELT_SPREAD_NONE,
     CELT_SPREAD_LIGHT,
@@ -96,7 +94,7 @@ struct CeltFrame {
     av_tx_fn            tx_fn[4];
     AVFloatDSPContext   *dsp;
     CeltBlock           block[2];
-    CeltPVQ             *pvq;
+    struct CeltPVQ      *pvq;
     OpusDSP             opusdsp;
     int channels;
     int output_channels;

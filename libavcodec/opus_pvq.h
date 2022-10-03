@@ -34,13 +34,13 @@
                                        float *lowband_out, int level, float gain,    \
                                        float *lowband_scratch, int fill)
 
-struct CeltPVQ {
+typedef struct CeltPVQ {
     DECLARE_ALIGNED(32, int,   qcoeff      )[256];
     DECLARE_ALIGNED(32, float, hadamard_tmp)[256];
 
     float (*pvq_search)(float *X, int *y, int K, int N);
     QUANT_FN(*quant_band);
-};
+} CeltPVQ;
 
 void ff_celt_pvq_init_x86(struct CeltPVQ *s);
 
