@@ -3737,7 +3737,7 @@ static int mxf_read_header(AVFormatContext *s)
 
         PRINT_KEY(s, "read header", klv.key);
         av_log(s, AV_LOG_TRACE, "size %"PRIu64" offset %#"PRIx64"\n", klv.length, klv.offset);
-        if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key) ||
+        if (mxf_match_uid(klv.key, mxf_encrypted_triplet_key, sizeof(mxf_encrypted_triplet_key)) ||
             IS_KLV_KEY(klv.key, mxf_essence_element_key) ||
             IS_KLV_KEY(klv.key, mxf_canopus_essence_element_key) ||
             IS_KLV_KEY(klv.key, mxf_avid_essence_element_key) ||
@@ -3983,7 +3983,7 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
             pos = klv.next_klv - klv.length;
             PRINT_KEY(s, "read packet", klv.key);
             av_log(s, AV_LOG_TRACE, "size %"PRIu64" offset %#"PRIx64"\n", klv.length, klv.offset);
-            if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key)) {
+            if (mxf_match_uid(klv.key, mxf_encrypted_triplet_key, sizeof(mxf_encrypted_triplet_key))) {
                 ret = mxf_decrypt_triplet(s, pkt, &klv);
                 if (ret < 0) {
                     av_log(s, AV_LOG_ERROR, "invalid encoded triplet\n");
