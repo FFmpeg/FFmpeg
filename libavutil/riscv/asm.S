@@ -19,8 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "config.h"
-
 #if defined (__riscv_float_abi_soft)
 #define NOHWF
 #define NOHWD

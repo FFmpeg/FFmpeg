@@ -18,7 +18,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "config.h"
 #include "asm.S"
 
 // (a0) = (a0) + (a1), (a1) = (a0) - (a1) [0..a2-1]
