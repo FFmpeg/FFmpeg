@@ -43,4 +43,22 @@ func ff_alac_decorrelate_stereo_rvv, zve32x
 
         ret
 endfunc
+
+func ff_alac_append_extra_bits_mono_rvv, zve32x
+        ld      a0, (a0)
+        ld      a1, (a1)
+1:
+        vsetvli t0, a4, e32, m1, ta, ma
+        vle32.v v16, (a0)
+        sub     a4, a4, t0
+        vle32.v v24, (a1)
+        sh2add  a1, t0, a1
+        vsll.vx v16, v16, a2
+        vor.vv  v16, v24, v16
+        vse32.v v16, (a0)
+        sh2add  a0, t0, a0
+        bnez    a4, 1b
+
+        ret
+endfunc
 #endif
