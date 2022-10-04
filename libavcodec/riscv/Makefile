@@ -1,5 +1,7 @@
 OBJS-$(CONFIG_AAC_DECODER) += riscv/aacpsdsp_init.o
 RVV-OBJS-$(CONFIG_AAC_DECODER) += riscv/aacpsdsp_rvv.o
+OBJS-$(CONFIG_ALAC_DECODER) += riscv/alacdsp_init.o
+RVV-OBJS-$(CONFIG_ALAC_DECODER) += riscv/alacdsp_rvv.o
 OBJS-$(CONFIG_AUDIODSP) += riscv/audiodsp_init.o \
                            riscv/audiodsp_rvf.o
 RVV-OBJS-$(CONFIG_AUDIODSP) += riscv/audiodsp_rvv.o

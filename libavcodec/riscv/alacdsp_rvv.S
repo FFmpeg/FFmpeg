@@ -1,4 +1,6 @@
 /*
+ * Copyright © 2022 Rémi Denis-Courmont.
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -16,20 +18,29 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_ALACDSP_H
-#define AVCODEC_ALACDSP_H
+#include "config.h"
+#include "libavutil/riscv/asm.S"
 
-#include <stdint.h>
+#if (__riscv_xlen == 64)
+func ff_alac_decorrelate_stereo_rvv, zve32x
+        ld          a4, 8(a0)
+        ld          a0, 0(a0)
+1:
+        vsetvli     t0, a1, e32, m1, ta, ma
+        vle32.v     v24, (a4)
+        sub         a1, a1, t0
+        vle32.v     v16, (a0)
+        vmul.vx     v8, v24, a3
+        vadd.vv     v24, v24, v16
+        vsra.vx     v8, v8, a2
+        vsub.vv     v16, v16, v8
+        vsub.vv     v24, v24, v8
+        vse32.v     v16, (a4)
+        sh2add      a4, t0, a4
+        vse32.v     v24, (a0)
+        sh2add      a0, t0, a0
+        bnez        a1, 1b
 
-typedef struct ALACDSPContext {
-    void (*decorrelate_stereo)(int32_t *buffer[2], int nb_samples,
-                               int decorr_shift, int decorr_left_weight);
-    void (*append_extra_bits[2])(int32_t *buffer[2], int32_t *extra_bits_buffer[2],
-                                 int extra_bits, int channels, int nb_samples);
-} ALACDSPContext;
-
-void ff_alacdsp_init(ALACDSPContext *c);
-void ff_alacdsp_init_riscv(ALACDSPContext *c);
-void ff_alacdsp_init_x86(ALACDSPContext *c);
-
-#endif /* AVCODEC_ALACDSP_H */
+        ret
+endfunc
+#endif

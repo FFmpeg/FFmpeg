@@ -1,4 +1,6 @@
 /*
+ * Copyright © 2022 Rémi Denis-Courmont.
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -16,20 +18,22 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_ALACDSP_H
-#define AVCODEC_ALACDSP_H
-
 #include <stdint.h>
 
-typedef struct ALACDSPContext {
-    void (*decorrelate_stereo)(int32_t *buffer[2], int nb_samples,
-                               int decorr_shift, int decorr_left_weight);
-    void (*append_extra_bits[2])(int32_t *buffer[2], int32_t *extra_bits_buffer[2],
-                                 int extra_bits, int channels, int nb_samples);
-} ALACDSPContext;
+#include "libavutil/attributes.h"
+#include "libavutil/cpu.h"
+#include "libavcodec/avcodec.h"
+#include "libavcodec/alacdsp.h"
 
-void ff_alacdsp_init(ALACDSPContext *c);
-void ff_alacdsp_init_riscv(ALACDSPContext *c);
-void ff_alacdsp_init_x86(ALACDSPContext *c);
+void ff_alac_decorrelate_stereo_rvv(int32_t *buffer[2], int nb_samples,
+                                    int decorr_shift, int decorr_left_weight);
 
-#endif /* AVCODEC_ALACDSP_H */
+av_cold void ff_alacdsp_init_riscv(ALACDSPContext *c)
+{
+#if HAVE_RVV && (__riscv_xlen == 64)
+    int flags = av_get_cpu_flags();
+
+    if (flags & AV_CPU_FLAG_RVV_I32)
+        c->decorrelate_stereo = ff_alac_decorrelate_stereo_rvv;
+#endif
+}
