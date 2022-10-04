@@ -31,6 +31,10 @@ void ff_alac_append_extra_bits_mono_rvv(int32_t *buffer[2],
                                         int32_t *extra_bits_buf[2],
                                         int extra_bits, int channels,
                                         int nb_samples);
+void ff_alac_append_extra_bits_stereo_rvv(int32_t *buffer[2],
+                                          int32_t *extra_bits_buf[2],
+                                          int extra_bits, int channels,
+                                          int nb_samples);
 
 av_cold void ff_alacdsp_init_riscv(ALACDSPContext *c)
 {
@@ -40,6 +44,7 @@ av_cold void ff_alacdsp_init_riscv(ALACDSPContext *c)
     if (flags & AV_CPU_FLAG_RVV_I32) {
         c->decorrelate_stereo = ff_alac_decorrelate_stereo_rvv;
         c->append_extra_bits[0] = ff_alac_append_extra_bits_mono_rvv;
+        c->append_extra_bits[1] = ff_alac_append_extra_bits_stereo_rvv;
     }
 #endif
 }
