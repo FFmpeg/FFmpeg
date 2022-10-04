@@ -3716,7 +3716,6 @@ static int open_files(OptionGroupList *l, const char *inout,
 int ffmpeg_parse_options(int argc, char **argv)
 {
     OptionParseContext octx;
-    uint8_t error[128];
     int ret;
 
     memset(&octx, 0, sizeof(octx));
@@ -3767,8 +3766,7 @@ int ffmpeg_parse_options(int argc, char **argv)
 fail:
     uninit_parse_context(&octx);
     if (ret < 0) {
-        av_strerror(ret, error, sizeof(error));
-        av_log(NULL, AV_LOG_FATAL, "%s\n", error);
+        av_log(NULL, AV_LOG_FATAL, "%s\n", av_err2str(ret));
     }
     return ret;
 }
