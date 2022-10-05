@@ -1,4 +1,6 @@
 /*
+ * Copyright © 2022 Rémi Denis-Courmont.
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -16,20 +18,25 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_OPUSDSP_H
-#define AVCODEC_OPUSDSP_H
+#include "config.h"
 
-#define CELT_EMPH_COEFF 0.8500061035f
+#include "libavutil/attributes.h"
+#include "libavutil/cpu.h"
+#include "libavutil/riscv/cpu.h"
+#include "libavcodec/opusdsp.h"
 
-typedef struct OpusDSP {
-    void (*postfilter)(float *data, int period, float *gains, int len);
-    float (*deemphasis)(float *out, float *in, float coeff, int len);
-} OpusDSP;
+void ff_opus_postfilter_rvv_128(float *data, int period, float *g, int len);
 
-void ff_opus_dsp_init(OpusDSP *ctx);
+av_cold void ff_opus_dsp_init_riscv(OpusDSP *d)
+{
+#if HAVE_RVV
+    int flags = av_get_cpu_flags();
 
-void ff_opus_dsp_init_x86(OpusDSP *ctx);
-void ff_opus_dsp_init_aarch64(OpusDSP *ctx);
-void ff_opus_dsp_init_riscv(OpusDSP *ctx);
-
-#endif /* AVCODEC_OPUSDSP_H */
+    if (flags & AV_CPU_FLAG_RVV_F32)
+        switch (ff_get_rv_vlenb()) {
+        case 16:
+            d->postfilter = ff_opus_postfilter_rvv_128;
+            break;
+        }
+#endif
+}

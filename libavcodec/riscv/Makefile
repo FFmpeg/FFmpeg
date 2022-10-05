@@ -12,6 +12,8 @@ OBJS-$(CONFIG_FMTCONVERT) += riscv/fmtconvert_init.o
 RVV-OBJS-$(CONFIG_FMTCONVERT) += riscv/fmtconvert_rvv.o
 OBJS-$(CONFIG_IDCTDSP) += riscv/idctdsp_init.o
 RVV-OBJS-$(CONFIG_IDCTDSP) += riscv/idctdsp_rvv.o
+OBJS-$(CONFIG_OPUS_DECODER) += riscv/opusdsp_init.o
+RVV-OBJS-$(CONFIG_OPUS_DECODER) += riscv/opusdsp_rvv.o
 OBJS-$(CONFIG_PIXBLOCKDSP) += riscv/pixblockdsp_init.o \
                               riscv/pixblockdsp_rvi.o
 RVV-OBJS-$(CONFIG_PIXBLOCKDSP) += riscv/pixblockdsp_rvv.o
