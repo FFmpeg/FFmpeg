@@ -510,6 +510,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
     }
 
     out->pts = av_rescale_q(out->pts, tinterlace->preout_time_base, outlink->time_base);
+    out->duration = av_rescale_q(1, av_inv_q(outlink->frame_rate), outlink->time_base);
     ret = ff_filter_frame(outlink, out);
 
     return ret;
