@@ -300,7 +300,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             encode_mb(a, a->block);
         }
     }
-    emms_c();
 
     if (avctx->codec_id == AV_CODEC_ID_ASV1)
         flush_put_bits(&a->pb);
