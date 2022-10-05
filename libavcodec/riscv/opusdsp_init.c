@@ -26,6 +26,7 @@
 #include "libavcodec/opusdsp.h"
 
 void ff_opus_postfilter_rvv_128(float *data, int period, float *g, int len);
+void ff_opus_postfilter_rvv_256(float *data, int period, float *g, int len);
 
 av_cold void ff_opus_dsp_init_riscv(OpusDSP *d)
 {
@@ -36,6 +37,9 @@ av_cold void ff_opus_dsp_init_riscv(OpusDSP *d)
         switch (ff_get_rv_vlenb()) {
         case 16:
             d->postfilter = ff_opus_postfilter_rvv_128;
+            break;
+        case 32:
+            d->postfilter = ff_opus_postfilter_rvv_256;
             break;
         }
 #endif

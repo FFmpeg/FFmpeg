@@ -21,30 +21,38 @@
 #include "libavutil/riscv/asm.S"
 
 func ff_opus_postfilter_rvv_128, zve32f
+        lvtypei a5, e32, m2, ta, ma
+        j       1f
+endfunc
+
+func ff_opus_postfilter_rvv_256, zve32f
+        lvtypei a5, e32, m1, ta, ma
+1:
+        li           a4, 5
         addi         a1, a1, 2
         slli         a1, a1, 2
         lw           t1, 4(a2)
         vsetivli     zero, 3, e32, m1, ta, ma
         vle32.v      v24, (a2)
         sub          a1, a0, a1      // a1 = &x4 = &data[-(period + 2)]
-        vsetivli     zero, 5, e32, m2, ta, ma
+        vsetvl       zero, a4, a5
         vslide1up.vx v8, v24, t1
         lw           t2, 8(a2)
         vle32.v      v16, (a1)
         vslide1up.vx v24, v8, t2     // v24 = { g[2], g[1], g[0], g[1], g[2] }
 2:
-        vsetvli t0, a3, e32, m2, ta, ma
+        vsetvl  t0, a3, a5
         vle32.v v0, (a0)
         sub     a3, a3, t0
 3:
-        vsetivli       zero, 5, e32, m2, ta, ma
+        vsetvl         zero, a4, a5
         lw             t2, 20(a1)
         vfmul.vv       v8, v24, v16
         addi           a0, a0, 4
         vslide1down.vx v16, v16, t2
         addi           a1, a1, 4
         vfredusum.vs   v0, v8, v0
-        vsetvli        zero, t0, e32, m2, ta, ma
+        vsetvl         zero, t0, a5
         vmv.x.s        t1, v0
         addi           t0, t0, -1
         vslide1down.vx v0, v0, zero
