@@ -248,8 +248,6 @@ static int ljpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     if (ret < 0)
         return ret;
 
-    emms_c();
-
     ff_mjpeg_escape_FF(&pb, header_bits >> 3);
     ff_mjpeg_encode_picture_trailer(&pb, header_bits);
 
