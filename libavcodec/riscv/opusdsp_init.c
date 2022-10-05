@@ -27,6 +27,8 @@
 
 void ff_opus_postfilter_rvv_128(float *data, int period, float *g, int len);
 void ff_opus_postfilter_rvv_256(float *data, int period, float *g, int len);
+void ff_opus_postfilter_rvv_512(float *data, int period, float *g, int len);
+void ff_opus_postfilter_rvv_1024(float *data, int period, float *g, int len);
 
 av_cold void ff_opus_dsp_init_riscv(OpusDSP *d)
 {
@@ -40,6 +42,12 @@ av_cold void ff_opus_dsp_init_riscv(OpusDSP *d)
             break;
         case 32:
             d->postfilter = ff_opus_postfilter_rvv_256;
+            break;
+        case 64:
+            d->postfilter = ff_opus_postfilter_rvv_512;
+            break;
+        case 128:
+            d->postfilter = ff_opus_postfilter_rvv_512;
             break;
         }
 #endif

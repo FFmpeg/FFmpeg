@@ -25,6 +25,16 @@ func ff_opus_postfilter_rvv_128, zve32f
         j       1f
 endfunc
 
+func ff_opus_postfilter_rvv_512, zve32f
+        lvtypei a5, e32, mf2, ta, ma
+        j       1f
+endfunc
+
+func ff_opus_postfilter_rvv_1024, zve32f
+        lvtypei a5, e32, mf4, ta, ma
+        j       1f
+endfunc
+
 func ff_opus_postfilter_rvv_256, zve32f
         lvtypei a5, e32, m1, ta, ma
 1:
