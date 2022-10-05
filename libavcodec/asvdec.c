@@ -293,8 +293,6 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
 
     *got_frame = 1;
 
-    emms_c();
-
     return (get_bits_count(&a->gb) + 31) / 32 * 4;
 }
 
