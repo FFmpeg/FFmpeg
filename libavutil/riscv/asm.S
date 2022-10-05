@@ -92,3 +92,78 @@
         shnadd  3, \rd, \rs1, \rs2
         .endm
 #endif
+
+        /* Convenience macro to load a Vector type (vtype) as immediate */
+        .macro  lvtypei rd, e, m=m1, tp=tu, mp=mu
+
+        .ifc \e,e8
+        .equ ei, 0
+        .else
+        .ifc \e,e16
+        .equ ei, 8
+        .else
+        .ifc \e,e32
+        .equ ei, 16
+        .else
+        .ifc \e,e64
+        .equ ei, 24
+        .else
+        .error "Unknown element type"
+        .endif
+        .endif
+        .endif
+        .endif
+
+        .ifc \m,m1
+        .equ mi, 0
+        .else
+        .ifc \m,m2
+        .equ mi, 1
+        .else
+        .ifc \m,m4
+        .equ mi, 2
+        .else
+        .ifc \m,m8
+        .equ mi, 3
+        .else
+        .ifc \m,mf8
+        .equ mi, 5
+        .else
+        .ifc \m,mf4
+        .equ mi, 6
+        .else
+        .ifc \m,mf2
+        .equ mi, 7
+        .else
+        .error "Unknown multiplier"
+        .equ mi, 3
+        .endif
+        .endif
+        .endif
+        .endif
+        .endif
+        .endif
+        .endif
+
+        .ifc \tp,tu
+        .equ tpi, 0
+        .else
+        .ifc \tp,ta
+        .equ tpi, 64
+        .else
+        .error "Unknown tail policy"
+        .endif
+        .endif
+
+        .ifc \mp,mu
+        .equ mpi, 0
+        .else
+        .ifc \mp,ma
+        .equ mpi, 128
+        .else
+        .error "Unknown mask policy"
+        .endif
+        .endif
+
+        li      \rd, (ei | mi | tpi | mpi)
+        .endm
