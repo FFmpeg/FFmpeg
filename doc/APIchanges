@@ -14,6 +14,9 @@ libavutil:     2021-04-27
 
 API changes, most recent first:
 
+2022-10-05 - 37d5ddc317 - lavu 57.39.100 - cpu.h
+  Add AV_CPU_FLAG_RVB_BASIC.
+
 2022-10-03 - xxxxxxxxxx - lavf 59.34.100 - avio.h
   Make AVIODirContext an opaque type in a future major version bump.
 
