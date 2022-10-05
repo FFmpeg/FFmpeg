@@ -300,6 +300,7 @@ static int request_frame(AVFilterLink *link)
     }
 
     frame->pts                 = ctx->pts;
+    frame->duration            = 1;
     frame->key_frame           = 1;
     frame->interlaced_frame    = 0;
     frame->pict_type           = AV_PICTURE_TYPE_I;
