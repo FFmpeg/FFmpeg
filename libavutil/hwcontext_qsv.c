@@ -109,20 +109,21 @@ typedef struct QSVFramesContext {
 static const struct {
     enum AVPixelFormat pix_fmt;
     uint32_t           fourcc;
+    uint16_t           mfx_shift;
 } supported_pixel_formats[] = {
-    { AV_PIX_FMT_NV12, MFX_FOURCC_NV12 },
-    { AV_PIX_FMT_BGRA, MFX_FOURCC_RGB4 },
-    { AV_PIX_FMT_P010, MFX_FOURCC_P010 },
-    { AV_PIX_FMT_PAL8, MFX_FOURCC_P8   },
+    { AV_PIX_FMT_NV12, MFX_FOURCC_NV12, 0 },
+    { AV_PIX_FMT_BGRA, MFX_FOURCC_RGB4, 0 },
+    { AV_PIX_FMT_P010, MFX_FOURCC_P010, 1 },
+    { AV_PIX_FMT_PAL8, MFX_FOURCC_P8,   0 },
 #if CONFIG_VAAPI
     { AV_PIX_FMT_YUYV422,
-                       MFX_FOURCC_YUY2 },
+                       MFX_FOURCC_YUY2, 0 },
     { AV_PIX_FMT_Y210,
-                       MFX_FOURCC_Y210 },
+                       MFX_FOURCC_Y210, 1 },
     // VUYX is used for VAAPI child device,
     // the SDK only delares support for AYUV
     { AV_PIX_FMT_VUYX,
-                       MFX_FOURCC_AYUV },
+                       MFX_FOURCC_AYUV, 0 },
 #endif
 };
 
@@ -167,6 +168,16 @@ static uint32_t qsv_fourcc_from_pix_fmt(enum AVPixelFormat pix_fmt)
         if (supported_pixel_formats[i].pix_fmt == pix_fmt)
             return supported_pixel_formats[i].fourcc;
     }
+    return 0;
+}
+
+static uint16_t qsv_shift_from_pix_fmt(enum AVPixelFormat pix_fmt)
+{
+    for (int i = 0; i < FF_ARRAY_ELEMS(supported_pixel_formats); i++) {
+        if (supported_pixel_formats[i].pix_fmt == pix_fmt)
+            return supported_pixel_formats[i].mfx_shift;
+    }
+
     return 0;
 }
 
@@ -503,7 +514,7 @@ static int qsv_init_surface(AVHWFramesContext *ctx, mfxFrameSurface1 *surf)
 
     surf->Info.BitDepthLuma   = desc->comp[0].depth;
     surf->Info.BitDepthChroma = desc->comp[0].depth;
-    surf->Info.Shift          = desc->comp[0].depth > 8;
+    surf->Info.Shift          = qsv_shift_from_pix_fmt(ctx->sw_format);
 
     if (desc->log2_chroma_w && desc->log2_chroma_h)
         surf->Info.ChromaFormat   = MFX_CHROMAFORMAT_YUV420;
