@@ -303,8 +303,11 @@ static int decode_slice(AVCodecContext *c, void *arg)
     }
     if ((ret = ff_ffv1_init_slice_state(f, fs)) < 0)
         return ret;
-    if (f->cur->key_frame || fs->slice_reset_contexts)
+    if (f->cur->key_frame || fs->slice_reset_contexts) {
         ff_ffv1_clear_slice_state(f, fs);
+    } else if (fs->slice_damaged) {
+        return AVERROR_INVALIDDATA;
+    }
 
     width  = fs->slice_width;
     height = fs->slice_height;
