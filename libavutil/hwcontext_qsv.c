@@ -128,6 +128,20 @@ static const struct {
     // the SDK only delares support for Y410
     { AV_PIX_FMT_XV30,
                        MFX_FOURCC_Y410, 0 },
+#if QSV_VERSION_ATLEAST(1, 31)
+    // P012 is used for VAAPI child device,
+    // the SDK only delares support for P016
+    { AV_PIX_FMT_P012,
+                       MFX_FOURCC_P016, 1 },
+    // Y212 is used for VAAPI child device,
+    // the SDK only delares support for Y216
+    { AV_PIX_FMT_Y212,
+                       MFX_FOURCC_Y216, 1 },
+    // XV36 is used for VAAPI child device,
+    // the SDK only delares support for Y416
+    { AV_PIX_FMT_XV36,
+                       MFX_FOURCC_Y416, 1 },
+#endif
 #endif
 };
 
@@ -1493,6 +1507,7 @@ static int map_frame_to_surface(const AVFrame *frame, mfxFrameSurface1 *surface)
     switch (frame->format) {
     case AV_PIX_FMT_NV12:
     case AV_PIX_FMT_P010:
+    case AV_PIX_FMT_P012:
         surface->Data.Y  = frame->data[0];
         surface->Data.UV = frame->data[1];
         break;
@@ -1517,6 +1532,7 @@ static int map_frame_to_surface(const AVFrame *frame, mfxFrameSurface1 *surface)
         break;
 
     case AV_PIX_FMT_Y210:
+    case AV_PIX_FMT_Y212:
         surface->Data.Y16 = (mfxU16 *)frame->data[0];
         surface->Data.U16 = (mfxU16 *)frame->data[0] + 1;
         surface->Data.V16 = (mfxU16 *)frame->data[0] + 3;
@@ -1531,6 +1547,14 @@ static int map_frame_to_surface(const AVFrame *frame, mfxFrameSurface1 *surface)
         break;
     case AV_PIX_FMT_XV30:
         surface->Data.U = frame->data[0];
+        break;
+    case AV_PIX_FMT_XV36:
+        surface->Data.U = frame->data[0];
+        surface->Data.Y = frame->data[0] + 2;
+        surface->Data.V = frame->data[0] + 4;
+        // Only set Data.A to a valid address, the SDK doesn't
+        // use the value from the frame.
+        surface->Data.A = frame->data[0] + 6;
         break;
 #endif
     default:
