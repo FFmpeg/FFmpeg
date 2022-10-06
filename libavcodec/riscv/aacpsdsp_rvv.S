@@ -55,9 +55,10 @@ endfunc
 
 func ff_ps_hybrid_analysis_rvv, zve32f
         /* We need 26 FP registers, for 20 scratch ones. Spill fs0-fs5. */
-        addi    sp, sp, -32
+        addi    sp, sp, -48
         .irp n, 0, 1, 2, 3, 4, 5
-        fsw     fs\n, (4 * \n)(sp)
+HWD     fsd     fs\n, (8 * \n)(sp)
+NOHWD   fsw     fs\n, (4 * \n)(sp)
         .endr
 
         .macro input, j, fd0, fd1, fd2, fd3
@@ -142,9 +143,10 @@ func ff_ps_hybrid_analysis_rvv, zve32f
         bnez       a4, 1b
 
         .irp n, 5, 4, 3, 2, 1, 0
-        flw     fs\n, (4 * \n)(sp)
+HWD     fld     fs\n, (8 * \n)(sp)
+NOHWD   flw     fs\n, (4 * \n)(sp)
         .endr
-        addi    sp, sp, 32
+        addi    sp, sp, 48
         ret
         .purgem input
         .purgem filter
