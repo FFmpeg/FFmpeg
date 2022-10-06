@@ -31,10 +31,7 @@
 
 #include <stdint.h>
 
-#include "mjpeg.h"
-#include "mjpegenc_common.h"
 #include "mpegvideo.h"
-#include "put_bits.h"
 
 int  ff_speedhq_encode_init(MpegEncContext *s);
 void ff_speedhq_encode_close(MpegEncContext *s);
