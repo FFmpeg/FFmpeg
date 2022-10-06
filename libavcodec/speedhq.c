@@ -501,6 +501,8 @@ static int speedhq_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
     if (buf_size < 4 || avctx->width < 8 || avctx->width % 8 != 0)
         return AVERROR_INVALIDDATA;
+    if (buf_size < avctx->width*avctx->height / 64 / 4)
+        return AVERROR_INVALIDDATA;
 
     quality = buf[0];
     if (quality >= 100) {
