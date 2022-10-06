@@ -942,7 +942,7 @@ static av_cold int vpx_init(AVCodecContext *avctx,
     enccfg.g_timebase.num = avctx->time_base.num;
     enccfg.g_timebase.den = avctx->time_base.den;
     enccfg.g_threads      =
-        FFMIN(avctx->thread_count ? avctx->thread_count : av_cpu_count(), 16);
+        FFMIN(avctx->thread_count ? avctx->thread_count : av_cpu_count(), MAX_VPX_THREADS);
     enccfg.g_lag_in_frames= ctx->lag_in_frames;
 
     if (avctx->flags & AV_CODEC_FLAG_PASS1)

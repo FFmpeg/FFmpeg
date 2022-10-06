@@ -25,6 +25,8 @@
 
 #include "codec_internal.h"
 
+#define MAX_VPX_THREADS 64
+
 void ff_vp9_init_static(FFCodec *codec);
 #if 0
 enum AVPixelFormat ff_vpx_imgfmt_to_pixfmt(vpx_img_fmt_t img);

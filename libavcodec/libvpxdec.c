@@ -88,7 +88,7 @@ static av_cold int vpx_init(AVCodecContext *avctx,
                             const struct vpx_codec_iface *iface)
 {
     struct vpx_codec_dec_cfg deccfg = {
-        .threads = FFMIN(avctx->thread_count ? avctx->thread_count : av_cpu_count(), 16)
+        .threads = FFMIN(avctx->thread_count ? avctx->thread_count : av_cpu_count(), MAX_VPX_THREADS)
     };
 
     av_log(avctx, AV_LOG_INFO, "%s\n", vpx_codec_version_str());
