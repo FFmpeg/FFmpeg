@@ -142,6 +142,7 @@ static int qsv_get_continuous_buffer(AVCodecContext *avctx, AVFrame *frame,
         break;
     case AV_PIX_FMT_Y210:
     case AV_PIX_FMT_VUYX:
+    case AV_PIX_FMT_XV30:
         frame->linesize[0] = 4 * FFALIGN(avctx->width, 128);
         break;
     default:
@@ -1043,6 +1044,7 @@ const FFCodec ff_##x##_qsv_decoder = { \
                                                     AV_PIX_FMT_YUYV422, \
                                                     AV_PIX_FMT_Y210, \
                                                     AV_PIX_FMT_VUYX, \
+                                                    AV_PIX_FMT_XV30, \
                                                     AV_PIX_FMT_QSV, \
                                                     AV_PIX_FMT_NONE }, \
     .hw_configs     = qsv_hw_configs, \

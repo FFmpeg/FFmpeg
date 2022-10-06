@@ -212,6 +212,7 @@ enum AVPixelFormat ff_qsv_map_fourcc(uint32_t fourcc)
     case MFX_FOURCC_YUY2: return AV_PIX_FMT_YUYV422;
     case MFX_FOURCC_Y210: return AV_PIX_FMT_Y210;
     case MFX_FOURCC_AYUV: return AV_PIX_FMT_VUYX;
+    case MFX_FOURCC_Y410: return AV_PIX_FMT_XV30;
 #endif
     }
     return AV_PIX_FMT_NONE;
@@ -254,6 +255,10 @@ int ff_qsv_map_pixfmt(enum AVPixelFormat format, uint32_t *fourcc, uint16_t *shi
         *fourcc = MFX_FOURCC_AYUV;
         *shift = 0;
         return AV_PIX_FMT_VUYX;
+    case AV_PIX_FMT_XV30:
+        *fourcc = MFX_FOURCC_Y410;
+        *shift = 0;
+        return AV_PIX_FMT_XV30;
 #endif
     default:
         return AVERROR(ENOSYS);
@@ -296,6 +301,10 @@ int ff_qsv_map_frame_to_surface(const AVFrame *frame, mfxFrameSurface1 *surface)
         // Only set Data.A to a valid address, the SDK doesn't
         // use the value from the frame.
         surface->Data.A = frame->data[0] + 3;
+        break;
+
+    case AV_PIX_FMT_XV30:
+        surface->Data.U = frame->data[0];
         break;
 
     default:
