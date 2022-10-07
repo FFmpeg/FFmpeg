@@ -98,7 +98,7 @@ typedef struct OpusPsyContext {
 int  ff_opus_psy_process           (OpusPsyContext *s, OpusPacketInfo *p);
 void ff_opus_psy_celt_frame_init   (OpusPsyContext *s, CeltFrame *f, int index);
 int  ff_opus_psy_celt_frame_process(OpusPsyContext *s, CeltFrame *f, int index);
-void ff_opus_psy_postencode_update (OpusPsyContext *s, CeltFrame *f, OpusRangeCoder *rc);
+void ff_opus_psy_postencode_update (OpusPsyContext *s, CeltFrame *f);
 
 int  ff_opus_psy_init(OpusPsyContext *s, AVCodecContext *avctx,
                       struct FFBufQueue *bufqueue, OpusEncOptions *options);

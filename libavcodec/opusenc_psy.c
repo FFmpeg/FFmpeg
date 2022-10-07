@@ -479,7 +479,7 @@ int ff_opus_psy_celt_frame_process(OpusPsyContext *s, CeltFrame *f, int index)
     return 0;
 }
 
-void ff_opus_psy_postencode_update(OpusPsyContext *s, CeltFrame *f, OpusRangeCoder *rc)
+void ff_opus_psy_postencode_update(OpusPsyContext *s, CeltFrame *f)
 {
     int i, frame_size = OPUS_BLOCK_SIZE(s->p.framesize);
     int steps_out = s->p.frames*(frame_size/120);

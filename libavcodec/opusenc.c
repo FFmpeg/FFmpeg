@@ -594,7 +594,7 @@ static int opus_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     opus_packet_assembler(s, avpkt);
 
     /* Update the psychoacoustic system */
-    ff_opus_psy_postencode_update(&s->psyctx, s->frame, s->rc);
+    ff_opus_psy_postencode_update(&s->psyctx, s->frame);
 
     /* Remove samples from queue and skip if needed */
     ff_af_queue_remove(&s->afq, s->packet.frames*frame_size, &avpkt->pts, &avpkt->duration);
