@@ -359,7 +359,7 @@ static void celt_gauge_psy_weight(OpusPsyContext *s, OpusPsyStep **start,
     rate /= s->avctx->sample_rate/frame_size;
 
     f_out->framebits = lrintf(rate);
-    f_out->framebits = FFMIN(f_out->framebits, OPUS_MAX_PACKET_SIZE*8);
+    f_out->framebits = FFMIN(f_out->framebits, OPUS_MAX_FRAME_SIZE * 8);
     f_out->framebits = FFALIGN(f_out->framebits, 8);
 }
 
