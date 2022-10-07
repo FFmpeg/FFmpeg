@@ -261,7 +261,7 @@ static void check_inv_trans_inplace(void)
 
     if (check_func(h.vc1_inv_trans_8x8, "vc1dsp.vc1_inv_trans_8x8")) {
         matrix *coeffs;
-        declare_func_emms(AV_CPU_FLAG_MMX, void, int16_t *);
+        declare_func(void, int16_t *);
         RANDOMIZE_BUFFER16(inv_trans_in, 10 * 8);
         coeffs = generate_inverse_quantized_transform_coefficients(8, 8);
         for (int j = 0; j < 8; ++j)
@@ -404,7 +404,7 @@ static void check_unescape(void)
 
     if (check_func(h.vc1_unescape_buffer, "vc1dsp.vc1_unescape_buffer")) {
         int len0, len1, escaped_offset, unescaped_offset, escaped_len;
-        declare_func_emms(AV_CPU_FLAG_MMX, int, const uint8_t *, int, uint8_t *);
+        declare_func(int, const uint8_t *, int, uint8_t *);
 
         /* Test data which consists of escapes sequences packed as tightly as possible */
         for (int x = 0; x < UNESCAPE_BUF_SIZE; ++x)
