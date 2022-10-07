@@ -366,6 +366,7 @@ static inline float celt_decode_pulses(OpusRangeCoder *rc, int *y, uint32_t N, u
     return celt_cwrsi(N, K, idx, y);
 }
 
+#if CONFIG_OPUS_ENCODER
 /*
  * Faster than libopus's search, operates entirely in the signed domain.
  * Slightly worse/better depending on N, K and the input vector.
@@ -418,6 +419,7 @@ static float ppp_pvq_search_c(float *X, int *y, int K, int N)
 
     return (float)y_norm;
 }
+#endif
 
 static uint32_t celt_alg_quant(OpusRangeCoder *rc, float *X, uint32_t N, uint32_t K,
                                enum CeltSpread spread, uint32_t blocks, float gain,
@@ -907,11 +909,13 @@ int av_cold ff_celt_pvq_init(CeltPVQ **pvq, int encode)
     if (!s)
         return AVERROR(ENOMEM);
 
-    s->pvq_search = ppp_pvq_search_c;
     s->quant_band = encode ? pvq_encode_band : pvq_decode_band;
 
-#if CONFIG_OPUS_ENCODER && ARCH_X86
+#if CONFIG_OPUS_ENCODER
+    s->pvq_search = ppp_pvq_search_c;
+#if ARCH_X86
     ff_celt_pvq_init_x86(s);
+#endif
 #endif
 
     *pvq = s;
