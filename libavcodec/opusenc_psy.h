@@ -49,19 +49,11 @@ typedef struct OpusBandExcitation {
     float excitation_init;
 } OpusBandExcitation;
 
-typedef struct PsyChain {
-    int start;
-    int end;
-} PsyChain;
-
 typedef struct OpusPsyContext {
     AVCodecContext *avctx;
     AVFloatDSPContext *dsp;
     struct FFBufQueue *bufqueue;
     OpusEncOptions *options;
-
-    PsyChain cs[128];
-    int cs_num;
 
     OpusBandExcitation ex[OPUS_MAX_CHANNELS][CELT_MAX_BANDS];
     FFBesselFilter bfilter_lo[OPUS_MAX_CHANNELS][CELT_MAX_BANDS];
@@ -78,15 +70,12 @@ typedef struct OpusPsyContext {
     DECLARE_ALIGNED(32, float, scratch)[2048];
 
     /* Stats */
-    float rc_waste;
     float avg_is_band;
     int64_t dual_stereo_used;
     int64_t total_packets_out;
 
     /* State */
-    FFBesselFilter lambda_lp;
     OpusPacketInfo p;
-    int redo_analysis;
     int buffered_steps;
     int steps_to_process;
     int eof;

@@ -470,11 +470,8 @@ int ff_opus_psy_celt_frame_process(OpusPsyContext *s, CeltFrame *f, int index)
 
     if (f->transient != start_transient_flag) {
         f->blocks = f->transient ? OPUS_BLOCK_SIZE(s->p.framesize)/CELT_OVERLAP : 1;
-        s->redo_analysis = 1;
         return 1;
     }
-
-    s->redo_analysis = 0;
 
     return 0;
 }
@@ -509,7 +506,6 @@ void ff_opus_psy_postencode_update(OpusPsyContext *s, CeltFrame *f)
 
     s->avg_is_band /= (s->p.frames + 1);
 
-    s->cs_num = 0;
     s->steps_to_process = 0;
     s->buffered_steps -= steps_out;
     s->total_packets_out += s->p.frames;
@@ -521,7 +517,6 @@ av_cold int ff_opus_psy_init(OpusPsyContext *s, AVCodecContext *avctx,
 {
     int i, ch, ret;
 
-    s->redo_analysis = 0;
     s->lambda = 1.0f;
     s->options = options;
     s->avctx = avctx;
