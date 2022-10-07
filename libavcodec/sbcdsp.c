@@ -107,26 +107,26 @@ static inline void sbc_analyze_4b_4s_simd(SBCDSPContext *s,
                                           int16_t *x, int32_t *out, int out_stride)
 {
     /* Analyze blocks */
-    s->sbc_analyze_4(x + 12, out, ff_sbcdsp_analysis_consts_fixed4_simd_odd);
+    s->sbc_analyze_4(x + 12, out, sbcdsp_analysis_consts_fixed4_simd_odd);
     out += out_stride;
-    s->sbc_analyze_4(x + 8, out, ff_sbcdsp_analysis_consts_fixed4_simd_even);
+    s->sbc_analyze_4(x + 8, out, sbcdsp_analysis_consts_fixed4_simd_even);
     out += out_stride;
-    s->sbc_analyze_4(x + 4, out, ff_sbcdsp_analysis_consts_fixed4_simd_odd);
+    s->sbc_analyze_4(x + 4, out, sbcdsp_analysis_consts_fixed4_simd_odd);
     out += out_stride;
-    s->sbc_analyze_4(x + 0, out, ff_sbcdsp_analysis_consts_fixed4_simd_even);
+    s->sbc_analyze_4(x + 0, out, sbcdsp_analysis_consts_fixed4_simd_even);
 }
 
 static inline void sbc_analyze_4b_8s_simd(SBCDSPContext *s,
                                           int16_t *x, int32_t *out, int out_stride)
 {
     /* Analyze blocks */
-    s->sbc_analyze_8(x + 24, out, ff_sbcdsp_analysis_consts_fixed8_simd_odd);
+    s->sbc_analyze_8(x + 24, out, sbcdsp_analysis_consts_fixed8_simd_odd);
     out += out_stride;
-    s->sbc_analyze_8(x + 16, out, ff_sbcdsp_analysis_consts_fixed8_simd_even);
+    s->sbc_analyze_8(x + 16, out, sbcdsp_analysis_consts_fixed8_simd_even);
     out += out_stride;
-    s->sbc_analyze_8(x + 8, out, ff_sbcdsp_analysis_consts_fixed8_simd_odd);
+    s->sbc_analyze_8(x + 8, out, sbcdsp_analysis_consts_fixed8_simd_odd);
     out += out_stride;
-    s->sbc_analyze_8(x + 0, out, ff_sbcdsp_analysis_consts_fixed8_simd_even);
+    s->sbc_analyze_8(x + 0, out, sbcdsp_analysis_consts_fixed8_simd_even);
 }
 
 static inline void sbc_analyze_1b_8s_simd_even(SBCDSPContext *s,
@@ -137,7 +137,7 @@ static inline void sbc_analyze_1b_8s_simd_odd(SBCDSPContext *s,
                                               int16_t *x, int32_t *out,
                                               int out_stride)
 {
-    s->sbc_analyze_8(x, out, ff_sbcdsp_analysis_consts_fixed8_simd_odd);
+    s->sbc_analyze_8(x, out, sbcdsp_analysis_consts_fixed8_simd_odd);
     s->sbc_analyze_8s = sbc_analyze_1b_8s_simd_even;
 }
 
@@ -145,7 +145,7 @@ static inline void sbc_analyze_1b_8s_simd_even(SBCDSPContext *s,
                                                int16_t *x, int32_t *out,
                                                int out_stride)
 {
-    s->sbc_analyze_8(x, out, ff_sbcdsp_analysis_consts_fixed8_simd_even);
+    s->sbc_analyze_8(x, out, sbcdsp_analysis_consts_fixed8_simd_even);
     s->sbc_analyze_8s = sbc_analyze_1b_8s_simd_odd;
 }
 

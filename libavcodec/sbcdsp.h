@@ -32,10 +32,11 @@
 #ifndef AVCODEC_SBCDSP_H
 #define AVCODEC_SBCDSP_H
 
+#include <stdint.h>
+
 #include "libavutil/mem_internal.h"
 
 #include "sbc.h"
-#include "sbcdsp_data.h"
 
 #define SCALE_OUT_BITS 15
 #define SBC_X_BUFFER_SIZE 328
