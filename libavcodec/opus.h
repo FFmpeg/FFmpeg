@@ -25,9 +25,9 @@
 
 #include <stdint.h>
 
-#define MAX_FRAME_SIZE               1275
-#define MAX_FRAMES                   48
-#define MAX_PACKET_DUR               5760
+#define OPUS_MAX_FRAME_SIZE          1275
+#define OPUS_MAX_FRAMES                48
+#define OPUS_MAX_PACKET_DUR          5760
 
 #define OPUS_TS_HEADER     0x7FE0        // 0x3ff (11 bits)
 #define OPUS_TS_MASK       0xFFE0        // top 11 bits

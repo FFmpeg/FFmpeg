@@ -37,8 +37,8 @@ typedef struct OpusPacket {
     int config;                     /**< configuration: tells the audio mode,
                                      **                bandwidth, and frame duration */
     int frame_count;                /**< frame count */
-    int frame_offset[MAX_FRAMES];   /**< frame offsets */
-    int frame_size[MAX_FRAMES];     /**< frame sizes */
+    int frame_offset[OPUS_MAX_FRAMES]; /**< frame offsets */
+    int frame_size[OPUS_MAX_FRAMES]; /**< frame sizes */
     int frame_duration;             /**< frame duration, in samples @ 48kHz */
     enum OpusMode mode;             /**< mode */
     enum OpusBandwidth bandwidth;   /**< bandwidth */

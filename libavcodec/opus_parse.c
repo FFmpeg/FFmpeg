@@ -128,7 +128,7 @@ int ff_opus_parse_packet(OpusPacket *pkt, const uint8_t *buf, int buf_size,
         }
 
         frame_bytes = end - ptr;
-        if (frame_bytes > MAX_FRAME_SIZE)
+        if (frame_bytes > OPUS_MAX_FRAME_SIZE)
             goto fail;
         pkt->frame_offset[0] = ptr - buf;
         pkt->frame_size[0]   = frame_bytes;
@@ -147,7 +147,7 @@ int ff_opus_parse_packet(OpusPacket *pkt, const uint8_t *buf, int buf_size,
         }
 
         frame_bytes = end - ptr;
-        if (frame_bytes & 1 || frame_bytes >> 1 > MAX_FRAME_SIZE)
+        if (frame_bytes & 1 || frame_bytes >> 1 > OPUS_MAX_FRAME_SIZE)
             goto fail;
         pkt->frame_offset[0] = ptr - buf;
         pkt->frame_size[0]   = frame_bytes >> 1;
@@ -177,7 +177,7 @@ int ff_opus_parse_packet(OpusPacket *pkt, const uint8_t *buf, int buf_size,
 
         /* calculate 2nd frame size */
         frame_bytes = end - ptr - pkt->frame_size[0];
-        if (frame_bytes < 0 || frame_bytes > MAX_FRAME_SIZE)
+        if (frame_bytes < 0 || frame_bytes > OPUS_MAX_FRAME_SIZE)
             goto fail;
         pkt->frame_offset[1] = pkt->frame_offset[0] + pkt->frame_size[0];
         pkt->frame_size[1]   = frame_bytes;
@@ -189,7 +189,7 @@ int ff_opus_parse_packet(OpusPacket *pkt, const uint8_t *buf, int buf_size,
         padding          = (i >> 6) & 0x01;
         pkt->vbr         = (i >> 7) & 0x01;
 
-        if (pkt->frame_count == 0 || pkt->frame_count > MAX_FRAMES)
+        if (pkt->frame_count == 0 || pkt->frame_count > OPUS_MAX_FRAMES)
             goto fail;
 
         /* read padding size */
@@ -239,7 +239,7 @@ int ff_opus_parse_packet(OpusPacket *pkt, const uint8_t *buf, int buf_size,
             } else {
                 frame_bytes = end - ptr - padding;
                 if (frame_bytes % pkt->frame_count ||
-                    frame_bytes / pkt->frame_count > MAX_FRAME_SIZE)
+                    frame_bytes / pkt->frame_count > OPUS_MAX_FRAME_SIZE)
                     goto fail;
                 frame_bytes /= pkt->frame_count;
             }
@@ -258,7 +258,7 @@ int ff_opus_parse_packet(OpusPacket *pkt, const uint8_t *buf, int buf_size,
 
     /* total packet duration cannot be larger than 120ms */
     pkt->frame_duration = opus_frame_duration[pkt->config];
-    if (pkt->frame_duration * pkt->frame_count > MAX_PACKET_DUR)
+    if (pkt->frame_duration * pkt->frame_count > OPUS_MAX_PACKET_DUR)
         goto fail;
 
     /* set mode and bandwidth */
