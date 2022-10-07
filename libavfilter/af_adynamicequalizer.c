@@ -34,13 +34,12 @@ typedef struct AudioDynamicEqualizerContext {
     double ratio;
     double range;
     double makeup;
-    double knee;
-    double slew;
     double attack;
     double release;
     double attack_coef;
     double release_coef;
     int mode;
+    int direction;
     int type;
 
     AVFrame *state;
@@ -54,6 +53,12 @@ static int config_input(AVFilterLink *inlink)
     s->state = ff_get_audio_buffer(inlink, 8);
     if (!s->state)
         return AVERROR(ENOMEM);
+
+    for (int ch = 0; ch < inlink->ch_layout.nb_channels; ch++) {
+        double *state = (double *)s->state->extended_data[ch];
+
+        state[4] = 1.;
+    }
 
     return 0;
 }
@@ -71,69 +76,6 @@ static double get_svf(double in, double *m, double *a, double *b)
     return m[0] * v0 + m[1] * v1 + m[2] * v2;
 }
 
-static inline double from_dB(double x)
-{
-    return exp(0.05 * x * M_LN10);
-}
-
-static inline double to_dB(double x)
-{
-    return 20. * log10(x);
-}
-
-static inline double sqr(double x)
-{
-    return x * x;
-}
-
-static double get_gain(double in, double srate, double makeup,
-                       double aattack, double iratio, double knee, double range,
-                       double thresdb, double slewfactor, double *state,
-                       double attack_coeff, double release_coeff, double nc)
-{
-    double width = (6. * knee) + 0.01;
-    double cdb = 0.;
-    double Lgain = 1.;
-    double Lxg, Lxl, Lyg, Lyl, Ly1;
-    double checkwidth = 0.;
-    double slewwidth = 1.8;
-    int attslew = 0;
-
-    Lyg = 0.;
-    Lxg = to_dB(fabs(in) + DBL_EPSILON);
-
-    Lyg = Lxg + (iratio - 1.) * sqr(Lxg - thresdb + width * .5) / (2. * width);
-
-    checkwidth = 2. * fabs(Lxg - thresdb);
-    if (2. * (Lxg - thresdb) < -width) {
-        Lyg = Lxg;
-    } else if (checkwidth <= width) {
-        Lyg = thresdb + (Lxg - thresdb) * iratio;
-        if (checkwidth <= slewwidth) {
-            if (Lyg >= state[2])
-                attslew = 1;
-        }
-    } else if (2. * (Lxg - thresdb) > width) {
-        Lyg = thresdb + (Lxg - thresdb) * iratio;
-    }
-
-    attack_coeff = attslew ? aattack : attack_coeff;
-
-    Lxl = Lxg - Lyg;
-
-    Ly1 = fmax(Lxl, release_coeff * state[1] +(1. - release_coeff) * Lxl);
-    Lyl = attack_coeff * state[0] + (1. - attack_coeff) * Ly1;
-
-    cdb = -Lyl;
-    Lgain = from_dB(nc * fmin(cdb - makeup, range));
-
-    state[0] = Lyl;
-    state[1] = Ly1;
-    state[2] = Lyg;
-
-    return Lgain;
-}
-
 typedef struct ThreadData {
     AVFrame *in, *out;
 } ThreadData;
@@ -146,25 +88,24 @@ static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     AVFrame *out = td->out;
     const double sample_rate = in->sample_rate;
     const double makeup = s->makeup;
-    const double iratio = 1. / s->ratio;
+    const double ratio = s->ratio;
     const double range = s->range;
     const double dfrequency = fmin(s->dfrequency, sample_rate * 0.5);
     const double tfrequency = fmin(s->tfrequency, sample_rate * 0.5);
-    const double threshold = to_dB(s->threshold + DBL_EPSILON);
+    const double threshold = s->threshold;
     const double release = s->release_coef;
+    const double irelease = 1. - release;
     const double attack = s->attack_coef;
+    const double iattack = 1. - attack;
     const double dqfactor = s->dqfactor;
     const double tqfactor = s->tqfactor;
     const double fg = tan(M_PI * tfrequency / sample_rate);
     const double dg = tan(M_PI * dfrequency / sample_rate);
     const int start = (in->ch_layout.nb_channels * jobnr) / nb_jobs;
     const int end = (in->ch_layout.nb_channels * (jobnr+1)) / nb_jobs;
+    const int direction = s->direction;
     const int mode = s->mode;
     const int type = s->type;
-    const double knee = s->knee;
-    const double slew = s->slew;
-    const double aattack = exp(-1000. / ((s->attack + 2.0 * (slew - 1.)) * sample_rate));
-    const double nc = mode == 0 ? 1. : -1.;
     double da[3], dm[3];
 
     {
@@ -175,7 +116,7 @@ static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
         da[2] = dg * da[1];
 
         dm[0] = 0.;
-        dm[1] = 1.;
+        dm[1] = k;
         dm[2] = 0.;
     }
 
@@ -192,46 +133,63 @@ static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
             detect = listen = get_svf(src[n], dm, da, state);
             detect = fabs(detect);
 
-            gain = get_gain(detect, sample_rate, makeup,
-                            aattack, iratio, knee, range, threshold, slew,
-                            &state[4], attack, release, nc);
+            if (direction == 0 && mode == 0 && detect < threshold)
+                detect = 1. / av_clipd(1. + makeup + (threshold - detect) * ratio, 1., range);
+            else if (direction == 0 && mode == 1 && detect < threshold)
+                detect = av_clipd(1. + makeup + (threshold - detect) * ratio, 1., range);
+            else if (direction == 1 && mode == 0 && detect > threshold)
+                detect = 1. / av_clipd(1. + makeup + (detect - threshold) * ratio, 1., range);
+            else if (direction == 1 && mode == 1 && detect > threshold)
+                detect = av_clipd(1. + makeup + (detect - threshold) * ratio, 1., range);
+            else
+                detect = 1.;
 
-            switch (type) {
-            case 0:
-                k = 1. / (tqfactor * gain);
+            if (detect < state[4]) {
+                detect = iattack * detect + attack * state[4];
+            } else {
+                detect = irelease * detect + release * state[4];
+            }
 
-                fa[0] = 1. / (1. + fg * (fg + k));
-                fa[1] = fg * fa[0];
-                fa[2] = fg * fa[1];
+            if (state[4] != detect || n == 0) {
+                state[4] = gain = detect;
 
-                fm[0] = 1.;
-                fm[1] = k * (gain * gain - 1.);
-                fm[2] = 0.;
-                break;
-            case 1:
-                k = 1. / tqfactor;
-                g = fg / sqrt(gain);
+                switch (type) {
+                case 0:
+                    k = 1. / (tqfactor * gain);
 
-                fa[0] = 1. / (1. + g * (g + k));
-                fa[1] = g * fa[0];
-                fa[2] = g * fa[1];
+                    fa[0] = 1. / (1. + fg * (fg + k));
+                    fa[1] = fg * fa[0];
+                    fa[2] = fg * fa[1];
 
-                fm[0] = 1.;
-                fm[1] = k * (gain - 1.);
-                fm[2] = gain * gain - 1.;
-                break;
-            case 2:
-                k = 1. / tqfactor;
-                g = fg / sqrt(gain);
+                    fm[0] = 1.;
+                    fm[1] = k * (gain * gain - 1.);
+                    fm[2] = 0.;
+                    break;
+                case 1:
+                    k = 1. / tqfactor;
+                    g = fg / sqrt(gain);
 
-                fa[0] = 1. / (1. + g * (g + k));
-                fa[1] = g * fa[0];
-                fa[2] = g * fa[1];
+                    fa[0] = 1. / (1. + g * (g + k));
+                    fa[1] = g * fa[0];
+                    fa[2] = g * fa[1];
 
-                fm[0] = gain * gain;
-                fm[1] = k * (1. - gain) * gain;
-                fm[2] = 1. - gain * gain;
-                break;
+                    fm[0] = 1.;
+                    fm[1] = k * (gain - 1.);
+                    fm[2] = gain * gain - 1.;
+                    break;
+                case 2:
+                    k = 1. / tqfactor;
+                    g = fg / sqrt(gain);
+
+                    fa[0] = 1. / (1. + g * (g + k));
+                    fa[1] = g * fa[0];
+                    fa[2] = g * fa[1];
+
+                    fm[0] = gain * gain;
+                    fm[1] = k * (1. - gain) * gain;
+                    fm[2] = 1. - gain * gain;
+                    break;
+                }
             }
 
             v = get_svf(src[n], fm, fa, &state[2]);
@@ -298,11 +256,9 @@ static const AVOption adynamicequalizer_options[] = {
     { "tqfactor",   "set target Q factor",     OFFSET(tqfactor),   AV_OPT_TYPE_DOUBLE, {.dbl=1},    0.001, 1000,    FLAGS },
     { "attack",     "set attack duration",     OFFSET(attack),     AV_OPT_TYPE_DOUBLE, {.dbl=20},       1, 2000,    FLAGS },
     { "release",    "set release duration",    OFFSET(release),    AV_OPT_TYPE_DOUBLE, {.dbl=200},      1, 2000,    FLAGS },
-    { "knee",       "set knee factor",         OFFSET(knee),       AV_OPT_TYPE_DOUBLE, {.dbl=1},        0, 8,       FLAGS },
-    { "ratio",      "set ratio factor",        OFFSET(ratio),      AV_OPT_TYPE_DOUBLE, {.dbl=1},        1, 20,      FLAGS },
-    { "makeup",     "set makeup gain",         OFFSET(makeup),     AV_OPT_TYPE_DOUBLE, {.dbl=0},        0, 30,      FLAGS },
-    { "range",      "set max gain",            OFFSET(range),      AV_OPT_TYPE_DOUBLE, {.dbl=0},        0, 200,     FLAGS },
-    { "slew",       "set slew factor",         OFFSET(slew),       AV_OPT_TYPE_DOUBLE, {.dbl=1},        1, 200,     FLAGS },
+    { "ratio",      "set ratio factor",        OFFSET(ratio),      AV_OPT_TYPE_DOUBLE, {.dbl=1},        0, 30,      FLAGS },
+    { "makeup",     "set makeup gain",         OFFSET(makeup),     AV_OPT_TYPE_DOUBLE, {.dbl=0},        0, 100,     FLAGS },
+    { "range",      "set max gain",            OFFSET(range),      AV_OPT_TYPE_DOUBLE, {.dbl=50},       1, 200,     FLAGS },
     { "mode",       "set mode",                OFFSET(mode),       AV_OPT_TYPE_INT,    {.i64=0},       -1, 1,       FLAGS, "mode" },
     {   "listen",   0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=-1},       0, 0,       FLAGS, "mode" },
     {   "cut",      0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=0},        0, 0,       FLAGS, "mode" },
@@ -311,6 +267,9 @@ static const AVOption adynamicequalizer_options[] = {
     {   "bell",     0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=0},        0, 0,       FLAGS, "type" },
     {   "lowshelf", 0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=1},        0, 0,       FLAGS, "type" },
     {   "highshelf",0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=2},        0, 0,       FLAGS, "type" },
+    { "direction",  "set direction",           OFFSET(direction),  AV_OPT_TYPE_INT,    {.i64=0},        0, 1,       FLAGS, "direction" },
+    {   "downward", 0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=0},        0, 0,       FLAGS, "direction" },
+    {   "upward",   0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=1},        0, 0,       FLAGS, "direction" },
     { NULL }
 };
 

@@ -897,25 +897,17 @@ Set the amount of milliseconds the signal from detection has to fall below the
 detection threshold before equalization ends.
 Default is 200. Allowed range is between 1 and 2000.
 
-@item knee
-Curve the sharp knee around the detection threshold to calculate
-equalization gain more softly.
-Default is 1. Allowed range is between 0 and 8.
-
 @item ratio
 Set the ratio by which the equalization gain is raised.
-Default is 1. Allowed range is between 1 and 20.
+Default is 1. Allowed range is between 0 and 30.
 
 @item makeup
-Set the makeup offset in dB by which the equalization gain is raised.
-Default is 0. Allowed range is between 0 and 30.
+Set the makeup offset by which the equalization gain is raised.
+Default is 0. Allowed range is between 0 and 100.
 
 @item range
-Set the max allowed cut/boost amount in dB. Default is 0.
-Allowed range is from 0 to 200.
-
-@item slew
-Set the slew factor. Default is 1. Allowed range is from 1 to 200.
+Set the max allowed cut/boost amount. Default is 50.
+Allowed range is from 1 to 200.
 
 @item mode
 Set the mode of filter operation, can be one of the following:
@@ -939,6 +931,16 @@ Set the type of target filter, can be one of the following:
 @item highshelf
 @end table
 Default type is @samp{bell}.
+
+@item direction
+Set processing direction relative to threshold.
+@table @samp
+@item downward
+Boost or cut if threshhold is higher than detected volume.
+@item upward
+Boost or cut if threshhold is lower than detected volume.
+@end table
+Default direction is @samp{downward}.
 @end table
 
 @subsection Commands
