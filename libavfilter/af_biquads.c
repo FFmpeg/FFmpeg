@@ -729,7 +729,7 @@ static void convert_dir2zdf(BiquadsContext *s, int sample_rate)
         a[1] = g * a[0];
         a[2] = g * a[1];
         m[0] = 0.;
-        m[1] = s->csg ? 1. : 2.;
+        m[1] = s->csg ? 1. : k;
         m[2] = 0.;
         break;
     case bandreject:
