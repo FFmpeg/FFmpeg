@@ -52,8 +52,8 @@ static void check_diff_bytes(LLVidEncDSPContext *c)
     LOCAL_ALIGNED_32(uint8_t, src2, [MAX_STRIDE]);
     LOCAL_ALIGNED_32(uint8_t, src3, [MAX_STRIDE]);
 
-    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst, const uint8_t *src1,
-                      const uint8_t *src2, intptr_t w);
+    declare_func(void, uint8_t *dst, const uint8_t *src1,
+                 const uint8_t *src2, intptr_t w);
 
     memset(dst0, 0, MAX_STRIDE);
     memset(dst1, 0, MAX_STRIDE);
