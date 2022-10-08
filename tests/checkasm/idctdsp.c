@@ -79,7 +79,7 @@ static void check_add_put_clamped(void)
     for (size_t t = 0; t < FF_ARRAY_ELEMS(tests); ++t) {
         void (*func)(const int16_t *, uint8_t * ptrdiff_t) = *(void **)((intptr_t) &h + tests[t].offset);
         if (check_func(func, "idctdsp.%s", tests[t].name)) {
-            declare_func_emms(AV_CPU_FLAG_MMX, void, const int16_t *, uint8_t *, ptrdiff_t);
+            declare_func(void, const int16_t *, uint8_t *, ptrdiff_t);
             RANDOMIZE_BUFFER16(src, 64);
             RANDOMIZE_BUFFER8(dst, 10 * 24);
             call_ref(src0, dst0 + 24 + 8, 24);
