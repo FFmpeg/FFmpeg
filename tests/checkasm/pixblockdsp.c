@@ -48,7 +48,7 @@
 #define check_get_pixels(type, aligned)                                                    \
     do {                                                                                   \
         int i;                                                                             \
-        declare_func_emms(AV_CPU_FLAG_MMX, void, int16_t *block, const uint8_t *pixels, ptrdiff_t line_size);    \
+        declare_func(void, int16_t *block, const uint8_t *pixels, ptrdiff_t line_size);    \
                                                                                            \
         for (i = 0; i < BUF_UNITS; i++) {                                              \
             int src_offset = i * 64 * sizeof(type) + (aligned ? 8 : 1) * i;                \
@@ -65,7 +65,7 @@
 #define check_diff_pixels(type, aligned)                                                   \
     do {                                                                                   \
         int i;                                                                             \
-        declare_func_emms(AV_CPU_FLAG_MMX, void, int16_t *av_restrict block, const uint8_t *s1, const uint8_t *s2, ptrdiff_t stride); \
+        declare_func(void, int16_t *av_restrict block, const uint8_t *s1, const uint8_t *s2, ptrdiff_t stride); \
                                                                                            \
         for (i = 0; i < BUF_UNITS; i++) {                                              \
             int src_offset = i * 64 * sizeof(type) + (aligned ? 8 : 1) * i;                \
