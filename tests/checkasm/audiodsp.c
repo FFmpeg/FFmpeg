@@ -61,7 +61,7 @@ void checkasm_check_audiodsp(void)
         unsigned int len_bits_minus4, v1_bits, v2_bits, len;
         int32_t res0, res1;
 
-        declare_func_emms(AV_CPU_FLAG_MMX, int32_t, const int16_t *v1, const int16_t *v2, int len);
+        declare_func(int32_t, const int16_t *v1, const int16_t *v2, int len);
 
         // generate random 5-12bit vector length
         len_bits_minus4 = rnd() % 8;
@@ -90,8 +90,8 @@ void checkasm_check_audiodsp(void)
         int32_t val1, val2, min, max;
         int len;
 
-        declare_func_emms(AV_CPU_FLAG_MMX, void, int32_t *dst, const int32_t *src,
-                          int32_t min, int32_t max, unsigned int len);
+        declare_func(void, int32_t *dst, const int32_t *src,
+                     int32_t min, int32_t max, unsigned int len);
 
         val1 = ((int32_t)rnd());
         val1 = FFSIGN(val1) * (val1 & ((1 << 24) - 1));
@@ -120,8 +120,8 @@ void checkasm_check_audiodsp(void)
         float val1, val2, min, max;
         int i, len;
 
-        declare_func_emms(AV_CPU_FLAG_MMX, void, float *dst, const float *src,
-                          int len, float min, float max);
+        declare_func(void, float *dst, const float *src,
+                     int len, float min, float max);
 
         val1 = (float)rnd() / (UINT_MAX >> 1) - 1.0f;
         val2 = (float)rnd() / (UINT_MAX >> 1) - 1.0f;
