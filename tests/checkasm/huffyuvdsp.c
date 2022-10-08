@@ -42,7 +42,7 @@ static void check_add_int16(HuffYUVDSPContext c, unsigned mask, int width, const
     uint16_t *dst0 = av_mallocz(width * sizeof(uint16_t));
     uint16_t *dst1 = av_mallocz(width * sizeof(uint16_t));
 
-    declare_func_emms(AV_CPU_FLAG_MMX, void, uint16_t *dst, uint16_t *src, unsigned mask, int w);
+    declare_func(void, uint16_t *dst, uint16_t *src, unsigned mask, int w);
 
     if (!src0 || !src1 || !dst0 || !dst1)
         fail();
