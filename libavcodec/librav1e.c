@@ -298,6 +298,12 @@ static av_cold int librav1e_encode_init(AVCodecContext *avctx)
         goto end;
     }
 
+    if (avctx->sample_aspect_ratio.num > 0 && avctx->sample_aspect_ratio.den > 0)
+        rav1e_config_set_sample_aspect_ratio(cfg, (RaRational) {
+                                             avctx->sample_aspect_ratio.num,
+                                             avctx->sample_aspect_ratio.den
+                                             });
+
     rret = rav1e_config_parse_int(cfg, "threads", avctx->thread_count);
     if (rret < 0)
         av_log(avctx, AV_LOG_WARNING, "Invalid number of threads, defaulting to auto.\n");
