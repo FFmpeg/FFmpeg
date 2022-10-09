@@ -2022,6 +2022,17 @@ static av_cold int encode_end(AVCodecContext *avctx)
     ff_snow_common_end(s);
     ff_rate_control_uninit(&s->m);
     av_frame_free(&s->input_picture);
+
+    for (int i = 0; i < MAX_REF_FRAMES; i++) {
+        av_freep(&s->ref_mvs[i]);
+        av_freep(&s->ref_scores[i]);
+    }
+
+    s->m.me.temp = NULL;
+    av_freep(&s->m.me.scratchpad);
+    av_freep(&s->m.me.map);
+    av_freep(&s->m.sc.obmc_scratchpad);
+
     av_freep(&avctx->stats_out);
 
     return 0;
