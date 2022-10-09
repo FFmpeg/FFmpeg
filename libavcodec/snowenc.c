@@ -152,6 +152,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
         s->plane[plane_index].fast_mc= 1;
     }
 
+    // Must be before ff_snow_common_init()
+    ff_hpeldsp_init(&s->hdsp, avctx->flags);
     if ((ret = ff_snow_common_init(avctx)) < 0) {
         return ret;
     }
