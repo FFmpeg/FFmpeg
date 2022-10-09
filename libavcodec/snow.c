@@ -566,9 +566,6 @@ av_cold void ff_snow_common_end(SnowContext *s)
     av_freep(&s->emu_edge_buffer);
 
     for(i=0; i<MAX_REF_FRAMES; i++){
-        if(s->last_picture[i] && s->last_picture[i]->data[0]) {
-            av_assert0(s->last_picture[i]->data[0] != s->current_picture->data[0]);
-        }
         av_frame_free(&s->last_picture[i]);
     }
 
