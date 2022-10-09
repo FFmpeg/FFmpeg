@@ -23,7 +23,6 @@
 #include "avcodec.h"
 #include "decode.h"
 #include "encode.h"
-#include "me_cmp.h"
 #include "snow_dwt.h"
 #include "snow.h"
 #include "snowdata.h"
@@ -434,7 +433,6 @@ av_cold int ff_snow_common_init(AVCodecContext *avctx){
     s->max_ref_frames=1; //just make sure it's not an invalid value in case of no initial keyframe
     s->spatial_decomposition_count = 1;
 
-    ff_me_cmp_init(&s->mecc, avctx);
     ff_hpeldsp_init(&s->hdsp, avctx->flags);
     ff_videodsp_init(&s->vdsp, 8);
     ff_dwt_init(&s->dwt);
