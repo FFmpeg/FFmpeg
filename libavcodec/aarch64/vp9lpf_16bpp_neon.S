@@ -417,10 +417,10 @@ endfunc
 function ff_\func\()_\bpp\()_neon, export=1
 .if \push
         mov             x16, x30
-        stp             d14, d15, [sp, #-0x10]!
-        stp             d12, d13, [sp, #-0x10]!
-        stp             d10, d11, [sp, #-0x10]!
-        stp             d8,  d9,  [sp, #-0x10]!
+        stp             d8,  d9,  [sp, #-0x40]!
+        stp             d14, d15, [sp, #0x30]
+        stp             d12, d13, [sp, #0x20]
+        stp             d10, d11, [sp, #0x10]
 .endif
         lsl             w2,  w2,  #\bpp - 8
         lsl             w3,  w3,  #\bpp - 8
@@ -430,10 +430,10 @@ function ff_\func\()_\bpp\()_neon, export=1
         mov             x7,  #((1 << \bpp) - 1)
 .if \push
         bl              \func\()_16_neon
-        ldp             d8,  d9,  [sp], 0x10
-        ldp             d10, d11, [sp], 0x10
-        ldp             d12, d13, [sp], 0x10
-        ldp             d14, d15, [sp], 0x10
+        ldp             d10, d11, [sp, #0x10]
+        ldp             d12, d13, [sp, #0x20]
+        ldp             d14, d15, [sp, #0x30]
+        ldp             d8,  d9,  [sp], #0x40
         ret             x16
 .else
         b               \func\()_16_neon
@@ -450,10 +450,10 @@ endfunc
 function ff_\func\()_\suffix\()_\bpp\()_neon, export=1
         mov             x16, x30
 .if \push
-        stp             d14, d15, [sp, #-0x10]!
-        stp             d12, d13, [sp, #-0x10]!
-        stp             d10, d11, [sp, #-0x10]!
-        stp             d8,  d9,  [sp, #-0x10]!
+        stp             d8,  d9,  [sp, #-0x40]!
+        stp             d14, d15, [sp, #0x30]
+        stp             d12, d13, [sp, #0x20]
+        stp             d10, d11, [sp, #0x10]
 .endif
         lsl             w2,  w2,  #\bpp - 8
         lsl             w3,  w3,  #\bpp - 8
@@ -469,10 +469,10 @@ function ff_\func\()_\suffix\()_\bpp\()_neon, export=1
 .endif
         bl              \func\()_\int_suffix\()_16_neon
 .if \push
-        ldp             d8,  d9,  [sp], 0x10
-        ldp             d10, d11, [sp], 0x10
-        ldp             d12, d13, [sp], 0x10
-        ldp             d14, d15, [sp], 0x10
+        ldp             d10, d11, [sp, #0x10]
+        ldp             d12, d13, [sp, #0x20]
+        ldp             d14, d15, [sp, #0x30]
+        ldp             d8,  d9,  [sp], 0x40
 .endif
         ret             x16
 endfunc

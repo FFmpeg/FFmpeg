@@ -157,8 +157,7 @@ function ff_h264_idct_add16intra_neon, export=1
 endfunc
 
 function ff_h264_idct_add8_neon, export=1
-        sub             sp,  sp, #0x40
-        stp             x19, x20, [sp]
+        stp             x19, x20, [sp, #-0x40]!
         mov             x12, x30
         ldp             x6,  x15, [x0]          // dest[0], dest[1]
         add             x5,  x1,  #16*4         // block_offset
@@ -187,8 +186,7 @@ function ff_h264_idct_add8_neon, export=1
         csel            x6,  x15, x6,  eq
         cmp             x10, #20
         b.lt            1b
-        ldp             x19, x20, [sp]
-        add             sp,  sp,  #0x40
+        ldp             x19, x20, [sp], #0x40
         ret             x12
 endfunc
 

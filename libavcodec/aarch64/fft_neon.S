@@ -342,8 +342,7 @@ endfunc
 function fft\n\()_neon, align=6
         AARCH64_VALID_JUMP_TARGET
         AARCH64_SIGN_LINK_REGISTER
-        sub             sp,  sp,  #16
-        stp             x28, x30, [sp]
+        stp             x28, x30, [sp, #-16]!
         add             x28, x0,  #\n4*2*8
         bl              fft\n2\()_neon
         mov             x0,  x28

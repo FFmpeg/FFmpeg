@@ -1173,10 +1173,9 @@ function nsse16_neon, export=1
         bl              X(sse16_neon)
         ldr             x30, [sp, #0x30]
         mov             w9, w0                                  // here we store score1
-        ldr             x5, [sp]
         ldp             x1, x2, [sp, #0x10]
         ldp             x3, x4, [sp, #0x20]
-        add             sp, sp, #0x40
+        ldr             x5, [sp], #0x40
 
         movi            v16.8h, #0
         movi            v17.8h, #0
@@ -1295,10 +1294,9 @@ function nsse8_neon, export=1
         bl              X(sse8_neon)
         ldr             x30, [sp, #0x30]
         mov             w9, w0                                  // here we store score1
-        ldr             x5, [sp]
         ldp             x1, x2, [sp, #0x10]
         ldp             x3, x4, [sp, #0x20]
-        add             sp, sp, #0x40
+        ldr             x5, [sp], #0x40
 
         movi            v16.8h, #0
         movi            v17.8h, #0

@@ -33,8 +33,7 @@
 //                      int16_t *sao_offset_val, int sao_left_class,
 //                      int width, int height)
 function ff_hevc_sao_band_filter_8x8_8_neon, export=1
-        sub             sp,  sp, #64
-        stp             xzr, xzr, [sp]
+        stp             xzr, xzr, [sp, #-64]!
         stp             xzr, xzr, [sp, #16]
         stp             xzr, xzr, [sp, #32]
         stp             xzr, xzr, [sp, #48]

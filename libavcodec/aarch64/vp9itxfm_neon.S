@@ -850,10 +850,10 @@ function ff_vp9_\txfm1\()_\txfm2\()_16x16_add_neon, export=1
         mov             x15, x30
         // iadst16 requires clobbering v8-v15, but idct16 doesn't need to.
 .ifnc \txfm1\()_\txfm2,idct_idct
-        stp             d14, d15, [sp, #-0x10]!
-        stp             d12, d13, [sp, #-0x10]!
-        stp             d10, d11, [sp, #-0x10]!
-        stp             d8,  d9,  [sp, #-0x10]!
+        stp             d8,  d9,  [sp, #-0x40]!
+        stp             d14, d15, [sp, #0x30]
+        stp             d12, d13, [sp, #0x20]
+        stp             d10, d11, [sp, #0x10]
 .endif
 
         sub             sp,  sp,  #512
@@ -920,10 +920,10 @@ function ff_vp9_\txfm1\()_\txfm2\()_16x16_add_neon, export=1
 
         add             sp,  sp,  #512
 .ifnc \txfm1\()_\txfm2,idct_idct
-        ldp             d8,  d9,  [sp], 0x10
-        ldp             d10, d11, [sp], 0x10
-        ldp             d12, d13, [sp], 0x10
-        ldp             d14, d15, [sp], 0x10
+        ldp             d10, d11, [sp, #0x10]
+        ldp             d12, d13, [sp, #0x20]
+        ldp             d14, d15, [sp, #0x30]
+        ldp             d8,  d9,  [sp], #0x40
 .endif
         ret             x15
 endfunc
@@ -1486,8 +1486,8 @@ function ff_vp9_idct_idct_32x32_add_neon, export=1
 
         mov             x15, x30
 
-        stp             d10, d11, [sp, #-0x10]!
-        stp             d8,  d9,  [sp, #-0x10]!
+        stp             d8,  d9,  [sp, #-0x20]!
+        stp             d10, d11, [sp, #0x10]
 
         sub             sp,  sp,  #2048
 
@@ -1544,8 +1544,8 @@ function ff_vp9_idct_idct_32x32_add_neon, export=1
 
         add             sp,  sp,  #2048
 
-        ldp             d8,  d9,  [sp], 0x10
-        ldp             d10, d11, [sp], 0x10
+        ldp             d10, d11, [sp, #0x10]
+        ldp             d8,  d9,  [sp], #0x20
 
         ret             x15
 endfunc
@@ -1569,8 +1569,8 @@ function idct32x32_\size\()_add_neon
 
         add             sp,  sp,  #2048
 
-        ldp             d8,  d9,  [sp], 0x10
-        ldp             d10, d11, [sp], 0x10
+        ldp             d10, d11, [sp, #0x10]
+        ldp             d8,  d9,  [sp], #0x20
 
         ret             x15
 endfunc

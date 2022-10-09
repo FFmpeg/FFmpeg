@@ -866,10 +866,10 @@ FFT16_FN ns_float, 1
 
 .macro FFT32_FN name, no_perm
 function ff_tx_fft32_\name\()_neon, export=1
-        stp             d8,  d9,  [sp, #-16]
-        stp             d10, d11, [sp, #-32]
-        stp             d12, d13, [sp, #-48]
-        stp             d14, d15, [sp, #-64]
+        stp             d14, d15, [sp, #-16*4]!
+        stp             d8,  d9,  [sp, #16*3]
+        stp             d10, d11, [sp, #16*2]
+        stp             d12, d13, [sp, #16]
 
         LOAD_SUBADD
         SETUP_SR_RECOMB 32, x7, x8, x9
@@ -911,10 +911,10 @@ function ff_tx_fft32_\name\()_neon, export=1
         zip2            v31.2d, v11.2d, v15.2d
         st1             { v28.4s, v29.4s, v30.4s, v31.4s }, [x1]
 
-        ldp             d14, d15, [sp, #-64]
-        ldp             d12, d13, [sp, #-48]
-        ldp             d10, d11, [sp, #-32]
-        ldp             d8,  d9,  [sp, #-16]
+        ldp             d12, d13, [sp, #16]
+        ldp             d10, d11, [sp, #16*2]
+        ldp             d8,  d9,  [sp, #16*3]
+        ldp             d14, d15, [sp], #16*4
 
         ret
 endfunc
@@ -966,12 +966,12 @@ FFT32_FN ns_float, 1
 
 .macro FFT_SPLIT_RADIX_FN name, no_perm
 function ff_tx_fft_sr_\name\()_neon, export=1
-        stp             d8,  d9,  [sp, #-16]!
-        stp             d10, d11, [sp, #-16]!
-        stp             d12, d13, [sp, #-16]!
-        stp             d14, d15, [sp, #-16]!
-        stp             x19, x20, [sp, #-16]!
-        stp             x21, x22, [sp, #-16]!
+        stp             x21, x22, [sp, #-16*6]!
+        stp             d8,  d9,  [sp, #16*5]
+        stp             d10, d11, [sp, #16*4]
+        stp             d12, d13, [sp, #16*3]
+        stp             d14, d15, [sp, #16*2]
+        stp             x19, x20, [sp, #16]
 
         ldr             w19, [x0, #0] // global target
         mov             w20, w19      // local length
@@ -1185,12 +1185,12 @@ SR_TRANSFORM_DEF        131072
         subs            w19, w19, #32*4
         b.gt            0b
 
-        ldp             x21, x22, [sp], #16
-        ldp             x19, x20, [sp], #16
-        ldp             d14, d15, [sp], #16
-        ldp             d12, d13, [sp], #16
-        ldp             d10, d11, [sp], #16
-        ldp             d8,  d9,  [sp], #16
+        ldp             x19, x20, [sp, #16]
+        ldp             d14, d15, [sp, #16*2]
+        ldp             d12, d13, [sp, #16*3]
+        ldp             d10, d11, [sp, #16*4]
+        ldp             d8,  d9,  [sp, #16*5]
+        ldp             x21, x22, [sp], #16*6
 
         ret
 
@@ -1279,12 +1279,12 @@ SR_TRANSFORM_DEF        131072
         zip2            v7.2d, v15.2d, v23.2d
         st1             {  v4.4s,  v5.4s,  v6.4s,  v7.4s }, [x15]
 
-        ldp             x21, x22, [sp], #16
-        ldp             x19, x20, [sp], #16
-        ldp             d14, d15, [sp], #16
-        ldp             d12, d13, [sp], #16
-        ldp             d10, d11, [sp], #16
-        ldp             d8,  d9,  [sp], #16
+        ldp             x19, x20, [sp, #16]
+        ldp             d14, d15, [sp, #16*2]
+        ldp             d12, d13, [sp, #16*3]
+        ldp             d10, d11, [sp, #16*4]
+        ldp             d8,  d9,  [sp, #16*5]
+        ldp             x21, x22, [sp], #16*6
 
         ret
 endfunc

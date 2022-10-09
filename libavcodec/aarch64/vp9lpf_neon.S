@@ -564,10 +564,10 @@ function vp9_loop_filter_16
         loop_filter     16, .8b,  0,    v8,  v9,  v10, v11, v12, v13, v14, v15
         ret
 9:
-        ldp             d8,  d9,  [sp], 0x10
-        ldp             d10, d11, [sp], 0x10
-        ldp             d12, d13, [sp], 0x10
-        ldp             d14, d15, [sp], 0x10
+        ldp             d10, d11, [sp, #0x10]
+        ldp             d12, d13, [sp, #0x20]
+        ldp             d14, d15, [sp, #0x30]
+        ldp             d8,  d9,  [sp], #0x40
         ret             x10
 endfunc
 
@@ -575,10 +575,10 @@ function vp9_loop_filter_16_16b
         loop_filter     16, .16b, 0,    v8,  v9,  v10, v11, v12, v13, v14, v15
         ret
 9:
-        ldp             d8,  d9,  [sp], 0x10
-        ldp             d10, d11, [sp], 0x10
-        ldp             d12, d13, [sp], 0x10
-        ldp             d14, d15, [sp], 0x10
+        ldp             d10, d11, [sp, #0x10]
+        ldp             d12, d13, [sp, #0x20]
+        ldp             d14, d15, [sp, #0x30]
+        ldp             d8,  d9,  [sp], #0x40
         ret             x10
 endfunc
 
@@ -973,10 +973,10 @@ mix_h_16 88
 
 function ff_vp9_loop_filter_v_16_8_neon, export=1
         mov             x10, x30
-        stp             d14, d15, [sp, #-0x10]!
-        stp             d12, d13, [sp, #-0x10]!
-        stp             d10, d11, [sp, #-0x10]!
-        stp             d8,  d9,  [sp, #-0x10]!
+        stp             d8,  d9,  [sp, #-0x40]!
+        stp             d14, d15, [sp, #0x30]
+        stp             d12, d13, [sp, #0x20]
+        stp             d10, d11, [sp, #0x10]
         sub             x9,  x0,  x1, lsl #3
         ld1             {v16.8b}, [x9], x1 // p7
         ld1             {v24.8b}, [x0], x1 // q0
@@ -1018,10 +1018,10 @@ function ff_vp9_loop_filter_v_16_8_neon, export=1
         st1             {v9.8b},  [x9], x1
         st1             {v17.8b}, [x0], x1
 9:
-        ldp             d8,  d9,  [sp], 0x10
-        ldp             d10, d11, [sp], 0x10
-        ldp             d12, d13, [sp], 0x10
-        ldp             d14, d15, [sp], 0x10
+        ldp             d10, d11, [sp, #0x10]
+        ldp             d12, d13, [sp, #0x20]
+        ldp             d14, d15, [sp, #0x30]
+        ldp             d8,  d9,  [sp], #0x40
         ret             x10
 8:
         add             x9,  x9,  x1, lsl #2
@@ -1045,10 +1045,10 @@ endfunc
 
 function ff_vp9_loop_filter_v_16_16_neon, export=1
         mov             x10, x30
-        stp             d14, d15, [sp, #-0x10]!
-        stp             d12, d13, [sp, #-0x10]!
-        stp             d10, d11, [sp, #-0x10]!
-        stp             d8,  d9,  [sp, #-0x10]!
+        stp             d8,  d9,  [sp, #-0x40]!
+        stp             d14, d15, [sp, #0x30]
+        stp             d12, d13, [sp, #0x20]
+        stp             d10, d11, [sp, #0x10]
         sub             x9,  x0,  x1, lsl #3
         ld1             {v16.16b}, [x9], x1 // p7
         ld1             {v24.16b}, [x0], x1 // q0
@@ -1087,10 +1087,10 @@ function ff_vp9_loop_filter_v_16_16_neon, export=1
         st1             {v9.16b},  [x9], x1
         st1             {v17.16b}, [x0], x1
 9:
-        ldp             d8,  d9,  [sp], 0x10
-        ldp             d10, d11, [sp], 0x10
-        ldp             d12, d13, [sp], 0x10
-        ldp             d14, d15, [sp], 0x10
+        ldp             d10, d11, [sp, #0x10]
+        ldp             d12, d13, [sp, #0x20]
+        ldp             d14, d15, [sp, #0x30]
+        ldp             d8,  d9,  [sp], #0x40
         ret             x10
 8:
         add             x9,  x9,  x1, lsl #2
@@ -1112,10 +1112,10 @@ endfunc
 
 function ff_vp9_loop_filter_h_16_8_neon, export=1
         mov             x10, x30
-        stp             d14, d15, [sp, #-0x10]!
-        stp             d12, d13, [sp, #-0x10]!
-        stp             d10, d11, [sp, #-0x10]!
-        stp             d8,  d9,  [sp, #-0x10]!
+        stp             d8,  d9,  [sp, #-0x40]!
+        stp             d14, d15, [sp, #0x30]
+        stp             d12, d13, [sp, #0x20]
+        stp             d10, d11, [sp, #0x10]
         sub             x9,  x0,  #8
         ld1             {v16.8b}, [x9], x1
         ld1             {v24.8b}, [x0], x1
@@ -1164,10 +1164,10 @@ function ff_vp9_loop_filter_h_16_8_neon, export=1
         st1             {v9.8b},  [x9], x1
         st1             {v31.8b}, [x0], x1
 9:
-        ldp             d8,  d9,  [sp], 0x10
-        ldp             d10, d11, [sp], 0x10
-        ldp             d12, d13, [sp], 0x10
-        ldp             d14, d15, [sp], 0x10
+        ldp             d10, d11, [sp, #0x10]
+        ldp             d12, d13, [sp, #0x20]
+        ldp             d14, d15, [sp, #0x30]
+        ldp             d8,  d9,  [sp], #0x40
         ret             x10
 8:
         // The same writeback as in loop_filter_h_8_8
@@ -1202,10 +1202,10 @@ endfunc
 
 function ff_vp9_loop_filter_h_16_16_neon, export=1
         mov             x10, x30
-        stp             d14, d15, [sp, #-0x10]!
-        stp             d12, d13, [sp, #-0x10]!
-        stp             d10, d11, [sp, #-0x10]!
-        stp             d8,  d9,  [sp, #-0x10]!
+        stp             d8,  d9,  [sp, #-0x40]!
+        stp             d14, d15, [sp, #0x30]
+        stp             d12, d13, [sp, #0x20]
+        stp             d10, d11, [sp, #0x10]
         sub             x9,  x0,  #8
         ld1             {v16.8b},   [x9], x1
         ld1             {v24.8b},   [x0], x1
@@ -1283,10 +1283,10 @@ function ff_vp9_loop_filter_h_16_16_neon, export=1
         st1             {v9.d}[1],  [x9], x1
         st1             {v31.d}[1], [x0], x1
 9:
-        ldp             d8,  d9,  [sp], 0x10
-        ldp             d10, d11, [sp], 0x10
-        ldp             d12, d13, [sp], 0x10
-        ldp             d14, d15, [sp], 0x10
+        ldp             d10, d11, [sp, #0x10]
+        ldp             d12, d13, [sp, #0x20]
+        ldp             d14, d15, [sp, #0x30]
+        ldp             d8,  d9,  [sp], #0x40
         ret             x10
 8:
         sub             x9,  x0,  #4
