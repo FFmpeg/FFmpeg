@@ -406,31 +406,6 @@ av_cold int ff_snow_common_init(AVCodecContext *avctx){
     ff_dwt_init(&s->dwt);
     ff_h264qpel_init(&s->h264qpel, 8);
 
-#define mcf(dx,dy)\
-    s->qdsp.put_qpel_pixels_tab       [0][dy+dx/4]=\
-    s->qdsp.put_no_rnd_qpel_pixels_tab[0][dy+dx/4]=\
-        s->h264qpel.put_h264_qpel_pixels_tab[0][dy+dx/4];\
-    s->qdsp.put_qpel_pixels_tab       [1][dy+dx/4]=\
-    s->qdsp.put_no_rnd_qpel_pixels_tab[1][dy+dx/4]=\
-        s->h264qpel.put_h264_qpel_pixels_tab[1][dy+dx/4];
-
-    mcf( 0, 0)
-    mcf( 4, 0)
-    mcf( 8, 0)
-    mcf(12, 0)
-    mcf( 0, 4)
-    mcf( 4, 4)
-    mcf( 8, 4)
-    mcf(12, 4)
-    mcf( 0, 8)
-    mcf( 4, 8)
-    mcf( 8, 8)
-    mcf(12, 8)
-    mcf( 0,12)
-    mcf( 4,12)
-    mcf( 8,12)
-    mcf(12,12)
-
 #define mcfh(dx,dy)\
     s->hdsp.put_pixels_tab       [0][dy/4+dx/8]=\
     s->hdsp.put_no_rnd_pixels_tab[0][dy/4+dx/8]=\

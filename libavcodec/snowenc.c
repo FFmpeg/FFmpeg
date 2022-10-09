@@ -91,6 +91,32 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if ((ret = ff_snow_common_init(avctx)) < 0) {
         return ret;
     }
+
+#define mcf(dx,dy)\
+    s->qdsp.put_qpel_pixels_tab       [0][dy+dx/4]=\
+    s->qdsp.put_no_rnd_qpel_pixels_tab[0][dy+dx/4]=\
+        s->h264qpel.put_h264_qpel_pixels_tab[0][dy+dx/4];\
+    s->qdsp.put_qpel_pixels_tab       [1][dy+dx/4]=\
+    s->qdsp.put_no_rnd_qpel_pixels_tab[1][dy+dx/4]=\
+        s->h264qpel.put_h264_qpel_pixels_tab[1][dy+dx/4];
+
+    mcf( 0, 0)
+    mcf( 4, 0)
+    mcf( 8, 0)
+    mcf(12, 0)
+    mcf( 0, 4)
+    mcf( 4, 4)
+    mcf( 8, 4)
+    mcf(12, 4)
+    mcf( 0, 8)
+    mcf( 4, 8)
+    mcf( 8, 8)
+    mcf(12, 8)
+    mcf( 0,12)
+    mcf( 4,12)
+    mcf( 8,12)
+    mcf(12,12)
+
     ff_me_cmp_init(&s->mecc, avctx);
     ff_mpegvideoencdsp_init(&s->mpvencdsp, avctx);
 
