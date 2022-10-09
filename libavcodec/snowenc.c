@@ -39,6 +39,70 @@
 #include "mpegvideo.h"
 #include "h263enc.h"
 
+static void init_ref(MotionEstContext *c, const uint8_t *const src[3],
+                     uint8_t *const ref[3], uint8_t *const ref2[3],
+                     int x, int y, int ref_index)
+{
+    SnowContext *s = c->avctx->priv_data;
+    const int offset[3] = {
+          y*c->  stride + x,
+        ((y*c->uvstride + x) >> s->chroma_h_shift),
+        ((y*c->uvstride + x) >> s->chroma_h_shift),
+    };
+    for (int i = 0; i < 3; i++) {
+        c->src[0][i] = src [i];
+        c->ref[0][i] = ref [i] + offset[i];
+    }
+    av_assert2(!ref_index);
+}
+
+static inline void put_symbol(RangeCoder *c, uint8_t *state, int v, int is_signed)
+{
+    if (v) {
+        const int a = FFABS(v);
+        const int e = av_log2(a);
+        const int el = FFMIN(e, 10);
+        int i;
+
+        put_rac(c, state + 0, 0);
+
+        for (i = 0; i < el; i++)
+            put_rac(c, state + 1 + i, 1);  //1..10
+        for(; i < e; i++)
+            put_rac(c, state + 1 + 9, 1);  //1..10
+        put_rac(c, state + 1 + FFMIN(i, 9), 0);
+
+        for (i = e - 1; i >= el; i--)
+            put_rac(c, state + 22 + 9, (a >> i) & 1); //22..31
+        for(; i >= 0; i--)
+            put_rac(c, state + 22 + i, (a >> i) & 1); //22..31
+
+        if (is_signed)
+            put_rac(c, state + 11 + el, v < 0); //11..21
+    } else {
+        put_rac(c, state + 0, 1);
+    }
+}
+
+static inline void put_symbol2(RangeCoder *c, uint8_t *state, int v, int log2)
+{
+    int r = log2 >= 0 ? 1<<log2 : 1;
+
+    av_assert2(v >= 0);
+    av_assert2(log2 >= -4);
+
+    while (v >= r) {
+        put_rac(c, state + 4 + log2, 1);
+        v -= r;
+        log2++;
+        if (log2 > 0) r += r;
+    }
+    put_rac(c, state + 4 + log2, 0);
+
+    for (int i = log2 - 1; i >= 0; i--)
+        put_rac(c, state + 31 - i, (v >> i) & 1);
+}
+
 static int get_encode_buffer(SnowContext *s, AVFrame *frame)
 {
     int ret;

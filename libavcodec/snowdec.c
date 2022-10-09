@@ -31,6 +31,153 @@
 #include "rangecoder.h"
 #include "mathops.h"
 
+static inline int get_symbol(RangeCoder *c, uint8_t *state, int is_signed)
+{
+    if (get_rac(c, state + 0))
+        return 0;
+    else {
+        int e;
+        unsigned a;
+        e = 0;
+        while (get_rac(c, state + 1 + FFMIN(e, 9))) { //1..10
+            e++;
+            if (e > 31)
+                return AVERROR_INVALIDDATA;
+        }
+
+        a = 1;
+        for (int i = e - 1; i >= 0; i--)
+            a += a + get_rac(c, state + 22 + FFMIN(i, 9)); //22..31
+
+        e = -(is_signed && get_rac(c, state + 11 + FFMIN(e, 10))); //11..21
+        return (a ^ e) - e;
+    }
+}
+
+static inline int get_symbol2(RangeCoder *c, uint8_t *state, int log2)
+{
+    int r = log2 >= 0 ? 1 << log2 : 1;
+    int v = 0;
+
+    av_assert2(log2 >= -4);
+
+    while (log2 < 28 && get_rac(c, state + 4 + log2)) {
+        v += r;
+        log2++;
+        if (log2 > 0) r += r;
+    }
+
+    for (int i = log2 - 1; i >= 0; i--)
+        v += get_rac(c, state + 31 - i) << i;
+
+    return v;
+}
+
+static void unpack_coeffs(SnowContext *s, SubBand *b, SubBand * parent, int orientation)
+{
+    const int w = b->width;
+    const int h = b->height;
+
+    int run, runs;
+    x_and_coeff *xc = b->x_coeff;
+    x_and_coeff *prev_xc = NULL;
+    x_and_coeff *prev2_xc = xc;
+    x_and_coeff *parent_xc = parent ? parent->x_coeff : NULL;
+    x_and_coeff *prev_parent_xc = parent_xc;
+
+    runs = get_symbol2(&s->c, b->state[30], 0);
+    if (runs-- > 0) run = get_symbol2(&s->c, b->state[1], 3);
+    else            run = INT_MAX;
+
+    for (int y = 0; y < h; y++) {
+        int v = 0;
+        int lt = 0, t = 0, rt = 0;
+
+        if (y && prev_xc->x == 0)
+            rt = prev_xc->coeff;
+
+        for (int x = 0; x < w; x++) {
+            int p = 0;
+            const int l = v;
+
+            lt= t; t= rt;
+
+            if (y) {
+                if (prev_xc->x <= x)
+                    prev_xc++;
+                if (prev_xc->x == x + 1)
+                    rt = prev_xc->coeff;
+                else
+                    rt = 0;
+            }
+            if (parent_xc) {
+                if (x>>1 > parent_xc->x)
+                    parent_xc++;
+                if (x>>1 == parent_xc->x)
+                    p = parent_xc->coeff;
+            }
+            if (/*ll|*/l|lt|t|rt|p) {
+                int context = av_log2(/*FFABS(ll) + */3*(l>>1) + (lt>>1) + (t&~1) + (rt>>1) + (p>>1));
+
+                v = get_rac(&s->c, &b->state[0][context]);
+                if (v) {
+                    v  = 2*(get_symbol2(&s->c, b->state[context + 2], context-4) + 1);
+                    v += get_rac(&s->c, &b->state[0][16 + 1 + 3 + ff_quant3bA[l&0xFF] + 3 * ff_quant3bA[t&0xFF]]);
+                    if ((uint16_t)v != v) {
+                        av_log(s->avctx, AV_LOG_ERROR, "Coefficient damaged\n");
+                        v = 1;
+                    }
+                    xc->x = x;
+                    (xc++)->coeff = v;
+                }
+            } else {
+                if (!run) {
+                    if (runs-- > 0) run = get_symbol2(&s->c, b->state[1], 3);
+                    else            run = INT_MAX;
+                    v  = 2 * (get_symbol2(&s->c, b->state[0 + 2], 0-4) + 1);
+                    v += get_rac(&s->c, &b->state[0][16 + 1 + 3]);
+                    if ((uint16_t)v != v) {
+                        av_log(s->avctx, AV_LOG_ERROR, "Coefficient damaged\n");
+                        v = 1;
+                    }
+
+                    xc->x = x;
+                    (xc++)->coeff = v;
+                } else {
+                    int max_run;
+                    run--;
+                    v = 0;
+                    av_assert2(run >= 0);
+                    if (y) max_run = FFMIN(run, prev_xc->x - x - 2);
+                    else   max_run = FFMIN(run, w-x-1);
+                    if (parent_xc)
+                        max_run = FFMIN(max_run, 2*parent_xc->x - x - 1);
+                    av_assert2(max_run >= 0 && max_run <= run);
+
+                    x   += max_run;
+                    run -= max_run;
+                }
+            }
+        }
+        (xc++)->x = w+1; //end marker
+        prev_xc  = prev2_xc;
+        prev2_xc = xc;
+
+        if (parent_xc) {
+            if (y & 1) {
+                while (parent_xc->x != parent->width+1)
+                    parent_xc++;
+                parent_xc++;
+                prev_parent_xc= parent_xc;
+            } else {
+                parent_xc= prev_parent_xc;
+            }
+        }
+    }
+
+    (xc++)->x = w + 1; //end marker
+}
+
 static av_always_inline void predict_slice_buffered(SnowContext *s, slice_buffer * sb, IDWTELEM * old_buffer, int plane_index, int add, int mb_y){
     Plane *p= &s->plane[plane_index];
     const int mb_w= s->b_width  << s->block_max_depth;
