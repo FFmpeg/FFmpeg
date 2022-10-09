@@ -2,6 +2,7 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 4.4.3:
+- avformat/vividas: Check packet size
 - configure: link to libatomic when it's present
 - avcodec/dstdec: Check for overflow in build_filter()
 - avformat/spdifdec: Use 64bit to compute bit rate
