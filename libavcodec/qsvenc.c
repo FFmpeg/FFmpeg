@@ -1514,6 +1514,64 @@ static int get_free_frame(QSVEncContext *q, QSVFrame **f)
     return 0;
 }
 
+static int qsvenc_fill_padding_area(AVFrame *frame, int new_w, int new_h)
+{
+    const AVPixFmtDescriptor *desc;
+    int max_step[4], filled[4] = { 0 };
+
+    desc = av_pix_fmt_desc_get(frame->format);
+    av_assert0(desc);
+    av_image_fill_max_pixsteps(max_step, NULL, desc);
+
+    for (int i = 0; i < desc->nb_components; i++) {
+        const AVComponentDescriptor *comp = &desc->comp[i];
+        int sheight, dheight, plane = comp->plane;
+        ptrdiff_t swidth = av_image_get_linesize(frame->format,
+                                                 frame->width,
+                                                 plane);
+        ptrdiff_t dwidth = av_image_get_linesize(frame->format,
+                                                 new_w,
+                                                 plane);
+
+        if (swidth < 0 || dwidth < 0) {
+            av_log(NULL, AV_LOG_ERROR, "av_image_get_linesize failed\n");
+            return AVERROR(EINVAL);
+        }
+
+        if (filled[plane])
+            continue;
+
+        sheight = frame->height;
+        dheight = new_h;
+
+        if (plane) {
+            sheight = AV_CEIL_RSHIFT(frame->height, desc->log2_chroma_h);
+            dheight = AV_CEIL_RSHIFT(new_h, desc->log2_chroma_h);
+        }
+
+        // Fill right padding
+        if (new_w > frame->width) {
+            for (int j = 0; j < sheight; j++) {
+                void *line_ptr = frame->data[plane] + j * frame->linesize[plane] + swidth;
+
+                av_memcpy_backptr(line_ptr,
+                                  max_step[plane],
+                                  new_w - frame->width);
+            }
+        }
+
+        // Fill bottom padding
+        for (int j = sheight; j < dheight; j++)
+            memcpy(frame->data[plane] + j * frame->linesize[plane],
+                   frame->data[plane] + (sheight - 1) * frame->linesize[plane],
+                   dwidth);
+
+        filled[plane] = 1;
+    }
+
+    return 0;
+}
+
 static int submit_frame(QSVEncContext *q, const AVFrame *frame,
                         QSVFrame **new_frame)
 {
@@ -1543,8 +1601,9 @@ static int submit_frame(QSVEncContext *q, const AVFrame *frame,
         /* and to make allocation continious for data[0]/data[1] */
          if ((frame->height & 31 || frame->linesize[0] & (q->width_align - 1)) ||
             (frame->data[1] - frame->data[0] != frame->linesize[0] * FFALIGN(qf->frame->height, q->height_align))) {
-            qf->frame->height = FFALIGN(frame->height, q->height_align);
-            qf->frame->width  = FFALIGN(frame->width, q->width_align);
+            int tmp_w, tmp_h;
+            qf->frame->height = tmp_h = FFALIGN(frame->height, q->height_align);
+            qf->frame->width  = tmp_w = FFALIGN(frame->width, q->width_align);
 
             qf->frame->format = frame->format;
 
@@ -1558,6 +1617,12 @@ static int submit_frame(QSVEncContext *q, const AVFrame *frame,
             qf->frame->width  = frame->width;
 
             ret = av_frame_copy(qf->frame, frame);
+            if (ret < 0) {
+                av_frame_unref(qf->frame);
+                return ret;
+            }
+
+            ret = qsvenc_fill_padding_area(qf->frame, tmp_w, tmp_h);
             if (ret < 0) {
                 av_frame_unref(qf->frame);
                 return ret;
