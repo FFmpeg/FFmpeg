@@ -433,7 +433,7 @@ static int deinterlace_slice(AVFilterContext *ctx, void *arg,
     return 0;
 }
 
-static int filter(AVFilterContext *ctx, int is_second, AVFrame *in)
+static int filter(AVFilterContext *ctx, AVFrame *in)
 {
     ESTDIFContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
@@ -510,7 +510,7 @@ static int config_input(AVFilterLink *inlink)
     }
 
     s->pts = s->prev->pts * 2;
-    ret = filter(ctx, 0, s->prev);
+    ret = filter(ctx, s->prev);
     if (ret < 0 || s->mode == 0) {
         av_frame_free(&s->prev);
         s->prev = in;
@@ -518,7 +518,7 @@ static int config_input(AVFilterLink *inlink)
     }
 
     s->pts = s->prev->pts + in->pts;
-    ret = filter(ctx, 1, s->prev);
+    ret = filter(ctx, s->prev);
     av_frame_free(&s->prev);
     s->prev = in;
     return ret;
