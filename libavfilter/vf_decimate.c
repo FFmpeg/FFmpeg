@@ -43,7 +43,6 @@ typedef struct DecimateContext {
     AVFrame *last;          ///< last frame from the previous queue
     AVFrame **clean_src;    ///< frame queue for the clean source
     int got_frame[2];       ///< frame request flag for each input stream
-    AVRational ts_unit;     ///< timestamp units for the output frames
     int64_t last_pts;       ///< last output timestamp
     int64_t start_pts;      ///< base for output timestamps
     uint32_t eof;           ///< bitmask for end of stream
@@ -213,6 +212,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     /* push all frames except the drop */
     ret = 0;
     for (i = 0; i < dm->cycle && dm->queue[i].frame; i++) {
+        AVRational in_tb = ctx->inputs[INPUT_MAIN]->time_base;
         if (i == drop) {
             if (dm->ppsrc)
                 av_frame_free(&dm->clean_src[i]);
@@ -221,7 +221,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             AVFrame *frame = dm->queue[i].frame;
             dm->queue[i].frame = NULL;
             if (frame->pts != AV_NOPTS_VALUE && dm->start_pts == AV_NOPTS_VALUE)
-                dm->start_pts = frame->pts;
+                dm->start_pts = av_rescale_q(frame->pts, in_tb, outlink->time_base);
+
             if (dm->ppsrc) {
                 av_frame_free(&frame);
                 frame = dm->clean_src[i];
@@ -229,8 +230,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                     continue;
                 dm->clean_src[i] = NULL;
             }
-            frame->pts = av_rescale_q(outlink->frame_count_in, dm->ts_unit, (AVRational){1,1}) +
+            frame->pts = outlink->frame_count_in +
                          (dm->start_pts == AV_NOPTS_VALUE ? 0 : dm->start_pts);
+            frame->duration = 1;
             dm->last_pts = frame->pts;
             ret = ff_filter_frame(outlink, frame);
             if (ret < 0)
@@ -404,7 +406,7 @@ static int config_output(AVFilterLink *outlink)
     fps = av_mul_q(fps, (AVRational){dm->cycle - 1, dm->cycle});
     av_log(ctx, AV_LOG_VERBOSE, "FPS: %d/%d -> %d/%d\n",
            inlink->frame_rate.num, inlink->frame_rate.den, fps.num, fps.den);
-    outlink->time_base  = inlink->time_base;
+    outlink->time_base  = av_inv_q(fps);
     outlink->frame_rate = fps;
     outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
     if (dm->ppsrc) {
@@ -414,7 +416,6 @@ static int config_output(AVFilterLink *outlink)
         outlink->w = inlink->w;
         outlink->h = inlink->h;
     }
-    dm->ts_unit = av_inv_q(av_mul_q(fps, outlink->time_base));
     return 0;
 }
 
