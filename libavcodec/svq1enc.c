@@ -37,11 +37,61 @@
 #include "internal.h"
 #include "mpegutils.h"
 #include "packet_internal.h"
+#include "put_bits.h"
 #include "svq1.h"
-#include "svq1enc.h"
+#include "svq1encdsp.h"
 #include "svq1enc_cb.h"
-#include "libavutil/avassert.h"
 
+#include "libavutil/avassert.h"
+#include "libavutil/frame.h"
+#include "libavutil/mem_internal.h"
+
+typedef struct SVQ1EncContext {
+    /* FIXME: Needed for motion estimation, should not be used for anything
+     * else, the idea is to make the motion estimation eventually independent
+     * of MpegEncContext, so this will be removed then. */
+    MpegEncContext m;
+    AVCodecContext *avctx;
+    MECmpContext mecc;
+    HpelDSPContext hdsp;
+    AVFrame *current_picture;
+    AVFrame *last_picture;
+    PutBitContext pb;
+
+    /* Some compression statistics */
+    enum AVPictureType pict_type;
+    int quality;
+
+    /* why ooh why this sick breadth first order,
+     * everything is slower and more complex */
+    PutBitContext reorder_pb[6];
+
+    int frame_width;
+    int frame_height;
+
+    /* Y plane block dimensions */
+    int y_block_width;
+    int y_block_height;
+
+    /* U & V plane (C planes) block dimensions */
+    int c_block_width;
+    int c_block_height;
+
+    DECLARE_ALIGNED(16, int16_t, encoded_block_levels)[6][7][256];
+
+    uint16_t *mb_type;
+    uint32_t *dummy;
+    int16_t (*motion_val8[3])[2];
+    int16_t (*motion_val16[3])[2];
+
+    int64_t rd_total;
+
+    uint8_t *scratchbuf;
+
+    int motion_est;
+
+    SVQ1EncDSPContext svq1encdsp;
+} SVQ1EncContext;
 
 static void svq1_write_header(SVQ1EncContext *s, int frame_type)
 {
@@ -154,7 +204,7 @@ static int encode_block(SVQ1EncContext *s, uint8_t *src, uint8_t *ref,
                 int sqr, diff, score;
 
                 vector = codebook + stage * size * 16 + i * size;
-                sqr    = s->ssd_int8_vs_int16(vector, block[stage], size);
+                sqr    = s->svq1encdsp.ssd_int8_vs_int16(vector, block[stage], size);
                 diff   = block_sum[stage] - sum;
                 score  = sqr - (diff * (int64_t)diff >> (level + 3)); // FIXME: 64 bits slooow
                 if (score < best_vector_score) {
@@ -558,7 +608,7 @@ static av_cold int svq1_encode_init(AVCodecContext *avctx)
                                         s->y_block_height * sizeof(int16_t));
     s->dummy               = av_mallocz((s->y_block_width + 1) *
                                         s->y_block_height * sizeof(int32_t));
-    s->ssd_int8_vs_int16   = ssd_int8_vs_int16_c;
+    s->svq1encdsp.ssd_int8_vs_int16 = ssd_int8_vs_int16_c;
 
     if (!s->m.me.temp || !s->m.me.scratchpad || !s->m.me.map ||
         !s->m.me.score_map || !s->mb_type || !s->dummy) {
@@ -566,9 +616,9 @@ static av_cold int svq1_encode_init(AVCodecContext *avctx)
     }
 
 #if ARCH_PPC
-    ff_svq1enc_init_ppc(s);
+    ff_svq1enc_init_ppc(&s->svq1encdsp);
 #elif ARCH_X86
-    ff_svq1enc_init_x86(s);
+    ff_svq1enc_init_x86(&s->svq1encdsp);
 #endif
 
     ff_h263_encode_init(&s->m); // mv_penalty

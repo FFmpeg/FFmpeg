@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007 Loren Merritt
+ * SVQ1 encoder DSP
  *
  * This file is part of FFmpeg.
  *
@@ -18,20 +18,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "config.h"
-#include "libavutil/attributes.h"
-#include "libavutil/cpu.h"
-#include "libavutil/x86/cpu.h"
-#include "libavcodec/svq1encdsp.h"
+#ifndef AVCODEC_SVQ1ENCDSP_H
+#define AVCODEC_SVQ1ENCDSP_H
 
-int ff_ssd_int8_vs_int16_sse2(const int8_t *pix1, const int16_t *pix2,
-                              intptr_t size);
+#include <stdint.h>
 
-av_cold void ff_svq1enc_init_x86(SVQ1EncDSPContext *c)
-{
-    int cpu_flags = av_get_cpu_flags();
+typedef struct SVQ1EncDSPContext {
+    int (*ssd_int8_vs_int16)(const int8_t *pix1, const int16_t *pix2,
+                             intptr_t size);
+} SVQ1EncDSPContext;
 
-    if (EXTERNAL_SSE2(cpu_flags)) {
-        c->ssd_int8_vs_int16 = ff_ssd_int8_vs_int16_sse2;
-    }
-}
+void ff_svq1enc_init_ppc(SVQ1EncDSPContext *c);
+void ff_svq1enc_init_x86(SVQ1EncDSPContext *c);
+
+#endif /* AVCODEC_SVQ1ENCDSP_H */
