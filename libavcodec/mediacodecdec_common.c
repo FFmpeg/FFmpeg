@@ -487,8 +487,20 @@ static int mediacodec_dec_parse_format(AVCodecContext *avctx, MediaCodecDecConte
     AMEDIAFORMAT_GET_INT32(s->crop_left,   "crop-left",   0);
     AMEDIAFORMAT_GET_INT32(s->crop_right,  "crop-right",  0);
 
-    width = s->crop_right + 1 - s->crop_left;
-    height = s->crop_bottom + 1 - s->crop_top;
+    if (s->crop_right && s->crop_bottom) {
+        width = s->crop_right + 1 - s->crop_left;
+        height = s->crop_bottom + 1 - s->crop_top;
+    } else {
+        /* TODO: NDK MediaFormat should try getRect() first.
+         * Try crop-width/crop-height, it works on NVIDIA Shield.
+         */
+        AMEDIAFORMAT_GET_INT32(width,  "crop-width",  0);
+        AMEDIAFORMAT_GET_INT32(height, "crop-height", 0);
+    }
+    if (!width || !height) {
+        width = s->width;
+        height = s->height;
+    }
 
     AMEDIAFORMAT_GET_INT32(s->display_width,  "display-width",  0);
     AMEDIAFORMAT_GET_INT32(s->display_height, "display-height", 0);
