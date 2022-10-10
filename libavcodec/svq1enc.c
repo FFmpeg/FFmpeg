@@ -390,9 +390,8 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
                     init_put_bits(&s->reorder_pb[i], reorder_buffer[0][i],
                                   7 * 32);
                 if (s->pict_type == AV_PICTURE_TYPE_P) {
-                    const uint8_t *vlc = ff_svq1_block_type_vlc[SVQ1_BLOCK_INTRA];
-                    put_bits(&s->reorder_pb[5], vlc[1], vlc[0]);
-                    score[0] = vlc[1] * lambda;
+                    put_bits(&s->reorder_pb[5], SVQ1_BLOCK_INTRA_LEN, SVQ1_BLOCK_INTRA_CODE);
+                    score[0] = SVQ1_BLOCK_INTRA_LEN * lambda;
                 }
                 score[0] += encode_block(s, src + 16 * x, NULL, temp, stride,
                                          5, 64, lambda, 1);
@@ -406,7 +405,6 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
             best = 0;
 
             if (s->pict_type == AV_PICTURE_TYPE_P) {
-                const uint8_t *vlc = ff_svq1_block_type_vlc[SVQ1_BLOCK_INTER];
                 int mx, my, pred_x, pred_y, dxy;
                 int16_t *motion_ptr;
 
@@ -417,7 +415,7 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
                         init_put_bits(&s->reorder_pb[i], reorder_buffer[1][i],
                                       7 * 32);
 
-                    put_bits(&s->reorder_pb[5], vlc[1], vlc[0]);
+                    put_bits(&s->reorder_pb[5], SVQ1_BLOCK_INTER_LEN, SVQ1_BLOCK_INTER_CODE);
 
                     s->m.pb = s->reorder_pb[5];
                     mx      = motion_ptr[0];
@@ -442,14 +440,13 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
                                              decoded, stride, 5, 64, lambda, 0);
                     best      = score[1] <= score[0];
 
-                    vlc       = ff_svq1_block_type_vlc[SVQ1_BLOCK_SKIP];
                     score[2]  = s->mecc.sse[0](NULL, src + 16 * x, ref,
                                                stride, 16);
-                    score[2] += vlc[1] * lambda;
+                    score[2] += SVQ1_BLOCK_SKIP_LEN * lambda;
                     if (score[2] < score[best] && mx == 0 && my == 0) {
                         best = 2;
                         s->hdsp.put_pixels_tab[0][0](decoded, ref, stride, 16);
-                        put_bits(&s->pb, vlc[1], vlc[0]);
+                        put_bits(&s->pb, SVQ1_BLOCK_SKIP_LEN, SVQ1_BLOCK_SKIP_CODE);
                     }
                 }
 
