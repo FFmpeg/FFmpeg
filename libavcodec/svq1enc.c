@@ -56,7 +56,6 @@ typedef struct SVQ1EncContext {
     HpelDSPContext hdsp;
     AVFrame *current_picture;
     AVFrame *last_picture;
-    PutBitContext pb;
 
     /* Some compression statistics */
     enum AVPictureType pict_type;
@@ -93,38 +92,38 @@ typedef struct SVQ1EncContext {
     SVQ1EncDSPContext svq1encdsp;
 } SVQ1EncContext;
 
-static void svq1_write_header(SVQ1EncContext *s, int frame_type)
+static void svq1_write_header(SVQ1EncContext *s, PutBitContext *pb, int frame_type)
 {
     int i;
 
     /* frame code */
-    put_bits(&s->pb, 22, 0x20);
+    put_bits(pb, 22, 0x20);
 
     /* temporal reference (sure hope this is a "don't care") */
-    put_bits(&s->pb, 8, 0x00);
+    put_bits(pb, 8, 0x00);
 
     /* frame type */
-    put_bits(&s->pb, 2, frame_type - 1);
+    put_bits(pb, 2, frame_type - 1);
 
     if (frame_type == AV_PICTURE_TYPE_I) {
         /* no checksum since frame code is 0x20 */
         /* no embedded string either */
         /* output 5 unknown bits (2 + 2 + 1) */
-        put_bits(&s->pb, 5, 2); /* 2 needed by quicktime decoder */
+        put_bits(pb, 5, 2); /* 2 needed by quicktime decoder */
 
         i = ff_match_2uint16((void*)ff_svq1_frame_size_table,
                              FF_ARRAY_ELEMS(ff_svq1_frame_size_table),
                              s->frame_width, s->frame_height);
-        put_bits(&s->pb, 3, i);
+        put_bits(pb, 3, i);
 
         if (i == 7) {
-            put_bits(&s->pb, 12, s->frame_width);
-            put_bits(&s->pb, 12, s->frame_height);
+            put_bits(pb, 12, s->frame_width);
+            put_bits(pb, 12, s->frame_height);
         }
     }
 
     /* no checksum or extra data (next 2 bits get 0) */
-    put_bits(&s->pb, 2, 0);
+    put_bits(pb, 2, 0);
 }
 
 #define QUALITY_THRESHOLD    100
@@ -298,6 +297,7 @@ static void init_block_index(MpegEncContext *s){
 }
 
 static int svq1_encode_plane(SVQ1EncContext *s, int plane,
+                             PutBitContext *pb,
                              const unsigned char *src_plane,
                              unsigned char *ref_plane,
                              unsigned char *decoded_plane,
@@ -425,7 +425,7 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
             int score[4]     = { 0, 0, 0, 0 }, best;
             uint8_t *temp    = s->scratchbuf;
 
-            if (put_bytes_left(&s->pb, 0) < 3000) { // FIXME: check size
+            if (put_bytes_left(pb, 0) < 3000) { // FIXME: check size
                 av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
                 return -1;
             }
@@ -496,7 +496,7 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
                     if (score[2] < score[best] && mx == 0 && my == 0) {
                         best = 2;
                         s->hdsp.put_pixels_tab[0][0](decoded, ref, stride, 16);
-                        put_bits(&s->pb, SVQ1_BLOCK_SKIP_LEN, SVQ1_BLOCK_SKIP_CODE);
+                        put_bits(pb, SVQ1_BLOCK_SKIP_LEN, SVQ1_BLOCK_SKIP_CODE);
                     }
                 }
 
@@ -521,7 +521,7 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
 
             if (best != 2)
             for (i = 5; i >= 0; i--)
-                ff_copy_bits(&s->pb, reorder_buffer[best][i],
+                ff_copy_bits(pb, reorder_buffer[best][i],
                                  count[best][i]);
             if (best == 0)
                 s->hdsp.put_pixels_tab[0][0](decoded, temp, stride, 16);
@@ -630,6 +630,7 @@ static int svq1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                              const AVFrame *pict, int *got_packet)
 {
     SVQ1EncContext *const s = avctx->priv_data;
+    PutBitContext pb;
     int i, ret;
 
     ret = ff_alloc_packet(avctx, pkt, s->y_block_width * s->y_block_height *
@@ -660,8 +661,6 @@ static int svq1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     FFSWAP(AVFrame*, s->current_picture, s->last_picture);
 
-    init_put_bits(&s->pb, pkt->data, pkt->size);
-
     if (avctx->gop_size && (avctx->frame_number % avctx->gop_size))
         s->pict_type = AV_PICTURE_TYPE_P;
     else
@@ -670,9 +669,10 @@ static int svq1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     ff_side_data_set_encoder_stats(pkt, pict->quality, NULL, 0, s->pict_type);
 
-    svq1_write_header(s, s->pict_type);
+    init_put_bits(&pb, pkt->data, pkt->size);
+    svq1_write_header(s, &pb, s->pict_type);
     for (i = 0; i < 3; i++) {
-        int ret = svq1_encode_plane(s, i,
+        int ret = svq1_encode_plane(s, i, &pb,
                               pict->data[i],
                               s->last_picture->data[i],
                               s->current_picture->data[i],
@@ -692,13 +692,13 @@ static int svq1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         }
     }
 
-    // align_put_bits(&s->pb);
-    while (put_bits_count(&s->pb) & 31)
-        put_bits(&s->pb, 1, 0);
+    // align_put_bits(&pb);
+    while (put_bits_count(&pb) & 31)
+        put_bits(&pb, 1, 0);
 
-    flush_put_bits(&s->pb);
+    flush_put_bits(&pb);
 
-    pkt->size = put_bytes_output(&s->pb);
+    pkt->size = put_bytes_output(&pb);
     if (s->pict_type == AV_PICTURE_TYPE_I)
         pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
