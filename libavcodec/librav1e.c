@@ -538,6 +538,32 @@ retry:
 
     pkt->pts = pkt->dts = *((int64_t *) rpkt->opaque);
     av_free(rpkt->opaque);
+
+    if (avctx->flags & AV_CODEC_FLAG_RECON_FRAME) {
+        AVCodecInternal *avci = avctx->internal;
+        AVFrame *frame = avci->recon_frame;
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
+
+        av_frame_unref(frame);
+
+        frame->format = avctx->pix_fmt;
+        frame->width  = avctx->width;
+        frame->height = avctx->height;
+
+        ret = ff_encode_alloc_frame(avctx, frame);
+        if (ret < 0) {
+            rav1e_packet_unref(rpkt);
+            return ret;
+        }
+
+        for (int i = 0; i < desc->nb_components; i++) {
+            int shift = i ? desc->log2_chroma_h : 0;
+            rav1e_frame_extract_plane(rpkt->rec, i, frame->data[i],
+                                      (frame->height >> shift) * frame->linesize[i],
+                                      frame->linesize[i], desc->comp[i].step);
+        }
+    }
+
     rav1e_packet_unref(rpkt);
 
     return 0;
@@ -601,7 +627,7 @@ const FFCodec ff_librav1e_encoder = {
     .defaults       = librav1e_defaults,
     .p.pix_fmts     = librav1e_pix_fmts,
     .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_OTHER_THREADS |
-                      AV_CODEC_CAP_DR1,
+                      AV_CODEC_CAP_DR1 | AV_CODEC_CAP_ENCODER_RECON_FRAME,
     .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE |
                       FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_AUTO_THREADS,
     .p.wrapper_name = "librav1e",
