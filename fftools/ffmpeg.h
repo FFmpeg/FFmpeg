@@ -725,7 +725,18 @@ int of_check_init(OutputFile *of);
 int of_write_trailer(OutputFile *of);
 void of_close(OutputFile **pof);
 
-int of_submit_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost);
+/*
+ * Send a single packet to the output, applying any bitstream filters
+ * associated with the output stream.  This may result in any number
+ * of packets actually being written, depending on what bitstream
+ * filters are applied.  The supplied packet is consumed and will be
+ * blank (as if newly-allocated) when this function returns.
+ *
+ * If eof is set, instead indicate EOF to all bitstream filters and
+ * therefore flush any delayed packets to the output.  A blank packet
+ * must be supplied in this case.
+ */
+void of_output_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost, int eof);
 int64_t of_filesize(OutputFile *of);
 AVChapter * const *
 of_get_chapters(OutputFile *of, unsigned int *nb_chapters);

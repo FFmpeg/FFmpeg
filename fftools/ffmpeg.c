@@ -694,70 +694,6 @@ static void close_output_stream(OutputStream *ost)
         sq_send(of->sq_encode, ost->sq_idx_encode, SQFRAME(NULL));
 }
 
-/*
- * Send a single packet to the output, applying any bitstream filters
- * associated with the output stream.  This may result in any number
- * of packets actually being written, depending on what bitstream
- * filters are applied.  The supplied packet is consumed and will be
- * blank (as if newly-allocated) when this function returns.
- *
- * If eof is set, instead indicate EOF to all bitstream filters and
- * therefore flush any delayed packets to the output.  A blank packet
- * must be supplied in this case.
- */
-static void output_packet(OutputFile *of, AVPacket *pkt,
-                          OutputStream *ost, int eof)
-{
-    const char *err_msg;
-    int ret = 0;
-
-    if (!eof && pkt->dts != AV_NOPTS_VALUE)
-        ost->last_mux_dts = av_rescale_q(pkt->dts, ost->mux_timebase, AV_TIME_BASE_Q);
-
-    /* apply the output bitstream filters */
-    if (ost->bsf_ctx) {
-        int bsf_eof = 0;
-
-        ret = av_bsf_send_packet(ost->bsf_ctx, eof ? NULL : pkt);
-        if (ret < 0) {
-            err_msg = "submitting a packet for bitstream filtering";
-            goto fail;
-        }
-
-        while (!bsf_eof) {
-            ret = av_bsf_receive_packet(ost->bsf_ctx, pkt);
-            if (ret == AVERROR(EAGAIN))
-                return;
-            else if (ret == AVERROR_EOF)
-                bsf_eof = 1;
-            else if (ret < 0) {
-                err_msg = "applying bitstream filters to a packet";
-                goto fail;
-            }
-
-            ret = of_submit_packet(of, bsf_eof ? NULL : pkt, ost);
-            if (ret < 0)
-                goto mux_fail;
-        }
-    } else {
-        ret = of_submit_packet(of, eof ? NULL : pkt, ost);
-        if (ret < 0)
-            goto mux_fail;
-    }
-
-    return;
-
-mux_fail:
-    err_msg = "submitting a packet to the muxer";
-
-fail:
-    av_log(NULL, AV_LOG_ERROR, "Error %s for output stream #%d:%d.\n",
-           err_msg, ost->file_index, ost->index);
-    if (exit_on_error)
-        exit_program(1);
-
-}
-
 static int check_recording_time(OutputStream *ost, int64_t ts, AVRational tb)
 {
     OutputFile *of = output_files[ost->file_index];
@@ -949,7 +885,7 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
             av_assert0(frame); // should never happen during flushing
             return 0;
         } else if (ret == AVERROR_EOF) {
-            output_packet(of, pkt, ost, 1);
+            of_output_packet(of, pkt, ost, 1);
             return ret;
         } else if (ret < 0) {
             av_log(NULL, AV_LOG_ERROR, "%s encoding failed\n", type_desc);
@@ -985,7 +921,7 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
 
         ost->packets_encoded++;
 
-        output_packet(of, pkt, ost, 0);
+        of_output_packet(of, pkt, ost, 0);
     }
 
     av_assert0(0);
@@ -1127,7 +1063,7 @@ static void do_subtitle_out(OutputFile *of,
                 pkt->pts += av_rescale_q(sub->end_display_time, (AVRational){ 1, 1000 }, ost->mux_timebase);
         }
         pkt->dts = pkt->pts;
-        output_packet(of, pkt, ost, 0);
+        of_output_packet(of, pkt, ost, 0);
     }
 }
 
@@ -1832,7 +1768,7 @@ static void flush_encoders(void)
                     exit_program(1);
                 }
 
-                output_packet(of, ost->pkt, ost, 1);
+                of_output_packet(of, ost->pkt, ost, 1);
             }
 
             init_output_stream_wrapper(ost, NULL, 1);
@@ -1878,7 +1814,7 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
     av_packet_unref(opkt);
     // EOF: flush output bitstream filters.
     if (!pkt) {
-        output_packet(of, opkt, ost, 1);
+        of_output_packet(of, opkt, ost, 1);
         return;
     }
 
@@ -1934,7 +1870,7 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
 
     opkt->duration = av_rescale_q(pkt->duration, ist->st->time_base, ost->mux_timebase);
 
-    output_packet(of, opkt, ost, 0);
+    of_output_packet(of, opkt, ost, 0);
 
     ost->streamcopy_started = 1;
 }
@@ -3833,7 +3769,7 @@ static int process_input(int file_index)
                 if (ost->source_index == ifile->ist_index + i &&
                     (!ost->enc_ctx || ost->enc_ctx->codec_type == AVMEDIA_TYPE_SUBTITLE)) {
                     OutputFile *of = output_files[ost->file_index];
-                    output_packet(of, ost->pkt, ost, 1);
+                    of_output_packet(of, ost->pkt, ost, 1);
                 }
             }
         }

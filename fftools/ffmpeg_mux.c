@@ -319,7 +319,7 @@ static int queue_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
     return 0;
 }
 
-int of_submit_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
+static int of_submit_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
 {
     int ret;
 
@@ -336,6 +336,58 @@ int of_submit_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
     }
 
     return 0;
+}
+
+void of_output_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost, int eof)
+{
+    const char *err_msg;
+    int ret = 0;
+
+    if (!eof && pkt->dts != AV_NOPTS_VALUE)
+        ost->last_mux_dts = av_rescale_q(pkt->dts, ost->mux_timebase, AV_TIME_BASE_Q);
+
+    /* apply the output bitstream filters */
+    if (ost->bsf_ctx) {
+        int bsf_eof = 0;
+
+        ret = av_bsf_send_packet(ost->bsf_ctx, eof ? NULL : pkt);
+        if (ret < 0) {
+            err_msg = "submitting a packet for bitstream filtering";
+            goto fail;
+        }
+
+        while (!bsf_eof) {
+            ret = av_bsf_receive_packet(ost->bsf_ctx, pkt);
+            if (ret == AVERROR(EAGAIN))
+                return;
+            else if (ret == AVERROR_EOF)
+                bsf_eof = 1;
+            else if (ret < 0) {
+                err_msg = "applying bitstream filters to a packet";
+                goto fail;
+            }
+
+            ret = of_submit_packet(of, bsf_eof ? NULL : pkt, ost);
+            if (ret < 0)
+                goto mux_fail;
+        }
+    } else {
+        ret = of_submit_packet(of, eof ? NULL : pkt, ost);
+        if (ret < 0)
+            goto mux_fail;
+    }
+
+    return;
+
+mux_fail:
+    err_msg = "submitting a packet to the muxer";
+
+fail:
+    av_log(NULL, AV_LOG_ERROR, "Error %s for output stream #%d:%d.\n",
+           err_msg, ost->file_index, ost->index);
+    if (exit_on_error)
+        exit_program(1);
+
 }
 
 static int thread_stop(OutputFile *of)
