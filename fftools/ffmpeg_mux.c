@@ -254,7 +254,7 @@ finish:
     return (void*)(intptr_t)ret;
 }
 
-static int submit_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
+static int thread_submit_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
 {
     Muxer *mux = of->mux;
     int ret = 0;
@@ -324,7 +324,7 @@ static int of_submit_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
     int ret;
 
     if (of->mux->tq) {
-        return submit_packet(of, ost, pkt);
+        return thread_submit_packet(of, ost, pkt);
     } else {
         /* the muxer is not initialized yet, buffer the packet */
         ret = queue_packet(of, ost, pkt);
@@ -447,7 +447,7 @@ static int thread_start(OutputFile *of)
             ost->mux_timebase = ost->st->time_base;
 
         while (av_fifo_read(ms->muxing_queue, &pkt, 1) >= 0) {
-            ret = submit_packet(of, ost, pkt);
+            ret = thread_submit_packet(of, ost, pkt);
             if (pkt) {
                 ms->muxing_queue_data_size -= pkt->size;
                 av_packet_free(&pkt);
