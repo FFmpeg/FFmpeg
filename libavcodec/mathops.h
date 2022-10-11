@@ -138,6 +138,15 @@ static inline av_const int sign_extend(int val, unsigned bits)
 }
 #endif
 
+#ifndef sign_extend64
+static inline av_const int64_t sign_extend64(int64_t val, unsigned bits)
+{
+    unsigned shift = 8 * sizeof(int64_t) - bits;
+    union { uint64_t u; int64_t s; } v = { (uint64_t) val << shift };
+    return v.s >> shift;
+}
+#endif
+
 #ifndef zero_extend
 static inline av_const unsigned zero_extend(unsigned val, unsigned bits)
 {

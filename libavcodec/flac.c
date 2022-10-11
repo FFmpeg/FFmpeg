@@ -28,7 +28,7 @@
 #include "flacdata.h"
 #include "flac_parse.h"
 
-static const int8_t sample_size_table[] = { 0, 8, 12, 0, 16, 20, 24, 0 };
+static const int8_t sample_size_table[] = { 0, 8, 12, 0, 16, 20, 24, 32 };
 
 static const AVChannelLayout flac_channel_layouts[8] = {
     AV_CHANNEL_LAYOUT_MONO,
@@ -82,7 +82,7 @@ int ff_flac_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
 
     /* bits per sample */
     bps_code = get_bits(gb, 3);
-    if (bps_code == 3 || bps_code == 7) {
+    if (bps_code == 3) {
         av_log(avctx, AV_LOG_ERROR + log_level_offset,
                "invalid sample size code (%d)\n",
                bps_code);

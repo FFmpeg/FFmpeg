@@ -597,6 +597,18 @@ static inline int get_sbits_long(GetBitContext *s, int n)
 }
 
 /**
+ * Read 0-64 bits as a signed integer.
+ */
+static inline int64_t get_sbits64(GetBitContext *s, int n)
+{
+    // sign_extend(x, 0) is undefined
+    if (!n)
+        return 0;
+
+    return sign_extend64(get_bits64(s, n), n);
+}
+
+/**
  * Show 0-32 bits.
  */
 static inline unsigned int show_bits_long(GetBitContext *s, int n)
