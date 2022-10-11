@@ -233,6 +233,8 @@ static int jpeg_parse_packet(AVFormatContext *ctx, PayloadContext *jpeg,
     q      = AV_RB8(buf + 5);   /* quantization factor (or table id) */
     width  = AV_RB8(buf + 6);   /* frame width in 8 pixel blocks */
     height = AV_RB8(buf + 7);   /* frame height in 8 pixel blocks */
+    st->codecpar->width = width*8;
+    st->codecpar->height = height*8;
     buf += 8;
     len -= 8;
 
