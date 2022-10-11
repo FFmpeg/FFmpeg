@@ -329,8 +329,10 @@ static int try_push_frame(AVFilterContext *ctx)
 
         for (i = 0; i < 2; i++) {
             // set correct timestamps
-            if (pts != AV_NOPTS_VALUE)
+            if (pts != AV_NOPTS_VALUE) {
                 s->input_views[i]->pts = i == 0 ? pts * 2 : pts * 2 + av_rescale_q(1, av_inv_q(outlink->frame_rate), outlink->time_base);
+                s->input_views[i]->duration = av_rescale_q(1, av_inv_q(outlink->frame_rate), outlink->time_base);
+            }
 
             // set stereo3d side data
             stereo = av_stereo3d_create_side_data(s->input_views[i]);
