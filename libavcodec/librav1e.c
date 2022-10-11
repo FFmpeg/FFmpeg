@@ -30,7 +30,6 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avcodec.h"
-#include "bsf.h"
 #include "codec_internal.h"
 #include "encode.h"
 #include "internal.h"
@@ -41,7 +40,6 @@ typedef struct librav1eContext {
     RaContext *ctx;
     AVFrame *frame;
     RaFrame *rframe;
-    AVBSFContext *bsf;
 
     uint8_t *pass_data;
     size_t pass_pos;
@@ -176,7 +174,6 @@ static av_cold int librav1e_encode_close(AVCodecContext *avctx)
     }
 
     av_frame_free(&ctx->frame);
-    av_bsf_free(&ctx->bsf);
     av_freep(&ctx->pass_data);
 
     return 0;
@@ -243,36 +240,6 @@ static av_cold int librav1e_encode_init(AVCodecContext *avctx)
             ret = AVERROR(EINVAL);
             goto end;
         }
-    }
-
-    if (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
-         const AVBitStreamFilter *filter = av_bsf_get_by_name("extract_extradata");
-         int bret;
-
-         if (!filter) {
-            av_log(avctx, AV_LOG_ERROR, "extract_extradata bitstream filter "
-                   "not found. This is a bug, please report it.\n");
-            ret = AVERROR_BUG;
-            goto end;
-         }
-
-         bret = av_bsf_alloc(filter, &ctx->bsf);
-         if (bret < 0) {
-             ret = bret;
-             goto end;
-         }
-
-         bret = avcodec_parameters_from_context(ctx->bsf->par_in, avctx);
-         if (bret < 0) {
-             ret = bret;
-             goto end;
-         }
-
-         bret = av_bsf_init(ctx->bsf);
-         if (bret < 0) {
-             ret = bret;
-             goto end;
-         }
     }
 
     {
@@ -427,6 +394,23 @@ static av_cold int librav1e_encode_init(AVCodecContext *avctx)
         goto end;
     }
 
+    if (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
+        RaData *seq_hdr = rav1e_container_sequence_header(ctx->ctx);
+
+        if (seq_hdr)
+            avctx->extradata = av_mallocz(seq_hdr->len + AV_INPUT_BUFFER_PADDING_SIZE);
+        if (!seq_hdr || !avctx->extradata) {
+            rav1e_data_unref(seq_hdr);
+            av_log(avctx, AV_LOG_ERROR, "Failed to get extradata.\n");
+            ret = seq_hdr ? AVERROR(ENOMEM) : AVERROR_EXTERNAL;
+            goto end;
+        }
+
+        memcpy(avctx->extradata, seq_hdr->data, seq_hdr->len);
+        avctx->extradata_size = seq_hdr->len;
+        rav1e_data_unref(seq_hdr);
+    }
+
     ret = 0;
 
 end:
@@ -555,22 +539,6 @@ retry:
     pkt->pts = pkt->dts = *((int64_t *) rpkt->opaque);
     av_free(rpkt->opaque);
     rav1e_packet_unref(rpkt);
-
-    if (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
-        int ret = av_bsf_send_packet(ctx->bsf, pkt);
-        if (ret < 0) {
-            av_log(avctx, AV_LOG_ERROR, "extradata extraction send failed.\n");
-            av_packet_unref(pkt);
-            return ret;
-        }
-
-        ret = av_bsf_receive_packet(ctx->bsf, pkt);
-        if (ret < 0) {
-            av_log(avctx, AV_LOG_ERROR, "extradata extraction receive failed.\n");
-            av_packet_unref(pkt);
-            return ret;
-        }
-    }
 
     return 0;
 }
