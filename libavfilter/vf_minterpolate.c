@@ -1189,6 +1189,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *avf_in)
 
         av_frame_copy_props(avf_out, mi_ctx->frames[NB_FRAMES - 1].avf);
         avf_out->pts = mi_ctx->out_pts++;
+        avf_out->duration = 1;
 
         interpolate(inlink, avf_out);
 
