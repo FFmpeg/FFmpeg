@@ -363,6 +363,13 @@ static inline void put_bits64(PutBitContext *s, int n, uint64_t value)
     }
 }
 
+static inline void put_sbits63(PutBitContext *pb, int n, int64_t value)
+{
+    av_assert2(n >= 0 && n < 64);
+
+    put_bits64(pb, n, (uint64_t)(value) & (~(UINT64_MAX << n)));
+}
+
 /**
  * Return the pointer to the byte where the bitstream writer will put
  * the next bit.

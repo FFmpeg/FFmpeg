@@ -31,7 +31,6 @@
 #include "codec_internal.h"
 #include "encode.h"
 #include "put_bits.h"
-#include "put_golomb.h"
 #include "lpc.h"
 #include "flac.h"
 #include "flacdata.h"
@@ -95,6 +94,7 @@ typedef struct FlacSubframe {
 
 typedef struct FlacFrame {
     FlacSubframe subframes[FLAC_MAX_CHANNELS];
+    int64_t samples_33bps[FLAC_MAX_BLOCKSIZE];
     int blocksize;
     int bs_code[2];
     uint8_t crc8;
@@ -282,10 +282,22 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
         s->bps_code                = 4;
         break;
     case AV_SAMPLE_FMT_S32:
-        if (avctx->bits_per_raw_sample != 24)
-            av_log(avctx, AV_LOG_WARNING, "encoding as 24 bits-per-sample\n");
-        avctx->bits_per_raw_sample = 24;
-        s->bps_code                = 6;
+        if (avctx->bits_per_raw_sample <= 24) {
+            if (avctx->bits_per_raw_sample < 24)
+                av_log(avctx, AV_LOG_WARNING, "encoding as 24 bits-per-sample\n");
+            avctx->bits_per_raw_sample = 24;
+            s->bps_code                = 6;
+        } else if (avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
+            av_log(avctx, AV_LOG_WARNING,
+                   "encoding as 24 bits-per-sample, more is considered "
+                   "experimental. Add -strict experimental if you want "
+                   "to encode more than 24 bits-per-sample\n");
+            avctx->bits_per_raw_sample = 24;
+            s->bps_code                = 6;
+        } else {
+            avctx->bits_per_raw_sample = 32;
+            s->bps_code = 7;
+        }
         break;
     }
 
@@ -536,8 +548,7 @@ static uint64_t rice_count_exact(const int32_t *res, int n, int k)
     uint64_t count = 0;
 
     for (i = 0; i < n; i++) {
-        int32_t v = -2 * res[i] - 1;
-        v ^= v >> 31;
+        unsigned v = ((unsigned)(res[i]) << 1) ^ (res[i] >> 31);
         count += (v >> k) + 1 + k;
     }
     return count;
@@ -716,8 +727,8 @@ static uint64_t calc_rice_params(RiceContext *rc,
 
     tmp_rc.coding_mode = rc->coding_mode;
 
-    for (i = 0; i < n; i++)
-        udata[i] = (2 * data[i]) ^ (data[i] >> 31);
+    for (i = pred_order; i < n; i++)
+        udata[i] = ((unsigned)(data[i]) << 1) ^ (data[i] >> 31);
 
     calc_sum_top(pmax, exact ? kmax : 0, udata, n, pred_order, sums);
 
@@ -815,6 +826,130 @@ static void encode_residual_fixed(int32_t *res, const int32_t *smp, int n,
 }
 
 
+/* These four functions check for every residual whether it can be
+ * contained in <INT32_MIN,INT32_MAX]. In case it doesn't, the
+ * function that called this function has to try something else.
+ * Each function is duplicated, once for int32_t input, once for
+ * int64_t input */
+#define ENCODE_RESIDUAL_FIXED_WITH_RESIDUAL_LIMIT()                   \
+{                                                                     \
+    for (int i = 0; i < order; i++)                                   \
+        res[i] = smp[i];                                              \
+    if (order == 0) {                                                 \
+        for (int i = order; i < n; i++) {                             \
+            if (smp[i] == INT32_MIN)                                  \
+                return 1;                                             \
+            res[i] = smp[i];                                          \
+        }                                                             \
+    } else if (order == 1) {                                          \
+        for (int i = order; i < n; i++) {                             \
+            int64_t res64 = (int64_t)smp[i] - smp[i-1];               \
+            if (res64 <= INT32_MIN || res64 > INT32_MAX)              \
+                return 1;                                             \
+            res[i] = res64;                                           \
+        }                                                             \
+    } else if (order == 2) {                                          \
+        for (int i = order; i < n; i++) {                             \
+            int64_t res64 = (int64_t)smp[i] - 2*(int64_t)smp[i-1] + smp[i-2]; \
+            if (res64 <= INT32_MIN || res64 > INT32_MAX)              \
+                return 1;                                             \
+            res[i] = res64;                                           \
+        }                                                             \
+    } else if (order == 3) {                                          \
+        for (int i = order; i < n; i++) {                             \
+            int64_t res64 = (int64_t)smp[i] - 3*(int64_t)smp[i-1] + 3*(int64_t)smp[i-2] - smp[i-3];  \
+            if (res64 <= INT32_MIN || res64 > INT32_MAX)              \
+                return 1;                                             \
+            res[i] = res64;                                           \
+        }                                                             \
+    } else {                                                          \
+        for (int i = order; i < n; i++) {                             \
+            int64_t res64 = (int64_t)smp[i] - 4*(int64_t)smp[i-1] + 6*(int64_t)smp[i-2] - 4*(int64_t)smp[i-3] + smp[i-4];   \
+            if (res64 <= INT32_MIN || res64 > INT32_MAX)              \
+                return 1;                                             \
+            res[i] = res64;                                           \
+        }                                                             \
+    }                                                                 \
+    return 0;                                                         \
+}
+
+static int encode_residual_fixed_with_residual_limit(int32_t *res, const int32_t *smp,
+                                                      int n, int order)
+{
+    ENCODE_RESIDUAL_FIXED_WITH_RESIDUAL_LIMIT();
+}
+
+
+static int encode_residual_fixed_with_residual_limit_33bps(int32_t *res, const int64_t *smp,
+                                                           int n, int order)
+{
+    ENCODE_RESIDUAL_FIXED_WITH_RESIDUAL_LIMIT();
+}
+
+#define LPC_ENCODE_WITH_RESIDUAL_LIMIT()                 \
+{                                                        \
+   for (int i = 0; i < order; i++)                       \
+        res[i] = smp[i];                                 \
+    for (int i = order; i < len; i++) {                  \
+        int64_t p = 0, tmp;                              \
+        for (int j = 0; j < order; j++)                  \
+            p += (int64_t)coefs[j]*smp[(i-1)-j];         \
+        p >>= shift;                                     \
+        tmp = smp[i] - p;                                \
+        if (tmp <= INT32_MIN || tmp > INT32_MAX)         \
+            return 1;                                    \
+        res[i] = tmp;                                    \
+    }                                                    \
+    return 0;                                            \
+}
+
+static int lpc_encode_with_residual_limit(int32_t *res, const int32_t *smp, int len,
+                                               int order, int32_t *coefs, int shift)
+{
+    LPC_ENCODE_WITH_RESIDUAL_LIMIT();
+}
+
+static int lpc_encode_with_residual_limit_33bps(int32_t *res, const int64_t *smp, int len,
+                                               int order, int32_t *coefs, int shift)
+{
+    LPC_ENCODE_WITH_RESIDUAL_LIMIT();
+}
+
+static int lpc_encode_choose_datapath(FlacEncodeContext *s, int32_t bps,
+                                      int32_t *res, const int32_t *smp,
+                                      const int64_t *smp_33bps, int len,
+                                      int order, int32_t *coefs, int shift)
+{
+    uint64_t max_residual_value = 0;
+    int64_t max_sample_value = ((int64_t)(1) << (bps-1));
+    /* This calculates the max size of any residual with the current
+     * predictor, so we know whether we need to check the residual */
+    for (int i = 0; i < order; i++)
+        max_residual_value += FFABS(max_sample_value * coefs[i]);
+    max_residual_value >>= shift;
+    max_residual_value += max_sample_value;
+    if (bps > 32) {
+        if (lpc_encode_with_residual_limit_33bps(res, smp_33bps, len, order, coefs, shift))
+            return 1;
+    } else if (max_residual_value > INT32_MAX) {
+        if (lpc_encode_with_residual_limit(res, smp, len, order, coefs, shift))
+            return 1;
+    } else if (bps + s->options.lpc_coeff_precision + av_log2(order) <= 32) {
+        s->flac_dsp.lpc16_encode(res, smp, len, order, coefs, shift);
+    } else {
+        s->flac_dsp.lpc32_encode(res, smp, len, order, coefs, shift);
+    }
+    return 0;
+}
+
+#define DEFAULT_TO_VERBATIM()                               \
+{                                                           \
+    sub->type = sub->type_code = FLAC_SUBFRAME_VERBATIM;    \
+    if (sub->obits <= 32)                                   \
+        memcpy(res, smp, n * sizeof(int32_t));              \
+    return subframe_count_exact(s, sub, 0);                 \
+}
+
 static int encode_residual_ch(FlacEncodeContext *s, int ch)
 {
     int i, n;
@@ -824,28 +959,38 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
     int32_t coefs[MAX_LPC_ORDER][MAX_LPC_ORDER];
     int shift[MAX_LPC_ORDER];
     int32_t *res, *smp;
+    int64_t *smp_33bps;
 
-    frame = &s->frame;
-    sub   = &frame->subframes[ch];
-    res   = sub->residual;
-    smp   = sub->samples;
-    n     = frame->blocksize;
+    frame     = &s->frame;
+    sub       = &frame->subframes[ch];
+    res       = sub->residual;
+    smp       = sub->samples;
+    smp_33bps = frame->samples_33bps;
+    n         = frame->blocksize;
 
     /* CONSTANT */
-    for (i = 1; i < n; i++)
-        if(smp[i] != smp[0])
-            break;
-    if (i == n) {
-        sub->type = sub->type_code = FLAC_SUBFRAME_CONSTANT;
-        res[0] = smp[0];
-        return subframe_count_exact(s, sub, 0);
+    if (sub->obits > 32) {
+        for (i = 1; i < n; i++)
+            if(smp_33bps[i] != smp_33bps[0])
+                break;
+        if (i == n) {
+            sub->type = sub->type_code = FLAC_SUBFRAME_CONSTANT;
+            return subframe_count_exact(s, sub, 0);
+        }
+    } else {
+        for (i = 1; i < n; i++)
+            if(smp[i] != smp[0])
+                break;
+        if (i == n) {
+            sub->type = sub->type_code = FLAC_SUBFRAME_CONSTANT;
+            res[0] = smp[0];
+            return subframe_count_exact(s, sub, 0);
+        }
     }
 
     /* VERBATIM */
     if (frame->verbatim_only || n < 5) {
-        sub->type = sub->type_code = FLAC_SUBFRAME_VERBATIM;
-        memcpy(res, smp, n * sizeof(int32_t));
-        return subframe_count_exact(s, sub, 0);
+        DEFAULT_TO_VERBATIM();
     }
 
     min_order  = s->options.min_prediction_order;
@@ -862,15 +1007,32 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
         opt_order = 0;
         bits[0]   = UINT32_MAX;
         for (i = min_order; i <= max_order; i++) {
-            encode_residual_fixed(res, smp, n, i);
+            if (sub->obits == 33) {
+                if (encode_residual_fixed_with_residual_limit_33bps(res, smp_33bps, n, i))
+                    continue;
+            } else if (sub->obits + i >= 32) {
+                if (encode_residual_fixed_with_residual_limit(res, smp, n, i))
+                    continue;
+            } else
+                encode_residual_fixed(res, smp, n, i);
             bits[i] = find_subframe_rice_params(s, sub, i);
             if (bits[i] < bits[opt_order])
                 opt_order = i;
         }
+        if (opt_order == 0 && bits[0] == UINT32_MAX) {
+            /* No predictor found with residuals within <INT32_MIN,INT32_MAX],
+             * so encode a verbatim subframe instead */
+            DEFAULT_TO_VERBATIM();
+        }
         sub->order     = opt_order;
         sub->type_code = sub->type | sub->order;
         if (sub->order != max_order) {
-            encode_residual_fixed(res, smp, n, sub->order);
+            if (sub->obits == 33)
+                encode_residual_fixed_with_residual_limit_33bps(res, smp_33bps, n, sub->order);
+            else if (sub->obits + i >= 32)
+                encode_residual_fixed_with_residual_limit(res, smp, n, sub->order);
+            else
+                encode_residual_fixed(res, smp, n, sub->order);
             find_subframe_rice_params(s, sub, sub->order);
         }
         return subframe_count_exact(s, sub, sub->order);
@@ -878,6 +1040,14 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
 
     /* LPC */
     sub->type = FLAC_SUBFRAME_LPC;
+    if (sub->obits == 33)
+        /* As ff_lpc_calc_coefs is shared with other codecs and the LSB
+         * probably isn't predictable anyway, throw away LSB for analysis
+         * so it fits 32 bit int and existing function can be used
+         * unmodified */
+        for (i = 0; i < n; i++)
+            smp[i] = smp_33bps[i] >> 1;
+
     opt_order = ff_lpc_calc_coefs(&s->lpc_ctx, smp, n, min_order, max_order,
                                   s->options.lpc_coeff_precision, coefs, shift, s->options.lpc_type,
                                   s->options.lpc_passes, omethod,
@@ -898,13 +1068,8 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
             order = av_clip(order, min_order - 1, max_order - 1);
             if (order == last_order)
                 continue;
-            if (s->bps_code * 4 + s->options.lpc_coeff_precision + av_log2(order) <= 32) {
-                s->flac_dsp.lpc16_encode(res, smp, n, order+1, coefs[order],
-                                         shift[order]);
-            } else {
-                s->flac_dsp.lpc32_encode(res, smp, n, order+1, coefs[order],
-                                         shift[order]);
-            }
+            if(lpc_encode_choose_datapath(s, sub->obits, res, smp, smp_33bps, n, order+1, coefs[order], shift[order]))
+                continue;
             bits[i] = find_subframe_rice_params(s, sub, order+1);
             if (bits[i] < bits[opt_index]) {
                 opt_index = i;
@@ -918,11 +1083,8 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
         opt_order = 0;
         bits[0]   = UINT32_MAX;
         for (i = min_order-1; i < max_order; i++) {
-            if (s->bps_code * 4 + s->options.lpc_coeff_precision + av_log2(i) <= 32) {
-                s->flac_dsp.lpc16_encode(res, smp, n, i+1, coefs[i], shift[i]);
-            } else {
-                s->flac_dsp.lpc32_encode(res, smp, n, i+1, coefs[i], shift[i]);
-            }
+            if(lpc_encode_choose_datapath(s, sub->obits, res, smp, smp_33bps, n, i+1, coefs[i], shift[i]))
+                continue;
             bits[i] = find_subframe_rice_params(s, sub, i+1);
             if (bits[i] < bits[opt_order])
                 opt_order = i;
@@ -940,11 +1102,8 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
             for (i = last-step; i <= last+step; i += step) {
                 if (i < min_order-1 || i >= max_order || bits[i] < UINT32_MAX)
                     continue;
-                if (s->bps_code * 4 + s->options.lpc_coeff_precision + av_log2(i) <= 32) {
-                    s->flac_dsp.lpc32_encode(res, smp, n, i+1, coefs[i], shift[i]);
-                } else {
-                    s->flac_dsp.lpc16_encode(res, smp, n, i+1, coefs[i], shift[i]);
-                }
+                if(lpc_encode_choose_datapath(s, sub->obits, res, smp, smp_33bps, n, i+1, coefs[i], shift[i]))
+                    continue;
                 bits[i] = find_subframe_rice_params(s, sub, i+1);
                 if (bits[i] < bits[opt_order])
                     opt_order = i;
@@ -981,11 +1140,8 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
                 if (diffsum >8)
                     continue;
 
-                if (s->bps_code * 4 + s->options.lpc_coeff_precision + av_log2(opt_order - 1) <= 32) {
-                    s->flac_dsp.lpc16_encode(res, smp, n, opt_order, lpc_try, shift[opt_order-1]);
-                } else {
-                    s->flac_dsp.lpc32_encode(res, smp, n, opt_order, lpc_try, shift[opt_order-1]);
-                }
+                if(lpc_encode_choose_datapath(s, sub->obits, res, smp, smp_33bps, n, opt_order, lpc_try, shift[opt_order-1]))
+                    continue;
                 score = find_subframe_rice_params(s, sub, opt_order);
                 if (score < best_score) {
                     best_score = score;
@@ -1002,10 +1158,10 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
     for (i = 0; i < sub->order; i++)
         sub->coefs[i] = coefs[sub->order-1][i];
 
-    if (s->bps_code * 4 + s->options.lpc_coeff_precision + av_log2(opt_order) <= 32) {
-        s->flac_dsp.lpc16_encode(res, smp, n, sub->order, sub->coefs, sub->shift);
-    } else {
-        s->flac_dsp.lpc32_encode(res, smp, n, sub->order, sub->coefs, sub->shift);
+    if(lpc_encode_choose_datapath(s, sub->obits, res, smp, smp_33bps, n, sub->order, sub->coefs, sub->shift)) {
+        /* No predictor found with residuals within <INT32_MIN,INT32_MAX],
+         * so encode a verbatim subframe instead */
+        DEFAULT_TO_VERBATIM();
     }
 
     find_subframe_rice_params(s, sub, sub->order);
@@ -1072,57 +1228,91 @@ static int encode_frame(FlacEncodeContext *s)
 
 static void remove_wasted_bits(FlacEncodeContext *s)
 {
-    int ch, i;
+    int ch, i, wasted_bits;
 
     for (ch = 0; ch < s->channels; ch++) {
         FlacSubframe *sub = &s->frame.subframes[ch];
-        int32_t v         = 0;
 
-        for (i = 0; i < s->frame.blocksize; i++) {
-            v |= sub->samples[i];
-            if (v & 1)
-                break;
-        }
+        if (sub->obits > 32) {
+            int64_t v = 0;
+            for (i = 0; i < s->frame.blocksize; i++) {
+                v |= s->frame.samples_33bps[i];
+                if (v & 1)
+                    break;
+            }
 
-        if (v && !(v & 1)) {
+            if (!v || (v & 1))
+                return;
+
+            v = ff_ctzll(v);
+
+            /* If any wasted bits are found, samples are moved
+             * from frame.samples_33bps to frame.subframes[ch] */
+            for (i = 0; i < s->frame.blocksize; i++)
+                sub->samples[i] = s->frame.samples_33bps[i] >> v;
+            wasted_bits = v;
+        } else {
+            int32_t v = 0;
+            for (i = 0; i < s->frame.blocksize; i++) {
+                v |= sub->samples[i];
+                if (v & 1)
+                    break;
+            }
+
+            if (!v || (v & 1))
+                return;
+
             v = ff_ctz(v);
 
             for (i = 0; i < s->frame.blocksize; i++)
                 sub->samples[i] >>= v;
-
-            sub->wasted = v;
-            sub->obits -= v;
-
-            /* for 24-bit, check if removing wasted bits makes the range better
-               suited for using RICE instead of RICE2 for entropy coding */
-            if (sub->obits <= 17)
-                sub->rc.coding_mode = CODING_MODE_RICE;
+            wasted_bits = v;
         }
+
+        sub->wasted = wasted_bits;
+        sub->obits -= wasted_bits;
+
+        /* for 24-bit, check if removing wasted bits makes the range better
+         * suited for using RICE instead of RICE2 for entropy coding */
+        if (sub->obits <= 17)
+            sub->rc.coding_mode = CODING_MODE_RICE;
     }
 }
 
 
 static int estimate_stereo_mode(const int32_t *left_ch, const int32_t *right_ch, int n,
-                                int max_rice_param)
+                                int max_rice_param, int bps)
 {
-    int i, best;
-    int32_t lt, rt;
+    int best;
     uint64_t sum[4];
     uint64_t score[4];
     int k;
 
     /* calculate sum of 2nd order residual for each channel */
     sum[0] = sum[1] = sum[2] = sum[3] = 0;
-    for (i = 2; i < n; i++) {
-        lt = left_ch[i]  - 2*left_ch[i-1]  + left_ch[i-2];
-        rt = right_ch[i] - 2*right_ch[i-1] + right_ch[i-2];
-        sum[2] += FFABS((lt + rt) >> 1);
-        sum[3] += FFABS(lt - rt);
-        sum[0] += FFABS(lt);
-        sum[1] += FFABS(rt);
+    if(bps < 30) {
+        int32_t lt, rt;
+        for (int i = 2; i < n; i++) {
+            lt = left_ch[i]  - 2*left_ch[i-1]  + left_ch[i-2];
+            rt = right_ch[i] - 2*right_ch[i-1] + right_ch[i-2];
+            sum[2] += FFABS((lt + rt) >> 1);
+            sum[3] += FFABS(lt - rt);
+            sum[0] += FFABS(lt);
+            sum[1] += FFABS(rt);
+        }
+    } else {
+        int64_t lt, rt;
+        for (int i = 2; i < n; i++) {
+            lt = (int64_t)left_ch[i]  - 2*(int64_t)left_ch[i-1]  + left_ch[i-2];
+            rt = (int64_t)right_ch[i] - 2*(int64_t)right_ch[i-1] + right_ch[i-2];
+            sum[2] += FFABS((lt + rt) >> 1);
+            sum[3] += FFABS(lt - rt);
+            sum[0] += FFABS(lt);
+            sum[1] += FFABS(rt);
+        }
     }
     /* estimate bit counts */
-    for (i = 0; i < 4; i++) {
+    for (int i = 0; i < 4; i++) {
         k      = find_optimal_param(2 * sum[i], n, max_rice_param);
         sum[i] = rice_encode_count( 2 * sum[i], n, k);
     }
@@ -1135,7 +1325,7 @@ static int estimate_stereo_mode(const int32_t *left_ch, const int32_t *right_ch,
 
     /* return mode with lowest score */
     best = 0;
-    for (i = 1; i < 4; i++)
+    for (int i = 1; i < 4; i++)
         if (score[i] < score[best])
             best = i;
 
@@ -1150,12 +1340,14 @@ static void channel_decorrelation(FlacEncodeContext *s)
 {
     FlacFrame *frame;
     int32_t *left, *right;
-    int i, n;
+    int64_t *side_33bps;
+    int n;
 
-    frame = &s->frame;
-    n     = frame->blocksize;
-    left  = frame->subframes[0].samples;
-    right = frame->subframes[1].samples;
+    frame      = &s->frame;
+    n          = frame->blocksize;
+    left       = frame->subframes[0].samples;
+    right      = frame->subframes[1].samples;
+    side_33bps = frame->samples_33bps;
 
     if (s->channels != 2) {
         frame->ch_mode = FLAC_CHMODE_INDEPENDENT;
@@ -1164,29 +1356,49 @@ static void channel_decorrelation(FlacEncodeContext *s)
 
     if (s->options.ch_mode < 0) {
         int max_rice_param = (1 << frame->subframes[0].rc.coding_mode) - 2;
-        frame->ch_mode = estimate_stereo_mode(left, right, n, max_rice_param);
+        frame->ch_mode = estimate_stereo_mode(left, right, n, max_rice_param, s->avctx->bits_per_raw_sample);
     } else
         frame->ch_mode = s->options.ch_mode;
 
     /* perform decorrelation and adjust bits-per-sample */
     if (frame->ch_mode == FLAC_CHMODE_INDEPENDENT)
         return;
-    if (frame->ch_mode == FLAC_CHMODE_MID_SIDE) {
-        int32_t tmp;
-        for (i = 0; i < n; i++) {
-            tmp      = left[i];
-            left[i]  = (tmp + right[i]) >> 1;
-            right[i] =  tmp - right[i];
+    if(s->avctx->bits_per_raw_sample == 32) {
+        if (frame->ch_mode == FLAC_CHMODE_MID_SIDE) {
+            int64_t tmp;
+            for (int i = 0; i < n; i++) {
+                tmp           = left[i];
+                left[i]       = (tmp + right[i]) >> 1;
+                side_33bps[i] =  tmp - right[i];
+            }
+            frame->subframes[1].obits++;
+        } else if (frame->ch_mode == FLAC_CHMODE_LEFT_SIDE) {
+            for (int i = 0; i < n; i++)
+                side_33bps[i] = (int64_t)left[i] - right[i];
+            frame->subframes[1].obits++;
+        } else {
+            for (int i = 0; i < n; i++)
+                side_33bps[i] = (int64_t)left[i] - right[i];
+            frame->subframes[0].obits++;
         }
-        frame->subframes[1].obits++;
-    } else if (frame->ch_mode == FLAC_CHMODE_LEFT_SIDE) {
-        for (i = 0; i < n; i++)
-            right[i] = left[i] - right[i];
-        frame->subframes[1].obits++;
     } else {
-        for (i = 0; i < n; i++)
-            left[i] -= right[i];
-        frame->subframes[0].obits++;
+        if (frame->ch_mode == FLAC_CHMODE_MID_SIDE) {
+            int32_t tmp;
+            for (int i = 0; i < n; i++) {
+                tmp      = left[i];
+                left[i]  = (tmp + right[i]) >> 1;
+                right[i] =  tmp - right[i];
+            }
+            frame->subframes[1].obits++;
+        } else if (frame->ch_mode == FLAC_CHMODE_LEFT_SIDE) {
+            for (int i = 0; i < n; i++)
+                right[i] = left[i] - right[i];
+            frame->subframes[1].obits++;
+        } else {
+            for (int i = 0; i < n; i++)
+                left[i] -= right[i];
+            frame->subframes[0].obits++;
+        }
     }
 }
 
@@ -1235,13 +1447,32 @@ static void write_frame_header(FlacEncodeContext *s)
 }
 
 
+static inline void set_sr_golomb_flac(PutBitContext *pb, int i, int k)
+{
+    unsigned v, e;
+
+    v = ((unsigned)(i) << 1) ^ (i >> 31);
+
+    e = (v >> k) + 1;
+    while (e > 31) {
+        put_bits(pb, 31, 0);
+        e -= 31;
+    }
+    put_bits(pb, e, 1);
+    if (k) {
+        unsigned mask = UINT32_MAX >> (32-k);
+        put_bits(pb, k, v & mask);
+    }
+}
+
+
 static void write_subframes(FlacEncodeContext *s)
 {
     int ch;
 
     for (ch = 0; ch < s->channels; ch++) {
         FlacSubframe *sub = &s->frame.subframes[ch];
-        int i, p, porder, psize;
+        int p, porder, psize;
         int32_t *part_end;
         int32_t *res       =  sub->residual;
         int32_t *frame_end = &sub->residual[s->frame.blocksize];
@@ -1255,21 +1486,45 @@ static void write_subframes(FlacEncodeContext *s)
 
         /* subframe */
         if (sub->type == FLAC_SUBFRAME_CONSTANT) {
-            put_sbits(&s->pb, sub->obits, res[0]);
+            if(sub->obits == 33)
+                put_sbits63(&s->pb, 33, s->frame.samples_33bps[0]);
+            else if(sub->obits == 32)
+                put_bits32(&s->pb, res[0]);
+            else
+                put_sbits(&s->pb, sub->obits, res[0]);
         } else if (sub->type == FLAC_SUBFRAME_VERBATIM) {
-            while (res < frame_end)
-                put_sbits(&s->pb, sub->obits, *res++);
+            if (sub->obits == 33) {
+                int64_t *res64 = s->frame.samples_33bps;
+                int64_t *frame_end64 = &s->frame.samples_33bps[s->frame.blocksize];
+                while (res64 < frame_end64)
+                    put_sbits63(&s->pb, 33, (*res64++));
+            } else if (sub->obits == 32) {
+                while (res < frame_end)
+                    put_bits32(&s->pb, *res++);
+            } else {
+                while (res < frame_end)
+                    put_sbits(&s->pb, sub->obits, *res++);
+            }
         } else {
             /* warm-up samples */
-            for (i = 0; i < sub->order; i++)
-                put_sbits(&s->pb, sub->obits, *res++);
+            if (sub->obits == 33) {
+                for (int i = 0; i < sub->order; i++)
+                    put_sbits63(&s->pb, 33, s->frame.samples_33bps[i]);
+                res += sub->order;
+            } else if (sub->obits == 32) {
+                for (int i = 0; i < sub->order; i++)
+                    put_bits32(&s->pb, *res++);
+            } else {
+                for (int i = 0; i < sub->order; i++)
+                    put_sbits(&s->pb, sub->obits, *res++);
+            }
 
             /* LPC coefficients */
             if (sub->type == FLAC_SUBFRAME_LPC) {
                 int cbits = s->options.lpc_coeff_precision;
                 put_bits( &s->pb, 4, cbits-1);
                 put_sbits(&s->pb, 5, sub->shift);
-                for (i = 0; i < sub->order; i++)
+                for (int i = 0; i < sub->order; i++)
                     put_sbits(&s->pb, cbits, sub->coefs[i]);
             }
 
@@ -1287,7 +1542,7 @@ static void write_subframes(FlacEncodeContext *s)
                 int k = sub->rc.params[p];
                 put_bits(&s->pb, sub->rc.coding_mode, k);
                 while (res < part_end)
-                    set_sr_golomb_flac(&s->pb, *res++, k, INT32_MAX, 0);
+                    set_sr_golomb_flac(&s->pb, *res++, k);
                 part_end = FFMIN(frame_end, part_end + psize);
             }
         }
@@ -1335,7 +1590,7 @@ static int update_md5_sum(FlacEncodeContext *s, const void *samples)
                             (const uint16_t *) samples, buf_size / 2);
         buf = s->md5_buffer;
 #endif
-    } else {
+    } else if (s->avctx->bits_per_raw_sample <= 24) {
         int i;
         const int32_t *samples0 = samples;
         uint8_t *tmp            = s->md5_buffer;
@@ -1344,6 +1599,15 @@ static int update_md5_sum(FlacEncodeContext *s, const void *samples)
             int32_t v = samples0[i] >> 8;
             AV_WL24(tmp + 3*i, v);
         }
+        buf = s->md5_buffer;
+    } else {
+        /* s->avctx->bits_per_raw_sample <= 32 */
+        int i;
+        const int32_t *samples0 = samples;
+        uint8_t *tmp            = s->md5_buffer;
+
+        for (i = 0; i < s->frame.blocksize * s->channels; i++)
+            AV_WL32(tmp + 4*i, samples0[i]);
         buf = s->md5_buffer;
     }
     av_md5_update(s->md5ctx, buf, buf_size);

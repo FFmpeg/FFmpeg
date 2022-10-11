@@ -151,18 +151,4 @@ static inline void set_sr_golomb(PutBitContext *pb, int i, int k, int limit,
     set_ur_golomb(pb, v, k, limit, esc_len);
 }
 
-/**
- * write signed golomb rice code (flac).
- */
-static inline void set_sr_golomb_flac(PutBitContext *pb, int i, int k,
-                                      int limit, int esc_len)
-{
-    int v;
-
-    v  = -2 * i - 1;
-    v ^= (v >> 31);
-
-    set_ur_golomb_jpegls(pb, v, k, limit, esc_len);
-}
-
 #endif /* AVCODEC_PUT_GOLOMB_H */
