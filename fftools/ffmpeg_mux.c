@@ -319,7 +319,7 @@ static int queue_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
     return 0;
 }
 
-static int of_submit_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
+static int submit_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
 {
     int ret;
 
@@ -367,12 +367,12 @@ void of_output_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost, int eof)
                 goto fail;
             }
 
-            ret = of_submit_packet(of, bsf_eof ? NULL : pkt, ost);
+            ret = submit_packet(of, bsf_eof ? NULL : pkt, ost);
             if (ret < 0)
                 goto mux_fail;
         }
     } else {
-        ret = of_submit_packet(of, eof ? NULL : pkt, ost);
+        ret = submit_packet(of, eof ? NULL : pkt, ost);
         if (ret < 0)
             goto mux_fail;
     }
