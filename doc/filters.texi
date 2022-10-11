@@ -2961,6 +2961,10 @@ Default is @code{hann}.
 Set window overlap. Allowed range is from @code{0}
 to @code{1}. Default value is @code{0.5}.
 
+@item measure
+Select the parameters which are measured. The metadata keys can
+be used as flags, default is @option{all} which measures everything.
+@option{none} disables all measurement.
 @end table
 
 A list of each metadata key follows:
