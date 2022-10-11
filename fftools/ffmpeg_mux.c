@@ -329,7 +329,8 @@ int of_submit_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
         /* the muxer is not initialized yet, buffer the packet */
         ret = queue_packet(of, ost, pkt);
         if (ret < 0) {
-            av_packet_unref(pkt);
+            if (pkt)
+                av_packet_unref(pkt);
             return ret;
         }
     }
