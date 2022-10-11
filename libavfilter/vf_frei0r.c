@@ -488,6 +488,7 @@ static int source_request_frame(AVFilterLink *outlink)
 
     frame->sample_aspect_ratio = (AVRational) {1, 1};
     frame->pts = s->pts++;
+    frame->duration = 1;
 
     s->update(s->instance, av_rescale_q(frame->pts, s->time_base, (AVRational){1,1000}),
                    NULL, (uint32_t *)frame->data[0]);
