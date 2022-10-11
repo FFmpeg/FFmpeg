@@ -516,8 +516,7 @@ fail:
     return ret;
 }
 
-/* open the muxer when all the streams are initialized */
-int of_check_init(OutputFile *of)
+static int mux_check_init(OutputFile *of)
 {
     AVFormatContext *fc = of->mux->fc;
     int ret, i;
@@ -563,6 +562,16 @@ int of_check_init(OutputFile *of)
     }
 
     return 0;
+}
+
+int of_stream_init(OutputFile *of, OutputStream *ost)
+{
+    if (ost->sq_idx_mux >= 0)
+        sq_set_tb(of->sq_mux, ost->sq_idx_mux, ost->mux_timebase);
+
+    ost->initialized = 1;
+
+    return mux_check_init(of);
 }
 
 int of_write_trailer(OutputFile *of)
@@ -710,7 +719,7 @@ int of_muxer_init(OutputFile *of, AVFormatContext *fc,
 
     /* write the header for files with no streams */
     if (of->format->flags & AVFMT_NOSTREAMS && fc->nb_streams == 0) {
-        ret = of_check_init(of);
+        ret = mux_check_init(of);
         if (ret < 0)
             goto fail;
     }

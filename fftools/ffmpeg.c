@@ -3115,7 +3115,6 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
 static int init_output_stream(OutputStream *ost, AVFrame *frame,
                               char *error, int error_len)
 {
-    OutputFile *of = output_files[ost->file_index];
     int ret = 0;
 
     if (ost->enc_ctx) {
@@ -3220,12 +3219,7 @@ static int init_output_stream(OutputStream *ost, AVFrame *frame,
     if (ret < 0)
         return ret;
 
-    if (ost->sq_idx_mux >= 0)
-        sq_set_tb(of->sq_mux, ost->sq_idx_mux, ost->mux_timebase);
-
-    ost->initialized = 1;
-
-    ret = of_check_init(output_files[ost->file_index]);
+    ret = of_stream_init(output_files[ost->file_index], ost);
     if (ret < 0)
         return ret;
 

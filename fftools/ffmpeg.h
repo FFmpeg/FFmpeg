@@ -720,8 +720,14 @@ int hwaccel_decode_init(AVCodecContext *avctx);
 int of_muxer_init(OutputFile *of, AVFormatContext *fc,
                   AVDictionary *opts, int64_t limit_filesize,
                   int thread_queue_size);
-/* open the muxer when all the streams are initialized */
-int of_check_init(OutputFile *of);
+
+/*
+ * Initialize muxing state for the given stream, should be called
+ * after the codec/streamcopy setup has been done.
+ *
+ * Open the muxer once all the streams have been initialized.
+ */
+int of_stream_init(OutputFile *of, OutputStream *ost);
 int of_write_trailer(OutputFile *of);
 void of_close(OutputFile **pof);
 
