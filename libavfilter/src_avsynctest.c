@@ -348,6 +348,7 @@ static int video_frame(AVFilterLink *outlink)
     }
 
     out->pts = s->vpts++;
+    out->duration = 1;
 
     return ff_filter_frame(outlink, out);
 }
