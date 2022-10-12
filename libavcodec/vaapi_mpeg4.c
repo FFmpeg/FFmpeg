@@ -66,7 +66,7 @@ static int vaapi_mpeg4_start_frame(AVCodecContext *avctx, av_unused const uint8_
             .interlaced                   = !s->progressive_sequence,
             .obmc_disable                 = 1,
             .sprite_enable                = ctx->vol_sprite_usage,
-            .sprite_warping_accuracy      = s->sprite_warping_accuracy,
+            .sprite_warping_accuracy      = ctx->sprite_warping_accuracy,
             .quant_type                   = s->mpeg_quant,
             .quarter_sample               = s->quarter_sample,
             .data_partitioned             = s->data_partitioning,

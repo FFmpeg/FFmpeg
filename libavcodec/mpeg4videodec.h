@@ -38,7 +38,11 @@ typedef struct Mpeg4DecContext {
     int shape;
     int vol_sprite_usage;
     int sprite_brightness_change;
+    int sprite_warping_accuracy;
     int num_sprite_warping_points;
+    int real_sprite_warping_points;
+    int sprite_offset[2][2];         ///< sprite offset[isChroma][isMVY]
+    int sprite_delta[2][2];          ///< sprite_delta [isY][isMVY]
     /// sprite trajectory points
     uint16_t sprite_traj[4][2];
     /// sprite shift [isChroma]

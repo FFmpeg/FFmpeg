@@ -81,12 +81,12 @@ static void gmc1_motion(MpegEncContext *s, const Mpeg4DecContext *ctx,
     ptrdiff_t offset, linesize, uvlinesize;
     int emu = 0;
 
-    motion_x   = s->sprite_offset[0][0];
-    motion_y   = s->sprite_offset[0][1];
-    src_x      = s->mb_x * 16 + (motion_x >> (s->sprite_warping_accuracy + 1));
-    src_y      = s->mb_y * 16 + (motion_y >> (s->sprite_warping_accuracy + 1));
-    motion_x *= 1 << (3 - s->sprite_warping_accuracy);
-    motion_y *= 1 << (3 - s->sprite_warping_accuracy);
+    motion_x   = ctx->sprite_offset[0][0];
+    motion_y   = ctx->sprite_offset[0][1];
+    src_x      = s->mb_x * 16 + (motion_x >> (ctx->sprite_warping_accuracy + 1));
+    src_y      = s->mb_y * 16 + (motion_y >> (ctx->sprite_warping_accuracy + 1));
+    motion_x *= 1 << (3 - ctx->sprite_warping_accuracy);
+    motion_y *= 1 << (3 - ctx->sprite_warping_accuracy);
     src_x      = av_clip(src_x, -16, s->width);
     if (src_x == s->width)
         motion_x = 0;
@@ -128,12 +128,12 @@ static void gmc1_motion(MpegEncContext *s, const Mpeg4DecContext *ctx,
     if (CONFIG_GRAY && s->avctx->flags & AV_CODEC_FLAG_GRAY)
         return;
 
-    motion_x   = s->sprite_offset[1][0];
-    motion_y   = s->sprite_offset[1][1];
-    src_x      = s->mb_x * 8 + (motion_x >> (s->sprite_warping_accuracy + 1));
-    src_y      = s->mb_y * 8 + (motion_y >> (s->sprite_warping_accuracy + 1));
-    motion_x  *= 1 << (3 - s->sprite_warping_accuracy);
-    motion_y  *= 1 << (3 - s->sprite_warping_accuracy);
+    motion_x   = ctx->sprite_offset[1][0];
+    motion_y   = ctx->sprite_offset[1][1];
+    src_x      = s->mb_x * 8 + (motion_x >> (ctx->sprite_warping_accuracy + 1));
+    src_y      = s->mb_y * 8 + (motion_y >> (ctx->sprite_warping_accuracy + 1));
+    motion_x  *= 1 << (3 - ctx->sprite_warping_accuracy);
+    motion_y  *= 1 << (3 - ctx->sprite_warping_accuracy);
     src_x      = av_clip(src_x, -8, s->width >> 1);
     if (src_x == s->width >> 1)
         motion_x = 0;
@@ -175,7 +175,7 @@ static void gmc_motion(MpegEncContext *s, const Mpeg4DecContext *ctx,
 {
     const uint8_t *ptr;
     int linesize, uvlinesize;
-    const int a = s->sprite_warping_accuracy;
+    const int a = ctx->sprite_warping_accuracy;
     int ox, oy;
 
     linesize   = s->linesize;
@@ -183,46 +183,46 @@ static void gmc_motion(MpegEncContext *s, const Mpeg4DecContext *ctx,
 
     ptr = ref_picture[0];
 
-    ox = s->sprite_offset[0][0] + s->sprite_delta[0][0] * s->mb_x * 16 +
-         s->sprite_delta[0][1] * s->mb_y * 16;
-    oy = s->sprite_offset[0][1] + s->sprite_delta[1][0] * s->mb_x * 16 +
-         s->sprite_delta[1][1] * s->mb_y * 16;
+    ox = ctx->sprite_offset[0][0] + ctx->sprite_delta[0][0] * s->mb_x * 16 +
+         ctx->sprite_delta[0][1] * s->mb_y * 16;
+    oy = ctx->sprite_offset[0][1] + ctx->sprite_delta[1][0] * s->mb_x * 16 +
+         ctx->sprite_delta[1][1] * s->mb_y * 16;
 
     ctx->mdsp.gmc(dest_y, ptr, linesize, 16,
                   ox, oy,
-                s->sprite_delta[0][0], s->sprite_delta[0][1],
-                s->sprite_delta[1][0], s->sprite_delta[1][1],
+                  ctx->sprite_delta[0][0], ctx->sprite_delta[0][1],
+                  ctx->sprite_delta[1][0], ctx->sprite_delta[1][1],
                   a + 1, (1 << (2 * a + 1)) - s->no_rounding,
                   s->h_edge_pos, s->v_edge_pos);
     ctx->mdsp.gmc(dest_y + 8, ptr, linesize, 16,
-                ox + s->sprite_delta[0][0] * 8,
-                oy + s->sprite_delta[1][0] * 8,
-                s->sprite_delta[0][0], s->sprite_delta[0][1],
-                s->sprite_delta[1][0], s->sprite_delta[1][1],
-                a + 1, (1 << (2 * a + 1)) - s->no_rounding,
-                s->h_edge_pos, s->v_edge_pos);
+                  ox + ctx->sprite_delta[0][0] * 8,
+                  oy + ctx->sprite_delta[1][0] * 8,
+                  ctx->sprite_delta[0][0], ctx->sprite_delta[0][1],
+                  ctx->sprite_delta[1][0], ctx->sprite_delta[1][1],
+                  a + 1, (1 << (2 * a + 1)) - s->no_rounding,
+                  s->h_edge_pos, s->v_edge_pos);
 
     if (CONFIG_GRAY && s->avctx->flags & AV_CODEC_FLAG_GRAY)
         return;
 
-    ox = s->sprite_offset[1][0] + s->sprite_delta[0][0] * s->mb_x * 8 +
-         s->sprite_delta[0][1] * s->mb_y * 8;
-    oy = s->sprite_offset[1][1] + s->sprite_delta[1][0] * s->mb_x * 8 +
-         s->sprite_delta[1][1] * s->mb_y * 8;
+    ox = ctx->sprite_offset[1][0] + ctx->sprite_delta[0][0] * s->mb_x * 8 +
+         ctx->sprite_delta[0][1] * s->mb_y * 8;
+    oy = ctx->sprite_offset[1][1] + ctx->sprite_delta[1][0] * s->mb_x * 8 +
+         ctx->sprite_delta[1][1] * s->mb_y * 8;
 
     ptr = ref_picture[1];
     ctx->mdsp.gmc(dest_cb, ptr, uvlinesize, 8,
                   ox, oy,
-                s->sprite_delta[0][0], s->sprite_delta[0][1],
-                s->sprite_delta[1][0], s->sprite_delta[1][1],
+                  ctx->sprite_delta[0][0], ctx->sprite_delta[0][1],
+                  ctx->sprite_delta[1][0], ctx->sprite_delta[1][1],
                   a + 1, (1 << (2 * a + 1)) - s->no_rounding,
                   (s->h_edge_pos + 1) >> 1, (s->v_edge_pos + 1) >> 1);
 
     ptr = ref_picture[2];
     ctx->mdsp.gmc(dest_cr, ptr, uvlinesize, 8,
                   ox, oy,
-                s->sprite_delta[0][0], s->sprite_delta[0][1],
-                s->sprite_delta[1][0], s->sprite_delta[1][1],
+                  ctx->sprite_delta[0][0], ctx->sprite_delta[0][1],
+                  ctx->sprite_delta[1][0], ctx->sprite_delta[1][1],
                   a + 1, (1 << (2 * a + 1)) - s->no_rounding,
                   (s->h_edge_pos + 1) >> 1, (s->v_edge_pos + 1) >> 1);
 }
@@ -233,7 +233,7 @@ void ff_mpeg4_mcsel_motion(MpegEncContext *s,
 {
     const Mpeg4DecContext *const ctx = (Mpeg4DecContext*)s;
 
-    if (s->real_sprite_warping_points == 1) {
+    if (ctx->real_sprite_warping_points == 1) {
         gmc1_motion(s, ctx, dest_y, dest_cb, dest_cr,
                     ref_picture);
     } else {
@@ -418,8 +418,8 @@ static inline int mpeg4_is_resync(Mpeg4DecContext *ctx)
 static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *gb)
 {
     MpegEncContext *s = &ctx->m;
-    int a     = 2 << s->sprite_warping_accuracy;
-    int rho   = 3  - s->sprite_warping_accuracy;
+    int a     = 2 << ctx->sprite_warping_accuracy;
+    int rho   = 3  - ctx->sprite_warping_accuracy;
     int r     = 16 / a;
     int alpha = 1;
     int beta  = 0;
@@ -607,7 +607,7 @@ static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *g
         sprite_delta[1][1] = a;
         ctx->sprite_shift[0] = 0;
         ctx->sprite_shift[1] = 0;
-        s->real_sprite_warping_points = 1;
+        ctx->real_sprite_warping_points = 1;
     } else {
         int shift_y = 16 - ctx->sprite_shift[0];
         int shift_c = 16 - ctx->sprite_shift[1];
@@ -653,18 +653,18 @@ static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *g
                 goto overflow;
             }
         }
-        s->real_sprite_warping_points = ctx->num_sprite_warping_points;
+        ctx->real_sprite_warping_points = ctx->num_sprite_warping_points;
     }
 
     for (i = 0; i < 4; i++) {
-        s->sprite_offset[i&1][i>>1] = sprite_offset[i&1][i>>1];
-        s->sprite_delta [i&1][i>>1] = sprite_delta [i&1][i>>1];
+        ctx->sprite_offset[i&1][i>>1] = sprite_offset[i&1][i>>1];
+        ctx->sprite_delta [i&1][i>>1] = sprite_delta [i&1][i>>1];
     }
 
     return 0;
 overflow:
-    memset(s->sprite_offset, 0, sizeof(s->sprite_offset));
-    memset(s->sprite_delta, 0, sizeof(s->sprite_delta));
+    memset(ctx->sprite_offset, 0, sizeof(ctx->sprite_offset));
+    memset(ctx->sprite_delta,  0, sizeof(ctx->sprite_delta));
     return AVERROR_PATCHWELCOME;
 }
 
@@ -832,25 +832,25 @@ static inline int get_amv(Mpeg4DecContext *ctx, int n)
     MpegEncContext *s = &ctx->m;
     int x, y, mb_v, sum, dx, dy, shift;
     int len     = 1 << (s->f_code + 4);
-    const int a = s->sprite_warping_accuracy;
+    const int a = ctx->sprite_warping_accuracy;
 
     if (s->workaround_bugs & FF_BUG_AMV)
         len >>= s->quarter_sample;
 
-    if (s->real_sprite_warping_points == 1) {
+    if (ctx->real_sprite_warping_points == 1) {
         if (ctx->divx_version == 500 && ctx->divx_build == 413 && a >= s->quarter_sample)
-            sum = s->sprite_offset[0][n] / (1 << (a - s->quarter_sample));
+            sum = ctx->sprite_offset[0][n] / (1 << (a - s->quarter_sample));
         else
-            sum = RSHIFT(s->sprite_offset[0][n] * (1 << s->quarter_sample), a);
+            sum = RSHIFT(ctx->sprite_offset[0][n] * (1 << s->quarter_sample), a);
     } else {
-        dx    = s->sprite_delta[n][0];
-        dy    = s->sprite_delta[n][1];
+        dx    = ctx->sprite_delta[n][0];
+        dy    = ctx->sprite_delta[n][1];
         shift = ctx->sprite_shift[0];
         if (n)
             dy -= 1 << (shift + a + 1);
         else
             dx -= 1 << (shift + a + 1);
-        mb_v = s->sprite_offset[0][n] + dx * s->mb_x * 16U + dy * s->mb_y * 16U;
+        mb_v = ctx->sprite_offset[0][n] + dx * s->mb_x * 16U + dy * s->mb_y * 16U;
 
         sum = 0;
         for (y = 0; y < 16; y++) {
@@ -2698,7 +2698,7 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
                 ctx->num_sprite_warping_points = 0;
                 return AVERROR_INVALIDDATA;
             }
-            s->sprite_warping_accuracy  = get_bits(gb, 2);
+            ctx->sprite_warping_accuracy  = get_bits(gb, 2);
             ctx->sprite_brightness_change = get_bits1(gb);
             if (ctx->vol_sprite_usage == STATIC_SPRITE)
                 skip_bits1(gb); // low_latency_sprite
@@ -3286,8 +3286,8 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb,
             if (ctx->vol_sprite_usage == STATIC_SPRITE)
                 av_log(s->avctx, AV_LOG_ERROR, "static sprite not supported\n");
         } else {
-            memset(s->sprite_offset, 0, sizeof(s->sprite_offset));
-            memset(s->sprite_delta, 0, sizeof(s->sprite_delta));
+            memset(ctx->sprite_offset, 0, sizeof(ctx->sprite_offset));
+            memset(ctx->sprite_delta,  0, sizeof(ctx->sprite_delta));
         }
     }
 
@@ -3329,7 +3329,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb,
                    gb->size_in_bits,s->progressive_sequence, s->alternate_scan,
                    s->top_field_first, s->quarter_sample ? 'q' : 'h',
                    s->data_partitioning, ctx->resync_marker,
-                   ctx->num_sprite_warping_points, s->sprite_warping_accuracy,
+                   ctx->num_sprite_warping_points, ctx->sprite_warping_accuracy,
                    1 - s->no_rounding, ctx->vo_type,
                    ctx->vol_control_parameters ? " VOLC" : " ", ctx->intra_dc_threshold,
                    ctx->cplx_estimation_trash_i, ctx->cplx_estimation_trash_p,
