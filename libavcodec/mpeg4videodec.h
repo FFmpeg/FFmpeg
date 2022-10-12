@@ -87,6 +87,9 @@ int ff_mpeg4_decode_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb,
 void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb,
                             uint8_t *dest_cr, int block_size, int uvlinesize,
                             int dct_linesize, int dct_offset);
+void ff_mpeg4_mcsel_motion(MpegEncContext *s,
+                           uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
+                           uint8_t *const *ref_picture);
 int ff_mpeg4_decode_partitions(Mpeg4DecContext *ctx);
 int ff_mpeg4_decode_video_packet_header(Mpeg4DecContext *ctx);
 int ff_mpeg4_decode_studio_slice_header(Mpeg4DecContext *ctx);
