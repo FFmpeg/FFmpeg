@@ -51,8 +51,6 @@ typedef struct MotionEstContext {
     int direct_basis_mv[4][2];
     uint8_t *scratchpad;            /**< data area for the ME algo, so that
                                      * the ME does not need to malloc/free. */
-    uint8_t *best_mb;
-    uint8_t *temp_mb[2];
     uint8_t *temp;
     int best_bits;
     uint32_t *map;                  ///< map to avoid duplicate evaluations
