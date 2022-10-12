@@ -1648,6 +1648,7 @@ static int mpeg4_decode_mb(MpegEncContext *s, int16_t block[6][64])
     int16_t *mot_val;
     static const int8_t quant_tab[4] = { -1, -2, 1, 2 };
     const int xy = s->mb_x + s->mb_y * s->mb_stride;
+    int next;
 
     av_assert2(s ==  (void*)ctx);
     av_assert2(s->h263_pred);
@@ -1999,8 +2000,7 @@ intra:
 
 end:
     /* per-MB end of slice check */
-    if (s->codec_id == AV_CODEC_ID_MPEG4) {
-        int next = mpeg4_is_resync(ctx);
+    next = mpeg4_is_resync(ctx);
         if (next) {
             if        (s->mb_x + s->mb_y*s->mb_width + 1 >  next && (s->avctx->err_recognition & AV_EF_AGGRESSIVE)) {
                 return AVERROR_INVALIDDATA;
@@ -2019,7 +2019,6 @@ end:
 
             return SLICE_END;
         }
-    }
 
     return SLICE_OK;
 }
@@ -3084,7 +3083,6 @@ int ff_mpeg4_workaround_bugs(AVCodecContext *avctx)
                ctx->divx_version, ctx->divx_build, s->divx_packed ? "p" : "");
 
     if (CONFIG_MPEG4_DECODER && ctx->xvid_build >= 0 &&
-        s->codec_id == AV_CODEC_ID_MPEG4 &&
         avctx->idct_algo == FF_IDCT_AUTO) {
         avctx->idct_algo = FF_IDCT_XVID;
         ff_mpv_idct_init(s);
