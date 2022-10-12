@@ -27,8 +27,7 @@ OBJS-$(CONFIG_LPC)                     += x86/lpc_init.o
 OBJS-$(CONFIG_MDCT15)                  += x86/mdct15_init.o
 OBJS-$(CONFIG_ME_CMP)                  += x86/me_cmp_init.o
 OBJS-$(CONFIG_MPEGAUDIODSP)            += x86/mpegaudiodsp.o
-OBJS-$(CONFIG_MPEGVIDEO)               += x86/mpegvideo.o              \
-                                          x86/mpegvideodsp.o
+OBJS-$(CONFIG_MPEGVIDEO)               += x86/mpegvideo.o
 OBJS-$(CONFIG_MPEGVIDEOENC)            += x86/mpegvideoenc.o           \
                                           x86/mpegvideoencdsp_init.o
 OBJS-$(CONFIG_PIXBLOCKDSP)             += x86/pixblockdsp_init.o
@@ -62,7 +61,7 @@ OBJS-$(CONFIG_HEVC_DECODER)            += x86/hevcdsp_init.o
 OBJS-$(CONFIG_JPEG2000_DECODER)        += x86/jpeg2000dsp_init.o
 OBJS-$(CONFIG_LSCR_DECODER)            += x86/pngdsp_init.o
 OBJS-$(CONFIG_MLP_DECODER)             += x86/mlpdsp_init.o
-OBJS-$(CONFIG_MPEG4_DECODER)           += x86/xvididct_init.o
+OBJS-$(CONFIG_MPEG4_DECODER)           += x86/mpeg4videodsp.o x86/xvididct_init.o
 OBJS-$(CONFIG_PNG_DECODER)             += x86/pngdsp_init.o
 OBJS-$(CONFIG_PRORES_DECODER)          += x86/proresdsp_init.o
 OBJS-$(CONFIG_PRORES_LGPL_DECODER)     += x86/proresdsp_init.o

@@ -40,7 +40,6 @@
 #include "me_cmp.h"
 #include "motion_est.h"
 #include "mpegpicture.h"
-#include "mpegvideodsp.h"
 #include "mpegvideoencdsp.h"
 #include "pixblockdsp.h"
 #include "put_bits.h"
@@ -209,7 +208,6 @@ typedef struct MpegEncContext {
     HpelDSPContext hdsp;
     IDCTDSPContext idsp;
     MECmpContext mecc;
-    MpegVideoDSPContext mdsp;
     MpegvideoEncDSPContext mpvencdsp;
     PixblockDSPContext pdsp;
     QpelDSPContext qdsp;

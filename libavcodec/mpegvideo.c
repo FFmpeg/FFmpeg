@@ -277,7 +277,6 @@ static av_cold int dct_init(MpegEncContext *s)
     ff_blockdsp_init(&s->bdsp);
     ff_h264chroma_init(&s->h264chroma, 8); //for lowres
     ff_hpeldsp_init(&s->hdsp, s->avctx->flags);
-    ff_mpegvideodsp_init(&s->mdsp);
     ff_videodsp_init(&s->vdsp, s->avctx->bits_per_raw_sample);
 
     if (s->avctx->debug & FF_DEBUG_NOMC) {

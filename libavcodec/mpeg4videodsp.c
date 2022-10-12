@@ -19,7 +19,7 @@
 #include "config.h"
 #include "libavutil/attributes.h"
 #include "libavutil/common.h"
-#include "mpegvideodsp.h"
+#include "mpeg4videodsp.h"
 
 static void gmc1_c(uint8_t *dst, const uint8_t *src, int stride, int h,
                    int x16, int y16, int rounder)
@@ -107,14 +107,14 @@ void ff_gmc_c(uint8_t *dst, const uint8_t *src, int stride, int h, int ox, int o
     }
 }
 
-av_cold void ff_mpegvideodsp_init(MpegVideoDSPContext *c)
+av_cold void ff_mpeg4videodsp_init(Mpeg4VideoDSPContext *c)
 {
     c->gmc1 = gmc1_c;
     c->gmc  = ff_gmc_c;
 
 #if ARCH_PPC
-    ff_mpegvideodsp_init_ppc(c);
+    ff_mpeg4videodsp_init_ppc(c);
 #elif ARCH_X86
-    ff_mpegvideodsp_init_x86(c);
+    ff_mpeg4videodsp_init_x86(c);
 #endif
 }

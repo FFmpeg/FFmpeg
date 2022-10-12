@@ -20,7 +20,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86/cpu.h"
-#include "libavcodec/mpegvideodsp.h"
+#include "libavcodec/mpeg4videodsp.h"
 #include "libavcodec/videodsp.h"
 
 #if HAVE_INLINE_ASM
@@ -150,7 +150,7 @@ static void gmc_mmx(uint8_t *dst, const uint8_t *src,
 
 #endif /* HAVE_INLINE_ASM */
 
-av_cold void ff_mpegvideodsp_init_x86(MpegVideoDSPContext *c)
+av_cold void ff_mpeg4videodsp_init_x86(Mpeg4VideoDSPContext *c)
 {
 #if HAVE_INLINE_ASM
     int cpu_flags = av_get_cpu_flags();

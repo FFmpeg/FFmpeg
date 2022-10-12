@@ -72,7 +72,7 @@ static const int mb_type_b_map[4] = {
     MB_TYPE_L0      | MB_TYPE_16x16,
 };
 
-static void gmc1_motion(MpegEncContext *s,
+static void gmc1_motion(MpegEncContext *s, const Mpeg4DecContext *ctx,
                         uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
                         uint8_t *const *ref_picture)
 {
@@ -110,10 +110,10 @@ static void gmc1_motion(MpegEncContext *s,
     }
 
     if ((motion_x | motion_y) & 7) {
-        s->mdsp.gmc1(dest_y, ptr, linesize, 16,
-                     motion_x & 15, motion_y & 15, 128 - s->no_rounding);
-        s->mdsp.gmc1(dest_y + 8, ptr + 8, linesize, 16,
-                     motion_x & 15, motion_y & 15, 128 - s->no_rounding);
+        ctx->mdsp.gmc1(dest_y, ptr, linesize, 16,
+                       motion_x & 15, motion_y & 15, 128 - s->no_rounding);
+        ctx->mdsp.gmc1(dest_y + 8, ptr + 8, linesize, 16,
+                       motion_x & 15, motion_y & 15, 128 - s->no_rounding);
     } else {
         int dxy;
 
@@ -153,8 +153,8 @@ static void gmc1_motion(MpegEncContext *s,
         ptr = s->sc.edge_emu_buffer;
         emu = 1;
     }
-    s->mdsp.gmc1(dest_cb, ptr, uvlinesize, 8,
-                 motion_x & 15, motion_y & 15, 128 - s->no_rounding);
+    ctx->mdsp.gmc1(dest_cb, ptr, uvlinesize, 8,
+                   motion_x & 15, motion_y & 15, 128 - s->no_rounding);
 
     ptr = ref_picture[2] + offset;
     if (emu) {
@@ -165,11 +165,11 @@ static void gmc1_motion(MpegEncContext *s,
                                  s->h_edge_pos >> 1, s->v_edge_pos >> 1);
         ptr = s->sc.edge_emu_buffer;
     }
-    s->mdsp.gmc1(dest_cr, ptr, uvlinesize, 8,
-                 motion_x & 15, motion_y & 15, 128 - s->no_rounding);
+    ctx->mdsp.gmc1(dest_cr, ptr, uvlinesize, 8,
+                   motion_x & 15, motion_y & 15, 128 - s->no_rounding);
 }
 
-static void gmc_motion(MpegEncContext *s,
+static void gmc_motion(MpegEncContext *s, const Mpeg4DecContext *ctx,
                        uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
                        uint8_t *const *ref_picture)
 {
@@ -188,13 +188,13 @@ static void gmc_motion(MpegEncContext *s,
     oy = s->sprite_offset[0][1] + s->sprite_delta[1][0] * s->mb_x * 16 +
          s->sprite_delta[1][1] * s->mb_y * 16;
 
-    s->mdsp.gmc(dest_y, ptr, linesize, 16,
-                ox, oy,
+    ctx->mdsp.gmc(dest_y, ptr, linesize, 16,
+                  ox, oy,
                 s->sprite_delta[0][0], s->sprite_delta[0][1],
                 s->sprite_delta[1][0], s->sprite_delta[1][1],
-                a + 1, (1 << (2 * a + 1)) - s->no_rounding,
-                s->h_edge_pos, s->v_edge_pos);
-    s->mdsp.gmc(dest_y + 8, ptr, linesize, 16,
+                  a + 1, (1 << (2 * a + 1)) - s->no_rounding,
+                  s->h_edge_pos, s->v_edge_pos);
+    ctx->mdsp.gmc(dest_y + 8, ptr, linesize, 16,
                 ox + s->sprite_delta[0][0] * 8,
                 oy + s->sprite_delta[1][0] * 8,
                 s->sprite_delta[0][0], s->sprite_delta[0][1],
@@ -211,31 +211,33 @@ static void gmc_motion(MpegEncContext *s,
          s->sprite_delta[1][1] * s->mb_y * 8;
 
     ptr = ref_picture[1];
-    s->mdsp.gmc(dest_cb, ptr, uvlinesize, 8,
-                ox, oy,
+    ctx->mdsp.gmc(dest_cb, ptr, uvlinesize, 8,
+                  ox, oy,
                 s->sprite_delta[0][0], s->sprite_delta[0][1],
                 s->sprite_delta[1][0], s->sprite_delta[1][1],
-                a + 1, (1 << (2 * a + 1)) - s->no_rounding,
-                (s->h_edge_pos + 1) >> 1, (s->v_edge_pos + 1) >> 1);
+                  a + 1, (1 << (2 * a + 1)) - s->no_rounding,
+                  (s->h_edge_pos + 1) >> 1, (s->v_edge_pos + 1) >> 1);
 
     ptr = ref_picture[2];
-    s->mdsp.gmc(dest_cr, ptr, uvlinesize, 8,
-                ox, oy,
+    ctx->mdsp.gmc(dest_cr, ptr, uvlinesize, 8,
+                  ox, oy,
                 s->sprite_delta[0][0], s->sprite_delta[0][1],
                 s->sprite_delta[1][0], s->sprite_delta[1][1],
-                a + 1, (1 << (2 * a + 1)) - s->no_rounding,
-                (s->h_edge_pos + 1) >> 1, (s->v_edge_pos + 1) >> 1);
+                  a + 1, (1 << (2 * a + 1)) - s->no_rounding,
+                  (s->h_edge_pos + 1) >> 1, (s->v_edge_pos + 1) >> 1);
 }
 
 void ff_mpeg4_mcsel_motion(MpegEncContext *s,
                            uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
                            uint8_t *const *ref_picture)
 {
+    const Mpeg4DecContext *const ctx = (Mpeg4DecContext*)s;
+
     if (s->real_sprite_warping_points == 1) {
-        gmc1_motion(s, dest_y, dest_cb, dest_cr,
+        gmc1_motion(s, ctx, dest_y, dest_cb, dest_cr,
                     ref_picture);
     } else {
-        gmc_motion(s, dest_y, dest_cb, dest_cr,
+        gmc_motion(s, ctx, dest_y, dest_cb, dest_cr,
                     ref_picture);
     }
 }
@@ -3684,6 +3686,7 @@ int ff_mpeg4_frame_end(AVCodecContext *avctx, const uint8_t *buf, int buf_size)
     return 0;
 }
 
+#if CONFIG_MPEG4_DECODER
 #if HAVE_THREADS
 static int mpeg4_update_thread_context(AVCodecContext *dst,
                                        const AVCodecContext *src)
@@ -3726,7 +3729,7 @@ static int mpeg4_update_thread_context(AVCodecContext *dst,
     memcpy(s->sprite_shift, s1->sprite_shift, sizeof(s1->sprite_shift));
     memcpy(s->sprite_traj,  s1->sprite_traj,  sizeof(s1->sprite_traj));
 
-    if (CONFIG_MPEG4_DECODER && !init && s1->xvid_build >= 0)
+    if (!init && s1->xvid_build >= 0)
         ff_xvid_idct_init(&s->m.idsp, dst);
 
     return 0;
@@ -3814,6 +3817,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     avctx->chroma_sample_location = AVCHROMA_LOC_LEFT;
 
+    ff_mpeg4videodsp_init(&ctx->mdsp);
+
     ff_thread_once(&init_static_once, mpeg4_init_static);
 
     return 0;
@@ -3873,3 +3878,4 @@ const FFCodec ff_mpeg4_decoder = {
                                NULL
                            },
 };
+#endif /* CONFIG_MPEG4_DECODER */

@@ -16,8 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_MPEGVIDEODSP_H
-#define AVCODEC_MPEGVIDEODSP_H
+#ifndef AVCODEC_MPEG4VIDEODSP_H
+#define AVCODEC_MPEG4VIDEODSP_H
 
 #include <stdint.h>
 
@@ -25,7 +25,7 @@ void ff_gmc_c(uint8_t *dst, const uint8_t *src, int stride, int h, int ox, int o
               int dxx, int dxy, int dyx, int dyy, int shift, int r,
               int width, int height);
 
-typedef struct MpegVideoDSPContext {
+typedef struct Mpeg4VideoDSPContext {
     /**
      * translational global motion compensation.
      */
@@ -38,10 +38,10 @@ typedef struct MpegVideoDSPContext {
                 int stride, int h, int ox, int oy,
                 int dxx, int dxy, int dyx, int dyy,
                 int shift, int r, int width, int height);
-} MpegVideoDSPContext;
+} Mpeg4VideoDSPContext;
 
-void ff_mpegvideodsp_init(MpegVideoDSPContext *c);
-void ff_mpegvideodsp_init_ppc(MpegVideoDSPContext *c);
-void ff_mpegvideodsp_init_x86(MpegVideoDSPContext *c);
+void ff_mpeg4videodsp_init(Mpeg4VideoDSPContext *c);
+void ff_mpeg4videodsp_init_ppc(Mpeg4VideoDSPContext *c);
+void ff_mpeg4videodsp_init_x86(Mpeg4VideoDSPContext *c);
 
-#endif /* AVCODEC_MPEGVIDEODSP_H */
+#endif /* AVCODEC_MPEG4VIDEODSP_H */

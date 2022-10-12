@@ -26,7 +26,7 @@
 #include "libavutil/ppc/cpu.h"
 #include "libavutil/ppc/util_altivec.h"
 
-#include "libavcodec/mpegvideodsp.h"
+#include "libavcodec/mpeg4videodsp.h"
 
 #if HAVE_ALTIVEC
 /* AltiVec-enhanced gmc1. ATM this code assumes stride is a multiple of 8
@@ -128,7 +128,7 @@ static void gmc1_altivec(uint8_t *dst /* align 8 */, const uint8_t *src /* align
 }
 #endif /* HAVE_ALTIVEC */
 
-av_cold void ff_mpegvideodsp_init_ppc(MpegVideoDSPContext *c)
+av_cold void ff_mpeg4videodsp_init_ppc(Mpeg4VideoDSPContext *c)
 {
 #if HAVE_ALTIVEC
     if (!PPC_ALTIVEC(av_get_cpu_flags()))
