@@ -3705,6 +3705,7 @@ static int mpeg4_update_thread_context(AVCodecContext *dst,
     s->shape                     = s1->shape;
     s->vol_sprite_usage          = s1->vol_sprite_usage;
     s->sprite_brightness_change  = s1->sprite_brightness_change;
+    s->sprite_warping_accuracy   = s1->sprite_warping_accuracy;
     s->num_sprite_warping_points = s1->num_sprite_warping_points;
     s->m.data_partitioning       = s1->m.data_partitioning;
     s->rvlc                      = s1->rvlc;
