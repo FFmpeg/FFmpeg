@@ -1413,7 +1413,6 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
                         ff_mpv_motion(s, dest_y, dest_cb, dest_cr, 1, s->next_picture.f->data, op_pix, op_qpix);
                     }
                 }
-            }
 
             /* skip dequant / idct if we are really late ;) */
             if(s->avctx->skip_idct){
@@ -1421,6 +1420,7 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
                    ||(s->avctx->skip_idct >= AVDISCARD_NONKEY && s->pict_type != AV_PICTURE_TYPE_I)
                    || s->avctx->skip_idct >= AVDISCARD_ALL)
                     goto skip_idct;
+            }
             }
 
             /* add dct residue */
