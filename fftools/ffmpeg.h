@@ -727,10 +727,6 @@ int hw_device_setup_for_filter(FilterGraph *fg);
 
 int hwaccel_decode_init(AVCodecContext *avctx);
 
-int of_muxer_init(OutputFile *of, AVFormatContext *fc,
-                  AVDictionary *opts, int64_t limit_filesize,
-                  int thread_queue_size);
-
 /*
  * Initialize muxing state for the given stream, should be called
  * after the codec/streamcopy setup has been done.

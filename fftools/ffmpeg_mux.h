@@ -71,4 +71,9 @@ typedef struct Muxer {
     AVPacket *sq_pkt;
 } Muxer;
 
+/* whether we want to print an SDP, set in of_open() */
+extern int want_sdp;
+
+int mux_check_init(Muxer *mux);
+
 #endif /* FFTOOLS_FFMPEG_MUX_H */

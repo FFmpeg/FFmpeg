@@ -1582,7 +1582,7 @@ int of_open(OptionsContext *o, const char *filename)
     AVFormatContext *oc;
     int i, j, err;
     OutputFile *of;
-    AVDictionary *unused_opts = NULL, *format_opts = NULL;
+    AVDictionary *unused_opts = NULL;
     const AVDictionaryEntry *e = NULL;
 
     if (o->stop_time != INT64_MAX && o->recording_time != INT64_MAX) {
@@ -1608,7 +1608,10 @@ int of_open(OptionsContext *o, const char *filename)
     of->recording_time = o->recording_time;
     of->start_time     = o->start_time;
     of->shortest       = o->shortest;
-    av_dict_copy(&format_opts, o->g->format_opts, 0);
+
+    mux->thread_queue_size = o->thread_queue_size > 0 ? o->thread_queue_size : 8;
+    mux->limit_filesize    = o->limit_filesize;
+    av_dict_copy(&mux->opts, o->g->format_opts, 0);
 
     if (!strcmp(filename, "-"))
         filename = "pipe:";
@@ -1618,6 +1621,10 @@ int of_open(OptionsContext *o, const char *filename)
         print_error(filename, err);
         exit_program(1);
     }
+    mux->fc = oc;
+
+    if (strcmp(oc->oformat->name, "rtp"))
+        want_sdp = 0;
 
     of->format = oc->oformat;
     if (o->recording_time != INT64_MAX)
@@ -1629,7 +1636,7 @@ int of_open(OptionsContext *o, const char *filename)
         oc->flags    |= AVFMT_FLAG_BITEXACT;
         of->bitexact  = 1;
     } else {
-        of->bitexact  = check_opt_bitexact(oc, format_opts, "fflags",
+        of->bitexact  = check_opt_bitexact(oc, mux->opts, "fflags",
                                            AVFMT_FLAG_BITEXACT);
     }
 
@@ -1798,7 +1805,7 @@ int of_open(OptionsContext *o, const char *filename)
         /* open the file */
         if ((err = avio_open2(&oc->pb, filename, AVIO_FLAG_WRITE,
                               &oc->interrupt_callback,
-                              &format_opts)) < 0) {
+                              &mux->opts)) < 0) {
             print_error(filename, err);
             exit_program(1);
         }
@@ -1806,7 +1813,7 @@ int of_open(OptionsContext *o, const char *filename)
         assert_file_overwrite(filename);
 
     if (o->mux_preload) {
-        av_dict_set_int(&format_opts, "preload", o->mux_preload*AV_TIME_BASE, 0);
+        av_dict_set_int(&mux->opts, "preload", o->mux_preload*AV_TIME_BASE, 0);
     }
     oc->max_delay = (int)(o->mux_max_delay * AV_TIME_BASE);
 
@@ -1884,10 +1891,24 @@ int of_open(OptionsContext *o, const char *filename)
 
     of->url        = filename;
 
-    err = of_muxer_init(of, oc, format_opts, o->limit_filesize, o->thread_queue_size);
-    if (err < 0) {
-        av_log(NULL, AV_LOG_FATAL, "Error initializing internal muxing state\n");
-        exit_program(1);
+    mux->streams = av_calloc(oc->nb_streams, sizeof(*mux->streams));
+    if (!mux->streams)
+        return AVERROR(ENOMEM);
+    of->nb_streams = oc->nb_streams;
+
+    for (int i = 0; i < oc->nb_streams; i++) {
+        MuxStream *ms = &mux->streams[i];
+        ms->muxing_queue = av_fifo_alloc2(8, sizeof(AVPacket*), 0);
+        if (!ms->muxing_queue)
+            return AVERROR(ENOMEM);
+        ms->last_mux_dts = AV_NOPTS_VALUE;
+    }
+
+    /* write the header for files with no streams */
+    if (of->format->flags & AVFMT_NOSTREAMS && oc->nb_streams == 0) {
+        int ret = mux_check_init(mux);
+        if (ret < 0)
+            return ret;
     }
 
     return 0;

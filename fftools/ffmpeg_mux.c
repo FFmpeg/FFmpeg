@@ -38,7 +38,7 @@
 #include "libavformat/avformat.h"
 #include "libavformat/avio.h"
 
-static int want_sdp = 1;
+int want_sdp = 1;
 
 static Muxer *mux_from_of(OutputFile *of)
 {
@@ -487,9 +487,9 @@ fail:
     return ret;
 }
 
-static int mux_check_init(OutputFile *of)
+int mux_check_init(Muxer *mux)
 {
-    Muxer *mux = mux_from_of(of);
+    OutputFile *of = &mux->of;
     AVFormatContext *fc = mux->fc;
     int ret, i;
 
@@ -538,12 +538,13 @@ static int mux_check_init(OutputFile *of)
 
 int of_stream_init(OutputFile *of, OutputStream *ost)
 {
+    Muxer *mux = mux_from_of(of);
     if (ost->sq_idx_mux >= 0)
         sq_set_tb(of->sq_mux, ost->sq_idx_mux, ost->mux_timebase);
 
     ost->initialized = 1;
 
-    return mux_check_init(of);
+    return mux_check_init(mux);
 }
 
 int of_write_trailer(OutputFile *of)
@@ -636,53 +637,6 @@ void of_close(OutputFile **pof)
     mux_free(mux_from_of(of));
 
     av_freep(pof);
-}
-
-int of_muxer_init(OutputFile *of, AVFormatContext *fc,
-                  AVDictionary *opts, int64_t limit_filesize,
-                  int thread_queue_size)
-{
-    Muxer *mux = mux_from_of(of);
-    int ret = 0;
-
-    mux->streams = av_calloc(fc->nb_streams, sizeof(*mux->streams));
-    if (!mux->streams) {
-        fc_close(&fc);
-        return AVERROR(ENOMEM);
-    }
-    of->nb_streams = fc->nb_streams;
-
-    mux->fc  = fc;
-
-    for (int i = 0; i < fc->nb_streams; i++) {
-        MuxStream *ms = &mux->streams[i];
-        ms->muxing_queue = av_fifo_alloc2(8, sizeof(AVPacket*), 0);
-        if (!ms->muxing_queue) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
-        ms->last_mux_dts = AV_NOPTS_VALUE;
-    }
-
-    mux->thread_queue_size = thread_queue_size > 0 ? thread_queue_size : 8;
-    mux->limit_filesize = limit_filesize;
-    mux->opts           = opts;
-
-    if (strcmp(of->format->name, "rtp"))
-        want_sdp = 0;
-
-    /* write the header for files with no streams */
-    if (of->format->flags & AVFMT_NOSTREAMS && fc->nb_streams == 0) {
-        ret = mux_check_init(of);
-        if (ret < 0)
-            goto fail;
-    }
-
-fail:
-    if (ret < 0)
-        mux_free(mux);
-
-    return ret;
 }
 
 int64_t of_filesize(OutputFile *of)
