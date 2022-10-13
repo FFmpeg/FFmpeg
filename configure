@@ -3271,6 +3271,8 @@ vp9_qsv_encoder_select="qsvenc"
 vp9_v4l2m2m_decoder_deps="v4l2_m2m vp9_v4l2_m2m"
 wmv3_crystalhd_decoder_select="crystalhd"
 av1_qsv_decoder_select="qsvdec"
+av1_qsv_encoder_select="qsvenc"
+av1_qsv_encoder_deps="libvpl"
 
 # parsers
 aac_parser_select="adts_header mpeg4audio"

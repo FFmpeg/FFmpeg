@@ -39,6 +39,7 @@
 #include "qsv_internal.h"
 
 #define QSV_HAVE_EXT_VP9_TILES QSV_VERSION_ATLEAST(1, 29)
+#define QSV_HAVE_EXT_AV1_PARAM QSV_VERSION_ATLEAST(2, 5)
 
 #if defined(_WIN32) || defined(__CYGWIN__)
 #define QSV_HAVE_AVBR   1
@@ -154,6 +155,10 @@ typedef struct QSVEncContext {
 #endif
     mfxExtHEVCTiles exthevctiles;
     mfxExtVP9Param  extvp9param;
+#if QSV_HAVE_EXT_AV1_PARAM
+    mfxExtAV1TileParam extav1tileparam;
+    mfxExtAV1BitstreamParam extav1bsparam;
+#endif
 
 #if QSV_HAVE_OPAQUE
     mfxExtOpaqueSurfaceAlloc opaque_alloc;
@@ -163,7 +168,7 @@ typedef struct QSVEncContext {
 
     mfxExtVideoSignalInfo extvsi;
 
-    mfxExtBuffer  *extparam_internal[5 + (QSV_HAVE_MF * 2)];
+    mfxExtBuffer  *extparam_internal[5 + (QSV_HAVE_MF * 2) + QSV_HAVE_EXT_AV1_PARAM * 2];
     int         nb_extparam_internal;
 
     mfxExtBuffer **extparam;
