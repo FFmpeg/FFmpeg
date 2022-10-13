@@ -35,6 +35,8 @@
 #include "libavutil/thread.h"
 
 typedef struct MuxStream {
+    OutputStream ost;
+
     /* the packets are buffered here until the muxer is ready to be initialized */
     AVFifo *muxing_queue;
 
@@ -56,9 +58,6 @@ typedef struct Muxer {
 
     pthread_t    thread;
     ThreadQueue *tq;
-
-    MuxStream *streams;
-    int     nb_streams;
 
     AVDictionary *opts;
 

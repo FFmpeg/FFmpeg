@@ -45,6 +45,11 @@ static Muxer *mux_from_of(OutputFile *of)
     return (Muxer*)of;
 }
 
+static MuxStream *ms_from_ost(OutputStream *ost)
+{
+    return (MuxStream*)ost;
+}
+
 static int64_t filesize(AVIOContext *pb)
 {
     int64_t ret = -1;
@@ -60,7 +65,7 @@ static int64_t filesize(AVIOContext *pb)
 
 static int write_packet(Muxer *mux, OutputStream *ost, AVPacket *pkt)
 {
-    MuxStream *ms = &mux->streams[ost->index];
+    MuxStream *ms = ms_from_ost(ost);
     AVFormatContext *s = mux->fc;
     AVStream *st = ost->st;
     int64_t fs;
@@ -251,7 +256,7 @@ finish:
 
 static int queue_packet(Muxer *mux, OutputStream *ost, AVPacket *pkt)
 {
-    MuxStream *ms = &mux->streams[ost->index];
+    MuxStream *ms = ms_from_ost(ost);
     AVPacket *tmp_pkt = NULL;
     int ret;
 
@@ -409,8 +414,8 @@ static int thread_start(Muxer *mux)
 
     /* flush the muxing queues */
     for (int i = 0; i < fc->nb_streams; i++) {
-        MuxStream     *ms = &mux->streams[i];
         OutputStream *ost = mux->of.streams[i];
+        MuxStream     *ms = ms_from_ost(ost);
         AVPacket *pkt;
 
         /* try to improve muxing time_base (only possible if nothing has been written yet) */
@@ -626,9 +631,11 @@ int of_write_trailer(OutputFile *of)
 static void ost_free(OutputStream **post)
 {
     OutputStream *ost = *post;
+    MuxStream *ms;
 
     if (!ost)
         return;
+    ms = ms_from_ost(ost);
 
     if (ost->logfile) {
         if (fclose(ost->logfile))
@@ -636,6 +643,13 @@ static void ost_free(OutputStream **post)
                    "Error closing logfile, loss of information possible: %s\n",
                    av_err2str(AVERROR(errno)));
         ost->logfile = NULL;
+    }
+
+    if (ms->muxing_queue) {
+        AVPacket *pkt;
+        while (av_fifo_read(ms->muxing_queue, &pkt, 1) >= 0)
+            av_packet_free(&pkt);
+        av_fifo_freep2(&ms->muxing_queue);
     }
 
     av_bsf_free(&ost->bsf_ctx);
@@ -696,19 +710,6 @@ void of_close(OutputFile **pof)
 
     sq_free(&of->sq_encode);
     sq_free(&mux->sq_mux);
-
-    for (int i = 0; i < mux->nb_streams; i++) {
-        MuxStream *ms = &mux->streams[i];
-        AVPacket *pkt;
-
-        if (!ms->muxing_queue)
-            continue;
-
-        while (av_fifo_read(ms->muxing_queue, &pkt, 1) >= 0)
-            av_packet_free(&pkt);
-        av_fifo_freep2(&ms->muxing_queue);
-    }
-    av_freep(&mux->streams);
 
     for (int i = 0; i < of->nb_streams; i++)
         ost_free(&of->streams[i]);

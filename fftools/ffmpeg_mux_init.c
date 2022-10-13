@@ -168,6 +168,7 @@ static OutputStream *new_output_stream(Muxer *mux, OptionsContext *o,
                                        enum AVMediaType type, int source_index)
 {
     AVFormatContext *oc = mux->fc;
+    MuxStream     *ms;
     OutputStream *ost;
     const AVCodec *enc;
     AVStream *st = avformat_new_stream(oc, NULL);
@@ -183,7 +184,14 @@ static OutputStream *new_output_stream(Muxer *mux, OptionsContext *o,
     if (oc->nb_streams - 1 < o->nb_streamid_map)
         st->id = o->streamid_map[oc->nb_streams - 1];
 
-    ost = ALLOC_ARRAY_ELEM(mux->of.streams, mux->of.nb_streams);
+    ms  = allocate_array_elem(&mux->of.streams, sizeof(MuxStream),
+                              &mux->of.nb_streams);
+    ost = &ms->ost;
+
+    ms->muxing_queue = av_fifo_alloc2(8, sizeof(AVPacket*), 0);
+    if (!ms->muxing_queue)
+        report_and_exit(AVERROR(ENOMEM));
+    ms->last_mux_dts = AV_NOPTS_VALUE;
 
     ost->file_index = nb_output_files - 1;
     ost->index      = idx;
@@ -1899,19 +1907,6 @@ int of_open(OptionsContext *o, const char *filename)
     }
 
     of->url        = filename;
-
-    mux->streams = av_calloc(oc->nb_streams, sizeof(*mux->streams));
-    if (!mux->streams)
-        return AVERROR(ENOMEM);
-    mux->nb_streams = oc->nb_streams;
-
-    for (int i = 0; i < mux->nb_streams; i++) {
-        MuxStream *ms = &mux->streams[i];
-        ms->muxing_queue = av_fifo_alloc2(8, sizeof(AVPacket*), 0);
-        if (!ms->muxing_queue)
-            return AVERROR(ENOMEM);
-        ms->last_mux_dts = AV_NOPTS_VALUE;
-    }
 
     /* write the header for files with no streams */
     if (of->format->flags & AVFMT_NOSTREAMS && oc->nb_streams == 0) {
