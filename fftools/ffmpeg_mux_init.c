@@ -22,6 +22,7 @@
 
 #include "cmdutils.h"
 #include "ffmpeg.h"
+#include "ffmpeg_mux.h"
 #include "fopen_utf8.h"
 
 #include "libavformat/avformat.h"
@@ -1593,7 +1594,7 @@ int of_open(OptionsContext *o, const char *filename)
         }
     }
 
-    of = ALLOC_ARRAY_ELEM(output_files, nb_output_files);
+    of = allocate_array_elem(&output_files, sizeof(Muxer), &nb_output_files);
 
     of->index          = nb_output_files - 1;
     of->ost_index      = nb_output_streams;
@@ -1874,7 +1875,6 @@ int of_open(OptionsContext *o, const char *filename)
         exit_program(1);
     }
 
-    of->nb_streams = oc->nb_streams;
     of->url        = filename;
 
     err = of_muxer_init(of, oc, format_opts, o->limit_filesize, o->thread_queue_size);

@@ -613,12 +613,9 @@ typedef struct OutputStream {
     int sq_idx_mux;
 } OutputStream;
 
-typedef struct Muxer Muxer;
-
 typedef struct OutputFile {
     int index;
 
-    Muxer                *mux;
     const AVOutputFormat *format;
     const char           *url;
 

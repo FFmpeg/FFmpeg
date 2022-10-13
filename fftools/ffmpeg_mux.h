@@ -49,7 +49,9 @@ typedef struct MuxStream {
     int64_t last_mux_dts;
 } MuxStream;
 
-struct Muxer {
+typedef struct Muxer {
+    OutputFile of;
+
     AVFormatContext *fc;
 
     pthread_t    thread;
@@ -67,6 +69,6 @@ struct Muxer {
     int header_written;
 
     AVPacket *sq_pkt;
-};
+} Muxer;
 
 #endif /* FFTOOLS_FFMPEG_MUX_H */

@@ -40,6 +40,11 @@
 
 static int want_sdp = 1;
 
+static Muxer *mux_from_of(OutputFile *of)
+{
+    return (Muxer*)of;
+}
+
 static int64_t filesize(AVIOContext *pb)
 {
     int64_t ret = -1;
@@ -53,17 +58,17 @@ static int64_t filesize(AVIOContext *pb)
     return ret;
 }
 
-static int write_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
+static int write_packet(Muxer *mux, OutputStream *ost, AVPacket *pkt)
 {
-    MuxStream *ms = &of->mux->streams[ost->index];
-    AVFormatContext *s = of->mux->fc;
+    MuxStream *ms = &mux->streams[ost->index];
+    AVFormatContext *s = mux->fc;
     AVStream *st = ost->st;
     int64_t fs;
     int ret;
 
     fs = filesize(s->pb);
-    atomic_store(&of->mux->last_filesize, fs);
-    if (fs >= of->mux->limit_filesize) {
+    atomic_store(&mux->last_filesize, fs);
+    if (fs >= mux->limit_filesize) {
         ret = AVERROR_EOF;
         goto fail;
     }
@@ -149,33 +154,35 @@ fail:
     return ret;
 }
 
-static int sync_queue_process(OutputFile *of, OutputStream *ost, AVPacket *pkt)
+static int sync_queue_process(Muxer *mux, OutputStream *ost, AVPacket *pkt)
 {
+    OutputFile *of = &mux->of;
+
     if (ost->sq_idx_mux >= 0) {
         int ret = sq_send(of->sq_mux, ost->sq_idx_mux, SQPKT(pkt));
         if (ret < 0)
             return ret;
 
         while (1) {
-            ret = sq_receive(of->sq_mux, -1, SQPKT(of->mux->sq_pkt));
+            ret = sq_receive(of->sq_mux, -1, SQPKT(mux->sq_pkt));
             if (ret < 0)
                 return (ret == AVERROR_EOF || ret == AVERROR(EAGAIN)) ? 0 : ret;
 
-            ret = write_packet(of, output_streams[of->ost_index + ret],
-                               of->mux->sq_pkt);
+            ret = write_packet(mux, output_streams[of->ost_index + ret],
+                               mux->sq_pkt);
             if (ret < 0)
                 return ret;
         }
     } else if (pkt)
-        return write_packet(of, ost, pkt);
+        return write_packet(mux, ost, pkt);
 
     return 0;
 }
 
 static void *muxer_thread(void *arg)
 {
-    OutputFile *of = arg;
-    Muxer     *mux = of->mux;
+    Muxer     *mux = arg;
+    OutputFile *of = &mux->of;
     AVPacket  *pkt = NULL;
     int        ret = 0;
 
@@ -198,7 +205,7 @@ static void *muxer_thread(void *arg)
         }
 
         ost = output_streams[of->ost_index + stream_idx];
-        ret = sync_queue_process(of, ost, ret < 0 ? NULL : pkt);
+        ret = sync_queue_process(mux, ost, ret < 0 ? NULL : pkt);
         av_packet_unref(pkt);
         if (ret == AVERROR_EOF)
             tq_receive_finish(mux->tq, stream_idx);
@@ -220,9 +227,8 @@ finish:
     return (void*)(intptr_t)ret;
 }
 
-static int thread_submit_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
+static int thread_submit_packet(Muxer *mux, OutputStream *ost, AVPacket *pkt)
 {
-    Muxer *mux = of->mux;
     int ret = 0;
 
     if (!pkt || ost->finished & MUXER_FINISHED)
@@ -243,9 +249,9 @@ finish:
     return ret == AVERROR_EOF ? 0 : ret;
 }
 
-static int queue_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
+static int queue_packet(Muxer *mux, OutputStream *ost, AVPacket *pkt)
 {
-    MuxStream *ms = &of->mux->streams[ost->index];
+    MuxStream *ms = &mux->streams[ost->index];
     AVPacket *tmp_pkt = NULL;
     int ret;
 
@@ -285,15 +291,15 @@ static int queue_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
     return 0;
 }
 
-static int submit_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
+static int submit_packet(Muxer *mux, AVPacket *pkt, OutputStream *ost)
 {
     int ret;
 
-    if (of->mux->tq) {
-        return thread_submit_packet(of, ost, pkt);
+    if (mux->tq) {
+        return thread_submit_packet(mux, ost, pkt);
     } else {
         /* the muxer is not initialized yet, buffer the packet */
-        ret = queue_packet(of, ost, pkt);
+        ret = queue_packet(mux, ost, pkt);
         if (ret < 0) {
             if (pkt)
                 av_packet_unref(pkt);
@@ -306,6 +312,7 @@ static int submit_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
 
 void of_output_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost, int eof)
 {
+    Muxer *mux = mux_from_of(of);
     const char *err_msg;
     int ret = 0;
 
@@ -333,12 +340,12 @@ void of_output_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost, int eof)
                 goto fail;
             }
 
-            ret = submit_packet(of, bsf_eof ? NULL : pkt, ost);
+            ret = submit_packet(mux, bsf_eof ? NULL : pkt, ost);
             if (ret < 0)
                 goto mux_fail;
         }
     } else {
-        ret = submit_packet(of, eof ? NULL : pkt, ost);
+        ret = submit_packet(mux, eof ? NULL : pkt, ost);
         if (ret < 0)
             goto mux_fail;
     }
@@ -356,9 +363,8 @@ fail:
 
 }
 
-static int thread_stop(OutputFile *of)
+static int thread_stop(Muxer *mux)
 {
-    Muxer *mux = of->mux;
     void *ret;
 
     if (!mux || !mux->tq)
@@ -379,9 +385,8 @@ static void pkt_move(void *dst, void *src)
     av_packet_move_ref(dst, src);
 }
 
-static int thread_start(OutputFile *of)
+static int thread_start(Muxer *mux)
 {
-    Muxer          *mux = of->mux;
     AVFormatContext *fc = mux->fc;
     ObjPool *op;
     int ret;
@@ -396,7 +401,7 @@ static int thread_start(OutputFile *of)
         return AVERROR(ENOMEM);
     }
 
-    ret = pthread_create(&mux->thread, NULL, muxer_thread, (void*)of);
+    ret = pthread_create(&mux->thread, NULL, muxer_thread, (void*)mux);
     if (ret) {
         tq_free(&mux->tq);
         return AVERROR(ret);
@@ -404,8 +409,8 @@ static int thread_start(OutputFile *of)
 
     /* flush the muxing queues */
     for (int i = 0; i < fc->nb_streams; i++) {
-        MuxStream     *ms = &of->mux->streams[i];
-        OutputStream *ost = output_streams[of->ost_index + i];
+        MuxStream     *ms = &mux->streams[i];
+        OutputStream *ost = output_streams[mux->of.ost_index + i];
         AVPacket *pkt;
 
         /* try to improve muxing time_base (only possible if nothing has been written yet) */
@@ -413,7 +418,7 @@ static int thread_start(OutputFile *of)
             ost->mux_timebase = ost->st->time_base;
 
         while (av_fifo_read(ms->muxing_queue, &pkt, 1) >= 0) {
-            ret = thread_submit_packet(of, ost, pkt);
+            ret = thread_submit_packet(mux, ost, pkt);
             if (pkt) {
                 ms->muxing_queue_data_size -= pkt->size;
                 av_packet_free(&pkt);
@@ -435,7 +440,7 @@ static int print_sdp(void)
     AVFormatContext **avc;
 
     for (i = 0; i < nb_output_files; i++) {
-        if (!output_files[i]->mux->header_written)
+        if (!mux_from_of(output_files[i])->header_written)
             return 0;
     }
 
@@ -444,7 +449,7 @@ static int print_sdp(void)
         return AVERROR(ENOMEM);
     for (i = 0, j = 0; i < nb_output_files; i++) {
         if (!strcmp(output_files[i]->format->name, "rtp")) {
-            avc[j] = output_files[i]->mux->fc;
+            avc[j] = mux_from_of(output_files[i])->fc;
             j++;
         }
     }
@@ -484,7 +489,8 @@ fail:
 
 static int mux_check_init(OutputFile *of)
 {
-    AVFormatContext *fc = of->mux->fc;
+    Muxer *mux = mux_from_of(of);
+    AVFormatContext *fc = mux->fc;
     int ret, i;
 
     for (i = 0; i < fc->nb_streams; i++) {
@@ -493,7 +499,7 @@ static int mux_check_init(OutputFile *of)
             return 0;
     }
 
-    ret = avformat_write_header(fc, &of->mux->opts);
+    ret = avformat_write_header(fc, &mux->opts);
     if (ret < 0) {
         av_log(NULL, AV_LOG_ERROR,
                "Could not write header for output file #%d "
@@ -502,7 +508,7 @@ static int mux_check_init(OutputFile *of)
         return ret;
     }
     //assert_avoptions(of->opts);
-    of->mux->header_written = 1;
+    mux->header_written = 1;
 
     av_dump_format(fc, of->index, fc->url, 1);
     nb_output_dumped++;
@@ -516,13 +522,13 @@ static int mux_check_init(OutputFile *of)
             /* SDP is written only after all the muxers are ready, so now we
              * start ALL the threads */
             for (i = 0; i < nb_output_files; i++) {
-                ret = thread_start(output_files[i]);
+                ret = thread_start(mux_from_of(output_files[i]));
                 if (ret < 0)
                     return ret;
             }
         }
     } else {
-        ret = thread_start(of);
+        ret = thread_start(mux_from_of(of));
         if (ret < 0)
             return ret;
     }
@@ -542,10 +548,11 @@ int of_stream_init(OutputFile *of, OutputStream *ost)
 
 int of_write_trailer(OutputFile *of)
 {
-    AVFormatContext *fc = of->mux->fc;
+    Muxer *mux = mux_from_of(of);
+    AVFormatContext *fc = mux->fc;
     int ret;
 
-    if (!of->mux->tq) {
+    if (!mux->tq) {
         av_log(NULL, AV_LOG_ERROR,
                "Nothing was written into output file %d (%s), because "
                "at least one of its streams received no packets.\n",
@@ -553,7 +560,7 @@ int of_write_trailer(OutputFile *of)
         return AVERROR(EINVAL);
     }
 
-    ret = thread_stop(of);
+    ret = thread_stop(mux);
     if (ret < 0)
         main_return_code = ret;
 
@@ -563,7 +570,7 @@ int of_write_trailer(OutputFile *of)
         return ret;
     }
 
-    of->mux->last_filesize = filesize(fc->pb);
+    mux->last_filesize = filesize(fc->pb);
 
     if (!(of->format->flags & AVFMT_NOFILE)) {
         ret = avio_closep(&fc->pb);
@@ -591,14 +598,9 @@ static void fc_close(AVFormatContext **pfc)
     *pfc = NULL;
 }
 
-static void mux_free(Muxer **pmux)
+static void mux_free(Muxer *mux)
 {
-    Muxer *mux = *pmux;
-
-    if (!mux)
-        return;
-
-    for (int i = 0; i < mux->fc->nb_streams; i++) {
+    for (int i = 0; i < mux->of.nb_streams; i++) {
         MuxStream *ms = &mux->streams[i];
         AVPacket *pkt;
 
@@ -615,23 +617,23 @@ static void mux_free(Muxer **pmux)
     av_packet_free(&mux->sq_pkt);
 
     fc_close(&mux->fc);
-
-    av_freep(pmux);
 }
 
 void of_close(OutputFile **pof)
 {
     OutputFile *of = *pof;
+    Muxer *mux;
 
     if (!of)
         return;
+    mux = mux_from_of(of);
 
-    thread_stop(of);
+    thread_stop(mux);
 
     sq_free(&of->sq_encode);
     sq_free(&of->sq_mux);
 
-    mux_free(&of->mux);
+    mux_free(mux_from_of(of));
 
     av_freep(pof);
 }
@@ -640,22 +642,16 @@ int of_muxer_init(OutputFile *of, AVFormatContext *fc,
                   AVDictionary *opts, int64_t limit_filesize,
                   int thread_queue_size)
 {
-    Muxer *mux = av_mallocz(sizeof(*mux));
+    Muxer *mux = mux_from_of(of);
     int ret = 0;
-
-    if (!mux) {
-        fc_close(&fc);
-        return AVERROR(ENOMEM);
-    }
 
     mux->streams = av_calloc(fc->nb_streams, sizeof(*mux->streams));
     if (!mux->streams) {
         fc_close(&fc);
-        av_freep(&mux);
         return AVERROR(ENOMEM);
     }
+    of->nb_streams = fc->nb_streams;
 
-    of->mux  = mux;
     mux->fc  = fc;
 
     for (int i = 0; i < fc->nb_streams; i++) {
@@ -692,19 +688,21 @@ int of_muxer_init(OutputFile *of, AVFormatContext *fc,
 
 fail:
     if (ret < 0)
-        mux_free(&of->mux);
+        mux_free(mux);
 
     return ret;
 }
 
 int64_t of_filesize(OutputFile *of)
 {
-    return atomic_load(&of->mux->last_filesize);
+    Muxer *mux = mux_from_of(of);
+    return atomic_load(&mux->last_filesize);
 }
 
 AVChapter * const *
 of_get_chapters(OutputFile *of, unsigned int *nb_chapters)
 {
-    *nb_chapters = of->mux->fc->nb_chapters;
-    return of->mux->fc->chapters;
+    Muxer *mux = mux_from_of(of);
+    *nb_chapters = mux->fc->nb_chapters;
+    return mux->fc->chapters;
 }
