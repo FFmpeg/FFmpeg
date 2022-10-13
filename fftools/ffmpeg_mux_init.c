@@ -1040,8 +1040,9 @@ loop_end:
     }
 }
 
-static int setup_sync_queues(OutputFile *of, AVFormatContext *oc, int64_t buf_size_us)
+static int setup_sync_queues(Muxer *mux, AVFormatContext *oc, int64_t buf_size_us)
 {
+    OutputFile *of = &mux->of;
     int nb_av_enc = 0, nb_interleaved = 0;
     int limit_frames = 0, limit_frames_av_enc = 0;
 
@@ -1101,6 +1102,10 @@ static int setup_sync_queues(OutputFile *of, AVFormatContext *oc, int64_t buf_si
     if (nb_interleaved > nb_av_enc) {
         of->sq_mux = sq_alloc(SYNC_QUEUE_PACKETS, buf_size_us);
         if (!of->sq_mux)
+            return AVERROR(ENOMEM);
+
+        mux->sq_pkt = av_packet_alloc();
+        if (!mux->sq_pkt)
             return AVERROR(ENOMEM);
 
         for (int i = 0; i < oc->nb_streams; i++) {
@@ -1573,6 +1578,7 @@ static int set_dispositions(OutputFile *of, AVFormatContext *ctx)
 
 int of_open(OptionsContext *o, const char *filename)
 {
+    Muxer *mux;
     AVFormatContext *oc;
     int i, j, err;
     OutputFile *of;
@@ -1594,7 +1600,8 @@ int of_open(OptionsContext *o, const char *filename)
         }
     }
 
-    of = allocate_array_elem(&output_files, sizeof(Muxer), &nb_output_files);
+    mux = allocate_array_elem(&output_files, sizeof(Muxer), &nb_output_files);
+    of  = &mux->of;
 
     of->index          = nb_output_files - 1;
     of->ost_index      = nb_output_streams;
@@ -1869,7 +1876,7 @@ int of_open(OptionsContext *o, const char *filename)
         exit_program(1);
     }
 
-    err = setup_sync_queues(of, oc, o->shortest_buf_duration * AV_TIME_BASE);
+    err = setup_sync_queues(mux, oc, o->shortest_buf_duration * AV_TIME_BASE);
     if (err < 0) {
         av_log(NULL, AV_LOG_FATAL, "Error setting up output sync queues\n");
         exit_program(1);

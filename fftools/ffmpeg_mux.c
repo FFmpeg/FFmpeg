@@ -671,14 +671,6 @@ int of_muxer_init(OutputFile *of, AVFormatContext *fc,
     if (strcmp(of->format->name, "rtp"))
         want_sdp = 0;
 
-    if (of->sq_mux) {
-        mux->sq_pkt = av_packet_alloc();
-        if (!mux->sq_pkt) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
-    }
-
     /* write the header for files with no streams */
     if (of->format->flags & AVFMT_NOSTREAMS && fc->nb_streams == 0) {
         ret = mux_check_init(of);
