@@ -686,6 +686,13 @@ extern HWDevice *filter_hw_device;
 extern unsigned nb_output_dumped;
 extern int main_return_code;
 
+extern int input_stream_potentially_available;
+extern int ignore_unknown_streams;
+extern int copy_unknown_streams;
+
+#if FFMPEG_OPT_PSNR
+extern int do_psnr;
+#endif
 
 void term_init(void);
 void term_exit(void);
@@ -694,6 +701,12 @@ void show_usage(void);
 
 void remove_avoptions(AVDictionary **a, AVDictionary *b);
 void assert_avoptions(AVDictionary *m);
+
+void assert_file_overwrite(const char *filename);
+char *read_file(const char *filename);
+AVDictionary *strip_specifiers(AVDictionary *dict);
+const AVCodec *find_codec_or_die(const char *name, enum AVMediaType type, int encoder);
+int parse_and_set_vsync(const char *arg, int *vsync_var, int file_idx, int st_idx, int is_global);
 
 int configure_filtergraph(FilterGraph *fg);
 void check_filter_outputs(void);
@@ -729,6 +742,7 @@ int of_muxer_init(OutputFile *of, AVFormatContext *fc,
  */
 int of_stream_init(OutputFile *of, OutputStream *ost);
 int of_write_trailer(OutputFile *of);
+int of_open(OptionsContext *o, const char *filename);
 void of_close(OutputFile **pof);
 
 /*
@@ -760,5 +774,60 @@ of_get_chapters(OutputFile *of, unsigned int *nb_chapters);
 int ifile_get_packet(InputFile *f, AVPacket **pkt);
 int init_input_threads(void);
 void free_input_threads(void);
+
+#define SPECIFIER_OPT_FMT_str  "%s"
+#define SPECIFIER_OPT_FMT_i    "%i"
+#define SPECIFIER_OPT_FMT_i64  "%"PRId64
+#define SPECIFIER_OPT_FMT_ui64 "%"PRIu64
+#define SPECIFIER_OPT_FMT_f    "%f"
+#define SPECIFIER_OPT_FMT_dbl  "%lf"
+
+#define WARN_MULTIPLE_OPT_USAGE(name, type, so, st)\
+{\
+    char namestr[128] = "";\
+    const char *spec = so->specifier && so->specifier[0] ? so->specifier : "";\
+    for (i = 0; opt_name_##name[i]; i++)\
+        av_strlcatf(namestr, sizeof(namestr), "-%s%s", opt_name_##name[i], opt_name_##name[i+1] ? (opt_name_##name[i+2] ? ", " : " or ") : "");\
+    av_log(NULL, AV_LOG_WARNING, "Multiple %s options specified for stream %d, only the last option '-%s%s%s "SPECIFIER_OPT_FMT_##type"' will be used.\n",\
+           namestr, st->index, opt_name_##name[0], spec[0] ? ":" : "", spec, so->u.type);\
+}
+
+#define MATCH_PER_STREAM_OPT(name, type, outvar, fmtctx, st)\
+{\
+    int i, ret, matches = 0;\
+    SpecifierOpt *so;\
+    for (i = 0; i < o->nb_ ## name; i++) {\
+        char *spec = o->name[i].specifier;\
+        if ((ret = check_stream_specifier(fmtctx, st, spec)) > 0) {\
+            outvar = o->name[i].u.type;\
+            so = &o->name[i];\
+            matches++;\
+        } else if (ret < 0)\
+            exit_program(1);\
+    }\
+    if (matches > 1)\
+       WARN_MULTIPLE_OPT_USAGE(name, type, so, st);\
+}
+
+#define MATCH_PER_TYPE_OPT(name, type, outvar, fmtctx, mediatype)\
+{\
+    int i;\
+    for (i = 0; i < o->nb_ ## name; i++) {\
+        char *spec = o->name[i].specifier;\
+        if (!strcmp(spec, mediatype))\
+            outvar = o->name[i].u.type;\
+    }\
+}
+
+extern const char * const opt_name_audio_channels[];
+extern const char * const opt_name_audio_ch_layouts[];
+extern const char * const opt_name_audio_sample_rate[];
+extern const char * const opt_name_codec_names[];
+extern const char * const opt_name_codec_tags[];
+extern const char * const opt_name_frame_rates[];
+extern const char * const opt_name_frame_sizes[];
+extern const char * const opt_name_frame_pix_fmts[];
+extern const char * const opt_name_sample_fmts[];
+extern const char * const opt_name_top_field_first[];
 
 #endif /* FFTOOLS_FFMPEG_H */
