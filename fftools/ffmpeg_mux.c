@@ -21,6 +21,7 @@
 #include <string.h>
 
 #include "ffmpeg.h"
+#include "ffmpeg_mux.h"
 #include "objpool.h"
 #include "sync_queue.h"
 #include "thread_queue.h"
@@ -36,41 +37,6 @@
 
 #include "libavformat/avformat.h"
 #include "libavformat/avio.h"
-
-typedef struct MuxStream {
-    /* the packets are buffered here until the muxer is ready to be initialized */
-    AVFifo *muxing_queue;
-
-    /*
-     * The size of the AVPackets' buffers in queue.
-     * Updated when a packet is either pushed or pulled from the queue.
-     */
-    size_t muxing_queue_data_size;
-
-    /* dts of the last packet sent to the muxer, in the stream timebase
-     * used for making up missing dts values */
-    int64_t last_mux_dts;
-} MuxStream;
-
-struct Muxer {
-    AVFormatContext *fc;
-
-    pthread_t    thread;
-    ThreadQueue *tq;
-
-    MuxStream *streams;
-
-    AVDictionary *opts;
-
-    int thread_queue_size;
-
-    /* filesize limit expressed in bytes */
-    int64_t limit_filesize;
-    atomic_int_least64_t last_filesize;
-    int header_written;
-
-    AVPacket *sq_pkt;
-};
 
 static int want_sdp = 1;
 
