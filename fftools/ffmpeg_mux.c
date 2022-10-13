@@ -599,8 +599,20 @@ static void fc_close(AVFormatContext **pfc)
     *pfc = NULL;
 }
 
-static void mux_free(Muxer *mux)
+void of_close(OutputFile **pof)
 {
+    OutputFile *of = *pof;
+    Muxer *mux;
+
+    if (!of)
+        return;
+    mux = mux_from_of(of);
+
+    thread_stop(mux);
+
+    sq_free(&of->sq_encode);
+    sq_free(&of->sq_mux);
+
     for (int i = 0; i < mux->of.nb_streams; i++) {
         MuxStream *ms = &mux->streams[i];
         AVPacket *pkt;
@@ -618,23 +630,6 @@ static void mux_free(Muxer *mux)
     av_packet_free(&mux->sq_pkt);
 
     fc_close(&mux->fc);
-}
-
-void of_close(OutputFile **pof)
-{
-    OutputFile *of = *pof;
-    Muxer *mux;
-
-    if (!of)
-        return;
-    mux = mux_from_of(of);
-
-    thread_stop(mux);
-
-    sq_free(&of->sq_encode);
-    sq_free(&of->sq_mux);
-
-    mux_free(mux_from_of(of));
 
     av_freep(pof);
 }
