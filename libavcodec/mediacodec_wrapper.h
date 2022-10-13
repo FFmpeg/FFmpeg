@@ -58,28 +58,90 @@ int ff_AMediaCodecProfile_getProfileFromAVCodecContext(AVCodecContext *avctx);
 
 char *ff_AMediaCodecList_getCodecNameByType(const char *mime, int profile, int encoder, void *log_ctx);
 
-struct FFAMediaFormat;
 typedef struct FFAMediaFormat FFAMediaFormat;
+struct FFAMediaFormat {
+    const AVClass *class;
+
+    FFAMediaFormat *(*create)(void);
+    int (*delete)(FFAMediaFormat *);
+
+    char* (*toString)(FFAMediaFormat* format);
+
+    int (*getInt32)(FFAMediaFormat* format, const char *name, int32_t *out);
+    int (*getInt64)(FFAMediaFormat* format, const char *name, int64_t *out);
+    int (*getFloat)(FFAMediaFormat* format, const char *name, float *out);
+    int (*getBuffer)(FFAMediaFormat* format, const char *name, void** data, size_t *size);
+    int (*getString)(FFAMediaFormat* format, const char *name, const char **out);
+
+    void (*setInt32)(FFAMediaFormat* format, const char* name, int32_t value);
+    void (*setInt64)(FFAMediaFormat* format, const char* name, int64_t value);
+    void (*setFloat)(FFAMediaFormat* format, const char* name, float value);
+    void (*setString)(FFAMediaFormat* format, const char* name, const char* value);
+    void (*setBuffer)(FFAMediaFormat* format, const char* name, void* data, size_t size);
+};
 
 FFAMediaFormat *ff_AMediaFormat_new(void);
-int ff_AMediaFormat_delete(FFAMediaFormat* format);
 
-char* ff_AMediaFormat_toString(FFAMediaFormat* format);
+static inline int ff_AMediaFormat_delete(FFAMediaFormat* format)
+{
+    return format->delete(format);
+}
 
-int ff_AMediaFormat_getInt32(FFAMediaFormat* format, const char *name, int32_t *out);
-int ff_AMediaFormat_getInt64(FFAMediaFormat* format, const char *name, int64_t *out);
-int ff_AMediaFormat_getFloat(FFAMediaFormat* format, const char *name, float *out);
-int ff_AMediaFormat_getBuffer(FFAMediaFormat* format, const char *name, void** data, size_t *size);
-int ff_AMediaFormat_getString(FFAMediaFormat* format, const char *name, const char **out);
+static inline char* ff_AMediaFormat_toString(FFAMediaFormat* format)
+{
+    return format->toString(format);
+}
 
-void ff_AMediaFormat_setInt32(FFAMediaFormat* format, const char* name, int32_t value);
-void ff_AMediaFormat_setInt64(FFAMediaFormat* format, const char* name, int64_t value);
-void ff_AMediaFormat_setFloat(FFAMediaFormat* format, const char* name, float value);
-void ff_AMediaFormat_setString(FFAMediaFormat* format, const char* name, const char* value);
-void ff_AMediaFormat_setBuffer(FFAMediaFormat* format, const char* name, void* data, size_t size);
+static inline int ff_AMediaFormat_getInt32(FFAMediaFormat* format, const char *name, int32_t *out)
+{
+    return format->getInt32(format, name, out);
+}
 
-struct FFAMediaCodec;
-typedef struct FFAMediaCodec FFAMediaCodec;
+static inline int ff_AMediaFormat_getInt64(FFAMediaFormat* format, const char *name, int64_t *out)
+{
+    return format->getInt64(format, name, out);
+}
+
+static inline int ff_AMediaFormat_getFloat(FFAMediaFormat* format, const char *name, float *out)
+{
+    return format->getFloat(format, name, out);
+}
+
+static inline int ff_AMediaFormat_getBuffer(FFAMediaFormat* format, const char *name, void** data, size_t *size)
+{
+    return format->getBuffer(format, name, data, size);
+}
+
+static inline int ff_AMediaFormat_getString(FFAMediaFormat* format, const char *name, const char **out)
+{
+    return format->getString(format, name, out);
+}
+
+static inline void ff_AMediaFormat_setInt32(FFAMediaFormat* format, const char* name, int32_t value)
+{
+    format->setInt32(format, name, value);
+}
+
+static inline void ff_AMediaFormat_setInt64(FFAMediaFormat* format, const char* name, int64_t value)
+{
+    format->setInt64(format, name, value);
+}
+
+static inline void ff_AMediaFormat_setFloat(FFAMediaFormat* format, const char* name, float value)
+{
+    format->setFloat(format, name, value);
+}
+
+static inline void ff_AMediaFormat_setString(FFAMediaFormat* format, const char* name, const char* value)
+{
+    format->setString(format, name, value);
+}
+
+static inline void ff_AMediaFormat_setBuffer(FFAMediaFormat* format, const char* name, void* data, size_t size)
+{
+    format->setBuffer(format, name, data, size);
+}
+
 typedef struct FFAMediaCodecCryptoInfo FFAMediaCodecCryptoInfo;
 
 struct FFAMediaCodecBufferInfo {
@@ -90,41 +152,160 @@ struct FFAMediaCodecBufferInfo {
 };
 typedef struct FFAMediaCodecBufferInfo FFAMediaCodecBufferInfo;
 
-char *ff_AMediaCodec_getName(FFAMediaCodec *codec);
+typedef struct FFAMediaCodec FFAMediaCodec;
+struct FFAMediaCodec {
+    const AVClass *class;
+
+    char *(*getName)(FFAMediaCodec *codec);
+
+    FFAMediaCodec* (*createCodecByName)(const char *name);
+    FFAMediaCodec* (*createDecoderByType)(const char *mime_type);
+    FFAMediaCodec* (*createEncoderByType)(const char *mime_type);
+    int (*delete)(FFAMediaCodec* codec);
+
+    int (*configure)(FFAMediaCodec* codec, const FFAMediaFormat* format, void* surface, void *crypto, uint32_t flags);
+    int (*start)(FFAMediaCodec* codec);
+    int (*stop)(FFAMediaCodec* codec);
+    int (*flush)(FFAMediaCodec* codec);
+
+    uint8_t* (*getInputBuffer)(FFAMediaCodec* codec, size_t idx, size_t *out_size);
+    uint8_t* (*getOutputBuffer)(FFAMediaCodec* codec, size_t idx, size_t *out_size);
+
+    ssize_t (*dequeueInputBuffer)(FFAMediaCodec* codec, int64_t timeoutUs);
+    int (*queueInputBuffer)(FFAMediaCodec* codec, size_t idx, off_t offset, size_t size, uint64_t time, uint32_t flags);
+
+    ssize_t (*dequeueOutputBuffer)(FFAMediaCodec* codec, FFAMediaCodecBufferInfo *info, int64_t timeoutUs);
+    FFAMediaFormat* (*getOutputFormat)(FFAMediaCodec* codec);
+
+    int (*releaseOutputBuffer)(FFAMediaCodec* codec, size_t idx, int render);
+    int (*releaseOutputBufferAtTime)(FFAMediaCodec *codec, size_t idx, int64_t timestampNs);
+
+    int (*infoTryAgainLater)(FFAMediaCodec *codec, ssize_t idx);
+    int (*infoOutputBuffersChanged)(FFAMediaCodec *codec, ssize_t idx);
+    int (*infoOutputFormatChanged)(FFAMediaCodec *codec, ssize_t indx);
+
+    int (*getBufferFlagCodecConfig)(FFAMediaCodec *codec);
+    int (*getBufferFlagEndOfStream)(FFAMediaCodec *codec);
+    int (*getBufferFlagKeyFrame)(FFAMediaCodec *codec);
+
+    int (*getConfigureFlagEncode)(FFAMediaCodec *codec);
+
+    int (*cleanOutputBuffers)(FFAMediaCodec *codec);
+};
+
+static inline char *ff_AMediaCodec_getName(FFAMediaCodec *codec)
+{
+    return codec->getName(codec);
+}
 
 FFAMediaCodec* ff_AMediaCodec_createCodecByName(const char *name);
 FFAMediaCodec* ff_AMediaCodec_createDecoderByType(const char *mime_type);
 FFAMediaCodec* ff_AMediaCodec_createEncoderByType(const char *mime_type);
 
-int ff_AMediaCodec_configure(FFAMediaCodec* codec, const FFAMediaFormat* format, void* surface, void *crypto, uint32_t flags);
-int ff_AMediaCodec_start(FFAMediaCodec* codec);
-int ff_AMediaCodec_stop(FFAMediaCodec* codec);
-int ff_AMediaCodec_flush(FFAMediaCodec* codec);
-int ff_AMediaCodec_delete(FFAMediaCodec* codec);
+static inline int ff_AMediaCodec_configure(FFAMediaCodec* codec, const FFAMediaFormat* format, void* surface, void *crypto, uint32_t flags)
+{
+    return codec->configure(codec, format, surface, crypto, flags);
+}
 
-uint8_t* ff_AMediaCodec_getInputBuffer(FFAMediaCodec* codec, size_t idx, size_t *out_size);
-uint8_t* ff_AMediaCodec_getOutputBuffer(FFAMediaCodec* codec, size_t idx, size_t *out_size);
+static inline int ff_AMediaCodec_start(FFAMediaCodec* codec)
+{
+    return codec->start(codec);
+}
 
-ssize_t ff_AMediaCodec_dequeueInputBuffer(FFAMediaCodec* codec, int64_t timeoutUs);
-int ff_AMediaCodec_queueInputBuffer(FFAMediaCodec* codec, size_t idx, off_t offset, size_t size, uint64_t time, uint32_t flags);
+static inline int ff_AMediaCodec_stop(FFAMediaCodec* codec)
+{
+    return codec->stop(codec);
+}
 
-ssize_t ff_AMediaCodec_dequeueOutputBuffer(FFAMediaCodec* codec, FFAMediaCodecBufferInfo *info, int64_t timeoutUs);
-FFAMediaFormat* ff_AMediaCodec_getOutputFormat(FFAMediaCodec* codec);
+static inline int ff_AMediaCodec_flush(FFAMediaCodec* codec)
+{
+    return codec->flush(codec);
+}
 
-int ff_AMediaCodec_releaseOutputBuffer(FFAMediaCodec* codec, size_t idx, int render);
-int ff_AMediaCodec_releaseOutputBufferAtTime(FFAMediaCodec *codec, size_t idx, int64_t timestampNs);
+static inline int ff_AMediaCodec_delete(FFAMediaCodec* codec)
+{
+    return codec->delete(codec);
+}
 
-int ff_AMediaCodec_infoTryAgainLater(FFAMediaCodec *codec, ssize_t idx);
-int ff_AMediaCodec_infoOutputBuffersChanged(FFAMediaCodec *codec, ssize_t idx);
-int ff_AMediaCodec_infoOutputFormatChanged(FFAMediaCodec *codec, ssize_t indx);
+static inline uint8_t* ff_AMediaCodec_getInputBuffer(FFAMediaCodec* codec, size_t idx, size_t *out_size)
+{
+    return codec->getInputBuffer(codec, idx, out_size);
+}
 
-int ff_AMediaCodec_getBufferFlagCodecConfig (FFAMediaCodec *codec);
-int ff_AMediaCodec_getBufferFlagEndOfStream(FFAMediaCodec *codec);
-int ff_AMediaCodec_getBufferFlagKeyFrame(FFAMediaCodec *codec);
+static inline uint8_t* ff_AMediaCodec_getOutputBuffer(FFAMediaCodec* codec, size_t idx, size_t *out_size)
+{
+    return codec->getOutputBuffer(codec, idx, out_size);
+}
 
-int ff_AMediaCodec_getConfigureFlagEncode(FFAMediaCodec *codec);
+static inline ssize_t ff_AMediaCodec_dequeueInputBuffer(FFAMediaCodec* codec, int64_t timeoutUs)
+{
+    return codec->dequeueInputBuffer(codec, timeoutUs);
+}
 
-int ff_AMediaCodec_cleanOutputBuffers(FFAMediaCodec *codec);
+static inline int ff_AMediaCodec_queueInputBuffer(FFAMediaCodec *codec, size_t idx, off_t offset, size_t size, uint64_t time, uint32_t flags)
+{
+    return codec->queueInputBuffer(codec, idx, offset, size, time, flags);
+}
+
+static inline ssize_t ff_AMediaCodec_dequeueOutputBuffer(FFAMediaCodec* codec, FFAMediaCodecBufferInfo *info, int64_t timeoutUs)
+{
+    return codec->dequeueOutputBuffer(codec, info, timeoutUs);
+}
+
+static inline FFAMediaFormat* ff_AMediaCodec_getOutputFormat(FFAMediaCodec* codec)
+{
+    return codec->getOutputFormat(codec);
+}
+
+static inline int ff_AMediaCodec_releaseOutputBuffer(FFAMediaCodec* codec, size_t idx, int render)
+{
+    return codec->releaseOutputBuffer(codec, idx, render);
+}
+
+static inline int ff_AMediaCodec_releaseOutputBufferAtTime(FFAMediaCodec *codec, size_t idx, int64_t timestampNs)
+{
+    return codec->releaseOutputBufferAtTime(codec, idx, timestampNs);
+}
+
+static inline int ff_AMediaCodec_infoTryAgainLater(FFAMediaCodec *codec, ssize_t idx)
+{
+    return codec->infoTryAgainLater(codec, idx);
+}
+
+static inline int ff_AMediaCodec_infoOutputBuffersChanged(FFAMediaCodec *codec, ssize_t idx)
+{
+    return codec->infoOutputBuffersChanged(codec, idx);
+}
+
+static inline int ff_AMediaCodec_infoOutputFormatChanged(FFAMediaCodec *codec, ssize_t idx)
+{
+    return codec->infoOutputFormatChanged(codec, idx);
+}
+
+static inline int ff_AMediaCodec_getBufferFlagCodecConfig(FFAMediaCodec *codec)
+{
+    return codec->getBufferFlagCodecConfig(codec);
+}
+
+static inline int ff_AMediaCodec_getBufferFlagEndOfStream(FFAMediaCodec *codec)
+{
+    return codec->getBufferFlagEndOfStream(codec);
+}
+
+static inline int ff_AMediaCodec_getBufferFlagKeyFrame(FFAMediaCodec *codec)
+{
+    return codec->getBufferFlagKeyFrame(codec);
+}
+
+static inline int ff_AMediaCodec_getConfigureFlagEncode(FFAMediaCodec *codec)
+{
+    return codec->getConfigureFlagEncode(codec);
+}
+
+static inline int ff_AMediaCodec_cleanOutputBuffers(FFAMediaCodec *codec)
+{
+    return codec->cleanOutputBuffers(codec);
+}
 
 int ff_Build_SDK_INT(AVCodecContext *avctx);
 
