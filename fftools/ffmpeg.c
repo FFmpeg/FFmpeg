@@ -2651,35 +2651,6 @@ static int compare_int64(const void *a, const void *b)
     return FFDIFFSIGN(*(const int64_t *)a, *(const int64_t *)b);
 }
 
-static int init_output_bsfs(OutputStream *ost)
-{
-    AVBSFContext *ctx = ost->bsf_ctx;
-    int ret;
-
-    if (!ctx)
-        return 0;
-
-    ret = avcodec_parameters_copy(ctx->par_in, ost->st->codecpar);
-    if (ret < 0)
-        return ret;
-
-    ctx->time_base_in = ost->st->time_base;
-
-    ret = av_bsf_init(ctx);
-    if (ret < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Error initializing bitstream filter: %s\n",
-               ctx->filter->name);
-        return ret;
-    }
-
-    ret = avcodec_parameters_copy(ost->st->codecpar, ctx->par_out);
-    if (ret < 0)
-        return ret;
-    ost->st->time_base = ctx->time_base_out;
-
-    return 0;
-}
-
 static int init_output_stream_streamcopy(OutputStream *ost)
 {
     OutputFile *of = output_files[ost->file_index];
@@ -3211,13 +3182,6 @@ static int init_output_stream(OutputStream *ost, AVFrame *frame,
         if (ret < 0)
             return ret;
     }
-
-    /* initialize bitstream filters for the output stream
-     * needs to be done here, because the codec id for streamcopy is not
-     * known until now */
-    ret = init_output_bsfs(ost);
-    if (ret < 0)
-        return ret;
 
     ret = of_stream_init(output_files[ost->file_index], ost);
     if (ret < 0)

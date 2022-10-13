@@ -536,11 +536,49 @@ int mux_check_init(Muxer *mux)
     return 0;
 }
 
+static int bsf_init(OutputStream *ost)
+{
+    AVBSFContext *ctx = ost->bsf_ctx;
+    int ret;
+
+    if (!ctx)
+        return 0;
+
+    ret = avcodec_parameters_copy(ctx->par_in, ost->st->codecpar);
+    if (ret < 0)
+        return ret;
+
+    ctx->time_base_in = ost->st->time_base;
+
+    ret = av_bsf_init(ctx);
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Error initializing bitstream filter: %s\n",
+               ctx->filter->name);
+        return ret;
+    }
+
+    ret = avcodec_parameters_copy(ost->st->codecpar, ctx->par_out);
+    if (ret < 0)
+        return ret;
+    ost->st->time_base = ctx->time_base_out;
+
+    return 0;
+}
+
 int of_stream_init(OutputFile *of, OutputStream *ost)
 {
     Muxer *mux = mux_from_of(of);
+    int ret;
+
     if (ost->sq_idx_mux >= 0)
         sq_set_tb(mux->sq_mux, ost->sq_idx_mux, ost->mux_timebase);
+
+    /* initialize bitstream filters for the output stream
+     * needs to be done here, because the codec id for streamcopy is not
+     * known until now */
+    ret = bsf_init(ost);
+    if (ret < 0)
+        return ret;
 
     ost->initialized = 1;
 
