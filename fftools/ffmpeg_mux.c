@@ -159,12 +159,12 @@ static int sync_queue_process(Muxer *mux, OutputStream *ost, AVPacket *pkt)
     OutputFile *of = &mux->of;
 
     if (ost->sq_idx_mux >= 0) {
-        int ret = sq_send(of->sq_mux, ost->sq_idx_mux, SQPKT(pkt));
+        int ret = sq_send(mux->sq_mux, ost->sq_idx_mux, SQPKT(pkt));
         if (ret < 0)
             return ret;
 
         while (1) {
-            ret = sq_receive(of->sq_mux, -1, SQPKT(mux->sq_pkt));
+            ret = sq_receive(mux->sq_mux, -1, SQPKT(mux->sq_pkt));
             if (ret < 0)
                 return (ret == AVERROR_EOF || ret == AVERROR(EAGAIN)) ? 0 : ret;
 
@@ -540,7 +540,7 @@ int of_stream_init(OutputFile *of, OutputStream *ost)
 {
     Muxer *mux = mux_from_of(of);
     if (ost->sq_idx_mux >= 0)
-        sq_set_tb(of->sq_mux, ost->sq_idx_mux, ost->mux_timebase);
+        sq_set_tb(mux->sq_mux, ost->sq_idx_mux, ost->mux_timebase);
 
     ost->initialized = 1;
 
@@ -611,7 +611,7 @@ void of_close(OutputFile **pof)
     thread_stop(mux);
 
     sq_free(&of->sq_encode);
-    sq_free(&of->sq_mux);
+    sq_free(&mux->sq_mux);
 
     for (int i = 0; i < mux->of.nb_streams; i++) {
         MuxStream *ms = &mux->streams[i];

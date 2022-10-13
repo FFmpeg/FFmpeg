@@ -1100,8 +1100,8 @@ static int setup_sync_queues(Muxer *mux, AVFormatContext *oc, int64_t buf_size_u
     /* if there are any additional interleaved streams, then ALL the streams
      * are also synchronized before sending them to the muxer */
     if (nb_interleaved > nb_av_enc) {
-        of->sq_mux = sq_alloc(SYNC_QUEUE_PACKETS, buf_size_us);
-        if (!of->sq_mux)
+        mux->sq_mux = sq_alloc(SYNC_QUEUE_PACKETS, buf_size_us);
+        if (!mux->sq_mux)
             return AVERROR(ENOMEM);
 
         mux->sq_pkt = av_packet_alloc();
@@ -1115,13 +1115,13 @@ static int setup_sync_queues(Muxer *mux, AVFormatContext *oc, int64_t buf_size_u
             if (!IS_INTERLEAVED(type))
                 continue;
 
-            ost->sq_idx_mux = sq_add_stream(of->sq_mux,
+            ost->sq_idx_mux = sq_add_stream(mux->sq_mux,
                                             of->shortest || ost->max_frames < INT64_MAX);
             if (ost->sq_idx_mux < 0)
                 return ost->sq_idx_mux;
 
             if (ost->max_frames != INT64_MAX)
-                sq_limit_frames(of->sq_mux, ost->sq_idx_mux, ost->max_frames);
+                sq_limit_frames(mux->sq_mux, ost->sq_idx_mux, ost->max_frames);
         }
     }
 

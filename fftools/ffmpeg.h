@@ -620,7 +620,6 @@ typedef struct OutputFile {
     const char           *url;
 
     SyncQueue *sq_encode;
-    SyncQueue *sq_mux;
 
     int nb_streams;
     int ost_index;       /* index of the first stream in output_streams */
