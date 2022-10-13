@@ -81,6 +81,9 @@ typedef struct MPVMainEncContext {
     int next_lambda;               ///< next lambda used for retrying to encode a frame
     int fixed_qscale;              ///< fixed qscale if non zero
     RateControlContext rc_context; ///< contains stuff only accessed in ratecontrol.c
+
+    int64_t mb_var_sum;            ///< sum of MB variance for current frame
+    int64_t mc_mb_var_sum;         ///< motion compensated MB variance for current frame
 } MPVMainEncContext;
 
 #define MAX_FCODE        7

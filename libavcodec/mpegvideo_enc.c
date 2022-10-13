@@ -3752,8 +3752,8 @@ static int encode_picture(MPVMainEncContext *const m, const AVPacket *pkt)
     for(i=1; i<context_count; i++){
         merge_context_after_me(s, s->thread_context[i]);
     }
-    s->mc_mb_var_sum = s->me.mc_mb_var_sum_temp;
-    s->mb_var_sum    = s->me.   mb_var_sum_temp;
+    m->mc_mb_var_sum = s->me.mc_mb_var_sum_temp;
+    m->mb_var_sum    = s->me.   mb_var_sum_temp;
     emms_c();
 
     if (s->me.scene_change_score > m->scenechange_threshold &&
@@ -3764,7 +3764,7 @@ static int encode_picture(MPVMainEncContext *const m, const AVPacket *pkt)
         if (s->msmpeg4_version >= MSMP4_V3)
             s->no_rounding=1;
         ff_dlog(s->avctx, "Scene change detected, encoding as I Frame %"PRId64" %"PRId64"\n",
-                s->mb_var_sum, s->mc_mb_var_sum);
+                m->mb_var_sum, m->mc_mb_var_sum);
     }
 
     if(!s->umvplus){
