@@ -1310,9 +1310,8 @@ void ff_clean_intra_table_entries(MpegEncContext *s)
  */
 static av_always_inline
 void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
-                            int lowres_flag, int is_mpeg12)
+                                 int lowres_flag, int is_mpeg12, int is_encoder)
 {
-#define IS_ENCODER(s) (CONFIG_MPEGVIDEOENC && !lowres_flag && (s)->encoding)
 #define IS_MPEG12(s) (is_mpeg12 == MAY_BE_MPEG12 ? ((s)->out_format == FMT_MPEG1) : is_mpeg12)
     const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
 
@@ -1331,7 +1330,7 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
     } else if (is_mpeg12 != DEFINITELY_MPEG12 && (s->h263_pred || s->h263_aic))
         s->mbintra_table[mb_xy]=1;
 
-    if (!IS_ENCODER(s) || (s->avctx->flags & AV_CODEC_FLAG_PSNR) || s->frame_skip_threshold || s->frame_skip_factor ||
+    if (!is_encoder || (s->avctx->flags & AV_CODEC_FLAG_PSNR) || s->frame_skip_threshold || s->frame_skip_factor ||
         !((s->intra_only || s->pict_type == AV_PICTURE_TYPE_B) &&
           s->avctx->mb_decision != FF_MB_DECISION_RD)) { // FIXME precalc
         uint8_t *dest_y, *dest_cb, *dest_cr;
@@ -1340,12 +1339,12 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
         qpel_mc_func (*op_qpix)[16];
         const int linesize   = s->current_picture.f->linesize[0]; //not s->linesize as this would be wrong for field pics
         const int uvlinesize = s->current_picture.f->linesize[1];
-        const int readable = s->pict_type != AV_PICTURE_TYPE_B || IS_ENCODER(s) || lowres_flag;
+        const int readable = s->pict_type != AV_PICTURE_TYPE_B || is_encoder || lowres_flag;
         const int block_size= lowres_flag ? 8>>s->avctx->lowres : 8;
 
         /* avoid copy if macroblock skipped in last frame too */
         /* skip only during decoding as we might trash the buffers during encoding a bit */
-        if (!IS_ENCODER(s)) {
+        if (!is_encoder) {
             uint8_t *mbskip_ptr = &s->mbskip_table[mb_xy];
 
             if (s->mb_skipped) {
@@ -1375,7 +1374,7 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
         if (!s->mb_intra) {
             /* motion handling */
             /* decoding or more than one mb_type (MC was already done otherwise) */
-            if (!IS_ENCODER(s)) {
+            if (!is_encoder) {
 
                 if(HAVE_THREADS && s->avctx->active_thread_type&FF_THREAD_FRAME) {
                     if (s->mv_dir & MV_DIR_FORWARD) {
@@ -1427,7 +1426,7 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
             }
 
             /* add dct residue */
-            if (IS_ENCODER(s) || !(IS_MPEG12(s) || s->msmpeg4_version
+            if (is_encoder || !(IS_MPEG12(s) || s->msmpeg4_version
                                 || (s->codec_id==AV_CODEC_ID_MPEG4 && !s->mpeg_quant))){
                 add_dequant_dct(s, block[0], 0, dest_y                          , dct_linesize, s->qscale);
                 add_dequant_dct(s, block[1], 1, dest_y              + block_size, dct_linesize, s->qscale);
@@ -1480,14 +1479,14 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
         } else {
             /* Only MPEG-4 Simple Studio Profile is supported in > 8-bit mode.
                TODO: Integrate 10-bit properly into mpegvideo.c so that ER works properly */
-            if (is_mpeg12 != DEFINITELY_MPEG12 && CONFIG_MPEG4_DECODER &&
+            if (!is_encoder && is_mpeg12 != DEFINITELY_MPEG12 && CONFIG_MPEG4_DECODER &&
                 /* s->codec_id == AV_CODEC_ID_MPEG4 && */
                 s->avctx->bits_per_raw_sample > 8) {
                 ff_mpeg4_decode_studio(s, dest_y, dest_cb, dest_cr, block_size,
                                        uvlinesize, dct_linesize, dct_offset);
             }
             /* dct only in intra block */
-            else if (IS_ENCODER(s) || !IS_MPEG12(s)) {
+            else if (is_encoder || !IS_MPEG12(s)) {
                 put_dct(s, block[0], 0, dest_y                          , dct_linesize, s->qscale);
                 put_dct(s, block[1], 1, dest_y              + block_size, dct_linesize, s->qscale);
                 put_dct(s, block[2], 2, dest_y + dct_offset             , dct_linesize, s->qscale);
@@ -1560,18 +1559,19 @@ void ff_mpv_reconstruct_mb(MpegEncContext *s, int16_t block[12][64])
        }
     }
 
+    if (s->encoding) {
+        mpv_reconstruct_mb_internal(s, block, 0, MAY_BE_MPEG12, 1);
+    } else if (!s->avctx->lowres) {
 #if !CONFIG_SMALL
-    if(s->out_format == FMT_MPEG1) {
-        if (s->avctx->lowres) mpv_reconstruct_mb_internal(s, block, 1, DEFINITELY_MPEG12);
-        else                  mpv_reconstruct_mb_internal(s, block, 0, DEFINITELY_MPEG12);
-    } else {
-        if (s->avctx->lowres) mpv_reconstruct_mb_internal(s, block, 1, NOT_MPEG12);
-        else                  mpv_reconstruct_mb_internal(s, block, 0, NOT_MPEG12);
-    }
+        if (s->out_format == FMT_MPEG1)
+            mpv_reconstruct_mb_internal(s, block, 0, DEFINITELY_MPEG12, 0);
+        else
+            mpv_reconstruct_mb_internal(s, block, 0, NOT_MPEG12, 0);
 #else
-    if (s->avctx->lowres) mpv_reconstruct_mb_internal(s, block, 1, MAY_BE_MPEG12);
-    else                  mpv_reconstruct_mb_internal(s, block, 0, MAY_BE_MPEG12);
+        mpv_reconstruct_mb_internal(s, block, 0, MAY_BE_MPEG12, 0);
 #endif
+    } else
+        mpv_reconstruct_mb_internal(s, block, 1, MAY_BE_MPEG12, 0);
 }
 
 void ff_init_block_index(MpegEncContext *s){ //FIXME maybe rename
