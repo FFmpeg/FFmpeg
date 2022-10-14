@@ -596,11 +596,6 @@ typedef struct OutputStream {
     /* packet quality factor */
     int quality;
 
-    int max_muxing_queue_size;
-
-    /* Threshold after which max_muxing_queue_size will be in effect */
-    size_t muxing_queue_data_threshold;
-
     /* packet picture type */
     int pict_type;
 

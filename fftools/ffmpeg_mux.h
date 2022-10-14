@@ -48,6 +48,11 @@ typedef struct MuxStream {
      */
     size_t muxing_queue_data_size;
 
+    int max_muxing_queue_size;
+
+    /* Threshold after which max_muxing_queue_size will be in effect */
+    size_t muxing_queue_data_threshold;
+
     /* dts of the last packet sent to the muxer, in the stream timebase
      * used for making up missing dts values */
     int64_t last_mux_dts;

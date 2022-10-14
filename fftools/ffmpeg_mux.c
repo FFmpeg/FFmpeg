@@ -264,8 +264,8 @@ static int queue_packet(Muxer *mux, OutputStream *ost, AVPacket *pkt)
         size_t cur_size = av_fifo_can_read(ms->muxing_queue);
         size_t pkt_size = pkt ? pkt->size : 0;
         unsigned int are_we_over_size =
-            (ms->muxing_queue_data_size + pkt_size) > ost->muxing_queue_data_threshold;
-        size_t limit    = are_we_over_size ? ost->max_muxing_queue_size : SIZE_MAX;
+            (ms->muxing_queue_data_size + pkt_size) > ms->muxing_queue_data_threshold;
+        size_t limit    = are_we_over_size ? ms->max_muxing_queue_size : SIZE_MAX;
         size_t new_size = FFMIN(2 * cur_size, limit);
 
         if (new_size <= cur_size) {
