@@ -32,6 +32,8 @@
 
 #include <stdint.h>
 
+#include "libavutil/attributes_internal.h"
+
 #include "rl.h"
 #include "vlc.h"
 
@@ -45,6 +47,7 @@ typedef struct MVTable {
     VLC vlc;                /* decoding: vlc */
 } MVTable;
 
+FF_VISIBILITY_PUSH_HIDDEN
 extern VLC ff_msmp4_mb_i_vlc;
 extern VLC ff_msmp4_dc_luma_vlc[2];
 extern VLC ff_msmp4_dc_chroma_vlc[2];
@@ -83,5 +86,6 @@ extern const uint32_t ff_table1_dc_chroma[120][2];
 
 #define WMV2_INTER_CBP_TABLE_COUNT 4
 extern const uint32_t (* const ff_wmv2_inter_table[WMV2_INTER_CBP_TABLE_COUNT])[2];
+FF_VISIBILITY_POP_HIDDEN
 
 #endif /* AVCODEC_MSMPEG4DATA_H */
