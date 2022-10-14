@@ -510,8 +510,6 @@ typedef struct OutputStream {
     AVRational mux_timebase;
     AVRational enc_timebase;
 
-    AVBSFContext            *bsf_ctx;
-
     AVCodecContext *enc_ctx;
     int64_t max_frames;
     AVFrame *filtered_frame;

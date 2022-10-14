@@ -40,6 +40,8 @@ typedef struct MuxStream {
     /* the packets are buffered here until the muxer is ready to be initialized */
     AVFifo *muxing_queue;
 
+    AVBSFContext *bsf_ctx;
+
     /*
      * The size of the AVPackets' buffers in queue.
      * Updated when a packet is either pushed or pulled from the queue.

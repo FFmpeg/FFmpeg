@@ -304,7 +304,7 @@ static OutputStream *new_output_stream(Muxer *mux, OptionsContext *o,
 
     MATCH_PER_STREAM_OPT(bitstream_filters, str, bsfs, oc, st);
     if (bsfs && *bsfs) {
-        ret = av_bsf_list_parse_str(bsfs, &ost->bsf_ctx);
+        ret = av_bsf_list_parse_str(bsfs, &ms->bsf_ctx);
         if (ret < 0) {
             av_log(NULL, AV_LOG_ERROR, "Error parsing bitstream filter sequence '%s': %s\n", bsfs, av_err2str(ret));
             exit_program(1);

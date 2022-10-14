@@ -318,6 +318,7 @@ static int submit_packet(Muxer *mux, AVPacket *pkt, OutputStream *ost)
 void of_output_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost, int eof)
 {
     Muxer *mux = mux_from_of(of);
+    MuxStream *ms = ms_from_ost(ost);
     const char *err_msg;
     int ret = 0;
 
@@ -325,17 +326,17 @@ void of_output_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost, int eof)
         ost->last_mux_dts = av_rescale_q(pkt->dts, ost->mux_timebase, AV_TIME_BASE_Q);
 
     /* apply the output bitstream filters */
-    if (ost->bsf_ctx) {
+    if (ms->bsf_ctx) {
         int bsf_eof = 0;
 
-        ret = av_bsf_send_packet(ost->bsf_ctx, eof ? NULL : pkt);
+        ret = av_bsf_send_packet(ms->bsf_ctx, eof ? NULL : pkt);
         if (ret < 0) {
             err_msg = "submitting a packet for bitstream filtering";
             goto fail;
         }
 
         while (!bsf_eof) {
-            ret = av_bsf_receive_packet(ost->bsf_ctx, pkt);
+            ret = av_bsf_receive_packet(ms->bsf_ctx, pkt);
             if (ret == AVERROR(EAGAIN))
                 return;
             else if (ret == AVERROR_EOF)
@@ -541,9 +542,10 @@ int mux_check_init(Muxer *mux)
     return 0;
 }
 
-static int bsf_init(OutputStream *ost)
+static int bsf_init(MuxStream *ms)
 {
-    AVBSFContext *ctx = ost->bsf_ctx;
+    OutputStream *ost = &ms->ost;
+    AVBSFContext *ctx = ms->bsf_ctx;
     int ret;
 
     if (!ctx)
@@ -573,6 +575,7 @@ static int bsf_init(OutputStream *ost)
 int of_stream_init(OutputFile *of, OutputStream *ost)
 {
     Muxer *mux = mux_from_of(of);
+    MuxStream *ms = ms_from_ost(ost);
     int ret;
 
     if (ost->sq_idx_mux >= 0)
@@ -581,7 +584,7 @@ int of_stream_init(OutputFile *of, OutputStream *ost)
     /* initialize bitstream filters for the output stream
      * needs to be done here, because the codec id for streamcopy is not
      * known until now */
-    ret = bsf_init(ost);
+    ret = bsf_init(ms);
     if (ret < 0)
         return ret;
 
@@ -652,7 +655,7 @@ static void ost_free(OutputStream **post)
         av_fifo_freep2(&ms->muxing_queue);
     }
 
-    av_bsf_free(&ost->bsf_ctx);
+    av_bsf_free(&ms->bsf_ctx);
 
     av_frame_free(&ost->filtered_frame);
     av_frame_free(&ost->sq_frame);
