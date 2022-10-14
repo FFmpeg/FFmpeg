@@ -509,6 +509,14 @@ static void ost_free(OutputStream **post)
     if (!ost)
         return;
 
+    if (ost->logfile) {
+        if (fclose(ost->logfile))
+            av_log(NULL, AV_LOG_ERROR,
+                   "Error closing logfile, loss of information possible: %s\n",
+                   av_err2str(AVERROR(errno)));
+        ost->logfile = NULL;
+    }
+
     av_bsf_free(&ost->bsf_ctx);
 
     av_frame_free(&ost->filtered_frame);
@@ -521,6 +529,9 @@ static void ost_free(OutputStream **post)
     av_expr_free(ost->forced_keyframes_pexpr);
     av_freep(&ost->avfilter);
     av_freep(&ost->logfile_prefix);
+    av_freep(&ost->forced_kf_pts);
+    av_freep(&ost->apad);
+    av_freep(&ost->disposition);
 
 #if FFMPEG_OPT_MAP_CHANNEL
     av_freep(&ost->audio_channels_map);
@@ -4032,24 +4043,6 @@ static int transcode(void)
 
  fail:
     free_input_threads();
-
-        for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
-            if (ost) {
-                if (ost->logfile) {
-                    if (fclose(ost->logfile))
-                        av_log(NULL, AV_LOG_ERROR,
-                               "Error closing logfile, loss of information possible: %s\n",
-                               av_err2str(AVERROR(errno)));
-                    ost->logfile = NULL;
-                }
-                av_freep(&ost->forced_kf_pts);
-                av_freep(&ost->apad);
-                av_freep(&ost->disposition);
-                av_dict_free(&ost->encoder_opts);
-                av_dict_free(&ost->sws_dict);
-                av_dict_free(&ost->swr_opts);
-            }
-        }
 
     return ret;
 }
