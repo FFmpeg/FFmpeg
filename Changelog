@@ -17,6 +17,7 @@ version <next>:
 - APAC decoder and demuxer
 - Media 100i decoders
 - DTS to PTS reorder bsf
+- ViewQuest VQC decoder
 
 
 version 5.1:

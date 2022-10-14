@@ -1339,6 +1339,7 @@ following image formats are supported:
 @item TwinVQ (VQF flavor)    @tab     @tab  X
 @item VIMA                   @tab     @tab  X
     @tab Used in LucasArts SMUSH animations.
+@item ViewQuest VQC          @tab     @tab  X
 @item Vorbis                 @tab  E  @tab  X
     @tab A native but very primitive encoder exists.
 @item Voxware MetaSound      @tab     @tab  X

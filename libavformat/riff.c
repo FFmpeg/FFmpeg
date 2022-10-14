@@ -499,6 +499,8 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_MVHA,         MKTAG('M', 'V', 'H', 'A') },
     { AV_CODEC_ID_MV30,         MKTAG('M', 'V', '3', '0') },
     { AV_CODEC_ID_NOTCHLC,      MKTAG('n', 'l', 'c', '1') },
+    { AV_CODEC_ID_VQC,          MKTAG('V', 'Q', 'C', '1') },
+    { AV_CODEC_ID_VQC,          MKTAG('V', 'Q', 'C', '2') },
     { AV_CODEC_ID_NONE,         0 }
 };
 
