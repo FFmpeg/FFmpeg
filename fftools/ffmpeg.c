@@ -504,6 +504,41 @@ static int decode_interrupt_cb(void *ctx)
 
 const AVIOInterruptCB int_cb = { decode_interrupt_cb, NULL };
 
+static void ost_free(OutputStream **post)
+{
+    OutputStream *ost = *post;
+
+    if (!ost)
+        return;
+
+        av_bsf_free(&ost->bsf_ctx);
+
+        av_frame_free(&ost->filtered_frame);
+        av_frame_free(&ost->sq_frame);
+        av_frame_free(&ost->last_frame);
+        av_packet_free(&ost->pkt);
+        av_dict_free(&ost->encoder_opts);
+
+        av_freep(&ost->forced_keyframes);
+        av_expr_free(ost->forced_keyframes_pexpr);
+        av_freep(&ost->avfilter);
+        av_freep(&ost->logfile_prefix);
+
+#if FFMPEG_OPT_MAP_CHANNEL
+        av_freep(&ost->audio_channels_map);
+        ost->audio_channels_mapped = 0;
+#endif
+
+        av_dict_free(&ost->sws_dict);
+        av_dict_free(&ost->swr_opts);
+
+        if (ost->enc_ctx)
+            av_freep(&ost->enc_ctx->stats_in);
+        avcodec_free_context(&ost->enc_ctx);
+
+    av_freep(post);
+}
+
 static void ffmpeg_cleanup(int ret)
 {
     int i, j;
@@ -557,39 +592,9 @@ static void ffmpeg_cleanup(int ret)
     for (i = 0; i < nb_output_files; i++)
         of_close(&output_files[i]);
 
-    for (i = 0; i < nb_output_streams; i++) {
-        OutputStream *ost = output_streams[i];
+    for (i = 0; i < nb_output_streams; i++)
+        ost_free(&output_streams[i]);
 
-        if (!ost)
-            continue;
-
-        av_bsf_free(&ost->bsf_ctx);
-
-        av_frame_free(&ost->filtered_frame);
-        av_frame_free(&ost->sq_frame);
-        av_frame_free(&ost->last_frame);
-        av_packet_free(&ost->pkt);
-        av_dict_free(&ost->encoder_opts);
-
-        av_freep(&ost->forced_keyframes);
-        av_expr_free(ost->forced_keyframes_pexpr);
-        av_freep(&ost->avfilter);
-        av_freep(&ost->logfile_prefix);
-
-#if FFMPEG_OPT_MAP_CHANNEL
-        av_freep(&ost->audio_channels_map);
-        ost->audio_channels_mapped = 0;
-#endif
-
-        av_dict_free(&ost->sws_dict);
-        av_dict_free(&ost->swr_opts);
-
-        if (ost->enc_ctx)
-            av_freep(&ost->enc_ctx->stats_in);
-        avcodec_free_context(&ost->enc_ctx);
-
-        av_freep(&output_streams[i]);
-    }
     free_input_threads();
     for (i = 0; i < nb_input_files; i++) {
         avformat_close_input(&input_files[i]->ctx);
