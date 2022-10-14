@@ -223,6 +223,21 @@ fate-kgv1: CMD = framecrc -i $(TARGET_SAMPLES)/kega/kgv1.avi -pix_fmt rgb555le -
 FATE_VIDEO-$(call FRAMECRC, AVI, KMVC, SCALE_FILTER) += fate-kmvc
 fate-kmvc: CMD = framecrc -i $(TARGET_SAMPLES)/KMVC/LOGO1.AVI -an -t 3 -pix_fmt rgb24 -vf scale
 
+FATE_LEAD_VIDEO-$(call FRAMECRC, AVI, LEAD) += fate-lead-yuv420p
+fate-lead-yuv420p: CMD = framecrc -idct simple -fflags +bitexact -i $(TARGET_SAMPLES)/lead/BeforeEmboss1.avi -an
+
+FATE_LEAD_VIDEO-$(call FRAMECRC, AVI, LEAD) += fate-lead-yuv420p-half
+fate-lead-yuv420p-half: CMD = framecrc -idct simple -fflags +bitexact -i $(TARGET_SAMPLES)/lead/DaDa_CMP1.avi -an
+
+FATE_LEAD_VIDEO-$(call FRAMECRC, AVI, LEAD) += fate-lead-yuv420p-zero
+fate-lead-yuv420p-zero: CMD = framecrc -idct simple -fflags +bitexact -i $(TARGET_SAMPLES)/lead/lead_0x0.avi -an
+
+FATE_LEAD_VIDEO-$(call FRAMECRC, AVI, LEAD) += fate-lead-yuv444p
+fate-lead-yuv444p: CMD = framecrc -idct simple -fflags +bitexact -i $(TARGET_SAMPLES)/lead/version320x240i1.avi -an
+
+FATE_VIDEO-yes += $(FATE_LEAD_VIDEO-yes)
+fate-lead: $(FATE_LEAD_VIDEO-yes)
+
 FATE_VIDEO-$(call FRAMECRC, AVI, LSCR) += fate-lscr
 fate-lscr: CMD = framecrc -i $(TARGET_SAMPLES)/lscr/lscr_compr9_short.avi
 
