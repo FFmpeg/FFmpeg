@@ -576,8 +576,6 @@ void ff_mpv_free_context_frame(MpegEncContext *s);
 
 void ff_mpv_common_end(MpegEncContext *s);
 
-void ff_mpv_reconstruct_mb(MpegEncContext *s, int16_t block[12][64]);
-
 void ff_clean_intra_table_entries(MpegEncContext *s);
 
 int ff_update_duplicate_context(MpegEncContext *dst, const MpegEncContext *src);

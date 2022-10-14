@@ -18,6 +18,7 @@
 
 #include "error_resilience.h"
 #include "mpegvideo.h"
+#include "mpegvideodec.h"
 #include "mpeg_er.h"
 
 static void set_erpic(ERPicture *dst, Picture *src)

@@ -1017,6 +1017,26 @@ av_cold int ff_mpv_encode_end(AVCodecContext *avctx)
     return 0;
 }
 
+#define IS_ENCODER 1
+#include "mpv_reconstruct_mb_template.c"
+
+static void mpv_reconstruct_mb(MpegEncContext *s, int16_t block[12][64])
+{
+    if (s->avctx->debug & FF_DEBUG_DCT_COEFF) {
+       /* print DCT coefficients */
+       av_log(s->avctx, AV_LOG_DEBUG, "DCT coeffs of MB at %dx%d:\n", s->mb_x, s->mb_y);
+       for (int i = 0; i < 6; i++) {
+           for (int j = 0; j < 64; j++) {
+               av_log(s->avctx, AV_LOG_DEBUG, "%5d",
+                      block[i][s->idsp.idct_permutation[j]]);
+           }
+           av_log(s->avctx, AV_LOG_DEBUG, "\n");
+       }
+    }
+
+    mpv_reconstruct_mb_internal(s, block, 0, MAY_BE_MPEG12);
+}
+
 static int get_sae(const uint8_t *src, int ref, int stride)
 {
     int x,y;
@@ -2577,7 +2597,7 @@ static inline void encode_mb_hq(MpegEncContext *s, MpegEncContext *backup, MpegE
     }
 
     if(s->avctx->mb_decision == FF_MB_DECISION_RD){
-        ff_mpv_reconstruct_mb(s, s->block);
+        mpv_reconstruct_mb(s, s->block);
 
         score *= s->lambda2;
         score += sse_mb(s) << FF_LAMBDA_SHIFT;
@@ -3287,7 +3307,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                 }
 
                 if(s->avctx->mb_decision == FF_MB_DECISION_BITS)
-                    ff_mpv_reconstruct_mb(s, s->block);
+                    mpv_reconstruct_mb(s, s->block);
             } else {
                 int motion_x = 0, motion_y = 0;
                 s->mv_type=MV_TYPE_16X16;
@@ -3406,7 +3426,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     s->out_format == FMT_H263 && s->pict_type!=AV_PICTURE_TYPE_B)
                     ff_h263_update_motion_val(s);
 
-                ff_mpv_reconstruct_mb(s, s->block);
+                mpv_reconstruct_mb(s, s->block);
             }
 
             /* clean the MV table in IPS frames for direct mode in B-frames */
