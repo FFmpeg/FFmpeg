@@ -609,7 +609,7 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
         int i;
 
         for (i = 0; i < of->nb_streams; i++)
-            if (output_streams[of->ost_index + i]->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
+            if (of->streams[i]->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
                 break;
 
         if (i < of->nb_streams) {

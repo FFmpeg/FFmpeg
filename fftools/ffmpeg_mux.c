@@ -168,7 +168,7 @@ static int sync_queue_process(Muxer *mux, OutputStream *ost, AVPacket *pkt)
             if (ret < 0)
                 return (ret == AVERROR_EOF || ret == AVERROR(EAGAIN)) ? 0 : ret;
 
-            ret = write_packet(mux, output_streams[of->ost_index + ret],
+            ret = write_packet(mux, of->streams[ret],
                                mux->sq_pkt);
             if (ret < 0)
                 return ret;
@@ -204,7 +204,7 @@ static void *muxer_thread(void *arg)
             break;
         }
 
-        ost = output_streams[of->ost_index + stream_idx];
+        ost = of->streams[stream_idx];
         ret = sync_queue_process(mux, ost, ret < 0 ? NULL : pkt);
         av_packet_unref(pkt);
         if (ret == AVERROR_EOF)
@@ -410,7 +410,7 @@ static int thread_start(Muxer *mux)
     /* flush the muxing queues */
     for (int i = 0; i < fc->nb_streams; i++) {
         MuxStream     *ms = &mux->streams[i];
-        OutputStream *ost = output_streams[mux->of.ost_index + i];
+        OutputStream *ost = mux->of.streams[i];
         AVPacket *pkt;
 
         /* try to improve muxing time_base (only possible if nothing has been written yet) */
@@ -494,7 +494,7 @@ int mux_check_init(Muxer *mux)
     int ret, i;
 
     for (i = 0; i < fc->nb_streams; i++) {
-        OutputStream *ost = output_streams[of->ost_index + i];
+        OutputStream *ost = of->streams[i];
         if (!ost->initialized)
             return 0;
     }
@@ -651,7 +651,7 @@ void of_close(OutputFile **pof)
     sq_free(&of->sq_encode);
     sq_free(&mux->sq_mux);
 
-    for (int i = 0; i < mux->of.nb_streams; i++) {
+    for (int i = 0; i < mux->nb_streams; i++) {
         MuxStream *ms = &mux->streams[i];
         AVPacket *pkt;
 

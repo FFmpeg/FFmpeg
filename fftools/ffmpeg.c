@@ -146,8 +146,6 @@ int        nb_input_streams = 0;
 InputFile   **input_files   = NULL;
 int        nb_input_files   = 0;
 
-OutputStream **output_streams = NULL;
-int         nb_output_streams = 0;
 OutputFile   **output_files   = NULL;
 int         nb_output_files   = 0;
 
@@ -589,11 +587,15 @@ static void ffmpeg_cleanup(int ret)
     av_freep(&filtergraphs);
 
     /* close files */
-    for (i = 0; i < nb_output_files; i++)
-        of_close(&output_files[i]);
+    for (i = 0; i < nb_output_files; i++) {
+        OutputFile *of = output_files[i];
 
-    for (i = 0; i < nb_output_streams; i++)
-        ost_free(&output_streams[i]);
+        for (int j = 0; j < of->nb_streams; j++)
+            ost_free(&of->streams[j]);
+        av_freep(&of->streams);
+
+        of_close(&output_files[i]);
+    }
 
     free_input_threads();
     for (i = 0; i < nb_input_files; i++) {
@@ -629,7 +631,6 @@ static void ffmpeg_cleanup(int ret)
 
     av_freep(&input_streams);
     av_freep(&input_files);
-    av_freep(&output_streams);
     av_freep(&output_files);
 
     uninit_opts();
@@ -644,6 +645,24 @@ static void ffmpeg_cleanup(int ret)
     }
     term_exit();
     ffmpeg_exited = 1;
+}
+
+/* iterate over all output streams in all output files;
+ * pass NULL to start iteration */
+static OutputStream *ost_iter(OutputStream *prev)
+{
+    int of_idx  = prev ? prev->file_index : 0;
+    int ost_idx = prev ? prev->index + 1  : 0;
+
+    for (; of_idx < nb_output_files; of_idx++) {
+        OutputFile *of = output_files[of_idx];
+        for (; ost_idx < of->nb_streams; ost_idx++)
+            return of->streams[ost_idx];
+
+        ost_idx = 0;
+    }
+
+    return NULL;
 }
 
 void remove_avoptions(AVDictionary **a, AVDictionary *b)
@@ -1308,11 +1327,9 @@ static void do_video_out(OutputFile *of,
 static int reap_filters(int flush)
 {
     AVFrame *filtered_frame = NULL;
-    int i;
 
     /* Reap all buffers present in the buffer sinks */
-    for (i = 0; i < nb_output_streams; i++) {
-        OutputStream *ost = output_streams[i];
+    for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
         OutputFile    *of = output_files[ost->file_index];
         AVFilterContext *filter;
         AVCodecContext *enc = ost->enc_ctx;
@@ -1397,8 +1414,7 @@ static void print_final_stats(int64_t total_size)
     int i, j;
     int pass1_used = 1;
 
-    for (i = 0; i < nb_output_streams; i++) {
-        OutputStream *ost = output_streams[i];
+    for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
         AVCodecParameters *par = ost->st->codecpar;
         const uint64_t s = ost->data_size_mux;
 
@@ -1474,7 +1490,7 @@ static void print_final_stats(int64_t total_size)
                i, of->url);
 
         for (j = 0; j < of->nb_streams; j++) {
-            OutputStream *ost = output_streams[of->ost_index + j];
+            OutputStream *ost = of->streams[j];
             enum AVMediaType type = ost->st->codecpar->codec_type;
 
             total_size    += ost->data_size_mux;
@@ -1513,7 +1529,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
 {
     AVBPrint buf, buf_script;
     int64_t total_size = of_filesize(output_files[0]);
-    int vid, i;
+    int vid;
     double bitrate;
     double speed;
     int64_t pts = INT64_MIN + 1;
@@ -1543,8 +1559,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
     vid = 0;
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_AUTOMATIC);
     av_bprint_init(&buf_script, 0, AV_BPRINT_SIZE_AUTOMATIC);
-    for (i = 0; i < nb_output_streams; i++) {
-        OutputStream         * const ost = output_streams[i];
+    for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
         const AVCodecContext * const enc = ost->enc_ctx;
         const float q = enc ? ost->quality / (float) FF_QP2LAMBDA : -1;
 
@@ -1727,17 +1742,15 @@ static int ifilter_parameters_from_codecpar(InputFilter *ifilter, AVCodecParamet
 
 static void flush_encoders(void)
 {
-    int i, ret;
+    int ret;
 
-    for (i = 0; i < nb_output_streams; i++) {
-        OutputStream   *ost = output_streams[i];
+    for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
         OutputFile      *of = output_files[ost->file_index];
         if (ost->sq_idx_encode >= 0)
             sq_send(of->sq_encode, ost->sq_idx_encode, SQFRAME(NULL));
     }
 
-    for (i = 0; i < nb_output_streams; i++) {
-        OutputStream   *ost = output_streams[i];
+    for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
         AVCodecContext *enc = ost->enc_ctx;
         OutputFile      *of = output_files[ost->file_index];
 
@@ -2250,8 +2263,8 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output,
 {
     AVSubtitle subtitle;
     int free_sub = 1;
-    int i, ret = avcodec_decode_subtitle2(ist->dec_ctx,
-                                          &subtitle, got_output, pkt);
+    int ret = avcodec_decode_subtitle2(ist->dec_ctx,
+                                       &subtitle, got_output, pkt);
 
     check_decode_result(NULL, got_output, ret);
 
@@ -2304,9 +2317,7 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output,
 
     ist->frames_decoded++;
 
-    for (i = 0; i < nb_output_streams; i++) {
-        OutputStream *ost = output_streams[i];
-
+    for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
         if (!check_output_constraints(ist, ost) || !ost->enc_ctx
             || ost->enc_ctx->codec_type != AVMEDIA_TYPE_SUBTITLE)
             continue;
@@ -2339,7 +2350,7 @@ static int send_filter_eof(InputStream *ist)
 static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eof)
 {
     const AVCodecParameters *par = ist->par;
-    int ret = 0, i;
+    int ret = 0;
     int repeating = 0;
     int eof_reached = 0;
 
@@ -2517,9 +2528,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
     } else if (!ist->decoding_needed)
         eof_reached = 1;
 
-    for (i = 0; i < nb_output_streams; i++) {
-        OutputStream *ost = output_streams[i];
-
+    for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
         if (!check_output_constraints(ist, ost) || ost->enc_ctx ||
             (!pkt && no_eof))
             continue;
@@ -3261,13 +3270,13 @@ static int transcode_init(void)
      *   to be configured with the correct audio frame size, which is only
      *   known after the encoder is initialized.
      */
-    for (i = 0; i < nb_output_streams; i++) {
-        if (output_streams[i]->enc_ctx &&
-            (output_streams[i]->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO ||
-             output_streams[i]->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO))
+    for (ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
+        if (ost->enc_ctx &&
+            (ost->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO ||
+             ost->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO))
             continue;
 
-        ret = init_output_stream_wrapper(output_streams[i], NULL, 0);
+        ret = init_output_stream_wrapper(ost, NULL, 0);
         if (ret < 0)
             goto dump_format;
     }
@@ -3306,9 +3315,7 @@ static int transcode_init(void)
         }
     }
 
-    for (i = 0; i < nb_output_streams; i++) {
-        ost = output_streams[i];
-
+    for (ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
         if (ost->attachment_filename) {
             /* an attached file */
             av_log(NULL, AV_LOG_INFO, "  File %s -> Stream #%d:%d\n",
@@ -3380,11 +3387,7 @@ static int transcode_init(void)
 /* Return 1 if there remain streams where more output is wanted, 0 otherwise. */
 static int need_output(void)
 {
-    int i;
-
-    for (i = 0; i < nb_output_streams; i++) {
-        OutputStream *ost    = output_streams[i];
-
+    for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
         if (ost->finished)
             continue;
 
@@ -3401,12 +3404,10 @@ static int need_output(void)
  */
 static OutputStream *choose_output(void)
 {
-    int i;
     int64_t opts_min = INT64_MAX;
     OutputStream *ost_min = NULL;
 
-    for (i = 0; i < nb_output_streams; i++) {
-        OutputStream *ost = output_streams[i];
+    for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
         int64_t opts;
 
         if (ost->filter && ost->last_filter_pts != AV_NOPTS_VALUE) {
@@ -3526,8 +3527,7 @@ static int check_keyboard_interaction(int64_t cur_time)
         for(i=0;i<nb_input_streams;i++) {
             input_streams[i]->dec_ctx->debug = debug;
         }
-        for(i=0;i<nb_output_streams;i++) {
-            OutputStream *ost = output_streams[i];
+        for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
             if (ost->enc_ctx)
                 ost->enc_ctx->debug = debug;
         }
@@ -3552,9 +3552,8 @@ static int check_keyboard_interaction(int64_t cur_time)
 
 static int got_eagain(void)
 {
-    int i;
-    for (i = 0; i < nb_output_streams; i++)
-        if (output_streams[i]->unavailable)
+    for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost))
+        if (ost->unavailable)
             return 1;
     return 0;
 }
@@ -3564,8 +3563,8 @@ static void reset_eagain(void)
     int i;
     for (i = 0; i < nb_input_files; i++)
         input_files[i]->eagain = 0;
-    for (i = 0; i < nb_output_streams; i++)
-        output_streams[i]->unavailable = 0;
+    for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost))
+        ost->unavailable = 0;
 }
 
 static void decode_flush(InputFile *ifile)
@@ -3696,7 +3695,7 @@ static int process_input(int file_index)
     AVFormatContext *is;
     InputStream *ist;
     AVPacket *pkt;
-    int ret, i, j;
+    int ret, i;
 
     is  = ifile->ctx;
     ret = ifile_get_packet(ifile, &pkt);
@@ -3726,9 +3725,7 @@ static int process_input(int file_index)
             }
 
             /* mark all outputs that don't go through lavfi as finished */
-            for (j = 0; j < nb_output_streams; j++) {
-                OutputStream *ost = output_streams[j];
-
+            for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
                 if (ost->source_index == ifile->ist_index + i &&
                     (!ost->enc_ctx || ost->enc_ctx->codec_type == AVMEDIA_TYPE_SUBTITLE)) {
                     OutputFile *of = output_files[ost->file_index];
@@ -3941,7 +3938,6 @@ static int transcode_step(void)
 static int transcode(void)
 {
     int ret, i;
-    OutputStream *ost;
     InputStream *ist;
     int64_t timer_start;
     int64_t total_packets_written = 0;
@@ -4006,9 +4002,8 @@ static int transcode(void)
     print_report(1, timer_start, av_gettime_relative());
 
     /* close each encoder */
-    for (i = 0; i < nb_output_streams; i++) {
+    for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
         uint64_t packets_written;
-        ost = output_streams[i];
         packets_written = atomic_load(&ost->packets_written);
         total_packets_written += packets_written;
         if (!packets_written && (abort_on_flags & ABORT_ON_FLAG_EMPTY_OUTPUT_STREAM)) {
@@ -4038,9 +4033,7 @@ static int transcode(void)
  fail:
     free_input_threads();
 
-    if (output_streams) {
-        for (i = 0; i < nb_output_streams; i++) {
-            ost = output_streams[i];
+        for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
             if (ost) {
                 if (ost->logfile) {
                     if (fclose(ost->logfile))
@@ -4057,7 +4050,7 @@ static int transcode(void)
                 av_dict_free(&ost->swr_opts);
             }
         }
-    }
+
     return ret;
 }
 

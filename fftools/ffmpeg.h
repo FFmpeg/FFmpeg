@@ -619,10 +619,11 @@ typedef struct OutputFile {
     const AVOutputFormat *format;
     const char           *url;
 
+    OutputStream **streams;
+    int         nb_streams;
+
     SyncQueue *sq_encode;
 
-    int nb_streams;
-    int ost_index;       /* index of the first stream in output_streams */
     int64_t recording_time;  ///< desired length of the resulting file in microseconds == AV_TIME_BASE units
     int64_t start_time;      ///< start time in microseconds == AV_TIME_BASE units
 
@@ -635,8 +636,6 @@ extern int        nb_input_streams;
 extern InputFile   **input_files;
 extern int        nb_input_files;
 
-extern OutputStream **output_streams;
-extern int         nb_output_streams;
 extern OutputFile   **output_files;
 extern int         nb_output_files;
 

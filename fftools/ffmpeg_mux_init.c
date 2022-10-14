@@ -183,7 +183,7 @@ static OutputStream *new_output_stream(Muxer *mux, OptionsContext *o,
     if (oc->nb_streams - 1 < o->nb_streamid_map)
         st->id = o->streamid_map[oc->nb_streams - 1];
 
-    ost = ALLOC_ARRAY_ELEM(output_streams, nb_output_streams);
+    ost = ALLOC_ARRAY_ELEM(mux->of.streams, mux->of.nb_streams);
 
     ost->file_index = nb_output_files - 1;
     ost->index      = idx;
@@ -555,13 +555,18 @@ static OutputStream *new_video_stream(Muxer *mux, OptionsContext *o, int source_
             report_and_exit(AVERROR(ENOMEM));
 
         if (do_pass) {
+            int ost_idx = -1;
             char logfilename[1024];
             FILE *f;
+
+            /* compute this stream's global index */
+            for (int i = 0; i <= ost->file_index; i++)
+                ost_idx += output_files[i]->nb_streams;
 
             snprintf(logfilename, sizeof(logfilename), "%s-%d.log",
                      ost->logfile_prefix ? ost->logfile_prefix :
                                            DEFAULT_PASS_LOGFILENAME_PREFIX,
-                     nb_output_streams - 1);
+                     ost_idx);
             if (!strcmp(ost->enc_ctx->codec->name, "libx264")) {
                 av_dict_set(&ost->encoder_opts, "stats", logfilename, AV_DICT_DONT_OVERWRITE);
             } else {
@@ -1054,7 +1059,7 @@ static int setup_sync_queues(Muxer *mux, AVFormatContext *oc, int64_t buf_size_u
 #define IS_INTERLEAVED(type) (type != AVMEDIA_TYPE_ATTACHMENT)
 
     for (int i = 0; i < oc->nb_streams; i++) {
-        OutputStream *ost = output_streams[of->ost_index + i];
+        OutputStream *ost = of->streams[i];
         enum AVMediaType type = ost->st->codecpar->codec_type;
 
         ost->sq_idx_encode = -1;
@@ -1080,7 +1085,7 @@ static int setup_sync_queues(Muxer *mux, AVFormatContext *oc, int64_t buf_size_u
             return AVERROR(ENOMEM);
 
         for (int i = 0; i < oc->nb_streams; i++) {
-            OutputStream *ost = output_streams[of->ost_index + i];
+            OutputStream *ost = of->streams[i];
             enum AVMediaType type = ost->st->codecpar->codec_type;
 
             if (!IS_AV_ENC(ost, type))
@@ -1112,7 +1117,7 @@ static int setup_sync_queues(Muxer *mux, AVFormatContext *oc, int64_t buf_size_u
             return AVERROR(ENOMEM);
 
         for (int i = 0; i < oc->nb_streams; i++) {
-            OutputStream *ost = output_streams[of->ost_index + i];
+            OutputStream *ost = of->streams[i];
             enum AVMediaType type = ost->st->codecpar->codec_type;
 
             if (!IS_INTERLEAVED(type))
@@ -1280,7 +1285,8 @@ static void parse_meta_type(char *arg, char *type, int *index, const char **stre
         *type = 'g';
 }
 
-static void of_add_metadata(AVFormatContext *oc, const OptionsContext *o)
+static void of_add_metadata(OutputFile *of, AVFormatContext *oc,
+                            const OptionsContext *o)
 {
     for (int i = 0; i < o->nb_metadata; i++) {
         AVDictionary **m;
@@ -1299,7 +1305,7 @@ static void of_add_metadata(AVFormatContext *oc, const OptionsContext *o)
         parse_meta_type(o->metadata[i].specifier, &type, &index, &stream_spec);
         if (type == 's') {
             for (int j = 0; j < oc->nb_streams; j++) {
-                OutputStream *ost = output_streams[nb_output_streams - oc->nb_streams + j];
+                OutputStream *ost = of->streams[j];
                 if ((ret = check_stream_specifier(oc, oc->streams[j], stream_spec)) > 0) {
                     if (!strcmp(o->metadata[i].u.str, "rotate")) {
                         char *tail;
@@ -1521,7 +1527,7 @@ static int set_dispositions(OutputFile *of, AVFormatContext *ctx)
 
     // first, copy the input dispositions
     for (int i = 0; i < ctx->nb_streams; i++) {
-        OutputStream *ost = output_streams[of->ost_index + i];
+        OutputStream *ost = of->streams[i];
 
         nb_streams[ost->st->codecpar->codec_type]++;
 
@@ -1538,7 +1544,7 @@ static int set_dispositions(OutputFile *of, AVFormatContext *ctx)
     if (have_manual) {
         // process manually set dispositions - they override the above copy
         for (int i = 0; i < ctx->nb_streams; i++) {
-            OutputStream *ost = output_streams[of->ost_index + i];
+            OutputStream *ost = of->streams[i];
             int ret;
 
             if (!ost->disposition)
@@ -1564,7 +1570,7 @@ static int set_dispositions(OutputFile *of, AVFormatContext *ctx)
         // mark as default, unless one is already marked default.
         // "Suitable" means the first of that type, skipping attached pictures.
         for (int i = 0; i < ctx->nb_streams; i++) {
-            OutputStream *ost = output_streams[of->ost_index + i];
+            OutputStream *ost = of->streams[i];
             enum AVMediaType type = ost->st->codecpar->codec_type;
 
             if (nb_streams[type] < 2 || have_default[type] ||
@@ -1607,7 +1613,6 @@ int of_open(OptionsContext *o, const char *filename)
     of  = &mux->of;
 
     of->index          = nb_output_files - 1;
-    of->ost_index      = nb_output_streams;
     of->recording_time = o->recording_time;
     of->start_time     = o->start_time;
     of->shortest       = o->shortest;
@@ -1686,9 +1691,9 @@ int of_open(OptionsContext *o, const char *filename)
 
     /* check if all codec options have been used */
     unused_opts = strip_specifiers(o->g->codec_opts);
-    for (i = of->ost_index; i < nb_output_streams; i++) {
+    for (int i = 0; i < of->nb_streams; i++) {
         e = NULL;
-        while ((e = av_dict_get(output_streams[i]->encoder_opts, "", e,
+        while ((e = av_dict_get(of->streams[i]->encoder_opts, "", e,
                                 AV_DICT_IGNORE_SUFFIX)))
             av_dict_set(&unused_opts, e->key, NULL, 0);
     }
@@ -1727,8 +1732,8 @@ int of_open(OptionsContext *o, const char *filename)
     av_dict_free(&unused_opts);
 
     /* set the decoding_needed flags and create simple filtergraphs */
-    for (i = of->ost_index; i < nb_output_streams; i++) {
-        OutputStream *ost = output_streams[i];
+    for (int i = 0; i < of->nb_streams; i++) {
+        OutputStream *ost = of->streams[i];
 
         if (ost->enc_ctx && ost->source_index >= 0) {
             InputStream *ist = input_streams[ost->source_index];
@@ -1866,19 +1871,20 @@ int of_open(OptionsContext *o, const char *filename)
         av_dict_set(&oc->metadata, "product_version", NULL, 0);
     }
     if (!o->metadata_streams_manual)
-        for (i = of->ost_index; i < nb_output_streams; i++) {
+        for (int i = 0; i < of->nb_streams; i++) {
+            OutputStream *ost = of->streams[i];
             InputStream *ist;
-            if (output_streams[i]->source_index < 0)         /* this is true e.g. for attached files */
+            if (ost->source_index < 0)         /* this is true e.g. for attached files */
                 continue;
-            ist = input_streams[output_streams[i]->source_index];
-            av_dict_copy(&output_streams[i]->st->metadata, ist->st->metadata, AV_DICT_DONT_OVERWRITE);
-            if (output_streams[i]->enc_ctx) {
-                av_dict_set(&output_streams[i]->st->metadata, "encoder", NULL, 0);
+            ist = input_streams[ost->source_index];
+            av_dict_copy(&ost->st->metadata, ist->st->metadata, AV_DICT_DONT_OVERWRITE);
+            if (ost->enc_ctx) {
+                av_dict_set(&ost->st->metadata, "encoder", NULL, 0);
             }
         }
 
     of_add_programs(oc, o);
-    of_add_metadata(oc, o);
+    of_add_metadata(of, oc, o);
 
     err = set_dispositions(of, oc);
     if (err < 0) {
@@ -1897,9 +1903,9 @@ int of_open(OptionsContext *o, const char *filename)
     mux->streams = av_calloc(oc->nb_streams, sizeof(*mux->streams));
     if (!mux->streams)
         return AVERROR(ENOMEM);
-    of->nb_streams = oc->nb_streams;
+    mux->nb_streams = oc->nb_streams;
 
-    for (int i = 0; i < oc->nb_streams; i++) {
+    for (int i = 0; i < mux->nb_streams; i++) {
         MuxStream *ms = &mux->streams[i];
         ms->muxing_queue = av_fifo_alloc2(8, sizeof(AVPacket*), 0);
         if (!ms->muxing_queue)

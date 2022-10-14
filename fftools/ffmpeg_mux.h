@@ -58,6 +58,7 @@ typedef struct Muxer {
     ThreadQueue *tq;
 
     MuxStream *streams;
+    int     nb_streams;
 
     AVDictionary *opts;
 
