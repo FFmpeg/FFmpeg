@@ -623,6 +623,52 @@ int of_write_trailer(OutputFile *of)
     return 0;
 }
 
+static void ost_free(OutputStream **post)
+{
+    OutputStream *ost = *post;
+
+    if (!ost)
+        return;
+
+    if (ost->logfile) {
+        if (fclose(ost->logfile))
+            av_log(NULL, AV_LOG_ERROR,
+                   "Error closing logfile, loss of information possible: %s\n",
+                   av_err2str(AVERROR(errno)));
+        ost->logfile = NULL;
+    }
+
+    av_bsf_free(&ost->bsf_ctx);
+
+    av_frame_free(&ost->filtered_frame);
+    av_frame_free(&ost->sq_frame);
+    av_frame_free(&ost->last_frame);
+    av_packet_free(&ost->pkt);
+    av_dict_free(&ost->encoder_opts);
+
+    av_freep(&ost->forced_keyframes);
+    av_expr_free(ost->forced_keyframes_pexpr);
+    av_freep(&ost->avfilter);
+    av_freep(&ost->logfile_prefix);
+    av_freep(&ost->forced_kf_pts);
+    av_freep(&ost->apad);
+    av_freep(&ost->disposition);
+
+#if FFMPEG_OPT_MAP_CHANNEL
+    av_freep(&ost->audio_channels_map);
+    ost->audio_channels_mapped = 0;
+#endif
+
+    av_dict_free(&ost->sws_dict);
+    av_dict_free(&ost->swr_opts);
+
+    if (ost->enc_ctx)
+        av_freep(&ost->enc_ctx->stats_in);
+    avcodec_free_context(&ost->enc_ctx);
+
+    av_freep(post);
+}
+
 static void fc_close(AVFormatContext **pfc)
 {
     AVFormatContext *fc = *pfc;
@@ -663,6 +709,11 @@ void of_close(OutputFile **pof)
         av_fifo_freep2(&ms->muxing_queue);
     }
     av_freep(&mux->streams);
+
+    for (int i = 0; i < of->nb_streams; i++)
+        ost_free(&of->streams[i]);
+    av_freep(&of->streams);
+
     av_dict_free(&mux->opts);
 
     av_packet_free(&mux->sq_pkt);

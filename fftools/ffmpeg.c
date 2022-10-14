@@ -502,52 +502,6 @@ static int decode_interrupt_cb(void *ctx)
 
 const AVIOInterruptCB int_cb = { decode_interrupt_cb, NULL };
 
-static void ost_free(OutputStream **post)
-{
-    OutputStream *ost = *post;
-
-    if (!ost)
-        return;
-
-    if (ost->logfile) {
-        if (fclose(ost->logfile))
-            av_log(NULL, AV_LOG_ERROR,
-                   "Error closing logfile, loss of information possible: %s\n",
-                   av_err2str(AVERROR(errno)));
-        ost->logfile = NULL;
-    }
-
-    av_bsf_free(&ost->bsf_ctx);
-
-    av_frame_free(&ost->filtered_frame);
-    av_frame_free(&ost->sq_frame);
-    av_frame_free(&ost->last_frame);
-    av_packet_free(&ost->pkt);
-    av_dict_free(&ost->encoder_opts);
-
-    av_freep(&ost->forced_keyframes);
-    av_expr_free(ost->forced_keyframes_pexpr);
-    av_freep(&ost->avfilter);
-    av_freep(&ost->logfile_prefix);
-    av_freep(&ost->forced_kf_pts);
-    av_freep(&ost->apad);
-    av_freep(&ost->disposition);
-
-#if FFMPEG_OPT_MAP_CHANNEL
-    av_freep(&ost->audio_channels_map);
-    ost->audio_channels_mapped = 0;
-#endif
-
-    av_dict_free(&ost->sws_dict);
-    av_dict_free(&ost->swr_opts);
-
-    if (ost->enc_ctx)
-        av_freep(&ost->enc_ctx->stats_in);
-    avcodec_free_context(&ost->enc_ctx);
-
-    av_freep(post);
-}
-
 static void ffmpeg_cleanup(int ret)
 {
     int i, j;
@@ -598,15 +552,8 @@ static void ffmpeg_cleanup(int ret)
     av_freep(&filtergraphs);
 
     /* close files */
-    for (i = 0; i < nb_output_files; i++) {
-        OutputFile *of = output_files[i];
-
-        for (int j = 0; j < of->nb_streams; j++)
-            ost_free(&of->streams[j]);
-        av_freep(&of->streams);
-
+    for (i = 0; i < nb_output_files; i++)
         of_close(&output_files[i]);
-    }
 
     free_input_threads();
     for (i = 0; i < nb_input_files; i++) {
