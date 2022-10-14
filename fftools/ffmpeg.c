@@ -511,30 +511,30 @@ static void ost_free(OutputStream **post)
     if (!ost)
         return;
 
-        av_bsf_free(&ost->bsf_ctx);
+    av_bsf_free(&ost->bsf_ctx);
 
-        av_frame_free(&ost->filtered_frame);
-        av_frame_free(&ost->sq_frame);
-        av_frame_free(&ost->last_frame);
-        av_packet_free(&ost->pkt);
-        av_dict_free(&ost->encoder_opts);
+    av_frame_free(&ost->filtered_frame);
+    av_frame_free(&ost->sq_frame);
+    av_frame_free(&ost->last_frame);
+    av_packet_free(&ost->pkt);
+    av_dict_free(&ost->encoder_opts);
 
-        av_freep(&ost->forced_keyframes);
-        av_expr_free(ost->forced_keyframes_pexpr);
-        av_freep(&ost->avfilter);
-        av_freep(&ost->logfile_prefix);
+    av_freep(&ost->forced_keyframes);
+    av_expr_free(ost->forced_keyframes_pexpr);
+    av_freep(&ost->avfilter);
+    av_freep(&ost->logfile_prefix);
 
 #if FFMPEG_OPT_MAP_CHANNEL
-        av_freep(&ost->audio_channels_map);
-        ost->audio_channels_mapped = 0;
+    av_freep(&ost->audio_channels_map);
+    ost->audio_channels_mapped = 0;
 #endif
 
-        av_dict_free(&ost->sws_dict);
-        av_dict_free(&ost->swr_opts);
+    av_dict_free(&ost->sws_dict);
+    av_dict_free(&ost->swr_opts);
 
-        if (ost->enc_ctx)
-            av_freep(&ost->enc_ctx->stats_in);
-        avcodec_free_context(&ost->enc_ctx);
+    if (ost->enc_ctx)
+        av_freep(&ost->enc_ctx->stats_in);
+    avcodec_free_context(&ost->enc_ctx);
 
     av_freep(post);
 }
