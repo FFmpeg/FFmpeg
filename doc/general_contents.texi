@@ -997,6 +997,7 @@ following image formats are supported:
 @item Lagarith               @tab     @tab  X
 @item LCL (LossLess Codec Library) MSZH  @tab     @tab  X
 @item LCL (LossLess Codec Library) ZLIB  @tab  E  @tab  E
+@item LEAD MCMP              @tab     @tab  X
 @item LOCO                   @tab     @tab  X
 @item LucasArts SANM/Smush   @tab     @tab  X
     @tab Used in LucasArts games / SMUSH animations.

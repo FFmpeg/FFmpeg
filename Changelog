@@ -1,6 +1,9 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version <next>:
+- LEAD MCMP decoder
+
 version 6.1:
 - libaribcaption decoder
 - Playdate video decoder and demuxer
