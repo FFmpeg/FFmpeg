@@ -77,12 +77,16 @@ The following options are supported by the libdav1d wrapper.
 @item framethreads
 Set amount of frame threads to use during decoding. The default value is 0 (autodetect).
 This option is deprecated for libdav1d >= 1.0 and will be removed in the future. Use the
-global option @code{threads} instead.
+option @code{max_frame_delay} and the global option @code{threads} instead.
 
 @item tilethreads
 Set amount of tile threads to use during decoding. The default value is 0 (autodetect).
 This option is deprecated for libdav1d >= 1.0 and will be removed in the future. Use the
 global option @code{threads} instead.
+
+@item max_frame_delay
+Set max amount of frames the decoder may buffer internally. The default value is 0
+(autodetect).
 
 @item filmgrain
 Apply film grain to the decoded video if present in the bitstream. Defaults to the
