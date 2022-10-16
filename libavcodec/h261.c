@@ -30,9 +30,9 @@
 
 #define IS_FIL(a)    ((a) & MB_TYPE_H261_FIL)
 
-static void h261_loop_filter(uint8_t *src, int stride)
+static void h261_loop_filter(uint8_t *src, ptrdiff_t stride)
 {
-    int x, y, xy, yz;
+    int x, y;
     int temp[64];
 
     for (x = 0; x < 8; x++) {
@@ -41,8 +41,8 @@ static void h261_loop_filter(uint8_t *src, int stride)
     }
     for (y = 1; y < 7; y++) {
         for (x = 0; x < 8; x++) {
-            xy       = y * stride + x;
-            yz       = y * 8      + x;
+            ptrdiff_t xy = y * stride + x;
+            ptrdiff_t yz = y * 8      + x;
             temp[yz] = src[xy - stride] + 2 * src[xy] + src[xy + stride];
         }
     }
@@ -51,8 +51,8 @@ static void h261_loop_filter(uint8_t *src, int stride)
         src[y * stride]     = (temp[y * 8]     + 2) >> 2;
         src[y * stride + 7] = (temp[y * 8 + 7] + 2) >> 2;
         for (x = 1; x < 7; x++) {
-            xy      = y * stride + x;
-            yz      = y * 8      + x;
+            ptrdiff_t xy = y * stride + x;
+            ptrdiff_t yz = y * 8      + x;
             src[xy] = (temp[yz - 1] + 2 * temp[yz] + temp[yz + 1] + 8) >> 4;
         }
     }
@@ -61,8 +61,8 @@ static void h261_loop_filter(uint8_t *src, int stride)
 void ff_h261_loop_filter(MpegEncContext *s)
 {
     H261Context *const h = s->private_ctx;
-    const int linesize   = s->linesize;
-    const int uvlinesize = s->uvlinesize;
+    const ptrdiff_t linesize   = s->linesize;
+    const ptrdiff_t uvlinesize = s->uvlinesize;
     uint8_t *dest_y      = s->dest[0];
     uint8_t *dest_cb     = s->dest[1];
     uint8_t *dest_cr     = s->dest[2];
