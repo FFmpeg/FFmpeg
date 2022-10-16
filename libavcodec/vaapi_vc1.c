@@ -457,8 +457,6 @@ static int vaapi_vc1_end_frame(AVCodecContext *avctx)
     if (ret < 0)
         goto fail;
 
-    ff_mpeg_draw_horiz_band(s, 0, s->avctx->height);
-
 fail:
     return ret;
 }
