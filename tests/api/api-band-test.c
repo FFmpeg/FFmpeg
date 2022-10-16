@@ -106,6 +106,11 @@ static int video_decode(const char *input_filename)
         return -1;
     }
 
+    if (strcmp(codec->name, "flv") && strcmp(codec->name, "mpeg4") && strcmp(codec->name, "huffyuv")) {
+        av_log(NULL, AV_LOG_ERROR, "Wrong codec\n");
+        return -1;
+    }
+
     ctx = avcodec_alloc_context3(codec);
     if (!ctx) {
         av_log(NULL, AV_LOG_ERROR, "Can't allocate decoder context\n");
@@ -137,11 +142,6 @@ static int video_decode(const char *input_filename)
     if (!pkt) {
         av_log(NULL, AV_LOG_ERROR, "Cannot allocate packet\n");
         return AVERROR(ENOMEM);
-    }
-
-    if (strcmp(codec->name, "flv") && strcmp(codec->name, "mpeg4") && strcmp(codec->name, "huffyuv")) {
-        av_log(NULL, AV_LOG_ERROR, "Wrong codec\n");
-        return -1;
     }
 
     byte_buffer_size = av_image_get_buffer_size(ctx->pix_fmt, ctx->width, ctx->height, 32);
