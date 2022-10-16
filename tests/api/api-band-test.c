@@ -31,7 +31,6 @@
 #include "libavutil/imgutils.h"
 
 uint8_t *slice_byte_buffer;
-uint8_t slice_byte_buffer_size;
 int draw_horiz_band_called;
 
 static void draw_horiz_band(AVCodecContext *ctx, const AVFrame *fr, int offset[4],
@@ -158,7 +157,6 @@ static int video_decode(const char *input_filename)
         return AVERROR(ENOMEM);
     }
     memset(slice_byte_buffer, 0, byte_buffer_size);
-    slice_byte_buffer_size = byte_buffer_size;
 
     result = 0;
     while (result >= 0) {
