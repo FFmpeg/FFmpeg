@@ -310,7 +310,7 @@ static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
     FFAMediaFormat *format = NULL;
     MediaCodecH264DecContext *s = avctx->priv_data;
 
-    format = ff_AMediaFormat_new();
+    format = ff_AMediaFormat_new(0);
     if (!format) {
         av_log(avctx, AV_LOG_ERROR, "Failed to create media format\n");
         ret = AVERROR_EXTERNAL;

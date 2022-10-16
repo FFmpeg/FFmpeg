@@ -613,7 +613,7 @@ int ff_mediacodec_dec_init(AVCodecContext *avctx, MediaCodecDecContext *s,
     }
 
     av_log(avctx, AV_LOG_DEBUG, "Found decoder %s\n", s->codec_name);
-    s->codec = ff_AMediaCodec_createCodecByName(s->codec_name);
+    s->codec = ff_AMediaCodec_createCodecByName(s->codec_name, 0);
     if (!s->codec) {
         av_log(avctx, AV_LOG_ERROR, "Failed to create media decoder for type %s and name %s\n", mime, s->codec_name);
         ret = AVERROR_EXTERNAL;

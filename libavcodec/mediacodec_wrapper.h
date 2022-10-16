@@ -80,7 +80,7 @@ struct FFAMediaFormat {
     void (*setBuffer)(FFAMediaFormat* format, const char* name, void* data, size_t size);
 };
 
-FFAMediaFormat *ff_AMediaFormat_new(void);
+FFAMediaFormat *ff_AMediaFormat_new(int ndk);
 
 static inline int ff_AMediaFormat_delete(FFAMediaFormat* format)
 {
@@ -198,9 +198,9 @@ static inline char *ff_AMediaCodec_getName(FFAMediaCodec *codec)
     return codec->getName(codec);
 }
 
-FFAMediaCodec* ff_AMediaCodec_createCodecByName(const char *name);
-FFAMediaCodec* ff_AMediaCodec_createDecoderByType(const char *mime_type);
-FFAMediaCodec* ff_AMediaCodec_createEncoderByType(const char *mime_type);
+FFAMediaCodec* ff_AMediaCodec_createCodecByName(const char *name, int ndk);
+FFAMediaCodec* ff_AMediaCodec_createDecoderByType(const char *mime_type, int ndk);
+FFAMediaCodec* ff_AMediaCodec_createEncoderByType(const char *mime_type, int ndk);
 
 static inline int ff_AMediaCodec_configure(FFAMediaCodec* codec, const FFAMediaFormat* format, void* surface, void *crypto, uint32_t flags)
 {
