@@ -70,6 +70,7 @@ typedef struct MediaCodecDecContext {
     bool delay_flush;
     atomic_int serial;
 
+    bool use_ndk_codec;
 } MediaCodecDecContext;
 
 int ff_mediacodec_dec_init(AVCodecContext *avctx,

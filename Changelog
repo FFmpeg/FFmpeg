@@ -20,6 +20,7 @@ version <next>:
 - ViewQuest VQC decoder
 - backgroundkey filter
 - nvenc AV1 encoding support
+- MediaCodec decoder via NDKMediaCodec
 
 
 version 5.1:

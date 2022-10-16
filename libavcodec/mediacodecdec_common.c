@@ -608,12 +608,27 @@ int ff_mediacodec_dec_init(AVCodecContext *avctx, MediaCodecDecContext *s,
 
     s->codec_name = ff_AMediaCodecList_getCodecNameByType(mime, profile, 0, avctx);
     if (!s->codec_name) {
-        ret = AVERROR_EXTERNAL;
-        goto fail;
+        // getCodecNameByType() can fail due to missing JVM, while NDK
+        // mediacodec can be used without JVM.
+        if (!s->use_ndk_codec) {
+            ret = AVERROR_EXTERNAL;
+            goto fail;
+        }
+        av_log(avctx, AV_LOG_INFO, "Failed to getCodecNameByType\n");
+    } else {
+        av_log(avctx, AV_LOG_DEBUG, "Found decoder %s\n", s->codec_name);
     }
 
-    av_log(avctx, AV_LOG_DEBUG, "Found decoder %s\n", s->codec_name);
-    s->codec = ff_AMediaCodec_createCodecByName(s->codec_name, 0);
+    if (s->codec_name)
+        s->codec = ff_AMediaCodec_createCodecByName(s->codec_name, s->use_ndk_codec);
+    else {
+        s->codec = ff_AMediaCodec_createDecoderByType(mime, s->use_ndk_codec);
+        if (s->codec) {
+            s->codec_name = ff_AMediaCodec_getName(s->codec);
+            if (!s->codec_name)
+                s->codec_name = av_strdup(mime);
+        }
+    }
     if (!s->codec) {
         av_log(avctx, AV_LOG_ERROR, "Failed to create media decoder for type %s and name %s\n", mime, s->codec_name);
         ret = AVERROR_EXTERNAL;

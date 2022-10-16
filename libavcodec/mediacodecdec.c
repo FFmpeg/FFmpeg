@@ -40,6 +40,7 @@
 #include "hevc_parse.h"
 #include "hwconfig.h"
 #include "internal.h"
+#include "jni.h"
 #include "mediacodec_wrapper.h"
 #include "mediacodecdec_common.h"
 
@@ -54,6 +55,7 @@ typedef struct MediaCodecH264DecContext {
     int delay_flush;
     int amlogic_mpeg2_api23_workaround;
 
+    int use_ndk_codec;
 } MediaCodecH264DecContext;
 
 static av_cold int mediacodec_decode_close(AVCodecContext *avctx)
@@ -310,7 +312,10 @@ static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
     FFAMediaFormat *format = NULL;
     MediaCodecH264DecContext *s = avctx->priv_data;
 
-    format = ff_AMediaFormat_new(0);
+    if (s->use_ndk_codec < 0)
+        s->use_ndk_codec = !av_jni_get_java_vm(avctx);
+
+    format = ff_AMediaFormat_new(s->use_ndk_codec);
     if (!format) {
         av_log(avctx, AV_LOG_ERROR, "Failed to create media format\n");
         ret = AVERROR_EXTERNAL;
@@ -388,6 +393,7 @@ static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
     }
 
     s->ctx->delay_flush = s->delay_flush;
+    s->ctx->use_ndk_codec = s->use_ndk_codec;
 
     if ((ret = ff_mediacodec_dec_init(avctx, s->ctx, codec_mime, format)) < 0) {
         s->ctx = NULL;
@@ -528,6 +534,8 @@ static const AVCodecHWConfigInternal *const mediacodec_hw_configs[] = {
 static const AVOption ff_mediacodec_vdec_options[] = {
     { "delay_flush", "Delay flush until hw output buffers are returned to the decoder",
                      OFFSET(delay_flush), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, VD },
+    { "ndk_codec", "Use MediaCodec from NDK",
+                   OFFSET(use_ndk_codec), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VD },
     { NULL }
 };
 
