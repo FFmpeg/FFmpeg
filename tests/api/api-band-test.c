@@ -106,8 +106,8 @@ static int video_decode(const char *input_filename)
         return -1;
     }
 
-    if (strcmp(codec->name, "flv") && strcmp(codec->name, "mpeg4") && strcmp(codec->name, "huffyuv")) {
-        av_log(NULL, AV_LOG_ERROR, "Wrong codec\n");
+    if (!(codec->capabilities & AV_CODEC_CAP_DRAW_HORIZ_BAND)) {
+        av_log(NULL, AV_LOG_ERROR, "Codec does not support draw_horiz_band\n");
         return -1;
     }
 
@@ -222,7 +222,7 @@ int main(int argc, char **argv)
 {
     if (argc < 2)
     {
-        av_log(NULL, AV_LOG_ERROR, "Incorrect input: expected %s <name of a video file>\nNote that test works only for huffyuv, flv and mpeg4 decoders\n", argv[0]);
+        av_log(NULL, AV_LOG_ERROR, "Incorrect input: expected %s <name of a video file>\n", argv[0]);
         return 1;
     }
 
