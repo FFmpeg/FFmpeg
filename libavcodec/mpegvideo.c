@@ -1584,16 +1584,16 @@ void ff_init_block_index(MpegEncContext *s){ //FIXME maybe rename
     s->dest[1] = s->current_picture.f->data[1] + (int)((s->mb_x - 1U) << (width_of_mb - s->chroma_x_shift));
     s->dest[2] = s->current_picture.f->data[2] + (int)((s->mb_x - 1U) << (width_of_mb - s->chroma_x_shift));
 
-        if(s->picture_structure==PICT_FRAME){
+    if (s->picture_structure == PICT_FRAME) {
         s->dest[0] += s->mb_y *   linesize << height_of_mb;
         s->dest[1] += s->mb_y * uvlinesize << (height_of_mb - s->chroma_y_shift);
         s->dest[2] += s->mb_y * uvlinesize << (height_of_mb - s->chroma_y_shift);
-        }else{
-            s->dest[0] += (s->mb_y>>1) *   linesize << height_of_mb;
-            s->dest[1] += (s->mb_y>>1) * uvlinesize << (height_of_mb - s->chroma_y_shift);
-            s->dest[2] += (s->mb_y>>1) * uvlinesize << (height_of_mb - s->chroma_y_shift);
-            av_assert1((s->mb_y&1) == (s->picture_structure == PICT_BOTTOM_FIELD));
-        }
+    } else {
+        s->dest[0] += (s->mb_y>>1) *   linesize << height_of_mb;
+        s->dest[1] += (s->mb_y>>1) * uvlinesize << (height_of_mb - s->chroma_y_shift);
+        s->dest[2] += (s->mb_y>>1) * uvlinesize << (height_of_mb - s->chroma_y_shift);
+        av_assert1((s->mb_y&1) == (s->picture_structure == PICT_BOTTOM_FIELD));
+    }
 }
 
 /**
