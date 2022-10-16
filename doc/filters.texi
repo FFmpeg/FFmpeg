@@ -1562,6 +1562,12 @@ Apply whisper effect:
 @example
 afftfilt="real='hypot(re,im)*cos((random(0)*2-1)*2*3.14)':imag='hypot(re,im)*sin((random(1)*2-1)*2*3.14)':win_size=128:overlap=0.8"
 @end example
+
+@item
+Apply phase shift:
+@example
+afftfilt="real=re*cos(1)-im*sin(1):imag=re*sin(1)+im*cos(1)"
+@end example
 @end itemize
 
 @anchor{afir}
