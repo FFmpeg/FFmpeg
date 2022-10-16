@@ -83,6 +83,12 @@ typedef struct MPEG12EncContext {
     int a53_cc;
     int seq_disp_ext;
     int video_format;
+#define VIDEO_FORMAT_COMPONENT   0
+#define VIDEO_FORMAT_PAL         1
+#define VIDEO_FORMAT_NTSC        2
+#define VIDEO_FORMAT_SECAM       3
+#define VIDEO_FORMAT_MAC         4
+#define VIDEO_FORMAT_UNSPECIFIED 5
 } MPEG12EncContext;
 
 #define A53_MAX_CC_COUNT 0x1f

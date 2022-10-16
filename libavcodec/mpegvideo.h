@@ -445,12 +445,6 @@ typedef struct MpegEncContext {
     int brd_scale;
     int intra_vlc_format;
     int alternate_scan;
-#define VIDEO_FORMAT_COMPONENT   0
-#define VIDEO_FORMAT_PAL         1
-#define VIDEO_FORMAT_NTSC        2
-#define VIDEO_FORMAT_SECAM       3
-#define VIDEO_FORMAT_MAC         4
-#define VIDEO_FORMAT_UNSPECIFIED 5
     int repeat_first_field;
     int chroma_420_type;
     int chroma_format;
