@@ -53,9 +53,14 @@ void ff_draw_horiz_band(AVCodecContext *avctx,
                         int y, int h, int picture_structure,
                         int first_field, int low_delay)
 {
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
-    int vshift = desc->log2_chroma_h;
     const int field_pic = picture_structure != PICT_FRAME;
+    const AVFrame *src;
+    int offset[AV_NUM_DATA_POINTERS];
+    int i;
+
+    if (!avctx->draw_horiz_band)
+        return;
+
     if (field_pic) {
         h <<= 1;
         y <<= 1;
@@ -66,11 +71,6 @@ void ff_draw_horiz_band(AVCodecContext *avctx,
     if (field_pic && first_field &&
         !(avctx->slice_flags & SLICE_FLAG_ALLOW_FIELD))
         return;
-
-    if (avctx->draw_horiz_band) {
-        const AVFrame *src;
-        int offset[AV_NUM_DATA_POINTERS];
-        int i;
 
         if (cur->pict_type == AV_PICTURE_TYPE_B || low_delay ||
            (avctx->slice_flags & SLICE_FLAG_CODED_ORDER))
@@ -86,6 +86,9 @@ void ff_draw_horiz_band(AVCodecContext *avctx,
             for (i = 0; i < AV_NUM_DATA_POINTERS; i++)
                 offset[i] = 0;
         } else {
+            const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
+            int vshift = desc->log2_chroma_h;
+
             offset[0]= y * src->linesize[0];
             offset[1]=
             offset[2]= (y >> vshift) * src->linesize[1];
@@ -97,7 +100,6 @@ void ff_draw_horiz_band(AVCodecContext *avctx,
 
         avctx->draw_horiz_band(avctx, src, offset,
                                y, picture_structure, h);
-    }
 }
 
 static char get_type_mv_char(int mb_type)
