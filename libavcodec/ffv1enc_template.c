@@ -20,6 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "ffv1_template.c"
+
 static av_always_inline int RENAME(encode_line)(FFV1Context *s, int w,
                                                 TYPE *sample[3],
                                                 int plane_index, int bits)
