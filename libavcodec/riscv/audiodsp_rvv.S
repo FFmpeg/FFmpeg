@@ -21,7 +21,7 @@
 #include "libavutil/riscv/asm.S"
 
 func ff_scalarproduct_int16_rvv, zve32x
-        vsetivli    zero, 1, e16, m1, ta, ma
+        vsetivli    zero, 1, e32, m1, ta, ma
         vmv.s.x     v8, zero
 1:
         vsetvli     t0, a2, e16, m1, ta, ma
