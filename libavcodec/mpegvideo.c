@@ -1337,7 +1337,7 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
         qpel_mc_func (*op_qpix)[16];
         const int linesize   = s->current_picture.f->linesize[0]; //not s->linesize as this would be wrong for field pics
         const int uvlinesize = s->current_picture.f->linesize[1];
-        const int readable = s->pict_type != AV_PICTURE_TYPE_B || IS_ENCODER(s) || s->avctx->draw_horiz_band || lowres_flag;
+        const int readable = s->pict_type != AV_PICTURE_TYPE_B || IS_ENCODER(s) || lowres_flag;
         const int block_size= lowres_flag ? 8>>s->avctx->lowres : 8;
 
         /* avoid copy if macroblock skipped in last frame too */
@@ -1584,8 +1584,6 @@ void ff_init_block_index(MpegEncContext *s){ //FIXME maybe rename
     s->dest[1] = s->current_picture.f->data[1] + (int)((s->mb_x - 1U) << (width_of_mb - s->chroma_x_shift));
     s->dest[2] = s->current_picture.f->data[2] + (int)((s->mb_x - 1U) << (width_of_mb - s->chroma_x_shift));
 
-    if(!(s->pict_type==AV_PICTURE_TYPE_B && s->avctx->draw_horiz_band && s->picture_structure==PICT_FRAME))
-    {
         if(s->picture_structure==PICT_FRAME){
         s->dest[0] += s->mb_y *   linesize << height_of_mb;
         s->dest[1] += s->mb_y * uvlinesize << (height_of_mb - s->chroma_y_shift);
@@ -1596,7 +1594,6 @@ void ff_init_block_index(MpegEncContext *s){ //FIXME maybe rename
             s->dest[2] += (s->mb_y>>1) * uvlinesize << (height_of_mb - s->chroma_y_shift);
             av_assert1((s->mb_y&1) == (s->picture_structure == PICT_BOTTOM_FIELD));
         }
-    }
 }
 
 /**
