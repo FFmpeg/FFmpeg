@@ -56,7 +56,6 @@ void ff_draw_horiz_band(AVCodecContext *avctx,
     const int field_pic = picture_structure != PICT_FRAME;
     const AVFrame *src;
     int offset[AV_NUM_DATA_POINTERS];
-    int i;
 
     if (!avctx->draw_horiz_band)
         return;
@@ -72,34 +71,34 @@ void ff_draw_horiz_band(AVCodecContext *avctx,
         !(avctx->slice_flags & SLICE_FLAG_ALLOW_FIELD))
         return;
 
-        if (cur->pict_type == AV_PICTURE_TYPE_B || low_delay ||
-           (avctx->slice_flags & SLICE_FLAG_CODED_ORDER))
-            src = cur;
-        else if (last)
-            src = last;
-        else
-            return;
+    if (cur->pict_type == AV_PICTURE_TYPE_B || low_delay ||
+        (avctx->slice_flags & SLICE_FLAG_CODED_ORDER))
+        src = cur;
+    else if (last)
+        src = last;
+    else
+        return;
 
-        if (cur->pict_type == AV_PICTURE_TYPE_B &&
-            picture_structure == PICT_FRAME &&
-            avctx->codec_id != AV_CODEC_ID_SVQ3) {
-            for (i = 0; i < AV_NUM_DATA_POINTERS; i++)
-                offset[i] = 0;
-        } else {
-            const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
-            int vshift = desc->log2_chroma_h;
+    if (cur->pict_type == AV_PICTURE_TYPE_B &&
+        picture_structure == PICT_FRAME &&
+        avctx->codec_id != AV_CODEC_ID_SVQ3) {
+        for (int i = 0; i < AV_NUM_DATA_POINTERS; i++)
+            offset[i] = 0;
+    } else {
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
+        int vshift = desc->log2_chroma_h;
 
-            offset[0]= y * src->linesize[0];
-            offset[1]=
-            offset[2]= (y >> vshift) * src->linesize[1];
-            for (i = 3; i < AV_NUM_DATA_POINTERS; i++)
-                offset[i] = 0;
-        }
+        offset[0] = y * src->linesize[0];
+        offset[1] =
+        offset[2] = (y >> vshift) * src->linesize[1];
+        for (int i = 3; i < AV_NUM_DATA_POINTERS; i++)
+            offset[i] = 0;
+    }
 
-        emms_c();
+    emms_c();
 
-        avctx->draw_horiz_band(avctx, src, offset,
-                               y, picture_structure, h);
+    avctx->draw_horiz_band(avctx, src, offset,
+                            y, picture_structure, h);
 }
 
 static char get_type_mv_char(int mb_type)
