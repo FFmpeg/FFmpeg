@@ -689,6 +689,8 @@ extern int input_stream_potentially_available;
 extern int ignore_unknown_streams;
 extern int copy_unknown_streams;
 
+extern int recast_media;
+
 #if FFMPEG_OPT_PSNR
 extern int do_psnr;
 #endif
@@ -755,6 +757,8 @@ void of_output_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost, int eof)
 int64_t of_filesize(OutputFile *of);
 AVChapter * const *
 of_get_chapters(OutputFile *of, unsigned int *nb_chapters);
+
+int ifile_open(OptionsContext *o, const char *filename);
 
 /**
  * Get next input packet from the demuxer.
