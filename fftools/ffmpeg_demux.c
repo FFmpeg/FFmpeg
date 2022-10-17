@@ -63,6 +63,9 @@ typedef struct Demuxer {
     /* time base of the duration */
     AVRational time_base;
 
+    /* number of streams that the user was warned of */
+    int nb_streams_warn;
+
     AVThreadMessageQueue *in_thread_queue;
     int                   thread_queue_size;
     pthread_t             thread;
@@ -82,18 +85,18 @@ static Demuxer *demuxer_from_ifile(InputFile *f)
     return (Demuxer*)f;
 }
 
-static void report_new_stream(InputFile *file, const AVPacket *pkt)
+static void report_new_stream(Demuxer *d, const AVPacket *pkt)
 {
-    AVStream *st = file->ctx->streams[pkt->stream_index];
+    AVStream *st = d->f.ctx->streams[pkt->stream_index];
 
-    if (pkt->stream_index < file->nb_streams_warn)
+    if (pkt->stream_index < d->nb_streams_warn)
         return;
     av_log(NULL, AV_LOG_WARNING,
            "New %s stream %d:%d at pos:%"PRId64" and DTS:%ss\n",
            av_get_media_type_string(st->codecpar->codec_type),
-           file->index, pkt->stream_index,
+           d->f.index, pkt->stream_index,
            pkt->pos, av_ts2timestr(pkt->dts, &st->time_base));
-    file->nb_streams_warn = pkt->stream_index + 1;
+    d->nb_streams_warn = pkt->stream_index + 1;
 }
 
 static void ifile_duration_update(Demuxer *d, InputStream *ist,
@@ -280,7 +283,7 @@ static void *input_thread(void *arg)
         /* the following test is needed in case new streams appear
            dynamically in stream : we ignore them */
         if (pkt->stream_index >= f->nb_streams) {
-            report_new_stream(f, pkt);
+            report_new_stream(d, pkt);
             av_packet_unref(pkt);
             continue;
         }
