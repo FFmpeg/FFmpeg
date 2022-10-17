@@ -803,15 +803,9 @@ void free_input_threads(void);
     }\
 }
 
-extern const char * const opt_name_audio_channels[];
-extern const char * const opt_name_audio_ch_layouts[];
-extern const char * const opt_name_audio_sample_rate[];
 extern const char * const opt_name_codec_names[];
 extern const char * const opt_name_codec_tags[];
 extern const char * const opt_name_frame_rates[];
-extern const char * const opt_name_frame_sizes[];
-extern const char * const opt_name_frame_pix_fmts[];
-extern const char * const opt_name_sample_fmts[];
 extern const char * const opt_name_top_field_first[];
 
 #endif /* FFTOOLS_FFMPEG_H */

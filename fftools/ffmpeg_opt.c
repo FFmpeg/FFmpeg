@@ -53,19 +53,13 @@
 #include "libavutil/pixfmt.h"
 
 const char *const opt_name_codec_names[]                      = {"c", "codec", "acodec", "vcodec", "scodec", "dcodec", NULL};
-const char *const opt_name_audio_channels[]                   = {"ac", NULL};
-const char *const opt_name_audio_ch_layouts[]                 = {"channel_layout", "ch_layout", NULL};
-const char *const opt_name_audio_sample_rate[]                = {"ar", NULL};
 const char *const opt_name_frame_rates[]                      = {"r", NULL};
-const char *const opt_name_frame_sizes[]                      = {"s", NULL};
-const char *const opt_name_frame_pix_fmts[]                   = {"pix_fmt", NULL};
 static const char *const opt_name_ts_scale[]                  = {"itsscale", NULL};
 static const char *const opt_name_hwaccels[]                  = {"hwaccel", NULL};
 static const char *const opt_name_hwaccel_devices[]           = {"hwaccel_device", NULL};
 static const char *const opt_name_hwaccel_output_formats[]    = {"hwaccel_output_format", NULL};
 static const char *const opt_name_autorotate[]                = {"autorotate", NULL};
 const char *const opt_name_codec_tags[]                       = {"tag", "atag", "vtag", "stag", NULL};
-const char *const opt_name_sample_fmts[]                      = {"sample_fmt", NULL};
 const char *const opt_name_top_field_first[]                  = {"top", NULL};
 static const char *const opt_name_reinit_filters[]            = {"reinit_filter", NULL};
 static const char *const opt_name_fix_sub_duration[]          = {"fix_sub_duration", NULL};
