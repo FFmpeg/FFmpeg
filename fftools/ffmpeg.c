@@ -3912,9 +3912,6 @@ static int transcode(void)
 
     timer_start = av_gettime_relative();
 
-    if ((ret = init_input_threads()) < 0)
-        goto fail;
-
     while (!received_sigterm) {
         int64_t cur_time= av_gettime_relative();
 

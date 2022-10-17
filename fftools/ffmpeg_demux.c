@@ -346,11 +346,10 @@ void free_input_threads(void)
         free_input_thread(i);
 }
 
-static int init_input_thread(int i)
+static int thread_start(Demuxer *d)
 {
     int ret;
-    InputFile *f = input_files[i];
-    Demuxer   *d = demuxer_from_ifile(f);
+    InputFile *f = &d->f;
 
     if (f->thread_queue_size <= 0)
         f->thread_queue_size = (nb_input_files > 1 ? 8 : 1);
@@ -393,23 +392,18 @@ fail:
     return ret;
 }
 
-int init_input_threads(void)
-{
-    int i, ret;
-
-    for (i = 0; i < nb_input_files; i++) {
-        ret = init_input_thread(i);
-        if (ret < 0)
-            return ret;
-    }
-    return 0;
-}
-
 int ifile_get_packet(InputFile *f, AVPacket **pkt)
 {
+    Demuxer *d = demuxer_from_ifile(f);
     InputStream *ist;
     DemuxMsg msg;
     int ret;
+
+    if (!f->in_thread_queue) {
+        ret = thread_start(d);
+        if (ret < 0)
+            return ret;
+    }
 
     if (f->readrate || f->rate_emu) {
         int i;

@@ -770,7 +770,6 @@ int ifile_open(OptionsContext *o, const char *filename);
  * - a negative error code on failure
  */
 int ifile_get_packet(InputFile *f, AVPacket **pkt);
-int init_input_threads(void);
 void free_input_threads(void);
 
 #define SPECIFIER_OPT_FMT_str  "%s"
