@@ -212,6 +212,9 @@ struct JNIAMediaCodecFields {
     jmethodID release_output_buffer_id;
     jmethodID release_output_buffer_at_time_id;
 
+    jmethodID set_input_surface_id;
+    jmethodID signal_end_of_input_stream_id;
+
     jclass mediainfo_class;
 
     jmethodID init_id;
@@ -260,6 +263,9 @@ static const struct FFJniField jni_amediacodec_mapping[] = {
         { "android/media/MediaCodec", "getOutputBuffers", "()[Ljava/nio/ByteBuffer;", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, get_output_buffers_id), 1 },
         { "android/media/MediaCodec", "releaseOutputBuffer", "(IZ)V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, release_output_buffer_id), 1 },
         { "android/media/MediaCodec", "releaseOutputBuffer", "(IJ)V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, release_output_buffer_at_time_id), 0 },
+
+        { "android/media/MediaCodec", "setInputSurface", "(Landroid/view/Surface;)V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, set_input_surface_id), 0 },
+        { "android/media/MediaCodec", "signalEndOfInputStream", "()V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, signal_end_of_input_stream_id), 0 },
 
     { "android/media/MediaCodec$BufferInfo", NULL, NULL, FF_JNI_CLASS, offsetof(struct JNIAMediaCodecFields, mediainfo_class), 1 },
 
@@ -1385,7 +1391,26 @@ static int mediacodec_jni_configure(FFAMediaCodec *ctx,
 
     JNI_GET_ENV_OR_RETURN(env, codec, AVERROR_EXTERNAL);
 
-    (*env)->CallVoidMethod(env, codec->object, codec->jfields.configure_id, format->object, surface, NULL, flags);
+    if (flags & codec->CONFIGURE_FLAG_ENCODE) {
+        if (surface && !codec->jfields.set_input_surface_id) {
+            av_log(ctx, AV_LOG_ERROR, "System doesn't support setInputSurface\n");
+            return AVERROR_EXTERNAL;
+        }
+
+        (*env)->CallVoidMethod(env, codec->object, codec->jfields.configure_id, format->object, NULL, NULL, flags);
+        if (ff_jni_exception_check(env, 1, codec) < 0)
+            return AVERROR_EXTERNAL;
+
+        if (!surface)
+            return 0;
+
+        (*env)->CallVoidMethod(env, codec->object, codec->jfields.set_input_surface_id, surface);
+        if (ff_jni_exception_check(env, 1, codec) < 0)
+            return AVERROR_EXTERNAL;
+        return 0;
+    } else {
+        (*env)->CallVoidMethod(env, codec->object, codec->jfields.configure_id, format->object, surface, NULL, flags);
+    }
     if (ff_jni_exception_check(env, 1, codec) < 0) {
         ret = AVERROR_EXTERNAL;
         goto fail;
@@ -1743,6 +1768,21 @@ fail:
     return ret;
 }
 
+static int mediacodec_jni_signalEndOfInputStream(FFAMediaCodec *ctx)
+{
+    JNIEnv *env = NULL;
+    FFAMediaCodecJni *codec = (FFAMediaCodecJni *)ctx;
+
+    JNI_GET_ENV_OR_RETURN(env, codec, AVERROR_EXTERNAL);
+
+    (*env)->CallVoidMethod(env, codec->object, codec->jfields.signal_end_of_input_stream_id);
+    if (ff_jni_exception_check(env, 1, codec) < 0) {
+        return AVERROR_EXTERNAL;
+    }
+
+    return 0;
+}
+
 static const FFAMediaFormat media_format_jni = {
     .class = &amediaformat_class,
 
@@ -1801,6 +1841,7 @@ static const FFAMediaCodec media_codec_jni = {
 
     .getConfigureFlagEncode = mediacodec_jni_getConfigureFlagEncode,
     .cleanOutputBuffers = mediacodec_jni_cleanOutputBuffers,
+    .signalEndOfInputStream = mediacodec_jni_signalEndOfInputStream,
 };
 
 typedef struct FFAMediaFormatNdk {
@@ -1866,6 +1907,10 @@ typedef struct FFAMediaCodecNdk {
     // Available since API level 28.
     media_status_t (*getName)(AMediaCodec*, char** out_name);
     void (*releaseName)(AMediaCodec*, char* name);
+
+    // Available since API level 26.
+    media_status_t (*setInputSurface)(AMediaCodec*, ANativeWindow *);
+    media_status_t (*signalEndOfInputStream)(AMediaCodec *);
 } FFAMediaCodecNdk;
 
 static const FFAMediaFormat media_format_ndk;
@@ -2098,6 +2143,9 @@ static inline FFAMediaCodec *ndk_codec_create(int method, const char *arg) {
     GET_SYMBOL(getName, 0)
     GET_SYMBOL(releaseName, 0)
 
+    GET_SYMBOL(setInputSurface, 0)
+    GET_SYMBOL(signalEndOfInputStream, 0)
+
 #undef GET_SYMBOL
 
     switch (method) {
@@ -2184,10 +2232,32 @@ static int mediacodec_ndk_configure(FFAMediaCodec* ctx,
         return AVERROR(EINVAL);
     }
 
-    status = codec->configure(codec->impl, format->impl, native_window, NULL, flags);
-    if (status != AMEDIA_OK) {
-        av_log(codec, AV_LOG_ERROR, "configure failed, %d\n", status);
-        return AVERROR_EXTERNAL;
+    if (flags & AMEDIACODEC_CONFIGURE_FLAG_ENCODE) {
+        if (native_window && !codec->setInputSurface) {
+            av_log(ctx, AV_LOG_ERROR, "System doesn't support setInputSurface\n");
+            return AVERROR_EXTERNAL;
+        }
+
+        status = codec->configure(codec->impl, format->impl, NULL, NULL, flags);
+        if (status != AMEDIA_OK) {
+            av_log(codec, AV_LOG_ERROR, "Encoder configure failed, %d\n", status);
+            return AVERROR_EXTERNAL;
+        }
+
+        if (!native_window)
+            return 0;
+
+        status = codec->setInputSurface(codec->impl, native_window);
+        if (status != AMEDIA_OK) {
+            av_log(codec, AV_LOG_ERROR, "Encoder set input surface failed, %d\n", status);
+            return AVERROR_EXTERNAL;
+        }
+    } else {
+        status = codec->configure(codec->impl, format->impl, native_window, NULL, flags);
+        if (status != AMEDIA_OK) {
+            av_log(codec, AV_LOG_ERROR, "Decoder configure failed, %d\n", status);
+            return AVERROR_EXTERNAL;
+        }
     }
 
     return 0;
@@ -2330,6 +2400,26 @@ static int mediacodec_ndk_cleanOutputBuffers(FFAMediaCodec *ctx)
     return 0;
 }
 
+static int mediacodec_ndk_signalEndOfInputStream(FFAMediaCodec *ctx)
+{
+    FFAMediaCodecNdk *codec = (FFAMediaCodecNdk *)ctx;
+    media_status_t status;
+
+    if (!codec->signalEndOfInputStream) {
+        av_log(codec, AV_LOG_ERROR, "signalEndOfInputStream unavailable\n");
+        return AVERROR_EXTERNAL;
+    }
+
+    status = codec->signalEndOfInputStream(codec->impl);
+    if (status != AMEDIA_OK) {
+        av_log(codec, AV_LOG_ERROR, "signalEndOfInputStream failed, %d\n", status);
+        return AVERROR_EXTERNAL;
+    }
+    av_log(codec, AV_LOG_DEBUG, "signalEndOfInputStream success\n");
+
+    return 0;
+}
+
 static const FFAMediaFormat media_format_ndk = {
     .class = &amediaformat_ndk_class,
 
@@ -2388,6 +2478,7 @@ static const FFAMediaCodec media_codec_ndk = {
 
     .getConfigureFlagEncode = mediacodec_ndk_getConfigureFlagEncode,
     .cleanOutputBuffers = mediacodec_ndk_cleanOutputBuffers,
+    .signalEndOfInputStream = mediacodec_ndk_signalEndOfInputStream,
 };
 
 FFAMediaFormat *ff_AMediaFormat_new(int ndk)

@@ -192,6 +192,9 @@ struct FFAMediaCodec {
     int (*getConfigureFlagEncode)(FFAMediaCodec *codec);
 
     int (*cleanOutputBuffers)(FFAMediaCodec *codec);
+
+    // For encoder with FFANativeWindow as input.
+    int (*signalEndOfInputStream)(FFAMediaCodec *);
 };
 
 static inline char *ff_AMediaCodec_getName(FFAMediaCodec *codec)
@@ -309,6 +312,11 @@ static inline int ff_AMediaCodec_getConfigureFlagEncode(FFAMediaCodec *codec)
 static inline int ff_AMediaCodec_cleanOutputBuffers(FFAMediaCodec *codec)
 {
     return codec->cleanOutputBuffers(codec);
+}
+
+static inline int ff_AMediaCodec_signalEndOfInputStream(FFAMediaCodec *codec)
+{
+    return codec->signalEndOfInputStream(codec);
 }
 
 int ff_Build_SDK_INT(AVCodecContext *avctx);

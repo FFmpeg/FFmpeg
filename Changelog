@@ -21,6 +21,7 @@ version <next>:
 - backgroundkey filter
 - nvenc AV1 encoding support
 - MediaCodec decoder via NDKMediaCodec
+- MediaCodec encoder
 
 
 version 5.1:
