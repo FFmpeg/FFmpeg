@@ -441,9 +441,6 @@ typedef struct InputFile {
     int eof_reached;      /* true if eof reached */
     int eagain;           /* true if last read attempt returned EAGAIN */
     int ist_index;        /* index of first stream in input_streams */
-    int64_t duration;     /* actual duration of the longest stream in a file
-                             at the moment when looping happens */
-    AVRational time_base; /* time base of the duration */
     int64_t input_ts_offset;
     int input_sync_ref;
 

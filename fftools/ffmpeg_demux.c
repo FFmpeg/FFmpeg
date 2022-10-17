@@ -57,6 +57,11 @@ typedef struct Demuxer {
 
     /* number of times input stream should be looped */
     int loop;
+    /* actual duration of the longest stream in a file at the moment when
+     * looping happens */
+    int64_t duration;
+    /* time base of the duration */
+    AVRational time_base;
 
     AVThreadMessageQueue *in_thread_queue;
     int                   thread_queue_size;
@@ -91,7 +96,7 @@ static void report_new_stream(InputFile *file, const AVPacket *pkt)
     file->nb_streams_warn = pkt->stream_index + 1;
 }
 
-static void ifile_duration_update(InputFile *f, InputStream *ist,
+static void ifile_duration_update(Demuxer *d, InputStream *ist,
                                   int64_t last_duration)
 {
     /* the total duration of the stream, max_pts - min_pts is
@@ -100,11 +105,11 @@ static void ifile_duration_update(InputFile *f, InputStream *ist,
         ist->max_pts - (uint64_t)ist->min_pts < INT64_MAX - last_duration)
         last_duration += ist->max_pts - ist->min_pts;
 
-    if (!f->duration ||
-        av_compare_ts(f->duration, f->time_base,
+    if (!d->duration ||
+        av_compare_ts(d->duration, d->time_base,
                       last_duration, ist->st->time_base) < 0) {
-        f->duration = last_duration;
-        f->time_base = ist->st->time_base;
+        d->duration = last_duration;
+        d->time_base = ist->st->time_base;
     }
 }
 
@@ -133,7 +138,7 @@ static int seek_to_start(Demuxer *d)
             got_durations++;
 
             ist = input_streams[ifile->ist_index + dur.stream_idx];
-            ifile_duration_update(ifile, ist, dur.duration);
+            ifile_duration_update(d, ist, dur.duration);
         }
     } else {
         for (int i = 0; i < ifile->nb_streams; i++) {
@@ -148,7 +153,7 @@ static int seek_to_start(Demuxer *d)
                 duration = 1;
             }
 
-            ifile_duration_update(ifile, ist, duration);
+            ifile_duration_update(d, ist, duration);
         }
     }
 
@@ -158,8 +163,9 @@ static int seek_to_start(Demuxer *d)
     return ret;
 }
 
-static void ts_fixup(InputFile *ifile, AVPacket *pkt, int *repeat_pict)
+static void ts_fixup(Demuxer *d, AVPacket *pkt, int *repeat_pict)
 {
+    InputFile *ifile = &d->f;
     InputStream *ist = input_streams[ifile->ist_index + pkt->stream_index];
     const int64_t start_time = ifile->ctx->start_time;
     int64_t duration;
@@ -202,7 +208,7 @@ static void ts_fixup(InputFile *ifile, AVPacket *pkt, int *repeat_pict)
     if (pkt->dts != AV_NOPTS_VALUE)
         pkt->dts *= ist->ts_scale;
 
-    duration = av_rescale_q(ifile->duration, ifile->time_base, ist->st->time_base);
+    duration = av_rescale_q(d->duration, d->time_base, ist->st->time_base);
     if (pkt->pts != AV_NOPTS_VALUE) {
         pkt->pts += duration;
         ist->max_pts = FFMAX(pkt->pts, ist->max_pts);
@@ -290,7 +296,7 @@ static void *input_thread(void *arg)
             }
         }
 
-        ts_fixup(f, pkt, &msg.repeat_pict);
+        ts_fixup(d, pkt, &msg.repeat_pict);
 
         msg.pkt = av_packet_alloc();
         if (!msg.pkt) {
@@ -1011,8 +1017,8 @@ int ifile_open(OptionsContext *o, const char *filename)
     f->rate_emu   = o->rate_emu;
     f->accurate_seek = o->accurate_seek;
     d->loop = o->loop;
-    f->duration = 0;
-    f->time_base = (AVRational){ 1, 1 };
+    d->duration = 0;
+    d->time_base = (AVRational){ 1, 1 };
 
     f->readrate = o->readrate ? o->readrate : 0.0;
     if (f->readrate < 0.0f) {
