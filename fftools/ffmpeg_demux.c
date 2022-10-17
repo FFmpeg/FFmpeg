@@ -322,12 +322,12 @@ finish:
     return NULL;
 }
 
-static void free_input_thread(int i)
+static void thread_stop(Demuxer *d)
 {
-    InputFile *f = input_files[i];
+    InputFile *f = &d->f;
     DemuxMsg msg;
 
-    if (!f || !f->in_thread_queue)
+    if (!f->in_thread_queue)
         return;
     av_thread_message_queue_set_err_send(f->in_thread_queue, AVERROR_EOF);
     while (av_thread_message_queue_recv(f->in_thread_queue, &msg, 0) >= 0)
@@ -336,14 +336,6 @@ static void free_input_thread(int i)
     pthread_join(f->thread, NULL);
     av_thread_message_queue_free(&f->in_thread_queue);
     av_thread_message_queue_free(&f->audio_duration_queue);
-}
-
-void free_input_threads(void)
-{
-    int i;
-
-    for (i = 0; i < nb_input_files; i++)
-        free_input_thread(i);
 }
 
 static int thread_start(Demuxer *d)
@@ -442,9 +434,12 @@ int ifile_get_packet(InputFile *f, AVPacket **pkt)
 void ifile_close(InputFile **pf)
 {
     InputFile *f = *pf;
+    Demuxer   *d = demuxer_from_ifile(f);
 
     if (!f)
         return;
+
+    thread_stop(d);
 
     avformat_close_input(&f->ctx);
 
