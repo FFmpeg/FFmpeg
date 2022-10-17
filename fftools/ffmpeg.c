@@ -556,10 +556,9 @@ static void ffmpeg_cleanup(int ret)
         of_close(&output_files[i]);
 
     free_input_threads();
-    for (i = 0; i < nb_input_files; i++) {
-        avformat_close_input(&input_files[i]->ctx);
-        av_freep(&input_files[i]);
-    }
+    for (i = 0; i < nb_input_files; i++)
+        ifile_close(&input_files[i]);
+
     for (i = 0; i < nb_input_streams; i++) {
         InputStream *ist = input_streams[i];
 

@@ -758,6 +758,7 @@ AVChapter * const *
 of_get_chapters(OutputFile *of, unsigned int *nb_chapters);
 
 int ifile_open(OptionsContext *o, const char *filename);
+void ifile_close(InputFile **f);
 
 /**
  * Get next input packet from the demuxer.

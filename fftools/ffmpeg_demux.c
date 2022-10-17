@@ -439,6 +439,18 @@ int ifile_get_packet(InputFile *f, AVPacket **pkt)
     return 0;
 }
 
+void ifile_close(InputFile **pf)
+{
+    InputFile *f = *pf;
+
+    if (!f)
+        return;
+
+    avformat_close_input(&f->ctx);
+
+    av_freep(pf);
+}
+
 static const AVCodec *choose_decoder(OptionsContext *o, AVFormatContext *s, AVStream *st,
                                      enum HWAccelID hwaccel_id, enum AVHWDeviceType hwaccel_device_type)
 
