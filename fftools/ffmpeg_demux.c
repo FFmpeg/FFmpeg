@@ -272,6 +272,12 @@ static void *input_thread(void *arg)
                 /* fallthrough to the error path */
             }
 
+            if (ret == AVERROR_EOF)
+                av_log(NULL, AV_LOG_VERBOSE, "EOF in input file %d\n", f->index);
+            else
+                av_log(NULL, AV_LOG_ERROR, "Error demuxing input file %d: %s\n",
+                       f->index, av_err2str(ret));
+
             break;
         }
 
@@ -332,6 +338,8 @@ finish:
     av_thread_message_queue_set_err_recv(d->in_thread_queue, ret);
 
     av_packet_free(&pkt);
+
+    av_log(NULL, AV_LOG_VERBOSE, "Terminating demuxer thread %d\n", f->index);
 
     return NULL;
 }
