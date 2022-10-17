@@ -88,7 +88,7 @@ static void report_new_stream(InputFile *file, const AVPacket *pkt)
 
     if (pkt->stream_index < file->nb_streams_warn)
         return;
-    av_log(file->ctx, AV_LOG_WARNING,
+    av_log(NULL, AV_LOG_WARNING,
            "New %s stream %d:%d at pos:%"PRId64" and DTS:%ss\n",
            av_get_media_type_string(st->codecpar->codec_type),
            file->index, pkt->stream_index,
