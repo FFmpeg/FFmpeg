@@ -52,6 +52,13 @@ static const char *const opt_name_display_rotations[]         = {"display_rotati
 static const char *const opt_name_display_hflips[]            = {"display_hflip", NULL};
 static const char *const opt_name_display_vflips[]            = {"display_vflip", NULL};
 
+typedef struct Demuxer {
+    InputFile f;
+
+    /* number of times input stream should be looped */
+    int loop;
+} Demuxer;
+
 typedef struct DemuxMsg {
     AVPacket *pkt;
     int looping;
@@ -59,6 +66,11 @@ typedef struct DemuxMsg {
     // repeat_pict from the demuxer-internal parser
     int repeat_pict;
 } DemuxMsg;
+
+static Demuxer *demuxer_from_ifile(InputFile *f)
+{
+    return (Demuxer*)f;
+}
 
 static void report_new_stream(InputFile *file, const AVPacket *pkt)
 {
@@ -91,8 +103,9 @@ static void ifile_duration_update(InputFile *f, InputStream *ist,
     }
 }
 
-static int seek_to_start(InputFile *ifile)
+static int seek_to_start(Demuxer *d)
 {
+    InputFile    *ifile = &d->f;
     AVFormatContext *is = ifile->ctx;
     InputStream *ist;
     int ret;
@@ -134,8 +147,8 @@ static int seek_to_start(InputFile *ifile)
         }
     }
 
-    if (ifile->loop > 0)
-        ifile->loop--;
+    if (d->loop > 0)
+        d->loop--;
 
     return ret;
 }
@@ -209,7 +222,8 @@ static void thread_set_name(InputFile *f)
 
 static void *input_thread(void *arg)
 {
-    InputFile *f = arg;
+    Demuxer   *d = arg;
+    InputFile *f = &d->f;
     AVPacket *pkt;
     unsigned flags = f->non_blocking ? AV_THREAD_MESSAGE_NONBLOCK : 0;
     int ret = 0;
@@ -232,12 +246,12 @@ static void *input_thread(void *arg)
             continue;
         }
         if (ret < 0) {
-            if (f->loop) {
+            if (d->loop) {
                 /* signal looping to the consumer thread */
                 msg.looping = 1;
                 ret = av_thread_message_queue_send(f->in_thread_queue, &msg, 0);
                 if (ret >= 0)
-                    ret = seek_to_start(f);
+                    ret = seek_to_start(d);
                 if (ret >= 0)
                     continue;
 
@@ -336,6 +350,7 @@ static int init_input_thread(int i)
 {
     int ret;
     InputFile *f = input_files[i];
+    Demuxer   *d = demuxer_from_ifile(f);
 
     if (f->thread_queue_size <= 0)
         f->thread_queue_size = (nb_input_files > 1 ? 8 : 1);
@@ -348,7 +363,7 @@ static int init_input_thread(int i)
     if (ret < 0)
         return ret;
 
-    if (f->loop) {
+    if (d->loop) {
         int nb_audio_dec = 0;
 
         for (int i = 0; i < f->nb_streams; i++) {
@@ -366,7 +381,7 @@ static int init_input_thread(int i)
         }
     }
 
-    if ((ret = pthread_create(&f->thread, NULL, input_thread, f))) {
+    if ((ret = pthread_create(&f->thread, NULL, input_thread, d))) {
         av_log(NULL, AV_LOG_ERROR, "pthread_create failed: %s. Try to increase `ulimit -v` or decrease `ulimit -s`.\n", strerror(ret));
         ret = AVERROR(ret);
         goto fail;
@@ -771,6 +786,7 @@ static void dump_attachment(AVStream *st, const char *filename)
 
 int ifile_open(OptionsContext *o, const char *filename)
 {
+    Demuxer   *d;
     InputFile *f;
     AVFormatContext *ic;
     const AVInputFormat *file_iformat = NULL;
@@ -974,7 +990,8 @@ int ifile_open(OptionsContext *o, const char *filename)
     /* dump the file content */
     av_dump_format(ic, nb_input_files, filename, 0);
 
-    f = ALLOC_ARRAY_ELEM(input_files, nb_input_files);
+    d = allocate_array_elem(&input_files, sizeof(*d), &nb_input_files);
+    f = &d->f;
 
     f->ctx        = ic;
     f->index      = nb_input_files - 1;
@@ -987,7 +1004,7 @@ int ifile_open(OptionsContext *o, const char *filename)
     f->nb_streams = ic->nb_streams;
     f->rate_emu   = o->rate_emu;
     f->accurate_seek = o->accurate_seek;
-    f->loop = o->loop;
+    d->loop = o->loop;
     f->duration = 0;
     f->time_base = (AVRational){ 1, 1 };
 
