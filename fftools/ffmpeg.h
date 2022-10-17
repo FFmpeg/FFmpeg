@@ -462,11 +462,6 @@ typedef struct InputFile {
     float readrate;
     int accurate_seek;
 
-    AVThreadMessageQueue *in_thread_queue;
-    pthread_t thread;           /* thread reading from this file */
-    int non_blocking;           /* reading packets from the thread should not block */
-    int thread_queue_size;      /* maximum number of queued packets */
-
     /* when looping the input file, this queue is used by decoders to report
      * the last frame duration back to the demuxer thread */
     AVThreadMessageQueue *audio_duration_queue;

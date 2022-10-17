@@ -57,6 +57,11 @@ typedef struct Demuxer {
 
     /* number of times input stream should be looped */
     int loop;
+
+    AVThreadMessageQueue *in_thread_queue;
+    int                   thread_queue_size;
+    pthread_t             thread;
+    int                   non_blocking;
 } Demuxer;
 
 typedef struct DemuxMsg {
@@ -225,7 +230,7 @@ static void *input_thread(void *arg)
     Demuxer   *d = arg;
     InputFile *f = &d->f;
     AVPacket *pkt;
-    unsigned flags = f->non_blocking ? AV_THREAD_MESSAGE_NONBLOCK : 0;
+    unsigned flags = d->non_blocking ? AV_THREAD_MESSAGE_NONBLOCK : 0;
     int ret = 0;
 
     pkt = av_packet_alloc();
@@ -249,7 +254,7 @@ static void *input_thread(void *arg)
             if (d->loop) {
                 /* signal looping to the consumer thread */
                 msg.looping = 1;
-                ret = av_thread_message_queue_send(f->in_thread_queue, &msg, 0);
+                ret = av_thread_message_queue_send(d->in_thread_queue, &msg, 0);
                 if (ret >= 0)
                     ret = seek_to_start(d);
                 if (ret >= 0)
@@ -294,14 +299,14 @@ static void *input_thread(void *arg)
             break;
         }
         av_packet_move_ref(msg.pkt, pkt);
-        ret = av_thread_message_queue_send(f->in_thread_queue, &msg, flags);
+        ret = av_thread_message_queue_send(d->in_thread_queue, &msg, flags);
         if (flags && ret == AVERROR(EAGAIN)) {
             flags = 0;
-            ret = av_thread_message_queue_send(f->in_thread_queue, &msg, flags);
+            ret = av_thread_message_queue_send(d->in_thread_queue, &msg, flags);
             av_log(f->ctx, AV_LOG_WARNING,
                    "Thread message queue blocking; consider raising the "
                    "thread_queue_size option (current value: %d)\n",
-                   f->thread_queue_size);
+                   d->thread_queue_size);
         }
         if (ret < 0) {
             if (ret != AVERROR_EOF)
@@ -315,7 +320,7 @@ static void *input_thread(void *arg)
 
 finish:
     av_assert0(ret < 0);
-    av_thread_message_queue_set_err_recv(f->in_thread_queue, ret);
+    av_thread_message_queue_set_err_recv(d->in_thread_queue, ret);
 
     av_packet_free(&pkt);
 
@@ -327,14 +332,14 @@ static void thread_stop(Demuxer *d)
     InputFile *f = &d->f;
     DemuxMsg msg;
 
-    if (!f->in_thread_queue)
+    if (!d->in_thread_queue)
         return;
-    av_thread_message_queue_set_err_send(f->in_thread_queue, AVERROR_EOF);
-    while (av_thread_message_queue_recv(f->in_thread_queue, &msg, 0) >= 0)
+    av_thread_message_queue_set_err_send(d->in_thread_queue, AVERROR_EOF);
+    while (av_thread_message_queue_recv(d->in_thread_queue, &msg, 0) >= 0)
         av_packet_free(&msg.pkt);
 
-    pthread_join(f->thread, NULL);
-    av_thread_message_queue_free(&f->in_thread_queue);
+    pthread_join(d->thread, NULL);
+    av_thread_message_queue_free(&d->in_thread_queue);
     av_thread_message_queue_free(&f->audio_duration_queue);
 }
 
@@ -343,14 +348,14 @@ static int thread_start(Demuxer *d)
     int ret;
     InputFile *f = &d->f;
 
-    if (f->thread_queue_size <= 0)
-        f->thread_queue_size = (nb_input_files > 1 ? 8 : 1);
+    if (d->thread_queue_size <= 0)
+        d->thread_queue_size = (nb_input_files > 1 ? 8 : 1);
 
     if (f->ctx->pb ? !f->ctx->pb->seekable :
         strcmp(f->ctx->iformat->name, "lavfi"))
-        f->non_blocking = 1;
-    ret = av_thread_message_queue_alloc(&f->in_thread_queue,
-                                        f->thread_queue_size, sizeof(DemuxMsg));
+        d->non_blocking = 1;
+    ret = av_thread_message_queue_alloc(&d->in_thread_queue,
+                                        d->thread_queue_size, sizeof(DemuxMsg));
     if (ret < 0)
         return ret;
 
@@ -372,7 +377,7 @@ static int thread_start(Demuxer *d)
         }
     }
 
-    if ((ret = pthread_create(&f->thread, NULL, input_thread, d))) {
+    if ((ret = pthread_create(&d->thread, NULL, input_thread, d))) {
         av_log(NULL, AV_LOG_ERROR, "pthread_create failed: %s. Try to increase `ulimit -v` or decrease `ulimit -s`.\n", strerror(ret));
         ret = AVERROR(ret);
         goto fail;
@@ -380,7 +385,7 @@ static int thread_start(Demuxer *d)
 
     return 0;
 fail:
-    av_thread_message_queue_free(&f->in_thread_queue);
+    av_thread_message_queue_free(&d->in_thread_queue);
     return ret;
 }
 
@@ -391,7 +396,7 @@ int ifile_get_packet(InputFile *f, AVPacket **pkt)
     DemuxMsg msg;
     int ret;
 
-    if (!f->in_thread_queue) {
+    if (!d->in_thread_queue) {
         ret = thread_start(d);
         if (ret < 0)
             return ret;
@@ -416,8 +421,8 @@ int ifile_get_packet(InputFile *f, AVPacket **pkt)
         }
     }
 
-    ret = av_thread_message_queue_recv(f->in_thread_queue, &msg,
-                                       f->non_blocking ?
+    ret = av_thread_message_queue_recv(d->in_thread_queue, &msg,
+                                       d->non_blocking ?
                                        AV_THREAD_MESSAGE_NONBLOCK : 0);
     if (ret < 0)
         return ret;
@@ -1019,7 +1024,7 @@ int ifile_open(OptionsContext *o, const char *filename)
         f->rate_emu = 0;
     }
 
-    f->thread_queue_size = o->thread_queue_size;
+    d->thread_queue_size = o->thread_queue_size;
 
     /* check if all codec options have been used */
     unused_opts = strip_specifiers(o->g->codec_opts);
