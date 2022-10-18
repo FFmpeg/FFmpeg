@@ -1547,6 +1547,7 @@ static void copy_meta(Muxer *mux, OptionsContext *o)
 {
     OutputFile      *of = &mux->of;
     AVFormatContext *oc = mux->fc;
+    int chapters_input_file = o->chapters_input_file;
 
     /* copy metadata */
     for (int i = 0; i < o->nb_metadata_map; i++) {
@@ -1563,23 +1564,23 @@ static void copy_meta(Muxer *mux, OptionsContext *o)
     }
 
     /* copy chapters */
-    if (o->chapters_input_file >= nb_input_files) {
-        if (o->chapters_input_file == INT_MAX) {
+    if (chapters_input_file >= nb_input_files) {
+        if (chapters_input_file == INT_MAX) {
             /* copy chapters from the first input file that has them*/
-            o->chapters_input_file = -1;
+            chapters_input_file = -1;
             for (int i = 0; i < nb_input_files; i++)
                 if (input_files[i]->ctx->nb_chapters) {
-                    o->chapters_input_file = i;
+                    chapters_input_file = i;
                     break;
                 }
         } else {
             av_log(NULL, AV_LOG_FATAL, "Invalid input file index %d in chapter mapping.\n",
-                   o->chapters_input_file);
+                   chapters_input_file);
             exit_program(1);
         }
     }
-    if (o->chapters_input_file >= 0)
-        copy_chapters(input_files[o->chapters_input_file], of, oc,
+    if (chapters_input_file >= 0)
+        copy_chapters(input_files[chapters_input_file], of, oc,
                       !o->metadata_chapters_manual);
 
     /* copy global metadata by default */
