@@ -26,15 +26,11 @@
 #include <stdint.h>
 
 #include "libavutil/channel_layout.h"
-#include "libavutil/float_dsp.h"
 
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "codec_internal.h"
-#include "fft.h"
 #include "get_bits.h"
-#include "lsp.h"
-#include "sinewin.h"
 
 #include "twinvq.h"
 #include "metasound_data.h"
