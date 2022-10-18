@@ -27,7 +27,6 @@
 #include "codec_internal.h"
 #include "get_bits.h"
 #include "twinvq.h"
-#include "metasound_data.h"
 #include "twinvq_data.h"
 
 static const TwinVQModeTab mode_08_08 = {

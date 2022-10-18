@@ -28,6 +28,7 @@
 #include "decode.h"
 #include "fft.h"
 #include "lsp.h"
+#include "metasound_twinvq_data.h"
 #include "sinewin.h"
 #include "twinvq.h"
 

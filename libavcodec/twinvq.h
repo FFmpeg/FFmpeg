@@ -25,6 +25,7 @@
 #include <math.h>
 #include <stdint.h>
 
+#include "libavutil/attributes_internal.h"
 #include "libavutil/common.h"
 #include "libavutil/float_dsp.h"
 #include "avcodec.h"
@@ -179,7 +180,14 @@ typedef struct TwinVQContext {
                        const float *shape, float *speech);
 } TwinVQContext;
 
+FF_VISIBILITY_PUSH_HIDDEN
 extern const enum TwinVQFrameType ff_twinvq_wtype_to_ftype_table[];
+
+extern const float ff_metasound_lsp8[];
+extern const float ff_metasound_lsp11[];
+extern const float ff_metasound_lsp16[];
+extern const float ff_metasound_lsp22[];
+extern const float ff_metasound_lsp44[];
 
 /** @note not speed critical, hence not optimized */
 static inline void twinvq_memset_float(float *buf, float val, int size)
@@ -199,5 +207,6 @@ int ff_twinvq_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 int ff_twinvq_decode_close(AVCodecContext *avctx);
 /** Requires the caller to call ff_twinvq_decode_close() upon failure. */
 int ff_twinvq_decode_init(AVCodecContext *avctx);
+FF_VISIBILITY_POP_HIDDEN
 
 #endif /* AVCODEC_TWINVQ_H */
