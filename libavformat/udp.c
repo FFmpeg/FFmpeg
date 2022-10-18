@@ -487,6 +487,8 @@ static void *circular_buffer_task_rx( void *_URLContext)
     UDPContext *s = h->priv_data;
     int old_cancelstate;
 
+    ff_thread_setname("udp-rx");
+
     pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_cancelstate);
     pthread_mutex_lock(&s->mutex);
     if (ff_socket_nonblock(s->udp_fd, 0) < 0) {
@@ -551,6 +553,8 @@ static void *circular_buffer_task_tx( void *_URLContext)
     int64_t sent_bits = 0;
     int64_t burst_interval = s->bitrate ? (s->burst_bits * 1000000 / s->bitrate) : 0;
     int64_t max_delay = s->bitrate ?  ((int64_t)h->max_packet_size * 8 * 1000000 / s->bitrate + 1) : 0;
+
+    ff_thread_setname("udp-tx");
 
     pthread_mutex_lock(&s->mutex);
 
