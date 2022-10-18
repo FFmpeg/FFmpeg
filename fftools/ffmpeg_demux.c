@@ -823,18 +823,23 @@ int ifile_open(OptionsContext *o, const char *filename)
     char *    data_codec_name = NULL;
     int scan_all_pmts_set = 0;
 
-    if (o->stop_time != INT64_MAX && o->recording_time != INT64_MAX) {
-        o->stop_time = INT64_MAX;
+    int64_t start_time     = o->start_time;
+    int64_t start_time_eof = o->start_time_eof;
+    int64_t stop_time      = o->stop_time;
+    int64_t recording_time = o->recording_time;
+
+    if (stop_time != INT64_MAX && recording_time != INT64_MAX) {
+        stop_time = INT64_MAX;
         av_log(NULL, AV_LOG_WARNING, "-t and -to cannot be used together; using -t.\n");
     }
 
-    if (o->stop_time != INT64_MAX && o->recording_time == INT64_MAX) {
-        int64_t start_time = o->start_time == AV_NOPTS_VALUE ? 0 : o->start_time;
-        if (o->stop_time <= start_time) {
+    if (stop_time != INT64_MAX && recording_time == INT64_MAX) {
+        int64_t start = start_time == AV_NOPTS_VALUE ? 0 : start_time;
+        if (stop_time <= start) {
             av_log(NULL, AV_LOG_ERROR, "-to value smaller than -ss; aborting.\n");
             exit_program(1);
         } else {
-            o->recording_time = o->stop_time - start_time;
+            recording_time = stop_time - start;
         }
     }
 
@@ -959,32 +964,32 @@ int ifile_open(OptionsContext *o, const char *filename)
         }
     }
 
-    if (o->start_time != AV_NOPTS_VALUE && o->start_time_eof != AV_NOPTS_VALUE) {
+    if (start_time != AV_NOPTS_VALUE && start_time_eof != AV_NOPTS_VALUE) {
         av_log(NULL, AV_LOG_WARNING, "Cannot use -ss and -sseof both, using -ss for %s\n", filename);
-        o->start_time_eof = AV_NOPTS_VALUE;
+        start_time_eof = AV_NOPTS_VALUE;
     }
 
-    if (o->start_time_eof != AV_NOPTS_VALUE) {
-        if (o->start_time_eof >= 0) {
+    if (start_time_eof != AV_NOPTS_VALUE) {
+        if (start_time_eof >= 0) {
             av_log(NULL, AV_LOG_ERROR, "-sseof value must be negative; aborting\n");
             exit_program(1);
         }
         if (ic->duration > 0) {
-            o->start_time = o->start_time_eof + ic->duration;
-            if (o->start_time < 0) {
+            start_time = start_time_eof + ic->duration;
+            if (start_time < 0) {
                 av_log(NULL, AV_LOG_WARNING, "-sseof value seeks to before start of file %s; ignored\n", filename);
-                o->start_time = AV_NOPTS_VALUE;
+                start_time = AV_NOPTS_VALUE;
             }
         } else
             av_log(NULL, AV_LOG_WARNING, "Cannot use -sseof, duration of %s not known\n", filename);
     }
-    timestamp = (o->start_time == AV_NOPTS_VALUE) ? 0 : o->start_time;
+    timestamp = (start_time == AV_NOPTS_VALUE) ? 0 : start_time;
     /* add the stream start time */
     if (!o->seek_timestamp && ic->start_time != AV_NOPTS_VALUE)
         timestamp += ic->start_time;
 
     /* if seeking requested, we execute it */
-    if (o->start_time != AV_NOPTS_VALUE) {
+    if (start_time != AV_NOPTS_VALUE) {
         int64_t seek_timestamp = timestamp;
 
         if (!(ic->iformat->flags & AVFMT_SEEK_TO_PTS)) {
@@ -1019,8 +1024,8 @@ int ifile_open(OptionsContext *o, const char *filename)
     f->ctx        = ic;
     f->index      = nb_input_files - 1;
     f->ist_index  = nb_input_streams - ic->nb_streams;
-    f->start_time = o->start_time;
-    f->recording_time = o->recording_time;
+    f->start_time = start_time;
+    f->recording_time = recording_time;
     f->input_sync_ref = o->input_sync_ref;
     f->input_ts_offset = o->input_ts_offset;
     f->ts_offset  = o->input_ts_offset - (copy_ts ? (start_at_zero && ic->start_time != AV_NOPTS_VALUE ? ic->start_time : 0) : timestamp);
