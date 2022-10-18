@@ -1506,16 +1506,6 @@ static int copy_metadata(const char *outspec, const char *inspec, AVFormatContex
     parse_meta_type(inspec,  &type_in,  &idx_in,  &istream_spec);
     parse_meta_type(outspec, &type_out, &idx_out, &ostream_spec);
 
-    if (!ic) {
-        if (type_out == 'g' || !*outspec)
-            o->metadata_global_manual = 1;
-        if (type_out == 's' || !*outspec)
-            o->metadata_streams_manual = 1;
-        if (type_out == 'c' || !*outspec)
-            o->metadata_chapters_manual = 1;
-        return 0;
-    }
-
     if (type_in == 'g' || type_out == 'g')
         o->metadata_global_manual = 1;
     if (type_in == 's' || type_out == 's')
