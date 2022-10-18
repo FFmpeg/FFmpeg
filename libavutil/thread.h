@@ -24,6 +24,12 @@
 
 #include "config.h"
 
+#if HAVE_PRCTL
+#include <sys/prctl.h>
+#endif
+
+#include "error.h"
+
 #if HAVE_PTHREADS || HAVE_W32THREADS || HAVE_OS2THREADS
 
 #if HAVE_PTHREADS
@@ -33,7 +39,6 @@
 
 #include <stdlib.h>
 
-#include "error.h"
 #include "log.h"
 #include "macros.h"
 
@@ -186,5 +191,14 @@ static inline int ff_thread_once(char *control, void (*routine)(void))
 }
 
 #endif
+
+static inline int ff_thread_setname(const char *name)
+{
+#if HAVE_PRCTL
+    return AVERROR(prctl(PR_SET_NAME, name));
+#endif
+
+    return AVERROR(ENOSYS);
+}
 
 #endif /* AVUTIL_THREAD_H */
