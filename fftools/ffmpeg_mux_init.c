@@ -1272,7 +1272,7 @@ static void of_add_programs(AVFormatContext *oc, const OptionsContext *o)
  * @param index for type c/p, chapter/program index is written here
  * @param stream_spec for type s, the stream specifier is written here
  */
-static void parse_meta_type(char *arg, char *type, int *index, const char **stream_spec)
+static void parse_meta_type(const char *arg, char *type, int *index, const char **stream_spec)
 {
     if (*arg) {
         *type = *arg;
@@ -1453,7 +1453,7 @@ static int copy_chapters(InputFile *ifile, OutputFile *ofile, AVFormatContext *o
     return 0;
 }
 
-static int copy_metadata(char *outspec, char *inspec, AVFormatContext *oc, AVFormatContext *ic, OptionsContext *o)
+static int copy_metadata(const char *outspec, const char *inspec, AVFormatContext *oc, AVFormatContext *ic, OptionsContext *o)
 {
     AVDictionary **meta_in = NULL;
     AVDictionary **meta_out = NULL;
