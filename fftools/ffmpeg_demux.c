@@ -177,6 +177,13 @@ static void ts_fixup(InputFile *ifile, AVPacket *pkt, int *repeat_pict)
         *repeat_pict = av_stream_get_parser(ist->st)->repeat_pict;
 }
 
+static void thread_set_name(InputFile *f)
+{
+    char name[16];
+    snprintf(name, sizeof(name), "dmx%d:%s", f->index, f->ctx->iformat->name);
+    ff_thread_setname(name);
+}
+
 static void *input_thread(void *arg)
 {
     InputFile *f = arg;
@@ -189,6 +196,8 @@ static void *input_thread(void *arg)
         ret = AVERROR(ENOMEM);
         goto finish;
     }
+
+    thread_set_name(f);
 
     while (1) {
         DemuxMsg msg = { NULL };

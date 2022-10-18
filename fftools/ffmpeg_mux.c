@@ -184,6 +184,13 @@ static int sync_queue_process(Muxer *mux, OutputStream *ost, AVPacket *pkt)
     return 0;
 }
 
+static void thread_set_name(OutputFile *of)
+{
+    char name[16];
+    snprintf(name, sizeof(name), "mux%d:%s", of->index, of->format->name);
+    ff_thread_setname(name);
+}
+
 static void *muxer_thread(void *arg)
 {
     Muxer     *mux = arg;
@@ -196,6 +203,8 @@ static void *muxer_thread(void *arg)
         ret = AVERROR(ENOMEM);
         goto finish;
     }
+
+    thread_set_name(of);
 
     while (1) {
         OutputStream *ost;
