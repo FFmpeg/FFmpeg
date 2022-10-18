@@ -51,7 +51,7 @@
 #define ASYNC_DEPTH_DEFAULT 4       // internal parallelism
 
 #define QSV_MAX_ENC_PAYLOAD 2       // # of mfxEncodeCtrl payloads supported
-#define QSV_MAX_ENC_EXTPARAM 2
+#define QSV_MAX_ENC_EXTPARAM 8      // # of mfxEncodeCtrl extparam supported
 
 #define QSV_MAX_ROI_NUM 256
 
