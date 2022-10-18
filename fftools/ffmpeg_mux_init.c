@@ -1587,7 +1587,7 @@ static void copy_meta(Muxer *mux, OptionsContext *o)
     if (!o->metadata_global_manual && nb_input_files){
         av_dict_copy(&oc->metadata, input_files[0]->ctx->metadata,
                      AV_DICT_DONT_OVERWRITE);
-        if(o->recording_time != INT64_MAX)
+        if (of->recording_time != INT64_MAX)
             av_dict_set(&oc->metadata, "duration", NULL, 0);
         av_dict_set(&oc->metadata, "creation_time", NULL, 0);
         av_dict_set(&oc->metadata, "company_name", NULL, 0);
@@ -1683,18 +1683,21 @@ int of_open(OptionsContext *o, const char *filename)
     AVDictionary *unused_opts = NULL;
     const AVDictionaryEntry *e = NULL;
 
-    if (o->stop_time != INT64_MAX && o->recording_time != INT64_MAX) {
-        o->stop_time = INT64_MAX;
+    int64_t recording_time = o->recording_time;
+    int64_t stop_time      = o->stop_time;
+
+    if (stop_time != INT64_MAX && recording_time != INT64_MAX) {
+        stop_time = INT64_MAX;
         av_log(NULL, AV_LOG_WARNING, "-t and -to cannot be used together; using -t.\n");
     }
 
-    if (o->stop_time != INT64_MAX && o->recording_time == INT64_MAX) {
+    if (stop_time != INT64_MAX && recording_time == INT64_MAX) {
         int64_t start_time = o->start_time == AV_NOPTS_VALUE ? 0 : o->start_time;
-        if (o->stop_time <= start_time) {
+        if (stop_time <= start_time) {
             av_log(NULL, AV_LOG_ERROR, "-to value smaller than -ss; aborting.\n");
             exit_program(1);
         } else {
-            o->recording_time = o->stop_time - start_time;
+            recording_time = stop_time - start_time;
         }
     }
 
@@ -1702,7 +1705,7 @@ int of_open(OptionsContext *o, const char *filename)
     of  = &mux->of;
 
     of->index          = nb_output_files - 1;
-    of->recording_time = o->recording_time;
+    of->recording_time = recording_time;
     of->start_time     = o->start_time;
     of->shortest       = o->shortest;
 
@@ -1724,8 +1727,8 @@ int of_open(OptionsContext *o, const char *filename)
         want_sdp = 0;
 
     of->format = oc->oformat;
-    if (o->recording_time != INT64_MAX)
-        oc->duration = o->recording_time;
+    if (recording_time != INT64_MAX)
+        oc->duration = recording_time;
 
     oc->interrupt_callback = int_cb;
 
