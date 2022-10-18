@@ -305,46 +305,46 @@ static av_cold int metasound_decode_init(AVCodecContext *avctx)
 
     switch ((channels << 16) + (isampf << 8) + ibps) {
     case (1 << 16) + ( 8 << 8) +  6:
-        tctx->mtab = &ff_metasound_mode0806;
+        tctx->mtab = &metasound_mode0806;
         break;
     case (2 << 16) + ( 8 << 8) +  6:
-        tctx->mtab = &ff_metasound_mode0806s;
+        tctx->mtab = &metasound_mode0806s;
         break;
     case (1 << 16) + ( 8 << 8) +  8:
-        tctx->mtab = &ff_metasound_mode0808;
+        tctx->mtab = &metasound_mode0808;
         break;
     case (2 << 16) + ( 8 << 8) +  8:
-        tctx->mtab = &ff_metasound_mode0808s;
+        tctx->mtab = &metasound_mode0808s;
         break;
     case (1 << 16) + (11 << 8) + 10:
-        tctx->mtab = &ff_metasound_mode1110;
+        tctx->mtab = &metasound_mode1110;
         break;
     case (2 << 16) + (11 << 8) + 10:
-        tctx->mtab = &ff_metasound_mode1110s;
+        tctx->mtab = &metasound_mode1110s;
         break;
     case (1 << 16) + (16 << 8) + 16:
-        tctx->mtab = &ff_metasound_mode1616;
+        tctx->mtab = &metasound_mode1616;
         break;
     case (2 << 16) + (16 << 8) + 16:
-        tctx->mtab = &ff_metasound_mode1616s;
+        tctx->mtab = &metasound_mode1616s;
         break;
     case (1 << 16) + (22 << 8) + 24:
-        tctx->mtab = &ff_metasound_mode2224;
+        tctx->mtab = &metasound_mode2224;
         break;
     case (2 << 16) + (22 << 8) + 24:
-        tctx->mtab = &ff_metasound_mode2224s;
+        tctx->mtab = &metasound_mode2224s;
         break;
     case (1 << 16) + (44 << 8) + 32:
     case (2 << 16) + (44 << 8) + 32:
-        tctx->mtab = &ff_metasound_mode4432;
+        tctx->mtab = &metasound_mode4432;
         break;
     case (1 << 16) + (44 << 8) + 40:
     case (2 << 16) + (44 << 8) + 40:
-        tctx->mtab = &ff_metasound_mode4440;
+        tctx->mtab = &metasound_mode4440;
         break;
     case (1 << 16) + (44 << 8) + 48:
     case (2 << 16) + (44 << 8) + 48:
-        tctx->mtab = &ff_metasound_mode4448;
+        tctx->mtab = &metasound_mode4448;
         break;
     default:
         av_log(avctx, AV_LOG_ERROR,
