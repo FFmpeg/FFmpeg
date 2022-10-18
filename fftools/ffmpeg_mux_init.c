@@ -1064,6 +1064,11 @@ loop_end:
 
 static void create_streams(Muxer *mux, OptionsContext *o)
 {
+    int auto_disable_v = o->video_disable;
+    int auto_disable_a = o->audio_disable;
+    int auto_disable_s = o->subtitle_disable;
+    int auto_disable_d = o->data_disable;
+
     /* create streams for all unlabeled output pads */
     for (int i = 0; i < nb_filtergraphs; i++) {
         FilterGraph *fg = filtergraphs[i];
@@ -1074,9 +1079,9 @@ static void create_streams(Muxer *mux, OptionsContext *o)
                 continue;
 
             switch (ofilter->type) {
-            case AVMEDIA_TYPE_VIDEO:    o->video_disable    = 1; break;
-            case AVMEDIA_TYPE_AUDIO:    o->audio_disable    = 1; break;
-            case AVMEDIA_TYPE_SUBTITLE: o->subtitle_disable = 1; break;
+            case AVMEDIA_TYPE_VIDEO:    auto_disable_v = 1; break;
+            case AVMEDIA_TYPE_AUDIO:    auto_disable_a = 1; break;
+            case AVMEDIA_TYPE_SUBTITLE: auto_disable_s = 1; break;
             }
             init_output_filter(ofilter, o, mux);
         }
@@ -1084,13 +1089,13 @@ static void create_streams(Muxer *mux, OptionsContext *o)
 
     if (!o->nb_stream_maps) {
         /* pick the "best" stream of each type */
-        if (!o->video_disable)
+        if (!auto_disable_v)
             map_auto_video(mux, o);
-        if (!o->audio_disable)
+        if (!auto_disable_a)
             map_auto_audio(mux, o);
-        if (!o->subtitle_disable)
+        if (!auto_disable_s)
             map_auto_subtitle(mux, o);
-        if (!o->data_disable)
+        if (!auto_disable_d)
             map_auto_data(mux, o);
     } else {
         for (int i = 0; i < o->nb_stream_maps; i++)
