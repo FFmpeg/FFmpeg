@@ -149,6 +149,10 @@ int ds_open(DecodeContext *dc, const char *url, int stream_idx)
     if (!dc->decoder)
         return AVERROR(ENOMEM);
 
+    ret = avcodec_parameters_to_context(dc->decoder, dc->stream->codecpar);
+    if (ret < 0)
+        goto fail;
+
     return 0;
 
 fail:
