@@ -19,13 +19,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "config_components.h"
-
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "rawdec.h"
 
-#if CONFIG_MJPEG_2000_DEMUXER
 static int mjpeg2000_probe(const AVProbeData *p)
 {
     const uint8_t *b = p->buf;
@@ -53,4 +50,3 @@ static int mjpeg2000_probe(const AVProbeData *p)
     return 0;
 }
 FF_DEF_RAWVIDEO_DEMUXER2(mjpeg_2000, "raw MJPEG 2000 video", mjpeg2000_probe, "j2k", AV_CODEC_ID_JPEG2000, AVFMT_GENERIC_INDEX|AVFMT_NOTIMESTAMPS)
-#endif
