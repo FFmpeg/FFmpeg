@@ -1543,6 +1543,70 @@ static int copy_metadata(char *outspec, char *inspec, AVFormatContext *oc, AVFor
     return 0;
 }
 
+static void copy_meta(Muxer *mux, OptionsContext *o)
+{
+    OutputFile      *of = &mux->of;
+    AVFormatContext *oc = mux->fc;
+
+    /* copy metadata */
+    for (int i = 0; i < o->nb_metadata_map; i++) {
+        char *p;
+        int in_file_index = strtol(o->metadata_map[i].u.str, &p, 0);
+
+        if (in_file_index >= nb_input_files) {
+            av_log(NULL, AV_LOG_FATAL, "Invalid input file index %d while processing metadata maps\n", in_file_index);
+            exit_program(1);
+        }
+        copy_metadata(o->metadata_map[i].specifier, *p ? p + 1 : p, oc,
+                      in_file_index >= 0 ?
+                      input_files[in_file_index]->ctx : NULL, o);
+    }
+
+    /* copy chapters */
+    if (o->chapters_input_file >= nb_input_files) {
+        if (o->chapters_input_file == INT_MAX) {
+            /* copy chapters from the first input file that has them*/
+            o->chapters_input_file = -1;
+            for (int i = 0; i < nb_input_files; i++)
+                if (input_files[i]->ctx->nb_chapters) {
+                    o->chapters_input_file = i;
+                    break;
+                }
+        } else {
+            av_log(NULL, AV_LOG_FATAL, "Invalid input file index %d in chapter mapping.\n",
+                   o->chapters_input_file);
+            exit_program(1);
+        }
+    }
+    if (o->chapters_input_file >= 0)
+        copy_chapters(input_files[o->chapters_input_file], of, oc,
+                      !o->metadata_chapters_manual);
+
+    /* copy global metadata by default */
+    if (!o->metadata_global_manual && nb_input_files){
+        av_dict_copy(&oc->metadata, input_files[0]->ctx->metadata,
+                     AV_DICT_DONT_OVERWRITE);
+        if(o->recording_time != INT64_MAX)
+            av_dict_set(&oc->metadata, "duration", NULL, 0);
+        av_dict_set(&oc->metadata, "creation_time", NULL, 0);
+        av_dict_set(&oc->metadata, "company_name", NULL, 0);
+        av_dict_set(&oc->metadata, "product_name", NULL, 0);
+        av_dict_set(&oc->metadata, "product_version", NULL, 0);
+    }
+    if (!o->metadata_streams_manual)
+        for (int i = 0; i < of->nb_streams; i++) {
+            OutputStream *ost = of->streams[i];
+            InputStream *ist;
+            if (ost->source_index < 0)         /* this is true e.g. for attached files */
+                continue;
+            ist = input_streams[ost->source_index];
+            av_dict_copy(&ost->st->metadata, ist->st->metadata, AV_DICT_DONT_OVERWRITE);
+            if (ost->enc_ctx) {
+                av_dict_set(&ost->st->metadata, "encoder", NULL, 0);
+            }
+        }
+}
+
 static int set_dispositions(OutputFile *of, AVFormatContext *ctx)
 {
     int nb_streams[AVMEDIA_TYPE_NB]   = { 0 };
@@ -1849,63 +1913,8 @@ int of_open(OptionsContext *o, const char *filename)
     }
     oc->max_delay = (int)(o->mux_max_delay * AV_TIME_BASE);
 
-    /* copy metadata */
-    for (i = 0; i < o->nb_metadata_map; i++) {
-        char *p;
-        int in_file_index = strtol(o->metadata_map[i].u.str, &p, 0);
-
-        if (in_file_index >= nb_input_files) {
-            av_log(NULL, AV_LOG_FATAL, "Invalid input file index %d while processing metadata maps\n", in_file_index);
-            exit_program(1);
-        }
-        copy_metadata(o->metadata_map[i].specifier, *p ? p + 1 : p, oc,
-                      in_file_index >= 0 ?
-                      input_files[in_file_index]->ctx : NULL, o);
-    }
-
-    /* copy chapters */
-    if (o->chapters_input_file >= nb_input_files) {
-        if (o->chapters_input_file == INT_MAX) {
-            /* copy chapters from the first input file that has them*/
-            o->chapters_input_file = -1;
-            for (i = 0; i < nb_input_files; i++)
-                if (input_files[i]->ctx->nb_chapters) {
-                    o->chapters_input_file = i;
-                    break;
-                }
-        } else {
-            av_log(NULL, AV_LOG_FATAL, "Invalid input file index %d in chapter mapping.\n",
-                   o->chapters_input_file);
-            exit_program(1);
-        }
-    }
-    if (o->chapters_input_file >= 0)
-        copy_chapters(input_files[o->chapters_input_file], of, oc,
-                      !o->metadata_chapters_manual);
-
-    /* copy global metadata by default */
-    if (!o->metadata_global_manual && nb_input_files){
-        av_dict_copy(&oc->metadata, input_files[0]->ctx->metadata,
-                     AV_DICT_DONT_OVERWRITE);
-        if(o->recording_time != INT64_MAX)
-            av_dict_set(&oc->metadata, "duration", NULL, 0);
-        av_dict_set(&oc->metadata, "creation_time", NULL, 0);
-        av_dict_set(&oc->metadata, "company_name", NULL, 0);
-        av_dict_set(&oc->metadata, "product_name", NULL, 0);
-        av_dict_set(&oc->metadata, "product_version", NULL, 0);
-    }
-    if (!o->metadata_streams_manual)
-        for (int i = 0; i < of->nb_streams; i++) {
-            OutputStream *ost = of->streams[i];
-            InputStream *ist;
-            if (ost->source_index < 0)         /* this is true e.g. for attached files */
-                continue;
-            ist = input_streams[ost->source_index];
-            av_dict_copy(&ost->st->metadata, ist->st->metadata, AV_DICT_DONT_OVERWRITE);
-            if (ost->enc_ctx) {
-                av_dict_set(&ost->st->metadata, "encoder", NULL, 0);
-            }
-        }
+    /* copy metadata and chapters from input files */
+    copy_meta(mux, o);
 
     of_add_programs(oc, o);
     of_add_metadata(of, oc, o);
