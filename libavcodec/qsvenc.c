@@ -2281,8 +2281,8 @@ static int encode_frame(AVCodecContext *avctx, QSVEncContext *q,
         pkt.bs->ExtParam = enc_buf;
     }
 
-    if (q->set_encode_ctrl_cb) {
-        q->set_encode_ctrl_cb(avctx, frame, &qsv_frame->enc_ctrl);
+    if (q->set_encode_ctrl_cb && enc_ctrl) {
+        q->set_encode_ctrl_cb(avctx, frame, enc_ctrl);
     }
 
     if ((avctx->codec_id == AV_CODEC_ID_H264 ||
