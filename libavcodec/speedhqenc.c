@@ -36,9 +36,9 @@
 #include "mpegvideo.h"
 #include "mpegvideodata.h"
 #include "mpegvideoenc.h"
+#include "speedhq.h"
 #include "speedhqenc.h"
 
-extern RLTable ff_rl_speedhq;
 static uint8_t speedhq_static_rl_table_store[2][2*MAX_RUN + MAX_LEVEL + 3];
 
 /* Exactly the same as MPEG-2, except little-endian. */
