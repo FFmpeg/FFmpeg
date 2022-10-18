@@ -1494,7 +1494,10 @@ static int copy_chapters(InputFile *ifile, OutputFile *ofile, AVFormatContext *o
     return 0;
 }
 
-static int copy_metadata(const char *outspec, const char *inspec, AVFormatContext *oc, AVFormatContext *ic, OptionsContext *o)
+static int copy_metadata(const char *outspec, const char *inspec,
+                         AVFormatContext *oc, AVFormatContext *ic,
+                         int *metadata_global_manual, int *metadata_streams_manual,
+                         int *metadata_chapters_manual, OptionsContext *o)
 {
     AVDictionary **meta_in = NULL;
     AVDictionary **meta_out = NULL;
@@ -1507,11 +1510,11 @@ static int copy_metadata(const char *outspec, const char *inspec, AVFormatContex
     parse_meta_type(outspec, &type_out, &idx_out, &ostream_spec);
 
     if (type_in == 'g' || type_out == 'g')
-        o->metadata_global_manual = 1;
+        *metadata_global_manual = 1;
     if (type_in == 's' || type_out == 's')
-        o->metadata_streams_manual = 1;
+        *metadata_streams_manual = 1;
     if (type_in == 'c' || type_out == 'c')
-        o->metadata_chapters_manual = 1;
+        *metadata_chapters_manual = 1;
 
     /* ic is NULL when just disabling automatic mappings */
     if (!ic)
@@ -1579,6 +1582,9 @@ static void copy_meta(Muxer *mux, OptionsContext *o)
     OutputFile      *of = &mux->of;
     AVFormatContext *oc = mux->fc;
     int chapters_input_file = o->chapters_input_file;
+    int metadata_global_manual   = 0;
+    int metadata_streams_manual  = 0;
+    int metadata_chapters_manual = 0;
 
     /* copy metadata */
     for (int i = 0; i < o->nb_metadata_map; i++) {
@@ -1591,7 +1597,9 @@ static void copy_meta(Muxer *mux, OptionsContext *o)
         }
         copy_metadata(o->metadata_map[i].specifier, *p ? p + 1 : p, oc,
                       in_file_index >= 0 ?
-                      input_files[in_file_index]->ctx : NULL, o);
+                      input_files[in_file_index]->ctx : NULL,
+                      &metadata_global_manual, &metadata_streams_manual,
+                      &metadata_chapters_manual, o);
     }
 
     /* copy chapters */
@@ -1612,10 +1620,10 @@ static void copy_meta(Muxer *mux, OptionsContext *o)
     }
     if (chapters_input_file >= 0)
         copy_chapters(input_files[chapters_input_file], of, oc,
-                      !o->metadata_chapters_manual);
+                      !metadata_chapters_manual);
 
     /* copy global metadata by default */
-    if (!o->metadata_global_manual && nb_input_files){
+    if (!metadata_global_manual && nb_input_files){
         av_dict_copy(&oc->metadata, input_files[0]->ctx->metadata,
                      AV_DICT_DONT_OVERWRITE);
         if (of->recording_time != INT64_MAX)
@@ -1625,7 +1633,7 @@ static void copy_meta(Muxer *mux, OptionsContext *o)
         av_dict_set(&oc->metadata, "product_name", NULL, 0);
         av_dict_set(&oc->metadata, "product_version", NULL, 0);
     }
-    if (!o->metadata_streams_manual)
+    if (!metadata_streams_manual)
         for (int i = 0; i < of->nb_streams; i++) {
             OutputStream *ost = of->streams[i];
             InputStream *ist;

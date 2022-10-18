@@ -149,9 +149,6 @@ typedef struct OptionsContext {
     AudioChannelMap *audio_channel_maps; /* one info entry per -map_channel */
     int           nb_audio_channel_maps; /* number of (valid) -map_channel settings */
 #endif
-    int metadata_global_manual;
-    int metadata_streams_manual;
-    int metadata_chapters_manual;
     const char **attachments;
     int       nb_attachments;
 
