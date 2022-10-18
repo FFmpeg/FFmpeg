@@ -179,6 +179,17 @@ static void async_unlock(FrameThreadContext *fctx)
     pthread_mutex_unlock(&fctx->async_mutex);
 }
 
+static void thread_set_name(PerThreadContext *p)
+{
+    AVCodecContext *avctx = p->avctx;
+    int idx = p - p->parent->threads;
+    char name[16];
+
+    snprintf(name, sizeof(name), "av:%.7s:df%d", avctx->codec->name, idx);
+
+    ff_thread_setname(name);
+}
+
 /**
  * Codec worker thread.
  *
@@ -191,6 +202,8 @@ static attribute_align_arg void *frame_worker_thread(void *arg)
     PerThreadContext *p = arg;
     AVCodecContext *avctx = p->avctx;
     const FFCodec *codec = ffcodec(avctx->codec);
+
+    thread_set_name(p);
 
     pthread_mutex_lock(&p->mutex);
     while (1) {
