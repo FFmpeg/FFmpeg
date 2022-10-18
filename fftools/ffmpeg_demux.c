@@ -468,7 +468,7 @@ void ifile_close(InputFile **pf)
     av_freep(pf);
 }
 
-static const AVCodec *choose_decoder(OptionsContext *o, AVFormatContext *s, AVStream *st,
+static const AVCodec *choose_decoder(const OptionsContext *o, AVFormatContext *s, AVStream *st,
                                      enum HWAccelID hwaccel_id, enum AVHWDeviceType hwaccel_device_type)
 
 {
@@ -528,7 +528,7 @@ static int guess_input_channel_layout(InputStream *ist)
     return 1;
 }
 
-static void add_display_matrix_to_stream(OptionsContext *o,
+static void add_display_matrix_to_stream(const OptionsContext *o,
                                          AVFormatContext *ctx, AVStream *st)
 {
     double rotation = DBL_MAX;
@@ -563,7 +563,7 @@ static void add_display_matrix_to_stream(OptionsContext *o,
 
 /* Add all the streams from the given input file to the global
  * list of input streams. */
-static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
+static void add_input_streams(const OptionsContext *o, AVFormatContext *ic)
 {
     int i, ret;
 
@@ -807,7 +807,7 @@ static void dump_attachment(AVStream *st, const char *filename)
     avio_close(out);
 }
 
-int ifile_open(OptionsContext *o, const char *filename)
+int ifile_open(const OptionsContext *o, const char *filename)
 {
     Demuxer   *d;
     InputFile *f;

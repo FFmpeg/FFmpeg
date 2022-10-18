@@ -729,7 +729,7 @@ int hwaccel_decode_init(AVCodecContext *avctx);
  */
 int of_stream_init(OutputFile *of, OutputStream *ost);
 int of_write_trailer(OutputFile *of);
-int of_open(OptionsContext *o, const char *filename);
+int of_open(const OptionsContext *o, const char *filename);
 void of_close(OutputFile **pof);
 
 /*
@@ -748,7 +748,7 @@ int64_t of_filesize(OutputFile *of);
 AVChapter * const *
 of_get_chapters(OutputFile *of, unsigned int *nb_chapters);
 
-int ifile_open(OptionsContext *o, const char *filename);
+int ifile_open(const OptionsContext *o, const char *filename);
 void ifile_close(InputFile **f);
 
 /**

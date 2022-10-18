@@ -1225,7 +1225,7 @@ static const OptionGroupDef groups[] = {
 };
 
 static int open_files(OptionGroupList *l, const char *inout,
-                      int (*open_file)(OptionsContext*, const char*))
+                      int (*open_file)(const OptionsContext*, const char*))
 {
     int i, ret;
 
