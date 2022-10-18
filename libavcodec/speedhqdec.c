@@ -51,7 +51,6 @@
 #define ALPHA_VLC_BITS 5
 
 typedef struct SHQContext {
-    AVCodecContext *avctx;
     BlockDSPContext bdsp;
     IDCTDSPContext idsp;
     ScanTable intra_scantable;
@@ -575,8 +574,6 @@ static av_cold int speedhq_decode_init(AVCodecContext *avctx)
     int ret;
     static AVOnce init_once = AV_ONCE_INIT;
     SHQContext * const s = avctx->priv_data;
-
-    s->avctx = avctx;
 
     ret = ff_thread_once(&init_once, speedhq_static_init);
     if (ret)
