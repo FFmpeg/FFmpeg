@@ -1062,6 +1062,42 @@ loop_end:
     }
 }
 
+static void create_streams(Muxer *mux, OptionsContext *o)
+{
+    /* create streams for all unlabeled output pads */
+    for (int i = 0; i < nb_filtergraphs; i++) {
+        FilterGraph *fg = filtergraphs[i];
+        for (int j = 0; j < fg->nb_outputs; j++) {
+            OutputFilter *ofilter = fg->outputs[j];
+
+            if (!ofilter->out_tmp || ofilter->out_tmp->name)
+                continue;
+
+            switch (ofilter->type) {
+            case AVMEDIA_TYPE_VIDEO:    o->video_disable    = 1; break;
+            case AVMEDIA_TYPE_AUDIO:    o->audio_disable    = 1; break;
+            case AVMEDIA_TYPE_SUBTITLE: o->subtitle_disable = 1; break;
+            }
+            init_output_filter(ofilter, o, mux);
+        }
+    }
+
+    if (!o->nb_stream_maps) {
+        /* pick the "best" stream of each type */
+        if (!o->video_disable)
+            map_auto_video(mux, o);
+        if (!o->audio_disable)
+            map_auto_audio(mux, o);
+        if (!o->subtitle_disable)
+            map_auto_subtitle(mux, o);
+        if (!o->data_disable)
+            map_auto_data(mux, o);
+    } else {
+        for (int i = 0; i < o->nb_stream_maps; i++)
+            map_manual(mux, o, &o->stream_maps[i]);
+    }
+}
+
 static int setup_sync_queues(Muxer *mux, AVFormatContext *oc, int64_t buf_size_us)
 {
     OutputFile *of = &mux->of;
@@ -1678,7 +1714,7 @@ int of_open(OptionsContext *o, const char *filename)
 {
     Muxer *mux;
     AVFormatContext *oc;
-    int i, j, err;
+    int err;
     OutputFile *of;
     AVDictionary *unused_opts = NULL;
     const AVDictionaryEntry *e = NULL;
@@ -1740,38 +1776,8 @@ int of_open(OptionsContext *o, const char *filename)
                                            AVFMT_FLAG_BITEXACT);
     }
 
-    /* create streams for all unlabeled output pads */
-    for (i = 0; i < nb_filtergraphs; i++) {
-        FilterGraph *fg = filtergraphs[i];
-        for (j = 0; j < fg->nb_outputs; j++) {
-            OutputFilter *ofilter = fg->outputs[j];
-
-            if (!ofilter->out_tmp || ofilter->out_tmp->name)
-                continue;
-
-            switch (ofilter->type) {
-            case AVMEDIA_TYPE_VIDEO:    o->video_disable    = 1; break;
-            case AVMEDIA_TYPE_AUDIO:    o->audio_disable    = 1; break;
-            case AVMEDIA_TYPE_SUBTITLE: o->subtitle_disable = 1; break;
-            }
-            init_output_filter(ofilter, o, mux);
-        }
-    }
-
-    if (!o->nb_stream_maps) {
-        /* pick the "best" stream of each type */
-        if (!o->video_disable)
-            map_auto_video(mux, o);
-        if (!o->audio_disable)
-            map_auto_audio(mux, o);
-        if (!o->subtitle_disable)
-            map_auto_subtitle(mux, o);
-        if (!o->data_disable)
-            map_auto_data(mux, o);
-    } else {
-        for (int i = 0; i < o->nb_stream_maps; i++)
-            map_manual(mux, o, &o->stream_maps[i]);
-    }
+    /* create all output streams for this file */
+    create_streams(mux, o);
 
     of_add_attachments(mux, o);
 
