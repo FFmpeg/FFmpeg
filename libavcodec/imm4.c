@@ -51,9 +51,8 @@ typedef struct IMM4Context {
     unsigned lo;
     unsigned hi;
 
-    ScanTable intra_scantable;
-    DECLARE_ALIGNED(32, int16_t, block)[6][64];
     IDCTDSPContext idsp;
+    DECLARE_ALIGNED(32, int16_t, block)[6][64];
 } IMM4Context;
 
 static const uint8_t intra_cb[] = {
@@ -129,7 +128,7 @@ static int decode_block(AVCodecContext *avctx, GetBitContext *gb,
                         int block, int factor, int flag, int offset, int flag2)
 {
     IMM4Context *s = avctx->priv_data;
-    const uint8_t *scantable = s->intra_scantable.permutated;
+    const uint8_t *idct_permutation = s->idsp.idct_permutation;
     int i, last, len, factor2;
 
     for (i = !flag; i < 64; i++) {
@@ -152,17 +151,17 @@ static int decode_block(AVCodecContext *avctx, GetBitContext *gb,
         i += len;
         if (i >= 64)
             break;
-        s->block[block][scantable[i]] = offset * (factor2 < 0 ? -1 : 1) + factor * factor2;
+        s->block[block][idct_permutation[i]] = offset * (factor2 < 0 ? -1 : 1) + factor * factor2;
         if (last)
             break;
     }
 
     if (s->hi == 2 && flag2 && block < 4) {
         if (flag)
-            s->block[block][scantable[0]]  *= 2;
-        s->block[block][scantable[1]]  *= 2;
-        s->block[block][scantable[8]]  *= 2;
-        s->block[block][scantable[16]] *= 2;
+            s->block[block][idct_permutation[0]]  *= 2;
+        s->block[block][idct_permutation[1]]  *= 2;
+        s->block[block][idct_permutation[8]]  *= 2;
+        s->block[block][idct_permutation[16]] *= 2;
     }
 
     return 0;
@@ -172,7 +171,7 @@ static int decode_blocks(AVCodecContext *avctx, GetBitContext *gb,
                          unsigned cbp, int flag, int offset, unsigned flag2)
 {
     IMM4Context *s = avctx->priv_data;
-    const uint8_t *scantable = s->intra_scantable.permutated;
+    const uint8_t *idct_permutation = s->idsp.idct_permutation;
     int ret, i;
 
     memset(s->block, 0, sizeof(s->block));
@@ -185,7 +184,7 @@ static int decode_blocks(AVCodecContext *avctx, GetBitContext *gb,
                 x = 128;
             x *= 8;
 
-            s->block[i][scantable[0]] = x;
+            s->block[i][idct_permutation[0]] = x;
         }
 
         if (cbp & (1 << (5 - i))) {
@@ -495,14 +494,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
 {
     static AVOnce init_static_once = AV_ONCE_INIT;
     IMM4Context *s = avctx->priv_data;
-    uint8_t table[64];
-
-    for (int i = 0; i < 64; i++)
-        table[i] = i;
 
     ff_bswapdsp_init(&s->bdsp);
     ff_idctdsp_init(&s->idsp, avctx);
-    ff_init_scantable(s->idsp.idct_permutation, &s->intra_scantable, table);
 
     s->prev_frame = av_frame_alloc();
     if (!s->prev_frame)
