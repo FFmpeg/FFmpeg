@@ -1321,6 +1321,7 @@ static void of_add_metadata(OutputFile *of, AVFormatContext *oc,
             for (int j = 0; j < oc->nb_streams; j++) {
                 OutputStream *ost = of->streams[j];
                 if ((ret = check_stream_specifier(oc, oc->streams[j], stream_spec)) > 0) {
+#if FFMPEG_ROTATION_METADATA
                     if (!strcmp(o->metadata[i].u.str, "rotate")) {
                         char *tail;
                         double theta = av_strtod(val, &tail);
@@ -1328,9 +1329,18 @@ static void of_add_metadata(OutputFile *of, AVFormatContext *oc,
                             ost->rotate_overridden = 1;
                             ost->rotate_override_value = theta;
                         }
+
+                        av_log(NULL, AV_LOG_WARNING,
+                               "Conversion of a 'rotate' metadata key to a "
+                               "proper display matrix rotation is deprecated. "
+                               "See -display_rotation for setting rotation "
+                               "instead.");
                     } else {
+#endif
                         av_dict_set(&oc->streams[j]->metadata, o->metadata[i].u.str, *val ? val : NULL, 0);
+#if FFMPEG_ROTATION_METADATA
                     }
+#endif
                 } else if (ret < 0)
                     exit_program(1);
             }

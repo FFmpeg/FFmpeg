@@ -2713,12 +2713,14 @@ static int init_output_stream_streamcopy(OutputStream *ost)
         }
     }
 
+#if FFMPEG_ROTATION_METADATA
     if (ost->rotate_overridden) {
         uint8_t *sd = av_stream_new_side_data(ost->st, AV_PKT_DATA_DISPLAYMATRIX,
                                               sizeof(int32_t) * 9);
         if (sd)
             av_display_rotation_set((int32_t *)sd, -ost->rotate_override_value);
     }
+#endif
 
     switch (par->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
