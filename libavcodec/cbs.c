@@ -839,12 +839,10 @@ void ff_cbs_delete_unit(CodedBitstreamFragment *frag,
 static void cbs_default_free_unit_content(void *opaque, uint8_t *data)
 {
     const CodedBitstreamUnitTypeDescriptor *desc = opaque;
-    if (desc->content_type == CBS_CONTENT_TYPE_INTERNAL_REFS) {
-        int i;
-        for (i = 0; i < desc->type.ref.nb_offsets; i++) {
-            void **ptr = (void**)(data + desc->type.ref.offsets[i]);
-            av_buffer_unref((AVBufferRef**)(ptr + 1));
-        }
+
+    for (int i = 0; i < desc->type.ref.nb_offsets; i++) {
+        void **ptr = (void**)(data + desc->type.ref.offsets[i]);
+        av_buffer_unref((AVBufferRef**)(ptr + 1));
     }
     av_free(data);
 }
@@ -981,14 +979,6 @@ static int cbs_clone_unit_content(CodedBitstreamContext *ctx,
         return AVERROR(ENOSYS);
 
     switch (desc->content_type) {
-    case CBS_CONTENT_TYPE_POD:
-        ref = av_buffer_alloc(desc->content_size);
-        if (!ref)
-            return AVERROR(ENOMEM);
-        memcpy(ref->data, unit->content, desc->content_size);
-        err = 0;
-        break;
-
     case CBS_CONTENT_TYPE_INTERNAL_REFS:
         err = cbs_clone_internal_refs_unit_content(&ref, unit, desc);
         break;

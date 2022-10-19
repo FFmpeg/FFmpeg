@@ -31,9 +31,7 @@
 
 
 enum CBSContentType {
-    // Unit content is a simple structure.
-    CBS_CONTENT_TYPE_POD,
-    // Unit content contains some references to other structures, but all
+    // Unit content may contain some references to other structures, but all
     // managed via buffer reference counting.  The descriptor defines the
     // structure offsets of every buffer reference.
     CBS_CONTENT_TYPE_INTERNAL_REFS,
@@ -78,9 +76,12 @@ typedef const struct CodedBitstreamUnitTypeDescriptor {
     size_t content_size;
 
     union {
+        // This union's state is determined by content_type:
+        // ref for CBS_CONTENT_TYPE_INTERNAL_REFS,
+        // complex for CBS_CONTENT_TYPE_COMPLEX.
         struct {
-            // Number of entries in the ref_offsets array.  Only nonzero
-            // if the content_type is CBS_CONTENT_TYPE_INTERNAL_REFS.
+            // Number of entries in the ref_offsets array.
+            // May be zero, then the structure is POD-like.
             int nb_offsets;
             // The structure must contain two adjacent elements:
             //   type        *field;
@@ -191,18 +192,20 @@ int ff_cbs_write_signed(CodedBitstreamContext *ctx, PutBitContext *pbc,
 #define MIN_INT_BITS(length) (-(INT64_C(1) << ((length) - 1)))
 
 #define TYPE_LIST(...) { __VA_ARGS__ }
-#define CBS_UNIT_TYPE_POD(type, structure) { \
+#define CBS_UNIT_TYPE_POD(type_, structure) { \
         .nb_unit_types  = 1, \
-        .unit_type.list = { type }, \
-        .content_type   = CBS_CONTENT_TYPE_POD, \
+        .unit_type.list = { type_ }, \
+        .content_type   = CBS_CONTENT_TYPE_INTERNAL_REFS, \
         .content_size   = sizeof(structure), \
+        .type.ref       = { .nb_offsets = 0 }, \
     }
 #define CBS_UNIT_RANGE_POD(range_start, range_end, structure) { \
         .nb_unit_types         = CBS_UNIT_TYPE_RANGE, \
         .unit_type.range.start = range_start, \
         .unit_type.range.end   = range_end, \
-        .content_type          = CBS_CONTENT_TYPE_POD, \
+        .content_type          = CBS_CONTENT_TYPE_INTERNAL_REFS, \
         .content_size          = sizeof(structure), \
+        .type.ref              = { .nb_offsets = 0 }, \
     }
 
 #define CBS_UNIT_TYPES_INTERNAL_REF(types, structure, ref_field) { \
