@@ -691,7 +691,7 @@ fate-filter-metadata-avf-aphase-meter-out-of-phase: SRC = $(TARGET_SAMPLES)/filt
 fate-filter-metadata-avf-aphase-meter-out-of-phase: CMD = run $(FILTER_METADATA_COMMAND) "amovie='$(SRC)',aphasemeter=video=0"
 
 FATE_FILTER_SAMPLES-$(call TRANSCODE, RAWVIDEO H264, MOV, ARESAMPLE_FILTER  AAC_FIXED_DECODER) += fate-filter-meta-4560-rotate0
-fate-filter-meta-4560-rotate0: CMD = transcode mov $(TARGET_SAMPLES)/filter/sample-in-issue-505.mov mov "-c copy -metadata:s:v:0 rotate=0" "-af aresample" "" "" "-flags +bitexact -c:a aac_fixed"
+fate-filter-meta-4560-rotate0: CMD = transcode "mov -display_rotation:v:0 0" $(TARGET_SAMPLES)/filter/sample-in-issue-505.mov mov "-c copy" "-af aresample" "" "" "-flags +bitexact -c:a aac_fixed"
 
 FATE_FILTER_CMP_METADATA-$(CONFIG_BLOCKDETECT_FILTER) += fate-filter-refcmp-blockdetect-yuv
 fate-filter-refcmp-blockdetect-yuv: CMD = cmp_metadata blockdetect yuv420p 0.015

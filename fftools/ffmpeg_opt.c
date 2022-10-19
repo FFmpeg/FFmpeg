@@ -20,6 +20,7 @@
 
 #include "config.h"
 
+#include <float.h>
 #include <stdint.h>
 
 #if HAVE_SYS_RESOURCE_H
@@ -44,6 +45,7 @@
 #include "libavutil/avutil.h"
 #include "libavutil/bprint.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/display.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/fifo.h"
 #include "libavutil/mathematics.h"
@@ -66,6 +68,9 @@ static const char *const opt_name_fix_sub_duration[]          = {"fix_sub_durati
 static const char *const opt_name_canvas_sizes[]              = {"canvas_size", NULL};
 static const char *const opt_name_guess_layout_max[]          = {"guess_layout_max", NULL};
 static const char *const opt_name_discard[]                   = {"discard", NULL};
+static const char *const opt_name_display_rotations[]         = {"display_rotation", NULL};
+static const char *const opt_name_display_hflips[]            = {"display_hflip", NULL};
+static const char *const opt_name_display_vflips[]            = {"display_vflip", NULL};
 
 HWDevice *filter_hw_device;
 
@@ -595,6 +600,39 @@ static int opt_recording_timestamp(void *optctx, const char *opt, const char *ar
     return 0;
 }
 
+static void add_display_matrix_to_stream(OptionsContext *o,
+                                         AVFormatContext *ctx, AVStream *st)
+{
+    double rotation = DBL_MAX;
+    int hflip = -1, vflip = -1;
+    int hflip_set = 0, vflip_set = 0, rotation_set = 0;
+    int32_t *buf;
+
+    MATCH_PER_STREAM_OPT(display_rotations, dbl, rotation, ctx, st);
+    MATCH_PER_STREAM_OPT(display_hflips,    i,   hflip,    ctx, st);
+    MATCH_PER_STREAM_OPT(display_vflips,    i,   vflip,    ctx, st);
+
+    rotation_set = rotation != DBL_MAX;
+    hflip_set    = hflip != -1;
+    vflip_set    = vflip != -1;
+
+    if (!rotation_set && !hflip_set && !vflip_set)
+        return;
+
+    buf = (int32_t *)av_stream_new_side_data(st, AV_PKT_DATA_DISPLAYMATRIX, sizeof(int32_t) * 9);
+    if (!buf) {
+        av_log(NULL, AV_LOG_FATAL, "Failed to generate a display matrix!\n");
+        exit_program(1);
+    }
+
+    av_display_rotation_set(buf,
+                            rotation_set ? -(rotation) : -0.0f);
+
+    av_display_matrix_flip(buf,
+                           hflip_set ? hflip : 0,
+                           vflip_set ? vflip : 0);
+}
+
 const AVCodec *find_codec_or_die(const char *name, enum AVMediaType type, int encoder)
 {
     const AVCodecDescriptor *desc;
@@ -729,6 +767,8 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
         }
 
         if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+            add_display_matrix_to_stream(o, ic, st);
+
             MATCH_PER_STREAM_OPT(hwaccels, str, hwaccel, ic, st);
             MATCH_PER_STREAM_OPT(hwaccel_output_formats, str,
                                  hwaccel_output_format, ic, st);
@@ -2127,6 +2167,16 @@ const OptionDef options[] = {
     { "pix_fmt",      OPT_VIDEO | HAS_ARG | OPT_EXPERT  | OPT_STRING | OPT_SPEC |
                       OPT_INPUT | OPT_OUTPUT,                                    { .off = OFFSET(frame_pix_fmts) },
         "set pixel format", "format" },
+    { "display_rotation", OPT_VIDEO | HAS_ARG | OPT_DOUBLE | OPT_SPEC |
+                          OPT_INPUT,                                             { .off = OFFSET(display_rotations) },
+        "set pure counter-clockwise rotation in degrees for stream(s)",
+        "angle" },
+    { "display_hflip", OPT_VIDEO | OPT_BOOL | OPT_SPEC | OPT_INPUT,              { .off = OFFSET(display_hflips) },
+        "set display horizontal flip for stream(s) "
+        "(overrides any display rotation if it is not set)"},
+    { "display_vflip", OPT_VIDEO | OPT_BOOL | OPT_SPEC | OPT_INPUT,              { .off = OFFSET(display_vflips) },
+        "set display vertical flip for stream(s) "
+        "(overrides any display rotation if it is not set)"},
     { "vn",           OPT_VIDEO | OPT_BOOL  | OPT_OFFSET | OPT_INPUT | OPT_OUTPUT,{ .off = OFFSET(video_disable) },
         "disable video" },
     { "rc_override",  OPT_VIDEO | HAS_ARG | OPT_EXPERT  | OPT_STRING | OPT_SPEC |

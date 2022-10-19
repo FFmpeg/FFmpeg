@@ -912,6 +912,32 @@ If used together with @option{-vcodec copy}, it will affect the aspect ratio
 stored at container level, but not the aspect ratio stored in encoded
 frames, if it exists.
 
+@item -display_rotation[:@var{stream_specifier}] @var{rotation} (@emph{input,per-stream})
+Set video rotation metadata.
+
+@var{rotation} is a decimal number specifying the amount in degree by
+which the video should be rotated counter-clockwise before being
+displayed.
+
+This option overrides the rotation/display transform metadata stored in
+the file, if any. When the video is being transcoded (rather than
+copied) and @code{-autorotate} is enabled, the video will be rotated at
+the filtering stage. Otherwise, the metadata will be written into the
+output file if the muxer supports it.
+
+If the @code{-display_hflip} and/or @code{-display_vflip} options are
+given, they are applied after the rotation specified by this option.
+
+@item -display_hflip[:@var{stream_specifier}] (@emph{input,per-stream})
+Set whether on display the image should be horizontally flipped.
+
+See the @code{-display_rotation} option for more details.
+
+@item -display_vflip[:@var{stream_specifier}] (@emph{input,per-stream})
+Set whether on display the image should be vertically flipped.
+
+See the @code{-display_rotation} option for more details.
+
 @item -vn (@emph{input/output})
 As an input option, blocks all video streams of a file from being filtered or
 being automatically selected or mapped for any output. See @code{-discard}
