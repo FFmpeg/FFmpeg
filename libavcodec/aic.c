@@ -143,7 +143,6 @@ typedef struct AICContext {
     AVCodecContext *avctx;
     AVFrame        *frame;
     IDCTDSPContext idsp;
-    ScanTable      scantable;
 
     int            num_x_slices;
     int            slice_width;
@@ -348,10 +347,10 @@ static int aic_decode_slice(AICContext *ctx, int mb_x, int mb_y,
     for (mb = 0; mb < slice_width; mb++) {
         for (blk = 0; blk < 4; blk++) {
             if (!ctx->interlaced)
-                recombine_block(ctx->block, ctx->scantable.permutated,
+                recombine_block(ctx->block, ctx->idsp.idct_permutation,
                                 &base_y, &ext_y);
             else
-                recombine_block_il(ctx->block, ctx->scantable.permutated,
+                recombine_block_il(ctx->block, ctx->idsp.idct_permutation,
                                    &base_y, &ext_y, blk);
             unquant_block(ctx->block, ctx->quant, ctx->quant_matrix);
             ctx->idsp.idct(ctx->block);
@@ -368,7 +367,7 @@ static int aic_decode_slice(AICContext *ctx, int mb_x, int mb_y,
         Y += 16;
 
         for (blk = 0; blk < 2; blk++) {
-            recombine_block(ctx->block, ctx->scantable.permutated,
+            recombine_block(ctx->block, ctx->idsp.idct_permutation,
                             &base_c, &ext_c);
             unquant_block(ctx->block, ctx->quant, ctx->quant_matrix);
             ctx->idsp.idct(ctx->block);
@@ -444,7 +443,6 @@ static av_cold int aic_decode_init(AVCodecContext *avctx)
 {
     AICContext *ctx = avctx->priv_data;
     int i;
-    uint8_t scan[64];
 
     ctx->avctx = avctx;
 
@@ -452,9 +450,6 @@ static av_cold int aic_decode_init(AVCodecContext *avctx)
 
     ff_idctdsp_init(&ctx->idsp, avctx);
 
-    for (i = 0; i < 64; i++)
-        scan[i] = i;
-    ff_init_scantable(ctx->idsp.idct_permutation, &ctx->scantable, scan);
     for (i = 0; i < 64; i++)
         ctx->quant_matrix[ctx->idsp.idct_permutation[i]] = aic_quant_matrix[i];
 
