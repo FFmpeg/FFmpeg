@@ -476,14 +476,31 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
         avctx->colorspace = AVCOL_SPC_RGB;
     }
 
+    av_strlcpy(creator, avpkt->data + 160, 100);
+    creator[100] = '\0';
+    av_dict_set(&p->metadata, "Creator", creator, 0);
+
+    av_strlcpy(input_device, avpkt->data + 1556, 32);
+    input_device[32] = '\0';
+    av_dict_set(&p->metadata, "Input Device", input_device, 0);
+
+    // Some devices do not pad 10bit samples to whole 32bit words per row
+    if (!memcmp(input_device, "Scanity", 7) ||
+        !memcmp(creator, "Lasergraphics Inc.", 18)) {
+        if (bits_per_color == 10)
+            unpadded_10bit = 1;
+    }
+
     // Table 3c: Runs will always break at scan line boundaries. Packing
     // will always break to the next 32-bit word at scan-line boundaries.
     // Unfortunately, the encoder produced invalid files, so attempt
     // to detect it
+    // Also handle special case with unpadded content
     need_align = FFALIGN(stride, 4);
-    if (need_align*avctx->height + (int64_t)offset > avpkt->size) {
+    if (need_align*avctx->height + (int64_t)offset > avpkt->size &&
+        (!unpadded_10bit || (avctx->width * avctx->height * elements + 2) / 3 * 4 + (int64_t)offset > avpkt->size)) {
         // Alignment seems unappliable, try without
-        if (stride*avctx->height + (int64_t)offset > avpkt->size) {
+        if (stride*avctx->height + (int64_t)offset > avpkt->size || unpadded_10bit) {
             av_log(avctx, AV_LOG_ERROR, "Overread buffer. Invalid header?\n");
             return AVERROR_INVALIDDATA;
         } else {
@@ -608,20 +625,6 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
 
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
         return ret;
-
-    av_strlcpy(creator, avpkt->data + 160, 100);
-    creator[100] = '\0';
-    av_dict_set(&p->metadata, "Creator", creator, 0);
-
-    av_strlcpy(input_device, avpkt->data + 1556, 32);
-    input_device[32] = '\0';
-    av_dict_set(&p->metadata, "Input Device", input_device, 0);
-
-    // Some devices do not pad 10bit samples to whole 32bit words per row
-    if (!memcmp(input_device, "Scanity", 7) ||
-        !memcmp(creator, "Lasergraphics Inc.", 18)) {
-        unpadded_10bit = 1;
-    }
 
     // Move pointer to offset from start of file
     buf =  avpkt->data + offset;
