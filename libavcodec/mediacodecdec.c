@@ -444,7 +444,16 @@ static int mediacodec_receive_frame(AVCodecContext *avctx, AVFrame *frame)
             index = ff_AMediaCodec_dequeueInputBuffer(s->ctx->codec, 0);
             if (index < 0) {
                 /* no space, block for an output frame to appear */
-                return ff_mediacodec_dec_receive(avctx, s->ctx, frame, true);
+                ret = ff_mediacodec_dec_receive(avctx, s->ctx, frame, true);
+                /* Try again if both input port and output port return EAGAIN.
+                 * If no data is consumed and no frame in output, it can make
+                 * both avcodec_send_packet() and avcodec_receive_frame()
+                 * return EAGAIN, which violate the design.
+                 */
+                if (ff_AMediaCodec_infoTryAgainLater(s->ctx->codec, index) &&
+                    ret == AVERROR(EAGAIN))
+                    continue;
+                return ret;
             }
             s->ctx->current_input_buffer = index;
         }
