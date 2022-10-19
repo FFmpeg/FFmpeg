@@ -612,7 +612,7 @@ static OutputStream *ost_iter(OutputStream *prev)
 
     for (; of_idx < nb_output_files; of_idx++) {
         OutputFile *of = output_files[of_idx];
-        for (; ost_idx < of->nb_streams; ost_idx++)
+        if (ost_idx < of->nb_streams)
             return of->streams[ost_idx];
 
         ost_idx = 0;
