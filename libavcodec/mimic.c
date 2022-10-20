@@ -56,7 +56,7 @@ typedef struct MimicContext {
     DECLARE_ALIGNED(32, int16_t, dct_block)[64];
 
     GetBitContext   gb;
-    ScanTable       scantable;
+    uint8_t         permutated_scantable[64];
     BlockDSPContext bdsp;
     BswapDSPContext bbdsp;
     HpelDSPContext  hdsp;
@@ -137,7 +137,7 @@ static av_cold int mimic_decode_init(AVCodecContext *avctx)
     ff_bswapdsp_init(&ctx->bbdsp);
     ff_hpeldsp_init(&ctx->hdsp, avctx->flags);
     ff_idctdsp_init(&ctx->idsp, avctx);
-    ff_init_scantable(ctx->idsp.idct_permutation, &ctx->scantable, col_zag);
+    ff_permute_scantable(ctx->permutated_scantable, col_zag, ctx->idsp.idct_permutation);
 
     for (i = 0; i < FF_ARRAY_ELEMS(ctx->frames); i++) {
         ctx->frames[i].f = av_frame_alloc();
@@ -250,7 +250,7 @@ static int vlc_decode_block(MimicContext *ctx, int num_coeffs, int qscale)
         else /* TODO Use >> 10 instead of / 1001 */
             coeff = (coeff * qscale) / 1001;
 
-        block[ctx->scantable.permutated[pos]] = coeff;
+        block[ctx->permutated_scantable[pos]] = coeff;
     }
 
     return 0;
