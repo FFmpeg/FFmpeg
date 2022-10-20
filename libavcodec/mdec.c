@@ -44,7 +44,7 @@ typedef struct MDECContext {
     BswapDSPContext bbdsp;
     IDCTDSPContext idsp;
     GetBitContext gb;
-    ScanTable scantable;
+    uint8_t permutated_scantable[64];
     int version;
     int qscale;
     int last_dc[3];
@@ -64,7 +64,7 @@ static inline int mdec_decode_block_intra(MDECContext *a, int16_t *block, int n)
     int level, diff, i, j, run;
     int component;
     RLTable *rl = &ff_rl_mpeg1;
-    uint8_t * const scantable = a->scantable.permutated;
+    const uint8_t *const scantable = a->permutated_scantable;
     const uint16_t *quant_matrix = a->quant_matrix;
     const int qscale = a->qscale;
 
@@ -223,8 +223,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ff_bswapdsp_init(&a->bbdsp);
     ff_idctdsp_init(&a->idsp, avctx);
     ff_mpeg12_init_vlcs();
-    ff_init_scantable(a->idsp.idct_permutation, &a->scantable,
-                      ff_zigzag_direct);
+    ff_permute_scantable(a->permutated_scantable, ff_zigzag_direct,
+                         a->idsp.idct_permutation);
 
     avctx->pix_fmt  = AV_PIX_FMT_YUVJ420P;
     avctx->color_range = AVCOL_RANGE_JPEG;
