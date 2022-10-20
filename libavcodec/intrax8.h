@@ -21,7 +21,6 @@
 
 #include "blockdsp.h"
 #include "get_bits.h"
-#include "idctdsp.h"
 #include "intrax8dsp.h"
 #include "wmv2dsp.h"
 #include "mpegpicture.h"
@@ -35,7 +34,7 @@ typedef struct IntraX8Context {
 
     // set by ff_intrax8_common_init
     uint8_t *prediction_table; // 2 * (mb_w * 2)
-    ScanTable scantable[3];
+    uint8_t permutated_scantable[3][64];
     WMV2DSPContext wdsp;
     uint8_t idct_permutation[64];
     AVCodecContext *avctx;

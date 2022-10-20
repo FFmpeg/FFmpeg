@@ -25,6 +25,7 @@
 #include "libavutil/thread.h"
 #include "avcodec.h"
 #include "get_bits.h"
+#include "idctdsp.h"
 #include "msmpeg4data.h"
 #include "intrax8huf.h"
 #include "intrax8.h"
@@ -576,7 +577,7 @@ static int x8_decode_intra_mb(IntraX8Context *const w, const int chroma)
         x8_select_ac_table(w, ac_mode);
         /* scantable_selector[12] = { 0, 2, 0, 1, 1, 1, 0, 2, 2, 0, 1, 2 }; <-
          * -> 10'01' 00'10' 10'00' 01'01' 01'00' 10'00 => 0x928548 */
-        scantable = w->scantable[(0x928548 >> (2 * w->orient)) & 3].permutated;
+        scantable = w->permutated_scantable[(0x928548 >> (2 * w->orient)) & 3];
         pos       = 0;
         do {
             n++;
@@ -714,12 +715,12 @@ av_cold int ff_intrax8_common_init(AVCodecContext *avctx,
     ff_init_scantable_permutation(w->idct_permutation,
                                   w->wdsp.idct_perm);
 
-    ff_init_scantable(w->idct_permutation, &w->scantable[0],
-                      ff_wmv1_scantable[0]);
-    ff_init_scantable(w->idct_permutation, &w->scantable[1],
-                      ff_wmv1_scantable[2]);
-    ff_init_scantable(w->idct_permutation, &w->scantable[2],
-                      ff_wmv1_scantable[3]);
+    ff_permute_scantable(w->permutated_scantable[0], ff_wmv1_scantable[0],
+                         w->idct_permutation);
+    ff_permute_scantable(w->permutated_scantable[1], ff_wmv1_scantable[2],
+                         w->idct_permutation);
+    ff_permute_scantable(w->permutated_scantable[2], ff_wmv1_scantable[3],
+                         w->idct_permutation);
 
     ff_intrax8dsp_init(&w->dsp);
     ff_blockdsp_init(&w->bdsp);
