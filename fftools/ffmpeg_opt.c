@@ -1300,7 +1300,7 @@ static int open_input_file(OptionsContext *o, const char *filename)
 }
 
 /* read file contents into a string */
-char *read_file(const char *filename)
+char *file_read(const char *filename)
 {
     AVIOContext *pb      = NULL;
     int ret = avio_open(&pb, filename, AVIO_FLAG_READ);
@@ -1725,7 +1725,7 @@ static int opt_filter_complex(void *optctx, const char *opt, const char *arg)
 static int opt_filter_complex_script(void *optctx, const char *opt, const char *arg)
 {
     FilterGraph *fg;
-    char *graph_desc = read_file(arg);
+    char *graph_desc = file_read(arg);
     if (!graph_desc)
         return AVERROR(EINVAL);
 

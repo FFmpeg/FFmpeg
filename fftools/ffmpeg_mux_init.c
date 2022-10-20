@@ -380,7 +380,7 @@ static char *get_ost_filters(OptionsContext *o, AVFormatContext *oc,
     }
 
     if (ost->filters_script)
-        return read_file(ost->filters_script);
+        return file_read(ost->filters_script);
     else if (ost->filters)
         return av_strdup(ost->filters);
 
@@ -585,7 +585,7 @@ static OutputStream *new_video_stream(Muxer *mux, OptionsContext *o, int source_
                 av_dict_set(&ost->encoder_opts, "stats", logfilename, AV_DICT_DONT_OVERWRITE);
             } else {
                 if (video_enc->flags & AV_CODEC_FLAG_PASS2) {
-                    char  *logbuffer = read_file(logfilename);
+                    char  *logbuffer = file_read(logfilename);
 
                     if (!logbuffer) {
                         av_log(NULL, AV_LOG_FATAL, "Error reading log file '%s' for pass-2 encoding\n",
