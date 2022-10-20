@@ -225,6 +225,7 @@ typedef struct HLSContext {
     int http_persistent;
     int http_multiple;
     int http_seekable;
+    int seg_max_retry;
     AVIOContext *playlist_pb;
     HLSCryptoContext  crypto_ctx;
 } HLSContext;
@@ -1472,6 +1473,7 @@ static int read_data(void *opaque, uint8_t *buf, int buf_size)
     int ret;
     int just_opened = 0;
     int reload_count = 0;
+    int segment_retries = 0;
     struct segment *seg;
 
 restart:
@@ -1563,9 +1565,18 @@ reload:
             av_log(v->parent, AV_LOG_WARNING, "Failed to open segment %"PRId64" of playlist %d\n",
                    v->cur_seq_no,
                    v->index);
-            v->cur_seq_no += 1;
+            if (segment_retries >= c->seg_max_retry) {
+                av_log(v->parent, AV_LOG_WARNING, "Segment %"PRId64" of playlist %d failed too many times, skipping\n",
+                       v->cur_seq_no,
+                       v->index);
+                v->cur_seq_no++;
+                segment_retries = 0;
+            } else {
+                segment_retries++;
+            }
             goto reload;
         }
+        segment_retries = 0;
         just_opened = 1;
     }
 
@@ -2549,6 +2560,8 @@ static const AVOption hls_options[] = {
         OFFSET(http_seekable), AV_OPT_TYPE_BOOL, { .i64 = -1}, -1, 1, FLAGS},
     {"seg_format_options", "Set options for segment demuxer",
         OFFSET(seg_format_opts), AV_OPT_TYPE_DICT, {.str = NULL}, 0, 0, FLAGS},
+    {"seg_max_retry", "Maximum number of times to reload a segment on error.",
+     OFFSET(seg_max_retry), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, FLAGS},
     {NULL}
 };
 

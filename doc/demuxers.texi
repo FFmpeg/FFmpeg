@@ -419,6 +419,10 @@ Use HTTP partial requests for downloading HTTP segments.
 
 @item seg_format_options
 Set options for the demuxer of media segments using a list of key=value pairs separated by @code{:}.
+
+@item seg_max_retry
+Maximum number of times to reload a segment on error, useful when segment skip on network error is not desired.
+Default value is 0.
 @end table
 
 @section image2
