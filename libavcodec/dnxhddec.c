@@ -65,7 +65,7 @@ typedef struct DNXHDContext {
     int cur_field;                      ///< current interlaced field
     VLC ac_vlc, dc_vlc, run_vlc;
     IDCTDSPContext idsp;
-    ScanTable scantable;
+    uint8_t permutated_scantable[64];
     const CIDEntry *cid_table;
     int bit_depth; // 8, 10, 12 or 0 if not initialized at all.
     int is_444;
@@ -275,8 +275,8 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
     if (ctx->bit_depth != old_bit_depth) {
         ff_blockdsp_init(&ctx->bdsp);
         ff_idctdsp_init(&ctx->idsp, ctx->avctx);
-        ff_init_scantable(ctx->idsp.idct_permutation, &ctx->scantable,
-                          ff_zigzag_direct);
+        ff_permute_scantable(ctx->permutated_scantable, ff_zigzag_direct,
+                             ctx->idsp.idct_permutation);
     }
 
     // make sure profile size constraints are respected
@@ -436,7 +436,7 @@ static av_always_inline int dnxhd_decode_dct_block(const DNXHDContext *ctx,
             break;
         }
 
-        j     = ctx->scantable.permutated[i];
+        j      = ctx->permutated_scantable[i];
         level *= scale[i];
         level += scale[i] >> 1;
         if (level_bias < 32 || weight_matrix[i] != level_bias)
