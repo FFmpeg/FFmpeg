@@ -58,7 +58,7 @@ typedef struct ASVDecContext {
 
     BlockDSPContext bdsp;
     IDCTDSPContext idsp;
-    ScanTable scantable;
+    uint8_t permutated_scantable[64];
     DECLARE_ALIGNED(32, int16_t, block)[6][64];
     uint16_t intra_matrix[64];
     uint8_t *bitstream_buffer;
@@ -141,13 +141,13 @@ static inline int asv1_decode_block(ASVDecContext *a, int16_t block[64])
             }
 
             if (ccp & 8)
-                block[a->scantable.permutated[4 * i + 0]] = (asv1_get_level(&a->gb) * a->intra_matrix[4 * i + 0]) >> 4;
+                block[a->permutated_scantable[4 * i + 0]] = (asv1_get_level(&a->gb) * a->intra_matrix[4 * i + 0]) >> 4;
             if (ccp & 4)
-                block[a->scantable.permutated[4 * i + 1]] = (asv1_get_level(&a->gb) * a->intra_matrix[4 * i + 1]) >> 4;
+                block[a->permutated_scantable[4 * i + 1]] = (asv1_get_level(&a->gb) * a->intra_matrix[4 * i + 1]) >> 4;
             if (ccp & 2)
-                block[a->scantable.permutated[4 * i + 2]] = (asv1_get_level(&a->gb) * a->intra_matrix[4 * i + 2]) >> 4;
+                block[a->permutated_scantable[4 * i + 2]] = (asv1_get_level(&a->gb) * a->intra_matrix[4 * i + 2]) >> 4;
             if (ccp & 1)
-                block[a->scantable.permutated[4 * i + 3]] = (asv1_get_level(&a->gb) * a->intra_matrix[4 * i + 3]) >> 4;
+                block[a->permutated_scantable[4 * i + 3]] = (asv1_get_level(&a->gb) * a->intra_matrix[4 * i + 3]) >> 4;
         }
     }
 
@@ -165,11 +165,11 @@ static inline int asv2_decode_block(ASVDecContext *a, int16_t block[64])
     ccp = asv2_get_vlc2(&a->gb, dc_ccp_vlc.table, DC_CCP_VLC_BITS);
     if (ccp) {
         if (ccp & 4)
-            block[a->scantable.permutated[1]] = (asv2_get_level(&a->gb) * a->intra_matrix[1]) >> 4;
+            block[a->permutated_scantable[1]] = (asv2_get_level(&a->gb) * a->intra_matrix[1]) >> 4;
         if (ccp & 2)
-            block[a->scantable.permutated[2]] = (asv2_get_level(&a->gb) * a->intra_matrix[2]) >> 4;
+            block[a->permutated_scantable[2]] = (asv2_get_level(&a->gb) * a->intra_matrix[2]) >> 4;
         if (ccp & 1)
-            block[a->scantable.permutated[3]] = (asv2_get_level(&a->gb) * a->intra_matrix[3]) >> 4;
+            block[a->permutated_scantable[3]] = (asv2_get_level(&a->gb) * a->intra_matrix[3]) >> 4;
     }
 
     for (i = 1; i < count + 1; i++) {
@@ -177,13 +177,13 @@ static inline int asv2_decode_block(ASVDecContext *a, int16_t block[64])
 
         if (ccp) {
             if (ccp & 8)
-                block[a->scantable.permutated[4 * i + 0]] = (asv2_get_level(&a->gb) * a->intra_matrix[4 * i + 0]) >> 4;
+                block[a->permutated_scantable[4 * i + 0]] = (asv2_get_level(&a->gb) * a->intra_matrix[4 * i + 0]) >> 4;
             if (ccp & 4)
-                block[a->scantable.permutated[4 * i + 1]] = (asv2_get_level(&a->gb) * a->intra_matrix[4 * i + 1]) >> 4;
+                block[a->permutated_scantable[4 * i + 1]] = (asv2_get_level(&a->gb) * a->intra_matrix[4 * i + 1]) >> 4;
             if (ccp & 2)
-                block[a->scantable.permutated[4 * i + 2]] = (asv2_get_level(&a->gb) * a->intra_matrix[4 * i + 2]) >> 4;
+                block[a->permutated_scantable[4 * i + 2]] = (asv2_get_level(&a->gb) * a->intra_matrix[4 * i + 2]) >> 4;
             if (ccp & 1)
-                block[a->scantable.permutated[4 * i + 3]] = (asv2_get_level(&a->gb) * a->intra_matrix[4 * i + 3]) >> 4;
+                block[a->permutated_scantable[4 * i + 3]] = (asv2_get_level(&a->gb) * a->intra_matrix[4 * i + 3]) >> 4;
         }
     }
 
@@ -311,7 +311,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ff_asv_common_init(avctx);
     ff_blockdsp_init(&a->bdsp);
     ff_idctdsp_init(&a->idsp, avctx);
-    ff_init_scantable(a->idsp.idct_permutation, &a->scantable, ff_asv_scantab);
+    ff_permute_scantable(a->permutated_scantable, ff_asv_scantab,
+                         a->idsp.idct_permutation);
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
 
     if (avctx->extradata_size < 1 || (inv_qscale = avctx->extradata[0]) == 0) {
