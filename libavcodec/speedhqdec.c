@@ -53,7 +53,7 @@
 typedef struct SHQContext {
     BlockDSPContext bdsp;
     IDCTDSPContext idsp;
-    ScanTable intra_scantable;
+    uint8_t permutated_intra_scantable[64];
     int quant_matrix[64];
     enum { SHQ_SUBSAMPLING_420, SHQ_SUBSAMPLING_422, SHQ_SUBSAMPLING_444 }
         subsampling;
@@ -137,7 +137,7 @@ static inline int decode_alpha_block(const SHQContext *s, GetBitContext *gb, uin
 static inline int decode_dct_block(const SHQContext *s, GetBitContext *gb, int last_dc[4], int component, uint8_t *dest, int linesize)
 {
     const int *quant_matrix = s->quant_matrix;
-    const uint8_t *scantable = s->intra_scantable.permutated;
+    const uint8_t *scantable = s->permutated_intra_scantable;
     LOCAL_ALIGNED_32(int16_t, block, [64]);
     int dc_offset;
 
@@ -581,7 +581,8 @@ static av_cold int speedhq_decode_init(AVCodecContext *avctx)
 
     ff_blockdsp_init(&s->bdsp);
     ff_idctdsp_init(&s->idsp, avctx);
-    ff_init_scantable(s->idsp.idct_permutation, &s->intra_scantable, ff_zigzag_direct);
+    ff_permute_scantable(s->permutated_intra_scantable, ff_zigzag_direct,
+                         s->idsp.idct_permutation);
 
     switch (avctx->codec_tag) {
     case MKTAG('S', 'H', 'Q', '0'):
