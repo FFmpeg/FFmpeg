@@ -18,11 +18,23 @@
 
 #include "config.h"
 
+#include <android/native_window.h>
+#include <dlfcn.h>
+#include <media/NdkMediaCodec.h>
+
 #include "buffer.h"
 #include "common.h"
 #include "hwcontext.h"
 #include "hwcontext_internal.h"
 #include "hwcontext_mediacodec.h"
+
+typedef struct MediaCodecDeviceContext {
+    AVMediaCodecDeviceContext ctx;
+
+    void *libmedia;
+    media_status_t (*create_surface)(ANativeWindow **surface);
+} MediaCodecDeviceContext;
+
 
 static int mc_device_create(AVHWDeviceContext *ctx, const char *device,
                             AVDictionary *opts, int flags)
@@ -35,13 +47,55 @@ static int mc_device_create(AVHWDeviceContext *ctx, const char *device,
     return 0;
 }
 
+static int mc_device_init(AVHWDeviceContext *ctx)
+{
+    MediaCodecDeviceContext *s = ctx->hwctx;
+    AVMediaCodecDeviceContext *dev = (AVMediaCodecDeviceContext *)s;
+    ANativeWindow *native_window = NULL;
+
+    if (dev->surface)
+        return 0;
+
+    if (dev->native_window)
+        return 0;
+
+    s->libmedia = dlopen("libmediandk.so", RTLD_NOW);
+    if (!s->libmedia)
+        return AVERROR_UNKNOWN;
+
+    s->create_surface = dlsym(s->libmedia, "AMediaCodec_createPersistentInputSurface");
+    if (!s->create_surface)
+        return AVERROR_UNKNOWN;
+
+    s->create_surface(&native_window);
+    dev->native_window = native_window;
+    return 0;
+}
+
+static void mc_device_uninit(AVHWDeviceContext *ctx)
+{
+    MediaCodecDeviceContext *s = ctx->hwctx;
+    AVMediaCodecDeviceContext *dev = ctx->hwctx;
+    if (!s->libmedia)
+        return;
+
+    if (dev->native_window) {
+        ANativeWindow_release(dev->native_window);
+        dev->native_window = NULL;
+    }
+    dlclose(s->libmedia);
+    s->libmedia = NULL;
+}
+
 const HWContextType ff_hwcontext_type_mediacodec = {
     .type                 = AV_HWDEVICE_TYPE_MEDIACODEC,
     .name                 = "mediacodec",
 
-    .device_hwctx_size    = sizeof(AVMediaCodecDeviceContext),
+    .device_hwctx_size    = sizeof(MediaCodecDeviceContext),
 
     .device_create        = mc_device_create,
+    .device_init          = mc_device_init,
+    .device_uninit        = mc_device_uninit,
 
     .pix_fmts = (const enum AVPixelFormat[]){
         AV_PIX_FMT_MEDIACODEC,

@@ -31,6 +31,17 @@ typedef struct AVMediaCodecDeviceContext {
      * This is the default surface used by decoders on this device.
      */
     void *surface;
+
+    /**
+     * Pointer to ANativeWindow.
+     *
+     * It both surface and native_window is NULL, try to create it
+     * automatically if OS support.
+     *
+     * It can be used as output surface for decoder and input surface for
+     * encoder.
+     */
+    void *native_window;
 } AVMediaCodecDeviceContext;
 
 #endif /* AVUTIL_HWCONTEXT_MEDIACODEC_H */
