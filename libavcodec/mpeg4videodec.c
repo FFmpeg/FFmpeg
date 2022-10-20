@@ -1327,9 +1327,9 @@ static inline int mpeg4_decode_block(Mpeg4DecContext *ctx, int16_t *block,
         }
         if (s->ac_pred) {
             if (dc_pred_dir == 0)
-                scan_table = s->intra_v_scantable.permutated;  /* left */
+                scan_table = s->permutated_intra_v_scantable;  /* left */
             else
-                scan_table = s->intra_h_scantable.permutated;  /* top */
+                scan_table = s->permutated_intra_h_scantable;  /* top */
         } else {
             scan_table = s->intra_scantable.permutated;
         }
@@ -3258,13 +3258,17 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb,
     if (s->alternate_scan) {
         ff_init_scantable(s->idsp.idct_permutation, &s->inter_scantable,   ff_alternate_vertical_scan);
         ff_init_scantable(s->idsp.idct_permutation, &s->intra_scantable,   ff_alternate_vertical_scan);
-        ff_init_scantable(s->idsp.idct_permutation, &s->intra_h_scantable, ff_alternate_vertical_scan);
-        ff_init_scantable(s->idsp.idct_permutation, &s->intra_v_scantable, ff_alternate_vertical_scan);
+        ff_permute_scantable(s->permutated_intra_h_scantable, ff_alternate_vertical_scan,
+                             s->idsp.idct_permutation);
+        ff_permute_scantable(s->permutated_intra_v_scantable, ff_alternate_vertical_scan,
+                             s->idsp.idct_permutation);
     } else {
         ff_init_scantable(s->idsp.idct_permutation, &s->inter_scantable,   ff_zigzag_direct);
         ff_init_scantable(s->idsp.idct_permutation, &s->intra_scantable,   ff_zigzag_direct);
-        ff_init_scantable(s->idsp.idct_permutation, &s->intra_h_scantable, ff_alternate_horizontal_scan);
-        ff_init_scantable(s->idsp.idct_permutation, &s->intra_v_scantable, ff_alternate_vertical_scan);
+        ff_permute_scantable(s->permutated_intra_h_scantable, ff_alternate_horizontal_scan,
+                             s->idsp.idct_permutation);
+        ff_permute_scantable(s->permutated_intra_v_scantable, ff_alternate_vertical_scan,
+                             s->idsp.idct_permutation);
     }
 
     /* Skip at this point when only parsing since the remaining
@@ -3432,13 +3436,17 @@ static int decode_studio_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
     if (s->alternate_scan) {
         ff_init_scantable(s->idsp.idct_permutation, &s->inter_scantable,   ff_alternate_vertical_scan);
         ff_init_scantable(s->idsp.idct_permutation, &s->intra_scantable,   ff_alternate_vertical_scan);
-        ff_init_scantable(s->idsp.idct_permutation, &s->intra_h_scantable, ff_alternate_vertical_scan);
-        ff_init_scantable(s->idsp.idct_permutation, &s->intra_v_scantable, ff_alternate_vertical_scan);
+        ff_permute_scantable(s->permutated_intra_h_scantable, ff_alternate_vertical_scan,
+                             s->idsp.idct_permutation);
+        ff_permute_scantable(s->permutated_intra_v_scantable, ff_alternate_vertical_scan,
+                             s->idsp.idct_permutation);
     } else {
         ff_init_scantable(s->idsp.idct_permutation, &s->inter_scantable,   ff_zigzag_direct);
         ff_init_scantable(s->idsp.idct_permutation, &s->intra_scantable,   ff_zigzag_direct);
-        ff_init_scantable(s->idsp.idct_permutation, &s->intra_h_scantable, ff_alternate_horizontal_scan);
-        ff_init_scantable(s->idsp.idct_permutation, &s->intra_v_scantable, ff_alternate_vertical_scan);
+        ff_permute_scantable(s->permutated_intra_h_scantable, ff_alternate_horizontal_scan,
+                             s->idsp.idct_permutation);
+        ff_permute_scantable(s->permutated_intra_v_scantable, ff_alternate_vertical_scan,
+                             s->idsp.idct_permutation);
     }
 
     mpeg4_load_default_matrices(s);

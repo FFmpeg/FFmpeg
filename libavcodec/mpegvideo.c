@@ -357,8 +357,10 @@ av_cold void ff_mpv_idct_init(MpegEncContext *s)
         ff_init_scantable(s->idsp.idct_permutation, &s->inter_scantable, ff_zigzag_direct);
         ff_init_scantable(s->idsp.idct_permutation, &s->intra_scantable, ff_zigzag_direct);
     }
-    ff_init_scantable(s->idsp.idct_permutation, &s->intra_h_scantable, ff_alternate_horizontal_scan);
-    ff_init_scantable(s->idsp.idct_permutation, &s->intra_v_scantable, ff_alternate_vertical_scan);
+    ff_permute_scantable(s->permutated_intra_h_scantable, ff_alternate_horizontal_scan,
+                         s->idsp.idct_permutation);
+    ff_permute_scantable(s->permutated_intra_v_scantable, ff_alternate_vertical_scan,
+                         s->idsp.idct_permutation);
 }
 
 static int init_duplicate_context(MpegEncContext *s)

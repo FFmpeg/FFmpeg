@@ -82,8 +82,8 @@ typedef struct MpegEncContext {
      *          offsets used in ASM. */
 
     ScanTable intra_scantable;
-    ScanTable intra_h_scantable;
-    ScanTable intra_v_scantable;
+    uint8_t permutated_intra_h_scantable[64];
+    uint8_t permutated_intra_v_scantable[64];
 
     struct AVCodecContext *avctx;
     /* The following pointer is intended for codecs sharing code

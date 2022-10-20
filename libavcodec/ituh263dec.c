@@ -544,9 +544,9 @@ static int h263_decode_block(MpegEncContext * s, int16_t * block,
         i = 0;
         if (s->ac_pred) {
             if (s->h263_aic_dir)
-                scan_table = s->intra_v_scantable.permutated; /* left */
+                scan_table = s->permutated_intra_v_scantable; /* left */
             else
-                scan_table = s->intra_h_scantable.permutated; /* top */
+                scan_table = s->permutated_intra_h_scantable; /* top */
         }
     } else if (s->mb_intra) {
         /* DC coef */
