@@ -38,7 +38,7 @@ static void threshold8(const uint8_t *in, const uint8_t *threshold,
 {
     for (int y = 0; y < h; y++) {
         for (int x = 0; x < w; x++)
-            out[x] = in[x] < threshold[x] ? min[x] : max[x];
+            out[x] = in[x] <= threshold[x] ? min[x] : max[x];
 
         in        += ilinesize;
         threshold += tlinesize;
@@ -64,7 +64,7 @@ static void threshold16(const uint8_t *iin, const uint8_t *tthreshold,
 
     for (int y = 0; y < h; y++) {
         for (int x = 0; x < w; x++)
-            out[x] = in[x] < threshold[x] ? min[x] : max[x];
+            out[x] = in[x] <= threshold[x] ? min[x] : max[x];
 
         in        += ilinesize / 2;
         threshold += tlinesize / 2;
