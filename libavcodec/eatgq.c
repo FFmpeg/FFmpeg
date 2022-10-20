@@ -39,12 +39,10 @@
 #include "decode.h"
 #include "eaidct.h"
 #include "get_bits.h"
-#include "idctdsp.h"
 
 typedef struct TgqContext {
     AVCodecContext *avctx;
     int width, height;
-    ScanTable scantable;
     int qtable[64];
     DECLARE_ALIGNED(16, int16_t, block)[6][64];
     GetByteContext gb;
@@ -53,10 +51,7 @@ typedef struct TgqContext {
 static av_cold int tgq_decode_init(AVCodecContext *avctx)
 {
     TgqContext *s = avctx->priv_data;
-    uint8_t idct_permutation[64];
     s->avctx = avctx;
-    ff_init_scantable_permutation(idct_permutation, FF_IDCT_PERM_NONE);
-    ff_init_scantable(idct_permutation, &s->scantable, ff_zigzag_direct);
     avctx->framerate = (AVRational){ 15, 1 };
     avctx->pix_fmt   = AV_PIX_FMT_YUV420P;
     return 0;
@@ -64,15 +59,15 @@ static av_cold int tgq_decode_init(AVCodecContext *avctx)
 
 static void tgq_decode_block(TgqContext *s, int16_t block[64], GetBitContext *gb)
 {
-    uint8_t *perm = s->scantable.permutated;
+    const uint8_t *scantable = ff_zigzag_direct;
     int i, j, value;
     block[0] = get_sbits(gb, 8) * s->qtable[0];
     for (i = 1; i < 64;) {
         switch (show_bits(gb, 3)) {
         case 4:
-            block[perm[i++]] = 0;
+            block[scantable[i++]] = 0;
         case 0:
-            block[perm[i++]] = 0;
+            block[scantable[i++]] = 0;
             skip_bits(gb, 3);
             break;
         case 5:
@@ -80,16 +75,16 @@ static void tgq_decode_block(TgqContext *s, int16_t block[64], GetBitContext *gb
             skip_bits(gb, 2);
             value = get_bits(gb, 6);
             for (j = 0; j < value; j++)
-                block[perm[i++]] = 0;
+                block[scantable[i++]] = 0;
             break;
         case 6:
             skip_bits(gb, 3);
-            block[perm[i]] = -s->qtable[perm[i]];
+            block[scantable[i]] = -s->qtable[scantable[i]];
             i++;
             break;
         case 2:
             skip_bits(gb, 3);
-            block[perm[i]] = s->qtable[perm[i]];
+            block[scantable[i]] = s->qtable[scantable[i]];
             i++;
             break;
         case 7: // 111b
@@ -97,9 +92,9 @@ static void tgq_decode_block(TgqContext *s, int16_t block[64], GetBitContext *gb
             skip_bits(gb, 2);
             if (show_bits(gb, 6) == 0x3F) {
                 skip_bits(gb, 6);
-                block[perm[i]] = get_sbits(gb, 8) * s->qtable[perm[i]];
+                block[scantable[i]] = get_sbits(gb, 8) * s->qtable[scantable[i]];
             } else {
-                block[perm[i]] = get_sbits(gb, 6) * s->qtable[perm[i]];
+                block[scantable[i]] = get_sbits(gb, 6) * s->qtable[scantable[i]];
             }
             i++;
             break;
