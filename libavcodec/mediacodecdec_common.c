@@ -589,14 +589,14 @@ int ff_mediacodec_dec_init(AVCodecContext *avctx, MediaCodecDecContext *s,
             if (device_ctx->type == AV_HWDEVICE_TYPE_MEDIACODEC) {
                 if (device_ctx->hwctx) {
                     AVMediaCodecDeviceContext *mediacodec_ctx = (AVMediaCodecDeviceContext *)device_ctx->hwctx;
-                    s->surface = ff_mediacodec_surface_ref(mediacodec_ctx->surface, avctx);
+                    s->surface = ff_mediacodec_surface_ref(mediacodec_ctx->surface, mediacodec_ctx->native_window, avctx);
                     av_log(avctx, AV_LOG_INFO, "Using surface %p\n", s->surface);
                 }
             }
         }
 
         if (!s->surface && user_ctx && user_ctx->surface) {
-            s->surface = ff_mediacodec_surface_ref(user_ctx->surface, avctx);
+            s->surface = ff_mediacodec_surface_ref(user_ctx->surface, NULL, avctx);
             av_log(avctx, AV_LOG_INFO, "Using surface %p\n", s->surface);
         }
     }

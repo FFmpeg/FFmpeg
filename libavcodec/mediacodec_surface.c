@@ -20,33 +20,59 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <android/native_window.h>
 #include <jni.h>
 
+#include "libavutil/mem.h"
 #include "ffjni.h"
 #include "mediacodec_surface.h"
 
-FFANativeWindow *ff_mediacodec_surface_ref(void *surface, void *log_ctx)
+FFANativeWindow *ff_mediacodec_surface_ref(void *surface, void *native_window, void *log_ctx)
 {
-    JNIEnv *env = NULL;
+    FFANativeWindow *ret;
 
-    env = ff_jni_get_env(log_ctx);
-    if (!env) {
+    ret = av_mallocz(sizeof(*ret));
+    if (!ret)
         return NULL;
+
+    if (surface) {
+        JNIEnv *env = NULL;
+
+        env = ff_jni_get_env(log_ctx);
+        if (env)
+            ret->surface = (*env)->NewGlobalRef(env, surface);
     }
 
-    return (*env)->NewGlobalRef(env, surface);
+    if (native_window) {
+        ANativeWindow_acquire(native_window);
+        ret->native_window = native_window;
+    }
+
+    if (!ret->surface && !ret->native_window) {
+        av_log(log_ctx, AV_LOG_ERROR, "Both surface and native_window are NULL\n");
+        av_freep(&ret);
+    }
+
+    return ret;
 }
 
 int ff_mediacodec_surface_unref(FFANativeWindow *window, void *log_ctx)
 {
-    JNIEnv *env = NULL;
+    if (!window)
+        return 0;
 
-    env = ff_jni_get_env(log_ctx);
-    if (!env) {
-        return AVERROR_EXTERNAL;
+    if (window->surface) {
+        JNIEnv *env = NULL;
+
+        env = ff_jni_get_env(log_ctx);
+        if (env)
+            (*env)->DeleteGlobalRef(env, window->surface);
     }
 
-    (*env)->DeleteGlobalRef(env, window);
+    if (window->native_window)
+        ANativeWindow_release(window->native_window);
+
+    av_free(window);
 
     return 0;
 }

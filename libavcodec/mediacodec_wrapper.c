@@ -1371,12 +1371,17 @@ fail:
     return ret;
 }
 
-static int mediacodec_jni_configure(FFAMediaCodec* ctx, const FFAMediaFormat* format_ctx, void* surface, void *crypto, uint32_t flags)
+static int mediacodec_jni_configure(FFAMediaCodec *ctx,
+                                    const FFAMediaFormat* format_ctx,
+                                    FFANativeWindow* window,
+                                    void *crypto,
+                                    uint32_t flags)
 {
     int ret = 0;
     JNIEnv *env = NULL;
     FFAMediaCodecJni *codec = (FFAMediaCodecJni *)ctx;
     const FFAMediaFormatJni *format = (FFAMediaFormatJni *)format_ctx;
+    jobject *surface = window ? window->surface : NULL;
 
     JNI_GET_ENV_OR_RETURN(env, codec, AVERROR_EXTERNAL);
 
@@ -2151,16 +2156,27 @@ static int mediacodec_ndk_delete(FFAMediaCodec* ctx)
     return ret;
 }
 
-static int mediacodec_ndk_configure(FFAMediaCodec* ctx, const FFAMediaFormat* format_ctx, void* surface, void *crypto, uint32_t flags)
+static int mediacodec_ndk_configure(FFAMediaCodec* ctx,
+                                    const FFAMediaFormat* format_ctx,
+                                    FFANativeWindow* window,
+                                    void *crypto,
+                                    uint32_t flags)
 {
     FFAMediaCodecNdk *codec = (FFAMediaCodecNdk *)ctx;
     FFAMediaFormatNdk *format = (FFAMediaFormatNdk *)format_ctx;
     media_status_t status;
+    ANativeWindow *native_window = NULL;
 
-    if (surface) {
-        JNIEnv *env = NULL;
-        JNI_GET_ENV_OR_RETURN(env, ctx, -1);
-        codec->window = ANativeWindow_fromSurface(env, surface);
+    if (window) {
+        if (window->surface) {
+            JNIEnv *env = NULL;
+            JNI_GET_ENV_OR_RETURN(env, ctx, -1);
+            native_window = ANativeWindow_fromSurface(env, window->surface);
+            // Save for release
+            codec->window = native_window;
+        } else if (window->native_window) {
+            native_window = window->native_window;
+        }
     }
 
     if (format_ctx->class != &amediaformat_ndk_class) {
@@ -2168,7 +2184,7 @@ static int mediacodec_ndk_configure(FFAMediaCodec* ctx, const FFAMediaFormat* fo
         return AVERROR(EINVAL);
     }
 
-    status = codec->configure(codec->impl, format->impl, codec->window, NULL, flags);
+    status = codec->configure(codec->impl, format->impl, native_window, NULL, flags);
     if (status != AMEDIA_OK) {
         av_log(codec, AV_LOG_ERROR, "configure failed, %d\n", status);
         return AVERROR_EXTERNAL;

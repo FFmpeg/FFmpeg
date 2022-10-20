@@ -27,6 +27,7 @@
 #include <sys/types.h>
 
 #include "avcodec.h"
+#include "mediacodec_surface.h"
 
 /**
  * The following API around MediaCodec and MediaFormat is based on the
@@ -163,7 +164,7 @@ struct FFAMediaCodec {
     FFAMediaCodec* (*createEncoderByType)(const char *mime_type);
     int (*delete)(FFAMediaCodec* codec);
 
-    int (*configure)(FFAMediaCodec* codec, const FFAMediaFormat* format, void* surface, void *crypto, uint32_t flags);
+    int (*configure)(FFAMediaCodec* codec, const FFAMediaFormat* format, FFANativeWindow* surface, void *crypto, uint32_t flags);
     int (*start)(FFAMediaCodec* codec);
     int (*stop)(FFAMediaCodec* codec);
     int (*flush)(FFAMediaCodec* codec);
@@ -202,7 +203,10 @@ FFAMediaCodec* ff_AMediaCodec_createCodecByName(const char *name, int ndk);
 FFAMediaCodec* ff_AMediaCodec_createDecoderByType(const char *mime_type, int ndk);
 FFAMediaCodec* ff_AMediaCodec_createEncoderByType(const char *mime_type, int ndk);
 
-static inline int ff_AMediaCodec_configure(FFAMediaCodec* codec, const FFAMediaFormat* format, void* surface, void *crypto, uint32_t flags)
+static inline int ff_AMediaCodec_configure(FFAMediaCodec *codec,
+                                           const FFAMediaFormat *format,
+                                           FFANativeWindow *surface,
+                                           void *crypto, uint32_t flags)
 {
     return codec->configure(codec, format, surface, crypto, flags);
 }
