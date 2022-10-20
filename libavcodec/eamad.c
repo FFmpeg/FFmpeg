@@ -39,7 +39,6 @@
 #include "get_bits.h"
 #include "aandcttab.h"
 #include "eaidct.h"
-#include "idctdsp.h"
 #include "mpeg12data.h"
 #include "mpeg12vlc.h"
 
@@ -52,13 +51,11 @@ typedef struct MadContext {
     AVCodecContext *avctx;
     BlockDSPContext bdsp;
     BswapDSPContext bbdsp;
-    IDCTDSPContext idsp;
     AVFrame *last_frame;
     GetBitContext gb;
     void *bitstream_buf;
     unsigned int bitstream_buf_size;
     DECLARE_ALIGNED(32, int16_t, block)[64];
-    ScanTable scantable;
     uint16_t quant_matrix[64];
     int mb_x;
     int mb_y;
@@ -71,9 +68,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
     ff_blockdsp_init(&s->bdsp);
     ff_bswapdsp_init(&s->bbdsp);
-    ff_idctdsp_init(&s->idsp, avctx);
-    ff_init_scantable_permutation(s->idsp.idct_permutation, FF_IDCT_PERM_NONE);
-    ff_init_scantable(s->idsp.idct_permutation, &s->scantable, ff_zigzag_direct);
     ff_mpeg12_init_vlcs();
 
     s->last_frame = av_frame_alloc();
@@ -135,7 +129,7 @@ static inline int decode_block_intra(MadContext *s, int16_t * block)
 {
     int level, i, j, run;
     RLTable *rl = &ff_rl_mpeg1;
-    const uint8_t *scantable = s->scantable.permutated;
+    const uint8_t *scantable = ff_zigzag_direct;
     int16_t *quant_matrix = s->quant_matrix;
 
     block[0] = (128 + get_sbits(&s->gb, 8)) * quant_matrix[0];
