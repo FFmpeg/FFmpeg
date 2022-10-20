@@ -36,7 +36,6 @@
 #include "get_bits.h"
 #include "aandcttab.h"
 #include "eaidct.h"
-#include "idctdsp.h"
 #include "mpeg12data.h"
 #include "mpeg12dec.h"
 
@@ -45,8 +44,6 @@ typedef struct TqiContext {
     GetBitContext gb;
     BlockDSPContext bdsp;
     BswapDSPContext bsdsp;
-    IDCTDSPContext idsp;
-    ScanTable intra_scantable;
 
     void *bitstream_buf;
     unsigned int bitstream_buf_size;
@@ -64,9 +61,6 @@ static av_cold int tqi_decode_init(AVCodecContext *avctx)
 
     ff_blockdsp_init(&t->bdsp);
     ff_bswapdsp_init(&t->bsdsp);
-    ff_idctdsp_init(&t->idsp, avctx);
-    ff_init_scantable_permutation(t->idsp.idct_permutation, FF_IDCT_PERM_NONE);
-    ff_init_scantable(t->idsp.idct_permutation, &t->intra_scantable, ff_zigzag_direct);
 
     avctx->framerate = (AVRational){ 15, 1 };
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
@@ -82,7 +76,7 @@ static int tqi_decode_mb(TqiContext *t, int16_t (*block)[64])
     for (n = 0; n < 6; n++) {
         int ret = ff_mpeg1_decode_block_intra(&t->gb,
                                               t->intra_matrix,
-                                              t->intra_scantable.permutated,
+                                              ff_zigzag_direct,
                                               t->last_dc, block[n], n, 1);
         if (ret < 0) {
             av_log(t->avctx, AV_LOG_ERROR, "ac-tex damaged at %d %d\n",
