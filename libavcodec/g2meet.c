@@ -120,7 +120,7 @@ typedef struct ePICContext {
 typedef struct JPGContext {
     BlockDSPContext bdsp;
     IDCTDSPContext idsp;
-    ScanTable  scantable;
+    uint8_t    permutated_scantable[64];
 
     VLC        dc_vlc[2], ac_vlc[2];
     int        prev_dc[3];
@@ -182,8 +182,8 @@ static av_cold int jpg_init(AVCodecContext *avctx, JPGContext *c)
 
     ff_blockdsp_init(&c->bdsp);
     ff_idctdsp_init(&c->idsp, avctx);
-    ff_init_scantable(c->idsp.idct_permutation, &c->scantable,
-                      ff_zigzag_direct);
+    ff_permute_scantable(c->permutated_scantable, ff_zigzag_direct,
+                         c->idsp.idct_permutation);
 
     return 0;
 }
@@ -251,7 +251,7 @@ static int jpg_decode_block(JPGContext *c, GetBitContext *gb,
 
             val                                 = get_xbits(gb, nbits);
             val                                *= qmat[ff_zigzag_direct[pos]];
-            block[c->scantable.permutated[pos]] = val;
+            block[c->permutated_scantable[pos]] = val;
         }
     }
     return 0;
