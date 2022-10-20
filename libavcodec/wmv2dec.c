@@ -52,7 +52,6 @@ typedef struct WMV2DecContext {
     int per_mb_rl_bit;
     int skip_type;
 
-    ScanTable abt_scantable[2];
     DECLARE_ALIGNED(32, int16_t, abt_block2)[6][64];
 } WMV2DecContext;
 
@@ -425,9 +424,7 @@ static inline int wmv2_decode_inter_block(WMV2DecContext *w, int16_t *block,
     w->abt_type_table[n] = w->abt_type;
 
     if (w->abt_type) {
-//        const uint8_t *scantable = w->abt_scantable[w->abt_type - 1].permutated;
-        const uint8_t *scantable = w->abt_scantable[w->abt_type - 1].scantable;
-//        const uint8_t *scantable = w->abt_type - 1 ? w->abt_scantable[1].permutated : w->abt_scantable[0].scantable;
+        const uint8_t *scantable = w->abt_type == 1 ? ff_wmv2_scantableA : ff_wmv2_scantableB;
 
         sub_cbp = sub_cbp_table[decode012(&s->gb)];
 
@@ -577,10 +574,6 @@ static av_cold int wmv2_decode_init(AVCodecContext *avctx)
         return ret;
 
     ff_wmv2_common_init(s);
-    ff_init_scantable(s->idsp.idct_permutation, &w->abt_scantable[0],
-                      ff_wmv2_scantableA);
-    ff_init_scantable(s->idsp.idct_permutation, &w->abt_scantable[1],
-                      ff_wmv2_scantableB);
 
     return ff_intrax8_common_init(avctx, &w->x8,
                                   w->s.block, w->s.block_last_index,
