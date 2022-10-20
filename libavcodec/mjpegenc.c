@@ -81,7 +81,7 @@ static av_cold void init_uni_ac_vlc(const uint8_t huff_size_ac[256],
 static void mjpeg_encode_picture_header(MpegEncContext *s)
 {
     ff_mjpeg_encode_picture_header(s->avctx, &s->pb, s->picture->f, s->mjpeg_ctx,
-                                   &s->intra_scantable, 0,
+                                   s->intra_scantable.permutated, 0,
                                    s->intra_matrix, s->chroma_intra_matrix,
                                    s->slice_context_count > 1);
 

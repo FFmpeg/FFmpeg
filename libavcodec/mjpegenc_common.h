@@ -24,7 +24,6 @@
 #include <stdint.h>
 
 #include "avcodec.h"
-#include "idctdsp.h"
 #include "put_bits.h"
 
 struct MJpegContext;
@@ -33,7 +32,8 @@ int ff_mjpeg_add_icc_profile_size(AVCodecContext *avctx, const AVFrame *frame,
                                   size_t *max_pkt_size);
 void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
                                     const AVFrame *frame, struct MJpegContext *m,
-                                    ScanTable *intra_scantable, int pred,
+                                    const uint8_t intra_matrix_permutation[64],
+                                    int pred,
                                     uint16_t luma_intra_matrix[64],
                                     uint16_t chroma_intra_matrix[64],
                                     int use_slices);

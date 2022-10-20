@@ -58,7 +58,7 @@ static int put_huffman_table(PutBitContext *p, int table_class, int table_id,
 
 static void jpeg_table_header(AVCodecContext *avctx, PutBitContext *p,
                               MJpegContext *m,
-                              ScanTable *intra_scantable,
+                              const uint8_t intra_matrix_permutation[64],
                               uint16_t luma_intra_matrix[64],
                               uint16_t chroma_intra_matrix[64],
                               int hsample[3], int use_slices, int matrices_differ)
@@ -76,7 +76,7 @@ static void jpeg_table_header(AVCodecContext *avctx, PutBitContext *p,
         put_bits(p, 4, 0); /* 8 bit precision */
         put_bits(p, 4, 0); /* table 0 */
         for (int i = 0; i < 64; i++) {
-            uint8_t j = intra_scantable->permutated[i];
+            uint8_t j = intra_matrix_permutation[i];
             put_bits(p, 8, luma_intra_matrix[j]);
         }
 
@@ -84,7 +84,7 @@ static void jpeg_table_header(AVCodecContext *avctx, PutBitContext *p,
             put_bits(p, 4, 0); /* 8 bit precision */
             put_bits(p, 4, 1); /* table 1 */
             for(i=0;i<64;i++) {
-                j = intra_scantable->permutated[i];
+                j = intra_matrix_permutation[i];
                 put_bits(p, 8, chroma_intra_matrix[j]);
             }
         }
@@ -275,7 +275,7 @@ void ff_mjpeg_init_hvsample(AVCodecContext *avctx, int hsample[4], int vsample[4
 
 void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
                                     const AVFrame *frame, struct MJpegContext *m,
-                                    ScanTable *intra_scantable, int pred,
+                                    const uint8_t intra_matrix_permutation[64], int pred,
                                     uint16_t luma_intra_matrix[64],
                                     uint16_t chroma_intra_matrix[64],
                                     int use_slices)
@@ -298,7 +298,7 @@ void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
     chroma_matrix = !lossless && !!memcmp(luma_intra_matrix,
                                           chroma_intra_matrix,
                                           sizeof(luma_intra_matrix[0]) * 64);
-    jpeg_table_header(avctx, pb, m, intra_scantable,
+    jpeg_table_header(avctx, pb, m, intra_matrix_permutation,
                       luma_intra_matrix, chroma_intra_matrix, hsample,
                       use_slices, chroma_matrix);
 
