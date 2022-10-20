@@ -22,12 +22,16 @@
 #ifndef AVCODEC_CAVS_H
 #define AVCODEC_CAVS_H
 
+#include <stddef.h>
+#include <stdint.h>
+
+#include "libavutil/frame.h"
 #include "libavutil/mem_internal.h"
 
+#include "avcodec.h"
 #include "cavsdsp.h"
 #include "blockdsp.h"
 #include "h264chroma.h"
-#include "idctdsp.h"
 #include "get_bits.h"
 #include "videodsp.h"
 
@@ -166,7 +170,6 @@ typedef struct AVSContext {
     AVCodecContext *avctx;
     BlockDSPContext bdsp;
     H264ChromaContext h264chroma;
-    IDCTDSPContext idsp;
     VideoDSPContext vdsp;
     CAVSDSPContext  cdsp;
     GetBitContext gb;
@@ -220,7 +223,7 @@ typedef struct AVSContext {
     int qp_fixed;
     int pic_qp_fixed;
     int cbp;
-    ScanTable scantable;
+    uint8_t permutated_scantable[64];
 
     /** intra prediction is done with un-deblocked samples
      they are saved here before deblocking the MB  */
