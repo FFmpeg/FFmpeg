@@ -25,15 +25,6 @@
 
 #include "avcodec.h"
 
-/**
- * Scantable.
- */
-typedef struct ScanTable {
-    const uint8_t *scantable;
-    uint8_t permutated[64];
-    uint8_t raster_end[64];
-} ScanTable;
-
 enum idct_permutation_type {
     FF_IDCT_PERM_NONE,
     FF_IDCT_PERM_LIBMPEG2,
@@ -45,8 +36,6 @@ enum idct_permutation_type {
 
 void ff_permute_scantable(uint8_t dst[64], const uint8_t src[64],
                           const uint8_t permutation[64]);
-void ff_init_scantable(const uint8_t *permutation, ScanTable *st,
-                       const uint8_t *src_scantable);
 void ff_init_scantable_permutation(uint8_t *idct_permutation,
                                    enum idct_permutation_type perm_type);
 int ff_init_scantable_permutation_x86(uint8_t *idct_permutation,

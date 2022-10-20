@@ -56,6 +56,15 @@
 #define MAX_B_FRAMES 16
 
 /**
+ * Scantable.
+ */
+typedef struct ScanTable {
+    const uint8_t *scantable;
+    uint8_t permutated[64];
+    uint8_t raster_end[64];
+} ScanTable;
+
+/**
  * MpegEncContext.
  */
 typedef struct MpegEncContext {
@@ -576,6 +585,8 @@ int ff_update_duplicate_context(MpegEncContext *dst, const MpegEncContext *src);
 void ff_set_qscale(MpegEncContext * s, int qscale);
 
 void ff_mpv_idct_init(MpegEncContext *s);
+void ff_init_scantable(const uint8_t *permutation, ScanTable *st,
+                       const uint8_t *src_scantable);
 void ff_init_block_index(MpegEncContext *s);
 
 void ff_mpv_motion(MpegEncContext *s,
