@@ -43,6 +43,8 @@ enum idct_permutation_type {
     FF_IDCT_PERM_SSE2,
 };
 
+void ff_permute_scantable(uint8_t dst[64], const uint8_t src[64],
+                          const uint8_t permutation[64]);
 void ff_init_scantable(const uint8_t *permutation, ScanTable *st,
                        const uint8_t *src_scantable);
 void ff_init_scantable_permutation(uint8_t *idct_permutation,
