@@ -77,12 +77,13 @@ typedef struct MpegEncContext {
 
     /* scantables */
     ScanTable inter_scantable; ///< if inter == intra then intra should be used to reduce the cache usage
-    ScanTable intra_scantable;
-    ScanTable intra_h_scantable;
-    ScanTable intra_v_scantable;
 
     /* WARNING: changes above this line require updates to hardcoded
      *          offsets used in ASM. */
+
+    ScanTable intra_scantable;
+    ScanTable intra_h_scantable;
+    ScanTable intra_v_scantable;
 
     struct AVCodecContext *avctx;
     /* The following pointer is intended for codecs sharing code
