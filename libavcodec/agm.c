@@ -88,7 +88,7 @@ typedef struct AGMContext {
     int luma_quant_matrix[64];
     int chroma_quant_matrix[64];
 
-    ScanTable scantable;
+    uint8_t permutated_scantable[64];
     DECLARE_ALIGNED(32, int16_t, block)[64];
 
     int16_t *wblocks;
@@ -195,7 +195,7 @@ static int read_code(GetBitContext *gb, int *oskip, int *level, int *map, int mo
 static int decode_intra_blocks(AGMContext *s, GetBitContext *gb,
                                const int *quant_matrix, int *skip, int *dc_level)
 {
-    const uint8_t *scantable = s->scantable.permutated;
+    const uint8_t *scantable = s->permutated_scantable;
     int level, ret, map = 0;
 
     memset(s->wblocks, 0, s->wblocks_size);
@@ -237,7 +237,7 @@ static int decode_inter_blocks(AGMContext *s, GetBitContext *gb,
                                const int *quant_matrix, int *skip,
                                int *map)
 {
-    const uint8_t *scantable = s->scantable.permutated;
+    const uint8_t *scantable = s->permutated_scantable;
     int level, ret;
 
     memset(s->wblocks, 0, s->wblocks_size);
@@ -272,7 +272,7 @@ static int decode_inter_blocks(AGMContext *s, GetBitContext *gb,
 static int decode_intra_block(AGMContext *s, GetBitContext *gb,
                               const int *quant_matrix, int *skip, int *dc_level)
 {
-    const uint8_t *scantable = s->scantable.permutated;
+    const uint8_t *scantable = s->permutated_scantable;
     const int offset = s->plus ? 0 : 1024;
     int16_t *block = s->block;
     int level, ret, map = 0;
@@ -362,7 +362,7 @@ static int decode_inter_block(AGMContext *s, GetBitContext *gb,
                               const int *quant_matrix, int *skip,
                               int *map)
 {
-    const uint8_t *scantable = s->scantable.permutated;
+    const uint8_t *scantable = s->permutated_scantable;
     int16_t *block = s->block;
     int level, ret;
 
@@ -1249,7 +1249,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     avctx->idct_algo = FF_IDCT_SIMPLE;
     ff_idctdsp_init(&s->idsp, avctx);
-    ff_init_scantable(s->idsp.idct_permutation, &s->scantable, ff_zigzag_direct);
+    ff_permute_scantable(s->permutated_scantable, ff_zigzag_direct,
+                         s->idsp.idct_permutation);
 
     s->prev_frame = av_frame_alloc();
     if (!s->prev_frame)
