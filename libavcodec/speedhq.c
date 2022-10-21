@@ -24,7 +24,7 @@
 #include "speedhq.h"
 
 /* AC codes: Very similar but not identical to MPEG-2. */
-static const uint16_t speedhq_vlc[123][2] = {
+const uint16_t ff_speedhq_vlc_table[SPEEDHQ_RL_NB_ELEMS + 2][2] = {
     {0x0001,  2}, {0x0003,  3}, {0x000E,  4}, {0x0007,  5},
     {0x0017,  5}, {0x0028,  6}, {0x0008,  6}, {0x006F,  7},
     {0x001F,  7}, {0x00C4,  8}, {0x0044,  8}, {0x005F,  8},
@@ -101,7 +101,7 @@ static const uint8_t speedhq_run[121] = {
 RLTable ff_rl_speedhq = {
     121,
     121,
-    speedhq_vlc,
+    ff_speedhq_vlc_table,
     speedhq_run,
     speedhq_level,
 };
