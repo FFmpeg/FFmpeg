@@ -335,7 +335,6 @@ static int mediacodec_wrap_hw_buffer(AVCodecContext *avctx,
     return 0;
 fail:
     av_freep(&buffer);
-    av_buffer_unref(&frame->buf[0]);
     status = ff_AMediaCodec_releaseOutputBuffer(s->codec, index, 0);
     if (status < 0) {
         av_log(avctx, AV_LOG_ERROR, "Failed to release output buffer\n");
