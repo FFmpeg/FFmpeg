@@ -77,6 +77,8 @@ static VLC dc_chroma_vlc_le;
 static VLC dc_alpha_run_vlc_le;
 static VLC dc_alpha_level_vlc_le;
 
+static RL_VLC_ELEM speedhq_rl_vlc[674];
+
 static inline int decode_dc_le(GetBitContext *gb, int component)
 {
     int code, diff;
@@ -154,7 +156,7 @@ static inline int decode_dct_block(const SHQContext *s, GetBitContext *gb, int l
         for ( ;; ) {
             int level, run;
             UPDATE_CACHE_LE(re, gb);
-            GET_RL_VLC(level, run, re, gb, ff_rl_speedhq.rl_vlc[0],
+            GET_RL_VLC(level, run, re, gb, speedhq_rl_vlc,
                        TEX_VLC_BITS, 2, 0);
             if (level == 127) {
                 break;
@@ -564,7 +566,7 @@ static av_cold void speedhq_static_init(void)
                            ff_mpeg12_vlc_dc_chroma_code, 2, 2,
                            INIT_VLC_OUTPUT_LE, 514);
 
-    INIT_2D_VLC_RL(ff_rl_speedhq, 674, INIT_VLC_LE);
+    INIT_2D_VLC_RL(ff_rl_speedhq, speedhq_rl_vlc, INIT_VLC_LE);
 
     compute_alpha_vlcs();
 }

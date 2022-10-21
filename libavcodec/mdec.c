@@ -63,7 +63,6 @@ static inline int mdec_decode_block_intra(MDECContext *a, int16_t *block, int n)
 {
     int level, diff, i, j, run;
     int component;
-    RLTable *rl = &ff_rl_mpeg1;
     const uint8_t *const scantable = a->permutated_scantable;
     const uint16_t *quant_matrix = a->quant_matrix;
     const int qscale = a->qscale;
@@ -84,7 +83,7 @@ static inline int mdec_decode_block_intra(MDECContext *a, int16_t *block, int n)
         /* now quantify & encode AC coefficients */
         for (;;) {
             UPDATE_CACHE(re, &a->gb);
-            GET_RL_VLC(level, run, re, &a->gb, rl->rl_vlc[0], TEX_VLC_BITS, 2, 0);
+            GET_RL_VLC(level, run, re, &a->gb, ff_mpeg1_rl_vlc, TEX_VLC_BITS, 2, 0);
 
             if (level == 127) {
                 break;

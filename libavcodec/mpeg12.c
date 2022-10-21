@@ -63,7 +63,8 @@ static const uint8_t table_mb_btype[11][2] = {
     { 2, 5 }, // 0x1E MB_QUANT|MB_FOR|MB_BACK|MB_PAT
 };
 
-av_cold void ff_init_2d_vlc_rl(RLTable *rl, unsigned static_size, int flags)
+av_cold void ff_init_2d_vlc_rl(const RLTable *rl, RL_VLC_ELEM rl_vlc[],
+                               unsigned static_size, int flags)
 {
     int i;
     VLCElem table[680] = { 0 };
@@ -94,9 +95,9 @@ av_cold void ff_init_2d_vlc_rl(RLTable *rl, unsigned static_size, int flags)
                 level = rl->table_level[code];
             }
         }
-        rl->rl_vlc[0][i].len   = len;
-        rl->rl_vlc[0][i].level = level;
-        rl->rl_vlc[0][i].run   = run;
+        rl_vlc[i].len   = len;
+        rl_vlc[i].level = level;
+        rl_vlc[i].run   = run;
     }
 }
 
@@ -121,6 +122,9 @@ VLC ff_mbincr_vlc;
 VLC ff_mb_ptype_vlc;
 VLC ff_mb_btype_vlc;
 VLC ff_mb_pat_vlc;
+
+RL_VLC_ELEM ff_mpeg1_rl_vlc[680];
+RL_VLC_ELEM ff_mpeg2_rl_vlc[674];
 
 static av_cold void mpeg12_init_vlcs(void)
 {
@@ -147,8 +151,8 @@ static av_cold void mpeg12_init_vlcs(void)
                     &table_mb_btype[0][1], 2, 1,
                     &table_mb_btype[0][0], 2, 1, 64);
 
-    INIT_2D_VLC_RL(ff_rl_mpeg1, 680, 0);
-    INIT_2D_VLC_RL(ff_rl_mpeg2, 674, 0);
+    INIT_2D_VLC_RL(ff_rl_mpeg1, ff_mpeg1_rl_vlc, 0);
+    INIT_2D_VLC_RL(ff_rl_mpeg2, ff_mpeg2_rl_vlc, 0);
 }
 
 av_cold void ff_mpeg12_init_vlcs(void)
@@ -231,7 +235,6 @@ int ff_mpeg1_decode_block_intra(GetBitContext *gb,
                                 int16_t *block, int index, int qscale)
 {
     int dc, diff, i = 0, component;
-    RLTable *rl = &ff_rl_mpeg1;
 
     /* DC coefficient */
     component = index <= 3 ? 0 : index - 4 + 1;
@@ -256,7 +259,7 @@ int ff_mpeg1_decode_block_intra(GetBitContext *gb,
         while (1) {
             int level, run, j;
 
-            GET_RL_VLC(level, run, re, gb, rl->rl_vlc[0],
+            GET_RL_VLC(level, run, re, gb, ff_mpeg1_rl_vlc,
                        TEX_VLC_BITS, 2, 0);
 
             if (level != 0) {

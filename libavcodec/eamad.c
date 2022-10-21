@@ -128,7 +128,6 @@ static inline void idct_put(MadContext *t, AVFrame *frame, int16_t *block,
 static inline int decode_block_intra(MadContext *s, int16_t * block)
 {
     int level, i, j, run;
-    RLTable *rl = &ff_rl_mpeg1;
     const uint8_t *scantable = ff_zigzag_direct;
     int16_t *quant_matrix = s->quant_matrix;
 
@@ -142,7 +141,7 @@ static inline int decode_block_intra(MadContext *s, int16_t * block)
         /* now quantify & encode AC coefficients */
         for (;;) {
             UPDATE_CACHE(re, &s->gb);
-            GET_RL_VLC(level, run, re, &s->gb, rl->rl_vlc[0], TEX_VLC_BITS, 2, 0);
+            GET_RL_VLC(level, run, re, &s->gb, ff_mpeg1_rl_vlc, TEX_VLC_BITS, 2, 0);
 
             if (level == 127) {
                 break;
