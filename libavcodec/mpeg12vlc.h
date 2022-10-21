@@ -53,8 +53,13 @@ void ff_mpeg12_init_vlcs(void);
 #define INIT_2D_VLC_RL(rl, rl_vlc, flags)\
     ff_init_2d_vlc_rl(&rl, rl_vlc, FF_ARRAY_ELEMS(rl_vlc), flags)
 
+#define MPEG12_RL_NB_ELEMS 111
+
 extern RLTable ff_rl_mpeg1;
 extern RLTable ff_rl_mpeg2;
+
+extern const uint16_t ff_mpeg1_vlc_table[MPEG12_RL_NB_ELEMS + 2][2];
+extern const uint16_t ff_mpeg2_vlc_table[MPEG12_RL_NB_ELEMS + 2][2];
 
 extern RL_VLC_ELEM ff_mpeg1_rl_vlc[];
 extern RL_VLC_ELEM ff_mpeg2_rl_vlc[];

@@ -709,7 +709,7 @@ static void mpeg1_encode_block(MpegEncContext *s, int16_t *block, int n)
 {
     int alevel, level, last_non_zero, dc, diff, i, j, run, last_index, sign;
     int code, component;
-    const uint16_t (*table_vlc)[2] = ff_rl_mpeg1.table_vlc;
+    const uint16_t (*table_vlc)[2] = ff_mpeg1_vlc_table;
 
     last_index = s->block_last_index[n];
 
@@ -722,7 +722,7 @@ static void mpeg1_encode_block(MpegEncContext *s, int16_t *block, int n)
         s->last_dc[component] = dc;
         i = 1;
         if (s->intra_vlc_format)
-            table_vlc = ff_rl_mpeg2.table_vlc;
+            table_vlc = ff_mpeg2_vlc_table;
     } else {
         /* encode the first coefficient: needs to be done here because
          * it is handled slightly differently */

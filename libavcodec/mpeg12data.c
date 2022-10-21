@@ -64,7 +64,7 @@ const unsigned char ff_mpeg12_vlc_dc_chroma_bits[12] = {
     2, 2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10,
 };
 
-static const uint16_t mpeg1_vlc[113][2] = {
+const uint16_t ff_mpeg1_vlc_table[MPEG12_RL_NB_ELEMS + 2][2] = {
  { 0x3, 2 }, { 0x4, 4 }, { 0x5, 5 }, { 0x6, 7 },
  { 0x26, 8 }, { 0x21, 8 }, { 0xa, 10 }, { 0x1d, 12 },
  { 0x18, 12 }, { 0x13, 12 }, { 0x10, 12 }, { 0x1a, 13 },
@@ -97,7 +97,7 @@ static const uint16_t mpeg1_vlc[113][2] = {
  { 0x2, 2 }, /* EOB */
 };
 
-static const uint16_t mpeg2_vlc[113][2] = {
+const uint16_t ff_mpeg2_vlc_table[MPEG12_RL_NB_ELEMS + 2][2] = {
   {0x02, 2}, {0x06, 3}, {0x07, 4}, {0x1c, 5},
   {0x1d, 5}, {0x05, 6}, {0x04, 6}, {0x7b, 7},
   {0x7c, 7}, {0x23, 8}, {0x22, 8}, {0xfa, 8},
@@ -167,7 +167,7 @@ static const int8_t mpeg1_run[111] = {
 RLTable ff_rl_mpeg1 = {
     111,
     111,
-    mpeg1_vlc,
+    ff_mpeg1_vlc_table,
     mpeg1_run,
     mpeg1_level,
 };
@@ -175,7 +175,7 @@ RLTable ff_rl_mpeg1 = {
 RLTable ff_rl_mpeg2 = {
     111,
     111,
-    mpeg2_vlc,
+    ff_mpeg2_vlc_table,
     mpeg1_run,
     mpeg1_level,
 };
