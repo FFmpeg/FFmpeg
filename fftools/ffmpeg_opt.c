@@ -202,6 +202,31 @@ int parse_and_set_vsync(const char *arg, int *vsync_var, int file_idx, int st_id
     return 0;
 }
 
+static void correct_input_start_times(void)
+{
+    // Correct starttime based on the enabled streams
+    for (int i = 0; i < nb_input_files; i++) {
+        InputFile       *ifile = input_files[i];
+        AVFormatContext    *is = ifile->ctx;
+        int64_t new_start_time = INT64_MAX;
+
+        if (is->start_time == AV_NOPTS_VALUE ||
+            !(is->iformat->flags & AVFMT_TS_DISCONT))
+            continue;
+
+        for (int j = 0; j < is->nb_streams; j++) {
+            AVStream *st = is->streams[j];
+            if(st->discard == AVDISCARD_ALL || st->start_time == AV_NOPTS_VALUE)
+                continue;
+            new_start_time = FFMIN(new_start_time, av_rescale_q(st->start_time, st->time_base, AV_TIME_BASE_Q));
+        }
+        if (new_start_time > is->start_time) {
+            av_log(is, AV_LOG_VERBOSE, "Correcting start time by %"PRId64"\n", new_start_time - is->start_time);
+            ifile->ts_offset = -new_start_time;
+        }
+    }
+}
+
 static int apply_sync_offsets(void)
 {
     for (int i = 0; i < nb_input_files; i++) {
@@ -1267,6 +1292,8 @@ int ffmpeg_parse_options(int argc, char **argv)
         av_log(NULL, AV_LOG_FATAL, "Error opening output files: ");
         goto fail;
     }
+
+    correct_input_start_times();
 
     check_filter_outputs();
 
