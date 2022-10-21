@@ -120,16 +120,12 @@ static int svt_print_error(void *log_ctx, EbErrorType err,
 
 static int alloc_buffer(EbSvtAv1EncConfiguration *config, SvtContext *svt_enc)
 {
-    const int    pack_mode_10bit =
-        (config->encoder_bit_depth > 8) && (config->compressed_ten_bit_format == 0) ? 1 : 0;
-    const size_t luma_size_8bit  =
-        config->source_width * config->source_height * (1 << pack_mode_10bit);
-    const size_t luma_size_10bit =
-        (config->encoder_bit_depth > 8 && pack_mode_10bit == 0) ? luma_size_8bit : 0;
+    const size_t luma_size = config->source_width * config->source_height *
+        (config->encoder_bit_depth > 8 ? 2 : 1);
 
     EbSvtIOFormat *in_data;
 
-    svt_enc->raw_size = (luma_size_8bit + luma_size_10bit) * 3 / 2;
+    svt_enc->raw_size = luma_size * 3 / 2;
 
     // allocate buffer for in and out
     svt_enc->in_buf           = av_mallocz(sizeof(*svt_enc->in_buf));
