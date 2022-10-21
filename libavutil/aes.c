@@ -253,7 +253,7 @@ int av_aes_init(AVAES *a, const uint8_t *key, int key_bits, int decrypt)
                     tk[j][i] ^= sbox[tk[j - 1][i]];
         }
 
-        memcpy(a->round_key[0].u8 + t, tk, KC * 4);
+        memcpy((unsigned char*)a->round_key + t, tk, KC * 4);
     }
 
     if (decrypt) {
