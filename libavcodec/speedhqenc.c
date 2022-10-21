@@ -88,7 +88,8 @@ static av_cold void speedhq_init_static_data(void)
         speedhq_chr_dc_uni[i + 255] = bits + (code << 8);
     }
 
-    ff_mpeg1_init_uni_ac_vlc(&ff_rl_speedhq, uni_speedhq_ac_vlc_len);
+    ff_mpeg1_init_uni_ac_vlc(ff_rl_speedhq.max_level[0], ff_rl_speedhq.index_run[0],
+                             ff_speedhq_vlc_table, uni_speedhq_ac_vlc_len);
 }
 
 av_cold int ff_speedhq_encode_init(MpegEncContext *s)

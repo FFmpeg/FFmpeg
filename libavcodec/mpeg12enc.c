@@ -94,7 +94,10 @@ typedef struct MPEG12EncContext {
 #define A53_MAX_CC_COUNT 0x1f
 #endif /* CONFIG_MPEG1VIDEO_ENCODER || CONFIG_MPEG2VIDEO_ENCODER */
 
-av_cold void ff_mpeg1_init_uni_ac_vlc(const RLTable *rl, uint8_t *uni_ac_vlc_len)
+av_cold void ff_mpeg1_init_uni_ac_vlc(const int8_t max_level[],
+                                      const uint8_t index_run[],
+                                      const uint16_t table_vlc[][2],
+                                      uint8_t uni_ac_vlc_len[])
 {
     int i;
 
@@ -107,16 +110,16 @@ av_cold void ff_mpeg1_init_uni_ac_vlc(const RLTable *rl, uint8_t *uni_ac_vlc_len
             int len, code;
             int alevel = FFABS(level);
 
-            if (alevel > rl->max_level[0][run])
+            if (alevel > max_level[run])
                 code = 111;                         /* rl->n */
             else
-                code = rl->index_run[0][run] + alevel - 1;
+                code = index_run[run] + alevel - 1;
 
             if (code < 111) {                       /* rl->n */
                 /* length of VLC and sign */
-                len = rl->table_vlc[code][1] + 1;
+                len = table_vlc[code][1] + 1;
             } else {
-                len = rl->table_vlc[111 /* rl->n */][1] + 6;
+                len = table_vlc[MPEG12_RL_NB_ELEMS][1] + 6;
 
                 if (alevel < 128)
                     len += 8;
@@ -1078,8 +1081,10 @@ static av_cold void mpeg12_encode_init_static(void)
     ff_rl_init(&ff_rl_mpeg1, mpeg12_static_rl_table_store[0]);
     ff_rl_init(&ff_rl_mpeg2, mpeg12_static_rl_table_store[1]);
 
-    ff_mpeg1_init_uni_ac_vlc(&ff_rl_mpeg1, uni_mpeg1_ac_vlc_len);
-    ff_mpeg1_init_uni_ac_vlc(&ff_rl_mpeg2, uni_mpeg2_ac_vlc_len);
+    ff_mpeg1_init_uni_ac_vlc(ff_rl_mpeg1.max_level[0], ff_rl_mpeg1.index_run[0],
+                             ff_mpeg1_vlc_table, uni_mpeg1_ac_vlc_len);
+    ff_mpeg1_init_uni_ac_vlc(ff_rl_mpeg2.max_level[0], ff_rl_mpeg2.index_run[0],
+                             ff_mpeg2_vlc_table, uni_mpeg2_ac_vlc_len);
 
     /* build unified dc encoding tables */
     for (int i = -255; i < 256; i++) {

@@ -67,6 +67,7 @@ extern RL_VLC_ELEM ff_mpeg2_rl_vlc[];
 void ff_init_2d_vlc_rl(const RLTable *rl, RL_VLC_ELEM rl_vlc[],
                        unsigned static_size, int flags);
 
-void ff_mpeg1_init_uni_ac_vlc(const RLTable *rl, uint8_t *uni_ac_vlc_len);
+void ff_mpeg1_init_uni_ac_vlc(const int8_t max_level[], const uint8_t index_run[],
+                              const uint16_t table_vlc[][2], uint8_t uni_ac_vlc_len[]);
 
 #endif /* AVCODEC_MPEG12VLC_H */
