@@ -566,7 +566,9 @@ static av_cold void speedhq_static_init(void)
                            ff_mpeg12_vlc_dc_chroma_code, 2, 2,
                            INIT_VLC_OUTPUT_LE, 514);
 
-    INIT_2D_VLC_RL(ff_rl_speedhq, speedhq_rl_vlc, INIT_VLC_LE);
+    ff_init_2d_vlc_rl(ff_speedhq_vlc_table, speedhq_rl_vlc, ff_rl_speedhq.table_run,
+                      ff_rl_speedhq.table_level, ff_rl_speedhq.n,
+                      FF_ARRAY_ELEMS(speedhq_rl_vlc), INIT_VLC_LE);
 
     compute_alpha_vlcs();
 }

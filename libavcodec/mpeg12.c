@@ -63,14 +63,15 @@ static const uint8_t table_mb_btype[11][2] = {
     { 2, 5 }, // 0x1E MB_QUANT|MB_FOR|MB_BACK|MB_PAT
 };
 
-av_cold void ff_init_2d_vlc_rl(const RLTable *rl, RL_VLC_ELEM rl_vlc[],
-                               unsigned static_size, int flags)
+av_cold void ff_init_2d_vlc_rl(const uint16_t table_vlc[][2], RL_VLC_ELEM rl_vlc[],
+                               const int8_t table_run[], const uint8_t table_level[],
+                               int n, unsigned static_size, int flags)
 {
     int i;
     VLCElem table[680] = { 0 };
     VLC vlc = { .table = table, .table_allocated = static_size };
     av_assert0(static_size <= FF_ARRAY_ELEMS(table));
-    init_vlc(&vlc, TEX_VLC_BITS, rl->n + 2, &rl->table_vlc[0][1], 4, 2, &rl->table_vlc[0][0], 4, 2, INIT_VLC_USE_NEW_STATIC | flags);
+    init_vlc(&vlc, TEX_VLC_BITS, n + 2, &table_vlc[0][1], 4, 2, &table_vlc[0][0], 4, 2, INIT_VLC_USE_NEW_STATIC | flags);
 
     for (i = 0; i < vlc.table_size; i++) {
         int code = vlc.table[i].sym;
@@ -84,15 +85,15 @@ av_cold void ff_init_2d_vlc_rl(const RLTable *rl, RL_VLC_ELEM rl_vlc[],
             run   = 0;
             level = code;
         } else {
-            if (code == rl->n) { //esc
+            if (code == n) { //esc
                 run   = 65;
                 level = 0;
-            } else if (code == rl->n+1) { //eob
+            } else if (code == n + 1) { //eob
                 run   = 0;
                 level = 127;
             } else {
-                run   = rl->table_run  [code] + 1;
-                level = rl->table_level[code];
+                run   = table_run  [code] + 1;
+                level = table_level[code];
             }
         }
         rl_vlc[i].len   = len;
@@ -151,8 +152,12 @@ static av_cold void mpeg12_init_vlcs(void)
                     &table_mb_btype[0][1], 2, 1,
                     &table_mb_btype[0][0], 2, 1, 64);
 
-    INIT_2D_VLC_RL(ff_rl_mpeg1, ff_mpeg1_rl_vlc, 0);
-    INIT_2D_VLC_RL(ff_rl_mpeg2, ff_mpeg2_rl_vlc, 0);
+    ff_init_2d_vlc_rl(ff_mpeg1_vlc_table, ff_mpeg1_rl_vlc, ff_rl_mpeg1.table_run,
+                      ff_rl_mpeg1.table_level, ff_rl_mpeg1.n,
+                      FF_ARRAY_ELEMS(ff_mpeg1_rl_vlc), 0);
+    ff_init_2d_vlc_rl(ff_mpeg2_vlc_table, ff_mpeg2_rl_vlc, ff_rl_mpeg1.table_run,
+                      ff_rl_mpeg1.table_level, ff_rl_mpeg1.n,
+                      FF_ARRAY_ELEMS(ff_mpeg2_rl_vlc), 0);
 }
 
 av_cold void ff_mpeg12_init_vlcs(void)
