@@ -32,6 +32,7 @@ typedef struct MaskedThresholdContext {
 
     int threshold;
     int planes;
+    int mode;
 
     int linesize[4];
     int planewidth[4], planeheight[4];
@@ -43,15 +44,19 @@ typedef struct MaskedThresholdContext {
 } MaskedThresholdContext;
 
 #define OFFSET(x) offsetof(MaskedThresholdContext, x)
-#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
+#define TFLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 
 typedef struct ThreadData {
     AVFrame *src, *ref, *dst;
 } ThreadData;
 
 static const AVOption maskedthreshold_options[] = {
-    { "threshold", "set threshold", OFFSET(threshold), AV_OPT_TYPE_INT, {.i64=1},   0, UINT16_MAX, FLAGS },
-    { "planes",    "set planes",    OFFSET(planes),    AV_OPT_TYPE_INT, {.i64=0xF}, 0, 0xF,        FLAGS },
+    { "threshold", "set threshold", OFFSET(threshold), AV_OPT_TYPE_INT, {.i64=1},   0, UINT16_MAX, TFLAGS },
+    { "planes",    "set planes",    OFFSET(planes),    AV_OPT_TYPE_INT, {.i64=0xF}, 0, 0xF,        TFLAGS },
+    { "mode",      "set mode",      OFFSET(mode),      AV_OPT_TYPE_INT, {.i64=0},   0, 1,          FLAGS, "mode" },
+    { "abs",       "",              0,                 AV_OPT_TYPE_CONST, {.i64=0}, 0, 0,          FLAGS, "mode" },
+    { "diff",      "",              0,                 AV_OPT_TYPE_CONST, {.i64=1}, 0, 0,          FLAGS, "mode" },
     { NULL }
 };
 
@@ -77,13 +82,29 @@ static const enum AVPixelFormat pix_fmts[] = {
     AV_PIX_FMT_NONE
 };
 
-static void threshold8(const uint8_t *src, const uint8_t *ref, uint8_t *dst, int threshold, int w)
+static void threshold8_diff(const uint8_t *src, const uint8_t *ref, uint8_t *dst, int threshold, int w)
+{
+    for (int x = 0; x < w; x++)
+        dst[x] = (ref[x] - src[x] <= threshold) ? FFMAX(ref[x] - threshold, 0): src[x];
+}
+
+static void threshold8_abs(const uint8_t *src, const uint8_t *ref, uint8_t *dst, int threshold, int w)
 {
     for (int x = 0; x < w; x++)
         dst[x] = FFABS(src[x] - ref[x]) <= threshold ? src[x] : ref[x];
 }
 
-static void threshold16(const uint8_t *ssrc, const uint8_t *rref, uint8_t *ddst, int threshold, int w)
+static void threshold16_diff(const uint8_t *ssrc, const uint8_t *rref, uint8_t *ddst, int threshold, int w)
+{
+    const uint16_t *src = (const uint16_t *)ssrc;
+    const uint16_t *ref = (const uint16_t *)rref;
+    uint16_t *dst = (uint16_t *)ddst;
+
+    for (int x = 0; x < w; x++)
+        dst[x] = (ref[x] - src[x] <= threshold) ? FFMAX(ref[x] - threshold, 0): src[x];
+}
+
+static void threshold16_abs(const uint8_t *ssrc, const uint8_t *rref, uint8_t *ddst, int threshold, int w)
 {
     const uint16_t *src = (const uint16_t *)ssrc;
     const uint16_t *ref = (const uint16_t *)rref;
@@ -115,9 +136,9 @@ static int config_input(AVFilterLink *inlink)
     s->depth = desc->comp[0].depth;
 
     if (desc->comp[0].depth == 8)
-        s->maskedthreshold = threshold8;
+        s->maskedthreshold = s->mode ? threshold8_diff : threshold8_abs;
     else
-        s->maskedthreshold = threshold16;
+        s->maskedthreshold = s->mode ? threshold16_diff : threshold16_abs;
 
     return 0;
 }
