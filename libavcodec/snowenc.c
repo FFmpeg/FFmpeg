@@ -935,7 +935,7 @@ static av_always_inline int check_block_inter(SnowContext *s, int mb_x, int mb_y
     av_assert2(mb_x < b_stride);
 
     index = (p0 + 31 * p1) & (ME_CACHE_SIZE-1);
-    value = s->me_cache_generation + (p0 >> 10) + (p1 << 6) + (block->ref << 12);
+    value = s->me_cache_generation + (p0 >> 10) + p1 * (1 << 6) + (block->ref << 12);
     if (s->me_cache[index] == value)
         return 0;
     s->me_cache[index] = value;
