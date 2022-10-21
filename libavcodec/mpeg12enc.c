@@ -1076,14 +1076,13 @@ void ff_mpeg1_encode_mb(MpegEncContext *s, int16_t block[8][64],
 
 static av_cold void mpeg12_encode_init_static(void)
 {
-    static uint8_t mpeg12_static_rl_table_store[2][2][2*MAX_RUN + MAX_LEVEL + 3];
+    static uint8_t mpeg12_static_rl_table_store[2][2*MAX_RUN + MAX_LEVEL + 3];
 
-    ff_rl_init(&ff_rl_mpeg1, mpeg12_static_rl_table_store[0]);
-    ff_rl_init(&ff_rl_mpeg2, mpeg12_static_rl_table_store[1]);
+    ff_rl_init(&ff_rl_mpeg1, mpeg12_static_rl_table_store);
 
     ff_mpeg1_init_uni_ac_vlc(ff_rl_mpeg1.max_level[0], ff_rl_mpeg1.index_run[0],
                              ff_mpeg1_vlc_table, uni_mpeg1_ac_vlc_len);
-    ff_mpeg1_init_uni_ac_vlc(ff_rl_mpeg2.max_level[0], ff_rl_mpeg2.index_run[0],
+    ff_mpeg1_init_uni_ac_vlc(ff_rl_mpeg1.max_level[0], ff_rl_mpeg1.index_run[0],
                              ff_mpeg2_vlc_table, uni_mpeg2_ac_vlc_len);
 
     /* build unified dc encoding tables */
