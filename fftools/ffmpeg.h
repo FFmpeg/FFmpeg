@@ -443,7 +443,10 @@ typedef struct InputFile {
     int ist_index;        /* index of first stream in input_streams */
     int64_t input_ts_offset;
     int input_sync_ref;
-
+    /**
+     * Effective format start time based on enabled streams.
+     */
+    int64_t start_time_effective;
     int64_t ts_offset;
     /**
      * Extra timestamp offset added by discontinuity handling.

@@ -202,13 +202,15 @@ int parse_and_set_vsync(const char *arg, int *vsync_var, int file_idx, int st_id
     return 0;
 }
 
+/* Correct input file start times based on enabled streams */
 static void correct_input_start_times(void)
 {
-    // Correct starttime based on the enabled streams
     for (int i = 0; i < nb_input_files; i++) {
         InputFile       *ifile = input_files[i];
         AVFormatContext    *is = ifile->ctx;
-        int64_t new_start_time = INT64_MAX;
+        int64_t new_start_time = INT64_MAX, diff, abs_start_seek;
+
+        ifile->start_time_effective = is->start_time;
 
         if (is->start_time == AV_NOPTS_VALUE ||
             !(is->iformat->flags & AVFMT_TS_DISCONT))
@@ -220,9 +222,20 @@ static void correct_input_start_times(void)
                 continue;
             new_start_time = FFMIN(new_start_time, av_rescale_q(st->start_time, st->time_base, AV_TIME_BASE_Q));
         }
-        if (new_start_time > is->start_time) {
-            av_log(is, AV_LOG_VERBOSE, "Correcting start time by %"PRId64"\n", new_start_time - is->start_time);
-            ifile->ts_offset = -new_start_time;
+
+        diff = new_start_time - is->start_time;
+        if (diff) {
+            av_log(NULL, AV_LOG_VERBOSE, "Correcting start time of Input #%d by %"PRId64" us.\n", i, diff);
+            ifile->start_time_effective = new_start_time;
+            if (copy_ts && start_at_zero)
+                ifile->ts_offset = -new_start_time;
+            else if (!copy_ts) {
+                abs_start_seek = is->start_time + (ifile->start_time != AV_NOPTS_VALUE) ? ifile->start_time : 0;
+                ifile->ts_offset = abs_start_seek > new_start_time ? -abs_start_seek : -new_start_time;
+            } else if (copy_ts)
+                ifile->ts_offset = 0;
+
+            ifile->ts_offset += ifile->input_ts_offset;
         }
     }
 }
@@ -255,9 +268,9 @@ static int apply_sync_offsets(void)
         if (self->ctx->start_time_realtime != AV_NOPTS_VALUE && ref->ctx->start_time_realtime != AV_NOPTS_VALUE) {
             self_start_time = self->ctx->start_time_realtime;
             ref_start_time  =  ref->ctx->start_time_realtime;
-        } else if (self->ctx->start_time != AV_NOPTS_VALUE && ref->ctx->start_time != AV_NOPTS_VALUE) {
-            self_start_time = self->ctx->start_time;
-            ref_start_time  =  ref->ctx->start_time;
+        } else if (self->start_time_effective != AV_NOPTS_VALUE && ref->start_time_effective != AV_NOPTS_VALUE) {
+            self_start_time = self->start_time_effective;
+            ref_start_time  =  ref->start_time_effective;
         } else {
             start_times_set = 0;
         }
@@ -1277,8 +1290,6 @@ int ffmpeg_parse_options(int argc, char **argv)
         goto fail;
     }
 
-    apply_sync_offsets();
-
     /* create the complex filtergraphs */
     ret = init_complex_filters();
     if (ret < 0) {
@@ -1294,6 +1305,8 @@ int ffmpeg_parse_options(int argc, char **argv)
     }
 
     correct_input_start_times();
+
+    apply_sync_offsets();
 
     check_filter_outputs();
 

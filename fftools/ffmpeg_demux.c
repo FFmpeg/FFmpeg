@@ -170,7 +170,7 @@ static void ts_fixup(Demuxer *d, AVPacket *pkt, int *repeat_pict)
 {
     InputFile *ifile = &d->f;
     InputStream *ist = input_streams[ifile->ist_index + pkt->stream_index];
-    const int64_t start_time = ifile->ctx->start_time;
+    const int64_t start_time = ifile->start_time_effective;
     int64_t duration;
 
     if (debug_ts) {
@@ -422,7 +422,7 @@ int ifile_get_packet(InputFile *f, AVPacket **pkt)
     if (f->readrate || f->rate_emu) {
         int i;
         int64_t file_start = copy_ts * (
-                              (f->ctx->start_time != AV_NOPTS_VALUE ? f->ctx->start_time * !start_at_zero : 0) +
+                              (f->start_time_effective != AV_NOPTS_VALUE ? f->start_time_effective * !start_at_zero : 0) +
                               (f->start_time != AV_NOPTS_VALUE ? f->start_time : 0)
                              );
         float scale = f->rate_emu ? 1.0 : f->readrate;

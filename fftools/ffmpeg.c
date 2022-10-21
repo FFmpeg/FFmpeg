@@ -1813,7 +1813,7 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
         start_time = 0;
         if (copy_ts) {
             start_time += f->start_time != AV_NOPTS_VALUE ? f->start_time : 0;
-            start_time += start_at_zero ? 0 : f->ctx->start_time;
+            start_time += start_at_zero ? 0 : f->start_time_effective;
         }
         if (ist->pts >= f->recording_time + start_time) {
             close_output_stream(ost);
