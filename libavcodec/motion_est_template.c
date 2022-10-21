@@ -281,7 +281,7 @@ static int qpel_motion_search(MpegEncContext * s,
                     for(i=0; i<8; i++){
                         if(score < best[i]){
                             memmove(&best[i+1], &best[i], sizeof(int)*(7-i));
-                            memmove(&best_pos[i+1][0], &best_pos[i][0], sizeof(int)*2*(7-i));
+                            memmove(&best_pos[i + 1], &best_pos[i], sizeof(*best_pos) * (7 - i));
                             best[i]= score;
                             best_pos[i][0]= nx + 4*mx;
                             best_pos[i][1]= ny + 4*my;
