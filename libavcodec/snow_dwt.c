@@ -778,10 +778,10 @@ static inline int w_c(struct MpegEncContext *v, const uint8_t *pix1, const uint8
 
     for (i = 0; i < h; i++) {
         for (j = 0; j < w; j += 4) {
-            tmp[32 * i + j + 0] = (pix1[j + 0] - pix2[j + 0]) << 4;
-            tmp[32 * i + j + 1] = (pix1[j + 1] - pix2[j + 1]) << 4;
-            tmp[32 * i + j + 2] = (pix1[j + 2] - pix2[j + 2]) << 4;
-            tmp[32 * i + j + 3] = (pix1[j + 3] - pix2[j + 3]) << 4;
+            tmp[32 * i + j + 0] = (pix1[j + 0] - pix2[j + 0]) * (1 << 4);
+            tmp[32 * i + j + 1] = (pix1[j + 1] - pix2[j + 1]) * (1 << 4);
+            tmp[32 * i + j + 2] = (pix1[j + 2] - pix2[j + 2]) * (1 << 4);
+            tmp[32 * i + j + 3] = (pix1[j + 3] - pix2[j + 3]) * (1 << 4);
         }
         pix1 += line_size;
         pix2 += line_size;
