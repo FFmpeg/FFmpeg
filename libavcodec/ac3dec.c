@@ -1508,19 +1508,8 @@ static int ac3_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     s->superframe_size = 0;
 
     buf_size = full_buf_size;
-    for (i = 1; i < buf_size; i += 2) {
-        if (buf[i] == 0x77 || buf[i] == 0x0B) {
-            if ((buf[i] ^ buf[i-1]) == (0x77 ^ 0x0B)) {
-                i--;
-                break;
-            } else if ((buf[i] ^ buf[i+1]) == (0x77 ^ 0x0B)) {
-                break;
-            }
-        }
-    }
-    if (i >= buf_size)
-        return AVERROR_INVALIDDATA;
-    if (i > 10)
+    i = ff_ac3_find_syncword(buf, buf_size);
+    if (i < 0 || i > 10)
         return i;
     buf += i;
     buf_size -= i;

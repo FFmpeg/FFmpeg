@@ -53,6 +53,25 @@ static const uint8_t center_levels[4] = { 4, 5, 6, 5 };
  */
 static const uint8_t surround_levels[4] = { 4, 6, 7, 6 };
 
+int ff_ac3_find_syncword(const uint8_t *buf, int buf_size)
+{
+    int i;
+
+    for (i = 1; i < buf_size; i += 2) {
+        if (buf[i] == 0x77 || buf[i] == 0x0B) {
+            if ((buf[i] ^ buf[i-1]) == (0x77 ^ 0x0B)) {
+                i--;
+                break;
+            } else if ((buf[i] ^ buf[i+1]) == (0x77 ^ 0x0B)) {
+                break;
+            }
+        }
+    }
+    if (i >= buf_size)
+        return AVERROR_INVALIDDATA;
+
+    return i;
+}
 
 int ff_ac3_parse_header(GetBitContext *gbc, AC3HeaderInfo *hdr)
 {

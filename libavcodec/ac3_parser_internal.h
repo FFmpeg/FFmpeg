@@ -79,4 +79,6 @@ int ff_ac3_parse_header(GetBitContext *gbc, AC3HeaderInfo *hdr);
 int avpriv_ac3_parse_header(AC3HeaderInfo **hdr, const uint8_t *buf,
                             size_t size);
 
+int ff_ac3_find_syncword(const uint8_t *buf, int buf_size);
+
 #endif /* AVCODEC_AC3_PARSER_INTERNAL_H */
