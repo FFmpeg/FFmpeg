@@ -54,6 +54,9 @@ void ff_mpeg12_init_vlcs(void);
 
 extern RLTable ff_rl_mpeg1;
 
+extern const int8_t ff_mpeg12_level[MPEG12_RL_NB_ELEMS];
+extern const int8_t ff_mpeg12_run[MPEG12_RL_NB_ELEMS];
+
 extern const uint16_t ff_mpeg1_vlc_table[MPEG12_RL_NB_ELEMS + 2][2];
 extern const uint16_t ff_mpeg2_vlc_table[MPEG12_RL_NB_ELEMS + 2][2];
 

@@ -152,11 +152,11 @@ static av_cold void mpeg12_init_vlcs(void)
                     &table_mb_btype[0][1], 2, 1,
                     &table_mb_btype[0][0], 2, 1, 64);
 
-    ff_init_2d_vlc_rl(ff_mpeg1_vlc_table, ff_mpeg1_rl_vlc, ff_rl_mpeg1.table_run,
-                      ff_rl_mpeg1.table_level, ff_rl_mpeg1.n,
+    ff_init_2d_vlc_rl(ff_mpeg1_vlc_table, ff_mpeg1_rl_vlc, ff_mpeg12_run,
+                      ff_mpeg12_level, MPEG12_RL_NB_ELEMS,
                       FF_ARRAY_ELEMS(ff_mpeg1_rl_vlc), 0);
-    ff_init_2d_vlc_rl(ff_mpeg2_vlc_table, ff_mpeg2_rl_vlc, ff_rl_mpeg1.table_run,
-                      ff_rl_mpeg1.table_level, ff_rl_mpeg1.n,
+    ff_init_2d_vlc_rl(ff_mpeg2_vlc_table, ff_mpeg2_rl_vlc, ff_mpeg12_run,
+                      ff_mpeg12_level, MPEG12_RL_NB_ELEMS,
                       FF_ARRAY_ELEMS(ff_mpeg2_rl_vlc), 0);
 }
 

@@ -130,7 +130,7 @@ const uint16_t ff_mpeg2_vlc_table[MPEG12_RL_NB_ELEMS + 2][2] = {
   {0x06,4}, /* EOB */
 };
 
-static const int8_t mpeg1_level[111] = {
+const int8_t ff_mpeg12_level[MPEG12_RL_NB_ELEMS] = {
   1,  2,  3,  4,  5,  6,  7,  8,
   9, 10, 11, 12, 13, 14, 15, 16,
  17, 18, 19, 20, 21, 22, 23, 24,
@@ -147,7 +147,7 @@ static const int8_t mpeg1_level[111] = {
   1,  1,  1,  1,  1,  1,  1,
 };
 
-static const int8_t mpeg1_run[111] = {
+const int8_t ff_mpeg12_run[MPEG12_RL_NB_ELEMS] = {
   0,  0,  0,  0,  0,  0,  0,  0,
   0,  0,  0,  0,  0,  0,  0,  0,
   0,  0,  0,  0,  0,  0,  0,  0,
@@ -168,8 +168,8 @@ RLTable ff_rl_mpeg1 = {
     111,
     111,
     ff_mpeg1_vlc_table,
-    mpeg1_run,
-    mpeg1_level,
+    ff_mpeg12_run,
+    ff_mpeg12_level,
 };
 
 const uint8_t ff_mpeg12_mbAddrIncrTable[36][2] = {
