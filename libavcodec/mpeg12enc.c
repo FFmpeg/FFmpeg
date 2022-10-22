@@ -49,6 +49,7 @@
 #include "mpegvideodata.h"
 #include "mpegvideoenc.h"
 #include "profiles.h"
+#include "rl.h"
 
 #if CONFIG_MPEG1VIDEO_ENCODER || CONFIG_MPEG2VIDEO_ENCODER
 static const uint8_t svcd_scan_offset_placeholder[] = {
@@ -61,6 +62,9 @@ static uint8_t fcode_tab[MAX_MV * 2 + 1];
 
 static uint8_t uni_mpeg1_ac_vlc_len[64 * 64 * 2];
 static uint8_t uni_mpeg2_ac_vlc_len[64 * 64 * 2];
+
+static uint8_t mpeg12_max_level[MAX_LEVEL + 1];
+static uint8_t mpeg12_index_run[MAX_RUN   + 1];
 
 /* simple include everything table for dc, first byte is bits
  * number next 3 are code */
@@ -757,8 +761,8 @@ next_coef:
             MASK_ABS(sign, alevel);
             sign &= 1;
 
-            if (alevel <= ff_rl_mpeg1.max_level[0][run]) {
-                code = ff_rl_mpeg1.index_run[0][run] + alevel - 1;
+            if (alevel <= mpeg12_max_level[run]) {
+                code = mpeg12_index_run[run] + alevel - 1;
                 /* store the VLC & sign at once */
                 put_bits(&s->pb, table_vlc[code][1] + 1,
                          (table_vlc[code][0] << 1) + sign);
@@ -1076,13 +1080,12 @@ void ff_mpeg1_encode_mb(MpegEncContext *s, int16_t block[8][64],
 
 static av_cold void mpeg12_encode_init_static(void)
 {
-    static uint8_t mpeg12_static_rl_table_store[2][2*MAX_RUN + MAX_LEVEL + 3];
+    ff_rl_init_level_run(mpeg12_max_level, mpeg12_index_run,
+                         ff_mpeg12_run, ff_mpeg12_level, MPEG12_RL_NB_ELEMS);
 
-    ff_rl_init(&ff_rl_mpeg1, mpeg12_static_rl_table_store);
-
-    ff_mpeg1_init_uni_ac_vlc(ff_rl_mpeg1.max_level[0], ff_rl_mpeg1.index_run[0],
+    ff_mpeg1_init_uni_ac_vlc(mpeg12_max_level, mpeg12_index_run,
                              ff_mpeg1_vlc_table, uni_mpeg1_ac_vlc_len);
-    ff_mpeg1_init_uni_ac_vlc(ff_rl_mpeg1.max_level[0], ff_rl_mpeg1.index_run[0],
+    ff_mpeg1_init_uni_ac_vlc(mpeg12_max_level, mpeg12_index_run,
                              ff_mpeg2_vlc_table, uni_mpeg2_ac_vlc_len);
 
     /* build unified dc encoding tables */
