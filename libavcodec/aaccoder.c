@@ -226,7 +226,7 @@ QUANTIZE_AND_ENCODE_BAND_COST_FUNC(ESC_RTZ, 0, 1, 1, 1, 0, 0, ROUND_TO_ZERO)
 QUANTIZE_AND_ENCODE_BAND_COST_FUNC(NOISE, 0, 0, 0, 0, 1, 0, ROUND_STANDARD)
 QUANTIZE_AND_ENCODE_BAND_COST_FUNC(STEREO,0, 0, 0, 0, 0, 1, ROUND_STANDARD)
 
-static quantize_and_encode_band_func quantize_and_encode_band_cost_arr[] =
+static const quantize_and_encode_band_func quantize_and_encode_band_cost_arr[] =
 {
     quantize_and_encode_band_cost_ZERO,
     quantize_and_encode_band_cost_SQUAD,
@@ -246,7 +246,7 @@ static quantize_and_encode_band_func quantize_and_encode_band_cost_arr[] =
     quantize_and_encode_band_cost_STEREO,
 };
 
-static quantize_and_encode_band_func quantize_and_encode_band_cost_rtz_arr[] =
+static const quantize_and_encode_band_func quantize_and_encode_band_cost_rtz_arr[] =
 {
     quantize_and_encode_band_cost_ZERO,
     quantize_and_encode_band_cost_SQUAD,
