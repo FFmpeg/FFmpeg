@@ -36,10 +36,12 @@
 #include "mpegvideo.h"
 #include "mpegvideodata.h"
 #include "mpegvideoenc.h"
+#include "rl.h"
 #include "speedhq.h"
 #include "speedhqenc.h"
 
-static uint8_t speedhq_static_rl_table_store[2][2*MAX_RUN + MAX_LEVEL + 3];
+static uint8_t speedhq_max_level[MAX_LEVEL + 1];
+static uint8_t speedhq_index_run[MAX_RUN   + 1];
 
 /* Exactly the same as MPEG-2, except little-endian. */
 static const uint16_t mpeg12_vlc_dc_lum_code_reversed[12] = {
@@ -64,7 +66,8 @@ typedef struct SpeedHQEncContext {
 
 static av_cold void speedhq_init_static_data(void)
 {
-    ff_rl_init(&ff_rl_speedhq, speedhq_static_rl_table_store);
+    ff_rl_init_level_run(speedhq_max_level, speedhq_index_run,
+                         ff_speedhq_run, ff_speedhq_level, SPEEDHQ_RL_NB_ELEMS);
 
     /* build unified dc encoding tables */
     for (int i = -255; i < 256; i++) {
@@ -88,7 +91,7 @@ static av_cold void speedhq_init_static_data(void)
         speedhq_chr_dc_uni[i + 255] = bits + (code << 8);
     }
 
-    ff_mpeg1_init_uni_ac_vlc(ff_rl_speedhq.max_level[0], ff_rl_speedhq.index_run[0],
+    ff_mpeg1_init_uni_ac_vlc(speedhq_max_level, speedhq_index_run,
                              ff_speedhq_vlc_table, uni_speedhq_ac_vlc_len);
 }
 
@@ -220,8 +223,8 @@ static void encode_block(MpegEncContext *s, int16_t *block, int n)
             MASK_ABS(sign, alevel);
             sign &= 1;
 
-            if (alevel <= ff_rl_speedhq.max_level[0][run]) {
-                code = ff_rl_speedhq.index_run[0][run] + alevel - 1;
+            if (alevel <= speedhq_max_level[run]) {
+                code = speedhq_index_run[run] + alevel - 1;
                 /* store the VLC & sign at once */
                 put_bits_le(&s->pb, ff_speedhq_vlc_table[code][1] + 1,
                             ff_speedhq_vlc_table[code][0] | (sign << ff_speedhq_vlc_table[code][1]));
