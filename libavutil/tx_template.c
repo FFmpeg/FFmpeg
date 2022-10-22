@@ -55,8 +55,13 @@ TABLE_DEF( 9,  8);
 typedef struct FFSRTabsInitOnce {
     void (*func)(void);
     AVOnce control;
-    int factors[TX_MAX_SUB]; /* Must be sorted high -> low */
 } FFSRTabsInitOnce;
+
+typedef struct FFSRTabsInitOnceExt {
+    void (*func)(void);
+    AVOnce control;
+    int factors[TX_MAX_SUB]; /* Must be sorted high -> low */
+} FFSRTabsInitOnceExt;
 
 #define INIT_FF_SR_TAB(len)                                        \
 static av_cold void TX_TAB(ff_tx_init_tab_ ##len)(void)            \
@@ -145,7 +150,7 @@ static av_cold void TX_TAB(ff_tx_init_tab_9)(void)
     TX_TAB(ff_tx_tab_9)[7] = TX_TAB(ff_tx_tab_9)[3] - TX_TAB(ff_tx_tab_9)[4];
 }
 
-static FFSRTabsInitOnce nptwo_tabs_init_once[] = {
+static FFSRTabsInitOnceExt nptwo_tabs_init_once[] = {
     { TX_TAB(ff_tx_init_tab_53),      AV_ONCE_INIT, { 15, 5, 3 } },
     { TX_TAB(ff_tx_init_tab_9),       AV_ONCE_INIT, {  9 }       },
     { TX_TAB(ff_tx_init_tab_7),       AV_ONCE_INIT, {  7 }       },
