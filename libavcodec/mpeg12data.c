@@ -172,14 +172,6 @@ RLTable ff_rl_mpeg1 = {
     mpeg1_level,
 };
 
-RLTable ff_rl_mpeg2 = {
-    111,
-    111,
-    ff_mpeg2_vlc_table,
-    mpeg1_run,
-    mpeg1_level,
-};
-
 const uint8_t ff_mpeg12_mbAddrIncrTable[36][2] = {
     {0x1, 1},
     {0x3, 3},
