@@ -45,42 +45,42 @@ int ff_aac_ac3_parse(AVCodecParserContext *s1,
         got_frame = 1;
     } else {
 get_next:
-    i=END_NOT_FOUND;
-    if(s->remaining_size <= buf_size){
-        if(s->remaining_size && !s->need_next_header){
-            i= s->remaining_size;
-            s->remaining_size = 0;
-        }else{ //we need a header first
-            len=0;
-            for(i=s->remaining_size; i<buf_size; i++){
-                s->state = (s->state<<8) + buf[i];
-                if((len=s->sync(s->state, &s->need_next_header, &new_frame_start)))
-                    break;
-            }
-            if(len<=0){
-                i=END_NOT_FOUND;
-            }else{
-                got_frame = 1;
-                s->state=0;
-                i-= s->header_size -1;
-                s->remaining_size = len;
-                if(!new_frame_start || pc->index+i<=0){
-                    s->remaining_size += i;
-                    goto get_next;
+        i=END_NOT_FOUND;
+        if(s->remaining_size <= buf_size){
+            if(s->remaining_size && !s->need_next_header){
+                i= s->remaining_size;
+                s->remaining_size = 0;
+            }else{ //we need a header first
+                len=0;
+                for(i=s->remaining_size; i<buf_size; i++){
+                    s->state = (s->state<<8) + buf[i];
+                    if((len=s->sync(s->state, &s->need_next_header, &new_frame_start)))
+                        break;
                 }
-                else if (i < 0) {
-                    s->remaining_size += i;
+                if(len<=0){
+                    i=END_NOT_FOUND;
+                }else{
+                    got_frame = 1;
+                    s->state=0;
+                    i-= s->header_size -1;
+                    s->remaining_size = len;
+                    if(!new_frame_start || pc->index+i<=0){
+                        s->remaining_size += i;
+                        goto get_next;
+                    }
+                    else if (i < 0) {
+                        s->remaining_size += i;
+                    }
                 }
             }
         }
-    }
 
-    if(ff_combine_frame(pc, i, &buf, &buf_size)<0){
-        s->remaining_size -= FFMIN(s->remaining_size, buf_size);
-        *poutbuf = NULL;
-        *poutbuf_size = 0;
-        return buf_size;
-    }
+        if(ff_combine_frame(pc, i, &buf, &buf_size)<0){
+            s->remaining_size -= FFMIN(s->remaining_size, buf_size);
+            *poutbuf = NULL;
+            *poutbuf_size = 0;
+            return buf_size;
+        }
     }
 
     *poutbuf = buf;
