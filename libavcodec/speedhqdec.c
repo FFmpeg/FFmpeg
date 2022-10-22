@@ -39,7 +39,6 @@
 #include "mathops.h"
 #include "mpeg12data.h"
 #include "mpeg12vlc.h"
-#include "rl.h"
 #include "speedhq.h"
 
 #define MAX_INDEX (64 - 1)

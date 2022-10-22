@@ -20,7 +20,6 @@
  */
 
 #include <stdint.h>
-#include "rl.h"
 #include "speedhq.h"
 
 /* AC codes: Very similar but not identical to MPEG-2. */
@@ -96,12 +95,4 @@ const uint8_t ff_speedhq_run[121] = {
     16, 16, 17, 18, 19, 20, 21, 22,
     23, 24, 25, 26, 27, 28, 29, 30,
     31,
-};
-
-RLTable ff_rl_speedhq = {
-    121,
-    121,
-    ff_speedhq_vlc_table,
-    ff_speedhq_run,
-    ff_speedhq_level,
 };
