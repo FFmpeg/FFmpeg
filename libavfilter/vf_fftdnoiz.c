@@ -308,6 +308,7 @@ static void import_block(FFTdnoizContext *s,
         dst_out += data_linesize;
     }
 
+    dst = dst_out;
     for (int i = rh; i < block; i++) {
         for (int j = 0; j < block; j++) {
             dst[j].re = ddst[j].re;
@@ -347,8 +348,8 @@ static void export_block(FFTdnoizContext *s,
     AVComplexFloat *hdata = p->hdata[jobnr];
     AVComplexFloat *hdata_out = p->hdata_out[jobnr];
     AVComplexFloat *vdata_out = p->vdata_out[jobnr];
-    const int rw = FFMIN(size, width  - x * size + hoverlap);
-    const int rh = FFMIN(size, height - y * size + hoverlap);
+    const int rw = FFMIN(size, width  - x * size);
+    const int rh = FFMIN(size, height - y * size);
     AVComplexFloat *hdst, *vdst = vdata_out, *hdst_out = hdata_out;
     float *bsrc = buffer;
 
