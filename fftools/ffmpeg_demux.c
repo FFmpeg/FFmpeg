@@ -625,6 +625,10 @@ static void add_input_streams(const OptionsContext *o, AVFormatContext *ic)
                     "with old commandlines. This behaviour is DEPRECATED and will be removed "
                     "in the future. Please explicitly set \"-hwaccel_output_format qsv\".\n");
                 ist->hwaccel_output_format = AV_PIX_FMT_QSV;
+            } else if (!hwaccel_output_format && hwaccel && !strcmp(hwaccel, "mediacodec")) {
+                // There is no real AVHWFrameContext implementation. Set
+                // hwaccel_output_format to avoid av_hwframe_transfer_data error.
+                ist->hwaccel_output_format = AV_PIX_FMT_MEDIACODEC;
             } else if (hwaccel_output_format) {
                 ist->hwaccel_output_format = av_get_pix_fmt(hwaccel_output_format);
                 if (ist->hwaccel_output_format == AV_PIX_FMT_NONE) {
