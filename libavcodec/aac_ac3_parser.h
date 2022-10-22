@@ -24,6 +24,7 @@
 #define AVCODEC_AAC_AC3_PARSER_H
 
 #include <stdint.h>
+#include "libavutil/crc.h"
 #include "avcodec.h"
 #include "parser.h"
 
@@ -42,6 +43,7 @@ typedef struct AACAC3ParseContext {
     int header_size;
     int (*sync)(uint64_t state, int *need_next_header, int *new_frame_start);
 
+    const AVCRC *crc_ctx;
     int remaining_size;
     uint64_t state;
 

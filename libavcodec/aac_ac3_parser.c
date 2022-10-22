@@ -114,6 +114,10 @@ get_next:
                     buf_size -= hdr.frame_size;
                     continue;
                 }
+                /* Check for false positives since the syncword is not enough.
+                   See section 6.1.2 of A/52. */
+                if (av_crc(s->crc_ctx, 0, buf + 2, hdr.frame_size - 2))
+                    return i;
                 break;
             }
 
