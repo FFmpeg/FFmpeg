@@ -397,9 +397,13 @@ int av_hwframe_transfer_get_formats(AVBufferRef *hwframe_ref,
 
 static int transfer_data_alloc(AVFrame *dst, const AVFrame *src, int flags)
 {
-    AVHWFramesContext *ctx = (AVHWFramesContext*)src->hw_frames_ctx->data;
+    AVHWFramesContext *ctx;
     AVFrame *frame_tmp;
     int ret = 0;
+
+    if (!src->hw_frames_ctx)
+        return AVERROR(EINVAL);
+    ctx = (AVHWFramesContext*)src->hw_frames_ctx->data;
 
     frame_tmp = av_frame_alloc();
     if (!frame_tmp)
