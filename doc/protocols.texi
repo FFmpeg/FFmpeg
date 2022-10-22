@@ -1178,6 +1178,59 @@ Options can be set on the @command{ffmpeg}/@command{ffplay} command
 line, or set in code via @code{AVOption}s or in
 @code{avformat_open_input}.
 
+@subsection Muxer
+The following options are supported.
+
+@table @option
+@item rtsp_transport
+Set RTSP transport protocols.
+
+It accepts the following values:
+@table @samp
+@item udp
+Use UDP as lower transport protocol.
+
+@item tcp
+Use TCP (interleaving within the RTSP control channel) as lower
+transport protocol.
+@end table
+
+Default value is @samp{0}.
+
+@item rtsp_flags
+Set RTSP flags.
+
+The following values are accepted:
+@table @samp
+@item latm
+Use MP4A-LATM packetization instead of MPEG4-GENERIC for AAC.
+@item rfc2190
+Use RFC 2190 packetization instead of RFC 4629 for H.263.
+@item skip_rtcp
+Don't send RTCP sender reports.
+@item h264_mode0
+Use mode 0 for H.264 in RTP.
+@item send_bye
+Send RTCP BYE packets when finishing.
+@end table
+
+Default value is @samp{0}.
+
+
+@item min_port
+Set minimum local UDP port. Default value is 5000.
+
+@item max_port
+Set maximum local UDP port. Default value is 65000.
+
+@item buffer_size
+Set the maximum socket buffer size in bytes.
+
+@item pkt_size
+Set max send packet size (in bytes). Default value is 1472.
+@end table
+
+@subsection Demuxer
 The following options are supported.
 
 @table @option
@@ -1203,6 +1256,10 @@ Use UDP multicast as lower transport protocol.
 @item http
 Use HTTP tunneling as lower transport protocol, which is useful for
 passing proxies.
+
+@item https
+Use HTTPs tunneling as lower transport protocol, which is useful for
+passing proxies and widely used for security consideration.
 @end table
 
 Multiple lower transport protocols may be specified, in that case they are
@@ -1220,6 +1277,9 @@ Accept packets only from negotiated peer address and port.
 Act as a server, listening for an incoming connection.
 @item prefer_tcp
 Try TCP for RTP transport first, if TCP is available as RTSP RTP transport.
+@item satip_raw
+Export raw MPEG-TS stream instead of demuxing. The flag will simply write out
+the raw stream, with the original PAT/PMT/PIDs intact.
 @end table
 
 Default value is @samp{none}.
@@ -1232,6 +1292,7 @@ The following flags are accepted:
 @item video
 @item audio
 @item data
+@item subtitle
 @end table
 
 By default it accepts all media types.
@@ -1256,6 +1317,9 @@ Set socket TCP I/O timeout in microseconds.
 @item user_agent
 Override User-Agent header. If not specified, it defaults to the
 libavformat identifier string.
+
+@item buffer_size
+Set the maximum socket buffer size in bytes.
 @end table
 
 When receiving data over UDP, the demuxer tries to reorder received packets
