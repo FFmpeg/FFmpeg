@@ -28,6 +28,8 @@
 #define SPEEDHQ_RL_NB_ELEMS 121
 
 FF_VISIBILITY_PUSH_HIDDEN
+extern const uint8_t ff_speedhq_run[SPEEDHQ_RL_NB_ELEMS];
+extern const uint8_t ff_speedhq_level[SPEEDHQ_RL_NB_ELEMS];
 extern const uint16_t ff_speedhq_vlc_table[SPEEDHQ_RL_NB_ELEMS + 2][2];
 
 extern RLTable attribute_visibility_hidden ff_rl_speedhq;

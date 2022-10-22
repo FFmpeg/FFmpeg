@@ -60,7 +60,7 @@ const uint16_t ff_speedhq_vlc_table[SPEEDHQ_RL_NB_ELEMS + 2][2] = {
     {0x0006,  4}  /* EOB */
 };
 
-static const uint8_t speedhq_level[121] = {
+const uint8_t ff_speedhq_level[121] = {
      1,  2,  3,  4,  5,  6,  7,  8,
      9, 10, 11, 12, 13, 14, 15, 16,
     17, 18, 19, 20, 21, 22, 23, 24,
@@ -79,7 +79,7 @@ static const uint8_t speedhq_level[121] = {
      1,
 };
 
-static const uint8_t speedhq_run[121] = {
+const uint8_t ff_speedhq_run[121] = {
      0,  0,  0,  0,  0,  0,  0,  0,
      0,  0,  0,  0,  0,  0,  0,  0,
      0,  0,  0,  0,  0,  0,  0,  0,
@@ -102,6 +102,6 @@ RLTable ff_rl_speedhq = {
     121,
     121,
     ff_speedhq_vlc_table,
-    speedhq_run,
-    speedhq_level,
+    ff_speedhq_run,
+    ff_speedhq_level,
 };
