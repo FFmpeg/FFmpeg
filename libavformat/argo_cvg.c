@@ -70,7 +70,7 @@ typedef struct ArgoCVGMuxContext {
 
 #if CONFIG_ARGO_CVG_DEMUXER
 /* "Special" files that are played at a different rate. */
-static ArgoCVGOverride overrides[] = {
+static const ArgoCVGOverride overrides[] = {
     { "CRYS.CVG",     { 23592, 0, 1 }, 2495499, 88200 }, /* Beta */
     { "REDCRY88.CVG", { 38280, 0, 1 }, 4134848, 88200 }, /* Beta */
     { "DANLOOP1.CVG", { 54744, 1, 0 }, 5684641, 37800 }, /* Beta */
