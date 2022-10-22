@@ -164,14 +164,6 @@ const int8_t ff_mpeg12_run[MPEG12_RL_NB_ELEMS] = {
  25, 26, 27, 28, 29, 30, 31,
 };
 
-RLTable ff_rl_mpeg1 = {
-    111,
-    111,
-    ff_mpeg1_vlc_table,
-    ff_mpeg12_run,
-    ff_mpeg12_level,
-};
-
 const uint8_t ff_mpeg12_mbAddrIncrTable[36][2] = {
     {0x1, 1},
     {0x3, 3},

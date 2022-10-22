@@ -28,7 +28,6 @@
 #ifndef AVCODEC_MPEG12VLC_H
 #define AVCODEC_MPEG12VLC_H
 
-#include "rl.h"
 #include "vlc.h"
 
 #define DC_VLC_BITS 9
@@ -51,8 +50,6 @@ extern VLC ff_mv_vlc;
 void ff_mpeg12_init_vlcs(void);
 
 #define MPEG12_RL_NB_ELEMS 111
-
-extern RLTable ff_rl_mpeg1;
 
 extern const int8_t ff_mpeg12_level[MPEG12_RL_NB_ELEMS];
 extern const int8_t ff_mpeg12_run[MPEG12_RL_NB_ELEMS];

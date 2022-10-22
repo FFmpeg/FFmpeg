@@ -37,6 +37,7 @@
 #include "mpeg12codecs.h"
 #include "mpeg12data.h"
 #include "mpeg12dec.h"
+#include "rl.h"
 #include "startcode.h"
 
 static const uint8_t table_mb_ptype[7][2] = {
