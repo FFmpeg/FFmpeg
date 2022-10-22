@@ -24,6 +24,23 @@
 
 #include "rl.h"
 
+av_cold void ff_rl_init_level_run(uint8_t max_level[MAX_LEVEL + 1],
+                                  uint8_t index_run[MAX_RUN + 1],
+                                  const uint8_t table_run[/* n */],
+                                  const uint8_t table_level[/* n*/],
+                                  int n)
+{
+    memset(index_run, n, MAX_RUN + 1);
+    for (int i = 0; i < n; i++) {
+        int run   = table_run[i];
+        int level = table_level[i];
+        if (index_run[run] == n)
+            index_run[run] = i;
+        if (level > max_level[run])
+            max_level[run] = level;
+    }
+}
+
 av_cold void ff_rl_init(RLTable *rl,
                         uint8_t static_store[2][2 * MAX_RUN + MAX_LEVEL + 3])
 {
