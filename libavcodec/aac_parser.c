@@ -27,8 +27,7 @@
 #include "get_bits.h"
 #include "mpeg4audio.h"
 
-static int aac_sync(uint64_t state, AACAC3ParseContext *hdr_info,
-        int *need_next_header, int *new_frame_start)
+static int aac_sync(uint64_t state, int *need_next_header, int *new_frame_start)
 {
     GetBitContext bits;
     AACADTSHeaderInfo hdr;
@@ -46,10 +45,6 @@ static int aac_sync(uint64_t state, AACAC3ParseContext *hdr_info,
         return 0;
     *need_next_header = 0;
     *new_frame_start  = 1;
-    hdr_info->sample_rate = hdr.sample_rate;
-    hdr_info->channels    = ff_mpeg4audio_channels[hdr.chan_config];
-    hdr_info->samples     = hdr.samples;
-    hdr_info->bit_rate    = hdr.bit_rate;
     return size;
 }
 

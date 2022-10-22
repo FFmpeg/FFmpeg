@@ -39,24 +39,14 @@ typedef enum {
 
 typedef struct AACAC3ParseContext {
     ParseContext pc;
-    int frame_size;
     int header_size;
-    int (*sync)(uint64_t state, struct AACAC3ParseContext *hdr_info,
-            int *need_next_header, int *new_frame_start);
-
-    int channels;
-    int sample_rate;
-    int bit_rate;
-    int samples;
-    uint64_t channel_layout;
-    int service_type;
+    int (*sync)(uint64_t state, int *need_next_header, int *new_frame_start);
 
     int remaining_size;
     uint64_t state;
 
     int need_next_header;
     int frame_number;
-    enum AVCodecID codec_id;
 } AACAC3ParseContext;
 
 int ff_aac_ac3_parse(AVCodecParserContext *s1,
