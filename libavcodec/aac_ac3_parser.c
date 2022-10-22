@@ -40,6 +40,10 @@ int ff_aac_ac3_parse(AVCodecParserContext *s1,
     int new_frame_start;
     int got_frame = 0;
 
+    if (s1->flags & PARSER_FLAG_COMPLETE_FRAMES) {
+        i = buf_size;
+        got_frame = 1;
+    } else {
 get_next:
     i=END_NOT_FOUND;
     if(s->remaining_size <= buf_size){
@@ -76,6 +80,7 @@ get_next:
         *poutbuf = NULL;
         *poutbuf_size = 0;
         return buf_size;
+    }
     }
 
     *poutbuf = buf;
