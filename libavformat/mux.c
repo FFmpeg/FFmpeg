@@ -144,7 +144,7 @@ error:
     return ret;
 }
 
-static int validate_codec_tag(AVFormatContext *s, AVStream *st)
+static int validate_codec_tag(const AVFormatContext *s, const AVStream *st)
 {
     const AVCodecTag *avctag;
     enum AVCodecID id = AV_CODEC_ID_NONE;
