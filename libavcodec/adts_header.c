@@ -32,6 +32,8 @@ int ff_adts_header_parse(GetBitContext *gbc, AACADTSHeaderInfo *hdr)
     int size, rdb, ch, sr;
     int aot, crc_abs;
 
+    memset(hdr, 0, sizeof(*hdr));
+
     if (get_bits(gbc, 12) != 0xfff)
         return AAC_AC3_PARSE_ERROR_SYNC;
 
