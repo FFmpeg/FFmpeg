@@ -1511,7 +1511,7 @@ static int vaapi_map_to_drm_abh(AVHWFramesContext *hwfc, AVFrame *dst,
         goto fail_derived;
     }
 
-    av_log(hwfc, AV_LOG_DEBUG, "DRM PRIME fd is %ld.\n",
+    av_log(hwfc, AV_LOG_DEBUG, "DRM PRIME fd is %"PRIdPTR".\n",
            mapping->buffer_info.handle);
 
     mapping->drm_desc.nb_objects = 1;
