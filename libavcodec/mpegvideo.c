@@ -34,7 +34,6 @@
 
 #include "avcodec.h"
 #include "blockdsp.h"
-#include "h264chroma.h"
 #include "idctdsp.h"
 #include "mathops.h"
 #include "mpeg_er.h"
@@ -275,7 +274,6 @@ static void gray8(uint8_t *dst, const uint8_t *src, ptrdiff_t linesize, int h)
 static av_cold int dct_init(MpegEncContext *s)
 {
     ff_blockdsp_init(&s->bdsp);
-    ff_h264chroma_init(&s->h264chroma, 8); //for lowres
     ff_hpeldsp_init(&s->hdsp, s->avctx->flags);
     ff_videodsp_init(&s->vdsp, s->avctx->bits_per_raw_sample);
 
