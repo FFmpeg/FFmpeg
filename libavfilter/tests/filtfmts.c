@@ -25,12 +25,11 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/samplefmt.h"
 
-#define FF_INTERNAL_FIELDS 1
-#include "libavfilter/framequeue.h"
-
 #include "libavfilter/avfilter.h"
 #include "libavfilter/formats.h"
+#include "libavfilter/framequeue.h"
 #include "libavfilter/internal.h"
+#include "libavfilter/link_internal.h"
 
 static void print_formats_internal(AVFilterLink **links, const AVFilterPad *pads,
                                    unsigned nb, size_t fmts_cfg_offset,
@@ -123,7 +122,7 @@ int main(int argc, char **argv)
 
     /* create a link for each of the input pads */
     for (i = 0; i < filter_ctx->nb_inputs; i++) {
-        AVFilterLink *link = av_mallocz(sizeof(AVFilterLink));
+        AVFilterLink *link = av_mallocz(sizeof(FilterLinkInternal));
         if (!link) {
             fprintf(stderr, "Unable to allocate memory for filter input link\n");
             ret = 1;
@@ -133,7 +132,7 @@ int main(int argc, char **argv)
         filter_ctx->inputs[i] = link;
     }
     for (i = 0; i < filter_ctx->nb_outputs; i++) {
-        AVFilterLink *link = av_mallocz(sizeof(AVFilterLink));
+        AVFilterLink *link = av_mallocz(sizeof(FilterLinkInternal));
         if (!link) {
             fprintf(stderr, "Unable to allocate memory for filter output link\n");
             ret = 1;

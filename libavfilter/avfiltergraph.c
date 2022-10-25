@@ -32,13 +32,13 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 
-#define FF_INTERNAL_FIELDS 1
-#include "framequeue.h"
 
 #include "avfilter.h"
 #include "buffersink.h"
 #include "formats.h"
+#include "framequeue.h"
 #include "internal.h"
+#include "link_internal.h"
 #include "thread.h"
 
 #define OFFSET(x) offsetof(AVFilterGraph, x)
@@ -1483,10 +1483,11 @@ int avfilter_graph_request_oldest(AVFilterGraph *graph)
     av_assert1(oldest->age_index >= 0);
     frame_count = oldest->frame_count_out;
     while (frame_count == oldest->frame_count_out) {
+        FilterLinkInternal * const li = ff_link_internal(oldest);
         r = ff_filter_graph_run_once(graph);
         if (r == AVERROR(EAGAIN) &&
-            !oldest->frame_wanted_out && !oldest->frame_blocked_in &&
-            !oldest->status_in)
+            !oldest->frame_wanted_out && !li->frame_blocked_in &&
+            !li->status_in)
             ff_request_frame(oldest);
         else if (r < 0)
             return r;

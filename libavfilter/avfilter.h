@@ -695,51 +695,6 @@ struct AVFilterLink {
      * AVHWFramesContext describing the frames.
      */
     AVBufferRef *hw_frames_ctx;
-
-#ifndef FF_INTERNAL_FIELDS
-
-    /**
-     * Internal structure members.
-     * The fields below this limit are internal for libavfilter's use
-     * and must in no way be accessed by applications.
-     */
-    char reserved[0xF000];
-
-#else /* FF_INTERNAL_FIELDS */
-
-    /**
-     * Queue of frames waiting to be filtered.
-     */
-    FFFrameQueue fifo;
-
-    /**
-     * If set, the source filter can not generate a frame as is.
-     * The goal is to avoid repeatedly calling the request_frame() method on
-     * the same link.
-     */
-    int frame_blocked_in;
-
-    /**
-     * Link input status.
-     * If not zero, all attempts of filter_frame will fail with the
-     * corresponding code.
-     */
-    int status_in;
-
-    /**
-     * Timestamp of the input status change.
-     */
-    int64_t status_in_pts;
-
-    /**
-     * Link output status.
-     * If not zero, all attempts of request_frame will fail with the
-     * corresponding code.
-     */
-    int status_out;
-
-#endif /* FF_INTERNAL_FIELDS */
-
 };
 
 /**
