@@ -42,6 +42,8 @@ typedef struct MuxStream {
 
     AVBSFContext *bsf_ctx;
 
+    int64_t max_frames;
+
     /*
      * The size of the AVPackets' buffers in queue.
      * Updated when a packet is either pushed or pulled from the queue.
@@ -83,5 +85,10 @@ typedef struct Muxer {
 extern int want_sdp;
 
 int mux_check_init(Muxer *mux);
+
+static MuxStream *ms_from_ost(OutputStream *ost)
+{
+    return (MuxStream*)ost;
+}
 
 #endif /* FFTOOLS_FFMPEG_MUX_H */

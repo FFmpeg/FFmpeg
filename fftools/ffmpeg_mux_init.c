@@ -295,8 +295,8 @@ static OutputStream *new_output_stream(Muxer *mux, const OptionsContext *o,
         ost->enc_timebase = q;
     }
 
-    ost->max_frames = INT64_MAX;
-    MATCH_PER_STREAM_OPT(max_frames, i64, ost->max_frames, oc, st);
+    ms->max_frames = INT64_MAX;
+    MATCH_PER_STREAM_OPT(max_frames, i64, ms->max_frames, oc, st);
     for (i = 0; i<o->nb_max_frames; i++) {
         char *p = o->max_frames[i].specifier;
         if (!*p && type != AVMEDIA_TYPE_VIDEO) {
@@ -1165,6 +1165,7 @@ static int setup_sync_queues(Muxer *mux, AVFormatContext *oc, int64_t buf_size_u
 
     for (int i = 0; i < oc->nb_streams; i++) {
         OutputStream *ost = of->streams[i];
+        MuxStream     *ms = ms_from_ost(ost);
         enum AVMediaType type = ost->st->codecpar->codec_type;
 
         ost->sq_idx_encode = -1;
@@ -1173,8 +1174,8 @@ static int setup_sync_queues(Muxer *mux, AVFormatContext *oc, int64_t buf_size_u
         nb_interleaved += IS_INTERLEAVED(type);
         nb_av_enc      += IS_AV_ENC(ost, type);
 
-        limit_frames        |=  ost->max_frames < INT64_MAX;
-        limit_frames_av_enc |= (ost->max_frames < INT64_MAX) && IS_AV_ENC(ost, type);
+        limit_frames        |=  ms->max_frames < INT64_MAX;
+        limit_frames_av_enc |= (ms->max_frames < INT64_MAX) && IS_AV_ENC(ost, type);
     }
 
     if (!((nb_interleaved > 1 && of->shortest) ||
@@ -1191,13 +1192,14 @@ static int setup_sync_queues(Muxer *mux, AVFormatContext *oc, int64_t buf_size_u
 
         for (int i = 0; i < oc->nb_streams; i++) {
             OutputStream *ost = of->streams[i];
+            MuxStream     *ms = ms_from_ost(ost);
             enum AVMediaType type = ost->st->codecpar->codec_type;
 
             if (!IS_AV_ENC(ost, type))
                 continue;
 
             ost->sq_idx_encode = sq_add_stream(of->sq_encode,
-                                               of->shortest || ost->max_frames < INT64_MAX);
+                                               of->shortest || ms->max_frames < INT64_MAX);
             if (ost->sq_idx_encode < 0)
                 return ost->sq_idx_encode;
 
@@ -1205,8 +1207,8 @@ static int setup_sync_queues(Muxer *mux, AVFormatContext *oc, int64_t buf_size_u
             if (!ost->sq_frame)
                 return AVERROR(ENOMEM);
 
-            if (ost->max_frames != INT64_MAX)
-                sq_limit_frames(of->sq_encode, ost->sq_idx_encode, ost->max_frames);
+            if (ms->max_frames != INT64_MAX)
+                sq_limit_frames(of->sq_encode, ost->sq_idx_encode, ms->max_frames);
         }
     }
 
@@ -1223,18 +1225,19 @@ static int setup_sync_queues(Muxer *mux, AVFormatContext *oc, int64_t buf_size_u
 
         for (int i = 0; i < oc->nb_streams; i++) {
             OutputStream *ost = of->streams[i];
+            MuxStream     *ms = ms_from_ost(ost);
             enum AVMediaType type = ost->st->codecpar->codec_type;
 
             if (!IS_INTERLEAVED(type))
                 continue;
 
             ost->sq_idx_mux = sq_add_stream(mux->sq_mux,
-                                            of->shortest || ost->max_frames < INT64_MAX);
+                                            of->shortest || ms->max_frames < INT64_MAX);
             if (ost->sq_idx_mux < 0)
                 return ost->sq_idx_mux;
 
-            if (ost->max_frames != INT64_MAX)
-                sq_limit_frames(mux->sq_mux, ost->sq_idx_mux, ost->max_frames);
+            if (ms->max_frames != INT64_MAX)
+                sq_limit_frames(mux->sq_mux, ost->sq_idx_mux, ms->max_frames);
         }
     }
 

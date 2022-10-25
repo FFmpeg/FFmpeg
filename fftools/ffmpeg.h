@@ -508,7 +508,6 @@ typedef struct OutputStream {
     AVRational enc_timebase;
 
     AVCodecContext *enc_ctx;
-    int64_t max_frames;
     AVFrame *filtered_frame;
     AVFrame *last_frame;
     AVFrame *sq_frame;

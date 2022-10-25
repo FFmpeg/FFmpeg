@@ -45,11 +45,6 @@ static Muxer *mux_from_of(OutputFile *of)
     return (Muxer*)of;
 }
 
-static MuxStream *ms_from_ost(OutputStream *ost)
-{
-    return (MuxStream*)ost;
-}
-
 static int64_t filesize(AVIOContext *pb)
 {
     int64_t ret = -1;
