@@ -880,6 +880,17 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
 
     ff_dct_encode_init(s);
 
+    if (s->mpeg_quant || s->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
+        s->dct_unquantize_intra = s->dct_unquantize_mpeg2_intra;
+        s->dct_unquantize_inter = s->dct_unquantize_mpeg2_inter;
+    } else if (s->out_format == FMT_H263 || s->out_format == FMT_H261) {
+        s->dct_unquantize_intra = s->dct_unquantize_h263_intra;
+        s->dct_unquantize_inter = s->dct_unquantize_h263_inter;
+    } else {
+        s->dct_unquantize_intra = s->dct_unquantize_mpeg1_intra;
+        s->dct_unquantize_inter = s->dct_unquantize_mpeg1_inter;
+    }
+
     if ((CONFIG_H263P_ENCODER || CONFIG_RV20_ENCODER) && s->modified_quant)
         s->chroma_qscale_table = ff_h263_chroma_qscale_table;
 
@@ -1721,17 +1732,6 @@ static int frame_start(MpegEncContext *s)
             s->last_picture.f->linesize[i]    *= 2;
             s->next_picture.f->linesize[i]    *= 2;
         }
-    }
-
-    if (s->mpeg_quant || s->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
-        s->dct_unquantize_intra = s->dct_unquantize_mpeg2_intra;
-        s->dct_unquantize_inter = s->dct_unquantize_mpeg2_inter;
-    } else if (s->out_format == FMT_H263 || s->out_format == FMT_H261) {
-        s->dct_unquantize_intra = s->dct_unquantize_h263_intra;
-        s->dct_unquantize_inter = s->dct_unquantize_h263_inter;
-    } else {
-        s->dct_unquantize_intra = s->dct_unquantize_mpeg1_intra;
-        s->dct_unquantize_inter = s->dct_unquantize_mpeg1_inter;
     }
 
     if (s->dct_error_sum) {
