@@ -33,6 +33,7 @@
 
 #include "config_components.h"
 
+#include <assert.h>
 #include <stdint.h>
 
 #include "libavutil/emms.h"
@@ -416,6 +417,53 @@ static av_cold int init_matrices(MPVMainEncContext *const m, AVCodecContext *avc
         ff_convert_matrix(s, s->q_inter_matrix, s->q_inter_matrix16,
                           s->inter_matrix, s->inter_quant_bias, avctx->qmin,
                           31, 0);
+
+    return 0;
+}
+
+static av_cold int init_buffers(MPVMainEncContext *const m, AVCodecContext *avctx)
+{
+    MpegEncContext *const s = &m->s;
+    // Align the following per-thread buffers to avoid false sharing.
+    enum {
+#ifndef _MSC_VER
+        /// The number is supposed to match/exceed the cache-line size.
+        ALIGN = FFMAX(128, _Alignof(max_align_t)),
+#else
+        ALIGN = 128,
+#endif
+        ME_MAP_ALLOC_SIZE = FFALIGN(2 * ME_MAP_SIZE * sizeof(*s->me.map), ALIGN),
+        DCT_ERROR_SIZE    = FFALIGN(2 * sizeof(*s->dct_error_sum), ALIGN),
+    };
+    static_assert(FFMAX(ME_MAP_ALLOC_SIZE, DCT_ERROR_SIZE) * MAX_THREADS + ALIGN - 1 <= SIZE_MAX,
+                  "Need checks for potential overflow.");
+    unsigned nb_slices = s->slice_context_count;
+    char *dct_error = NULL, *me_map;
+
+    if (s->noise_reduction) {
+        dct_error = av_mallocz(ALIGN - 1 + nb_slices * DCT_ERROR_SIZE);
+        if (!dct_error)
+            return AVERROR(ENOMEM);
+        m->dct_error_sum_base = dct_error;
+        dct_error += FFALIGN((uintptr_t)dct_error, ALIGN) - (uintptr_t)dct_error;
+    }
+    me_map = av_mallocz(ALIGN - 1 + nb_slices * ME_MAP_ALLOC_SIZE);
+    if (!me_map)
+        return AVERROR(ENOMEM);
+    m->me_map_base = me_map;
+    me_map += FFALIGN((uintptr_t)me_map, ALIGN) - (uintptr_t)me_map;
+
+    for (unsigned i = 0; i < nb_slices; ++i) {
+        MpegEncContext *const s2 = s->thread_context[i];
+
+        if (dct_error) {
+            s2->dct_error_sum = (void*)dct_error;
+            dct_error        += DCT_ERROR_SIZE;
+        }
+        s2->me.map       = (uint32_t*)me_map;
+        s2->me.score_map = s2->me.map + ME_MAP_SIZE;
+        me_map          += ME_MAP_ALLOC_SIZE;
+    }
 
     return 0;
 }
@@ -923,6 +971,10 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     if (ret < 0)
         return ret;
 
+    ret = init_buffers(m, avctx);
+    if (ret < 0)
+        return ret;
+
     /* Allocate MV tables; the MV and MB tables will be copied
      * to slice contexts by ff_update_duplicate_context().  */
     mv_table_size = (s->mb_height + 2) * s->mb_stride + 1;
@@ -1067,6 +1119,8 @@ av_cold int ff_mpv_encode_end(AVCodecContext *avctx)
     av_freep(&s->b_field_mv_table_base);
     av_freep(&s->b_field_select_table[0][0]);
     av_freep(&s->p_field_select_table[0]);
+    av_freep(&m->dct_error_sum_base);
+    av_freep(&m->me_map_base);
 
     av_freep(&s->mb_type);
     av_freep(&s->lambda_table);

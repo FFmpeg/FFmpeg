@@ -98,6 +98,9 @@ typedef struct MPVMainEncContext {
 
     int64_t mb_var_sum;            ///< sum of MB variance for current frame
     int64_t mc_mb_var_sum;         ///< motion compensated MB variance for current frame
+
+    char *me_map_base;             ///< backs MotionEstContext.(map|score_map)
+    char *dct_error_sum_base;      ///< backs dct_error_sum
 } MPVMainEncContext;
 
 static inline const MPVMainEncContext *slice_to_mainenc(const MpegEncContext *s)

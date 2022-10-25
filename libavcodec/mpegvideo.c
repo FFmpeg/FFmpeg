@@ -351,17 +351,6 @@ av_cold void ff_mpv_idct_init(MpegEncContext *s)
 
 static av_cold int init_duplicate_context(MpegEncContext *s)
 {
-    if (s->encoding) {
-        s->me.map = av_mallocz(2 * ME_MAP_SIZE * sizeof(*s->me.map));
-        if (!s->me.map)
-            return AVERROR(ENOMEM);
-        s->me.score_map = s->me.map + ME_MAP_SIZE;
-
-        if (s->noise_reduction) {
-            if (!FF_ALLOCZ_TYPED_ARRAY(s->dct_error_sum,  2))
-                return AVERROR(ENOMEM);
-        }
-    }
     if (!FF_ALLOCZ_TYPED_ARRAY(s->blocks,  1 + s->encoding))
         return AVERROR(ENOMEM);
     s->block = s->blocks[0];
@@ -420,9 +409,6 @@ static av_cold void free_duplicate_context(MpegEncContext *s)
     s->sc.obmc_scratchpad = NULL;
     s->sc.linesize = 0;
 
-    av_freep(&s->dct_error_sum);
-    av_freep(&s->me.map);
-    s->me.score_map = NULL;
     av_freep(&s->blocks);
     av_freep(&s->ac_val_base);
     s->block = NULL;
@@ -646,9 +632,6 @@ static void clear_context(MpegEncContext *s)
 
     memset(s->thread_context, 0, sizeof(s->thread_context));
 
-    s->me.map = NULL;
-    s->me.score_map = NULL;
-    s->dct_error_sum = NULL;
     s->block = NULL;
     s->blocks = NULL;
     s->ac_val_base = NULL;
