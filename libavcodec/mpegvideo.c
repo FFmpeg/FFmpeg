@@ -381,7 +381,7 @@ static int init_duplicate_context(MpegEncContext *s)
                 return AVERROR(ENOMEM);
         }
     }
-    if (!FF_ALLOCZ_TYPED_ARRAY(s->blocks,  2))
+    if (!FF_ALLOCZ_TYPED_ARRAY(s->blocks,  1 + s->encoding))
         return AVERROR(ENOMEM);
     s->block = s->blocks[0];
 
