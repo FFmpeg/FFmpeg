@@ -23,7 +23,6 @@
 
 #include "mpegvideo.h"
 
-int ff_wmv2_decode_mb(MpegEncContext *s, int16_t block[6][64]);
 int ff_wmv2_decode_picture_header(MpegEncContext * s);
 int ff_wmv2_decode_secondary_picture_header(MpegEncContext * s);
 void ff_wmv2_add_mb(MpegEncContext *s, int16_t block[6][64],

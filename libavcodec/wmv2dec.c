@@ -445,7 +445,7 @@ static inline int wmv2_decode_inter_block(WMV2DecContext *w, int16_t *block,
     }
 }
 
-int ff_wmv2_decode_mb(MpegEncContext *s, int16_t block[6][64])
+static int wmv2_decode_mb(MpegEncContext *s, int16_t block[6][64])
 {
     /* The following is only allowed because this encoder
      * does not use slice threading. */
@@ -572,6 +572,8 @@ static av_cold int wmv2_decode_init(AVCodecContext *avctx)
 
     if ((ret = ff_msmpeg4_decode_init(avctx)) < 0)
         return ret;
+
+    s->decode_mb = wmv2_decode_mb;
 
     ff_wmv2_common_init(s);
 
