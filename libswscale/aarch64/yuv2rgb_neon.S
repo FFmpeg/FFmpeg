@@ -118,8 +118,8 @@
 .endm
 
 .macro increment_yuv422p
-    add                 x6,  x6,  w7, UXTW                              // srcU += incU
-    add                 x13, x13, w14, UXTW                             // srcV += incV
+    add                 x6,  x6,  w7, SXTW                              // srcU += incU
+    add                 x13, x13, w14, SXTW                             // srcV += incV
 .endm
 
 .macro compute_rgba r1 g1 b1 a1 r2 g2 b2 a2
@@ -189,8 +189,8 @@ function ff_\ifmt\()_to_\ofmt\()_neon, export=1
     st4                 {v16.8B,v17.8B,v18.8B,v19.8B}, [x2], #32
     subs                w8, w8, #16                                     // width -= 16
     b.gt                2b
-    add                 x2, x2, w3, UXTW                                // dst  += padding
-    add                 x4, x4, w5, UXTW                                // srcY += paddingY
+    add                 x2, x2, w3, SXTW                                // dst  += padding
+    add                 x4, x4, w5, SXTW                                // srcY += paddingY
     increment_\ifmt
     subs                w1, w1, #1                                      // height -= 1
     b.gt                1b
