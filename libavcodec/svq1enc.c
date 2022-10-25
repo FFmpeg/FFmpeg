@@ -46,6 +46,12 @@
 #include "libavutil/frame.h"
 #include "libavutil/mem_internal.h"
 
+// Workaround for GCC bug 102513
+#if AV_GCC_VERSION_AT_LEAST(10, 0) && AV_GCC_VERSION_AT_MOST(12, 0) \
+    && !defined(__clang__) && !defined(__INTEL_COMPILER)
+#pragma GCC optimize ("no-ipa-cp-clone")
+#endif
+
 typedef struct SVQ1EncContext {
     /* FIXME: Needed for motion estimation, should not be used for anything
      * else, the idea is to make the motion estimation eventually independent
