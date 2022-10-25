@@ -1062,8 +1062,50 @@ loop_end:
     }
 }
 
+static void of_add_attachments(Muxer *mux, const OptionsContext *o)
+{
+    OutputStream *ost;
+    int err;
+
+    for (int i = 0; i < o->nb_attachments; i++) {
+        AVIOContext *pb;
+        uint8_t *attachment;
+        const char *p;
+        int64_t len;
+
+        if ((err = avio_open2(&pb, o->attachments[i], AVIO_FLAG_READ, &int_cb, NULL)) < 0) {
+            av_log(NULL, AV_LOG_FATAL, "Could not open attachment file %s.\n",
+                   o->attachments[i]);
+            exit_program(1);
+        }
+        if ((len = avio_size(pb)) <= 0) {
+            av_log(NULL, AV_LOG_FATAL, "Could not get size of the attachment %s.\n",
+                   o->attachments[i]);
+            exit_program(1);
+        }
+        if (len > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE ||
+            !(attachment = av_malloc(len + AV_INPUT_BUFFER_PADDING_SIZE))) {
+            av_log(NULL, AV_LOG_FATAL, "Attachment %s too large.\n",
+                   o->attachments[i]);
+            exit_program(1);
+        }
+        avio_read(pb, attachment, len);
+        memset(attachment + len, 0, AV_INPUT_BUFFER_PADDING_SIZE);
+
+        ost = new_attachment_stream(mux, o, -1);
+        ost->attachment_filename       = o->attachments[i];
+        ost->st->codecpar->extradata      = attachment;
+        ost->st->codecpar->extradata_size = len;
+
+        p = strrchr(o->attachments[i], '/');
+        av_dict_set(&ost->st->metadata, "filename", (p && *p) ? p + 1 : o->attachments[i], AV_DICT_DONT_OVERWRITE);
+        avio_closep(&pb);
+    }
+}
+
 static void create_streams(Muxer *mux, const OptionsContext *o)
 {
+    AVFormatContext *oc = mux->fc;
     int auto_disable_v = o->video_disable;
     int auto_disable_a = o->audio_disable;
     int auto_disable_s = o->subtitle_disable;
@@ -1100,6 +1142,14 @@ static void create_streams(Muxer *mux, const OptionsContext *o)
     } else {
         for (int i = 0; i < o->nb_stream_maps; i++)
             map_manual(mux, o, &o->stream_maps[i]);
+    }
+
+    of_add_attachments(mux, o);
+
+    if (!oc->nb_streams && !(oc->oformat->flags & AVFMT_NOSTREAMS)) {
+        av_dump_format(oc, nb_output_files - 1, oc->url, 1);
+        av_log(NULL, AV_LOG_ERROR, "Output file #%d does not contain any stream\n", nb_output_files - 1);
+        exit_program(1);
     }
 }
 
@@ -1192,47 +1242,6 @@ static int setup_sync_queues(Muxer *mux, AVFormatContext *oc, int64_t buf_size_u
 #undef IS_INTERLEAVED
 
     return 0;
-}
-
-static void of_add_attachments(Muxer *mux, const OptionsContext *o)
-{
-    OutputStream *ost;
-    int err;
-
-    for (int i = 0; i < o->nb_attachments; i++) {
-        AVIOContext *pb;
-        uint8_t *attachment;
-        const char *p;
-        int64_t len;
-
-        if ((err = avio_open2(&pb, o->attachments[i], AVIO_FLAG_READ, &int_cb, NULL)) < 0) {
-            av_log(NULL, AV_LOG_FATAL, "Could not open attachment file %s.\n",
-                   o->attachments[i]);
-            exit_program(1);
-        }
-        if ((len = avio_size(pb)) <= 0) {
-            av_log(NULL, AV_LOG_FATAL, "Could not get size of the attachment %s.\n",
-                   o->attachments[i]);
-            exit_program(1);
-        }
-        if (len > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE ||
-            !(attachment = av_malloc(len + AV_INPUT_BUFFER_PADDING_SIZE))) {
-            av_log(NULL, AV_LOG_FATAL, "Attachment %s too large.\n",
-                   o->attachments[i]);
-            exit_program(1);
-        }
-        avio_read(pb, attachment, len);
-        memset(attachment + len, 0, AV_INPUT_BUFFER_PADDING_SIZE);
-
-        ost = new_attachment_stream(mux, o, -1);
-        ost->attachment_filename       = o->attachments[i];
-        ost->st->codecpar->extradata      = attachment;
-        ost->st->codecpar->extradata_size = len;
-
-        p = strrchr(o->attachments[i], '/');
-        av_dict_set(&ost->st->metadata, "filename", (p && *p) ? p + 1 : o->attachments[i], AV_DICT_DONT_OVERWRITE);
-        avio_closep(&pb);
-    }
 }
 
 static void of_add_programs(AVFormatContext *oc, const OptionsContext *o)
@@ -1781,14 +1790,6 @@ int of_open(const OptionsContext *o, const char *filename)
 
     /* create all output streams for this file */
     create_streams(mux, o);
-
-    of_add_attachments(mux, o);
-
-    if (!oc->nb_streams && !(oc->oformat->flags & AVFMT_NOSTREAMS)) {
-        av_dump_format(oc, nb_output_files - 1, oc->url, 1);
-        av_log(NULL, AV_LOG_ERROR, "Output file #%d does not contain any stream\n", nb_output_files - 1);
-        exit_program(1);
-    }
 
     /* check if all codec options have been used */
     unused_opts = strip_specifiers(o->g->codec_opts);
