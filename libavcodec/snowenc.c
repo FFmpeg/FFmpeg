@@ -82,11 +82,11 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     s->m.me.temp      =
     s->m.me.scratchpad = av_calloc(avctx->width + 64, 2*16*2*sizeof(uint8_t));
-    s->m.me.map       = av_mallocz(ME_MAP_SIZE*sizeof(uint32_t));
-    s->m.me.score_map = av_mallocz(ME_MAP_SIZE*sizeof(uint32_t));
     s->m.sc.obmc_scratchpad= av_mallocz(MB_SIZE*MB_SIZE*12*sizeof(uint32_t));
-    if (!s->m.me.scratchpad || !s->m.me.map || !s->m.me.score_map || !s->m.sc.obmc_scratchpad)
+    s->m.me.map       = av_mallocz(2 * ME_MAP_SIZE * sizeof(*s->m.me.map));
+    if (!s->m.me.scratchpad || !s->m.me.map || !s->m.sc.obmc_scratchpad)
         return AVERROR(ENOMEM);
+    s->m.me.score_map = s->m.me.map + ME_MAP_SIZE;
 
     ff_h263_encode_init(&s->m); //mv_penalty
 

@@ -552,7 +552,6 @@ static av_cold int svq1_encode_end(AVCodecContext *avctx)
 
     av_freep(&s->m.me.scratchpad);
     av_freep(&s->m.me.map);
-    av_freep(&s->m.me.score_map);
     av_freep(&s->mb_type);
     av_freep(&s->dummy);
     av_freep(&s->scratchbuf);
@@ -608,18 +607,17 @@ static av_cold int svq1_encode_init(AVCodecContext *avctx)
     s->m.me.temp           =
     s->m.me.scratchpad     = av_mallocz((avctx->width + 64) *
                                         2 * 16 * 2 * sizeof(uint8_t));
-    s->m.me.map            = av_mallocz(ME_MAP_SIZE * sizeof(uint32_t));
-    s->m.me.score_map      = av_mallocz(ME_MAP_SIZE * sizeof(uint32_t));
     s->mb_type             = av_mallocz((s->y_block_width + 1) *
                                         s->y_block_height * sizeof(int16_t));
     s->dummy               = av_mallocz((s->y_block_width + 1) *
                                         s->y_block_height * sizeof(int32_t));
+    s->m.me.map            = av_mallocz(2 * ME_MAP_SIZE * sizeof(*s->m.me.map));
     s->svq1encdsp.ssd_int8_vs_int16 = ssd_int8_vs_int16_c;
 
     if (!s->m.me.temp || !s->m.me.scratchpad || !s->m.me.map ||
-        !s->m.me.score_map || !s->mb_type || !s->dummy) {
+        !s->mb_type || !s->dummy)
         return AVERROR(ENOMEM);
-    }
+    s->m.me.score_map = s->m.me.map + ME_MAP_SIZE;
 
 #if ARCH_PPC
     ff_svq1enc_init_ppc(&s->svq1encdsp);
