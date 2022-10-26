@@ -918,5 +918,6 @@ int checkasm_check_##type(const char *const file, const int line, \
 
 DEF_CHECKASM_CHECK_FUNC(uint8_t,  "%02x")
 DEF_CHECKASM_CHECK_FUNC(uint16_t, "%04x")
+DEF_CHECKASM_CHECK_FUNC(uint32_t, "%08x")
 DEF_CHECKASM_CHECK_FUNC(int16_t,  "%6d")
 DEF_CHECKASM_CHECK_FUNC(int32_t,  "%9d")
