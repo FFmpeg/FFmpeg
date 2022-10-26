@@ -47,11 +47,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#define FFT_FLOAT 0
 #define USE_FIXED 1
 #include "ac3dec.h"
 #include "codec_internal.h"
+#define IMDCT_TYPE AV_TX_INT32_MDCT
 
+#include "ac3dec.h"
 
 static const int end_freq_inv_tab[8] =
 {

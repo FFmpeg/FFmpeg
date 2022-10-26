@@ -89,7 +89,7 @@ fate-ac3-fixed-encode: tests/data/asynth-44100-2.wav
 fate-ac3-fixed-encode: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
 fate-ac3-fixed-encode: CMD = md5 -i $(SRC) -c ac3_fixed -ab 128k -f ac3 -flags +bitexact -af aresample
 fate-ac3-fixed-encode: CMP = oneline
-fate-ac3-fixed-encode: REF = 1f548175e11a95e62ce20e442fcc8d08
+fate-ac3-fixed-encode: REF = e9d78bca187b4bbafc4512bcea8efd3e
 
 FATE_EAC3-$(call ALLYES, EAC3_DEMUXER EAC3_MUXER EAC3_CORE_BSF) += fate-eac3-core-bsf
 fate-eac3-core-bsf: CMD = md5pipe -i $(TARGET_SAMPLES)/eac3/the_great_wall_7.1.eac3 -c:a copy -bsf:a eac3_core -fflags +bitexact -f eac3

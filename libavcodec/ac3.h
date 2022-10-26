@@ -38,8 +38,6 @@
 
 #if USE_FIXED
 
-#define FFT_FLOAT 0
-
 #define FIXR(a)                 ((int)((a) * 0 + 0.5))
 #define FIXR12(a)               ((int)((a) * 4096 + 0.5))
 #define FIXR15(a)               ((int)((a) * 32768 + 0.5))

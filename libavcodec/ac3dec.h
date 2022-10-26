@@ -50,6 +50,7 @@
 #ifndef AVCODEC_AC3DEC_H
 #define AVCODEC_AC3DEC_H
 
+#include "libavutil/tx.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/fixed_dsp.h"
 #include "libavutil/lfg.h"
@@ -60,7 +61,6 @@
 #include "avcodec.h"
 #include "bswapdsp.h"
 #include "get_bits.h"
-#include "fft.h"
 #include "fmtconvert.h"
 
 #define AC3_OUTPUT_LFEON  8
@@ -223,8 +223,8 @@ typedef struct AC3DecodeContext {
 
 ///@name IMDCT
     int block_switch[AC3_MAX_CHANNELS];     ///< block switch flags                     (blksw)
-    FFTContext imdct_512;                   ///< for 512 sample IMDCT
-    FFTContext imdct_256;                   ///< for 256 sample IMDCT
+    AVTXContext *tx_128, *tx_256;
+    av_tx_fn tx_fn_128, tx_fn_256;
 ///@}
 
 ///@name Optimization

@@ -217,13 +217,17 @@ static av_cold int ac3_decode_init(AVCodecContext *avctx)
 {
     static AVOnce init_static_once = AV_ONCE_INIT;
     AC3DecodeContext *s = avctx->priv_data;
+    const float scale = 1.0f;
     int i, ret;
 
     s->avctx = avctx;
 
-    if ((ret = ff_mdct_init(&s->imdct_256, 8, 1, 1.0)) < 0 ||
-        (ret = ff_mdct_init(&s->imdct_512, 9, 1, 1.0)) < 0)
+    if ((ret = av_tx_init(&s->tx_128, &s->tx_fn_128, IMDCT_TYPE, 1, 128, &scale, 0)))
         return ret;
+
+    if ((ret = av_tx_init(&s->tx_256, &s->tx_fn_256, IMDCT_TYPE, 1, 256, &scale, 0)))
+        return ret;
+
     AC3_RENAME(ff_kbd_window_init)(s->window, 5.0, 256);
     ff_bswapdsp_init(&s->bdsp);
 
@@ -721,10 +725,10 @@ static inline void do_imdct(AC3DecodeContext *s, int channels, int offset)
     for (ch = 1; ch <= channels; ch++) {
         if (s->block_switch[ch]) {
             int i;
-            FFTSample *x = s->tmp_output + 128;
+            INTFLOAT *x = s->tmp_output + 128;
             for (i = 0; i < 128; i++)
                 x[i] = s->transform_coeffs[ch][2 * i];
-            s->imdct_256.imdct_half(&s->imdct_256, s->tmp_output, x);
+            s->tx_fn_128(s->tx_128, s->tmp_output, x, sizeof(INTFLOAT));
 #if USE_FIXED
             s->fdsp->vector_fmul_window_scaled(s->outptr[ch - 1], s->delay[ch - 1 + offset],
                                        s->tmp_output, s->window, 128, 8);
@@ -734,9 +738,9 @@ static inline void do_imdct(AC3DecodeContext *s, int channels, int offset)
 #endif
             for (i = 0; i < 128; i++)
                 x[i] = s->transform_coeffs[ch][2 * i + 1];
-            s->imdct_256.imdct_half(&s->imdct_256, s->delay[ch - 1 + offset], x);
+            s->tx_fn_128(s->tx_128, s->delay[ch - 1 + offset], x, sizeof(INTFLOAT));
         } else {
-            s->imdct_512.imdct_half(&s->imdct_512, s->tmp_output, s->transform_coeffs[ch]);
+            s->tx_fn_256(s->tx_256, s->tmp_output, s->transform_coeffs[ch], sizeof(INTFLOAT));
 #if USE_FIXED
             s->fdsp->vector_fmul_window_scaled(s->outptr[ch - 1], s->delay[ch - 1 + offset],
                                        s->tmp_output, s->window, 128, 8);
@@ -744,7 +748,7 @@ static inline void do_imdct(AC3DecodeContext *s, int channels, int offset)
             s->fdsp->vector_fmul_window(s->outptr[ch - 1], s->delay[ch - 1 + offset],
                                        s->tmp_output, s->window, 128);
 #endif
-            memcpy(s->delay[ch - 1 + offset], s->tmp_output + 128, 128 * sizeof(FFTSample));
+            memcpy(s->delay[ch - 1 + offset], s->tmp_output + 128, 128 * sizeof(INTFLOAT));
         }
     }
 }
@@ -1854,8 +1858,8 @@ skip:
 static av_cold int ac3_decode_end(AVCodecContext *avctx)
 {
     AC3DecodeContext *s = avctx->priv_data;
-    ff_mdct_end(&s->imdct_512);
-    ff_mdct_end(&s->imdct_256);
+    av_tx_uninit(&s->tx_256);
+    av_tx_uninit(&s->tx_128);
     av_freep(&s->fdsp);
     av_freep(&s->downmix_coeffs[0]);
 

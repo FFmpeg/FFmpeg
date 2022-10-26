@@ -75,20 +75,7 @@ static void sum_square_butterfly(AC3EncodeContext *s, float sum[4],
     s->ac3dsp.sum_square_butterfly_float(sum, coef0, coef1, len);
 }
 
-
 #include "ac3enc_template.c"
-
-
-/**
- * Finalize MDCT and free allocated memory.
- *
- * @param s  AC-3 encoder private context
- */
-static av_cold void ac3_float_mdct_end(AC3EncodeContext *s)
-{
-    ff_mdct_end(&s->mdct);
-}
-
 
 /**
  * Initialize MDCT tables.
@@ -98,6 +85,7 @@ static av_cold void ac3_float_mdct_end(AC3EncodeContext *s)
  */
 static av_cold int ac3_float_mdct_init(AC3EncodeContext *s)
 {
+    const float scale = -2.0 / AC3_WINDOW_SIZE;
     float *window = av_malloc_array(AC3_BLOCK_SIZE, sizeof(*window));
     if (!window) {
         av_log(s->avctx, AV_LOG_ERROR, "Cannot allocate memory.\n");
@@ -107,14 +95,14 @@ static av_cold int ac3_float_mdct_init(AC3EncodeContext *s)
     ff_kbd_window_init(window, 5.0, AC3_BLOCK_SIZE);
     s->mdct_window = window;
 
-    return ff_mdct_init(&s->mdct, 9, 0, -2.0 / AC3_WINDOW_SIZE);
+    return av_tx_init(&s->tx, &s->tx_fn, AV_TX_FLOAT_MDCT, 0,
+                      AC3_BLOCK_SIZE, &scale, 0);
 }
 
 
 av_cold int ff_ac3_float_encode_init(AVCodecContext *avctx)
 {
     AC3EncodeContext *s = avctx->priv_data;
-    s->mdct_end                = ac3_float_mdct_end;
     s->mdct_init               = ac3_float_mdct_init;
     s->allocate_sample_buffers = allocate_sample_buffers;
     s->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);

@@ -29,6 +29,7 @@
  */
 
 #include "config_components.h"
+#define IMDCT_TYPE AV_TX_FLOAT_MDCT
 
 #include "ac3dec.h"
 #include "codec_internal.h"

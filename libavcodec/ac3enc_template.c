@@ -98,8 +98,8 @@ static void apply_mdct(AC3EncodeContext *s)
                                          &input_samples[AC3_BLOCK_SIZE],
                                          s->mdct_window, AC3_BLOCK_SIZE);
 
-            s->mdct.mdct_calc(&s->mdct, block->mdct_coef[ch+1],
-                              s->windowed_samples);
+            s->tx_fn(s->tx, block->mdct_coef[ch+1],
+                     s->windowed_samples, sizeof(float));
         }
     }
 }
