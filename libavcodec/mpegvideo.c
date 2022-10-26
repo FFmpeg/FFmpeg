@@ -785,7 +785,6 @@ void ff_mpv_free_context_frame(MpegEncContext *s)
     s->linesize = s->uvlinesize = 0;
 }
 
-/* init common structure for both encoder and decoder */
 void ff_mpv_common_end(MpegEncContext *s)
 {
     ff_mpv_free_context_frame(s);
