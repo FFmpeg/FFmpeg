@@ -788,9 +788,6 @@ void ff_mpv_free_context_frame(MpegEncContext *s)
 /* init common structure for both encoder and decoder */
 void ff_mpv_common_end(MpegEncContext *s)
 {
-    if (!s)
-        return;
-
     ff_mpv_free_context_frame(s);
     if (s->slice_context_count > 1)
         s->slice_context_count = 1;
