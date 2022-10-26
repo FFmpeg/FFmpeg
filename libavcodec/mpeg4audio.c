@@ -56,7 +56,7 @@ static int parse_config_ALS(GetBitContext *gb, MPEG4AudioConfig *c, void *logctx
     return 0;
 }
 
-const uint8_t ff_mpeg4audio_channels[14] = {
+const uint8_t ff_mpeg4audio_channels[15] = {
     0,
     1, // mono (1/0)
     2, // stereo (2/0)
@@ -70,7 +70,8 @@ const uint8_t ff_mpeg4audio_channels[14] = {
     0,
     7, // 3/3.1
     8, // 3/2/2.1
-    24 // 3/3/3 - 5/2/3 - 3/0/0.2
+    24, // 3/3/3 - 5/2/3 - 3/0/0.2
+    8, // 3/2.1 - 2/0
 };
 
 static inline int get_object_type(GetBitContext *gb)

@@ -404,6 +404,21 @@ static uint64_t sniff_channel_order(uint8_t (*layout_map)[3], int tags)
         i++;
     }
 
+    // The previous checks would end up at 4 at this point for chan_config 14
+    if (layout == AV_CH_LAYOUT_5POINT1_BACK && tags == 5 && i == 4) {
+        const uint8_t (*reference_layout_map)[3] = aac_channel_layout_map[13];
+        for (int j = 0; j < tags; j++) {
+            if (layout_map[j][0] != reference_layout_map[j][0] ||
+                layout_map[j][2] != reference_layout_map[j][2])
+                goto end_of_layout_definition;
+        }
+
+        i += assign_pair(e2c_vec, layout_map, i,
+                         AV_CH_TOP_FRONT_LEFT,
+                         AV_CH_TOP_FRONT_RIGHT,
+                         AAC_CHANNEL_FRONT,
+                         &layout);
+    }
     // The previous checks would end up at 8 at this point for 22.2
     if (layout == PREFIX_FOR_22POINT2 && tags == 16 && i == 8) {
         const uint8_t (*reference_layout_map)[3] = aac_channel_layout_map[12];
@@ -633,7 +648,7 @@ static int set_default_channel_config(AACContext *ac, AVCodecContext *avctx,
                                       int channel_config)
 {
     if (channel_config < 1 || (channel_config > 7 && channel_config < 11) ||
-        channel_config > 13) {
+        channel_config > 14) {
         av_log(avctx, AV_LOG_ERROR,
                "invalid default channel configuration (%d)\n",
                channel_config);
@@ -717,6 +732,12 @@ static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
     /* For indexed channel configurations map the channels solely based
      * on position. */
     switch (ac->oc[1].m4ac.chan_config) {
+    case 14:
+        if (ac->tags_mapped > 2 && ((type == TYPE_CPE && elem_id < 3) ||
+                                    (type == TYPE_LFE && elem_id < 1))) {
+            ac->tags_mapped++;
+            return ac->tag_che_map[type][elem_id] = ac->che[type][elem_id];
+        }
     case 13:
         if (ac->tags_mapped > 3 && ((type == TYPE_CPE && elem_id < 8) ||
                                     (type == TYPE_SCE && elem_id < 6) ||

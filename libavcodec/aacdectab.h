@@ -68,8 +68,8 @@ static const uint8_t aac_channel_layout_map[16][16][3] = {
       { TYPE_SCE, 5, AAC_CHANNEL_FRONT }, // SCE6 = BtFC,
       { TYPE_CPE, 7, AAC_CHANNEL_FRONT }, // CPE8 = BtFL and BtFR
     },
+    { { TYPE_SCE, 0, AAC_CHANNEL_FRONT }, { TYPE_CPE, 0, AAC_CHANNEL_FRONT }, { TYPE_CPE, 1, AAC_CHANNEL_BACK }, { TYPE_LFE, 0, AAC_CHANNEL_LFE }, { TYPE_CPE, 2, AAC_CHANNEL_FRONT  }, },
     { { 0, } },
-    /* TODO: Add 7+1 TOP configuration */
 };
 
 #if FF_API_OLD_CHANNEL_LAYOUT
@@ -84,8 +84,8 @@ static const uint64_t aac_channel_layout[] = {
     AV_CH_LAYOUT_6POINT1_BACK,
     AV_CH_LAYOUT_7POINT1,
     AV_CH_LAYOUT_22POINT2,
+    AV_CH_LAYOUT_7POINT1_TOP_BACK,
     0,
-    /* AV_CH_LAYOUT_7POINT1_TOP, */
 };
 #endif
 
@@ -100,8 +100,8 @@ static const AVChannelLayout aac_ch_layout[] = {
     AV_CHANNEL_LAYOUT_6POINT1_BACK,
     AV_CHANNEL_LAYOUT_7POINT1,
     AV_CHANNEL_LAYOUT_22POINT2,
+    AV_CHANNEL_LAYOUT_7POINT1_TOP_BACK,
     { 0 },
-    /* AV_CHANNEL_LAYOUT_7POINT1_TOP, */
 };
 
 #endif /* AVCODEC_AACDECTAB_H */
