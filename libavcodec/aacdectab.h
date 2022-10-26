@@ -35,7 +35,7 @@
 
 #include <stdint.h>
 
-static const int8_t tags_per_config[16] = { 0, 1, 1, 2, 3, 3, 4, 5, 0, 0, 0, 4, 5, 16, 5, 0 };
+static const int8_t tags_per_config[16] = { 0, 1, 1, 2, 3, 3, 4, 5, 0, 0, 0, 5, 5, 16, 5, 0 };
 
 static const uint8_t aac_channel_layout_map[16][16][3] = {
     { { TYPE_SCE, 0, AAC_CHANNEL_FRONT }, },
@@ -81,7 +81,7 @@ static const uint64_t aac_channel_layout[] = {
     AV_CH_LAYOUT_5POINT0_BACK,
     AV_CH_LAYOUT_5POINT1_BACK,
     AV_CH_LAYOUT_7POINT1_WIDE_BACK,
-    AV_CH_LAYOUT_6POINT1,
+    AV_CH_LAYOUT_6POINT1_BACK,
     AV_CH_LAYOUT_7POINT1,
     AV_CH_LAYOUT_22POINT2,
     0,
@@ -97,7 +97,7 @@ static const AVChannelLayout aac_ch_layout[] = {
     AV_CHANNEL_LAYOUT_5POINT0_BACK,
     AV_CHANNEL_LAYOUT_5POINT1_BACK,
     AV_CHANNEL_LAYOUT_7POINT1_WIDE_BACK,
-    AV_CHANNEL_LAYOUT_6POINT1,
+    AV_CHANNEL_LAYOUT_6POINT1_BACK,
     AV_CHANNEL_LAYOUT_7POINT1,
     AV_CHANNEL_LAYOUT_22POINT2,
     { 0 },
