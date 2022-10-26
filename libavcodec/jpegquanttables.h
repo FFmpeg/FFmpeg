@@ -1,12 +1,5 @@
 /*
- * MJPEG encoder and decoder
- * Copyright (c) 2000, 2001 Fabrice Bellard
- * Copyright (c) 2003 Alex Beregszaszi
- * Copyright (c) 2003-2004 Michael Niedermayer
- *
- * Support for external huffman table, various fixes (AVID workaround),
- * aspecting, new decode_frame mechanism and apple mjpeg-b support
- *                                  by Alex Beregszaszi
+ * MJPEG quantization tables
  *
  * This file is part of FFmpeg.
  *
@@ -25,9 +18,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/**
- * @file
- * MJPEG encoder and decoder.
- */
+#ifndef AVCODEC_JPEGQUANTTABLES_H
+#define AVCODEC_JPEGQUANTTABLES_H
 
-#include "jpegtabs.h"
+#include <stdint.h>
+#include "libavutil/attributes_internal.h"
+
+FF_VISIBILITY_PUSH_HIDDEN
+extern const uint8_t ff_mjpeg_std_luminance_quant_tbl[64];
+extern const uint8_t ff_mjpeg_std_chrominance_quant_tbl[64];
+FF_VISIBILITY_POP_HIDDEN
+
+#endif /* AVCODEC_JPEGQUANTTABLES_H */

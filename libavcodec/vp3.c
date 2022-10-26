@@ -43,6 +43,7 @@
 #include "decode.h"
 #include "get_bits.h"
 #include "hpeldsp.h"
+#include "jpegquanttables.h"
 #include "mathops.h"
 #include "thread.h"
 #include "threadframe.h"
@@ -2418,7 +2419,7 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
             s->coded_dc_scale_factor[1][i] = s->version < 2 ? vp31_dc_scale_factor[i] : vp4_uv_dc_scale_factor[i];
             s->coded_ac_scale_factor[i] = s->version < 2 ? vp31_ac_scale_factor[i] : vp4_ac_scale_factor[i];
             s->base_matrix[0][i]        = s->version < 2 ? vp31_intra_y_dequant[i] : vp4_generic_dequant[i];
-            s->base_matrix[1][i]        = s->version < 2 ? vp31_intra_c_dequant[i] : vp4_generic_dequant[i];
+            s->base_matrix[1][i]        = s->version < 2 ? ff_mjpeg_std_chrominance_quant_tbl[i] : vp4_generic_dequant[i];
             s->base_matrix[2][i]        = s->version < 2 ? vp31_inter_dequant[i]   : vp4_generic_dequant[i];
             s->filter_limit_values[i]   = s->version < 2 ? vp31_filter_limit_values[i] : vp4_filter_limit_values[i];
         }
