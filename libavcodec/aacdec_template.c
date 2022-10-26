@@ -716,9 +716,7 @@ static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
             return ac->tag_che_map[TYPE_CPE][elem_id] = ac->che[TYPE_CPE][2];
         }
     case 11:
-        if (ac->tags_mapped == 2 &&
-            ac->oc[1].m4ac.chan_config == 11 &&
-            type == TYPE_SCE) {
+        if (ac->tags_mapped == 3 && type == TYPE_SCE) {
             ac->tags_mapped++;
             return ac->tag_che_map[TYPE_SCE][elem_id] = ac->che[TYPE_SCE][1];
         }
