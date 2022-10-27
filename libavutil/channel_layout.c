@@ -196,6 +196,7 @@ static const struct channel_layout_name channel_layout_map[] = {
     { "7.1",            AV_CHANNEL_LAYOUT_7POINT1             },
     { "7.1(wide)",      AV_CHANNEL_LAYOUT_7POINT1_WIDE_BACK   },
     { "7.1(wide-side)", AV_CHANNEL_LAYOUT_7POINT1_WIDE        },
+    { "7.1(top)",       AV_CHANNEL_LAYOUT_7POINT1_TOP_BACK    },
     { "octagonal",      AV_CHANNEL_LAYOUT_OCTAGONAL           },
     { "cube",           AV_CHANNEL_LAYOUT_CUBE                },
     { "hexadecagonal",  AV_CHANNEL_LAYOUT_HEXADECAGONAL       },
