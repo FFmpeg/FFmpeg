@@ -22,6 +22,63 @@
 #include "libswscale/swscale_internal.h"
 #include "libavutil/aarch64/cpu.h"
 
+void ff_hscale16to15_4_neon_asm(int shift, int16_t *_dst, int dstW,
+                      const uint8_t *_src, const int16_t *filter,
+                      const int32_t *filterPos, int filterSize);
+void ff_hscale16to15_X8_neon_asm(int shift, int16_t *_dst, int dstW,
+                      const uint8_t *_src, const int16_t *filter,
+                      const int32_t *filterPos, int filterSize);
+void ff_hscale16to15_X4_neon_asm(int shift, int16_t *_dst, int dstW,
+                      const uint8_t *_src, const int16_t *filter,
+                      const int32_t *filterPos, int filterSize);
+
+static void ff_hscale16to15_4_neon(SwsContext *c, int16_t *_dst, int dstW,
+                      const uint8_t *_src, const int16_t *filter,
+                      const int32_t *filterPos, int filterSize)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(c->srcFormat);
+    int sh              = desc->comp[0].depth - 1;
+
+    if (sh<15) {
+        sh = isAnyRGB(c->srcFormat) || c->srcFormat==AV_PIX_FMT_PAL8 ? 13 : (desc->comp[0].depth - 1);
+    } else if (desc->flags & AV_PIX_FMT_FLAG_FLOAT) { /* float input are process like uint 16bpc */
+        sh = 16 - 1;
+    }
+    ff_hscale16to15_4_neon_asm(sh, _dst, dstW, _src, filter, filterPos, filterSize);
+
+}
+
+static void ff_hscale16to15_X8_neon(SwsContext *c, int16_t *_dst, int dstW,
+                      const uint8_t *_src, const int16_t *filter,
+                      const int32_t *filterPos, int filterSize)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(c->srcFormat);
+    int sh              = desc->comp[0].depth - 1;
+
+    if (sh<15) {
+        sh = isAnyRGB(c->srcFormat) || c->srcFormat==AV_PIX_FMT_PAL8 ? 13 : (desc->comp[0].depth - 1);
+    } else if (desc->flags & AV_PIX_FMT_FLAG_FLOAT) { /* float input are process like uint 16bpc */
+        sh = 16 - 1;
+    }
+    ff_hscale16to15_X8_neon_asm(sh, _dst, dstW, _src, filter, filterPos, filterSize);
+
+}
+
+static void ff_hscale16to15_X4_neon(SwsContext *c, int16_t *_dst, int dstW,
+                      const uint8_t *_src, const int16_t *filter,
+                      const int32_t *filterPos, int filterSize)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(c->srcFormat);
+    int sh              = desc->comp[0].depth - 1;
+
+    if (sh<15) {
+        sh = isAnyRGB(c->srcFormat) || c->srcFormat==AV_PIX_FMT_PAL8 ? 13 : (desc->comp[0].depth - 1);
+    } else if (desc->flags & AV_PIX_FMT_FLAG_FLOAT) { /* float input are process like uint 16bpc */
+        sh = 16 - 1;
+    }
+    ff_hscale16to15_X4_neon_asm(sh, _dst, dstW, _src, filter, filterPos, filterSize);
+}
+
 #define SCALE_FUNC(filter_n, from_bpc, to_bpc, opt) \
 void ff_hscale ## from_bpc ## to ## to_bpc ## _ ## filter_n ## _ ## opt( \
                                                 SwsContext *c, int16_t *data, \
@@ -56,6 +113,10 @@ void ff_yuv2plane1_8_neon(
         } else                                                          \
             hscalefn =                                                  \
                 ff_hscale8to19_ ## filtersize ## _ ## opt;              \
+    } else {                                                            \
+        if (c->dstBpc <= 14)                                            \
+            hscalefn =                                                  \
+                ff_hscale16to15_ ## filtersize ## _ ## opt;             \
     }                                                                   \
 } while (0)
 
