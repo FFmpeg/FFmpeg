@@ -29,7 +29,8 @@ void ff_hscale ## from_bpc ## to ## to_bpc ## _ ## filter_n ## _ ## opt( \
                                                 const int16_t *filter, \
                                                 const int32_t *filterPos, int filterSize)
 #define SCALE_FUNCS(filter_n, opt) \
-    SCALE_FUNC(filter_n,  8, 15, opt);
+    SCALE_FUNC(filter_n, 8, 15, opt); \
+    SCALE_FUNC(filter_n, 8, 19, opt);
 #define ALL_SCALE_FUNCS(opt) \
     SCALE_FUNCS(4, opt); \
     SCALE_FUNCS(X8, opt); \
@@ -48,9 +49,13 @@ void ff_yuv2plane1_8_neon(
         int offset);
 
 #define ASSIGN_SCALE_FUNC2(hscalefn, filtersize, opt) do {              \
-    if (c->srcBpc == 8 && c->dstBpc <= 14) {                            \
-      hscalefn =                                                        \
-        ff_hscale8to15_ ## filtersize ## _ ## opt;                      \
+    if (c->srcBpc == 8) {                                               \
+        if(c->dstBpc <= 14) {                                           \
+            hscalefn =                                                  \
+                ff_hscale8to15_ ## filtersize ## _ ## opt;              \
+        } else                                                          \
+            hscalefn =                                                  \
+                ff_hscale8to19_ ## filtersize ## _ ## opt;              \
     }                                                                   \
 } while (0)
 

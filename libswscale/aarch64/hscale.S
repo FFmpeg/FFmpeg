@@ -347,3 +347,294 @@ function ff_hscale8to15_4_neon, export=1
         add                 sp, sp, #32                 // clean up stack
         ret
 endfunc
+
+function ff_hscale8to19_4_neon, export=1
+        // x0               SwsContext *c (unused)
+        // x1               int32_t *dst
+        // w2               int dstW
+        // x3               const uint8_t *src // treat it as uint16_t *src
+        // x4               const uint16_t *filter
+        // x5               const int32_t *filterPos
+        // w6               int filterSize
+
+        movi                v18.4s, #1
+        movi                v17.4s, #1
+        shl                 v18.4s, v18.4s, #19
+        sub                 v18.4s, v18.4s, v17.4s      // max allowed value
+
+        cmp                 w2, #16
+        b.lt                2f // move to last block
+
+        ldp                 w8, w9, [x5]                // filterPos[0], filterPos[1]
+        ldp                 w10, w11, [x5, #8]          // filterPos[2], filterPos[3]
+        ldp                 w12, w13, [x5, #16]         // filterPos[4], filterPos[5]
+        ldp                 w14, w15, [x5, #24]         // filterPos[6], filterPos[7]
+        add                 x5, x5, #32
+
+        // load data from
+        ldr                 w8, [x3, w8, UXTW]
+        ldr                 w9, [x3, w9, UXTW]
+        ldr                 w10, [x3, w10, UXTW]
+        ldr                 w11, [x3, w11, UXTW]
+        ldr                 w12, [x3, w12, UXTW]
+        ldr                 w13, [x3, w13, UXTW]
+        ldr                 w14, [x3, w14, UXTW]
+        ldr                 w15, [x3, w15, UXTW]
+
+        sub                 sp, sp, #32
+
+        stp                 w8, w9, [sp]
+        stp                 w10, w11, [sp, #8]
+        stp                 w12, w13, [sp, #16]
+        stp                 w14, w15, [sp, #24]
+
+1:
+        ld4                 {v0.8b, v1.8b, v2.8b, v3.8b}, [sp]
+        ld4                 {v28.8h, v29.8h, v30.8h, v31.8h}, [x4], #64 // filter[0..7]
+        // load filterPositions into registers for next iteration
+
+        ldp                 w8, w9, [x5]                // filterPos[0], filterPos[1]
+        ldp                 w10, w11, [x5, #8]          // filterPos[2], filterPos[3]
+        ldp                 w12, w13, [x5, #16]         // filterPos[4], filterPos[5]
+        ldp                 w14, w15, [x5, #24]         // filterPos[6], filterPos[7]
+        add                 x5, x5, #32
+        uxtl                v0.8h, v0.8b
+        ldr                 w8, [x3, w8, UXTW]
+        smull               v5.4s, v0.4h, v28.4h        // multiply first column of src
+        ldr                 w9, [x3, w9, UXTW]
+        smull2              v6.4s, v0.8h, v28.8h
+        stp                 w8, w9, [sp]
+
+        uxtl                v1.8h, v1.8b
+        ldr                 w10, [x3, w10, UXTW]
+        smlal               v5.4s, v1.4h, v29.4h        // multiply second column of src
+        ldr                 w11, [x3, w11, UXTW]
+        smlal2              v6.4s, v1.8h, v29.8h
+        stp                 w10, w11, [sp, #8]
+
+        uxtl                v2.8h, v2.8b
+        ldr                 w12, [x3, w12, UXTW]
+        smlal               v5.4s, v2.4h, v30.4h        // multiply third column of src
+        ldr                 w13, [x3, w13, UXTW]
+        smlal2              v6.4s, v2.8h, v30.8h
+        stp                 w12, w13, [sp, #16]
+
+        uxtl                v3.8h, v3.8b
+        ldr                 w14, [x3, w14, UXTW]
+        smlal               v5.4s, v3.4h, v31.4h        // multiply fourth column of src
+        ldr                 w15, [x3, w15, UXTW]
+        smlal2              v6.4s, v3.8h, v31.8h
+        stp                 w14, w15, [sp, #24]
+
+        sub                 w2, w2, #8
+        sshr                v5.4s, v5.4s, #3
+        sshr                v6.4s, v6.4s, #3
+        smin                v5.4s, v5.4s, v18.4s
+        smin                v6.4s, v6.4s, v18.4s
+
+        st1                 {v5.4s, v6.4s}, [x1], #32
+        cmp                 w2, #16
+        b.ge                1b
+
+        // here we make last iteration, without updating the registers
+        ld4                 {v0.8b, v1.8b, v2.8b, v3.8b}, [sp]
+        ld4                 {v28.8h, v29.8h, v30.8h, v31.8h}, [x4], #64 // filter[0..7]
+
+        uxtl                v0.8h, v0.8b
+        uxtl                v1.8h, v1.8b
+        smull               v5.4s, v0.4h, v28.4h
+        smull2              v6.4s, v0.8h, v28.8h
+        uxtl                v2.8h, v2.8b
+        smlal               v5.4s, v1.4h, v29.4H
+        smlal2              v6.4s, v1.8h, v29.8H
+        uxtl                v3.8h, v3.8b
+        smlal               v5.4s, v2.4h, v30.4H
+        smlal2              v6.4s, v2.8h, v30.8H
+        smlal               v5.4s, v3.4h, v31.4H
+        smlal2              v6.4s, v3.8h, v31.8h
+
+        sshr                v5.4s, v5.4s, #3
+        sshr                v6.4s, v6.4s, #3
+
+        smin                v5.4s, v5.4s, v18.4s
+        smin                v6.4s, v6.4s, v18.4s
+
+        sub                 w2, w2, #8
+        st1                 {v5.4s, v6.4s}, [x1], #32
+        add                 sp, sp, #32 // restore stack
+        cbnz                w2, 2f
+
+        ret
+
+2:
+        ldr                 w8, [x5], #4 // load filterPos
+        add                 x9, x3, w8, UXTW // src + filterPos
+        ld1                 {v0.s}[0], [x9] // load 4 * uint8_t* into one single
+        ld1                 {v31.4h}, [x4], #8
+        uxtl                v0.8h, v0.8b
+        smull               v5.4s, v0.4h, v31.4H
+        saddlv              d0, v5.4S
+        sqshrn              s0, d0, #3
+        smin                v0.4s, v0.4s, v18.4s
+        st1                 {v0.s}[0], [x1], #4
+        sub                 w2, w2, #1
+        cbnz                w2, 2b // if iterations remain jump to beginning
+
+        ret
+endfunc
+
+function ff_hscale8to19_X8_neon, export=1
+        movi                v20.4s, #1
+        movi                v17.4s, #1
+        shl                 v20.4s, v20.4s, #19
+        sub                 v20.4s, v20.4s, v17.4s
+
+        sbfiz               x7, x6, #1, #32             // filterSize*2 (*2 because int16)
+1:
+        mov                 x16, x4                     // filter0 = filter
+        ldr                 w8, [x5], #4                // filterPos[idx]
+        add                 x12, x16, x7                // filter1 = filter0 + filterSize*2
+        ldr                 w0, [x5], #4                // filterPos[idx + 1]
+        add                 x13, x12, x7                // filter2 = filter1 + filterSize*2
+        ldr                 w11, [x5], #4               // filterPos[idx + 2]
+        add                 x4, x13, x7                 // filter3 = filter2 + filterSize*2
+        ldr                 w9, [x5], #4                // filterPos[idx + 3]
+        movi                v0.2D, #0                   // val sum part 1 (for dst[0])
+        movi                v1.2D, #0                   // val sum part 2 (for dst[1])
+        movi                v2.2D, #0                   // val sum part 3 (for dst[2])
+        movi                v3.2D, #0                   // val sum part 4 (for dst[3])
+        add                 x17, x3, w8, UXTW           // srcp + filterPos[0]
+        add                 x8,  x3, w0, UXTW           // srcp + filterPos[1]
+        add                 x0, x3, w11, UXTW           // srcp + filterPos[2]
+        add                 x11, x3, w9, UXTW           // srcp + filterPos[3]
+        mov                 w15, w6                     // filterSize counter
+2:      ld1                 {v4.8B}, [x17], #8          // srcp[filterPos[0] + {0..7}]
+        ld1                 {v5.8H}, [x16], #16         // load 8x16-bit filter values, part 1
+        uxtl                v4.8H, v4.8B                // unpack part 1 to 16-bit
+        smlal               v0.4S, v4.4H, v5.4H         // v0 accumulates srcp[filterPos[0] + {0..3}] * filter[{0..3}]
+        ld1                 {v6.8B}, [x8], #8           // srcp[filterPos[1] + {0..7}]
+        smlal2              v0.4S, v4.8H, v5.8H         // v0 accumulates srcp[filterPos[0] + {4..7}] * filter[{4..7}]
+        ld1                 {v7.8H}, [x12], #16         // load 8x16-bit at filter+filterSize
+        ld1                 {v16.8B}, [x0], #8          // srcp[filterPos[2] + {0..7}]
+        uxtl                v6.8H, v6.8B                // unpack part 2 to 16-bit
+        ld1                 {v17.8H}, [x13], #16        // load 8x16-bit at filter+2*filterSize
+        uxtl                v16.8H, v16.8B              // unpack part 3 to 16-bit
+        smlal               v1.4S, v6.4H, v7.4H         // v1 accumulates srcp[filterPos[1] + {0..3}] * filter[{0..3}]
+        ld1                 {v18.8B}, [x11], #8         // srcp[filterPos[3] + {0..7}]
+        smlal               v2.4S, v16.4H, v17.4H       // v2 accumulates srcp[filterPos[2] + {0..3}] * filter[{0..3}]
+        ld1                 {v19.8H}, [x4], #16         // load 8x16-bit at filter+3*filterSize
+        smlal2              v2.4S, v16.8H, v17.8H       // v2 accumulates srcp[filterPos[2] + {4..7}] * filter[{4..7}]
+        uxtl                v18.8H, v18.8B              // unpack part 4 to 16-bit
+        smlal2              v1.4S, v6.8H, v7.8H         // v1 accumulates srcp[filterPos[1] + {4..7}] * filter[{4..7}]
+        smlal               v3.4S, v18.4H, v19.4H       // v3 accumulates srcp[filterPos[3] + {0..3}] * filter[{0..3}]
+        subs                w15, w15, #8                // j -= 8: processed 8/filterSize
+        smlal2              v3.4S, v18.8H, v19.8H       // v3 accumulates srcp[filterPos[3] + {4..7}] * filter[{4..7}]
+        b.gt                2b                          // inner loop if filterSize not consumed completely
+        addp                v0.4S, v0.4S, v1.4S         // part01 horizontal pair adding
+        addp                v2.4S, v2.4S, v3.4S         // part23 horizontal pair adding
+        addp                v0.4S, v0.4S, v2.4S         // part0123 horizontal pair adding
+        subs                w2, w2, #4                  // dstW -= 4
+        sshr                v0.4s, v0.4S, #3            // shift and clip the 2x16-bit final values
+        smin                v0.4s, v0.4s, v20.4s
+        st1                 {v0.4s}, [x1], #16           // write to destination part0123
+        b.gt                1b                          // loop until end of line
+        ret
+endfunc
+
+function ff_hscale8to19_X4_neon, export=1
+        // x0  SwsContext *c (not used)
+        // x1  int16_t *dst
+        // w2  int dstW
+        // x3  const uint8_t *src
+        // x4  const int16_t *filter
+        // x5  const int32_t *filterPos
+        // w6  int filterSize
+
+        movi                v20.4s, #1
+        movi                v17.4s, #1
+        shl                 v20.4s, v20.4s, #19
+        sub                 v20.4s, v20.4s, v17.4s
+
+        lsl                 w7, w6, #1
+1:
+        ldp                 w8, w9, [x5]
+        ldp                 w10, w11, [x5, #8]
+
+        movi                v16.2d, #0                  // initialize accumulator for idx + 0
+        movi                v17.2d, #0                  // initialize accumulator for idx + 1
+        movi                v18.2d, #0                  // initialize accumulator for idx + 2
+        movi                v19.2d, #0                  // initialize accumulator for idx + 3
+
+        mov                 x12, x4                     // filter + 0
+        add                 x13, x4, x7                 // filter + 1
+        add                 x8, x3, w8, UXTW            // srcp + filterPos 0
+        add                 x14, x13, x7                // filter + 2
+        add                 x9, x3, w9, UXTW            // srcp + filterPos 1
+        add                 x15, x14, x7                // filter + 3
+        add                 x10, x3, w10, UXTW          // srcp + filterPos 2
+        mov                 w0, w6                      // save the filterSize to temporary variable
+        add                 x11, x3, w11, UXTW          // srcp + filterPos 3
+        add                 x5, x5, #16                 // advance filter position
+        mov                 x16, xzr                    // clear the register x16 used for offsetting the filter values
+
+2:
+        ldr                 d4, [x8], #8                // load src values for idx 0
+        ldr                 q31, [x12, x16]             // load filter values for idx 0
+        uxtl                v4.8h, v4.8b                // extend type to match the filter' size
+        ldr                 d5, [x9], #8                // load src values for idx 1
+        smlal               v16.4s, v4.4h, v31.4h       // multiplication of lower half for idx 0
+        uxtl                v5.8h, v5.8b                // extend type to match the filter' size
+        ldr                 q30, [x13, x16]             // load filter values for idx 1
+        smlal2              v16.4s, v4.8h, v31.8h       // multiplication of upper half for idx 0
+        ldr                 d6, [x10], #8               // load src values for idx 2
+        ldr                 q29, [x14, x16]             // load filter values for idx 2
+        smlal               v17.4s, v5.4h, v30.4H       // multiplication of lower half for idx 1
+        ldr                 d7, [x11], #8               // load src values for idx 3
+        smlal2              v17.4s, v5.8h, v30.8H       // multiplication of upper half for idx 1
+        uxtl                v6.8h, v6.8B                // extend tpye to matchi the filter's size
+        ldr                 q28, [x15, x16]             // load filter values for idx 3
+        smlal               v18.4s, v6.4h, v29.4h       // multiplication of lower half for idx 2
+        uxtl                v7.8h, v7.8B
+        smlal2              v18.4s, v6.8h, v29.8H       // multiplication of upper half for idx 2
+        sub                 w0, w0, #8
+        smlal               v19.4s, v7.4h, v28.4H       // multiplication of lower half for idx 3
+        cmp                 w0, #8
+        smlal2              v19.4s, v7.8h, v28.8h       // multiplication of upper half for idx 3
+        add                 x16, x16, #16                // advance filter values indexing
+
+        b.ge                2b
+
+
+        // 4 iterations left
+
+        sub                 x17, x7, #8                 // step back to wrap up the filter pos for last 4 elements
+
+        ldr                 s4, [x8]                    // load src values for idx 0
+        ldr                 d31, [x12, x17]             // load filter values for idx 0
+        uxtl                v4.8h, v4.8b                // extend type to match the filter' size
+        ldr                 s5, [x9]                    // load src values for idx 1
+        smlal               v16.4s, v4.4h, v31.4h
+        ldr                 d30, [x13, x17]             // load filter values for idx 1
+        uxtl                v5.8h, v5.8b                // extend type to match the filter' size
+        ldr                 s6, [x10]                   // load src values for idx 2
+        smlal               v17.4s, v5.4h, v30.4h
+        uxtl                v6.8h, v6.8B                // extend type to match the filter's size
+        ldr                 d29, [x14, x17]             // load filter values for idx 2
+        ldr                 s7, [x11]                   // load src values for idx 3
+        addp                v16.4s, v16.4s, v17.4s
+        uxtl                v7.8h, v7.8B
+        ldr                 d28, [x15, x17]             // load filter values for idx 3
+        smlal               v18.4s, v6.4h, v29.4h
+        smlal               v19.4s, v7.4h, v28.4h
+        subs                w2, w2, #4
+        addp                v18.4s, v18.4s, v19.4s
+        addp                v16.4s, v16.4s, v18.4s
+        sshr                v16.4s, v16.4s, #3
+        smin                v16.4s, v16.4s, v20.4s
+
+        st1                 {v16.4s}, [x1], #16
+        add                 x4, x4, x7, lsl #2
+        b.gt                1b
+        ret
+
+endfunc
