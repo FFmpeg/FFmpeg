@@ -32,16 +32,14 @@
  * @author Maxim Gavrilov ( maxim.gavrilov gmail com )
  */
 
-#define FFT_FLOAT 1
 #define USE_FIXED 0
+#define TX_TYPE AV_TX_FLOAT_MDCT
 
 #include "libavutil/float_dsp.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "get_bits.h"
-#include "fft.h"
-#include "mdct15.h"
 #include "lpc.h"
 #include "kbdwin.h"
 #include "sinewin.h"

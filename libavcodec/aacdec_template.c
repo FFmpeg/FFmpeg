@@ -845,13 +845,6 @@ static int decode_ga_specific_config(AACContext *ac, AVCodecContext *avctx,
     uint8_t layout_map[MAX_ELEM_ID*4][3];
     int tags = 0;
 
-#if USE_FIXED
-    if (get_bits1(gb)) { // frameLengthFlag
-        avpriv_report_missing_feature(avctx, "Fixed point 960/120 MDCT window");
-        return AVERROR_PATCHWELCOME;
-    }
-    m4ac->frame_length_short = 0;
-#else
     m4ac->frame_length_short = get_bits1(gb);
     if (m4ac->frame_length_short && m4ac->sbr == 1) {
       avpriv_report_missing_feature(avctx, "SBR with 960 frame length");
@@ -859,7 +852,6 @@ static int decode_ga_specific_config(AACContext *ac, AVCodecContext *avctx,
       m4ac->sbr = 0;
       m4ac->ps = 0;
     }
-#endif
 
     if (get_bits1(gb))       // dependsOnCoreCoder
         skip_bits(gb, 14);   // coreCoderDelay
@@ -936,14 +928,8 @@ static int decode_eld_specific_config(AACContext *ac, AVCodecContext *avctx,
 
     m4ac->ps  = 0;
     m4ac->sbr = 0;
-#if USE_FIXED
-    if (get_bits1(gb)) { // frameLengthFlag
-        avpriv_request_sample(avctx, "960/120 MDCT window");
-        return AVERROR_PATCHWELCOME;
-    }
-#else
     m4ac->frame_length_short = get_bits1(gb);
-#endif
+
     res_flags = get_bits(gb, 3);
     if (res_flags) {
         avpriv_report_missing_feature(avctx,
@@ -1170,9 +1156,10 @@ static av_cold void aac_static_table_init(void)
                     352);
 
     // window initialization
-#if !USE_FIXED
     AAC_RENAME(ff_kbd_window_init)(AAC_RENAME(aac_kbd_long_960), 4.0, 960);
     AAC_RENAME(ff_kbd_window_init)(AAC_RENAME(aac_kbd_short_120), 6.0, 120);
+
+#if !USE_FIXED
     AAC_RENAME(ff_sine_window_init)(AAC_RENAME(sine_960), 960);
     AAC_RENAME(ff_sine_window_init)(AAC_RENAME(sine_120), 120);
     AAC_RENAME(ff_init_ff_sine_windows)(9);
@@ -1190,6 +1177,7 @@ static AVOnce aac_table_init = AV_ONCE_INIT;
 
 static av_cold int aac_decode_init(AVCodecContext *avctx)
 {
+    float scale;
     AACContext *ac = avctx->priv_data;
     int ret;
 
@@ -1262,21 +1250,25 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
 
     ac->random_state = 0x1f2e3d4c;
 
-    AAC_RENAME_32(ff_mdct_init)(&ac->mdct,       11, 1, 1.0 / RANGE15(1024.0));
-    AAC_RENAME_32(ff_mdct_init)(&ac->mdct_ld,    10, 1, 1.0 / RANGE15(512.0));
-    AAC_RENAME_32(ff_mdct_init)(&ac->mdct_small,  8, 1, 1.0 / RANGE15(128.0));
-    AAC_RENAME_32(ff_mdct_init)(&ac->mdct_ltp,   11, 0, RANGE15(-2.0));
-#if !USE_FIXED
-    ret = ff_mdct15_init(&ac->mdct120, 1, 3, 1.0f/(16*1024*120*2));
+#define MDCT_INIT(s, fn, len, sval)                                            \
+    scale = sval;                                                              \
+    ret = av_tx_init(&s, &fn, TX_TYPE, 1, len, &scale, 0);                     \
+    if (ret < 0)                                                               \
+        return ret;
+
+    MDCT_INIT(ac->mdct120,  ac->mdct120_fn,   120, TX_SCALE(1.0/120))
+    MDCT_INIT(ac->mdct128,  ac->mdct128_fn,   128, TX_SCALE(1.0/128))
+    MDCT_INIT(ac->mdct480,  ac->mdct480_fn,   480, TX_SCALE(1.0/480))
+    MDCT_INIT(ac->mdct512,  ac->mdct512_fn,   512, TX_SCALE(1.0/512))
+    MDCT_INIT(ac->mdct960,  ac->mdct960_fn,   960, TX_SCALE(1.0/960))
+    MDCT_INIT(ac->mdct1024, ac->mdct1024_fn, 1024, TX_SCALE(1.0/1024))
+#undef MDCT_INIT
+
+    /* LTP forward MDCT */
+    scale = USE_FIXED ? -1.0 : -32786.0*2 + 36;
+    ret = av_tx_init(&ac->mdct_ltp, &ac->mdct_ltp_fn, TX_TYPE, 0, 1024, &scale, 0);
     if (ret < 0)
         return ret;
-    ret = ff_mdct15_init(&ac->mdct480, 1, 5, 1.0f/(16*1024*960));
-    if (ret < 0)
-        return ret;
-    ret = ff_mdct15_init(&ac->mdct960, 1, 6, 1.0f/(16*1024*960*2));
-    if (ret < 0)
-        return ret;
-#endif
 
     return 0;
 }
@@ -2605,7 +2597,7 @@ static void windowing_and_mdct_ltp(AACContext *ac, INTFLOAT *out,
         ac->fdsp->vector_fmul_reverse(in + 1024 + 448, in + 1024 + 448, swindow, 128);
         memset(in + 1024 + 576, 0, 448 * sizeof(*in));
     }
-    ac->mdct_ltp.mdct_calc(&ac->mdct_ltp, out, in);
+    ac->mdct_ltp_fn(ac->mdct_ltp, out, in, sizeof(INTFLOAT));
 }
 
 /**
@@ -2697,13 +2689,9 @@ static void imdct_and_windowing(AACContext *ac, SingleChannelElement *sce)
     // imdct
     if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
         for (i = 0; i < 1024; i += 128)
-            ac->mdct_small.imdct_half(&ac->mdct_small, buf + i, in + i);
+            ac->mdct128_fn(ac->mdct128, buf + i, in + i, sizeof(INTFLOAT));
     } else {
-        ac->mdct.imdct_half(&ac->mdct, buf, in);
-#if USE_FIXED
-        for (i=0; i<1024; i++)
-          buf[i] = (buf[i] + 4LL) >> 3;
-#endif /* USE_FIXED */
+        ac->mdct1024_fn(ac->mdct1024, buf, in, sizeof(INTFLOAT));
     }
 
     /* window overlapping
@@ -2751,7 +2739,6 @@ static void imdct_and_windowing(AACContext *ac, SingleChannelElement *sce)
  */
 static void imdct_and_windowing_960(AACContext *ac, SingleChannelElement *sce)
 {
-#if !USE_FIXED
     IndividualChannelStream *ics = &sce->ics;
     INTFLOAT *in    = sce->coeffs;
     INTFLOAT *out   = sce->ret;
@@ -2766,9 +2753,9 @@ static void imdct_and_windowing_960(AACContext *ac, SingleChannelElement *sce)
     // imdct
     if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
         for (i = 0; i < 8; i++)
-            ac->mdct120->imdct_half(ac->mdct120, buf + i * 120, in + i * 128, 1);
+            ac->mdct120_fn(ac->mdct120, buf + i * 120, in + i * 128, sizeof(INTFLOAT));
     } else {
-        ac->mdct960->imdct_half(ac->mdct960, buf, in, 1);
+        ac->mdct960_fn(ac->mdct960, buf, in, sizeof(INTFLOAT));
     }
 
     /* window overlapping
@@ -2810,7 +2797,6 @@ static void imdct_and_windowing_960(AACContext *ac, SingleChannelElement *sce)
     } else { // LONG_STOP or ONLY_LONG
         memcpy(                      saved,       buf + 480,        480 * sizeof(*saved));
     }
-#endif
 }
 static void imdct_and_windowing_ld(AACContext *ac, SingleChannelElement *sce)
 {
@@ -2819,17 +2805,9 @@ static void imdct_and_windowing_ld(AACContext *ac, SingleChannelElement *sce)
     INTFLOAT *out   = sce->ret;
     INTFLOAT *saved = sce->saved;
     INTFLOAT *buf  = ac->buf_mdct;
-#if USE_FIXED
-    int i;
-#endif /* USE_FIXED */
 
     // imdct
-    ac->mdct.imdct_half(&ac->mdct_ld, buf, in);
-
-#if USE_FIXED
-    for (i = 0; i < 1024; i++)
-        buf[i] = (buf[i] + 2) >> 2;
-#endif /* USE_FIXED */
+    ac->mdct512_fn(ac->mdct512, buf, in, sizeof(INTFLOAT));
 
     // window overlapping
     if (ics->use_kb_window[1]) {
@@ -2868,20 +2846,15 @@ static void imdct_and_windowing_eld(AACContext *ac, SingleChannelElement *sce)
         temp =  in[i    ]; in[i    ] = -in[n - 1 - i]; in[n - 1 - i] = temp;
         temp = -in[i + 1]; in[i + 1] =  in[n - 2 - i]; in[n - 2 - i] = temp;
     }
-#if !USE_FIXED
-    if (n == 480)
-        ac->mdct480->imdct_half(ac->mdct480, buf, in, 1);
-    else
-#endif
-        ac->mdct.imdct_half(&ac->mdct_ld, buf, in);
 
-#if USE_FIXED
-    for (i = 0; i < 1024; i++)
-      buf[i] = (buf[i] + 1) >> 1;
-#endif /* USE_FIXED */
+    if (n == 480)
+        ac->mdct480_fn(ac->mdct480, buf, in, sizeof(INTFLOAT));
+    else
+        ac->mdct512_fn(ac->mdct512, buf, in, sizeof(INTFLOAT));
 
     for (i = 0; i < n; i+=2) {
-        buf[i] = -buf[i];
+        buf[i + 0] = -(USE_FIXED + 1)*buf[i + 0];
+        buf[i + 1] =  (USE_FIXED + 1)*buf[i + 1];
     }
     // Like with the regular IMDCT at this point we still have the middle half
     // of a transform but with even symmetry on the left and odd symmetry on
@@ -3443,15 +3416,14 @@ static av_cold int aac_decode_close(AVCodecContext *avctx)
         }
     }
 
-    ff_mdct_end(&ac->mdct);
-    ff_mdct_end(&ac->mdct_small);
-    ff_mdct_end(&ac->mdct_ld);
-    ff_mdct_end(&ac->mdct_ltp);
-#if !USE_FIXED
-    ff_mdct15_uninit(&ac->mdct120);
-    ff_mdct15_uninit(&ac->mdct480);
-    ff_mdct15_uninit(&ac->mdct960);
-#endif
+    av_tx_uninit(&ac->mdct120);
+    av_tx_uninit(&ac->mdct128);
+    av_tx_uninit(&ac->mdct480);
+    av_tx_uninit(&ac->mdct512);
+    av_tx_uninit(&ac->mdct960);
+    av_tx_uninit(&ac->mdct1024);
+    av_tx_uninit(&ac->mdct_ltp);
+
     av_freep(&ac->fdsp);
     return 0;
 }

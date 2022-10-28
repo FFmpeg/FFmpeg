@@ -36,11 +36,8 @@
 #include "libavutil/float_dsp.h"
 #include "libavutil/fixed_dsp.h"
 #include "libavutil/mem_internal.h"
+#include "libavutil/tx.h"
 #include "avcodec.h"
-#if !USE_FIXED
-#include "mdct15.h"
-#endif
-#include "fft.h"
 #include "mpeg4audio.h"
 #include "sbr.h"
 
@@ -326,16 +323,24 @@ struct AACContext {
      * @name Computed / set up during initialization
      * @{
      */
-    FFTContext mdct;
-    FFTContext mdct_small;
-    FFTContext mdct_ld;
-    FFTContext mdct_ltp;
+    AVTXContext *mdct120;
+    AVTXContext *mdct128;
+    AVTXContext *mdct480;
+    AVTXContext *mdct512;
+    AVTXContext *mdct960;
+    AVTXContext *mdct1024;
+    AVTXContext *mdct_ltp;
+
+    av_tx_fn mdct120_fn;
+    av_tx_fn mdct128_fn;
+    av_tx_fn mdct480_fn;
+    av_tx_fn mdct512_fn;
+    av_tx_fn mdct960_fn;
+    av_tx_fn mdct1024_fn;
+    av_tx_fn mdct_ltp_fn;
 #if USE_FIXED
     AVFixedDSPContext *fdsp;
 #else
-    MDCT15Context *mdct120;
-    MDCT15Context *mdct480;
-    MDCT15Context *mdct960;
     AVFloatDSPContext *fdsp;
 #endif /* USE_FIXED */
     int random_state;

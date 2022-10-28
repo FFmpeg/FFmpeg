@@ -58,15 +58,14 @@
  * @author Stanislav Ocovaj ( stanislav.ocovaj imgtec com )
  */
 
-#define FFT_FLOAT 0
 #define USE_FIXED 1
+#define TX_TYPE AV_TX_INT32_MDCT
 
 #include "libavutil/fixed_dsp.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "get_bits.h"
-#include "fft.h"
 #include "lpc.h"
 #include "kbdwin.h"
 #include "sinewin_fixed_tablegen.h"
@@ -87,6 +86,8 @@
 
 DECLARE_ALIGNED(32, static int, AAC_RENAME2(aac_kbd_long_1024))[1024];
 DECLARE_ALIGNED(32, static int, AAC_RENAME2(aac_kbd_short_128))[128];
+DECLARE_ALIGNED(32, static int, AAC_RENAME2(aac_kbd_long_960))[960];
+DECLARE_ALIGNED(32, static int, AAC_RENAME2(aac_kbd_short_120))[120];
 
 static av_always_inline void reset_predict_state(PredictorState *ps)
 {
