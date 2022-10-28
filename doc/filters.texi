@@ -7987,6 +7987,25 @@ The command accepts the same syntax of the corresponding option.
 If the specified expression is not valid, it is kept at its current
 value.
 
+@section backgroundkey
+
+Turns a static background into transparency.
+
+The filter accepts the following option:
+
+@table @option
+@item threshold
+Threshold for scene change detection.
+@item similarity
+Similarity percentage with the background.
+@item blend
+Set the blend amount for pixels that are not similar.
+@end table
+
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section bbox
 
 Compute the bounding box for the non-black pixels in the input frame

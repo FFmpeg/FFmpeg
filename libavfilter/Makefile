@@ -191,6 +191,7 @@ OBJS-$(CONFIG_AVGBLUR_FILTER)                += vf_avgblur.o
 OBJS-$(CONFIG_AVGBLUR_OPENCL_FILTER)         += vf_avgblur_opencl.o opencl.o \
                                                 opencl/avgblur.o boxblur.o
 OBJS-$(CONFIG_AVGBLUR_VULKAN_FILTER)         += vf_avgblur_vulkan.o vulkan.o vulkan_filter.o
+OBJS-$(CONFIG_BACKGROUNDKEY_FILTER)          += vf_backgroundkey.o
 OBJS-$(CONFIG_BBOX_FILTER)                   += bbox.o vf_bbox.o
 OBJS-$(CONFIG_BENCH_FILTER)                  += f_bench.o
 OBJS-$(CONFIG_BILATERAL_FILTER)              += vf_bilateral.o

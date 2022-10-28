@@ -177,6 +177,7 @@ extern const AVFilter ff_vf_atadenoise;
 extern const AVFilter ff_vf_avgblur;
 extern const AVFilter ff_vf_avgblur_opencl;
 extern const AVFilter ff_vf_avgblur_vulkan;
+extern const AVFilter ff_vf_backgroundkey;
 extern const AVFilter ff_vf_bbox;
 extern const AVFilter ff_vf_bench;
 extern const AVFilter ff_vf_bilateral;
