@@ -31,6 +31,15 @@ void ff_hscale16to15_X8_neon_asm(int shift, int16_t *_dst, int dstW,
 void ff_hscale16to15_X4_neon_asm(int shift, int16_t *_dst, int dstW,
                       const uint8_t *_src, const int16_t *filter,
                       const int32_t *filterPos, int filterSize);
+void ff_hscale16to19_4_neon_asm(int shift, int16_t *_dst, int dstW,
+                      const uint8_t *_src, const int16_t *filter,
+                      const int32_t *filterPos, int filterSize);
+void ff_hscale16to19_X8_neon_asm(int shift, int16_t *_dst, int dstW,
+                      const uint8_t *_src, const int16_t *filter,
+                      const int32_t *filterPos, int filterSize);
+void ff_hscale16to19_X4_neon_asm(int shift, int16_t *_dst, int dstW,
+                      const uint8_t *_src, const int16_t *filter,
+                      const int32_t *filterPos, int filterSize);
 
 static void ff_hscale16to15_4_neon(SwsContext *c, int16_t *_dst, int dstW,
                       const uint8_t *_src, const int16_t *filter,
@@ -79,6 +88,60 @@ static void ff_hscale16to15_X4_neon(SwsContext *c, int16_t *_dst, int dstW,
     ff_hscale16to15_X4_neon_asm(sh, _dst, dstW, _src, filter, filterPos, filterSize);
 }
 
+static void ff_hscale16to19_4_neon(SwsContext *c, int16_t *_dst, int dstW,
+                           const uint8_t *_src, const int16_t *filter,
+                           const int32_t *filterPos, int filterSize)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(c->srcFormat);
+    int bits            = desc->comp[0].depth - 1;
+    int sh              = bits - 4;
+
+    if ((isAnyRGB(c->srcFormat) || c->srcFormat==AV_PIX_FMT_PAL8) && desc->comp[0].depth<16) {
+        sh = 9;
+    } else if (desc->flags & AV_PIX_FMT_FLAG_FLOAT) { /* float input are process like uint 16bpc */
+        sh = 16 - 1 - 4;
+    }
+
+    ff_hscale16to19_4_neon_asm(sh, _dst, dstW, _src, filter, filterPos, filterSize);
+
+}
+
+static void ff_hscale16to19_X8_neon(SwsContext *c, int16_t *_dst, int dstW,
+                           const uint8_t *_src, const int16_t *filter,
+                           const int32_t *filterPos, int filterSize)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(c->srcFormat);
+    int bits            = desc->comp[0].depth - 1;
+    int sh              = bits - 4;
+
+    if ((isAnyRGB(c->srcFormat) || c->srcFormat==AV_PIX_FMT_PAL8) && desc->comp[0].depth<16) {
+        sh = 9;
+    } else if (desc->flags & AV_PIX_FMT_FLAG_FLOAT) { /* float input are process like uint 16bpc */
+        sh = 16 - 1 - 4;
+    }
+
+    ff_hscale16to19_X8_neon_asm(sh, _dst, dstW, _src, filter, filterPos, filterSize);
+
+}
+
+static void ff_hscale16to19_X4_neon(SwsContext *c, int16_t *_dst, int dstW,
+                           const uint8_t *_src, const int16_t *filter,
+                           const int32_t *filterPos, int filterSize)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(c->srcFormat);
+    int bits            = desc->comp[0].depth - 1;
+    int sh              = bits - 4;
+
+    if ((isAnyRGB(c->srcFormat) || c->srcFormat==AV_PIX_FMT_PAL8) && desc->comp[0].depth<16) {
+        sh = 9;
+    } else if (desc->flags & AV_PIX_FMT_FLAG_FLOAT) { /* float input are process like uint 16bpc */
+        sh = 16 - 1 - 4;
+    }
+
+    ff_hscale16to19_X4_neon_asm(sh, _dst, dstW, _src, filter, filterPos, filterSize);
+
+}
+
 #define SCALE_FUNC(filter_n, from_bpc, to_bpc, opt) \
 void ff_hscale ## from_bpc ## to ## to_bpc ## _ ## filter_n ## _ ## opt( \
                                                 SwsContext *c, int16_t *data, \
@@ -117,6 +180,9 @@ void ff_yuv2plane1_8_neon(
         if (c->dstBpc <= 14)                                            \
             hscalefn =                                                  \
                 ff_hscale16to15_ ## filtersize ## _ ## opt;             \
+        else                                                            \
+            hscalefn =                                                  \
+                ff_hscale16to19_ ## filtersize ## _ ## opt;             \
     }                                                                   \
 } while (0)
 
