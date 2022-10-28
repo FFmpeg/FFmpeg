@@ -1,6 +1,45 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 2.8.21:
+ avformat/rmdec: check tag_size
+ avformat/nutdec: Check fields
+ avformat/cafdec: Check that nb_frasmes fits within 64bit
+ avformat/asfdec_o: Limit packet offset
+ avformat/ape: Check frames size
+ avformat/icodec: Check nb_pal
+ avformat/aiffdec: Check block_duration
+ avcodec/apedec: Fix integer overflow in filter_3800()
+ avcodec/tta: Check 24bit scaling for overflow
+ libavformat/hls: Free keys
+ avcodec/bink: disallow odd positioned scaled blocks
+ avformat/asfdec_o: limit recursion depth in asf_read_unknown()
+ doc/git-howto.texi: Document commit signing
+ libavcodec/8bps: Check that line lengths fit within the buffer
+ libavformat/iff: Check for overflow in body_end calculation
+ avcodec/h263dec: Sanity check against minimal I/P frame size
+ MAINTAINERS: Add ED25519 key for signing my commits in the future
+ avcodec/hevc_filter: copy_CTB() only within width&height
+ avformat/flvdec: Check for EOF in index reading
+ avformat/nutdec: Check get_packetheader() in mainheader
+ avformat/asfdec_f: Use 64bit for packet start time
+ avcodec/lagarith: Check dst/src in zero run code
+ avcodec/sbrdsp_fixed: Fix integer overflows in sbr_qmf_deint_neg_c()
+ avformat/rtsp: break on unknown protocols
+ avcodec/hevcdsp_template: stay within tables in sao_band_filter()
+ avcodec/qpeldsp: copy less for the mc0x cases
+ avcodec/wnv1: Check for width =1
+ avformat/sctp: close socket on errors
+ avcodec/qdrw: adjust max colors to array size
+ avformat/aiffdec: cleanup size handling for extreem cases
+ avcodec/jpeglsdec: fix end check for xfrm
+ avcodec/cdgraphics: limit scrolling to the line
+ avformat/aiffdec: avoid integer overflow in get_meta()
+ avformat/ape: more bits in size for less overflows
+ avformat/bfi: Check offsets better
+ avformat/asfdec_f: Check packet_frag_timestamp
+ avcodec/texturedspenc: Fix indexing in color distribution determination
+
 version 2.8.20:
  avcodec/ac3enc: Fix memleak
  avformat/nutenc: don't allocate a dynamic AVIOContext if no index is going to be written
