@@ -30,31 +30,23 @@ const uint8_t ff_mpeg2_non_linear_qscale[32] = {
     56, 64, 72, 80, 88, 96, 104, 112,
 };
 
-const uint8_t ff_mpeg1_dc_scale_table[32] = {
+const uint8_t ff_mpeg12_dc_scale_table[4][32] = {
+{
     8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
     8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
-};
-
-static const uint8_t mpeg2_dc_scale_table1[32] = {
+},
+{
     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-};
-
-static const uint8_t mpeg2_dc_scale_table2[32] = {
+},
+{
     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-};
-
-static const uint8_t mpeg2_dc_scale_table3[32] = {
+},
+{
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-};
-
-const uint8_t *const ff_mpeg2_dc_scale_table[4] = {
-    ff_mpeg1_dc_scale_table,
-    mpeg2_dc_scale_table1,
-    mpeg2_dc_scale_table2,
-    mpeg2_dc_scale_table3,
+},
 };
 
 const uint8_t ff_alternate_horizontal_scan[64] = {

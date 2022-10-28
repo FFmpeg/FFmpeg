@@ -1148,7 +1148,7 @@ av_cold void ff_mpeg1_encode_init(MpegEncContext *s)
     static AVOnce init_static_once = AV_ONCE_INIT;
 
     s->y_dc_scale_table =
-    s->c_dc_scale_table = ff_mpeg2_dc_scale_table[s->intra_dc_precision];
+    s->c_dc_scale_table = ff_mpeg12_dc_scale_table[s->intra_dc_precision];
 
     s->me.mv_penalty = mv_penalty;
     s->fcode_tab     = fcode_tab;

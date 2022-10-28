@@ -25,8 +25,8 @@
 extern const uint8_t ff_alternate_horizontal_scan[64];
 extern const uint8_t ff_alternate_vertical_scan[64];
 
-extern const uint8_t ff_mpeg1_dc_scale_table[32];
-extern const uint8_t * const ff_mpeg2_dc_scale_table[4];
+extern const uint8_t ff_mpeg12_dc_scale_table[4][32];
+static const uint8_t *const ff_mpeg1_dc_scale_table = ff_mpeg12_dc_scale_table[0];
 
 extern const uint8_t ff_mpeg2_non_linear_qscale[32];
 
