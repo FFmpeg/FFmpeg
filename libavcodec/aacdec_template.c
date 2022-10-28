@@ -238,13 +238,13 @@ static int assign_pair(struct elem_to_channel e2c_vec[MAX_ELEM_ID],
 }
 
 static int count_paired_channels(uint8_t (*layout_map)[3], int tags, int pos,
-                                 int *current)
+                                 int current)
 {
     int num_pos_channels = 0;
     int first_cpe        = 0;
     int sce_parity       = 0;
     int i;
-    for (i = *current; i < tags; i++) {
+    for (i = current; i < tags; i++) {
         if (layout_map[i][2] != pos)
             break;
         if (layout_map[i][0] == TYPE_CPE) {
@@ -259,207 +259,117 @@ static int count_paired_channels(uint8_t (*layout_map)[3], int tags, int pos,
             first_cpe         = 1;
         } else {
             num_pos_channels++;
-            sce_parity ^= 1;
+            sce_parity ^= (pos != AAC_CHANNEL_LFE);
         }
     }
     if (sce_parity &&
-        ((pos == AAC_CHANNEL_FRONT && first_cpe) || pos == AAC_CHANNEL_SIDE))
+        (pos == AAC_CHANNEL_FRONT && first_cpe))
         return -1;
-    *current = i;
+
     return num_pos_channels;
 }
 
-#define PREFIX_FOR_22POINT2 (AV_CH_LAYOUT_7POINT1_WIDE_BACK|AV_CH_BACK_CENTER|AV_CH_SIDE_LEFT|AV_CH_SIDE_RIGHT|AV_CH_LOW_FREQUENCY_2)
+static int assign_channels(struct elem_to_channel e2c_vec[MAX_ELEM_ID], uint8_t (*layout_map)[3],
+                           uint64_t *layout, int tags, int layer, int pos, int *current)
+{
+    int i = *current, j = 0;
+    int nb_channels = count_paired_channels(layout_map, tags, pos, i);
+
+    if (nb_channels < 0 || nb_channels > 5)
+        return 0;
+
+    if (pos == AAC_CHANNEL_LFE) {
+        while (nb_channels) {
+            if (aac_channel_map[layer][pos - 1][j] == AV_CHAN_NONE)
+                return -1;
+            e2c_vec[i] = (struct elem_to_channel) {
+                .av_position  = 1ULL << aac_channel_map[layer][pos - 1][j],
+                .syn_ele      = layout_map[i][0],
+                .elem_id      = layout_map[i][1],
+                .aac_position = pos
+            };
+            *layout |= e2c_vec[i].av_position;
+            i++;
+            j++;
+            nb_channels--;
+        }
+        *current = i;
+
+        return 0;
+    }
+
+    while (nb_channels & 1) {
+        if (aac_channel_map[layer][pos - 1][0] == AV_CHAN_NONE)
+            return -1;
+        if (aac_channel_map[layer][pos - 1][0] == AV_CHAN_UNUSED)
+            break;
+        e2c_vec[i] = (struct elem_to_channel) {
+            .av_position  = 1ULL << aac_channel_map[layer][pos - 1][0],
+            .syn_ele      = layout_map[i][0],
+            .elem_id      = layout_map[i][1],
+            .aac_position = pos
+        };
+        *layout |= e2c_vec[i].av_position;
+        i++;
+        nb_channels--;
+    }
+
+    j = (pos != AAC_CHANNEL_SIDE) && nb_channels <= 3 ? 3 : 1;
+    while (nb_channels >= 2) {
+        if (aac_channel_map[layer][pos - 1][j]   == AV_CHAN_NONE ||
+            aac_channel_map[layer][pos - 1][j+1] == AV_CHAN_NONE)
+            return -1;
+        i += assign_pair(e2c_vec, layout_map, i,
+                         1ULL << aac_channel_map[layer][pos - 1][j],
+                         1ULL << aac_channel_map[layer][pos - 1][j+1],
+                         pos, layout);
+        j += 2;
+        nb_channels -= 2;
+    }
+    while (nb_channels & 1) {
+        if (aac_channel_map[layer][pos - 1][5] == AV_CHAN_NONE)
+            return -1;
+        e2c_vec[i] = (struct elem_to_channel) {
+            .av_position  = 1ULL << aac_channel_map[layer][pos - 1][5],
+            .syn_ele      = layout_map[i][0],
+            .elem_id      = layout_map[i][1],
+            .aac_position = pos
+        };
+        *layout |= e2c_vec[i].av_position;
+        i++;
+        nb_channels--;
+    }
+    if (nb_channels)
+        return -1;
+
+    *current = i;
+
+    return 0;
+}
+
 static uint64_t sniff_channel_order(uint8_t (*layout_map)[3], int tags)
 {
     int i, n, total_non_cc_elements;
     struct elem_to_channel e2c_vec[4 * MAX_ELEM_ID] = { { 0 } };
-    int num_front_channels, num_side_channels, num_back_channels;
     uint64_t layout = 0;
 
     if (FF_ARRAY_ELEMS(e2c_vec) < tags)
         return 0;
 
-    i = 0;
-    num_front_channels =
-        count_paired_channels(layout_map, tags, AAC_CHANNEL_FRONT, &i);
-    if (num_front_channels < 0)
-        return 0;
-    num_side_channels =
-        count_paired_channels(layout_map, tags, AAC_CHANNEL_SIDE, &i);
-    if (num_side_channels < 0)
-        return 0;
-    num_back_channels =
-        count_paired_channels(layout_map, tags, AAC_CHANNEL_BACK, &i);
-    if (num_back_channels < 0)
-        return 0;
-
-    if (num_side_channels == 0 && num_back_channels >= 4) {
-        num_side_channels = 2;
-        num_back_channels -= 2;
+    for (n = 0, i = 0; n < 3 && i < tags; n++) {
+        int ret = assign_channels(e2c_vec, layout_map, &layout, tags, n, AAC_CHANNEL_FRONT, &i);
+        if (ret < 0)
+            return 0;
+        ret = assign_channels(e2c_vec, layout_map, &layout, tags, n, AAC_CHANNEL_SIDE, &i);
+        if (ret < 0)
+            return 0;
+        ret = assign_channels(e2c_vec, layout_map, &layout, tags, n, AAC_CHANNEL_BACK, &i);
+        if (ret < 0)
+            return 0;
+        ret = assign_channels(e2c_vec, layout_map, &layout, tags, n, AAC_CHANNEL_LFE, &i);
+        if (ret < 0)
+            return 0;
     }
-
-    i = 0;
-    if (num_front_channels & 1) {
-        e2c_vec[i] = (struct elem_to_channel) {
-            .av_position  = AV_CH_FRONT_CENTER,
-            .syn_ele      = TYPE_SCE,
-            .elem_id      = layout_map[i][1],
-            .aac_position = AAC_CHANNEL_FRONT
-        };
-        layout |= e2c_vec[i].av_position;
-        i++;
-        num_front_channels--;
-    }
-    if (num_front_channels >= 4) {
-        i += assign_pair(e2c_vec, layout_map, i,
-                         AV_CH_FRONT_LEFT_OF_CENTER,
-                         AV_CH_FRONT_RIGHT_OF_CENTER,
-                         AAC_CHANNEL_FRONT, &layout);
-        num_front_channels -= 2;
-    }
-    if (num_front_channels >= 2) {
-        i += assign_pair(e2c_vec, layout_map, i,
-                         AV_CH_FRONT_LEFT,
-                         AV_CH_FRONT_RIGHT,
-                         AAC_CHANNEL_FRONT, &layout);
-        num_front_channels -= 2;
-    }
-    if (num_front_channels)
-        return 0; // Non standard PCE defined layout
-
-    if (num_side_channels >= 2) {
-        i += assign_pair(e2c_vec, layout_map, i,
-                         AV_CH_SIDE_LEFT,
-                         AV_CH_SIDE_RIGHT,
-                         AAC_CHANNEL_SIDE, &layout);
-        num_side_channels -= 2;
-    }
-    if (num_side_channels)
-        return 0; // Non standard PCE defined layout
-
-    if (num_back_channels >= 2) {
-        i += assign_pair(e2c_vec, layout_map, i,
-                         AV_CH_BACK_LEFT,
-                         AV_CH_BACK_RIGHT,
-                         AAC_CHANNEL_BACK, &layout);
-        num_back_channels -= 2;
-    }
-    if (num_back_channels) {
-        e2c_vec[i] = (struct elem_to_channel) {
-            .av_position  = AV_CH_BACK_CENTER,
-            .syn_ele      = TYPE_SCE,
-            .elem_id      = layout_map[i][1],
-            .aac_position = AAC_CHANNEL_BACK
-        };
-        layout |= e2c_vec[i].av_position;
-        i++;
-        num_back_channels--;
-    }
-    if (num_back_channels)
-        return 0; // Non standard PCE defined layout
-
-    if (i < tags && layout_map[i][2] == AAC_CHANNEL_LFE) {
-        e2c_vec[i] = (struct elem_to_channel) {
-            .av_position  = AV_CH_LOW_FREQUENCY,
-            .syn_ele      = TYPE_LFE,
-            .elem_id      = layout_map[i][1],
-            .aac_position = AAC_CHANNEL_LFE
-        };
-        layout |= e2c_vec[i].av_position;
-        i++;
-    }
-    if (i < tags && layout_map[i][2] == AAC_CHANNEL_LFE) {
-        e2c_vec[i] = (struct elem_to_channel) {
-            .av_position  = AV_CH_LOW_FREQUENCY_2,
-            .syn_ele      = TYPE_LFE,
-            .elem_id      = layout_map[i][1],
-            .aac_position = AAC_CHANNEL_LFE
-        };
-        layout |= e2c_vec[i].av_position;
-        i++;
-    }
-    while (i < tags && layout_map[i][2] == AAC_CHANNEL_LFE) {
-        e2c_vec[i] = (struct elem_to_channel) {
-            .av_position  = UINT64_MAX,
-            .syn_ele      = TYPE_LFE,
-            .elem_id      = layout_map[i][1],
-            .aac_position = AAC_CHANNEL_LFE
-        };
-        i++;
-    }
-
-    // The previous checks would end up at 4 at this point for chan_config 14
-    if (layout == AV_CH_LAYOUT_5POINT1_BACK && tags == 5 && i == 4) {
-        const uint8_t (*reference_layout_map)[3] = aac_channel_layout_map[13];
-        for (int j = 0; j < tags; j++) {
-            if (layout_map[j][0] != reference_layout_map[j][0] ||
-                layout_map[j][2] != reference_layout_map[j][2])
-                goto end_of_layout_definition;
-        }
-
-        i += assign_pair(e2c_vec, layout_map, i,
-                         AV_CH_TOP_FRONT_LEFT,
-                         AV_CH_TOP_FRONT_RIGHT,
-                         AAC_CHANNEL_FRONT,
-                         &layout);
-    }
-    // The previous checks would end up at 8 at this point for 22.2
-    if (layout == PREFIX_FOR_22POINT2 && tags == 16 && i == 8) {
-        const uint8_t (*reference_layout_map)[3] = aac_channel_layout_map[12];
-        for (int j = 0; j < tags; j++) {
-            if (layout_map[j][0] != reference_layout_map[j][0] ||
-                layout_map[j][2] != reference_layout_map[j][2])
-                goto end_of_layout_definition;
-        }
-
-        e2c_vec[i] = (struct elem_to_channel) {
-            .av_position  = AV_CH_TOP_FRONT_CENTER,
-            .syn_ele      = layout_map[i][0],
-            .elem_id      = layout_map[i][1],
-            .aac_position = layout_map[i][2]
-        }; layout |= e2c_vec[i].av_position; i++;
-        i += assign_pair(e2c_vec, layout_map, i,
-                         AV_CH_TOP_FRONT_LEFT,
-                         AV_CH_TOP_FRONT_RIGHT,
-                         AAC_CHANNEL_FRONT,
-                         &layout);
-        i += assign_pair(e2c_vec, layout_map, i,
-                         AV_CH_TOP_SIDE_LEFT,
-                         AV_CH_TOP_SIDE_RIGHT,
-                         AAC_CHANNEL_SIDE,
-                         &layout);
-        e2c_vec[i] = (struct elem_to_channel) {
-            .av_position  = AV_CH_TOP_CENTER,
-            .syn_ele      = layout_map[i][0],
-            .elem_id      = layout_map[i][1],
-            .aac_position = layout_map[i][2]
-        }; layout |= e2c_vec[i].av_position; i++;
-        i += assign_pair(e2c_vec, layout_map, i,
-                         AV_CH_TOP_BACK_LEFT,
-                         AV_CH_TOP_BACK_RIGHT,
-                         AAC_CHANNEL_BACK,
-                         &layout);
-        e2c_vec[i] = (struct elem_to_channel) {
-            .av_position  = AV_CH_TOP_BACK_CENTER,
-            .syn_ele      = layout_map[i][0],
-            .elem_id      = layout_map[i][1],
-            .aac_position = layout_map[i][2]
-        }; layout |= e2c_vec[i].av_position; i++;
-        e2c_vec[i] = (struct elem_to_channel) {
-            .av_position  = AV_CH_BOTTOM_FRONT_CENTER,
-            .syn_ele      = layout_map[i][0],
-            .elem_id      = layout_map[i][1],
-            .aac_position = layout_map[i][2]
-        }; layout |= e2c_vec[i].av_position; i++;
-        i += assign_pair(e2c_vec, layout_map, i,
-                         AV_CH_BOTTOM_FRONT_LEFT,
-                         AV_CH_BOTTOM_FRONT_RIGHT,
-                         AAC_CHANNEL_FRONT,
-                         &layout);
-    }
-
-end_of_layout_definition:
 
     total_non_cc_elements = n = i;
 
@@ -655,7 +565,7 @@ static int set_default_channel_config(AACContext *ac, AVCodecContext *avctx,
      * 7.1 layout was intended.
      */
     if (channel_config == 7 && avctx->strict_std_compliance < FF_COMPLIANCE_STRICT) {
-        layout_map[2][2] = AAC_CHANNEL_SIDE;
+        layout_map[2][2] = AAC_CHANNEL_BACK;
 
         if (!ac || !ac->warned_71_wide++) {
             av_log(avctx, AV_LOG_INFO, "Assuming an incorrectly encoded 7.1 channel layout"
