@@ -325,36 +325,19 @@ static uint64_t sniff_channel_order(uint8_t (*layout_map)[3], int tags)
                          AAC_CHANNEL_FRONT, &layout);
         num_front_channels -= 2;
     }
-    while (num_front_channels >= 2) {
-        i += assign_pair(e2c_vec, layout_map, i,
-                         UINT64_MAX,
-                         UINT64_MAX,
-                         AAC_CHANNEL_FRONT, &layout);
-        num_front_channels -= 2;
-    }
+    if (num_front_channels)
+        return 0; // Non standard PCE defined layout
 
     if (num_side_channels >= 2) {
         i += assign_pair(e2c_vec, layout_map, i,
                          AV_CH_SIDE_LEFT,
                          AV_CH_SIDE_RIGHT,
-                         AAC_CHANNEL_FRONT, &layout);
-        num_side_channels -= 2;
-    }
-    while (num_side_channels >= 2) {
-        i += assign_pair(e2c_vec, layout_map, i,
-                         UINT64_MAX,
-                         UINT64_MAX,
                          AAC_CHANNEL_SIDE, &layout);
         num_side_channels -= 2;
     }
+    if (num_side_channels)
+        return 0; // Non standard PCE defined layout
 
-    while (num_back_channels >= 4) {
-        i += assign_pair(e2c_vec, layout_map, i,
-                         UINT64_MAX,
-                         UINT64_MAX,
-                         AAC_CHANNEL_BACK, &layout);
-        num_back_channels -= 2;
-    }
     if (num_back_channels >= 2) {
         i += assign_pair(e2c_vec, layout_map, i,
                          AV_CH_BACK_LEFT,
@@ -373,6 +356,8 @@ static uint64_t sniff_channel_order(uint8_t (*layout_map)[3], int tags)
         i++;
         num_back_channels--;
     }
+    if (num_back_channels)
+        return 0; // Non standard PCE defined layout
 
     if (i < tags && layout_map[i][2] == AAC_CHANNEL_LFE) {
         e2c_vec[i] = (struct elem_to_channel) {
