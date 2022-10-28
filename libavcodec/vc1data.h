@@ -30,10 +30,12 @@
 
 #include <stdint.h>
 
+#include "libavutil/attributes_internal.h"
 #include "libavutil/rational.h"
 
 #include "vlc.h"
 
+FF_VISIBILITY_PUSH_HIDDEN
 /** Table for conversion between TTBLK and TTMB */
 extern const int ff_vc1_ttblk_to_tt[3][8];
 
@@ -127,5 +129,6 @@ extern const uint16_t ff_vc1_b_field_mvpred_scales[7][4];
 #define AC_MODES 8
 
 extern const int ff_vc1_ac_sizes[AC_MODES];
+FF_VISIBILITY_POP_HIDDEN
 
 #endif /* AVCODEC_VC1DATA_H */
