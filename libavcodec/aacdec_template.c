@@ -135,9 +135,12 @@ static av_cold int che_configure(AACContext *ac,
         return AVERROR_INVALIDDATA;
     if (che_pos) {
         if (!ac->che[type][id]) {
+            int ret;
             if (!(ac->che[type][id] = av_mallocz(sizeof(ChannelElement))))
                 return AVERROR(ENOMEM);
-            AAC_RENAME(ff_aac_sbr_ctx_init)(ac, &ac->che[type][id]->sbr, type);
+            ret = AAC_RENAME(ff_aac_sbr_ctx_init)(ac, &ac->che[type][id]->sbr, type);
+            if (ret < 0)
+                return ret;
         }
         if (type != TYPE_CCE) {
             if (*channels >= MAX_CHANNELS - (type == TYPE_CPE || (type == TYPE_SCE && ac->oc[1].m4ac.ps == 1))) {

@@ -89,10 +89,14 @@ static void sbr_turnoff(SpectralBandReplication *sbr) {
     memset(&sbr->spectrum_params, -1, sizeof(SpectrumParameters));
 }
 
-av_cold void AAC_RENAME(ff_aac_sbr_ctx_init)(AACContext *ac, SpectralBandReplication *sbr, int id_aac)
+av_cold int AAC_RENAME(ff_aac_sbr_ctx_init)(AACContext *ac, SpectralBandReplication *sbr, int id_aac)
 {
-    if(sbr->mdct.mdct_bits)
-        return;
+    int ret;
+    float scale;
+
+    if (sbr->mdct)
+        return 0;
+
     sbr->kx[0] = sbr->kx[1];
     sbr->id_aac = id_aac;
     sbr_turnoff(sbr);
@@ -101,17 +105,32 @@ av_cold void AAC_RENAME(ff_aac_sbr_ctx_init)(AACContext *ac, SpectralBandReplica
     /* SBR requires samples to be scaled to +/-32768.0 to work correctly.
      * mdct scale factors are adjusted to scale up from +/-1.0 at analysis
      * and scale back down at synthesis. */
-    AAC_RENAME_32(ff_mdct_init)(&sbr->mdct,     7, 1, 1.0 / (64 * 32768.0));
-    AAC_RENAME_32(ff_mdct_init)(&sbr->mdct_ana, 7, 1, -2.0 * 32768.0);
+
+    scale = USE_FIXED ? 1 : 1.0 / (64 * 32768);
+    ret = av_tx_init(&sbr->mdct, &sbr->mdct_fn,
+                     USE_FIXED ? AV_TX_INT32_MDCT : AV_TX_FLOAT_MDCT,
+                     1, 64, &scale, 0);
+    if (ret < 0)
+        return ret;
+
+    scale = USE_FIXED ? -1.0 : -2.0 * 32768;
+    ret = av_tx_init(&sbr->mdct_ana, &sbr->mdct_ana_fn,
+                     USE_FIXED ? AV_TX_INT32_MDCT : AV_TX_FLOAT_MDCT,
+                     1, 64, &scale, 0);
+    if (ret < 0)
+        return ret;
+
     AAC_RENAME(ff_ps_ctx_init)(&sbr->ps);
     AAC_RENAME(ff_sbrdsp_init)(&sbr->dsp);
     aacsbr_func_ptr_init(&sbr->c);
+
+    return 0;
 }
 
 av_cold void AAC_RENAME(ff_aac_sbr_ctx_close)(SpectralBandReplication *sbr)
 {
-    AAC_RENAME_32(ff_mdct_end)(&sbr->mdct);
-    AAC_RENAME_32(ff_mdct_end)(&sbr->mdct_ana);
+    av_tx_uninit(&sbr->mdct);
+    av_tx_uninit(&sbr->mdct_ana);
 }
 
 static int qsort_comparison_function_int16(const void *a, const void *b)
@@ -1164,9 +1183,11 @@ int AAC_RENAME(ff_decode_sbr_extension)(AACContext *ac, SpectralBandReplication 
  */
 #ifndef sbr_qmf_analysis
 #if USE_FIXED
-static void sbr_qmf_analysis(AVFixedDSPContext *dsp, FFTContext *mdct,
+static void sbr_qmf_analysis(AVFixedDSPContext *dsp, AVTXContext *mdct,
+                             av_tx_fn mdct_fn,
 #else
-static void sbr_qmf_analysis(AVFloatDSPContext *dsp, FFTContext *mdct,
+static void sbr_qmf_analysis(AVFloatDSPContext *dsp, AVTXContext *mdct,
+                             av_tx_fn mdct_fn,
 #endif /* USE_FIXED */
                              SBRDSPContext *sbrdsp, const INTFLOAT *in, INTFLOAT *x,
                              INTFLOAT z[320], INTFLOAT W[2][32][32][2], int buf_idx)
@@ -1197,7 +1218,7 @@ static void sbr_qmf_analysis(AVFloatDSPContext *dsp, FFTContext *mdct,
             }
         }
 #endif
-        mdct->imdct_half(mdct, z, z+64);
+        mdct_fn(mdct, z, z + 64, sizeof(INTFLOAT));
         sbrdsp->qmf_post_shuffle(W[buf_idx][i], z);
         x += 32;
     }
@@ -1209,7 +1230,7 @@ static void sbr_qmf_analysis(AVFloatDSPContext *dsp, FFTContext *mdct,
  * (14496-3 sp04 p206)
  */
 #ifndef sbr_qmf_synthesis
-static void sbr_qmf_synthesis(FFTContext *mdct,
+static void sbr_qmf_synthesis(AVTXContext *mdct, av_tx_fn mdct_fn,
 #if USE_FIXED
                               SBRDSPContext *sbrdsp, AVFixedDSPContext *dsp,
 #else
@@ -1237,12 +1258,12 @@ static void sbr_qmf_synthesis(FFTContext *mdct,
                 X[0][i][   n] = -X[0][i][n];
                 X[0][i][32+n] =  X[1][i][31-n];
             }
-            mdct->imdct_half(mdct, mdct_buf[0], X[0][i]);
+            mdct_fn(mdct, mdct_buf[0], X[0][i], sizeof(INTFLOAT));
             sbrdsp->qmf_deint_neg(v, mdct_buf[0]);
         } else {
             sbrdsp->neg_odd_64(X[1][i]);
-            mdct->imdct_half(mdct, mdct_buf[0], X[0][i]);
-            mdct->imdct_half(mdct, mdct_buf[1], X[1][i]);
+            mdct_fn(mdct, mdct_buf[0], X[0][i], sizeof(INTFLOAT));
+            mdct_fn(mdct, mdct_buf[1], X[1][i], sizeof(INTFLOAT));
             sbrdsp->qmf_deint_bfly(v, mdct_buf[1], mdct_buf[0]);
         }
         dsp->vector_fmul    (out, v                , sbr_qmf_window                       , 64 >> div);
@@ -1507,7 +1528,8 @@ void AAC_RENAME(ff_sbr_apply)(AACContext *ac, SpectralBandReplication *sbr, int 
     }
     for (ch = 0; ch < nch; ch++) {
         /* decode channel */
-        sbr_qmf_analysis(ac->fdsp, &sbr->mdct_ana, &sbr->dsp, ch ? R : L, sbr->data[ch].analysis_filterbank_samples,
+        sbr_qmf_analysis(ac->fdsp, sbr->mdct_ana, sbr->mdct_ana_fn, &sbr->dsp,
+                         ch ? R : L, sbr->data[ch].analysis_filterbank_samples,
                          (INTFLOAT*)sbr->qmf_filter_scratch,
                          sbr->data[ch].W, sbr->data[ch].Ypos);
         sbr->c.sbr_lf_gen(ac, sbr, sbr->X_low,
@@ -1554,13 +1576,13 @@ void AAC_RENAME(ff_sbr_apply)(AACContext *ac, SpectralBandReplication *sbr, int 
         nch = 2;
     }
 
-    sbr_qmf_synthesis(&sbr->mdct, &sbr->dsp, ac->fdsp,
+    sbr_qmf_synthesis(sbr->mdct, sbr->mdct_fn, &sbr->dsp, ac->fdsp,
                       L, sbr->X[0], sbr->qmf_filter_scratch,
                       sbr->data[0].synthesis_filterbank_samples,
                       &sbr->data[0].synthesis_filterbank_samples_offset,
                       downsampled);
     if (nch == 2)
-        sbr_qmf_synthesis(&sbr->mdct, &sbr->dsp, ac->fdsp,
+        sbr_qmf_synthesis(sbr->mdct, sbr->mdct_fn, &sbr->dsp, ac->fdsp,
                           R, sbr->X[1], sbr->qmf_filter_scratch,
                           sbr->data[1].synthesis_filterbank_samples,
                           &sbr->data[1].synthesis_filterbank_samples_offset,
