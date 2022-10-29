@@ -613,7 +613,10 @@ static void rotate_luts(VC1Context *v)
 }
 
 static int read_bfraction(VC1Context *v, GetBitContext* gb) {
-    int bfraction_lut_index = get_vlc2(gb, ff_vc1_bfraction_vlc.table, VC1_BFRACTION_VLC_BITS, 1);
+    int bfraction_lut_index = get_bits(gb, 3);
+
+    if (bfraction_lut_index == 7)
+        bfraction_lut_index = 7 + get_bits(gb, 4);
 
     if (bfraction_lut_index == 21) {
         av_log(v->s.avctx, AV_LOG_ERROR, "bfraction invalid\n");
@@ -1582,9 +1585,6 @@ static av_cold void vc1_init_static(void)
 {
     static VLCElem vlc_table[32372];
 
-    INIT_VLC_STATIC(&ff_vc1_bfraction_vlc, VC1_BFRACTION_VLC_BITS, 23,
-                    ff_vc1_bfraction_bits,  1, 1,
-                    ff_vc1_bfraction_codes, 1, 1, 1 << VC1_BFRACTION_VLC_BITS);
     INIT_VLC_STATIC(&ff_vc1_norm2_vlc, VC1_NORM2_VLC_BITS, 4,
                     ff_vc1_norm2_bits,  1, 1,
                     ff_vc1_norm2_codes, 1, 1, 1 << VC1_NORM2_VLC_BITS);

@@ -102,8 +102,6 @@ const uint8_t ff_vc1_pquant_table[3][32] = {
  *  @todo TODO move this into the context
  */
 //@{
-#define VC1_BFRACTION_VLC_BITS 7
-VLC ff_vc1_bfraction_vlc;
 #define VC1_IMODE_VLC_BITS 4
 VLC ff_vc1_imode_vlc;
 #define VC1_NORM2_VLC_BITS 3
@@ -170,25 +168,6 @@ const int16_t ff_vc1_bfraction_lut[23] = {
     -1 /*inv.*/, 0 /*BI fm*/
 };
 #endif
-
-const uint8_t ff_vc1_bfraction_bits[23] = {
-    3, 3, 3, 3,
-    3, 3, 3,
-    7, 7, 7, 7,
-    7, 7, 7, 7,
-    7, 7, 7, 7,
-    7, 7,
-    7, 7
-};
-const uint8_t ff_vc1_bfraction_codes[23] = {
-      0,   1,   2,   3,
-      4,   5,   6,
-    112, 113, 114, 115,
-    116, 117, 118, 119,
-    120, 121, 122, 123,
-    124, 125,
-    126, 127
-};
 
 //Same as H.264
 const AVRational ff_vc1_pixel_aspect[16] = {

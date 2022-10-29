@@ -53,8 +53,6 @@ extern const uint8_t ff_vc1_mbmode_intfrp[2][15][4];
  *  @todo TODO move this into the context
  */
 //@{
-#define VC1_BFRACTION_VLC_BITS 7
-extern VLC ff_vc1_bfraction_vlc;
 #define VC1_IMODE_VLC_BITS 4
 extern VLC ff_vc1_imode_vlc;
 #define VC1_NORM2_VLC_BITS 3
@@ -100,8 +98,6 @@ extern VLC ff_vc1_ac_coeff_table[8];
 
 /* pre-computed scales for all bfractions and base=256 */
 extern const int16_t ff_vc1_bfraction_lut[23];
-extern const uint8_t ff_vc1_bfraction_bits[23];
-extern const uint8_t ff_vc1_bfraction_codes[23];
 
 //Same as H.264
 extern const AVRational ff_vc1_pixel_aspect[16];
