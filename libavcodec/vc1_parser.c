@@ -29,6 +29,7 @@
 #include "parser.h"
 #include "vc1.h"
 #include "get_bits.h"
+#include "vc1dsp.h"
 
 /** The maximum number of bytes of a sequence, entry point or
  *  frame header whose values we pay any attention to */
@@ -264,7 +265,7 @@ static av_cold int vc1_parse_init(AVCodecParserContext *s)
     vpc->bytes_to_skip = 0;
     vpc->unesc_index = 0;
     vpc->search_state = NO_MATCH;
-    ff_vc1_init_common(&vpc->v);
+    ff_vc1dsp_init(&vpc->v.vc1dsp); /* startcode_find_candidate */
     return 0;
 }
 
