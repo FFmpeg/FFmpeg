@@ -89,6 +89,7 @@
 #include <inttypes.h>
 
 #include "libavutil/audio_fifo.h"
+#include "libavutil/tx.h"
 #include "libavutil/ffmath.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/intfloat.h"
@@ -185,7 +186,8 @@ typedef struct WMAProDecodeCtx {
     uint8_t          frame_data[MAX_FRAMESIZE +
                       AV_INPUT_BUFFER_PADDING_SIZE];///< compressed frame data
     PutBitContext    pb;                            ///< context for filling the frame_data buffer
-    FFTContext       mdct_ctx[WMAPRO_BLOCK_SIZES];  ///< MDCT context per block size
+    AVTXContext *tx[WMAPRO_BLOCK_SIZES];            ///< MDCT context per block size
+    av_tx_fn tx_fn[WMAPRO_BLOCK_SIZES];
     DECLARE_ALIGNED(32, float, tmp)[WMAPRO_BLOCK_MAX_SIZE]; ///< IMDCT output buffer
     const float*     windows[WMAPRO_BLOCK_SIZES];   ///< windows for the different block sizes
 
@@ -287,7 +289,7 @@ static av_cold int decode_end(WMAProDecodeCtx *s)
     av_freep(&s->fdsp);
 
     for (i = 0; i < WMAPRO_BLOCK_SIZES; i++)
-        ff_mdct_end(&s->mdct_ctx[i]);
+        av_tx_uninit(&s->tx[i]);
 
     return 0;
 }
@@ -552,12 +554,13 @@ static av_cold int decode_init(WMAProDecodeCtx *s, AVCodecContext *avctx, int nu
         return AVERROR(ENOMEM);
 
     /** init MDCT, FIXME: only init needed sizes */
-    for (int i = 0; i < WMAPRO_BLOCK_SIZES; i++) {
-        ret = ff_mdct_init(&s->mdct_ctx[i], WMAPRO_BLOCK_MIN_BITS + 1 + i, 1,
-                           1.0 / (1 << (WMAPRO_BLOCK_MIN_BITS + i - 1))
-                           / (1ll << (s->bits_per_sample - 1)));
-        if (ret < 0)
-            return ret;
+    for (i = 0; i < WMAPRO_BLOCK_SIZES; i++) {
+        const float scale = 1.0 / (1 << (WMAPRO_BLOCK_MIN_BITS + i - 1))
+                                / (1ll << (s->bits_per_sample - 1));
+        int err = av_tx_init(&s->tx[i], &s->tx_fn[i], AV_TX_FLOAT_MDCT, 1,
+                             1 << (WMAPRO_BLOCK_MIN_BITS + i), &scale, 0);
+        if (err < 0)
+            return err;
     }
 
     /** init MDCT windows: simple sine window */
@@ -1386,7 +1389,8 @@ static int decode_subframe(WMAProDecodeCtx *s)
             get_bits_count(&s->gb) - s->subframe_offset);
 
     if (transmit_coeffs) {
-        FFTContext *mdct = &s->mdct_ctx[av_log2(subframe_len) - WMAPRO_BLOCK_MIN_BITS];
+        AVTXContext *tx = s->tx[av_log2(subframe_len) - WMAPRO_BLOCK_MIN_BITS];
+        av_tx_fn tx_fn = s->tx_fn[av_log2(subframe_len) - WMAPRO_BLOCK_MIN_BITS];
         /** reconstruct the per channel data */
         inverse_channel_transform(s);
         for (i = 0; i < s->channels_for_cur_subframe; i++) {
@@ -1412,7 +1416,7 @@ static int decode_subframe(WMAProDecodeCtx *s)
             }
 
             /** apply imdct (imdct_half == DCTIV with reverse) */
-            mdct->imdct_half(mdct, s->channel[c].coeffs, s->tmp);
+            tx_fn(tx, s->channel[c].coeffs, s->tmp, sizeof(float));
         }
     }
 
