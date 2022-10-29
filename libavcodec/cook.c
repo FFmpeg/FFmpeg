@@ -46,6 +46,7 @@
 #include "libavutil/lfg.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/thread.h"
+#include "libavutil/tx.h"
 
 #include "audiodsp.h"
 #include "avcodec.h"
@@ -53,7 +54,6 @@
 #include "bytestream.h"
 #include "codec_internal.h"
 #include "decode.h"
-#include "fft.h"
 #include "sinewin.h"
 #include "unary.h"
 
@@ -140,7 +140,8 @@ typedef struct cook {
     int                 discarded_packets;
 
     /* transform data */
-    FFTContext          mdct_ctx;
+    AVTXContext        *mdct_ctx;
+    av_tx_fn            mdct_fn;
     float*              mlt_window;
 
     /* VLC data */
@@ -248,6 +249,7 @@ static av_cold int init_cook_mlt(COOKContext *q)
 {
     int j, ret;
     int mlt_size = q->samples_per_channel;
+    const float scale = 1.0 / 32768.0;
 
     if (!(q->mlt_window = av_malloc_array(mlt_size, sizeof(*q->mlt_window))))
         return AVERROR(ENOMEM);
@@ -258,11 +260,10 @@ static av_cold int init_cook_mlt(COOKContext *q)
         q->mlt_window[j] *= sqrt(2.0 / q->samples_per_channel);
 
     /* Initialize the MDCT. */
-    ret = ff_mdct_init(&q->mdct_ctx, av_log2(mlt_size) + 1, 1, 1.0 / 32768.0);
+    ret = av_tx_init(&q->mdct_ctx, &q->mdct_fn, AV_TX_FLOAT_MDCT,
+                     1, mlt_size, &scale, AV_TX_FULL_IMDCT);
     if (ret < 0)
         return ret;
-    av_log(q->avctx, AV_LOG_DEBUG, "MDCT initialized, order = %d.\n",
-           av_log2(mlt_size) + 1);
 
     return 0;
 }
@@ -336,7 +337,7 @@ static av_cold int cook_decode_close(AVCodecContext *avctx)
     av_freep(&q->decoded_bytes_buffer);
 
     /* Free the transform. */
-    ff_mdct_end(&q->mdct_ctx);
+    av_tx_uninit(&q->mdct_ctx);
 
     /* Free the VLC tables. */
     for (i = 0; i < 13; i++)
@@ -743,7 +744,7 @@ static void imlt_gain(COOKContext *q, float *inbuffer,
     int i;
 
     /* Inverse modified discrete cosine transform */
-    q->mdct_ctx.imdct_calc(&q->mdct_ctx, q->mono_mdct_output, inbuffer);
+    q->mdct_fn(q->mdct_ctx, q->mono_mdct_output, inbuffer, sizeof(float));
 
     q->imlt_window(q, buffer1, gains_ptr, previous_buffer);
 
