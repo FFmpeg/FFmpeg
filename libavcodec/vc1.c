@@ -632,8 +632,6 @@ int ff_vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
     v->fcm = PROGRESSIVE;
     if (v->finterpflag)
         v->interpfrm = get_bits1(gb);
-    if (!v->s.avctx->codec)
-        return -1;
     if (v->s.avctx->codec_id == AV_CODEC_ID_MSS2)
         v->respic   =
         v->rangered =
