@@ -25,8 +25,8 @@
 #include "codec_internal.h"
 #include "decode.h"
 #include "get_bits.h"
-#include "fft.h"
 #include "atrac9tab.h"
+#include "libavutil/tx.h"
 #include "libavutil/lfg.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/mem_internal.h"
@@ -86,7 +86,8 @@ typedef struct ATRAC9BlockData {
 typedef struct ATRAC9Context {
     AVCodecContext *avctx;
     AVFloatDSPContext *fdsp;
-    FFTContext imdct;
+    AVTXContext *tx;
+    av_tx_fn tx_fn;
     ATRAC9BlockData block[5];
     AVLFG lfg;
 
@@ -101,7 +102,7 @@ typedef struct ATRAC9Context {
     uint8_t alloc_curve[48][48];
     DECLARE_ALIGNED(32, float, imdct_win)[256];
 
-    DECLARE_ALIGNED(32, float, temp)[256];
+    DECLARE_ALIGNED(32, float, temp)[2048];
 } ATRAC9Context;
 
 static VLC sf_vlc[2][8];            /* Signed/unsigned, length */
@@ -778,7 +779,7 @@ imdct:
         const ptrdiff_t offset = wsize*frame_idx*sizeof(float);
         float *dst = (float *)(frame->extended_data[dst_idx] + offset);
 
-        s->imdct.imdct_half(&s->imdct, s->temp, c->coeffs);
+        s->tx_fn(s->tx, s->temp, c->coeffs, sizeof(float));
         s->fdsp->vector_fmul_window(dst, c->prev_win, s->temp,
                                     s->imdct_win, wsize >> 1);
         memcpy(c->prev_win, s->temp + (wsize >> 1), sizeof(float)*wsize >> 1);
@@ -834,7 +835,7 @@ static av_cold int atrac9_decode_close(AVCodecContext *avctx)
 {
     ATRAC9Context *s = avctx->priv_data;
 
-    ff_mdct_end(&s->imdct);
+    av_tx_uninit(&s->tx);
     av_freep(&s->fdsp);
 
     return 0;
@@ -896,10 +897,11 @@ static av_cold void atrac9_init_static(void)
 
 static av_cold int atrac9_decode_init(AVCodecContext *avctx)
 {
+    float scale;
     static AVOnce static_table_init = AV_ONCE_INIT;
     GetBitContext gb;
     ATRAC9Context *s = avctx->priv_data;
-    int version, block_config_idx, superframe_idx, alloc_c_len;
+    int err, version, block_config_idx, superframe_idx, alloc_c_len;
 
     s->avctx = avctx;
 
@@ -959,8 +961,11 @@ static av_cold int atrac9_decode_init(AVCodecContext *avctx)
     s->frame_count = 1 << superframe_idx;
     s->frame_log2  = at9_tab_sri_frame_log2[s->samplerate_idx];
 
-    if (ff_mdct_init(&s->imdct, s->frame_log2 + 1, 1, 1.0f / 32768.0f))
-        return AVERROR(ENOMEM);
+    scale = 1.0f / 32768.0;
+    err = av_tx_init(&s->tx, &s->tx_fn, AV_TX_FLOAT_MDCT, 1,
+                     1 << s->frame_log2, &scale, 0);
+    if (err < 0)
+        return err;
 
     s->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
     if (!s->fdsp)
