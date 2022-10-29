@@ -475,15 +475,15 @@ static void apply_window_and_mdct(AACEncContext *s, SingleChannelElement *sce,
                                   float *audio)
 {
     int i;
-    const float *output = sce->ret_buf;
+    float *output = sce->ret_buf;
 
     apply_window[sce->ics.window_sequence[0]](s->fdsp, sce, audio);
 
     if (sce->ics.window_sequence[0] != EIGHT_SHORT_SEQUENCE)
-        s->mdct1024.mdct_calc(&s->mdct1024, sce->coeffs, output);
+        s->mdct1024_fn(s->mdct1024, sce->coeffs, output, sizeof(float));
     else
         for (i = 0; i < 1024; i += 128)
-            s->mdct128.mdct_calc(&s->mdct128, &sce->coeffs[i], output + i*2);
+            s->mdct128_fn(s->mdct128, &sce->coeffs[i], output + i*2, sizeof(float));
     memcpy(audio, audio + 1024, sizeof(audio[0]) * 1024);
     memcpy(sce->pcoeffs, sce->coeffs, sizeof(sce->pcoeffs));
 }
@@ -939,7 +939,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             if (s->options.ltp && s->coder->update_ltp) {
                 s->coder->update_ltp(s, sce);
                 apply_window[sce->ics.window_sequence[0]](s->fdsp, sce, &sce->ltp_state[0]);
-                s->mdct1024.mdct_calc(&s->mdct1024, sce->lcoeffs, sce->ret_buf);
+                s->mdct1024_fn(s->mdct1024, sce->lcoeffs, sce->ret_buf, sizeof(float));
             }
 
             for (k = 0; k < 1024; k++) {
@@ -1176,8 +1176,8 @@ static av_cold int aac_encode_end(AVCodecContext *avctx)
 
     av_log(avctx, AV_LOG_INFO, "Qavg: %.3f\n", s->lambda_count ? s->lambda_sum / s->lambda_count : NAN);
 
-    ff_mdct_end(&s->mdct1024);
-    ff_mdct_end(&s->mdct128);
+    av_tx_uninit(&s->mdct1024);
+    av_tx_uninit(&s->mdct128);
     ff_psy_end(&s->psy);
     ff_lpc_end(&s->lpc);
     if (s->psypp)
@@ -1192,6 +1192,7 @@ static av_cold int aac_encode_end(AVCodecContext *avctx)
 static av_cold int dsp_init(AVCodecContext *avctx, AACEncContext *s)
 {
     int ret = 0;
+    float scale = 32768.0f;
 
     s->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
     if (!s->fdsp)
@@ -1200,9 +1201,11 @@ static av_cold int dsp_init(AVCodecContext *avctx, AACEncContext *s)
     // window init
     ff_aac_float_common_init();
 
-    if ((ret = ff_mdct_init(&s->mdct1024, 11, 0, 32768.0)) < 0)
+    if ((ret = av_tx_init(&s->mdct1024, &s->mdct1024_fn, AV_TX_FLOAT_MDCT, 0,
+                          1024, &scale, 0)) < 0)
         return ret;
-    if ((ret = ff_mdct_init(&s->mdct128,   8, 0, 32768.0)) < 0)
+    if ((ret = av_tx_init(&s->mdct128, &s->mdct128_fn,   AV_TX_FLOAT_MDCT, 0,
+                          128, &scale, 0)) < 0)
         return ret;
 
     return 0;

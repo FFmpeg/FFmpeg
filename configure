@@ -2765,7 +2765,7 @@ rdft_select="fft"
 # decoders / encoders
 aac_decoder_select="adts_header mpeg4audio sinewin"
 aac_fixed_decoder_select="adts_header mpeg4audio"
-aac_encoder_select="audio_frame_queue iirfilter lpc mdct sinewin"
+aac_encoder_select="audio_frame_queue iirfilter lpc sinewin"
 aac_latm_decoder_select="aac_decoder aac_latm_parser"
 ac3_decoder_select="ac3_parser ac3dsp bswapdsp fmtconvert"
 ac3_fixed_decoder_select="ac3_parser ac3dsp bswapdsp"

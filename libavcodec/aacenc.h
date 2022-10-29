@@ -109,8 +109,10 @@ typedef struct AACEncContext {
     AVClass *av_class;
     AACEncOptions options;                       ///< encoding options
     PutBitContext pb;
-    FFTContext mdct1024;                         ///< long (1024 samples) frame transform context
-    FFTContext mdct128;                          ///< short (128 samples) frame transform context
+    AVTXContext *mdct1024;                       ///< long (1024 samples) frame transform context
+    av_tx_fn mdct1024_fn;
+    AVTXContext *mdct128;                        ///< short (128 samples) frame transform context
+    av_tx_fn mdct128_fn;
     AVFloatDSPContext *fdsp;
     AACPCEInfo pce;                              ///< PCE data, if needed
     float *planar_samples[16];                   ///< saved preprocessed input
