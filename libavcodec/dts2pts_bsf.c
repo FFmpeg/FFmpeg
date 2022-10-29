@@ -505,7 +505,8 @@ static void dts2pts_flush(AVBSFContext *ctx)
     s->root = NULL;
 
     ff_cbs_fragment_reset(&s->au);
-    ff_cbs_flush(s->cbc);
+    if (s->cbc)
+        ff_cbs_flush(s->cbc);
 }
 
 static void dts2pts_close(AVBSFContext *ctx)
