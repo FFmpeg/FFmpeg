@@ -933,8 +933,6 @@ int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
     v->rnd = get_bits1(gb);
     if (v->interlace)
         v->uvsamp = get_bits1(gb);
-    if(!ff_vc1_bfraction_vlc.table)
-        return 0; //parsing only, vlc tables havnt been allocated
     if (v->field_mode) {
         if (!v->refdist_flag)
             v->refdist = 0;
