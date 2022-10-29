@@ -1017,7 +1017,7 @@ static int read_block(ALSDecContext *ctx, ALSBlockData *bd)
 
     *bd->shift_lsbs = 0;
 
-    if (get_bits_left(gb) < 1)
+    if (get_bits_left(gb) < 7)
         return AVERROR_INVALIDDATA;
 
     // read block type flag and read the samples accordingly
