@@ -24,13 +24,13 @@
 #include "libavutil/mem.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/opt.h"
+#include "libavutil/tx.h"
 
 #include "codec_internal.h"
 #include "decode.h"
 #include "get_bits.h"
 #include "dolby_e.h"
 #include "kbdwin.h"
-#include "fft.h"
 
 #define MAX_SEGMENTS    2
 
@@ -85,7 +85,8 @@ typedef struct DBEDecodeContext {
 
     DECLARE_ALIGNED(32, float, history)[MAX_CHANNELS][256];
 
-    FFTContext          imdct[3];
+    AVTXContext         *imdct[2][3];
+    av_tx_fn             imdct_fn[2][3];
     AVFloatDSPContext   *fdsp;
 } DBEDecodeContext;
 
@@ -989,23 +990,23 @@ static int parse_meter(DBEDecodeContext *s1)
 
 static void imdct_calc(DBEDecodeContext *s1, DBEGroup *g, float *result, float *values)
 {
-    FFTContext *imdct = &s1->imdct[g->imdct_idx];
+    AVTXContext *imdct = s1->imdct[g->imdct_phs == 1][g->imdct_idx];
+    av_tx_fn  imdct_fn = s1->imdct_fn[g->imdct_phs == 1][g->imdct_idx];
     int n   = 1 << imdct_bits_tab[g->imdct_idx];
     int n2  = n >> 1;
-    int i;
 
     switch (g->imdct_phs) {
     case 0:
-        imdct->imdct_half(imdct, result, values);
-        for (i = 0; i < n2; i++)
+        imdct_fn(imdct, result, values, sizeof(float));
+        for (int i = 0; i < n2; i++)
             result[n2 + i] = result[n2 - i - 1];
         break;
     case 1:
-        imdct->imdct_calc(imdct, result, values);
+        imdct_fn(imdct, result, values, sizeof(float));
         break;
     case 2:
-        imdct->imdct_half(imdct, result + n2, values);
-        for (i = 0; i < n2; i++)
+        imdct_fn(imdct, result + n2, values, sizeof(float));
+        for (int i = 0; i < n2; i++)
             result[i] = -result[n - i - 1];
         break;
     default:
@@ -1152,10 +1153,11 @@ static av_cold void dolby_e_flush(AVCodecContext *avctx)
 static av_cold int dolby_e_close(AVCodecContext *avctx)
 {
     DBEDecodeContext *s = avctx->priv_data;
-    int i;
 
-    for (i = 0; i < 3; i++)
-        ff_mdct_end(&s->imdct[i]);
+    for (int i = 0; i < 3; i++) {
+        av_tx_uninit(&s->imdct[0][i]);
+        av_tx_uninit(&s->imdct[1][i]);
+    }
 
     av_freep(&s->fdsp);
     return 0;
@@ -1252,14 +1254,20 @@ static av_cold int dolby_e_init(AVCodecContext *avctx)
 {
     static AVOnce init_once = AV_ONCE_INIT;
     DBEDecodeContext *s = avctx->priv_data;
-    int i;
+    float scale = 2.0f;
+    int ret;
 
     if (ff_thread_once(&init_once, init_tables))
         return AVERROR_UNKNOWN;
 
-    for (i = 0; i < 3; i++)
-        if (ff_mdct_init(&s->imdct[i], imdct_bits_tab[i], 1, 2.0) < 0)
-            return AVERROR(ENOMEM);
+    for (int i = 0; i < 3; i++) {
+        if ((ret = av_tx_init(&s->imdct[0][i], &s->imdct_fn[0][i], AV_TX_FLOAT_MDCT,
+                              1, 1 << imdct_bits_tab[i] - 1, &scale, 0)) < 0)
+            return ret;
+        if ((ret = av_tx_init(&s->imdct[1][i], &s->imdct_fn[1][i], AV_TX_FLOAT_MDCT,
+                              1, 1 << imdct_bits_tab[i] - 1, &scale, AV_TX_FULL_IMDCT)) < 0)
+            return ret;
+    }
 
     if (!(s->fdsp = avpriv_float_dsp_alloc(0)))
         return AVERROR(ENOMEM);
