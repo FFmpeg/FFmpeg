@@ -26,10 +26,11 @@
 #include <stdint.h>
 
 #include "libavutil/attributes_internal.h"
+#include "libavutil/tx.h"
 #include "libavutil/common.h"
 #include "libavutil/float_dsp.h"
 #include "avcodec.h"
-#include "fft.h"
+#include "internal.h"
 
 enum TwinVQCodec {
     TWINVQ_CODEC_VQF,
@@ -137,7 +138,8 @@ typedef struct TwinVQModeTab {
 typedef struct TwinVQContext {
     AVCodecContext *avctx;
     AVFloatDSPContext *fdsp;
-    FFTContext mdct_ctx[3];
+    AVTXContext *tx[3];
+    av_tx_fn tx_fn[3];
 
     const TwinVQModeTab *mtab;
 
