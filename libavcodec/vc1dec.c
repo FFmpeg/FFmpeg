@@ -1060,9 +1060,6 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
         s->current_picture_ptr->f->repeat_pict = v->rptfrm * 2;
     }
 
-    s->me.qpel_put = s->qdsp.put_qpel_pixels_tab;
-    s->me.qpel_avg = s->qdsp.avg_qpel_pixels_tab;
-
     if (avctx->hwaccel) {
         s->mb_y = 0;
         if (v->field_mode && buf_start_second_field) {

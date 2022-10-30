@@ -145,17 +145,19 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
                 }
             } else {
                 op_pixels_func (*op_pix)[4];
-                qpel_mc_func (*op_qpix)[16] = s->me.qpel_put;
+                qpel_mc_func (*op_qpix)[16];
 
                 if ((is_mpeg12 == DEFINITELY_MPEG12 || !s->no_rounding) || s->pict_type == AV_PICTURE_TYPE_B) {
                     op_pix = s->hdsp.put_pixels_tab;
+                    op_qpix = s->qdsp.put_qpel_pixels_tab;
                 } else {
                     op_pix = s->hdsp.put_no_rnd_pixels_tab;
+                    op_qpix = s->qdsp.put_no_rnd_qpel_pixels_tab;
                 }
                 if (s->mv_dir & MV_DIR_FORWARD) {
                     ff_mpv_motion(s, dest_y, dest_cb, dest_cr, 0, s->last_picture.f->data, op_pix, op_qpix);
                     op_pix  = s->hdsp.avg_pixels_tab;
-                    op_qpix = s->me.qpel_avg;
+                    op_qpix = s->qdsp.avg_qpel_pixels_tab;
                 }
                 if (s->mv_dir & MV_DIR_BACKWARD) {
                     ff_mpv_motion(s, dest_y, dest_cb, dest_cr, 1, s->next_picture.f->data, op_pix, op_qpix);

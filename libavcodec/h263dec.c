@@ -597,14 +597,6 @@ retry:
         avctx->skip_frame >= AVDISCARD_ALL)
         return get_consumed_bytes(s, buf_size);
 
-    if ((!s->no_rounding) || s->pict_type == AV_PICTURE_TYPE_B) {
-        s->me.qpel_put = s->qdsp.put_qpel_pixels_tab;
-        s->me.qpel_avg = s->qdsp.avg_qpel_pixels_tab;
-    } else {
-        s->me.qpel_put = s->qdsp.put_no_rnd_qpel_pixels_tab;
-        s->me.qpel_avg = s->qdsp.avg_qpel_pixels_tab;
-    }
-
     if ((ret = ff_mpv_frame_start(s, avctx)) < 0)
         return ret;
 

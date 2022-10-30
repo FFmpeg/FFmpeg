@@ -855,10 +855,6 @@ static av_cold int wmv9_init(AVCodecContext *avctx)
     if (ret < 0)
         return ret;
 
-    /* error concealment */
-    v->s.me.qpel_put = v->s.qdsp.put_qpel_pixels_tab;
-    v->s.me.qpel_avg = v->s.qdsp.avg_qpel_pixels_tab;
-
     return 0;
 }
 
