@@ -40,6 +40,7 @@
 #include "msmpeg4data.h"
 #include "msmpeg4dec.h"
 #include "profiles.h"
+#include "simple_idct.h"
 #include "vc1.h"
 #include "vc1data.h"
 #include "libavutil/avassert.h"
@@ -562,6 +563,14 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
         memcpy(v->zz_8x8, ff_wmv1_scantable, 4*64);
         v->left_blk_sh = 3;
         v->top_blk_sh  = 0;
+        v->vc1dsp.vc1_inv_trans_8x8    = ff_simple_idct_int16_8bit;
+        v->vc1dsp.vc1_inv_trans_8x4    = ff_simple_idct84_add;
+        v->vc1dsp.vc1_inv_trans_4x8    = ff_simple_idct48_add;
+        v->vc1dsp.vc1_inv_trans_4x4    = ff_simple_idct44_add;
+        v->vc1dsp.vc1_inv_trans_8x8_dc = ff_simple_idct_add_int16_8bit;
+        v->vc1dsp.vc1_inv_trans_8x4_dc = ff_simple_idct84_add;
+        v->vc1dsp.vc1_inv_trans_4x8_dc = ff_simple_idct48_add;
+        v->vc1dsp.vc1_inv_trans_4x4_dc = ff_simple_idct44_add;
     }
 
     if (avctx->codec_id == AV_CODEC_ID_WMV3IMAGE || avctx->codec_id == AV_CODEC_ID_VC1IMAGE) {

@@ -1169,7 +1169,7 @@ OBJS-$(CONFIG_SBC_PARSER)              += sbc_parser.o
 OBJS-$(CONFIG_SIPR_PARSER)             += sipr_parser.o
 OBJS-$(CONFIG_TAK_PARSER)              += tak_parser.o tak.o
 OBJS-$(CONFIG_VC1_PARSER)              += vc1_parser.o vc1.o vc1data.o  \
-                                          simple_idct.o wmv2data.o
+                                          wmv2data.o
 OBJS-$(CONFIG_VP3_PARSER)              += vp3_parser.o
 OBJS-$(CONFIG_VP8_PARSER)              += vp8_parser.o
 OBJS-$(CONFIG_VP9_PARSER)              += vp9_parser.o
