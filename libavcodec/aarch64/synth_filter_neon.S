@@ -43,8 +43,8 @@
 .endm
 
 function ff_synth_filter_float_neon, export=1
+        mov             x9,  x7                 // imdct_fn parameter
         ldr             w7,  [x2]               // *synth_buf_offset
-        ldr             x9,  [x0, #IMDCT_HALF]  // imdct_half function pointer
         sxtw            x7,  w7
         stp             x3,  x4,  [sp, #-64]!
         add             x1,  x1,  x7,  lsl #2   // synth_buf
@@ -58,6 +58,7 @@ function ff_synth_filter_float_neon, export=1
         str             s0,  [sp, #48]
 
         mov             x2,  x6                 // in
+        mov             x3,  #4                 // sizeof(float)
 
         blr             x9
 

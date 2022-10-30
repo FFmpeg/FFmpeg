@@ -26,6 +26,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/mem_internal.h"
+#include "libavutil/tx.h"
 
 #include "libavcodec/dcadata.h"
 #include "libavcodec/synth_filter.h"
@@ -45,10 +46,12 @@
 
 void checkasm_check_synth_filter(void)
 {
-    FFTContext imdct;
+    float scale = 1.0;
+    AVTXContext *imdct;
+    av_tx_fn imdct_fn;
     SynthFilterContext synth;
 
-    ff_mdct_init(&imdct, 6, 1, 1.0);
+    av_tx_init(&imdct, &imdct_fn, AV_TX_FLOAT_MDCT, 0, 16, &scale, 0);
     ff_synth_filter_init(&synth);
 
     if (check_func(synth.synth_filter_float, "synth_filter_float")) {
@@ -65,8 +68,8 @@ void checkasm_check_synth_filter(void)
         float scale = 1.0f;
         int i, offset0 = 0, offset1 = 0, offset_b = 0;
 
-        declare_func(void, FFTContext *, float *, int *, float[32], const float[512],
-                     float[32], float[32], float);
+        declare_func(void, AVTXContext *, float *, int *,
+                     float[32], const float[512], float[32], float[32], float, av_tx_fn);
 
         memset(buf2_0, 0, sizeof(*buf2_0) * BUF_SIZE);
         memset(buf2_1, 0, sizeof(*buf2_1) * BUF_SIZE);
@@ -86,10 +89,10 @@ void checkasm_check_synth_filter(void)
 
             randomize_input();
 
-            call_ref(&imdct, buf0, &offset0, buf2_0, window,
-                     out0, in, scale);
-            call_new(&imdct, buf1, &offset1, buf2_1, window,
-                     out1, in, scale);
+            call_ref(imdct, buf0, &offset0, buf2_0, window,
+                     out0, in, scale, imdct_fn);
+            call_new(imdct, buf1, &offset1, buf2_1, window,
+                     out1, in, scale, imdct_fn);
 
             if (offset0 != offset1) {
                 fail();
@@ -113,11 +116,11 @@ void checkasm_check_synth_filter(void)
                 }
             }
 
-            bench_new(&imdct, buf_b, &offset_b, buf2_b, window,
-                      out_b, in, scale);
+            bench_new(imdct, buf_b, &offset_b, buf2_b, window,
+                      out_b, in, scale, imdct_fn);
         }
     }
-    ff_mdct_end(&imdct);
+    av_tx_uninit(&imdct);
 
     report("synth_filter");
 }

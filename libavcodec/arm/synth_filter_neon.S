@@ -31,10 +31,13 @@ function ff_synth_filter_float_neon, export=1
         str             r12, [r2]
 
         ldr             r2,  [sp, #12*4]        @ in
+VFP     ldr             r12, [sp, #13*4]        @ imdct_fn
+NOVFP   ldr             r12, [sp, #14*4]        @ imdct_fn
+        mov             r3,  #4                 @ sizeof(float)
         mov             r9,  r1                 @ synth_buf
 
 VFP     vpush           {d0}
-        bl              X(ff_imdct_half_neon)
+        blx             r12
 VFP     vpop            {d0}
         pop             {r3}
 

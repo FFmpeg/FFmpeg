@@ -22,8 +22,8 @@
 #define AVCODEC_DCADSP_H
 
 #include "libavutil/common.h"
+#include "libavutil/tx.h"
 
-#include "fft.h"
 #include "dcadct.h"
 #include "synth_filter.h"
 
@@ -47,7 +47,8 @@ typedef struct DCADSPContext {
                           float *hist, ptrdiff_t len);
 
     void (*sub_qmf_float[2])(SynthFilterContext *synth,
-                             FFTContext *imdct,
+                             AVTXContext *imdct,
+                             av_tx_fn imdct_fn,
                              float *pcm_samples,
                              int32_t **subband_samples_lo,
                              int32_t **subband_samples_hi,

@@ -24,15 +24,16 @@
 #include "dcamath.h"
 #include "synth_filter.h"
 
-static void synth_filter_float(FFTContext *imdct,
+static void synth_filter_float(AVTXContext *imdct,
                                float *synth_buf_ptr, int *synth_buf_offset,
                                float synth_buf2[32], const float window[512],
-                               float out[32], const float in[32], float scale)
+                               float out[32], float in[32], float scale,
+                               av_tx_fn imdct_fn)
 {
     float *synth_buf = synth_buf_ptr + *synth_buf_offset;
     int i, j;
 
-    imdct->imdct_half(imdct, synth_buf, in);
+    imdct_fn(imdct, synth_buf, in, sizeof(float));
 
     for (i = 0; i < 16; i++) {
         float a = synth_buf2[i     ];
@@ -60,15 +61,16 @@ static void synth_filter_float(FFTContext *imdct,
     *synth_buf_offset = (*synth_buf_offset - 32) & 511;
 }
 
-static void synth_filter_float_64(FFTContext *imdct,
+static void synth_filter_float_64(AVTXContext *imdct,
                                   float *synth_buf_ptr, int *synth_buf_offset,
                                   float synth_buf2[64], const float window[1024],
-                                  float out[64], const float in[64], float scale)
+                                  float out[64], float in[64], float scale,
+                                  av_tx_fn imdct_fn)
 {
     float *synth_buf = synth_buf_ptr + *synth_buf_offset;
     int i, j;
 
-    imdct->imdct_half(imdct, synth_buf, in);
+    imdct_fn(imdct, synth_buf, in, sizeof(float));
 
     for (i = 0; i < 32; i++) {
         float a = synth_buf2[i     ];

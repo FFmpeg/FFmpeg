@@ -27,14 +27,15 @@
 void ff_synth_filter_inner_##opt(float *synth_buf_ptr, float synth_buf2[32],   \
                                  const float window[512],                      \
                                  float out[32], intptr_t offset, float scale); \
-static void synth_filter_##opt(FFTContext *imdct,                              \
+static void synth_filter_##opt(AVTXContext *imdct,                             \
                                float *synth_buf_ptr, int *synth_buf_offset,    \
                                float synth_buf2[32], const float window[512],  \
-                               float out[32], const float in[32], float scale) \
+                               float out[32], float in[32], float scale,       \
+                               av_tx_fn imdct_fn)                              \
 {                                                                              \
     float *synth_buf= synth_buf_ptr + *synth_buf_offset;                       \
                                                                                \
-    imdct->imdct_half(imdct, synth_buf, in);                                   \
+    imdct_fn(imdct, synth_buf, in, sizeof(float));                             \
                                                                                \
     ff_synth_filter_inner_##opt(synth_buf, synth_buf2, window,                 \
                                 out, *synth_buf_offset, scale);                \
