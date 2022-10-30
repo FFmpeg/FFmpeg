@@ -39,12 +39,12 @@
 #include "libavutil/float_dsp.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/thread.h"
+#include "libavutil/tx.h"
 
 #include "audio_frame_queue.h"
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "encode.h"
-#include "fft.h"
 #include "nellymoser.h"
 #include "sinewin.h"
 
@@ -59,7 +59,8 @@ typedef struct NellyMoserEncodeContext {
     AVCodecContext  *avctx;
     int             last_frame;
     AVFloatDSPContext *fdsp;
-    FFTContext      mdct_ctx;
+    AVTXContext    *mdct_ctx;
+    av_tx_fn        mdct_fn;
     AudioFrameQueue afq;
     DECLARE_ALIGNED(32, float, mdct_out)[NELLY_SAMPLES];
     DECLARE_ALIGNED(32, float, in_buff)[NELLY_SAMPLES];
@@ -126,18 +127,18 @@ static void apply_mdct(NellyMoserEncodeContext *s)
 
     s->fdsp->vector_fmul        (s->in_buff,                 in0, ff_sine_128, NELLY_BUF_LEN);
     s->fdsp->vector_fmul_reverse(s->in_buff + NELLY_BUF_LEN, in1, ff_sine_128, NELLY_BUF_LEN);
-    s->mdct_ctx.mdct_calc(&s->mdct_ctx, s->mdct_out, s->in_buff);
+    s->mdct_fn(s->mdct_ctx, s->mdct_out, s->in_buff, sizeof(float));
 
     s->fdsp->vector_fmul        (s->in_buff,                 in1, ff_sine_128, NELLY_BUF_LEN);
     s->fdsp->vector_fmul_reverse(s->in_buff + NELLY_BUF_LEN, in2, ff_sine_128, NELLY_BUF_LEN);
-    s->mdct_ctx.mdct_calc(&s->mdct_ctx, s->mdct_out + NELLY_BUF_LEN, s->in_buff);
+    s->mdct_fn(s->mdct_ctx, s->mdct_out + NELLY_BUF_LEN, s->in_buff, sizeof(float));
 }
 
 static av_cold int encode_end(AVCodecContext *avctx)
 {
     NellyMoserEncodeContext *s = avctx->priv_data;
 
-    ff_mdct_end(&s->mdct_ctx);
+    av_tx_uninit(&s->mdct_ctx);
 
     av_freep(&s->opt);
     av_freep(&s->path);
@@ -169,6 +170,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 {
     static AVOnce init_static_once = AV_ONCE_INIT;
     NellyMoserEncodeContext *s = avctx->priv_data;
+    float scale = 32768.0;
     int ret;
 
     if (avctx->sample_rate != 8000 && avctx->sample_rate != 16000 &&
@@ -183,7 +185,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     avctx->initial_padding = NELLY_BUF_LEN;
     ff_af_queue_init(avctx, &s->afq);
     s->avctx = avctx;
-    if ((ret = ff_mdct_init(&s->mdct_ctx, 8, 0, 32768.0)) < 0)
+    if ((ret = av_tx_init(&s->mdct_ctx, &s->mdct_fn, AV_TX_FLOAT_MDCT, 0, 128, &scale, 0)) < 0)
         return ret;
     s->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
     if (!s->fdsp)
