@@ -540,6 +540,7 @@ static av_cold void vc1_init_static(void)
                  vc1_if_1mv_mbmode_bits[i],  1, 1,
                  vc1_if_1mv_mbmode_codes[i], 1, 1, INIT_VLC_USE_NEW_STATIC);
     }
+    ff_msmp4_vc1_vlcs_init_once();
 }
 
 /**
@@ -671,16 +672,6 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
         if (avctx->color_range == AVCOL_RANGE_UNSPECIFIED)
             avctx->color_range = AVCOL_RANGE_MPEG;
     }
-
-    // ensure static VLC tables are initialized
-    if ((ret = ff_msmpeg4_decode_init(avctx)) < 0)
-        return ret;
-    if ((ret = ff_vc1_decode_init_alloc_tables(v)) < 0)
-        return ret;
-    // Hack to ensure the above functions will be called
-    // again once we know all necessary settings.
-    // That this is necessary might indicate a bug.
-    ff_vc1_decode_end(avctx);
 
     ff_blockdsp_init(&s->bdsp);
     ff_h264chroma_init(&v->h264chroma, 8);
