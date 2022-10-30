@@ -59,7 +59,7 @@ enum {
 };
 
 #define NBITS 5
-#define HIST_SIZE (1<<(4*NBITS))
+#define HIST_SIZE (1<<(3*NBITS))
 
 typedef struct PaletteGenContext {
     const AVClass *class;
@@ -67,7 +67,6 @@ typedef struct PaletteGenContext {
     int max_colors;
     int reserve_transparent;
     int stats_mode;
-    int use_alpha;
 
     AVFrame *prev_frame;                    // previous frame used for the diff stats_mode
     struct hist_node histogram[HIST_SIZE];  // histogram/hashtable of the colors
@@ -89,7 +88,6 @@ static const AVOption palettegen_options[] = {
         { "full", "compute full frame histograms", 0, AV_OPT_TYPE_CONST, {.i64=STATS_MODE_ALL_FRAMES}, INT_MIN, INT_MAX, FLAGS, "mode" },
         { "diff", "compute histograms only for the part that differs from previous frame", 0, AV_OPT_TYPE_CONST, {.i64=STATS_MODE_DIFF_FRAMES}, INT_MIN, INT_MAX, FLAGS, "mode" },
         { "single", "compute new histogram for each frame", 0, AV_OPT_TYPE_CONST, {.i64=STATS_MODE_SINGLE_FRAMES}, INT_MIN, INT_MAX, FLAGS, "mode" },
-    { "use_alpha", "create a palette including alpha values", OFFSET(use_alpha), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, FLAGS },
     { NULL }
 };
 
@@ -115,16 +113,15 @@ static int cmp_##name(const void *pa, const void *pb)   \
 {                                                       \
     const struct color_ref * const *a = pa;             \
     const struct color_ref * const *b = pb;             \
-    return   (int)((*a)->color >> (8 * (3 - (pos))) & 0xff)  \
-           - (int)((*b)->color >> (8 * (3 - (pos))) & 0xff); \
+    return   (int)((*a)->color >> (8 * (2 - (pos))) & 0xff)  \
+           - (int)((*b)->color >> (8 * (2 - (pos))) & 0xff); \
 }
 
-DECLARE_CMP_FUNC(a, 0)
-DECLARE_CMP_FUNC(r, 1)
-DECLARE_CMP_FUNC(g, 2)
-DECLARE_CMP_FUNC(b, 3)
+DECLARE_CMP_FUNC(r, 0)
+DECLARE_CMP_FUNC(g, 1)
+DECLARE_CMP_FUNC(b, 2)
 
-static const cmp_func cmp_funcs[] = {cmp_a, cmp_r, cmp_g, cmp_b};
+static const cmp_func cmp_funcs[] = {cmp_r, cmp_g, cmp_b};
 
 /**
  * Simple color comparison for sorting the final palette
@@ -144,17 +141,6 @@ static av_always_inline int diff(const uint32_t a, const uint32_t b)
     const int dg = c1[1] - c2[1];
     const int db = c1[2] - c2[2];
     return dr*dr + dg*dg + db*db;
-}
-
-static av_always_inline int diff_alpha(const uint32_t a, const uint32_t b)
-{
-    const uint8_t c1[] = {a >> 24 & 0xff, a >> 16 & 0xff, a >> 8 & 0xff, a & 0xff};
-    const uint8_t c2[] = {b >> 24 & 0xff, b >> 16 & 0xff, b >> 8 & 0xff, b & 0xff};
-    const int da = c1[0] - c2[0];
-    const int dr = c1[1] - c2[1];
-    const int dg = c1[2] - c2[2];
-    const int db = c1[3] - c2[3];
-    return da*da + dr*dr + dg*dg + db*db;
 }
 
 /**
@@ -178,10 +164,7 @@ static int get_next_box_id_to_split(PaletteGenContext *s)
 
                 for (i = 0; i < box->len; i++) {
                     const struct color_ref *ref = s->refs[box->start + i];
-                    if (s->use_alpha)
-                        variance += (int64_t)diff_alpha(ref->color, box->color) * ref->count;
-                    else
-                        variance += (int64_t)diff(ref->color, box->color) * ref->count;
+                    variance += diff(ref->color, box->color) * ref->count;
                 }
                 box->variance = variance;
             }
@@ -201,30 +184,23 @@ static int get_next_box_id_to_split(PaletteGenContext *s)
  * specified box. Takes into account the weight of each color.
  */
 static uint32_t get_avg_color(struct color_ref * const *refs,
-                              const struct range_box *box, int use_alpha)
+                              const struct range_box *box)
 {
     int i;
     const int n = box->len;
-    uint64_t a = 0, r = 0, g = 0, b = 0, div = 0;
+    uint64_t r = 0, g = 0, b = 0, div = 0;
 
     for (i = 0; i < n; i++) {
         const struct color_ref *ref = refs[box->start + i];
-        if (use_alpha)
-            a += (ref->color >> 24 & 0xff) * ref->count;
-        r += (ref->color     >> 16 & 0xff) * ref->count;
-        g += (ref->color     >>  8 & 0xff) * ref->count;
-        b += (ref->color           & 0xff) * ref->count;
+        r += (ref->color >> 16 & 0xff) * ref->count;
+        g += (ref->color >>  8 & 0xff) * ref->count;
+        b += (ref->color       & 0xff) * ref->count;
         div += ref->count;
     }
 
-    if (use_alpha)
-        a = a / div;
     r = r / div;
     g = g / div;
     b = b / div;
-
-    if (use_alpha)
-        return a<<24 | r<<16 | g<<8 | b;
 
     return 0xffU<<24 | r<<16 | g<<8 | b;
 }
@@ -244,8 +220,8 @@ static void split_box(PaletteGenContext *s, struct range_box *box, int n)
     av_assert0(box->len     >= 1);
     av_assert0(new_box->len >= 1);
 
-    box->color     = get_avg_color(s->refs, box, s->use_alpha);
-    new_box->color = get_avg_color(s->refs, new_box, s->use_alpha);
+    box->color     = get_avg_color(s->refs, box);
+    new_box->color = get_avg_color(s->refs, new_box);
     box->variance     = -1;
     new_box->variance = -1;
 }
@@ -275,7 +251,7 @@ static void write_palette(AVFilterContext *ctx, AVFrame *out)
         pal += pal_linesize;
     }
 
-    if (s->reserve_transparent && !s->use_alpha) {
+    if (s->reserve_transparent) {
         av_assert0(s->nb_boxes < 256);
         pal[out->width - pal_linesize - 1] = AV_RB32(&s->transparency_color) >> 8;
     }
@@ -343,49 +319,40 @@ static AVFrame *get_palette_frame(AVFilterContext *ctx)
     box = &s->boxes[box_id];
     box->len = s->nb_refs;
     box->sorted_by = -1;
-    box->color = get_avg_color(s->refs, box, s->use_alpha);
+    box->color = get_avg_color(s->refs, box);
     box->variance = -1;
     s->nb_boxes = 1;
 
     while (box && box->len > 1) {
-        int i, ar, rr, gr, br, longest;
+        int i, rr, gr, br, longest;
         uint64_t median, box_weight = 0;
 
         /* compute the box weight (sum all the weights of the colors in the
          * range) and its boundings */
-        uint8_t min[4] = {0xff, 0xff, 0xff, 0xff};
-        uint8_t max[4] = {0x00, 0x00, 0x00, 0x00};
+        uint8_t min[3] = {0xff, 0xff, 0xff};
+        uint8_t max[3] = {0x00, 0x00, 0x00};
         for (i = box->start; i < box->start + box->len; i++) {
             const struct color_ref *ref = s->refs[i];
             const uint32_t rgb = ref->color;
-            const uint8_t a = rgb >> 24 & 0xff, r = rgb >> 16 & 0xff, g = rgb >> 8 & 0xff, b = rgb & 0xff;
-            min[0] = FFMIN(a, min[0]); max[0] = FFMAX(a, max[0]);
-            min[1] = FFMIN(r, min[1]); max[1] = FFMAX(r, max[1]);
-            min[2] = FFMIN(g, min[2]); max[2] = FFMAX(g, max[2]);
-            min[3] = FFMIN(b, min[3]); max[3] = FFMAX(b, max[3]);
+            const uint8_t r = rgb >> 16 & 0xff, g = rgb >> 8 & 0xff, b = rgb & 0xff;
+            min[0] = FFMIN(r, min[0]), max[0] = FFMAX(r, max[0]);
+            min[1] = FFMIN(g, min[1]), max[1] = FFMAX(g, max[1]);
+            min[2] = FFMIN(b, min[2]), max[2] = FFMAX(b, max[2]);
             box_weight += ref->count;
         }
 
         /* define the axis to sort by according to the widest range of colors */
-        ar = max[0] - min[0];
-        rr = max[1] - min[1];
-        gr = max[2] - min[2];
-        br = max[3] - min[3];
-        longest = 2; // pick green by default (the color the eye is the most sensitive to)
-        if (s->use_alpha) {
-            if (ar >= rr && ar >= br && ar >= gr) longest = 0;
-            if (br >= rr && br >= gr && br >= ar) longest = 3;
-            if (rr >= gr && rr >= br && rr >= ar) longest = 1;
-            if (gr >= rr && gr >= br && gr >= ar) longest = 2; // prefer green again
-        } else {
-            if (br >= rr && br >= gr) longest = 3;
-            if (rr >= gr && rr >= br) longest = 1;
-            if (gr >= rr && gr >= br) longest = 2; // prefer green again
-        }
+        rr = max[0] - min[0];
+        gr = max[1] - min[1];
+        br = max[2] - min[2];
+        longest = 1; // pick green by default (the color the eye is the most sensitive to)
+        if (br >= rr && br >= gr) longest = 2;
+        if (rr >= gr && rr >= br) longest = 0;
+        if (gr >= rr && gr >= br) longest = 1; // prefer green again
 
-        ff_dlog(ctx, "box #%02X [%6d..%-6d] (%6d) w:%-6"PRIu64" ranges:[%2x %2x %2x %2x] sort by %c (already sorted:%c) ",
+        ff_dlog(ctx, "box #%02X [%6d..%-6d] (%6d) w:%-6"PRIu64" ranges:[%2x %2x %2x] sort by %c (already sorted:%c) ",
                 box_id, box->start, box->start + box->len - 1, box->len, box_weight,
-                ar, rr, gr, br, "argb"[longest], box->sorted_by == longest ? 'y' : 'n');
+                rr, gr, br, "rgb"[longest], box->sorted_by == longest ? 'y':'n');
 
         /* sort the range by its longest axis if it's not already sorted */
         if (box->sorted_by != longest) {
@@ -427,16 +394,11 @@ static AVFrame *get_palette_frame(AVFilterContext *ctx)
  * It keeps the NBITS least significant bit of each component to make it
  * "random" even if the scene doesn't have much different colors.
  */
-static inline unsigned color_hash(uint32_t color, int use_alpha)
+static inline unsigned color_hash(uint32_t color)
 {
     const uint8_t r = color >> 16 & ((1<<NBITS)-1);
     const uint8_t g = color >>  8 & ((1<<NBITS)-1);
     const uint8_t b = color       & ((1<<NBITS)-1);
-
-    if (use_alpha) {
-        const uint8_t a = color >> 24 & ((1 << NBITS) - 1);
-        return a << (NBITS * 3) | r << (NBITS * 2) | g << NBITS | b;
-    }
 
     return r << (NBITS * 2) | g << NBITS | b;
 }
@@ -444,10 +406,10 @@ static inline unsigned color_hash(uint32_t color, int use_alpha)
 /**
  * Locate the color in the hash table and increment its counter.
  */
-static int color_inc(struct hist_node *hist, uint32_t color, int use_alpha)
+static int color_inc(struct hist_node *hist, uint32_t color)
 {
     int i;
-    const unsigned hash = color_hash(color, use_alpha);
+    const unsigned hash = color_hash(color);
     struct hist_node *node = &hist[hash];
     struct color_ref *e;
 
@@ -472,7 +434,7 @@ static int color_inc(struct hist_node *hist, uint32_t color, int use_alpha)
  * Update histogram when pixels differ from previous frame.
  */
 static int update_histogram_diff(struct hist_node *hist,
-                                 const AVFrame *f1, const AVFrame *f2, int use_alpha)
+                                 const AVFrame *f1, const AVFrame *f2)
 {
     int x, y, ret, nb_diff_colors = 0;
 
@@ -483,7 +445,7 @@ static int update_histogram_diff(struct hist_node *hist,
         for (x = 0; x < f1->width; x++) {
             if (p[x] == q[x])
                 continue;
-            ret = color_inc(hist, p[x], use_alpha);
+            ret = color_inc(hist, p[x]);
             if (ret < 0)
                 return ret;
             nb_diff_colors += ret;
@@ -495,7 +457,7 @@ static int update_histogram_diff(struct hist_node *hist,
 /**
  * Simple histogram of the frame.
  */
-static int update_histogram_frame(struct hist_node *hist, const AVFrame *f, int use_alpha)
+static int update_histogram_frame(struct hist_node *hist, const AVFrame *f)
 {
     int x, y, ret, nb_diff_colors = 0;
 
@@ -503,7 +465,7 @@ static int update_histogram_frame(struct hist_node *hist, const AVFrame *f, int 
         const uint32_t *p = (const uint32_t *)(f->data[0] + y*f->linesize[0]);
 
         for (x = 0; x < f->width; x++) {
-            ret = color_inc(hist, p[x], use_alpha);
+            ret = color_inc(hist, p[x]);
             if (ret < 0)
                 return ret;
             nb_diff_colors += ret;
@@ -519,8 +481,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
     PaletteGenContext *s = ctx->priv;
-    int ret = s->prev_frame ? update_histogram_diff(s->histogram, s->prev_frame, in, s->use_alpha)
-                            : update_histogram_frame(s->histogram, in, s->use_alpha);
+    int ret = s->prev_frame ? update_histogram_diff(s->histogram, s->prev_frame, in)
+                            : update_histogram_frame(s->histogram, in);
 
     if (ret > 0)
         s->nb_refs += ret;
@@ -582,9 +544,6 @@ static int config_output(AVFilterLink *outlink)
 static int init(AVFilterContext *ctx)
 {
     PaletteGenContext* s = ctx->priv;
-
-    if (s->use_alpha && s->reserve_transparent)
-        s->reserve_transparent = 0;
 
     if (s->max_colors - s->reserve_transparent < 2) {
         av_log(ctx, AV_LOG_ERROR, "max_colors=2 is only allowed without reserving a transparent color slot\n");
