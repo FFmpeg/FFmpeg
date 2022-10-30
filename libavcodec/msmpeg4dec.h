@@ -27,7 +27,6 @@
 
 #define INTER_INTRA_VLC_BITS 3
 #define MB_NON_INTRA_VLC_BITS 9
-#define MB_INTRA_VLC_BITS 9
 
 extern VLC ff_mb_non_intra_vlc[4];
 extern VLC ff_inter_intra_vlc;

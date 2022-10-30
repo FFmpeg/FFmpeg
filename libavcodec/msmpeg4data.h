@@ -48,7 +48,9 @@ typedef struct MVTable {
 } MVTable;
 
 FF_VISIBILITY_PUSH_HIDDEN
+#define MSMP4_MB_INTRA_VLC_BITS 9
 extern VLC ff_msmp4_mb_i_vlc;
+#define MSMP4_DC_VLC_BITS 9
 extern VLC ff_msmp4_dc_luma_vlc[2];
 extern VLC ff_msmp4_dc_chroma_vlc[2];
 

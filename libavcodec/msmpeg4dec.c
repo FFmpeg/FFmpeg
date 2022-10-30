@@ -37,7 +37,6 @@
 #include "mpeg4videodec.h"
 #include "msmpeg4data.h"
 
-#define DC_VLC_BITS 9
 #define V2_INTRA_CBPC_VLC_BITS 3
 #define V2_MB_TYPE_VLC_BITS 7
 #define MV_VLC_BITS 9
@@ -237,7 +236,7 @@ static int msmpeg4v34_decode_mb(MpegEncContext *s, int16_t block[6][64])
         cbp = code & 0x3f;
     } else {
         s->mb_intra = 1;
-        code = get_vlc2(&s->gb, ff_msmp4_mb_i_vlc.table, MB_INTRA_VLC_BITS, 2);
+        code = get_vlc2(&s->gb, ff_msmp4_mb_i_vlc.table, MSMP4_MB_INTRA_VLC_BITS, 2);
         /* predict coded block pattern */
         cbp = 0;
         for(i=0;i<6;i++) {
@@ -317,23 +316,23 @@ static av_cold void msmpeg4_decode_init_static(void)
                     mv->table_mv_bits, 1, 1,
                     mv->table_mv_code, 2, 2, 2694);
 
-    INIT_VLC_STATIC(&ff_msmp4_dc_luma_vlc[0], DC_VLC_BITS, 120,
+    INIT_VLC_STATIC(&ff_msmp4_dc_luma_vlc[0], MSMP4_DC_VLC_BITS, 120,
                     &ff_table0_dc_lum[0][1], 8, 4,
                     &ff_table0_dc_lum[0][0], 8, 4, 1158);
-    INIT_VLC_STATIC(&ff_msmp4_dc_chroma_vlc[0], DC_VLC_BITS, 120,
+    INIT_VLC_STATIC(&ff_msmp4_dc_chroma_vlc[0], MSMP4_DC_VLC_BITS, 120,
                     &ff_table0_dc_chroma[0][1], 8, 4,
                     &ff_table0_dc_chroma[0][0], 8, 4, 1118);
-    INIT_VLC_STATIC(&ff_msmp4_dc_luma_vlc[1], DC_VLC_BITS, 120,
+    INIT_VLC_STATIC(&ff_msmp4_dc_luma_vlc[1], MSMP4_DC_VLC_BITS, 120,
                     &ff_table1_dc_lum[0][1], 8, 4,
                     &ff_table1_dc_lum[0][0], 8, 4, 1476);
-    INIT_VLC_STATIC(&ff_msmp4_dc_chroma_vlc[1], DC_VLC_BITS, 120,
+    INIT_VLC_STATIC(&ff_msmp4_dc_chroma_vlc[1], MSMP4_DC_VLC_BITS, 120,
                     &ff_table1_dc_chroma[0][1], 8, 4,
                     &ff_table1_dc_chroma[0][0], 8, 4, 1216);
 
-    INIT_VLC_STATIC(&v2_dc_lum_vlc, DC_VLC_BITS, 512,
+    INIT_VLC_STATIC(&v2_dc_lum_vlc, MSMP4_DC_VLC_BITS, 512,
                     &ff_v2_dc_lum_table[0][1], 8, 4,
                     &ff_v2_dc_lum_table[0][0], 8, 4, 1472);
-    INIT_VLC_STATIC(&v2_dc_chroma_vlc, DC_VLC_BITS, 512,
+    INIT_VLC_STATIC(&v2_dc_chroma_vlc, MSMP4_DC_VLC_BITS, 512,
                     &ff_v2_dc_chroma_table[0][1], 8, 4,
                     &ff_v2_dc_chroma_table[0][0], 8, 4, 1506);
 
@@ -355,7 +354,7 @@ static av_cold void msmpeg4_decode_init_static(void)
         offset += ff_mb_non_intra_vlc[i].table_size;
     }
 
-    INIT_VLC_STATIC(&ff_msmp4_mb_i_vlc, MB_INTRA_VLC_BITS, 64,
+    INIT_VLC_STATIC(&ff_msmp4_mb_i_vlc, MSMP4_MB_INTRA_VLC_BITS, 64,
                     &ff_msmp4_mb_i_table[0][1], 4, 2,
                     &ff_msmp4_mb_i_table[0][0], 4, 2, 536);
 
@@ -591,9 +590,9 @@ static int msmpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr)
 
     if(s->msmpeg4_version<=2){
         if (n < 4) {
-            level = get_vlc2(&s->gb, v2_dc_lum_vlc.table, DC_VLC_BITS, 3);
+            level = get_vlc2(&s->gb, v2_dc_lum_vlc.table, MSMP4_DC_VLC_BITS, 3);
         } else {
-            level = get_vlc2(&s->gb, v2_dc_chroma_vlc.table, DC_VLC_BITS, 3);
+            level = get_vlc2(&s->gb, v2_dc_chroma_vlc.table, MSMP4_DC_VLC_BITS, 3);
         }
         if (level < 0) {
             av_log(s->avctx, AV_LOG_ERROR, "illegal dc vlc\n");
@@ -603,9 +602,11 @@ static int msmpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr)
         level-=256;
     }else{  //FIXME optimize use unified tables & index
         if (n < 4) {
-            level = get_vlc2(&s->gb, ff_msmp4_dc_luma_vlc[s->dc_table_index].table, DC_VLC_BITS, 3);
+            level = get_vlc2(&s->gb, ff_msmp4_dc_luma_vlc[s->dc_table_index].table,
+                             MSMP4_DC_VLC_BITS, 3);
         } else {
-            level = get_vlc2(&s->gb, ff_msmp4_dc_chroma_vlc[s->dc_table_index].table, DC_VLC_BITS, 3);
+            level = get_vlc2(&s->gb, ff_msmp4_dc_chroma_vlc[s->dc_table_index].table,
+                             MSMP4_DC_VLC_BITS, 3);
         }
 
         if (level == DC_MAX) {
