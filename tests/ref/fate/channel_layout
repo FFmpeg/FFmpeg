@@ -25,6 +25,7 @@ hexagonal      FL+FR+FC+BL+BR+BC
 7.1(wide)      FL+FR+FC+LFE+BL+BR+FLC+FRC
 7.1(wide-side) FL+FR+FC+LFE+FLC+FRC+SL+SR
 octagonal      FL+FR+FC+BL+BR+BC+SL+SR
+cube           FL+FR+BL+BR+TFL+TFR+TBL+TBR
 hexadecagonal  FL+FR+FC+BL+BR+BC+SL+SR+TFL+TFC+TFR+TBL+TBC+TBR+WL+WR
 downmix        DL+DR
 22.2           FL+FR+FC+LFE+BL+BR+FLC+FRC+BC+SL+SR+TC+TFL+TFC+TFR+TBL+TBC+TBR+LFE2+TSL+TSR+BFC+BFL+BFR
