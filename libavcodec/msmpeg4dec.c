@@ -36,6 +36,7 @@
 #include "h263dec.h"
 #include "mpeg4videodec.h"
 #include "msmpeg4data.h"
+#include "msmpeg4_vc1_data.h"
 
 #define V2_INTRA_CBPC_VLC_BITS 3
 #define V2_MB_TYPE_VLC_BITS 7

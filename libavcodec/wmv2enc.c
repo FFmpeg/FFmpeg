@@ -26,6 +26,7 @@
 #include "msmpeg4.h"
 #include "msmpeg4enc.h"
 #include "msmpeg4data.h"
+#include "msmpeg4_vc1_data.h"
 #include "wmv2.h"
 #include "wmv2enc.h"
 

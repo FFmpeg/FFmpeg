@@ -38,6 +38,7 @@
 #include "libavutil/x86/asm.h"
 #include "mpeg4videodata.h"
 #include "msmpeg4data.h"
+#include "msmpeg4_vc1_data.h"
 #include "mpegvideodata.h"
 #include "vc1data.h"
 #include "libavutil/imgutils.h"

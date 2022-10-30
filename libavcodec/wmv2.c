@@ -21,7 +21,7 @@
 #include "avcodec.h"
 #include "idctdsp.h"
 #include "mpegvideo.h"
-#include "msmpeg4data.h"
+#include "msmpeg4_vc1_data.h"
 #include "wmv2.h"
 
 

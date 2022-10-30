@@ -26,7 +26,7 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "idctdsp.h"
-#include "msmpeg4data.h"
+#include "msmpeg4_vc1_data.h"
 #include "intrax8huf.h"
 #include "intrax8.h"
 #include "intrax8dsp.h"

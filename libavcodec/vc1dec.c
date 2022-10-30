@@ -37,7 +37,7 @@
 #include "mpeg_er.h"
 #include "mpegvideo.h"
 #include "mpegvideodec.h"
-#include "msmpeg4data.h"
+#include "msmpeg4_vc1_data.h"
 #include "msmpeg4dec.h"
 #include "profiles.h"
 #include "simple_idct.h"
