@@ -91,7 +91,8 @@ extern VLC ff_vc1_2ref_mvdata_vlc[8];
 
 extern VLC ff_vc1_ac_coeff_table[8];
 
-#define VC1_IF_MBMODE_VLC_BITS 5
+#define VC1_IF_MBMODE_VLC_BITS 5    // as a placeholder for VC1_IF_MMV_MBMODE_VLC_BITS
+                                    // or VC1_IF_1MV_MBMODE_VLC_BITS since they are the same
 //@}
 
 #define B_FRACTION_DEN  256
