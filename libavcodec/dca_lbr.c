@@ -953,12 +953,14 @@ static int parse_ts2_chunk(DCALbrDecoder *s, LBRChunk *chunk, int ch1, int ch2)
 static int init_sample_rate(DCALbrDecoder *s)
 {
     double scale = (-1.0 / (1 << 17)) * sqrt(1 << (2 - s->limited_range));
+    float scale_t = scale;
     int i, br_per_ch = s->bit_rate_scaled / s->nchannels_total;
     int ret;
 
-    ff_mdct_end(&s->imdct);
+    av_tx_uninit(&s->imdct);
 
-    ret = ff_mdct_init(&s->imdct, s->freq_range + 6, 1, scale);
+    ret = av_tx_init(&s->imdct, &s->imdct_fn, AV_TX_FLOAT_MDCT, 1,
+                     1 << (s->freq_range + 5), &scale_t, AV_TX_FULL_IMDCT);
     if (ret < 0)
         return ret;
 
@@ -1714,7 +1716,7 @@ static void transform_channel(DCALbrDecoder *s, int ch, float *output)
 
         base_func_synth(s, ch, values[0], sf);
 
-        s->imdct.imdct_calc(&s->imdct, result[0], values[0]);
+        s->imdct_fn(s->imdct, result[0], values[0], sizeof(float));
 
         // Long window and overlap-add
         s->fdsp->vector_fmul_add(output, result[0], s->window,
@@ -1834,5 +1836,5 @@ av_cold void ff_dca_lbr_close(DCALbrDecoder *s)
     s->ts_size = 0;
 
     av_freep(&s->fdsp);
-    ff_mdct_end(&s->imdct);
+    av_tx_uninit(&s->imdct);
 }

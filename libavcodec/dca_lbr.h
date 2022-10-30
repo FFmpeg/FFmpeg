@@ -23,13 +23,13 @@
 
 #include "libavutil/float_dsp.h"
 #include "libavutil/mem_internal.h"
+#include "libavutil/tx.h"
 
 #include "avcodec.h"
 #include "get_bits.h"
 #include "dca.h"
 #include "dca_exss.h"
 #include "dcadsp.h"
-#include "fft.h"
 
 #define DCA_LBR_CHANNELS        6
 #define DCA_LBR_CHANNELS_TOTAL  32
@@ -119,7 +119,8 @@ typedef struct DCALbrDecoder {
     DCALbrTone  tones[DCA_LBR_TONES];   ///< Circular buffer of tones
     int         ntones;                 ///< Circular buffer head position
 
-    FFTContext          imdct;
+    AVTXContext         *imdct;
+    av_tx_fn             imdct_fn;
     AVFloatDSPContext   *fdsp;
     DCADSPContext       *dcadsp;
 } DCALbrDecoder;
