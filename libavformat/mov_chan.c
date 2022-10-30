@@ -172,11 +172,7 @@ static const struct MovChannelLayoutMap mov_ch_layout_map_8ch[] = {
     { MOV_CH_LAYOUT_OCTAGONAL,           AV_CH_LAYOUT_OCTAGONAL },      // L, R, Rls, Rrs, C,  Cs,  Ls,  Rs
     { MOV_CH_LAYOUT_AAC_OCTAGONAL,       AV_CH_LAYOUT_OCTAGONAL },      // C, L, R,   Ls,  Rs, Rls, Rrs, Cs
 
-    { MOV_CH_LAYOUT_CUBE,                AV_CH_LAYOUT_QUAD     |        // L, R, Rls, Rrs, Vhl, Vhr, Rlt, Rrt
-                                         AV_CH_TOP_FRONT_LEFT  |
-                                         AV_CH_TOP_FRONT_RIGHT |
-                                         AV_CH_TOP_BACK_LEFT   |
-                                         AV_CH_TOP_BACK_RIGHT },
+    { MOV_CH_LAYOUT_CUBE,                AV_CH_LAYOUT_CUBE },           // L, R, Rls, Rrs, Vhl, Vhr, Rlt, Rrt
 
     { MOV_CH_LAYOUT_MPEG_7_1_A,          AV_CH_LAYOUT_7POINT1_WIDE },   // L,  R,  C,  LFE, Ls, Rs,  Lc, Rc
     { MOV_CH_LAYOUT_MPEG_7_1_B,          AV_CH_LAYOUT_7POINT1_WIDE },   // C,  Lc, Rc, L,   R,  Ls,  Rs, LFE
