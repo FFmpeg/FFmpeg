@@ -329,7 +329,7 @@ static void vc1_sprite_flush(AVCodecContext *avctx)
 
 #endif
 
-av_cold int ff_vc1_decode_init_alloc_tables(VC1Context *v)
+static av_cold int vc1_decode_init_alloc_tables(VC1Context *v)
 {
     MpegEncContext *s = &v->s;
     int i, ret = AVERROR(ENOMEM);
@@ -404,8 +404,22 @@ av_cold int ff_vc1_decode_init_alloc_tables(VC1Context *v)
     return 0;
 
 error:
-    ff_vc1_decode_end(s->avctx);
     return ret;
+}
+
+av_cold int ff_vc1_decode_init(AVCodecContext *avctx)
+{
+    int ret = ff_msmpeg4_decode_init(avctx);
+    VC1Context *const v = avctx->priv_data;
+    if (ret < 0)
+        return ret;
+
+    ret = vc1_decode_init_alloc_tables(v);
+    if (ret < 0) {
+        ff_vc1_decode_end(avctx);
+        return ret;
+    }
+    return 0;
 }
 
 av_cold void ff_vc1_init_transposed_scantables(VC1Context *v)
@@ -947,12 +961,9 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
     }
 
     if (!s->context_initialized) {
-        if ((ret = ff_msmpeg4_decode_init(avctx)) < 0)
+        ret = ff_vc1_decode_init(avctx);
+        if (ret < 0)
             goto err;
-        if ((ret = ff_vc1_decode_init_alloc_tables(v)) < 0) {
-            ff_mpv_common_end(s);
-            goto err;
-        }
 
         s->low_delay = !avctx->has_b_frames || v->res_sprite;
 

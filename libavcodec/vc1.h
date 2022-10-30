@@ -413,7 +413,7 @@ int ff_vc1_parse_frame_header    (VC1Context *v, GetBitContext *gb);
 int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext *gb);
 void ff_vc1_init_common(VC1Context *v);
 
-int  ff_vc1_decode_init_alloc_tables(VC1Context *v);
+int  ff_vc1_decode_init(AVCodecContext *avctx);
 void ff_vc1_init_transposed_scantables(VC1Context *v);
 int  ff_vc1_decode_end(AVCodecContext *avctx);
 void ff_vc1_decode_blocks(VC1Context *v);
