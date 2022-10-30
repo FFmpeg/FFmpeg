@@ -2977,7 +2977,6 @@ static void vc1_decode_skip_blocks(VC1Context *v)
         memcpy(s->dest[2], s->last_picture.f->data[2] + s->mb_y *  8 * s->uvlinesize, s->uvlinesize *  8);
         s->first_slice_line = 0;
     }
-    s->pict_type = AV_PICTURE_TYPE_P;
 }
 
 void ff_vc1_decode_blocks(VC1Context *v)
