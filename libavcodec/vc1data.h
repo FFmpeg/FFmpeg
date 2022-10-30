@@ -103,77 +103,7 @@ extern const int16_t ff_vc1_bfraction_lut[23];
 //Same as H.264
 extern const AVRational ff_vc1_pixel_aspect[16];
 
-/* BitPlane IMODE - such a small table... */
-extern const uint8_t ff_vc1_imode_codes[7];
-extern const uint8_t ff_vc1_imode_bits[7];
-
-/* Normal-2 imode */
-extern const uint8_t ff_vc1_norm2_codes[4];
-extern const uint8_t ff_vc1_norm2_bits[4];
-extern const uint16_t ff_vc1_norm6_codes[64];
-extern const uint8_t ff_vc1_norm6_bits[64];
-
-/* 4MV Block pattern VLC tables */
-extern const uint8_t ff_vc1_4mv_block_pattern_codes[4][16];
-extern const uint8_t ff_vc1_4mv_block_pattern_bits[4][16];
-
-/* 2MV Block pattern VLC tables */
-extern const uint8_t ff_vc1_2mv_block_pattern_codes[4][4];
-extern const uint8_t ff_vc1_2mv_block_pattern_bits[4][4];
-
 extern const uint8_t ff_wmv3_dc_scale_table[32];
-
-/* P-Picture CBPCY VLC tables */
-extern const uint16_t ff_vc1_cbpcy_p_codes[4][64];
-extern const uint8_t ff_vc1_cbpcy_p_bits[4][64];
-
-/* Interlaced CBPCY VLC tables (Table 124 - Table 131) */
-extern const uint16_t ff_vc1_icbpcy_p_codes[8][63];
-extern const uint8_t ff_vc1_icbpcy_p_bits[8][63];
-
-/* MacroBlock Transform Type: 7.1.3.11, p89
- * 8x8:B
- * 8x4:B:btm  8x4:B:top  8x4:B:both,
- * 4x8:B:right  4x8:B:left  4x8:B:both
- * 4x4:B  8x8:MB
- * 8x4:MB:btm  8x4:MB:top  8x4,MB,both
- * 4x8,MB,right  4x8,MB,left
- * 4x4,MB                               */
-extern const uint16_t ff_vc1_ttmb_codes[3][16];
-
-extern const uint8_t ff_vc1_ttmb_bits[3][16];
-
-/* TTBLK (Transform Type per Block) tables */
-extern const uint8_t ff_vc1_ttblk_codes[3][8];
-extern const uint8_t ff_vc1_ttblk_bits[3][8];
-
-/* SUBBLKPAT tables, p93-94, reordered */
-extern const uint8_t ff_vc1_subblkpat_codes[3][15];
-extern const uint8_t ff_vc1_subblkpat_bits[3][15];
-
-/* MV differential tables, p265 */
-extern const uint16_t ff_vc1_mv_diff_codes[4][73];
-extern const uint8_t ff_vc1_mv_diff_bits[4][73];
-
-/* Interlaced frame picture MBMODE VLC tables (p. 246, p. 360) */
-extern const uint16_t ff_vc1_intfr_4mv_mbmode_codes[4][15];
-extern const uint8_t ff_vc1_intfr_4mv_mbmode_bits[4][15];
-extern const uint8_t ff_vc1_intfr_non4mv_mbmode_codes[4][9];
-extern const uint8_t ff_vc1_intfr_non4mv_mbmode_bits[4][9];
-
-/* Interlaced field picture MBMODE VLC tables (p. 356 - 11.4.1, 11.4.2) */
-extern const uint8_t ff_vc1_if_mmv_mbmode_codes[8][8];
-extern const uint8_t ff_vc1_if_mmv_mbmode_bits[8][8];
-extern const uint8_t ff_vc1_if_1mv_mbmode_codes[8][6];
-extern const uint8_t ff_vc1_if_1mv_mbmode_bits[8][6];
-
-/* Interlaced frame/field picture MVDATA VLC tables */
-/* 1-reference tables */
-extern const uint32_t ff_vc1_1ref_mvdata_codes[4][72];
-extern const uint8_t ff_vc1_1ref_mvdata_bits[4][72];
-/* 2-reference tables */
-extern const uint32_t ff_vc1_2ref_mvdata_codes[8][126];
-extern const uint8_t ff_vc1_2ref_mvdata_bits[8][126];
 
 /* DC differentials low+hi-mo, p217 are the same as in msmpeg4data .h */
 
