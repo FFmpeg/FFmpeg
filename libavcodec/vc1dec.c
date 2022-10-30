@@ -43,7 +43,10 @@
 #include "simple_idct.h"
 #include "vc1.h"
 #include "vc1data.h"
+#include "vc1_vlc_data.h"
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
+#include "libavutil/thread.h"
 
 
 #if CONFIG_WMV3IMAGE_DECODER || CONFIG_VC1IMAGE_DECODER
@@ -418,6 +421,144 @@ av_cold void ff_vc1_init_transposed_scantables(VC1Context *v)
     }
     v->left_blk_sh = 0;
     v->top_blk_sh  = 3;
+}
+
+static const uint16_t vlc_offs[] = {
+        0,   520,   552,   616,  1128,  1160,  1224,  1740,  1772,  1836,  1900,  2436,
+     2986,  3050,  3610,  4154,  4218,  4746,  5326,  5390,  5902,  6554,  7658,  8342,
+     9304,  9988, 10630, 11234, 12174, 13006, 13560, 14232, 14786, 15432, 16350, 17522,
+    20372, 21818, 22330, 22394, 23166, 23678, 23742, 24820, 25332, 25396, 26460, 26980,
+    27048, 27592, 27600, 27608, 27616, 27624, 28224, 28258, 28290, 28802, 28834, 28866,
+    29378, 29412, 29444, 29960, 29994, 30026, 30538, 30572, 30604, 31120, 31154, 31186,
+    31714, 31746, 31778, 32306, 32340, 32372
+};
+
+static av_cold void vc1_init_static(void)
+{
+    static VLCElem vlc_table[32372];
+
+    INIT_VLC_STATIC(&ff_vc1_norm2_vlc, VC1_NORM2_VLC_BITS, 4,
+                    vc1_norm2_bits,  1, 1,
+                    vc1_norm2_codes, 1, 1, 1 << VC1_NORM2_VLC_BITS);
+    INIT_VLC_STATIC(&ff_vc1_norm6_vlc, VC1_NORM6_VLC_BITS, 64,
+                    vc1_norm6_bits,  1, 1,
+                    vc1_norm6_codes, 2, 2, 556);
+    INIT_VLC_STATIC(&ff_vc1_imode_vlc, VC1_IMODE_VLC_BITS, 7,
+                    vc1_imode_bits,  1, 1,
+                    vc1_imode_codes, 1, 1, 1 << VC1_IMODE_VLC_BITS);
+    for (int i = 0; i < 3; i++) {
+        ff_vc1_ttmb_vlc[i].table           = &vlc_table[vlc_offs[i * 3 + 0]];
+        ff_vc1_ttmb_vlc[i].table_allocated = vlc_offs[i * 3 + 1] - vlc_offs[i * 3 + 0];
+        init_vlc(&ff_vc1_ttmb_vlc[i], VC1_TTMB_VLC_BITS, 16,
+                 vc1_ttmb_bits[i],  1, 1,
+                 vc1_ttmb_codes[i], 2, 2, INIT_VLC_USE_NEW_STATIC);
+        ff_vc1_ttblk_vlc[i].table           = &vlc_table[vlc_offs[i * 3 + 1]];
+        ff_vc1_ttblk_vlc[i].table_allocated = vlc_offs[i * 3 + 2] - vlc_offs[i * 3 + 1];
+        init_vlc(&ff_vc1_ttblk_vlc[i], VC1_TTBLK_VLC_BITS, 8,
+                 vc1_ttblk_bits[i],  1, 1,
+                 vc1_ttblk_codes[i], 1, 1, INIT_VLC_USE_NEW_STATIC);
+        ff_vc1_subblkpat_vlc[i].table           = &vlc_table[vlc_offs[i * 3 + 2]];
+        ff_vc1_subblkpat_vlc[i].table_allocated = vlc_offs[i * 3 + 3] - vlc_offs[i * 3 + 2];
+        init_vlc(&ff_vc1_subblkpat_vlc[i], VC1_SUBBLKPAT_VLC_BITS, 15,
+                 vc1_subblkpat_bits[i],  1, 1,
+                 vc1_subblkpat_codes[i], 1, 1, INIT_VLC_USE_NEW_STATIC);
+    }
+    for (int i = 0; i < 4; i++) {
+        ff_vc1_4mv_block_pattern_vlc[i].table           = &vlc_table[vlc_offs[i * 3 + 9]];
+        ff_vc1_4mv_block_pattern_vlc[i].table_allocated = vlc_offs[i * 3 + 10] - vlc_offs[i * 3 + 9];
+        init_vlc(&ff_vc1_4mv_block_pattern_vlc[i], VC1_4MV_BLOCK_PATTERN_VLC_BITS, 16,
+                 vc1_4mv_block_pattern_bits[i],  1, 1,
+                 vc1_4mv_block_pattern_codes[i], 1, 1, INIT_VLC_USE_NEW_STATIC);
+        ff_vc1_cbpcy_p_vlc[i].table           = &vlc_table[vlc_offs[i * 3 + 10]];
+        ff_vc1_cbpcy_p_vlc[i].table_allocated = vlc_offs[i * 3 + 11] - vlc_offs[i * 3 + 10];
+        init_vlc(&ff_vc1_cbpcy_p_vlc[i], VC1_CBPCY_P_VLC_BITS, 64,
+                 vc1_cbpcy_p_bits[i],  1, 1,
+                 vc1_cbpcy_p_codes[i], 2, 2, INIT_VLC_USE_NEW_STATIC);
+        ff_vc1_mv_diff_vlc[i].table           = &vlc_table[vlc_offs[i * 3 + 11]];
+        ff_vc1_mv_diff_vlc[i].table_allocated = vlc_offs[i * 3 + 12] - vlc_offs[i * 3 + 11];
+        init_vlc(&ff_vc1_mv_diff_vlc[i], VC1_MV_DIFF_VLC_BITS, 73,
+                 vc1_mv_diff_bits[i],  1, 1,
+                 vc1_mv_diff_codes[i], 2, 2, INIT_VLC_USE_NEW_STATIC);
+    }
+    for (int i = 0; i < 8; i++) {
+        ff_vc1_ac_coeff_table[i].table           = &vlc_table[vlc_offs[i * 2 + 21]];
+        ff_vc1_ac_coeff_table[i].table_allocated = vlc_offs[i * 2 + 22] - vlc_offs[i * 2 + 21];
+        init_vlc(&ff_vc1_ac_coeff_table[i], AC_VLC_BITS, ff_vc1_ac_sizes[i],
+                 &vc1_ac_tables[i][0][1], 8, 4,
+                 &vc1_ac_tables[i][0][0], 8, 4, INIT_VLC_USE_NEW_STATIC);
+        /* initialize interlaced MVDATA tables (2-Ref) */
+        ff_vc1_2ref_mvdata_vlc[i].table           = &vlc_table[vlc_offs[i * 2 + 22]];
+        ff_vc1_2ref_mvdata_vlc[i].table_allocated = vlc_offs[i * 2 + 23] - vlc_offs[i * 2 + 22];
+        init_vlc(&ff_vc1_2ref_mvdata_vlc[i], VC1_2REF_MVDATA_VLC_BITS, 126,
+                 vc1_2ref_mvdata_bits[i],  1, 1,
+                 vc1_2ref_mvdata_codes[i], 4, 4, INIT_VLC_USE_NEW_STATIC);
+    }
+    for (int i = 0; i < 4; i++) {
+        /* initialize 4MV MBMODE VLC tables for interlaced frame P picture */
+        ff_vc1_intfr_4mv_mbmode_vlc[i].table           = &vlc_table[vlc_offs[i * 3 + 37]];
+        ff_vc1_intfr_4mv_mbmode_vlc[i].table_allocated = vlc_offs[i * 3 + 38] - vlc_offs[i * 3 + 37];
+        init_vlc(&ff_vc1_intfr_4mv_mbmode_vlc[i], VC1_INTFR_4MV_MBMODE_VLC_BITS, 15,
+                 vc1_intfr_4mv_mbmode_bits[i],  1, 1,
+                 vc1_intfr_4mv_mbmode_codes[i], 2, 2, INIT_VLC_USE_NEW_STATIC);
+        /* initialize NON-4MV MBMODE VLC tables for the same */
+        ff_vc1_intfr_non4mv_mbmode_vlc[i].table           = &vlc_table[vlc_offs[i * 3 + 38]];
+        ff_vc1_intfr_non4mv_mbmode_vlc[i].table_allocated = vlc_offs[i * 3 + 39] - vlc_offs[i * 3 + 38];
+        init_vlc(&ff_vc1_intfr_non4mv_mbmode_vlc[i], VC1_INTFR_NON4MV_MBMODE_VLC_BITS, 9,
+                 vc1_intfr_non4mv_mbmode_bits[i],  1, 1,
+                 vc1_intfr_non4mv_mbmode_codes[i], 1, 1, INIT_VLC_USE_NEW_STATIC);
+        /* initialize interlaced MVDATA tables (1-Ref) */
+        ff_vc1_1ref_mvdata_vlc[i].table           = &vlc_table[vlc_offs[i * 3 + 39]];
+        ff_vc1_1ref_mvdata_vlc[i].table_allocated = vlc_offs[i * 3 + 40] - vlc_offs[i * 3 + 39];
+        init_vlc(&ff_vc1_1ref_mvdata_vlc[i], VC1_1REF_MVDATA_VLC_BITS, 72,
+                 vc1_1ref_mvdata_bits[i],  1, 1,
+                 vc1_1ref_mvdata_codes[i], 4, 4, INIT_VLC_USE_NEW_STATIC);
+    }
+    for (int i = 0; i < 4; i++) {
+        /* Initialize 2MV Block pattern VLC tables */
+        ff_vc1_2mv_block_pattern_vlc[i].table           = &vlc_table[vlc_offs[i + 49]];
+        ff_vc1_2mv_block_pattern_vlc[i].table_allocated = vlc_offs[i + 50] - vlc_offs[i + 49];
+        init_vlc(&ff_vc1_2mv_block_pattern_vlc[i], VC1_2MV_BLOCK_PATTERN_VLC_BITS, 4,
+                 vc1_2mv_block_pattern_bits[i],  1, 1,
+                 vc1_2mv_block_pattern_codes[i], 1, 1, INIT_VLC_USE_NEW_STATIC);
+    }
+    for (int i = 0; i < 8; i++) {
+        /* Initialize interlaced CBPCY VLC tables (Table 124 - Table 131) */
+        ff_vc1_icbpcy_vlc[i].table           = &vlc_table[vlc_offs[i * 3 + 53]];
+        ff_vc1_icbpcy_vlc[i].table_allocated = vlc_offs[i * 3 + 54] - vlc_offs[i * 3 + 53];
+        init_vlc(&ff_vc1_icbpcy_vlc[i], VC1_ICBPCY_VLC_BITS, 63,
+                 vc1_icbpcy_p_bits[i],  1, 1,
+                 vc1_icbpcy_p_codes[i], 2, 2, INIT_VLC_USE_NEW_STATIC);
+        /* Initialize interlaced field picture MBMODE VLC tables */
+        ff_vc1_if_mmv_mbmode_vlc[i].table           = &vlc_table[vlc_offs[i * 3 + 54]];
+        ff_vc1_if_mmv_mbmode_vlc[i].table_allocated = vlc_offs[i * 3 + 55] - vlc_offs[i * 3 + 54];
+        init_vlc(&ff_vc1_if_mmv_mbmode_vlc[i], VC1_IF_MMV_MBMODE_VLC_BITS, 8,
+                 vc1_if_mmv_mbmode_bits[i],  1, 1,
+                 vc1_if_mmv_mbmode_codes[i], 1, 1, INIT_VLC_USE_NEW_STATIC);
+        ff_vc1_if_1mv_mbmode_vlc[i].table           = &vlc_table[vlc_offs[i * 3 + 55]];
+        ff_vc1_if_1mv_mbmode_vlc[i].table_allocated = vlc_offs[i * 3 + 56] - vlc_offs[i * 3 + 55];
+        init_vlc(&ff_vc1_if_1mv_mbmode_vlc[i], VC1_IF_1MV_MBMODE_VLC_BITS, 6,
+                 vc1_if_1mv_mbmode_bits[i],  1, 1,
+                 vc1_if_1mv_mbmode_codes[i], 1, 1, INIT_VLC_USE_NEW_STATIC);
+    }
+}
+
+/**
+ * Init VC-1 specific tables and VC1Context members
+ * @param v The VC1Context to initialize
+ * @return Status
+ */
+av_cold void ff_vc1_init_common(VC1Context *v)
+{
+    static AVOnce init_static_once = AV_ONCE_INIT;
+
+    /* defaults */
+    v->pq      = -1;
+    v->mvrange = 0; /* 7.1.1.18, p80 */
+
+    ff_vc1dsp_init(&v->vc1dsp);
+
+    /* VLC tables */
+    ff_thread_once(&init_static_once, vc1_init_static);
 }
 
 /** Initialize a VC1/WMV3 decoder
