@@ -373,9 +373,6 @@ av_cold int ff_msmpeg4_decode_init(AVCodecContext *avctx)
         break;
     case 5:
         break;
-    case 6:
-        //FIXME + TODO VC1 decode mb
-        break;
     }
 
     s->slice_height= s->mb_height; //to avoid 1/0 if the first frame is not a keyframe

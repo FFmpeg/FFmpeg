@@ -33,12 +33,12 @@
 #include "codec_internal.h"
 #include "decode.h"
 #include "get_bits.h"
+#include "h263dec.h"
 #include "hwconfig.h"
 #include "mpeg_er.h"
 #include "mpegvideo.h"
 #include "mpegvideodec.h"
 #include "msmpeg4_vc1_data.h"
-#include "msmpeg4dec.h"
 #include "profiles.h"
 #include "simple_idct.h"
 #include "vc1.h"
@@ -46,6 +46,7 @@
 #include "vc1_vlc_data.h"
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/thread.h"
 
 
@@ -406,10 +407,25 @@ static av_cold int vc1_decode_init_alloc_tables(VC1Context *v)
 
 av_cold int ff_vc1_decode_init(AVCodecContext *avctx)
 {
-    int ret = ff_msmpeg4_decode_init(avctx);
     VC1Context *const v = avctx->priv_data;
+    MpegEncContext *const s = &v->s;
+    int ret;
+
+    ret = av_image_check_size(avctx->width, avctx->height, 0, avctx);
     if (ret < 0)
         return ret;
+
+    ret = ff_h263_decode_init(avctx);
+    if (ret < 0)
+        return ret;
+
+    s->y_dc_scale_table = ff_wmv3_dc_scale_table;
+    s->c_dc_scale_table = ff_wmv3_dc_scale_table;
+
+    ff_init_scantable(s->idsp.idct_permutation, &s->inter_scantable,
+                      ff_wmv1_scantable[0]);
+    ff_init_scantable(s->idsp.idct_permutation, &s->intra_scantable,
+                      ff_wmv1_scantable[1]);
 
     ret = vc1_decode_init_alloc_tables(v);
     if (ret < 0) {
