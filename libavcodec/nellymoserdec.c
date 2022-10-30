@@ -35,12 +35,12 @@
 #include "libavutil/float_dsp.h"
 #include "libavutil/lfg.h"
 #include "libavutil/mem_internal.h"
+#include "libavutil/tx.h"
 
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "decode.h"
-#include "fft.h"
 #include "get_bits.h"
 #include "nellymoser.h"
 #include "sinewin.h"
@@ -52,7 +52,8 @@ typedef struct NellyMoserDecodeContext {
     GetBitContext   gb;
     float           scale_bias;
     AVFloatDSPContext *fdsp;
-    FFTContext      imdct_ctx;
+    AVTXContext    *imdct_ctx;
+    av_tx_fn        imdct_fn;
     DECLARE_ALIGNED(32, float, imdct_buf)[2][NELLY_BUF_LEN];
     float          *imdct_out;
     float          *imdct_prev;
@@ -105,7 +106,7 @@ static void nelly_decode_block(NellyMoserDecodeContext *s,
         memset(&aptr[NELLY_FILL_LEN], 0,
                (NELLY_BUF_LEN - NELLY_FILL_LEN) * sizeof(float));
 
-        s->imdct_ctx.imdct_half(&s->imdct_ctx, s->imdct_out, aptr);
+        s->imdct_fn(s->imdct_ctx, s->imdct_out, aptr, sizeof(float));
         s->fdsp->vector_fmul_window(aptr, s->imdct_prev + NELLY_BUF_LEN / 2,
                                    s->imdct_out, ff_sine_128,
                                    NELLY_BUF_LEN / 2);
@@ -113,14 +114,19 @@ static void nelly_decode_block(NellyMoserDecodeContext *s,
     }
 }
 
-static av_cold int decode_init(AVCodecContext * avctx) {
+static av_cold int decode_init(AVCodecContext * avctx)
+{
+    int ret;
+    float scale = 1.0f;
     NellyMoserDecodeContext *s = avctx->priv_data;
 
     s->avctx = avctx;
     s->imdct_out = s->imdct_buf[0];
     s->imdct_prev = s->imdct_buf[1];
     av_lfg_init(&s->random_state, 0);
-    ff_mdct_init(&s->imdct_ctx, 8, 1, 1.0);
+    if ((ret = av_tx_init(&s->imdct_ctx, &s->imdct_fn, AV_TX_FLOAT_MDCT,
+                          1, 128, &scale, 0)) < 0)
+        return ret;
 
     s->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
     if (!s->fdsp)
@@ -179,7 +185,7 @@ static int decode_tag(AVCodecContext *avctx, AVFrame *frame,
 static av_cold int decode_end(AVCodecContext * avctx) {
     NellyMoserDecodeContext *s = avctx->priv_data;
 
-    ff_mdct_end(&s->imdct_ctx);
+    av_tx_uninit(&s->imdct_ctx);
     av_freep(&s->fdsp);
 
     return 0;
