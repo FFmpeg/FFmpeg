@@ -332,7 +332,7 @@ static void vc1_sprite_flush(AVCodecContext *avctx)
 static av_cold int vc1_decode_init_alloc_tables(VC1Context *v)
 {
     MpegEncContext *s = &v->s;
-    int i, ret = AVERROR(ENOMEM);
+    int i, ret;
     int mb_height = FFALIGN(s->mb_height, 2);
 
     /* Allocate mb bitplanes */
@@ -344,31 +344,31 @@ static av_cold int vc1_decode_init_alloc_tables(VC1Context *v)
     v->over_flags_plane = av_malloc (s->mb_stride * mb_height);
     if (!v->mv_type_mb_plane || !v->direct_mb_plane || !v->forward_mb_plane ||
         !v->fieldtx_plane || !v->acpred_plane || !v->over_flags_plane)
-        goto error;
+        return AVERROR(ENOMEM);
 
     v->n_allocated_blks = s->mb_width + 2;
     v->block            = av_malloc(sizeof(*v->block) * v->n_allocated_blks);
     v->cbp_base         = av_malloc(sizeof(v->cbp_base[0]) * 3 * s->mb_stride);
     if (!v->block || !v->cbp_base)
-        goto error;
+        return AVERROR(ENOMEM);
     v->cbp              = v->cbp_base + 2 * s->mb_stride;
     v->ttblk_base       = av_malloc(sizeof(v->ttblk_base[0]) * 3 * s->mb_stride);
     if (!v->ttblk_base)
-        goto error;
+        return AVERROR(ENOMEM);
     v->ttblk            = v->ttblk_base + 2 * s->mb_stride;
     v->is_intra_base    = av_mallocz(sizeof(v->is_intra_base[0]) * 3 * s->mb_stride);
     if (!v->is_intra_base)
-        goto error;
+        return AVERROR(ENOMEM);
     v->is_intra         = v->is_intra_base + 2 * s->mb_stride;
     v->luma_mv_base     = av_mallocz(sizeof(v->luma_mv_base[0]) * 3 * s->mb_stride);
     if (!v->luma_mv_base)
-        goto error;
+        return AVERROR(ENOMEM);
     v->luma_mv          = v->luma_mv_base + 2 * s->mb_stride;
 
     /* allocate block type info in that way so it could be used with s->block_index[] */
     v->mb_type_base = av_malloc(s->b8_stride * (mb_height * 2 + 1) + s->mb_stride * (mb_height + 1) * 2);
     if (!v->mb_type_base)
-        goto error;
+        return AVERROR(ENOMEM);
     v->mb_type[0]   = v->mb_type_base + s->b8_stride + 1;
     v->mb_type[1]   = v->mb_type_base + s->b8_stride * (mb_height * 2 + 1) + s->mb_stride + 1;
     v->mb_type[2]   = v->mb_type[1] + s->mb_stride * (mb_height + 1);
@@ -376,35 +376,32 @@ static av_cold int vc1_decode_init_alloc_tables(VC1Context *v)
     /* allocate memory to store block level MV info */
     v->blk_mv_type_base = av_mallocz(     s->b8_stride * (mb_height * 2 + 1) + s->mb_stride * (mb_height + 1) * 2);
     if (!v->blk_mv_type_base)
-        goto error;
+        return AVERROR(ENOMEM);
     v->blk_mv_type      = v->blk_mv_type_base + s->b8_stride + 1;
     v->mv_f_base        = av_mallocz(2 * (s->b8_stride * (mb_height * 2 + 1) + s->mb_stride * (mb_height + 1) * 2));
     if (!v->mv_f_base)
-        goto error;
+        return AVERROR(ENOMEM);
     v->mv_f[0]          = v->mv_f_base + s->b8_stride + 1;
     v->mv_f[1]          = v->mv_f[0] + (s->b8_stride * (mb_height * 2 + 1) + s->mb_stride * (mb_height + 1) * 2);
     v->mv_f_next_base   = av_mallocz(2 * (s->b8_stride * (mb_height * 2 + 1) + s->mb_stride * (mb_height + 1) * 2));
     if (!v->mv_f_next_base)
-        goto error;
+        return AVERROR(ENOMEM);
     v->mv_f_next[0]     = v->mv_f_next_base + s->b8_stride + 1;
     v->mv_f_next[1]     = v->mv_f_next[0] + (s->b8_stride * (mb_height * 2 + 1) + s->mb_stride * (mb_height + 1) * 2);
 
     if (s->avctx->codec_id == AV_CODEC_ID_WMV3IMAGE || s->avctx->codec_id == AV_CODEC_ID_VC1IMAGE) {
         for (i = 0; i < 4; i++)
             if (!(v->sr_rows[i >> 1][i & 1] = av_malloc(v->output_width)))
-                goto error;
+                return AVERROR(ENOMEM);
     }
 
     ret = ff_intrax8_common_init(s->avctx, &v->x8,
                                  s->block, s->block_last_index,
                                  s->mb_width, s->mb_height);
     if (ret < 0)
-        goto error;
+        return ret;
 
     return 0;
-
-error:
-    return ret;
 }
 
 av_cold int ff_vc1_decode_init(AVCodecContext *avctx)
