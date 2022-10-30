@@ -21,8 +21,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#define FFT_FLOAT 0
-
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
@@ -30,6 +28,7 @@
 #include "libavutil/mem_internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/thread.h"
+#include "libavutil/tx.h"
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "dca.h"
@@ -39,7 +38,6 @@
 #include "dcadata.h"
 #include "dcaenc.h"
 #include "encode.h"
-#include "fft.h"
 #include "put_bits.h"
 
 #define MAX_CHANNELS 6
@@ -63,7 +61,8 @@ typedef struct DCAEncContext {
     AVClass *class;
     PutBitContext pb;
     DCAADPCMEncContext adpcm_ctx;
-    FFTContext mdct;
+    AVTXContext *mdct;
+    av_tx_fn mdct_fn;
     CompressionOptions options;
     int frame_size;
     int frame_bits;
@@ -206,6 +205,7 @@ static int encode_init(AVCodecContext *avctx)
     DCAEncContext *c = avctx->priv_data;
     AVChannelLayout layout = avctx->ch_layout;
     int i, j, k, min_frame_bits;
+    float scale = 1.0f;
     int ret;
 
     if ((ret = subband_bufer_alloc(c)) < 0)
@@ -287,7 +287,7 @@ static int encode_init(AVCodecContext *avctx)
 
     avctx->frame_size = 32 * SUBBAND_SAMPLES;
 
-    if ((ret = ff_mdct_init(&c->mdct, 9, 0, 1.0)) < 0)
+    if ((ret = av_tx_init(&c->mdct, &c->mdct_fn, AV_TX_INT32_MDCT, 0, 256, &scale, 0)) < 0)
         return ret;
 
     /* Init all tables */
@@ -354,7 +354,7 @@ static int encode_init(AVCodecContext *avctx)
 static av_cold int encode_close(AVCodecContext *avctx)
 {
     DCAEncContext *c = avctx->priv_data;
-    ff_mdct_end(&c->mdct);
+    av_tx_uninit(&c->mdct);
     subband_bufer_free(c);
     ff_dcaadpcm_free(&c->adpcm_ctx);
 
@@ -506,7 +506,7 @@ static void calc_power(DCAEncContext *c,
     for (i = 0; i < 512; i++)
         data[i] = norm__(mul32(in[i], 0x3fffffff - (COS_T(4 * i + 2) >> 1)), 4);
 
-    c->mdct.mdct_calc(&c->mdct, coeff, data);
+    c->mdct_fn(c->mdct, coeff, data, sizeof(int32_t));
     for (i = 0; i < 256; i++) {
         const int32_t cb = get_cb(c, coeff[i]);
         power[i] = add_cb(c, cb, cb);

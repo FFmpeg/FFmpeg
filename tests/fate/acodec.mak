@@ -126,7 +126,7 @@ fate-acodec-dca2: CMD = enc_dec_pcm dts wav s16le $(SRC) -c:a dca -strict -2 -fl
 fate-acodec-dca2: REF = $(SRC)
 fate-acodec-dca2: CMP = stddev
 fate-acodec-dca2: CMP_SHIFT = -2048
-fate-acodec-dca2: CMP_TARGET = 535
+fate-acodec-dca2: CMP_TARGET = 534
 fate-acodec-dca2: SIZE_TOLERANCE = 1632
 
 FATE_ACODEC-$(call ENCDEC, FLAC, FLAC) += fate-acodec-flac fate-acodec-flac-exact-rice
