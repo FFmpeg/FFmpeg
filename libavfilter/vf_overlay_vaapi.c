@@ -38,34 +38,6 @@ typedef struct OverlayVAAPIContext {
     float            alpha;
 } OverlayVAAPIContext;
 
-static int overlay_vaapi_query_formats(AVFilterContext *ctx)
-{
-    int ret;
-    enum {
-        MAIN    = 0,
-        OVERLAY = 1,
-    };
-
-    static const enum AVPixelFormat pix_fmts[] = {
-        AV_PIX_FMT_VAAPI,
-        AV_PIX_FMT_NONE
-    };
-
-    ret = ff_formats_ref(ff_make_format_list(pix_fmts), &ctx->inputs[MAIN]->outcfg.formats);
-    if (ret < 0)
-        return ret;
-
-    ret = ff_formats_ref(ff_make_format_list(pix_fmts), &ctx->inputs[OVERLAY]->outcfg.formats);
-    if (ret < 0)
-        return ret;
-
-    ret = ff_formats_ref(ff_make_format_list(pix_fmts), &ctx->outputs[0]->incfg.formats);
-    if (ret < 0)
-        return ret;
-
-    return 0;
-}
-
 static int overlay_vaapi_build_filter_params(AVFilterContext *avctx)
 {
     VAAPIVPPContext *vpp_ctx   = avctx->priv;
@@ -418,6 +390,6 @@ const AVFilter ff_vf_overlay_vaapi = {
     .activate        = &overlay_vaapi_activate,
     FILTER_INPUTS(overlay_vaapi_inputs),
     FILTER_OUTPUTS(overlay_vaapi_outputs),
-    FILTER_QUERY_FUNC(overlay_vaapi_query_formats),
+    FILTER_SINGLE_PIXFMT(AV_PIX_FMT_VAAPI),
     .flags_internal  = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
