@@ -57,7 +57,7 @@ enum diff_mode {
 };
 
 struct color_node {
-    uint8_t val[4];
+    uint32_t val;
     uint8_t palette_id;
     int split;
     int left_id, right_id;
@@ -162,9 +162,11 @@ static av_always_inline uint32_t dither_color(uint32_t px, int er, int eg,
          | av_clip_uint8((px       & 0xff) + ((eb * scale) / (1<<shift)));
 }
 
-static av_always_inline int diff(const uint8_t *c1, const uint8_t *c2, const int trans_thresh)
+static av_always_inline int diff(const uint32_t a, const uint32_t b, const int trans_thresh)
 {
     // XXX: try L*a*b with CIE76 (dL*dL + da*da + db*db)
+    const uint8_t c1[] = {a >> 24, a >> 16 & 0xff, a >> 8 & 0xff, a & 0xff};
+    const uint8_t c2[] = {b >> 24, b >> 16 & 0xff, b >> 8 & 0xff, b & 0xff};
     const int dr = c1[1] - c2[1];
     const int dg = c1[2] - c2[2];
     const int db = c1[3] - c2[3];
@@ -178,7 +180,7 @@ static av_always_inline int diff(const uint8_t *c1, const uint8_t *c2, const int
     }
 }
 
-static av_always_inline uint8_t colormap_nearest_bruteforce(const uint32_t *palette, const uint8_t *argb, const int trans_thresh)
+static av_always_inline uint8_t colormap_nearest_bruteforce(const uint32_t *palette, const uint32_t argb, const int trans_thresh)
 {
     int i, pal_id = -1, min_dist = INT_MAX;
 
@@ -186,13 +188,7 @@ static av_always_inline uint8_t colormap_nearest_bruteforce(const uint32_t *pale
         const uint32_t c = palette[i];
 
         if (c >> 24 >= trans_thresh) { // ignore transparent entry
-            const uint8_t palargb[] = {
-                palette[i]>>24,
-                palette[i]>>16 & 0xff,
-                palette[i]>> 8 & 0xff,
-                palette[i]     & 0xff,
-            };
-            const int d = diff(palargb, argb, trans_thresh);
+            const int d = diff(palette[i], argb, trans_thresh);
             if (d < min_dist) {
                 pal_id = i;
                 min_dist = d;
@@ -210,14 +206,14 @@ struct nearest_color {
 
 static void colormap_nearest_node(const struct color_node *map,
                                   const int node_pos,
-                                  const uint8_t *target,
+                                  const uint32_t target,
                                   const int trans_thresh,
                                   struct nearest_color *nearest)
 {
     const struct color_node *kd = map + node_pos;
-    const int s = kd->split;
+    const int shift = (3 - kd->split) * 8;
     int dx, nearer_kd_id, further_kd_id;
-    const uint8_t *current = kd->val;
+    const uint32_t current = kd->val;
     const int current_to_target = diff(target, current, trans_thresh);
 
     if (current_to_target < nearest->dist_sqd) {
@@ -226,7 +222,7 @@ static void colormap_nearest_node(const struct color_node *map,
     }
 
     if (kd->left_id != -1 || kd->right_id != -1) {
-        dx = target[s] - current[s];
+        dx = (int)(target>>shift & 0xff) - (int)(current>>shift & 0xff);
 
         if (dx <= 0) nearer_kd_id = kd->left_id,  further_kd_id = kd->right_id;
         else         nearer_kd_id = kd->right_id, further_kd_id = kd->left_id;
@@ -239,7 +235,7 @@ static void colormap_nearest_node(const struct color_node *map,
     }
 }
 
-static av_always_inline uint8_t colormap_nearest_recursive(const struct color_node *node, const uint8_t *rgb, const int trans_thresh)
+static av_always_inline uint8_t colormap_nearest_recursive(const struct color_node *node, const uint8_t rgb, const int trans_thresh)
 {
     struct nearest_color res = {.dist_sqd = INT_MAX, .node_pos = -1};
     colormap_nearest_node(node, 0, rgb, trans_thresh, &res);
@@ -251,7 +247,7 @@ struct stack_node {
     int dx2;
 };
 
-static av_always_inline uint8_t colormap_nearest_iterative(const struct color_node *root, const uint8_t *target, const int trans_thresh)
+static av_always_inline uint8_t colormap_nearest_iterative(const struct color_node *root, const uint32_t target, const int trans_thresh)
 {
     int pos = 0, best_node_id = -1, best_dist = INT_MAX, cur_color_id = 0;
     struct stack_node nodes[16];
@@ -260,7 +256,7 @@ static av_always_inline uint8_t colormap_nearest_iterative(const struct color_no
     for (;;) {
 
         const struct color_node *kd = &root[cur_color_id];
-        const uint8_t *current = kd->val;
+        const uint32_t current = kd->val;
         const int current_to_target = diff(target, current, trans_thresh);
 
         /* Compare current color node to the target and update our best node if
@@ -274,8 +270,8 @@ static av_always_inline uint8_t colormap_nearest_iterative(const struct color_no
 
         /* Check if it's not a leaf */
         if (kd->left_id != -1 || kd->right_id != -1) {
-            const int split = kd->split;
-            const int dx = target[split] - current[split];
+            const int shift = (3 - kd->split) * 8;
+            const int dx = (target>>shift & 0xff) - (current>>shift & 0xff);
             int nearer_kd_id, further_kd_id;
 
             /* Define which side is the most interesting. */
@@ -331,24 +327,20 @@ end:
 /**
  * Check if the requested color is in the cache already. If not, find it in the
  * color tree and cache it.
- * Note: a, r, g, and b are the components of color, but are passed as well to avoid
- * recomputing them (they are generally computed by the caller for other uses).
  */
 static av_always_inline int color_get(PaletteUseContext *s, uint32_t color,
-                                      uint8_t a, uint8_t r, uint8_t g, uint8_t b,
                                       const enum color_search_method search_method)
 {
     int i;
-    const uint8_t argb_elts[] = {a, r, g, b};
-    const uint8_t rhash = r & ((1<<NBITS)-1);
-    const uint8_t ghash = g & ((1<<NBITS)-1);
-    const uint8_t bhash = b & ((1<<NBITS)-1);
+    const uint8_t rhash = (color>>16) & ((1<<NBITS)-1);
+    const uint8_t ghash = (color>> 8) & ((1<<NBITS)-1);
+    const uint8_t bhash =  color      & ((1<<NBITS)-1);
     const unsigned hash = rhash<<(NBITS*2) | ghash<<NBITS | bhash;
     struct cache_node *node = &s->cache[hash];
     struct cached_color *e;
 
     // first, check for transparency
-    if (a < s->trans_thresh && s->transparency_index >= 0) {
+    if (color>>24 < s->trans_thresh && s->transparency_index >= 0) {
         return s->transparency_index;
     }
 
@@ -363,7 +355,7 @@ static av_always_inline int color_get(PaletteUseContext *s, uint32_t color,
     if (!e)
         return AVERROR(ENOMEM);
     e->color = color;
-    e->pal_entry = COLORMAP_NEAREST(search_method, s->palette, s->map, argb_elts, s->trans_thresh);
+    e->pal_entry = COLORMAP_NEAREST(search_method, s->palette, s->map, color, s->trans_thresh);
 
     return e->pal_entry;
 }
@@ -372,12 +364,11 @@ static av_always_inline int get_dst_color_err(PaletteUseContext *s,
                                               uint32_t c, int *er, int *eg, int *eb,
                                               const enum color_search_method search_method)
 {
-    const uint8_t a = c >> 24;
     const uint8_t r = c >> 16 & 0xff;
     const uint8_t g = c >>  8 & 0xff;
     const uint8_t b = c       & 0xff;
     uint32_t dstc;
-    const int dstx = color_get(s, c, a, r, g, b, search_method);
+    const int dstx = color_get(s, c, search_method);
     if (dstx < 0)
         return dstx;
     dstc = s->palette[dstx];
@@ -419,7 +410,7 @@ static av_always_inline int set_frame(PaletteUseContext *s, AVFrame *out, AVFram
                 const uint8_t g = av_clip_uint8(g8 + d);
                 const uint8_t b = av_clip_uint8(b8 + d);
                 const uint32_t color_new = (unsigned)(a8) << 24 | r << 16 | g << 8 | b;
-                const int color = color_get(s, color_new, a8, r, g, b, search_method);
+                const int color = color_get(s, color_new, search_method);
 
                 if (color < 0)
                     return color;
@@ -483,11 +474,7 @@ static av_always_inline int set_frame(PaletteUseContext *s, AVFrame *out, AVFram
                 if (         down) src[src_linesize + x    ] = dither_color(src[src_linesize + x    ], er, eg, eb, 1, 2);
 
             } else {
-                const uint8_t a = src[x] >> 24;
-                const uint8_t r = src[x] >> 16 & 0xff;
-                const uint8_t g = src[x] >>  8 & 0xff;
-                const uint8_t b = src[x]       & 0xff;
-                const int color = color_get(s, src[x], a, r, g, b, search_method);
+                const int color = color_get(s, src[x], search_method);
 
                 if (color < 0)
                     return color;
@@ -507,20 +494,20 @@ static void disp_node(AVBPrint *buf,
                       int depth)
 {
     const struct color_node *node = &map[node_id];
-    const uint32_t fontcolor = node->val[1] > 0x50 &&
-                               node->val[2] > 0x50 &&
-                               node->val[3] > 0x50 ? 0 : 0xffffff;
+    const uint32_t fontcolor = (node->val>>16 & 0xff) > 0x50 &&
+                               (node->val>> 8 & 0xff) > 0x50 &&
+                               (node->val     & 0xff) > 0x50 ? 0 : 0xffffff;
     const int rgb_comp = node->split - 1;
     av_bprintf(buf, "%*cnode%d ["
                "label=\"%c%02X%c%02X%c%02X%c\" "
-               "fillcolor=\"#%02x%02x%02x\" "
+               "fillcolor=\"#%06"PRIX32"\" "
                "fontcolor=\"#%06"PRIX32"\"]\n",
                depth*INDENT, ' ', node->palette_id,
-               "[  "[rgb_comp], node->val[1],
-               "][ "[rgb_comp], node->val[2],
-               " ]["[rgb_comp], node->val[3],
+               "[  "[rgb_comp], node->val>>16 & 0xff,
+               "][ "[rgb_comp], node->val>> 8 & 0xff,
+               " ]["[rgb_comp], node->val     & 0xff,
                "  ]"[rgb_comp],
-               node->val[1], node->val[2], node->val[3],
+               node->val & 0xffffff,
                fontcolor);
     if (parent_id != -1)
         av_bprintf(buf, "%*cnode%d -> node%d\n", depth*INDENT, ' ',
@@ -563,16 +550,14 @@ static int debug_accuracy(const struct color_node *node, const uint32_t *palette
     for (r = 0; r < 256; r++) {
         for (g = 0; g < 256; g++) {
             for (b = 0; b < 256; b++) {
-                const uint8_t argb[] = {0xff, r, g, b};
+                const uint32_t argb = 0xff000000 | r<<16 | g<<8 | b;
                 const int r1 = COLORMAP_NEAREST(search_method, palette, node, argb, trans_thresh);
                 const int r2 = colormap_nearest_bruteforce(palette, argb, trans_thresh);
                 if (r1 != r2) {
                     const uint32_t c1 = palette[r1];
                     const uint32_t c2 = palette[r2];
-                    const uint8_t palargb1[] = { 0xff, c1>>16 & 0xff, c1>> 8 & 0xff, c1 & 0xff };
-                    const uint8_t palargb2[] = { 0xff, c2>>16 & 0xff, c2>> 8 & 0xff, c2 & 0xff };
-                    const int d1 = diff(palargb1, argb, trans_thresh);
-                    const int d2 = diff(palargb2, argb, trans_thresh);
+                    const int d1 = diff(0xff000000 | c1, argb, trans_thresh);
+                    const int d2 = diff(0xff000000 | c2, argb, trans_thresh);
                     if (d1 != d2) {
                         av_log(NULL, AV_LOG_ERROR,
                                "/!\\ %02X%02X%02X: %d ! %d (%06"PRIX32" ! %06"PRIX32") / dist: %d ! %d\n",
@@ -686,6 +671,7 @@ static int colormap_insert(struct color_node *map,
 {
     uint32_t c;
     int component, cur_id;
+    uint8_t comp_value;
     int node_left_id = -1, node_right_id = -1;
     struct color_node *node;
     struct color_rect box1, box2;
@@ -700,17 +686,15 @@ static int colormap_insert(struct color_node *map,
     node = &map[cur_id];
     node->split = component;
     node->palette_id = pal_id;
-    node->val[0] = c>>24;
-    node->val[1] = c>>16 & 0xff;
-    node->val[2] = c>> 8 & 0xff;
-    node->val[3] = c     & 0xff;
+    node->val = c;
 
     color_used[pal_id] = 1;
 
     /* get the two boxes this node creates */
     box1 = box2 = *box;
-    box1.max[component-1] = node->val[component];
-    box2.min[component-1] = FFMIN(node->val[component] + 1, 255);
+    comp_value = node->val >> ((3 - component) * 8) & 0xff;
+    box1.max[component-1] = comp_value;
+    box2.min[component-1] = FFMIN(comp_value + 1, 255);
 
     node_left_id = colormap_insert(map, color_used, nb_used, palette, trans_thresh, &box1);
 
@@ -787,8 +771,8 @@ static void debug_mean_error(PaletteUseContext *s, const AVFrame *in1,
         for (x = 0; x < in1->width; x++) {
             const uint32_t c1 = src1[x];
             const uint32_t c2 = palette[src2[x]];
-            const uint8_t argb1[] = {0xff, c1 >> 16 & 0xff, c1 >> 8 & 0xff, c1 & 0xff};
-            const uint8_t argb2[] = {0xff, c2 >> 16 & 0xff, c2 >> 8 & 0xff, c2 & 0xff};
+            const uint32_t argb1 = 0xff000000 | c1;
+            const uint32_t argb2 = 0xff000000 | c2;
             mean_err += diff(argb1, argb2, s->trans_thresh);
         }
         src1 += src1_linesize;
