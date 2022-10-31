@@ -196,11 +196,11 @@ static int guess_channel_layout(MovieStream *st, int st_index, void *log_ctx)
     av_channel_layout_default(&chl, dec_par->ch_layout.nb_channels);
 
     if (!KNOWN(&chl)) {
-        av_log(log_ctx, AV_LOG_ERROR,
+        av_log(log_ctx, AV_LOG_WARNING,
                "Channel layout is not set in stream %d, and could not "
                "be guessed from the number of channels (%d)\n",
                st_index, dec_par->ch_layout.nb_channels);
-        return AVERROR(EINVAL);
+        return av_channel_layout_copy(&dec_par->ch_layout, &chl);
     }
 
     av_channel_layout_describe(&chl, buf, sizeof(buf));
