@@ -340,13 +340,11 @@ static const AVFilterPad overlay_vaapi_inputs[] = {
     {
         .name             = "main",
         .type             = AVMEDIA_TYPE_VIDEO,
-        .get_buffer.video = ff_default_get_video_buffer,
         .config_props     = &ff_vaapi_vpp_config_input,
     },
     {
         .name             = "overlay",
         .type             = AVMEDIA_TYPE_VIDEO,
-        .get_buffer.video = ff_default_get_video_buffer,
     },
 };
 
