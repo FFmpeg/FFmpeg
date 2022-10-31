@@ -27,18 +27,105 @@
 #include "formats.h"
 #include "internal.h"
 #include "vaapi_vpp.h"
+#include "libavutil/eval.h"
+
+enum var_name {
+    VAR_MAIN_IW,     VAR_MW,
+    VAR_MAIN_IH,     VAR_MH,
+    VAR_OVERLAY_IW,
+    VAR_OVERLAY_IH,
+    VAR_OVERLAY_X,  VAR_OX,
+    VAR_OVERLAY_Y,  VAR_OY,
+    VAR_OVERLAY_W,  VAR_OW,
+    VAR_OVERLAY_H,  VAR_OH,
+    VAR_VARS_NB
+};
 
 typedef struct OverlayVAAPIContext {
     VAAPIVPPContext  vpp_ctx; /**< must be the first field */
     FFFrameSync      fs;
-    int              overlay_ox;
-    int              overlay_oy;
-    int              overlay_ow;
-    int              overlay_oh;
+
+    double           var_values[VAR_VARS_NB];
+    char             *overlay_ox;
+    char             *overlay_oy;
+    char             *overlay_ow;
+    char             *overlay_oh;
+    int              ox;
+    int              oy;
+    int              ow;
+    int              oh;
     float            alpha;
     unsigned int     blend_flags;
     float            blend_alpha;
 } OverlayVAAPIContext;
+
+static const char *const var_names[] = {
+    "main_w",     "W",   /* input width of the main layer */
+    "main_h",     "H",   /* input height of the main layer */
+    "overlay_iw",        /* input width of the overlay layer */
+    "overlay_ih",        /* input height of the overlay layer */
+    "overlay_x",  "x",   /* x position of the overlay layer inside of main */
+    "overlay_y",  "y",   /* y position of the overlay layer inside of main */
+    "overlay_w",  "w",   /* output width of overlay layer */
+    "overlay_h",  "h",   /* output height of overlay layer */
+    NULL
+};
+
+static int eval_expr(AVFilterContext *avctx)
+{
+    OverlayVAAPIContext *ctx = avctx->priv;
+    double       *var_values = ctx->var_values;
+    int                  ret = 0;
+    AVExpr *ox_expr = NULL, *oy_expr = NULL;
+    AVExpr *ow_expr = NULL, *oh_expr = NULL;
+
+#define PARSE_EXPR(e, s) {\
+    ret = av_expr_parse(&(e), s, var_names, NULL, NULL, NULL, NULL, 0, ctx); \
+    if (ret < 0) {\
+        av_log(ctx, AV_LOG_ERROR, "Error when parsing '%s'.\n", s);\
+        goto release;\
+    }\
+}
+    PARSE_EXPR(ox_expr, ctx->overlay_ox)
+    PARSE_EXPR(oy_expr, ctx->overlay_oy)
+    PARSE_EXPR(ow_expr, ctx->overlay_ow)
+    PARSE_EXPR(oh_expr, ctx->overlay_oh)
+#undef PASS_EXPR
+
+    var_values[VAR_OVERLAY_W] =
+    var_values[VAR_OW]        = av_expr_eval(ow_expr, var_values, NULL);
+    var_values[VAR_OVERLAY_H] =
+    var_values[VAR_OH]        = av_expr_eval(oh_expr, var_values, NULL);
+
+    /* calc again in case ow is relative to oh */
+    var_values[VAR_OVERLAY_W] =
+    var_values[VAR_OW]        = av_expr_eval(ow_expr, var_values, NULL);
+
+    var_values[VAR_OVERLAY_X] =
+    var_values[VAR_OX]        = av_expr_eval(ox_expr, var_values, NULL);
+    var_values[VAR_OVERLAY_Y] =
+    var_values[VAR_OY]        = av_expr_eval(oy_expr, var_values, NULL);
+
+    /* calc again in case ox is relative to oy */
+    var_values[VAR_OVERLAY_X] =
+    var_values[VAR_OX]        = av_expr_eval(ox_expr, var_values, NULL);
+
+    /* calc overlay_w and overlay_h again incase relative to ox,oy */
+    var_values[VAR_OVERLAY_W] =
+    var_values[VAR_OW]        = av_expr_eval(ow_expr, var_values, NULL);
+    var_values[VAR_OVERLAY_H] =
+    var_values[VAR_OH]        = av_expr_eval(oh_expr, var_values, NULL);
+    var_values[VAR_OVERLAY_W] =
+    var_values[VAR_OW]        = av_expr_eval(ow_expr, var_values, NULL);
+
+release:
+    av_expr_free(ox_expr);
+    av_expr_free(oy_expr);
+    av_expr_free(ow_expr);
+    av_expr_free(oh_expr);
+
+    return ret;
+}
 
 static int overlay_vaapi_build_filter_params(AVFilterContext *avctx)
 {
@@ -233,10 +320,10 @@ static int overlay_vaapi_blend(FFFrameSync *fs)
                input_overlay->width, input_overlay->height, input_overlay->pts);
 
         overlay_region = (VARectangle) {
-            .x      = ctx->overlay_ox,
-            .y      = ctx->overlay_oy,
-            .width  = ctx->overlay_ow ? ctx->overlay_ow : input_overlay->width,
-            .height = ctx->overlay_oh ? ctx->overlay_oh : input_overlay->height,
+            .x      = ctx->ox,
+            .y      = ctx->oy,
+            .width  = ctx->ow ? ctx->ow : input_overlay->width,
+            .height = ctx->oh ? ctx->oh : input_overlay->height,
         };
 
         if (overlay_region.x + overlay_region.width > input_main->width ||
@@ -289,10 +376,36 @@ static int have_alpha_planar(AVFilterLink *link)
     return !!(desc->flags & AV_PIX_FMT_FLAG_ALPHA);
 }
 
+static int overlay_vaapi_config_input_main(AVFilterLink *inlink)
+{
+    AVFilterContext  *avctx  = inlink->dst;
+    OverlayVAAPIContext *ctx = avctx->priv;
+
+    ctx->var_values[VAR_MAIN_IW] =
+    ctx->var_values[VAR_MW]      = inlink->w;
+    ctx->var_values[VAR_MAIN_IH] =
+    ctx->var_values[VAR_MH]      = inlink->h;
+
+    return ff_vaapi_vpp_config_input(inlink);
+}
+
 static int overlay_vaapi_config_input_overlay(AVFilterLink *inlink)
 {
     AVFilterContext  *avctx  = inlink->dst;
     OverlayVAAPIContext *ctx = avctx->priv;
+    int ret;
+
+    ctx->var_values[VAR_OVERLAY_IW] = inlink->w;
+    ctx->var_values[VAR_OVERLAY_IH] = inlink->h;
+
+    ret = eval_expr(avctx);
+    if (ret < 0)
+        return ret;
+
+    ctx->ox = (int)ctx->var_values[VAR_OX];
+    ctx->oy = (int)ctx->var_values[VAR_OY];
+    ctx->ow = (int)ctx->var_values[VAR_OW];
+    ctx->oh = (int)ctx->var_values[VAR_OH];
 
     ctx->blend_flags = 0;
     ctx->blend_alpha = 1.0f;
@@ -365,11 +478,11 @@ static av_cold void overlay_vaapi_uninit(AVFilterContext *avctx)
 #define OFFSET(x) offsetof(OverlayVAAPIContext, x)
 #define FLAGS (AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_VIDEO_PARAM)
 static const AVOption overlay_vaapi_options[] = {
-    { "x", "Overlay x position",       OFFSET(overlay_ox), AV_OPT_TYPE_INT,   { .i64 = 0 },   0, INT_MAX, .flags = FLAGS },
-    { "y", "Overlay y position",       OFFSET(overlay_oy), AV_OPT_TYPE_INT,   { .i64 = 0 },   0, INT_MAX, .flags = FLAGS },
-    { "w", "Overlay width",            OFFSET(overlay_ow), AV_OPT_TYPE_INT,   { .i64 = 0 },   0, INT_MAX, .flags = FLAGS },
-    { "h", "Overlay height",           OFFSET(overlay_oh), AV_OPT_TYPE_INT,   { .i64 = 0 },   0, INT_MAX, .flags = FLAGS },
-    { "alpha", "Overlay global alpha", OFFSET(alpha),      AV_OPT_TYPE_FLOAT, { .dbl = 1.0 }, 0.0, 1.0,   .flags = FLAGS },
+    { "x", "Overlay x position", OFFSET(overlay_ox),   AV_OPT_TYPE_STRING, { .str="0"}, 0, 255,          .flags = FLAGS},
+    { "y", "Overlay y position", OFFSET(overlay_oy),   AV_OPT_TYPE_STRING, { .str="0"}, 0, 255,          .flags = FLAGS},
+    { "w", "Overlay width",      OFFSET(overlay_ow),   AV_OPT_TYPE_STRING, { .str="overlay_iw"}, 0, 255, .flags = FLAGS},
+    { "h", "Overlay height",     OFFSET(overlay_oh),   AV_OPT_TYPE_STRING, { .str="overlay_ih*w/overlay_iw"}, 0, 255, .flags = FLAGS},
+    { "alpha", "Overlay global alpha", OFFSET(alpha),  AV_OPT_TYPE_FLOAT,  { .dbl = 1.0 }, 0.0, 1.0,      .flags = FLAGS },
     { "eof_action", "Action to take when encountering EOF from secondary input ",
         OFFSET(fs.opt_eof_action), AV_OPT_TYPE_INT, { .i64 = EOF_ACTION_REPEAT },
         EOF_ACTION_REPEAT, EOF_ACTION_PASS, .flags = FLAGS, "eof_action" },
@@ -387,7 +500,7 @@ static const AVFilterPad overlay_vaapi_inputs[] = {
     {
         .name             = "main",
         .type             = AVMEDIA_TYPE_VIDEO,
-        .config_props     = &ff_vaapi_vpp_config_input,
+        .config_props     = overlay_vaapi_config_input_main,
     },
     {
         .name             = "overlay",
