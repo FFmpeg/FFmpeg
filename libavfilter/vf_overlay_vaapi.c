@@ -36,6 +36,8 @@ typedef struct OverlayVAAPIContext {
     int              overlay_ow;
     int              overlay_oh;
     float            alpha;
+    unsigned int     blend_flags;
+    float            blend_alpha;
 } OverlayVAAPIContext;
 
 static int overlay_vaapi_build_filter_params(AVFilterContext *avctx)
@@ -246,8 +248,8 @@ static int overlay_vaapi_blend(FFFrameSync *fs)
 
         memcpy(&subpic_params, &params, sizeof(subpic_params));
 
-        blend_state.flags         = VA_BLEND_GLOBAL_ALPHA;
-        blend_state.global_alpha  = ctx->alpha;
+        blend_state.flags         = ctx->blend_flags;
+        blend_state.global_alpha  = ctx->blend_alpha;
         subpic_params.blend_state = &blend_state;
 
         subpic_params.surface       = (VASurfaceID)(uintptr_t)input_overlay->data[3];
@@ -267,6 +269,43 @@ static int overlay_vaapi_blend(FFFrameSync *fs)
 fail:
     av_frame_free(&output);
     return err;
+}
+
+static int have_alpha_planar(AVFilterLink *link)
+{
+    enum AVPixelFormat pix_fmt = link->format;
+    const AVPixFmtDescriptor *desc;
+    AVHWFramesContext *fctx;
+
+    if (link->format == AV_PIX_FMT_VAAPI) {
+        fctx    = (AVHWFramesContext *)link->hw_frames_ctx->data;
+        pix_fmt = fctx->sw_format;
+    }
+
+    desc = av_pix_fmt_desc_get(pix_fmt);
+    if (!desc)
+        return 0;
+
+    return !!(desc->flags & AV_PIX_FMT_FLAG_ALPHA);
+}
+
+static int overlay_vaapi_config_input_overlay(AVFilterLink *inlink)
+{
+    AVFilterContext  *avctx  = inlink->dst;
+    OverlayVAAPIContext *ctx = avctx->priv;
+
+    ctx->blend_flags = 0;
+    ctx->blend_alpha = 1.0f;
+
+    if (ctx->alpha < 1.0f) {
+        ctx->blend_flags |= VA_BLEND_GLOBAL_ALPHA;
+        ctx->blend_alpha  = ctx->alpha;
+    }
+
+    if (have_alpha_planar(inlink))
+        ctx->blend_flags |= VA_BLEND_PREMULTIPLIED_ALPHA;
+
+    return 0;
 }
 
 static int overlay_vaapi_config_output(AVFilterLink *outlink)
@@ -353,6 +392,7 @@ static const AVFilterPad overlay_vaapi_inputs[] = {
     {
         .name             = "overlay",
         .type             = AVMEDIA_TYPE_VIDEO,
+        .config_props     = overlay_vaapi_config_input_overlay,
     },
 };
 
