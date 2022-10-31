@@ -106,18 +106,6 @@ static int overlay_vaapi_render_picture(AVFilterContext *avctx,
            params_id);
 
 
-    vas = vaCreateBuffer(ctx->hwctx->display, ctx->va_context,
-                         VAProcPipelineParameterBufferType,
-                         sizeof(*subpic_params), 1, subpic_params, &subpic_params_id);
-    if (vas != VA_STATUS_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to create parameter buffer: "
-               "%d (%s).\n", vas, vaErrorStr(vas));
-        err = AVERROR(EIO);
-        goto fail_after_begin;
-    }
-    av_log(avctx, AV_LOG_DEBUG, "Pipeline subpic parameter buffer is %#x.\n",
-           subpic_params_id);
-
     vas = vaRenderPicture(ctx->hwctx->display, ctx->va_context,
                           &params_id, 1);
     if (vas != VA_STATUS_SUCCESS) {
@@ -127,13 +115,27 @@ static int overlay_vaapi_render_picture(AVFilterContext *avctx,
         goto fail_after_begin;
     }
 
-    vas = vaRenderPicture(ctx->hwctx->display, ctx->va_context,
-                          &subpic_params_id, 1);
-    if (vas != VA_STATUS_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to render subpic parameter buffer: "
-               "%d (%s).\n", vas, vaErrorStr(vas));
-        err = AVERROR(EIO);
-        goto fail_after_begin;
+    if (subpic_params) {
+        vas = vaCreateBuffer(ctx->hwctx->display, ctx->va_context,
+                             VAProcPipelineParameterBufferType,
+                             sizeof(*subpic_params), 1, subpic_params, &subpic_params_id);
+        if (vas != VA_STATUS_SUCCESS) {
+            av_log(avctx, AV_LOG_ERROR, "Failed to create parameter buffer: "
+                   "%d (%s).\n", vas, vaErrorStr(vas));
+            err = AVERROR(EIO);
+            goto fail_after_begin;
+        }
+        av_log(avctx, AV_LOG_DEBUG, "Pipeline subpic parameter buffer is %#x.\n",
+               subpic_params_id);
+
+        vas = vaRenderPicture(ctx->hwctx->display, ctx->va_context,
+                              &subpic_params_id, 1);
+        if (vas != VA_STATUS_SUCCESS) {
+            av_log(avctx, AV_LOG_ERROR, "Failed to render subpic parameter buffer: "
+                   "%d (%s).\n", vas, vaErrorStr(vas));
+            err = AVERROR(EIO);
+            goto fail_after_begin;
+        }
     }
 
     vas = vaEndPicture(ctx->hwctx->display, ctx->va_context);
@@ -177,7 +179,7 @@ static int overlay_vaapi_blend(FFFrameSync *fs)
     AVFrame *input_main, *input_overlay;
     AVFrame *output;
     VAProcPipelineParameterBuffer params, subpic_params;
-    VABlendState blend_state; /**< Blend State */
+    VABlendState blend_state = { 0 }; /**< Blend State */
     VARectangle overlay_region, output_region;
     int err;
 
@@ -191,10 +193,6 @@ static int overlay_vaapi_blend(FFFrameSync *fs)
     av_log(avctx, AV_LOG_DEBUG, "Filter main: %s, %ux%u (%"PRId64").\n",
            av_get_pix_fmt_name(input_main->format),
            input_main->width, input_main->height, input_main->pts);
-
-    av_log(avctx, AV_LOG_DEBUG, "Filter overlay: %s, %ux%u (%"PRId64").\n",
-           av_get_pix_fmt_name(input_overlay->format),
-           input_overlay->width, input_overlay->height, input_overlay->pts);
 
     if (vpp_ctx->va_context == VA_INVALID_ID)
         return AVERROR(EINVAL);
@@ -214,13 +212,6 @@ static int overlay_vaapi_blend(FFFrameSync *fs)
     if (err < 0)
         goto fail;
 
-    overlay_region = (VARectangle) {
-        .x      = ctx->overlay_ox,
-        .y      = ctx->overlay_oy,
-        .width  = ctx->overlay_ow ? ctx->overlay_ow : input_overlay->width,
-        .height = ctx->overlay_oh ? ctx->overlay_oh : input_overlay->height,
-    };
-
     output_region = (VARectangle) {
         .x      = 0,
         .y      = 0,
@@ -228,29 +219,42 @@ static int overlay_vaapi_blend(FFFrameSync *fs)
         .height = output->height,
     };
 
-    if (overlay_region.x + overlay_region.width > input_main->width ||
-        overlay_region.y + overlay_region.height > input_main->height) {
-        av_log(ctx, AV_LOG_WARNING,
-               "The overlay image exceeds the scope of the main image, "
-               "will crop the overlay image according based on the main image.\n");
-    }
-
     params.filters     = &vpp_ctx->filter_buffers[0];
     params.num_filters = vpp_ctx->nb_filter_buffers;
 
     params.output_region = &output_region;
     params.output_background_color = VAAPI_VPP_BACKGROUND_BLACK;
 
-    memcpy(&subpic_params, &params, sizeof(subpic_params));
+    if (input_overlay) {
+        av_log(avctx, AV_LOG_DEBUG, "Filter overlay: %s, %ux%u (%"PRId64").\n",
+               av_get_pix_fmt_name(input_overlay->format),
+               input_overlay->width, input_overlay->height, input_overlay->pts);
 
-    blend_state.flags = VA_BLEND_GLOBAL_ALPHA;
-    blend_state.global_alpha = ctx->alpha;
-    subpic_params.blend_state = &blend_state;
+        overlay_region = (VARectangle) {
+            .x      = ctx->overlay_ox,
+            .y      = ctx->overlay_oy,
+            .width  = ctx->overlay_ow ? ctx->overlay_ow : input_overlay->width,
+            .height = ctx->overlay_oh ? ctx->overlay_oh : input_overlay->height,
+        };
 
-    subpic_params.surface = (VASurfaceID)(uintptr_t)input_overlay->data[3];
-    subpic_params.output_region = &overlay_region;
+        if (overlay_region.x + overlay_region.width > input_main->width ||
+            overlay_region.y + overlay_region.height > input_main->height) {
+            av_log(ctx, AV_LOG_WARNING,
+                   "The overlay image exceeds the scope of the main image, "
+                   "will crop the overlay image according based on the main image.\n");
+        }
 
-    err = overlay_vaapi_render_picture(avctx, &params, &subpic_params, output);
+        memcpy(&subpic_params, &params, sizeof(subpic_params));
+
+        blend_state.flags         = VA_BLEND_GLOBAL_ALPHA;
+        blend_state.global_alpha  = ctx->alpha;
+        subpic_params.blend_state = &blend_state;
+
+        subpic_params.surface       = (VASurfaceID)(uintptr_t)input_overlay->data[3];
+        subpic_params.output_region = &overlay_region;
+    }
+
+    err = overlay_vaapi_render_picture(avctx, &params, input_overlay ? &subpic_params : NULL, output);
     if (err < 0)
         goto fail;
 
