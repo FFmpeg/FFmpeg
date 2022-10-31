@@ -26317,7 +26317,6 @@ To use vaapi filters, you need to setup the vaapi device correctly. For more inf
 Overlay one video on the top of another.
 
 It takes two inputs and has one output. The first input is the "main" video on which the second input is overlaid.
-This filter requires same memory layout for all the inputs. So, format conversion may be needed.
 
 The filter accepts the following options:
 
