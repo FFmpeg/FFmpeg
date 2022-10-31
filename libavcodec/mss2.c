@@ -519,7 +519,7 @@ static int mss2_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
     struct Rectangle wmv9rects[MAX_WMV9_RECTANGLES], *r;
     struct Rectangle2 draw;
-    int used_rects = 0, i, implicit_rect = 0, av_uninit(wmv9_mask);
+    int used_rects = 0, i, implicit_rect = 0, wmv9_mask = -1;
 
     if ((ret = init_get_bits8(&gb, buf, buf_size)) < 0)
         return ret;
