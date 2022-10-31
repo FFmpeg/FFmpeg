@@ -26321,30 +26321,59 @@ It takes two inputs and has one output. The first input is the "main" video on w
 The filter accepts the following options:
 
 @table @option
-
 @item x
-Set the x coordinate of the overlaid video on the main video.
-Default value is @code{0}.
-
 @item y
-Set the y coordinate of the overlaid video on the main video.
-Default value is @code{0}.
+Set expressions for the x and y coordinates of the overlaid video
+on the main video.
+
+Default value is "0" for both expressions.
 
 @item w
-Set the width of the overlaid video on the main video.
-Default value is the width of input overlay video.
-
 @item h
-Set the height of the overlaid video on the main video.
-Default value is the height of input overlay video.
+Set expressions for the width and height the overlaid video
+on the main video.
+
+Default values are 'overlay_iw' for 'w' and 'overlay_ih*w/overlay_iw' for 'h'.
+
+The expressions can contain the following parameters:
+
+@table @option
+
+@item main_w, W
+@item main_h, H
+The main input width and height.
+
+@item overlay_iw
+@item overlay_ih
+The overlay input width and height.
+
+@item overlay_w, w
+@item overlay_h, h
+The overlay output width and height.
+
+@item overlay_x, x
+@item overlay_y, y
+Position of the overlay layer inside of main
+
+@end table
 
 @item alpha
 Set transparency of overlaid video. Allowed range is 0.0 to 1.0.
 Higher value means lower transparency.
 Default value is @code{1.0}.
 
+@item eof_action
+See @ref{framesync}.
+
+@item shortest
+See @ref{framesync}.
+
+@item repeatlast
+See @ref{framesync}.
+
 @end table
 
+This filter also supports the @ref{framesync} options.
 @subsection Examples
 
 @itemize
