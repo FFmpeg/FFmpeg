@@ -156,7 +156,7 @@ static int query_formats(AVFilterContext *ctx)
 static av_always_inline uint32_t dither_color(uint32_t px, int er, int eg,
                                               int eb, int scale, int shift)
 {
-    return                px >> 24                                        << 24
+    return (px & 0xff000000)
          | av_clip_uint8((px >> 16 & 0xff) + ((er * scale) / (1<<shift))) << 16
          | av_clip_uint8((px >>  8 & 0xff) + ((eg * scale) / (1<<shift))) <<  8
          | av_clip_uint8((px       & 0xff) + ((eb * scale) / (1<<shift)));
@@ -187,7 +187,7 @@ static av_always_inline uint8_t colormap_nearest_bruteforce(const uint32_t *pale
 
         if (c >> 24 >= trans_thresh) { // ignore transparent entry
             const uint8_t palargb[] = {
-                palette[i]>>24 & 0xff,
+                palette[i]>>24,
                 palette[i]>>16 & 0xff,
                 palette[i]>> 8 & 0xff,
                 palette[i]     & 0xff,
@@ -372,7 +372,7 @@ static av_always_inline int get_dst_color_err(PaletteUseContext *s,
                                               uint32_t c, int *er, int *eg, int *eb,
                                               const enum color_search_method search_method)
 {
-    const uint8_t a = c >> 24 & 0xff;
+    const uint8_t a = c >> 24;
     const uint8_t r = c >> 16 & 0xff;
     const uint8_t g = c >>  8 & 0xff;
     const uint8_t b = c       & 0xff;
@@ -411,7 +411,7 @@ static av_always_inline int set_frame(PaletteUseContext *s, AVFrame *out, AVFram
 
             if (dither == DITHERING_BAYER) {
                 const int d = s->ordered_dither[(y & 7)<<3 | (x & 7)];
-                const uint8_t a8 = src[x] >> 24 & 0xff;
+                const uint8_t a8 = src[x] >> 24;
                 const uint8_t r8 = src[x] >> 16 & 0xff;
                 const uint8_t g8 = src[x] >>  8 & 0xff;
                 const uint8_t b8 = src[x]       & 0xff;
@@ -483,7 +483,7 @@ static av_always_inline int set_frame(PaletteUseContext *s, AVFrame *out, AVFram
                 if (         down) src[src_linesize + x    ] = dither_color(src[src_linesize + x    ], er, eg, eb, 1, 2);
 
             } else {
-                const uint8_t a = src[x] >> 24 & 0xff;
+                const uint8_t a = src[x] >> 24;
                 const uint8_t r = src[x] >> 16 & 0xff;
                 const uint8_t g = src[x] >>  8 & 0xff;
                 const uint8_t b = src[x]       & 0xff;
@@ -630,7 +630,7 @@ static int get_next_color(const uint8_t *color_used, const uint32_t *palette,
 
     for (i = 0; i < AVPALETTE_COUNT; i++) {
         const uint32_t c = palette[i];
-        const uint8_t a = c >> 24 & 0xff;
+        const uint8_t a = c >> 24;
         const uint8_t r = c >> 16 & 0xff;
         const uint8_t g = c >>  8 & 0xff;
         const uint8_t b = c       & 0xff;
@@ -700,7 +700,7 @@ static int colormap_insert(struct color_node *map,
     node = &map[cur_id];
     node->split = component;
     node->palette_id = pal_id;
-    node->val[0] = c>>24 & 0xff;
+    node->val[0] = c>>24;
     node->val[1] = c>>16 & 0xff;
     node->val[2] = c>> 8 & 0xff;
     node->val[3] = c     & 0xff;
