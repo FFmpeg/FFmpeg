@@ -47,6 +47,17 @@
 #include "atrac.h"
 #include "atrac3plus.h"
 
+static const uint8_t channel_map[8][8] = {
+    { 0, },
+    { 0, 1, },
+    { 0, 1, 2, },
+    { 0, 1, 2, 3, },
+    { 0, },
+    { 0, 1, 2, 4, 5, 3, },
+    { 0, 1, 2, 4, 5, 6, 3, },
+    { 0, 1, 2, 4, 5, 6, 7, 3, },
+};
+
 typedef struct ATRAC3PContext {
     GetBitContext gb;
     AVFloatDSPContext *fdsp;
@@ -65,6 +76,7 @@ typedef struct ATRAC3PContext {
     int num_channel_blocks;     ///< number of channel blocks
     uint8_t channel_blocks[5];  ///< channel configuration descriptor
     uint64_t my_channel_layout; ///< current channel layout
+    const uint8_t *channel_map; ///< channel layout map
 } ATRAC3PContext;
 
 static av_cold int atrac3p_decode_close(AVCodecContext *avctx)
@@ -142,6 +154,8 @@ static av_cold int set_channel_params(ATRAC3PContext *ctx,
                "Unsupported channel count: %d!\n", avctx->channels);
         return AVERROR_INVALIDDATA;
     }
+
+    ctx->channel_map = channel_map[channels - 1];
 
     return 0;
 }
@@ -381,7 +395,7 @@ static int atrac3p_decode_frame(AVCodecContext *avctx, void *data,
                           channels_to_process, avctx);
 
         for (i = 0; i < channels_to_process; i++)
-            memcpy(samples_p[out_ch_index + i], ctx->outp_buf[i],
+            memcpy(samples_p[ctx->channel_map[out_ch_index + i]], ctx->outp_buf[i],
                    ATRAC3P_FRAME_SAMPLES * sizeof(**samples_p));
 
         ch_block++;
