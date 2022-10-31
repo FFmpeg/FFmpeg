@@ -22,3 +22,4 @@
 /transcoding
 /vaapi_encode
 /vaapi_transcode
+/qsv_transcode
