@@ -326,16 +326,11 @@ static av_cold void overlay_vaapi_uninit(AVFilterContext *avctx)
 #define OFFSET(x) offsetof(OverlayVAAPIContext, x)
 #define FLAGS (AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_VIDEO_PARAM)
 static const AVOption overlay_vaapi_options[] = {
-    { "x", "Overlay x position",
-      OFFSET(overlay_ox), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, .flags = FLAGS },
-    { "y", "Overlay y position",
-      OFFSET(overlay_oy), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, .flags = FLAGS },
-    { "w", "Overlay width",
-      OFFSET(overlay_ow), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, .flags = FLAGS },
-    { "h", "Overlay height",
-      OFFSET(overlay_oh), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, .flags = FLAGS },
-    { "alpha", "Overlay global alpha",
-      OFFSET(alpha), AV_OPT_TYPE_FLOAT, { .dbl = 1.0}, 0.0, 1.0, .flags = FLAGS},
+    { "x", "Overlay x position",       OFFSET(overlay_ox), AV_OPT_TYPE_INT,   { .i64 = 0 },   0, INT_MAX, .flags = FLAGS },
+    { "y", "Overlay y position",       OFFSET(overlay_oy), AV_OPT_TYPE_INT,   { .i64 = 0 },   0, INT_MAX, .flags = FLAGS },
+    { "w", "Overlay width",            OFFSET(overlay_ow), AV_OPT_TYPE_INT,   { .i64 = 0 },   0, INT_MAX, .flags = FLAGS },
+    { "h", "Overlay height",           OFFSET(overlay_oh), AV_OPT_TYPE_INT,   { .i64 = 0 },   0, INT_MAX, .flags = FLAGS },
+    { "alpha", "Overlay global alpha", OFFSET(alpha),      AV_OPT_TYPE_FLOAT, { .dbl = 1.0 }, 0.0, 1.0,   .flags = FLAGS },
     { NULL },
 };
 
