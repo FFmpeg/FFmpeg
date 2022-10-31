@@ -240,6 +240,11 @@ static int encode_block(SVQ1EncContext *s, uint8_t *src, uint8_t *ref,
         }
     }
 
+    if (best_mean == -128)
+        best_mean = -127;
+    else if (best_mean == 128)
+        best_mean = 127;
+
     split = 0;
     if (best_score > threshold && level) {
         int score  = 0;
