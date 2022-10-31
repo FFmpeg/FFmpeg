@@ -299,7 +299,7 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
     /* find samplerate in table */
     if (freq < 1)
         return AVERROR(EINVAL);
-    for (i = 4; i < 12; i++) {
+    for (i = 1; i < 12; i++) {
         if (freq == ff_flac_sample_rate_table[i]) {
             s->samplerate = ff_flac_sample_rate_table[i];
             s->sr_code[0] = i;
@@ -318,6 +318,9 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
         } else if (freq < 65535) {
             s->sr_code[0] = 13;
             s->sr_code[1] = freq;
+        } else if (freq < 1048576) {
+            s->sr_code[0] = 0;
+            s->sr_code[1] = 0;
         } else {
             av_log(avctx, AV_LOG_ERROR, "%d Hz not supported\n", freq);
             return AVERROR(EINVAL);
