@@ -181,10 +181,6 @@ static int overlay_vaapi_blend(FFFrameSync *fs)
     VARectangle overlay_region, output_region;
     int err;
 
-    err = overlay_vaapi_build_filter_params(avctx);
-    if (err < 0)
-        return err;
-
     err = ff_framesync_get_frame(fs, 0, &input_main, 0);
     if (err < 0)
         return err;
@@ -306,6 +302,10 @@ static int overlay_vaapi_config_output(AVFilterLink *outlink)
     vpp_ctx->output_height = avctx->inputs[0]->h;
 
     err = ff_vaapi_vpp_config_output(outlink);
+    if (err < 0)
+        return err;
+
+    err = overlay_vaapi_build_filter_params(avctx);
     if (err < 0)
         return err;
 
