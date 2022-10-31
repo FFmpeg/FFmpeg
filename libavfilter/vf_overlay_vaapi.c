@@ -292,8 +292,7 @@ static int overlay_vaapi_config_output(AVFilterLink *outlink)
     if (err < 0)
         return err;
 
-    ctx->fs.on_event  = overlay_vaapi_blend;
-    ctx->fs.opaque    = ctx;
+    ctx->fs.on_event = overlay_vaapi_blend;
     ctx->fs.time_base = outlink->time_base;
 
     return ff_framesync_configure(&ctx->fs);
@@ -321,6 +320,7 @@ static av_cold void overlay_vaapi_uninit(AVFilterContext *avctx)
     OverlayVAAPIContext *ctx = avctx->priv;
 
     ff_framesync_uninit(&ctx->fs);
+    ff_vaapi_vpp_ctx_uninit(avctx);
 }
 
 #define OFFSET(x) offsetof(OverlayVAAPIContext, x)
@@ -331,10 +331,18 @@ static const AVOption overlay_vaapi_options[] = {
     { "w", "Overlay width",            OFFSET(overlay_ow), AV_OPT_TYPE_INT,   { .i64 = 0 },   0, INT_MAX, .flags = FLAGS },
     { "h", "Overlay height",           OFFSET(overlay_oh), AV_OPT_TYPE_INT,   { .i64 = 0 },   0, INT_MAX, .flags = FLAGS },
     { "alpha", "Overlay global alpha", OFFSET(alpha),      AV_OPT_TYPE_FLOAT, { .dbl = 1.0 }, 0.0, 1.0,   .flags = FLAGS },
+    { "eof_action", "Action to take when encountering EOF from secondary input ",
+        OFFSET(fs.opt_eof_action), AV_OPT_TYPE_INT, { .i64 = EOF_ACTION_REPEAT },
+        EOF_ACTION_REPEAT, EOF_ACTION_PASS, .flags = FLAGS, "eof_action" },
+        { "repeat", "Repeat the previous frame.",   0, AV_OPT_TYPE_CONST, { .i64 = EOF_ACTION_REPEAT }, .flags = FLAGS, "eof_action" },
+        { "endall", "End both streams.",            0, AV_OPT_TYPE_CONST, { .i64 = EOF_ACTION_ENDALL }, .flags = FLAGS, "eof_action" },
+        { "pass",   "Pass through the main input.", 0, AV_OPT_TYPE_CONST, { .i64 = EOF_ACTION_PASS },   .flags = FLAGS, "eof_action" },
+    { "shortest", "force termination when the shortest input terminates", OFFSET(fs.opt_shortest),   AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
+    { "repeatlast", "repeat overlay of the last overlay frame",           OFFSET(fs.opt_repeatlast), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, FLAGS },
     { NULL },
 };
 
-AVFILTER_DEFINE_CLASS(overlay_vaapi);
+FRAMESYNC_DEFINE_CLASS(overlay_vaapi, OverlayVAAPIContext, fs);
 
 static const AVFilterPad overlay_vaapi_inputs[] = {
     {
@@ -364,6 +372,7 @@ const AVFilter ff_vf_overlay_vaapi = {
     .init            = &overlay_vaapi_init,
     .uninit          = &overlay_vaapi_uninit,
     .activate        = &overlay_vaapi_activate,
+    .preinit         = overlay_vaapi_framesync_preinit,
     FILTER_INPUTS(overlay_vaapi_inputs),
     FILTER_OUTPUTS(overlay_vaapi_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_VAAPI),
