@@ -265,28 +265,6 @@ fail:
     return err;
 }
 
-static int overlay_vaapi_init_framesync(AVFilterContext *avctx)
-{
-    OverlayVAAPIContext *ctx = avctx->priv;
-    int ret, i;
-
-    ctx->fs.on_event = overlay_vaapi_blend;
-    ctx->fs.opaque   = ctx;
-    ret = ff_framesync_init(&ctx->fs, avctx, avctx->nb_inputs);
-    if (ret < 0)
-        return ret;
-
-    for (i = 0; i < avctx->nb_inputs; i++) {
-        FFFrameSyncIn *in = &ctx->fs.in[i];
-        in->before    = EXT_STOP;
-        in->after     = EXT_INFINITY;
-        in->sync      = i ? 1 : 2;
-        in->time_base = avctx->inputs[i]->time_base;
-    }
-
-    return ff_framesync_configure(&ctx->fs);
-}
-
 static int overlay_vaapi_config_output(AVFilterLink *outlink)
 {
     AVFilterContext  *avctx  = outlink->src;
@@ -294,10 +272,7 @@ static int overlay_vaapi_config_output(AVFilterLink *outlink)
     VAAPIVPPContext *vpp_ctx = avctx->priv;
     int err;
 
-    err = overlay_vaapi_init_framesync(avctx);
-    if (err < 0)
-        return err;
-
+    outlink->time_base = avctx->inputs[0]->time_base;
     vpp_ctx->output_width  = avctx->inputs[0]->w;
     vpp_ctx->output_height = avctx->inputs[0]->h;
 
@@ -312,6 +287,10 @@ static int overlay_vaapi_config_output(AVFilterLink *outlink)
     err = ff_framesync_init_dualinput(&ctx->fs, avctx);
     if (err < 0)
         return err;
+
+    ctx->fs.on_event  = overlay_vaapi_blend;
+    ctx->fs.opaque    = ctx;
+    ctx->fs.time_base = outlink->time_base;
 
     return ff_framesync_configure(&ctx->fs);
 }
