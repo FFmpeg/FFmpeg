@@ -24,12 +24,12 @@
 #include "libavutil/ffmath.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/mem_internal.h"
+#include "libavutil/tx.h"
 
 #include "avcodec.h"
 #include "bytestream.h"
 #include "codec_internal.h"
 #include "decode.h"
-#include "fft.h"
 #include "get_bits.h"
 
 #include "on2avcdata.h"
@@ -50,8 +50,10 @@ enum WindowTypes {
 typedef struct On2AVCContext {
     AVCodecContext *avctx;
     AVFloatDSPContext *fdsp;
-    FFTContext mdct, mdct_half, mdct_small;
-    FFTContext fft128, fft256, fft512, fft1024;
+    AVTXContext *mdct, *mdct_half, *mdct_small;
+    AVTXContext *fft128, *fft256, *fft512, *fft1024;
+    av_tx_fn mdct_fn, mdct_half_fn, mdct_small_fn;
+    av_tx_fn fft128_fn, fft256_fn, fft512_fn, fft1024_fn;
     void (*wtf)(struct On2AVCContext *ctx, float *out, float *in, int size);
 
     int is_av500;
@@ -465,67 +467,57 @@ static void combine_fft(float *s0, float *s1, float *s2, float *s3, float *dst,
 static void wtf_end_512(On2AVCContext *c, float *out, float *src,
                         float *tmp0, float *tmp1)
 {
-    memcpy(src,        tmp0,      384 * sizeof(*tmp0));
-    memcpy(tmp0 + 384, src + 384, 128 * sizeof(*tmp0));
+    memcpy(tmp1,       tmp0,       384 * sizeof(*tmp0));
+    memcpy(tmp0 + 384, tmp1 + 384, 128 * sizeof(*tmp0));
 
-    zero_head_and_tail(src,       128, 16, 4);
-    zero_head_and_tail(src + 128, 128, 16, 4);
-    zero_head_and_tail(src + 256, 128, 13, 7);
-    zero_head_and_tail(src + 384, 128, 15, 5);
+    zero_head_and_tail(tmp1,       128, 16, 4);
+    zero_head_and_tail(tmp1 + 128, 128, 16, 4);
+    zero_head_and_tail(tmp1 + 256, 128, 13, 7);
+    zero_head_and_tail(tmp1 + 384, 128, 15, 5);
 
-    c->fft128.fft_permute(&c->fft128, (FFTComplex*)src);
-    c->fft128.fft_permute(&c->fft128, (FFTComplex*)(src + 128));
-    c->fft128.fft_permute(&c->fft128, (FFTComplex*)(src + 256));
-    c->fft128.fft_permute(&c->fft128, (FFTComplex*)(src + 384));
-    c->fft128.fft_calc(&c->fft128, (FFTComplex*)src);
-    c->fft128.fft_calc(&c->fft128, (FFTComplex*)(src + 128));
-    c->fft128.fft_calc(&c->fft128, (FFTComplex*)(src + 256));
-    c->fft128.fft_calc(&c->fft128, (FFTComplex*)(src + 384));
+    c->fft128_fn(c->fft128, src +   0, tmp1 +   0, sizeof(float));
+    c->fft128_fn(c->fft128, src + 128, tmp1 + 128, sizeof(float));
+    c->fft128_fn(c->fft128, src + 256, tmp1 + 256, sizeof(float));
+    c->fft128_fn(c->fft128, src + 384, tmp1 + 384, sizeof(float));
+
     combine_fft(src, src + 128, src + 256, src + 384, tmp1,
                 ff_on2avc_ctab_1, ff_on2avc_ctab_2,
                 ff_on2avc_ctab_3, ff_on2avc_ctab_4, 512, 2);
-    c->fft512.fft_permute(&c->fft512, (FFTComplex*)tmp1);
-    c->fft512.fft_calc(&c->fft512, (FFTComplex*)tmp1);
 
-    pretwiddle(&tmp0[  0], tmp1, 512, 84, 4, 16, 4, ff_on2avc_tabs_20_84_1);
-    pretwiddle(&tmp0[128], tmp1, 512, 84, 4, 16, 4, ff_on2avc_tabs_20_84_2);
-    pretwiddle(&tmp0[256], tmp1, 512, 84, 4, 13, 7, ff_on2avc_tabs_20_84_3);
-    pretwiddle(&tmp0[384], tmp1, 512, 84, 4, 15, 5, ff_on2avc_tabs_20_84_4);
+    c->fft512_fn(c->fft512, src, tmp1, sizeof(float));
 
-    memcpy(src, tmp1, 512 * sizeof(float));
+    pretwiddle(&tmp0[  0], src, 512, 84, 4, 16, 4, ff_on2avc_tabs_20_84_1);
+    pretwiddle(&tmp0[128], src, 512, 84, 4, 16, 4, ff_on2avc_tabs_20_84_2);
+    pretwiddle(&tmp0[256], src, 512, 84, 4, 13, 7, ff_on2avc_tabs_20_84_3);
+    pretwiddle(&tmp0[384], src, 512, 84, 4, 15, 5, ff_on2avc_tabs_20_84_4);
 }
 
 static void wtf_end_1024(On2AVCContext *c, float *out, float *src,
                          float *tmp0, float *tmp1)
 {
-    memcpy(src,        tmp0,      768 * sizeof(*tmp0));
-    memcpy(tmp0 + 768, src + 768, 256 * sizeof(*tmp0));
+    memcpy(tmp1,       tmp0,       768 * sizeof(*tmp0));
+    memcpy(tmp0 + 768, tmp1 + 768, 256 * sizeof(*tmp0));
 
-    zero_head_and_tail(src,       256, 16, 4);
-    zero_head_and_tail(src + 256, 256, 16, 4);
-    zero_head_and_tail(src + 512, 256, 13, 7);
-    zero_head_and_tail(src + 768, 256, 15, 5);
+    zero_head_and_tail(tmp1,       256, 16, 4);
+    zero_head_and_tail(tmp1 + 256, 256, 16, 4);
+    zero_head_and_tail(tmp1 + 512, 256, 13, 7);
+    zero_head_and_tail(tmp1 + 768, 256, 15, 5);
 
-    c->fft256.fft_permute(&c->fft256, (FFTComplex*)src);
-    c->fft256.fft_permute(&c->fft256, (FFTComplex*)(src + 256));
-    c->fft256.fft_permute(&c->fft256, (FFTComplex*)(src + 512));
-    c->fft256.fft_permute(&c->fft256, (FFTComplex*)(src + 768));
-    c->fft256.fft_calc(&c->fft256, (FFTComplex*)src);
-    c->fft256.fft_calc(&c->fft256, (FFTComplex*)(src + 256));
-    c->fft256.fft_calc(&c->fft256, (FFTComplex*)(src + 512));
-    c->fft256.fft_calc(&c->fft256, (FFTComplex*)(src + 768));
+    c->fft256_fn(c->fft256, src +   0, tmp1 +   0, sizeof(float));
+    c->fft256_fn(c->fft256, src + 256, tmp1 + 256, sizeof(float));
+    c->fft256_fn(c->fft256, src + 512, tmp1 + 512, sizeof(float));
+    c->fft256_fn(c->fft256, src + 768, tmp1 + 768, sizeof(float));
+
     combine_fft(src, src + 256, src + 512, src + 768, tmp1,
                 ff_on2avc_ctab_1, ff_on2avc_ctab_2,
                 ff_on2avc_ctab_3, ff_on2avc_ctab_4, 1024, 1);
-    c->fft1024.fft_permute(&c->fft1024, (FFTComplex*)tmp1);
-    c->fft1024.fft_calc(&c->fft1024, (FFTComplex*)tmp1);
 
-    pretwiddle(&tmp0[  0], tmp1, 1024, 84, 4, 16, 4, ff_on2avc_tabs_20_84_1);
-    pretwiddle(&tmp0[256], tmp1, 1024, 84, 4, 16, 4, ff_on2avc_tabs_20_84_2);
-    pretwiddle(&tmp0[512], tmp1, 1024, 84, 4, 13, 7, ff_on2avc_tabs_20_84_3);
-    pretwiddle(&tmp0[768], tmp1, 1024, 84, 4, 15, 5, ff_on2avc_tabs_20_84_4);
+    c->fft1024_fn(c->fft1024, src, tmp1, sizeof(float));
 
-    memcpy(src, tmp1, 1024 * sizeof(float));
+    pretwiddle(&tmp0[  0], src, 1024, 84, 4, 16, 4, ff_on2avc_tabs_20_84_1);
+    pretwiddle(&tmp0[256], src, 1024, 84, 4, 16, 4, ff_on2avc_tabs_20_84_2);
+    pretwiddle(&tmp0[512], src, 1024, 84, 4, 13, 7, ff_on2avc_tabs_20_84_3);
+    pretwiddle(&tmp0[768], src, 1024, 84, 4, 15, 5, ff_on2avc_tabs_20_84_4);
 }
 
 static void wtf_40(On2AVCContext *c, float *out, float *src, int size)
@@ -701,20 +693,20 @@ static int on2avc_reconstruct_channel_ext(On2AVCContext *c, AVFrame *dst, int of
 
         switch (c->window_type) {
         case WINDOW_TYPE_EXT7:
-            c->mdct.imdct_half(&c->mdct, buf, in);
+            c->mdct_fn(c->mdct, buf, in, sizeof(float));
             break;
         case WINDOW_TYPE_EXT4:
             c->wtf(c, buf, in, 1024);
             break;
         case WINDOW_TYPE_EXT5:
             c->wtf(c, buf, in, 512);
-            c->mdct.imdct_half(&c->mdct_half, buf + 512, in + 512);
+            c->mdct_half_fn(c->mdct, buf + 512, in + 512, sizeof(float));
             for (i = 0; i < 256; i++) {
                 FFSWAP(float, buf[i + 512], buf[1023 - i]);
             }
             break;
         case WINDOW_TYPE_EXT6:
-            c->mdct.imdct_half(&c->mdct_half, buf, in);
+            c->mdct_half_fn(c->mdct_half, buf, in, sizeof(float));
             for (i = 0; i < 256; i++) {
                 FFSWAP(float, buf[i], buf[511 - i]);
             }
@@ -747,11 +739,11 @@ static int on2avc_reconstruct_channel(On2AVCContext *c, int channel,
     case WINDOW_TYPE_LONG_START:
     case WINDOW_TYPE_LONG_STOP:
     case WINDOW_TYPE_LONG:
-        c->mdct.imdct_half(&c->mdct, buf, in);
+        c->mdct_fn(c->mdct, buf, in, sizeof(float));
         break;
     case WINDOW_TYPE_8SHORT:
         for (i = 0; i < ON2AVC_SUBFRAME_SIZE; i += ON2AVC_SUBFRAME_SIZE / 8)
-            c->mdct_small.imdct_half(&c->mdct_small, buf + i, in + i);
+            c->mdct_small_fn(c->mdct_small, buf + i, in + i, sizeof(float));
         break;
     }
 
@@ -911,6 +903,7 @@ static av_cold int on2avc_decode_init(AVCodecContext *avctx)
     const uint8_t  *lens = ff_on2avc_cb_lens;
     const uint16_t *syms = ff_on2avc_cb_syms;
     int channels = avctx->ch_layout.nb_channels;
+    float scale;
     int i, ret;
 
     if (channels > 2U) {
@@ -951,13 +944,27 @@ static av_cold int on2avc_decode_init(AVCodecContext *avctx)
     c->wtf   = (avctx->sample_rate <= 40000) ? wtf_40
                                              : wtf_44;
 
-    ff_mdct_init(&c->mdct,       11, 1, 1.0 / (32768.0 * 1024.0));
-    ff_mdct_init(&c->mdct_half,  10, 1, 1.0 / (32768.0 * 512.0));
-    ff_mdct_init(&c->mdct_small,  8, 1, 1.0 / (32768.0 * 128.0));
-    ff_fft_init(&c->fft128,  6, 0);
-    ff_fft_init(&c->fft256,  7, 0);
-    ff_fft_init(&c->fft512,  8, 1);
-    ff_fft_init(&c->fft1024, 9, 1);
+    scale = 1.0 / (1024*32768);
+    if ((ret = av_tx_init(&c->mdct, &c->mdct_fn, AV_TX_FLOAT_MDCT, 1, 1024, &scale, 0)) < 0)
+        return ret;
+
+    scale = 1.0 / (512*32768);
+    if ((ret = av_tx_init(&c->mdct_half, &c->mdct_half_fn, AV_TX_FLOAT_MDCT, 1, 512, &scale, 0)) < 0)
+        return ret;
+
+    scale = 1.0 / (128*32768);
+    if ((ret = av_tx_init(&c->mdct_small, &c->mdct_small_fn, AV_TX_FLOAT_MDCT, 1, 128, &scale, 0)) < 0)
+        return ret;
+
+    if ((ret = av_tx_init(&c->fft1024, &c->fft1024_fn, AV_TX_FLOAT_FFT, 1, 1024, NULL, 0)) < 0)
+        return ret;
+    if ((ret = av_tx_init(&c->fft512, &c->fft512_fn, AV_TX_FLOAT_FFT, 1, 512, NULL, 0)) < 0)
+        return ret;
+    if ((ret = av_tx_init(&c->fft256, &c->fft256_fn, AV_TX_FLOAT_FFT, 0, 256, NULL, 0)) < 0)
+        return ret;
+    if ((ret = av_tx_init(&c->fft128, &c->fft128_fn, AV_TX_FLOAT_FFT, 0, 128, NULL, 0)) < 0)
+        return ret;
+
     c->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
     if (!c->fdsp)
         return AVERROR(ENOMEM);
@@ -988,13 +995,13 @@ static av_cold int on2avc_decode_close(AVCodecContext *avctx)
 {
     On2AVCContext *c = avctx->priv_data;
 
-    ff_mdct_end(&c->mdct);
-    ff_mdct_end(&c->mdct_half);
-    ff_mdct_end(&c->mdct_small);
-    ff_fft_end(&c->fft128);
-    ff_fft_end(&c->fft256);
-    ff_fft_end(&c->fft512);
-    ff_fft_end(&c->fft1024);
+    av_tx_uninit(&c->mdct);
+    av_tx_uninit(&c->mdct_half);
+    av_tx_uninit(&c->mdct_small);
+    av_tx_uninit(&c->fft128);
+    av_tx_uninit(&c->fft256);
+    av_tx_uninit(&c->fft512);
+    av_tx_uninit(&c->fft1024);
 
     av_freep(&c->fdsp);
 
