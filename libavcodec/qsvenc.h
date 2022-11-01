@@ -185,6 +185,7 @@ typedef struct QSVEncContext {
     int async_depth;
     int idr_interval;
     int profile;
+    int tier;
     int preset;
     int avbr_accuracy;
     int avbr_convergence;

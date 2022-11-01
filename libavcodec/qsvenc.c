@@ -709,8 +709,11 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
         return AVERROR_BUG;
     q->param.mfx.CodecId = ret;
 
-    if (avctx->level > 0)
+    if (avctx->level > 0) {
         q->param.mfx.CodecLevel = avctx->level;
+        if (avctx->codec_id == AV_CODEC_ID_HEVC && avctx->level >= MFX_LEVEL_HEVC_4)
+            q->param.mfx.CodecLevel |= q->tier;
+    }
 
     if (avctx->compression_level == FF_COMPRESSION_DEFAULT) {
         avctx->compression_level = q->preset;
