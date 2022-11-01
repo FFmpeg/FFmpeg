@@ -26,11 +26,11 @@
 
 #include <float.h>
 #include "libavutil/float_dsp.h"
+#include "libavutil/tx.h"
 
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "encode.h"
-#include "fft.h"
 #include "mathops.h"
 #include "vorbis.h"
 #include "vorbis_data.h"
@@ -107,7 +107,8 @@ typedef struct vorbis_enc_context {
     int channels;
     int sample_rate;
     int log2_blocksize[2];
-    FFTContext mdct[2];
+    AVTXContext *mdct[2];
+    av_tx_fn mdct_fn[2];
     const float *win[2];
     int have_saved;
     float *saved;
@@ -251,6 +252,7 @@ static int ready_residue(vorbis_enc_residue *rc, vorbis_enc_context *venc)
 static av_cold int dsp_init(AVCodecContext *avctx, vorbis_enc_context *venc)
 {
     int ret = 0;
+    float scale = 1.0f;
 
     venc->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
     if (!venc->fdsp)
@@ -260,9 +262,11 @@ static av_cold int dsp_init(AVCodecContext *avctx, vorbis_enc_context *venc)
     venc->win[0] = ff_vorbis_vwin[venc->log2_blocksize[0] - 6];
     venc->win[1] = ff_vorbis_vwin[venc->log2_blocksize[1] - 6];
 
-    if ((ret = ff_mdct_init(&venc->mdct[0], venc->log2_blocksize[0], 0, 1.0)) < 0)
+    if ((ret = av_tx_init(&venc->mdct[0], &venc->mdct_fn[0], AV_TX_FLOAT_MDCT,
+                          0, 1 << (venc->log2_blocksize[0] - 1), &scale, 0)) < 0)
         return ret;
-    if ((ret = ff_mdct_init(&venc->mdct[1], venc->log2_blocksize[1], 0, 1.0)) < 0)
+    if ((ret = av_tx_init(&venc->mdct[1], &venc->mdct_fn[1], AV_TX_FLOAT_MDCT,
+                          0, 1 << (venc->log2_blocksize[1] - 1), &scale, 0)) < 0)
         return ret;
 
     return 0;
@@ -1022,8 +1026,8 @@ static int apply_window_and_mdct(vorbis_enc_context *venc)
         fdsp->vector_fmul_reverse(offset, offset, win, window_len);
         fdsp->vector_fmul_scalar(offset, offset, 1/n, window_len);
 
-        venc->mdct[1].mdct_calc(&venc->mdct[1], venc->coeffs + channel * window_len,
-                     venc->samples + channel * window_len * 2);
+        venc->mdct_fn[1](venc->mdct[1], venc->coeffs + channel * window_len,
+                         venc->samples + channel * window_len * 2, sizeof(float));
     }
     return 1;
 }
@@ -1256,8 +1260,8 @@ static av_cold int vorbis_encode_close(AVCodecContext *avctx)
     av_freep(&venc->scratch);
     av_freep(&venc->fdsp);
 
-    ff_mdct_end(&venc->mdct[0]);
-    ff_mdct_end(&venc->mdct[1]);
+    av_tx_uninit(&venc->mdct[0]);
+    av_tx_uninit(&venc->mdct[1]);
     ff_af_queue_close(&venc->afq);
     ff_bufqueue_discard_all(&venc->bufqueue);
 
