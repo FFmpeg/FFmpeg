@@ -32,10 +32,10 @@
 
 #include "libavutil/float_dsp.h"
 #include "libavutil/mem_internal.h"
+#include "libavutil/tx.h"
 
 #include "atrac.h"
 #include "avcodec.h"
-#include "fft.h"
 #include "get_bits.h"
 
 /** Global unit sizes */
@@ -173,14 +173,6 @@ int ff_atrac3p_decode_channel_unit(GetBitContext *gb, Atrac3pChanUnitCtx *ctx,
                                    int num_channels, AVCodecContext *avctx);
 
 /**
- * Initialize IMDCT transform.
- *
- * @param[in]   avctx      ptr to the AVCodecContext
- * @param[in]   mdct_ctx   pointer to MDCT transform context
- */
-void ff_atrac3p_init_imdct(AVCodecContext *avctx, FFTContext *mdct_ctx);
-
-/**
  * Initialize sine waves synthesizer and ff_sine_* tables.
  */
 void ff_atrac3p_init_dsp_static(void);
@@ -221,8 +213,9 @@ void ff_atrac3p_power_compensation(Atrac3pChanUnitCtx *ctx, AVFloatDSPContext *f
  * @param[in]   wind_id    which MDCT window to apply
  * @param[in]   sb         subband number
  */
-void ff_atrac3p_imdct(AVFloatDSPContext *fdsp, FFTContext *mdct_ctx, float *pIn,
-                      float *pOut, int wind_id, int sb);
+void ff_atrac3p_imdct(AVFloatDSPContext *fdsp, AVTXContext *mdct_ctx,
+                      av_tx_fn mdct_fn, float *pIn, float *pOut,
+                      int wind_id, int sb);
 
 /**
  * Subband synthesis filter based on the polyphase quadrature (pseudo-QMF)
@@ -233,8 +226,8 @@ void ff_atrac3p_imdct(AVFloatDSPContext *fdsp, FFTContext *mdct_ctx, float *pIn,
  * @param[in]      in        input data to process
  * @param[out]     out       receives processed data
  */
-void ff_atrac3p_ipqf(FFTContext *dct_ctx, Atrac3pIPQFChannelCtx *hist,
-                     const float *in, float *out);
+void ff_atrac3p_ipqf(AVTXContext *dct_ctx, av_tx_fn dct_fn,
+                     Atrac3pIPQFChannelCtx *hist, const float *in, float *out);
 
 extern const uint16_t ff_atrac3p_qu_to_spec_pos[33];
 extern const float ff_atrac3p_sf_tab[64];

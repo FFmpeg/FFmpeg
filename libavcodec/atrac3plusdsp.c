@@ -79,12 +79,6 @@ const float ff_atrac3p_mant_tab[8] = {
 
 #define ATRAC3P_MDCT_SIZE (ATRAC3P_SUBBAND_SAMPLES * 2)
 
-av_cold void ff_atrac3p_init_imdct(AVCodecContext *avctx, FFTContext *mdct_ctx)
-{
-    /* Initialize the MDCT transform. */
-    ff_mdct_init(mdct_ctx, 8, 1, -1.0);
-}
-
 #define TWOPI (2 * M_PI)
 
 #define DEQUANT_PHASE(ph) (((ph) & 0x1F) << 6)
@@ -463,8 +457,9 @@ void ff_atrac3p_power_compensation(Atrac3pChanUnitCtx *ctx, AVFloatDSPContext *f
     }
 }
 
-void ff_atrac3p_imdct(AVFloatDSPContext *fdsp, FFTContext *mdct_ctx, float *pIn,
-                      float *pOut, int wind_id, int sb)
+void ff_atrac3p_imdct(AVFloatDSPContext *fdsp, AVTXContext *mdct_ctx,
+                      av_tx_fn mdct_fn, float *pIn, float *pOut,
+                      int wind_id, int sb)
 {
     int i;
 
@@ -472,7 +467,7 @@ void ff_atrac3p_imdct(AVFloatDSPContext *fdsp, FFTContext *mdct_ctx, float *pIn,
         for (i = 0; i < ATRAC3P_SUBBAND_SAMPLES / 2; i++)
             FFSWAP(float, pIn[i], pIn[ATRAC3P_SUBBAND_SAMPLES - 1 - i]);
 
-    mdct_ctx->imdct_calc(mdct_ctx, pOut, pIn);
+    mdct_fn(mdct_ctx, pOut, pIn, sizeof(float));
 
     /* Perform windowing on the output.
      * ATRAC3+ uses two different MDCT windows:
@@ -604,8 +599,8 @@ static const float ipqf_coeffs2[ATRAC3P_PQF_FIR_LEN][16] = {
       -4.4400572e-8,    -4.2005411e-7,    -8.0604229e-7,    -5.8336207e-7 }
 };
 
-void ff_atrac3p_ipqf(FFTContext *dct_ctx, Atrac3pIPQFChannelCtx *hist,
-                     const float *in, float *out)
+void ff_atrac3p_ipqf(AVTXContext *dct_ctx, av_tx_fn dct_fn,
+                     Atrac3pIPQFChannelCtx *hist, const float *in, float *out)
 {
     int i, s, sb, t, pos_now, pos_next;
     LOCAL_ALIGNED(32, float, idct_in, [ATRAC3P_SUBBANDS]);
@@ -619,7 +614,7 @@ void ff_atrac3p_ipqf(FFTContext *dct_ctx, Atrac3pIPQFChannelCtx *hist,
             idct_in[sb] = in[sb * ATRAC3P_SUBBAND_SAMPLES + s];
 
         /* Calculate the sine and cosine part of the PQF using IDCT-IV */
-        dct_ctx->imdct_half(dct_ctx, idct_out, idct_in);
+        dct_fn(dct_ctx, idct_out, idct_in, sizeof(float));
 
         /* append the result to the history */
         for (i = 0; i < 8; i++) {
