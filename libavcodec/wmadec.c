@@ -111,8 +111,9 @@ static av_cold int wma_decode_init(AVCodecContext *avctx)
 
     /* init MDCT */
     for (i = 0; i < s->nb_block_sizes; i++) {
-        ret = ff_mdct_init(&s->mdct_ctx[i], s->frame_len_bits - i + 1,
-                           1, 1.0 / 32768.0);
+        float scale = 1.0 / 32768.0;
+        ret = av_tx_init(&s->mdct_ctx[i], &s->mdct_fn[i], AV_TX_FLOAT_MDCT,
+                         1, 1 << (s->frame_len_bits - i), &scale, AV_TX_FULL_IMDCT);
         if (ret < 0)
             return ret;
     }
@@ -448,7 +449,8 @@ static int wma_decode_block(WMACodecContext *s)
     int coef_nb_bits, total_gain;
     int nb_coefs[MAX_CHANNELS];
     float mdct_norm;
-    FFTContext *mdct;
+    AVTXContext *mdct;
+    av_tx_fn mdct_fn;
 
 #ifdef TRACE
     ff_tlog(s->avctx, "***decode_block: %d:%d\n",
@@ -757,14 +759,15 @@ static int wma_decode_block(WMACodecContext *s)
     }
 
 next:
-    mdct = &s->mdct_ctx[bsize];
+    mdct = s->mdct_ctx[bsize];
+    mdct_fn = s->mdct_fn[bsize];
 
     for (ch = 0; ch < channels; ch++) {
         int n4, index;
 
         n4 = s->block_len / 2;
         if (s->channel_coded[ch])
-            mdct->imdct_calc(mdct, s->output, s->coefs[ch]);
+            mdct_fn(mdct, s->output, s->coefs[ch], sizeof(float));
         else if (!(s->ms_stereo && ch == 1))
             memset(s->output, 0, sizeof(s->output));
 

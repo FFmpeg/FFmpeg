@@ -92,7 +92,9 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     /* init MDCT */
     for (i = 0; i < s->nb_block_sizes; i++) {
-        ret = ff_mdct_init(&s->mdct_ctx[i], s->frame_len_bits - i + 1, 0, 1.0);
+        float scale = 1.0f;
+        ret = av_tx_init(&s->mdct_ctx[i], &s->mdct_fn[i], AV_TX_FLOAT_MDCT,
+                         0, 1 << (s->frame_len_bits - i), &scale, 0);
         if (ret < 0)
             return ret;
     }
@@ -112,7 +114,8 @@ static int apply_window_and_mdct(AVCodecContext *avctx, const AVFrame *frame)
     const float *const *audio = (const float *const *) frame->extended_data;
     int len            = frame->nb_samples;
     int window_index   = s->frame_len_bits - s->block_len_bits;
-    FFTContext *mdct   = &s->mdct_ctx[window_index];
+    AVTXContext *mdct  = s->mdct_ctx[window_index];
+    av_tx_fn mdct_fn   = s->mdct_fn[window_index];
     int ch;
     const float *win   = s->windows[window_index];
     int window_len     = 1 << s->block_len_bits;
@@ -124,7 +127,7 @@ static int apply_window_and_mdct(AVCodecContext *avctx, const AVFrame *frame)
         s->fdsp->vector_fmul_reverse(&s->output[window_len], s->frame_out[ch],
                                     win, len);
         s->fdsp->vector_fmul(s->frame_out[ch], s->frame_out[ch], win, len);
-        mdct->mdct_calc(mdct, s->coefs[ch], s->output);
+        mdct_fn(mdct, s->coefs[ch], s->output, sizeof(float));
         if (!isfinite(s->coefs[ch][0])) {
             av_log(avctx, AV_LOG_ERROR, "Input contains NaN/+-Inf\n");
             return AVERROR(EINVAL);
