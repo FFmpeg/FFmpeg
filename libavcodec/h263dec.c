@@ -51,7 +51,6 @@
 #include "mpegvideo.h"
 #include "mpegvideodec.h"
 #include "msmpeg4dec.h"
-#include "qpeldsp.h"
 #include "thread.h"
 #include "wmv2dec.h"
 
@@ -140,7 +139,6 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
     }
 
     ff_h263dsp_init(&s->h263dsp);
-    ff_qpeldsp_init(&s->qdsp);
     ff_h263_decode_init_vlc();
 
     return 0;

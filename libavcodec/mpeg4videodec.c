@@ -43,6 +43,7 @@
 #include "h263data.h"
 #include "h263dec.h"
 #include "profiles.h"
+#include "qpeldsp.h"
 #include "threadframe.h"
 #include "xvididct.h"
 #include "unary.h"
@@ -3824,6 +3825,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     avctx->chroma_sample_location = AVCHROMA_LOC_LEFT;
 
+    ff_qpeldsp_init(&s->qdsp);
     ff_mpeg4videodsp_init(&ctx->mdsp);
 
     ff_thread_once(&init_static_once, mpeg4_init_static);
