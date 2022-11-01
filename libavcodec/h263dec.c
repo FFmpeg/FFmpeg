@@ -63,9 +63,6 @@ static enum AVPixelFormat h263_get_format(AVCodecContext *avctx)
         return avctx->pix_fmt;
     }
 
-    if (avctx->codec->id == AV_CODEC_ID_MSS2)
-        return AV_PIX_FMT_YUV420P;
-
     if (CONFIG_GRAY && (avctx->flags & AV_CODEC_FLAG_GRAY)) {
         if (avctx->color_range == AVCOL_RANGE_UNSPECIFIED)
             avctx->color_range = AVCOL_RANGE_MPEG;
@@ -116,15 +113,6 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
     case AV_CODEC_ID_WMV2:
         s->h263_pred       = 1;
         s->msmpeg4_version = 5;
-        break;
-    case AV_CODEC_ID_VC1:
-    case AV_CODEC_ID_WMV3:
-    case AV_CODEC_ID_VC1IMAGE:
-    case AV_CODEC_ID_WMV3IMAGE:
-    case AV_CODEC_ID_MSS2:
-        s->h263_pred       = 1;
-        s->msmpeg4_version = 6;
-        avctx->chroma_sample_location = AVCHROMA_LOC_LEFT;
         break;
     case AV_CODEC_ID_H263I:
         break;

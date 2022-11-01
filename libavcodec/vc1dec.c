@@ -405,6 +405,20 @@ static av_cold int vc1_decode_init_alloc_tables(VC1Context *v)
     return 0;
 }
 
+static enum AVPixelFormat vc1_get_format(AVCodecContext *avctx)
+{
+    if (avctx->codec_id == AV_CODEC_ID_MSS2)
+        return AV_PIX_FMT_YUV420P;
+
+    if (CONFIG_GRAY && (avctx->flags & AV_CODEC_FLAG_GRAY)) {
+        if (avctx->color_range == AVCOL_RANGE_UNSPECIFIED)
+            avctx->color_range = AVCOL_RANGE_MPEG;
+        return AV_PIX_FMT_GRAY8;
+    }
+
+    return ff_get_format(avctx, avctx->codec->pix_fmts);
+}
+
 av_cold int ff_vc1_decode_init(AVCodecContext *avctx)
 {
     VC1Context *const v = avctx->priv_data;
@@ -415,7 +429,12 @@ av_cold int ff_vc1_decode_init(AVCodecContext *avctx)
     if (ret < 0)
         return ret;
 
-    ret = ff_h263_decode_init(avctx);
+    ff_mpv_decode_init(s, avctx);
+    ff_mpv_idct_init(s);
+
+    avctx->pix_fmt = vc1_get_format(avctx);
+
+    ret = ff_mpv_common_init(s);
     if (ret < 0)
         return ret;
 
@@ -578,12 +597,22 @@ static av_cold void vc1_init_static(void)
 av_cold void ff_vc1_init_common(VC1Context *v)
 {
     static AVOnce init_static_once = AV_ONCE_INIT;
+    MpegEncContext *const s = &v->s;
 
     /* defaults */
     v->pq      = -1;
     v->mvrange = 0; /* 7.1.1.18, p80 */
 
+    s->avctx->chroma_sample_location = AVCHROMA_LOC_LEFT;
+    s->out_format      = FMT_H263;
+
+    s->h263_pred       = 1;
+    s->msmpeg4_version = 6;
+
     ff_vc1dsp_init(&v->vc1dsp);
+
+    /* For error resilience */
+    ff_qpeldsp_init(&s->qdsp);
 
     /* VLC tables */
     ff_thread_once(&init_static_once, vc1_init_static);
@@ -702,7 +731,6 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
 
     ff_blockdsp_init(&s->bdsp);
     ff_h264chroma_init(&v->h264chroma, 8);
-    ff_qpeldsp_init(&s->qdsp);
 
     avctx->has_b_frames = !!avctx->max_b_frames;
 
