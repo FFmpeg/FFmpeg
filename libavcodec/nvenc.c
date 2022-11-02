@@ -1199,7 +1199,8 @@ static av_cold int nvenc_setup_h264_config(AVCodecContext *avctx)
         h264->entropyCodingMode = ctx->coder;
 
 #ifdef NVENC_HAVE_BFRAME_REF_MODE
-    h264->useBFramesAsRef = ctx->b_ref_mode;
+    if (ctx->b_ref_mode >= 0)
+        h264->useBFramesAsRef = ctx->b_ref_mode;
 #endif
 
 #ifdef NVENC_HAVE_MULTIPLE_REF_FRAMES
@@ -1314,7 +1315,8 @@ static av_cold int nvenc_setup_hevc_config(AVCodecContext *avctx)
     hevc->tier = ctx->tier;
 
 #ifdef NVENC_HAVE_HEVC_BFRAME_REF_MODE
-    hevc->useBFramesAsRef = ctx->b_ref_mode;
+    if (ctx->b_ref_mode >= 0)
+        hevc->useBFramesAsRef = ctx->b_ref_mode;
 #endif
 
 #ifdef NVENC_HAVE_MULTIPLE_REF_FRAMES
