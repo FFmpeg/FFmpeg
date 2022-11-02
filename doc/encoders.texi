@@ -3564,6 +3564,24 @@ bitrate, @var{target_bitrate}, within the accuracy range @var{avbr_accuracy},
 after a @var{avbr_Convergence} period. This method does not follow HRD and the
 instant bitrate is not capped or padded.
 
+@item @var{skip_frame}
+Use per-frame metadata "qsv_skip_frame" to skip frame when encoding. This option
+defines the usage of this metadata.
+@table @samp
+@item no_skip
+Frame skipping is disabled.
+@item insert_dummy
+Encoder inserts into bitstream frame where all macroblocks are encoded as
+skipped.
+@item insert_nothing
+Similar to insert_dummy, but encoder inserts nothing into bitstream. The skipped
+frames are still used in brc. For example, gop still include skipped frames, and
+the frames after skipped frames will be larger in size.
+@item brc_only
+skip_frame metadata indicates the number of missed frames before the current
+frame.
+@end table
+
 @end table
 
 @subsection HEVC Options
@@ -3750,6 +3768,24 @@ The algorithm focuses on overall encoding quality while meeting the specified
 bitrate, @var{target_bitrate}, within the accuracy range @var{avbr_accuracy},
 after a @var{avbr_Convergence} period. This method does not follow HRD and the
 instant bitrate is not capped or padded.
+
+@item @var{skip_frame}
+Use per-frame metadata "qsv_skip_frame" to skip frame when encoding. This option
+defines the usage of this metadata.
+@table @samp
+@item no_skip
+Frame skipping is disabled.
+@item insert_dummy
+Encoder inserts into bitstream frame where all macroblocks are encoded as
+skipped.
+@item insert_nothing
+Similar to insert_dummy, but encoder inserts nothing into bitstream. The skipped
+frames are still used in brc. For example, gop still include skipped frames, and
+the frames after skipped frames will be larger in size.
+@item brc_only
+skip_frame metadata indicates the number of missed frames before the current
+frame.
+@end table
 
 @end table
 

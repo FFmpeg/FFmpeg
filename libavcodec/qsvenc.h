@@ -127,6 +127,18 @@
 { "avbr_accuracy",    "Accuracy of the AVBR ratecontrol (unit of tenth of percent)",    OFFSET(qsv.avbr_accuracy),    AV_OPT_TYPE_INT, { .i64 = 0 }, 0, UINT16_MAX, VE }, \
 { "avbr_convergence", "Convergence of the AVBR ratecontrol (unit of 100 frames)", OFFSET(qsv.avbr_convergence), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, UINT16_MAX, VE },
 
+#define QSV_OPTION_SKIP_FRAME \
+{ "skip_frame",     "Allow frame skipping", OFFSET(qsv.skip_frame),  AV_OPT_TYPE_INT, { .i64 = MFX_SKIPFRAME_NO_SKIP }, \
+   MFX_SKIPFRAME_NO_SKIP, MFX_SKIPFRAME_BRC_ONLY, VE, "skip_frame" }, \
+{ "no_skip",        "Frame skipping is disabled", \
+    0, AV_OPT_TYPE_CONST, { .i64 = MFX_SKIPFRAME_NO_SKIP },           .flags = VE, "skip_frame" },        \
+{ "insert_dummy",   "Encoder inserts into bitstream frame where all macroblocks are encoded as skipped",  \
+    0, AV_OPT_TYPE_CONST, { .i64 = MFX_SKIPFRAME_INSERT_DUMMY },      .flags = VE, "skip_frame" },        \
+{ "insert_nothing", "Encoder inserts nothing into bitstream",                                             \
+    0, AV_OPT_TYPE_CONST, { .i64 = MFX_SKIPFRAME_INSERT_NOTHING },    .flags = VE, "skip_frame" },        \
+{ "brc_only",       "skip_frame metadata indicates the number of missed frames before the current frame", \
+    0, AV_OPT_TYPE_CONST, { .i64 = MFX_SKIPFRAME_BRC_ONLY },          .flags = VE, "skip_frame" },
+
 extern const AVCodecHWConfigInternal *const ff_qsv_enc_hw_configs[];
 
 typedef int SetEncodeCtrlCB (AVCodecContext *avctx,
@@ -286,6 +298,7 @@ typedef struct QSVEncContext {
     int old_rc_max_rate;
     // This is used for SEI Timing reset
     int old_pic_timing_sei;
+    int skip_frame;
 } QSVEncContext;
 
 int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q);
