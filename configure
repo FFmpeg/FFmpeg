@@ -6559,7 +6559,8 @@ enabled avisynth          && { require_headers "avisynth/avisynth_c.h avisynth/a
                                { test_cpp_condition avisynth/avs/version.h "AVS_MAJOR_VER >= 3 && AVS_MINOR_VER >= 7 && AVS_BUGFIX_VER >= 1 || AVS_MAJOR_VER >= 3 && AVS_MINOR_VER > 7 || AVS_MAJOR_VER > 3" ||
                                  die "ERROR: AviSynth+ header version must be >= 3.7.1"; } }
 enabled cuda_nvcc         && { check_nvcc cuda_nvcc || die "ERROR: failed checking for nvcc."; }
-enabled chromaprint       && require chromaprint chromaprint.h chromaprint_get_version -lchromaprint
+enabled chromaprint       && { check_pkg_config chromaprint libchromaprint "chromaprint.h" chromaprint_get_version ||
+                               require chromaprint chromaprint.h chromaprint_get_version -lchromaprint; }
 enabled decklink          && { require_headers DeckLinkAPI.h &&
                                { test_cpp_condition DeckLinkAPIVersion.h "BLACKMAGIC_DECKLINK_API_VERSION >= 0x0a0b0000" || die "ERROR: Decklink API version must be >= 10.11"; } }
 enabled frei0r            && require_headers "frei0r.h"
