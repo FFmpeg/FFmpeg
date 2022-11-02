@@ -2340,18 +2340,15 @@ yuv2gbrp16_full_X_c(SwsContext *c, const int16_t *lumFilter,
 
         Y -= c->yuv2rgb_y_offset;
         Y *= c->yuv2rgb_y_coeff;
-        Y += 1 << 13;
+        Y += (1 << 13) - (1 << 29);
         R = V * c->yuv2rgb_v2r_coeff;
         G = V * c->yuv2rgb_v2g_coeff + U * c->yuv2rgb_u2g_coeff;
         B =                            U * c->yuv2rgb_u2b_coeff;
 
-        R = av_clip_uintp2(Y + R, 30);
-        G = av_clip_uintp2(Y + G, 30);
-        B = av_clip_uintp2(Y + B, 30);
+        dest16[2][i] = av_clip_uintp2(((Y + R) >> 14) + (1<<15), 16);
+        dest16[0][i] = av_clip_uintp2(((Y + G) >> 14) + (1<<15), 16);
+        dest16[1][i] = av_clip_uintp2(((Y + B) >> 14) + (1<<15), 16);
 
-        dest16[0][i] = G >> 14;
-        dest16[1][i] = B >> 14;
-        dest16[2][i] = R >> 14;
         if (hasAlpha)
             dest16[3][i] = av_clip_uintp2(A, 30) >> 14;
     }
@@ -2416,18 +2413,18 @@ yuv2gbrpf32_full_X_c(SwsContext *c, const int16_t *lumFilter,
 
         Y -= c->yuv2rgb_y_offset;
         Y *= c->yuv2rgb_y_coeff;
-        Y += 1 << 13;
+        Y += (1 << 13) - (1 << 29);
         R = V * c->yuv2rgb_v2r_coeff;
         G = V * c->yuv2rgb_v2g_coeff + U * c->yuv2rgb_u2g_coeff;
         B =                            U * c->yuv2rgb_u2b_coeff;
 
-        R = av_clip_uintp2(Y + R, 30);
-        G = av_clip_uintp2(Y + G, 30);
-        B = av_clip_uintp2(Y + B, 30);
+        R = av_clip_uintp2(((Y + R) >> 14) + (1<<15), 16);
+        G = av_clip_uintp2(((Y + G) >> 14) + (1<<15), 16);
+        B = av_clip_uintp2(((Y + B) >> 14) + (1<<15), 16);
 
-        dest32[0][i] = av_float2int(float_mult * (float)(G >> 14));
-        dest32[1][i] = av_float2int(float_mult * (float)(B >> 14));
-        dest32[2][i] = av_float2int(float_mult * (float)(R >> 14));
+        dest32[0][i] = av_float2int(float_mult * (float)G);
+        dest32[1][i] = av_float2int(float_mult * (float)B);
+        dest32[2][i] = av_float2int(float_mult * (float)R);
         if (hasAlpha)
             dest32[3][i] = av_float2int(float_mult * (float)(av_clip_uintp2(A, 30) >> 14));
     }
