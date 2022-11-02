@@ -274,7 +274,7 @@ static int vaapi_av1_start_frame(AVCodecContext *avctx,
     };
 
     for (int i = 0; i < AV1_NUM_REF_FRAMES; i++) {
-        if (pic_param.pic_info_fields.bits.frame_type == AV1_FRAME_KEY)
+        if (pic_param.pic_info_fields.bits.frame_type == AV1_FRAME_KEY && frame_header->show_frame)
             pic_param.ref_frame_map[i] = VA_INVALID_ID;
         else
             pic_param.ref_frame_map[i] = ctx->ref_tab[i].valid ?
