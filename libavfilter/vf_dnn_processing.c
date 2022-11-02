@@ -110,6 +110,7 @@ static int check_modelinput_inlink(const DNNData *model_input, const AVFilterLin
             return AVERROR(EIO);
         }
         return 0;
+    case AV_PIX_FMT_GRAY8:
     case AV_PIX_FMT_GRAYF32:
     case AV_PIX_FMT_YUV420P:
     case AV_PIX_FMT_YUV422P:
