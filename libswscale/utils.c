@@ -1966,8 +1966,6 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
 
         if (INLINE_MMXEXT(cpu_flags))
             cpucaps = "MMXEXT";
-        else if (INLINE_AMD3DNOW(cpu_flags))
-            cpucaps = "3DNOW";
         else if (INLINE_MMX(cpu_flags))
             cpucaps = "MMX";
         else if (PPC_ALTIVEC(cpu_flags))
