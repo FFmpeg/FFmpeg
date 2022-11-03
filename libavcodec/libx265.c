@@ -295,7 +295,6 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
             return ret;
     }
 
-#if X265_BUILD >= 89
     if (avctx->qmin >= 0) {
         ret = libx265_param_parse_int(avctx, "qpmin", avctx->qmin);
         if (ret < 0)
@@ -306,7 +305,6 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
         if (ret < 0)
             return ret;
     }
-#endif
     if (avctx->max_qdiff >= 0) {
         ret = libx265_param_parse_int(avctx, "qpstep", avctx->max_qdiff);
         if (ret < 0)
