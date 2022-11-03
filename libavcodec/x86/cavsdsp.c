@@ -308,10 +308,6 @@ static void OPNAME ## cavs_qpel ## SIZE ## _mc03_ ## MMX(uint8_t *dst, const uin
 }\
 
 #define PUT_OP(a,b,temp, size) "mov" #size " " #a ", " #b "    \n\t"
-#define AVG_3DNOW_OP(a,b,temp, size) \
-"mov" #size " " #b ", " #temp "   \n\t"\
-"pavgusb " #temp ", " #a "        \n\t"\
-"mov" #size " " #a ", " #b "      \n\t"
 #define AVG_MMXEXT_OP(a, b, temp, size) \
 "mov" #size " " #b ", " #temp "   \n\t"\
 "pavgb " #temp ", " #a "          \n\t"\
