@@ -1287,6 +1287,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
+    ff_qpeldsp_init(&s->qdsp);
     if ((ret = ff_mpv_encode_init(avctx)) < 0)
         return ret;
 

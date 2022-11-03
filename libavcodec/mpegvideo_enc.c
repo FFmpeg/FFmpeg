@@ -807,7 +807,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     ff_me_cmp_init(&s->mecc, avctx);
     ff_mpegvideoencdsp_init(&s->mpvencdsp, avctx);
     ff_pixblockdsp_init(&s->pdsp, avctx);
-    ff_qpeldsp_init(&s->qdsp);
 
     if (!(avctx->stats_out = av_mallocz(256))               ||
         !FF_ALLOCZ_TYPED_ARRAY(s->q_intra_matrix,          32) ||
