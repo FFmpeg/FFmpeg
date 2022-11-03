@@ -20,7 +20,7 @@
 
 /**
  * @file
- * mmx/mmx2/3dnow postprocess code.
+ * mmx/mmx2/sse2 postprocess code.
  */
 
 #include "libavutil/mem_internal.h"
@@ -57,14 +57,6 @@
 #   define TEMPLATE_PP_MMXEXT 0
 #endif
 
-#ifdef TEMPLATE_PP_3DNOW
-#   undef  TEMPLATE_PP_MMX
-#   define TEMPLATE_PP_MMX 1
-#   define RENAME(a) a ## _3DNow
-#else
-#   define TEMPLATE_PP_3DNOW 0
-#endif
-
 #ifdef TEMPLATE_PP_SSE2
 #   undef  TEMPLATE_PP_MMX
 #   define TEMPLATE_PP_MMX 1
@@ -82,30 +74,19 @@
 
 #if   TEMPLATE_PP_MMXEXT
 #define REAL_PAVGB(a,b) "pavgb " #a ", " #b " \n\t"
-#elif TEMPLATE_PP_3DNOW
-#define REAL_PAVGB(a,b) "pavgusb " #a ", " #b " \n\t"
 #endif
 #define PAVGB(a,b)  REAL_PAVGB(a,b)
 
 #if   TEMPLATE_PP_MMXEXT
 #define PMINUB(a,b,t) "pminub " #a ", " #b " \n\t"
-#elif TEMPLATE_PP_MMX
-#define PMINUB(b,a,t) \
-    "movq " #a ", " #t " \n\t"\
-    "psubusb " #b ", " #t " \n\t"\
-    "psubb " #t ", " #a " \n\t"
 #endif
 
 #if   TEMPLATE_PP_MMXEXT
 #define PMAXUB(a,b) "pmaxub " #a ", " #b " \n\t"
-#elif TEMPLATE_PP_MMX
-#define PMAXUB(a,b) \
-    "psubusb " #a ", " #b " \n\t"\
-    "paddb " #a ", " #b " \n\t"
 #endif
 
 //FIXME? |255-0| = 1 (should not be a problem ...)
-#if TEMPLATE_PP_MMX
+#if TEMPLATE_PP_MMXEXT
 /**
  * Check if the middle 8x8 Block in the given 8x16 block is flat
  */
@@ -185,20 +166,8 @@ static inline int RENAME(vertClassify)(const uint8_t src[], int stride, PPContex
         "psubusb %%mm3, %%mm4                   \n\t"
 
         "                                       \n\t"
-#if TEMPLATE_PP_MMXEXT
         "pxor %%mm7, %%mm7                      \n\t"
         "psadbw %%mm7, %%mm0                    \n\t"
-#else
-        "movq %%mm0, %%mm1                      \n\t"
-        "psrlw $8, %%mm0                        \n\t"
-        "paddb %%mm1, %%mm0                     \n\t"
-        "movq %%mm0, %%mm1                      \n\t"
-        "psrlq $16, %%mm0                       \n\t"
-        "paddb %%mm1, %%mm0                     \n\t"
-        "movq %%mm0, %%mm1                      \n\t"
-        "psrlq $32, %%mm0                       \n\t"
-        "paddb %%mm1, %%mm0                     \n\t"
-#endif
         "movq %4, %%mm7                         \n\t" // QP,..., QP
         "paddusb %%mm7, %%mm7                   \n\t" // 2QP ... 2QP
         "psubusb %%mm7, %%mm4                   \n\t" // Diff <= 2QP -> 0
@@ -219,7 +188,7 @@ static inline int RENAME(vertClassify)(const uint8_t src[], int stride, PPContex
         return 2;
     }
 }
-#endif //TEMPLATE_PP_MMX
+#endif //TEMPLATE_PP_MMXEXT
 
 /**
  * Do a vertical low pass filter on the 8x16 block (only write to the 8x8 block in the middle)
@@ -228,7 +197,7 @@ static inline int RENAME(vertClassify)(const uint8_t src[], int stride, PPContex
 #if !TEMPLATE_PP_ALTIVEC
 static inline void RENAME(doVertLowPass)(uint8_t *src, int stride, PPContext *c)
 {
-#if TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
+#if TEMPLATE_PP_MMXEXT
     src+= stride*3;
     __asm__ volatile(        //"movv %0 %1 %2\n\t"
         "movq %2, %%mm0                         \n\t"  // QP,..., QP
@@ -355,7 +324,7 @@ static inline void RENAME(doVertLowPass)(uint8_t *src, int stride, PPContext *c)
         : "r" (src), "r" ((x86_reg)stride), "m" (c->pQPb)
         : "%"FF_REG_a, "%"FF_REG_c
     );
-#else //TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
+#else //TEMPLATE_PP_MMXEXT
     const int l1= stride;
     const int l2= stride + l1;
     const int l3= stride + l2;
@@ -394,7 +363,7 @@ static inline void RENAME(doVertLowPass)(uint8_t *src, int stride, PPContext *c)
 
         src++;
     }
-#endif //TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
+#endif //TEMPLATE_PP_MMXEXT
 }
 #endif //TEMPLATE_PP_ALTIVEC
 
@@ -407,7 +376,7 @@ static inline void RENAME(doVertLowPass)(uint8_t *src, int stride, PPContext *c)
  */
 static inline void RENAME(vertX1Filter)(uint8_t *src, int stride, PPContext *co)
 {
-#if TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
+#if TEMPLATE_PP_MMXEXT
     src+= stride*3;
 
     __asm__ volatile(
@@ -494,7 +463,7 @@ static inline void RENAME(vertX1Filter)(uint8_t *src, int stride, PPContext *co)
           NAMED_CONSTRAINTS_ADD(b01)
         : "%"FF_REG_a, "%"FF_REG_c
     );
-#else //TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
+#else //TEMPLATE_PP_MMXEXT
 
     const int l1= stride;
     const int l2= stride + l1;
@@ -528,13 +497,13 @@ static inline void RENAME(vertX1Filter)(uint8_t *src, int stride, PPContext *co)
         }
         src++;
     }
-#endif //TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
+#endif //TEMPLATE_PP_MMXEXT
 }
 
 #if !TEMPLATE_PP_ALTIVEC
 static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext *c)
 {
-#if TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
+#if TEMPLATE_PP_MMXEXT
 /*
     uint8_t tmp[16];
     const int l1= stride;
@@ -816,239 +785,7 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext 
     }
 }
 */
-#elif TEMPLATE_PP_MMX
-    DECLARE_ALIGNED(8, uint64_t, tmp)[4]; // make space for 4 8-byte vars
-    src+= stride*4;
-    __asm__ volatile(
-        "pxor %%mm7, %%mm7                      \n\t"
-//      0       1       2       3       4       5       6       7
-//      %0      %0+%1   %0+2%1  eax+2%1 %0+4%1  eax+4%1 edx+%1  edx+2%1
-//      %0      eax     eax+%1  eax+2%1 %0+4%1  edx     edx+%1  edx+2%1
-
-        "movq (%0), %%mm0                       \n\t"
-        "movq %%mm0, %%mm1                      \n\t"
-        "punpcklbw %%mm7, %%mm0                 \n\t" // low part of line 0
-        "punpckhbw %%mm7, %%mm1                 \n\t" // high part of line 0
-
-        "movq (%0, %1), %%mm2                   \n\t"
-        "lea (%0, %1, 2), %%"FF_REG_a"          \n\t"
-        "movq %%mm2, %%mm3                      \n\t"
-        "punpcklbw %%mm7, %%mm2                 \n\t" // low part of line 1
-        "punpckhbw %%mm7, %%mm3                 \n\t" // high part of line 1
-
-        "movq (%%"FF_REG_a"), %%mm4             \n\t"
-        "movq %%mm4, %%mm5                      \n\t"
-        "punpcklbw %%mm7, %%mm4                 \n\t" // low part of line 2
-        "punpckhbw %%mm7, %%mm5                 \n\t" // high part of line 2
-
-        "paddw %%mm0, %%mm0                     \n\t" // 2L0
-        "paddw %%mm1, %%mm1                     \n\t" // 2H0
-        "psubw %%mm4, %%mm2                     \n\t" // L1 - L2
-        "psubw %%mm5, %%mm3                     \n\t" // H1 - H2
-        "psubw %%mm2, %%mm0                     \n\t" // 2L0 - L1 + L2
-        "psubw %%mm3, %%mm1                     \n\t" // 2H0 - H1 + H2
-
-        "psllw $2, %%mm2                        \n\t" // 4L1 - 4L2
-        "psllw $2, %%mm3                        \n\t" // 4H1 - 4H2
-        "psubw %%mm2, %%mm0                     \n\t" // 2L0 - 5L1 + 5L2
-        "psubw %%mm3, %%mm1                     \n\t" // 2H0 - 5H1 + 5H2
-
-        "movq (%%"FF_REG_a", %1), %%mm2         \n\t"
-        "movq %%mm2, %%mm3                      \n\t"
-        "punpcklbw %%mm7, %%mm2                 \n\t" // L3
-        "punpckhbw %%mm7, %%mm3                 \n\t" // H3
-
-        "psubw %%mm2, %%mm0                     \n\t" // 2L0 - 5L1 + 5L2 - L3
-        "psubw %%mm3, %%mm1                     \n\t" // 2H0 - 5H1 + 5H2 - H3
-        "psubw %%mm2, %%mm0                     \n\t" // 2L0 - 5L1 + 5L2 - 2L3
-        "psubw %%mm3, %%mm1                     \n\t" // 2H0 - 5H1 + 5H2 - 2H3
-        "movq %%mm0, (%3)                       \n\t" // 2L0 - 5L1 + 5L2 - 2L3
-        "movq %%mm1, 8(%3)                      \n\t" // 2H0 - 5H1 + 5H2 - 2H3
-
-        "movq (%%"FF_REG_a", %1, 2), %%mm0      \n\t"
-        "movq %%mm0, %%mm1                      \n\t"
-        "punpcklbw %%mm7, %%mm0                 \n\t" // L4
-        "punpckhbw %%mm7, %%mm1                 \n\t" // H4
-
-        "psubw %%mm0, %%mm2                     \n\t" // L3 - L4
-        "psubw %%mm1, %%mm3                     \n\t" // H3 - H4
-        "movq %%mm2, 16(%3)                     \n\t" // L3 - L4
-        "movq %%mm3, 24(%3)                     \n\t" // H3 - H4
-        "paddw %%mm4, %%mm4                     \n\t" // 2L2
-        "paddw %%mm5, %%mm5                     \n\t" // 2H2
-        "psubw %%mm2, %%mm4                     \n\t" // 2L2 - L3 + L4
-        "psubw %%mm3, %%mm5                     \n\t" // 2H2 - H3 + H4
-
-        "lea (%%"FF_REG_a", %1), %0             \n\t"
-        "psllw $2, %%mm2                        \n\t" // 4L3 - 4L4
-        "psllw $2, %%mm3                        \n\t" // 4H3 - 4H4
-        "psubw %%mm2, %%mm4                     \n\t" // 2L2 - 5L3 + 5L4
-        "psubw %%mm3, %%mm5                     \n\t" // 2H2 - 5H3 + 5H4
-//50 opcodes so far
-        "movq (%0, %1, 2), %%mm2                \n\t"
-        "movq %%mm2, %%mm3                      \n\t"
-        "punpcklbw %%mm7, %%mm2                 \n\t" // L5
-        "punpckhbw %%mm7, %%mm3                 \n\t" // H5
-        "psubw %%mm2, %%mm4                     \n\t" // 2L2 - 5L3 + 5L4 - L5
-        "psubw %%mm3, %%mm5                     \n\t" // 2H2 - 5H3 + 5H4 - H5
-        "psubw %%mm2, %%mm4                     \n\t" // 2L2 - 5L3 + 5L4 - 2L5
-        "psubw %%mm3, %%mm5                     \n\t" // 2H2 - 5H3 + 5H4 - 2H5
-
-        "movq (%%"FF_REG_a", %1, 4), %%mm6      \n\t"
-        "punpcklbw %%mm7, %%mm6                 \n\t" // L6
-        "psubw %%mm6, %%mm2                     \n\t" // L5 - L6
-        "movq (%%"FF_REG_a", %1, 4), %%mm6      \n\t"
-        "punpckhbw %%mm7, %%mm6                 \n\t" // H6
-        "psubw %%mm6, %%mm3                     \n\t" // H5 - H6
-
-        "paddw %%mm0, %%mm0                     \n\t" // 2L4
-        "paddw %%mm1, %%mm1                     \n\t" // 2H4
-        "psubw %%mm2, %%mm0                     \n\t" // 2L4 - L5 + L6
-        "psubw %%mm3, %%mm1                     \n\t" // 2H4 - H5 + H6
-
-        "psllw $2, %%mm2                        \n\t" // 4L5 - 4L6
-        "psllw $2, %%mm3                        \n\t" // 4H5 - 4H6
-        "psubw %%mm2, %%mm0                     \n\t" // 2L4 - 5L5 + 5L6
-        "psubw %%mm3, %%mm1                     \n\t" // 2H4 - 5H5 + 5H6
-
-        "movq (%0, %1, 4), %%mm2                \n\t"
-        "movq %%mm2, %%mm3                      \n\t"
-        "punpcklbw %%mm7, %%mm2                 \n\t" // L7
-        "punpckhbw %%mm7, %%mm3                 \n\t" // H7
-
-        "paddw %%mm2, %%mm2                     \n\t" // 2L7
-        "paddw %%mm3, %%mm3                     \n\t" // 2H7
-        "psubw %%mm2, %%mm0                     \n\t" // 2L4 - 5L5 + 5L6 - 2L7
-        "psubw %%mm3, %%mm1                     \n\t" // 2H4 - 5H5 + 5H6 - 2H7
-
-        "movq (%3), %%mm2                       \n\t" // 2L0 - 5L1 + 5L2 - 2L3
-        "movq 8(%3), %%mm3                      \n\t" // 2H0 - 5H1 + 5H2 - 2H3
-
-#if TEMPLATE_PP_MMXEXT
-        "movq %%mm7, %%mm6                      \n\t" // 0
-        "psubw %%mm0, %%mm6                     \n\t"
-        "pmaxsw %%mm6, %%mm0                    \n\t" // |2L4 - 5L5 + 5L6 - 2L7|
-        "movq %%mm7, %%mm6                      \n\t" // 0
-        "psubw %%mm1, %%mm6                     \n\t"
-        "pmaxsw %%mm6, %%mm1                    \n\t" // |2H4 - 5H5 + 5H6 - 2H7|
-        "movq %%mm7, %%mm6                      \n\t" // 0
-        "psubw %%mm2, %%mm6                     \n\t"
-        "pmaxsw %%mm6, %%mm2                    \n\t" // |2L0 - 5L1 + 5L2 - 2L3|
-        "movq %%mm7, %%mm6                      \n\t" // 0
-        "psubw %%mm3, %%mm6                     \n\t"
-        "pmaxsw %%mm6, %%mm3                    \n\t" // |2H0 - 5H1 + 5H2 - 2H3|
-#else
-        "movq %%mm7, %%mm6                      \n\t" // 0
-        "pcmpgtw %%mm0, %%mm6                   \n\t"
-        "pxor %%mm6, %%mm0                      \n\t"
-        "psubw %%mm6, %%mm0                     \n\t" // |2L4 - 5L5 + 5L6 - 2L7|
-        "movq %%mm7, %%mm6                      \n\t" // 0
-        "pcmpgtw %%mm1, %%mm6                   \n\t"
-        "pxor %%mm6, %%mm1                      \n\t"
-        "psubw %%mm6, %%mm1                     \n\t" // |2H4 - 5H5 + 5H6 - 2H7|
-        "movq %%mm7, %%mm6                      \n\t" // 0
-        "pcmpgtw %%mm2, %%mm6                   \n\t"
-        "pxor %%mm6, %%mm2                      \n\t"
-        "psubw %%mm6, %%mm2                     \n\t" // |2L0 - 5L1 + 5L2 - 2L3|
-        "movq %%mm7, %%mm6                      \n\t" // 0
-        "pcmpgtw %%mm3, %%mm6                   \n\t"
-        "pxor %%mm6, %%mm3                      \n\t"
-        "psubw %%mm6, %%mm3                     \n\t" // |2H0 - 5H1 + 5H2 - 2H3|
-#endif
-
-#if TEMPLATE_PP_MMXEXT
-        "pminsw %%mm2, %%mm0                    \n\t"
-        "pminsw %%mm3, %%mm1                    \n\t"
-#else
-        "movq %%mm0, %%mm6                      \n\t"
-        "psubusw %%mm2, %%mm6                   \n\t"
-        "psubw %%mm6, %%mm0                     \n\t"
-        "movq %%mm1, %%mm6                      \n\t"
-        "psubusw %%mm3, %%mm6                   \n\t"
-        "psubw %%mm6, %%mm1                     \n\t"
-#endif
-
-        "movd %2, %%mm2                         \n\t" // QP
-        "punpcklbw %%mm7, %%mm2                 \n\t"
-
-        "movq %%mm7, %%mm6                      \n\t" // 0
-        "pcmpgtw %%mm4, %%mm6                   \n\t" // sign(2L2 - 5L3 + 5L4 - 2L5)
-        "pxor %%mm6, %%mm4                      \n\t"
-        "psubw %%mm6, %%mm4                     \n\t" // |2L2 - 5L3 + 5L4 - 2L5|
-        "pcmpgtw %%mm5, %%mm7                   \n\t" // sign(2H2 - 5H3 + 5H4 - 2H5)
-        "pxor %%mm7, %%mm5                      \n\t"
-        "psubw %%mm7, %%mm5                     \n\t" // |2H2 - 5H3 + 5H4 - 2H5|
-// 100 opcodes
-        "psllw $3, %%mm2                        \n\t" // 8QP
-        "movq %%mm2, %%mm3                      \n\t" // 8QP
-        "pcmpgtw %%mm4, %%mm2                   \n\t"
-        "pcmpgtw %%mm5, %%mm3                   \n\t"
-        "pand %%mm2, %%mm4                      \n\t"
-        "pand %%mm3, %%mm5                      \n\t"
-
-
-        "psubusw %%mm0, %%mm4                   \n\t" // hd
-        "psubusw %%mm1, %%mm5                   \n\t" // ld
-
-
-        "movq "MANGLE(w05)", %%mm2              \n\t" // 5
-        "pmullw %%mm2, %%mm4                    \n\t"
-        "pmullw %%mm2, %%mm5                    \n\t"
-        "movq "MANGLE(w20)", %%mm2              \n\t" // 32
-        "paddw %%mm2, %%mm4                     \n\t"
-        "paddw %%mm2, %%mm5                     \n\t"
-        "psrlw $6, %%mm4                        \n\t"
-        "psrlw $6, %%mm5                        \n\t"
-
-        "movq 16(%3), %%mm0                     \n\t" // L3 - L4
-        "movq 24(%3), %%mm1                     \n\t" // H3 - H4
-
-        "pxor %%mm2, %%mm2                      \n\t"
-        "pxor %%mm3, %%mm3                      \n\t"
-
-        "pcmpgtw %%mm0, %%mm2                   \n\t" // sign (L3-L4)
-        "pcmpgtw %%mm1, %%mm3                   \n\t" // sign (H3-H4)
-        "pxor %%mm2, %%mm0                      \n\t"
-        "pxor %%mm3, %%mm1                      \n\t"
-        "psubw %%mm2, %%mm0                     \n\t" // |L3-L4|
-        "psubw %%mm3, %%mm1                     \n\t" // |H3-H4|
-        "psrlw $1, %%mm0                        \n\t" // |L3 - L4|/2
-        "psrlw $1, %%mm1                        \n\t" // |H3 - H4|/2
-
-        "pxor %%mm6, %%mm2                      \n\t"
-        "pxor %%mm7, %%mm3                      \n\t"
-        "pand %%mm2, %%mm4                      \n\t"
-        "pand %%mm3, %%mm5                      \n\t"
-
-#if TEMPLATE_PP_MMXEXT
-        "pminsw %%mm0, %%mm4                    \n\t"
-        "pminsw %%mm1, %%mm5                    \n\t"
-#else
-        "movq %%mm4, %%mm2                      \n\t"
-        "psubusw %%mm0, %%mm2                   \n\t"
-        "psubw %%mm2, %%mm4                     \n\t"
-        "movq %%mm5, %%mm2                      \n\t"
-        "psubusw %%mm1, %%mm2                   \n\t"
-        "psubw %%mm2, %%mm5                     \n\t"
-#endif
-        "pxor %%mm6, %%mm4                      \n\t"
-        "pxor %%mm7, %%mm5                      \n\t"
-        "psubw %%mm6, %%mm4                     \n\t"
-        "psubw %%mm7, %%mm5                     \n\t"
-        "packsswb %%mm5, %%mm4                  \n\t"
-        "movq (%0), %%mm0                       \n\t"
-        "paddb   %%mm4, %%mm0                   \n\t"
-        "movq %%mm0, (%0)                       \n\t"
-        "movq (%0, %1), %%mm0                   \n\t"
-        "psubb %%mm4, %%mm0                     \n\t"
-        "movq %%mm0, (%0, %1)                   \n\t"
-
-        : "+r" (src)
-        : "r" ((x86_reg)stride), "m" (c->pQPb), "r"(tmp)
-          NAMED_CONSTRAINTS_ADD(w05,w20)
-        : "%"FF_REG_a
-    );
-#else //TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
+#else //TEMPLATE_PP_MMXEXT
     const int l1= stride;
     const int l2= stride + l1;
     const int l3= stride + l2;
@@ -1086,14 +823,14 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext 
         }
         src++;
     }
-#endif //TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
+#endif //TEMPLATE_PP_MMXEXT
 }
 #endif //TEMPLATE_PP_ALTIVEC
 
 #if !TEMPLATE_PP_ALTIVEC
 static inline void RENAME(dering)(uint8_t src[], int stride, PPContext *c)
 {
-#if HAVE_7REGS && (TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW)
+#if HAVE_7REGS && TEMPLATE_PP_MMXEXT
     DECLARE_ALIGNED(8, uint64_t, tmp)[3];
     __asm__ volatile(
         "pxor %%mm6, %%mm6                      \n\t"
@@ -1113,20 +850,10 @@ static inline void RENAME(dering)(uint8_t src[], int stride, PPContext *c)
 
 #undef REAL_FIND_MIN_MAX
 #undef FIND_MIN_MAX
-#if TEMPLATE_PP_MMXEXT
 #define REAL_FIND_MIN_MAX(addr)\
         "movq " #addr ", %%mm0                  \n\t"\
         "pminub %%mm0, %%mm7                    \n\t"\
         "pmaxub %%mm0, %%mm6                    \n\t"
-#else
-#define REAL_FIND_MIN_MAX(addr)\
-        "movq " #addr ", %%mm0                  \n\t"\
-        "movq %%mm7, %%mm1                      \n\t"\
-        "psubusb %%mm0, %%mm6                   \n\t"\
-        "paddb %%mm0, %%mm6                     \n\t"\
-        "psubusb %%mm0, %%mm1                   \n\t"\
-        "psubb %%mm1, %%mm7                     \n\t"
-#endif
 #define FIND_MIN_MAX(addr)  REAL_FIND_MIN_MAX(addr)
 
 FIND_MIN_MAX((%%FF_REGa))
@@ -1140,49 +867,20 @@ FIND_MIN_MAX((%0, %1, 8))
 
         "movq %%mm7, %%mm4                      \n\t"
         "psrlq $8, %%mm7                        \n\t"
-#if TEMPLATE_PP_MMXEXT
         "pminub %%mm4, %%mm7                    \n\t" // min of pixels
         "pshufw $0xF9, %%mm7, %%mm4             \n\t"
         "pminub %%mm4, %%mm7                    \n\t" // min of pixels
         "pshufw $0xFE, %%mm7, %%mm4             \n\t"
         "pminub %%mm4, %%mm7                    \n\t"
-#else
-        "movq %%mm7, %%mm1                      \n\t"
-        "psubusb %%mm4, %%mm1                   \n\t"
-        "psubb %%mm1, %%mm7                     \n\t"
-        "movq %%mm7, %%mm4                      \n\t"
-        "psrlq $16, %%mm7                       \n\t"
-        "movq %%mm7, %%mm1                      \n\t"
-        "psubusb %%mm4, %%mm1                   \n\t"
-        "psubb %%mm1, %%mm7                     \n\t"
-        "movq %%mm7, %%mm4                      \n\t"
-        "psrlq $32, %%mm7                       \n\t"
-        "movq %%mm7, %%mm1                      \n\t"
-        "psubusb %%mm4, %%mm1                   \n\t"
-        "psubb %%mm1, %%mm7                     \n\t"
-#endif
 
 
         "movq %%mm6, %%mm4                      \n\t"
         "psrlq $8, %%mm6                        \n\t"
-#if TEMPLATE_PP_MMXEXT
         "pmaxub %%mm4, %%mm6                    \n\t" // max of pixels
         "pshufw $0xF9, %%mm6, %%mm4             \n\t"
         "pmaxub %%mm4, %%mm6                    \n\t"
         "pshufw $0xFE, %%mm6, %%mm4             \n\t"
         "pmaxub %%mm4, %%mm6                    \n\t"
-#else
-        "psubusb %%mm4, %%mm6                   \n\t"
-        "paddb %%mm4, %%mm6                     \n\t"
-        "movq %%mm6, %%mm4                      \n\t"
-        "psrlq $16, %%mm6                       \n\t"
-        "psubusb %%mm4, %%mm6                   \n\t"
-        "paddb %%mm4, %%mm6                     \n\t"
-        "movq %%mm6, %%mm4                      \n\t"
-        "psrlq $32, %%mm6                       \n\t"
-        "psubusb %%mm4, %%mm6                   \n\t"
-        "paddb %%mm4, %%mm6                     \n\t"
-#endif
         "movq %%mm6, %%mm0                      \n\t" // max
         "psubb %%mm7, %%mm6                     \n\t" // max - min
         "push %%"FF_REG_a"                      \n\t"
@@ -1320,7 +1018,7 @@ DERING_CORE((%0, %1, 8)       ,(%%FF_REGd, %1, 4),%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,
           NAMED_CONSTRAINTS_ADD(deringThreshold,b00,b02,b08)
         : "%"FF_REG_a, "%"FF_REG_d
     );
-#else // HAVE_7REGS && (TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW)
+#else // HAVE_7REGS && TEMPLATE_PP_MMXEXT
     int y;
     int min=255;
     int max=0;
@@ -1438,7 +1136,7 @@ DERING_CORE((%0, %1, 8)       ,(%%FF_REGd, %1, 4),%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,
 //        src[0] = src[7]=src[stride*7]=src[stride*7 + 7]=255;
     }
 #endif
-#endif //TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
+#endif //TEMPLATE_PP_MMXEXT
 }
 #endif //TEMPLATE_PP_ALTIVEC
 
@@ -1450,7 +1148,7 @@ DERING_CORE((%0, %1, 8)       ,(%%FF_REGd, %1, 4),%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,
  */
 static inline void RENAME(deInterlaceInterpolateLinear)(uint8_t src[], int stride)
 {
-#if TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
+#if TEMPLATE_PP_MMXEXT
     src+= 4*stride;
     __asm__ volatile(
         "lea (%0, %1), %%"FF_REG_a"             \n\t"
@@ -1503,14 +1201,13 @@ static inline void RENAME(deInterlaceInterpolateLinear)(uint8_t src[], int strid
  */
 static inline void RENAME(deInterlaceInterpolateCubic)(uint8_t src[], int stride)
 {
-#if TEMPLATE_PP_SSE2 || TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
+#if TEMPLATE_PP_SSE2
     src+= stride*3;
     __asm__ volatile(
         "lea (%0, %1), %%"FF_REG_a"             \n\t"
         "lea (%%"FF_REG_a", %1, 4), %%"FF_REG_d"\n\t"
         "lea (%%"FF_REG_d", %1, 4), %%"FF_REG_c"\n\t"
         "add %1, %%"FF_REG_c"                   \n\t"
-#if TEMPLATE_PP_SSE2
         "pxor %%xmm7, %%xmm7                    \n\t"
 #define REAL_DEINT_CUBIC(a,b,c,d,e)\
         "movq " #a ", %%xmm0                    \n\t"\
@@ -1526,33 +1223,6 @@ static inline void RENAME(deInterlaceInterpolateCubic)(uint8_t src[], int stride
         "psubw %%xmm0, %%xmm1                   \n\t"\
         "packuswb %%xmm1, %%xmm1                \n\t"\
         "movlps %%xmm1, " #c "                  \n\t"
-#else //TEMPLATE_PP_SSE2
-        "pxor %%mm7, %%mm7                      \n\t"
-//      0       1       2       3       4       5       6       7       8       9       10
-//      %0      eax     eax+%1  eax+2%1 %0+4%1  edx     edx+%1  edx+2%1 %0+8%1  edx+4%1 ecx
-
-#define REAL_DEINT_CUBIC(a,b,c,d,e)\
-        "movq " #a ", %%mm0                     \n\t"\
-        "movq " #b ", %%mm1                     \n\t"\
-        "movq " #d ", %%mm2                     \n\t"\
-        "movq " #e ", %%mm3                     \n\t"\
-        PAVGB(%%mm2, %%mm1)                             /* (b+d) /2 */\
-        PAVGB(%%mm3, %%mm0)                             /* (a+e) /2 */\
-        "movq %%mm0, %%mm2                      \n\t"\
-        "punpcklbw %%mm7, %%mm0                 \n\t"\
-        "punpckhbw %%mm7, %%mm2                 \n\t"\
-        "movq %%mm1, %%mm3                      \n\t"\
-        "punpcklbw %%mm7, %%mm1                 \n\t"\
-        "punpckhbw %%mm7, %%mm3                 \n\t"\
-        "psubw %%mm1, %%mm0                     \n\t"   /* L(a+e - (b+d))/2 */\
-        "psubw %%mm3, %%mm2                     \n\t"   /* H(a+e - (b+d))/2 */\
-        "psraw $3, %%mm0                        \n\t"   /* L(a+e - (b+d))/16 */\
-        "psraw $3, %%mm2                        \n\t"   /* H(a+e - (b+d))/16 */\
-        "psubw %%mm0, %%mm1                     \n\t"   /* L(9b + 9d - a - e)/16 */\
-        "psubw %%mm2, %%mm3                     \n\t"   /* H(9b + 9d - a - e)/16 */\
-        "packuswb %%mm3, %%mm1                  \n\t"\
-        "movq %%mm1, " #c "                     \n\t"
-#endif //TEMPLATE_PP_SSE2
 #define DEINT_CUBIC(a,b,c,d,e)  REAL_DEINT_CUBIC(a,b,c,d,e)
 
 DEINT_CUBIC((%0)           , (%%FF_REGa, %1), (%%FF_REGa, %1, 2), (%0, %1, 4)    , (%%FF_REGd, %1))
@@ -1562,13 +1232,11 @@ DEINT_CUBIC((%%FF_REGd, %1), (%0, %1, 8)    , (%%FF_REGd, %1, 4), (%%FF_REGc)   
 
         : : "r" (src), "r" ((x86_reg)stride)
         :
-#if TEMPLATE_PP_SSE2
         XMM_CLOBBERS("%xmm0", "%xmm1", "%xmm2", "%xmm3", "%xmm7",)
-#endif
         "%"FF_REG_a, "%"FF_REG_d, "%"FF_REG_c
     );
 #undef REAL_DEINT_CUBIC
-#else //TEMPLATE_PP_SSE2 || TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
+#else //TEMPLATE_PP_SSE2
     int x;
     src+= stride*3;
     for(x=0; x<8; x++){
@@ -1578,7 +1246,7 @@ DEINT_CUBIC((%%FF_REGd, %1), (%0, %1, 8)    , (%%FF_REGd, %1, 4), (%%FF_REGc)   
         src[stride*9] = av_clip_uint8((-src[stride*6] + 9*src[stride*8] + 9*src[stride*10] - src[stride*12])>>4);
         src++;
     }
-#endif //TEMPLATE_PP_SSE2 || TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
+#endif //TEMPLATE_PP_SSE2
 }
 
 /**
@@ -1590,7 +1258,7 @@ DEINT_CUBIC((%%FF_REGd, %1), (%0, %1, 8)    , (%%FF_REGd, %1, 4), (%%FF_REGc)   
  */
 static inline void RENAME(deInterlaceFF)(uint8_t src[], int stride, uint8_t *tmp)
 {
-#if TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
+#if TEMPLATE_PP_MMXEXT
     src+= stride*4;
     __asm__ volatile(
         "lea (%0, %1), %%"FF_REG_a"             \n\t"
@@ -1639,7 +1307,7 @@ DEINT_FF((%%FF_REGd, %1), (%%FF_REGd, %1, 2), (%0, %1, 8)    , (%%FF_REGd, %1, 4
         : : "r" (src), "r" ((x86_reg)stride), "r"(tmp)
         : "%"FF_REG_a, "%"FF_REG_d
     );
-#else //TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
+#else //TEMPLATE_PP_MMXEXT
     int x;
     src+= stride*4;
     for(x=0; x<8; x++){
@@ -1657,7 +1325,7 @@ DEINT_FF((%%FF_REGd, %1), (%%FF_REGd, %1, 2), (%0, %1, 8)    , (%%FF_REGd, %1, 4
 
         src++;
     }
-#endif //TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
+#endif //TEMPLATE_PP_MMXEXT
 }
 
 /**
@@ -1669,7 +1337,7 @@ DEINT_FF((%%FF_REGd, %1), (%%FF_REGd, %1, 2), (%0, %1, 8)    , (%%FF_REGd, %1, 4
  */
 static inline void RENAME(deInterlaceL5)(uint8_t src[], int stride, uint8_t *tmp, uint8_t *tmp2)
 {
-#if (TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW) && HAVE_6REGS
+#if TEMPLATE_PP_MMXEXT && HAVE_6REGS
     src+= stride*4;
     __asm__ volatile(
         "lea (%0, %1), %%"FF_REG_a"             \n\t"
@@ -1729,7 +1397,7 @@ DEINT_L5(%%mm1, %%mm0, (%%FF_REGd, %1, 2), (%0, %1, 8)       , (%%FF_REGd, %1, 4
         : : "r" (src), "r" ((x86_reg)stride), "r"(tmp), "r"(tmp2)
         : "%"FF_REG_a, "%"FF_REG_d
     );
-#else //(TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW) && HAVE_6REGS
+#else //TEMPLATE_PP_MMXEXT && HAVE_6REGS
     int x;
     src+= stride*4;
     for(x=0; x<8; x++){
@@ -1758,7 +1426,7 @@ DEINT_L5(%%mm1, %%mm0, (%%FF_REGd, %1, 2), (%0, %1, 8)       , (%%FF_REGd, %1, 4
 
         src++;
     }
-#endif //(TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW) && HAVE_6REGS
+#endif // TEMPLATE_PP_MMXEXT && HAVE_6REGS
 }
 
 /**
@@ -1770,7 +1438,7 @@ DEINT_L5(%%mm1, %%mm0, (%%FF_REGd, %1, 2), (%0, %1, 8)       , (%%FF_REGd, %1, 4
  */
 static inline void RENAME(deInterlaceBlendLinear)(uint8_t src[], int stride, uint8_t *tmp)
 {
-#if TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
+#if TEMPLATE_PP_MMXEXT
     src+= 4*stride;
     __asm__ volatile(
         "lea (%0, %1), %%"FF_REG_a"             \n\t"
@@ -1817,7 +1485,7 @@ static inline void RENAME(deInterlaceBlendLinear)(uint8_t src[], int stride, uin
         : : "r" (src), "r" ((x86_reg)stride), "r" (tmp)
         : "%"FF_REG_a, "%"FF_REG_d
     );
-#else //TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
+#else //TEMPLATE_PP_MMXEXT
     int a, b, c, x;
     src+= 4*stride;
 
@@ -1860,7 +1528,7 @@ static inline void RENAME(deInterlaceBlendLinear)(uint8_t src[], int stride, uin
         src += 4;
         tmp += 4;
     }
-#endif //TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
+#endif //TEMPLATE_PP_MMXEXT
 }
 
 /**
@@ -1871,9 +1539,8 @@ static inline void RENAME(deInterlaceBlendLinear)(uint8_t src[], int stride, uin
  */
 static inline void RENAME(deInterlaceMedian)(uint8_t src[], int stride)
 {
-#if TEMPLATE_PP_MMX
-    src+= 4*stride;
 #if TEMPLATE_PP_MMXEXT
+    src+= 4*stride;
     __asm__ volatile(
         "lea (%0, %1), %%"FF_REG_a"             \n\t"
         "lea (%%"FF_REG_a", %1, 4), %%"FF_REG_d"\n\t"
@@ -1922,48 +1589,6 @@ static inline void RENAME(deInterlaceMedian)(uint8_t src[], int stride)
         : "%"FF_REG_a, "%"FF_REG_d
     );
 
-#else // MMX without MMX2
-    __asm__ volatile(
-        "lea (%0, %1), %%"FF_REG_a"             \n\t"
-        "lea (%%"FF_REG_a", %1, 4), %%"FF_REG_d"\n\t"
-//      0       1       2       3       4       5       6       7       8       9
-//      %0      eax     eax+%1  eax+2%1 %0+4%1  edx     edx+%1  edx+2%1 %0+8%1  edx+4%1
-        "pxor %%mm7, %%mm7                      \n\t"
-
-#define REAL_MEDIAN(a,b,c)\
-        "movq " #a ", %%mm0                     \n\t"\
-        "movq " #b ", %%mm2                     \n\t"\
-        "movq " #c ", %%mm1                     \n\t"\
-        "movq %%mm0, %%mm3                      \n\t"\
-        "movq %%mm1, %%mm4                      \n\t"\
-        "movq %%mm2, %%mm5                      \n\t"\
-        "psubusb %%mm1, %%mm3                   \n\t"\
-        "psubusb %%mm2, %%mm4                   \n\t"\
-        "psubusb %%mm0, %%mm5                   \n\t"\
-        "pcmpeqb %%mm7, %%mm3                   \n\t"\
-        "pcmpeqb %%mm7, %%mm4                   \n\t"\
-        "pcmpeqb %%mm7, %%mm5                   \n\t"\
-        "movq %%mm3, %%mm6                      \n\t"\
-        "pxor %%mm4, %%mm3                      \n\t"\
-        "pxor %%mm5, %%mm4                      \n\t"\
-        "pxor %%mm6, %%mm5                      \n\t"\
-        "por %%mm3, %%mm1                       \n\t"\
-        "por %%mm4, %%mm2                       \n\t"\
-        "por %%mm5, %%mm0                       \n\t"\
-        "pand %%mm2, %%mm0                      \n\t"\
-        "pand %%mm1, %%mm0                      \n\t"\
-        "movq %%mm0, " #b "                     \n\t"
-#define MEDIAN(a,b,c)  REAL_MEDIAN(a,b,c)
-
-MEDIAN((%0)           , (%%FF_REGa)       , (%%FF_REGa, %1))
-MEDIAN((%%FF_REGa, %1), (%%FF_REGa, %1, 2), (%0, %1, 4))
-MEDIAN((%0, %1, 4)    , (%%FF_REGd)       , (%%FF_REGd, %1))
-MEDIAN((%%FF_REGd, %1), (%%FF_REGd, %1, 2), (%0, %1, 8))
-
-        : : "r" (src), "r" ((x86_reg)stride)
-        : "%"FF_REG_a, "%"FF_REG_d
-    );
-#endif //TEMPLATE_PP_MMXEXT
 #else //TEMPLATE_PP_MMX
     int x, y;
     src+= 4*stride;
@@ -2165,7 +1790,7 @@ static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
 
 #define FAST_L2_DIFF
 //#define L1_DIFF //u should change the thresholds too if u try that one
-#if (TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW) && HAVE_6REGS
+#if TEMPLATE_PP_MMXEXT && HAVE_6REGS
     __asm__ volatile(
         "lea (%2, %2, 2), %%"FF_REG_a"          \n\t" // 3*stride
         "lea (%2, %2, 4), %%"FF_REG_d"          \n\t" // 5*stride
@@ -2454,7 +2079,7 @@ L2_DIFF_CORE((%0, %%FF_REGc)  , (%1, %%FF_REGc))
           NAMED_CONSTRAINTS_ADD(b80)
         : "%"FF_REG_a, "%"FF_REG_d, "%"FF_REG_c, "memory"
     );
-#else //(TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW) && HAVE_6REGS
+#else //TEMPLATE_PP_MMXEXT && HAVE_6REGS
 {
     int y;
     int d=0;
@@ -2537,11 +2162,11 @@ Switch between
         }
     }
 }
-#endif //(TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW) && HAVE_6REGS
+#endif //TEMPLATE_PP_MMXEXT && HAVE_6REGS
 }
 #endif //TEMPLATE_PP_ALTIVEC
 
-#if TEMPLATE_PP_MMX
+#if TEMPLATE_PP_MMXEXT
 /**
  * accurate deblock filter
  */
@@ -2945,7 +2570,6 @@ static av_always_inline void RENAME(do_a_deblock)(uint8_t *src, int step, int st
             "movq (%4), %%mm2                       \n\t" // 2L0 - 5L1 + 5L2 - 2L3
             "movq 8(%4), %%mm3                      \n\t" // 2H0 - 5H1 + 5H2 - 2H3
 
-#if TEMPLATE_PP_MMXEXT
             "movq %%mm7, %%mm6                      \n\t" // 0
             "psubw %%mm0, %%mm6                     \n\t"
             "pmaxsw %%mm6, %%mm0                    \n\t" // |2L4 - 5L5 + 5L6 - 2L7|
@@ -2958,36 +2582,9 @@ static av_always_inline void RENAME(do_a_deblock)(uint8_t *src, int step, int st
             "movq %%mm7, %%mm6                      \n\t" // 0
             "psubw %%mm3, %%mm6                     \n\t"
             "pmaxsw %%mm6, %%mm3                    \n\t" // |2H0 - 5H1 + 5H2 - 2H3|
-#else
-            "movq %%mm7, %%mm6                      \n\t" // 0
-            "pcmpgtw %%mm0, %%mm6                   \n\t"
-            "pxor %%mm6, %%mm0                      \n\t"
-            "psubw %%mm6, %%mm0                     \n\t" // |2L4 - 5L5 + 5L6 - 2L7|
-            "movq %%mm7, %%mm6                      \n\t" // 0
-            "pcmpgtw %%mm1, %%mm6                   \n\t"
-            "pxor %%mm6, %%mm1                      \n\t"
-            "psubw %%mm6, %%mm1                     \n\t" // |2H4 - 5H5 + 5H6 - 2H7|
-            "movq %%mm7, %%mm6                      \n\t" // 0
-            "pcmpgtw %%mm2, %%mm6                   \n\t"
-            "pxor %%mm6, %%mm2                      \n\t"
-            "psubw %%mm6, %%mm2                     \n\t" // |2L0 - 5L1 + 5L2 - 2L3|
-            "movq %%mm7, %%mm6                      \n\t" // 0
-            "pcmpgtw %%mm3, %%mm6                   \n\t"
-            "pxor %%mm6, %%mm3                      \n\t"
-            "psubw %%mm6, %%mm3                     \n\t" // |2H0 - 5H1 + 5H2 - 2H3|
-#endif
 
-#if TEMPLATE_PP_MMXEXT
             "pminsw %%mm2, %%mm0                    \n\t"
             "pminsw %%mm3, %%mm1                    \n\t"
-#else
-            "movq %%mm0, %%mm6                      \n\t"
-            "psubusw %%mm2, %%mm6                   \n\t"
-            "psubw %%mm6, %%mm0                     \n\t"
-            "movq %%mm1, %%mm6                      \n\t"
-            "psubusw %%mm3, %%mm6                   \n\t"
-            "psubw %%mm6, %%mm1                     \n\t"
-#endif
 
             "movd %2, %%mm2                         \n\t" // QP
             "punpcklbw %%mm7, %%mm2                 \n\t"
@@ -3041,17 +2638,8 @@ static av_always_inline void RENAME(do_a_deblock)(uint8_t *src, int step, int st
             "pand %%mm2, %%mm4                      \n\t"
             "pand %%mm3, %%mm5                      \n\t"
 
-#if TEMPLATE_PP_MMXEXT
             "pminsw %%mm0, %%mm4                    \n\t"
             "pminsw %%mm1, %%mm5                    \n\t"
-#else
-            "movq %%mm4, %%mm2                      \n\t"
-            "psubusw %%mm0, %%mm2                   \n\t"
-            "psubw %%mm2, %%mm4                     \n\t"
-            "movq %%mm5, %%mm2                      \n\t"
-            "psubusw %%mm1, %%mm2                   \n\t"
-            "psubw %%mm2, %%mm5                     \n\t"
-#endif
             "pxor %%mm6, %%mm4                      \n\t"
             "pxor %%mm7, %%mm5                      \n\t"
             "psubw %%mm6, %%mm4                     \n\t"
@@ -3088,18 +2676,14 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
 static inline void RENAME(blockCopy)(uint8_t dst[], int dstStride, const uint8_t src[], int srcStride,
                                      int levelFix, int64_t *packedOffsetAndScale)
 {
-#if !TEMPLATE_PP_MMX || !HAVE_6REGS
-    int i;
-#endif
     if(levelFix){
-#if TEMPLATE_PP_MMX && HAVE_6REGS
+#if TEMPLATE_PP_MMXEXT && HAVE_6REGS
     __asm__ volatile(
         "movq (%%"FF_REG_a"), %%mm2     \n\t" // packedYOffset
         "movq 8(%%"FF_REG_a"), %%mm3    \n\t" // packedYScale
         "lea (%2,%4), %%"FF_REG_a"      \n\t"
         "lea (%3,%5), %%"FF_REG_d"      \n\t"
         "pxor %%mm4, %%mm4              \n\t"
-#if TEMPLATE_PP_MMXEXT
 #define REAL_SCALED_CPY(src1, src2, dst1, dst2)                                                \
         "movq " #src1 ", %%mm0          \n\t"\
         "movq " #src1 ", %%mm5          \n\t"\
@@ -3122,34 +2706,6 @@ static inline void RENAME(blockCopy)(uint8_t dst[], int dstStride, const uint8_t
         "movq %%mm0, " #dst1 "          \n\t"\
         "movq %%mm1, " #dst2 "          \n\t"\
 
-#else //TEMPLATE_PP_MMXEXT
-#define REAL_SCALED_CPY(src1, src2, dst1, dst2)                                        \
-        "movq " #src1 ", %%mm0          \n\t"\
-        "movq " #src1 ", %%mm5          \n\t"\
-        "punpcklbw %%mm4, %%mm0         \n\t"\
-        "punpckhbw %%mm4, %%mm5         \n\t"\
-        "psubw %%mm2, %%mm0             \n\t"\
-        "psubw %%mm2, %%mm5             \n\t"\
-        "movq " #src2 ", %%mm1          \n\t"\
-        "psllw $6, %%mm0                \n\t"\
-        "psllw $6, %%mm5                \n\t"\
-        "pmulhw %%mm3, %%mm0            \n\t"\
-        "movq " #src2 ", %%mm6          \n\t"\
-        "pmulhw %%mm3, %%mm5            \n\t"\
-        "punpcklbw %%mm4, %%mm1         \n\t"\
-        "punpckhbw %%mm4, %%mm6         \n\t"\
-        "psubw %%mm2, %%mm1             \n\t"\
-        "psubw %%mm2, %%mm6             \n\t"\
-        "psllw $6, %%mm1                \n\t"\
-        "psllw $6, %%mm6                \n\t"\
-        "pmulhw %%mm3, %%mm1            \n\t"\
-        "pmulhw %%mm3, %%mm6            \n\t"\
-        "packuswb %%mm5, %%mm0          \n\t"\
-        "packuswb %%mm6, %%mm1          \n\t"\
-        "movq %%mm0, " #dst1 "          \n\t"\
-        "movq %%mm1, " #dst2 "          \n\t"\
-
-#endif //TEMPLATE_PP_MMXEXT
 #define SCALED_CPY(src1, src2, dst1, dst2)\
    REAL_SCALED_CPY(src1, src2, dst1, dst2)
 
@@ -3170,7 +2726,7 @@ SCALED_CPY((%%FF_REGa, %4), (%%FF_REGa, %4, 2), (%%FF_REGd, %5), (%%FF_REGd, %5,
         : "%"FF_REG_d
     );
 #else //TEMPLATE_PP_MMX && HAVE_6REGS
-    for(i=0; i<8; i++)
+    for (int i = 0; i < 8; i++)
         memcpy( &(dst[dstStride*i]),
                 &(src[srcStride*i]), BLOCK_SIZE);
 #endif //TEMPLATE_PP_MMX && HAVE_6REGS
@@ -3203,7 +2759,7 @@ SIMPLE_CPY((%%FF_REGa, %2), (%%FF_REGa, %2, 2), (%%FF_REGd, %3), (%%FF_REGd, %3,
         : "%"FF_REG_a, "%"FF_REG_d
     );
 #else //TEMPLATE_PP_MMX && HAVE_6REGS
-    for(i=0; i<8; i++)
+    for (int i = 0; i < 8; i++)
         memcpy( &(dst[dstStride*i]),
                 &(src[srcStride*i]), BLOCK_SIZE);
 #endif //TEMPLATE_PP_MMX && HAVE_6REGS
@@ -3696,9 +3252,7 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
             }
         }
     }
-#if   TEMPLATE_PP_3DNOW
-    __asm__ volatile("femms");
-#elif TEMPLATE_PP_MMX
+#if TEMPLATE_PP_MMX
     __asm__ volatile("emms");
 #endif
 
@@ -3734,5 +3288,4 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
 #undef TEMPLATE_PP_ALTIVEC
 #undef TEMPLATE_PP_MMX
 #undef TEMPLATE_PP_MMXEXT
-#undef TEMPLATE_PP_3DNOW
 #undef TEMPLATE_PP_SSE2

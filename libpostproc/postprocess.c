@@ -26,28 +26,27 @@
  */
 
 /*
-                        C       MMX     MMX2    3DNow   AltiVec
-isVertDC                Ec      Ec                      Ec
-isVertMinMaxOk          Ec      Ec                      Ec
-doVertLowPass           E               e       e       Ec
-doVertDefFilter         Ec      Ec      e       e       Ec
-isHorizDC               Ec      Ec                      Ec
-isHorizMinMaxOk         a       E                       Ec
-doHorizLowPass          E               e       e       Ec
-doHorizDefFilter        Ec      Ec      e       e       Ec
-do_a_deblock            Ec      E       Ec      E
-deRing                  E               e       e*      Ecp
-Vertical RKAlgo1        E               a       a
-Horizontal RKAlgo1                      a       a
-Vertical X1#            a               E       E
-Horizontal X1#          a               E       E
-LinIpolDeinterlace      e               E       E*
-CubicIpolDeinterlace    a               e       e*
-LinBlendDeinterlace     e               E       E*
+                        C       MMX     MMX2    AltiVec
+isVertDC                Ec      Ec              Ec
+isVertMinMaxOk          Ec      Ec              Ec
+doVertLowPass           E               e       Ec
+doVertDefFilter         Ec      Ec      e       Ec
+isHorizDC               Ec      Ec              Ec
+isHorizMinMaxOk         a       E               Ec
+doHorizLowPass          E               e       Ec
+doHorizDefFilter        Ec      Ec      e       Ec
+do_a_deblock            Ec      E       Ec
+deRing                  E               e       Ecp
+Vertical RKAlgo1        E               a
+Horizontal RKAlgo1                      a
+Vertical X1#            a               E
+Horizontal X1#          a               E
+LinIpolDeinterlace      e               E
+CubicIpolDeinterlace    a               e
+LinBlendDeinterlace     e               E
 MedianDeinterlace#      E       Ec      Ec
-TempDeNoiser#           E               e       e       Ec
+TempDeNoiser#           E               e       Ec
 
-* I do not have a 3DNow! CPU -> it is untested, but no one said it does not work so it seems to work
 # more or less selfinvented filters so the exactness is not too meaningful
 E = Exact implementation
 e = almost exact implementation (slightly different rounding,...)
@@ -83,7 +82,6 @@ try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 #include <stdlib.h>
 #include <string.h>
 //#undef HAVE_MMXEXT_INLINE
-//#define HAVE_AMD3DNOW_INLINE
 //#undef HAVE_MMX_INLINE
 //#undef ARCH_X86
 //#define DEBUG_BRIGHTNESS
@@ -494,7 +492,7 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step,
     }
 }
 
-//Note: we have C, MMX, MMX2, 3DNOW version there is no 3DNOW+MMX2 one
+//Note: we have C and SSE2 version (which uses MMX(EXT) when advantageous)
 //Plain C versions
 //we always compile C for testing which needs bitexactness
 #define TEMPLATE_PP_C 1
@@ -508,26 +506,11 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step,
 
 #if ARCH_X86 && HAVE_INLINE_ASM
 #    if CONFIG_RUNTIME_CPUDETECT
-#        define TEMPLATE_PP_MMX 1
-#        include "postprocess_template.c"
-#        define TEMPLATE_PP_MMXEXT 1
-#        include "postprocess_template.c"
-#        define TEMPLATE_PP_3DNOW 1
-#        include "postprocess_template.c"
 #        define TEMPLATE_PP_SSE2 1
 #        include "postprocess_template.c"
 #    else
 #        if HAVE_SSE2_INLINE
 #            define TEMPLATE_PP_SSE2 1
-#            include "postprocess_template.c"
-#        elif HAVE_MMXEXT_INLINE
-#            define TEMPLATE_PP_MMXEXT 1
-#            include "postprocess_template.c"
-#        elif HAVE_AMD3DNOW_INLINE
-#            define TEMPLATE_PP_3DNOW 1
-#            include "postprocess_template.c"
-#        elif HAVE_MMX_INLINE
-#            define TEMPLATE_PP_MMX 1
 #            include "postprocess_template.c"
 #        endif
 #    endif
@@ -549,21 +532,12 @@ static inline void postProcess(const uint8_t src[], int srcStride, uint8_t dst[]
 #if ARCH_X86 && HAVE_INLINE_ASM
         // ordered per speed fastest first
         if      (c->cpuCaps & AV_CPU_FLAG_SSE2)     pp = postProcess_SSE2;
-        else if (c->cpuCaps & AV_CPU_FLAG_MMXEXT)   pp = postProcess_MMX2;
-        else if (c->cpuCaps & AV_CPU_FLAG_3DNOW)    pp = postProcess_3DNow;
-        else if (c->cpuCaps & AV_CPU_FLAG_MMX)      pp = postProcess_MMX;
 #elif HAVE_ALTIVEC
         if      (c->cpuCaps & AV_CPU_FLAG_ALTIVEC)  pp = postProcess_altivec;
 #endif
 #else /* CONFIG_RUNTIME_CPUDETECT */
 #if     HAVE_SSE2_INLINE
         pp = postProcess_SSE2;
-#elif   HAVE_MMXEXT_INLINE
-        pp = postProcess_MMX2;
-#elif HAVE_AMD3DNOW_INLINE
-        pp = postProcess_3DNow;
-#elif HAVE_MMX_INLINE
-        pp = postProcess_MMX;
 #elif HAVE_ALTIVEC
         pp = postProcess_altivec;
 #endif
@@ -877,9 +851,6 @@ av_cold pp_context *pp_get_context(int width, int height, int cpuCaps){
         c->cpuCaps = av_get_cpu_flags();
     } else {
         c->cpuCaps = 0;
-        if (cpuCaps & PP_CPU_CAPS_MMX)      c->cpuCaps |= AV_CPU_FLAG_MMX;
-        if (cpuCaps & PP_CPU_CAPS_MMX2)     c->cpuCaps |= AV_CPU_FLAG_MMXEXT;
-        if (cpuCaps & PP_CPU_CAPS_3DNOW)    c->cpuCaps |= AV_CPU_FLAG_3DNOW;
         if (cpuCaps & PP_CPU_CAPS_ALTIVEC)  c->cpuCaps |= AV_CPU_FLAG_ALTIVEC;
     }
 
