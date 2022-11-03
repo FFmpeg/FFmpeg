@@ -52,7 +52,6 @@ typedef struct MotionEstContext {
     uint8_t *scratchpad;            /**< data area for the ME algo, so that
                                      * the ME does not need to malloc/free. */
     uint8_t *temp;
-    int best_bits;
     uint32_t *map;                  ///< map to avoid duplicate evaluations
     uint32_t *score_map;            ///< map to store the scores
     unsigned map_generation;
