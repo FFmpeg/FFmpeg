@@ -40,10 +40,18 @@ typedef struct Libaribb24Context {
 
     char        *aribb24_base_path;
     unsigned int aribb24_skip_ruby;
+
+    int default_profile;
 } Libaribb24Context;
 
-static unsigned int get_profile_font_size(int profile)
+static unsigned int get_profile_font_size(AVCodecContext *avctx)
 {
+    Libaribb24Context *b24 = avctx->priv_data;
+    int profile = avctx->profile;
+
+    if (profile == FF_PROFILE_UNKNOWN)
+        profile = b24->default_profile;
+
     switch (profile) {
     case FF_PROFILE_ARIB_PROFILE_A:
         return 36;
@@ -61,25 +69,30 @@ static void libaribb24_log(void *p, const char *msg)
 
 static int libaribb24_generate_ass_header(AVCodecContext *avctx)
 {
+    Libaribb24Context *b24 = avctx->priv_data;
     unsigned int plane_width = 0;
     unsigned int plane_height = 0;
     unsigned int font_size = 0;
+    int profile = avctx->profile;
 
-    switch (avctx->profile) {
+    if (profile == FF_PROFILE_UNKNOWN)
+        profile = b24->default_profile;
+
+    switch (profile) {
     case FF_PROFILE_ARIB_PROFILE_A:
         plane_width = 960;
         plane_height = 540;
-        font_size = get_profile_font_size(avctx->profile);
         break;
     case FF_PROFILE_ARIB_PROFILE_C:
         plane_width = 320;
         plane_height = 180;
-        font_size = get_profile_font_size(avctx->profile);
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unknown or unsupported profile set!\n");
         return AVERROR(EINVAL);
     }
+
+    font_size = get_profile_font_size(avctx);
 
     avctx->subtitle_header = av_asprintf(
              "[Script Info]\r\n"
@@ -135,6 +148,7 @@ static int libaribb24_init(AVCodecContext *avctx)
     Libaribb24Context *b24 = avctx->priv_data;
     void(* arib_dec_init)(arib_decoder_t* decoder) = NULL;
     int ret_code = AVERROR_EXTERNAL;
+    int profile = avctx->profile;
 
     if (!(b24->lib_instance = arib_instance_new(avctx))) {
         av_log(avctx, AV_LOG_ERROR, "Failed to initialize libaribb24!\n");
@@ -158,7 +172,10 @@ static int libaribb24_init(AVCodecContext *avctx)
         goto init_fail;
     }
 
-    switch (avctx->profile) {
+    if (profile == FF_PROFILE_UNKNOWN)
+        profile = b24->default_profile;
+
+    switch (profile) {
     case FF_PROFILE_ARIB_PROFILE_A:
         arib_dec_init = arib_initialize_decoder_a_profile;
         break;
@@ -209,7 +226,7 @@ static int libaribb24_handle_regions(AVCodecContext *avctx, AVSubtitle *sub)
 {
     Libaribb24Context *b24 = avctx->priv_data;
     const arib_buf_region_t *region = arib_decoder_get_regions(b24->decoder);
-    unsigned int profile_font_size = get_profile_font_size(avctx->profile);
+    unsigned int profile_font_size = get_profile_font_size(avctx);
     AVBPrint buf = { 0 };
     int ret = 0;
 
@@ -371,6 +388,10 @@ static const AVOption options[] = {
       OFFSET(aribb24_base_path), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, SD },
     { "aribb24-skip-ruby-text", "skip ruby text blocks during decoding",
       OFFSET(aribb24_skip_ruby), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, SD },
+    { "default_profile", "default profile to use if not specified in the stream parameters",
+      OFFSET(default_profile), AV_OPT_TYPE_INT, { .i64 = FF_PROFILE_UNKNOWN }, FF_PROFILE_UNKNOWN, FF_PROFILE_ARIB_PROFILE_C, SD, "profile" },
+        {"a", "Profile A", 0, AV_OPT_TYPE_CONST, {.i64 = FF_PROFILE_ARIB_PROFILE_A}, INT_MIN, INT_MAX, SD, "profile"},
+        {"c", "Profile C", 0, AV_OPT_TYPE_CONST, {.i64 = FF_PROFILE_ARIB_PROFILE_C}, INT_MIN, INT_MAX, SD, "profile"},
     { NULL }
 };
 
