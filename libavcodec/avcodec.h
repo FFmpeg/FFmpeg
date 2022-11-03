@@ -2062,6 +2062,19 @@ typedef struct AVCodecContext {
      * Number of entries in side_data_prefer_packet.
      */
     unsigned nb_side_data_prefer_packet;
+
+    /**
+     * Array containing static side data, such as HDR10 CLL / MDCV structures.
+     * Side data entries should be allocated by usage of helpers defined in
+     * libavutil/frame.h.
+     *
+     * - encoding: may be set by user before calling avcodec_open2() for
+     *             encoder configuration. Afterwards owned and freed by the
+     *             encoder.
+     * - decoding: unused
+     */
+    AVFrameSideData  **decoded_side_data;
+    int             nb_decoded_side_data;
 } AVCodecContext;
 
 /**
