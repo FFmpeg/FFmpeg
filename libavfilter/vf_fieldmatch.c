@@ -680,7 +680,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterLink *outlink = ctx->outputs[0];
     FieldMatchContext *fm = ctx->priv;
     int combs[] = { -1, -1, -1, -1, -1 };
-    int order, field, i, match, sc = 0, ret = 0;
+    int order, field, i, match, interlaced_frame, sc = 0, ret = 0;
     const int *fxo;
     AVFrame *gen_frames[] = { NULL, NULL, NULL, NULL, NULL };
     AVFrame *dst = NULL;
@@ -793,6 +793,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         }
     }
 
+    /* keep fields as-is if not matched properly */
+    interlaced_frame = combs[match] >= fm->combpel;
+    if (interlaced_frame && fm->combmatch == COMBMATCH_FULL) {
+        match = mC;
+    }
+
     /* get output frame and drop the others */
     if (fm->ppsrc) {
         /* field matching was based on a filtered/post-processed input, we now
@@ -813,7 +819,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     /* mark the frame we are unable to match properly as interlaced so a proper
      * de-interlacer can take the relay */
-    dst->interlaced_frame = combs[match] >= fm->combpel;
+    dst->interlaced_frame = interlaced_frame;
     if (dst->interlaced_frame) {
         av_log(ctx, AV_LOG_WARNING, "Frame #%"PRId64" at %s is still interlaced\n",
                outlink->frame_count_in, av_ts2timestr(in->pts, &inlink->time_base));
