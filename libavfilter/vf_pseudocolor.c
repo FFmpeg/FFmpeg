@@ -67,6 +67,7 @@ enum Curves {
     TURBO,
     CIVIDIS,
     SOLAR,
+    SPECTRAL,
     NB_CURVES,
 };
 
@@ -85,6 +86,7 @@ enum Presets {
     PRESET_NOMINAL,
     PRESET_PREFERRED,
     PRESET_TOTAL,
+    PRESET_SPECTRAL,
     NB_PRESETS,
 };
 
@@ -174,6 +176,11 @@ static const Curve curves[] =
     },
     .offset = { 0., -9., 9. },
     .fun = { solarfun, solarfun, solarfun }, },
+    [SPECTRAL] = {{
+        { -1.6820e-15,   1.4982e-12,  -5.0442e-10,   8.0490e-08,  -6.1903e-06,   1.5821e-04, 6.4359e-03,   6.2887e-01 },
+        {  1.2526e-15,  -1.2203e-12,   4.7013e-10,  -8.9360e-08,   8.3839e-06,  -3.6642e-04, 1.4784e-02,  -9.8075e-03 },
+        {  1.4755e-15,  -1.6765e-12,   7.3188e-10,  -1.5522e-07,   1.6406e-05,  -7.7883e-04, 1.4502e-02,   2.1597e-01 },
+    }, .fun = { limit, limit, limit }, },
 };
 
 static const Preset presets[] =
@@ -191,7 +198,8 @@ static const Preset presets[] =
     [PRESET_RANGE2]  = { 5, spec2_range, NULL,             spec2_fills },
     [PRESET_SHADOWS] = { 2, shadows_range, NULL,           shadows_fills },
     [PRESET_HIGHLIGHTS] = { 3, highlights_range, NULL,     highlights_fills },
-    [PRESET_SOLAR] = { 1, &full_range, &curves[SOLAR], NULL },
+    [PRESET_SOLAR]   = { 1, &full_range, &curves[SOLAR],   NULL },
+    [PRESET_SPECTRAL]= { 1, &full_range, &curves[SPECTRAL],NULL },
 };
 
 typedef struct PseudoColorContext {
@@ -246,6 +254,7 @@ static const AVOption pseudocolor_options[] = {
     { "nominal",    NULL,                  0,                        AV_OPT_TYPE_CONST,  {.i64=PRESET_NOMINAL}, .flags=FLAGS, "preset" },
     { "preferred",  NULL,                  0,                        AV_OPT_TYPE_CONST,  {.i64=PRESET_PREFERRED},.flags=FLAGS,"preset" },
     { "total",      NULL,                  0,                        AV_OPT_TYPE_CONST,  {.i64=PRESET_TOTAL},   .flags=FLAGS, "preset" },
+    { "spectral",   NULL,                  0,                        AV_OPT_TYPE_CONST,  {.i64=PRESET_SPECTRAL},.flags = FLAGS, "preset" },
     { "opacity", "set pseudocolor opacity",OFFSET(opacity),          AV_OPT_TYPE_FLOAT,  {.dbl=1}, 0, 1, .flags = FLAGS },
     { NULL }
 };

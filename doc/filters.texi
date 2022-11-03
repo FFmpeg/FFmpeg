@@ -18886,6 +18886,7 @@ Available LUTs:
 @item nominal
 @item preferred
 @item total
+@item spectral
 @end table
 
 @item opacity
