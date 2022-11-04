@@ -139,24 +139,6 @@ static void filter16_roberts(uint8_t *dstp, int width,
     }
 }
 
-static void filter16_sobel(uint8_t *dstp, int width,
-                           float scale, float delta, const int *const matrix,
-                           const uint8_t *c[], int peak, int radius,
-                           int dstride, int stride, int size)
-{
-    uint16_t *dst = (uint16_t *)dstp;
-    int x;
-
-    for (x = 0; x < width; x++) {
-        float suma = AV_RN16A(&c[0][2 * x]) * -1 + AV_RN16A(&c[1][2 * x]) * -2 + AV_RN16A(&c[2][2 * x]) * -1 +
-                     AV_RN16A(&c[6][2 * x]) *  1 + AV_RN16A(&c[7][2 * x]) *  2 + AV_RN16A(&c[8][2 * x]) *  1;
-        float sumb = AV_RN16A(&c[0][2 * x]) * -1 + AV_RN16A(&c[2][2 * x]) *  1 + AV_RN16A(&c[3][2 * x]) * -2 +
-                     AV_RN16A(&c[5][2 * x]) *  2 + AV_RN16A(&c[6][2 * x]) * -1 + AV_RN16A(&c[8][2 * x]) *  1;
-
-        dst[x] = av_clip(sqrtf(suma*suma + sumb*sumb) * scale + delta, 0, peak);
-    }
-}
-
 static void filter16_scharr(uint8_t *dstp, int width,
                             float scale, float delta, const int *const matrix,
                             const uint8_t *c[], int peak, int radius,
@@ -256,26 +238,6 @@ static void filter_roberts(uint8_t *dst, int width,
     for (x = 0; x < width; x++) {
         float suma = c[0][x] *  1 + c[1][x] * -1;
         float sumb = c[4][x] *  1 + c[3][x] * -1;
-
-        dst[x] = av_clip_uint8(sqrtf(suma*suma + sumb*sumb) * scale + delta);
-    }
-}
-
-static void filter_sobel(uint8_t *dst, int width,
-                         float scale, float delta, const int *const matrix,
-                         const uint8_t *c[], int peak, int radius,
-                         int dstride, int stride, int size)
-{
-    const uint8_t *c0 = c[0], *c1 = c[1], *c2 = c[2];
-    const uint8_t *c3 = c[3], *c5 = c[5];
-    const uint8_t *c6 = c[6], *c7 = c[7], *c8 = c[8];
-    int x;
-
-    for (x = 0; x < width; x++) {
-        float suma = c0[x] * -1 + c1[x] * -2 + c2[x] * -1 +
-                     c6[x] *  1 + c7[x] *  2 + c8[x] *  1;
-        float sumb = c0[x] * -1 + c2[x] *  1 + c3[x] * -2 +
-                     c5[x] *  2 + c6[x] * -1 + c8[x] *  1;
 
         dst[x] = av_clip_uint8(sqrtf(suma*suma + sumb*sumb) * scale + delta);
     }
@@ -552,22 +514,6 @@ static void filter_column(uint8_t *dst, int height,
     }
 }
 
-static void setup_3x3(int radius, const uint8_t *c[], const uint8_t *src, int stride,
-                      int x, int w, int y, int h, int bpc)
-{
-    int i;
-
-    for (i = 0; i < 9; i++) {
-        int xoff = FFABS(x + ((i % 3) - 1));
-        int yoff = FFABS(y + (i / 3) - 1);
-
-        xoff = xoff >= w ? 2 * w - 1 - xoff : xoff;
-        yoff = yoff >= h ? 2 * h - 1 - yoff : yoff;
-
-        c[i] = src + xoff * bpc + yoff * stride;
-    }
-}
-
 static void setup_5x5(int radius, const uint8_t *c[], const uint8_t *src, int stride,
                       int x, int w, int y, int h, int bpc)
 {
@@ -708,6 +654,18 @@ static int param_init(AVFilterContext *ctx)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     int p, i;
 
+    s->depth = desc->comp[0].depth;
+    s->max = (1 << s->depth) - 1;
+
+    s->planewidth[1] = s->planewidth[2] = AV_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
+    s->planewidth[0] = s->planewidth[3] = inlink->w;
+    s->planeheight[1] = s->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
+    s->planeheight[0] = s->planeheight[3] = inlink->h;
+
+    s->nb_planes = av_pix_fmt_count_planes(inlink->format);
+    s->nb_threads = ff_filter_get_nb_threads(ctx);
+    s->bpc = (s->depth + 7) / 8;
+
     if (!strcmp(ctx->filter->name, "convolution")) {
         for (i = 0; i < 4; i++) {
             int *matrix = (int *)s->matrix[i];
@@ -804,14 +762,7 @@ static int param_init(AVFilterContext *ctx)
             s->bias[i] = s->delta;
         }
     } else if (!strcmp(ctx->filter->name, "sobel")) {
-        for (i = 0; i < 4; i++) {
-            s->filter[i] = filter_sobel;
-            s->copy[i] = !((1 << i) & s->planes);
-            s->size[i] = 3;
-            s->setup[i] = setup_3x3;
-            s->rdiv[i] = s->scale;
-            s->bias[i] = s->delta;
-        }
+        ff_sobel_init(s, s->depth, s->nb_planes);
     } else if (!strcmp(ctx->filter->name, "kirsch")) {
         for (i = 0; i < 4; i++) {
             s->filter[i] = filter_kirsch;
@@ -831,18 +782,6 @@ static int param_init(AVFilterContext *ctx)
             s->bias[i] = s->delta;
         }
     }
-
-    s->depth = desc->comp[0].depth;
-    s->max = (1 << s->depth) - 1;
-
-    s->planewidth[1] = s->planewidth[2] = AV_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
-    s->planewidth[0] = s->planewidth[3] = inlink->w;
-    s->planeheight[1] = s->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
-    s->planeheight[0] = s->planeheight[3] = inlink->h;
-
-    s->nb_planes = av_pix_fmt_count_planes(inlink->format);
-    s->nb_threads = ff_filter_get_nb_threads(ctx);
-    s->bpc = (s->depth + 7) / 8;
 
     if (!strcmp(ctx->filter->name, "convolution")) {
         if (s->depth > 8) {
@@ -870,10 +809,6 @@ static int param_init(AVFilterContext *ctx)
         if (s->depth > 8)
             for (p = 0; p < s->nb_planes; p++)
                 s->filter[p] = filter16_roberts;
-    } else if (!strcmp(ctx->filter->name, "sobel")) {
-        if (s->depth > 8)
-            for (p = 0; p < s->nb_planes; p++)
-                s->filter[p] = filter16_sobel;
     } else if (!strcmp(ctx->filter->name, "kirsch")) {
         if (s->depth > 8)
             for (p = 0; p < s->nb_planes; p++)

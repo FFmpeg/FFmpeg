@@ -22,6 +22,18 @@
 
 SECTION_RODATA
 half:   dd 0.5
+data_p1: dd  1
+data_n1: dd -1
+data_p2: dd  2
+data_n2: dd -2
+
+ALIGN 64
+sobel_perm: db  0, 16, 32, 48,  1, 17, 33, 49,  2, 18, 34, 50,  3, 19, 35, 51
+            db  4, 20, 36, 52,  5, 21, 37, 53,  6, 22, 38, 54,  7, 23, 39, 55
+            db  8, 24, 40, 56,  9, 25, 41, 57, 10, 26, 42, 58, 11, 27, 43, 59
+            db 12, 28, 44, 60, 13, 29, 45, 61, 14, 30, 46, 62, 15, 31, 47, 63
+sobel_mulA: db -1,  1, -2,  2
+sobel_mulB: db  1, -1,  2, -2
 
 SECTION .text
 
@@ -153,4 +165,139 @@ cglobal filter_3x3, 4, 15, 7, dst, width, rdiv, bias, matrix, ptr, c0, c1, c2, c
 %if ARCH_X86_64
 INIT_XMM sse4
 FILTER_3X3
+%endif
+
+%macro SOBEL_MUL 2
+    movzx ptrd, byte [c%1q + xq]
+    imul  ptrd, [%2]
+    add   rd, ptrd
+%endmacro
+
+%macro SOBEL_ADD 1
+    movzx ptrd, byte [c%1q + xq]
+    add   rd, ptrd
+%endmacro
+
+; void filter_sobel_avx512(uint8_t *dst, int width,
+;                      float scale, float delta, const int *const matrix,
+;                      const uint8_t *c[], int peak, int radius,
+;                      int dstride, int stride)
+%macro FILTER_SOBEL 0
+%if UNIX64
+cglobal filter_sobel, 4, 15, 7, dst, width, matrix, ptr, c0, c1, c2, c3, c4, c5, c6, c7, c8, r, x
+%else
+cglobal filter_sobel, 4, 15, 7, dst, width, rdiv, bias, matrix, ptr, c0, c1, c2, c3, c4, c5, c6, c7, c8, r, x
+%endif
+%if WIN64
+    SWAP xmm0, xmm2
+    SWAP xmm1, xmm3
+    mov  r2q, matrixmp
+    mov  r3q, ptrmp
+    DEFINE_ARGS dst, width, matrix, ptr, c0, c1, c2, c3, c4, c5, c6, c7, c8, r, x
+%endif
+    movsxdifnidn widthq, widthd
+    VBROADCASTSS m0, xmm0
+    VBROADCASTSS m1, xmm1
+    pxor  m6, m6
+    mov   c0q, [ptrq + 0*gprsize]
+    mov   c1q, [ptrq + 1*gprsize]
+    mov   c2q, [ptrq + 2*gprsize]
+    mov   c3q, [ptrq + 3*gprsize]
+    mov   c4q, [ptrq + 4*gprsize]
+    mov   c5q, [ptrq + 5*gprsize]
+    mov   c6q, [ptrq + 6*gprsize]
+    mov   c7q, [ptrq + 7*gprsize]
+    mov   c8q, [ptrq + 8*gprsize]
+
+    xor   xq, xq
+    cmp   widthq, mmsize/4
+    jl .loop2
+
+    mov   rq, widthq
+    and   rq, mmsize/4-1
+    sub   widthq, rq
+
+    mova  m6, [sobel_perm]
+.loop1:
+    movu          xm3, [c2q + xq]
+    pmovzxbd      m5, [c0q + xq]
+    vinserti32x4  ym3, [c6q + xq], 1
+    pmovzxbd      m4, [c8q + xq]
+    vinserti32x4  m2, m3, [c1q + xq], 2
+    vinserti32x4  m3, [c5q + xq], 2
+    vinserti32x4  m2, [c7q + xq], 3
+    vinserti32x4  m3, [c3q + xq], 3
+    vpermb        m2, m6, m2
+    psubd         m4, m5
+    vpermb        m3, m6, m3
+    mova          m5, m4
+    vpdpbusd      m4, m2, [sobel_mulA] {1to16}
+    vpdpbusd      m5, m3, [sobel_mulB] {1to16}
+
+    cvtdq2ps  m4, m4
+    mulps     m4, m4
+
+    cvtdq2ps    m5, m5
+    VFMADD231PS m4, m5, m5
+
+    sqrtps    m4, m4
+    fmaddps m4, m4, m0, m1
+    cvttps2dq m4, m4
+    vpmovusdb [dstq + xq], m4
+
+    add xq, mmsize/4
+    cmp xq, widthq
+    jl .loop1
+
+    add widthq, rq
+    cmp xq, widthq
+    jge .end
+
+.loop2:
+    xor  rd, rd
+    pxor m4, m4
+
+    ;Gx
+    SOBEL_MUL 0, data_n1
+    SOBEL_MUL 1, data_n2
+    SOBEL_MUL 2, data_n1
+    SOBEL_ADD 6
+    SOBEL_MUL 7, data_p2
+    SOBEL_ADD 8
+
+    cvtsi2ss xmm4, rd
+    mulss    xmm4, xmm4
+
+    xor rd, rd
+    ;Gy
+    SOBEL_MUL 0, data_n1
+    SOBEL_ADD 2
+    SOBEL_MUL 3, data_n2
+    SOBEL_MUL 5, data_p2
+    SOBEL_MUL 6, data_n1
+    SOBEL_ADD 8
+
+    cvtsi2ss  xmm5, rd
+    fmaddss xmm4, xmm5, xmm5, xmm4
+
+    sqrtps    xmm4, xmm4
+    fmaddss   xmm4, xmm4, xmm0, xmm1     ;sum = sum * rdiv + bias
+    cvttps2dq xmm4, xmm4     ; trunc to integer
+    packssdw  xmm4, xmm4
+    packuswb  xmm4, xmm4
+    movd      rd, xmm4
+    mov       [dstq + xq], rb
+
+    add xq, 1
+    cmp xq, widthq
+    jl .loop2
+.end:
+    RET
+%endmacro
+
+%if ARCH_X86_64
+%if HAVE_AVX512ICL_EXTERNAL
+INIT_ZMM avx512icl
+FILTER_SOBEL
+%endif
 %endif

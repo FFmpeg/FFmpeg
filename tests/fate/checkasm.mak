@@ -43,6 +43,7 @@ FATE_CHECKASM = fate-checkasm-aacpsdsp                                  \
                 fate-checkasm-vf_hflip                                  \
                 fate-checkasm-vf_nlmeans                                \
                 fate-checkasm-vf_threshold                              \
+                fate-checkasm-vf_sobel                                  \
                 fate-checkasm-videodsp                                  \
                 fate-checkasm-vorbisdsp                                 \
                 fate-checkasm-vp8dsp                                    \

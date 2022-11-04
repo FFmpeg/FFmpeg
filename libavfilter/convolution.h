@@ -21,6 +21,7 @@
 #ifndef AVFILTER_CONVOLUTION_H
 #define AVFILTER_CONVOLUTION_H
 #include "avfilter.h"
+#include "libavutil/intreadwrite.h"
 
 enum MatrixMode {
     MATRIX_SQUARE,
@@ -61,4 +62,77 @@ typedef struct ConvolutionContext {
 } ConvolutionContext;
 
 void ff_convolution_init_x86(ConvolutionContext *s);
+void ff_sobel_init_x86(ConvolutionContext *s, int depth, int nb_planes);
+
+static void setup_3x3(int radius, const uint8_t *c[], const uint8_t *src, int stride,
+                      int x, int w, int y, int h, int bpc)
+{
+    int i;
+
+    for (i = 0; i < 9; i++) {
+        int xoff = FFABS(x + ((i % 3) - 1));
+        int yoff = FFABS(y + (i / 3) - 1);
+
+        xoff = xoff >= w ? 2 * w - 1 - xoff : xoff;
+        yoff = yoff >= h ? 2 * h - 1 - yoff : yoff;
+
+        c[i] = src + xoff * bpc + yoff * stride;
+    }
+}
+
+static void filter_sobel(uint8_t *dst, int width,
+                         float scale, float delta, const int *const matrix,
+                         const uint8_t *c[], int peak, int radius,
+                         int dstride, int stride, int size)
+{
+    const uint8_t *c0 = c[0], *c1 = c[1], *c2 = c[2];
+    const uint8_t *c3 = c[3], *c5 = c[5];
+    const uint8_t *c6 = c[6], *c7 = c[7], *c8 = c[8];
+    int x;
+
+    for (x = 0; x < width; x++) {
+        float suma = c0[x] * -1 + c1[x] * -2 + c2[x] * -1 +
+                     c6[x] *  1 + c7[x] *  2 + c8[x] *  1;
+        float sumb = c0[x] * -1 + c2[x] *  1 + c3[x] * -2 +
+                     c5[x] *  2 + c6[x] * -1 + c8[x] *  1;
+
+        dst[x] = av_clip_uint8(sqrtf(suma*suma + sumb*sumb) * scale + delta);
+    }
+}
+
+static void filter16_sobel(uint8_t *dstp, int width,
+                           float scale, float delta, const int *const matrix,
+                           const uint8_t *c[], int peak, int radius,
+                           int dstride, int stride, int size)
+{
+    uint16_t *dst = (uint16_t *)dstp;
+    int x;
+
+    for (x = 0; x < width; x++) {
+        float suma = AV_RN16A(&c[0][2 * x]) * -1 + AV_RN16A(&c[1][2 * x]) * -2 + AV_RN16A(&c[2][2 * x]) * -1 +
+                     AV_RN16A(&c[6][2 * x]) *  1 + AV_RN16A(&c[7][2 * x]) *  2 + AV_RN16A(&c[8][2 * x]) *  1;
+        float sumb = AV_RN16A(&c[0][2 * x]) * -1 + AV_RN16A(&c[2][2 * x]) *  1 + AV_RN16A(&c[3][2 * x]) * -2 +
+                     AV_RN16A(&c[5][2 * x]) *  2 + AV_RN16A(&c[6][2 * x]) * -1 + AV_RN16A(&c[8][2 * x]) *  1;
+
+        dst[x] = av_clip(sqrtf(suma*suma + sumb*sumb) * scale + delta, 0, peak);
+    }
+}
+
+static av_unused void ff_sobel_init(ConvolutionContext *s, int depth, int nb_planes)
+{
+    for (int i = 0; i < 4; i++) {
+        s->filter[i] = filter_sobel;
+        s->copy[i] = !((1 << i) & s->planes);
+        s->size[i] = 3;
+        s->setup[i] = setup_3x3;
+        s->rdiv[i] = s->scale;
+        s->bias[i] = s->delta;
+    }
+    if (s->depth > 8)
+        for (int i = 0; i < 4; i++)
+            s->filter[i] = filter16_sobel;
+#if ARCH_X86_64
+    ff_sobel_init_x86(s, depth, nb_planes);
+#endif
+}
 #endif
