@@ -14,8 +14,9 @@ FATE_MSS2-$(call FRAMECRC, ASF, MSS2, SCALE_FILTER) += fate-mss2-rgb555 fate-mss
 fate-mss2-rgb555:  CMD = framecrc -i $(TARGET_SAMPLES)/mss2/rle555.wmv  -pix_fmt rgb555le -vf scale
 fate-mss2-rgb555s: CMD = framecrc -i $(TARGET_SAMPLES)/mss2/rle555s.wmv -pix_fmt rgb555le -vf scale
 
-FATE_MSS2 += fate-mss2-wmv
+FATE_MSS2 += fate-mss2-wmv fate-mss2-region
 fate-mss2-wmv: CMD = framecrc -i $(TARGET_SAMPLES)/mss2/msscreencodec.wmv -an -frames 100
+fate-mss2-region: CMD = framecrc -i $(TARGET_SAMPLES)/mss2/mss2_2.wmv -an
 
 FATE_MSS2-$(call FRAMECRC, ASF, MSS2) += $(FATE_MSS2)
 
