@@ -824,19 +824,13 @@ static int flush(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = ctx->inputs[0];
     DynamicAudioNormalizerContext *s = ctx->priv;
-    int ret = 0;
 
-    if (!cqueue_empty(s->gain_history_smoothed[0])) {
-        ret = flush_buffer(s, inlink, outlink);
-    } else if (s->queue.available) {
-        AVFrame *out = ff_bufqueue_get(&s->queue);
-
-        s->pts = out->pts + av_rescale_q(out->nb_samples, av_make_q(1, outlink->sample_rate),
-                                         outlink->time_base);
-        ret = ff_filter_frame(outlink, out);
+    while (s->eof && cqueue_empty(s->gain_history_smoothed[0])) {
+        for (int c = 0; c < s->channels; c++)
+            update_gain_history(s, c, (local_gain){ cqueue_peek(s->gain_history_original[c], 0), 1.0});
     }
 
-    return ret;
+    return flush_buffer(s, inlink, outlink);
 }
 
 static int activate(AVFilterContext *ctx)
