@@ -46,6 +46,11 @@ fate-imc: CMP = oneoff
 fate-imc: CMP_TARGET = 59416
 fate-imc: REF = $(SAMPLES)/imc/imc-201706.pcm
 
+FATE_SAMPLES_AUDIO-$(call DEMDEC, WAV, MSNSIREN) += fate-msnsiren
+fate-msnsiren: CMD = pcm -i $(TARGET_SAMPLES)/msnsiren/msnsiren2.wav
+fate-msnsiren: CMP = oneoff
+fate-msnsiren: REF = $(SAMPLES)/msnsiren/msnsiren2.pcm
+
 FATE_SAMPLES_AUDIO-$(call DEMDEC, FLV, NELLYMOSER) += fate-nellymoser
 fate-nellymoser: CMD = pcm -i $(TARGET_SAMPLES)/nellymoser/nellymoser.flv
 fate-nellymoser: CMP = oneoff
