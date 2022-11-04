@@ -180,7 +180,7 @@ static av_always_inline int diff(const uint32_t a, const uint32_t b, const int t
     }
 }
 
-static av_always_inline uint8_t colormap_nearest_bruteforce(const uint32_t *palette, const uint32_t argb, const int trans_thresh)
+static av_always_inline uint8_t colormap_nearest_bruteforce(const uint32_t *palette, const uint32_t target, const int trans_thresh)
 {
     int i, pal_id = -1, min_dist = INT_MAX;
 
@@ -188,7 +188,7 @@ static av_always_inline uint8_t colormap_nearest_bruteforce(const uint32_t *pale
         const uint32_t c = palette[i];
 
         if (c >> 24 >= trans_thresh) { // ignore transparent entry
-            const int d = diff(palette[i], argb, trans_thresh);
+            const int d = diff(palette[i], target, trans_thresh);
             if (d < min_dist) {
                 pal_id = i;
                 min_dist = d;
@@ -235,10 +235,10 @@ static void colormap_nearest_node(const struct color_node *map,
     }
 }
 
-static av_always_inline uint8_t colormap_nearest_recursive(const struct color_node *node, const uint8_t rgb, const int trans_thresh)
+static av_always_inline uint8_t colormap_nearest_recursive(const struct color_node *node, const uint8_t target, const int trans_thresh)
 {
     struct nearest_color res = {.dist_sqd = INT_MAX, .node_pos = -1};
-    colormap_nearest_node(node, 0, rgb, trans_thresh, &res);
+    colormap_nearest_node(node, 0, target, trans_thresh, &res);
     return node[res.node_pos].palette_id;
 }
 
