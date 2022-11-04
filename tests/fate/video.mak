@@ -374,6 +374,9 @@ fate-xxan-wc4: CMD = framecrc -i $(TARGET_SAMPLES)/wc4-xan/wc4trailer-partial.av
 FATE_VIDEO-$(call FRAMECRC, WAV, SMVJPEG) += fate-smvjpeg
 fate-smvjpeg: CMD = framecrc -idct simple -flags +bitexact -i $(TARGET_SAMPLES)/smv/clock.smv -an
 
+FATE_VIDEO-$(call FRAMECRC, AVI, VQC) += fate-vqc
+fate-vqc: CMD = framecrc -i $(TARGET_SAMPLES)/vqc/samp1.avi
+
 FATE_VIDEO += $(FATE_VIDEO-yes)
 
 FATE_SAMPLES_FFMPEG += $(FATE_VIDEO)
