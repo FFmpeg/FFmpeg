@@ -155,7 +155,7 @@ static av_cold int set_channel_params(ATRAC3PContext *ctx,
         return AVERROR_INVALIDDATA;
     }
 
-    ctx->channel_map = channel_map[channels - 1];
+    ctx->channel_map = channel_map[avctx->channels - 1];
 
     return 0;
 }
