@@ -110,8 +110,6 @@ Generic Parts:
     lzw.*                               Michael Niedermayer
   floating point AAN DCT:
     faandct.c, faandct.h                Michael Niedermayer
-  Non-power-of-two MDCT:
-    mdct15.c, mdct15.h                  Rostislav Pehlivanov
   Golomb coding:
     golomb.c, golomb.h                  Michael Niedermayer
   motion estimation:

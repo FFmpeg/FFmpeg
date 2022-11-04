@@ -2477,7 +2477,6 @@ CONFIG_EXTRA="
     huffyuvencdsp
     idctdsp
     iirfilter
-    mdct15
     inflate_wrapper
     intrax8
     iso_media
@@ -2749,7 +2748,6 @@ inflate_wrapper_deps="zlib"
 intrax8_select="blockdsp wmv2dsp"
 iso_media_select="mpeg4audio"
 mdct_select="fft"
-mdct15_select="fft"
 me_cmp_select="idctdsp"
 mpeg_er_select="error_resilience"
 mpegaudio_select="mpegaudiodsp mpegaudioheader"
