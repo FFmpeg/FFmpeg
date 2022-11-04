@@ -2,6 +2,11 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 5.0.2:
+- swscale: aarch64: Fix yuv2rgb with negative strides
+- avcodec/atrac3plusdec: fix compilation failure after last commit
+- avcodec/atrac3plus: reorder channels to match the output layout
+- avcodec/aacdec: fix parsing streams with channel configuration 11
+- Changelog: update
 - avcodec/speexdec: Check channels > 2
 - avformat/vividas: Check packet size
 - avcodec/dstdec: Check for overflow in build_filter()
