@@ -211,7 +211,7 @@ static void colormap_nearest_node(const struct color_node *map,
                                   struct nearest_color *nearest)
 {
     const struct color_node *kd = map + node_pos;
-    const int shift = (3 - kd->split) * 8;
+    const int shift = (2 - kd->split) * 8;
     int dx, nearer_kd_id, further_kd_id;
     const uint32_t current = kd->val;
     const int current_to_target = diff(target, current, trans_thresh);
@@ -270,7 +270,7 @@ static av_always_inline uint8_t colormap_nearest_iterative(const struct color_no
 
         /* Check if it's not a leaf */
         if (kd->left_id != -1 || kd->right_id != -1) {
-            const int shift = (3 - kd->split) * 8;
+            const int shift = (2 - kd->split) * 8;
             const int dx = (target>>shift & 0xff) - (current>>shift & 0xff);
             int nearer_kd_id, further_kd_id;
 
@@ -497,7 +497,7 @@ static void disp_node(AVBPrint *buf,
     const uint32_t fontcolor = (node->val>>16 & 0xff) > 0x50 &&
                                (node->val>> 8 & 0xff) > 0x50 &&
                                (node->val     & 0xff) > 0x50 ? 0 : 0xffffff;
-    const int rgb_comp = node->split - 1;
+    const int rgb_comp = node->split;
     av_bprintf(buf, "%*cnode%d ["
                "label=\"%c%02X%c%02X%c%02X%c\" "
                "fillcolor=\"#%06"PRIX32"\" "
@@ -588,16 +588,15 @@ static int cmp_##name(const void *pa, const void *pb)   \
 {                                                       \
     const struct color *a = pa;                         \
     const struct color *b = pb;                         \
-    return   (int)(a->value >> (8 * (3 - (pos))) & 0xff)     \
-           - (int)(b->value >> (8 * (3 - (pos))) & 0xff);    \
+    return   (int)(a->value >> (8 * (2 - (pos))) & 0xff)     \
+           - (int)(b->value >> (8 * (2 - (pos))) & 0xff);    \
 }
 
-DECLARE_CMP_FUNC(a, 0)
-DECLARE_CMP_FUNC(r, 1)
-DECLARE_CMP_FUNC(g, 2)
-DECLARE_CMP_FUNC(b, 3)
+DECLARE_CMP_FUNC(r, 0)
+DECLARE_CMP_FUNC(g, 1)
+DECLARE_CMP_FUNC(b, 2)
 
-static const cmp_func cmp_funcs[] = {cmp_a, cmp_r, cmp_g, cmp_b};
+static const cmp_func cmp_funcs[] = {cmp_r, cmp_g, cmp_b};
 
 static int get_next_color(const uint8_t *color_used, const uint32_t *palette,
                           const int trans_thresh,
@@ -650,9 +649,9 @@ static int get_next_color(const uint8_t *color_used, const uint32_t *palette,
     wr = ranges.max[0] - ranges.min[0];
     wg = ranges.max[1] - ranges.min[1];
     wb = ranges.max[2] - ranges.min[2];
-    if (wr >= wg && wr >= wb) longest = 1;
-    if (wg >= wr && wg >= wb) longest = 2;
-    if (wb >= wr && wb >= wg) longest = 3;
+    if (wr >= wg && wr >= wb) longest = 0;
+    if (wg >= wr && wg >= wb) longest = 1;
+    if (wb >= wr && wb >= wg) longest = 2;
     cmpf = cmp_funcs[longest];
     *component = longest;
 
@@ -692,13 +691,13 @@ static int colormap_insert(struct color_node *map,
 
     /* get the two boxes this node creates */
     box1 = box2 = *box;
-    comp_value = node->val >> ((3 - component) * 8) & 0xff;
-    box1.max[component-1] = comp_value;
-    box2.min[component-1] = FFMIN(comp_value + 1, 255);
+    comp_value = node->val >> ((2 - component) * 8) & 0xff;
+    box1.max[component] = comp_value;
+    box2.min[component] = FFMIN(comp_value + 1, 255);
 
     node_left_id = colormap_insert(map, color_used, nb_used, palette, trans_thresh, &box1);
 
-    if (box2.min[component-1] <= box2.max[component-1])
+    if (box2.min[component] <= box2.max[component])
         node_right_id = colormap_insert(map, color_used, nb_used, palette, trans_thresh, &box2);
 
     node->left_id  = node_left_id;
