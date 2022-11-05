@@ -43,6 +43,7 @@ fate-dsf-dst: REF = $(SAMPLES)/dst/dst-64fs44-2ch.pcm
 FATE_SAMPLES_AUDIO-$(call DEMDEC, AVI, IMC) += fate-imc
 fate-imc: CMD = pcm -i $(TARGET_SAMPLES)/imc/imc.avi
 fate-imc: CMP = oneoff
+fate-imc: CMP_TARGET = 59416
 fate-imc: REF = $(SAMPLES)/imc/imc-201706.pcm
 
 FATE_SAMPLES_AUDIO-$(call DEMDEC, FLV, NELLYMOSER) += fate-nellymoser

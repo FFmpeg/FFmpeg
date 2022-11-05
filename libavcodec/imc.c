@@ -40,13 +40,13 @@
 #include "libavutil/internal.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/thread.h"
+#include "libavutil/tx.h"
 
 #include "avcodec.h"
 #include "bswapdsp.h"
 #include "codec_internal.h"
 #include "decode.h"
 #include "get_bits.h"
-#include "fft.h"
 #include "sinewin.h"
 
 #include "imcdata.h"
@@ -64,7 +64,7 @@ typedef struct IMCChannel {
     float flcoeffs4[BANDS];
     float flcoeffs5[BANDS];
     float flcoeffs6[BANDS];
-    float CWdecoded[COEFFS];
+    DECLARE_ALIGNED(32, float, CWdecoded)[COEFFS];
 
     int bandWidthT[BANDS];     ///< codewords per band
     int bitsBandT[BANDS];      ///< how many bits per codeword in band
@@ -78,31 +78,25 @@ typedef struct IMCChannel {
     int skipFlags[COEFFS];     ///< skip coefficient decoding or not
     int codewords[COEFFS];     ///< raw codewords read from bitstream
 
-    float last_fft_im[COEFFS];
-
     int decoder_reset;
+    DECLARE_ALIGNED(32, float, prev_win)[128];
 } IMCChannel;
 
 typedef struct IMCContext {
     IMCChannel chctx[2];
 
     /** MDCT tables */
-    //@{
-    float mdct_sine_window[COEFFS];
-    float post_cos[COEFFS];
-    float post_sin[COEFFS];
-    float pre_coef1[COEFFS];
-    float pre_coef2[COEFFS];
-    //@}
+    DECLARE_ALIGNED(32, float, mdct_sine_window)[COEFFS];
 
     float sqrt_tab[30];
     GetBitContext gb;
 
+    AVFloatDSPContext *fdsp;
     BswapDSPContext bdsp;
-    void (*butterflies_float)(float *av_restrict v1, float *av_restrict v2, int len);
-    FFTContext fft;
-    DECLARE_ALIGNED(32, FFTComplex, samples)[COEFFS / 2];
+    AVTXContext *mdct;
+    av_tx_fn mdct_fn;
     float *out_samples;
+    DECLARE_ALIGNED(32, float, temp)[256];
 
     int coef0_pos;
 
@@ -196,8 +190,7 @@ static av_cold int imc_decode_init(AVCodecContext *avctx)
     int i, j, ret;
     IMCContext *q = avctx->priv_data;
     static AVOnce init_static_once = AV_ONCE_INIT;
-    AVFloatDSPContext *fdsp;
-    double r1, r2;
+    float scale = 1.0f / (16384);
 
     if (avctx->codec_id == AV_CODEC_ID_IAC && avctx->sample_rate > 96000) {
         av_log(avctx, AV_LOG_ERROR,
@@ -222,33 +215,14 @@ static av_cold int imc_decode_init(AVCodecContext *avctx)
 
         for (i = 0; i < BANDS; i++)
             q->chctx[j].old_floor[i] = 1.0;
-
-        for (i = 0; i < COEFFS / 2; i++)
-            q->chctx[j].last_fft_im[i] = 0;
     }
 
     /* Build mdct window, a simple sine window normalized with sqrt(2) */
     ff_sine_window_init(q->mdct_sine_window, COEFFS);
     for (i = 0; i < COEFFS; i++)
         q->mdct_sine_window[i] *= sqrt(2.0);
-    for (i = 0; i < COEFFS / 2; i++) {
-        q->post_cos[i] = (1.0f / 32768) * cos(i / 256.0 * M_PI);
-        q->post_sin[i] = (1.0f / 32768) * sin(i / 256.0 * M_PI);
-
-        r1 = sin((i * 4.0 + 1.0) / 1024.0 * M_PI);
-        r2 = cos((i * 4.0 + 1.0) / 1024.0 * M_PI);
-
-        if (i & 0x1) {
-            q->pre_coef1[i] =  (r1 + r2) * sqrt(2.0);
-            q->pre_coef2[i] = -(r1 - r2) * sqrt(2.0);
-        } else {
-            q->pre_coef1[i] = -(r1 + r2) * sqrt(2.0);
-            q->pre_coef2[i] =  (r1 - r2) * sqrt(2.0);
-        }
-    }
 
     /* Generate a square root table */
-
     for (i = 0; i < 30; i++)
         q->sqrt_tab[i] = sqrt(i);
 
@@ -261,15 +235,14 @@ static av_cold int imc_decode_init(AVCodecContext *avctx)
         memcpy(q->weights2, imc_weights2, sizeof(imc_weights2));
     }
 
-    fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
-    if (!fdsp)
+    q->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
+    if (!q->fdsp)
         return AVERROR(ENOMEM);
-    q->butterflies_float = fdsp->butterflies_float;
-    av_free(fdsp);
-    if ((ret = ff_fft_init(&q->fft, 7, 1))) {
-        av_log(avctx, AV_LOG_INFO, "FFT init failed\n");
+
+    ret = av_tx_init(&q->mdct, &q->mdct_fn, AV_TX_FLOAT_MDCT, 1, COEFFS, &scale, 0);
+    if (ret < 0)
         return ret;
-    }
+
     ff_bswapdsp_init(&q->bdsp);
 
     avctx->sample_fmt     = AV_SAMPLE_FMT_FLTP;
@@ -726,39 +699,6 @@ static void imc_adjust_bit_allocation(IMCContext *q, IMCChannel *chctx,
     }
 }
 
-static void imc_imdct256(IMCContext *q, IMCChannel *chctx, int channels)
-{
-    int i;
-    float re, im;
-    float *dst1 = q->out_samples;
-    float *dst2 = q->out_samples + (COEFFS - 1);
-
-    /* prerotation */
-    for (i = 0; i < COEFFS / 2; i++) {
-        q->samples[i].re = -(q->pre_coef1[i] * chctx->CWdecoded[COEFFS - 1 - i * 2]) -
-                            (q->pre_coef2[i] * chctx->CWdecoded[i * 2]);
-        q->samples[i].im =  (q->pre_coef2[i] * chctx->CWdecoded[COEFFS - 1 - i * 2]) -
-                            (q->pre_coef1[i] * chctx->CWdecoded[i * 2]);
-    }
-
-    /* FFT */
-    q->fft.fft_permute(&q->fft, q->samples);
-    q->fft.fft_calc(&q->fft, q->samples);
-
-    /* postrotation, window and reorder */
-    for (i = 0; i < COEFFS / 2; i++) {
-        re = ( q->samples[i].re * q->post_cos[i]) + (-q->samples[i].im * q->post_sin[i]);
-        im = (-q->samples[i].im * q->post_cos[i]) - ( q->samples[i].re * q->post_sin[i]);
-        *dst1 =  (q->mdct_sine_window[COEFFS - 1 - i * 2] * chctx->last_fft_im[i])
-               + (q->mdct_sine_window[i * 2] * re);
-        *dst2 =  (q->mdct_sine_window[i * 2] * chctx->last_fft_im[i])
-               - (q->mdct_sine_window[COEFFS - 1 - i * 2] * re);
-        dst1 += 2;
-        dst2 -= 2;
-        chctx->last_fft_im[i] = im;
-    }
-}
-
 static int inverse_quant_coeff(IMCContext *q, IMCChannel *chctx,
                                int stream_format_code)
 {
@@ -1012,7 +952,10 @@ static int imc_decode_block(AVCodecContext *avctx, IMCContext *q, int ch)
 
     memset(chctx->skipFlags, 0, sizeof(chctx->skipFlags));
 
-    imc_imdct256(q, chctx, avctx->ch_layout.nb_channels);
+    q->mdct_fn(q->mdct, q->temp, chctx->CWdecoded, sizeof(float));
+    q->fdsp->vector_fmul_window(q->out_samples, chctx->prev_win, q->temp,
+                                q->mdct_sine_window, 128);
+    memcpy(chctx->prev_win, q->temp + 128, sizeof(float)*128);
 
     return 0;
 }
@@ -1054,8 +997,8 @@ static int imc_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     }
 
     if (avctx->ch_layout.nb_channels == 2) {
-        q->butterflies_float((float *)frame->extended_data[0],
-                             (float *)frame->extended_data[1], COEFFS);
+        q->fdsp->butterflies_float((float *)frame->extended_data[0],
+                                   (float *)frame->extended_data[1], COEFFS);
     }
 
     *got_frame_ptr = 1;
@@ -1067,7 +1010,8 @@ static av_cold int imc_decode_close(AVCodecContext * avctx)
 {
     IMCContext *q = avctx->priv_data;
 
-    ff_fft_end(&q->fft);
+    av_free(q->fdsp);
+    av_tx_uninit(&q->mdct);
 
     return 0;
 }
