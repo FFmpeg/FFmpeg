@@ -599,7 +599,6 @@ DECLARE_CMP_FUNC(b, 2)
 static const cmp_func cmp_funcs[] = {cmp_r, cmp_g, cmp_b};
 
 static int get_next_color(const uint8_t *color_used, const uint32_t *palette,
-                          const int trans_thresh,
                           int *component, const struct color_rect *box)
 {
     int wr, wg, wb;
@@ -618,10 +617,6 @@ static int get_next_color(const uint8_t *color_used, const uint32_t *palette,
         const uint8_t r = c >> 16 & 0xff;
         const uint8_t g = c >>  8 & 0xff;
         const uint8_t b = c       & 0xff;
-
-        if (a < trans_thresh) {
-            continue;
-        }
 
         if (color_used[i] || (a != 0xff) ||
             r < box->min[0] || g < box->min[1] || b < box->min[2] ||
@@ -674,7 +669,7 @@ static int colormap_insert(struct color_node *map,
     int node_left_id = -1, node_right_id = -1;
     struct color_node *node;
     struct color_rect box1, box2;
-    const int pal_id = get_next_color(color_used, palette, trans_thresh, &component, box);
+    const int pal_id = get_next_color(color_used, palette, &component, box);
 
     if (pal_id < 0)
         return -1;
