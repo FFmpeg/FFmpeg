@@ -24,6 +24,9 @@
 
 #include "nvenc.h"
 #include "hevc_sei.h"
+#if CONFIG_AV1_NVENC_ENCODER
+#include "av1.h"
+#endif
 
 #include "libavutil/hwcontext_cuda.h"
 #include "libavutil/hwcontext.h"
@@ -2306,8 +2309,15 @@ static int prepare_sei_data_array(AVCodecContext *avctx, const AVFrame *frame)
             } else {
                 ctx->sei_data = tmp;
                 ctx->sei_data[sei_count].payloadSize = (uint32_t)a53_size;
-                ctx->sei_data[sei_count].payloadType = 4;
                 ctx->sei_data[sei_count].payload = (uint8_t*)a53_data;
+
+#if CONFIG_AV1_NVENC_ENCODER
+                if (avctx->codec->id == AV_CODEC_ID_AV1)
+                    ctx->sei_data[sei_count].payloadType = AV1_METADATA_TYPE_ITUT_T35;
+                else
+#endif
+                    ctx->sei_data[sei_count].payloadType = SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35;
+
                 sei_count++;
             }
         }
@@ -2332,8 +2342,15 @@ static int prepare_sei_data_array(AVCodecContext *avctx, const AVFrame *frame)
             } else {
                 ctx->sei_data = tmp;
                 ctx->sei_data[sei_count].payloadSize = (uint32_t)tc_size;
-                ctx->sei_data[sei_count].payloadType = SEI_TYPE_TIME_CODE;
                 ctx->sei_data[sei_count].payload = (uint8_t*)tc_data;
+
+#if CONFIG_AV1_NVENC_ENCODER
+                if (avctx->codec->id == AV_CODEC_ID_AV1)
+                    ctx->sei_data[sei_count].payloadType = AV1_METADATA_TYPE_TIMECODE;
+                else
+#endif
+                    ctx->sei_data[sei_count].payloadType = SEI_TYPE_TIME_CODE;
+
                 sei_count++;
             }
         }
