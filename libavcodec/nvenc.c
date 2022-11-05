@@ -2170,9 +2170,13 @@ static int nvenc_set_timestamp(AVCodecContext *avctx,
     NvencContext *ctx = avctx->priv_data;
 
     pkt->pts = params->outputTimeStamp;
-    pkt->dts = timestamp_queue_dequeue(ctx->timestamp_list);
 
-    pkt->dts -= FFMAX(ctx->encode_config.frameIntervalP - 1, 0) * FFMAX(avctx->ticks_per_frame, 1);
+    if (avctx->codec_descriptor->props & AV_CODEC_PROP_REORDER) {
+        pkt->dts = timestamp_queue_dequeue(ctx->timestamp_list);
+        pkt->dts -= FFMAX(ctx->encode_config.frameIntervalP - 1, 0) * FFMAX(avctx->ticks_per_frame, 1);
+    } else {
+        pkt->dts = pkt->pts;
+    }
 
     return 0;
 }
@@ -2582,7 +2586,9 @@ static int nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
 
     if (frame && frame->buf[0]) {
         av_fifo_write(ctx->output_surface_queue, &in_surf, 1);
-        timestamp_queue_enqueue(ctx->timestamp_list, frame->pts);
+
+        if (avctx->codec_descriptor->props & AV_CODEC_PROP_REORDER)
+            timestamp_queue_enqueue(ctx->timestamp_list, frame->pts);
     }
 
     /* all the pending buffers are now ready for output */
