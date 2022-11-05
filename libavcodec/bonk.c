@@ -356,7 +356,7 @@ static int bonk_decode(AVCodecContext *avctx, AVFrame *frame,
                 sample++;
             }
 
-            sample[0] = predictor_calc_error(s->k, state, s->n_taps, s->input_samples[i] * quant);
+            sample[0] = predictor_calc_error(s->k, state, s->n_taps, s->input_samples[i] * (unsigned)quant);
             sample++;
         }
 
