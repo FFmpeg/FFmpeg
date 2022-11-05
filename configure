@@ -3184,6 +3184,8 @@ nvenc_deps_any="libdl LoadLibrary"
 aac_mf_encoder_deps="mediafoundation"
 ac3_mf_encoder_deps="mediafoundation"
 av1_cuvid_decoder_deps="cuvid CUVIDAV1PICPARAMS"
+av1_nvenc_encoder_deps="nvenc NV_ENC_PIC_PARAMS_AV1"
+av1_nvenc_encoder_select="atsc_a53"
 h263_v4l2m2m_decoder_deps="v4l2_m2m h263_v4l2_m2m"
 h263_v4l2m2m_encoder_deps="v4l2_m2m h263_v4l2_m2m"
 h264_amf_encoder_deps="amf"
@@ -6466,10 +6468,10 @@ fi
 
 if ! disabled ffnvcodec; then
     ffnv_hdr_list="ffnvcodec/nvEncodeAPI.h ffnvcodec/dynlink_cuda.h ffnvcodec/dynlink_cuviddec.h ffnvcodec/dynlink_nvcuvid.h"
-    check_pkg_config ffnvcodec "ffnvcodec >= 9.1.23.1" "$ffnv_hdr_list" "" || \
-      check_pkg_config ffnvcodec "ffnvcodec >= 9.0.18.3 ffnvcodec < 9.1" "$ffnv_hdr_list" "" || \
-      check_pkg_config ffnvcodec "ffnvcodec >= 8.2.15.10 ffnvcodec < 8.3" "$ffnv_hdr_list" "" || \
-      check_pkg_config ffnvcodec "ffnvcodec >= 8.1.24.11 ffnvcodec < 8.2" "$ffnv_hdr_list" ""
+    check_pkg_config ffnvcodec "ffnvcodec >= 12.0.11.0" "$ffnv_hdr_list" "" || \
+      check_pkg_config ffnvcodec "ffnvcodec >= 11.1.5.2 ffnvcodec < 12.0" "$ffnv_hdr_list" "" || \
+      check_pkg_config ffnvcodec "ffnvcodec >= 11.0.10.2 ffnvcodec < 11.1" "$ffnv_hdr_list" "" || \
+      check_pkg_config ffnvcodec "ffnvcodec >= 8.1.24.14 ffnvcodec < 8.2" "$ffnv_hdr_list" ""
 fi
 
 if enabled_all libglslang libshaderc; then
@@ -7049,6 +7051,10 @@ NV_ENCODE_API_FUNCTION_LIST flist;
 void f(void) { struct { const GUID guid; } s[] = { { NV_ENC_PRESET_HQ_GUID } }; }
 int main(void) { return 0; }
 EOF
+
+if enabled nvenc; then
+    check_type "ffnvcodec/nvEncodeAPI.h" "NV_ENC_PIC_PARAMS_AV1"
+fi
 
 if enabled_any nvdec cuvid; then
     check_type "ffnvcodec/dynlink_cuda.h ffnvcodec/dynlink_cuviddec.h" "CUVIDAV1PICPARAMS"

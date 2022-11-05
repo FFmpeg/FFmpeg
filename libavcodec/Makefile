@@ -244,6 +244,7 @@ OBJS-$(CONFIG_AURA_DECODER)            += cyuv.o
 OBJS-$(CONFIG_AURA2_DECODER)           += aura.o
 OBJS-$(CONFIG_AV1_DECODER)             += av1dec.o
 OBJS-$(CONFIG_AV1_CUVID_DECODER)       += cuviddec.o
+OBJS-$(CONFIG_AV1_NVENC_ENCODER)       += nvenc_av1.o nvenc.o
 OBJS-$(CONFIG_AV1_QSV_ENCODER)         += qsvenc_av1.o
 OBJS-$(CONFIG_AVRN_DECODER)            += avrndec.o
 OBJS-$(CONFIG_AVRP_DECODER)            += r210dec.o

@@ -199,6 +199,8 @@ typedef struct NvencContext
     int tier;
     int rc;
     int cbr;
+    int tile_rows;
+    int tile_cols;
     int twopass;
     int device;
     int flags;
@@ -236,6 +238,8 @@ typedef struct NvencContext
     int single_slice_intra_refresh;
     int constrained_encoding;
     int udu_sei;
+    int timing_info;
+    int highbitdepth;
 } NvencContext;
 
 int ff_nvenc_encode_init(AVCodecContext *avctx);
