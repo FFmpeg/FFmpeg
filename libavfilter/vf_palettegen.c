@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2015 Stupeflix
+ * Copyright (c) 2022 Clément Bœsch <u pkh me>
  *
  * This file is part of FFmpeg.
  *
