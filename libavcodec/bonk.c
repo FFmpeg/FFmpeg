@@ -184,8 +184,7 @@ static int intlist_read(BonkContext *s, int *buf, int entries, int base_2_part)
         } else if (steplet > 0) {
             int actual_run = read_uint_max(s, steplet - 1);
 
-            if (actual_run < 0)
-                break;
+            av_assert0(actual_run >= 0);
 
             if (actual_run > 0) {
                 bits[x  ].bit   = dominant;
