@@ -143,7 +143,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             for (x = 0; x < s->qstride; x++) {
                 unsigned int block_idx = y * s->qstride + x;
                 AVVideoBlockParams *b = av_video_enc_params_block(par_out, block_idx);
-                int qp = sd_in ? in_qp_global + BLOCK_QP_DELTA(block_idx) : NAN;
+                double qp = sd_in ? in_qp_global + BLOCK_QP_DELTA(block_idx) : NAN;
                 double var_values[] = { !!sd_in, qp, x, y, s->qstride, s->h, 0};
                 double temp_val;
 
