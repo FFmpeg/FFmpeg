@@ -136,8 +136,7 @@ static unsigned read_uint_max(BonkContext *s, uint32_t max)
     if (max == 0)
         return 0;
 
-    if (max >> 31)
-        return 32;
+    av_assert0(max >> 31 == 0);
 
     for (unsigned i = 1; i <= max - value; i+=i)
         if (get_bits1(&s->gb))
