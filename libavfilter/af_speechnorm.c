@@ -536,7 +536,7 @@ static int config_input(AVFilterLink *inlink)
         ChannelContext *cc = &s->cc[ch];
 
         cc->state = -1;
-        cc->gain_state = 1.;
+        cc->gain_state = s->max_expansion;
     }
 
     switch (inlink->format) {
