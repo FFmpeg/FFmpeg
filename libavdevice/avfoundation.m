@@ -706,8 +706,7 @@ static int get_audio_config(AVFormatContext *s)
 
     stream->codecpar->codec_type     = AVMEDIA_TYPE_AUDIO;
     stream->codecpar->sample_rate    = basic_desc->mSampleRate;
-    stream->codecpar->channels       = basic_desc->mChannelsPerFrame;
-    stream->codecpar->channel_layout = av_get_default_channel_layout(stream->codecpar->channels);
+    av_channel_layout_default(&stream->codecpar->ch_layout, basic_desc->mChannelsPerFrame);
 
     ctx->audio_channels        = basic_desc->mChannelsPerFrame;
     ctx->audio_bits_per_sample = basic_desc->mBitsPerChannel;
