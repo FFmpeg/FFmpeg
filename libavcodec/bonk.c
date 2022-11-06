@@ -203,8 +203,6 @@ static int intlist_read(BonkContext *s, int *buf, int entries, int base_2_part)
         }
 
         if (step < 256) {
-            if (step == 0)
-                return AVERROR_INVALIDDATA;
             step = 65536 / step;
             dominant = !dominant;
         }
