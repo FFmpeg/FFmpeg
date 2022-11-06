@@ -362,19 +362,18 @@ static void mvi_update_row(MVInfo *mvi)
     }
 }
 
-static TileInfo *decode_tile_info(GetBitContext *gb, const LevelCodes *lc, int level)
+static TileInfo *decode_tile_info(GetBitContext *gb, const LevelCodes *lc)
 {
     TileInfo *ti;
     int i, flags = 0;
     int16_t bias = 0;
     MV mv = { 0 };
 
-    if (lc[level].flags_cb.table) {
-        flags = get_vlc2(gb, lc[level].flags_cb.table, CLV_VLC_BITS, 2);
-    }
+    if (lc->flags_cb.table)
+        flags = get_vlc2(gb, lc->flags_cb.table, CLV_VLC_BITS, 2);
 
-    if (lc[level].mv_cb.table) {
-        uint16_t mv_code = get_vlc2(gb, lc[level].mv_cb.table, CLV_VLC_BITS, 2);
+    if (lc->mv_cb.table) {
+        uint16_t mv_code = get_vlc2(gb, lc->mv_cb.table, CLV_VLC_BITS, 2);
 
         if (mv_code != MV_ESC) {
             mv.x = (int8_t)(mv_code & 0xff);
@@ -385,8 +384,8 @@ static TileInfo *decode_tile_info(GetBitContext *gb, const LevelCodes *lc, int l
         }
     }
 
-    if (lc[level].bias_cb.table) {
-        uint16_t bias_val = get_vlc2(gb, lc[level].bias_cb.table, CLV_VLC_BITS, 2);
+    if (lc->bias_cb.table) {
+        uint16_t bias_val = get_vlc2(gb, lc->bias_cb.table, CLV_VLC_BITS, 2);
 
         if (bias_val != BIAS_ESC) {
             bias = (int16_t)(bias_val);
@@ -406,7 +405,7 @@ static TileInfo *decode_tile_info(GetBitContext *gb, const LevelCodes *lc, int l
     if (ti->flags) {
         for (i = 0; i < 4; i++) {
             if (ti->flags & (1 << i)) {
-                TileInfo *subti = decode_tile_info(gb, lc, level + 1);
+                TileInfo *subti = decode_tile_info(gb, lc + 1);
                 ti->child[i] = subti;
             }
         }
@@ -599,7 +598,7 @@ static int clv_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                     TileInfo *tile;
                     MV mv, cmv;
 
-                    tile = decode_tile_info(&c->gb, &lev[0], 0); // Y
+                    tile = decode_tile_info(&c->gb, &lev[0]); // Y
                     if (!tile)
                         return AVERROR(ENOMEM);
                     mv = mvi_predict(&c->mvi, i, j, tile->mv);
@@ -614,14 +613,14 @@ static int clv_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                     cmv.x /= 2;
                     cmv.y /= 2;
                     av_freep(&tile);
-                    tile = decode_tile_info(&c->gb, &lev[4], 0); // U
+                    tile = decode_tile_info(&c->gb, &lev[4]); // U
                     if (!tile)
                         return AVERROR(ENOMEM);
                     ret = restore_tree(avctx, c->pic, c->prev, 1, x, y, size, tile, cmv);
                     if (ret < 0)
                         mb_ret = ret;
                     av_freep(&tile);
-                    tile = decode_tile_info(&c->gb, &lev[7], 0); // V
+                    tile = decode_tile_info(&c->gb, &lev[7]); // V
                     if (!tile)
                         return AVERROR(ENOMEM);
                     ret = restore_tree(avctx, c->pic, c->prev, 2, x, y, size, tile, cmv);
