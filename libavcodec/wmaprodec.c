@@ -360,7 +360,7 @@ static av_cold int decode_init(WMAProDecodeCtx *s, AVCodecContext *avctx, int nu
     static AVOnce init_static_once = AV_ONCE_INIT;
     uint8_t *edata_ptr = avctx->extradata;
     unsigned int channel_mask;
-    int i, bits, ret;
+    int i, bits;
     int log2_max_num_subframes;
     int num_possible_block_sizes;
 
