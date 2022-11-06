@@ -366,7 +366,6 @@ static void filter_link_channels_## name (AVFilterContext *ctx,                 
                                                                                 \
     while (n < nb_samples) {                                                    \
         int min_size = nb_samples - n;                                          \
-        int max_size = 1;                                                       \
         ptype gain = s->max_expansion;                                          \
                                                                                 \
         for (int ch = 0; ch < inlink->ch_layout.nb_channels; ch++) {            \
@@ -377,7 +376,6 @@ static void filter_link_channels_## name (AVFilterContext *ctx,                 
                                                                                 \
             next_pi(ctx, cc, cc->bypass);                                       \
             min_size = FFMIN(min_size, cc->pi_size);                            \
-            max_size = FFMAX(max_size, cc->pi_size);                            \
         }                                                                       \
                                                                                 \
         av_assert1(min_size > 0);                                               \
@@ -386,7 +384,7 @@ static void filter_link_channels_## name (AVFilterContext *ctx,                 
                                                                                 \
             if (cc->bypass)                                                     \
                 continue;                                                       \
-            gain = FFMIN(gain, min_gain(ctx, cc, max_size));                    \
+            gain = FFMIN(gain, min_gain(ctx, cc, min_size));                    \
         }                                                                       \
                                                                                 \
         for (int ch = 0; ch < inlink->ch_layout.nb_channels; ch++) {            \
