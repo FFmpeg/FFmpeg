@@ -6338,6 +6338,10 @@ option. When enabled any half-cycle of samples with their local peak value below
 Link channels when calculating gain applied to each filtered channel sample, by default is disabled.
 When disabled each filtered channel gain calculation is independent, otherwise when this option
 is enabled the minimum of all possible gains for each filtered channel is used.
+
+@item rms, m
+Set the expansion target RMS value. This specifies the highest allowed RMS level for the normalized
+audio input. Default value is 0.0, thus disabled. Allowed range is from 0.0 to 1.0.
 @end table
 
 @subsection Commands
