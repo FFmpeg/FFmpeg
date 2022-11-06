@@ -362,6 +362,20 @@ static void mvi_update_row(MVInfo *mvi)
     }
 }
 
+static int tile_do_block(AVCodecContext *avctx, AVFrame *dst, AVFrame *src,
+                         int plane, int x, int y, int dx, int dy, int size, int bias)
+{
+    int ret;
+
+    if (!bias) {
+        ret = copy_block(avctx, dst, src, plane, x, y, dx, dy, size);
+    } else {
+        ret = copyadd_block(avctx, dst, src, plane, x, y, dx, dy, size, bias);
+    }
+
+    return ret;
+}
+
 static TileInfo *decode_tile_info(GetBitContext *gb, const LevelCodes *lc)
 {
     TileInfo *ti;
@@ -412,20 +426,6 @@ static TileInfo *decode_tile_info(GetBitContext *gb, const LevelCodes *lc)
     }
 
     return ti;
-}
-
-static int tile_do_block(AVCodecContext *avctx, AVFrame *dst, AVFrame *src,
-                         int plane, int x, int y, int dx, int dy, int size, int bias)
-{
-    int ret;
-
-    if (!bias) {
-        ret = copy_block(avctx, dst, src, plane, x, y, dx, dy, size);
-    } else {
-        ret = copyadd_block(avctx, dst, src, plane, x, y, dx, dy, size, bias);
-    }
-
-    return ret;
 }
 
 static int restore_tree(AVCodecContext *avctx, AVFrame *dst, AVFrame *src,
