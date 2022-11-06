@@ -169,8 +169,7 @@ static int intlist_read(BonkContext *s, int *buf, int entries, int base_2_part)
             return AVERROR_INVALIDDATA;
 
         if (!get_bits1(&s->gb)) {
-            if (steplet < 0)
-                break;
+            av_assert0(steplet >= 0);
 
             if (steplet > 0) {
                 bits[x  ].bit   = dominant;
