@@ -59,7 +59,7 @@
 #include "libavutil/mips/asmdefs.h"
 
 #if HAVE_INLINE_ASM
-static void sbr_qmf_analysis_mips(AVFloatDSPContext *fdsp, FFTContext *mdct,
+static void sbr_qmf_analysis_mips(AVFloatDSPContext *fdsp, AVTXContext *mdct, av_tx_fn mdct_fn,
                              SBRDSPContext *sbrdsp, const float *in, float *x,
                              float z[320], float W[2][32][32][2], int buf_idx)
 {
@@ -143,7 +143,7 @@ static void sbr_qmf_analysis_mips(AVFloatDSPContext *fdsp, FFTContext *mdct,
         fdsp->vector_fmul_reverse(z, sbr_qmf_window_ds, x, 320);
         sbrdsp->sum64x5(z);
         sbrdsp->qmf_pre_shuffle(z);
-        mdct->imdct_half(mdct, z, z+64);
+        mdct_fn(mdct, z, z+64, sizeof(float));
         sbrdsp->qmf_post_shuffle(W[buf_idx][i], z);
         x += 32;
     }
@@ -151,7 +151,7 @@ static void sbr_qmf_analysis_mips(AVFloatDSPContext *fdsp, FFTContext *mdct,
 
 #if HAVE_MIPSFPU
 #if !HAVE_MIPS32R6 && !HAVE_MIPS64R6
-static void sbr_qmf_synthesis_mips(FFTContext *mdct,
+static void sbr_qmf_synthesis_mips(AVTXContext *mdct, av_tx_fn mdct_fn,
                               SBRDSPContext *sbrdsp, AVFloatDSPContext *fdsp,
                               float *out, float X[2][38][64],
                               float mdct_buf[2][64],
@@ -180,12 +180,12 @@ static void sbr_qmf_synthesis_mips(FFTContext *mdct,
                 X[0][i][   n] = -X[0][i][n];
                 X[0][i][32+n] =  X[1][i][31-n];
             }
-            mdct->imdct_half(mdct, mdct_buf[0], X[0][i]);
+            mdct_fn(mdct, mdct_buf[0], X[0][i], sizeof(float));
             sbrdsp->qmf_deint_neg(v, mdct_buf[0]);
         } else {
             sbrdsp->neg_odd_64(X[1][i]);
-            mdct->imdct_half(mdct, mdct_buf[0], X[0][i]);
-            mdct->imdct_half(mdct, mdct_buf[1], X[1][i]);
+            mdct_fn(mdct, mdct_buf[0], X[0][i], sizeof(float));
+            mdct_fn(mdct, mdct_buf[1], X[1][i], sizeof(float));
             sbrdsp->qmf_deint_bfly(v, mdct_buf[1], mdct_buf[0]);
         }
 
