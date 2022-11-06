@@ -296,7 +296,7 @@ static int copyadd_block(AVCodecContext *avctx, AVFrame *dst, AVFrame *src,
     return 0;
 }
 
-static MV mvi_predict(MVInfo *mvi, int mb_x, int mb_y, MV diff)
+static MV *mvi_predict(MVInfo *mvi, int mb_x, int mb_y)
 {
     MV res, pred_mv;
     int left_mv, right_mv, top_mv, bot_mv;
@@ -336,10 +336,16 @@ static MV mvi_predict(MVInfo *mvi, int mb_x, int mb_y, MV diff)
         res.y = bot_mv;
     }
 
-    mvi->mv[mvi->mb_stride + mb_x].x = res.x + diff.x;
-    mvi->mv[mvi->mb_stride + mb_x].y = res.y + diff.y;
+    mvi->mv[mvi->mb_stride + mb_x].x = res.x;
+    mvi->mv[mvi->mb_stride + mb_x].y = res.y;
 
-    return res;
+    return &mvi->mv[mvi->mb_stride + mb_x];
+}
+
+static void mvi_update_prediction(MV *mv, MV diff)
+{
+    mv->x += diff.x;
+    mv->y += diff.y;
 }
 
 static void mvi_reset(MVInfo *mvi, int mb_w, int mb_h, int mb_size)
@@ -575,11 +581,13 @@ static int clv_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
 
         for (j = 0; j < c->pmb_height; j++) {
             for (i = 0; i < c->pmb_width; i++) {
+                MV *mvp, mv;
                 if (get_bits_left(&c->gb) <= 0)
                     return AVERROR_INVALIDDATA;
-                if (get_bits1(&c->gb)) {
-                    MV mv = mvi_predict(&c->mvi, i, j, zero_mv);
 
+                mvp = mvi_predict(&c->mvi, i, j);
+                mv  = *mvp;
+                if (get_bits1(&c->gb)) {
                     for (plane = 0; plane < 3; plane++) {
                         int16_t x = plane == 0 ? i << c->tile_shift : i << (c->tile_shift - 1);
                         int16_t y = plane == 0 ? j << c->tile_shift : j << (c->tile_shift - 1);
@@ -596,15 +604,15 @@ static int clv_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                     int y = j << c->tile_shift;
                     int size = 1 << c->tile_shift;
                     TileInfo *tile;
-                    MV mv, cmv;
+                    MV cmv;
 
                     tile = decode_tile_info(&c->gb, &lev[0]); // Y
                     if (!tile)
                         return AVERROR(ENOMEM);
-                    mv = mvi_predict(&c->mvi, i, j, tile->mv);
                     ret = restore_tree(avctx, c->pic, c->prev, 0, x, y, size, tile, mv);
                     if (ret < 0)
                         mb_ret = ret;
+                    mvi_update_prediction(mvp, tile->mv);
                     x = i << (c->tile_shift - 1);
                     y = j << (c->tile_shift - 1);
                     size = 1 << (c->tile_shift - 1);
