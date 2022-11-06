@@ -132,7 +132,6 @@ static av_cold int bonk_init(AVCodecContext *avctx)
 static unsigned read_uint_max(BonkContext *s, uint32_t max)
 {
     unsigned value = 0;
-    int i, bits;
 
     if (max == 0)
         return 0;
@@ -140,15 +139,9 @@ static unsigned read_uint_max(BonkContext *s, uint32_t max)
     if (max >> 31)
         return 32;
 
-    bits = 32 - ff_clz(max);
-
-    for (i = 0; i < bits - 1; i++)
+    for (unsigned i = 1; i <= max - value; i+=i)
         if (get_bits1(&s->gb))
-            value += 1 << i;
-
-    if ((value | (1 << (bits - 1))) <= max)
-        if (get_bits1(&s->gb))
-            value += 1 << (bits - 1);
+            value += i;
 
     return value;
 }
