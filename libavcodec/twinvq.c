@@ -26,7 +26,6 @@
 #include "libavutil/float_dsp.h"
 #include "avcodec.h"
 #include "decode.h"
-#include "fft.h"
 #include "lsp.h"
 #include "metasound_twinvq_data.h"
 #include "sinewin.h"

@@ -48,7 +48,6 @@
 #include "ac3.h"
 #include "ac3defs.h"
 #include "ac3tab.h"
-#include "fft.h"
 #include "ac3enc.h"
 #include "eac3enc.h"
 
