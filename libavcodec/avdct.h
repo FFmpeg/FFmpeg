@@ -19,7 +19,6 @@
 #ifndef AVCODEC_AVDCT_H
 #define AVCODEC_AVDCT_H
 
-#include "libavutil/attributes.h"
 #include "libavutil/opt.h"
 
 /**
@@ -27,7 +26,7 @@
  * @note function pointers can be NULL if the specific features have been
  *       disabled at build time.
  */
-typedef struct attribute_deprecated AVDCT {
+typedef struct AVDCT {
     const AVClass *av_class;
 
     void (*idct)(int16_t *block /* align 16 */);
@@ -81,13 +80,9 @@ typedef struct attribute_deprecated AVDCT {
  *
  * To free it use av_free()
  */
-attribute_deprecated
 AVDCT *avcodec_dct_alloc(void);
-
-attribute_deprecated
 int avcodec_dct_init(AVDCT *);
 
-attribute_deprecated
 const AVClass *avcodec_dct_get_class(void);
 
 #endif /* AVCODEC_AVDCT_H */
