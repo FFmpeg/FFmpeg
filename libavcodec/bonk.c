@@ -180,6 +180,8 @@ static int intlist_read(BonkContext *s, int *buf, int entries, int base_2_part)
             if (!dominant)
                 n_zeros += steplet;
 
+            if (step > INT32_MAX*8LL/9 + 1)
+                return AVERROR_INVALIDDATA;
             step += step / 8;
         } else if (steplet > 0) {
             int actual_run = read_uint_max(s, steplet - 1);
