@@ -59,13 +59,6 @@ typedef struct MVInfo {
     MV  *mv;
 } MVInfo;
 
-typedef struct TileInfo {
-    uint16_t        flags;
-    int16_t         bias;
-    MV              mv;
-    struct TileInfo *child[4];
-} TileInfo;
-
 typedef struct CLVContext {
     AVCodecContext *avctx;
     IDCTDSPContext idsp;
@@ -383,12 +376,16 @@ static int tile_do_block(AVCodecContext *avctx, AVFrame *dst, const AVFrame *src
     return ret;
 }
 
-static TileInfo *decode_tile_info(GetBitContext *gb, const LevelCodes *lc)
+static int decode_tile(AVCodecContext *avctx, GetBitContext *gb,
+                       const LevelCodes *lc,
+                       AVFrame *dst, const AVFrame *src,
+                       int plane, int x, int y, int size,
+                       MV root_mv, MV *pred)
 {
-    TileInfo *ti;
     int i, flags = 0;
     int16_t bias = 0;
     MV mv = { 0 };
+    int err;
 
     if (lc->flags_cb.table)
         flags = get_vlc2(gb, lc->flags_cb.table, CLV_VLC_BITS, 2);
@@ -403,7 +400,11 @@ static TileInfo *decode_tile_info(GetBitContext *gb, const LevelCodes *lc)
             mv.x = get_sbits(gb, 8);
             mv.y = get_sbits(gb, 8);
         }
+        if (pred)
+            mvi_update_prediction(pred, mv);
     }
+    mv.x += root_mv.x;
+    mv.y += root_mv.y;
 
     if (lc->bias_cb.table) {
         uint16_t bias_val = get_vlc2(gb, lc->bias_cb.table, CLV_VLC_BITS, 2);
@@ -415,55 +416,29 @@ static TileInfo *decode_tile_info(GetBitContext *gb, const LevelCodes *lc)
         }
     }
 
-    ti = av_calloc(1, sizeof(*ti));
-    if (!ti)
-        return NULL;
-
-    ti->flags = flags;
-    ti->mv = mv;
-    ti->bias = bias;
-
-    if (ti->flags) {
-        for (i = 0; i < 4; i++) {
-            if (ti->flags & (1 << i)) {
-                TileInfo *subti = decode_tile_info(gb, lc + 1);
-                ti->child[i] = subti;
-            }
-        }
-    }
-
-    return ti;
-}
-
-static int restore_tree(AVCodecContext *avctx, AVFrame *dst, AVFrame *src,
-                        int plane, int x, int y, int size,
-                        TileInfo *tile, MV root_mv)
-{
-    int ret;
-    MV mv;
-
-    mv.x = root_mv.x + tile->mv.x;
-    mv.y = root_mv.y + tile->mv.y;
-
-    if (!tile->flags) {
-        ret = tile_do_block(avctx, dst, src, plane, x, y, mv.x, mv.y, size, tile->bias);
-    } else {
-        int i, hsize = size >> 1;
-
+    if (flags) {
+        int hsize = size >> 1;
         for (i = 0; i < 4; i++) {
             int xoff = (i & 2) == 0 ? 0 : hsize;
             int yoff = (i & 1) == 0 ? 0 : hsize;
 
-            if (tile->child[i]) {
-                ret = restore_tree(avctx, dst, src, plane, x + xoff, y + yoff, hsize, tile->child[i], root_mv);
-                av_freep(&tile->child[i]);
+            if (flags & (1 << i)) {
+                err = decode_tile(avctx, gb, lc + 1, dst, src, plane,
+                                  x + xoff, y + yoff, hsize, root_mv, NULL);
             } else {
-                ret = tile_do_block(avctx, dst, src, plane, x + xoff, y + yoff, mv.x, mv.y, hsize, tile->bias);
+                err = tile_do_block(avctx, dst, src, plane, x + xoff, y + yoff,
+                                    mv.x, mv.y, hsize, bias);
             }
+            if (err < 0)
+                return err;
         }
+    } else {
+        err = tile_do_block(avctx, dst, src, plane, x, y, mv.x, mv.y, size, bias);
+        if (err < 0)
+            return err;
     }
 
-    return ret;
+    return 0;
 }
 
 static void extend_edges(AVFrame *buf, int tile_size)
@@ -604,38 +579,26 @@ static int clv_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                     int x = i << c->tile_shift;
                     int y = j << c->tile_shift;
                     int size = 1 << c->tile_shift;
-                    TileInfo *tile;
                     MV cmv;
 
-                    tile = decode_tile_info(&c->gb, &lev[0]); // Y
-                    if (!tile)
-                        return AVERROR(ENOMEM);
-                    ret = restore_tree(avctx, c->pic, c->prev, 0, x, y, size, tile, mv);
+                    ret = decode_tile(avctx, &c->gb, &lev[0], c->pic, c->prev,  // Y
+                                      0, x, y, size, mv, mvp);
                     if (ret < 0)
                         mb_ret = ret;
-                    mvi_update_prediction(mvp, tile->mv);
                     x = i << (c->tile_shift - 1);
                     y = j << (c->tile_shift - 1);
                     size = 1 << (c->tile_shift - 1);
-                    cmv.x = mv.x + tile->mv.x;
-                    cmv.y = mv.y + tile->mv.y;
+                    cmv = *mvp;
                     cmv.x /= 2;
                     cmv.y /= 2;
-                    av_freep(&tile);
-                    tile = decode_tile_info(&c->gb, &lev[4]); // U
-                    if (!tile)
-                        return AVERROR(ENOMEM);
-                    ret = restore_tree(avctx, c->pic, c->prev, 1, x, y, size, tile, cmv);
+                    ret = decode_tile(avctx, &c->gb, &lev[4], c->pic, c->prev,  // U
+                                      1, x, y, size, cmv, NULL);
                     if (ret < 0)
                         mb_ret = ret;
-                    av_freep(&tile);
-                    tile = decode_tile_info(&c->gb, &lev[7]); // V
-                    if (!tile)
-                        return AVERROR(ENOMEM);
-                    ret = restore_tree(avctx, c->pic, c->prev, 2, x, y, size, tile, cmv);
+                    ret = decode_tile(avctx, &c->gb, &lev[7], c->pic, c->prev,  // U
+                                      2, x, y, size, cmv, NULL);
                     if (ret < 0)
                         mb_ret = ret;
-                    av_freep(&tile);
                 }
             }
             mvi_update_row(&c->mvi);
