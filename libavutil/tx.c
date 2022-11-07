@@ -368,7 +368,7 @@ static void print_cd_info(const FFTXCodelet *cd, int prio, int print_prio)
     if (print_prio)
         av_bprintf(&bp, ", prio: %i", prio);
 
-    av_log(NULL, AV_LOG_VERBOSE, "%s\n", bp.str);
+    av_log(NULL, AV_LOG_DEBUG, "%s\n", bp.str);
 }
 
 static void print_tx_structure(AVTXContext *s, int depth)
@@ -376,7 +376,7 @@ static void print_tx_structure(AVTXContext *s, int depth)
     const FFTXCodelet *cd = s->cd_self;
 
     for (int i = 0; i <= depth; i++)
-        av_log(NULL, AV_LOG_VERBOSE, "    ");
+        av_log(NULL, AV_LOG_DEBUG, "    ");
 
     print_cd_info(cd, cd->prio, 0);
 
@@ -593,10 +593,10 @@ av_cold int ff_tx_init_subtx(AVTXContext *s, enum AVTXType type,
     AV_QSORT(cd_matches, nb_cd_matches, TXCodeletMatch, cmp_matches);
 
 #if !CONFIG_SMALL
-    av_log(NULL, AV_LOG_VERBOSE, "%s\n", bp.str);
+    av_log(NULL, AV_LOG_DEBUG, "%s\n", bp.str);
 
     for (int i = 0; i < nb_cd_matches; i++) {
-        av_log(NULL, AV_LOG_VERBOSE, "    %i: ", i + 1);
+        av_log(NULL, AV_LOG_DEBUG, "    %i: ", i + 1);
         print_cd_info(cd_matches[i].cd, cd_matches[i].prio, 1);
     }
 #endif
@@ -677,7 +677,7 @@ av_cold int av_tx_init(AVTXContext **ctx, av_tx_fn *tx, enum AVTXType type,
     *tx  = tmp.fn[0];
 
 #if !CONFIG_SMALL
-    av_log(NULL, AV_LOG_VERBOSE, "Transform tree:\n");
+    av_log(NULL, AV_LOG_DEBUG, "Transform tree:\n");
     print_tx_structure(*ctx, 0);
 #endif
 
