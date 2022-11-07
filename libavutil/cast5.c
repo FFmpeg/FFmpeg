@@ -32,7 +32,7 @@
 #define IC(x) (((x) >> 8) & 0xff)
 #define ID(x) ((x) & 0xff)
 
-#define LR(x, c) (((x) << (c)) | ((x) >> (32 - (c))))
+#define LR(x, c) (((x) << (c)) | ((x) >> ((32 - (c)) & 31)))
 
 #define F3(l, r, i)                                                                                  \
     do {                                                                                             \
