@@ -222,14 +222,15 @@ static int decode_mb(CLVContext *c, int x, int y)
     return 0;
 }
 
-static int copy_block(AVCodecContext *avctx, AVFrame *dst, AVFrame *src,
+static int copy_block(AVCodecContext *avctx, AVFrame *dst, const AVFrame *src,
                       int plane, int x, int y, int dx, int dy, int size)
 {
     int shift = plane > 0;
     int sx = x + dx;
     int sy = y + dy;
     int sstride, dstride, soff, doff;
-    uint8_t *sbuf, *dbuf;
+    uint8_t *dbuf;
+    const uint8_t *sbuf;
     int i;
 
     if (x < 0 || sx < 0 || y < 0 || sy < 0 ||
@@ -248,7 +249,7 @@ static int copy_block(AVCodecContext *avctx, AVFrame *dst, AVFrame *src,
 
     for (i = 0; i < size; i++) {
         uint8_t *dptr = &dbuf[doff];
-        uint8_t *sptr = &sbuf[soff];
+        const uint8_t *sptr = &sbuf[soff];
 
         memcpy(dptr, sptr, size);
         doff += dstride;
@@ -258,7 +259,7 @@ static int copy_block(AVCodecContext *avctx, AVFrame *dst, AVFrame *src,
     return 0;
 }
 
-static int copyadd_block(AVCodecContext *avctx, AVFrame *dst, AVFrame *src,
+static int copyadd_block(AVCodecContext *avctx, AVFrame *dst, const AVFrame *src,
                          int plane, int x, int y, int dx, int dy, int size, int bias)
 {
     int shift = plane > 0;
@@ -267,7 +268,7 @@ static int copyadd_block(AVCodecContext *avctx, AVFrame *dst, AVFrame *src,
     int sstride   = src->linesize[plane];
     int dstride   = dst->linesize[plane];
     int soff      = sx + sy * sstride;
-    uint8_t *sbuf = src->data[plane];
+    const uint8_t *sbuf = src->data[plane];
     int doff      = x + y * dstride;
     uint8_t *dbuf = dst->data[plane];
     int i, j;
@@ -281,7 +282,7 @@ static int copyadd_block(AVCodecContext *avctx, AVFrame *dst, AVFrame *src,
 
     for (j = 0; j < size; j++) {
         uint8_t *dptr = &dbuf[doff];
-        uint8_t *sptr = &sbuf[soff];
+        const uint8_t *sptr = &sbuf[soff];
 
         for (i = 0; i < size; i++) {
             int val = sptr[i] + bias;
@@ -368,7 +369,7 @@ static void mvi_update_row(MVInfo *mvi)
     }
 }
 
-static int tile_do_block(AVCodecContext *avctx, AVFrame *dst, AVFrame *src,
+static int tile_do_block(AVCodecContext *avctx, AVFrame *dst, const AVFrame *src,
                          int plane, int x, int y, int dx, int dy, int size, int bias)
 {
     int ret;
