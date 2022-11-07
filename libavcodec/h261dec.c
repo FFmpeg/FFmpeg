@@ -101,6 +101,15 @@ static av_cold int h261_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
+static inline void h261_init_dest(MpegEncContext *s)
+{
+    const unsigned block_size = 8 >> s->avctx->lowres;
+    ff_init_block_index(s);
+    s->dest[0] += 2 * block_size;
+    s->dest[1] += block_size;
+    s->dest[2] += block_size;
+}
+
 /**
  * Decode the group of blocks header or slice header.
  * @return <0 if an error occurred
@@ -213,8 +222,7 @@ static int h261_decode_mb_skipped(H261DecContext *h, int mba1, int mba2)
         s->mb_x = ((h->gob_number - 1) % 2) * 11 + i % 11;
         s->mb_y = ((h->gob_number - 1) / 2) * 3 + i / 11;
         xy      = s->mb_x + s->mb_y * s->mb_stride;
-        ff_init_block_index(s);
-        ff_update_block_index(s, 8, s->avctx->lowres, 1);
+        h261_init_dest(s);
 
         for (j = 0; j < 6; j++)
             s->block_last_index[j] = -1;
@@ -399,8 +407,7 @@ static int h261_decode_mb(H261DecContext *h)
     s->mb_x = ((h->gob_number - 1) % 2) * 11 + ((h->current_mba - 1) % 11);
     s->mb_y = ((h->gob_number - 1) / 2) * 3 + ((h->current_mba - 1) / 11);
     xy      = s->mb_x + s->mb_y * s->mb_stride;
-    ff_init_block_index(s);
-    ff_update_block_index(s, 8, s->avctx->lowres, 1);
+    h261_init_dest(s);
 
     // Read mtype
     com->mtype = get_vlc2(&s->gb, h261_mtype_vlc.table, H261_MTYPE_VLC_BITS, 2);
