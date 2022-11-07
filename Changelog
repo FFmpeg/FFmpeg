@@ -19,6 +19,7 @@ version <next>:
 - DTS to PTS reorder bsf
 - ViewQuest VQC decoder
 - backgroundkey filter
+- nvenc AV1 encoding support
 
 
 version 5.1:
