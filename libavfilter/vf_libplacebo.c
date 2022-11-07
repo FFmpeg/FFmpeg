@@ -56,7 +56,6 @@ static const struct pl_tone_map_function * const tonemapping_funcs[TONE_MAP_COUN
 typedef struct LibplaceboContext {
     /* lavfi vulkan*/
     FFVulkanContext vkctx;
-    int initialized;
 
     /* libplacebo */
     pl_log log;
@@ -237,9 +236,16 @@ static int init_vulkan(AVFilterContext *avctx)
 {
     int err = 0;
     LibplaceboContext *s = avctx->priv;
-    const AVVulkanDeviceContext *hwctx = s->vkctx.hwctx;
+    const AVVulkanDeviceContext *hwctx;
     uint8_t *buf = NULL;
     size_t buf_len;
+
+    if (!avctx->hw_device_ctx) {
+        av_log(s, AV_LOG_ERROR, "Missing vulkan hwdevice for vf_libplacebo.\n");
+        return AVERROR(EINVAL);
+    }
+
+    hwctx = ((AVHWDeviceContext*) avctx->hw_device_ctx->data)->hwctx;
 
     /* Import libavfilter vulkan context into libplacebo */
     s->vulkan = pl_vulkan_import(s->log, pl_vulkan_import_params(
@@ -289,7 +295,6 @@ static int init_vulkan(AVFilterContext *avctx)
 fail:
     if (buf)
         av_file_unmap(buf, buf_len);
-    s->initialized =  1;
     return err;
 }
 
@@ -303,7 +308,6 @@ static void libplacebo_uninit(AVFilterContext *avctx)
     pl_vulkan_destroy(&s->vulkan);
     pl_log_destroy(&s->log);
     ff_vk_uninit(&s->vkctx);
-    s->initialized = 0;
     s->gpu = NULL;
 }
 
@@ -452,8 +456,6 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     }
 
     pl_log_level_update(s->log, get_log_level());
-    if (!s->initialized)
-        RET(init_vulkan(ctx));
 
     RET(av_frame_copy_props(out, in));
     out->width = outlink->w;
@@ -502,6 +504,25 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
 fail:
     av_frame_free(&in);
     av_frame_free(&out);
+    return err;
+}
+
+static int libplacebo_query_format(AVFilterContext *ctx)
+{
+    int err = 0;
+    static const enum AVPixelFormat pix_fmts[] = {
+        AV_PIX_FMT_VULKAN, AV_PIX_FMT_NONE,
+    };
+
+    RET(init_vulkan(ctx));
+
+    RET(ff_formats_ref(ff_make_format_list(pix_fmts),
+                       &ctx->inputs[0]->outcfg.formats));
+    RET(ff_formats_ref(ff_make_format_list(pix_fmts),
+                       &ctx->outputs[0]->incfg.formats));
+    return 0;
+
+fail:
     return err;
 }
 
@@ -755,7 +776,7 @@ const AVFilter ff_vf_libplacebo = {
     .process_command = &ff_filter_process_command,
     FILTER_INPUTS(libplacebo_inputs),
     FILTER_OUTPUTS(libplacebo_outputs),
-    FILTER_SINGLE_PIXFMT(AV_PIX_FMT_VULKAN),
+    FILTER_QUERY_FUNC(libplacebo_query_format),
     .priv_class     = &libplacebo_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
