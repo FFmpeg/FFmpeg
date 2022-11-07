@@ -872,6 +872,91 @@ Compute derivative/integral of audio stream.
 
 Applying both filters one after another produces original audio.
 
+@section adrc
+
+Apply spectral dynamic range controller filter to input audio stream.
+
+A description of the accepted options follows.
+
+@table @option
+@item transfer
+Set the transfer expression.
+
+The expression can contain the following constants:
+
+@table @option
+@item ch
+current channel number
+
+@item sn
+current sample number
+
+@item nb_channels
+number of channels
+
+@item t
+timestamp expressed in seconds
+
+@item sr
+sample rate
+
+@item p
+current frequency power value, in dB
+
+@item f
+current frequency in Hz
+@end table
+
+Default value is @code{p}.
+
+@item attack
+Set the attack in milliseconds. Default is @code{50} milliseconds.
+Allowed range is from 1 to 1000 milliseconds.
+@item release
+Set the release in milliseconds. Default is @code{100} milliseconds.
+Allowed range is from 5 to 2000 milliseconds.
+@item channels
+Set which channels to filter, by default @code{all} channels in audio stream are filtered.
+@end table
+
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
+@subsection Examples
+
+@itemize
+@item
+Apply spectral compression to all frequencies with threshold of -50 dB and 1:6 ratio:
+@example
+adrc=transfer='if(gt(p,-50),-50+(p-(-50))/6,p)':attack=50:release=100
+@end example
+
+@item
+Similar to above but with 1:2 ratio and filtering only front center channel:
+@example
+adrc=transfer='if(gt(p,-50),-50+(p-(-50))/2,p)':attack=50:release=100:channels=FC
+@end example
+
+@item
+Apply spectral noise gate to all frequencies with threshold of -85 dB and with short attack time and short release time:
+@example
+adrc=transfer='if(lte(p,-85),p-800,p)':attack=1:release=5
+@end example
+
+@item
+Apply spectral expansion to all frequencies with threshold of -10 dB and 1:2 ratio:
+@example
+adrc=transfer='if(lt(p,-10),-10+(p-(-10))*2,p)':attack=50:release=100
+@end example
+
+@item
+Apply limiter to max -60 dB to all frequencies, with attack of 2 ms and release of 10 ms:
+@example
+adrc=transfer='min(p,-60)':attack=2:release=10
+@end example
+@end itemize
+
 @section adynamicequalizer
 
 Apply dynamic equalization to input audio stream.
