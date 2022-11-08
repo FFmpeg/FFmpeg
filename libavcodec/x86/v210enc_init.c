@@ -37,6 +37,12 @@ void ff_v210_planar_pack_10_ssse3(const uint16_t *y, const uint16_t *u,
 void ff_v210_planar_pack_10_avx2(const uint16_t *y, const uint16_t *u,
                                  const uint16_t *v, uint8_t *dst,
                                  ptrdiff_t width);
+void ff_v210_planar_pack_10_avx512(const uint16_t *y, const uint16_t *u,
+                                   const uint16_t *v, uint8_t *dst,
+                                   ptrdiff_t width);
+void ff_v210_planar_pack_10_avx512icl(const uint16_t *y, const uint16_t *u,
+                                      const uint16_t *v, uint8_t *dst,
+                                      ptrdiff_t width);
 
 av_cold void ff_v210enc_init_x86(V210EncContext *s)
 {
@@ -60,10 +66,16 @@ av_cold void ff_v210enc_init_x86(V210EncContext *s)
     if (EXTERNAL_AVX512(cpu_flags)) {
         s->sample_factor_8  = 2;
         s->pack_line_8      = ff_v210_planar_pack_8_avx512;
+#if ARCH_X86_64
+        s->sample_factor_10  = 2;
+        s->pack_line_10      = ff_v210_planar_pack_10_avx512;
+#endif
     }
 
     if (EXTERNAL_AVX512ICL(cpu_flags)) {
         s->sample_factor_8  = 4;
         s->pack_line_8      = ff_v210_planar_pack_8_avx512icl;
+        s->sample_factor_10 = 4;
+        s->pack_line_10     = ff_v210_planar_pack_10_avx512icl;
     }
 }

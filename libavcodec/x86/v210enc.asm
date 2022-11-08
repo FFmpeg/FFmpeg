@@ -56,6 +56,36 @@ v210enc_8_permd: dd 0,1,4,5, 1,2,5,6
 v210enc_8_mult: db 4, 0, 64, 0
 v210enc_8_mask: dd 255<<12
 
+icl_perm_y: ; vpermb does not set bytes to zero when the high bit is set unlike pshufb
+%assign i 0
+%rep 8
+    db -1,i+0,i+1,-1 , i+2,i+3,i+4,i+5
+    %assign i i+6
+%endrep
+
+icl_perm_uv: ; vpermb does not set bytes to zero when the high bit is set unlike pshufb
+%assign i 0
+%rep 4
+    db i+0,i+1,i+32,i+33 , -1,i+2,i+3,-1 , i+34,i+35,i+4,i+5 , -1,i+36,i+37,-1
+    %assign i i+6
+%endrep
+
+icl_perm_y_kmask:  times 8 db 0b1111_0110
+icl_perm_uv_kmask: times 8 db 0b0110_1111
+
+icl_shift_y:  times 10 dw 2,0,4
+              times 4 db 0 ; padding to 64 bytes
+icl_shift_uv: times 5 dw 0,2,4
+              times 2 db 0 ; padding to 32 bytes
+              times 5 dw 4,0,2
+              times 2 db 0 ; padding to 32 bytes
+
+v210enc_10_permd_y:  dd 0,1,2,-1 , 3,4,5,-1
+v210enc_10_shufb_y:  db -1,0,1,-1 , 2,3,4,5 , -1,6,7,-1 , 8,9,10,11
+v210enc_10_permd_uv: dd 0,1,4,5 , 1,2,5,6
+v210enc_10_shufb_uv: db 0,1, 8, 9 , -1,2,3,-1 , 10,11,4,5 , -1,12,13,-1
+                     db 2,3,10,11 , -1,4,5,-1 , 12,13,6,7 , -1,14,15,-1
+
 SECTION .text
 
 %macro v210_planar_pack_10 0
@@ -111,6 +141,75 @@ v210_planar_pack_10
 %if HAVE_AVX2_EXTERNAL
 INIT_YMM avx2
 v210_planar_pack_10
+%endif
+
+%macro v210_planar_pack_10_new 0
+
+cglobal v210_planar_pack_10, 5, 5, 8+2*notcpuflag(avx512icl), y, u, v, dst, width
+    lea     yq, [yq+2*widthq]
+    add     uq, widthq
+    add     vq, widthq
+    neg     widthq
+
+    %if cpuflag(avx512icl)
+        movu  m6, [icl_perm_y]
+        movu  m7, [icl_perm_uv]
+        kmovq k1, [icl_perm_y_kmask]
+        kmovq k2, [icl_perm_uv_kmask]
+    %else
+        movu           m6, [v210enc_10_permd_y]
+        VBROADCASTI128 m7, [v210enc_10_shufb_y]
+        movu           m8, [v210enc_10_permd_uv]
+        movu           m9, [v210enc_10_shufb_uv]
+    %endif
+    movu  m2, [icl_shift_y]
+    movu  m3, [icl_shift_uv]
+    VBROADCASTI128 m4, [v210_enc_min_10] ; only ymm sized
+    VBROADCASTI128 m5, [v210_enc_max_10] ; only ymm sized
+
+    .loop:
+        movu m0, [yq + widthq*2]
+        %if cpuflag(avx512icl)
+            movu         ym1, [uq + widthq*1]
+            vinserti32x8 zm1, [vq + widthq*1], 1
+        %else
+            movu         xm1, [uq + widthq*1]
+            vinserti128  ym1, [vq + widthq*1], 1
+        %endif
+        CLIPW m0, m4, m5
+        CLIPW m1, m4, m5
+
+        vpsllvw m0, m2
+        vpsllvw m1, m3
+        %if cpuflag(avx512icl)
+            vpermb  m0{k1}{z}, m6, m0 ; make space for uv where the k-mask sets to zero
+            vpermb  m1{k2}{z}, m7, m1 ; interleave uv and make space for y where the k-mask sets to zero
+        %else
+            vpermd m0, m6, m0
+            pshufb m0, m7
+            vpermd m1, m8, m1
+            pshufb m1, m9
+        %endif
+        por     m0, m1
+
+        movu  [dstq], m0
+        add     dstq, mmsize
+        add   widthq, (mmsize*3)/8
+    jl .loop
+RET
+
+%endmacro
+
+%if ARCH_X86_64
+%if HAVE_AVX512_EXTERNAL
+INIT_YMM avx512
+v210_planar_pack_10_new
+%endif
+%endif
+
+%if HAVE_AVX512ICL_EXTERNAL
+INIT_ZMM avx512icl
+v210_planar_pack_10_new
 %endif
 
 %macro v210_planar_pack_8 0
