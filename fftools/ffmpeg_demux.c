@@ -368,8 +368,9 @@ static int thread_start(Demuxer *d)
     if (d->thread_queue_size <= 0)
         d->thread_queue_size = (nb_input_files > 1 ? 8 : 1);
 
-    if (f->ctx->pb ? !f->ctx->pb->seekable :
-        strcmp(f->ctx->iformat->name, "lavfi"))
+    if (nb_input_files > 1 &&
+        (f->ctx->pb ? !f->ctx->pb->seekable :
+         strcmp(f->ctx->iformat->name, "lavfi")))
         d->non_blocking = 1;
     ret = av_thread_message_queue_alloc(&d->in_thread_queue,
                                         d->thread_queue_size, sizeof(DemuxMsg));
