@@ -36,6 +36,7 @@
 #include "encode.h"
 #include "internal.h"
 #include "packet_internal.h"
+#include "atsc_a53.h"
 #include "sei.h"
 
 typedef struct libx265Context {
@@ -56,6 +57,7 @@ typedef struct libx265Context {
     void *sei_data;
     int sei_data_size;
     int udu_sei;
+    int a53_cc;
 
     /**
      * If the encoder does not support ROI then warn the first time we
@@ -499,6 +501,16 @@ static av_cold int libx265_encode_set_roi(libx265Context *ctx, const AVFrame *fr
     return 0;
 }
 
+static void free_picture(x265_picture *pic)
+{
+    x265_sei *sei = &pic->userSEI;
+    for (int i = 0; i < sei->numPayloads; i++)
+        av_free(sei->payloads[i].payload);
+    av_freep(&pic->userData);
+    av_freep(&pic->quantOffsets);
+    sei->numPayloads = 0;
+}
+
 static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                                 const AVFrame *pic, int *got_packet)
 {
@@ -506,6 +518,7 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     x265_picture x265pic;
     x265_picture x265pic_out = { 0 };
     x265_nal *nal;
+    x265_sei *sei;
     uint8_t *dst;
     int pict_type;
     int payload = 0;
@@ -515,9 +528,10 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     ctx->api->picture_init(ctx->params, &x265pic);
 
+    sei = &x265pic.userSEI;
+    sei->numPayloads = 0;
+
     if (pic) {
-        x265_sei *sei = &x265pic.userSEI;
-        sei->numPayloads = 0;
         for (i = 0; i < 3; i++) {
            x265pic.planes[i] = pic->data[i];
            x265pic.stride[i] = pic->linesize[i];
@@ -539,11 +553,40 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         if (pic->reordered_opaque) {
             x265pic.userData = av_malloc(sizeof(pic->reordered_opaque));
             if (!x265pic.userData) {
-                av_freep(&x265pic.quantOffsets);
+                free_picture(&x265pic);
                 return AVERROR(ENOMEM);
             }
 
             memcpy(x265pic.userData, &pic->reordered_opaque, sizeof(pic->reordered_opaque));
+        }
+
+        if (ctx->a53_cc) {
+            void *sei_data;
+            size_t sei_size;
+
+            ret = ff_alloc_a53_sei(pic, 0, &sei_data, &sei_size);
+            if (ret < 0) {
+                av_log(ctx, AV_LOG_ERROR, "Not enough memory for closed captions, skipping\n");
+            } else if (sei_data) {
+                void *tmp;
+                x265_sei_payload *sei_payload;
+
+                tmp = av_fast_realloc(ctx->sei_data,
+                        &ctx->sei_data_size,
+                        (sei->numPayloads + 1) * sizeof(*sei_payload));
+                if (!tmp) {
+                    av_free(sei_data);
+                    free_picture(&x265pic);
+                    return AVERROR(ENOMEM);
+                }
+                ctx->sei_data = tmp;
+                sei->payloads = ctx->sei_data;
+                sei_payload = &sei->payloads[sei->numPayloads];
+                sei_payload->payload = sei_data;
+                sei_payload->payloadSize = sei_size;
+                sei_payload->payloadType = SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35;
+                sei->numPayloads++;
+            }
         }
 
         if (ctx->udu_sei) {
@@ -559,14 +602,17 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                         &ctx->sei_data_size,
                         (sei->numPayloads + 1) * sizeof(*sei_payload));
                 if (!tmp) {
-                    av_freep(&x265pic.userData);
-                    av_freep(&x265pic.quantOffsets);
+                    free_picture(&x265pic);
                     return AVERROR(ENOMEM);
                 }
                 ctx->sei_data = tmp;
                 sei->payloads = ctx->sei_data;
                 sei_payload = &sei->payloads[sei->numPayloads];
-                sei_payload->payload = side_data->data;
+                sei_payload->payload = av_memdup(side_data->data, side_data->size);
+                if (!sei_payload->payload) {
+                    free_picture(&x265pic);
+                    return AVERROR(ENOMEM);
+                }
                 sei_payload->payloadSize = side_data->size;
                 /* Equal to libx265 USER_DATA_UNREGISTERED */
                 sei_payload->payloadType = SEI_TYPE_USER_DATA_UNREGISTERED;
@@ -578,6 +624,8 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     ret = ctx->api->encoder_encode(ctx->encoder, &nal, &nnal,
                                    pic ? &x265pic : NULL, &x265pic_out);
 
+    for (i = 0; i < sei->numPayloads; i++)
+        av_free(sei->payloads[i].payload);
     av_freep(&x265pic.quantOffsets);
 
     if (ret < 0)
@@ -713,7 +761,8 @@ static const AVOption options[] = {
     { "preset",      "set the x265 preset",                                                         OFFSET(preset),    AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
     { "tune",        "set the x265 tune parameter",                                                 OFFSET(tune),      AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
     { "profile",     "set the x265 profile",                                                        OFFSET(profile),   AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
-    { "udu_sei",      "Use user data unregistered SEI if available",                                OFFSET(udu_sei),   AV_OPT_TYPE_BOOL,   { .i64 = 0 }, 0, 1, VE },
+    { "udu_sei",     "Use user data unregistered SEI if available",                                 OFFSET(udu_sei),   AV_OPT_TYPE_BOOL,   { .i64 = 0 }, 0, 1, VE },
+    { "a53cc",       "Use A53 Closed Captions (if available)",                                      OFFSET(a53_cc),    AV_OPT_TYPE_BOOL,   { .i64 = 1 }, 0, 1, VE },
     { "x265-params", "set the x265 configuration using a :-separated list of key=value parameters", OFFSET(x265_opts), AV_OPT_TYPE_DICT,   { 0 }, 0, 0, VE },
     { NULL }
 };
