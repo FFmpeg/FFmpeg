@@ -62,7 +62,7 @@ SECTION .text
 
 ; v210_planar_pack_10(const uint16_t *y, const uint16_t *u, const uint16_t *v, uint8_t *dst, ptrdiff_t width)
 cglobal v210_planar_pack_10, 5, 5, 4+cpuflag(avx2), y, u, v, dst, width
-    lea     r0, [yq+2*widthq]
+    lea     yq, [yq+2*widthq]
     add     uq, widthq
     add     vq, widthq
     neg     widthq
