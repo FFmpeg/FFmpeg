@@ -4587,6 +4587,33 @@ Using >0 and <1 values will make less conservative gain adjustments, like
 when framelen option is set to smaller value, if framelen option value is
 compensated for non-zero overlap then gain adjustments will be smoother across time
 compared to zero overlap case.
+
+@item curve, v
+Specify the peak mapping curve expression which is going to be used when calculating
+gain applied to frames. The max output frame gain will still be limited by other
+options mentioned previously for this filter.
+
+The expression can contain the following constants:
+
+@table @option
+@item ch
+current channel number
+
+@item sn
+current sample number
+
+@item nb_channels
+number of channels
+
+@item t
+timestamp expressed in seconds
+
+@item sr
+sample rate
+
+@item p
+current frame peak value
+@end table
 @end table
 
 @subsection Commands

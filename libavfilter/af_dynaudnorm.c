@@ -28,6 +28,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/eval.h"
 #include "libavutil/opt.h"
 
 #define MIN_FILTER_SIZE 3
@@ -40,6 +41,26 @@
 #include "avfilter.h"
 #include "filters.h"
 #include "internal.h"
+
+static const char * const var_names[] = {
+    "ch",           ///< the value of the current channel
+    "sn",           ///< number of samples
+    "nb_channels",
+    "t",            ///< timestamp expressed in seconds
+    "sr",           ///< sample rate
+    "p",            ///< peak value
+    NULL
+};
+
+enum var_name {
+    VAR_CH,
+    VAR_SN,
+    VAR_NB_CHANNELS,
+    VAR_T,
+    VAR_SR,
+    VAR_P,
+    VAR_VARS_NB
+};
 
 typedef struct local_gain {
     double max_gain;
@@ -65,6 +86,7 @@ typedef struct DynamicAudioNormalizerContext {
     int channels_coupled;
     int alt_boundary_mode;
     double overlap;
+    char *expr_str;
 
     double peak_value;
     double max_amplification;
@@ -91,6 +113,9 @@ typedef struct DynamicAudioNormalizerContext {
     cqueue *is_enabled;
 
     AVFrame *window;
+
+    AVExpr *expr;
+    double var_values[VAR_VARS_NB];
 } DynamicAudioNormalizerContext;
 
 typedef struct ThreadData {
@@ -122,10 +147,12 @@ static const AVOption dynaudnorm_options[] = {
     { "s",           "set the compress factor",          OFFSET(compress_factor),   AV_OPT_TYPE_DOUBLE, {.dbl = 0.0},  0.0,  30.0, FLAGS },
     { "threshold",   "set the threshold value",          OFFSET(threshold),         AV_OPT_TYPE_DOUBLE, {.dbl = 0.0},  0.0,   1.0, FLAGS },
     { "t",           "set the threshold value",          OFFSET(threshold),         AV_OPT_TYPE_DOUBLE, {.dbl = 0.0},  0.0,   1.0, FLAGS },
-    { "channels",    "set channels to filter",           OFFSET(channels_to_filter),AV_OPT_TYPE_STRING, {.str="all"}, 0, 0, FLAGS },
-    { "h",           "set channels to filter",           OFFSET(channels_to_filter),AV_OPT_TYPE_STRING, {.str="all"}, 0, 0, FLAGS },
+    { "channels",    "set channels to filter",           OFFSET(channels_to_filter),AV_OPT_TYPE_STRING, {.str="all"},    0,     0, FLAGS },
+    { "h",           "set channels to filter",           OFFSET(channels_to_filter),AV_OPT_TYPE_STRING, {.str="all"},    0,     0, FLAGS },
     { "overlap",     "set the frame overlap",            OFFSET(overlap),           AV_OPT_TYPE_DOUBLE, {.dbl=.0},     0.0,   1.0, FLAGS },
     { "o",           "set the frame overlap",            OFFSET(overlap),           AV_OPT_TYPE_DOUBLE, {.dbl=.0},     0.0,   1.0, FLAGS },
+    { "curve",       "set the custom peak mapping curve",OFFSET(expr_str),          AV_OPT_TYPE_STRING, {.str=NULL},      .flags = FLAGS },
+    { "v",           "set the custom peak mapping curve",OFFSET(expr_str),          AV_OPT_TYPE_STRING, {.str=NULL},      .flags = FLAGS },
     { NULL }
 };
 
@@ -309,12 +336,15 @@ static av_cold void uninit(AVFilterContext *ctx)
     ff_bufqueue_discard_all(&s->queue);
 
     av_frame_free(&s->window);
+    av_expr_free(s->expr);
+    s->expr = NULL;
 }
 
 static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     DynamicAudioNormalizerContext *s = ctx->priv;
+    int ret = 0;
 
     uninit(ctx);
 
@@ -358,7 +388,13 @@ static int config_input(AVFilterLink *inlink)
         return AVERROR(ENOMEM);
     s->sample_advance = FFMAX(1, lrint(s->frame_len * (1. - s->overlap)));
 
-    return 0;
+    s->var_values[VAR_SR] = inlink->sample_rate;
+    s->var_values[VAR_NB_CHANNELS] = s->channels;
+
+    if (s->expr_str)
+        ret = av_expr_parse(&s->expr, s->expr_str, var_names, NULL, NULL,
+                            NULL, NULL, 0, ctx);
+    return ret;
 }
 
 static inline double fade(double prev, double next, int pos, int length)
@@ -433,10 +469,22 @@ static local_gain get_max_local_gain(DynamicAudioNormalizerContext *s, AVFrame *
     const double peak_magnitude = find_peak_magnitude(frame, channel);
     const double maximum_gain = s->peak_value / peak_magnitude;
     const double rms_gain = s->target_rms > DBL_EPSILON ? (s->target_rms / compute_frame_rms(frame, channel)) : DBL_MAX;
+    double target_gain = DBL_MAX;
     local_gain gain;
 
+    if (s->expr_str) {
+        double var_values[VAR_VARS_NB];
+
+        memcpy(var_values, s->var_values, sizeof(var_values));
+
+        var_values[VAR_CH] = channel;
+        var_values[VAR_P]  = peak_magnitude;
+
+        target_gain = av_expr_eval(s->expr, var_values, s) / peak_magnitude;
+    }
+
     gain.threshold = peak_magnitude > s->threshold;
-    gain.max_gain  = bound(s->max_amplification, fmin(maximum_gain, rms_gain));
+    gain.max_gain  = bound(s->max_amplification, fmin(target_gain, fmin(maximum_gain, rms_gain)));
 
     return gain;
 }
@@ -731,6 +779,9 @@ static int analyze_frame(AVFilterContext *ctx, AVFilterLink *outlink, AVFrame **
         analyze_frame = *frame;
     }
 
+    s->var_values[VAR_SN] = outlink->sample_count_in;
+    s->var_values[VAR_T] = s->var_values[VAR_SN] * (double)1/outlink->sample_rate;
+
     if (s->channels_coupled) {
         const local_gain gain = get_max_local_gain(s, analyze_frame, -1);
         for (int c = 0; c < s->channels; c++)
@@ -951,7 +1002,12 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
 
     s->frame_len = frame_size(inlink->sample_rate, s->frame_len_msec);
     s->sample_advance = FFMAX(1, lrint(s->frame_len * (1. - s->overlap)));
-
+    if (s->expr_str) {
+        ret = av_expr_parse(&s->expr, s->expr_str, var_names, NULL, NULL,
+                            NULL, NULL, 0, ctx);
+        if (ret < 0)
+            return ret;
+    }
     return 0;
 }
 
