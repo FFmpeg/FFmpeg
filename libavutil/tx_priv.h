@@ -124,7 +124,7 @@ typedef void TXComplex;
     } while (0)
 
 #define UNSCALE(x) ((double)(x)/2147483648.0)
-#define RESCALE(x) (av_clip64(lrintf((x) * 2147483648.0), INT32_MIN, INT32_MAX))
+#define RESCALE(x) (av_clip64(llrintf((x) * 2147483648.0), INT32_MIN, INT32_MAX))
 
 #define FOLD(x, y) ((int32_t)((x) + (unsigned)(y) + 32) >> 6)
 
