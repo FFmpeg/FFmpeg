@@ -10,13 +10,19 @@
 
 @contents
 
-@chapter Notes for external developers
+@chapter Introduction
 
-This document is mostly useful for internal FFmpeg developers.
-External developers who need to use the API in their application should
-refer to the API doxygen documentation in the public headers, and
-check the examples in @file{doc/examples} and in the source code to
-see how the public API is employed.
+This text is concerned with the development @emph{of} FFmpeg itself. Information
+on using the FFmpeg libraries in other programs can be found elsewhere, e.g. in:
+@itemize @bullet
+@item
+the installed header files
+@item
+@url{http://ffmpeg.org/doxygen/trunk/index.html, the Doxygen documentation}
+generated from the headers
+@item
+the examples under @file{doc/examples}
+@end itemize
 
 You can use the FFmpeg libraries in your commercial program, but you
 are encouraged to @emph{publish any patch you make}. In this case the
