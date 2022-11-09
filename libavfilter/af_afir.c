@@ -158,6 +158,7 @@ static int init_segment(AVFilterContext *ctx, AudioFIRSegment *seg,
                         int offset, int nb_partitions, int part_size)
 {
     AudioFIRContext *s = ctx->priv;
+    int ret;
 
     seg->tx  = av_calloc(ctx->inputs[0]->ch_layout.nb_channels, sizeof(*seg->tx));
     seg->itx = av_calloc(ctx->inputs[0]->ch_layout.nb_channels, sizeof(*seg->itx));
@@ -178,22 +179,29 @@ static int init_segment(AVFilterContext *ctx, AudioFIRSegment *seg,
         return AVERROR(ENOMEM);
 
     for (int ch = 0; ch < ctx->inputs[0]->ch_layout.nb_channels && part_size >= 8; ch++) {
-        double dscale = 1.0, idscale = 1.0 / part_size;
-        float fscale = 1.f, ifscale = 1.f / part_size;
+        union { double d; float f; } scale, iscale;
+        enum AVTXType tx_type;
 
         switch (s->format) {
         case AV_SAMPLE_FMT_FLTP:
-            av_tx_init(&seg->tx[ch],  &seg->tx_fn,  AV_TX_FLOAT_RDFT, 0, 2 * part_size, &fscale,  0);
-            av_tx_init(&seg->itx[ch], &seg->itx_fn, AV_TX_FLOAT_RDFT, 1, 2 * part_size, &ifscale, 0);
+            scale.f  = 1.f;
+            iscale.f = 1.f / part_size;
+            tx_type  = AV_TX_FLOAT_RDFT;
             break;
         case AV_SAMPLE_FMT_DBLP:
-            av_tx_init(&seg->tx[ch],  &seg->tx_fn,  AV_TX_DOUBLE_RDFT, 0, 2 * part_size, &dscale,  0);
-            av_tx_init(&seg->itx[ch], &seg->itx_fn, AV_TX_DOUBLE_RDFT, 1, 2 * part_size, &idscale, 0);
+            scale.d  = 1.0;
+            iscale.d = 1.0 / part_size;
+            tx_type  = AV_TX_DOUBLE_RDFT;
             break;
         }
-
-        if (!seg->tx[ch] || !seg->itx[ch])
-            return AVERROR(ENOMEM);
+        ret = av_tx_init(&seg->tx[ch],  &seg->tx_fn,  tx_type,
+                         0, 2 * part_size, &scale,  0);
+        if (ret < 0)
+            return ret;
+        ret = av_tx_init(&seg->itx[ch], &seg->itx_fn, tx_type,
+                         1, 2 * part_size, &iscale, 0);
+        if (ret < 0)
+            return ret;
     }
 
     seg->sumin  = ff_get_audio_buffer(ctx->inputs[0], seg->fft_length);
