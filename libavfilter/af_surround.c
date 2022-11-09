@@ -194,7 +194,7 @@ static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     AudioSurroundContext *s = ctx->priv;
-    int ch;
+    int ch, ret;
 
     s->rdft = av_calloc(inlink->ch_layout.nb_channels, sizeof(*s->rdft));
     if (!s->rdft)
@@ -204,9 +204,10 @@ static int config_input(AVFilterLink *inlink)
     for (ch = 0; ch < inlink->ch_layout.nb_channels; ch++) {
         float scale = 1.f;
 
-        av_tx_init(&s->rdft[ch], &s->tx_fn, AV_TX_FLOAT_RDFT, 0, s->buf_size, &scale, 0);
-        if (!s->rdft[ch])
-            return AVERROR(ENOMEM);
+        ret = av_tx_init(&s->rdft[ch], &s->tx_fn, AV_TX_FLOAT_RDFT,
+                         0, s->buf_size, &scale, 0);
+        if (ret < 0)
+            return ret;
     }
     s->input_levels = av_malloc_array(s->nb_in_channels, sizeof(*s->input_levels));
     if (!s->input_levels)
@@ -263,7 +264,7 @@ static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     AudioSurroundContext *s = ctx->priv;
-    int ch;
+    int ch, ret;
 
     s->irdft = av_calloc(outlink->ch_layout.nb_channels, sizeof(*s->irdft));
     if (!s->irdft)
@@ -273,9 +274,10 @@ static int config_output(AVFilterLink *outlink)
     for (ch = 0; ch < outlink->ch_layout.nb_channels; ch++) {
         float iscale = 1.f;
 
-        av_tx_init(&s->irdft[ch], &s->itx_fn, AV_TX_FLOAT_RDFT, 1, s->buf_size, &iscale, 0);
-        if (!s->irdft[ch])
-            return AVERROR(ENOMEM);
+        ret = av_tx_init(&s->irdft[ch], &s->itx_fn, AV_TX_FLOAT_RDFT,
+                         1, s->buf_size, &iscale, 0);
+        if (ret < 0)
+            return ret;
     }
     s->output_levels = av_malloc_array(s->nb_out_channels, sizeof(*s->output_levels));
     if (!s->output_levels)
