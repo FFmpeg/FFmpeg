@@ -44,7 +44,7 @@ For more detailed legal information about the use of FFmpeg in
 external programs read the @file{LICENSE} file in the source tree and
 consult @url{https://ffmpeg.org/legal.html}.
 
-@chapter Contributing
+@section Contributing code
 
 There are 2 ways by which code gets into FFmpeg:
 @itemize @bullet
