@@ -46,15 +46,10 @@ consult @url{https://ffmpeg.org/legal.html}.
 
 @section Contributing code
 
-There are 2 ways by which code gets into FFmpeg:
-@itemize @bullet
-@item Submitting patches to the ffmpeg-devel mailing list.
-      See @ref{Submitting patches} for details.
-@item Directly committing changes to the main tree.
-@end itemize
-
-Whichever way, changes should be reviewed by the maintainer of the code
-before they are committed. And they should follow the @ref{Coding Rules}.
+All proposed code changes should be submitted for review to
+@url{mailto:ffmpeg-devel@@ffmpeg.org, the development mailing list}, as
+described in more detail in the @ref{Submitting patches} chapter. The code
+should comply with the @ref{Development Policy} and follow the @ref{Coding Rules}.
 The developer making the commit and the author are responsible for their changes
 and should try to fix issues their commit causes.
 
@@ -267,6 +262,7 @@ For Emacs, add these roughly equivalent lines to your @file{.emacs.d/init.el}:
 (setq c-default-style "ffmpeg")
 @end lisp
 
+@anchor{Development Policy}
 @chapter Development Policy
 
 @section Patches/Committing
