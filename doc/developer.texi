@@ -24,11 +24,21 @@ generated from the headers
 the examples under @file{doc/examples}
 @end itemize
 
-You can use the FFmpeg libraries in your commercial program, but you
-are encouraged to @emph{publish any patch you make}. In this case the
-best way to proceed is to send your patches to the ffmpeg-devel
-mailing list following the guidelines illustrated in the remainder of
-this document.
+If you modify FFmpeg code for your own use case, you are highly encouraged to
+@emph{submit your changes back to us}, using this document as a guide. There are
+both pragmatic and ideological reasons to do so:
+@itemize @bullet
+@item
+Maintaining external changes to keep up with upstream development is
+time-consuming and error-prone. With your code in the main tree, it will be
+maintained by FFmpeg developers.
+@item
+FFmpeg developers include leading experts in the field who can find bugs or
+design flaws in your code.
+@item
+By supporting the project you find useful you ensure it continues to be
+maintained and developed.
+@end itemize
 
 For more detailed legal information about the use of FFmpeg in
 external programs read the @file{LICENSE} file in the source tree and
