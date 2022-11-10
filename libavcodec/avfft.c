@@ -32,6 +32,8 @@ typedef struct AVTXWrapper {
     av_tx_fn fn2;
 
     ptrdiff_t stride;
+    int len;
+    int inv;
 } AVTXWrapper;
 
 /* FFT */
@@ -129,32 +131,53 @@ av_cold void av_mdct_end(FFTContext *s)
     }
 }
 
-#if CONFIG_RDFT
-
 RDFTContext *av_rdft_init(int nbits, enum RDFTransformType trans)
 {
-    RDFTContext *s = av_malloc(sizeof(*s));
+    int ret;
+    float scale = trans == IDFT_C2R ? 0.5f : 1.0f;
+    AVTXWrapper *s;
 
-    if (s && ff_rdft_init(s, nbits, trans))
-        av_freep(&s);
+    /* The other 2 modes are unconventional, do not form an orthogonal
+     * transform, have never been useful, and so they're not implemented. */
+    if (trans != IDFT_C2R && trans != DFT_R2C)
+        return NULL;
 
-    return s;
+    s = av_malloc(sizeof(*s));
+    if (!s)
+        return NULL;
+
+    ret = av_tx_init(&s->ctx, &s->fn, AV_TX_FLOAT_RDFT, trans == IDFT_C2R,
+                     1 << nbits, &scale, AV_TX_INPLACE);
+    if (ret < 0) {
+        av_free(s);
+        return NULL;
+    }
+
+    s->stride = (trans == DFT_C2R) ? sizeof(float) : sizeof(AVComplexFloat);
+    s->len = 1 << nbits;
+    s->inv = trans == IDFT_C2R;
+
+    return (RDFTContext *)s;
 }
 
 void av_rdft_calc(RDFTContext *s, FFTSample *data)
 {
-    s->rdft_calc(s, data);
+    AVTXWrapper *w = (AVTXWrapper *)s;
+    if (w->inv)
+        FFSWAP(float, data[1], data[w->len]);
+    w->fn(w->ctx, data, (void *)data, w->stride);
+    if (!w->inv)
+        FFSWAP(float, data[1], data[w->len]);
 }
 
 av_cold void av_rdft_end(RDFTContext *s)
 {
     if (s) {
-        ff_rdft_end(s);
-        av_free(s);
+        AVTXWrapper *w = (AVTXWrapper *)s;
+        av_tx_uninit(&w->ctx);
+        av_free(w);
     }
 }
-
-#endif /* CONFIG_RDFT */
 
 #if CONFIG_DCT
 
