@@ -75,42 +75,59 @@ av_cold void av_fft_end(FFTContext *s)
     }
 }
 
-#if CONFIG_MDCT
-
 FFTContext *av_mdct_init(int nbits, int inverse, double scale)
 {
-    FFTContext *s = av_malloc(sizeof(*s));
+    int ret;
+    float scale_f = scale;
+    AVTXWrapper *s = av_malloc(sizeof(*s));
+    if (!s)
+        return NULL;
 
-    if (s && ff_mdct_init(s, nbits, inverse, scale))
-        av_freep(&s);
+    ret = av_tx_init(&s->ctx, &s->fn, AV_TX_FLOAT_MDCT, inverse, 1 << (nbits - 1), &scale_f, 0);
+    if (ret < 0) {
+        av_free(s);
+        return NULL;
+    }
 
-    return s;
+    if (inverse) {
+        ret = av_tx_init(&s->ctx2, &s->fn2, AV_TX_FLOAT_MDCT, inverse, 1 << (nbits - 1),
+                         &scale_f, AV_TX_FULL_IMDCT);
+        if (ret < 0) {
+            av_tx_uninit(&s->ctx);
+            av_free(s);
+            return NULL;
+        }
+    }
+
+    return (FFTContext *)s;
 }
 
 void av_imdct_calc(FFTContext *s, FFTSample *output, const FFTSample *input)
 {
-    s->imdct_calc(s, output, input);
+    AVTXWrapper *w = (AVTXWrapper *)s;
+    w->fn2(w->ctx2, output, (void *)input, sizeof(float));
 }
 
 void av_imdct_half(FFTContext *s, FFTSample *output, const FFTSample *input)
 {
-    s->imdct_half(s, output, input);
+    AVTXWrapper *w = (AVTXWrapper *)s;
+    w->fn(w->ctx, output, (void *)input, sizeof(float));
 }
 
 void av_mdct_calc(FFTContext *s, FFTSample *output, const FFTSample *input)
 {
-    s->mdct_calc(s, output, input);
+    AVTXWrapper *w = (AVTXWrapper *)s;
+    w->fn(w->ctx, output, (void *)input, sizeof(float));
 }
 
 av_cold void av_mdct_end(FFTContext *s)
 {
     if (s) {
-        ff_mdct_end(s);
-        av_free(s);
+        AVTXWrapper *w = (AVTXWrapper *)s;
+        av_tx_uninit(&w->ctx);
+        av_free(w);
     }
 }
-
-#endif /* CONFIG_MDCT */
 
 #if CONFIG_RDFT
 
