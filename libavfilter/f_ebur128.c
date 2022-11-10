@@ -164,6 +164,7 @@ static const AVOption ebur128_options[] = {
     { "size",  "set video size",   OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str = "640x480"}, 0, 0, V|F },
     { "meter", "set scale meter (+9 to +18)",  OFFSET(meter), AV_OPT_TYPE_INT, {.i64 = 9}, 9, 18, V|F },
     { "framelog", "force frame logging level", OFFSET(loglevel), AV_OPT_TYPE_INT, {.i64 = -1},   INT_MIN, INT_MAX, A|V|F, "level" },
+        { "quiet",   "logging disabled",          0, AV_OPT_TYPE_CONST, {.i64 = AV_LOG_QUIET},   INT_MIN, INT_MAX, A|V|F, "level" },
         { "info",    "information logging level", 0, AV_OPT_TYPE_CONST, {.i64 = AV_LOG_INFO},    INT_MIN, INT_MAX, A|V|F, "level" },
         { "verbose", "verbose logging level",     0, AV_OPT_TYPE_CONST, {.i64 = AV_LOG_VERBOSE}, INT_MIN, INT_MAX, A|V|F, "level" },
     { "metadata", "inject metadata in the filtergraph", OFFSET(metadata), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, A|V|F },
@@ -535,6 +536,7 @@ static av_cold int init(AVFilterContext *ctx)
     int ret;
 
     if (ebur128->loglevel != AV_LOG_INFO &&
+        ebur128->loglevel != AV_LOG_QUIET &&
         ebur128->loglevel != AV_LOG_VERBOSE) {
         if (ebur128->do_video || ebur128->metadata)
             ebur128->loglevel = AV_LOG_VERBOSE;
@@ -898,6 +900,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                 SET_META_PEAK(true,   TRUE);
             }
 
+            if (ebur128->loglevel != AV_LOG_QUIET) {
             if (ebur128->scale == SCALE_TYPE_ABSOLUTE) {
                 av_log(ctx, ebur128->loglevel, "t: %-10s " LOG_FMT,
                        av_ts2timestr(pts, &outlink->time_base),
@@ -923,7 +926,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             PRINT_PEAKS("FTPK", ebur128->true_peaks_per_frame, TRUE);
             PRINT_PEAKS("TPK", ebur128->true_peaks,   TRUE);
             av_log(ctx, ebur128->loglevel, "\n");
-
+            }
         }
     }
 

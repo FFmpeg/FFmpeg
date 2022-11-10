@@ -27979,6 +27979,8 @@ Force the frame logging level.
 
 Available values are:
 @table @samp
+@item quiet
+logging disabled
 @item info
 information logging level
 @item verbose
