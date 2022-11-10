@@ -46,6 +46,9 @@ typedef struct ThumbContext {
     struct thumb_frame *frames; ///< the n_frames frames
     AVRational tb;              ///< copy of the input timebase to ease access
 
+    int nb_threads;
+    int *thread_histogram;
+
     int planewidth[4];
     int planeheight[4];
 } ThumbContext;
@@ -132,24 +135,24 @@ static AVFrame *get_best_frame(AVFilterContext *ctx)
     return picref;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
+static int do_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    int i, j;
-    AVFilterContext *ctx  = inlink->dst;
-    ThumbContext *s   = ctx->priv;
-    AVFilterLink *outlink = ctx->outputs[0];
-    int *hist = s->frames[s->n].histogram;
-    const uint8_t *p = frame->data[0];
+    ThumbContext *s = ctx->priv;
+    AVFrame *frame = arg;
+    int *hist = s->thread_histogram + HIST_SIZE * jobnr;
+    const int h = frame->height;
+    const int w = frame->width;
+    const int slice_start = (h * jobnr) / nb_jobs;
+    const int slice_end = (h * (jobnr+1)) / nb_jobs;
+    const uint8_t *p = frame->data[0] + slice_start * frame->linesize[0];
 
-    // keep a reference of each frame
-    s->frames[s->n].buf = frame;
+    memset(hist, 0, sizeof(*hist) * HIST_SIZE);
 
-    // update current frame histogram
-    switch (inlink->format) {
+    switch (frame->format) {
     case AV_PIX_FMT_RGB24:
     case AV_PIX_FMT_BGR24:
-        for (j = 0; j < inlink->h; j++) {
-            for (i = 0; i < inlink->w; i++) {
+        for (int j = slice_start; j < slice_end; j++) {
+            for (int i = 0; i < w; i++) {
                 hist[0*256 + p[i*3    ]]++;
                 hist[1*256 + p[i*3 + 1]]++;
                 hist[2*256 + p[i*3 + 2]]++;
@@ -161,8 +164,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     case AV_PIX_FMT_BGR0:
     case AV_PIX_FMT_RGBA:
     case AV_PIX_FMT_BGRA:
-        for (j = 0; j < inlink->h; j++) {
-            for (i = 0; i < inlink->w; i++) {
+        for (int j = slice_start; j < slice_end; j++) {
+            for (int i = 0; i < w; i++) {
                 hist[0*256 + p[i*4    ]]++;
                 hist[1*256 + p[i*4 + 1]]++;
                 hist[2*256 + p[i*4 + 2]]++;
@@ -174,8 +177,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     case AV_PIX_FMT_0BGR:
     case AV_PIX_FMT_ARGB:
     case AV_PIX_FMT_ABGR:
-        for (j = 0; j < inlink->h; j++) {
-            for (i = 0; i < inlink->w; i++) {
+        for (int j = slice_start; j < slice_end; j++) {
+            for (int i = 0; i < w; i++) {
                 hist[0*256 + p[i*4 + 1]]++;
                 hist[1*256 + p[i*4 + 2]]++;
                 hist[2*256 + p[i*4 + 3]]++;
@@ -185,14 +188,41 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         break;
     default:
         for (int plane = 0; plane < 3; plane++) {
-            const uint8_t *p = frame->data[plane];
-            for (j = 0; j < s->planeheight[plane]; j++) {
-                for (i = 0; i < s->planewidth[plane]; i++)
+            const int slice_start = (s->planeheight[plane] * jobnr) / nb_jobs;
+            const int slice_end = (s->planeheight[plane] * (jobnr+1)) / nb_jobs;
+            const uint8_t *p = frame->data[plane] + slice_start * frame->linesize[plane];
+
+            for (int j = slice_start; j < slice_end; j++) {
+                for (int i = 0; i < s->planewidth[plane]; i++)
                     hist[256*plane + p[i]]++;
                 p += frame->linesize[plane];
             }
         }
         break;
+    }
+
+    return 0;
+}
+
+static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
+{
+    AVFilterContext *ctx  = inlink->dst;
+    ThumbContext *s   = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
+    int *hist = s->frames[s->n].histogram;
+
+    // keep a reference of each frame
+    s->frames[s->n].buf = frame;
+
+    ff_filter_execute(ctx, do_slice, frame, NULL,
+                      FFMIN(frame->height, s->nb_threads));
+
+    // update current frame histogram
+    for (int j = 0; j < FFMIN(frame->height, s->nb_threads); j++) {
+        int *thread_histogram = s->thread_histogram + HIST_SIZE * j;
+
+        for (int i = 0; i < HIST_SIZE; i++)
+            hist[i] += thread_histogram[i];
     }
 
     // no selection until the buffer of N frames is filled up
@@ -210,6 +240,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     for (i = 0; i < s->n_frames && s->frames && s->frames[i].buf; i++)
         av_frame_free(&s->frames[i].buf);
     av_freep(&s->frames);
+    av_freep(&s->thread_histogram);
 }
 
 static int request_frame(AVFilterLink *link)
@@ -234,6 +265,11 @@ static int config_props(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     ThumbContext *s = ctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+
+    s->nb_threads = ff_filter_get_nb_threads(ctx);
+    s->thread_histogram = av_calloc(HIST_SIZE, s->nb_threads * sizeof(*s->thread_histogram));
+    if (!s->thread_histogram)
+        return AVERROR(ENOMEM);
 
     s->tb = inlink->time_base;
     s->planewidth[1]  = s->planewidth[2]  = AV_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
@@ -288,5 +324,6 @@ const AVFilter ff_vf_thumbnail = {
     FILTER_OUTPUTS(thumbnail_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
     .priv_class    = &thumbnail_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
+                     AVFILTER_FLAG_SLICE_THREADS,
 };
