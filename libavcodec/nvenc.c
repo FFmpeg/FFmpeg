@@ -34,6 +34,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/mathematics.h"
 #include "atsc_a53.h"
 #include "encode.h"
 #include "internal.h"
@@ -1453,6 +1454,25 @@ static void compute_dar(AVCodecContext *avctx, int *dw, int *dh) {
 
     sw = avctx->width;
     sh = avctx->height;
+
+#if CONFIG_AV1_NVENC_ENCODER
+    if (avctx->codec->id == AV_CODEC_ID_AV1) {
+        /* For AV1 we actually need to calculate the render width/height, not the dar */
+        if (avctx->sample_aspect_ratio.num > 0 && avctx->sample_aspect_ratio.den > 0
+            && avctx->sample_aspect_ratio.num != avctx->sample_aspect_ratio.den)
+        {
+            if (avctx->sample_aspect_ratio.num > avctx->sample_aspect_ratio.den) {
+                sw = av_rescale(sw, avctx->sample_aspect_ratio.num, avctx->sample_aspect_ratio.den);
+            } else {
+                sh = av_rescale(sh, avctx->sample_aspect_ratio.den, avctx->sample_aspect_ratio.num);
+            }
+        }
+
+        *dw = sw;
+        *dh = sh;
+        return;
+    }
+#endif
 
     if (avctx->sample_aspect_ratio.num > 0 && avctx->sample_aspect_ratio.den > 0) {
         sw *= avctx->sample_aspect_ratio.num;
