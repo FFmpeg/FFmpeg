@@ -1375,8 +1375,8 @@ static av_cold int nvenc_setup_av1_config(AVCodecContext *avctx)
     }
 
     if (IS_YUV444(ctx->data_pix_fmt)) {
-        cc->profileGUID = NV_ENC_AV1_PROFILE_HIGH_GUID;
-        avctx->profile  = FF_PROFILE_AV1_HIGH;
+        av_log(avctx, AV_LOG_ERROR, "AV1 High Profile not supported, required for 4:4:4 encoding\n");
+        return AVERROR(ENOTSUP);
     } else {
         cc->profileGUID = NV_ENC_AV1_PROFILE_MAIN_GUID;
         avctx->profile  = FF_PROFILE_AV1_MAIN;
