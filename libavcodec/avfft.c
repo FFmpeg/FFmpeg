@@ -18,38 +18,60 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/mem.h"
+#include "libavutil/tx.h"
 #include "avfft.h"
 #include "fft.h"
 #include "rdft.h"
 #include "dct.h"
 
+typedef struct AVTXWrapper {
+    AVTXContext *ctx;
+    av_tx_fn fn;
+
+    AVTXContext *ctx2;
+    av_tx_fn fn2;
+
+    ptrdiff_t stride;
+} AVTXWrapper;
+
 /* FFT */
 
 FFTContext *av_fft_init(int nbits, int inverse)
 {
-    FFTContext *s = av_mallocz(sizeof(*s));
+    int ret;
+    float scale = 1.0f;
+    AVTXWrapper *s = av_malloc(sizeof(*s));
+    if (!s)
+        return NULL;
 
-    if (s && ff_fft_init(s, nbits, inverse))
-        av_freep(&s);
+    ret = av_tx_init(&s->ctx, &s->fn, AV_TX_FLOAT_FFT, inverse, 1 << nbits,
+                     &scale, AV_TX_INPLACE);
+    if (ret < 0) {
+        av_free(s);
+        return NULL;
+    }
 
-    return s;
+    return (FFTContext *)s;
 }
 
 void av_fft_permute(FFTContext *s, FFTComplex *z)
 {
-    s->fft_permute(s, z);
+    /* Empty */
 }
 
 void av_fft_calc(FFTContext *s, FFTComplex *z)
 {
-    s->fft_calc(s, z);
+    AVTXWrapper *w = (AVTXWrapper *)s;
+    w->fn(w->ctx, z, (void *)z, sizeof(AVComplexFloat));
 }
 
 av_cold void av_fft_end(FFTContext *s)
 {
     if (s) {
-        ff_fft_end(s);
-        av_free(s);
+        AVTXWrapper *w = (AVTXWrapper *)s;
+        av_tx_uninit(&w->ctx);
+        av_tx_uninit(&w->ctx2);
+        av_free(w);
     }
 }
 
