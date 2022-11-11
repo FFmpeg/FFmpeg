@@ -45,14 +45,19 @@ typedef struct VPCC {
  *
  * @param s address of the AVFormatContext for the logging context.
  * @param pb address of the AVIOContext where the vpcC shall be written.
+ * @param data address of a data array which contains coded bitstream data from
+ *             which codec information can be extracted. May be NULL.
+ * @param len length of the data array.
  * @param par address of the AVCodecParameters which contains codec information.
  * @return >=0 in case of success, a negative value corresponding to an AVERROR
  *         code in case of failure
  */
 int ff_isom_write_vpcc(AVFormatContext *s, AVIOContext *pb,
+                       const uint8_t *data, int len,
                        AVCodecParameters *par);
 
 int ff_isom_get_vpcc_features(AVFormatContext *s, AVCodecParameters *par,
+                              const uint8_t *data, int len,
                               AVRational *frame_rate, VPCC *vpcc);
 
 #endif /* AVFORMAT_VPCC_H */

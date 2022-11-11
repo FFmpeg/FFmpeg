@@ -22,7 +22,10 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/pixfmt.h"
 #include "libavcodec/avcodec.h"
+#include "libavcodec/get_bits.h"
 #include "vpcc.h"
+
+#define VP9_SYNCCODE 0x498342
 
 enum VPX_CHROMA_SUBSAMPLING
 {
@@ -114,7 +117,41 @@ static int get_vp9_level(AVCodecParameters *par, AVRational *frame_rate) {
     }
 }
 
+static void parse_bitstream(GetBitContext *gb, int *profile, int *bit_depth) {
+    int keyframe, invisible;
+
+    if (get_bits(gb, 2) != 0x2) // frame marker
+        return;
+    *profile  = get_bits1(gb);
+    *profile |= get_bits1(gb) << 1;
+    if (*profile == 3)
+        *profile += get_bits1(gb);
+
+    if (get_bits1(gb))
+        return;
+
+    keyframe = !get_bits1(gb);
+    invisible = !get_bits1(gb);
+    get_bits1(gb);
+
+    if (keyframe) {
+        if (get_bits(gb, 24) != VP9_SYNCCODE)
+            return;
+    } else {
+        int intraonly = invisible ? get_bits1(gb) : 0;
+        if (!intraonly || get_bits(gb, 24) != VP9_SYNCCODE)
+            return;
+        if (*profile < 1) {
+            *bit_depth = 8;
+            return;
+        }
+    }
+
+    *bit_depth = *profile <= 1 ? 8 : 10 + get_bits1(gb) * 2;
+}
+
 int ff_isom_get_vpcc_features(AVFormatContext *s, AVCodecParameters *par,
+                              const uint8_t *data, int len,
                               AVRational *frame_rate, VPCC *vpcc)
 {
     int profile = par->profile;
@@ -129,7 +166,17 @@ int ff_isom_get_vpcc_features(AVFormatContext *s, AVCodecParameters *par,
     if (bit_depth < 0 || vpx_chroma_subsampling < 0)
         return AVERROR_INVALIDDATA;
 
-    if (profile == FF_PROFILE_UNKNOWN) {
+    if (len && (profile == FF_PROFILE_UNKNOWN || !bit_depth)) {
+        GetBitContext gb;
+
+        int ret = init_get_bits8(&gb, data, len);
+        if (ret < 0)
+            return ret;
+
+        parse_bitstream(&gb, &profile, &bit_depth);
+    }
+
+    if (profile == FF_PROFILE_UNKNOWN && bit_depth) {
         if (vpx_chroma_subsampling == VPX_SUBSAMPLING_420_VERTICAL ||
             vpx_chroma_subsampling == VPX_SUBSAMPLING_420_COLLOCATED_WITH_LUMA) {
             profile = (bit_depth == 8) ? FF_PROFILE_VP9_0 : FF_PROFILE_VP9_2;
@@ -137,6 +184,9 @@ int ff_isom_get_vpcc_features(AVFormatContext *s, AVCodecParameters *par,
             profile = (bit_depth == 8) ? FF_PROFILE_VP9_1 : FF_PROFILE_VP9_3;
         }
     }
+
+    if (profile == FF_PROFILE_UNKNOWN || !bit_depth)
+        av_log(s, AV_LOG_WARNING, "VP9 profile and/or bit depth not set or could not be derived\n");
 
     vpcc->profile            = profile;
     vpcc->level              = level;
@@ -148,12 +198,13 @@ int ff_isom_get_vpcc_features(AVFormatContext *s, AVCodecParameters *par,
 }
 
 int ff_isom_write_vpcc(AVFormatContext *s, AVIOContext *pb,
+                       const uint8_t *data, int len,
                        AVCodecParameters *par)
 {
     VPCC vpcc;
     int ret;
 
-    ret = ff_isom_get_vpcc_features(s, par, NULL, &vpcc);
+    ret = ff_isom_get_vpcc_features(s, par, data, len, NULL, &vpcc);
     if (ret < 0)
         return ret;
 
