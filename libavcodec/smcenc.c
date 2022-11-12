@@ -61,6 +61,7 @@ typedef struct SMCContext {
         { \
             row_ptr += stride * 4; \
             pixel_ptr = row_ptr; \
+            cur_y += 4; \
         } \
     } \
 }
@@ -117,6 +118,7 @@ static void smc_encode_stream(SMCContext *s, const AVFrame *frame,
     const uint8_t *prev_pixels = (const uint8_t *)s->prev_frame->data[0];
     uint8_t *distinct_values = s->distinct_values;
     const uint8_t *pixel_ptr, *row_ptr;
+    const int height = frame->height;
     const int width = frame->width;
     uint8_t block_values[16];
     int block_counter = 0;
@@ -125,13 +127,14 @@ static void smc_encode_stream(SMCContext *s, const AVFrame *frame,
     int color_octet_index = 0;
     int color_table_index;  /* indexes to color pair, quad, or octet tables */
     int total_blocks;
+    int cur_y = 0;
 
     memset(s->color_pairs, 0, sizeof(s->color_pairs));
     memset(s->color_quads, 0, sizeof(s->color_quads));
     memset(s->color_octets, 0, sizeof(s->color_octets));
 
     /* Number of 4x4 blocks in frame. */
-    total_blocks = ((frame->width + 3) / 4) * ((frame->height + 3) / 4);
+    total_blocks = ((width + 3) / 4) * ((height + 3) / 4);
 
     pixel_ptr = row_ptr = src_pixels;
 
@@ -145,11 +148,13 @@ static void smc_encode_stream(SMCContext *s, const AVFrame *frame,
         int cache_index;
         int distinct = 0;
         int blocks = 0;
+        int frame_y = cur_y;
 
         while (prev_pixels && s->key_frame == 0 && block_counter + inter_skip_blocks < total_blocks) {
+            const int y_size = FFMIN(4, height - cur_y);
             int compare = 0;
 
-            for (int y = 0; y < 4; y++) {
+            for (int y = 0; y < y_size; y++) {
                 const ptrdiff_t offset = pixel_ptr - src_pixels;
                 const uint8_t *prev_pixel_ptr = prev_pixels + offset;
 
@@ -170,8 +175,10 @@ static void smc_encode_stream(SMCContext *s, const AVFrame *frame,
 
         pixel_ptr = xpixel_ptr;
         row_ptr = xrow_ptr;
+        cur_y = frame_y;
 
         while (block_counter > 0 && block_counter + intra_skip_blocks < total_blocks) {
+            const int y_size = FFMIN(4, height - cur_y);
             const ptrdiff_t offset = pixel_ptr - src_pixels;
             const int sy = offset / stride;
             const int sx = offset % stride;
@@ -180,7 +187,7 @@ static void smc_encode_stream(SMCContext *s, const AVFrame *frame,
             const uint8_t *old_pixel_ptr = src_pixels + nx + ny * stride;
             int compare = 0;
 
-            for (int y = 0; y < 4; y++) {
+            for (int y = 0; y < y_size; y++) {
                 compare |= memcmp(old_pixel_ptr + y * stride, pixel_ptr + y * stride, 4);
                 if (compare)
                     break;
@@ -197,9 +204,11 @@ static void smc_encode_stream(SMCContext *s, const AVFrame *frame,
 
         pixel_ptr = xpixel_ptr;
         row_ptr = xrow_ptr;
+        cur_y = frame_y;
 
         while (block_counter + coded_blocks < total_blocks && coded_blocks < 256) {
-            for (int y = 0; y < 4; y++)
+            const int y_size = FFMIN(4, height - cur_y);
+            for (int y = 0; y < y_size; y++)
                 memcpy(block_values + y * 4, pixel_ptr + y * stride, 4);
 
             qsort(block_values, 16, sizeof(block_values[0]), smc_cmp_values);
@@ -224,6 +233,7 @@ static void smc_encode_stream(SMCContext *s, const AVFrame *frame,
 
         pixel_ptr = xpixel_ptr;
         row_ptr = xrow_ptr;
+        cur_y = frame_y;
 
         blocks = coded_blocks;
         distinct = coded_distinct;
