@@ -23,7 +23,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/eval.h"
 #include "libavutil/avassert.h"
-#include "libavcodec/avfft.h"
+#include "libavutil/tx.h"
 #include "avfilter.h"
 #include "internal.h"
 #include "audio.h"
@@ -67,22 +67,33 @@ typedef struct OverlapIndex {
 typedef struct FIREqualizerContext {
     const AVClass *class;
 
-    RDFTContext   *analysis_rdft;
-    RDFTContext   *analysis_irdft;
-    RDFTContext   *rdft;
-    RDFTContext   *irdft;
-    FFTContext    *fft_ctx;
-    RDFTContext   *cepstrum_rdft;
-    RDFTContext   *cepstrum_irdft;
+    AVTXContext   *analysis_rdft;
+    av_tx_fn      analysis_rdft_fn;
+    AVTXContext   *analysis_irdft;
+    av_tx_fn      analysis_irdft_fn;
+    AVTXContext   *rdft;
+    av_tx_fn      rdft_fn;
+    AVTXContext   *irdft;
+    av_tx_fn      irdft_fn;
+    AVTXContext   *fft_ctx;
+    av_tx_fn      fft_fn;
+    AVTXContext   *cepstrum_rdft;
+    av_tx_fn      cepstrum_rdft_fn;
+    AVTXContext   *cepstrum_irdft;
+    av_tx_fn      cepstrum_irdft_fn;
     int           analysis_rdft_len;
     int           rdft_len;
     int           cepstrum_len;
 
     float         *analysis_buf;
+    float         *analysis_tbuf;
     float         *dump_buf;
     float         *kernel_tmp_buf;
+    float         *kernel_tmp_tbuf;
     float         *kernel_buf;
+    float         *tx_buf;
     float         *cepstrum_buf;
+    float         *cepstrum_tbuf;
     float         *conv_buf;
     OverlapIndex  *conv_idx;
     int           fir_len;
@@ -151,23 +162,27 @@ AVFILTER_DEFINE_CLASS(firequalizer);
 
 static void common_uninit(FIREqualizerContext *s)
 {
-    av_rdft_end(s->analysis_rdft);
-    av_rdft_end(s->analysis_irdft);
-    av_rdft_end(s->rdft);
-    av_rdft_end(s->irdft);
-    av_fft_end(s->fft_ctx);
-    av_rdft_end(s->cepstrum_rdft);
-    av_rdft_end(s->cepstrum_irdft);
+    av_tx_uninit(&s->analysis_rdft);
+    av_tx_uninit(&s->analysis_irdft);
+    av_tx_uninit(&s->rdft);
+    av_tx_uninit(&s->irdft);
+    av_tx_uninit(&s->fft_ctx);
+    av_tx_uninit(&s->cepstrum_rdft);
+    av_tx_uninit(&s->cepstrum_irdft);
     s->analysis_rdft = s->analysis_irdft = s->rdft = s->irdft = NULL;
     s->fft_ctx = NULL;
     s->cepstrum_rdft = NULL;
     s->cepstrum_irdft = NULL;
 
     av_freep(&s->analysis_buf);
+    av_freep(&s->analysis_tbuf);
     av_freep(&s->dump_buf);
     av_freep(&s->kernel_tmp_buf);
+    av_freep(&s->kernel_tmp_tbuf);
     av_freep(&s->kernel_buf);
+    av_freep(&s->tx_buf);
     av_freep(&s->cepstrum_buf);
+    av_freep(&s->cepstrum_tbuf);
     av_freep(&s->conv_buf);
     av_freep(&s->conv_idx);
 }
@@ -187,22 +202,21 @@ static void fast_convolute(FIREqualizerContext *av_restrict s, const float *av_r
     if (nsamples <= s->nsamples_max) {
         float *buf = conv_buf + idx->buf_idx * s->rdft_len;
         float *obuf = conv_buf + !idx->buf_idx * s->rdft_len + idx->overlap_idx;
+        float *tbuf = s->tx_buf;
         int center = s->fir_len/2;
         int k;
 
         memset(buf, 0, center * sizeof(*data));
         memcpy(buf + center, data, nsamples * sizeof(*data));
         memset(buf + center + nsamples, 0, (s->rdft_len - nsamples - center) * sizeof(*data));
-        av_rdft_calc(s->rdft, buf);
+        s->rdft_fn(s->rdft, tbuf, buf, sizeof(float));
 
-        buf[0] *= kernel_buf[0];
-        buf[1] *= kernel_buf[s->rdft_len/2];
-        for (k = 1; k < s->rdft_len/2; k++) {
-            buf[2*k] *= kernel_buf[k];
-            buf[2*k+1] *= kernel_buf[k];
+        for (k = 0; k <= s->rdft_len/2; k++) {
+            tbuf[2*k] *= kernel_buf[k];
+            tbuf[2*k+1] *= kernel_buf[k];
         }
 
-        av_rdft_calc(s->irdft, buf);
+        s->irdft_fn(s->irdft, buf, tbuf, sizeof(AVComplexFloat));
         for (k = 0; k < s->rdft_len - idx->overlap_idx; k++)
             buf[k] += obuf[k];
         memcpy(data, buf, nsamples * sizeof(*data));
@@ -226,23 +240,22 @@ static void fast_convolute_nonlinear(FIREqualizerContext *av_restrict s, const f
     if (nsamples <= s->nsamples_max) {
         float *buf = conv_buf + idx->buf_idx * s->rdft_len;
         float *obuf = conv_buf + !idx->buf_idx * s->rdft_len + idx->overlap_idx;
+        float *tbuf = s->tx_buf;
         int k;
 
         memcpy(buf, data, nsamples * sizeof(*data));
         memset(buf + nsamples, 0, (s->rdft_len - nsamples) * sizeof(*data));
-        av_rdft_calc(s->rdft, buf);
+        s->rdft_fn(s->rdft, tbuf, buf, sizeof(float));
 
-        buf[0] *= kernel_buf[0];
-        buf[1] *= kernel_buf[1];
-        for (k = 2; k < s->rdft_len; k += 2) {
+        for (k = 0; k < s->rdft_len + 2; k += 2) {
             float re, im;
-            re = buf[k] * kernel_buf[k] - buf[k+1] * kernel_buf[k+1];
-            im = buf[k] * kernel_buf[k+1] + buf[k+1] * kernel_buf[k];
-            buf[k] = re;
-            buf[k+1] = im;
+            re = tbuf[k] * kernel_buf[k] - tbuf[k+1] * kernel_buf[k+1];
+            im = tbuf[k] * kernel_buf[k+1] + tbuf[k+1] * kernel_buf[k];
+            tbuf[k] = re;
+            tbuf[k+1] = im;
         }
 
-        av_rdft_calc(s->irdft, buf);
+        s->irdft_fn(s->irdft, buf, tbuf, sizeof(AVComplexFloat));
         for (k = 0; k < s->rdft_len - idx->overlap_idx; k++)
             buf[k] += obuf[k];
         memcpy(data, buf, nsamples * sizeof(*data));
@@ -259,12 +272,13 @@ static void fast_convolute_nonlinear(FIREqualizerContext *av_restrict s, const f
     }
 }
 
-static void fast_convolute2(FIREqualizerContext *av_restrict s, const float *av_restrict kernel_buf, FFTComplex *av_restrict conv_buf,
+static void fast_convolute2(FIREqualizerContext *av_restrict s, const float *av_restrict kernel_buf, AVComplexFloat *av_restrict conv_buf,
                             OverlapIndex *av_restrict idx, float *av_restrict data0, float *av_restrict data1, int nsamples)
 {
     if (nsamples <= s->nsamples_max) {
-        FFTComplex *buf = conv_buf + idx->buf_idx * s->rdft_len;
-        FFTComplex *obuf = conv_buf + !idx->buf_idx * s->rdft_len + idx->overlap_idx;
+        AVComplexFloat *buf = conv_buf + idx->buf_idx * s->rdft_len;
+        AVComplexFloat *obuf = conv_buf + !idx->buf_idx * s->rdft_len + idx->overlap_idx;
+        AVComplexFloat *tbuf = (AVComplexFloat *)s->tx_buf;
         int center = s->fir_len/2;
         int k;
         float tmp;
@@ -275,29 +289,27 @@ static void fast_convolute2(FIREqualizerContext *av_restrict s, const float *av_
             buf[center+k].im = data1[k];
         }
         memset(buf + center + nsamples, 0, (s->rdft_len - nsamples - center) * sizeof(*buf));
-        av_fft_permute(s->fft_ctx, buf);
-        av_fft_calc(s->fft_ctx, buf);
+        s->fft_fn(s->fft_ctx, tbuf, buf, sizeof(AVComplexFloat));
 
         /* swap re <-> im, do backward fft using forward fft_ctx */
         /* normalize with 0.5f */
-        tmp = buf[0].re;
-        buf[0].re = 0.5f * kernel_buf[0] * buf[0].im;
-        buf[0].im = 0.5f * kernel_buf[0] * tmp;
+        tmp = tbuf[0].re;
+        tbuf[0].re = 0.5f * kernel_buf[0] * tbuf[0].im;
+        tbuf[0].im = 0.5f * kernel_buf[0] * tmp;
         for (k = 1; k < s->rdft_len/2; k++) {
             int m = s->rdft_len - k;
-            tmp = buf[k].re;
-            buf[k].re = 0.5f * kernel_buf[k] * buf[k].im;
-            buf[k].im = 0.5f * kernel_buf[k] * tmp;
-            tmp = buf[m].re;
-            buf[m].re = 0.5f * kernel_buf[k] * buf[m].im;
-            buf[m].im = 0.5f * kernel_buf[k] * tmp;
+            tmp = tbuf[k].re;
+            tbuf[k].re = 0.5f * kernel_buf[k] * tbuf[k].im;
+            tbuf[k].im = 0.5f * kernel_buf[k] * tmp;
+            tmp = tbuf[m].re;
+            tbuf[m].re = 0.5f * kernel_buf[k] * tbuf[m].im;
+            tbuf[m].im = 0.5f * kernel_buf[k] * tmp;
         }
-        tmp = buf[k].re;
-        buf[k].re = 0.5f * kernel_buf[k] * buf[k].im;
-        buf[k].im = 0.5f * kernel_buf[k] * tmp;
+        tmp = tbuf[k].re;
+        tbuf[k].re = 0.5f * kernel_buf[k] * tbuf[k].im;
+        tbuf[k].im = 0.5f * kernel_buf[k] * tmp;
 
-        av_fft_permute(s->fft_ctx, buf);
-        av_fft_calc(s->fft_ctx, buf);
+        s->fft_fn(s->fft_ctx, buf, tbuf, sizeof(AVComplexFloat));
 
         for (k = 0; k < s->rdft_len - idx->overlap_idx; k++) {
             buf[k].re += obuf[k].re;
@@ -361,17 +373,17 @@ static void dump_fir(AVFilterContext *ctx, FILE *fp, int ch)
             fprintf(fp, "%15.10f %15.10f\n", (double)x / rate, (double) s->analysis_buf[x]);
     }
 
-    av_rdft_calc(s->analysis_rdft, s->analysis_buf);
+    s->analysis_rdft_fn(s->analysis_rdft, s->analysis_tbuf, s->analysis_buf, sizeof(float));
 
     fprintf(fp, "\n\n# freq[%d] (frequency desired_gain actual_gain)\n", ch);
 
     for (x = 0; x <= s->analysis_rdft_len/2; x++) {
-        int i = (x == s->analysis_rdft_len/2) ? 1 : 2 * x;
+        int i = 2 * x;
         vx = (double)x * rate / s->analysis_rdft_len;
         if (xlog)
             vx = log2(0.05*vx);
         ya = s->dump_buf[i];
-        yb = s->min_phase && (i > 1) ? hypotf(s->analysis_buf[i], s->analysis_buf[i+1]) : s->analysis_buf[i];
+        yb = s->min_phase ? hypotf(s->analysis_tbuf[i], s->analysis_tbuf[i+1]) : s->analysis_tbuf[i];
         if (s->min_phase)
             yb = fabs(yb);
         if (ylog) {
@@ -530,45 +542,40 @@ static void generate_min_phase_kernel(FIREqualizerContext *s, float *rdft_buf)
     double minval = 1e-7 / rdft_len;
 
     memset(s->cepstrum_buf, 0, cepstrum_len * sizeof(*s->cepstrum_buf));
+    memset(s->cepstrum_tbuf, 0, (cepstrum_len + 2) * sizeof(*s->cepstrum_tbuf));
     memcpy(s->cepstrum_buf, rdft_buf, rdft_len/2 * sizeof(*rdft_buf));
     memcpy(s->cepstrum_buf + cepstrum_len - rdft_len/2, rdft_buf + rdft_len/2, rdft_len/2  * sizeof(*rdft_buf));
 
-    av_rdft_calc(s->cepstrum_rdft, s->cepstrum_buf);
+    s->cepstrum_rdft_fn(s->cepstrum_rdft, s->cepstrum_tbuf, s->cepstrum_buf, sizeof(float));
 
-    s->cepstrum_buf[0] = log(FFMAX(s->cepstrum_buf[0], minval));
-    s->cepstrum_buf[1] = log(FFMAX(s->cepstrum_buf[1], minval));
-
-    for (k = 2; k < cepstrum_len; k += 2) {
-        s->cepstrum_buf[k] = log(FFMAX(s->cepstrum_buf[k], minval));
-        s->cepstrum_buf[k+1] = 0;
+    for (k = 0; k < cepstrum_len + 2; k += 2) {
+        s->cepstrum_tbuf[k] = log(FFMAX(s->cepstrum_tbuf[k], minval));
+        s->cepstrum_tbuf[k+1] = 0;
     }
 
-    av_rdft_calc(s->cepstrum_irdft, s->cepstrum_buf);
+    s->cepstrum_irdft_fn(s->cepstrum_irdft, s->cepstrum_buf, s->cepstrum_tbuf, sizeof(AVComplexFloat));
 
     memset(s->cepstrum_buf + cepstrum_len/2 + 1, 0, (cepstrum_len/2 - 1) * sizeof(*s->cepstrum_buf));
-    for (k = 1; k < cepstrum_len/2; k++)
+    for (k = 1; k <= cepstrum_len/2; k++)
         s->cepstrum_buf[k] *= 2;
 
-    av_rdft_calc(s->cepstrum_rdft, s->cepstrum_buf);
+    s->cepstrum_rdft_fn(s->cepstrum_rdft, s->cepstrum_tbuf, s->cepstrum_buf, sizeof(float));
 
-    s->cepstrum_buf[0] = exp(s->cepstrum_buf[0] * norm) * norm;
-    s->cepstrum_buf[1] = exp(s->cepstrum_buf[1] * norm) * norm;
-    for (k = 2; k < cepstrum_len; k += 2) {
-        double mag = exp(s->cepstrum_buf[k] * norm) * norm;
-        double ph = s->cepstrum_buf[k+1] * norm;
-        s->cepstrum_buf[k] = mag * cos(ph);
-        s->cepstrum_buf[k+1] = mag * sin(ph);
+    for (k = 0; k < cepstrum_len + 2; k += 2) {
+        double mag = exp(s->cepstrum_tbuf[k] * norm) * norm;
+        double ph = s->cepstrum_tbuf[k+1] * norm;
+        s->cepstrum_tbuf[k] = mag * cos(ph);
+        s->cepstrum_tbuf[k+1] = mag * sin(ph);
     }
 
-    av_rdft_calc(s->cepstrum_irdft, s->cepstrum_buf);
+    s->cepstrum_irdft_fn(s->cepstrum_irdft, s->cepstrum_buf, s->cepstrum_tbuf, sizeof(AVComplexFloat));
     memset(rdft_buf, 0, s->rdft_len * sizeof(*rdft_buf));
     memcpy(rdft_buf, s->cepstrum_buf, s->fir_len * sizeof(*rdft_buf));
 
     if (s->dumpfile) {
-        memset(s->analysis_buf, 0, s->analysis_rdft_len * sizeof(*s->analysis_buf));
+        memset(s->analysis_buf, 0, (s->analysis_rdft_len + 2) * sizeof(*s->analysis_buf));
         memcpy(s->analysis_buf, s->cepstrum_buf, s->fir_len * sizeof(*s->analysis_buf));
     }
-
 }
 
 static int generate_kernel(AVFilterContext *ctx, const char *gain, const char *gain_entry)
@@ -613,35 +620,25 @@ static int generate_kernel(AVFilterContext *ctx, const char *gain, const char *g
                          inlink->ch_layout.u.mask : 0;
     vars[VAR_SR] = inlink->sample_rate;
     for (ch = 0; ch < inlink->ch_layout.nb_channels; ch++) {
-        float *rdft_buf = s->kernel_tmp_buf + ch * s->rdft_len;
+        float *rdft_buf = s->kernel_tmp_buf + ch * (s->rdft_len * 2);
+        float *rdft_tbuf = s->kernel_tmp_tbuf;
         double result;
         vars[VAR_CH] = ch;
         vars[VAR_CHID] = av_channel_layout_channel_from_index(&inlink->ch_layout, ch);
-        vars[VAR_F] = 0.0;
-        if (xlog)
-            vars[VAR_F] = log2(0.05 * vars[VAR_F]);
-        result = av_expr_eval(gain_expr, vars, ctx);
-        s->analysis_buf[0] = ylog ? pow(10.0, 0.05 * result) : result;
 
-        vars[VAR_F] = 0.5 * inlink->sample_rate;
-        if (xlog)
-            vars[VAR_F] = log2(0.05 * vars[VAR_F]);
-        result = av_expr_eval(gain_expr, vars, ctx);
-        s->analysis_buf[1] = ylog ? pow(10.0, 0.05 * result) : result;
-
-        for (k = 1; k < s->analysis_rdft_len/2; k++) {
+        for (k = 0; k <= s->analysis_rdft_len/2; k++) {
             vars[VAR_F] = k * ((double)inlink->sample_rate /(double)s->analysis_rdft_len);
             if (xlog)
                 vars[VAR_F] = log2(0.05 * vars[VAR_F]);
             result = av_expr_eval(gain_expr, vars, ctx);
-            s->analysis_buf[2*k] = ylog ? pow(10.0, 0.05 * result) : s->min_phase ? fabs(result) : result;
-            s->analysis_buf[2*k+1] = 0.0;
+            s->analysis_tbuf[2*k] = ylog ? pow(10.0, 0.05 * result) : s->min_phase ? fabs(result) : result;
+            s->analysis_tbuf[2*k+1] = 0.0;
         }
 
         if (s->dump_buf)
-            memcpy(s->dump_buf, s->analysis_buf, s->analysis_rdft_len * sizeof(*s->analysis_buf));
+            memcpy(s->dump_buf, s->analysis_tbuf, (s->analysis_rdft_len + 2) * sizeof(*s->analysis_tbuf));
 
-        av_rdft_calc(s->analysis_irdft, s->analysis_buf);
+        s->analysis_irdft_fn(s->analysis_irdft, s->analysis_buf, s->analysis_tbuf, sizeof(AVComplexFloat));
         center = s->fir_len / 2;
 
         for (k = 0; k <= center; k++) {
@@ -687,13 +684,13 @@ static int generate_kernel(AVFilterContext *ctx, const char *gain, const char *g
         }
 
         memset(s->analysis_buf + center + 1, 0, (s->analysis_rdft_len - s->fir_len) * sizeof(*s->analysis_buf));
-        memcpy(rdft_buf, s->analysis_buf, s->rdft_len/2 * sizeof(*s->analysis_buf));
-        memcpy(rdft_buf + s->rdft_len/2, s->analysis_buf + s->analysis_rdft_len - s->rdft_len/2, s->rdft_len/2 * sizeof(*s->analysis_buf));
+        memcpy(rdft_tbuf, s->analysis_buf, s->rdft_len/2 * sizeof(*s->analysis_buf));
+        memcpy(rdft_tbuf + s->rdft_len/2, s->analysis_buf + s->analysis_rdft_len - s->rdft_len/2, s->rdft_len/2 * sizeof(*s->analysis_buf));
         if (s->min_phase)
-            generate_min_phase_kernel(s, rdft_buf);
-        av_rdft_calc(s->rdft, rdft_buf);
+            generate_min_phase_kernel(s, rdft_tbuf);
+        s->rdft_fn(s->rdft, rdft_buf, rdft_tbuf, sizeof(float));
 
-        for (k = 0; k < s->rdft_len; k++) {
+        for (k = 0; k < s->rdft_len + 2; k++) {
             if (isnan(rdft_buf[k]) || isinf(rdft_buf[k])) {
                 av_log(ctx, AV_LOG_ERROR, "filter kernel contains nan or infinity.\n");
                 av_expr_free(gain_expr);
@@ -704,10 +701,8 @@ static int generate_kernel(AVFilterContext *ctx, const char *gain, const char *g
         }
 
         if (!s->min_phase) {
-            rdft_buf[s->rdft_len-1] = rdft_buf[1];
-            for (k = 0; k < s->rdft_len/2; k++)
+            for (k = 0; k <= s->rdft_len/2; k++)
                 rdft_buf[k] = rdft_buf[2*k];
-            rdft_buf[s->rdft_len/2] = rdft_buf[s->rdft_len-1];
         }
 
         if (dump_fp)
@@ -717,7 +712,7 @@ static int generate_kernel(AVFilterContext *ctx, const char *gain, const char *g
             break;
     }
 
-    memcpy(s->kernel_buf, s->kernel_tmp_buf, (s->multi ? inlink->ch_layout.nb_channels : 1) * s->rdft_len * sizeof(*s->kernel_buf));
+    memcpy(s->kernel_buf, s->kernel_tmp_buf, (s->multi ? inlink->ch_layout.nb_channels : 1) * (s->rdft_len * 2) * sizeof(*s->kernel_buf));
     av_expr_free(gain_expr);
     if (dump_fp)
         fclose(dump_fp);
@@ -731,7 +726,8 @@ static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     FIREqualizerContext *s = ctx->priv;
-    int rdft_bits;
+    float iscale, scale = 1.f;
+    int rdft_bits, ret;
 
     common_uninit(s);
 
@@ -753,11 +749,15 @@ static int config_input(AVFilterLink *inlink)
         return AVERROR(EINVAL);
     }
 
-    if (!(s->rdft = av_rdft_init(rdft_bits, DFT_R2C)) || !(s->irdft = av_rdft_init(rdft_bits, IDFT_C2R)))
-        return AVERROR(ENOMEM);
+    iscale = 0.5f;
+    if (((ret = av_tx_init(&s->rdft,  &s->rdft_fn,  AV_TX_FLOAT_RDFT, 0, 1 << rdft_bits, &scale,  0)) < 0) ||
+        ((ret = av_tx_init(&s->irdft, &s->irdft_fn, AV_TX_FLOAT_RDFT, 1, 1 << rdft_bits, &iscale, 0)) < 0))
+        return ret;
 
-    if (s->fft2 && !s->multi && inlink->ch_layout.nb_channels > 1 && !(s->fft_ctx = av_fft_init(rdft_bits, 0)))
-        return AVERROR(ENOMEM);
+    scale = 1.f;
+    if (s->fft2 && !s->multi && inlink->ch_layout.nb_channels > 1 &&
+        ((ret = av_tx_init(&s->fft_ctx, &s->fft_fn, AV_TX_FLOAT_FFT, 0, 1 << rdft_bits, &scale, 0)) < 0))
+        return ret;
 
     if (s->min_phase) {
         int cepstrum_bits = rdft_bits + 2;
@@ -767,14 +767,22 @@ static int config_input(AVFilterLink *inlink)
         }
 
         cepstrum_bits = FFMIN(RDFT_BITS_MAX, cepstrum_bits + 1);
-        s->cepstrum_rdft = av_rdft_init(cepstrum_bits, DFT_R2C);
-        s->cepstrum_irdft = av_rdft_init(cepstrum_bits, IDFT_C2R);
-        if (!s->cepstrum_rdft || !s->cepstrum_irdft)
-            return AVERROR(ENOMEM);
+        scale = 1.f;
+        ret = av_tx_init(&s->cepstrum_rdft,  &s->cepstrum_rdft_fn,  AV_TX_FLOAT_RDFT, 0, 1 << cepstrum_bits, &scale, 0);
+        if (ret < 0)
+            return ret;
+
+        iscale = 0.5f;
+        ret = av_tx_init(&s->cepstrum_irdft, &s->cepstrum_irdft_fn, AV_TX_FLOAT_RDFT, 1, 1 << cepstrum_bits, &iscale, 0);
+        if (ret < 0)
+            return ret;
 
         s->cepstrum_len = 1 << cepstrum_bits;
         s->cepstrum_buf = av_malloc_array(s->cepstrum_len, sizeof(*s->cepstrum_buf));
         if (!s->cepstrum_buf)
+            return AVERROR(ENOMEM);
+        s->cepstrum_tbuf = av_malloc_array(s->cepstrum_len + 2, sizeof(*s->cepstrum_tbuf));
+        if (!s->cepstrum_tbuf)
             return AVERROR(ENOMEM);
     }
 
@@ -789,20 +797,26 @@ static int config_input(AVFilterLink *inlink)
         return AVERROR(EINVAL);
     }
 
-    if (!(s->analysis_irdft = av_rdft_init(rdft_bits, IDFT_C2R)))
-        return AVERROR(ENOMEM);
+    iscale = 0.5f;
+    if ((ret = av_tx_init(&s->analysis_irdft, &s->analysis_irdft_fn, AV_TX_FLOAT_RDFT, 1, 1 << rdft_bits, &iscale, 0)) < 0)
+        return ret;
 
     if (s->dumpfile) {
-        s->analysis_rdft = av_rdft_init(rdft_bits, DFT_R2C);
-        s->dump_buf = av_malloc_array(s->analysis_rdft_len, sizeof(*s->dump_buf));
+        scale = 1.f;
+        if ((ret = av_tx_init(&s->analysis_rdft, &s->analysis_rdft_fn, AV_TX_FLOAT_RDFT, 0, 1 << rdft_bits, &scale, 0)) < 0)
+            return ret;
+        s->dump_buf = av_malloc_array(s->analysis_rdft_len + 2, sizeof(*s->dump_buf));
     }
 
-    s->analysis_buf = av_malloc_array(s->analysis_rdft_len, sizeof(*s->analysis_buf));
-    s->kernel_tmp_buf = av_malloc_array(s->rdft_len * (s->multi ? inlink->ch_layout.nb_channels : 1), sizeof(*s->kernel_tmp_buf));
-    s->kernel_buf = av_malloc_array(s->rdft_len * (s->multi ? inlink->ch_layout.nb_channels : 1), sizeof(*s->kernel_buf));
+    s->analysis_buf = av_malloc_array((s->analysis_rdft_len + 2), sizeof(*s->analysis_buf));
+    s->analysis_tbuf = av_malloc_array(s->analysis_rdft_len + 2, sizeof(*s->analysis_tbuf));
+    s->kernel_tmp_buf = av_malloc_array((s->rdft_len * 2) * (s->multi ? inlink->ch_layout.nb_channels : 1), sizeof(*s->kernel_tmp_buf));
+    s->kernel_tmp_tbuf = av_malloc_array(s->rdft_len, sizeof(*s->kernel_tmp_tbuf));
+    s->kernel_buf = av_malloc_array((s->rdft_len * 2) * (s->multi ? inlink->ch_layout.nb_channels : 1), sizeof(*s->kernel_buf));
+    s->tx_buf = av_malloc_array(2 * (s->rdft_len + 2), sizeof(*s->kernel_buf));
     s->conv_buf   = av_calloc(2 * s->rdft_len * inlink->ch_layout.nb_channels, sizeof(*s->conv_buf));
     s->conv_idx   = av_calloc(inlink->ch_layout.nb_channels, sizeof(*s->conv_idx));
-    if (!s->analysis_buf || !s->kernel_tmp_buf || !s->kernel_buf || !s->conv_buf || !s->conv_idx)
+    if (!s->analysis_buf || !s->analysis_tbuf || !s->kernel_tmp_buf || !s->kernel_buf || !s->conv_buf || !s->conv_idx || !s->kernel_tmp_tbuf || !s->tx_buf)
         return AVERROR(ENOMEM);
 
     av_log(ctx, AV_LOG_DEBUG, "sample_rate = %d, channels = %d, analysis_rdft_len = %d, rdft_len = %d, fir_len = %d, nsamples_max = %d.\n",
@@ -822,19 +836,19 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
     if (!s->min_phase) {
         for (ch = 0; ch + 1 < inlink->ch_layout.nb_channels && s->fft_ctx; ch += 2) {
-            fast_convolute2(s, s->kernel_buf, (FFTComplex *)(s->conv_buf + 2 * ch * s->rdft_len),
+            fast_convolute2(s, s->kernel_buf, (AVComplexFloat *)(s->conv_buf + 2 * ch * s->rdft_len),
                             s->conv_idx + ch, (float *) frame->extended_data[ch],
                             (float *) frame->extended_data[ch+1], frame->nb_samples);
         }
 
         for ( ; ch < inlink->ch_layout.nb_channels; ch++) {
-            fast_convolute(s, s->kernel_buf + (s->multi ? ch * s->rdft_len : 0),
+            fast_convolute(s, s->kernel_buf + (s->multi ? ch * (s->rdft_len * 2) : 0),
                         s->conv_buf + 2 * ch * s->rdft_len, s->conv_idx + ch,
                         (float *) frame->extended_data[ch], frame->nb_samples);
         }
     } else {
         for (ch = 0; ch < inlink->ch_layout.nb_channels; ch++) {
-            fast_convolute_nonlinear(s, s->kernel_buf + (s->multi ? ch * s->rdft_len : 0),
+            fast_convolute_nonlinear(s, s->kernel_buf + (s->multi ? ch * (s->rdft_len * 2) : 0),
                                      s->conv_buf + 2 * ch * s->rdft_len, s->conv_idx + ch,
                                      (float *) frame->extended_data[ch], frame->nb_samples);
         }
