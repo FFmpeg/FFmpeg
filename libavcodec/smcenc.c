@@ -116,6 +116,7 @@ static void smc_encode_stream(SMCContext *s, const AVFrame *frame,
     const uint8_t *src_pixels = (const uint8_t *)frame->data[0];
     const int stride = frame->linesize[0];
     const uint8_t *prev_pixels = (const uint8_t *)s->prev_frame->data[0];
+    const int prev_stride = s->prev_frame->linesize[0];
     uint8_t *distinct_values = s->distinct_values;
     const uint8_t *pixel_ptr, *row_ptr;
     const int height = frame->height;
@@ -155,10 +156,10 @@ static void smc_encode_stream(SMCContext *s, const AVFrame *frame,
             int compare = 0;
 
             for (int y = 0; y < y_size; y++) {
-                const ptrdiff_t offset = pixel_ptr - src_pixels;
-                const uint8_t *prev_pixel_ptr = prev_pixels + offset;
+                const ptrdiff_t offset = pixel_ptr - row_ptr;
+                const uint8_t *prev_pixel_ptr = prev_pixels + cur_y * prev_stride + offset;
 
-                compare |= memcmp(prev_pixel_ptr + y * stride, pixel_ptr + y * stride, 4);
+                compare |= memcmp(prev_pixel_ptr + y * prev_stride, pixel_ptr + y * stride, 4);
                 if (compare)
                     break;
             }
