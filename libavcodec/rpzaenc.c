@@ -205,7 +205,7 @@ static void get_max_component_diff(const BlockInfo *bi, const uint16_t *block_pt
 
     // loop thru and compare pixels
     for (y = 0; y < bi->block_height; y++) {
-        for (x = 0; x < bi->block_width; x++){
+        for (x = 0; x < bi->block_width; x++) {
             // TODO:  optimize
             min_r = FFMIN(R(block_ptr[x]), min_r);
             min_g = FFMIN(G(block_ptr[x]), min_g);
@@ -278,7 +278,7 @@ static int leastsquares(const uint16_t *block_ptr, const BlockInfo *bi,
         return -1;
 
     for (i = 0; i < bi->block_height; i++) {
-        for (j = 0; j < bi->block_width; j++){
+        for (j = 0; j < bi->block_width; j++) {
             x = GET_CHAN(block_ptr[j], xchannel);
             y = GET_CHAN(block_ptr[j], ychannel);
             sumx += x;
@@ -325,7 +325,7 @@ static int calc_lsq_max_fit_error(const uint16_t *block_ptr, const BlockInfo *bi
     int max_err = 0;
 
     for (i = 0; i < bi->block_height; i++) {
-        for (j = 0; j < bi->block_width; j++){
+        for (j = 0; j < bi->block_width; j++) {
             int x_inc, lin_y, lin_x;
             x = GET_CHAN(block_ptr[j], xchannel);
             y = GET_CHAN(block_ptr[j], ychannel);
@@ -420,7 +420,9 @@ static void update_block_in_prev_frame(const uint16_t *src_pixels,
                                        uint16_t *dest_pixels,
                                        const BlockInfo *bi, int block_counter)
 {
-    for (int y = 0; y < 4; y++) {
+    const int y_size = FFMIN(4, bi->image_height - bi->row * 4);
+
+    for (int y = 0; y < y_size; y++) {
         memcpy(dest_pixels, src_pixels, 8);
         dest_pixels += bi->rowstride;
         src_pixels += bi->rowstride;
@@ -730,19 +732,25 @@ post_skip :
 
             if (err > s->sixteen_color_thresh) { // DO SIXTEEN COLOR BLOCK
                 const uint16_t *row_ptr;
-                int rgb555;
+                int y_size, rgb555;
 
                 block_offset = get_block_info(&bi, block_counter);
 
                 row_ptr = &src_pixels[block_offset];
+                y_size = FFMIN(4, bi.image_height - bi.row * 4);
 
-                for (int y = 0; y < 4; y++) {
-                    for (int x = 0; x < 4; x++){
+                for (int y = 0; y < y_size; y++) {
+                    for (int x = 0; x < 4; x++) {
                         rgb555 = row_ptr[x] & ~0x8000;
 
                         put_bits(&s->pb, 16, rgb555);
                     }
                     row_ptr += bi.rowstride;
+                }
+
+                for (int y = y_size; y < 4; y++) {
+                    for (int x = 0; x < 4; x++)
+                        put_bits(&s->pb, 16, 0);
                 }
 
                 block_counter++;
