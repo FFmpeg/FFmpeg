@@ -438,7 +438,9 @@ static int cuda_device_derive(AVHWDeviceContext *device_ctx,
     AVCUDADeviceContext *hwctx = device_ctx->hwctx;
     CudaFunctions *cu;
     const char *src_uuid = NULL;
+#if CONFIG_VULKAN
     VkPhysicalDeviceIDProperties vk_idp;
+#endif
     int ret, i, device_count;
 
     ret = cuda_flags_from_opts(device_ctx, opts, &flags);
