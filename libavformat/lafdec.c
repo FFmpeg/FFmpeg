@@ -111,6 +111,9 @@ static int laf_read_header(AVFormatContext *ctx)
     sample_rate = avio_rl32(pb);
     duration = avio_rl64(pb) / st_count;
 
+    if (avio_feof(pb))
+        return AVERROR_INVALIDDATA;
+
     switch (quality) {
     case 0:
         codec_id = AV_CODEC_ID_PCM_U8;
