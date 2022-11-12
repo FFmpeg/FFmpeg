@@ -141,9 +141,10 @@ read_header:
         av_log(avctx, AV_LOG_WARNING, "no picture\n");
         return buf_size;
     }
-
     av_frame_move_ref(rframe, s->picture_ptr);
     s->got_picture = 0;
+    if (avctx->skip_frame == AVDISCARD_ALL)
+        return AVERROR(EAGAIN);
     *got_frame = 1;
 
     if (!s->lossless && avctx->debug & FF_DEBUG_QP) {
