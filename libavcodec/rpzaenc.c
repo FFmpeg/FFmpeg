@@ -80,6 +80,7 @@ typedef struct BlockInfo {
     int block_index;
     uint16_t start;
     int rowstride;
+    int prev_rowstride;
     int blocks_per_row;
     int total_blocks;
 } BlockInfo;
@@ -113,7 +114,7 @@ static void get_colors(const uint8_t *min, const uint8_t *max, uint8_t color4[4]
 }
 
 /* Fill BlockInfo struct with information about a 4x4 block of the image */
-static int get_block_info(BlockInfo *bi, int block)
+static int get_block_info(BlockInfo *bi, int block, int prev_frame)
 {
     bi->row = block / bi->blocks_per_row;
     bi->col = block % bi->blocks_per_row;
@@ -132,7 +133,7 @@ static int get_block_info(BlockInfo *bi, int block)
         bi->block_height = 4;
     }
 
-    return block ? (bi->col * 4) + (bi->row * bi->rowstride * 4) : 0;
+    return block ? (bi->col * 4) + (bi->row * (prev_frame ? bi->prev_rowstride : bi->rowstride) * 4) : 0;
 }
 
 static uint16_t rgb24_to_rgb555(const uint8_t *rgb24)
@@ -253,7 +254,7 @@ static int compare_blocks(const uint16_t *block1, const uint16_t *block2,
                 return -1;
             }
         }
-        block1 += bi->rowstride;
+        block1 += bi->prev_rowstride;
         block2 += bi->rowstride;
     }
     return 0;
@@ -387,9 +388,11 @@ static int match_color(const uint16_t *color, uint8_t colors[4][3])
 static int encode_four_color_block(const uint8_t *min_color, const uint8_t *max_color,
                                    PutBitContext *pb, const uint16_t *block_ptr, const BlockInfo *bi)
 {
-    int x, y, idx;
+    const int y_size = FFMIN(4, bi->image_height - bi->row * 4);
+    const int x_size = FFMIN(4, bi->image_width  - bi->col * 4);
     uint8_t color4[4][3];
     uint16_t rounded_max, rounded_min;
+    int idx;
 
     // round min and max wider
     rounded_min = rgb24_to_rgb555(min_color);
@@ -403,12 +406,20 @@ static int encode_four_color_block(const uint8_t *min_color, const uint8_t *max_
 
     get_colors(min_color, max_color, color4);
 
-    for (y = 0; y < 4; y++) {
-        for (x = 0; x < 4; x++) {
+    for (int y = 0; y < y_size; y++) {
+        for (int x = 0; x < x_size; x++) {
             idx = match_color(&block_ptr[x], color4);
             put_bits(pb, 2, idx);
         }
+
+        for (int x = x_size; x < 4; x++)
+            put_bits(pb, 2, idx);
         block_ptr += bi->rowstride;
+    }
+
+    for (int y = y_size; y < 4; y++) {
+        for (int x = 0; x < 4; x++)
+            put_bits(pb, 2, 0);
     }
     return 1; // num blocks encoded
 }
@@ -421,10 +432,11 @@ static void update_block_in_prev_frame(const uint16_t *src_pixels,
                                        const BlockInfo *bi, int block_counter)
 {
     const int y_size = FFMIN(4, bi->image_height - bi->row * 4);
+    const int x_size = FFMIN(4, bi->image_width  - bi->col * 4) * 2;
 
     for (int y = 0; y < y_size; y++) {
-        memcpy(dest_pixels, src_pixels, 8);
-        dest_pixels += bi->rowstride;
+        memcpy(dest_pixels, src_pixels, x_size);
+        dest_pixels += bi->prev_rowstride;
         src_pixels += bi->rowstride;
     }
 }
@@ -556,6 +568,7 @@ static void rpza_encode_stream(RpzaContext *s, const AVFrame *pict)
     int total_blocks;
     int prev_block_offset;
     int block_offset = 0;
+    int pblock_offset = 0;
     uint8_t min = 0, max = 0;
     channel_offset chan;
     int i;
@@ -574,6 +587,7 @@ static void rpza_encode_stream(RpzaContext *s, const AVFrame *pict)
     bi.image_width = s->frame_width;
     bi.image_height = s->frame_height;
     bi.rowstride = pict->linesize[0] / 2;
+    bi.prev_rowstride = s->prev_frame->linesize[0] / 2;
 
     bi.blocks_per_row = (s->frame_width + 3) / 4;
 
@@ -586,8 +600,8 @@ static void rpza_encode_stream(RpzaContext *s, const AVFrame *pict)
             prev_block_offset = 0;
 
             while (n_blocks < 32 && block_counter + n_blocks < total_blocks) {
-
-                block_offset = get_block_info(&bi, block_counter + n_blocks);
+                block_offset  = get_block_info(&bi, block_counter + n_blocks, 0);
+                pblock_offset = get_block_info(&bi, block_counter + n_blocks, 1);
 
                 // multi-block opcodes cannot span multiple rows.
                 // If we're starting a new row, break out and write the opcode
@@ -602,7 +616,7 @@ static void rpza_encode_stream(RpzaContext *s, const AVFrame *pict)
 
                 prev_block_offset = block_offset;
 
-                if (compare_blocks(&prev_pixels[block_offset],
+                if (compare_blocks(&prev_pixels[pblock_offset],
                                    &src_pixels[block_offset], &bi, s->skip_frame_thresh) != 0) {
                     // write out skipable blocks
                     if (n_blocks) {
@@ -623,7 +637,7 @@ static void rpza_encode_stream(RpzaContext *s, const AVFrame *pict)
                  */
 
                 // update_block_in_prev_frame(&src_pixels[block_offset],
-                //   &prev_pixels[block_offset], &bi, block_counter + n_blocks);
+                //   &prev_pixels[pblock_offset], &bi, block_counter + n_blocks);
 
                 n_blocks++;
             }
@@ -639,7 +653,8 @@ static void rpza_encode_stream(RpzaContext *s, const AVFrame *pict)
             }
 
         } else {
-            block_offset = get_block_info(&bi, block_counter);
+            block_offset  = get_block_info(&bi, block_counter, 0);
+            pblock_offset = get_block_info(&bi, block_counter, 1);
         }
 post_skip :
 
@@ -653,11 +668,12 @@ post_skip :
 
             /* update this block in the previous frame buffer */
             update_block_in_prev_frame(&src_pixels[block_offset],
-                                       &prev_pixels[block_offset], &bi, block_counter + n_blocks);
+                                       &prev_pixels[pblock_offset], &bi, block_counter + n_blocks);
 
             // check for subsequent blocks with the same color
             while (n_blocks < 32 && block_counter + n_blocks < total_blocks) {
-                block_offset = get_block_info(&bi, block_counter + n_blocks);
+                block_offset  = get_block_info(&bi, block_counter + n_blocks, 0);
+                pblock_offset = get_block_info(&bi, block_counter + n_blocks, 1);
 
                 // multi-block opcodes cannot span multiple rows.
                 // If we've hit end of a row, break out and write the opcode
@@ -675,7 +691,7 @@ post_skip :
 
                 /* update this block in the previous frame buffer */
                 update_block_in_prev_frame(&src_pixels[block_offset],
-                                           &prev_pixels[block_offset], &bi, block_counter + n_blocks);
+                                           &prev_pixels[pblock_offset], &bi, block_counter + n_blocks);
 
                 n_blocks++;
             }
@@ -734,7 +750,8 @@ post_skip :
                 const uint16_t *row_ptr;
                 int y_size, rgb555;
 
-                block_offset = get_block_info(&bi, block_counter);
+                block_offset  = get_block_info(&bi, block_counter, 0);
+                pblock_offset = get_block_info(&bi, block_counter, 1);
 
                 row_ptr = &src_pixels[block_offset];
                 y_size = FFMIN(4, bi.image_height - bi.row * 4);
@@ -761,7 +778,7 @@ post_skip :
 
             /* update this block in the previous frame buffer */
             update_block_in_prev_frame(&src_pixels[block_offset],
-                                       &prev_pixels[block_offset], &bi, block_counter);
+                                       &prev_pixels[pblock_offset], &bi, block_counter);
         }
     }
 }
