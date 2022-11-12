@@ -720,8 +720,8 @@ static int siren_decode(AVCodecContext *avctx, AVFrame *frame,
         if ((ret = init_get_bits(gb, avpkt->data, bits_per_frame)) < 0)
             return ret;
     } else
-    if ((ret = init_get_bits8(gb, avpkt->data, avpkt->size)) < 0)
-        return ret;
+        if ((ret = init_get_bits8(gb, avpkt->data, avpkt->size)) < 0)
+            return ret;
 
     skip_bits(gb, s->sample_rate_bits);
 
