@@ -65,7 +65,7 @@ int ff_ass_subtitle_header_full(AVCodecContext *avctx,
              "0,0,"                 /* Spacing, Angle */
              "%d,1,0,"              /* BorderStyle, Outline, Shadow */
              "%d,10,10,10,"         /* Alignment, Margin[LRV] */
-             "0\r\n"                /* Encoding */
+             "1\r\n"                /* Encoding */
 
              "\r\n"
              "[Events]\r\n"
