@@ -285,6 +285,24 @@ This demuxer accepts the following option:
 
 @end table
 
+@section ea
+
+Electronic Arts Multimedia format demuxer.
+
+This format is used by various Electronic Arts games.
+
+@subsection Options
+
+@table @option
+
+@item merge_alpha @var{bool}
+
+Normally the VP6 alpha channel (if exists) is returned as a secondary video
+stream, by setting this option you can make the demuxer return a single video
+stream which contains the alpha channel in addition to the ordinary video.
+
+@end table
+
 @section imf
 
 Interoperable Master Format demuxer.

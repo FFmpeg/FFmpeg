@@ -28,6 +28,7 @@
 #include <inttypes.h>
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/opt.h"
 #include "avformat.h"
 #include "internal.h"
 
@@ -75,6 +76,8 @@ typedef struct VideoProperties {
 } VideoProperties;
 
 typedef struct EaDemuxContext {
+    const AVClass *class;
+
     int big_endian;
 
     VideoProperties video, alpha;
@@ -88,6 +91,7 @@ typedef struct EaDemuxContext {
     int num_samples;
 
     int platform;
+    int merge_alpha;
 } EaDemuxContext;
 
 static uint32_t read_arbitrary(AVIOContext *pb)
@@ -442,6 +446,10 @@ static int process_ea_header(AVFormatContext *s)
 
         case AVhd_TAG:
             err = process_video_header_vp6(s, &ea->alpha);
+            if (err >= 0 && ea->video.codec == AV_CODEC_ID_VP6 && ea->merge_alpha) {
+                ea->alpha.codec = 0;
+                ea->video.codec = AV_CODEC_ID_VP6A;
+            }
             break;
         }
 
@@ -578,7 +586,7 @@ static int ea_read_packet(AVFormatContext *s, AVPacket *pkt)
     int partial_packet = 0;
     int hit_end = 0;
     unsigned int chunk_type, chunk_size;
-    int ret = 0, packet_read = 0, key = 0;
+    int ret = 0, packet_read = 0, key = 0, vp6a;
     int av_uninit(num_samples);
 
     while ((!packet_read && !hit_end) || partial_packet) {
@@ -721,19 +729,28 @@ static int ea_read_packet(AVFormatContext *s, AVPacket *pkt)
 get_video_packet:
             if (!chunk_size)
                 continue;
+            if (chunk_size > INT_MAX - 3)
+                return AVERROR_INVALIDDATA;
+
+            vp6a = (ea->video.codec == AV_CODEC_ID_VP6A && (chunk_type == MV0F_TAG || chunk_type == MV0K_TAG));
 
             if (partial_packet) {
                 ret = av_append_packet(pb, pkt, chunk_size);
-            } else
-                ret = av_get_packet(pb, pkt, chunk_size);
+            } else {
+                if (vp6a)
+                    avio_seek(pb, -3, SEEK_CUR);
+                ret = av_get_packet(pb, pkt, chunk_size + (vp6a ? 3 : 0));
+                if (ret >= 0 && vp6a)
+                   AV_WB24(pkt->data, chunk_size);
+            }
             packet_read = 1;
 
             if (ret < 0) {
                 partial_packet = 0;
                 break;
             }
-            partial_packet = chunk_type == MVIh_TAG;
-            if (chunk_type == AV0K_TAG || chunk_type == AV0F_TAG)
+            partial_packet = vp6a || chunk_type == MVIh_TAG;
+            if (ea->alpha.codec && (chunk_type == AV0K_TAG || chunk_type == AV0F_TAG))
                 pkt->stream_index = ea->alpha.stream_index;
             else
                 pkt->stream_index = ea->video.stream_index;
@@ -752,6 +769,20 @@ get_video_packet:
     return ret;
 }
 
+#define OFFSET(x) offsetof(EaDemuxContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
+static const AVOption options[] = {
+    {"merge_alpha", "return VP6 alpha in the main video stream", OFFSET(merge_alpha), AV_OPT_TYPE_BOOL,  {.i64 = 0}, 0, 1, FLAGS },
+    {NULL}
+};
+
+static const AVClass ea_class = {
+    .class_name = "ea demuxer",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 const AVInputFormat ff_ea_demuxer = {
     .name           = "ea",
     .long_name      = NULL_IF_CONFIG_SMALL("Electronic Arts Multimedia"),
@@ -759,4 +790,5 @@ const AVInputFormat ff_ea_demuxer = {
     .read_probe     = ea_probe,
     .read_header    = ea_read_header,
     .read_packet    = ea_read_packet,
+    .priv_class     = &ea_class,
 };
