@@ -1896,12 +1896,14 @@ static void writer_register_all(void)
     writer_print_string(w, k, pbuf.str, 0);    \
 } while (0)
 
-#define print_list_fmt(k, f, n, ...) do {       \
+#define print_list_fmt(k, f, n, m, ...) do {    \
     av_bprint_clear(&pbuf);                     \
     for (int idx = 0; idx < n; idx++) {         \
-        if (idx > 0)                            \
-            av_bprint_chars(&pbuf, ' ', 1);     \
-        av_bprintf(&pbuf, f, __VA_ARGS__);      \
+        for (int idx2 = 0; idx2 < m; idx2++) {  \
+            if (idx > 0 || idx2 > 0)            \
+                av_bprint_chars(&pbuf, ' ', 1); \
+            av_bprintf(&pbuf, f, __VA_ARGS__);  \
+        }                                       \
     }                                           \
     writer_print_string(w, k, pbuf.str, 0);     \
 } while (0)
@@ -2012,7 +2014,7 @@ static void print_dovi_metadata(WriterContext *w, const AVDOVIMetadata *dovi)
             const AVDOVIReshapingCurve *curve = &mapping->curves[c];
             writer_print_section_header(w, SECTION_ID_FRAME_SIDE_DATA_COMPONENT);
 
-            print_list_fmt("pivots", "%"PRIu16, curve->num_pivots, curve->pivots[idx]);
+            print_list_fmt("pivots", "%"PRIu16, curve->num_pivots, 1, curve->pivots[idx]);
 
             writer_print_section_header(w, SECTION_ID_FRAME_SIDE_DATA_PIECE_LIST);
             for (int i = 0; i < curve->num_pivots - 1; i++) {
@@ -2024,7 +2026,7 @@ static void print_dovi_metadata(WriterContext *w, const AVDOVIMetadata *dovi)
                     print_str("mapping_idc_name",   "polynomial");
                     print_int("poly_order",         curve->poly_order[i]);
                     print_list_fmt("poly_coef", "%"PRIi64,
-                                   curve->poly_order[i] + 1,
+                                   curve->poly_order[i] + 1, 1,
                                    curve->poly_coef[i][idx]);
                     break;
                 case AV_DOVI_MAPPING_MMR:
@@ -2032,8 +2034,8 @@ static void print_dovi_metadata(WriterContext *w, const AVDOVIMetadata *dovi)
                     print_int("mmr_order",          curve->mmr_order[i]);
                     print_int("mmr_constant",       curve->mmr_constant[i]);
                     print_list_fmt("mmr_coef", "%"PRIi64,
-                                   curve->mmr_order[i] * 7,
-                                   curve->mmr_coef[i][0][idx]);
+                                   curve->mmr_order[i], 7,
+                                   curve->mmr_coef[i][idx][idx2]);
                     break;
                 default:
                     print_str("mapping_idc_name",   "unknown");
@@ -2071,15 +2073,15 @@ static void print_dovi_metadata(WriterContext *w, const AVDOVIMetadata *dovi)
         print_int("dm_metadata_id",         color->dm_metadata_id);
         print_int("scene_refresh_flag",     color->scene_refresh_flag);
         print_list_fmt("ycc_to_rgb_matrix", "%d/%d",
-                       FF_ARRAY_ELEMS(color->ycc_to_rgb_matrix),
+                       FF_ARRAY_ELEMS(color->ycc_to_rgb_matrix), 1,
                        color->ycc_to_rgb_matrix[idx].num,
                        color->ycc_to_rgb_matrix[idx].den);
         print_list_fmt("ycc_to_rgb_offset", "%d/%d",
-                       FF_ARRAY_ELEMS(color->ycc_to_rgb_offset),
+                       FF_ARRAY_ELEMS(color->ycc_to_rgb_offset), 1,
                        color->ycc_to_rgb_offset[idx].num,
                        color->ycc_to_rgb_offset[idx].den);
         print_list_fmt("rgb_to_lms_matrix", "%d/%d",
-                       FF_ARRAY_ELEMS(color->rgb_to_lms_matrix),
+                       FF_ARRAY_ELEMS(color->rgb_to_lms_matrix), 1,
                        color->rgb_to_lms_matrix[idx].num,
                        color->rgb_to_lms_matrix[idx].den);
         print_int("signal_eotf",            color->signal_eotf);
