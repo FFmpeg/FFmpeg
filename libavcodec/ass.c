@@ -44,7 +44,7 @@ int ff_ass_subtitle_header_full(AVCodecContext *avctx,
              "\r\n"
              "[V4+ Styles]\r\n"
 
-             /* ASSv4 header */
+             /* ASS (v4+) header */
              "Format: Name, "
              "Fontname, Fontsize, "
              "PrimaryColour, SecondaryColour, OutlineColour, BackColour, "
