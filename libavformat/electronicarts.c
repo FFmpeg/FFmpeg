@@ -726,8 +726,9 @@ get_video_packet:
                 ret = av_append_packet(pb, pkt, chunk_size);
             } else
                 ret = av_get_packet(pb, pkt, chunk_size);
+            packet_read = 1;
+
             if (ret < 0) {
-                packet_read = 1;
                 partial_packet = 0;
                 break;
             }
@@ -737,7 +738,6 @@ get_video_packet:
             else
                 pkt->stream_index = ea->video.stream_index;
             pkt->flags       |= key;
-            packet_read       = 1;
             break;
 
         default:
