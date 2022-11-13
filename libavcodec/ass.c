@@ -41,6 +41,7 @@ int ff_ass_subtitle_header_full(AVCodecContext *avctx,
              "PlayResX: %d\r\n"
              "PlayResY: %d\r\n"
              "ScaledBorderAndShadow: yes\r\n"
+             "YCbCr Matrix: None\r\n"
              "\r\n"
              "[V4+ Styles]\r\n"
 
