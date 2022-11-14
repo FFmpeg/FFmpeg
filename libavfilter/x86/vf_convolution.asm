@@ -189,15 +189,16 @@ cglobal filter_sobel, 4, 15, 7, dst, width, matrix, ptr, c0, c1, c2, c3, c4, c5,
 cglobal filter_sobel, 4, 15, 7, dst, width, rdiv, bias, matrix, ptr, c0, c1, c2, c3, c4, c5, c6, c7, c8, r, x
 %endif
 %if WIN64
-    SWAP xmm0, xmm2
-    SWAP xmm1, xmm3
+    VBROADCASTSS m0, xmm2
+    VBROADCASTSS m1, xmm3
     mov  r2q, matrixmp
     mov  r3q, ptrmp
     DEFINE_ARGS dst, width, matrix, ptr, c0, c1, c2, c3, c4, c5, c6, c7, c8, r, x
-%endif
-    movsxdifnidn widthq, widthd
+%else
     VBROADCASTSS m0, xmm0
     VBROADCASTSS m1, xmm1
+%endif
+    movsxdifnidn widthq, widthd
     pxor  m6, m6
     mov   c0q, [ptrq + 0*gprsize]
     mov   c1q, [ptrq + 1*gprsize]
@@ -281,7 +282,7 @@ cglobal filter_sobel, 4, 15, 7, dst, width, rdiv, bias, matrix, ptr, c0, c1, c2,
     fmaddss xmm4, xmm5, xmm5, xmm4
 
     sqrtps    xmm4, xmm4
-    fmaddss   xmm4, xmm4, xmm0, xmm1     ;sum = sum * rdiv + bias
+    fmaddss   xmm4, xmm4, xm0, xm1     ;sum = sum * rdiv + bias
     cvttps2dq xmm4, xmm4     ; trunc to integer
     packssdw  xmm4, xmm4
     packuswb  xmm4, xmm4
