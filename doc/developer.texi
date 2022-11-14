@@ -58,54 +58,29 @@ and should try to fix issues their commit causes.
 
 @section C language features
 
-FFmpeg is programmed in the ISO C90 language with a few additional
-features from ISO C99, namely:
-
+FFmpeg is programmed in the ISO C99 language, extended with:
 @itemize @bullet
 @item
-the @samp{inline} keyword;
-
-@item
-@samp{//} comments;
-
-@item
-designated struct initializers (@samp{struct s x = @{ .i = 17 @};});
-
-@item
-compound literals (@samp{x = (struct s) @{ 17, 23 @};}).
-
-@item
-for loops with variable definition (@samp{for (int i = 0; i < 8; i++)});
-
-@item
-Variadic macros (@samp{#define ARRAY(nb, ...) (int[nb + 1])@{ nb, __VA_ARGS__ @}});
-
-@item
-Implementation defined behavior for signed integers is assumed to match the
-expected behavior for two's complement. Non representable values in integer
-casts are binary truncated. Shift right of signed values uses sign extension.
+Atomic operations from C11 @file{stdatomic.h}. They are emulated on
+architectures/compilers that do not support them, so all FFmpeg-internal code
+may use atomics without any extra checks. However, @file{stdatomic.h} must not
+be included in public headers, so they stay C99-compatible.
 @end itemize
 
-These features are supported by all compilers we care about, so we will not
-accept patches to remove their use unless they absolutely do not impair
-clarity and performance.
+Compiler-specific extensions may be used with good reason, but must not be
+depended on, i.e. the code must still compile and work with compilers lacking
+the extension.
 
-All code must compile with recent versions of GCC and a number of other
-currently supported compilers. To ensure compatibility, please do not use
-additional C99 features or GCC extensions. Especially watch out for:
-
+The following C99 features must not be used anywhere in the codebase:
 @itemize @bullet
 @item
-mixing statements and declarations;
+variable-length arrays;
 
 @item
-@samp{long long} (use @samp{int64_t} instead);
+complex numbers;
 
 @item
-@samp{__attribute__} not protected by @samp{#ifdef __GNUC__} or similar;
-
-@item
-GCC statement expressions (@samp{(x = (@{ int y = 4; y; @})}).
+mixed statements and declarations.
 @end itemize
 
 @section Code formatting conventions
