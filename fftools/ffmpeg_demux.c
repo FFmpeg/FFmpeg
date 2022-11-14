@@ -1098,7 +1098,5 @@ int ifile_open(const OptionsContext *o, const char *filename)
         }
     }
 
-    input_stream_potentially_available = 1;
-
     return 0;
 }

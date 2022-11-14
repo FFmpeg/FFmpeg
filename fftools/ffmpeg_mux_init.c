@@ -1911,12 +1911,6 @@ int of_open(const OptionsContext *o, const char *filename)
         }
     }
 
-    if (!(oc->oformat->flags & AVFMT_NOSTREAMS) && !input_stream_potentially_available) {
-        av_log(NULL, AV_LOG_ERROR,
-               "No input streams but output needs an input stream\n");
-        exit_program(1);
-    }
-
     if (!(oc->oformat->flags & AVFMT_NOFILE)) {
         /* test if it already exists to avoid losing precious files */
         assert_file_overwrite(filename);

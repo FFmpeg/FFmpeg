@@ -674,7 +674,6 @@ extern HWDevice *filter_hw_device;
 extern unsigned nb_output_dumped;
 extern int main_return_code;
 
-extern int input_stream_potentially_available;
 extern int ignore_unknown_streams;
 extern int copy_unknown_streams;
 

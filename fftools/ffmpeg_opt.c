@@ -95,7 +95,6 @@ static int no_file_overwrite  = 0;
 #if FFMPEG_OPT_PSNR
 int do_psnr            = 0;
 #endif
-int input_stream_potentially_available = 0;
 int ignore_unknown_streams = 0;
 int copy_unknown_streams = 0;
 int recast_media = 0;
@@ -1114,8 +1113,6 @@ static int opt_filter_complex(void *optctx, const char *opt, const char *arg)
     if (!fg->graph_desc)
         return AVERROR(ENOMEM);
 
-    input_stream_potentially_available = 1;
-
     return 0;
 }
 
@@ -1129,8 +1126,6 @@ static int opt_filter_complex_script(void *optctx, const char *opt, const char *
     fg = ALLOC_ARRAY_ELEM(filtergraphs, nb_filtergraphs);
     fg->index      = nb_filtergraphs - 1;
     fg->graph_desc = graph_desc;
-
-    input_stream_potentially_available = 1;
 
     return 0;
 }
