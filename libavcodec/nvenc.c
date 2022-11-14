@@ -82,6 +82,8 @@ const AVCodecHWConfigInternal *const ff_nvenc_hw_configs[] = {
 #define IS_10BIT(pix_fmt)  (pix_fmt == AV_PIX_FMT_P010      || \
                             pix_fmt == AV_PIX_FMT_P016      || \
                             pix_fmt == AV_PIX_FMT_YUV444P16 || \
+                            pix_fmt == AV_PIX_FMT_X2RGB10   || \
+                            pix_fmt == AV_PIX_FMT_X2BGR10   || \
                             pix_fmt == AV_PIX_FMT_GBRP16)
 
 #define IS_YUV444(pix_fmt) (pix_fmt == AV_PIX_FMT_YUV444P   || \
