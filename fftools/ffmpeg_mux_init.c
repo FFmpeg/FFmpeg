@@ -1737,13 +1737,12 @@ static void validate_enc_avopt(const Muxer *mux, const AVDictionary *codec_avopt
     unused_opts = strip_specifiers(codec_avopt);
     for (int i = 0; i < of->nb_streams; i++) {
         e = NULL;
-        while ((e = av_dict_get(of->streams[i]->encoder_opts, "", e,
-                                AV_DICT_IGNORE_SUFFIX)))
+        while ((e = av_dict_iterate(of->streams[i]->encoder_opts, e)))
             av_dict_set(&unused_opts, e->key, NULL, 0);
     }
 
     e = NULL;
-    while ((e = av_dict_get(unused_opts, "", e, AV_DICT_IGNORE_SUFFIX))) {
+    while ((e = av_dict_iterate(unused_opts, e))) {
         const AVOption *option = av_opt_find(&class, e->key, NULL, 0,
                                              AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ);
         const AVOption *foption = av_opt_find(&fclass, e->key, NULL, 0,
