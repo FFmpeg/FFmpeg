@@ -1949,7 +1949,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                             ff_filter_get_nb_threads(ctx)));
 
     s->filter(ctx);
-    ff_filter_execute(ctx, s->upmix, NULL, NULL, outlink->ch_layout.nb_channels);
+    if (s->upmix)
+        ff_filter_execute(ctx, s->upmix, NULL, NULL, outlink->ch_layout.nb_channels);
 
     out = ff_get_audio_buffer(outlink, s->hop_size);
     if (!out)
