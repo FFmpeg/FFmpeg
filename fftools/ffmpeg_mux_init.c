@@ -1725,14 +1725,60 @@ static int set_dispositions(OutputFile *of, AVFormatContext *ctx)
     return 0;
 }
 
+static void validate_enc_avopt(const Muxer *mux, const AVDictionary *codec_avopt)
+{
+    const OutputFile *of = &mux->of;
+
+    AVDictionary *unused_opts;
+    const AVDictionaryEntry *e;
+
+    unused_opts = strip_specifiers(codec_avopt);
+    for (int i = 0; i < of->nb_streams; i++) {
+        e = NULL;
+        while ((e = av_dict_get(of->streams[i]->encoder_opts, "", e,
+                                AV_DICT_IGNORE_SUFFIX)))
+            av_dict_set(&unused_opts, e->key, NULL, 0);
+    }
+
+    e = NULL;
+    while ((e = av_dict_get(unused_opts, "", e, AV_DICT_IGNORE_SUFFIX))) {
+        const AVClass *class = avcodec_get_class();
+        const AVOption *option = av_opt_find(&class, e->key, NULL, 0,
+                                             AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ);
+        const AVClass *fclass = avformat_get_class();
+        const AVOption *foption = av_opt_find(&fclass, e->key, NULL, 0,
+                                              AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ);
+        if (!option || foption)
+            continue;
+
+        if (!(option->flags & AV_OPT_FLAG_ENCODING_PARAM)) {
+            av_log(NULL, AV_LOG_ERROR, "Codec AVOption %s (%s) specified for "
+                   "output file #%d (%s) is not an encoding option.\n", e->key,
+                   option->help ? option->help : "", nb_output_files - 1,
+                   mux->fc->url);
+            exit_program(1);
+        }
+
+        // gop_timecode is injected by generic code but not always used
+        if (!strcmp(e->key, "gop_timecode"))
+            continue;
+
+        av_log(NULL, AV_LOG_WARNING, "Codec AVOption %s (%s) specified for "
+               "output file #%d (%s) has not been used for any stream. The most "
+               "likely reason is either wrong type (e.g. a video option with "
+               "no video streams) or that it is a private option of some encoder "
+               "which was not actually used for any stream.\n", e->key,
+               option->help ? option->help : "", nb_output_files - 1, mux->fc->url);
+    }
+    av_dict_free(&unused_opts);
+}
+
 int of_open(const OptionsContext *o, const char *filename)
 {
     Muxer *mux;
     AVFormatContext *oc;
     int err;
     OutputFile *of;
-    AVDictionary *unused_opts = NULL;
-    const AVDictionaryEntry *e = NULL;
 
     int64_t recording_time = o->recording_time;
     int64_t stop_time      = o->stop_time;
@@ -1795,46 +1841,7 @@ int of_open(const OptionsContext *o, const char *filename)
     create_streams(mux, o);
 
     /* check if all codec options have been used */
-    unused_opts = strip_specifiers(o->g->codec_opts);
-    for (int i = 0; i < of->nb_streams; i++) {
-        e = NULL;
-        while ((e = av_dict_get(of->streams[i]->encoder_opts, "", e,
-                                AV_DICT_IGNORE_SUFFIX)))
-            av_dict_set(&unused_opts, e->key, NULL, 0);
-    }
-
-    e = NULL;
-    while ((e = av_dict_get(unused_opts, "", e, AV_DICT_IGNORE_SUFFIX))) {
-        const AVClass *class = avcodec_get_class();
-        const AVOption *option = av_opt_find(&class, e->key, NULL, 0,
-                                             AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ);
-        const AVClass *fclass = avformat_get_class();
-        const AVOption *foption = av_opt_find(&fclass, e->key, NULL, 0,
-                                              AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ);
-        if (!option || foption)
-            continue;
-
-
-        if (!(option->flags & AV_OPT_FLAG_ENCODING_PARAM)) {
-            av_log(NULL, AV_LOG_ERROR, "Codec AVOption %s (%s) specified for "
-                   "output file #%d (%s) is not an encoding option.\n", e->key,
-                   option->help ? option->help : "", nb_output_files - 1,
-                   filename);
-            exit_program(1);
-        }
-
-        // gop_timecode is injected by generic code but not always used
-        if (!strcmp(e->key, "gop_timecode"))
-            continue;
-
-        av_log(NULL, AV_LOG_WARNING, "Codec AVOption %s (%s) specified for "
-               "output file #%d (%s) has not been used for any stream. The most "
-               "likely reason is either wrong type (e.g. a video option with "
-               "no video streams) or that it is a private option of some encoder "
-               "which was not actually used for any stream.\n", e->key,
-               option->help ? option->help : "", nb_output_files - 1, filename);
-    }
-    av_dict_free(&unused_opts);
+    validate_enc_avopt(mux, o->g->codec_opts);
 
     /* set the decoding_needed flags and create simple filtergraphs */
     for (int i = 0; i < of->nb_streams; i++) {

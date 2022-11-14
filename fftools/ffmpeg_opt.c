@@ -165,7 +165,7 @@ static int show_hwaccels(void *optctx, const char *opt, const char *arg)
 }
 
 /* return a copy of the input with the stream specifiers removed from the keys */
-AVDictionary *strip_specifiers(AVDictionary *dict)
+AVDictionary *strip_specifiers(const AVDictionary *dict)
 {
     const AVDictionaryEntry *e = NULL;
     AVDictionary    *ret = NULL;
