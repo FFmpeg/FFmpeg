@@ -56,9 +56,9 @@ and should try to fix issues their commit causes.
 @anchor{Coding Rules}
 @chapter Coding Rules
 
-@section C language features
+@section Language
 
-FFmpeg is programmed in the ISO C99 language, extended with:
+FFmpeg is mainly programmed in the ISO C99 language, extended with:
 @itemize @bullet
 @item
 Atomic operations from C11 @file{stdatomic.h}. They are emulated on
@@ -81,6 +81,40 @@ complex numbers;
 
 @item
 mixed statements and declarations.
+@end itemize
+
+@subsection SIMD/DSP
+@anchor{SIMD/DSP}
+
+As modern compilers are unable to generate efficient SIMD or other
+performance-critical DSP code from plain C, handwritten assembly is used.
+Usually such code is isolated in a separate function. Then the standard approach
+is writing multiple versions of this function – a plain C one that works
+everywhere and may also be useful for debugging, and potentially multiple
+architecture-specific optimized implementations. Initialization code then
+chooses the best available version at runtime and loads it into a function
+pointer; the function in question is then always called through this pointer.
+
+The specific syntax used for writing assembly is:
+@itemize @bullet
+@item
+NASM on x86;
+
+@item
+GAS on ARM.
+@end itemize
+
+@subsection Other languages
+
+Other languages than C may be used in special cases:
+@itemize @bullet
+@item
+Compiler intrinsics or inline assembly when the code in question cannot be
+written in the standard way described in the @ref{SIMD/DSP} section. This
+typically applies to code that needs to be inlined.
+
+@item
+Objective-C where required for interacting with macOS-specific interfaces.
 @end itemize
 
 @section Code formatting conventions
