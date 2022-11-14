@@ -22,6 +22,9 @@
 #define AVUTIL_X86_INTREADWRITE_H
 
 #include <stdint.h>
+#if HAVE_INTRINSICS_SSE2
+#include <emmintrin.h>
+#endif
 #include "config.h"
 #include "libavutil/attributes.h"
 
@@ -43,20 +46,16 @@ static av_always_inline void AV_COPY128(void *d, const void *s)
 
 #endif /* __SSE__ */
 
-#ifdef __SSE2__
+#if HAVE_INTRINSICS_SSE2
 
 #define AV_ZERO128 AV_ZERO128
 static av_always_inline void AV_ZERO128(void *d)
 {
-    struct v {uint64_t v[2];};
-
-    __asm__("pxor %%xmm0, %%xmm0  \n\t"
-            "movdqa   %%xmm0, %0  \n\t"
-            : "=m"(*(struct v*)d)
-            :: "xmm0");
+    __m128i zero = _mm_setzero_si128();
+    _mm_store_si128(d, zero);
 }
 
-#endif /* __SSE2__ */
+#endif /* HAVE_INTRINSICS_SSE2 */
 
 #endif /* HAVE_MMX */
 
