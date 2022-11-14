@@ -56,6 +56,58 @@ and should try to fix issues their commit causes.
 @anchor{Coding Rules}
 @chapter Coding Rules
 
+@section C language features
+
+FFmpeg is programmed in the ISO C90 language with a few additional
+features from ISO C99, namely:
+
+@itemize @bullet
+@item
+the @samp{inline} keyword;
+
+@item
+@samp{//} comments;
+
+@item
+designated struct initializers (@samp{struct s x = @{ .i = 17 @};});
+
+@item
+compound literals (@samp{x = (struct s) @{ 17, 23 @};}).
+
+@item
+for loops with variable definition (@samp{for (int i = 0; i < 8; i++)});
+
+@item
+Variadic macros (@samp{#define ARRAY(nb, ...) (int[nb + 1])@{ nb, __VA_ARGS__ @}});
+
+@item
+Implementation defined behavior for signed integers is assumed to match the
+expected behavior for two's complement. Non representable values in integer
+casts are binary truncated. Shift right of signed values uses sign extension.
+@end itemize
+
+These features are supported by all compilers we care about, so we will not
+accept patches to remove their use unless they absolutely do not impair
+clarity and performance.
+
+All code must compile with recent versions of GCC and a number of other
+currently supported compilers. To ensure compatibility, please do not use
+additional C99 features or GCC extensions. Especially watch out for:
+
+@itemize @bullet
+@item
+mixing statements and declarations;
+
+@item
+@samp{long long} (use @samp{int64_t} instead);
+
+@item
+@samp{__attribute__} not protected by @samp{#ifdef __GNUC__} or similar;
+
+@item
+GCC statement expressions (@samp{(x = (@{ int y = 4; y; @})}).
+@end itemize
+
 @section Code formatting conventions
 
 There are the following guidelines regarding the indentation in files:
@@ -120,58 +172,6 @@ typedef struct Foobar @{
 int myfunc(int my_parameter)
 ...
 @end example
-
-@section C language features
-
-FFmpeg is programmed in the ISO C90 language with a few additional
-features from ISO C99, namely:
-
-@itemize @bullet
-@item
-the @samp{inline} keyword;
-
-@item
-@samp{//} comments;
-
-@item
-designated struct initializers (@samp{struct s x = @{ .i = 17 @};});
-
-@item
-compound literals (@samp{x = (struct s) @{ 17, 23 @};}).
-
-@item
-for loops with variable definition (@samp{for (int i = 0; i < 8; i++)});
-
-@item
-Variadic macros (@samp{#define ARRAY(nb, ...) (int[nb + 1])@{ nb, __VA_ARGS__ @}});
-
-@item
-Implementation defined behavior for signed integers is assumed to match the
-expected behavior for two's complement. Non representable values in integer
-casts are binary truncated. Shift right of signed values uses sign extension.
-@end itemize
-
-These features are supported by all compilers we care about, so we will not
-accept patches to remove their use unless they absolutely do not impair
-clarity and performance.
-
-All code must compile with recent versions of GCC and a number of other
-currently supported compilers. To ensure compatibility, please do not use
-additional C99 features or GCC extensions. Especially watch out for:
-
-@itemize @bullet
-@item
-mixing statements and declarations;
-
-@item
-@samp{long long} (use @samp{int64_t} instead);
-
-@item
-@samp{__attribute__} not protected by @samp{#ifdef __GNUC__} or similar;
-
-@item
-GCC statement expressions (@samp{(x = (@{ int y = 4; y; @})}).
-@end itemize
 
 @section Naming conventions
 All names should be composed with underscores (_), not CamelCase. For example,
