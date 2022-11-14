@@ -1727,6 +1727,8 @@ static int set_dispositions(OutputFile *of, AVFormatContext *ctx)
 
 static void validate_enc_avopt(const Muxer *mux, const AVDictionary *codec_avopt)
 {
+    const AVClass *class  = avcodec_get_class();
+    const AVClass *fclass = avformat_get_class();
     const OutputFile *of = &mux->of;
 
     AVDictionary *unused_opts;
@@ -1742,10 +1744,8 @@ static void validate_enc_avopt(const Muxer *mux, const AVDictionary *codec_avopt
 
     e = NULL;
     while ((e = av_dict_get(unused_opts, "", e, AV_DICT_IGNORE_SUFFIX))) {
-        const AVClass *class = avcodec_get_class();
         const AVOption *option = av_opt_find(&class, e->key, NULL, 0,
                                              AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ);
-        const AVClass *fclass = avformat_get_class();
         const AVOption *foption = av_opt_find(&fclass, e->key, NULL, 0,
                                               AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ);
         if (!option || foption)
