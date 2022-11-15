@@ -333,7 +333,7 @@ static int config_output(AVFilterLink *outlink)
     s->mag_total = av_calloc(s->rdft_size, sizeof(*s->mag_total));
     s->lfe_mag = av_calloc(s->rdft_size, sizeof(*s->lfe_mag));
     if (!s->x_pos || !s->y_pos || !s->l_phase || !s->r_phase ||
-        !s->c_phase || !s->lfe_mag)
+        !s->c_phase || !s->mag_total || !s->lfe_mag)
         return AVERROR(ENOMEM);
 
     return 0;
