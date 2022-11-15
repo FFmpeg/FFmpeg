@@ -180,25 +180,30 @@ int myfunc(int my_parameter)
 @end example
 
 @section Naming conventions
-All names should be composed with underscores (_), not CamelCase. For example,
-@samp{avfilter_get_video_buffer} is an acceptable function name and
-@samp{AVFilterGetVideo} is not. The exception from this are type names, like
-for example structs and enums; they should always be in CamelCase.
 
-There are the following conventions for naming variables and functions:
+Names of functions, variables, and struct members must be lowercase, using
+underscores (_) to separate words. For example, @samp{avfilter_get_video_buffer}
+is an acceptable function name and @samp{AVFilterGetVideo} is not.
 
+Struct, union, enum, and typedeffed type names must use CamelCase. All structs
+and unions should be typedeffed to the same name as the struct/union tag, e.g.
+@code{typedef struct AVFoo @{ ... @} AVFoo;}. Enums are typically not
+typedeffed.
+
+Enumeration constants and macros must be UPPERCASE, except for macros
+masquerading as functions, which should use the function naming convention.
+
+All identifiers in the libraries should be namespaced as follows:
 @itemize @bullet
 @item
-For local variables no prefix is required.
+No namespacing for identifiers with file and lower scope (e.g. local variables,
+static functions), and struct and union members,
 
 @item
-For file-scope variables and functions declared as @code{static}, no prefix
-is required.
-
-@item
-For variables and functions visible outside of file scope, but only used
-internally by a library, an @code{ff_} prefix should be used,
-e.g. @samp{ff_w64_demuxer}.
+The @code{ff_} prefix must be used for variables and functions visible outside
+of file scope, but only used internally within a single library, e.g.
+@samp{ff_w64_demuxer}. This prevents name collisions when FFmpeg is statically
+linked.
 
 @item
 For variables and functions visible outside of file scope, used internally
@@ -206,13 +211,19 @@ across multiple libraries, use @code{avpriv_} as prefix, for example,
 @samp{avpriv_report_missing_feature}.
 
 @item
+All other internal identifiers, like private type or macro names, should be
+namespaced only to avoid possible internal conflicts. E.g. @code{H264_NAL_SPS}
+vs. @code{HEVC_NAL_SPS}.
+
+@item
 Each library has its own prefix for public symbols, in addition to the
 commonly used @code{av_} (@code{avformat_} for libavformat,
 @code{avcodec_} for libavcodec, @code{swr_} for libswresample, etc).
 Check the existing code and choose names accordingly.
-Note that some symbols without these prefixes are also exported for
-retro-compatibility reasons. These exceptions are declared in the
-@code{lib<name>/lib<name>.v} files.
+
+@item
+Other public identifiers (struct, union, enum, macro, type names) must use their
+library's public prefix (@code{AV}, @code{Sws}, or @code{Swr}).
 @end itemize
 
 Furthermore, name space reserved for the system should not be invaded.
