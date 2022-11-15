@@ -105,9 +105,6 @@ K&R coding style is used.
 @end itemize
 The presentation is one inspired by 'indent -i4 -kr -nut'.
 
-The main priority in FFmpeg is simplicity and small code size in order to
-minimize the bug count.
-
 @subsection Vim configuration
 In order to configure Vim to follow FFmpeg formatting conventions, paste
 the following snippet into your @file{.vimrc}:
