@@ -57,6 +57,7 @@ typedef struct AudioSurroundContext {
     float lfe_out;
     int   lfe_mode;
     float angle;
+    float focus;
     int   win_size;
     int   win_func;
     float overlap;
@@ -339,7 +340,17 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-static void stereo_transform(float *x, float *y, float angle)
+static float sqrf(float x)
+{
+    return x * x;
+}
+
+static float r_distance(float a)
+{
+    return fminf(sqrtf(1.f + sqrf(tanf(a))), sqrtf(1.f + sqrf(1.f / tanf(a))));
+}
+
+static void angle_transform(float *x, float *y, float angle)
 {
     float reference, r, a;
 
@@ -350,11 +361,31 @@ static void stereo_transform(float *x, float *y, float angle)
     r = hypotf(*x, *y);
     a = atan2f(*x, *y);
 
+    r /= r_distance(a);
+
     if (fabsf(a) <= M_PI_4)
         a *= reference / M_PI_2;
     else
-        a = M_PI + 2 * (-2 * M_PI + reference) * (M_PI - fabsf(a)) * FFDIFFSIGN(a, 0) / (3 * M_PI);
+        a = M_PI + (-2.f * M_PI + reference) * (M_PI - fabsf(a)) * FFDIFFSIGN(a, 0.f) / (3.f * M_PI_2);
 
+    r *= r_distance(a);
+
+    *x = av_clipf(sinf(a) * r, -1.f, 1.f);
+    *y = av_clipf(cosf(a) * r, -1.f, 1.f);
+}
+
+static void focus_transform(float *x, float *y, float focus)
+{
+    float a, r, ra;
+
+    if (focus == 0.f)
+        return;
+
+    a = atan2f(*x, *y);
+    ra = r_distance(a);
+    r = av_clipf(hypotf(*x, *y) / ra, 0.f, 1.f);
+    r = focus > 0.f ? 1.f - powf(1.f - r, 1.f + focus * 20.f) : powf(r, 1.f - focus * 20.f);
+    r *= ra;
     *x = av_clipf(sinf(a) * r, -1.f, 1.f);
     *y = av_clipf(cosf(a) * r, -1.f, 1.f);
 }
@@ -1405,6 +1436,7 @@ static void filter_stereo(AVFilterContext *ctx)
     const float highcut = s->highcut;
     const float lowcut = s->lowcut;
     const float angle = s->angle;
+    const float focus = s->focus;
     float *magtotal = s->mag_total;
     float *lfemag = s->lfe_mag;
     float *lphase = s->l_phase;
@@ -1431,7 +1463,8 @@ static void filter_stereo(AVFilterContext *ctx)
             phase_dif = 2.f * M_PI - phase_dif;
 
         stereo_position(mag_dif, phase_dif, &x, &y);
-        stereo_transform(&x, &y, angle);
+        angle_transform(&x, &y, angle);
+        focus_transform(&x, &y, focus);
         get_lfe(output_lfe, n, lowcut, highcut, &lfemag[n], &mag_total, lfe_mode);
 
         xpos[n]   = x;
@@ -1473,7 +1506,7 @@ static void filter_surround(AVFilterContext *ctx)
             phase_dif = 2.f * M_PI - phase_dif;
 
         stereo_position(mag_dif, phase_dif, &x, &y);
-        stereo_transform(&x, &y, s->angle);
+        angle_transform(&x, &y, s->angle);
 
         s->upmix_3_0(ctx, l_phase, r_phase, c_phase, c_mag, mag_total, x, y, n);
     }
@@ -1508,7 +1541,7 @@ static void filter_2_1(AVFilterContext *ctx)
             phase_dif = 2.f * M_PI - phase_dif;
 
         stereo_position(mag_dif, phase_dif, &x, &y);
-        stereo_transform(&x, &y, s->angle);
+        angle_transform(&x, &y, s->angle);
 
         s->upmix_2_1(ctx, l_phase, r_phase, c_phase, mag_total, lfe_re, lfe_im, x, y, n);
     }
@@ -2047,6 +2080,7 @@ static const AVOption surround_options[] = {
     {  "add",      "just add LFE channel",                  0,                  AV_OPT_TYPE_CONST,  {.i64=0},     0,   1, FLAGS, "lfe_mode" },
     {  "sub",      "substract LFE channel with others",     0,                  AV_OPT_TYPE_CONST,  {.i64=1},     0,   1, FLAGS, "lfe_mode" },
     { "angle",     "set soundfield transform angle",        OFFSET(angle),      AV_OPT_TYPE_FLOAT,  {.dbl=90},    0, 360, FLAGS },
+    { "focus",     "set soundfield transform focus",        OFFSET(focus),      AV_OPT_TYPE_FLOAT,  {.dbl=0},    -1,   1, FLAGS },
     { "fc_in",     "set front center channel input level",  OFFSET(fc_in),      AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, FLAGS },
     { "fc_out",    "set front center channel output level", OFFSET(fc_out),     AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, FLAGS },
     { "fl_in",     "set front left channel input level",    OFFSET(fl_in),      AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, FLAGS },

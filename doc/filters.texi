@@ -6674,6 +6674,10 @@ also all non-LFE output channels are subtracted with output LFE channel.
 Set angle of stereo surround transform, Allowed range is from @var{0} to @var{360}.
 Default is @var{90}.
 
+@item focus
+Set focus of stereo surround transform, Allowed range is from @var{-1} to @var{1}.
+Default is @var{0}.
+
 @item fc_in
 Set front center input volume. By default, this is @var{1}.
 
