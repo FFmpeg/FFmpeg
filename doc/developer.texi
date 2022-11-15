@@ -108,6 +108,40 @@ The presentation is one inspired by 'indent -i4 -kr -nut'.
 The main priority in FFmpeg is simplicity and small code size in order to
 minimize the bug count.
 
+@subsection Vim configuration
+In order to configure Vim to follow FFmpeg formatting conventions, paste
+the following snippet into your @file{.vimrc}:
+@example
+" indentation rules for FFmpeg: 4 spaces, no tabs
+set expandtab
+set shiftwidth=4
+set softtabstop=4
+set cindent
+set cinoptions=(0
+" Allow tabs in Makefiles.
+autocmd FileType make,automake set noexpandtab shiftwidth=8 softtabstop=8
+" Trailing whitespace and tabs are forbidden, so highlight them.
+highlight ForbiddenWhitespace ctermbg=red guibg=red
+match ForbiddenWhitespace /\s\+$\|\t/
+" Do not highlight spaces at the end of line while typing on that line.
+autocmd InsertEnter * match ForbiddenWhitespace /\t\|\s\+\%#\@@<!$/
+@end example
+
+@subsection Emacs configuration
+For Emacs, add these roughly equivalent lines to your @file{.emacs.d/init.el}:
+@lisp
+(c-add-style "ffmpeg"
+             '("k&r"
+               (c-basic-offset . 4)
+               (indent-tabs-mode . nil)
+               (show-trailing-whitespace . t)
+               (c-offsets-alist
+                (statement-cont . (c-lineup-assignments +)))
+               )
+             )
+(setq c-default-style "ffmpeg")
+@end lisp
+
 @section Comments
 Use the JavaDoc/Doxygen  format (see examples below) so that code documentation
 can be generated automatically. All nontrivial functions should have a comment
@@ -203,39 +237,6 @@ please use av_log() instead.
 Casts should be used only when necessary. Unneeded parentheses
 should also be avoided if they don't make the code easier to understand.
 @end itemize
-
-@section Editor configuration
-In order to configure Vim to follow FFmpeg formatting conventions, paste
-the following snippet into your @file{.vimrc}:
-@example
-" indentation rules for FFmpeg: 4 spaces, no tabs
-set expandtab
-set shiftwidth=4
-set softtabstop=4
-set cindent
-set cinoptions=(0
-" Allow tabs in Makefiles.
-autocmd FileType make,automake set noexpandtab shiftwidth=8 softtabstop=8
-" Trailing whitespace and tabs are forbidden, so highlight them.
-highlight ForbiddenWhitespace ctermbg=red guibg=red
-match ForbiddenWhitespace /\s\+$\|\t/
-" Do not highlight spaces at the end of line while typing on that line.
-autocmd InsertEnter * match ForbiddenWhitespace /\t\|\s\+\%#\@@<!$/
-@end example
-
-For Emacs, add these roughly equivalent lines to your @file{.emacs.d/init.el}:
-@lisp
-(c-add-style "ffmpeg"
-             '("k&r"
-               (c-basic-offset . 4)
-               (indent-tabs-mode . nil)
-               (show-trailing-whitespace . t)
-               (c-offsets-alist
-                (statement-cont . (c-lineup-assignments +)))
-               )
-             )
-(setq c-default-style "ffmpeg")
-@end lisp
 
 @anchor{Development Policy}
 @chapter Development Policy
