@@ -1783,7 +1783,8 @@ static av_cold int nvenc_setup_extradata(AVCodecContext *avctx)
 
     NVENCSTATUS nv_status;
     uint32_t outSize = 0;
-    char tmpHeader[256];
+    char tmpHeader[NV_MAX_SEQ_HDR_LEN];
+
     NV_ENC_SEQUENCE_PARAM_PAYLOAD payload = { 0 };
     payload.version = NV_ENC_SEQUENCE_PARAM_PAYLOAD_VER;
 
