@@ -486,7 +486,12 @@ typedef enum {
 typedef struct OutputStream {
     int file_index;          /* file index */
     int index;               /* stream index in the output file */
-    int source_index;        /* InputStream index */
+
+    /* input stream that is the source for this output stream;
+     * may be NULL for streams with no well-defined source, e.g.
+     * attachments or outputs from complex filtergraphs */
+    InputStream *ist;
+
     AVStream *st;            /* stream in the output file */
     /* number of frames emitted by the video-encoding sync code */
     int64_t vsync_frame_number;

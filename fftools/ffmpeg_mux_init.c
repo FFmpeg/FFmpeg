@@ -354,10 +354,10 @@ static OutputStream *new_output_stream(Muxer *mux, const OptionsContext *o,
     if (ost->enc_ctx && av_get_exact_bits_per_sample(ost->enc_ctx->codec_id) == 24)
         av_dict_set(&ost->swr_opts, "output_sample_bits", "24", 0);
 
-    ost->source_index = source_index;
     if (source_index >= 0) {
-        input_streams[source_index]->discard = 0;
-        input_streams[source_index]->st->discard = input_streams[source_index]->user_set_discard;
+        ost->ist = input_streams[source_index];
+        ost->ist->discard = 0;
+        ost->ist->st->discard = ost->ist->user_set_discard;
     }
     ost->last_mux_dts = AV_NOPTS_VALUE;
     ost->last_filter_pts = AV_NOPTS_VALUE;
@@ -631,9 +631,8 @@ static OutputStream *new_video_stream(Muxer *mux, const OptionsContext *o, int s
                                      VSYNC_CFR;
             }
 
-            if (ost->source_index >= 0 && ost->vsync_method == VSYNC_CFR) {
-                const InputStream *ist = input_streams[ost->source_index];
-                const InputFile *ifile = input_files[ist->file_index];
+            if (ost->ist && ost->vsync_method == VSYNC_CFR) {
+                const InputFile *ifile = input_files[ost->ist->file_index];
 
                 if (ifile->nb_streams == 1 && ifile->input_ts_offset == 0)
                     ost->vsync_method = VSYNC_VSCFR;
@@ -730,12 +729,12 @@ static OutputStream *new_audio_stream(Muxer *mux, const OptionsContext *o, int s
 
                 if (map->channel_idx == -1) {
                     ist = NULL;
-                } else if (ost->source_index < 0) {
+                } else if (!ost->ist) {
                     av_log(NULL, AV_LOG_FATAL, "Cannot determine input stream for channel mapping %d.%d\n",
                            ost->file_index, ost->st->index);
                     continue;
                 } else {
-                    ist = input_streams[ost->source_index];
+                    ist = ost->ist;
                 }
 
                 if (!ist || (ist->file_index == map->file_idx && ist->st->index == map->stream_idx)) {
@@ -1648,11 +1647,10 @@ static void copy_meta(Muxer *mux, const OptionsContext *o)
     if (!metadata_streams_manual)
         for (int i = 0; i < of->nb_streams; i++) {
             OutputStream *ost = of->streams[i];
-            InputStream *ist;
-            if (ost->source_index < 0)         /* this is true e.g. for attached files */
+
+            if (!ost->ist)         /* this is true e.g. for attached files */
                 continue;
-            ist = input_streams[ost->source_index];
-            av_dict_copy(&ost->st->metadata, ist->st->metadata, AV_DICT_DONT_OVERWRITE);
+            av_dict_copy(&ost->st->metadata, ost->ist->st->metadata, AV_DICT_DONT_OVERWRITE);
             if (ost->enc_ctx) {
                 av_dict_set(&ost->st->metadata, "encoder", NULL, 0);
             }
@@ -1673,8 +1671,8 @@ static int set_dispositions(OutputFile *of, AVFormatContext *ctx)
 
         have_manual |= !!ost->disposition;
 
-        if (ost->source_index >= 0) {
-            ost->st->disposition = input_streams[ost->source_index]->st->disposition;
+        if (ost->ist) {
+            ost->st->disposition = ost->ist->st->disposition;
 
             if (ost->st->disposition & AV_DISPOSITION_DEFAULT)
                 have_default[ost->st->codecpar->codec_type] = 1;
@@ -1846,8 +1844,8 @@ int of_open(const OptionsContext *o, const char *filename)
     for (int i = 0; i < of->nb_streams; i++) {
         OutputStream *ost = of->streams[i];
 
-        if (ost->enc_ctx && ost->source_index >= 0) {
-            InputStream *ist = input_streams[ost->source_index];
+        if (ost->enc_ctx && ost->ist) {
+            InputStream *ist = ost->ist;
             ist->decoding_needed |= DECODING_FOR_OST;
             ist->processing_needed = 1;
 
@@ -1857,14 +1855,13 @@ int of_open(const OptionsContext *o, const char *filename)
                 if (err < 0) {
                     av_log(NULL, AV_LOG_ERROR,
                            "Error initializing a simple filtergraph between streams "
-                           "%d:%d->%d:%d\n", ist->file_index, ost->source_index,
+                           "%d:%d->%d:%d\n", ist->file_index, ist->st->index,
                            nb_output_files - 1, ost->st->index);
                     exit_program(1);
                 }
             }
-        } else if (ost->source_index >= 0) {
-            InputStream *ist = input_streams[ost->source_index];
-            ist->processing_needed = 1;
+        } else if (ost->ist) {
+            ost->ist->processing_needed = 1;
         }
 
         /* set the filter output constraints */
