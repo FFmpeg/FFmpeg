@@ -502,6 +502,28 @@ static int decode_interrupt_cb(void *ctx)
 
 const AVIOInterruptCB int_cb = { decode_interrupt_cb, NULL };
 
+static void ist_free(InputStream **pist)
+{
+    InputStream *ist = *pist;
+
+    if (!ist)
+        return;
+
+    av_frame_free(&ist->decoded_frame);
+    av_packet_free(&ist->pkt);
+    av_dict_free(&ist->decoder_opts);
+    avsubtitle_free(&ist->prev_sub.subtitle);
+    av_frame_free(&ist->sub2video.frame);
+    av_freep(&ist->filters);
+    av_freep(&ist->hwaccel_device);
+    av_freep(&ist->dts_buffer);
+
+    avcodec_free_context(&ist->dec_ctx);
+    avcodec_parameters_free(&ist->par);
+
+    av_freep(pist);
+}
+
 static void ffmpeg_cleanup(int ret)
 {
     int i, j;
@@ -558,23 +580,8 @@ static void ffmpeg_cleanup(int ret)
     for (i = 0; i < nb_input_files; i++)
         ifile_close(&input_files[i]);
 
-    for (i = 0; i < nb_input_streams; i++) {
-        InputStream *ist = input_streams[i];
-
-        av_frame_free(&ist->decoded_frame);
-        av_packet_free(&ist->pkt);
-        av_dict_free(&ist->decoder_opts);
-        avsubtitle_free(&ist->prev_sub.subtitle);
-        av_frame_free(&ist->sub2video.frame);
-        av_freep(&ist->filters);
-        av_freep(&ist->hwaccel_device);
-        av_freep(&ist->dts_buffer);
-
-        avcodec_free_context(&ist->dec_ctx);
-        avcodec_parameters_free(&ist->par);
-
-        av_freep(&input_streams[i]);
-    }
+    for (i = 0; i < nb_input_streams; i++)
+        ist_free(&input_streams[i]);
 
     if (vstats_file) {
         if (fclose(vstats_file))
