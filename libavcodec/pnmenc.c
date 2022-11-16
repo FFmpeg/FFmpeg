@@ -136,9 +136,10 @@ static int pnm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     if ((avctx->pix_fmt == AV_PIX_FMT_GBRPF32LE ||
          avctx->pix_fmt == AV_PIX_FMT_GBRPF32BE) && c == 'F') {
-        const float *r = (const float *)p->data[2];
-        const float *g = (const float *)p->data[0];
-        const float *b = (const float *)p->data[1];
+        /* PFM is encoded from bottom to top */
+        const float *r = (const float *)(p->data[2] + p->linesize[2] * (avctx->height - 1));
+        const float *g = (const float *)(p->data[0] + p->linesize[0] * (avctx->height - 1));
+        const float *b = (const float *)(p->data[1] + p->linesize[1] * (avctx->height - 1));
 
         for (int i = 0; i < avctx->height; i++) {
             for (int j = 0; j < avctx->width; j++) {
@@ -148,13 +149,14 @@ static int pnm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 bytestream += 12;
             }
 
-            r += p->linesize[2] / 4;
-            g += p->linesize[0] / 4;
-            b += p->linesize[1] / 4;
+            r -= p->linesize[2] / 4;
+            g -= p->linesize[0] / 4;
+            b -= p->linesize[1] / 4;
         }
     } else if ((avctx->pix_fmt == AV_PIX_FMT_GRAYF32LE ||
                 avctx->pix_fmt == AV_PIX_FMT_GRAYF32BE) && c == 'f') {
-        const float *g = (const float *)p->data[0];
+        /* PFM is encoded from bottom to top */
+        const float *g = (const float *)(p->data[0] + p->linesize[0] * (avctx->height - 1));
 
         for (int i = 0; i < avctx->height; i++) {
             for (int j = 0; j < avctx->width; j++) {
@@ -162,7 +164,7 @@ static int pnm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 bytestream += 4;
             }
 
-            g += p->linesize[0] / 4;
+            g -= p->linesize[0] / 4;
         }
     } else if (avctx->pix_fmt == AV_PIX_FMT_GBRPF32 && c == 'H') {
         const float *r = (const float *)p->data[2];
