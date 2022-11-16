@@ -2404,7 +2404,8 @@ static av_always_inline int decode_mb_row_no_filter(AVCodecContext *avctx, void 
     int num_jobs = s->num_jobs;
     const VP8Frame *prev_frame = s->prev_frame;
     VP8Frame *curframe = s->curframe;
-    VPXRangeCoder *c  = &s->coeff_partition[mb_y & (s->num_coeff_partitions - 1)];
+    VPXRangeCoder *coeff_c  = &s->coeff_partition[mb_y & (s->num_coeff_partitions - 1)];
+
     VP8Macroblock *mb;
     uint8_t *dst[3] = {
         curframe->tf.f->data[0] + 16 * mb_y * s->linesize,
@@ -2412,7 +2413,7 @@ static av_always_inline int decode_mb_row_no_filter(AVCodecContext *avctx, void 
         curframe->tf.f->data[2] +  8 * mb_y * s->uvlinesize
     };
 
-    if (vpx_rac_is_end(c))
+    if (vpx_rac_is_end(&s->c))
          return AVERROR_INVALIDDATA;
 
     if (mb_y == 0)
@@ -2443,7 +2444,7 @@ static av_always_inline int decode_mb_row_no_filter(AVCodecContext *avctx, void 
     td->mv_bounds.mv_max.x = ((s->mb_width - 1) << 6) + MARGIN;
 
     for (mb_x = 0; mb_x < s->mb_width; mb_x++, mb_xy++, mb++) {
-        if (vpx_rac_is_end(c))
+        if (vpx_rac_is_end(&s->c))
             return AVERROR_INVALIDDATA;
         // Wait for previous thread to read mb_x+2, and reach mb_y-1.
         if (prev_td != td) {
@@ -2470,8 +2471,11 @@ static av_always_inline int decode_mb_row_no_filter(AVCodecContext *avctx, void 
 
         prefetch_motion(s, mb, mb_x, mb_y, mb_xy, VP8_FRAME_PREVIOUS);
 
-        if (!mb->skip)
-            decode_mb_coeffs(s, td, c, mb, s->top_nnz[mb_x], td->left_nnz, is_vp7);
+        if (!mb->skip) {
+            if (vpx_rac_is_end(coeff_c))
+                return AVERROR_INVALIDDATA;
+            decode_mb_coeffs(s, td, coeff_c, mb, s->top_nnz[mb_x], td->left_nnz, is_vp7);
+        }
 
         if (mb->mode <= MODE_I4x4)
             intra_predict(s, td, dst, mb, mb_x, mb_y, is_vp7);
