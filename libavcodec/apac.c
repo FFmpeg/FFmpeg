@@ -191,6 +191,8 @@ static int apac_decode(AVCodecContext *avctx, AVFrame *frame,
             if (c->bit_length < 0 ||
                 c->bit_length > 17) {
                 c->bit_length = avctx->bits_per_coded_sample;
+                s->bitstream_index = 0;
+                s->bitstream_size  = 0;
                 return AVERROR_INVALIDDATA;
             }
 
