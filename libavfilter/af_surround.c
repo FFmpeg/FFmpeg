@@ -121,7 +121,7 @@ typedef struct AudioSurroundContext {
     float *window_func_lut;
 
     void (*filter)(AVFilterContext *ctx);
-    int (*upmix)(AVFilterContext *ctx, void *arg, int ch, int nb_jobs);
+    int (*upmix)(AVFilterContext *ctx, int ch);
     void (*upmix_2_1)(AVFilterContext *ctx,
                       float l_phase,
                       float r_phase,
@@ -439,7 +439,7 @@ static inline void get_lfe(int output_lfe, int n, float lowcut, float highcut,
         dst[2 * n    ] = mag * cosf(ph);  \
         dst[2 * n + 1] = mag * sinf(ph);
 
-static int stereo_upmix(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
+static int stereo_upmix(AVFilterContext *ctx, int ch)
 {
     AudioSurroundContext *s = ctx->priv;
     float *dst = (float *)s->output->extended_data[ch];
@@ -1301,12 +1301,16 @@ static int ifft_channel(AVFilterContext *ctx, AVFrame *out, int ch)
 
 static int ifft_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
+    AudioSurroundContext *s = ctx->priv;
     AVFrame *out = arg;
     const int start = (out->ch_layout.nb_channels * jobnr) / nb_jobs;
     const int end = (out->ch_layout.nb_channels * (jobnr+1)) / nb_jobs;
 
-    for (int ch = start; ch < end; ch++)
+    for (int ch = start; ch < end; ch++) {
+        if (s->upmix)
+            s->upmix(ctx, ch);
         ifft_channel(ctx, out, ch);
+    }
 
     return 0;
 }
@@ -1323,8 +1327,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                             ff_filter_get_nb_threads(ctx)));
 
     s->filter(ctx);
-    if (s->upmix)
-        ff_filter_execute(ctx, s->upmix, NULL, NULL, outlink->ch_layout.nb_channels);
 
     out = ff_get_audio_buffer(outlink, s->hop_size);
     if (!out)
