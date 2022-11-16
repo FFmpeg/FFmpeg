@@ -869,15 +869,18 @@ static void map_auto_video(Muxer *mux, const OptionsContext *o)
         for (int i = 0; i < ifile->nb_streams; i++) {
             int score;
             ist = input_streams[ifile->ist_index + i];
+
+            if (ist->user_set_discard == AVDISCARD_ALL ||
+                ist->st->codecpar->codec_type != AVMEDIA_TYPE_VIDEO)
+                continue;
+
             score = ist->st->codecpar->width * ist->st->codecpar->height
                        + 100000000 * !!(ist->st->event_flags & AVSTREAM_EVENT_FLAG_NEW_PACKETS)
                        + 5000000*!!(ist->st->disposition & AV_DISPOSITION_DEFAULT);
-            if (ist->user_set_discard == AVDISCARD_ALL)
-                continue;
             if((qcr!=MKTAG('A', 'P', 'I', 'C')) && (ist->st->disposition & AV_DISPOSITION_ATTACHED_PIC))
                 score = 1;
-            if (ist->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
-                score > file_best_score) {
+
+            if (score > file_best_score) {
                 if((qcr==MKTAG('A', 'P', 'I', 'C')) && !(ist->st->disposition & AV_DISPOSITION_ATTACHED_PIC))
                     continue;
                 file_best_score = score;
@@ -913,13 +916,15 @@ static void map_auto_audio(Muxer *mux, const OptionsContext *o)
         for (int i = 0; i < ifile->nb_streams; i++) {
             int score;
             ist = input_streams[ifile->ist_index + i];
+
+            if (ist->user_set_discard == AVDISCARD_ALL ||
+                ist->st->codecpar->codec_type != AVMEDIA_TYPE_AUDIO)
+                continue;
+
             score = ist->st->codecpar->ch_layout.nb_channels
                     + 100000000 * !!(ist->st->event_flags & AVSTREAM_EVENT_FLAG_NEW_PACKETS)
                     + 5000000*!!(ist->st->disposition & AV_DISPOSITION_DEFAULT);
-            if (ist->user_set_discard == AVDISCARD_ALL)
-                continue;
-            if (ist->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
-                score > file_best_score) {
+            if (score > file_best_score) {
                 file_best_score = score;
                 file_best_idx = ifile->ist_index + i;
             }
