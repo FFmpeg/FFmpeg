@@ -2877,7 +2877,7 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
     if (enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO) {
         if (!ost->frame_rate.num)
             ost->frame_rate = av_buffersink_get_frame_rate(ost->filter->filter);
-        if (ist && !ost->frame_rate.num && !ost->max_frame_rate.num) {
+        if (!ost->frame_rate.num && !ost->max_frame_rate.num) {
             ost->frame_rate = (AVRational){25, 1};
             av_log(NULL, AV_LOG_WARNING,
                    "No information "
