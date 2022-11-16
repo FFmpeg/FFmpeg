@@ -280,10 +280,10 @@ static int predictor_calc_error(int *k, int *state, int order, int error)
     return x;
 }
 
-static void predictor_init_state(int *k, int *state, int order)
+static void predictor_init_state(int *k, unsigned *state, int order)
 {
     for (int i = order - 2; i >= 0; i--) {
-        int x = state[i];
+        unsigned x = state[i];
 
         for (int j = 0, p = i + 1; p < order; j++, p++) {
             int tmp = x + shift_down(k[j] * state[p], LATTICE_SHIFT);
