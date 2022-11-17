@@ -115,9 +115,8 @@ typedef void (*av_tx_fn)(AVTXContext *s, void *out, void *in, ptrdiff_t stride);
  */
 enum AVTXFlags {
     /**
-     * Performs an in-place transformation on the input. The output argument
-     * of av_tn_fn() MUST match the input. May be unsupported or slower for some
-     * transform types.
+     * Allows for in-place transformations, where input == output.
+     * May be unsupported or slower for some transform types.
      */
     AV_TX_INPLACE = 1ULL << 0,
 
