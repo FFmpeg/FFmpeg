@@ -181,8 +181,9 @@ static int copy_stream_props(AVStream *st, AVStream *source_st)
             if (ret < 0)
                 return ret;
         }
-        memcpy(st->codecpar->extradata, source_st->codecpar->extradata,
-               source_st->codecpar->extradata_size);
+        if (source_st->codecpar->extradata_size)
+            memcpy(st->codecpar->extradata, source_st->codecpar->extradata,
+                   source_st->codecpar->extradata_size);
         return 0;
     }
     if ((ret = avcodec_parameters_copy(st->codecpar, source_st->codecpar)) < 0)
