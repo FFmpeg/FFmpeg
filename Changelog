@@ -22,6 +22,9 @@ version <next>:
 - nvenc AV1 encoding support
 - MediaCodec decoder via NDKMediaCodec
 - MediaCodec encoder
+- oneVPL support for QSV
+- QSV AV1 encoder
+- QSV decoding and encoding for 10/12bit 422, 10/12bit 444 HEVC and VP9
 
 
 version 5.1:
