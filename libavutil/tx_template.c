@@ -611,8 +611,8 @@ static const FFTXCodelet TX_NAME(ff_tx_fft##n##_ns_def) = { \
     .name       = TX_NAME_STR("fft" #n "_ns"),              \
     .function   = TX_NAME(ff_tx_fft##n##_ns),               \
     .type       = TX_TYPE(FFT),                             \
-    .flags      = AV_TX_INPLACE | AV_TX_UNALIGNED |         \
-                  FF_TX_PRESHUFFLE,                         \
+    .flags      = FF_TX_OUT_OF_PLACE | AV_TX_INPLACE |      \
+                  AV_TX_UNALIGNED | FF_TX_PRESHUFFLE,       \
     .factors[0] = 2,                                        \
     .min_len    = n,                                        \
     .max_len    = n,                                        \
@@ -621,70 +621,75 @@ static const FFTXCodelet TX_NAME(ff_tx_fft##n##_ns_def) = { \
     .prio       = FF_TX_PRIO_BASE,                          \
 };
 
-#define DECL_SR_CODELET(n, n2, n4)                                   \
-static void TX_NAME(ff_tx_fft##n##_ns)(AVTXContext *s, void *dst,    \
-                                        void *src, ptrdiff_t stride) \
-{                                                                    \
-    TXComplex *z = dst;                                              \
-    const TXSample *cos = TX_TAB(ff_tx_tab_##n);                     \
-                                                                     \
-    TX_NAME(ff_tx_fft##n2##_ns)(s, z,        z,        stride);      \
-    TX_NAME(ff_tx_fft##n4##_ns)(s, z + n4*2, z + n4*2, stride);      \
-    TX_NAME(ff_tx_fft##n4##_ns)(s, z + n4*3, z + n4*3, stride);      \
-    TX_NAME(ff_tx_fft_sr_combine)(z, cos, n4 >> 1);                  \
-}                                                                    \
-                                                                     \
+#define DECL_SR_CODELET(n, n2, n4)                                    \
+static void TX_NAME(ff_tx_fft##n##_ns)(AVTXContext *s, void *_dst,    \
+                                        void *_src, ptrdiff_t stride) \
+{                                                                     \
+    TXComplex *src = _src;                                            \
+    TXComplex *dst = _dst;                                            \
+    const TXSample *cos = TX_TAB(ff_tx_tab_##n);                      \
+                                                                      \
+    TX_NAME(ff_tx_fft##n2##_ns)(s, dst,        src,        stride);   \
+    TX_NAME(ff_tx_fft##n4##_ns)(s, dst + n4*2, src + n4*2, stride);   \
+    TX_NAME(ff_tx_fft##n4##_ns)(s, dst + n4*3, src + n4*3, stride);   \
+    TX_NAME(ff_tx_fft_sr_combine)(dst, cos, n4 >> 1);                 \
+}                                                                     \
+                                                                      \
 DECL_SR_CODELET_DEF(n)
 
-static void TX_NAME(ff_tx_fft2_ns)(AVTXContext *s, void *dst,
-                                   void *src, ptrdiff_t stride)
+static void TX_NAME(ff_tx_fft2_ns)(AVTXContext *s, void *_dst,
+                                   void *_src, ptrdiff_t stride)
 {
-    TXComplex *z = dst;
+    TXComplex *src = _src;
+    TXComplex *dst = _dst;
     TXComplex tmp;
 
-    BF(tmp.re, z[0].re, z[0].re, z[1].re);
-    BF(tmp.im, z[0].im, z[0].im, z[1].im);
-    z[1] = tmp;
+    BF(tmp.re, dst[0].re, src[0].re, src[1].re);
+    BF(tmp.im, dst[0].im, src[0].im, src[1].im);
+    dst[1] = tmp;
 }
 
-static void TX_NAME(ff_tx_fft4_ns)(AVTXContext *s, void *dst,
-                                   void *src, ptrdiff_t stride)
+static void TX_NAME(ff_tx_fft4_ns)(AVTXContext *s, void *_dst,
+                                   void *_src, ptrdiff_t stride)
 {
-    TXComplex *z = dst;
+    TXComplex *src = _src;
+    TXComplex *dst = _dst;
     TXSample t1, t2, t3, t4, t5, t6, t7, t8;
 
-    BF(t3, t1, z[0].re, z[1].re);
-    BF(t8, t6, z[3].re, z[2].re);
-    BF(z[2].re, z[0].re, t1, t6);
-    BF(t4, t2, z[0].im, z[1].im);
-    BF(t7, t5, z[2].im, z[3].im);
-    BF(z[3].im, z[1].im, t4, t8);
-    BF(z[3].re, z[1].re, t3, t7);
-    BF(z[2].im, z[0].im, t2, t5);
+    BF(t3, t1, src[0].re, src[1].re);
+    BF(t8, t6, src[3].re, src[2].re);
+    BF(dst[2].re, dst[0].re, t1, t6);
+    BF(t4, t2, src[0].im, src[1].im);
+    BF(t7, t5, src[2].im, src[3].im);
+    BF(dst[3].im, dst[1].im, t4, t8);
+    BF(dst[3].re, dst[1].re, t3, t7);
+    BF(dst[2].im, dst[0].im, t2, t5);
 }
 
-static void TX_NAME(ff_tx_fft8_ns)(AVTXContext *s, void *dst,
-                                   void *src, ptrdiff_t stride)
+static void TX_NAME(ff_tx_fft8_ns)(AVTXContext *s, void *_dst,
+                                   void *_src, ptrdiff_t stride)
 {
-    TXComplex *z = dst;
+    TXComplex *src = _src;
+    TXComplex *dst = _dst;
     TXSample t1, t2, t3, t4, t5, t6, r0, i0, r1, i1;
     const TXSample cos = TX_TAB(ff_tx_tab_8)[1];
 
-    TX_NAME(ff_tx_fft4_ns)(s, z, z, stride);
+    TX_NAME(ff_tx_fft4_ns)(s, dst, src, stride);
 
-    BF(t1, z[5].re, z[4].re, -z[5].re);
-    BF(t2, z[5].im, z[4].im, -z[5].im);
-    BF(t5, z[7].re, z[6].re, -z[7].re);
-    BF(t6, z[7].im, z[6].im, -z[7].im);
+    BF(t1, dst[5].re, src[4].re, -src[5].re);
+    BF(t2, dst[5].im, src[4].im, -src[5].im);
+    BF(t5, dst[7].re, src[6].re, -src[7].re);
+    BF(t6, dst[7].im, src[6].im, -src[7].im);
 
-    BUTTERFLIES(z[0], z[2], z[4], z[6]);
-    TRANSFORM(z[1], z[3], z[5], z[7], cos, cos);
+    BUTTERFLIES(dst[0], dst[2], dst[4], dst[6]);
+    TRANSFORM(dst[1], dst[3], dst[5], dst[7], cos, cos);
 }
 
-static void TX_NAME(ff_tx_fft16_ns)(AVTXContext *s, void *dst,
-                                    void *src, ptrdiff_t stride)
+static void TX_NAME(ff_tx_fft16_ns)(AVTXContext *s, void *_dst,
+                                    void *_src, ptrdiff_t stride)
 {
-    TXComplex *z = dst;
+    TXComplex *src = _src;
+    TXComplex *dst = _dst;
     const TXSample *cos = TX_TAB(ff_tx_tab_16);
 
     TXSample t1, t2, t3, t4, t5, t6, r0, i0, r1, i1;
@@ -692,19 +697,19 @@ static void TX_NAME(ff_tx_fft16_ns)(AVTXContext *s, void *dst,
     TXSample cos_16_2 = cos[2];
     TXSample cos_16_3 = cos[3];
 
-    TX_NAME(ff_tx_fft8_ns)(s, z +  0, z +  0, stride);
-    TX_NAME(ff_tx_fft4_ns)(s, z +  8, z +  8, stride);
-    TX_NAME(ff_tx_fft4_ns)(s, z + 12, z + 12, stride);
+    TX_NAME(ff_tx_fft8_ns)(s, dst +  0, src +  0, stride);
+    TX_NAME(ff_tx_fft4_ns)(s, dst +  8, src +  8, stride);
+    TX_NAME(ff_tx_fft4_ns)(s, dst + 12, src + 12, stride);
 
-    t1 = z[ 8].re;
-    t2 = z[ 8].im;
-    t5 = z[12].re;
-    t6 = z[12].im;
-    BUTTERFLIES(z[0], z[4], z[8], z[12]);
+    t1 = dst[ 8].re;
+    t2 = dst[ 8].im;
+    t5 = dst[12].re;
+    t6 = dst[12].im;
+    BUTTERFLIES(dst[0], dst[4], dst[8], dst[12]);
 
-    TRANSFORM(z[ 2], z[ 6], z[10], z[14], cos_16_2, cos_16_2);
-    TRANSFORM(z[ 1], z[ 5], z[ 9], z[13], cos_16_1, cos_16_3);
-    TRANSFORM(z[ 3], z[ 7], z[11], z[15], cos_16_3, cos_16_1);
+    TRANSFORM(dst[ 2], dst[ 6], dst[10], dst[14], cos_16_2, cos_16_2);
+    TRANSFORM(dst[ 1], dst[ 5], dst[ 9], dst[13], cos_16_1, cos_16_3);
+    TRANSFORM(dst[ 3], dst[ 7], dst[11], dst[15], cos_16_3, cos_16_1);
 }
 
 DECL_SR_CODELET_DEF(2)
