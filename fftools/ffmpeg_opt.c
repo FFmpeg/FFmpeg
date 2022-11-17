@@ -417,7 +417,7 @@ static int opt_map(void *optctx, const char *opt, const char *arg)
                 if (check_stream_specifier(input_files[file_idx]->ctx, input_files[file_idx]->ctx->streams[i],
                             *p == ':' ? p + 1 : p) <= 0)
                     continue;
-                if (input_streams[input_files[file_idx]->ist_index + i]->user_set_discard == AVDISCARD_ALL) {
+                if (input_files[file_idx]->streams[i]->user_set_discard == AVDISCARD_ALL) {
                     disabled = 1;
                     continue;
                 }
@@ -523,7 +523,7 @@ static int opt_map_channel(void *optctx, const char *opt, const char *arg)
     if (allow_unused = strchr(mapchan, '?'))
         *allow_unused = 0;
     if (m->channel_idx < 0 || m->channel_idx >= st->codecpar->ch_layout.nb_channels ||
-        input_streams[input_files[m->file_idx]->ist_index + m->stream_idx]->user_set_discard == AVDISCARD_ALL) {
+        input_files[m->file_idx]->streams[m->stream_idx]->user_set_discard == AVDISCARD_ALL) {
         if (allow_unused) {
             av_log(NULL, AV_LOG_VERBOSE, "mapchan: invalid audio channel #%d.%d.%d\n",
                     m->file_idx, m->stream_idx, m->channel_idx);

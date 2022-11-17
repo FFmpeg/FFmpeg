@@ -140,13 +140,13 @@ static int seek_to_start(Demuxer *d)
                 return ret;
             got_durations++;
 
-            ist = input_streams[ifile->ist_index + dur.stream_idx];
+            ist = ifile->streams[dur.stream_idx];
             ifile_duration_update(d, ist, dur.duration);
         }
     } else {
         for (int i = 0; i < ifile->nb_streams; i++) {
             int64_t duration = 0;
-            ist   = input_streams[ifile->ist_index + i];
+            ist   = ifile->streams[i];
 
             if (ist->framerate.num) {
                 duration = av_rescale_q(1, av_inv_q(ist->framerate), ist->st->time_base);
@@ -169,14 +169,14 @@ static int seek_to_start(Demuxer *d)
 static void ts_fixup(Demuxer *d, AVPacket *pkt, int *repeat_pict)
 {
     InputFile *ifile = &d->f;
-    InputStream *ist = input_streams[ifile->ist_index + pkt->stream_index];
+    InputStream *ist = ifile->streams[pkt->stream_index];
     const int64_t start_time = ifile->start_time_effective;
     int64_t duration;
 
     if (debug_ts) {
-        av_log(NULL, AV_LOG_INFO, "demuxer -> ist_index:%d type:%s "
+        av_log(NULL, AV_LOG_INFO, "demuxer -> ist_index:%d:%d type:%s "
                "pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s duration:%s duration_time:%s\n",
-               ifile->ist_index + pkt->stream_index,
+               ifile->index, pkt->stream_index,
                av_get_media_type_string(ist->st->codecpar->codec_type),
                av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &ist->st->time_base),
                av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &ist->st->time_base),
@@ -381,7 +381,7 @@ static int thread_start(Demuxer *d)
         int nb_audio_dec = 0;
 
         for (int i = 0; i < f->nb_streams; i++) {
-            InputStream *ist = input_streams[f->ist_index + i];
+            InputStream *ist = f->streams[i];
             nb_audio_dec += !!(ist->decoding_needed &&
                                ist->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO);
         }
@@ -428,7 +428,7 @@ int ifile_get_packet(InputFile *f, AVPacket **pkt)
                              );
         float scale = f->rate_emu ? 1.0 : f->readrate;
         for (i = 0; i < f->nb_streams; i++) {
-            InputStream *ist = input_streams[f->ist_index + i];
+            InputStream *ist = f->streams[i];
             int64_t stream_ts_offset, pts, now;
             if (!ist->nb_packets || (ist->decoding_needed && !ist->got_output)) continue;
             stream_ts_offset = FFMAX(ist->first_dts != AV_NOPTS_VALUE ? ist->first_dts : 0, file_start);
@@ -447,11 +447,33 @@ int ifile_get_packet(InputFile *f, AVPacket **pkt)
     if (msg.looping)
         return 1;
 
-    ist = input_streams[f->ist_index + msg.pkt->stream_index];
+    ist = f->streams[msg.pkt->stream_index];
     ist->last_pkt_repeat_pict = msg.repeat_pict;
 
     *pkt = msg.pkt;
     return 0;
+}
+
+static void ist_free(InputStream **pist)
+{
+    InputStream *ist = *pist;
+
+    if (!ist)
+        return;
+
+    av_frame_free(&ist->decoded_frame);
+    av_packet_free(&ist->pkt);
+    av_dict_free(&ist->decoder_opts);
+    avsubtitle_free(&ist->prev_sub.subtitle);
+    av_frame_free(&ist->sub2video.frame);
+    av_freep(&ist->filters);
+    av_freep(&ist->hwaccel_device);
+    av_freep(&ist->dts_buffer);
+
+    avcodec_free_context(&ist->dec_ctx);
+    avcodec_parameters_free(&ist->par);
+
+    av_freep(pist);
 }
 
 void ifile_close(InputFile **pf)
@@ -463,6 +485,10 @@ void ifile_close(InputFile **pf)
         return;
 
     thread_stop(d);
+
+    for (int i = 0; i < f->nb_streams; i++)
+        ist_free(&f->streams[i]);
+    av_freep(&f->streams);
 
     avformat_close_input(&f->ctx);
 
@@ -562,10 +588,11 @@ static void add_display_matrix_to_stream(const OptionsContext *o,
                            vflip_set ? vflip : 0);
 }
 
-/* Add all the streams from the given input file to the global
- * list of input streams. */
-static void add_input_streams(const OptionsContext *o, AVFormatContext *ic)
+/* Add all the streams from the given input file to the demuxer */
+static void add_input_streams(const OptionsContext *o, Demuxer *d)
 {
+    InputFile       *f  = &d->f;
+    AVFormatContext *ic = f->ctx;
     int i, ret;
 
     for (i = 0; i < ic->nb_streams; i++) {
@@ -582,9 +609,9 @@ static void add_input_streams(const OptionsContext *o, AVFormatContext *ic)
         const AVOption *discard_opt = av_opt_find(&cc, "skip_frame", NULL,
                                                   0, AV_OPT_SEARCH_FAKE_OBJ);
 
-        ist = ALLOC_ARRAY_ELEM(input_streams, nb_input_streams);
+        ist = ALLOC_ARRAY_ELEM(f->streams, f->nb_streams);
         ist->st = st;
-        ist->file_index = nb_input_files;
+        ist->file_index = f->index;
         ist->discard = 1;
         st->discard  = AVDISCARD_ALL;
         ist->nb_samples = 0;
@@ -1017,24 +1044,16 @@ int ifile_open(const OptionsContext *o, const char *filename)
         }
     }
 
-    /* update the current parameters so that they match the one of the input stream */
-    add_input_streams(o, ic);
-
-    /* dump the file content */
-    av_dump_format(ic, nb_input_files, filename, 0);
-
     d = allocate_array_elem(&input_files, sizeof(*d), &nb_input_files);
     f = &d->f;
 
     f->ctx        = ic;
     f->index      = nb_input_files - 1;
-    f->ist_index  = nb_input_streams - ic->nb_streams;
     f->start_time = start_time;
     f->recording_time = recording_time;
     f->input_sync_ref = o->input_sync_ref;
     f->input_ts_offset = o->input_ts_offset;
     f->ts_offset  = o->input_ts_offset - (copy_ts ? (start_at_zero && ic->start_time != AV_NOPTS_VALUE ? ic->start_time : 0) : timestamp);
-    f->nb_streams = ic->nb_streams;
     f->rate_emu   = o->rate_emu;
     f->accurate_seek = o->accurate_seek;
     d->loop = o->loop;
@@ -1053,11 +1072,17 @@ int ifile_open(const OptionsContext *o, const char *filename)
 
     d->thread_queue_size = o->thread_queue_size;
 
+    /* update the current parameters so that they match the one of the input stream */
+    add_input_streams(o, d);
+
+    /* dump the file content */
+    av_dump_format(ic, f->index, filename, 0);
+
     /* check if all codec options have been used */
     unused_opts = strip_specifiers(o->g->codec_opts);
-    for (i = f->ist_index; i < nb_input_streams; i++) {
+    for (i = 0; i < f->nb_streams; i++) {
         e = NULL;
-        while ((e = av_dict_get(input_streams[i]->decoder_opts, "", e,
+        while ((e = av_dict_get(f->streams[i]->decoder_opts, "", e,
                                 AV_DICT_IGNORE_SUFFIX)))
             av_dict_set(&unused_opts, e->key, NULL, 0);
     }

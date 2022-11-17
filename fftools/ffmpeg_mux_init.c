@@ -171,7 +171,7 @@ static int get_preset_file_2(const char *preset_name, const char *codec_name, AV
 }
 
 static OutputStream *new_output_stream(Muxer *mux, const OptionsContext *o,
-                                       enum AVMediaType type, int source_index)
+                                       enum AVMediaType type, InputStream *ist)
 {
     AVFormatContext *oc = mux->fc;
     MuxStream     *ms;
@@ -354,8 +354,8 @@ static OutputStream *new_output_stream(Muxer *mux, const OptionsContext *o,
     if (ost->enc_ctx && av_get_exact_bits_per_sample(ost->enc_ctx->codec_id) == 24)
         av_dict_set(&ost->swr_opts, "output_sample_bits", "24", 0);
 
-    if (source_index >= 0) {
-        ost->ist = input_streams[source_index];
+    if (ist) {
+        ost->ist = ist;
         ost->ist->discard = 0;
         ost->ist->st->discard = ost->ist->user_set_discard;
     }
@@ -419,14 +419,14 @@ static void parse_matrix_coeffs(uint16_t *dest, const char *str)
     }
 }
 
-static OutputStream *new_video_stream(Muxer *mux, const OptionsContext *o, int source_index)
+static OutputStream *new_video_stream(Muxer *mux, const OptionsContext *o, InputStream *ist)
 {
     AVFormatContext *oc = mux->fc;
     AVStream *st;
     OutputStream *ost;
     char *frame_rate = NULL, *max_frame_rate = NULL, *frame_aspect_ratio = NULL;
 
-    ost = new_output_stream(mux, o, AVMEDIA_TYPE_VIDEO, source_index);
+    ost = new_output_stream(mux, o, AVMEDIA_TYPE_VIDEO, ist);
     st  = ost->st;
 
     MATCH_PER_STREAM_OPT(frame_rates, str, frame_rate, oc, st);
@@ -657,13 +657,13 @@ static OutputStream *new_video_stream(Muxer *mux, const OptionsContext *o, int s
     return ost;
 }
 
-static OutputStream *new_audio_stream(Muxer *mux, const OptionsContext *o, int source_index)
+static OutputStream *new_audio_stream(Muxer *mux, const OptionsContext *o, InputStream *ist)
 {
     AVFormatContext *oc = mux->fc;
     AVStream *st;
     OutputStream *ost;
 
-    ost = new_output_stream(mux, o, AVMEDIA_TYPE_AUDIO, source_index);
+    ost = new_output_stream(mux, o, AVMEDIA_TYPE_AUDIO, ist);
     st  = ost->st;
 
 
@@ -755,11 +755,11 @@ static OutputStream *new_audio_stream(Muxer *mux, const OptionsContext *o, int s
     return ost;
 }
 
-static OutputStream *new_data_stream(Muxer *mux, const OptionsContext *o, int source_index)
+static OutputStream *new_data_stream(Muxer *mux, const OptionsContext *o, InputStream *ist)
 {
     OutputStream *ost;
 
-    ost = new_output_stream(mux, o, AVMEDIA_TYPE_DATA, source_index);
+    ost = new_output_stream(mux, o, AVMEDIA_TYPE_DATA, ist);
     if (ost->enc_ctx) {
         av_log(NULL, AV_LOG_FATAL, "Data stream encoding not supported yet (only streamcopy)\n");
         exit_program(1);
@@ -768,11 +768,11 @@ static OutputStream *new_data_stream(Muxer *mux, const OptionsContext *o, int so
     return ost;
 }
 
-static OutputStream *new_unknown_stream(Muxer *mux, const OptionsContext *o, int source_index)
+static OutputStream *new_unknown_stream(Muxer *mux, const OptionsContext *o, InputStream *ist)
 {
     OutputStream *ost;
 
-    ost = new_output_stream(mux, o, AVMEDIA_TYPE_UNKNOWN, source_index);
+    ost = new_output_stream(mux, o, AVMEDIA_TYPE_UNKNOWN, ist);
     if (ost->enc_ctx) {
         av_log(NULL, AV_LOG_FATAL, "Unknown stream encoding not supported yet (only streamcopy)\n");
         exit_program(1);
@@ -781,19 +781,19 @@ static OutputStream *new_unknown_stream(Muxer *mux, const OptionsContext *o, int
     return ost;
 }
 
-static OutputStream *new_attachment_stream(Muxer *mux, const OptionsContext *o, int source_index)
+static OutputStream *new_attachment_stream(Muxer *mux, const OptionsContext *o, InputStream *ist)
 {
-    OutputStream *ost = new_output_stream(mux, o, AVMEDIA_TYPE_ATTACHMENT, source_index);
+    OutputStream *ost = new_output_stream(mux, o, AVMEDIA_TYPE_ATTACHMENT, ist);
     ost->finished    = 1;
     return ost;
 }
 
-static OutputStream *new_subtitle_stream(Muxer *mux, const OptionsContext *o, int source_index)
+static OutputStream *new_subtitle_stream(Muxer *mux, const OptionsContext *o, InputStream *ist)
 {
     AVStream *st;
     OutputStream *ost;
 
-    ost = new_output_stream(mux, o, AVMEDIA_TYPE_SUBTITLE, source_index);
+    ost = new_output_stream(mux, o, AVMEDIA_TYPE_SUBTITLE, ist);
     st  = ost->st;
 
     if (ost->enc_ctx) {
@@ -816,8 +816,8 @@ static void init_output_filter(OutputFilter *ofilter, const OptionsContext *o,
     OutputStream *ost;
 
     switch (ofilter->type) {
-    case AVMEDIA_TYPE_VIDEO: ost = new_video_stream(mux, o, -1); break;
-    case AVMEDIA_TYPE_AUDIO: ost = new_audio_stream(mux, o, -1); break;
+    case AVMEDIA_TYPE_VIDEO: ost = new_video_stream(mux, o, NULL); break;
+    case AVMEDIA_TYPE_AUDIO: ost = new_audio_stream(mux, o, NULL); break;
     default:
         av_log(NULL, AV_LOG_FATAL, "Only video and audio filters are supported "
                "currently.\n");
@@ -854,8 +854,8 @@ static void init_output_filter(OutputFilter *ofilter, const OptionsContext *o,
 static void map_auto_video(Muxer *mux, const OptionsContext *o)
 {
     AVFormatContext *oc = mux->fc;
-    InputStream *ist;
-    int best_score = 0, idx = -1;
+    InputStream *best_ist = NULL;
+    int best_score = 0;
     int qcr;
 
     /* video: highest resolution */
@@ -865,10 +865,11 @@ static void map_auto_video(Muxer *mux, const OptionsContext *o)
     qcr = avformat_query_codec(oc->oformat, oc->oformat->video_codec, 0);
     for (int j = 0; j < nb_input_files; j++) {
         InputFile *ifile = input_files[j];
-        int file_best_score = 0, file_best_idx = -1;
+        InputStream *file_best_ist = NULL;
+        int file_best_score = 0;
         for (int i = 0; i < ifile->nb_streams; i++) {
+            InputStream *ist = ifile->streams[i];
             int score;
-            ist = input_streams[ifile->ist_index + i];
 
             if (ist->user_set_discard == AVDISCARD_ALL ||
                 ist->st->codecpar->codec_type != AVMEDIA_TYPE_VIDEO)
@@ -884,27 +885,28 @@ static void map_auto_video(Muxer *mux, const OptionsContext *o)
                 if((qcr==MKTAG('A', 'P', 'I', 'C')) && !(ist->st->disposition & AV_DISPOSITION_ATTACHED_PIC))
                     continue;
                 file_best_score = score;
-                file_best_idx = ifile->ist_index + i;
+                file_best_ist   = ist;
             }
         }
-        if (file_best_idx >= 0) {
-            if((qcr == MKTAG('A', 'P', 'I', 'C')) || !(ist->st->disposition & AV_DISPOSITION_ATTACHED_PIC))
-                file_best_score -= 5000000*!!(input_streams[file_best_idx]->st->disposition & AV_DISPOSITION_DEFAULT);
+        if (file_best_ist) {
+            if((qcr == MKTAG('A', 'P', 'I', 'C')) ||
+               !(file_best_ist->st->disposition & AV_DISPOSITION_ATTACHED_PIC))
+                file_best_score -= 5000000*!!(file_best_ist->st->disposition & AV_DISPOSITION_DEFAULT);
             if (file_best_score > best_score) {
                 best_score = file_best_score;
-                idx = file_best_idx;
+                best_ist = file_best_ist;
             }
        }
     }
-    if (idx >= 0)
-        new_video_stream(mux, o, idx);
+    if (best_ist)
+        new_video_stream(mux, o, best_ist);
 }
 
 static void map_auto_audio(Muxer *mux, const OptionsContext *o)
 {
     AVFormatContext *oc = mux->fc;
-    InputStream *ist;
-    int best_score = 0, idx = -1;
+    InputStream *best_ist = NULL;
+    int best_score = 0;
 
         /* audio: most channels */
     if (av_guess_codec(oc->oformat, NULL, oc->url, NULL, AVMEDIA_TYPE_AUDIO) == AV_CODEC_ID_NONE)
@@ -912,10 +914,11 @@ static void map_auto_audio(Muxer *mux, const OptionsContext *o)
 
     for (int j = 0; j < nb_input_files; j++) {
         InputFile *ifile = input_files[j];
-        int file_best_score = 0, file_best_idx = -1;
+        InputStream *file_best_ist = NULL;
+        int file_best_score = 0;
         for (int i = 0; i < ifile->nb_streams; i++) {
+            InputStream *ist = ifile->streams[i];
             int score;
-            ist = input_streams[ifile->ist_index + i];
 
             if (ist->user_set_discard == AVDISCARD_ALL ||
                 ist->st->codecpar->codec_type != AVMEDIA_TYPE_AUDIO)
@@ -926,19 +929,19 @@ static void map_auto_audio(Muxer *mux, const OptionsContext *o)
                     + 5000000*!!(ist->st->disposition & AV_DISPOSITION_DEFAULT);
             if (score > file_best_score) {
                 file_best_score = score;
-                file_best_idx = ifile->ist_index + i;
+                file_best_ist   = ist;
             }
         }
-        if (file_best_idx >= 0) {
-            file_best_score -= 5000000*!!(input_streams[file_best_idx]->st->disposition & AV_DISPOSITION_DEFAULT);
+        if (file_best_ist) {
+            file_best_score -= 5000000*!!(file_best_ist->st->disposition & AV_DISPOSITION_DEFAULT);
             if (file_best_score > best_score) {
                 best_score = file_best_score;
-                idx = file_best_idx;
+                best_ist   = file_best_ist;
             }
        }
     }
-    if (idx >= 0)
-        new_audio_stream(mux, o, idx);
+    if (best_ist)
+        new_audio_stream(mux, o, best_ist);
 }
 
 static void map_auto_subtitle(Muxer *mux, const OptionsContext *o)
@@ -951,15 +954,15 @@ static void map_auto_subtitle(Muxer *mux, const OptionsContext *o)
     if (!avcodec_find_encoder(oc->oformat->subtitle_codec) && !subtitle_codec_name)
         return;
 
-    for (int i = 0; i < nb_input_streams; i++)
-        if (input_streams[i]->st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE) {
+    for (InputStream *ist = ist_iter(NULL); ist; ist = ist_iter(ist))
+        if (ist->st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE) {
             AVCodecDescriptor const *input_descriptor =
-                avcodec_descriptor_get(input_streams[i]->st->codecpar->codec_id);
+                avcodec_descriptor_get(ist->st->codecpar->codec_id);
             AVCodecDescriptor const *output_descriptor = NULL;
             AVCodec const *output_codec =
                 avcodec_find_encoder(oc->oformat->subtitle_codec);
             int input_props = 0, output_props = 0;
-            if (input_streams[i]->user_set_discard == AVDISCARD_ALL)
+            if (ist->user_set_discard == AVDISCARD_ALL)
                 continue;
             if (output_codec)
                 output_descriptor = avcodec_descriptor_get(output_codec->id);
@@ -973,7 +976,7 @@ static void map_auto_subtitle(Muxer *mux, const OptionsContext *o)
                 input_descriptor && output_descriptor &&
                 (!input_descriptor->props ||
                  !output_descriptor->props)) {
-                new_subtitle_stream(mux, o, i);
+                new_subtitle_stream(mux, o, ist);
                 break;
             }
         }
@@ -984,12 +987,16 @@ static void map_auto_data(Muxer *mux, const OptionsContext *o)
     AVFormatContext *oc = mux->fc;
     /* Data only if codec id match */
     enum AVCodecID codec_id = av_guess_codec(oc->oformat, NULL, oc->url, NULL, AVMEDIA_TYPE_DATA);
-    for (int i = 0; codec_id != AV_CODEC_ID_NONE && i < nb_input_streams; i++) {
-        if (input_streams[i]->user_set_discard == AVDISCARD_ALL)
+
+    if (codec_id == AV_CODEC_ID_NONE)
+        return;
+
+    for (InputStream *ist = ist_iter(NULL); ist; ist = ist_iter(ist)) {
+        if (ist->user_set_discard == AVDISCARD_ALL)
             continue;
-        if (input_streams[i]->st->codecpar->codec_type == AVMEDIA_TYPE_DATA
-            && input_streams[i]->st->codecpar->codec_id == codec_id )
-            new_data_stream(mux, o, i);
+        if (ist->st->codecpar->codec_type == AVMEDIA_TYPE_DATA &&
+            ist->st->codecpar->codec_id == codec_id )
+            new_data_stream(mux, o, ist);
     }
 }
 
@@ -1023,9 +1030,7 @@ loop_end:
         }
         init_output_filter(ofilter, o, mux);
     } else {
-        int src_idx = input_files[map->file_index]->ist_index + map->stream_index;
-
-        ist = input_streams[input_files[map->file_index]->ist_index + map->stream_index];
+        ist = input_files[map->file_index]->streams[map->stream_index];
         if (ist->user_set_discard == AVDISCARD_ALL) {
             av_log(NULL, AV_LOG_FATAL, "Stream #%d:%d is disabled and cannot be mapped.\n",
                    map->file_index, map->stream_index);
@@ -1041,14 +1046,14 @@ loop_end:
             return;
 
         switch (ist->st->codecpar->codec_type) {
-        case AVMEDIA_TYPE_VIDEO:      new_video_stream     (mux, o, src_idx); break;
-        case AVMEDIA_TYPE_AUDIO:      new_audio_stream     (mux, o, src_idx); break;
-        case AVMEDIA_TYPE_SUBTITLE:   new_subtitle_stream  (mux, o, src_idx); break;
-        case AVMEDIA_TYPE_DATA:       new_data_stream      (mux, o, src_idx); break;
-        case AVMEDIA_TYPE_ATTACHMENT: new_attachment_stream(mux, o, src_idx); break;
+        case AVMEDIA_TYPE_VIDEO:      new_video_stream     (mux, o, ist); break;
+        case AVMEDIA_TYPE_AUDIO:      new_audio_stream     (mux, o, ist); break;
+        case AVMEDIA_TYPE_SUBTITLE:   new_subtitle_stream  (mux, o, ist); break;
+        case AVMEDIA_TYPE_DATA:       new_data_stream      (mux, o, ist); break;
+        case AVMEDIA_TYPE_ATTACHMENT: new_attachment_stream(mux, o, ist); break;
         case AVMEDIA_TYPE_UNKNOWN:
             if (copy_unknown_streams) {
-                new_unknown_stream   (mux, o, src_idx);
+                new_unknown_stream   (mux, o, ist);
                 break;
             }
         default:
@@ -1096,7 +1101,7 @@ static void of_add_attachments(Muxer *mux, const OptionsContext *o)
         avio_read(pb, attachment, len);
         memset(attachment + len, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
-        ost = new_attachment_stream(mux, o, -1);
+        ost = new_attachment_stream(mux, o, NULL);
         ost->attachment_filename       = o->attachments[i];
         ost->st->codecpar->extradata      = attachment;
         ost->st->codecpar->extradata_size = len;

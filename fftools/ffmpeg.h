@@ -437,7 +437,6 @@ typedef struct InputFile {
     AVFormatContext *ctx;
     int eof_reached;      /* true if eof reached */
     int eagain;           /* true if last read attempt returned EAGAIN */
-    int ist_index;        /* index of first stream in input_streams */
     int64_t input_ts_offset;
     int input_sync_ref;
     /**
@@ -452,8 +451,13 @@ typedef struct InputFile {
     int64_t last_ts;
     int64_t start_time;   /* user-specified start time in AV_TIME_BASE or AV_NOPTS_VALUE */
     int64_t recording_time;
-    int nb_streams;       /* number of stream that ffmpeg is aware of; may be different
-                             from ctx.nb_streams if new streams appear during av_read_frame() */
+
+    /* streams that ffmpeg is aware of;
+     * there may be extra streams in ctx that are not mapped to an InputStream
+     * if new streams appear dynamically during demuxing */
+    InputStream **streams;
+    int        nb_streams;
+
     int rate_emu;
     float readrate;
     int accurate_seek;
@@ -629,8 +633,6 @@ typedef struct OutputFile {
     int bitexact;
 } OutputFile;
 
-extern InputStream **input_streams;
-extern int        nb_input_streams;
 extern InputFile   **input_files;
 extern int        nb_input_files;
 
@@ -765,6 +767,10 @@ void ifile_close(InputFile **f);
  * - a negative error code on failure
  */
 int ifile_get_packet(InputFile *f, AVPacket **pkt);
+
+/* iterate over all input streams in all input files;
+ * pass NULL to start iteration */
+InputStream *ist_iter(InputStream *prev);
 
 #define SPECIFIER_OPT_FMT_str  "%s"
 #define SPECIFIER_OPT_FMT_i    "%i"

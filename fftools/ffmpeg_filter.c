@@ -271,7 +271,7 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
                    "matches no streams.\n", p, fg->graph_desc);
             exit_program(1);
         }
-        ist = input_streams[input_files[file_idx]->ist_index + st->index];
+        ist = input_files[file_idx]->streams[st->index];
         if (ist->user_set_discard == AVDISCARD_ALL) {
             av_log(NULL, AV_LOG_FATAL, "Stream specifier '%s' in filtergraph description %s "
                    "matches a disabled input stream.\n", p, fg->graph_desc);
@@ -279,14 +279,13 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
         }
     } else {
         /* find the first unused stream of corresponding type */
-        for (i = 0; i < nb_input_streams; i++) {
-            ist = input_streams[i];
+        for (ist = ist_iter(NULL); ist; ist = ist_iter(ist)) {
             if (ist->user_set_discard == AVDISCARD_ALL)
                 continue;
             if (ist->dec_ctx->codec_type == type && ist->discard)
                 break;
         }
-        if (i == nb_input_streams) {
+        if (!ist) {
             av_log(NULL, AV_LOG_FATAL, "Cannot find a matching stream for "
                    "unlabeled input pad %d on filter %s\n", in->pad_idx,
                    in->filter_ctx->name);
