@@ -29,6 +29,35 @@
 #include "formats.h"
 #include "window_func.h"
 
+enum SurroundChannel {
+    SC_FL, SC_FR, SC_FC, SC_LF, SC_BL, SC_BR, SC_BC, SC_SL, SC_SR,
+    SC_NB,
+};
+
+static const int ch_map[SC_NB] = {
+    [SC_FL] = AV_CHAN_FRONT_LEFT,
+    [SC_FR] = AV_CHAN_FRONT_RIGHT,
+    [SC_FC] = AV_CHAN_FRONT_CENTER,
+    [SC_LF] = AV_CHAN_LOW_FREQUENCY,
+    [SC_BL] = AV_CHAN_BACK_LEFT,
+    [SC_BR] = AV_CHAN_BACK_RIGHT,
+    [SC_BC] = AV_CHAN_BACK_CENTER,
+    [SC_SL] = AV_CHAN_SIDE_LEFT,
+    [SC_SR] = AV_CHAN_SIDE_RIGHT,
+};
+
+static const int sc_map[16] = {
+    [AV_CHAN_FRONT_LEFT   ] = SC_FL,
+    [AV_CHAN_FRONT_RIGHT  ] = SC_FR,
+    [AV_CHAN_FRONT_CENTER ] = SC_FC,
+    [AV_CHAN_LOW_FREQUENCY] = SC_LF,
+    [AV_CHAN_BACK_LEFT    ] = SC_BL,
+    [AV_CHAN_BACK_RIGHT   ] = SC_BR,
+    [AV_CHAN_BACK_CENTER  ] = SC_BC,
+    [AV_CHAN_SIDE_LEFT    ] = SC_SL,
+    [AV_CHAN_SIDE_RIGHT   ] = SC_SR,
+};
+
 typedef struct AudioSurroundContext {
     const AVClass *class;
 
@@ -37,24 +66,8 @@ typedef struct AudioSurroundContext {
 
     float level_in;
     float level_out;
-    float fc_in;
-    float fc_out;
-    float fl_in;
-    float fl_out;
-    float fr_in;
-    float fr_out;
-    float sl_in;
-    float sl_out;
-    float sr_in;
-    float sr_out;
-    float bl_in;
-    float bl_out;
-    float br_in;
-    float br_out;
-    float bc_in;
-    float bc_out;
-    float lfe_in;
-    float lfe_out;
+    float f_i[SC_NB];
+    float f_o[SC_NB];
     int   lfe_mode;
     float angle;
     float focus;
@@ -65,23 +78,8 @@ typedef struct AudioSurroundContext {
     float all_x;
     float all_y;
 
-    float fc_x;
-    float fl_x;
-    float fr_x;
-    float bl_x;
-    float br_x;
-    float sl_x;
-    float sr_x;
-    float bc_x;
-
-    float fc_y;
-    float fl_y;
-    float fr_y;
-    float bl_y;
-    float br_y;
-    float sl_y;
-    float sr_y;
-    float bc_y;
+    float f_x[SC_NB];
+    float f_y[SC_NB];
 
     float *input_levels;
     float *output_levels;
@@ -197,37 +195,14 @@ static int query_formats(AVFilterContext *ctx)
 static void set_input_levels(AVFilterContext *ctx)
 {
     AudioSurroundContext *s = ctx->priv;
-    int ch;
 
-    ch = av_channel_layout_index_from_channel(&s->in_ch_layout, AV_CHAN_FRONT_CENTER);
-    if (ch >= 0)
-        s->input_levels[ch] = s->fc_in;
-    ch = av_channel_layout_index_from_channel(&s->in_ch_layout, AV_CHAN_FRONT_LEFT);
-    if (ch >= 0)
-        s->input_levels[ch] = s->fl_in;
-    ch = av_channel_layout_index_from_channel(&s->in_ch_layout, AV_CHAN_FRONT_RIGHT);
-    if (ch >= 0)
-        s->input_levels[ch] = s->fr_in;
-    ch = av_channel_layout_index_from_channel(&s->in_ch_layout, AV_CHAN_SIDE_LEFT);
-    if (ch >= 0)
-        s->input_levels[ch] = s->sl_in;
-    ch = av_channel_layout_index_from_channel(&s->in_ch_layout, AV_CHAN_SIDE_RIGHT);
-    if (ch >= 0)
-        s->input_levels[ch] = s->sr_in;
-    ch = av_channel_layout_index_from_channel(&s->in_ch_layout, AV_CHAN_BACK_LEFT);
-    if (ch >= 0)
-        s->input_levels[ch] = s->bl_in;
-    ch = av_channel_layout_index_from_channel(&s->in_ch_layout, AV_CHAN_BACK_RIGHT);
-    if (ch >= 0)
-        s->input_levels[ch] = s->br_in;
-    ch = av_channel_layout_index_from_channel(&s->in_ch_layout, AV_CHAN_BACK_CENTER);
-    if (ch >= 0)
-        s->input_levels[ch] = s->bc_in;
-    ch = av_channel_layout_index_from_channel(&s->in_ch_layout, AV_CHAN_LOW_FREQUENCY);
-    if (ch >= 0)
-        s->input_levels[ch] = s->lfe_in;
+    for (int n = 0; n < SC_NB; n++) {
+        const int ch = av_channel_layout_index_from_channel(&s->in_ch_layout, ch_map[n]);
+        if (ch >= 0)
+            s->input_levels[ch] = s->f_i[n];
+    }
 
-    for (ch = 0;  ch < s->nb_in_channels && s->level_in >= 0.f; ch++)
+    for (int ch = 0;  ch < s->nb_in_channels && s->level_in >= 0.f; ch++)
         s->input_levels[ch] = s->level_in;
     s->level_in = -1.f;
 }
@@ -235,37 +210,14 @@ static void set_input_levels(AVFilterContext *ctx)
 static void set_output_levels(AVFilterContext *ctx)
 {
     AudioSurroundContext *s = ctx->priv;
-    int ch;
 
-    ch = av_channel_layout_index_from_channel(&s->out_ch_layout, AV_CHAN_FRONT_CENTER);
-    if (ch >= 0)
-        s->output_levels[ch] = s->fc_out;
-    ch = av_channel_layout_index_from_channel(&s->out_ch_layout, AV_CHAN_FRONT_LEFT);
-    if (ch >= 0)
-        s->output_levels[ch] = s->fl_out;
-    ch = av_channel_layout_index_from_channel(&s->out_ch_layout, AV_CHAN_FRONT_RIGHT);
-    if (ch >= 0)
-        s->output_levels[ch] = s->fr_out;
-    ch = av_channel_layout_index_from_channel(&s->out_ch_layout, AV_CHAN_SIDE_LEFT);
-    if (ch >= 0)
-        s->output_levels[ch] = s->sl_out;
-    ch = av_channel_layout_index_from_channel(&s->out_ch_layout, AV_CHAN_SIDE_RIGHT);
-    if (ch >= 0)
-        s->output_levels[ch] = s->sr_out;
-    ch = av_channel_layout_index_from_channel(&s->out_ch_layout, AV_CHAN_BACK_LEFT);
-    if (ch >= 0)
-        s->output_levels[ch] = s->bl_out;
-    ch = av_channel_layout_index_from_channel(&s->out_ch_layout, AV_CHAN_BACK_RIGHT);
-    if (ch >= 0)
-        s->output_levels[ch] = s->br_out;
-    ch = av_channel_layout_index_from_channel(&s->out_ch_layout, AV_CHAN_BACK_CENTER);
-    if (ch >= 0)
-        s->output_levels[ch] = s->bc_out;
-    ch = av_channel_layout_index_from_channel(&s->out_ch_layout, AV_CHAN_LOW_FREQUENCY);
-    if (ch >= 0)
-        s->output_levels[ch] = s->lfe_out;
+    for (int n = 0; n < SC_NB; n++) {
+        const int ch = av_channel_layout_index_from_channel(&s->out_ch_layout, ch_map[n]);
+        if (ch >= 0)
+            s->output_levels[ch] = s->f_o[n];
+    }
 
-    for (ch = 0;  ch < s->nb_out_channels && s->level_out >= 0.f; ch++)
+    for (int ch = 0;  ch < s->nb_out_channels && s->level_out >= 0.f; ch++)
         s->output_levels[ch] = s->level_out;
     s->level_out = -1.f;
 }
@@ -289,6 +241,7 @@ static int config_input(AVFilterLink *inlink)
         if (ret < 0)
             return ret;
     }
+
     s->input_levels = av_malloc_array(s->nb_in_channels, sizeof(*s->input_levels));
     if (!s->input_levels)
         return AVERROR(ENOMEM);
@@ -451,12 +404,11 @@ static int stereo_upmix(AVFilterContext *ctx, int ch)
     const float *x = s->x_pos;
     const float *y = s->y_pos;
     const int chan = av_channel_layout_channel_from_index(&s->out_ch_layout, ch);
-    float f_x, f_y;
+    const float f_x = s->f_x[sc_map[chan]];
+    const float f_y = s->f_y[sc_map[chan]];
 
     switch (chan) {
     case AV_CHAN_FRONT_CENTER:
-        f_x = s->fc_x;
-        f_y = s->fc_y;
         for (int n = 0; n < rdft_size; n++) {
             float mag = powf(1.f - fabsf(x[n]), f_x) * powf((y[n] + 1.f) * .5f, f_y) * mag_total[n];
             float ph = c_phase[n];
@@ -465,8 +417,6 @@ static int stereo_upmix(AVFilterContext *ctx, int ch)
         }
         break;
     case AV_CHAN_FRONT_LEFT:
-        f_x = s->fl_x;
-        f_y = s->fl_y;
         for (int n = 0; n < rdft_size; n++) {
             float mag = powf(.5f * ( x[n] + 1.f), f_x) * powf((y[n] + 1.f) * .5f, f_y) * mag_total[n];
             float ph = l_phase[n];
@@ -475,8 +425,6 @@ static int stereo_upmix(AVFilterContext *ctx, int ch)
         }
         break;
     case AV_CHAN_FRONT_RIGHT:
-        f_x = s->fr_x;
-        f_y = s->fr_y;
         for (int n = 0; n < rdft_size; n++) {
             float mag = powf(.5f * (-x[n] + 1.f), f_x) * powf((y[n] + 1.f) * .5f, f_y) * mag_total[n];
             float ph = r_phase[n];
@@ -493,8 +441,6 @@ static int stereo_upmix(AVFilterContext *ctx, int ch)
         }
         break;
     case AV_CHAN_BACK_CENTER:
-        f_x = s->bc_x;
-        f_y = s->bc_y;
         for (int n = 0; n < rdft_size; n++) {
             float mag = powf(1.f - fabsf(x[n]), f_x) * powf((1.f - y[n]) * .5f, f_y) * mag_total[n];
             float ph = c_phase[n];
@@ -503,8 +449,6 @@ static int stereo_upmix(AVFilterContext *ctx, int ch)
         }
         break;
     case AV_CHAN_BACK_LEFT:
-        f_x = s->bl_x;
-        f_y = s->bl_y;
         for (int n = 0; n < rdft_size; n++) {
             float mag = powf(.5f * ( x[n] + 1.f), f_x) * powf(1.f - ((y[n] + 1.f) * .5f), f_y) * mag_total[n];
             float ph = l_phase[n];
@@ -513,8 +457,6 @@ static int stereo_upmix(AVFilterContext *ctx, int ch)
         }
         break;
     case AV_CHAN_BACK_RIGHT:
-        f_x = s->br_x;
-        f_y = s->br_y;
         for (int n = 0; n < rdft_size; n++) {
             float mag = powf(.5f * (-x[n] + 1.f), f_x) * powf(1.f - ((y[n] + 1.f) * .5f), f_y) * mag_total[n];
             float ph = r_phase[n];
@@ -523,8 +465,6 @@ static int stereo_upmix(AVFilterContext *ctx, int ch)
         }
         break;
     case AV_CHAN_SIDE_LEFT:
-        f_x = s->sl_x;
-        f_y = s->sl_y;
         for (int n = 0; n < rdft_size; n++) {
             float mag = powf(.5f * ( x[n] + 1.f), f_x) * powf(1.f - fabsf(y[n]), f_y) * mag_total[n];
             float ph = l_phase[n];
@@ -533,8 +473,6 @@ static int stereo_upmix(AVFilterContext *ctx, int ch)
         }
         break;
     case AV_CHAN_SIDE_RIGHT:
-        f_x = s->sr_x;
-        f_y = s->sr_y;
         for (int n = 0; n < rdft_size; n++) {
             float mag = powf(.5f * (-x[n] + 1.f), f_x) * powf(1.f - fabsf(y[n]), f_y) * mag_total[n];
             float ph = r_phase[n];
@@ -568,8 +506,8 @@ static void upmix_3_1_surround(AVFilterContext *ctx,
 
     get_lfe(s->output_lfe, n, s->lowcut, s->highcut, &lfe_mag, &c_mag, s->lfe_mode);
 
-    l_mag = powf(.5f * ( x + 1.f), s->fl_x) * powf((y + 1.f) * .5f, s->fl_y) * mag_total;
-    r_mag = powf(.5f * (-x + 1.f), s->fr_x) * powf((y + 1.f) * .5f, s->fr_y) * mag_total;
+    l_mag = powf(.5f * ( x + 1.f), s->f_x[SC_FL]) * powf((y + 1.f) * .5f, s->f_y[SC_FL]) * mag_total;
+    r_mag = powf(.5f * (-x + 1.f), s->f_x[SC_FR]) * powf((y + 1.f) * .5f, s->f_y[SC_FR]) * mag_total;
 
     dstl[2 * n    ] = l_mag * cosf(l_phase);
     dstl[2 * n + 1] = l_mag * sinf(l_phase);
@@ -606,10 +544,10 @@ static void upmix_5_1_back_surround(AVFilterContext *ctx,
 
     get_lfe(s->output_lfe, n, s->lowcut, s->highcut, &lfe_mag, &c_mag, s->lfe_mode);
 
-    l_mag = powf(.5f * ( x + 1.f),  s->fl_x) * powf((y + 1.f) * .5f, s->fl_y) * mag_total;
-    r_mag = powf(.5f * (-x + 1.f),  s->fr_x) * powf((y + 1.f) * .5f, s->fr_y) * mag_total;
-    ls_mag = powf(.5f * ( x + 1.f), s->bl_x) * powf(1.f - ((y + 1.f) * .5f), s->bl_y) * mag_total;
-    rs_mag = powf(.5f * (-x + 1.f), s->br_x) * powf(1.f - ((y + 1.f) * .5f), s->br_y) * mag_total;
+    l_mag = powf(.5f * ( x + 1.f),  s->f_x[SC_FL]) * powf((y + 1.f) * .5f, s->f_y[SC_FL]) * mag_total;
+    r_mag = powf(.5f * (-x + 1.f),  s->f_x[SC_FR]) * powf((y + 1.f) * .5f, s->f_y[SC_FR]) * mag_total;
+    ls_mag = powf(.5f * ( x + 1.f), s->f_x[SC_BL]) * powf(1.f - ((y + 1.f) * .5f), s->f_y[SC_BL]) * mag_total;
+    rs_mag = powf(.5f * (-x + 1.f), s->f_x[SC_BR]) * powf(1.f - ((y + 1.f) * .5f), s->f_y[SC_BR]) * mag_total;
 
     dstl[2 * n    ] = l_mag * cosf(l_phase);
     dstl[2 * n + 1] = l_mag * sinf(l_phase);
@@ -651,11 +589,11 @@ static void upmix_5_1_back_2_1(AVFilterContext *ctx,
     dstls = (float *)s->output->extended_data[4];
     dstrs = (float *)s->output->extended_data[5];
 
-    c_mag  = powf(1.f - fabsf(x),   s->fc_x) * powf((y + 1.f) * .5f, s->fc_y) * mag_total;
-    l_mag  = powf(.5f * ( x + 1.f), s->fl_x) * powf((y + 1.f) * .5f, s->fl_y) * mag_total;
-    r_mag  = powf(.5f * (-x + 1.f), s->fr_x) * powf((y + 1.f) * .5f, s->fr_y) * mag_total;
-    ls_mag = powf(.5f * ( x + 1.f), s->bl_x) * powf(1.f - ((y + 1.f) * .5f), s->bl_y) * mag_total;
-    rs_mag = powf(.5f * (-x + 1.f), s->br_x) * powf(1.f - ((y + 1.f) * .5f), s->br_y) * mag_total;
+    c_mag  = powf(1.f - fabsf(x),   s->f_x[SC_FC]) * powf((y + 1.f) * .5f, s->f_y[SC_FC]) * mag_total;
+    l_mag  = powf(.5f * ( x + 1.f), s->f_x[SC_FL]) * powf((y + 1.f) * .5f, s->f_y[SC_FL]) * mag_total;
+    r_mag  = powf(.5f * (-x + 1.f), s->f_x[SC_FR]) * powf((y + 1.f) * .5f, s->f_y[SC_FR]) * mag_total;
+    ls_mag = powf(.5f * ( x + 1.f), s->f_x[SC_BL]) * powf(1.f - ((y + 1.f) * .5f), s->f_y[SC_BL]) * mag_total;
+    rs_mag = powf(.5f * (-x + 1.f), s->f_x[SC_BR]) * powf(1.f - ((y + 1.f) * .5f), s->f_y[SC_BR]) * mag_total;
 
     dstl[2 * n    ] = l_mag * cosf(l_phase);
     dstl[2 * n + 1] = l_mag * sinf(l_phase);
@@ -704,12 +642,12 @@ static void upmix_7_1_5_0_side(AVFilterContext *ctx,
 
     get_lfe(s->output_lfe, n, s->lowcut, s->highcut, &lfe_mag, &mag_total, s->lfe_mode);
 
-    fl_mag = powf(.5f * (xl + 1.f), s->fl_x) * powf((yl + 1.f) * .5f, s->fl_y) * mag_totall;
-    fr_mag = powf(.5f * (xr + 1.f), s->fr_x) * powf((yr + 1.f) * .5f, s->fr_y) * mag_totalr;
-    lb_mag = powf(.5f * (-xl + 1.f), s->bl_x) * powf((yl + 1.f) * .5f, s->bl_y) * mag_totall;
-    rb_mag = powf(.5f * (-xr + 1.f), s->br_x) * powf((yr + 1.f) * .5f, s->br_y) * mag_totalr;
-    ls_mag = powf(1.f - fabsf(xl), s->sl_x) * powf((yl + 1.f) * .5f, s->sl_y) * mag_totall;
-    rs_mag = powf(1.f - fabsf(xr), s->sr_x) * powf((yr + 1.f) * .5f, s->sr_y) * mag_totalr;
+    fl_mag = powf(.5f * (xl + 1.f), s->f_x[SC_FL]) * powf((yl + 1.f) * .5f, s->f_y[SC_FL]) * mag_totall;
+    fr_mag = powf(.5f * (xr + 1.f), s->f_x[SC_FR]) * powf((yr + 1.f) * .5f, s->f_y[SC_FR]) * mag_totalr;
+    lb_mag = powf(.5f * (-xl + 1.f), s->f_x[SC_BL]) * powf((yl + 1.f) * .5f, s->f_y[SC_BL]) * mag_totall;
+    rb_mag = powf(.5f * (-xr + 1.f), s->f_x[SC_BR]) * powf((yr + 1.f) * .5f, s->f_y[SC_BR]) * mag_totalr;
+    ls_mag = powf(1.f - fabsf(xl), s->f_x[SC_SL]) * powf((yl + 1.f) * .5f, s->f_y[SC_SL]) * mag_totall;
+    rs_mag = powf(1.f - fabsf(xr), s->f_x[SC_SR]) * powf((yr + 1.f) * .5f, s->f_y[SC_SR]) * mag_totalr;
 
     dstl[2 * n    ] = fl_mag * cosf(fl_phase);
     dstl[2 * n + 1] = fl_mag * sinf(fl_phase);
@@ -760,12 +698,12 @@ static void upmix_7_1_5_1(AVFilterContext *ctx,
     dstls = (float *)s->output->extended_data[6];
     dstrs = (float *)s->output->extended_data[7];
 
-    fl_mag = powf(.5f * (xl + 1.f), s->fl_x) * powf((yl + 1.f) * .5f, s->fl_y) * mag_totall;
-    fr_mag = powf(.5f * (xr + 1.f), s->fr_x) * powf((yr + 1.f) * .5f, s->fr_y) * mag_totalr;
-    lb_mag = powf(.5f * (-xl + 1.f), s->bl_x) * powf((yl + 1.f) * .5f, s->bl_y) * mag_totall;
-    rb_mag = powf(.5f * (-xr + 1.f), s->br_x) * powf((yr + 1.f) * .5f, s->br_y) * mag_totalr;
-    ls_mag = powf(1.f - fabsf(xl), s->sl_x) * powf((yl + 1.f) * .5f, s->sl_y) * mag_totall;
-    rs_mag = powf(1.f - fabsf(xr), s->sr_x) * powf((yr + 1.f) * .5f, s->sr_y) * mag_totalr;
+    fl_mag = powf(.5f * (xl + 1.f), s->f_x[SC_FL]) * powf((yl + 1.f) * .5f, s->f_y[SC_FL]) * mag_totall;
+    fr_mag = powf(.5f * (xr + 1.f), s->f_x[SC_FR]) * powf((yr + 1.f) * .5f, s->f_y[SC_FR]) * mag_totalr;
+    lb_mag = powf(.5f * (-xl + 1.f), s->f_x[SC_BL]) * powf((yl + 1.f) * .5f, s->f_y[SC_BL]) * mag_totall;
+    rb_mag = powf(.5f * (-xr + 1.f), s->f_x[SC_BR]) * powf((yr + 1.f) * .5f, s->f_y[SC_BR]) * mag_totalr;
+    ls_mag = powf(1.f - fabsf(xl), s->f_x[SC_SL]) * powf((yl + 1.f) * .5f, s->f_y[SC_SL]) * mag_totall;
+    rs_mag = powf(1.f - fabsf(xr), s->f_x[SC_SR]) * powf((yr + 1.f) * .5f, s->f_y[SC_SR]) * mag_totalr;
 
     dstl[2 * n    ] = fl_mag * cosf(fl_phase);
     dstl[2 * n + 1] = fl_mag * sinf(fl_phase);
@@ -1096,10 +1034,12 @@ static void allchannels_spread(AVFilterContext *ctx)
     AudioSurroundContext *s = ctx->priv;
 
     if (s->all_x >= 0.f)
-        s->fc_x = s->fl_x = s->fr_x = s->bc_x = s->sl_x = s->sr_x = s->bl_x = s->br_x = s->all_x;
+        for (int n = 0; n < SC_NB; n++)
+            s->f_x[n] = s->all_x;
     s->all_x = -1.f;
     if (s->all_y >= 0.f)
-        s->fc_y = s->fl_y = s->fr_y = s->bc_y = s->sl_y = s->sr_y = s->bl_y = s->br_y = s->all_y;
+        for (int n = 0; n < SC_NB; n++)
+            s->f_y[n] = s->all_y;
     s->all_y = -1.f;
 }
 
@@ -1445,43 +1385,43 @@ static const AVOption surround_options[] = {
     {  "sub",      "substract LFE channel with others",     0,                  AV_OPT_TYPE_CONST,  {.i64=1},     0,   1, TFLAGS, "lfe_mode" },
     { "angle",     "set soundfield transform angle",        OFFSET(angle),      AV_OPT_TYPE_FLOAT,  {.dbl=90},    0, 360, TFLAGS },
     { "focus",     "set soundfield transform focus",        OFFSET(focus),      AV_OPT_TYPE_FLOAT,  {.dbl=0},    -1,   1, TFLAGS },
-    { "fc_in",     "set front center channel input level",  OFFSET(fc_in),      AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
-    { "fc_out",    "set front center channel output level", OFFSET(fc_out),     AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
-    { "fl_in",     "set front left channel input level",    OFFSET(fl_in),      AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
-    { "fl_out",    "set front left channel output level",   OFFSET(fl_out),     AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
-    { "fr_in",     "set front right channel input level",   OFFSET(fr_in),      AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
-    { "fr_out",    "set front right channel output level",  OFFSET(fr_out),     AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
-    { "sl_in",     "set side left channel input level",     OFFSET(sl_in),      AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
-    { "sl_out",    "set side left channel output level",    OFFSET(sl_out),     AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
-    { "sr_in",     "set side right channel input level",    OFFSET(sr_in),      AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
-    { "sr_out",    "set side right channel output level",   OFFSET(sr_out),     AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
-    { "bl_in",     "set back left channel input level",     OFFSET(bl_in),      AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
-    { "bl_out",    "set back left channel output level",    OFFSET(bl_out),     AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
-    { "br_in",     "set back right channel input level",    OFFSET(br_in),      AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
-    { "br_out",    "set back right channel output level",   OFFSET(br_out),     AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
-    { "bc_in",     "set back center channel input level",   OFFSET(bc_in),      AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
-    { "bc_out",    "set back center channel output level",  OFFSET(bc_out),     AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
-    { "lfe_in",    "set lfe channel input level",  OFFSET(lfe_in),              AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
-    { "lfe_out",   "set lfe channel output level", OFFSET(lfe_out),             AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
-    { "allx",      "set all channel's x spread",         OFFSET(all_x),         AV_OPT_TYPE_FLOAT,  {.dbl=-1},   -1,  15, TFLAGS },
-    { "ally",      "set all channel's y spread",         OFFSET(all_y),         AV_OPT_TYPE_FLOAT,  {.dbl=-1},   -1,  15, TFLAGS },
-    { "fcx",       "set front center channel x spread",  OFFSET(fc_x),          AV_OPT_TYPE_FLOAT,  {.dbl=0.5}, .06,  15, TFLAGS },
-    { "flx",       "set front left channel x spread",    OFFSET(fl_x),          AV_OPT_TYPE_FLOAT,  {.dbl=0.5}, .06,  15, TFLAGS },
-    { "frx",       "set front right channel x spread",   OFFSET(fr_x),          AV_OPT_TYPE_FLOAT,  {.dbl=0.5}, .06,  15, TFLAGS },
-    { "blx",       "set back left channel x spread",     OFFSET(bl_x),          AV_OPT_TYPE_FLOAT,  {.dbl=0.5}, .06,  15, TFLAGS },
-    { "brx",       "set back right channel x spread",    OFFSET(br_x),          AV_OPT_TYPE_FLOAT,  {.dbl=0.5}, .06,  15, TFLAGS },
-    { "slx",       "set side left channel x spread",     OFFSET(sl_x),          AV_OPT_TYPE_FLOAT,  {.dbl=0.5}, .06,  15, TFLAGS },
-    { "srx",       "set side right channel x spread",    OFFSET(sr_x),          AV_OPT_TYPE_FLOAT,  {.dbl=0.5}, .06,  15, TFLAGS },
-    { "bcx",       "set back center channel x spread",   OFFSET(bc_x),          AV_OPT_TYPE_FLOAT,  {.dbl=0.5}, .06,  15, TFLAGS },
-    { "fcy",       "set front center channel y spread",  OFFSET(fc_y),          AV_OPT_TYPE_FLOAT,  {.dbl=0.5}, .06,  15, TFLAGS },
-    { "fly",       "set front left channel y spread",    OFFSET(fl_y),          AV_OPT_TYPE_FLOAT,  {.dbl=0.5}, .06,  15, TFLAGS },
-    { "fry",       "set front right channel y spread",   OFFSET(fr_y),          AV_OPT_TYPE_FLOAT,  {.dbl=0.5}, .06,  15, TFLAGS },
-    { "bly",       "set back left channel y spread",     OFFSET(bl_y),          AV_OPT_TYPE_FLOAT,  {.dbl=0.5}, .06,  15, TFLAGS },
-    { "bry",       "set back right channel y spread",    OFFSET(br_y),          AV_OPT_TYPE_FLOAT,  {.dbl=0.5}, .06,  15, TFLAGS },
-    { "sly",       "set side left channel y spread",     OFFSET(sl_y),          AV_OPT_TYPE_FLOAT,  {.dbl=0.5}, .06,  15, TFLAGS },
-    { "sry",       "set side right channel y spread",    OFFSET(sr_y),          AV_OPT_TYPE_FLOAT,  {.dbl=0.5}, .06,  15, TFLAGS },
-    { "bcy",       "set back center channel y spread",   OFFSET(bc_y),          AV_OPT_TYPE_FLOAT,  {.dbl=0.5}, .06,  15, TFLAGS },
-    { "win_size", "set window size", OFFSET(win_size), AV_OPT_TYPE_INT, {.i64 = 4096}, 1024, 65536, FLAGS },
+    { "fc_in",     "set front center channel input level",  OFFSET(f_i[SC_FC]), AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
+    { "fc_out",    "set front center channel output level", OFFSET(f_o[SC_FC]), AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
+    { "fl_in",     "set front left channel input level",    OFFSET(f_i[SC_FL]), AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
+    { "fl_out",    "set front left channel output level",   OFFSET(f_o[SC_FL]), AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
+    { "fr_in",     "set front right channel input level",   OFFSET(f_i[SC_FR]), AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
+    { "fr_out",    "set front right channel output level",  OFFSET(f_o[SC_FR]), AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
+    { "sl_in",     "set side left channel input level",     OFFSET(f_i[SC_SL]), AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
+    { "sl_out",    "set side left channel output level",    OFFSET(f_o[SC_SL]), AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
+    { "sr_in",     "set side right channel input level",    OFFSET(f_i[SC_SR]), AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
+    { "sr_out",    "set side right channel output level",   OFFSET(f_o[SC_SR]), AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
+    { "bl_in",     "set back left channel input level",     OFFSET(f_i[SC_BL]), AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
+    { "bl_out",    "set back left channel output level",    OFFSET(f_o[SC_BL]), AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
+    { "br_in",     "set back right channel input level",    OFFSET(f_i[SC_BR]), AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
+    { "br_out",    "set back right channel output level",   OFFSET(f_o[SC_BR]), AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
+    { "bc_in",     "set back center channel input level",   OFFSET(f_i[SC_BC]), AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
+    { "bc_out",    "set back center channel output level",  OFFSET(f_o[SC_BC]), AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
+    { "lfe_in",    "set lfe channel input level",           OFFSET(f_i[SC_LF]), AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
+    { "lfe_out",   "set lfe channel output level",          OFFSET(f_o[SC_LF]), AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
+    { "allx",      "set all channel's x spread",            OFFSET(all_x),      AV_OPT_TYPE_FLOAT,  {.dbl=-1},   -1,  15, TFLAGS },
+    { "ally",      "set all channel's y spread",            OFFSET(all_y),      AV_OPT_TYPE_FLOAT,  {.dbl=-1},   -1,  15, TFLAGS },
+    { "fcx",       "set front center channel x spread",  OFFSET(f_x[SC_FC]),    AV_OPT_TYPE_FLOAT,  {.dbl=0.5}, .06,  15, TFLAGS },
+    { "flx",       "set front left channel x spread",    OFFSET(f_x[SC_FL]),    AV_OPT_TYPE_FLOAT,  {.dbl=0.5}, .06,  15, TFLAGS },
+    { "frx",       "set front right channel x spread",   OFFSET(f_x[SC_FR]),    AV_OPT_TYPE_FLOAT,  {.dbl=0.5}, .06,  15, TFLAGS },
+    { "blx",       "set back left channel x spread",     OFFSET(f_x[SC_BL]),    AV_OPT_TYPE_FLOAT,  {.dbl=0.5}, .06,  15, TFLAGS },
+    { "brx",       "set back right channel x spread",    OFFSET(f_x[SC_BR]),    AV_OPT_TYPE_FLOAT,  {.dbl=0.5}, .06,  15, TFLAGS },
+    { "slx",       "set side left channel x spread",     OFFSET(f_x[SC_SL]),    AV_OPT_TYPE_FLOAT,  {.dbl=0.5}, .06,  15, TFLAGS },
+    { "srx",       "set side right channel x spread",    OFFSET(f_x[SC_SR]),    AV_OPT_TYPE_FLOAT,  {.dbl=0.5}, .06,  15, TFLAGS },
+    { "bcx",       "set back center channel x spread",   OFFSET(f_x[SC_BC]),    AV_OPT_TYPE_FLOAT,  {.dbl=0.5}, .06,  15, TFLAGS },
+    { "fcy",       "set front center channel y spread",  OFFSET(f_y[SC_FC]),    AV_OPT_TYPE_FLOAT,  {.dbl=0.5}, .06,  15, TFLAGS },
+    { "fly",       "set front left channel y spread",    OFFSET(f_y[SC_FL]),    AV_OPT_TYPE_FLOAT,  {.dbl=0.5}, .06,  15, TFLAGS },
+    { "fry",       "set front right channel y spread",   OFFSET(f_y[SC_FR]),    AV_OPT_TYPE_FLOAT,  {.dbl=0.5}, .06,  15, TFLAGS },
+    { "bly",       "set back left channel y spread",     OFFSET(f_y[SC_BL]),    AV_OPT_TYPE_FLOAT,  {.dbl=0.5}, .06,  15, TFLAGS },
+    { "bry",       "set back right channel y spread",    OFFSET(f_y[SC_BR]),    AV_OPT_TYPE_FLOAT,  {.dbl=0.5}, .06,  15, TFLAGS },
+    { "sly",       "set side left channel y spread",     OFFSET(f_y[SC_SL]),    AV_OPT_TYPE_FLOAT,  {.dbl=0.5}, .06,  15, TFLAGS },
+    { "sry",       "set side right channel y spread",    OFFSET(f_y[SC_SR]),    AV_OPT_TYPE_FLOAT,  {.dbl=0.5}, .06,  15, TFLAGS },
+    { "bcy",       "set back center channel y spread",   OFFSET(f_y[SC_BC]),    AV_OPT_TYPE_FLOAT,  {.dbl=0.5}, .06,  15, TFLAGS },
+    { "win_size", "set window size",                     OFFSET(win_size),        AV_OPT_TYPE_INT,  {.i64=4096},1024,65536,FLAGS },
     WIN_FUNC_OPTION("win_func", OFFSET(win_func), FLAGS, WFUNC_HANNING),
     { "overlap", "set window overlap", OFFSET(overlap), AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0, 1, TFLAGS },
     { NULL }
