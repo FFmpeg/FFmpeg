@@ -1537,7 +1537,9 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
     }
 
     if (!s->single_pic && (s->sliding != FULLFRAME || s->xpos == 0)) {
-        if (s->old_pts < outpicref->pts || s->sliding == FULLFRAME) {
+        if (s->old_pts < outpicref->pts || s->sliding == FULLFRAME ||
+            (ff_outlink_get_status(inlink) == AVERROR_EOF &&
+             ff_inlink_queued_samples(inlink) <= s->hop_size)) {
             AVFrame *clone;
 
             if (s->legend) {
