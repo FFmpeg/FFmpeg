@@ -1745,6 +1745,104 @@ finish:
     return ret;
 }
 
+const char *const forced_keyframes_const_names[] = {
+    "n",
+    "n_forced",
+    "prev_forced_n",
+    "prev_forced_t",
+    "t",
+    NULL
+};
+
+static int compare_int64(const void *a, const void *b)
+{
+    return FFDIFFSIGN(*(const int64_t *)a, *(const int64_t *)b);
+}
+
+static void parse_forced_key_frames(KeyframeForceCtx *kf, const Muxer *mux)
+{
+    const char *p;
+    int n = 1, i, size, index = 0;
+    int64_t t, *pts;
+
+    for (p = kf->forced_keyframes; *p; p++)
+        if (*p == ',')
+            n++;
+    size = n;
+    pts = av_malloc_array(size, sizeof(*pts));
+    if (!pts)
+        report_and_exit(AVERROR(ENOMEM));
+
+    p = kf->forced_keyframes;
+    for (i = 0; i < n; i++) {
+        char *next = strchr(p, ',');
+
+        if (next)
+            *next++ = 0;
+
+        if (!memcmp(p, "chapters", 8)) {
+            AVChapter * const *ch = mux->fc->chapters;
+            unsigned int    nb_ch = mux->fc->nb_chapters;
+            int j;
+
+            if (nb_ch > INT_MAX - size ||
+                !(pts = av_realloc_f(pts, size += nb_ch - 1,
+                                     sizeof(*pts))))
+                report_and_exit(AVERROR(ENOMEM));
+            t = p[8] ? parse_time_or_die("force_key_frames", p + 8, 1) : 0;
+
+            for (j = 0; j < nb_ch; j++) {
+                const AVChapter *c = ch[j];
+                av_assert1(index < size);
+                pts[index++] = av_rescale_q(c->start, c->time_base,
+                                            AV_TIME_BASE_Q) + t;
+            }
+
+        } else {
+            av_assert1(index < size);
+            pts[index++] = parse_time_or_die("force_key_frames", p, 1);
+        }
+
+        p = next;
+    }
+
+    av_assert0(index == size);
+    qsort(pts, size, sizeof(*pts), compare_int64);
+    kf->nb_pts = size;
+    kf->pts    = pts;
+}
+
+static int process_forced_keyframes(Muxer *mux)
+{
+    for (int i = 0; i < mux->of.nb_streams; i++) {
+        OutputStream *ost = mux->of.streams[i];
+
+        if (!ost->kf.forced_keyframes)
+            continue;
+
+        if (!strncmp(ost->kf.forced_keyframes, "expr:", 5)) {
+            int ret = av_expr_parse(&ost->kf.pexpr, ost->kf.forced_keyframes+5,
+                                    forced_keyframes_const_names, NULL, NULL, NULL, NULL, 0, NULL);
+            if (ret < 0) {
+                av_log(NULL, AV_LOG_ERROR,
+                       "Invalid force_key_frames expression '%s'\n", ost->kf.forced_keyframes+5);
+                return ret;
+            }
+            ost->kf.expr_const_values[FKF_N]             = 0;
+            ost->kf.expr_const_values[FKF_N_FORCED]      = 0;
+            ost->kf.expr_const_values[FKF_PREV_FORCED_N] = NAN;
+            ost->kf.expr_const_values[FKF_PREV_FORCED_T] = NAN;
+
+            // Don't parse the 'forced_keyframes' in case of 'keep-source-keyframes',
+            // parse it only for static kf timings
+        } else if (strncmp(ost->kf.forced_keyframes, "source", 6)) {
+            parse_forced_key_frames(&ost->kf, mux);
+        }
+    }
+
+    return 0;
+}
+
 static void validate_enc_avopt(const Muxer *mux, const AVDictionary *codec_avopt)
 {
     const AVClass *class  = avcodec_get_class();
@@ -1958,6 +2056,14 @@ int of_open(const OptionsContext *o, const char *filename)
     err = set_dispositions(mux, o);
     if (err < 0) {
         av_log(NULL, AV_LOG_FATAL, "Error setting output stream dispositions\n");
+        exit_program(1);
+    }
+
+    // parse forced keyframe specifications;
+    // must be done after chapters are created
+    err = process_forced_keyframes(mux);
+    if (err < 0) {
+        av_log(NULL, AV_LOG_FATAL, "Error processing forced keyframes\n");
         exit_program(1);
     }
 

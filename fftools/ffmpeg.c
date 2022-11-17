@@ -113,15 +113,6 @@ const int program_birth_year = 2000;
 
 static FILE *vstats_file;
 
-const char *const forced_keyframes_const_names[] = {
-    "n",
-    "n_forced",
-    "prev_forced_n",
-    "prev_forced_t",
-    "t",
-    NULL
-};
-
 typedef struct BenchmarkTimeStamps {
     int64_t real_usec;
     int64_t user_usec;
@@ -2590,11 +2581,6 @@ static int init_input_stream(InputStream *ist, char *error, int error_len)
     return 0;
 }
 
-static int compare_int64(const void *a, const void *b)
-{
-    return FFDIFFSIGN(*(const int64_t *)a, *(const int64_t *)b);
-}
-
 static int init_output_stream_streamcopy(OutputStream *ost)
 {
     OutputFile *of = output_files[ost->file_index];
@@ -2748,61 +2734,6 @@ static void set_encoder_id(OutputFile *of, OutputStream *ost)
                 AV_DICT_DONT_STRDUP_VAL | AV_DICT_DONT_OVERWRITE);
 }
 
-static void parse_forced_key_frames(KeyframeForceCtx *kf, OutputFile *of)
-{
-    const char *p;
-    int n = 1, i, size, index = 0;
-    int64_t t, *pts;
-
-    for (p = kf->forced_keyframes; *p; p++)
-        if (*p == ',')
-            n++;
-    size = n;
-    pts = av_malloc_array(size, sizeof(*pts));
-    if (!pts)
-        report_and_exit(AVERROR(ENOMEM));
-
-    p = kf->forced_keyframes;
-    for (i = 0; i < n; i++) {
-        char *next = strchr(p, ',');
-
-        if (next)
-            *next++ = 0;
-
-        if (!memcmp(p, "chapters", 8)) {
-            AVChapter * const *ch;
-            unsigned int    nb_ch;
-            int j;
-
-            ch = of_get_chapters(of, &nb_ch);
-
-            if (nb_ch > INT_MAX - size ||
-                !(pts = av_realloc_f(pts, size += nb_ch - 1,
-                                     sizeof(*pts))))
-                report_and_exit(AVERROR(ENOMEM));
-            t = p[8] ? parse_time_or_die("force_key_frames", p + 8, 1) : 0;
-
-            for (j = 0; j < nb_ch; j++) {
-                const AVChapter *c = ch[j];
-                av_assert1(index < size);
-                pts[index++] = av_rescale_q(c->start, c->time_base,
-                                            AV_TIME_BASE_Q) + t;
-            }
-
-        } else {
-            av_assert1(index < size);
-            pts[index++] = parse_time_or_die("force_key_frames", p, 1);
-        }
-
-        p = next;
-    }
-
-    av_assert0(index == size);
-    qsort(pts, size, sizeof(*pts), compare_int64);
-    kf->nb_pts = size;
-    kf->pts    = pts;
-}
-
 static void init_encoder_time_base(OutputStream *ost, AVRational default_time_base)
 {
     InputStream *ist = ost->ist;
@@ -2949,26 +2880,6 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
             enc_ctx->field_order = AV_FIELD_TT;
         }
 
-        if (ost->kf.forced_keyframes) {
-            if (!strncmp(ost->kf.forced_keyframes, "expr:", 5)) {
-                ret = av_expr_parse(&ost->kf.pexpr, ost->kf.forced_keyframes+5,
-                                    forced_keyframes_const_names, NULL, NULL, NULL, NULL, 0, NULL);
-                if (ret < 0) {
-                    av_log(NULL, AV_LOG_ERROR,
-                           "Invalid force_key_frames expression '%s'\n", ost->kf.forced_keyframes+5);
-                    return ret;
-                }
-                ost->kf.expr_const_values[FKF_N]             = 0;
-                ost->kf.expr_const_values[FKF_N_FORCED]      = 0;
-                ost->kf.expr_const_values[FKF_PREV_FORCED_N] = NAN;
-                ost->kf.expr_const_values[FKF_PREV_FORCED_T] = NAN;
-
-                // Don't parse the 'forced_keyframes' in case of 'keep-source-keyframes',
-                // parse it only for static kf timings
-            } else if(strncmp(ost->kf.forced_keyframes, "source", 6)) {
-                parse_forced_key_frames(&ost->kf, of);
-            }
-        }
         break;
     case AVMEDIA_TYPE_SUBTITLE:
         enc_ctx->time_base = AV_TIME_BASE_Q;

@@ -757,8 +757,6 @@ void of_close(OutputFile **pof);
  */
 void of_output_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost, int eof);
 int64_t of_filesize(OutputFile *of);
-AVChapter * const *
-of_get_chapters(OutputFile *of, unsigned int *nb_chapters);
 
 int ifile_open(const OptionsContext *o, const char *filename);
 void ifile_close(InputFile **f);

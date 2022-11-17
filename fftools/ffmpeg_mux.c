@@ -736,11 +736,3 @@ int64_t of_filesize(OutputFile *of)
     Muxer *mux = mux_from_of(of);
     return atomic_load(&mux->last_filesize);
 }
-
-AVChapter * const *
-of_get_chapters(OutputFile *of, unsigned int *nb_chapters)
-{
-    Muxer *mux = mux_from_of(of);
-    *nb_chapters = mux->fc->nb_chapters;
-    return mux->fc->chapters;
-}
