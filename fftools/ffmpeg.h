@@ -585,7 +585,6 @@ typedef struct OutputStream {
     int streamcopy_started;
     int copy_initial_nonkeyframes;
     int copy_prior_start;
-    char *disposition;
 
     int keep_pix_fmt;
 

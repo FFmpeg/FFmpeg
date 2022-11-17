@@ -333,9 +333,6 @@ static OutputStream *new_output_stream(Muxer *mux, const OptionsContext *o,
         ost->enc_ctx->global_quality = FF_QP2LAMBDA * qscale;
     }
 
-    MATCH_PER_STREAM_OPT(disposition, str, ost->disposition, oc, st);
-    ost->disposition = av_strdup(ost->disposition);
-
     ms->max_muxing_queue_size = 128;
     MATCH_PER_STREAM_OPT(max_muxing_queue_size, i, ms->max_muxing_queue_size, oc, st);
 
@@ -1667,11 +1664,21 @@ static void copy_meta(Muxer *mux, const OptionsContext *o)
         }
 }
 
-static int set_dispositions(OutputFile *of, AVFormatContext *ctx)
+static int set_dispositions(Muxer *mux, const OptionsContext *o)
 {
+    OutputFile                    *of = &mux->of;
+    AVFormatContext              *ctx = mux->fc;
+
     int nb_streams[AVMEDIA_TYPE_NB]   = { 0 };
     int have_default[AVMEDIA_TYPE_NB] = { 0 };
     int have_manual = 0;
+    int ret = 0;
+
+    const char **dispositions;
+
+    dispositions = av_calloc(ctx->nb_streams, sizeof(*dispositions));
+    if (!dispositions)
+        return AVERROR(ENOMEM);
 
     // first, copy the input dispositions
     for (int i = 0; i < ctx->nb_streams; i++) {
@@ -1679,7 +1686,9 @@ static int set_dispositions(OutputFile *of, AVFormatContext *ctx)
 
         nb_streams[ost->st->codecpar->codec_type]++;
 
-        have_manual |= !!ost->disposition;
+        MATCH_PER_STREAM_OPT(disposition, str, dispositions[i], ctx, ost->st);
+
+        have_manual |= !!dispositions[i];
 
         if (ost->ist) {
             ost->st->disposition = ost->ist->st->disposition;
@@ -1693,25 +1702,25 @@ static int set_dispositions(OutputFile *of, AVFormatContext *ctx)
         // process manually set dispositions - they override the above copy
         for (int i = 0; i < ctx->nb_streams; i++) {
             OutputStream *ost = of->streams[i];
-            int ret;
+            const char  *disp = dispositions[i];
 
-            if (!ost->disposition)
+            if (!disp)
                 continue;
 
 #if LIBAVFORMAT_VERSION_MAJOR >= 60
-            ret = av_opt_set(ost->st, "disposition", ost->disposition, 0);
+            ret = av_opt_set(ost->st, "disposition", disp, 0);
 #else
             {
                 const AVClass *class = av_stream_get_class();
                 const AVOption    *o = av_opt_find(&class, "disposition", NULL, 0, AV_OPT_SEARCH_FAKE_OBJ);
 
                 av_assert0(o);
-                ret = av_opt_eval_flags(&class, o, ost->disposition, &ost->st->disposition);
+                ret = av_opt_eval_flags(&class, o, disp, &ost->st->disposition);
             }
 #endif
 
             if (ret < 0)
-                return ret;
+                goto finish;
         }
     } else {
         // For each media type with more than one stream, find a suitable stream to
@@ -1730,7 +1739,10 @@ static int set_dispositions(OutputFile *of, AVFormatContext *ctx)
         }
     }
 
-    return 0;
+finish:
+    av_freep(&dispositions);
+
+    return ret;
 }
 
 static void validate_enc_avopt(const Muxer *mux, const AVDictionary *codec_avopt)
@@ -1943,7 +1955,7 @@ int of_open(const OptionsContext *o, const char *filename)
     of_add_programs(oc, o);
     of_add_metadata(of, oc, o);
 
-    err = set_dispositions(of, oc);
+    err = set_dispositions(mux, o);
     if (err < 0) {
         av_log(NULL, AV_LOG_FATAL, "Error setting output stream dispositions\n");
         exit_program(1);
