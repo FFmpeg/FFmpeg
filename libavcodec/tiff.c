@@ -1896,6 +1896,8 @@ static void camera_xyz_coeff(TiffContext *s,
     for (i = 0; i < 3; i++) {
         for (num = j = 0; j < 3; j++)
             num += cam2rgb[i][j];
+        if (!num)
+            num = 1;
         for (j = 0; j < 3; j++)
             cam2rgb[i][j] /= num;
         s->premultiply[i] = 1.f / num;
