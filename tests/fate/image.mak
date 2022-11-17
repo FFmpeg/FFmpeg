@@ -513,12 +513,13 @@ fate-tiff-lzw-rgbf32le: CMD = framecrc -i $(TARGET_SAMPLES)/tiff/lzw_rgbf32le.ti
 FATE_TIFF += fate-tiff-lzw-rgbaf32le
 fate-tiff-lzw-rgbaf32le: CMD = framecrc -i $(TARGET_SAMPLES)/tiff/lzw_rgbaf32le.tif
 
-FATE_TIFF += fate-tiff-zip-rgbf32le
+FATE_TIFF_ZIP += fate-tiff-zip-rgbf32le
 fate-tiff-zip-rgbf32le: CMD = framecrc -i $(TARGET_SAMPLES)/tiff/zip_rgbf32le.tif
 
-FATE_TIFF += fate-tiff-zip-rgbaf32le
+FATE_TIFF_ZIP += fate-tiff-zip-rgbaf32le
 fate-tiff-zip-rgbaf32le: CMD = framecrc -i $(TARGET_SAMPLES)/tiff/zip_rgbaf32le.tif
 
+FATE_TIFF-$(call FRAMECRC, IMAGE2, TIFF, ZLIB) += $(FATE_TIFF_ZIP)
 FATE_TIFF-$(call FRAMECRC, IMAGE2, TIFF) += $(FATE_TIFF)
 
 FATE_IMAGE_FRAMECRC += $(FATE_TIFF-yes)
