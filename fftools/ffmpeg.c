@@ -3140,21 +3140,19 @@ static int init_output_stream(OutputStream *ost, AVFrame *frame,
 
 static int transcode_init(void)
 {
-    int ret = 0, i, j, k;
-    OutputStream *ost;
-    InputStream *ist;
+    int ret = 0;
     char error[1024] = {0};
 
     /* init framerate emulation */
-    for (i = 0; i < nb_input_files; i++) {
+    for (int i = 0; i < nb_input_files; i++) {
         InputFile *ifile = input_files[i];
         if (ifile->readrate || ifile->rate_emu)
-            for (j = 0; j < ifile->nb_streams; j++)
+            for (int j = 0; j < ifile->nb_streams; j++)
                 ifile->streams[j]->start = av_gettime_relative();
     }
 
     /* init input streams */
-    for (ist = ist_iter(NULL); ist; ist = ist_iter(ist))
+    for (InputStream *ist = ist_iter(NULL); ist; ist = ist_iter(ist))
         if ((ret = init_input_stream(ist, error, sizeof(error))) < 0)
             goto dump_format;
 
@@ -3167,7 +3165,7 @@ static int transcode_init(void)
      *   to be configured with the correct audio frame size, which is only
      *   known after the encoder is initialized.
      */
-    for (ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
+    for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
         if (ost->enc_ctx &&
             (ost->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO ||
              ost->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO))
@@ -3179,13 +3177,13 @@ static int transcode_init(void)
     }
 
     /* discard unused programs */
-    for (i = 0; i < nb_input_files; i++) {
+    for (int i = 0; i < nb_input_files; i++) {
         InputFile *ifile = input_files[i];
-        for (j = 0; j < ifile->ctx->nb_programs; j++) {
+        for (int j = 0; j < ifile->ctx->nb_programs; j++) {
             AVProgram *p = ifile->ctx->programs[j];
             int discard  = AVDISCARD_ALL;
 
-            for (k = 0; k < p->nb_stream_indexes; k++)
+            for (int k = 0; k < p->nb_stream_indexes; k++)
                 if (!ifile->streams[p->stream_index[k]]->discard) {
                     discard = AVDISCARD_DEFAULT;
                     break;
@@ -3197,8 +3195,8 @@ static int transcode_init(void)
  dump_format:
     /* dump the stream mapping */
     av_log(NULL, AV_LOG_INFO, "Stream mapping:\n");
-    for (ist = ist_iter(NULL); ist; ist = ist_iter(ist)) {
-        for (j = 0; j < ist->nb_filters; j++) {
+    for (InputStream *ist = ist_iter(NULL); ist; ist = ist_iter(ist)) {
+        for (int j = 0; j < ist->nb_filters; j++) {
             if (!filtergraph_is_simple(ist->filters[j]->graph)) {
                 av_log(NULL, AV_LOG_INFO, "  Stream #%d:%d (%s) -> %s",
                        ist->file_index, ist->st->index, ist->dec ? ist->dec->name : "?",
@@ -3210,7 +3208,7 @@ static int transcode_init(void)
         }
     }
 
-    for (ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
+    for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
         if (ost->attachment_filename) {
             /* an attached file */
             av_log(NULL, AV_LOG_INFO, "  File %s -> Stream #%d:%d\n",
