@@ -667,11 +667,12 @@ static void ost_free(OutputStream **post)
     av_packet_free(&ost->pkt);
     av_dict_free(&ost->encoder_opts);
 
-    av_freep(&ost->forced_keyframes);
-    av_expr_free(ost->forced_keyframes_pexpr);
+    av_freep(&ost->kf.forced_keyframes);
+    av_freep(&ost->kf.pts);
+    av_expr_free(ost->kf.pexpr);
+
     av_freep(&ost->avfilter);
     av_freep(&ost->logfile_prefix);
-    av_freep(&ost->forced_kf_pts);
     av_freep(&ost->apad);
 
 #if FFMPEG_OPT_MAP_CHANNEL

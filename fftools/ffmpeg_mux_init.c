@@ -202,7 +202,7 @@ static OutputStream *new_output_stream(Muxer *mux, const OptionsContext *o,
     ost->file_index = nb_output_files - 1;
     ost->index      = idx;
     ost->st         = st;
-    ost->forced_kf_ref_pts = AV_NOPTS_VALUE;
+    ost->kf.ref_pts = AV_NOPTS_VALUE;
     st->codecpar->codec_type = type;
 
     ret = choose_encoder(o, oc, ost, &enc);
@@ -604,9 +604,9 @@ static OutputStream *new_video_stream(Muxer *mux, const OptionsContext *o, Input
             }
         }
 
-        MATCH_PER_STREAM_OPT(forced_key_frames, str, ost->forced_keyframes, oc, st);
-        if (ost->forced_keyframes)
-            ost->forced_keyframes = av_strdup(ost->forced_keyframes);
+        MATCH_PER_STREAM_OPT(forced_key_frames, str, ost->kf.forced_keyframes, oc, st);
+        if (ost->kf.forced_keyframes)
+            ost->kf.forced_keyframes = av_strdup(ost->kf.forced_keyframes);
 
         MATCH_PER_STREAM_OPT(force_fps, i, ost->force_fps, oc, st);
 

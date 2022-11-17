@@ -1042,52 +1042,49 @@ static void do_subtitle_out(OutputFile *of,
     }
 }
 
-static enum AVPictureType forced_kf_apply(OutputStream *ost,
+static enum AVPictureType forced_kf_apply(KeyframeForceCtx *kf, AVRational tb,
                                           const AVFrame *in_picture, int dup_idx)
 {
-    AVCodecContext *enc = ost->enc_ctx;
     double pts_time;
 
-    if (ost->forced_kf_ref_pts == AV_NOPTS_VALUE)
-        ost->forced_kf_ref_pts = in_picture->pts;
+    if (kf->ref_pts == AV_NOPTS_VALUE)
+        kf->ref_pts = in_picture->pts;
 
-    pts_time = (in_picture->pts - ost->forced_kf_ref_pts) * av_q2d(enc->time_base);
-    if (ost->forced_kf_index < ost->forced_kf_count &&
-        in_picture->pts >= ost->forced_kf_pts[ost->forced_kf_index]) {
-        ost->forced_kf_index++;
+    pts_time = (in_picture->pts - kf->ref_pts) * av_q2d(tb);
+    if (kf->index < kf->nb_pts &&
+        in_picture->pts >= kf->pts[kf->index]) {
+        kf->index++;
         goto force_keyframe;
-    } else if (ost->forced_keyframes_pexpr) {
+    } else if (kf->pexpr) {
         double res;
-        ost->forced_keyframes_expr_const_values[FKF_T] = pts_time;
-        res = av_expr_eval(ost->forced_keyframes_pexpr,
-                           ost->forced_keyframes_expr_const_values, NULL);
+        kf->expr_const_values[FKF_T] = pts_time;
+        res = av_expr_eval(kf->pexpr,
+                           kf->expr_const_values, NULL);
         ff_dlog(NULL, "force_key_frame: n:%f n_forced:%f prev_forced_n:%f t:%f prev_forced_t:%f -> res:%f\n",
-                ost->forced_keyframes_expr_const_values[FKF_N],
-                ost->forced_keyframes_expr_const_values[FKF_N_FORCED],
-                ost->forced_keyframes_expr_const_values[FKF_PREV_FORCED_N],
-                ost->forced_keyframes_expr_const_values[FKF_T],
-                ost->forced_keyframes_expr_const_values[FKF_PREV_FORCED_T],
+                kf->expr_const_values[FKF_N],
+                kf->expr_const_values[FKF_N_FORCED],
+                kf->expr_const_values[FKF_PREV_FORCED_N],
+                kf->expr_const_values[FKF_T],
+                kf->expr_const_values[FKF_PREV_FORCED_T],
                 res);
 
-        ost->forced_keyframes_expr_const_values[FKF_N] += 1;
+        kf->expr_const_values[FKF_N] += 1;
 
         if (res) {
-            ost->forced_keyframes_expr_const_values[FKF_PREV_FORCED_N] =
-                ost->forced_keyframes_expr_const_values[FKF_N] - 1;
-            ost->forced_keyframes_expr_const_values[FKF_PREV_FORCED_T] =
-                ost->forced_keyframes_expr_const_values[FKF_T];
-            ost->forced_keyframes_expr_const_values[FKF_N_FORCED] += 1;
+            kf->expr_const_values[FKF_PREV_FORCED_N] = kf->expr_const_values[FKF_N] - 1;
+            kf->expr_const_values[FKF_PREV_FORCED_T] = kf->expr_const_values[FKF_T];
+            kf->expr_const_values[FKF_N_FORCED]     += 1;
             goto force_keyframe;
         }
-    } else if (ost->forced_keyframes                        &&
-               !strncmp(ost->forced_keyframes, "source", 6) &&
+    } else if (kf->forced_keyframes                        &&
+               !strncmp(kf->forced_keyframes, "source", 6) &&
                in_picture->key_frame == 1 && !dup_idx) {
             goto force_keyframe;
-    } else if (ost->forced_keyframes                                 &&
-               !strncmp(ost->forced_keyframes, "source_no_drop", 14) &&
+    } else if (kf->forced_keyframes                                 &&
+               !strncmp(kf->forced_keyframes, "source_no_drop", 14) &&
                !dup_idx) {
-        ost->dropped_keyframe = 0;
-        if ((in_picture->key_frame == 1) || ost->dropped_keyframe)
+        kf->dropped_keyframe = 0;
+        if ((in_picture->key_frame == 1) || kf->dropped_keyframe)
             goto force_keyframe;
     }
 
@@ -1223,7 +1220,7 @@ static void do_video_out(OutputFile *of,
         }
     }
     ost->last_dropped = nb_frames == nb0_frames && next_picture;
-    ost->dropped_keyframe = ost->last_dropped && next_picture && next_picture->key_frame;
+    ost->kf.dropped_keyframe = ost->last_dropped && next_picture && next_picture->key_frame;
 
     /* duplicates frame if needed */
     for (i = 0; i < nb_frames; i++) {
@@ -1243,7 +1240,7 @@ static void do_video_out(OutputFile *of,
             return;
 
         in_picture->quality = enc->global_quality;
-        in_picture->pict_type = forced_kf_apply(ost, in_picture, i);
+        in_picture->pict_type = forced_kf_apply(&ost->kf, enc->time_base, in_picture, i);
 
         ret = submit_encode_frame(of, ost, in_picture);
         if (ret == AVERROR_EOF)
@@ -2751,14 +2748,14 @@ static void set_encoder_id(OutputFile *of, OutputStream *ost)
                 AV_DICT_DONT_STRDUP_VAL | AV_DICT_DONT_OVERWRITE);
 }
 
-static void parse_forced_key_frames(char *kf, OutputStream *ost,
+static void parse_forced_key_frames(KeyframeForceCtx *kf, OutputFile *of,
                                     AVCodecContext *avctx)
 {
-    char *p;
+    const char *p;
     int n = 1, i, size, index = 0;
     int64_t t, *pts;
 
-    for (p = kf; *p; p++)
+    for (p = kf->forced_keyframes; *p; p++)
         if (*p == ',')
             n++;
     size = n;
@@ -2766,7 +2763,7 @@ static void parse_forced_key_frames(char *kf, OutputStream *ost,
     if (!pts)
         report_and_exit(AVERROR(ENOMEM));
 
-    p = kf;
+    p = kf->forced_keyframes;
     for (i = 0; i < n; i++) {
         char *next = strchr(p, ',');
 
@@ -2774,7 +2771,6 @@ static void parse_forced_key_frames(char *kf, OutputStream *ost,
             *next++ = 0;
 
         if (!memcmp(p, "chapters", 8)) {
-            OutputFile *of = output_files[ost->file_index];
             AVChapter * const *ch;
             unsigned int    nb_ch;
             int j;
@@ -2808,8 +2804,8 @@ static void parse_forced_key_frames(char *kf, OutputStream *ost,
 
     av_assert0(index == size);
     qsort(pts, size, sizeof(*pts), compare_int64);
-    ost->forced_kf_count = size;
-    ost->forced_kf_pts   = pts;
+    kf->nb_pts = size;
+    kf->pts    = pts;
 }
 
 static void init_encoder_time_base(OutputStream *ost, AVRational default_time_base)
@@ -2958,24 +2954,24 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
             enc_ctx->field_order = AV_FIELD_TT;
         }
 
-        if (ost->forced_keyframes) {
-            if (!strncmp(ost->forced_keyframes, "expr:", 5)) {
-                ret = av_expr_parse(&ost->forced_keyframes_pexpr, ost->forced_keyframes+5,
+        if (ost->kf.forced_keyframes) {
+            if (!strncmp(ost->kf.forced_keyframes, "expr:", 5)) {
+                ret = av_expr_parse(&ost->kf.pexpr, ost->kf.forced_keyframes+5,
                                     forced_keyframes_const_names, NULL, NULL, NULL, NULL, 0, NULL);
                 if (ret < 0) {
                     av_log(NULL, AV_LOG_ERROR,
-                           "Invalid force_key_frames expression '%s'\n", ost->forced_keyframes+5);
+                           "Invalid force_key_frames expression '%s'\n", ost->kf.forced_keyframes+5);
                     return ret;
                 }
-                ost->forced_keyframes_expr_const_values[FKF_N] = 0;
-                ost->forced_keyframes_expr_const_values[FKF_N_FORCED] = 0;
-                ost->forced_keyframes_expr_const_values[FKF_PREV_FORCED_N] = NAN;
-                ost->forced_keyframes_expr_const_values[FKF_PREV_FORCED_T] = NAN;
+                ost->kf.expr_const_values[FKF_N]             = 0;
+                ost->kf.expr_const_values[FKF_N_FORCED]      = 0;
+                ost->kf.expr_const_values[FKF_PREV_FORCED_N] = NAN;
+                ost->kf.expr_const_values[FKF_PREV_FORCED_T] = NAN;
 
                 // Don't parse the 'forced_keyframes' in case of 'keep-source-keyframes',
                 // parse it only for static kf timings
-            } else if(strncmp(ost->forced_keyframes, "source", 6)) {
-                parse_forced_key_frames(ost->forced_keyframes, ost, ost->enc_ctx);
+            } else if(strncmp(ost->kf.forced_keyframes, "source", 6)) {
+                parse_forced_key_frames(&ost->kf, of, ost->enc_ctx);
             }
         }
         break;

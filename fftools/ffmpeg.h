@@ -487,6 +487,21 @@ typedef enum {
     MUXER_FINISHED = 2,
 } OSTFinished ;
 
+typedef struct KeyframeForceCtx {
+    char        *forced_keyframes;
+
+    int64_t      ref_pts;
+
+    int64_t     *pts;
+    int       nb_pts;
+    int          index;
+
+    AVExpr      *pexpr;
+    double       expr_const_values[FKF_NB];
+
+    int          dropped_keyframe;
+} KeyframeForceCtx;
+
 typedef struct OutputStream {
     int file_index;          /* file index */
     int index;               /* stream index in the output file */
@@ -543,15 +558,7 @@ typedef struct OutputStream {
 
     AVRational frame_aspect_ratio;
 
-    /* forced key frames */
-    int64_t forced_kf_ref_pts;
-    int64_t *forced_kf_pts;
-    int forced_kf_count;
-    int forced_kf_index;
-    char *forced_keyframes;
-    AVExpr *forced_keyframes_pexpr;
-    double forced_keyframes_expr_const_values[FKF_NB];
-    int dropped_keyframe;
+    KeyframeForceCtx kf;
 
     /* audio only */
 #if FFMPEG_OPT_MAP_CHANNEL
