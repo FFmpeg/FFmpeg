@@ -3908,13 +3908,6 @@ static int transcode(void)
         exit_program(1);
     }
 
-    /* close each decoder */
-    for (ist = ist_iter(NULL); ist; ist = ist_iter(ist)) {
-        if (ist->decoding_needed) {
-            avcodec_close(ist->dec_ctx);
-        }
-    }
-
     hw_device_free_all();
 
     /* finished ! */
