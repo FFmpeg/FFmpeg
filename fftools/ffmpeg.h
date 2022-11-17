@@ -492,6 +492,7 @@ typedef struct KeyframeForceCtx {
 
     int64_t      ref_pts;
 
+    // timestamps of the forced keyframes, in AV_TIME_BASE_Q
     int64_t     *pts;
     int       nb_pts;
     int          index;

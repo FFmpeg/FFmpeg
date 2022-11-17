@@ -1052,7 +1052,7 @@ static enum AVPictureType forced_kf_apply(KeyframeForceCtx *kf, AVRational tb,
 
     pts_time = (in_picture->pts - kf->ref_pts) * av_q2d(tb);
     if (kf->index < kf->nb_pts &&
-        in_picture->pts >= kf->pts[kf->index]) {
+        av_compare_ts(in_picture->pts, tb, kf->pts[kf->index], AV_TIME_BASE_Q) >= 0) {
         kf->index++;
         goto force_keyframe;
     } else if (kf->pexpr) {
@@ -2748,8 +2748,7 @@ static void set_encoder_id(OutputFile *of, OutputStream *ost)
                 AV_DICT_DONT_STRDUP_VAL | AV_DICT_DONT_OVERWRITE);
 }
 
-static void parse_forced_key_frames(KeyframeForceCtx *kf, OutputFile *of,
-                                    AVCodecContext *avctx)
+static void parse_forced_key_frames(KeyframeForceCtx *kf, OutputFile *of)
 {
     const char *p;
     int n = 1, i, size, index = 0;
@@ -2782,21 +2781,17 @@ static void parse_forced_key_frames(KeyframeForceCtx *kf, OutputFile *of,
                                      sizeof(*pts))))
                 report_and_exit(AVERROR(ENOMEM));
             t = p[8] ? parse_time_or_die("force_key_frames", p + 8, 1) : 0;
-            t = av_rescale_q(t, AV_TIME_BASE_Q, avctx->time_base);
 
             for (j = 0; j < nb_ch; j++) {
                 const AVChapter *c = ch[j];
                 av_assert1(index < size);
                 pts[index++] = av_rescale_q(c->start, c->time_base,
-                                            avctx->time_base) + t;
+                                            AV_TIME_BASE_Q) + t;
             }
 
         } else {
-
-            t = parse_time_or_die("force_key_frames", p, 1);
             av_assert1(index < size);
-            pts[index++] = av_rescale_q(t, AV_TIME_BASE_Q, avctx->time_base);
-
+            pts[index++] = parse_time_or_die("force_key_frames", p, 1);
         }
 
         p = next;
@@ -2971,7 +2966,7 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
                 // Don't parse the 'forced_keyframes' in case of 'keep-source-keyframes',
                 // parse it only for static kf timings
             } else if(strncmp(ost->kf.forced_keyframes, "source", 6)) {
-                parse_forced_key_frames(&ost->kf, of, ost->enc_ctx);
+                parse_forced_key_frames(&ost->kf, of);
             }
         }
         break;
