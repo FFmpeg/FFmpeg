@@ -730,35 +730,26 @@ static int activate(AVFilterContext *ctx)
 static int query_formats(AVFilterContext *ctx)
 {
     LoudNormContext *s = ctx->priv;
-    AVFilterFormats *formats;
-    AVFilterLink *inlink = ctx->inputs[0];
-    AVFilterLink *outlink = ctx->outputs[0];
+    AVFilterFormats *formats = NULL;
     static const int input_srate[] = {192000, -1};
-    static const enum AVSampleFormat sample_fmts[] = {
-        AV_SAMPLE_FMT_DBL,
-        AV_SAMPLE_FMT_NONE
-    };
     int ret = ff_set_common_all_channel_counts(ctx);
     if (ret < 0)
         return ret;
 
-    ret = ff_set_common_formats_from_list(ctx, sample_fmts);
-    if (ret < 0)
+    ret = ff_add_format(&formats, AV_SAMPLE_FMT_DBL);
+    if (ret)
+        return ret;
+    ret = ff_set_common_formats(ctx, formats);
+    if (ret)
         return ret;
 
     if (s->frame_type != LINEAR_MODE) {
         formats = ff_make_format_list(input_srate);
-        if (!formats)
-            return AVERROR(ENOMEM);
-        ret = ff_formats_ref(formats, &inlink->outcfg.samplerates);
-        if (ret < 0)
-            return ret;
-        ret = ff_formats_ref(formats, &outlink->incfg.samplerates);
-        if (ret < 0)
-            return ret;
+    } else {
+        formats = ff_all_samplerates();
     }
 
-    return 0;
+    return ff_set_common_samplerates(ctx, formats);
 }
 
 static int config_input(AVFilterLink *inlink)
