@@ -3401,7 +3401,11 @@ static int check_keyboard_interaction(int64_t cur_time)
     if (key == 'd' || key == 'D'){
         int debug=0;
         if(key == 'D') {
-            debug = ist_iter(NULL)->dec_ctx->debug << 1;
+            InputStream *ist = ist_iter(NULL);
+
+            if (ist)
+                debug = ist->dec_ctx->debug << 1;
+
             if(!debug) debug = 1;
             while (debug & FF_DEBUG_DCT_COEFF) //unsupported, would just crash
                 debug += debug;
