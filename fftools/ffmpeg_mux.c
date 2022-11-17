@@ -667,7 +667,6 @@ static void ost_free(OutputStream **post)
     av_packet_free(&ost->pkt);
     av_dict_free(&ost->encoder_opts);
 
-    av_freep(&ost->kf.forced_keyframes);
     av_freep(&ost->kf.pts);
     av_expr_free(ost->kf.pexpr);
 

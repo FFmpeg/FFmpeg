@@ -487,8 +487,13 @@ typedef enum {
     MUXER_FINISHED = 2,
 } OSTFinished ;
 
+enum {
+    KF_FORCE_SOURCE         = 1,
+    KF_FORCE_SOURCE_NO_DROP = 2,
+};
+
 typedef struct KeyframeForceCtx {
-    char        *forced_keyframes;
+    int          type;
 
     int64_t      ref_pts;
 

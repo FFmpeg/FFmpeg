@@ -1067,13 +1067,10 @@ static enum AVPictureType forced_kf_apply(KeyframeForceCtx *kf, AVRational tb,
             kf->expr_const_values[FKF_N_FORCED]     += 1;
             goto force_keyframe;
         }
-    } else if (kf->forced_keyframes                        &&
-               !strncmp(kf->forced_keyframes, "source", 6) &&
+    } else if (kf->type == KF_FORCE_SOURCE &&
                in_picture->key_frame == 1 && !dup_idx) {
             goto force_keyframe;
-    } else if (kf->forced_keyframes                                 &&
-               !strncmp(kf->forced_keyframes, "source_no_drop", 14) &&
-               !dup_idx) {
+    } else if (kf->type == KF_FORCE_SOURCE_NO_DROP && !dup_idx) {
         kf->dropped_keyframe = 0;
         if ((in_picture->key_frame == 1) || kf->dropped_keyframe)
             goto force_keyframe;
