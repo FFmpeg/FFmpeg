@@ -300,6 +300,67 @@ static const FFTXCodelet * const ff_tx_null_list[] = {
     NULL,
 };
 
+/* Array of all compiled codelet lists. Order is irrelevant. */
+static const FFTXCodelet * const * const codelet_list[] = {
+    ff_tx_codelet_list_float_c,
+    ff_tx_codelet_list_double_c,
+    ff_tx_codelet_list_int32_c,
+    ff_tx_null_list,
+#if HAVE_X86ASM
+    ff_tx_codelet_list_float_x86,
+#endif
+#if ARCH_AARCH64
+    ff_tx_codelet_list_float_aarch64,
+#endif
+};
+static const int codelet_list_num = FF_ARRAY_ELEMS(codelet_list);
+
+static const int cpu_slow_mask = AV_CPU_FLAG_SSE2SLOW | AV_CPU_FLAG_SSE3SLOW  |
+                                 AV_CPU_FLAG_ATOM     | AV_CPU_FLAG_SSSE3SLOW |
+                                 AV_CPU_FLAG_AVXSLOW  | AV_CPU_FLAG_SLOW_GATHER;
+
+static const int cpu_slow_penalties[][2] = {
+    { AV_CPU_FLAG_SSE2SLOW,    1 + 64  },
+    { AV_CPU_FLAG_SSE3SLOW,    1 + 64  },
+    { AV_CPU_FLAG_SSSE3SLOW,   1 + 64  },
+    { AV_CPU_FLAG_ATOM,        1 + 128 },
+    { AV_CPU_FLAG_AVXSLOW,     1 + 128 },
+    { AV_CPU_FLAG_SLOW_GATHER, 1 + 32  },
+};
+
+static int get_codelet_prio(const FFTXCodelet *cd, int cpu_flags, int len)
+{
+    int prio = cd->prio;
+    int max_factor = 0;
+
+    /* If the CPU has a SLOW flag, and the instruction is also flagged
+     * as being slow for such, reduce its priority */
+    for (int i = 0; i < FF_ARRAY_ELEMS(cpu_slow_penalties); i++) {
+        if ((cpu_flags & cd->cpu_flags) & cpu_slow_penalties[i][0])
+            prio -= cpu_slow_penalties[i][1];
+    }
+
+    /* Prioritize aligned-only codelets */
+    if ((cd->flags & FF_TX_ALIGNED) && !(cd->flags & AV_TX_UNALIGNED))
+        prio += 64;
+
+    /* Codelets for specific lengths are generally faster */
+    if ((len == cd->min_len) && (len == cd->max_len))
+        prio += 64;
+
+    /* Forward-only or inverse-only transforms are generally better */
+    if ((cd->flags & (FF_TX_FORWARD_ONLY | FF_TX_INVERSE_ONLY)))
+        prio += 64;
+
+    /* Larger factors are generally better */
+    for (int i = 0; i < TX_MAX_SUB; i++)
+        max_factor = FFMAX(cd->factors[i], max_factor);
+    if (max_factor)
+        prio += 16*max_factor;
+
+    return prio;
+}
+
 #if !CONFIG_SMALL
 static void print_flags(AVBPrint *bp, uint64_t f)
 {
@@ -465,41 +526,15 @@ av_cold int ff_tx_init_subtx(AVTXContext *s, enum AVTXType type,
     AVTXContext *sub = NULL;
     TXCodeletMatch *cd_tmp, *cd_matches = NULL;
     unsigned int cd_matches_size = 0;
+    int codelet_list_idx = codelet_list_num;
     int nb_cd_matches = 0;
 #if !CONFIG_SMALL
     AVBPrint bp = { 0 };
 #endif
 
-    /* Array of all compiled codelet lists. Order is irrelevant. */
-    const FFTXCodelet * const * const codelet_list[] = {
-        ff_tx_codelet_list_float_c,
-        ff_tx_codelet_list_double_c,
-        ff_tx_codelet_list_int32_c,
-        ff_tx_null_list,
-#if HAVE_X86ASM
-        ff_tx_codelet_list_float_x86,
-#endif
-#if ARCH_AARCH64
-        ff_tx_codelet_list_float_aarch64,
-#endif
-    };
-    int codelet_list_num = FF_ARRAY_ELEMS(codelet_list);
-
     /* We still accept functions marked with SLOW, even if the CPU is
      * marked with the same flag, but we give them lower priority. */
     const int cpu_flags = av_get_cpu_flags();
-    const int slow_mask = AV_CPU_FLAG_SSE2SLOW | AV_CPU_FLAG_SSE3SLOW  |
-                          AV_CPU_FLAG_ATOM     | AV_CPU_FLAG_SSSE3SLOW |
-                          AV_CPU_FLAG_AVXSLOW  | AV_CPU_FLAG_SLOW_GATHER;
-
-    static const int slow_penalties[][2] = {
-        { AV_CPU_FLAG_SSE2SLOW,    1 + 64  },
-        { AV_CPU_FLAG_SSE3SLOW,    1 + 64  },
-        { AV_CPU_FLAG_SSSE3SLOW,   1 + 64  },
-        { AV_CPU_FLAG_ATOM,        1 + 128 },
-        { AV_CPU_FLAG_AVXSLOW,     1 + 128 },
-        { AV_CPU_FLAG_SLOW_GATHER, 1 + 32  },
-    };
 
     /* Flags the transform wants */
     uint64_t req_flags = flags;
@@ -519,13 +554,11 @@ av_cold int ff_tx_init_subtx(AVTXContext *s, enum AVTXType type,
 
     /* Loop through all codelets in all codelet lists to find matches
      * to the requirements */
-    while (codelet_list_num--) {
-        const FFTXCodelet * const * list = codelet_list[codelet_list_num];
+    while (codelet_list_idx--) {
+        const FFTXCodelet * const * list = codelet_list[codelet_list_idx];
         const FFTXCodelet *cd = NULL;
 
         while ((cd = *list++)) {
-            int max_factor = 0;
-
             /* Check if the type matches */
             if (cd->type != TX_TYPE_ANY && type != cd->type)
                 continue;
@@ -546,7 +579,7 @@ av_cold int ff_tx_init_subtx(AVTXContext *s, enum AVTXType type,
 
             /* Check if the CPU supports the required ISA */
             if (cd->cpu_flags != FF_TX_CPU_FLAGS_ALL &&
-                !(cpu_flags & (cd->cpu_flags & ~slow_mask)))
+                !(cpu_flags & (cd->cpu_flags & ~cpu_slow_mask)))
                 continue;
 
             /* Check for factors */
@@ -563,33 +596,7 @@ av_cold int ff_tx_init_subtx(AVTXContext *s, enum AVTXType type,
 
             cd_matches                     = cd_tmp;
             cd_matches[nb_cd_matches].cd   = cd;
-            cd_matches[nb_cd_matches].prio = cd->prio;
-
-            /* If the CPU has a SLOW flag, and the instruction is also flagged
-             * as being slow for such, reduce its priority */
-            for (int i = 0; i < FF_ARRAY_ELEMS(slow_penalties); i++) {
-                if ((cpu_flags & cd->cpu_flags) & slow_penalties[i][0])
-                    cd_matches[nb_cd_matches].prio -= slow_penalties[i][1];
-            }
-
-            /* Prioritize aligned-only codelets */
-            if ((cd->flags & FF_TX_ALIGNED) && !(cd->flags & AV_TX_UNALIGNED))
-                cd_matches[nb_cd_matches].prio += 64;
-
-            /* Codelets for specific lengths are generally faster */
-            if ((len == cd->min_len) && (len == cd->max_len))
-                cd_matches[nb_cd_matches].prio += 64;
-
-            /* Forward-only or inverse-only transforms are generally better */
-            if ((cd->flags & (FF_TX_FORWARD_ONLY | FF_TX_INVERSE_ONLY)))
-                cd_matches[nb_cd_matches].prio += 64;
-
-            /* Larger factors are generally better */
-            for (int i = 0; i < TX_MAX_SUB; i++)
-                max_factor = FFMAX(cd->factors[i], max_factor);
-            if (max_factor)
-                cd_matches[nb_cd_matches].prio += 16*max_factor;
-
+            cd_matches[nb_cd_matches].prio = get_codelet_prio(cd, cpu_flags, len);
             nb_cd_matches++;
         }
     }
