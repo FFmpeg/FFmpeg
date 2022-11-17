@@ -773,6 +773,7 @@ static void TX_NAME(ff_tx_fft)(AVTXContext *s, void *_dst,
 static void TX_NAME(ff_tx_fft_inplace)(AVTXContext *s, void *_dst,
                                        void *_src, ptrdiff_t stride)
 {
+    TXComplex *src = _src;
     TXComplex *dst = _dst;
     TXComplex tmp;
     const int *map = s->sub->map;
@@ -781,16 +782,16 @@ static void TX_NAME(ff_tx_fft_inplace)(AVTXContext *s, void *_dst,
 
     src_idx = *inplace_idx++;
     do {
-        tmp = dst[src_idx];
+        tmp = src[src_idx];
         dst_idx = map[src_idx];
         do {
-            FFSWAP(TXComplex, tmp, dst[dst_idx]);
+            FFSWAP(TXComplex, tmp, src[dst_idx]);
             dst_idx = map[dst_idx];
         } while (dst_idx != src_idx); /* Can be > as well, but was less predictable */
-        dst[dst_idx] = tmp;
+        src[dst_idx] = tmp;
     } while ((src_idx = *inplace_idx++));
 
-    s->fn[0](&s->sub[0], dst, dst, stride);
+    s->fn[0](&s->sub[0], dst, src, stride);
 }
 
 static const FFTXCodelet TX_NAME(ff_tx_fft_def) = {
@@ -810,13 +811,13 @@ static const FFTXCodelet TX_NAME(ff_tx_fft_inplace_def) = {
     .name       = TX_NAME_STR("fft_inplace"),
     .function   = TX_NAME(ff_tx_fft_inplace),
     .type       = TX_TYPE(FFT),
-    .flags      = AV_TX_UNALIGNED | AV_TX_INPLACE,
+    .flags      = AV_TX_UNALIGNED | FF_TX_OUT_OF_PLACE | AV_TX_INPLACE,
     .factors[0] = TX_FACTOR_ANY,
     .min_len    = 2,
     .max_len    = TX_LEN_UNLIMITED,
     .init       = TX_NAME(ff_tx_fft_init),
     .cpu_flags  = FF_TX_CPU_FLAGS_ALL,
-    .prio       = FF_TX_PRIO_BASE,
+    .prio       = FF_TX_PRIO_BASE - 512,
 };
 
 static av_cold int TX_NAME(ff_tx_fft_init_naive_small)(AVTXContext *s,
