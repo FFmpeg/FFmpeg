@@ -206,8 +206,36 @@ enum AVPixelFormat {
     AV_PIX_FMT_GBRAP16BE,    ///< planar GBRA 4:4:4:4 64bpp, big-endian
     AV_PIX_FMT_GBRAP16LE,    ///< planar GBRA 4:4:4:4 64bpp, little-endian
     /**
-     *  HW acceleration through QSV, data[3] contains a pointer to the
-     *  mfxFrameSurface1 structure.
+     * HW acceleration through QSV, data[3] contains a pointer to the
+     * mfxFrameSurface1 structure.
+     *
+     * Before FFmpeg 5.0:
+     * mfxFrameSurface1.Data.MemId contains a pointer when importing
+     * the following frames as QSV frames:
+     *
+     * VAAPI:
+     * mfxFrameSurface1.Data.MemId contains a pointer to VASurfaceID
+     *
+     * DXVA2:
+     * mfxFrameSurface1.Data.MemId contains a pointer to IDirect3DSurface9
+     *
+     * FFmpeg 5.0 and above:
+     * mfxFrameSurface1.Data.MemId contains a pointer to the mfxHDLPair
+     * structure when importing the following frames as QSV frames:
+     *
+     * VAAPI:
+     * mfxHDLPair.first contains a VASurfaceID pointer.
+     * mfxHDLPair.second is always MFX_INFINITE.
+     *
+     * DXVA2:
+     * mfxHDLPair.first contains IDirect3DSurface9 pointer.
+     * mfxHDLPair.second is always MFX_INFINITE.
+     *
+     * D3D11:
+     * mfxHDLPair.first contains a ID3D11Texture2D pointer.
+     * mfxHDLPair.second contains the texture array index of the frame if the
+     * ID3D11Texture2D is an array texture, or always MFX_INFINITE if it is a
+     * normal texture.
      */
     AV_PIX_FMT_QSV,
     /**
