@@ -96,9 +96,12 @@ typedef struct AudioSurroundContext {
     int nb_in_channels;
     int nb_out_channels;
 
+    AVFrame *factors;
     AVFrame *input_in;
     AVFrame *input;
     AVFrame *output;
+    AVFrame *output_mag;
+    AVFrame *output_ph;
     AVFrame *output_out;
     AVFrame *overlap_buffer;
     AVFrame *window;
@@ -293,10 +296,14 @@ static int config_output(AVFilterLink *outlink)
 
     set_output_levels(ctx);
 
+    s->factors = ff_get_audio_buffer(outlink, s->win_size + 2);
+    s->output_ph = ff_get_audio_buffer(outlink, s->win_size + 2);
+    s->output_mag = ff_get_audio_buffer(outlink, s->win_size + 2);
     s->output_out = ff_get_audio_buffer(outlink, s->win_size + 2);
     s->output = ff_get_audio_buffer(outlink, s->win_size + 2);
     s->overlap_buffer = ff_get_audio_buffer(outlink, s->win_size * 2);
-    if (!s->overlap_buffer || !s->output || !s->output_out)
+    if (!s->overlap_buffer || !s->output || !s->output_out || !s->output_mag ||
+        !s->output_ph || !s->factors)
         return AVERROR(ENOMEM);
 
     s->rdft_size = s->win_size / 2 + 1;
@@ -397,6 +404,9 @@ static int stereo_upmix(AVFilterContext *ctx, int ch)
 {
     AudioSurroundContext *s = ctx->priv;
     float *dst = (float *)s->output->extended_data[ch];
+    float *factor = (float *)s->factors->extended_data[ch];
+    float *omag = (float *)s->output_mag->extended_data[ch];
+    float *oph = (float *)s->output_ph->extended_data[ch];
     const float *mag_total = s->mag_total;
     const int rdft_size = s->rdft_size;
     const float *c_phase = s->c_phase;
@@ -412,79 +422,93 @@ static int stereo_upmix(AVFilterContext *ctx, int ch)
 
     switch (chan) {
     case AV_CHAN_FRONT_CENTER:
-        for (int n = 0; n < rdft_size; n++) {
-            float mag = powf(1.f - fabsf(x[n]), f_x) * powf((y[n] + 1.f) * .5f, f_y) * c_mag[n];
-            float ph = c_phase[n];
-
-            TRANSFORM
-        }
+        for (int n = 0; n < rdft_size; n++)
+            factor[n] = powf(1.f - fabsf(x[n]), f_x) * powf((y[n] + 1.f) * .5f, f_y);
         break;
     case AV_CHAN_FRONT_LEFT:
-        for (int n = 0; n < rdft_size; n++) {
-            float mag = powf(.5f * ( x[n] + 1.f), f_x) * powf((y[n] + 1.f) * .5f, f_y) * mag_total[n];
-            float ph = l_phase[n];
-
-            TRANSFORM
-        }
+        for (int n = 0; n < rdft_size; n++)
+            factor[n] = powf(.5f * ( x[n] + 1.f), f_x) * powf((y[n] + 1.f) * .5f, f_y);
         break;
     case AV_CHAN_FRONT_RIGHT:
-        for (int n = 0; n < rdft_size; n++) {
-            float mag = powf(.5f * (-x[n] + 1.f), f_x) * powf((y[n] + 1.f) * .5f, f_y) * mag_total[n];
-            float ph = r_phase[n];
-
-            TRANSFORM
-        }
+        for (int n = 0; n < rdft_size; n++)
+            factor[n] = powf(.5f * (-x[n] + 1.f), f_x) * powf((y[n] + 1.f) * .5f, f_y);
         break;
     case AV_CHAN_LOW_FREQUENCY:
-        for (int n = 0; n < rdft_size; n++) {
-            float mag = lfe_mag[n];
-            float ph = c_phase[n];
-
-            TRANSFORM
-        }
+        for (int n = 0; n < rdft_size; n++)
+            factor[n] = lfe_mag[n];
         break;
     case AV_CHAN_BACK_CENTER:
-        for (int n = 0; n < rdft_size; n++) {
-            float mag = powf(1.f - fabsf(x[n]), f_x) * powf((1.f - y[n]) * .5f, f_y) * mag_total[n];
-            float ph = c_phase[n];
-
-            TRANSFORM
-        }
+        for (int n = 0; n < rdft_size; n++)
+            factor[n] = powf(1.f - fabsf(x[n]), f_x) * powf((1.f - y[n]) * .5f, f_y);
         break;
     case AV_CHAN_BACK_LEFT:
-        for (int n = 0; n < rdft_size; n++) {
-            float mag = powf(.5f * ( x[n] + 1.f), f_x) * powf(1.f - ((y[n] + 1.f) * .5f), f_y) * mag_total[n];
-            float ph = l_phase[n];
-
-            TRANSFORM
-        }
+        for (int n = 0; n < rdft_size; n++)
+            factor[n] = powf(.5f * ( x[n] + 1.f), f_x) * powf(1.f - ((y[n] + 1.f) * .5f), f_y);
         break;
     case AV_CHAN_BACK_RIGHT:
-        for (int n = 0; n < rdft_size; n++) {
-            float mag = powf(.5f * (-x[n] + 1.f), f_x) * powf(1.f - ((y[n] + 1.f) * .5f), f_y) * mag_total[n];
-            float ph = r_phase[n];
-
-            TRANSFORM
-        }
+        for (int n = 0; n < rdft_size; n++)
+            factor[n] = powf(.5f * (-x[n] + 1.f), f_x) * powf(1.f - ((y[n] + 1.f) * .5f), f_y);
         break;
     case AV_CHAN_SIDE_LEFT:
-        for (int n = 0; n < rdft_size; n++) {
-            float mag = powf(.5f * ( x[n] + 1.f), f_x) * powf(1.f - fabsf(y[n]), f_y) * mag_total[n];
-            float ph = l_phase[n];
-
-            TRANSFORM
-        }
+        for (int n = 0; n < rdft_size; n++)
+            factor[n] = powf(.5f * ( x[n] + 1.f), f_x) * powf(1.f - fabsf(y[n]), f_y);
         break;
     case AV_CHAN_SIDE_RIGHT:
-        for (int n = 0; n < rdft_size; n++) {
-            float mag = powf(.5f * (-x[n] + 1.f), f_x) * powf(1.f - fabsf(y[n]), f_y) * mag_total[n];
-            float ph = r_phase[n];
-
-            TRANSFORM
-        }
+        for (int n = 0; n < rdft_size; n++)
+            factor[n] = powf(.5f * (-x[n] + 1.f), f_x) * powf(1.f - fabsf(y[n]), f_y);
         break;
     default:
         break;
+    }
+
+    switch (chan) {
+    case AV_CHAN_FRONT_CENTER:
+        memcpy(omag, c_mag, rdft_size * sizeof(*omag));
+        break;
+    case AV_CHAN_LOW_FREQUENCY:
+        memcpy(omag, lfe_mag, rdft_size * sizeof(*omag));
+        break;
+    case AV_CHAN_FRONT_LEFT:
+    case AV_CHAN_FRONT_RIGHT:
+    case AV_CHAN_BACK_CENTER:
+    case AV_CHAN_BACK_LEFT:
+    case AV_CHAN_BACK_RIGHT:
+    case AV_CHAN_SIDE_LEFT:
+    case AV_CHAN_SIDE_RIGHT:
+        memcpy(omag, mag_total, rdft_size * sizeof(*omag));
+        break;
+    default:
+        break;
+    }
+
+    switch (chan) {
+    case AV_CHAN_FRONT_CENTER:
+    case AV_CHAN_LOW_FREQUENCY:
+    case AV_CHAN_BACK_CENTER:
+        memcpy(oph, c_phase, rdft_size * sizeof(*oph));
+        break;
+    case AV_CHAN_FRONT_LEFT:
+    case AV_CHAN_BACK_LEFT:
+    case AV_CHAN_SIDE_LEFT:
+        memcpy(oph, l_phase, rdft_size * sizeof(*oph));
+        break;
+    case AV_CHAN_FRONT_RIGHT:
+    case AV_CHAN_BACK_RIGHT:
+    case AV_CHAN_SIDE_RIGHT:
+        memcpy(oph, r_phase, rdft_size * sizeof(*oph));
+        break;
+    default:
+        break;
+    }
+
+    for (int n = 0; n < rdft_size; n++)
+        omag[n] *= factor[n];
+
+    for (int n = 0; n < rdft_size; n++) {
+        const float mag = omag[n];
+        const float ph = oph[n];
+
+        TRANSFORM
     }
 
     return 0;
@@ -1329,10 +1353,13 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     AudioSurroundContext *s = ctx->priv;
 
+    av_frame_free(&s->factors);
     av_frame_free(&s->window);
     av_frame_free(&s->input_in);
     av_frame_free(&s->input);
     av_frame_free(&s->output);
+    av_frame_free(&s->output_ph);
+    av_frame_free(&s->output_mag);
     av_frame_free(&s->output_out);
     av_frame_free(&s->overlap_buffer);
 
