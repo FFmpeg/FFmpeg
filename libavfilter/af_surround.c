@@ -387,11 +387,11 @@ static void stereo_position(float a, float p, float *x, float *y)
 }
 
 static inline void get_lfe(int output_lfe, int n, float lowcut, float highcut,
-                           float *lfe_mag, float *mag_total, int lfe_mode)
+                           float *lfe_mag, float c_mag, float *mag_total, int lfe_mode)
 {
     if (output_lfe && n < highcut) {
         *lfe_mag    = n < lowcut ? 1.f : .5f*(1.f+cosf(M_PI*(lowcut-n)/(lowcut-highcut)));
-        *lfe_mag   *= *mag_total;
+        *lfe_mag   *= c_mag;
         if (lfe_mode)
             *mag_total -= *lfe_mag;
     } else {
@@ -440,7 +440,7 @@ static int stereo_upmix(AVFilterContext *ctx, int ch)
         break;
     case AV_CHAN_LOW_FREQUENCY:
         for (int n = 0; n < rdft_size; n++)
-            factor[n] = lfe_mag[n];
+            factor[n] = powf(1.f - fabsf(x[n]), f_x) * powf((1.f - fabs(y[n])), f_y);
         break;
     case AV_CHAN_BACK_CENTER:
         for (int n = 0; n < rdft_size; n++)
@@ -543,7 +543,7 @@ static void upmix_3_1_surround(AVFilterContext *ctx,
     dstc = (float *)s->output->extended_data[2];
     dstlfe = (float *)s->output->extended_data[3];
 
-    get_lfe(s->output_lfe, n, s->lowcut, s->highcut, &lfe_mag, &c_mag, s->lfe_mode);
+    get_lfe(s->output_lfe, n, s->lowcut, s->highcut, &lfe_mag, c_mag, &mag_total, s->lfe_mode);
 
     l_mag = powf(.5f * ( x + 1.f), s->f_x[SC_FL]) * powf((y + 1.f) * .5f, s->f_y[SC_FL]) * mag_total;
     r_mag = powf(.5f * (-x + 1.f), s->f_x[SC_FR]) * powf((y + 1.f) * .5f, s->f_y[SC_FR]) * mag_total;
@@ -581,7 +581,7 @@ static void upmix_5_1_back_surround(AVFilterContext *ctx,
     dstls = (float *)s->output->extended_data[4];
     dstrs = (float *)s->output->extended_data[5];
 
-    get_lfe(s->output_lfe, n, s->lowcut, s->highcut, &lfe_mag, &c_mag, s->lfe_mode);
+    get_lfe(s->output_lfe, n, s->lowcut, s->highcut, &lfe_mag, c_mag, &mag_total, s->lfe_mode);
 
     l_mag = powf(.5f * ( x + 1.f),  s->f_x[SC_FL]) * powf((y + 1.f) * .5f, s->f_y[SC_FL]) * mag_total;
     r_mag = powf(.5f * (-x + 1.f),  s->f_x[SC_FR]) * powf((y + 1.f) * .5f, s->f_y[SC_FR]) * mag_total;
@@ -679,7 +679,7 @@ static void upmix_7_1_5_0_side(AVFilterContext *ctx,
 
     c_phase = atan2f(c_im, c_re);
 
-    get_lfe(s->output_lfe, n, s->lowcut, s->highcut, &lfe_mag, &mag_total, s->lfe_mode);
+    get_lfe(s->output_lfe, n, s->lowcut, s->highcut, &lfe_mag, hypotf(c_re, c_im), &mag_total, s->lfe_mode);
 
     fl_mag = powf(.5f * (xl + 1.f), s->f_x[SC_FL]) * powf((yl + 1.f) * .5f, s->f_y[SC_FL]) * mag_totall;
     fr_mag = powf(.5f * (xr + 1.f), s->f_x[SC_FR]) * powf((yr + 1.f) * .5f, s->f_y[SC_FR]) * mag_totalr;
@@ -811,7 +811,7 @@ static void filter_stereo(AVFilterContext *ctx)
         stereo_position(mag_dif, phase_dif, &x, &y);
         angle_transform(&x, &y, angle);
         focus_transform(&x, &y, focus);
-        get_lfe(output_lfe, n, lowcut, highcut, &lfemag[n], &mag_total, lfe_mode);
+        get_lfe(output_lfe, n, lowcut, highcut, &lfemag[n], c_mag, &mag_total, lfe_mode);
 
         xpos[n]   = x;
         ypos[n]   = y;
