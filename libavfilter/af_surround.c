@@ -108,6 +108,7 @@ typedef struct AudioSurroundContext {
     float *l_phase;
     float *r_phase;
     float *c_phase;
+    float *c_mag;
     float *lfe_mag;
     float *mag_total;
 
@@ -304,11 +305,12 @@ static int config_output(AVFilterLink *outlink)
     s->y_pos = av_calloc(s->rdft_size, sizeof(*s->y_pos));
     s->l_phase = av_calloc(s->rdft_size, sizeof(*s->l_phase));
     s->r_phase = av_calloc(s->rdft_size, sizeof(*s->r_phase));
+    s->c_mag   = av_calloc(s->rdft_size, sizeof(*s->c_mag));
     s->c_phase = av_calloc(s->rdft_size, sizeof(*s->c_phase));
     s->mag_total = av_calloc(s->rdft_size, sizeof(*s->mag_total));
     s->lfe_mag = av_calloc(s->rdft_size, sizeof(*s->lfe_mag));
     if (!s->x_pos || !s->y_pos || !s->l_phase || !s->r_phase ||
-        !s->c_phase || !s->mag_total || !s->lfe_mag)
+        !s->c_phase || !s->mag_total || !s->lfe_mag || !s->c_mag)
         return AVERROR(ENOMEM);
 
     return 0;
@@ -401,6 +403,7 @@ static int stereo_upmix(AVFilterContext *ctx, int ch)
     const float *l_phase = s->l_phase;
     const float *r_phase = s->r_phase;
     const float *lfe_mag = s->lfe_mag;
+    const float *c_mag = s->c_mag;
     const float *x = s->x_pos;
     const float *y = s->y_pos;
     const int chan = av_channel_layout_channel_from_index(&s->out_ch_layout, ch);
@@ -410,7 +413,7 @@ static int stereo_upmix(AVFilterContext *ctx, int ch)
     switch (chan) {
     case AV_CHAN_FRONT_CENTER:
         for (int n = 0; n < rdft_size; n++) {
-            float mag = powf(1.f - fabsf(x[n]), f_x) * powf((y[n] + 1.f) * .5f, f_y) * mag_total[n];
+            float mag = powf(1.f - fabsf(x[n]), f_x) * powf((y[n] + 1.f) * .5f, f_y) * c_mag[n];
             float ph = c_phase[n];
 
             TRANSFORM
@@ -746,6 +749,7 @@ static void filter_stereo(AVFilterContext *ctx)
     float *lphase = s->l_phase;
     float *rphase = s->r_phase;
     float *cphase = s->c_phase;
+    float *cmag = s->c_mag;
     float *xpos = s->x_pos;
     float *ypos = s->y_pos;
 
@@ -760,6 +764,7 @@ static void filter_stereo(AVFilterContext *ctx)
         float r_phase = atan2f(r_im, r_re);
         float phase_dif = fabsf(l_phase - r_phase);
         float mag_sum = l_mag + r_mag;
+        float c_mag = mag_sum * 0.5f;
         float mag_dif, x, y;
 
         mag_sum = mag_sum < MIN_MAG_SUM ? 1.f : mag_sum;
@@ -776,6 +781,7 @@ static void filter_stereo(AVFilterContext *ctx)
         ypos[n]   = y;
         lphase[n] = l_phase;
         rphase[n] = r_phase;
+        cmag[n]   = c_mag;
         cphase[n] = c_phase;
         magtotal[n] = mag_total;
     }
@@ -1344,6 +1350,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->y_pos);
     av_freep(&s->l_phase);
     av_freep(&s->r_phase);
+    av_freep(&s->c_mag);
     av_freep(&s->c_phase);
     av_freep(&s->mag_total);
     av_freep(&s->lfe_mag);
