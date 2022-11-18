@@ -201,7 +201,7 @@ static int irdft_horizontal8(AVFilterContext *ctx, void *arg, int jobnr, int nb_
             s->ihtx_fn(s->ihrdft[jobnr][plane],
                        s->rdft_hdata_out[plane] + i * s->rdft_hstride[plane],
                        s->rdft_hdata_in[plane] + i * s->rdft_hstride[plane],
-                       sizeof(float));
+                       sizeof(AVComplexFloat));
 
         for (int i = slice_start; i < slice_end; i++) {
             const float scale = 1.f / (s->rdft_hlen[plane] * s->rdft_vlen[plane]);
@@ -232,7 +232,7 @@ static int irdft_horizontal16(AVFilterContext *ctx, void *arg, int jobnr, int nb
             s->ihtx_fn(s->ihrdft[jobnr][plane],
                        s->rdft_hdata_out[plane] + i * s->rdft_hstride[plane],
                        s->rdft_hdata_in[plane] + i * s->rdft_hstride[plane],
-                       sizeof(float));
+                       sizeof(AVComplexFloat));
 
         for (int i = slice_start; i < slice_end; i++) {
             const float scale = 1.f / (s->rdft_hlen[plane] * s->rdft_vlen[plane]);
@@ -468,7 +468,7 @@ static int irdft_vertical(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
             s->ivtx_fn(s->ivrdft[jobnr][plane],
                        s->rdft_vdata_in[plane] + i * s->rdft_vstride[plane],
                        s->rdft_vdata_out[plane] + i * s->rdft_vstride[plane],
-                       sizeof(float));
+                       sizeof(AVComplexFloat));
     }
 
     return 0;

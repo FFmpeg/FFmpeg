@@ -121,7 +121,7 @@ static int run_channel_fft(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
         s->fft_tdata[ch][n].im = 0.f;
     }
 
-    s->tx_fn[ch](s->fft[ch], s->fft_data[ch], s->fft_tdata[ch], sizeof(float));
+    s->tx_fn[ch](s->fft[ch], s->fft_data[ch], s->fft_tdata[ch], sizeof(AVComplexFloat));
 
     return 0;
 }

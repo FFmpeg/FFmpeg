@@ -525,7 +525,7 @@ static int sofalizer_fast_convolute(AVFilterContext *ctx, void *arg, int jobnr, 
         }
 
         /* transform input signal of current channel to frequency domain */
-        tx_fn(fft, fft_out, fft_in, sizeof(float));
+        tx_fn(fft, fft_out, fft_in, sizeof(*fft_in));
 
         for (j = 0; j < n_fft; j++) {
             const AVComplexFloat *hcomplex = hrtf_offset + j;
@@ -541,7 +541,7 @@ static int sofalizer_fast_convolute(AVFilterContext *ctx, void *arg, int jobnr, 
     }
 
     /* transform output signal of current channel back to time domain */
-    itx_fn(ifft, fft_out, fft_acc, sizeof(float));
+    itx_fn(ifft, fft_out, fft_acc, sizeof(*fft_acc));
 
     for (j = 0; j < in->nb_samples; j++) {
         /* write output signal of current channel to output buffer */
@@ -832,7 +832,7 @@ static int load_data(AVFilterContext *ctx, int azim, int elev, float radius, int
     s->n_fft = n_fft = 1 << (32 - ff_clz(n_max + s->framesize));
 
     if (s->type == FREQUENCY_DOMAIN) {
-        float scale;
+        float scale = 1.f;
 
         av_tx_uninit(&s->fft[0]);
         av_tx_uninit(&s->fft[1]);
@@ -927,9 +927,9 @@ static int load_data(AVFilterContext *ctx, int azim, int elev, float radius, int
             }
 
             /* actually transform to frequency domain (IRs -> HRTFs) */
-            s->tx_fn[0](s->fft[0], fft_out_l, fft_in_l, sizeof(float));
+            s->tx_fn[0](s->fft[0], fft_out_l, fft_in_l, sizeof(*fft_in_l));
             memcpy(data_hrtf_l + offset, fft_out_l, n_fft * sizeof(*fft_out_l));
-            s->tx_fn[1](s->fft[1], fft_out_r, fft_in_r, sizeof(float));
+            s->tx_fn[1](s->fft[1], fft_out_r, fft_in_r, sizeof(*fft_in_r));
             memcpy(data_hrtf_r + offset, fft_out_r, n_fft * sizeof(*fft_out_r));
         }
     }

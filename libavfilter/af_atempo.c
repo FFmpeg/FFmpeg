@@ -619,7 +619,7 @@ static void yae_xcorr_via_rdft(float *xcorr_in,
     }
 
     // apply inverse rDFT:
-    c2r_fn(complex_to_real, xcorr, xcorr_in, sizeof(float));
+    c2r_fn(complex_to_real, xcorr, xcorr_in, sizeof(*xc));
 }
 
 /**

@@ -357,7 +357,7 @@ static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int offse
             j--;
         }
 
-        seg->itx_fn(seg->itx[ch], sumout, sumin, sizeof(ftype));
+        seg->itx_fn(seg->itx[ch], sumout, sumin, sizeof(ctype));
 
         buf = (ftype *)seg->buffer->extended_data[ch];
         fn(fir_fadd)(s, buf, sumout, seg->part_size);

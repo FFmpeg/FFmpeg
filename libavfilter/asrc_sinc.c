@@ -261,7 +261,7 @@ static int fir_to_phase(SincContext *s, float **h, int *len, int *post_len, floa
         work[i + 1] = 0;
     }
 
-    s->itx_fn(s->itx, work, work, sizeof(float));
+    s->itx_fn(s->itx, work, work, sizeof(AVComplexFloat));
 
     for (i = 0; i < work_len; i++)
         work[i] *= 2.f / work_len;
@@ -284,7 +284,7 @@ static int fir_to_phase(SincContext *s, float **h, int *len, int *post_len, floa
         work[i + 1] = x * sinf(work[i + 1]);
     }
 
-    s->itx_fn(s->itx, work, work, sizeof(float));
+    s->itx_fn(s->itx, work, work, sizeof(AVComplexFloat));
     for (i = 0; i < work_len; i++)
         work[i] *= 2.f / work_len;
 

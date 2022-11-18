@@ -342,7 +342,7 @@ static void synth_window(AVFilterContext *ctx, int x)
             s->fft_in[ch][y].im = -s->fft_in[ch][f].im;
         }
 
-        s->tx_fn(s->fft, s->fft_out[ch], s->fft_in[ch], sizeof(float));
+        s->tx_fn(s->fft, s->fft_out[ch], s->fft_in[ch], sizeof(AVComplexFloat));
     }
 }
 

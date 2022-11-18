@@ -239,7 +239,7 @@ static av_cold int config_output(AVFilterLink *outlink)
 
     lininterp(s->complexf, s->freq, s->magnitude, s->phase, s->nb_freq, fft_size / 2);
 
-    s->tx_fn(s->tx_ctx, s->complexf + fft_size, s->complexf, sizeof(float));
+    s->tx_fn(s->tx_ctx, s->complexf + fft_size, s->complexf, sizeof(*s->complexf));
 
     compensation = 2.f / fft_size;
     middle = s->nb_taps / 2;

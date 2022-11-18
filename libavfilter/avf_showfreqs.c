@@ -151,7 +151,7 @@ static int config_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = ctx->inputs[0];
     ShowFreqsContext *s = ctx->priv;
-    float overlap, scale;
+    float overlap, scale = 1.f;
     int i, ret;
 
     s->old_pts = AV_NOPTS_VALUE;
@@ -403,7 +403,7 @@ static int plot_freqs(AVFilterLink *inlink, int64_t pts)
         if (s->bypass[ch])
             continue;
 
-        s->tx_fn(s->fft, s->fft_data[ch], s->fft_input[ch], sizeof(float));
+        s->tx_fn(s->fft, s->fft_data[ch], s->fft_input[ch], sizeof(AVComplexFloat));
     }
 
     s->pts = av_rescale_q(pts, inlink->time_base, outlink->time_base);

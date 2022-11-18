@@ -111,7 +111,7 @@ AVFILTER_DEFINE_CLASS(aspectralstats);
 static int config_output(AVFilterLink *outlink)
 {
     AudioSpectralStatsContext *s = outlink->src->priv;
-    float overlap, scale;
+    float overlap, scale = 1.f;
     int ret;
 
     s->nb_channels = outlink->ch_layout.nb_channels;
@@ -460,7 +460,7 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
             fft_in[n].im = 0;
         }
 
-        s->tx_fn(s->fft[ch], fft_out, fft_in, sizeof(float));
+        s->tx_fn(s->fft[ch], fft_out, fft_in, sizeof(*fft_in));
 
         for (int n = 0; n < s->win_size / 2; n++) {
             fft_out[n].re *= scale;

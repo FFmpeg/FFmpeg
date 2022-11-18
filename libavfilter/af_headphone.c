@@ -273,7 +273,7 @@ static int headphone_fast_convolute(AVFilterContext *ctx, void *arg, int jobnr, 
             fft_in[j].re = src[j * in_channels + i];
         }
 
-        tx_fn(fft, fft_out, fft_in, sizeof(float));
+        tx_fn(fft, fft_out, fft_in, sizeof(*fft_in));
 
         for (j = 0; j < n_fft; j++) {
             const AVComplexFloat *hcomplex = hrtf_offset + j;
@@ -285,7 +285,7 @@ static int headphone_fast_convolute(AVFilterContext *ctx, void *arg, int jobnr, 
         }
     }
 
-    itx_fn(ifft, fft_out, fft_acc, sizeof(float));
+    itx_fn(ifft, fft_out, fft_acc, sizeof(*fft_acc));
 
     for (j = 0; j < in->nb_samples; j++) {
         dst[2 * j] += fft_out[j].re * fft_scale;
@@ -480,8 +480,8 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
                     fft_in_r[j].re = ptr[j * 2 + 1] * gain_lin;
                 }
 
-                s->tx_fn[0](s->fft[0], fft_out_l, fft_in_l, sizeof(float));
-                s->tx_fn[0](s->fft[0], fft_out_r, fft_in_r, sizeof(float));
+                s->tx_fn[0](s->fft[0], fft_out_l, fft_in_l, sizeof(*fft_in_l));
+                s->tx_fn[0](s->fft[0], fft_out_r, fft_in_r, sizeof(*fft_in_r));
             }
         } else {
             int I, N = ctx->inputs[1]->ch_layout.nb_channels;
@@ -513,8 +513,8 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
                         fft_in_r[j].re = ptr[j * N + I + 1] * gain_lin;
                     }
 
-                    s->tx_fn[0](s->fft[0], fft_out_l, fft_in_l, sizeof(float));
-                    s->tx_fn[0](s->fft[0], fft_out_r, fft_in_r, sizeof(float));
+                    s->tx_fn[0](s->fft[0], fft_out_l, fft_in_l, sizeof(*fft_in_l));
+                    s->tx_fn[0](s->fft[0], fft_out_r, fft_in_r, sizeof(*fft_in_r));
                 }
             }
         }

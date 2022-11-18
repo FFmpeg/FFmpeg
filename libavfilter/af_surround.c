@@ -1264,7 +1264,7 @@ static int ifft_channel(AVFilterContext *ctx, AVFrame *out, int ch)
 
     dst = (float *)s->output_out->extended_data[ch];
     ptr = (float *)s->overlap_buffer->extended_data[ch];
-    s->itx_fn(s->irdft[ch], dst, (float *)s->output->extended_data[ch], sizeof(float));
+    s->itx_fn(s->irdft[ch], dst, (float *)s->output->extended_data[ch], sizeof(AVComplexFloat));
 
     memmove(s->overlap_buffer->extended_data[ch],
             s->overlap_buffer->extended_data[ch] + s->hop_size * sizeof(float),
