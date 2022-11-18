@@ -17,6 +17,7 @@
  */
 
 #include "avassert.h"
+#include "intmath.h"
 #include "cpu.h"
 #include "qsort.h"
 #include "bprint.h"
@@ -393,6 +394,148 @@ static int get_codelet_prio(const FFTXCodelet *cd, int cpu_flags, int len)
         prio += 16*max_factor;
 
     return prio;
+}
+
+typedef struct FFTXLenDecomp {
+    int len;
+    int len2;
+    int prio;
+    const FFTXCodelet *cd;
+} FFTXLenDecomp;
+
+static int cmp_decomp(FFTXLenDecomp *a, FFTXLenDecomp *b)
+{
+    return FFDIFFSIGN(b->prio, a->prio);
+}
+
+int ff_tx_decompose_length(int dst[TX_MAX_DECOMPOSITIONS], enum AVTXType type,
+                           int len, int inv)
+{
+    int nb_decomp = 0;
+    FFTXLenDecomp ld[TX_MAX_DECOMPOSITIONS];
+    int codelet_list_idx = codelet_list_num;
+
+    const int cpu_flags = av_get_cpu_flags();
+
+    /* Loop through all codelets in all codelet lists to find matches
+     * to the requirements */
+    while (codelet_list_idx--) {
+        const FFTXCodelet * const * list = codelet_list[codelet_list_idx];
+        const FFTXCodelet *cd = NULL;
+
+        while ((cd = *list++)) {
+            int fl = len;
+            int skip = 0, prio;
+            int factors_product = 1, factors_mod = 0;
+
+            if (nb_decomp >= TX_MAX_DECOMPOSITIONS)
+                goto sort;
+
+            /* Check if the type matches */
+            if (cd->type != TX_TYPE_ANY && type != cd->type)
+                continue;
+
+            /* Check direction for non-orthogonal codelets */
+            if (((cd->flags & FF_TX_FORWARD_ONLY) && inv) ||
+                ((cd->flags & (FF_TX_INVERSE_ONLY | AV_TX_FULL_IMDCT)) && !inv))
+                continue;
+
+            /* Check if the CPU supports the required ISA */
+            if (cd->cpu_flags != FF_TX_CPU_FLAGS_ALL &&
+                !(cpu_flags & (cd->cpu_flags & ~cpu_slow_mask)))
+                continue;
+
+            for (int i = 0; i < TX_MAX_FACTORS; i++) {
+                if (!cd->factors[i] || (fl == 1))
+                    break;
+
+                if (cd->factors[i] == TX_FACTOR_ANY) {
+                    factors_mod++;
+                    factors_product *= fl;
+                } else if (!(fl % cd->factors[i])) {
+                    factors_mod++;
+                    if (cd->factors[i] == 2) {
+                        int b = ff_ctz(fl);
+                        fl >>= b;
+                        factors_product <<= b;
+                    } else {
+                        do {
+                            fl /= cd->factors[i];
+                            factors_product *= cd->factors[i];
+                        } while (!(fl % cd->factors[i]));
+                    }
+                }
+            }
+
+            /* Disqualify if factor requirements are not satisfied or if trivial */
+            if ((factors_mod < cd->nb_factors) || (len == factors_product))
+                continue;
+
+            if (av_gcd(factors_product, fl) != 1)
+                continue;
+
+            /* Check if length is supported and factorization was successful */
+            if ((factors_product < cd->min_len) ||
+                (cd->max_len != TX_LEN_UNLIMITED && (factors_product > cd->max_len)))
+                continue;
+
+            prio = get_codelet_prio(cd, cpu_flags, factors_product) * factors_product;
+
+            /* Check for duplicates */
+            for (int i = 0; i < nb_decomp; i++) {
+                if (factors_product == ld[i].len) {
+                    /* Update priority if new one is higher */
+                    if (prio > ld[i].prio)
+                        ld[i].prio = prio;
+                    skip = 1;
+                    break;
+                }
+            }
+
+            /* Add decomposition if unique */
+            if (!skip) {
+                ld[nb_decomp].cd = cd;
+                ld[nb_decomp].len = factors_product;
+                ld[nb_decomp].len2 = fl;
+                ld[nb_decomp].prio = prio;
+                nb_decomp++;
+            }
+        }
+    }
+
+    if (!nb_decomp)
+        return AVERROR(EINVAL);
+
+sort:
+    AV_QSORT(ld, nb_decomp, FFTXLenDecomp, cmp_decomp);
+
+    for (int i = 0; i < nb_decomp; i++) {
+        if (ld[i].cd->nb_factors > 1)
+            dst[i] = ld[i].len2;
+        else
+            dst[i] = ld[i].len;
+    }
+
+    return nb_decomp;
+}
+
+int ff_tx_gen_default_map(AVTXContext *s, FFTXCodeletOptions *opts)
+{
+    s->map = av_malloc(s->len*sizeof(*s->map));
+    if (!s->map)
+        return AVERROR(ENOMEM);
+
+    s->map[0] = 0; /* DC is always at the start */
+    if (s->inv) /* Reversing the ACs flips the transform direction */
+        for (int i = 1; i < s->len; i++)
+            s->map[i] = s->len - i;
+    else
+        for (int i = 1; i < s->len; i++)
+            s->map[i] = i;
+
+    s->map_dir = FF_TX_MAP_GATHER;
+
+    return 0;
 }
 
 #if !CONFIG_SMALL

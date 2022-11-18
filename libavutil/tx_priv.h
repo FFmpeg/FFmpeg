@@ -183,6 +183,9 @@ typedef struct FFTXCodeletOptions {
 /* Maximum amount of subtransform functions, subtransforms and factors. Arbitrary. */
 #define TX_MAX_SUB 4
 
+/* Maximum number of returned results for ff_tx_decompose_length. Arbitrary. */
+#define TX_MAX_DECOMPOSITIONS 512
+
 typedef struct FFTXCodelet {
     const char    *name;          /* Codelet name, for debugging */
     av_tx_fn       function;      /* Codelet function, != NULL */
@@ -283,6 +286,11 @@ int ff_tx_init_subtx(AVTXContext *s, enum AVTXType type,
 
 /* Clear the context by freeing all tables, maps and subtransforms. */
 void ff_tx_clear_ctx(AVTXContext *s);
+
+/* Attempt to factorize a length into 2 integers such that
+ * len / dst1 == dst2, where dst1 and dst2 are coprime. */
+int ff_tx_decompose_length(int dst[TX_MAX_DECOMPOSITIONS], enum AVTXType type,
+                           int len, int inv);
 
 /* Generate a default map (0->len or 0, (len-1)->1 for inverse transforms)
  * for a context. */
