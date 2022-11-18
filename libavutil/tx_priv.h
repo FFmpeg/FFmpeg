@@ -158,10 +158,23 @@ typedef enum FFTXCodeletPriority {
     FF_TX_PRIO_MAX          =  32768,  /* For custom implementations/ASICs */
 } FFTXCodeletPriority;
 
+typedef enum FFTXMapDirection {
+    /* No map. Make a map up. */
+    FF_TX_MAP_NONE = 0,
+
+    /* Lookup table must be applied via dst[i] = src[lut[i]]; */
+    FF_TX_MAP_GATHER,
+
+    /* Lookup table must be applied via dst[lut[i]] = src[i]; */
+    FF_TX_MAP_SCATTER,
+} FFTXMapDirection;
+
 /* Codelet options */
 typedef struct FFTXCodeletOptions {
-    int invert_lookup;     /* If codelet is flagged as FF_TX_CODELET_PRESHUFFLE,
-                              invert the lookup direction for the map generated */
+    /* Request a specific lookup table direction. Codelets MUST put the
+     * direction in AVTXContext. If the codelet does not respect this, a
+     * conversion will be performed. */
+    FFTXMapDirection map_dir;
 } FFTXCodeletOptions;
 
 /* Maximum number of factors a codelet may have. Arbitrary. */
@@ -234,10 +247,31 @@ struct AVTXContext {
     enum AVTXType      type;            /* Type of transform */
     uint64_t           flags;           /* A combination of AVTXFlags and
                                          * codelet flags used when creating */
+    FFTXMapDirection   map_dir;         /* Direction of AVTXContext->map */
     float              scale_f;
     double             scale_d;
     void              *opaque;          /* Free to use by implementations */
 };
+
+/* This function embeds a Ruritanian PFA input map into an existing lookup table
+ * to avoid double permutation. This allows for compound factors to be
+ * synthesized as fast PFA FFTs and embedded into either other or standalone
+ * transforms.
+ * The output CRT map must still be pre-baked into the transform. */
+#define TX_EMBED_INPUT_PFA_MAP(map, tot_len, d1, d2)                             \
+    do {                                                                         \
+        int mtmp[(d1)*(d2)];                                                     \
+        for (int k = 0; k < tot_len; k += (d1)*(d2)) {                           \
+            memcpy(mtmp, &map[k], (d1)*(d2)*sizeof(*mtmp));                      \
+            for (int m = 0; m < (d2); m++)                                       \
+                for (int n = 0; n < (d1); n++)                                   \
+                    map[k + m*(d1) + n] = mtmp[(m*(d1) + n*(d2)) % ((d1)*(d2))]; \
+        }                                                                        \
+    } while (0)
+
+/* This function generates a Ruritanian PFA input map into s->map. */
+int ff_tx_gen_pfa_input_map(AVTXContext *s, FFTXCodeletOptions *opts,
+                            int d1, int d2);
 
 /* Create a subtransform in the current context with the given parameters.
  * The flags parameter from FFTXCodelet.init() should be preserved as much
@@ -250,11 +284,18 @@ int ff_tx_init_subtx(AVTXContext *s, enum AVTXType type,
 /* Clear the context by freeing all tables, maps and subtransforms. */
 void ff_tx_clear_ctx(AVTXContext *s);
 
+/* Generate a default map (0->len or 0, (len-1)->1 for inverse transforms)
+ * for a context. */
+int ff_tx_gen_default_map(AVTXContext *s, FFTXCodeletOptions *opts);
+
 /*
  * Generates the PFA permutation table into AVTXContext->pfatab. The end table
  * is appended to the start table.
+ * The `inv` flag should only be enabled if the lookup tables of subtransforms
+ * won't get flattened.
  */
-int ff_tx_gen_compound_mapping(AVTXContext *s, int n, int m);
+int ff_tx_gen_compound_mapping(AVTXContext *s, FFTXCodeletOptions *opts,
+                               int inv, int n, int m);
 
 /*
  * Generates a standard-ish (slightly modified) Split-Radix revtab into
@@ -262,7 +303,7 @@ int ff_tx_gen_compound_mapping(AVTXContext *s, int n, int m);
  * If it's set to 0, it has to be applied like out[map[i]] = in[i], otherwise
  * if it's set to 1, has to be applied as out[i] = in[map[i]]
  */
-int ff_tx_gen_ptwo_revtab(AVTXContext *s, int invert_lookup);
+int ff_tx_gen_ptwo_revtab(AVTXContext *s, FFTXCodeletOptions *opts);
 
 /*
  * Generates an index into AVTXContext->inplace_idx that if followed in the
@@ -303,7 +344,8 @@ int ff_tx_gen_inplace_map(AVTXContext *s, int len);
  * to out[i] = src[map[i]].
  */
 int ff_tx_gen_split_radix_parity_revtab(AVTXContext *s, int len, int inv,
-                                        int inv_lookup, int basis, int dual_stride);
+                                        FFTXCodeletOptions *opts,
+                                        int basis, int dual_stride);
 
 /* Typed init function to initialize shared tables. Will initialize all tables
  * for all factors of a length. */

@@ -479,30 +479,15 @@ static av_cold int TX_NAME(ff_tx_fft_factor_init)(AVTXContext *s,
                                                   int len, int inv,
                                                   const void *scale)
 {
+    int ret = 0;
     TX_TAB(ff_tx_init_tabs)(len);
 
-    if (flags & FF_TX_PRESHUFFLE) {
-        s->map = av_malloc(len*sizeof(s->map));
-        s->map[0] = 0; /* DC is always at the start */
-        if (inv) /* Reversing the ACs flips the transform direction */
-            for (int i = 1; i < len; i++)
-                s->map[i] = len - i;
-        else
-            for (int i = 1; i < len; i++)
-                s->map[i] = i;
-    }
+    if (len == 15)
+        ret = ff_tx_gen_pfa_input_map(s, opts, 3, 5);
+    else if (flags & FF_TX_PRESHUFFLE)
+        ret = ff_tx_gen_default_map(s, opts);
 
-    /* Our 15-point transform is actually a 5x3 PFA, so embed its input map. */
-    if (len == 15) {
-        int tmp[15];
-        memcpy(tmp, s->map, 15*sizeof(*tmp));
-        for (int i = 0; i < 5; i++) {
-            for (int j = 0; j < 3; j++)
-                s->map[i*3 + j] = tmp[(i*3 + j*5) % 15];
-        }
-    }
-
-    return 0;
+    return ret;
 }
 
 #define DECL_FACTOR_S(n)                                                       \
@@ -605,7 +590,7 @@ static av_cold int TX_NAME(ff_tx_fft_sr_codelet_init)(AVTXContext *s,
                                                       const void *scale)
 {
     TX_TAB(ff_tx_init_tabs)(len);
-    return ff_tx_gen_ptwo_revtab(s, opts ? opts->invert_lookup : 1);
+    return ff_tx_gen_ptwo_revtab(s, opts);
 }
 
 #define DECL_SR_CODELET_DEF(n)                              \
@@ -742,7 +727,9 @@ static av_cold int TX_NAME(ff_tx_fft_init)(AVTXContext *s,
 {
     int ret;
     int is_inplace = !!(flags & AV_TX_INPLACE);
-    FFTXCodeletOptions sub_opts = { .invert_lookup = !is_inplace };
+    FFTXCodeletOptions sub_opts = {
+        .map_dir = is_inplace ? FF_TX_MAP_SCATTER : FF_TX_MAP_GATHER,
+    };
 
     flags &= ~FF_TX_OUT_OF_PLACE; /* We want the subtransform to be */
     flags |=  AV_TX_INPLACE;      /* in-place */
@@ -974,7 +961,9 @@ static av_cold int TX_NAME(ff_tx_fft_pfa_init)(AVTXContext *s,
                                 sub_len, inv, scale)))
         return ret;
 
-    if ((ret = ff_tx_gen_compound_mapping(s, cd->factors[0], sub_len)))
+    /* Generate PFA map */
+    if ((ret = ff_tx_gen_compound_mapping(s, opts, 0,
+                                          cd->factors[0], sub_len)))
         return ret;
 
     if (!(s->tmp = av_malloc(len*sizeof(*s->tmp))))
@@ -1128,7 +1117,9 @@ static av_cold int TX_NAME(ff_tx_mdct_init)(AVTXContext *s,
                                             const void *scale)
 {
     int ret;
-    FFTXCodeletOptions sub_opts = { .invert_lookup = inv };
+    FFTXCodeletOptions sub_opts = {
+        .map_dir = !inv ? FF_TX_MAP_SCATTER : FF_TX_MAP_GATHER,
+    };
 
     s->scale_d = *((SCALE_TYPE *)scale);
     s->scale_f = s->scale_d;
@@ -1328,7 +1319,7 @@ static av_cold int TX_NAME(ff_tx_mdct_pfa_init)(AVTXContext *s,
                                                 const void *scale)
 {
     int ret, sub_len;
-    FFTXCodeletOptions sub_opts = { .invert_lookup = 0 };
+    FFTXCodeletOptions sub_opts = { .map_dir = FF_TX_MAP_SCATTER };
 
     len >>= 1;
     sub_len = len / cd->factors[0];
@@ -1344,8 +1335,12 @@ static av_cold int TX_NAME(ff_tx_mdct_pfa_init)(AVTXContext *s,
                                 sub_len, inv, scale)))
         return ret;
 
-    if ((ret = ff_tx_gen_compound_mapping(s, cd->factors[0], sub_len)))
+    if ((ret = ff_tx_gen_compound_mapping(s, opts, s->inv, cd->factors[0], sub_len)))
         return ret;
+
+    /* Our 15-point transform is also a compound one, so embed its input map */
+    if (cd->factors[0] == 15)
+        TX_EMBED_INPUT_PFA_MAP(s->map, len, 3, 5);
 
     if ((ret = TX_TAB(ff_tx_mdct_gen_exp)(s, inv ? s->map : NULL)))
         return ret;

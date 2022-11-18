@@ -75,12 +75,11 @@ static av_cold int b ##basis## _i ##interleave(AVTXContext *s,                 \
                                                int len, int inv,               \
                                                const void *scale)              \
 {                                                                              \
-    const int inv_lookup = opts ? opts->invert_lookup : 1;                     \
     ff_tx_init_tabs_float(len);                                                \
     if (cd->max_len == 2)                                                      \
-        return ff_tx_gen_ptwo_revtab(s, inv_lookup);                           \
+        return ff_tx_gen_ptwo_revtab(s, opts);                                 \
     else                                                                       \
-        return ff_tx_gen_split_radix_parity_revtab(s, len, inv, inv_lookup,    \
+        return ff_tx_gen_split_radix_parity_revtab(s, len, inv, opts,          \
                                                    basis, interleave);         \
 }
 
@@ -91,27 +90,27 @@ static av_cold int factor_init(AVTXContext *s, const FFTXCodelet *cd,
                                uint64_t flags, FFTXCodeletOptions *opts,
                                int len, int inv, const void *scale)
 {
+    int ret;
+
+    /* The transformations below are performed in the gather domain,
+     * so override the option and let the infrastructure convert the map
+     * to SCATTER if needed. */
+    FFTXCodeletOptions sub_opts = { .map_dir = FF_TX_MAP_GATHER };
+
     TX_TAB(ff_tx_init_tabs)(len);
 
-    s->map = av_malloc(len*sizeof(s->map));
-    s->map[0] = 0; /* DC is always at the start */
-    if (inv) /* Reversing the ACs flips the transform direction */
-        for (int i = 1; i < len; i++)
-            s->map[i] = len - i;
+    if (len == 15)
+        ret = ff_tx_gen_pfa_input_map(s, &sub_opts, 3, 5);
     else
-        for (int i = 1; i < len; i++)
-            s->map[i] = i;
+        ret = ff_tx_gen_default_map(s, &sub_opts);
+
+    if (ret < 0)
+        return ret;
 
     if (len == 15) {
         int cnt = 0, tmp[15];
 
-        /* Our 15-point transform is actually a 5x3 PFA, so embed its input map. */
-        memcpy(tmp, s->map, 15*sizeof(*tmp));
-        for (int i = 0; i < 5; i++)
-            for (int j = 0; j < 3; j++)
-                s->map[i*3 + j] = tmp[(i*3 + j*5) % 15];
-
-        /* Special 15-point assembly permutation */
+        /* Special permutation to simplify loads in the pre-permuted version */
         memcpy(tmp, s->map, 15*sizeof(*tmp));
         for (int i = 1; i < 15; i += 3) {
             s->map[cnt] = tmp[i];
@@ -139,7 +138,7 @@ static av_cold int m_inv_init(AVTXContext *s, const FFTXCodelet *cd,
                               int len, int inv, const void *scale)
 {
     int ret;
-    FFTXCodeletOptions sub_opts = { .invert_lookup = 1 };
+    FFTXCodeletOptions sub_opts = { .map_dir = FF_TX_MAP_GATHER };
 
     s->scale_d = *((SCALE_TYPE *)scale);
     s->scale_f = s->scale_d;
@@ -177,7 +176,7 @@ static av_cold int fft_pfa_init(AVTXContext *s,
 {
     int ret;
     int sub_len = len / cd->factors[0];
-    FFTXCodeletOptions sub_opts = { .invert_lookup = 0 };
+    FFTXCodeletOptions sub_opts = { .map_dir = FF_TX_MAP_SCATTER };
 
     flags &= ~FF_TX_OUT_OF_PLACE; /* We want the subtransform to be */
     flags |=  AV_TX_INPLACE;      /* in-place */
@@ -188,13 +187,18 @@ static av_cold int fft_pfa_init(AVTXContext *s,
                                 sub_len, inv, scale)))
         return ret;
 
-    if ((ret = ff_tx_gen_compound_mapping(s, cd->factors[0], sub_len)))
+    if ((ret = ff_tx_gen_compound_mapping(s, opts, s->inv, cd->factors[0], sub_len)))
         return ret;
 
     if (cd->factors[0] == 15) {
+        int tmp[15];
+
+        /* Our 15-point transform is also a compound one, so embed its input map */
+        TX_EMBED_INPUT_PFA_MAP(s->map, len, 3, 5);
+
+        /* Special permutation to simplify loads in the pre-permuted version */
         for (int k = 0; k < s->sub[0].len; k++) {
             int cnt = 0;
-            int tmp[15];
             memcpy(tmp, &s->map[k*15], 15*sizeof(*tmp));
             for (int i = 1; i < 15; i += 3) {
                 s->map[k*15 + cnt] = tmp[i];

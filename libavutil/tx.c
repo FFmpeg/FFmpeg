@@ -39,11 +39,41 @@ static av_always_inline int mulinv(int n, int m)
     return 0;
 }
 
+int ff_tx_gen_pfa_input_map(AVTXContext *s, FFTXCodeletOptions *opts,
+                            int d1, int d2)
+{
+    const int sl = d1*d2;
+
+    s->map = av_malloc(s->len*sizeof(*s->map));
+    if (!s->map)
+        return AVERROR(ENOMEM);
+
+    for (int k = 0; k < s->len; k += sl) {
+        if (s->inv || (opts && opts->map_dir == FF_TX_MAP_SCATTER)) {
+            for (int m = 0; m < d2; m++)
+                for (int n = 0; n < d1; n++)
+                    s->map[k + ((m*d1 + n*d2) % (sl))] = m*d1 + n;
+        } else {
+            for (int m = 0; m < d2; m++)
+                for (int n = 0; n < d1; n++)
+                    s->map[k + m*d1 + n] = (m*d1 + n*d2) % (sl);
+        }
+
+        if (s->inv)
+            for (int w = 1; w <= ((sl) >> 1); w++)
+                FFSWAP(int, s->map[k + w], s->map[k + sl - w]);
+    }
+
+    s->map_dir = opts ? opts->map_dir : FF_TX_MAP_GATHER;
+
+    return 0;
+}
+
 /* Guaranteed to work for any n, m where gcd(n, m) == 1 */
-int ff_tx_gen_compound_mapping(AVTXContext *s, int n, int m)
+int ff_tx_gen_compound_mapping(AVTXContext *s, FFTXCodeletOptions *opts,
+                               int inv, int n, int m)
 {
     int *in_map, *out_map;
-    const int inv = s->inv;
     const int len = n*m;    /* Will not be equal to s->len for MDCTs */
     int m_inv, n_inv;
 
@@ -61,14 +91,22 @@ int ff_tx_gen_compound_mapping(AVTXContext *s, int n, int m)
     out_map = s->map + len;
 
     /* Ruritanian map for input, CRT map for output, can be swapped */
-    for (int j = 0; j < m; j++) {
-        for (int i = 0; i < n; i++) {
-            in_map[j*n + i] = (i*m + j*n) % len;
-            out_map[(i*m*m_inv + j*n*n_inv) % len] = i*m + j;
+    if (opts && opts->map_dir == FF_TX_MAP_SCATTER) {
+        for (int j = 0; j < m; j++) {
+            for (int i = 0; i < n; i++) {
+                in_map[(i*m + j*n) % len] = j*n + i;
+                out_map[(i*m*m_inv + j*n*n_inv) % len] = i*m + j;
+            }
+        }
+    } else {
+        for (int j = 0; j < m; j++) {
+            for (int i = 0; i < n; i++) {
+                in_map[j*n + i] = (i*m + j*n) % len;
+                out_map[(i*m*m_inv + j*n*n_inv) % len] = i*m + j;
+            }
         }
     }
 
-    /* Change transform direction by reversing all ACs */
     if (inv) {
         for (int i = 0; i < m; i++) {
             int *in = &in_map[i*n + 1]; /* Skip the DC */
@@ -77,17 +115,7 @@ int ff_tx_gen_compound_mapping(AVTXContext *s, int n, int m)
         }
     }
 
-    /* Our 15-point transform is also a compound one, so embed its input map */
-    if (n == 15) {
-        for (int k = 0; k < m; k++) {
-            int tmp[15];
-            memcpy(tmp, &in_map[k*15], 15*sizeof(*tmp));
-            for (int i = 0; i < 5; i++) {
-                for (int j = 0; j < 3; j++)
-                    in_map[k*15 + i*3 + j] = tmp[(i*3 + j*5) % 15];
-            }
-        }
-    }
+    s->map_dir = opts ? opts->map_dir : FF_TX_MAP_GATHER;
 
     return 0;
 }
@@ -103,20 +131,22 @@ static inline int split_radix_permutation(int i, int len, int inv)
     return split_radix_permutation(i, len, inv) * 4 + 1 - 2*(!(i & len) ^ inv);
 }
 
-int ff_tx_gen_ptwo_revtab(AVTXContext *s, int invert_lookup)
+int ff_tx_gen_ptwo_revtab(AVTXContext *s, FFTXCodeletOptions *opts)
 {
     int len = s->len;
 
     if (!(s->map = av_malloc(len*sizeof(*s->map))))
         return AVERROR(ENOMEM);
 
-    if (invert_lookup) {
-        for (int i = 0; i < s->len; i++)
-            s->map[i] = -split_radix_permutation(i, len, s->inv) & (len - 1);
-    } else {
+    if (opts && opts->map_dir == FF_TX_MAP_SCATTER) {
         for (int i = 0; i < s->len; i++)
             s->map[-split_radix_permutation(i, len, s->inv) & (len - 1)] = i;
+    } else {
+        for (int i = 0; i < s->len; i++)
+            s->map[i] = -split_radix_permutation(i, len, s->inv) & (len - 1);
     }
+
+    s->map_dir = opts ? opts->map_dir : FF_TX_MAP_GATHER;
 
     return 0;
 }
@@ -207,7 +237,8 @@ static void parity_revtab_generator(int *revtab, int n, int inv, int offset,
 }
 
 int ff_tx_gen_split_radix_parity_revtab(AVTXContext *s, int len, int inv,
-                                        int inv_lookup, int basis, int dual_stride)
+                                        FFTXCodeletOptions *opts,
+                                        int basis, int dual_stride)
 {
     basis >>= 1;
     if (len < basis)
@@ -220,7 +251,10 @@ int ff_tx_gen_split_radix_parity_revtab(AVTXContext *s, int len, int inv,
     av_assert0(dual_stride <= basis);
 
     parity_revtab_generator(s->map, len, inv, 0, 0, 0, len,
-                            basis, dual_stride, inv_lookup != 0);
+                            basis, dual_stride,
+                            opts ? opts->map_dir == FF_TX_MAP_GATHER : FF_TX_MAP_GATHER);
+
+    s->map_dir = opts ? opts->map_dir : FF_TX_MAP_GATHER;
 
     return 0;
 }
@@ -656,6 +690,33 @@ av_cold int ff_tx_init_subtx(AVTXContext *s, enum AVTXType type,
             ret = cd->init(sctx, cd, flags, opts, len, inv, scale);
 
         if (ret >= 0) {
+            if (opts && opts->map_dir != FF_TX_MAP_NONE &&
+                sctx->map_dir == FF_TX_MAP_NONE) {
+                /* If a specific map direction was requested, and it doesn't
+                 * exist, create one.*/
+                sctx->map = av_malloc(len*sizeof(*sctx->map));
+                if (!sctx->map) {
+                    ret = AVERROR(ENOMEM);
+                    goto end;
+                }
+
+                for (int i = 0; i < len; i++)
+                    sctx->map[i] = i;
+            } else if (opts && (opts->map_dir != sctx->map_dir)) {
+                int *tmp = av_malloc(len*sizeof(*sctx->map));
+                if (!tmp) {
+                    ret = AVERROR(ENOMEM);
+                    goto end;
+                }
+
+                memcpy(tmp, sctx->map, len*sizeof(*sctx->map));
+
+                for (int i = 0; i < len; i++)
+                    sctx->map[tmp[i]] = i;
+
+                free(tmp);
+            }
+
             s->nb_sub++;
             goto end;
         }
