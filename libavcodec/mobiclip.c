@@ -1216,6 +1216,9 @@ static int mobiclip_decode(AVCodecContext *avctx, AVFrame *rframe,
     AVFrame *frame = s->pic[s->current_pic];
     int ret;
 
+    if (avctx->height/16 * (avctx->width/16) * 2 > 8LL*FFALIGN(pkt->size, 2))
+        return AVERROR_INVALIDDATA;
+
     av_fast_padded_malloc(&s->bitstream, &s->bitstream_size,
                           pkt->size);
 
