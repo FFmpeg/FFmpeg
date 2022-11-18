@@ -15587,9 +15587,10 @@ will be performed.
 Work the same as the identical @ref{scale} filter options.
 
 @item normalize_sar
-If enabled (the default), output frames will always have a pixel aspect ratio
-of 1:1. If disabled, any aspect ratio mismatches, including those from e.g.
-anamorphic video sources, are forwarded to the output pixel aspect ratio.
+If enabled, output frames will always have a pixel aspect ratio of 1:1. This
+will introduce padding/cropping as necessary. If disabled (the default), any
+aspect ratio mismatches, including those from e.g. anamorphic video sources,
+are forwarded to the output pixel aspect ratio.
 
 @item pad_crop_ratio
 Specifies a ratio (between @code{0.0} and @code{1.0}) between padding and
