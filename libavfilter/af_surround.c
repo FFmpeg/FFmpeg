@@ -69,6 +69,7 @@ typedef struct AudioSurroundContext {
     float f_i[SC_NB];
     float f_o[SC_NB];
     int   lfe_mode;
+    float smooth;
     float angle;
     float focus;
     int   win_size;
@@ -97,6 +98,7 @@ typedef struct AudioSurroundContext {
     int nb_out_channels;
 
     AVFrame *factors;
+    AVFrame *sfactors;
     AVFrame *input_in;
     AVFrame *input;
     AVFrame *output;
@@ -297,13 +299,14 @@ static int config_output(AVFilterLink *outlink)
     set_output_levels(ctx);
 
     s->factors = ff_get_audio_buffer(outlink, s->win_size + 2);
+    s->sfactors = ff_get_audio_buffer(outlink, s->win_size + 2);
     s->output_ph = ff_get_audio_buffer(outlink, s->win_size + 2);
     s->output_mag = ff_get_audio_buffer(outlink, s->win_size + 2);
     s->output_out = ff_get_audio_buffer(outlink, s->win_size + 2);
     s->output = ff_get_audio_buffer(outlink, s->win_size + 2);
     s->overlap_buffer = ff_get_audio_buffer(outlink, s->win_size * 2);
     if (!s->overlap_buffer || !s->output || !s->output_out || !s->output_mag ||
-        !s->output_ph || !s->factors)
+        !s->output_ph || !s->factors || !s->sfactors)
         return AVERROR(ENOMEM);
 
     s->rdft_size = s->win_size / 2 + 1;
@@ -404,6 +407,7 @@ static int stereo_upmix(AVFilterContext *ctx, int ch)
 {
     AudioSurroundContext *s = ctx->priv;
     float *dst = (float *)s->output->extended_data[ch];
+    float *sfactor = (float *)s->sfactors->extended_data[ch];
     float *factor = (float *)s->factors->extended_data[ch];
     float *omag = (float *)s->output_mag->extended_data[ch];
     float *oph = (float *)s->output_ph->extended_data[ch];
@@ -419,6 +423,7 @@ static int stereo_upmix(AVFilterContext *ctx, int ch)
     const int chan = av_channel_layout_channel_from_index(&s->out_ch_layout, ch);
     const float f_x = s->f_x[sc_map[chan]];
     const float f_y = s->f_y[sc_map[chan]];
+    const float smooth = s->smooth;
 
     switch (chan) {
     case AV_CHAN_FRONT_CENTER:
@@ -499,6 +504,13 @@ static int stereo_upmix(AVFilterContext *ctx, int ch)
         break;
     default:
         break;
+    }
+
+    if (smooth > 0.f) {
+        for (int n = 0; n < rdft_size; n++)
+            sfactor[n] = smooth * factor[n] + (1.f - smooth) * sfactor[n];
+
+        factor = sfactor;
     }
 
     for (int n = 0; n < rdft_size; n++)
@@ -1076,9 +1088,9 @@ static void allchannels_spread(AVFilterContext *ctx)
 static av_cold int init(AVFilterContext *ctx)
 {
     AudioSurroundContext *s = ctx->priv;
-    float overlap;
     int64_t in_channel_layout, out_channel_layout;
-    int i, ret;
+    float overlap;
+    int ret;
 
     if ((ret = av_channel_layout_from_string(&s->out_ch_layout, s->out_channel_layout_str)) < 0) {
         av_log(ctx, AV_LOG_ERROR, "Error parsing output channel layout '%s'.\n",
@@ -1203,7 +1215,7 @@ fail:
     if (s->overlap == 1)
         s->overlap = overlap;
 
-    for (i = 0; i < s->win_size; i++)
+    for (int i = 0; i < s->win_size; i++)
         s->window_func_lut[i] = sqrtf(s->window_func_lut[i] / s->win_size);
     s->hop_size = FFMAX(1, s->win_size * (1. - s->overlap));
 
@@ -1354,6 +1366,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     AudioSurroundContext *s = ctx->priv;
 
     av_frame_free(&s->factors);
+    av_frame_free(&s->sfactors);
     av_frame_free(&s->window);
     av_frame_free(&s->input_in);
     av_frame_free(&s->input);
@@ -1417,6 +1430,7 @@ static const AVOption surround_options[] = {
     { "lfe_mode",  "set LFE channel mode",      OFFSET(lfe_mode),               AV_OPT_TYPE_INT,    {.i64=0},     0,   1, TFLAGS, "lfe_mode" },
     {  "add",      "just add LFE channel",                  0,                  AV_OPT_TYPE_CONST,  {.i64=0},     0,   1, TFLAGS, "lfe_mode" },
     {  "sub",      "substract LFE channel with others",     0,                  AV_OPT_TYPE_CONST,  {.i64=1},     0,   1, TFLAGS, "lfe_mode" },
+    { "smooth",    "set temporal smoothness strength",      OFFSET(smooth),     AV_OPT_TYPE_FLOAT,  {.dbl=0},     0,   1, TFLAGS },
     { "angle",     "set soundfield transform angle",        OFFSET(angle),      AV_OPT_TYPE_FLOAT,  {.dbl=90},    0, 360, TFLAGS },
     { "focus",     "set soundfield transform focus",        OFFSET(focus),      AV_OPT_TYPE_FLOAT,  {.dbl=0},    -1,   1, TFLAGS },
     { "fc_in",     "set front center channel input level",  OFFSET(f_i[SC_FC]), AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },

@@ -6670,6 +6670,12 @@ In @var{add} mode, LFE channel is created from input audio and added to output.
 In @var{sub} mode, LFE channel is created from input audio and added to output but
 also all non-LFE output channels are subtracted with output LFE channel.
 
+@item smooth
+Set temporal smoothness strength, used to gradually change factors when transforming
+stereo sound in time. Allowed range is from @var{0.0} to @var{1.0}.
+Useful to improve output quality with @var{focus} option values greater than @var{0.0}.
+Default is @var{0.0}. Only values inside this range and without edges are effective.
+
 @item angle
 Set angle of stereo surround transform, Allowed range is from @var{0} to @var{360}.
 Default is @var{90}.
