@@ -470,7 +470,7 @@ static int run_channel_fft(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
         }
 
         memcpy(f, g, s->buf_size * sizeof(*f));
-        s->itx_fn(s->ifft[ch], g, f, sizeof(float));
+        s->itx_fn(s->ifft[ch], g, f, sizeof(AVComplexFloat));
 
         for (int k = 0; k < M; k++) {
             psi = k * k / 2.f * phi;
@@ -1146,7 +1146,7 @@ static int config_output(AVFilterLink *outlink)
 
         s->nb_display_channels = inlink->ch_layout.nb_channels;
         for (i = 0; i < s->nb_display_channels; i++) {
-            float scale;
+            float scale = 1.f;
 
             ret = av_tx_init(&s->fft[i], &s->tx_fn, AV_TX_FLOAT_FFT, 0, fft_size << (!!s->stop), &scale, 0);
             if (s->stop) {
