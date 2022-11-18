@@ -551,8 +551,14 @@ fail:
 
 static int libplacebo_config_input(AVFilterLink *inlink)
 {
+    AVFilterContext *avctx = inlink->dst;
+    LibplaceboContext *s   = avctx->priv;
+
     if (inlink->format == AV_PIX_FMT_VULKAN)
         return ff_vk_filter_config_input(inlink);
+
+    /* Forward this to the vkctx for format selection */
+    s->vkctx.input_format = inlink->format;
 
     return 0;
 }
