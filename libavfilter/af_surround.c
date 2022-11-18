@@ -196,30 +196,30 @@ static void set_input_levels(AVFilterContext *ctx)
 {
     AudioSurroundContext *s = ctx->priv;
 
+    for (int ch = 0;  ch < s->nb_in_channels && s->level_in >= 0.f; ch++)
+        s->input_levels[ch] = s->level_in;
+    s->level_in = -1.f;
+
     for (int n = 0; n < SC_NB; n++) {
         const int ch = av_channel_layout_index_from_channel(&s->in_ch_layout, ch_map[n]);
         if (ch >= 0)
             s->input_levels[ch] = s->f_i[n];
     }
-
-    for (int ch = 0;  ch < s->nb_in_channels && s->level_in >= 0.f; ch++)
-        s->input_levels[ch] = s->level_in;
-    s->level_in = -1.f;
 }
 
 static void set_output_levels(AVFilterContext *ctx)
 {
     AudioSurroundContext *s = ctx->priv;
 
+    for (int ch = 0;  ch < s->nb_out_channels && s->level_out >= 0.f; ch++)
+        s->output_levels[ch] = s->level_out;
+    s->level_out = -1.f;
+
     for (int n = 0; n < SC_NB; n++) {
         const int ch = av_channel_layout_index_from_channel(&s->out_ch_layout, ch_map[n]);
         if (ch >= 0)
             s->output_levels[ch] = s->f_o[n];
     }
-
-    for (int ch = 0;  ch < s->nb_out_channels && s->level_out >= 0.f; ch++)
-        s->output_levels[ch] = s->level_out;
-    s->level_out = -1.f;
 }
 
 static int config_input(AVFilterLink *inlink)
