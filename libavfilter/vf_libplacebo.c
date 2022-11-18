@@ -582,12 +582,13 @@ static int libplacebo_config_output(AVFilterLink *outlink)
                                s->force_original_aspect_ratio,
                                s->force_divisible_by);
 
-    scale_sar = (AVRational){outlink->h * inlink->w, *out_w * *out_h};
+    scale_sar = (AVRational){*out_h * inlink->w, *out_w * inlink->h};
     if (inlink->sample_aspect_ratio.num)
         scale_sar = av_mul_q(scale_sar, inlink->sample_aspect_ratio);
 
     if (s->normalize_sar) {
         /* Apply all SAR during scaling, so we don't need to set the out SAR */
+        outlink->sample_aspect_ratio = (AVRational){ 1, 1 };
         s->target_sar = scale_sar;
     } else {
         /* This is consistent with other scale_* filters, which only
