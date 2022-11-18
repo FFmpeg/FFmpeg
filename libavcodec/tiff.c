@@ -102,7 +102,6 @@ typedef struct TiffContext {
     int is_tiled;
     int tile_byte_counts_offset, tile_offsets_offset;
     int tile_width, tile_length;
-    int tile_count;
 
     int is_jpeg;
 
@@ -976,7 +975,7 @@ static int dng_decode_tiles(AVCodecContext *avctx, AVFrame *frame,
     tile_count_y = (s->height + s->tile_length - 1) / s->tile_length;
 
     /* Iterate over the number of tiles */
-    for (tile_idx = 0; tile_idx < s->tile_count; tile_idx++) {
+    for (tile_idx = 0; tile_idx < tile_count_x * tile_count_y; tile_idx++) {
         tile_x = tile_idx % tile_count_x;
         tile_y = tile_idx / tile_count_x;
 
@@ -1396,7 +1395,6 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         break;
     case TIFF_TILE_OFFSETS:
         s->tile_offsets_offset = off;
-        s->tile_count = count;
         s->is_tiled = 1;
         break;
     case TIFF_TILE_BYTE_COUNTS:
@@ -1889,7 +1887,7 @@ again:
         return AVERROR_INVALIDDATA;
     }
 
-    has_tile_bits  = s->is_tiled || s->tile_byte_counts_offset || s->tile_offsets_offset || s->tile_width || s->tile_length || s->tile_count;
+    has_tile_bits  = s->is_tiled || s->tile_byte_counts_offset || s->tile_offsets_offset || s->tile_width || s->tile_length;
     has_strip_bits = s->strippos || s->strips || s->stripoff || s->rps || s->sot || s->sstype || s->stripsize || s->stripsizesoff;
 
     if (has_tile_bits && has_strip_bits) {
