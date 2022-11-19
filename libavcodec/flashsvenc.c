@@ -44,9 +44,10 @@
  * Speed up. Make the difference check faster.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <stdint.h>
 #include <zlib.h>
+
+#include "libavutil/buffer.h"
 
 #include "avcodec.h"
 #include "codec_internal.h"
@@ -60,7 +61,8 @@
 
 typedef struct FlashSVContext {
     AVCodecContext *avctx;
-    uint8_t        *previous_frame;
+    const uint8_t  *previous_frame;
+    AVBufferRef    *prev_frame_buf;
     int             image_width, image_height;
     unsigned        packet_size;
     int             block_width, block_height;
@@ -93,7 +95,7 @@ static av_cold int flashsv_encode_end(AVCodecContext *avctx)
 {
     FlashSVContext *s = avctx->priv_data;
 
-    av_freep(&s->previous_frame);
+    av_buffer_unref(&s->prev_frame_buf);
 
     return 0;
 }
@@ -203,25 +205,16 @@ static int flashsv_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 {
     FlashSVContext * const s = avctx->priv_data;
     const AVFrame * const p = pict;
-    const uint8_t *pfptr;
+    const uint8_t *prev_frame = s->previous_frame;
     int res;
     int I_frame = 0;
     int opt_w = 4, opt_h = 4;
 
     /* First frame needs to be a keyframe */
     if (!s->previous_frame) {
-        s->previous_frame = av_mallocz(FFABS(p->linesize[0]) * s->image_height);
-        if (!s->previous_frame) {
-            av_log(avctx, AV_LOG_ERROR, "Memory allocation failed.\n");
-            return AVERROR(ENOMEM);
-        }
+        prev_frame = pict->data[0];
         I_frame = 1;
     }
-
-    if (p->linesize[0] < 0)
-        pfptr = s->previous_frame - (s->image_height - 1) * p->linesize[0];
-    else
-        pfptr = s->previous_frame;
 
     /* Check the placement of keyframes */
     if (avctx->gop_size > 0 &&
@@ -234,15 +227,7 @@ static int flashsv_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return res;
 
     pkt->size = encode_bitstream(s, p, pkt->data, pkt->size, opt_w * 16, opt_h * 16,
-                                 pfptr, &I_frame);
-
-    //save the current frame
-    if (p->linesize[0] > 0)
-        memcpy(s->previous_frame, p->data[0], s->image_height * p->linesize[0]);
-    else
-        memcpy(s->previous_frame,
-               p->data[0] + p->linesize[0] * (s->image_height - 1),
-               s->image_height * FFABS(p->linesize[0]));
+                                 prev_frame, &I_frame);
 
     //mark the frame type so the muxer can mux it correctly
     if (I_frame) {
@@ -253,6 +238,12 @@ static int flashsv_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     if (I_frame)
         pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
+
+    //save the current frame
+    res = av_buffer_replace(&s->prev_frame_buf, pict->buf[0]);
+    if (res < 0)
+        return res;
+    s->previous_frame = pict->data[0];
 
     return 0;
 }
