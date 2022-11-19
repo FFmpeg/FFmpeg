@@ -1622,7 +1622,7 @@ static av_cold int TX_NAME(ff_tx_rdft_init)(AVTXContext *s,
     m = (inv ? 2*s->scale_d : s->scale_d);
 
     *tab++ = RESCALE((inv ? 0.5 : 1.0) * m);
-    *tab++ = RESCALE(inv ? 0.5*m : 1.0);
+    *tab++ = RESCALE(inv ? 0.5*m : 1.0*m);
     *tab++ = RESCALE( m);
     *tab++ = RESCALE(-m);
 
