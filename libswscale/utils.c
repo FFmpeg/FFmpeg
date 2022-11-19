@@ -1317,11 +1317,6 @@ static int context_init_threaded(SwsContext *c,
         }
     }
 
-    c->frame_src = av_frame_alloc();
-    c->frame_dst = av_frame_alloc();
-    if (!c->frame_src || !c->frame_dst)
-        return AVERROR(ENOMEM);
-
     return 0;
 }
 
@@ -1579,11 +1574,6 @@ static av_cold int sws_init_single_context(SwsContext *c, SwsFilter *srcFilter,
     c->chrDstH = AV_CEIL_RSHIFT(dstH, c->chrDstVSubSample);
 
     if (!FF_ALLOCZ_TYPED_ARRAY(c->formatConvBuffer, FFALIGN(srcW * 2 + 78, 16) * 2))
-        goto nomem;
-
-    c->frame_src = av_frame_alloc();
-    c->frame_dst = av_frame_alloc();
-    if (!c->frame_src || !c->frame_dst)
         goto nomem;
 
     c->srcBpc = desc_src->comp[0].depth;
@@ -2054,6 +2044,11 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
                              SwsFilter *dstFilter)
 {
     int ret;
+
+    c->frame_src = av_frame_alloc();
+    c->frame_dst = av_frame_alloc();
+    if (!c->frame_src || !c->frame_dst)
+        return AVERROR(ENOMEM);
 
     if (c->nb_threads != 1) {
         ret = context_init_threaded(c, srcFilter, dstFilter);
