@@ -1340,13 +1340,10 @@ static av_cold int sws_init_single_context(SwsContext *c, SwsFilter *srcFilter,
     int ret = 0;
     enum AVPixelFormat tmpFmt;
     static const float float_mult = 1.0f / 255.0f;
-    static AVOnce rgb2rgb_once = AV_ONCE_INIT;
 
     cpu_flags = av_get_cpu_flags();
     flags     = c->flags;
     emms_c();
-    if (ff_thread_once(&rgb2rgb_once, ff_sws_rgb2rgb_init) != 0)
-        return AVERROR_UNKNOWN;
 
     unscaled = (srcW == dstW && srcH == dstH);
 
@@ -2043,12 +2040,16 @@ fail: // FIXME replace things by appropriate error codes
 av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
                              SwsFilter *dstFilter)
 {
+    static AVOnce rgb2rgb_once = AV_ONCE_INIT;
     int ret;
 
     c->frame_src = av_frame_alloc();
     c->frame_dst = av_frame_alloc();
     if (!c->frame_src || !c->frame_dst)
         return AVERROR(ENOMEM);
+
+    if (ff_thread_once(&rgb2rgb_once, ff_sws_rgb2rgb_init) != 0)
+        return AVERROR_UNKNOWN;
 
     if (c->nb_threads != 1) {
         ret = context_init_threaded(c, srcFilter, dstFilter);
