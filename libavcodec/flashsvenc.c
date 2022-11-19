@@ -70,15 +70,14 @@ typedef struct FlashSVContext {
 } FlashSVContext;
 
 static int copy_region_enc(const uint8_t *sptr, uint8_t *dptr, int dx, int dy,
-                           int h, int w, int stride, uint8_t *pfptr)
+                           int h, int w, int stride, const uint8_t *pfptr)
 {
     int i, j;
-    uint8_t *npfptr;
     int diff = 0;
 
     for (i = dx + h; i > dx; i--) {
         const uint8_t *nsptr = sptr + i * stride + dy * 3;
-        npfptr = pfptr + i * stride + dy * 3;
+        const uint8_t *npfptr = pfptr + i * stride + dy * 3;
         for (j = 0; j < w * 3; j++) {
             diff    |= npfptr[j] ^ nsptr[j];
             dptr[j]  = nsptr[j];
@@ -128,7 +127,7 @@ static av_cold int flashsv_encode_init(AVCodecContext *avctx)
 
 static int encode_bitstream(FlashSVContext *s, const AVFrame *p, uint8_t *buf,
                             int buf_size, int block_width, int block_height,
-                            uint8_t *previous_frame, int *I_frame)
+                            const uint8_t *previous_frame, int *I_frame)
 {
 
     PutBitContext pb;
@@ -204,7 +203,7 @@ static int flashsv_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 {
     FlashSVContext * const s = avctx->priv_data;
     const AVFrame * const p = pict;
-    uint8_t *pfptr;
+    const uint8_t *pfptr;
     int res;
     int I_frame = 0;
     int opt_w = 4, opt_h = 4;
