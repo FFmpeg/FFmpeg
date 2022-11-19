@@ -1725,6 +1725,113 @@ static const FFTXCodelet TX_NAME(ff_tx_rdft_c2r_def) = {
     .prio       = FF_TX_PRIO_BASE,
 };
 
+static av_cold int TX_NAME(ff_tx_dct_init)(AVTXContext *s,
+                                           const FFTXCodelet *cd,
+                                           uint64_t flags,
+                                           FFTXCodeletOptions *opts,
+                                           int len, int inv,
+                                           const void *scale)
+{
+    int ret;
+    double freq;
+    TXSample *tab;
+    SCALE_TYPE rsc = *((SCALE_TYPE *)scale);
+
+
+    if ((ret = ff_tx_init_subtx(s, TX_TYPE(RDFT), flags, NULL, len, inv, &rsc)))
+        return ret;
+
+    s->exp = av_malloc((len/2)*3*sizeof(TXSample));
+    if (!s->exp)
+        return AVERROR(ENOMEM);
+
+    tab = (TXSample *)s->exp;
+
+    freq = M_PI/(len*2);
+
+    for (int i = 0; i < len; i++)
+        tab[i] = RESCALE(cos(i*freq)*(!inv + 1));
+
+    for (int i = 0; i < len/2; i++)
+        tab[len + i] = RESCALE(cos((len - 2*i - 1)*freq));
+
+    return 0;
+}
+
+static void TX_NAME(ff_tx_dctII)(AVTXContext *s, void *_dst,
+                                 void *_src, ptrdiff_t stride)
+{
+    TXSample *dst = _dst;
+    TXSample *src = _src;
+    const int len = s->len;
+    const int len2 = len >> 1;
+    const TXSample *exp = (void *)s->exp;
+    TXSample next;
+#ifdef TX_INT32
+    int64_t tmp1, tmp2;
+#else
+    TXSample tmp1, tmp2;
+#endif
+
+    for (int i = 0; i < len2; i++) {
+        TXSample in1 = src[i];
+        TXSample in2 = src[len - i - 1];
+        TXSample s    = exp[len + i];
+
+#ifdef TX_INT32
+        tmp1 = in1 + in2;
+        tmp2 = in1 - in2;
+
+        tmp1 >>= 1;
+        tmp2 *= s;
+
+        tmp2 = (tmp2 + 0x40000000) >> 31;
+#else
+        tmp1 = (in1 + in2)*0.5;
+        tmp2 = (in1 - in2)*s;
+#endif
+
+        src[i]           = tmp1 + tmp2;
+        src[len - i - 1] = tmp1 - tmp2;
+    }
+
+    s->fn[0](&s->sub[0], dst, src, sizeof(TXComplex));
+
+    next = dst[len];
+
+    for (int i = len - 2; i > 0; i -= 2) {
+        TXSample tmp;
+
+        CMUL(tmp, dst[i], exp[len - i], exp[i], dst[i + 0], dst[i + 1]);
+
+        dst[i + 1] = next;
+
+        next += tmp;
+    }
+
+#ifdef TX_INT32
+    tmp1 = ((int64_t)exp[0]) * ((int64_t)dst[0]);
+    dst[0] = (tmp1 + 0x40000000) >> 31;
+#else
+    dst[0] = exp[0] * dst[0];
+#endif
+    dst[1] = next;
+}
+
+static const FFTXCodelet TX_NAME(ff_tx_dctII_def) = {
+    .name       = TX_NAME_STR("dctII"),
+    .function   = TX_NAME(ff_tx_dctII),
+    .type       = TX_TYPE(DCT),
+    .flags      = AV_TX_UNALIGNED | AV_TX_INPLACE |
+                  FF_TX_OUT_OF_PLACE | FF_TX_FORWARD_ONLY,
+    .factors    = { 2, TX_FACTOR_ANY },
+    .min_len    = 2,
+    .max_len    = TX_LEN_UNLIMITED,
+    .init       = TX_NAME(ff_tx_dct_init),
+    .cpu_flags  = FF_TX_CPU_FLAGS_ALL,
+    .prio       = FF_TX_PRIO_BASE,
+};
+
 int TX_TAB(ff_tx_mdct_gen_exp)(AVTXContext *s, int *pre_tab)
 {
     int off = 0;
@@ -1812,6 +1919,7 @@ const FFTXCodelet * const TX_NAME(ff_tx_codelet_list)[] = {
     &TX_NAME(ff_tx_mdct_inv_full_def),
     &TX_NAME(ff_tx_rdft_r2c_def),
     &TX_NAME(ff_tx_rdft_c2r_def),
+    &TX_NAME(ff_tx_dctII_def),
 
     NULL,
 };

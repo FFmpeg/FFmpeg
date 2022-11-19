@@ -91,6 +91,20 @@ enum AVTXType {
     AV_TX_DOUBLE_RDFT = 7,
     AV_TX_INT32_RDFT  = 8,
 
+    /**
+     * Real to real (DCT) transforms.
+     *
+     * The forward transform is a DCT-II.
+     * The inverse transform is a DCT-III.
+     *
+     * The input array is always overwritten. DCT-III requires that the
+     * input be padded with 2 extra samples. Stride must be set to the
+     * spacing between two samples in bytes.
+     */
+    AV_TX_FLOAT_DCT  = 9,
+    AV_TX_DOUBLE_DCT = 10,
+    AV_TX_INT32_DCT  = 11,
+
     /* Not part of the API, do not use */
     AV_TX_NB,
 };
