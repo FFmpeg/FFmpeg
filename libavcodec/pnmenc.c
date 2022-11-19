@@ -42,7 +42,10 @@ static int pnm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int size = av_image_get_buffer_size(avctx->pix_fmt,
                                         avctx->width, avctx->height, 1);
 
-    if ((ret = ff_get_encode_buffer(avctx, pkt, size + 200, 0)) < 0)
+    if (size < 0)
+        return size;
+
+    if ((ret = ff_get_encode_buffer(avctx, pkt, size + 200U, 0)) < 0)
         return ret;
 
     bytestream_start =
