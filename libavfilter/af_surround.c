@@ -388,13 +388,12 @@ static inline void get_lfe(int output_lfe, int n, float lowcut, float highcut,
         dst[2 * n    ] = mag * cosf(ph);  \
         dst[2 * n + 1] = mag * sinf(ph);
 
-
 static void calculate_factors(AVFilterContext *ctx, int ch, int chan)
 {
     AudioSurroundContext *s = ctx->priv;
     float *factor = (float *)s->factors->extended_data[ch];
-    const float f_x = s->f_x[sc_map[chan]];
-    const float f_y = s->f_y[sc_map[chan]];
+    const float f_x = s->f_x[sc_map[chan >= 0 ? chan : 0]];
+    const float f_y = s->f_y[sc_map[chan >= 0 ? chan : 0]];
     const int rdft_size = s->rdft_size;
     const float *x = s->x_pos;
     const float *y = s->y_pos;
