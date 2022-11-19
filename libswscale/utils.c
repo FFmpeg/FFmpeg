@@ -1268,6 +1268,9 @@ static enum AVPixelFormat alphaless_fmt(enum AVPixelFormat fmt)
     }
 }
 
+static int sws_init_single_context(SwsContext *c, SwsFilter *srcFilter,
+                                   SwsFilter *dstFilter);
+
 static int context_init_threaded(SwsContext *c,
                                  SwsFilter *src_filter, SwsFilter *dst_filter)
 {
@@ -1301,7 +1304,7 @@ static int context_init_threaded(SwsContext *c,
 
         c->slice_ctx[i]->nb_threads = 1;
 
-        ret = sws_init_context(c->slice_ctx[i], src_filter, dst_filter);
+        ret = sws_init_single_context(c->slice_ctx[i], src_filter, dst_filter);
         if (ret < 0)
             return ret;
 
@@ -1322,8 +1325,8 @@ static int context_init_threaded(SwsContext *c,
     return 0;
 }
 
-av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
-                             SwsFilter *dstFilter)
+static av_cold int sws_init_single_context(SwsContext *c, SwsFilter *srcFilter,
+                                           SwsFilter *dstFilter)
 {
     int i;
     int usesVFilter, usesHFilter;
@@ -1343,13 +1346,6 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
     enum AVPixelFormat tmpFmt;
     static const float float_mult = 1.0f / 255.0f;
     static AVOnce rgb2rgb_once = AV_ONCE_INIT;
-
-    if (c->nb_threads != 1) {
-        ret = context_init_threaded(c, srcFilter, dstFilter);
-        if (ret < 0 || c->nb_threads > 1)
-            return ret;
-        // threading disabled in this build, init as single-threaded
-    }
 
     cpu_flags = av_get_cpu_flags();
     flags     = c->flags;
@@ -2052,6 +2048,21 @@ fail: // FIXME replace things by appropriate error codes
         return 0;
     }
     return ret;
+}
+
+av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
+                             SwsFilter *dstFilter)
+{
+    int ret;
+
+    if (c->nb_threads != 1) {
+        ret = context_init_threaded(c, srcFilter, dstFilter);
+        if (ret < 0 || c->nb_threads > 1)
+            return ret;
+        // threading disabled in this build, init as single-threaded
+    }
+
+    return sws_init_single_context(c, srcFilter, dstFilter);
 }
 
 SwsContext *sws_alloc_set_opts(int srcW, int srcH, enum AVPixelFormat srcFormat,
