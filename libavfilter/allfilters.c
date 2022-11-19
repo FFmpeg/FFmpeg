@@ -558,6 +558,7 @@ extern const AVFilter ff_avf_aphasemeter;
 extern const AVFilter ff_avf_avectorscope;
 extern const AVFilter ff_avf_concat;
 extern const AVFilter ff_avf_showcqt;
+extern const AVFilter ff_avf_showcwt;
 extern const AVFilter ff_avf_showfreqs;
 extern const AVFilter ff_avf_showspatial;
 extern const AVFilter ff_avf_showspectrum;

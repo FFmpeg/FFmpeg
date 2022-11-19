@@ -593,6 +593,7 @@ OBJS-$(CONFIG_APHASEMETER_FILTER)            += avf_aphasemeter.o
 OBJS-$(CONFIG_AVECTORSCOPE_FILTER)           += avf_avectorscope.o
 OBJS-$(CONFIG_CONCAT_FILTER)                 += avf_concat.o
 OBJS-$(CONFIG_SHOWCQT_FILTER)                += avf_showcqt.o lswsutils.o lavfutils.o
+OBJS-$(CONFIG_SHOWCWT_FILTER)                += avf_showcwt.o
 OBJS-$(CONFIG_SHOWFREQS_FILTER)              += avf_showfreqs.o
 OBJS-$(CONFIG_SHOWSPATIAL_FILTER)            += avf_showspatial.o
 OBJS-$(CONFIG_SHOWSPECTRUM_FILTER)           += avf_showspectrum.o

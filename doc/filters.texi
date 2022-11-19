@@ -29274,6 +29274,102 @@ axisfile=myaxis.png:basefreq=40:endfreq=10000
 @end example
 @end itemize
 
+@section showcwt
+
+Convert input audio to video output representing frequency spectrum
+using Continuous Wavelet Transform and Morlet wavelet.
+
+The filter accepts the following options:
+
+@table @option
+@item size, s
+Specify the video size for the output. For the syntax of this option,
+check the @ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
+Default value is @code{640x512}.
+
+@item rate, r
+Set the output frame rate. Default value is @code{25}.
+
+@item scale
+Set the frequency scale used. Allowed values are:
+
+@table @option
+@item linear
+@item log2
+@item bark
+@item mel
+@item erbs
+@end table
+Default value is @code{linear}.
+
+@item min
+Set the minimum frequency that will be used in output.
+Default is @code{20} Hz.
+
+@item max
+Set the maximum frequency that will be used in output.
+Default is @code{20000} Hz. The real frequency upper limit
+depends on input audio's sample rate and such will be enforced
+on this value when it is set to value greater than Nyquist frequency.
+
+@item logb
+Set the logarithmic basis for brightness strength when
+mapping calculated magnitude values to pixel values.
+Allowed range is from @code{0} to @code{1}.
+Default value is @code{0.0001}.
+
+@item deviation
+Set the frequency deviation.
+Lower values than @code{1} are more frequency oriented,
+while higher values than @code{1} are more time oriented.
+Allowed range is from @code{0} to @code{10}.
+Default value is @code{1}.
+
+@item pps
+Set the number of pixel output per each second in one row.
+Allowed range is from @code{1} to @code{1024}.
+Default value is @code{64}.
+
+@item mode
+Set the output visual mode. Allowed values are:
+
+@table @option
+@item magnitude
+Show magnitude.
+@item phase
+Show only phase.
+@item magphase
+Show combination of magnitude and phase.
+Magnitude is mapped to brightness and phase to color.
+@item channel
+Show unique color per channel magnitude.
+@end table
+
+Default value is @code{magnitude}.
+
+@item slide
+Set the output slide method. Allowed values are:
+
+@table @option
+@item replace
+@item scroll
+@end table
+
+@item direction
+Set the direction method for output slide method. Allowed values are:
+
+@table @option
+@item lr
+Direction from left to right.
+@item rl
+Direction from right to left.
+@item ud
+Direction from up to down.
+@item du
+Direction from down to up.
+@end table
+@end table
+
 @section showfreqs
 
 Convert input audio to video output representing the audio power spectrum.
