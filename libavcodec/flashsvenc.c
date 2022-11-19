@@ -54,11 +54,15 @@
 #include "put_bits.h"
 #include "bytestream.h"
 
+/* These values are hardcoded for now. */
+#define BLOCK_WIDTH  (4 * 16U)
+#define BLOCK_HEIGHT (4 * 16U)
 
 typedef struct FlashSVContext {
     AVCodecContext *avctx;
     uint8_t        *previous_frame;
     int             image_width, image_height;
+    unsigned        packet_size;
     int             block_width, block_height;
     uint8_t        *encbuffer;
     int             block_size;
@@ -100,6 +104,7 @@ static av_cold int flashsv_encode_end(AVCodecContext *avctx)
 static av_cold int flashsv_encode_init(AVCodecContext *avctx)
 {
     FlashSVContext *s = avctx->priv_data;
+    int h_blocks, v_blocks, nb_blocks;
 
     s->avctx = avctx;
 
@@ -113,6 +118,11 @@ static av_cold int flashsv_encode_init(AVCodecContext *avctx)
 
     s->image_width  = avctx->width;
     s->image_height = avctx->height;
+
+    h_blocks = (s->image_width  + BLOCK_WIDTH - 1) / BLOCK_WIDTH;
+    v_blocks = (s->image_height + BLOCK_WIDTH - 1) / BLOCK_WIDTH;
+    nb_blocks = h_blocks * v_blocks;
+    s->packet_size = 4 + nb_blocks * (2 + 3 * BLOCK_WIDTH * BLOCK_HEIGHT);
 
     s->encbuffer = av_mallocz(s->image_width * s->image_height * 3);
 
@@ -229,7 +239,8 @@ static int flashsv_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         I_frame = 1;
     }
 
-    if ((res = ff_alloc_packet(avctx, pkt, s->image_width * s->image_height * 3)) < 0)
+    res = ff_alloc_packet(avctx, pkt, s->packet_size);
+    if (res < 0)
         return res;
 
     pkt->size = encode_bitstream(s, p, pkt->data, pkt->size, opt_w * 16, opt_h * 16,
