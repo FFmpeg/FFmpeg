@@ -232,7 +232,8 @@ struct AVTXContext {
     int                len;             /* Length of the transform */
     int                inv;             /* If transform is inverse */
     int               *map;             /* Lookup table(s) */
-    TXComplex         *exp;             /* Any non-pre-baked multiplication factors needed */
+    TXComplex         *exp;             /* Any non-pre-baked multiplication factors,
+                                         * or extra temporary buffer */
     TXComplex         *tmp;             /* Temporary buffer, if needed */
 
     AVTXContext       *sub;             /* Subtransform context(s), if needed */

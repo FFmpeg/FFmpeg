@@ -949,74 +949,182 @@ static av_cold int TX_NAME(ff_tx_fft_pfa_init)(AVTXContext *s,
                                                int len, int inv,
                                                const void *scale)
 {
-    int ret;
-    int sub_len = len / cd->factors[0];
-    FFTXCodeletOptions sub_opts = { .invert_lookup = 0 };
+    int ret, *tmp, ps = flags & FF_TX_PRESHUFFLE;
+    FFTXCodeletOptions sub_opts = { .map_dir = FF_TX_MAP_GATHER };
+    size_t extra_tmp_len = 0;
+    int len_list[TX_MAX_DECOMPOSITIONS];
 
-    flags &= ~FF_TX_OUT_OF_PLACE; /* We want the subtransform to be */
-    flags |=  AV_TX_INPLACE;      /* in-place */
-    flags |=  FF_TX_PRESHUFFLE;   /* This function handles the permute step */
+    if ((ret = ff_tx_decompose_length(len_list, TX_TYPE(FFT), len, inv)) < 0)
+        return ret;
 
-    if ((ret = ff_tx_init_subtx(s, TX_TYPE(FFT), flags, &sub_opts,
-                                sub_len, inv, scale)))
+    /* Two iterations to test both orderings. */
+    for (int i = 0; i < ret; i++) {
+        int len1 = len_list[i];
+        int len2 = len / len1;
+
+        /* Our ptwo transforms don't support striding the output. */
+        if (len2 & (len2 - 1))
+            FFSWAP(int, len1, len2);
+
+        ff_tx_clear_ctx(s);
+
+        /* First transform */
+        sub_opts.map_dir = FF_TX_MAP_GATHER;
+        flags &= ~AV_TX_INPLACE;
+        flags |=  FF_TX_OUT_OF_PLACE;
+        flags |=  FF_TX_PRESHUFFLE; /* This function handles the permute step */
+        ret = ff_tx_init_subtx(s, TX_TYPE(FFT), flags, &sub_opts,
+                               len1, inv, scale);
+
+        if (ret == AVERROR(ENOMEM)) {
+            return ret;
+        } else if (ret < 0) { /* Try again without a preshuffle flag */
+            flags &= ~FF_TX_PRESHUFFLE;
+            ret = ff_tx_init_subtx(s, TX_TYPE(FFT), flags, &sub_opts,
+                                   len1, inv, scale);
+            if (ret == AVERROR(ENOMEM))
+                return ret;
+            else if (ret < 0)
+                continue;
+        }
+
+        /* Second transform. */
+        sub_opts.map_dir = FF_TX_MAP_SCATTER;
+        flags |=  FF_TX_PRESHUFFLE;
+retry:
+        flags &= ~FF_TX_OUT_OF_PLACE;
+        flags |=  AV_TX_INPLACE;
+        ret = ff_tx_init_subtx(s, TX_TYPE(FFT), flags, &sub_opts,
+                               len2, inv, scale);
+
+        if (ret == AVERROR(ENOMEM)) {
+            return ret;
+        } else if (ret < 0) { /* Try again with an out-of-place transform */
+            flags |= FF_TX_OUT_OF_PLACE;
+            flags &= ~AV_TX_INPLACE;
+            ret = ff_tx_init_subtx(s, TX_TYPE(FFT), flags, &sub_opts,
+                                   len2, inv, scale);
+            if (ret == AVERROR(ENOMEM)) {
+                return ret;
+            } else if (ret < 0) {
+                if (flags & FF_TX_PRESHUFFLE) { /* Retry again without a preshuf flag */
+                    flags &= ~FF_TX_PRESHUFFLE;
+                    goto retry;
+                } else {
+                    continue;
+                }
+            }
+        }
+
+        /* Success */
+        break;
+    }
+
+    /* If nothing was sucessful, error out */
+    if (ret < 0)
         return ret;
 
     /* Generate PFA map */
     if ((ret = ff_tx_gen_compound_mapping(s, opts, 0,
-                                          cd->factors[0], sub_len)))
+                                          s->sub[0].len, s->sub[1].len)))
         return ret;
 
     if (!(s->tmp = av_malloc(len*sizeof(*s->tmp))))
         return AVERROR(ENOMEM);
 
-    TX_TAB(ff_tx_init_tabs)(len / sub_len);
+    /* Flatten input map */
+    tmp = (int *)s->tmp;
+    for (int k = 0; k < len; k += s->sub[0].len) {
+        memcpy(tmp, &s->map[k], s->sub[0].len*sizeof(*tmp));
+        for (int i = 0; i < s->sub[0].len; i++)
+            s->map[k + i] = tmp[s->sub[0].map[i]];
+    }
+
+    /* Only allocate extra temporary memory if we need it */
+    if (!(s->sub[1].flags & AV_TX_INPLACE))
+        extra_tmp_len = len;
+    else if (!ps)
+        extra_tmp_len = s->sub[0].len;
+
+    if (extra_tmp_len && !(s->exp = av_malloc(extra_tmp_len*sizeof(*s->exp))))
+        return AVERROR(ENOMEM);
 
     return 0;
 }
 
-#define DECL_COMP_FFT(N)                                                       \
-static void TX_NAME(ff_tx_fft_pfa_##N##xM)(AVTXContext *s, void *_out,         \
-                                           void *_in, ptrdiff_t stride)        \
-{                                                                              \
-    const int m = s->sub->len;                                                 \
-    const int *in_map = s->map, *out_map = in_map + s->len;                    \
-    const int *sub_map = s->sub->map;                                          \
-    TXComplex *in = _in;                                                       \
-    TXComplex *out = _out;                                                     \
-    TXComplex fft##N##in[N];                                                   \
-                                                                               \
-    for (int i = 0; i < m; i++) {                                              \
-        for (int j = 0; j < N; j++)                                            \
-            fft##N##in[j] = in[in_map[i*N + j]];                               \
-        fft##N(s->tmp + sub_map[i], fft##N##in, m);                            \
-    }                                                                          \
-                                                                               \
-    for (int i = 0; i < N; i++)                                                \
-        s->fn[0](&s->sub[0], s->tmp + m*i, s->tmp + m*i, sizeof(TXComplex));   \
-                                                                               \
-    for (int i = 0; i < N*m; i++)                                              \
-        out[i] = s->tmp[out_map[i]];                                           \
-}                                                                              \
-                                                                               \
-static const FFTXCodelet TX_NAME(ff_tx_fft_pfa_##N##xM_def) = {                \
-    .name       = TX_NAME_STR("fft_pfa_" #N "xM"),                             \
-    .function   = TX_NAME(ff_tx_fft_pfa_##N##xM),                              \
-    .type       = TX_TYPE(FFT),                                                \
-    .flags      = AV_TX_UNALIGNED | AV_TX_INPLACE | FF_TX_OUT_OF_PLACE,        \
-    .factors    = { N, TX_FACTOR_ANY },                                        \
-    .nb_factors = 2,                                                           \
-    .min_len    = N*2,                                                         \
-    .max_len    = TX_LEN_UNLIMITED,                                            \
-    .init       = TX_NAME(ff_tx_fft_pfa_init),                                 \
-    .cpu_flags  = FF_TX_CPU_FLAGS_ALL,                                         \
-    .prio       = FF_TX_PRIO_BASE,                                             \
+static void TX_NAME(ff_tx_fft_pfa)(AVTXContext *s, void *_out,
+                                   void *_in, ptrdiff_t stride)
+{
+    const int n = s->sub[0].len, m = s->sub[1].len, l = s->len;
+    const int *in_map = s->map, *out_map = in_map + l;
+    const int *sub_map = s->sub[1].map;
+    TXComplex *tmp1 = s->sub[1].flags & AV_TX_INPLACE ? s->tmp : s->exp;
+    TXComplex *in = _in, *out = _out;
+
+    stride /= sizeof(*out);
+
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < n; j++)
+            s->exp[j] = in[in_map[i*n + j]];
+        s->fn[0](&s->sub[0], &s->tmp[sub_map[i]], s->exp, m*sizeof(TXComplex));
+    }
+
+    for (int i = 0; i < n; i++)
+        s->fn[1](&s->sub[1], &tmp1[m*i], &s->tmp[m*i], sizeof(TXComplex));
+
+    for (int i = 0; i < l; i++)
+        out[i*stride] = tmp1[out_map[i]];
+}
+
+static void TX_NAME(ff_tx_fft_pfa_ns)(AVTXContext *s, void *_out,
+                                      void *_in, ptrdiff_t stride)
+{
+    const int n = s->sub[0].len, m = s->sub[1].len, l = s->len;
+    const int *in_map = s->map, *out_map = in_map + l;
+    const int *sub_map = s->sub[1].map;
+    TXComplex *tmp1 = s->sub[1].flags & AV_TX_INPLACE ? s->tmp : s->exp;
+    TXComplex *in = _in, *out = _out;
+
+    stride /= sizeof(*out);
+
+    for (int i = 0; i < m; i++)
+        s->fn[0](&s->sub[0], &s->tmp[sub_map[i]], &in[i*n], m*sizeof(TXComplex));
+
+    for (int i = 0; i < n; i++)
+        s->fn[1](&s->sub[1], &tmp1[m*i], &s->tmp[m*i], sizeof(TXComplex));
+
+    for (int i = 0; i < l; i++)
+        out[i*stride] = tmp1[out_map[i]];
+}
+
+static const FFTXCodelet TX_NAME(ff_tx_fft_pfa_def) = {
+    .name       = TX_NAME_STR("fft_pfa"),
+    .function   = TX_NAME(ff_tx_fft_pfa),
+    .type       = TX_TYPE(FFT),
+    .flags      = AV_TX_UNALIGNED | AV_TX_INPLACE | FF_TX_OUT_OF_PLACE,
+    .factors    = { 7, 5, 3, 2, TX_FACTOR_ANY },
+    .nb_factors = 2,
+    .min_len    = 2*3,
+    .max_len    = TX_LEN_UNLIMITED,
+    .init       = TX_NAME(ff_tx_fft_pfa_init),
+    .cpu_flags  = FF_TX_CPU_FLAGS_ALL,
+    .prio       = FF_TX_PRIO_BASE,
 };
 
-DECL_COMP_FFT(3)
-DECL_COMP_FFT(5)
-DECL_COMP_FFT(7)
-DECL_COMP_FFT(9)
-DECL_COMP_FFT(15)
+static const FFTXCodelet TX_NAME(ff_tx_fft_pfa_ns_def) = {
+    .name       = TX_NAME_STR("fft_pfa_ns"),
+    .function   = TX_NAME(ff_tx_fft_pfa_ns),
+    .type       = TX_TYPE(FFT),
+    .flags      = AV_TX_UNALIGNED | AV_TX_INPLACE | FF_TX_OUT_OF_PLACE |
+                  FF_TX_PRESHUFFLE,
+    .factors    = { 7, 5, 3, 2, TX_FACTOR_ANY },
+    .nb_factors = 2,
+    .min_len    = 2*3,
+    .max_len    = TX_LEN_UNLIMITED,
+    .init       = TX_NAME(ff_tx_fft_pfa_init),
+    .cpu_flags  = FF_TX_CPU_FLAGS_ALL,
+    .prio       = FF_TX_PRIO_BASE,
+};
 
 static av_cold int TX_NAME(ff_tx_mdct_naive_init)(AVTXContext *s,
                                                   const FFTXCodelet *cd,
@@ -1683,11 +1791,8 @@ const FFTXCodelet * const TX_NAME(ff_tx_codelet_list)[] = {
     &TX_NAME(ff_tx_fft_def),
     &TX_NAME(ff_tx_fft_inplace_def),
     &TX_NAME(ff_tx_fft_inplace_small_def),
-    &TX_NAME(ff_tx_fft_pfa_3xM_def),
-    &TX_NAME(ff_tx_fft_pfa_5xM_def),
-    &TX_NAME(ff_tx_fft_pfa_7xM_def),
-    &TX_NAME(ff_tx_fft_pfa_9xM_def),
-    &TX_NAME(ff_tx_fft_pfa_15xM_def),
+    &TX_NAME(ff_tx_fft_pfa_def),
+    &TX_NAME(ff_tx_fft_pfa_ns_def),
     &TX_NAME(ff_tx_fft_naive_def),
     &TX_NAME(ff_tx_fft_naive_small_def),
     &TX_NAME(ff_tx_mdct_fwd_def),
