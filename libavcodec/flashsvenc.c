@@ -209,7 +209,7 @@ static int flashsv_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int opt_w = 4, opt_h = 4;
 
     /* First frame needs to be a keyframe */
-    if (avctx->frame_number == 0) {
+    if (!s->previous_frame) {
         s->previous_frame = av_mallocz(FFABS(p->linesize[0]) * s->image_height);
         if (!s->previous_frame) {
             av_log(avctx, AV_LOG_ERROR, "Memory allocation failed.\n");
