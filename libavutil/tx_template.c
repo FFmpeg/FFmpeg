@@ -1737,6 +1737,11 @@ static av_cold int TX_NAME(ff_tx_dct_init)(AVTXContext *s,
     TXSample *tab;
     SCALE_TYPE rsc = *((SCALE_TYPE *)scale);
 
+    if (inv) {
+        len *= 2;
+        s->len *= 2;
+        rsc *= 0.5;
+    }
 
     if ((ret = ff_tx_init_subtx(s, TX_TYPE(RDFT), flags, NULL, len, inv, &rsc)))
         return ret;
@@ -1752,8 +1757,13 @@ static av_cold int TX_NAME(ff_tx_dct_init)(AVTXContext *s,
     for (int i = 0; i < len; i++)
         tab[i] = RESCALE(cos(i*freq)*(!inv + 1));
 
-    for (int i = 0; i < len/2; i++)
-        tab[len + i] = RESCALE(cos((len - 2*i - 1)*freq));
+    if (inv) {
+        for (int i = 0; i < len/2; i++)
+            tab[len + i] = RESCALE(0.5 / sin((2*i + 1)*freq));
+    } else {
+        for (int i = 0; i < len/2; i++)
+            tab[len + i] = RESCALE(cos((len - 2*i - 1)*freq));
+    }
 
     return 0;
 }
@@ -1818,12 +1828,69 @@ static void TX_NAME(ff_tx_dctII)(AVTXContext *s, void *_dst,
     dst[1] = next;
 }
 
+static void TX_NAME(ff_tx_dctIII)(AVTXContext *s, void *_dst,
+                                  void *_src, ptrdiff_t stride)
+{
+    TXSample *dst = _dst;
+    TXSample *src = _src;
+    const int len = s->len;
+    const int len2 = len >> 1;
+    const TXSample *exp = (void *)s->exp;
+#ifdef TX_INT32
+    int64_t  tmp1, tmp2 = src[len - 1];
+    tmp2 = (2*tmp2 + 0x40000000) >> 31;
+#else
+    TXSample tmp1, tmp2 = 2*src[len - 1];
+#endif
+
+    src[len] = tmp2;
+
+    for (int i = len - 2; i >= 2; i -= 2) {
+        TXSample val1 = src[i - 0];
+        TXSample val2 = src[i - 1] - src[i + 1];
+
+        CMUL(src[i + 1], src[i], exp[len - i], exp[i], val1, val2);
+    }
+
+    s->fn[0](&s->sub[0], dst, src, sizeof(float));
+
+    for (int i = 0; i < len2; i++) {
+        TXSample in1 = dst[i];
+        TXSample in2 = dst[len - i - 1];
+        TXSample c   = exp[len + i];
+
+        tmp1 = in1 + in2;
+        tmp2 = in1 - in2;
+        tmp2 *= c;
+#ifdef TX_INT32
+        tmp2 = (tmp2 + 0x40000000) >> 31;
+#endif
+
+        dst[i]            = tmp1 + tmp2;
+        dst[len - i - 1]  = tmp1 - tmp2;
+    }
+}
+
 static const FFTXCodelet TX_NAME(ff_tx_dctII_def) = {
     .name       = TX_NAME_STR("dctII"),
     .function   = TX_NAME(ff_tx_dctII),
     .type       = TX_TYPE(DCT),
     .flags      = AV_TX_UNALIGNED | AV_TX_INPLACE |
                   FF_TX_OUT_OF_PLACE | FF_TX_FORWARD_ONLY,
+    .factors    = { 2, TX_FACTOR_ANY },
+    .min_len    = 2,
+    .max_len    = TX_LEN_UNLIMITED,
+    .init       = TX_NAME(ff_tx_dct_init),
+    .cpu_flags  = FF_TX_CPU_FLAGS_ALL,
+    .prio       = FF_TX_PRIO_BASE,
+};
+
+static const FFTXCodelet TX_NAME(ff_tx_dctIII_def) = {
+    .name       = TX_NAME_STR("dctIII"),
+    .function   = TX_NAME(ff_tx_dctIII),
+    .type       = TX_TYPE(DCT),
+    .flags      = AV_TX_UNALIGNED | AV_TX_INPLACE |
+                  FF_TX_OUT_OF_PLACE | FF_TX_INVERSE_ONLY,
     .factors    = { 2, TX_FACTOR_ANY },
     .min_len    = 2,
     .max_len    = TX_LEN_UNLIMITED,
@@ -1920,6 +1987,7 @@ const FFTXCodelet * const TX_NAME(ff_tx_codelet_list)[] = {
     &TX_NAME(ff_tx_rdft_r2c_def),
     &TX_NAME(ff_tx_rdft_c2r_def),
     &TX_NAME(ff_tx_dctII_def),
+    &TX_NAME(ff_tx_dctIII_def),
 
     NULL,
 };
