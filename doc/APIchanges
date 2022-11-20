@@ -14,6 +14,9 @@ libavutil:     2021-04-27
 
 API changes, most recent first:
 
+2022-11-xx - xxxxxxxxxx - lavu 57.43.100 - tx.h
+  Add AV_TX_FLOAT_DCT, AV_TX_DOUBLE_DCT and AV_TX_INT32_DCT.
+
 2022-xx-xx - xxxxxxxxxx - lavu 57.42.100 - dict.h
   Add av_dict_iterate().
 
