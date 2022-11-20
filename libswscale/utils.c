@@ -1307,16 +1307,16 @@ static av_cold int sws_init_single_context(SwsContext *c, SwsFilter *srcFilter,
 
     if (!(unscaled && sws_isSupportedEndiannessConversion(srcFormat) &&
           av_pix_fmt_swap_endianness(srcFormat) == dstFormat)) {
-    if (!sws_isSupportedInput(srcFormat)) {
-        av_log(c, AV_LOG_ERROR, "%s is not supported as input pixel format\n",
-               av_get_pix_fmt_name(srcFormat));
-        return AVERROR(EINVAL);
-    }
-    if (!sws_isSupportedOutput(dstFormat)) {
-        av_log(c, AV_LOG_ERROR, "%s is not supported as output pixel format\n",
-               av_get_pix_fmt_name(dstFormat));
-        return AVERROR(EINVAL);
-    }
+        if (!sws_isSupportedInput(srcFormat)) {
+            av_log(c, AV_LOG_ERROR, "%s is not supported as input pixel format\n",
+                   av_get_pix_fmt_name(srcFormat));
+            return AVERROR(EINVAL);
+        }
+        if (!sws_isSupportedOutput(dstFormat)) {
+            av_log(c, AV_LOG_ERROR, "%s is not supported as output pixel format\n",
+                   av_get_pix_fmt_name(dstFormat));
+            return AVERROR(EINVAL);
+        }
     }
     av_assert2(desc_src && desc_dst);
 
