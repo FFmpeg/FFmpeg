@@ -502,7 +502,7 @@ static inline void TX_NAME(ff_tx_fft_sr_combine)(TXComplex *z,
     int o2 = 4*len;
     int o3 = 6*len;
     const TXSample *wim = cos + o1 - 7;
-    TXSample t1, t2, t3, t4, t5, t6, r0, i0, r1, i1;
+    TXUSample t1, t2, t3, t4, t5, t6, r0, i0, r1, i1;
 
     for (int i = 0; i < len; i += 4) {
         TRANSFORM(z[0], z[o1 + 0], z[o2 + 0], z[o3 + 0], cos[0], wim[7]);

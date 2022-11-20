@@ -34,6 +34,7 @@
 #define MULT(x, m) ((x) * (m))
 #define SCALE_TYPE float
 typedef float TXSample;
+typedef float TXUSample;
 typedef AVComplexFloat TXComplex;
 #elif defined(TX_DOUBLE)
 #define TX_TAB(x) x ## _double
@@ -45,6 +46,7 @@ typedef AVComplexFloat TXComplex;
 #define MULT(x, m) ((x) * (m))
 #define SCALE_TYPE double
 typedef double TXSample;
+typedef double TXUSample;
 typedef AVComplexDouble TXComplex;
 #elif defined(TX_INT32)
 #define TX_TAB(x) x ## _int32
@@ -56,6 +58,7 @@ typedef AVComplexDouble TXComplex;
 #define MULT(x, m) (((((int64_t)(x)) * (int64_t)(m)) + 0x40000000) >> 31)
 #define SCALE_TYPE float
 typedef int32_t TXSample;
+typedef uint32_t TXUSample;
 typedef AVComplexInt32 TXComplex;
 #else
 typedef void TXComplex;
