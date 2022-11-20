@@ -179,7 +179,8 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
         param->min_qp_allowed       = avctx->qmin;
     }
     param->max_bit_rate             = avctx->rc_max_rate;
-    param->maximum_buffer_size_ms   = avctx->rc_buffer_size * 1000LL / avctx->bit_rate;
+    if (avctx->bit_rate && avctx->rc_buffer_size)
+        param->maximum_buffer_size_ms = avctx->rc_buffer_size * 1000LL / avctx->bit_rate;
 
     if (svt_enc->crf > 0) {
         param->qp                   = svt_enc->crf;
