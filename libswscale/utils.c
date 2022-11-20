@@ -1277,8 +1277,7 @@ static av_cold int sws_init_single_context(SwsContext *c, SwsFilter *srcFilter,
     int dstH              = c->dstH;
     int dst_stride        = FFALIGN(dstW * sizeof(int16_t) + 66, 16);
     int flags, cpu_flags;
-    enum AVPixelFormat srcFormat = c->srcFormat;
-    enum AVPixelFormat dstFormat = c->dstFormat;
+    enum AVPixelFormat srcFormat, dstFormat;
     const AVPixFmtDescriptor *desc_src;
     const AVPixFmtDescriptor *desc_dst;
     int ret = 0;
@@ -1290,12 +1289,6 @@ static av_cold int sws_init_single_context(SwsContext *c, SwsFilter *srcFilter,
     emms_c();
 
     unscaled = (srcW == dstW && srcH == dstH);
-
-    c->srcRange |= handle_jpeg(&c->srcFormat);
-    c->dstRange |= handle_jpeg(&c->dstFormat);
-
-    if(srcFormat!=c->srcFormat || dstFormat!=c->dstFormat)
-        av_log(c, AV_LOG_WARNING, "deprecated pixel format used, make sure you did set range correctly\n");
 
     if (!c->contrast && !c->saturation && !c->dstFormatBpp)
         sws_setColorspaceDetails(c, ff_yuv2rgb_coeffs[SWS_CS_DEFAULT], c->srcRange,
@@ -2034,6 +2027,7 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
                              SwsFilter *dstFilter)
 {
     static AVOnce rgb2rgb_once = AV_ONCE_INIT;
+    enum AVPixelFormat src_format, dst_format;
     int ret;
 
     c->frame_src = av_frame_alloc();
@@ -2043,6 +2037,14 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
 
     if (ff_thread_once(&rgb2rgb_once, ff_sws_rgb2rgb_init) != 0)
         return AVERROR_UNKNOWN;
+
+    src_format = c->srcFormat;
+    dst_format = c->dstFormat;
+    c->srcRange |= handle_jpeg(&c->srcFormat);
+    c->dstRange |= handle_jpeg(&c->dstFormat);
+
+    if (src_format != c->srcFormat || dst_format != c->dstFormat)
+        av_log(c, AV_LOG_WARNING, "deprecated pixel format used, make sure you did set range correctly\n");
 
     if (c->nb_threads != 1) {
         ret = context_init_threaded(c, srcFilter, dstFilter);
