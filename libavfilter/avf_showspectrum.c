@@ -1770,6 +1770,7 @@ static int showspectrumpic_request_frame(AVFilterLink *outlink)
 
         spf = s->win_size * (s->samples / ((s->win_size * sz) * ceil(s->samples / (float)(s->win_size * sz))));
         spf = FFMAX(1, spf);
+        s->hop_size = spf;
 
         spb = (s->samples / (spf * sz)) * spf;
 
