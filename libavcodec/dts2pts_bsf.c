@@ -301,15 +301,15 @@ static int h264_filter(AVBSFContext *ctx)
 
             if (output_picture_number != h264->last_poc) {
                 if (h264->last_poc != INT_MIN) {
-                    int diff = FFABS(h264->last_poc - output_picture_number);
+                    int64_t diff = FFABS(h264->last_poc - (int64_t)output_picture_number);
 
                     if ((output_picture_number < 0) && !h264->last_poc)
                         h264->poc_diff = 0;
-                    else if (FFABS(output_picture_number) < h264->poc_diff) {
+                    else if (FFABS((int64_t)output_picture_number) < h264->poc_diff) {
                         diff = FFABS(output_picture_number);
                         h264->poc_diff = 0;
                     }
-                    if (!h264->poc_diff || (h264->poc_diff > diff)) {
+                    if ((!h264->poc_diff || (h264->poc_diff > diff)) && diff <= INT_MAX) {
                         h264->poc_diff = diff;
                         if (h264->poc_diff == 1 && h264->sps.frame_mbs_only_flag) {
                             av_tree_enumerate(s->root, &h264->poc_diff, NULL, dec_poc);
