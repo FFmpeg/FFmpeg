@@ -162,6 +162,25 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
     if (av_image_check_size(s->width, s->height, 0, avctx) < 0)
         return -1;
+
+    /*
+        There are 2 coding modes, RLE and RAW.
+        Undamaged RAW should be proportional to W*H and thus bigger than RLE
+        RLE codes the most compressed runs by
+        1 byte for val (=marker)
+        1 byte run (=0)
+        2 bytes run
+        1 byte val
+        thats 5 bytes and the maximum run we can code is 65535
+
+        The RLE decoder can exit prematurly but it does not on any image available
+        Based on this the formula is assumed correct for undamaged images.
+        If an image is found which exploits the special end
+        handling and breaks this formula then this needs to be adapted.
+    */
+    if (bytestream2_get_bytes_left(&s->g) < s->width * s->height / 65535 * 5)
+        return AVERROR_INVALIDDATA;
+
     if (s->width != avctx->width || s->height != avctx->height) {
         ret = ff_set_dimensions(avctx, s->width, s->height);
         if (ret < 0)
