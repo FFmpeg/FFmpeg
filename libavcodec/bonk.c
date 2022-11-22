@@ -217,6 +217,9 @@ static int intlist_read(BonkContext *s, int *buf, int entries, int base_2_part)
             level += 1 << low_bits;
         }
 
+        if (level > 1 << 15)
+            return AVERROR_INVALIDDATA;
+
         if (x >= max_x)
             return AVERROR_INVALIDDATA;
 
@@ -330,7 +333,7 @@ static int bonk_decode(AVCodecContext *avctx, AVFrame *frame,
 
     skip_bits(gb, s->skip);
     if ((ret = intlist_read(s, s->k, s->n_taps, 0)) < 0)
-        return ret;
+        goto fail;
 
     for (int i = 0; i < s->n_taps; i++)
         s->k[i] *= s->quant[i];
@@ -345,7 +348,7 @@ static int bonk_decode(AVCodecContext *avctx, AVFrame *frame,
 
         predictor_init_state(s->k, state, s->n_taps);
         if ((ret = intlist_read(s, s->input_samples, samples_per_packet, 1)) < 0)
-            return ret;
+            goto fail;
 
         for (int i = 0; i < samples_per_packet; i++) {
             for (int j = 0; j < s->down_sampling - 1; j++) {
@@ -390,6 +393,7 @@ static int bonk_decode(AVCodecContext *avctx, AVFrame *frame,
     n = get_bits_count(gb) / 8;
 
     if (n > buf_size) {
+fail:
         s->bitstream_size = 0;
         s->bitstream_index = 0;
         return AVERROR_INVALIDDATA;
