@@ -168,24 +168,31 @@ static int decode_slice_header(const FFV1Context *f, FFV1Context *fs)
     RangeCoder *c = &fs->c;
     uint8_t state[CONTEXT_SIZE];
     unsigned ps, i, context_count;
+    int sx, sy, sw, sh;
+
     memset(state, 128, sizeof(state));
+    sx = get_symbol(c, state, 0);
+    sy = get_symbol(c, state, 0);
+    sw = get_symbol(c, state, 0) + 1U;
+    sh = get_symbol(c, state, 0) + 1U;
 
     av_assert0(f->version > 2);
 
-    fs->slice_x      =  get_symbol(c, state, 0)      * f->width ;
-    fs->slice_y      =  get_symbol(c, state, 0)      * f->height;
-    fs->slice_width  = (get_symbol(c, state, 0) + 1) * f->width  + fs->slice_x;
-    fs->slice_height = (get_symbol(c, state, 0) + 1) * f->height + fs->slice_y;
 
-    fs->slice_x /= f->num_h_slices;
-    fs->slice_y /= f->num_v_slices;
-    fs->slice_width  = fs->slice_width /f->num_h_slices - fs->slice_x;
-    fs->slice_height = fs->slice_height/f->num_v_slices - fs->slice_y;
-    if ((unsigned)fs->slice_width > f->width || (unsigned)fs->slice_height > f->height)
-        return -1;
-    if (    (unsigned)fs->slice_x + (uint64_t)fs->slice_width  > f->width
-         || (unsigned)fs->slice_y + (uint64_t)fs->slice_height > f->height)
-        return -1;
+    if (sx < 0 || sy < 0 || sw <= 0 || sh <= 0)
+        return AVERROR_INVALIDDATA;
+    if (sx > f->num_h_slices - sw || sy > f->num_v_slices - sh)
+        return AVERROR_INVALIDDATA;
+
+    fs->slice_x      =  sx       * (int64_t)f->width  / f->num_h_slices;
+    fs->slice_y      =  sy       * (int64_t)f->height / f->num_v_slices;
+    fs->slice_width  = (sx + sw) * (int64_t)f->width  / f->num_h_slices - fs->slice_x;
+    fs->slice_height = (sy + sh) * (int64_t)f->height / f->num_v_slices - fs->slice_y;
+
+    av_assert0((unsigned)fs->slice_width  <= f->width &&
+                (unsigned)fs->slice_height <= f->height);
+    av_assert0 (   (unsigned)fs->slice_x + (uint64_t)fs->slice_width  <= f->width
+                && (unsigned)fs->slice_y + (uint64_t)fs->slice_height <= f->height);
 
     if (fs->ac == AC_GOLOMB_RICE && fs->slice_width >= (1<<23))
         return AVERROR_INVALIDDATA;
@@ -770,21 +777,25 @@ static int read_header(FFV1Context *f)
         fs->slice_damaged = 0;
 
         if (f->version == 2) {
-            fs->slice_x      =  get_symbol(c, state, 0)      * f->width ;
-            fs->slice_y      =  get_symbol(c, state, 0)      * f->height;
-            fs->slice_width  = (get_symbol(c, state, 0) + 1) * f->width  + fs->slice_x;
-            fs->slice_height = (get_symbol(c, state, 0) + 1) * f->height + fs->slice_y;
+            int sx = get_symbol(c, state, 0);
+            int sy = get_symbol(c, state, 0);
+            int sw = get_symbol(c, state, 0) + 1U;
+            int sh = get_symbol(c, state, 0) + 1U;
 
-            fs->slice_x     /= f->num_h_slices;
-            fs->slice_y     /= f->num_v_slices;
-            fs->slice_width  = fs->slice_width  / f->num_h_slices - fs->slice_x;
-            fs->slice_height = fs->slice_height / f->num_v_slices - fs->slice_y;
-            if ((unsigned)fs->slice_width  > f->width ||
-                (unsigned)fs->slice_height > f->height)
+            if (sx < 0 || sy < 0 || sw <= 0 || sh <= 0)
                 return AVERROR_INVALIDDATA;
-            if (   (unsigned)fs->slice_x + (uint64_t)fs->slice_width  > f->width
-                || (unsigned)fs->slice_y + (uint64_t)fs->slice_height > f->height)
+            if (sx > f->num_h_slices - sw || sy > f->num_v_slices - sh)
                 return AVERROR_INVALIDDATA;
+
+            fs->slice_x      =  sx       * (int64_t)f->width  / f->num_h_slices;
+            fs->slice_y      =  sy       * (int64_t)f->height / f->num_v_slices;
+            fs->slice_width  = (sx + sw) * (int64_t)f->width  / f->num_h_slices - fs->slice_x;
+            fs->slice_height = (sy + sh) * (int64_t)f->height / f->num_v_slices - fs->slice_y;
+
+            av_assert0((unsigned)fs->slice_width  <= f->width &&
+                       (unsigned)fs->slice_height <= f->height);
+            av_assert0 (   (unsigned)fs->slice_x + (uint64_t)fs->slice_width  <= f->width
+                        && (unsigned)fs->slice_y + (uint64_t)fs->slice_height <= f->height);
         }
 
         for (i = 0; i < f->plane_count; i++) {
