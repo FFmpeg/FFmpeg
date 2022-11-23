@@ -673,7 +673,7 @@ static int create_instance(AVHWDeviceContext *ctx, AVDictionary *opts)
     VkApplicationInfo application_info = {
         .sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO,
         .pEngineName        = "libavutil",
-        .apiVersion         = VK_API_VERSION_1_2,
+        .apiVersion         = VK_API_VERSION_1_3,
         .engineVersion      = VK_MAKE_VERSION(LIBAVUTIL_VERSION_MAJOR,
                                               LIBAVUTIL_VERSION_MINOR,
                                               LIBAVUTIL_VERSION_MICRO),
