@@ -625,7 +625,14 @@ int ff_vk_submit_exec_queue(FFVulkanContext *s, FFVkExecContext *e)
         return AVERROR_EXTERNAL;
     }
 
+    s->hwctx->lock_queue((AVHWDeviceContext *)s->device_ref->data,
+                         e->qf->queue_family, e->qf->cur_queue % e->qf->actual_queues);
+
     ret = vk->QueueSubmit(q->queue, 1, &s_info, q->fence);
+
+    s->hwctx->unlock_queue((AVHWDeviceContext *)s->device_ref->data,
+                           e->qf->queue_family, e->qf->cur_queue % e->qf->actual_queues);
+
     if (ret != VK_SUCCESS) {
         av_log(s, AV_LOG_ERROR, "Unable to submit command buffer: %s\n",
                ff_vk_ret2str(ret));
