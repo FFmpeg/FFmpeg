@@ -71,6 +71,9 @@ static av_cold int vqc_decode_init(AVCodecContext * avctx)
     static AVOnce init_static_once = AV_ONCE_INIT;
     VqcContext *s = avctx->priv_data;
 
+    if (avctx->width & 15)
+        return AVERROR_PATCHWELCOME;
+
     s->vectors = av_malloc((avctx->width * avctx->height * 3) / 2);
     if (!s->vectors)
         return AVERROR(ENOMEM);
