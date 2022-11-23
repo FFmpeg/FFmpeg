@@ -2030,7 +2030,9 @@ static int alloc_bind_mem(AVHWFramesContext *hwfc, AVVkFrame *f,
 enum PrepMode {
     PREP_MODE_WRITE,
     PREP_MODE_EXTERNAL_EXPORT,
-    PREP_MODE_EXTERNAL_IMPORT
+    PREP_MODE_EXTERNAL_IMPORT,
+    PREP_MODE_DECODING_DST,
+    PREP_MODE_DECODING_DPB,
 };
 
 static int prepare_frame(AVHWFramesContext *hwfc, VulkanExecCtx *ectx,
@@ -2039,7 +2041,7 @@ static int prepare_frame(AVHWFramesContext *hwfc, VulkanExecCtx *ectx,
     int err;
     uint32_t src_qf, dst_qf;
     VkImageLayout new_layout;
-    VkAccessFlags new_access;
+    VkAccessFlags2 new_access;
     AVVulkanFramesContext *vkfc = hwfc->hwctx;
     const int planes = av_pix_fmt_count_planes(hwfc->sw_format);
     VulkanDevicePriv *p = hwfc->device_ctx->internal->priv;
@@ -2047,7 +2049,8 @@ static int prepare_frame(AVHWFramesContext *hwfc, VulkanExecCtx *ectx,
     AVFrame tmp = { .data[0] = (uint8_t *)frame };
     uint64_t sem_sig_val[AV_NUM_DATA_POINTERS];
 
-    VkImageMemoryBarrier img_bar[AV_NUM_DATA_POINTERS] = { 0 };
+    VkImageMemoryBarrier2 img_bar[AV_NUM_DATA_POINTERS] = { 0 };
+    VkDependencyInfo dep_info;
 
     VkTimelineSemaphoreSubmitInfo s_timeline_sem_info = {
         .sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,
@@ -2103,32 +2106,52 @@ static int prepare_frame(AVHWFramesContext *hwfc, VulkanExecCtx *ectx,
         s_info.pWaitDstStageMask = wait_st;
         s_info.waitSemaphoreCount = planes;
         break;
+    case PREP_MODE_DECODING_DST:
+        new_layout = VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR;
+        new_access = VK_ACCESS_TRANSFER_WRITE_BIT;
+        src_qf     = VK_QUEUE_FAMILY_IGNORED;
+        dst_qf     = VK_QUEUE_FAMILY_IGNORED;
+        break;
+    case PREP_MODE_DECODING_DPB:
+        new_layout = VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR;
+        new_access = VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
+        src_qf     = VK_QUEUE_FAMILY_IGNORED;
+        dst_qf     = VK_QUEUE_FAMILY_IGNORED;
+        break;
     }
 
     /* Change the image layout to something more optimal for writes.
      * This also signals the newly created semaphore, making it usable
      * for synchronization */
     for (int i = 0; i < planes; i++) {
-        img_bar[i].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        img_bar[i].srcAccessMask = 0x0;
-        img_bar[i].dstAccessMask = new_access;
-        img_bar[i].oldLayout = frame->layout[i];
-        img_bar[i].newLayout = new_layout;
-        img_bar[i].srcQueueFamilyIndex = src_qf;
-        img_bar[i].dstQueueFamilyIndex = dst_qf;
-        img_bar[i].image = frame->img[i];
-        img_bar[i].subresourceRange.levelCount = 1;
-        img_bar[i].subresourceRange.layerCount = 1;
-        img_bar[i].subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        img_bar[i] = (VkImageMemoryBarrier2) {
+            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+            .pNext = NULL,
+            .srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
+            .srcAccessMask = 0x0,
+            .dstStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT,
+            .dstAccessMask = new_access,
+            .oldLayout = frame->layout[i],
+            .newLayout = new_layout,
+            .srcQueueFamilyIndex = src_qf,
+            .dstQueueFamilyIndex = dst_qf,
+            .image = frame->img[i],
+            .subresourceRange = (VkImageSubresourceRange) {
+                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                .levelCount = 1,
+                .layerCount = 1,
+            },
+        };
 
         frame->layout[i] = img_bar[i].newLayout;
         frame->access[i] = img_bar[i].dstAccessMask;
     }
 
-    vk->CmdPipelineBarrier(get_buf_exec_ctx(hwfc, ectx),
-                           VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                           VK_PIPELINE_STAGE_TRANSFER_BIT,
-                           0, 0, NULL, 0, NULL, planes, img_bar);
+    vk->CmdPipelineBarrier2(get_buf_exec_ctx(hwfc, ectx), &(VkDependencyInfo) {
+            .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+            .pImageMemoryBarriers = img_bar,
+            .imageMemoryBarrierCount = planes,
+        });
 
     err = submit_exec_ctx(hwfc, ectx, &s_info, frame, 0);
     vkfc->unlock_frame(hwfc, frame);
@@ -2369,7 +2392,13 @@ static AVBufferRef *vulkan_pool_alloc(void *opaque, size_t size)
     if (err)
         goto fail;
 
-    err = prepare_frame(hwfc, &fp->conv_ctx, f, PREP_MODE_WRITE);
+    if ( (hwctx->usage & VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR) &&
+        !(hwctx->usage & VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR))
+        err = prepare_frame(hwfc, &fp->conv_ctx, f, PREP_MODE_DECODING_DPB);
+    else if (hwctx->usage & VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR)
+        err = prepare_frame(hwfc, &fp->conv_ctx, f, PREP_MODE_DECODING_DST);
+    else
+        err = prepare_frame(hwfc, &fp->conv_ctx, f, PREP_MODE_WRITE);
     if (err)
         goto fail;
 
