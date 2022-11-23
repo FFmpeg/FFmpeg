@@ -167,8 +167,8 @@ typedef struct AVVkFrameInternal {
 
 static const struct {
     enum AVPixelFormat pixfmt;
-    const VkFormat vkfmts[4];
-} vk_pixfmt_map[] = {
+    const VkFormat vkfmts[5];
+} vk_pixfmt_planar_map[] = {
     { AV_PIX_FMT_GRAY8,   { VK_FORMAT_R8_UNORM } },
     { AV_PIX_FMT_GRAY16,  { VK_FORMAT_R16_UNORM } },
     { AV_PIX_FMT_GRAYF32, { VK_FORMAT_R32_SFLOAT } },
@@ -244,9 +244,9 @@ static const struct {
 
 const VkFormat *av_vkfmt_from_pixfmt(enum AVPixelFormat p)
 {
-    for (enum AVPixelFormat i = 0; i < FF_ARRAY_ELEMS(vk_pixfmt_map); i++)
-        if (vk_pixfmt_map[i].pixfmt == p)
-            return vk_pixfmt_map[i].vkfmts;
+    for (enum AVPixelFormat i = 0; i < FF_ARRAY_ELEMS(vk_pixfmt_planar_map); i++)
+        if (vk_pixfmt_planar_map[i].pixfmt == p)
+            return vk_pixfmt_planar_map[i].vkfmts;
     return NULL;
 }
 
