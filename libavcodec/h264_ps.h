@@ -106,7 +106,7 @@ typedef struct PPS {
     unsigned int pps_id;
     unsigned int sps_id;
     int cabac;                  ///< entropy_coding_mode_flag
-    int pic_order_present;      ///< pic_order_present_flag
+    int pic_order_present;      ///< bottom_field_pic_order_in_frame_present_flag
     int slice_group_count;      ///< num_slice_groups_minus1 + 1
     int mb_slice_group_map_type;
     unsigned int ref_count[2];  ///< num_ref_idx_l0/1_active_minus1 + 1
