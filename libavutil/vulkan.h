@@ -19,6 +19,8 @@
 #ifndef AVUTIL_VULKAN_H
 #define AVUTIL_VULKAN_H
 
+#define VK_NO_PROTOTYPES
+
 #include "pixdesc.h"
 #include "bprint.h"
 #include "hwcontext.h"
