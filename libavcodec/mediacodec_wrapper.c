@@ -1861,12 +1861,16 @@ typedef struct FFAMediaFormatNdk {
     bool (*getSize)(AMediaFormat*, const char *name, size_t *out);
     bool (*getBuffer)(AMediaFormat*, const char *name, void** data, size_t *size);
     bool (*getString)(AMediaFormat*, const char *name, const char **out);
+    bool (*getRect)(AMediaFormat *, const char *name,
+                    int32_t *left, int32_t *top, int32_t *right, int32_t *bottom);
 
     void (*setInt32)(AMediaFormat*, const char* name, int32_t value);
     void (*setInt64)(AMediaFormat*, const char* name, int64_t value);
     void (*setFloat)(AMediaFormat*, const char* name, float value);
     void (*setString)(AMediaFormat*, const char* name, const char* value);
     void (*setBuffer)(AMediaFormat*, const char* name, const void* data, size_t size);
+    void (*setRect)(AMediaFormat *, const char *name,
+                    int32_t left, int32_t top, int32_t right, int32_t bottom);
 } FFAMediaFormatNdk;
 
 typedef struct FFAMediaCodecNdk {
@@ -1940,9 +1944,12 @@ static FFAMediaFormat *mediaformat_ndk_create(AMediaFormat *impl)
     if (!format->libmedia)
         goto error;
 
-#define GET_SYMBOL(sym) \
-    format->sym = dlsym(format->libmedia, "AMediaFormat_" #sym);    \
-    if (!format->sym)                                               \
+#define GET_OPTIONAL_SYMBOL(sym) \
+    format->sym = dlsym(format->libmedia, "AMediaFormat_" #sym);
+
+#define GET_SYMBOL(sym)         \
+    GET_OPTIONAL_SYMBOL(sym)    \
+    if (!format->sym)           \
         goto error;
 
     GET_SYMBOL(new)
@@ -1956,14 +1963,17 @@ static FFAMediaFormat *mediaformat_ndk_create(AMediaFormat *impl)
     GET_SYMBOL(getSize)
     GET_SYMBOL(getBuffer)
     GET_SYMBOL(getString)
+    GET_OPTIONAL_SYMBOL(getRect)
 
     GET_SYMBOL(setInt32)
     GET_SYMBOL(setInt64)
     GET_SYMBOL(setFloat)
     GET_SYMBOL(setString)
     GET_SYMBOL(setBuffer)
+    GET_OPTIONAL_SYMBOL(setRect)
 
 #undef GET_SYMBOL
+#undef GET_OPTIONAL_SYMBOL
 
     if (impl) {
         format->impl = impl;
@@ -2047,6 +2057,15 @@ static int mediaformat_ndk_getString(FFAMediaFormat* ctx, const char *name, cons
     return ret;
 }
 
+static int mediaformat_ndk_getRect(FFAMediaFormat *ctx, const char *name,
+                                   int32_t *left, int32_t *top, int32_t *right, int32_t *bottom)
+{
+    FFAMediaFormatNdk *format = (FFAMediaFormatNdk *)ctx;
+    if (!format->getRect)
+        return AVERROR_EXTERNAL;
+    return format->getRect(format->impl, name, left, top, right, bottom);
+}
+
 static void mediaformat_ndk_setInt32(FFAMediaFormat* ctx, const char* name, int32_t value)
 {
     FFAMediaFormatNdk *format = (FFAMediaFormatNdk *)ctx;
@@ -2075,6 +2094,17 @@ static void mediaformat_ndk_setBuffer(FFAMediaFormat* ctx, const char* name, voi
 {
     FFAMediaFormatNdk *format = (FFAMediaFormatNdk *)ctx;
     format->setBuffer(format->impl, name, data, size);
+}
+
+static void mediaformat_ndk_setRect(FFAMediaFormat *ctx, const char *name,
+                                     int32_t left, int32_t top, int32_t right, int32_t bottom)
+{
+    FFAMediaFormatNdk *format = (FFAMediaFormatNdk *)ctx;
+    if (!format->setRect) {
+        av_log(ctx, AV_LOG_WARNING, "Doesn't support setRect\n");
+        return;
+    }
+    format->setRect(format->impl, name, left, top, right, bottom);
 }
 
 static char *mediacodec_ndk_getName(FFAMediaCodec *ctx)
@@ -2433,12 +2463,14 @@ static const FFAMediaFormat media_format_ndk = {
     .getFloat = mediaformat_ndk_getFloat,
     .getBuffer = mediaformat_ndk_getBuffer,
     .getString = mediaformat_ndk_getString,
+    .getRect = mediaformat_ndk_getRect,
 
     .setInt32 = mediaformat_ndk_setInt32,
     .setInt64 = mediaformat_ndk_setInt64,
     .setFloat = mediaformat_ndk_setFloat,
     .setString = mediaformat_ndk_setString,
     .setBuffer = mediaformat_ndk_setBuffer,
+    .setRect = mediaformat_ndk_setRect,
 };
 
 static const FFAMediaCodec media_codec_ndk = {

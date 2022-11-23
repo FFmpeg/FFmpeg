@@ -73,12 +73,18 @@ struct FFAMediaFormat {
     int (*getFloat)(FFAMediaFormat* format, const char *name, float *out);
     int (*getBuffer)(FFAMediaFormat* format, const char *name, void** data, size_t *size);
     int (*getString)(FFAMediaFormat* format, const char *name, const char **out);
+    // NDK only, introduced in API level 28
+    int (*getRect)(FFAMediaFormat *, const char *name,
+                   int32_t *left, int32_t *top, int32_t *right, int32_t *bottom);
 
     void (*setInt32)(FFAMediaFormat* format, const char* name, int32_t value);
     void (*setInt64)(FFAMediaFormat* format, const char* name, int64_t value);
     void (*setFloat)(FFAMediaFormat* format, const char* name, float value);
     void (*setString)(FFAMediaFormat* format, const char* name, const char* value);
     void (*setBuffer)(FFAMediaFormat* format, const char* name, void* data, size_t size);
+    // NDK only, introduced in API level 28
+    void (*setRect)(FFAMediaFormat*, const char* name,
+                    int32_t left, int32_t top, int32_t right, int32_t bottom);
 };
 
 FFAMediaFormat *ff_AMediaFormat_new(int ndk);
@@ -118,6 +124,14 @@ static inline int ff_AMediaFormat_getString(FFAMediaFormat* format, const char *
     return format->getString(format, name, out);
 }
 
+static inline int ff_AMediaFormat_getRect(FFAMediaFormat *format, const char *name,
+                                          int32_t *left, int32_t *top, int32_t *right, int32_t *bottom)
+{
+    if (!format->getRect)
+        return AVERROR_EXTERNAL;
+    return format->getRect(format, name, left, top, right, bottom);
+}
+
 static inline void ff_AMediaFormat_setInt32(FFAMediaFormat* format, const char* name, int32_t value)
 {
     format->setInt32(format, name, value);
@@ -141,6 +155,16 @@ static inline void ff_AMediaFormat_setString(FFAMediaFormat* format, const char*
 static inline void ff_AMediaFormat_setBuffer(FFAMediaFormat* format, const char* name, void* data, size_t size)
 {
     format->setBuffer(format, name, data, size);
+}
+
+static inline void ff_AMediaFormat_setRect(FFAMediaFormat* format, const char* name,
+                                           int32_t left, int32_t top, int32_t right, int32_t bottom)
+{
+    if (!format->setRect) {
+        av_log(format, AV_LOG_WARNING, "Doesn't support setRect\n");
+        return;
+    }
+    format->setRect(format, name, left, top, right, bottom);
 }
 
 typedef struct FFAMediaCodecCryptoInfo FFAMediaCodecCryptoInfo;
