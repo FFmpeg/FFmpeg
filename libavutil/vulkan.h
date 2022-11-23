@@ -428,6 +428,17 @@ int ff_vk_unmap_buffers(FFVulkanContext *s, FFVkBuffer *buf, int nb_buffers,
 void ff_vk_free_buf(FFVulkanContext *s, FFVkBuffer *buf);
 
 /**
+ * Creates an image, allocates and binds memory in the given
+ * idx value of the dst frame. If mem is non-NULL, then no memory will be
+ * allocated, but instead the given memory will be bound to the image.
+ */
+int ff_vk_image_create(FFVulkanContext *s, AVVkFrame *dst, int idx,
+                       int width, int height, VkFormat fmt, VkImageTiling tiling,
+                       VkImageUsageFlagBits usage, VkImageCreateFlags flags,
+                       void *create_pnext,
+                       VkDeviceMemory *mem, void *alloc_pnext);
+
+/**
  * Frees the main Vulkan context.
  */
 void ff_vk_uninit(FFVulkanContext *s);

@@ -401,6 +401,95 @@ void ff_vk_free_buf(FFVulkanContext *s, FFVkBuffer *buf)
         vk->FreeMemory(s->hwctx->act_dev, buf->mem, s->hwctx->alloc);
 }
 
+int ff_vk_image_create(FFVulkanContext *s, AVVkFrame *f, int idx,
+                       int width, int height, VkFormat fmt, VkImageTiling tiling,
+                       VkImageUsageFlagBits usage, VkImageCreateFlags flags,
+                       void *create_pnext, VkDeviceMemory *mem, void *alloc_pnext)
+{
+    int err;
+    VkResult ret;
+    FFVulkanFunctions *vk = &s->vkfn;
+    AVVulkanDeviceContext *hwctx = s->hwctx;
+
+    VkExportSemaphoreCreateInfo ext_sem_info = {
+        .sType = VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_CREATE_INFO,
+#ifdef _WIN32
+        .handleTypes = IsWindows8OrGreater()
+            ? VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT
+            : VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT,
+#else
+        .handleTypes = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT,
+#endif
+    };
+
+    VkSemaphoreTypeCreateInfo sem_type_info = {
+        .sType         = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
+#ifdef _WIN32
+        .pNext         = s->extensions & FF_VK_EXT_EXTERNAL_WIN32_SEM ? &ext_sem_info : NULL,
+#else
+        .pNext         = s->extensions & FF_VK_EXT_EXTERNAL_FD_SEM ? &ext_sem_info : NULL,
+#endif
+        .semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE,
+        .initialValue  = 0,
+    };
+
+    VkSemaphoreCreateInfo sem_spawn = {
+        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+        .pNext = &sem_type_info,
+    };
+
+    /* Create the image */
+    VkImageCreateInfo create_info = {
+        .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+        .pNext                 = create_pnext,
+        .imageType             = VK_IMAGE_TYPE_2D,
+        .format                = fmt,
+        .extent.depth          = 1,
+        .mipLevels             = 1,
+        .arrayLayers           = 1,
+        .flags                 = flags,
+        .tiling                = tiling,
+        .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED,
+        .usage                 = usage,
+        .samples               = VK_SAMPLE_COUNT_1_BIT,
+        .pQueueFamilyIndices   = s->qfs,
+        .queueFamilyIndexCount = s->nb_qfs,
+        .sharingMode           = s->nb_qfs > 1 ? VK_SHARING_MODE_CONCURRENT :
+                                                 VK_SHARING_MODE_EXCLUSIVE,
+    };
+
+    ret = vk->CreateImage(hwctx->act_dev, &create_info,
+                          hwctx->alloc, &f->img[0]);
+    if (ret != VK_SUCCESS) {
+        av_log(s, AV_LOG_ERROR, "Image creation failure: %s\n",
+               ff_vk_ret2str(ret));
+        err = AVERROR(EINVAL);
+        goto fail;
+    }
+
+    /* Create semaphore */
+    ret = vk->CreateSemaphore(hwctx->act_dev, &sem_spawn,
+                              hwctx->alloc, &f->sem[0]);
+    if (ret != VK_SUCCESS) {
+        av_log(s, AV_LOG_ERROR, "Failed to create semaphore: %s\n",
+               ff_vk_ret2str(ret));
+        return AVERROR_EXTERNAL;
+    }
+
+    f->queue_family[0] = s->nb_qfs > 1 ? VK_QUEUE_FAMILY_IGNORED : s->qfs[0];
+    f->layout[0] = create_info.initialLayout;
+    f->access[0] = 0x0;
+    f->sem_value[0] = 0;
+
+    f->flags  = 0x0;
+    f->tiling = tiling;
+
+    return 0;
+
+fail:
+    return err;
+}
+
 int ff_vk_add_push_constant(FFVulkanPipeline *pl, int offset, int size,
                             VkShaderStageFlagBits stage)
 {
