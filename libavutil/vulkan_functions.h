@@ -39,6 +39,10 @@ typedef enum FFVulkanExtensions {
 #endif
     FF_VK_EXT_DESCRIPTOR_BUFFER      = 1ULL <<  8, /* VK_EXT_descriptor_buffer */
     FF_VK_EXT_DEVICE_DRM             = 1ULL <<  9, /* VK_EXT_physical_device_drm */
+    FF_VK_EXT_VIDEO_QUEUE            = 1ULL << 10, /* VK_KHR_video_queue */
+    FF_VK_EXT_VIDEO_DECODE_QUEUE     = 1ULL << 11, /* VK_KHR_video_decode_queue */
+    FF_VK_EXT_VIDEO_DECODE_H264      = 1ULL << 12, /* VK_EXT_video_decode_h264 */
+    FF_VK_EXT_VIDEO_DECODE_H265      = 1ULL << 13, /* VK_EXT_video_decode_h265 */
 
     FF_VK_EXT_NO_FLAG                = 1ULL << 31,
 } FFVulkanExtensions;
@@ -60,6 +64,8 @@ typedef enum FFVulkanExtensions {
     MACRO(1, 0, FF_VK_EXT_NO_FLAG,              CreateDevice)                            \
     MACRO(1, 0, FF_VK_EXT_NO_FLAG,              GetPhysicalDeviceFeatures2)              \
     MACRO(1, 0, FF_VK_EXT_NO_FLAG,              GetPhysicalDeviceProperties)             \
+    MACRO(1, 0, FF_VK_EXT_VIDEO_QUEUE,          GetPhysicalDeviceVideoCapabilitiesKHR)     \
+    MACRO(1, 0, FF_VK_EXT_VIDEO_QUEUE,          GetPhysicalDeviceVideoFormatPropertiesKHR) \
     MACRO(1, 0, FF_VK_EXT_NO_FLAG,              DeviceWaitIdle)                          \
     MACRO(1, 0, FF_VK_EXT_NO_FLAG,              DestroyDevice)                           \
                                                                                          \
@@ -159,6 +165,20 @@ typedef enum FFVulkanExtensions {
     /* sync2 */                                                                            \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CmdPipelineBarrier2)                       \
                                                                                            \
+    /* Video queue */                                                                      \
+    MACRO(1, 1, FF_VK_EXT_VIDEO_QUEUE,          CreateVideoSessionKHR)                     \
+    MACRO(1, 1, FF_VK_EXT_VIDEO_QUEUE,          CreateVideoSessionParametersKHR)           \
+    MACRO(1, 1, FF_VK_EXT_VIDEO_QUEUE,          GetVideoSessionMemoryRequirementsKHR)      \
+    MACRO(1, 1, FF_VK_EXT_VIDEO_QUEUE,          BindVideoSessionMemoryKHR)                 \
+    MACRO(1, 1, FF_VK_EXT_VIDEO_QUEUE,          CmdBeginVideoCodingKHR)                    \
+    MACRO(1, 1, FF_VK_EXT_VIDEO_QUEUE,          CmdControlVideoCodingKHR)                  \
+    MACRO(1, 1, FF_VK_EXT_VIDEO_QUEUE,          CmdEndVideoCodingKHR)                      \
+    MACRO(1, 1, FF_VK_EXT_VIDEO_QUEUE,          DestroyVideoSessionParametersKHR)          \
+    MACRO(1, 1, FF_VK_EXT_VIDEO_QUEUE,          DestroyVideoSessionKHR)                    \
+                                                                                           \
+    /* Video decoding */                                                                   \
+    MACRO(1, 1, FF_VK_EXT_VIDEO_DECODE_QUEUE,   CmdDecodeVideoKHR)                         \
+                                                                                         \
     /* Pipeline */                                                                       \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CreatePipelineLayout)                    \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              DestroyPipelineLayout)                   \
