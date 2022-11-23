@@ -207,6 +207,9 @@ typedef struct FFVulkanContext {
     AVHWFramesContext     *frames;
     AVVulkanFramesContext *hwfc;
 
+    uint32_t               qfs[5];
+    int                    nb_qfs;
+
     FFVkSPIRVCompiler     *spirv_compiler;
 
     /* Properties */
@@ -248,6 +251,12 @@ int ff_vk_mt_is_np_rgb(enum AVPixelFormat pix_fmt);
  * Gets the glsl format string for a pixel format
  */
 const char *ff_vk_shader_rep_fmt(enum AVPixelFormat pixfmt);
+
+/**
+ * Setup the queue families from the hardware device context.
+ * Necessary for image creation to work.
+ */
+void ff_vk_qf_fill(FFVulkanContext *s);
 
 /**
  * Initialize a queue family with a specific number of queues.

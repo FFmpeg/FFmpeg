@@ -108,6 +108,31 @@ const char *ff_vk_ret2str(VkResult res)
 #undef CASE
 }
 
+void ff_vk_qf_fill(FFVulkanContext *s)
+{
+    s->nb_qfs = 0;
+
+    /* Simply fills in all unique queues into s->qfs */
+    if (s->hwctx->queue_family_index >= 0)
+        s->qfs[s->nb_qfs++] = s->hwctx->queue_family_index;
+    if (!s->nb_qfs || s->qfs[0] != s->hwctx->queue_family_tx_index)
+        s->qfs[s->nb_qfs++] = s->hwctx->queue_family_tx_index;
+    if (!s->nb_qfs || (s->qfs[0] != s->hwctx->queue_family_comp_index &&
+                       s->qfs[1] != s->hwctx->queue_family_comp_index))
+        s->qfs[s->nb_qfs++] = s->hwctx->queue_family_comp_index;
+    if (s->hwctx->queue_family_decode_index >= 0 &&
+         (s->qfs[0] != s->hwctx->queue_family_decode_index &&
+          s->qfs[1] != s->hwctx->queue_family_decode_index &&
+          s->qfs[2] != s->hwctx->queue_family_decode_index))
+        s->qfs[s->nb_qfs++] = s->hwctx->queue_family_decode_index;
+    if (s->hwctx->queue_family_encode_index >= 0 &&
+         (s->qfs[0] != s->hwctx->queue_family_encode_index &&
+          s->qfs[1] != s->hwctx->queue_family_encode_index &&
+          s->qfs[2] != s->hwctx->queue_family_encode_index &&
+          s->qfs[3] != s->hwctx->queue_family_encode_index))
+        s->qfs[s->nb_qfs++] = s->hwctx->queue_family_encode_index;
+}
+
 void ff_vk_qf_init(FFVulkanContext *s, FFVkQueueFamilyCtx *qf,
                    VkQueueFlagBits dev_family, int nb_queues)
 {
