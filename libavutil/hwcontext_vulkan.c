@@ -112,9 +112,6 @@ typedef struct VulkanDevicePriv {
 
     /* Nvidia */
     int dev_is_nvidia;
-
-    /* Intel */
-    int dev_is_intel;
 } VulkanDevicePriv;
 
 typedef struct VulkanFramesPriv {
@@ -1504,7 +1501,6 @@ static int vulkan_device_init(AVHWDeviceContext *ctx)
                p->hprops.minImportedHostPointerAlignment);
 
     p->dev_is_nvidia = (p->props.properties.vendorID == 0x10de);
-    p->dev_is_intel  = (p->props.properties.vendorID == 0x8086);
 
     vk->GetPhysicalDeviceQueueFamilyProperties(hwctx->phys_dev, &qf_num, NULL);
     if (!qf_num) {
@@ -1629,8 +1625,6 @@ static int vulkan_device_derive(AVHWDeviceContext *ctx,
             return AVERROR_EXTERNAL;
         }
 
-        if (strstr(vendor, "Intel"))
-            dev_select.vendor_id = 0x8086;
         if (strstr(vendor, "AMD"))
             dev_select.vendor_id = 0x1002;
 
@@ -2365,12 +2359,6 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
 
     if (!hwctx->usage)
         hwctx->usage = FF_VK_DEFAULT_USAGE_FLAGS;
-
-    if (!(hwctx->flags & AV_VK_FRAME_FLAG_NONE)) {
-        if (p->contiguous_planes == 1 ||
-           ((p->contiguous_planes == -1) && p->dev_is_intel))
-           hwctx->flags |= AV_VK_FRAME_FLAG_CONTIGUOUS_MEMORY;
-    }
 
     modifier_info = vk_find_struct(hwctx->create_pnext,
                                    VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_LIST_CREATE_INFO_EXT);
