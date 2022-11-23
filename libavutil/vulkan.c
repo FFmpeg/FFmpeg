@@ -174,9 +174,9 @@ void ff_vk_qf_rotate(FFVkQueueFamilyCtx *qf)
     qf->cur_queue = (qf->cur_queue + 1) % qf->nb_queues;
 }
 
-static int vk_alloc_mem(FFVulkanContext *s, VkMemoryRequirements *req,
-                        VkMemoryPropertyFlagBits req_flags, void *alloc_extension,
-                        VkMemoryPropertyFlagBits *mem_flags, VkDeviceMemory *mem)
+int ff_vk_alloc_mem(FFVulkanContext *s, VkMemoryRequirements *req,
+                    VkMemoryPropertyFlagBits req_flags, void *alloc_extension,
+                    VkMemoryPropertyFlagBits *mem_flags, VkDeviceMemory *mem)
 {
     VkResult ret;
     int index = -1;
@@ -225,7 +225,8 @@ static int vk_alloc_mem(FFVulkanContext *s, VkMemoryRequirements *req,
         return AVERROR(ENOMEM);
     }
 
-    *mem_flags |= s->mprops.memoryTypes[index].propertyFlags;
+    if (mem_flags)
+        *mem_flags |= s->mprops.memoryTypes[index].propertyFlags;
 
     return 0;
 }
@@ -279,9 +280,9 @@ int ff_vk_create_buf(FFVulkanContext *s, FFVkBuffer *buf, size_t size, void *pNe
     if (use_ded_mem)
         ded_alloc.buffer = buf->buf;
 
-    err = vk_alloc_mem(s, &req.memoryRequirements, flags,
-                       use_ded_mem ? &ded_alloc : (void *)ded_alloc.pNext,
-                       &buf->flags, &buf->mem);
+    err = ff_vk_alloc_mem(s, &req.memoryRequirements, flags,
+                          use_ded_mem ? &ded_alloc : (void *)ded_alloc.pNext,
+                          &buf->flags, &buf->mem);
     if (err)
         return err;
 

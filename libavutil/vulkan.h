@@ -259,6 +259,13 @@ const char *ff_vk_shader_rep_fmt(enum AVPixelFormat pixfmt);
 void ff_vk_qf_fill(FFVulkanContext *s);
 
 /**
+ * Allocate device memory.
+ */
+int ff_vk_alloc_mem(FFVulkanContext *s, VkMemoryRequirements *req,
+                    VkMemoryPropertyFlagBits req_flags, void *alloc_extension,
+                    VkMemoryPropertyFlagBits *mem_flags, VkDeviceMemory *mem);
+
+/**
  * Initialize a queue family with a specific number of queues.
  * If nb_queues == 0, use however many queues the queue family has.
  */
