@@ -167,6 +167,16 @@ static av_cold int mediacodec_init(AVCodecContext *avctx)
             av_log(avctx, AV_LOG_ERROR, "Missing hw_device_ctx or hwaccel_context for AV_PIX_FMT_MEDIACODEC\n");
             goto bailout;
         }
+        /* Although there is a method ANativeWindow_toSurface() introduced in
+         * API level 26, it's easier and safe to always require a Surface for
+         * Java MediaCodec.
+         */
+        if (!s->use_ndk_codec && !s->window->surface) {
+            ret = AVERROR(EINVAL);
+            av_log(avctx, AV_LOG_ERROR, "Missing jobject Surface for AV_PIX_FMT_MEDIACODEC. "
+                    "Please note that Java MediaCodec doesn't work with ANativeWindow.\n");
+            goto bailout;
+        }
     }
 
     for (int i = 0; i < FF_ARRAY_ELEMS(color_formats); i++) {
