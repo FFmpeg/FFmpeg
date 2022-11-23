@@ -1378,6 +1378,7 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
         goto end;
     }
     p->device_features_1_2.timelineSemaphore = 1;
+    p->device_features_1_1.samplerYcbcrConversion = dev_features_1_1.samplerYcbcrConversion;
 
     /* Setup queue family */
     if ((err = setup_queue_families(ctx, &dev_info)))

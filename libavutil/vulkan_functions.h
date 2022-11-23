@@ -155,6 +155,8 @@ typedef enum FFVulkanExtensions {
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              DestroyPipeline)                         \
                                                                                          \
     /* Sampler */                                                                        \
+    MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CreateSamplerYcbcrConversion)              \
+    MACRO(1, 1, FF_VK_EXT_NO_FLAG,              DestroySamplerYcbcrConversion)             \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CreateSampler)                           \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              DestroySampler)                          \
                                                                                          \
