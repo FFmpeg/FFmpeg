@@ -75,7 +75,9 @@ enum AVTXType {
      * the double variant, it's a 'double'. If scale is NULL, 1.0 will be used
      * as a default.
      *
-     * The stride parameter must be set to the size of a single sample in bytes.
+     * For forward transforms (R2C), stride must be the spacing between two
+     * samples in bytes. For inverse transforms, the stride must be set
+     * to the spacing between two complex values in bytes.
      *
      * The forward transform performs a real-to-complex DFT of N samples to
      * N/2+1 complex values.
