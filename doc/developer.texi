@@ -104,6 +104,10 @@ NASM on x86;
 GAS on ARM.
 @end itemize
 
+A unit testing framework for assembly called @code{checkasm} lives under
+@file{tests/checkasm}. All new assembly should come with @code{checkasm} tests;
+adding tests for existing assembly that lacks them is also strongly encouraged.
+
 @subsection Other languages
 
 Other languages than C may be used in special cases:
