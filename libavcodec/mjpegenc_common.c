@@ -247,7 +247,7 @@ void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
     default: av_assert0(0);
     }
 
-    put_bits(pb, 16, 17);
+    put_bits(pb, 16, 8 + 3 * components);
     if (lossless && (  avctx->pix_fmt == AV_PIX_FMT_BGR0
                     || avctx->pix_fmt == AV_PIX_FMT_BGRA
                     || avctx->pix_fmt == AV_PIX_FMT_BGR24))
