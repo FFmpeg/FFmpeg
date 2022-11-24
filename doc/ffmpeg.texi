@@ -1011,12 +1011,6 @@ list separated with slashes. Two first values are the beginning and
 end frame numbers, last one is quantizer to use if positive, or quality
 factor if negative.
 
-@item -ilme
-Force interlacing support in encoder (MPEG-2 and MPEG-4 only).
-Use this option if your input file is interlaced and you want
-to keep the interlaced format for minimum losses.
-The alternative is to deinterlace the input stream by use of a filter
-such as @code{yadif} or @code{bwdif}, but deinterlacing introduces losses.
 @item -psnr
 Calculate PSNR of compressed frames. This option is deprecated, pass the
 PSNR flag to the encoder instead, using @code{-flags +psnr}.
