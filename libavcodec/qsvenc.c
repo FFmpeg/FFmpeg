@@ -644,6 +644,12 @@ static int check_enc_param(AVCodecContext *avctx, QSVEncContext *q)
     return 1;
 }
 
+static int is_strict_gop(QSVEncContext *q) {
+    if (q->adaptive_b == 0 && q->adaptive_i == 0)
+        return 1;
+    return 0;
+}
+
 static int init_video_param_jpeg(AVCodecContext *avctx, QSVEncContext *q)
 {
     enum AVPixelFormat sw_format = avctx->pix_fmt == AV_PIX_FMT_QSV ?
@@ -755,7 +761,8 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
     q->old_gop_size                 = avctx->gop_size;
     q->param.mfx.GopRefDist         = FFMAX(-1, avctx->max_b_frames) + 1;
     q->param.mfx.GopOptFlag         = avctx->flags & AV_CODEC_FLAG_CLOSED_GOP ?
-                                      MFX_GOP_CLOSED : MFX_GOP_STRICT;
+                                      MFX_GOP_CLOSED : is_strict_gop(q) ?
+                                      MFX_GOP_STRICT : 0;
     q->param.mfx.IdrInterval        = q->idr_interval;
     q->param.mfx.NumSlice           = avctx->slices;
     q->param.mfx.NumRefFrame        = FFMAX(0, avctx->refs);
