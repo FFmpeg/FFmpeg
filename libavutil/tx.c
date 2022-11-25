@@ -857,7 +857,7 @@ av_cold int ff_tx_init_subtx(AVTXContext *s, enum AVTXType type,
                 for (int i = 0; i < len; i++)
                     sctx->map[tmp[i]] = i;
 
-                free(tmp);
+                av_free(tmp);
             }
 
             s->nb_sub++;
