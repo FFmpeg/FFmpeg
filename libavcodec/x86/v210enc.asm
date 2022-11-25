@@ -314,7 +314,7 @@ cglobal v210_planar_pack_8, 5, 5, 7+notcpuflag(avx512icl), y, u, v, dst, width
             movu         ym1, [yq + 2*widthq]
             vinserti32x4  m1, [uq + 1*widthq], 2
             vinserti32x4  m1, [vq + 1*widthq], 3
-            vpermb        m1, m2, m1                 ; uyv0 yuy0 vyu0 yvy0
+            vpermb        m1, m2, m1                 ; uyvx yuyx vyux yvyx
         %else
             movq         xm0, [uq + 1*widthq]        ; uuuu uuxx
             movq         xm1, [vq + 1*widthq]        ; vvvv vvxx
@@ -325,10 +325,10 @@ cglobal v210_planar_pack_8, 5, 5, 7+notcpuflag(avx512icl), y, u, v, dst, width
         %endif
         CLIPUB       m1, m4, m5
 
-        pmaddubsw  m0, m1, m3
-        pslld      m1,  4
+        pmaddubsw  m0, m1, m3 ; shift high and low samples of each dword and mask out other bits
+        pslld      m1,  4     ; shift center sample of each dword
         %if cpuflag(avx512)
-            vpternlogd m0, m1, m6, 0xd8 ; C?B:A
+            vpternlogd m0, m1, m6, 0xd8 ; C?B:A ; merge and mask out bad bits from B
         %else
             pand       m1, m6, m1
             pandn      m0, m6, m0
