@@ -1362,8 +1362,10 @@ exit_loop:
         return 0;
     }
 
-    if (percent_missing(s) > avctx->discard_damaged_percentage)
-        return AVERROR_INVALIDDATA;
+    if (percent_missing(s) > avctx->discard_damaged_percentage) {
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
+    }
 
     if (s->bits_per_pixel <= 4)
         handle_small_bpp(s, p);
