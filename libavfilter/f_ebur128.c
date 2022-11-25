@@ -337,7 +337,8 @@ static int config_video_output(AVFilterLink *outlink)
         return AVERROR(ENOMEM);
 
     /* black background */
-    memset(outpicref->data[0], 0, ebur128->h * outpicref->linesize[0]);
+    for (int y = 0; y < ebur128->h; y++)
+        memset(outpicref->data[0] + y * outpicref->linesize[0], 0, ebur128->w * 3);
 
     /* draw LU legends */
     drawtext(outpicref, PAD, PAD+16, FONT8, font_colors+3, " LU");
