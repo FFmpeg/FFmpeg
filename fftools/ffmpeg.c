@@ -678,7 +678,7 @@ static double adjust_frame_pts_to_encoder_tb(OutputFile *of, OutputStream *ost,
     double float_pts = AV_NOPTS_VALUE; // this is identical to frame.pts but with higher precision
     AVCodecContext *enc = ost->enc_ctx;
     AVRational filter_tb = (AVRational){ -1, -1 };
-    if (frame->pts == AV_NOPTS_VALUE || !enc)
+    if (frame->pts == AV_NOPTS_VALUE)
         goto early_exit;
 
     {
