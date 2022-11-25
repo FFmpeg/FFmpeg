@@ -678,17 +678,14 @@ static double adjust_frame_pts_to_encoder_tb(OutputFile *of, OutputStream *ost,
     double float_pts = AV_NOPTS_VALUE; // this is identical to frame.pts but with higher precision
     AVCodecContext *enc = ost->enc_ctx;
     AVRational filter_tb = (AVRational){ -1, -1 };
-    if (!frame || frame->pts == AV_NOPTS_VALUE ||
-        !enc || !ost->filter || !ost->filter->graph->graph)
+    if (!frame || frame->pts == AV_NOPTS_VALUE || !enc)
         goto early_exit;
 
     {
-        AVFilterContext *filter = ost->filter->filter;
-
         int64_t start_time = (of->start_time == AV_NOPTS_VALUE) ? 0 : of->start_time;
         AVRational tb = enc->time_base;
         int extra_bits = av_clip(29 - av_log2(tb.den), 0, 16);
-        filter_tb = av_buffersink_get_time_base(filter);
+        filter_tb = frame->time_base;
 
         tb.den <<= extra_bits;
         float_pts =
@@ -701,6 +698,7 @@ static double adjust_frame_pts_to_encoder_tb(OutputFile *of, OutputStream *ost,
         frame->pts =
             av_rescale_q(frame->pts, filter_tb, enc->time_base) -
             av_rescale_q(start_time, AV_TIME_BASE_Q, enc->time_base);
+        frame->time_base = enc->time_base;
     }
 
 early_exit:
@@ -1295,6 +1293,7 @@ static int reap_filters(int flush)
                 AVRational tb = av_buffersink_get_time_base(filter);
                 ost->last_filter_pts = av_rescale_q(filtered_frame->pts, tb,
                                                     AV_TIME_BASE_Q);
+                filtered_frame->time_base = tb;
 
                 if (debug_ts)
                     av_log(NULL, AV_LOG_INFO, "filter_raw -> pts:%s pts_time:%s time_base:%d/%d\n",
