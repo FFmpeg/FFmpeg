@@ -209,7 +209,7 @@ static void view_matrix(const float eye[3],
 static void draw_dot(AVFrame *out, unsigned x, unsigned y, float z,
                      int r, int g, int b)
 {
-    const int linesize = out->linesize[0];
+    const ptrdiff_t linesize = out->linesize[0];
     uint8_t *dst;
 
     dst = out->data[0] + y * linesize + x * 4;
