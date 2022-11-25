@@ -678,7 +678,7 @@ static double adjust_frame_pts_to_encoder_tb(OutputFile *of, OutputStream *ost,
     double float_pts = AV_NOPTS_VALUE; // this is identical to frame.pts but with higher precision
     AVCodecContext *enc = ost->enc_ctx;
     AVRational filter_tb = (AVRational){ -1, -1 };
-    if (!frame || frame->pts == AV_NOPTS_VALUE || !enc)
+    if (frame->pts == AV_NOPTS_VALUE || !enc)
         goto early_exit;
 
     {
@@ -1092,12 +1092,10 @@ static void do_video_out(OutputFile *of,
     int64_t nb_frames, nb0_frames, i;
     double delta, delta0;
     double duration = 0;
-    double sync_ipts = AV_NOPTS_VALUE;
     InputStream *ist = ost->ist;
     AVFilterContext *filter = ost->filter->filter;
 
     init_output_stream_wrapper(ost, next_picture, 1);
-    sync_ipts = adjust_frame_pts_to_encoder_tb(of, ost, next_picture);
 
     frame_rate = av_buffersink_get_frame_rate(filter);
     if (frame_rate.num > 0 && frame_rate.den > 0)
@@ -1121,6 +1119,7 @@ static void do_video_out(OutputFile *of,
                                           ost->last_nb0_frames[1],
                                           ost->last_nb0_frames[2]);
     } else {
+        double sync_ipts = adjust_frame_pts_to_encoder_tb(of, ost, next_picture);
         /* delta0 is the "drift" between the input frame (next_picture) and
          * where it would fall in the output. */
         delta0 = sync_ipts - ost->next_pts;
