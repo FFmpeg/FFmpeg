@@ -936,9 +936,6 @@ static void do_audio_out(OutputFile *of, OutputStream *ost,
     AVCodecContext *enc = ost->enc_ctx;
     int ret;
 
-    if (!check_recording_time(ost, ost->next_pts, ost->enc_ctx->time_base))
-        return;
-
     if (frame->pts == AV_NOPTS_VALUE)
         frame->pts = ost->next_pts;
     else {
@@ -948,6 +945,9 @@ static void do_audio_out(OutputFile *of, OutputStream *ost,
             av_rescale_q(start_time, AV_TIME_BASE_Q,   enc->time_base);
     }
     frame->time_base = enc->time_base;
+
+    if (!check_recording_time(ost, frame->pts, frame->time_base))
+        return;
 
     ost->next_pts = frame->pts + frame->nb_samples;
 
