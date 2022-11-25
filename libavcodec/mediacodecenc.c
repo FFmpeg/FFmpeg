@@ -43,6 +43,7 @@ typedef struct MediaCodecEncContext {
     AVClass *avclass;
     FFAMediaCodec *codec;
     int use_ndk_codec;
+    const char *name;
     FFANativeWindow *window;
 
     int fps;
@@ -126,7 +127,10 @@ static av_cold int mediacodec_init(AVCodecContext *avctx)
         av_assert0(0);
     }
 
-    s->codec = ff_AMediaCodec_createEncoderByType(codec_mime, s->use_ndk_codec);
+    if (s->name)
+        s->codec = ff_AMediaCodec_createCodecByName(s->name, s->use_ndk_codec);
+    else
+        s->codec = ff_AMediaCodec_createEncoderByType(codec_mime, s->use_ndk_codec);
     if (!s->codec) {
         av_log(avctx, AV_LOG_ERROR, "Failed to create encoder for type %s\n",
                codec_mime);
@@ -474,6 +478,8 @@ static const AVCodecHWConfigInternal *const mediacodec_hw_configs[] = {
 static const AVOption common_options[] = {
     { "ndk_codec", "Use MediaCodec from NDK",
                     OFFSET(use_ndk_codec), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE },
+    { "codec_name", "Select codec by name",
+                    OFFSET(name), AV_OPT_TYPE_STRING, {0}, 0, 0, VE },
     { NULL },
 };
 
