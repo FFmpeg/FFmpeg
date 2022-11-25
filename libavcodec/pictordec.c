@@ -245,8 +245,6 @@ static int decode_frame(AVCodecContext *avctx,
                         run = bytestream2_get_le16(&s->g);
                     val = bytestream2_get_byte(&s->g);
                 }
-                if (!bytestream2_get_bytes_left(&s->g))
-                    break;
 
                 if (bits_per_plane == 8) {
                     picmemset_8bpp(s, frame, val, run, &x, &y);
