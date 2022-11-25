@@ -688,18 +688,17 @@ static double adjust_frame_pts_to_encoder_tb(OutputFile *of, OutputStream *ost,
     if (frame->pts == AV_NOPTS_VALUE)
         goto early_exit;
 
-        tb.den <<= extra_bits;
-        float_pts =
-            av_rescale_q(frame->pts, filter_tb, tb) -
-            av_rescale_q(start_time, AV_TIME_BASE_Q, tb);
-        float_pts /= 1 << extra_bits;
-        // avoid exact midoints to reduce the chance of rounding differences, this can be removed in case the fps code is changed to work with integers
-        float_pts += FFSIGN(float_pts) * 1.0 / (1<<17);
+    tb.den <<= extra_bits;
+    float_pts = av_rescale_q(frame->pts, filter_tb, tb) -
+                av_rescale_q(start_time, AV_TIME_BASE_Q, tb);
+    float_pts /= 1 << extra_bits;
+    // avoid exact midoints to reduce the chance of rounding differences, this
+    // can be removed in case the fps code is changed to work with integers
+    float_pts += FFSIGN(float_pts) * 1.0 / (1<<17);
 
-        frame->pts =
-            av_rescale_q(frame->pts, filter_tb, enc->time_base) -
-            av_rescale_q(start_time, AV_TIME_BASE_Q, enc->time_base);
-        frame->time_base = enc->time_base;
+    frame->pts = av_rescale_q(frame->pts, filter_tb, enc->time_base) -
+                 av_rescale_q(start_time, AV_TIME_BASE_Q, enc->time_base);
+    frame->time_base = enc->time_base;
 
 early_exit:
 
