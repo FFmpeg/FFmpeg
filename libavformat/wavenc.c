@@ -527,6 +527,16 @@ const AVOutputFormat ff_wav_muxer = {
 #if CONFIG_W64_MUXER
 #include "w64.h"
 
+static av_cold int w64_init(AVFormatContext *ctx)
+{
+    if (ctx->nb_streams != 1) {
+        av_log(ctx, AV_LOG_ERROR, "This muxer only supports a single stream.\n");
+        return AVERROR(EINVAL);
+    }
+
+    return 0;
+}
+
 static void start_guid(AVIOContext *pb, const uint8_t *guid, int64_t *pos)
 {
     *pos = avio_tell(pb);
@@ -612,6 +622,7 @@ const AVOutputFormat ff_w64_muxer = {
     .priv_data_size    = sizeof(WAVMuxContext),
     .audio_codec       = AV_CODEC_ID_PCM_S16LE,
     .video_codec       = AV_CODEC_ID_NONE,
+    .init              = w64_init,
     .write_header      = w64_write_header,
     .write_packet      = wav_write_packet,
     .write_trailer     = w64_write_trailer,
