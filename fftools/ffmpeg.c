@@ -676,16 +676,17 @@ static double adjust_frame_pts_to_encoder_tb(OutputFile *of, OutputStream *ost,
                                              AVFrame *frame)
 {
     double float_pts = AV_NOPTS_VALUE; // this is identical to frame.pts but with higher precision
-    AVCodecContext *enc = ost->enc_ctx;
-    AVRational filter_tb = (AVRational){ -1, -1 };
+    const int64_t start_time = (of->start_time == AV_NOPTS_VALUE) ?
+                               0 : of->start_time;
+
+    AVCodecContext *const enc = ost->enc_ctx;
+
+    AVRational        tb = enc->time_base;
+    AVRational filter_tb = frame->time_base;
+    const int extra_bits = av_clip(29 - av_log2(tb.den), 0, 16);
+
     if (frame->pts == AV_NOPTS_VALUE)
         goto early_exit;
-
-    {
-        int64_t start_time = (of->start_time == AV_NOPTS_VALUE) ? 0 : of->start_time;
-        AVRational tb = enc->time_base;
-        int extra_bits = av_clip(29 - av_log2(tb.den), 0, 16);
-        filter_tb = frame->time_base;
 
         tb.den <<= extra_bits;
         float_pts =
@@ -699,7 +700,6 @@ static double adjust_frame_pts_to_encoder_tb(OutputFile *of, OutputStream *ost,
             av_rescale_q(frame->pts, filter_tb, enc->time_base) -
             av_rescale_q(start_time, AV_TIME_BASE_Q, enc->time_base);
         frame->time_base = enc->time_base;
-    }
 
 early_exit:
 
