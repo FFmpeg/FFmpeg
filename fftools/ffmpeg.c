@@ -676,7 +676,6 @@ static double adjust_frame_pts_to_encoder_tb(OutputFile *of, OutputStream *ost,
                                              AVFrame *frame)
 {
     double float_pts = AV_NOPTS_VALUE; // this is identical to frame.pts but with higher precision
-    int64_t orig_pts = AV_NOPTS_VALUE;
     AVCodecContext *enc = ost->enc_ctx;
     AVRational filter_tb = (AVRational){ -1, -1 };
     if (!frame || frame->pts == AV_NOPTS_VALUE ||
@@ -690,7 +689,6 @@ static double adjust_frame_pts_to_encoder_tb(OutputFile *of, OutputStream *ost,
         AVRational tb = enc->time_base;
         int extra_bits = av_clip(29 - av_log2(tb.den), 0, 16);
         filter_tb = av_buffersink_get_time_base(filter);
-        orig_pts = frame->pts;
 
         tb.den <<= extra_bits;
         float_pts =
@@ -708,11 +706,6 @@ static double adjust_frame_pts_to_encoder_tb(OutputFile *of, OutputStream *ost,
 early_exit:
 
     if (debug_ts) {
-        av_log(NULL, AV_LOG_INFO, "filter_raw -> pts:%s pts_time:%s time_base:%d/%d\n",
-               frame ? av_ts2str(orig_pts) : "NULL",
-               frame ? av_ts2timestr(orig_pts, &filter_tb) : "NULL",
-               filter_tb.num, filter_tb.den);
-
         av_log(NULL, AV_LOG_INFO, "filter -> pts:%s pts_time:%s exact:%f time_base:%d/%d\n",
                frame ? av_ts2str(frame->pts) : "NULL",
                (enc && frame) ? av_ts2timestr(frame->pts, &enc->time_base) : "NULL",
@@ -1302,6 +1295,12 @@ static int reap_filters(int flush)
                 AVRational tb = av_buffersink_get_time_base(filter);
                 ost->last_filter_pts = av_rescale_q(filtered_frame->pts, tb,
                                                     AV_TIME_BASE_Q);
+
+                if (debug_ts)
+                    av_log(NULL, AV_LOG_INFO, "filter_raw -> pts:%s pts_time:%s time_base:%d/%d\n",
+                           av_ts2str(filtered_frame->pts),
+                           av_ts2timestr(filtered_frame->pts, &tb),
+                           tb.num, tb.den);
             }
 
             switch (av_buffersink_get_type(filter)) {
