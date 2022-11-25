@@ -933,15 +933,22 @@ static int submit_encode_frame(OutputFile *of, OutputStream *ost,
 static void do_audio_out(OutputFile *of, OutputStream *ost,
                          AVFrame *frame)
 {
+    AVCodecContext *enc = ost->enc_ctx;
     int ret;
-
-    adjust_frame_pts_to_encoder_tb(of, ost, frame);
 
     if (!check_recording_time(ost, ost->next_pts, ost->enc_ctx->time_base))
         return;
 
     if (frame->pts == AV_NOPTS_VALUE)
         frame->pts = ost->next_pts;
+    else {
+        int64_t start_time = (of->start_time == AV_NOPTS_VALUE) ? 0 : of->start_time;
+        frame->pts =
+            av_rescale_q(frame->pts, frame->time_base, enc->time_base) -
+            av_rescale_q(start_time, AV_TIME_BASE_Q,   enc->time_base);
+    }
+    frame->time_base = enc->time_base;
+
     ost->next_pts = frame->pts + frame->nb_samples;
 
     ret = submit_encode_frame(of, ost, frame);
