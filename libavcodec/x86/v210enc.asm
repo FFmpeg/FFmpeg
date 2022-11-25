@@ -331,7 +331,6 @@ cglobal v210_planar_pack_8, 5, 5, 7+notcpuflag(avx512icl), y, u, v, dst, width
             vpternlogd m0, m1, m6, 0xd8 ; C?B:A ; merge and mask out bad bits from B
         %else
             pand       m1, m6, m1
-            pandn      m0, m6, m0
             por        m0, m0, m1
         %endif
 
