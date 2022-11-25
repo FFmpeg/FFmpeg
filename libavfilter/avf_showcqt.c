@@ -1031,16 +1031,17 @@ static void draw_sono(AVFrame *out, AVFrame *sono, int off, int idx)
     int nb_planes = (fmt == AV_PIX_FMT_RGB24) ? 1 : 3;
     int offh = (fmt == AV_PIX_FMT_YUV420P) ? off / 2 : off;
     int inc = (fmt == AV_PIX_FMT_YUV420P) ? 2 : 1;
-    int ls, i, y, yh;
+    ptrdiff_t ls;
+    int i, y, yh;
 
-    ls = FFMIN(out->linesize[0], sono->linesize[0]);
+    ls = FFABS(FFMIN(out->linesize[0], sono->linesize[0]));
     for (y = 0; y < h; y++) {
         memcpy(out->data[0] + (off + y) * out->linesize[0],
                sono->data[0] + (idx + y) % h * sono->linesize[0], ls);
     }
 
     for (i = 1; i < nb_planes; i++) {
-        ls = FFMIN(out->linesize[i], sono->linesize[i]);
+        ls = FFABS(FFMIN(out->linesize[i], sono->linesize[i]));
         for (y = 0; y < h; y += inc) {
             yh = (fmt == AV_PIX_FMT_YUV420P) ? y / 2 : y;
             memcpy(out->data[i] + (offh + yh) * out->linesize[i],
