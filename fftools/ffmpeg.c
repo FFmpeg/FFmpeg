@@ -554,6 +554,8 @@ static void ffmpeg_cleanup(int ret)
                    av_err2str(AVERROR(errno)));
     }
     av_freep(&vstats_filename);
+    of_enc_stats_close();
+
     av_freep(&filter_nbthreads);
 
     av_freep(&input_files);
@@ -798,6 +800,56 @@ static void update_video_stats(OutputStream *ost, const AVPacket *pkt, int write
     fprintf(vstats_file, "type= %c\n", av_get_picture_type_char(ost->pict_type));
 }
 
+static void enc_stats_write(OutputStream *ost, EncStats *es,
+                            const AVFrame *frame, const AVPacket *pkt)
+{
+    AVIOContext *io = ost->enc_stats_pre.io;
+    AVRational   tb = ost->enc_ctx->time_base;
+    int64_t     pts = frame ? frame->pts : pkt->pts;
+
+    for (size_t i = 0; i < es->nb_components; i++) {
+        const EncStatsComponent *c = &es->components[i];
+
+        switch (c->type) {
+        case ENC_STATS_LITERAL:         avio_write (io, c->str,     c->str_len);                    continue;
+        case ENC_STATS_FILE_IDX:        avio_printf(io, "%d",       ost->file_index);               continue;
+        case ENC_STATS_STREAM_IDX:      avio_printf(io, "%d",       ost->index);                    continue;
+        case ENC_STATS_TIMEBASE:        avio_printf(io, "%d/%d",    tb.num, tb.den);                continue;
+        case ENC_STATS_PTS:             avio_printf(io, "%"PRId64,  pts);                           continue;
+        case ENC_STATS_PTS_TIME:        avio_printf(io, "%g",       pts * av_q2d(tb));              continue;
+        }
+
+        if (frame) {
+            switch (c->type) {
+            case ENC_STATS_FRAME_NUM:   avio_printf(io, "%"PRIu64,  ost->frames_encoded);           continue;
+            case ENC_STATS_SAMPLE_NUM:  avio_printf(io, "%"PRIu64,  ost->samples_encoded);          continue;
+            case ENC_STATS_NB_SAMPLES:  avio_printf(io, "%d",       frame->nb_samples);             continue;
+            default: av_assert0(0);
+            }
+        } else {
+            switch (c->type) {
+            case ENC_STATS_DTS:         avio_printf(io, "%"PRId64,  pkt->dts);                      continue;
+            case ENC_STATS_DTS_TIME:    avio_printf(io, "%g",       pkt->dts * av_q2d(tb));         continue;
+            case ENC_STATS_PKT_SIZE:    avio_printf(io, "%d",       pkt->size);                     continue;
+            case ENC_STATS_FRAME_NUM:   avio_printf(io, "%"PRIu64,  ost->packets_encoded);          continue;
+            case ENC_STATS_BITRATE: {
+                double duration = FFMAX(pkt->duration, 1) * av_q2d(tb);
+                avio_printf(io, "%g",  8.0 * pkt->size / duration);
+                continue;
+            }
+            case ENC_STATS_AVG_BITRATE: {
+                double duration = pkt->dts * av_q2d(tb);
+                avio_printf(io, "%g",  duration > 0 ? 8.0 * ost->data_size_enc / duration : -1.);
+                continue;
+            }
+            default: av_assert0(0);
+            }
+        }
+    }
+    avio_w8(io, '\n');
+    avio_flush(io);
+}
+
 static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
 {
     AVCodecContext   *enc = ost->enc_ctx;
@@ -807,6 +859,9 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
     int ret;
 
     if (frame) {
+        if (ost->enc_stats_pre.io)
+            enc_stats_write(ost, &ost->enc_stats_pre, frame, NULL);
+
         ost->frames_encoded++;
         ost->samples_encoded += frame->nb_samples;
 
@@ -848,6 +903,11 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
             return ret;
         }
 
+        if (enc->codec_type == AVMEDIA_TYPE_VIDEO)
+            update_video_stats(ost, pkt, !!vstats_filename);
+        if (ost->enc_stats_post.io)
+            enc_stats_write(ost, &ost->enc_stats_post, NULL, pkt);
+
         if (debug_ts) {
             av_log(NULL, AV_LOG_INFO, "encoder -> type:%s "
                    "pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s "
@@ -871,9 +931,6 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
         }
 
         ost->data_size_enc += pkt->size;
-
-        if (enc->codec_type == AVMEDIA_TYPE_VIDEO)
-            update_video_stats(ost, pkt, !!vstats_filename);
 
         ost->packets_encoded++;
 

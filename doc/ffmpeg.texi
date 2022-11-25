@@ -2047,6 +2047,94 @@ encoder/muxer, it does not change the stream to conform to this value. Setting
 values that do not match the stream properties may result in encoding failures
 or invalid output files.
 
+@item -enc_stats_pre[:@var{stream_specifier}] @var{path} (@emph{output,per-stream})
+@item -enc_stats_post[:@var{stream_specifier}] @var{path} (@emph{output,per-stream})
+Write per-frame encoding information about the matching streams into the file
+given by @var{path}.
+
+@option{-enc_stats_pre} writes information about raw video or audio frames right
+before they are sent for encoding, while @option{-enc_stats_post} writes
+information about encoded packets as they are received from the encoder. Every
+frame or packet produces one line in the specified file. The format of this line
+is controlled by @option{-enc_stats_pre_fmt} / @option{-enc_stats_post_fmt}.
+
+When stats for multiple streams are written into a single file, the lines
+corresponding to different streams will be interleaved. The precise order of
+this interleaving is not specified and not guaranteed to remain stable between
+different invocations of the program, even with the same options.
+
+@item -enc_stats_pre_fmt[:@var{stream_specifier}] @var{format_spec} (@emph{output,per-stream})
+@item -enc_stats_post_fmt[:@var{stream_specifier}] @var{format_spec} (@emph{output,per-stream})
+Specify the format for the lines written with @option{-enc_stats_pre} /
+@option{-enc_stats_post}.
+
+@var{format_spec} is a string that may contain directives of the form
+@var{@{fmt@}}. @var{format_spec} is backslash-escaped --- use \@{, \@}, and \\
+to write a literal @{, @}, or \, respectively, into the output.
+
+The directives given with @var{fmt} may be one of the following:
+@table @option
+@item fidx
+Index of the output file.
+
+@item sidx
+Index of the output stream in the file.
+
+@item n
+Frame number. Pre-encoding: number of frames sent to the encoder so far.
+Post-encoding: number of packets received from the encoder so far.
+
+@item tb
+Encoder timebase, as a rational number @var{num/den}. Note that this may be
+different from the timebase used by the muxer.
+
+@item pts
+Presentation timestamp of the frame or packet, as an integer. Should be
+multiplied by the timebase to compute presentation time.
+
+@item t
+Presentation time of the frame or packet, as a decimal number. Equal to
+@var{pts} multiplied by @var{tb}.
+
+@item dts
+Decoding timestamp of the packet, as an integer. Should be multiplied by the
+timebase to compute presentation time. Post-encoding only.
+
+@item dt
+Decoding time of the frame or packet, as a decimal number. Equal to
+@var{dts} multiplied by @var{tb}.
+
+@item sn
+Number of audio samples sent to the encoder so far. Audio and pre-encoding only.
+
+@item samp
+Number of audio samples in the frame. Audio and pre-encoding only.
+
+@item size
+Size of the encoded packet in bytes. Post-encoding only.
+
+@item br
+Current bitrate in bits per second. Post-encoding only.
+
+@item abr
+Average bitrate for the whole stream so far, in bits per second, -1 if it cannot
+be determined at this point. Post-encoding only.
+@end table
+
+The default format strings are:
+@table @option
+@item pre-encoding
+@{fidx@} @{sidx@} @{n@} @{t@}
+@item post-encoding
+@{fidx@} @{sidx@} @{n@} @{t@}
+@end table
+In the future, new items may be added to the end of the default formatting
+strings. Users who depend on the format staying exactly the same, should
+prescribe it manually.
+
+Note that stats for different streams written into the same file may have
+different formats.
+
 @end table
 
 @section Preset files

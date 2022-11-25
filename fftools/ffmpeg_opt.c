@@ -1543,6 +1543,15 @@ const OptionDef options[] = {
         { .off = OFFSET(bits_per_raw_sample) },
         "set the number of bits per raw sample", "number" },
 
+    { "enc_stats_pre",      HAS_ARG | OPT_SPEC | OPT_EXPERT | OPT_OUTPUT | OPT_STRING, { .off = OFFSET(enc_stats_pre)      },
+        "write encoding stats before encoding" },
+    { "enc_stats_post",     HAS_ARG | OPT_SPEC | OPT_EXPERT | OPT_OUTPUT | OPT_STRING, { .off = OFFSET(enc_stats_post)     },
+        "write encoding stats after encoding" },
+    { "enc_stats_pre_fmt",  HAS_ARG | OPT_SPEC | OPT_EXPERT | OPT_OUTPUT | OPT_STRING, { .off = OFFSET(enc_stats_pre_fmt)  },
+        "format of the stats written with -enc_stats_pre" },
+    { "enc_stats_post_fmt", HAS_ARG | OPT_SPEC | OPT_EXPERT | OPT_OUTPUT | OPT_STRING, { .off = OFFSET(enc_stats_post_fmt) },
+        "format of the stats written with -enc_stats_post" },
+
     /* video options */
     { "vframes",      OPT_VIDEO | HAS_ARG  | OPT_PERFILE | OPT_OUTPUT,           { .func_arg = opt_video_frames },
         "set the number of video frames to output", "number" },

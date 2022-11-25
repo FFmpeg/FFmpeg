@@ -686,6 +686,14 @@ static void ost_free(OutputStream **post)
         av_freep(&ost->enc_ctx->stats_in);
     avcodec_free_context(&ost->enc_ctx);
 
+    for (int i = 0; i < ost->enc_stats_pre.nb_components; i++)
+        av_freep(&ost->enc_stats_pre.components[i].str);
+    av_freep(&ost->enc_stats_pre.components);
+
+    for (int i = 0; i < ost->enc_stats_post.nb_components; i++)
+        av_freep(&ost->enc_stats_post.components[i].str);
+    av_freep(&ost->enc_stats_post.components);
+
     av_freep(post);
 }
 

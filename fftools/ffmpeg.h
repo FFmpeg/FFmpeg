@@ -252,6 +252,14 @@ typedef struct OptionsContext {
     int        nb_autoscale;
     SpecifierOpt *bits_per_raw_sample;
     int        nb_bits_per_raw_sample;
+    SpecifierOpt *enc_stats_pre;
+    int        nb_enc_stats_pre;
+    SpecifierOpt *enc_stats_post;
+    int        nb_enc_stats_post;
+    SpecifierOpt *enc_stats_pre_fmt;
+    int        nb_enc_stats_pre_fmt;
+    SpecifierOpt *enc_stats_post_fmt;
+    int        nb_enc_stats_post_fmt;
 } OptionsContext;
 
 typedef struct InputFilter {
@@ -480,6 +488,37 @@ enum forced_keyframes_const {
 #define ABORT_ON_FLAG_EMPTY_OUTPUT        (1 <<  0)
 #define ABORT_ON_FLAG_EMPTY_OUTPUT_STREAM (1 <<  1)
 
+enum EncStatsType {
+    ENC_STATS_LITERAL = 0,
+    ENC_STATS_FILE_IDX,
+    ENC_STATS_STREAM_IDX,
+    ENC_STATS_FRAME_NUM,
+    ENC_STATS_TIMEBASE,
+    ENC_STATS_PTS,
+    ENC_STATS_PTS_TIME,
+    ENC_STATS_DTS,
+    ENC_STATS_DTS_TIME,
+    ENC_STATS_SAMPLE_NUM,
+    ENC_STATS_NB_SAMPLES,
+    ENC_STATS_PKT_SIZE,
+    ENC_STATS_BITRATE,
+    ENC_STATS_AVG_BITRATE,
+};
+
+typedef struct EncStatsComponent {
+    enum EncStatsType type;
+
+    uint8_t *str;
+    size_t   str_len;
+} EncStatsComponent;
+
+typedef struct EncStats {
+    EncStatsComponent  *components;
+    int              nb_components;
+
+    AVIOContext        *io;
+} EncStats;
+
 extern const char *const forced_keyframes_const_names[];
 
 typedef enum {
@@ -625,6 +664,9 @@ typedef struct OutputStream {
 
     int sq_idx_encode;
     int sq_idx_mux;
+
+    EncStats enc_stats_pre;
+    EncStats enc_stats_post;
 } OutputStream;
 
 typedef struct OutputFile {
@@ -748,6 +790,8 @@ int of_stream_init(OutputFile *of, OutputStream *ost);
 int of_write_trailer(OutputFile *of);
 int of_open(const OptionsContext *o, const char *filename);
 void of_close(OutputFile **pof);
+
+void of_enc_stats_close(void);
 
 /*
  * Send a single packet to the output, applying any bitstream filters

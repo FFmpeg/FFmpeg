@@ -55,6 +55,10 @@ static const char *const opt_name_copy_initial_nonkeyframes[] = {"copyinkf", NUL
 static const char *const opt_name_copy_prior_start[]          = {"copypriorss", NULL};
 static const char *const opt_name_disposition[]               = {"disposition", NULL};
 static const char *const opt_name_enc_time_bases[]            = {"enc_time_base", NULL};
+static const char *const opt_name_enc_stats_pre[]             = {"enc_stats_pre", NULL};
+static const char *const opt_name_enc_stats_post[]            = {"enc_stats_post", NULL};
+static const char *const opt_name_enc_stats_pre_fmt[]         = {"enc_stats_pre_fmt", NULL};
+static const char *const opt_name_enc_stats_post_fmt[]        = {"enc_stats_post_fmt", NULL};
 static const char *const opt_name_filters[]                   = {"filter", "af", "vf", NULL};
 static const char *const opt_name_filter_scripts[]            = {"filter_script", NULL};
 static const char *const opt_name_fps_mode[]                  = {"fps_mode", NULL};
@@ -170,6 +174,201 @@ static int get_preset_file_2(const char *preset_name, const char *codec_name, AV
     return ret;
 }
 
+typedef struct EncStatsFile {
+    char        *path;
+    AVIOContext *io;
+} EncStatsFile;
+
+static EncStatsFile   *enc_stats_files;
+static          int nb_enc_stats_files;
+
+static int enc_stats_get_file(AVIOContext **io, const char *path)
+{
+    EncStatsFile *esf;
+    int ret;
+
+    for (int i = 0; i < nb_enc_stats_files; i++)
+        if (!strcmp(path, enc_stats_files[i].path)) {
+            *io = enc_stats_files[i].io;
+            return 0;
+        }
+
+    GROW_ARRAY(enc_stats_files, nb_enc_stats_files);
+
+    esf = &enc_stats_files[nb_enc_stats_files - 1];
+
+    ret = avio_open2(&esf->io, path, AVIO_FLAG_WRITE, &int_cb, NULL);
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Error opening stats file '%s': %s\n",
+               path, av_err2str(ret));
+        return ret;
+    }
+
+    esf->path = av_strdup(path);
+    if (!esf->path)
+        return AVERROR(ENOMEM);
+
+    *io = esf->io;
+
+    return 0;
+}
+
+void of_enc_stats_close(void)
+{
+    for (int i = 0; i < nb_enc_stats_files; i++) {
+        av_freep(&enc_stats_files[i].path);
+        avio_closep(&enc_stats_files[i].io);
+    }
+    av_freep(&enc_stats_files);
+    nb_enc_stats_files = 0;
+}
+
+static int unescape(char **pdst, size_t *dst_len,
+                    const char **pstr, char delim)
+{
+    const char *str = *pstr;
+    char *dst;
+    size_t len, idx;
+
+    *pdst = NULL;
+
+    len = strlen(str);
+    if (!len)
+        return 0;
+
+    dst = av_malloc(len + 1);
+    if (!dst)
+        return AVERROR(ENOMEM);
+
+    for (idx = 0; *str; idx++, str++) {
+        if (str[0] == '\\' && str[1])
+            str++;
+        else if (*str == delim)
+            break;
+
+        dst[idx] = *str;
+    }
+    if (!idx) {
+        av_freep(&dst);
+        return 0;
+    }
+
+    dst[idx] = 0;
+
+    *pdst    = dst;
+    *dst_len = idx;
+    *pstr    = str;
+
+    return 0;
+}
+
+static int enc_stats_init(OutputStream *ost, int pre,
+                          const char *path, const char *fmt_spec)
+{
+    static const struct {
+        enum EncStatsType  type;
+        const char        *str;
+        int                pre_only:1;
+        int                post_only:1;
+    } fmt_specs[] = {
+        { ENC_STATS_FILE_IDX,       "fidx"                      },
+        { ENC_STATS_STREAM_IDX,     "sidx"                      },
+        { ENC_STATS_FRAME_NUM,      "n"                         },
+        { ENC_STATS_TIMEBASE,       "tb"                        },
+        { ENC_STATS_PTS,            "pts"                       },
+        { ENC_STATS_PTS_TIME,       "t"                         },
+        { ENC_STATS_DTS,            "dts",      0, 1            },
+        { ENC_STATS_DTS_TIME,       "dt",       0, 1            },
+        { ENC_STATS_SAMPLE_NUM,     "sn",       1               },
+        { ENC_STATS_NB_SAMPLES,     "samp",     1               },
+        { ENC_STATS_PKT_SIZE,       "size",     0, 1            },
+        { ENC_STATS_BITRATE,        "br",       0, 1            },
+        { ENC_STATS_AVG_BITRATE,    "abr",      0, 1            },
+    };
+    EncStats *es = pre ? &ost->enc_stats_pre : &ost->enc_stats_post;
+    const char *next = fmt_spec;
+
+    int ret;
+
+    while (*next) {
+        EncStatsComponent *c;
+        char *val;
+        size_t val_len;
+
+        // get the sequence up until next opening brace
+        ret = unescape(&val, &val_len, &next, '{');
+        if (ret < 0)
+            return ret;
+
+        if (val) {
+            GROW_ARRAY(es->components, es->nb_components);
+
+            c          = &es->components[es->nb_components - 1];
+            c->type    = ENC_STATS_LITERAL;
+            c->str     = val;
+            c->str_len = val_len;
+        }
+
+        if (!*next)
+            break;
+        next++;
+
+        // get the part inside braces
+        ret = unescape(&val, &val_len, &next, '}');
+        if (ret < 0)
+            return ret;
+
+        if (!val) {
+            av_log(NULL, AV_LOG_ERROR,
+                   "Empty formatting directive in: %s\n", fmt_spec);
+            return AVERROR(EINVAL);
+        }
+
+        if (!*next) {
+            av_log(NULL, AV_LOG_ERROR,
+                   "Missing closing brace in: %s\n", fmt_spec);
+            ret = AVERROR(EINVAL);
+            goto fail;
+        }
+        next++;
+
+        GROW_ARRAY(es->components, es->nb_components);
+        c = &es->components[es->nb_components - 1];
+
+        for (size_t i = 0; i < FF_ARRAY_ELEMS(fmt_specs); i++) {
+            if (!strcmp(val, fmt_specs[i].str)) {
+                if ((pre && fmt_specs[i].post_only) || (!pre && fmt_specs[i].pre_only)) {
+                    av_log(NULL, AV_LOG_ERROR,
+                           "Format directive '%s' may only be used %s-encoding\n",
+                           val, pre ? "post" : "pre");
+                    ret = AVERROR(EINVAL);
+                    goto fail;
+                }
+
+                c->type = fmt_specs[i].type;
+                break;
+            }
+        }
+
+        if (!c->type) {
+            av_log(NULL, AV_LOG_ERROR, "Invalid format directive: %s\n", val);
+            ret = AVERROR(EINVAL);
+            goto fail;
+        }
+
+fail:
+        av_freep(&val);
+        if (ret < 0)
+            return ret;
+    }
+
+    ret = enc_stats_get_file(&es->io, path);
+    if (ret < 0)
+        return ret;
+
+    return 0;
+}
+
 static OutputStream *new_output_stream(Muxer *mux, const OptionsContext *o,
                                        enum AVMediaType type, InputStream *ist)
 {
@@ -230,6 +429,7 @@ static OutputStream *new_output_stream(Muxer *mux, const OptionsContext *o,
         AVCodecContext *enc = ost->enc_ctx;
         AVIOContext *s = NULL;
         char *buf = NULL, *arg = NULL, *preset = NULL;
+        const char *enc_stats_pre = NULL, *enc_stats_post = NULL;
 
         ost->encoder_opts = filter_codec_opts(o->g->codec_opts, enc->codec_id,
                                               oc, st, enc->codec);
@@ -260,6 +460,30 @@ static OutputStream *new_output_stream(Muxer *mux, const OptionsContext *o,
                    "Preset %s specified for stream %d:%d, but could not be opened.\n",
                    preset, ost->file_index, ost->index);
             exit_program(1);
+        }
+
+        MATCH_PER_STREAM_OPT(enc_stats_pre, str, enc_stats_pre, oc, st);
+        if (enc_stats_pre &&
+            (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO)) {
+            const char *format = "{fidx} {sidx} {n} {t}";
+
+            MATCH_PER_STREAM_OPT(enc_stats_pre_fmt, str, format, oc, st);
+
+            ret = enc_stats_init(ost, 1, enc_stats_pre, format);
+            if (ret < 0)
+                exit_program(1);
+        }
+
+        MATCH_PER_STREAM_OPT(enc_stats_post, str, enc_stats_post, oc, st);
+        if (enc_stats_post &&
+            (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO)) {
+            const char *format = "{fidx} {sidx} {n} {t}";
+
+            MATCH_PER_STREAM_OPT(enc_stats_post_fmt, str, format, oc, st);
+
+            ret = enc_stats_init(ost, 0, enc_stats_post, format);
+            if (ret < 0)
+                exit_program(1);
         }
     } else {
         ost->encoder_opts = filter_codec_opts(o->g->codec_opts, AV_CODEC_ID_NONE, oc, st, NULL);
