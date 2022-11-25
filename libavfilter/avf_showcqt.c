@@ -1149,7 +1149,6 @@ static int plot_cqt(AVFilterContext *ctx, AVFrame **frameout)
     }
 
     s->tx_fn(s->fft_ctx, s->fft_result, s->fft_input, sizeof(AVComplexFloat));
-    s->fft_result[s->fft_len] = s->fft_result[0];
     UPDATE_TIME(s->fft_time);
 
     s->cqt_calc(s->cqt_result, s->fft_result, s->coeffs, s->cqt_len, s->fft_len);
