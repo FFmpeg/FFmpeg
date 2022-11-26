@@ -148,8 +148,8 @@ static int fifo_thread_write_header(FifoThreadContext *ctx)
 
     // Check for options unrecognized by underlying muxer
     if (format_options) {
-        AVDictionaryEntry *entry = NULL;
-        while ((entry = av_dict_get(format_options, "", entry, AV_DICT_IGNORE_SUFFIX)))
+        const AVDictionaryEntry *entry = NULL;
+        while ((entry = av_dict_iterate(format_options, entry)))
             av_log(avf2, AV_LOG_ERROR, "Unknown option '%s'\n", entry->key);
         ret = AVERROR(EINVAL);
     }
