@@ -670,12 +670,12 @@ static void write_table_entries_attrib(AVFormatContext *s)
 {
     WtvContext *wctx = s->priv_data;
     AVIOContext *pb = s->pb;
-    AVDictionaryEntry *tag = 0;
+    const AVDictionaryEntry *tag = NULL;
 
     ff_standardize_creation_time(s);
     //FIXME: translate special tags (e.g. WM/Bitrate) to binary representation
     ff_metadata_conv(&s->metadata, ff_asf_metadata_conv, NULL);
-    while ((tag = av_dict_get(s->metadata, "", tag, AV_DICT_IGNORE_SUFFIX)))
+    while ((tag = av_dict_iterate(s->metadata, tag)))
         write_tag(pb, tag->key, tag->value);
 
     if (wctx->thumbnail.size) {
@@ -698,11 +698,11 @@ static void write_table_redirector_legacy_attrib(AVFormatContext *s)
 {
     WtvContext *wctx = s->priv_data;
     AVIOContext *pb = s->pb;
-    AVDictionaryEntry *tag = 0;
+    const AVDictionaryEntry *tag = NULL;
     int64_t pos = 0;
 
     //FIXME: translate special tags to binary representation
-    while ((tag = av_dict_get(s->metadata, "", tag, AV_DICT_IGNORE_SUFFIX))) {
+    while ((tag = av_dict_iterate(s->metadata, tag))) {
         avio_wl64(pb, pos);
         pos += metadata_header_size(tag->key) + strlen(tag->value)*2 + 2;
     }
