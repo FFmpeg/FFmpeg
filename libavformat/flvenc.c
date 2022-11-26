@@ -277,7 +277,7 @@ static void write_metadata(AVFormatContext *s, unsigned int ts)
     int write_duration_filesize = !(flv->flags & FLV_NO_DURATION_FILESIZE);
     int metadata_count = 0;
     int64_t metadata_count_pos;
-    AVDictionaryEntry *tag = NULL;
+    const AVDictionaryEntry *tag = NULL;
 
     /* write meta_tag */
     avio_w8(pb, FLV_TAG_TYPE_META);            // tag type META
@@ -353,7 +353,7 @@ static void write_metadata(AVFormatContext *s, unsigned int ts)
     }
 
     ff_standardize_creation_time(s);
-    while ((tag = av_dict_get(s->metadata, "", tag, AV_DICT_IGNORE_SUFFIX))) {
+    while ((tag = av_dict_iterate(s->metadata, tag))) {
         if(   !strcmp(tag->key, "width")
             ||!strcmp(tag->key, "height")
             ||!strcmp(tag->key, "videodatarate")
