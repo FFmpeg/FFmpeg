@@ -113,7 +113,7 @@ static int caf_write_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     AVCodecParameters *par = s->streams[0]->codecpar;
     CAFContext *caf = s->priv_data;
-    AVDictionaryEntry *t = NULL;
+    const AVDictionaryEntry *t = NULL;
     unsigned int codec_tag = ff_codec_get_tag(ff_codec_caf_tags, par->codec_id);
     int64_t chunk_size = 0;
     int frame_size = par->frame_size, sample_rate = par->sample_rate;
@@ -195,13 +195,13 @@ static int caf_write_header(AVFormatContext *s)
     ff_standardize_creation_time(s);
     if (av_dict_count(s->metadata)) {
         ffio_wfourcc(pb, "info"); //< Information chunk
-        while ((t = av_dict_get(s->metadata, "", t, AV_DICT_IGNORE_SUFFIX))) {
+        while ((t = av_dict_iterate(s->metadata, t))) {
             chunk_size += strlen(t->key) + strlen(t->value) + 2;
         }
         avio_wb64(pb, chunk_size + 4);
         avio_wb32(pb, av_dict_count(s->metadata));
         t = NULL;
-        while ((t = av_dict_get(s->metadata, "", t, AV_DICT_IGNORE_SUFFIX))) {
+        while ((t = av_dict_iterate(s->metadata, t))) {
             avio_put_str(pb, t->key);
             avio_put_str(pb, t->value);
         }
