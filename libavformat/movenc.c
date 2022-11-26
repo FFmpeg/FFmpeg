@@ -4110,7 +4110,7 @@ static int mov_write_mdta_hdlr_tag(AVIOContext *pb, MOVMuxContext *mov,
 static int mov_write_mdta_keys_tag(AVIOContext *pb, MOVMuxContext *mov,
                                    AVFormatContext *s)
 {
-    AVDictionaryEntry *t = NULL;
+    const AVDictionaryEntry *t = NULL;
     int64_t pos = avio_tell(pb);
     int64_t curpos, entry_pos;
     int count = 0;
@@ -4121,7 +4121,7 @@ static int mov_write_mdta_keys_tag(AVIOContext *pb, MOVMuxContext *mov,
     entry_pos = avio_tell(pb);
     avio_wb32(pb, 0); /* entry count */
 
-    while (t = av_dict_get(s->metadata, "", t, AV_DICT_IGNORE_SUFFIX)) {
+    while (t = av_dict_iterate(s->metadata, t)) {
         size_t key_len = strlen(t->key);
         avio_wb32(pb, key_len + 8);
         ffio_wfourcc(pb, "mdta");
@@ -4139,14 +4139,14 @@ static int mov_write_mdta_keys_tag(AVIOContext *pb, MOVMuxContext *mov,
 static int mov_write_mdta_ilst_tag(AVIOContext *pb, MOVMuxContext *mov,
                                    AVFormatContext *s)
 {
-    AVDictionaryEntry *t = NULL;
+    const AVDictionaryEntry *t = NULL;
     int64_t pos = avio_tell(pb);
     int count = 1; /* keys are 1-index based */
 
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "ilst");
 
-    while (t = av_dict_get(s->metadata, "", t, AV_DICT_IGNORE_SUFFIX)) {
+    while (t = av_dict_iterate(s->metadata, t)) {
         int64_t entry_pos = avio_tell(pb);
         avio_wb32(pb, 0); /* size */
         avio_wb32(pb, count); /* key */
