@@ -1021,11 +1021,11 @@ static int parse_cookie(HTTPContext *s, const char *p, AVDictionary **cookies)
 
 static int cookie_string(AVDictionary *dict, char **cookies)
 {
-    AVDictionaryEntry *e = NULL;
+    const AVDictionaryEntry *e = NULL;
     int len = 1;
 
     // determine how much memory is needed for the cookies string
-    while (e = av_dict_get(dict, "", e, AV_DICT_IGNORE_SUFFIX))
+    while ((e = av_dict_iterate(dict, e)))
         len += strlen(e->key) + strlen(e->value) + 1;
 
     // reallocate the cookies
@@ -1036,7 +1036,7 @@ static int cookie_string(AVDictionary *dict, char **cookies)
     *cookies[0] = '\0';
 
     // write out the cookies
-    while (e = av_dict_get(dict, "", e, AV_DICT_IGNORE_SUFFIX))
+    while ((e = av_dict_iterate(dict, e)))
         av_strlcatf(*cookies, len, "%s%s\n", e->key, e->value);
 
     return 0;
