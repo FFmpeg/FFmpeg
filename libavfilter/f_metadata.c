@@ -308,7 +308,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     AVFilterLink *outlink = ctx->outputs[0];
     MetadataContext *s = ctx->priv;
     AVDictionary **metadata = &frame->metadata;
-    AVDictionaryEntry *e;
+    const AVDictionaryEntry *e;
 
     e = av_dict_get(*metadata, !s->key ? "" : s->key, NULL,
                     !s->key ? AV_DICT_IGNORE_SUFFIX: 0);
@@ -339,7 +339,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             s->print(ctx, "frame:%-4"PRId64" pts:%-7s pts_time:%s\n",
                      inlink->frame_count_out, av_ts2str(frame->pts), av_ts2timestr(frame->pts, &inlink->time_base));
             s->print(ctx, "%s=%s\n", e->key, e->value);
-            while ((e = av_dict_get(*metadata, "", e, AV_DICT_IGNORE_SUFFIX)) != NULL) {
+            while ((e = av_dict_iterate(*metadata, e)) != NULL) {
                 s->print(ctx, "%s=%s\n", e->key, e->value);
             }
         } else if (e && e->value && (!s->value || (e->value && s->compare(s, e->value, s->value)))) {
