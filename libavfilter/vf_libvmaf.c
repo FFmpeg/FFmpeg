@@ -236,9 +236,9 @@ static int parse_features(AVFilterContext *ctx)
     for (unsigned i = 0; i < dict_cnt; i++) {
         char *feature_name = NULL;
         VmafFeatureDictionary *feature_opts_dict = NULL;
-        AVDictionaryEntry *e = NULL;
+        const AVDictionaryEntry *e = NULL;
 
-        while (e = av_dict_get(dict[i], "", e, AV_DICT_IGNORE_SUFFIX)) {
+        while (e = av_dict_iterate(dict[i], e)) {
             if (av_stristr(e->key, "name")) {
                 feature_name = e->value;
                 continue;
@@ -295,11 +295,11 @@ static int parse_models(AVFilterContext *ctx)
 
     for (unsigned i = 0; i < dict_cnt; i++) {
         VmafModelConfig model_cfg = { 0 };
-        AVDictionaryEntry *e = NULL;
+        const AVDictionaryEntry *e = NULL;
         char *version = NULL;
         char  *path = NULL;
 
-        while (e = av_dict_get(dict[i], "", e, AV_DICT_IGNORE_SUFFIX)) {
+        while (e = av_dict_iterate(dict[i], e)) {
             if (av_stristr(e->key, "disable_clip")) {
                 model_cfg.flags |= av_stristr(e->value, "true") ?
                     VMAF_MODEL_FLAG_DISABLE_CLIP : 0;
@@ -355,7 +355,7 @@ static int parse_models(AVFilterContext *ctx)
             goto exit;
         }
 
-        while (e = av_dict_get(dict[i], "", e, AV_DICT_IGNORE_SUFFIX)) {
+        while (e = av_dict_iterate(dict[i], e)) {
             VmafFeatureDictionary *feature_opts_dict = NULL;
             char *feature_opt = NULL;
 
