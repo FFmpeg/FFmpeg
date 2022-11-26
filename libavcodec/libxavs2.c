@@ -96,8 +96,8 @@ static av_cold int xavs2_init(AVCodecContext *avctx)
     xavs2_opt_set2("OpenGOP",  "%d", !(avctx->flags & AV_CODEC_FLAG_CLOSED_GOP));
 
     {
-        AVDictionaryEntry *en = NULL;
-        while ((en = av_dict_get(cae->xavs2_opts, "", en, AV_DICT_IGNORE_SUFFIX)))
+        const AVDictionaryEntry *en = NULL;
+        while ((en = av_dict_iterate(cae->xavs2_opts, en)))
             xavs2_opt_set2(en->key, "%s", en->value);
     }
 
