@@ -2048,7 +2048,7 @@ static int mkv_write_tag(MatroskaMuxContext *mkv, const AVDictionary *m,
 
     mkv_write_tag_targets(mkv, tmp_bc, elementid, uid);
 
-    while ((t = av_dict_get(m, "", t, AV_DICT_IGNORE_SUFFIX))) {
+    while ((t = av_dict_iterate(m, t))) {
         if (mkv_check_tag_name(t->key, elementid)) {
             ret = mkv_write_simpletag(tmp_bc, t);
             if (ret < 0)
