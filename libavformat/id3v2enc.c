@@ -150,7 +150,7 @@ static int id3v2_put_priv(ID3v2EncContext *id3, AVIOContext *avioc, const char *
     return len + ID3v2_HEADER_SIZE;
 }
 
-static int id3v2_check_write_tag(ID3v2EncContext *id3, AVIOContext *pb, AVDictionaryEntry *t,
+static int id3v2_check_write_tag(ID3v2EncContext *id3, AVIOContext *pb, const AVDictionaryEntry *t,
                                  const char table[][4], enum ID3v2Encoding enc)
 {
     uint32_t tag;
@@ -167,13 +167,13 @@ static int id3v2_check_write_tag(ID3v2EncContext *id3, AVIOContext *pb, AVDictio
 
 static void id3v2_3_metadata_split_date(AVDictionary **pm)
 {
-    AVDictionaryEntry *mtag = NULL;
+    const AVDictionaryEntry *mtag = NULL;
     AVDictionary *dst = NULL;
     const char *key, *value;
     char year[5] = {0}, day_month[5] = {0};
     int i;
 
-    while ((mtag = av_dict_get(*pm, "", mtag, AV_DICT_IGNORE_SUFFIX))) {
+    while ((mtag = av_dict_iterate(*pm, mtag))) {
         key = mtag->key;
         if (!av_strcasecmp(key, "date")) {
             /* split date tag using "YYYY-MM-DD" format into year and month/day segments */
@@ -220,7 +220,7 @@ void ff_id3v2_start(ID3v2EncContext *id3, AVIOContext *pb, int id3v2_version,
 static int write_metadata(AVIOContext *pb, AVDictionary **metadata,
                           ID3v2EncContext *id3, int enc)
 {
-    AVDictionaryEntry *t = NULL;
+    const AVDictionaryEntry *t = NULL;
     int ret;
 
     ff_metadata_conv(metadata, ff_id3v2_34_metadata_conv, NULL);
@@ -229,7 +229,7 @@ static int write_metadata(AVIOContext *pb, AVDictionary **metadata,
     else if (id3->version == 4)
         ff_metadata_conv(metadata, ff_id3v2_4_metadata_conv, NULL);
 
-    while ((t = av_dict_get(*metadata, "", t, AV_DICT_IGNORE_SUFFIX))) {
+    while ((t = av_dict_iterate(*metadata, t))) {
         if ((ret = id3v2_check_write_tag(id3, pb, t, ff_id3v2_tags, enc)) > 0) {
             id3->len += ret;
             continue;
