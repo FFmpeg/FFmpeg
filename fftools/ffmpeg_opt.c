@@ -169,7 +169,7 @@ AVDictionary *strip_specifiers(const AVDictionary *dict)
     const AVDictionaryEntry *e = NULL;
     AVDictionary    *ret = NULL;
 
-    while ((e = av_dict_get(dict, "", e, AV_DICT_IGNORE_SUFFIX))) {
+    while ((e = av_dict_iterate(dict, e))) {
         char *p = strchr(e->key, ':');
 
         if (p)

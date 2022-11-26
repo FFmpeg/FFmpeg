@@ -1082,13 +1082,12 @@ int ifile_open(const OptionsContext *o, const char *filename)
     unused_opts = strip_specifiers(o->g->codec_opts);
     for (i = 0; i < f->nb_streams; i++) {
         e = NULL;
-        while ((e = av_dict_get(f->streams[i]->decoder_opts, "", e,
-                                AV_DICT_IGNORE_SUFFIX)))
+        while ((e = av_dict_iterate(f->streams[i]->decoder_opts, e)))
             av_dict_set(&unused_opts, e->key, NULL, 0);
     }
 
     e = NULL;
-    while ((e = av_dict_get(unused_opts, "", e, AV_DICT_IGNORE_SUFFIX))) {
+    while ((e = av_dict_iterate(unused_opts, e))) {
         const AVClass *class = avcodec_get_class();
         const AVOption *option = av_opt_find(&class, e->key, NULL, 0,
                                              AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ);
