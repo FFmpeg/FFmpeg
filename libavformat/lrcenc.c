@@ -63,8 +63,7 @@ static int lrc_write_header(AVFormatContext *s)
         av_dict_set(&s->metadata, "ve", NULL, 0);
     }
     for(metadata_item = NULL;
-       (metadata_item = av_dict_get(s->metadata, "", metadata_item,
-                                    AV_DICT_IGNORE_SUFFIX));) {
+       (metadata_item = av_dict_iterate(s->metadata, metadata_item));) {
         char *delim;
         if(!metadata_item->value[0]) {
             continue;
