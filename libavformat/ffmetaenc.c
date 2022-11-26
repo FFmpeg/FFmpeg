@@ -40,8 +40,8 @@ static void write_escape_str(AVIOContext *s, const uint8_t *str)
 
 static void write_tags(AVIOContext *s, AVDictionary *m)
 {
-    AVDictionaryEntry *t = NULL;
-    while ((t = av_dict_get(m, "", t, AV_DICT_IGNORE_SUFFIX))) {
+    const AVDictionaryEntry *t = NULL;
+    while ((t = av_dict_iterate(m, t))) {
         write_escape_str(s, t->key);
         avio_w8(s, '=');
         write_escape_str(s, t->value);
