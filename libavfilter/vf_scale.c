@@ -555,8 +555,8 @@ static int config_props(AVFilterLink *outlink)
                                scale->out_range == AVCOL_RANGE_JPEG, 0);
 
             if (scale->opts) {
-                AVDictionaryEntry *e = NULL;
-                while ((e = av_dict_get(scale->opts, "", e, AV_DICT_IGNORE_SUFFIX))) {
+                const AVDictionaryEntry *e = NULL;
+                while ((e = av_dict_iterate(scale->opts, e))) {
                     if ((ret = av_opt_set(s, e->key, e->value, 0)) < 0)
                         return ret;
                 }
