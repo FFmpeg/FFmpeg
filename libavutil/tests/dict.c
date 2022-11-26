@@ -52,7 +52,7 @@ static void test_separators(const AVDictionary *m, const char pair, const char v
 int main(void)
 {
     AVDictionary *dict = NULL;
-    AVDictionaryEntry *e;
+    const AVDictionaryEntry *e;
     char *buffer = NULL;
 
     printf("Testing av_dict_get_string() and av_dict_parse_string()\n");
