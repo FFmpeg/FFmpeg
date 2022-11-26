@@ -516,7 +516,7 @@ static int add_info(AVIOContext *bc, const char *type, const char *value)
 static int write_globalinfo(NUTContext *nut, AVIOContext *bc)
 {
     AVFormatContext *s   = nut->avf;
-    AVDictionaryEntry *t = NULL;
+    const AVDictionaryEntry *t = NULL;
     AVIOContext *dyn_bc;
     uint8_t *dyn_buf = NULL;
     int count        = 0, dyn_size;
@@ -525,7 +525,7 @@ static int write_globalinfo(NUTContext *nut, AVIOContext *bc)
         return ret;
 
     ff_standardize_creation_time(s);
-    while ((t = av_dict_get(s->metadata, "", t, AV_DICT_IGNORE_SUFFIX)))
+    while ((t = av_dict_iterate(s->metadata, t)))
         count += add_info(dyn_bc, t->key, t->value);
 
     put_v(bc, 0); //stream_if_plus1
@@ -544,7 +544,7 @@ static int write_globalinfo(NUTContext *nut, AVIOContext *bc)
 static int write_streaminfo(NUTContext *nut, AVIOContext *bc, int stream_id) {
     AVFormatContext *s= nut->avf;
     AVStream* st = s->streams[stream_id];
-    AVDictionaryEntry *t = NULL;
+    const AVDictionaryEntry *t = NULL;
     AVIOContext *dyn_bc;
     uint8_t *dyn_buf=NULL;
     int count=0, dyn_size, i;
@@ -552,7 +552,7 @@ static int write_streaminfo(NUTContext *nut, AVIOContext *bc, int stream_id) {
     if (ret < 0)
         return ret;
 
-    while ((t = av_dict_get(st->metadata, "", t, AV_DICT_IGNORE_SUFFIX)))
+    while ((t = av_dict_iterate(st->metadata, t)))
         count += add_info(dyn_bc, t->key, t->value);
     for (i=0; ff_nut_dispositions[i].flag; ++i) {
         if (st->disposition & ff_nut_dispositions[i].flag)
@@ -587,7 +587,7 @@ static int write_chapter(NUTContext *nut, AVIOContext *bc, int id)
 {
     AVIOContext *dyn_bc;
     uint8_t *dyn_buf     = NULL;
-    AVDictionaryEntry *t = NULL;
+    const AVDictionaryEntry *t = NULL;
     AVChapter *ch        = nut->avf->chapters[id];
     int ret, dyn_size, count = 0;
 
@@ -600,7 +600,7 @@ static int write_chapter(NUTContext *nut, AVIOContext *bc, int id)
     put_tt(nut, nut->chapter[id].time_base, bc, ch->start); // chapter_start
     put_v(bc, ch->end - ch->start);                         // chapter_len
 
-    while ((t = av_dict_get(ch->metadata, "", t, AV_DICT_IGNORE_SUFFIX)))
+    while ((t = av_dict_iterate(ch->metadata, t)))
         count += add_info(dyn_bc, t->key, t->value);
 
     put_v(bc, count);
