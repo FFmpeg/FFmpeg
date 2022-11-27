@@ -338,13 +338,13 @@ static int setup_roi(AVCodecContext *ctx, x264_picture_t *pic, int bit_depth,
 {
     X264Context *x4 = ctx->priv_data;
 
-            int mbx = (frame->width + MB_SIZE - 1) / MB_SIZE;
-            int mby = (frame->height + MB_SIZE - 1) / MB_SIZE;
-            int qp_range = 51 + 6 * (bit_depth - 8);
-            int nb_rois;
-            const AVRegionOfInterest *roi;
-            uint32_t roi_size;
-            float *qoffsets;
+    int mbx = (frame->width + MB_SIZE - 1) / MB_SIZE;
+    int mby = (frame->height + MB_SIZE - 1) / MB_SIZE;
+    int qp_range = 51 + 6 * (bit_depth - 8);
+    int nb_rois;
+    const AVRegionOfInterest *roi;
+    uint32_t roi_size;
+    float *qoffsets;
 
     if (x4->params.rc.i_aq_mode == X264_AQ_NONE) {
         if (!x4->roi_warned) {
@@ -360,48 +360,48 @@ static int setup_roi(AVCodecContext *ctx, x264_picture_t *pic, int bit_depth,
         return 0;
     }
 
-            roi = (const AVRegionOfInterest*)data;
-            roi_size = roi->self_size;
-            if (!roi_size || size % roi_size != 0) {
-                av_log(ctx, AV_LOG_ERROR, "Invalid AVRegionOfInterest.self_size.\n");
-                return AVERROR(EINVAL);
+    roi = (const AVRegionOfInterest*)data;
+    roi_size = roi->self_size;
+    if (!roi_size || size % roi_size != 0) {
+        av_log(ctx, AV_LOG_ERROR, "Invalid AVRegionOfInterest.self_size.\n");
+        return AVERROR(EINVAL);
+    }
+    nb_rois = size / roi_size;
+
+    qoffsets = av_calloc(mbx * mby, sizeof(*qoffsets));
+    if (!qoffsets)
+        return AVERROR(ENOMEM);
+
+    // This list must be iterated in reverse because the first
+    // region in the list applies when regions overlap.
+    for (int i = nb_rois - 1; i >= 0; i--) {
+        int startx, endx, starty, endy;
+        float qoffset;
+
+        roi = (const AVRegionOfInterest*)(data + roi_size * i);
+
+        starty = FFMIN(mby, roi->top / MB_SIZE);
+        endy   = FFMIN(mby, (roi->bottom + MB_SIZE - 1)/ MB_SIZE);
+        startx = FFMIN(mbx, roi->left / MB_SIZE);
+        endx   = FFMIN(mbx, (roi->right + MB_SIZE - 1)/ MB_SIZE);
+
+        if (roi->qoffset.den == 0) {
+            av_free(qoffsets);
+            av_log(ctx, AV_LOG_ERROR, "AVRegionOfInterest.qoffset.den must not be zero.\n");
+            return AVERROR(EINVAL);
+        }
+        qoffset = roi->qoffset.num * 1.0f / roi->qoffset.den;
+        qoffset = av_clipf(qoffset * qp_range, -qp_range, +qp_range);
+
+        for (int y = starty; y < endy; y++) {
+            for (int x = startx; x < endx; x++) {
+                qoffsets[x + y*mbx] = qoffset;
             }
-            nb_rois = size / roi_size;
+        }
+    }
 
-            qoffsets = av_calloc(mbx * mby, sizeof(*qoffsets));
-            if (!qoffsets)
-                return AVERROR(ENOMEM);
-
-            // This list must be iterated in reverse because the first
-            // region in the list applies when regions overlap.
-            for (int i = nb_rois - 1; i >= 0; i--) {
-                int startx, endx, starty, endy;
-                float qoffset;
-
-                roi = (const AVRegionOfInterest*)(data + roi_size * i);
-
-                starty = FFMIN(mby, roi->top / MB_SIZE);
-                endy   = FFMIN(mby, (roi->bottom + MB_SIZE - 1)/ MB_SIZE);
-                startx = FFMIN(mbx, roi->left / MB_SIZE);
-                endx   = FFMIN(mbx, (roi->right + MB_SIZE - 1)/ MB_SIZE);
-
-                if (roi->qoffset.den == 0) {
-                    av_free(qoffsets);
-                    av_log(ctx, AV_LOG_ERROR, "AVRegionOfInterest.qoffset.den must not be zero.\n");
-                    return AVERROR(EINVAL);
-                }
-                qoffset = roi->qoffset.num * 1.0f / roi->qoffset.den;
-                qoffset = av_clipf(qoffset * qp_range, -qp_range, +qp_range);
-
-                for (int y = starty; y < endy; y++) {
-                    for (int x = startx; x < endx; x++) {
-                        qoffsets[x + y*mbx] = qoffset;
-                    }
-                }
-            }
-
-            pic->prop.quant_offsets = qoffsets;
-            pic->prop.quant_offsets_free = av_free;
+    pic->prop.quant_offsets = qoffsets;
+    pic->prop.quant_offsets_free = av_free;
 
     return 0;
 }
