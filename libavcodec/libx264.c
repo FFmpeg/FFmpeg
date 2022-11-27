@@ -337,7 +337,8 @@ static int setup_frame(AVCodecContext *ctx, const AVFrame *frame,
                        x264_picture_t **ppic)
 {
     X264Context *x4 = ctx->priv_data;
-    x264_sei_t *sei = &x4->pic.extra_sei;
+    x264_picture_t *pic = &x4->pic;
+    x264_sei_t     *sei = &pic->extra_sei;
     unsigned int sei_data_size = 0;
     int64_t wallclock = 0;
     int bit_depth, ret;
@@ -347,45 +348,44 @@ static int setup_frame(AVCodecContext *ctx, const AVFrame *frame,
     if (!frame)
         return 0;
 
-    x264_picture_init( &x4->pic );
-    x4->pic.img.i_csp   = x4->params.i_csp;
+    x264_picture_init(pic);
+    pic->img.i_csp   = x4->params.i_csp;
 #if X264_BUILD >= 153
     bit_depth = x4->params.i_bitdepth;
 #else
     bit_depth = x264_bit_depth;
 #endif
     if (bit_depth > 8)
-        x4->pic.img.i_csp |= X264_CSP_HIGH_DEPTH;
-    x4->pic.img.i_plane = avfmt2_num_planes(ctx->pix_fmt);
+        pic->img.i_csp |= X264_CSP_HIGH_DEPTH;
+    pic->img.i_plane = avfmt2_num_planes(ctx->pix_fmt);
 
-    for (int i = 0; i < x4->pic.img.i_plane; i++) {
-        x4->pic.img.plane[i]    = frame->data[i];
-        x4->pic.img.i_stride[i] = frame->linesize[i];
+    for (int i = 0; i < pic->img.i_plane; i++) {
+        pic->img.plane[i]    = frame->data[i];
+        pic->img.i_stride[i] = frame->linesize[i];
     }
 
-    x4->pic.i_pts  = frame->pts;
+    pic->i_pts  = frame->pts;
 
     x4->reordered_opaque[x4->next_reordered_opaque].reordered_opaque = frame->reordered_opaque;
     x4->reordered_opaque[x4->next_reordered_opaque].wallclock = wallclock;
     if (ctx->export_side_data & AV_CODEC_EXPORT_DATA_PRFT)
         x4->reordered_opaque[x4->next_reordered_opaque].wallclock = av_gettime();
-    x4->pic.opaque = &x4->reordered_opaque[x4->next_reordered_opaque];
+    pic->opaque = &x4->reordered_opaque[x4->next_reordered_opaque];
     x4->next_reordered_opaque++;
     x4->next_reordered_opaque %= x4->nb_reordered_opaque;
 
     switch (frame->pict_type) {
     case AV_PICTURE_TYPE_I:
-        x4->pic.i_type = x4->forced_idr > 0 ? X264_TYPE_IDR
-                                            : X264_TYPE_KEYFRAME;
+        pic->i_type = x4->forced_idr > 0 ? X264_TYPE_IDR : X264_TYPE_KEYFRAME;
         break;
     case AV_PICTURE_TYPE_P:
-        x4->pic.i_type = X264_TYPE_P;
+        pic->i_type = X264_TYPE_P;
         break;
     case AV_PICTURE_TYPE_B:
-        x4->pic.i_type = X264_TYPE_B;
+        pic->i_type = X264_TYPE_B;
         break;
     default:
-        x4->pic.i_type = X264_TYPE_AUTO;
+        pic->i_type = X264_TYPE_AUTO;
         break;
     }
     reconfig_encoder(ctx, frame);
@@ -398,17 +398,17 @@ static int setup_frame(AVCodecContext *ctx, const AVFrame *frame,
         if (ret < 0) {
             av_log(ctx, AV_LOG_ERROR, "Not enough memory for closed captions, skipping\n");
         } else if (sei_data) {
-            x4->pic.extra_sei.payloads = av_mallocz(sizeof(x4->pic.extra_sei.payloads[0]));
-            if (x4->pic.extra_sei.payloads == NULL) {
+            pic->extra_sei.payloads = av_mallocz(sizeof(pic->extra_sei.payloads[0]));
+            if (pic->extra_sei.payloads == NULL) {
                 av_log(ctx, AV_LOG_ERROR, "Not enough memory for closed captions, skipping\n");
                 av_free(sei_data);
             } else {
-                x4->pic.extra_sei.sei_free = av_free;
+                pic->extra_sei.sei_free = av_free;
 
-                x4->pic.extra_sei.payloads[0].payload_size = sei_size;
-                x4->pic.extra_sei.payloads[0].payload = sei_data;
-                x4->pic.extra_sei.num_payloads = 1;
-                x4->pic.extra_sei.payloads[0].payload_type = 4;
+                pic->extra_sei.payloads[0].payload_size = sei_size;
+                pic->extra_sei.payloads[0].payload = sei_data;
+                pic->extra_sei.num_payloads = 1;
+                pic->extra_sei.payloads[0].payload_type = 4;
             }
         }
     }
@@ -473,8 +473,8 @@ static int setup_frame(AVCodecContext *ctx, const AVFrame *frame,
                     }
                 }
 
-                x4->pic.prop.quant_offsets = qoffsets;
-                x4->pic.prop.quant_offsets_free = av_free;
+                pic->prop.quant_offsets = qoffsets;
+                pic->prop.quant_offsets_free = av_free;
             } else {
                 if (!x4->roi_warned) {
                     x4->roi_warned = 1;
@@ -510,7 +510,7 @@ static int setup_frame(AVCodecContext *ctx, const AVFrame *frame,
         }
     }
 
-    *ppic = &x4->pic;
+    *ppic = pic;
     return 0;
 }
 
