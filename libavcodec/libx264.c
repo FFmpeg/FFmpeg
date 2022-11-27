@@ -489,10 +489,8 @@ static int setup_frame(AVCodecContext *ctx, const AVFrame *frame,
     sd = av_frame_get_side_data(frame, AV_FRAME_DATA_REGIONS_OF_INTEREST);
     if (sd) {
         ret = setup_roi(ctx, pic, bit_depth, frame, sd->data, sd->size);
-        if (ret < 0) {
-            free_picture(ctx);
-            return ret;
-        }
+        if (ret < 0)
+            goto fail;
     }
 
     if (x4->udu_sei) {
@@ -504,16 +502,16 @@ static int setup_frame(AVCodecContext *ctx, const AVFrame *frame,
                 continue;
             tmp = av_fast_realloc(sei->payloads, &sei_data_size, (sei->num_payloads + 1) * sizeof(*sei_payload));
             if (!tmp) {
-                free_picture(ctx);
-                return AVERROR(ENOMEM);
+                ret = AVERROR(ENOMEM);
+                goto fail;
             }
             sei->payloads = tmp;
             sei->sei_free = av_free;
             sei_payload = &sei->payloads[sei->num_payloads];
             sei_payload->payload = av_memdup(side_data->data, side_data->size);
             if (!sei_payload->payload) {
-                free_picture(ctx);
-                return AVERROR(ENOMEM);
+                ret = AVERROR(ENOMEM);
+                goto fail;
             }
             sei_payload->payload_size = side_data->size;
             sei_payload->payload_type = SEI_TYPE_USER_DATA_UNREGISTERED;
@@ -523,6 +521,11 @@ static int setup_frame(AVCodecContext *ctx, const AVFrame *frame,
 
     *ppic = pic;
     return 0;
+
+fail:
+    free_picture(ctx);
+    *ppic = NULL;
+    return ret;
 }
 
 static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
