@@ -1105,8 +1105,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
     // Overestimate the reordered opaque buffer size, in case a runtime
     // reconfigure would increase the delay (which it shouldn't).
     x4->nb_reordered_opaque = x264_encoder_maximum_delayed_frames(x4->enc) + 17;
-    x4->reordered_opaque    = av_malloc_array(x4->nb_reordered_opaque,
-                                              sizeof(*x4->reordered_opaque));
+    x4->reordered_opaque    = av_calloc(x4->nb_reordered_opaque,
+                                        sizeof(*x4->reordered_opaque));
     if (!x4->reordered_opaque)
         return AVERROR(ENOMEM);
 
