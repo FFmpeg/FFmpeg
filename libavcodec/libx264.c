@@ -468,21 +468,22 @@ static int setup_frame(AVCodecContext *ctx, const AVFrame *frame,
         size_t sei_size;
 
         ret = ff_alloc_a53_sei(frame, 0, &sei_data, &sei_size);
-        if (ret < 0) {
-            av_log(ctx, AV_LOG_ERROR, "Not enough memory for closed captions, skipping\n");
-        } else if (sei_data) {
+        if (ret < 0)
+            goto fail;
+
+        if (sei_data) {
             pic->extra_sei.payloads = av_mallocz(sizeof(pic->extra_sei.payloads[0]));
             if (pic->extra_sei.payloads == NULL) {
-                av_log(ctx, AV_LOG_ERROR, "Not enough memory for closed captions, skipping\n");
-                av_free(sei_data);
-            } else {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
+
                 pic->extra_sei.sei_free = av_free;
 
                 pic->extra_sei.payloads[0].payload_size = sei_size;
                 pic->extra_sei.payloads[0].payload = sei_data;
                 pic->extra_sei.num_payloads = 1;
                 pic->extra_sei.payloads[0].payload_type = 4;
-            }
         }
     }
 
