@@ -478,12 +478,12 @@ static int setup_frame(AVCodecContext *ctx, const AVFrame *frame,
                 goto fail;
             }
 
-                pic->extra_sei.sei_free = av_free;
+            pic->extra_sei.sei_free = av_free;
 
-                pic->extra_sei.payloads[0].payload_size = sei_size;
-                pic->extra_sei.payloads[0].payload = sei_data;
-                pic->extra_sei.num_payloads = 1;
-                pic->extra_sei.payloads[0].payload_type = 4;
+            pic->extra_sei.payloads[0].payload_size = sei_size;
+            pic->extra_sei.payloads[0].payload = sei_data;
+            pic->extra_sei.num_payloads = 1;
+            pic->extra_sei.payloads[0].payload_type = 4;
         }
     }
 
