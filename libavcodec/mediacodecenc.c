@@ -213,6 +213,11 @@ static av_cold int mediacodec_init(AVCodecContext *avctx)
     ff_AMediaFormat_setInt32(format, "frame-rate", s->fps);
     ff_AMediaFormat_setInt32(format, "i-frame-interval", gop);
 
+    ret = ff_AMediaCodecProfile_getProfileFromAVCodecContext(avctx);
+    if (ret > 0) {
+        av_log(avctx, AV_LOG_DEBUG, "set profile to 0x%x\n", ret);
+        ff_AMediaFormat_setInt32(format, "profile", ret);
+    }
 
     ret = ff_AMediaCodec_getConfigureFlagEncode(s->codec);
     ret = ff_AMediaCodec_configure(s->codec, format, s->window, NULL, ret);
