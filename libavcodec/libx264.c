@@ -410,6 +410,7 @@ static int setup_frame(AVCodecContext *ctx, const AVFrame *frame,
                        x264_picture_t **ppic)
 {
     X264Context *x4 = ctx->priv_data;
+    X264Opaque  *opaque = &x4->reordered_opaque[x4->next_reordered_opaque];
     x264_picture_t *pic = &x4->pic;
     x264_sei_t     *sei = &pic->extra_sei;
     unsigned int sei_data_size = 0;
@@ -439,11 +440,13 @@ static int setup_frame(AVCodecContext *ctx, const AVFrame *frame,
 
     pic->i_pts  = frame->pts;
 
-    x4->reordered_opaque[x4->next_reordered_opaque].reordered_opaque = frame->reordered_opaque;
-    x4->reordered_opaque[x4->next_reordered_opaque].wallclock = wallclock;
+    opaque->reordered_opaque = frame->reordered_opaque;
+    opaque->wallclock = wallclock;
     if (ctx->export_side_data & AV_CODEC_EXPORT_DATA_PRFT)
-        x4->reordered_opaque[x4->next_reordered_opaque].wallclock = av_gettime();
-    pic->opaque = &x4->reordered_opaque[x4->next_reordered_opaque];
+        opaque->wallclock = av_gettime();
+
+    pic->opaque = opaque;
+
     x4->next_reordered_opaque++;
     x4->next_reordered_opaque %= x4->nb_reordered_opaque;
 
