@@ -190,6 +190,21 @@ int ff_encode_get_frame(AVCodecContext *avctx, AVFrame *frame)
     return 0;
 }
 
+int ff_encode_reordered_opaque(AVCodecContext *avctx,
+                               AVPacket *pkt, const AVFrame *frame)
+{
+    avctx->reordered_opaque = frame->reordered_opaque;
+
+    if (avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE) {
+        int ret = av_buffer_replace(&pkt->opaque_ref, frame->opaque_ref);
+        if (ret < 0)
+            return ret;
+        pkt->opaque = frame->opaque;
+    }
+
+    return 0;
+}
+
 int ff_encode_encode_cb(AVCodecContext *avctx, AVPacket *avpkt,
                         AVFrame *frame, int *got_packet)
 {
@@ -221,6 +236,10 @@ int ff_encode_encode_cb(AVCodecContext *avctx, AVPacket *avpkt,
                     avpkt->duration = ff_samples_to_time_base(avctx,
                                                               frame->nb_samples);
             }
+
+            ret = ff_encode_reordered_opaque(avctx, avpkt, frame);
+            if (ret < 0)
+                goto unref;
         }
 
         // dts equals pts unless there is reordering

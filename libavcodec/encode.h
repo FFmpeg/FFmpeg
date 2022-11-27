@@ -69,6 +69,12 @@ int ff_encode_alloc_frame(AVCodecContext *avctx, AVFrame *frame);
  */
 int ff_alloc_packet(AVCodecContext *avctx, AVPacket *avpkt, int64_t size);
 
+/**
+ * Propagate user opaque values from the frame to avctx/pkt as needed.
+ */
+int ff_encode_reordered_opaque(AVCodecContext *avctx,
+                               AVPacket *pkt, const AVFrame *frame);
+
 /*
  * Perform encoder initialization and validation.
  * Called when opening the encoder, before the FFCodec.init() call.

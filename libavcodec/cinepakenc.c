@@ -1219,7 +1219,7 @@ const FFCodec ff_cinepak_encoder = {
     CODEC_LONG_NAME("Cinepak"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_CINEPAK,
-    .p.capabilities = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_data_size = sizeof(CinepakEncContext),
     .init           = cinepak_encode_init,
     FF_CODEC_ENCODE_CB(cinepak_encode_frame),

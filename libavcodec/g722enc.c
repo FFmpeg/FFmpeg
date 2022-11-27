@@ -375,7 +375,8 @@ const FFCodec ff_adpcm_g722_encoder = {
     CODEC_LONG_NAME("G.722 ADPCM"),
     .p.type          = AVMEDIA_TYPE_AUDIO,
     .p.id            = AV_CODEC_ID_ADPCM_G722,
-    .p.capabilities  = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SMALL_LAST_FRAME,
+    .p.capabilities  = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SMALL_LAST_FRAME |
+                       AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_data_size  = sizeof(G722Context),
     .init            = g722_encode_init,
     .close           = g722_encode_close,

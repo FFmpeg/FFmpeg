@@ -116,5 +116,6 @@ const FFCodec ff_dfpwm_encoder = {
     .init            = dfpwm_enc_init,
     FF_CODEC_ENCODE_CB(dfpwm_enc_frame),
     .p.sample_fmts   = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_U8, AV_SAMPLE_FMT_NONE},
-    .p.capabilities  = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_VARIABLE_FRAME_SIZE,
+    .p.capabilities  = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_VARIABLE_FRAME_SIZE |
+                       AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
 };

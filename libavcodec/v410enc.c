@@ -79,7 +79,7 @@ const FFCodec ff_v410_encoder = {
     CODEC_LONG_NAME("Uncompressed 4:4:4 10-bit"),
     .p.type       = AVMEDIA_TYPE_VIDEO,
     .p.id         = AV_CODEC_ID_V410,
-    .p.capabilities = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .init         = v410_encode_init,
     FF_CODEC_ENCODE_CB(v410_encode_frame),
     .p.pix_fmts   = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV444P10, AV_PIX_FMT_NONE },

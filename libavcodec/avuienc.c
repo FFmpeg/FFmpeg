@@ -96,7 +96,8 @@ const FFCodec ff_avui_encoder = {
     CODEC_LONG_NAME("Avid Meridien Uncompressed"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_AVUI,
-    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_EXPERIMENTAL,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_EXPERIMENTAL |
+                      AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .p.pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_UYVY422, AV_PIX_FMT_NONE },
     .init         = avui_encode_init,
     FF_CODEC_ENCODE_CB(avui_encode_frame),

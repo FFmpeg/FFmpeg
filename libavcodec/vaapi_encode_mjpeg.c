@@ -574,7 +574,8 @@ const FFCodec ff_mjpeg_vaapi_encoder = {
     FF_CODEC_RECEIVE_PACKET_CB(&ff_vaapi_encode_receive_packet),
     .close          = &vaapi_encode_mjpeg_close,
     .p.priv_class   = &vaapi_encode_mjpeg_class,
-    .p.capabilities = AV_CODEC_CAP_HARDWARE | AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_HARDWARE | AV_CODEC_CAP_DR1 |
+                      AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE |
                       FF_CODEC_CAP_INIT_CLEANUP,
     .defaults       = vaapi_encode_mjpeg_defaults,

@@ -307,6 +307,7 @@ const FFCodec ff_msvideo1_encoder = {
     CODEC_LONG_NAME("Microsoft Video-1"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_MSVIDEO1,
+    .p.capabilities = AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_data_size = sizeof(Msvideo1EncContext),
     .init           = encode_init,
     FF_CODEC_ENCODE_CB(encode_frame),

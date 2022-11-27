@@ -197,7 +197,8 @@ const FFCodec ff_libcodec2_encoder = {
     CODEC_LONG_NAME("codec2 encoder using libcodec2"),
     .p.type                 = AVMEDIA_TYPE_AUDIO,
     .p.id                   = AV_CODEC_ID_CODEC2,
-    .p.capabilities         = AV_CODEC_CAP_DR1,
+    .p.capabilities         = AV_CODEC_CAP_DR1 |
+                              AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .p.supported_samplerates = (const int[]){ 8000, 0 },
     .p.sample_fmts          = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE },
     .p.ch_layouts           = (const AVChannelLayout[]) { AV_CHANNEL_LAYOUT_MONO, { 0 } },

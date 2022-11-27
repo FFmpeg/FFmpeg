@@ -467,7 +467,8 @@ const FFCodec ff_libjxl_encoder = {
     .init             = libjxl_encode_init,
     FF_CODEC_ENCODE_CB(libjxl_encode_frame),
     .close            = libjxl_encode_close,
-    .p.capabilities   = AV_CODEC_CAP_OTHER_THREADS,
+    .p.capabilities   = AV_CODEC_CAP_OTHER_THREADS |
+                        AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .caps_internal    = FF_CODEC_CAP_NOT_INIT_THREADSAFE |
                         FF_CODEC_CAP_AUTO_THREADS | FF_CODEC_CAP_INIT_CLEANUP |
                         FF_CODEC_CAP_ICC_PROFILES,

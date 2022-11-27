@@ -569,7 +569,8 @@ const FFCodec ff_magicyuv_encoder = {
     CODEC_LONG_NAME("MagicYUV video"),
     .p.type           = AVMEDIA_TYPE_VIDEO,
     .p.id             = AV_CODEC_ID_MAGICYUV,
-    .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
+    .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS |
+                        AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_data_size   = sizeof(MagicYUVContext),
     .p.priv_class     = &magicyuv_class,
     .init             = magy_encode_init,

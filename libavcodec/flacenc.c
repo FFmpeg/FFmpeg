@@ -1754,7 +1754,8 @@ const FFCodec ff_flac_encoder = {
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_FLAC,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
-                      AV_CODEC_CAP_SMALL_LAST_FRAME,
+                      AV_CODEC_CAP_SMALL_LAST_FRAME |
+                      AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_data_size = sizeof(FlacEncodeContext),
     .init           = flac_encode_init,
     FF_CODEC_ENCODE_CB(flac_encode_frame),

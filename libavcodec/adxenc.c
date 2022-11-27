@@ -192,7 +192,8 @@ const FFCodec ff_adpcm_adx_encoder = {
     CODEC_LONG_NAME("SEGA CRI ADX ADPCM"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_ADPCM_ADX,
-    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
+                      AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_data_size = sizeof(ADXContext),
     .init           = adx_encode_init,
     FF_CODEC_ENCODE_CB(adx_encode_frame),

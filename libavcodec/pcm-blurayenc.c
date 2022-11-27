@@ -304,5 +304,5 @@ const FFCodec ff_pcm_bluray_encoder = {
         { 0 } },
     .p.sample_fmts         = (const enum AVSampleFormat[]) {
         AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S32, AV_SAMPLE_FMT_NONE },
-    .p.capabilities        = AV_CODEC_CAP_DR1,
+    .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
 };

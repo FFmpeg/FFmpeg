@@ -176,7 +176,8 @@ const FFCodec ff_pcm_dvd_encoder = {
     CODEC_LONG_NAME("PCM signed 16|20|24-bit big-endian for DVD media"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_PCM_DVD,
-    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SMALL_LAST_FRAME,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SMALL_LAST_FRAME |
+                      AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_data_size = sizeof(PCMDVDContext),
     .init           = pcm_dvd_encode_init,
     FF_CODEC_ENCODE_CB(pcm_dvd_encode_frame),

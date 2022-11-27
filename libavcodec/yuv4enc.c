@@ -64,7 +64,7 @@ const FFCodec ff_yuv4_encoder = {
     CODEC_LONG_NAME("Uncompressed packed 4:2:0"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_YUV4,
-    .p.capabilities = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .p.pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
     FF_CODEC_ENCODE_CB(yuv4_encode_frame),
 };

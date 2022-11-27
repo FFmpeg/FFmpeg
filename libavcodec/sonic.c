@@ -1096,7 +1096,8 @@ const FFCodec ff_sonic_encoder = {
     CODEC_LONG_NAME("Sonic"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_SONIC,
-    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_EXPERIMENTAL,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_EXPERIMENTAL |
+                      AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_data_size = sizeof(SonicContext),
     .init           = sonic_encode_init,
     FF_CODEC_ENCODE_CB(sonic_encode_frame),
@@ -1112,7 +1113,8 @@ const FFCodec ff_sonic_ls_encoder = {
     CODEC_LONG_NAME("Sonic lossless"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_SONIC_LS,
-    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_EXPERIMENTAL,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_EXPERIMENTAL |
+                      AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_data_size = sizeof(SonicContext),
     .init           = sonic_encode_init,
     FF_CODEC_ENCODE_CB(sonic_encode_frame),

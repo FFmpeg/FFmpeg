@@ -205,7 +205,7 @@ const FFCodec ff_libilbc_encoder = {
     CODEC_LONG_NAME("iLBC (Internet Low Bitrate Codec)"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_ILBC,
-    .p.capabilities = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE,
     .priv_data_size = sizeof(ILBCEncContext),
     .init           = ilbc_encode_init,

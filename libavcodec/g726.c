@@ -405,7 +405,8 @@ const FFCodec ff_adpcm_g726_encoder = {
     CODEC_LONG_NAME("G.726 ADPCM"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_ADPCM_G726,
-    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SMALL_LAST_FRAME,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SMALL_LAST_FRAME |
+                      AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_data_size = sizeof(G726Context),
     .init           = g726_encode_init,
     FF_CODEC_ENCODE_CB(g726_encode_frame),
@@ -422,7 +423,8 @@ const FFCodec ff_adpcm_g726le_encoder = {
     CODEC_LONG_NAME("G.726 little endian ADPCM (\"right-justified\")"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_ADPCM_G726LE,
-    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SMALL_LAST_FRAME,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SMALL_LAST_FRAME |
+                      AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_data_size = sizeof(G726Context),
     .init           = g726_encode_init,
     FF_CODEC_ENCODE_CB(g726_encode_frame),

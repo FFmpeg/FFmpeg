@@ -2963,7 +2963,8 @@ const FFCodec ff_wavpack_encoder = {
     CODEC_LONG_NAME("WavPack"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_WAVPACK,
-    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SMALL_LAST_FRAME,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SMALL_LAST_FRAME |
+                      AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_data_size = sizeof(WavPackEncodeContext),
     .p.priv_class   = &wavpack_encoder_class,
     .init           = wavpack_encode_init,

@@ -275,7 +275,7 @@ const FFCodec ff_sgi_encoder = {
     CODEC_LONG_NAME("SGI image"),
     .p.type    = AVMEDIA_TYPE_VIDEO,
     .p.id      = AV_CODEC_ID_SGI,
-    .p.capabilities = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_data_size = sizeof(SgiContext),
     .p.priv_class = &sgi_class,
     .init      = encode_init,

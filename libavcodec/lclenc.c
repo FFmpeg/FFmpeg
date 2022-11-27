@@ -156,7 +156,8 @@ const FFCodec ff_zlib_encoder = {
     CODEC_LONG_NAME("LCL (LossLess Codec Library) ZLIB"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_ZLIB,
-    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS |
+                      AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_data_size = sizeof(LclEncContext),
     .init           = encode_init,
     FF_CODEC_ENCODE_CB(encode_frame),

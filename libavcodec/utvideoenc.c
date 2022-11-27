@@ -648,7 +648,8 @@ const FFCodec ff_utvideo_encoder = {
     CODEC_LONG_NAME("Ut Video"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_UTVIDEO,
-    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS |
+                      AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_data_size = sizeof(UtvideoContext),
     .p.priv_class   = &utvideo_class,
     .init           = utvideo_encode_init,

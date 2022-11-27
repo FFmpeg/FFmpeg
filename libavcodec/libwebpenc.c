@@ -92,7 +92,7 @@ const FFCodec ff_libwebp_encoder = {
     CODEC_LONG_NAME("libwebp WebP image"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_WEBP,
-    .p.capabilities = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .p.pix_fmts     = ff_libwebpenc_pix_fmts,
     .p.priv_class   = &ff_libwebpenc_class,
     .p.wrapper_name = "libwebp",

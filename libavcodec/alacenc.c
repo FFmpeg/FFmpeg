@@ -653,7 +653,8 @@ const FFCodec ff_alac_encoder = {
     CODEC_LONG_NAME("ALAC (Apple Lossless Audio Codec)"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_ALAC,
-    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SMALL_LAST_FRAME,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SMALL_LAST_FRAME |
+                      AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_data_size = sizeof(AlacEncodeContext),
     .p.priv_class   = &alacenc_class,
     .init           = alac_encode_init,

@@ -553,7 +553,8 @@ const FFCodec ff_ ## name_ ## _encoder = {                                  \
     CODEC_LONG_NAME(long_name_),                                            \
     .p.type       = AVMEDIA_TYPE_AUDIO,                                     \
     .p.id         = AV_CODEC_ID_ ## id_,                                    \
-    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_VARIABLE_FRAME_SIZE,    \
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_VARIABLE_FRAME_SIZE | \
+                      AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,                \
     .init         = pcm_encode_init,                                        \
     FF_CODEC_ENCODE_CB(pcm_encode_frame),                                   \
     .p.sample_fmts = (const enum AVSampleFormat[]){ sample_fmt_,             \
