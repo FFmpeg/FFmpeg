@@ -338,13 +338,6 @@ static int setup_roi(AVCodecContext *ctx, x264_picture_t *pic, int bit_depth,
 {
     X264Context *x4 = ctx->priv_data;
 
-    if (x4->params.rc.i_aq_mode == X264_AQ_NONE) {
-        if (!x4->roi_warned) {
-            x4->roi_warned = 1;
-            av_log(ctx, AV_LOG_WARNING, "Adaptive quantization must be enabled to use ROI encoding, skipping ROI.\n");
-        }
-    } else {
-        if (frame->interlaced_frame == 0) {
             int mbx = (frame->width + MB_SIZE - 1) / MB_SIZE;
             int mby = (frame->height + MB_SIZE - 1) / MB_SIZE;
             int qp_range = 51 + 6 * (bit_depth - 8);
@@ -352,6 +345,20 @@ static int setup_roi(AVCodecContext *ctx, x264_picture_t *pic, int bit_depth,
             const AVRegionOfInterest *roi;
             uint32_t roi_size;
             float *qoffsets;
+
+    if (x4->params.rc.i_aq_mode == X264_AQ_NONE) {
+        if (!x4->roi_warned) {
+            x4->roi_warned = 1;
+            av_log(ctx, AV_LOG_WARNING, "Adaptive quantization must be enabled to use ROI encoding, skipping ROI.\n");
+        }
+        return 0;
+    } else if (frame->interlaced_frame) {
+        if (!x4->roi_warned) {
+            x4->roi_warned = 1;
+            av_log(ctx, AV_LOG_WARNING, "interlaced_frame not supported for ROI encoding yet, skipping ROI.\n");
+        }
+        return 0;
+    }
 
             roi = (const AVRegionOfInterest*)data;
             roi_size = roi->self_size;
@@ -395,13 +402,6 @@ static int setup_roi(AVCodecContext *ctx, x264_picture_t *pic, int bit_depth,
 
             pic->prop.quant_offsets = qoffsets;
             pic->prop.quant_offsets_free = av_free;
-        } else {
-            if (!x4->roi_warned) {
-                x4->roi_warned = 1;
-                av_log(ctx, AV_LOG_WARNING, "interlaced_frame not supported for ROI encoding yet, skipping ROI.\n");
-            }
-        }
-    }
 
     return 0;
 }
