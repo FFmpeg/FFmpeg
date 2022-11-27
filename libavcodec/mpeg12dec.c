@@ -2956,6 +2956,10 @@ static int ipu_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     GetBitContext *gb = &m->gb;
     int ret;
 
+    // Check for minimal intra MB size (considering mb header, luma & chroma dc VLC, ac EOB VLC)
+    if (avpkt->size*8LL < (avctx->width+15)/16 * ((avctx->height+15)/16) * (2 + 3*4 + 2*2 + 2*6))
+        return AVERROR_INVALIDDATA;
+
     ret = ff_get_buffer(avctx, frame, 0);
     if (ret < 0)
         return ret;
