@@ -190,6 +190,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
 /* The version macro is introduced the same time as the 7.1 support, so this
    should suffice. */
 #if FDKENC_VER_AT_LEAST(3, 4) // 3.4.12
+    case 7: mode = MODE_6_1;     sce = 3; cpe = 2; break;
     case 8:
         sce = 2;
         cpe = 3;
@@ -451,6 +452,7 @@ static const uint64_t aac_channel_layout[] = {
     AV_CH_LAYOUT_5POINT0_BACK,
     AV_CH_LAYOUT_5POINT1_BACK,
 #if FDKENC_VER_AT_LEAST(3, 4) // 3.4.12
+    AV_CH_LAYOUT_6POINT1_BACK,
     AV_CH_LAYOUT_7POINT1_WIDE_BACK,
     AV_CH_LAYOUT_7POINT1,
     AV_CH_LAYOUT_7POINT1_TOP_BACK,
@@ -467,6 +469,7 @@ static const AVChannelLayout aac_ch_layouts[16] = {
     AV_CHANNEL_LAYOUT_5POINT0_BACK,
     AV_CHANNEL_LAYOUT_5POINT1_BACK,
 #ifdef AACENCODER_LIB_VL0
+    AV_CHANNEL_LAYOUT_6POINT1_BACK,
     AV_CHANNEL_LAYOUT_7POINT1_WIDE_BACK,
     AV_CHANNEL_LAYOUT_7POINT1,
     AV_CHANNEL_LAYOUT_7POINT1_TOP_BACK,
