@@ -333,18 +333,19 @@ static enum AVPixelFormat csp_to_pixfmt(int csp)
     return AV_PIX_FMT_NONE;
 }
 
-static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
-                      int *got_packet)
+static int setup_frame(AVCodecContext *ctx, const AVFrame *frame,
+                       x264_picture_t **ppic)
 {
     X264Context *x4 = ctx->priv_data;
-    x264_nal_t *nal;
-    int nnal, i, ret;
-    x264_picture_t pic_out = {0};
-    int pict_type;
-    int bit_depth;
+    x264_sei_t *sei = &x4->pic.extra_sei;
+    unsigned int sei_data_size = 0;
     int64_t wallclock = 0;
-    X264Opaque *out_opaque;
+    int bit_depth, ret;
     AVFrameSideData *sd;
+
+    *ppic = NULL;
+    if (!frame)
+        return 0;
 
     x264_picture_init( &x4->pic );
     x4->pic.img.i_csp   = x4->params.i_csp;
@@ -357,11 +358,7 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
         x4->pic.img.i_csp |= X264_CSP_HIGH_DEPTH;
     x4->pic.img.i_plane = avfmt2_num_planes(ctx->pix_fmt);
 
-    if (frame) {
-        x264_sei_t *sei = &x4->pic.extra_sei;
-        unsigned int sei_data_size = 0;
-
-        for (i = 0; i < x4->pic.img.i_plane; i++) {
+        for (int i = 0; i < x4->pic.img.i_plane; i++) {
             x4->pic.img.plane[i]    = frame->data[i];
             x4->pic.img.i_stride[i] = frame->linesize[i];
         }
@@ -512,10 +509,28 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
                 sei->num_payloads++;
             }
         }
-    }
+
+    *ppic = &x4->pic;
+    return 0;
+}
+
+static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
+                      int *got_packet)
+{
+    X264Context *x4 = ctx->priv_data;
+    x264_nal_t *nal;
+    int nnal, ret;
+    x264_picture_t pic_out = {0}, *pic_in;
+    int pict_type;
+    int64_t wallclock = 0;
+    X264Opaque *out_opaque;
+
+    ret = setup_frame(ctx, frame, &pic_in);
+    if (ret < 0)
+        return ret;
 
     do {
-        if (x264_encoder_encode(x4->enc, &nal, &nnal, frame? &x4->pic: NULL, &pic_out) < 0)
+        if (x264_encoder_encode(x4->enc, &nal, &nnal, pic_in, &pic_out) < 0)
             return AVERROR_EXTERNAL;
 
         if (nnal && (ctx->flags & AV_CODEC_FLAG_RECON_FRAME)) {
