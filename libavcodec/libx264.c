@@ -333,6 +333,79 @@ static enum AVPixelFormat csp_to_pixfmt(int csp)
     return AV_PIX_FMT_NONE;
 }
 
+static int setup_roi(AVCodecContext *ctx, x264_picture_t *pic, int bit_depth,
+                     const AVFrame *frame, const uint8_t *data, size_t size)
+{
+    X264Context *x4 = ctx->priv_data;
+
+        if (x4->params.rc.i_aq_mode == X264_AQ_NONE) {
+            if (!x4->roi_warned) {
+                x4->roi_warned = 1;
+                av_log(ctx, AV_LOG_WARNING, "Adaptive quantization must be enabled to use ROI encoding, skipping ROI.\n");
+            }
+        } else {
+            if (frame->interlaced_frame == 0) {
+                int mbx = (frame->width + MB_SIZE - 1) / MB_SIZE;
+                int mby = (frame->height + MB_SIZE - 1) / MB_SIZE;
+                int qp_range = 51 + 6 * (bit_depth - 8);
+                int nb_rois;
+                const AVRegionOfInterest *roi;
+                uint32_t roi_size;
+                float *qoffsets;
+
+                roi = (const AVRegionOfInterest*)data;
+                roi_size = roi->self_size;
+                if (!roi_size || size % roi_size != 0) {
+                    av_log(ctx, AV_LOG_ERROR, "Invalid AVRegionOfInterest.self_size.\n");
+                    return AVERROR(EINVAL);
+                }
+                nb_rois = size / roi_size;
+
+                qoffsets = av_calloc(mbx * mby, sizeof(*qoffsets));
+                if (!qoffsets)
+                    return AVERROR(ENOMEM);
+
+                // This list must be iterated in reverse because the first
+                // region in the list applies when regions overlap.
+                for (int i = nb_rois - 1; i >= 0; i--) {
+                    int startx, endx, starty, endy;
+                    float qoffset;
+
+                    roi = (const AVRegionOfInterest*)(data + roi_size * i);
+
+                    starty = FFMIN(mby, roi->top / MB_SIZE);
+                    endy   = FFMIN(mby, (roi->bottom + MB_SIZE - 1)/ MB_SIZE);
+                    startx = FFMIN(mbx, roi->left / MB_SIZE);
+                    endx   = FFMIN(mbx, (roi->right + MB_SIZE - 1)/ MB_SIZE);
+
+                    if (roi->qoffset.den == 0) {
+                        av_free(qoffsets);
+                        av_log(ctx, AV_LOG_ERROR, "AVRegionOfInterest.qoffset.den must not be zero.\n");
+                        return AVERROR(EINVAL);
+                    }
+                    qoffset = roi->qoffset.num * 1.0f / roi->qoffset.den;
+                    qoffset = av_clipf(qoffset * qp_range, -qp_range, +qp_range);
+
+                    for (int y = starty; y < endy; y++) {
+                        for (int x = startx; x < endx; x++) {
+                            qoffsets[x + y*mbx] = qoffset;
+                        }
+                    }
+                }
+
+                pic->prop.quant_offsets = qoffsets;
+                pic->prop.quant_offsets_free = av_free;
+            } else {
+                if (!x4->roi_warned) {
+                    x4->roi_warned = 1;
+                    av_log(ctx, AV_LOG_WARNING, "interlaced_frame not supported for ROI encoding yet, skipping ROI.\n");
+                }
+            }
+        }
+
+    return 0;
+}
+
 static int setup_frame(AVCodecContext *ctx, const AVFrame *frame,
                        x264_picture_t **ppic)
 {
@@ -415,72 +488,10 @@ static int setup_frame(AVCodecContext *ctx, const AVFrame *frame,
 
     sd = av_frame_get_side_data(frame, AV_FRAME_DATA_REGIONS_OF_INTEREST);
     if (sd) {
-        if (x4->params.rc.i_aq_mode == X264_AQ_NONE) {
-            if (!x4->roi_warned) {
-                x4->roi_warned = 1;
-                av_log(ctx, AV_LOG_WARNING, "Adaptive quantization must be enabled to use ROI encoding, skipping ROI.\n");
-            }
-        } else {
-            if (frame->interlaced_frame == 0) {
-                int mbx = (frame->width + MB_SIZE - 1) / MB_SIZE;
-                int mby = (frame->height + MB_SIZE - 1) / MB_SIZE;
-                int qp_range = 51 + 6 * (bit_depth - 8);
-                int nb_rois;
-                const AVRegionOfInterest *roi;
-                uint32_t roi_size;
-                float *qoffsets;
-
-                roi = (const AVRegionOfInterest*)sd->data;
-                roi_size = roi->self_size;
-                if (!roi_size || sd->size % roi_size != 0) {
-                    free_picture(ctx);
-                    av_log(ctx, AV_LOG_ERROR, "Invalid AVRegionOfInterest.self_size.\n");
-                    return AVERROR(EINVAL);
-                }
-                nb_rois = sd->size / roi_size;
-
-                qoffsets = av_calloc(mbx * mby, sizeof(*qoffsets));
-                if (!qoffsets) {
-                    free_picture(ctx);
-                    return AVERROR(ENOMEM);
-                }
-                // This list must be iterated in reverse because the first
-                // region in the list applies when regions overlap.
-                for (int i = nb_rois - 1; i >= 0; i--) {
-                    int startx, endx, starty, endy;
-                    float qoffset;
-
-                    roi = (const AVRegionOfInterest*)(sd->data + roi_size * i);
-
-                    starty = FFMIN(mby, roi->top / MB_SIZE);
-                    endy   = FFMIN(mby, (roi->bottom + MB_SIZE - 1)/ MB_SIZE);
-                    startx = FFMIN(mbx, roi->left / MB_SIZE);
-                    endx   = FFMIN(mbx, (roi->right + MB_SIZE - 1)/ MB_SIZE);
-
-                    if (roi->qoffset.den == 0) {
-                        av_free(qoffsets);
-                        free_picture(ctx);
-                        av_log(ctx, AV_LOG_ERROR, "AVRegionOfInterest.qoffset.den must not be zero.\n");
-                        return AVERROR(EINVAL);
-                    }
-                    qoffset = roi->qoffset.num * 1.0f / roi->qoffset.den;
-                    qoffset = av_clipf(qoffset * qp_range, -qp_range, +qp_range);
-
-                    for (int y = starty; y < endy; y++) {
-                        for (int x = startx; x < endx; x++) {
-                            qoffsets[x + y*mbx] = qoffset;
-                        }
-                    }
-                }
-
-                pic->prop.quant_offsets = qoffsets;
-                pic->prop.quant_offsets_free = av_free;
-            } else {
-                if (!x4->roi_warned) {
-                    x4->roi_warned = 1;
-                    av_log(ctx, AV_LOG_WARNING, "interlaced_frame not supported for ROI encoding yet, skipping ROI.\n");
-                }
-            }
+        ret = setup_roi(ctx, pic, bit_depth, frame, sd->data, sd->size);
+        if (ret < 0) {
+            free_picture(ctx);
+            return ret;
         }
     }
 
