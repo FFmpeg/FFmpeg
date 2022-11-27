@@ -596,6 +596,8 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
         wallclock = out_opaque->wallclock;
     } else {
         // Unexpected opaque pointer on picture output
+        av_log(ctx, AV_LOG_ERROR, "Unexpected opaque pointer; "
+               "this is a bug, please report it.\n");
         ctx->reordered_opaque = 0;
     }
 
