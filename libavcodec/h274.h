@@ -28,7 +28,7 @@
 #ifndef AVCODEC_H274_H
 #define AVCODEC_H274_H
 
-#include <libavutil/film_grain_params.h>
+#include "libavutil/film_grain_params.h"
 
 // Must be initialized to {0} prior to first usage
 typedef struct H274FilmGrainDatabase {
