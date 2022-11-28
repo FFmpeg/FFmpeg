@@ -1088,7 +1088,7 @@ static void do_video_out(OutputFile *of,
     int ret;
     AVCodecContext *enc = ost->enc_ctx;
     AVRational frame_rate;
-    int64_t nb_frames, nb0_frames, i;
+    int64_t nb_frames, nb_frames_prev, i;
     double delta, delta0;
     double duration = 0;
     InputStream *ist = ost->ist;
@@ -1114,9 +1114,9 @@ static void do_video_out(OutputFile *of,
 
     if (!next_picture) {
         //end, flushing
-        nb0_frames = nb_frames = mid_pred(ost->last_nb0_frames[0],
-                                          ost->last_nb0_frames[1],
-                                          ost->last_nb0_frames[2]);
+        nb_frames_prev = nb_frames = mid_pred(ost->last_nb0_frames[0],
+                                              ost->last_nb0_frames[1],
+                                              ost->last_nb0_frames[2]);
     } else {
         double sync_ipts = adjust_frame_pts_to_encoder_tb(of, ost, next_picture);
         /* delta0 is the "drift" between the input frame (next_picture) and
@@ -1124,8 +1124,10 @@ static void do_video_out(OutputFile *of,
         delta0 = sync_ipts - ost->next_pts;
         delta  = delta0 + duration;
 
+        // tracks the number of times the PREVIOUS frame should be duplicated,
+        // mostly for variable framerate (VFR)
+        nb_frames_prev = 0;
         /* by default, we output a single frame */
-        nb0_frames = 0; // tracks the number of times the PREVIOUS frame should be duplicated, mostly for variable framerate (VFR)
         nb_frames = 1;
 
         if (delta0 < 0 &&
@@ -1158,7 +1160,7 @@ static void do_video_out(OutputFile *of,
             else if (delta > 1.1) {
                 nb_frames = llrintf(delta);
                 if (delta0 > 1.1)
-                    nb0_frames = llrintf(delta0 - 0.6);
+                    nb_frames_prev = llrintf(delta0 - 0.6);
             }
             next_picture->duration = 1;
             break;
@@ -1182,35 +1184,35 @@ static void do_video_out(OutputFile *of,
     memmove(ost->last_nb0_frames + 1,
             ost->last_nb0_frames,
             sizeof(ost->last_nb0_frames[0]) * (FF_ARRAY_ELEMS(ost->last_nb0_frames) - 1));
-    ost->last_nb0_frames[0] = nb0_frames;
+    ost->last_nb0_frames[0] = nb_frames_prev;
 
-    if (nb0_frames == 0 && ost->last_dropped) {
+    if (nb_frames_prev == 0 && ost->last_dropped) {
         nb_frames_drop++;
         av_log(NULL, AV_LOG_VERBOSE,
                "*** dropping frame %"PRId64" from stream %d at ts %"PRId64"\n",
                ost->vsync_frame_number, ost->st->index, ost->last_frame->pts);
     }
-    if (nb_frames > (nb0_frames && ost->last_dropped) + (nb_frames > nb0_frames)) {
+    if (nb_frames > (nb_frames_prev && ost->last_dropped) + (nb_frames > nb_frames_prev)) {
         if (nb_frames > dts_error_threshold * 30) {
             av_log(NULL, AV_LOG_ERROR, "%"PRId64" frame duplication too large, skipping\n", nb_frames - 1);
             nb_frames_drop++;
             return;
         }
-        nb_frames_dup += nb_frames - (nb0_frames && ost->last_dropped) - (nb_frames > nb0_frames);
+        nb_frames_dup += nb_frames - (nb_frames_prev && ost->last_dropped) - (nb_frames > nb_frames_prev);
         av_log(NULL, AV_LOG_VERBOSE, "*** %"PRId64" dup!\n", nb_frames - 1);
         if (nb_frames_dup > dup_warning) {
             av_log(NULL, AV_LOG_WARNING, "More than %"PRIu64" frames duplicated\n", dup_warning);
             dup_warning *= 10;
         }
     }
-    ost->last_dropped = nb_frames == nb0_frames && next_picture;
+    ost->last_dropped = nb_frames == nb_frames_prev && next_picture;
     ost->kf.dropped_keyframe = ost->last_dropped && next_picture && next_picture->key_frame;
 
     /* duplicates frame if needed */
     for (i = 0; i < nb_frames; i++) {
         AVFrame *in_picture;
 
-        if (i < nb0_frames && ost->last_frame->buf[0]) {
+        if (i < nb_frames_prev && ost->last_frame->buf[0]) {
             in_picture = ost->last_frame;
         } else
             in_picture = next_picture;
