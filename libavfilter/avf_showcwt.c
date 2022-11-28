@@ -73,7 +73,6 @@ typedef struct ShowCWTContext {
     int ifft_in_size;
     int ifft_out_size;
     int pos;
-    int in_nb_samples;
     int64_t in_pts;
     int64_t old_pts;
     float *frequency_band;
@@ -95,6 +94,7 @@ typedef struct ShowCWTContext {
     int slide;
     int direction;
     int hop_size;
+    int hop_index;
     int ihop_size;
     int ihop_index;
     int input_padding_size;
@@ -250,7 +250,7 @@ static float remap_log(float value, float log_factor)
     return 1.f - av_clipf(value, 0.f, 1.f);
 }
 
-static int run_channel_cwt_prepare(AVFilterContext *ctx, void *arg, int ch)
+static int run_channel_cwt_prepare(AVFilterContext *ctx, void *arg, int ch, int eof)
 {
     ShowCWTContext *s = ctx->priv;
     AVFrame *fin = arg;
@@ -260,14 +260,19 @@ static int run_channel_cwt_prepare(AVFilterContext *ctx, void *arg, int ch)
     AVComplexFloat *dst = (AVComplexFloat *)s->fft_out->extended_data[ch];
     const int nb_consumed_samples = s->nb_consumed_samples;
     const int input_padding_size = s->input_padding_size;
-    const int hop_size = s->hop_size;
+    const int hop_size = eof ? s->hop_size : fin->nb_samples;
     const int offset = input_padding_size - hop_size;
 
     memmove(overlap, &overlap[hop_size], offset * sizeof(float));
     memcpy(&overlap[offset], input,
            fin->nb_samples * sizeof(float));
-    memset(&overlap[offset + fin->nb_samples], 0,
-           (hop_size - fin->nb_samples) * sizeof(float));
+
+    if (eof) {
+        memset(&overlap[offset + fin->nb_samples], 0,
+               (hop_size - fin->nb_samples) * sizeof(float));
+    } else if (s->hop_index + fin->nb_samples < s->hop_size) {
+        return 0;
+    }
 
     for (int n = 0; n < nb_consumed_samples; n++) {
         src[n].re = overlap[n];
@@ -665,21 +670,25 @@ static int activate(AVFilterContext *ctx)
         AVFrame *fin;
 
         if (s->ihop_index == 0) {
-            ret = ff_inlink_consume_samples(inlink, s->hop_size, s->hop_size, &fin);
+            ret = ff_inlink_consume_samples(inlink, 1, s->hop_size - s->hop_index, &fin);
             if (ret < 0)
                 return ret;
             if (ret > 0) {
                 for (int ch = 0; ch < s->nb_channels; ch++)
-                    run_channel_cwt_prepare(ctx, fin, ch);
+                    run_channel_cwt_prepare(ctx, fin, ch,
+                                            ff_outlink_get_status(inlink));
 
-                s->in_pts = fin->pts;
-                s->in_nb_samples = fin->nb_samples;
+                if (s->hop_index == 0)
+                    s->in_pts = fin->pts;
+                s->hop_index += fin->nb_samples;
                 av_frame_free(&fin);
             }
         }
 
-        if (ret > 0 || s->ihop_index > 0) {
+        if (s->hop_index >= s->hop_size || s->ihop_index > 0) {
             int64_t pts_offset;
+
+            s->hop_index = 0;
 
             switch (s->slide) {
             case SLIDE_SCROLL:
@@ -717,7 +726,7 @@ static int activate(AVFilterContext *ctx)
 
             ff_filter_execute(ctx, draw, NULL, NULL, s->nb_threads);
 
-            pts_offset = av_rescale_q(s->ihop_index, av_make_q(1, s->ihop_size), av_make_q(1, s->in_nb_samples));
+            pts_offset = av_rescale(s->ihop_index, s->hop_size, s->ihop_size);
             s->outpicref->pts = av_rescale_q(s->in_pts + pts_offset, inlink->time_base, outlink->time_base);
 
             s->ihop_index++;
@@ -795,7 +804,7 @@ fail:
         }
     }
 
-    if (ff_inlink_queued_samples(inlink) >= s->hop_size || s->ihop_index) {
+    if (ff_inlink_queued_samples(inlink) > 0 || s->ihop_index || s->hop_index >= s->hop_size) {
         ff_filter_set_ready(ctx, 10);
         return 0;
     }
