@@ -1772,7 +1772,7 @@ IMDCT_FN avx2
 %macro PFA_15_FN 2
 INIT_YMM %1
 %if %2
-cglobal fft_pfa_15xM_asm_float, 0, 8, 0, ctx, out, in, stride, len, lut, buf, map, tgt, tmp, \
+cglobal fft_pfa_15xM_asm_float, 0, 0, 0, ctx, out, in, stride, len, lut, buf, map, tgt, tmp, \
                                          tgt5, stride3, stride5, btmp
 %else
 cglobal fft_pfa_15xM_float, 4, 14, 16, 320, ctx, out, in, stride, len, lut, buf, map, tgt, tmp, \
@@ -1892,7 +1892,7 @@ cglobal fft_pfa_15xM_float, 4, 14, 16, 320, ctx, out, in, stride, len, lut, buf,
     mov stride5q, lenq
     mov tgt5q, btmpq
     POP strideq
-    imul tmpq, strideq, 3
+    lea tmpq, [strideq + 2*strideq]
 
 .post:
     LOAD64_LUT m0, inq, stride3q, 0, tmpq, m8, m9
