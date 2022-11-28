@@ -194,7 +194,7 @@ static uint8_t get_shear_params_valid(AV1DecContext *s, int idx)
 }
 
 /**
-* update gm type/params, since cbs already implemented part of this funcation,
+* update gm type/params, since cbs already implemented part of this function,
 * so we don't need to full implement spec.
 */
 static void global_motion_params(AV1DecContext *s)
