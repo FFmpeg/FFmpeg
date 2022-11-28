@@ -1040,67 +1040,67 @@ static void video_sync_process(OutputFile *of, OutputStream *ost,
 {
     double delta0, delta;
 
-        double sync_ipts = adjust_frame_pts_to_encoder_tb(of, ost, next_picture);
-        /* delta0 is the "drift" between the input frame (next_picture) and
-         * where it would fall in the output. */
-        delta0 = sync_ipts - ost->next_pts;
-        delta  = delta0 + duration;
+    double sync_ipts = adjust_frame_pts_to_encoder_tb(of, ost, next_picture);
+    /* delta0 is the "drift" between the input frame (next_picture) and
+     * where it would fall in the output. */
+    delta0 = sync_ipts - ost->next_pts;
+    delta  = delta0 + duration;
 
-        // tracks the number of times the PREVIOUS frame should be duplicated,
-        // mostly for variable framerate (VFR)
-        *nb_frames_prev = 0;
-        /* by default, we output a single frame */
-        *nb_frames = 1;
+    // tracks the number of times the PREVIOUS frame should be duplicated,
+    // mostly for variable framerate (VFR)
+    *nb_frames_prev = 0;
+    /* by default, we output a single frame */
+    *nb_frames = 1;
 
-        if (delta0 < 0 &&
-            delta > 0 &&
-            ost->vsync_method != VSYNC_PASSTHROUGH &&
-            ost->vsync_method != VSYNC_DROP) {
-            if (delta0 < -0.6) {
-                av_log(NULL, AV_LOG_VERBOSE, "Past duration %f too large\n", -delta0);
-            } else
-                av_log(NULL, AV_LOG_DEBUG, "Clipping frame in rate conversion by %f\n", -delta0);
-            sync_ipts = ost->next_pts;
-            duration += delta0;
+    if (delta0 < 0 &&
+        delta > 0 &&
+        ost->vsync_method != VSYNC_PASSTHROUGH &&
+        ost->vsync_method != VSYNC_DROP) {
+        if (delta0 < -0.6) {
+            av_log(NULL, AV_LOG_VERBOSE, "Past duration %f too large\n", -delta0);
+        } else
+            av_log(NULL, AV_LOG_DEBUG, "Clipping frame in rate conversion by %f\n", -delta0);
+        sync_ipts = ost->next_pts;
+        duration += delta0;
+        delta0 = 0;
+    }
+
+    switch (ost->vsync_method) {
+    case VSYNC_VSCFR:
+        if (ost->vsync_frame_number == 0 && delta0 >= 0.5) {
+            av_log(NULL, AV_LOG_DEBUG, "Not duplicating %d initial frames\n", (int)lrintf(delta0));
+            delta = duration;
             delta0 = 0;
-        }
-
-        switch (ost->vsync_method) {
-        case VSYNC_VSCFR:
-            if (ost->vsync_frame_number == 0 && delta0 >= 0.5) {
-                av_log(NULL, AV_LOG_DEBUG, "Not duplicating %d initial frames\n", (int)lrintf(delta0));
-                delta = duration;
-                delta0 = 0;
-                ost->next_pts = llrint(sync_ipts);
-            }
-        case VSYNC_CFR:
-            // FIXME set to 0.5 after we fix some dts/pts bugs like in avidec.c
-            if (frame_drop_threshold && delta < frame_drop_threshold && ost->vsync_frame_number) {
-                *nb_frames = 0;
-            } else if (delta < -1.1)
-                *nb_frames = 0;
-            else if (delta > 1.1) {
-                *nb_frames = llrintf(delta);
-                if (delta0 > 1.1)
-                    *nb_frames_prev = llrintf(delta0 - 0.6);
-            }
-            next_picture->duration = 1;
-            break;
-        case VSYNC_VFR:
-            if (delta <= -0.6)
-                *nb_frames = 0;
-            else if (delta > 0.6)
-                ost->next_pts = llrint(sync_ipts);
-            next_picture->duration = duration;
-            break;
-        case VSYNC_DROP:
-        case VSYNC_PASSTHROUGH:
-            next_picture->duration = duration;
             ost->next_pts = llrint(sync_ipts);
-            break;
-        default:
-            av_assert0(0);
         }
+    case VSYNC_CFR:
+        // FIXME set to 0.5 after we fix some dts/pts bugs like in avidec.c
+        if (frame_drop_threshold && delta < frame_drop_threshold && ost->vsync_frame_number) {
+            *nb_frames = 0;
+        } else if (delta < -1.1)
+            *nb_frames = 0;
+        else if (delta > 1.1) {
+            *nb_frames = llrintf(delta);
+            if (delta0 > 1.1)
+                *nb_frames_prev = llrintf(delta0 - 0.6);
+        }
+        next_picture->duration = 1;
+        break;
+    case VSYNC_VFR:
+        if (delta <= -0.6)
+            *nb_frames = 0;
+        else if (delta > 0.6)
+            ost->next_pts = llrint(sync_ipts);
+        next_picture->duration = duration;
+        break;
+    case VSYNC_DROP:
+    case VSYNC_PASSTHROUGH:
+        next_picture->duration = duration;
+        ost->next_pts = llrint(sync_ipts);
+        break;
+    default:
+        av_assert0(0);
+    }
 }
 
 static enum AVPictureType forced_kf_apply(KeyframeForceCtx *kf, AVRational tb,
