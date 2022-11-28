@@ -3797,7 +3797,8 @@ static int transcode(void)
         packets_written = atomic_load(&ost->packets_written);
         total_packets_written += packets_written;
         if (!packets_written && (abort_on_flags & ABORT_ON_FLAG_EMPTY_OUTPUT_STREAM)) {
-            av_log(NULL, AV_LOG_FATAL, "Empty output on stream %d.\n", i);
+            av_log(NULL, AV_LOG_FATAL, "Empty output on stream %d:%d.\n",
+                   ost->file_index, ost->index);
             exit_program(1);
         }
     }
