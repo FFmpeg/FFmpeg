@@ -833,7 +833,7 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
     QSVAsyncFrame     aframe;
     mfxSyncPoint      sync;
     QSVFrame         *in_frame, *out_frame;
-    int               ret, filter_ret;
+    int               ret, ret1, filter_ret;
 
     while (s->eof && av_fifo_read(s->async_fifo, &aframe, 1) >= 0) {
         if (MFXVideoCORE_SyncOperation(s->session, aframe.sync, 1000) < 0)
@@ -890,8 +890,13 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
             av_fifo_read(s->async_fifo, &aframe, 1);
 
             do {
-                ret = MFXVideoCORE_SyncOperation(s->session, aframe.sync, 1000);
-            } while (ret == MFX_WRN_IN_EXECUTION);
+                ret1 = MFXVideoCORE_SyncOperation(s->session, aframe.sync, 1000);
+            } while (ret1 == MFX_WRN_IN_EXECUTION);
+
+            if (ret1 < 0) {
+                ret = ret1;
+                break;
+            }
 
             filter_ret = s->filter_frame(outlink, aframe.frame->frame);
             if (filter_ret < 0) {
