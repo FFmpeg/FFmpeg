@@ -656,6 +656,115 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
+static int output_frame(AVFilterContext *ctx)
+{
+    AVFilterLink *outlink = ctx->outputs[0];
+    AVFilterLink *inlink = ctx->inputs[0];
+    ShowCWTContext *s = ctx->priv;
+    int64_t pts_offset;
+    int ret;
+
+    switch (s->slide) {
+    case SLIDE_SCROLL:
+        switch (s->direction) {
+        case DIRECTION_UD:
+            for (int p = 0; p < 3; p++) {
+                ptrdiff_t linesize = s->outpicref->linesize[p];
+
+                for (int y = s->h - 1; y > 0; y--) {
+                    uint8_t *dst = s->outpicref->data[p] + y * linesize;
+
+                    memmove(dst, dst - linesize, s->w);
+                }
+            }
+            break;
+        case DIRECTION_DU:
+            for (int p = 0; p < 3; p++) {
+                ptrdiff_t linesize = s->outpicref->linesize[p];
+
+                for (int y = 0; y < s->h - 1; y++) {
+                    uint8_t *dst = s->outpicref->data[p] + y * linesize;
+
+                    memmove(dst, dst + linesize, s->w);
+                }
+            }
+            break;
+        }
+        break;
+    }
+
+    ff_filter_execute(ctx, draw, NULL, NULL, s->nb_threads);
+
+    pts_offset = av_rescale(s->ihop_index, s->hop_size, s->ihop_size);
+    s->outpicref->pts = av_rescale_q(s->in_pts + pts_offset, inlink->time_base, outlink->time_base);
+
+    s->ihop_index++;
+    if (s->ihop_index >= s->ihop_size)
+        s->ihop_index = 0;
+
+    switch (s->slide) {
+    case SLIDE_REPLACE:
+        switch (s->direction) {
+        case DIRECTION_LR:
+            s->pos++;
+            if (s->pos >= s->w)
+                s->pos = 0;
+            break;
+        case DIRECTION_RL:
+            s->pos--;
+            if (s->pos < 0)
+                s->pos = s->w - 1;
+            break;
+        case DIRECTION_UD:
+            s->pos++;
+            if (s->pos >= s->h)
+                s->pos = 0;
+            break;
+        case DIRECTION_DU:
+            s->pos--;
+            if (s->pos < 0)
+                s->pos = s->h - 1;
+            break;
+        }
+        break;
+    case SLIDE_SCROLL:
+        switch (s->direction) {
+        case DIRECTION_UD:
+        case DIRECTION_LR:
+            s->pos = 0;
+            break;
+        case DIRECTION_RL:
+            s->pos = s->w - 1;
+            break;
+        case DIRECTION_DU:
+            s->pos = s->h - 1;
+            break;
+        }
+        break;
+    }
+
+    if (s->old_pts < s->outpicref->pts) {
+        AVFrame *out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+        if (!out)
+            return AVERROR(ENOMEM);
+        ret = av_frame_copy_props(out, s->outpicref);
+        if (ret < 0)
+            goto fail;
+        ret = av_frame_copy(out, s->outpicref);
+        if (ret < 0)
+            goto fail;
+        s->old_pts = s->outpicref->pts;
+        ret = ff_filter_frame(outlink, out);
+        if (ret <= 0)
+            return ret;
+fail:
+        av_frame_free(&out);
+        return ret;
+    }
+
+    return 1;
+}
+
 static int activate(AVFilterContext *ctx)
 {
     AVFilterLink *inlink = ctx->inputs[0];
@@ -686,125 +795,28 @@ static int activate(AVFilterContext *ctx)
         }
 
         if (s->hop_index >= s->hop_size || s->ihop_index > 0) {
-            int64_t pts_offset;
-
             s->hop_index = 0;
-
-            switch (s->slide) {
-            case SLIDE_SCROLL:
-                switch (s->direction) {
-                case DIRECTION_UD:
-                    for (int p = 0; p < 3; p++) {
-                        ptrdiff_t linesize = s->outpicref->linesize[p];
-
-                        for (int y = s->h - 1; y > 0; y--) {
-                            uint8_t *dst = s->outpicref->data[p] + y * linesize;
-
-                            memmove(dst, dst - linesize, s->w);
-                        }
-                    }
-                    break;
-                case DIRECTION_DU:
-                    for (int p = 0; p < 3; p++) {
-                        ptrdiff_t linesize = s->outpicref->linesize[p];
-
-                        for (int y = 0; y < s->h - 1; y++) {
-                            uint8_t *dst = s->outpicref->data[p] + y * linesize;
-
-                            memmove(dst, dst + linesize, s->w);
-                        }
-                    }
-                    break;
-                }
-                break;
-            }
 
             for (int ch = 0; ch < s->nb_channels && s->ihop_index == 0; ch++) {
                 ff_filter_execute(ctx, run_channel_cwt, (void *)&ch, NULL,
                                   s->nb_threads);
             }
 
-            ff_filter_execute(ctx, draw, NULL, NULL, s->nb_threads);
-
-            pts_offset = av_rescale(s->ihop_index, s->hop_size, s->ihop_size);
-            s->outpicref->pts = av_rescale_q(s->in_pts + pts_offset, inlink->time_base, outlink->time_base);
-
-            s->ihop_index++;
-            if (s->ihop_index >= s->ihop_size)
-                s->ihop_index = 0;
-
-            switch (s->slide) {
-            case SLIDE_REPLACE:
-                switch (s->direction) {
-                case DIRECTION_LR:
-                    s->pos++;
-                    if (s->pos >= s->w)
-                        s->pos = 0;
-                    break;
-                case DIRECTION_RL:
-                    s->pos--;
-                    if (s->pos < 0)
-                        s->pos = s->w - 1;
-                    break;
-                case DIRECTION_UD:
-                    s->pos++;
-                    if (s->pos >= s->h)
-                        s->pos = 0;
-                    break;
-                case DIRECTION_DU:
-                    s->pos--;
-                    if (s->pos < 0)
-                        s->pos = s->h - 1;
-                    break;
-                }
-                break;
-            case SLIDE_SCROLL:
-                switch (s->direction) {
-                case DIRECTION_LR:
-                    s->pos = 0;
-                    break;
-                case DIRECTION_RL:
-                    s->pos = s->w - 1;
-                    break;
-                case DIRECTION_UD:
-                    s->pos = 0;
-                    break;
-                case DIRECTION_DU:
-                    s->pos = s->h - 1;
-                    break;
-                }
-                break;
-            }
-
-            if (s->old_pts < s->outpicref->pts) {
-                AVFrame *out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-                if (!out)
-                    return AVERROR(ENOMEM);
-                ret = av_frame_copy_props(out, s->outpicref);
-                if (ret < 0)
-                    goto fail;
-                ret = av_frame_copy(out, s->outpicref);
-                if (ret < 0)
-                    goto fail;
-                s->old_pts = s->outpicref->pts;
-                ret = ff_filter_frame(outlink, out);
-                if (ret <= 0)
-                    return ret;
-fail:
-                av_frame_free(&out);
+            ret = output_frame(ctx);
+            if (ret != 1)
                 return ret;
-            }
         }
     }
 
     if (ff_inlink_acknowledge_status(inlink, &status, &pts)) {
         if (status == AVERROR_EOF) {
-            ff_outlink_set_status(outlink, status, pts);
+            ff_outlink_set_status(outlink, status, s->old_pts);
             return 0;
         }
     }
 
-    if (ff_inlink_queued_samples(inlink) > 0 || s->ihop_index || s->hop_index >= s->hop_size) {
+    if (ff_inlink_queued_samples(inlink) > 0 || s->ihop_index ||
+        s->hop_index >= s->hop_size) {
         ff_filter_set_ready(ctx, 10);
         return 0;
     }
