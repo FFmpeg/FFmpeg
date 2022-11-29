@@ -187,17 +187,21 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     case 4: mode = MODE_1_2_1;   sce = 2; cpe = 1; break;
     case 5: mode = MODE_1_2_2;   sce = 1; cpe = 2; break;
     case 6: mode = MODE_1_2_2_1; sce = 2; cpe = 2; break;
+#if FDKENC_VER_AT_LEAST(4, 0) // 4.0.0
+    case 7: mode = MODE_6_1;     sce = 3; cpe = 2; break;
+#endif
 /* The version macro is introduced the same time as the 7.1 support, so this
    should suffice. */
 #if FDKENC_VER_AT_LEAST(3, 4) // 3.4.12
-    case 7: mode = MODE_6_1;     sce = 3; cpe = 2; break;
     case 8:
         sce = 2;
         cpe = 3;
         if (!av_channel_layout_compare(&avctx->ch_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_7POINT1)) {
             mode = MODE_7_1_REAR_SURROUND;
+#if FDKENC_VER_AT_LEAST(4, 0) // 4.0.0
         } else if (!av_channel_layout_compare(&avctx->ch_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_7POINT1_TOP_BACK)) {
             mode = MODE_7_1_TOP_FRONT;
+#endif
         } else {
             // MODE_1_2_2_2_1 and MODE_7_1_FRONT_CENTER use the same channel layout
             mode = MODE_7_1_FRONT_CENTER;
@@ -451,10 +455,14 @@ static const uint64_t aac_channel_layout[] = {
     AV_CH_LAYOUT_4POINT0,
     AV_CH_LAYOUT_5POINT0_BACK,
     AV_CH_LAYOUT_5POINT1_BACK,
-#if FDKENC_VER_AT_LEAST(3, 4) // 3.4.12
+#if FDKENC_VER_AT_LEAST(4, 0) // 4.0.0
     AV_CH_LAYOUT_6POINT1_BACK,
+#endif
+#if FDKENC_VER_AT_LEAST(3, 4) // 3.4.12
     AV_CH_LAYOUT_7POINT1_WIDE_BACK,
     AV_CH_LAYOUT_7POINT1,
+#endif
+#if FDKENC_VER_AT_LEAST(4, 0) // 4.0.0
     AV_CH_LAYOUT_7POINT1_TOP_BACK,
 #endif
     0,
@@ -468,10 +476,14 @@ static const AVChannelLayout aac_ch_layouts[16] = {
     AV_CHANNEL_LAYOUT_4POINT0,
     AV_CHANNEL_LAYOUT_5POINT0_BACK,
     AV_CHANNEL_LAYOUT_5POINT1_BACK,
-#ifdef AACENCODER_LIB_VL0
+#if FDKENC_VER_AT_LEAST(4, 0) // 4.0.0
     AV_CHANNEL_LAYOUT_6POINT1_BACK,
+#endif
+#if FDKENC_VER_AT_LEAST(3, 4) // 3.4.12
     AV_CHANNEL_LAYOUT_7POINT1_WIDE_BACK,
     AV_CHANNEL_LAYOUT_7POINT1,
+#endif
+#if FDKENC_VER_AT_LEAST(4, 0) // 4.0.0
     AV_CHANNEL_LAYOUT_7POINT1_TOP_BACK,
 #endif
     { 0 },
