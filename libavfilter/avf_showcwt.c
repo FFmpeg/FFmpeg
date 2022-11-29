@@ -64,7 +64,7 @@ typedef struct ShowCWTContext {
     char *rate_str;
     AVRational auto_frame_rate;
     AVRational frame_rate;
-    AVTXContext *fft;
+    AVTXContext **fft;
     AVTXContext **ifft;
     av_tx_fn tx_fn;
     av_tx_fn itx_fn;
@@ -165,11 +165,17 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_frame_free(&s->ifft_in);
     av_frame_free(&s->ifft_out);
     av_frame_free(&s->ch_out);
-    av_tx_uninit(&s->fft);
+
+    if (s->fft) {
+        for (int n = 0; n < s->nb_threads; n++)
+            av_tx_uninit(&s->fft[n]);
+        av_freep(&s->fft);
+    }
 
     if (s->ifft) {
         for (int n = 0; n < s->nb_threads; n++)
             av_tx_uninit(&s->ifft[n]);
+        av_freep(&s->ifft);
     }
 }
 
@@ -252,7 +258,7 @@ static float remap_log(float value, float log_factor)
     return 1.f - av_clipf(value, 0.f, 1.f);
 }
 
-static int run_channel_cwt_prepare(AVFilterContext *ctx, void *arg, int ch)
+static int run_channel_cwt_prepare(AVFilterContext *ctx, void *arg, int jobnr, int ch)
 {
     ShowCWTContext *s = ctx->priv;
     AVFrame *fin = arg;
@@ -287,7 +293,7 @@ static int run_channel_cwt_prepare(AVFilterContext *ctx, void *arg, int ch)
         src[n].im = 0.f;
     }
 
-    s->tx_fn(s->fft, dst, src, sizeof(*src));
+    s->tx_fn(s->fft[jobnr], dst, src, sizeof(*src));
 
     return 0;
 }
@@ -541,9 +547,15 @@ static int config_output(AVFilterLink *outlink)
     s->ifft_out_size = FFALIGN(s->output_padding_size, av_cpu_max_align());
     s->ihop_size = s->output_padding_size >> 1;
 
-    ret = av_tx_init(&s->fft, &s->tx_fn, AV_TX_FLOAT_FFT, 0, s->input_padding_size, &scale, 0);
-    if (ret < 0)
-        return ret;
+    s->fft = av_calloc(s->nb_threads, sizeof(*s->fft));
+    if (!s->fft)
+        return AVERROR(ENOMEM);
+
+    for (int n = 0; n < s->nb_threads; n++) {
+        ret = av_tx_init(&s->fft[n], &s->tx_fn, AV_TX_FLOAT_FFT, 0, s->input_padding_size, &scale, 0);
+        if (ret < 0)
+            return ret;
+    }
 
     s->ifft = av_calloc(s->nb_threads, sizeof(*s->ifft));
     if (!s->ifft)
@@ -774,6 +786,19 @@ fail:
     return 1;
 }
 
+static int run_channels_cwt_prepare(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    ShowCWTContext *s = ctx->priv;
+    const int count = s->nb_channels;
+    const int start = (count * jobnr) / nb_jobs;
+    const int end = (count * (jobnr+1)) / nb_jobs;
+
+    for (int ch = start; ch < end; ch++)
+        run_channel_cwt_prepare(ctx, arg, jobnr, ch);
+
+    return 0;
+}
+
 static int activate(AVFilterContext *ctx)
 {
     AVFilterLink *inlink = ctx->inputs[0];
@@ -795,9 +820,8 @@ static int activate(AVFilterContext *ctx)
             }
 
             if (ret > 0 || s->eof) {
-                for (int ch = 0; ch < s->nb_channels; ch++)
-                    run_channel_cwt_prepare(ctx, fin, ch);
-
+                ff_filter_execute(ctx, run_channels_cwt_prepare, fin, NULL,
+                                  FFMIN(s->nb_threads, s->nb_channels));
                 if (fin) {
                     if (s->hop_index == 0)
                         s->in_pts = fin->pts;
