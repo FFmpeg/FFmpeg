@@ -75,6 +75,7 @@ typedef struct ShowCWTContext {
     int pos;
     int64_t in_pts;
     int64_t old_pts;
+    int64_t eof_pts;
     float *frequency_band;
     AVFrame *kernel;
     unsigned *index;
@@ -91,6 +92,7 @@ typedef struct ShowCWTContext {
     int nb_channels;
     int nb_consumed_samples;
     int pps;
+    int eof;
     int slide;
     int direction;
     int hop_size;
@@ -250,26 +252,32 @@ static float remap_log(float value, float log_factor)
     return 1.f - av_clipf(value, 0.f, 1.f);
 }
 
-static int run_channel_cwt_prepare(AVFilterContext *ctx, void *arg, int ch, int eof)
+static int run_channel_cwt_prepare(AVFilterContext *ctx, void *arg, int ch)
 {
     ShowCWTContext *s = ctx->priv;
     AVFrame *fin = arg;
-    const float *input = (const float *)fin->extended_data[ch];
     float *overlap = (float *)s->overlap->extended_data[ch];
     AVComplexFloat *src = (AVComplexFloat *)s->fft_in->extended_data[ch];
     AVComplexFloat *dst = (AVComplexFloat *)s->fft_out->extended_data[ch];
     const int nb_consumed_samples = s->nb_consumed_samples;
     const int input_padding_size = s->input_padding_size;
-    const int hop_size = eof ? s->hop_size : fin->nb_samples;
-    const int offset = input_padding_size - hop_size;
 
-    memmove(overlap, &overlap[hop_size], offset * sizeof(float));
-    memcpy(&overlap[offset], input,
-           fin->nb_samples * sizeof(float));
+    if (fin) {
+        const int hop_size = fin->nb_samples;
+        const int offset = input_padding_size - hop_size;
+        const float *input = (const float *)fin->extended_data[ch];
 
-    if (eof) {
-        memset(&overlap[offset + fin->nb_samples], 0,
-               (hop_size - fin->nb_samples) * sizeof(float));
+        memmove(overlap, &overlap[hop_size], offset * sizeof(float));
+        memcpy(&overlap[offset], input,
+               fin->nb_samples * sizeof(float));
+    }
+
+    if (fin == NULL) {
+        const int hop_size = s->hop_size;
+
+        memmove(overlap, &overlap[hop_size], hop_size * sizeof(float));
+        memset(&overlap[s->hop_index], 0,
+               (hop_size - s->hop_index) * sizeof(float));
     } else if (s->hop_index + fin->nb_samples < s->hop_size) {
         return 0;
     }
@@ -512,6 +520,7 @@ static int config_output(AVFilterLink *outlink)
     s->nb_threads = FFMIN(s->frequency_band_count, ff_filter_get_nb_threads(ctx));
     s->nb_channels = inlink->ch_layout.nb_channels;
     s->old_pts = AV_NOPTS_VALUE;
+    s->eof_pts = AV_NOPTS_VALUE;
     s->nb_consumed_samples = 65536;
 
     s->input_sample_count = s->nb_consumed_samples;
@@ -776,21 +785,27 @@ static int activate(AVFilterContext *ctx)
     FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
 
     if (s->outpicref) {
-        AVFrame *fin;
+        AVFrame *fin = NULL;
 
         if (s->ihop_index == 0) {
-            ret = ff_inlink_consume_samples(inlink, 1, s->hop_size - s->hop_index, &fin);
-            if (ret < 0)
-                return ret;
-            if (ret > 0) {
-                for (int ch = 0; ch < s->nb_channels; ch++)
-                    run_channel_cwt_prepare(ctx, fin, ch,
-                                            ff_outlink_get_status(inlink));
+            if (!s->eof) {
+                ret = ff_inlink_consume_samples(inlink, 1, s->hop_size - s->hop_index, &fin);
+                if (ret < 0)
+                    return ret;
+            }
 
-                if (s->hop_index == 0)
-                    s->in_pts = fin->pts;
-                s->hop_index += fin->nb_samples;
-                av_frame_free(&fin);
+            if (ret > 0 || s->eof) {
+                for (int ch = 0; ch < s->nb_channels; ch++)
+                    run_channel_cwt_prepare(ctx, fin, ch);
+
+                if (fin) {
+                    if (s->hop_index == 0)
+                        s->in_pts = fin->pts;
+                    s->hop_index += fin->nb_samples;
+                    av_frame_free(&fin);
+                } else {
+                    s->hop_index = s->hop_size;
+                }
             }
         }
 
@@ -808,15 +823,22 @@ static int activate(AVFilterContext *ctx)
         }
     }
 
-    if (ff_inlink_acknowledge_status(inlink, &status, &pts)) {
+    if (s->eof && s->eof_pts != AV_NOPTS_VALUE && s->old_pts + 1 >= s->eof_pts) {
+        ff_outlink_set_status(outlink, AVERROR_EOF, s->eof_pts);
+        return 0;
+    }
+
+    if (!s->eof && ff_inlink_acknowledge_status(inlink, &status, &pts)) {
         if (status == AVERROR_EOF) {
-            ff_outlink_set_status(outlink, status, s->old_pts);
+            s->eof = 1;
+            ff_filter_set_ready(ctx, 10);
+            s->eof_pts = av_rescale_q(pts, inlink->time_base, outlink->time_base);
             return 0;
         }
     }
 
     if (ff_inlink_queued_samples(inlink) > 0 || s->ihop_index ||
-        s->hop_index >= s->hop_size) {
+        s->hop_index >= s->hop_size || s->eof) {
         ff_filter_set_ready(ctx, 10);
         return 0;
     }
