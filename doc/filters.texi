@@ -29353,6 +29353,7 @@ Set the output slide method. Allowed values are:
 @table @option
 @item replace
 @item scroll
+@item frame
 @end table
 
 @item direction

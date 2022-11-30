@@ -54,6 +54,7 @@ enum DirectionMode {
 enum SlideMode {
     SLIDE_REPLACE,
     SLIDE_SCROLL,
+    SLIDE_FRAME,
     NB_SLIDE
 };
 
@@ -94,6 +95,7 @@ typedef struct ShowCWTContext {
     int pps;
     int eof;
     int slide;
+    int new_frame;
     int direction;
     int hop_size;
     int hop_index;
@@ -138,6 +140,7 @@ static const AVOption showcwt_options[] = {
     { "slide", "set slide mode", OFFSET(slide), AV_OPT_TYPE_INT,  {.i64=0}, 0, NB_SLIDE-1, FLAGS, "slide" },
     {  "replace", "replace", 0, AV_OPT_TYPE_CONST,{.i64=SLIDE_REPLACE},0, 0, FLAGS, "slide" },
     {  "scroll",  "scroll",  0, AV_OPT_TYPE_CONST,{.i64=SLIDE_SCROLL}, 0, 0, FLAGS, "slide" },
+    {  "frame",   "frame",   0, AV_OPT_TYPE_CONST,{.i64=SLIDE_FRAME},  0, 0, FLAGS, "slide" },
     { "direction", "set direction mode", OFFSET(direction), AV_OPT_TYPE_INT,  {.i64=0}, 0, NB_DIRECTION-1, FLAGS, "direction" },
     {  "lr", "left to right", 0, AV_OPT_TYPE_CONST,{.i64=DIRECTION_LR}, 0, 0, FLAGS, "direction" },
     {  "rl", "right to left", 0, AV_OPT_TYPE_CONST,{.i64=DIRECTION_RL}, 0, 0, FLAGS, "direction" },
@@ -330,6 +333,7 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 
         switch (s->slide) {
         case SLIDE_REPLACE:
+        case SLIDE_FRAME:
             /* nothing to do here */
             break;
         case SLIDE_SCROLL:
@@ -515,6 +519,7 @@ static int config_output(AVFilterLink *outlink)
         break;
     }
 
+    s->new_frame = 1;
     s->nb_threads = FFMIN(s->frequency_band_count, ff_filter_get_nb_threads(ctx));
     s->nb_channels = inlink->ch_layout.nb_channels;
     s->old_pts = AV_NOPTS_VALUE;
@@ -675,7 +680,6 @@ static int output_frame(AVFilterContext *ctx)
     AVFilterLink *outlink = ctx->outputs[0];
     AVFilterLink *inlink = ctx->inputs[0];
     ShowCWTContext *s = ctx->priv;
-    int64_t pts_offset;
     int ret;
 
     switch (s->slide) {
@@ -709,35 +713,37 @@ static int output_frame(AVFilterContext *ctx)
 
     ff_filter_execute(ctx, draw, NULL, NULL, s->nb_threads);
 
-    pts_offset = av_rescale(s->ihop_index, s->hop_size, s->ihop_size);
-    s->outpicref->pts = av_rescale_q(s->in_pts + pts_offset, inlink->time_base, outlink->time_base);
-
-    s->ihop_index++;
-    if (s->ihop_index >= s->ihop_size)
-        s->ihop_index = 0;
-
     switch (s->slide) {
     case SLIDE_REPLACE:
+    case SLIDE_FRAME:
         switch (s->direction) {
         case DIRECTION_LR:
             s->pos++;
-            if (s->pos >= s->w)
+            if (s->pos >= s->w) {
                 s->pos = 0;
+                s->new_frame = 1;
+            }
             break;
         case DIRECTION_RL:
             s->pos--;
-            if (s->pos < 0)
+            if (s->pos < 0) {
                 s->pos = s->w - 1;
+                s->new_frame = 1;
+            }
             break;
         case DIRECTION_UD:
             s->pos++;
-            if (s->pos >= s->h)
+            if (s->pos >= s->h) {
                 s->pos = 0;
+                s->new_frame = 1;
+            }
             break;
         case DIRECTION_DU:
             s->pos--;
-            if (s->pos < 0)
+            if (s->pos < 0) {
                 s->pos = s->h - 1;
+                s->new_frame = 1;
+            }
             break;
         }
         break;
@@ -757,6 +763,77 @@ static int output_frame(AVFilterContext *ctx)
         break;
     }
 
+    if (s->slide == SLIDE_FRAME && s->eof) {
+        switch (s->direction) {
+        case DIRECTION_LR:
+            for (int p = 0; p < 3; p++) {
+                ptrdiff_t linesize = s->outpicref->linesize[p];
+                const int size = s->w - s->pos;
+                const int fill = p ? 128 : 0;
+                const int x = s->pos;
+
+                for (int y = 0; y < s->h; y++) {
+                    uint8_t *dst = s->outpicref->data[p] + y * linesize + x;
+
+                    memset(dst, fill, size);
+                }
+            }
+            break;
+        case DIRECTION_RL:
+            for (int p = 0; p < 3; p++) {
+                ptrdiff_t linesize = s->outpicref->linesize[p];
+                const int size = s->w - s->pos;
+                const int fill = p ? 128 : 0;
+
+                for (int y = 0; y < s->h; y++) {
+                    uint8_t *dst = s->outpicref->data[p] + y * linesize;
+
+                    memset(dst, fill, size);
+                }
+            }
+            break;
+        case DIRECTION_UD:
+            for (int p = 0; p < 3; p++) {
+                ptrdiff_t linesize = s->outpicref->linesize[p];
+                const int fill = p ? 128 : 0;
+
+                for (int y = s->pos; y < s->h; y++) {
+                    uint8_t *dst = s->outpicref->data[p] + y * linesize;
+
+                    memset(dst, fill, s->w);
+                }
+            }
+            break;
+        case DIRECTION_DU:
+            for (int p = 0; p < 3; p++) {
+                ptrdiff_t linesize = s->outpicref->linesize[p];
+                const int fill = p ? 128 : 0;
+
+                for (int y = s->h - s->pos; y >= 0; y--) {
+                    uint8_t *dst = s->outpicref->data[p] + y * linesize;
+
+                    memset(dst, fill, s->w);
+                }
+            }
+            break;
+        }
+    }
+
+    s->new_frame = s->slide == SLIDE_FRAME && (s->new_frame || s->eof);
+
+    if (s->slide != SLIDE_FRAME || s->new_frame == 1) {
+        int64_t pts_offset = s->new_frame ? 0LL : av_rescale(s->ihop_index, s->hop_size, s->ihop_size);
+
+        s->outpicref->pts = av_rescale_q(s->in_pts + pts_offset, inlink->time_base, outlink->time_base);
+    }
+
+    s->ihop_index++;
+    if (s->ihop_index >= s->ihop_size)
+        s->ihop_index = 0;
+
+    if (s->slide == SLIDE_FRAME && s->new_frame == 0)
+        return 1;
+
     if (s->old_pts < s->outpicref->pts) {
         AVFrame *out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
         if (!out)
@@ -768,6 +845,7 @@ static int output_frame(AVFilterContext *ctx)
         if (ret < 0)
             goto fail;
         s->old_pts = s->outpicref->pts;
+        s->new_frame = 0;
         ret = ff_filter_frame(outlink, out);
         if (ret <= 0)
             return ret;
@@ -816,8 +894,10 @@ static int activate(AVFilterContext *ctx)
                 ff_filter_execute(ctx, run_channels_cwt_prepare, fin, NULL,
                                   FFMIN(s->nb_threads, s->nb_channels));
                 if (fin) {
-                    if (s->hop_index == 0)
+                    if ((s->hop_index == 0 && s->slide != SLIDE_FRAME) || s->new_frame) {
                         s->in_pts = fin->pts;
+                        s->new_frame = 0;
+                    }
                     s->hop_index += fin->nb_samples;
                     av_frame_free(&fin);
                 } else {
@@ -843,9 +923,12 @@ static int activate(AVFilterContext *ctx)
         }
     }
 
-    if (s->eof && s->eof_pts != AV_NOPTS_VALUE && s->old_pts + 1 >= s->eof_pts) {
+    if (s->eof && s->eof_pts != AV_NOPTS_VALUE &&
+        (s->old_pts + 1 >= s->eof_pts || (s->slide == SLIDE_FRAME))) {
+        if (s->slide == SLIDE_FRAME)
+            ret = output_frame(ctx);
         ff_outlink_set_status(outlink, AVERROR_EOF, s->eof_pts);
-        return 0;
+        return ret;
     }
 
     if (!s->eof && ff_inlink_acknowledge_status(inlink, &status, &pts)) {
