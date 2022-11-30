@@ -81,7 +81,7 @@ typedef struct ShowCWTContext {
     unsigned *index;
     int *kernel_start;
     int *kernel_stop;
-    AVFrame *overlap;
+    AVFrame *cache[2];
     AVFrame *outpicref;
     AVFrame *fft_in;
     AVFrame *fft_out;
@@ -158,7 +158,8 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->index);
 
     av_frame_free(&s->kernel);
-    av_frame_free(&s->overlap);
+    av_frame_free(&s->cache[0]);
+    av_frame_free(&s->cache[1]);
     av_frame_free(&s->outpicref);
     av_frame_free(&s->fft_in);
     av_frame_free(&s->fft_out);
@@ -243,12 +244,6 @@ static void frequency_band(float *frequency_band,
     }
 }
 
-#define cmul(operator, index) {           \
-    const float ff = kernel[index];       \
-    isrc[n].re operator ff*dst[index].re; \
-    isrc[n].im operator ff*dst[index].im; \
-}
-
 static float remap_log(float value, float log_factor)
 {
     float sign = (0 < value) - (value < 0);
@@ -261,36 +256,33 @@ static float remap_log(float value, float log_factor)
 static int run_channel_cwt_prepare(AVFilterContext *ctx, void *arg, int jobnr, int ch)
 {
     ShowCWTContext *s = ctx->priv;
+    const int hop_size = s->hop_size;
     AVFrame *fin = arg;
-    float *overlap = (float *)s->overlap->extended_data[ch];
+    float *cache0 = (float *)s->cache[0]->extended_data[ch];
+    float *cache = (float *)s->cache[1]->extended_data[ch];
     AVComplexFloat *src = (AVComplexFloat *)s->fft_in->extended_data[ch];
     AVComplexFloat *dst = (AVComplexFloat *)s->fft_out->extended_data[ch];
-    const int nb_consumed_samples = s->nb_consumed_samples;
-    const int input_padding_size = s->input_padding_size;
 
     if (fin) {
-        const int hop_size = fin->nb_samples;
-        const int offset = input_padding_size - hop_size;
+        const int offset = s->hop_index;
         const float *input = (const float *)fin->extended_data[ch];
 
-        memmove(overlap, &overlap[hop_size], offset * sizeof(float));
-        memcpy(&overlap[offset], input,
+        memcpy(&cache[offset], input,
                fin->nb_samples * sizeof(float));
     }
 
     if (fin == NULL) {
-        const int hop_size = s->hop_size;
-
-        memmove(overlap, &overlap[hop_size], hop_size * sizeof(float));
-        memset(&overlap[s->hop_index], 0,
+        memset(&cache[s->hop_index], 0,
                (hop_size - s->hop_index) * sizeof(float));
-    } else if (s->hop_index + fin->nb_samples < s->hop_size) {
+    } else if (s->hop_index + fin->nb_samples < hop_size) {
         return 0;
     }
 
-    for (int n = 0; n < nb_consumed_samples; n++) {
-        src[n].re = overlap[n];
+    for (int n = 0; n < hop_size; n++) {
+        src[n].re = cache0[n];
         src[n].im = 0.f;
+        src[n + hop_size].re = cache[n];
+        src[n + hop_size].im = 0.f;
     }
 
     s->tx_fn(s->fft[jobnr], dst, src, sizeof(*src));
@@ -442,15 +434,15 @@ static int run_channel_cwt(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
         memset(isrc, 0, sizeof(*isrc) * output_sample_count);
         for (int i = kernel_start; i < kernel_stop; i++) {
             const unsigned n = index[i];
-            cmul(+=, i);
+            const float ff = kernel[i];
+
+            isrc[n].re += ff * dst[i].re;
+            isrc[n].im += ff * dst[i].im;
         }
 
         s->itx_fn(s->ifft[jobnr], idst, isrc, sizeof(*isrc));
 
-        for (int i = 0; i < ihop_size; i++) {
-            chout[i].re = idst[ioffset + i].re;
-            chout[i].im = idst[ioffset + i].im;
-        }
+        memcpy(chout, idst + ioffset, sizeof(*chout) * ihop_size);
     }
 
     return 0;
@@ -572,7 +564,8 @@ static int config_output(AVFilterLink *outlink)
     s->outpicref = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     s->fft_in = ff_get_audio_buffer(inlink, s->fft_in_size * 2);
     s->fft_out = ff_get_audio_buffer(inlink, s->fft_out_size * 2);
-    s->overlap = ff_get_audio_buffer(inlink, s->input_padding_size);
+    s->cache[0] = ff_get_audio_buffer(inlink, s->hop_size);
+    s->cache[1] = ff_get_audio_buffer(inlink, s->hop_size);
     s->ch_out = ff_get_audio_buffer(inlink, s->frequency_band_count * 2 * s->ihop_size);
     s->ifft_in = av_frame_alloc();
     s->ifft_out = av_frame_alloc();
@@ -582,7 +575,7 @@ static int config_output(AVFilterLink *outlink)
     s->kernel_stop = av_calloc(s->frequency_band_count, sizeof(*s->kernel_stop));
     if (!s->outpicref || !s->fft_in || !s->fft_out ||
         !s->ifft_in || !s->ifft_out || !s->kernel_start || !s->kernel_stop ||
-        !s->frequency_band || !s->kernel || !s->overlap || !s->index)
+        !s->frequency_band || !s->kernel || !s->cache[0] || !s->cache[1] || !s->index)
         return AVERROR(ENOMEM);
 
     s->ifft_in->format     = inlink->format;
@@ -834,7 +827,10 @@ static int activate(AVFilterContext *ctx)
         }
 
         if (s->hop_index >= s->hop_size || s->ihop_index > 0) {
-            s->hop_index = 0;
+            if (s->hop_index) {
+                FFSWAP(AVFrame *, s->cache[0], s->cache[1]);
+                s->hop_index = 0;
+            }
 
             for (int ch = 0; ch < s->nb_channels && s->ihop_index == 0; ch++) {
                 ff_filter_execute(ctx, run_channel_cwt, (void *)&ch, NULL,
