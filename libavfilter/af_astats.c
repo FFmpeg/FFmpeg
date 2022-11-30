@@ -668,6 +668,9 @@ static void print_stats(AVFilterContext *ctx)
     for (c = 0; c < s->nb_channels; c++) {
         ChannelStats *p = &s->chstats[c];
 
+        if (p->nb_samples == 0)
+            continue;
+
         if (p->nb_samples < s->tc_samples)
             p->min_sigma_x2 = p->max_sigma_x2 = p->sigma_x2 / p->nb_samples;
 
@@ -753,6 +756,9 @@ static void print_stats(AVFilterContext *ctx)
         if ((s->is_float || s->is_double) && s->measure_perchannel & MEASURE_NUMBER_OF_DENORMALS)
             av_log(ctx, AV_LOG_INFO, "Number of denormals: %"PRId64"\n", p->nb_denormals);
     }
+
+    if (nb_samples == 0)
+        return;
 
     if (s->measure_overall != MEASURE_NONE)
         av_log(ctx, AV_LOG_INFO, "Overall\n");
