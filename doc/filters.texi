@@ -29343,6 +29343,8 @@ Show combination of magnitude and phase.
 Magnitude is mapped to brightness and phase to color.
 @item channel
 Show unique color per channel magnitude.
+@item stereo
+Show unique color per stereo difference.
 @end table
 
 Default value is @code{magnitude}.

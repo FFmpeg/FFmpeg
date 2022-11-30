@@ -132,11 +132,12 @@ static const AVOption showcwt_options[] = {
     { "logb", "set logarithmic basis", OFFSET(logarithmic_basis), AV_OPT_TYPE_FLOAT, {.dbl = 0.0001}, 0, 1, FLAGS },
     { "deviation", "set frequency deviation", OFFSET(deviation), AV_OPT_TYPE_FLOAT, {.dbl = 1.}, 0, 10, FLAGS },
     { "pps",  "set pixels per second", OFFSET(pps), AV_OPT_TYPE_INT, {.i64 = 64}, 1, 1024, FLAGS },
-    { "mode", "set output mode", OFFSET(mode), AV_OPT_TYPE_INT,  {.i64=0}, 0, 3, FLAGS, "mode" },
+    { "mode", "set output mode", OFFSET(mode), AV_OPT_TYPE_INT,  {.i64=0}, 0, 4, FLAGS, "mode" },
     {  "magnitude", "magnitude",         0, AV_OPT_TYPE_CONST,{.i64=0}, 0, 0, FLAGS, "mode" },
     {  "phase",     "phase",             0, AV_OPT_TYPE_CONST,{.i64=1}, 0, 0, FLAGS, "mode" },
     {  "magphase",  "magnitude+phase",   0, AV_OPT_TYPE_CONST,{.i64=2}, 0, 0, FLAGS, "mode" },
     {  "channel",   "color per channel", 0, AV_OPT_TYPE_CONST,{.i64=3}, 0, 0, FLAGS, "mode" },
+    {  "stereo",    "stereo difference", 0, AV_OPT_TYPE_CONST,{.i64=4}, 0, 0, FLAGS, "mode" },
     { "slide", "set slide mode", OFFSET(slide), AV_OPT_TYPE_INT,  {.i64=0}, 0, NB_SLIDE-1, FLAGS, "slide" },
     {  "replace", "replace", 0, AV_OPT_TYPE_CONST,{.i64=SLIDE_REPLACE},0, 0, FLAGS, "slide" },
     {  "scroll",  "scroll",  0, AV_OPT_TYPE_CONST,{.i64=SLIDE_SCROLL}, 0, 0, FLAGS, "slide" },
@@ -360,6 +361,29 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
         }
 
         switch (mode) {
+        case 4:
+            {
+                const AVComplexFloat *src2 = ((const AVComplexFloat *)s->ch_out->extended_data[FFMAX(1, s->nb_channels - 1)]) +
+                                               y * ihop_size + ihop_index;
+                float z, u, v;
+
+                z = hypotf(src[0].re + src2[0].re, src[0].im + src2[0].im);
+                u = hypotf(src[0].re, src[0].im);
+                v = hypotf(src2[0].re, src2[0].im);
+
+                z  = remap_log(z, log_factor);
+                u  = remap_log(u, log_factor);
+                v  = remap_log(v, log_factor);
+
+                Y  = z;
+                U  = 0.5f + z * sinf((v - u) * M_PI_2);
+                V  = 0.5f + z * sinf((u - v) * M_PI_2);
+
+                dstY[0] = av_clip_uint8(lrintf(Y * 255.f));
+                dstU[0] = av_clip_uint8(lrintf(U * 255.f));
+                dstV[0] = av_clip_uint8(lrintf(V * 255.f));
+            }
+            break;
         case 3:
             {
                 const int nb_channels = s->nb_channels;
