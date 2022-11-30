@@ -548,7 +548,7 @@ static int cfhd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                          width, height * 2);
     }
 
-    ret = ff_alloc_packet(avctx, pkt, 64LL + s->planes * (2LL * avctx->width * avctx->height + 1000LL));
+    ret = ff_alloc_packet(avctx, pkt, 256LL + s->planes * (2LL * avctx->width * (avctx->height + 15) + 2048LL));
     if (ret < 0)
         return ret;
 
