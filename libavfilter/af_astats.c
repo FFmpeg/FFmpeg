@@ -668,7 +668,7 @@ static void print_stats(AVFilterContext *ctx)
     for (c = 0; c < s->nb_channels; c++) {
         ChannelStats *p = &s->chstats[c];
 
-        if (p->nb_samples == 0)
+        if (p->nb_samples == 0 && ctx->outputs[0]->sample_count_in == 0)
             continue;
 
         if (p->nb_samples < s->tc_samples)
@@ -757,7 +757,7 @@ static void print_stats(AVFilterContext *ctx)
             av_log(ctx, AV_LOG_INFO, "Number of denormals: %"PRId64"\n", p->nb_denormals);
     }
 
-    if (nb_samples == 0)
+    if (nb_samples == 0 && ctx->outputs[0]->sample_count_in == 0)
         return;
 
     if (s->measure_overall != MEASURE_NONE)
