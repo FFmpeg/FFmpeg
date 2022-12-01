@@ -216,7 +216,7 @@ static void smc_encode_stream(SMCContext *s, const AVFrame *frame,
 
         while (block_counter + coded_blocks < total_blocks && coded_blocks < 256) {
             const int y_size = FFMIN(4, height - cur_y);
-            const int x_size = FFMIN(4, width  - cur_y);
+            const int x_size = FFMIN(4, width  - cur_x);
             const int nb_elements = x_size * y_size;
             uint8_t block_values[16] = { 0 };
             for (int y = 0; y < y_size; y++)
