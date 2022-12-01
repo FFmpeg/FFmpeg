@@ -44,7 +44,7 @@
 #define ST_UW(...) ST_V(v4u32, __VA_ARGS__)
 #define ST_SW(...) ST_V(v4i32, __VA_ARGS__)
 
-#if (__mips_isa_rev >= 6)
+#if HAVE_MIPS32R6 || HAVE_MIPS64R6
     #define LH(psrc)                              \
     ( {                                           \
         uint16_t val_lh_m = *(uint16_t *)(psrc);  \
@@ -85,7 +85,7 @@
     #define SW(val, pdst)  *(uint32_t *)(pdst) = (val);
     #define SD(val, pdst)  *(uint64_t *)(pdst) = (val);
 
-#else  // !(__mips_isa_rev >= 6)
+#else  // !HAVE_MIPS32R6 && !HAVE_MIPS64R6
     #define LH(psrc)                                 \
     ( {                                              \
         uint8_t *psrc_lh_m = (uint8_t *) (psrc);     \
@@ -188,7 +188,7 @@
         SW(val0_sd_m, pdst_sd_m);                                     \
         SW(val1_sd_m, pdst_sd_m + 4);                                 \
     }
-#endif // (__mips_isa_rev >= 6)
+#endif // HAVE_MIPS32R6 || HAVE_MIPS64R6
 
 /* Description : Load 4 words with stride
    Arguments   : Inputs  - psrc    (source pointer to load from)
