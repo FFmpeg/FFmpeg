@@ -116,9 +116,9 @@ static void smc_encode_stream(SMCContext *s, const AVFrame *frame,
                               PutByteContext *pb)
 {
     const uint8_t *src_pixels = (const uint8_t *)frame->data[0];
-    const int stride = frame->linesize[0];
+    const ptrdiff_t stride = frame->linesize[0];
     const uint8_t *prev_pixels = (const uint8_t *)s->prev_frame->data[0];
-    const int prev_stride = s->prev_frame->linesize[0];
+    const ptrdiff_t prev_stride = s->prev_frame->linesize[0];
     uint8_t *distinct_values = s->distinct_values;
     const uint8_t *pixel_ptr, *row_ptr;
     const int height = frame->height;
@@ -160,10 +160,9 @@ static void smc_encode_stream(SMCContext *s, const AVFrame *frame,
             int compare = 0;
 
             for (int y = 0; y < y_size; y++) {
-                const ptrdiff_t offset = pixel_ptr - row_ptr;
-                const uint8_t *prev_pixel_ptr = prev_pixels + cur_y * prev_stride + offset;
+                const uint8_t *prev_pixel_ptr = prev_pixels + (y + cur_y) * prev_stride + cur_x;
 
-                compare |= memcmp(prev_pixel_ptr + y * prev_stride, pixel_ptr + y * stride, x_size);
+                compare |= !!memcmp(prev_pixel_ptr, pixel_ptr + y * stride, x_size);
                 if (compare)
                     break;
             }
@@ -171,9 +170,9 @@ static void smc_encode_stream(SMCContext *s, const AVFrame *frame,
             if (compare)
                 break;
 
+            inter_skip_blocks++;
             if (inter_skip_blocks >= 256)
                 break;
-            inter_skip_blocks++;
 
             ADVANCE_BLOCK(pixel_ptr, row_ptr, 1)
         }
@@ -190,7 +189,7 @@ static void smc_encode_stream(SMCContext *s, const AVFrame *frame,
             const int sy = offset / stride;
             const int sx = offset % stride;
             const int ny = sx < 4 ? sy - 4 : sy;
-            const int nx = sx < 4 ? width - 4 : sx - 4;
+            const int nx = sx < 4 ? width - 4 + (width & 3) : sx - 4;
             const uint8_t *old_pixel_ptr = src_pixels + nx + ny * stride;
             int compare = 0;
 
@@ -203,9 +202,10 @@ static void smc_encode_stream(SMCContext *s, const AVFrame *frame,
             if (compare)
                 break;
 
+            intra_skip_blocks++;
             if (intra_skip_blocks >= 256)
                 break;
-            intra_skip_blocks++;
+
             ADVANCE_BLOCK(pixel_ptr, row_ptr, 1)
         }
 
@@ -236,10 +236,11 @@ static void smc_encode_stream(SMCContext *s, const AVFrame *frame,
             s->mono_value = block_values[0];
 
             coded_distinct = s->nb_distinct;
-            ADVANCE_BLOCK(pixel_ptr, row_ptr, 1)
             coded_blocks++;
             if (coded_distinct > 1 && coded_blocks >= 16)
                 break;
+
+            ADVANCE_BLOCK(pixel_ptr, row_ptr, 1)
         }
 
         pixel_ptr = xpixel_ptr;
