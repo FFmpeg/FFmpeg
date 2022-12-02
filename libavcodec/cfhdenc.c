@@ -272,22 +272,21 @@ static av_cold int cfhd_encode_init(AVCodecContext *avctx)
 
     for (int i = 0; i < s->planes; i++) {
         int w8, h8, w4, h4, w2, h2;
-        int width  = i ? avctx->width >> s->chroma_h_shift : avctx->width;
-        int height = i ? FFALIGN(avctx->height >> s->chroma_v_shift, 8) :
-                         FFALIGN(avctx->height >> s->chroma_v_shift, 8);
-        ptrdiff_t stride = (FFALIGN(width / 8, 8) + 64) * 8;
+        const int a_height = FFALIGN(avctx->height, 8);
+        int width  = i ? AV_CEIL_RSHIFT(avctx->width, s->chroma_h_shift) : avctx->width;
+        int height = i ? a_height >> s->chroma_v_shift: a_height;
 
-        w8 = FFALIGN(width / 8, 8) + 64;
-        h8 = FFALIGN(height, 8) / 8;
+        w8 = width / 8 + 64;
+        h8 = height / 8;
         w4 = w8 * 2;
         h4 = h8 * 2;
         w2 = w4 * 2;
         h2 = h4 * 2;
 
         s->plane[i].dwt_buf =
-            av_calloc(height * stride, sizeof(*s->plane[i].dwt_buf));
+            av_calloc(h8 * 8 * w8 * 8, sizeof(*s->plane[i].dwt_buf));
         s->plane[i].dwt_tmp =
-            av_malloc_array(height * stride, sizeof(*s->plane[i].dwt_tmp));
+            av_malloc_array(h8 * 8 * w8 * 8, sizeof(*s->plane[i].dwt_tmp));
         if (!s->plane[i].dwt_buf || !s->plane[i].dwt_tmp)
             return AVERROR(ENOMEM);
 
@@ -305,7 +304,7 @@ static av_cold int cfhd_encode_init(AVCodecContext *avctx)
         for (int j = 0; j < DWT_LEVELS; j++) {
             for (int k = 0; k < FF_ARRAY_ELEMS(s->plane[i].band[j]); k++) {
                 s->plane[i].band[j][k].width  = (width / 8) << j;
-                s->plane[i].band[j][k].height = (height / 8) << j;
+                s->plane[i].band[j][k].height = height >> (DWT_LEVELS - j);
                 s->plane[i].band[j][k].a_width  = w8 << j;
                 s->plane[i].band[j][k].a_height = h8 << j;
             }
@@ -438,6 +437,7 @@ static int cfhd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int ret;
 
     for (int plane = 0; plane < s->planes; plane++) {
+        const int h_shift = plane ? s->chroma_h_shift : 0;
         int width = s->plane[plane].band[2][0].width;
         int a_width = s->plane[plane].band[2][0].a_width;
         int height = s->plane[plane].band[2][0].height;
@@ -458,7 +458,7 @@ static int cfhd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
         dsp->horiz_filter(input, low, high,
                           in_stride, a_width, a_width,
-                          width * 2, height * 2);
+                          avctx->width >> h_shift, avctx->height);
 
         input = s->plane[plane].l_h[7];
         low = s->plane[plane].subband[7];
@@ -596,6 +596,9 @@ static int cfhd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     bytestream2_put_be16(pby, avctx->width);
 
     bytestream2_put_be16(pby, ImageHeight);
+    bytestream2_put_be16(pby, FFALIGN(avctx->height, 8));
+
+    bytestream2_put_be16(pby, -DisplayHeight);
     bytestream2_put_be16(pby, avctx->height);
 
     bytestream2_put_be16(pby, -FrameNumber);
