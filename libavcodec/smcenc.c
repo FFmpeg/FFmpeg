@@ -127,6 +127,7 @@ static void smc_encode_stream(SMCContext *s, const AVFrame *frame,
     int color_pair_index = 0;
     int color_quad_index = 0;
     int color_octet_index = 0;
+    int prev_block_inter = 0;
     int color_table_index;  /* indexes to color pair, quad, or octet tables */
     int total_blocks;
     int cur_y = 0;
@@ -182,10 +183,10 @@ static void smc_encode_stream(SMCContext *s, const AVFrame *frame,
         cur_y = frame_y;
         cur_x = frame_x;
 
-        while (block_counter > 0 && block_counter + intra_skip_blocks < total_blocks) {
+        while (block_counter > 0 && prev_block_inter == 0 && block_counter + intra_skip_blocks < total_blocks) {
             const int y_size = FFMIN(4, height - cur_y);
             const int x_size = FFMIN(4, width  - cur_x);
-            const ptrdiff_t offset = pixel_ptr - src_pixels;
+            const ptrdiff_t offset = xpixel_ptr - src_pixels;
             const int sy = offset / stride;
             const int sx = offset % stride;
             const int ny = sx < 4 ? sy - 4 : sy;
@@ -194,7 +195,7 @@ static void smc_encode_stream(SMCContext *s, const AVFrame *frame,
             int compare = 0;
 
             for (int y = 0; y < y_size; y++) {
-                compare |= memcmp(old_pixel_ptr + y * stride, pixel_ptr + y * stride, x_size);
+                compare |= !!memcmp(old_pixel_ptr + y * stride, pixel_ptr + y * stride, x_size);
                 if (compare)
                     break;
             }
@@ -271,6 +272,7 @@ static void smc_encode_stream(SMCContext *s, const AVFrame *frame,
             blocks = inter_skip_blocks;
         }
 
+        prev_block_inter = distinct == 19 || distinct == 20;
         switch (distinct) {
         case 1:
             if (blocks <= 16) {
