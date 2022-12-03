@@ -363,7 +363,7 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
         switch (mode) {
         case 4:
             {
-                const AVComplexFloat *src2 = ((const AVComplexFloat *)s->ch_out->extended_data[FFMAX(1, s->nb_channels - 1)]) +
+                const AVComplexFloat *src2 = ((const AVComplexFloat *)s->ch_out->extended_data[FFMIN(1, s->nb_channels - 1)]) +
                                                y * ihop_size + ihop_index;
                 float z, u, v;
 
