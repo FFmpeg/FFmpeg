@@ -399,6 +399,10 @@ static int count_nalus(size_t length_code_size,
                                             length_code_size,
                                             size_buf);
 
+        if (status != kCMBlockBufferNoErr) {
+            return AVERROR_EXTERNAL;
+        }
+
         for (i = 0; i < length_code_size; i++) {
             box_len <<= 8;
             box_len |= size_buf[i];
@@ -1637,7 +1641,6 @@ static int find_sei_end(AVCodecContext *avctx,
 {
     int nal_type;
     size_t sei_payload_size = 0;
-    int sei_payload_type = 0;
     *sei_end = NULL;
     uint8_t *nal_start = nal_data;
 
@@ -1656,7 +1659,6 @@ static int find_sei_end(AVCodecContext *avctx,
 
     while (nal_size > 0 && *nal_data > 0) {
         do{
-            sei_payload_type += *nal_data;
             nal_data++;
             nal_size--;
         } while (nal_size > 0 && *nal_data == 0xFF);
