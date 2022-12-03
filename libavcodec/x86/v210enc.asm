@@ -70,8 +70,8 @@ icl_perm_uv: ; vpermb does not set bytes to zero when the high bit is set unlike
     %assign i i+6
 %endrep
 
-icl_perm_y_kmask:  times 8 db 0b1111_0110
-icl_perm_uv_kmask: times 8 db 0b0110_1111
+icl_perm_y_kmask:  times 8 db 1111_0110b
+icl_perm_uv_kmask: times 8 db 0110_1111b
 
 icl_shift_y:  times 10 dw 2,0,4
               times 4 db 0 ; padding to 64 bytes
