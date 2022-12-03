@@ -1688,7 +1688,7 @@ static void TX_NAME(ff_tx_rdft_ ##name)(AVTXContext *s, void *_dst,            \
     } else {                                                                   \
         /* Move [0].im to the last position, as convention requires */         \
         data[len2].re = data[0].im;                                            \
-        data[   0].im = 0;                                                     \
+        data[   0].im = data[len2].im = 0;                                     \
     }                                                                          \
 }
 
