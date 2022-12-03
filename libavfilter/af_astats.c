@@ -99,6 +99,7 @@ typedef struct AudioStatsContext {
     double time_constant;
     double mult;
     int metadata;
+    int used;
     int reset_count;
     int nb_frames;
     int maxbitdepth;
@@ -637,6 +638,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
         s->nb_frames++;
     }
 
+    if (s->used == 0)
+        s->used = buf->nb_samples > 0;
     ff_filter_execute(ctx, filter_channel, buf, NULL,
                       FFMIN(inlink->ch_layout.nb_channels, ff_filter_get_nb_threads(ctx)));
 
@@ -668,7 +671,7 @@ static void print_stats(AVFilterContext *ctx)
     for (c = 0; c < s->nb_channels; c++) {
         ChannelStats *p = &s->chstats[c];
 
-        if (p->nb_samples == 0 && ctx->outputs[0]->sample_count_in == 0)
+        if (p->nb_samples == 0 && !s->used)
             continue;
 
         if (p->nb_samples < s->tc_samples)
@@ -757,7 +760,7 @@ static void print_stats(AVFilterContext *ctx)
             av_log(ctx, AV_LOG_INFO, "Number of denormals: %"PRId64"\n", p->nb_denormals);
     }
 
-    if (nb_samples == 0 && ctx->outputs[0]->sample_count_in == 0)
+    if (nb_samples == 0 && !s->used)
         return;
 
     if (s->measure_overall != MEASURE_NONE)
