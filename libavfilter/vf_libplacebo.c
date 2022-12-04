@@ -252,6 +252,7 @@ static int init_vulkan(AVFilterContext *avctx)
 {
     int err = 0;
     LibplaceboContext *s = avctx->priv;
+    const AVHWDeviceContext *avhwctx;
     const AVVulkanDeviceContext *hwctx;
     uint8_t *buf = NULL;
     size_t buf_len;
@@ -261,7 +262,15 @@ static int init_vulkan(AVFilterContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    hwctx = ((AVHWDeviceContext*) avctx->hw_device_ctx->data)->hwctx;
+    avhwctx = avctx->hw_device_ctx->data;
+
+    if (avhwctx->type != AV_HWDEVICE_TYPE_VULKAN) {
+        av_log(s, AV_LOG_ERROR, "Expected vulkan hwdevice for vf_libplacebo, got %s.\n",
+            av_hwdevice_get_type_name(avhwctx->type));
+        return AVERROR(EINVAL);
+    }
+
+    hwctx = avhwctx->hwctx;
 
     /* Import libavfilter vulkan context into libplacebo */
     s->vulkan = pl_vulkan_import(s->log, pl_vulkan_import_params(
