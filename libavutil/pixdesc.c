@@ -46,19 +46,35 @@ void av_read_image_line2(void *dst,
     uint32_t *dst32 = dst;
 
     if (flags & AV_PIX_FMT_FLAG_BITSTREAM) {
-        int skip = x * step + comp.offset;
-        const uint8_t *p = data[plane] + y * linesize[plane] + (skip >> 3);
-        int shift = 8 - depth - (skip & 7);
+        if (depth == 10) {
+            // Assume all channels are packed into a 32bit value
+            const uint8_t *byte_p = data[plane] + y * linesize[plane];
+            const uint32_t *p = (uint32_t *)byte_p;
 
-        while (w--) {
-            int val = (*p >> shift) & mask;
-            if (read_pal_component)
-                val = data[1][4*val + c];
-            shift -= step;
-            p -= shift >> 3;
-            shift &= 7;
-            if (dst_element_size == 4) *dst32++ = val;
-            else                       *dst16++ = val;
+            while (w--) {
+                int val = AV_RB32(p);
+                val = (val >> comp.offset) & mask;
+                if (read_pal_component)
+                    val = data[1][4*val + c];
+                if (dst_element_size == 4) *dst32++ = val;
+                else                       *dst16++ = val;
+                p++;
+            }
+        } else {
+            int skip = x * step + comp.offset;
+            const uint8_t *p = data[plane] + y * linesize[plane] + (skip >> 3);
+            int shift = 8 - depth - (skip & 7);
+
+            while (w--) {
+                int val = (*p >> shift) & mask;
+                if (read_pal_component)
+                    val = data[1][4*val + c];
+                shift -= step;
+                p -= shift >> 3;
+                shift &= 7;
+                if (dst_element_size == 4) *dst32++ = val;
+                else                       *dst16++ = val;
+            }
         }
     } else {
         const uint8_t *p = data[plane] + y * linesize[plane] +
@@ -109,15 +125,29 @@ void av_write_image_line2(const void *src,
     const uint16_t *src16 = src;
 
     if (flags & AV_PIX_FMT_FLAG_BITSTREAM) {
-        int skip = x * step + comp.offset;
-        uint8_t *p = data[plane] + y * linesize[plane] + (skip >> 3);
-        int shift = 8 - depth - (skip & 7);
+        if (depth == 10) {
+            // Assume all channels are packed into a 32bit value
+            const uint8_t *byte_p = data[plane] + y * linesize[plane];
+            uint32_t *p = (uint32_t *)byte_p;
+            int offset = comp.offset;
+            uint32_t mask  = ((1ULL << depth) - 1) << offset;
 
-        while (w--) {
-            *p |= (src_element_size == 4 ? *src32++ : *src16++) << shift;
-            shift -= step;
-            p -= shift >> 3;
-            shift &= 7;
+            while (w--) {
+                uint16_t val = src_element_size == 4 ? *src32++ : *src16++;
+                AV_WB32(p, (AV_RB32(p) & ~mask) | (val << offset));
+                p++;
+            }
+        } else {
+            int skip = x * step + comp.offset;
+            uint8_t *p = data[plane] + y * linesize[plane] + (skip >> 3);
+            int shift = 8 - depth - (skip & 7);
+
+            while (w--) {
+                *p |= (src_element_size == 4 ? *src32++ : *src16++) << shift;
+                shift -= step;
+                p -= shift >> 3;
+                shift &= 7;
+            }
         }
     } else {
         int shift = comp.shift;
