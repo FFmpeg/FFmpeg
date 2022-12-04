@@ -140,7 +140,7 @@ static int extract_packet_props(AVCodecInternal *avci, const AVPacket *pkt)
     if (pkt) {
         ret = av_packet_copy_props(avci->last_pkt_props, pkt);
         if (!ret)
-            avci->last_pkt_props->size = pkt->size; // HACK: Needed for ff_decode_frame_props().
+            avci->last_pkt_props->opaque = (void *)(intptr_t)pkt->size; // Needed for ff_decode_frame_props().
     }
     return ret;
 }
@@ -469,7 +469,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
         pkt->pts                  = AV_NOPTS_VALUE;
         pkt->dts                  = AV_NOPTS_VALUE;
         if (!(codec->caps_internal & FF_CODEC_CAP_SETS_FRAME_PROPS)) {
-            avci->last_pkt_props->size -= consumed; // See extract_packet_props() comment.
+            // See extract_packet_props() comment.
+            avci->last_pkt_props->opaque = (void *)((intptr_t)avci->last_pkt_props->opaque - consumed);
             avci->last_pkt_props->pts = AV_NOPTS_VALUE;
             avci->last_pkt_props->dts = AV_NOPTS_VALUE;
         }
@@ -1284,7 +1285,7 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
         frame->pts = pkt->pts;
         frame->pkt_pos      = pkt->pos;
         frame->duration     = pkt->duration;
-        frame->pkt_size     = pkt->size;
+        frame->pkt_size     = (int)(intptr_t)pkt->opaque;
 
         for (int i = 0; i < FF_ARRAY_ELEMS(sd); i++) {
             size_t size;
