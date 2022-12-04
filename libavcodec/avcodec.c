@@ -386,9 +386,6 @@ void avcodec_flush_buffers(AVCodecContext *avctx)
             av_frame_unref(avci->recon_frame);
     } else {
         av_packet_unref(avci->last_pkt_props);
-        while (av_fifo_read(avci->pkt_props, avci->last_pkt_props, 1) >= 0)
-            av_packet_unref(avci->last_pkt_props);
-
         av_packet_unref(avci->in_pkt);
 
         avctx->pts_correction_last_pts =
@@ -453,13 +450,6 @@ av_cold int avcodec_close(AVCodecContext *avctx)
         av_freep(&avci->byte_buffer);
         av_frame_free(&avci->buffer_frame);
         av_packet_free(&avci->buffer_pkt);
-        if (avci->pkt_props) {
-            while (av_fifo_can_read(avci->pkt_props)) {
-                av_packet_unref(avci->last_pkt_props);
-                av_fifo_read(avci->pkt_props, avci->last_pkt_props, 1);
-            }
-            av_fifo_freep2(&avci->pkt_props);
-        }
         av_packet_free(&avci->last_pkt_props);
 
         av_packet_free(&avci->in_pkt);

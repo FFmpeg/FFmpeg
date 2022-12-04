@@ -88,7 +88,6 @@ typedef struct AVCodecInternal {
      * for decoding.
      */
     AVPacket *last_pkt_props;
-    struct AVFifo *pkt_props;
 
     /**
      * temporary buffer used for encoders to store their bitstream
