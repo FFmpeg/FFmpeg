@@ -67,8 +67,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     AVFilterContext *ctx = inlink->dst;
     ExposureContext *s = ctx->priv;
+    float diff = fabsf(exp2f(-s->exposure) - s->black);
 
-    s->scale = 1.f / (exp2f(-s->exposure) - s->black);
+    diff = diff > 0.f ? diff : 1.f / 1024.f;
+    s->scale = 1.f / diff;
     ff_filter_execute(ctx, s->do_slice, frame, NULL,
                       FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
 
