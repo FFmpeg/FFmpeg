@@ -300,6 +300,7 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const ptrdiff_t ylinesize = s->outpicref->linesize[0];
     const ptrdiff_t ulinesize = s->outpicref->linesize[1];
     const ptrdiff_t vlinesize = s->outpicref->linesize[2];
+    const ptrdiff_t alinesize = s->outpicref->linesize[3];
     const float log_factor = 1.f/logf(s->logarithmic_basis);
     const int count = s->frequency_band_count;
     const int start = (count * jobnr) / nb_jobs;
@@ -307,7 +308,7 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const int ihop_index = s->ihop_index;
     const int ihop_size = s->ihop_size;
     const int direction = s->direction;
-    uint8_t *dstY, *dstU, *dstV;
+    uint8_t *dstY, *dstU, *dstV, *dstA;
     const int mode = s->mode;
     const int w_1 = s->w - 1;
     const int x = s->pos;
@@ -323,12 +324,14 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             dstY = s->outpicref->data[0] + y * ylinesize;
             dstU = s->outpicref->data[1] + y * ulinesize;
             dstV = s->outpicref->data[2] + y * vlinesize;
+            dstA = s->outpicref->data[3] ? s->outpicref->data[3] + y * alinesize : NULL;
             break;
         case DIRECTION_UD:
         case DIRECTION_DU:
             dstY = s->outpicref->data[0] + x * ylinesize + w_1 - y;
             dstU = s->outpicref->data[1] + x * ulinesize + w_1 - y;
             dstV = s->outpicref->data[2] + x * vlinesize + w_1 - y;
+            dstA = s->outpicref->data[3] ? s->outpicref->data[3] + x * alinesize + w_1 - y : NULL;
             break;
         }
 
@@ -343,11 +346,15 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
                 memmove(dstY, dstY + 1, w_1);
                 memmove(dstU, dstU + 1, w_1);
                 memmove(dstV, dstV + 1, w_1);
+                if (dstA != NULL)
+                    memmove(dstA, dstA + 1, w_1);
                 break;
             case DIRECTION_LR:
                 memmove(dstY + 1, dstY, w_1);
                 memmove(dstU + 1, dstU, w_1);
                 memmove(dstV + 1, dstV, w_1);
+                if (dstA != NULL)
+                    memmove(dstA + 1, dstA, w_1);
                 break;
             }
             break;
@@ -358,6 +365,8 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             dstY += x;
             dstU += x;
             dstV += x;
+            if (dstA != NULL)
+                dstA += x;
         }
 
         switch (mode) {
@@ -382,6 +391,8 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
                 dstY[0] = av_clip_uint8(lrintf(Y * 255.f));
                 dstU[0] = av_clip_uint8(lrintf(U * 255.f));
                 dstV[0] = av_clip_uint8(lrintf(V * 255.f));
+                if (dstA)
+                    dstA[0] = dstY[0];
             }
             break;
         case 3:
@@ -407,6 +418,8 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
                 dstY[0] = av_clip_uint8(lrintf(Y * 255.f));
                 dstU[0] = av_clip_uint8(lrintf(U * 255.f));
                 dstV[0] = av_clip_uint8(lrintf(V * 255.f));
+                if (dstA)
+                    dstA[0] = dstY[0];
             }
             break;
         case 2:
@@ -419,18 +432,24 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             dstY[0] = av_clip_uint8(lrintf(Y * 255.f));
             dstU[0] = av_clip_uint8(lrintf(U * 255.f));
             dstV[0] = av_clip_uint8(lrintf(V * 255.f));
+            if (dstA)
+                dstA[0] = dstY[0];
             break;
         case 1:
             Y = atan2f(src[0].im, src[0].re);
             Y = 0.5f + 0.5f * Y / M_PI;
 
             dstY[0] = av_clip_uint8(lrintf(Y * 255.f));
+            if (dstA)
+                dstA[0] = dstY[0];
             break;
         case 0:
             Y = hypotf(src[0].re, src[0].im);
             Y = remap_log(Y, log_factor);
 
             dstY[0] = av_clip_uint8(lrintf(Y * 255.f));
+            if (dstA)
+                dstA[0] = dstY[0];
             break;
         }
     }
@@ -704,13 +723,14 @@ static int output_frame(AVFilterContext *ctx)
     AVFilterLink *outlink = ctx->outputs[0];
     AVFilterLink *inlink = ctx->inputs[0];
     ShowCWTContext *s = ctx->priv;
+    const int nb_planes = 3 + (s->outpicref->data[3] != NULL);
     int ret;
 
     switch (s->slide) {
     case SLIDE_SCROLL:
         switch (s->direction) {
         case DIRECTION_UD:
-            for (int p = 0; p < 3; p++) {
+            for (int p = 0; p < nb_planes; p++) {
                 ptrdiff_t linesize = s->outpicref->linesize[p];
 
                 for (int y = s->h - 1; y > 0; y--) {
@@ -721,7 +741,7 @@ static int output_frame(AVFilterContext *ctx)
             }
             break;
         case DIRECTION_DU:
-            for (int p = 0; p < 3; p++) {
+            for (int p = 0; p < nb_planes; p++) {
                 ptrdiff_t linesize = s->outpicref->linesize[p];
 
                 for (int y = 0; y < s->h - 1; y++) {
@@ -790,10 +810,10 @@ static int output_frame(AVFilterContext *ctx)
     if (s->slide == SLIDE_FRAME && s->eof) {
         switch (s->direction) {
         case DIRECTION_LR:
-            for (int p = 0; p < 3; p++) {
+            for (int p = 0; p < nb_planes; p++) {
                 ptrdiff_t linesize = s->outpicref->linesize[p];
                 const int size = s->w - s->pos;
-                const int fill = p ? 128 : 0;
+                const int fill = p > 0 && p < 3 ? 128 : 0;
                 const int x = s->pos;
 
                 for (int y = 0; y < s->h; y++) {
@@ -804,10 +824,10 @@ static int output_frame(AVFilterContext *ctx)
             }
             break;
         case DIRECTION_RL:
-            for (int p = 0; p < 3; p++) {
+            for (int p = 0; p < nb_planes; p++) {
                 ptrdiff_t linesize = s->outpicref->linesize[p];
                 const int size = s->w - s->pos;
-                const int fill = p ? 128 : 0;
+                const int fill = p > 0 && p < 3 ? 128 : 0;
 
                 for (int y = 0; y < s->h; y++) {
                     uint8_t *dst = s->outpicref->data[p] + y * linesize;
@@ -817,9 +837,9 @@ static int output_frame(AVFilterContext *ctx)
             }
             break;
         case DIRECTION_UD:
-            for (int p = 0; p < 3; p++) {
+            for (int p = 0; p < nb_planes; p++) {
                 ptrdiff_t linesize = s->outpicref->linesize[p];
-                const int fill = p ? 128 : 0;
+                const int fill = p > 0 && p < 3 ? 128 : 0;
 
                 for (int y = s->pos; y < s->h; y++) {
                     uint8_t *dst = s->outpicref->data[p] + y * linesize;
@@ -829,9 +849,9 @@ static int output_frame(AVFilterContext *ctx)
             }
             break;
         case DIRECTION_DU:
-            for (int p = 0; p < 3; p++) {
+            for (int p = 0; p < nb_planes; p++) {
                 ptrdiff_t linesize = s->outpicref->linesize[p];
-                const int fill = p ? 128 : 0;
+                const int fill = p > 0 && p < 3 ? 128 : 0;
 
                 for (int y = s->h - s->pos; y >= 0; y--) {
                     uint8_t *dst = s->outpicref->data[p] + y * linesize;
