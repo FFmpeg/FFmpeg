@@ -296,9 +296,10 @@ static int binkaudio_receive_frame(AVCodecContext *avctx, AVFrame *frame)
 {
     BinkAudioContext *s = avctx->priv_data;
     GetBitContext *gb = &s->gb;
-    int ret;
+    int new_pkt, ret;
 
 again:
+    new_pkt = !s->pkt->data;
     if (!s->pkt->data) {
         ret = ff_decode_get_packet(avctx, s->pkt);
         if (ret < 0) {
@@ -325,6 +326,8 @@ again:
         frame->nb_samples = s->frame_len;
         if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
             return ret;
+        if (!new_pkt)
+            frame->pts = AV_NOPTS_VALUE;
     }
 
     if (decode_block(s, (float **)frame->extended_data,
