@@ -371,6 +371,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
  */
 static int update_context_from_user(AVCodecContext *dst, AVCodecContext *src)
 {
+    int err;
+
     dst->flags          = src->flags;
 
     dst->draw_horiz_band= src->draw_horiz_band;
@@ -406,6 +408,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
                src->slice_count * sizeof(*dst->slice_offset));
     }
     dst->slice_count = src->slice_count;
+
+    av_packet_unref(dst->internal->last_pkt_props);
+    err = av_packet_copy_props(dst->internal->last_pkt_props, src->internal->last_pkt_props);
+    if (err < 0)
+        return err;
+
     return 0;
 }
 
@@ -775,6 +783,7 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
             av_freep(&ctx->slice_offset);
 
             av_buffer_unref(&ctx->internal->pool);
+            av_packet_free(&ctx->internal->last_pkt_props);
             av_freep(&ctx->internal);
             av_buffer_unref(&ctx->hw_frames_ctx);
         }
@@ -848,10 +857,13 @@ static av_cold int init_thread(PerThreadContext *p, int *threads_to_free,
     if (!(p->frame = av_frame_alloc()) ||
         !(p->avpkt = av_packet_alloc()))
         return AVERROR(ENOMEM);
-    copy->internal->last_pkt_props = p->avpkt;
 
     if (!first)
         copy->internal->is_copy = 1;
+
+    copy->internal->last_pkt_props = av_packet_alloc();
+    if (!copy->internal->last_pkt_props)
+        return AVERROR(ENOMEM);
 
     if (codec->init) {
         err = codec->init(copy);
