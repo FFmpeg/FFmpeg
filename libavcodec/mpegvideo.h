@@ -175,6 +175,7 @@ typedef struct MpegEncContext {
     Picture *last_picture_ptr;     ///< pointer to the previous picture.
     Picture *next_picture_ptr;     ///< pointer to the next picture (for bidir pred)
     Picture *current_picture_ptr;  ///< pointer to the current picture
+    int skipped_last_frame;
     int last_dc[3];                ///< last DC values for MPEG-1
     int16_t *dc_val_base;
     int16_t *dc_val[3];            ///< used for MPEG-4 DC prediction, all 3 arrays must be continuous

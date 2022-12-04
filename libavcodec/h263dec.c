@@ -431,6 +431,18 @@ int ff_h263_decode_frame(AVCodecContext *avctx, AVFrame *pict,
             s->next_picture_ptr = NULL;
 
             *got_frame = 1;
+        } else if (s->skipped_last_frame && s->current_picture_ptr) {
+            /* Output the last picture we decoded again if the stream ended with
+             * an NVOP */
+            if ((ret = av_frame_ref(pict, s->current_picture_ptr->f)) < 0)
+                return ret;
+            /* Copy props from the last input packet. Otherwise, props from the last
+             * returned picture would be reused */
+            if ((ret = ff_decode_frame_props(avctx, pict)) < 0)
+                return ret;
+            s->current_picture_ptr = NULL;
+
+            *got_frame = 1;
         }
 
         return 0;
@@ -500,6 +512,7 @@ retry:
             s->extradata_parsed = 1;
         }
         ret = ff_mpeg4_decode_picture_header(avctx->priv_data, &s->gb, 0, 0);
+        s->skipped_last_frame = (ret == FRAME_SKIPPED);
     } else if (CONFIG_H263I_DECODER && s->codec_id == AV_CODEC_ID_H263I) {
         ret = ff_intel_h263_decode_picture_header(s);
     } else if (CONFIG_FLV_DECODER && s->h263_flv) {
