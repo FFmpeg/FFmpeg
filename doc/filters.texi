@@ -22193,6 +22193,10 @@ The filter accepts the following options:
 Set the frames batch size to analyze; in a set of @var{n} frames, the filter
 will pick one of them, and then handle the next batch of @var{n} frames until
 the end. Default is @code{100}.
+
+@item log
+Set the log level to display picked frame stats.
+Default is @code{info}.
 @end table
 
 Since the filter keeps track of the whole frames sequence, a bigger @var{n}

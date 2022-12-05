@@ -42,6 +42,7 @@ struct thumb_frame {
 typedef struct ThumbContext {
     const AVClass *class;
     int n;                      ///< current frame
+    int loglevel;
     int n_frames;               ///< number of frames for analysis
     struct thumb_frame *frames; ///< the n_frames frames
     AVRational tb;              ///< copy of the input timebase to ease access
@@ -58,6 +59,10 @@ typedef struct ThumbContext {
 
 static const AVOption thumbnail_options[] = {
     { "n", "set the frames batch size", OFFSET(n_frames), AV_OPT_TYPE_INT, {.i64=100}, 2, INT_MAX, FLAGS },
+    { "log", "force stats logging level", OFFSET(loglevel), AV_OPT_TYPE_INT, {.i64 = AV_LOG_INFO}, INT_MIN, INT_MAX, FLAGS, "level" },
+        { "quiet",   "logging disabled",          0, AV_OPT_TYPE_CONST, {.i64 = AV_LOG_QUIET},   0, 0, FLAGS, "level" },
+        { "info",    "information logging level", 0, AV_OPT_TYPE_CONST, {.i64 = AV_LOG_INFO},    0, 0, FLAGS, "level" },
+        { "verbose", "verbose logging level",     0, AV_OPT_TYPE_CONST, {.i64 = AV_LOG_VERBOSE}, 0, 0, FLAGS, "level" },
     { NULL }
 };
 
@@ -127,9 +132,10 @@ static AVFrame *get_best_frame(AVFilterContext *ctx)
 
     // raise the chosen one
     picref = s->frames[best_frame_idx].buf;
-    av_log(ctx, AV_LOG_INFO, "frame id #%d (pts_time=%f) selected "
-           "from a set of %d images\n", best_frame_idx,
-           picref->pts * av_q2d(s->tb), nb_frames);
+    if (s->loglevel != AV_LOG_QUIET)
+        av_log(ctx, s->loglevel, "frame id #%d (pts_time=%f) selected "
+               "from a set of %d images\n", best_frame_idx,
+               picref->pts * av_q2d(s->tb), nb_frames);
     s->frames[best_frame_idx].buf = NULL;
 
     return picref;
