@@ -641,6 +641,7 @@ static const AVFilterPad qsvscale_inputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = qsvscale_filter_frame,
+        .get_buffer.video = ff_qsvvpp_get_video_buffer,
     },
 };
 

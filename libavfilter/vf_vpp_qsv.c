@@ -634,6 +634,7 @@ static const AVFilterPad vpp_inputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_input,
+        .get_buffer.video = ff_qsvvpp_get_video_buffer,
     },
 };
 

@@ -127,4 +127,5 @@ int ff_qsvvpp_print_warning(void *log_ctx, mfxStatus err,
 int ff_qsvvpp_create_mfx_session(void *ctx, void *loader, mfxIMPL implementation,
                                  mfxVersion *pver, mfxSession *psession);
 
+AVFrame *ff_qsvvpp_get_video_buffer(AVFilterLink *inlink, int w, int h);
 #endif /* AVFILTER_QSVVPP_H */

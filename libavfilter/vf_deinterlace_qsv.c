@@ -581,6 +581,7 @@ static const AVFilterPad qsvdeint_inputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = qsvdeint_filter_frame,
+        .get_buffer.video = ff_qsvvpp_get_video_buffer,
     },
 };
 

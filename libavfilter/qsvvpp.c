@@ -1015,3 +1015,16 @@ int ff_qsvvpp_create_mfx_session(void *ctx,
 }
 
 #endif
+
+AVFrame *ff_qsvvpp_get_video_buffer(AVFilterLink *inlink, int w, int h)
+{
+    /* When process YUV420 frames, FFmpeg uses same alignment on Y/U/V
+     * planes. VPL and MSDK use Y plane's pitch / 2 as U/V planes's
+     * pitch, which makes U/V planes 16-bytes aligned. We need to set a
+     * separate alignment to meet runtime's behaviour.
+    */
+    return ff_default_get_video_buffer2(inlink,
+                                        FFALIGN(inlink->w, 32),
+                                        FFALIGN(inlink->h, 32),
+                                        16);
+}
