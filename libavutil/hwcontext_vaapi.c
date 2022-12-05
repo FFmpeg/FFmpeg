@@ -1700,6 +1700,7 @@ static int vaapi_device_create(AVHWDeviceContext *ctx, const char *device,
             char path[64];
             int n, max_devices = 8;
 #if CONFIG_LIBDRM
+            drmVersion *info;
             const AVDictionaryEntry *kernel_driver;
             kernel_driver = av_dict_get(opts, "kernel_driver", NULL, 0);
 #endif
@@ -1713,9 +1714,15 @@ static int vaapi_device_create(AVHWDeviceContext *ctx, const char *device,
                     break;
                 }
 #if CONFIG_LIBDRM
+                info = drmGetVersion(priv->drm_fd);
+                if (!info) {
+                    av_log(ctx, AV_LOG_VERBOSE,
+                           "Failed to get DRM version for device %d.\n", n);
+                    close(priv->drm_fd);
+                    priv->drm_fd = -1;
+                    continue;
+                }
                 if (kernel_driver) {
-                    drmVersion *info;
-                    info = drmGetVersion(priv->drm_fd);
                     if (strcmp(kernel_driver->value, info->name)) {
                         av_log(ctx, AV_LOG_VERBOSE, "Ignoring device %d "
                                "with non-matching kernel driver (%s).\n",
@@ -1730,12 +1737,20 @@ static int vaapi_device_create(AVHWDeviceContext *ctx, const char *device,
                            "with matching kernel driver (%s).\n",
                            n, info->name);
                     drmFreeVersion(info);
-                } else
-#endif
-                {
-                    av_log(ctx, AV_LOG_VERBOSE, "Trying to use "
-                           "DRM render node for device %d.\n", n);
+                    break;
+                // drmGetVersion() ensures |info->name| is 0-terminated.
+                } else if (!strcmp(info->name, "vgem")) {
+                    av_log(ctx, AV_LOG_VERBOSE,
+                           "Skipping vgem node for device %d.\n", n);
+                    drmFreeVersion(info);
+                    close(priv->drm_fd);
+                    priv->drm_fd = -1;
+                    continue;
                 }
+                drmFreeVersion(info);
+#endif
+                av_log(ctx, AV_LOG_VERBOSE, "Trying to use "
+                       "DRM render node for device %d.\n", n);
                 break;
             }
             if (n >= max_devices)
