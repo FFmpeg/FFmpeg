@@ -169,6 +169,8 @@ do {                        \
     }                       \
 } while (0)                 \
 
+#define MFX_IMPL_VIA_MASK(impl) (0x0f00 & (impl))
+
 static const char *print_ratecontrol(mfxU16 rc_mode)
 {
     int i;
@@ -197,6 +199,10 @@ static void dump_video_param(AVCodecContext *avctx, QSVEncContext *q,
     mfxExtCodingOption2 *co2 = NULL;
     mfxExtCodingOption3 *co3 = NULL;
     mfxExtHEVCTiles *exthevctiles = NULL;
+#if QSV_HAVE_HE
+    mfxExtHyperModeParam *exthypermodeparam = NULL;
+#endif
+
     const char *tmp_str = NULL;
 
     if (q->co2_idx > 0)
@@ -207,6 +213,11 @@ static void dump_video_param(AVCodecContext *avctx, QSVEncContext *q,
 
     if (q->exthevctiles_idx > 0)
         exthevctiles = (mfxExtHEVCTiles *)coding_opts[q->exthevctiles_idx];
+
+#if QSV_HAVE_HE
+    if (q->exthypermodeparam_idx > 0)
+        exthypermodeparam = (mfxExtHyperModeParam *)coding_opts[q->exthypermodeparam_idx];
+#endif
 
     av_log(avctx, AV_LOG_VERBOSE, "profile: %s; level: %"PRIu16"\n",
            print_profile(avctx->codec_id, info->CodecProfile), info->CodecLevel);
@@ -373,6 +384,21 @@ static void dump_video_param(AVCodecContext *avctx, QSVEncContext *q,
         av_log(avctx, AV_LOG_VERBOSE, "NumTileColumns: %"PRIu16"; NumTileRows: %"PRIu16"\n",
                exthevctiles->NumTileColumns, exthevctiles->NumTileRows);
     }
+
+#if QSV_HAVE_HE
+    if (exthypermodeparam) {
+        av_log(avctx, AV_LOG_VERBOSE, "HyperEncode: ");
+
+        if (exthypermodeparam->Mode == MFX_HYPERMODE_OFF)
+            av_log(avctx, AV_LOG_VERBOSE, "OFF");
+        if (exthypermodeparam->Mode == MFX_HYPERMODE_ON)
+            av_log(avctx, AV_LOG_VERBOSE, "ON");
+        if (exthypermodeparam->Mode == MFX_HYPERMODE_ADAPTIVE)
+            av_log(avctx, AV_LOG_VERBOSE, "Adaptive");
+
+        av_log(avctx, AV_LOG_VERBOSE, "\n");
+    }
+#endif
 }
 
 static void dump_video_vp9_param(AVCodecContext *avctx, QSVEncContext *q,
@@ -1168,6 +1194,54 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
         q->extparam_internal[q->nb_extparam_internal++] = (mfxExtBuffer *)&q->extvsi;
     }
 
+#if QSV_HAVE_HE
+   if (q->dual_gfx) {
+        if (QSV_RUNTIME_VERSION_ATLEAST(q->ver, 2, 4)) {
+            mfxIMPL impl;
+            MFXQueryIMPL(q->session, &impl);
+
+            if (MFX_IMPL_VIA_MASK(impl) != MFX_IMPL_VIA_D3D11) {
+                av_log(avctx, AV_LOG_ERROR, "Dual GFX mode requires D3D11VA \n");
+                return AVERROR_UNKNOWN;
+            }
+            if (q->param.mfx.LowPower != MFX_CODINGOPTION_ON) {
+                av_log(avctx, AV_LOG_ERROR, "Dual GFX mode supports only low-power encoding mode \n");
+                return AVERROR_UNKNOWN;
+            }
+            if (q->param.mfx.CodecId != MFX_CODEC_AVC && q->param.mfx.CodecId != MFX_CODEC_HEVC) {
+                av_log(avctx, AV_LOG_ERROR, "Not supported encoder for dual GFX mode. "
+                                            "Supported: h264_qsv and hevc_qsv \n");
+                return AVERROR_UNKNOWN;
+            }
+            if (q->param.mfx.RateControlMethod != MFX_RATECONTROL_VBR &&
+                q->param.mfx.RateControlMethod != MFX_RATECONTROL_CQP &&
+                q->param.mfx.RateControlMethod != MFX_RATECONTROL_ICQ) {
+                av_log(avctx, AV_LOG_WARNING, "Not supported BRC for dual GFX mode. "
+                                            "Supported: VBR, CQP and ICQ \n");
+            }
+            if ((q->param.mfx.CodecId == MFX_CODEC_AVC  && q->param.mfx.IdrInterval != 0) ||
+                (q->param.mfx.CodecId == MFX_CODEC_HEVC && q->param.mfx.IdrInterval != 1)) {
+                av_log(avctx, AV_LOG_WARNING, "Dual GFX mode requires closed GOP for AVC and strict GOP for HEVC, -idr_interval 0 \n");
+            }
+            if (q->param.mfx.GopPicSize < 30) {
+                av_log(avctx, AV_LOG_WARNING, "For better performance in dual GFX mode GopPicSize must be >= 30 \n");
+            }
+            if (q->param.AsyncDepth < 30) {
+                av_log(avctx, AV_LOG_WARNING, "For better performance in dual GFX mode AsyncDepth must be >= 30 \n");
+            }
+
+            q->exthypermodeparam.Header.BufferId = MFX_EXTBUFF_HYPER_MODE_PARAM;
+            q->exthypermodeparam.Header.BufferSz = sizeof(q->exthypermodeparam);
+            q->exthypermodeparam.Mode            = q->dual_gfx;
+            q->extparam_internal[q->nb_extparam_internal++] = (mfxExtBuffer *)&q->exthypermodeparam;
+        } else {
+            av_log(avctx, AV_LOG_ERROR,
+                   "This version of runtime doesn't support Hyper Encode\n");
+            return AVERROR_UNKNOWN;
+        }
+    }
+#endif
+
     if (!check_enc_param(avctx,q)) {
         av_log(avctx, AV_LOG_ERROR,
                "some encoding parameters are not supported by the QSV "
@@ -1342,12 +1416,19 @@ static int qsv_retrieve_enc_params(AVCodecContext *avctx, QSVEncContext *q)
          .Header.BufferSz = sizeof(hevc_tile_buf),
     };
 
-    mfxExtBuffer *ext_buffers[6];
+#if QSV_HAVE_HE
+    mfxExtHyperModeParam hyper_mode_param_buf = {
+        .Header.BufferId = MFX_EXTBUFF_HYPER_MODE_PARAM,
+        .Header.BufferSz = sizeof(hyper_mode_param_buf),
+    };
+#endif
+
+    mfxExtBuffer *ext_buffers[6 + QSV_HAVE_HE];
 
     int need_pps = avctx->codec_id != AV_CODEC_ID_MPEG2VIDEO;
     int ret, ext_buf_num = 0, extradata_offset = 0;
 
-    q->co2_idx = q->co3_idx = q->exthevctiles_idx = -1;
+    q->co2_idx = q->co3_idx = q->exthevctiles_idx = q->exthypermodeparam_idx = -1;
     ext_buffers[ext_buf_num++] = (mfxExtBuffer*)&extradata;
     ext_buffers[ext_buf_num++] = (mfxExtBuffer*)&co;
 
@@ -1369,6 +1450,12 @@ static int qsv_retrieve_enc_params(AVCodecContext *avctx, QSVEncContext *q)
         q->exthevctiles_idx = ext_buf_num;
         ext_buffers[ext_buf_num++] = (mfxExtBuffer*)&hevc_tile_buf;
     }
+#if QSV_HAVE_HE
+    if (q->dual_gfx && QSV_RUNTIME_VERSION_ATLEAST(q->ver, 2, 4)) {
+        q->exthypermodeparam_idx = ext_buf_num;
+        ext_buffers[ext_buf_num++] = (mfxExtBuffer*)&hyper_mode_param_buf;
+    }
+#endif
 
     q->param.ExtParam    = ext_buffers;
     q->param.NumExtParam = ext_buf_num;

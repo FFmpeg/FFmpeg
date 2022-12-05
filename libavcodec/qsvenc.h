@@ -45,10 +45,12 @@
 #define QSV_HAVE_AVBR   1
 #define QSV_HAVE_VCM    1
 #define QSV_HAVE_MF     0
+#define QSV_HAVE_HE     QSV_VERSION_ATLEAST(2, 4)
 #else
 #define QSV_HAVE_AVBR   0
 #define QSV_HAVE_VCM    0
 #define QSV_HAVE_MF     !QSV_ONEVPL
+#define QSV_HAVE_HE     0
 #endif
 
 #define QSV_COMMON_OPTS \
@@ -63,6 +65,14 @@
 { "veryslow",    NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_TARGETUSAGE_BEST_QUALITY  }, INT_MIN, INT_MAX, VE, "preset" },                                                \
 { "forced_idr",     "Forcing I frames as IDR frames",         OFFSET(qsv.forced_idr),     AV_OPT_TYPE_BOOL,{ .i64 = 0  },  0,          1, VE },                         \
 { "low_power", "enable low power mode(experimental: many limitations by mfx version, BRC modes, etc.)", OFFSET(qsv.low_power), AV_OPT_TYPE_BOOL, { .i64 = -1}, -1, 1, VE},
+
+#if QSV_HAVE_HE
+#define QSV_HE_OPTIONS \
+{ "dual_gfx", "Prefer processing on both iGfx and dGfx simultaneously",                                             OFFSET(qsv.dual_gfx), AV_OPT_TYPE_INT, { .i64 = MFX_HYPERMODE_OFF }, MFX_HYPERMODE_OFF, MFX_HYPERMODE_ADAPTIVE, VE, "dual_gfx" }, \
+{ "off",      "Disable HyperEncode mode",                                                                           0, AV_OPT_TYPE_CONST, { .i64 = MFX_HYPERMODE_OFF       },   INT_MIN, INT_MAX, VE, "dual_gfx" }, \
+{ "on",       "Enable HyperEncode mode and return error if incompatible parameters during initialization",          0, AV_OPT_TYPE_CONST, { .i64 = MFX_HYPERMODE_ON        },   INT_MIN, INT_MAX, VE, "dual_gfx" }, \
+{ "adaptive", "Enable HyperEncode mode or fallback to single GPU if incompatible parameters during initialization", 0, AV_OPT_TYPE_CONST, { .i64 = MFX_HYPERMODE_ADAPTIVE  },   INT_MIN, INT_MAX, VE, "dual_gfx" },
+#endif
 
 #define QSV_OPTION_RDO \
 { "rdo",            "Enable rate distortion optimization",    OFFSET(qsv.rdo),            AV_OPT_TYPE_INT, { .i64 = -1 }, -1,          1, VE },
@@ -171,7 +181,9 @@ typedef struct QSVEncContext {
     mfxExtAV1TileParam extav1tileparam;
     mfxExtAV1BitstreamParam extav1bsparam;
 #endif
-
+#if QSV_HAVE_HE
+    mfxExtHyperModeParam exthypermodeparam;
+#endif
 #if QSV_HAVE_OPAQUE
     mfxExtOpaqueSurfaceAlloc opaque_alloc;
     mfxFrameSurface1       **opaque_surfaces;
@@ -180,7 +192,7 @@ typedef struct QSVEncContext {
 
     mfxExtVideoSignalInfo extvsi;
 
-    mfxExtBuffer  *extparam_internal[5 + (QSV_HAVE_MF * 2) + QSV_HAVE_EXT_AV1_PARAM * 2];
+    mfxExtBuffer  *extparam_internal[5 + (QSV_HAVE_MF * 2) + (QSV_HAVE_EXT_AV1_PARAM * 2) + QSV_HAVE_HE];
     int         nb_extparam_internal;
 
     mfxExtBuffer **extparam;
@@ -255,6 +267,7 @@ typedef struct QSVEncContext {
     int co2_idx;
     int co3_idx;
     int exthevctiles_idx;
+    int exthypermodeparam_idx;
     int vp9_idx;
 
     int max_qp_i;
@@ -299,6 +312,8 @@ typedef struct QSVEncContext {
     // This is used for SEI Timing reset
     int old_pic_timing_sei;
     int skip_frame;
+    // This is used for Hyper Encode
+    int dual_gfx;
 } QSVEncContext;
 
 int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q);
