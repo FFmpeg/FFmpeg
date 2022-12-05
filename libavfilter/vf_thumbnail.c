@@ -191,11 +191,14 @@ static int do_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             const int slice_start = (s->planeheight[plane] * jobnr) / nb_jobs;
             const int slice_end = (s->planeheight[plane] * (jobnr+1)) / nb_jobs;
             const uint8_t *p = frame->data[plane] + slice_start * frame->linesize[plane];
+            const ptrdiff_t linesize = frame->linesize[plane];
+            const int planewidth = s->planewidth[plane];
+            int *hhist = hist + 256 * plane;
 
             for (int j = slice_start; j < slice_end; j++) {
-                for (int i = 0; i < s->planewidth[plane]; i++)
-                    hist[256*plane + p[i]]++;
-                p += frame->linesize[plane];
+                for (int i = 0; i < planewidth; i++)
+                    hhist[p[i]]++;
+                p += linesize;
             }
         }
         break;
