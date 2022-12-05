@@ -1076,6 +1076,7 @@ static av_cold void nvenc_setup_rate_control(AVCodecContext *avctx)
                         ctx->encode_config.frameIntervalP - 4;
 
         if (lkd_bound < 0) {
+            ctx->encode_config.rcParams.enableLookahead = 0;
             av_log(avctx, AV_LOG_WARNING,
                    "Lookahead not enabled. Increase buffer delay (-delay).\n");
         } else {
