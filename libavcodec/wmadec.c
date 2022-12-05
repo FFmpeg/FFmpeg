@@ -845,6 +845,7 @@ static int wma_decode_superframe(AVCodecContext *avctx, AVFrame *frame,
         if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
             return ret;
 
+        frame->pts = AV_NOPTS_VALUE;
         for (i = 0; i < s->avctx->ch_layout.nb_channels; i++)
             memcpy(frame->extended_data[i], &s->frame_out[i][0],
                    frame->nb_samples * sizeof(s->frame_out[i][0]));
