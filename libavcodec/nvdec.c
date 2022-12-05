@@ -51,6 +51,8 @@ typedef struct NVDECDecoder {
 
     CudaFunctions *cudl;
     CuvidFunctions *cvdl;
+
+    int unsafe_output;
 } NVDECDecoder;
 
 typedef struct NVDECFramePool {
@@ -344,6 +346,8 @@ int ff_nvdec_decode_init(AVCodecContext *avctx)
     int cuvid_codec_type, cuvid_chroma_format, chroma_444;
     int ret = 0;
 
+    int unsafe_output = !!(avctx->hwaccel_flags & AV_HWACCEL_FLAG_UNSAFE_OUTPUT);
+
     sw_desc = av_pix_fmt_desc_get(avctx->sw_pix_fmt);
     if (!sw_desc)
         return AVERROR_BUG;
@@ -402,7 +406,7 @@ int ff_nvdec_decode_init(AVCodecContext *avctx)
     params.CodecType           = cuvid_codec_type;
     params.ChromaFormat        = cuvid_chroma_format;
     params.ulNumDecodeSurfaces = frames_ctx->initial_pool_size;
-    params.ulNumOutputSurfaces = frames_ctx->initial_pool_size;
+    params.ulNumOutputSurfaces = unsafe_output ? frames_ctx->initial_pool_size : 1;
 
     ret = nvdec_decoder_create(&ctx->decoder_ref, frames_ctx->device_ref, &params, avctx);
     if (ret < 0) {
@@ -417,6 +421,7 @@ int ff_nvdec_decode_init(AVCodecContext *avctx)
     }
 
     decoder = (NVDECDecoder*)ctx->decoder_ref->data;
+    decoder->unsafe_output = unsafe_output;
     decoder->real_hw_frames_ref = real_hw_frames_ref;
     real_hw_frames_ref = NULL;
 
@@ -554,7 +559,11 @@ copy_fail:
 
 finish:
     CHECK_CU(decoder->cudl->cuCtxPopCurrent(&dummy));
-    return ret;
+
+    if (ret < 0 || decoder->unsafe_output)
+        return ret;
+
+    return av_frame_make_writable(frame);
 }
 
 int ff_nvdec_start_frame(AVCodecContext *avctx, AVFrame *frame)
