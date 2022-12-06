@@ -134,6 +134,10 @@ static const AVOption options[] = {
     { "format", "Output pixel format", OFFSET(output_format_str), AV_OPT_TYPE_STRING, { .str = "same" }, .flags = FLAGS },
     { "async_depth", "Internal parallelization depth, the higher the value the higher the latency.", OFFSET(async_depth), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, .flags = FLAGS },
     { "scale_mode", "scale & format conversion mode: 0=auto, 1=low power, 2=high quality", OFFSET(scale_mode), AV_OPT_TYPE_INT, { .i64 = MFX_SCALING_MODE_DEFAULT }, MFX_SCALING_MODE_DEFAULT, MFX_SCALING_MODE_QUALITY, .flags = FLAGS, "scale mode" },
+    { "auto",      "auto mode",             0,    AV_OPT_TYPE_CONST,  { .i64 = MFX_SCALING_MODE_DEFAULT},  INT_MIN, INT_MAX, FLAGS, "scale mode"},
+    { "low_power", "low power mode",        0,    AV_OPT_TYPE_CONST,  { .i64 = MFX_SCALING_MODE_LOWPOWER}, INT_MIN, INT_MAX, FLAGS, "scale mode"},
+    { "hq",        "high quality mode",     0,    AV_OPT_TYPE_CONST,  { .i64 = MFX_SCALING_MODE_QUALITY},  INT_MIN, INT_MAX, FLAGS, "scale mode"},
+
     { NULL }
 };
 
