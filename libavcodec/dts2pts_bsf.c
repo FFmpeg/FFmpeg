@@ -461,9 +461,10 @@ static int dts2pts_filter(AVBSFContext *ctx, AVPacket *out)
                 poc_node = av_tree_find(s->root, &dup, cmp_find, NULL);
             }
         }
-    } else {
+    } else if (s->eof && frame.poc > INT_MIN) {
         DTS2PTSFrame dup = (DTS2PTSFrame) { NULL, frame.poc - 1, frame.poc_diff, frame.gop };
-        if (s->eof && (poc_node = av_tree_find(s->root, &dup, cmp_find, NULL)) && poc_node->poc == dup.poc) {
+        poc_node = av_tree_find(s->root, &dup, cmp_find, NULL);
+        if (poc_node && poc_node->poc == dup.poc) {
             out->pts = poc_node->dts;
             if (out->pts != AV_NOPTS_VALUE)
                 out->pts += poc_node->duration;
@@ -480,7 +481,8 @@ static int dts2pts_filter(AVBSFContext *ctx, AVPacket *out)
                        poc_node->poc, poc_node->gop, poc_node->dts, poc_node->duration);
         } else
             av_log(ctx, AV_LOG_WARNING, "No timestamp for POC %d in tree\n", frame.poc);
-    }
+    } else
+        av_log(ctx, AV_LOG_WARNING, "No timestamp for POC %d in tree\n", frame.poc);
     av_log(ctx, AV_LOG_DEBUG, "Returning frame for POC %d, GOP %d, dts %"PRId64", pts %"PRId64"\n",
            frame.poc, frame.gop, out->dts, out->pts);
 
