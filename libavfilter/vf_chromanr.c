@@ -75,7 +75,7 @@ static const enum AVPixelFormat pix_fmts[] = {
 #define MANHATTAN_DISTANCE(x, y, z) ((x) + (y) + (z))
 #define EUCLIDEAN_DISTANCE(x, y, z) (sqrtf((x)*(x) + (y)*(y) + (z)*(z)))
 
-#define FILTER_FUNC(distance, name, ctype, type, fun)                                    \
+#define FILTER_FUNC(distance, name, ctype, type, fun, extra)                             \
 static int distance ## _slice##name(AVFilterContext *ctx, void *arg,                     \
                                     int jobnr, int nb_jobs)                              \
 {                                                                                        \
@@ -128,8 +128,12 @@ static int distance ## _slice##name(AVFilterContext *ctx, void *arg,            
         const type *in_yptr = (const type *)(in->data[0] + y * chroma_h * in_ylinesize); \
         const type *in_uptr = (const type *)(in->data[1] + y * in_ulinesize);            \
         const type *in_vptr = (const type *)(in->data[2] + y * in_vlinesize);            \
+        const int yystart = FFMAX(0, y - sizeh);                                         \
+        const int yystop  = FFMIN(h - 1, y + sizeh);                                     \
                                                                                          \
         for (int x = 0; x < w; x++) {                                                    \
+            const int xxstart = FFMAX(0, x - sizew);                                     \
+            const int xxstop  = FFMIN(w - 1, x + sizew);                                 \
             const int cy = in_yptr[x * chroma_w];                                        \
             const int cu = in_uptr[x];                                                   \
             const int cv = in_vptr[x];                                                   \
@@ -137,12 +141,12 @@ static int distance ## _slice##name(AVFilterContext *ctx, void *arg,            
             int sv = cv;                                                                 \
             int cn = 1;                                                                  \
                                                                                          \
-            for (int yy = FFMAX(0, y - sizeh); yy <= FFMIN(y + sizeh, h - 1); yy += steph) {      \
+            for (int yy = yystart; yy <= yystop; yy += steph) {                          \
                 const type *in_yptr = (const type *)(in->data[0] + yy * chroma_h * in_ylinesize); \
                 const type *in_uptr = (const type *)(in->data[1] + yy * in_ulinesize);            \
                 const type *in_vptr = (const type *)(in->data[2] + yy * in_vlinesize);            \
                                                                                                   \
-                for (int xx = FFMAX(0, x - sizew); xx <= FFMIN(x + sizew, w - 1); xx += stepw) {  \
+                for (int xx = xxstart; xx <= xxstop; xx += stepw) {                    \
                     const ctype Y = in_yptr[xx * chroma_w];                            \
                     const ctype U = in_uptr[xx];                                       \
                     const ctype V = in_vptr[xx];                                       \
@@ -150,10 +154,13 @@ static int distance ## _slice##name(AVFilterContext *ctx, void *arg,            
                     const ctype cuU = FFABS(cu - U);                                   \
                     const ctype cvV = FFABS(cv - V);                                   \
                                                                                        \
-                    if (fun(cyY, cuU, cvV) < thres &&                                  \
+                    if (extra && fun(cyY, cuU, cvV) < thres &&                         \
                         cuU < thres_u && cvV < thres_v &&                              \
-                        cyY < thres_y &&                                               \
-                        xx != x && yy != y) {                                          \
+                        cyY < thres_y) {                                               \
+                        su += U;                                                       \
+                        sv += V;                                                       \
+                        cn++;                                                          \
+                    } else if (fun(cyY, cuU, cvV) < thres) {                           \
                         su += U;                                                       \
                         sv += V;                                                       \
                         cn++;                                                          \
@@ -172,11 +179,17 @@ static int distance ## _slice##name(AVFilterContext *ctx, void *arg,            
     return 0;                                                                          \
 }
 
-FILTER_FUNC(manhattan, 8,  int, uint8_t, MANHATTAN_DISTANCE)
-FILTER_FUNC(manhattan, 16, int, uint16_t, MANHATTAN_DISTANCE)
+FILTER_FUNC(manhattan, 8,  int, uint8_t, MANHATTAN_DISTANCE, 0)
+FILTER_FUNC(manhattan, 16, int, uint16_t, MANHATTAN_DISTANCE, 0)
 
-FILTER_FUNC(euclidean, 8,  int, uint8_t, EUCLIDEAN_DISTANCE)
-FILTER_FUNC(euclidean, 16, int64_t, uint16_t, EUCLIDEAN_DISTANCE)
+FILTER_FUNC(euclidean, 8,  int, uint8_t, EUCLIDEAN_DISTANCE, 0)
+FILTER_FUNC(euclidean, 16, int64_t, uint16_t, EUCLIDEAN_DISTANCE, 0)
+
+FILTER_FUNC(manhattan_e, 8,  int, uint8_t, MANHATTAN_DISTANCE, 1)
+FILTER_FUNC(manhattan_e, 16, int, uint16_t, MANHATTAN_DISTANCE, 1)
+
+FILTER_FUNC(euclidean_e, 8,  int, uint8_t, EUCLIDEAN_DISTANCE, 1)
+FILTER_FUNC(euclidean_e, 16, int64_t, uint16_t, EUCLIDEAN_DISTANCE, 1)
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
@@ -198,6 +211,17 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     s->thres_y = s->threshold_y * (1 << (s->depth - 8));
     s->thres_u = s->threshold_u * (1 << (s->depth - 8));
     s->thres_v = s->threshold_v * (1 << (s->depth - 8));
+
+    if (s->thres_y < 200.f || s->thres_u < 200.f || s->thres_v < 200.f) {
+        switch (s->distance) {
+        case 0:
+            s->filter_slice = s->depth <= 8 ? manhattan_e_slice8 : manhattan_e_slice16;
+            break;
+        case 1:
+            s->filter_slice = s->depth <= 8 ? euclidean_e_slice8 : euclidean_e_slice16;
+            break;
+        }
+    }
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
@@ -243,8 +267,8 @@ static int config_input(AVFilterLink *inlink)
 
 static const AVOption chromanr_options[] = {
     { "thres", "set y+u+v threshold", OFFSET(threshold), AV_OPT_TYPE_FLOAT, {.dbl=30}, 1,   200, VF },
-    { "sizew", "set horizontal size", OFFSET(sizew),     AV_OPT_TYPE_INT,   {.i64=5},  1,   100, VF },
-    { "sizeh", "set vertical size",   OFFSET(sizeh),     AV_OPT_TYPE_INT,   {.i64=5},  1,   100, VF },
+    { "sizew", "set horizontal patch size", OFFSET(sizew),     AV_OPT_TYPE_INT,   {.i64=5},  1,   100, VF },
+    { "sizeh", "set vertical patch size",   OFFSET(sizeh),     AV_OPT_TYPE_INT,   {.i64=5},  1,   100, VF },
     { "stepw", "set horizontal step", OFFSET(stepw),     AV_OPT_TYPE_INT,   {.i64=1},  1,    50, VF },
     { "steph", "set vertical step",   OFFSET(steph),     AV_OPT_TYPE_INT,   {.i64=1},  1,    50, VF },
     { "threy", "set y threshold",   OFFSET(threshold_y), AV_OPT_TYPE_FLOAT, {.dbl=200},1,   200, VF },
