@@ -659,7 +659,7 @@ static void TX_NAME(ff_tx_fft8_ns)(AVTXContext *s, void *_dst,
 {
     TXComplex *src = _src;
     TXComplex *dst = _dst;
-    TXSample t1, t2, t3, t4, t5, t6, r0, i0, r1, i1;
+    TXUSample t1, t2, t3, t4, t5, t6, r0, i0, r1, i1;
     const TXSample cos = TX_TAB(ff_tx_tab_8)[1];
 
     TX_NAME(ff_tx_fft4_ns)(s, dst, src, stride);
@@ -680,7 +680,7 @@ static void TX_NAME(ff_tx_fft16_ns)(AVTXContext *s, void *_dst,
     TXComplex *dst = _dst;
     const TXSample *cos = TX_TAB(ff_tx_tab_16);
 
-    TXSample t1, t2, t3, t4, t5, t6, r0, i0, r1, i1;
+    TXUSample t1, t2, t3, t4, t5, t6, r0, i0, r1, i1;
     TXSample cos_16_1 = cos[1];
     TXSample cos_16_2 = cos[2];
     TXSample cos_16_3 = cos[3];
