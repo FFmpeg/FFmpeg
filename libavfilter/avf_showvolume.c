@@ -56,7 +56,6 @@ typedef struct ShowVolumeContext {
     double *values;
     uint32_t *color_lut;
     float *max;
-    float rms_factor;
     int display_scale;
 
     double draw_persistent_duration; /* in second */
@@ -65,7 +64,7 @@ typedef struct ShowVolumeContext {
     float *max_persistent; /* max value for draw_persistent_max for each channel */
     int *nb_frames_max_display; /* number of frame for each channel, for displaying the max value */
 
-    void (*meter)(float *src, int nb_samples, float *max, float factor);
+    void (*meter)(float *src, int nb_samples, float *max);
 } ShowVolumeContext;
 
 #define OFFSET(x) offsetof(ShowVolumeContext, x)
@@ -143,21 +142,23 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static void find_peak(float *src, int nb_samples, float *peak, float factor)
+static void find_peak(float *src, int nb_samples, float *peak)
 {
-    int i;
+    float max = 0.f;
 
-    *peak = 0;
-    for (i = 0; i < nb_samples; i++)
-        *peak = FFMAX(*peak, FFABS(src[i]));
+    max = 0;
+    for (int i = 0; i < nb_samples; i++)
+        max = fmaxf(max, fabsf(src[i]));
+    *peak = max;
 }
 
-static void find_rms(float *src, int nb_samples, float *rms, float factor)
+static void find_rms(float *src, int nb_samples, float *rms)
 {
-    int i;
+    float sum = 0.f;
 
-    for (i = 0; i < nb_samples; i++)
-        *rms += factor * (src[i] * src[i] - *rms);
+    for (int i = 0; i < nb_samples; i++)
+        sum += src[i] * src[i];
+    *rms = sqrtf(sum / nb_samples);
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -177,8 +178,6 @@ static int config_input(AVFilterLink *inlink)
     s->max = av_calloc(inlink->ch_layout.nb_channels, sizeof(*s->max));
     if (!s->max)
         return AVERROR(ENOMEM);
-
-    s->rms_factor = 10000. / inlink->sample_rate;
 
     switch (s->mode) {
     case 0: s->meter = find_peak; break;
@@ -363,7 +362,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             uint32_t *lut = s->color_lut + s->w * c;
             float max;
 
-            s->meter(src, insamples->nb_samples, &s->max[c], s->rms_factor);
+            s->meter(src, insamples->nb_samples, &s->max[c]);
             max = s->max[c];
 
             s->values[c * VAR_VARS_NB + VAR_VOLUME] = 20.0 * log10(max);
@@ -398,7 +397,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             uint32_t *lut = s->color_lut + s->w * c;
             float max;
 
-            s->meter(src, insamples->nb_samples, &s->max[c], s->rms_factor);
+            s->meter(src, insamples->nb_samples, &s->max[c]);
             max = s->max[c];
 
             s->values[c * VAR_VARS_NB + VAR_VOLUME] = 20.0 * log10(max);
