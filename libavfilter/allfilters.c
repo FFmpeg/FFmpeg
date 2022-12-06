@@ -221,6 +221,7 @@ extern const AVFilter ff_vf_convolution_opencl;
 extern const AVFilter ff_vf_convolve;
 extern const AVFilter ff_vf_copy;
 extern const AVFilter ff_vf_coreimage;
+extern const AVFilter ff_vf_corr;
 extern const AVFilter ff_vf_cover_rect;
 extern const AVFilter ff_vf_crop;
 extern const AVFilter ff_vf_cropdetect;
