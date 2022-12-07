@@ -15070,6 +15070,8 @@ the logging system.
 
 The filter stores the calculated identity scores of each frame in frame metadata.
 
+This filter also supports the @ref{framesync} options.
+
 In the below example the input file @file{main.mpg} being processed is compared
 with the reference file @file{ref.mpg}.
 
@@ -17201,6 +17203,8 @@ The obtained per component, average, min and max MSAD is printed through
 the logging system.
 
 The filter stores the calculated MSAD of each frame in frame metadata.
+
+This filter also supports the @ref{framesync} options.
 
 In the below example the input file @file{main.mpg} being processed is compared
 with the reference file @file{ref.mpg}.
@@ -24047,6 +24051,8 @@ have the same number of frames, which are compared one by one.
 The obtained average VIF score is printed through the logging system.
 
 The filter stores the calculated VIF score of each frame.
+
+This filter also supports the @ref{framesync} options.
 
 In the below example the input file @file{main.mpg} being processed is compared
 with the reference file @file{ref.mpg}.
