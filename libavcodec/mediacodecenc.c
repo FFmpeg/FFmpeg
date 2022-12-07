@@ -71,6 +71,7 @@ typedef struct MediaCodecEncContext {
 
     int bitrate_mode;
     int level;
+    int pts_as_dts;
 } MediaCodecEncContext;
 
 enum {
@@ -277,6 +278,8 @@ static av_cold int mediacodec_init(AVCodecContext *avctx)
     }
     if (avctx->max_b_frames > 0)
         ff_AMediaFormat_setInt32(format, "max-bframes", avctx->max_b_frames);
+    if (s->pts_as_dts == -1)
+        s->pts_as_dts = avctx->max_b_frames <= 0;
 
     ret = ff_AMediaCodec_getConfigureFlagEncode(s->codec);
     ret = ff_AMediaCodec_configure(s->codec, format, s->window, NULL, ret);
@@ -369,6 +372,8 @@ static int mediacodec_receive(AVCodecContext *avctx,
     }
     memcpy(pkt->data + extradata_size, out_buf + out_info.offset, out_info.size);
     pkt->pts = av_rescale_q(out_info.presentationTimeUs, AV_TIME_BASE_Q, avctx->time_base);
+    if (s->pts_as_dts)
+        pkt->dts = pkt->pts;
     if (out_info.flags & ff_AMediaCodec_getBufferFlagKeyFrame(codec))
         pkt->flags |= AV_PKT_FLAG_KEY;
     ret = 0;
@@ -559,6 +564,9 @@ static const AVCodecHWConfigInternal *const mediacodec_hw_configs[] = {
                     0, AV_OPT_TYPE_CONST, {.i64 = BITRATE_MODE_CBR}, 0, 0, VE, "bitrate_mode" },            \
     { "cbr_fd", "Constant bitrate mode with frame drops",                                                   \
                     0, AV_OPT_TYPE_CONST, {.i64 = BITRATE_MODE_CBR_FD}, 0, 0, VE, "bitrate_mode" },         \
+    { "pts_as_dts", "Use PTS as DTS. It is enabled automatically if avctx max_b_frames <= 0, "              \
+                    "since most of Android devices don't output B frames by default.",                      \
+                    OFFSET(pts_as_dts), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE },                         \
 
 
 #define MEDIACODEC_ENCODER_CLASS(name)              \
