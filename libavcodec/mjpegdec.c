@@ -2345,25 +2345,6 @@ static void reset_icc_profile(MJpegDecodeContext *s)
     s->iccnum  = 0;
 }
 
-// SMV JPEG just stacks several output frames into one JPEG picture
-// we handle that by setting up the cropping parameters appropriately
-static void smv_process_frame(AVCodecContext *avctx, AVFrame *frame)
-{
-    MJpegDecodeContext *s = avctx->priv_data;
-
-    av_assert0((s->smv_next_frame + 1) * avctx->height <= avctx->coded_height);
-
-    frame->width       = avctx->coded_width;
-    frame->height      = avctx->coded_height;
-    frame->crop_top    = FFMIN(s->smv_next_frame * avctx->height, frame->height);
-    frame->crop_bottom = frame->height - (s->smv_next_frame + 1) * avctx->height;
-
-    s->smv_next_frame = (s->smv_next_frame + 1) % s->smv_frames_per_jpeg;
-
-    if (s->smv_next_frame == 0)
-        av_frame_unref(s->smv_frame);
-}
-
 int ff_mjpeg_decode_frame_from_buf(AVCodecContext *avctx, AVFrame *frame,
                                    int *got_frame, const AVPacket *avpkt,
                                    const uint8_t *buf, const int buf_size)
@@ -3009,6 +2990,25 @@ const FFCodec ff_thp_decoder = {
 #endif
 
 #if CONFIG_SMVJPEG_DECODER
+// SMV JPEG just stacks several output frames into one JPEG picture
+// we handle that by setting up the cropping parameters appropriately
+static void smv_process_frame(AVCodecContext *avctx, AVFrame *frame)
+{
+    MJpegDecodeContext *s = avctx->priv_data;
+
+    av_assert0((s->smv_next_frame + 1) * avctx->height <= avctx->coded_height);
+
+    frame->width       = avctx->coded_width;
+    frame->height      = avctx->coded_height;
+    frame->crop_top    = FFMIN(s->smv_next_frame * avctx->height, frame->height);
+    frame->crop_bottom = frame->height - (s->smv_next_frame + 1) * avctx->height;
+
+    s->smv_next_frame = (s->smv_next_frame + 1) % s->smv_frames_per_jpeg;
+
+    if (s->smv_next_frame == 0)
+        av_frame_unref(s->smv_frame);
+}
+
 static int smvjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
 {
     MJpegDecodeContext *s = avctx->priv_data;
