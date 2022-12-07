@@ -2349,24 +2349,9 @@ static void reset_icc_profile(MJpegDecodeContext *s)
 
 // SMV JPEG just stacks several output frames into one JPEG picture
 // we handle that by setting up the cropping parameters appropriately
-static int smv_process_frame(AVCodecContext *avctx, AVFrame *frame)
+static void smv_process_frame(AVCodecContext *avctx, AVFrame *frame)
 {
     MJpegDecodeContext *s = avctx->priv_data;
-    int ret;
-
-    if (s->smv_next_frame > 0) {
-        av_assert0(s->smv_frame->buf[0]);
-        av_frame_unref(frame);
-        ret = av_frame_ref(frame, s->smv_frame);
-        if (ret < 0)
-            return ret;
-    } else {
-        av_assert0(frame->buf[0]);
-        av_frame_unref(s->smv_frame);
-        ret = av_frame_ref(s->smv_frame, frame);
-        if (ret < 0)
-            return ret;
-    }
 
     av_assert0((s->smv_next_frame + 1) * avctx->height <= avctx->coded_height);
 
@@ -2379,8 +2364,6 @@ static int smv_process_frame(AVCodecContext *avctx, AVFrame *frame)
 
     if (s->smv_next_frame == 0)
         av_frame_unref(s->smv_frame);
-
-    return 0;
 }
 
 static int mjpeg_get_packet(AVCodecContext *avctx)
@@ -3055,14 +3038,28 @@ static int smvjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
     MJpegDecodeContext *s = avctx->priv_data;
     int ret;
 
-    if (s->smv_next_frame > 0)
-        return smv_process_frame(avctx, frame);
+    if (s->smv_next_frame > 0) {
+        av_assert0(s->smv_frame->buf[0]);
+        ret = av_frame_ref(frame, s->smv_frame);
+        if (ret < 0)
+            return ret;
+
+        smv_process_frame(avctx, frame);
+        return 0;
+    }
 
     ret = ff_mjpeg_receive_frame(avctx, frame);
     if (ret < 0)
         return ret;
 
-    return smv_process_frame(avctx, frame);
+    av_assert0(frame->buf[0]);
+    av_frame_unref(s->smv_frame);
+    ret = av_frame_ref(s->smv_frame, frame);
+    if (ret < 0)
+        return ret;
+
+    smv_process_frame(avctx, frame);
+    return 0;
 }
 
 const FFCodec ff_smvjpeg_decoder = {
