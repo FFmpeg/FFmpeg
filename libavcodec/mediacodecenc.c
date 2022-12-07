@@ -275,6 +275,8 @@ static av_cold int mediacodec_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_DEBUG, "set level to 0x%x\n", s->level);
         ff_AMediaFormat_setInt32(format, "level", s->level);
     }
+    if (avctx->max_b_frames > 0)
+        ff_AMediaFormat_setInt32(format, "max-bframes", avctx->max_b_frames);
 
     ret = ff_AMediaCodec_getConfigureFlagEncode(s->codec);
     ret = ff_AMediaCodec_configure(s->codec, format, s->window, NULL, ret);
