@@ -350,6 +350,19 @@ terminates. Default value is 0.
 If set to 1, force the filter to extend the last frame of secondary streams
 until the end of the primary stream. A value of 0 disables this behavior.
 Default value is 1.
+
+@item ts_sync_mode
+How strictly to sync streams based on secondary input timestamps; it accepts
+one of the following values:
+
+@table @option
+@item default
+Frame from secondary input with the nearest lower or equal timestamp to the
+primary input frame.
+@item nearest
+Frame from secondary input with the absolute nearest timestamp to the primary
+input frame.
+@end table
 @end table
 
 @c man end OPTIONS FOR FILTERS WITH SEVERAL INPUTS
