@@ -32,6 +32,43 @@
 #include "h2645_vui.h"
 #include "hevc.h"
 
+typedef struct HEVCSublayerHdrParams {
+    uint32_t bit_rate_value_minus1[HEVC_MAX_CPB_CNT];
+    uint32_t cpb_size_value_minus1[HEVC_MAX_CPB_CNT];
+    uint32_t cpb_size_du_value_minus1[HEVC_MAX_CPB_CNT];
+    uint32_t bit_rate_du_value_minus1[HEVC_MAX_CPB_CNT];
+    uint32_t cbr_flag;
+} HEVCSublayerHdrParams;
+
+typedef struct HEVCHdrFlagParams {
+    uint32_t nal_hrd_parameters_present_flag;
+    uint32_t vcl_hrd_parameters_present_flag;
+    uint32_t sub_pic_hrd_params_present_flag;
+    uint32_t sub_pic_cpb_params_in_pic_timing_sei_flag;
+    uint32_t fixed_pic_rate_general_flag;
+    uint32_t fixed_pic_rate_within_cvs_flag;
+    uint32_t low_delay_hrd_flag;
+} HEVCHdrFlagParams;
+
+typedef struct HEVCHdrParams {
+    HEVCHdrFlagParams flags;
+
+    uint8_t tick_divisor_minus2;
+    uint8_t du_cpb_removal_delay_increment_length_minus1;
+    uint8_t dpb_output_delay_du_length_minus1;
+    uint8_t bit_rate_scale;
+    uint8_t cpb_size_scale;
+    uint8_t cpb_size_du_scale;
+    uint8_t initial_cpb_removal_delay_length_minus1;
+    uint8_t au_cpb_removal_delay_length_minus1;
+    uint8_t dpb_output_delay_length_minus1;
+    uint8_t cpb_cnt_minus1[HEVC_MAX_SUB_LAYERS];
+    uint16_t elemental_duration_in_tc_minus1[HEVC_MAX_SUB_LAYERS];
+
+    HEVCSublayerHdrParams nal_params[HEVC_MAX_SUB_LAYERS];
+    HEVCSublayerHdrParams vcl_params[HEVC_MAX_SUB_LAYERS];
+} HEVCHdrParams;
+
 typedef struct ShortTermRPS {
     unsigned int num_negative_pics;
     int num_delta_pocs;
@@ -108,6 +145,8 @@ typedef struct PTL {
 } PTL;
 
 typedef struct HEVCVPS {
+    HEVCHdrParams hdr[HEVC_MAX_LAYER_SETS];
+
     uint8_t vps_temporal_id_nesting_flag;
     int vps_max_layers;
     int vps_max_sub_layers; ///< vps_max_temporal_layers_minus1 + 1
@@ -145,6 +184,8 @@ typedef struct HEVCSPS {
     HEVCWindow output_window;
 
     HEVCWindow pic_conf_win;
+
+    HEVCHdrParams hdr;
 
     int bit_depth;
     int bit_depth_chroma;
