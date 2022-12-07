@@ -1956,7 +1956,8 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
 
     pps->slice_header_extension_present_flag = get_bits1(gb);
 
-    if (get_bits1(gb)) { // pps_extension_present_flag
+    pps->pps_extension_present_flag = get_bits1(gb);
+    if (pps->pps_extension_present_flag) {
         pps->pps_range_extensions_flag     = get_bits1(gb);
         pps->pps_multilayer_extension_flag = get_bits1(gb);
         pps->pps_3d_extension_flag         = get_bits1(gb);
