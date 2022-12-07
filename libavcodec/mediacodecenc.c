@@ -39,6 +39,17 @@
 #define INPUT_DEQUEUE_TIMEOUT_US 8000
 #define OUTPUT_DEQUEUE_TIMEOUT_US 8000
 
+enum BitrateMode {
+    /* Constant quality mode */
+    BITRATE_MODE_CQ = 0,
+    /* Variable bitrate mode */
+    BITRATE_MODE_VBR = 1,
+    /* Constant bitrate mode */
+    BITRATE_MODE_CBR = 2,
+    /* Constant bitrate mode with frame drops */
+    BITRATE_MODE_CBR_FD = 3,
+};
+
 typedef struct MediaCodecEncContext {
     AVClass *avclass;
     FFAMediaCodec *codec;
@@ -67,6 +78,8 @@ typedef struct MediaCodecEncContext {
     int eof_sent;
 
     AVFrame *frame;
+
+    int bitrate_mode;
 } MediaCodecEncContext;
 
 enum {
@@ -193,6 +206,8 @@ static av_cold int mediacodec_init(AVCodecContext *avctx)
 
     if (avctx->bit_rate)
         ff_AMediaFormat_setInt32(format, "bitrate", avctx->bit_rate);
+    if (s->bitrate_mode >= 0)
+        ff_AMediaFormat_setInt32(format, "bitrate-mode", s->bitrate_mode);
     // frame-rate and i-frame-interval are required to configure codec
     if (avctx->framerate.num >= avctx->framerate.den && avctx->framerate.den > 0) {
         s->fps = avctx->framerate.num / avctx->framerate.den;
@@ -485,6 +500,16 @@ static const AVCodecHWConfigInternal *const mediacodec_hw_configs[] = {
                     OFFSET(use_ndk_codec), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE },                      \
     { "codec_name", "Select codec by name",                                                                 \
                     OFFSET(name), AV_OPT_TYPE_STRING, {0}, 0, 0, VE },                                      \
+    { "bitrate_mode", "Bitrate control method",                                                             \
+                    OFFSET(bitrate_mode), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, VE, "bitrate_mode" },  \
+    { "cq", "Constant quality mode",                                                                        \
+                    0, AV_OPT_TYPE_CONST, {.i64 = BITRATE_MODE_CQ}, 0, 0, VE, "bitrate_mode" },             \
+    { "vbr", "Variable bitrate mode",                                                                       \
+                    0, AV_OPT_TYPE_CONST, {.i64 = BITRATE_MODE_VBR}, 0, 0, VE, "bitrate_mode" },            \
+    { "cbr", "Constant bitrate mode",                                                                       \
+                    0, AV_OPT_TYPE_CONST, {.i64 = BITRATE_MODE_CBR}, 0, 0, VE, "bitrate_mode" },            \
+    { "cbr_fd", "Constant bitrate mode with frame drops",                                                   \
+                    0, AV_OPT_TYPE_CONST, {.i64 = BITRATE_MODE_CBR_FD}, 0, 0, VE, "bitrate_mode" },         \
 
 
 #define MEDIACODEC_ENCODER_CLASS(name)              \
