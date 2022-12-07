@@ -480,19 +480,18 @@ static const AVCodecHWConfigInternal *const mediacodec_hw_configs[] = {
 
 #define OFFSET(x) offsetof(MediaCodecEncContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
-static const AVOption common_options[] = {
-    { "ndk_codec", "Use MediaCodec from NDK",
-                    OFFSET(use_ndk_codec), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE },
-    { "codec_name", "Select codec by name",
-                    OFFSET(name), AV_OPT_TYPE_STRING, {0}, 0, 0, VE },
-    { NULL },
-};
+#define COMMON_OPTION                                                                                       \
+    { "ndk_codec", "Use MediaCodec from NDK",                                                               \
+                    OFFSET(use_ndk_codec), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE },                      \
+    { "codec_name", "Select codec by name",                                                                 \
+                    OFFSET(name), AV_OPT_TYPE_STRING, {0}, 0, 0, VE },                                      \
+
 
 #define MEDIACODEC_ENCODER_CLASS(name)              \
 static const AVClass name ## _mediacodec_class = {  \
     .class_name = #name "_mediacodec",              \
     .item_name  = av_default_item_name,             \
-    .option     = common_options,                   \
+    .option     = name ## _options,                 \
     .version    = LIBAVUTIL_VERSION_INT,            \
 };                                                  \
 
@@ -517,9 +516,17 @@ const FFCodec ff_ ## short_name ## _mediacodec_encoder = {              \
 };                                                                      \
 
 #if CONFIG_H264_MEDIACODEC_ENCODER
+static const AVOption h264_options[] = {
+    COMMON_OPTION
+    { NULL, }
+};
 DECLARE_MEDIACODEC_ENCODER(h264, "H.264", AV_CODEC_ID_H264)
 #endif
 
 #if CONFIG_HEVC_MEDIACODEC_ENCODER
+static const AVOption hevc_options[] = {
+    COMMON_OPTION
+    { NULL, }
+};
 DECLARE_MEDIACODEC_ENCODER(hevc, "H.265", AV_CODEC_ID_HEVC)
 #endif
