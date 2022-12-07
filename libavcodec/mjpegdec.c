@@ -131,8 +131,6 @@ av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
         s->picture_ptr = s->picture;
     }
 
-    s->pkt = avctx->internal->in_pkt;
-
     s->avctx = avctx;
     ff_blockdsp_init(&s->bdsp);
     ff_hpeldsp_init(&s->hdsp, avctx->flags);
@@ -2366,31 +2364,9 @@ static void smv_process_frame(AVCodecContext *avctx, AVFrame *frame)
         av_frame_unref(s->smv_frame);
 }
 
-static int mjpeg_get_packet(AVCodecContext *avctx)
-{
-    MJpegDecodeContext *s = avctx->priv_data;
-    int ret;
-
-    av_packet_unref(s->pkt);
-    ret = ff_decode_get_packet(avctx, s->pkt);
-    if (ret < 0)
-        return ret;
-
-#if CONFIG_SP5X_DECODER || CONFIG_AMV_DECODER
-    if (avctx->codec_id == AV_CODEC_ID_SP5X ||
-        avctx->codec_id == AV_CODEC_ID_AMV) {
-        ret = ff_sp5x_process_packet(avctx, s->pkt);
-        if (ret < 0)
-            return ret;
-    }
-#endif
-
-    s->buf_size = s->pkt->size;
-
-    return 0;
-}
-
-int ff_mjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+int ff_mjpeg_decode_frame_from_buf(AVCodecContext *avctx, AVFrame *frame,
+                                   int *got_frame, const AVPacket *avpkt,
+                                   const uint8_t *buf, const int buf_size)
 {
     MJpegDecodeContext *s = avctx->priv_data;
     const uint8_t *buf_end, *buf_ptr;
@@ -2405,6 +2381,8 @@ int ff_mjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
 
     s->force_pal8 = 0;
 
+    s->buf_size = buf_size;
+
     av_dict_free(&s->exif_metadata);
     av_freep(&s->stereo3d);
     s->adobe_transform = -1;
@@ -2412,12 +2390,9 @@ int ff_mjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
     if (s->iccnum != 0)
         reset_icc_profile(s);
 
-    ret = mjpeg_get_packet(avctx);
-    if (ret < 0)
-        return ret;
 redo_for_pal8:
-    buf_ptr = s->pkt->data;
-    buf_end = s->pkt->data + s->pkt->size;
+    buf_ptr = buf;
+    buf_end = buf + buf_size;
     while (buf_ptr < buf_end) {
         /* find start next marker */
         start_code = ff_mjpeg_find_marker(s, &buf_ptr, buf_end,
@@ -2429,7 +2404,7 @@ redo_for_pal8:
         } else if (unescaped_buf_size > INT_MAX / 8) {
             av_log(avctx, AV_LOG_ERROR,
                    "MJPEG packet 0x%x too big (%d/%d), corrupt data?\n",
-                   start_code, unescaped_buf_size, s->pkt->size);
+                   start_code, unescaped_buf_size, buf_size);
             return AVERROR_INVALIDDATA;
         }
         av_log(avctx, AV_LOG_DEBUG, "marker=%x avail_size_in_buf=%"PTRDIFF_SPECIFIER"\n",
@@ -2568,7 +2543,6 @@ eoi_parser:
             }
             if (avctx->skip_frame == AVDISCARD_ALL) {
                 s->got_picture = 0;
-                ret = AVERROR(EAGAIN);
                 goto the_end_no_picture;
             }
             if (s->avctx->hwaccel) {
@@ -2580,9 +2554,8 @@ eoi_parser:
             }
             if ((ret = av_frame_ref(frame, s->picture_ptr)) < 0)
                 return ret;
+            *got_frame = 1;
             s->got_picture = 0;
-
-            frame->pkt_dts = s->pkt->dts;
 
             if (!s->lossless && avctx->debug & FF_DEBUG_QP) {
                 int qp = FFMAX3(s->qscale[0],
@@ -2909,14 +2882,19 @@ the_end:
         frame->crop_top = frame->height - avctx->height;
     }
 
-    ret = 0;
-
 the_end_no_picture:
     av_log(avctx, AV_LOG_DEBUG, "decode frame unused %"PTRDIFF_SPECIFIER" bytes\n",
            buf_end - buf_ptr);
-
-    return ret;
+    return buf_ptr - buf;
 }
+
+int ff_mjpeg_decode_frame(AVCodecContext *avctx, AVFrame *frame, int *got_frame,
+                          AVPacket *avpkt)
+{
+    return ff_mjpeg_decode_frame_from_buf(avctx, frame, got_frame,
+                                          avpkt, avpkt->data, avpkt->size);
+}
+
 
 /* mxpeg may call the following function (with a blank MJpegDecodeContext)
  * even without having called ff_mjpeg_decode_init(). */
@@ -2993,7 +2971,7 @@ const FFCodec ff_mjpeg_decoder = {
     .priv_data_size = sizeof(MJpegDecodeContext),
     .init           = ff_mjpeg_decode_init,
     .close          = ff_mjpeg_decode_end,
-    FF_CODEC_RECEIVE_FRAME_CB(ff_mjpeg_receive_frame),
+    FF_CODEC_DECODE_CB(ff_mjpeg_decode_frame),
     .flush          = decode_flush,
     .p.capabilities = AV_CODEC_CAP_DR1,
     .p.max_lowres   = 3,
@@ -3001,7 +2979,6 @@ const FFCodec ff_mjpeg_decoder = {
     .p.profiles     = NULL_IF_CONFIG_SMALL(ff_mjpeg_profiles),
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP |
                       FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM |
-                      FF_CODEC_CAP_SETS_PKT_DTS |
                       FF_CODEC_CAP_ICC_PROFILES,
     .hw_configs     = (const AVCodecHWConfigInternal *const []) {
 #if CONFIG_MJPEG_NVDEC_HWACCEL
@@ -3023,12 +3000,11 @@ const FFCodec ff_thp_decoder = {
     .priv_data_size = sizeof(MJpegDecodeContext),
     .init           = ff_mjpeg_decode_init,
     .close          = ff_mjpeg_decode_end,
-    FF_CODEC_RECEIVE_FRAME_CB(ff_mjpeg_receive_frame),
+    FF_CODEC_DECODE_CB(ff_mjpeg_decode_frame),
     .flush          = decode_flush,
     .p.capabilities = AV_CODEC_CAP_DR1,
     .p.max_lowres   = 3,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP |
-                      FF_CODEC_CAP_SETS_PKT_DTS,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
 #endif
 
@@ -3036,6 +3012,9 @@ const FFCodec ff_thp_decoder = {
 static int smvjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
 {
     MJpegDecodeContext *s = avctx->priv_data;
+    AVPacket *const pkt = avctx->internal->in_pkt;
+    int64_t pkt_dts;
+    int got_frame = 0;
     int ret;
 
     if (s->smv_next_frame > 0) {
@@ -3048,9 +3027,20 @@ static int smvjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
         return 0;
     }
 
-    ret = ff_mjpeg_receive_frame(avctx, frame);
+    ret = ff_decode_get_packet(avctx, pkt);
     if (ret < 0)
         return ret;
+
+    ret = ff_mjpeg_decode_frame(avctx, frame, &got_frame, pkt);
+    pkt_dts = pkt->dts;
+    av_packet_unref(pkt);
+    if (ret < 0)
+        return ret;
+
+    if (!got_frame)
+        return AVERROR(EAGAIN);
+
+    frame->pkt_dts = pkt_dts;
 
     av_assert0(frame->buf[0]);
     av_frame_unref(s->smv_frame);
