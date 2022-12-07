@@ -2422,9 +2422,6 @@ int ff_mjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
 
     s->force_pal8 = 0;
 
-    if (avctx->codec_id == AV_CODEC_ID_SMVJPEG && s->smv_next_frame > 0)
-        return smv_process_frame(avctx, frame);
-
     av_dict_free(&s->exif_metadata);
     av_freep(&s->stereo3d);
     s->adobe_transform = -1;
@@ -2921,13 +2918,6 @@ the_end:
     av_dict_copy(&frame->metadata, s->exif_metadata, 0);
     av_dict_free(&s->exif_metadata);
 
-    if (avctx->codec_id == AV_CODEC_ID_SMVJPEG) {
-        ret = smv_process_frame(avctx, frame);
-        if (ret < 0) {
-            av_frame_unref(frame);
-            return ret;
-        }
-    }
     if (avctx->codec_id != AV_CODEC_ID_SMVJPEG &&
         (avctx->codec_tag == MKTAG('A', 'V', 'R', 'n') ||
          avctx->codec_tag == MKTAG('A', 'V', 'D', 'J')) &&
@@ -3060,6 +3050,21 @@ const FFCodec ff_thp_decoder = {
 #endif
 
 #if CONFIG_SMVJPEG_DECODER
+static int smvjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+{
+    MJpegDecodeContext *s = avctx->priv_data;
+    int ret;
+
+    if (s->smv_next_frame > 0)
+        return smv_process_frame(avctx, frame);
+
+    ret = ff_mjpeg_receive_frame(avctx, frame);
+    if (ret < 0)
+        return ret;
+
+    return smv_process_frame(avctx, frame);
+}
+
 const FFCodec ff_smvjpeg_decoder = {
     .p.name         = "smvjpeg",
     CODEC_LONG_NAME("SMV JPEG"),
@@ -3068,7 +3073,7 @@ const FFCodec ff_smvjpeg_decoder = {
     .priv_data_size = sizeof(MJpegDecodeContext),
     .init           = ff_mjpeg_decode_init,
     .close          = ff_mjpeg_decode_end,
-    FF_CODEC_RECEIVE_FRAME_CB(ff_mjpeg_receive_frame),
+    FF_CODEC_RECEIVE_FRAME_CB(smvjpeg_receive_frame),
     .flush          = decode_flush,
     .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_EXPORTS_CROPPING |
