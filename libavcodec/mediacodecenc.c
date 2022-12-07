@@ -64,18 +64,6 @@ typedef struct MediaCodecEncContext {
 
     uint8_t *extradata;
     int extradata_size;
-
-    // Since MediaCodec doesn't output DTS, use a timestamp queue to save pts
-    // of AVFrame and generate DTS for AVPacket.
-    //
-    // This doesn't work when use Surface as input, in that case frames can be
-    // sent to encoder without our notice. One exception is frames come from
-    // our MediaCodec decoder wrapper, since we can control it's render by
-    // av_mediacodec_release_buffer.
-    int64_t timestamps[32];
-    int ts_head;
-    int ts_tail;
-
     int eof_sent;
 
     AVFrame *frame;
@@ -379,11 +367,6 @@ static int mediacodec_receive(AVCodecContext *avctx,
     }
     memcpy(pkt->data + extradata_size, out_buf + out_info.offset, out_info.size);
     pkt->pts = av_rescale_q(out_info.presentationTimeUs, AV_TIME_BASE_Q, avctx->time_base);
-    if (s->ts_tail != s->ts_head) {
-        pkt->dts = s->timestamps[s->ts_tail];
-        s->ts_tail = (s->ts_tail + 1) % FF_ARRAY_ELEMS(s->timestamps);
-    }
-
     if (out_info.flags & ff_AMediaCodec_getBufferFlagKeyFrame(codec))
         pkt->flags |= AV_PKT_FLAG_KEY;
     ret = 0;
@@ -448,14 +431,8 @@ static int mediacodec_send(AVCodecContext *avctx,
             return ff_AMediaCodec_signalEndOfInputStream(codec);
         }
 
-
-        if (frame->data[3]) {
-            pts = av_rescale_q(frame->pts, avctx->time_base, AV_TIME_BASE_Q);
-            s->timestamps[s->ts_head] = frame->pts;
-            s->ts_head = (s->ts_head + 1) % FF_ARRAY_ELEMS(s->timestamps);
-
+        if (frame->data[3])
             av_mediacodec_release_buffer((AVMediaCodecBuffer *)frame->data[3], 1);
-        }
         return 0;
     }
 
@@ -474,9 +451,6 @@ static int mediacodec_send(AVCodecContext *avctx,
         copy_frame_to_buffer(avctx, frame, input_buf, input_size);
 
         pts = av_rescale_q(frame->pts, avctx->time_base, AV_TIME_BASE_Q);
-
-        s->timestamps[s->ts_head] = frame->pts;
-        s->ts_head = (s->ts_head + 1) % FF_ARRAY_ELEMS(s->timestamps);
     } else {
         flags |= ff_AMediaCodec_getBufferFlagEndOfStream(codec);
         s->eof_sent = 1;
