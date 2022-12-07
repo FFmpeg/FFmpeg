@@ -703,6 +703,7 @@ static int hls_slice_header(HEVCContext *s)
                 if (ret < 0)
                     return ret;
 
+                sh->bits_used_for_short_term_rps = pos - get_bits_left(gb);
                 sh->short_term_rps = &sh->slice_rps;
             } else {
                 int numbits, rps_idx;

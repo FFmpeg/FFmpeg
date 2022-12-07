@@ -268,6 +268,7 @@ typedef struct SliceHeader {
 
     ///< RPS coded in the slice header itself is stored here
     int short_term_ref_pic_set_sps_flag;
+    int bits_used_for_short_term_rps;
     int short_term_ref_pic_set_size;
     ShortTermRPS slice_rps;
     const ShortTermRPS *short_term_rps;
