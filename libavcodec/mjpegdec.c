@@ -452,7 +452,8 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         if (ret < 0)
             return ret;
 
-        if ((s->avctx->codec_tag == MKTAG('A', 'V', 'R', 'n') ||
+        if (s->avctx->codec_id != AV_CODEC_ID_SMVJPEG &&
+            (s->avctx->codec_tag == MKTAG('A', 'V', 'R', 'n') ||
              s->avctx->codec_tag == MKTAG('A', 'V', 'D', 'J')) &&
             s->orig_height < height)
             s->avctx->height = AV_CEIL_RSHIFT(s->orig_height, s->avctx->lowres);
@@ -2927,7 +2928,8 @@ the_end:
             return ret;
         }
     }
-    if ((avctx->codec_tag == MKTAG('A', 'V', 'R', 'n') ||
+    if (avctx->codec_id != AV_CODEC_ID_SMVJPEG &&
+        (avctx->codec_tag == MKTAG('A', 'V', 'R', 'n') ||
          avctx->codec_tag == MKTAG('A', 'V', 'D', 'J')) &&
         avctx->coded_height > s->orig_height) {
         frame->height   = AV_CEIL_RSHIFT(avctx->coded_height, avctx->lowres);
