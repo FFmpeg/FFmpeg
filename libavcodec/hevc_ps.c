@@ -464,7 +464,7 @@ int ff_hevc_decode_nal_vps(GetBitContext *gb, AVCodecContext *avctx,
     }
     memcpy(vps->data, gb->buffer, vps->data_size);
 
-    vps_id = get_bits(gb, 4);
+    vps_id = vps->vps_id = get_bits(gb, 4);
 
     if (get_bits(gb, 2) != 3) { // vps_reserved_three_2bits
         av_log(avctx, AV_LOG_ERROR, "vps_reserved_three_2bits is not three\n");

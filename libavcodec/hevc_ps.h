@@ -145,6 +145,7 @@ typedef struct PTL {
 } PTL;
 
 typedef struct HEVCVPS {
+    unsigned int vps_id;
     HEVCHdrParams hdr[HEVC_MAX_LAYER_SETS];
 
     uint8_t vps_temporal_id_nesting_flag;
