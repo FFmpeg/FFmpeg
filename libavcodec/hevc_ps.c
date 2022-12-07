@@ -856,9 +856,8 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
 {
     HEVCWindow *ow;
     int ret = 0;
-    int log2_diff_max_min_transform_block_size;
     int bit_depth_chroma, start, vui_present, sublayer_ordering_info, num_comps;
-    int i;
+    int i, j;
 
     // Coded parameters
 
@@ -993,12 +992,12 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
         }
     }
 
-    sps->log2_min_cb_size                    = get_ue_golomb_long(gb) + 3;
-    sps->log2_diff_max_min_coding_block_size = get_ue_golomb_long(gb);
-    sps->log2_min_tb_size                    = get_ue_golomb_long(gb) + 2;
-    log2_diff_max_min_transform_block_size   = get_ue_golomb_long(gb);
-    sps->log2_max_trafo_size                 = log2_diff_max_min_transform_block_size +
-                                               sps->log2_min_tb_size;
+    sps->log2_min_cb_size                       = get_ue_golomb_long(gb) + 3;
+    sps->log2_diff_max_min_coding_block_size    = get_ue_golomb_long(gb);
+    sps->log2_min_tb_size                       = get_ue_golomb_long(gb) + 2;
+    sps->log2_diff_max_min_transform_block_size = get_ue_golomb_long(gb);
+    sps->log2_max_trafo_size                    = sps->log2_diff_max_min_transform_block_size +
+                                                  sps->log2_min_tb_size;
 
     if (sps->log2_min_cb_size < 3 || sps->log2_min_cb_size > 30) {
         av_log(avctx, AV_LOG_ERROR, "Invalid value %d for log2_min_cb_size", sps->log2_min_cb_size);
@@ -1015,8 +1014,9 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
         return AVERROR_INVALIDDATA;
     }
 
-    if (log2_diff_max_min_transform_block_size < 0 || log2_diff_max_min_transform_block_size > 30) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid value %d for log2_diff_max_min_transform_block_size", log2_diff_max_min_transform_block_size);
+    if (sps->log2_diff_max_min_transform_block_size > 30) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid value %d for log2_diff_max_min_transform_block_size",
+               sps->log2_diff_max_min_transform_block_size);
         return AVERROR_INVALIDDATA;
     }
 

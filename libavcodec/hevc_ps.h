@@ -237,6 +237,7 @@ typedef struct HEVCSPS {
     unsigned int log2_max_trafo_size;
     unsigned int log2_ctb_size;
     unsigned int log2_min_pu_size;
+    unsigned int log2_diff_max_min_transform_block_size;
 
     int max_transform_hierarchy_depth_inter;
     int max_transform_hierarchy_depth_intra;
