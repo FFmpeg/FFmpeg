@@ -102,8 +102,6 @@ static int config_input(AVFilterLink *inlink)
     BlackDetectContext *s = ctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     const int depth = desc->comp[0].depth;
-    const int max = (1 << depth) - 1;
-    const int factor = (1 << (depth - 8));
 
     s->depth = depth;
     s->nb_threads = ff_filter_get_nb_threads(ctx);
@@ -113,16 +111,10 @@ static int config_input(AVFilterLink *inlink)
     if (!s->counter)
         return AVERROR(ENOMEM);
 
-    s->pixel_black_th_i = ff_fmt_is_in(inlink->format, yuvj_formats) ?
-        // luminance_minimum_value + pixel_black_th * luminance_range_size
-             s->pixel_black_th *  max :
-        16 * factor + s->pixel_black_th * (235 - 16) * factor;
-
     av_log(s, AV_LOG_VERBOSE,
-           "black_min_duration:%s pixel_black_th:%f pixel_black_th_i:%d picture_black_ratio_th:%f\n",
+           "black_min_duration:%s pixel_black_th:%f picture_black_ratio_th:%f\n",
            av_ts2timestr(s->black_min_duration, &s->time_base),
-           s->pixel_black_th, s->pixel_black_th_i,
-           s->picture_black_ratio_th);
+           s->pixel_black_th, s->picture_black_ratio_th);
     return 0;
 }
 
@@ -182,6 +174,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
     AVFilterContext *ctx = inlink->dst;
     BlackDetectContext *s = ctx->priv;
     double picture_black_ratio = 0;
+    const int max = (1 << s->depth) - 1;
+    const int factor = (1 << (s->depth - 8));
+    const int full = picref->color_range == AVCOL_RANGE_JPEG ||
+                     ff_fmt_is_in(picref->format, yuvj_formats);
+
+    s->pixel_black_th_i = full ? s->pixel_black_th * max :
+        // luminance_minimum_value + pixel_black_th * luminance_range_size
+        16 * factor + s->pixel_black_th * (235 - 16) * factor;
 
     ff_filter_execute(ctx, black_counter, picref, NULL,
                       FFMIN(inlink->h, s->nb_threads));
