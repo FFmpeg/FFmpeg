@@ -1512,7 +1512,7 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah,
                                        "error y=%d x=%d\n", mb_y, mb_x);
                                 return AVERROR_INVALIDDATA;
                             }
-                            if (ptr) {
+                            if (ptr && linesize[c]) {
                                 s->idsp.idct_put(ptr, linesize[c], s->block);
                                 if (s->bits & 7)
                                     shift_output(s, ptr, linesize[c]);
