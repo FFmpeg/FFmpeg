@@ -41,9 +41,6 @@
 typedef struct Libdav1dContext {
     AVClass *class;
     Dav1dContext *c;
-    /* This packet coincides with AVCodecInternal.in_pkt
-     * and is not owned by us. */
-    AVPacket *pkt;
     AVBufferPool *pool;
     int pool_size;
 
@@ -219,8 +216,6 @@ static av_cold int libdav1d_init(AVCodecContext *c)
 #endif
     int res;
 
-    dav1d->pkt = c->internal->in_pkt;
-
     av_log(c, AV_LOG_INFO, "libdav1d %s\n", dav1d_version());
 
     dav1d_default_settings(&s);
@@ -306,17 +301,22 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
     int res;
 
     if (!data->sz) {
-        AVPacket *const pkt = dav1d->pkt;
+        AVPacket *pkt = av_packet_alloc();
+
+        if (!pkt)
+            return AVERROR(ENOMEM);
 
         res = ff_decode_get_packet(c, pkt);
-        if (res < 0 && res != AVERROR_EOF)
+        if (res < 0 && res != AVERROR_EOF) {
+            av_packet_free(&pkt);
             return res;
+        }
 
         if (pkt->size) {
             res = dav1d_data_wrap(data, pkt->data, pkt->size,
                                   libdav1d_data_free, pkt->buf);
             if (res < 0) {
-                av_packet_unref(pkt);
+                av_packet_free(&pkt);
                 return res;
             }
 
@@ -325,7 +325,7 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
             data->m.duration  = pkt->duration;
 
             pkt->buf = NULL;
-            av_packet_unref(pkt);
+            av_packet_free(&pkt);
 
             if (c->reordered_opaque != AV_NOPTS_VALUE) {
                 uint8_t *reordered_opaque = av_memdup(&c->reordered_opaque,
@@ -343,8 +343,9 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
                     return res;
                 }
             }
-        } else if (res >= 0) {
-            av_packet_unref(pkt);
+        } else {
+            av_packet_free(&pkt);
+            if (res >= 0)
             return AVERROR(EAGAIN);
         }
     }
