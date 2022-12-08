@@ -1083,8 +1083,9 @@ static av_cold void nvenc_setup_rate_control(AVCodecContext *avctx)
 
         av_log(avctx, AV_LOG_VERBOSE, "CQ(%d) mode enabled.\n", tmp_quality);
 
-        //CQ mode shall discard avg bitrate & honor max bitrate;
+        // CQ mode shall discard avg bitrate/vbv buffer size and honor only max bitrate
         ctx->encode_config.rcParams.averageBitRate = avctx->bit_rate = 0;
+        ctx->encode_config.rcParams.vbvBufferSize = avctx->rc_buffer_size = 0;
         ctx->encode_config.rcParams.maxBitRate = avctx->rc_max_rate;
     }
 }
