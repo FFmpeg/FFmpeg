@@ -1261,9 +1261,8 @@ static int add_metadata_from_side_data(const AVPacket *avpkt, AVFrame *frame)
     return av_packet_unpack_dictionary(side_metadata, size, frame_md);
 }
 
-int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
+int ff_decode_frame_props_from_pkt(AVFrame *frame, const AVPacket *pkt)
 {
-    const AVPacket *pkt = avctx->internal->last_pkt_props;
     static const struct {
         enum AVPacketSideDataType packet;
         enum AVFrameSideDataType frame;
@@ -1281,11 +1280,10 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
         { AV_PKT_DATA_DYNAMIC_HDR10_PLUS,         AV_FRAME_DATA_DYNAMIC_HDR_PLUS },
     };
 
-    if (!(ffcodec(avctx->codec)->caps_internal & FF_CODEC_CAP_SETS_FRAME_PROPS)) {
         frame->pts = pkt->pts;
         frame->pkt_pos      = pkt->pos;
         frame->duration     = pkt->duration;
-        frame->pkt_size     = (int)(intptr_t)pkt->opaque;
+        frame->pkt_size     = pkt->size;
 
         for (int i = 0; i < FF_ARRAY_ELEMS(sd); i++) {
             size_t size;
@@ -1307,6 +1305,19 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
         } else {
             frame->flags = (frame->flags & ~AV_FRAME_FLAG_DISCARD);
         }
+
+    return 0;
+}
+
+int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
+{
+    const AVPacket *pkt = avctx->internal->last_pkt_props;
+
+    if (!(ffcodec(avctx->codec)->caps_internal & FF_CODEC_CAP_SETS_FRAME_PROPS)) {
+        int ret = ff_decode_frame_props_from_pkt(frame, pkt);
+        if (ret < 0)
+            return ret;
+        frame->pkt_size     = (int)(intptr_t)pkt->opaque;
     }
     frame->reordered_opaque = avctx->reordered_opaque;
 

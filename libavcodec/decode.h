@@ -70,6 +70,11 @@ int ff_decode_receive_frame(AVCodecContext *avctx, AVFrame *frame);
 int ff_decode_get_packet(AVCodecContext *avctx, AVPacket *pkt);
 
 /**
+ * Set various frame properties from the provided packet.
+ */
+int ff_decode_frame_props_from_pkt(AVFrame *frame, const AVPacket *pkt);
+
+/**
  * Set various frame properties from the codec context / packet data.
  */
 int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame);
