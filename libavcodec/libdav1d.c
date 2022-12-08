@@ -328,7 +328,7 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
 
             if (c->reordered_opaque != AV_NOPTS_VALUE) {
                 pkt->opaque = av_memdup(&c->reordered_opaque,
-                                                      sizeof(c->reordered_opaque));
+                                        sizeof(c->reordered_opaque));
                 if (!pkt->opaque) {
                     av_packet_free(&pkt);
                     dav1d_data_unref(data);
@@ -336,19 +336,19 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
                 }
             }
 
-                res = dav1d_data_wrap_user_data(data, (const uint8_t *)pkt,
-                                                libdav1d_user_data_free, pkt);
-                if (res < 0) {
-                    av_free(pkt->opaque);
-                    av_packet_free(&pkt);
-                    dav1d_data_unref(data);
-                    return res;
-                }
+            res = dav1d_data_wrap_user_data(data, (const uint8_t *)pkt,
+                                            libdav1d_user_data_free, pkt);
+            if (res < 0) {
+                av_free(pkt->opaque);
+                av_packet_free(&pkt);
+                dav1d_data_unref(data);
+                return res;
+            }
             pkt = NULL;
         } else {
             av_packet_free(&pkt);
             if (res >= 0)
-            return AVERROR(EAGAIN);
+                return AVERROR(EAGAIN);
         }
     }
 
