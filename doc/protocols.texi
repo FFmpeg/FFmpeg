@@ -622,9 +622,6 @@ This protocol wraps the IPFS native protocols (ipfs:// and ipns://) to be sent
 to such a gateway. Users can (and should) host their own node which means this
 protocol will use one's local gateway to access files on the IPFS network.
 
-If a user doesn't have a node of their own then the public gateway @code{https://dweb.link}
-is used by default.
-
 This protocol accepts the following options:
 
 @table @option
@@ -632,7 +629,7 @@ This protocol accepts the following options:
 @item gateway
 Defines the gateway to use. When not set, the protocol will first try
 locating the local gateway by looking at @code{$IPFS_GATEWAY}, @code{$IPFS_PATH}
-and @code{$HOME/.ipfs/}, in that order. If that fails @code{https://dweb.link} will be used.
+and @code{$HOME/.ipfs/}, in that order.
 
 @end table
 
