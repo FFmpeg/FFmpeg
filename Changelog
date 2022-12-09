@@ -31,7 +31,7 @@ version <next>:
 
 
 version 5.1:
-- add ipfs/ipns protocol support
+- add ipfs/ipns gateway support
 - dialogue enhance audio filter
 - dropped obsolete XvMC hwaccel
 - pcm-bluray encoder

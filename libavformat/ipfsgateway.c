@@ -329,29 +329,29 @@ static const AVOption options[] = {
     {NULL},
 };
 
-static const AVClass ipfs_context_class = {
-    .class_name     = "IPFS",
+static const AVClass ipfs_gateway_context_class = {
+    .class_name     = "IPFS Gateway",
     .item_name      = av_default_item_name,
     .option         = options,
     .version        = LIBAVUTIL_VERSION_INT,
 };
 
-const URLProtocol ff_ipfs_protocol = {
+const URLProtocol ff_ipfs_gateway_protocol = {
     .name               = "ipfs",
     .url_open2          = translate_ipfs_to_http,
     .url_read           = ipfs_read,
     .url_seek           = ipfs_seek,
     .url_close          = ipfs_close,
     .priv_data_size     = sizeof(IPFSGatewayContext),
-    .priv_data_class    = &ipfs_context_class,
+    .priv_data_class    = &ipfs_gateway_context_class,
 };
 
-const URLProtocol ff_ipns_protocol = {
+const URLProtocol ff_ipns_gateway_protocol = {
     .name               = "ipns",
     .url_open2          = translate_ipfs_to_http,
     .url_read           = ipfs_read,
     .url_seek           = ipfs_seek,
     .url_close          = ipfs_close,
     .priv_data_size     = sizeof(IPFSGatewayContext),
-    .priv_data_class    = &ipfs_context_class,
+    .priv_data_class    = &ipfs_gateway_context_class,
 };
