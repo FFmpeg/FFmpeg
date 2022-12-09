@@ -70,7 +70,7 @@ typedef struct TInterlaceContext {
     int vsub;                   ///< chroma vertical subsampling
     AVFrame *cur;
     AVFrame *next;
-    uint8_t *black_data[4];     ///< buffer used to fill padded lines
+    uint8_t *black_data[2][4];  ///< buffer used to fill padded lines (limited/full)
     int black_linesize[4];
     FFDrawContext draw;
     FFDrawColor color;

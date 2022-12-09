@@ -201,7 +201,8 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     av_frame_free(&tinterlace->cur );
     av_frame_free(&tinterlace->next);
-    av_freep(&tinterlace->black_data[0]);
+    av_freep(&tinterlace->black_data[0][0]);
+    av_freep(&tinterlace->black_data[1][0]);
 }
 
 static int config_out_props(AVFilterLink *outlink)
@@ -225,14 +226,22 @@ static int config_out_props(AVFilterLink *outlink)
         int ret;
         ff_draw_init(&tinterlace->draw, outlink->format, 0);
         ff_draw_color(&tinterlace->draw, &tinterlace->color, black);
-        if (ff_fmt_is_in(outlink->format, full_scale_yuvj_pix_fmts))
-            tinterlace->color.comp[0].u8[0] = 0;
-        ret = av_image_alloc(tinterlace->black_data, tinterlace->black_linesize,
+        /* limited range */
+        if (!ff_fmt_is_in(outlink->format, full_scale_yuvj_pix_fmts)) {
+            ret = av_image_alloc(tinterlace->black_data[0], tinterlace->black_linesize,
+                                 outlink->w, outlink->h, outlink->format, 16);
+            if (ret < 0)
+                return ret;
+            ff_fill_rectangle(&tinterlace->draw, &tinterlace->color, tinterlace->black_data[0],
+                              tinterlace->black_linesize, 0, 0, outlink->w, outlink->h);
+        }
+        /* full range */
+        tinterlace->color.comp[0].u8[0] = 0;
+        ret = av_image_alloc(tinterlace->black_data[1], tinterlace->black_linesize,
                              outlink->w, outlink->h, outlink->format, 16);
         if (ret < 0)
             return ret;
-
-        ff_fill_rectangle(&tinterlace->draw, &tinterlace->color, tinterlace->black_data,
+        ff_fill_rectangle(&tinterlace->draw, &tinterlace->color, tinterlace->black_data[1],
                           tinterlace->black_linesize, 0, 0, outlink->w, outlink->h);
     }
     if (tinterlace->flags & (TINTERLACE_FLAG_VLPF | TINTERLACE_FLAG_CVLPF)
@@ -360,7 +369,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
     AVFilterLink *outlink = ctx->outputs[0];
     TInterlaceContext *tinterlace = ctx->priv;
     AVFrame *cur, *next, *out;
-    int field, tff, ret;
+    int field, tff, full, ret;
 
     av_frame_free(&tinterlace->cur);
     tinterlace->cur  = tinterlace->next;
@@ -418,6 +427,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
         out->sample_aspect_ratio = av_mul_q(cur->sample_aspect_ratio, av_make_q(2, 1));
 
         field = (1 + outlink->frame_count_in) & 1 ? FIELD_UPPER : FIELD_LOWER;
+        full = out->color_range == AVCOL_RANGE_JPEG || ff_fmt_is_in(out->format, full_scale_yuvj_pix_fmts);
         /* copy upper and lower fields */
         copy_picture_field(tinterlace, out->data, out->linesize,
                            (const uint8_t **)cur->data, cur->linesize,
@@ -425,7 +435,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
                            FIELD_UPPER_AND_LOWER, 1, field, tinterlace->flags);
         /* pad with black the other field */
         copy_picture_field(tinterlace, out->data, out->linesize,
-                           (const uint8_t **)tinterlace->black_data, tinterlace->black_linesize,
+                           (const uint8_t **)tinterlace->black_data[full], tinterlace->black_linesize,
                            inlink->format, inlink->w, inlink->h,
                            FIELD_UPPER_AND_LOWER, 1, !field, tinterlace->flags);
         break;
