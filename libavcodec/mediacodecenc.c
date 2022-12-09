@@ -28,6 +28,7 @@
 #include "libavutil/opt.h"
 
 #include "avcodec.h"
+#include "bsf.h"
 #include "codec_internal.h"
 #include "encode.h"
 #include "hwconfig.h"
@@ -78,6 +79,7 @@ typedef struct MediaCodecEncContext {
     int eof_sent;
 
     AVFrame *frame;
+    AVBSFContext *bsf;
 
     int bitrate_mode;
     int level;
@@ -119,6 +121,42 @@ static void mediacodec_output_format(AVCodecContext *avctx)
     ff_AMediaFormat_delete(out_format);
 }
 
+static int mediacodec_init_bsf(AVCodecContext *avctx)
+{
+    MediaCodecEncContext *s = avctx->priv_data;
+    char str[128];
+    int ret;
+    int crop_right = s->width - avctx->width;
+    int crop_bottom = s->height - avctx->height;
+
+    if (!crop_right && !crop_bottom)
+        return 0;
+
+    if (avctx->codec_id == AV_CODEC_ID_H264)
+        ret = snprintf(str, sizeof(str), "h264_metadata=crop_right=%d:crop_bottom=%d",
+                 crop_right, crop_bottom);
+    else if (avctx->codec_id == AV_CODEC_ID_HEVC)
+        ret = snprintf(str, sizeof(str), "hevc_metadata=crop_right=%d:crop_bottom=%d",
+                 crop_right, crop_bottom);
+    else
+        return 0;
+
+    if (ret >= sizeof(str))
+        return AVERROR_BUFFER_TOO_SMALL;
+
+    ret = av_bsf_list_parse_str(str, &s->bsf);
+    if (ret < 0)
+        return ret;
+
+    ret = avcodec_parameters_from_context(s->bsf->par_in, avctx);
+    if (ret < 0)
+        return ret;
+    s->bsf->time_base_in = avctx->time_base;
+    ret = av_bsf_init(s->bsf);
+
+    return ret;
+}
+
 static av_cold int mediacodec_init(AVCodecContext *avctx)
 {
     const char *codec_mime = NULL;
@@ -158,8 +196,19 @@ static av_cold int mediacodec_init(AVCodecContext *avctx)
     }
 
     ff_AMediaFormat_setString(format, "mime", codec_mime);
-    s->width = FFALIGN(avctx->width, 16);
-    s->height = avctx->height;
+    // Workaround the alignment requirement of mediacodec. We can't do it
+    // silently for AV_PIX_FMT_MEDIACODEC.
+    if (avctx->pix_fmt != AV_PIX_FMT_MEDIACODEC) {
+        s->width = FFALIGN(avctx->width, 16);
+        s->height = FFALIGN(avctx->height, 16);
+    } else {
+        s->width = avctx->width;
+        s->height = avctx->height;
+        if (s->width % 16 || s->height % 16)
+            av_log(avctx, AV_LOG_WARNING,
+                    "Video size %dx%d isn't align to 16, it may have device compatibility issue\n",
+                    s->width, s->height);
+    }
     ff_AMediaFormat_setInt32(format, "width", s->width);
     ff_AMediaFormat_setInt32(format, "height", s->height);
 
@@ -251,6 +300,10 @@ static av_cold int mediacodec_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "MediaCodec failed to start, %s\n", av_err2str(ret));
         goto bailout;
     }
+
+    ret = mediacodec_init_bsf(avctx);
+    if (ret)
+        goto bailout;
 
     mediacodec_output_format(avctx);
 
@@ -444,10 +497,24 @@ static int mediacodec_encode(AVCodecContext *avctx, AVPacket *pkt)
     // 2. Got a packet success
     // 3. No AVFrame is available yet (don't return if get_frame return EOF)
     while (1) {
+        if (s->bsf) {
+            ret = av_bsf_receive_packet(s->bsf, pkt);
+            if (!ret)
+                return 0;
+            if (ret != AVERROR(EAGAIN))
+                return ret;
+        }
+
         ret = mediacodec_receive(avctx, pkt, &got_packet);
-        if (!ret)
-            return 0;
-        else if (ret != AVERROR(EAGAIN))
+        if (s->bsf) {
+            if (!ret || ret == AVERROR_EOF)
+                ret = av_bsf_send_packet(s->bsf, pkt);
+        } else {
+            if (!ret)
+                return 0;
+        }
+
+        if (ret != AVERROR(EAGAIN))
             return ret;
 
         if (!s->frame->buf[0]) {
@@ -480,6 +547,7 @@ static av_cold int mediacodec_close(AVCodecContext *avctx)
         s->window = NULL;
     }
 
+    av_bsf_free(&s->bsf);
     av_frame_free(&s->frame);
 
     return 0;
