@@ -269,9 +269,8 @@ fate-mv-sgirle: CMD = framecrc -i $(TARGET_SAMPLES)/mv/pet-rle.movie -an
 FATE_VIDEO-$(call FRAMECRC, MXG, MXPEG) += fate-mxpeg
 fate-mxpeg: CMD = framecrc -idct simple -flags +bitexact -i $(TARGET_SAMPLES)/mxpeg/m1.mxg -an
 
-# FIXME dropped frames in this test because of coarse timebase
 FATE_NUV += fate-nuv-rtjpeg
-fate-nuv-rtjpeg: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/nuv/Today.nuv -an -r 1000
+fate-nuv-rtjpeg: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/nuv/Today.nuv -an -enc_time_base -1
 
 FATE_NUV += fate-nuv-rtjpeg-fh
 fate-nuv-rtjpeg-fh: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/nuv/rtjpeg_frameheader.nuv -an

@@ -443,10 +443,6 @@ static OutputStream *new_video_stream(Muxer *mux, const OptionsContext *o, Input
         exit_program(1);
     }
 
-    if ((frame_rate || max_frame_rate) &&
-        video_sync_method == VSYNC_PASSTHROUGH)
-        av_log(NULL, AV_LOG_ERROR, "Using -vsync passthrough and -r/-fpsmax can produce invalid output files\n");
-
     MATCH_PER_STREAM_OPT(frame_aspect_ratios, str, frame_aspect_ratio, oc, st);
     if (frame_aspect_ratio) {
         AVRational q;
@@ -614,8 +610,18 @@ static OutputStream *new_video_stream(Muxer *mux, const OptionsContext *o, Input
         if (fps_mode)
             parse_and_set_vsync(fps_mode, &ost->vsync_method, ost->file_index, ost->index, 0);
 
+        if ((ost->frame_rate.num || ost->max_frame_rate.num) &&
+            !(ost->vsync_method == VSYNC_AUTO ||
+              ost->vsync_method == VSYNC_CFR || ost->vsync_method == VSYNC_VSCFR)) {
+            av_log(NULL, AV_LOG_FATAL, "One of -r/-fpsmax was specified "
+                   "together a non-CFR -vsync/-fps_mode. This is contradictory.\n");
+            exit_program(1);
+        }
+
         if (ost->vsync_method == VSYNC_AUTO) {
-            if (!strcmp(oc->oformat->name, "avi")) {
+            if (ost->frame_rate.num || ost->max_frame_rate.num) {
+                ost->vsync_method = VSYNC_CFR;
+            } else if (!strcmp(oc->oformat->name, "avi")) {
                 ost->vsync_method = VSYNC_VFR;
             } else {
                 ost->vsync_method = (oc->oformat->flags & AVFMT_VARIABLE_FPS)       ?
