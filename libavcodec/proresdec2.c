@@ -289,10 +289,10 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
         avctx->pix_fmt = ret;
     }
 
-    avctx->color_primaries = buf[14];
-    avctx->color_trc       = buf[15];
-    avctx->colorspace      = buf[16];
-    avctx->color_range     = AVCOL_RANGE_MPEG;
+    ctx->frame->color_primaries = buf[14];
+    ctx->frame->color_trc       = buf[15];
+    ctx->frame->colorspace      = buf[16];
+    ctx->frame->color_range     = AVCOL_RANGE_MPEG;
 
     ptr   = buf + 20;
     flags = buf[19];
