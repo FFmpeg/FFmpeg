@@ -687,7 +687,7 @@ static int ogg_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int i;
 
-    if (pkt)
+    if (pkt && pkt->size)
         return ogg_write_packet_internal(s, pkt);
 
     for (i = 0; i < s->nb_streams; i++) {
