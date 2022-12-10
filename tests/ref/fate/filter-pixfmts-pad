@@ -4,6 +4,7 @@ abgr                52738042432893de555e6a3833172806
 argb                2a10108ac524b422b8a2393c064b3eab
 bgr0                025d4d5e5691801ba39bc9de70e39df0
 bgr24               f8b65ad845905c7d0c93ca28dfbb826f
+bgr48le             4564b56dd1f2a9761b8a7a5244ac4c49
 bgra                929aac15e848038e367c250037575f9f
 gbrap               5f16cccab5a17cb766c882e865995167
 gbrap10le           e63e0a1ae9afd7e6a732f18be194e761
@@ -35,6 +36,7 @@ p410le              5ca28f2bcc849987810e1f3437b12feb
 p416le              fa4e023d0bf4b03b0ffef3d4d35abf7e
 rgb0                0984eb985dabbe757ed6beb53db84eff
 rgb24               17f9e2e0c609009acaf2175c42d4a2a5
+rgb48le             ed08db9b1aa50d69b8c3d73db93e390e
 rgba                b157c90191463d34fb3ce77b36c96386
 vuya                44368c0a758ee68e24ce976e3b1b8535
 vuyx                bc7c4f693a22cd1ac95e33d473086474

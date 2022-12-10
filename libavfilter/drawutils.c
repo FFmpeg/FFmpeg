@@ -128,9 +128,6 @@ int ff_draw_init2(FFDrawContext *draw, enum AVPixelFormat format, enum AVColorSp
         if (pixelstep[c->plane] != 0 &&
             pixelstep[c->plane] != c->step)
             return AVERROR(ENOSYS);
-        if (pixelstep[c->plane] == 6 &&
-            c->depth == 16)
-            return AVERROR(ENOSYS);
         pixelstep[c->plane] = c->step;
         if (pixelstep[c->plane] >= 8)
             return AVERROR(ENOSYS);
