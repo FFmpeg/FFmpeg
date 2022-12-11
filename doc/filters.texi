@@ -1703,6 +1703,13 @@ Apply reverb to stream using mono IR file as second input, complete command usin
 @example
 ffmpeg -i input.wav -i middle_tunnel_1way_mono.wav -lavfi afir output.wav
 @end example
+
+@item
+Apply true stereo processing given input stereo stream, and two stereo impulse responses for left and right channel,
+the impulse response files are files with names l_ir.wav and r_ir.wav:
+@example
+"pan=4C|c0=FL|c1=FL|c2=FR|c3=FR[a];amovie=l_ir.wav[LIR];amovie=r_ir.wav[RIR];[LIR][RIR]amerge[ir];[a][ir]afir=irfmt=input:gtype=gn:irgain=-5dB,pan=stereo|FL<c0+c2|FR<c1+c3"
+@end example
 @end itemize
 
 @anchor{aformat}
