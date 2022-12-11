@@ -156,14 +156,6 @@ static void fn(convert_channels)(AVFilterContext *ctx, AudioFIRContext *s)
                 const int remaining = s->nb_taps - toffset;
                 const int size = remaining >= seg->part_size ? seg->part_size : remaining;
 
-                if (size < 8) {
-                    for (int n = 0; n < size; n++)
-                        coeff[coffset + n].re = time[toffset + n];
-
-                    toffset += size;
-                    continue;
-                }
-
                 memset(blockin, 0, sizeof(*blockin) * seg->fft_length);
                 memcpy(blockin, time + toffset, size * sizeof(*blockin));
 
@@ -245,16 +237,9 @@ static int fn(get_power)(AVFilterContext *ctx, AudioFIRContext *s, int cur_nb_ta
     return 0;
 }
 
-static void fn(direct)(const ftype *in, const ctype *ir, int len, ftype *out)
-{
-    for (int n = 0; n < len; n++)
-        for (int m = 0; m <= n; m++)
-            out[n] += ir[m].re * in[n - m];
-}
-
 static void fn(fir_fadd)(AudioFIRContext *s, ftype *dst, const ftype *src, int nb_samples)
 {
-    if ((nb_samples & 15) == 0 && nb_samples >= 16) {
+    if ((nb_samples & 15) == 0 && nb_samples >= 8) {
 #if DEPTH == 32
         s->fdsp->vector_fmac_scalar(dst, src, 1.f, nb_samples);
 #else
@@ -272,7 +257,8 @@ static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int offse
     const ftype *in = (const ftype *)s->in->extended_data[ch] + offset;
     ftype *blockin, *blockout, *buf, *ptr = (ftype *)out->extended_data[ch] + offset;
     const int nb_samples = FFMIN(s->min_part_size, out->nb_samples - offset);
-    int n, i, j;
+    const int min_part_size = s->min_part_size;
+    const float dry_gain = s->dry_gain;
 
     for (int segment = 0; segment < s->nb_segments; segment++) {
         AudioFIRSegment *seg = &s->seg[segment];
@@ -280,76 +266,55 @@ static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int offse
         ftype *dst = (ftype *)seg->output->extended_data[ch];
         ftype *sumin = (ftype *)seg->sumin->extended_data[ch];
         ftype *sumout = (ftype *)seg->sumout->extended_data[ch];
+        int *output_offset = &seg->output_offset[ch];
+        const int input_offset = seg->input_offset;
+        const int part_size = seg->part_size;
+        int j;
 
-        if (s->min_part_size >= 8) {
+        if (min_part_size >= 8) {
 #if DEPTH == 32
-            s->fdsp->vector_fmul_scalar(src + seg->input_offset, in, s->dry_gain, FFALIGN(nb_samples, 4));
+            s->fdsp->vector_fmul_scalar(src + input_offset, in, dry_gain, FFALIGN(nb_samples, 4));
 #else
-            s->fdsp->vector_dmul_scalar(src + seg->input_offset, in, s->dry_gain, FFALIGN(nb_samples, 8));
+            s->fdsp->vector_dmul_scalar(src + input_offset, in, dry_gain, FFALIGN(nb_samples, 8));
 #endif
             emms_c();
         } else {
-            for (n = 0; n < nb_samples; n++)
-                src[seg->input_offset + n] = in[n] * s->dry_gain;
+            ftype *src2 = src + input_offset;
+            for (int n = 0; n < nb_samples; n++)
+                src2[n] = in[n] * dry_gain;
         }
 
-        seg->output_offset[ch] += s->min_part_size;
-        if (seg->output_offset[ch] == seg->part_size) {
-            seg->output_offset[ch] = 0;
+        output_offset[0] += min_part_size;
+        if (output_offset[0] == part_size) {
+            output_offset[0] = 0;
         } else {
-            memmove(src, src + s->min_part_size, (seg->input_size - s->min_part_size) * sizeof(*src));
+            memmove(src, src + min_part_size, (seg->input_size - min_part_size) * sizeof(*src));
 
-            dst += seg->output_offset[ch];
+            dst += output_offset[0];
             fn(fir_fadd)(s, ptr, dst, nb_samples);
-            continue;
-        }
-
-        if (seg->part_size < 8) {
-            memset(dst, 0, sizeof(*dst) * seg->part_size * seg->nb_partitions);
-
-            j = seg->part_index[ch];
-
-            for (i = 0; i < seg->nb_partitions; i++) {
-                const int coffset = j * seg->coeff_size;
-                const ctype *coeff = (const ctype *)seg->coeff->extended_data[ch * !s->one2many] + coffset;
-
-                fn(direct)(src, coeff, nb_samples, dst);
-
-                if (j == 0)
-                    j = seg->nb_partitions;
-                j--;
-            }
-
-            seg->part_index[ch] = (seg->part_index[ch] + 1) % seg->nb_partitions;
-
-            memmove(src, src + s->min_part_size, (seg->input_size - s->min_part_size) * sizeof(*src));
-
-            for (n = 0; n < nb_samples; n++) {
-                ptr[n] += dst[n];
-            }
             continue;
         }
 
         memset(sumin, 0, sizeof(*sumin) * seg->fft_length);
         blockin = (ftype *)seg->blockin->extended_data[ch] + seg->part_index[ch] * seg->block_size;
         blockout = (ftype *)seg->blockout->extended_data[ch] + seg->part_index[ch] * seg->block_size;
-        memset(blockin + seg->part_size, 0, sizeof(*blockin) * (seg->fft_length - seg->part_size));
+        memset(blockin + part_size, 0, sizeof(*blockin) * (seg->fft_length - part_size));
 
-        memcpy(blockin, src, sizeof(*src) * seg->part_size);
+        memcpy(blockin, src, sizeof(*src) * part_size);
 
         seg->tx_fn(seg->tx[ch], blockout, blockin, sizeof(ftype));
 
         j = seg->part_index[ch];
 
-        for (i = 0; i < seg->nb_partitions; i++) {
+        for (int i = 0; i < seg->nb_partitions; i++) {
             const int coffset = j * seg->coeff_size;
             const ftype *blockout = (const ftype *)seg->blockout->extended_data[ch] + i * seg->block_size;
             const ctype *coeff = (const ctype *)seg->coeff->extended_data[ch * !s->one2many] + coffset;
 
 #if DEPTH == 32
-            s->afirdsp.fcmul_add(sumin, blockout, (const ftype *)coeff, seg->part_size);
+            s->afirdsp.fcmul_add(sumin, blockout, (const ftype *)coeff, part_size);
 #else
-            s->afirdsp.dcmul_add(sumin, blockout, (const ftype *)coeff, seg->part_size);
+            s->afirdsp.dcmul_add(sumin, blockout, (const ftype *)coeff, part_size);
 #endif
 
             if (j == 0)
@@ -360,21 +325,21 @@ static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int offse
         seg->itx_fn(seg->itx[ch], sumout, sumin, sizeof(ctype));
 
         buf = (ftype *)seg->buffer->extended_data[ch];
-        fn(fir_fadd)(s, buf, sumout, seg->part_size);
+        fn(fir_fadd)(s, buf, sumout, part_size);
 
-        memcpy(dst, buf, seg->part_size * sizeof(*dst));
+        memcpy(dst, buf, part_size * sizeof(*dst));
 
         buf = (ftype *)seg->buffer->extended_data[ch];
-        memcpy(buf, sumout + seg->part_size, seg->part_size * sizeof(*buf));
+        memcpy(buf, sumout + part_size, part_size * sizeof(*buf));
 
         seg->part_index[ch] = (seg->part_index[ch] + 1) % seg->nb_partitions;
 
-        memmove(src, src + s->min_part_size, (seg->input_size - s->min_part_size) * sizeof(*src));
+        memmove(src, src + min_part_size, (seg->input_size - min_part_size) * sizeof(*src));
 
         fn(fir_fadd)(s, ptr, dst, nb_samples);
     }
 
-    if (s->min_part_size >= 8) {
+    if (min_part_size >= 8) {
 #if DEPTH == 32
         s->fdsp->vector_fmul_scalar(ptr, ptr, s->wet_gain, FFALIGN(nb_samples, 4));
 #else
@@ -382,11 +347,9 @@ static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int offse
 #endif
         emms_c();
     } else {
-        for (n = 0; n < nb_samples; n++)
+        for (int n = 0; n < nb_samples; n++)
             ptr[n] *= s->wet_gain;
     }
 
     return 0;
 }
-
-

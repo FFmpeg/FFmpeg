@@ -25,6 +25,7 @@
 
 #include <float.h>
 
+#include "libavutil/cpu.h"
 #include "libavutil/tx.h"
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
@@ -158,6 +159,7 @@ static int init_segment(AVFilterContext *ctx, AudioFIRSegment *seg,
                         int offset, int nb_partitions, int part_size)
 {
     AudioFIRContext *s = ctx->priv;
+    const size_t cpu_align = av_cpu_max_align();
     int ret;
 
     seg->tx  = av_calloc(ctx->inputs[0]->ch_layout.nb_channels, sizeof(*seg->tx));
@@ -167,8 +169,8 @@ static int init_segment(AVFilterContext *ctx, AudioFIRSegment *seg,
 
     seg->fft_length    = part_size * 2 + 1;
     seg->part_size     = part_size;
-    seg->block_size    = FFALIGN(seg->fft_length, 32);
-    seg->coeff_size    = FFALIGN(seg->part_size + 1, 32);
+    seg->block_size    = FFALIGN(seg->fft_length, cpu_align);
+    seg->coeff_size    = FFALIGN(seg->part_size + 1, cpu_align);
     seg->nb_partitions = nb_partitions;
     seg->input_size    = offset + s->min_part_size;
     seg->input_offset  = offset;
@@ -178,7 +180,7 @@ static int init_segment(AVFilterContext *ctx, AudioFIRSegment *seg,
     if (!seg->part_index || !seg->output_offset)
         return AVERROR(ENOMEM);
 
-    for (int ch = 0; ch < ctx->inputs[0]->ch_layout.nb_channels && part_size >= 8; ch++) {
+    for (int ch = 0; ch < ctx->inputs[0]->ch_layout.nb_channels && part_size >= 1; ch++) {
         union { double d; float f; } scale, iscale;
         enum AVTXType tx_type;
 
