@@ -160,6 +160,8 @@ static int init_segment(AVFilterContext *ctx, AudioFIRSegment *seg,
 {
     AudioFIRContext *s = ctx->priv;
     const size_t cpu_align = av_cpu_max_align();
+    union { double d; float f; } cscale, scale, iscale;
+    enum AVTXType tx_type;
     int ret;
 
     seg->tx  = av_calloc(ctx->inputs[0]->ch_layout.nb_channels, sizeof(*seg->tx));
@@ -167,7 +169,7 @@ static int init_segment(AVFilterContext *ctx, AudioFIRSegment *seg,
     if (!seg->tx || !seg->itx)
         return AVERROR(ENOMEM);
 
-    seg->fft_length    = part_size * 2 + 1;
+    seg->fft_length    = part_size * 2 + 2;
     seg->part_size     = part_size;
     seg->block_size    = FFALIGN(seg->fft_length, cpu_align);
     seg->coeff_size    = FFALIGN(seg->part_size + 1, cpu_align);
@@ -180,22 +182,27 @@ static int init_segment(AVFilterContext *ctx, AudioFIRSegment *seg,
     if (!seg->part_index || !seg->output_offset)
         return AVERROR(ENOMEM);
 
-    for (int ch = 0; ch < ctx->inputs[0]->ch_layout.nb_channels && part_size >= 1; ch++) {
-        union { double d; float f; } scale, iscale;
-        enum AVTXType tx_type;
+    switch (s->format) {
+    case AV_SAMPLE_FMT_FLTP:
+        cscale.f = 1.f;
+        scale.f  = 1.f / sqrtf(2.f * part_size);
+        iscale.f = 1.f / sqrtf(2.f * part_size);
+        tx_type  = AV_TX_FLOAT_RDFT;
+        break;
+    case AV_SAMPLE_FMT_DBLP:
+        cscale.d = 1.0;
+        scale.d  = 1.0 / sqrt(2.0 * part_size);
+        iscale.d = 1.0 / sqrt(2.0 * part_size);
+        tx_type  = AV_TX_DOUBLE_RDFT;
+        break;
+    }
 
-        switch (s->format) {
-        case AV_SAMPLE_FMT_FLTP:
-            scale.f  = 1.f;
-            iscale.f = 1.f / part_size;
-            tx_type  = AV_TX_FLOAT_RDFT;
-            break;
-        case AV_SAMPLE_FMT_DBLP:
-            scale.d  = 1.0;
-            iscale.d = 1.0 / part_size;
-            tx_type  = AV_TX_DOUBLE_RDFT;
-            break;
-        }
+    ret = av_tx_init(&seg->ctx, &seg->ctx_fn, tx_type,
+                     0, 2 * part_size, &cscale,  0);
+    if (ret < 0)
+        return ret;
+
+    for (int ch = 0; ch < ctx->inputs[0]->ch_layout.nb_channels && part_size >= 1; ch++) {
         ret = av_tx_init(&seg->tx[ch],  &seg->tx_fn,  tx_type,
                          0, 2 * part_size, &scale,  0);
         if (ret < 0)
@@ -223,6 +230,8 @@ static int init_segment(AVFilterContext *ctx, AudioFIRSegment *seg,
 static void uninit_segment(AVFilterContext *ctx, AudioFIRSegment *seg)
 {
     AudioFIRContext *s = ctx->priv;
+
+    av_tx_uninit(&seg->ctx);
 
     if (seg->tx) {
         for (int ch = 0; ch < s->nb_channels; ch++) {

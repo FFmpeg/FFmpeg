@@ -49,8 +49,8 @@ typedef struct AudioFIRSegment {
     AVFrame *input;
     AVFrame *output;
 
-    AVTXContext **tx, **itx;
-    av_tx_fn tx_fn, itx_fn;
+    AVTXContext *ctx, **tx, **itx;
+    av_tx_fn ctx_fn, tx_fn, itx_fn;
 } AudioFIRSegment;
 
 typedef struct AudioFIRContext {

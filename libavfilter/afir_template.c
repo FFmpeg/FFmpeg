@@ -159,7 +159,7 @@ static void fn(convert_channels)(AVFilterContext *ctx, AudioFIRContext *s)
                 memset(blockin, 0, sizeof(*blockin) * seg->fft_length);
                 memcpy(blockin, time + toffset, size * sizeof(*blockin));
 
-                seg->tx_fn(seg->tx[0], blockout, blockin, sizeof(ftype));
+                seg->ctx_fn(seg->ctx, blockout, blockin, sizeof(ftype));
 
                 for (int n = 0; n < seg->part_size + 1; n++) {
                     coeff[coffset + n].re = blockout[2 * n];
@@ -316,7 +316,6 @@ static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int offse
 #else
             s->afirdsp.dcmul_add(sumin, blockout, (const ftype *)coeff, part_size);
 #endif
-
             if (j == 0)
                 j = seg->nb_partitions;
             j--;
