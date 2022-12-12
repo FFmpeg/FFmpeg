@@ -338,6 +338,9 @@ static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int offse
         fn(fir_fadd)(s, ptr, dst, nb_samples);
     }
 
+    if (s->wet_gain == 1.f)
+        return 0;
+
     if (min_part_size >= 8) {
 #if DEPTH == 32
         s->fdsp->vector_fmul_scalar(ptr, ptr, s->wet_gain, FFALIGN(nb_samples, 4));
