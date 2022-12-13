@@ -89,6 +89,10 @@ typedef struct SPS {
     int pic_struct_present_flag;
     int time_offset_length;
     int cpb_cnt;                          ///< See H.264 E.1.2
+    int bit_rate_scale;
+    uint32_t bit_rate_value[32];          ///< bit_rate_value_minus1 + 1
+    uint32_t cpb_size_value[32];          ///< cpb_size_value_minus1 + 1
+    uint32_t cpr_flag;
     int initial_cpb_removal_delay_length; ///< initial_cpb_removal_delay_length_minus1 + 1
     int cpb_removal_delay_length;         ///< cpb_removal_delay_length_minus1 + 1
     int dpb_output_delay_length;          ///< dpb_output_delay_length_minus1 + 1

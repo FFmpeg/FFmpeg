@@ -113,12 +113,13 @@ static inline int decode_hrd_parameters(GetBitContext *gb, void *logctx,
         return AVERROR_INVALIDDATA;
     }
 
-    get_bits(gb, 4); /* bit_rate_scale */
+    sps->cpr_flag = 0x0;
+    sps->bit_rate_scale = get_bits(gb, 4);
     get_bits(gb, 4); /* cpb_size_scale */
     for (i = 0; i < cpb_count; i++) {
-        get_ue_golomb_long(gb); /* bit_rate_value_minus1 */
-        get_ue_golomb_long(gb); /* cpb_size_value_minus1 */
-        get_bits1(gb);          /* cbr_flag */
+        sps->bit_rate_value[i] = get_ue_golomb_long(gb) + 1; /* bit_rate_value_minus1 + 1 */
+        sps->cpb_size_value[i] = get_ue_golomb_long(gb) + 1; /* cpb_size_value_minus1 + 1 */
+        sps->cpr_flag         |= get_bits1(gb) << i;
     }
     sps->initial_cpb_removal_delay_length = get_bits(gb, 5) + 1;
     sps->cpb_removal_delay_length         = get_bits(gb, 5) + 1;
