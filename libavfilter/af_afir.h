@@ -37,6 +37,8 @@ typedef struct AudioFIRSegment {
     int input_size;
     int input_offset;
 
+    int *selir;
+    int *loading;
     int *output_offset;
     int *part_index;
 
@@ -44,14 +46,19 @@ typedef struct AudioFIRSegment {
     AVFrame *sumout;
     AVFrame *blockin;
     AVFrame *blockout;
+    AVFrame *tempin;
+    AVFrame *tempout;
     AVFrame *buffer;
     AVFrame *coeff;
     AVFrame *input;
     AVFrame *output;
+    AVFrame *loaded;
 
-    AVTXContext *ctx, **tx, **itx;
+    AVTXContext **ctx, **tx, **itx;
     av_tx_fn ctx_fn, tx_fn, itx_fn;
 } AudioFIRSegment;
+
+#define MAX_IR_STREAMS 32
 
 typedef struct AudioFIRContext {
     const AVClass *class;
@@ -70,24 +77,23 @@ typedef struct AudioFIRContext {
     int minp;
     int maxp;
     int nb_irs;
+    int prev_selir;
     int selir;
     int precision;
     int format;
 
-    double gain;
-
-    int eof_coeffs[32];
-    int have_coeffs;
-    int nb_taps;
+    int eof_coeffs[MAX_IR_STREAMS];
+    int have_coeffs[MAX_IR_STREAMS];
+    int nb_taps[MAX_IR_STREAMS];
     int nb_channels;
-    int nb_coef_channels;
     int one2many;
 
     AudioFIRSegment seg[1024];
     int nb_segments;
 
     AVFrame *in;
-    AVFrame *ir[32];
+    AVFrame *ir[MAX_IR_STREAMS];
+    AVFrame *norm_ir;
     AVFrame *video;
     int min_part_size;
     int64_t pts;

@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/tx.h"
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
@@ -26,17 +27,23 @@
 #undef ctype
 #undef ftype
 #undef SQRT
+#undef HYPOT
 #undef SAMPLE_FORMAT
+#undef TX_TYPE
 #if DEPTH == 32
 #define SAMPLE_FORMAT float
 #define SQRT sqrtf
+#define HYPOT hypotf
 #define ctype AVComplexFloat
 #define ftype float
+#define TX_TYPE AV_TX_FLOAT_RDFT
 #else
 #define SAMPLE_FORMAT double
 #define SQRT sqrt
+#define HYPOT hypot
 #define ctype AVComplexDouble
 #define ftype double
+#define TX_TYPE AV_TX_DOUBLE_RDFT
 #endif
 
 #define fn3(a,b)   a##_##b
@@ -66,7 +73,7 @@ static void fn(draw_response)(AVFilterContext *ctx, AVFrame *out)
         double w = i * M_PI / (s->w - 1);
         double div, real_num = 0., imag_num = 0., real = 0., imag = 0.;
 
-        for (x = 0; x < s->nb_taps; x++) {
+        for (x = 0; x < s->nb_taps[s->selir]; x++) {
             real += cos(-x * w) * src[x];
             imag += sin(-x * w) * src[x];
             real_num += cos(-x * w) * src[x] * x;
@@ -132,109 +139,160 @@ end:
     av_free(mag);
 }
 
-static void fn(convert_channels)(AVFilterContext *ctx, AudioFIRContext *s)
+static int fn(get_power)(AVFilterContext *ctx, AudioFIRContext *s,
+                         int cur_nb_taps, int ch)
 {
-    for (int ch = 0; ch < ctx->inputs[1 + s->selir]->ch_layout.nb_channels; ch++) {
-        ftype *time = (ftype *)s->ir[s->selir]->extended_data[!s->one2many * ch];
-        int toffset = 0;
-
-        for (int i = FFMAX(1, s->length * s->nb_taps); i < s->nb_taps; i++)
-            time[i] = 0;
-
-        av_log(ctx, AV_LOG_DEBUG, "channel: %d\n", ch);
-
-        for (int segment = 0; segment < s->nb_segments; segment++) {
-            AudioFIRSegment *seg = &s->seg[segment];
-            ftype *blockin = (ftype *)seg->blockin->extended_data[ch];
-            ftype *blockout = (ftype *)seg->blockout->extended_data[ch];
-            ctype *coeff = (ctype *)seg->coeff->extended_data[ch];
-
-            av_log(ctx, AV_LOG_DEBUG, "segment: %d\n", segment);
-
-            for (int i = 0; i < seg->nb_partitions; i++) {
-                const int coffset = i * seg->coeff_size;
-                const int remaining = s->nb_taps - toffset;
-                const int size = remaining >= seg->part_size ? seg->part_size : remaining;
-
-                memset(blockin, 0, sizeof(*blockin) * seg->fft_length);
-                memcpy(blockin, time + toffset, size * sizeof(*blockin));
-
-                seg->ctx_fn(seg->ctx, blockout, blockin, sizeof(ftype));
-
-                for (int n = 0; n < seg->part_size + 1; n++) {
-                    coeff[coffset + n].re = blockout[2 * n];
-                    coeff[coffset + n].im = blockout[2 * n + 1];
-                }
-
-                toffset += size;
-            }
-
-            av_log(ctx, AV_LOG_DEBUG, "nb_partitions: %d\n", seg->nb_partitions);
-            av_log(ctx, AV_LOG_DEBUG, "partition size: %d\n", seg->part_size);
-            av_log(ctx, AV_LOG_DEBUG, "block size: %d\n", seg->block_size);
-            av_log(ctx, AV_LOG_DEBUG, "fft_length: %d\n", seg->fft_length);
-            av_log(ctx, AV_LOG_DEBUG, "coeff_size: %d\n", seg->coeff_size);
-            av_log(ctx, AV_LOG_DEBUG, "input_size: %d\n", seg->input_size);
-            av_log(ctx, AV_LOG_DEBUG, "input_offset: %d\n", seg->input_offset);
-        }
-    }
-}
-
-static int fn(get_power)(AVFilterContext *ctx, AudioFIRContext *s, int cur_nb_taps)
-{
-    ftype power = 0;
-    int ch;
+    ftype ch_gain = 1;
 
     switch (s->gtype) {
     case -1:
-        /* nothing to do */
+        ch_gain = 1;
         break;
     case 0:
-        for (ch = 0; ch < ctx->inputs[1 + s->selir]->ch_layout.nb_channels; ch++) {
-            ftype *time = (ftype *)s->ir[s->selir]->extended_data[!s->one2many * ch];
+        {
+            ftype *time = (ftype *)s->norm_ir->extended_data[ch];
+            ftype sum = 0;
 
             for (int i = 0; i < cur_nb_taps; i++)
-                power += FFABS(time[i]);
+                sum += FFABS(time[i]);
+            ch_gain = 1. / sum;
         }
-        s->gain = ctx->inputs[1 + s->selir]->ch_layout.nb_channels / power;
         break;
     case 1:
-        for (ch = 0; ch < ctx->inputs[1 + s->selir]->ch_layout.nb_channels; ch++) {
-            ftype *time = (ftype *)s->ir[s->selir]->extended_data[!s->one2many * ch];
+        {
+            ftype *time = (ftype *)s->norm_ir->extended_data[ch];
+            ftype sum = 0;
 
             for (int i = 0; i < cur_nb_taps; i++)
-                power += time[i];
+                sum += time[i];
+            ch_gain = 1. / sum;
         }
-        s->gain = ctx->inputs[1 + s->selir]->ch_layout.nb_channels / power;
         break;
     case 2:
-        for (ch = 0; ch < ctx->inputs[1 + s->selir]->ch_layout.nb_channels; ch++) {
-            ftype *time = (ftype *)s->ir[s->selir]->extended_data[!s->one2many * ch];
+        {
+            ftype *time = (ftype *)s->norm_ir->extended_data[ch];
+            ftype sum = 0;
 
             for (int i = 0; i < cur_nb_taps; i++)
-                power += time[i] * time[i];
+                sum += time[i] * time[i];
+            ch_gain = 1. / SQRT(sum);
         }
-        s->gain = SQRT(ch / power);
+        break;
+    case 3:
+    case 4:
+        {
+            ftype *inc, *outc, scale;
+            AVTXContext *tx;
+            av_tx_fn tx_fn;
+            int ret, size;
+
+            size = 1 << av_ceil_log2_c(cur_nb_taps);
+            inc = av_calloc(size + 2, sizeof(SAMPLE_FORMAT));
+            outc = av_calloc(size + 2, sizeof(SAMPLE_FORMAT));
+            if (!inc || !outc) {
+                av_free(outc);
+                av_free(inc);
+                break;
+            }
+
+            scale = 1.;
+            ret = av_tx_init(&tx, &tx_fn, TX_TYPE, 0, size, &scale, 0);
+            if (ret < 0) {
+                av_free(outc);
+                av_free(inc);
+                break;
+            }
+
+            {
+                ftype power, *time = (ftype *)s->norm_ir->extended_data[ch];
+                memcpy(inc, time, cur_nb_taps * sizeof(SAMPLE_FORMAT));
+                tx_fn(tx, outc, inc, sizeof(SAMPLE_FORMAT));
+
+                power = 0;
+                if (s->gtype == 3) {
+                    for (int i = 0; i < size / 2 + 1; i++)
+                        power = FFMAX(power, HYPOT(outc[i * 2], outc[i * 2 + 1]));
+                } else {
+                    ftype sum = 0;
+                    for (int i = 0; i < size / 2 + 1; i++)
+                        sum += HYPOT(outc[i * 2], outc[i * 2 + 1]);
+                    power = SQRT(sum / (size / 2 + 1));
+                }
+
+                ch_gain = 1. / power;
+            }
+
+            av_tx_uninit(&tx);
+            av_free(outc);
+            av_free(inc);
+        }
         break;
     default:
         return AVERROR_BUG;
     }
 
-    s->gain = FFMIN(s->gain * s->ir_gain, 1.);
+    if (ch_gain != 1. || s->ir_gain != 1.) {
+        ftype *time = (ftype *)s->norm_ir->extended_data[ch];
+        ftype gain = ch_gain * s->ir_gain;
 
-    av_log(ctx, AV_LOG_DEBUG, "power %f, gain %f\n", power, s->gain);
-
-    for (int ch = 0; ch < ctx->inputs[1 + s->selir]->ch_layout.nb_channels; ch++) {
-        ftype *time = (ftype *)s->ir[s->selir]->extended_data[!s->one2many * ch];
-
+        av_log(ctx, AV_LOG_DEBUG, "ch%d gain %f\n", ch, gain);
 #if DEPTH == 32
-        s->fdsp->vector_fmul_scalar(time, time, s->gain, FFALIGN(cur_nb_taps, 4));
+        s->fdsp->vector_fmul_scalar(time, time, gain, FFALIGN(cur_nb_taps, 4));
 #else
-        s->fdsp->vector_dmul_scalar(time, time, s->gain, FFALIGN(cur_nb_taps, 8));
+        s->fdsp->vector_dmul_scalar(time, time, gain, FFALIGN(cur_nb_taps, 8));
 #endif
     }
 
     return 0;
+}
+
+static void fn(convert_channel)(AVFilterContext *ctx, AudioFIRContext *s, int ch,
+                                AudioFIRSegment *seg)
+{
+    const int coeff_partition = seg->loading[ch];
+    const int coffset = coeff_partition * seg->coeff_size;
+    const int selir = s->selir;
+    const int nb_taps = s->nb_taps[selir];
+    ftype *tsrc = (ftype *)s->ir[selir]->extended_data[!s->one2many * ch];
+    ftype *time = (ftype *)s->norm_ir->extended_data[ch];
+    ftype *tempin = (ftype *)seg->tempin->extended_data[ch];
+    ftype *tempout = (ftype *)seg->tempout->extended_data[ch];
+    ctype *coeff = (ctype *)seg->coeff->extended_data[ch];
+    int *loaded = (int *)seg->loaded->extended_data[ch];
+    const int remaining = nb_taps - (seg->input_offset + coeff_partition * seg->part_size);
+    const int size = remaining >= seg->part_size ? seg->part_size : remaining;
+
+    if (loaded[coeff_partition] == selir + 1)
+        return;
+    loaded[coeff_partition] = selir + 1;
+
+    memcpy(time, tsrc, sizeof(*time) * nb_taps);
+    for (int i = FFMAX(1, s->length * nb_taps); i < nb_taps; i++)
+        time[i] = 0;
+
+#if DEPTH == 32
+    get_power_float(ctx, s, nb_taps, ch);
+#else
+    get_power_double(ctx, s, nb_taps, ch);
+#endif
+
+    av_log(ctx, AV_LOG_DEBUG, "channel: %d\n", ch);
+
+    memset(tempin, 0, sizeof(*tempin) * seg->fft_length);
+    memcpy(tempin, time + seg->input_offset + coeff_partition * seg->part_size,
+           size * sizeof(*tempin));
+
+    seg->ctx_fn(seg->ctx[ch], tempout, tempin, sizeof(*tempin));
+
+    memcpy(coeff + coffset, tempout, (seg->part_size + 1) * sizeof(*coeff));
+
+    av_log(ctx, AV_LOG_DEBUG, "nb_partitions: %d\n", seg->nb_partitions);
+    av_log(ctx, AV_LOG_DEBUG, "partition size: %d\n", seg->part_size);
+    av_log(ctx, AV_LOG_DEBUG, "block size: %d\n", seg->block_size);
+    av_log(ctx, AV_LOG_DEBUG, "fft_length: %d\n", seg->fft_length);
+    av_log(ctx, AV_LOG_DEBUG, "coeff_size: %d\n", seg->coeff_size);
+    av_log(ctx, AV_LOG_DEBUG, "input_size: %d\n", seg->input_size);
+    av_log(ctx, AV_LOG_DEBUG, "input_offset: %d\n", seg->input_offset);
 }
 
 static void fn(fir_fadd)(AudioFIRContext *s, ftype *dst, const ftype *src, int nb_samples)
@@ -256,11 +314,12 @@ static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int offse
     AudioFIRContext *s = ctx->priv;
     const ftype *in = (const ftype *)s->in->extended_data[ch] + offset;
     ftype *blockin, *blockout, *buf, *ptr = (ftype *)out->extended_data[ch] + offset;
-    const int nb_samples = FFMIN(s->min_part_size, out->nb_samples - offset);
     const int min_part_size = s->min_part_size;
+    const int nb_samples = FFMIN(min_part_size, out->nb_samples - offset);
+    const int nb_segments = s->nb_segments;
     const float dry_gain = s->dry_gain;
 
-    for (int segment = 0; segment < s->nb_segments; segment++) {
+    for (int segment = 0; segment < nb_segments; segment++) {
         AudioFIRSegment *seg = &s->seg[segment];
         ftype *src = (ftype *)seg->input->extended_data[ch];
         ftype *dst = (ftype *)seg->output->extended_data[ch];
@@ -272,6 +331,7 @@ static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int offse
         const int part_size = seg->part_size;
         int j;
 
+        seg->part_index[ch] = seg->part_index[ch] % nb_partitions;;
         if (min_part_size >= 8) {
 #if DEPTH == 32
             s->fdsp->vector_fmul_scalar(src + input_offset, in, dry_gain, FFALIGN(nb_samples, 4));
@@ -286,7 +346,7 @@ static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int offse
         }
 
         output_offset[0] += min_part_size;
-        if (output_offset[0] == part_size) {
+        if (output_offset[0] >= part_size) {
             output_offset[0] = 0;
         } else {
             memmove(src, src + min_part_size, (seg->input_size - min_part_size) * sizeof(*src));
@@ -300,26 +360,36 @@ static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int offse
         blockin = (ftype *)seg->blockin->extended_data[ch] + seg->part_index[ch] * seg->block_size;
         blockout = (ftype *)seg->blockout->extended_data[ch] + seg->part_index[ch] * seg->block_size;
         memset(blockin + part_size, 0, sizeof(*blockin) * (seg->fft_length - part_size));
-
         memcpy(blockin, src, sizeof(*src) * part_size);
 
         seg->tx_fn(seg->tx[ch], blockout, blockin, sizeof(ftype));
 
         j = seg->part_index[ch];
+        if (seg->loading[ch] < nb_partitions) {
+#if DEPTH == 32
+            convert_channel_float(ctx, s, ch, seg);
+#else
+            convert_channel_double(ctx, s, ch, seg);
+#endif
+            seg->loading[ch]++;
+        }
 
         for (int i = 0; i < nb_partitions; i++) {
-            const int coffset = j * seg->coeff_size;
-            const ftype *blockout = (const ftype *)seg->blockout->extended_data[ch] + i * seg->block_size;
-            const ctype *coeff = (const ctype *)seg->coeff->extended_data[ch * !s->one2many] + coffset;
+            const int input_partition = i;
+            const int coeff_partition = j;
+            const int coffset = coeff_partition * seg->coeff_size;
+            const ftype *blockout = (const ftype *)seg->blockout->extended_data[ch] + input_partition * seg->block_size;
+            const ctype *coeff = ((const ctype *)seg->coeff->extended_data[ch]) + coffset;
+
+            if (j == 0)
+                j = nb_partitions;
+            j--;
 
 #if DEPTH == 32
             s->afirdsp.fcmul_add(sumin, blockout, (const ftype *)coeff, part_size);
 #else
             s->afirdsp.dcmul_add(sumin, blockout, (const ftype *)coeff, part_size);
 #endif
-            if (j == 0)
-                j = nb_partitions;
-            j--;
         }
 
         seg->itx_fn(seg->itx[ch], sumout, sumin, sizeof(ctype));
@@ -332,7 +402,7 @@ static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int offse
         buf = (ftype *)seg->buffer->extended_data[ch];
         memcpy(buf, sumout + part_size, part_size * sizeof(*buf));
 
-        seg->part_index[ch] = (seg->part_index[ch] + 1) % nb_partitions;;
+        seg->part_index[ch] = (seg->part_index[ch] + 1) % nb_partitions;
 
         memmove(src, src + min_part_size, (seg->input_size - min_part_size) * sizeof(*src));
 

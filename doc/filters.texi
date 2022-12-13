@@ -1631,6 +1631,12 @@ select DC gain, limited application.
 
 @item gn
 select gain to noise approach, this is most popular one.
+
+@item ac
+select AC gain.
+
+@item rms
+select RMS gain.
 @end table
 
 @item irgain
