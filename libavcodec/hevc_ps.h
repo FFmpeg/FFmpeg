@@ -70,9 +70,16 @@ typedef struct HEVCHdrParams {
 } HEVCHdrParams;
 
 typedef struct ShortTermRPS {
+    uint8_t rps_predict;
+    unsigned int delta_idx;
+    uint8_t use_delta_flag;
+    uint8_t delta_rps_sign;
+    unsigned int abs_delta_rps;
     unsigned int num_negative_pics;
     int num_delta_pocs;
     int rps_idx_num_delta_pocs;
+    int32_t delta_poc_s0[32];
+    int32_t delta_poc_s1[32];
     int32_t delta_poc[32];
     uint8_t used[32];
 } ShortTermRPS;

@@ -100,51 +100,50 @@ static void remove_vps(HEVCParamSets *s, int id)
 int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
                                   ShortTermRPS *rps, const HEVCSPS *sps, int is_slice_header)
 {
-    uint8_t rps_predict = 0;
     int delta_poc;
     int k0 = 0;
     int k  = 0;
     int i;
 
-    if (rps != sps->st_rps && sps->nb_st_rps)
-        rps_predict = get_bits1(gb);
+    rps->rps_predict = 0;
 
-    if (rps_predict) {
+    if (rps != sps->st_rps && sps->nb_st_rps)
+        rps->rps_predict = get_bits1(gb);
+
+    if (rps->rps_predict) {
         const ShortTermRPS *rps_ridx;
         int delta_rps;
-        unsigned abs_delta_rps;
-        uint8_t use_delta_flag = 0;
-        uint8_t delta_rps_sign;
 
         if (is_slice_header) {
-            unsigned int delta_idx = get_ue_golomb_long(gb) + 1;
-            if (delta_idx > sps->nb_st_rps) {
+            rps->delta_idx = get_ue_golomb_long(gb) + 1;
+            if (rps->delta_idx > sps->nb_st_rps) {
                 av_log(avctx, AV_LOG_ERROR,
                        "Invalid value of delta_idx in slice header RPS: %d > %d.\n",
-                       delta_idx, sps->nb_st_rps);
+                       rps->delta_idx, sps->nb_st_rps);
                 return AVERROR_INVALIDDATA;
             }
-            rps_ridx = &sps->st_rps[sps->nb_st_rps - delta_idx];
+            rps_ridx = &sps->st_rps[sps->nb_st_rps - rps->delta_idx];
             rps->rps_idx_num_delta_pocs = rps_ridx->num_delta_pocs;
         } else
             rps_ridx = &sps->st_rps[rps - sps->st_rps - 1];
 
-        delta_rps_sign = get_bits1(gb);
-        abs_delta_rps  = get_ue_golomb_long(gb) + 1;
-        if (abs_delta_rps < 1 || abs_delta_rps > 32768) {
+        rps->delta_rps_sign = get_bits1(gb);
+        rps->abs_delta_rps  = get_ue_golomb_long(gb) + 1;
+        if (rps->abs_delta_rps > 32768) {
             av_log(avctx, AV_LOG_ERROR,
                    "Invalid value of abs_delta_rps: %d\n",
-                   abs_delta_rps);
+                   rps->abs_delta_rps);
             return AVERROR_INVALIDDATA;
         }
-        delta_rps      = (1 - (delta_rps_sign << 1)) * abs_delta_rps;
+        delta_rps      = (1 - (rps->delta_rps_sign << 1)) * rps->abs_delta_rps;
         for (i = 0; i <= rps_ridx->num_delta_pocs; i++) {
             int used = rps->used[k] = get_bits1(gb);
 
+            rps->use_delta_flag = 0;
             if (!used)
-                use_delta_flag = get_bits1(gb);
+                rps->use_delta_flag = get_bits1(gb);
 
-            if (used || use_delta_flag) {
+            if (used || rps->use_delta_flag) {
                 if (i < rps_ridx->num_delta_pocs)
                     delta_poc = delta_rps + rps_ridx->delta_poc[i];
                 else
@@ -210,7 +209,7 @@ int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
         if (rps->num_delta_pocs) {
             prev = 0;
             for (i = 0; i < rps->num_negative_pics; i++) {
-                delta_poc = get_ue_golomb_long(gb) + 1;
+                delta_poc = rps->delta_poc_s0[i] = get_ue_golomb_long(gb) + 1;
                 if (delta_poc < 1 || delta_poc > 32768) {
                     av_log(avctx, AV_LOG_ERROR,
                         "Invalid value of delta_poc: %d\n",
@@ -223,7 +222,7 @@ int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
             }
             prev = 0;
             for (i = 0; i < nb_positive_pics; i++) {
-                delta_poc = get_ue_golomb_long(gb) + 1;
+                delta_poc = rps->delta_poc_s1[i] = get_ue_golomb_long(gb) + 1;
                 if (delta_poc < 1 || delta_poc > 32768) {
                     av_log(avctx, AV_LOG_ERROR,
                         "Invalid value of delta_poc: %d\n",
