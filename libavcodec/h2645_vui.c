@@ -36,12 +36,10 @@
 
 void ff_h2645_decode_common_vui_params(GetBitContext *gb, H2645VUI *vui, void *logctx)
 {
-    int aspect_ratio_info_present_flag;
-
     av_log(logctx, AV_LOG_DEBUG, "Decoding VUI\n");
 
-    aspect_ratio_info_present_flag = get_bits1(gb);
-    if (aspect_ratio_info_present_flag) {
+    vui->aspect_ratio_info_present_flag = get_bits1(gb);
+    if (vui->aspect_ratio_info_present_flag) {
         vui->aspect_ratio_idc = get_bits(gb, 8);
         if (vui->aspect_ratio_idc < FF_ARRAY_ELEMS(ff_h2645_pixel_aspect))
             vui->sar = ff_h2645_pixel_aspect[vui->aspect_ratio_idc];
