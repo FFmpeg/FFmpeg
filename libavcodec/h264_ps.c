@@ -176,7 +176,7 @@ static inline int decode_vui_parameters(GetBitContext *gb, void *logctx,
         get_ue_golomb_31(gb); /* log2_max_mv_length_horizontal */
         get_ue_golomb_31(gb); /* log2_max_mv_length_vertical */
         sps->num_reorder_frames = get_ue_golomb_31(gb);
-        get_ue_golomb_31(gb); /*max_dec_frame_buffering*/
+        sps->max_dec_frame_buffering = get_ue_golomb_31(gb);
 
         if (get_bits_left(gb) < 0) {
             sps->num_reorder_frames         = 0;

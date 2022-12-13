@@ -80,6 +80,7 @@ typedef struct SPS {
     int32_t offset_for_ref_frame[256];
     int bitstream_restriction_flag;
     int num_reorder_frames;
+    int max_dec_frame_buffering;
     int scaling_matrix_present;
     uint8_t scaling_matrix4[6][16];
     uint8_t scaling_matrix8[6][64];
