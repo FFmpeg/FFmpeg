@@ -66,7 +66,7 @@ typedef struct VulkanQueueCtx {
     /* Buffer dependencies */
     AVBufferRef **buf_deps;
     int nb_buf_deps;
-    int buf_deps_alloc_size;
+    unsigned int buf_deps_alloc_size;
 } VulkanQueueCtx;
 
 typedef struct VulkanExecCtx {
