@@ -42,15 +42,15 @@ void ff_h2645_decode_common_vui_params(GetBitContext *gb, H2645VUI *vui, void *l
 
     aspect_ratio_info_present_flag = get_bits1(gb);
     if (aspect_ratio_info_present_flag) {
-        uint8_t aspect_ratio_idc = get_bits(gb, 8);
-        if (aspect_ratio_idc < FF_ARRAY_ELEMS(ff_h2645_pixel_aspect))
-            vui->sar = ff_h2645_pixel_aspect[aspect_ratio_idc];
-        else if (aspect_ratio_idc == EXTENDED_SAR) {
+        vui->aspect_ratio_idc = get_bits(gb, 8);
+        if (vui->aspect_ratio_idc < FF_ARRAY_ELEMS(ff_h2645_pixel_aspect))
+            vui->sar = ff_h2645_pixel_aspect[vui->aspect_ratio_idc];
+        else if (vui->aspect_ratio_idc == EXTENDED_SAR) {
             vui->sar.num = get_bits(gb, 16);
             vui->sar.den = get_bits(gb, 16);
         } else
             av_log(logctx, AV_LOG_WARNING,
-                   "Unknown SAR index: %u.\n", aspect_ratio_idc);
+                   "Unknown SAR index: %u.\n", vui->aspect_ratio_idc);
     } else
         vui->sar = (AVRational){ 0, 1 };
 
