@@ -22,7 +22,21 @@
 
 %include "libavutil/x86/x86util.asm"
 
-SECTION_RODATA 32
+SECTION_RODATA 64
+
+perm_y:
+    db  0,1,   4,5,   6,7,   8,9,  12,13, 14,15, 16,17, 20,21
+    db 22,23, 24,25, 28,29, 30,31, 32,33, 36,37, 38,39, 40,41
+    db 44,45, 46,47, 48,49, 52,53, 54,55, 56,57, 60,61, 62,63
+times 16 db 0xff ; align to 64
+
+perm_uv:
+    db  0,1,   4,5,  10,11, 16,17, 20,21, 26,27, 32,33, 36,37
+    db 42,43, 48,49, 52,53, 58,59
+times 8 db 0xff ; align to 32
+    db  2,3,   8,9,  12,13, 18,19, 24,25, 28,29, 34,35, 40,41
+    db 44,45, 50,51, 56,57, 60,61
+times 8 db 0xff ; align to 32
 
 ; for AVX2 version only
 v210_luma_permute: dd 0,1,2,4,5,6,7,7  ; 32-byte alignment required
@@ -33,6 +47,9 @@ v210_chroma_shuf_avx2: db 0,1,4,5,10,11,-1,-1,2,3,8,9,12,13,-1,-1
 v210_mult: dw 64,4,64,4,64,4,64,4
 v210_luma_shuf: db 8,9,0,1,2,3,12,13,4,5,6,7,-1,-1,-1,-1
 v210_chroma_shuf: db 0,1,8,9,6,7,-1,-1,2,3,4,5,12,13,-1,-1
+
+shift: times 4 dw 6, 2
+kmask: dw 0x5555, 0xaaaa
 
 SECTION .text
 
@@ -126,4 +143,45 @@ v210_planar_unpack aligned
 %if HAVE_AVX2_EXTERNAL
 INIT_YMM avx2
 v210_planar_unpack aligned
+%endif
+
+%if HAVE_AVX512ICL_EXTERNAL
+
+INIT_ZMM avx512icl
+
+cglobal v210_planar_unpack, 5, 5, 6, src, y, u, v, w
+    movsxdifnidn wq, wd
+    lea    yq, [yq+2*wq]
+    add    uq, wq
+    add    vq, wq
+    neg    wq
+
+    kmovw k1, [kmask]   ; odd dword mask
+    kmovw k2, [kmask+2] ; even dword mask
+
+    VBROADCASTI128 m0, [shift]
+    mova           m1, [perm_y]
+    mova           m2, [perm_uv]
+
+    .loop:
+        movu    m3, [srcq]
+        vpsllvw m4, m3, m0
+        pslld   m5, m3, 12
+        psrlw   m4, 6
+        psrld   m5, 22
+
+        vpblendmd m3{k1}, m4, m5
+        vpermb    m3, m1, m3 ; could use vpcompressw
+        movu      [yq+2*wq], m3
+
+        vpblendmd     m5{k2}, m4, m5
+        vpermb        m5, m2, m5
+        movu          [uq+wq], ym5
+        vextracti32x8 [vq+wq], zm5, 1
+
+        add srcq, mmsize
+        add wq, (mmsize*3)/8
+    jl  .loop
+RET
+
 %endif
