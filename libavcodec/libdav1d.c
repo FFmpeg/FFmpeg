@@ -260,6 +260,15 @@ static av_cold int libdav1d_init(AVCodecContext *c)
            s.n_frame_threads, s.n_tile_threads);
 #endif
 
+#if FF_DAV1D_VERSION_AT_LEAST(6,8)
+    if (c->skip_frame >= AVDISCARD_NONKEY)
+        s.decode_frame_type = DAV1D_DECODEFRAMETYPE_KEY;
+    else if (c->skip_frame >= AVDISCARD_NONINTRA)
+        s.decode_frame_type = DAV1D_DECODEFRAMETYPE_INTRA;
+    else if (c->skip_frame >= AVDISCARD_NONREF)
+        s.decode_frame_type = DAV1D_DECODEFRAMETYPE_REFERENCE;
+#endif
+
     res = libdav1d_parse_extradata(c);
     if (res < 0)
         return res;
