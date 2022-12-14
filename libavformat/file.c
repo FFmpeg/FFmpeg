@@ -167,6 +167,36 @@ static int file_check(URLContext *h, int mask)
     return ret;
 }
 
+static int fd_dup(URLContext *h, int oldfd)
+{
+    int newfd;
+
+#ifdef F_DUPFD_CLOEXEC
+    newfd = fcntl(oldfd, F_DUPFD_CLOEXEC, 0);
+#else
+    newfd = dup(oldfd);
+#endif
+    if (newfd == -1)
+        return newfd;
+
+#if HAVE_FCNTL
+    if (fcntl(newfd, F_SETFD, FD_CLOEXEC) == -1)
+        av_log(h, AV_LOG_DEBUG, "Failed to set close on exec\n");
+#endif
+
+#if HAVE_SETMODE
+    setmode(newfd, O_BINARY);
+#endif
+    return newfd;
+}
+
+static int file_close(URLContext *h)
+{
+    FileContext *c = h->priv_data;
+    int ret = close(c->fd);
+    return (ret == -1) ? AVERROR(errno) : 0;
+}
+
 #if CONFIG_FILE_PROTOCOL
 
 static int file_delete(URLContext *h)
@@ -261,13 +291,6 @@ static int64_t file_seek(URLContext *h, int64_t pos, int whence)
     ret = lseek(c->fd, pos, whence);
 
     return ret < 0 ? AVERROR(errno) : ret;
-}
-
-static int file_close(URLContext *h)
-{
-    FileContext *c = h->priv_data;
-    int ret = close(c->fd);
-    return (ret == -1) ? AVERROR(errno) : 0;
 }
 
 static int file_open_dir(URLContext *h)
@@ -397,9 +420,9 @@ static int pipe_open(URLContext *h, const char *filename, int flags)
         c->fd = fd;
     }
 
-#if HAVE_SETMODE
-    setmode(c->fd, O_BINARY);
-#endif
+    c->fd = fd_dup(h, c->fd);
+    if (c->fd == -1)
+        return AVERROR(errno);
     h->is_streamed = 1;
     return 0;
 }
@@ -409,6 +432,7 @@ const URLProtocol ff_pipe_protocol = {
     .url_open            = pipe_open,
     .url_read            = file_read,
     .url_write           = file_write,
+    .url_close           = file_close,
     .url_get_file_handle = file_get_handle,
     .url_check           = file_check,
     .priv_data_size      = sizeof(FileContext),
