@@ -275,6 +275,33 @@ For example, to convert a GIF file given inline with @command{ffmpeg}:
 ffmpeg -i "data:image/gif;base64,R0lGODdhCAAIAMIEAAAAAAAA//8AAP//AP///////////////ywAAAAACAAIAAADF0gEDLojDgdGiJdJqUX02iB4E8Q9jUMkADs=" smiley.png
 @end example
 
+@section fd
+
+File descriptor access protocol.
+
+The accepted syntax is:
+@example
+fd: -fd @var{file_descriptor}
+@end example
+
+If @option{fd} is not specified, by default the stdout file descriptor will be
+used for writing, stdin for reading. Unlike the pipe protocol, fd protocol has
+seek support if it corresponding to a regular file. fd protocol doesn't support
+pass file descriptor via URL for security.
+
+This protocol accepts the following options:
+
+@table @option
+@item blocksize
+Set I/O operation maximum block size, in bytes. Default value is
+@code{INT_MAX}, which results in not limiting the requested block size.
+Setting this value reasonably low improves user termination request reaction
+time, which is valuable if data transmission is slow.
+
+@item fd
+Set file descriptor.
+@end table
+
 @section file
 
 File access protocol.

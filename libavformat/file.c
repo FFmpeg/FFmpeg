@@ -110,6 +110,13 @@ static const AVClass pipe_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
+static const AVClass fd_class = {
+    .class_name = "fd",
+    .item_name  = av_default_item_name,
+    .option     = pipe_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 static int file_read(URLContext *h, unsigned char *buf, int size)
 {
     FileContext *c = h->priv_data;
@@ -197,6 +204,23 @@ static int file_close(URLContext *h)
     return (ret == -1) ? AVERROR(errno) : 0;
 }
 
+/* XXX: use llseek */
+static int64_t file_seek(URLContext *h, int64_t pos, int whence)
+{
+    FileContext *c = h->priv_data;
+    int64_t ret;
+
+    if (whence == AVSEEK_SIZE) {
+        struct stat st;
+        ret = fstat(c->fd, &st);
+        return ret < 0 ? AVERROR(errno) : (S_ISFIFO(st.st_mode) ? 0 : st.st_size);
+    }
+
+    ret = lseek(c->fd, pos, whence);
+
+    return ret < 0 ? AVERROR(errno) : ret;
+}
+
 #if CONFIG_FILE_PROTOCOL
 
 static int file_delete(URLContext *h)
@@ -274,23 +298,6 @@ static int file_open(URLContext *h, const char *filename, int flags)
         h->is_streamed = !c->seekable;
 
     return 0;
-}
-
-/* XXX: use llseek */
-static int64_t file_seek(URLContext *h, int64_t pos, int whence)
-{
-    FileContext *c = h->priv_data;
-    int64_t ret;
-
-    if (whence == AVSEEK_SIZE) {
-        struct stat st;
-        ret = fstat(c->fd, &st);
-        return ret < 0 ? AVERROR(errno) : (S_ISFIFO(st.st_mode) ? 0 : st.st_size);
-    }
-
-    ret = lseek(c->fd, pos, whence);
-
-    return ret < 0 ? AVERROR(errno) : ret;
 }
 
 static int file_open_dir(URLContext *h)
@@ -441,3 +448,49 @@ const URLProtocol ff_pipe_protocol = {
 };
 
 #endif /* CONFIG_PIPE_PROTOCOL */
+
+#if CONFIG_FD_PROTOCOL
+
+static int fd_open(URLContext *h, const char *filename, int flags)
+{
+    FileContext *c = h->priv_data;
+    struct stat st;
+
+    if (strcmp(filename, "fd:") != 0) {
+        av_log(h, AV_LOG_ERROR, "Doesn't support pass file descriptor via URL,"
+                                " please set it via -fd {num}\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (c->fd < 0) {
+        if (flags & AVIO_FLAG_WRITE) {
+            c->fd = 1;
+        } else {
+            c->fd = 0;
+        }
+    }
+    if (fstat(c->fd, &st) < 0)
+        return AVERROR(errno);
+    h->is_streamed = !(S_ISREG(st.st_mode) || S_ISBLK(st.st_mode));
+    c->fd = fd_dup(h, c->fd);
+    if (c->fd == -1)
+        return AVERROR(errno);
+
+    return 0;
+}
+
+const URLProtocol ff_fd_protocol = {
+    .name                = "fd",
+    .url_open            = fd_open,
+    .url_read            = file_read,
+    .url_write           = file_write,
+    .url_seek            = file_seek,
+    .url_close           = file_close,
+    .url_get_file_handle = file_get_handle,
+    .url_check           = file_check,
+    .priv_data_size      = sizeof(FileContext),
+    .priv_data_class     = &fd_class,
+    .default_whitelist   = "crypto,data"
+};
+
+#endif /* CONFIG_FD_PROTOCOL */
