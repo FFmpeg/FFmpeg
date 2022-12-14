@@ -384,17 +384,17 @@ static int pipe_open(URLContext *h, const char *filename, int flags)
     char *final;
 
     if (c->fd < 0) {
-    av_strstart(filename, "pipe:", &filename);
+        av_strstart(filename, "pipe:", &filename);
 
-    fd = strtol(filename, &final, 10);
-    if((filename == final) || *final ) {/* No digits found, or something like 10ab */
-        if (flags & AVIO_FLAG_WRITE) {
-            fd = 1;
-        } else {
-            fd = 0;
+        fd = strtol(filename, &final, 10);
+        if((filename == final) || *final ) {/* No digits found, or something like 10ab */
+            if (flags & AVIO_FLAG_WRITE) {
+                fd = 1;
+            } else {
+                fd = 0;
+            }
         }
-    }
-    c->fd = fd;
+        c->fd = fd;
     }
 
 #if HAVE_SETMODE
