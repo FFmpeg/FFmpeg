@@ -3537,7 +3537,7 @@ static void opt_input_file(void *optctx, const char *filename)
         exit(1);
     }
     if (!strcmp(filename, "-"))
-        filename = "pipe:";
+        filename = "fd:";
     input_filename = filename;
 }
 
