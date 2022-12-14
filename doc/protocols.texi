@@ -687,7 +687,7 @@ The accepted syntax is:
 pipe:[@var{number}]
 @end example
 
-@var{number} is the number corresponding to the file descriptor of the
+If @option{fd} isn't specified, @var{number} is the number corresponding to the file descriptor of the
 pipe (e.g. 0 for stdin, 1 for stdout, 2 for stderr).  If @var{number}
 is not specified, by default the stdout file descriptor will be used
 for writing, stdin for reading.
@@ -714,6 +714,8 @@ Set I/O operation maximum block size, in bytes. Default value is
 @code{INT_MAX}, which results in not limiting the requested block size.
 Setting this value reasonably low improves user termination request reaction
 time, which is valuable if data transmission is slow.
+@item fd
+Set file descriptor.
 @end table
 
 Note that some formats (typically MOV), require the output protocol to

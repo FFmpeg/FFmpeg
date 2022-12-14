@@ -92,6 +92,7 @@ static const AVOption file_options[] = {
 
 static const AVOption pipe_options[] = {
     { "blocksize", "set I/O operation maximum block size", offsetof(FileContext, blocksize), AV_OPT_TYPE_INT, { .i64 = INT_MAX }, 1, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
+    { "fd", "set file descriptor", offsetof(FileContext, fd), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
     { NULL }
 };
 
@@ -381,6 +382,8 @@ static int pipe_open(URLContext *h, const char *filename, int flags)
     FileContext *c = h->priv_data;
     int fd;
     char *final;
+
+    if (c->fd < 0) {
     av_strstart(filename, "pipe:", &filename);
 
     fd = strtol(filename, &final, 10);
@@ -391,10 +394,12 @@ static int pipe_open(URLContext *h, const char *filename, int flags)
             fd = 0;
         }
     }
-#if HAVE_SETMODE
-    setmode(fd, O_BINARY);
-#endif
     c->fd = fd;
+    }
+
+#if HAVE_SETMODE
+    setmode(c->fd, O_BINARY);
+#endif
     h->is_streamed = 1;
     return 0;
 }
