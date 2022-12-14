@@ -3714,7 +3714,7 @@ static void opt_input_file(void *optctx, const char *arg)
         exit_program(1);
     }
     if (!strcmp(arg, "-"))
-        arg = "pipe:";
+        arg = "fd:";
     input_filename = arg;
 }
 
@@ -3733,7 +3733,7 @@ static void opt_output_file(void *optctx, const char *arg)
         exit_program(1);
     }
     if (!strcmp(arg, "-"))
-        arg = "pipe:";
+        arg = "fd:";
     output_filename = arg;
 }
 
