@@ -174,7 +174,7 @@ static int init_gblur_pipeline(GBlurVulkanContext *s, FFVulkanPipeline *pl, FFVk
     RET(ff_vk_init_pipeline_layout(&s->vkctx, pl));
     RET(ff_vk_init_compute_pipeline(&s->vkctx, pl));
 
-    RET(ff_vk_create_buf(&s->vkctx, params_buf, sizeof(float) * ksize, NULL,
+    RET(ff_vk_create_buf(&s->vkctx, params_buf, sizeof(float) * ksize, NULL, NULL,
                          VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
     RET(ff_vk_map_buffers(&s->vkctx, params_buf, &kernel_mapped, 1, 0));
 

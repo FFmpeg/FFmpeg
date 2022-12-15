@@ -413,7 +413,8 @@ int ff_vk_submit_exec_queue(FFVulkanContext *s, FFVkExecContext *e);
 /**
  * Create a VkBuffer with the specified parameters.
  */
-int ff_vk_create_buf(FFVulkanContext *s, FFVkBuffer *buf, size_t size, void *pNext,
+int ff_vk_create_buf(FFVulkanContext *s, FFVkBuffer *buf, size_t size,
+                     void *pNext, void *alloc_pNext,
                      VkBufferUsageFlags usage, VkMemoryPropertyFlagBits flags);
 
 /**

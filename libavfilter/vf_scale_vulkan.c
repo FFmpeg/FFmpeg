@@ -253,7 +253,7 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
         }
 
         RET(ff_vk_create_buf(vkctx, &s->params_buf,
-                             sizeof(*par), NULL,
+                             sizeof(*par), NULL, NULL,
                              VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
 
