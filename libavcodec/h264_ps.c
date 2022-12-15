@@ -198,12 +198,14 @@ static inline int decode_vui_parameters(GetBitContext *gb, void *logctx,
 }
 
 static int decode_scaling_list(GetBitContext *gb, uint8_t *factors, int size,
-                                const uint8_t *jvt_list,
-                                const uint8_t *fallback_list)
+                               const uint8_t *jvt_list, const uint8_t *fallback_list,
+                               uint16_t *mask, int pos)
 {
     int i, last = 8, next = 8;
     const uint8_t *scan = size == 16 ? ff_zigzag_scan : ff_zigzag_direct;
-    if (!get_bits1(gb)) /* matrix not written, we use the predicted one */
+    uint16_t seq_scaling_list_present_flag = get_bits1(gb);
+    *mask |= (seq_scaling_list_present_flag << pos);
+    if (!seq_scaling_list_present_flag) /* matrix not written, we use the predicted one */
         memcpy(factors, fallback_list, size * sizeof(uint8_t));
     else
         for (i = 0; i < size; i++) {
@@ -227,7 +229,7 @@ static int decode_scaling_list(GetBitContext *gb, uint8_t *factors, int size,
 /* returns non zero if the provided SPS scaling matrix has been filled */
 static int decode_scaling_matrices(GetBitContext *gb, const SPS *sps,
                                     const PPS *pps, int is_sps,
-                                    int present_flag,
+                                    int present_flag, uint16_t *mask,
                                     uint8_t(*scaling_matrix4)[16],
                                     uint8_t(*scaling_matrix8)[64])
 {
@@ -239,21 +241,22 @@ static int decode_scaling_matrices(GetBitContext *gb, const SPS *sps,
         fallback_sps ? sps->scaling_matrix8[3] : default_scaling8[1]
     };
     int ret = 0;
+    *mask = 0x0;
     if (present_flag) {
-        ret |= decode_scaling_list(gb, scaling_matrix4[0], 16, default_scaling4[0], fallback[0]);        // Intra, Y
-        ret |= decode_scaling_list(gb, scaling_matrix4[1], 16, default_scaling4[0], scaling_matrix4[0]); // Intra, Cr
-        ret |= decode_scaling_list(gb, scaling_matrix4[2], 16, default_scaling4[0], scaling_matrix4[1]); // Intra, Cb
-        ret |= decode_scaling_list(gb, scaling_matrix4[3], 16, default_scaling4[1], fallback[1]);        // Inter, Y
-        ret |= decode_scaling_list(gb, scaling_matrix4[4], 16, default_scaling4[1], scaling_matrix4[3]); // Inter, Cr
-        ret |= decode_scaling_list(gb, scaling_matrix4[5], 16, default_scaling4[1], scaling_matrix4[4]); // Inter, Cb
+        ret |= decode_scaling_list(gb, scaling_matrix4[0], 16, default_scaling4[0], fallback[0], mask, 0);        // Intra, Y
+        ret |= decode_scaling_list(gb, scaling_matrix4[1], 16, default_scaling4[0], scaling_matrix4[0], mask, 1); // Intra, Cr
+        ret |= decode_scaling_list(gb, scaling_matrix4[2], 16, default_scaling4[0], scaling_matrix4[1], mask, 2); // Intra, Cb
+        ret |= decode_scaling_list(gb, scaling_matrix4[3], 16, default_scaling4[1], fallback[1], mask, 3);        // Inter, Y
+        ret |= decode_scaling_list(gb, scaling_matrix4[4], 16, default_scaling4[1], scaling_matrix4[3], mask, 4); // Inter, Cr
+        ret |= decode_scaling_list(gb, scaling_matrix4[5], 16, default_scaling4[1], scaling_matrix4[4], mask, 5); // Inter, Cb
         if (is_sps || pps->transform_8x8_mode) {
-            ret |= decode_scaling_list(gb, scaling_matrix8[0], 64, default_scaling8[0], fallback[2]); // Intra, Y
-            ret |= decode_scaling_list(gb, scaling_matrix8[3], 64, default_scaling8[1], fallback[3]); // Inter, Y
+            ret |= decode_scaling_list(gb, scaling_matrix8[0], 64, default_scaling8[0], fallback[2], mask, 6); // Intra, Y
+            ret |= decode_scaling_list(gb, scaling_matrix8[3], 64, default_scaling8[1], fallback[3], mask, 7); // Inter, Y
             if (sps->chroma_format_idc == 3) {
-                ret |= decode_scaling_list(gb, scaling_matrix8[1], 64, default_scaling8[0], scaling_matrix8[0]); // Intra, Cr
-                ret |= decode_scaling_list(gb, scaling_matrix8[4], 64, default_scaling8[1], scaling_matrix8[3]); // Inter, Cr
-                ret |= decode_scaling_list(gb, scaling_matrix8[2], 64, default_scaling8[0], scaling_matrix8[1]); // Intra, Cb
-                ret |= decode_scaling_list(gb, scaling_matrix8[5], 64, default_scaling8[1], scaling_matrix8[4]); // Inter, Cb
+                ret |= decode_scaling_list(gb, scaling_matrix8[1], 64, default_scaling8[0], scaling_matrix8[0], mask,  8); // Intra, Cr
+                ret |= decode_scaling_list(gb, scaling_matrix8[4], 64, default_scaling8[1], scaling_matrix8[3], mask,  9); // Inter, Cr
+                ret |= decode_scaling_list(gb, scaling_matrix8[2], 64, default_scaling8[0], scaling_matrix8[1], mask, 10); // Intra, Cb
+                ret |= decode_scaling_list(gb, scaling_matrix8[5], 64, default_scaling8[1], scaling_matrix8[4], mask, 11); // Inter, Cb
             }
         }
         if (!ret)
@@ -371,6 +374,7 @@ int ff_h264_decode_seq_parameter_set(GetBitContext *gb, AVCodecContext *avctx,
         }
         sps->transform_bypass = get_bits1(gb);
         ret = decode_scaling_matrices(gb, sps, NULL, 1, get_bits1(gb),
+                                      &sps->scaling_matrix_present_mask,
                                       sps->scaling_matrix4, sps->scaling_matrix8);
         if (ret < 0)
             goto fail;
@@ -808,6 +812,7 @@ int ff_h264_decode_picture_parameter_set(GetBitContext *gb, AVCodecContext *avct
         pps->pic_scaling_matrix_present_flag = get_bits1(gb);
         ret = decode_scaling_matrices(gb, sps, pps, 0,
                                 pps->pic_scaling_matrix_present_flag,
+                                &pps->pic_scaling_matrix_present_mask,
                                 pps->scaling_matrix4, pps->scaling_matrix8);
         if (ret < 0)
             goto fail;

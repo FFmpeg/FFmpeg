@@ -82,6 +82,7 @@ typedef struct SPS {
     int num_reorder_frames;
     int max_dec_frame_buffering;
     int scaling_matrix_present;
+    uint16_t scaling_matrix_present_mask;
     uint8_t scaling_matrix4[6][16];
     uint8_t scaling_matrix8[6][64];
     int nal_hrd_parameters_present_flag;
@@ -125,6 +126,7 @@ typedef struct PPS {
     int redundant_pic_cnt_present;  ///< redundant_pic_cnt_present_flag
     int transform_8x8_mode;         ///< transform_8x8_mode_flag
     int pic_scaling_matrix_present_flag;
+    uint16_t pic_scaling_matrix_present_mask;
     uint8_t scaling_matrix4[6][16];
     uint8_t scaling_matrix8[6][64];
     uint8_t chroma_qp_table[2][QP_MAX_NUM+1];  ///< pre-scaled (with chroma_qp_index_offset) version of qp_table
