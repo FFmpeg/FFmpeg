@@ -396,8 +396,6 @@ void ff_vk_free_buf(FFVulkanContext *s, FFVkBuffer *buf)
     if (!buf || !s->hwctx)
         return;
 
-    vk->DeviceWaitIdle(s->hwctx->act_dev);
-
     if (buf->buf != VK_NULL_HANDLE)
         vk->DestroyBuffer(s->hwctx->act_dev, buf->buf, s->hwctx->alloc);
     if (buf->mem != VK_NULL_HANDLE)
