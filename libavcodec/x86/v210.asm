@@ -65,18 +65,18 @@ cglobal v210_planar_unpack_%1, 5, 5, 6 + 2 * cpuflag(avx2), src, y, u, v, w
     mova   m0, [srcq]
 %endif
 
-    pmullw m1, m0, m3
-    pslld  m0, 12
-    psrlw  m1, 6                       ; yB yA u5 v4 y8 y7 v3 u3 y5 y4 u2 v1 y2 y1 v0 u0
-    psrld  m0, 22                      ; 00 v5 00 y9 00 u4 00 y6 00 v2 00 y3 00 u1 00 y0
+    pmullw m1, m0, m3 ; shifts the 1st and 3rd sample of each dword into the high 10 bits of each word
+    pslld  m0, 12     ; shifts the 2nd sample of each dword into the high 10 bits of each dword
+    psrlw  m1, 6      ; shifts the 1st and 3rd samples back into the low 10 bits
+    psrld  m0, 22     ; shifts the 2nd sample back into the low 10 bits of each dword
 
 %if cpuflag(avx2)
-    vpblendd m2, m1, m0, 0x55          ; yB yA 00 y9 y8 y7 00 y6 y5 y4 00 y3 y2 y1 00 y0
+    vpblendd m2, m1, m0, 0x55 ; merge the odd dwords from m0 and even from m1 ; yB yA 00 y9 y8 y7 00 y6 y5 y4 00 y3 y2 y1 00 y0
     pshufb m2, m4                      ; 00 00 yB yA y9 y8 y7 y6 00 00 y5 y4 y3 y2 y1 y0
     vpermd m2, m6, m2                  ; 00 00 00 00 yB yA y9 y8 y7 y6 y5 y4 y3 y2 y1 y0
     movu   [yq+2*wq], m2
 
-    vpblendd m1, m1, m0, 0xaa          ; 00 v5 u5 v4 00 u4 v3 u3 00 v2 u2 v1 00 u1 v0 u0
+    vpblendd m1, m1, m0, 0xaa ; merge the even dwords from m0 and odd from m1 ; 00 v5 u5 v4 00 u4 v3 u3 00 v2 u2 v1 00 u1 v0 u0
     pshufb m1, m5                      ; 00 v5 v4 v3 00 u5 u4 u3 00 v2 v1 v0 00 u2 u1 u0
     vpermq m1, m1, 0xd8                ; 00 v5 v4 v3 00 v2 v1 v0 00 u5 u4 u3 00 u2 u1 u0
     pshufb m1, m7                      ; 00 00 v5 v4 v3 v2 v1 v0 00 00 u5 u4 u3 u2 u1 u0
