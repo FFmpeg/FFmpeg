@@ -295,6 +295,8 @@ int ff_vk_create_buf(FFVulkanContext *s, FFVkBuffer *buf, size_t size,
         return AVERROR_EXTERNAL;
     }
 
+    buf->size = size;
+
     return 0;
 }
 

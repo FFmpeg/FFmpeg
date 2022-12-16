@@ -94,6 +94,7 @@ typedef struct FFVkBuffer {
     VkBuffer buf;
     VkDeviceMemory mem;
     VkMemoryPropertyFlagBits flags;
+    size_t size;
 } FFVkBuffer;
 
 typedef struct FFVkQueueFamilyCtx {
