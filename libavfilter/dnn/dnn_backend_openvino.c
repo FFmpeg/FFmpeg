@@ -244,7 +244,6 @@ static void infer_completion_callback(void *args)
     av_assert0(request->lltask_count >= 1);
     for (int i = 0; i < request->lltask_count; ++i) {
         task = request->lltasks[i]->task;
-        task->inference_done++;
 
         switch (ov_model->model->func_type) {
         case DFT_PROCESS_FRAME:
@@ -278,6 +277,7 @@ static void infer_completion_callback(void *args)
             break;
         }
 
+        task->inference_done++;
         av_freep(&request->lltasks[i]);
         output.data = (uint8_t *)output.data
                       + output.width * output.height * output.channels * get_datatype_size(output.dt);
