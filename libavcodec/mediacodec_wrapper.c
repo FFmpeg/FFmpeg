@@ -22,6 +22,7 @@
 
 #include <dlfcn.h>
 #include <jni.h>
+#include <stdbool.h>
 #include <media/NdkMediaFormat.h>
 #include <media/NdkMediaCodec.h>
 #include <android/native_window_jni.h>
