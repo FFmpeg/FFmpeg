@@ -2050,8 +2050,10 @@ again:
         }
 
         if (!s->use_color_matrix) {
-            for (i = 0; i < 3; i++)
-                s->premultiply[i] /= s->camera_calibration[i][i];
+            for (i = 0; i < 3; i++) {
+                if (s->camera_calibration[i][i])
+                    s->premultiply[i] /= s->camera_calibration[i][i];
+            }
         } else {
             for (int c = 0; c < 3; c++) {
                 for (i = 0; i < 3; i++) {
