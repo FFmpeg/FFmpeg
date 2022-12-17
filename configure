@@ -2089,7 +2089,6 @@ ARCH_LIST="
     sparc64
     tilegx
     tilepro
-    tomi
     x86
     x86_32
     x86_64
