@@ -129,7 +129,7 @@ static av_always_inline unsigned get_tail(GetBitContext *gb, unsigned k)
     e   = (1LL << (p + 1)) - k - 1;
     res = get_bits_long(gb, p);
     if (res >= e)
-        res = (res << 1) - e + get_bits1(gb);
+        res = res * 2U - e + get_bits1(gb);
     return res;
 }
 
