@@ -75,7 +75,10 @@ static av_cold int apac_init(AVCodecContext *avctx)
         avctx->sample_fmt = AV_SAMPLE_FMT_U8P;
 
     if (avctx->ch_layout.nb_channels < 1 ||
-        avctx->ch_layout.nb_channels > 2)
+        avctx->ch_layout.nb_channels > 2 ||
+        avctx->bits_per_coded_sample < 8 ||
+        avctx->bits_per_coded_sample > 16
+    )
         return AVERROR_INVALIDDATA;
 
     for (int ch = 0; ch < avctx->ch_layout.nb_channels; ch++) {
