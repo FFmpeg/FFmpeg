@@ -1228,7 +1228,7 @@ static int h264_export_frame_props(H264Context *h)
 
     ret = ff_h2645_sei_to_frame(out, &h->sei.common, AV_CODEC_ID_H264, h->avctx,
                                 &sps->vui, sps->bit_depth_luma, sps->bit_depth_chroma,
-                                cur->poc + (h->poc_offset << 5));
+                                cur->poc + (unsigned)(h->poc_offset << 5));
     if (ret < 0)
         return ret;
 
