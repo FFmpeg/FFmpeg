@@ -331,7 +331,7 @@ static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int offse
         const int part_size = seg->part_size;
         int j;
 
-        seg->part_index[ch] = seg->part_index[ch] % nb_partitions;;
+        seg->part_index[ch] = seg->part_index[ch] % nb_partitions;
         if (min_part_size >= 8) {
 #if DEPTH == 32
             s->fdsp->vector_fmul_scalar(src + input_offset, in, dry_gain, FFALIGN(nb_samples, 4));
@@ -359,7 +359,7 @@ static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int offse
         memset(sumin, 0, sizeof(*sumin) * seg->fft_length);
         blockin = (ftype *)seg->blockin->extended_data[ch] + seg->part_index[ch] * seg->block_size;
         blockout = (ftype *)seg->blockout->extended_data[ch] + seg->part_index[ch] * seg->block_size;
-        memset(blockin + part_size, 0, sizeof(*blockin) * (seg->fft_length - part_size));
+        memset(blockin + part_size, 0, sizeof(*blockin) * (seg->block_size - part_size));
         memcpy(blockin, src, sizeof(*src) * part_size);
 
         seg->tx_fn(seg->tx[ch], blockout, blockin, sizeof(ftype));
@@ -398,8 +398,6 @@ static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int offse
         fn(fir_fadd)(s, buf, sumout, part_size);
 
         memcpy(dst, buf, part_size * sizeof(*dst));
-
-        buf = (ftype *)seg->buffer->extended_data[ch];
         memcpy(buf, sumout + part_size, part_size * sizeof(*buf));
 
         seg->part_index[ch] = (seg->part_index[ch] + 1) % nb_partitions;

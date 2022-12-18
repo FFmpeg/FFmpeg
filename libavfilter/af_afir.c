@@ -136,7 +136,7 @@ static int fir_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 static int fir_frame(AudioFIRContext *s, AVFrame *in, AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
-    AVFrame *out = NULL;
+    AVFrame *out;
 
     out = ff_get_audio_buffer(outlink, in->nb_samples);
     if (!out) {
