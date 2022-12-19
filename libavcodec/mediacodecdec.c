@@ -289,7 +289,8 @@ done:
 #if CONFIG_MPEG2_MEDIACODEC_DECODER || \
     CONFIG_MPEG4_MEDIACODEC_DECODER || \
     CONFIG_VP8_MEDIACODEC_DECODER   || \
-    CONFIG_VP9_MEDIACODEC_DECODER
+    CONFIG_VP9_MEDIACODEC_DECODER   || \
+    CONFIG_AV1_MEDIACODEC_DECODER
 static int common_set_extradata(AVCodecContext *avctx, FFAMediaFormat *format)
 {
     int ret = 0;
@@ -323,6 +324,15 @@ static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
     }
 
     switch (avctx->codec_id) {
+#if CONFIG_AV1_MEDIACODEC_DECODER
+    case AV_CODEC_ID_AV1:
+        codec_mime = "video/av01";
+
+        ret = common_set_extradata(avctx, format);
+        if (ret < 0)
+            goto done;
+        break;
+#endif
 #if CONFIG_H264_MEDIACODEC_DECODER
     case AV_CODEC_ID_H264:
         codec_mime = "video/avc";
@@ -590,4 +600,8 @@ DECLARE_MEDIACODEC_VDEC(vp8, "VP8", AV_CODEC_ID_VP8, NULL)
 
 #if CONFIG_VP9_MEDIACODEC_DECODER
 DECLARE_MEDIACODEC_VDEC(vp9, "VP9", AV_CODEC_ID_VP9, NULL)
+#endif
+
+#if CONFIG_AV1_MEDIACODEC_DECODER
+DECLARE_MEDIACODEC_VDEC(av1, "AV1", AV_CODEC_ID_AV1, NULL)
 #endif
