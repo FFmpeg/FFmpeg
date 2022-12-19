@@ -108,6 +108,22 @@ const char *ff_vk_ret2str(VkResult res)
 #undef CASE
 }
 
+void ff_vk_load_props(FFVulkanContext *s)
+{
+    FFVulkanFunctions *vk = &s->vkfn;
+
+    s->driver_props = (VkPhysicalDeviceDriverProperties) {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES,
+    };
+    s->props = (VkPhysicalDeviceProperties2) {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
+        .pNext = &s->driver_props,
+    };
+
+    vk->GetPhysicalDeviceProperties2(s->hwctx->phys_dev, &s->props);
+    vk->GetPhysicalDeviceMemoryProperties(s->hwctx->phys_dev, &s->mprops);
+}
+
 void ff_vk_qf_fill(FFVulkanContext *s)
 {
     s->nb_qfs = 0;
@@ -189,7 +205,7 @@ int ff_vk_alloc_mem(FFVulkanContext *s, VkMemoryRequirements *req,
 
     /* Align if we need to */
     if ((req_flags != UINT32_MAX) && req_flags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
-        req->size = FFALIGN(req->size, s->props.limits.minMemoryMapAlignment);
+        req->size = FFALIGN(req->size, s->props.properties.limits.minMemoryMapAlignment);
 
     alloc_info.allocationSize = req->size;
 

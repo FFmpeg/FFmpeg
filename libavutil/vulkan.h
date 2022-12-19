@@ -197,7 +197,8 @@ typedef struct FFVulkanContext {
 
     FFVulkanFunctions     vkfn;
     FFVulkanExtensions    extensions;
-    VkPhysicalDeviceProperties props;
+    VkPhysicalDeviceProperties2 props;
+    VkPhysicalDeviceDriverProperties driver_props;
     VkPhysicalDeviceMemoryProperties mprops;
 
     AVBufferRef           *device_ref;
@@ -242,6 +243,11 @@ extern const VkComponentMapping ff_comp_identity_map;
  * Converts Vulkan return values to strings
  */
 const char *ff_vk_ret2str(VkResult res);
+
+/**
+ * Loads props/mprops/driver_props
+ */
+void ff_vk_load_props(FFVulkanContext *s);
 
 /**
  * Returns 1 if the image is any sort of supported RGB
