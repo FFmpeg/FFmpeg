@@ -44,6 +44,7 @@ typedef struct DecimateContext {
     AVFrame **clean_src;    ///< frame queue for the clean source
     int got_frame[2];       ///< frame request flag for each input stream
     int64_t last_pts;       ///< last output timestamp
+    int64_t last_duration;  ///< last output duration
     int64_t start_pts;      ///< base for output timestamps
     uint32_t eof;           ///< bitmask for end of stream
     int hsub, vsub;         ///< chroma subsampling values
@@ -51,6 +52,9 @@ typedef struct DecimateContext {
     int nxblocks, nyblocks;
     int bdiffsize;
     int64_t *bdiffs;
+    AVRational in_tb;       // input time-base
+    AVRational nondec_tb;   // non-decimated time-base
+    AVRational dec_tb;      // decimated time-base
 
     /* options */
     int cycle;
@@ -61,6 +65,7 @@ typedef struct DecimateContext {
     int blockx, blocky;
     int ppsrc;
     int chroma;
+    int mixed;
 } DecimateContext;
 
 #define OFFSET(x) offsetof(DecimateContext, x)
@@ -74,6 +79,7 @@ static const AVOption decimate_options[] = {
     { "blocky",    "set the size of the y-axis blocks used during metric calculations", OFFSET(blocky), AV_OPT_TYPE_INT, {.i64 = 32}, 4, 1<<9, FLAGS },
     { "ppsrc",     "mark main input as a pre-processed input and activate clean source input stream", OFFSET(ppsrc), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
     { "chroma",    "set whether or not chroma is considered in the metric calculations", OFFSET(chroma), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, FLAGS },
+    { "mixed",     "set whether or not the input only partially contains content to be decimated", OFFSET(mixed), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
     { NULL }
 };
 
@@ -193,7 +199,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         }
         if (dm->queue[lowest].maxbdiff < dm->dupthresh)
             duppos = lowest;
-        drop = scpos >= 0 && duppos < 0 ? scpos : lowest;
+
+        if (dm->mixed && duppos < 0) {
+            drop = -1; // no drop if mixed content + no frame in cycle below threshold
+        } else {
+            drop = scpos >= 0 && duppos < 0 ? scpos : lowest;
+        }
     }
 
     /* metrics debug */
@@ -212,7 +223,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     /* push all frames except the drop */
     ret = 0;
     for (i = 0; i < dm->cycle && dm->queue[i].frame; i++) {
-        AVRational in_tb = ctx->inputs[INPUT_MAIN]->time_base;
         if (i == drop) {
             if (dm->ppsrc)
                 av_frame_free(&dm->clean_src[i]);
@@ -221,7 +231,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             AVFrame *frame = dm->queue[i].frame;
             dm->queue[i].frame = NULL;
             if (frame->pts != AV_NOPTS_VALUE && dm->start_pts == AV_NOPTS_VALUE)
-                dm->start_pts = av_rescale_q(frame->pts, in_tb, outlink->time_base);
+                dm->start_pts = av_rescale_q(frame->pts, dm->in_tb, outlink->time_base);
 
             if (dm->ppsrc) {
                 av_frame_free(&frame);
@@ -230,9 +240,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                     continue;
                 dm->clean_src[i] = NULL;
             }
-            frame->pts = outlink->frame_count_in +
+
+            frame->pts = dm->last_duration ? dm->last_pts + dm->last_duration :
                          (dm->start_pts == AV_NOPTS_VALUE ? 0 : dm->start_pts);
-            frame->duration = 1;
+            frame->duration = dm->mixed ? av_div_q(drop < 0 ? dm->nondec_tb : dm->dec_tb, outlink->time_base).num : 1;
+            dm->last_duration = frame->duration;
             dm->last_pts = frame->pts;
             ret = ff_filter_frame(outlink, frame);
             if (ret < 0)
@@ -329,6 +341,7 @@ static av_cold int decimate_init(AVFilterContext *ctx)
     }
 
     dm->start_pts = AV_NOPTS_VALUE;
+    dm->last_duration = 0;
 
     return 0;
 }
@@ -388,6 +401,9 @@ static int config_output(AVFilterLink *outlink)
     dm->bdiffsize = dm->nxblocks * dm->nyblocks;
     dm->bdiffs    = av_malloc_array(dm->bdiffsize, sizeof(*dm->bdiffs));
     dm->queue     = av_calloc(dm->cycle, sizeof(*dm->queue));
+    dm->in_tb     = inlink->time_base;
+    dm->nondec_tb = av_inv_q(fps);
+    dm->dec_tb    = av_mul_q(dm->nondec_tb, (AVRational){dm->cycle, dm->cycle - 1});
 
     if (!dm->bdiffs || !dm->queue)
         return AVERROR(ENOMEM);
@@ -403,11 +419,17 @@ static int config_output(AVFilterLink *outlink)
                "current rate of %d/%d is invalid\n", fps.num, fps.den);
         return AVERROR(EINVAL);
     }
-    fps = av_mul_q(fps, (AVRational){dm->cycle - 1, dm->cycle});
-    av_log(ctx, AV_LOG_VERBOSE, "FPS: %d/%d -> %d/%d\n",
-           inlink->frame_rate.num, inlink->frame_rate.den, fps.num, fps.den);
-    outlink->time_base  = av_inv_q(fps);
-    outlink->frame_rate = fps;
+
+    if (dm->mixed) {
+        outlink->time_base = av_gcd_q(dm->nondec_tb, dm->dec_tb, AV_TIME_BASE / 2, AV_TIME_BASE_Q);
+        av_log(ctx, AV_LOG_VERBOSE, "FPS: %d/%d -> VFR (use %d/%d if CFR required)\n",
+            fps.num, fps.den, outlink->time_base.den, outlink->time_base.num);
+    } else {
+        outlink->time_base = dm->dec_tb;
+        outlink->frame_rate = av_inv_q(outlink->time_base);
+        av_log(ctx, AV_LOG_VERBOSE, "FPS: %d/%d -> %d/%d\n",
+            fps.num, fps.den, outlink->frame_rate.num, outlink->frame_rate.den);
+    }
     outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
     if (dm->ppsrc) {
         outlink->w = ctx->inputs[INPUT_CLEANSRC]->w;
