@@ -379,7 +379,7 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
     s->n_fft = n_fft = 1 << (32 - ff_clz(ir_len + s->size));
 
     if (s->type == FREQUENCY_DOMAIN) {
-        float scale;
+        float scale = 1.f;
 
         ret = av_tx_init(&s->fft[0], &s->tx_fn[0], AV_TX_FLOAT_FFT, 0, s->n_fft, &scale, 0);
         if (ret < 0)
