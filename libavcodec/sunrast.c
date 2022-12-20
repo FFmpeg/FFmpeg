@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/imgutils.h"
@@ -75,6 +76,12 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_PATCHWELCOME;
     }
 
+    if (maplength > 768) {
+        av_log(avctx, AV_LOG_WARNING, "invalid colormap length\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    // This also checks depth to be valid
     switch (depth) {
         case 1:
             avctx->pix_fmt = maplength ? AV_PIX_FMT_PAL8 : AV_PIX_FMT_MONOWHITE;
@@ -96,15 +103,23 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
             return AVERROR_INVALIDDATA;
     }
 
+    // This checks w and h to be valid in the sense that bytes of a padded bitmap are addressable with 32bit int
     ret = ff_set_dimensions(avctx, w, h);
     if (ret < 0)
         return ret;
+
+    // ensured by ff_set_dimensions()
+    av_assert0(w <= (INT32_MAX - 7) / depth);
 
     /* scanlines are aligned on 16 bit boundaries */
     len  = (depth * w + 7) >> 3;
     alen = len + (len & 1);
 
-    if (buf_end - buf < maplength + (len * h) * 3 / 256)
+    // ensured by ff_set_dimensions()
+    av_assert0(h  <= INT32_MAX / (3 * len));
+
+    // maplength is limited to 768 and the right term is limited to INT32_MAX / 256 so the add needs no check
+    if (buf_end - buf < (uint64_t)maplength + (len * h) * 3 / 256)
         return AVERROR_INVALIDDATA;
 
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
@@ -118,7 +133,7 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
     } else if (maplength) {
         unsigned int len = maplength / 3;
 
-        if (maplength % 3 || maplength > 768) {
+        if (maplength % 3) {
             av_log(avctx, AV_LOG_WARNING, "invalid colormap length\n");
             return AVERROR_INVALIDDATA;
         }
