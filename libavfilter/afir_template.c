@@ -59,7 +59,8 @@ static void fn(draw_response)(AVFilterContext *ctx, AVFrame *out)
     char text[32];
     int channel, i, x;
 
-    memset(out->data[0], 0, s->h * out->linesize[0]);
+    for (int y = 0; y < s->h; y++)
+        memset(out->data[0] + y * out->linesize[0], 0, s->w * 4);
 
     phase = av_malloc_array(s->w, sizeof(*phase));
     mag = av_malloc_array(s->w, sizeof(*mag));
