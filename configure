@@ -3257,6 +3257,7 @@ wmv3_crystalhd_decoder_select="crystalhd"
 av1_qsv_decoder_select="qsvdec"
 av1_qsv_encoder_select="qsvenc"
 av1_qsv_encoder_deps="libvpl"
+av1_amf_encoder_deps="amf"
 
 # parsers
 aac_parser_select="adts_header mpeg4audio"
