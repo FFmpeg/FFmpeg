@@ -403,7 +403,8 @@ static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int offse
 
         seg->part_index[ch] = (seg->part_index[ch] + 1) % nb_partitions;
 
-        memmove(src, src + min_part_size, (seg->input_size - min_part_size) * sizeof(*src));
+        if (part_size != min_part_size)
+            memmove(src, src + min_part_size, (seg->input_size - min_part_size) * sizeof(*src));
 
         fn(fir_fadd)(s, ptr, dst, nb_samples);
     }
