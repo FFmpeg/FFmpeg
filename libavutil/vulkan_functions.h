@@ -77,6 +77,7 @@ typedef enum FFVulkanExtensions {
     MACRO(1, 0, FF_VK_EXT_NO_FLAG,              GetPhysicalDeviceFormatProperties2)      \
     MACRO(1, 0, FF_VK_EXT_NO_FLAG,              GetPhysicalDeviceImageFormatProperties2) \
     MACRO(1, 0, FF_VK_EXT_NO_FLAG,              GetPhysicalDeviceQueueFamilyProperties)  \
+    MACRO(1, 0, FF_VK_EXT_NO_FLAG,              GetPhysicalDeviceQueueFamilyProperties2) \
                                                                                          \
     /* Command pool */                                                                   \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CreateCommandPool)                       \

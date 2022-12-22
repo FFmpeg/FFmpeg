@@ -108,8 +108,9 @@ const char *ff_vk_ret2str(VkResult res)
 #undef CASE
 }
 
-void ff_vk_load_props(FFVulkanContext *s)
+int ff_vk_load_props(FFVulkanContext *s)
 {
+    uint32_t qc = 0;
     FFVulkanFunctions *vk = &s->vkfn;
 
     s->driver_props = (VkPhysicalDeviceDriverProperties) {
@@ -120,8 +121,48 @@ void ff_vk_load_props(FFVulkanContext *s)
         .pNext = &s->driver_props,
     };
 
+
     vk->GetPhysicalDeviceProperties2(s->hwctx->phys_dev, &s->props);
     vk->GetPhysicalDeviceMemoryProperties(s->hwctx->phys_dev, &s->mprops);
+    vk->GetPhysicalDeviceQueueFamilyProperties2(s->hwctx->phys_dev, &qc, s->qf_props);
+
+    if (s->qf_props)
+        return 0;
+
+    s->qf_props = av_calloc(qc, sizeof(*s->qf_props));
+    if (!s->qf_props)
+        return AVERROR(ENOMEM);
+
+    s->query_props = av_calloc(qc, sizeof(*s->query_props));
+    if (!s->qf_props) {
+        av_freep(&s->qf_props);
+        return AVERROR(ENOMEM);
+    }
+
+    s->video_props = av_calloc(qc, sizeof(*s->video_props));
+    if (!s->video_props) {
+        av_freep(&s->qf_props);
+        av_freep(&s->query_props);
+        return AVERROR(ENOMEM);
+    }
+
+    for (uint32_t i = 0; i < qc; i++) {
+        s->query_props[i] = (VkQueueFamilyQueryResultStatusPropertiesKHR) {
+            .sType = VK_STRUCTURE_TYPE_QUEUE_FAMILY_QUERY_RESULT_STATUS_PROPERTIES_KHR,
+        };
+        s->video_props[i] = (VkQueueFamilyVideoPropertiesKHR) {
+            .sType = VK_STRUCTURE_TYPE_QUEUE_FAMILY_VIDEO_PROPERTIES_KHR,
+            .pNext = &s->query_props[i],
+        };
+        s->qf_props[i] = (VkQueueFamilyProperties2) {
+            .sType = VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2,
+            .pNext = &s->video_props[i],
+        };
+    }
+
+    vk->GetPhysicalDeviceQueueFamilyProperties2(s->hwctx->phys_dev, &qc, s->qf_props);
+
+    return 0;
 }
 
 void ff_vk_qf_fill(FFVulkanContext *s)
@@ -149,40 +190,54 @@ void ff_vk_qf_fill(FFVulkanContext *s)
         s->qfs[s->nb_qfs++] = s->hwctx->queue_family_encode_index;
 }
 
-void ff_vk_qf_init(FFVulkanContext *s, FFVkQueueFamilyCtx *qf,
-                   VkQueueFlagBits dev_family, int nb_queues)
+int ff_vk_qf_get_index(FFVulkanContext *s, VkQueueFlagBits dev_family, int *nb)
 {
+    int ret, num;
+
     switch (dev_family) {
     case VK_QUEUE_GRAPHICS_BIT:
-        qf->queue_family = s->hwctx->queue_family_index;
-        qf->actual_queues = s->hwctx->nb_graphics_queues;
+        ret = s->hwctx->queue_family_index;
+        num = s->hwctx->nb_graphics_queues;
         break;
     case VK_QUEUE_COMPUTE_BIT:
-        qf->queue_family = s->hwctx->queue_family_comp_index;
-        qf->actual_queues = s->hwctx->nb_comp_queues;
+        ret = s->hwctx->queue_family_comp_index;
+        num = s->hwctx->nb_comp_queues;
         break;
     case VK_QUEUE_TRANSFER_BIT:
-        qf->queue_family = s->hwctx->queue_family_tx_index;
-        qf->actual_queues = s->hwctx->nb_tx_queues;
+        ret = s->hwctx->queue_family_tx_index;
+        num = s->hwctx->nb_tx_queues;
         break;
     case VK_QUEUE_VIDEO_ENCODE_BIT_KHR:
-        qf->queue_family = s->hwctx->queue_family_encode_index;
-        qf->actual_queues = s->hwctx->nb_encode_queues;
+        ret = s->hwctx->queue_family_encode_index;
+        num = s->hwctx->nb_encode_queues;
         break;
     case VK_QUEUE_VIDEO_DECODE_BIT_KHR:
-        qf->queue_family = s->hwctx->queue_family_decode_index;
-        qf->actual_queues = s->hwctx->nb_decode_queues;
+        ret = s->hwctx->queue_family_decode_index;
+        num = s->hwctx->nb_decode_queues;
         break;
     default:
         av_assert0(0); /* Should never happen */
     }
+
+    if (nb)
+        *nb = num;
+
+    return ret;
+}
+
+int ff_vk_qf_init(FFVulkanContext *s, FFVkQueueFamilyCtx *qf,
+                  VkQueueFlagBits dev_family, int nb_queues)
+{
+    int ret;
+
+    ret = qf->queue_family = ff_vk_qf_get_index(s, dev_family, &qf->actual_queues);
 
     if (!nb_queues)
         qf->nb_queues = qf->actual_queues;
     else
         qf->nb_queues = nb_queues;
 
-    return;
+    return ret;
 }
 
 void ff_vk_qf_rotate(FFVkQueueFamilyCtx *qf)
@@ -1668,6 +1723,10 @@ static void free_pipeline(FFVulkanContext *s, FFVulkanPipeline *pl)
 void ff_vk_uninit(FFVulkanContext *s)
 {
     FFVulkanFunctions *vk = &s->vkfn;
+
+    av_freep(&s->query_props);
+    av_freep(&s->qf_props);
+    av_freep(&s->video_props);
 
     if (s->spirv_compiler)
         s->spirv_compiler->uninit(&s->spirv_compiler);

@@ -216,6 +216,9 @@ typedef struct FFVulkanContext {
     VkPhysicalDeviceProperties2 props;
     VkPhysicalDeviceDriverProperties driver_props;
     VkPhysicalDeviceMemoryProperties mprops;
+    VkQueueFamilyQueryResultStatusPropertiesKHR *query_props;
+    VkQueueFamilyVideoPropertiesKHR *video_props;
+    VkQueueFamilyProperties2 *qf_props;
 
     AVBufferRef           *device_ref;
     AVHWDeviceContext     *device;
@@ -263,7 +266,7 @@ const char *ff_vk_ret2str(VkResult res);
 /**
  * Loads props/mprops/driver_props
  */
-void ff_vk_load_props(FFVulkanContext *s);
+int ff_vk_load_props(FFVulkanContext *s);
 
 /**
  * Returns 1 if the image is any sort of supported RGB
@@ -289,11 +292,16 @@ int ff_vk_alloc_mem(FFVulkanContext *s, VkMemoryRequirements *req,
                     VkMemoryPropertyFlagBits *mem_flags, VkDeviceMemory *mem);
 
 /**
+ * Get a queue family index and the number of queues. nb is optional.
+ */
+int ff_vk_qf_get_index(FFVulkanContext *s, VkQueueFlagBits dev_family, int *nb);
+
+/**
  * Initialize a queue family with a specific number of queues.
  * If nb_queues == 0, use however many queues the queue family has.
  */
-void ff_vk_qf_init(FFVulkanContext *s, FFVkQueueFamilyCtx *qf,
-                   VkQueueFlagBits dev_family, int nb_queues);
+int ff_vk_qf_init(FFVulkanContext *s, FFVkQueueFamilyCtx *qf,
+                  VkQueueFlagBits dev_family, int nb_queues);
 
 /**
  * Rotate through the queues in a queue family.
