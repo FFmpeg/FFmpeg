@@ -147,6 +147,9 @@ typedef struct FFVkQueueCtx {
     VkFence fence;
     VkQueue queue;
 
+    int synchronous;
+    int submitted;
+
     /* Buffer dependencies */
     AVBufferRef **buf_deps;
     int nb_buf_deps;
@@ -416,6 +419,12 @@ int ff_vk_add_exec_dep(FFVulkanContext *s, FFVkExecContext *e, AVFrame *frame,
  * Submits a command buffer to the queue for execution. Will not block.
  */
 int ff_vk_submit_exec_queue(FFVulkanContext *s, FFVkExecContext *e);
+
+/**
+ * Wait on a command buffer's execution. Mainly useful for debugging and
+ * development.
+ */
+void ff_vk_wait_on_exec_ctx(FFVulkanContext *s, FFVkExecContext *e);
 
 /**
  * Create a VkBuffer with the specified parameters.

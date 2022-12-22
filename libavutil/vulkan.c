@@ -564,7 +564,7 @@ int ff_vk_create_exec_ctx(FFVulkanContext *s, FFVkExecContext **ctx,
 
     /* Create command pool */
     ret = vk->CreateCommandPool(s->hwctx->act_dev, &cqueue_create,
-                              s->hwctx->alloc, &e->pool);
+                                s->hwctx->alloc, &e->pool);
     if (ret != VK_SUCCESS) {
         av_log(s, AV_LOG_ERROR, "Command pool creation failure: %s\n",
                ff_vk_ret2str(ret));
@@ -631,10 +631,12 @@ int ff_vk_start_exec_recording(FFVulkanContext *s, FFVkExecContext *e)
                    ff_vk_ret2str(ret));
             return AVERROR_EXTERNAL;
         }
-    } else {
+    } else if (!q->synchronous) {
         vk->WaitForFences(s->hwctx->act_dev, 1, &q->fence, VK_TRUE, UINT64_MAX);
         vk->ResetFences(s->hwctx->act_dev, 1, &q->fence);
     }
+
+    q->synchronous = 0;
 
     /* Discard queue dependencies */
     ff_vk_discard_exec_deps(e);
@@ -788,7 +790,21 @@ int ff_vk_submit_exec_queue(FFVulkanContext *s, FFVkExecContext *e)
     for (int i = 0; i < e->sem_sig_cnt; i++)
         *e->sem_sig_val_dst[i] += 1;
 
+    q->submitted = 1;
+
     return 0;
+}
+
+void ff_vk_wait_on_exec_ctx(FFVulkanContext *s, FFVkExecContext *e)
+{
+    FFVulkanFunctions *vk = &s->vkfn;
+    FFVkQueueCtx *q = &e->queues[e->qf->cur_queue];
+    if (!q->submitted)
+        return;
+
+    vk->WaitForFences(s->hwctx->act_dev, 1, &q->fence, VK_TRUE, UINT64_MAX);
+    vk->ResetFences(s->hwctx->act_dev, 1, &q->fence);
+    q->synchronous = 1;
 }
 
 int ff_vk_add_dep_exec_ctx(FFVulkanContext *s, FFVkExecContext *e,
