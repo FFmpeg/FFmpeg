@@ -120,6 +120,7 @@ static struct{
 
     CFStringRef kVTProfileLevel_HEVC_Main_AutoLevel;
     CFStringRef kVTProfileLevel_HEVC_Main10_AutoLevel;
+    CFStringRef kVTProfileLevel_HEVC_Main42210_AutoLevel;
 
     CFStringRef kVTCompressionPropertyKey_RealTime;
     CFStringRef kVTCompressionPropertyKey_TargetQualityForAlpha;
@@ -192,6 +193,7 @@ static void loadVTEncSymbols(void){
 
     GET_SYM(kVTProfileLevel_HEVC_Main_AutoLevel,     "HEVC_Main_AutoLevel");
     GET_SYM(kVTProfileLevel_HEVC_Main10_AutoLevel,   "HEVC_Main10_AutoLevel");
+    GET_SYM(kVTProfileLevel_HEVC_Main42210_AutoLevel,   "HEVC_Main42210_AutoLevel");
 
     GET_SYM(kVTCompressionPropertyKey_RealTime, "RealTime");
     GET_SYM(kVTCompressionPropertyKey_TargetQualityForAlpha,
@@ -978,6 +980,11 @@ static bool get_vt_hevc_profile_level(AVCodecContext *avctx,
             }
             *profile_level_val =
                 compat_keys.kVTProfileLevel_HEVC_Main10_AutoLevel;
+            break;
+        case AV_PROFILE_HEVC_REXT:
+            // only main42210 is supported, omit depth and chroma subsampling
+            *profile_level_val =
+                compat_keys.kVTProfileLevel_HEVC_Main42210_AutoLevel;
             break;
     }
 
@@ -2854,6 +2861,7 @@ static const enum AVPixelFormat hevc_pix_fmts[] = {
     AV_PIX_FMT_YUV420P,
     AV_PIX_FMT_BGRA,
     AV_PIX_FMT_P010LE,
+    AV_PIX_FMT_P210,
     AV_PIX_FMT_NONE
 };
 
@@ -2988,6 +2996,8 @@ static const AVOption hevc_options[] = {
     { "profile", "Profile", OFFSET(profile), AV_OPT_TYPE_INT, { .i64 = AV_PROFILE_UNKNOWN }, AV_PROFILE_UNKNOWN, INT_MAX, VE, .unit = "profile" },
     { "main",     "Main Profile",     0, AV_OPT_TYPE_CONST, { .i64 = AV_PROFILE_HEVC_MAIN    }, INT_MIN, INT_MAX, VE, .unit = "profile" },
     { "main10",   "Main10 Profile",   0, AV_OPT_TYPE_CONST, { .i64 = AV_PROFILE_HEVC_MAIN_10 }, INT_MIN, INT_MAX, VE, .unit = "profile" },
+    { "main42210","Main 4:2:2 10 Profile",0, AV_OPT_TYPE_CONST, { .i64 = AV_PROFILE_HEVC_REXT }, INT_MIN, INT_MAX, VE, .unit = "profile" },
+    { "rext",     "Main 4:2:2 10 Profile",0, AV_OPT_TYPE_CONST, { .i64 = AV_PROFILE_HEVC_REXT }, INT_MIN, INT_MAX, VE, .unit = "profile" },
 
     { "alpha_quality", "Compression quality for the alpha channel", OFFSET(alpha_quality), AV_OPT_TYPE_DOUBLE, { .dbl = 0.0 }, 0.0, 1.0, VE },
 
