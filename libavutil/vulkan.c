@@ -592,6 +592,114 @@ int ff_vk_create_exec_ctx(FFVulkanContext *s, FFVkExecContext **ctx,
     return 0;
 }
 
+int ff_vk_create_exec_ctx_query_pool(FFVulkanContext *s, FFVkExecContext *e,
+                                     int nb_queries, VkQueryType type,
+                                     int elem_64bits, void *create_pnext)
+{
+    VkResult ret;
+    size_t qd_size;
+    int nb_results = nb_queries;
+    int nb_statuses = 0 /* Once RADV has support, = nb_queries */;
+    int status_stride = 2;
+    int result_elem_size = elem_64bits ? 8 : 4;
+    FFVulkanFunctions *vk = &s->vkfn;
+    VkQueryPoolCreateInfo query_pool_info = {
+        .sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
+        .pNext = create_pnext,
+        .queryType = type,
+        .queryCount = nb_queries*e->qf->nb_queues,
+    };
+
+    if (e->query.pool)
+        return AVERROR(EINVAL);
+
+    /* Video encode quieries produce two results per query */
+    if (type == VK_QUERY_TYPE_VIDEO_ENCODE_BITSTREAM_BUFFER_RANGE_KHR) {
+        status_stride = 3; /* skip,skip,result,skip,skip,result */
+        nb_results *= 2;
+    } else if (type == VK_QUERY_TYPE_RESULT_STATUS_ONLY_KHR) {
+        status_stride = 1;
+        nb_results *= 0;
+    }
+
+    qd_size = nb_results*result_elem_size + nb_statuses*result_elem_size;
+
+    e->query.data = av_mallocz(e->qf->nb_queues*qd_size);
+    if (!e->query.data)
+        return AVERROR(ENOMEM);
+
+    ret = vk->CreateQueryPool(s->hwctx->act_dev, &query_pool_info,
+                              s->hwctx->alloc, &e->query.pool);
+    if (ret != VK_SUCCESS)
+        return AVERROR_EXTERNAL;
+
+    e->query.data_per_queue = qd_size;
+    e->query.nb_queries     = nb_queries;
+    e->query.nb_results     = nb_results;
+    e->query.nb_statuses    = nb_statuses;
+    e->query.elem_64bits    = elem_64bits;
+    e->query.status_stride  = status_stride;
+
+    return 0;
+}
+
+int ff_vk_get_exec_ctx_query_results(FFVulkanContext *s, FFVkExecContext *e,
+                                     int query_idx, void **data, int64_t *status)
+{
+    VkResult ret;
+    FFVulkanFunctions *vk = &s->vkfn;
+    uint8_t *qd;
+    int32_t *res32;
+    int64_t *res64;
+    int64_t res = 0;
+    VkQueryResultFlags qf = 0;
+    FFVkQueueCtx *q = &e->queues[e->qf->cur_queue];
+
+    if (!q->submitted) {
+        *data = NULL;
+        return 0;
+    }
+
+    qd = e->query.data + e->qf->cur_queue*e->query.data_per_queue;
+    qf |= e->query.nb_results && e->query.nb_statuses ?
+          VK_QUERY_RESULT_WITH_STATUS_BIT_KHR : 0x0;
+    qf |= e->query.elem_64bits ? VK_QUERY_RESULT_64_BIT : 0x0;
+    res32 = (int32_t *)(qd + e->query.nb_results*4);
+    res64 = (int64_t *)(qd + e->query.nb_results*8);
+
+    ret = vk->GetQueryPoolResults(s->hwctx->act_dev, e->query.pool,
+                                  query_idx,
+                                  e->query.nb_queries,
+                                  e->query.data_per_queue, qd,
+                                  e->query.elem_64bits ? 8 : 4, qf);
+    if (ret != VK_SUCCESS) {
+        av_log(s, AV_LOG_ERROR, "Unable to perform query: %s!\n",
+               ff_vk_ret2str(ret));
+        return AVERROR_EXTERNAL;
+    }
+
+    if (e->query.nb_statuses && e->query.elem_64bits) {
+        for (int i = 0; i < e->query.nb_queries; i++) {
+            res = (res64[i] < res) || (res >= 0 && res64[i] > res) ?
+                  res64[i] : res;
+            res64 += e->query.status_stride;
+        }
+    } else if (e->query.nb_statuses) {
+        for (int i = 0; i < e->query.nb_queries; i++) {
+            res = (res32[i] < res) || (res >= 0 && res32[i] > res) ?
+                  res32[i] : res;
+            res32 += e->query.status_stride;
+        }
+    }
+
+    if (data)
+        *data = qd;
+    if (status)
+        *status = res;
+
+    return 0;
+}
+
 void ff_vk_discard_exec_deps(FFVkExecContext *e)
 {
     FFVkQueueCtx *q = &e->queues[e->qf->cur_queue];
@@ -646,6 +754,12 @@ int ff_vk_start_exec_recording(FFVulkanContext *s, FFVkExecContext *e)
         av_log(s, AV_LOG_ERROR, "Failed to start command recoding: %s\n",
                ff_vk_ret2str(ret));
         return AVERROR_EXTERNAL;
+    }
+
+    if (e->query.pool) {
+        e->query.idx = e->qf->cur_queue*e->query.nb_queries;
+        vk->CmdResetQueryPool(e->bufs[e->qf->cur_queue], e->query.pool,
+                              e->query.idx, e->query.nb_queries);
     }
 
     return 0;
@@ -790,6 +904,7 @@ int ff_vk_submit_exec_queue(FFVulkanContext *s, FFVkExecContext *e)
     for (int i = 0; i < e->sem_sig_cnt; i++)
         *e->sem_sig_val_dst[i] += 1;
 
+    e->query.idx = e->qf->cur_queue*e->query.nb_queries;
     q->submitted = 1;
 
     return 0;
@@ -1483,7 +1598,10 @@ static void free_exec_ctx(FFVulkanContext *s, FFVkExecContext *e)
         vk->FreeCommandBuffers(s->hwctx->act_dev, e->pool, e->qf->nb_queues, e->bufs);
     if (e->pool)
         vk->DestroyCommandPool(s->hwctx->act_dev, e->pool, s->hwctx->alloc);
+    if (e->query.pool)
+        vk->DestroyQueryPool(s->hwctx->act_dev, e->query.pool, s->hwctx->alloc);
 
+    av_freep(&e->query.data);
     av_freep(&e->bufs);
     av_freep(&e->queues);
     av_freep(&e->sem_sig);

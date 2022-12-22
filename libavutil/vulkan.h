@@ -168,6 +168,19 @@ typedef struct FFVkExecContext {
     VkCommandBuffer *bufs;
     FFVkQueueCtx *queues;
 
+    struct {
+        int           idx;
+        VkQueryPool   pool;
+        uint8_t      *data;
+
+        int           nb_queries;
+        int           nb_results;
+        int           nb_statuses;
+        int           elem_64bits;
+        size_t        data_per_queue;
+        int           status_stride;
+    } query;
+
     AVBufferRef ***deps;
     int *nb_deps;
     int *dep_alloc_size;
@@ -370,6 +383,23 @@ void ff_vk_update_descriptor_set(FFVulkanContext *s, FFVulkanPipeline *pl,
  */
 int ff_vk_create_exec_ctx(FFVulkanContext *s, FFVkExecContext **ctx,
                           FFVkQueueFamilyCtx *qf);
+
+/**
+ * Create a query pool for a command context.
+ * elem_64bits exists to troll driver devs for compliance. All results
+ * and statuses returned should be 32 bits, unless this is set, then it's 64bits.
+ */
+int ff_vk_create_exec_ctx_query_pool(FFVulkanContext *s, FFVkExecContext *e,
+                                     int nb_queries, VkQueryType type,
+                                     int elem_64bits, void *create_pnext);
+
+/**
+ * Get results for query.
+ * Returns the status of the query.
+ * Sets *res to the status of the queries.
+ */
+int ff_vk_get_exec_ctx_query_results(FFVulkanContext *s, FFVkExecContext *e,
+                                     int query_idx, void **data, int64_t *status);
 
 /**
  * Begin recording to the command buffer. Previous execution must have been
