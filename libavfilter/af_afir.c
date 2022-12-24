@@ -217,7 +217,6 @@ static int init_segment(AVFilterContext *ctx, AudioFIRSegment *seg,
 
     seg->sumin  = ff_get_audio_buffer(ctx->inputs[0], seg->fft_length);
     seg->sumout = ff_get_audio_buffer(ctx->inputs[0], seg->fft_length);
-    seg->blockin  = ff_get_audio_buffer(ctx->inputs[0], seg->block_size * seg->nb_partitions);
     seg->blockout = ff_get_audio_buffer(ctx->inputs[0], seg->block_size * seg->nb_partitions);
     seg->tempin = ff_get_audio_buffer(ctx->inputs[0], seg->block_size);
     seg->tempout = ff_get_audio_buffer(ctx->inputs[0], seg->block_size);
@@ -226,7 +225,7 @@ static int init_segment(AVFilterContext *ctx, AudioFIRSegment *seg,
     seg->input  = ff_get_audio_buffer(ctx->inputs[0], seg->input_size);
     seg->output = ff_get_audio_buffer(ctx->inputs[0], seg->part_size);
     seg->loaded = ff_get_audio_buffer(ctx->inputs[0], seg->nb_partitions);
-    if (!seg->buffer || !seg->sumin || !seg->sumout || !seg->blockin || !seg->blockout ||
+    if (!seg->buffer || !seg->sumin || !seg->sumout || !seg->blockout ||
         !seg->coeff || !seg->input || !seg->output || !seg->loaded || !seg->tempin || !seg->tempout)
         return AVERROR(ENOMEM);
 
@@ -261,7 +260,6 @@ static void uninit_segment(AVFilterContext *ctx, AudioFIRSegment *seg)
 
     av_frame_free(&seg->tempin);
     av_frame_free(&seg->tempout);
-    av_frame_free(&seg->blockin);
     av_frame_free(&seg->blockout);
     av_frame_free(&seg->sumin);
     av_frame_free(&seg->sumout);

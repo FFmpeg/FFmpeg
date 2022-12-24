@@ -314,7 +314,7 @@ static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int offse
 {
     AudioFIRContext *s = ctx->priv;
     const ftype *in = (const ftype *)s->in->extended_data[ch] + offset;
-    ftype *blockin, *blockout, *buf, *ptr = (ftype *)out->extended_data[ch] + offset;
+    ftype *blockout, *buf, *ptr = (ftype *)out->extended_data[ch] + offset;
     const int min_part_size = s->min_part_size;
     const int nb_samples = FFMIN(min_part_size, out->nb_samples - offset);
     const int nb_segments = s->nb_segments;
@@ -326,6 +326,7 @@ static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int offse
         ftype *dst = (ftype *)seg->output->extended_data[ch];
         ftype *sumin = (ftype *)seg->sumin->extended_data[ch];
         ftype *sumout = (ftype *)seg->sumout->extended_data[ch];
+        ftype *tempin = (ftype *)seg->tempin->extended_data[ch];
         int *output_offset = &seg->output_offset[ch];
         const int nb_partitions = seg->nb_partitions;
         const int input_offset = seg->input_offset;
@@ -358,12 +359,11 @@ static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int offse
         }
 
         memset(sumin, 0, sizeof(*sumin) * seg->fft_length);
-        blockin = (ftype *)seg->blockin->extended_data[ch] + seg->part_index[ch] * seg->block_size;
         blockout = (ftype *)seg->blockout->extended_data[ch] + seg->part_index[ch] * seg->block_size;
-        memset(blockin + part_size, 0, sizeof(*blockin) * (seg->block_size - part_size));
-        memcpy(blockin, src, sizeof(*src) * part_size);
+        memset(tempin + part_size, 0, sizeof(*tempin) * (seg->block_size - part_size));
+        memcpy(tempin, src, sizeof(*src) * part_size);
 
-        seg->tx_fn(seg->tx[ch], blockout, blockin, sizeof(ftype));
+        seg->tx_fn(seg->tx[ch], blockout, tempin, sizeof(ftype));
 
         j = seg->part_index[ch];
         if (seg->loading[ch] < nb_partitions) {
@@ -376,8 +376,8 @@ static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int offse
         }
 
         for (int i = 0; i < nb_partitions; i++) {
-            const int input_partition = i;
-            const int coeff_partition = j;
+            const int input_partition = j;
+            const int coeff_partition = i;
             const int coffset = coeff_partition * seg->coeff_size;
             const ftype *blockout = (const ftype *)seg->blockout->extended_data[ch] + input_partition * seg->block_size;
             const ctype *coeff = ((const ctype *)seg->coeff->extended_data[ch]) + coffset;

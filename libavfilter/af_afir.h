@@ -37,14 +37,12 @@ typedef struct AudioFIRSegment {
     int input_size;
     int input_offset;
 
-    int *selir;
     int *loading;
     int *output_offset;
     int *part_index;
 
     AVFrame *sumin;
     AVFrame *sumout;
-    AVFrame *blockin;
     AVFrame *blockout;
     AVFrame *tempin;
     AVFrame *tempout;
