@@ -90,9 +90,11 @@ static int cmp_insert(const void *key, const void *node)
 
 static int cmp_find(const void *key, const void *node)
 {
-    int ret = ((const DTS2PTSFrame *)key)->poc - ((const DTS2PTSNode *) node)->poc;
+    const DTS2PTSFrame * key1 = key;
+    const DTS2PTSNode  *node1 = node;
+    int ret = FFDIFFSIGN(key1->poc, node1->poc);
     if (!ret)
-        ret = ((const DTS2PTSFrame *)key)->gop - ((const DTS2PTSNode *) node)->gop;
+        ret = key1->gop - node1->gop;
     return ret;
 }
 
