@@ -632,15 +632,16 @@ static int process_command(AVFilterContext *ctx,
                            int flags)
 {
     AudioFIRContext *s = ctx->priv;
-    int ret;
+    int prev_selir, ret;
 
-    s->prev_selir = s->selir;
+    prev_selir = s->selir;
     ret = ff_filter_process_command(ctx, cmd, arg, res, res_len, flags);
     if (ret < 0)
         return ret;
 
     s->selir = FFMIN(s->nb_irs - 1, s->selir);
-    if (s->selir != s->prev_selir) {
+    if (s->selir != prev_selir) {
+        s->prev_selir = prev_selir;
         for (int n = 0; n < s->nb_segments; n++) {
             AudioFIRSegment *seg = &s->seg[n];
 
