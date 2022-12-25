@@ -3516,8 +3516,8 @@ static int64_t mxf_compute_sample_count(MXFContext *mxf, AVStream *st,
     if ((sample_rate.num / sample_rate.den) == 48000) {
         return av_rescale_q(edit_unit, sample_rate, track->edit_rate);
     } else {
-        int remainder = (sample_rate.num * time_base.num) %
-                        (time_base.den * sample_rate.den);
+        int64_t remainder = (sample_rate.num * (int64_t)  time_base.num) %
+                            (  time_base.den * (int64_t)sample_rate.den);
         if (remainder)
             av_log(mxf->fc, AV_LOG_WARNING,
                    "seeking detected on stream #%d with time base (%d/%d) and "
