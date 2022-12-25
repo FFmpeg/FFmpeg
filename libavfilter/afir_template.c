@@ -279,13 +279,13 @@ static void fn(convert_channel)(AVFilterContext *ctx, AudioFIRContext *s, int ch
 
     av_log(ctx, AV_LOG_DEBUG, "channel: %d\n", ch);
 
-    memset(tempin, 0, sizeof(*tempin) * seg->fft_length);
+    memset(tempin + size, 0, sizeof(*tempin) * (seg->block_size - size));
     memcpy(tempin, time + seg->input_offset + coeff_partition * seg->part_size,
            size * sizeof(*tempin));
 
     seg->ctx_fn(seg->ctx[ch], tempout, tempin, sizeof(*tempin));
 
-    memcpy(coeff + coffset, tempout, (seg->part_size + 1) * sizeof(*coeff));
+    memcpy(coeff + coffset, tempout, seg->coeff_size * sizeof(*coeff));
 
     av_log(ctx, AV_LOG_DEBUG, "nb_partitions: %d\n", seg->nb_partitions);
     av_log(ctx, AV_LOG_DEBUG, "partition size: %d\n", seg->part_size);
