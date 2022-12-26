@@ -3855,6 +3855,11 @@ Depth of look ahead in number frames, available when extbrc option is enabled.
 Setting this flag turns on or off LowDelayBRC feautre in qsv plugin, which provides
 more accurate bitrate control to minimize the variance of bitstream size frame
 by frame. Value: -1-default 0-off 1-on
+
+@item max_frame_size
+Set the allowed max size in bytes for each frame. If the frame size exceeds
+the limitation, encoder will adjust the QP value to control the frame size.
+Invalid in CQP rate control mode.
 @end table
 
 @section snow
