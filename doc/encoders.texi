@@ -3850,6 +3850,11 @@ Extended bitrate control.
 
 @item @var{look_ahead_depth}
 Depth of look ahead in number frames, available when extbrc option is enabled.
+
+@item @var{low_delay_brc}
+Setting this flag turns on or off LowDelayBRC feautre in qsv plugin, which provides
+more accurate bitrate control to minimize the variance of bitstream size frame
+by frame. Value: -1-default 0-off 1-on
 @end table
 
 @section snow

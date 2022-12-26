@@ -537,6 +537,7 @@ static void dump_video_av1_param(AVCodecContext *avctx, QSVEncContext *q,
 
     av_log(avctx, AV_LOG_VERBOSE, "WriteIVFHeaders: %s \n",
            print_threestate(av1_bs_param->WriteIVFHeaders));
+    av_log(avctx, AV_LOG_VERBOSE, "LowDelayBRC: %s\n", print_threestate(co3->LowDelayBRC));
 }
 #endif
 
@@ -1090,6 +1091,9 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
                 q->extco3.MaxFrameSizeP = q->max_frame_size_p;
 
             q->extco3.ScenarioInfo = q->scenario;
+        } else if (avctx->codec_id == AV_CODEC_ID_AV1) {
+            if (q->low_delay_brc >= 0)
+                q->extco3.LowDelayBRC = q->low_delay_brc ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
         }
 
         if (avctx->codec_id == AV_CODEC_ID_HEVC) {
