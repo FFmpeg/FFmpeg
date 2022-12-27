@@ -135,16 +135,6 @@ static int cmp_color(const void *a, const void *b)
     return FFDIFFSIGN(box1->color , box2->color);
 }
 
-static av_always_inline int diff(const uint32_t a, const uint32_t b)
-{
-    const uint8_t c1[] = {a >> 16 & 0xff, a >> 8 & 0xff, a & 0xff};
-    const uint8_t c2[] = {b >> 16 & 0xff, b >> 8 & 0xff, b & 0xff};
-    const int dr = c1[0] - c2[0];
-    const int dg = c1[1] - c2[1];
-    const int db = c1[2] - c2[2];
-    return dr*dr + dg*dg + db*db;
-}
-
 static void compute_box_stats(PaletteGenContext *s, struct range_box *box)
 {
     int avg[3];
@@ -180,6 +170,8 @@ static void compute_box_stats(PaletteGenContext *s, struct range_box *box)
     if (er2[2] >= er2[0] && er2[2] >= er2[1]) box->major_axis = 2;
     if (er2[0] >= er2[1] && er2[0] >= er2[2]) box->major_axis = 0;
     if (er2[1] >= er2[0] && er2[1] >= er2[2]) box->major_axis = 1; // prefer green again
+
+    box->variance = er2[0] + er2[1] + er2[2];
 }
 
 /**
@@ -187,7 +179,7 @@ static void compute_box_stats(PaletteGenContext *s, struct range_box *box)
  */
 static int get_next_box_id_to_split(PaletteGenContext *s)
 {
-    int box_id, i, best_box_id = -1;
+    int box_id, best_box_id = -1;
     int64_t max_variance = -1;
 
     if (s->nb_boxes == s->max_colors - s->reserve_transparent)
@@ -195,24 +187,9 @@ static int get_next_box_id_to_split(PaletteGenContext *s)
 
     for (box_id = 0; box_id < s->nb_boxes; box_id++) {
         struct range_box *box = &s->boxes[box_id];
-
-        if (s->boxes[box_id].len >= 2) {
-
-            if (box->variance == -1) {
-                int64_t variance = 0;
-
-                for (i = 0; i < box->len; i++) {
-                    const struct color_ref *ref = s->refs[box->start + i];
-                    variance += diff(ref->color, box->color) * ref->count;
-                }
-                box->variance = variance;
-            }
-            if (box->variance > max_variance) {
-                best_box_id = box_id;
-                max_variance = box->variance;
-            }
-        } else {
-            box->variance = -1;
+        if (s->boxes[box_id].len >= 2 && box->variance > max_variance) {
+            best_box_id = box_id;
+            max_variance = box->variance;
         }
     }
     return best_box_id;
@@ -261,8 +238,8 @@ static void split_box(PaletteGenContext *s, struct range_box *box, int n)
 
     box->color     = get_avg_color(s->refs, box);
     new_box->color = get_avg_color(s->refs, new_box);
-    box->variance     = -1;
-    new_box->variance = -1;
+    compute_box_stats(s, box);
+    compute_box_stats(s, new_box);
 }
 
 /**
@@ -359,14 +336,13 @@ static AVFrame *get_palette_frame(AVFilterContext *ctx)
     box->len = s->nb_refs;
     box->sorted_by = -1;
     box->color = get_avg_color(s->refs, box);
-    box->variance = -1;
+    compute_box_stats(s, box);
     s->nb_boxes = 1;
 
     while (box && box->len > 1) {
         int i;
         uint64_t median, box_weight;
 
-        compute_box_stats(s, box);
         box_weight = box->weight;
 
         ff_dlog(ctx, "box #%02X [%6d..%-6d] (%6d) w:%-6"PRIu64" sort by %c (already sorted:%c) ",
