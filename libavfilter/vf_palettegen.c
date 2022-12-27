@@ -26,7 +26,6 @@
 #include "libavutil/avassert.h"
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
-#include "libavutil/qsort.h"
 #include "libavutil/intreadwrite.h"
 #include "avfilter.h"
 #include "internal.h"
@@ -352,7 +351,7 @@ static AVFrame *get_palette_frame(AVFilterContext *ctx)
         /* sort the range by its major axis if it's not already sorted */
         if (box->sorted_by != box->major_axis) {
             cmp_func cmpf = cmp_funcs[box->major_axis];
-            AV_QSORT(&s->refs[box->start], box->len, const struct color_ref *, cmpf);
+            qsort(&s->refs[box->start], box->len, sizeof(struct color_ref *), cmpf);
             box->sorted_by = box->major_axis;
         }
 
