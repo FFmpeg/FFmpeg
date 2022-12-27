@@ -231,7 +231,6 @@ struct stack_node {
  */
 static av_always_inline int color_get(PaletteUseContext *s, uint32_t color)
 {
-    int i;
     struct color_info clrinfo;
     const uint32_t hash = ff_lowbias32(color) & (CACHE_SIZE - 1);
     struct cache_node *node = &s->cache[hash];
@@ -242,7 +241,7 @@ static av_always_inline int color_get(PaletteUseContext *s, uint32_t color)
         return s->transparency_index;
     }
 
-    for (i = 0; i < node->nb_entries; i++) {
+    for (int i = 0; i < node->nb_entries; i++) {
         e = &node->entries[i];
         if (e->color == color)
             return e->pal_entry;
@@ -284,7 +283,6 @@ static av_always_inline int set_frame(PaletteUseContext *s, AVFrame *out, AVFram
                                       int x_start, int y_start, int w, int h,
                                       enum dithering_mode dither)
 {
-    int x, y;
     const int src_linesize = in ->linesize[0] >> 2;
     const int dst_linesize = out->linesize[0];
     uint32_t *src = ((uint32_t *)in ->data[0]) + y_start*src_linesize;
@@ -293,8 +291,8 @@ static av_always_inline int set_frame(PaletteUseContext *s, AVFrame *out, AVFram
     w += x_start;
     h += y_start;
 
-    for (y = y_start; y < h; y++) {
-        for (x = x_start; x < w; x++) {
+    for (int y = y_start; y < h; y++) {
+        for (int x = x_start; x < w; x++) {
             int er, eg, eb;
 
             if (dither == DITHERING_BAYER) {
@@ -467,7 +465,7 @@ static int get_next_color(const uint8_t *color_used, const uint32_t *palette,
                           int *component, const struct color_rect *box)
 {
     int wL, wa, wb;
-    int i, longest = 0;
+    int longest = 0;
     unsigned nb_color = 0;
     struct color_rect ranges;
     struct color tmp_pal[256];
@@ -476,7 +474,7 @@ static int get_next_color(const uint8_t *color_used, const uint32_t *palette,
     ranges.min[0] = ranges.min[1] = ranges.min[2] = 0xffff;
     ranges.max[0] = ranges.max[1] = ranges.max[2] = -0xffff;
 
-    for (i = 0; i < AVPALETTE_COUNT; i++) {
+    for (int i = 0; i < AVPALETTE_COUNT; i++) {
         const uint32_t c = palette[i];
         const uint8_t a = c >> 24;
         const struct Lab lab = ff_srgb_u8_to_oklab_int(c);
@@ -571,7 +569,7 @@ static int cmp_pal_entry(const void *a, const void *b)
 
 static void load_colormap(PaletteUseContext *s)
 {
-    int i, nb_used = 0;
+    int nb_used = 0;
     uint8_t color_used[AVPALETTE_COUNT] = {0};
     uint32_t last_color = 0;
     struct color_rect box;
@@ -583,7 +581,7 @@ static void load_colormap(PaletteUseContext *s)
     /* disable transparent colors and dups */
     qsort(s->palette, AVPALETTE_COUNT-(s->transparency_index >= 0), sizeof(*s->palette), cmp_pal_entry);
 
-    for (i = 0; i < AVPALETTE_COUNT; i++) {
+    for (int i = 0; i < AVPALETTE_COUNT; i++) {
         const uint32_t c = s->palette[i];
         if (i != 0 && c == last_color) {
             color_used[i] = 1;
@@ -874,10 +872,9 @@ static av_cold int init(AVFilterContext *ctx)
     s->set_frame = set_frame_lut[s->dither];
 
     if (s->dither == DITHERING_BAYER) {
-        int i;
         const int delta = 1 << (5 - s->bayer_scale); // to avoid too much luma
 
-        for (i = 0; i < FF_ARRAY_ELEMS(s->ordered_dither); i++)
+        for (int i = 0; i < FF_ARRAY_ELEMS(s->ordered_dither); i++)
             s->ordered_dither[i] = (dither_value(i) >> s->bayer_scale) - delta;
     }
 
@@ -892,11 +889,10 @@ static int activate(AVFilterContext *ctx)
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
-    int i;
     PaletteUseContext *s = ctx->priv;
 
     ff_framesync_uninit(&s->fs);
-    for (i = 0; i < CACHE_SIZE; i++)
+    for (int i = 0; i < CACHE_SIZE; i++)
         av_freep(&s->cache[i].entries);
     av_frame_free(&s->last_in);
     av_frame_free(&s->last_out);

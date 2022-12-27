@@ -209,13 +209,13 @@ static void compute_box_stats(PaletteGenContext *s, struct range_box *box)
  */
 static int get_next_box_id_to_split(PaletteGenContext *s)
 {
-    int box_id, best_box_id = -1;
+    int best_box_id = -1;
     int64_t max_score = -1;
 
     if (s->nb_boxes == s->max_colors - s->reserve_transparent)
         return -1;
 
-    for (box_id = 0; box_id < s->nb_boxes; box_id++) {
+    for (int box_id = 0; box_id < s->nb_boxes; box_id++) {
         const struct range_box *box = &s->boxes[box_id];
         if (s->boxes[box_id].len >= 2 && box->cut_score > max_score) {
             best_box_id = box_id;
@@ -250,13 +250,13 @@ static void split_box(PaletteGenContext *s, struct range_box *box, int n)
 static void write_palette(AVFilterContext *ctx, AVFrame *out)
 {
     const PaletteGenContext *s = ctx->priv;
-    int x, y, box_id = 0;
+    int box_id = 0;
     uint32_t *pal = (uint32_t *)out->data[0];
     const int pal_linesize = out->linesize[0] >> 2;
     uint32_t last_color = 0;
 
-    for (y = 0; y < out->height; y++) {
-        for (x = 0; x < out->width; x++) {
+    for (int y = 0; y < out->height; y++) {
+        for (int x = 0; x < out->width; x++) {
             if (box_id < s->nb_boxes) {
                 pal[x] = s->boxes[box_id++].color;
                 if ((x || y) && pal[x] == last_color)
@@ -282,16 +282,16 @@ static void write_palette(AVFilterContext *ctx, AVFrame *out)
  */
 static struct color_ref **load_color_refs(const struct hist_node *hist, int nb_refs)
 {
-    int i, j, k = 0;
+    int k = 0;
     struct color_ref **refs = av_malloc_array(nb_refs, sizeof(*refs));
 
     if (!refs)
         return NULL;
 
-    for (j = 0; j < HIST_SIZE; j++) {
+    for (int j = 0; j < HIST_SIZE; j++) {
         const struct hist_node *node = &hist[j];
 
-        for (i = 0; i < node->nb_entries; i++)
+        for (int i = 0; i < node->nb_entries; i++)
             refs[k++] = &node->entries[i];
     }
 
@@ -391,12 +391,11 @@ static AVFrame *get_palette_frame(AVFilterContext *ctx)
  */
 static int color_inc(struct hist_node *hist, uint32_t color)
 {
-    int i;
     const uint32_t hash = ff_lowbias32(color) & (HIST_SIZE - 1);
     struct hist_node *node = &hist[hash];
     struct color_ref *e;
 
-    for (i = 0; i < node->nb_entries; i++) {
+    for (int i = 0; i < node->nb_entries; i++) {
         e = &node->entries[i];
         if (e->color == color) {
             e->count++;
