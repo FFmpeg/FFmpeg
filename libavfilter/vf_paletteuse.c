@@ -121,7 +121,6 @@ static const AVOption paletteuse_options[] = {
 
     /* following are the debug options, not part of the official API */
     { "debug_kdtree", "save Graphviz graph of the kdtree in specified file", OFFSET(dot_filename), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
-    { "mean_err", "compute and print mean error", OFFSET(calc_mean_err), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
     { NULL }
 };
 
@@ -606,34 +605,6 @@ static void load_colormap(PaletteUseContext *s)
         disp_tree(s->map, s->dot_filename);
 }
 
-static void debug_mean_error(PaletteUseContext *s, const AVFrame *in1,
-                             const AVFrame *in2, int frame_count)
-{
-    int x, y;
-    const uint32_t *palette = s->palette;
-    uint32_t *src1 = (uint32_t *)in1->data[0];
-    uint8_t  *src2 =             in2->data[0];
-    const int src1_linesize = in1->linesize[0] >> 2;
-    const int src2_linesize = in2->linesize[0];
-    const float div = in1->width * in1->height * 3;
-    unsigned mean_err = 0;
-
-    for (y = 0; y < in1->height; y++) {
-        for (x = 0; x < in1->width; x++) {
-            const struct color_info c1 = get_color_from_srgb(0xff000000 | src1[x]);
-            const struct color_info c2 = get_color_from_srgb(0xff000000 | palette[src2[x]]);
-            mean_err += diff(&c1, &c2, s->trans_thresh);
-        }
-        src1 += src1_linesize;
-        src2 += src2_linesize;
-    }
-
-    s->total_mean_err += mean_err;
-
-    av_log(NULL, AV_LOG_INFO, "MEP:%.3f TotalMEP:%.3f\n",
-           mean_err / div, s->total_mean_err / (div * frame_count));
-}
-
 static void set_processing_window(enum diff_mode diff_mode,
                                   const AVFrame *prv_src, const AVFrame *cur_src,
                                   const AVFrame *prv_dst,       AVFrame *cur_dst,
@@ -759,8 +730,6 @@ static int apply_palette(AVFilterLink *inlink, AVFrame *in, AVFrame **outf)
         return ret;
     }
     memcpy(out->data[1], s->palette, AVPALETTE_SIZE);
-    if (s->calc_mean_err)
-        debug_mean_error(s, in, out, inlink->frame_count_out);
     *outf = out;
     return 0;
 }
