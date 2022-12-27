@@ -171,7 +171,8 @@ static void compute_box_stats(PaletteGenContext *s, struct range_box *box)
     if (er2[0] >= er2[1] && er2[0] >= er2[2]) box->major_axis = 0;
     if (er2[1] >= er2[0] && er2[1] >= er2[2]) box->major_axis = 1; // prefer green again
 
-    box->cut_score = er2[0] + er2[1] + er2[2];
+    /* The box that has the axis with the biggest error amongst all boxes will but cut down */
+    box->cut_score = FFMAX3(er2[0], er2[1], er2[2]);
 }
 
 /**
