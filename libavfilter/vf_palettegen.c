@@ -34,14 +34,14 @@
 /* Reference a color and how much it's used */
 struct color_ref {
     uint32_t color;
-    uint64_t count;
+    int64_t count;
 };
 
 /* Store a range of colors */
 struct range_box {
     uint32_t color;     // average color
     int major_axis;     // best axis candidate for cutting the box
-    uint64_t weight;    // sum of all the weights of the colors
+    int64_t weight;     // sum of all the weights of the colors
     int64_t cut_score;  // how likely the box is to be cut down (higher implying more likely)
     int start;          // index in PaletteGenContext->refs
     int len;            // number of referenced colors
@@ -141,7 +141,7 @@ static void compute_box_stats(PaletteGenContext *s, struct range_box *box)
     int64_t er2[3] = {0};
 
     /* Compute average color */
-    uint64_t sr = 0, sg = 0, sb = 0;
+    int64_t sr = 0, sg = 0, sb = 0;
     box->weight = 0;
     for (int i = box->start; i < box->start + box->len; i++) {
         const struct color_ref *ref = s->refs[i];
@@ -314,7 +314,7 @@ static AVFrame *get_palette_frame(AVFilterContext *ctx)
 
     while (box && box->len > 1) {
         int i;
-        uint64_t median, weight;
+        int64_t median, weight;
 
         ff_dlog(ctx, "box #%02X [%6d..%-6d] (%6d) w:%-6"PRIu64" sort by %c (already sorted:%c) ",
                 box_id, box->start, box->start + box->len - 1, box->len, box->weight,
