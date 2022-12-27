@@ -207,3 +207,13 @@ uint32_t ff_oklab_int_to_srgb_u8(struct Lab c)
 
     return r<<16 | g<<8 | b;
 }
+
+uint32_t ff_lowbias32(uint32_t x)
+{
+    x ^= x >> 16;
+    x *= 0x7feb352d;
+    x ^= x >> 15;
+    x *= 0x846ca68b;
+    x ^= x >> 16;
+    return x;
+}

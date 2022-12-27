@@ -55,4 +55,9 @@ struct Lab ff_srgb_u8_to_oklab_int(uint32_t srgb);
  */
 uint32_t ff_oklab_int_to_srgb_u8(struct Lab c);
 
+/*
+ * lowbias32 hashing from https://nullprogram.com/blog/2018/07/31/
+ */
+uint32_t ff_lowbias32(uint32_t x);
+
 #endif /* AVFILTER_PALETTE_H */
