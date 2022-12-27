@@ -314,12 +314,10 @@ static AVFrame *get_palette_frame(AVFilterContext *ctx)
 
     while (box && box->len > 1) {
         int i;
-        uint64_t median, box_weight;
-
-        box_weight = box->weight;
+        uint64_t median, weight;
 
         ff_dlog(ctx, "box #%02X [%6d..%-6d] (%6d) w:%-6"PRIu64" sort by %c (already sorted:%c) ",
-                box_id, box->start, box->start + box->len - 1, box->len, box_weight,
+                box_id, box->start, box->start + box->len - 1, box->len, box->weight,
                 "rgb"[box->major_axis], box->sorted_by == box->major_axis ? 'y':'n');
 
         /* sort the range by its major axis if it's not already sorted */
@@ -330,16 +328,16 @@ static AVFrame *get_palette_frame(AVFilterContext *ctx)
         }
 
         /* locate the median where to split */
-        median = (box_weight + 1) >> 1;
-        box_weight = 0;
+        median = (box->weight + 1) >> 1;
+        weight = 0;
         /* if you have 2 boxes, the maximum is actually #0: you must have at
          * least 1 color on each side of the split, hence the -2 */
         for (i = box->start; i < box->start + box->len - 2; i++) {
-            box_weight += s->refs[i]->count;
-            if (box_weight > median)
+            weight += s->refs[i]->count;
+            if (weight > median)
                 break;
         }
-        ff_dlog(ctx, "split @ i=%-6d with w=%-6"PRIu64" (target=%6"PRIu64")\n", i, box_weight, median);
+        ff_dlog(ctx, "split @ i=%-6d with w=%-6"PRIu64" (target=%6"PRIu64")\n", i, weight, median);
         split_box(s, box, i);
 
         box_id = get_next_box_id_to_split(s);
