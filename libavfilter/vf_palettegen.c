@@ -63,8 +63,7 @@ enum {
     NB_STATS_MODE
 };
 
-#define NBITS 5
-#define HIST_SIZE (1<<(3*NBITS))
+#define HIST_SIZE (1<<15)
 
 typedef struct PaletteGenContext {
     const AVClass *class;
@@ -388,26 +387,12 @@ static AVFrame *get_palette_frame(AVFilterContext *ctx)
 }
 
 /**
- * Hashing function for the color.
- * It keeps the NBITS least significant bit of each component to make it
- * "random" even if the scene doesn't have much different colors.
- */
-static inline unsigned color_hash(uint32_t color)
-{
-    const uint8_t r = color >> 16 & ((1<<NBITS)-1);
-    const uint8_t g = color >>  8 & ((1<<NBITS)-1);
-    const uint8_t b = color       & ((1<<NBITS)-1);
-
-    return r << (NBITS * 2) | g << NBITS | b;
-}
-
-/**
  * Locate the color in the hash table and increment its counter.
  */
 static int color_inc(struct hist_node *hist, uint32_t color)
 {
     int i;
-    const unsigned hash = color_hash(color);
+    const uint32_t hash = ff_lowbias32(color) & (HIST_SIZE - 1);
     struct hist_node *node = &hist[hash];
     struct color_ref *e;
 
