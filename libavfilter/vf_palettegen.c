@@ -363,22 +363,21 @@ static AVFrame *get_palette_frame(AVFilterContext *ctx)
     s->nb_boxes = 1;
 
     while (box && box->len > 1) {
-        int i, longest;
+        int i;
         uint64_t median, box_weight;
 
         compute_box_stats(s, box);
-        longest = box->major_axis;
         box_weight = box->weight;
 
         ff_dlog(ctx, "box #%02X [%6d..%-6d] (%6d) w:%-6"PRIu64" sort by %c (already sorted:%c) ",
                 box_id, box->start, box->start + box->len - 1, box->len, box_weight,
-                "rgb"[longest], box->sorted_by == longest ? 'y':'n');
+                "rgb"[box->major_axis], box->sorted_by == box->major_axis ? 'y':'n');
 
-        /* sort the range by its longest axis if it's not already sorted */
-        if (box->sorted_by != longest) {
-            cmp_func cmpf = cmp_funcs[longest];
+        /* sort the range by its major axis if it's not already sorted */
+        if (box->sorted_by != box->major_axis) {
+            cmp_func cmpf = cmp_funcs[box->major_axis];
             AV_QSORT(&s->refs[box->start], box->len, const struct color_ref *, cmpf);
-            box->sorted_by = longest;
+            box->sorted_by = box->major_axis;
         }
 
         /* locate the median where to split */
