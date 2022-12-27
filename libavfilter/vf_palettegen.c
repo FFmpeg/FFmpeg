@@ -30,16 +30,19 @@
 #include "libavutil/intreadwrite.h"
 #include "avfilter.h"
 #include "internal.h"
+#include "palette.h"
 
 /* Reference a color and how much it's used */
 struct color_ref {
     uint32_t color;
+    struct Lab lab;
     int64_t count;
 };
 
 /* Store a range of colors */
 struct range_box {
     uint32_t color;     // average color
+    struct Lab avg;     // average color in perceptual OkLab space
     int major_axis;     // best axis candidate for cutting the box
     int64_t weight;     // sum of all the weights of the colors
     int64_t cut_score;  // how likely the box is to be cut down (higher implying more likely)
@@ -115,15 +118,14 @@ static int cmp_##name(const void *pa, const void *pb)   \
 {                                                       \
     const struct color_ref * const *a = pa;             \
     const struct color_ref * const *b = pb;             \
-    return   (int)((*a)->color >> (8 * (2 - (pos))) & 0xff)  \
-           - (int)((*b)->color >> (8 * (2 - (pos))) & 0xff); \
+    return FFDIFFSIGN((*a)->lab.name, (*b)->lab.name);  \
 }
 
-DECLARE_CMP_FUNC(r, 0)
-DECLARE_CMP_FUNC(g, 1)
+DECLARE_CMP_FUNC(L, 0)
+DECLARE_CMP_FUNC(a, 1)
 DECLARE_CMP_FUNC(b, 2)
 
-static const cmp_func cmp_funcs[] = {cmp_r, cmp_g, cmp_b};
+static const cmp_func cmp_funcs[] = {cmp_L, cmp_a, cmp_b};
 
 /**
  * Simple color comparison for sorting the final palette
@@ -137,40 +139,38 @@ static int cmp_color(const void *a, const void *b)
 
 static void compute_box_stats(PaletteGenContext *s, struct range_box *box)
 {
-    int avg[3];
     int64_t er2[3] = {0};
 
     /* Compute average color */
-    int64_t sr = 0, sg = 0, sb = 0;
+    int64_t sL = 0, sa = 0, sb = 0;
     box->weight = 0;
     for (int i = box->start; i < box->start + box->len; i++) {
         const struct color_ref *ref = s->refs[i];
-        sr += (ref->color >> 16 & 0xff) * ref->count;
-        sg += (ref->color >>  8 & 0xff) * ref->count;
-        sb += (ref->color       & 0xff) * ref->count;
+        sL += ref->lab.L * ref->count;
+        sa += ref->lab.a * ref->count;
+        sb += ref->lab.b * ref->count;
         box->weight += ref->count;
     }
-    avg[0] = sr / box->weight;
-    avg[1] = sg / box->weight;
-    avg[2] = sb / box->weight;
-    box->color = 0xffU<<24 | avg[0]<<16 | avg[1]<<8 | avg[2];
+    box->avg.L = sL / box->weight;
+    box->avg.a = sa / box->weight;
+    box->avg.b = sb / box->weight;
 
     /* Compute squared error of each color channel */
     for (int i = box->start; i < box->start + box->len; i++) {
         const struct color_ref *ref = s->refs[i];
-        const int64_t dr = (int)(ref->color >> 16 & 0xff) - avg[0];
-        const int64_t dg = (int)(ref->color >>  8 & 0xff) - avg[1];
-        const int64_t db = (int)(ref->color       & 0xff) - avg[2];
-        er2[0] += dr * dr * ref->count;
-        er2[1] += dg * dg * ref->count;
+        const int64_t dL = ref->lab.L - box->avg.L;
+        const int64_t da = ref->lab.a - box->avg.a;
+        const int64_t db = ref->lab.b - box->avg.b;
+        er2[0] += dL * dL * ref->count;
+        er2[1] += da * da * ref->count;
         er2[2] += db * db * ref->count;
     }
 
     /* Define the best axis candidate for cutting the box */
-    box->major_axis = 1; // pick green by default (the color the eye is the most sensitive to)
+    box->major_axis = 0;
     if (er2[2] >= er2[0] && er2[2] >= er2[1]) box->major_axis = 2;
+    if (er2[1] >= er2[0] && er2[1] >= er2[2]) box->major_axis = 1;
     if (er2[0] >= er2[1] && er2[0] >= er2[2]) box->major_axis = 0;
-    if (er2[1] >= er2[0] && er2[1] >= er2[2]) box->major_axis = 1; // prefer green again
 
     /* The box that has the axis with the biggest error amongst all boxes will but cut down */
     box->cut_score = FFMAX3(er2[0], er2[1], er2[2]);
@@ -318,7 +318,7 @@ static AVFrame *get_palette_frame(AVFilterContext *ctx)
 
         ff_dlog(ctx, "box #%02X [%6d..%-6d] (%6d) w:%-6"PRIu64" sort by %c (already sorted:%c) ",
                 box_id, box->start, box->start + box->len - 1, box->len, box->weight,
-                "rgb"[box->major_axis], box->sorted_by == box->major_axis ? 'y':'n');
+                "Lab"[box->major_axis], box->sorted_by == box->major_axis ? 'y':'n');
 
         /* sort the range by its major axis if it's not already sorted */
         if (box->sorted_by != box->major_axis) {
@@ -347,6 +347,9 @@ static AVFrame *get_palette_frame(AVFilterContext *ctx)
     ratio = set_colorquant_ratio_meta(out, s->nb_boxes, s->nb_refs);
     av_log(ctx, AV_LOG_INFO, "%d%s colors generated out of %d colors; ratio=%f\n",
            s->nb_boxes, s->reserve_transparent ? "(+1)" : "", s->nb_refs, ratio);
+
+    for (int i = 0; i < s->nb_boxes; i++)
+        s->boxes[i].color = 0xffU<<24 | ff_oklab_int_to_srgb_u8(s->boxes[i].avg);
 
     qsort(s->boxes, s->nb_boxes, sizeof(*s->boxes), cmp_color);
 
@@ -392,6 +395,7 @@ static int color_inc(struct hist_node *hist, uint32_t color)
     if (!e)
         return AVERROR(ENOMEM);
     e->color = color;
+    e->lab = ff_srgb_u8_to_oklab_int(color);
     e->count = 1;
     return 1;
 }
