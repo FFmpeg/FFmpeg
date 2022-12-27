@@ -113,19 +113,51 @@ static int query_formats(AVFilterContext *ctx)
 
 typedef int (*cmp_func)(const void *, const void *);
 
-#define DECLARE_CMP_FUNC(name, pos)                     \
-static int cmp_##name(const void *pa, const void *pb)   \
-{                                                       \
-    const struct color_ref * const *a = pa;             \
-    const struct color_ref * const *b = pb;             \
-    return FFDIFFSIGN((*a)->lab.name, (*b)->lab.name);  \
+#define DECLARE_CMP_FUNC(k0, k1, k2)                        \
+static int cmp_##k0##k1##k2(const void *pa, const void *pb) \
+{                                                           \
+    const struct color_ref * const *a = pa;                 \
+    const struct color_ref * const *b = pb;                 \
+    const int c0 = FFDIFFSIGN((*a)->lab.k0, (*b)->lab.k0);  \
+    const int c1 = FFDIFFSIGN((*a)->lab.k1, (*b)->lab.k1);  \
+    const int c2 = FFDIFFSIGN((*a)->lab.k2, (*b)->lab.k2);  \
+    return c0 ? c0 : c1 ? c1 : c2;                          \
 }
 
-DECLARE_CMP_FUNC(L, 0)
-DECLARE_CMP_FUNC(a, 1)
-DECLARE_CMP_FUNC(b, 2)
+DECLARE_CMP_FUNC(L, a, b)
+DECLARE_CMP_FUNC(L, b, a)
+DECLARE_CMP_FUNC(a, L, b)
+DECLARE_CMP_FUNC(a, b, L)
+DECLARE_CMP_FUNC(b, L, a)
+DECLARE_CMP_FUNC(b, a, L)
 
-static const cmp_func cmp_funcs[] = {cmp_L, cmp_a, cmp_b};
+enum { ID_XYZ, ID_XZY, ID_ZXY, ID_YXZ, ID_ZYX, ID_YZX };
+static const char * const sortstr[] = { "Lab", "Lba", "bLa", "aLb", "baL", "abL" };
+
+static const cmp_func cmp_funcs[] = {
+    [ID_XYZ] = cmp_Lab,
+    [ID_XZY] = cmp_Lba,
+    [ID_ZXY] = cmp_bLa,
+    [ID_YXZ] = cmp_aLb,
+    [ID_ZYX] = cmp_baL,
+    [ID_YZX] = cmp_abL,
+};
+
+/*
+ * Return an identifier for the order of x, y, z (from higher to lower),
+ * preferring x over y and y over z in case of equality.
+ */
+static int sort3id(int64_t x, int64_t y, int64_t z)
+{
+    if (x >= y) {
+        if (y >= z) return ID_XYZ;
+        if (x >= z) return ID_XZY;
+        return ID_ZXY;
+    }
+    if (x >= z) return ID_YXZ;
+    if (y >= z) return ID_YZX;
+    return ID_ZYX;
+}
 
 /**
  * Simple color comparison for sorting the final palette
@@ -167,10 +199,7 @@ static void compute_box_stats(PaletteGenContext *s, struct range_box *box)
     }
 
     /* Define the best axis candidate for cutting the box */
-    box->major_axis = 0;
-    if (er2[2] >= er2[0] && er2[2] >= er2[1]) box->major_axis = 2;
-    if (er2[1] >= er2[0] && er2[1] >= er2[2]) box->major_axis = 1;
-    if (er2[0] >= er2[1] && er2[0] >= er2[2]) box->major_axis = 0;
+    box->major_axis = sort3id(er2[0], er2[1], er2[2]);
 
     /* The box that has the axis with the biggest error amongst all boxes will but cut down */
     box->cut_score = FFMAX3(er2[0], er2[1], er2[2]);
@@ -316,9 +345,9 @@ static AVFrame *get_palette_frame(AVFilterContext *ctx)
         int i;
         int64_t median, weight;
 
-        ff_dlog(ctx, "box #%02X [%6d..%-6d] (%6d) w:%-6"PRIu64" sort by %c (already sorted:%c) ",
+        ff_dlog(ctx, "box #%02X [%6d..%-6d] (%6d) w:%-6"PRIu64" sort by %s (already sorted:%c) ",
                 box_id, box->start, box->start + box->len - 1, box->len, box->weight,
-                "Lab"[box->major_axis], box->sorted_by == box->major_axis ? 'y':'n');
+                sortstr[box->major_axis], box->sorted_by == box->major_axis ? 'y':'n');
 
         /* sort the range by its major axis if it's not already sorted */
         if (box->sorted_by != box->major_axis) {
