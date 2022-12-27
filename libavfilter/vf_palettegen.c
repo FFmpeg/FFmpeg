@@ -147,31 +147,39 @@ static av_always_inline int diff(const uint32_t a, const uint32_t b)
 
 static void compute_box_stats(PaletteGenContext *s, struct range_box *box)
 {
-    int rr, gr, br;
+    int avg[3];
+    int64_t er2[3] = {0};
 
-    /* compute the box weight (sum all the weights of the colors in the
-     * range) and its boundings */
-    uint8_t min[3] = {0xff, 0xff, 0xff};
-    uint8_t max[3] = {0x00, 0x00, 0x00};
+    /* Compute average color */
+    uint64_t sr = 0, sg = 0, sb = 0;
     box->weight = 0;
     for (int i = box->start; i < box->start + box->len; i++) {
         const struct color_ref *ref = s->refs[i];
-        const uint32_t rgb = ref->color;
-        const uint8_t r = rgb >> 16 & 0xff, g = rgb >> 8 & 0xff, b = rgb & 0xff;
-        min[0] = FFMIN(r, min[0]), max[0] = FFMAX(r, max[0]);
-        min[1] = FFMIN(g, min[1]), max[1] = FFMAX(g, max[1]);
-        min[2] = FFMIN(b, min[2]), max[2] = FFMAX(b, max[2]);
+        sr += (ref->color >> 16 & 0xff) * ref->count;
+        sg += (ref->color >>  8 & 0xff) * ref->count;
+        sb += (ref->color       & 0xff) * ref->count;
         box->weight += ref->count;
     }
+    avg[0] = sr / box->weight;
+    avg[1] = sg / box->weight;
+    avg[2] = sb / box->weight;
 
-    /* define the axis to sort by according to the widest range of colors */
-    rr = max[0] - min[0];
-    gr = max[1] - min[1];
-    br = max[2] - min[2];
+    /* Compute squared error of each color channel */
+    for (int i = box->start; i < box->start + box->len; i++) {
+        const struct color_ref *ref = s->refs[i];
+        const int64_t dr = (int)(ref->color >> 16 & 0xff) - avg[0];
+        const int64_t dg = (int)(ref->color >>  8 & 0xff) - avg[1];
+        const int64_t db = (int)(ref->color       & 0xff) - avg[2];
+        er2[0] += dr * dr * ref->count;
+        er2[1] += dg * dg * ref->count;
+        er2[2] += db * db * ref->count;
+    }
+
+    /* Define the best axis candidate for cutting the box */
     box->major_axis = 1; // pick green by default (the color the eye is the most sensitive to)
-    if (br >= rr && br >= gr) box->major_axis = 2;
-    if (rr >= gr && rr >= br) box->major_axis = 0;
-    if (gr >= rr && gr >= br) box->major_axis = 1; // prefer green again
+    if (er2[2] >= er2[0] && er2[2] >= er2[1]) box->major_axis = 2;
+    if (er2[0] >= er2[1] && er2[0] >= er2[2]) box->major_axis = 0;
+    if (er2[1] >= er2[0] && er2[1] >= er2[2]) box->major_axis = 1; // prefer green again
 }
 
 /**
