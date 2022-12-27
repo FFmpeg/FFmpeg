@@ -451,9 +451,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
     PaletteGenContext *s = ctx->priv;
-    int ret = s->prev_frame ? update_histogram_diff(s->histogram, s->prev_frame, in)
-                            : update_histogram_frame(s->histogram, in);
+    int ret;
 
+    if (in->color_trc != AVCOL_TRC_UNSPECIFIED && in->color_trc != AVCOL_TRC_IEC61966_2_1)
+        av_log(ctx, AV_LOG_WARNING, "The input frame is not in sRGB, colors may be off\n");
+
+    ret = s->prev_frame ? update_histogram_diff(s->histogram, s->prev_frame, in)
+                        : update_histogram_frame(s->histogram, in);
     if (ret > 0)
         s->nb_refs += ret;
 
