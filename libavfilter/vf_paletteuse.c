@@ -70,8 +70,7 @@ struct color_node {
     int left_id, right_id;
 };
 
-#define NBITS 5
-#define CACHE_SIZE (1<<(3*NBITS))
+#define CACHE_SIZE (1<<15)
 
 struct cached_color {
     uint32_t color;
@@ -347,10 +346,7 @@ static av_always_inline int color_get(PaletteUseContext *s, uint32_t color,
 {
     int i;
     struct color_info clrinfo;
-    const uint8_t rhash = (color>>16) & ((1<<NBITS)-1);
-    const uint8_t ghash = (color>> 8) & ((1<<NBITS)-1);
-    const uint8_t bhash =  color      & ((1<<NBITS)-1);
-    const unsigned hash = rhash<<(NBITS*2) | ghash<<NBITS | bhash;
+    const uint32_t hash = ff_lowbias32(color) & (CACHE_SIZE - 1);
     struct cache_node *node = &s->cache[hash];
     struct cached_color *e;
 
