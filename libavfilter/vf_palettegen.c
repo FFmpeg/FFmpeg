@@ -42,7 +42,7 @@ struct range_box {
     uint32_t color;     // average color
     int major_axis;     // best axis candidate for cutting the box
     uint64_t weight;    // sum of all the weights of the colors
-    int64_t variance;   // overall variance of the box (how much the colors are spread)
+    int64_t cut_score;  // how likely the box is to be cut down (higher implying more likely)
     int start;          // index in PaletteGenContext->refs
     int len;            // number of referenced colors
     int sorted_by;      // whether range of colors is sorted by red (0), green (1) or blue (2)
@@ -171,25 +171,25 @@ static void compute_box_stats(PaletteGenContext *s, struct range_box *box)
     if (er2[0] >= er2[1] && er2[0] >= er2[2]) box->major_axis = 0;
     if (er2[1] >= er2[0] && er2[1] >= er2[2]) box->major_axis = 1; // prefer green again
 
-    box->variance = er2[0] + er2[1] + er2[2];
+    box->cut_score = er2[0] + er2[1] + er2[2];
 }
 
 /**
- * Find the next box to split: pick the one with the highest variance
+ * Find the next box to split: pick the one with the highest cut score
  */
 static int get_next_box_id_to_split(PaletteGenContext *s)
 {
     int box_id, best_box_id = -1;
-    int64_t max_variance = -1;
+    int64_t max_score = -1;
 
     if (s->nb_boxes == s->max_colors - s->reserve_transparent)
         return -1;
 
     for (box_id = 0; box_id < s->nb_boxes; box_id++) {
         struct range_box *box = &s->boxes[box_id];
-        if (s->boxes[box_id].len >= 2 && box->variance > max_variance) {
+        if (s->boxes[box_id].len >= 2 && box->cut_score > max_score) {
             best_box_id = box_id;
-            max_variance = box->variance;
+            max_score = box->cut_score;
         }
     }
     return best_box_id;
