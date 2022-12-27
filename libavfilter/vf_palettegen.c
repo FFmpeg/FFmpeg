@@ -132,7 +132,7 @@ static int cmp_color(const void *a, const void *b)
 {
     const struct range_box *box1 = a;
     const struct range_box *box2 = b;
-    return FFDIFFSIGN(box1->color , box2->color);
+    return FFDIFFSIGN(box1->color, box2->color);
 }
 
 static void compute_box_stats(PaletteGenContext *s, struct range_box *box)
@@ -188,7 +188,7 @@ static int get_next_box_id_to_split(PaletteGenContext *s)
         return -1;
 
     for (box_id = 0; box_id < s->nb_boxes; box_id++) {
-        struct range_box *box = &s->boxes[box_id];
+        const struct range_box *box = &s->boxes[box_id];
         if (s->boxes[box_id].len >= 2 && box->cut_score > max_score) {
             best_box_id = box_id;
             max_score = box->cut_score;
