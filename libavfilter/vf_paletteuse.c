@@ -262,9 +262,6 @@ static av_always_inline int color_get(PaletteUseContext *s, uint32_t color)
 static av_always_inline int get_dst_color_err(PaletteUseContext *s,
                                               uint32_t c, int *er, int *eg, int *eb)
 {
-    const uint8_t r = c >> 16 & 0xff;
-    const uint8_t g = c >>  8 & 0xff;
-    const uint8_t b = c       & 0xff;
     uint32_t dstc;
     const int dstx = color_get(s, c);
     if (dstx < 0)
@@ -273,6 +270,9 @@ static av_always_inline int get_dst_color_err(PaletteUseContext *s,
     if (dstx == s->transparency_index) {
         *er = *eg = *eb = 0;
     } else {
+        const uint8_t r = c >> 16 & 0xff;
+        const uint8_t g = c >>  8 & 0xff;
+        const uint8_t b = c       & 0xff;
         *er = (int)r - (int)(dstc >> 16 & 0xff);
         *eg = (int)g - (int)(dstc >>  8 & 0xff);
         *eb = (int)b - (int)(dstc       & 0xff);
