@@ -153,6 +153,7 @@ static void compute_box_stats(PaletteGenContext *s, struct range_box *box)
     avg[0] = sr / box->weight;
     avg[1] = sg / box->weight;
     avg[2] = sb / box->weight;
+    box->color = 0xffU<<24 | avg[0]<<16 | avg[1]<<8 | avg[2];
 
     /* Compute squared error of each color channel */
     for (int i = box->start; i < box->start + box->len; i++) {
@@ -197,32 +198,6 @@ static int get_next_box_id_to_split(PaletteGenContext *s)
 }
 
 /**
- * Get the 32-bit average color for the range of RGB colors enclosed in the
- * specified box. Takes into account the weight of each color.
- */
-static uint32_t get_avg_color(struct color_ref * const *refs,
-                              const struct range_box *box)
-{
-    int i;
-    const int n = box->len;
-    uint64_t r = 0, g = 0, b = 0, div = 0;
-
-    for (i = 0; i < n; i++) {
-        const struct color_ref *ref = refs[box->start + i];
-        r += (ref->color >> 16 & 0xff) * ref->count;
-        g += (ref->color >>  8 & 0xff) * ref->count;
-        b += (ref->color       & 0xff) * ref->count;
-        div += ref->count;
-    }
-
-    r = r / div;
-    g = g / div;
-    b = b / div;
-
-    return 0xffU<<24 | r<<16 | g<<8 | b;
-}
-
-/**
  * Split given box in two at position n. The original box becomes the left part
  * of the split, and the new index box is the right part.
  */
@@ -237,8 +212,6 @@ static void split_box(PaletteGenContext *s, struct range_box *box, int n)
     av_assert0(box->len     >= 1);
     av_assert0(new_box->len >= 1);
 
-    box->color     = get_avg_color(s->refs, box);
-    new_box->color = get_avg_color(s->refs, new_box);
     compute_box_stats(s, box);
     compute_box_stats(s, new_box);
 }
@@ -336,7 +309,6 @@ static AVFrame *get_palette_frame(AVFilterContext *ctx)
     box = &s->boxes[box_id];
     box->len = s->nb_refs;
     box->sorted_by = -1;
-    box->color = get_avg_color(s->refs, box);
     compute_box_stats(s, box);
     s->nb_boxes = 1;
 
