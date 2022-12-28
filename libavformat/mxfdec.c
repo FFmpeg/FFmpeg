@@ -1991,11 +1991,11 @@ static int mxf_compute_ptses_fake_index(MXFContext *mxf, MXFIndexTable *index_ta
         int index_delta = 1;
         int n = s->nb_index_entries;
 
-        if (s->nb_index_entries == 2 * s->index_duration + 1) {
+        if (s->nb_index_entries == 2 * s->index_duration + 1)
             index_delta = 2;    /* Avid index */
-            /* ignore the last entry - it's the size of the essence container */
+        if (s->nb_index_entries == index_delta * s->index_duration + 1)
+            /* ignore the last entry - it's the size of the essence container in Avid */
             n--;
-        }
 
         for (j = 0; j < n; j += index_delta, x++) {
             int offset = s->temporal_offset_entries[j] / index_delta;
