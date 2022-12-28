@@ -1496,6 +1496,8 @@ static int vulkan_device_init(AVHWDeviceContext *ctx)
            p->props.properties.limits.optimalBufferCopyRowPitchAlignment);
     av_log(ctx, AV_LOG_VERBOSE, "    minMemoryMapAlignment:              %"SIZE_SPECIFIER"\n",
            p->props.properties.limits.minMemoryMapAlignment);
+    av_log(ctx, AV_LOG_VERBOSE, "    nonCoherentAtomSize:                %"PRIu64"\n",
+           p->props.properties.limits.nonCoherentAtomSize);
     if (p->extensions & FF_VK_EXT_EXTERNAL_HOST_MEMORY)
         av_log(ctx, AV_LOG_VERBOSE, "    minImportedHostPointerAlignment:    %"PRIu64"\n",
                p->hprops.minImportedHostPointerAlignment);
