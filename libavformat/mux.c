@@ -951,6 +951,7 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *pkt,
 
     if (s->max_interleave_delta > 0 &&
         si->packet_buffer.head &&
+        si->packet_buffer.head->pkt.dts != AV_NOPTS_VALUE &&
         !flush &&
         si->nb_interleaved_streams == stream_count+noninterleaved_count
     ) {
