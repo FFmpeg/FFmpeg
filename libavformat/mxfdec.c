@@ -1198,11 +1198,15 @@ static int mxf_read_essence_container_data(void *arg, AVIOContext *pb, int tag, 
 static int mxf_read_index_entry_array(AVIOContext *pb, MXFIndexTableSegment *segment)
 {
     int i, length;
+    uint32_t nb_index_entries;
 
     if (segment->temporal_offset_entries)
         return AVERROR_INVALIDDATA;
 
-    segment->nb_index_entries = avio_rb32(pb);
+    nb_index_entries = avio_rb32(pb);
+    if (nb_index_entries > INT_MAX)
+        return AVERROR_INVALIDDATA;
+    segment->nb_index_entries = nb_index_entries;
 
     length = avio_rb32(pb);
     if(segment->nb_index_entries && length < 11)
