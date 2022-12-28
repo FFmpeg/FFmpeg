@@ -1937,6 +1937,14 @@ static int mxf_compute_ptses_fake_index(MXFContext *mxf, MXFIndexTable *index_ta
             return 0;
         }
 
+        if (s->nb_index_entries != s->index_duration &&
+            s->nb_index_entries != s->index_duration + 1 &&  /* Avid index */
+            s->nb_index_entries != s->index_duration * 2 + 1) {
+            index_table->nb_ptses = 0;
+            av_log(mxf->fc, AV_LOG_ERROR, "ignoring IndexSID %d, duration does not match nb_index_entries\n", s->index_sid);
+            return 0;
+        }
+
         index_table->nb_ptses += s->index_duration;
     }
 
