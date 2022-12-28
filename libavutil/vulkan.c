@@ -240,9 +240,10 @@ int ff_vk_qf_init(FFVulkanContext *s, FFVkQueueFamilyCtx *qf,
     return ret;
 }
 
-void ff_vk_qf_rotate(FFVkQueueFamilyCtx *qf)
+int ff_vk_qf_rotate(FFVkQueueFamilyCtx *qf)
 {
     qf->cur_queue = (qf->cur_queue + 1) % qf->nb_queues;
+    return qf->cur_queue;
 }
 
 int ff_vk_alloc_mem(FFVulkanContext *s, VkMemoryRequirements *req,

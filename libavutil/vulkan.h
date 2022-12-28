@@ -306,7 +306,7 @@ int ff_vk_qf_init(FFVulkanContext *s, FFVkQueueFamilyCtx *qf,
 /**
  * Rotate through the queues in a queue family.
  */
-void ff_vk_qf_rotate(FFVkQueueFamilyCtx *qf);
+int ff_vk_qf_rotate(FFVkQueueFamilyCtx *qf);
 
 /**
  * Create a Vulkan sampler, will be auto-freed in ff_vk_filter_uninit()
