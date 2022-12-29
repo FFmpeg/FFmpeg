@@ -93,6 +93,7 @@ typedef enum FFVulkanExtensions {
     /* Queue */                                                                          \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              GetDeviceQueue)                          \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              QueueSubmit)                             \
+    MACRO(1, 1, FF_VK_EXT_NO_FLAG,              QueueSubmit2)                              \
                                                                                          \
     /* Fences */                                                                         \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CreateFence)                             \
