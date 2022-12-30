@@ -18526,6 +18526,8 @@ Frankie Sierra dithering v2 (error diffusion)
 Frankie Sierra dithering v2 "Lite" (error diffusion)
 @item sierra3
 Frankie Sierra dithering v3 (error diffusion)
+@item burkes
+Burkes dithering (error diffusion)
 @end table
 
 Default is @var{sierra2_4a}.

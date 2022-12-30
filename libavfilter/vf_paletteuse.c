@@ -43,6 +43,7 @@ enum dithering_mode {
     DITHERING_SIERRA2,
     DITHERING_SIERRA2_4A,
     DITHERING_SIERRA3,
+    DITHERING_BURKES,
     NB_DITHERING
 };
 
@@ -115,6 +116,7 @@ static const AVOption paletteuse_options[] = {
         { "sierra2",         "Frankie Sierra dithering v2 (error diffusion)",                          0, AV_OPT_TYPE_CONST, {.i64=DITHERING_SIERRA2},         INT_MIN, INT_MAX, FLAGS, "dithering_mode" },
         { "sierra2_4a",      "Frankie Sierra dithering v2 \"Lite\" (error diffusion)",                 0, AV_OPT_TYPE_CONST, {.i64=DITHERING_SIERRA2_4A},      INT_MIN, INT_MAX, FLAGS, "dithering_mode" },
         { "sierra3",         "Frankie Sierra dithering v3 (error diffusion)",                          0, AV_OPT_TYPE_CONST, {.i64=DITHERING_SIERRA3},         INT_MIN, INT_MAX, FLAGS, "dithering_mode" },
+        { "burkes",          "Burkes dithering (error diffusion)",                                     0, AV_OPT_TYPE_CONST, {.i64=DITHERING_BURKES},          INT_MIN, INT_MAX, FLAGS, "dithering_mode" },
     { "bayer_scale", "set scale for bayer dithering", OFFSET(bayer_scale), AV_OPT_TYPE_INT, {.i64=2}, 0, 5, FLAGS },
     { "diff_mode",   "set frame difference mode",     OFFSET(diff_mode),   AV_OPT_TYPE_INT, {.i64=DIFF_MODE_NONE}, 0, NB_DIFF_MODE-1, FLAGS, "diff_mode" },
         { "rectangle", "process smallest different rectangle", 0, AV_OPT_TYPE_CONST, {.i64=DIFF_MODE_RECTANGLE}, INT_MIN, INT_MAX, FLAGS, "diff_mode" },
@@ -394,6 +396,26 @@ static av_always_inline int set_frame(PaletteUseContext *s, AVFrame *out, AVFram
                         if (1)     src[src_linesize*2 + x    ] = dither_color(src[src_linesize*2 + x    ], er, eg, eb, 3, 5);
                         if (right) src[src_linesize*2 + x + 1] = dither_color(src[src_linesize*2 + x + 1], er, eg, eb, 2, 5);
                     }
+                }
+
+            } else if (dither == DITHERING_BURKES) {
+                const int right  = x < w - 1, down  = y < h - 1, left  = x > x_start;
+                const int right2 = x < w - 2,                    left2 = x > x_start + 1;
+                const int color = get_dst_color_err(s, src[x], &er, &eg, &eb);
+
+                if (color < 0)
+                    return color;
+                dst[x] = color;
+
+                if (right)      src[                 x + 1] = dither_color(src[                 x + 1], er, eg, eb, 8, 5);
+                if (right2)     src[                 x + 2] = dither_color(src[                 x + 2], er, eg, eb, 4, 5);
+
+                if (down) {
+                    if (left2)  src[src_linesize   + x - 2] = dither_color(src[src_linesize   + x - 2], er, eg, eb, 2, 5);
+                    if (left)   src[src_linesize   + x - 1] = dither_color(src[src_linesize   + x - 1], er, eg, eb, 4, 5);
+                    if (1)      src[src_linesize   + x    ] = dither_color(src[src_linesize   + x    ], er, eg, eb, 8, 5);
+                    if (right)  src[src_linesize   + x + 1] = dither_color(src[src_linesize   + x + 1], er, eg, eb, 4, 5);
+                    if (right2) src[src_linesize   + x + 2] = dither_color(src[src_linesize   + x + 2], er, eg, eb, 2, 5);
                 }
 
             } else {
@@ -871,6 +893,7 @@ DEFINE_SET_FRAME(floyd_steinberg, DITHERING_FLOYD_STEINBERG)
 DEFINE_SET_FRAME(sierra2,         DITHERING_SIERRA2)
 DEFINE_SET_FRAME(sierra2_4a,      DITHERING_SIERRA2_4A)
 DEFINE_SET_FRAME(sierra3,         DITHERING_SIERRA3)
+DEFINE_SET_FRAME(burkes,          DITHERING_BURKES)
 
 static const set_frame_func set_frame_lut[NB_DITHERING] = {
     set_frame_none,
@@ -880,6 +903,7 @@ static const set_frame_func set_frame_lut[NB_DITHERING] = {
     set_frame_sierra2,
     set_frame_sierra2_4a,
     set_frame_sierra3,
+    set_frame_burkes,
 };
 
 static int dither_value(int p)
