@@ -18524,6 +18524,8 @@ Floyd and Steingberg dithering (error diffusion)
 Frankie Sierra dithering v2 (error diffusion)
 @item sierra2_4a
 Frankie Sierra dithering v2 "Lite" (error diffusion)
+@item sierra3
+Frankie Sierra dithering v3 (error diffusion)
 @end table
 
 Default is @var{sierra2_4a}.
