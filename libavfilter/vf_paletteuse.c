@@ -918,15 +918,15 @@ DEFINE_SET_FRAME(burkes,          DITHERING_BURKES)
 DEFINE_SET_FRAME(atkinson,        DITHERING_ATKINSON)
 
 static const set_frame_func set_frame_lut[NB_DITHERING] = {
-    set_frame_none,
-    set_frame_bayer,
-    set_frame_heckbert,
-    set_frame_floyd_steinberg,
-    set_frame_sierra2,
-    set_frame_sierra2_4a,
-    set_frame_sierra3,
-    set_frame_burkes,
-    set_frame_atkinson,
+    [DITHERING_NONE]            = set_frame_none,
+    [DITHERING_BAYER]           = set_frame_bayer,
+    [DITHERING_HECKBERT]        = set_frame_heckbert,
+    [DITHERING_FLOYD_STEINBERG] = set_frame_floyd_steinberg,
+    [DITHERING_SIERRA2]         = set_frame_sierra2,
+    [DITHERING_SIERRA2_4A]      = set_frame_sierra2_4a,
+    [DITHERING_SIERRA3]         = set_frame_sierra3,
+    [DITHERING_BURKES]          = set_frame_burkes,
+    [DITHERING_ATKINSON]        = set_frame_atkinson,
 };
 
 static int dither_value(int p)
