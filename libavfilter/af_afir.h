@@ -28,6 +28,8 @@
 #include "avfilter.h"
 #include "af_afirdsp.h"
 
+#define MAX_IR_STREAMS 32
+
 typedef struct AudioFIRSegment {
     int nb_partitions;
     int part_size;
@@ -47,16 +49,13 @@ typedef struct AudioFIRSegment {
     AVFrame *tempin;
     AVFrame *tempout;
     AVFrame *buffer;
-    AVFrame *coeff;
+    AVFrame *coeff[MAX_IR_STREAMS];
     AVFrame *input;
     AVFrame *output;
-    AVFrame *loaded;
 
     AVTXContext **ctx, **tx, **itx;
     av_tx_fn ctx_fn, tx_fn, itx_fn;
 } AudioFIRSegment;
-
-#define MAX_IR_STREAMS 32
 
 typedef struct AudioFIRContext {
     const AVClass *class;
@@ -91,7 +90,7 @@ typedef struct AudioFIRContext {
 
     AVFrame *in;
     AVFrame *ir[MAX_IR_STREAMS];
-    AVFrame *norm_ir;
+    AVFrame *norm_ir[MAX_IR_STREAMS];
     AVFrame *video;
     int min_part_size;
     int64_t pts;

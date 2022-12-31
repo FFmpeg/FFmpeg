@@ -155,7 +155,7 @@ static int fir_frame(AudioFIRContext *s, AVFrame *in, AVFilterLink *outlink)
     return ff_filter_frame(outlink, out);
 }
 
-static int init_segment(AVFilterContext *ctx, AudioFIRSegment *seg,
+static int init_segment(AVFilterContext *ctx, AudioFIRSegment *seg, int selir,
                         int offset, int nb_partitions, int part_size, int index)
 {
     AudioFIRContext *s = ctx->priv;
@@ -221,12 +221,10 @@ static int init_segment(AVFilterContext *ctx, AudioFIRSegment *seg,
     seg->tempin = ff_get_audio_buffer(ctx->inputs[0], seg->block_size);
     seg->tempout = ff_get_audio_buffer(ctx->inputs[0], seg->block_size);
     seg->buffer = ff_get_audio_buffer(ctx->inputs[0], seg->part_size);
-    seg->coeff  = ff_get_audio_buffer(ctx->inputs[0], seg->nb_partitions * seg->coeff_size * 2);
     seg->input  = ff_get_audio_buffer(ctx->inputs[0], seg->input_size);
-    seg->output = ff_get_audio_buffer(ctx->inputs[0], seg->part_size);
-    seg->loaded = ff_get_audio_buffer(ctx->inputs[0], seg->nb_partitions);
+    seg->output = ff_get_audio_buffer(ctx->inputs[0], seg->part_size * 5);
     if (!seg->buffer || !seg->sumin || !seg->sumout || !seg->blockout ||
-        !seg->coeff || !seg->input || !seg->output || !seg->loaded || !seg->tempin || !seg->tempout)
+        !seg->input || !seg->output || !seg->tempin || !seg->tempout)
         return AVERROR(ENOMEM);
 
     return 0;
@@ -264,18 +262,18 @@ static void uninit_segment(AVFilterContext *ctx, AudioFIRSegment *seg)
     av_frame_free(&seg->sumin);
     av_frame_free(&seg->sumout);
     av_frame_free(&seg->buffer);
-    av_frame_free(&seg->coeff);
     av_frame_free(&seg->input);
     av_frame_free(&seg->output);
-    av_frame_free(&seg->loaded);
     seg->input_size = 0;
+
+    for (int i = 0; i < MAX_IR_STREAMS; i++)
+        av_frame_free(&seg->coeff[i]);
 }
 
 static int convert_coeffs(AVFilterContext *ctx, int selir)
 {
     AudioFIRContext *s = ctx->priv;
-    const int prev_selir = s->prev_selir;
-    int ret, nb_taps, cur_nb_taps, prev_nb_taps;
+    int ret, nb_taps, cur_nb_taps;
 
     if (!s->nb_taps[selir]) {
         int part_size, max_part_size;
@@ -302,7 +300,7 @@ static int convert_coeffs(AVFilterContext *ctx, int selir)
             int nb_partitions = FFMIN(step, (left + part_size - 1) / part_size);
 
             s->nb_segments = i + 1;
-            ret = init_segment(ctx, &s->seg[i], offset, nb_partitions, part_size, i);
+            ret = init_segment(ctx, &s->seg[i], selir, offset, nb_partitions, part_size, i);
             if (ret < 0)
                 return ret;
             offset += nb_partitions * part_size;
@@ -333,18 +331,67 @@ skip:
     }
 
     cur_nb_taps  = s->ir[selir]->nb_samples;
-    prev_nb_taps = s->ir[prev_selir]->nb_samples;
-    nb_taps      = FFMAX(cur_nb_taps, prev_nb_taps);
+    nb_taps      = cur_nb_taps;
 
-    if (!s->norm_ir || s->norm_ir->nb_samples < nb_taps) {
-        av_frame_free(&s->norm_ir);
-        s->norm_ir = ff_get_audio_buffer(ctx->inputs[0], FFALIGN(nb_taps, 8));
-        if (!s->norm_ir)
+    if (!s->norm_ir[selir] || s->norm_ir[selir]->nb_samples < nb_taps) {
+        av_frame_free(&s->norm_ir[selir]);
+        s->norm_ir[selir] = ff_get_audio_buffer(ctx->inputs[0], FFALIGN(nb_taps, 8));
+        if (!s->norm_ir[selir])
             return AVERROR(ENOMEM);
     }
 
     av_log(ctx, AV_LOG_DEBUG, "nb_taps: %d\n", cur_nb_taps);
     av_log(ctx, AV_LOG_DEBUG, "nb_segments: %d\n", s->nb_segments);
+
+    switch (s->format) {
+    case AV_SAMPLE_FMT_FLTP:
+        for (int ch = 0; ch < s->nb_channels; ch++) {
+            const float *tsrc = (const float *)s->ir[selir]->extended_data[!s->one2many * ch];
+            float *time = (float *)s->norm_ir[selir]->extended_data[ch];
+
+            memcpy(time, tsrc, sizeof(*time) * nb_taps);
+            for (int i = FFMAX(1, s->length * nb_taps); i < nb_taps; i++)
+                time[i] = 0;
+
+            get_power_float(ctx, s, nb_taps, ch, time);
+
+            for (int n = 0; n < s->nb_segments; n++) {
+                AudioFIRSegment *seg = &s->seg[n];
+
+                if (!seg->coeff[selir])
+                    seg->coeff[selir] = ff_get_audio_buffer(ctx->inputs[0], seg->nb_partitions * seg->coeff_size * 2);
+                if (!seg->coeff[selir])
+                    return AVERROR(ENOMEM);
+
+                for (int i = 0; i < seg->nb_partitions; i++)
+                    convert_channel_float(ctx, s, ch, seg, i, selir);
+            }
+        }
+        break;
+    case AV_SAMPLE_FMT_DBLP:
+        for (int ch = 0; ch < s->nb_channels; ch++) {
+            const double *tsrc = (const double *)s->ir[selir]->extended_data[!s->one2many * ch];
+            double *time = (double *)s->norm_ir[selir]->extended_data[ch];
+
+            memcpy(time, tsrc, sizeof(*time) * nb_taps);
+            for (int i = FFMAX(1, s->length * nb_taps); i < nb_taps; i++)
+                time[i] = 0;
+
+            get_power_double(ctx, s, nb_taps, ch, time);
+            for (int n = 0; n < s->nb_segments; n++) {
+                AudioFIRSegment *seg = &s->seg[n];
+
+                if (!seg->coeff[selir])
+                    seg->coeff[selir] = ff_get_audio_buffer(ctx->inputs[0], seg->nb_partitions * seg->coeff_size * 2);
+                if (!seg->coeff[selir])
+                    return AVERROR(ENOMEM);
+
+                for (int i = 0; i < seg->nb_partitions; i++)
+                    convert_channel_double(ctx, s, ch, seg, i, selir);
+            }
+        }
+        break;
+    }
 
     s->have_coeffs[selir] = 1;
 
@@ -536,9 +583,10 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     av_freep(&s->fdsp);
 
-    av_frame_free(&s->norm_ir);
-    for (int i = 0; i < s->nb_irs; i++)
+    for (int i = 0; i < s->nb_irs; i++) {
         av_frame_free(&s->ir[i]);
+        av_frame_free(&s->norm_ir[i]);
+    }
 
     av_frame_free(&s->video);
 }
