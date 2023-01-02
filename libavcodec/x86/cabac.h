@@ -178,7 +178,7 @@
 #if HAVE_7REGS && !BROKEN_COMPILER
 #define get_cabac_inline get_cabac_inline_x86
 static
-#if defined(_WIN32) && !defined(_WIN64) && defined(__clang__)
+#if ARCH_X86_32
 av_noinline
 #else
 av_always_inline
