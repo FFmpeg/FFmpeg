@@ -20,9 +20,11 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "avio_internal.h"
 #include "avformat.h"
 #include "demux.h"
 #include "internal.h"
+#include "id3v2.h"
 #include "rawdec.h"
 
 static int bonk_probe(const AVProbeData *p)
@@ -45,8 +47,6 @@ static int bonk_probe(const AVProbeData *p)
             if (AV_RL16(p->buf + i + 20) == 0)
                 return 0;
             return AVPROBE_SCORE_MAX;
-        } else if (!p->buf[i]) {
-            break;
         }
     }
 
@@ -55,15 +55,35 @@ static int bonk_probe(const AVProbeData *p)
 
 static int bonk_read_header(AVFormatContext *s)
 {
+    ID3v2ExtraMeta *extra_meta;
     AVStream *st;
     int ret;
 
     for (int i = 0; !avio_feof(s->pb); i++) {
-        int b = avio_r8(s->pb);
-        if (!b && avio_rl32(s->pb) == MKTAG('B','O','N','K'))
-            break;
-        else if (!b)
-            return AVERROR_INVALIDDATA;
+        const int b = avio_r8(s->pb);
+        if (!b) {
+            uint32_t t;
+            int ret = ffio_ensure_seekback(s->pb, 3);
+
+            if (ret < 0)
+                return ret;
+
+            t = avio_rl32(s->pb);
+            if (t == MKTAG('B','O','N','K')) {
+                break;
+            } else if (t == MKTAG(' ','I','D','3')) {
+                avio_seek(s->pb, -3, SEEK_CUR);
+                ff_id3v2_read(s, ID3v2_DEFAULT_MAGIC, &extra_meta, 0);
+                if (extra_meta) {
+                    ff_id3v2_parse_apic(s, extra_meta);
+                    ff_id3v2_parse_priv(s, extra_meta);
+                    ff_id3v2_free_extra_meta(&extra_meta);
+                }
+                avio_skip(s->pb, 8);
+            } else {
+                return AVERROR_INVALIDDATA;
+            }
+        }
     }
 
     st = avformat_new_stream(s, NULL);
