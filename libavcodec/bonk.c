@@ -217,7 +217,7 @@ static int intlist_read(BonkContext *s, int *buf, int entries, int base_2_part)
             level += 1 << low_bits;
         }
 
-        if (level > 1 << 15)
+        if (level > 1 << 16)
             return AVERROR_INVALIDDATA;
 
         if (x >= max_x)
