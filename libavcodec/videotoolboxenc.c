@@ -847,13 +847,22 @@ static int get_cv_pixel_format(AVCodecContext* avctx,
                                int* av_pixel_format,
                                int* range_guessed)
 {
+    const char *range_name;
     if (range_guessed) *range_guessed = range != AVCOL_RANGE_MPEG &&
                                         range != AVCOL_RANGE_JPEG;
 
     //MPEG range is used when no range is set
     *av_pixel_format = av_map_videotoolbox_format_from_pixfmt2(fmt, range == AVCOL_RANGE_JPEG);
+    if (*av_pixel_format)
+        return 0;
 
-    return *av_pixel_format ? 0 : AVERROR(EINVAL);
+    range_name = av_color_range_name(range);
+    av_log(avctx, AV_LOG_ERROR,
+        "Could not get pixel format for color format '%s' range '%s'.\n",
+        av_get_pix_fmt_name(fmt),
+        range_name ? range_name : "Unknown");
+
+    return AVERROR(EINVAL);
 }
 
 static void add_color_attr(AVCodecContext *avctx, CFMutableDictionaryRef dict) {
@@ -2146,18 +2155,8 @@ static int get_cv_pixel_info(
         return AVERROR(EINVAL);
 
     status = get_cv_pixel_format(avctx, av_format, av_color_range, color, &range_guessed);
-    if (status) {
-        av_log(avctx,
-            AV_LOG_ERROR,
-            "Could not get pixel format for color format '%s' range '%s'.\n",
-            av_get_pix_fmt_name(av_format),
-            av_color_range > AVCOL_RANGE_UNSPECIFIED &&
-            av_color_range < AVCOL_RANGE_NB ?
-               av_color_range_name(av_color_range) :
-               "Unknown");
-
+    if (status)
         return AVERROR(EINVAL);
-    }
 
     if (range_guessed) {
         if (!vtctx->warned_color_range) {
