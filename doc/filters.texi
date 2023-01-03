@@ -1380,6 +1380,14 @@ select inverted sine cardinal function
 @item nofade
 no fade applied
 @end table
+
+@item silence
+Set the initial gain for fade-in or final gain for fade-out.
+Default value is @code{0.0}.
+
+@item unity
+Set the initial gain for fade-out or final gain for fade-in.
+Default value is @code{1.0}.
 @end table
 
 @subsection Commands

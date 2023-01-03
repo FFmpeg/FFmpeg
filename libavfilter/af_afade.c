@@ -39,6 +39,8 @@ typedef struct AudioFadeContext {
     int64_t start_sample;
     int64_t duration;
     int64_t start_time;
+    double silence;
+    double unity;
     int overlap;
     int cf0_eof;
     int crossfade_is_over;
@@ -46,7 +48,10 @@ typedef struct AudioFadeContext {
 
     void (*fade_samples)(uint8_t **dst, uint8_t * const *src,
                          int nb_samples, int channels, int direction,
-                         int64_t start, int64_t range, int curve);
+                         int64_t start, int64_t range, int curve,
+                         double silence, double unity);
+    void (*scale_samples)(uint8_t **dst, uint8_t * const *src,
+                          int nb_samples, int channels, double unity);
     void (*crossfade_samples)(uint8_t **dst, uint8_t * const *cf0,
                               uint8_t * const *cf1,
                               int nb_samples, int channels,
@@ -67,7 +72,7 @@ enum CurveType { NONE = -1, TRI, QSIN, ESIN, HSIN, LOG, IPAR, QUA, CUB, SQU, CBR
         AV_SAMPLE_FMT_NONE
     };
 
-static double fade_gain(int curve, int64_t index, int64_t range)
+static double fade_gain(int curve, int64_t index, int64_t range, double silence, double unity)
 {
 #define CUBE(a) ((a)*(a)*(a))
     double gain;
@@ -142,18 +147,19 @@ static double fade_gain(int curve, int64_t index, int64_t range)
         break;
     }
 
-    return gain;
+    return silence + (unity - silence) * gain;
 }
 
 #define FADE_PLANAR(name, type)                                             \
 static void fade_samples_## name ##p(uint8_t **dst, uint8_t * const *src,   \
                                      int nb_samples, int channels, int dir, \
-                                     int64_t start, int64_t range, int curve) \
+                                     int64_t start, int64_t range,int curve,\
+                                     double silence, double unity)          \
 {                                                                           \
     int i, c;                                                               \
                                                                             \
     for (i = 0; i < nb_samples; i++) {                                      \
-        double gain = fade_gain(curve, start + i * dir, range);             \
+        double gain = fade_gain(curve, start + i * dir,range,silence,unity);\
         for (c = 0; c < channels; c++) {                                    \
             type *d = (type *)dst[c];                                       \
             const type *s = (type *)src[c];                                 \
@@ -166,14 +172,15 @@ static void fade_samples_## name ##p(uint8_t **dst, uint8_t * const *src,   \
 #define FADE(name, type)                                                    \
 static void fade_samples_## name (uint8_t **dst, uint8_t * const *src,      \
                                   int nb_samples, int channels, int dir,    \
-                                  int64_t start, int64_t range, int curve)  \
+                                  int64_t start, int64_t range, int curve,  \
+                                  double silence, double unity)             \
 {                                                                           \
     type *d = (type *)dst[0];                                               \
     const type *s = (type *)src[0];                                         \
     int i, c, k = 0;                                                        \
                                                                             \
     for (i = 0; i < nb_samples; i++) {                                      \
-        double gain = fade_gain(curve, start + i * dir, range);             \
+        double gain = fade_gain(curve, start + i * dir,range,silence,unity);\
         for (c = 0; c < channels; c++, k++)                                 \
             d[k] = s[k] * gain;                                             \
     }                                                                       \
@@ -189,20 +196,77 @@ FADE(flt, float)
 FADE(s16, int16_t)
 FADE(s32, int32_t)
 
+#define SCALE_PLANAR(name, type)                                            \
+static void scale_samples_## name ##p(uint8_t **dst, uint8_t * const *src,  \
+                                     int nb_samples, int channels,          \
+                                     double gain)                           \
+{                                                                           \
+    int i, c;                                                               \
+                                                                            \
+    for (i = 0; i < nb_samples; i++) {                                      \
+        for (c = 0; c < channels; c++) {                                    \
+            type *d = (type *)dst[c];                                       \
+            const type *s = (type *)src[c];                                 \
+                                                                            \
+            d[i] = s[i] * gain;                                             \
+        }                                                                   \
+    }                                                                       \
+}
+
+#define SCALE(name, type)                                                   \
+static void scale_samples_## name (uint8_t **dst, uint8_t * const *src,     \
+                                  int nb_samples, int channels, double gain)\
+{                                                                           \
+    type *d = (type *)dst[0];                                               \
+    const type *s = (type *)src[0];                                         \
+    int i, c, k = 0;                                                        \
+                                                                            \
+    for (i = 0; i < nb_samples; i++) {                                      \
+        for (c = 0; c < channels; c++, k++)                                 \
+            d[k] = s[k] * gain;                                             \
+    }                                                                       \
+}
+
+SCALE_PLANAR(dbl, double)
+SCALE_PLANAR(flt, float)
+SCALE_PLANAR(s16, int16_t)
+SCALE_PLANAR(s32, int32_t)
+
+SCALE(dbl, double)
+SCALE(flt, float)
+SCALE(s16, int16_t)
+SCALE(s32, int32_t)
+
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     AudioFadeContext *s  = ctx->priv;
 
     switch (outlink->format) {
-    case AV_SAMPLE_FMT_DBL:  s->fade_samples = fade_samples_dbl;  break;
-    case AV_SAMPLE_FMT_DBLP: s->fade_samples = fade_samples_dblp; break;
-    case AV_SAMPLE_FMT_FLT:  s->fade_samples = fade_samples_flt;  break;
-    case AV_SAMPLE_FMT_FLTP: s->fade_samples = fade_samples_fltp; break;
-    case AV_SAMPLE_FMT_S16:  s->fade_samples = fade_samples_s16;  break;
-    case AV_SAMPLE_FMT_S16P: s->fade_samples = fade_samples_s16p; break;
-    case AV_SAMPLE_FMT_S32:  s->fade_samples = fade_samples_s32;  break;
-    case AV_SAMPLE_FMT_S32P: s->fade_samples = fade_samples_s32p; break;
+    case AV_SAMPLE_FMT_DBL:  s->fade_samples = fade_samples_dbl;
+                             s->scale_samples = scale_samples_dbl;
+                             break;
+    case AV_SAMPLE_FMT_DBLP: s->fade_samples = fade_samples_dblp;
+                             s->scale_samples = scale_samples_dblp;
+                             break;
+    case AV_SAMPLE_FMT_FLT:  s->fade_samples = fade_samples_flt;
+                             s->scale_samples = scale_samples_flt;
+                             break;
+    case AV_SAMPLE_FMT_FLTP: s->fade_samples = fade_samples_fltp;
+                             s->scale_samples = scale_samples_fltp;
+                             break;
+    case AV_SAMPLE_FMT_S16:  s->fade_samples = fade_samples_s16;
+                             s->scale_samples = scale_samples_s16;
+                             break;
+    case AV_SAMPLE_FMT_S16P: s->fade_samples = fade_samples_s16p;
+                             s->scale_samples = scale_samples_s16p;
+                             break;
+    case AV_SAMPLE_FMT_S32:  s->fade_samples = fade_samples_s32;
+                             s->scale_samples = scale_samples_s32;
+                             break;
+    case AV_SAMPLE_FMT_S32P: s->fade_samples = fade_samples_s32p;
+                             s->scale_samples = scale_samples_s32p;
+                             break;
     }
 
     if (s->duration)
@@ -252,6 +316,8 @@ static const AVOption afade_options[] = {
     { "losi",         "logistic sigmoid",                            0,                    AV_OPT_TYPE_CONST,  {.i64 = LOSI }, 0, 0, TFLAGS, "curve" },
     { "sinc",         "sine cardinal function",                      0,                    AV_OPT_TYPE_CONST,  {.i64 = SINC }, 0, 0, TFLAGS, "curve" },
     { "isinc",        "inverted sine cardinal function",             0,                    AV_OPT_TYPE_CONST,  {.i64 = ISINC}, 0, 0, TFLAGS, "curve" },
+    { "silence",      "set the silence gain",                        OFFSET(silence),      AV_OPT_TYPE_DOUBLE, {.dbl = 0 },    0, 1, TFLAGS },
+    { "unity",        "set the unity gain",                          OFFSET(unity),        AV_OPT_TYPE_DOUBLE, {.dbl = 1 },    0, 1, TFLAGS },
     { NULL }
 };
 
@@ -275,8 +341,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     AVFrame *out_buf;
     int64_t cur_sample = av_rescale_q(buf->pts, inlink->time_base, (AVRational){1, inlink->sample_rate});
 
-    if ((!s->type && (s->start_sample + s->nb_samples < cur_sample)) ||
-        ( s->type && (cur_sample + nb_samples < s->start_sample)))
+    if (s->unity == 1.0 &&
+        ((!s->type && (s->start_sample + s->nb_samples < cur_sample)) ||
+         ( s->type && (cur_sample + nb_samples < s->start_sample))))
         return ff_filter_frame(outlink, buf);
 
     if (av_frame_is_writable(buf)) {
@@ -290,8 +357,19 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 
     if ((!s->type && (cur_sample + nb_samples < s->start_sample)) ||
         ( s->type && (s->start_sample + s->nb_samples < cur_sample))) {
-        av_samples_set_silence(out_buf->extended_data, 0, nb_samples,
-                               out_buf->ch_layout.nb_channels, out_buf->format);
+        if (s->silence == 0.) {
+            av_samples_set_silence(out_buf->extended_data, 0, nb_samples,
+                                   out_buf->ch_layout.nb_channels, out_buf->format);
+        } else {
+            s->scale_samples(out_buf->extended_data, buf->extended_data,
+                             nb_samples, buf->ch_layout.nb_channels,
+                             s->silence);
+        }
+    } else if (( s->type && (cur_sample + nb_samples < s->start_sample)) ||
+               (!s->type && (s->start_sample + s->nb_samples < cur_sample))) {
+        s->scale_samples(out_buf->extended_data, buf->extended_data,
+                         nb_samples, buf->ch_layout.nb_channels,
+                         s->unity);
     } else {
         int64_t start;
 
@@ -303,7 +381,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
         s->fade_samples(out_buf->extended_data, buf->extended_data,
                         nb_samples, buf->ch_layout.nb_channels,
                         s->type ? -1 : 1, start,
-                        s->nb_samples, s->curve);
+                        s->nb_samples, s->curve, s->silence, s->unity);
     }
 
     if (buf != out_buf)
@@ -402,8 +480,8 @@ static void crossfade_samples_## name ##p(uint8_t **dst, uint8_t * const *cf0, \
     int i, c;                                                                  \
                                                                                \
     for (i = 0; i < nb_samples; i++) {                                         \
-        double gain0 = fade_gain(curve0, nb_samples - 1 - i, nb_samples);      \
-        double gain1 = fade_gain(curve1, i, nb_samples);                       \
+        double gain0 = fade_gain(curve0, nb_samples - 1 - i, nb_samples,0.,1.);\
+        double gain1 = fade_gain(curve1, i, nb_samples, 0., 1.);               \
         for (c = 0; c < channels; c++) {                                       \
             type *d = (type *)dst[c];                                          \
             const type *s0 = (type *)cf0[c];                                   \
@@ -426,8 +504,8 @@ static void crossfade_samples_## name (uint8_t **dst, uint8_t * const *cf0, \
     int i, c, k = 0;                                                        \
                                                                             \
     for (i = 0; i < nb_samples; i++) {                                      \
-        double gain0 = fade_gain(curve0, nb_samples - 1 - i, nb_samples);   \
-        double gain1 = fade_gain(curve1, i, nb_samples);                    \
+        double gain0 = fade_gain(curve0, nb_samples - 1-i,nb_samples,0.,1.);\
+        double gain1 = fade_gain(curve1, i, nb_samples, 0., 1.);            \
         for (c = 0; c < channels; c++, k++)                                 \
             d[k] = s0[k] * gain0 + s1[k] * gain1;                           \
     }                                                                       \
@@ -525,7 +603,7 @@ static int activate(AVFilterContext *ctx)
             }
 
             s->fade_samples(out->extended_data, cf[0]->extended_data, s->nb_samples,
-                            outlink->ch_layout.nb_channels, -1, s->nb_samples - 1, s->nb_samples, s->curve);
+                            outlink->ch_layout.nb_channels, -1, s->nb_samples - 1, s->nb_samples, s->curve, 0., 1.);
             out->pts = s->pts;
             s->pts += av_rescale_q(s->nb_samples,
                 (AVRational){ 1, outlink->sample_rate }, outlink->time_base);
@@ -545,7 +623,7 @@ static int activate(AVFilterContext *ctx)
             }
 
             s->fade_samples(out->extended_data, cf[1]->extended_data, s->nb_samples,
-                            outlink->ch_layout.nb_channels, 1, 0, s->nb_samples, s->curve2);
+                            outlink->ch_layout.nb_channels, 1, 0, s->nb_samples, s->curve2, 0., 1.);
             out->pts = s->pts;
             s->pts += av_rescale_q(s->nb_samples,
                 (AVRational){ 1, outlink->sample_rate }, outlink->time_base);
