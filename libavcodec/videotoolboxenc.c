@@ -2156,7 +2156,7 @@ static int get_cv_pixel_info(
 
     status = get_cv_pixel_format(avctx, av_format, av_color_range, color, &range_guessed);
     if (status)
-        return AVERROR(EINVAL);
+        return status;
 
     if (range_guessed) {
         if (!vtctx->warned_color_range) {
@@ -2338,7 +2338,7 @@ static int create_cv_pixel_buffer(AVCodecContext   *avctx,
             status
         );
 
-        return AVERROR_EXTERNAL;
+        return status;
     }
 
     pix_buf_pool = VTCompressionSessionGetPixelBufferPool(vtctx->session);
