@@ -44,7 +44,7 @@ static const struct {
 } cv_pix_fmts[] = {
     { kCVPixelFormatType_420YpCbCr8Planar,              false, AV_PIX_FMT_YUV420P },
     { kCVPixelFormatType_422YpCbCr8,                    false, AV_PIX_FMT_UYVY422 },
-    { kCVPixelFormatType_32BGRA,                        false, AV_PIX_FMT_BGRA },
+    { kCVPixelFormatType_32BGRA,                        true,  AV_PIX_FMT_BGRA },
 #ifdef kCFCoreFoundationVersionNumber10_7
     { kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange,  false, AV_PIX_FMT_NV12 },
     { kCVPixelFormatType_420YpCbCr8BiPlanarFullRange,   true,  AV_PIX_FMT_NV12 },
