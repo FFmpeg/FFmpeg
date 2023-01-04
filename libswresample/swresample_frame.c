@@ -84,7 +84,7 @@ static int config_changed(SwrContext *s,
                           const AVFrame *out, const AVFrame *in)
 {
     AVChannelLayout ch_layout = { 0 };
-    int ret = 0;
+    int ret = 0, err;
 
     if (in) {
 #if FF_API_OLD_CHANNEL_LAYOUT
@@ -96,8 +96,8 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
         } else
 #endif
-        if ((ret = av_channel_layout_copy(&ch_layout, &in->ch_layout)) < 0)
-            return ret;
+        if ((err = av_channel_layout_copy(&ch_layout, &in->ch_layout)) < 0)
+            return err;
         if (av_channel_layout_compare(&s->in_ch_layout, &ch_layout) ||
             s->in_sample_rate != in->sample_rate ||
             s->in_sample_fmt  != in->format) {
@@ -116,8 +116,8 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
         } else
 #endif
-        if ((ret = av_channel_layout_copy(&ch_layout, &out->ch_layout)) < 0)
-            return ret;
+        if ((err = av_channel_layout_copy(&ch_layout, &out->ch_layout)) < 0)
+            return err;
         if (av_channel_layout_compare(&s->out_ch_layout, &ch_layout) ||
             s->out_sample_rate != out->sample_rate ||
             s->out_sample_fmt  != out->format) {
