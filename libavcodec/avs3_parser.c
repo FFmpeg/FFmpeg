@@ -117,8 +117,8 @@ static void parse_avs3_nal_units(AVCodecParserContext *s, const uint8_t *buf,
             low_delay = get_bits(&gb, 1);
             avctx->has_b_frames = FFMAX(avctx->has_b_frames, !low_delay);
 
-            avctx->framerate.num = avctx->time_base.den = ff_avs3_frame_rate_tab[ratecode].num;
-            avctx->framerate.den = avctx->time_base.num = ff_avs3_frame_rate_tab[ratecode].den;
+            avctx->framerate.num = ff_avs3_frame_rate_tab[ratecode].num;
+            avctx->framerate.den = ff_avs3_frame_rate_tab[ratecode].den;
 
             s->width  = s->coded_width = avctx->width;
             s->height = s->coded_height = avctx->height;

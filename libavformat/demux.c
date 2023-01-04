@@ -2156,10 +2156,19 @@ static int get_std_framerate(int i)
  * Old DivX and Xvid often have nonsense timebases like 1fps or 2fps.
  * MPEG-2 commonly misuses field repeat flags to store different framerates.
  * And there are "variable" fps files this needs to detect as well. */
-static int tb_unreliable(AVCodecContext *c)
+static int tb_unreliable(AVFormatContext *ic, AVStream *st)
 {
-    if (c->time_base.den >= 101LL * c->time_base.num ||
-        c->time_base.den <    5LL * c->time_base.num ||
+    FFStream *const sti = ffstream(st);
+    AVCodecContext *c = sti->avctx;
+    AVRational time_base = c->framerate.num ? av_inv_q(av_mul_q(c->framerate,
+                                                                (AVRational){c->ticks_per_frame, 1}))
+                                            /* NOHEADER check added to not break existing behavior */
+                                            : (((ic->ctx_flags & AVFMTCTX_NOHEADER) ||
+                                                st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) ? (AVRational){0, 1}
+                                                                                                : st->time_base);
+
+    if (time_base.den >= 101LL * time_base.num ||
+        time_base.den <    5LL * time_base.num ||
         // c->codec_tag == AV_RL32("DIVX") ||
         // c->codec_tag == AV_RL32("XVID") ||
         c->codec_tag == AV_RL32("mp4v") ||
@@ -2243,11 +2252,11 @@ void ff_rfps_calculate(AVFormatContext *ic)
         // the check for tb_unreliable() is not completely correct, since this is not about handling
         // an unreliable/inexact time base, but a time base that is finer than necessary, as e.g.
         // ipmovie.c produces.
-        if (tb_unreliable(sti->avctx) && sti->info->duration_count > 15 && sti->info->duration_gcd > FFMAX(1, st->time_base.den/(500LL*st->time_base.num)) && !st->r_frame_rate.num &&
+        if (tb_unreliable(ic, st) && sti->info->duration_count > 15 && sti->info->duration_gcd > FFMAX(1, st->time_base.den/(500LL*st->time_base.num)) && !st->r_frame_rate.num &&
             sti->info->duration_gcd < INT64_MAX / st->time_base.num)
             av_reduce(&st->r_frame_rate.num, &st->r_frame_rate.den, st->time_base.den, st->time_base.num * sti->info->duration_gcd, INT_MAX);
         if (sti->info->duration_count > 1 && !st->r_frame_rate.num
-            && tb_unreliable(sti->avctx)) {
+            && tb_unreliable(ic, st)) {
             int num = 0;
             double best_error = 0.01;
             AVRational ref_rate = st->r_frame_rate.num ? st->r_frame_rate : av_inv_q(st->time_base);
@@ -2459,14 +2468,6 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         FFStream *const sti = ffstream(st);
         AVCodecContext *const avctx = sti->avctx;
 
-        if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO ||
-            st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE) {
-/*            if (!st->time_base.num)
-                st->time_base = */
-            if (!avctx->time_base.num)
-                avctx->time_base = st->time_base;
-        }
-
         /* check if the caller has overridden the codec id */
         // only for the split stuff
         if (!sti->parser && !(ic->flags & AVFMT_FLAG_NOPARSE) && sti->request_probe <= 0) {
@@ -2544,7 +2545,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
              * the correct fps. */
             if (av_q2d(st->time_base) > 0.0005)
                 fps_analyze_framecount *= 2;
-            if (!tb_unreliable(sti->avctx))
+            if (!tb_unreliable(ic, st))
                 fps_analyze_framecount = 0;
             if (ic->fps_probe_size >= 0)
                 fps_analyze_framecount = ic->fps_probe_size;
@@ -2857,12 +2858,16 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                     av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
                               best_fps, 12 * 1001, INT_MAX);
             }
-
             if (!st->r_frame_rate.num) {
-                if (    avctx->time_base.den * (int64_t) st->time_base.num
-                    <= avctx->time_base.num * (uint64_t)avctx->ticks_per_frame * st->time_base.den) {
+                AVRational time_base = avctx->framerate.num ? av_inv_q(av_mul_q(avctx->framerate,
+                                                                       (AVRational){avctx->ticks_per_frame, 1}))
+                                                            /* NOHEADER check added to not break existing behavior */
+                                                            : ((ic->ctx_flags & AVFMTCTX_NOHEADER) ? (AVRational){0, 1}
+                                                                                                   : st->time_base);
+                if (   time_base.den * (int64_t) st->time_base.num
+                    <= time_base.num * (uint64_t)avctx->ticks_per_frame * st->time_base.den) {
                     av_reduce(&st->r_frame_rate.num, &st->r_frame_rate.den,
-                              avctx->time_base.den, (int64_t)avctx->time_base.num * avctx->ticks_per_frame, INT_MAX);
+                              time_base.den, (int64_t)time_base.num * avctx->ticks_per_frame, INT_MAX);
                 } else {
                     st->r_frame_rate.num = st->time_base.den;
                     st->r_frame_rate.den = st->time_base.num;

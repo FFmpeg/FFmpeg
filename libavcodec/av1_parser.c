@@ -168,9 +168,6 @@ static int av1_parser_parse(AVCodecParserContext *ctx,
                   timing->num_units_in_display_tick, timing->time_scale, INT_MAX);
     }
 
-    if (avctx->framerate.num)
-        avctx->time_base = av_inv_q(av_mul_q(avctx->framerate, (AVRational){avctx->ticks_per_frame, 1}));
-
 end:
     ff_cbs_fragment_reset(td);
 

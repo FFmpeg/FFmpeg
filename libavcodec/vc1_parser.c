@@ -112,8 +112,6 @@ static void vc1_extract_header(AVCodecParserContext *s, AVCodecContext *avctx,
 
         break;
     }
-    if (avctx->framerate.num)
-        avctx->time_base = av_inv_q(av_mul_q(avctx->framerate, (AVRational){avctx->ticks_per_frame, 1}));
     s->format = vpc->v.chromaformat == 1 ? AV_PIX_FMT_YUV420P
                                          : AV_PIX_FMT_NONE;
     if (avctx->width && avctx->height) {

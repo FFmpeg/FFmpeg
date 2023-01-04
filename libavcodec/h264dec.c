@@ -382,12 +382,6 @@ static av_cold int h264_decode_init(AVCodecContext *avctx)
         return AVERROR_UNKNOWN;
     }
 
-    if (avctx->ticks_per_frame == 1) {
-        if(h->avctx->time_base.den < INT_MAX/2) {
-            h->avctx->time_base.den *= 2;
-        } else
-            h->avctx->time_base.num /= 2;
-    }
     avctx->ticks_per_frame = 2;
 
     if (!avctx->internal->is_copy) {

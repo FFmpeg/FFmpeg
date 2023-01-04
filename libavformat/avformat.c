@@ -703,6 +703,10 @@ int avformat_transfer_internal_stream_timing_info(const AVOutputFormat *ofmt,
 {
     const AVCodecContext *const dec_ctx = cffstream(ist)->avctx;
     AVCodecContext       *const enc_ctx =  ffstream(ost)->avctx;
+    AVRational dec_ctx_tb = dec_ctx->framerate.num ? av_inv_q(av_mul_q(dec_ctx->framerate,
+                                                                       (AVRational){dec_ctx->ticks_per_frame, 1}))
+                                                   : (ist->codecpar->codec_type == AVMEDIA_TYPE_AUDIO ? (AVRational){0, 1}
+                                                                                                      : ist->time_base);
 
     enc_ctx->time_base = ist->time_base;
     /*
@@ -715,38 +719,41 @@ int avformat_transfer_internal_stream_timing_info(const AVOutputFormat *ofmt,
         if (copy_tb == AVFMT_TBCF_AUTO && ist->r_frame_rate.num
             && av_q2d(ist->r_frame_rate) >= av_q2d(ist->avg_frame_rate)
             && 0.5/av_q2d(ist->r_frame_rate) > av_q2d(ist->time_base)
-            && 0.5/av_q2d(ist->r_frame_rate) > av_q2d(dec_ctx->time_base)
-            && av_q2d(ist->time_base) < 1.0/500 && av_q2d(dec_ctx->time_base) < 1.0/500
+            && 0.5/av_q2d(ist->r_frame_rate) > av_q2d(dec_ctx_tb)
+            && av_q2d(ist->time_base) < 1.0/500 && av_q2d(dec_ctx_tb) < 1.0/500
             || copy_tb == AVFMT_TBCF_R_FRAMERATE) {
             enc_ctx->time_base.num = ist->r_frame_rate.den;
             enc_ctx->time_base.den = 2*ist->r_frame_rate.num;
             enc_ctx->ticks_per_frame = 2;
         } else
 #endif
-            if (copy_tb == AVFMT_TBCF_AUTO && av_q2d(dec_ctx->time_base)*dec_ctx->ticks_per_frame > 2*av_q2d(ist->time_base)
+            if (copy_tb == AVFMT_TBCF_AUTO && dec_ctx->framerate.num &&
+                av_q2d(av_inv_q(dec_ctx->framerate)) > 2*av_q2d(ist->time_base)
                    && av_q2d(ist->time_base) < 1.0/500
-                   || copy_tb == AVFMT_TBCF_DECODER) {
-            enc_ctx->time_base = dec_ctx->time_base;
+                   || (copy_tb == AVFMT_TBCF_DECODER &&
+                       (dec_ctx->framerate.num || ist->codecpar->codec_type == AVMEDIA_TYPE_AUDIO))) {
+            enc_ctx->time_base = dec_ctx_tb;
             enc_ctx->time_base.num *= dec_ctx->ticks_per_frame;
             enc_ctx->time_base.den *= 2;
             enc_ctx->ticks_per_frame = 2;
         }
     } else if (!(ofmt->flags & AVFMT_VARIABLE_FPS)
                && !av_match_name(ofmt->name, "mov,mp4,3gp,3g2,psp,ipod,ismv,f4v")) {
-        if (copy_tb == AVFMT_TBCF_AUTO && dec_ctx->time_base.den
-            && av_q2d(dec_ctx->time_base)*dec_ctx->ticks_per_frame > av_q2d(ist->time_base)
+        if (copy_tb == AVFMT_TBCF_AUTO && dec_ctx->framerate.num
+            && av_q2d(av_inv_q(dec_ctx->framerate)) > av_q2d(ist->time_base)
             && av_q2d(ist->time_base) < 1.0/500
-            || copy_tb == AVFMT_TBCF_DECODER) {
-            enc_ctx->time_base = dec_ctx->time_base;
+            || (copy_tb == AVFMT_TBCF_DECODER &&
+                (dec_ctx->framerate.num || ist->codecpar->codec_type == AVMEDIA_TYPE_AUDIO))) {
+            enc_ctx->time_base = dec_ctx_tb;
             enc_ctx->time_base.num *= dec_ctx->ticks_per_frame;
         }
     }
 
     if ((enc_ctx->codec_tag == AV_RL32("tmcd") || ost->codecpar->codec_tag == AV_RL32("tmcd"))
-        && dec_ctx->time_base.num < dec_ctx->time_base.den
-        && dec_ctx->time_base.num > 0
-        && 121LL*dec_ctx->time_base.num > dec_ctx->time_base.den) {
-        enc_ctx->time_base = dec_ctx->time_base;
+        && dec_ctx_tb.num < dec_ctx_tb.den
+        && dec_ctx_tb.num > 0
+        && 121LL*dec_ctx_tb.num > dec_ctx_tb.den) {
+        enc_ctx->time_base = dec_ctx_tb;
     }
 
     av_reduce(&enc_ctx->time_base.num, &enc_ctx->time_base.den,

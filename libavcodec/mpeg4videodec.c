@@ -2648,8 +2648,6 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
     else
         s->avctx->framerate.den = 1;
 
-    s->avctx->time_base = av_inv_q(av_mul_q(s->avctx->framerate, (AVRational){s->avctx->ticks_per_frame, 1}));
-
     ctx->t_frame = 0;
 
     if (ctx->shape != BIN_ONLY_SHAPE) {
@@ -3145,7 +3143,6 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb,
                "time_increment_bits set to %d bits, based on bitstream analysis\n", ctx->time_increment_bits);
         if (s->avctx->framerate.num && 4*s->avctx->framerate.num < 1<<ctx->time_increment_bits) {
             s->avctx->framerate.num = 1<<ctx->time_increment_bits;
-            s->avctx->time_base = av_inv_q(av_mul_q(s->avctx->framerate, (AVRational){s->avctx->ticks_per_frame, 1}));
         }
     }
 

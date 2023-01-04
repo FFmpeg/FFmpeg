@@ -114,11 +114,11 @@ static int mpeg4_decode_header(AVCodecParserContext *s1, AVCodecContext *avctx,
         if (ret < 0)
             return ret;
     }
-    if((s1->flags & PARSER_FLAG_USE_CODEC_TS) && s->avctx->time_base.den>0 && ret>=0){
+    if((s1->flags & PARSER_FLAG_USE_CODEC_TS) && s->avctx->framerate.num>0 && ret>=0){
         av_assert1(s1->pts == AV_NOPTS_VALUE);
         av_assert1(s1->dts == AV_NOPTS_VALUE);
 
-        s1->pts = av_rescale_q(s->time, (AVRational){1, s->avctx->time_base.den}, (AVRational){1, 1200000});
+        s1->pts = av_rescale_q(s->time, (AVRational){1, s->avctx->framerate.num}, (AVRational){1, 1200000});
     }
 
     s1->pict_type     = s->pict_type;
