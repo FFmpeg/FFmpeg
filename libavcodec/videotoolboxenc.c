@@ -2555,6 +2555,7 @@ static int vtenc_populate_extradata(AVCodecContext   *avctx,
     pool = VTCompressionSessionGetPixelBufferPool(vtctx->session);
     if(!pool){
         av_log(avctx, AV_LOG_ERROR, "Error getting pixel buffer pool.\n");
+        status = AVERROR_EXTERNAL;
         goto pe_cleanup;
     }
 
@@ -2564,6 +2565,7 @@ static int vtenc_populate_extradata(AVCodecContext   *avctx,
 
     if(status != kCVReturnSuccess){
         av_log(avctx, AV_LOG_ERROR, "Error creating frame from pool: %d\n", status);
+        status = AVERROR_EXTERNAL;
         goto pe_cleanup;
     }
 
@@ -2581,7 +2583,7 @@ static int vtenc_populate_extradata(AVCodecContext   *avctx,
                AV_LOG_ERROR,
                "Error sending frame for extradata: %d\n",
                status);
-
+        status = AVERROR_EXTERNAL;
         goto pe_cleanup;
     }
 
@@ -2589,8 +2591,10 @@ static int vtenc_populate_extradata(AVCodecContext   *avctx,
     status = VTCompressionSessionCompleteFrames(vtctx->session,
                                                 kCMTimeIndefinite);
 
-    if (status)
+    if (status) {
+        status = AVERROR_EXTERNAL;
         goto pe_cleanup;
+    }
 
     status = vtenc_q_pop(vtctx, 0, &buf, NULL);
     if (status) {
