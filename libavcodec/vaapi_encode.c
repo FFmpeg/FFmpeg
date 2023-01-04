@@ -695,6 +695,7 @@ static int vaapi_encode_output(AVCodecContext *avctx,
         pkt->flags |= AV_PKT_FLAG_KEY;
 
     pkt->pts = pic->pts;
+    pkt->duration = pic->input_image->duration;
 
     vas = vaUnmapBuffer(ctx->hwctx->display, pic->output_buffer);
     if (vas != VA_STATUS_SUCCESS) {
@@ -702,6 +703,13 @@ static int vaapi_encode_output(AVCodecContext *avctx,
                "%d (%s).\n", vas, vaErrorStr(vas));
         err = AVERROR(EIO);
         goto fail;
+    }
+
+    // for no-delay encoders this is handled in generic codec
+    if (avctx->codec->capabilities & AV_CODEC_CAP_DELAY) {
+        err = ff_encode_reordered_opaque(avctx, pkt, pic->input_image);
+        if (err < 0)
+            goto fail;
     }
 
     av_buffer_unref(&pic->output_buffer_ref);

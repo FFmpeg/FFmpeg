@@ -308,7 +308,7 @@ const FFCodec ff_vp9_vaapi_encoder = {
     .close          = &ff_vaapi_encode_close,
     .p.priv_class   = &vaapi_encode_vp9_class,
     .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE |
-                      AV_CODEC_CAP_DR1,
+                      AV_CODEC_CAP_DR1 | AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE |
                       FF_CODEC_CAP_INIT_CLEANUP,
     .defaults       = vaapi_encode_vp9_defaults,
