@@ -2553,7 +2553,9 @@ static int decode_chunks(AVCodecContext *avctx, AVFrame *picture,
             }
             break;
         case EXT_START_CODE:
-            init_get_bits(&s2->gb, buf_ptr, input_size * 8);
+            ret = init_get_bits8(&s2->gb, buf_ptr, input_size);
+            if (ret < 0)
+                return ret;
 
             switch (get_bits(&s2->gb, 4)) {
             case 0x1:
