@@ -1694,7 +1694,10 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
 
     av_assert0(mb_y < s->mb_height);
 
-    init_get_bits(&s->gb, *buf, buf_size * 8);
+    ret = init_get_bits8(&s->gb, *buf, buf_size);
+    if (ret < 0)
+        return ret;
+
     if (s->codec_id != AV_CODEC_ID_MPEG1VIDEO && s->mb_height > 2800/16)
         skip_bits(&s->gb, 3);
 
@@ -2063,7 +2066,9 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
     int width, height;
     int i, v, j;
 
-    init_get_bits(&s->gb, buf, buf_size * 8);
+    int ret = init_get_bits8(&s->gb, buf, buf_size);
+    if (ret < 0)
+        return ret;
 
     width  = get_bits(&s->gb, 12);
     height = get_bits(&s->gb, 12);
@@ -2228,7 +2233,9 @@ static int mpeg_decode_a53_cc(AVCodecContext *avctx,
         int cc_count = 0;
         int i, ret;
 
-        init_get_bits8(&gb, p + 2, buf_size - 2);
+        ret = init_get_bits8(&gb, p + 2, buf_size - 2);
+        if (ret < 0)
+            return ret;
         cc_count = get_bits(&gb, 5);
         if (cc_count > 0) {
             int old_size = s1->a53_buf_ref ? s1->a53_buf_ref->size : 0;
@@ -2400,7 +2407,7 @@ static void mpeg_decode_user_data(AVCodecContext *avctx,
     }
 }
 
-static void mpeg_decode_gop(AVCodecContext *avctx,
+static int mpeg_decode_gop(AVCodecContext *avctx,
                             const uint8_t *buf, int buf_size)
 {
     Mpeg1Context *s1  = avctx->priv_data;
@@ -2408,7 +2415,9 @@ static void mpeg_decode_gop(AVCodecContext *avctx,
     int broken_link;
     int64_t tc;
 
-    init_get_bits(&s->gb, buf, buf_size * 8);
+    int ret = init_get_bits8(&s->gb, buf, buf_size);
+    if (ret < 0)
+        return ret;
 
     tc = s1->timecode_frame_start = get_bits(&s->gb, 25);
 
@@ -2425,6 +2434,8 @@ static void mpeg_decode_gop(AVCodecContext *avctx,
                "GOP (%s) closed_gop=%d broken_link=%d\n",
                tcbuf, s1->closed_gop, broken_link);
     }
+
+    return 0;
 }
 
 static int decode_chunks(AVCodecContext *avctx, AVFrame *picture,
@@ -2594,7 +2605,9 @@ static int decode_chunks(AVCodecContext *avctx, AVFrame *picture,
         case GOP_START_CODE:
             if (last_code == 0) {
                 s2->first_field = 0;
-                mpeg_decode_gop(avctx, buf_ptr, input_size);
+                ret = mpeg_decode_gop(avctx, buf_ptr, input_size);
+                if (ret < 0)
+                    return ret;
                 s->sync = 1;
             } else {
                 av_log(avctx, AV_LOG_ERROR,
@@ -2734,7 +2747,9 @@ static int decode_chunks(AVCodecContext *avctx, AVFrame *picture,
                             if (ret < 0)
                                 return ret;
                         }
-                        init_get_bits(&thread_context->gb, buf_ptr, input_size * 8);
+                        ret = init_get_bits8(&thread_context->gb, buf_ptr, input_size);
+                        if (ret < 0)
+                            return ret;
                         s->slice_count++;
                     }
                     buf_ptr += 2; // FIXME add minimum number of bytes per slice
