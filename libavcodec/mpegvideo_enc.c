@@ -1952,6 +1952,7 @@ vbv_retry:
         s->total_bits     += s->frame_bits;
 
         pkt->pts = s->current_picture.f->pts;
+        pkt->duration = s->current_picture.f->duration;
         if (!s->low_delay && s->pict_type != AV_PICTURE_TYPE_B) {
             if (!s->current_picture.f->coded_picture_number)
                 pkt->dts = pkt->pts - s->dts_delta;
@@ -1960,6 +1961,14 @@ vbv_retry:
             s->reordered_pts = pkt->pts;
         } else
             pkt->dts = pkt->pts;
+
+        // the no-delay case is handled in generic code
+        if (avctx->codec->capabilities & AV_CODEC_CAP_DELAY) {
+            ret = ff_encode_reordered_opaque(avctx, pkt, s->current_picture.f);
+            if (ret < 0)
+                return ret;
+        }
+
         if (s->current_picture.f->key_frame)
             pkt->flags |= AV_PKT_FLAG_KEY;
         if (s->mb_info)
