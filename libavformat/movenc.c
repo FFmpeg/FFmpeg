@@ -7758,6 +7758,11 @@ static const AVCodecTag codec_f4v_tags[] = {
 };
 
 #if CONFIG_AVIF_MUXER
+
+static const AVOption avif_options[] = {
+    { "movie_timescale", "set movie timescale", offsetof(MOVMuxContext, movie_timescale), AV_OPT_TYPE_INT, {.i64 = MOV_TIMESCALE}, 1, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
+    { NULL },
+};
 static const AVCodecTag codec_avif_tags[] = {
     { AV_CODEC_ID_AV1,     MKTAG('a','v','0','1') },
     { AV_CODEC_ID_NONE, 0 },
@@ -7767,6 +7772,7 @@ static const AVCodecTag *const codec_avif_tags_list[] = { codec_avif_tags, NULL 
 static const AVClass mov_avif_muxer_class = {
     .class_name = "avif muxer",
     .item_name  = av_default_item_name,
+    .option     = avif_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 #endif
