@@ -307,7 +307,15 @@ stream which contains the alpha channel in addition to the ordinary video.
 
 Interoperable Master Format demuxer.
 
-This demuxer presents audio and video streams found in an IMF Composition.
+This demuxer presents audio and video streams found in an IMF Composition, as
+specified in @url{https://doi.org/10.5594/SMPTE.ST2067-2.2020, SMPTE ST 2067-2}.
+
+@example
+ffmpeg [-assetmaps <path of ASSETMAP1>,<path of ASSETMAP2>,...] -i <path of CPL> ...
+@end example
+
+If @code{-assetmaps} is not specified, the demuxer looks for a file called
+@file{ASSETMAP.xml} in the same directory as the CPL.
 
 @section flv, live_flv, kux
 
