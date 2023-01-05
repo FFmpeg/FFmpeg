@@ -685,10 +685,8 @@ int ff_decode_receive_frame(AVCodecContext *avctx, AVFrame *frame)
 
     if (avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
         ret = apply_cropping(avctx, frame);
-        if (ret < 0) {
-            av_frame_unref(frame);
-            return ret;
-        }
+        if (ret < 0)
+            goto fail;
     }
 
     avctx->frame_number++;
@@ -706,10 +704,8 @@ int ff_decode_receive_frame(AVCodecContext *avctx, AVFrame *frame)
                 avci->initial_sample_rate = frame->sample_rate ? frame->sample_rate :
                                                                  avctx->sample_rate;
                 ret = av_channel_layout_copy(&avci->initial_ch_layout, &frame->ch_layout);
-                if (ret < 0) {
-                    av_frame_unref(frame);
-                    return ret;
-                }
+                if (ret < 0)
+                    goto fail;
                 break;
             }
         }
@@ -735,12 +731,15 @@ int ff_decode_receive_frame(AVCodecContext *avctx, AVFrame *frame)
                                             " drop count: %d \n",
                                             avctx->frame_number, frame->pts,
                                             avci->changed_frames_dropped);
-                av_frame_unref(frame);
-                return AVERROR_INPUT_CHANGED;
+                ret = AVERROR_INPUT_CHANGED;
+                goto fail;
             }
         }
     }
     return 0;
+fail:
+    av_frame_unref(frame);
+    return ret;
 }
 
 static void get_subtitle_defaults(AVSubtitle *sub)
