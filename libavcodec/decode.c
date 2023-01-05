@@ -667,6 +667,33 @@ static int apply_cropping(AVCodecContext *avctx, AVFrame *frame)
                                           AV_FRAME_CROP_UNALIGNED : 0);
 }
 
+// make sure frames returned to the caller are valid
+static int frame_validate(AVCodecContext *avctx, AVFrame *frame)
+{
+    if (!frame->buf[0] || frame->format < 0)
+        goto fail;
+
+    switch (avctx->codec_type) {
+    case AVMEDIA_TYPE_VIDEO:
+        if (frame->width <= 0 || frame->height <= 0)
+            goto fail;
+        break;
+    case AVMEDIA_TYPE_AUDIO:
+        if (!av_channel_layout_check(&frame->ch_layout) ||
+            frame->sample_rate <= 0)
+            goto fail;
+
+        break;
+    default: av_assert0(0);
+    }
+
+    return 0;
+fail:
+    av_log(avctx, AV_LOG_ERROR, "An invalid frame was output by a decoder. "
+           "This is a bug, please report it.\n");
+    return AVERROR_BUG;
+}
+
 int ff_decode_receive_frame(AVCodecContext *avctx, AVFrame *frame)
 {
     AVCodecInternal *avci = avctx->internal;
@@ -682,6 +709,10 @@ int ff_decode_receive_frame(AVCodecContext *avctx, AVFrame *frame)
         if (ret < 0)
             return ret;
     }
+
+    ret = frame_validate(avctx, frame);
+    if (ret < 0)
+        goto fail;
 
     if (avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
         ret = apply_cropping(avctx, frame);
