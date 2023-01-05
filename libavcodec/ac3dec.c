@@ -1716,6 +1716,11 @@ skip:
         avctx->bit_rate    = s->bit_rate + s->prev_bit_rate;
     }
 
+    if (!avctx->sample_rate) {
+        av_log(avctx, AV_LOG_ERROR, "Could not determine the sample rate\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     for (ch = 0; ch < EAC3_MAX_CHANNELS; ch++)
         extended_channel_map[ch] = ch;
 
