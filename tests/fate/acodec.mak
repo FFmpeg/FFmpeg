@@ -156,14 +156,14 @@ fate-acodec-ra144: CMP_SHIFT = -320
 FATE_ACODEC-$(call ENCDEC, ROQ_DPCM, ROQ, ARESAMPLE_FILTER) += fate-acodec-roqaudio
 fate-acodec-roqaudio: FMT = roq
 fate-acodec-roqaudio: CODEC = roq_dpcm
-fate-acodec-roqaudio: ENCOPTS = -ar 22050
-fate-acodec-roqaudio: DECOPTS = -ar 44100
+fate-acodec-roqaudio: ENCOPTS = -af aresample=22050:tsf=s16p
+fate-acodec-roqaudio: DECOPTS = -af aresample=44100:tsf=s16p
 
 FATE_ACODEC-$(call ENCDEC, S302M, MPEGTS, ARESAMPLE_FILTER) += fate-acodec-s302m
 fate-acodec-s302m: FMT = mpegts
 fate-acodec-s302m: CODEC = s302m
-fate-acodec-s302m: ENCOPTS = -ar 48000 -strict -2
-fate-acodec-s302m: DECOPTS = -ar 44100
+fate-acodec-s302m: ENCOPTS = -af aresample=48000:tsf=s16p -strict -2
+fate-acodec-s302m: DECOPTS = -af aresample=44100:tsf=s16p
 
 FATE_ACODEC-$(call ENCDEC, WAVPACK, WV, ARESAMPLE_FILTER) += fate-acodec-wavpack
 fate-acodec-wavpack: FMT = wv

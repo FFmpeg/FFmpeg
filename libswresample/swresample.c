@@ -331,8 +331,14 @@ av_cold int swr_init(struct SwrContext *s){
                  s->rematrix_custom;
 
     if(s->int_sample_fmt == AV_SAMPLE_FMT_NONE){
+        // 16bit or less to 16bit or less with the same sample rate
         if(   av_get_bytes_per_sample(s-> in_sample_fmt) <= 2
-           && av_get_bytes_per_sample(s->out_sample_fmt) <= 2){
+           && av_get_bytes_per_sample(s->out_sample_fmt) <= 2
+           && s->out_sample_rate==s->in_sample_rate) {
+            s->int_sample_fmt= AV_SAMPLE_FMT_S16P;
+        // 8 -> 8, 16->8, 8->16bit
+        } else if(   av_get_bytes_per_sample(s-> in_sample_fmt)
+                    +av_get_bytes_per_sample(s->out_sample_fmt) <= 3 ) {
             s->int_sample_fmt= AV_SAMPLE_FMT_S16P;
         }else if(   av_get_bytes_per_sample(s-> in_sample_fmt) <= 2
            && !s->rematrix
