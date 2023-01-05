@@ -128,7 +128,9 @@ static int qsv_get_continuous_buffer(AVCodecContext *avctx, AVFrame *frame,
 {
     int ret = 0;
 
-    ff_decode_frame_props(avctx, frame);
+    ret = ff_decode_frame_props(avctx, frame);
+    if (ret < 0)
+        return ret;
 
     frame->width       = avctx->width;
     frame->height      = avctx->height;
