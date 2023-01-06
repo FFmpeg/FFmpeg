@@ -159,9 +159,6 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     if (size < 1 || size >= avpkt->size)
         return AVERROR_INVALIDDATA;
 
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
-        return ret;
-
     if (type == MKTAG('L','Z','Y','V')) {
         z_stream *const zstream = &s->zstream.zstream;
         ret = inflateReset(zstream);
@@ -169,6 +166,9 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
             av_log(avctx, AV_LOG_ERROR, "Inflate reset error: %d\n", ret);
             return AVERROR_EXTERNAL;
         }
+
+        if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
+            return ret;
 
         zstream->next_in  = avpkt->data + 8;
         zstream->avail_in = avpkt->size - 8;
@@ -218,8 +218,14 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
             }
         }
 
+        if (get_bits_left(gb) < avctx->height * avctx->width)
+            return AVERROR_INVALIDDATA;
+
         ret = build_vlc(avctx, &s->vlc);
         if (ret < 0)
+            return ret;
+
+        if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
             return ret;
 
         for (int p = 0; p < 3; p++) {
