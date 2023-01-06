@@ -167,6 +167,9 @@ static void vp8_decode_flush_impl(AVCodecContext *avctx, int free_mem)
 
     if (free_mem)
         free_buffers(s);
+
+    if (avctx->hwaccel && avctx->hwaccel->flush)
+        avctx->hwaccel->flush(avctx);
 }
 
 static void vp8_decode_flush(AVCodecContext *avctx)

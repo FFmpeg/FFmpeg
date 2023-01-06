@@ -1452,6 +1452,9 @@ static void av1_decode_flush(AVCodecContext *avctx)
 
     ff_cbs_fragment_reset(&s->current_obu);
     ff_cbs_flush(s->cbc);
+
+    if (avctx->hwaccel && avctx->hwaccel->flush)
+        avctx->hwaccel->flush(avctx);
 }
 
 #define OFFSET(x) offsetof(AV1DecContext, x)

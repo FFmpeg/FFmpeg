@@ -3708,6 +3708,9 @@ static void hevc_decode_flush(AVCodecContext *avctx)
     av_buffer_unref(&s->rpu_buf);
     s->max_ra = INT_MAX;
     s->eos = 1;
+
+    if (avctx->hwaccel && avctx->hwaccel->flush)
+        avctx->hwaccel->flush(avctx);
 }
 
 #define OFFSET(x) offsetof(HEVCContext, x)

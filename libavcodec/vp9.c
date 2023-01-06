@@ -1801,6 +1801,9 @@ static void vp9_decode_flush(AVCodecContext *avctx)
         vp9_frame_unref(avctx, &s->s.frames[i]);
     for (i = 0; i < 8; i++)
         ff_thread_release_ext_buffer(avctx, &s->s.refs[i]);
+
+    if (avctx->hwaccel && avctx->hwaccel->flush)
+        avctx->hwaccel->flush(avctx);
 }
 
 static av_cold int vp9_decode_init(AVCodecContext *avctx)

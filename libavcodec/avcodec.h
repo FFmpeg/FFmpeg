@@ -2267,6 +2267,11 @@ typedef struct AVHWAccel {
      * @param data the per-frame hardware accelerator private data to be freed.
      */
     void (*free_frame_priv)(void *hwctx, uint8_t *data);
+
+    /**
+     * Callback to flush the hwaccel state.
+     */
+    void (*flush)(AVCodecContext *avctx);
 } AVHWAccel;
 
 /**

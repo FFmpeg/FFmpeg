@@ -484,6 +484,9 @@ static void h264_decode_flush(AVCodecContext *avctx)
 
     ff_h264_free_tables(h);
     h->context_initialized = 0;
+
+    if (avctx->hwaccel && avctx->hwaccel->flush)
+        avctx->hwaccel->flush(avctx);
 }
 
 static int get_last_needed_nal(H264Context *h)
