@@ -55,6 +55,7 @@
 #define AC3_DYNAMIC_RANGE1      0
 
 typedef int                     INTFLOAT;
+typedef unsigned int            UINTFLOAT;
 typedef int16_t                 SHORTFLOAT;
 
 #else /* USE_FIXED */
@@ -75,6 +76,7 @@ typedef int16_t                 SHORTFLOAT;
 #define AC3_DYNAMIC_RANGE1      1.0f
 
 typedef float                   INTFLOAT;
+typedef float                   UINTFLOAT;
 typedef float                   SHORTFLOAT;
 
 #endif /* USE_FIXED */
