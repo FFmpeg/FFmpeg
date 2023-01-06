@@ -276,8 +276,16 @@ static av_cold int mediacodec_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_DEBUG, "set level to 0x%x\n", s->level);
         ff_AMediaFormat_setInt32(format, "level", s->level);
     }
-    if (avctx->max_b_frames > 0)
+    if (avctx->max_b_frames > 0) {
+        if (avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
+            av_log(avctx, AV_LOG_ERROR,
+                    "Enabling B frames will produce packets with no DTS. "
+                    "Use -strict experimental to use it anyway.\n");
+            ret = AVERROR(EINVAL);
+            goto bailout;
+        }
         ff_AMediaFormat_setInt32(format, "max-bframes", avctx->max_b_frames);
+    }
     if (s->pts_as_dts == -1)
         s->pts_as_dts = avctx->max_b_frames <= 0;
 
