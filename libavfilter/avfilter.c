@@ -887,7 +887,7 @@ int avfilter_init_dict(AVFilterContext *ctx, AVDictionary **options)
 {
     int ret = 0;
 
-    ret = av_opt_set_dict(ctx, options);
+    ret = av_opt_set_dict2(ctx, options, AV_OPT_SEARCH_CHILDREN);
     if (ret < 0) {
         av_log(ctx, AV_LOG_ERROR, "Error applying generic filter options.\n");
         return ret;
@@ -900,14 +900,6 @@ int avfilter_init_dict(AVFilterContext *ctx, AVDictionary **options)
         ctx->internal->execute = ctx->graph->internal->thread_execute;
     } else {
         ctx->thread_type = 0;
-    }
-
-    if (ctx->filter->priv_class) {
-        ret = av_opt_set_dict2(ctx->priv, options, AV_OPT_SEARCH_CHILDREN);
-        if (ret < 0) {
-            av_log(ctx, AV_LOG_ERROR, "Error applying options to the filter.\n");
-            return ret;
-        }
     }
 
     if (ctx->filter->init)
