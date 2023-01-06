@@ -912,8 +912,6 @@ int avfilter_init_dict(AVFilterContext *ctx, AVDictionary **options)
 
     if (ctx->filter->init)
         ret = ctx->filter->init(ctx);
-    else if (ctx->filter->init_dict)
-        ret = ctx->filter->init_dict(ctx, options);
     if (ret < 0)
         return ret;
 

@@ -277,19 +277,6 @@ typedef struct AVFilter {
     int (*init)(AVFilterContext *ctx);
 
     /**
-     * Should be set instead of @ref AVFilter.init "init" by the filters that
-     * want to pass a dictionary of AVOptions to nested contexts that are
-     * allocated during init.
-     *
-     * On return, the options dict should be freed and replaced with one that
-     * contains all the options which could not be processed by this filter (or
-     * with NULL if all the options were processed).
-     *
-     * Otherwise the semantics is the same as for @ref AVFilter.init "init".
-     */
-    int (*init_dict)(AVFilterContext *ctx, AVDictionary **options);
-
-    /**
      * Filter uninitialization function.
      *
      * Called only once right before the filter is freed. Should deallocate any
