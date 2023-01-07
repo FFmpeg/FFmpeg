@@ -179,6 +179,7 @@ typedef struct DASHContext {
     int master_playlist_created;
     AVIOContext *mpd_out;
     AVIOContext *m3u8_out;
+    AVIOContext *http_delete;
     int streaming;
     int64_t timeout;
     int index_correction;
@@ -642,6 +643,7 @@ static void dash_free(AVFormatContext *s)
 
     ff_format_io_close(s, &c->mpd_out);
     ff_format_io_close(s, &c->m3u8_out);
+    ff_format_io_close(s, &c->http_delete);
 }
 
 static void output_segment_list(OutputStream *os, AVIOContext *out, AVFormatContext *s,
@@ -1855,18 +1857,18 @@ static void dashenc_delete_file(AVFormatContext *s, char *filename) {
     int http_base_proto = ff_is_http_proto(filename);
 
     if (http_base_proto) {
-        AVIOContext *out = NULL;
         AVDictionary *http_opts = NULL;
 
         set_http_options(&http_opts, c);
         av_dict_set(&http_opts, "method", "DELETE", 0);
 
-        if (dashenc_io_open(s, &out, filename, &http_opts) < 0) {
+        if (dashenc_io_open(s, &c->http_delete, filename, &http_opts) < 0) {
             av_log(s, AV_LOG_ERROR, "failed to delete %s\n", filename);
         }
-
         av_dict_free(&http_opts);
-        ff_format_io_close(s, &out);
+
+        //Nothing to write
+        dashenc_io_close(s, &c->http_delete, filename);
     } else {
         int res = ffurl_delete(filename);
         if (res < 0) {
