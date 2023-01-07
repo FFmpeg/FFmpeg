@@ -842,16 +842,7 @@ static int process_options(AVFilterContext *ctx, AVDictionary **options,
 
         av_log(ctx, AV_LOG_DEBUG, "Setting '%s' to value '%s'\n", key, value);
 
-        if (av_opt_find(ctx, key, NULL, 0, 0)) {
-            ret = av_opt_set(ctx, key, value, 0);
-            if (ret < 0) {
-                av_free(value);
-                av_free(parsed_key);
-                return ret;
-            }
-        } else {
-            av_dict_set(options, key, value, AV_DICT_MULTIKEY);
-        }
+        av_dict_set(options, key, value, AV_DICT_MULTIKEY);
 
         av_free(value);
         av_free(parsed_key);
