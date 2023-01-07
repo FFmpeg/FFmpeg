@@ -116,6 +116,7 @@ typedef struct SegmentContext {
     int64_t initial_offset;    ///< initial timestamps offset, expressed in microseconds
     char *reference_stream_specifier; ///< reference stream specifier
     int   reference_stream_index;
+    int64_t reference_stream_first_pts;    ///< initial timestamp, expressed in microseconds
     int   break_non_keyframes;
     int   write_empty;
 
@@ -746,6 +747,8 @@ static int seg_init(AVFormatContext *s)
            seg->reference_stream_index,
            av_get_media_type_string(s->streams[seg->reference_stream_index]->codecpar->codec_type));
 
+    seg->reference_stream_first_pts = AV_NOPTS_VALUE;
+
     seg->oformat = av_guess_format(seg->format, s->url, NULL);
 
     if (!seg->oformat)
@@ -897,6 +900,18 @@ calc_times:
             av_ts2timestr(pkt->duration, &st->time_base),
             pkt->flags & AV_PKT_FLAG_KEY,
             pkt->stream_index == seg->reference_stream_index ? seg->frame_count : -1);
+
+    if (seg->reference_stream_first_pts == AV_NOPTS_VALUE &&
+        pkt->stream_index == seg->reference_stream_index &&
+        pkt->pts != AV_NOPTS_VALUE) {
+        seg->reference_stream_first_pts = av_rescale_q(pkt->pts, st->time_base, AV_TIME_BASE_Q);
+    }
+
+    if (seg->reference_stream_first_pts != AV_NOPTS_VALUE) {
+        end_pts += (INT64_MAX - end_pts >= seg->reference_stream_first_pts) ?
+                    seg->reference_stream_first_pts :
+                    INT64_MAX - end_pts;
+    }
 
     if (pkt->pts != AV_NOPTS_VALUE)
         pkt_pts_avtb = av_rescale_q(pkt->pts, st->time_base, AV_TIME_BASE_Q);
