@@ -252,6 +252,7 @@ typedef struct HLSContext {
     int http_persistent;
     AVIOContext *m3u8_out;
     AVIOContext *sub_m3u8_out;
+    AVIOContext *http_delete;
     int64_t timeout;
     int ignore_io_errors;
     char *headers;
@@ -565,19 +566,22 @@ static void reflush_dynbuf(VariantStream *vs, int *range_length)
 #endif
 
 static int hls_delete_file(HLSContext *hls, AVFormatContext *avf,
-                           const char *path, const char *proto)
+                           char *path, const char *proto)
 {
     if (hls->method || (proto && !av_strcasecmp(proto, "http"))) {
         AVDictionary *opt = NULL;
-        AVIOContext  *out = NULL;
         int ret;
+
         set_http_options(avf, &opt, hls);
         av_dict_set(&opt, "method", "DELETE", 0);
-        ret = avf->io_open(avf, &out, path, AVIO_FLAG_WRITE, &opt);
+
+        ret = hlsenc_io_open(avf, &hls->http_delete, path, &opt);
         av_dict_free(&opt);
         if (ret < 0)
             return hls->ignore_io_errors ? 1 : ret;
-        ff_format_io_close(avf, &out);
+
+        //Nothing to write
+        hlsenc_io_close(avf, &hls->http_delete, path);
     } else if (unlink(path) < 0) {
         av_log(hls, AV_LOG_ERROR, "failed to delete old segment %s: %s\n",
                path, strerror(errno));
@@ -662,7 +666,7 @@ static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
         }
 
         proto = avio_find_protocol_name(s->url);
-        if (ret = hls_delete_file(hls, vs->avf, path.str, proto))
+        if (ret = hls_delete_file(hls, s, path.str, proto))
             goto fail;
 
         if ((segment->sub_filename[0] != '\0')) {
@@ -679,7 +683,7 @@ static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
                 goto fail;
             }
 
-            if (ret = hls_delete_file(hls, vs->vtt_avf, path.str, proto))
+            if (ret = hls_delete_file(hls, s, path.str, proto))
                 goto fail;
         }
         av_bprint_clear(&path);
@@ -2707,6 +2711,7 @@ static void hls_deinit(AVFormatContext *s)
 
     ff_format_io_close(s, &hls->m3u8_out);
     ff_format_io_close(s, &hls->sub_m3u8_out);
+    ff_format_io_close(s, &hls->http_delete);
     av_freep(&hls->key_basename);
     av_freep(&hls->var_streams);
     av_freep(&hls->cc_streams);
