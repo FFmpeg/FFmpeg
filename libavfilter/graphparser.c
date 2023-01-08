@@ -421,7 +421,7 @@ int avfilter_graph_parse2(AVFilterGraph *graph, const char *filters,
     filters += strspn(filters, WHITESPACES);
 
     if ((ret = parse_sws_flags(&filters, graph)) < 0)
-        goto fail;
+        goto end;
 
     do {
         AVFilterContext *filter;
@@ -463,7 +463,7 @@ int avfilter_graph_parse2(AVFilterGraph *graph, const char *filters,
     *outputs = open_outputs;
     return 0;
 
- fail:end:
+end:
     while (graph->nb_filters)
         avfilter_free(graph->filters[0]);
     av_freep(&graph->filters);
