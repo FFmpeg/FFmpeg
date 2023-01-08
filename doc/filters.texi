@@ -7519,6 +7519,33 @@ aevalsrc="0.1*sin(2*PI*(360-2.5/2)*t) | 0.1*sin(2*PI*(360+2.5/2)*t)"
 
 @end itemize
 
+@section afdelaysrc
+
+Generate a fractional delay FIR coefficients.
+
+The resulting stream can be used with @ref{afir} filter for filtering the audio signal.
+
+The filter accepts the following options:
+
+@table @option
+@item delay, d
+Set the fractional delay. Default is 0.
+
+@item sample_rate, r
+Set the sample rate, default is 44100.
+
+@item nb_samples, n
+Set the number of samples per each frame. Default is 1024.
+
+@item taps, t
+Set the number of filter coefficents in output audio stream.
+Default value is 0.
+
+@item channel_layout, c
+Specifies the channel layout, and can be a string representing a channel layout.
+The default value of @var{channel_layout} is "stereo".
+@end table
+
 @section afirsrc
 
 Generate a FIR coefficients using frequency sampling method.
