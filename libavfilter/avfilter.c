@@ -812,7 +812,8 @@ static int process_options(AVFilterContext *ctx, AVDictionary **options,
     while (*args) {
         const char *shorthand = NULL;
 
-        o = av_opt_next(ctx->priv, o);
+        if (ctx->filter->priv_class)
+            o = av_opt_next(ctx->priv, o);
         if (o) {
             if (o->type == AV_OPT_TYPE_CONST || o->offset == offset)
                 continue;
@@ -835,7 +836,10 @@ static int process_options(AVFilterContext *ctx, AVDictionary **options,
             args++;
         if (parsed_key) {
             key = parsed_key;
-            while ((o = av_opt_next(ctx->priv, o))); /* discard all remaining shorthand */
+
+            /* discard all remaining shorthand */
+            if (ctx->filter->priv_class)
+                while ((o = av_opt_next(ctx->priv, o)));
         } else {
             key = shorthand;
         }
@@ -904,12 +908,6 @@ int avfilter_init_str(AVFilterContext *filter, const char *args)
     int ret = 0;
 
     if (args && *args) {
-        if (!filter->filter->priv_class) {
-            av_log(filter, AV_LOG_ERROR, "This filter does not take any "
-                   "options, but options were provided: %s.\n", args);
-            return AVERROR(EINVAL);
-        }
-
         ret = process_options(filter, &options, args);
         if (ret < 0)
             goto fail;
