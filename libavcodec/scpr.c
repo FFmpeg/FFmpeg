@@ -459,6 +459,9 @@ static int decompress_p(AVCodecContext *avctx,
                 int run, bx = x * 16 + sx1, by = y * 16 + sy1;
                 uint32_t r, g, b, clr, ptype = 0;
 
+                if (bx >= avctx->width)
+                    return AVERROR_INVALIDDATA;
+
                 for (; by < y * 16 + sy2 && by < avctx->height;) {
                     ret = decode_value(s, s->op_model[ptype], 6, 1000, &ptype);
                     if (ret < 0)
