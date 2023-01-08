@@ -428,6 +428,10 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 
         ctx->workaround_bugs = bytestream2_get_le32(&gbc);
 
+        if (c->p.max_lowres) {
+            ctx->lowres = bytestream2_get_byte(&gbc) % (c->p.max_lowres+1);
+        }
+
         if (extradata_size < size) {
             ctx->extradata = av_mallocz(extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
             if (ctx->extradata) {
