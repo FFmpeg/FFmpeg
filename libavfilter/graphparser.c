@@ -25,6 +25,8 @@
 
 #include "libavutil/avstring.h"
 #include "libavutil/mem.h"
+#include "libavutil/opt.h"
+
 #include "avfilter.h"
 
 #define WHITESPACES " \n\t\r"
@@ -101,7 +103,6 @@ static int create_filter(AVFilterContext **filt_ctx, AVFilterGraph *ctx, int ind
     const AVFilter *filt;
     char name2[30];
     const char *inst_name = NULL, *filt_name = NULL;
-    char *tmp_args = NULL;
     int ret, k;
 
     av_strlcpy(name2, name, sizeof(name2));
@@ -136,16 +137,10 @@ static int create_filter(AVFilterContext **filt_ctx, AVFilterGraph *ctx, int ind
         return AVERROR(ENOMEM);
     }
 
-    if (!strcmp(filt_name, "scale") && (!args || !strstr(args, "flags")) &&
-        ctx->scale_sws_opts) {
-        if (args) {
-            tmp_args = av_asprintf("%s:%s",
-                    args, ctx->scale_sws_opts);
-            if (!tmp_args)
-                return AVERROR(ENOMEM);
-            args = tmp_args;
-        } else
-            args = ctx->scale_sws_opts;
+    if (!strcmp(filt_name, "scale") && ctx->scale_sws_opts) {
+        ret = av_set_options_string(*filt_ctx, ctx->scale_sws_opts, "=", ":");
+        if (ret < 0)
+            return ret;
     }
 
     ret = avfilter_init_str(*filt_ctx, args);
@@ -159,7 +154,6 @@ static int create_filter(AVFilterContext **filt_ctx, AVFilterGraph *ctx, int ind
         *filt_ctx = NULL;
     }
 
-    av_free(tmp_args);
     return ret;
 }
 
