@@ -37,7 +37,6 @@
  * at once through the bump. This improves the git bisect-ability of the change.
  */
 
-#define FF_API_OPENH264_SLICE_MODE (LIBAVCODEC_VERSION_MAJOR < 60)
 #define FF_API_OPENH264_CABAC      (LIBAVCODEC_VERSION_MAJOR < 60)
 #define FF_API_UNUSED_CODEC_CAPS   (LIBAVCODEC_VERSION_MAJOR < 60)
 #define FF_API_THREAD_SAFE_CALLBACKS (LIBAVCODEC_VERSION_MAJOR < 60)

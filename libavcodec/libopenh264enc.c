@@ -63,22 +63,6 @@ typedef struct SVCContext {
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 #define DEPRECATED AV_OPT_FLAG_DEPRECATED
 static const AVOption options[] = {
-#if FF_API_OPENH264_SLICE_MODE
-#if OPENH264_VER_AT_LEAST(1, 6)
-    { "slice_mode", "set slice mode, use slices/max_nal_size", OFFSET(slice_mode), AV_OPT_TYPE_INT, { .i64 = SM_FIXEDSLCNUM_SLICE }, SM_SINGLE_SLICE, SM_RESERVED, VE|DEPRECATED, "slice_mode" },
-#else
-    { "slice_mode", "set slice mode, use slices/max_nal_size", OFFSET(slice_mode), AV_OPT_TYPE_INT, { .i64 = SM_AUTO_SLICE }, SM_SINGLE_SLICE, SM_RESERVED, VE|DEPRECATED, "slice_mode" },
-#endif
-        { "fixed", "a fixed number of slices", 0, AV_OPT_TYPE_CONST, { .i64 = SM_FIXEDSLCNUM_SLICE }, 0, 0, VE, "slice_mode" },
-#if OPENH264_VER_AT_LEAST(1, 6)
-        { "dyn", "Size limited (compatibility name)", 0, AV_OPT_TYPE_CONST, { .i64 = SM_SIZELIMITED_SLICE }, 0, 0, VE, "slice_mode" },
-        { "sizelimited", "Size limited", 0, AV_OPT_TYPE_CONST, { .i64 = SM_SIZELIMITED_SLICE }, 0, 0, VE, "slice_mode" },
-#else
-        { "rowmb", "one slice per row of macroblocks", 0, AV_OPT_TYPE_CONST, { .i64 = SM_ROWMB_SLICE }, 0, 0, VE, "slice_mode" },
-        { "auto", "automatic number of slices according to number of threads", 0, AV_OPT_TYPE_CONST, { .i64 = SM_AUTO_SLICE }, 0, 0, VE, "slice_mode" },
-        { "dyn", "Dynamic slicing", 0, AV_OPT_TYPE_CONST, { .i64 = SM_DYN_SLICE }, 0, 0, VE, "slice_mode" },
-#endif
-#endif
     { "loopfilter", "enable loop filter", OFFSET(loopfilter), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, VE },
     { "profile", "set profile restrictions", OFFSET(profile), AV_OPT_TYPE_INT, { .i64 = FF_PROFILE_UNKNOWN }, FF_PROFILE_UNKNOWN, 0xffff, VE, "profile" },
 #define PROFILE(name, value)  name, NULL, 0, AV_OPT_TYPE_CONST, { .i64 = value }, 0, 0, VE, "profile"
