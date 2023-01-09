@@ -25,6 +25,7 @@
 
 #include "config_components.h"
 
+#include "libavutil/ambient_viewing_environment.h"
 #include "libavutil/display.h"
 #include "libavutil/film_grain_params.h"
 #include "libavutil/pixdesc.h"
@@ -320,6 +321,31 @@ static int decode_alternative_transfer(H2645SEIAlternativeTransfer *s,
     return 0;
 }
 
+static int decode_ambient_viewing_environment(H2645SEIAmbientViewingEnvironment *s,
+                                              GetByteContext *gb)
+{
+    static const uint16_t max_ambient_light_value = 50000;
+
+    if (bytestream2_get_bytes_left(gb) < 8)
+        return AVERROR_INVALIDDATA;
+
+    s->ambient_illuminance = bytestream2_get_be32u(gb);
+    if (!s->ambient_illuminance)
+        return AVERROR_INVALIDDATA;
+
+    s->ambient_light_x = bytestream2_get_be16u(gb);
+    if (s->ambient_light_x > max_ambient_light_value)
+        return AVERROR_INVALIDDATA;
+
+    s->ambient_light_y = bytestream2_get_be16u(gb);
+    if (s->ambient_light_y > max_ambient_light_value)
+        return AVERROR_INVALIDDATA;
+
+    s->present = 1;
+
+    return 0;
+}
+
 static int decode_film_grain_characteristics(H2645SEIFilmGrainCharacteristics *h,
                                              enum AVCodecID codec_id, GetBitContext *gb)
 {
@@ -383,6 +409,9 @@ int ff_h2645_sei_message_decode(H2645SEI *h, enum SEIType type,
         return decode_frame_packing_arrangement(&h->frame_packing, gb, codec_id);
     case SEI_TYPE_ALTERNATIVE_TRANSFER_CHARACTERISTICS:
         return decode_alternative_transfer(&h->alternative_transfer, gbyte);
+    case SEI_TYPE_AMBIENT_VIEWING_ENVIRONMENT:
+        return decode_ambient_viewing_environment(&h->ambient_viewing_environment,
+                                                  gbyte);
     default:
         return FF_H2645_SEI_MESSAGE_UNHANDLED;
     }
@@ -609,6 +638,20 @@ int ff_h2645_sei_to_frame(AVFrame *frame, H2645SEI *sei,
             avctx->properties |= FF_CODEC_PROPERTY_FILM_GRAIN;
     }
 
+    if (sei->ambient_viewing_environment.present) {
+        H2645SEIAmbientViewingEnvironment *env =
+            &sei->ambient_viewing_environment;
+
+        AVAmbientViewingEnvironment *dst_env =
+            av_ambient_viewing_environment_create_side_data(frame);
+        if (!dst_env)
+            return AVERROR(ENOMEM);
+
+        dst_env->ambient_illuminance = av_make_q(env->ambient_illuminance, 10000);
+        dst_env->ambient_light_x     = av_make_q(env->ambient_light_x,     50000);
+        dst_env->ambient_light_y     = av_make_q(env->ambient_light_y,     50000);
+    }
+
     return 0;
 }
 
@@ -622,4 +665,6 @@ void ff_h2645_sei_reset(H2645SEI *s)
     av_freep(&s->unregistered.buf_ref);
     av_buffer_unref(&s->dynamic_hdr_plus.info);
     av_buffer_unref(&s->dynamic_hdr_vivid.info);
+
+    s->ambient_viewing_environment.present = 0;
 }

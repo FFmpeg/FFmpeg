@@ -76,6 +76,13 @@ typedef struct H2645SEIAlternativeTransfer {
     int preferred_transfer_characteristics;
 } H2645SEIAlternativeTransfer;
 
+typedef struct H2645SEIAmbientViewingEnvironment {
+    int present;
+    uint32_t ambient_illuminance;
+    uint16_t ambient_light_x;
+    uint16_t ambient_light_y;
+} H2645SEIAmbientViewingEnvironment;
+
 typedef struct H2645SEIFilmGrainCharacteristics {
     int present;
     int model_id;
@@ -108,6 +115,7 @@ typedef struct H2645SEI {
     H2645SEIDisplayOrientation display_orientation;
     H2645SEIAlternativeTransfer alternative_transfer;
     H2645SEIFilmGrainCharacteristics film_grain_characteristics;
+    H2645SEIAmbientViewingEnvironment ambient_viewing_environment;
 } H2645SEI;
 
 enum {
