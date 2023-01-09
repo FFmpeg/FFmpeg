@@ -90,6 +90,8 @@ typedef struct AVVideotoolboxContext {
     int cm_codec_type;
 } AVVideotoolboxContext;
 
+#if FF_API_VT_HWACCEL_CONTEXT
+
 /**
  * Allocate and initialize a Videotoolbox context.
  *
@@ -102,7 +104,9 @@ typedef struct AVVideotoolboxContext {
  * object and free the Videotoolbox context using av_free().
  *
  * @return the newly allocated context or NULL on failure
+ * @deprecated Use AVCodecContext.hw_frames_ctx or hw_device_ctx instead.
  */
+attribute_deprecated
 AVVideotoolboxContext *av_videotoolbox_alloc_context(void);
 
 /**
@@ -112,7 +116,9 @@ AVVideotoolboxContext *av_videotoolbox_alloc_context(void);
  * @param avctx the corresponding codec context
  *
  * @return >= 0 on success, a negative AVERROR code on failure
+ * @deprecated Use AVCodecContext.hw_frames_ctx or hw_device_ctx instead.
  */
+attribute_deprecated
 int av_videotoolbox_default_init(AVCodecContext *avctx);
 
 /**
@@ -123,7 +129,9 @@ int av_videotoolbox_default_init(AVCodecContext *avctx);
  * @param vtctx the Videotoolbox context to use
  *
  * @return >= 0 on success, a negative AVERROR code on failure
+ * @deprecated Use AVCodecContext.hw_frames_ctx or hw_device_ctx instead.
  */
+attribute_deprecated
 int av_videotoolbox_default_init2(AVCodecContext *avctx, AVVideotoolboxContext *vtctx);
 
 /**
@@ -131,8 +139,12 @@ int av_videotoolbox_default_init2(AVCodecContext *avctx, AVVideotoolboxContext *
  * av_videotoolbox_default_init().
  *
  * @param avctx the corresponding codec context
+ * @deprecated Use AVCodecContext.hw_frames_ctx or hw_device_ctx instead.
  */
+attribute_deprecated
 void av_videotoolbox_default_free(AVCodecContext *avctx);
+
+#endif /* FF_API_VT_HWACCEL_CONTEXT */
 
 /**
  * @}
