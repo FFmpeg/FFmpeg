@@ -427,11 +427,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (!got_frame)
         av_frame_unref(frame);
 
-#if FF_API_FLAG_TRUNCATED
-    if (ret >= 0 && avctx->codec->type == AVMEDIA_TYPE_VIDEO && !(avctx->flags & AV_CODEC_FLAG_TRUNCATED))
-#else
     if (ret >= 0 && avctx->codec->type == AVMEDIA_TYPE_VIDEO)
-#endif
         ret = pkt->size;
 
     /* do not stop draining when actual_got_frame != 0 or ret < 0 */

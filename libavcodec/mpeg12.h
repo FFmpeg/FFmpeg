@@ -34,15 +34,6 @@
 #define EXT_START_CODE          0x000001b5
 #define USER_START_CODE         0x000001b2
 
-#include "version_major.h"
-#if FF_API_FLAG_TRUNCATED
-#include <stdint.h>
-
-struct ParseContext;
-struct AVCodecParserContext;
-int ff_mpeg1_find_frame_end(struct ParseContext *pc, const uint8_t *buf, int buf_size, struct AVCodecParserContext *s);
-#endif
-
 void ff_mpeg12_find_best_frame_rate(AVRational frame_rate,
                                     int *code, int *ext_n, int *ext_d,
                                     int nonstandard);

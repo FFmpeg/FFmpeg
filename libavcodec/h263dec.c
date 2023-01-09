@@ -36,17 +36,11 @@
 #include "flvdec.h"
 #include "h263.h"
 #include "h263dec.h"
-#if FF_API_FLAG_TRUNCATED
-#include "h263_parser.h"
-#endif
 #include "hwconfig.h"
 #include "mpeg_er.h"
 #include "mpeg4video.h"
 #include "mpeg4videodec.h"
 #include "mpeg4videodefs.h"
-#if FF_API_FLAG_TRUNCATED
-#include "mpeg4video_parser.h"
-#endif
 #include "mpegutils.h"
 #include "mpegvideo.h"
 #include "mpegvideodec.h"
@@ -163,14 +157,6 @@ static int get_consumed_bytes(MpegEncContext *s, int buf_size)
         /* We would have to scan through the whole buf to handle the weird
          * reordering ... */
         return buf_size;
-#if FF_API_FLAG_TRUNCATED
-    } else if (s->avctx->flags & AV_CODEC_FLAG_TRUNCATED) {
-        pos -= s->parse_context.last_index;
-        // padding is not really read so this might be -1
-        if (pos < 0)
-            pos = 0;
-        return pos;
-#endif
     } else {
         // avoid infinite loops (maybe not needed...)
         if (pos == 0)
@@ -447,28 +433,6 @@ int ff_h263_decode_frame(AVCodecContext *avctx, AVFrame *pict,
 
         return 0;
     }
-
-#if FF_API_FLAG_TRUNCATED
-    if (s->avctx->flags & AV_CODEC_FLAG_TRUNCATED) {
-        int next;
-
-        if (CONFIG_MPEG4_DECODER && s->codec_id == AV_CODEC_ID_MPEG4) {
-            next = ff_mpeg4_find_frame_end(&s->parse_context, buf, buf_size);
-        } else if (CONFIG_H263_DECODER && s->codec_id == AV_CODEC_ID_H263) {
-            next = ff_h263_find_frame_end(&s->parse_context, buf, buf_size);
-        } else if (CONFIG_H263P_DECODER && s->codec_id == AV_CODEC_ID_H263P) {
-            next = ff_h263_find_frame_end(&s->parse_context, buf, buf_size);
-        } else {
-            av_log(s->avctx, AV_LOG_ERROR,
-                   "this codec does not support truncated bitstreams\n");
-            return AVERROR(ENOSYS);
-        }
-
-        if (ff_combine_frame(&s->parse_context, next, (const uint8_t **)&buf,
-                             &buf_size) < 0)
-            return buf_size;
-    }
-#endif
 
 retry:
     if (s->divx_packed && s->bitstream_buffer_size) {
@@ -749,9 +713,6 @@ const FFCodec ff_h263_decoder = {
     .close          = ff_h263_decode_end,
     FF_CODEC_DECODE_CB(ff_h263_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1 |
-#if FF_API_FLAG_TRUNCATED
-                      AV_CODEC_CAP_TRUNCATED |
-#endif
                       AV_CODEC_CAP_DELAY,
     .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .flush          = ff_mpeg_flush,
@@ -770,9 +731,6 @@ const FFCodec ff_h263p_decoder = {
     .close          = ff_h263_decode_end,
     FF_CODEC_DECODE_CB(ff_h263_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1 |
-#if FF_API_FLAG_TRUNCATED
-                      AV_CODEC_CAP_TRUNCATED |
-#endif
                       AV_CODEC_CAP_DELAY,
     .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .flush          = ff_mpeg_flush,

@@ -738,10 +738,6 @@ av_cold int ff_mpv_common_init(MpegEncContext *s)
         nb_slices = max_slices;
     }
 
-#if FF_API_FLAG_TRUNCATED
-    s->parse_context.state = -1;
-#endif
-
     s->context_initialized = 1;
     memset(s->thread_context, 0, sizeof(s->thread_context));
     s->thread_context[0]   = s;
@@ -790,11 +786,6 @@ void ff_mpv_common_end(MpegEncContext *s)
     ff_mpv_free_context_frame(s);
     if (s->slice_context_count > 1)
         s->slice_context_count = 1;
-
-#if FF_API_FLAG_TRUNCATED
-    av_freep(&s->parse_context.buffer);
-    s->parse_context.buffer_size = 0;
-#endif
 
     av_freep(&s->bitstream_buffer);
     s->allocated_bitstream_buffer_size = 0;

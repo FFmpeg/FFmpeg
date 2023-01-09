@@ -554,14 +554,6 @@ void ff_mpeg_flush(AVCodecContext *avctx)
 
     s->mb_x = s->mb_y = 0;
 
-#if FF_API_FLAG_TRUNCATED
-    s->parse_context.state = -1;
-    s->parse_context.frame_start_found = 0;
-    s->parse_context.overread = 0;
-    s->parse_context.overread_index = 0;
-    s->parse_context.index = 0;
-    s->parse_context.last_index = 0;
-#endif
     s->bitstream_buffer_size = 0;
     s->pp_time = 0;
 }

@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "decode.h"
 #include "parser.h"
 #include "mpeg12.h"
@@ -33,7 +34,6 @@ struct MpvParseContext {
     int width, height;
 };
 
-#if !FF_API_FLAG_TRUNCATED
 /**
  * Find the end of the current frame in the bitstream.
  * @return the position of the first byte of the next frame, or -1
@@ -98,7 +98,6 @@ static int mpeg1_find_frame_end(ParseContext *pc, const uint8_t *buf,
     pc->state = state;
     return END_NOT_FOUND;
 }
-#endif
 
 static void mpegvideo_extract_headers(AVCodecParserContext *s,
                                       AVCodecContext *avctx,
@@ -255,11 +254,7 @@ static int mpegvideo_parse(AVCodecParserContext *s,
     if(s->flags & PARSER_FLAG_COMPLETE_FRAMES){
         next= buf_size;
     }else{
-#if FF_API_FLAG_TRUNCATED
-        next= ff_mpeg1_find_frame_end(pc, buf, buf_size, s);
-#else
         next = mpeg1_find_frame_end(pc, buf, buf_size, s);
-#endif
 
         if (ff_combine_frame(pc, next, &buf, &buf_size) < 0) {
             *poutbuf = NULL;

@@ -25,16 +25,9 @@
  */
 
 #include "parser.h"
-#if FF_API_FLAG_TRUNCATED
-/* Nuke this header when removing FF_API_FLAG_TRUNCATED */
-#include "h263_parser.h"
-
-int ff_h263_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size){
-#else
 
 static int h263_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size)
 {
-#endif
     int vop_found, i;
     uint32_t state;
 
@@ -80,11 +73,7 @@ static int h263_parse(AVCodecParserContext *s,
     if (s->flags & PARSER_FLAG_COMPLETE_FRAMES) {
         next = buf_size;
     } else {
-#if FF_API_FLAG_TRUNCATED
-        next= ff_h263_find_frame_end(pc, buf, buf_size);
-#else
         next = h263_find_frame_end(pc, buf, buf_size);
-#endif
 
         if (ff_combine_frame(pc, next, &buf, &buf_size) < 0) {
             *poutbuf = NULL;
