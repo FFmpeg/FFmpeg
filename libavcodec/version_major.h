@@ -37,7 +37,6 @@
  * at once through the bump. This improves the git bisect-ability of the change.
  */
 
-#define FF_API_GET_FRAME_CLASS     (LIBAVCODEC_VERSION_MAJOR < 60)
 #define FF_API_AUTO_THREADS        (LIBAVCODEC_VERSION_MAJOR < 60)
 #define FF_API_INIT_PACKET         (LIBAVCODEC_VERSION_MAJOR < 60)
 #define FF_API_AVCTX_TIMEBASE    (LIBAVCODEC_VERSION_MAJOR < 60)

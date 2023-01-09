@@ -189,39 +189,6 @@ const AVClass *avcodec_get_class(void)
     return &av_codec_context_class;
 }
 
-#if FF_API_GET_FRAME_CLASS
-FF_DISABLE_DEPRECATION_WARNINGS
-#define FOFFSET(x) offsetof(AVFrame,x)
-
-static const AVOption frame_options[]={
-{"best_effort_timestamp", "", FOFFSET(best_effort_timestamp), AV_OPT_TYPE_INT64, {.i64 = AV_NOPTS_VALUE }, INT64_MIN, INT64_MAX, 0},
-{"pkt_pos", "", FOFFSET(pkt_pos), AV_OPT_TYPE_INT64, {.i64 = -1 }, INT64_MIN, INT64_MAX, 0},
-{"pkt_size", "", FOFFSET(pkt_size), AV_OPT_TYPE_INT64, {.i64 = -1 }, INT64_MIN, INT64_MAX, 0},
-{"sample_aspect_ratio", "", FOFFSET(sample_aspect_ratio), AV_OPT_TYPE_RATIONAL, {.dbl = 0 }, 0, INT_MAX, 0},
-{"width", "", FOFFSET(width), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, 0},
-{"height", "", FOFFSET(height), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, 0},
-{"format", "", FOFFSET(format), AV_OPT_TYPE_INT, {.i64 = -1 }, 0, INT_MAX, 0},
-#if FF_API_OLD_CHANNEL_LAYOUT
-{"channel_layout", "", FOFFSET(channel_layout), AV_OPT_TYPE_INT64, {.i64 = 0 }, 0, INT64_MAX, 0},
-#endif
-{"sample_rate", "", FOFFSET(sample_rate), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, 0},
-{NULL},
-};
-
-static const AVClass av_frame_class = {
-    .class_name              = "AVFrame",
-    .item_name               = NULL,
-    .option                  = frame_options,
-    .version                 = LIBAVUTIL_VERSION_INT,
-};
-
-const AVClass *avcodec_get_frame_class(void)
-{
-    return &av_frame_class;
-}
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
 #define SROFFSET(x) offsetof(AVSubtitleRect,x)
 
 static const AVOption subtitle_rect_options[]={
