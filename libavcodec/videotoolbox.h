@@ -57,7 +57,6 @@
 typedef struct AVVideotoolboxContext {
     /**
      * Videotoolbox decompression session object.
-     * Created and freed the caller.
      */
     VTDecompressionSessionRef session;
 
@@ -79,13 +78,11 @@ typedef struct AVVideotoolboxContext {
 
     /**
      * CoreMedia Format Description that Videotoolbox will use to create the decompression session.
-     * Set by the caller.
      */
     CMVideoFormatDescriptionRef cm_fmt_desc;
 
     /**
      * CoreMedia codec type that Videotoolbox will use to create the decompression session.
-     * Set by the caller.
      */
     int cm_codec_type;
 } AVVideotoolboxContext;
