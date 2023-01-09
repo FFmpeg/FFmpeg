@@ -1882,15 +1882,6 @@ typedef struct AVCodecContext {
      */
     AVBufferRef *hw_frames_ctx;
 
-#if FF_API_SUB_TEXT_FORMAT
-    /**
-     * @deprecated unused
-     */
-    attribute_deprecated
-    int sub_text_format;
-#define FF_SUB_TEXT_FMT_ASS              0
-#endif
-
     /**
      * Audio only. The amount of padding (in samples) appended by the encoder to
      * the end of the audio. I.e. this number of decoded samples must be
