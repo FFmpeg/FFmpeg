@@ -59,6 +59,11 @@ typedef struct VPPContext{
     mfxExtVPPMirroring mirroring_conf;
     mfxExtVPPScaling scale_conf;
 
+    /**
+     * New dimensions. Special values are:
+     *   0 = original width/height
+     *  -1 = keep original aspect
+     */
     int out_width;
     int out_height;
     /**
@@ -127,10 +132,10 @@ static const AVOption options[] = {
     { "cx",   "set the x crop area expression",       OFFSET(cx), AV_OPT_TYPE_STRING, { .str = "(in_w-out_w)/2" }, 0, 0, FLAGS },
     { "cy",   "set the y crop area expression",       OFFSET(cy), AV_OPT_TYPE_STRING, { .str = "(in_h-out_h)/2" }, 0, 0, FLAGS },
 
-    { "w",      "Output video width",  OFFSET(ow), AV_OPT_TYPE_STRING, { .str="cw" }, 0, 255, .flags = FLAGS },
-    { "width",  "Output video width",  OFFSET(ow), AV_OPT_TYPE_STRING, { .str="cw" }, 0, 255, .flags = FLAGS },
-    { "h",      "Output video height", OFFSET(oh), AV_OPT_TYPE_STRING, { .str="w*ch/cw" }, 0, 255, .flags = FLAGS },
-    { "height", "Output video height", OFFSET(oh), AV_OPT_TYPE_STRING, { .str="w*ch/cw" }, 0, 255, .flags = FLAGS },
+    { "w",      "Output video width(0=input video width, -1=keep input video aspect)",  OFFSET(ow), AV_OPT_TYPE_STRING, { .str="cw" }, 0, 255, .flags = FLAGS },
+    { "width",  "Output video width(0=input video width, -1=keep input video aspect)",  OFFSET(ow), AV_OPT_TYPE_STRING, { .str="cw" }, 0, 255, .flags = FLAGS },
+    { "h",      "Output video height(0=input video height, -1=keep input video aspect)", OFFSET(oh), AV_OPT_TYPE_STRING, { .str="w*ch/cw" }, 0, 255, .flags = FLAGS },
+    { "height", "Output video height(0=input video height, -1=keep input video aspect)", OFFSET(oh), AV_OPT_TYPE_STRING, { .str="w*ch/cw" }, 0, 255, .flags = FLAGS },
     { "format", "Output pixel format", OFFSET(output_format_str), AV_OPT_TYPE_STRING, { .str = "same" }, .flags = FLAGS },
     { "async_depth", "Internal parallelization depth, the higher the value the higher the latency.", OFFSET(async_depth), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, .flags = FLAGS },
     { "scale_mode", "scale & format conversion mode: 0=auto, 1=low power, 2=high quality", OFFSET(scale_mode), AV_OPT_TYPE_INT, { .i64 = MFX_SCALING_MODE_DEFAULT }, MFX_SCALING_MODE_DEFAULT, MFX_SCALING_MODE_QUALITY, .flags = FLAGS, "scale mode" },
@@ -276,6 +281,7 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     VPPContext      *vpp = ctx->priv;
     int              ret;
+    int64_t          ow, oh;
 
     if (vpp->framerate.den == 0 || vpp->framerate.num == 0)
         vpp->framerate = inlink->frame_rate;
@@ -289,10 +295,37 @@ static int config_input(AVFilterLink *inlink)
         return ret;
     }
 
-    if (vpp->out_height == 0 || vpp->out_width == 0) {
-        vpp->out_width  = inlink->w;
-        vpp->out_height = inlink->h;
+    ow = vpp->out_width;
+    oh = vpp->out_height;
+
+    /* sanity check params */
+    if (ow <  -1 || oh <  -1) {
+        av_log(ctx, AV_LOG_ERROR, "Size values less than -1 are not acceptable.\n");
+        return AVERROR(EINVAL);
     }
+
+    if (ow == -1 && oh == -1)
+        vpp->out_width = vpp->out_height = 0;
+
+    if (!(ow = vpp->out_width))
+        ow = inlink->w;
+
+    if (!(oh = vpp->out_height))
+        oh = inlink->h;
+
+    if (ow == -1)
+        ow = av_rescale(oh, inlink->w, inlink->h);
+
+    if (oh == -1)
+        oh = av_rescale(ow, inlink->h, inlink->w);
+
+    if (ow > INT_MAX || oh > INT_MAX ||
+        (oh * inlink->w) > INT_MAX  ||
+        (ow * inlink->h) > INT_MAX)
+        av_log(ctx, AV_LOG_ERROR, "Rescaled value for width or height is too big.\n");
+
+    vpp->out_width = ow;
+    vpp->out_height = oh;
 
     if (vpp->use_crop) {
         vpp->crop_x = FFMAX(vpp->crop_x, 0);
