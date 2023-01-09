@@ -1181,9 +1181,8 @@ int ff_videotoolbox_common_init(AVCodecContext *avctx)
 
     vtctx->logctx = avctx;
 
-    // Old API - do nothing.
     if (avctx->hwaccel_context)
-        return 0;
+        return videotoolbox_start(avctx);
 
     if (!avctx->hw_frames_ctx && !avctx->hw_device_ctx) {
         av_log(avctx, AV_LOG_ERROR,
@@ -1404,7 +1403,7 @@ int av_videotoolbox_default_init2(AVCodecContext *avctx, AVVideotoolboxContext *
     avctx->hwaccel_context = vtctx ?: av_videotoolbox_alloc_context_with_pix_fmt(pix_fmt, full_range);
     if (!avctx->hwaccel_context)
         return AVERROR(ENOMEM);
-    return videotoolbox_start(avctx);
+    return 0;
 }
 
 void av_videotoolbox_default_free(AVCodecContext *avctx)
