@@ -125,9 +125,6 @@
  * multithreading-capable external libraries.
  */
 #define AV_CODEC_CAP_OTHER_THREADS       (1 << 15)
-#if FF_API_AUTO_THREADS
-#define AV_CODEC_CAP_AUTO_THREADS        AV_CODEC_CAP_OTHER_THREADS
-#endif
 /**
  * Audio encoder supports receiving a different number of samples in each call.
  */
