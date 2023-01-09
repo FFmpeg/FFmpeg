@@ -259,6 +259,19 @@ release:
     return ret;
 }
 
+static av_cold int vpp_preinit(AVFilterContext *ctx)
+{
+    VPPContext  *vpp  = ctx->priv;
+    /* For AV_OPT_TYPE_STRING options, NULL is handled in other way so
+     * we needn't set default value here
+     */
+    vpp->saturation = 1.0;
+    vpp->contrast = 1.0;
+    vpp->transpose = -1;
+
+    return 0;
+}
+
 static av_cold int vpp_init(AVFilterContext *ctx)
 {
     VPPContext  *vpp  = ctx->priv;
@@ -683,6 +696,7 @@ const AVFilter ff_vf_vpp_qsv = {
     .name          = "vpp_qsv",
     .description   = NULL_IF_CONFIG_SMALL("Quick Sync Video VPP."),
     .priv_size     = sizeof(VPPContext),
+    .preinit       = vpp_preinit,
     .init          = vpp_init,
     .uninit        = vpp_uninit,
     FILTER_INPUTS(vpp_inputs),
