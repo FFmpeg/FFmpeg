@@ -143,17 +143,6 @@
  */
 #define AV_CODEC_CAP_AVOID_PROBING       (1 << 17)
 
-#if FF_API_UNUSED_CODEC_CAPS
-/**
- * Deprecated and unused. Use AVCodecDescriptor.props instead
- */
-#define AV_CODEC_CAP_INTRA_ONLY       0x40000000
-/**
- * Deprecated and unused. Use AVCodecDescriptor.props instead
- */
-#define AV_CODEC_CAP_LOSSLESS         0x80000000
-#endif
-
 /**
  * Codec is backed by a hardware implementation. Typically used to
  * identify a non-hwaccel hardware decoder. For information about hwaccels, use
