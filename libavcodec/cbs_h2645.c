@@ -1500,6 +1500,12 @@ static const SEIMessageTypeDescriptor cbs_sei_common_types[] = {
         sizeof(SEIRawAlternativeTransferCharacteristics),
         SEI_MESSAGE_RW(sei, alternative_transfer_characteristics),
     },
+    {
+        SEI_TYPE_AMBIENT_VIEWING_ENVIRONMENT,
+        1, 0,
+        sizeof(SEIRawAmbientViewingEnvironment),
+        SEI_MESSAGE_RW(sei, ambient_viewing_environment),
+    },
     SEI_MESSAGE_TYPE_END,
 };
 

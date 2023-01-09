@@ -65,6 +65,12 @@ typedef struct SEIRawAlternativeTransferCharacteristics {
     uint8_t preferred_transfer_characteristics;
 } SEIRawAlternativeTransferCharacteristics;
 
+typedef struct SEIRawAmbientViewingEnvironment {
+    uint32_t ambient_illuminance;
+    uint16_t ambient_light_x;
+    uint16_t ambient_light_y;
+} SEIRawAmbientViewingEnvironment;
+
 typedef struct SEIRawMessage {
     uint32_t     payload_type;
     uint32_t     payload_size;
