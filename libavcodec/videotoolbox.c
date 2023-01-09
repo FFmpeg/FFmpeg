@@ -1181,7 +1181,8 @@ int ff_videotoolbox_common_init(AVCodecContext *avctx)
 
     vtctx->logctx = avctx;
 
-    if (avctx->hwaccel_context)
+    if (!avctx->hw_frames_ctx && !avctx->hw_device_ctx &&
+            avctx->hwaccel_context)
         return videotoolbox_start(avctx);
 
     if (!avctx->hw_frames_ctx && !avctx->hw_device_ctx) {
