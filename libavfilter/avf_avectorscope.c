@@ -44,6 +44,7 @@ enum VectorScopeMode {
 enum VectorScopeDraw {
     DOT,
     LINE,
+    AALINE,
     DRAW_NB,
 };
 
@@ -97,8 +98,9 @@ static const AVOption avectorscope_options[] = {
     { "af", "set alpha fade",     OFFSET(fade[3]), AV_OPT_TYPE_INT, {.i64=5},  0, 255, TFLAGS },
     { "zoom", "set zoom factor",  OFFSET(zoom), AV_OPT_TYPE_DOUBLE, {.dbl=1},  0, 10, TFLAGS },
     { "draw", "set draw mode", OFFSET(draw), AV_OPT_TYPE_INT, {.i64=DOT}, 0, DRAW_NB-1, TFLAGS, "draw" },
-    { "dot",   "", 0, AV_OPT_TYPE_CONST, {.i64=DOT} , 0, 0, TFLAGS, "draw" },
-    { "line",  "", 0, AV_OPT_TYPE_CONST, {.i64=LINE}, 0, 0, TFLAGS, "draw" },
+    { "dot",   "draw dots",               0, AV_OPT_TYPE_CONST, {.i64=DOT} , 0, 0, TFLAGS, "draw" },
+    { "line",  "draw lines",              0, AV_OPT_TYPE_CONST, {.i64=LINE}, 0, 0, TFLAGS, "draw" },
+    { "aaline","draw anti-aliased lines", 0, AV_OPT_TYPE_CONST, {.i64=AALINE},0,0, TFLAGS, "draw" },
     { "scale", "set amplitude scale mode", OFFSET(scale), AV_OPT_TYPE_INT, {.i64=LIN}, 0, SCALE_NB-1, TFLAGS, "scale" },
     { "lin",   "linear",      0, AV_OPT_TYPE_CONST, {.i64=LIN},  0, 0, TFLAGS, "scale" },
     { "sqrt",  "square root", 0, AV_OPT_TYPE_CONST, {.i64=SQRT}, 0, 0, TFLAGS, "scale" },
@@ -115,7 +117,7 @@ static const AVOption avectorscope_options[] = {
 
 AVFILTER_DEFINE_CLASS(avectorscope);
 
-static void draw_dot(AudioVectorScopeContext *s, unsigned x, unsigned y)
+static void draw_dot(AudioVectorScopeContext *s, unsigned x, unsigned y, int value)
 {
     const ptrdiff_t linesize = s->outpicref->linesize[0];
     uint8_t *dst;
@@ -129,10 +131,10 @@ static void draw_dot(AudioVectorScopeContext *s, unsigned x, unsigned y)
     }
 
     dst = s->outpicref->data[0] + y * linesize + x * 4;
-    dst[0] = FFMIN(dst[0] + s->contrast[0], 255);
-    dst[1] = FFMIN(dst[1] + s->contrast[1], 255);
-    dst[2] = FFMIN(dst[2] + s->contrast[2], 255);
-    dst[3] = FFMIN(dst[3] + s->contrast[3], 255);
+    dst[0] = FFMIN(dst[0] + s->contrast[0], value);
+    dst[1] = FFMIN(dst[1] + s->contrast[1], value);
+    dst[2] = FFMIN(dst[2] + s->contrast[2], value);
+    dst[3] = FFMIN(dst[3] + s->contrast[3], value);
 }
 
 static void draw_line(AudioVectorScopeContext *s, int x0, int y0, int x1, int y1)
@@ -142,7 +144,7 @@ static void draw_line(AudioVectorScopeContext *s, int x0, int y0, int x1, int y1
     int err = (dx>dy ? dx : -dy) / 2, e2;
 
     for (;;) {
-        draw_dot(s, x0, y0);
+        draw_dot(s, x0, y0, 255);
 
         if (x0 == x1 && y0 == y1)
             break;
@@ -155,6 +157,40 @@ static void draw_line(AudioVectorScopeContext *s, int x0, int y0, int x1, int y1
         }
 
         if (e2 < dy) {
+            err += dx;
+            y0 += sy;
+        }
+    }
+}
+
+static void draw_aaline(AudioVectorScopeContext *s, int x0, int y0, int x1, int y1)
+{
+    int sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1, x2;
+    int dx = FFABS(x1-x0), dy = FFABS(y1-y0), err = dx * dx + dy * dy;
+    int e2 = err == 0 ? 1 : 0xffffff / (dx + dy);
+
+    dx *= e2;
+    dy *= e2;
+    err = dx - dy;
+
+    for (;;) {
+        draw_dot(s, x0, y0, 255-(FFABS(err - dx + dy) >> 16));
+        e2 = err;
+        x2 = x0;
+        if (2 * e2 >= -dx) {
+            if (x0 == x1)
+                break;
+            if (e2 + dy < 0xff0000)
+                draw_dot(s, x0, y0 + sy, 255-((e2 + dy) >> 16));
+            err -= dy;
+            x0 += sx;
+        }
+
+        if (2 * e2 <= dy) {
+            if (y0 == y1)
+                break;
+            if (dx - e2 < 0xff0000)
+                draw_dot(s, x2 + sx, y0, 255-((dx - e2) >> 16));
             err += dx;
             y0 += sy;
         }
@@ -312,7 +348,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             break;
         }
 
-        zoom = 1. / max;
+        if (max > 0.f)
+            zoom = 1. / max;
     }
 
     for (int i = 0; i < insamples->nb_samples; i++) {
@@ -373,9 +410,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
         }
 
         if (s->draw == DOT) {
-            draw_dot(s, x, y);
-        } else {
+            draw_dot(s, x, y, 255);
+        } else if (s->draw == LINE) {
             draw_line(s, x, y, prev_x, prev_y);
+        } else {
+            draw_aaline(s, x, y, prev_x, prev_y);
         }
         prev_x = x;
         prev_y = y;

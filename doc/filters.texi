@@ -27933,6 +27933,9 @@ Draw dot for each sample.
 
 @item line
 Draw line between previous and current sample.
+
+@item aaline
+Draw anti-aliased line between previous and current sample.
 @end table
 
 Default value is @samp{dot}.
