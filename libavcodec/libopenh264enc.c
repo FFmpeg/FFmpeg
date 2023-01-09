@@ -50,9 +50,6 @@ typedef struct SVCContext {
     int max_nal_size;
     int skip_frames;
     int skipped;
-#if FF_API_OPENH264_CABAC
-    int cabac;                      // deprecated
-#endif
     int coder;
 
     // rate control mode
@@ -72,9 +69,6 @@ static const AVOption options[] = {
 #undef PROFILE
     { "max_nal_size", "set maximum NAL size in bytes", OFFSET(max_nal_size), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
     { "allow_skip_frames", "allow skipping frames to hit the target bitrate", OFFSET(skip_frames), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
-#if FF_API_OPENH264_CABAC
-    { "cabac", "Enable cabac(deprecated, use coder)", OFFSET(cabac), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE|DEPRECATED },
-#endif
     { "coder", "Coder type",  OFFSET(coder), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 1, VE, "coder" },
         { "default",          NULL, 0, AV_OPT_TYPE_CONST, { .i64 = -1 }, INT_MIN, INT_MAX, VE, "coder" },
         { "cavlc",            NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 0 },  INT_MIN, INT_MAX, VE, "coder" },
