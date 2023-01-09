@@ -279,7 +279,7 @@ static av_cold int vpp_init(AVFilterContext *ctx)
 {
     VPPContext  *vpp  = ctx->priv;
 
-    if (!strcmp(vpp->output_format_str, "same")) {
+    if (!vpp->output_format_str || !strcmp(vpp->output_format_str, "same")) {
         vpp->out_format = AV_PIX_FMT_NONE;
     } else {
         vpp->out_format = av_get_pix_fmt(vpp->output_format_str);
