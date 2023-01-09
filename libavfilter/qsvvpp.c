@@ -687,15 +687,11 @@ static int init_vpp_session(AVFilterContext *avctx, QSVVPPContext *s)
     return 0;
 }
 
-int ff_qsvvpp_create(AVFilterContext *avctx, QSVVPPContext **vpp, QSVVPPParam *param)
+int ff_qsvvpp_init(AVFilterContext *avctx, QSVVPPParam *param)
 {
     int i;
     int ret;
-    QSVVPPContext *s;
-
-    s = av_mallocz(sizeof(*s));
-    if (!s)
-        return AVERROR(ENOMEM);
+    QSVVPPContext *s = avctx->priv;
 
     s->filter_frame  = param->filter_frame;
     if (!s->filter_frame)
@@ -767,14 +763,13 @@ int ff_qsvvpp_create(AVFilterContext *avctx, QSVVPPContext **vpp, QSVVPPParam *p
     s->got_frame = 0;
 
     /** keep fifo size at least 1. Even when async_depth is 0, fifo is used. */
-    s->async_fifo  = av_fifo_alloc2(param->async_depth + 1, sizeof(QSVAsyncFrame), 0);
-    s->async_depth = param->async_depth;
+    s->async_fifo  = av_fifo_alloc2(s->async_depth + 1, sizeof(QSVAsyncFrame), 0);
     if (!s->async_fifo) {
         ret = AVERROR(ENOMEM);
         goto failed;
     }
 
-    s->vpp_param.AsyncDepth = param->async_depth;
+    s->vpp_param.AsyncDepth = s->async_depth;
 
     if (IS_SYSTEM_MEMORY(s->in_mem_mode))
         s->vpp_param.IOPattern |= MFX_IOPATTERN_IN_SYSTEM_MEMORY;
@@ -805,25 +800,22 @@ int ff_qsvvpp_create(AVFilterContext *avctx, QSVVPPContext **vpp, QSVVPPParam *p
     } else if (ret > 0)
         ff_qsvvpp_print_warning(avctx, ret, "Warning When creating qsvvpp");
 
-    *vpp = s;
     return 0;
 
 failed:
-    ff_qsvvpp_free(&s);
+    ff_qsvvpp_close(avctx);
 
     return ret;
 }
 
-int ff_qsvvpp_free(QSVVPPContext **vpp)
+int ff_qsvvpp_close(AVFilterContext *avctx)
 {
-    QSVVPPContext *s = *vpp;
-
-    if (!s)
-        return 0;
+    QSVVPPContext *s = avctx->priv;
 
     if (s->session) {
         MFXVideoVPP_Close(s->session);
         MFXClose(s->session);
+        s->session = NULL;
     }
 
     /* release all the resources */
@@ -836,7 +828,6 @@ int ff_qsvvpp_free(QSVVPPContext **vpp)
 #endif
     av_freep(&s->frame_infos);
     av_fifo_freep2(&s->async_fifo);
-    av_freep(vpp);
 
     return 0;
 }

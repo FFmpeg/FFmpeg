@@ -57,10 +57,9 @@ enum var_name {
 };
 
 typedef struct QSVOverlayContext {
-    const AVClass      *class;
+    QSVVPPContext      qsv;
 
     FFFrameSync fs;
-    QSVVPPContext      *qsv;
     QSVVPPParam        qsv_param;
     mfxExtVPPComposite comp_conf;
     double             var_values[VAR_VARS_NB];
@@ -230,14 +229,14 @@ static int config_overlay_input(AVFilterLink *inlink)
 static int process_frame(FFFrameSync *fs)
 {
     AVFilterContext  *ctx = fs->parent;
-    QSVOverlayContext  *s = fs->opaque;
+    QSVVPPContext    *qsv = fs->opaque;
     AVFrame        *frame = NULL;
     int               ret = 0, i;
 
     for (i = 0; i < ctx->nb_inputs; i++) {
         ret = ff_framesync_get_frame(fs, i, &frame, 0);
         if (ret == 0)
-            ret = ff_qsvvpp_filter_frame(s->qsv, ctx->inputs[i], frame);
+            ret = ff_qsvvpp_filter_frame(qsv, ctx->inputs[i], frame);
         if (ret < 0 && ret != AVERROR(EAGAIN))
             break;
     }
@@ -301,7 +300,7 @@ static int config_output(AVFilterLink *outlink)
     if (ret < 0)
         return ret;
 
-    return ff_qsvvpp_create(ctx, &vpp->qsv, &vpp->qsv_param);
+    return ff_qsvvpp_init(ctx, &vpp->qsv_param);
 }
 
 /*
@@ -350,7 +349,7 @@ static av_cold void overlay_qsv_uninit(AVFilterContext *ctx)
 {
     QSVOverlayContext *vpp = ctx->priv;
 
-    ff_qsvvpp_free(&vpp->qsv);
+    ff_qsvvpp_close(ctx);
     ff_framesync_uninit(&vpp->fs);
     av_freep(&vpp->comp_conf.InputStream);
     av_freep(&vpp->qsv_param.ext_buf);
