@@ -150,18 +150,22 @@ static const char *const var_names[] = {
     "ch",
     "cx",
     "cy",
+    "a", "dar",
+    "sar",
     NULL
 };
 
 enum var_name {
-    VAR_iW, VAR_IN_W,
-    VAR_iH, VAR_IN_H,
-    VAR_oW, VAR_OUT_W, VAR_W,
-    VAR_oH, VAR_OUT_H, VAR_H,
-    CW,
-    CH,
-    CX,
-    CY,
+    VAR_IW, VAR_IN_W,
+    VAR_IH, VAR_IN_H,
+    VAR_OW, VAR_OUT_W, VAR_W,
+    VAR_OH, VAR_OUT_H, VAR_H,
+    VAR_CW,
+    VAR_CH,
+    VAR_CX,
+    VAR_CY,
+    VAR_A, VAR_DAR,
+    VAR_SAR,
     VAR_VARS_NB
 };
 
@@ -193,39 +197,44 @@ static int eval_expr(AVFilterContext *ctx)
     PASS_EXPR(cx_expr, vpp->cx);
     PASS_EXPR(cy_expr, vpp->cy);
 
-    var_values[VAR_iW] =
+    var_values[VAR_IW] =
     var_values[VAR_IN_W] = ctx->inputs[0]->w;
 
-    var_values[VAR_iH] =
+    var_values[VAR_IH] =
     var_values[VAR_IN_H] = ctx->inputs[0]->h;
 
+    var_values[VAR_A] = (double)var_values[VAR_IN_W] / var_values[VAR_IN_H];
+    var_values[VAR_SAR] = ctx->inputs[0]->sample_aspect_ratio.num ?
+        (double)ctx->inputs[0]->sample_aspect_ratio.num / ctx->inputs[0]->sample_aspect_ratio.den : 1;
+    var_values[VAR_DAR] = var_values[VAR_A] * var_values[VAR_SAR];
+
     /* crop params */
-    CALC_EXPR(cw_expr, var_values[CW], vpp->crop_w);
-    CALC_EXPR(ch_expr, var_values[CH], vpp->crop_h);
+    CALC_EXPR(cw_expr, var_values[VAR_CW], vpp->crop_w);
+    CALC_EXPR(ch_expr, var_values[VAR_CH], vpp->crop_h);
 
     /* calc again in case cw is relative to ch */
-    CALC_EXPR(cw_expr, var_values[CW], vpp->crop_w);
+    CALC_EXPR(cw_expr, var_values[VAR_CW], vpp->crop_w);
 
     CALC_EXPR(w_expr,
-            var_values[VAR_OUT_W] = var_values[VAR_oW] = var_values[VAR_W],
+            var_values[VAR_OUT_W] = var_values[VAR_OW] = var_values[VAR_W],
             vpp->out_width);
     CALC_EXPR(h_expr,
-            var_values[VAR_OUT_H] = var_values[VAR_oH] = var_values[VAR_H],
+            var_values[VAR_OUT_H] = var_values[VAR_OH] = var_values[VAR_H],
             vpp->out_height);
 
     /* calc again in case ow is relative to oh */
     CALC_EXPR(w_expr,
-            var_values[VAR_OUT_W] = var_values[VAR_oW] = var_values[VAR_W],
+            var_values[VAR_OUT_W] = var_values[VAR_OW] = var_values[VAR_W],
             vpp->out_width);
 
 
-    CALC_EXPR(cx_expr, var_values[CX], vpp->crop_x);
-    CALC_EXPR(cy_expr, var_values[CY], vpp->crop_y);
+    CALC_EXPR(cx_expr, var_values[VAR_CX], vpp->crop_x);
+    CALC_EXPR(cy_expr, var_values[VAR_CY], vpp->crop_y);
 
     /* calc again in case cx is relative to cy */
-    CALC_EXPR(cx_expr, var_values[CX], vpp->crop_x);
+    CALC_EXPR(cx_expr, var_values[VAR_CX], vpp->crop_x);
 
-    if ((vpp->crop_w != var_values[VAR_iW]) || (vpp->crop_h != var_values[VAR_iH]))
+    if ((vpp->crop_w != var_values[VAR_IW]) || (vpp->crop_h != var_values[VAR_IH]))
         vpp->use_crop = 1;
 
 release:
