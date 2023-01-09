@@ -1173,8 +1173,8 @@ static enum AVPixelFormat videotoolbox_best_pixel_format(AVCodecContext *avctx) 
     return AV_PIX_FMT_NV12;
 }
 
-static AVVideotoolboxContext *av_videotoolbox_alloc_context_with_pix_fmt(enum AVPixelFormat pix_fmt,
-                                                                         bool full_range)
+static AVVideotoolboxContext *videotoolbox_alloc_context_with_pix_fmt(enum AVPixelFormat pix_fmt,
+                                                                      bool full_range)
 {
     AVVideotoolboxContext *ret = av_mallocz(sizeof(*ret));
 
@@ -1207,7 +1207,7 @@ int ff_videotoolbox_common_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    vtctx->vt_ctx = av_videotoolbox_alloc_context_with_pix_fmt(AV_PIX_FMT_NONE, false);
+    vtctx->vt_ctx = videotoolbox_alloc_context_with_pix_fmt(AV_PIX_FMT_NONE, false);
     if (!vtctx->vt_ctx) {
         err = AVERROR(ENOMEM);
         goto fail;
@@ -1392,7 +1392,7 @@ const AVHWAccel ff_prores_videotoolbox_hwaccel = {
 #if FF_API_VT_HWACCEL_CONTEXT
 AVVideotoolboxContext *av_videotoolbox_alloc_context(void)
 {
-    return av_videotoolbox_alloc_context_with_pix_fmt(AV_PIX_FMT_NONE, false);
+    return videotoolbox_alloc_context_with_pix_fmt(AV_PIX_FMT_NONE, false);
 }
 
 int av_videotoolbox_default_init(AVCodecContext *avctx)
@@ -1404,7 +1404,7 @@ int av_videotoolbox_default_init2(AVCodecContext *avctx, AVVideotoolboxContext *
 {
     enum AVPixelFormat pix_fmt = videotoolbox_best_pixel_format(avctx);
     bool full_range = avctx->color_range == AVCOL_RANGE_JPEG;
-    avctx->hwaccel_context = vtctx ?: av_videotoolbox_alloc_context_with_pix_fmt(pix_fmt, full_range);
+    avctx->hwaccel_context = vtctx ?: videotoolbox_alloc_context_with_pix_fmt(pix_fmt, full_range);
     if (!avctx->hwaccel_context)
         return AVERROR(ENOMEM);
     return 0;
