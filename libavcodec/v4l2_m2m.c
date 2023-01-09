@@ -148,13 +148,15 @@ static int v4l2_configure_contexts(V4L2m2mContext *s)
 
     ofmt = s->output.format;
     cfmt = s->capture.format;
-    av_log(log_ctx, AV_LOG_INFO, "requesting formats: output=%s capture=%s\n",
+    av_log(log_ctx, AV_LOG_INFO, "requesting formats: output=%s/%s capture=%s/%s\n",
                                  av_fourcc2str(V4L2_TYPE_IS_MULTIPLANAR(ofmt.type) ?
                                                ofmt.fmt.pix_mp.pixelformat :
                                                ofmt.fmt.pix.pixelformat),
+                                 av_get_pix_fmt_name(s->output.av_pix_fmt) ?: "none",
                                  av_fourcc2str(V4L2_TYPE_IS_MULTIPLANAR(cfmt.type) ?
                                                cfmt.fmt.pix_mp.pixelformat :
-                                               cfmt.fmt.pix.pixelformat));
+                                               cfmt.fmt.pix.pixelformat),
+                                 av_get_pix_fmt_name(s->capture.av_pix_fmt) ?: "none");
 
     ret = ff_v4l2_context_set_format(&s->output);
     if (ret) {
