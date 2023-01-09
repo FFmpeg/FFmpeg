@@ -503,6 +503,11 @@ static QSVFrame *query_frame(QSVVPPContext *s, AVFilterLink *outlink)
             return NULL;
     }
 
+    if (outlink->frame_rate.num && outlink->frame_rate.den)
+        out_frame->frame->duration = av_rescale_q(1, av_inv_q(outlink->frame_rate), outlink->time_base);
+    else
+        out_frame->frame->duration = 0;
+
     out_frame->frame->width  = outlink->w;
     out_frame->frame->height = outlink->h;
     out_frame->surface.Info = s->vpp_param.vpp.Out;
