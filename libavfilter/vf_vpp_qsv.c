@@ -102,6 +102,7 @@ typedef struct VPPContext{
 
     int async_depth;
     int eof;
+    int has_passthrough;        /* apply pass through mode if possible */
 } VPPContext;
 
 static const AVOption options[] = {
@@ -268,6 +269,8 @@ static av_cold int vpp_preinit(AVFilterContext *ctx)
     vpp->saturation = 1.0;
     vpp->contrast = 1.0;
     vpp->transpose = -1;
+
+    vpp->has_passthrough = 1;
 
     return 0;
 }
@@ -552,7 +555,8 @@ static int config_output(AVFilterLink *outlink)
 
     if (vpp->use_frc || vpp->use_crop || vpp->deinterlace || vpp->denoise ||
         vpp->detail || vpp->procamp || vpp->rotate || vpp->hflip ||
-        inlink->w != outlink->w || inlink->h != outlink->h || in_format != vpp->out_format)
+        inlink->w != outlink->w || inlink->h != outlink->h || in_format != vpp->out_format ||
+        !vpp->has_passthrough)
         return ff_qsvvpp_create(ctx, &vpp->qsv, &param);
     else {
         av_log(ctx, AV_LOG_VERBOSE, "qsv vpp pass through mode.\n");
