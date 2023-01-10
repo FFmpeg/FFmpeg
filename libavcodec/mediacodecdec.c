@@ -415,7 +415,13 @@ static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
            s->ctx->codec_name, ret);
 
     sdk_int = ff_Build_SDK_INT(avctx);
-    if (sdk_int <= 23 &&
+    /* ff_Build_SDK_INT can fail when target API < 24 and JVM isn't available.
+     * If we don't check sdk_int > 0, the workaround might be enabled by
+     * mistake.
+     * JVM is required to make the workaround works reliably. On the other hand,
+     * missing a workaround should not be a serious issue, we do as best we can.
+     */
+    if (sdk_int > 0 && sdk_int <= 23 &&
         strcmp(s->ctx->codec_name, "OMX.amlogic.mpeg2.decoder.awesome") == 0) {
         av_log(avctx, AV_LOG_INFO, "Enabling workaround for %s on API=%d\n",
                s->ctx->codec_name, sdk_int);
