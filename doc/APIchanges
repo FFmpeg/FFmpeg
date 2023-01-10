@@ -14,6 +14,12 @@ libavutil:     2021-04-27
 
 API changes, most recent first:
 
+2023-01-13 - xxxxxxxxxx - lavu 57.44.100 - ambient_viewing_environment.h frame.h
+  Adds a new structure for holding H.274 Ambient Viewing Environment metadata,
+  AVAmbientViewingEnvironment.
+  Adds a new AVFrameSideDataType entry AV_FRAME_DATA_AMBIENT_VIEWING_ENVIRONMENT
+  for it.
+
 2022-12-xx - xxxxxxxxxx - lavc 59.55.100 - avcodec.h
   Add AV_HWACCEL_FLAG_UNSAFE_OUTPUT.
 

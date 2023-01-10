@@ -209,6 +209,11 @@ enum AVFrameSideDataType {
      * volume transform - CUVA 005.1-2021.
      */
     AV_FRAME_DATA_DYNAMIC_HDR_VIVID,
+
+    /**
+     * Ambient viewing environment metadata, as defined by H.274.
+     */
+    AV_FRAME_DATA_AMBIENT_VIEWING_ENVIRONMENT,
 };
 
 enum AVActiveFormatDescription {
