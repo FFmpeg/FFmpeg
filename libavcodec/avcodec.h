@@ -232,13 +232,13 @@ typedef struct RcOverride{
  */
 #define AV_CODEC_FLAG_DROPCHANGED     (1 <<  5)
 /**
- * Request the encoder to output reconstructed frames, i.e. frames that would be
- * produced by decoding the encoded bistream. These frames may be retrieved by
- * calling avcodec_receive_frame() immediately after a successful call to
+ * Request the encoder to output reconstructed frames, i.e.\ frames that would
+ * be produced by decoding the encoded bistream. These frames may be retrieved
+ * by calling avcodec_receive_frame() immediately after a successful call to
  * avcodec_receive_packet().
  *
  * Should only be used with encoders flagged with the
- * AV_CODEC_CAP_ENCODER_RECON_FRAME capability.
+ * @ref AV_CODEC_CAP_ENCODER_RECON_FRAME capability.
  */
 #define AV_CODEC_FLAG_RECON_FRAME     (1 <<  6)
 /**
