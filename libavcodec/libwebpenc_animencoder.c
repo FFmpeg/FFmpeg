@@ -77,7 +77,7 @@ static int libwebp_anim_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 memcpy(pkt->data, assembled_data.bytes, assembled_data.size);
                 WebPDataClear(&assembled_data);
                 s->done = 1;
-                pkt->pts = pkt->dts = s->first_frame_pts;
+                pkt->pts = s->first_frame_pts;
                 *got_packet = 1;
                 return 0;
             } else {
