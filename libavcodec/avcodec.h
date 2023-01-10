@@ -2605,17 +2605,17 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
  *                  still has frames buffered, it will return them after sending
  *                  a flush packet.
  *
- * @return 0 on success, otherwise negative error code:
- *      AVERROR(EAGAIN):   input is not accepted in the current state - user
- *                         must read output with avcodec_receive_frame() (once
- *                         all output is read, the packet should be resent, and
- *                         the call will not fail with EAGAIN).
- *      AVERROR_EOF:       the decoder has been flushed, and no new packets can
- *                         be sent to it (also returned if more than 1 flush
- *                         packet is sent)
- *      AVERROR(EINVAL):   codec not opened, it is an encoder, or requires flush
- *      AVERROR(ENOMEM):   failed to add packet to internal queue, or similar
- *      other errors: legitimate decoding errors
+ * @retval 0                 success
+ * @retval AVERROR(EAGAIN)   input is not accepted in the current state - user
+ *                           must read output with avcodec_receive_frame() (once
+ *                           all output is read, the packet should be resent,
+ *                           and the call will not fail with EAGAIN).
+ * @retval AVERROR_EOF       the decoder has been flushed, and no new packets can be
+ *                           sent to it (also returned if more than 1 flush
+ *                           packet is sent)
+ * @retval AVERROR(EINVAL)   codec not opened, it is an encoder, or requires flush
+ * @retval AVERROR(ENOMEM)   failed to add packet to internal queue, or similar
+ * @retval "another negative error code" legitimate decoding errors
  */
 int avcodec_send_packet(AVCodecContext *avctx, const AVPacket *avpkt);
 
@@ -2629,18 +2629,17 @@ int avcodec_send_packet(AVCodecContext *avctx, const AVPacket *avpkt);
  *              codec. Note that the function will always call
  *              av_frame_unref(frame) before doing anything else.
  *
- * @return
- *      0:                 success, a frame was returned
- *      AVERROR(EAGAIN):   output is not available in this state - user must try
- *                         to send new input
- *      AVERROR_EOF:       the codec has been fully flushed, and there will be
- *                         no more output frames
- *      AVERROR(EINVAL):   codec not opened, or it is an encoder without
- *                         the AV_CODEC_FLAG_RECON_FRAME flag enabled
- *      AVERROR_INPUT_CHANGED:   current decoded frame has changed parameters
- *                               with respect to first decoded frame. Applicable
- *                               when flag AV_CODEC_FLAG_DROPCHANGED is set.
- *      other negative values: legitimate decoding errors
+ * @retval 0                success, a frame was returned
+ * @retval AVERROR(EAGAIN)  output is not available in this state - user must
+ *                          try to send new input
+ * @retval AVERROR_EOF      the codec has been fully flushed, and there will be
+ *                          no more output frames
+ * @retval AVERROR(EINVAL)  codec not opened, or it is an encoder without the
+ *                          AV_CODEC_FLAG_RECON_FRAME flag enabled
+ * @retval AVERROR_INPUT_CHANGED current decoded frame has changed parameters with
+ *                          respect to first decoded frame. Applicable when flag
+ *                          AV_CODEC_FLAG_DROPCHANGED is set.
+ * @retval "other negative error code" legitimate decoding errors
  */
 int avcodec_receive_frame(AVCodecContext *avctx, AVFrame *frame);
 
@@ -2667,16 +2666,16 @@ int avcodec_receive_frame(AVCodecContext *avctx, AVFrame *frame);
  *                  If it is not set, frame->nb_samples must be equal to
  *                  avctx->frame_size for all frames except the last.
  *                  The final frame may be smaller than avctx->frame_size.
- * @return 0 on success, otherwise negative error code:
- *      AVERROR(EAGAIN):   input is not accepted in the current state - user
- *                         must read output with avcodec_receive_packet() (once
- *                         all output is read, the packet should be resent, and
- *                         the call will not fail with EAGAIN).
- *      AVERROR_EOF:       the encoder has been flushed, and no new frames can
- *                         be sent to it
- *      AVERROR(EINVAL):   codec not opened, it is a decoder, or requires flush
- *      AVERROR(ENOMEM):   failed to add packet to internal queue, or similar
- *      other errors: legitimate encoding errors
+ * @retval 0                 success
+ * @retval AVERROR(EAGAIN)   input is not accepted in the current state - user must
+ *                           read output with avcodec_receive_packet() (once all
+ *                           output is read, the packet should be resent, and the
+ *                           call will not fail with EAGAIN).
+ * @retval AVERROR_EOF       the encoder has been flushed, and no new frames can
+ *                           be sent to it
+ * @retval AVERROR(EINVAL)   codec not opened, it is a decoder, or requires flush
+ * @retval AVERROR(ENOMEM)   failed to add packet to internal queue, or similar
+ * @retval "another negative error code" legitimate encoding errors
  */
 int avcodec_send_frame(AVCodecContext *avctx, const AVFrame *frame);
 
@@ -2687,13 +2686,13 @@ int avcodec_send_frame(AVCodecContext *avctx, const AVFrame *frame);
  * @param avpkt This will be set to a reference-counted packet allocated by the
  *              encoder. Note that the function will always call
  *              av_packet_unref(avpkt) before doing anything else.
- * @return 0 on success, otherwise negative error code:
- *      AVERROR(EAGAIN):   output is not available in the current state - user
- *                         must try to send input
- *      AVERROR_EOF:       the encoder has been fully flushed, and there will be
- *                         no more output packets
- *      AVERROR(EINVAL):   codec not opened, or it is a decoder
- *      other errors: legitimate encoding errors
+ * @retval 0               success
+ * @retval AVERROR(EAGAIN) output is not available in the current state - user must
+ *                         try to send input
+ * @retval AVERROR_EOF     the encoder has been fully flushed, and there will be no
+ *                         more output packets
+ * @retval AVERROR(EINVAL) codec not opened, or it is a decoder
+ * @retval "another negative error code" legitimate encoding errors
  */
 int avcodec_receive_packet(AVCodecContext *avctx, AVPacket *avpkt);
 
