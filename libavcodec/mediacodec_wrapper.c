@@ -2513,6 +2513,21 @@ FFAMediaCodec* ff_AMediaCodec_createEncoderByType(const char *mime_type, int ndk
 int ff_Build_SDK_INT(AVCodecContext *avctx)
 {
     int ret = -1;
+
+#if __ANDROID_API__ >= 24
+    // android_get_device_api_level() is a static inline before API level 29.
+    // dlsym() might doesn't work.
+    //
+    // We can implement android_get_device_api_level() by
+    // __system_property_get(), but __system_property_get() has created a lot of
+    // troubles and is deprecated. So avoid using __system_property_get() for
+    // now.
+    //
+    // Hopy we can remove the conditional compilation finally by bumping the
+    // required API level.
+    //
+    ret = android_get_device_api_level();
+#else
     JNIEnv *env = NULL;
     jclass versionClass;
     jfieldID sdkIntFieldID;
@@ -2522,5 +2537,8 @@ int ff_Build_SDK_INT(AVCodecContext *avctx)
     sdkIntFieldID = (*env)->GetStaticFieldID(env, versionClass, "SDK_INT", "I");
     ret = (*env)->GetStaticIntField(env, versionClass, sdkIntFieldID);
     (*env)->DeleteLocalRef(env, versionClass);
+#endif
+    av_log(avctx, AV_LOG_DEBUG, "device api level %d\n", ret);
+
     return ret;
 }
