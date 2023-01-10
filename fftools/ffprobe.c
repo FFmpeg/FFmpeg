@@ -33,6 +33,7 @@
 #include "libavformat/version.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/version.h"
+#include "libavutil/ambient_viewing_environment.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
@@ -2268,6 +2269,17 @@ static void print_dynamic_hdr_vivid(WriterContext *w, const AVDynamicHDRVivid *m
     }
 }
 
+static void print_ambient_viewing_environment(WriterContext *w,
+                                              const AVAmbientViewingEnvironment *env)
+{
+    if (!env)
+        return;
+
+    print_q("ambient_illuminance", env->ambient_illuminance, '/');
+    print_q("ambient_light_x",     env->ambient_light_x,     '/');
+    print_q("ambient_light_y",     env->ambient_light_y,     '/');
+}
+
 static void print_pkt_side_data(WriterContext *w,
                                 AVCodecParameters *par,
                                 const AVPacketSideData *side_data,
@@ -2704,6 +2716,9 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
             } else if (sd->type == AV_FRAME_DATA_DYNAMIC_HDR_VIVID) {
                 AVDynamicHDRVivid *metadata = (AVDynamicHDRVivid *)sd->data;
                 print_dynamic_hdr_vivid(w, metadata);
+            } else if (sd->type == AV_FRAME_DATA_AMBIENT_VIEWING_ENVIRONMENT) {
+                print_ambient_viewing_environment(
+                    w, (const AVAmbientViewingEnvironment *)sd->data);
             }
             writer_print_section_footer(w);
         }
