@@ -1238,6 +1238,7 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
                 }
                 av_log(avctx, AV_LOG_ERROR, ", skipping\n");
                 bytestream2_skip(&s->gb, length + 8); /* tag */
+                continue;
             }
         }
         tag = bytestream2_get_le32(&s->gb);
