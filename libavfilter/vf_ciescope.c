@@ -1010,27 +1010,44 @@ static void draw_line(uint16_t *const pixels, int linesize,
                       int w, int h,
                       const uint16_t *const rgbcolor)
 {
-    int dx  = FFABS(x1 - x0), sx = x0 < x1 ? 1 : -1;
-    int dy  = FFABS(y1 - y0), sy = y0 < y1 ? 1 : -1;
-    int err = (dx > dy ? dx : -dy) / 2, e2;
+    int sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1, x2;
+    int dx = FFABS(x1-x0), dy = FFABS(y1-y0), err = dx * dx + dy * dy;
+    int e2 = err == 0 ? 1 : 0xffffff / (dx + dy);
+
+    dx *= e2;
+    dy *= e2;
+    err = dx - dy;
 
     for (;;) {
-        pixels[y0 * linesize + x0 * 4 + 0] = rgbcolor[0];
-        pixels[y0 * linesize + x0 * 4 + 1] = rgbcolor[1];
-        pixels[y0 * linesize + x0 * 4 + 2] = rgbcolor[2];
-        pixels[y0 * linesize + x0 * 4 + 3] = rgbcolor[3];
-
-        if (x0 == x1 && y0 == y1)
-            break;
+        pixels[y0 * linesize + x0 * 4 + 0] = rgbcolor[0]-(FFABS(err - dx + dy) >> 8);
+        pixels[y0 * linesize + x0 * 4 + 1] = rgbcolor[1]-(FFABS(err - dx + dy) >> 8);
+        pixels[y0 * linesize + x0 * 4 + 2] = rgbcolor[2]-(FFABS(err - dx + dy) >> 8);
+        pixels[y0 * linesize + x0 * 4 + 3] = rgbcolor[3]-(FFABS(err - dx + dy) >> 8);
 
         e2 = err;
-
-        if (e2 >-dx) {
+        x2 = x0;
+        if (2 * e2 >= -dx) {
+            if (x0 == x1)
+                break;
+            if (e2 + dy < 0xff0000) {
+                pixels[(y0 + sy) * linesize + x0 * 4 + 0] = rgbcolor[0]-(FFABS(e2 + dy) >> 8);
+                pixels[(y0 + sy) * linesize + x0 * 4 + 1] = rgbcolor[1]-(FFABS(e2 + dy) >> 8);
+                pixels[(y0 + sy) * linesize + x0 * 4 + 2] = rgbcolor[2]-(FFABS(e2 + dy) >> 8);
+                pixels[(y0 + sy) * linesize + x0 * 4 + 3] = rgbcolor[3]-(FFABS(e2 + dy) >> 8);
+            }
             err -= dy;
             x0 += sx;
         }
 
-        if (e2 < dy) {
+        if (2 * e2 <= dy) {
+            if (y0 == y1)
+                break;
+            if (dx - e2 < 0xff0000) {
+                pixels[y0 * linesize + (x2 + sx) * 4 + 0] = rgbcolor[0]-(FFABS(dx - e2) >> 8);
+                pixels[y0 * linesize + (x2 + sx) * 4 + 1] = rgbcolor[1]-(FFABS(dx - e2) >> 8);
+                pixels[y0 * linesize + (x2 + sx) * 4 + 2] = rgbcolor[2]-(FFABS(dx - e2) >> 8);
+                pixels[y0 * linesize + (x2 + sx) * 4 + 3] = rgbcolor[3]-(FFABS(dx - e2) >> 8);
+            }
             err += dx;
             y0 += sy;
         }
