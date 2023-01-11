@@ -240,6 +240,15 @@ typedef struct FFVulkanContext {
     enum AVPixelFormat  input_format;
 } FFVulkanContext;
 
+static inline int ff_vk_count_images(AVVkFrame *f)
+{
+    int cnt = 0;
+    while (f->img[cnt])
+        cnt++;
+
+    return cnt;
+}
+
 /* Identity mapping - r = r, b = b, g = g, a = a */
 extern const VkComponentMapping ff_comp_identity_map;
 
