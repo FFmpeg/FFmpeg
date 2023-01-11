@@ -101,6 +101,10 @@ static av_cold int bonk_init(AVCodecContext *avctx)
     s->samples_per_packet = AV_RL16(avctx->extradata + 15);
     if (!s->samples_per_packet)
         return AVERROR(EINVAL);
+
+    if (s->down_sampling * s->samples_per_packet < s->n_taps)
+        return AVERROR_INVALIDDATA;
+
     s->max_framesize = s->samples_per_packet * avctx->ch_layout.nb_channels * s->down_sampling * 16LL;
     if (s->max_framesize > (INT32_MAX - AV_INPUT_BUFFER_PADDING_SIZE) / 8)
         return AVERROR_INVALIDDATA;
