@@ -838,7 +838,7 @@ static int binkb_decode_plane(BinkContext *c, AVFrame *frame, GetBitContext *gb,
 
     binkb_init_bundles(c);
     ref_start = frame->data[plane_idx];
-    ref_end   = frame->data[plane_idx] + (bh * frame->linesize[plane_idx] + bw - 1) * 8;
+    ref_end   = frame->data[plane_idx] + ((bh - 1) * frame->linesize[plane_idx] + bw - 1) * 8;
 
     for (i = 0; i < 64; i++)
         coordmap[i] = (i & 7) + (i >> 3) * stride;
@@ -894,7 +894,7 @@ static int binkb_decode_plane(BinkContext *c, AVFrame *frame, GetBitContext *gb,
                 xoff = binkb_get_value(c, BINKB_SRC_X_OFF);
                 yoff = binkb_get_value(c, BINKB_SRC_Y_OFF) + ybias;
                 ref = dst + xoff + yoff * stride;
-                if (ref < ref_start || ref + 8*stride > ref_end) {
+                if (ref < ref_start || ref > ref_end) {
                     av_log(c->avctx, AV_LOG_WARNING, "Reference block is out of bounds\n");
                 } else if (ref + 8*stride < dst || ref >= dst + 8*stride) {
                     c->hdsp.put_pixels_tab[1][0](dst, ref, stride, 8);
@@ -910,7 +910,7 @@ static int binkb_decode_plane(BinkContext *c, AVFrame *frame, GetBitContext *gb,
                 xoff = binkb_get_value(c, BINKB_SRC_X_OFF);
                 yoff = binkb_get_value(c, BINKB_SRC_Y_OFF) + ybias;
                 ref = dst + xoff + yoff * stride;
-                if (ref < ref_start || ref + 8 * stride > ref_end) {
+                if (ref < ref_start || ref > ref_end) {
                     av_log(c->avctx, AV_LOG_WARNING, "Reference block is out of bounds\n");
                 } else if (ref + 8*stride < dst || ref >= dst + 8*stride) {
                     c->hdsp.put_pixels_tab[1][0](dst, ref, stride, 8);
@@ -942,7 +942,7 @@ static int binkb_decode_plane(BinkContext *c, AVFrame *frame, GetBitContext *gb,
                 xoff = binkb_get_value(c, BINKB_SRC_X_OFF);
                 yoff = binkb_get_value(c, BINKB_SRC_Y_OFF) + ybias;
                 ref = dst + xoff + yoff * stride;
-                if (ref < ref_start || ref + 8 * stride > ref_end) {
+                if (ref < ref_start || ref > ref_end) {
                     av_log(c->avctx, AV_LOG_WARNING, "Reference block is out of bounds\n");
                 } else if (ref + 8*stride < dst || ref >= dst + 8*stride) {
                     c->hdsp.put_pixels_tab[1][0](dst, ref, stride, 8);
