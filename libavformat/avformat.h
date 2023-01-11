@@ -838,12 +838,10 @@ const char *av_disposition_to_string(int disposition);
  * sizeof(AVStream) must not be used outside libav*.
  */
 typedef struct AVStream {
-#if FF_API_AVSTREAM_CLASS
     /**
      * A class for @ref avoptions. Set on stream creation.
      */
     const AVClass *av_class;
-#endif
 
     int index;    /**< stream index in AVFormatContext */
     /**

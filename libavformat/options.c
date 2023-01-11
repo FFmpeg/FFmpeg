@@ -257,10 +257,7 @@ AVStream *avformat_new_stream(AVFormatContext *s, const AVCodec *c)
         return NULL;
     st = &sti->pub;
 
-#if FF_API_AVSTREAM_CLASS
     st->av_class = &stream_class;
-#endif
-
     st->codecpar = avcodec_parameters_alloc();
     if (!st->codecpar)
         goto fail;

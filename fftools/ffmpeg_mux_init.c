@@ -2000,18 +2000,7 @@ static int set_dispositions(Muxer *mux, const OptionsContext *o)
             if (!disp)
                 continue;
 
-#if LIBAVFORMAT_VERSION_MAJOR >= 60
             ret = av_opt_set(ost->st, "disposition", disp, 0);
-#else
-            {
-                const AVClass *class = av_stream_get_class();
-                const AVOption    *o = av_opt_find(&class, "disposition", NULL, 0, AV_OPT_SEARCH_FAKE_OBJ);
-
-                av_assert0(o);
-                ret = av_opt_eval_flags(&class, o, disp, &ost->st->disposition);
-            }
-#endif
-
             if (ret < 0)
                 goto finish;
         }
