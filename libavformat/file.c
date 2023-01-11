@@ -68,6 +68,24 @@
 #  endif
 #endif
 
+/* S_ISREG not available on Windows */
+#ifndef S_ISREG
+#  ifdef S_IFREG
+#    define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
+#  else
+#    define S_ISREG(m) 0
+#  endif
+#endif
+
+/* S_ISBLK not available on Windows */
+#ifndef S_ISBLK
+#  ifdef S_IFBLK
+#    define S_ISBLK(m) (((m) & S_IFMT) == S_IFBLK)
+#  else
+#    define S_ISBLK(m) 0
+#  endif
+#endif
+
 /* standard file protocol */
 
 typedef struct FileContext {
