@@ -159,14 +159,6 @@ av_alloc_size(1, 2) void *av_malloc_array(size_t nmemb, size_t size);
  */
 void *av_calloc(size_t nmemb, size_t size) av_malloc_attrib av_alloc_size(1, 2);
 
-#if FF_API_AV_MALLOCZ_ARRAY
-/**
- * @deprecated use av_calloc()
- */
-attribute_deprecated
-void *av_mallocz_array(size_t nmemb, size_t size) av_malloc_attrib av_alloc_size(1, 2);
-#endif
-
 /**
  * Allocate, reallocate, or free a block of memory.
  *

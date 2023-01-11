@@ -212,16 +212,6 @@ void *av_malloc_array(size_t nmemb, size_t size)
     return av_malloc(result);
 }
 
-#if FF_API_AV_MALLOCZ_ARRAY
-void *av_mallocz_array(size_t nmemb, size_t size)
-{
-    size_t result;
-    if (size_mult(nmemb, size, &result) < 0)
-        return NULL;
-    return av_mallocz(result);
-}
-#endif
-
 void *av_realloc_array(void *ptr, size_t nmemb, size_t size)
 {
     size_t result;
