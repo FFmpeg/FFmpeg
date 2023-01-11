@@ -33,7 +33,7 @@ duration=24
 duration_time=0.024000
 size=1152
 pos=1238
-flags=K_
+flags=K__
 [/PACKET]
 [PACKET]
 codec_type=video
@@ -46,7 +46,7 @@ duration=40
 duration_time=0.040000
 size=237628
 pos=2398
-flags=K_
+flags=K__
 [/PACKET]
 [PACKET]
 codec_type=audio
@@ -59,7 +59,7 @@ duration=24
 duration_time=0.024000
 size=1152
 pos=240033
-flags=K_
+flags=K__
 [/PACKET]
 [PACKET]
 codec_type=audio
@@ -72,7 +72,7 @@ duration=24
 duration_time=0.024000
 size=1152
 pos=241208
-flags=K_
+flags=K__
 [/PACKET]
 [PACKET]
 codec_type=video
@@ -85,7 +85,7 @@ duration=40
 duration_time=0.040000
 size=238066
 pos=242368
-flags=K_
+flags=K__
 [/PACKET]
 [STREAM]
 codec_name=mpeg2video

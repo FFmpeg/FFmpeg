@@ -17,7 +17,7 @@ cbd2c7ff864a663b0d893deac5a0caec *tests/data/fate/mov-mp4-ttml-stpp.mp4
             "duration_time": "68.500000",
             "size": "7866",
             "pos": "44",
-            "flags": "K_"
+            "flags": "K__"
         }
     ],
     "programs": [

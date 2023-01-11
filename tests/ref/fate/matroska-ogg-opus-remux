@@ -58,7 +58,7 @@ duration=20
 duration_time=0.020000
 size=402
 pos=540
-flags=K_
+flags=K__
 [/PACKET]
 [PACKET]
 codec_type=audio
@@ -71,7 +71,7 @@ duration=20
 duration_time=0.020000
 size=216
 pos=949
-flags=K_
+flags=K__
 [/PACKET]
 [PACKET]
 codec_type=audio
@@ -84,7 +84,7 @@ duration=20
 duration_time=0.020000
 size=215
 pos=1172
-flags=K_
+flags=K__
 [/PACKET]
 [STREAM]
 codec_name=opus
