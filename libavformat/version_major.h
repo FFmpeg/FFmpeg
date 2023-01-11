@@ -41,7 +41,6 @@
  * at once through the bump. This improves the git bisect-ability of the change.
  *
  */
-#define FF_API_LAVF_PRIV_OPT            (LIBAVFORMAT_VERSION_MAJOR < 60)
 #define FF_API_COMPUTE_PKT_FIELDS2      (LIBAVFORMAT_VERSION_MAJOR < 60)
 #define FF_API_AVIOCONTEXT_WRITTEN      (LIBAVFORMAT_VERSION_MAJOR < 60)
 #define FF_HLS_TS_OPTIONS               (LIBAVFORMAT_VERSION_MAJOR < 60)
