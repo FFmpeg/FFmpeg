@@ -30,7 +30,6 @@
 #include "mem.h"
 #include "version.h"
 
-#if !FF_API_DECLARE_ALIGNED
 /**
  * @def DECLARE_ALIGNED(n,t,v)
  * Declare a variable that is aligned in memory.
@@ -96,7 +95,6 @@
     #define DECLARE_ALIGNED(n,t,v)      t v
     #define DECLARE_ASM_ALIGNED(n,t,v)  t v
     #define DECLARE_ASM_CONST(n,t,v)    static const t v
-#endif
 #endif
 
 // Some broken preprocessors need a second expansion
