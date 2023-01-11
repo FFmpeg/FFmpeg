@@ -125,11 +125,6 @@ void ffio_init_context(FFIOContext *ctx,
     ctx->current_type        = AVIO_DATA_MARKER_UNKNOWN;
     ctx->last_time           = AV_NOPTS_VALUE;
     ctx->short_seek_get      = NULL;
-#if FF_API_AVIOCONTEXT_WRITTEN
-FF_DISABLE_DEPRECATION_WARNINGS
-    s->written               = 0;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 }
 
 AVIOContext *avio_alloc_context(
@@ -174,11 +169,6 @@ static void writeout(AVIOContext *s, const uint8_t *data, int len)
 
             if (s->pos + len > ctx->written_output_size) {
                 ctx->written_output_size = s->pos + len;
-#if FF_API_AVIOCONTEXT_WRITTEN
-FF_DISABLE_DEPRECATION_WARNINGS
-                s->written = ctx->written_output_size;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
             }
         }
     }
