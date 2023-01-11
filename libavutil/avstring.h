@@ -157,15 +157,6 @@ static inline size_t av_strnlen(const char *s, size_t len)
  */
 char *av_asprintf(const char *fmt, ...) av_printf_format(1, 2);
 
-#if FF_API_D2STR
-/**
- * Convert a number to an av_malloced string.
- * @deprecated  use av_asprintf() with "%f" or a more specific format
- */
-attribute_deprecated
-char *av_d2str(double d);
-#endif
-
 /**
  * Unescape the given string until a non escaped terminating char,
  * and return the token corresponding to the unescaped string.

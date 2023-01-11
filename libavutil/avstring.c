@@ -139,16 +139,6 @@ end:
     return p;
 }
 
-#if FF_API_D2STR
-char *av_d2str(double d)
-{
-    char *str = av_malloc(16);
-    if (str)
-        snprintf(str, 16, "%f", d);
-    return str;
-}
-#endif
-
 #define WHITESPACES " \n\t\r"
 
 char *av_get_token(const char **buf, const char *term)
