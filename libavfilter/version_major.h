@@ -35,6 +35,4 @@
  * the public API and may change, break or disappear at any time.
  */
 
-#define FF_API_PAD_COUNT                    (LIBAVFILTER_VERSION_MAJOR < 9)
-
 #endif /* AVFILTER_VERSION_MAJOR_H */

@@ -560,27 +560,6 @@ int avfilter_process_command(AVFilterContext *filter, const char *cmd, const cha
     return AVERROR(ENOSYS);
 }
 
-#if FF_API_PAD_COUNT
-int avfilter_pad_count(const AVFilterPad *pads)
-{
-    const AVFilter *filter;
-    void *opaque = NULL;
-
-    if (!pads)
-        return 0;
-
-    while (filter = av_filter_iterate(&opaque)) {
-        if (pads == filter->inputs)
-            return filter->nb_inputs;
-        if (pads == filter->outputs)
-            return filter->nb_outputs;
-    }
-
-    av_assert0(!"AVFilterPad list not from a filter");
-    return AVERROR_BUG;
-}
-#endif
-
 unsigned avfilter_filter_pad_count(const AVFilter *filter, int is_output)
 {
     return is_output ? filter->nb_outputs : filter->nb_inputs;

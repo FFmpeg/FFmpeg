@@ -76,16 +76,6 @@ typedef struct AVFilterPad     AVFilterPad;
 typedef struct AVFilterFormats AVFilterFormats;
 typedef struct AVFilterChannelLayouts AVFilterChannelLayouts;
 
-#if FF_API_PAD_COUNT
-/**
- * Get the number of elements in an AVFilter's inputs or outputs array.
- *
- * @deprecated Use avfilter_filter_pad_count() instead.
- */
-attribute_deprecated
-int avfilter_pad_count(const AVFilterPad *pads);
-#endif
-
 /**
  * Get the name of an AVFilterPad.
  *
