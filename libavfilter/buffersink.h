@@ -94,42 +94,6 @@ int av_buffersink_get_frame_flags(AVFilterContext *ctx, AVFrame *frame, int flag
  */
 #define AV_BUFFERSINK_FLAG_NO_REQUEST 2
 
-#if FF_API_BUFFERSINK_ALLOC
-/**
- * Deprecated and unused struct to use for initializing a buffersink context.
- */
-typedef struct AVBufferSinkParams {
-    const enum AVPixelFormat *pixel_fmts; ///< list of allowed pixel formats, terminated by AV_PIX_FMT_NONE
-} AVBufferSinkParams;
-
-/**
- * Create an AVBufferSinkParams structure.
- *
- * Must be freed with av_free().
- */
-attribute_deprecated
-AVBufferSinkParams *av_buffersink_params_alloc(void);
-
-/**
- * Deprecated and unused struct to use for initializing an abuffersink context.
- */
-typedef struct AVABufferSinkParams {
-    const enum AVSampleFormat *sample_fmts; ///< list of allowed sample formats, terminated by AV_SAMPLE_FMT_NONE
-    const int64_t *channel_layouts;         ///< list of allowed channel layouts, terminated by -1
-    const int *channel_counts;              ///< list of allowed channel counts, terminated by -1
-    int all_channel_counts;                 ///< if not 0, accept any channel count or layout
-    int *sample_rates;                      ///< list of allowed sample rates, terminated by -1
-} AVABufferSinkParams;
-
-/**
- * Create an AVABufferSinkParams structure.
- *
- * Must be freed with av_free().
- */
-attribute_deprecated
-AVABufferSinkParams *av_abuffersink_params_alloc(void);
-#endif
-
 /**
  * Set the frame size for an audio buffer sink.
  *
