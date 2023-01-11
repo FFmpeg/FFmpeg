@@ -68,7 +68,6 @@ static void dump_spherical(AVFilterContext *ctx, AVFrame *frame, const AVFrameSi
     const AVSphericalMapping *spherical = (const AVSphericalMapping *)sd->data;
     double yaw, pitch, roll;
 
-    av_log(ctx, AV_LOG_INFO, "spherical information: ");
     if (sd->size < sizeof(*spherical)) {
         av_log(ctx, AV_LOG_ERROR, "invalid data\n");
         return;
@@ -106,7 +105,6 @@ static void dump_stereo3d(AVFilterContext *ctx, const AVFrameSideData *sd)
 {
     const AVStereo3D *stereo;
 
-    av_log(ctx, AV_LOG_INFO, "stereoscopic information: ");
     if (sd->size < sizeof(*stereo)) {
         av_log(ctx, AV_LOG_ERROR, "invalid data\n");
         return;
@@ -150,7 +148,6 @@ static void dump_roi(AVFilterContext *ctx, const AVFrameSideData *sd)
     }
     nb_rois = sd->size / roi_size;
 
-    av_log(ctx, AV_LOG_INFO, "Regions Of Interest(ROI) information:\n");
     for (int i = 0; i < nb_rois; i++) {
         roi = (const AVRegionOfInterest *)(sd->data + roi_size * i);
         av_log(ctx, AV_LOG_INFO, "index: %d, region: (%d, %d) -> (%d, %d), qp offset: %d/%d.\n",
@@ -166,7 +163,6 @@ static void dump_detection_bbox(AVFilterContext *ctx, const AVFrameSideData *sd)
 
     header = (const AVDetectionBBoxHeader *)sd->data;
     nb_bboxes = header->nb_bboxes;
-    av_log(ctx, AV_LOG_INFO, "detection bounding boxes:\n");
     av_log(ctx, AV_LOG_INFO, "source: %s\n", header->source);
 
     for (int i = 0; i < nb_bboxes; i++) {
@@ -187,7 +183,6 @@ static void dump_mastering_display(AVFilterContext *ctx, const AVFrameSideData *
 {
     const AVMasteringDisplayMetadata *mastering_display;
 
-    av_log(ctx, AV_LOG_INFO, "mastering display: ");
     if (sd->size < sizeof(*mastering_display)) {
         av_log(ctx, AV_LOG_ERROR, "invalid data\n");
         return;
@@ -213,7 +208,6 @@ static void dump_dynamic_hdr_plus(AVFilterContext *ctx, AVFrameSideData *sd)
 {
     AVDynamicHDRPlus *hdr_plus;
 
-    av_log(ctx, AV_LOG_INFO, "HDR10+ metadata: ");
     if (sd->size < sizeof(*hdr_plus)) {
         av_log(ctx, AV_LOG_ERROR, "invalid data\n");
         return;
@@ -313,7 +307,6 @@ static void dump_dynamic_hdr_vivid(AVFilterContext *ctx, AVFrameSideData *sd)
 {
     AVDynamicHDRVivid *hdr_vivid;
 
-    av_log(ctx, AV_LOG_INFO, "HDR Vivid metadata: ");
     if (sd->size < sizeof(*hdr_vivid)) {
         av_log(ctx, AV_LOG_ERROR, "invalid hdr vivid data\n");
         return;
@@ -396,7 +389,7 @@ static void dump_content_light_metadata(AVFilterContext *ctx, AVFrameSideData *s
 {
     const AVContentLightMetadata *metadata = (const AVContentLightMetadata *)sd->data;
 
-    av_log(ctx, AV_LOG_INFO, "Content Light Level information: "
+    av_log(ctx, AV_LOG_INFO,
            "MaxCLL=%d, MaxFALL=%d",
            metadata->MaxCLL, metadata->MaxFALL);
 }
@@ -406,7 +399,7 @@ static void dump_video_enc_params(AVFilterContext *ctx, const AVFrameSideData *s
     const AVVideoEncParams *par = (const AVVideoEncParams *)sd->data;
     int plane, acdc;
 
-    av_log(ctx, AV_LOG_INFO, "video encoding parameters: type %d; ", par->type);
+    av_log(ctx, AV_LOG_INFO, "type %d; ", par->type);
     if (par->qp)
         av_log(ctx, AV_LOG_INFO, "qp=%d; ", par->qp);
     for (plane = 0; plane < FF_ARRAY_ELEMS(par->delta_qp); plane++)
@@ -430,7 +423,6 @@ static void dump_sei_unregistered_metadata(AVFilterContext *ctx, const AVFrameSi
         return;
     }
 
-    av_log(ctx, AV_LOG_INFO, "User Data Unregistered:\n");
     av_log(ctx, AV_LOG_INFO, "UUID=" AV_PRI_UUID "\n", AV_UUID_ARG(user_data));
 
     av_log(ctx, AV_LOG_INFO, "User Data=");
@@ -453,7 +445,7 @@ static void dump_sei_film_grain_params_metadata(AVFilterContext *ctx, const AVFr
         return;
     }
 
-    av_log(ctx, AV_LOG_INFO, "film grain parameters: type %s; ", film_grain_type_names[fgp->type]);
+    av_log(ctx, AV_LOG_INFO, "type %s; ", film_grain_type_names[fgp->type]);
     av_log(ctx, AV_LOG_INFO, "seed=%"PRIu64"; ", fgp->seed);
 
     switch (fgp->type) {
@@ -513,7 +505,6 @@ static void dump_dovi_metadata(AVFilterContext *ctx, const AVFrameSideData *sd)
     const AVDOVIDataMapping *mapping = av_dovi_get_mapping(dovi);
     const AVDOVIColorMetadata *color = av_dovi_get_color(dovi);
 
-    av_log(ctx, AV_LOG_INFO, "Dolby Vision Metadata:\n");
     av_log(ctx, AV_LOG_INFO, "    rpu_type=%"PRIu8"; ", hdr->rpu_type);
     av_log(ctx, AV_LOG_INFO, "rpu_format=%"PRIu16"; ", hdr->rpu_format);
     av_log(ctx, AV_LOG_INFO, "vdr_rpu_profile=%"PRIu8"; ", hdr->vdr_rpu_profile);
@@ -747,16 +738,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
     for (i = 0; i < frame->nb_side_data; i++) {
         AVFrameSideData *sd = frame->side_data[i];
+        const char *name = av_frame_side_data_name(sd->type);
 
         av_log(ctx, AV_LOG_INFO, "  side data - ");
+        if (name)
+            av_log(ctx, AV_LOG_INFO, "%s: ", name);
         switch (sd->type) {
-        case AV_FRAME_DATA_PANSCAN:
-            av_log(ctx, AV_LOG_INFO, "pan/scan");
-            break;
-        case AV_FRAME_DATA_A53_CC:
-            av_log(ctx, AV_LOG_INFO, "A/53 closed captions "
-                   "(%"SIZE_SPECIFIER" bytes)", sd->size);
-            break;
         case AV_FRAME_DATA_SPHERICAL:
             dump_spherical(ctx, frame, sd);
             break;
@@ -768,11 +755,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             break;
         }
         case AV_FRAME_DATA_DISPLAYMATRIX:
-            av_log(ctx, AV_LOG_INFO, "displaymatrix: rotation of %.2f degrees",
+            av_log(ctx, AV_LOG_INFO, "rotation of %.2f degrees",
                    av_display_rotation_get((int32_t *)sd->data));
             break;
         case AV_FRAME_DATA_AFD:
-            av_log(ctx, AV_LOG_INFO, "afd: value of %"PRIu8, sd->data[0]);
+            av_log(ctx, AV_LOG_INFO, "value of %"PRIu8, sd->data[0]);
             break;
         case AV_FRAME_DATA_REGIONS_OF_INTEREST:
             dump_roi(ctx, sd);
@@ -795,7 +782,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         case AV_FRAME_DATA_GOP_TIMECODE: {
             char tcbuf[AV_TIMECODE_STR_SIZE];
             av_timecode_make_mpeg_tc_string(tcbuf, *(int64_t *)(sd->data));
-            av_log(ctx, AV_LOG_INFO, "GOP timecode - %s", tcbuf);
+            av_log(ctx, AV_LOG_INFO, "%s", tcbuf);
             break;
         }
         case AV_FRAME_DATA_VIDEO_ENC_PARAMS:
@@ -811,8 +798,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             dump_dovi_metadata(ctx, sd);
             break;
         default:
-            av_log(ctx, AV_LOG_WARNING, "unknown side data type %d "
-                   "(%"SIZE_SPECIFIER" bytes)\n", sd->type, sd->size);
+            if (name)
+                av_log(ctx, AV_LOG_INFO,
+                       "(%"SIZE_SPECIFIER" bytes)", sd->size);
+            else
+                av_log(ctx, AV_LOG_WARNING, "unknown side data type %d "
+                       "(%"SIZE_SPECIFIER" bytes)", sd->type, sd->size);
             break;
         }
 
