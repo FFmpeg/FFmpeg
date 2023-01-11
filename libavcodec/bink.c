@@ -825,7 +825,7 @@ static int binkb_decode_plane(BinkContext *c, AVFrame *frame, GetBitContext *gb,
 
     binkb_init_bundles(c);
     ref_start = frame->data[plane_idx];
-    ref_end   = frame->data[plane_idx] + (bh * frame->linesize[plane_idx] + bw) * 8;
+    ref_end   = frame->data[plane_idx] + (bh * frame->linesize[plane_idx] + bw - 1) * 8;
 
     for (i = 0; i < 64; i++)
         coordmap[i] = (i & 7) + (i >> 3) * stride;
