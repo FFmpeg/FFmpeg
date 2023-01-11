@@ -159,7 +159,7 @@ static int read_uncompressed_sgi(uint8_t *const out[4], const ptrdiff_t stride[4
     unsigned rowsize = width * bytes_per_channel;
 
     /* Test buffer size. */
-    if (rowsize * (int64_t)height > bytestream2_get_bytes_left(g))
+    if (rowsize * (int64_t)height * nb_components > bytestream2_get_bytes_left(g))
         return AVERROR_INVALIDDATA;
 
     for (unsigned z = 0; z < nb_components; z++) {
