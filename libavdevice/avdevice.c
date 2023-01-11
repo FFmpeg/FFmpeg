@@ -21,12 +21,6 @@
 #include "internal.h"
 #include "libavformat/mux.h"
 
-#if FF_API_DEVICE_CAPABILITIES
-const AVOption av_device_capabilities[] = {
-    { NULL }
-};
-#endif
-
 int avdevice_app_to_dev_control_message(struct AVFormatContext *s, enum AVAppToDevMessageType type,
                                         void *data, size_t data_size)
 {
@@ -42,19 +36,6 @@ int avdevice_dev_to_app_control_message(struct AVFormatContext *s, enum AVDevToA
         return AVERROR(ENOSYS);
     return s->control_message_cb(s, type, data, data_size);
 }
-
-#if FF_API_DEVICE_CAPABILITIES
-int avdevice_capabilities_create(AVDeviceCapabilitiesQuery **caps, AVFormatContext *s,
-                                 AVDictionary **device_options)
-{
-    return AVERROR(ENOSYS);
-}
-
-void avdevice_capabilities_free(AVDeviceCapabilitiesQuery **caps, AVFormatContext *s)
-{
-    return;
-}
-#endif
 
 int avdevice_list_devices(AVFormatContext *s, AVDeviceInfoList **device_list)
 {

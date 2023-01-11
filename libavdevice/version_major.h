@@ -32,6 +32,5 @@
  * dropped at a future version bump. The defines themselves are not part of
  * the public API and may change, break or disappear at any time.
  */
-#define FF_API_DEVICE_CAPABILITIES (LIBAVDEVICE_VERSION_MAJOR < 60)
 
 #endif /* AVDEVICE_VERSION_MAJOR_H */
