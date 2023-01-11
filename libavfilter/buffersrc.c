@@ -50,9 +50,6 @@ typedef struct BufferSourceContext {
     int               w, h;
     enum AVPixelFormat  pix_fmt;
     AVRational        pixel_aspect;
-#if FF_API_SWS_PARAM_OPTION
-    char              *sws_param;
-#endif
 
     AVBufferRef *hw_frames_ctx;
 
@@ -287,11 +284,6 @@ static av_cold int init_video(AVFilterContext *ctx)
            c->time_base.num, c->time_base.den, c->frame_rate.num, c->frame_rate.den,
            c->pixel_aspect.num, c->pixel_aspect.den);
 
-#if FF_API_SWS_PARAM_OPTION
-    if (c->sws_param)
-        av_log(ctx, AV_LOG_WARNING, "sws_param option is deprecated and ignored\n");
-#endif
-
     return 0;
 }
 
@@ -313,9 +305,6 @@ static const AVOption buffer_options[] = {
     { "pixel_aspect",  "sample aspect ratio",    OFFSET(pixel_aspect),     AV_OPT_TYPE_RATIONAL, { .dbl = 0 }, 0, DBL_MAX, V },
     { "time_base",     NULL,                     OFFSET(time_base),        AV_OPT_TYPE_RATIONAL, { .dbl = 0 }, 0, DBL_MAX, V },
     { "frame_rate",    NULL,                     OFFSET(frame_rate),       AV_OPT_TYPE_RATIONAL, { .dbl = 0 }, 0, DBL_MAX, V },
-#if FF_API_SWS_PARAM_OPTION
-    { "sws_param",     NULL,                     OFFSET(sws_param),        AV_OPT_TYPE_STRING,                    .flags = V },
-#endif
     { NULL },
 };
 
