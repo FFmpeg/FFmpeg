@@ -55,7 +55,7 @@ static int dtshd_read_header(AVFormatContext *s)
     DTSHDDemuxContext *dtshd = s->priv_data;
     AVIOContext *pb = s->pb;
     uint64_t chunk_type, chunk_size;
-    int64_t duration, data_start;
+    int64_t duration, orig_nb_samples, data_start;
     AVStream *st;
     int ret;
     char *value;
@@ -103,9 +103,12 @@ static int dtshd_read_header(AVFormatContext *s)
             duration  = avio_rb32(pb); // num_frames
             duration *= avio_rb16(pb); // samples_per_frames
             st->duration = duration;
-            avio_skip(pb, 5);
+            orig_nb_samples  = avio_rb32(pb);
+            orig_nb_samples <<= 8;
+            orig_nb_samples |= avio_r8(pb);
             st->codecpar->ch_layout.nb_channels = ff_dca_count_chs_for_mask(avio_rb16(pb));
             st->codecpar->initial_padding = avio_rb16(pb);
+            st->codecpar->trailing_padding = FFMAX(st->duration - orig_nb_samples - st->codecpar->initial_padding, 0);
             avio_skip(pb, chunk_size - 21);
             break;
         case FILEINFO:
