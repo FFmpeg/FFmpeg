@@ -354,6 +354,9 @@ static int xpm_decode_frame(AVCodecContext *avctx, AVFrame *p,
         return AVERROR_INVALIDDATA;
     }
 
+    if (size > SIZE_MAX / 4)
+        return AVERROR(ENOMEM);
+
     size *= 4;
 
     ptr += mod_strcspn(ptr, ",") + 1;
