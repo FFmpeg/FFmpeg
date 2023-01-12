@@ -131,6 +131,18 @@ loop_fail:
         h->is_streamed |= c->child[i].url_context->is_streamed;
     }
 
+    h->max_packet_size = 0;
+    for (i = 0; i < c->child_count; i++) {
+        int max = c->child[i].url_context->max_packet_size;
+        if (!max)
+            continue;
+
+        if (!h->max_packet_size)
+            h->max_packet_size = max;
+        else if (h->max_packet_size > max)
+            h->max_packet_size = max;
+    }
+
     return 0;
 fail:
     tee_close(h);
