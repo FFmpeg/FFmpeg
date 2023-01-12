@@ -39,6 +39,7 @@ typedef struct CropDetectContext {
     const AVClass *class;
     int x1, y1, x2, y2;
     float limit;
+    float limit_upscaled;
     int round;
     int skip;
     int reset_count;
@@ -48,6 +49,7 @@ typedef struct CropDetectContext {
     int mode;
     int window_size;
     int mv_threshold;
+    int bitdepth;
     float   low, high;
     uint8_t low_u8, high_u8;
     uint8_t  *filterbuf;
@@ -207,8 +209,12 @@ static int config_input(AVFilterLink *inlink)
 
     av_image_fill_max_pixsteps(s->max_pixsteps, NULL, desc);
 
+    s->bitdepth = desc->comp[0].depth;
+
     if (s->limit < 1.0)
-        s->limit *= (1 << desc->comp[0].depth) - 1;
+        s->limit_upscaled = s->limit * ((1 << s->bitdepth) - 1);
+    else
+        s->limit_upscaled = s->limit;
 
     s->x1 = inlink->w - 1;
     s->y1 = inlink->h - 1;
@@ -243,7 +249,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     int w, h, x, y, shrink_by, i;
     AVDictionary **metadata;
     int outliers, last_y;
-    int limit = lrint(s->limit);
+    int limit_upscaled = lrint(s->limit_upscaled);
+    char limit_str[22];
 
     const int inw = inlink->w;
     const int inh = inlink->h;
@@ -278,7 +285,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 #define FIND(DST, FROM, NOEND, INC, STEP0, STEP1, LEN) \
         outliers = 0;\
         for (last_y = y = FROM; NOEND; y = y INC) {\
-            if (checkline(ctx, frame->data[0] + STEP0 * y, STEP1, LEN, bpp) > limit) {\
+            if (checkline(ctx, frame->data[0] + STEP0 * y, STEP1, LEN, bpp) > limit_upscaled) {\
                 if (++outliers > s->max_outliers) { \
                     DST = last_y;\
                     break;\
@@ -423,21 +430,46 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         SET_META("lavfi.cropdetect.x",  x);
         SET_META("lavfi.cropdetect.y",  y);
 
+        snprintf(limit_str, sizeof(limit_str), "%f", s->limit);
+        av_dict_set(metadata, "lavfi.cropdetect.limit", limit_str, 0);
+
         av_log(ctx, AV_LOG_INFO,
-               "x1:%d x2:%d y1:%d y2:%d w:%d h:%d x:%d y:%d pts:%"PRId64" t:%f crop=%d:%d:%d:%d\n",
+               "x1:%d x2:%d y1:%d y2:%d w:%d h:%d x:%d y:%d pts:%"PRId64" t:%f limit:%f crop=%d:%d:%d:%d\n",
                s->x1, s->x2, s->y1, s->y2, w, h, x, y, frame->pts,
                frame->pts == AV_NOPTS_VALUE ? -1 : frame->pts * av_q2d(inlink->time_base),
-               w, h, x, y);
+               s->limit, w, h, x, y);
     }
 
     return ff_filter_frame(inlink->dst->outputs[0], frame);
 }
 
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    CropDetectContext *s = ctx->priv;
+    int ret;
+    int old_limit = s->limit;
+
+    if ((ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags)) < 0)
+        return ret;
+
+    if (old_limit != s->limit) {
+        if (s->limit < 1.0)
+            s->limit_upscaled = s->limit * ((1 << s->bitdepth) - 1);
+        else
+            s->limit_upscaled = s->limit;
+        s->frame_nb = s->reset_count;
+    }
+
+    return 0;
+}
+
 #define OFFSET(x) offsetof(CropDetectContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+#define TFLAGS AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption cropdetect_options[] = {
-    { "limit", "Threshold below which the pixel is considered black", OFFSET(limit),       AV_OPT_TYPE_FLOAT, { .dbl = 24.0/255 }, 0, 65535, FLAGS },
+    { "limit", "Threshold below which the pixel is considered black", OFFSET(limit),       AV_OPT_TYPE_FLOAT, { .dbl = 24.0/255 }, 0, 65535, TFLAGS },
     { "round", "Value by which the width/height should be divisible", OFFSET(round),       AV_OPT_TYPE_INT, { .i64 = 16 }, 0, INT_MAX, FLAGS },
     { "reset", "Recalculate the crop area after this many frames",    OFFSET(reset_count), AV_OPT_TYPE_INT, { .i64 = 0 },  0, INT_MAX, FLAGS },
     { "skip",  "Number of initial frames to skip",                    OFFSET(skip),        AV_OPT_TYPE_INT, { .i64 = 2 },  0, INT_MAX, FLAGS },
@@ -481,4 +513,5 @@ const AVFilter ff_vf_cropdetect = {
     FILTER_OUTPUTS(avfilter_vf_cropdetect_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_METADATA_ONLY,
+    .process_command = process_command,
 };

@@ -10587,6 +10587,16 @@ ffmpeg -flags2 +export_mvs -i file.mp4 -vf cropdetect=mode=mvedges,metadata=mode
 @end example
 @end itemize
 
+@subsection Commands
+
+This filter supports the following commands:
+
+@table @option
+@item limit
+The command accepts the same syntax of the corresponding option.
+If the specified expression is not valid, it is kept at its current value.
+@end table
+
 @anchor{cue}
 @section cue
 
