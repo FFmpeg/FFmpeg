@@ -249,6 +249,7 @@ typedef struct MOVMuxContext {
     int64_t avif_extent_pos[2];  // index 0 is YUV and 1 is Alpha.
     int avif_extent_length[2];   // index 0 is YUV and 1 is Alpha.
     int is_animated_avif;
+    int avif_loop_count;
 } MOVMuxContext;
 
 #define FF_MOV_FLAG_RTP_HINT              (1 <<  0)

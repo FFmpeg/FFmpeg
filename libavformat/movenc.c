@@ -3287,13 +3287,21 @@ static int mov_write_tkhd_tag(AVIOContext *pb, MOVMuxContext *mov,
     int64_t duration = av_rescale_rnd(calc_pts_duration(mov, track),
                                       mov->movie_timescale, track->timescale,
                                       AV_ROUND_UP);
-    int version = duration < INT32_MAX ? 0 : 1;
+    int version;
     int flags   = MOV_TKHD_FLAG_IN_MOVIE;
     int group   = 0;
 
     uint32_t *display_matrix = NULL;
     size_t display_matrix_size;
     int       i;
+
+    if (mov->mode == MODE_AVIF)
+        if (!mov->avif_loop_count)
+            duration = INT64_MAX;
+        else
+            duration *= mov->avif_loop_count;
+
+     version = duration < INT32_MAX ? 0 : 1;
 
     if (st) {
         if (mov->per_stream_grouping)
@@ -3414,7 +3422,10 @@ static int mov_write_tapt_tag(AVIOContext *pb, MOVTrack *track)
     return update_size(pb, pos);
 }
 
-// This box seems important for the psp playback ... without it the movie seems to hang
+// This box is written in the following cases:
+//   * Seems important for the psp playback. Without it the movie seems to hang.
+//   * Used for specifying the looping behavior of animated AVIF (as specified
+//   in Section 9.6 of the HEIF specification ISO/IEC 23008-12).
 static int mov_write_edts_tag(AVIOContext *pb, MOVMuxContext *mov,
                               MOVTrack *track)
 {
@@ -3425,6 +3436,7 @@ static int mov_write_edts_tag(AVIOContext *pb, MOVMuxContext *mov,
     int entry_size, entry_count, size;
     int64_t delay, start_ct = track->start_cts;
     int64_t start_dts = track->start_dts;
+    int flags = 0;
 
     if (track->entry) {
         if (start_dts != track->cluster[0].dts || start_ct != track->cluster[0].cts) {
@@ -3440,6 +3452,17 @@ static int mov_write_edts_tag(AVIOContext *pb, MOVMuxContext *mov,
 
     delay = av_rescale_rnd(start_dts + start_ct, mov->movie_timescale,
                            track->timescale, AV_ROUND_DOWN);
+
+    if (mov->mode == MODE_AVIF) {
+        delay = 0;
+        // Section 9.6.3 of ISO/IEC 23008-12: flags specifies repetition of the
+        // edit list as follows: (flags & 1) equal to 0 specifies that the edit
+        // list is not repeated, while (flags & 1) equal to 1 specifies that the
+        // edit list is repeated.
+        flags = mov->avif_loop_count != 1;
+        start_ct = 0;
+    }
+
     version |= delay < INT32_MAX ? 0 : 1;
 
     entry_size = (version == 1) ? 20 : 12;
@@ -3452,7 +3475,7 @@ static int mov_write_edts_tag(AVIOContext *pb, MOVMuxContext *mov,
     avio_wb32(pb, size - 8);
     ffio_wfourcc(pb, "elst");
     avio_w8(pb, version);
-    avio_wb24(pb, 0); /* flags */
+    avio_wb24(pb, flags); /* flags */
 
     avio_wb32(pb, entry_count);
     if (delay > 0) { /* add an empty edit to delay presentation */
@@ -3469,7 +3492,7 @@ static int mov_write_edts_tag(AVIOContext *pb, MOVMuxContext *mov,
             avio_wb32(pb, -1);
         }
         avio_wb32(pb, 0x00010000);
-    } else {
+    } else if (mov->mode != MODE_AVIF) {
         /* Avoid accidentally ending up with start_ct = -1 which has got a
          * special meaning. Normally start_ct should end up positive or zero
          * here, but use FFMIN in case dts is a small positive integer
@@ -3669,6 +3692,9 @@ static int mov_write_trak_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContext
             av_log(mov->fc, AV_LOG_WARNING,
                    "Not writing any edit list even though one would have been required\n");
     }
+
+    if (mov->is_animated_avif)
+        mov_write_edts_tag(pb, mov, track);
 
     if (track->tref_tag)
         mov_write_tref_tag(pb, track);
@@ -7761,6 +7787,7 @@ static const AVCodecTag codec_f4v_tags[] = {
 
 static const AVOption avif_options[] = {
     { "movie_timescale", "set movie timescale", offsetof(MOVMuxContext, movie_timescale), AV_OPT_TYPE_INT, {.i64 = MOV_TIMESCALE}, 1, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
+    { "loop", "Number of times to loop animated AVIF: 0 - infinite loop", offsetof(MOVMuxContext, avif_loop_count), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, 0 },
     { NULL },
 };
 static const AVCodecTag codec_avif_tags[] = {
