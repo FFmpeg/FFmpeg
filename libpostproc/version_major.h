@@ -26,6 +26,6 @@
  * Libpostproc version macros
  */
 
-#define LIBPOSTPROC_VERSION_MAJOR  56
+#define LIBPOSTPROC_VERSION_MAJOR  57
 
 #endif /* POSTPROC_VERSION_MAJOR_H */

@@ -28,8 +28,8 @@
 
 #include "version_major.h"
 
-#define LIBSWSCALE_VERSION_MINOR   8
-#define LIBSWSCALE_VERSION_MICRO 112
+#define LIBSWSCALE_VERSION_MINOR   0
+#define LIBSWSCALE_VERSION_MICRO 100
 
 #define LIBSWSCALE_VERSION_INT  AV_VERSION_INT(LIBSWSCALE_VERSION_MAJOR, \
                                                LIBSWSCALE_VERSION_MINOR, \
