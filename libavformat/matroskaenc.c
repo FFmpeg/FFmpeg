@@ -58,6 +58,7 @@
 #include "libavutil/stereo3d.h"
 
 #include "libavcodec/av1.h"
+#include "libavcodec/avcodec.h"
 #include "libavcodec/codec_desc.h"
 #include "libavcodec/xiph.h"
 #include "libavcodec/mpeg4audio.h"
@@ -1142,6 +1143,27 @@ static int mkv_assemble_native_codecprivate(AVFormatContext *s, AVIOContext *dyn
         else
             *size_to_reserve = MAX_PCE_SIZE;
         break;
+    case AV_CODEC_ID_ARIB_CAPTION: {
+        unsigned stream_identifier, data_component_id;
+        switch (par->profile) {
+        case FF_PROFILE_ARIB_PROFILE_A:
+            stream_identifier = 0x30;
+            data_component_id = 0x0008;
+            break;
+        case FF_PROFILE_ARIB_PROFILE_C:
+            stream_identifier = 0x87;
+            data_component_id = 0x0012;
+            break;
+        default:
+            av_log(s, AV_LOG_ERROR,
+                   "Unset/unknown ARIB caption profile %d utilized!\n",
+                   par->profile);
+            return AVERROR_INVALIDDATA;
+        }
+        avio_w8(dyn_cp, stream_identifier);
+        avio_wb16(dyn_cp, data_component_id);
+        break;
+    }
 #endif
     default:
         if (CONFIG_MATROSKA_MUXER && par->codec_id == AV_CODEC_ID_PRORES &&
@@ -3274,6 +3296,7 @@ static const AVCodecTag additional_subtitle_tags[] = {
     { AV_CODEC_ID_DVB_SUBTITLE,      0xFFFFFFFF },
     { AV_CODEC_ID_DVD_SUBTITLE,      0xFFFFFFFF },
     { AV_CODEC_ID_HDMV_PGS_SUBTITLE, 0xFFFFFFFF },
+    { AV_CODEC_ID_ARIB_CAPTION,      0xFFFFFFFF },
     { AV_CODEC_ID_NONE,              0xFFFFFFFF }
 };
 
