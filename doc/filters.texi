@@ -7624,6 +7624,71 @@ Specifies the channel layout, and can be a string representing a channel layout.
 The default value of @var{channel_layout} is "stereo".
 @end table
 
+@section afireqsrc
+
+Generate a FIR equalizer coefficients.
+
+The resulting stream can be used with @ref{afir} filter for filtering the audio signal.
+
+The filter accepts the following options:
+
+@table @option
+@item preset, p
+Set equalizer preset.
+Default preset is @code{flat}.
+
+Available presets are:
+@table @samp
+@item custom
+@item flat
+@item acoustic
+@item bass
+@item beats
+@item classic
+@item clear
+@item deep bass
+@item dubstep
+@item electronic
+@item hard-style
+@item hip-hop
+@item jazz
+@item metal
+@item movie
+@item pop
+@item r&b
+@item rock
+@item vocal booster
+@end table
+
+@item gains, g
+Set custom gains for each band. Only used if the preset option is set to @code{custom}.
+Gains are separated by white spaces and each gain is set in dBFS.
+Default is @code{0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0}.
+
+@item bands, b
+Set the custom bands from where custon equalizer gains are set.
+This must be in strictly increasing order. Only used if the preset option is set to @code{custom}.
+Bands are separated by white spaces and each band represent frequency in Hz.
+Default is @code{25 40 63 100 160 250 400 630 1000 1600 2500 4000 6300 10000 16000 24000}.
+
+@item taps, t
+Set number of filter coefficents in output audio stream.
+Default value is @code{4096}.
+
+@item sample_rate, r
+Set sample rate of output audio stream, default is @code{44100}.
+
+@item nb_samples, n
+Set number of samples per each frame in output audio stream. Default is @code{1024}.
+
+@item interp, i
+Set interpolation method for FIR equalizer coefficients. Can be @code{linear} or @code{cubic}.
+
+@item phase, h
+Set phase type of FIR filter. Can be @code{linear} or @code{min}: minimum-phase.
+Default is minimum-phase filter.
+@end table
+
 @section afirsrc
 
 Generate a FIR coefficients using frequency sampling method.

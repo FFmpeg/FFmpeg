@@ -160,6 +160,7 @@ extern const AVFilter ff_af_volumedetect;
 
 extern const AVFilter ff_asrc_aevalsrc;
 extern const AVFilter ff_asrc_afdelaysrc;
+extern const AVFilter ff_asrc_afireqsrc;
 extern const AVFilter ff_asrc_afirsrc;
 extern const AVFilter ff_asrc_anoisesrc;
 extern const AVFilter ff_asrc_anullsrc;
