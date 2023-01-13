@@ -208,9 +208,6 @@ static int overlay_vaapi_blend(FFFrameSync *fs)
         .height = output->height,
     };
 
-    params[0].filters     = &vpp_ctx->filter_buffers[0];
-    params[0].num_filters = vpp_ctx->nb_filter_buffers;
-
     params[0].output_region = &output_region;
     params[0].output_background_color = VAAPI_VPP_BACKGROUND_BLACK;
 
