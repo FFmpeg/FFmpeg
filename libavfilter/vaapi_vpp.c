@@ -588,16 +588,52 @@ int ff_vaapi_vpp_make_param_buffers(AVFilterContext *avctx,
     return 0;
 }
 
+static int vaapi_vpp_render_single_pipeline_buffer(AVFilterContext *avctx,
+                                                   VAProcPipelineParameterBuffer *params,
+                                                   VABufferID *params_id)
+{
+    VAAPIVPPContext *ctx = avctx->priv;
+    VAStatus vas;
 
-int ff_vaapi_vpp_render_picture(AVFilterContext *avctx,
-                                VAProcPipelineParameterBuffer *params,
-                                AVFrame *output_frame)
+    vas = vaCreateBuffer(ctx->hwctx->display, ctx->va_context,
+                         VAProcPipelineParameterBufferType,
+                         sizeof(*params), 1, params, params_id);
+    if (vas != VA_STATUS_SUCCESS) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to create parameter buffer: "
+               "%d (%s).\n", vas, vaErrorStr(vas));
+        *params_id = VA_INVALID_ID;
+
+        return AVERROR(EIO);
+    }
+    av_log(avctx, AV_LOG_DEBUG, "Pipeline parameter buffer is %#x.\n", *params_id);
+
+    vas = vaRenderPicture(ctx->hwctx->display, ctx->va_context, params_id, 1);
+    if (vas != VA_STATUS_SUCCESS) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to render parameter buffer: "
+               "%d (%s).\n", vas, vaErrorStr(vas));
+        return AVERROR(EIO);
+    }
+
+    return 0;
+}
+
+int ff_vaapi_vpp_render_pictures(AVFilterContext *avctx,
+                                 VAProcPipelineParameterBuffer *params_list,
+                                 int cout,
+                                 AVFrame *output_frame)
 {
     VAAPIVPPContext *ctx = avctx->priv;
     VASurfaceID output_surface;
-    VABufferID params_id;
+    VABufferID *params_ids;
     VAStatus vas;
     int err;
+
+    params_ids = (VABufferID *)av_malloc_array(cout, sizeof(VABufferID));
+    if (!params_ids)
+        return AVERROR(ENOMEM);
+
+    for (int i = 0; i < cout; i++)
+        params_ids[i] = VA_INVALID_ID;
 
     output_surface = (VASurfaceID)(uintptr_t)output_frame->data[3];
 
@@ -610,25 +646,10 @@ int ff_vaapi_vpp_render_picture(AVFilterContext *avctx,
         goto fail;
     }
 
-    vas = vaCreateBuffer(ctx->hwctx->display, ctx->va_context,
-                         VAProcPipelineParameterBufferType,
-                         sizeof(*params), 1, params, &params_id);
-    if (vas != VA_STATUS_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to create parameter buffer: "
-               "%d (%s).\n", vas, vaErrorStr(vas));
-        err = AVERROR(EIO);
-        goto fail_after_begin;
-    }
-    av_log(avctx, AV_LOG_DEBUG, "Pipeline parameter buffer is %#x.\n",
-           params_id);
-
-    vas = vaRenderPicture(ctx->hwctx->display, ctx->va_context,
-                          &params_id, 1);
-    if (vas != VA_STATUS_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to render parameter buffer: "
-               "%d (%s).\n", vas, vaErrorStr(vas));
-        err = AVERROR(EIO);
-        goto fail_after_begin;
+    for (int i = 0; i < cout; i++) {
+        err = vaapi_vpp_render_single_pipeline_buffer(avctx, &params_list[i], &params_ids[i]);
+        if (err)
+            goto fail_after_begin;
     }
 
     vas = vaEndPicture(ctx->hwctx->display, ctx->va_context);
@@ -641,14 +662,17 @@ int ff_vaapi_vpp_render_picture(AVFilterContext *avctx,
 
     if (CONFIG_VAAPI_1 || ctx->hwctx->driver_quirks &
         AV_VAAPI_DRIVER_QUIRK_RENDER_PARAM_BUFFERS) {
-        vas = vaDestroyBuffer(ctx->hwctx->display, params_id);
-        if (vas != VA_STATUS_SUCCESS) {
-            av_log(avctx, AV_LOG_ERROR, "Failed to free parameter buffer: "
-                   "%d (%s).\n", vas, vaErrorStr(vas));
-            // And ignore.
+        for (int i = 0; i < cout && params_ids[i] != VA_INVALID_ID; i++) {
+            vas = vaDestroyBuffer(ctx->hwctx->display, params_ids[i]);
+            if (vas != VA_STATUS_SUCCESS) {
+                av_log(avctx, AV_LOG_ERROR, "Failed to free parameter buffer: "
+                       "%d (%s).\n", vas, vaErrorStr(vas));
+                // And ignore.
+            }
         }
     }
 
+    av_freep(&params_ids);
     return 0;
 
     // We want to make sure that if vaBeginPicture has been called, we also
@@ -656,11 +680,19 @@ int ff_vaapi_vpp_render_picture(AVFilterContext *avctx,
     // do something else nasty, but once we're in this failure case there
     // isn't much else we can do.
 fail_after_begin:
-    vaRenderPicture(ctx->hwctx->display, ctx->va_context, &params_id, 1);
+    vaRenderPicture(ctx->hwctx->display, ctx->va_context, &params_ids[0], 1);
 fail_after_render:
     vaEndPicture(ctx->hwctx->display, ctx->va_context);
 fail:
+    av_freep(&params_ids);
     return err;
+}
+
+int ff_vaapi_vpp_render_picture(AVFilterContext *avctx,
+                                VAProcPipelineParameterBuffer *params,
+                                AVFrame *output_frame)
+{
+    return ff_vaapi_vpp_render_pictures(avctx, params, 1, output_frame);
 }
 
 void ff_vaapi_vpp_ctx_init(AVFilterContext *avctx)

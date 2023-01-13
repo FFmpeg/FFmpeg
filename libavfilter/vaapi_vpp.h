@@ -83,4 +83,9 @@ int ff_vaapi_vpp_render_picture(AVFilterContext *avctx,
                                 VAProcPipelineParameterBuffer *params,
                                 AVFrame *output_frame);
 
+int ff_vaapi_vpp_render_pictures(AVFilterContext *avctx,
+                                 VAProcPipelineParameterBuffer *params_list,
+                                 int count,
+                                 AVFrame *output_frame);
+
 #endif /* AVFILTER_VAAPI_VPP_H */
