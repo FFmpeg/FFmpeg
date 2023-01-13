@@ -42,6 +42,7 @@
 #include "libavutil/mastering_display_metadata.h"
 #include "libavutil/video_enc_params.h"
 #include "libavutil/detection_bbox.h"
+#include "libavutil/ambient_viewing_environment.h"
 #include "libavutil/uuid.h"
 
 #include "avfilter.h"
@@ -601,6 +602,17 @@ static void dump_dovi_metadata(AVFilterContext *ctx, const AVFrameSideData *sd)
     av_log(ctx, AV_LOG_INFO, "source_diagonal=%"PRIu16"; ", color->source_diagonal);
 }
 
+static void dump_ambient_viewing_environment(AVFilterContext *ctx, const AVFrameSideData *sd)
+{
+    const AVAmbientViewingEnvironment *ambient_viewing_environment =
+                                               (const AVAmbientViewingEnvironment *)sd->data;
+
+    av_log(ctx, AV_LOG_INFO, "ambient_illuminance=%f, ambient_light_x=%f, ambient_light_y=%f",
+           av_q2d(ambient_viewing_environment->ambient_illuminance),
+           av_q2d(ambient_viewing_environment->ambient_light_x),
+           av_q2d(ambient_viewing_environment->ambient_light_y));
+}
+
 static void dump_color_property(AVFilterContext *ctx, AVFrame *frame)
 {
     const char *color_range_str     = av_color_range_name(frame->color_range);
@@ -796,6 +808,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             break;
         case AV_FRAME_DATA_DOVI_METADATA:
             dump_dovi_metadata(ctx, sd);
+            break;
+        case AV_FRAME_DATA_AMBIENT_VIEWING_ENVIRONMENT:
+            dump_ambient_viewing_environment(ctx, sd);
             break;
         default:
             if (name)
