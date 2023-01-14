@@ -1149,8 +1149,9 @@ static int64_t mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID
 {
     MXFStreamContext *sc = st->priv_data;
     AVIOContext *pb = s->pb;
-    int stored_width = 0;
-    int stored_height = (st->codecpar->height+15)/16*16;
+    int stored_width = st->codecpar->width;
+    int stored_height = st->codecpar->height;
+    int display_width;
     int display_height;
     int f1, f2;
     const MXFCodecUL *color_primaries_ul;
@@ -1169,12 +1170,24 @@ static int64_t mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID
         else if (st->codecpar->height == 720)
             stored_width = 1280;
     }
-    if (!stored_width)
-        stored_width = (st->codecpar->width+15)/16*16;
+    display_width = stored_width;
 
+    switch (st->codecpar->codec_id) {
+    case AV_CODEC_ID_MPEG2VIDEO:
+    case AV_CODEC_ID_H264:
+        //Based on 16x16 macroblocks
+        stored_width = (stored_width+15)/16*16;
+        stored_height = (stored_height+15)/16*16;
+        break;
+    default:
+        break;
+    }
+
+    //Stored width
     mxf_write_local_tag(s, 4, 0x3203);
     avio_wb32(pb, stored_width);
 
+    //Stored height
     mxf_write_local_tag(s, 4, 0x3202);
     avio_wb32(pb, stored_height>>sc->interlaced);
 
@@ -1194,7 +1207,7 @@ static int64_t mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID
 
     //Sampled width
     mxf_write_local_tag(s, 4, 0x3205);
-    avio_wb32(pb, stored_width);
+    avio_wb32(pb, display_width);
 
     //Samples height
     mxf_write_local_tag(s, 4, 0x3204);
@@ -1208,8 +1221,9 @@ static int64_t mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID
     mxf_write_local_tag(s, 4, 0x3207);
     avio_wb32(pb, 0);
 
+    //Display width
     mxf_write_local_tag(s, 4, 0x3209);
-    avio_wb32(pb, stored_width);
+    avio_wb32(pb, display_width);
 
     if (st->codecpar->height == 608) // PAL + VBI
         display_height = 576;
@@ -1218,6 +1232,7 @@ static int64_t mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID
     else
         display_height = st->codecpar->height;
 
+    //Display height
     mxf_write_local_tag(s, 4, 0x3208);
     avio_wb32(pb, display_height>>sc->interlaced);
 
