@@ -1710,6 +1710,7 @@ COMPONENT_LIST="
 "
 
 EXAMPLE_LIST="
+    avio_http_serve_files_example
     avio_list_dir_example
     avio_read_callback_example
     decode_audio_example
@@ -1721,7 +1722,6 @@ EXAMPLE_LIST="
     encode_video_example
     extract_mvs_example
     filter_audio_example
-    http_multiclient_example
     hw_decode_example
     metadata_example
     muxing_example
@@ -3774,6 +3774,7 @@ vstack_vaapi_filter_deps="vaapi_1"
 xstack_vaapi_filter_deps="vaapi_1"
 
 # examples
+avio_http_serve_files_deps="avformat avutil fork"
 avio_list_dir_deps="avformat avutil"
 avio_read_callback_deps="avformat avcodec avutil"
 decode_audio_example_deps="avcodec avutil"
@@ -3785,7 +3786,6 @@ encode_audio_example_deps="avcodec avutil"
 encode_video_example_deps="avcodec avutil"
 extract_mvs_example_deps="avcodec avformat avutil"
 filter_audio_example_deps="avfilter avutil"
-http_multiclient_example_deps="avformat avutil fork"
 hw_decode_example_deps="avcodec avformat avutil"
 metadata_example_deps="avformat avutil"
 muxing_example_deps="avcodec avformat avutil swscale"

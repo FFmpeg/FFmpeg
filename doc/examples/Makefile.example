@@ -11,7 +11,9 @@ CFLAGS += -Wall -g
 CFLAGS := $(shell pkg-config --cflags $(FFMPEG_LIBS)) $(CFLAGS)
 LDLIBS := $(shell pkg-config --libs $(FFMPEG_LIBS)) $(LDLIBS)
 
-EXAMPLES=       avio_list_dir                      \
+EXAMPLES=\
+                avio_http_serve_files              \
+                avio_list_dir                      \
                 avio_read_callback                 \
                 decode_audio                       \
                 decode_filter_audio                \
@@ -21,7 +23,6 @@ EXAMPLES=       avio_list_dir                      \
                 encode_audio                       \
                 encode_video                       \
                 extract_mvs                        \
-                http_multiclient                   \
                 hw_decode                          \
                 metadata                           \
                 muxing                             \

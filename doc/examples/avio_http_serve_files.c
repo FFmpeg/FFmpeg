@@ -24,7 +24,7 @@
  * @file
  * libavformat multi-client network API usage example.
  *
- * @example http_multiclient.c
+ * @example avio_http_serve_files.c
  * This example will serve a file without decoding or demuxing it over http.
  * Multiple clients can connect and will receive the same file.
  */

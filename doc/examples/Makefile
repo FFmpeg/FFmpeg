@@ -1,3 +1,4 @@
+EXAMPLES-$(CONFIG_AVIO_HTTP_SERVE_FILES)     += avio_http_serve_files
 EXAMPLES-$(CONFIG_AVIO_LIST_DIR_EXAMPLE)     += avio_list_dir
 EXAMPLES-$(CONFIG_AVIO_READ_CALLBACK_EXAMPLE) += avio_read_callback
 EXAMPLES-$(CONFIG_DECODE_AUDIO_EXAMPLE)      += decode_audio
@@ -9,7 +10,6 @@ EXAMPLES-$(CONFIG_ENCODE_AUDIO_EXAMPLE)      += encode_audio
 EXAMPLES-$(CONFIG_ENCODE_VIDEO_EXAMPLE)      += encode_video
 EXAMPLES-$(CONFIG_EXTRACT_MVS_EXAMPLE)       += extract_mvs
 EXAMPLES-$(CONFIG_FILTER_AUDIO_EXAMPLE)      += filter_audio
-EXAMPLES-$(CONFIG_HTTP_MULTICLIENT_EXAMPLE)  += http_multiclient
 EXAMPLES-$(CONFIG_HW_DECODE_EXAMPLE)         += hw_decode
 EXAMPLES-$(CONFIG_METADATA_EXAMPLE)          += metadata
 EXAMPLES-$(CONFIG_MUXING_EXAMPLE)            += muxing
