@@ -1725,7 +1725,7 @@ EXAMPLE_LIST="
     hw_decode_example
     mux_example
     qsv_decode_example
-    remuxing_example
+    remux_example
     resampling_audio_example
     scaling_video_example
     show_metadata_example
@@ -3789,7 +3789,7 @@ filter_audio_example_deps="avfilter avutil"
 hw_decode_example_deps="avcodec avformat avutil"
 mux_example_deps="avcodec avformat avutil swscale"
 qsv_decode_example_deps="avcodec avutil libmfx h264_qsv_decoder"
-remuxing_example_deps="avcodec avformat avutil"
+remux_example_deps="avcodec avformat avutil"
 resampling_audio_example_deps="avutil swresample"
 scaling_video_example_deps="avutil swscale"
 show_metadata_example_deps="avformat avutil"

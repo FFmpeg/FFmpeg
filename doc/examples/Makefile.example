@@ -25,7 +25,7 @@ EXAMPLES=\
                 extract_mvs                        \
                 hw_decode                          \
                 mux                                \
-                remuxing                           \
+                remux                              \
                 resampling_audio                   \
                 scaling_video                      \
                 show_metadata                      \

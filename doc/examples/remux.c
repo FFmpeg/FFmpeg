@@ -25,7 +25,7 @@
  * libavformat/libavcodec demuxing and muxing API example.
  *
  * Remux streams from one container format to another.
- * @example remuxing.c
+ * @example remux.c
  */
 
 #include <libavutil/timestamp.h>
