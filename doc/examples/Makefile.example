@@ -26,7 +26,7 @@ EXAMPLES=\
                 hw_decode                          \
                 mux                                \
                 remux                              \
-                resampling_audio                   \
+                resample_audio                     \
                 scaling_video                      \
                 show_metadata                      \
                 transcode_aac                      \

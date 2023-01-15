@@ -21,7 +21,7 @@
  */
 
 /**
- * @example resampling_audio.c
+ * @example resample_audio.c
  * libswresample API use example.
  */
 
