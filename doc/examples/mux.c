@@ -26,7 +26,7 @@
  *
  * Output a media file in any supported libavformat format. The default
  * codecs are used.
- * @example muxing.c
+ * @example mux.c
  */
 
 #include <stdlib.h>

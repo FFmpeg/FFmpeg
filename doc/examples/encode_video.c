@@ -202,7 +202,7 @@ int main(int argc, char **argv)
        It makes only sense because this tiny examples writes packets
        directly. This is called "elementary stream" and only works for some
        codecs. To create a valid file, you usually need to write packets
-       into a proper file format or protocol; see muxing.c.
+       into a proper file format or protocol; see mux.c.
      */
     if (codec->id == AV_CODEC_ID_MPEG1VIDEO || codec->id == AV_CODEC_ID_MPEG2VIDEO)
         fwrite(endcode, 1, sizeof(endcode), f);

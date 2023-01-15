@@ -24,7 +24,7 @@ EXAMPLES=\
                 encode_video                       \
                 extract_mvs                        \
                 hw_decode                          \
-                muxing                             \
+                mux                                \
                 remuxing                           \
                 resampling_audio                   \
                 scaling_video                      \
