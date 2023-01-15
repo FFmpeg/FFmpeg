@@ -15,12 +15,12 @@ EXAMPLES=       avio_list_dir                      \
                 avio_read_callback                 \
                 decode_audio                       \
                 decode_filter_audio                \
+                decode_filter_video                \
                 decode_video                       \
                 demux_decode                       \
                 encode_audio                       \
                 encode_video                       \
                 extract_mvs                        \
-                filtering_video                    \
                 http_multiclient                   \
                 hw_decode                          \
                 metadata                           \

@@ -1714,13 +1714,13 @@ EXAMPLE_LIST="
     avio_read_callback_example
     decode_audio_example
     decode_filter_audio_example
+    decode_filter_video_example
     decode_video_example
     demux_decode_example
     encode_audio_example
     encode_video_example
     extract_mvs_example
     filter_audio_example
-    filtering_video_example
     http_multiclient_example
     hw_decode_example
     metadata_example
@@ -3778,13 +3778,13 @@ avio_list_dir_deps="avformat avutil"
 avio_read_callback_deps="avformat avcodec avutil"
 decode_audio_example_deps="avcodec avutil"
 decode_filter_audio_example_deps="avfilter avcodec avformat avutil"
+decode_filter_video_example_deps="avfilter avcodec avformat avutil"
 decode_video_example_deps="avcodec avutil"
 demux_decode_example_deps="avcodec avformat avutil"
 encode_audio_example_deps="avcodec avutil"
 encode_video_example_deps="avcodec avutil"
 extract_mvs_example_deps="avcodec avformat avutil"
 filter_audio_example_deps="avfilter avutil"
-filtering_video_example_deps="avfilter avcodec avformat avutil"
 http_multiclient_example_deps="avformat avutil fork"
 hw_decode_example_deps="avcodec avformat avutil"
 metadata_example_deps="avformat avutil"
