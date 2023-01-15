@@ -11,6 +11,12 @@ CFLAGS += -Wall -g
 CFLAGS := $(shell pkg-config --cflags $(FFMPEG_LIBS)) $(CFLAGS)
 LDLIBS := $(shell pkg-config --libs $(FFMPEG_LIBS)) $(LDLIBS)
 
+# missing the following targets, since they need special options in the FFmpeg build:
+# qsv_decode
+# qsv_transcode
+# vaapi_encode
+# vaapi_transcode
+
 EXAMPLES=\
                 avio_http_serve_files              \
                 avio_list_dir                      \
@@ -30,7 +36,7 @@ EXAMPLES=\
                 scale_video                        \
                 show_metadata                      \
                 transcode_aac                      \
-                transcode                          \
+                transcode
 
 OBJS=$(addsuffix .o,$(EXAMPLES))
 
