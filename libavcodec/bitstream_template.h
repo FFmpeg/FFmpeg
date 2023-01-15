@@ -291,12 +291,28 @@ static inline uint64_t BS_FUNC(read_64)(BSCTX *bc, unsigned int n)
 }
 
 /**
+ * Return n bits from the buffer as a signed integer, n has to be in the 1-32
+ * range. May be faster than bits_read_signed() when n is not a compile-time
+ * constant and is known to be non-zero;
+ */
+static inline int32_t BS_FUNC(read_signed_nz)(BSCTX *bc, unsigned int n)
+{
+    av_assert2(n > 0 && n <= 32);
+    return sign_extend(BS_FUNC(read_nz)(bc, n), n);
+}
+
+/**
  * Return n bits from the buffer as a signed integer.
  * n has to be in the 0-32 range.
  */
 static inline int32_t BS_FUNC(read_signed)(BSCTX *bc, unsigned int n)
 {
-    return sign_extend(BS_FUNC(read)(bc, n), n);
+    av_assert2(n <= 32);
+
+    if (!n)
+        return 0;
+
+    return BS_FUNC(read_signed_nz)(bc, n);
 }
 
 /**
@@ -328,13 +344,29 @@ static inline uint32_t BS_FUNC(peek)(BSCTX *bc, unsigned int n)
 }
 
 /**
+ * Return n bits from the buffer as a signed integer, do not change the buffer
+ * state. n has to be in the 1-32 range. May be faster than bits_peek_signed()
+ * when n is not a compile-time constant and is known to be non-zero;
+ */
+static inline int BS_FUNC(peek_signed_nz)(BSCTX *bc, unsigned int n)
+{
+    av_assert2(n > 0 && n <= 32);
+    return sign_extend(BS_FUNC(peek_nz)(bc, n), n);
+}
+
+/**
  * Return n bits from the buffer as a signed integer,
  * do not change the buffer state.
  * n has to be in the 0-32 range.
  */
 static inline int BS_FUNC(peek_signed)(BSCTX *bc, unsigned int n)
 {
-    return sign_extend(BS_FUNC(peek)(bc, n), n);
+    av_assert2(n <= 32);
+
+    if (!n)
+        return 0;
+
+    return BS_FUNC(peek_signed_nz)(bc, n);
 }
 
 /**

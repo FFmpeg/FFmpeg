@@ -85,7 +85,7 @@ typedef BitstreamContext GetBitContext;
 #define get_bits1           bits_read_bit
 #define get_bits64          bits_read_64
 #define get_xbits           bits_read_xbits
-#define get_sbits           bits_read_signed
+#define get_sbits           bits_read_signed_nz
 #define get_sbits_long      bits_read_signed
 #define show_bits           bits_peek
 #define show_bits_long      bits_peek
