@@ -1016,8 +1016,11 @@ typedef struct AVCodecContext {
 
     /**
      * MPEG vs JPEG YUV range.
-     * - encoding: Set by user
-     * - decoding: Set by libavcodec
+     * - encoding: Set by user to override the default output color range value,
+     *   If not specified, libavcodec sets the color range depending on the
+     *   output format.
+     * - decoding: Set by libavcodec, can be set by the user to propagate the
+     *   color range to components reading from the decoder context.
      */
     enum AVColorRange color_range;
 
