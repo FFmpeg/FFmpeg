@@ -30,7 +30,7 @@ EXAMPLES=\
                 scale_video                        \
                 show_metadata                      \
                 transcode_aac                      \
-                transcoding                        \
+                transcode                          \
 
 OBJS=$(addsuffix .o,$(EXAMPLES))
 
