@@ -42,6 +42,7 @@ enum Op {
     OP_READ_63,
     OP_READ_64,
     OP_READ_SIGNED,
+    OP_READ_SIGNED_NZ,
     OP_APPLY_SIGN,
     OP_ALIGN,
     OP_NB,
@@ -58,7 +59,7 @@ int main(int argc, char **argv)
 
     uint32_t random_seed;
     uint64_t val, val1;
-    int32_t  sval;
+    int32_t  sval, sval1;
     unsigned count;
 
     /* generate random input, using a given or random seed */
@@ -130,9 +131,25 @@ int main(int argc, char **argv)
             break;
         case OP_READ_SIGNED:
             count = av_lfg_get(&lfg) % FFMIN(33, bits_left(&bc) + 1);
+            sval1 = bits_peek_signed(&bc, count);
             sval  = bits_read_signed(&bc, count);
 
             fprintf(stderr, "%d read_signed %u: %"PRId32"\n", bits_tell(&bc) - count, count, sval);
+
+            av_assert0(sval == sval1);
+
+            if (count == 32) put_bits32(&pb, sval);
+            else             put_sbits(&pb, count, sval);
+            break;
+        case OP_READ_SIGNED_NZ:
+            count = av_lfg_get(&lfg) % FFMIN(33, bits_left(&bc) + 1);
+            count = FFMAX(count, 1);
+            sval1 = bits_peek_signed_nz(&bc, count);
+            sval  = bits_read_signed_nz(&bc, count);
+
+            fprintf(stderr, "%d read_signed_nz %u: %"PRId32"\n", bits_tell(&bc) - count, count, sval);
+
+            av_assert0(sval == sval1);
 
             if (count == 32) put_bits32(&pb, sval);
             else             put_sbits(&pb, count, sval);
