@@ -26,7 +26,7 @@
  *
  * Make libavformat demuxer access media content through a custom
  * AVIOContext read callback.
- * @example avio_reading.c
+ * @example avio_read_callback.c
  */
 
 #include <libavcodec/avcodec.h>

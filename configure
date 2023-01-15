@@ -1711,7 +1711,7 @@ COMPONENT_LIST="
 
 EXAMPLE_LIST="
     avio_list_dir_example
-    avio_reading_example
+    avio_read_callback_example
     decode_audio_example
     decode_video_example
     demuxing_decoding_example
@@ -3775,7 +3775,7 @@ xstack_vaapi_filter_deps="vaapi_1"
 
 # examples
 avio_list_dir_deps="avformat avutil"
-avio_reading_deps="avformat avcodec avutil"
+avio_read_callback_deps="avformat avcodec avutil"
 decode_audio_example_deps="avcodec avutil"
 decode_video_example_deps="avcodec avutil"
 demuxing_decoding_example_deps="avcodec avformat avutil"
