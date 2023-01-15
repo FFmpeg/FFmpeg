@@ -27,7 +27,7 @@ EXAMPLES=\
                 mux                                \
                 remux                              \
                 resample_audio                     \
-                scaling_video                      \
+                scale_video                        \
                 show_metadata                      \
                 transcode_aac                      \
                 transcoding                        \

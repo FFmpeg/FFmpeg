@@ -1727,7 +1727,7 @@ EXAMPLE_LIST="
     qsv_decode_example
     remux_example
     resample_audio_example
-    scaling_video_example
+    scale_video_example
     show_metadata_example
     transcode_aac_example
     transcoding_example
@@ -3791,7 +3791,7 @@ mux_example_deps="avcodec avformat avutil swscale"
 qsv_decode_example_deps="avcodec avutil libmfx h264_qsv_decoder"
 remux_example_deps="avcodec avformat avutil"
 resample_audio_example_deps="avutil swresample"
-scaling_video_example_deps="avutil swscale"
+scale_video_example_deps="avutil swscale"
 show_metadata_example_deps="avformat avutil"
 transcode_aac_example_deps="avcodec avformat swresample"
 transcoding_example_deps="avfilter avcodec avformat avutil"
