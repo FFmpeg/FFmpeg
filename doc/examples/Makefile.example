@@ -24,11 +24,11 @@ EXAMPLES=\
                 encode_video                       \
                 extract_mvs                        \
                 hw_decode                          \
-                metadata                           \
                 muxing                             \
                 remuxing                           \
                 resampling_audio                   \
                 scaling_video                      \
+                show_metadata                      \
                 transcode_aac                      \
                 transcoding                        \
 

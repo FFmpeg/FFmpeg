@@ -1723,12 +1723,12 @@ EXAMPLE_LIST="
     extract_mvs_example
     filter_audio_example
     hw_decode_example
-    metadata_example
     muxing_example
     qsvdec_example
     remuxing_example
     resampling_audio_example
     scaling_video_example
+    show_metadata_example
     transcode_aac_example
     transcoding_example
     vaapi_encode_example
@@ -3787,12 +3787,12 @@ encode_video_example_deps="avcodec avutil"
 extract_mvs_example_deps="avcodec avformat avutil"
 filter_audio_example_deps="avfilter avutil"
 hw_decode_example_deps="avcodec avformat avutil"
-metadata_example_deps="avformat avutil"
 muxing_example_deps="avcodec avformat avutil swscale"
 qsvdec_example_deps="avcodec avutil libmfx h264_qsv_decoder"
 remuxing_example_deps="avcodec avformat avutil"
 resampling_audio_example_deps="avutil swresample"
 scaling_video_example_deps="avutil swscale"
+show_metadata_example_deps="avformat avutil"
 transcode_aac_example_deps="avcodec avformat swresample"
 transcoding_example_deps="avfilter avcodec avformat avutil"
 vaapi_encode_example_deps="avcodec avutil h264_vaapi_encoder"
