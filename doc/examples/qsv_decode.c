@@ -24,7 +24,7 @@
  * @file
  * Intel QSV-accelerated H.264 decoding example.
  *
- * @example qsvdec.c
+ * @example qsv_decode.c
  * This example shows how to do QSV-accelerated H.264 decoding with output
  * frames in the GPU video surfaces.
  */
