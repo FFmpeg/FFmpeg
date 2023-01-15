@@ -1714,7 +1714,7 @@ EXAMPLE_LIST="
     avio_read_callback_example
     decode_audio_example
     decode_video_example
-    demuxing_decoding_example
+    demux_decode_example
     encode_audio_example
     encode_video_example
     extract_mvs_example
@@ -3778,7 +3778,7 @@ avio_list_dir_deps="avformat avutil"
 avio_read_callback_deps="avformat avcodec avutil"
 decode_audio_example_deps="avcodec avutil"
 decode_video_example_deps="avcodec avutil"
-demuxing_decoding_example_deps="avcodec avformat avutil"
+demux_decode_example_deps="avcodec avformat avutil"
 encode_audio_example_deps="avcodec avutil"
 encode_video_example_deps="avcodec avutil"
 extract_mvs_example_deps="avcodec avformat avutil"

@@ -15,7 +15,7 @@ EXAMPLES=       avio_list_dir                      \
                 avio_read_callback                 \
                 decode_audio                       \
                 decode_video                       \
-                demuxing_decoding                  \
+                demux_decode                       \
                 encode_audio                       \
                 encode_video                       \
                 extract_mvs                        \
