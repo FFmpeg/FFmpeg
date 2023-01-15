@@ -21,10 +21,10 @@
  */
 
 /**
- * @file
- * video encoding with libavcodec API example
- *
+ * @file libavcodec encoding video API usage example
  * @example encode_video.c
+ *
+ * Generate synthetic video data and encode it to an output file.
  */
 
 #include <stdio.h>

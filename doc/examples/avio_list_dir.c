@@ -20,6 +20,13 @@
  * THE SOFTWARE.
  */
 
+/**
+ * @file libavformat AVIOContext list directory API usage example
+ * @example avio_list_dir.c
+ *
+ * Show how to list directories through the libavformat AVIOContext API.
+ */
+
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavformat/avio.h>

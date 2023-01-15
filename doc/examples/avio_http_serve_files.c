@@ -21,12 +21,11 @@
  */
 
 /**
- * @file
- * libavformat multi-client network API usage example.
- *
+ * @file libavformat multi-client network API usage example
  * @example avio_http_serve_files.c
- * This example will serve a file without decoding or demuxing it over http.
- * Multiple clients can connect and will receive the same file.
+ *
+ * Serve a file without decoding or demuxing it over the HTTP protocol. Multiple
+ * clients can connect and will receive the same file.
  */
 
 #include <libavformat/avformat.h>

@@ -21,10 +21,11 @@
  */
 
 /**
- * @file
- * video decoding with libavcodec API example
+ * @file libavcodec video decoding API usage example
+ * @example decode_video.c *
  *
- * @example decode_video.c
+ * Read from an MPEG1 video file, decode frames, and generate PGM images as
+ * output.
  */
 
 #include <stdio.h>

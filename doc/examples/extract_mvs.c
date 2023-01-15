@@ -21,6 +21,14 @@
  * THE SOFTWARE.
  */
 
+/**
+ * @file libavcodec motion vectors extraction API usage example
+ * @example extract_mvs.c
+ *
+ * Read from input file, decode video stream and print a motion vectors
+ * representation to stdout.
+ */
+
 #include <libavutil/motion_vector.h>
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>

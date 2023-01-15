@@ -19,13 +19,11 @@
  */
 
 /**
- * @file
- * libavfilter API usage example.
- *
+ * @file libavfilter audio filtering API usage example
  * @example filter_audio.c
- * This example will generate a sine wave audio,
- * pass it through a simple filter chain, and then compute the MD5 checksum of
- * the output data.
+ *
+ * This example will generate a sine wave audio, pass it through a simple filter
+ * chain, and then compute the MD5 checksum of the output data.
  *
  * The filter chain it uses is:
  * (input) -> abuffer -> volume -> aformat -> abuffersink -> (output)

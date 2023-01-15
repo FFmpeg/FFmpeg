@@ -1,6 +1,4 @@
 /*
- * Video Acceleration API (video encoding) encode sample
- *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
@@ -21,13 +19,12 @@
  */
 
 /**
- * @file
- * Intel VAAPI-accelerated encoding example.
- *
+ * @file Intel VAAPI-accelerated encoding API usage example
  * @example vaapi_encode.c
- * This example shows how to do VAAPI-accelerated encoding. now only support NV12
- * raw file, usage like: vaapi_encode 1920 1080 input.yuv output.h264
  *
+ * Perform VAAPI-accelerated encoding. Read input from an NV12 raw
+ * file, and write the H.264 encoded data to an output raw file.
+ * Usage: vaapi_encode 1920 1080 input.yuv output.h264
  */
 
 #include <stdio.h>

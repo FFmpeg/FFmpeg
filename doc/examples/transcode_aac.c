@@ -19,12 +19,11 @@
  */
 
 /**
- * @file
- * Simple audio converter
- *
+ * @file audio transcoding to MPEG/AAC API usage example
  * @example transcode_aac.c
- * Convert an input audio file to AAC in an MP4 container using FFmpeg.
- * Formats other than MP4 are supported based on the output file extension.
+ *
+ * Convert an input audio file to AAC in an MP4 container. Formats other than
+ * MP4 are supported based on the output file extension.
  * @author Andreas Unterweger (dustsigns@gmail.com)
  */
 

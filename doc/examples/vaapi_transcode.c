@@ -1,6 +1,4 @@
 /*
- * Video Acceleration API (video transcoding) transcode sample
- *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
@@ -21,11 +19,10 @@
  */
 
 /**
- * @file
- * Intel VAAPI-accelerated transcoding example.
- *
+ * @file Intel VAAPI-accelerated transcoding API usage example
  * @example vaapi_transcode.c
- * This example shows how to do VAAPI-accelerated transcoding.
+ *
+ * Perform VAAPI-accelerated transcoding.
  * Usage: vaapi_transcode input_stream codec output_stream
  * e.g: - vaapi_transcode input.mp4 h264_vaapi output_h264.mp4
  *      - vaapi_transcode input.mp4 vp9_vaapi output_vp9.ivf

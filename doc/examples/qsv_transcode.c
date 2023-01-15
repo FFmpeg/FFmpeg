@@ -1,6 +1,4 @@
 /*
- * Quick Sync Video (video transcoding) transcode sample
- *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
@@ -21,12 +19,12 @@
  */
 
 /**
- * @file
- * Intel QSV-accelerated transcoding example.
- *
+ * @file Intel QSV-accelerated video transcoding API usage example
  * @example qsv_transcode.c
- * This example shows how to do QSV-accelerated transcoding and how to
- * dynamically change encoder's option.
+ *
+ * Perform QSV-accelerated transcoding and show to dynamically change
+ * encoder's options.
+ *
  * Usage: qsv_transcode input_stream codec output_stream initial option
  *                      { frame_number new_option }
  * e.g: - qsv_transcode input.mp4 h264_qsv output_h264.mp4 "g 60"

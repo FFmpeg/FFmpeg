@@ -23,9 +23,11 @@
  */
 
 /**
- * @file
- * API example for demuxing, decoding, filtering, encoding and muxing
+ * @file demuxing, decoding, filtering, encoding and muxing API usage example
  * @example transcode.c
+ *
+ * Convert input to output file, applying some hard-coded filter-graph on both
+ * audio and video streams.
  */
 
 #include <libavcodec/avcodec.h>

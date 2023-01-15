@@ -21,12 +21,11 @@
  */
 
 /**
- * @file
- * libavformat AVIOContext API example.
+ * @file libavformat AVIOContext read callback API usage example
+ * @example avio_read_callback.c
  *
  * Make libavformat demuxer access media content through a custom
  * AVIOContext read callback.
- * @example avio_read_callback.c
  */
 
 #include <libavcodec/avcodec.h>

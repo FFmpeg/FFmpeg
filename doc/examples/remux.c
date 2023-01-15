@@ -21,11 +21,11 @@
  */
 
 /**
- * @file
- * libavformat/libavcodec demuxing and muxing API example.
- *
- * Remux streams from one container format to another.
+ * @file libavformat/libavcodec demuxing and muxing API usage example
  * @example remux.c
+ *
+ * Remux streams from one container format to another. Data is copied from the
+ * input to the output without transcoding.
  */
 
 #include <libavutil/timestamp.h>

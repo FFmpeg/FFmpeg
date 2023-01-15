@@ -21,12 +21,11 @@
  */
 
 /**
- * @file
- * Intel QSV-accelerated H.264 decoding example.
- *
+ * @file Intel QSV-accelerated H.264 decoding API usage example
  * @example qsv_decode.c
- * This example shows how to do QSV-accelerated H.264 decoding with output
- * frames in the GPU video surfaces.
+ *
+ * Perform QSV-accelerated H.264 decoding with output frames in the
+ * GPU video surfaces, write the decoded frames to an output file.
  */
 
 #include "config.h"

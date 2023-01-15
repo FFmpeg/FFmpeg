@@ -21,9 +21,10 @@
  */
 
 /**
- * @file
- * libswscale API use example.
+ * @file libswscale API usage example
  * @example scale_video.c
+ *
+ * Generate a synthetic video signal and use libswscale to perform rescaling.
  */
 
 #include <libavutil/imgutils.h>

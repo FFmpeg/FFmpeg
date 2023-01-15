@@ -23,9 +23,11 @@
  */
 
 /**
- * @file
- * API example for audio decoding and filtering
+ * @file audio decoding and filtering usage example
  * @example decode_filter_audio.c
+ *
+ * Demux, decode and filter audio input file, generate a raw audio
+ * file to be played with ffplay.
  */
 
 #include <unistd.h>

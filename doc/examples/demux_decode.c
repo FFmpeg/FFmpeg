@@ -21,12 +21,12 @@
  */
 
 /**
- * @file
- * libavformat and libavcodec API example to demux and decode.
- *
- * Show how to use the libavformat and libavcodec API to demux and
- * decode audio and video data.
+ * @file libavformat and libavcodec demuxing and decoding API usage example
  * @example demux_decode.c
+ *
+ * Show how to use the libavformat and libavcodec API to demux and decode audio
+ * and video data. Write the output as raw audio and input files to be played by
+ * ffplay.
  */
 
 #include <libavutil/imgutils.h>

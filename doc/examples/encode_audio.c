@@ -21,10 +21,10 @@
  */
 
 /**
- * @file
- * audio encoding with libavcodec API example.
- *
+ * @file libavcodec encoding audio API usage examples
  * @example encode_audio.c
+ *
+ * Generate a synthetic audio signal and encode it to an output MP2 file.
  */
 
 #include <stdint.h>
