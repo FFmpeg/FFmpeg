@@ -2,6 +2,21 @@ The last version increases of all libraries were on 2023-02-09
 
 API changes, most recent first:
 
+2023-02-12 - xxxxxxxxxx - lavfi 9.1.100 - avfilter.h
+  Add filtergraph segment parsing API.
+  New structs:
+    - AVFilterGraphSegment
+    - AVFilterChain
+    - AVFilterParams
+    - AVFilterPadParams
+  New functions:
+    - avfilter_graph_segment_parse()
+    - avfilter_graph_segment_create_filters()
+    - avfilter_graph_segment_apply_opts()
+    - avfilter_graph_segment_init()
+    - avfilter_graph_segment_link()
+    - avfilter_graph_segment_apply()
+
 2023-02-xx - xxxxxxxxxx - lavu 58.0.100 - csp.h
   Add av_csp_approximate_trc_gamma() and av_csp_trc_func_from_id().
   Add av_csp_trc_function.

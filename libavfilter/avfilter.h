@@ -1109,6 +1109,317 @@ int avfilter_graph_parse2(AVFilterGraph *graph, const char *filters,
                           AVFilterInOut **outputs);
 
 /**
+ * Parameters of a filter's input or output pad.
+ *
+ * Created as a child of AVFilterParams by avfilter_graph_segment_parse().
+ * Freed in avfilter_graph_segment_free().
+ */
+typedef struct AVFilterPadParams {
+    /**
+     * An av_malloc()'ed string containing the pad label.
+     *
+     * May be av_free()'d and set to NULL by the caller, in which case this pad
+     * will be treated as unlabeled for linking.
+     * May also be replaced by another av_malloc()'ed string.
+     */
+    char *label;
+} AVFilterPadParams;
+
+/**
+ * Parameters describing a filter to be created in a filtergraph.
+ *
+ * Created as a child of AVFilterGraphSegment by avfilter_graph_segment_parse().
+ * Freed in avfilter_graph_segment_free().
+ */
+typedef struct AVFilterParams {
+    /**
+     * The filter context.
+     *
+     * Created by avfilter_graph_segment_create_filters() based on
+     * AVFilterParams.filter_name and instance_name.
+     *
+     * Callers may also create the filter context manually, then they should
+     * av_free() filter_name and set it to NULL. Such AVFilterParams instances
+     * are then skipped by avfilter_graph_segment_create_filters().
+     */
+    AVFilterContext     *filter;
+
+    /**
+     * Name of the AVFilter to be used.
+     *
+     * An av_malloc()'ed string, set by avfilter_graph_segment_parse(). Will be
+     * passed to avfilter_get_by_name() by
+     * avfilter_graph_segment_create_filters().
+     *
+     * Callers may av_free() this string and replace it with another one or
+     * NULL. If the caller creates the filter instance manually, this string
+     * MUST be set to NULL.
+     *
+     * When both AVFilterParams.filter an AVFilterParams.filter_name are NULL,
+     * this AVFilterParams instance is skipped by avfilter_graph_segment_*()
+     * functions.
+     */
+    char                *filter_name;
+    /**
+     * Name to be used for this filter instance.
+     *
+     * An av_malloc()'ed string, may be set by avfilter_graph_segment_parse() or
+     * left NULL. The caller may av_free() this string and replace with another
+     * one or NULL.
+     *
+     * Will be used by avfilter_graph_segment_create_filters() - passed as the
+     * third argument to avfilter_graph_alloc_filter(), then freed and set to
+     * NULL.
+     */
+    char                *instance_name;
+
+    /**
+     * Options to be apllied to the filter.
+     *
+     * Filled by avfilter_graph_segment_parse(). Afterwards may be freely
+     * modified by the caller.
+     *
+     * Will be applied to the filter by avfilter_graph_segment_apply_opts()
+     * with an equivalent of av_opt_set_dict2(filter, &opts, AV_OPT_SEARCH_CHILDREN),
+     * i.e. any unapplied options will be left in this dictionary.
+     */
+    AVDictionary        *opts;
+
+    AVFilterPadParams  **inputs;
+    unsigned          nb_inputs;
+
+    AVFilterPadParams  **outputs;
+    unsigned          nb_outputs;
+} AVFilterParams;
+
+/**
+ * A filterchain is a list of filter specifications.
+ *
+ * Created as a child of AVFilterGraphSegment by avfilter_graph_segment_parse().
+ * Freed in avfilter_graph_segment_free().
+ */
+typedef struct AVFilterChain {
+    AVFilterParams  **filters;
+    size_t         nb_filters;
+} AVFilterChain;
+
+/**
+ * A parsed representation of a filtergraph segment.
+ *
+ * A filtergraph segment is conceptually a list of filterchains, with some
+ * supplementary information (e.g. format conversion flags).
+ *
+ * Created by avfilter_graph_segment_parse(). Must be freed with
+ * avfilter_graph_segment_free().
+ */
+typedef struct AVFilterGraphSegment {
+    /**
+     * The filtergraph this segment is associated with.
+     * Set by avfilter_graph_segment_parse().
+     */
+    AVFilterGraph *graph;
+
+    /**
+     * A list of filter chain contained in this segment.
+     * Set in avfilter_graph_segment_parse().
+     */
+    AVFilterChain **chains;
+    size_t       nb_chains;
+
+    /**
+     * A string containing a colon-separated list of key=value options applied
+     * to all scale filters in this segment.
+     *
+     * May be set by avfilter_graph_segment_parse().
+     * The caller may free this string with av_free() and replace it with a
+     * different av_malloc()'ed string.
+     */
+    char *scale_sws_opts;
+} AVFilterGraphSegment;
+
+/**
+ * Parse a textual filtergraph description into an intermediate form.
+ *
+ * This intermediate representation is intended to be modified by the caller as
+ * described in the documentation of AVFilterGraphSegment and its children, and
+ * then applied to the graph either manually or with other
+ * avfilter_graph_segment_*() functions. See the documentation for
+ * avfilter_graph_segment_apply() for the canonical way to apply
+ * AVFilterGraphSegment.
+ *
+ * @param graph Filter graph the parsed segment is associated with. Will only be
+ *              used for logging and similar auxiliary purposes. The graph will
+ *              not be actually modified by this function - the parsing results
+ *              are instead stored in seg for further processing.
+ * @param graph_str a string describing the filtergraph segment
+ * @param flags reserved for future use, caller must set to 0 for now
+ * @param seg A pointer to the newly-created AVFilterGraphSegment is written
+ *            here on success. The graph segment is owned by the caller and must
+ *            be freed with avfilter_graph_segment_free() before graph itself is
+ *            freed.
+ *
+ * @retval "non-negative number" success
+ * @retval "negative error code" failure
+ */
+int avfilter_graph_segment_parse(AVFilterGraph *graph, const char *graph_str,
+                                 int flags, AVFilterGraphSegment **seg);
+
+/**
+ * Create filters specified in a graph segment.
+ *
+ * Walk through the creation-pending AVFilterParams in the segment and create
+ * new filter instances for them.
+ * Creation-pending params are those where AVFilterParams.filter_name is
+ * non-NULL (and hence AVFilterParams.filter is NULL). All other AVFilterParams
+ * instances are ignored.
+ *
+ * For any filter created by this function, the corresponding
+ * AVFilterParams.filter is set to the newly-created filter context,
+ * AVFilterParams.filter_name and AVFilterParams.instance_name are freed and set
+ * to NULL.
+ *
+ * @param seg the filtergraph segment to process
+ * @param flags reserved for future use, caller must set to 0 for now
+ *
+ * @retval "non-negative number" Success, all creation-pending filters were
+ *                               successfully created
+ * @retval AVERROR_FILTER_NOT_FOUND some filter's name did not correspond to a
+ *                                  known filter
+ * @retval "another negative error code" other failures
+ *
+ * @note Calling this function multiple times is safe, as it is idempotent.
+ */
+int avfilter_graph_segment_create_filters(AVFilterGraphSegment *seg, int flags);
+
+/**
+ * Apply parsed options to filter instances in a graph segment.
+ *
+ * Walk through all filter instances in the graph segment that have option
+ * dictionaries associated with them and apply those options with
+ * av_opt_set_dict2(..., AV_OPT_SEARCH_CHILDREN). AVFilterParams.opts is
+ * replaced by the dictionary output by av_opt_set_dict2(), which should be
+ * empty (NULL) if all options were successfully applied.
+ *
+ * If any options could not be found, this function will continue processing all
+ * other filters and finally return AVERROR_OPTION_NOT_FOUND (unless another
+ * error happens). The calling program may then deal with unapplied options as
+ * it wishes.
+ *
+ * Any creation-pending filters (see avfilter_graph_segment_create_filters())
+ * present in the segment will cause this function to fail. AVFilterParams with
+ * no associated filter context are simply skipped.
+ *
+ * @param seg the filtergraph segment to process
+ * @param flags reserved for future use, caller must set to 0 for now
+ *
+ * @retval "non-negative number" Success, all options were successfully applied.
+ * @retval AVERROR_OPTION_NOT_FOUND some options were not found in a filter
+ * @retval "another negative error code" other failures
+ *
+ * @note Calling this function multiple times is safe, as it is idempotent.
+ */
+int avfilter_graph_segment_apply_opts(AVFilterGraphSegment *seg, int flags);
+
+/**
+ * Initialize all filter instances in a graph segment.
+ *
+ * Walk through all filter instances in the graph segment and call
+ * avfilter_init_dict(..., NULL) on those that have not been initialized yet.
+ *
+ * Any creation-pending filters (see avfilter_graph_segment_create_filters())
+ * present in the segment will cause this function to fail. AVFilterParams with
+ * no associated filter context or whose filter context is already initialized,
+ * are simply skipped.
+ *
+ * @param seg the filtergraph segment to process
+ * @param flags reserved for future use, caller must set to 0 for now
+ *
+ * @retval "non-negative number" Success, all filter instances were successfully
+ *                               initialized
+ * @retval "negative error code" failure
+ *
+ * @note Calling this function multiple times is safe, as it is idempotent.
+ */
+int avfilter_graph_segment_init(AVFilterGraphSegment *seg, int flags);
+
+/**
+ * Link filters in a graph segment.
+ *
+ * Walk through all filter instances in the graph segment and try to link all
+ * unlinked input and output pads. Any creation-pending filters (see
+ * avfilter_graph_segment_create_filters()) present in the segment will cause
+ * this function to fail. Disabled filters and already linked pads are skipped.
+ *
+ * Every filter output pad that has a corresponding AVFilterPadParams with a
+ * non-NULL label is
+ * - linked to the input with the matching label, if one exists;
+ * - exported in the outputs linked list otherwise, with the label preserved.
+ * Unlabeled outputs are
+ * - linked to the first unlinked unlabeled input in the next non-disabled
+ *   filter in the chain, if one exists
+ * - exported in the ouputs linked list otherwise, with NULL label
+ *
+ * Similarly, unlinked input pads are exported in the inputs linked list.
+ *
+ * @param seg the filtergraph segment to process
+ * @param flags reserved for future use, caller must set to 0 for now
+ * @param[out] inputs  a linked list of all free (unlinked) inputs of the
+ *                     filters in this graph segment will be returned here. It
+ *                     is to be freed by the caller using avfilter_inout_free().
+ * @param[out] outputs a linked list of all free (unlinked) outputs of the
+ *                     filters in this graph segment will be returned here. It
+ *                     is to be freed by the caller using avfilter_inout_free().
+ *
+ * @retval "non-negative number" success
+ * @retval "negative error code" failure
+ *
+ * @note Calling this function multiple times is safe, as it is idempotent.
+ */
+int avfilter_graph_segment_link(AVFilterGraphSegment *seg, int flags,
+                                AVFilterInOut **inputs,
+                                AVFilterInOut **outputs);
+
+/**
+ * Apply all filter/link descriptions from a graph segment to the associated filtergraph.
+ *
+ * This functions is currently equivalent to calling the following in sequence:
+ * - avfilter_graph_segment_create_filters();
+ * - avfilter_graph_segment_apply_opts();
+ * - avfilter_graph_segment_init();
+ * - avfilter_graph_segment_link();
+ * failing if any of them fails. This list may be extended in the future.
+ *
+ * Since the above functions are idempotent, the caller may call some of them
+ * manually, then do some custom processing on the filtergraph, then call this
+ * function to do the rest.
+ *
+ * @param seg the filtergraph segment to process
+ * @param flags reserved for future use, caller must set to 0 for now
+ * @param[out] inputs passed to avfilter_graph_segment_link()
+ * @param[out] outputs passed to avfilter_graph_segment_link()
+ *
+ * @retval "non-negative number" success
+ * @retval "negative error code" failure
+ *
+ * @note Calling this function multiple times is safe, as it is idempotent.
+ */
+int avfilter_graph_segment_apply(AVFilterGraphSegment *seg, int flags,
+                                 AVFilterInOut **inputs,
+                                 AVFilterInOut **outputs);
+
+/**
+ * Free the provided AVFilterGraphSegment and everything associated with it.
+ *
+ * @param seg double pointer to the AVFilterGraphSegment to be freed. NULL will
+ * be written to this pointer on exit from this function.
+ *
+ * @note
+ * The filter contexts (AVFilterParams.filter) are owned by AVFilterGraph rather
+ * than AVFilterGraphSegment, so they are not freed.
+ */
+void avfilter_graph_segment_free(AVFilterGraphSegment **seg);
+
+/**
  * Send a command to one or more filter instances.
  *
  * @param graph  the filter graph

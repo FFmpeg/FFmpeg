@@ -24,10 +24,12 @@
 #include <stdio.h>
 
 #include "libavutil/avstring.h"
+#include "libavutil/dict.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 
 #include "avfilter.h"
+#include "internal.h"
 
 #define WHITESPACES " \n\t\r"
 
@@ -386,7 +388,7 @@ static int parse_outputs(const char **buf, AVFilterInOut **curr_inputs,
     return pad;
 }
 
-static int parse_sws_flags(const char **buf, AVFilterGraph *graph)
+static int parse_sws_flags(const char **buf, char **dst, void *log_ctx)
 {
     char *p = strchr(*buf, ';');
 
@@ -394,16 +396,16 @@ static int parse_sws_flags(const char **buf, AVFilterGraph *graph)
         return 0;
 
     if (!p) {
-        av_log(graph, AV_LOG_ERROR, "sws_flags not terminated with ';'.\n");
+        av_log(log_ctx, AV_LOG_ERROR, "sws_flags not terminated with ';'.\n");
         return AVERROR(EINVAL);
     }
 
     *buf += 4;  // keep the 'flags=' part
 
-    av_freep(&graph->scale_sws_opts);
-    if (!(graph->scale_sws_opts = av_mallocz(p - *buf + 1)))
+    av_freep(dst);
+    if (!(*dst = av_mallocz(p - *buf + 1)))
         return AVERROR(ENOMEM);
-    av_strlcpy(graph->scale_sws_opts, *buf, p - *buf + 1);
+    av_strlcpy(*dst, *buf, p - *buf + 1);
 
     *buf = p + 1;
     return 0;
@@ -420,7 +422,7 @@ int avfilter_graph_parse2(AVFilterGraph *graph, const char *filters,
 
     filters += strspn(filters, WHITESPACES);
 
-    if ((ret = parse_sws_flags(&filters, graph)) < 0)
+    if ((ret = parse_sws_flags(&filters, &graph->scale_sws_opts, graph)) < 0)
         goto end;
 
     do {
@@ -551,7 +553,7 @@ int avfilter_graph_parse_ptr(AVFilterGraph *graph, const char *filters,
     AVFilterInOut *open_inputs  = open_inputs_ptr  ? *open_inputs_ptr  : NULL;
     AVFilterInOut *open_outputs = open_outputs_ptr ? *open_outputs_ptr : NULL;
 
-    if ((ret = parse_sws_flags(&filters, graph)) < 0)
+    if ((ret = parse_sws_flags(&filters, &graph->scale_sws_opts, graph)) < 0)
         goto end;
 
     do {
@@ -622,4 +624,667 @@ end:
         av_freep(&graph->filters);
     }
     return ret;
+}
+
+static void pad_params_free(AVFilterPadParams **pfpp)
+{
+    AVFilterPadParams *fpp = *pfpp;
+
+    if (!fpp)
+        return;
+
+    av_freep(&fpp->label);
+
+    av_freep(pfpp);
+}
+
+static void filter_params_free(AVFilterParams **pp)
+{
+    AVFilterParams *p = *pp;
+
+    if (!p)
+        return;
+
+    for (unsigned i = 0; i < p->nb_inputs; i++)
+        pad_params_free(&p->inputs[i]);
+    av_freep(&p->inputs);
+
+    for (unsigned i = 0; i < p->nb_outputs; i++)
+        pad_params_free(&p->outputs[i]);
+    av_freep(&p->outputs);
+
+    av_dict_free(&p->opts);
+
+    av_freep(&p->filter_name);
+    av_freep(&p->instance_name);
+
+    av_freep(pp);
+}
+
+static void chain_free(AVFilterChain **pch)
+{
+    AVFilterChain *ch = *pch;
+
+    if (!ch)
+        return;
+
+    for (size_t i = 0; i < ch->nb_filters; i++)
+        filter_params_free(&ch->filters[i]);
+    av_freep(&ch->filters);
+
+    av_freep(pch);
+}
+
+void avfilter_graph_segment_free(AVFilterGraphSegment **pseg)
+{
+    AVFilterGraphSegment *seg = *pseg;
+
+    if (!seg)
+        return;
+
+    for (size_t i = 0; i < seg->nb_chains; i++)
+        chain_free(&seg->chains[i]);
+    av_freep(&seg->chains);
+
+    av_freep(&seg->scale_sws_opts);
+
+    av_freep(pseg);
+}
+
+static int linklabels_parse(void *logctx, const char **linklabels,
+                            AVFilterPadParams ***res, unsigned *nb_res)
+{
+    AVFilterPadParams **pp = NULL;
+    int nb = 0;
+    int ret;
+
+    while (**linklabels == '[') {
+        char *label;
+        AVFilterPadParams *par;
+
+        label = parse_link_name(linklabels, logctx);
+        if (!label) {
+            ret = AVERROR(EINVAL);
+            goto fail;
+        }
+
+        par = av_mallocz(sizeof(*par));
+        if (!par) {
+            av_freep(&label);
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+
+        par->label = label;
+
+        ret = av_dynarray_add_nofree(&pp, &nb, par);
+        if (ret < 0) {
+            pad_params_free(&par);
+            goto fail;
+        }
+
+        *linklabels += strspn(*linklabels, WHITESPACES);
+    }
+
+    *res    = pp;
+    *nb_res = nb;
+
+    return 0;
+fail:
+    for (unsigned i = 0; i < nb; i++)
+        pad_params_free(&pp[i]);
+    av_freep(&pp);
+    return ret;
+}
+
+static int filter_parse(void *logctx, const char **filter,
+                        AVFilterParams **pp)
+{
+    AVFilterParams *p;
+    char *inst_name;
+    int ret;
+
+    p = av_mallocz(sizeof(*p));
+    if (!p)
+        return AVERROR(ENOMEM);
+
+    ret = linklabels_parse(logctx, filter, &p->inputs, &p->nb_inputs);
+    if (ret < 0)
+        goto fail;
+
+    p->filter_name = av_get_token(filter, "=,;[");
+    if (!p->filter_name) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    inst_name = strchr(p->filter_name, '@');
+    if (inst_name) {
+        *inst_name++ = 0;
+        p->instance_name = av_strdup(inst_name);
+        if (!p->instance_name) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+    }
+
+    if (**filter == '=') {
+        const AVFilter *f = avfilter_get_by_name(p->filter_name);
+        char *opts;
+
+        (*filter)++;
+
+        opts = av_get_token(filter, "[],;");
+        if (!opts) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+
+        ret = ff_filter_opt_parse(logctx, f ? f->priv_class : NULL,
+                                  &p->opts, opts);
+        av_freep(&opts);
+        if (ret < 0)
+            goto fail;
+    }
+
+    ret = linklabels_parse(logctx, filter, &p->outputs, &p->nb_outputs);
+    if (ret < 0)
+        goto fail;
+
+    *filter += strspn(*filter, WHITESPACES);
+
+    *pp = p;
+    return 0;
+fail:
+    av_log(logctx, AV_LOG_ERROR,
+           "Error parsing a filter description around: %s\n", *filter);
+    filter_params_free(&p);
+    return ret;
+}
+
+static int chain_parse(void *logctx, const char **pchain,
+                       AVFilterChain **pch)
+{
+    const char *chain = *pchain;
+    AVFilterChain *ch;
+    int ret, nb_filters = 0;
+
+    *pch = NULL;
+
+    ch = av_mallocz(sizeof(*ch));
+    if (!ch)
+        return AVERROR(ENOMEM);
+
+    while (*chain) {
+        AVFilterParams *p;
+        char chr;
+
+        ret = filter_parse(logctx, &chain, &p);
+        if (ret < 0)
+            goto fail;
+
+        ret = av_dynarray_add_nofree(&ch->filters, &nb_filters, p);
+        if (ret < 0) {
+            filter_params_free(&p);
+            goto fail;
+        }
+        ch->nb_filters = nb_filters;
+
+        // a filter ends with one of: , ; end-of-string
+        chr = *chain;
+        if (chr && chr != ',' && chr != ';') {
+            av_log(logctx, AV_LOG_ERROR,
+                   "Trailing garbage after a filter: %s\n", chain);
+            ret = AVERROR(EINVAL);
+            goto fail;
+        }
+
+        if (chr) {
+            chain++;
+            chain += strspn(chain, WHITESPACES);
+
+            if (chr == ';')
+                break;
+        }
+    }
+
+    *pchain = chain;
+    *pch    = ch;
+
+    return 0;
+fail:
+    av_log(logctx, AV_LOG_ERROR,
+           "Error parsing filterchain '%s' around: %s\n", *pchain, chain);
+    chain_free(&ch);
+    return ret;
+}
+
+int avfilter_graph_segment_parse(AVFilterGraph *graph, const char *graph_str,
+                                 int flags, AVFilterGraphSegment **pseg)
+{
+    AVFilterGraphSegment *seg;
+    int ret, nb_chains = 0;
+
+    *pseg = NULL;
+
+    if (flags)
+        return AVERROR(ENOSYS);
+
+    seg = av_mallocz(sizeof(*seg));
+    if (!seg)
+        return AVERROR(ENOMEM);
+
+    seg->graph = graph;
+
+    graph_str += strspn(graph_str, WHITESPACES);
+
+    ret = parse_sws_flags(&graph_str, &seg->scale_sws_opts, &graph);
+    if (ret < 0)
+        goto fail;
+
+    graph_str += strspn(graph_str, WHITESPACES);
+
+    while (*graph_str) {
+        AVFilterChain *ch;
+
+        ret = chain_parse(graph, &graph_str, &ch);
+        if (ret < 0)
+            goto fail;
+
+        ret = av_dynarray_add_nofree(&seg->chains, &nb_chains, ch);
+        if (ret < 0) {
+            chain_free(&ch);
+            goto fail;
+        }
+        seg->nb_chains = nb_chains;
+
+        graph_str += strspn(graph_str, WHITESPACES);
+    }
+
+    if (!seg->nb_chains) {
+        av_log(graph, AV_LOG_ERROR, "No filters specified in the graph description\n");
+        ret = AVERROR(EINVAL);
+        goto fail;
+    }
+
+    *pseg = seg;
+
+    return 0;
+fail:
+    avfilter_graph_segment_free(&seg);
+    return ret;
+}
+
+int avfilter_graph_segment_create_filters(AVFilterGraphSegment *seg, int flags)
+{
+    size_t idx = 0;
+
+    if (flags)
+        return AVERROR(ENOSYS);
+
+    if (seg->scale_sws_opts) {
+        av_freep(&seg->graph->scale_sws_opts);
+        seg->graph->scale_sws_opts = av_strdup(seg->scale_sws_opts);
+        if (!seg->graph->scale_sws_opts)
+            return AVERROR(ENOMEM);
+    }
+
+    for (size_t i = 0; i < seg->nb_chains; i++) {
+        AVFilterChain *ch = seg->chains[i];
+
+        for (size_t j = 0; j < ch->nb_filters; j++) {
+            AVFilterParams *p = ch->filters[j];
+            const AVFilter *f = avfilter_get_by_name(p->filter_name);
+            char inst_name[30], *name = p->instance_name ? p->instance_name :
+                                                           inst_name;
+
+            // skip already processed filters
+            if (p->filter || !p->filter_name)
+                continue;
+
+            if (!f) {
+                av_log(seg->graph, AV_LOG_ERROR,
+                       "No such filter: '%s'\n", p->filter_name);
+                return AVERROR_FILTER_NOT_FOUND;
+            }
+
+            if (!p->instance_name)
+                snprintf(inst_name, sizeof(inst_name), "Parsed_%s_%zu", f->name, idx);
+
+            p->filter = avfilter_graph_alloc_filter(seg->graph, f, name);
+            if (!p->filter)
+                return AVERROR(ENOMEM);
+
+            if (!strcmp(f->name, "scale") && seg->graph->scale_sws_opts) {
+                int ret = av_set_options_string(p->filter, seg->graph->scale_sws_opts,
+                                                "=", ":");
+                if (ret < 0) {
+                    avfilter_free(p->filter);
+                    p->filter = NULL;
+                    return ret;
+                }
+            }
+
+            av_freep(&p->filter_name);
+            av_freep(&p->instance_name);
+
+            idx++;
+        }
+    }
+
+    return 0;
+}
+
+static int fail_creation_pending(AVFilterGraphSegment *seg, const char *fn,
+                                 const char *func)
+{
+    av_log(seg->graph, AV_LOG_ERROR,
+           "A creation-pending filter '%s' present in the segment. All filters "
+           "must be created or disabled before calling %s().\n", fn, func);
+    return AVERROR(EINVAL);
+}
+
+int avfilter_graph_segment_apply_opts(AVFilterGraphSegment *seg, int flags)
+{
+    int ret, leftover_opts = 0;
+
+    if (flags)
+        return AVERROR(ENOSYS);
+
+    for (size_t i = 0; i < seg->nb_chains; i++) {
+        AVFilterChain *ch = seg->chains[i];
+
+        for (size_t j = 0; j < ch->nb_filters; j++) {
+            AVFilterParams *p = ch->filters[j];
+
+            if (p->filter_name)
+                return fail_creation_pending(seg, p->filter_name, __func__);
+            if (!p->filter || !p->opts)
+                continue;
+
+            ret = av_opt_set_dict2(p->filter, &p->opts, AV_OPT_SEARCH_CHILDREN);
+            if (ret < 0)
+                return ret;
+
+            if (av_dict_count(p->opts))
+                leftover_opts = 1;
+        }
+    }
+
+    return leftover_opts ? AVERROR_OPTION_NOT_FOUND : 0;
+}
+
+int avfilter_graph_segment_init(AVFilterGraphSegment *seg, int flags)
+{
+    if (flags)
+        return AVERROR(ENOSYS);
+
+    for (size_t i = 0; i < seg->nb_chains; i++) {
+        AVFilterChain *ch = seg->chains[i];
+
+        for (size_t j = 0; j < ch->nb_filters; j++) {
+            AVFilterParams *p = ch->filters[j];
+            int ret;
+
+            if (p->filter_name)
+                return fail_creation_pending(seg, p->filter_name, __func__);
+            if (!p->filter || p->filter->internal->initialized)
+                continue;
+
+            ret = avfilter_init_dict(p->filter, NULL);
+            if (ret < 0)
+                return ret;
+        }
+    }
+
+    return 0;
+}
+
+static unsigned
+find_linklabel(AVFilterGraphSegment *seg, const char *label,
+               int output, size_t idx_chain, size_t idx_filter,
+               AVFilterParams **pp)
+{
+    for (; idx_chain < seg->nb_chains; idx_chain++) {
+        AVFilterChain *ch = seg->chains[idx_chain];
+
+        for (; idx_filter < ch->nb_filters; idx_filter++) {
+            AVFilterParams *p = ch->filters[idx_filter];
+            AVFilterPadParams **io = output ? p->outputs    : p->inputs;
+            unsigned         nb_io = output ? p->nb_outputs : p->nb_inputs;
+            AVFilterLink **l;
+            unsigned nb_l;
+
+            if (!p->filter)
+                continue;
+
+            l    = output ? p->filter->outputs    : p->filter->inputs;
+            nb_l = output ? p->filter->nb_outputs : p->filter->nb_inputs;
+
+            for (unsigned i = 0; i < FFMIN(nb_io, nb_l); i++)
+                if (!l[i] && io[i]->label && !strcmp(io[i]->label, label)) {
+                    *pp = p;
+                    return i;
+                }
+        }
+
+        idx_filter = 0;
+    }
+
+    *pp = NULL;
+    return 0;
+}
+
+static int inout_add(AVFilterInOut **inouts, AVFilterContext *f, unsigned pad_idx,
+                     const char *label)
+{
+    AVFilterInOut *io = av_mallocz(sizeof(*io));
+
+    if (!io)
+        return AVERROR(ENOMEM);
+
+    io->filter_ctx = f;
+    io->pad_idx    = pad_idx;
+
+    if (label) {
+        io->name = av_strdup(label);
+        if (!io->name) {
+            avfilter_inout_free(&io);
+            return AVERROR(ENOMEM);
+        }
+    }
+
+    append_inout(inouts, &io);
+
+    return 0;
+}
+
+static int link_inputs(AVFilterGraphSegment *seg, size_t idx_chain,
+                       size_t idx_filter, AVFilterInOut **inputs)
+{
+    AVFilterChain  *ch = seg->chains[idx_chain];
+    AVFilterParams  *p = ch->filters[idx_filter];
+    AVFilterContext *f = p->filter;
+
+    int ret;
+
+    if (f->nb_inputs < p->nb_inputs) {
+        av_log(seg->graph, AV_LOG_ERROR,
+               "More input link labels specified for filter '%s' than "
+               "it has inputs: %u > %d\n", f->filter->name,
+               p->nb_inputs, f->nb_inputs);
+        return AVERROR(EINVAL);
+    }
+
+    for (unsigned in = 0; in < f->nb_inputs; in++) {
+        const char *label = (in < p->nb_inputs) ? p->inputs[in]->label : NULL;
+
+        // skip already linked inputs
+        if (f->inputs[in])
+            continue;
+
+        if (label) {
+            AVFilterParams *po = NULL;
+            unsigned idx = find_linklabel(seg, label, 1, idx_chain, idx_filter, &po);
+
+            if (po) {
+                ret = avfilter_link(po->filter, idx, f, in);
+                if (ret < 0)
+                    return ret;
+
+                continue;
+            }
+        }
+
+        ret = inout_add(inputs, f, in, label);
+        if (ret < 0)
+            return ret;
+    }
+
+    return 0;
+}
+
+static int link_outputs(AVFilterGraphSegment *seg, size_t idx_chain,
+                        size_t idx_filter, AVFilterInOut **outputs)
+{
+    AVFilterChain  *ch = seg->chains[idx_chain];
+    AVFilterParams  *p = ch->filters[idx_filter];
+    AVFilterContext *f = p->filter;
+
+    int ret;
+
+    if (f->nb_outputs < p->nb_outputs) {
+        av_log(seg->graph, AV_LOG_ERROR,
+               "More output link labels specified for filter '%s' than "
+               "it has outputs: %u > %d\n", f->filter->name,
+               p->nb_outputs, f->nb_outputs);
+        return AVERROR(EINVAL);
+    }
+    for (unsigned out = 0; out < f->nb_outputs; out++) {
+        char *label = (out < p->nb_outputs) ? p->outputs[out]->label : NULL;
+
+        // skip already linked outputs
+        if (f->outputs[out])
+            continue;
+
+        if (label) {
+            AVFilterParams *po = NULL;
+            unsigned idx = find_linklabel(seg, label, 0, idx_chain, idx_filter, &po);
+
+            if (po) {
+                ret = avfilter_link(f, out, po->filter, idx);
+                if (ret < 0)
+                    return ret;
+
+                continue;
+            }
+        }
+
+        // if this output is unlabeled, try linking it to an unlabeled
+        // input in the next non-disabled filter in the chain
+        for (size_t i = idx_filter + 1; i < ch->nb_filters && !label; i++) {
+            AVFilterParams *p_next = ch->filters[i];
+
+            if (!p_next->filter)
+                continue;
+
+            for (unsigned in = 0; in < p_next->filter->nb_inputs; in++) {
+                if (!p_next->filter->inputs[in] &&
+                    (in >= p_next->nb_inputs || !p_next->inputs[in]->label)) {
+                    ret = avfilter_link(f, out, p_next->filter, in);
+                    if (ret < 0)
+                        return ret;
+
+                    goto cont;
+                }
+            }
+            break;
+        }
+
+        ret = inout_add(outputs, f, out, label);
+        if (ret < 0)
+            return ret;
+
+cont:;
+    }
+
+    return 0;
+}
+
+int avfilter_graph_segment_link(AVFilterGraphSegment *seg, int flags,
+                                AVFilterInOut **inputs,
+                                AVFilterInOut **outputs)
+{
+    int ret;
+
+    *inputs  = NULL;
+    *outputs = NULL;
+
+    if (flags)
+        return AVERROR(ENOSYS);
+
+    for (size_t idx_chain = 0; idx_chain < seg->nb_chains; idx_chain++) {
+        AVFilterChain *ch = seg->chains[idx_chain];
+
+        for (size_t idx_filter = 0; idx_filter < ch->nb_filters; idx_filter++) {
+            AVFilterParams  *p = ch->filters[idx_filter];
+
+            if (p->filter_name) {
+                ret = fail_creation_pending(seg, p->filter_name, __func__);
+                goto fail;
+            }
+
+            if (!p->filter)
+                continue;
+
+            ret = link_inputs(seg, idx_chain, idx_filter, inputs);
+            if (ret < 0)
+                goto fail;
+
+            ret = link_outputs(seg, idx_chain, idx_filter, outputs);
+            if (ret < 0)
+                goto fail;
+        }
+    }
+    return 0;
+fail:
+    avfilter_inout_free(inputs);
+    avfilter_inout_free(outputs);
+    return ret;
+}
+
+int avfilter_graph_segment_apply(AVFilterGraphSegment *seg, int flags,
+                                 AVFilterInOut **inputs,
+                                 AVFilterInOut **outputs)
+{
+    int ret;
+
+    if (flags)
+        return AVERROR(ENOSYS);
+
+    ret = avfilter_graph_segment_create_filters(seg, 0);
+    if (ret < 0) {
+        av_log(seg->graph, AV_LOG_ERROR, "Error creating filters\n");
+        return ret;
+    }
+
+    ret = avfilter_graph_segment_apply_opts(seg, 0);
+    if (ret < 0) {
+        av_log(seg->graph, AV_LOG_ERROR, "Error applying filter options\n");
+        return ret;
+    }
+
+    ret = avfilter_graph_segment_init(seg, 0);
+    if (ret < 0) {
+        av_log(seg->graph, AV_LOG_ERROR, "Error initializing filters\n");
+        return ret;
+    }
+
+    ret = avfilter_graph_segment_link(seg, 0, inputs, outputs);
+    if (ret < 0) {
+        av_log(seg->graph, AV_LOG_ERROR, "Error linking filters\n");
+        return ret;
+    }
+
+    return 0;
 }
