@@ -3183,62 +3183,61 @@ where @code{X} is channel number starting from 1 or string @code{Overall}. Defau
 disabled.
 
 Available keys for each channel are:
-DC_offset
-Min_level
-Max_level
-Min_difference
-Max_difference
-Mean_difference
-RMS_difference
-Peak_level
-RMS_peak
-RMS_trough
-Crest_factor
-Flat_factor
-Peak_count
-Noise_floor
-Noise_floor_count
-Entropy
-Bit_depth
-Dynamic_range
-Zero_crossings
-Zero_crossings_rate
-Number_of_NaNs
-Number_of_Infs
-Number_of_denormals
+@var{Bit_depth}
+@var{Crest_factor}
+@var{DC_offset}
+@var{Dynamic_range}
+@var{Entropy}
+@var{Flat_factor}
+@var{Max_difference}
+@var{Max_level}
+@var{Mean_difference}
+@var{Min_difference}
+@var{Min_level}
+@var{Noise_floor}
+@var{Noise_floor_count}
+@var{Number_of_Infs}
+@var{Number_of_NaNs}
+@var{Number_of_denormals}
+@var{Peak_count}
+@var{Peak_level}
+@var{RMS_difference}
+@var{RMS_peak}
+@var{RMS_trough}
+@var{Zero_crossings}
+@var{Zero_crossings_rate}
 
-and for Overall:
-DC_offset
-Min_level
-Max_level
-Min_difference
-Max_difference
-Mean_difference
-RMS_difference
-Peak_level
-RMS_level
-RMS_peak
-RMS_trough
-Flat_factor
-Peak_count
-Noise_floor
-Noise_floor_count
-Entropy
-Bit_depth
-Number_of_samples
-Number_of_NaNs
-Number_of_Infs
-Number_of_denormals
+and for @code{Overall}:
+@var{Bit_depth}
+@var{DC_offset}
+@var{Entropy}
+@var{Flat_factor}
+@var{Max_difference}
+@var{Max_level}
+@var{Mean_difference}
+@var{Min_difference}
+@var{Min_level}
+@var{Noise_floor}
+@var{Noise_floor_count}
+@var{Number_of_Infs}
+@var{Number_of_NaNs}
+@var{Number_of_denormals}
+@var{Number_of_samples}
+@var{Peak_count}
+@var{Peak_level}
+@var{RMS_difference}
+@var{RMS_level}
+@var{RMS_peak}
+@var{RMS_trough}
 
-For example full key look like this @code{lavfi.astats.1.DC_offset} or
-this @code{lavfi.astats.Overall.Peak_count}.
+For example, a full key looks like @code{lavfi.astats.1.DC_offset} or
+@code{lavfi.astats.Overall.Peak_count}.
 
-For description what each key means read below.
+Read below for the description of the keys.
 
 @item reset
 Set the number of frames over which cumulative stats are calculated before
-being reset
-Default is disabled.
+being reset. Default is disabled.
 
 @item measure_perchannel
 Select the parameters which are measured per channel. The metadata keys can
@@ -3252,71 +3251,91 @@ be used as flags, default is @option{all} which measures everything.
 
 @end table
 
-A description of each shown parameter follows:
+A description of the measure keys follow:
 
 @table @option
-@item DC offset
-Mean amplitude displacement from zero.
+@item none
+no measures
 
-@item Min level
-Minimal sample level.
+@item all
+all measures
 
-@item Max level
-Maximal sample level.
+@item Bit_depth
+overall bit depth of audio, i.e. number of bits used for each sample
 
-@item Min difference
-Minimal difference between two consecutive samples.
+@item Crest_factor
+standard ratio of peak to RMS level (note: not in dB)
 
-@item Max difference
-Maximal difference between two consecutive samples.
+@item DC_offset
+mean amplitude displacement from zero
 
-@item Mean difference
-Mean difference between two consecutive samples.
-The average of each difference between two consecutive samples.
-
-@item RMS difference
-Root Mean Square difference between two consecutive samples.
-
-@item Peak level dB
-@item RMS level dB
-Standard peak and RMS level measured in dBFS.
-
-@item RMS peak dB
-@item RMS trough dB
-Peak and trough values for RMS level measured over a short window.
-
-@item Crest factor
-Standard ratio of peak to RMS level (note: not in dB).
-
-@item Flat factor
-Flatness (i.e. consecutive samples with the same value) of the signal at its peak levels
-(i.e. either @var{Min level} or @var{Max level}).
-
-@item Peak count
-Number of occasions (not the number of samples) that the signal attained either
-@var{Min level} or @var{Max level}.
-
-@item Noise floor dB
-Minimum local peak measured in dBFS over a short window.
-
-@item Noise floor count
-Number of occasions (not the number of samples) that the signal attained
-@var{Noise floor}.
+@item Dynamic_range
+measured dynamic range of audio in dB
 
 @item Entropy
-Entropy measured across whole audio. Entropy of value near 1.0 is typically measured for white noise.
+entropy measured across whole audio, entropy of value near 1.0 is typically measured for white noise
 
-@item Bit depth
-Overall bit depth of audio. Number of bits used for each sample.
+@item Flat_factor
+flatness (i.e. consecutive samples with the same value) of the signal at its peak levels
+(i.e. either @var{Min_level} or @var{Max_level})
 
-@item Dynamic range
-Measured dynamic range of audio in dB.
+@item Max_difference
+maximal difference between two consecutive samples
+
+@item Max_level
+maximal sample level
+
+@item Mean_difference
+mean difference between two consecutive samples, i.e. the average of each difference between two consecutive samples
+
+@item Min_difference
+minimal difference between two consecutive samples
+
+@item Min_level
+minimal sample level
+
+@item Noise_floor
+minimum local peak measured in dBFS over a short window
+
+@item Noise_floor_count
+number of occasions (not the number of samples) that the signal attained
+@var{Noise floor}
+
+@item Number_of_Infs
+number of samples with an infinite value
+
+@item Number_of_NaNs
+number of samples with a NaN (not a number) value
+
+@item Number_of_denormals
+number of samples with a subnormal value
+
+@item Number_of_samples
+number of samples
+
+@item Peak_count
+number of occasions (not the number of samples) that the signal attained either
+@var{Min_level} or @var{Max_level}
+
+@item Peak_level
+standard peak level measured in dBFS
+
+@item RMS_difference
+Root Mean Square difference between two consecutive samples
+
+@item RMS_level
+standard RMS level measured in dBFS
+
+@item RMS_peak
+@item RMS_trough
+peak and trough values for RMS level measured over a short window,
+measured in dBFS.
 
 @item Zero crossings
-Number of points where the waveform crosses the zero level axis.
+number of points where the waveform crosses the zero level axis
 
 @item Zero crossings rate
-Rate of Zero crossings and number of audio samples.
+rate of Zero crossings and number of audio samples
 @end table
 
 @section asubboost
