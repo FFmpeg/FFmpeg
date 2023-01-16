@@ -405,4 +405,17 @@ int ff_filter_process_command(AVFilterContext *ctx, const char *cmd,
 int ff_filter_init_hw_frames(AVFilterContext *avctx, AVFilterLink *link,
                              int default_pool_size);
 
+/**
+ * Parse filter options into a dictionary.
+ *
+ * @param logctx context for logging
+ * @param priv_class a filter's private class for shorthand options or NULL
+ * @param options dictionary to store parsed options in
+ * @param args options string to parse
+ *
+ * @return a non-negative number on success, a negative error code on failure
+ */
+int ff_filter_opt_parse(void *logctx, const AVClass *priv_class,
+                        AVDictionary **options, const char *args);
+
 #endif /* AVFILTER_INTERNAL_H */

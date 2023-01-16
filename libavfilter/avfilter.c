@@ -776,8 +776,8 @@ int ff_filter_get_nb_threads(AVFilterContext *ctx)
     return ctx->graph->nb_threads;
 }
 
-static int process_options(AVFilterContext *ctx, AVDictionary **options,
-                           const char *args)
+int ff_filter_opt_parse(void *logctx, const AVClass *priv_class,
+                        AVDictionary **options, const char *args)
 {
     const AVOption *o = NULL;
     int ret;
@@ -791,8 +791,8 @@ static int process_options(AVFilterContext *ctx, AVDictionary **options,
     while (*args) {
         const char *shorthand = NULL;
 
-        if (ctx->filter->priv_class)
-            o = av_opt_next(ctx->priv, o);
+        if (priv_class)
+            o = av_opt_next(&priv_class, o);
         if (o) {
             if (o->type == AV_OPT_TYPE_CONST || o->offset == offset)
                 continue;
@@ -805,9 +805,9 @@ static int process_options(AVFilterContext *ctx, AVDictionary **options,
                                    &parsed_key, &value);
         if (ret < 0) {
             if (ret == AVERROR(EINVAL))
-                av_log(ctx, AV_LOG_ERROR, "No option name near '%s'\n", args);
+                av_log(logctx, AV_LOG_ERROR, "No option name near '%s'\n", args);
             else
-                av_log(ctx, AV_LOG_ERROR, "Unable to parse '%s': %s\n", args,
+                av_log(logctx, AV_LOG_ERROR, "Unable to parse '%s': %s\n", args,
                        av_err2str(ret));
             return ret;
         }
@@ -817,13 +817,13 @@ static int process_options(AVFilterContext *ctx, AVDictionary **options,
             key = parsed_key;
 
             /* discard all remaining shorthand */
-            if (ctx->filter->priv_class)
-                while ((o = av_opt_next(ctx->priv, o)));
+            if (priv_class)
+                while ((o = av_opt_next(&priv_class, o)));
         } else {
             key = shorthand;
         }
 
-        av_log(ctx, AV_LOG_DEBUG, "Setting '%s' to value '%s'\n", key, value);
+        av_log(logctx, AV_LOG_DEBUG, "Setting '%s' to value '%s'\n", key, value);
 
         av_dict_set(options, key, value, AV_DICT_MULTIKEY);
 
@@ -887,7 +887,7 @@ int avfilter_init_str(AVFilterContext *filter, const char *args)
     int ret = 0;
 
     if (args && *args) {
-        ret = process_options(filter, &options, args);
+        ret = ff_filter_opt_parse(filter, filter->filter->priv_class, &options, args);
         if (ret < 0)
             goto fail;
     }
