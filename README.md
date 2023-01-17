@@ -34,6 +34,8 @@ and in the [wiki](https://trac.ffmpeg.org).
 
 Coding examples are available in the **doc/examples** directory.
 
+For Windows OS users, there is a set of ready-made BAT scripts: [FFMPEG_BAT](https://github.com/brendan8c/FFMPEG_BAT).
+
 ## License
 
 FFmpeg codebase is mainly LGPL-licensed with optional components licensed under
