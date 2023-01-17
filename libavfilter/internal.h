@@ -137,6 +137,10 @@ struct AVFilterGraphInternal {
 
 struct AVFilterInternal {
     avfilter_execute_func *execute;
+
+    // 1 when avfilter_init_*() was successfully called on this filter
+    // 0 otherwise
+    int initialized;
 };
 
 static av_always_inline int ff_filter_execute(AVFilterContext *ctx, avfilter_action_func *func,

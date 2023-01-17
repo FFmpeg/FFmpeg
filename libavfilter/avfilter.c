@@ -158,6 +158,11 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
         src->outputs[srcpad]      || dst->inputs[dstpad])
         return AVERROR(EINVAL);
 
+    if (!src->internal->initialized || !dst->internal->initialized) {
+        av_log(src, AV_LOG_ERROR, "Filters must be initialized before linking.\n");
+        return AVERROR(EINVAL);
+    }
+
     if (src->output_pads[srcpad].type != dst->input_pads[dstpad].type) {
         av_log(src, AV_LOG_ERROR,
                "Media type mismatch between the '%s' filter output pad %d (%s) and the '%s' filter input pad %d (%s)\n",
@@ -851,6 +856,11 @@ int avfilter_init_dict(AVFilterContext *ctx, AVDictionary **options)
 {
     int ret = 0;
 
+    if (ctx->internal->initialized) {
+        av_log(ctx, AV_LOG_ERROR, "Filter already initialized\n");
+        return AVERROR(EINVAL);
+    }
+
     ret = av_opt_set_dict2(ctx, options, AV_OPT_SEARCH_CHILDREN);
     if (ret < 0) {
         av_log(ctx, AV_LOG_ERROR, "Error applying generic filter options.\n");
@@ -876,6 +886,8 @@ int avfilter_init_dict(AVFilterContext *ctx, AVDictionary **options)
         if (ret < 0)
             return ret;
     }
+
+    ctx->internal->initialized = 1;
 
     return 0;
 }
