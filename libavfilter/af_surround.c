@@ -1291,7 +1291,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                       FFMIN(outlink->ch_layout.nb_channels,
                             ff_filter_get_nb_threads(ctx)));
 
-    out->pts = in->pts;
+    av_frame_copy_props(out, in);
     out->nb_samples = in->nb_samples;
 
     av_frame_free(&in);
