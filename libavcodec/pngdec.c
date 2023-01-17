@@ -76,6 +76,10 @@ typedef struct PNGDecContext {
     uint32_t white_point[2];
     uint32_t display_primaries[3][2];
     int have_srgb;
+    int have_cicp;
+    enum AVColorPrimaries cicp_primaries;
+    enum AVColorTransferCharacteristic cicp_trc;
+    enum AVColorRange cicp_range;
 
     enum PNGHeaderState hdr_state;
     enum PNGImageState pic_state;
@@ -1314,6 +1318,19 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
             }
             break;
         }
+        case MKTAG('c', 'I', 'C', 'P'):
+            s->cicp_primaries = bytestream2_get_byte(&gb_chunk);
+            s->cicp_trc = bytestream2_get_byte(&gb_chunk);
+            if (bytestream2_get_byte(&gb_chunk) != 0)
+                av_log(avctx, AV_LOG_WARNING, "nonzero cICP matrix\n");
+            s->cicp_range = bytestream2_get_byte(&gb_chunk);
+            if (s->cicp_range != 0 && s->cicp_range != 1) {
+                av_log(avctx, AV_LOG_ERROR, "invalid cICP range: %d\n", s->cicp_range);
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
+            }
+            s->have_cicp = 1;
+            break;
         case MKTAG('s', 'R', 'G', 'B'):
             /* skip rendering intent byte */
             bytestream2_skip(&gb_chunk, 1);
@@ -1475,6 +1492,7 @@ static void clear_frame_metadata(PNGDecContext *s)
 
     s->have_chrm = 0;
     s->have_srgb = 0;
+    s->have_cicp = 0;
 
     av_dict_free(&s->frame_metadata);
 }
@@ -1484,7 +1502,18 @@ static int output_frame(PNGDecContext *s, AVFrame *f)
     AVCodecContext *avctx = s->avctx;
     int ret;
 
-    if (s->iccp_data) {
+    if (s->have_cicp) {
+        if (s->cicp_primaries >= AVCOL_PRI_NB)
+            av_log(avctx, AV_LOG_WARNING, "unrecognized cICP primaries\n");
+        else
+            avctx->color_primaries = f->color_primaries = s->cicp_primaries;
+        if (s->cicp_trc >= AVCOL_TRC_NB)
+            av_log(avctx, AV_LOG_WARNING, "unrecognized cICP transfer\n");
+        else
+            avctx->color_trc = f->color_trc = s->cicp_trc;
+        avctx->color_range = f->color_range =
+            s->cicp_range == 0 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
+    } else if (s->iccp_data) {
         AVFrameSideData *sd = av_frame_new_side_data(f, AV_FRAME_DATA_ICC_PROFILE, s->iccp_data_len);
         if (!sd) {
             ret = AVERROR(ENOMEM);
@@ -1514,8 +1543,8 @@ static int output_frame(PNGDecContext *s, AVFrame *f)
             av_log(avctx, AV_LOG_WARNING, "unknown cHRM primaries\n");
     }
 
-    /* these chunks overrides gAMA */
-    if (s->iccp_data || s->have_srgb)
+    /* these chunks override gAMA */
+    if (s->iccp_data || s->have_srgb || s->have_cicp)
         av_dict_set(&s->frame_metadata, "gamma", NULL, 0);
 
     avctx->colorspace = f->colorspace = AVCOL_SPC_RGB;

@@ -417,6 +417,14 @@ static int encode_headers(AVCodecContext *avctx, const AVFrame *pict)
         pict->color_trc == AVCOL_TRC_IEC61966_2_1) {
         s->buf[0] = 1; /* rendering intent, relative colorimetric by default */
         png_write_chunk(&s->bytestream, MKTAG('s', 'R', 'G', 'B'), s->buf, 1);
+    } else if (pict->color_primaries != AVCOL_PRI_UNSPECIFIED ||
+        pict->color_trc != AVCOL_TRC_UNSPECIFIED) {
+        /* these values match H.273 so no translation is needed */
+        s->buf[0] = pict->color_primaries;
+        s->buf[1] = pict->color_trc;
+        s->buf[2] = 0; /* colorspace = RGB */
+        s->buf[3] = pict->color_range == AVCOL_RANGE_MPEG ? 0 : 1;
+        png_write_chunk(&s->bytestream, MKTAG('c', 'I', 'C', 'P'), s->buf, 4);
     }
 
     if (png_get_chrm(pict->color_primaries, s->buf))
