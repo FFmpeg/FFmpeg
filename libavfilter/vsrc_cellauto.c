@@ -302,6 +302,7 @@ static int request_frame(AVFilterLink *outlink)
     evolve(outlink->src);
 
     picref->pts = s->pts++;
+    picref->duration = 1;
 
 #ifdef DEBUG
     show_cellauto_row(outlink->src);
