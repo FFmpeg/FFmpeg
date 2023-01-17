@@ -143,6 +143,7 @@ static int fir_frame(AudioFIRContext *s, AVFrame *in, AVFilterLink *outlink)
         av_frame_free(&in);
         return AVERROR(ENOMEM);
     }
+    av_frame_copy_props(out, in);
     out->pts = s->pts = in->pts;
 
     s->in = in;
