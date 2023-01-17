@@ -26,10 +26,12 @@
 #include "libavutil/avassert.h"
 #include "libavutil/bprint.h"
 #include "libavutil/crc.h"
+#include "libavutil/csp.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/pixfmt.h"
+#include "libavutil/rational.h"
 #include "libavutil/stereo3d.h"
-#include "libavutil/mastering_display_metadata.h"
 
 #include "avcodec.h"
 #include "bytestream.h"
@@ -1472,6 +1474,7 @@ static void clear_frame_metadata(PNGDecContext *s)
 
 static int output_frame(PNGDecContext *s, AVFrame *f)
 {
+    AVCodecContext *avctx = s->avctx;
     int ret;
 
     if (s->iccp_data) {
@@ -1483,7 +1486,29 @@ static int output_frame(PNGDecContext *s, AVFrame *f)
         memcpy(sd->data, s->iccp_data, s->iccp_data_len);
 
         av_dict_set(&sd->metadata, "name", s->iccp_name, 0);
+    } else if (s->have_chrm) {
+        AVColorPrimariesDesc desc;
+        enum AVColorPrimaries prim;
+        desc.wp.x = av_make_q(s->white_point[0], 100000);
+        desc.wp.y = av_make_q(s->white_point[1], 100000);
+        desc.prim.r.x = av_make_q(s->display_primaries[0][0], 100000);
+        desc.prim.r.y = av_make_q(s->display_primaries[0][1], 100000);
+        desc.prim.g.x = av_make_q(s->display_primaries[1][0], 100000);
+        desc.prim.g.y = av_make_q(s->display_primaries[1][1], 100000);
+        desc.prim.b.x = av_make_q(s->display_primaries[2][0], 100000);
+        desc.prim.b.y = av_make_q(s->display_primaries[2][1], 100000);
+        prim = av_csp_primaries_id_from_desc(&desc);
+        if (prim != AVCOL_PRI_UNSPECIFIED)
+            avctx->color_primaries = f->color_primaries = prim;
+        else
+            av_log(avctx, AV_LOG_WARNING, "unknown cHRM primaries\n");
     }
+
+    /* this chunk overrides gAMA */
+    if (s->iccp_data)
+        av_dict_set(&s->frame_metadata, "gamma", NULL, 0);
+
+    avctx->colorspace = f->colorspace = AVCOL_SPC_RGB;
 
     if (s->stereo_mode >= 0) {
         AVStereo3D *stereo3d = av_stereo3d_create_side_data(f);
@@ -1494,25 +1519,6 @@ static int output_frame(PNGDecContext *s, AVFrame *f)
 
         stereo3d->type  = AV_STEREO3D_SIDEBYSIDE;
         stereo3d->flags = s->stereo_mode ? 0 : AV_STEREO3D_FLAG_INVERT;
-    }
-
-    if (s->have_chrm) {
-        AVMasteringDisplayMetadata *mdm = av_mastering_display_metadata_create_side_data(f);
-        if (!mdm) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
-
-        mdm->white_point[0] = av_make_q(s->white_point[0], 100000);
-        mdm->white_point[1] = av_make_q(s->white_point[1], 100000);
-
-        /* RGB Primaries */
-        for (int i = 0; i < 3; i++) {
-            mdm->display_primaries[i][0] = av_make_q(s->display_primaries[i][0], 100000);
-            mdm->display_primaries[i][1] = av_make_q(s->display_primaries[i][1], 100000);
-        }
-
-        mdm->has_primaries = 1;
     }
 
     FFSWAP(AVDictionary*, f->metadata, s->frame_metadata);

@@ -29,10 +29,12 @@
 #include "zlib_wrapper.h"
 
 #include "libavutil/avassert.h"
+#include "libavutil/color_utils.h"
 #include "libavutil/crc.h"
+#include "libavutil/csp.h"
 #include "libavutil/libm.h"
 #include "libavutil/opt.h"
-#include "libavutil/color_utils.h"
+#include "libavutil/rational.h"
 #include "libavutil/stereo3d.h"
 
 #include <zlib.h>
@@ -294,45 +296,22 @@ static int png_write_row(AVCodecContext *avctx, const uint8_t *data, int size)
 }
 
 #define AV_WB32_PNG(buf, n) AV_WB32(buf, lrint((n) * 100000))
+#define AV_WB32_PNG_D(buf, d) AV_WB32_PNG(buf, av_q2d(d))
 static int png_get_chrm(enum AVColorPrimaries prim,  uint8_t *buf)
 {
-    double rx, ry, gx, gy, bx, by, wx = 0.3127, wy = 0.3290;
-    switch (prim) {
-        case AVCOL_PRI_BT709:
-            rx = 0.640; ry = 0.330;
-            gx = 0.300; gy = 0.600;
-            bx = 0.150; by = 0.060;
-            break;
-        case AVCOL_PRI_BT470M:
-            rx = 0.670; ry = 0.330;
-            gx = 0.210; gy = 0.710;
-            bx = 0.140; by = 0.080;
-            wx = 0.310; wy = 0.316;
-            break;
-        case AVCOL_PRI_BT470BG:
-            rx = 0.640; ry = 0.330;
-            gx = 0.290; gy = 0.600;
-            bx = 0.150; by = 0.060;
-            break;
-        case AVCOL_PRI_SMPTE170M:
-        case AVCOL_PRI_SMPTE240M:
-            rx = 0.630; ry = 0.340;
-            gx = 0.310; gy = 0.595;
-            bx = 0.155; by = 0.070;
-            break;
-        case AVCOL_PRI_BT2020:
-            rx = 0.708; ry = 0.292;
-            gx = 0.170; gy = 0.797;
-            bx = 0.131; by = 0.046;
-            break;
-        default:
-            return 0;
-    }
+    const AVColorPrimariesDesc *desc = av_csp_primaries_desc_from_id(prim);
+    if (!desc)
+        return 0;
 
-    AV_WB32_PNG(buf     , wx); AV_WB32_PNG(buf + 4 , wy);
-    AV_WB32_PNG(buf + 8 , rx); AV_WB32_PNG(buf + 12, ry);
-    AV_WB32_PNG(buf + 16, gx); AV_WB32_PNG(buf + 20, gy);
-    AV_WB32_PNG(buf + 24, bx); AV_WB32_PNG(buf + 28, by);
+    AV_WB32_PNG_D(buf,      desc->wp.x);
+    AV_WB32_PNG_D(buf +  4, desc->wp.y);
+    AV_WB32_PNG_D(buf +  8, desc->prim.r.x);
+    AV_WB32_PNG_D(buf + 12, desc->prim.r.y);
+    AV_WB32_PNG_D(buf + 16, desc->prim.g.x);
+    AV_WB32_PNG_D(buf + 20, desc->prim.g.y);
+    AV_WB32_PNG_D(buf + 24, desc->prim.b.x);
+    AV_WB32_PNG_D(buf + 28, desc->prim.b.y);
+
     return 1;
 }
 
