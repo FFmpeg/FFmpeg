@@ -593,7 +593,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         memset(s->histogram, 0, s->histogram_size * sizeof(unsigned));
     }
 
-    out->pts = in->pts;
+    av_frame_copy_props(out, in);
     av_frame_free(&in);
     s->x_pos++;
     if (s->x_pos >= s->width) {
