@@ -402,6 +402,7 @@ static int activate(AVFilterContext *ctx)
         frame->pict_type           = AV_PICTURE_TYPE_I;
         frame->sample_aspect_ratio = (AVRational) {1, 1};
         frame->pts = s->pts++;
+        frame->duration = 1;
 
         ff_filter_execute(ctx, s->draw_slice, frame, NULL,
                           FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
