@@ -1196,7 +1196,7 @@ static int output_frame(AVFilterLink *inlink, AVFrame *in)
             return AVERROR(ENOMEM);
         }
 
-        out->pts = in->pts;
+        av_frame_copy_props(out, in);
     }
 
     for (int ch = 0; ch < inlink->ch_layout.nb_channels; ch++) {
