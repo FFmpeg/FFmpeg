@@ -143,6 +143,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->h = s->h;
     outlink->sample_aspect_ratio = (AVRational){1,1};
     outlink->frame_rate = s->frame_rate;
+    outlink->time_base = av_inv_q(outlink->frame_rate);
 
     return 0;
 }
@@ -233,7 +234,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             return AVERROR(ENOMEM);
     }
 
-    outpicref->pts = insamples->pts;
+    outpicref->pts = av_rescale_q(insamples->pts, inlink->time_base, outlink->time_base);
+    outpicref->duration = 1;
     outpicref->sample_aspect_ratio = (AVRational){1,1};
 
     switch (insamples->format) {
