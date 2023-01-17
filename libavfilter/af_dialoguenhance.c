@@ -320,7 +320,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     s->in = in;
     de_stereo(ctx, out);
 
-    out->pts = in->pts;
+    av_frame_copy_props(out, in);
     out->nb_samples = in->nb_samples;
     ret = ff_filter_frame(outlink, out);
 fail:
