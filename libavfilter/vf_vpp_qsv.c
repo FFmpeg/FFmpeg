@@ -615,36 +615,31 @@ static const AVFilterPad vpp_outputs[] = {
     },
 };
 
+#define DEFINE_QSV_FILTER(x, sn, ln, fmts) \
+static const AVClass x##_class = { \
+    .class_name = #sn "_qsv", \
+    .item_name  = av_default_item_name, \
+    .option     = x##_options, \
+    .version    = LIBAVUTIL_VERSION_INT, \
+}; \
+const AVFilter ff_vf_##sn##_qsv = { \
+    .name           = #sn "_qsv", \
+    .description    = NULL_IF_CONFIG_SMALL("Quick Sync Video " #ln), \
+    .preinit        = x##_preinit, \
+    .init           = vpp_init, \
+    .uninit         = vpp_uninit, \
+    .priv_size      = sizeof(VPPContext), \
+    .priv_class     = &x##_class, \
+    FILTER_INPUTS(vpp_inputs), \
+    FILTER_OUTPUTS(vpp_outputs), \
+    fmts, \
+    .activate       = activate, \
+    .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE, \
+};
+
 #if CONFIG_VPP_QSV_FILTER
 
-static int query_formats(AVFilterContext *ctx)
-{
-    int ret;
-    static const enum AVPixelFormat in_pix_fmts[] = {
-        AV_PIX_FMT_YUV420P,
-        AV_PIX_FMT_NV12,
-        AV_PIX_FMT_YUYV422,
-        AV_PIX_FMT_RGB32,
-        AV_PIX_FMT_P010,
-        AV_PIX_FMT_QSV,
-        AV_PIX_FMT_NONE
-    };
-    static const enum AVPixelFormat out_pix_fmts[] = {
-        AV_PIX_FMT_NV12,
-        AV_PIX_FMT_P010,
-        AV_PIX_FMT_QSV,
-        AV_PIX_FMT_NONE
-    };
-
-    ret = ff_formats_ref(ff_make_format_list(in_pix_fmts),
-                         &ctx->inputs[0]->outcfg.formats);
-    if (ret < 0)
-        return ret;
-    return ff_formats_ref(ff_make_format_list(out_pix_fmts),
-                          &ctx->outputs[0]->incfg.formats);
-}
-
-static const AVOption options[] = {
+static const AVOption vpp_options[] = {
     { "deinterlace", "deinterlace mode: 0=off, 1=bob, 2=advanced", OFFSET(deinterlace), AV_OPT_TYPE_INT,      { .i64 = 0 }, 0, MFX_DEINTERLACING_ADVANCED, .flags = FLAGS, "deinterlace" },
     { "bob",         "Bob deinterlace mode.",                      0,                   AV_OPT_TYPE_CONST,    { .i64 = MFX_DEINTERLACING_BOB },            .flags = FLAGS, "deinterlace" },
     { "advanced",    "Advanced deinterlace mode. ",                0,                   AV_OPT_TYPE_CONST,    { .i64 = MFX_DEINTERLACING_ADVANCED },       .flags = FLAGS, "deinterlace" },
@@ -686,27 +681,34 @@ static const AVOption options[] = {
     { NULL }
 };
 
-static const AVClass vpp_class = {
-    .class_name = "vpp_qsv",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
+static int vpp_query_formats(AVFilterContext *ctx)
+{
+    int ret;
+    static const enum AVPixelFormat in_pix_fmts[] = {
+        AV_PIX_FMT_YUV420P,
+        AV_PIX_FMT_NV12,
+        AV_PIX_FMT_YUYV422,
+        AV_PIX_FMT_RGB32,
+        AV_PIX_FMT_P010,
+        AV_PIX_FMT_QSV,
+        AV_PIX_FMT_NONE
+    };
+    static const enum AVPixelFormat out_pix_fmts[] = {
+        AV_PIX_FMT_NV12,
+        AV_PIX_FMT_P010,
+        AV_PIX_FMT_QSV,
+        AV_PIX_FMT_NONE
+    };
 
-const AVFilter ff_vf_vpp_qsv = {
-    .name          = "vpp_qsv",
-    .description   = NULL_IF_CONFIG_SMALL("Quick Sync Video VPP."),
-    .priv_size     = sizeof(VPPContext),
-    .preinit       = vpp_preinit,
-    .init          = vpp_init,
-    .uninit        = vpp_uninit,
-    FILTER_INPUTS(vpp_inputs),
-    FILTER_OUTPUTS(vpp_outputs),
-    FILTER_QUERY_FUNC(query_formats),
-    .activate      = activate,
-    .priv_class    = &vpp_class,
-    .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
-};
+    ret = ff_formats_ref(ff_make_format_list(in_pix_fmts),
+                         &ctx->inputs[0]->outcfg.formats);
+    if (ret < 0)
+        return ret;
+    return ff_formats_ref(ff_make_format_list(out_pix_fmts),
+                          &ctx->outputs[0]->incfg.formats);
+}
+
+DEFINE_QSV_FILTER(vpp, vpp, "VPP", FILTER_QUERY_FUNC(vpp_query_formats));
 
 #endif
 
@@ -734,32 +736,6 @@ static av_cold int qsvscale_preinit(AVFilterContext *ctx)
     return 0;
 }
 
-static const AVClass qsvscale_class = {
-    .class_name = "scale_qsv",
-    .item_name  = av_default_item_name,
-    .option     = qsvscale_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
-const AVFilter ff_vf_scale_qsv = {
-    .name               = "scale_qsv",
-    .description        = NULL_IF_CONFIG_SMALL("Quick Sync Video scaling and format conversion"),
-
-    .preinit            = qsvscale_preinit,
-    .init               = vpp_init,
-    .uninit             = vpp_uninit,
-
-    .priv_size          = sizeof(VPPContext),
-    .priv_class         = &qsvscale_class,
-
-    FILTER_INPUTS(vpp_inputs),
-    FILTER_OUTPUTS(vpp_outputs),
-
-    FILTER_SINGLE_PIXFMT(AV_PIX_FMT_QSV),
-
-    .activate           = activate,
-
-    .flags_internal     = FF_FILTER_FLAG_HWFRAME_AWARE,
-};
+DEFINE_QSV_FILTER(qsvscale, scale, "scaling and format conversion", FILTER_SINGLE_PIXFMT(AV_PIX_FMT_QSV));
 
 #endif
