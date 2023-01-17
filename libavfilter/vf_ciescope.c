@@ -855,8 +855,6 @@ rgb_to_xy(float rc,
     *z = m[2][0] * rc + m[2][1] * gc + m[2][2] * bc;
 
     scale = *x + *y + *z;
-    if (scale == 0.f)
-        scale = 1.f;
     scale = 1.f / scale;
     *x = *x * scale;
     *y = *y * scale;
@@ -1270,11 +1268,11 @@ static void filter_rgb48(AVFilterContext *ctx, const uint8_t *ptr,
                          float *cx, float *cy, int x, int y)
 {
     CiescopeContext *s = ctx->priv;
-    const float scale = 1. / 65535.;
+    const float scale = 1.f / 65535.f;
     const uint16_t *src = (const uint16_t*)(ptr + linesize * y + x * 6);
-    float r = src[0] * scale;
-    float g = src[1] * scale;
-    float b = src[2] * scale;
+    float r = (src[0] + 0.01f) * scale;
+    float g = (src[1] + 0.01f) * scale;
+    float b = (src[2] + 0.01f) * scale;
     float cz;
 
     rgb_to_xy(r, g, b, cx, cy, &cz, (const float (*)[3])s->m);
@@ -1285,11 +1283,11 @@ static void filter_rgba64(AVFilterContext *ctx, const uint8_t *ptr,
                           float *cx, float *cy, int x, int y)
 {
     CiescopeContext *s = ctx->priv;
-    const float scale = 1. / 65535.;
+    const float scale = 1.f / 65535.f;
     const uint16_t *src = (const uint16_t*)(ptr + linesize * y + x * 8);
-    float r = src[0] * scale;
-    float g = src[1] * scale;
-    float b = src[2] * scale;
+    float r = (src[0] + 0.01f) * scale;
+    float g = (src[1] + 0.01f) * scale;
+    float b = (src[2] + 0.01f) * scale;
     float cz;
 
     rgb_to_xy(r, g, b, cx, cy, &cz, (const float (*)[3])s->m);
@@ -1300,11 +1298,11 @@ static void filter_rgb24(AVFilterContext *ctx, const uint8_t *ptr,
                          float *cx, float *cy, int x, int y)
 {
     CiescopeContext *s = ctx->priv;
-    const float scale = 1. / 255.;
+    const float scale = 1.f / 255.f;
     const uint8_t *src = ptr + linesize * y + x * 3;
-    float r = src[0] * scale;
-    float g = src[1] * scale;
-    float b = src[2] * scale;
+    float r = (src[0] + 0.01f) * scale;
+    float g = (src[1] + 0.01f) * scale;
+    float b = (src[2] + 0.01f) * scale;
     float cz;
 
     rgb_to_xy(r, g, b, cx, cy, &cz, (const float (*)[3])s->m);
@@ -1315,11 +1313,11 @@ static void filter_rgba(AVFilterContext *ctx, const uint8_t *ptr,
                         float *cx, float *cy, int x, int y)
 {
     CiescopeContext *s = ctx->priv;
-    const float scale = 1. / 255.;
+    const float scale = 1.f / 255.f;
     const uint8_t *src = ptr + linesize * y + x * 4;
-    float r = src[0] * scale;
-    float g = src[1] * scale;
-    float b = src[2] * scale;
+    float r = (src[0] + 0.01f) * scale;
+    float g = (src[1] + 0.01f) * scale;
+    float b = (src[2] + 0.01f) * scale;
     float cz;
 
     rgb_to_xy(r, g, b, cx, cy, &cz, (const float (*)[3])s->m);
