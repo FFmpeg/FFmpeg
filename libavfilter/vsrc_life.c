@@ -404,6 +404,7 @@ static int request_frame(AVFilterLink *outlink)
         return AVERROR(ENOMEM);
     picref->sample_aspect_ratio = (AVRational) {1, 1};
     picref->pts = life->pts++;
+    picref->duration = 1;
 
     life->draw(outlink->src, picref);
     evolve(outlink->src);
