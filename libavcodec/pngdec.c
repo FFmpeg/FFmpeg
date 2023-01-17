@@ -75,6 +75,7 @@ typedef struct PNGDecContext {
     int have_chrm;
     uint32_t white_point[2];
     uint32_t display_primaries[3][2];
+    int have_srgb;
 
     enum PNGHeaderState hdr_state;
     enum PNGImageState pic_state;
@@ -1313,6 +1314,11 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
             }
             break;
         }
+        case MKTAG('s', 'R', 'G', 'B'):
+            /* skip rendering intent byte */
+            bytestream2_skip(&gb_chunk, 1);
+            s->have_srgb = 1;
+            break;
         case MKTAG('i', 'C', 'C', 'P'): {
             if ((ret = decode_iccp_chunk(s, &gb_chunk, p)) < 0)
                 goto fail;
@@ -1468,6 +1474,7 @@ static void clear_frame_metadata(PNGDecContext *s)
     s->stereo_mode = -1;
 
     s->have_chrm = 0;
+    s->have_srgb = 0;
 
     av_dict_free(&s->frame_metadata);
 }
@@ -1486,6 +1493,9 @@ static int output_frame(PNGDecContext *s, AVFrame *f)
         memcpy(sd->data, s->iccp_data, s->iccp_data_len);
 
         av_dict_set(&sd->metadata, "name", s->iccp_name, 0);
+    } else if (s->have_srgb) {
+        avctx->color_primaries = f->color_primaries = AVCOL_PRI_BT709;
+        avctx->color_trc = f->color_trc = AVCOL_TRC_IEC61966_2_1;
     } else if (s->have_chrm) {
         AVColorPrimariesDesc desc;
         enum AVColorPrimaries prim;
@@ -1504,8 +1514,8 @@ static int output_frame(PNGDecContext *s, AVFrame *f)
             av_log(avctx, AV_LOG_WARNING, "unknown cHRM primaries\n");
     }
 
-    /* this chunk overrides gAMA */
-    if (s->iccp_data)
+    /* these chunks overrides gAMA */
+    if (s->iccp_data || s->have_srgb)
         av_dict_set(&s->frame_metadata, "gamma", NULL, 0);
 
     avctx->colorspace = f->colorspace = AVCOL_SPC_RGB;
