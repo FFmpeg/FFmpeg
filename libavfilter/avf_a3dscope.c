@@ -243,6 +243,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     for (int y = 0; y < outlink->h; y++)
         memset(out->data[0] + y * out->linesize[0], 0, outlink->w * 4);
     out->pts = av_rescale_q(in->pts, inlink->time_base, outlink->time_base);
+    out->duration = 1;
 
     projection_matrix(s->fov, half_width / half_height, 0.1f, 1000000.f, s->projection_matrix);
     view_matrix(s->eye, s->zoom, s->roll, s->pitch, s->yaw, s->view_matrix);

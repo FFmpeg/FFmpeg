@@ -869,6 +869,7 @@ static int output_frame(AVFilterContext *ctx)
         int64_t pts_offset = s->new_frame ? 0LL : av_rescale(s->ihop_index, s->hop_size, s->ihop_size);
 
         s->outpicref->pts = av_rescale_q(s->in_pts + pts_offset, inlink->time_base, outlink->time_base);
+        s->outpicref->duration = 1;
     }
 
     s->ihop_index++;
