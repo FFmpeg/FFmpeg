@@ -187,7 +187,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             av_frame_free(&frame);
             return AVERROR(ENOMEM);
         }
-        out->pts = frame->pts;
+        av_frame_copy_props(out, frame);
         av_frame_free(&frame);
         pal = (uint32_t *)out->data[1];
         p0 = (uint8_t *)out->data[0];
