@@ -361,8 +361,10 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
     sps->chroma_format_idc    = 1;
 
     sps->log2_max_frame_num_minus4 = 4;
-    sps->pic_order_cnt_type        = 0;
-    sps->log2_max_pic_order_cnt_lsb_minus4 = 4;
+    sps->pic_order_cnt_type        = ctx->max_b_depth ? 0 : 2;
+    if (sps->pic_order_cnt_type == 0) {
+        sps->log2_max_pic_order_cnt_lsb_minus4 = 4;
+    }
 
     sps->max_num_ref_frames = priv->dpb_frames;
 
@@ -643,6 +645,10 @@ static int vaapi_encode_h264_init_picture_params(AVCodecContext *avctx,
         }
     }
     hpic->pic_order_cnt = pic->display_order - hpic->last_idr_frame;
+    if (priv->raw_sps.pic_order_cnt_type == 2) {
+        hpic->pic_order_cnt *= 2;
+    }
+
     hpic->dpb_delay     = pic->display_order - pic->encode_order + ctx->max_b_depth;
     hpic->cpb_delay     = pic->encode_order - hpic->last_idr_frame;
 
