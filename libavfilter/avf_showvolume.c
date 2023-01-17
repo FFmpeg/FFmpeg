@@ -339,6 +339,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
         clear_picture(s, outlink);
     }
     s->out->pts = av_rescale_q(insamples->pts, inlink->time_base, outlink->time_base);
+    s->out->duration = 1;
 
     if ((s->f < 1.) && (s->f > 0.)) {
         for (j = 0; j < outlink->h; j++) {
