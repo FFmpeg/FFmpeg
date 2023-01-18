@@ -322,7 +322,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         av_frame_free(&in);
         return AVERROR(ENOMEM);
     }
-    out->pts = in->pts;
+    av_frame_copy_props(out, in);
 
     ff_fill_rectangle(&s->draw, &s->black, out->data, out->linesize,
                       0, 0, outlink->w, outlink->h);
