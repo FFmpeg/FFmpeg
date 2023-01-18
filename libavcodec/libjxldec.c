@@ -167,9 +167,9 @@ static enum AVColorTransferCharacteristic libjxl_get_trc(void *avctx, const JxlC
     case JXL_TRANSFER_FUNCTION_DCI: return AVCOL_TRC_SMPTE428;
     case JXL_TRANSFER_FUNCTION_HLG: return AVCOL_TRC_ARIB_STD_B67;
     case JXL_TRANSFER_FUNCTION_GAMMA:
-        if (jxl_color->gamma > 2.199 && jxl_color->gamma < 2.201)
+        if (jxl_color->gamma > 0.45355 && jxl_color->gamma < 0.45555)
             return AVCOL_TRC_GAMMA22;
-        else if (jxl_color->gamma > 2.799 && jxl_color->gamma < 2.801)
+        else if (jxl_color->gamma > 0.35614 && jxl_color->gamma < 0.35814)
             return AVCOL_TRC_GAMMA28;
         else
             av_log(avctx, AV_LOG_WARNING, "Unsupported gamma transfer: %f\n", jxl_color->gamma);
