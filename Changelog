@@ -42,6 +42,8 @@ version <next>:
 - CrystalHD decoders deprecated
 - SDNS demuxer
 - RKA decoder and demuxer
+- filtergraph syntax in ffmpeg CLI now supports passing file contents
+  as option values, by prefixing option name with '/'
 
 
 version 5.1:

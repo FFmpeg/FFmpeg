@@ -171,6 +171,17 @@ within the quoted text; otherwise the argument string is considered
 terminated when the next special character (belonging to the set
 @samp{[]=;,}) is encountered.
 
+A special syntax implemented in the @command{ffmpeg} CLI tool allows loading
+option values from files. This is done be prepending a slash '/' to the option
+name, then the supplied value is interpreted as a path from which the actual
+value is loaded. E.g.
+@example
+ffmpeg -i <INPUT> -vf drawtext=/text=/tmp/some_text <OUTPUT>
+@end example
+will load the text to be drawn from @file{/tmp/some_text}. API users wishing to
+implement a similar feature should use the @code{avfilter_graph_segment_*()}
+functions together with custom IO code.
+
 The name and arguments of the filter are optionally preceded and
 followed by a list of link labels.
 A link label allows one to name a link and associate it to a filter output

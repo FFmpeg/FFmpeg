@@ -314,6 +314,156 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
     ist->filters[ist->nb_filters - 1] = ifilter;
 }
 
+static int read_binary(const char *path, uint8_t **data, int *len)
+{
+    AVIOContext *io = NULL;
+    int64_t fsize;
+    int ret;
+
+    *data = NULL;
+    *len  = 0;
+
+    ret = avio_open2(&io, path, AVIO_FLAG_READ, &int_cb, NULL);
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Cannot open file '%s': %s\n",
+               path, av_err2str(ret));
+        return ret;
+    }
+
+    fsize = avio_size(io);
+    if (fsize < 0 || fsize > INT_MAX) {
+        av_log(NULL, AV_LOG_ERROR, "Cannot obtain size of file %s\n", path);
+        ret = AVERROR(EIO);
+        goto fail;
+    }
+
+    *data = av_malloc(fsize);
+    if (!*data) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    ret = avio_read(io, *data, fsize);
+    if (ret != fsize) {
+        av_log(NULL, AV_LOG_ERROR, "Error reading file %s\n", path);
+        ret = ret < 0 ? ret : AVERROR(EIO);
+        goto fail;
+    }
+
+    *len = fsize;
+
+    return 0;
+fail:
+    avio_close(io);
+    av_freep(data);
+    *len = 0;
+    return ret;
+}
+
+static int filter_opt_apply(AVFilterContext *f, const char *key, const char *val)
+{
+    const AVOption *o;
+    int ret;
+
+    ret = av_opt_set(f, key, val, AV_OPT_SEARCH_CHILDREN);
+    if (ret >= 0)
+        return 0;
+
+    if (ret == AVERROR_OPTION_NOT_FOUND && key[0] == '/')
+        o = av_opt_find(f, key + 1, NULL, 0, AV_OPT_SEARCH_CHILDREN);
+    if (!o)
+        goto err_apply;
+
+    // key is a valid option name prefixed with '/'
+    // interpret value as a path from which to load the actual option value
+    key++;
+
+    if (o->type == AV_OPT_TYPE_BINARY) {
+        uint8_t *data;
+        int      len;
+
+        ret = read_binary(val, &data, &len);
+        if (ret < 0)
+            goto err_load;
+
+        ret = av_opt_set_bin(f, key, data, len, AV_OPT_SEARCH_CHILDREN);
+        av_freep(&data);
+    } else {
+        char *data = file_read(val);
+        if (!data) {
+            ret = AVERROR(EIO);
+            goto err_load;
+        }
+
+        ret = av_opt_set(f, key, data, AV_OPT_SEARCH_CHILDREN);
+        av_freep(&data);
+    }
+    if (ret < 0)
+        goto err_apply;
+
+    return 0;
+
+err_apply:
+    av_log(NULL, AV_LOG_ERROR,
+           "Error applying option '%s' to filter '%s': %s\n",
+           key, f->filter->name, av_err2str(ret));
+    return ret;
+err_load:
+    av_log(NULL, AV_LOG_ERROR,
+           "Error loading value for option '%s' from file '%s'\n",
+           key, val);
+    return ret;
+}
+
+static int graph_opts_apply(AVFilterGraphSegment *seg)
+{
+    for (size_t i = 0; i < seg->nb_chains; i++) {
+        AVFilterChain *ch = seg->chains[i];
+
+        for (size_t j = 0; j < ch->nb_filters; j++) {
+            AVFilterParams *p = ch->filters[j];
+            const AVDictionaryEntry *e = NULL;
+
+            av_assert0(p->filter);
+
+            while ((e = av_dict_iterate(p->opts, e))) {
+                int ret = filter_opt_apply(p->filter, e->key, e->value);
+                if (ret < 0)
+                    return ret;
+            }
+
+            av_dict_free(&p->opts);
+        }
+    }
+
+    return 0;
+}
+
+static int graph_parse(AVFilterGraph *graph, const char *desc,
+                       AVFilterInOut **inputs, AVFilterInOut **outputs)
+{
+    AVFilterGraphSegment *seg;
+    int ret;
+
+    ret = avfilter_graph_segment_parse(graph, desc, 0, &seg);
+    if (ret < 0)
+        return ret;
+
+    ret = avfilter_graph_segment_create_filters(seg, 0);
+    if (ret < 0)
+        goto fail;
+
+    ret = graph_opts_apply(seg);
+    if (ret < 0)
+        goto fail;
+
+    ret = avfilter_graph_segment_apply(seg, 0, inputs, outputs);
+
+fail:
+    avfilter_graph_segment_free(&seg);
+    return ret;
+}
+
 int init_complex_filtergraph(FilterGraph *fg)
 {
     AVFilterInOut *inputs, *outputs, *cur;
@@ -327,7 +477,7 @@ int init_complex_filtergraph(FilterGraph *fg)
         return AVERROR(ENOMEM);
     graph->nb_threads = 1;
 
-    ret = avfilter_graph_parse2(graph, fg->graph_desc, &inputs, &outputs);
+    ret = graph_parse(graph, fg->graph_desc, &inputs, &outputs);
     if (ret < 0)
         goto fail;
 
@@ -1004,7 +1154,7 @@ int configure_filtergraph(FilterGraph *fg)
         fg->graph->nb_threads = filter_complex_nbthreads;
     }
 
-    if ((ret = avfilter_graph_parse2(fg->graph, graph_desc, &inputs, &outputs)) < 0)
+    if ((ret = graph_parse(fg->graph, graph_desc, &inputs, &outputs)) < 0)
         goto fail;
 
     ret = hw_device_setup_for_filter(fg);
