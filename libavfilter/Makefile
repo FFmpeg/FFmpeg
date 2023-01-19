@@ -558,6 +558,9 @@ OBJS-$(CONFIG_YAEPBLUR_FILTER)               += vf_yaepblur.o
 OBJS-$(CONFIG_ZMQ_FILTER)                    += f_zmq.o
 OBJS-$(CONFIG_ZOOMPAN_FILTER)                += vf_zoompan.o
 OBJS-$(CONFIG_ZSCALE_FILTER)                 += vf_zscale.o
+OBJS-$(CONFIG_HSTACK_VAAPI_FILTER)           += vf_stack_vaapi.o framesync.o vaapi_vpp.o
+OBJS-$(CONFIG_VSTACK_VAAPI_FILTER)           += vf_stack_vaapi.o framesync.o vaapi_vpp.o
+OBJS-$(CONFIG_XSTACK_VAAPI_FILTER)           += vf_stack_vaapi.o framesync.o vaapi_vpp.o
 
 OBJS-$(CONFIG_ALLRGB_FILTER)                 += vsrc_testsrc.o
 OBJS-$(CONFIG_ALLYUV_FILTER)                 += vsrc_testsrc.o

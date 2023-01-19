@@ -14941,6 +14941,7 @@ Set the scaling dimension: @code{2} for @code{hq2x}, @code{3} for
 Default is @code{3}.
 @end table
 
+@anchor{hstack}
 @section hstack
 Stack input videos horizontally.
 
@@ -24392,6 +24393,7 @@ Example:
 ffmpeg -i ref.mpg -vf vmafmotion -f null -
 @end example
 
+@anchor{vstack}
 @section vstack
 Stack input videos vertically.
 
@@ -24873,6 +24875,7 @@ minimum values, and @code{1} maximum values.
 
 This filter supports all above options as @ref{commands}, excluding option @code{inputs}.
 
+@anchor{xstack}
 @section xstack
 Stack video inputs into custom layout.
 
@@ -26688,6 +26691,84 @@ Convert HDR(HDR10) video to bt2020-transfer-characteristic p010 format
 tonemap_vaapi=format=p010:t=bt2020-10
 @end example
 @end itemize
+
+@section hstack_vaapi
+Stack input videos horizontally.
+
+This is the VA-API variant of the @ref{hstack} filter, each input stream may
+have different height, this filter will scale down/up each input stream while
+keeping the orignal aspect.
+
+It accepts the following options:
+
+@table @option
+@item inputs
+See @ref{hstack}.
+
+@item shortest
+See @ref{hstack}.
+
+@item height
+Set height of output. If set to 0, this filter will set height of output to
+height of the first input stream. Default value is 0.
+@end table
+
+@section vstack_vaapi
+Stack input videos vertically.
+
+This is the VA-API variant of the @ref{vstack} filter, each input stream may
+have different width, this filter will scale down/up each input stream while
+keeping the orignal aspect.
+
+It accepts the following options:
+
+@table @option
+@item inputs
+See @ref{vstack}.
+
+@item shortest
+See @ref{vstack}.
+
+@item width
+Set width of output. If set to 0, this filter will set width of output to
+width of the first input stream. Default value is 0.
+@end table
+
+@section xstack_vaapi
+Stack video inputs into custom layout.
+
+This is the VA-API variant of the @ref{xstack} filter,  each input stream may
+have different size, this filter will scale down/up each input stream to the
+given output size, or the size of the first input stream.
+
+It accepts the following options:
+
+@table @option
+@item inputs
+See @ref{xstack}.
+
+@item shortest
+See @ref{xstack}.
+
+@item layout
+See @ref{xstack}.
+Moreover, this permits the user to supply output size for each input stream.
+@example
+xstack_vaapi=inputs=4:layout=0_0_1920x1080|0_h0_1920x1080|w0_0_1920x1080|w0_h0_1920x1080
+@end example
+
+@item grid
+See @ref{xstack}.
+
+@item grid_tile_size
+Set output size for each input stream when @option{grid} is set. If this option
+is not set, this filter will set output size by default to the size of the
+first input stream. For the syntax of this option, check the
+@ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
+
+@item fill
+See @ref{xstack}.
+@end table
 
 @c man end VAAPI VIDEO FILTERS
 
