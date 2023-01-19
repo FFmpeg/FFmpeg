@@ -67,7 +67,7 @@ static int filter_horizontally(AVFilterContext *ctx, int width, int height)
     float g;
 
     if (s->R3 > 0) {
-        for (int y = 1; y < height - 1; y++) {
+        for (int y = 1; y < height; y++) {
             g = q * f(y, 0) + c * f(y, 0);
             for (int x = 0; x < width; x++) {
                 f(y, x) = b0 * f(y, x) + b1 * f(y - 1, x) + g;
@@ -83,7 +83,7 @@ static int filter_horizontally(AVFilterContext *ctx, int width, int height)
             }
         }
     } else {
-        for (int y = 1; y < height - 1; y++) {
+        for (int y = 1; y < height; y++) {
             g = q * f(y, width - 1) + c * f(y, width - 1);
             for (int x = width - 1; x >= 0; x--) {
                 f(y, x) = b0 * f(y, x) + b1 * f(y - 1, x) + g;
