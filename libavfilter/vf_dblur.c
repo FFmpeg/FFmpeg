@@ -47,7 +47,7 @@ typedef struct DBlurContext {
 
 static const AVOption dblur_options[] = {
     { "angle",  "set angle",            OFFSET(angle),  AV_OPT_TYPE_FLOAT, {.dbl=45},  0.0,  360, FLAGS },
-    { "radius", "set radius",           OFFSET(radius), AV_OPT_TYPE_FLOAT, {.dbl=5},     1, 8192, FLAGS },
+    { "radius", "set radius",           OFFSET(radius), AV_OPT_TYPE_FLOAT, {.dbl=5},     0, 8192, FLAGS },
     { "planes", "set planes to filter", OFFSET(planes), AV_OPT_TYPE_INT,   {.i64=0xF},   0,  0xF, FLAGS },
     { NULL }
 };
