@@ -40,6 +40,7 @@ typedef struct AudioDynamicEqualizerContext {
     double release_coef;
     int mode;
     int direction;
+    int detection;
     int type;
 
     AVFrame *state;
@@ -92,7 +93,6 @@ static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     const double range = s->range;
     const double dfrequency = fmin(s->dfrequency, sample_rate * 0.5);
     const double tfrequency = fmin(s->tfrequency, sample_rate * 0.5);
-    const double threshold = s->threshold;
     const double release = s->release_coef;
     const double irelease = 1. - release;
     const double attack = s->attack_coef;
@@ -103,6 +103,7 @@ static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     const double dg = tan(M_PI * dfrequency / sample_rate);
     const int start = (in->ch_layout.nb_channels * jobnr) / nb_jobs;
     const int end = (in->ch_layout.nb_channels * (jobnr+1)) / nb_jobs;
+    const int detection = s->detection;
     const int direction = s->direction;
     const int mode = s->mode;
     const int type = s->type;
@@ -124,6 +125,10 @@ static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
         const double *src = (const double *)in->extended_data[ch];
         double *dst = (double *)out->extended_data[ch];
         double *state = (double *)s->state->extended_data[ch];
+        const double threshold = detection == 0 ? state[5] : s->threshold;
+
+        if (detection < 0)
+            state[5] = threshold;
 
         for (int n = 0; n < out->nb_samples; n++) {
             double detect, gain, v, listen;
@@ -132,6 +137,9 @@ static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
 
             detect = listen = get_svf(src[n], dm, da, state);
             detect = fabs(detect);
+
+            if (detection > 0)
+                state[5] = fmax(state[5], detect);
 
             if (direction == 0 && mode == 0 && detect < threshold)
                 detect = 1. / av_clipd(1. + makeup + (threshold - detect) * ratio, 1., range);
@@ -144,10 +152,18 @@ static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
             else
                 detect = 1.;
 
-            if (detect < state[4]) {
-                detect = iattack * detect + attack * state[4];
+            if (direction == 0) {
+                if (detect > state[4]) {
+                    detect = iattack * detect + attack * state[4];
+                } else {
+                    detect = irelease * detect + release * state[4];
+                }
             } else {
-                detect = irelease * detect + release * state[4];
+                if (detect < state[4]) {
+                    detect = iattack * detect + attack * state[4];
+                } else {
+                    detect = irelease * detect + release * state[4];
+                }
             }
 
             if (state[4] != detect || n == 0) {
@@ -270,6 +286,10 @@ static const AVOption adynamicequalizer_options[] = {
     { "direction",  "set direction",           OFFSET(direction),  AV_OPT_TYPE_INT,    {.i64=0},        0, 1,       FLAGS, "direction" },
     {   "downward", 0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=0},        0, 0,       FLAGS, "direction" },
     {   "upward",   0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=1},        0, 0,       FLAGS, "direction" },
+    { "auto",       "set auto threshold",      OFFSET(detection),  AV_OPT_TYPE_INT,    {.i64=-1},      -1, 1,       FLAGS, "auto" },
+    {   "disabled", 0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=-1},       0, 0,       FLAGS, "auto" },
+    {   "off",      0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=0},        0, 0,       FLAGS, "auto" },
+    {   "on",       0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=1},        0, 0,       FLAGS, "auto" },
     { NULL }
 };
 

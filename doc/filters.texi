@@ -1034,11 +1034,27 @@ Default type is @samp{bell}.
 Set processing direction relative to threshold.
 @table @samp
 @item downward
-Boost or cut if threshhold is higher than detected volume.
+Boost/Cut if threshold is higher/lower than detected volume.
 @item upward
-Boost or cut if threshhold is lower than detected volume.
+Boost/Cut if threshold is lower/higher than detected volume.
 @end table
 Default direction is @samp{downward}.
+
+@item auto
+Automatically gather threshold from detection filter. By default
+is @samp{disabled}.
+This option is useful to detect threshold in certain time frame of
+input audio stream, in such case option value is changed at runtime.
+
+Available values are:
+@table @samp
+@item disabled
+Disable using automatically gathered threshold value.
+@item off
+Stop picking threshold value.
+@item on
+Start picking threshold value.
+@end table
 @end table
 
 @subsection Commands
