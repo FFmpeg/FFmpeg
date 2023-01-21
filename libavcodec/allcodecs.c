@@ -538,6 +538,7 @@ extern const FFCodec ff_twinvq_decoder;
 extern const FFCodec ff_vmdaudio_decoder;
 extern const FFCodec ff_vorbis_encoder;
 extern const FFCodec ff_vorbis_decoder;
+extern const FFCodec ff_wavarc_decoder;
 extern const FFCodec ff_wavpack_encoder;
 extern const FFCodec ff_wavpack_decoder;
 extern const FFCodec ff_wmalossless_decoder;
