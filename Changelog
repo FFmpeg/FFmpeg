@@ -29,7 +29,7 @@ version <next>:
 - corr video filter
 - adrc audio filter
 - afdelaysrc audio filter
-- WADY DPCM decoder
+- WADY DPCM decoder and demuxer
 
 
 version 5.1:
