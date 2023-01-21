@@ -45,7 +45,8 @@
 
 typedef struct DPCMContext {
     int16_t array[256];
-    int sample[2];                  ///< previous sample (for SOL_DPCM)
+    int sample[2];                  ///< previous sample (for SOL_DPCM and WADY_DPCM)
+    int scale;                      ///< scale for WADY_DPCM
     const int8_t *sol_table;        ///< delta table for SOL_DPCM
 } DPCMContext;
 
@@ -126,6 +127,24 @@ static const int16_t sol_table_16[128] = {
     0xF00, 0x1000, 0x1400, 0x1800, 0x1C00, 0x2000, 0x3000, 0x4000
 };
 
+static const int16_t wady_table[128] = {
+    0,   2,   4,   6,   8,   10,  12,  15,
+    18,  21,  24,  28,  32,  36,  40,  44,
+    49,  54,  59,  64,  70,  76,  82,  88,
+    95,  102, 109, 116, 124, 132, 140, 148,
+    160, 170, 180, 190, 200, 210, 220, 230,
+    240, 255, 270, 285, 300, 320, 340, 360,
+    380, 400, 425, 450, 475, 500, 525, 550,
+    580, 610, 650, 700, 750, 800, 900, 1000,
+    -0,  -2,  -4,  -6,  -8,  -10, -12, -15,
+    -18, -21, -24, -28, -32, -36, -40, -44,
+    -49, -54, -59, -64, -70, -76, -82, -88,
+    -95, -102,-109,-116,-124,-132,-140,-148,
+    -160,-170,-180,-190,-200,-210,-220,-230,
+    -240,-255,-270,-285,-300,-320,-340,-360,
+    -380,-400,-425,-450,-475,-500,-525,-550,
+    -580,-610,-650,-700,-750,-800,-900,-1000,
+};
 
 static av_cold int dpcm_decode_init(AVCodecContext *avctx)
 {
@@ -139,7 +158,7 @@ static av_cold int dpcm_decode_init(AVCodecContext *avctx)
 
     s->sample[0] = s->sample[1] = 0;
 
-    switch(avctx->codec->id) {
+    switch (avctx->codec->id) {
 
     case AV_CODEC_ID_ROQ_DPCM:
         /* initialize square table */
@@ -193,6 +212,10 @@ static av_cold int dpcm_decode_init(AVCodecContext *avctx)
         }
         break;
 
+    case AV_CODEC_ID_WADY_DPCM:
+        s->scale = (avctx->extradata && avctx->extradata_size > 0) ? avctx->extradata[0] : 1;
+        break;
+
     default:
         break;
     }
@@ -239,6 +262,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         else
             out = buf_size;
         break;
+    case AV_CODEC_ID_WADY_DPCM:
     case AV_CODEC_ID_DERF_DPCM:
     case AV_CODEC_ID_GREMLIN_DPCM:
     case AV_CODEC_ID_SDX2_DPCM:
@@ -401,6 +425,22 @@ static int dpcm_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         }
         }
         break;
+
+    case AV_CODEC_ID_WADY_DPCM: {
+        int idx = 0;
+
+        while (output_samples < samples_end) {
+            const uint8_t n = bytestream2_get_byteu(&gb);
+
+            if (n & 0x80)
+                s->sample[idx] = sign_extend((n & 0x7f) << 9, 16);
+            else
+                s->sample[idx] += s->scale * wady_table[n & 0x7f];
+            *output_samples++ = av_clip_int16(s->sample[idx]);
+            idx ^= stereo;
+        }
+        }
+        break;
     }
 
     *got_frame_ptr = 1;
@@ -427,3 +467,4 @@ DPCM_DECODER(AV_CODEC_ID_ROQ_DPCM,       roq_dpcm,       "DPCM id RoQ");
 DPCM_DECODER(AV_CODEC_ID_SDX2_DPCM,      sdx2_dpcm,      "DPCM Squareroot-Delta-Exact");
 DPCM_DECODER(AV_CODEC_ID_SOL_DPCM,       sol_dpcm,       "DPCM Sol");
 DPCM_DECODER(AV_CODEC_ID_XAN_DPCM,       xan_dpcm,       "DPCM Xan");
+DPCM_DECODER(AV_CODEC_ID_WADY_DPCM,      wady_dpcm,      "DPCM Marble WADY");

@@ -628,6 +628,7 @@ extern const FFCodec ff_roq_dpcm_decoder;
 extern const FFCodec ff_sdx2_dpcm_decoder;
 extern const FFCodec ff_sol_dpcm_decoder;
 extern const FFCodec ff_xan_dpcm_decoder;
+extern const FFCodec ff_wady_dpcm_decoder;
 
 /* ADPCM codecs */
 extern const FFCodec ff_adpcm_4xm_decoder;
