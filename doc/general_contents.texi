@@ -707,6 +707,7 @@ library:
     @tab Audio format used in Sony PS games.
 @item Marble WADY               @tab   @tab X
 @item WAV                       @tab X @tab X
+@item Waveform Archiver         @tab   @tab X
 @item WavPack                   @tab X @tab X
 @item WebM                      @tab X @tab X
 @item Windows Televison (WTV)   @tab X @tab X

@@ -37,7 +37,7 @@ version <next>:
 - XMD ADPCM decoder and demuxer
 - media100 to mjpegb bsf
 - ffmpeg CLI new option: -fix_sub_duration_heartbeat
-- WavArc decoder
+- WavArc decoder and demuxer
 
 
 version 5.1:
