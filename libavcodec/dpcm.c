@@ -448,6 +448,13 @@ static int dpcm_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     return avpkt->size;
 }
 
+static void dpcm_flush(AVCodecContext *avctx)
+{
+    DPCMContext *s = avctx->priv_data;
+
+    s->sample[0] = s->sample[1] = 0;
+}
+
 #define DPCM_DECODER(id_, name_, long_name_)                \
 const FFCodec ff_ ## name_ ## _decoder = {                  \
     .p.name         = #name_,                               \
@@ -457,6 +464,7 @@ const FFCodec ff_ ## name_ ## _decoder = {                  \
     .p.capabilities = AV_CODEC_CAP_DR1,                     \
     .priv_data_size = sizeof(DPCMContext),                  \
     .init           = dpcm_decode_init,                     \
+    .flush          = dpcm_flush,                           \
     FF_CODEC_DECODE_CB(dpcm_decode_frame),                  \
 }
 
