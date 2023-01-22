@@ -80,9 +80,6 @@ typedef struct RateControlContext{
     int frame_count[5];
     int last_non_b_pict_type;
 
-    void *non_lavc_opaque;        ///< context for non lavc rc code (for example xvid)
-    float dry_run_qscale;         ///< for xvid rc
-    int last_picture_number;      ///< for xvid rc
     AVExpr * rc_eq_eval;
 }RateControlContext;
 
