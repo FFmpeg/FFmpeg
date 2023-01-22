@@ -25,7 +25,7 @@
 #include "mpegvideodata.h"
 #include "mpegvideoenc.h"
 
-void ff_flv_encode_picture_header(MpegEncContext *s, int picture_number)
+void ff_flv_encode_picture_header(MpegEncContext *s)
 {
     int format;
 

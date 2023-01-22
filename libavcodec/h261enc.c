@@ -52,7 +52,7 @@ typedef struct H261EncContext {
     } format;
 } H261EncContext;
 
-void ff_h261_encode_picture_header(MpegEncContext *s, int picture_number)
+void ff_h261_encode_picture_header(MpegEncContext *s)
 {
     H261EncContext *const h = (H261EncContext *)s;
     int temp_ref;

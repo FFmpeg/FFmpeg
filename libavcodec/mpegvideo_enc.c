@@ -83,7 +83,7 @@
 #define QMAT_SHIFT_MMX 16
 #define QMAT_SHIFT 21
 
-static int encode_picture(MpegEncContext *s, int picture_number);
+static int encode_picture(MpegEncContext *s);
 static int dct_quantize_refine(MpegEncContext *s, int16_t *block, int16_t *weight, int16_t *orig, int n, int qscale);
 static int sse_mb(MpegEncContext *s);
 static void denoise_dct_c(MpegEncContext *s, int16_t *block);
@@ -1795,7 +1795,7 @@ int ff_mpv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
         if (ret < 0)
             return ret;
 vbv_retry:
-        ret = encode_picture(s, s->picture_number);
+        ret = encode_picture(s);
         if (growing_buffer) {
             av_assert0(s->pb.buf == avctx->internal->byte_buffer);
             pkt->data = s->pb.buf;
@@ -3556,13 +3556,11 @@ static void set_frame_distances(MpegEncContext * s){
     }
 }
 
-static int encode_picture(MpegEncContext *s, int picture_number)
+static int encode_picture(MpegEncContext *s)
 {
     int i, ret;
     int bits;
     int context_count = s->slice_context_count;
-
-    s->picture_number = picture_number;
 
     /* Reset the average MB variance */
     s->me.mb_var_sum_temp    =
@@ -3788,32 +3786,32 @@ static int encode_picture(MpegEncContext *s, int picture_number)
         break;
     case FMT_H261:
         if (CONFIG_H261_ENCODER)
-            ff_h261_encode_picture_header(s, picture_number);
+            ff_h261_encode_picture_header(s);
         break;
     case FMT_H263:
         if (CONFIG_WMV2_ENCODER && s->codec_id == AV_CODEC_ID_WMV2)
-            ff_wmv2_encode_picture_header(s, picture_number);
+            ff_wmv2_encode_picture_header(s);
         else if (CONFIG_MSMPEG4ENC && s->msmpeg4_version)
-            ff_msmpeg4_encode_picture_header(s, picture_number);
+            ff_msmpeg4_encode_picture_header(s);
         else if (CONFIG_MPEG4_ENCODER && s->h263_pred) {
-            ret = ff_mpeg4_encode_picture_header(s, picture_number);
+            ret = ff_mpeg4_encode_picture_header(s);
             if (ret < 0)
                 return ret;
         } else if (CONFIG_RV10_ENCODER && s->codec_id == AV_CODEC_ID_RV10) {
-            ret = ff_rv10_encode_picture_header(s, picture_number);
+            ret = ff_rv10_encode_picture_header(s);
             if (ret < 0)
                 return ret;
         }
         else if (CONFIG_RV20_ENCODER && s->codec_id == AV_CODEC_ID_RV20)
-            ff_rv20_encode_picture_header(s, picture_number);
+            ff_rv20_encode_picture_header(s);
         else if (CONFIG_FLV_ENCODER && s->codec_id == AV_CODEC_ID_FLV1)
-            ff_flv_encode_picture_header(s, picture_number);
+            ff_flv_encode_picture_header(s);
         else if (CONFIG_H263_ENCODER)
-            ff_h263_encode_picture_header(s, picture_number);
+            ff_h263_encode_picture_header(s);
         break;
     case FMT_MPEG1:
         if (CONFIG_MPEG1VIDEO_ENCODER || CONFIG_MPEG2VIDEO_ENCODER)
-            ff_mpeg1_encode_picture_header(s, picture_number);
+            ff_mpeg1_encode_picture_header(s);
         break;
     default:
         av_assert0(0);

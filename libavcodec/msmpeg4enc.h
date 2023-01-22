@@ -34,7 +34,7 @@ typedef struct MSMPEG4EncContext {
 } MSMPEG4EncContext;
 
 void ff_msmpeg4_encode_init(MpegEncContext *s);
-void ff_msmpeg4_encode_picture_header(MpegEncContext *s, int picture_number);
+void ff_msmpeg4_encode_picture_header(MpegEncContext *s);
 void ff_msmpeg4_encode_ext_header(MpegEncContext *s);
 void ff_msmpeg4_encode_mb(MpegEncContext *s, int16_t block[6][64],
                           int motion_x, int motion_y);

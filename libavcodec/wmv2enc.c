@@ -93,7 +93,7 @@ static av_cold int wmv2_encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-int ff_wmv2_encode_picture_header(MpegEncContext *s, int picture_number)
+int ff_wmv2_encode_picture_header(MpegEncContext *s)
 {
     WMV2EncContext *const w = (WMV2EncContext *) s;
 

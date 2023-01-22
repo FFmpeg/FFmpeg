@@ -216,7 +216,7 @@ static void find_best_tables(MSMPEG4EncContext *ms)
 }
 
 /* write MSMPEG4 compatible frame header */
-void ff_msmpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
+void ff_msmpeg4_encode_picture_header(MpegEncContext * s)
 {
     MSMPEG4EncContext *const ms = (MSMPEG4EncContext*)s;
 

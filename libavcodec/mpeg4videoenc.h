@@ -32,7 +32,7 @@ void ff_mpeg4_encode_mb(MpegEncContext *s,
                         int16_t block[6][64],
                         int motion_x, int motion_y);
 void ff_set_mpeg4_time(MpegEncContext *s);
-int ff_mpeg4_encode_picture_header(MpegEncContext *s, int picture_number);
+int ff_mpeg4_encode_picture_header(MpegEncContext *s);
 
 void ff_mpeg4_encode_video_packet_header(MpegEncContext *s);
 void ff_mpeg4_stuffing(PutBitContext *pbc);

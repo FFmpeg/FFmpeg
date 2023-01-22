@@ -105,7 +105,7 @@ av_const int ff_h263_aspect_to_info(AVRational aspect){
     return FF_ASPECT_EXTENDED;
 }
 
-void ff_h263_encode_picture_header(MpegEncContext * s, int picture_number)
+void ff_h263_encode_picture_header(MpegEncContext * s)
 {
     int format, coded_frame_rate, coded_frame_rate_base, i, temp_ref;
     int best_clock_code=1;

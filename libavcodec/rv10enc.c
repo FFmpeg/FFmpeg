@@ -31,7 +31,7 @@
 #include "put_bits.h"
 #include "rv10enc.h"
 
-int ff_rv10_encode_picture_header(MpegEncContext *s, int picture_number)
+int ff_rv10_encode_picture_header(MpegEncContext *s)
 {
     int full_frame= 0;
 

@@ -25,7 +25,7 @@
 #include "mpegvideoenc.h"
 
 void ff_h263_encode_init(MpegEncContext *s);
-void ff_h263_encode_picture_header(MpegEncContext *s, int picture_number);
+void ff_h263_encode_picture_header(MpegEncContext *s);
 void ff_h263_encode_gob_header(MpegEncContext * s, int mb_line);
 void ff_h263_encode_mb(MpegEncContext *s,
                        int16_t block[6][64],
