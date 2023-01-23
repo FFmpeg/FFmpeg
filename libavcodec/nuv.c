@@ -139,7 +139,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *picture,
     int size_change = 0;
     int minsize = 0;
     int flags = 0;
-    int result, init_frame = !avctx->frame_number;
+    int result, init_frame = !avctx->frame_num;
     enum {
         NUV_UNCOMPRESSED  = '0',
         NUV_RTJPEG        = '1',

@@ -66,7 +66,7 @@ static int bfi_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     bytestream2_init(&g, avpkt->data, buf_size);
 
     /* Set frame parameters and palette, if necessary */
-    if (!avctx->frame_number) {
+    if (!avctx->frame_num) {
         frame->pict_type = AV_PICTURE_TYPE_I;
         frame->key_frame = 1;
         /* Setting the palette */

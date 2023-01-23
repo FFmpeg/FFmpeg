@@ -374,7 +374,7 @@ static void cdg_decode_flush(AVCodecContext *avctx)
         return;
 
     memset(cc->frame->data[0], 0, cc->frame->linesize[0] * avctx->height);
-    if (!avctx->frame_number)
+    if (!avctx->frame_num)
         memset(cc->frame->data[1], 0, AVPALETTE_SIZE);
 }
 

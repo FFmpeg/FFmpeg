@@ -364,7 +364,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
 
     if ((ret = ff_reget_buffer(avctx, s->frame, 0)) < 0)
         return ret;
-    if (!avctx->frame_number) {
+    if (!avctx->frame_num) {
         for (i=0; i<avctx->height; i++)
             memset(s->frame->data[0]+ i*s->frame->linesize[0], 0, avctx->width);
         memset(s->frame->data[1], 0, AVPALETTE_SIZE);

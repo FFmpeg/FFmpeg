@@ -548,10 +548,10 @@ static av_cold int svq1_encode_end(AVCodecContext *avctx)
     SVQ1EncContext *const s = avctx->priv_data;
     int i;
 
-    if (avctx->frame_number)
+    if (avctx->frame_num)
         av_log(avctx, AV_LOG_DEBUG, "RD: %f\n",
                s->rd_total / (double)(avctx->width * avctx->height *
-                                      avctx->frame_number));
+                                      avctx->frame_num));
 
     s->m.mb_type = NULL;
     ff_mpv_common_end(&s->m);
@@ -684,7 +684,7 @@ static int svq1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     FFSWAP(AVFrame*, s->current_picture, s->last_picture);
 
-    if (avctx->gop_size && (avctx->frame_number % avctx->gop_size))
+    if (avctx->gop_size && (avctx->frame_num % avctx->gop_size))
         s->pict_type = AV_PICTURE_TYPE_P;
     else
         s->pict_type = AV_PICTURE_TYPE_I;

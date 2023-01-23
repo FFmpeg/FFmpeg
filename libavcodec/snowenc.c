@@ -1607,9 +1607,9 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     pic->pict_type = pict->pict_type;
     pic->quality = pict->quality;
 
-    s->m.picture_number= avctx->frame_number;
+    s->m.picture_number= avctx->frame_num;
     if(avctx->flags&AV_CODEC_FLAG_PASS2){
-        s->m.pict_type = pic->pict_type = s->m.rc_context.entry[avctx->frame_number].new_pict_type;
+        s->m.pict_type = pic->pict_type = s->m.rc_context.entry[avctx->frame_num].new_pict_type;
         s->keyframe = pic->pict_type == AV_PICTURE_TYPE_I;
         if(!(avctx->flags&AV_CODEC_FLAG_QSCALE)) {
             pic->quality = ff_rate_estimate_qscale(&s->m, 0);
@@ -1617,11 +1617,11 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 return -1;
         }
     }else{
-        s->keyframe= avctx->gop_size==0 || avctx->frame_number % avctx->gop_size == 0;
+        s->keyframe= avctx->gop_size==0 || avctx->frame_num % avctx->gop_size == 0;
         s->m.pict_type = pic->pict_type = s->keyframe ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
     }
 
-    if(s->pass1_rc && avctx->frame_number == 0)
+    if(s->pass1_rc && avctx->frame_num == 0)
         pic->quality = 2*FF_QP2LAMBDA;
     if (pic->quality) {
         s->qlog   = qscale2qlog(pic->quality);
@@ -1856,13 +1856,13 @@ redo_frame:
 
     ff_snow_release_buffer(avctx);
 
-    s->current_picture->coded_picture_number = avctx->frame_number;
+    s->current_picture->coded_picture_number = avctx->frame_num;
     s->current_picture->pict_type = pic->pict_type;
     s->current_picture->quality = pic->quality;
     s->m.frame_bits = 8*(s->c.bytestream - s->c.bytestream_start);
     s->m.p_tex_bits = s->m.frame_bits - s->m.misc_bits - s->m.mv_bits;
     s->m.current_picture.f->display_picture_number =
-    s->m.current_picture.f->coded_picture_number   = avctx->frame_number;
+    s->m.current_picture.f->coded_picture_number   = avctx->frame_num;
     s->m.current_picture.f->quality                = pic->quality;
     s->m.total_bits += 8*(s->c.bytestream - s->c.bytestream_start);
     if(s->pass1_rc)

@@ -931,8 +931,8 @@ static int epic_jb_decode_tile(G2MContext *c, int tile_x, int tile_y,
 
         if (ret) {
             av_log(avctx, AV_LOG_ERROR,
-                   "ePIC: tile decoding failed, frame=%d, tile_x=%d, tile_y=%d\n",
-                   avctx->frame_number, tile_x, tile_y);
+                   "ePIC: tile decoding failed, frame=%"PRId64", tile_x=%d, tile_y=%d\n",
+                   avctx->frame_num, tile_x, tile_y);
             return AVERROR_INVALIDDATA;
         }
 

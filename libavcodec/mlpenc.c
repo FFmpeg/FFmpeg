@@ -2118,7 +2118,7 @@ static int mlp_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     data = frame ? frame->data[0] : NULL;
 
-    ctx->frame_index = avctx->frame_number % ctx->max_restart_interval;
+    ctx->frame_index = avctx->frame_num % ctx->max_restart_interval;
 
     ctx->inout_buffer = ctx->major_inout_buffer
                       + ctx->frame_index * ctx->one_sample_buffer_size;
@@ -2128,7 +2128,7 @@ static int mlp_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     ctx->write_buffer = ctx->inout_buffer;
 
-    if (avctx->frame_number < ctx->max_restart_interval) {
+    if (avctx->frame_num < ctx->max_restart_interval) {
         if (data)
             goto input_and_return;
     }
@@ -2199,7 +2199,7 @@ input_and_return:
     }
 
     if (!frame && ctx->last_frames < ctx->max_restart_interval - 1)
-        avctx->frame_number++;
+        avctx->frame_num++;
 
     if (bytes_written > 0) {
         ff_af_queue_remove(&ctx->afq,

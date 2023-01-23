@@ -646,8 +646,8 @@ static qcelp_packet_rate determine_bitrate(AVCodecContext *avctx,
 static void warn_insufficient_frame_quality(AVCodecContext *avctx,
                                             const char *message)
 {
-    av_log(avctx, AV_LOG_WARNING, "Frame #%d, IFQ: %s\n",
-           avctx->frame_number, message);
+    av_log(avctx, AV_LOG_WARNING, "Frame #%"PRId64", IFQ: %s\n",
+           avctx->frame_num, message);
 }
 
 static void postfilter(QCELPContext *q, float *samples, float *lpc)

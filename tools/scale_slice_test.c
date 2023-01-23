@@ -100,8 +100,8 @@ static int process_frame(DecodeContext *dc, AVFrame *frame)
 
         if (memcmp(pd->frame_ref->data[i], pd->frame_dst->data[i],
                    pd->frame_ref->linesize[i] * (pd->frame_ref->height >> shift))) {
-            fprintf(stderr, "mismatch frame %d seed %u\n",
-                    dc->decoder->frame_number - 1, pd->random_seed);
+            fprintf(stderr, "mismatch frame %"PRId64" seed %u\n",
+                    dc->decoder->frame_num - 1, pd->random_seed);
             return AVERROR(EINVAL);
         }
     }

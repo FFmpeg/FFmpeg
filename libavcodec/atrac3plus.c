@@ -1391,9 +1391,9 @@ static int decode_band_numwavs(GetBitContext *gb, Atrac3pChanUnitCtx *ctx,
         if (band_has_tones[sb]) {
             if (ctx->waves_info->tones_index + dst[sb].num_wavs > 48) {
                 av_log(avctx, AV_LOG_ERROR,
-                       "Too many tones: %d (max. 48), frame: %d!\n",
+                       "Too many tones: %d (max. 48), frame: %"PRId64"!\n",
                        ctx->waves_info->tones_index + dst[sb].num_wavs,
-                       avctx->frame_number);
+                       avctx->frame_num);
                 return AVERROR_INVALIDDATA;
             }
             dst[sb].start_index           = ctx->waves_info->tones_index;

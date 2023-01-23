@@ -603,7 +603,7 @@ static int rv10_decode_frame(AVCodecContext *avctx, AVFrame *pict,
     int slice_count;
     const uint8_t *slices_hdr = NULL;
 
-    ff_dlog(avctx, "*****frame %d size=%d\n", avctx->frame_number, buf_size);
+    ff_dlog(avctx, "*****frame %"PRId64" size=%d\n", avctx->frame_num, buf_size);
 
     /* no supplementary picture */
     if (buf_size == 0) {

@@ -65,7 +65,7 @@ typedef struct FlashSVContext {
     AVBufferRef    *prev_frame_buf;
     int             image_width, image_height;
     unsigned        packet_size;
-    int             last_key_frame;
+    int64_t         last_key_frame;
     uint8_t         tmpblock[3 * 256 * 256];
 } FlashSVContext;
 
@@ -215,7 +215,7 @@ static int flashsv_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     /* Check the placement of keyframes */
     if (avctx->gop_size > 0 &&
-        avctx->frame_number >= s->last_key_frame + avctx->gop_size) {
+        avctx->frame_num >= s->last_key_frame + avctx->gop_size) {
         I_frame = 1;
     }
 
@@ -229,8 +229,8 @@ static int flashsv_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     //mark the frame type so the muxer can mux it correctly
     if (I_frame) {
-        s->last_key_frame = avctx->frame_number;
-        ff_dlog(avctx, "Inserting keyframe at frame %d\n", avctx->frame_number);
+        s->last_key_frame = avctx->frame_num;
+        ff_dlog(avctx, "Inserting keyframe at frame %"PRId64"\n", avctx->frame_num);
     }
 
     if (I_frame)

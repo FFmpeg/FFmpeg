@@ -554,7 +554,7 @@ static int opus_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         ff_bufqueue_add(avctx, &s->bufqueue, av_frame_clone(frame));
     } else {
         ff_opus_psy_signal_eof(&s->psyctx);
-        if (!s->afq.remaining_samples || !avctx->frame_number)
+        if (!s->afq.remaining_samples || !avctx->frame_num)
             return 0; /* We've been flushed and there's nothing left to encode */
     }
 

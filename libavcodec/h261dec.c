@@ -610,7 +610,7 @@ static int h261_decode_frame(AVCodecContext *avctx, AVFrame *pict,
     MpegEncContext *s  = &h->s;
     int ret;
 
-    ff_dlog(avctx, "*****frame %d size=%d\n", avctx->frame_number, buf_size);
+    ff_dlog(avctx, "*****frame %"PRId64" size=%d\n", avctx->frame_num, buf_size);
     ff_dlog(avctx, "bytes=%x %x %x %x\n", buf[0], buf[1], buf[2], buf[3]);
 
     h->gob_start_code_skipped = 0;

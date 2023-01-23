@@ -38,7 +38,7 @@ static int process_frame(DecodeContext *dc, AVFrame *frame)
     if (!frame)
         return 0;
 
-    fprintf(stdout, "frame %d\n", dc->decoder->frame_number - 1);
+    fprintf(stdout, "frame %"PRId64"\n", dc->decoder->frame_num - 1);
 
     sd = av_frame_get_side_data(frame, AV_FRAME_DATA_VIDEO_ENC_PARAMS);
     if (sd) {

@@ -151,7 +151,7 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
     *got_frame_ptr = 1;
 
-    return ((avctx->frame_number == 0) * hdr_size + buf_size) * channels;
+    return ((avctx->frame_num == 0) * hdr_size + buf_size) * channels;
 }
 
 static av_cold int eightsvx_decode_init(AVCodecContext *avctx)

@@ -542,7 +542,7 @@ static int smc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return ret;
 
     if (avctx->gop_size == 0 || !s->prev_frame->data[0] ||
-        (avctx->frame_number % avctx->gop_size) == 0) {
+        (avctx->frame_num % avctx->gop_size) == 0) {
         s->key_frame = 1;
     } else {
         s->key_frame = 0;

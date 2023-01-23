@@ -105,7 +105,7 @@ typedef struct FlashSV2Context {
 
     int rows, cols;
 
-    int last_key_frame;
+    int64_t last_key_frame;
 
     int image_width, image_height;
     int block_width, block_height;
@@ -787,7 +787,7 @@ static int optimum_use15_7(FlashSV2Context * s)
 {
 #ifndef FLASHSV2_DUMB
     double ideal = ((double)(s->avctx->bit_rate * s->avctx->time_base.den * s->avctx->ticks_per_frame)) /
-        ((double) s->avctx->time_base.num) * s->avctx->frame_number;
+        ((double) s->avctx->time_base.num) * s->avctx->frame_num;
     if (ideal + use15_7_threshold < s->total_bits) {
         return 1;
     } else {
@@ -861,20 +861,20 @@ static int flashsv2_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return res;
 
     /* First frame needs to be a keyframe */
-    if (avctx->frame_number == 0)
+    if (avctx->frame_num == 0)
         keyframe = 1;
 
     /* Check the placement of keyframes */
     if (avctx->gop_size > 0) {
-        if (avctx->frame_number >= s->last_key_frame + avctx->gop_size)
+        if (avctx->frame_num >= s->last_key_frame + avctx->gop_size)
             keyframe = 1;
     }
 
     if (!keyframe
-        && avctx->frame_number > s->last_key_frame + avctx->keyint_min) {
+        && avctx->frame_num > s->last_key_frame + avctx->keyint_min) {
         recommend_keyframe(s, &keyframe);
         if (keyframe)
-            av_log(avctx, AV_LOG_DEBUG, "Recommending key frame at frame %d\n", avctx->frame_number);
+            av_log(avctx, AV_LOG_DEBUG, "Recommending key frame at frame %"PRId64"\n", avctx->frame_num);
     }
 
     if (keyframe) {
@@ -890,9 +890,9 @@ static int flashsv2_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     if (keyframe) {
         new_key_frame(s);
-        s->last_key_frame = avctx->frame_number;
+        s->last_key_frame = avctx->frame_num;
         pkt->flags |= AV_PKT_FLAG_KEY;
-        av_log(avctx, AV_LOG_DEBUG, "Inserting key frame at frame %d\n", avctx->frame_number);
+        av_log(avctx, AV_LOG_DEBUG, "Inserting key frame at frame %"PRId64"\n", avctx->frame_num);
     }
 
     pkt->size = res;

@@ -1678,7 +1678,7 @@ static int decode_packet(AVCodecContext *avctx, WMAProDecodeCtx *s,
             skip_bits(gb, 2);
         } else {
             int num_frames = get_bits(gb, 6);
-            ff_dlog(avctx, "packet[%d]: number of frames %d\n", avctx->frame_number, num_frames);
+            ff_dlog(avctx, "packet[%"PRId64"]: number of frames %d\n", avctx->frame_num, num_frames);
             packet_sequence_number = 0;
         }
 
@@ -1687,10 +1687,10 @@ static int decode_packet(AVCodecContext *avctx, WMAProDecodeCtx *s,
         if (avctx->codec_id != AV_CODEC_ID_WMAPRO) {
             skip_bits(gb, 3);
             s->skip_packets = get_bits(gb, 8);
-            ff_dlog(avctx, "packet[%d]: skip packets %d\n", avctx->frame_number, s->skip_packets);
+            ff_dlog(avctx, "packet[%"PRId64"]: skip packets %d\n", avctx->frame_num, s->skip_packets);
         }
 
-        ff_dlog(avctx, "packet[%d]: nbpf %x\n", avctx->frame_number,
+        ff_dlog(avctx, "packet[%"PRId64"]: nbpf %x\n", avctx->frame_num,
                 num_bits_prev_frame);
 
         /** check for packet loss */

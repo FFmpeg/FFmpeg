@@ -42,7 +42,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     CLJRContext *a = avctx->priv_data;
     PutBitContext pb;
     int x, y, ret;
-    uint32_t dither= avctx->frame_number;
+    uint32_t dither= avctx->frame_num;
     static const uint32_t ordered_dither[2][2] =
     {
         { 0x10400000, 0x104F0000 },

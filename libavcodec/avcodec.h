@@ -1061,6 +1061,7 @@ typedef struct AVCodecContext {
      */
     int frame_size;
 
+#if FF_API_AVCTX_FRAME_NUMBER
     /**
      * Frame counter, set by libavcodec.
      *
@@ -1069,8 +1070,11 @@ typedef struct AVCodecContext {
      *
      *   @note the counter is not incremented if encoding/decoding resulted in
      *   an error.
+     *   @deprecated use frame_num instead
      */
+    attribute_deprecated
     int frame_number;
+#endif
 
     /**
      * number of bytes per packet if constant and known or 0
@@ -2048,6 +2052,17 @@ typedef struct AVCodecContext {
      *             The decoder can then override during decoding as needed.
      */
     AVChannelLayout ch_layout;
+
+    /**
+     * Frame counter, set by libavcodec.
+     *
+     * - decoding: total number of frames returned from the decoder so far.
+     * - encoding: total number of frames passed to the encoder so far.
+     *
+     *   @note the counter is not incremented if encoding/decoding resulted in
+     *   an error.
+     */
+    int64_t frame_num;
 } AVCodecContext;
 
 /**

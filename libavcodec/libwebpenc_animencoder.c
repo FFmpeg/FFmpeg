@@ -132,7 +132,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             goto end;
         }
 
-        if (!avctx->frame_number) {
+        if (!avctx->frame_num) {
             s->first_frame_pts = frame->pts;
 #if FF_API_REORDERED_OPAQUE
 FF_DISABLE_DEPRECATION_WARNINGS

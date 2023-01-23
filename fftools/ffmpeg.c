@@ -2115,7 +2115,7 @@ static int decode(InputStream *ist, AVCodecContext *avctx,
             fd      = (FrameData*)frame->opaque_ref->data;
             fd->pts = frame->pts;
             fd->tb  = avctx->pkt_timebase;
-            fd->idx = avctx->frame_number - 1;
+            fd->idx = avctx->frame_num - 1;
         }
 
         *got_frame = 1;

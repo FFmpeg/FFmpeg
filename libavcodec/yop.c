@@ -207,7 +207,7 @@ static int yop_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     if ((ret = ff_reget_buffer(avctx, frame, 0)) < 0)
         return ret;
 
-    if (!avctx->frame_number)
+    if (!avctx->frame_num)
         memset(frame->data[1], 0, AVPALETTE_SIZE);
 
     s->dstbuf     = frame->data[0];

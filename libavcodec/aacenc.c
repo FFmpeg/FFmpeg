@@ -854,7 +854,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     if (s->psypp)
         ff_psy_preprocess(s->psypp, s->planar_samples, s->channels);
 
-    if (!avctx->frame_number)
+    if (!avctx->frame_num)
         return 0;
 
     start_ch = 0;
@@ -958,7 +958,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     do {
         init_put_bits(&s->pb, avpkt->data, avpkt->size);
 
-        if ((avctx->frame_number & 0xFF)==1 && !(avctx->flags & AV_CODEC_FLAG_BITEXACT))
+        if ((avctx->frame_num & 0xFF)==1 && !(avctx->flags & AV_CODEC_FLAG_BITEXACT))
             put_bitstream_info(s, LIBAVCODEC_IDENT);
         start_ch = 0;
         target_bits = 0;

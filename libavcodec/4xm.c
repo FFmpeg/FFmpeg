@@ -875,7 +875,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *picture,
         }
 
         for (i = 0; i < CFRAME_BUFFER_COUNT; i++)
-            if (f->cfrm[i].id && f->cfrm[i].id < avctx->frame_number)
+            if (f->cfrm[i].id && f->cfrm[i].id < avctx->frame_num)
                 av_log(f->avctx, AV_LOG_ERROR, "lost c frame %d\n",
                        f->cfrm[i].id);
 
@@ -910,9 +910,9 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *picture,
             buf        = cfrm->data;
             frame_size = cfrm->size;
 
-            if (id != avctx->frame_number)
-                av_log(f->avctx, AV_LOG_ERROR, "cframe id mismatch %d %d\n",
-                       id, avctx->frame_number);
+            if (id != avctx->frame_num)
+                av_log(f->avctx, AV_LOG_ERROR, "cframe id mismatch %d %"PRId64"\n",
+                       id, avctx->frame_num);
 
             if (f->version <= 1)
                 return AVERROR_INVALIDDATA;

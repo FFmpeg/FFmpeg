@@ -221,8 +221,8 @@ static evrc_packet_rate determine_bitrate(AVCodecContext *avctx,
 static void warn_insufficient_frame_quality(AVCodecContext *avctx,
                                             const char *message)
 {
-    av_log(avctx, AV_LOG_WARNING, "Frame #%d, %s\n",
-           avctx->frame_number, message);
+    av_log(avctx, AV_LOG_WARNING, "Frame #%"PRId64", %s\n",
+           avctx->frame_num, message);
 }
 
 /**

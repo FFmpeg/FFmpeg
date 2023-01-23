@@ -38,7 +38,7 @@ static int decode_read(DecodeContext *dc, int flush)
     int ret = 0;
 
     while (ret >= 0 &&
-           (dc->max_frames == 0 || dc->decoder->frame_number < dc->max_frames)) {
+           (dc->max_frames == 0 || dc->decoder->frame_num < dc->max_frames)) {
         ret = avcodec_receive_frame(dc->decoder, dc->frame);
         if (ret < 0) {
             if (ret == AVERROR_EOF) {
@@ -55,11 +55,11 @@ static int decode_read(DecodeContext *dc, int flush)
         if (ret < 0)
             return ret;
 
-        if (dc->max_frames && dc->decoder->frame_number == dc->max_frames)
+        if (dc->max_frames && dc->decoder->frame_num == dc->max_frames)
             return 1;
     }
 
-    return (dc->max_frames == 0 || dc->decoder->frame_number < dc->max_frames) ? 0 : 1;
+    return (dc->max_frames == 0 || dc->decoder->frame_num < dc->max_frames) ? 0 : 1;
 }
 
 int ds_run(DecodeContext *dc)

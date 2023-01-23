@@ -156,7 +156,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     if (bytestream2_get_bytes_left(&gb) < 8LL * blocks)
         return AVERROR_INVALIDDATA;
 
-    if (!avctx->frame_number) {
+    if (!avctx->frame_num) {
         ptrdiff_t linesize[4] = { s->prev_frame->linesize[0], 0, 0, 0 };
         av_image_fill_black(s->prev_frame->data, linesize, avctx->pix_fmt, 0,
                             avctx->width, avctx->height);

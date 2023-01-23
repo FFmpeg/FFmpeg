@@ -2654,8 +2654,8 @@ static int vp3_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         s->qps[i] = -1;
 
     if (s->avctx->debug & FF_DEBUG_PICT_INFO)
-        av_log(s->avctx, AV_LOG_INFO, " VP3 %sframe #%d: Q index = %d\n",
-               s->keyframe ? "key" : "", avctx->frame_number + 1, s->qps[0]);
+        av_log(s->avctx, AV_LOG_INFO, " VP3 %sframe #%"PRId64": Q index = %d\n",
+               s->keyframe ? "key" : "", avctx->frame_num + 1, s->qps[0]);
 
     s->skip_loop_filter = !s->filter_limit_values[s->qps[0]] ||
                           avctx->skip_loop_filter >= (s->keyframe ? AVDISCARD_ALL
@@ -2701,7 +2701,7 @@ static int vp3_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                 }
 #endif
                 s->version = version;
-                if (avctx->frame_number == 0)
+                if (avctx->frame_num == 0)
                     av_log(s->avctx, AV_LOG_DEBUG,
                            "VP version: %d\n", s->version);
             }

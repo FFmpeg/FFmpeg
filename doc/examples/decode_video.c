@@ -70,12 +70,12 @@ static void decode(AVCodecContext *dec_ctx, AVFrame *frame, AVPacket *pkt,
             exit(1);
         }
 
-        printf("saving frame %3d\n", dec_ctx->frame_number);
+        printf("saving frame %3"PRId64"\n", dec_ctx->frame_num);
         fflush(stdout);
 
         /* the picture is allocated by the decoder. no need to
            free it */
-        snprintf(buf, sizeof(buf), "%s-%d", filename, dec_ctx->frame_number);
+        snprintf(buf, sizeof(buf), "%s-%"PRId64, filename, dec_ctx->frame_num);
         pgm_save(frame->data[0], frame->linesize[0],
                  frame->width, frame->height, buf);
     }

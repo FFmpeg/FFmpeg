@@ -318,7 +318,7 @@ static int gif_image_write_image(AVCodecContext *avctx,
         disposal = GCE_DISPOSAL_INPLACE;
     }
 
-    if (s->image || !avctx->frame_number) { /* GIF header */
+    if (s->image || !avctx->frame_num) { /* GIF header */
         const uint32_t *global_palette = palette ? palette : s->palette;
         const AVRational sar = avctx->sample_aspect_ratio;
         int64_t aspect = 0;
@@ -510,7 +510,7 @@ static int gif_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     pkt->size   = outbuf_ptr - pkt->data;
-    if (s->image || !avctx->frame_number)
+    if (s->image || !avctx->frame_num)
         pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
 

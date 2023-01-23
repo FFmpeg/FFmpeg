@@ -711,11 +711,16 @@ int ff_decode_receive_frame(AVCodecContext *avctx, AVFrame *frame)
             goto fail;
     }
 
-    avctx->frame_number++;
+    avctx->frame_num++;
+#if FF_API_AVCTX_FRAME_NUMBER
+FF_DISABLE_DEPRECATION_WARNINGS
+    avctx->frame_number = avctx->frame_num;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     if (avctx->flags & AV_CODEC_FLAG_DROPCHANGED) {
 
-        if (avctx->frame_number == 1) {
+        if (avctx->frame_num == 1) {
             avci->initial_format = frame->format;
             switch(avctx->codec_type) {
             case AVMEDIA_TYPE_VIDEO:
@@ -732,7 +737,7 @@ int ff_decode_receive_frame(AVCodecContext *avctx, AVFrame *frame)
             }
         }
 
-        if (avctx->frame_number > 1) {
+        if (avctx->frame_num > 1) {
             changed = avci->initial_format != frame->format;
 
             switch(avctx->codec_type) {
@@ -749,9 +754,9 @@ int ff_decode_receive_frame(AVCodecContext *avctx, AVFrame *frame)
 
             if (changed) {
                 avci->changed_frames_dropped++;
-                av_log(avctx, AV_LOG_INFO, "dropped changed frame #%d pts %"PRId64
+                av_log(avctx, AV_LOG_INFO, "dropped changed frame #%"PRId64" pts %"PRId64
                                             " drop count: %d \n",
-                                            avctx->frame_number, frame->pts,
+                                            avctx->frame_num, frame->pts,
                                             avci->changed_frames_dropped);
                 ret = AVERROR_INPUT_CHANGED;
                 goto fail;
@@ -916,7 +921,12 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
         }
 
         if (*got_sub_ptr)
-            avctx->frame_number++;
+            avctx->frame_num++;
+#if FF_API_AVCTX_FRAME_NUMBER
+FF_DISABLE_DEPRECATION_WARNINGS
+        avctx->frame_number = avctx->frame_num;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     }
 
     return ret;

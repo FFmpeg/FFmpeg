@@ -2,6 +2,10 @@ The last version increases of all libraries were on 2023-02-09
 
 API changes, most recent first:
 
+2023-02-13 - xxxxxxxxxx - lavc 60.2.100 - avcodec.h
+  Add AVCodecContext.frame_num as a 64bit version of frame_number.
+  Deprecate AVCodecContext.frame_number.
+
 2023-02-12 - xxxxxxxxxx - lavfi 9.1.100 - avfilter.h
   Add filtergraph segment parsing API.
   New structs:

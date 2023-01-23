@@ -189,7 +189,7 @@ void ff_eac3_output_frame_header(AC3EncodeContext *s)
         put_bits(&s->pb, 1, 0);
     }
     if (s->num_blocks != 6)
-        put_bits(&s->pb, 1, !(s->avctx->frame_number % 6)); /* converter sync flag */
+        put_bits(&s->pb, 1, !(s->avctx->frame_num % 6)); /* converter sync flag */
     put_bits(&s->pb, 1, 0);                         /* no additional bit stream info */
 
     /* frame header */
