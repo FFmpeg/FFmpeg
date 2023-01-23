@@ -1526,27 +1526,6 @@ typedef struct AVCodecContext {
      */
     int active_thread_type;
 
-#if FF_API_THREAD_SAFE_CALLBACKS
-    /**
-     * Set by the client if its custom get_buffer() callback can be called
-     * synchronously from another thread, which allows faster multithreaded decoding.
-     * draw_horiz_band() will be called from other threads regardless of this setting.
-     * Ignored if the default get_buffer() is used.
-     * - encoding: Set by user.
-     * - decoding: Set by user.
-     *
-     * @deprecated the custom get_buffer2() callback should always be
-     *   thread-safe. Thread-unsafe get_buffer2() implementations will be
-     *   invalid starting with LIBAVCODEC_VERSION_MAJOR=60; in other words,
-     *   libavcodec will behave as if this field was always set to 1.
-     *   Callers that want to be forward compatible with future libavcodec
-     *   versions should wrap access to this field in
-     *     `#if LIBAVCODEC_VERSION_MAJOR < 60`
-     */
-    attribute_deprecated
-    int thread_safe_callbacks;
-#endif
-
     /**
      * The codec may call this to execute several independent things.
      * It will return only after finishing all tasks.

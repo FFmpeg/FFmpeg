@@ -913,11 +913,6 @@ int ff_thread_ref_frame(ThreadFrame *dst, const ThreadFrame *src)
 
 #if !HAVE_THREADS
 
-enum AVPixelFormat ff_thread_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt)
-{
-    return ff_get_format(avctx, fmt);
-}
-
 int ff_thread_get_buffer(AVCodecContext *avctx, AVFrame *f, int flags)
 {
     return ff_get_buffer(avctx, f, flags);

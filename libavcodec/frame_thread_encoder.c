@@ -48,9 +48,6 @@ typedef struct{
 
 typedef struct{
     AVCodecContext *parent_avctx;
-#if FF_API_THREAD_SAFE_CALLBACKS
-    pthread_mutex_t buffer_mutex;
-#endif
 
     pthread_mutex_t task_fifo_mutex; /* Used to guard (next_)task_index */
     pthread_cond_t task_fifo_cond;
@@ -70,15 +67,9 @@ typedef struct{
 } ThreadContext;
 
 #define OFF(member) offsetof(ThreadContext, member)
-#if FF_API_THREAD_SAFE_CALLBACKS
-DEFINE_OFFSET_ARRAY(ThreadContext, thread_ctx, pthread_init_cnt,
-                    (OFF(buffer_mutex), OFF(task_fifo_mutex), OFF(finished_task_mutex)),
-                    (OFF(task_fifo_cond), OFF(finished_task_cond)));
-#else
 DEFINE_OFFSET_ARRAY(ThreadContext, thread_ctx, pthread_init_cnt,
                     (OFF(task_fifo_mutex), OFF(finished_task_mutex)),
                     (OFF(task_fifo_cond),  OFF(finished_task_cond)));
-#endif
 #undef OFF
 
 static void * attribute_align_arg worker(void *v){
@@ -112,11 +103,6 @@ static void * attribute_align_arg worker(void *v){
         pkt   = task->outdata;
 
         ret = ff_encode_encode_cb(avctx, pkt, frame, &task->got_packet);
-#if FF_API_THREAD_SAFE_CALLBACKS
-        pthread_mutex_lock(&c->buffer_mutex);
-        av_frame_unref(frame);
-        pthread_mutex_unlock(&c->buffer_mutex);
-#endif
         pthread_mutex_lock(&c->finished_task_mutex);
         task->return_code = ret;
         task->finished    = 1;
@@ -124,13 +110,7 @@ static void * attribute_align_arg worker(void *v){
         pthread_mutex_unlock(&c->finished_task_mutex);
     }
 end:
-#if FF_API_THREAD_SAFE_CALLBACKS
-    pthread_mutex_lock(&c->buffer_mutex);
-#endif
     avcodec_close(avctx);
-#if FF_API_THREAD_SAFE_CALLBACKS
-    pthread_mutex_unlock(&c->buffer_mutex);
-#endif
     av_freep(&avctx);
     return NULL;
 }

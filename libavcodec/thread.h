@@ -62,19 +62,7 @@ int ff_thread_decode_frame(AVCodecContext *avctx, AVFrame *picture,
  */
 void ff_thread_finish_setup(AVCodecContext *avctx);
 
-#if FF_API_THREAD_SAFE_CALLBACKS
-/**
- * Wrapper around get_format() for frame-multithreaded codecs.
- * Call this function instead of avctx->get_format().
- * Cannot be called after the codec has called ff_thread_finish_setup().
- *
- * @param avctx The current context.
- * @param fmt The list of available formats.
- */
-enum AVPixelFormat ff_thread_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt);
-#else
 #define ff_thread_get_format ff_get_format
-#endif
 
 /**
  * Wrapper around get_buffer() for frame-multithreaded codecs.

@@ -2804,11 +2804,6 @@ static int init_input_stream(InputStream *ist, char *error, int error_len)
 
         ist->dec_ctx->opaque                = ist;
         ist->dec_ctx->get_format            = get_format;
-#if LIBAVCODEC_VERSION_MAJOR < 60
-        AV_NOWARN_DEPRECATED({
-        ist->dec_ctx->thread_safe_callbacks = 1;
-        })
-#endif
 
         if (ist->dec_ctx->codec_id == AV_CODEC_ID_DVB_SUBTITLE &&
            (ist->decoding_needed & DECODING_FOR_OST)) {
