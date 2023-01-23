@@ -85,7 +85,7 @@ typedef struct FFV1Context {
     int chroma_h_shift, chroma_v_shift;
     int transparency;
     int flags;
-    int picture_number;
+    int64_t picture_number;
     int key_frame;
     ThreadFrame picture, last_picture;
     struct FFV1Context *fsrc;
