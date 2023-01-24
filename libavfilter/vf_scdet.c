@@ -170,7 +170,7 @@ static int activate(AVFilterContext *ctx)
                     av_ts2timestr(frame->pts, &inlink->time_base));
         }
         if (s->sc_pass) {
-            if (s->scene_score > s->threshold)
+            if (s->scene_score >= s->threshold)
                 return ff_filter_frame(outlink, frame);
             else {
                 av_frame_free(&frame);
