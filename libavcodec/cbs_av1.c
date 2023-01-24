@@ -1306,9 +1306,16 @@ static void cbs_av1_free_metadata(void *unit, uint8_t *content)
     md = &obu->obu.metadata;
 
     switch (md->metadata_type) {
+    case AV1_METADATA_TYPE_HDR_CLL:
+    case AV1_METADATA_TYPE_HDR_MDCV:
+    case AV1_METADATA_TYPE_SCALABILITY:
+    case AV1_METADATA_TYPE_TIMECODE:
+        break;
     case AV1_METADATA_TYPE_ITUT_T35:
         av_buffer_unref(&md->metadata.itut_t35.payload_ref);
         break;
+    default:
+        av_buffer_unref(&md->metadata.unknown.payload_ref);
     }
     av_free(content);
 }

@@ -370,6 +370,12 @@ typedef struct AV1RawMetadataTimecode {
     uint32_t time_offset_value;
 } AV1RawMetadataTimecode;
 
+typedef struct AV1RawMetadataUnknown {
+    uint8_t     *payload;
+    AVBufferRef *payload_ref;
+    size_t       payload_size;
+} AV1RawMetadataUnknown;
+
 typedef struct AV1RawMetadata {
     uint64_t metadata_type;
     union {
@@ -378,6 +384,7 @@ typedef struct AV1RawMetadata {
         AV1RawMetadataScalability scalability;
         AV1RawMetadataITUTT35     itut_t35;
         AV1RawMetadataTimecode    timecode;
+        AV1RawMetadataUnknown     unknown;
     } metadata;
 } AV1RawMetadata;
 

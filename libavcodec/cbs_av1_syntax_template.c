@@ -2004,6 +2004,29 @@ static int FUNC(metadata_timecode)(CodedBitstreamContext *ctx, RWContext *rw,
     return 0;
 }
 
+static int FUNC(metadata_unknown)(CodedBitstreamContext *ctx, RWContext *rw,
+                                  AV1RawMetadataUnknown *current)
+{
+    int err;
+    size_t i;
+
+    HEADER("Unknown Metadata");
+
+#ifdef READ
+    current->payload_size = cbs_av1_get_payload_bytes_left(rw);
+
+    current->payload_ref = av_buffer_alloc(current->payload_size);
+    if (!current->payload_ref)
+        return AVERROR(ENOMEM);
+    current->payload = current->payload_ref->data;
+#endif
+
+    for (i = 0; i < current->payload_size; i++)
+        fbs(8, payload[i], 1, i);
+
+    return 0;
+}
+
 static int FUNC(metadata_obu)(CodedBitstreamContext *ctx, RWContext *rw,
                               AV1RawMetadata *current)
 {
@@ -2028,8 +2051,7 @@ static int FUNC(metadata_obu)(CodedBitstreamContext *ctx, RWContext *rw,
         CHECK(FUNC(metadata_timecode)(ctx, rw, &current->metadata.timecode));
         break;
     default:
-        // Unknown metadata type.
-        return AVERROR_PATCHWELCOME;
+        CHECK(FUNC(metadata_unknown)(ctx, rw, &current->metadata.unknown));
     }
 
     return 0;
