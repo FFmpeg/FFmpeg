@@ -194,6 +194,13 @@ static av_cold int dpcm_decode_init(AVCodecContext *avctx)
         }
         break;
 
+    case AV_CODEC_ID_CBD2_DPCM:
+        for (i = -128; i < 128; i++) {
+            int16_t cube = (i * i * i) / 64;
+            s->array[i+128] = cube;
+        }
+        break;
+
     case AV_CODEC_ID_GREMLIN_DPCM: {
         int delta = 0;
         int code = 64;
@@ -265,6 +272,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     case AV_CODEC_ID_WADY_DPCM:
     case AV_CODEC_ID_DERF_DPCM:
     case AV_CODEC_ID_GREMLIN_DPCM:
+    case AV_CODEC_ID_CBD2_DPCM:
     case AV_CODEC_ID_SDX2_DPCM:
         out = buf_size;
         break;
@@ -386,6 +394,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         }
         break;
 
+    case AV_CODEC_ID_CBD2_DPCM:
     case AV_CODEC_ID_SDX2_DPCM:
         while (output_samples < samples_end) {
             int8_t n = bytestream2_get_byteu(&gb);
@@ -468,6 +477,7 @@ const FFCodec ff_ ## name_ ## _decoder = {                  \
     FF_CODEC_DECODE_CB(dpcm_decode_frame),                  \
 }
 
+DPCM_DECODER(AV_CODEC_ID_CBD2_DPCM,      cbd2_dpcm,      "DPCM Cuberoot-Delta-Exact");
 DPCM_DECODER(AV_CODEC_ID_DERF_DPCM,      derf_dpcm,      "DPCM Xilam DERF");
 DPCM_DECODER(AV_CODEC_ID_GREMLIN_DPCM,   gremlin_dpcm,   "DPCM Gremlin");
 DPCM_DECODER(AV_CODEC_ID_INTERPLAY_DPCM, interplay_dpcm, "DPCM Interplay");

@@ -30,6 +30,7 @@ version <next>:
 - adrc audio filter
 - afdelaysrc audio filter
 - WADY DPCM decoder and demuxer
+- CBD2 DPCM decoder
 
 
 version 5.1:
