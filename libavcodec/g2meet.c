@@ -145,7 +145,8 @@ typedef struct G2MContext {
     int        got_header;
 
     uint8_t    *framebuf;
-    int        framebuf_stride, old_width, old_height;
+    int        framebuf_stride;
+    unsigned int framebuf_allocated;
 
     uint8_t    *synth_tile, *jpeg_tile, *epic_buf, *epic_buf_base;
     int        tile_stride, epic_buf_stride, old_tile_w, old_tile_h;
@@ -1160,14 +1161,13 @@ static int g2m_init_buffers(G2MContext *c)
 {
     int aligned_height;
 
-    if (!c->framebuf || c->old_width < c->width || c->old_height < c->height) {
-        c->framebuf_stride = FFALIGN(c->width + 15, 16) * 3;
-        aligned_height     = c->height + 15;
-        av_free(c->framebuf);
-        c->framebuf = av_mallocz_array(c->framebuf_stride, aligned_height);
-        if (!c->framebuf)
-            return AVERROR(ENOMEM);
-    }
+    c->framebuf_stride = FFALIGN(c->width + 15, 16) * 3;
+    aligned_height = c->height + 15;
+
+    av_fast_mallocz(&c->framebuf, &c->framebuf_allocated, c->framebuf_stride * aligned_height);
+    if (!c->framebuf)
+        return AVERROR(ENOMEM);
+
     if (!c->synth_tile || !c->jpeg_tile ||
         (c->compression == 2 && !c->epic_buf_base) ||
         c->old_tile_w < c->tile_width ||
@@ -1619,6 +1619,7 @@ static av_cold int g2m_decode_end(AVCodecContext *avctx)
     av_freep(&c->jpeg_tile);
     av_freep(&c->cursor);
     av_freep(&c->framebuf);
+    c->framebuf_allocated = 0;
 
     return 0;
 }
