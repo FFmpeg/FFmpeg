@@ -1843,6 +1843,8 @@ static int FUNC(metadata_hdr_cll)(CodedBitstreamContext *ctx, RWContext *rw,
 {
     int err;
 
+    HEADER("HDR CLL Metadata");
+
     fb(16, max_cll);
     fb(16, max_fall);
 
@@ -1853,6 +1855,8 @@ static int FUNC(metadata_hdr_mdcv)(CodedBitstreamContext *ctx, RWContext *rw,
                                    AV1RawMetadataHDRMDCV *current)
 {
     int err, i;
+
+    HEADER("HDR MDCV Metadata");
 
     for (i = 0; i < 3; i++) {
         fbs(16, primary_chromaticity_x[i], 1, i);
@@ -1920,6 +1924,8 @@ static int FUNC(metadata_scalability)(CodedBitstreamContext *ctx, RWContext *rw,
 {
     int err;
 
+    HEADER("Scalability Metadata");
+
     fb(8, scalability_mode_idc);
 
     if (current->scalability_mode_idc == AV1_SCALABILITY_SS)
@@ -1933,6 +1939,8 @@ static int FUNC(metadata_itut_t35)(CodedBitstreamContext *ctx, RWContext *rw,
 {
     int err;
     size_t i;
+
+    HEADER("ITU-T T.35 Metadata");
 
     fb(8, itu_t_t35_country_code);
     if (current->itu_t_t35_country_code == 0xff)
@@ -1960,6 +1968,8 @@ static int FUNC(metadata_timecode)(CodedBitstreamContext *ctx, RWContext *rw,
                                    AV1RawMetadataTimecode *current)
 {
     int err;
+
+    HEADER("Timecode Metadata");
 
     fb(5, counting_type);
     flag(full_timestamp_flag);
