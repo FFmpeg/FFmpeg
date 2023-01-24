@@ -49,9 +49,6 @@ typedef struct AV1OBU {
     int raw_size;
     const uint8_t *raw_data;
 
-    /** GetBitContext initialized to the start of the payload */
-    GetBitContext gb;
-
     int type;
 
     int temporal_id;

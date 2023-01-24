@@ -56,7 +56,7 @@ int ff_av1_extract_obu(AV1OBU *obu, const uint8_t *buf, int length, void *logctx
 int ff_av1_packet_split(AV1Packet *pkt, const uint8_t *buf, int length, void *logctx)
 {
     GetByteContext bc;
-    int ret, consumed;
+    int consumed;
 
     bytestream2_init(&bc, buf, length);
     pkt->nb_obus = 0;
@@ -94,10 +94,6 @@ int ff_av1_packet_split(AV1Packet *pkt, const uint8_t *buf, int length, void *lo
         }
 
         pkt->nb_obus++;
-
-        ret = init_get_bits(&obu->gb, obu->data, obu->size_bits);
-        if (ret < 0)
-            return ret;
     }
 
     return 0;
