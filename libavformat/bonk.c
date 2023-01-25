@@ -59,7 +59,7 @@ static int bonk_read_header(AVFormatContext *s)
     AVStream *st;
     int ret;
 
-    for (int i = 0; !avio_feof(s->pb); i++) {
+    while (!avio_feof(s->pb)) {
         const int b = avio_r8(s->pb);
         if (!b) {
             uint32_t t;
