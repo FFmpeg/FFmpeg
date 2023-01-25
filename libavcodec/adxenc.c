@@ -183,8 +183,6 @@ static int adx_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         dst += BLOCK_SIZE;
     }
 
-    avpkt->pts = frame->pts;
-    avpkt->duration = frame->nb_samples;
     *got_packet_ptr = 1;
     return 0;
 }
@@ -200,4 +198,5 @@ const FFCodec ff_adpcm_adx_encoder = {
     FF_CODEC_ENCODE_CB(adx_encode_frame),
     .p.sample_fmts  = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16,
                                                       AV_SAMPLE_FMT_NONE },
+    .caps_internal  = FF_CODEC_CAP_EOF_FLUSH,
 };

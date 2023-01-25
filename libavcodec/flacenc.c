@@ -1690,10 +1690,7 @@ static int flac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     if (out_bytes < s->min_framesize)
         s->min_framesize = out_bytes;
 
-    avpkt->pts      = frame->pts;
-    avpkt->duration = ff_samples_to_time_base(avctx, frame->nb_samples);
-
-    s->next_pts = avpkt->pts + avpkt->duration;
+    s->next_pts = frame->pts + ff_samples_to_time_base(avctx, frame->nb_samples);
 
     av_shrink_packet(avpkt, out_bytes);
 
@@ -1766,5 +1763,5 @@ const FFCodec ff_flac_encoder = {
                                                      AV_SAMPLE_FMT_S32,
                                                      AV_SAMPLE_FMT_NONE },
     .p.priv_class   = &flac_encoder_class,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_EOF_FLUSH,
 };

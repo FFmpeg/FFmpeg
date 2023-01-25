@@ -211,7 +211,8 @@ int ff_encode_encode_cb(AVCodecContext *avctx, AVPacket *avpkt,
 
         // set the timestamps for the simple no-delay case
         // encoders with delay have to set the timestamps themselves
-        if (!(avctx->codec->capabilities & AV_CODEC_CAP_DELAY)) {
+        if (!(avctx->codec->capabilities & AV_CODEC_CAP_DELAY) ||
+            (frame && (codec->caps_internal & FF_CODEC_CAP_EOF_FLUSH))) {
             if (avpkt->pts == AV_NOPTS_VALUE)
                 avpkt->pts = frame->pts;
 
@@ -225,7 +226,8 @@ int ff_encode_encode_cb(AVCodecContext *avctx, AVPacket *avpkt,
         // dts equals pts unless there is reordering
         // there can be no reordering if there is no encoder delay
         if (!(avctx->codec_descriptor->props & AV_CODEC_PROP_REORDER) ||
-            !(avctx->codec->capabilities & AV_CODEC_CAP_DELAY))
+            !(avctx->codec->capabilities & AV_CODEC_CAP_DELAY)        ||
+            (codec->caps_internal & FF_CODEC_CAP_EOF_FLUSH))
             avpkt->dts = avpkt->pts;
     } else {
 unref:
