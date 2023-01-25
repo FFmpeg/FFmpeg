@@ -501,6 +501,7 @@ extern const AVInputFormat  ff_wv_demuxer;
 extern const AVOutputFormat ff_wv_muxer;
 extern const AVInputFormat  ff_xa_demuxer;
 extern const AVInputFormat  ff_xbin_demuxer;
+extern const AVInputFormat  ff_xmd_demuxer;
 extern const AVInputFormat  ff_xmv_demuxer;
 extern const AVInputFormat  ff_xvag_demuxer;
 extern const AVInputFormat  ff_xwma_demuxer;
