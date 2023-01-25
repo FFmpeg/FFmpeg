@@ -769,6 +769,9 @@ static int get_audio_frame_duration(enum AVCodecID id, int sr, int ch, int ba,
                 case AV_CODEC_ID_ADPCM_MTAF:
                     tmp = blocks * (ba - 16LL) * 2 / ch;
                     break;
+                case AV_CODEC_ID_ADPCM_XMD:
+                    tmp = blocks * 32;
+                    break;
                 }
                 if (tmp) {
                     if (tmp != (int)tmp)

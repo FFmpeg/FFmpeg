@@ -324,6 +324,7 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
     case AV_CODEC_ID_ADPCM_IMA_WAV:
     case AV_CODEC_ID_ADPCM_4XM:
     case AV_CODEC_ID_ADPCM_XA:
+    case AV_CODEC_ID_ADPCM_XMD:
     case AV_CODEC_ID_ADPCM_EA_R1:
     case AV_CODEC_ID_ADPCM_EA_R2:
     case AV_CODEC_ID_ADPCM_EA_R3:
@@ -1043,6 +1044,9 @@ static int get_nb_samples(AVCodecContext *avctx, GetByteContext *gb,
     case AV_CODEC_ID_ADPCM_XA:
         nb_samples = (buf_size / 128) * 224 / ch;
         break;
+    case AV_CODEC_ID_ADPCM_XMD:
+        nb_samples = buf_size / (21 * ch) * 32;
+        break;
     case AV_CODEC_ID_ADPCM_DTK:
     case AV_CODEC_ID_ADPCM_PSX:
         nb_samples = buf_size / (16 * ch) * 28;
@@ -1552,6 +1556,45 @@ static int adpcm_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             }
         }
         bytestream2_seek(&gb, 0, SEEK_END);
+        ) /* End of CASE */
+    CASE(ADPCM_XMD,
+        int bytes_remaining, block = 0;
+        while (bytestream2_get_bytes_left(&gb) >= 21 * channels) {
+            for (int channel = 0; channel < channels; channel++) {
+                int16_t *out = samples_p[channel] + block * 32;
+                int16_t history[2];
+                uint16_t scale;
+
+                history[1] = sign_extend(bytestream2_get_le16(&gb), 16);
+                history[0] = sign_extend(bytestream2_get_le16(&gb), 16);
+                scale = bytestream2_get_le16(&gb);
+
+                out[0] = history[1];
+                out[1] = history[0];
+
+                for (int n = 0; n < 15; n++) {
+                    unsigned byte = bytestream2_get_byte(&gb);
+                    int32_t nibble[2];
+
+                    nibble[0] = sign_extend(byte & 15, 4);
+                    nibble[1] = sign_extend(byte >> 4, 4);
+
+                    out[2+n*2] = (nibble[0]*(scale<<14) + (history[0]*29336) - (history[1]*13136)) >> 14;
+                    history[1] = history[0];
+                    history[0] = out[2+n*2];
+
+                    out[2+n*2+1] = (nibble[1]*(scale<<14) + (history[0]*29336) - (history[1]*13136)) >> 14;
+                    history[1] = history[0];
+                    history[0] = out[2+n*2+1];
+                }
+            }
+
+            block++;
+        }
+        bytes_remaining = bytestream2_get_bytes_left(&gb);
+        if (bytes_remaining > 0) {
+            bytestream2_skip(&gb, bytes_remaining);
+        }
         ) /* End of CASE */
     CASE(ADPCM_XA,
         int16_t *out0 = samples_p[0];
@@ -2350,5 +2393,6 @@ ADPCM_DECODER(ADPCM_SWF,         sample_fmts_s16,  adpcm_swf,         "ADPCM Sho
 ADPCM_DECODER(ADPCM_THP_LE,      sample_fmts_s16p, adpcm_thp_le,      "ADPCM Nintendo THP (little-endian)")
 ADPCM_DECODER(ADPCM_THP,         sample_fmts_s16p, adpcm_thp,         "ADPCM Nintendo THP")
 ADPCM_DECODER(ADPCM_XA,          sample_fmts_s16p, adpcm_xa,          "ADPCM CDROM XA")
+ADPCM_DECODER(ADPCM_XMD,         sample_fmts_s16p, adpcm_xmd,         "ADPCM Konami XMD")
 ADPCM_DECODER(ADPCM_YAMAHA,      sample_fmts_s16,  adpcm_yamaha,      "ADPCM Yamaha")
 ADPCM_DECODER(ADPCM_ZORK,        sample_fmts_s16,  adpcm_zork,        "ADPCM Zork")

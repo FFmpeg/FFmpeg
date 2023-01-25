@@ -959,6 +959,7 @@ OBJS-$(CONFIG_ADPCM_THP_DECODER)          += adpcm.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_THP_LE_DECODER)       += adpcm.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_VIMA_DECODER)         += vima.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_XA_DECODER)           += adpcm.o adpcm_data.o
+OBJS-$(CONFIG_ADPCM_XMD_DECODER)          += adpcm.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_YAMAHA_DECODER)       += adpcm.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_YAMAHA_ENCODER)       += adpcmenc.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_ZORK_DECODER)         += adpcm.o adpcm_data.o

@@ -695,6 +695,7 @@ extern const FFCodec ff_adpcm_thp_decoder;
 extern const FFCodec ff_adpcm_thp_le_decoder;
 extern const FFCodec ff_adpcm_vima_decoder;
 extern const FFCodec ff_adpcm_xa_decoder;
+extern const FFCodec ff_adpcm_xmd_decoder;
 extern const FFCodec ff_adpcm_yamaha_encoder;
 extern const FFCodec ff_adpcm_yamaha_decoder;
 extern const FFCodec ff_adpcm_zork_decoder;
