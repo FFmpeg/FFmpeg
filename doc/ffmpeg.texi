@@ -1041,8 +1041,6 @@ version > 1:
 @code{out= %2d st= %2d frame= %5d q= %2.1f PSNR= %6.2f f_size= %6d s_size= %8.0fkB time= %0.3f br= %7.1fkbits/s avg_br= %7.1fkbits/s}
 @item -top[:@var{stream_specifier}] @var{n} (@emph{output,per-stream})
 top=1/bottom=0/auto=-1 field first
-@item -dc @var{precision}
-Intra_dc_precision.
 @item -vtag @var{fourcc/tag} (@emph{output})
 Force video tag/fourcc. This is an alias for @code{-tag:v}.
 @item -qphist (@emph{global})
