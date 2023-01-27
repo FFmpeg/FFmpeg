@@ -219,6 +219,8 @@ OBJS-$(CONFIG_AMRWB_DECODER)           += amrwbdec.o celp_filters.o   \
                                           acelp_pitch_delay.o
 OBJS-$(CONFIG_AMV_ENCODER)             += mjpegenc.o mjpegenc_common.o
 OBJS-$(CONFIG_ANM_DECODER)             += anm.o
+OBJS-$(CONFIG_ANULL_DECODER)           += null.o
+OBJS-$(CONFIG_ANULL_ENCODER)           += null.o
 OBJS-$(CONFIG_ANSI_DECODER)            += ansi.o cga_data.o
 OBJS-$(CONFIG_APAC_DECODER)            += apac.o
 OBJS-$(CONFIG_APE_DECODER)             += apedec.o
@@ -747,6 +749,8 @@ OBJS-$(CONFIG_VCR1_DECODER)            += vcr1.o
 OBJS-$(CONFIG_VMDAUDIO_DECODER)        += vmdaudio.o
 OBJS-$(CONFIG_VMDVIDEO_DECODER)        += vmdvideo.o
 OBJS-$(CONFIG_VMNC_DECODER)            += vmnc.o
+OBJS-$(CONFIG_VNULL_DECODER)           += null.o
+OBJS-$(CONFIG_VNULL_ENCODER)           += null.o
 OBJS-$(CONFIG_VORBIS_DECODER)          += vorbisdec.o vorbisdsp.o vorbis.o \
                                           vorbis_data.o
 OBJS-$(CONFIG_VORBIS_ENCODER)          += vorbisenc.o vorbis.o \

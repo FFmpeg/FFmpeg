@@ -3625,6 +3625,18 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("AVFrame to AVPacket passthrough"),
         .props     = AV_CODEC_PROP_LOSSLESS,
     },
+    {
+        .id        = AV_CODEC_ID_VNULL,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "vnull",
+        .long_name = NULL_IF_CONFIG_SMALL("Null video codec"),
+    },
+    {
+        .id        = AV_CODEC_ID_ANULL,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "anull",
+        .long_name = NULL_IF_CONFIG_SMALL("Null audio codec"),
+    },
 };
 
 static int descriptor_compare(const void *key, const void *member)
