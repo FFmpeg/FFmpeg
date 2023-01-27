@@ -665,6 +665,7 @@ library:
 @item Sample Dump eXchange      @tab   @tab X
 @item SAP                       @tab X @tab X
 @item SBG                       @tab   @tab X
+@item SDNS                      @tab   @tab X
 @item SDP                       @tab   @tab X
 @item SER                       @tab   @tab X
 @item Digital Pictures SGA      @tab   @tab X

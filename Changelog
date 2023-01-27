@@ -40,6 +40,7 @@ version <next>:
 - ffmpeg CLI new option: -fix_sub_duration_heartbeat
 - WavArc decoder and demuxer
 - CrystalHD decoders deprecated
+- SDNS demuxer
 
 
 version 5.1:
