@@ -47,6 +47,7 @@ typedef struct LibJxlDecodeContext {
     JxlDecoder *decoder;
     JxlBasicInfo basic_info;
     JxlPixelFormat jxl_pixfmt;
+    JxlBitDepth jxl_bit_depth;
     JxlDecoderStatus events;
     AVBufferRef *iccp;
 } LibJxlDecodeContext;
@@ -93,10 +94,14 @@ static av_cold int libjxl_decode_init(AVCodecContext *avctx)
     return libjxl_init_jxl_decoder(avctx);
 }
 
-static enum AVPixelFormat libjxl_get_pix_fmt(void *avctx, const JxlBasicInfo *basic_info, JxlPixelFormat *format)
+static enum AVPixelFormat libjxl_get_pix_fmt(AVCodecContext *avctx, const JxlBasicInfo *basic_info,
+                                             JxlPixelFormat *format, JxlBitDepth *depth)
 {
     format->endianness = JXL_NATIVE_ENDIAN;
     format->num_channels = basic_info->num_color_channels + (basic_info->alpha_bits > 0);
+    depth->bits_per_sample = avctx->bits_per_raw_sample = basic_info->bits_per_sample;
+    depth->type = JXL_BIT_DEPTH_FROM_PIXEL_FORMAT;
+    depth->exponent_bits_per_sample = basic_info->exponent_bits_per_sample;
     /* Gray */
     if (basic_info->num_color_channels == 1) {
         if (basic_info->bits_per_sample <= 8) {
@@ -119,10 +124,10 @@ static enum AVPixelFormat libjxl_get_pix_fmt(void *avctx, const JxlBasicInfo *ba
             format->data_type = JXL_TYPE_UINT8;
             return basic_info->alpha_bits ? AV_PIX_FMT_RGBA : AV_PIX_FMT_RGB24;
         }
-        if (basic_info->bits_per_sample > 16)
-            av_log(avctx, AV_LOG_WARNING, "Downsampling larger integer to 16-bit via libjxl\n");
         if (basic_info->exponent_bits_per_sample)
             av_log(avctx, AV_LOG_WARNING, "Downsampling float to 16-bit integer via libjxl\n");
+        else if (basic_info->bits_per_sample > 16)
+            av_log(avctx, AV_LOG_WARNING, "Downsampling larger integer to 16-bit via libjxl\n");
         format->data_type = JXL_TYPE_UINT16;
         return basic_info->alpha_bits ? AV_PIX_FMT_RGBA64 : AV_PIX_FMT_RGB48;
     }
@@ -367,7 +372,7 @@ static int libjxl_decode_frame(AVCodecContext *avctx, AVFrame *frame, int *got_f
                 av_log(avctx, AV_LOG_ERROR, "Bad libjxl basic info event\n");
                 return AVERROR_EXTERNAL;
             }
-            avctx->pix_fmt = libjxl_get_pix_fmt(avctx, &ctx->basic_info, &ctx->jxl_pixfmt);
+            avctx->pix_fmt = libjxl_get_pix_fmt(avctx, &ctx->basic_info, &ctx->jxl_pixfmt, &ctx->jxl_bit_depth);
             if (avctx->pix_fmt == AV_PIX_FMT_NONE) {
                 av_log(avctx, AV_LOG_ERROR, "Bad libjxl pixel format\n");
                 return AVERROR_EXTERNAL;
@@ -388,6 +393,10 @@ static int libjxl_decode_frame(AVCodecContext *avctx, AVFrame *frame, int *got_f
             if (JxlDecoderSetImageOutBuffer(ctx->decoder, &ctx->jxl_pixfmt, frame->data[0], frame->buf[0]->size)
                 != JXL_DEC_SUCCESS) {
                 av_log(avctx, AV_LOG_ERROR, "Bad libjxl dec need image out buffer event\n");
+                return AVERROR_EXTERNAL;
+            }
+            if (JxlDecoderSetImageOutBitDepth(ctx->decoder, &ctx->jxl_bit_depth) != JXL_DEC_SUCCESS) {
+                av_log(avctx, AV_LOG_ERROR, "Error setting output bit depth\n");
                 return AVERROR_EXTERNAL;
             }
             continue;

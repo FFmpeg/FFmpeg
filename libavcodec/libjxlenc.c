@@ -250,6 +250,7 @@ static int libjxl_encode_frame(AVCodecContext *avctx, AVPacket *pkt, const AVFra
     JxlBasicInfo info;
     JxlColorEncoding jxl_color;
     JxlPixelFormat jxl_fmt;
+    JxlBitDepth jxl_bit_depth;
     JxlEncoderStatus jret;
     int ret;
     size_t available = ctx->buffer_size;
@@ -269,17 +270,22 @@ static int libjxl_encode_frame(AVCodecContext *avctx, AVPacket *pkt, const AVFra
     info.ysize = frame->height;
     info.num_extra_channels = (jxl_fmt.num_channels + 1) % 2;
     info.num_color_channels = jxl_fmt.num_channels - info.num_extra_channels;
-    info.bits_per_sample = av_get_bits_per_pixel(pix_desc) / jxl_fmt.num_channels;
+    jxl_bit_depth.bits_per_sample = av_get_bits_per_pixel(pix_desc) / jxl_fmt.num_channels;
+    info.bits_per_sample = avctx->bits_per_raw_sample > 0 && !(pix_desc->flags & AV_PIX_FMT_FLAG_FLOAT)
+                           ? avctx->bits_per_raw_sample : jxl_bit_depth.bits_per_sample;
     info.alpha_bits = (info.num_extra_channels > 0) * info.bits_per_sample;
     if (pix_desc->flags & AV_PIX_FMT_FLAG_FLOAT) {
         info.exponent_bits_per_sample = info.bits_per_sample > 16 ? 8 : 5;
         info.alpha_exponent_bits = info.alpha_bits ? info.exponent_bits_per_sample : 0;
         jxl_fmt.data_type = info.bits_per_sample > 16 ? JXL_TYPE_FLOAT : JXL_TYPE_FLOAT16;
+        jxl_bit_depth.exponent_bits_per_sample = info.exponent_bits_per_sample;
     } else {
         info.exponent_bits_per_sample = 0;
         info.alpha_exponent_bits = 0;
         jxl_fmt.data_type = info.bits_per_sample <= 8 ? JXL_TYPE_UINT8 : JXL_TYPE_UINT16;
+        jxl_bit_depth.exponent_bits_per_sample = 0;
     }
+    jxl_bit_depth.type = JXL_BIT_DEPTH_FROM_PIXEL_FORMAT;
 
     /* JPEG XL format itself does not support limited range */
     if (avctx->color_range == AVCOL_RANGE_MPEG ||
@@ -356,6 +362,8 @@ static int libjxl_encode_frame(AVCodecContext *avctx, AVPacket *pkt, const AVFra
         av_log(avctx, AV_LOG_WARNING, "Could not set ICC Profile\n");
     if (JxlEncoderSetColorEncoding(ctx->encoder, &jxl_color) != JXL_ENC_SUCCESS)
         av_log(avctx, AV_LOG_WARNING, "Failed to set JxlColorEncoding\n");
+    if (JxlEncoderSetFrameBitDepth(ctx->options, &jxl_bit_depth) != JXL_ENC_SUCCESS)
+        av_log(avctx, AV_LOG_WARNING, "Failed to set JxlBitDepth\n");
 
     /* depending on basic info, level 10 might
      * be required instead of level 5 */
