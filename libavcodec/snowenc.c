@@ -1856,13 +1856,12 @@ redo_frame:
 
     ff_snow_release_buffer(avctx);
 
-    s->current_picture->coded_picture_number = avctx->frame_num;
     s->current_picture->pict_type = pic->pict_type;
     s->current_picture->quality = pic->quality;
     s->m.frame_bits = 8*(s->c.bytestream - s->c.bytestream_start);
     s->m.p_tex_bits = s->m.frame_bits - s->m.misc_bits - s->m.mv_bits;
-    s->m.current_picture.f->display_picture_number =
-    s->m.current_picture.f->coded_picture_number   = avctx->frame_num;
+    s->m.current_picture.display_picture_number =
+    s->m.current_picture.coded_picture_number   = avctx->frame_num;
     s->m.current_picture.f->quality                = pic->quality;
     s->m.total_bits += 8*(s->c.bytestream - s->c.bytestream_start);
     if(s->pass1_rc)

@@ -332,6 +332,8 @@ void ff_mpeg_unref_picture(AVCodecContext *avctx, Picture *pic)
     pic->needs_realloc = 0;
     pic->reference     = 0;
     pic->shared        = 0;
+    pic->display_picture_number = 0;
+    pic->coded_picture_number   = 0;
 }
 
 int ff_update_picture_tables(Picture *dst, const Picture *src)
@@ -397,6 +399,8 @@ int ff_mpeg_ref_picture(AVCodecContext *avctx, Picture *dst, Picture *src)
     dst->needs_realloc           = src->needs_realloc;
     dst->reference               = src->reference;
     dst->shared                  = src->shared;
+    dst->display_picture_number  = src->display_picture_number;
+    dst->coded_picture_number    = src->coded_picture_number;
 
     return 0;
 fail:

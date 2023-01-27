@@ -419,10 +419,10 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
     /* time code: we must convert from the real frame rate to a
      * fake MPEG frame rate in case of low frame rate */
     fps       = (framerate.num + framerate.den / 2) / framerate.den;
-    time_code = s->current_picture_ptr->f->coded_picture_number +
+    time_code = s->current_picture_ptr->coded_picture_number +
                 mpeg12->timecode_frame_start;
 
-    mpeg12->gop_picture_number = s->current_picture_ptr->f->coded_picture_number;
+    mpeg12->gop_picture_number = s->current_picture_ptr->coded_picture_number;
 
     av_assert0(mpeg12->drop_frame_timecode == !!(mpeg12->tc.flags & AV_TIMECODE_FLAG_DROPFRAME));
     if (mpeg12->drop_frame_timecode)
