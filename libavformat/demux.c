@@ -1984,7 +1984,7 @@ static int has_codec_parameters(const AVStream *st, const char **errmsg_ptr)
 
 /* returns 1 or 0 if or if not decoded data was returned, or a negative error */
 static int try_decode_frame(AVFormatContext *s, AVStream *st,
-                            const AVPacket *avpkt, AVDictionary **options)
+                            const AVPacket *pkt, AVDictionary **options)
 {
     FFStream *const sti = ffstream(st);
     AVCodecContext *const avctx = sti->avctx;
@@ -1992,9 +1992,9 @@ static int try_decode_frame(AVFormatContext *s, AVStream *st,
     int got_picture = 1, ret = 0;
     AVFrame *frame = av_frame_alloc();
     AVSubtitle subtitle;
-    AVPacket pkt = *avpkt;
     int do_skip_frame = 0;
     enum AVDiscard skip_frame;
+    int pkt_to_send = pkt->size > 0;
 
     if (!frame)
         return AVERROR(ENOMEM);
@@ -2043,7 +2043,7 @@ static int try_decode_frame(AVFormatContext *s, AVStream *st,
         avctx->skip_frame = AVDISCARD_ALL;
     }
 
-    while ((pkt.size > 0 || (!pkt.data && got_picture)) &&
+    while ((pkt_to_send || (!pkt->data && got_picture)) &&
            ret >= 0 &&
            (!has_codec_parameters(st, NULL) || !has_decode_delay_been_guessed(st) ||
             (!sti->codec_info_nb_frames &&
@@ -2051,11 +2051,11 @@ static int try_decode_frame(AVFormatContext *s, AVStream *st,
         got_picture = 0;
         if (avctx->codec_type == AVMEDIA_TYPE_VIDEO ||
             avctx->codec_type == AVMEDIA_TYPE_AUDIO) {
-            ret = avcodec_send_packet(avctx, &pkt);
+            ret = avcodec_send_packet(avctx, pkt);
             if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF)
                 break;
             if (ret >= 0)
-                pkt.size = 0;
+                pkt_to_send = 0;
             ret = avcodec_receive_frame(avctx, frame);
             if (ret >= 0)
                 got_picture = 1;
@@ -2063,11 +2063,11 @@ static int try_decode_frame(AVFormatContext *s, AVStream *st,
                 ret = 0;
         } else if (avctx->codec_type == AVMEDIA_TYPE_SUBTITLE) {
             ret = avcodec_decode_subtitle2(avctx, &subtitle,
-                                           &got_picture, &pkt);
+                                           &got_picture, pkt);
             if (got_picture)
                 avsubtitle_free(&subtitle);
             if (ret >= 0)
-                pkt.size = 0;
+                pkt_to_send = 0;
         }
         if (ret >= 0) {
             if (got_picture)
