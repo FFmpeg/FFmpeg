@@ -111,8 +111,6 @@ enum AVCodecID av_guess_codec(const AVOutputFormat *fmt, const char *short_name,
         return fmt->audio_codec;
     else if (type == AVMEDIA_TYPE_SUBTITLE)
         return fmt->subtitle_codec;
-    else if (type == AVMEDIA_TYPE_DATA)
-        return fmt->data_codec;
     else
         return AV_CODEC_ID_NONE;
 }

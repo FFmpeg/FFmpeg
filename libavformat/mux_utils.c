@@ -51,8 +51,7 @@ int avformat_query_codec(const AVOutputFormat *ofmt, enum AVCodecID codec_id,
             return !!av_codec_get_tag2(ofmt->codec_tag, codec_id, &codec_tag);
         else if (codec_id == ofmt->video_codec ||
                  codec_id == ofmt->audio_codec ||
-                 codec_id == ofmt->subtitle_codec ||
-                 codec_id == ofmt->data_codec)
+                 codec_id == ofmt->subtitle_codec)
             return 1;
     }
     return AVERROR_PATCHWELCOME;
