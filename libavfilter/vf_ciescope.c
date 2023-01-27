@@ -1407,6 +1407,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         return AVERROR(ENOMEM);
     }
     out->pts = in->pts;
+    out->duration = in->duration;
 
     if (!s->background) {
         ret = draw_background(ctx);
