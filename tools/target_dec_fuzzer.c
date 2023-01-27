@@ -81,8 +81,8 @@ static const FFCodec *AVCodecInitialize(enum AVCodecID codec_id)
     return ffcodec(res);
 }
 
-static int subtitle_handler(AVCodecContext *avctx, void *frame,
-                            int *got_sub_ptr, AVPacket *avpkt)
+static int subtitle_handler(AVCodecContext *avctx, AVFrame *unused,
+                            int *got_sub_ptr, const AVPacket *avpkt)
 {
     AVSubtitle sub;
     int ret = avcodec_decode_subtitle2(avctx, &sub, got_sub_ptr, avpkt);

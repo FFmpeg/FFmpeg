@@ -2512,8 +2512,8 @@ static int trigger_fix_sub_duration_heartbeat(OutputStream *ost, const AVPacket 
     return 0;
 }
 
-static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output,
-                               int *decode_failed)
+static int transcode_subtitles(InputStream *ist, const AVPacket *pkt,
+                               int *got_output, int *decode_failed)
 {
     AVSubtitle subtitle;
     int ret = avcodec_decode_subtitle2(ist->dec_ctx,

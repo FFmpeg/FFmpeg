@@ -2615,8 +2615,7 @@ enum AVChromaLocation avcodec_chroma_pos_to_enum(int xpos, int ypos);
  * @param[in] avpkt The input AVPacket containing the input buffer.
  */
 int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
-                            int *got_sub_ptr,
-                            AVPacket *avpkt);
+                             int *got_sub_ptr, const AVPacket *avpkt);
 
 /**
  * Supply raw packet data as input to a decoder.

@@ -780,8 +780,8 @@ static void get_subtitle_defaults(AVSubtitle *sub)
 }
 
 #define UTF8_MAX_BYTES 4 /* 5 and 6 bytes sequences should not be used */
-static int recode_subtitle(AVCodecContext *avctx, AVPacket **outpkt,
-                           AVPacket *inpkt, AVPacket *buf_pkt)
+static int recode_subtitle(AVCodecContext *avctx, const AVPacket **outpkt,
+                           const AVPacket *inpkt, AVPacket *buf_pkt)
 {
 #if CONFIG_ICONV
     iconv_t cd = (iconv_t)-1;
@@ -861,8 +861,7 @@ static int utf8_check(const uint8_t *str)
 }
 
 int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
-                             int *got_sub_ptr,
-                             AVPacket *avpkt)
+                             int *got_sub_ptr, const AVPacket *avpkt)
 {
     int ret = 0;
 
@@ -882,7 +881,7 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
 
     if ((avctx->codec->capabilities & AV_CODEC_CAP_DELAY) || avpkt->size) {
         AVCodecInternal *avci = avctx->internal;
-        AVPacket *pkt;
+        const AVPacket *pkt;
 
         ret = recode_subtitle(avctx, &pkt, avpkt, avci->buffer_pkt);
         if (ret < 0)

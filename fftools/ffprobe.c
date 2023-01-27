@@ -2734,7 +2734,7 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
 
 static av_always_inline int process_frame(WriterContext *w,
                                           InputFile *ifile,
-                                          AVFrame *frame, AVPacket *pkt,
+                                          AVFrame *frame, const AVPacket *pkt,
                                           int *packet_new)
 {
     AVFormatContext *fmt_ctx = ifile->fmt_ctx;
