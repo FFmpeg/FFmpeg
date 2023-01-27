@@ -335,6 +335,8 @@ typedef struct InputStream {
 #define DECODING_FOR_OST    1
 #define DECODING_FOR_FILTER 2
     int processing_needed;   /* non zero if the packets must be processed */
+    // should attach FrameData as opaque_ref after decoding
+    int want_frame_data;
 
     /**
      * Codec parameters - to be used by the decoding/streamcopy code.
@@ -493,9 +495,13 @@ enum EncStatsType {
     ENC_STATS_FILE_IDX,
     ENC_STATS_STREAM_IDX,
     ENC_STATS_FRAME_NUM,
+    ENC_STATS_FRAME_NUM_IN,
     ENC_STATS_TIMEBASE,
+    ENC_STATS_TIMEBASE_IN,
     ENC_STATS_PTS,
     ENC_STATS_PTS_TIME,
+    ENC_STATS_PTS_IN,
+    ENC_STATS_PTS_TIME_IN,
     ENC_STATS_DTS,
     ENC_STATS_DTS_TIME,
     ENC_STATS_SAMPLE_NUM,

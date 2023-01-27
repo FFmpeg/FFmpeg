@@ -2082,17 +2082,34 @@ Index of the output stream in the file.
 Frame number. Pre-encoding: number of frames sent to the encoder so far.
 Post-encoding: number of packets received from the encoder so far.
 
+@item ni
+Input frame number. Index of the input frame (i.e. output by a decoder) that
+corresponds to this output frame or packet. -1 if unavailable.
+
 @item tb
 Encoder timebase, as a rational number @var{num/den}. Note that this may be
 different from the timebase used by the muxer.
+
+@item tbi
+Timebase for @var{ptsi}, as a rational number @var{num/den}. Available when
+@var{ptsi} is available, @var{0/1} otherwise.
 
 @item pts
 Presentation timestamp of the frame or packet, as an integer. Should be
 multiplied by the timebase to compute presentation time.
 
+@item ptsi
+Presentation timestamp of the input frame (see @var{ni}), as an integer. Should
+be multiplied by @var{tbi} to compute presentation time. Printed as
+(2^63 - 1 = 9223372036854775807) when not available.
+
 @item t
 Presentation time of the frame or packet, as a decimal number. Equal to
 @var{pts} multiplied by @var{tb}.
+
+@item ti
+Presentation time of the input frame (see @var{ni}), as a decimal number. Equal
+to @var{ptsi} multiplied by @var{tbi}. Printed as inf when not available.
 
 @item dts
 Decoding timestamp of the packet, as an integer. Should be multiplied by the

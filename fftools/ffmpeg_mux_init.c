@@ -269,13 +269,18 @@ static int enc_stats_init(OutputStream *ost, int pre,
         const char        *str;
         int                pre_only:1;
         int                post_only:1;
+        int                need_input_data:1;
     } fmt_specs[] = {
         { ENC_STATS_FILE_IDX,       "fidx"                      },
         { ENC_STATS_STREAM_IDX,     "sidx"                      },
         { ENC_STATS_FRAME_NUM,      "n"                         },
+        { ENC_STATS_FRAME_NUM_IN,   "ni",       0, 0, 1         },
         { ENC_STATS_TIMEBASE,       "tb"                        },
+        { ENC_STATS_TIMEBASE_IN,    "tbi",      0, 0, 1         },
         { ENC_STATS_PTS,            "pts"                       },
         { ENC_STATS_PTS_TIME,       "t"                         },
+        { ENC_STATS_PTS_IN,         "ptsi",     0, 0, 1         },
+        { ENC_STATS_PTS_TIME_IN,    "ti",       0, 0, 1         },
         { ENC_STATS_DTS,            "dts",      0, 1            },
         { ENC_STATS_DTS_TIME,       "dt",       0, 1            },
         { ENC_STATS_SAMPLE_NUM,     "sn",       1               },
@@ -345,6 +350,18 @@ static int enc_stats_init(OutputStream *ost, int pre,
                 }
 
                 c->type = fmt_specs[i].type;
+
+                if (fmt_specs[i].need_input_data) {
+                    if (ost->ist)
+                        ost->ist->want_frame_data = 1;
+                    else {
+                        av_log(ost, AV_LOG_WARNING,
+                               "Format directive '%s' is unavailable, because "
+                               "this output stream has no associated input stream\n",
+                               val);
+                    }
+                }
+
                 break;
             }
         }
@@ -428,6 +445,7 @@ static OutputStream *new_output_stream(Muxer *mux, const OptionsContext *o,
     ms->last_mux_dts = AV_NOPTS_VALUE;
 
     ost->st         = st;
+    ost->ist        = ist;
     ost->kf.ref_pts = AV_NOPTS_VALUE;
     st->codecpar->codec_type = type;
 
@@ -605,8 +623,7 @@ static OutputStream *new_output_stream(Muxer *mux, const OptionsContext *o,
     if (ost->enc_ctx && av_get_exact_bits_per_sample(ost->enc_ctx->codec_id) == 24)
         av_dict_set(&ost->swr_opts, "output_sample_bits", "24", 0);
 
-    if (ist) {
-        ost->ist = ist;
+    if (ost->ist) {
         ost->ist->discard = 0;
         ost->ist->st->discard = ost->ist->user_set_discard;
     }

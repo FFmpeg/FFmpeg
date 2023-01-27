@@ -113,6 +113,13 @@ const int program_birth_year = 2000;
 
 static FILE *vstats_file;
 
+// optionally attached as opaque_ref to decoded AVFrames
+typedef struct FrameData {
+    uint64_t   idx;
+    int64_t    pts;
+    AVRational tb;
+} FrameData;
+
 typedef struct BenchmarkTimeStamps {
     int64_t real_usec;
     int64_t user_usec;
@@ -807,6 +814,17 @@ static void enc_stats_write(OutputStream *ost, EncStats *es,
     AVRational   tb = ost->enc_ctx->time_base;
     int64_t     pts = frame ? frame->pts : pkt->pts;
 
+    AVRational  tbi = (AVRational){ 0, 1};
+    int64_t    ptsi = INT64_MAX;
+
+    const FrameData *fd;
+
+    if ((frame && frame->opaque_ref) || (pkt && pkt->opaque_ref)) {
+        fd   = (const FrameData*)(frame ? frame->opaque_ref->data : pkt->opaque_ref->data);
+        tbi  = fd->tb;
+        ptsi = fd->pts;
+    }
+
     for (size_t i = 0; i < es->nb_components; i++) {
         const EncStatsComponent *c = &es->components[i];
 
@@ -815,8 +833,13 @@ static void enc_stats_write(OutputStream *ost, EncStats *es,
         case ENC_STATS_FILE_IDX:        avio_printf(io, "%d",       ost->file_index);               continue;
         case ENC_STATS_STREAM_IDX:      avio_printf(io, "%d",       ost->index);                    continue;
         case ENC_STATS_TIMEBASE:        avio_printf(io, "%d/%d",    tb.num, tb.den);                continue;
+        case ENC_STATS_TIMEBASE_IN:     avio_printf(io, "%d/%d",    tbi.num, tbi.den);              continue;
         case ENC_STATS_PTS:             avio_printf(io, "%"PRId64,  pts);                           continue;
+        case ENC_STATS_PTS_IN:          avio_printf(io, "%"PRId64,  ptsi);                          continue;
         case ENC_STATS_PTS_TIME:        avio_printf(io, "%g",       pts * av_q2d(tb));              continue;
+        case ENC_STATS_PTS_TIME_IN:     avio_printf(io, "%g",       ptsi == INT64_MAX ?
+                                                                    INFINITY : ptsi * av_q2d(tbi)); continue;
+        case ENC_STATS_FRAME_NUM_IN:    avio_printf(io, "%"PRIu64,  fd ? fd->idx : -1);             continue;
         }
 
         if (frame) {
@@ -2034,7 +2057,8 @@ static int ifilter_send_eof(InputFilter *ifilter, int64_t pts)
 // There is the following difference: if you got a frame, you must call
 // it again with pkt=NULL. pkt==NULL is treated differently from pkt->size==0
 // (pkt==NULL means get more output, pkt->size==0 is a flush/drain packet)
-static int decode(AVCodecContext *avctx, AVFrame *frame, int *got_frame, AVPacket *pkt)
+static int decode(InputStream *ist, AVCodecContext *avctx,
+                  AVFrame *frame, int *got_frame, AVPacket *pkt)
 {
     int ret;
 
@@ -2051,8 +2075,24 @@ static int decode(AVCodecContext *avctx, AVFrame *frame, int *got_frame, AVPacke
     ret = avcodec_receive_frame(avctx, frame);
     if (ret < 0 && ret != AVERROR(EAGAIN))
         return ret;
-    if (ret >= 0)
+    if (ret >= 0) {
+        if (ist->want_frame_data) {
+            FrameData *fd;
+
+            av_assert0(!frame->opaque_ref);
+            frame->opaque_ref = av_buffer_allocz(sizeof(*fd));
+            if (!frame->opaque_ref) {
+                av_frame_unref(frame);
+                return AVERROR(ENOMEM);
+            }
+            fd      = (FrameData*)frame->opaque_ref->data;
+            fd->pts = frame->pts;
+            fd->tb  = avctx->pkt_timebase;
+            fd->idx = avctx->frame_number - 1;
+        }
+
         *got_frame = 1;
+    }
 
     return 0;
 }
@@ -2084,7 +2124,7 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output,
     AVRational decoded_frame_tb;
 
     update_benchmark(NULL);
-    ret = decode(avctx, decoded_frame, got_output, pkt);
+    ret = decode(ist, avctx, decoded_frame, got_output, pkt);
     update_benchmark("decode_audio %d.%d", ist->file_index, ist->st->index);
     if (ret < 0)
         *decode_failed = 1;
@@ -2163,7 +2203,7 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output, int64_
     }
 
     update_benchmark(NULL);
-    ret = decode(ist->dec_ctx, decoded_frame, got_output, pkt);
+    ret = decode(ist, ist->dec_ctx, decoded_frame, got_output, pkt);
     update_benchmark("decode_video %d.%d", ist->file_index, ist->st->index);
     if (ret < 0)
         *decode_failed = 1;
@@ -3016,6 +3056,12 @@ static int init_output_stream(OutputStream *ost, AVFrame *frame,
 
         if (!av_dict_get(ost->encoder_opts, "threads", NULL, 0))
             av_dict_set(&ost->encoder_opts, "threads", "auto", 0);
+
+        if (codec->capabilities & AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE) {
+            ret = av_dict_set(&ost->encoder_opts, "flags", "+copy_opaque", AV_DICT_MULTIKEY);
+            if (ret < 0)
+                return ret;
+        }
 
         ret = hw_device_setup_for_encode(ost);
         if (ret < 0) {
