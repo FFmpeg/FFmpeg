@@ -21,6 +21,7 @@
 
 #include "avformat.h"
 #include "internal.h"
+#include "mux.h"
 
 static int write_header(AVFormatContext *s)
 {
@@ -40,11 +41,11 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-const AVOutputFormat ff_mkvtimestamp_v2_muxer = {
-    .name         = "mkvtimestamp_v2",
-    .long_name    = NULL_IF_CONFIG_SMALL("extract pts as timecode v2 format, as defined by mkvtoolnix"),
-    .audio_codec  = AV_CODEC_ID_NONE,
-    .video_codec  = AV_CODEC_ID_RAWVIDEO,
+const FFOutputFormat ff_mkvtimestamp_v2_muxer = {
+    .p.name        = "mkvtimestamp_v2",
+    .p.long_name   = NULL_IF_CONFIG_SMALL("extract pts as timecode v2 format, as defined by mkvtoolnix"),
+    .p.audio_codec = AV_CODEC_ID_NONE,
+    .p.video_codec = AV_CODEC_ID_RAWVIDEO,
     .write_header = write_header,
     .write_packet = write_packet,
 };

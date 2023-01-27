@@ -22,6 +22,7 @@
 #include "libavutil/pixdesc.h"
 #include "avformat.h"
 #include "internal.h"
+#include "mux.h"
 #include "yuv4mpeg.h"
 
 static int yuv4_write_header(AVFormatContext *s)
@@ -282,12 +283,12 @@ static int yuv4_init(AVFormatContext *s)
     return 0;
 }
 
-const AVOutputFormat ff_yuv4mpegpipe_muxer = {
-    .name              = "yuv4mpegpipe",
-    .long_name         = NULL_IF_CONFIG_SMALL("YUV4MPEG pipe"),
-    .extensions        = "y4m",
-    .audio_codec       = AV_CODEC_ID_NONE,
-    .video_codec       = AV_CODEC_ID_WRAPPED_AVFRAME,
+const FFOutputFormat ff_yuv4mpegpipe_muxer = {
+    .p.name            = "yuv4mpegpipe",
+    .p.long_name       = NULL_IF_CONFIG_SMALL("YUV4MPEG pipe"),
+    .p.extensions      = "y4m",
+    .p.audio_codec     = AV_CODEC_ID_NONE,
+    .p.video_codec     = AV_CODEC_ID_WRAPPED_AVFRAME,
     .init              = yuv4_init,
     .write_header      = yuv4_write_header,
     .write_packet      = yuv4_write_packet,

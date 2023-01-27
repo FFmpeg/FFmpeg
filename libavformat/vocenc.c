@@ -21,6 +21,7 @@
 
 #include "voc.h"
 #include "internal.h"
+#include "mux.h"
 
 
 typedef struct voc_enc_context {
@@ -96,17 +97,17 @@ static int voc_write_trailer(AVFormatContext *s)
     return 0;
 }
 
-const AVOutputFormat ff_voc_muxer = {
-    .name              = "voc",
-    .long_name         = NULL_IF_CONFIG_SMALL("Creative Voice"),
-    .mime_type         = "audio/x-voc",
-    .extensions        = "voc",
+const FFOutputFormat ff_voc_muxer = {
+    .p.name            = "voc",
+    .p.long_name       = NULL_IF_CONFIG_SMALL("Creative Voice"),
+    .p.mime_type       = "audio/x-voc",
+    .p.extensions      = "voc",
     .priv_data_size    = sizeof(VocEncContext),
-    .audio_codec       = AV_CODEC_ID_PCM_S16LE,
-    .video_codec       = AV_CODEC_ID_NONE,
+    .p.audio_codec     = AV_CODEC_ID_PCM_S16LE,
+    .p.video_codec     = AV_CODEC_ID_NONE,
     .write_header      = voc_write_header,
     .write_packet      = voc_write_packet,
     .write_trailer     = voc_write_trailer,
-    .codec_tag         = ff_voc_codec_tags_list,
-    .flags             = AVFMT_NOTIMESTAMPS,
+    .p.codec_tag       = ff_voc_codec_tags_list,
+    .p.flags           = AVFMT_NOTIMESTAMPS,
 };

@@ -26,6 +26,7 @@
 #include "avformat.h"
 #include "avio_internal.h"
 #include "internal.h"
+#include "mux.h"
 #include "rawenc.h"
 #include "libavutil/intreadwrite.h"
 
@@ -188,12 +189,12 @@ static int kvag_write_trailer(AVFormatContext *s)
     return 0;
 }
 
-const AVOutputFormat ff_kvag_muxer = {
-    .name           = "kvag",
-    .long_name      = NULL_IF_CONFIG_SMALL("Simon & Schuster Interactive VAG"),
-    .extensions     = "vag",
-    .audio_codec    = AV_CODEC_ID_ADPCM_IMA_SSI,
-    .video_codec    = AV_CODEC_ID_NONE,
+const FFOutputFormat ff_kvag_muxer = {
+    .p.name         = "kvag",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Simon & Schuster Interactive VAG"),
+    .p.extensions   = "vag",
+    .p.audio_codec  = AV_CODEC_ID_ADPCM_IMA_SSI,
+    .p.video_codec  = AV_CODEC_ID_NONE,
     .init           = kvag_write_init,
     .write_header   = kvag_write_header,
     .write_packet   = ff_raw_write_packet,

@@ -25,6 +25,119 @@
 #include "libavcodec/packet.h"
 #include "avformat.h"
 
+struct AVDeviceInfoList;
+
+typedef struct FFOutputFormat {
+    /**
+     * The public AVOutputFormat. See avformat.h for it.
+     */
+    AVOutputFormat p;
+    /**
+     * size of private data so that it can be allocated in the wrapper
+     */
+    int priv_data_size;
+
+    /**
+     * Internal flags. See FF_FMT_FLAG_* in internal.h.
+     */
+    int flags_internal;
+
+    int (*write_header)(AVFormatContext *);
+    /**
+     * Write a packet. If AVFMT_ALLOW_FLUSH is set in flags,
+     * pkt can be NULL in order to flush data buffered in the muxer.
+     * When flushing, return 0 if there still is more data to flush,
+     * or 1 if everything was flushed and there is no more buffered
+     * data.
+     */
+    int (*write_packet)(AVFormatContext *, AVPacket *pkt);
+    int (*write_trailer)(AVFormatContext *);
+    /**
+     * A format-specific function for interleavement.
+     * If unset, packets will be interleaved by dts.
+     *
+     * @param s           An AVFormatContext for output. pkt will be added to
+     *                    resp. taken from its packet buffer.
+     * @param[in,out] pkt A packet to be interleaved if has_packet is set;
+     *                    also used to return packets. If no packet is returned
+     *                    (e.g. on error), pkt is blank on return.
+     * @param flush       1 if no further packets are available as input and
+     *                    all remaining packets should be output.
+     * @param has_packet  If set, pkt contains a packet to be interleaved
+     *                    on input; otherwise pkt is blank on input.
+     * @return 1 if a packet was output, 0 if no packet could be output,
+     *         < 0 if an error occurred
+     */
+    int (*interleave_packet)(AVFormatContext *s, AVPacket *pkt,
+                             int flush, int has_packet);
+    /**
+     * Test if the given codec can be stored in this container.
+     *
+     * @return 1 if the codec is supported, 0 if it is not.
+     *         A negative number if unknown.
+     *         MKTAG('A', 'P', 'I', 'C') if the codec is only supported as AV_DISPOSITION_ATTACHED_PIC
+     */
+    int (*query_codec)(enum AVCodecID id, int std_compliance);
+
+    void (*get_output_timestamp)(AVFormatContext *s, int stream,
+                                 int64_t *dts, int64_t *wall);
+    /**
+     * Allows sending messages from application to device.
+     */
+    int (*control_message)(AVFormatContext *s, int type,
+                           void *data, size_t data_size);
+
+    /**
+     * Write an uncoded AVFrame.
+     *
+     * See av_write_uncoded_frame() for details.
+     *
+     * The library will free *frame afterwards, but the muxer can prevent it
+     * by setting the pointer to NULL.
+     */
+    int (*write_uncoded_frame)(AVFormatContext *, int stream_index,
+                               AVFrame **frame, unsigned flags);
+    /**
+     * Returns device list with it properties.
+     * @see avdevice_list_devices() for more details.
+     */
+    int (*get_device_list)(AVFormatContext *s, struct AVDeviceInfoList *device_list);
+    /**
+     * Initialize format. May allocate data here, and set any AVFormatContext or
+     * AVStream parameters that need to be set before packets are sent.
+     * This method must not write output.
+     *
+     * Return 0 if streams were fully configured, 1 if not, negative AVERROR on failure
+     *
+     * Any allocations made here must be freed in deinit().
+     */
+    int (*init)(AVFormatContext *);
+    /**
+     * Deinitialize format. If present, this is called whenever the muxer is being
+     * destroyed, regardless of whether or not the header has been written.
+     *
+     * If a trailer is being written, this is called after write_trailer().
+     *
+     * This is called if init() fails as well.
+     */
+    void (*deinit)(AVFormatContext *);
+    /**
+     * Set up any necessary bitstream filtering and extract any extra data needed
+     * for the global header.
+     *
+     * @note pkt might have been directly forwarded by a meta-muxer; therefore
+     *       pkt->stream_index as well as the pkt's timebase might be invalid.
+     * Return 0 if more packets from this stream must be checked; 1 if not.
+     */
+    int (*check_bitstream)(AVFormatContext *s, AVStream *st,
+                           const AVPacket *pkt);
+} FFOutputFormat;
+
+static inline const FFOutputFormat *ffofmt(const AVOutputFormat *fmt)
+{
+    return (const FFOutputFormat*)fmt;
+}
+
 /**
  * Add packet to an AVFormatContext's packet_buffer list, determining its
  * interleaved position using compare() function argument.

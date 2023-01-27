@@ -23,6 +23,7 @@
 #include "avio_internal.h"
 #include "id3v1.h"
 #include "id3v2.h"
+#include "mux.h"
 #include "rawenc.h"
 #include "libavutil/avstring.h"
 #include "libavcodec/mpegaudio.h"
@@ -636,20 +637,20 @@ static void mp3_deinit(struct AVFormatContext *s)
     av_freep(&mp3->xing_frame);
 }
 
-const AVOutputFormat ff_mp3_muxer = {
-    .name              = "mp3",
-    .long_name         = NULL_IF_CONFIG_SMALL("MP3 (MPEG audio layer 3)"),
-    .mime_type         = "audio/mpeg",
-    .extensions        = "mp3",
+const FFOutputFormat ff_mp3_muxer = {
+    .p.name            = "mp3",
+    .p.long_name       = NULL_IF_CONFIG_SMALL("MP3 (MPEG audio layer 3)"),
+    .p.mime_type       = "audio/mpeg",
+    .p.extensions      = "mp3",
     .priv_data_size    = sizeof(MP3Context),
-    .audio_codec       = AV_CODEC_ID_MP3,
-    .video_codec       = AV_CODEC_ID_PNG,
+    .p.audio_codec     = AV_CODEC_ID_MP3,
+    .p.video_codec     = AV_CODEC_ID_PNG,
     .init              = mp3_init,
     .write_header      = mp3_write_header,
     .write_packet      = mp3_write_packet,
     .write_trailer     = mp3_write_trailer,
     .deinit            = mp3_deinit,
     .query_codec       = query_codec,
-    .flags             = AVFMT_NOTIMESTAMPS,
-    .priv_class        = &mp3_muxer_class,
+    .p.flags           = AVFMT_NOTIMESTAMPS,
+    .p.priv_class      = &mp3_muxer_class,
 };

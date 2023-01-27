@@ -35,6 +35,7 @@
 #include "avio_internal.h"
 #include "internal.h"
 #include "mpeg.h"
+#include "mux.h"
 
 #define MAX_PAYLOAD_SIZE 4096
 
@@ -86,10 +87,10 @@ typedef struct MpegMuxContext {
     int preload;
 } MpegMuxContext;
 
-extern const AVOutputFormat ff_mpeg1vcd_muxer;
-extern const AVOutputFormat ff_mpeg2dvd_muxer;
-extern const AVOutputFormat ff_mpeg2svcd_muxer;
-extern const AVOutputFormat ff_mpeg2vob_muxer;
+extern const FFOutputFormat ff_mpeg1vcd_muxer;
+extern const FFOutputFormat ff_mpeg2dvd_muxer;
+extern const FFOutputFormat ff_mpeg2svcd_muxer;
+extern const FFOutputFormat ff_mpeg2vob_muxer;
 
 static int put_pack_header(AVFormatContext *ctx, uint8_t *buf,
                            int64_t timestamp)
@@ -307,12 +308,12 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
     int video_bitrate;
 
     s->packet_number = 0;
-    s->is_vcd   =  (CONFIG_MPEG1VCD_MUXER  && ctx->oformat == &ff_mpeg1vcd_muxer);
-    s->is_svcd  =  (CONFIG_MPEG2SVCD_MUXER && ctx->oformat == &ff_mpeg2svcd_muxer);
-    s->is_mpeg2 = ((CONFIG_MPEG2VOB_MUXER  && ctx->oformat == &ff_mpeg2vob_muxer) ||
-                   (CONFIG_MPEG2DVD_MUXER  && ctx->oformat == &ff_mpeg2dvd_muxer) ||
-                   (CONFIG_MPEG2SVCD_MUXER && ctx->oformat == &ff_mpeg2svcd_muxer));
-    s->is_dvd   =  (CONFIG_MPEG2DVD_MUXER  && ctx->oformat == &ff_mpeg2dvd_muxer);
+    s->is_vcd   =  (CONFIG_MPEG1VCD_MUXER  && ctx->oformat == &ff_mpeg1vcd_muxer.p);
+    s->is_svcd  =  (CONFIG_MPEG2SVCD_MUXER && ctx->oformat == &ff_mpeg2svcd_muxer.p);
+    s->is_mpeg2 = ((CONFIG_MPEG2VOB_MUXER  && ctx->oformat == &ff_mpeg2vob_muxer.p) ||
+                   (CONFIG_MPEG2DVD_MUXER  && ctx->oformat == &ff_mpeg2dvd_muxer.p) ||
+                   (CONFIG_MPEG2SVCD_MUXER && ctx->oformat == &ff_mpeg2svcd_muxer.p));
+    s->is_dvd   =  (CONFIG_MPEG2DVD_MUXER  && ctx->oformat == &ff_mpeg2dvd_muxer.p);
 
     if (ctx->packet_size) {
         if (ctx->packet_size < 20 || ctx->packet_size > (1 << 23) + 10) {
@@ -1293,87 +1294,87 @@ static const AVClass mpeg_class = {
 };
 
 #if CONFIG_MPEG1SYSTEM_MUXER
-const AVOutputFormat ff_mpeg1system_muxer = {
-    .name              = "mpeg",
-    .long_name         = NULL_IF_CONFIG_SMALL("MPEG-1 Systems / MPEG program stream"),
-    .mime_type         = "video/mpeg",
-    .extensions        = "mpg,mpeg",
+const FFOutputFormat ff_mpeg1system_muxer = {
+    .p.name            = "mpeg",
+    .p.long_name       = NULL_IF_CONFIG_SMALL("MPEG-1 Systems / MPEG program stream"),
+    .p.mime_type       = "video/mpeg",
+    .p.extensions      = "mpg,mpeg",
     .priv_data_size    = sizeof(MpegMuxContext),
-    .audio_codec       = AV_CODEC_ID_MP2,
-    .video_codec       = AV_CODEC_ID_MPEG1VIDEO,
+    .p.audio_codec     = AV_CODEC_ID_MP2,
+    .p.video_codec     = AV_CODEC_ID_MPEG1VIDEO,
     .write_header      = mpeg_mux_init,
     .write_packet      = mpeg_mux_write_packet,
     .write_trailer     = mpeg_mux_end,
     .deinit            = mpeg_mux_deinit,
-    .priv_class        = &mpeg_class,
+    .p.priv_class      = &mpeg_class,
 };
 #endif
 
 #if CONFIG_MPEG1VCD_MUXER
-const AVOutputFormat ff_mpeg1vcd_muxer = {
-    .name              = "vcd",
-    .long_name         = NULL_IF_CONFIG_SMALL("MPEG-1 Systems / MPEG program stream (VCD)"),
-    .mime_type         = "video/mpeg",
+const FFOutputFormat ff_mpeg1vcd_muxer = {
+    .p.name            = "vcd",
+    .p.long_name       = NULL_IF_CONFIG_SMALL("MPEG-1 Systems / MPEG program stream (VCD)"),
+    .p.mime_type       = "video/mpeg",
     .priv_data_size    = sizeof(MpegMuxContext),
-    .audio_codec       = AV_CODEC_ID_MP2,
-    .video_codec       = AV_CODEC_ID_MPEG1VIDEO,
+    .p.audio_codec     = AV_CODEC_ID_MP2,
+    .p.video_codec     = AV_CODEC_ID_MPEG1VIDEO,
     .write_header      = mpeg_mux_init,
     .write_packet      = mpeg_mux_write_packet,
     .write_trailer     = mpeg_mux_end,
     .deinit            = mpeg_mux_deinit,
-    .priv_class        = &mpeg_class,
+    .p.priv_class      = &mpeg_class,
 };
 #endif
 
 #if CONFIG_MPEG2VOB_MUXER
-const AVOutputFormat ff_mpeg2vob_muxer = {
-    .name              = "vob",
-    .long_name         = NULL_IF_CONFIG_SMALL("MPEG-2 PS (VOB)"),
-    .mime_type         = "video/mpeg",
-    .extensions        = "vob",
+const FFOutputFormat ff_mpeg2vob_muxer = {
+    .p.name            = "vob",
+    .p.long_name       = NULL_IF_CONFIG_SMALL("MPEG-2 PS (VOB)"),
+    .p.mime_type       = "video/mpeg",
+    .p.extensions      = "vob",
     .priv_data_size    = sizeof(MpegMuxContext),
-    .audio_codec       = AV_CODEC_ID_MP2,
-    .video_codec       = AV_CODEC_ID_MPEG2VIDEO,
+    .p.audio_codec     = AV_CODEC_ID_MP2,
+    .p.video_codec     = AV_CODEC_ID_MPEG2VIDEO,
     .write_header      = mpeg_mux_init,
     .write_packet      = mpeg_mux_write_packet,
     .write_trailer     = mpeg_mux_end,
     .deinit            = mpeg_mux_deinit,
-    .priv_class        = &mpeg_class,
+    .p.priv_class      = &mpeg_class,
 };
 #endif
 
 /* Same as mpeg2vob_mux except that the pack size is 2324 */
 #if CONFIG_MPEG2SVCD_MUXER
-const AVOutputFormat ff_mpeg2svcd_muxer = {
-    .name              = "svcd",
-    .long_name         = NULL_IF_CONFIG_SMALL("MPEG-2 PS (SVCD)"),
-    .mime_type         = "video/mpeg",
-    .extensions        = "vob",
+const FFOutputFormat ff_mpeg2svcd_muxer = {
+    .p.name            = "svcd",
+    .p.long_name       = NULL_IF_CONFIG_SMALL("MPEG-2 PS (SVCD)"),
+    .p.mime_type       = "video/mpeg",
+    .p.extensions      = "vob",
     .priv_data_size    = sizeof(MpegMuxContext),
-    .audio_codec       = AV_CODEC_ID_MP2,
-    .video_codec       = AV_CODEC_ID_MPEG2VIDEO,
+    .p.audio_codec     = AV_CODEC_ID_MP2,
+    .p.video_codec     = AV_CODEC_ID_MPEG2VIDEO,
     .write_header      = mpeg_mux_init,
     .write_packet      = mpeg_mux_write_packet,
     .write_trailer     = mpeg_mux_end,
     .deinit            = mpeg_mux_deinit,
-    .priv_class        = &mpeg_class,
+    .p.priv_class      = &mpeg_class,
 };
 #endif
 
 /*  Same as mpeg2vob_mux except the 'is_dvd' flag is set to produce NAV pkts */
 #if CONFIG_MPEG2DVD_MUXER
-const AVOutputFormat ff_mpeg2dvd_muxer = {
-    .name              = "dvd",
-    .long_name         = NULL_IF_CONFIG_SMALL("MPEG-2 PS (DVD VOB)"),
-    .mime_type         = "video/mpeg",
-    .extensions        = "dvd",
+const FFOutputFormat ff_mpeg2dvd_muxer = {
+    .p.name            = "dvd",
+    .p.long_name       = NULL_IF_CONFIG_SMALL("MPEG-2 PS (DVD VOB)"),
+    .p.mime_type       = "video/mpeg",
+    .p.extensions      = "dvd",
     .priv_data_size    = sizeof(MpegMuxContext),
-    .audio_codec       = AV_CODEC_ID_MP2,
-    .video_codec       = AV_CODEC_ID_MPEG2VIDEO,
+    .p.audio_codec     = AV_CODEC_ID_MP2,
+    .p.video_codec     = AV_CODEC_ID_MPEG2VIDEO,
     .write_header      = mpeg_mux_init,
     .write_packet      = mpeg_mux_write_packet,
     .write_trailer     = mpeg_mux_end,
     .deinit            = mpeg_mux_deinit,
-    .priv_class        = &mpeg_class,
+    .p.priv_class      = &mpeg_class,
 };
 #endif

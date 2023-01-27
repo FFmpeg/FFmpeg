@@ -23,6 +23,7 @@
 #include "libavutil/opt.h"
 #include "avformat.h"
 #include "internal.h"
+#include "mux.h"
 
 typedef struct WebpContext{
     AVClass *class;
@@ -208,15 +209,15 @@ static const AVClass webp_muxer_class = {
     .version    = LIBAVUTIL_VERSION_INT,
     .option     = options,
 };
-const AVOutputFormat ff_webp_muxer = {
-    .name           = "webp",
-    .long_name      = NULL_IF_CONFIG_SMALL("WebP"),
-    .extensions     = "webp",
+const FFOutputFormat ff_webp_muxer = {
+    .p.name         = "webp",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("WebP"),
+    .p.extensions   = "webp",
     .priv_data_size = sizeof(WebpContext),
-    .video_codec    = AV_CODEC_ID_WEBP,
+    .p.video_codec  = AV_CODEC_ID_WEBP,
     .init           = webp_init,
     .write_packet   = webp_write_packet,
     .write_trailer  = webp_write_trailer,
-    .priv_class     = &webp_muxer_class,
-    .flags          = AVFMT_VARIABLE_FPS,
+    .p.priv_class   = &webp_muxer_class,
+    .p.flags        = AVFMT_VARIABLE_FPS,
 };

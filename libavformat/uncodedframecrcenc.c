@@ -165,14 +165,14 @@ static int write_packet(struct AVFormatContext *s, AVPacket *pkt)
     return AVERROR(ENOSYS);
 }
 
-const AVOutputFormat ff_uncodedframecrc_muxer = {
-    .name              = "uncodedframecrc",
-    .long_name         = NULL_IF_CONFIG_SMALL("uncoded framecrc testing"),
-    .audio_codec       = AV_CODEC_ID_PCM_S16LE,
-    .video_codec       = AV_CODEC_ID_RAWVIDEO,
+const FFOutputFormat ff_uncodedframecrc_muxer = {
+    .p.name              = "uncodedframecrc",
+    .p.long_name         = NULL_IF_CONFIG_SMALL("uncoded framecrc testing"),
+    .p.audio_codec       = AV_CODEC_ID_PCM_S16LE,
+    .p.video_codec       = AV_CODEC_ID_RAWVIDEO,
+    .p.flags             = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT |
+                           AVFMT_TS_NEGATIVE,
     .write_header      = write_header,
     .write_packet      = write_packet,
     .write_uncoded_frame = write_frame,
-    .flags             = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT |
-                         AVFMT_TS_NEGATIVE,
 };

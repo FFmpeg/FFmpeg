@@ -22,6 +22,7 @@
 #include <inttypes.h>
 #include "avformat.h"
 #include "internal.h"
+#include "mux.h"
 
 static int microdvd_write_header(struct AVFormatContext *s)
 {
@@ -55,13 +56,13 @@ static int microdvd_write_packet(AVFormatContext *avf, AVPacket *pkt)
     return 0;
 }
 
-const AVOutputFormat ff_microdvd_muxer = {
-    .name           = "microdvd",
-    .long_name      = NULL_IF_CONFIG_SMALL("MicroDVD subtitle format"),
-    .mime_type      = "text/x-microdvd",
-    .extensions     = "sub",
+const FFOutputFormat ff_microdvd_muxer = {
+    .p.name           = "microdvd",
+    .p.long_name      = NULL_IF_CONFIG_SMALL("MicroDVD subtitle format"),
+    .p.mime_type      = "text/x-microdvd",
+    .p.extensions     = "sub",
+    .p.flags          = AVFMT_NOTIMESTAMPS,
+    .p.subtitle_codec = AV_CODEC_ID_MICRODVD,
     .write_header   = microdvd_write_header,
     .write_packet   = microdvd_write_packet,
-    .flags          = AVFMT_NOTIMESTAMPS,
-    .subtitle_codec = AV_CODEC_ID_MICRODVD,
 };

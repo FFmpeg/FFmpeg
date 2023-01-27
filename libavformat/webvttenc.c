@@ -26,6 +26,7 @@
 
 #include "avformat.h"
 #include "internal.h"
+#include "mux.h"
 
 static void webvtt_write_time(AVIOContext *pb, int64_t millisec)
 {
@@ -102,13 +103,13 @@ static int webvtt_write_packet(AVFormatContext *ctx, AVPacket *pkt)
     return 0;
 }
 
-const AVOutputFormat ff_webvtt_muxer = {
-    .name              = "webvtt",
-    .long_name         = NULL_IF_CONFIG_SMALL("WebVTT subtitle"),
-    .extensions        = "vtt",
-    .mime_type         = "text/vtt",
-    .flags             = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT,
-    .subtitle_codec    = AV_CODEC_ID_WEBVTT,
+const FFOutputFormat ff_webvtt_muxer = {
+    .p.name            = "webvtt",
+    .p.long_name       = NULL_IF_CONFIG_SMALL("WebVTT subtitle"),
+    .p.extensions      = "vtt",
+    .p.mime_type       = "text/vtt",
+    .p.flags           = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT,
+    .p.subtitle_codec  = AV_CODEC_ID_WEBVTT,
     .write_header      = webvtt_write_header,
     .write_packet      = webvtt_write_packet,
 };

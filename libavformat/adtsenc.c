@@ -31,6 +31,7 @@
 #include "avformat.h"
 #include "apetag.h"
 #include "id3v2.h"
+#include "mux.h"
 
 #define ADTS_HEADER_SIZE 7
 
@@ -232,18 +233,18 @@ static const AVClass adts_muxer_class = {
     .version        = LIBAVUTIL_VERSION_INT,
 };
 
-const AVOutputFormat ff_adts_muxer = {
-    .name              = "adts",
-    .long_name         = NULL_IF_CONFIG_SMALL("ADTS AAC (Advanced Audio Coding)"),
-    .mime_type         = "audio/aac",
-    .extensions        = "aac,adts",
+const FFOutputFormat ff_adts_muxer = {
+    .p.name            = "adts",
+    .p.long_name       = NULL_IF_CONFIG_SMALL("ADTS AAC (Advanced Audio Coding)"),
+    .p.mime_type       = "audio/aac",
+    .p.extensions      = "aac,adts",
     .priv_data_size    = sizeof(ADTSContext),
-    .audio_codec       = AV_CODEC_ID_AAC,
-    .video_codec       = AV_CODEC_ID_NONE,
+    .p.audio_codec     = AV_CODEC_ID_AAC,
+    .p.video_codec     = AV_CODEC_ID_NONE,
     .init              = adts_init,
     .write_header      = adts_write_header,
     .write_packet      = adts_write_packet,
     .write_trailer     = adts_write_trailer,
-    .priv_class        = &adts_muxer_class,
-    .flags             = AVFMT_NOTIMESTAMPS,
+    .p.priv_class      = &adts_muxer_class,
+    .p.flags           = AVFMT_NOTIMESTAMPS,
 };

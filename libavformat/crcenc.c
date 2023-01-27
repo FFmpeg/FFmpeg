@@ -23,6 +23,7 @@
 
 #include "libavutil/adler32.h"
 #include "avformat.h"
+#include "mux.h"
 
 typedef struct CRCState {
     uint32_t crcval;
@@ -54,14 +55,14 @@ static int crc_write_trailer(struct AVFormatContext *s)
     return 0;
 }
 
-const AVOutputFormat ff_crc_muxer = {
-    .name              = "crc",
-    .long_name         = NULL_IF_CONFIG_SMALL("CRC testing"),
+const FFOutputFormat ff_crc_muxer = {
+    .p.name            = "crc",
+    .p.long_name       = NULL_IF_CONFIG_SMALL("CRC testing"),
     .priv_data_size    = sizeof(CRCState),
-    .audio_codec       = AV_CODEC_ID_PCM_S16LE,
-    .video_codec       = AV_CODEC_ID_RAWVIDEO,
+    .p.audio_codec     = AV_CODEC_ID_PCM_S16LE,
+    .p.video_codec     = AV_CODEC_ID_RAWVIDEO,
     .init              = crc_init,
     .write_packet      = crc_write_packet,
     .write_trailer     = crc_write_trailer,
-    .flags             = AVFMT_NOTIMESTAMPS,
+    .p.flags           = AVFMT_NOTIMESTAMPS,
 };

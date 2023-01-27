@@ -30,6 +30,7 @@
 
 #include "avformat.h"
 #include "internal.h"
+#include "mux.h"
 
 static int framecrc_write_header(struct AVFormatContext *s)
 {
@@ -69,13 +70,13 @@ static int framecrc_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-const AVOutputFormat ff_framecrc_muxer = {
-    .name              = "framecrc",
-    .long_name         = NULL_IF_CONFIG_SMALL("framecrc testing"),
-    .audio_codec       = AV_CODEC_ID_PCM_S16LE,
-    .video_codec       = AV_CODEC_ID_RAWVIDEO,
+const FFOutputFormat ff_framecrc_muxer = {
+    .p.name            = "framecrc",
+    .p.long_name       = NULL_IF_CONFIG_SMALL("framecrc testing"),
+    .p.audio_codec     = AV_CODEC_ID_PCM_S16LE,
+    .p.video_codec     = AV_CODEC_ID_RAWVIDEO,
     .write_header      = framecrc_write_header,
     .write_packet      = framecrc_write_packet,
-    .flags             = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT |
+    .p.flags           = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT |
                          AVFMT_TS_NEGATIVE,
 };

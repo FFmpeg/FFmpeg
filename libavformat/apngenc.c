@@ -22,6 +22,7 @@
  */
 
 #include "avformat.h"
+#include "mux.h"
 #include "libavutil/avassert.h"
 #include "libavutil/crc.h"
 #include "libavutil/intreadwrite.h"
@@ -306,18 +307,18 @@ static const AVClass apng_muxer_class = {
     .option     = options,
 };
 
-const AVOutputFormat ff_apng_muxer = {
-    .name           = "apng",
-    .long_name      = NULL_IF_CONFIG_SMALL("Animated Portable Network Graphics"),
-    .mime_type      = "image/png",
-    .extensions     = "apng",
+const FFOutputFormat ff_apng_muxer = {
+    .p.name         = "apng",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Animated Portable Network Graphics"),
+    .p.mime_type    = "image/png",
+    .p.extensions   = "apng",
     .priv_data_size = sizeof(APNGMuxContext),
-    .audio_codec    = AV_CODEC_ID_NONE,
-    .video_codec    = AV_CODEC_ID_APNG,
+    .p.audio_codec  = AV_CODEC_ID_NONE,
+    .p.video_codec  = AV_CODEC_ID_APNG,
     .write_header   = apng_write_header,
     .write_packet   = apng_write_packet,
     .write_trailer  = apng_write_trailer,
     .deinit         = apng_deinit,
-    .priv_class     = &apng_muxer_class,
-    .flags          = AVFMT_VARIABLE_FPS,
+    .p.priv_class   = &apng_muxer_class,
+    .p.flags        = AVFMT_VARIABLE_FPS,
 };

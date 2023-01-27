@@ -602,13 +602,13 @@ static int tee_write_packet(AVFormatContext *avf, AVPacket *pkt)
     return ret_all;
 }
 
-const AVOutputFormat ff_tee_muxer = {
-    .name              = "tee",
-    .long_name         = NULL_IF_CONFIG_SMALL("Multiple muxer tee"),
+const FFOutputFormat ff_tee_muxer = {
+    .p.name            = "tee",
+    .p.long_name       = NULL_IF_CONFIG_SMALL("Multiple muxer tee"),
     .priv_data_size    = sizeof(TeeContext),
     .write_header      = tee_write_header,
     .write_trailer     = tee_write_trailer,
     .write_packet      = tee_write_packet,
-    .priv_class        = &tee_muxer_class,
-    .flags             = AVFMT_NOFILE | AVFMT_ALLOW_FLUSH | AVFMT_TS_NEGATIVE,
+    .p.priv_class      = &tee_muxer_class,
+    .p.flags           = AVFMT_NOFILE | AVFMT_ALLOW_FLUSH | AVFMT_TS_NEGATIVE,
 };

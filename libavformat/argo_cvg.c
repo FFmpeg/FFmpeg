@@ -26,6 +26,7 @@
 #include "libavutil/channel_layout.h"
 #include "avformat.h"
 #include "internal.h"
+#include "mux.h"
 #include "libavutil/opt.h"
 #include "libavutil/intreadwrite.h"
 
@@ -400,17 +401,17 @@ static const AVClass argo_cvg_muxer_class = {
     .version    = LIBAVUTIL_VERSION_INT
 };
 
-const AVOutputFormat ff_argo_cvg_muxer = {
-    .name           = "argo_cvg",
-    .long_name      = NULL_IF_CONFIG_SMALL("Argonaut Games CVG"),
-    .extensions     = "cvg",
-    .audio_codec    = AV_CODEC_ID_ADPCM_PSX,
-    .video_codec    = AV_CODEC_ID_NONE,
+const FFOutputFormat ff_argo_cvg_muxer = {
+    .p.name         = "argo_cvg",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Argonaut Games CVG"),
+    .p.extensions   = "cvg",
+    .p.audio_codec  = AV_CODEC_ID_ADPCM_PSX,
+    .p.video_codec  = AV_CODEC_ID_NONE,
+    .p.priv_class   = &argo_cvg_muxer_class,
     .init           = argo_cvg_write_init,
     .write_header   = argo_cvg_write_header,
     .write_packet   = argo_cvg_write_packet,
     .write_trailer  = argo_cvg_write_trailer,
-    .priv_class     = &argo_cvg_muxer_class,
     .priv_data_size = sizeof(ArgoCVGMuxContext),
 };
 #endif

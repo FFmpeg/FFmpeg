@@ -31,6 +31,7 @@
 
 #include "avformat.h"
 #include "avio_internal.h"
+#include "mux.h"
 
 typedef struct {
     int offset;
@@ -193,17 +194,17 @@ static void ico_deinit(AVFormatContext *s)
     av_freep(&ico->images);
 }
 
-const AVOutputFormat ff_ico_muxer = {
-    .name           = "ico",
-    .long_name      = NULL_IF_CONFIG_SMALL("Microsoft Windows ICO"),
+const FFOutputFormat ff_ico_muxer = {
+    .p.name         = "ico",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Microsoft Windows ICO"),
     .priv_data_size = sizeof(IcoMuxContext),
-    .mime_type      = "image/vnd.microsoft.icon",
-    .extensions     = "ico",
-    .audio_codec    = AV_CODEC_ID_NONE,
-    .video_codec    = AV_CODEC_ID_BMP,
+    .p.mime_type    = "image/vnd.microsoft.icon",
+    .p.extensions   = "ico",
+    .p.audio_codec  = AV_CODEC_ID_NONE,
+    .p.video_codec  = AV_CODEC_ID_BMP,
     .write_header   = ico_write_header,
     .write_packet   = ico_write_packet,
     .write_trailer  = ico_write_trailer,
     .deinit         = ico_deinit,
-    .flags          = AVFMT_NOTIMESTAMPS,
+    .p.flags        = AVFMT_NOTIMESTAMPS,
 };

@@ -22,6 +22,7 @@
 #include "avformat.h"
 #include "mpegts.h"
 #include "internal.h"
+#include "mux.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/random_seed.h"
 #include "libavutil/opt.h"
@@ -659,15 +660,15 @@ static int rtp_write_trailer(AVFormatContext *s1)
     return 0;
 }
 
-const AVOutputFormat ff_rtp_muxer = {
-    .name              = "rtp",
-    .long_name         = NULL_IF_CONFIG_SMALL("RTP output"),
+const FFOutputFormat ff_rtp_muxer = {
+    .p.name            = "rtp",
+    .p.long_name       = NULL_IF_CONFIG_SMALL("RTP output"),
     .priv_data_size    = sizeof(RTPMuxContext),
-    .audio_codec       = AV_CODEC_ID_PCM_MULAW,
-    .video_codec       = AV_CODEC_ID_MPEG4,
+    .p.audio_codec     = AV_CODEC_ID_PCM_MULAW,
+    .p.video_codec     = AV_CODEC_ID_MPEG4,
     .write_header      = rtp_write_header,
     .write_packet      = rtp_write_packet,
     .write_trailer     = rtp_write_trailer,
-    .priv_class        = &rtp_muxer_class,
-    .flags             = AVFMT_TS_NONSTRICT,
+    .p.priv_class      = &rtp_muxer_class,
+    .p.flags           = AVFMT_TS_NONSTRICT,
 };

@@ -376,17 +376,17 @@ static const AVClass xv_class = {
     .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_OUTPUT,
 };
 
-const AVOutputFormat ff_xv_muxer = {
-    .name           = "xv",
-    .long_name      = NULL_IF_CONFIG_SMALL("XV (XVideo) output device"),
+const FFOutputFormat ff_xv_muxer = {
+    .p.name         = "xv",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("XV (XVideo) output device"),
+    .p.audio_codec   = AV_CODEC_ID_NONE,
+    .p.video_codec   = AV_CODEC_ID_WRAPPED_AVFRAME,
+    .p.flags         = AVFMT_NOFILE | AVFMT_VARIABLE_FPS | AVFMT_NOTIMESTAMPS,
+    .p.priv_class    = &xv_class,
     .priv_data_size = sizeof(XVContext),
-    .audio_codec    = AV_CODEC_ID_NONE,
-    .video_codec    = AV_CODEC_ID_WRAPPED_AVFRAME,
     .write_header   = xv_write_header,
     .write_packet   = xv_write_packet,
     .write_uncoded_frame = xv_write_frame,
     .write_trailer  = xv_write_trailer,
     .control_message = xv_control_message,
-    .flags          = AVFMT_NOFILE | AVFMT_VARIABLE_FPS | AVFMT_NOTIMESTAMPS,
-    .priv_class     = &xv_class,
 };

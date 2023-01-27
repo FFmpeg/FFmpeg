@@ -1060,24 +1060,24 @@ static const AVClass flv_muxer_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVOutputFormat ff_flv_muxer = {
-    .name           = "flv",
-    .long_name      = NULL_IF_CONFIG_SMALL("FLV (Flash Video)"),
-    .mime_type      = "video/x-flv",
-    .extensions     = "flv",
+const FFOutputFormat ff_flv_muxer = {
+    .p.name         = "flv",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("FLV (Flash Video)"),
+    .p.mime_type    = "video/x-flv",
+    .p.extensions   = "flv",
     .priv_data_size = sizeof(FLVContext),
-    .audio_codec    = CONFIG_LIBMP3LAME ? AV_CODEC_ID_MP3 : AV_CODEC_ID_ADPCM_SWF,
-    .video_codec    = AV_CODEC_ID_FLV1,
+    .p.audio_codec  = CONFIG_LIBMP3LAME ? AV_CODEC_ID_MP3 : AV_CODEC_ID_ADPCM_SWF,
+    .p.video_codec  = AV_CODEC_ID_FLV1,
     .init           = flv_init,
     .write_header   = flv_write_header,
     .write_packet   = flv_write_packet,
     .write_trailer  = flv_write_trailer,
     .deinit         = flv_deinit,
     .check_bitstream= flv_check_bitstream,
-    .codec_tag      = (const AVCodecTag* const []) {
+    .p.codec_tag    = (const AVCodecTag* const []) {
                           flv_video_codec_ids, flv_audio_codec_ids, 0
                       },
-    .flags          = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS |
+    .p.flags        = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS |
                       AVFMT_TS_NONSTRICT,
-    .priv_class     = &flv_muxer_class,
+    .p.priv_class   = &flv_muxer_class,
 };

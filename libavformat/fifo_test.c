@@ -25,6 +25,7 @@
 #include "libavutil/time.h"
 
 #include "avformat.h"
+#include "mux.h"
 #include "url.h"
 
 /* Implementation of mock muxer to simulate real muxer failures */
@@ -137,15 +138,15 @@ static const AVClass failing_muxer_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVOutputFormat ff_fifo_test_muxer = {
-    .name           = "fifo_test",
-    .long_name      = NULL_IF_CONFIG_SMALL("Fifo test muxer"),
+const FFOutputFormat ff_fifo_test_muxer = {
+    .p.name         = "fifo_test",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Fifo test muxer"),
     .priv_data_size = sizeof(FailingMuxerContext),
     .write_header   = failing_write_header,
     .write_packet   = failing_write_packet,
     .write_trailer  = failing_write_trailer,
     .deinit         = failing_deinit,
-    .priv_class     = &failing_muxer_class,
-    .flags          = AVFMT_NOFILE | AVFMT_ALLOW_FLUSH,
+    .p.priv_class   = &failing_muxer_class,
+    .p.flags        = AVFMT_NOFILE | AVFMT_ALLOW_FLUSH,
 };
 

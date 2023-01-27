@@ -30,6 +30,7 @@
 #include "libavutil/avstring.h"
 #include "avformat.h"
 #include "internal.h"
+#include "mux.h"
 #include "ttmlenc.h"
 #include "libavcodec/ttmlenc.h"
 #include "libavutil/internal.h"
@@ -215,15 +216,15 @@ static int ttml_write_trailer(AVFormatContext *ctx)
     return 0;
 }
 
-const AVOutputFormat ff_ttml_muxer = {
-    .name              = "ttml",
-    .long_name         = NULL_IF_CONFIG_SMALL("TTML subtitle"),
-    .extensions        = "ttml",
-    .mime_type         = "text/ttml",
+const FFOutputFormat ff_ttml_muxer = {
+    .p.name            = "ttml",
+    .p.long_name       = NULL_IF_CONFIG_SMALL("TTML subtitle"),
+    .p.extensions      = "ttml",
+    .p.mime_type       = "text/ttml",
     .priv_data_size    = sizeof(TTMLMuxContext),
-    .flags             = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS |
+    .p.flags           = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS |
                          AVFMT_TS_NONSTRICT,
-    .subtitle_codec    = AV_CODEC_ID_TTML,
+    .p.subtitle_codec  = AV_CODEC_ID_TTML,
     .write_header      = ttml_write_header,
     .write_packet      = ttml_write_packet,
     .write_trailer     = ttml_write_trailer,

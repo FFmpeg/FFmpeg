@@ -27,6 +27,7 @@
 #include "libavutil/opt.h"
 #include "avformat.h"
 #include "internal.h"
+#include "mux.h"
 
 struct HashContext {
     const AVClass *avclass;
@@ -172,19 +173,19 @@ static void hash_free(struct AVFormatContext *s)
 }
 
 #if CONFIG_HASH_MUXER
-const AVOutputFormat ff_hash_muxer = {
-    .name              = "hash",
-    .long_name         = NULL_IF_CONFIG_SMALL("Hash testing"),
+const FFOutputFormat ff_hash_muxer = {
+    .p.name            = "hash",
+    .p.long_name       = NULL_IF_CONFIG_SMALL("Hash testing"),
     .priv_data_size    = sizeof(struct HashContext),
-    .audio_codec       = AV_CODEC_ID_PCM_S16LE,
-    .video_codec       = AV_CODEC_ID_RAWVIDEO,
+    .p.audio_codec     = AV_CODEC_ID_PCM_S16LE,
+    .p.video_codec     = AV_CODEC_ID_RAWVIDEO,
     .init              = hash_init,
     .write_packet      = hash_write_packet,
     .write_trailer     = hash_write_trailer,
     .deinit            = hash_free,
-    .flags             = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT |
+    .p.flags           = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT |
                          AVFMT_TS_NEGATIVE,
-    .priv_class        = &hash_streamhashenc_class,
+    .p.priv_class      = &hash_streamhashenc_class,
 };
 #endif
 
@@ -196,36 +197,36 @@ static const AVClass md5enc_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVOutputFormat ff_md5_muxer = {
-    .name              = "md5",
-    .long_name         = NULL_IF_CONFIG_SMALL("MD5 testing"),
+const FFOutputFormat ff_md5_muxer = {
+    .p.name            = "md5",
+    .p.long_name       = NULL_IF_CONFIG_SMALL("MD5 testing"),
     .priv_data_size    = sizeof(struct HashContext),
-    .audio_codec       = AV_CODEC_ID_PCM_S16LE,
-    .video_codec       = AV_CODEC_ID_RAWVIDEO,
+    .p.audio_codec     = AV_CODEC_ID_PCM_S16LE,
+    .p.video_codec     = AV_CODEC_ID_RAWVIDEO,
     .init              = hash_init,
     .write_packet      = hash_write_packet,
     .write_trailer     = hash_write_trailer,
     .deinit            = hash_free,
-    .flags             = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT |
+    .p.flags           = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT |
                          AVFMT_TS_NEGATIVE,
-    .priv_class        = &md5enc_class,
+    .p.priv_class      = &md5enc_class,
 };
 #endif
 
 #if CONFIG_STREAMHASH_MUXER
-const AVOutputFormat ff_streamhash_muxer = {
-    .name              = "streamhash",
-    .long_name         = NULL_IF_CONFIG_SMALL("Per-stream hash testing"),
+const FFOutputFormat ff_streamhash_muxer = {
+    .p.name            = "streamhash",
+    .p.long_name       = NULL_IF_CONFIG_SMALL("Per-stream hash testing"),
     .priv_data_size    = sizeof(struct HashContext),
-    .audio_codec       = AV_CODEC_ID_PCM_S16LE,
-    .video_codec       = AV_CODEC_ID_RAWVIDEO,
+    .p.audio_codec     = AV_CODEC_ID_PCM_S16LE,
+    .p.video_codec     = AV_CODEC_ID_RAWVIDEO,
     .init              = streamhash_init,
     .write_packet      = hash_write_packet,
     .write_trailer     = hash_write_trailer,
     .deinit            = hash_free,
-    .flags             = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT |
+    .p.flags           = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT |
                          AVFMT_TS_NEGATIVE,
-    .priv_class        = &hash_streamhashenc_class,
+    .p.priv_class      = &hash_streamhashenc_class,
 };
 #endif
 
@@ -324,19 +325,19 @@ static const AVClass framehash_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVOutputFormat ff_framehash_muxer = {
-    .name              = "framehash",
-    .long_name         = NULL_IF_CONFIG_SMALL("Per-frame hash testing"),
+const FFOutputFormat ff_framehash_muxer = {
+    .p.name            = "framehash",
+    .p.long_name       = NULL_IF_CONFIG_SMALL("Per-frame hash testing"),
     .priv_data_size    = sizeof(struct HashContext),
-    .audio_codec       = AV_CODEC_ID_PCM_S16LE,
-    .video_codec       = AV_CODEC_ID_RAWVIDEO,
+    .p.audio_codec     = AV_CODEC_ID_PCM_S16LE,
+    .p.video_codec     = AV_CODEC_ID_RAWVIDEO,
     .init              = framehash_init,
     .write_header      = framehash_write_header,
     .write_packet      = framehash_write_packet,
     .deinit            = hash_free,
-    .flags             = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT |
+    .p.flags           = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT |
                          AVFMT_TS_NEGATIVE,
-    .priv_class        = &framehash_class,
+    .p.priv_class      = &framehash_class,
 };
 #endif
 
@@ -348,18 +349,18 @@ static const AVClass framemd5_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVOutputFormat ff_framemd5_muxer = {
-    .name              = "framemd5",
-    .long_name         = NULL_IF_CONFIG_SMALL("Per-frame MD5 testing"),
+const FFOutputFormat ff_framemd5_muxer = {
+    .p.name            = "framemd5",
+    .p.long_name       = NULL_IF_CONFIG_SMALL("Per-frame MD5 testing"),
     .priv_data_size    = sizeof(struct HashContext),
-    .audio_codec       = AV_CODEC_ID_PCM_S16LE,
-    .video_codec       = AV_CODEC_ID_RAWVIDEO,
+    .p.audio_codec     = AV_CODEC_ID_PCM_S16LE,
+    .p.video_codec     = AV_CODEC_ID_RAWVIDEO,
     .init              = framehash_init,
     .write_header      = framehash_write_header,
     .write_packet      = framehash_write_packet,
     .deinit            = hash_free,
-    .flags             = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT |
+    .p.flags           = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT |
                          AVFMT_TS_NEGATIVE,
-    .priv_class        = &framemd5_class,
+    .p.priv_class      = &framemd5_class,
 };
 #endif

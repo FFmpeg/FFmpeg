@@ -20,6 +20,7 @@
  */
 
 #include "libavformat/avformat.h"
+#include "libavformat/mux.h"
 #include "libavutil/opt.h"
 
 #include "decklink_common_c.h"
@@ -71,15 +72,15 @@ static const AVClass decklink_muxer_class = {
     .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_OUTPUT,
 };
 
-const AVOutputFormat ff_decklink_muxer = {
-    .name           = "decklink",
-    .long_name      = NULL_IF_CONFIG_SMALL("Blackmagic DeckLink output"),
-    .audio_codec    = AV_CODEC_ID_PCM_S16LE,
-    .video_codec    = AV_CODEC_ID_WRAPPED_AVFRAME,
-    .subtitle_codec = AV_CODEC_ID_NONE,
-    .flags          = AVFMT_NOFILE,
+const FFOutputFormat ff_decklink_muxer = {
+    .p.name           = "decklink",
+    .p.long_name      = NULL_IF_CONFIG_SMALL("Blackmagic DeckLink output"),
+    .p.audio_codec    = AV_CODEC_ID_PCM_S16LE,
+    .p.video_codec    = AV_CODEC_ID_WRAPPED_AVFRAME,
+    .p.subtitle_codec = AV_CODEC_ID_NONE,
+    .p.flags          = AVFMT_NOFILE,
+    .p.priv_class     = &decklink_muxer_class,
     .get_device_list = ff_decklink_list_output_devices,
-    .priv_class     = &decklink_muxer_class,
     .priv_data_size = sizeof(struct decklink_cctx),
     .write_header   = ff_decklink_write_header,
     .write_packet   = ff_decklink_write_packet,

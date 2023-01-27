@@ -28,6 +28,7 @@
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "libavformat/avformat.h"
+#include "libavformat/mux.h"
 #include "fbdev_common.h"
 #include "avdevice.h"
 
@@ -206,16 +207,16 @@ static const AVClass fbdev_class = {
     .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_OUTPUT,
 };
 
-const AVOutputFormat ff_fbdev_muxer = {
-    .name           = "fbdev",
-    .long_name      = NULL_IF_CONFIG_SMALL("Linux framebuffer"),
+const FFOutputFormat ff_fbdev_muxer = {
+    .p.name         = "fbdev",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Linux framebuffer"),
     .priv_data_size = sizeof(FBDevContext),
-    .audio_codec    = AV_CODEC_ID_NONE,
-    .video_codec    = AV_CODEC_ID_RAWVIDEO,
+    .p.audio_codec  = AV_CODEC_ID_NONE,
+    .p.video_codec  = AV_CODEC_ID_RAWVIDEO,
     .write_header   = fbdev_write_header,
     .write_packet   = fbdev_write_packet,
     .write_trailer  = fbdev_write_trailer,
     .get_device_list = fbdev_get_device_list,
-    .flags          = AVFMT_NOFILE | AVFMT_VARIABLE_FPS | AVFMT_NOTIMESTAMPS,
-    .priv_class     = &fbdev_class,
+    .p.flags        = AVFMT_NOFILE | AVFMT_VARIABLE_FPS | AVFMT_NOTIMESTAMPS,
+    .p.priv_class   = &fbdev_class,
 };

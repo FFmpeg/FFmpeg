@@ -21,6 +21,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
 #include "libavformat/avformat.h"
+#include "libavformat/mux.h"
 #include "v4l2-common.h"
 
 typedef struct {
@@ -111,15 +112,15 @@ static const AVClass v4l2_class = {
     .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_OUTPUT,
 };
 
-const AVOutputFormat ff_v4l2_muxer = {
-    .name           = "video4linux2,v4l2",
-    .long_name      = NULL_IF_CONFIG_SMALL("Video4Linux2 output device"),
+const FFOutputFormat ff_v4l2_muxer = {
+    .p.name         = "video4linux2,v4l2",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Video4Linux2 output device"),
     .priv_data_size = sizeof(V4L2Context),
-    .audio_codec    = AV_CODEC_ID_NONE,
-    .video_codec    = AV_CODEC_ID_RAWVIDEO,
+    .p.audio_codec  = AV_CODEC_ID_NONE,
+    .p.video_codec  = AV_CODEC_ID_RAWVIDEO,
     .write_header   = write_header,
     .write_packet   = write_packet,
     .write_trailer  = write_trailer,
-    .flags          = AVFMT_NOFILE,
-    .priv_class     = &v4l2_class,
+    .p.flags        = AVFMT_NOFILE,
+    .p.priv_class   = &v4l2_class,
 };

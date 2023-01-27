@@ -32,6 +32,7 @@
 
 #include "avdevice.h"
 #include "libavformat/internal.h"
+#include "libavformat/mux.h"
 
 #include "oss.h"
 
@@ -94,18 +95,18 @@ static const AVClass oss_muxer_class = {
     .category       = AV_CLASS_CATEGORY_DEVICE_AUDIO_OUTPUT,
 };
 
-const AVOutputFormat ff_oss_muxer = {
-    .name           = "oss",
-    .long_name      = NULL_IF_CONFIG_SMALL("OSS (Open Sound System) playback"),
+const FFOutputFormat ff_oss_muxer = {
+    .p.name         = "oss",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("OSS (Open Sound System) playback"),
     .priv_data_size = sizeof(OSSAudioData),
     /* XXX: we make the assumption that the soundcard accepts this format */
     /* XXX: find better solution with "preinit" method, needed also in
        other formats */
-    .audio_codec    = AV_NE(AV_CODEC_ID_PCM_S16BE, AV_CODEC_ID_PCM_S16LE),
-    .video_codec    = AV_CODEC_ID_NONE,
+    .p.audio_codec  = AV_NE(AV_CODEC_ID_PCM_S16BE, AV_CODEC_ID_PCM_S16LE),
+    .p.video_codec  = AV_CODEC_ID_NONE,
     .write_header   = audio_write_header,
     .write_packet   = audio_write_packet,
     .write_trailer  = audio_write_trailer,
-    .flags          = AVFMT_NOFILE,
-    .priv_class     = &oss_muxer_class,
+    .p.flags        = AVFMT_NOFILE,
+    .p.priv_class   = &oss_muxer_class,
 };

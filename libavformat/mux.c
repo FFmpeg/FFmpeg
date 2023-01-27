@@ -118,8 +118,8 @@ int avformat_alloc_output_context2(AVFormatContext **avctx, const AVOutputFormat
     }
 
     s->oformat = oformat;
-    if (s->oformat->priv_data_size > 0) {
-        s->priv_data = av_mallocz(s->oformat->priv_data_size);
+    if (ffofmt(s->oformat)->priv_data_size > 0) {
+        s->priv_data = av_mallocz(ffofmt(s->oformat)->priv_data_size);
         if (!s->priv_data)
             goto nomem;
         if (s->oformat->priv_class) {
@@ -182,7 +182,7 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
 {
     FFFormatContext *const si = ffformatcontext(s);
     AVDictionary *tmp = NULL;
-    const AVOutputFormat *of = s->oformat;
+    const FFOutputFormat *of = ffofmt(s->oformat);
     AVDictionaryEntry *e;
     int ret = 0;
 
@@ -201,7 +201,7 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
     }
 
     // some sanity checks
-    if (s->nb_streams == 0 && !(of->flags & AVFMT_NOSTREAMS)) {
+    if (s->nb_streams == 0 && !(of->p.flags & AVFMT_NOSTREAMS)) {
         av_log(s, AV_LOG_ERROR, "No streams to mux were specified\n");
         ret = AVERROR(EINVAL);
         goto fail;
@@ -251,7 +251,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             break;
         case AVMEDIA_TYPE_VIDEO:
             if ((par->width <= 0 || par->height <= 0) &&
-                !(of->flags & AVFMT_NODIMENSIONS)) {
+                !(of->p.flags & AVFMT_NODIMENSIONS)) {
                 av_log(s, AV_LOG_ERROR, "dimensions not set\n");
                 ret = AVERROR(EINVAL);
                 goto fail;
@@ -281,11 +281,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
         sti->is_intra_only = ff_is_intra_only(par->codec_id);
 
-        if (of->codec_tag) {
+        if (of->p.codec_tag) {
             if (   par->codec_tag
                 && par->codec_id == AV_CODEC_ID_RAWVIDEO
-                && (   av_codec_get_tag(of->codec_tag, par->codec_id) == 0
-                    || av_codec_get_tag(of->codec_tag, par->codec_id) == MKTAG('r', 'a', 'w', ' '))
+                && (   av_codec_get_tag(of->p.codec_tag, par->codec_id) == 0
+                    || av_codec_get_tag(of->p.codec_tag, par->codec_id) == MKTAG('r', 'a', 'w', ' '))
                 && !validate_codec_tag(s, st)) {
                 // the current rawvideo encoding system ends up setting
                 // the wrong codec_tag for avi/mov, we override it here
@@ -301,7 +301,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                     goto fail;
                 }
             } else
-                par->codec_tag = av_codec_get_tag(of->codec_tag, par->codec_id);
+                par->codec_tag = av_codec_get_tag(of->p.codec_tag, par->codec_id);
         }
 
         if (par->codec_type != AVMEDIA_TYPE_ATTACHMENT)
@@ -319,8 +319,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
             ret = AVERROR(ENOMEM);
             goto fail;
         }
-        if (of->priv_class) {
-            *(const AVClass **)s->priv_data = of->priv_class;
+        if (of->p.priv_class) {
+            *(const AVClass **)s->priv_data = of->p.priv_class;
             av_opt_set_defaults(s->priv_data);
             if ((ret = av_opt_set_dict2(s->priv_data, &tmp, AV_OPT_SEARCH_CHILDREN)) < 0)
                 goto fail;
@@ -343,10 +343,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
          *options = tmp;
     }
 
-    if (s->oformat->init) {
-        if ((ret = s->oformat->init(s)) < 0) {
-            if (s->oformat->deinit)
-                s->oformat->deinit(s);
+    if (of->init) {
+        if ((ret = of->init(s)) < 0) {
+            if (of->deinit)
+                of->deinit(s);
             return ret;
         }
         return ret == 0;
@@ -420,8 +420,9 @@ static void flush_if_needed(AVFormatContext *s)
 static void deinit_muxer(AVFormatContext *s)
 {
     FFFormatContext *const si = ffformatcontext(s);
-    if (s->oformat && s->oformat->deinit && si->initialized)
-        s->oformat->deinit(s);
+    const FFOutputFormat *const of = ffofmt(s->oformat);
+    if (of && of->deinit && si->initialized)
+        of->deinit(s);
     si->initialized =
     si->streams_initialized = 0;
 }
@@ -437,7 +438,7 @@ int avformat_init_output(AVFormatContext *s, AVDictionary **options)
     si->initialized = 1;
     si->streams_initialized = ret;
 
-    if (s->oformat->init && ret) {
+    if (ffofmt(s->oformat)->init && ret) {
         if ((ret = init_pts(s)) < 0)
             return ret;
 
@@ -460,8 +461,8 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
 
     if (!(s->oformat->flags & AVFMT_NOFILE) && s->pb)
         avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_HEADER);
-    if (s->oformat->write_header) {
-        ret = s->oformat->write_header(s);
+    if (ffofmt(s->oformat)->write_header) {
+        ret = ffofmt(s->oformat)->write_header(s);
         if (ret >= 0 && s->pb && s->pb->error < 0)
             ret = s->pb->error;
         if (ret < 0)
@@ -724,9 +725,9 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     if ((pkt->flags & AV_PKT_FLAG_UNCODED_FRAME)) {
         AVFrame **frame = (AVFrame **)pkt->data;
         av_assert0(pkt->size == sizeof(*frame));
-        ret = s->oformat->write_uncoded_frame(s, pkt->stream_index, frame, 0);
+        ret = ffofmt(s->oformat)->write_uncoded_frame(s, pkt->stream_index, frame, 0);
     } else {
-        ret = s->oformat->write_packet(s, pkt);
+        ret = ffofmt(s->oformat)->write_packet(s, pkt);
     }
 
     if (s->pb && ret >= 0) {
@@ -1078,9 +1079,9 @@ static int check_bitstream(AVFormatContext *s, FFStream *sti, AVPacket *pkt)
     if (!(s->flags & AVFMT_FLAG_AUTO_BSF))
         return 1;
 
-    if (s->oformat->check_bitstream) {
+    if (ffofmt(s->oformat)->check_bitstream) {
         if (!sti->bitstream_checked) {
-            if ((ret = s->oformat->check_bitstream(s, &sti->pub, pkt)) < 0)
+            if ((ret = ffofmt(s->oformat)->check_bitstream(s, &sti->pub, pkt)) < 0)
                 return ret;
             else if (ret == 1)
                 sti->bitstream_checked = 1;
@@ -1198,7 +1199,7 @@ int av_write_frame(AVFormatContext *s, AVPacket *in)
 
     if (!in) {
         if (s->oformat->flags & AVFMT_ALLOW_FLUSH) {
-            ret = s->oformat->write_packet(s, NULL);
+            ret = ffofmt(s->oformat)->write_packet(s, NULL);
             flush_if_needed(s);
             if (ret >= 0 && s->pb && s->pb->error < 0)
                 ret = s->pb->error;
@@ -1273,14 +1274,12 @@ int av_write_trailer(AVFormatContext *s)
     if (ret >= 0)
         ret = ret1;
 
-    if (s->oformat->write_trailer) {
+    if (ffofmt(s->oformat)->write_trailer) {
         if (!(s->oformat->flags & AVFMT_NOFILE) && s->pb)
             avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_TRAILER);
-        if (ret >= 0) {
-        ret = s->oformat->write_trailer(s);
-        } else {
-            s->oformat->write_trailer(s);
-        }
+        ret1 = ffofmt(s->oformat)->write_trailer(s);
+        if (ret >= 0)
+            ret = ret1;
     }
 
     deinit_muxer(s);
@@ -1303,9 +1302,10 @@ int av_write_trailer(AVFormatContext *s)
 int av_get_output_timestamp(struct AVFormatContext *s, int stream,
                             int64_t *dts, int64_t *wall)
 {
-    if (!s->oformat || !s->oformat->get_output_timestamp)
+    const FFOutputFormat *const of = ffofmt(s->oformat);
+    if (!of || !of->get_output_timestamp)
         return AVERROR(ENOSYS);
-    s->oformat->get_output_timestamp(s, stream, dts, wall);
+    of->get_output_timestamp(s, stream, dts, wall);
     return 0;
 }
 
@@ -1395,7 +1395,7 @@ static int write_uncoded_frame_internal(AVFormatContext *s, int stream_index,
     AVPacket *pkt = si->parse_pkt;
 
     av_assert0(s->oformat);
-    if (!s->oformat->write_uncoded_frame) {
+    if (!ffofmt(s->oformat)->write_uncoded_frame) {
         av_frame_free(&frame);
         return AVERROR(ENOSYS);
     }
@@ -1452,9 +1452,10 @@ int av_interleaved_write_uncoded_frame(AVFormatContext *s, int stream_index,
 
 int av_write_uncoded_frame_query(AVFormatContext *s, int stream_index)
 {
-    av_assert0(s->oformat);
-    if (!s->oformat->write_uncoded_frame)
+    const FFOutputFormat *const of = ffofmt(s->oformat);
+    av_assert0(of);
+    if (!of->write_uncoded_frame)
         return AVERROR(ENOSYS);
-    return s->oformat->write_uncoded_frame(s, stream_index, NULL,
-                                           AV_WRITE_UNCODED_FRAME_QUERY);
+    return of->write_uncoded_frame(s, stream_index, NULL,
+                                   AV_WRITE_UNCODED_FRAME_QUERY);
 }

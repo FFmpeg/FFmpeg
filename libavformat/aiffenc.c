@@ -30,6 +30,7 @@
 #include "avio_internal.h"
 #include "isom.h"
 #include "id3v2.h"
+#include "mux.h"
 
 typedef struct AIFFOutputContext {
     const AVClass *class;
@@ -284,18 +285,18 @@ static const AVClass aiff_muxer_class = {
     .version        = LIBAVUTIL_VERSION_INT,
 };
 
-const AVOutputFormat ff_aiff_muxer = {
-    .name              = "aiff",
-    .long_name         = NULL_IF_CONFIG_SMALL("Audio IFF"),
-    .mime_type         = "audio/aiff",
-    .extensions        = "aif,aiff,afc,aifc",
+const FFOutputFormat ff_aiff_muxer = {
+    .p.name            = "aiff",
+    .p.long_name       = NULL_IF_CONFIG_SMALL("Audio IFF"),
+    .p.mime_type       = "audio/aiff",
+    .p.extensions      = "aif,aiff,afc,aifc",
     .priv_data_size    = sizeof(AIFFOutputContext),
-    .audio_codec       = AV_CODEC_ID_PCM_S16BE,
-    .video_codec       = AV_CODEC_ID_PNG,
+    .p.audio_codec     = AV_CODEC_ID_PCM_S16BE,
+    .p.video_codec     = AV_CODEC_ID_PNG,
     .write_header      = aiff_write_header,
     .write_packet      = aiff_write_packet,
     .write_trailer     = aiff_write_trailer,
     .deinit            = aiff_deinit,
-    .codec_tag         = ff_aiff_codec_tags_list,
-    .priv_class        = &aiff_muxer_class,
+    .p.codec_tag       = ff_aiff_codec_tags_list,
+    .p.priv_class      = &aiff_muxer_class,
 };

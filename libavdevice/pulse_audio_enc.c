@@ -788,12 +788,12 @@ static const AVClass pulse_muxer_class = {
     .category       = AV_CLASS_CATEGORY_DEVICE_AUDIO_OUTPUT,
 };
 
-const AVOutputFormat ff_pulse_muxer = {
-    .name                 = "pulse",
-    .long_name            = NULL_IF_CONFIG_SMALL("Pulse audio output"),
+const FFOutputFormat ff_pulse_muxer = {
+    .p.name               = "pulse",
+    .p.long_name          = NULL_IF_CONFIG_SMALL("Pulse audio output"),
     .priv_data_size       = sizeof(PulseData),
-    .audio_codec          = AV_NE(AV_CODEC_ID_PCM_S16BE, AV_CODEC_ID_PCM_S16LE),
-    .video_codec          = AV_CODEC_ID_NONE,
+    .p.audio_codec        = AV_NE(AV_CODEC_ID_PCM_S16BE, AV_CODEC_ID_PCM_S16LE),
+    .p.video_codec        = AV_CODEC_ID_NONE,
     .write_header         = pulse_write_header,
     .write_packet         = pulse_write_packet,
     .write_uncoded_frame  = pulse_write_frame,
@@ -801,6 +801,6 @@ const AVOutputFormat ff_pulse_muxer = {
     .get_output_timestamp = pulse_get_output_timestamp,
     .get_device_list      = pulse_get_device_list,
     .control_message      = pulse_control_message,
-    .flags                = AVFMT_NOFILE | AVFMT_ALLOW_FLUSH,
-    .priv_class           = &pulse_muxer_class,
+    .p.flags              = AVFMT_NOFILE | AVFMT_ALLOW_FLUSH,
+    .p.priv_class         = &pulse_muxer_class,
 };

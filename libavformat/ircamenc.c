@@ -23,6 +23,7 @@
 #include "avformat.h"
 #include "avio_internal.h"
 #include "internal.h"
+#include "mux.h"
 #include "rawenc.h"
 #include "ircam.h"
 
@@ -50,13 +51,13 @@ static int ircam_write_header(AVFormatContext *s)
     return 0;
 }
 
-const AVOutputFormat ff_ircam_muxer = {
-    .name           = "ircam",
-    .extensions     = "sf,ircam",
-    .long_name      = NULL_IF_CONFIG_SMALL("Berkeley/IRCAM/CARL Sound Format"),
-    .audio_codec    = AV_CODEC_ID_PCM_S16LE,
-    .video_codec    = AV_CODEC_ID_NONE,
+const FFOutputFormat ff_ircam_muxer = {
+    .p.name         = "ircam",
+    .p.extensions   = "sf,ircam",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Berkeley/IRCAM/CARL Sound Format"),
+    .p.audio_codec  = AV_CODEC_ID_PCM_S16LE,
+    .p.video_codec  = AV_CODEC_ID_NONE,
     .write_header   = ircam_write_header,
     .write_packet   = ff_raw_write_packet,
-    .codec_tag      = (const AVCodecTag *const []){ ff_codec_ircam_le_tags, 0 },
+    .p.codec_tag    = (const AVCodecTag *const []){ ff_codec_ircam_le_tags, 0 },
 };

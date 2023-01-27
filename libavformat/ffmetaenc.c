@@ -23,6 +23,7 @@
 
 #include "avformat.h"
 #include "ffmeta.h"
+#include "mux.h"
 #include "libavutil/dict.h"
 
 
@@ -87,12 +88,12 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-const AVOutputFormat ff_ffmetadata_muxer = {
-    .name          = "ffmetadata",
-    .long_name     = NULL_IF_CONFIG_SMALL("FFmpeg metadata in text"),
-    .extensions    = "ffmeta",
+const FFOutputFormat ff_ffmetadata_muxer = {
+    .p.name        = "ffmetadata",
+    .p.long_name   = NULL_IF_CONFIG_SMALL("FFmpeg metadata in text"),
+    .p.extensions  = "ffmeta",
     .write_header  = write_header,
     .write_packet  = write_packet,
     .write_trailer = write_trailer,
-    .flags         = AVFMT_NOTIMESTAMPS | AVFMT_NOSTREAMS,
+    .p.flags       = AVFMT_NOTIMESTAMPS | AVFMT_NOSTREAMS,
 };

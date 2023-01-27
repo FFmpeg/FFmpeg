@@ -1009,13 +1009,13 @@ static int gxf_interleave_packet(AVFormatContext *s, AVPacket *pkt,
     return ff_interleave_packet_per_dts(s, pkt, flush, 0);
 }
 
-const AVOutputFormat ff_gxf_muxer = {
-    .name              = "gxf",
-    .long_name         = NULL_IF_CONFIG_SMALL("GXF (General eXchange Format)"),
-    .extensions        = "gxf",
+const FFOutputFormat ff_gxf_muxer = {
+    .p.name            = "gxf",
+    .p.long_name       = NULL_IF_CONFIG_SMALL("GXF (General eXchange Format)"),
+    .p.extensions      = "gxf",
     .priv_data_size    = sizeof(GXFContext),
-    .audio_codec       = AV_CODEC_ID_PCM_S16LE,
-    .video_codec       = AV_CODEC_ID_MPEG2VIDEO,
+    .p.audio_codec     = AV_CODEC_ID_PCM_S16LE,
+    .p.video_codec     = AV_CODEC_ID_MPEG2VIDEO,
     .write_header      = gxf_write_header,
     .write_packet      = gxf_write_packet,
     .write_trailer     = gxf_write_trailer,

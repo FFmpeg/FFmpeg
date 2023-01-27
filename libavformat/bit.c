@@ -23,6 +23,7 @@
 
 #include "avformat.h"
 #include "internal.h"
+#include "mux.h"
 #include "libavcodec/get_bits.h"
 #include "libavcodec/put_bits.h"
 
@@ -158,13 +159,13 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-const AVOutputFormat ff_bit_muxer = {
-    .name         = "bit",
-    .long_name    = NULL_IF_CONFIG_SMALL("G.729 BIT file format"),
-    .mime_type    = "audio/bit",
-    .extensions   = "bit",
-    .audio_codec  = AV_CODEC_ID_G729,
-    .video_codec  = AV_CODEC_ID_NONE,
+const FFOutputFormat ff_bit_muxer = {
+    .p.name         = "bit",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("G.729 BIT file format"),
+    .p.mime_type    = "audio/bit",
+    .p.extensions   = "bit",
+    .p.audio_codec  = AV_CODEC_ID_G729,
+    .p.video_codec  = AV_CODEC_ID_NONE,
     .write_header = write_header,
     .write_packet = write_packet,
 };

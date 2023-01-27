@@ -1129,39 +1129,39 @@ static const AVClass asf_muxer_class = {
 };
 
 #if CONFIG_ASF_MUXER
-const AVOutputFormat ff_asf_muxer = {
-    .name           = "asf",
-    .long_name      = NULL_IF_CONFIG_SMALL("ASF (Advanced / Active Streaming Format)"),
-    .mime_type      = "video/x-ms-asf",
-    .extensions     = "asf,wmv,wma",
+const FFOutputFormat ff_asf_muxer = {
+    .p.name         = "asf",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("ASF (Advanced / Active Streaming Format)"),
+    .p.mime_type    = "video/x-ms-asf",
+    .p.extensions   = "asf,wmv,wma",
+    .p.audio_codec  = AV_CODEC_ID_WMAV2,
+    .p.video_codec  = AV_CODEC_ID_MSMPEG4V3,
+    .p.flags        = AVFMT_GLOBALHEADER,
+    .p.codec_tag    = asf_codec_tags,
+    .p.priv_class   = &asf_muxer_class,
     .priv_data_size = sizeof(ASFContext),
-    .audio_codec    = AV_CODEC_ID_WMAV2,
-    .video_codec    = AV_CODEC_ID_MSMPEG4V3,
     .write_header   = asf_write_header,
     .write_packet   = asf_write_packet,
     .write_trailer  = asf_write_trailer,
-    .flags          = AVFMT_GLOBALHEADER,
-    .codec_tag      = asf_codec_tags,
-    .priv_class        = &asf_muxer_class,
     .deinit         = asf_deinit,
 };
 #endif /* CONFIG_ASF_MUXER */
 
 #if CONFIG_ASF_STREAM_MUXER
-const AVOutputFormat ff_asf_stream_muxer = {
-    .name           = "asf_stream",
-    .long_name      = NULL_IF_CONFIG_SMALL("ASF (Advanced / Active Streaming Format)"),
-    .mime_type      = "video/x-ms-asf",
-    .extensions     = "asf,wmv,wma",
+const FFOutputFormat ff_asf_stream_muxer = {
+    .p.name         = "asf_stream",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("ASF (Advanced / Active Streaming Format)"),
+    .p.mime_type    = "video/x-ms-asf",
+    .p.extensions   = "asf,wmv,wma",
     .priv_data_size = sizeof(ASFContext),
-    .audio_codec    = AV_CODEC_ID_WMAV2,
-    .video_codec    = AV_CODEC_ID_MSMPEG4V3,
+    .p.audio_codec  = AV_CODEC_ID_WMAV2,
+    .p.video_codec  = AV_CODEC_ID_MSMPEG4V3,
     .write_header   = asf_write_stream_header,
     .write_packet   = asf_write_packet,
     .write_trailer  = asf_write_trailer,
-    .flags          = AVFMT_GLOBALHEADER,
-    .codec_tag      = asf_codec_tags,
-    .priv_class     = &asf_muxer_class,
+    .p.flags        = AVFMT_GLOBALHEADER,
+    .p.codec_tag    = asf_codec_tags,
+    .p.priv_class   = &asf_muxer_class,
     .deinit         = asf_deinit,
 };
 #endif /* CONFIG_ASF_STREAM_MUXER */

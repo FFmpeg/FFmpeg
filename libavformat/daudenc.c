@@ -20,6 +20,7 @@
  */
 
 #include "avformat.h"
+#include "mux.h"
 
 static int daud_init(struct AVFormatContext *s)
 {
@@ -42,13 +43,13 @@ static int daud_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-const AVOutputFormat ff_daud_muxer = {
-    .name         = "daud",
-    .long_name    = NULL_IF_CONFIG_SMALL("D-Cinema audio"),
-    .extensions   = "302",
-    .audio_codec  = AV_CODEC_ID_PCM_S24DAUD,
-    .video_codec  = AV_CODEC_ID_NONE,
+const FFOutputFormat ff_daud_muxer = {
+    .p.name        = "daud",
+    .p.long_name   = NULL_IF_CONFIG_SMALL("D-Cinema audio"),
+    .p.extensions  = "302",
+    .p.audio_codec = AV_CODEC_ID_PCM_S24DAUD,
+    .p.video_codec = AV_CODEC_ID_NONE,
+    .p.flags       = AVFMT_NOTIMESTAMPS,
     .init         = daud_init,
     .write_packet = daud_write_packet,
-    .flags        = AVFMT_NOTIMESTAMPS,
 };

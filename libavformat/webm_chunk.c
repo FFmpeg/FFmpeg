@@ -292,18 +292,18 @@ static const AVClass webm_chunk_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVOutputFormat ff_webm_chunk_muxer = {
-    .name           = "webm_chunk",
-    .long_name      = NULL_IF_CONFIG_SMALL("WebM Chunk Muxer"),
-    .mime_type      = "video/webm",
-    .extensions     = "chk",
-    .flags          = AVFMT_NOFILE | AVFMT_GLOBALHEADER | AVFMT_NEEDNUMBER |
+const FFOutputFormat ff_webm_chunk_muxer = {
+    .p.name         = "webm_chunk",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("WebM Chunk Muxer"),
+    .p.mime_type    = "video/webm",
+    .p.extensions   = "chk",
+    .p.flags        = AVFMT_NOFILE | AVFMT_GLOBALHEADER | AVFMT_NEEDNUMBER |
                       AVFMT_TS_NONSTRICT,
+    .p.priv_class   = &webm_chunk_class,
     .priv_data_size = sizeof(WebMChunkContext),
     .init           = webm_chunk_init,
     .write_header   = webm_chunk_write_header,
     .write_packet   = webm_chunk_write_packet,
     .write_trailer  = webm_chunk_write_trailer,
     .deinit         = webm_chunk_deinit,
-    .priv_class     = &webm_chunk_class,
 };

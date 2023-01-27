@@ -35,6 +35,7 @@
 #include "avformat.h"
 #include "avio.h"
 #include "demux.h"
+#include "mux.h"
 #include "internal.h"
 
 void ff_free_stream(AVStream **pst)
@@ -100,8 +101,8 @@ void avformat_free_context(AVFormatContext *s)
         return;
     si = ffformatcontext(s);
 
-    if (s->oformat && s->oformat->deinit && si->initialized)
-        s->oformat->deinit(s);
+    if (s->oformat && ffofmt(s->oformat)->deinit && si->initialized)
+        ffofmt(s->oformat)->deinit(s);
 
     av_opt_free(s);
     if (s->iformat && s->iformat->priv_class && s->priv_data)

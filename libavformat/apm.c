@@ -24,6 +24,7 @@
 
 #include "avformat.h"
 #include "internal.h"
+#include "mux.h"
 #include "rawenc.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/internal.h"
@@ -303,12 +304,12 @@ static int apm_write_trailer(AVFormatContext *s)
     return 0;
 }
 
-const AVOutputFormat ff_apm_muxer = {
-    .name           = "apm",
-    .long_name      = NULL_IF_CONFIG_SMALL("Ubisoft Rayman 2 APM"),
-    .extensions     = "apm",
-    .audio_codec    = AV_CODEC_ID_ADPCM_IMA_APM,
-    .video_codec    = AV_CODEC_ID_NONE,
+const FFOutputFormat ff_apm_muxer = {
+    .p.name         = "apm",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Ubisoft Rayman 2 APM"),
+    .p.extensions   = "apm",
+    .p.audio_codec  = AV_CODEC_ID_ADPCM_IMA_APM,
+    .p.video_codec  = AV_CODEC_ID_NONE,
     .init           = apm_write_init,
     .write_header   = apm_write_header,
     .write_packet   = ff_raw_write_packet,

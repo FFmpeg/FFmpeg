@@ -21,6 +21,7 @@
 
 #include "avformat.h"
 #include "internal.h"
+#include "mux.h"
 #include "libavutil/log.h"
 #include "libavutil/intreadwrite.h"
 
@@ -111,13 +112,13 @@ static int scc_write_packet(AVFormatContext *avf, AVPacket *pkt)
     return 0;
 }
 
-const AVOutputFormat ff_scc_muxer = {
-    .name           = "scc",
-    .long_name      = NULL_IF_CONFIG_SMALL("Scenarist Closed Captions"),
-    .extensions     = "scc",
+const FFOutputFormat ff_scc_muxer = {
+    .p.name           = "scc",
+    .p.long_name      = NULL_IF_CONFIG_SMALL("Scenarist Closed Captions"),
+    .p.extensions     = "scc",
+    .p.flags          = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT,
+    .p.subtitle_codec = AV_CODEC_ID_EIA_608,
     .priv_data_size = sizeof(SCCContext),
     .write_header   = scc_write_header,
     .write_packet   = scc_write_packet,
-    .flags          = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT,
-    .subtitle_codec = AV_CODEC_ID_EIA_608,
 };

@@ -26,6 +26,7 @@
 
 #include "avio_internal.h"
 #include "internal.h"
+#include "mux.h"
 
 typedef struct FITSContext {
     int first_image;
@@ -191,13 +192,13 @@ static int fits_write_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-const AVOutputFormat ff_fits_muxer = {
-    .name         = "fits",
-    .long_name    = NULL_IF_CONFIG_SMALL("Flexible Image Transport System"),
-    .extensions   = "fits",
+const FFOutputFormat ff_fits_muxer = {
+    .p.name         = "fits",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Flexible Image Transport System"),
+    .p.extensions   = "fits",
+    .p.audio_codec  = AV_CODEC_ID_NONE,
+    .p.video_codec  = AV_CODEC_ID_FITS,
     .priv_data_size = sizeof(FITSContext),
-    .audio_codec  = AV_CODEC_ID_NONE,
-    .video_codec  = AV_CODEC_ID_FITS,
     .write_header = fits_write_header,
     .write_packet = fits_write_packet,
 };

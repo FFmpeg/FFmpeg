@@ -33,6 +33,7 @@
 #include "avio_internal.h"
 #include "internal.h"
 #include "img2.h"
+#include "mux.h"
 
 typedef struct VideoMuxData {
     const AVClass *class;  /**< Class for private options. */
@@ -268,30 +269,30 @@ static const AVClass img2mux_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVOutputFormat ff_image2_muxer = {
-    .name           = "image2",
-    .long_name      = NULL_IF_CONFIG_SMALL("image2 sequence"),
-    .extensions     = "bmp,dpx,exr,jls,jpeg,jpg,jxl,ljpg,pam,pbm,pcx,pfm,pgm,pgmyuv,phm,"
+const FFOutputFormat ff_image2_muxer = {
+    .p.name         = "image2",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("image2 sequence"),
+    .p.extensions   = "bmp,dpx,exr,jls,jpeg,jpg,jxl,ljpg,pam,pbm,pcx,pfm,pgm,pgmyuv,phm,"
                       "png,ppm,sgi,tga,tif,tiff,jp2,j2c,j2k,xwd,sun,ras,rs,im1,im8,"
                       "im24,sunras,vbn,xbm,xface,pix,y,avif,qoi,hdr,wbmp",
     .priv_data_size = sizeof(VideoMuxData),
-    .video_codec    = AV_CODEC_ID_MJPEG,
+    .p.video_codec  = AV_CODEC_ID_MJPEG,
     .write_header   = write_header,
     .write_packet   = write_packet,
     .query_codec    = query_codec,
-    .flags          = AVFMT_NOTIMESTAMPS | AVFMT_NODIMENSIONS | AVFMT_NOFILE,
-    .priv_class     = &img2mux_class,
+    .p.flags        = AVFMT_NOTIMESTAMPS | AVFMT_NODIMENSIONS | AVFMT_NOFILE,
+    .p.priv_class   = &img2mux_class,
 };
 #endif
 #if CONFIG_IMAGE2PIPE_MUXER
-const AVOutputFormat ff_image2pipe_muxer = {
-    .name           = "image2pipe",
-    .long_name      = NULL_IF_CONFIG_SMALL("piped image2 sequence"),
+const FFOutputFormat ff_image2pipe_muxer = {
+    .p.name         = "image2pipe",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("piped image2 sequence"),
     .priv_data_size = sizeof(VideoMuxData),
-    .video_codec    = AV_CODEC_ID_MJPEG,
+    .p.video_codec  = AV_CODEC_ID_MJPEG,
     .write_header   = write_header,
     .write_packet   = write_packet_pipe,
     .query_codec    = query_codec,
-    .flags          = AVFMT_NOTIMESTAMPS | AVFMT_NODIMENSIONS
+    .p.flags        = AVFMT_NOTIMESTAMPS | AVFMT_NODIMENSIONS
 };
 #endif

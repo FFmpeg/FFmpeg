@@ -33,6 +33,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/time.h"
 #include "avdevice.h"
+#include "libavformat/mux.h"
 
 typedef struct {
     AVClass *class;
@@ -355,15 +356,15 @@ static const AVClass sdl2_class = {
     .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_OUTPUT,
 };
 
-const AVOutputFormat ff_sdl2_muxer = {
-    .name           = "sdl,sdl2",
-    .long_name      = NULL_IF_CONFIG_SMALL("SDL2 output device"),
+const FFOutputFormat ff_sdl2_muxer = {
+    .p.name         = "sdl,sdl2",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("SDL2 output device"),
     .priv_data_size = sizeof(SDLContext),
-    .audio_codec    = AV_CODEC_ID_NONE,
-    .video_codec    = AV_CODEC_ID_RAWVIDEO,
+    .p.audio_codec  = AV_CODEC_ID_NONE,
+    .p.video_codec  = AV_CODEC_ID_RAWVIDEO,
     .write_header   = sdl2_write_header,
     .write_packet   = sdl2_write_packet,
     .write_trailer  = sdl2_write_trailer,
-    .flags          = AVFMT_NOFILE | AVFMT_VARIABLE_FPS | AVFMT_NOTIMESTAMPS,
-    .priv_class     = &sdl2_class,
+    .p.flags        = AVFMT_NOFILE | AVFMT_VARIABLE_FPS | AVFMT_NOTIMESTAMPS,
+    .p.priv_class   = &sdl2_class,
 };

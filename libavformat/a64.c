@@ -23,6 +23,7 @@
 #include "libavcodec/codec_id.h"
 #include "libavcodec/codec_par.h"
 #include "avformat.h"
+#include "mux.h"
 #include "rawenc.h"
 
 static int a64_write_header(AVFormatContext *s)
@@ -59,11 +60,11 @@ static int a64_write_header(AVFormatContext *s)
     return 0;
 }
 
-const AVOutputFormat ff_a64_muxer = {
-    .name           = "a64",
-    .long_name      = NULL_IF_CONFIG_SMALL("a64 - video for Commodore 64"),
-    .extensions     = "a64, A64",
-    .video_codec    = AV_CODEC_ID_A64_MULTI,
+const FFOutputFormat ff_a64_muxer = {
+    .p.name         = "a64",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("a64 - video for Commodore 64"),
+    .p.extensions   = "a64, A64",
+    .p.video_codec  = AV_CODEC_ID_A64_MULTI,
     .write_header   = a64_write_header,
     .write_packet   = ff_raw_write_packet,
 };

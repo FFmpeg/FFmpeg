@@ -21,6 +21,7 @@
 
 #include "avformat.h"
 #include "internal.h"
+#include "mux.h"
 #include "libavutil/log.h"
 #include "libavutil/intreadwrite.h"
 
@@ -96,14 +97,14 @@ static int srt_write_packet(AVFormatContext *avf, AVPacket *pkt)
     return 0;
 }
 
-const AVOutputFormat ff_srt_muxer = {
-    .name           = "srt",
-    .long_name      = NULL_IF_CONFIG_SMALL("SubRip subtitle"),
-    .mime_type      = "application/x-subrip",
-    .extensions     = "srt",
+const FFOutputFormat ff_srt_muxer = {
+    .p.name           = "srt",
+    .p.long_name      = NULL_IF_CONFIG_SMALL("SubRip subtitle"),
+    .p.mime_type      = "application/x-subrip",
+    .p.extensions     = "srt",
+    .p.flags          = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT,
+    .p.subtitle_codec = AV_CODEC_ID_SUBRIP,
     .priv_data_size = sizeof(SRTContext),
     .write_header   = srt_write_header,
     .write_packet   = srt_write_packet,
-    .flags          = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT,
-    .subtitle_codec = AV_CODEC_ID_SUBRIP,
 };

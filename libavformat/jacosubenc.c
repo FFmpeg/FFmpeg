@@ -17,6 +17,7 @@
  */
 
 #include "avformat.h"
+#include "mux.h"
 #include "rawenc.h"
 
 static int jacosub_write_header(AVFormatContext *s)
@@ -29,13 +30,13 @@ static int jacosub_write_header(AVFormatContext *s)
     return 0;
 }
 
-const AVOutputFormat ff_jacosub_muxer = {
-    .name           = "jacosub",
-    .long_name      = NULL_IF_CONFIG_SMALL("JACOsub subtitle format"),
-    .mime_type      = "text/x-jacosub",
-    .extensions     = "jss,js",
+const FFOutputFormat ff_jacosub_muxer = {
+    .p.name           = "jacosub",
+    .p.long_name      = NULL_IF_CONFIG_SMALL("JACOsub subtitle format"),
+    .p.mime_type      = "text/x-jacosub",
+    .p.extensions     = "jss,js",
+    .p.flags          = AVFMT_TS_NONSTRICT,
+    .p.subtitle_codec = AV_CODEC_ID_JACOSUB,
     .write_header   = jacosub_write_header,
     .write_packet   = ff_raw_write_packet,
-    .flags          = AVFMT_TS_NONSTRICT,
-    .subtitle_codec = AV_CODEC_ID_JACOSUB,
 };

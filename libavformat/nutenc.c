@@ -1253,20 +1253,20 @@ static const AVClass class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVOutputFormat ff_nut_muxer = {
-    .name           = "nut",
-    .long_name      = NULL_IF_CONFIG_SMALL("NUT"),
-    .mime_type      = "video/x-nut",
-    .extensions     = "nut",
+const FFOutputFormat ff_nut_muxer = {
+    .p.name         = "nut",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("NUT"),
+    .p.mime_type    = "video/x-nut",
+    .p.extensions   = "nut",
     .priv_data_size = sizeof(NUTContext),
-    .audio_codec    = CONFIG_LIBVORBIS ? AV_CODEC_ID_VORBIS :
+    .p.audio_codec  = CONFIG_LIBVORBIS ? AV_CODEC_ID_VORBIS :
                       CONFIG_LIBMP3LAME ? AV_CODEC_ID_MP3 : AV_CODEC_ID_MP2,
-    .video_codec    = AV_CODEC_ID_MPEG4,
+    .p.video_codec  = AV_CODEC_ID_MPEG4,
     .write_header   = nut_write_header,
     .write_packet   = nut_write_packet,
     .write_trailer  = nut_write_trailer,
     .deinit         = nut_write_deinit,
-    .flags          = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS,
-    .codec_tag      = ff_nut_codec_tags,
-    .priv_class     = &class,
+    .p.flags        = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS,
+    .p.codec_tag    = ff_nut_codec_tags,
+    .p.priv_class   = &class,
 };

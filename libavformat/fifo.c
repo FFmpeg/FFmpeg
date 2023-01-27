@@ -707,15 +707,15 @@ static const AVClass fifo_muxer_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVOutputFormat ff_fifo_muxer = {
-    .name           = "fifo",
-    .long_name      = NULL_IF_CONFIG_SMALL("FIFO queue pseudo-muxer"),
+const FFOutputFormat ff_fifo_muxer = {
+    .p.name         = "fifo",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("FIFO queue pseudo-muxer"),
+    .p.priv_class   = &fifo_muxer_class,
+    .p.flags        = AVFMT_NOFILE | AVFMT_ALLOW_FLUSH | AVFMT_TS_NEGATIVE,
     .priv_data_size = sizeof(FifoContext),
     .init           = fifo_init,
     .write_header   = fifo_write_header,
     .write_packet   = fifo_write_packet,
     .write_trailer  = fifo_write_trailer,
     .deinit         = fifo_deinit,
-    .priv_class     = &fifo_muxer_class,
-    .flags          = AVFMT_NOFILE | AVFMT_ALLOW_FLUSH | AVFMT_TS_NEGATIVE,
 };

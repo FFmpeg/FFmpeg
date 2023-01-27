@@ -268,14 +268,14 @@ static int sap_write_packet(AVFormatContext *s, AVPacket *pkt)
     return ff_write_chained(rtpctx, 0, pkt, s, 0);
 }
 
-const AVOutputFormat ff_sap_muxer = {
-    .name              = "sap",
-    .long_name         = NULL_IF_CONFIG_SMALL("SAP output"),
+const FFOutputFormat ff_sap_muxer = {
+    .p.name            = "sap",
+    .p.long_name       = NULL_IF_CONFIG_SMALL("SAP output"),
     .priv_data_size    = sizeof(struct SAPState),
-    .audio_codec       = AV_CODEC_ID_AAC,
-    .video_codec       = AV_CODEC_ID_MPEG4,
+    .p.audio_codec     = AV_CODEC_ID_AAC,
+    .p.video_codec     = AV_CODEC_ID_MPEG4,
     .write_header      = sap_write_header,
     .write_packet      = sap_write_packet,
     .write_trailer     = sap_write_close,
-    .flags             = AVFMT_NOFILE | AVFMT_GLOBALHEADER,
+    .p.flags           = AVFMT_NOFILE | AVFMT_GLOBALHEADER,
 };

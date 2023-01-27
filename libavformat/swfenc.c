@@ -27,6 +27,7 @@
 #include "libavutil/fifo.h"
 #include "avformat.h"
 #include "flv.h"
+#include "mux.h"
 #include "swf.h"
 
 #define AUDIO_FIFO_SIZE 65536
@@ -547,33 +548,33 @@ static void swf_deinit(AVFormatContext *s)
 }
 
 #if CONFIG_SWF_MUXER
-const AVOutputFormat ff_swf_muxer = {
-    .name              = "swf",
-    .long_name         = NULL_IF_CONFIG_SMALL("SWF (ShockWave Flash)"),
-    .mime_type         = "application/x-shockwave-flash",
-    .extensions        = "swf",
+const FFOutputFormat ff_swf_muxer = {
+    .p.name            = "swf",
+    .p.long_name       = NULL_IF_CONFIG_SMALL("SWF (ShockWave Flash)"),
+    .p.mime_type       = "application/x-shockwave-flash",
+    .p.extensions      = "swf",
     .priv_data_size    = sizeof(SWFEncContext),
-    .audio_codec       = AV_CODEC_ID_MP3,
-    .video_codec       = AV_CODEC_ID_FLV1,
+    .p.audio_codec     = AV_CODEC_ID_MP3,
+    .p.video_codec     = AV_CODEC_ID_FLV1,
     .write_header      = swf_write_header,
     .write_packet      = swf_write_packet,
     .write_trailer     = swf_write_trailer,
     .deinit            = swf_deinit,
-    .flags             = AVFMT_TS_NONSTRICT,
+    .p.flags           = AVFMT_TS_NONSTRICT,
 };
 #endif
 #if CONFIG_AVM2_MUXER
-const AVOutputFormat ff_avm2_muxer = {
-    .name              = "avm2",
-    .long_name         = NULL_IF_CONFIG_SMALL("SWF (ShockWave Flash) (AVM2)"),
-    .mime_type         = "application/x-shockwave-flash",
+const FFOutputFormat ff_avm2_muxer = {
+    .p.name            = "avm2",
+    .p.long_name       = NULL_IF_CONFIG_SMALL("SWF (ShockWave Flash) (AVM2)"),
+    .p.mime_type       = "application/x-shockwave-flash",
     .priv_data_size    = sizeof(SWFEncContext),
-    .audio_codec       = AV_CODEC_ID_MP3,
-    .video_codec       = AV_CODEC_ID_FLV1,
+    .p.audio_codec     = AV_CODEC_ID_MP3,
+    .p.video_codec     = AV_CODEC_ID_FLV1,
     .write_header      = swf_write_header,
     .write_packet      = swf_write_packet,
     .write_trailer     = swf_write_trailer,
     .deinit            = swf_deinit,
-    .flags             = AVFMT_TS_NONSTRICT,
+    .p.flags           = AVFMT_TS_NONSTRICT,
 };
 #endif

@@ -30,6 +30,7 @@
 
 #include "libavutil/opt.h"
 #include "libavformat/internal.h"
+#include "libavformat/mux.h"
 #include "libavutil/internal.h"
 #include "avdevice.h"
 
@@ -294,15 +295,15 @@ static const AVClass at_class = {
     .category   = AV_CLASS_CATEGORY_DEVICE_AUDIO_OUTPUT,
 };
 
-const AVOutputFormat ff_audiotoolbox_muxer = {
-    .name           = "audiotoolbox",
-    .long_name      = NULL_IF_CONFIG_SMALL("AudioToolbox output device"),
+const FFOutputFormat ff_audiotoolbox_muxer = {
+    .p.name         = "audiotoolbox",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("AudioToolbox output device"),
     .priv_data_size = sizeof(ATContext),
-    .audio_codec    = AV_NE(AV_CODEC_ID_PCM_S16BE, AV_CODEC_ID_PCM_S16LE),
-    .video_codec    = AV_CODEC_ID_NONE,
+    .p.audio_codec  = AV_NE(AV_CODEC_ID_PCM_S16BE, AV_CODEC_ID_PCM_S16LE),
+    .p.video_codec  = AV_CODEC_ID_NONE,
     .write_header   = at_write_header,
     .write_packet   = at_write_packet,
     .write_trailer  = at_write_trailer,
-    .flags          = AVFMT_NOFILE,
-    .priv_class     = &at_class,
+    .p.flags        = AVFMT_NOFILE,
+    .p.priv_class   = &at_class,
 };

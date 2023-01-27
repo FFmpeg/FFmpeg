@@ -20,6 +20,7 @@
  */
 #include "avformat.h"
 #include "avio_internal.h"
+#include "mux.h"
 #include "rm.h"
 #include "libavutil/dict.h"
 
@@ -465,16 +466,16 @@ static int rm_write_trailer(AVFormatContext *s)
 }
 
 
-const AVOutputFormat ff_rm_muxer = {
-    .name              = "rm",
-    .long_name         = NULL_IF_CONFIG_SMALL("RealMedia"),
-    .mime_type         = "application/vnd.rn-realmedia",
-    .extensions        = "rm,ra",
+const FFOutputFormat ff_rm_muxer = {
+    .p.name            = "rm",
+    .p.long_name       = NULL_IF_CONFIG_SMALL("RealMedia"),
+    .p.mime_type       = "application/vnd.rn-realmedia",
+    .p.extensions      = "rm,ra",
     .priv_data_size    = sizeof(RMMuxContext),
-    .audio_codec       = AV_CODEC_ID_AC3,
-    .video_codec       = AV_CODEC_ID_RV10,
+    .p.audio_codec     = AV_CODEC_ID_AC3,
+    .p.video_codec     = AV_CODEC_ID_RV10,
     .write_header      = rm_write_header,
     .write_packet      = rm_write_packet,
     .write_trailer     = rm_write_trailer,
-    .codec_tag         = (const AVCodecTag* const []){ ff_rm_codec_tags, 0 },
+    .p.codec_tag       = (const AVCodecTag* const []){ ff_rm_codec_tags, 0 },
 };

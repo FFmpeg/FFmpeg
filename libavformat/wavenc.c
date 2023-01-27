@@ -46,6 +46,7 @@
 #include "avio.h"
 #include "avio_internal.h"
 #include "internal.h"
+#include "mux.h"
 #include "riff.h"
 
 #define RF64_AUTO   (-1)
@@ -506,21 +507,21 @@ static const AVClass wav_muxer_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVOutputFormat ff_wav_muxer = {
-    .name              = "wav",
-    .long_name         = NULL_IF_CONFIG_SMALL("WAV / WAVE (Waveform Audio)"),
-    .mime_type         = "audio/x-wav",
-    .extensions        = "wav",
+const FFOutputFormat ff_wav_muxer = {
+    .p.name            = "wav",
+    .p.long_name       = NULL_IF_CONFIG_SMALL("WAV / WAVE (Waveform Audio)"),
+    .p.mime_type       = "audio/x-wav",
+    .p.extensions      = "wav",
     .priv_data_size    = sizeof(WAVMuxContext),
-    .audio_codec       = AV_CODEC_ID_PCM_S16LE,
-    .video_codec       = AV_CODEC_ID_NONE,
+    .p.audio_codec     = AV_CODEC_ID_PCM_S16LE,
+    .p.video_codec     = AV_CODEC_ID_NONE,
     .write_header      = wav_write_header,
     .write_packet      = wav_write_packet,
     .write_trailer     = wav_write_trailer,
     .deinit            = wav_deinit,
-    .flags             = AVFMT_TS_NONSTRICT,
-    .codec_tag         = ff_wav_codec_tags_list,
-    .priv_class        = &wav_muxer_class,
+    .p.flags           = AVFMT_TS_NONSTRICT,
+    .p.codec_tag       = ff_wav_codec_tags_list,
+    .p.priv_class      = &wav_muxer_class,
 };
 #endif /* CONFIG_WAV_MUXER */
 
@@ -615,18 +616,18 @@ static int w64_write_trailer(AVFormatContext *s)
     return 0;
 }
 
-const AVOutputFormat ff_w64_muxer = {
-    .name              = "w64",
-    .long_name         = NULL_IF_CONFIG_SMALL("Sony Wave64"),
-    .extensions        = "w64",
+const FFOutputFormat ff_w64_muxer = {
+    .p.name            = "w64",
+    .p.long_name       = NULL_IF_CONFIG_SMALL("Sony Wave64"),
+    .p.extensions      = "w64",
     .priv_data_size    = sizeof(WAVMuxContext),
-    .audio_codec       = AV_CODEC_ID_PCM_S16LE,
-    .video_codec       = AV_CODEC_ID_NONE,
+    .p.audio_codec     = AV_CODEC_ID_PCM_S16LE,
+    .p.video_codec     = AV_CODEC_ID_NONE,
     .init              = w64_init,
     .write_header      = w64_write_header,
     .write_packet      = wav_write_packet,
     .write_trailer     = w64_write_trailer,
-    .flags             = AVFMT_TS_NONSTRICT,
-    .codec_tag         = ff_wav_codec_tags_list,
+    .p.flags           = AVFMT_TS_NONSTRICT,
+    .p.codec_tag       = ff_wav_codec_tags_list,
 };
 #endif /* CONFIG_W64_MUXER */

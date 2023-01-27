@@ -27,6 +27,7 @@
 #include "avformat.h"
 #include "avio_internal.h"
 #include "internal.h"
+#include "mux.h"
 
 typedef struct TTAMuxContext {
     AVIOContext *seek_table;
@@ -165,14 +166,14 @@ static void tta_deinit(AVFormatContext *s)
     avpriv_packet_list_free(&tta->queue);
 }
 
-const AVOutputFormat ff_tta_muxer = {
-    .name              = "tta",
-    .long_name         = NULL_IF_CONFIG_SMALL("TTA (True Audio)"),
-    .mime_type         = "audio/x-tta",
-    .extensions        = "tta",
+const FFOutputFormat ff_tta_muxer = {
+    .p.name            = "tta",
+    .p.long_name       = NULL_IF_CONFIG_SMALL("TTA (True Audio)"),
+    .p.mime_type       = "audio/x-tta",
+    .p.extensions      = "tta",
     .priv_data_size    = sizeof(TTAMuxContext),
-    .audio_codec       = AV_CODEC_ID_TTA,
-    .video_codec       = AV_CODEC_ID_NONE,
+    .p.audio_codec     = AV_CODEC_ID_TTA,
+    .p.video_codec     = AV_CODEC_ID_NONE,
     .init              = tta_init,
     .deinit            = tta_deinit,
     .write_header      = tta_write_header,
