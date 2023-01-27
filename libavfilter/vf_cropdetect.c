@@ -447,8 +447,8 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
                            char *res, int res_len, int flags)
 {
     CropDetectContext *s = ctx->priv;
+    float old_limit = s->limit;
     int ret;
-    int old_limit = s->limit;
 
     if ((ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags)) < 0)
         return ret;
