@@ -2110,6 +2110,7 @@ const FFCodec ff_xma1_decoder = {
     .init           = xma_decode_init,
     .close          = xma_decode_end,
     FF_CODEC_DECODE_CB(xma_decode_packet),
+    .flush          = xma_flush,
     .p.capabilities = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .p.sample_fmts  = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
