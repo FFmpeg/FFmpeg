@@ -249,7 +249,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
         }
     }
 
-    mpeg12->drop_frame_timecode = mpeg12->drop_frame_timecode || !!(avctx->flags2 & AV_CODEC_FLAG2_DROP_FRAME_TIMECODE);
     if (mpeg12->drop_frame_timecode)
         mpeg12->tc.flags |= AV_TIMECODE_FLAG_DROPFRAME;
     if (mpeg12->drop_frame_timecode && mpeg12->frame_rate_index != 4) {

@@ -353,11 +353,6 @@ typedef struct RcOverride{
 #define AV_CODEC_FLAG2_LOCAL_HEADER   (1 <<  3)
 
 /**
- * timecode is in drop frame format. DEPRECATED!!!!
- */
-#define AV_CODEC_FLAG2_DROP_FRAME_TIMECODE (1 << 13)
-
-/**
  * Input bitstream might be truncated at a packet boundaries
  * instead of only at frame boundaries.
  */
