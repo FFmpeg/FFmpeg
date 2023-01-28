@@ -1751,7 +1751,7 @@ static const AVFilterPad ssim360_outputs[] = {
     },
 };
 
-AVFilter ff_vf_ssim360 = {
+const AVFilter ff_vf_ssim360 = {
     .name          = "ssim360",
     .description   = NULL_IF_CONFIG_SMALL("Calculate the SSIM between two 360 video streams."),
     .preinit       = ssim360_framesync_preinit,
