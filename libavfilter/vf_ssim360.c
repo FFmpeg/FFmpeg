@@ -547,7 +547,7 @@ static double ssim360_db(double ssim360, double weight)
 static int get_bilinear_sample(const uint8_t *data, BilinearMap *m, int max_value)
 {
     static const int fixed_point_half = 1 << (FIXED_POINT_PRECISION - 1);
-    static const int inv_byte_mask = (-1) << 8;
+    static const int inv_byte_mask = UINT_MAX << 8;
 
     int tl, tr, bl, br, v;
 
