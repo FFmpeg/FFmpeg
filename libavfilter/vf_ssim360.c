@@ -72,11 +72,11 @@
 
 #define DEFAULT_EXPANSION_COEF 1.01f
 
-static const float BARREL_THETA_RANGE   = DEFAULT_EXPANSION_COEF *  2.0f * M_PI_F;
-static const float BARREL_PHI_RANGE     = DEFAULT_EXPANSION_COEF *  M_PI_2_F;
+#define BARREL_THETA_RANGE (DEFAULT_EXPANSION_COEF *  2.0f * M_PI_F)
+#define BARREL_PHI_RANGE   (DEFAULT_EXPANSION_COEF *  M_PI_2_F)
 
 // Use fixed-point with 16 bit precision for fast bilinear math
-static const int   FIXED_POINT_PRECISION = 16;
+#define FIXED_POINT_PRECISION 16
 
 // Use 1MB per channel for the histogram to get 5-digit precise SSIM value
 #define SSIM360_HIST_SIZE 131072
