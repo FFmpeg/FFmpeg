@@ -63,6 +63,9 @@ typedef struct MuxStream {
 typedef struct Muxer {
     OutputFile of;
 
+    // name used for logging
+    char log_name[32];
+
     AVFormatContext *fc;
 
     pthread_t    thread;

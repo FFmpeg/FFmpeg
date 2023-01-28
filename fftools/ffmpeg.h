@@ -670,6 +670,8 @@ typedef struct OutputStream {
 } OutputStream;
 
 typedef struct OutputFile {
+    const AVClass *class;
+
     int index;
 
     const AVOutputFormat *format;

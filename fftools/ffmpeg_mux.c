@@ -207,8 +207,7 @@ static void *muxer_thread(void *arg)
 
         ret = tq_receive(mux->tq, &stream_idx, pkt);
         if (stream_idx < 0) {
-            av_log(NULL, AV_LOG_VERBOSE,
-                   "All streams finished for output file #%d\n", of->index);
+            av_log(mux, AV_LOG_VERBOSE, "All streams finished\n");
             ret = 0;
             break;
         }
@@ -219,8 +218,7 @@ static void *muxer_thread(void *arg)
         if (ret == AVERROR_EOF)
             tq_receive_finish(mux->tq, stream_idx);
         else if (ret < 0) {
-            av_log(NULL, AV_LOG_ERROR,
-                   "Error muxing a packet for output file #%d\n", of->index);
+            av_log(mux, AV_LOG_ERROR, "Error muxing a packet\n");
             break;
         }
     }
@@ -231,7 +229,7 @@ finish:
     for (unsigned int i = 0; i < mux->fc->nb_streams; i++)
         tq_receive_finish(mux->tq, i);
 
-    av_log(NULL, AV_LOG_VERBOSE, "Terminating muxer thread %d\n", of->index);
+    av_log(mux, AV_LOG_VERBOSE, "Terminating muxer thread\n");
 
     return (void*)(intptr_t)ret;
 }
@@ -511,10 +509,8 @@ int mux_check_init(Muxer *mux)
 
     ret = avformat_write_header(fc, &mux->opts);
     if (ret < 0) {
-        av_log(NULL, AV_LOG_ERROR,
-               "Could not write header for output file #%d "
-               "(incorrect codec parameters ?): %s\n",
-               of->index, av_err2str(ret));
+        av_log(mux, AV_LOG_ERROR, "Could not write header (incorrect codec "
+               "parameters ?): %s\n", av_err2str(ret));
         return ret;
     }
     //assert_avoptions(of->opts);
@@ -604,10 +600,9 @@ int of_write_trailer(OutputFile *of)
     int ret;
 
     if (!mux->tq) {
-        av_log(NULL, AV_LOG_ERROR,
-               "Nothing was written into output file %d (%s), because "
-               "at least one of its streams received no packets.\n",
-               of->index, fc->url);
+        av_log(mux, AV_LOG_ERROR,
+               "Nothing was written into output file, because "
+               "at least one of its streams received no packets.\n");
         return AVERROR(EINVAL);
     }
 
@@ -617,7 +612,7 @@ int of_write_trailer(OutputFile *of)
 
     ret = av_write_trailer(fc);
     if (ret < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Error writing trailer of %s: %s\n", fc->url, av_err2str(ret));
+        av_log(mux, AV_LOG_ERROR, "Error writing trailer: %s\n", av_err2str(ret));
         return ret;
     }
 
@@ -626,8 +621,7 @@ int of_write_trailer(OutputFile *of)
     if (!(of->format->flags & AVFMT_NOFILE)) {
         ret = avio_closep(&fc->pb);
         if (ret < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Error closing file %s: %s\n",
-                   fc->url, av_err2str(ret));
+            av_log(mux, AV_LOG_ERROR, "Error closing file: %s\n", av_err2str(ret));
             return ret;
         }
     }
