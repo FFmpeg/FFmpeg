@@ -73,8 +73,8 @@ static int output_video_frame(AVFrame *frame)
         return -1;
     }
 
-    printf("video_frame n:%d coded_n:%d\n",
-           video_frame_count++, frame->coded_picture_number);
+    printf("video_frame n:%d\n",
+           video_frame_count++);
 
     /* copy decoded frame to destination buffer:
      * this is required since rawvideo expects non aligned data */

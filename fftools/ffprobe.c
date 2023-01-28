@@ -2618,8 +2618,12 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
             print_str_opt("sample_aspect_ratio", "N/A");
         }
         print_fmt("pict_type",              "%c", av_get_picture_type_char(frame->pict_type));
+#if LIBAVUTIL_VERSION_MAJOR < 59
+    AV_NOWARN_DEPRECATED(
         print_int("coded_picture_number",   frame->coded_picture_number);
         print_int("display_picture_number", frame->display_picture_number);
+    )
+#endif
         print_int("interlaced_frame",       frame->interlaced_frame);
         print_int("top_field_first",        frame->top_field_first);
         print_int("repeat_pict",            frame->repeat_pict);

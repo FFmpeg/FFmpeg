@@ -2,6 +2,10 @@ The last version increases of all libraries were on 2023-02-09
 
 API changes, most recent first:
 
+2023-02-13 - xxxxxxxxxx - lavu 58.1.100 - frame.h
+  Deprecate AVFrame.coded_picture_number and display_picture_number.
+  Their usefulness is questionable and very few decoders set them.
+
 2023-02-13 - xxxxxxxxxx - lavc 60.2.100 - avcodec.h
   Add AVCodecContext.frame_num as a 64bit version of frame_number.
   Deprecate AVCodecContext.frame_number.

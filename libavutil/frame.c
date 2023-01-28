@@ -294,8 +294,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     dst->quality                = src->quality;
     dst->best_effort_timestamp  = src->best_effort_timestamp;
+#if FF_API_FRAME_PICTURE_NUMBER
+FF_DISABLE_DEPRECATION_WARNINGS
     dst->coded_picture_number   = src->coded_picture_number;
     dst->display_picture_number = src->display_picture_number;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     dst->flags                  = src->flags;
     dst->decode_error_flags     = src->decode_error_flags;
     dst->color_primaries        = src->color_primaries;

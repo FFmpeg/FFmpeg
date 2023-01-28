@@ -81,8 +81,12 @@ static void uavs3d_output_callback(uavs3d_io_frm_t *dec_frame) {
     frm->pkt_dts   = dec_frame->dts;
     frm->pkt_pos   = dec_frame->pkt_pos;
     frm->pkt_size  = dec_frame->pkt_size;
+#if FF_API_FRAME_PICTURE_NUMBER
+FF_DISABLE_DEPRECATION_WARNINGS
     frm->coded_picture_number   = dec_frame->dtr;
     frm->display_picture_number = dec_frame->ptr;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     if (dec_frame->type < 0 || dec_frame->type >= FF_ARRAY_ELEMS(ff_avs3_image_type)) {
         av_log(NULL, AV_LOG_WARNING, "Error frame type in uavs3d: %d.\n", dec_frame->type);
