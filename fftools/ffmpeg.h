@@ -548,6 +548,8 @@ typedef struct KeyframeForceCtx {
 } KeyframeForceCtx;
 
 typedef struct OutputStream {
+    const AVClass *class;
+
     int file_index;          /* file index */
     int index;               /* stream index in the output file */
 
@@ -757,7 +759,8 @@ void assert_avoptions(AVDictionary *m);
 void assert_file_overwrite(const char *filename);
 char *file_read(const char *filename);
 AVDictionary *strip_specifiers(const AVDictionary *dict);
-const AVCodec *find_codec_or_die(const char *name, enum AVMediaType type, int encoder);
+const AVCodec *find_codec_or_die(void *logctx, const char *name,
+                                 enum AVMediaType type, int encoder);
 int parse_and_set_vsync(const char *arg, int *vsync_var, int file_idx, int st_idx, int is_global);
 
 int configure_filtergraph(FilterGraph *fg);

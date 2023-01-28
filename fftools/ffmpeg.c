@@ -730,8 +730,8 @@ static int init_output_stream_wrapper(OutputStream *ost, AVFrame *frame,
 
     ret = init_output_stream(ost, frame, error, sizeof(error));
     if (ret < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Error initializing output stream %d:%d -- %s\n",
-               ost->file_index, ost->index, error);
+        av_log(ost, AV_LOG_ERROR, "Error initializing output stream: %s\n",
+               error);
 
         if (fatal)
             exit_program(1);
@@ -866,7 +866,7 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
         ost->samples_encoded += frame->nb_samples;
 
         if (debug_ts) {
-            av_log(NULL, AV_LOG_INFO, "encoder <- type:%s "
+            av_log(ost, AV_LOG_INFO, "encoder <- type:%s "
                    "frame_pts:%s frame_pts_time:%s time_base:%d/%d\n",
                    type_desc,
                    av_ts2str(frame->pts), av_ts2timestr(frame->pts, &enc->time_base),
@@ -878,7 +878,7 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
 
     ret = avcodec_send_frame(enc, frame);
     if (ret < 0 && !(ret == AVERROR_EOF && !frame)) {
-        av_log(NULL, AV_LOG_ERROR, "Error submitting %s frame to the encoder\n",
+        av_log(ost, AV_LOG_ERROR, "Error submitting %s frame to the encoder\n",
                type_desc);
         return ret;
     }
@@ -899,7 +899,7 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
             of_output_packet(of, pkt, ost, 1);
             return ret;
         } else if (ret < 0) {
-            av_log(NULL, AV_LOG_ERROR, "%s encoding failed\n", type_desc);
+            av_log(ost, AV_LOG_ERROR, "%s encoding failed\n", type_desc);
             return ret;
         }
 
@@ -909,7 +909,7 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
             enc_stats_write(ost, &ost->enc_stats_post, NULL, pkt);
 
         if (debug_ts) {
-            av_log(NULL, AV_LOG_INFO, "encoder -> type:%s "
+            av_log(ost, AV_LOG_INFO, "encoder -> type:%s "
                    "pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s "
                    "duration:%s duration_time:%s\n",
                    type_desc,
@@ -921,7 +921,7 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
         av_packet_rescale_ts(pkt, enc->time_base, ost->mux_timebase);
 
         if (debug_ts) {
-            av_log(NULL, AV_LOG_INFO, "encoder -> type:%s "
+            av_log(ost, AV_LOG_INFO, "encoder -> type:%s "
                    "pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s "
                    "duration:%s duration_time:%s\n",
                    type_desc,
@@ -1023,7 +1023,7 @@ static void do_subtitle_out(OutputFile *of,
     int64_t pts;
 
     if (sub->pts == AV_NOPTS_VALUE) {
-        av_log(NULL, AV_LOG_ERROR, "Subtitle packets must have a pts\n");
+        av_log(ost, AV_LOG_ERROR, "Subtitle packets must have a pts\n");
         if (exit_on_error)
             exit_program(1);
         return;
@@ -1067,7 +1067,7 @@ static void do_subtitle_out(OutputFile *of,
         if (i == 1)
             sub->num_rects = save_num_rects;
         if (subtitle_out_size < 0) {
-            av_log(NULL, AV_LOG_FATAL, "Subtitle encoding failed\n");
+            av_log(ost, AV_LOG_FATAL, "Subtitle encoding failed\n");
             exit_program(1);
         }
 
@@ -1114,9 +1114,9 @@ static void video_sync_process(OutputFile *of, OutputStream *ost,
         ost->vsync_method != VSYNC_PASSTHROUGH &&
         ost->vsync_method != VSYNC_DROP) {
         if (delta0 < -0.6) {
-            av_log(NULL, AV_LOG_VERBOSE, "Past duration %f too large\n", -delta0);
+            av_log(ost, AV_LOG_VERBOSE, "Past duration %f too large\n", -delta0);
         } else
-            av_log(NULL, AV_LOG_DEBUG, "Clipping frame in rate conversion by %f\n", -delta0);
+            av_log(ost, AV_LOG_DEBUG, "Clipping frame in rate conversion by %f\n", -delta0);
         sync_ipts = ost->next_pts;
         duration += delta0;
         delta0 = 0;
@@ -1125,7 +1125,7 @@ static void video_sync_process(OutputFile *of, OutputStream *ost,
     switch (ost->vsync_method) {
     case VSYNC_VSCFR:
         if (ost->vsync_frame_number == 0 && delta0 >= 0.5) {
-            av_log(NULL, AV_LOG_DEBUG, "Not duplicating %d initial frames\n", (int)lrintf(delta0));
+            av_log(ost, AV_LOG_DEBUG, "Not duplicating %d initial frames\n", (int)lrintf(delta0));
             delta = duration;
             delta0 = 0;
             ost->next_pts = llrint(sync_ipts);
@@ -1160,8 +1160,9 @@ static void video_sync_process(OutputFile *of, OutputStream *ost,
     }
 }
 
-static enum AVPictureType forced_kf_apply(KeyframeForceCtx *kf, AVRational tb,
-                                          const AVFrame *in_picture, int dup_idx)
+static enum AVPictureType forced_kf_apply(void *logctx, KeyframeForceCtx *kf,
+                                          AVRational tb, const AVFrame *in_picture,
+                                          int dup_idx)
 {
     double pts_time;
 
@@ -1206,7 +1207,7 @@ static enum AVPictureType forced_kf_apply(KeyframeForceCtx *kf, AVRational tb,
     return AV_PICTURE_TYPE_NONE;
 
 force_keyframe:
-    av_log(NULL, AV_LOG_DEBUG, "Forced keyframe at time %f\n", pts_time);
+    av_log(logctx, AV_LOG_DEBUG, "Forced keyframe at time %f\n", pts_time);
     return AV_PICTURE_TYPE_I;
 }
 
@@ -1258,20 +1259,20 @@ static void do_video_out(OutputFile *of,
 
     if (nb_frames_prev == 0 && ost->last_dropped) {
         nb_frames_drop++;
-        av_log(NULL, AV_LOG_VERBOSE,
-               "*** dropping frame %"PRId64" from stream %d at ts %"PRId64"\n",
-               ost->vsync_frame_number, ost->st->index, ost->last_frame->pts);
+        av_log(ost, AV_LOG_VERBOSE,
+               "*** dropping frame %"PRId64" at ts %"PRId64"\n",
+               ost->vsync_frame_number, ost->last_frame->pts);
     }
     if (nb_frames > (nb_frames_prev && ost->last_dropped) + (nb_frames > nb_frames_prev)) {
         if (nb_frames > dts_error_threshold * 30) {
-            av_log(NULL, AV_LOG_ERROR, "%"PRId64" frame duplication too large, skipping\n", nb_frames - 1);
+            av_log(ost, AV_LOG_ERROR, "%"PRId64" frame duplication too large, skipping\n", nb_frames - 1);
             nb_frames_drop++;
             return;
         }
         nb_frames_dup += nb_frames - (nb_frames_prev && ost->last_dropped) - (nb_frames > nb_frames_prev);
-        av_log(NULL, AV_LOG_VERBOSE, "*** %"PRId64" dup!\n", nb_frames - 1);
+        av_log(ost, AV_LOG_VERBOSE, "*** %"PRId64" dup!\n", nb_frames - 1);
         if (nb_frames_dup > dup_warning) {
-            av_log(NULL, AV_LOG_WARNING, "More than %"PRIu64" frames duplicated\n", dup_warning);
+            av_log(ost, AV_LOG_WARNING, "More than %"PRIu64" frames duplicated\n", dup_warning);
             dup_warning *= 10;
         }
     }
@@ -1296,7 +1297,7 @@ static void do_video_out(OutputFile *of,
             return;
 
         in_picture->quality = enc->global_quality;
-        in_picture->pict_type = forced_kf_apply(&ost->kf, enc->time_base, in_picture, i);
+        in_picture->pict_type = forced_kf_apply(ost, &ost->kf, enc->time_base, in_picture, i);
 
         ret = submit_encode_frame(of, ost, in_picture);
         if (ret == AVERROR_EOF)
@@ -1764,9 +1765,8 @@ static void flush_encoders(void)
         if (!ost->initialized) {
             FilterGraph *fg = ost->filter->graph;
 
-            av_log(NULL, AV_LOG_WARNING,
-                   "Finishing stream %d:%d without any data written to it.\n",
-                   ost->file_index, ost->st->index);
+            av_log(ost, AV_LOG_WARNING,
+                   "Finishing stream without any data written to it.\n");
 
             if (ost->filter && !fg->graph) {
                 int x;
@@ -1774,7 +1774,7 @@ static void flush_encoders(void)
                     InputFilter *ifilter = fg->inputs[x];
                     if (ifilter->format < 0 &&
                         ifilter_parameters_from_codecpar(ifilter, ifilter->ist->par) < 0) {
-                        av_log(NULL, AV_LOG_ERROR, "Error copying paramerets from input stream\n");
+                        av_log(ost, AV_LOG_ERROR, "Error copying paramerets from input stream\n");
                         exit_program(1);
                     }
                 }
@@ -1784,7 +1784,7 @@ static void flush_encoders(void)
 
                 ret = configure_filtergraph(fg);
                 if (ret < 0) {
-                    av_log(NULL, AV_LOG_ERROR, "Error configuring filter graph\n");
+                    av_log(ost, AV_LOG_ERROR, "Error configuring filter graph\n");
                     exit_program(1);
                 }
 
@@ -2671,7 +2671,7 @@ static int init_output_stream_streamcopy(OutputStream *ost)
     if (ret >= 0)
         ret = av_opt_set_dict(codec_ctx, &ost->encoder_opts);
     if (ret < 0) {
-        av_log(NULL, AV_LOG_FATAL,
+        av_log(ost, AV_LOG_FATAL,
                "Error setting up codec context options.\n");
         avcodec_free_context(&codec_ctx);
         return ret;
@@ -2680,7 +2680,7 @@ static int init_output_stream_streamcopy(OutputStream *ost)
     ret = avcodec_parameters_from_context(par, codec_ctx);
     avcodec_free_context(&codec_ctx);
     if (ret < 0) {
-        av_log(NULL, AV_LOG_FATAL,
+        av_log(ost, AV_LOG_FATAL,
                "Error getting reference codec parameters.\n");
         return ret;
     }
@@ -2762,7 +2762,7 @@ static int init_output_stream_streamcopy(OutputStream *ost)
             sar =
                 av_mul_q(ost->frame_aspect_ratio,
                          (AVRational){ par->height, par->width });
-            av_log(NULL, AV_LOG_WARNING, "Overriding aspect ratio "
+            av_log(ost, AV_LOG_WARNING, "Overriding aspect ratio "
                    "with stream copy may produce invalid files\n");
             }
         else if (ist->st->sample_aspect_ratio.num)
@@ -2819,9 +2819,8 @@ static void init_encoder_time_base(OutputStream *ost, AVRational default_time_ba
             return;
         }
 
-        av_log(NULL, AV_LOG_WARNING,
-               "Input stream data for output stream #%d:%d not available, "
-               "using default time base\n", ost->file_index, ost->index);
+        av_log(ost, AV_LOG_WARNING,
+               "Input stream data not available, using default time base\n");
     }
 
     enc_ctx->time_base = default_time_base;
@@ -2846,12 +2845,11 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
             ost->frame_rate = av_buffersink_get_frame_rate(ost->filter->filter);
         if (!ost->frame_rate.num && !ost->max_frame_rate.num) {
             ost->frame_rate = (AVRational){25, 1};
-            av_log(NULL, AV_LOG_WARNING,
+            av_log(ost, AV_LOG_WARNING,
                    "No information "
                    "about the input framerate is available. Falling "
-                   "back to a default value of 25fps for output stream #%d:%d. Use the -r option "
-                   "if you want a different framerate.\n",
-                   ost->file_index, ost->index);
+                   "back to a default value of 25fps. Use the -r option "
+                   "if you want a different framerate.\n");
         }
 
         if (ost->max_frame_rate.num &&
@@ -2895,9 +2893,9 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
         if (   av_q2d(enc_ctx->time_base) < 0.001 && ost->vsync_method != VSYNC_PASSTHROUGH
            && (ost->vsync_method == VSYNC_CFR || ost->vsync_method == VSYNC_VSCFR ||
                (ost->vsync_method == VSYNC_AUTO && !(of->format->flags & AVFMT_VARIABLE_FPS)))){
-            av_log(NULL, AV_LOG_WARNING, "Frame rate very high for a muxer not efficiently supporting it.\n"
-                                       "Please consider specifying a lower framerate, a different muxer or "
-                                       "setting vsync/fps_mode to vfr\n");
+            av_log(ost, AV_LOG_WARNING, "Frame rate very high for a muxer not efficiently supporting it.\n"
+                                        "Please consider specifying a lower framerate, a different muxer or "
+                                        "setting vsync/fps_mode to vfr\n");
         }
 
         enc_ctx->width  = av_buffersink_get_w(ost->filter->filter);
@@ -2977,7 +2975,7 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
             if (output_descriptor)
                 output_props = output_descriptor->props & (AV_CODEC_PROP_TEXT_SUB | AV_CODEC_PROP_BITMAP_SUB);
             if (input_props && output_props && input_props != output_props) {
-                av_log(NULL, AV_LOG_ERROR,
+                av_log(ost, AV_LOG_ERROR,
                        "Subtitle encoding currently only possible from text to text "
                        "or bitmap to bitmap");
                 return AVERROR_INVALIDDATA;
@@ -3043,12 +3041,12 @@ static int init_output_stream(OutputStream *ost, AVFrame *frame,
         assert_avoptions(ost->encoder_opts);
         if (ost->enc_ctx->bit_rate && ost->enc_ctx->bit_rate < 1000 &&
             ost->enc_ctx->codec_id != AV_CODEC_ID_CODEC2 /* don't complain about 700 bit/s modes */)
-            av_log(NULL, AV_LOG_WARNING, "The bitrate parameter is set too low."
-                                         " It takes bits/s as argument, not kbits/s\n");
+            av_log(ost, AV_LOG_WARNING, "The bitrate parameter is set too low."
+                                        " It takes bits/s as argument, not kbits/s\n");
 
         ret = avcodec_parameters_from_context(ost->st->codecpar, ost->enc_ctx);
         if (ret < 0) {
-            av_log(NULL, AV_LOG_FATAL,
+            av_log(ost, AV_LOG_FATAL,
                    "Error initializing the output stream codec context.\n");
             exit_program(1);
         }
@@ -3280,9 +3278,9 @@ static OutputStream *choose_output(void)
             opts = ost->last_mux_dts == AV_NOPTS_VALUE ?
                    INT64_MIN : ost->last_mux_dts;
             if (ost->last_mux_dts == AV_NOPTS_VALUE)
-                av_log(NULL, AV_LOG_DEBUG,
-                    "cur_dts is invalid st:%d (%d) [init:%d i_done:%d finish:%d] (this is harmless if it occurs once at the start per stream)\n",
-                    ost->st->index, ost->st->id, ost->initialized, ost->inputs_done, ost->finished);
+                av_log(ost, AV_LOG_DEBUG,
+                    "cur_dts is invalid [init:%d i_done:%d finish:%d] (this is harmless if it occurs once at the start per stream)\n",
+                    ost->initialized, ost->inputs_done, ost->finished);
         }
 
         if (!ost->initialized && !ost->inputs_done)
@@ -3869,8 +3867,7 @@ static int transcode(void)
         packets_written = atomic_load(&ost->packets_written);
         total_packets_written += packets_written;
         if (!packets_written && (abort_on_flags & ABORT_ON_FLAG_EMPTY_OUTPUT_STREAM)) {
-            av_log(NULL, AV_LOG_FATAL, "Empty output on stream %d:%d.\n",
-                   ost->file_index, ost->index);
+            av_log(ost, AV_LOG_FATAL, "Empty output\n");
             exit_program(1);
         }
     }

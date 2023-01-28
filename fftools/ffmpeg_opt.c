@@ -623,7 +623,8 @@ static int opt_recording_timestamp(void *optctx, const char *opt, const char *ar
     return 0;
 }
 
-const AVCodec *find_codec_or_die(const char *name, enum AVMediaType type, int encoder)
+const AVCodec *find_codec_or_die(void *logctx, const char *name,
+                                 enum AVMediaType type, int encoder)
 {
     const AVCodecDescriptor *desc;
     const char *codec_string = encoder ? "encoder" : "decoder";
@@ -637,16 +638,16 @@ const AVCodec *find_codec_or_die(const char *name, enum AVMediaType type, int en
         codec = encoder ? avcodec_find_encoder(desc->id) :
                           avcodec_find_decoder(desc->id);
         if (codec)
-            av_log(NULL, AV_LOG_VERBOSE, "Matched %s '%s' for codec '%s'.\n",
+            av_log(logctx, AV_LOG_VERBOSE, "Matched %s '%s' for codec '%s'.\n",
                    codec_string, codec->name, desc->name);
     }
 
     if (!codec) {
-        av_log(NULL, AV_LOG_FATAL, "Unknown %s '%s'\n", codec_string, name);
+        av_log(logctx, AV_LOG_FATAL, "Unknown %s '%s'\n", codec_string, name);
         exit_program(1);
     }
     if (codec->type != type && !recast_media) {
-        av_log(NULL, AV_LOG_FATAL, "Invalid %s type '%s'\n", codec_string, name);
+        av_log(logctx, AV_LOG_FATAL, "Invalid %s type '%s'\n", codec_string, name);
         exit_program(1);
     }
     return codec;

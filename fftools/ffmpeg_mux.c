@@ -79,7 +79,7 @@ static int write_packet(Muxer *mux, OutputStream *ost, AVPacket *pkt)
     if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
         if (ost->frame_rate.num && ost->is_cfr) {
             if (pkt->duration > 0)
-                av_log(NULL, AV_LOG_WARNING, "Overriding packet duration by frame rate, this should not happen\n");
+                av_log(ost, AV_LOG_WARNING, "Overriding packet duration by frame rate, this should not happen\n");
             pkt->duration = av_rescale_q(1, av_inv_q(ost->frame_rate),
                                          ost->mux_timebase);
         }
@@ -132,7 +132,7 @@ static int write_packet(Muxer *mux, OutputStream *ost, AVPacket *pkt)
     pkt->stream_index = ost->index;
 
     if (debug_ts) {
-        av_log(NULL, AV_LOG_INFO, "muxer <- type:%s "
+        av_log(ost, AV_LOG_INFO, "muxer <- type:%s "
                 "pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s duration:%s duration_time:%s size:%d\n",
                 av_get_media_type_string(st->codecpar->codec_type),
                 av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &ost->st->time_base),
@@ -271,7 +271,7 @@ static int queue_packet(Muxer *mux, OutputStream *ost, AVPacket *pkt)
         size_t new_size = FFMIN(2 * cur_size, limit);
 
         if (new_size <= cur_size) {
-            av_log(NULL, AV_LOG_ERROR,
+            av_log(ost, AV_LOG_ERROR,
                    "Too many packets buffered for output stream %d:%d.\n",
                    ost->file_index, ost->st->index);
             return AVERROR(ENOSPC);
@@ -364,8 +364,7 @@ mux_fail:
     err_msg = "submitting a packet to the muxer";
 
 fail:
-    av_log(NULL, AV_LOG_ERROR, "Error %s for output stream #%d:%d.\n",
-           err_msg, ost->file_index, ost->index);
+    av_log(ost, AV_LOG_ERROR, "Error %s\n", err_msg);
     if (exit_on_error)
         exit_program(1);
 
@@ -559,7 +558,7 @@ static int bsf_init(MuxStream *ms)
 
     ret = av_bsf_init(ctx);
     if (ret < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Error initializing bitstream filter: %s\n",
+        av_log(ms, AV_LOG_ERROR, "Error initializing bitstream filter: %s\n",
                ctx->filter->name);
         return ret;
     }
@@ -640,7 +639,7 @@ static void ost_free(OutputStream **post)
 
     if (ost->logfile) {
         if (fclose(ost->logfile))
-            av_log(NULL, AV_LOG_ERROR,
+            av_log(ms, AV_LOG_ERROR,
                    "Error closing logfile, loss of information possible: %s\n",
                    av_err2str(AVERROR(errno)));
         ost->logfile = NULL;

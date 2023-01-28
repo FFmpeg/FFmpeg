@@ -37,6 +37,9 @@
 typedef struct MuxStream {
     OutputStream ost;
 
+    // name used for logging
+    char log_name[32];
+
     /* the packets are buffered here until the muxer is ready to be initialized */
     AVFifo *muxing_queue;
 
