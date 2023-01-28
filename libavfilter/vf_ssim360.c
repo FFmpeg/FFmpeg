@@ -1760,8 +1760,6 @@ AVFilter ff_vf_ssim360 = {
     .activate      = activate,
     .priv_size     = sizeof(SSIM360Context),
     .priv_class    = &ssim360_class,
-    .inputs        = ssim360_inputs,
-    .outputs       = ssim360_outputs,
     FILTER_INPUTS(ssim360_inputs),
     FILTER_OUTPUTS(ssim360_outputs),
     FILTER_PIXFMTS_ARRAY(ssim360_pixfmts),
