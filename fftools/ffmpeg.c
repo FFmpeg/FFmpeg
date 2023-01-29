@@ -803,7 +803,7 @@ static void update_video_stats(OutputStream *ost, const AVPacket *pkt, int write
 static void enc_stats_write(OutputStream *ost, EncStats *es,
                             const AVFrame *frame, const AVPacket *pkt)
 {
-    AVIOContext *io = ost->enc_stats_pre.io;
+    AVIOContext *io = es->io;
     AVRational   tb = ost->enc_ctx->time_base;
     int64_t     pts = frame ? frame->pts : pkt->pts;
 
