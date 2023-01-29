@@ -469,12 +469,13 @@ static int h264_metadata_update_fragment(AVBSFContext *bsf, AVPacket *pkt,
     H264MetadataContext *ctx = bsf->priv_data;
     int err, i, has_sps, seek_point;
 
-    // If an AUD is present, it must be the first NAL unit.
-    if (au->nb_units && au->units[0].type == H264_NAL_AUD) {
-        if (ctx->aud == BSF_ELEMENT_REMOVE)
-            ff_cbs_delete_unit(au, 0);
-    } else {
-        if (pkt && ctx->aud == BSF_ELEMENT_INSERT) {
+    if (ctx->aud == BSF_ELEMENT_REMOVE) {
+        for (i = au->nb_units - 1; i >= 0; i--) {
+            if (au->units[i].type == H264_NAL_AUD)
+                ff_cbs_delete_unit(au, i);
+        }
+    } else if (ctx->aud == BSF_ELEMENT_INSERT) {
+        if (pkt) {
             err = h264_metadata_insert_aud(bsf, au);
             if (err < 0)
                 return err;
