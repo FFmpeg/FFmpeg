@@ -55,6 +55,9 @@ static const char *const opt_name_display_vflips[]            = {"display_vflip"
 typedef struct Demuxer {
     InputFile f;
 
+    // name used for logging
+    char log_name[32];
+
     /* number of times input stream should be looped */
     int loop;
     /* actual duration of the longest stream in a file at the moment when
@@ -91,11 +94,10 @@ static void report_new_stream(Demuxer *d, const AVPacket *pkt)
 
     if (pkt->stream_index < d->nb_streams_warn)
         return;
-    av_log(NULL, AV_LOG_WARNING,
-           "New %s stream %d:%d at pos:%"PRId64" and DTS:%ss\n",
+    av_log(d, AV_LOG_WARNING,
+           "New %s stream with index %d at pos:%"PRId64" and DTS:%ss\n",
            av_get_media_type_string(st->codecpar->codec_type),
-           d->f.index, pkt->stream_index,
-           pkt->pos, av_ts2timestr(pkt->dts, &st->time_base));
+           pkt->stream_index, pkt->pos, av_ts2timestr(pkt->dts, &st->time_base));
     d->nb_streams_warn = pkt->stream_index + 1;
 }
 
@@ -273,10 +275,10 @@ static void *input_thread(void *arg)
             }
 
             if (ret == AVERROR_EOF)
-                av_log(NULL, AV_LOG_VERBOSE, "EOF in input file %d\n", f->index);
+                av_log(d, AV_LOG_VERBOSE, "EOF while reading input\n");
             else
-                av_log(NULL, AV_LOG_ERROR, "Error demuxing input file %d: %s\n",
-                       f->index, av_err2str(ret));
+                av_log(d, AV_LOG_ERROR, "Error during demuxing: %s\n",
+                       av_err2str(ret));
 
             break;
         }
@@ -295,9 +297,9 @@ static void *input_thread(void *arg)
         }
 
         if (pkt->flags & AV_PKT_FLAG_CORRUPT) {
-            av_log(NULL, exit_on_error ? AV_LOG_FATAL : AV_LOG_WARNING,
-                   "%s: corrupt input packet in stream %d\n",
-                   f->ctx->url, pkt->stream_index);
+            av_log(d, exit_on_error ? AV_LOG_FATAL : AV_LOG_WARNING,
+                   "corrupt input packet in stream %d\n",
+                   pkt->stream_index);
             if (exit_on_error) {
                 av_packet_unref(pkt);
                 ret = AVERROR_INVALIDDATA;
@@ -339,7 +341,7 @@ finish:
 
     av_packet_free(&pkt);
 
-    av_log(NULL, AV_LOG_VERBOSE, "Terminating demuxer thread %d\n", f->index);
+    av_log(d, AV_LOG_VERBOSE, "Terminating demuxer thread\n");
 
     return NULL;
 }
@@ -396,7 +398,7 @@ static int thread_start(Demuxer *d)
     }
 
     if ((ret = pthread_create(&d->thread, NULL, input_thread, d))) {
-        av_log(NULL, AV_LOG_ERROR, "pthread_create failed: %s. Try to increase `ulimit -v` or decrease `ulimit -s`.\n", strerror(ret));
+        av_log(d, AV_LOG_ERROR, "pthread_create failed: %s. Try to increase `ulimit -v` or decrease `ulimit -s`.\n", strerror(ret));
         ret = AVERROR(ret);
         goto fail;
     }
@@ -839,6 +841,32 @@ static void dump_attachment(AVStream *st, const char *filename)
     avio_close(out);
 }
 
+static const char *input_file_item_name(void *obj)
+{
+    const Demuxer *d = obj;
+
+    return d->log_name;
+}
+
+static const AVClass input_file_class = {
+    .class_name = "InputFile",
+    .version    = LIBAVUTIL_VERSION_INT,
+    .item_name  = input_file_item_name,
+    .category   = AV_CLASS_CATEGORY_DEMUXER,
+};
+
+static Demuxer *demux_alloc(void)
+{
+    Demuxer *d = allocate_array_elem(&input_files, sizeof(*d), &nb_input_files);
+
+    d->f.class = &input_file_class;
+    d->f.index = nb_input_files - 1;
+
+    snprintf(d->log_name, sizeof(d->log_name), "in#%d", d->f.index);
+
+    return d;
+}
+
 int ifile_open(const OptionsContext *o, const char *filename)
 {
     Demuxer   *d;
@@ -860,15 +888,18 @@ int ifile_open(const OptionsContext *o, const char *filename)
     int64_t stop_time      = o->stop_time;
     int64_t recording_time = o->recording_time;
 
+    d = demux_alloc();
+    f = &d->f;
+
     if (stop_time != INT64_MAX && recording_time != INT64_MAX) {
         stop_time = INT64_MAX;
-        av_log(NULL, AV_LOG_WARNING, "-t and -to cannot be used together; using -t.\n");
+        av_log(d, AV_LOG_WARNING, "-t and -to cannot be used together; using -t.\n");
     }
 
     if (stop_time != INT64_MAX && recording_time == INT64_MAX) {
         int64_t start = start_time == AV_NOPTS_VALUE ? 0 : start_time;
         if (stop_time <= start) {
-            av_log(NULL, AV_LOG_ERROR, "-to value smaller than -ss; aborting.\n");
+            av_log(d, AV_LOG_ERROR, "-to value smaller than -ss; aborting.\n");
             exit_program(1);
         } else {
             recording_time = stop_time - start;
@@ -877,7 +908,7 @@ int ifile_open(const OptionsContext *o, const char *filename)
 
     if (o->format) {
         if (!(file_iformat = av_find_input_format(o->format))) {
-            av_log(NULL, AV_LOG_FATAL, "Unknown input format: '%s'\n", o->format);
+            av_log(d, AV_LOG_FATAL, "Unknown input format: '%s'\n", o->format);
             exit_program(1);
         }
     }
@@ -964,9 +995,13 @@ int ifile_open(const OptionsContext *o, const char *filename)
     if (err < 0) {
         print_error(filename, err);
         if (err == AVERROR_PROTOCOL_NOT_FOUND)
-            av_log(NULL, AV_LOG_ERROR, "Did you mean file:%s?\n", filename);
+            av_log(d, AV_LOG_ERROR, "Did you mean file:%s?\n", filename);
         exit_program(1);
     }
+
+    av_strlcat(d->log_name, "/",               sizeof(d->log_name));
+    av_strlcat(d->log_name, ic->iformat->name, sizeof(d->log_name));
+
     if (scan_all_pmts_set)
         av_dict_set(&o->g->format_opts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE);
     remove_avoptions(&o->g->format_opts, o->g->codec_opts);
@@ -989,7 +1024,7 @@ int ifile_open(const OptionsContext *o, const char *filename)
         av_freep(&opts);
 
         if (ret < 0) {
-            av_log(NULL, AV_LOG_FATAL, "%s: could not find codec parameters\n", filename);
+            av_log(d, AV_LOG_FATAL, "could not find codec parameters\n");
             if (ic->nb_streams == 0) {
                 avformat_close_input(&ic);
                 exit_program(1);
@@ -998,23 +1033,23 @@ int ifile_open(const OptionsContext *o, const char *filename)
     }
 
     if (start_time != AV_NOPTS_VALUE && start_time_eof != AV_NOPTS_VALUE) {
-        av_log(NULL, AV_LOG_WARNING, "Cannot use -ss and -sseof both, using -ss for %s\n", filename);
+        av_log(d, AV_LOG_WARNING, "Cannot use -ss and -sseof both, using -ss\n");
         start_time_eof = AV_NOPTS_VALUE;
     }
 
     if (start_time_eof != AV_NOPTS_VALUE) {
         if (start_time_eof >= 0) {
-            av_log(NULL, AV_LOG_ERROR, "-sseof value must be negative; aborting\n");
+            av_log(d, AV_LOG_ERROR, "-sseof value must be negative; aborting\n");
             exit_program(1);
         }
         if (ic->duration > 0) {
             start_time = start_time_eof + ic->duration;
             if (start_time < 0) {
-                av_log(NULL, AV_LOG_WARNING, "-sseof value seeks to before start of file %s; ignored\n", filename);
+                av_log(d, AV_LOG_WARNING, "-sseof value seeks to before start of file; ignored\n");
                 start_time = AV_NOPTS_VALUE;
             }
         } else
-            av_log(NULL, AV_LOG_WARNING, "Cannot use -sseof, duration of %s not known\n", filename);
+            av_log(d, AV_LOG_WARNING, "Cannot use -sseof, file duration not known\n");
     }
     timestamp = (start_time == AV_NOPTS_VALUE) ? 0 : start_time;
     /* add the stream start time */
@@ -1040,16 +1075,12 @@ int ifile_open(const OptionsContext *o, const char *filename)
         }
         ret = avformat_seek_file(ic, -1, INT64_MIN, seek_timestamp, seek_timestamp, 0);
         if (ret < 0) {
-            av_log(NULL, AV_LOG_WARNING, "%s: could not seek to position %0.3f\n",
-                   filename, (double)timestamp / AV_TIME_BASE);
+            av_log(d, AV_LOG_WARNING, "could not seek to position %0.3f\n",
+                   (double)timestamp / AV_TIME_BASE);
         }
     }
 
-    d = allocate_array_elem(&input_files, sizeof(*d), &nb_input_files);
-    f = &d->f;
-
     f->ctx        = ic;
-    f->index      = nb_input_files - 1;
     f->start_time = start_time;
     f->recording_time = recording_time;
     f->input_sync_ref = o->input_sync_ref;
@@ -1063,11 +1094,11 @@ int ifile_open(const OptionsContext *o, const char *filename)
 
     f->readrate = o->readrate ? o->readrate : 0.0;
     if (f->readrate < 0.0f) {
-        av_log(NULL, AV_LOG_ERROR, "Option -readrate for Input #%d is %0.3f; it must be non-negative.\n", f->index, f->readrate);
+        av_log(d, AV_LOG_ERROR, "Option -readrate is %0.3f; it must be non-negative.\n", f->readrate);
         exit_program(1);
     }
     if (f->readrate && f->rate_emu) {
-        av_log(NULL, AV_LOG_WARNING, "Both -readrate and -re set for Input #%d. Using -readrate %0.3f.\n", f->index, f->readrate);
+        av_log(d, AV_LOG_WARNING, "Both -readrate and -re set. Using -readrate %0.3f.\n", f->readrate);
         f->rate_emu = 0;
     }
 
@@ -1100,19 +1131,16 @@ int ifile_open(const OptionsContext *o, const char *filename)
 
 
         if (!(option->flags & AV_OPT_FLAG_DECODING_PARAM)) {
-            av_log(NULL, AV_LOG_ERROR, "Codec AVOption %s (%s) specified for "
-                   "input file #%d (%s) is not a decoding option.\n", e->key,
-                   option->help ? option->help : "", f->index,
-                   filename);
+            av_log(d, AV_LOG_ERROR, "Codec AVOption %s (%s) is not a decoding "
+                   "option.\n", e->key, option->help ? option->help : "");
             exit_program(1);
         }
 
-        av_log(NULL, AV_LOG_WARNING, "Codec AVOption %s (%s) specified for "
-               "input file #%d (%s) has not been used for any stream. The most "
-               "likely reason is either wrong type (e.g. a video option with "
-               "no video streams) or that it is a private option of some decoder "
-               "which was not actually used for any stream.\n", e->key,
-               option->help ? option->help : "", f->index, filename);
+        av_log(d, AV_LOG_WARNING, "Codec AVOption %s (%s) has not been used "
+               "for any stream. The most likely reason is either wrong type "
+               "(e.g. a video option with no video streams) or that it is a "
+               "private option of some decoder which was not actually used "
+               "for any stream.\n", e->key, option->help ? option->help : "");
     }
     av_dict_free(&unused_opts);
 

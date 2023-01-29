@@ -448,6 +448,8 @@ typedef struct LastFrameDuration {
 } LastFrameDuration;
 
 typedef struct InputFile {
+    const AVClass *class;
+
     int index;
 
     AVFormatContext *ctx;
