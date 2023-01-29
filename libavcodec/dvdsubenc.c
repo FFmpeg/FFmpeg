@@ -379,7 +379,7 @@ static int encode_dvd_subtitles(AVCodecContext *avctx,
     if (x2 > avctx->width || y2 > avctx->height) {
         av_log(avctx, AV_LOG_ERROR, "canvas_size(%d:%d) is too small(%d:%d) for render\n",
                avctx->width, avctx->height, x2, y2);
-        ret = AVERROR(EINVAL);;
+        ret = AVERROR(EINVAL);
         goto fail;
     }
     *q++ = 0x05;
