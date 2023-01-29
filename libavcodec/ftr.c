@@ -37,7 +37,7 @@ static av_cold int ftr_init(AVCodecContext *avctx)
 
     if (avctx->ch_layout.nb_channels > 64 ||
         avctx->ch_layout.nb_channels <= 0)
-        return AVERROR(ENOTSUP);
+        return AVERROR(EINVAL);
 
     s->packet = av_packet_alloc();
     if (!s->packet)
