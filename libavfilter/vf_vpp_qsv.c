@@ -752,3 +752,28 @@ static av_cold int qsvscale_preinit(AVFilterContext *ctx)
 DEFINE_QSV_FILTER(qsvscale, scale, "scaling and format conversion", FILTER_SINGLE_PIXFMT(AV_PIX_FMT_QSV));
 
 #endif
+
+#if CONFIG_DEINTERLACE_QSV_FILTER
+
+static const AVOption qsvdeint_options[] = {
+    { "mode", "set deinterlace mode", OFFSET(deinterlace),   AV_OPT_TYPE_INT, {.i64 = MFX_DEINTERLACING_ADVANCED}, MFX_DEINTERLACING_BOB, MFX_DEINTERLACING_ADVANCED, FLAGS, "mode"},
+    { "bob",   "bob algorithm",                  0, AV_OPT_TYPE_CONST,      {.i64 = MFX_DEINTERLACING_BOB}, MFX_DEINTERLACING_BOB, MFX_DEINTERLACING_ADVANCED, FLAGS, "mode"},
+    { "advanced", "Motion adaptive algorithm",   0, AV_OPT_TYPE_CONST, {.i64 = MFX_DEINTERLACING_ADVANCED}, MFX_DEINTERLACING_BOB, MFX_DEINTERLACING_ADVANCED, FLAGS, "mode"},
+
+    { NULL },
+};
+
+static av_cold int qsvdeint_preinit(AVFilterContext *ctx)
+{
+    VPPContext  *vpp  = ctx->priv;
+
+    vpp_preinit(ctx);
+    vpp->has_passthrough = 0;
+    vpp->field_rate = 1;
+
+    return 0;
+}
+
+DEFINE_QSV_FILTER(qsvdeint, deinterlace, "deinterlacing", FILTER_SINGLE_PIXFMT(AV_PIX_FMT_QSV))
+
+#endif
