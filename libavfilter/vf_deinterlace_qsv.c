@@ -44,36 +44,10 @@
 
 #define MFX_IMPL_VIA_MASK(impl) (0x0f00 & (impl))
 
-enum {
-    QSVDEINT_MORE_OUTPUT = 1,
-    QSVDEINT_MORE_INPUT,
-};
-
 typedef struct QSVDeintContext {
-    const AVClass *class;
+    QSVVPPContext qsv;
 
-    AVBufferRef *hw_frames_ctx;
-    /* a clone of the main session, used internally for deinterlacing */
-    mfxSession   session;
-
-    mfxMemId *mem_ids;
-    int    nb_mem_ids;
-
-    mfxFrameSurface1 **surface_ptrs;
-    int             nb_surface_ptrs;
-
-#if QSV_HAVE_OPAQUE
-    mfxExtOpaqueSurfaceAlloc opaque_alloc;
-#endif
-    mfxExtVPPDeinterlacing   deint_conf;
-    mfxExtBuffer            *ext_buffers[2];
-    int                      num_ext_buffers;
-
-    QSVFrame *work_frames;
-
-    int64_t last_pts;
-
-    int eof;
+    mfxExtVPPDeinterlacing deint_conf;
 
     /* option for Deinterlacing algorithm to be used */
     int mode;
@@ -81,476 +55,57 @@ typedef struct QSVDeintContext {
 
 static av_cold void qsvdeint_uninit(AVFilterContext *ctx)
 {
-    QSVDeintContext *s = ctx->priv;
-    QSVFrame *cur;
-
-    if (s->session) {
-        MFXClose(s->session);
-        s->session = NULL;
-    }
-    av_buffer_unref(&s->hw_frames_ctx);
-
-    cur = s->work_frames;
-    while (cur) {
-        s->work_frames = cur->next;
-        av_frame_free(&cur->frame);
-        av_freep(&cur);
-        cur = s->work_frames;
-    }
-
-    av_freep(&s->mem_ids);
-    s->nb_mem_ids = 0;
-
-    av_freep(&s->surface_ptrs);
-    s->nb_surface_ptrs = 0;
-}
-
-static mfxStatus frame_alloc(mfxHDL pthis, mfxFrameAllocRequest *req,
-                             mfxFrameAllocResponse *resp)
-{
-    AVFilterContext *ctx = pthis;
-    QSVDeintContext   *s = ctx->priv;
-
-    if (!(req->Type & MFX_MEMTYPE_VIDEO_MEMORY_PROCESSOR_TARGET) ||
-        !(req->Type & (MFX_MEMTYPE_FROM_VPPIN | MFX_MEMTYPE_FROM_VPPOUT)) ||
-        !(req->Type & MFX_MEMTYPE_EXTERNAL_FRAME))
-        return MFX_ERR_UNSUPPORTED;
-
-    resp->mids           = s->mem_ids;
-    resp->NumFrameActual = s->nb_mem_ids;
-
-    return MFX_ERR_NONE;
-}
-
-static mfxStatus frame_free(mfxHDL pthis, mfxFrameAllocResponse *resp)
-{
-    return MFX_ERR_NONE;
-}
-
-static mfxStatus frame_lock(mfxHDL pthis, mfxMemId mid, mfxFrameData *ptr)
-{
-    return MFX_ERR_UNSUPPORTED;
-}
-
-static mfxStatus frame_unlock(mfxHDL pthis, mfxMemId mid, mfxFrameData *ptr)
-{
-    return MFX_ERR_UNSUPPORTED;
-}
-
-static mfxStatus frame_get_hdl(mfxHDL pthis, mfxMemId mid, mfxHDL *hdl)
-{
-    mfxHDLPair *pair_dst = (mfxHDLPair*)hdl;
-    mfxHDLPair *pair_src = (mfxHDLPair*)mid;
-
-    pair_dst->first = pair_src->first;
-
-    if (pair_src->second != (mfxMemId)MFX_INFINITE)
-        pair_dst->second = pair_src->second;
-    return MFX_ERR_NONE;
-}
-
-static int init_out_session(AVFilterContext *ctx)
-{
-
-    QSVDeintContext                  *s = ctx->priv;
-    AVHWFramesContext    *hw_frames_ctx = (AVHWFramesContext*)s->hw_frames_ctx->data;
-    AVQSVFramesContext *hw_frames_hwctx = hw_frames_ctx->hwctx;
-    AVQSVDeviceContext    *device_hwctx = hw_frames_ctx->device_ctx->hwctx;
-    int opaque = 0;
-    mfxHDL handle = NULL;
-    mfxHandleType handle_type;
-    mfxVersion ver;
-    mfxIMPL impl;
-    mfxVideoParam par;
-    mfxStatus err;
-    int i, ret;
-
-#if QSV_HAVE_OPAQUE
-    opaque = !!(hw_frames_hwctx->frame_type & MFX_MEMTYPE_OPAQUE_FRAME);
-#endif
-    /* extract the properties of the "master" session given to us */
-    err = MFXQueryIMPL(device_hwctx->session, &impl);
-    if (err == MFX_ERR_NONE)
-        err = MFXQueryVersion(device_hwctx->session, &ver);
-    if (err != MFX_ERR_NONE) {
-        av_log(ctx, AV_LOG_ERROR, "Error querying the session attributes\n");
-        return AVERROR_UNKNOWN;
-    }
-
-    if (MFX_IMPL_VIA_VAAPI == MFX_IMPL_VIA_MASK(impl)) {
-        handle_type = MFX_HANDLE_VA_DISPLAY;
-    } else if (MFX_IMPL_VIA_D3D11 == MFX_IMPL_VIA_MASK(impl)) {
-        handle_type = MFX_HANDLE_D3D11_DEVICE;
-    } else if (MFX_IMPL_VIA_D3D9 == MFX_IMPL_VIA_MASK(impl)) {
-        handle_type = MFX_HANDLE_D3D9_DEVICE_MANAGER;
-    } else {
-        av_log(ctx, AV_LOG_ERROR, "Error unsupported handle type\n");
-        return AVERROR_UNKNOWN;
-    }
-
-    err = MFXVideoCORE_GetHandle(device_hwctx->session, handle_type, &handle);
-    if (err < 0)
-        return ff_qsvvpp_print_error(ctx, err, "Error getting the session handle");
-    else if (err > 0) {
-        ff_qsvvpp_print_warning(ctx, err, "Warning in getting the session handle");
-        return AVERROR_UNKNOWN;
-    }
-
-    /* create a "slave" session with those same properties, to be used for
-     * actual deinterlacing */
-    ret = ff_qsvvpp_create_mfx_session(ctx, device_hwctx->loader, impl, &ver,
-                                       &s->session);
-    if (ret)
-        return ret;
-
-    if (handle) {
-        err = MFXVideoCORE_SetHandle(s->session, handle_type, handle);
-        if (err != MFX_ERR_NONE)
-            return AVERROR_UNKNOWN;
-    }
-
-    if (QSV_RUNTIME_VERSION_ATLEAST(ver, 1, 25)) {
-        err = MFXJoinSession(device_hwctx->session, s->session);
-        if (err != MFX_ERR_NONE)
-            return AVERROR_UNKNOWN;
-    }
-
-    memset(&par, 0, sizeof(par));
-
-    s->deint_conf.Header.BufferId = MFX_EXTBUFF_VPP_DEINTERLACING;
-    s->deint_conf.Header.BufferSz = sizeof(s->deint_conf);
-    s->deint_conf.Mode = s->mode;
-
-    s->ext_buffers[s->num_ext_buffers++] = (mfxExtBuffer *)&s->deint_conf;
-
-    if (!opaque) {
-        mfxFrameAllocator frame_allocator = {
-            .pthis  = ctx,
-            .Alloc  = frame_alloc,
-            .Lock   = frame_lock,
-            .Unlock = frame_unlock,
-            .GetHDL = frame_get_hdl,
-            .Free   = frame_free,
-        };
-
-        s->mem_ids = av_calloc(hw_frames_hwctx->nb_surfaces,
-                               sizeof(*s->mem_ids));
-        if (!s->mem_ids)
-            return AVERROR(ENOMEM);
-        for (i = 0; i < hw_frames_hwctx->nb_surfaces; i++)
-            s->mem_ids[i] = hw_frames_hwctx->surfaces[i].Data.MemId;
-        s->nb_mem_ids = hw_frames_hwctx->nb_surfaces;
-
-        err = MFXVideoCORE_SetFrameAllocator(s->session, &frame_allocator);
-        if (err != MFX_ERR_NONE)
-            return AVERROR_UNKNOWN;
-
-        par.IOPattern = MFX_IOPATTERN_IN_VIDEO_MEMORY | MFX_IOPATTERN_OUT_VIDEO_MEMORY;
-    }
-#if QSV_HAVE_OPAQUE
-    else {
-        s->surface_ptrs = av_calloc(hw_frames_hwctx->nb_surfaces,
-                                    sizeof(*s->surface_ptrs));
-
-        if (!s->surface_ptrs)
-            return AVERROR(ENOMEM);
-        for (i = 0; i < hw_frames_hwctx->nb_surfaces; i++)
-            s->surface_ptrs[i] = hw_frames_hwctx->surfaces + i;
-        s->nb_surface_ptrs = hw_frames_hwctx->nb_surfaces;
-
-        s->opaque_alloc.In.Surfaces   = s->surface_ptrs;
-        s->opaque_alloc.In.NumSurface = s->nb_surface_ptrs;
-        s->opaque_alloc.In.Type       = hw_frames_hwctx->frame_type;
-
-        s->opaque_alloc.Out = s->opaque_alloc.In;
-
-        s->opaque_alloc.Header.BufferId = MFX_EXTBUFF_OPAQUE_SURFACE_ALLOCATION;
-        s->opaque_alloc.Header.BufferSz = sizeof(s->opaque_alloc);
-
-        s->ext_buffers[s->num_ext_buffers++] = (mfxExtBuffer *)&s->opaque_alloc;
-
-        par.IOPattern = MFX_IOPATTERN_IN_OPAQUE_MEMORY | MFX_IOPATTERN_OUT_OPAQUE_MEMORY;
-    }
-#endif
-
-    par.ExtParam    = s->ext_buffers;
-    par.NumExtParam = s->num_ext_buffers;
-
-    par.AsyncDepth = 1;    // TODO async
-
-    par.vpp.In = hw_frames_hwctx->surfaces[0].Info;
-
-    par.vpp.In.CropW = ctx->inputs[0]->w;
-    par.vpp.In.CropH = ctx->inputs[0]->h;
-
-    if (ctx->inputs[0]->frame_rate.num) {
-        par.vpp.In.FrameRateExtN = ctx->inputs[0]->frame_rate.num;
-        par.vpp.In.FrameRateExtD = ctx->inputs[0]->frame_rate.den;
-    } else {
-        par.vpp.In.FrameRateExtN = ctx->inputs[0]->time_base.num;
-        par.vpp.In.FrameRateExtD = ctx->inputs[0]->time_base.den;
-    }
-
-    par.vpp.Out = par.vpp.In;
-
-    if (ctx->outputs[0]->frame_rate.num) {
-        par.vpp.Out.FrameRateExtN = ctx->outputs[0]->frame_rate.num;
-        par.vpp.Out.FrameRateExtD = ctx->outputs[0]->frame_rate.den;
-    } else {
-        par.vpp.Out.FrameRateExtN = ctx->outputs[0]->time_base.num;
-        par.vpp.Out.FrameRateExtD = ctx->outputs[0]->time_base.den;
-    }
-
-    /* Print input memory mode */
-    ff_qsvvpp_print_iopattern(ctx, par.IOPattern & 0x0F, "VPP");
-    /* Print output memory mode */
-    ff_qsvvpp_print_iopattern(ctx, par.IOPattern & 0xF0, "VPP");
-    err = MFXVideoVPP_Init(s->session, &par);
-    if (err < 0)
-        return ff_qsvvpp_print_error(ctx, err,
-                                     "Error opening the VPP for deinterlacing");
-    else if (err > 0) {
-        ff_qsvvpp_print_warning(ctx, err,
-                                "Warning in VPP initialization");
-        return AVERROR_UNKNOWN;
-    }
-
-    return 0;
+    ff_qsvvpp_close(ctx);
 }
 
 static int qsvdeint_config_props(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = ctx->inputs[0];
-    QSVDeintContext  *s = ctx->priv;
-    int ret;
+    QSVDeintContext   *s = ctx->priv;
+    QSVVPPParam    param = { NULL };
+    mfxExtBuffer *ext_buf[1];
+    enum AVPixelFormat in_format;
 
     qsvdeint_uninit(ctx);
 
-    s->last_pts = AV_NOPTS_VALUE;
+    outlink->w          = inlink->w;
+    outlink->h          = inlink->h;
     outlink->frame_rate = av_mul_q(inlink->frame_rate,
                                    (AVRational){ 2, 1 });
     outlink->time_base  = av_mul_q(inlink->time_base,
                                    (AVRational){ 1, 2 });
 
-    /* check that we have a hw context */
-    if (!inlink->hw_frames_ctx) {
-        av_log(ctx, AV_LOG_ERROR, "No hw context provided on input\n");
-        return AVERROR(EINVAL);
-    }
+    if (inlink->format == AV_PIX_FMT_QSV) {
+        if (!inlink->hw_frames_ctx || !inlink->hw_frames_ctx->data)
+            return AVERROR(EINVAL);
+        else
+            in_format = ((AVHWFramesContext*)inlink->hw_frames_ctx->data)->sw_format;
+    } else
+        in_format = inlink->format;
 
-    s->hw_frames_ctx = av_buffer_ref(inlink->hw_frames_ctx);
-    if (!s->hw_frames_ctx)
-        return AVERROR(ENOMEM);
+    param.out_sw_format = in_format;
+    param.ext_buf       = ext_buf;
 
-    av_buffer_unref(&outlink->hw_frames_ctx);
-    outlink->hw_frames_ctx = av_buffer_ref(inlink->hw_frames_ctx);
-    if (!outlink->hw_frames_ctx) {
-        qsvdeint_uninit(ctx);
-        return AVERROR(ENOMEM);
-    }
+    memset(&s->deint_conf, 0, sizeof(mfxExtVPPDeinterlacing));
+    s->deint_conf.Header.BufferId      = MFX_EXTBUFF_VPP_DEINTERLACING;
+    s->deint_conf.Header.BufferSz      = sizeof(s->deint_conf);
+    s->deint_conf.Mode                 = s->mode;
+    param.ext_buf[param.num_ext_buf++] = (mfxExtBuffer*)&s->deint_conf;
 
-    ret = init_out_session(ctx);
-    if (ret < 0)
-        return ret;
-
-
-    return 0;
-}
-
-static void clear_unused_frames(QSVDeintContext *s)
-{
-    QSVFrame *cur = s->work_frames;
-    while (cur) {
-        if (!cur->surface.Data.Locked) {
-            av_frame_free(&cur->frame);
-            cur->queued = 0;
-        }
-        cur = cur->next;
-    }
-}
-
-static int get_free_frame(QSVDeintContext *s, QSVFrame **f)
-{
-    QSVFrame *frame, **last;
-
-    clear_unused_frames(s);
-
-    frame = s->work_frames;
-    last  = &s->work_frames;
-    while (frame) {
-        if (!frame->queued) {
-            *f = frame;
-            return 0;
-        }
-
-        last  = &frame->next;
-        frame = frame->next;
-    }
-
-    frame = av_mallocz(sizeof(*frame));
-    if (!frame)
-        return AVERROR(ENOMEM);
-    *last = frame;
-    *f    = frame;
-
-    return 0;
-}
-
-static int submit_frame(AVFilterContext *ctx, AVFrame *frame,
-                        mfxFrameSurface1 **surface)
-{
-    QSVDeintContext *s = ctx->priv;
-    QSVFrame *qf;
-    int ret;
-
-    ret = get_free_frame(s, &qf);
-    if (ret < 0)
-        return ret;
-
-    qf->frame = frame;
-
-    qf->surface = *(mfxFrameSurface1*)qf->frame->data[3];
-
-    qf->surface.Data.Locked = 0;
-    qf->surface.Info.CropW  = qf->frame->width;
-    qf->surface.Info.CropH  = qf->frame->height;
-
-    qf->surface.Info.PicStruct = !qf->frame->interlaced_frame ? MFX_PICSTRUCT_PROGRESSIVE :
-                                 (qf->frame->top_field_first ? MFX_PICSTRUCT_FIELD_TFF :
-                                                           MFX_PICSTRUCT_FIELD_BFF);
-    if (qf->frame->repeat_pict == 1) {
-        qf->surface.Info.PicStruct |= MFX_PICSTRUCT_FIELD_REPEATED;
-        qf->surface.Info.PicStruct |= qf->frame->top_field_first ? MFX_PICSTRUCT_FIELD_TFF :
-                                                            MFX_PICSTRUCT_FIELD_BFF;
-    } else if (qf->frame->repeat_pict == 2)
-        qf->surface.Info.PicStruct |= MFX_PICSTRUCT_FRAME_DOUBLING;
-    else if (qf->frame->repeat_pict == 4)
-        qf->surface.Info.PicStruct |= MFX_PICSTRUCT_FRAME_TRIPLING;
-
-    if (ctx->inputs[0]->frame_rate.num) {
-        qf->surface.Info.FrameRateExtN = ctx->inputs[0]->frame_rate.num;
-        qf->surface.Info.FrameRateExtD = ctx->inputs[0]->frame_rate.den;
-    } else {
-        qf->surface.Info.FrameRateExtN = ctx->inputs[0]->time_base.num;
-        qf->surface.Info.FrameRateExtD = ctx->inputs[0]->time_base.den;
-    }
-
-    qf->surface.Data.TimeStamp = av_rescale_q(qf->frame->pts,
-                                              ctx->inputs[0]->time_base,
-                                              (AVRational){1, 90000});
-
-    *surface = &qf->surface;
-    qf->queued = 1;
-
-    return 0;
-}
-
-static int process_frame(AVFilterContext *ctx, const AVFrame *in,
-                         mfxFrameSurface1 *surf_in)
-{
-    QSVDeintContext    *s = ctx->priv;
-    AVFilterLink  *inlink = ctx->inputs[0];
-    AVFilterLink *outlink = ctx->outputs[0];
-
-    AVFrame *out;
-    mfxFrameSurface1 *surf_out;
-    mfxSyncPoint sync = NULL;
-    mfxStatus err;
-    int ret, again = 0;
-
-    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-    if (!out) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
-
-    surf_out = (mfxFrameSurface1*)out->data[3];
-    surf_out->Info.CropW     = outlink->w;
-    surf_out->Info.CropH     = outlink->h;
-    surf_out->Info.PicStruct = MFX_PICSTRUCT_PROGRESSIVE;
-
-    do {
-        err = MFXVideoVPP_RunFrameVPPAsync(s->session, surf_in, surf_out,
-                                           NULL, &sync);
-        if (err == MFX_WRN_DEVICE_BUSY)
-            av_usleep(1);
-    } while (err == MFX_WRN_DEVICE_BUSY);
-
-    if (err == MFX_ERR_MORE_DATA) {
-        av_frame_free(&out);
-        return QSVDEINT_MORE_INPUT;
-    }
-
-    if (err < 0 && err != MFX_ERR_MORE_SURFACE) {
-        ret = ff_qsvvpp_print_error(ctx, err, "Error during deinterlacing");
-        goto fail;
-    }
-
-    if (!sync) {
-        av_log(ctx, AV_LOG_ERROR, "No sync during deinterlacing\n");
-        ret = AVERROR_UNKNOWN;
-        goto fail;
-    }
-    if (err == MFX_ERR_MORE_SURFACE)
-        again = 1;
-
-    do {
-        err = MFXVideoCORE_SyncOperation(s->session, sync, 1000);
-    } while (err == MFX_WRN_IN_EXECUTION);
-    if (err < 0) {
-        ret = ff_qsvvpp_print_error(ctx, err, "Error synchronizing the operation");
-        goto fail;
-    }
-
-    ret = av_frame_copy_props(out, in);
-    if (ret < 0)
-        goto fail;
-
-    out->width            = outlink->w;
-    out->height           = outlink->h;
-    out->interlaced_frame = 0;
-
-    out->pts = av_rescale_q(out->pts, inlink->time_base, outlink->time_base);
-    if (out->pts == s->last_pts)
-        out->pts++;
-    s->last_pts = out->pts;
-
-    if (outlink->frame_rate.num && outlink->frame_rate.den)
-        out->duration = av_rescale_q(1, av_inv_q(outlink->frame_rate), outlink->time_base);
-    else
-        out->duration = 0;
-
-    ret = ff_filter_frame(outlink, out);
-    if (ret < 0)
-        return ret;
-
-    return again ? QSVDEINT_MORE_OUTPUT : 0;
-fail:
-    av_frame_free(&out);
-    return ret;
+    return ff_qsvvpp_init(ctx, &param);
 }
 
 static int qsvdeint_filter_frame(AVFilterLink *link, AVFrame *in)
 {
-    AVFilterContext *ctx = link->dst;
+    AVFilterContext  *ctx = link->dst;
+    QSVVPPContext    *qsv = ctx->priv;
+    int               ret = 0;
 
-    mfxFrameSurface1 *surf_in;
-    int ret;
+    ret = ff_qsvvpp_filter_frame(qsv, link, in);
+    av_frame_free(&in);
 
-    ret = submit_frame(ctx, in, &surf_in);
-    if (ret < 0) {
-        av_frame_free(&in);
-        return ret;
-    }
-
-    do {
-        ret = process_frame(ctx, in, surf_in);
-        if (ret < 0)
-            return ret;
-    } while (ret == QSVDEINT_MORE_OUTPUT);
-
-    return 0;
+    return ret;
 }
 
 static int qsvdeint_request_frame(AVFilterLink *outlink)
