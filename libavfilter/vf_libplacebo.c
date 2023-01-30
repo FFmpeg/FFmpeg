@@ -544,6 +544,30 @@ fail:
     return err;
 }
 
+#if PL_API_VER >= 201
+# if PL_API_VER >= 278
+static void lock_queue(void *priv, uint32_t qf, uint32_t qidx)
+# else
+static void lock_queue(void *priv, int qf, int qidx)
+# endif
+{
+    AVHWDeviceContext *avhwctx = priv;
+    const AVVulkanDeviceContext *hwctx = avhwctx->hwctx;
+    hwctx->lock_queue(avhwctx, qf, qidx);
+}
+
+# if PL_API_VER >= 278
+static void unlock_queue(void *priv, uint32_t qf, uint32_t qidx)
+# else
+static void unlock_queue(void *priv, int qf, int qidx)
+# endif
+{
+    AVHWDeviceContext *avhwctx = priv;
+    const AVVulkanDeviceContext *hwctx = avhwctx->hwctx;
+    hwctx->unlock_queue(avhwctx, qf, qidx);
+}
+#endif
+
 static int init_vulkan(AVFilterContext *avctx, const AVVulkanDeviceContext *hwctx)
 {
     int err = 0;
@@ -561,6 +585,11 @@ static int init_vulkan(AVFilterContext *avctx, const AVVulkanDeviceContext *hwct
             .extensions     = hwctx->enabled_dev_extensions,
             .num_extensions = hwctx->nb_enabled_dev_extensions,
             .features       = &hwctx->device_features,
+#if PL_API_VER >= 201
+            .lock_queue     = lock_queue,
+            .unlock_queue   = unlock_queue,
+            .queue_ctx      = avctx->hw_device_ctx->data,
+#endif
             .queue_graphics = {
                 .index = hwctx->queue_family_index,
                 .count = hwctx->nb_graphics_queues,
