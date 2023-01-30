@@ -101,6 +101,7 @@ typedef struct VPPContext{
     char *output_format_str;
 
     int has_passthrough;        /* apply pass through mode if possible */
+    int field_rate;             /* Generate output at frame rate or field rate for deinterlace mode, 0: frame, 1: field */
 } VPPContext;
 
 static const char *const var_names[] = {
@@ -255,8 +256,13 @@ static int config_input(AVFilterLink *inlink)
     int              ret;
     int64_t          ow, oh;
 
-    if (vpp->framerate.den == 0 || vpp->framerate.num == 0)
+    if (vpp->framerate.den == 0 || vpp->framerate.num == 0) {
         vpp->framerate = inlink->frame_rate;
+
+        if (vpp->deinterlace && vpp->field_rate)
+            vpp->framerate = av_mul_q(inlink->frame_rate,
+                                      (AVRational){ 2, 1 });
+    }
 
     if (av_cmp_q(vpp->framerate, inlink->frame_rate))
         vpp->use_frc = 1;
@@ -352,7 +358,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->w          = vpp->out_width;
     outlink->h          = vpp->out_height;
     outlink->frame_rate = vpp->framerate;
-    outlink->time_base  = inlink->time_base;
+    outlink->time_base  = av_inv_q(vpp->framerate);
 
     param.filter_frame  = NULL;
     param.num_ext_buf   = 0;
@@ -677,6 +683,13 @@ static const AVOption vpp_options[] = {
     { "auto",      "auto mode",             0,    AV_OPT_TYPE_CONST,  { .i64 = MFX_SCALING_MODE_DEFAULT},  INT_MIN, INT_MAX, FLAGS, "scale mode"},
     { "low_power", "low power mode",        0,    AV_OPT_TYPE_CONST,  { .i64 = MFX_SCALING_MODE_LOWPOWER}, INT_MIN, INT_MAX, FLAGS, "scale mode"},
     { "hq",        "high quality mode",     0,    AV_OPT_TYPE_CONST,  { .i64 = MFX_SCALING_MODE_QUALITY},  INT_MIN, INT_MAX, FLAGS, "scale mode"},
+
+    { "rate", "Generate output at frame rate or field rate, available only for deinterlace mode",
+      OFFSET(field_rate), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS, "rate" },
+    { "frame", "Output at frame rate (one frame of output for each field-pair)",
+      0, AV_OPT_TYPE_CONST, { .i64 = 0 }, 0, 0, FLAGS, "rate" },
+    { "field", "Output at field rate (one frame of output for each field)",
+      0, AV_OPT_TYPE_CONST, { .i64 = 1 }, 0, 0, FLAGS, "rate" },
 
     { NULL }
 };
