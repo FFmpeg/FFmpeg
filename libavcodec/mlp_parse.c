@@ -159,7 +159,11 @@ int ff_mlp_read_major_sync(void *log, MLPHeaderInfo *mh, GetBitContext *gb)
 
     mh->num_substreams = get_bits(gb, 4);
 
-    skip_bits_long(gb, 4 + (header_size - 17) * 8);
+    skip_bits(gb, 2);
+    mh->extended_substream_info = get_bits(gb, 2);
+    mh->substream_info = get_bits(gb, 8);
+
+    skip_bits_long(gb, (header_size - 18) * 8);
 
     return 0;
 }

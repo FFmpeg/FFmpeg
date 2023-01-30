@@ -153,6 +153,12 @@ typedef struct MLPDecodeContext {
     /// Number of substreams contained within this stream.
     uint8_t     num_substreams;
 
+    /// Which substream of substreams carry 16-channel presentation
+    uint8_t     extended_substream_info;
+
+    /// Which substream of substreams carry 2/6/8-channel presentation
+    uint8_t     substream_info;
+
     /// Index of the last substream to decode - further substreams are skipped.
     uint8_t     max_decoded_substream;
 
@@ -384,6 +390,7 @@ static int read_major_sync(MLPDecodeContext *m, GetBitContext *gb)
     m->access_unit_size_pow2 = mh.access_unit_size_pow2;
 
     m->num_substreams        = mh.num_substreams;
+    m->substream_info        = mh.substream_info;
 
     /* limit to decoding 3 substreams, as the 4th is used by Dolby Atmos for non-audio data */
     m->max_decoded_substream = FFMIN(m->num_substreams - 1, 2);
@@ -1286,7 +1293,13 @@ static int read_access_unit(AVCodecContext *avctx, AVFrame *frame,
             if (!s->restart_seen)
                 goto next_substr;
 
-            if (substr > 0 && substr < m->max_decoded_substream &&
+            if (((avctx->ch_layout.nb_channels == 6 &&
+                  ((m->substream_info >> 2) & 0x3) != 0x3) ||
+                 (avctx->ch_layout.nb_channels == 8 &&
+                  ((m->substream_info >> 4) & 0x7) != 0x7 &&
+                  ((m->substream_info >> 4) & 0x7) != 0x6 &&
+                  ((m->substream_info >> 4) & 0x7) != 0x3)) &&
+                substr > 0 && substr < m->max_decoded_substream &&
                 (s->min_channel <= m->substream[substr - 1].max_channel)) {
                 av_log(avctx, AV_LOG_DEBUG,
                        "Previous substream(%d) channels overlaps current substream(%d) channels, skipping.\n",
