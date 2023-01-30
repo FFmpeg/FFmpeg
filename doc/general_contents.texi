@@ -534,6 +534,8 @@ library:
 @item Metal Gear Solid: The Twin Snakes @tab @tab X
 @item Megalux Frame             @tab   @tab X
     @tab Used by Megalux Ultimate Paint
+@item MobiClip MODS             @tab   @tab X
+@item MobiClip MOFLEX           @tab   @tab X
 @item Mobotix .mxg              @tab   @tab X
 @item Monkey's Audio            @tab   @tab X
 @item Motion Pixels MVI         @tab   @tab X
@@ -665,6 +667,7 @@ library:
 @item SBG                       @tab   @tab X
 @item SDP                       @tab   @tab X
 @item SER                       @tab   @tab X
+@item Digital Pictures SGA      @tab   @tab X
 @item Sega FILM/CPK             @tab X @tab X
     @tab Used in many Sega Saturn console games.
 @item Silicon Graphics Movie    @tab   @tab X
@@ -702,6 +705,7 @@ library:
 @item Vivo                      @tab   @tab X
 @item VPK                       @tab   @tab X
     @tab Audio format used in Sony PS games.
+@item Marble WADY               @tab   @tab X
 @item WAV                       @tab X @tab X
 @item WavPack                   @tab X @tab X
 @item WebM                      @tab X @tab X
@@ -714,6 +718,7 @@ library:
     @tab Multimedia format used in Westwood Studios games.
 @item Wideband Single-bit Data (WSD) @tab   @tab X
 @item WVE                       @tab   @tab X
+@item Konami XMD                @tab   @tab X
 @item XMV                       @tab   @tab X
     @tab Microsoft video container used in Xbox games.
 @item XVAG                      @tab   @tab X
@@ -763,6 +768,7 @@ following image formats are supported:
 @item JPEG-LS      @tab X @tab X
 @item LJPEG        @tab X @tab
     @tab Lossless JPEG
+@item Media 100    @tab   @tab X
 @item MSP          @tab   @tab X
     @tab Microsoft Paint image
 @item PAM          @tab X @tab X
@@ -1159,6 +1165,7 @@ following image formats are supported:
 @item ADPCM IMA Electronic Arts SEAD  @tab     @tab  X
 @item ADPCM IMA Funcom       @tab     @tab  X
 @item ADPCM IMA High Voltage Software ALP      @tab  X  @tab  X
+@item ADPCM IMA Mobiclip MOFLEX  @tab     @tab  X
 @item ADPCM IMA QuickTime    @tab  X  @tab  X
 @item ADPCM IMA Simon & Schuster Interactive   @tab  X  @tab  X
 @item ADPCM IMA Ubisoft APM  @tab  X  @tab  X
@@ -1188,6 +1195,7 @@ following image formats are supported:
 @item ADPCM Sound Blaster Pro 4-bit  @tab     @tab  X
 @item ADPCM VIMA             @tab     @tab  X
     @tab Used in LucasArts SMUSH animations.
+@item ADPCM Konami XMD       @tab     @tab  X
 @item ADPCM Westwood Studios IMA      @tab  X @tab  X
     @tab Used in Westwood Studios games like Command and Conquer.
 @item ADPCM Yamaha           @tab  X  @tab  X
@@ -1225,9 +1233,12 @@ following image formats are supported:
 @item DCA (DTS Coherent Acoustics)  @tab  X  @tab  X
     @tab supported extensions: XCh, XXCH, X96, XBR, XLL, LBR (partially)
 @item Dolby E  @tab     @tab  X
+@item DPCM Cuberoot-Delta-Exact @tab  @tab  X
+    @tab Used in few games.
 @item DPCM Gremlin           @tab     @tab  X
 @item DPCM id RoQ            @tab  X  @tab  X
     @tab Used in Quake III, Jedi Knight 2 and other computer games.
+@item DPCM Marble WADY       @tab     @tab  X
 @item DPCM Interplay         @tab     @tab  X
     @tab Used in various Interplay computer games.
 @item DPCM Squareroot-Delta-Exact  @tab  @tab  X
@@ -1273,6 +1284,7 @@ following image formats are supported:
 @item MP3 (MPEG audio layer 3)  @tab  E  @tab IX
     @tab encoding supported through external library LAME, ADU MP3 and MP3onMP4 also supported
 @item MPEG-4 Audio Lossless Coding (ALS)  @tab     @tab  X
+@item MobiClip FastAudio     @tab     @tab  X
 @item Musepack SV7           @tab     @tab  X
 @item Musepack SV8           @tab     @tab  X
 @item Nellymoser Asao        @tab  X  @tab  X
@@ -1307,6 +1319,7 @@ following image formats are supported:
 @item PCM unsigned 24-bit little-endian  @tab  X  @tab  X
 @item PCM unsigned 32-bit big-endian  @tab  X  @tab  X
 @item PCM unsigned 32-bit little-endian  @tab  X  @tab  X
+@item PCM SGA                @tab     @tab  X
 @item QCELP / PureVoice      @tab     @tab  X
 @item QDesign Music Codec 1  @tab     @tab  X
 @item QDesign Music Codec 2  @tab     @tab  X
