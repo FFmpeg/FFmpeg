@@ -21,6 +21,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 
 #define MAX_STREAMS 4096
@@ -205,7 +206,7 @@ again:
         s->nb_stored = st_count;
         if (!st_count)
             return AVERROR_INVALIDDATA;
-        ret = avio_read(pb, s->data, st_count * st->codecpar->sample_rate * bpp);
+        ret = ffio_read_size(pb, s->data, st_count * st->codecpar->sample_rate * bpp);
         if (ret < 0)
             return ret;
     }
