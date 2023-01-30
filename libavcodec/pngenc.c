@@ -29,7 +29,6 @@
 #include "zlib_wrapper.h"
 
 #include "libavutil/avassert.h"
-#include "libavutil/color_utils.h"
 #include "libavutil/crc.h"
 #include "libavutil/csp.h"
 #include "libavutil/libm.h"
@@ -317,7 +316,7 @@ static int png_get_chrm(enum AVColorPrimaries prim,  uint8_t *buf)
 
 static int png_get_gama(enum AVColorTransferCharacteristic trc, uint8_t *buf)
 {
-    double gamma = avpriv_get_gamma_from_trc(trc);
+    double gamma = av_csp_approximate_trc_gamma(trc);
     if (gamma <= 1e-6)
         return 0;
 

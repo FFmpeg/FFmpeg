@@ -36,11 +36,11 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
+#include "libavutil/csp.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
-#include "libavutil/color_utils.h"
 #include "libavutil/half2float.h"
 
 #include "avcodec.h"
@@ -1189,7 +1189,7 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
     int i, x, buf_size = s->buf_size;
     int c, rgb_channel_count;
     float one_gamma = 1.0f / s->gamma;
-    avpriv_trc_function trc_func = avpriv_get_trc_function_from_trc(s->apply_trc_type);
+    av_csp_trc_function trc_func = av_csp_trc_func_from_id(s->apply_trc_type);
     int ret;
 
     line_offset = AV_RL64(s->gb.buffer + jobnr * 8);
@@ -2215,7 +2215,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     uint32_t i;
     union av_intfloat32 t;
     float one_gamma = 1.0f / s->gamma;
-    avpriv_trc_function trc_func = NULL;
+    av_csp_trc_function trc_func = NULL;
 
     ff_init_half2float_tables(&s->h2f_tables);
 
@@ -2227,7 +2227,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ff_bswapdsp_init(&s->bbdsp);
 #endif
 
-    trc_func = avpriv_get_trc_function_from_trc(s->apply_trc_type);
+    trc_func = av_csp_trc_func_from_id(s->apply_trc_type);
     if (trc_func) {
         for (i = 0; i < 65536; ++i) {
             t.i = half2float(i, &s->h2f_tables);

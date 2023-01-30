@@ -47,6 +47,7 @@
 #include "internal.h"
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/csp.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/libm.h"
@@ -56,7 +57,6 @@
 #include "libavutil/stereo3d.h"
 #include "libavutil/timecode.h"
 #include "libavutil/dovi_meta.h"
-#include "libavutil/color_utils.h"
 #include "libavutil/uuid.h"
 #include "hevc.h"
 #include "rtpenc.h"
@@ -2011,9 +2011,8 @@ static int mov_write_pasp_tag(AVIOContext *pb, MOVTrack *track)
 static int mov_write_gama_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *track, double gamma)
 {
     uint32_t gama = 0;
-    if (gamma <= 0.0) {
-        gamma = avpriv_get_gamma_from_trc(track->par->color_trc);
-    }
+    if (gamma <= 0.0)
+        gamma = av_csp_approximate_trc_gamma(track->par->color_trc);
     av_log(s, AV_LOG_DEBUG, "gamma value %g\n", gamma);
 
     if (gamma > 1e-6) {

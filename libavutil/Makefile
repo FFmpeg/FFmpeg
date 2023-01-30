@@ -114,7 +114,6 @@ OBJS = adler32.o                                                        \
        cast5.o                                                          \
        camellia.o                                                       \
        channel_layout.o                                                 \
-       color_utils.o                                                    \
        cpu.o                                                            \
        crc.o                                                            \
        csp.o                                                            \
