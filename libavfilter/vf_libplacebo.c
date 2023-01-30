@@ -262,8 +262,7 @@ static int init_vulkan(AVFilterContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    avhwctx = avctx->hw_device_ctx->data;
-
+    avhwctx = (AVHWDeviceContext *) avctx->hw_device_ctx->data;
     if (avhwctx->type != AV_HWDEVICE_TYPE_VULKAN) {
         av_log(s, AV_LOG_ERROR, "Expected vulkan hwdevice for vf_libplacebo, got %s.\n",
             av_hwdevice_get_type_name(avhwctx->type));
