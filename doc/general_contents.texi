@@ -579,6 +579,7 @@ library:
 @item Ogg                       @tab X @tab X
 @item Playstation Portable PMP  @tab   @tab X
 @item Portable Voice Format     @tab   @tab X
+@item RK Audio (RKA)            @tab   @tab X
 @item TechnoTrend PVA           @tab   @tab X
     @tab Used by TechnoTrend DVB PCI boards.
 @item QCP                       @tab   @tab X

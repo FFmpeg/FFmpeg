@@ -41,7 +41,7 @@ version <next>:
 - WavArc decoder and demuxer
 - CrystalHD decoders deprecated
 - SDNS demuxer
-- RKA decoder
+- RKA decoder and demuxer
 
 
 version 5.1:
