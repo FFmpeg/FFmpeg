@@ -329,6 +329,10 @@ static av_cold int init(AVCodecContext *avctx)
     av_log(avctx, AV_LOG_VERBOSE, "CrystalHD Init for %s\n",
            avctx->codec->name);
 
+    av_log(avctx, AV_LOG_WARNING, "CrystalHD support is deprecated and will "
+           "be removed. Please contact the developers if you are interested in "
+           "maintaining it.\n");
+
     avctx->pix_fmt = AV_PIX_FMT_YUYV422;
 
     /* Initialize the library */

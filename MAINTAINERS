@@ -151,7 +151,6 @@ Codecs:
   ccaption_dec.c                        Anshul Maheshwari, Aman Gupta
   cljr                                  Alex Beregszaszi
   cpia.c                                Stephan Hilb
-  crystalhd.c                           Philip Langdale
   cscd.c                                Reimar Doeffinger
   cuviddec.c                            Timo Rothenpieler
   dca*                                  foo86
@@ -265,7 +264,6 @@ Codecs:
   xwd*                                  Paul B Mahol
 
 Hardware acceleration:
-  crystalhd.c                           Philip Langdale
   dxva2*                                Hendrik Leppkes, Laurent Aimar, Steve Lhomme
   d3d11va*                              Steve Lhomme
   mediacodec*                           Matthieu Bouron, Aman Gupta

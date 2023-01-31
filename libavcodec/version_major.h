@@ -55,4 +55,7 @@
 #define FF_API_VT_HWACCEL_CONTEXT  (LIBAVCODEC_VERSION_MAJOR < 60)
 #define FF_API_AVCODEC_CHROMA_POS  (LIBAVCODEC_VERSION_MAJOR < 60)
 
+// reminder to remove CrystalHD decoders on next major bump
+#define FF_CODEC_CRYSTAL_HD        (LIBAVCODEC_VERSION_MAJOR < 61)
+
 #endif /* AVCODEC_VERSION_MAJOR_H */

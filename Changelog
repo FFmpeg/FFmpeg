@@ -38,6 +38,7 @@ version <next>:
 - media100 to mjpegb bsf
 - ffmpeg CLI new option: -fix_sub_duration_heartbeat
 - WavArc decoder and demuxer
+- CrystalHD decoders deprecated
 
 
 version 5.1:
