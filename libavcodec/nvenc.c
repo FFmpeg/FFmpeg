@@ -166,7 +166,9 @@ static int nvenc_print_error(AVCodecContext *avctx, NVENCSTATUS err,
 typedef struct FrameData {
     int64_t pts;
     int64_t duration;
+#if FF_API_REORDERED_OPAQUE
     int64_t reordered_opaque;
+#endif
 
     void        *frame_opaque;
     AVBufferRef *frame_opaque_ref;
@@ -2203,7 +2205,11 @@ static void reorder_queue_enqueue(AVFifo *queue, const AVCodecContext *avctx,
 
     fd.pts              = frame->pts;
     fd.duration         = frame->duration;
+#if FF_API_REORDERED_OPAQUE
+FF_DISABLE_DEPRECATION_WARNINGS
     fd.reordered_opaque = frame->reordered_opaque;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     fd.frame_opaque     = frame->opaque;
     fd.frame_opaque_ref = *opaque_ref;
 
@@ -2222,7 +2228,11 @@ static int64_t reorder_queue_dequeue(AVFifo *queue, AVCodecContext *avctx,
         return AV_NOPTS_VALUE;
 
     if (pkt) {
+#if FF_API_REORDERED_OPAQUE
+FF_DISABLE_DEPRECATION_WARNINGS
         avctx->reordered_opaque = fd.reordered_opaque;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
         pkt->duration           = fd.duration;
 
         if (avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE) {

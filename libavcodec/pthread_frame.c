@@ -390,7 +390,11 @@ static int update_context_from_user(AVCodecContext *dst, AVCodecContext *src)
     dst->skip_frame       = src->skip_frame;
 
     dst->frame_number     = src->frame_number;
+#if FF_API_REORDERED_OPAQUE
+FF_DISABLE_DEPRECATION_WARNINGS
     dst->reordered_opaque = src->reordered_opaque;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 #if FF_API_THREAD_SAFE_CALLBACKS
 FF_DISABLE_DEPRECATION_WARNINGS
     dst->thread_safe_callbacks = src->thread_safe_callbacks;

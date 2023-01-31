@@ -1357,7 +1357,11 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
             return ret;
         frame->pkt_size     = (int)(intptr_t)pkt->opaque;
     }
+#if FF_API_REORDERED_OPAQUE
+FF_DISABLE_DEPRECATION_WARNINGS
     frame->reordered_opaque = avctx->reordered_opaque;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     if (frame->color_primaries == AVCOL_PRI_UNSPECIFIED)
         frame->color_primaries = avctx->color_primaries;

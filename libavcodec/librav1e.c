@@ -57,7 +57,9 @@ typedef struct librav1eContext {
 typedef struct FrameData {
     int64_t pts;
     int64_t duration;
+#if FF_API_REORDERED_OPAQUE
     int64_t reordered_opaque;
+#endif
 
     void        *frame_opaque;
     AVBufferRef *frame_opaque_ref;
@@ -465,7 +467,11 @@ static int librav1e_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
             }
             fd->pts      = frame->pts;
             fd->duration = frame->duration;
+#if FF_API_REORDERED_OPAQUE
+FF_DISABLE_DEPRECATION_WARNINGS
             fd->reordered_opaque = frame->reordered_opaque;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
             if (avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE) {
                 fd->frame_opaque = frame->opaque;
@@ -572,7 +578,11 @@ retry:
     fd = rpkt->opaque;
     pkt->pts = pkt->dts = fd->pts;
     pkt->duration = fd->duration;
+#if FF_API_REORDERED_OPAQUE
+FF_DISABLE_DEPRECATION_WARNINGS
     avctx->reordered_opaque = fd->reordered_opaque;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     if (avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE) {
         pkt->opaque          = fd->frame_opaque;

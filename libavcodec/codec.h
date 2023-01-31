@@ -169,9 +169,9 @@
 #define AV_CODEC_CAP_HYBRID              (1 << 19)
 
 /**
- * This codec takes the reordered_opaque field from input AVFrames
- * and returns it in the corresponding field in AVCodecContext after
- * encoding.
+ * This encoder can reorder user opaque values from input AVFrames and return
+ * them with corresponding output packets.
+ * @see AV_CODEC_FLAG_COPY_OPAQUE
  */
 #define AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE (1 << 20)
 

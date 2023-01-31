@@ -290,7 +290,9 @@ static void libdav1d_flush(AVCodecContext *c)
 
 typedef struct OpaqueData {
     void    *pkt_orig_opaque;
+#if FF_API_REORDERED_OPAQUE
     int64_t  reordered_opaque;
+#endif
 } OpaqueData;
 
 static void libdav1d_data_free(const uint8_t *data, void *opaque) {
@@ -340,7 +342,11 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
 
             pkt->buf = NULL;
 
-            if (c->reordered_opaque != AV_NOPTS_VALUE ||
+FF_DISABLE_DEPRECATION_WARNINGS
+            if (
+#if FF_API_REORDERED_OPAQUE
+                c->reordered_opaque != AV_NOPTS_VALUE ||
+#endif
                 (pkt->opaque && (c->flags & AV_CODEC_FLAG_COPY_OPAQUE))) {
                 od = av_mallocz(sizeof(*od));
                 if (!od) {
@@ -349,7 +355,10 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
                     return AVERROR(ENOMEM);
                 }
                 od->pkt_orig_opaque  = pkt->opaque;
+#if FF_API_REORDERED_OPAQUE
                 od->reordered_opaque = c->reordered_opaque;
+#endif
+FF_ENABLE_DEPRECATION_WARNINGS
             }
             pkt->opaque = od;
 
@@ -432,10 +441,14 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
 
     pkt = (AVPacket *)p->m.user_data.data;
     od  = pkt->opaque;
+#if FF_API_REORDERED_OPAQUE
+FF_DISABLE_DEPRECATION_WARNINGS
     if (od && od->reordered_opaque != AV_NOPTS_VALUE)
         frame->reordered_opaque = od->reordered_opaque;
     else
         frame->reordered_opaque = AV_NOPTS_VALUE;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     // restore the original user opaque value for
     // ff_decode_frame_props_from_pkt()
