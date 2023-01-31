@@ -14,6 +14,9 @@ libavutil:     2021-04-27
 
 API changes, most recent first:
 
+2023-0x-xx - xxxxxxxxxx - lavc 59.63.100
+  Allow AV_CODEC_FLAG_COPY_OPAQUE to be used with decoders.
+
 2023-01-29 - xxxxxxxxxx - lavc 59.59.100 - avcodec.h
   Add AV_CODEC_FLAG_COPY_OPAQUE and AV_CODEC_FLAG_FRAME_DURATION.
 

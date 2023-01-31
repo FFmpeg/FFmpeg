@@ -288,6 +288,11 @@ static void libdav1d_flush(AVCodecContext *c)
     dav1d_flush(dav1d->c);
 }
 
+typedef struct OpaqueData {
+    void    *pkt_orig_opaque;
+    int64_t  reordered_opaque;
+} OpaqueData;
+
 static void libdav1d_data_free(const uint8_t *data, void *opaque) {
     AVBufferRef *buf = opaque;
 
@@ -307,6 +312,7 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
     Dav1dData *data = &dav1d->data;
     Dav1dPicture pic = { 0 }, *p = &pic;
     AVPacket *pkt;
+    OpaqueData *od = NULL;
 #if FF_DAV1D_VERSION_AT_LEAST(5,1)
     enum Dav1dEventFlags event_flags = 0;
 #endif
@@ -333,17 +339,19 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
             }
 
             pkt->buf = NULL;
-            pkt->opaque = NULL;
 
-            if (c->reordered_opaque != AV_NOPTS_VALUE) {
-                pkt->opaque = av_memdup(&c->reordered_opaque,
-                                        sizeof(c->reordered_opaque));
-                if (!pkt->opaque) {
+            if (c->reordered_opaque != AV_NOPTS_VALUE ||
+                (pkt->opaque && (c->flags & AV_CODEC_FLAG_COPY_OPAQUE))) {
+                od = av_mallocz(sizeof(*od));
+                if (!od) {
                     av_packet_free(&pkt);
                     dav1d_data_unref(data);
                     return AVERROR(ENOMEM);
                 }
+                od->pkt_orig_opaque  = pkt->opaque;
+                od->reordered_opaque = c->reordered_opaque;
             }
+            pkt->opaque = od;
 
             res = dav1d_data_wrap_user_data(data, (const uint8_t *)pkt,
                                             libdav1d_user_data_free, pkt);
@@ -423,13 +431,20 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
     ff_set_sar(c, frame->sample_aspect_ratio);
 
     pkt = (AVPacket *)p->m.user_data.data;
-    if (pkt->opaque)
-        memcpy(&frame->reordered_opaque, pkt->opaque, sizeof(frame->reordered_opaque));
+    od  = pkt->opaque;
+    if (od && od->reordered_opaque != AV_NOPTS_VALUE)
+        frame->reordered_opaque = od->reordered_opaque;
     else
         frame->reordered_opaque = AV_NOPTS_VALUE;
 
+    // restore the original user opaque value for
+    // ff_decode_frame_props_from_pkt()
+    pkt->opaque = od ? od->pkt_orig_opaque : NULL;
+    av_freep(&od);
+
     // match timestamps and packet size
-    res = ff_decode_frame_props_from_pkt(frame, pkt);
+    res = ff_decode_frame_props_from_pkt(c, frame, pkt);
+    pkt->opaque = NULL;
     if (res < 0)
         goto fail;
 

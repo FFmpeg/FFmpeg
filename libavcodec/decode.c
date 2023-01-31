@@ -1291,7 +1291,8 @@ static int add_metadata_from_side_data(const AVPacket *avpkt, AVFrame *frame)
     return av_packet_unpack_dictionary(side_metadata, size, frame_md);
 }
 
-int ff_decode_frame_props_from_pkt(AVFrame *frame, const AVPacket *pkt)
+int ff_decode_frame_props_from_pkt(const AVCodecContext *avctx,
+                                   AVFrame *frame, const AVPacket *pkt)
 {
     static const struct {
         enum AVPacketSideDataType packet;
@@ -1336,6 +1337,13 @@ int ff_decode_frame_props_from_pkt(AVFrame *frame, const AVPacket *pkt)
         frame->flags = (frame->flags & ~AV_FRAME_FLAG_DISCARD);
     }
 
+    if (avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE) {
+        int ret = av_buffer_replace(&frame->opaque_ref, pkt->opaque_ref);
+        if (ret < 0)
+            return ret;
+        frame->opaque = pkt->opaque;
+    }
+
     return 0;
 }
 
@@ -1344,7 +1352,7 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
     const AVPacket *pkt = avctx->internal->last_pkt_props;
 
     if (!(ffcodec(avctx->codec)->caps_internal & FF_CODEC_CAP_SETS_FRAME_PROPS)) {
-        int ret = ff_decode_frame_props_from_pkt(frame, pkt);
+        int ret = ff_decode_frame_props_from_pkt(avctx, frame, pkt);
         if (ret < 0)
             return ret;
         frame->pkt_size     = (int)(intptr_t)pkt->opaque;
