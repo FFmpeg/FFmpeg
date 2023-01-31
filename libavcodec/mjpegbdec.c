@@ -168,3 +168,18 @@ const FFCodec ff_mjpegb_decoder = {
     .p.max_lowres   = 3,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
+
+const FFCodec ff_media100_decoder = {
+    .p.name         = "media100",
+    CODEC_LONG_NAME("Media 100"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_MEDIA100,
+    .priv_data_size = sizeof(MJpegDecodeContext),
+    .init           = ff_mjpeg_decode_init,
+    .close          = ff_mjpeg_decode_end,
+    FF_CODEC_DECODE_CB(mjpegb_decode_frame),
+    .p.capabilities = AV_CODEC_CAP_DR1,
+    .p.max_lowres   = 3,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
+    .bsfs           = "media100_to_mjpegb",
+};

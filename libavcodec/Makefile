@@ -485,7 +485,7 @@ OBJS-$(CONFIG_MACE6_DECODER)           += mace.o
 OBJS-$(CONFIG_MAGICYUV_DECODER)        += magicyuv.o
 OBJS-$(CONFIG_MAGICYUV_ENCODER)        += magicyuvenc.o
 OBJS-$(CONFIG_MDEC_DECODER)            += mdec.o mpeg12.o mpeg12data.o
-OBJS-$(CONFIG_MEDIA100_DECODER)        += media100.o
+OBJS-$(CONFIG_MEDIA100_DECODER)        += mjpegbdec.o
 OBJS-$(CONFIG_METASOUND_DECODER)       += metasound.o twinvq.o
 OBJS-$(CONFIG_MICRODVD_DECODER)        += microdvddec.o ass.o
 OBJS-$(CONFIG_MIMIC_DECODER)           += mimic.o
@@ -1220,6 +1220,7 @@ OBJS-$(CONFIG_HEVC_METADATA_BSF)          += h265_metadata_bsf.o h265_profile_le
                                              h2645data.o
 OBJS-$(CONFIG_HEVC_MP4TOANNEXB_BSF)       += hevc_mp4toannexb_bsf.o
 OBJS-$(CONFIG_IMX_DUMP_HEADER_BSF)        += imx_dump_header_bsf.o
+OBJS-$(CONFIG_MEDIA100_TO_MJPEGB_BSF)     += media100_to_mjpegb_bsf.o
 OBJS-$(CONFIG_MJPEG2JPEG_BSF)             += mjpeg2jpeg_bsf.o
 OBJS-$(CONFIG_MJPEGA_DUMP_HEADER_BSF)     += mjpega_dump_header_bsf.o
 OBJS-$(CONFIG_MPEG4_UNPACK_BFRAMES_BSF)   += mpeg4_unpack_bframes_bsf.o
