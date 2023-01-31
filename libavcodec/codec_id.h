@@ -537,6 +537,7 @@ enum AVCodecID {
     AV_CODEC_ID_APAC,
     AV_CODEC_ID_FTR,
     AV_CODEC_ID_WAVARC,
+    AV_CODEC_ID_RKA,
 
     /* subtitle codecs */
     AV_CODEC_ID_FIRST_SUBTITLE = 0x17000,          ///< A dummy ID pointing at the start of subtitle codecs.
