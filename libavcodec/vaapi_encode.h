@@ -75,7 +75,11 @@ typedef struct VAAPIEncodePicture {
     int64_t         display_order;
     int64_t         encode_order;
     int64_t         pts;
+    int64_t         duration;
     int             force_idr;
+
+    void           *opaque;
+    AVBufferRef    *opaque_ref;
 
 #if VA_CHECK_VERSION(1, 0, 0)
     // ROI regions.
