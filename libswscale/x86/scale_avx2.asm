@@ -144,7 +144,7 @@ cglobal hscale8to15_%1, 7, 9, 16, pos0, dst, w, srcmem, filter, fltpos, fltsize,
     cmp countq, wq
     jl .tail_loop
 .end:
-REP_RET
+RET
 %endmacro
 
 %if ARCH_X86_64

@@ -166,7 +166,7 @@ INIT_YMM cpuname
     add             srcq, srcstrideq             ; src += srcstride
     dec          heightd                         ; cmp height
     jnz               .loop                      ; height loop
-    REP_RET
+    RET
 %endmacro
 
 

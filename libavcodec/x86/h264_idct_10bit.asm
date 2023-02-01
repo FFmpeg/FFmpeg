@@ -155,7 +155,7 @@ cglobal h264_idct_add16_10, 5,6
     ADD16_OP 13, 7+3*8
     ADD16_OP 14, 6+4*8
     ADD16_OP 15, 7+4*8
-    REP_RET
+    RET
 %endmacro
 
 INIT_XMM sse2
@@ -292,7 +292,7 @@ cglobal h264_idct_add16intra_10,5,7,8
     ADD16_OP_INTRA 10, 4+4*8
     ADD16_OP_INTRA 12, 6+3*8
     ADD16_OP_INTRA 14, 6+4*8
-    REP_RET
+    RET
     AC 8
     AC 10
     AC 12
@@ -335,7 +335,7 @@ cglobal h264_idct_add8_10,5,8,7
 %endif
     ADD16_OP_INTRA 32, 4+11*8
     ADD16_OP_INTRA 34, 4+12*8
-    REP_RET
+    RET
     AC 16
     AC 18
     AC 32
@@ -384,7 +384,7 @@ cglobal h264_idct_add8_422_10, 5, 8, 7
     ADD16_OP_INTRA 34, 4+12*8
     ADD16_OP_INTRA 40, 4+13*8 ; i+4
     ADD16_OP_INTRA 42, 4+14*8 ; i+4
-REP_RET
+RET
     AC 16
     AC 18
     AC 24 ; i+4

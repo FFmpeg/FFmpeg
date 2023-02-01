@@ -101,7 +101,7 @@ cglobal h264_weight_16_10
     add       r0, r1
     dec       r2d
     jnz .nextrow
-    REP_RET
+    RET
 %endmacro
 
 INIT_XMM sse2
@@ -120,7 +120,7 @@ cglobal h264_weight_8_10
     add        r0, r1
     dec        r2d
     jnz .nextrow
-    REP_RET
+    RET
 %endmacro
 
 INIT_XMM sse2
@@ -142,7 +142,7 @@ cglobal h264_weight_4_10
     add         r0, r3
     dec         r2d
     jnz .nextrow
-    REP_RET
+    RET
 %endmacro
 
 INIT_XMM sse2
@@ -234,7 +234,7 @@ cglobal h264_biweight_16_10
     add       r1, r2
     dec       r3d
     jnz .nextrow
-    REP_RET
+    RET
 %endmacro
 
 INIT_XMM sse2
@@ -253,7 +253,7 @@ cglobal h264_biweight_8_10
     add      r1, r2
     dec      r3d
     jnz .nextrow
-    REP_RET
+    RET
 %endmacro
 
 INIT_XMM sse2
@@ -275,7 +275,7 @@ cglobal h264_biweight_4_10
     add         r1, r4
     dec         r3d
     jnz .nextrow
-    REP_RET
+    RET
 %endmacro
 
 INIT_XMM sse2

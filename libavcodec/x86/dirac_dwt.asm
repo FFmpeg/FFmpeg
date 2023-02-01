@@ -75,7 +75,7 @@ cglobal vertical_compose53iL0_%1, 4,4,1, b0, b1, b2, width
     COMPOSE_53iL0 m0, m1, [b2q+2*widthq], m2
     mova    [b1q+2*widthq], m0
     jg      .loop
-    REP_RET
+    RET
 
 ; void vertical_compose_dirac53iH0(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2,
 ;                                  int width)
@@ -93,7 +93,7 @@ cglobal vertical_compose_dirac53iH0_%1, 4,4,1, b0, b1, b2, width
     paddw   m0, [b1q+2*widthq]
     mova    [b1q+2*widthq], m0
     jg      .loop
-    REP_RET
+    RET
 
 ; void vertical_compose_dd97iH0(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2,
 ;                               IDWTELEM *b3, IDWTELEM *b4, int width)
@@ -110,7 +110,7 @@ cglobal vertical_compose_dd97iH0_%1, 6,6,5, b0, b1, b2, b3, b4, width
     COMPOSE_DD97iH0 [b2q+2*widthq], [b3q+2*widthq], [b4q+2*widthq]
     mova    [b2q+2*widthq], m1
     jg      .loop
-    REP_RET
+    RET
 
 ; void vertical_compose_dd137iL0(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2,
 ;                                IDWTELEM *b3, IDWTELEM *b4, int width)
@@ -139,7 +139,7 @@ cglobal vertical_compose_dd137iL0_%1, 6,6,6, b0, b1, b2, b3, b4, width
     psubw   m5, m1
     mova    [b2q+2*widthq], m5
     jg      .loop
-    REP_RET
+    RET
 
 ; void vertical_compose_haar(IDWTELEM *b0, IDWTELEM *b1, int width)
 cglobal vertical_compose_haar_%1, 3,4,3, b0, b1, width
@@ -159,7 +159,7 @@ cglobal vertical_compose_haar_%1, 3,4,3, b0, b1, width
     paddw   m2, m0
     mova    [b1q+2*widthq], m2
     jg      .loop
-    REP_RET
+    RET
 %endmacro
 
 ; extend the left and right edges of the tmp array by %1 and %2 respectively
@@ -225,7 +225,7 @@ cglobal horizontal_compose_haar%2i_%1, 3,6,4, b, tmp, w, x, w2, b_w2
     cmp     xq, w2q
     jl      .highpass_loop
 .end:
-    REP_RET
+    RET
 %endmacro
 
 
@@ -290,7 +290,7 @@ cglobal horizontal_compose_dd97i_ssse3, 3,6,8, b, tmp, w, x, w2, b_w2
     cmp     xd, w2d
     jl      .highpass_loop
 .end:
-    REP_RET
+    RET
 
 
 INIT_XMM

@@ -53,7 +53,7 @@ cglobal scene_sad, 6, 7, 2, src1, stride1, src2, stride2, width, end, x
 
     mov         r0q, r6mp
     movu      [r0q], m1      ; sum
-REP_RET
+RET
 %endmacro
 
 

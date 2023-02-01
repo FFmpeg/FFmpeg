@@ -78,7 +78,7 @@ cglobal put_pixels8_x2, 4,5
     add          r0, r4
     sub         r3d, 4
     jne .loop
-    REP_RET
+    RET
 %endmacro
 
 INIT_MMX mmxext
@@ -120,7 +120,7 @@ cglobal put_pixels16_x2, 4,5
     add          r0, r4
     sub         r3d, 4
     jne .loop
-    REP_RET
+    RET
 %endmacro
 
 INIT_MMX mmxext
@@ -162,7 +162,7 @@ cglobal put_no_rnd_pixels8_x2, 4,5
     add          r0, r4
     sub         r3d, 4
     jne .loop
-    REP_RET
+    RET
 
 
 ; void ff_put_pixels8_y2(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
@@ -194,7 +194,7 @@ cglobal put_pixels8_y2, 4,5
     add          r0, r4
     sub         r3d, 4
     jne .loop
-    REP_RET
+    RET
 %endmacro
 
 INIT_MMX mmxext
@@ -232,7 +232,7 @@ cglobal put_no_rnd_pixels8_y2, 4,5
     add          r0, r4
     sub         r3d, 4
     jne .loop
-    REP_RET
+    RET
 
 
 ; void ff_avg_pixels8_x2(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
@@ -280,7 +280,7 @@ cglobal avg_pixels8_x2, 4,5
     add          r0, r4
     sub         r3d, 4
     jne .loop
-    REP_RET
+    RET
 %endmacro
 
 INIT_MMX mmxext
@@ -323,7 +323,7 @@ cglobal avg_pixels8_y2, 4,5
     add          r0, r4
     sub         r3d, 4
     jne .loop
-    REP_RET
+    RET
 %endmacro
 
 INIT_MMX mmxext
@@ -370,7 +370,7 @@ cglobal avg_approx_pixels8_xy2, 4,5
     add          r0, r4
     sub         r3d, 4
     jne .loop
-    REP_RET
+    RET
 
 
 ; void ff_avg_pixels16_xy2(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
@@ -448,7 +448,7 @@ cglobal %1_pixels8_xy2, 4,5
     add         r4, r2
     sub        r3d, 2
     jnz .loop
-    REP_RET
+    RET
 %endmacro
 
 INIT_MMX mmxext
@@ -514,7 +514,7 @@ cglobal %1_pixels8_xy2, 4,5
     add         r4, r2
     sub        r3d, 2
     jnz .loop
-    REP_RET
+    RET
 %endmacro
 
 INIT_MMX ssse3

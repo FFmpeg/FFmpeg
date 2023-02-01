@@ -475,7 +475,7 @@ cglobal fft_calc, 2,5,8
     mov     r0, r1
     mov     r1, r3
     FFT_DISPATCH _interleave %+ SUFFIX, r1
-    REP_RET
+    RET
 
 %endif
 
@@ -510,7 +510,7 @@ cglobal fft_calc, 2,5,8
     add      r2, mmsize*2
     jl       .loop
 .end:
-    REP_RET
+    RET
 
 cglobal fft_permute, 2,7,1
     mov     r4,  [r0 + FFTContext.revtab]
@@ -543,7 +543,7 @@ cglobal fft_permute, 2,7,1
     movaps  [r1 + r2 + 16], xmm1
     add     r2, 32
     jl      .loopcopy
-    REP_RET
+    RET
 
 INIT_XMM sse
 cglobal imdct_calc, 3,5,3
@@ -583,7 +583,7 @@ cglobal imdct_calc, 3,5,3
     sub     r3, mmsize
     add     r2, mmsize
     jl      .loop
-    REP_RET
+    RET
 
 %ifdef PIC
 %define SECTION_REL - $$

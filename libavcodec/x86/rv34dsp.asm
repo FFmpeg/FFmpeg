@@ -54,7 +54,7 @@ cglobal rv34_idct_dc_noround, 1, 2, 0
     movq    [r0+ 8], m0
     movq    [r0+16], m0
     movq    [r0+24], m0
-    REP_RET
+    RET
 
 ; Load coeffs and perform row transform
 ; Output: coeffs in mm[0467], rounder in mm5

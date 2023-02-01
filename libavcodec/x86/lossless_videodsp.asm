@@ -229,7 +229,7 @@ cglobal add_bytes, 3,4,2, dst, src, w, size
     inc     wq
     jl .3
 .end:
-    REP_RET
+    RET
 %endmacro
 
 INIT_XMM sse2

@@ -372,7 +372,7 @@ cglobal deblock_v_luma_10, 5,5,15
     add         r4, 2
     dec         r3
     jg .loop
-    REP_RET
+    RET
 
 cglobal deblock_h_luma_10, 5,7,15
     shl        r2d, 2
@@ -411,7 +411,7 @@ cglobal deblock_h_luma_10, 5,7,15
     lea         r5, [r5+r1*8]
     dec         r6
     jg .loop
-    REP_RET
+    RET
 %endmacro
 
 INIT_XMM sse2
@@ -648,7 +648,7 @@ cglobal deblock_v_luma_intra_10, 4,7,16
     add     r4, mmsize
     dec     r6
     jg .loop
-    REP_RET
+    RET
 
 ;-----------------------------------------------------------------------------
 ; void ff_deblock_h_luma_intra_10(uint16_t *pix, int stride, int alpha,

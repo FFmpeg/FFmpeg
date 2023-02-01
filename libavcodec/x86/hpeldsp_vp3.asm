@@ -60,7 +60,7 @@ cglobal put_no_rnd_pixels8_x2_exact, 4,5
     lea          r0, [r0+r2*4]
     sub         r3d, 4
     jg .loop
-    REP_RET
+    RET
 
 
 ; void ff_put_no_rnd_pixels8_y2_exact(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
@@ -96,4 +96,4 @@ cglobal put_no_rnd_pixels8_y2_exact, 4,5
     lea          r0, [r0+r2*4]
     sub         r3d, 4
     jg .loop
-    REP_RET
+    RET

@@ -112,7 +112,7 @@ cglobal %1_%2_chroma_mc8%3, 6, 7 + extra_regs, 0
     jne .at_least_one_non_zero
     ; mx == 0 AND my == 0 - no filter needed
     mv0_pixels_mc8
-    REP_RET
+    RET
 
 .at_least_one_non_zero:
 %ifidn %2, rv40
@@ -192,7 +192,7 @@ cglobal %1_%2_chroma_mc8%3, 6, 7 + extra_regs, 0
     add           r1, r2
     dec           r3d
     jne .next1drow
-    REP_RET
+    RET
 
 .both_non_zero: ; general case, bilinear
     movd          m4, r4d         ; x
@@ -365,7 +365,7 @@ cglobal %1_%2_chroma_mc4, 6, 6 + extra_regs, 0
     add           r0, r2
     sub          r3d, 2
     jnz .next2rows
-    REP_RET
+    RET
 %endmacro
 
 %macro chroma_mc2_mmx_func 2
@@ -407,7 +407,7 @@ cglobal %1_%2_chroma_mc2, 6, 7, 0
     add           r0, r2
     sub          r3d, 1
     jnz .nextrow
-    REP_RET
+    RET
 %endmacro
 
 %define rnd_1d_h264 pw_4
@@ -453,7 +453,7 @@ cglobal %1_%2_chroma_mc8%3, 6, 7, 8
     jne .at_least_one_non_zero
     ; mx == 0 AND my == 0 - no filter needed
     mv0_pixels_mc8
-    REP_RET
+    RET
 
 .at_least_one_non_zero:
     test         r5d, r5d
@@ -514,7 +514,7 @@ cglobal %1_%2_chroma_mc8%3, 6, 7, 8
     sub          r3d, 2
     lea           r0, [r0+r2*2]
     jg .next2rows
-    REP_RET
+    RET
 
 .my_is_zero:
     mov          r5d, r4d
@@ -551,7 +551,7 @@ cglobal %1_%2_chroma_mc8%3, 6, 7, 8
     lea           r0, [r0+r2*2]
     lea           r1, [r1+r2*2]
     jg .next2xrows
-    REP_RET
+    RET
 
 .mx_is_zero:
     mov          r4d, r5d
@@ -588,7 +588,7 @@ cglobal %1_%2_chroma_mc8%3, 6, 7, 8
     sub          r3d, 2
     lea           r0, [r0+r2*2]
     jg .next2yrows
-    REP_RET
+    RET
 %endmacro
 
 %macro chroma_mc4_ssse3_func 2
@@ -638,7 +638,7 @@ cglobal %1_%2_chroma_mc4, 6, 7, 0
     sub          r3d, 2
     lea           r0, [r0+r2*2]
     jg .next2rows
-    REP_RET
+    RET
 %endmacro
 
 %define CHROMAMC_AVG NOTHING

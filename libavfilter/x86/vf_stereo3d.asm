@@ -213,4 +213,4 @@ cglobal anaglyph, 3, 6, 8, 2*9*mmsize, dst, lsrc, rsrc, dst_linesize, o, cnt
     add         rsrcq, r_linesizeq
     sub       heightd, 1
     jg .nextrow
-REP_RET
+RET

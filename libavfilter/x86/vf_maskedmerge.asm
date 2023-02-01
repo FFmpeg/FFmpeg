@@ -81,4 +81,4 @@ cglobal maskedmerge8, 5, 7, 8, bsrc, osrc, msrc, dst, blinesize, w, x
     add          dstq, dlinesizeq
     sub         hd, 1
     jg .nextrow
-REP_RET
+RET

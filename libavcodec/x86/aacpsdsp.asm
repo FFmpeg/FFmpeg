@@ -49,7 +49,7 @@ align 16
     add  dstq, mmsize
     add    nq, mmsize*2
     jl .loop
-    REP_RET
+    RET
 %endmacro
 
 INIT_XMM sse
@@ -83,7 +83,7 @@ align 16
     add   src2q, mmsize
     add      nq, mmsize*2
     jl .loop
-    REP_RET
+    RET
 
 ;***********************************************************************
 ;void ff_ps_stereo_interpolate_sse3(float (*l)[2], float (*r)[2],
@@ -116,7 +116,7 @@ align 16
     movhps [rq+nq], m2
     add      nq, 8
     jl .loop
-    REP_RET
+    RET
 
 ;***************************************************************************
 ;void ps_stereo_interpolate_ipdopd_sse3(float (*l)[2], float (*r)[2],
@@ -164,7 +164,7 @@ align 16
     movhps [rq+nq], m2
     add      nq, 8
     jl .loop
-    REP_RET
+    RET
 
 ;**********************************************************
 ;void ps_hybrid_analysis_ileave_sse(float out[2][38][64],
@@ -484,7 +484,7 @@ align 16
     add    outq, strideq
     add      nq, 64
     jl .loop
-    REP_RET
+    RET
 %endmacro
 
 INIT_XMM sse

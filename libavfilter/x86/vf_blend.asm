@@ -63,7 +63,7 @@ cglobal blend_%1, 5, 7, %2, top, top_linesize, bottom, bottom_linesize, dst, end
     add          dstq, dst_linesizeq
     sub          endd, 1
     jg .nextrow
-REP_RET
+RET
 %endmacro
 
 %macro BLEND_SIMPLE 2-3 0

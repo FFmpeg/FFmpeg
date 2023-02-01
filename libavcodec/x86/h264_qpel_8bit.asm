@@ -89,7 +89,7 @@ cglobal %1_h264_qpel4_h_lowpass, 4,5 ; dst, src, dstStride, srcStride
     add           r1, r3
     dec          r4d
     jg         .loop
-    REP_RET
+    RET
 %endmacro
 
 INIT_MMX mmxext
@@ -149,7 +149,7 @@ cglobal %1_h264_qpel8_h_lowpass, 4,5 ; dst, src, dstStride, srcStride
     add           r1, r3
     dec          r4d
     jg         .loop
-    REP_RET
+    RET
 %endmacro
 
 INIT_MMX mmxext
@@ -192,7 +192,7 @@ cglobal %1_h264_qpel8_h_lowpass, 4,5,8 ; dst, src, dstStride, srcStride
     add           r0, r2
     dec          r4d
     jne        .loop
-    REP_RET
+    RET
 %endmacro
 
 INIT_XMM ssse3
@@ -239,7 +239,7 @@ cglobal %1_h264_qpel4_h_lowpass_l2, 5,6 ; dst, src, src2, dstStride, srcStride
     add           r2, r4
     dec          r5d
     jg         .loop
-    REP_RET
+    RET
 %endmacro
 
 INIT_MMX mmxext
@@ -303,7 +303,7 @@ cglobal %1_h264_qpel8_h_lowpass_l2, 5,6 ; dst, src, src2, dstStride, srcStride
     add           r2, r4
     dec          r5d
     jg         .loop
-    REP_RET
+    RET
 %endmacro
 
 INIT_MMX mmxext
@@ -350,7 +350,7 @@ cglobal %1_h264_qpel8_h_lowpass_l2, 5,6,8 ; dst, src, src2, dstStride, src2Strid
     add           r2, r4
     dec          r5d
     jg         .loop
-    REP_RET
+    RET
 %endmacro
 
 INIT_XMM ssse3
@@ -458,7 +458,7 @@ cglobal %1_h264_qpel8or16_v_lowpass_op, 5,5,8 ; dst, src, dstStride, srcStride, 
     FILT_V        %1
     FILT_V        %1
 .end:
-    REP_RET
+    RET
 %endmacro
 
 INIT_XMM sse2
@@ -531,7 +531,7 @@ cglobal %1_h264_qpel4_hv_lowpass_h, 3,4 ; tmp, dst, dstStride
     add           r1, r2
     dec          r3d
     jnz        .loop
-    REP_RET
+    RET
 %endmacro
 
 INIT_MMX mmxext
@@ -574,7 +574,7 @@ cglobal %1_h264_qpel8or16_hv1_lowpass_op, 4,4,8 ; src, tmp, srcStride, size
     FILT_HV    14*48
     FILT_HV    15*48
 .end:
-    REP_RET
+    RET
 %endmacro
 
 INIT_XMM sse2
@@ -619,7 +619,7 @@ cglobal %1_h264_qpel8or16_hv2_lowpass_op, 5,5 ; dst, tmp, dstStride, unused, h
     add           r0, r2
     dec          r4d
     jne        .loop
-    REP_RET
+    RET
 %endmacro
 
 INIT_MMX mmxext
@@ -710,7 +710,7 @@ cglobal %1_h264_qpel8or16_hv2_lowpass, 5,5,8 ; dst, tmp, dstStride, tmpStride, s
     dec          r4d
     jne        .op16
 .done:
-    REP_RET
+    RET
 %endmacro
 
 INIT_XMM ssse3
@@ -776,7 +776,7 @@ cglobal %1_pixels8_l2_shift5, 6, 6 ; dst, src16, src8, dstStride, src8Stride, h
     lea           r0, [r0+2*r3]
     sub          r5d, 2
     jne        .loop
-    REP_RET
+    RET
 %endmacro
 
 INIT_MMX mmxext
@@ -845,7 +845,7 @@ cglobal %1_h264_qpel16_h_lowpass_l2, 5, 6, 16 ; dst, src, src2, dstStride, src2S
     add           r2, r4
     dec          r5d
     jg         .loop
-    REP_RET
+    RET
 %endmacro
 
 INIT_XMM ssse3

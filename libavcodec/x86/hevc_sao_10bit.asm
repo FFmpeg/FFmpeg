@@ -145,7 +145,7 @@ align 16
     add             srcq, srcstrideq
     dec          heightd
     jg .loop
-    REP_RET
+    RET
 %endmacro
 
 %macro HEVC_SAO_BAND_FILTER_FUNCS 0

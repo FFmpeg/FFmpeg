@@ -85,7 +85,7 @@ pack_2ch_%2_to_%1_u_int %+ SUFFIX:
     add lenq, 2*mmsize/(2<<%4)
 %endif
         jl .next
-    REP_RET
+    RET
 %endmacro
 
 %macro UNPACK_2CH 5-7
@@ -157,7 +157,7 @@ unpack_2ch_%2_to_%1_u_int %+ SUFFIX:
     add lenq, mmsize/(1<<%4)
 %endif
         jl .next
-    REP_RET
+    RET
 %endmacro
 
 %macro CONV 5-7
@@ -198,7 +198,7 @@ cglobal %2_to_%1_%3, 3, 3, 6, dst, src, len
     emms
     RET
 %else
-    REP_RET
+    RET
 %endif
 %endmacro
 
@@ -301,7 +301,7 @@ pack_6ch_%2_to_%1_u_int %+ SUFFIX:
     emms
     RET
 %else
-    REP_RET
+    RET
 %endif
 %endmacro
 
@@ -375,7 +375,7 @@ unpack_6ch_%2_to_%1_u_int %+ SUFFIX:
     add      dstq, mmsize
     sub      lend, mmsize/4
     jg .loop
-    REP_RET
+    RET
 %endmacro
 
 %define PACK_8CH_GPRS (10 * ARCH_X86_64) + ((6 + HAVE_ALIGNED_STACK) * ARCH_X86_32)
@@ -525,7 +525,7 @@ pack_8ch_%2_to_%1_u_int %+ SUFFIX:
 %endif
     sub      lend, mmsize/4
     jg .loop
-    REP_RET
+    RET
 %endmacro
 
 %macro INT16_TO_INT32_N 6

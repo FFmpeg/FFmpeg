@@ -75,7 +75,7 @@ cglobal add_bytes_l2, 4, 6, 2, dst, src1, src2, wa, w, i
 .end_s:
     cmp                 iq, wq
     jl .loop_s
-    REP_RET
+    RET
 
 %macro ADD_PAETH_PRED_FN 1
 cglobal add_png_paeth_prediction, 5, 7, %1, dst, src, top, w, bpp, end, cntr

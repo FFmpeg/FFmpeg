@@ -60,7 +60,7 @@ cglobal ac3_exponent_min, 3, 4, 2, exp, reuse_blks, expn, offset
     sub        expnq, mmsize
     jg .nextexp
 .end:
-    REP_RET
+    RET
 %endmacro
 
 %define LOOP_ALIGN ALIGN 16
@@ -126,7 +126,7 @@ cglobal float_to_fixed24, 3, 3, 9, dst, src, len
     sub      lenq, 16
 %endif
     ja .loop
-    REP_RET
+    RET
 
 ;------------------------------------------------------------------------------
 ; int ff_ac3_compute_mantissa_size(uint16_t mant_cnt[6][16])
@@ -220,7 +220,7 @@ cglobal ac3_extract_exponents, 3, 3, 4, exp, coef, len
 
     add     lenq, 4
     jl .loop
-    REP_RET
+    RET
 %endmacro
 
 %if HAVE_SSE2_EXTERNAL

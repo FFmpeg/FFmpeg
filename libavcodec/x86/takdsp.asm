@@ -43,7 +43,7 @@ cglobal tak_decorrelate_ls, 3, 3, 2, p1, p2, length
     mova     [p2q+lengthq+mmsize*1], m1
     add                     lengthq, mmsize*2
     jl .loop
-    REP_RET
+    RET
 
 cglobal tak_decorrelate_sr, 3, 3, 2, p1, p2, length
     shl                     lengthd, 2
@@ -60,7 +60,7 @@ cglobal tak_decorrelate_sr, 3, 3, 2, p1, p2, length
     mova     [p1q+lengthq+mmsize*1], m1
     add                     lengthq, mmsize*2
     jl .loop
-    REP_RET
+    RET
 
 cglobal tak_decorrelate_sm, 3, 3, 6, p1, p2, length
     shl                     lengthd, 2
@@ -87,7 +87,7 @@ cglobal tak_decorrelate_sm, 3, 3, 6, p1, p2, length
     mova       [p2q+lengthq+mmsize], m4
     add                     lengthq, mmsize*2
     jl .loop
-    REP_RET
+    RET
 
 INIT_XMM sse4
 cglobal tak_decorrelate_sf, 3, 3, 5, p1, p2, length, dshift, dfactor
@@ -113,4 +113,4 @@ cglobal tak_decorrelate_sf, 3, 3, 5, p1, p2, length, dshift, dfactor
     mova      [p1q+lengthq], m1
     add             lengthq, mmsize
     jl .loop
-    REP_RET
+    RET

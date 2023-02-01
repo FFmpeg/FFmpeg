@@ -110,7 +110,7 @@ cglobal diff_bytes, 4,5,2, dst, src1, src2, w
     inc               wq
         jl .loop_gpr_%1%2
 .end_%1%2:
-    REP_RET
+    RET
 %endmacro
 
 INIT_XMM sse2

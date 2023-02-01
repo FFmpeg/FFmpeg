@@ -67,7 +67,7 @@ cglobal %1_h264_chroma_mc8_10, 6,7,8
     jne .at_least_one_non_zero
     ; mx == 0 AND my == 0 - no filter needed
     MV0_PIXELS_MC8
-    REP_RET
+    RET
 
 .at_least_one_non_zero:
     mov          r6d, 2
@@ -102,7 +102,7 @@ cglobal %1_h264_chroma_mc8_10, 6,7,8
     add           r1, r2
     dec           r3d
     jne .next1drow
-    REP_RET
+    RET
 
 .xy_interpolation: ; general case, bilinear
     movd          m4, r4m         ; x
@@ -144,7 +144,7 @@ cglobal %1_h264_chroma_mc8_10, 6,7,8
     add           r0, r2
     dec          r3d
     jne .next2drow
-    REP_RET
+    RET
 %endmacro
 
 ;-----------------------------------------------------------------------------
@@ -194,7 +194,7 @@ cglobal %1_h264_chroma_mc4_10, 6,6,7
     MC4_OP m6, m0
     sub   r3d, 2
     jnz .next2rows
-    REP_RET
+    RET
 %endmacro
 
 ;-----------------------------------------------------------------------------
@@ -234,7 +234,7 @@ cglobal %1_h264_chroma_mc2_10, 6,7
     add           r0, r2
     dec          r3d
     jnz .nextrow
-    REP_RET
+    RET
 %endmacro
 
 %macro NOTHING 2-3

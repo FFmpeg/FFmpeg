@@ -116,7 +116,7 @@ cglobal v210_planar_unpack_%1, 5, 5, 6 + 2 * cpuflag(avx2), src, y, u, v, w
     add wq, (mmsize*3)/8
     jl  .loop
 
-    REP_RET
+    RET
 %endmacro
 
 INIT_XMM ssse3

@@ -211,7 +211,7 @@ cglobal %1_h264_qpel16_mc00_10, 3,4
     lea            r1, [r1+r2*2]
     dec r3d
     jg .loop
-    REP_RET
+    RET
 %endmacro
 
 %define OP_MOV mova

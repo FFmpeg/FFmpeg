@@ -74,7 +74,7 @@ cglobal add_hfyu_left_pred_bgr32, 4,4,3, dst, src, w, left
     jl         .loop
     movd          m0, [dstq-4]
     movd     [leftq], m0
-    REP_RET
+    RET
 
 
 ; void add_hfyu_median_prediction_mmxext(uint8_t *dst, const uint8_t *top, const uint8_t *diff, int mask, int w, int *left, int *left_top)

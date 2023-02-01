@@ -234,7 +234,7 @@ cglobal checked_call%1, 1,7
 .emms_ok:
 %endif
     add  esp, max_args*4
-    REP_RET
+    RET
 %endmacro
 
 %endif ; ARCH_X86_64

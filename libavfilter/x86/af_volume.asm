@@ -56,7 +56,7 @@ cglobal scale_samples_s16, 4,4,4, dst, src, len, volume
     mova  [dstq+lenq], m3
     sub       lenq, mmsize
     jge .loop
-    REP_RET
+    RET
 
 ;------------------------------------------------------------------------------
 ; void ff_scale_samples_s32(uint8_t *dst, const uint8_t *src, int len,
@@ -93,7 +93,7 @@ cglobal scale_samples_s32, 4,4,4, dst, src, len, volume
 %endif
     sub            lenq, mmsize
     jge .loop
-    REP_RET
+    RET
 %endmacro
 
 INIT_XMM sse2
@@ -137,4 +137,4 @@ cglobal scale_samples_s32, 4,4,8, dst, src, len, volume
     mova  [dstq+lenq], m0
     sub       lenq, mmsize
     jge .loop
-    REP_RET
+    RET

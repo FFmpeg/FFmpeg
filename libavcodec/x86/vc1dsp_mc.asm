@@ -139,7 +139,7 @@ cglobal vc1_put_ver_16b_shift2, 4,7,0, dst, src, stride
     add              dstq, 8
     dec                 i
         jnz         .loop
-    REP_RET
+    RET
 %undef rnd
 %undef shift
 %undef stride_neg2

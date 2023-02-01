@@ -207,7 +207,7 @@ cglobal %2 %+ 24ToY, 6, 6, %1, dst, src, u1, u2, w, table
     mova    [dstq+wq], m0
     add            wq, mmsize
     jl .loop
-    REP_RET
+    RET
 %endif ; ARCH_X86_64 && %0 == 3
 %endmacro
 
@@ -313,7 +313,7 @@ cglobal %2 %+ 24ToUV, 7, 7, %1, dstU, dstV, u1, src, u2, w, table
     mova   [dstVq+wq], m2
     add            wq, mmsize
     jl .loop
-    REP_RET
+    RET
 %endif ; ARCH_X86_64 && %0 == 3
 %endmacro
 
@@ -394,7 +394,7 @@ cglobal %2%3%4%5 %+ ToY, 6, 6, %1, dst, src, u1, u2, w, table
     add            wq, 2
     jl .loop2
 .end:
-    REP_RET
+    RET
 %endif ; %0 == 3
 %endmacro
 
@@ -491,7 +491,7 @@ cglobal %2%3%4%5 %+ ToUV, 7, 7, %1, dstU, dstV, u1, src, u2, w, table
     add            wq, 2
     jl .loop2
 .end:
-    REP_RET
+    RET
 %endif ; ARCH_X86_64 && %0 == 3
 %endmacro
 
@@ -543,7 +543,7 @@ RGB32_FUNCS 8, 12
     mova    [dstq+wq], m0
     add            wq, mmsize
     jl .loop_%1
-    REP_RET
+    RET
 %endmacro
 
 ; %1 = nr. of XMM registers
@@ -599,7 +599,7 @@ cglobal %2ToY, 5, 5, %1, dst, unused0, unused1, src, w
     movhps [dstVq+wq], m1
     add            wq, mmsize / 2
     jl .loop_%1
-    REP_RET
+    RET
 %endmacro
 
 ; %1 = nr. of XMM registers
@@ -657,7 +657,7 @@ cglobal %2ToUV, 4, 5, %1, dstU, dstV, unused, src, w
 %endif ; nv12/21
     add            wq, mmsize
     jl .loop_%1
-    REP_RET
+    RET
 %endmacro
 
 ; %1 = nr. of XMM registers

@@ -127,7 +127,7 @@ cglobal showcqt_cqt_calc, 5, 10, 12, dst, src, coeffs, len, fft_len, x, coeffs_v
         lea     dstq, [dstq + 16]
         lea     coeffsq, [coeffsq + 2*Coeffs.sizeof]
         jnz     .loop_k
-        REP_RET
+        RET
         align   16
         .check_loop_a:
         cmp     xd, [coeffsq + Coeffs.len]
@@ -170,7 +170,7 @@ cglobal showcqt_cqt_calc, 4, 7, 8, dst, src, coeffs, len, x, coeffs_val, i
         lea     dstq, [dstq + 8]
         lea     coeffsq, [coeffsq + Coeffs.sizeof]
         jnz     .loop_k
-        REP_RET
+        RET
 %endif ; ARCH_X86_64
 %endmacro ; DECLARE_CQT_CALC
 

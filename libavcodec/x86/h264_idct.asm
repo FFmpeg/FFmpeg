@@ -354,7 +354,7 @@ INIT_MMX cpuname
     add          r2, 128
     cmp          r5, 16
     jl .nextblock
-    REP_RET
+    RET
 .no_dc:
 INIT_XMM cpuname
     mov       dst2d, dword [r1+r5*4]
@@ -368,7 +368,7 @@ INIT_XMM cpuname
     add          r2, 128
     cmp          r5, 16
     jl .nextblock
-    REP_RET
+    RET
 
 INIT_MMX mmx
 h264_idct_add8_mmx_plane:
@@ -508,7 +508,7 @@ cglobal h264_idct_add16_8, 5, 5 + ARCH_X86_64, 8
     add16_sse2_cycle 5, 0x24
     add16_sse2_cycle 6, 0x1e
     add16_sse2_cycle 7, 0x26
-REP_RET
+RET
 
 %macro add16intra_sse2_cycle 2
     movzx       r0, word [r4+%2]
@@ -555,7 +555,7 @@ cglobal h264_idct_add16intra_8, 5, 7 + ARCH_X86_64, 8
     add16intra_sse2_cycle 5, 0x24
     add16intra_sse2_cycle 6, 0x1e
     add16intra_sse2_cycle 7, 0x26
-REP_RET
+RET
 
 %macro add8_sse2_cycle 2
     movzx       r0, word [r4+%2]
@@ -610,7 +610,7 @@ cglobal h264_idct_add8_8, 5, 7 + ARCH_X86_64, 8
 %endif
     add8_sse2_cycle 2, 0x5c
     add8_sse2_cycle 3, 0x64
-REP_RET
+RET
 
 ;void ff_h264_luma_dc_dequant_idct_mmx(int16_t *output, int16_t *input, int qmul)
 

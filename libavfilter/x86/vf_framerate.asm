@@ -84,7 +84,7 @@ cglobal blend_frames%1, 5, 7, 5, src1, src1_linesize, src2, src2_linesize, dst, 
     add      dstq, dst_linesizeq
     sub      endd, 1
     jg .nextrow
-REP_RET
+RET
 %endmacro
 
 

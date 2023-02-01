@@ -327,7 +327,7 @@ cglobal pred8x8_horizontal_10, 2, 3
     lea          r0, [r0+r1*2]
     dec          r2d
     jg .loop
-    REP_RET
+    RET
 
 ;-----------------------------------------------------------------------------
 ; void ff_predict_8x8_dc_10(pixel *src, ptrdiff_t stride)
@@ -481,7 +481,7 @@ cglobal pred8x8_plane_10, 2, 7, 7
     add       r0, r1
     dec r2d
     jg .loop
-    REP_RET
+    RET
 
 
 ;-----------------------------------------------------------------------------
@@ -994,7 +994,7 @@ cglobal pred16x16_vertical_10, 2, 3
     lea   r0, [r0+r1*2]
     dec   r2d
     jg .loop
-    REP_RET
+    RET
 
 ;-----------------------------------------------------------------------------
 ; void ff_pred16x16_horizontal_10(pixel *src, ptrdiff_t stride)
@@ -1012,7 +1012,7 @@ cglobal pred16x16_horizontal_10, 2, 3
     lea    r0, [r0+r1*2]
     dec    r2d
     jg .vloop
-    REP_RET
+    RET
 
 ;-----------------------------------------------------------------------------
 ; void ff_pred16x16_dc_10(pixel *src, ptrdiff_t stride)
@@ -1048,7 +1048,7 @@ cglobal pred16x16_dc_10, 2, 6
     lea        r5, [r5+r1*2]
     dec       r3d
     jg .loop
-    REP_RET
+    RET
 
 ;-----------------------------------------------------------------------------
 ; void ff_pred16x16_top_dc_10(pixel *src, ptrdiff_t stride)
@@ -1070,7 +1070,7 @@ cglobal pred16x16_top_dc_10, 2, 3
     lea        r0, [r0+r1*2]
     dec       r2d
     jg .loop
-    REP_RET
+    RET
 
 ;-----------------------------------------------------------------------------
 ; void ff_pred16x16_left_dc_10(pixel *src, ptrdiff_t stride)
@@ -1101,7 +1101,7 @@ cglobal pred16x16_left_dc_10, 2, 6
     lea        r5, [r5+r1*2]
     dec       r3d
     jg .loop
-    REP_RET
+    RET
 
 ;-----------------------------------------------------------------------------
 ; void ff_pred16x16_128_dc_10(pixel *src, ptrdiff_t stride)
@@ -1116,4 +1116,4 @@ cglobal pred16x16_128_dc_10, 2,3
     lea        r0, [r0+r1*2]
     dec       r2d
     jg .loop
-    REP_RET
+    RET

@@ -354,7 +354,7 @@ add imageq, 8 * depth * time_num
 add indexq, 4 * time_num
 js .loop0
 
-REP_RET
+RET
 
 %endmacro
 

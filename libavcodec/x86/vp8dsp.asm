@@ -200,7 +200,7 @@ cglobal put_vp8_epel%1_h6, 6, 6 + npicregs, 8, dst, dststride, src, srcstride, h
     add     srcq, srcstrideq
     dec  heightd            ; next row
     jg .nextrow
-    REP_RET
+    RET
 
 cglobal put_vp8_epel%1_h4, 6, 6 + npicregs, 7, dst, dststride, src, srcstride, height, mx, picreg
     shl      mxd, 4
@@ -230,7 +230,7 @@ cglobal put_vp8_epel%1_h4, 6, 6 + npicregs, 7, dst, dststride, src, srcstride, h
     add     srcq, srcstrideq
     dec  heightd            ; next row
     jg .nextrow
-    REP_RET
+    RET
 
 cglobal put_vp8_epel%1_v4, 7, 7, 8, dst, dststride, src, srcstride, height, picreg, my
     shl      myd, 4
@@ -268,7 +268,7 @@ cglobal put_vp8_epel%1_v4, 7, 7, 8, dst, dststride, src, srcstride, height, picr
     add      srcq, srcstrideq
     dec   heightd                          ; next row
     jg .nextrow
-    REP_RET
+    RET
 
 cglobal put_vp8_epel%1_v6, 7, 7, 8, dst, dststride, src, srcstride, height, picreg, my
     lea      myd, [myq*3]
@@ -314,7 +314,7 @@ cglobal put_vp8_epel%1_v6, 7, 7, 8, dst, dststride, src, srcstride, height, picr
     add      srcq, srcstrideq
     dec   heightd                          ; next row
     jg .nextrow
-    REP_RET
+    RET
 %endmacro
 
 INIT_MMX ssse3
@@ -368,7 +368,7 @@ cglobal put_vp8_epel4_h4, 6, 6 + npicregs, 0, dst, dststride, src, srcstride, he
     add      srcq, srcstrideq
     dec   heightd                          ; next row
     jg .nextrow
-    REP_RET
+    RET
 
 ; 4x4 block, H-only 6-tap filter
 INIT_MMX mmxext
@@ -426,7 +426,7 @@ cglobal put_vp8_epel4_h6, 6, 6 + npicregs, 0, dst, dststride, src, srcstride, he
     add      srcq, srcstrideq
     dec   heightd                          ; next row
     jg .nextrow
-    REP_RET
+    RET
 
 INIT_XMM sse2
 cglobal put_vp8_epel8_h4, 6, 6 + npicregs, 10, dst, dststride, src, srcstride, height, mx, picreg
@@ -474,7 +474,7 @@ cglobal put_vp8_epel8_h4, 6, 6 + npicregs, 10, dst, dststride, src, srcstride, h
     add     srcq, srcstrideq
     dec  heightd            ; next row
     jg .nextrow
-    REP_RET
+    RET
 
 INIT_XMM sse2
 cglobal put_vp8_epel8_h6, 6, 6 + npicregs, 14, dst, dststride, src, srcstride, height, mx, picreg
@@ -537,7 +537,7 @@ cglobal put_vp8_epel8_h6, 6, 6 + npicregs, 14, dst, dststride, src, srcstride, h
     add     srcq, srcstrideq
     dec  heightd            ; next row
     jg .nextrow
-    REP_RET
+    RET
 
 %macro FILTER_V 1
 ; 4x4 block, V-only 4-tap filter
@@ -590,7 +590,7 @@ cglobal put_vp8_epel%1_v4, 7, 7, 8, dst, dststride, src, srcstride, height, picr
     add     srcq, srcstrideq
     dec  heightd                           ; next row
     jg .nextrow
-    REP_RET
+    RET
 
 
 ; 4x4 block, V-only 6-tap filter
@@ -655,7 +655,7 @@ cglobal put_vp8_epel%1_v6, 7, 7, 8, dst, dststride, src, srcstride, height, picr
     add     srcq, srcstrideq
     dec  heightd                           ; next row
     jg .nextrow
-    REP_RET
+    RET
 %endmacro
 
 INIT_MMX mmxext
@@ -738,7 +738,7 @@ cglobal put_vp8_bilinear%1_v, 7, 7, 7, dst, dststride, src, srcstride, height, p
     lea     srcq, [srcq+srcstrideq*2]
     sub  heightd, 2
     jg .nextrow
-    REP_RET
+    RET
 
 %if cpuflag(ssse3)
 cglobal put_vp8_bilinear%1_h, 6, 6 + npicregs, 5, dst, dststride, src, srcstride, height, mx, picreg
@@ -815,7 +815,7 @@ cglobal put_vp8_bilinear%1_h, 6, 6 + npicregs, 7, dst, dststride, src, srcstride
     lea     srcq, [srcq+srcstrideq*2]
     sub  heightd, 2
     jg .nextrow
-    REP_RET
+    RET
 %endmacro
 
 INIT_MMX mmxext
@@ -838,7 +838,7 @@ cglobal put_vp8_pixels8, 5, 5, 0, dst, dststride, src, srcstride, height
     lea    dstq, [dstq+dststrideq*2]
     sub heightd, 2
     jg .nextrow
-    REP_RET
+    RET
 
 INIT_XMM sse
 cglobal put_vp8_pixels16, 5, 5, 2, dst, dststride, src, srcstride, height
@@ -851,7 +851,7 @@ cglobal put_vp8_pixels16, 5, 5, 2, dst, dststride, src, srcstride, height
     lea    dstq, [dstq+dststrideq*2]
     sub heightd, 2
     jg .nextrow
-    REP_RET
+    RET
 
 ;-----------------------------------------------------------------------------
 ; void ff_vp8_idct_dc_add_<opt>(uint8_t *dst, int16_t block[16], ptrdiff_t stride);

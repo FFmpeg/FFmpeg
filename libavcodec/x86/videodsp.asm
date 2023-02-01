@@ -433,4 +433,4 @@ cglobal prefetch, 3, 3, 0, buf, stride, h
     add      bufq, strideq
     dec        hd
     jg .loop
-    REP_RET
+    RET

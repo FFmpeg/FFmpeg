@@ -458,7 +458,7 @@ cglobal hf_noise%1, 3,3,0, pix1, lsize, h
     psrlq      m6, 32
     paddd      m0, m6
     movd      eax, m0   ; eax = result of hf_noise8;
-    REP_RET                 ; return eax;
+    RET                 ; return eax;
 %endmacro
 
 INIT_MMX mmx

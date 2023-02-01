@@ -100,7 +100,7 @@ align 16
 
     add     lenq, mmsize*2
     jl .loop
-    REP_RET
+    RET
 
 %if ARCH_X86_64
 cglobal alac_append_extra_bits_mono, 2, 5, 3, buf, exbuf, exbits, ch, len
@@ -130,4 +130,4 @@ align 16
 
     add     lenq, mmsize*2
     jl .loop
-    REP_RET
+    RET

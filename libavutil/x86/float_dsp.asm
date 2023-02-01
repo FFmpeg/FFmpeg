@@ -48,7 +48,7 @@ ALIGN 16
 
     sub       lenq, 64
     jge       .loop
-    REP_RET
+    RET
 %endmacro
 
 INIT_XMM sse
@@ -141,7 +141,7 @@ cglobal vector_fmac_scalar, 4,4,5, dst, src, mul, len
 %endif ; mmsize
     sub    lenq, 64
     jge .loop
-    REP_RET
+    RET
 %endmacro
 
 INIT_XMM sse
@@ -178,7 +178,7 @@ cglobal vector_fmul_scalar, 4,4,3, dst, src, mul, len
     mova  [dstq+lenq], m1
     sub    lenq, mmsize
     jge .loop
-    REP_RET
+    RET
 %endmacro
 
 INIT_XMM sse
@@ -233,7 +233,7 @@ cglobal vector_dmac_scalar, 4,4,5, dst, src, mul, len
     movaps [dstq+lenq+3*mmsize], m4
     sub    lenq, mmsize*4
     jge .loop
-    REP_RET
+    RET
 %endmacro
 
 INIT_XMM sse2
@@ -280,7 +280,7 @@ cglobal vector_dmul_scalar, 4,4,3, dst, src, mul, len
     movaps [dstq+lenq+mmsize], m2
     sub          lenq, 2*mmsize
     jge .loop
-    REP_RET
+    RET
 %endmacro
 
 INIT_XMM sse2
@@ -323,7 +323,7 @@ cglobal vector_fmul_window, 5, 6, 6, dst, src0, src1, win, len, len1
     sub       len1q, mmsize
     add       lenq,  mmsize
     jl .loop
-    REP_RET
+    RET
 
 ;-----------------------------------------------------------------------------
 ; vector_fmul_add(float *dst, const float *src0, const float *src1,
@@ -352,7 +352,7 @@ ALIGN 16
 
     sub     lenq,   2*mmsize
     jge     .loop
-    REP_RET
+    RET
 %endmacro
 
 INIT_XMM sse
@@ -401,7 +401,7 @@ ALIGN 16
     add     src1q, 2*mmsize
     sub     lenq,  2*mmsize
     jge     .loop
-    REP_RET
+    RET
 %endmacro
 
 INIT_XMM sse
@@ -585,4 +585,4 @@ cglobal butterflies_float, 3,3,3, src0, src1, len
     mova        [src0q + lenq], m0
     add       lenq, mmsize
     jl .loop
-    REP_RET
+    RET

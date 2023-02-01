@@ -38,7 +38,7 @@ cglobal w3fdif_scale, 3, 3, 2, 0, out_pixel, work_pixel, linesize
     add                 work_pixelq, mmsize*2
     sub                   linesized, mmsize/2
     jg .loop
-REP_RET
+RET
 
 cglobal w3fdif_simple_low, 4, 5, 6, 0, work_line, in_lines_cur0, coef, linesize, offset
     movd                  m1, [coefq]
@@ -63,7 +63,7 @@ cglobal w3fdif_simple_low, 4, 5, 6, 0, work_line, in_lines_cur0, coef, linesize,
     add                               offsetq, mmsize/2
     sub                             linesized, mmsize/2
     jg .loop
-REP_RET
+RET
 
 cglobal w3fdif_complex_low, 4, 7, 8, 0, work_line, in_lines_cur0, coef, linesize
     movq                  m0, [coefq]
@@ -99,7 +99,7 @@ cglobal w3fdif_complex_low, 4, 7, 8, 0, work_line, in_lines_cur0, coef, linesize
     add                               offsetq, mmsize/2
     sub                             linesized, mmsize/2
     jg .loop
-REP_RET
+RET
 
 %if ARCH_X86_64
 cglobal w3fdif_simple_high, 5, 9, 8, 0, work_line, in_lines_cur0, in_lines_adj0, coef, linesize
@@ -179,7 +179,7 @@ cglobal w3fdif_simple_high, 4, 7, 8, 0, work_line, in_lines_cur0, in_lines_adj0,
     add                               offsetq, mmsize/2
     sub                             linesized, mmsize/2
     jg .loop
-REP_RET
+RET
 
 %if ARCH_X86_64
 
@@ -254,6 +254,6 @@ cglobal w3fdif_complex_high, 5, 13, 10, 0, work_line, in_lines_cur0, in_lines_ad
     add                               offsetq, mmsize/2
     sub                             linesized, mmsize/2
     jg .loop
-REP_RET
+RET
 
 %endif

@@ -113,7 +113,7 @@ align 16
     movaps   [src1q+csizeq], m5
     add  csizeq, mmsize
     jl .loop
-    REP_RET
+    RET
 %endmacro
 
 INIT_XMM sse
@@ -153,7 +153,7 @@ align 16
     mova   [src0q+csizeq], m2
     add  csizeq, mmsize
     jl .loop
-    REP_RET
+    RET
 %endmacro
 
 INIT_XMM sse2

@@ -170,7 +170,7 @@ cglobal %1_rv40_qpel_v, 6,6+npicregs,12, dst, dststride, src, srcstride, height,
     add     srcq, srcstrideq
     dec  heightd                           ; next row
     jg .nextrow
-    REP_RET
+    RET
 %endmacro
 
 %macro FILTER_H  1
@@ -227,7 +227,7 @@ cglobal %1_rv40_qpel_h, 6, 6+npicregs, 12, dst, dststride, src, srcstride, heigh
     add     srcq, srcstrideq
     dec  heightd            ; next row
     jg .nextrow
-    REP_RET
+    RET
 %endmacro
 
 INIT_XMM  sse2
@@ -280,7 +280,7 @@ cglobal %1_rv40_qpel_v, 6,6+npicregs,8, dst, dststride, src, srcstride, height, 
     add     srcq, srcstrideq
     dec       heightd                          ; next row
     jg       .nextrow
-    REP_RET
+    RET
 
 cglobal %1_rv40_qpel_h, 6,6+npicregs,8, dst, dststride, src, srcstride, height, mx, picreg
 %ifdef PIC
@@ -313,7 +313,7 @@ cglobal %1_rv40_qpel_h, 6,6+npicregs,8, dst, dststride, src, srcstride, height, 
     add     srcq, srcstrideq
     dec  heightd            ; next row
     jg .nextrow
-    REP_RET
+    RET
 %endmacro
 
 INIT_XMM ssse3
@@ -464,7 +464,7 @@ cglobal rv40_weight_func_%1_%2, 6, 7, 8
 .loop:
     MAIN_LOOP  %2, RND
     jnz        .loop
-    REP_RET
+    RET
 %endmacro
 
 INIT_XMM sse2

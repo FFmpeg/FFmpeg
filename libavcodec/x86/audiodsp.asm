@@ -123,7 +123,7 @@ cglobal vector_clip_int32%5, 5,5,%1, dst, src, min, max, len
     add     dstq, mmsize*4*(%2+%3)
     sub     lend, mmsize*(%2+%3)
     jg .loop
-    REP_RET
+    RET
 %endmacro
 
 INIT_XMM sse2

@@ -69,7 +69,7 @@ DEFINE_ARGS src_r, src_g, src_b, linesize_r, linesize_g, linesize_b, x
     add        src_bq, linesize_bq
     sub        hd, 1
     jg .nextrow
-    REP_RET
+    RET
 %endmacro
 
 INIT_XMM sse2
@@ -125,7 +125,7 @@ DEFINE_ARGS src_r, src_g, src_b, linesize_r, linesize_g, linesize_b, x
     add        src_bq, linesize_bq
     sub        hd, 1
     jg .nextrow
-    REP_RET
+    RET
 %endmacro
 
 INIT_XMM sse2

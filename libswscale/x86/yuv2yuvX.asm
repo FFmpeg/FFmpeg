@@ -121,7 +121,7 @@ cglobal yuv2yuvX, 7, 7, 8, filter, filterSize, src, dest, dstW, dither, offset
     mov                  filterSizeq, filterq
     cmp                  offsetq, dstWq
     jb                  .outerloop
-    REP_RET
+    RET
 %endmacro
 
 INIT_MMX mmxext

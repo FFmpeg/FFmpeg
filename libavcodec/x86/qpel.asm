@@ -81,7 +81,7 @@ cglobal %1_pixels4_l2, 6,6
     add          r2, 16
     sub         r5d, 4
     jne       .loop
-    REP_RET
+    RET
 %endmacro
 
 INIT_MMX mmxext
@@ -125,7 +125,7 @@ cglobal %1_pixels8_l2, 6,6
     add          r2, 32
     sub         r5d, 4
     jne       .loop
-    REP_RET
+    RET
 %endmacro
 
 INIT_MMX mmxext
@@ -171,7 +171,7 @@ cglobal %1_pixels16_l2, 6,6
     add          r2, 32
     sub         r5d, 2
     jne       .loop
-    REP_RET
+    RET
 %endmacro
 
 INIT_MMX mmxext
