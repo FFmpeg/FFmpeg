@@ -1,5 +1,5 @@
-a50d37a0e72bddea2fcbba6fb773e2a0 *tests/data/fate/png-icc.image2
-49397 tests/data/fate/png-icc.image2
+c460cd06a88ace94d7c76a6309aa8fb8 *tests/data/fate/png-icc.image2
+49441 tests/data/fate/png-icc.image2
 #tb 0: 1/25
 #media_type 0: video
 #codec_id 0: rawvideo
@@ -21,7 +21,7 @@ pkt_duration_time=0.040000
 duration=1
 duration_time=0.040000
 pkt_pos=0
-pkt_size=49397
+pkt_size=49441
 width=128
 height=128
 pix_fmt=rgb24
@@ -34,7 +34,7 @@ top_field_first=0
 repeat_pict=0
 color_range=pc
 color_space=gbr
-color_primaries=unknown
+color_primaries=bt709
 color_transfer=unknown
 chroma_location=unspecified
 [SIDE_DATA]
