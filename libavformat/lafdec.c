@@ -185,7 +185,9 @@ again:
     if (s->index >= ctx->nb_streams) {
         int cur_st = 0, st_count = 0, st_index = 0;
 
-        avio_read(pb, s->header, s->header_len);
+        ret = ffio_read_size(pb, s->header, s->header_len);
+        if (ret < 0)
+            return ret;
         for (int i = 0; i < s->header_len; i++) {
             uint8_t val = s->header[i];
 
