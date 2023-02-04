@@ -132,6 +132,8 @@ static int laf_read_header(AVFormatContext *ctx)
         codec_id = AV_CODEC_ID_PCM_S24LE;
         bpp = 3;
         break;
+    default:
+        return AVERROR_INVALIDDATA;
     }
 
     s->index = 0;
