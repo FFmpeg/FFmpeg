@@ -313,7 +313,9 @@ static int config_props(AVFilterLink *link)
             pan->channel_map[i] = ch_id;
         }
 
-        av_opt_set_int(pan->swr, "uch", pan->nb_output_channels, 0);
+        av_opt_set_chlayout(pan->swr, "ichl", &link->ch_layout, 0);
+        av_opt_set_chlayout(pan->swr, "ochl", &pan->out_channel_layout, 0);
+        av_opt_set_int(pan->swr, "uch", link->ch_layout.nb_channels, 0);
         swr_set_channel_mapping(pan->swr, pan->channel_map);
     } else {
         // renormalize
@@ -333,6 +335,8 @@ static int config_props(AVFilterLink *link)
             for (j = 0; j < link->ch_layout.nb_channels; j++)
                 pan->gain[i][j] /= t;
         }
+        av_opt_set_chlayout(pan->swr, "ichl", &link->ch_layout, 0);
+        av_opt_set_chlayout(pan->swr, "ochl", &pan->out_channel_layout, 0);
         swr_set_matrix(pan->swr, pan->gain[0], pan->gain[1] - pan->gain[0]);
     }
 
