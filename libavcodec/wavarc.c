@@ -226,7 +226,7 @@ static int decode_1dif(AVCodecContext *avctx,
 
     if (avctx->ch_layout.nb_channels == 1) {
         for (int n = 0; n < 4; n++)
-            s->samples[0][n] = s->samples[0][s->nb_samples + n] >> s->shift;
+            s->samples[0][n] = s->samples[0][s->nb_samples + n];
     }
 
     return 0;
@@ -334,7 +334,7 @@ static int decode_2slp(AVCodecContext *avctx,
 
     if (avctx->ch_layout.nb_channels == 1) {
         for (int n = 0; n < 70; n++)
-            s->samples[0][n] = s->samples[0][s->nb_samples + n] >> s->shift;
+            s->samples[0][n] = s->samples[0][s->nb_samples + n];
     }
 
     return 0;
