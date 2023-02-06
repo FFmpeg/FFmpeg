@@ -797,7 +797,7 @@ static void update_video_stats(OutputStream *ost, const AVPacket *pkt, int write
 
     fprintf(vstats_file,"f_size= %6d ", pkt->size);
     /* compute pts value */
-    ti1 = pkt->dts * av_q2d(ost->mux_timebase);
+    ti1 = pkt->dts * av_q2d(pkt->time_base);
     if (ti1 < 0.01)
         ti1 = 0.01;
 
@@ -812,7 +812,7 @@ static void enc_stats_write(OutputStream *ost, EncStats *es,
                             const AVFrame *frame, const AVPacket *pkt)
 {
     AVIOContext *io = es->io;
-    AVRational   tb = ost->enc_ctx->time_base;
+    AVRational   tb = frame ? frame->time_base : pkt->time_base;
     int64_t     pts = frame ? frame->pts : pkt->pts;
 
     AVRational  tbi = (AVRational){ 0, 1};
@@ -912,6 +912,8 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
         update_benchmark("%s_%s %d.%d", action, type_desc,
                          ost->file_index, ost->index);
 
+        pkt->time_base = enc->time_base;
+
         /* if two pass, output log on success and EOF */
         if ((ret >= 0 || ret == AVERROR_EOF) && ost->logfile && enc->stats_out)
             fprintf(ost->logfile, "%s", enc->stats_out);
@@ -942,7 +944,8 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
                    av_ts2str(pkt->duration), av_ts2timestr(pkt->duration, &enc->time_base));
         }
 
-        av_packet_rescale_ts(pkt, enc->time_base, ost->mux_timebase);
+        av_packet_rescale_ts(pkt, pkt->time_base, ost->mux_timebase);
+        pkt->time_base = ost->mux_timebase;
 
         if (debug_ts) {
             av_log(ost, AV_LOG_INFO, "encoder -> type:%s "
@@ -1103,17 +1106,19 @@ static void do_subtitle_out(OutputFile *of,
         }
 
         av_shrink_packet(pkt, subtitle_out_size);
-        pkt->pts  = av_rescale_q(sub->pts, AV_TIME_BASE_Q, ost->mux_timebase);
-        pkt->duration = av_rescale_q(sub->end_display_time, (AVRational){ 1, 1000 }, ost->mux_timebase);
+        pkt->time_base = ost->mux_timebase;
+        pkt->pts  = av_rescale_q(sub->pts, AV_TIME_BASE_Q, pkt->time_base);
+        pkt->duration = av_rescale_q(sub->end_display_time, (AVRational){ 1, 1000 }, pkt->time_base);
         if (enc->codec_id == AV_CODEC_ID_DVB_SUBTITLE) {
             /* XXX: the pts correction is handled here. Maybe handling
                it in the codec would be better */
             if (i == 0)
-                pkt->pts += av_rescale_q(sub->start_display_time, (AVRational){ 1, 1000 }, ost->mux_timebase);
+                pkt->pts += av_rescale_q(sub->start_display_time, (AVRational){ 1, 1000 }, pkt->time_base);
             else
-                pkt->pts += av_rescale_q(sub->end_display_time, (AVRational){ 1, 1000 }, ost->mux_timebase);
+                pkt->pts += av_rescale_q(sub->end_display_time, (AVRational){ 1, 1000 }, pkt->time_base);
         }
         pkt->dts = pkt->pts;
+
         of_output_packet(of, pkt, ost, 0);
     }
 }
@@ -1900,25 +1905,27 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
     if (av_packet_ref(opkt, pkt) < 0)
         exit_program(1);
 
+    opkt->time_base = ost->mux_timebase;
+
     if (pkt->pts != AV_NOPTS_VALUE)
-        opkt->pts = av_rescale_q(pkt->pts, ist->st->time_base, ost->mux_timebase) - ost_tb_start_time;
+        opkt->pts = av_rescale_q(pkt->pts, ist->st->time_base, opkt->time_base) - ost_tb_start_time;
 
     if (pkt->dts == AV_NOPTS_VALUE) {
-        opkt->dts = av_rescale_q(ist->dts, AV_TIME_BASE_Q, ost->mux_timebase);
+        opkt->dts = av_rescale_q(ist->dts, AV_TIME_BASE_Q, opkt->time_base);
     } else if (ost->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         int duration = av_get_audio_frame_duration2(ist->par, pkt->size);
         if(!duration)
             duration = ist->par->frame_size;
         opkt->dts = av_rescale_delta(ist->st->time_base, pkt->dts,
                                     (AVRational){1, ist->par->sample_rate}, duration,
-                                    &ist->filter_in_rescale_delta_last, ost->mux_timebase);
+                                    &ist->filter_in_rescale_delta_last, opkt->time_base);
         /* dts will be set immediately afterwards to what pts is now */
         opkt->pts = opkt->dts - ost_tb_start_time;
     } else
-        opkt->dts = av_rescale_q(pkt->dts, ist->st->time_base, ost->mux_timebase);
+        opkt->dts = av_rescale_q(pkt->dts, ist->st->time_base, opkt->time_base);
     opkt->dts -= ost_tb_start_time;
 
-    opkt->duration = av_rescale_q(pkt->duration, ist->st->time_base, ost->mux_timebase);
+    opkt->duration = av_rescale_q(pkt->duration, ist->st->time_base, opkt->time_base);
 
     {
         int ret = trigger_fix_sub_duration_heartbeat(ost, pkt);
@@ -2475,7 +2482,7 @@ static int fix_sub_duration_heartbeat(InputStream *ist, int64_t signal_pts)
 static int trigger_fix_sub_duration_heartbeat(OutputStream *ost, const AVPacket *pkt)
 {
     OutputFile *of = output_files[ost->file_index];
-    int64_t signal_pts = av_rescale_q(pkt->pts, ost->mux_timebase,
+    int64_t signal_pts = av_rescale_q(pkt->pts, pkt->time_base,
                                       AV_TIME_BASE_Q);
 
     if (!ost->fix_sub_duration_heartbeat || !(pkt->flags & AV_PKT_FLAG_KEY))

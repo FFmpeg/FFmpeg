@@ -81,11 +81,12 @@ static int write_packet(Muxer *mux, OutputStream *ost, AVPacket *pkt)
             if (pkt->duration > 0)
                 av_log(ost, AV_LOG_WARNING, "Overriding packet duration by frame rate, this should not happen\n");
             pkt->duration = av_rescale_q(1, av_inv_q(ost->frame_rate),
-                                         ost->mux_timebase);
+                                         pkt->time_base);
         }
     }
 
-    av_packet_rescale_ts(pkt, ost->mux_timebase, ost->st->time_base);
+    av_packet_rescale_ts(pkt, pkt->time_base, ost->st->time_base);
+    pkt->time_base = ost->st->time_base;
 
     if (!(s->oformat->flags & AVFMT_NOTIMESTAMPS)) {
         if (pkt->dts != AV_NOPTS_VALUE &&
@@ -325,7 +326,7 @@ void of_output_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost, int eof)
     int ret = 0;
 
     if (!eof && pkt->dts != AV_NOPTS_VALUE)
-        ost->last_mux_dts = av_rescale_q(pkt->dts, ost->mux_timebase, AV_TIME_BASE_Q);
+        ost->last_mux_dts = av_rescale_q(pkt->dts, pkt->time_base, AV_TIME_BASE_Q);
 
     /* apply the output bitstream filters */
     if (ms->bsf_ctx) {
