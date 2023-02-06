@@ -194,14 +194,18 @@ static void ts_fixup(Demuxer *d, AVPacket *pkt, int *repeat_pict)
     const int64_t start_time = ifile->start_time_effective;
     int64_t duration;
 
-    if (debug_ts) {
-        av_log(ist, AV_LOG_INFO, "demuxer -> type:%s "
-               "pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s duration:%s duration_time:%s\n",
-               av_get_media_type_string(ist->st->codecpar->codec_type),
-               av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &ist->st->time_base),
-               av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &ist->st->time_base),
-               av_ts2str(pkt->duration), av_ts2timestr(pkt->duration, &ist->st->time_base));
+#define SHOW_TS_DEBUG(tag_)                                             \
+    if (debug_ts) {                                                     \
+        av_log(ist, AV_LOG_INFO, "%s -> ist_index:%d:%d type:%s "       \
+               "pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s duration:%s duration_time:%s\n", \
+               tag_, ifile->index, pkt->stream_index,                   \
+               av_get_media_type_string(ist->st->codecpar->codec_type), \
+               av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &ist->st->time_base), \
+               av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &ist->st->time_base), \
+               av_ts2str(pkt->duration), av_ts2timestr(pkt->duration, &ist->st->time_base)); \
     }
+
+    SHOW_TS_DEBUG("demuxer");
 
     if (!ist->wrap_correction_done && start_time != AV_NOPTS_VALUE &&
         ist->st->pts_wrap_bits < 64) {
@@ -245,6 +249,8 @@ static void ts_fixup(Demuxer *d, AVPacket *pkt, int *repeat_pict)
     if (ist->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
         av_stream_get_parser(ist->st))
         *repeat_pict = av_stream_get_parser(ist->st)->repeat_pict;
+
+    SHOW_TS_DEBUG("demuxer+tsfixup");
 }
 
 static void thread_set_name(InputFile *f)
