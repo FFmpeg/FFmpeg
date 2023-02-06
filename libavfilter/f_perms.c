@@ -24,6 +24,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/random_seed.h"
 #include "audio.h"
+#include "filters.h"
 #include "video.h"
 
 enum mode {
@@ -96,8 +97,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
            in_perm == out_perm ? " (no-op)" : "");
 
     if (in_perm == RO && out_perm == RW) {
-        if ((ret = av_frame_make_writable(frame)) < 0)
+        if ((ret = ff_inlink_make_frame_writable(inlink, &frame)) < 0)
             return ret;
+        out = frame;
     } else if (in_perm == RW && out_perm == RO) {
         out = av_frame_clone(frame);
         if (!out)

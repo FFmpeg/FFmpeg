@@ -1441,7 +1441,10 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
         }
     }
 
-    av_frame_make_writable(s->outpicref);
+    ret = ff_inlink_make_frame_writable(outlink, &s->outpicref);
+    if (ret < 0)
+        return ret;
+    outpicref = s->outpicref;
     /* copy to output */
     if (s->orientation == VERTICAL) {
         if (s->sliding == SCROLL) {

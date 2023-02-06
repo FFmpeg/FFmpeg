@@ -783,7 +783,7 @@ static int apply_palette(AVFilterLink *inlink, AVFrame *in, AVFrame **outf)
     av_frame_unref(s->last_out);
     if ((ret = av_frame_ref(s->last_in, in))       < 0 ||
         (ret = av_frame_ref(s->last_out, out))     < 0 ||
-        (ret = av_frame_make_writable(s->last_in)) < 0) {
+        (ret = ff_inlink_make_frame_writable(inlink, &s->last_in)) < 0) {
         av_frame_free(&out);
         *outf = NULL;
         return ret;

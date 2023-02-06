@@ -29,6 +29,7 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/timestamp.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "audio.h"
 #include "video.h"
@@ -246,7 +247,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     float fphase = 0;
     AVFrame *out;
     uint8_t *dst;
-    int i;
+    int i, ret;
     int mono_measurement;
     int out_phase_measurement;
     float tolerance = 1.0f - s->tolerance;
@@ -265,8 +266,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         for (i = 0; i < outlink->h; i++)
             memset(out->data[0] + i * out->linesize[0], 0, outlink->w * 4);
     } else if (s->do_video) {
+        ret = ff_inlink_make_frame_writable(outlink, &s->out);
+        if (ret < 0) {
+            av_frame_free(&in);
+            return ret;
+        }
         out = s->out;
-        av_frame_make_writable(s->out);
         for (i = outlink->h - 1; i >= 10; i--)
             memmove(out->data[0] + (i  ) * out->linesize[0],
                     out->data[0] + (i-1) * out->linesize[0],

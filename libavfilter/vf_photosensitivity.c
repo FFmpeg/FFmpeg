@@ -25,6 +25,7 @@
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -243,7 +244,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             /* just duplicate the frame */
             s->history[s->history_pos] = 0; /* frame was duplicated, thus, delta is zero */
         } else {
-            res = av_frame_make_writable(s->last_frame_av);
+            res = ff_inlink_make_frame_writable(inlink, &s->last_frame_av);
             if (res) {
                 av_frame_free(&in);
                 return res;

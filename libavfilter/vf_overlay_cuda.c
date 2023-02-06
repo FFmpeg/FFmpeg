@@ -32,6 +32,7 @@
 #include "libavutil/eval.h"
 
 #include "avfilter.h"
+#include "filters.h"
 #include "framesync.h"
 #include "internal.h"
 
@@ -252,7 +253,7 @@ static int overlay_cuda_blend(FFFrameSync *fs)
     if (!input_overlay)
         return ff_filter_frame(outlink, input_main);
 
-    ret = av_frame_make_writable(input_main);
+    ret = ff_inlink_make_frame_writable(inlink, &input_main);
     if (ret < 0) {
         av_frame_free(&input_main);
         return ret;

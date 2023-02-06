@@ -297,6 +297,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     unsigned x, y;
     unsigned prev_x = s->prev_x, prev_y = s->prev_y;
     double zoom = s->zoom;
+    int ret;
 
     if (!s->outpicref || s->outpicref->width  != outlink->w ||
                          s->outpicref->height != outlink->h) {
@@ -314,7 +315,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     s->outpicref->pts = av_rescale_q(insamples->pts, inlink->time_base, outlink->time_base);
     s->outpicref->duration = 1;
 
-    av_frame_make_writable(s->outpicref);
+    ret = ff_inlink_make_frame_writable(outlink, &s->outpicref);
+    if (ret < 0) {
+        av_frame_free(&insamples);
+        return ret;
+    }
     ff_filter_execute(ctx, fade, NULL, NULL, FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
 
     if (zoom < 1) {

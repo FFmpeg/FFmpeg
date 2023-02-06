@@ -213,6 +213,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     AVFilterLink *outlink = ctx->outputs[0];
     AudioBitScopeContext *s = ctx->priv;
     AVFrame *outpicref;
+    int ret;
 
     if (s->mode == 0 || !s->outpicref) {
         outpicref = ff_get_video_buffer(outlink, outlink->w, outlink->h);
@@ -228,10 +229,16 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     }
 
     if (s->mode == 1) {
-        av_frame_make_writable(s->outpicref);
+        ret = ff_inlink_make_frame_writable(outlink, &s->outpicref);
+        if (ret < 0) {
+            av_frame_free(&insamples);
+            return ret;
+        }
         outpicref = av_frame_clone(s->outpicref);
-        if (!outpicref)
+        if (!outpicref) {
+            av_frame_free(&insamples);
             return AVERROR(ENOMEM);
+        }
     }
 
     outpicref->pts = av_rescale_q(insamples->pts, inlink->time_base, outlink->time_base);

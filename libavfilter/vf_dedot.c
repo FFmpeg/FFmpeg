@@ -289,7 +289,7 @@ static int activate(AVFilterContext *ctx)
             s->frames[4]) {
             out = av_frame_clone(s->frames[2]);
             if (out && !ctx->is_disabled) {
-                ret = av_frame_make_writable(out);
+                ret = ff_inlink_make_frame_writable(inlink, &out);
                 if (ret >= 0) {
                     if (s->m & 1)
                         ff_filter_execute(ctx, s->dedotcrawl, out, NULL,

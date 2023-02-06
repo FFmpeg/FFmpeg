@@ -209,7 +209,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AudioHistogramContext *s = ctx->priv;
     const int H = s->histogram_h;
     const int w = s->w;
-    int c, y, n, p, bin;
+    int c, y, n, p, bin, ret;
     uint64_t acmax = 1;
     AVFrame *clone;
 
@@ -229,7 +229,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         }
     }
 
-    av_frame_make_writable(s->out);
+    ret = ff_inlink_make_frame_writable(outlink, &s->out);
+    if (ret < 0) {
+        av_frame_free(&in);
+        return ret;
+    }
+
     if (s->dmode == SEPARATE) {
         for (y = 0; y < w; y++) {
             s->combine_buffer[3 * y    ] = 0;

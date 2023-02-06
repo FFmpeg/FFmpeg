@@ -32,6 +32,7 @@
 #include "libavutil/opt.h"
 #include "libswscale/swscale.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -443,9 +444,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFrame *out;
     VignettingThreadData vignetting_thread_data;
     DistortionCorrectionThreadData distortion_correction_thread_data;
+    int ret;
 
     if (lensfun->mode & VIGNETTING) {
-        av_frame_make_writable(in);
+        ret = ff_inlink_make_frame_writable(inlink, &in);
+        if (ret < 0) {
+            av_frame_free(&in);
+            return ret;
+        }
 
         vignetting_thread_data = (VignettingThreadData) {
             .width = inlink->w,
