@@ -52,7 +52,7 @@ static av_cold int wavarc_init(AVCodecContext *avctx)
 {
     WavArcContext *s = avctx->priv_data;
 
-    if (avctx->extradata_size < 44)
+    if (avctx->extradata_size < 52)
         return AVERROR_INVALIDDATA;
     if (AV_RL32(avctx->extradata + 16) != MKTAG('R','I','F','F'))
         return AVERROR_INVALIDDATA;
@@ -68,9 +68,9 @@ static av_cold int wavarc_init(AVCodecContext *avctx)
     av_channel_layout_default(&avctx->ch_layout, AV_RL16(avctx->extradata + 38));
     avctx->sample_rate = AV_RL32(avctx->extradata + 40);
 
-    switch (AV_RL16(avctx->extradata + 38)) {
-    case 1: avctx->sample_fmt = AV_SAMPLE_FMT_U8P;  break;
-    case 2: avctx->sample_fmt = AV_SAMPLE_FMT_S16P; break;
+    switch (AV_RL16(avctx->extradata + 50)) {
+    case  8: avctx->sample_fmt = AV_SAMPLE_FMT_U8P;  break;
+    case 16: avctx->sample_fmt = AV_SAMPLE_FMT_S16P; break;
     }
 
     s->shift = 0;
