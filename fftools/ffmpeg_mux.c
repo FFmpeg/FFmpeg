@@ -64,6 +64,7 @@ static int write_packet(Muxer *mux, OutputStream *ost, AVPacket *pkt)
     AVFormatContext *s = mux->fc;
     AVStream *st = ost->st;
     int64_t fs;
+    uint64_t frame_num;
     int ret;
 
     fs = filesize(s->pb);
@@ -128,7 +129,7 @@ static int write_packet(Muxer *mux, OutputStream *ost, AVPacket *pkt)
     ms->last_mux_dts = pkt->dts;
 
     ost->data_size_mux += pkt->size;
-    atomic_fetch_add(&ost->packets_written, 1);
+    frame_num = atomic_fetch_add(&ost->packets_written, 1);
 
     pkt->stream_index = ost->index;
 
@@ -142,6 +143,9 @@ static int write_packet(Muxer *mux, OutputStream *ost, AVPacket *pkt)
                 pkt->size
               );
     }
+
+    if (ms->stats.io)
+        enc_stats_write(ost, &ms->stats, NULL, pkt, frame_num);
 
     ret = av_interleaved_write_frame(s, pkt);
     if (ret < 0) {
@@ -687,6 +691,10 @@ static void ost_free(OutputStream **post)
     for (int i = 0; i < ost->enc_stats_post.nb_components; i++)
         av_freep(&ost->enc_stats_post.components[i].str);
     av_freep(&ost->enc_stats_post.components);
+
+    for (int i = 0; i < ms->stats.nb_components; i++)
+        av_freep(&ms->stats.components[i].str);
+    av_freep(&ms->stats.components);
 
     av_freep(post);
 }

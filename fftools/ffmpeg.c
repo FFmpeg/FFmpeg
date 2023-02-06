@@ -808,8 +808,9 @@ static void update_video_stats(OutputStream *ost, const AVPacket *pkt, int write
     fprintf(vstats_file, "type= %c\n", av_get_picture_type_char(ost->pict_type));
 }
 
-static void enc_stats_write(OutputStream *ost, EncStats *es,
-                            const AVFrame *frame, const AVPacket *pkt)
+void enc_stats_write(OutputStream *ost, EncStats *es,
+                     const AVFrame *frame, const AVPacket *pkt,
+                     uint64_t frame_num)
 {
     AVIOContext *io = es->io;
     AVRational   tb = frame ? frame->time_base : pkt->time_base;
@@ -840,12 +841,12 @@ static void enc_stats_write(OutputStream *ost, EncStats *es,
         case ENC_STATS_PTS_TIME:        avio_printf(io, "%g",       pts * av_q2d(tb));              continue;
         case ENC_STATS_PTS_TIME_IN:     avio_printf(io, "%g",       ptsi == INT64_MAX ?
                                                                     INFINITY : ptsi * av_q2d(tbi)); continue;
+        case ENC_STATS_FRAME_NUM:       avio_printf(io, "%"PRIu64,  frame_num);                     continue;
         case ENC_STATS_FRAME_NUM_IN:    avio_printf(io, "%"PRIu64,  fd ? fd->idx : -1);             continue;
         }
 
         if (frame) {
             switch (c->type) {
-            case ENC_STATS_FRAME_NUM:   avio_printf(io, "%"PRIu64,  ost->frames_encoded);           continue;
             case ENC_STATS_SAMPLE_NUM:  avio_printf(io, "%"PRIu64,  ost->samples_encoded);          continue;
             case ENC_STATS_NB_SAMPLES:  avio_printf(io, "%d",       frame->nb_samples);             continue;
             default: av_assert0(0);
@@ -855,7 +856,6 @@ static void enc_stats_write(OutputStream *ost, EncStats *es,
             case ENC_STATS_DTS:         avio_printf(io, "%"PRId64,  pkt->dts);                      continue;
             case ENC_STATS_DTS_TIME:    avio_printf(io, "%g",       pkt->dts * av_q2d(tb));         continue;
             case ENC_STATS_PKT_SIZE:    avio_printf(io, "%d",       pkt->size);                     continue;
-            case ENC_STATS_FRAME_NUM:   avio_printf(io, "%"PRIu64,  ost->packets_encoded);          continue;
             case ENC_STATS_BITRATE: {
                 double duration = FFMAX(pkt->duration, 1) * av_q2d(tb);
                 avio_printf(io, "%g",  8.0 * pkt->size / duration);
@@ -884,7 +884,8 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
 
     if (frame) {
         if (ost->enc_stats_pre.io)
-            enc_stats_write(ost, &ost->enc_stats_pre, frame, NULL);
+            enc_stats_write(ost, &ost->enc_stats_pre, frame, NULL,
+                            ost->frames_encoded);
 
         ost->frames_encoded++;
         ost->samples_encoded += frame->nb_samples;
@@ -932,7 +933,8 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
         if (enc->codec_type == AVMEDIA_TYPE_VIDEO)
             update_video_stats(ost, pkt, !!vstats_filename);
         if (ost->enc_stats_post.io)
-            enc_stats_write(ost, &ost->enc_stats_post, NULL, pkt);
+            enc_stats_write(ost, &ost->enc_stats_post, NULL, pkt,
+                            ost->packets_encoded);
 
         if (debug_ts) {
             av_log(ost, AV_LOG_INFO, "encoder -> type:%s "

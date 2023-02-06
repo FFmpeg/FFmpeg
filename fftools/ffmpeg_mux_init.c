@@ -57,8 +57,10 @@ static const char *const opt_name_disposition[]               = {"disposition", 
 static const char *const opt_name_enc_time_bases[]            = {"enc_time_base", NULL};
 static const char *const opt_name_enc_stats_pre[]             = {"enc_stats_pre", NULL};
 static const char *const opt_name_enc_stats_post[]            = {"enc_stats_post", NULL};
+static const char *const opt_name_mux_stats[]                 = {"mux_stats", NULL};
 static const char *const opt_name_enc_stats_pre_fmt[]         = {"enc_stats_pre_fmt", NULL};
 static const char *const opt_name_enc_stats_post_fmt[]        = {"enc_stats_post_fmt", NULL};
+static const char *const opt_name_mux_stats_fmt[]             = {"mux_stats_fmt", NULL};
 static const char *const opt_name_filters[]                   = {"filter", "af", "vf", NULL};
 static const char *const opt_name_filter_scripts[]            = {"filter_script", NULL};
 static const char *const opt_name_fix_sub_duration_heartbeat[] = {"fix_sub_duration_heartbeat", NULL};
@@ -262,7 +264,7 @@ static int unescape(char **pdst, size_t *dst_len,
     return 0;
 }
 
-static int enc_stats_init(OutputStream *ost, int pre,
+static int enc_stats_init(OutputStream *ost, EncStats *es, int pre,
                           const char *path, const char *fmt_spec)
 {
     static const struct {
@@ -290,7 +292,6 @@ static int enc_stats_init(OutputStream *ost, int pre,
         { ENC_STATS_BITRATE,        "br",       0, 1            },
         { ENC_STATS_AVG_BITRATE,    "abr",      0, 1            },
     };
-    EncStats *es = pre ? &ost->enc_stats_pre : &ost->enc_stats_post;
     const char *next = fmt_spec;
 
     int ret;
@@ -479,7 +480,7 @@ static OutputStream *new_output_stream(Muxer *mux, const OptionsContext *o,
         AVCodecContext *enc = ost->enc_ctx;
         AVIOContext *s = NULL;
         char *buf = NULL, *arg = NULL, *preset = NULL;
-        const char *enc_stats_pre = NULL, *enc_stats_post = NULL;
+        const char *enc_stats_pre = NULL, *enc_stats_post = NULL, *mux_stats = NULL;
 
         ost->encoder_opts = filter_codec_opts(o->g->codec_opts, enc->codec_id,
                                               oc, st, enc->codec);
@@ -518,7 +519,7 @@ static OutputStream *new_output_stream(Muxer *mux, const OptionsContext *o,
 
             MATCH_PER_STREAM_OPT(enc_stats_pre_fmt, str, format, oc, st);
 
-            ret = enc_stats_init(ost, 1, enc_stats_pre, format);
+            ret = enc_stats_init(ost, &ost->enc_stats_pre, 1, enc_stats_pre, format);
             if (ret < 0)
                 exit_program(1);
         }
@@ -530,7 +531,19 @@ static OutputStream *new_output_stream(Muxer *mux, const OptionsContext *o,
 
             MATCH_PER_STREAM_OPT(enc_stats_post_fmt, str, format, oc, st);
 
-            ret = enc_stats_init(ost, 0, enc_stats_post, format);
+            ret = enc_stats_init(ost, &ost->enc_stats_post, 0, enc_stats_post, format);
+            if (ret < 0)
+                exit_program(1);
+        }
+
+        MATCH_PER_STREAM_OPT(mux_stats, str, mux_stats, oc, st);
+        if (mux_stats &&
+            (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO)) {
+            const char *format = "{fidx} {sidx} {n} {t}";
+
+            MATCH_PER_STREAM_OPT(mux_stats_fmt, str, format, oc, st);
+
+            ret = enc_stats_init(ost, &ms->stats, 0, mux_stats, format);
             if (ret < 0)
                 exit_program(1);
         }
