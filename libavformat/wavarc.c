@@ -89,7 +89,7 @@ static int wavarc_read_header(AVFormatContext *s)
         id = avio_rl32(pb);
         if (id != MKTAG('d','a','t','a'))
             avio_skip(pb, avio_rl32(pb));
-    } while (id != MKTAG('d','a','t','a'));
+    } while (id != MKTAG('d','a','t','a') && !avio_feof(pb));
     avio_skip(pb, 4);
 
     if (AV_RL32(par->extradata + 16) != MKTAG('R','I','F','F'))
@@ -103,11 +103,6 @@ static int wavarc_read_header(AVFormatContext *s)
     par->sample_rate = AV_RL32(par->extradata + 40);
     avpriv_set_pts_info(st, 64, 1, par->sample_rate);
     st->start_time = 0;
-
-    switch (par->extradata[36]) {
-    case 0: par->format = AV_SAMPLE_FMT_U8P;  break;
-    case 1: par->format = AV_SAMPLE_FMT_S16P; break;
-    }
 
     return 0;
 }
