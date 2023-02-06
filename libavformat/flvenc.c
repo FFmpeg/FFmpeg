@@ -235,13 +235,16 @@ static void put_timestamp(AVIOContext *pb, int64_t ts) {
     avio_w8(pb, (ts >> 24) & 0x7F);
 }
 
-static void put_avc_eos_tag(AVIOContext *pb, unsigned ts)
+static void put_eos_tag(AVIOContext *pb, unsigned ts, enum AVCodecID codec_id)
 {
+    uint32_t tag = ff_codec_get_tag(flv_video_codec_ids, codec_id);
+    /* ub[4] FrameType = 1, ub[4] CodecId */
+    tag |= 1 << 4;
     avio_w8(pb, FLV_TAG_TYPE_VIDEO);
     avio_wb24(pb, 5);               /* Tag Data Size */
     put_timestamp(pb, ts);
     avio_wb24(pb, 0);               /* StreamId = 0 */
-    avio_w8(pb, 23);                /* ub[4] FrameType = 1, ub[4] CodecId = 7 */
+    avio_w8(pb, tag);
     avio_w8(pb, 2);                 /* AVC end of sequence */
     avio_wb24(pb, 0);               /* Always 0 for AVC EOS. */
     avio_wb32(pb, 16);              /* Size of FLV tag */
@@ -783,7 +786,7 @@ end:
             FLVStreamContext *sc = s->streams[i]->priv_data;
             if (par->codec_type == AVMEDIA_TYPE_VIDEO &&
                     (par->codec_id == AV_CODEC_ID_H264 || par->codec_id == AV_CODEC_ID_MPEG4))
-                put_avc_eos_tag(pb, sc->last_ts);
+                put_eos_tag(pb, sc->last_ts, par->codec_id);
         }
     }
 
