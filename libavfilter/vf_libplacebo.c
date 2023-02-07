@@ -547,10 +547,10 @@ fail:
 
 static int libplacebo_query_format(AVFilterContext *ctx)
 {
-    int err = 0;
+    int err;
     LibplaceboContext *s = ctx->priv;
     const AVPixFmtDescriptor *desc = NULL;
-    AVFilterFormats *formats = NULL;
+    AVFilterFormats *infmts = NULL, *outfmts = NULL;
 
     RET(init_vulkan(ctx));
 
@@ -564,29 +564,47 @@ static int libplacebo_query_format(AVFilterContext *ctx)
             continue;
 #endif
 
-        if (pl_test_pixfmt(s->gpu, pixfmt)) {
-            if ((err = ff_add_format(&formats, pixfmt)) < 0)
-                return err;
+        if (!pl_test_pixfmt(s->gpu, pixfmt))
+            continue;
+
+        RET(ff_add_format(&infmts, pixfmt));
+
+        /* Filter for supported output pixel formats */
+        if (desc->flags & AV_PIX_FMT_FLAG_BE)
+            continue; /* BE formats are not supported by pl_download_avframe */
+
+        /* Mask based on user specified format */
+        if (s->out_format != AV_PIX_FMT_NONE) {
+            if (pixfmt == AV_PIX_FMT_VULKAN && av_vkfmt_from_pixfmt(s->out_format)) {
+                /* OK */
+            } else if (pixfmt == s->out_format) {
+                /* OK */
+            } else {
+                continue; /* Not OK */
+            }
         }
+
+        RET(ff_add_format(&outfmts, pixfmt));
     }
 
-    RET(ff_formats_ref(formats, &ctx->inputs[0]->outcfg.formats));
-
-    if (s->out_format != AV_PIX_FMT_NONE) {
-        /* Support only requested format, and hwaccel (vulkan) */
-        const enum AVPixelFormat out_fmts[] = {
-            s->out_format, AV_PIX_FMT_VULKAN, AV_PIX_FMT_NONE,
-        };
-        RET(ff_formats_ref(ff_make_format_list(out_fmts),
-                           &ctx->outputs[0]->incfg.formats));
-    } else {
-        /* Support all formats */
-        RET(ff_formats_ref(formats, &ctx->outputs[0]->incfg.formats));
+    if (!infmts || !outfmts) {
+        if (s->out_format) {
+            av_log(s, AV_LOG_ERROR, "Invalid output format '%s'!\n",
+                   av_get_pix_fmt_name(s->out_format));
+        }
+        err = AVERROR(EINVAL);
+        goto fail;
     }
 
+    RET(ff_formats_ref(infmts, &ctx->inputs[0]->outcfg.formats));
+    RET(ff_formats_ref(outfmts, &ctx->outputs[0]->incfg.formats));
     return 0;
 
 fail:
+    if (infmts && !infmts->refcount)
+        ff_formats_unref(&infmts);
+    if (outfmts && !outfmts->refcount)
+        ff_formats_unref(&outfmts);
     return err;
 }
 
