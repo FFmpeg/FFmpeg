@@ -36,7 +36,6 @@ typedef struct WavArcContext {
     int nb_samples;
     int offset;
     int align;
-    int add;
 
     int eof;
     int skip;
@@ -83,19 +82,16 @@ static av_cold int wavarc_init(AVCodecContext *avctx)
     case MKTAG('0','C','P','Y'):
         s->nb_samples = 640;
         s->offset = 0;
-        s->add = 0;
         break;
     case MKTAG('1','D','I','F'):
         s->nb_samples = 256;
         s->offset = 4;
-        s->add = 0x80;
         break;
     case MKTAG('2','S','L','P'):
     case MKTAG('3','N','L','P'):
     case MKTAG('4','A','L','P'):
         s->nb_samples = 570;
         s->offset = 70;
-        s->add = 0x80;
         break;
     default:
         return AVERROR_INVALIDDATA;
@@ -157,12 +153,23 @@ static void do_stereo(WavArcContext *s, int ch, int correlated, int len)
 static int decode_0cpy(AVCodecContext *avctx,
                        WavArcContext *s, GetBitContext *gb)
 {
-    int bits = s->align * 8;
+    const int bits = s->align * 8;
+
     s->nb_samples = FFMIN(640, get_bits_left(gb) / bits);
 
-    for (int n = 0; n < s->nb_samples; n++) {
-        for (int ch = 0; ch < avctx->ch_layout.nb_channels; ch++)
-            s->samples[ch][n] = get_bits(gb, bits);
+    switch (avctx->sample_fmt) {
+    case AV_SAMPLE_FMT_U8P:
+        for (int n = 0; n < s->nb_samples; n++) {
+            for (int ch = 0; ch < avctx->ch_layout.nb_channels; ch++)
+                s->samples[ch][n] = get_bits(gb, 8) - 0x80;
+        }
+        break;
+    case AV_SAMPLE_FMT_S16P:
+        for (int n = 0; n < s->nb_samples; n++) {
+            for (int ch = 0; ch < avctx->ch_layout.nb_channels; ch++)
+                s->samples[ch][n] = sign_extend(av_bswap16(get_bits(gb, 16)), 16);
+        }
+        break;
     }
     return 0;
 }
@@ -441,7 +448,7 @@ fail:
             const int *src = s->samples[ch] + s->offset;
 
             for (int n = 0; n < frame->nb_samples; n++)
-                dst[n] = src[n] * (1 << s->shift) + s->add;
+                dst[n] = src[n] * (1 << s->shift) + 0x80U;
         }
         break;
     case AV_SAMPLE_FMT_S16P:
