@@ -330,10 +330,10 @@ static int bonk_decode(AVCodecContext *avctx, AVFrame *frame,
 
     frame->nb_samples = FFMIN(s->samples_per_packet * s->down_sampling, s->nb_samples);
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
-        return ret;
+        goto fail;
 
     if ((ret = init_get_bits8(gb, buf, buf_size)) < 0)
-        return ret;
+        goto fail;
 
     skip_bits(gb, s->skip);
     if ((ret = intlist_read(s, s->k, s->n_taps, 0)) < 0)
