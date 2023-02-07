@@ -371,7 +371,7 @@ static int wavarc_decode(AVCodecContext *avctx, AVFrame *frame,
     }
 
     if ((ret = init_get_bits8(gb, buf, buf_size)) < 0)
-        return ret;
+        goto fail;
     skip_bits(gb, s->skip);
 
     switch (avctx->codec_tag) {
@@ -397,12 +397,14 @@ static int wavarc_decode(AVCodecContext *avctx, AVFrame *frame,
 fail:
         s->bitstream_size = 0;
         s->bitstream_index = 0;
-        return ret;
+        if (ret == AVERROR_EOF)
+            return 0;
+        return AVERROR_INVALIDDATA;
     }
 
     frame->nb_samples = s->nb_samples;
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
-        return ret;
+        goto fail;
 
     switch (avctx->sample_fmt) {
     case AV_SAMPLE_FMT_U8P:
