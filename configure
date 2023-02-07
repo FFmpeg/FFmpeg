@@ -3772,6 +3772,12 @@ yadif_videotoolbox_filter_deps="metal corevideo videotoolbox"
 hstack_vaapi_filter_deps="vaapi_1"
 vstack_vaapi_filter_deps="vaapi_1"
 xstack_vaapi_filter_deps="vaapi_1"
+hstack_qsv_filter_deps="libmfx"
+hstack_qsv_filter_select="qsvvpp"
+vstack_qsv_filter_deps="libmfx"
+vstack_qsv_filter_select="qsvvpp"
+xstack_qsv_filter_deps="libmfx"
+xstack_qsv_filter_select="qsvvpp"
 
 # examples
 avio_http_serve_files_deps="avformat avutil fork"

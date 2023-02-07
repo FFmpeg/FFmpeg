@@ -44,6 +44,7 @@ version <next>:
 - RKA decoder and demuxer
 - filtergraph syntax in ffmpeg CLI now supports passing file contents
   as option values, by prefixing option name with '/'
+- hstack_qsv, vstack_qsv and xstack_qsv filters
 
 
 version 5.1:
