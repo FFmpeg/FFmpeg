@@ -38,7 +38,8 @@ static int wavarc_probe(const AVProbeData *p)
         return 0;
 
     id = AV_RL32(p->buf + len + 2);
-    if (id != MKTAG('1','D','I','F') &&
+    if (id != MKTAG('0','C','P','Y') &&
+        id != MKTAG('1','D','I','F') &&
         id != MKTAG('2','S','L','P') &&
         id != MKTAG('3','N','L','P') &&
         id != MKTAG('4','A','L','P') &&

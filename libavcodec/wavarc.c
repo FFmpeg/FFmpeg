@@ -35,6 +35,8 @@ typedef struct WavArcContext {
     int shift;
     int nb_samples;
     int offset;
+    int align;
+    int add;
 
     int eof;
     int skip;
@@ -68,22 +70,32 @@ static av_cold int wavarc_init(AVCodecContext *avctx)
     av_channel_layout_default(&avctx->ch_layout, AV_RL16(avctx->extradata + 38));
     avctx->sample_rate = AV_RL32(avctx->extradata + 40);
 
+    s->align = avctx->ch_layout.nb_channels;
+
     switch (AV_RL16(avctx->extradata + 50)) {
     case  8: avctx->sample_fmt = AV_SAMPLE_FMT_U8P;  break;
-    case 16: avctx->sample_fmt = AV_SAMPLE_FMT_S16P; break;
+    case 16: s->align *= 2;
+             avctx->sample_fmt = AV_SAMPLE_FMT_S16P; break;
     }
 
     s->shift = 0;
     switch (avctx->codec_tag) {
+    case MKTAG('0','C','P','Y'):
+        s->nb_samples = 640;
+        s->offset = 0;
+        s->add = 0;
+        break;
     case MKTAG('1','D','I','F'):
         s->nb_samples = 256;
         s->offset = 4;
+        s->add = 0x80;
         break;
     case MKTAG('2','S','L','P'):
     case MKTAG('3','N','L','P'):
     case MKTAG('4','A','L','P'):
         s->nb_samples = 570;
         s->offset = 70;
+        s->add = 0x80;
         break;
     default:
         return AVERROR_INVALIDDATA;
@@ -140,6 +152,19 @@ static void do_stereo(WavArcContext *s, int ch, int correlated, int len)
             s->pred[1][n] = s->pred[0][n] - s->samples[0][nb_samples + n];
         }
     }
+}
+
+static int decode_0cpy(AVCodecContext *avctx,
+                       WavArcContext *s, GetBitContext *gb)
+{
+    int bits = s->align * 8;
+    s->nb_samples = FFMIN(640, get_bits_left(gb) / bits);
+
+    for (int n = 0; n < s->nb_samples; n++) {
+        for (int ch = 0; ch < avctx->ch_layout.nb_channels; ch++)
+            s->samples[ch][n] = get_bits(gb, bits);
+    }
+    return 0;
 }
 
 static int decode_1dif(AVCodecContext *avctx,
@@ -375,6 +400,9 @@ static int wavarc_decode(AVCodecContext *avctx, AVFrame *frame,
     skip_bits(gb, s->skip);
 
     switch (avctx->codec_tag) {
+    case MKTAG('0','C','P','Y'):
+        ret = decode_0cpy(avctx, s, gb);
+        break;
     case MKTAG('1','D','I','F'):
         ret = decode_1dif(avctx, s, gb);
         break;
@@ -413,7 +441,7 @@ fail:
             const int *src = s->samples[ch] + s->offset;
 
             for (int n = 0; n < frame->nb_samples; n++)
-                dst[n] = src[n] * (1 << s->shift) + 0x80U;
+                dst[n] = src[n] * (1 << s->shift) + s->add;
         }
         break;
     case AV_SAMPLE_FMT_S16P:
