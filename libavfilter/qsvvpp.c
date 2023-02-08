@@ -441,7 +441,10 @@ static QSVFrame *submit_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *p
                 return NULL;
             }
 
-            av_frame_copy_props(qsv_frame->frame, picref);
+            if (av_frame_copy_props(qsv_frame->frame, picref) < 0) {
+                av_frame_free(&qsv_frame->frame);
+                return NULL;
+            }
         } else
             qsv_frame->frame = av_frame_clone(picref);
 
