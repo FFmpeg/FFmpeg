@@ -68,7 +68,6 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     CompensationDelayContext *s = ctx->priv;
     unsigned min_size, new_size = 1;
-    int ret;
 
     s->delay = (s->distance_m * 100. + s->distance_cm * 1. + s->distance_mm * .1) *
                COMP_DELAY_SOUND_FRONT_DELAY(s->temp) * inlink->sample_rate;
@@ -77,23 +76,12 @@ static int config_input(AVFilterLink *inlink)
     while (new_size < min_size)
         new_size <<= 1;
 
-    s->delay_frame = av_frame_alloc();
+    s->buf_size = new_size;
+    s->delay_frame = ff_get_audio_buffer(inlink, s->buf_size);
     if (!s->delay_frame)
         return AVERROR(ENOMEM);
 
-    s->buf_size                    = new_size;
-    s->delay_frame->format         = inlink->format;
-    s->delay_frame->nb_samples     = new_size;
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-    s->delay_frame->channel_layout = inlink->channel_layout;
-    s->delay_frame->channels       = inlink->ch_layout.nb_channels;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-    if ((ret = av_channel_layout_copy(&s->delay_frame->ch_layout, &inlink->ch_layout)) < 0)
-        return ret;
-
-    return av_frame_get_buffer(s->delay_frame, 0);
+    return 0;
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
