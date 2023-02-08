@@ -306,8 +306,6 @@ static int config_output(AVFilterLink *outlink)
     int nb_attacks, nb_decays, nb_points;
     int new_nb_items, num;
     int i;
-    int err;
-
 
     count_items(s->attacks, &nb_attacks);
     count_items(s->decays, &nb_decays);
@@ -495,25 +493,9 @@ static int config_output(AVFilterLink *outlink)
         return 0;
     }
 
-    s->delay_frame = av_frame_alloc();
-    if (!s->delay_frame) {
-        uninit(ctx);
+    s->delay_frame = ff_get_audio_buffer(outlink, s->delay_samples);
+    if (!s->delay_frame)
         return AVERROR(ENOMEM);
-    }
-
-    s->delay_frame->format         = outlink->format;
-    s->delay_frame->nb_samples     = s->delay_samples;
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-    s->delay_frame->channel_layout = outlink->channel_layout;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-    if ((err = av_channel_layout_copy(&s->delay_frame->ch_layout, &outlink->ch_layout)) < 0)
-        return err;
-
-    err = av_frame_get_buffer(s->delay_frame, 0);
-    if (err)
-        return err;
 
     s->compand = compand_delay;
     return 0;
