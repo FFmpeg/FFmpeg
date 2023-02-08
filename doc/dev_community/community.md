@@ -58,6 +58,8 @@ Candidates for election can either be suggested or self-nominated.
 
 The conflict resolution process is detailed in the [resolution process](resolution_process.md) document.
 
+The TC can be contacted at <tc@ffmpeg>.
+
 ## Community committee
 
 The Community Committee (CC) is here to arbitrage and make decisions when
@@ -80,3 +82,5 @@ The members of the CC can be elected from outside of the GA.
 Candidates for election can either be suggested or self-nominated.
 
 The CC is governed by and responsible for enforcing the Code of Conduct.
+
+The CC can be contacted at <cc@ffmpeg>.
