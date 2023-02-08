@@ -344,7 +344,7 @@ recommended.
 Avoid sending the same message to multiple mailing lists.
 
 @item
-Please follow our @url{https://ffmpeg.org/developer.html#Code-of-conduct, Code of Conduct}.
+Please follow our @url{https://ffmpeg.org/community.html#Code-of-conduct, Code of Conduct}.
 @end itemize
 
 @chapter Help
