@@ -159,14 +159,18 @@ fail:
     return ret;
 }
 
-static int sync_queue_process(Muxer *mux, OutputStream *ost, AVPacket *pkt)
+static int sync_queue_process(Muxer *mux, OutputStream *ost, AVPacket *pkt, int *stream_eof)
 {
     OutputFile *of = &mux->of;
 
     if (ost->sq_idx_mux >= 0) {
         int ret = sq_send(mux->sq_mux, ost->sq_idx_mux, SQPKT(pkt));
-        if (ret < 0)
+        if (ret < 0) {
+            if (ret == AVERROR_EOF)
+                *stream_eof = 1;
+
             return ret;
+        }
 
         while (1) {
             ret = sq_receive(mux->sq_mux, -1, SQPKT(mux->sq_pkt));
@@ -208,7 +212,7 @@ static void *muxer_thread(void *arg)
 
     while (1) {
         OutputStream *ost;
-        int stream_idx;
+        int stream_idx, stream_eof = 0;
 
         ret = tq_receive(mux->tq, &stream_idx, pkt);
         if (stream_idx < 0) {
@@ -218,9 +222,9 @@ static void *muxer_thread(void *arg)
         }
 
         ost = of->streams[stream_idx];
-        ret = sync_queue_process(mux, ost, ret < 0 ? NULL : pkt);
+        ret = sync_queue_process(mux, ost, ret < 0 ? NULL : pkt, &stream_eof);
         av_packet_unref(pkt);
-        if (ret == AVERROR_EOF)
+        if (ret == AVERROR_EOF && stream_eof)
             tq_receive_finish(mux->tq, stream_idx);
         else if (ret < 0) {
             av_log(mux, AV_LOG_ERROR, "Error muxing a packet\n");
