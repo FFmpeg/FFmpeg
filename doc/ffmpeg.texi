@@ -2061,30 +2061,30 @@ encoder/muxer, it does not change the stream to conform to this value. Setting
 values that do not match the stream properties may result in encoding failures
 or invalid output files.
 
-@item -enc_stats_pre[:@var{stream_specifier}] @var{path} (@emph{output,per-stream})
-@item -enc_stats_post[:@var{stream_specifier}] @var{path} (@emph{output,per-stream})
+@item -stats_enc_pre[:@var{stream_specifier}] @var{path} (@emph{output,per-stream})
+@item -stats_enc_post[:@var{stream_specifier}] @var{path} (@emph{output,per-stream})
 @item -stats_mux_pre[:@var{stream_specifier}] @var{path} (@emph{output,per-stream})
 Write per-frame encoding information about the matching streams into the file
 given by @var{path}.
 
-@option{-enc_stats_pre} writes information about raw video or audio frames right
-before they are sent for encoding, while @option{-enc_stats_post} writes
+@option{-stats_enc_pre} writes information about raw video or audio frames right
+before they are sent for encoding, while @option{-stats_enc_post} writes
 information about encoded packets as they are received from the encoder.
 @option{-stats_mux_pre} writes information about packets just as they are about to
 be sent to the muxer. Every frame or packet produces one line in the specified
-file. The format of this line is controlled by @option{-enc_stats_pre_fmt} /
-@option{-enc_stats_post_fmt} / @option{-stats_mux_pre_fmt}.
+file. The format of this line is controlled by @option{-stats_enc_pre_fmt} /
+@option{-stats_enc_post_fmt} / @option{-stats_mux_pre_fmt}.
 
 When stats for multiple streams are written into a single file, the lines
 corresponding to different streams will be interleaved. The precise order of
 this interleaving is not specified and not guaranteed to remain stable between
 different invocations of the program, even with the same options.
 
-@item -enc_stats_pre_fmt[:@var{stream_specifier}] @var{format_spec} (@emph{output,per-stream})
-@item -enc_stats_post_fmt[:@var{stream_specifier}] @var{format_spec} (@emph{output,per-stream})
+@item -stats_enc_pre_fmt[:@var{stream_specifier}] @var{format_spec} (@emph{output,per-stream})
+@item -stats_enc_post_fmt[:@var{stream_specifier}] @var{format_spec} (@emph{output,per-stream})
 @item -stats_mux_pre_fmt[:@var{stream_specifier}] @var{format_spec} (@emph{output,per-stream})
-Specify the format for the lines written with @option{-enc_stats_pre} /
-@option{-enc_stats_post} / @option{-stats_mux_pre}.
+Specify the format for the lines written with @option{-stats_enc_pre} /
+@option{-stats_enc_post} / @option{-stats_mux_pre}.
 
 @var{format_spec} is a string that may contain directives of the form
 @var{@{fmt@}}. @var{format_spec} is backslash-escaped --- use \@{, \@}, and \\

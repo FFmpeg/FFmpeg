@@ -32,7 +32,7 @@ version <next>:
 - WADY DPCM decoder and demuxer
 - CBD2 DPCM decoder
 - ssim360 video filter
-- ffmpeg CLI new options: -enc_stats_pre[_fmt], -enc_stats_post[_fmt],
+- ffmpeg CLI new options: -stats_enc_pre[_fmt], -stats_enc_post[_fmt],
   -stats_mux_pre[_fmt]
 - hstack_vaapi, vstack_vaapi and xstack_vaapi filters
 - XMD ADPCM decoder and demuxer
