@@ -388,7 +388,6 @@ typedef struct InputStream {
     AVDictionary *decoder_opts;
     AVRational framerate;               /* framerate forced with -r */
     int top_field_first;
-    int guess_layout_max;
 
     int autorotate;
 

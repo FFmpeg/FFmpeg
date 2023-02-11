@@ -552,14 +552,14 @@ static const AVCodec *choose_decoder(const OptionsContext *o, AVFormatContext *s
     }
 }
 
-static int guess_input_channel_layout(InputStream *ist)
+static int guess_input_channel_layout(InputStream *ist, int guess_layout_max)
 {
     AVCodecContext *dec = ist->dec_ctx;
 
     if (dec->ch_layout.order == AV_CHANNEL_ORDER_UNSPEC) {
         char layout_name[256];
 
-        if (dec->ch_layout.nb_channels > ist->guess_layout_max)
+        if (dec->ch_layout.nb_channels > guess_layout_max)
             return 0;
         av_channel_layout_default(&dec->ch_layout, dec->ch_layout.nb_channels);
         if (dec->ch_layout.order == AV_CHANNEL_ORDER_UNSPEC)
@@ -800,11 +800,12 @@ static void add_input_streams(const OptionsContext *o, Demuxer *d)
             ist->framerate_guessed = av_guess_frame_rate(ic, st, NULL);
 
             break;
-        case AVMEDIA_TYPE_AUDIO:
-            ist->guess_layout_max = INT_MAX;
-            MATCH_PER_STREAM_OPT(guess_layout_max, i, ist->guess_layout_max, ic, st);
-            guess_input_channel_layout(ist);
+        case AVMEDIA_TYPE_AUDIO: {
+            int guess_layout_max = INT_MAX;
+            MATCH_PER_STREAM_OPT(guess_layout_max, i, guess_layout_max, ic, st);
+            guess_input_channel_layout(ist, guess_layout_max);
             break;
+        }
         case AVMEDIA_TYPE_DATA:
         case AVMEDIA_TYPE_SUBTITLE: {
             char *canvas_size = NULL;
