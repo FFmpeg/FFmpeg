@@ -333,6 +333,8 @@ typedef struct FilterGraph {
 } FilterGraph;
 
 typedef struct InputStream {
+    const AVClass *class;
+
     int file_index;
     AVStream *st;
     int discard;             /* true if stream data should be discarded */
