@@ -385,7 +385,6 @@ typedef struct InputStream {
 
     int64_t nb_samples; /* number of samples in the last decoded audio frame before looping */
 
-    double ts_scale;
     int saw_first_ts;
     AVDictionary *decoder_opts;
     AVRational framerate;               /* framerate forced with -r */

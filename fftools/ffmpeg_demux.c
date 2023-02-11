@@ -58,6 +58,8 @@ typedef struct DemuxStream {
     // name used for logging
     char log_name[32];
 
+    double ts_scale;
+
     int64_t min_pts; /* pts with the smallest value in a current stream */
     int64_t max_pts; /* pts with the higher value in a current stream */
 } DemuxStream;
@@ -225,9 +227,9 @@ static void ts_fixup(Demuxer *d, AVPacket *pkt, int *repeat_pict)
         pkt->pts += av_rescale_q(ifile->ts_offset, AV_TIME_BASE_Q, ist->st->time_base);
 
     if (pkt->pts != AV_NOPTS_VALUE)
-        pkt->pts *= ist->ts_scale;
+        pkt->pts *= ds->ts_scale;
     if (pkt->dts != AV_NOPTS_VALUE)
-        pkt->dts *= ist->ts_scale;
+        pkt->dts *= ds->ts_scale;
 
     duration = av_rescale_q(d->duration, d->time_base, ist->st->time_base);
     if (pkt->pts != AV_NOPTS_VALUE) {
@@ -670,8 +672,8 @@ static void add_input_streams(const OptionsContext *o, Demuxer *d)
         ds->min_pts = INT64_MAX;
         ds->max_pts = INT64_MIN;
 
-        ist->ts_scale = 1.0;
-        MATCH_PER_STREAM_OPT(ts_scale, dbl, ist->ts_scale, ic, st);
+        ds->ts_scale = 1.0;
+        MATCH_PER_STREAM_OPT(ts_scale, dbl, ds->ts_scale, ic, st);
 
         ist->autorotate = 1;
         MATCH_PER_STREAM_OPT(autorotate, i, ist->autorotate, ic, st);
