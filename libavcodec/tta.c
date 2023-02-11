@@ -160,7 +160,8 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
         av_channel_layout_uninit(&avctx->ch_layout);
         if (s->channels > 1 && s->channels < 9) {
             av_channel_layout_from_mask(&avctx->ch_layout, tta_channel_layouts[s->channels-2]);
-        } else {
+        }
+        if (avctx->ch_layout.nb_channels == 0) {
             avctx->ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
             avctx->ch_layout.nb_channels = s->channels;
         }
