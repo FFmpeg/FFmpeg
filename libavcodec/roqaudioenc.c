@@ -174,7 +174,7 @@ static int roq_dpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     /* Write the actual samples */
     for (i = 0; i < data_size; i++)
-        *out++ = dpcm_predict(&context->lastSample[i & 1], *in++);
+        *out++ = dpcm_predict(&context->lastSample[(i & 1) & stereo], *in++);
 
     avpkt->pts      = context->input_frames <= 7 ? context->first_pts : frame->pts;
     avpkt->duration = data_size / channels;
