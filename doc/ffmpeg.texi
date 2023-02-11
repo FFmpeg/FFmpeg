@@ -1837,12 +1837,38 @@ results, but increase memory use and latency.
 
 The default value is 10 seconds.
 
-@item -dts_delta_threshold
-Timestamp discontinuity delta threshold.
-@item -dts_error_threshold @var{seconds}
-Timestamp error delta threshold. This threshold use to discard crazy/damaged
-timestamps and the default is 30 hours which is arbitrarily picked and quite
-conservative.
+@item -dts_delta_threshold @var{threshold}
+Timestamp discontinuity delta threshold, expressed as a decimal number
+of seconds.
+
+The timestamp discontinuity correction enabled by this option is only
+applied to input formats accepting timestamp discontinuity (for which
+the @code{AV_FMT_DISCONT} flag is enabled), e.g. MPEG-TS and HLS, and
+is automatically disabled when employing the @code{-copy_ts} option
+(unless wrapping is detected).
+
+If a timestamp discontinuity is detected whose absolute value is
+greater than @var{threshold}, ffmpeg will remove the discontinuity by
+decreasing/increasing the current DTS and PTS by the corresponding
+delta value.
+
+The default value is 10.
+
+@item -dts_error_threshold @var{threshold}
+Timestamp error delta threshold, expressed as a decimal number of
+seconds.
+
+The timestamp correction enabled by this option is only applied to
+input formats not accepting timestamp discontinuity (for which the
+@code{AV_FMT_DISCONT} flag is not enabled).
+
+If a timestamp discontinuity is detected whose absolute value is
+greater than @var{threshold}, ffmpeg will drop the PTS/DTS timestamp
+value.
+
+The default value is @code{3600*30} (30 hours), which is arbitrarily
+picked and quite conservative.
+
 @item -muxdelay @var{seconds} (@emph{output})
 Set the maximum demux-decode delay.
 @item -muxpreload @var{seconds} (@emph{output})
