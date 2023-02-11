@@ -52,6 +52,13 @@ static const char *const opt_name_display_rotations[]         = {"display_rotati
 static const char *const opt_name_display_hflips[]            = {"display_hflip", NULL};
 static const char *const opt_name_display_vflips[]            = {"display_vflip", NULL};
 
+typedef struct DemuxStream {
+    InputStream ist;
+
+    int64_t min_pts; /* pts with the smallest value in a current stream */
+    int64_t max_pts; /* pts with the higher value in a current stream */
+} DemuxStream;
+
 typedef struct Demuxer {
     InputFile f;
 
@@ -83,6 +90,11 @@ typedef struct DemuxMsg {
     int repeat_pict;
 } DemuxMsg;
 
+static DemuxStream *ds_from_ist(InputStream *ist)
+{
+    return (DemuxStream*)ist;
+}
+
 static Demuxer *demuxer_from_ifile(InputFile *f)
 {
     return (Demuxer*)f;
@@ -101,20 +113,20 @@ static void report_new_stream(Demuxer *d, const AVPacket *pkt)
     d->nb_streams_warn = pkt->stream_index + 1;
 }
 
-static void ifile_duration_update(Demuxer *d, InputStream *ist,
+static void ifile_duration_update(Demuxer *d, DemuxStream *ds,
                                   int64_t last_duration)
 {
     /* the total duration of the stream, max_pts - min_pts is
      * the duration of the stream without the last frame */
-    if (ist->max_pts > ist->min_pts &&
-        ist->max_pts - (uint64_t)ist->min_pts < INT64_MAX - last_duration)
-        last_duration += ist->max_pts - ist->min_pts;
+    if (ds->max_pts > ds->min_pts &&
+        ds->max_pts - (uint64_t)ds->min_pts < INT64_MAX - last_duration)
+        last_duration += ds->max_pts - ds->min_pts;
 
     if (!d->duration ||
         av_compare_ts(d->duration, d->time_base,
-                      last_duration, ist->st->time_base) < 0) {
+                      last_duration, ds->ist.st->time_base) < 0) {
         d->duration = last_duration;
-        d->time_base = ist->st->time_base;
+        d->time_base = ds->ist.st->time_base;
     }
 }
 
@@ -122,7 +134,6 @@ static int seek_to_start(Demuxer *d)
 {
     InputFile    *ifile = &d->f;
     AVFormatContext *is = ifile->ctx;
-    InputStream *ist;
     int ret;
 
     ret = avformat_seek_file(is, -1, INT64_MIN, is->start_time, is->start_time, 0);
@@ -136,19 +147,21 @@ static int seek_to_start(Demuxer *d)
         int got_durations = 0;
 
         while (got_durations < ifile->audio_duration_queue_size) {
+            DemuxStream *ds;
             LastFrameDuration dur;
             ret = av_thread_message_queue_recv(ifile->audio_duration_queue, &dur, 0);
             if (ret < 0)
                 return ret;
             got_durations++;
 
-            ist = ifile->streams[dur.stream_idx];
-            ifile_duration_update(d, ist, dur.duration);
+            ds = ds_from_ist(ifile->streams[dur.stream_idx]);
+            ifile_duration_update(d, ds, dur.duration);
         }
     } else {
         for (int i = 0; i < ifile->nb_streams; i++) {
             int64_t duration = 0;
-            ist   = ifile->streams[i];
+            InputStream *ist = ifile->streams[i];
+            DemuxStream *ds  = ds_from_ist(ist);
 
             if (ist->framerate.num) {
                 duration = av_rescale_q(1, av_inv_q(ist->framerate), ist->st->time_base);
@@ -158,7 +171,7 @@ static int seek_to_start(Demuxer *d)
                 duration = 1;
             }
 
-            ifile_duration_update(d, ist, duration);
+            ifile_duration_update(d, ds, duration);
         }
     }
 
@@ -172,6 +185,7 @@ static void ts_fixup(Demuxer *d, AVPacket *pkt, int *repeat_pict)
 {
     InputFile *ifile = &d->f;
     InputStream *ist = ifile->streams[pkt->stream_index];
+    DemuxStream  *ds = ds_from_ist(ist);
     const int64_t start_time = ifile->start_time_effective;
     int64_t duration;
 
@@ -216,8 +230,8 @@ static void ts_fixup(Demuxer *d, AVPacket *pkt, int *repeat_pict)
     duration = av_rescale_q(d->duration, d->time_base, ist->st->time_base);
     if (pkt->pts != AV_NOPTS_VALUE) {
         pkt->pts += duration;
-        ist->max_pts = FFMAX(pkt->pts, ist->max_pts);
-        ist->min_pts = FFMIN(pkt->pts, ist->min_pts);
+        ds->max_pts = FFMAX(pkt->pts, ds->max_pts);
+        ds->min_pts = FFMIN(pkt->pts, ds->min_pts);
     }
 
     if (pkt->dts != AV_NOPTS_VALUE)
@@ -590,6 +604,18 @@ static void add_display_matrix_to_stream(const OptionsContext *o,
                            vflip_set ? vflip : 0);
 }
 
+static DemuxStream *demux_stream_alloc(Demuxer *d, AVStream *st)
+{
+    InputFile    *f = &d->f;
+    DemuxStream *ds = allocate_array_elem(&f->streams, sizeof(*ds),
+                                          &f->nb_streams);
+
+    ds->ist.st         = st;
+    ds->ist.file_index = f->index;
+
+    return ds;
+}
+
 /* Add all the streams from the given input file to the demuxer */
 static void add_input_streams(const OptionsContext *o, Demuxer *d)
 {
@@ -600,6 +626,7 @@ static void add_input_streams(const OptionsContext *o, Demuxer *d)
     for (i = 0; i < ic->nb_streams; i++) {
         AVStream *st = ic->streams[i];
         AVCodecParameters *par = st->codecpar;
+        DemuxStream *ds;
         InputStream *ist;
         char *framerate = NULL, *hwaccel_device = NULL;
         const char *hwaccel = NULL;
@@ -611,15 +638,15 @@ static void add_input_streams(const OptionsContext *o, Demuxer *d)
         const AVOption *discard_opt = av_opt_find(&cc, "skip_frame", NULL,
                                                   0, AV_OPT_SEARCH_FAKE_OBJ);
 
-        ist = ALLOC_ARRAY_ELEM(f->streams, f->nb_streams);
-        ist->st = st;
-        ist->file_index = f->index;
+        ds  = demux_stream_alloc(d, st);
+        ist = &ds->ist;
+
         ist->discard = 1;
         st->discard  = AVDISCARD_ALL;
         ist->nb_samples = 0;
         ist->first_dts = AV_NOPTS_VALUE;
-        ist->min_pts = INT64_MAX;
-        ist->max_pts = INT64_MIN;
+        ds->min_pts = INT64_MAX;
+        ds->max_pts = INT64_MIN;
 
         ist->ts_scale = 1.0;
         MATCH_PER_STREAM_OPT(ts_scale, dbl, ist->ts_scale, ic, st);
