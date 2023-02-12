@@ -29,6 +29,8 @@
 
 #include "libavcodec/ac3_parser_internal.h"
 #include "libavcodec/avcodec.h"
+#include "libavcodec/bytestream.h"
+#include "libavcodec/h264.h"
 #include "libavcodec/startcode.h"
 
 #include "avformat.h"
@@ -1877,6 +1879,7 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
 
     if (st->codecpar->codec_id == AV_CODEC_ID_H264) {
         const uint8_t *p = buf, *buf_end = p + size;
+        const uint8_t *found_aud = NULL, *found_aud_end = NULL;
         uint32_t state = -1;
         int extradd = (pkt->flags & AV_PKT_FLAG_KEY) ? st->codecpar->extradata_size : 0;
         int ret = ff_check_h264_startcode(s, st, pkt);
@@ -1886,27 +1889,58 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
         if (extradd && AV_RB24(st->codecpar->extradata) > 1)
             extradd = 0;
 
+        /* Ensure that all pictures are prefixed with an AUD, and that
+         * IDR pictures are also prefixed with SPS and PPS. SPS and PPS
+         * are assumed to be available in 'extradata' if not found in-band. */
         do {
             p = avpriv_find_start_code(p, buf_end, &state);
             av_log(s, AV_LOG_TRACE, "nal %"PRId32"\n", state & 0x1f);
-            if ((state & 0x1f) == 7)
+            if ((state & 0x1f) == H264_NAL_SPS)
                 extradd = 0;
-        } while (p < buf_end && (state & 0x1f) != 9 &&
-                 (state & 0x1f) != 5 && (state & 0x1f) != 1);
-
-        if ((state & 0x1f) != 5)
+            if ((state & 0x1f) == H264_NAL_AUD) {
+                found_aud = p - 4;     // start of the 0x000001 start code.
+                found_aud_end = p + 1; // first byte past the AUD.
+                if (found_aud < buf)
+                    found_aud = buf;
+                if (buf_end < found_aud_end)
+                    found_aud_end = buf_end;
+            }
+        } while (p < buf_end
+                 && (state & 0x1f) != H264_NAL_IDR_SLICE
+                 && (state & 0x1f) != H264_NAL_SLICE
+                 && (extradd > 0 || !found_aud));
+        if ((state & 0x1f) != H264_NAL_IDR_SLICE)
             extradd = 0;
-        if ((state & 0x1f) != 9) { // AUD NAL
+
+        if (!found_aud) {
+            /* Prefix 'buf' with the missing AUD, and extradata if needed. */
             data = av_malloc(pkt->size + 6 + extradd);
             if (!data)
                 return AVERROR(ENOMEM);
             memcpy(data + 6, st->codecpar->extradata, extradd);
             memcpy(data + 6 + extradd, pkt->data, pkt->size);
             AV_WB32(data, 0x00000001);
-            data[4] = 0x09;
+            data[4] = H264_NAL_AUD;
             data[5] = 0xf0; // any slice type (0xe) + rbsp stop one bit
             buf     = data;
             size    = pkt->size + 6 + extradd;
+        } else if (extradd != 0) {
+            /* Move the AUD up to the beginning of the frame, where the H.264
+             * spec requires it to appear. Emit the extradata after it. */
+            PutByteContext pb;
+            const int new_pkt_size = pkt->size + 1 + extradd;
+            data = av_malloc(new_pkt_size);
+            if (!data)
+                return AVERROR(ENOMEM);
+            bytestream2_init_writer(&pb, data, new_pkt_size);
+            bytestream2_put_byte(&pb, 0x00);
+            bytestream2_put_buffer(&pb, found_aud, found_aud_end - found_aud);
+            bytestream2_put_buffer(&pb, st->codecpar->extradata, extradd);
+            bytestream2_put_buffer(&pb, pkt->data, found_aud - pkt->data);
+            bytestream2_put_buffer(&pb, found_aud_end, buf_end - found_aud_end);
+            av_assert0(new_pkt_size == bytestream2_tell_p(&pb));
+            buf     = data;
+            size    = new_pkt_size;
         }
     } else if (st->codecpar->codec_id == AV_CODEC_ID_AAC) {
         if (pkt->size < 2) {
