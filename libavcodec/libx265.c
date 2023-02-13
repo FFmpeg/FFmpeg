@@ -778,10 +778,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
         rd_release(ctx, idx);
     }
 #if FF_API_REORDERED_OPAQUE
-    else
+    else {
 FF_DISABLE_DEPRECATION_WARNINGS
         avctx->reordered_opaque = 0;
 FF_ENABLE_DEPRECATION_WARNINGS
+    }
 #endif
 
     *got_packet = 1;
