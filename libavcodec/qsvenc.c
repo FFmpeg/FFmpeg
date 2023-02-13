@@ -1185,7 +1185,12 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
         q->extvsi.ColourDescriptionPresent = 1;
         q->extvsi.ColourPrimaries = avctx->color_primaries;
         q->extvsi.TransferCharacteristics = avctx->color_trc;
-        q->extvsi.MatrixCoefficients = avctx->colorspace;
+        if (avctx->colorspace == AVCOL_SPC_RGB)
+            // RGB will be converted to YUV, so RGB colorspace is not supported
+            q->extvsi.MatrixCoefficients = AVCOL_SPC_UNSPECIFIED;
+        else
+            q->extvsi.MatrixCoefficients = avctx->colorspace;
+
     }
 
     if ((avctx->codec_id != AV_CODEC_ID_VP9) && (q->extvsi.VideoFullRange || q->extvsi.ColourDescriptionPresent)) {
