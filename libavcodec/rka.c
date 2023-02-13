@@ -68,8 +68,7 @@ typedef struct ChContext {
     AdaptiveModel *filt_size;
     AdaptiveModel *filt_bits;
 
-    int *bprob0;
-    int *bprob1;
+    uint32_t *bprob[2];
 
     AdaptiveModel position;
     AdaptiveModel fshift;
@@ -96,8 +95,7 @@ typedef struct RKAContext {
     uint32_t total_nb_samples;
     uint32_t samples_left;
 
-    int bprob0[257];
-    int bprob1[257];
+    uint32_t bprob[2][257];
 
     AdaptiveModel filt_size;
     AdaptiveModel filt_bits;
@@ -203,14 +201,14 @@ static int chctx_init(RKAContext *s, ChContext *c,
     c->filt_size = &s->filt_size;
     c->filt_bits = &s->filt_bits;
 
-    c->bprob0 = s->bprob0;
-    c->bprob1 = s->bprob1;
+    c->bprob[0] = s->bprob[0];
+    c->bprob[1] = s->bprob[1];
 
     c->srate_pad = (sample_rate << 13) / 44100 & 0xFFFFFFFCU;
     c->pos_idx = 1;
 
-    for (int i = 0; i < FF_ARRAY_ELEMS(s->bprob0); i++)
-        c->bprob0[i] = c->bprob1[i] = 1;
+    for (int i = 0; i < FF_ARRAY_ELEMS(s->bprob[0]); i++)
+        c->bprob[0][i] = c->bprob[1][i] = 1;
 
     for (int i = 0; i < 11; i++) {
         ret = adaptive_model_init(&c->coeff_bits[i], 32);
@@ -247,8 +245,8 @@ static void init_acoder(ACoder *ac)
 
 static int ac_decode_bool(ACoder *ac, int freq1, int freq2)
 {
-    unsigned help, add, high;
-    int value, low;
+    unsigned help, add, high, value;
+    int low;
 
     low = ac->low;
     help = ac->high / (unsigned)(freq2 + freq1);
@@ -270,7 +268,7 @@ static int ac_decode_bool(ACoder *ac, int freq1, int freq2)
                 break;
             ac->value = bytestream2_get_byteu(&ac->gb) | (ac->value << 8);
             ac->high = high = ac->high << 8;
-            ac->low = low = ac->low << 8;
+            low = ac->low = ac->low << 8;
         }
         return -1;
     }
@@ -287,27 +285,27 @@ static int ac_decode_bool(ACoder *ac, int freq1, int freq2)
             break;
         ac->value = bytestream2_get_byteu(&ac->gb) | (ac->value << 8);
         ac->high = add = ac->high << 8;
-        ac->low = low = ac->low << 8;
+        low = ac->low = ac->low << 8;
     }
     return -1;
 }
 
 static int decode_bool(ACoder *ac, ChContext *c, int idx)
 {
-    int x, b;
+    uint32_t x;
+    int b;
 
-    x = c->bprob0[idx];
-    if (x + c->bprob1[idx] > 4096) {
-        c->bprob0[idx] = (x >> 1) + 1;
-        c->bprob1[idx] = (c->bprob1[idx] >> 1) + 1;
+    x = c->bprob[0][idx];
+    if (x + c->bprob[1][idx] > 4096) {
+        c->bprob[0][idx] = (x >> 1) + 1;
+        c->bprob[1][idx] = (c->bprob[1][idx] >> 1) + 1;
     }
 
-    b = ac_decode_bool(ac, c->bprob0[idx], c->bprob1[idx]);
-    if (b == 1) {
-        c->bprob1[idx]++;
-    } else if (b == 0) {
-        c->bprob0[idx]++;
-    }
+    b = ac_decode_bool(ac, c->bprob[0][idx], c->bprob[1][idx]);
+    if (b < 0)
+        return b;
+
+    c->bprob[b][idx]++;
 
     return b;
 }
@@ -341,7 +339,7 @@ static int ac_update(ACoder *ac, int freq, int mul)
         if (((high + low) ^ low) > 0xffffff) {
             if (high > 0xffff)
                 return 0;
-            ac->high = (-(int16_t)low) & 0xffff;
+            ac->high = (uint16_t)-(int16_t)low;
         }
 
         if (bytestream2_get_bytes_left(&ac->gb) <= 0)
@@ -403,8 +401,8 @@ static void update_ch_subobj(AdaptiveModel *am)
 
 static int amdl_decode_int(AdaptiveModel *am, ACoder *ac, unsigned *dst, unsigned size)
 {
-    unsigned freq, size2;
-    int val, mul, j;
+    unsigned freq, size2, val, mul;
+    int j;
 
     size = FFMIN(size, am->buf_size - 1);
 
@@ -437,7 +435,7 @@ static int amdl_decode_int(AdaptiveModel *am, ACoder *ac, unsigned *dst, unsigne
                     j -= v;
                 }
             }
-            freq = freq - j;
+            freq -= j;
             val = sum + 1;
         } else {
             freq = 0;
@@ -549,7 +547,7 @@ static int ac_dec_bit(ACoder *ac)
             if (((high + low) ^ low) > 0xffffff) {
                 if (high > 0xffff)
                     return 0;
-                ac->high = (-(int16_t)low) & 0xffff;
+                ac->high = (uint16_t)-(int16_t)low;
             }
 
             if (bytestream2_get_bytes_left(&ac->gb) <= 0)
@@ -567,7 +565,7 @@ static int ac_dec_bit(ACoder *ac)
         if (((high + low) ^ low) > 0xffffff) {
             if (high > 0xffff)
                 return 1;
-            ac->high = (-(int16_t)low) & 0xffff;
+            ac->high = (uint16_t)-(int16_t)low;
         }
 
         if (bytestream2_get_bytes_left(&ac->gb) <= 0)
@@ -586,11 +584,11 @@ static int mdl64_decode(ACoder *ac, Model64 *ctx, int *dst)
     int sign, idx, bits;
     unsigned val = 0;
 
-    if (ctx->zero[0] + ctx->zero[1] > 4000) {
+    if (ctx->zero[0] + ctx->zero[1] > 4000U) {
         ctx->zero[0] = (ctx->zero[0] >> 1) + 1;
         ctx->zero[1] = (ctx->zero[1] >> 1) + 1;
     }
-    if (ctx->sign[0] + ctx->sign[1] > 4000) {
+    if (ctx->sign[0] + ctx->sign[1] > 4000U) {
         ctx->sign[0] = (ctx->sign[0] >> 1) + 1;
         ctx->sign[1] = (ctx->sign[1] >> 1) + 1;
     }
@@ -599,8 +597,9 @@ static int mdl64_decode(ACoder *ac, Model64 *ctx, int *dst)
         ctx->zero[0] += 2;
         dst[0] = 0;
         return 0;
-    } else if (sign < 0)
+    } else if (sign < 0) {
         return -1;
+    }
 
     ctx->zero[1] += 2;
     sign = ac_decode_bool(ac, ctx->sign[0], ctx->sign[1]);
@@ -613,11 +612,12 @@ static int mdl64_decode(ACoder *ac, Model64 *ctx, int *dst)
             ac_get_freq(ac, 1 << bits, &val);
             ac_update(ac, val, 1);
         } else {
-            ac_get_freq(ac, 1 << (bits / 2), &val);
+            int hbits = bits / 2;
+            ac_get_freq(ac, 1 << hbits, &val);
             ac_update(ac, val, 1);
-            ac_get_freq(ac, 1 << (ctx->bits - (bits / 2)), &bits);
+            ac_get_freq(ac, 1 << (ctx->bits - (hbits)), &bits);
             ac_update(ac, val, 1);
-            val = val + (bits << (bits / 2));
+            val += (bits << hbits);
         }
     }
     bits = ctx->size;
@@ -649,14 +649,13 @@ static int mdl64_decode(ACoder *ac, Model64 *ctx, int *dst)
             return 0;
         }
     }
-    bits = bits + 1;
+    bits++;
     while (ac_dec_bit(ac) == 0)
-        bits = bits + 64;
+        bits += 64;
     ac_get_freq(ac, 64, &idx);
     ac_update(ac, idx, 1);
     idx += bits;
-    bits = val + 1 + (idx << ctx->bits);
-    dst[0] = bits;
+    dst[0] = val + 1 + (idx << ctx->bits);
     if (sign)
         dst[0] = -dst[0];
 
@@ -697,7 +696,7 @@ static int decode_filter(RKAContext *s, ChContext *ctx, ACoder *ac, int off, uns
         idx = (ctx->pos_idx + idx) % 11;
         ctx->pos_idx = idx;
 
-        for (int y = 0; y < split; y++, off++) {
+        for (int y = 0; y < FFMIN(split, size - x); y++, off++) {
             int midx, shift = idx, *src, sum = 16;
 
             midx = FFABS(last_val) >> shift;
@@ -725,7 +724,7 @@ static int decode_filter(RKAContext *s, ChContext *ctx, ACoder *ac, int off, uns
                 if (bits == 0) {
                     ctx->buf1[off] = sum + val;
                 } else {
-                    ctx->buf1[off] = (val + (sum >> bits) * (1U << bits)) +
+                    ctx->buf1[off] = (val + (sum >> bits) << bits) +
                         (((1U << bits) - 1U) & ctx->buf1[off + -1]);
                 }
                 ctx->buf0[off] = ctx->buf1[off] + ctx->buf0[off + -1];
@@ -733,8 +732,8 @@ static int decode_filter(RKAContext *s, ChContext *ctx, ACoder *ac, int off, uns
                 val = val * (1 << ctx->cmode & 0x1f);
                 sum += ctx->buf0[off + -1] + val;
                 switch (s->bps) {
-                    case 16: sum = av_clip_int16(sum); break;
-                    case  8: sum = av_clip_int8(sum);  break;
+                case 16: sum = av_clip_int16(sum); break;
+                case  8: sum = av_clip_int8(sum);  break;
                 }
                 ctx->buf1[off] = sum - ctx->buf0[off + -1];
                 ctx->buf0[off] = sum;
@@ -770,28 +769,44 @@ static int decode_samples(AVCodecContext *avctx, ACoder *ac, ChContext *ctx, int
             return ret;
         ac_update(ac, segment_size, 1);
         segment_size *= 4;
-        decode_filter(s, ctx, ac, offset, segment_size);
+        ret = decode_filter(s, ctx, ac, offset, segment_size);
+        if (ret < 0)
+            return ret;
     } else {
         segment_size = ctx->srate_pad;
 
         if (mode) {
             if (mode > 2) {
-                decode_filter(s, ctx, ac, offset, segment_size / 4);
+                ret = decode_filter(s, ctx, ac, offset, segment_size / 4);
+                if (ret < 0)
+                    return ret;
                 offset2 = segment_size / 4 + offset;
-                decode_filter(s, ctx, ac, offset2, segment_size / 4);
+                ret = decode_filter(s, ctx, ac, offset2, segment_size / 4);
+                if (ret < 0)
+                    return ret;
                 offset2 = segment_size / 4 + offset2;
             } else {
-                decode_filter(s, ctx, ac, offset, segment_size / 2);
+                ret = decode_filter(s, ctx, ac, offset, segment_size / 2);
+                if (ret < 0)
+                    return ret;
                 offset2 = segment_size / 2 + offset;
             }
             if (mode & 1) {
-                decode_filter(s, ctx, ac, offset2, segment_size / 2);
+                ret = decode_filter(s, ctx, ac, offset2, segment_size / 2);
+                if (ret < 0)
+                    return ret;
             } else {
-                decode_filter(s, ctx, ac, offset2, segment_size / 4);
-                decode_filter(s, ctx, ac, segment_size / 4 + offset2, segment_size / 4);
+                ret = decode_filter(s, ctx, ac, offset2, segment_size / 4);
+                if (ret < 0)
+                    return ret;
+                ret = decode_filter(s, ctx, ac, segment_size / 4 + offset2, segment_size / 4);
+                if (ret < 0)
+                    return ret;
             }
         } else {
-            decode_filter(s, ctx, ac, offset, ctx->srate_pad);
+            ret = decode_filter(s, ctx, ac, offset, ctx->srate_pad);
+            if (ret < 0)
+                return ret;
         }
     }
 
