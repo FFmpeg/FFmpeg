@@ -857,26 +857,28 @@ static int rka_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     if (s->channels == 2) {
         int16_t *l16 = (int16_t *)frame->extended_data[0];
         int16_t *r16 = (int16_t *)frame->extended_data[1];
+        uint8_t *l8 = frame->extended_data[0];
+        uint8_t *r8 = frame->extended_data[1];
 
-        switch (avctx->sample_fmt) {
-        case AV_SAMPLE_FMT_S16P:
-            for (int n = 0; n < frame->nb_samples;) {
-                ret = decode_ch_samples(avctx, &s->ch[0]);
-                if (ret == 0) {
-                    frame->nb_samples = n;
-                    break;
-                }
-                if (ret < 0 || n + ret > frame->nb_samples)
-                    return AVERROR_INVALIDDATA;
+        for (int n = 0; n < frame->nb_samples;) {
+            ret = decode_ch_samples(avctx, &s->ch[0]);
+            if (ret == 0) {
+                frame->nb_samples = n;
+                break;
+            }
+            if (ret < 0 || n + ret > frame->nb_samples)
+                return AVERROR_INVALIDDATA;
 
-                ret = decode_ch_samples(avctx, &s->ch[1]);
-                if (ret == 0) {
-                    frame->nb_samples = n;
-                    break;
-                }
-                if (ret < 0 || n + ret > frame->nb_samples)
-                    return AVERROR_INVALIDDATA;
+            ret = decode_ch_samples(avctx, &s->ch[1]);
+            if (ret == 0) {
+                frame->nb_samples = n;
+                break;
+            }
+            if (ret < 0 || n + ret > frame->nb_samples)
+                return AVERROR_INVALIDDATA;
 
+            switch (avctx->sample_fmt) {
+            case AV_SAMPLE_FMT_S16P:
                 for (int i = 0; i < ret; i++) {
                     int l = s->ch[0].buf0[2560 + i];
                     int r = s->ch[1].buf0[2560 + i];
@@ -884,38 +886,55 @@ static int rka_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                     l16[n + i] = (l * 2 + r + 1) >> 1;
                     r16[n + i] = (l * 2 - r + 1) >> 1;
                 }
+                break;
+            case AV_SAMPLE_FMT_U8P:
+                for (int i = 0; i < ret; i++) {
+                    int l = s->ch[0].buf0[2560 + i];
+                    int r = s->ch[1].buf0[2560 + i];
 
-                n += ret;
+                    l8[n + i] = ((l * 2 + r + 1) >> 1) + 0x7f;
+                    r8[n + i] = ((l * 2 - r + 1) >> 1) + 0x7f;
+                }
+                break;
+            default:
+                return AVERROR_INVALIDDATA;
             }
-            break;
-        default:
-            return AVERROR_INVALIDDATA;
+
+            n += ret;
         }
     } else {
         int16_t *m16 = (int16_t *)frame->data[0];
+        uint8_t *m8 = frame->data[0];
 
-        switch (avctx->sample_fmt) {
-        case AV_SAMPLE_FMT_S16P:
-            for (int n = 0; n < frame->nb_samples;) {
-                ret = decode_ch_samples(avctx, &s->ch[0]);
-                if (ret == 0) {
-                    frame->nb_samples = n;
-                    break;
-                }
-                if (ret < 0 || n + ret > frame->nb_samples)
-                    return AVERROR_INVALIDDATA;
+        for (int n = 0; n < frame->nb_samples;) {
+            ret = decode_ch_samples(avctx, &s->ch[0]);
+            if (ret == 0) {
+                frame->nb_samples = n;
+                break;
+            }
+            if (ret < 0 || n + ret > frame->nb_samples)
+                return AVERROR_INVALIDDATA;
 
+            switch (avctx->sample_fmt) {
+            case AV_SAMPLE_FMT_S16P:
                 for (int i = 0; i < ret; i++) {
                     int m = s->ch[0].buf0[2560 + i];
 
                     m16[n + i] = m;
                 }
+                break;
+            case AV_SAMPLE_FMT_U8P:
+                for (int i = 0; i < ret; i++) {
+                    int m = s->ch[0].buf0[2560 + i];
 
-                n += ret;
+                    m8[n + i] = m + 0x7f;
+                }
+                break;
+            default:
+                return AVERROR_INVALIDDATA;
             }
-            break;
-        default:
-            return AVERROR_INVALIDDATA;
+
+            n += ret;
         }
     }
 
