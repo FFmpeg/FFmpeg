@@ -1605,7 +1605,7 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
 
     q->param.AsyncDepth = q->async_depth;
 
-    q->async_fifo = av_fifo_alloc2(q->async_depth, sizeof(QSVPacket), 0);
+    q->async_fifo = av_fifo_alloc2(q->async_depth, sizeof(QSVPacket), AV_FIFO_FLAG_AUTO_GROW);
     if (!q->async_fifo)
         return AVERROR(ENOMEM);
 
@@ -2301,58 +2301,6 @@ static int update_pic_timing_sei(AVCodecContext *avctx, QSVEncContext *q)
     return updated;
 }
 
-static int update_parameters(AVCodecContext *avctx, QSVEncContext *q,
-                             const AVFrame *frame)
-{
-    int needReset = 0, ret = 0;
-
-    if (!frame || avctx->codec_id == AV_CODEC_ID_MJPEG)
-        return 0;
-
-    needReset = update_qp(avctx, q);
-    needReset |= update_max_frame_size(avctx, q);
-    needReset |= update_gop_size(avctx, q);
-    needReset |= update_rir(avctx, q);
-    needReset |= update_low_delay_brc(avctx, q);
-    needReset |= update_frame_rate(avctx, q);
-    needReset |= update_bitrate(avctx, q);
-    needReset |= update_pic_timing_sei(avctx, q);
-    ret = update_min_max_qp(avctx, q);
-    if (ret < 0)
-        return ret;
-    needReset |= ret;
-    if (!needReset)
-        return 0;
-
-    if (avctx->hwaccel_context) {
-        AVQSVContext *qsv = avctx->hwaccel_context;
-        int i, j;
-        q->param.ExtParam = q->extparam;
-        for (i = 0; i < qsv->nb_ext_buffers; i++)
-            q->param.ExtParam[i] = qsv->ext_buffers[i];
-        q->param.NumExtParam = qsv->nb_ext_buffers;
-
-        for (i = 0; i < q->nb_extparam_internal; i++) {
-            for (j = 0; j < qsv->nb_ext_buffers; j++) {
-                if (qsv->ext_buffers[j]->BufferId == q->extparam_internal[i]->BufferId)
-                    break;
-            }
-            if (j < qsv->nb_ext_buffers)
-                continue;
-            q->param.ExtParam[q->param.NumExtParam++] = q->extparam_internal[i];
-        }
-    } else {
-        q->param.ExtParam    = q->extparam_internal;
-        q->param.NumExtParam = q->nb_extparam_internal;
-    }
-    av_log(avctx, AV_LOG_DEBUG, "Parameter change, call msdk reset.\n");
-    ret = MFXVideoENCODE_Reset(q->session, &q->param);
-    if (ret < 0)
-        return ff_qsv_print_error(avctx, ret, "Error during resetting");
-
-    return 0;
-}
-
 static int encode_frame(AVCodecContext *avctx, QSVEncContext *q,
                         const AVFrame *frame)
 {
@@ -2443,7 +2391,7 @@ static int encode_frame(AVCodecContext *avctx, QSVEncContext *q,
 
     if (ret < 0) {
         ret = (ret == MFX_ERR_MORE_DATA) ?
-               0 : ff_qsv_print_error(avctx, ret, "Error during encoding");
+               AVERROR(EAGAIN) : ff_qsv_print_error(avctx, ret, "Error during encoding");
         goto free;
     }
 
@@ -2453,7 +2401,9 @@ static int encode_frame(AVCodecContext *avctx, QSVEncContext *q,
     ret = 0;
 
     if (*pkt.sync) {
-        av_fifo_write(q->async_fifo, &pkt, 1);
+        ret = av_fifo_write(q->async_fifo, &pkt, 1);
+        if (ret < 0)
+            goto free;
     } else {
 free:
         av_freep(&pkt.sync);
@@ -2471,6 +2421,66 @@ nomem:
     goto free;
 }
 
+static int update_parameters(AVCodecContext *avctx, QSVEncContext *q,
+                             const AVFrame *frame)
+{
+    int needReset = 0, ret = 0;
+
+    if (!frame || avctx->codec_id == AV_CODEC_ID_MJPEG)
+        return 0;
+
+    needReset = update_qp(avctx, q);
+    needReset |= update_max_frame_size(avctx, q);
+    needReset |= update_gop_size(avctx, q);
+    needReset |= update_rir(avctx, q);
+    needReset |= update_low_delay_brc(avctx, q);
+    needReset |= update_frame_rate(avctx, q);
+    needReset |= update_bitrate(avctx, q);
+    needReset |= update_pic_timing_sei(avctx, q);
+    ret = update_min_max_qp(avctx, q);
+    if (ret < 0)
+        return ret;
+    needReset |= ret;
+    if (!needReset)
+        return 0;
+
+    if (avctx->hwaccel_context) {
+        AVQSVContext *qsv = avctx->hwaccel_context;
+        int i, j;
+        q->param.ExtParam = q->extparam;
+        for (i = 0; i < qsv->nb_ext_buffers; i++)
+            q->param.ExtParam[i] = qsv->ext_buffers[i];
+        q->param.NumExtParam = qsv->nb_ext_buffers;
+
+        for (i = 0; i < q->nb_extparam_internal; i++) {
+            for (j = 0; j < qsv->nb_ext_buffers; j++) {
+                if (qsv->ext_buffers[j]->BufferId == q->extparam_internal[i]->BufferId)
+                    break;
+            }
+            if (j < qsv->nb_ext_buffers)
+                continue;
+            q->param.ExtParam[q->param.NumExtParam++] = q->extparam_internal[i];
+        }
+    } else {
+        q->param.ExtParam    = q->extparam_internal;
+        q->param.NumExtParam = q->nb_extparam_internal;
+    }
+
+    // Flush codec before reset configuration.
+    while (ret != AVERROR(EAGAIN)) {
+        ret = encode_frame(avctx, q, NULL);
+        if (ret < 0 && ret != AVERROR(EAGAIN))
+            return ret;
+    }
+
+    av_log(avctx, AV_LOG_DEBUG, "Parameter change, call msdk reset.\n");
+    ret = MFXVideoENCODE_Reset(q->session, &q->param);
+    if (ret < 0)
+        return ff_qsv_print_error(avctx, ret, "Error during resetting");
+
+    return 0;
+}
+
 int ff_qsv_encode(AVCodecContext *avctx, QSVEncContext *q,
                   AVPacket *pkt, const AVFrame *frame, int *got_packet)
 {
@@ -2481,7 +2491,7 @@ int ff_qsv_encode(AVCodecContext *avctx, QSVEncContext *q,
         return ret;
 
     ret = encode_frame(avctx, q, frame);
-    if (ret < 0)
+    if (ret < 0 && ret != AVERROR(EAGAIN))
         return ret;
 
     if ((av_fifo_can_read(q->async_fifo) >= q->async_depth) ||
