@@ -1663,10 +1663,15 @@ typedef struct AVFormatContext {
     int (*io_open)(struct AVFormatContext *s, AVIOContext **pb, const char *url,
                    int flags, AVDictionary **options);
 
+#if FF_API_AVFORMAT_IO_CLOSE
     /**
      * A callback for closing the streams opened with AVFormatContext.io_open().
+     *
+     * @deprecated use io_close2
      */
+    attribute_deprecated
     void (*io_close)(struct AVFormatContext *s, AVIOContext *pb);
+#endif
 
     /**
      * ',' separated list of disallowed protocols.

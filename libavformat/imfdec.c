@@ -379,7 +379,11 @@ static int open_track_resource_context(AVFormatContext *s,
         return AVERROR(ENOMEM);
 
     track_resource->ctx->io_open = s->io_open;
+#if FF_API_AVFORMAT_IO_CLOSE
+FF_DISABLE_DEPRECATION_WARNINGS
     track_resource->ctx->io_close = s->io_close;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     track_resource->ctx->io_close2 = s->io_close2;
     track_resource->ctx->flags |= s->flags & ~AVFMT_FLAG_CUSTOM_IO;
 

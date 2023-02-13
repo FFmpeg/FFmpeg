@@ -2,6 +2,10 @@ The last version increases of all libraries were on 2023-02-09
 
 API changes, most recent first:
 
+2023-02-16 - xxxxxxxxxx - lavf 60.2.100 - avformat.h
+  Deprecate AVFormatContext io_close callback.
+  The superior io_close2 callback should be used instead.
+
 2023-02-13 - xxxxxxxxxx - lavu 58.1.100 - frame.h
   Deprecate AVFrame.coded_picture_number and display_picture_number.
   Their usefulness is questionable and very few decoders set them.
