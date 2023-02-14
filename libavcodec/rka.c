@@ -161,9 +161,9 @@ static av_cold int rka_decode_init(AVCodecContext *avctx)
     if ((avctx->extradata[15] & 4) != 0)
         cmode = -cmode;
 
-    s->ch[0].cmode = s->ch[1].cmode = cmode;
-    s->ch[0].cmode2 = -s->ch[0].cmode;
-    s->ch[1].cmode2 = -s->ch[1].cmode;
+    s->ch[0].cmode = s->ch[1].cmode = cmode < 0 ? 2 : cmode;
+    s->ch[0].cmode2 = cmode < 0 ? FFABS(cmode) : 0;
+    s->ch[1].cmode2 = cmode < 0 ? FFABS(cmode) : 0;
     av_log(avctx, AV_LOG_DEBUG, "cmode: %d\n", cmode);
 
     return 0;
@@ -662,7 +662,9 @@ static int mdl64_decode(ACoder *ac, Model64 *ctx, int *dst)
     return 0;
 }
 
-static const uint8_t tab[] = { 0, 3, 3, 2, 2, 1, 1, 1, 1 };
+static const uint8_t tab[16] = {
+    0, 3, 3, 2, 2, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0
+};
 
 static int decode_filter(RKAContext *s, ChContext *ctx, ACoder *ac, int off, unsigned size)
 {
@@ -729,7 +731,7 @@ static int decode_filter(RKAContext *s, ChContext *ctx, ACoder *ac, int off, uns
                 }
                 ctx->buf0[off] = ctx->buf1[off] + ctx->buf0[off + -1];
             } else {
-                val = val * (1 << ctx->cmode & 0x1f);
+                val <<= ctx->cmode;
                 sum += ctx->buf0[off + -1] + val;
                 switch (s->bps) {
                 case 16: sum = av_clip_int16(sum); break;
