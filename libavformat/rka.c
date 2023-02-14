@@ -42,7 +42,7 @@ static int rka_probe(const AVProbeData *p)
         p->buf[12] > 0 &&
         p->buf[12] <= 2 &&
         (p->buf[13] == 8 || p->buf[13] == 16) &&
-        p->buf[15] & 2 != 0)
+        (p->buf[15] & 2) != 0)
         return AVPROBE_SCORE_EXTENSION + 30;
     return 0;
 }
