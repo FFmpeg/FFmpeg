@@ -149,7 +149,8 @@ static av_cold int rka_decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    s->channels = avctx->ch_layout.nb_channels;
+    av_channel_layout_uninit(&avctx->ch_layout);
+    s->channels = avctx->ch_layout.nb_channels = avctx->extradata[12];
     if (s->channels < 1 || s->channels > 2)
         return AVERROR_INVALIDDATA;
 
