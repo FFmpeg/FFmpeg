@@ -90,6 +90,7 @@ typedef struct RKAContext {
     int bps;
     int align;
     int channels;
+    int correlated;
     int frame_samples;
     int last_nb_samples;
     uint32_t total_nb_samples;
@@ -156,6 +157,7 @@ static av_cold int rka_decode_init(AVCodecContext *avctx)
     s->samples_left = s->total_nb_samples = (AV_RL32(avctx->extradata + 4)) / s->align;
     s->frame_samples = 131072 / s->align;
     s->last_nb_samples = s->total_nb_samples % s->frame_samples;
+    s->correlated = avctx->extradata[15] & 1;
 
     cmode = avctx->extradata[14] & 0xf;
     if ((avctx->extradata[15] & 4) != 0)
@@ -859,7 +861,7 @@ static int rka_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
 
-    if (s->channels == 2) {
+    if (s->channels == 2 && s->correlated) {
         int16_t *l16 = (int16_t *)frame->extended_data[0];
         int16_t *r16 = (int16_t *)frame->extended_data[1];
         uint8_t *l8 = frame->extended_data[0];
@@ -908,35 +910,38 @@ static int rka_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             n += ret;
         }
     } else {
-        int16_t *m16 = (int16_t *)frame->data[0];
-        uint8_t *m8 = frame->data[0];
-
         for (int n = 0; n < frame->nb_samples;) {
-            ret = decode_ch_samples(avctx, &s->ch[0]);
-            if (ret == 0) {
-                frame->nb_samples = n;
-                break;
-            }
-            if (ret < 0 || n + ret > frame->nb_samples)
-                return AVERROR_INVALIDDATA;
+            for (int ch = 0; ch < s->channels; ch++) {
+                int16_t *m16 = (int16_t *)frame->data[ch];
+                uint8_t *m8 = frame->data[ch];
 
-            switch (avctx->sample_fmt) {
-            case AV_SAMPLE_FMT_S16P:
-                for (int i = 0; i < ret; i++) {
-                    int m = s->ch[0].buf0[2560 + i];
-
-                    m16[n + i] = m;
+                ret = decode_ch_samples(avctx, &s->ch[ch]);
+                if (ret == 0) {
+                    frame->nb_samples = n;
+                    break;
                 }
-                break;
-            case AV_SAMPLE_FMT_U8P:
-                for (int i = 0; i < ret; i++) {
-                    int m = s->ch[0].buf0[2560 + i];
 
-                    m8[n + i] = m + 0x7f;
+                if (ret < 0 || n + ret > frame->nb_samples)
+                    return AVERROR_INVALIDDATA;
+
+                switch (avctx->sample_fmt) {
+                case AV_SAMPLE_FMT_S16P:
+                    for (int i = 0; i < ret; i++) {
+                        int m = s->ch[ch].buf0[2560 + i];
+
+                        m16[n + i] = m;
+                    }
+                    break;
+                case AV_SAMPLE_FMT_U8P:
+                    for (int i = 0; i < ret; i++) {
+                        int m = s->ch[ch].buf0[2560 + i];
+
+                        m8[n + i] = m + 0x7f;
+                    }
+                    break;
+                default:
+                    return AVERROR_INVALIDDATA;
                 }
-                break;
-            default:
-                return AVERROR_INVALIDDATA;
             }
 
             n += ret;
