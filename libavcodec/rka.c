@@ -77,8 +77,8 @@ typedef struct ChContext {
 
     Model64 mdl64[4][11];
 
-    int32_t buf0[12001];
-    int32_t buf1[12001];
+    int32_t buf0[131072+2560];
+    int32_t buf1[131072+2560];
 } ChContext;
 
 typedef struct RKAContext {
@@ -700,6 +700,9 @@ static int decode_filter(RKAContext *s, ChContext *ctx, ACoder *ac, int off, uns
 
         for (int y = 0; y < FFMIN(split, size - x); y++, off++) {
             int midx, shift = idx, *src, sum = 16;
+
+            if (off >= FF_ARRAY_ELEMS(ctx->buf0))
+                return -1;
 
             midx = FFABS(last_val) >> shift;
             if (midx >= 15) {
