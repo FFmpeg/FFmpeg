@@ -977,7 +977,7 @@ static av_cold int rka_decode_close(AVCodecContext *avctx)
 
 const FFCodec ff_rka_decoder = {
     .p.name         = "rka",
-    CODEC_LONG_NAME("RKA (RK Audio"),
+    CODEC_LONG_NAME("RKA (RK Audio)"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_RKA,
     .priv_data_size = sizeof(RKAContext),
