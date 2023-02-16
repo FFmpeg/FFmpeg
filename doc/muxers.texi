@@ -795,12 +795,6 @@ deletes them. Increase this to allow continue clients to download segments which
 were recently referenced in the playlist. Default value is 1, meaning segments older than
 @code{hls_list_size+1} will be deleted.
 
-@item hls_ts_options @var{options_list}
-Set output format options using a :-separated list of key=value
-parameters. Values containing @code{:} special characters must be
-escaped.
-@code{hls_ts_options} is deprecated, use hls_segment_options instead of it..
-
 @item hls_start_number_source
 Start the playlist sequence number (@code{#EXT-X-MEDIA-SEQUENCE}) according to the specified source.
 Unless @code{hls_flags single_file} is set, it also specifies source of starting sequence numbers of

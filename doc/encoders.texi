@@ -1949,22 +1949,6 @@ Set the number of slices, used in parallelized encoding. Default value
 is 0. This is only used when @option{slice_mode} is set to
 @samp{fixed}.
 
-@item slice_mode
-Set slice mode. Can assume one of the following possible values:
-
-@table @samp
-@item fixed
-a fixed number of slices
-@item rowmb
-one slice per row of macroblocks
-@item auto
-automatic number of slices according to number of threads
-@item dyn
-dynamic slicing
-@end table
-
-Default value is @samp{auto}.
-
 @item loopfilter
 Enable loop filter, if set to 1 (automatically enabled). To disable
 set a value of 0.
