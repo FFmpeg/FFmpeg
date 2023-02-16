@@ -839,6 +839,14 @@ static int hls_slice_header(HEVCContext *s)
                        sh->max_num_merge_cand);
                 return AVERROR_INVALIDDATA;
             }
+
+            // Syntax in 7.3.6.1
+            if (s->ps.sps->motion_vector_resolution_control_idc == 2)
+                sh->use_integer_mv_flag = get_bits1(gb);
+            else
+                // Inferred to be equal to motion_vector_resolution_control_idc if not present
+                sh->use_integer_mv_flag = s->ps.sps->motion_vector_resolution_control_idc;
+
         }
 
         sh->slice_qp_delta = get_se_golomb(gb);
