@@ -856,6 +856,12 @@ static int hls_slice_header(HEVCContext *s)
             sh->slice_cr_qp_offset = 0;
         }
 
+        if (s->ps.pps->pps_slice_act_qp_offsets_present_flag) {
+            sh->slice_act_y_qp_offset  = get_se_golomb(gb);
+            sh->slice_act_cb_qp_offset = get_se_golomb(gb);
+            sh->slice_act_cr_qp_offset = get_se_golomb(gb);
+        }
+
         if (s->ps.pps->chroma_qp_offset_list_enabled_flag)
             sh->cu_chroma_qp_offset_enabled_flag = get_bits1(gb);
         else
