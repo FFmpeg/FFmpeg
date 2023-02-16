@@ -304,7 +304,7 @@ typedef struct SliceHeader {
     int beta_offset;    ///< beta_offset_div2 * 2
     int tc_offset;      ///< tc_offset_div2 * 2
 
-    unsigned int max_num_merge_cand; ///< 5 - 5_minus_max_num_merge_cand
+    uint8_t max_num_merge_cand; ///< 5 - 5_minus_max_num_merge_cand
     uint8_t use_integer_mv_flag;
 
     unsigned *entry_point_offset;
