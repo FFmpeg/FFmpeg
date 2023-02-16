@@ -154,6 +154,9 @@ enum {
     // get near that, though, so set a lower limit here with the maximum
     // possible value for 4K video (at most 135 16x16 Ctb rows).
     HEVC_MAX_ENTRY_POINT_OFFSETS = HEVC_MAX_TILE_COLUMNS * 135,
+
+    // A.3.7: Screen content coding extensions
+    HEVC_MAX_PALETTE_PREDICTOR_SIZE = 128,
 };
 
 

@@ -210,6 +210,20 @@ typedef struct HEVCSPS {
     int persistent_rice_adaptation_enabled_flag;
     int cabac_bypass_alignment_enabled_flag;
 
+    int sps_multilayer_extension_flag;
+    int sps_3d_extension_flag;
+
+    int sps_scc_extension_flag;
+    int sps_curr_pic_ref_enabled_flag;
+    int palette_mode_enabled_flag;
+    int palette_max_size;
+    int delta_palette_max_predictor_size;
+    int sps_palette_predictor_initializers_present_flag;
+    int sps_num_palette_predictor_initializers_minus1;
+    int sps_palette_predictor_initializer[3][HEVC_MAX_PALETTE_PREDICTOR_SIZE];
+    int motion_vector_resolution_control_idc;
+    int intra_boundary_filtering_disabled_flag;
+
     ///< coded frame dimension in various units
     int width;
     int height;
@@ -284,6 +298,9 @@ typedef struct HEVCPPS {
     uint8_t slice_header_extension_present_flag;
     uint8_t log2_max_transform_skip_block_size;
     uint8_t pps_range_extensions_flag;
+    uint8_t pps_multilayer_extension_flag;
+    uint8_t pps_3d_extension_flag;
+    uint8_t pps_scc_extension_flag;
     uint8_t cross_component_prediction_enabled_flag;
     uint8_t chroma_qp_offset_list_enabled_flag;
     uint8_t diff_cu_chroma_qp_offset_depth;
@@ -292,6 +309,58 @@ typedef struct HEVCPPS {
     int8_t  cr_qp_offset_list[6];
     uint8_t log2_sao_offset_scale_luma;
     uint8_t log2_sao_offset_scale_chroma;
+
+    // Multilayer extension parameters
+    uint8_t poc_reset_info_present_flag;
+    uint8_t pps_infer_scaling_list_flag;
+    uint8_t pps_scaling_list_ref_layer_id;
+    uint16_t num_ref_loc_offsets;
+    uint8_t ref_loc_offset_layer_id[64];
+    uint8_t scaled_ref_layer_offset_present_flag[64];
+    int8_t scaled_ref_layer_left_offset[64];
+    int8_t scaled_ref_layer_top_offset[64];
+    int8_t scaled_ref_layer_right_offset[64];
+    int8_t scaled_ref_layer_bottom_offset[64];
+    uint8_t ref_region_offset_present_flag[64];
+    int8_t ref_region_left_offset[64];
+    int8_t ref_region_top_offset[64];
+    int8_t ref_region_right_offset[64];
+    int8_t ref_region_bottom_offset[64];
+    uint8_t resample_phase_set_present_flag[64];
+    uint16_t phase_hor_luma[64];
+    uint16_t phase_ver_luma[64];
+    uint16_t phase_hor_chroma_plus8[64];
+    uint16_t phase_ver_chroma_plus8[64];
+    uint8_t colour_mapping_enabled_flag;
+    uint16_t num_cm_ref_layers_minus1;
+    uint8_t cm_ref_layer_id[63];
+    uint8_t cm_octant_depth;
+    uint8_t cm_y_part_num_log2;
+    uint16_t luma_bit_depth_cm_input_minus8;
+    uint16_t chroma_bit_depth_cm_input_minus8;
+    uint16_t luma_bit_depth_cm_output_minus8;
+    uint16_t chroma_bit_depth_cm_output_minus8;
+    uint8_t cm_res_quant_bits;
+    uint8_t cm_delta_flc_bits_minus1;
+    int8_t cm_adapt_threshold_u_delta;
+    int8_t cm_adapt_threshold_v_delta;
+
+    // 3D extension parameters
+    uint8_t pps_bit_depth_for_depth_layers_minus8;
+
+    // SCC extension parameters
+    uint8_t pps_curr_pic_ref_enabled_flag;
+    uint8_t residual_adaptive_colour_transform_enabled_flag;
+    uint8_t pps_slice_act_qp_offsets_present_flag;
+    int8_t  pps_act_y_qp_offset;  // _plus5
+    int8_t  pps_act_cb_qp_offset; // _plus5
+    int8_t  pps_act_cr_qp_offset; // _plus3
+    uint8_t pps_palette_predictor_initializers_present_flag;
+    uint8_t pps_num_palette_predictor_initializers;
+    uint8_t monochrome_palette_flag;
+    uint8_t luma_bit_depth_entry_minus8;
+    uint8_t chroma_bit_depth_entry_minus8;
+    uint8_t pps_palette_predictor_initializer[3][HEVC_MAX_PALETTE_PREDICTOR_SIZE];
 
     // Inferred parameters
     unsigned int *column_width;  ///< ColumnWidth
