@@ -71,6 +71,7 @@ static void fill_vaapi_pic(VAPictureHEVC *va_pic, const HEVCFrame *pic, int rps_
 static int find_frame_rps_type(const HEVCContext *h, const HEVCFrame *pic)
 {
     VASurfaceID pic_surf = ff_vaapi_get_surface_id(pic->frame);
+    const HEVCFrame *current_picture = h->ref;
     int i;
 
     for (i = 0; i < h->rps[ST_CURR_BEF].nb_refs; i++) {
@@ -87,6 +88,9 @@ static int find_frame_rps_type(const HEVCContext *h, const HEVCFrame *pic)
         if (pic_surf == ff_vaapi_get_surface_id(h->rps[LT_CURR].ref[i]->frame))
             return VA_PICTURE_HEVC_RPS_LT_CURR;
     }
+
+    if (h->ps.pps->pps_curr_pic_ref_enabled_flag && current_picture->poc == pic->poc)
+        return VA_PICTURE_HEVC_LONG_TERM_REFERENCE;
 
     return 0;
 }
