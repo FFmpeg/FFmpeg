@@ -668,7 +668,8 @@ static int hls_slice_header(HEVCContext *s)
                    sh->slice_type);
             return AVERROR_INVALIDDATA;
         }
-        if (IS_IRAP(s) && sh->slice_type != HEVC_SLICE_I) {
+        if (IS_IRAP(s) && sh->slice_type != HEVC_SLICE_I &&
+            !s->ps.pps->pps_curr_pic_ref_enabled_flag) {
             av_log(s->avctx, AV_LOG_ERROR, "Inter slices in an IRAP frame.\n");
             return AVERROR_INVALIDDATA;
         }
@@ -3123,6 +3124,13 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
             if (ret < 0)
                 goto fail;
         } else {
+            if (s->avctx->profile == FF_PROFILE_HEVC_SCC) {
+                av_log(s->avctx, AV_LOG_ERROR,
+                       "SCC profile is not yet implemented in hevc native decoder.\n");
+                ret = AVERROR_PATCHWELCOME;
+                goto fail;
+            }
+
             if (s->threads_number > 1 && s->sh.num_entry_point_offsets > 0)
                 ctb_addr_ts = hls_slice_data_wpp(s, nal);
             else
