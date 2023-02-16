@@ -410,7 +410,9 @@ static const struct {
 #endif
 #if VA_CHECK_VERSION(1, 2, 0) && CONFIG_HEVC_VAAPI_HWACCEL
     MAP(HEVC,        HEVC_REXT,       None,
-                 ff_vaapi_parse_hevc_rext_profile ),
+                 ff_vaapi_parse_hevc_rext_scc_profile ),
+    MAP(HEVC,        HEVC_SCC,        None,
+                 ff_vaapi_parse_hevc_rext_scc_profile ),
 #endif
     MAP(MJPEG,       MJPEG_HUFFMAN_BASELINE_DCT,
                                       JPEGBaseline),

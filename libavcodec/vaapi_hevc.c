@@ -591,9 +591,9 @@ static int ptl_convert(const PTLCommon *general_ptl, H265RawProfileTierLevel *h2
 }
 
 /*
- * Find exact va_profile for HEVC Range Extension
+ * Find exact va_profile for HEVC Range Extension and Screen Content Coding Extension
  */
-VAProfile ff_vaapi_parse_hevc_rext_profile(AVCodecContext *avctx)
+VAProfile ff_vaapi_parse_hevc_rext_scc_profile(AVCodecContext *avctx)
 {
     const HEVCContext *h = avctx->priv_data;
     const HEVCSPS *sps = h->ps.sps;
@@ -632,6 +632,16 @@ VAProfile ff_vaapi_parse_hevc_rext_profile(AVCodecContext *avctx)
     else if (!strcmp(profile->name, "Main 4:4:4 12") ||
              !strcmp(profile->name, "Main 4:4:4 12 Intra"))
         return VAProfileHEVCMain444_12;
+    else if (!strcmp(profile->name, "Screen-Extended Main"))
+        return VAProfileHEVCSccMain;
+    else if (!strcmp(profile->name, "Screen-Extended Main 10"))
+        return VAProfileHEVCSccMain10;
+    else if (!strcmp(profile->name, "Screen-Extended Main 4:4:4"))
+        return VAProfileHEVCSccMain444;
+#if VA_CHECK_VERSION(1, 8, 0)
+    else if (!strcmp(profile->name, "Screen-Extended Main 4:4:4 10"))
+        return VAProfileHEVCSccMain444_10;
+#endif
 #else
     av_log(avctx, AV_LOG_WARNING, "HEVC profile %s is "
            "not supported with this VA version.\n", profile->name);

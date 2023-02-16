@@ -22,6 +22,6 @@
 #include <va/va.h>
 #include "avcodec.h"
 
-VAProfile ff_vaapi_parse_hevc_rext_profile(AVCodecContext *avctx);
+VAProfile ff_vaapi_parse_hevc_rext_scc_profile(AVCodecContext *avctx);
 
 #endif /* AVCODEC_VAAPI_HEVC_H */
