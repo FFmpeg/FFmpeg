@@ -59,7 +59,7 @@ static const char distort_chroma_kernel[] = {
     C(0, {                                                                     )
     C(1,     vec2 p = ((vec2(pos)/vec2(size)) - 0.5f)*2.0f;                    )
     C(1,     float d = sqrt(p.x*p.x + p.y*p.y);                                )
-    C(1,     p *= d / (d*     dist);                                           )
+    C(1,     p *= d / (d*dist);                                                )
     C(1,     vec4 res = texture(input_img[idx], (p/2.0f) + 0.5f);              )
     C(1,     imageStore(output_img[idx], pos, res);                            )
     C(0, }                                                                     )

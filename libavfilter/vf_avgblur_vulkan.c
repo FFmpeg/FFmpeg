@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) Lynne
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -19,23 +21,24 @@
 #include "libavutil/random_seed.h"
 #include "libavutil/opt.h"
 #include "vulkan_filter.h"
+#include "vulkan_spirv.h"
 #include "internal.h"
-
-#define CGS 32
 
 typedef struct AvgBlurVulkanContext {
     FFVulkanContext vkctx;
 
     int initialized;
+    FFVkExecPool e;
     FFVkQueueFamilyCtx qf;
-    FFVkExecContext *exec;
-    FFVulkanPipeline *pl_hor;
-    FFVulkanPipeline *pl_ver;
+    VkSampler sampler;
+    FFVulkanPipeline pl;
+    FFVkSPIRVShader shd;
 
-    /* Shader updators, must be in the main filter struct */
-    VkDescriptorImageInfo input_images[3];
-    VkDescriptorImageInfo tmp_images[3];
-    VkDescriptorImageInfo output_images[3];
+    /* Push constants / options */
+    struct {
+        float filter_norm[4];
+        int32_t filter_len[2];
+    } opts;
 
     int size_x;
     int size_y;
@@ -43,46 +46,53 @@ typedef struct AvgBlurVulkanContext {
 } AvgBlurVulkanContext;
 
 static const char blur_kernel[] = {
-    C(0, shared vec4 cache[DIR(gl_WorkGroupSize) + FILTER_RADIUS*2 + 1];           )
-    C(0,                                                                           )
-    C(0, void distort(const ivec2 pos, const int idx)                              )
-    C(0, {                                                                         )
-    C(1,     const uint cp = DIR(gl_LocalInvocationID) + FILTER_RADIUS;            )
-    C(0,                                                                           )
-    C(1,     cache[cp] = texture(input_img[idx], pos);                             )
-    C(0,                                                                           )
-    C(1,     const ivec2 loc_l = pos - INC(FILTER_RADIUS);                         )
-    C(1,     cache[cp - FILTER_RADIUS] = texture(input_img[idx], loc_l);           )
-    C(0,                                                                           )
-    C(1,     const ivec2 loc_h = pos + INC(DIR(gl_WorkGroupSize));                 )
-    C(1,     cache[cp + DIR(gl_WorkGroupSize)] = texture(input_img[idx], loc_h);   )
-    C(0,                                                                           )
-    C(1,     barrier();                                                            )
-    C(0,                                                                           )
-    C(1,     vec4 sum = vec4(0);                                                   )
-    C(1,     for (int p = -FILTER_RADIUS; p <= FILTER_RADIUS; p++)                 )
-    C(2,         sum += cache[cp + p];                                             )
-    C(0,                                                                           )
-    C(1,     sum /= vec4(FILTER_RADIUS*2 + 1);                                     )
-    C(1,     imageStore(output_img[idx], pos, sum);                                )
-    C(0, }                                                                         )
+    C(0, void distort(const ivec2 pos, const int idx)                         )
+    C(0, {                                                                    )
+    C(1,     vec4 sum = vec4(0);                                              )
+    C(1,     for (int y = -filter_len.y; y <= filter_len.y; y++)              )
+    C(1,        for (int x = -filter_len.x; x <= filter_len.x; x++)           )
+    C(2,            sum += texture(input_img[idx], pos + ivec2(x, y));        )
+    C(0,                                                                      )
+    C(1,     imageStore(output_img[idx], pos, sum * filter_norm);             )
+    C(0, }                                                                    )
 };
 
 static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
 {
     int err;
-    FFVkSPIRVShader *shd;
+    uint8_t *spv_data;
+    size_t spv_len;
+    void *spv_opaque = NULL;
     AvgBlurVulkanContext *s = ctx->priv;
     FFVulkanContext *vkctx = &s->vkctx;
     const int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
+    FFVkSPIRVShader *shd;
+    FFVkSPIRVCompiler *spv;
+    FFVulkanDescriptorSetBinding *desc;
 
-    FFVulkanDescriptorSetBinding desc_i[2] = {
+    spv = ff_vk_spirv_init();
+    if (!spv) {
+        av_log(ctx, AV_LOG_ERROR, "Unable to initialize SPIR-V compiler!\n");
+        return AVERROR_EXTERNAL;
+    }
+
+    ff_vk_qf_init(vkctx, &s->qf, VK_QUEUE_COMPUTE_BIT);
+    RET(ff_vk_exec_pool_init(vkctx, &s->qf, &s->e, s->qf.nb_queues*4, 0, 0, 0, NULL));
+    RET(ff_vk_init_sampler(vkctx, &s->sampler, 1, VK_FILTER_LINEAR));
+    RET(ff_vk_shader_init(&s->pl, &s->shd, "avgblur_compute",
+                          VK_SHADER_STAGE_COMPUTE_BIT, 0));
+    shd = &s->shd;
+
+    ff_vk_shader_set_compute_sizes(shd, 32, 1, 1);
+
+    desc = (FFVulkanDescriptorSetBinding []) {
         {
             .name       = "input_img",
             .type       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             .dimensions = 2,
             .elems      = planes,
             .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
+            .samplers   = DUP_SAMPLER(s->sampler),
         },
         {
             .name       = "output_img",
@@ -95,244 +105,68 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
         },
     };
 
-    ff_vk_qf_init(vkctx, &s->qf, VK_QUEUE_COMPUTE_BIT, 0);
+    RET(ff_vk_pipeline_descriptor_set_add(vkctx, &s->pl, shd, desc, 2, 0, 0));
 
-    desc_i[0].sampler = ff_vk_init_sampler(vkctx, 1, VK_FILTER_LINEAR);
-    if (!desc_i[0].sampler)
-        return AVERROR_EXTERNAL;
+    GLSLC(0, layout(push_constant, std430) uniform pushConstants {        );
+    GLSLC(1,    vec4 filter_norm;                                         );
+    GLSLC(1,    ivec2 filter_len;                                         );
+    GLSLC(0, };                                                           );
+    GLSLC(0,                                                              );
 
-    { /* Create shader for the horizontal pass */
-        desc_i[0].updater = s->input_images;
-        desc_i[1].updater = s->tmp_images;
+    ff_vk_add_push_constant(&s->pl, 0, sizeof(s->opts),
+                            VK_SHADER_STAGE_COMPUTE_BIT);
 
-        s->pl_hor = ff_vk_create_pipeline(vkctx, &s->qf);
-        if (!s->pl_hor)
-            return AVERROR(ENOMEM);
-
-        shd = ff_vk_init_shader(s->pl_hor, "avgblur_compute_hor",
-                                VK_SHADER_STAGE_COMPUTE_BIT);
-        if (!shd)
-            return AVERROR(ENOMEM);
-
-        ff_vk_set_compute_shader_sizes(shd, (int [3]){ CGS, 1, 1 });
-
-        RET(ff_vk_add_descriptor_set(vkctx, s->pl_hor, shd, desc_i, FF_ARRAY_ELEMS(desc_i), 0));
-
-        GLSLF(0, #define FILTER_RADIUS (%i)                     ,s->size_x - 1);
-        GLSLC(0, #define INC(x) (ivec2(x, 0))                                 );
-        GLSLC(0, #define DIR(var) (var.x)                                     );
-        GLSLD(   blur_kernel                                                  );
-        GLSLC(0, void main()                                                  );
-        GLSLC(0, {                                                            );
-        GLSLC(1,     ivec2 size;                                              );
-        GLSLC(1,     const ivec2 pos = ivec2(gl_GlobalInvocationID.xy);       );
-        for (int i = 0; i < planes; i++) {
-            GLSLC(0,                                                          );
-            GLSLF(1,  size = imageSize(output_img[%i]);                     ,i);
-            GLSLC(1,  if (IS_WITHIN(pos, size)) {                             );
-            if (s->planes & (1 << i)) {
-                GLSLF(2, distort(pos, %i);                                  ,i);
-            } else {
-                GLSLF(2, vec4 res = texture(input_img[%i], pos);            ,i);
-                GLSLF(2, imageStore(output_img[%i], pos, res);              ,i);
-            }
-            GLSLC(1, }                                                        );
+    GLSLD(   blur_kernel                                                  );
+    GLSLC(0, void main()                                                  );
+    GLSLC(0, {                                                            );
+    GLSLC(1,     ivec2 size;                                              );
+    GLSLC(1,     const ivec2 pos = ivec2(gl_GlobalInvocationID.xy);       );
+    for (int i = 0; i < planes; i++) {
+        GLSLC(0,                                                          );
+        GLSLF(1,  size = imageSize(output_img[%i]);                     ,i);
+        GLSLC(1,  if (!IS_WITHIN(pos, size))                              );
+        GLSLC(2,      return;                                             );
+        if (s->planes & (1 << i)) {
+            GLSLF(1, distort(pos, %i);                                  ,i);
+        } else {
+            GLSLF(1, vec4 res = texture(input_img[%i], pos);            ,i);
+            GLSLF(1, imageStore(output_img[%i], pos, res);              ,i);
         }
-        GLSLC(0, }                                                            );
-
-        RET(ff_vk_compile_shader(vkctx, shd, "main"));
-
-        RET(ff_vk_init_pipeline_layout(vkctx, s->pl_hor));
-        RET(ff_vk_init_compute_pipeline(vkctx, s->pl_hor));
     }
+    GLSLC(0, }                                                            );
 
-    { /* Create shader for the vertical pass */
-        desc_i[0].updater = s->tmp_images;
-        desc_i[1].updater = s->output_images;
+    RET(spv->compile_shader(spv, ctx, &s->shd, &spv_data, &spv_len, "main",
+                            &spv_opaque));
+    RET(ff_vk_shader_create(vkctx, &s->shd, spv_data, spv_len, "main"));
 
-        s->pl_ver = ff_vk_create_pipeline(vkctx, &s->qf);
-        if (!s->pl_ver)
-            return AVERROR(ENOMEM);
-
-        shd = ff_vk_init_shader(s->pl_ver, "avgblur_compute_ver",
-                                VK_SHADER_STAGE_COMPUTE_BIT);
-        if (!shd)
-            return AVERROR(ENOMEM);
-
-        ff_vk_set_compute_shader_sizes(shd, (int [3]){ 1, CGS, 1 });
-
-        RET(ff_vk_add_descriptor_set(vkctx, s->pl_ver, shd, desc_i, FF_ARRAY_ELEMS(desc_i), 0));
-
-        GLSLF(0, #define FILTER_RADIUS (%i)                     ,s->size_y - 1);
-        GLSLC(0, #define INC(x) (ivec2(0, x))                                 );
-        GLSLC(0, #define DIR(var) (var.y)                                     );
-        GLSLD(   blur_kernel                                                  );
-        GLSLC(0, void main()                                                  );
-        GLSLC(0, {                                                            );
-        GLSLC(1,     ivec2 size;                                              );
-        GLSLC(1,     const ivec2 pos = ivec2(gl_GlobalInvocationID.xy);       );
-        for (int i = 0; i < planes; i++) {
-            GLSLC(0,                                                          );
-            GLSLF(1,  size = imageSize(output_img[%i]);                     ,i);
-            GLSLC(1,  if (IS_WITHIN(pos, size)) {                             );
-            if (s->planes & (1 << i)) {
-                GLSLF(2, distort(pos, %i);                                  ,i);
-            } else {
-                GLSLF(2, vec4 res = texture(input_img[%i], pos);            ,i);
-                GLSLF(2, imageStore(output_img[%i], pos, res);              ,i);
-            }
-            GLSLC(1, }                                                        );
-        }
-        GLSLC(0, }                                                            );
-
-        RET(ff_vk_compile_shader(vkctx, shd, "main"));
-
-        RET(ff_vk_init_pipeline_layout(vkctx, s->pl_ver));
-        RET(ff_vk_init_compute_pipeline(vkctx, s->pl_ver));
-    }
-
-    /* Execution context */
-    RET(ff_vk_create_exec_ctx(vkctx, &s->exec, &s->qf));
+    RET(ff_vk_init_compute_pipeline(vkctx, &s->pl, &s->shd));
+    RET(ff_vk_exec_pipeline_register(vkctx, &s->e, &s->pl));
 
     s->initialized = 1;
+    s->opts.filter_len[0] = s->size_x - 1;
+    s->opts.filter_len[1] = s->size_y - 1;
+
+    s->opts.filter_norm[0] = s->opts.filter_len[0]*2 + 1;
+    s->opts.filter_norm[0] = 1.0/(s->opts.filter_norm[0]*s->opts.filter_norm[0]);
+    s->opts.filter_norm[1] = s->opts.filter_norm[0];
+    s->opts.filter_norm[2] = s->opts.filter_norm[0];
+    s->opts.filter_norm[3] = s->opts.filter_norm[0];
 
     return 0;
 
 fail:
-    return err;
-}
+    if (spv_opaque)
+        spv->free_shader(spv, &spv_opaque);
+    if (spv)
+        spv->uninit(&spv);
 
-static int process_frames(AVFilterContext *avctx, AVFrame *out_f, AVFrame *tmp_f, AVFrame *in_f)
-{
-    int err;
-    VkCommandBuffer cmd_buf;
-    AvgBlurVulkanContext *s = avctx->priv;
-    FFVulkanContext *vkctx = &s->vkctx;
-    FFVulkanFunctions *vk = &vkctx->vkfn;
-    AVVkFrame *in = (AVVkFrame *)in_f->data[0];
-    AVVkFrame *tmp = (AVVkFrame *)tmp_f->data[0];
-    AVVkFrame *out = (AVVkFrame *)out_f->data[0];
-
-    const VkFormat *input_formats = av_vkfmt_from_pixfmt(s->vkctx.input_format);
-    const VkFormat *output_formats = av_vkfmt_from_pixfmt(s->vkctx.output_format);
-
-    int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
-
-    /* Update descriptors and init the exec context */
-    ff_vk_start_exec_recording(vkctx, s->exec);
-    cmd_buf = ff_vk_get_exec_buf(s->exec);
-
-    for (int i = 0; i < planes; i++) {
-        RET(ff_vk_create_imageview(vkctx, s->exec,
-                                   &s->input_images[i].imageView, in->img[i],
-                                   input_formats[i],
-                                   ff_comp_identity_map));
-
-        RET(ff_vk_create_imageview(vkctx, s->exec,
-                                   &s->tmp_images[i].imageView, tmp->img[i],
-                                   output_formats[i],
-                                   ff_comp_identity_map));
-
-        RET(ff_vk_create_imageview(vkctx, s->exec,
-                                   &s->output_images[i].imageView, out->img[i],
-                                   output_formats[i],
-                                   ff_comp_identity_map));
-
-        s->input_images[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        s->tmp_images[i].imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-        s->output_images[i].imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-    }
-
-    ff_vk_update_descriptor_set(vkctx, s->pl_hor, 0);
-    ff_vk_update_descriptor_set(vkctx, s->pl_ver, 0);
-
-    for (int i = 0; i < planes; i++) {
-        VkImageMemoryBarrier bar[] = {
-            {
-                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                .srcAccessMask = 0,
-                .dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
-                .oldLayout = in->layout[i],
-                .newLayout = s->input_images[i].imageLayout,
-                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                .image = in->img[i],
-                .subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                .subresourceRange.levelCount = 1,
-                .subresourceRange.layerCount = 1,
-            },
-            {
-                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                .srcAccessMask = 0,
-                .dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT,
-                .oldLayout = tmp->layout[i],
-                .newLayout = s->tmp_images[i].imageLayout,
-                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                .image = tmp->img[i],
-                .subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                .subresourceRange.levelCount = 1,
-                .subresourceRange.layerCount = 1,
-            },
-            {
-                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                .srcAccessMask = 0,
-                .dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT,
-                .oldLayout = out->layout[i],
-                .newLayout = s->output_images[i].imageLayout,
-                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                .image = out->img[i],
-                .subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                .subresourceRange.levelCount = 1,
-                .subresourceRange.layerCount = 1,
-            },
-        };
-
-        vk->CmdPipelineBarrier(cmd_buf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                               VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0,
-                               0, NULL, 0, NULL, FF_ARRAY_ELEMS(bar), bar);
-
-        in->layout[i]  = bar[0].newLayout;
-        in->access[i]  = bar[0].dstAccessMask;
-
-        tmp->layout[i] = bar[1].newLayout;
-        tmp->access[i] = bar[1].dstAccessMask;
-
-        out->layout[i] = bar[2].newLayout;
-        out->access[i] = bar[2].dstAccessMask;
-    }
-
-    ff_vk_bind_pipeline_exec(vkctx, s->exec, s->pl_hor);
-
-    vk->CmdDispatch(cmd_buf, FFALIGN(s->vkctx.output_width, CGS)/CGS,
-                  s->vkctx.output_height, 1);
-
-    ff_vk_bind_pipeline_exec(vkctx, s->exec, s->pl_ver);
-
-    vk->CmdDispatch(cmd_buf, s->vkctx.output_width,
-                    FFALIGN(s->vkctx.output_height, CGS)/CGS, 1);
-
-    ff_vk_add_exec_dep(vkctx, s->exec, in_f, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
-    ff_vk_add_exec_dep(vkctx, s->exec, out_f, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
-
-    err = ff_vk_submit_exec_queue(vkctx,s->exec);
-    if (err)
-        return err;
-
-    ff_vk_qf_rotate(&s->qf);
-
-    return err;
-
-fail:
-    ff_vk_discard_exec_deps(s->exec);
     return err;
 }
 
 static int avgblur_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
 {
     int err;
-    AVFrame *tmp = NULL, *out = NULL;
+    AVFrame *out = NULL;
     AVFilterContext *ctx = link->dst;
     AvgBlurVulkanContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
@@ -343,29 +177,22 @@ static int avgblur_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
         goto fail;
     }
 
-    tmp = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-    if (!tmp) {
-        err = AVERROR(ENOMEM);
-        goto fail;
-    }
-
     if (!s->initialized)
         RET(init_filter(ctx, in));
 
-    RET(process_frames(ctx, out, tmp, in));
+    RET(ff_vk_filter_process_simple(&s->vkctx, &s->e, &s->pl,
+                                    out, in, s->sampler, &s->opts, sizeof(s->opts)));
 
     err = av_frame_copy_props(out, in);
     if (err < 0)
         goto fail;
 
     av_frame_free(&in);
-    av_frame_free(&tmp);
 
     return ff_filter_frame(outlink, out);
 
 fail:
     av_frame_free(&in);
-    av_frame_free(&tmp);
     av_frame_free(&out);
     return err;
 }
@@ -373,6 +200,16 @@ fail:
 static void avgblur_vulkan_uninit(AVFilterContext *avctx)
 {
     AvgBlurVulkanContext *s = avctx->priv;
+    FFVulkanContext *vkctx = &s->vkctx;
+    FFVulkanFunctions *vk = &vkctx->vkfn;
+
+    ff_vk_exec_pool_free(vkctx, &s->e);
+    ff_vk_pipeline_free(vkctx, &s->pl);
+    ff_vk_shader_free(vkctx, &s->shd);
+
+    if (s->sampler)
+        vk->DestroySampler(vkctx->hwctx->act_dev, s->sampler,
+                           vkctx->hwctx->alloc);
 
     ff_vk_uninit(&s->vkctx);
 
@@ -382,9 +219,9 @@ static void avgblur_vulkan_uninit(AVFilterContext *avctx)
 #define OFFSET(x) offsetof(AvgBlurVulkanContext, x)
 #define FLAGS (AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_VIDEO_PARAM)
 static const AVOption avgblur_vulkan_options[] = {
-    { "sizeX",  "Set horizontal radius", OFFSET(size_x), AV_OPT_TYPE_INT, {.i64 = 3}, 1, 32, .flags = FLAGS },
+    { "sizeX",  "Set horizontal radius", OFFSET(size_x), AV_OPT_TYPE_INT, { .i64 = 3 }, 1, 32, .flags = FLAGS },
+    { "sizeY",  "Set vertical radius", OFFSET(size_y), AV_OPT_TYPE_INT, { .i64 = 3 }, 1, 32, .flags = FLAGS },
     { "planes", "Set planes to filter (bitmask)", OFFSET(planes), AV_OPT_TYPE_INT, {.i64 = 0xF}, 0, 0xF, .flags = FLAGS },
-    { "sizeY",  "Set vertical radius", OFFSET(size_y), AV_OPT_TYPE_INT, {.i64 = 3}, 1, 32, .flags = FLAGS },
     { NULL },
 };
 
