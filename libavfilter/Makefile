@@ -623,6 +623,10 @@ OBJS-$(CONFIG_AVSYNCTEST_FILTER)             += src_avsynctest.o
 OBJS-$(CONFIG_AMOVIE_FILTER)                 += src_movie.o
 OBJS-$(CONFIG_MOVIE_FILTER)                  += src_movie.o
 
+# vulkan libs
+OBJS-$(CONFIG_LIBGLSLANG)                    += vulkan_glslang.o
+OBJS-$(CONFIG_LIBSHADERC)                    += vulkan_shaderc.o
+
 # Objects duplicated from other libraries for shared builds
 SHLIBOBJS                                    += log2_tab.o
 
@@ -636,6 +640,8 @@ SKIPHEADERS-$(CONFIG_QSVVPP)                 += qsvvpp.h stack_internal.h
 SKIPHEADERS-$(CONFIG_OPENCL)                 += opencl.h
 SKIPHEADERS-$(CONFIG_VAAPI)                  += vaapi_vpp.h stack_internal.h
 SKIPHEADERS-$(CONFIG_VULKAN)                 += vulkan.h vulkan_filter.h
+SKIPHEADERS-$(CONFIG_LIBSHADERC)             += vulkan_spirv.h
+SKIPHEADERS-$(CONFIG_LIBGLSLANG)             += vulkan_spirv.h
 
 TOOLS     = graph2dot
 TESTPROGS = drawutils filtfmts formats integral

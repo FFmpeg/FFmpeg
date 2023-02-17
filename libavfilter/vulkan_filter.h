@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) Lynne
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -26,9 +28,38 @@
 /**
  * General lavfi IO functions
  */
-int  ff_vk_filter_init                 (AVFilterContext *avctx);
-int  ff_vk_filter_config_input         (AVFilterLink   *inlink);
-int  ff_vk_filter_config_output        (AVFilterLink  *outlink);
-int  ff_vk_filter_config_output_inplace(AVFilterLink  *outlink);
+int ff_vk_filter_init         (AVFilterContext *avctx);
+int ff_vk_filter_config_input (AVFilterLink   *inlink);
+int ff_vk_filter_config_output(AVFilterLink  *outlink);
+
+/**
+ * Can be called manually, if not using ff_vk_filter_config_output.
+ */
+int ff_vk_filter_init_context(AVFilterContext *avctx, FFVulkanContext *s,
+                              AVBufferRef *frames_ref,
+                              int width, int height, enum AVPixelFormat sw_format);
+
+/**
+ * Submit a compute shader with a zero/one input and single out for execution.
+ */
+int ff_vk_filter_process_simple(FFVulkanContext *vkctx, FFVkExecPool *e,
+                                FFVulkanPipeline *pl, AVFrame *out_f, AVFrame *in_f,
+                                VkSampler sampler, void *push_src, size_t push_size);
+
+/**
+ * Submit a compute shader with a single in and single out with 2 stages.
+ */
+int ff_vk_filter_process_2pass(FFVulkanContext *vkctx, FFVkExecPool *e,
+                               FFVulkanPipeline *pls[2],
+                               AVFrame *out, AVFrame *tmp, AVFrame *in,
+                               VkSampler sampler, void *push_src, size_t push_size);
+
+/**
+ * Up to 16 inputs, one output
+ */
+int ff_vk_filter_process_Nin(FFVulkanContext *vkctx, FFVkExecPool *e,
+                             FFVulkanPipeline *pl,
+                             AVFrame *out, AVFrame *in[], int nb_in,
+                             VkSampler sampler, void *push_src, size_t push_size);
 
 #endif /* AVFILTER_VULKAN_FILTER_H */

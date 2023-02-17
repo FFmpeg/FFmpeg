@@ -18,7 +18,8 @@
 
 #include <shaderc/shaderc.h>
 
-#include "mem.h"
+#include "libavutil/mem.h"
+#include "vulkan_spirv.h"
 
 static int shdc_shader_compile(FFVkSPIRVCompiler *ctx, void *avctx,
                                FFVkSPIRVShader *shd, uint8_t **data,
@@ -43,6 +44,7 @@ static int shdc_shader_compile(FFVkSPIRVCompiler *ctx, void *avctx,
     };
 
     shaderc_compile_options_t opts = shaderc_compile_options_initialize();
+    *opaque = NULL;
     if (!opts)
         return AVERROR(ENOMEM);
 
@@ -65,7 +67,7 @@ static int shdc_shader_compile(FFVkSPIRVCompiler *ctx, void *avctx,
 
     loglevel = err ? AV_LOG_ERROR : warn ? AV_LOG_WARNING : AV_LOG_VERBOSE;
 
-    ff_vk_print_shader(avctx, shd, loglevel);
+    ff_vk_shader_print(avctx, shd, loglevel);
     if (message && (err || warn))
         av_log(avctx, loglevel, "%s\n", message);
     status = ret < FF_ARRAY_ELEMS(shdc_result) ? shdc_result[ret] : "unknown";
@@ -104,7 +106,7 @@ static void shdc_uninit(FFVkSPIRVCompiler **ctx)
     av_freep(ctx);
 }
 
-static FFVkSPIRVCompiler *ff_vk_shaderc_init(void)
+FFVkSPIRVCompiler *ff_vk_shaderc_init(void)
 {
     FFVkSPIRVCompiler *ret = av_mallocz(sizeof(*ret));
     if (!ret)
