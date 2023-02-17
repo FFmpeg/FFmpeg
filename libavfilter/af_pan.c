@@ -313,7 +313,7 @@ static int config_props(AVFilterLink *link)
             pan->channel_map[i] = ch_id;
         }
 
-        av_opt_set_int(pan->swr, "uch", pan->nb_output_channels, 0);
+        av_opt_set_chlayout(pan->swr, "uchl", &pan->out_channel_layout, 0);
         swr_set_channel_mapping(pan->swr, pan->channel_map);
     } else {
         // renormalize
