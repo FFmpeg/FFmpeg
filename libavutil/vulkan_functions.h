@@ -162,6 +162,15 @@ typedef enum FFVulkanExtensions {
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CreateDescriptorUpdateTemplate)          \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              DestroyDescriptorUpdateTemplate)         \
                                                                                            \
+    /* Queries */                                                                          \
+    MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CreateQueryPool)                           \
+    MACRO(1, 1, FF_VK_EXT_NO_FLAG,              GetQueryPoolResults)                       \
+    MACRO(1, 1, FF_VK_EXT_NO_FLAG,              ResetQueryPool)                            \
+    MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CmdBeginQuery)                             \
+    MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CmdEndQuery)                               \
+    MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CmdResetQueryPool)                         \
+    MACRO(1, 1, FF_VK_EXT_NO_FLAG,              DestroyQueryPool)                          \
+                                                                                           \
     /* sync2 */                                                                            \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CmdPipelineBarrier2)                       \
                                                                                            \
