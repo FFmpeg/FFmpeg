@@ -1,5 +1,7 @@
 /*
  * copyright (c) 2021 Wu Jianhua <jianhua.wu@intel.com>
+ * Copyright (c) Lynne
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -20,41 +22,60 @@
 #include "libavutil/random_seed.h"
 #include "libavutil/opt.h"
 #include "vulkan_filter.h"
+#include "vulkan_spirv.h"
 #include "internal.h"
 #include "transpose.h"
 
-#define CGS 32
-
 typedef struct TransposeVulkanContext {
     FFVulkanContext vkctx;
-    FFVkQueueFamilyCtx qf;
-    FFVkExecContext *exec;
-    FFVulkanPipeline *pl;
 
-    VkDescriptorImageInfo input_images[3];
-    VkDescriptorImageInfo output_images[3];
+    int initialized;
+    FFVulkanPipeline pl;
+    FFVkExecPool e;
+    FFVkQueueFamilyCtx qf;
+    FFVkSPIRVShader shd;
+    VkSampler sampler;
 
     int dir;
     int passthrough;
-    int initialized;
 } TransposeVulkanContext;
 
 static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
 {
-    int err = 0;
-    FFVkSPIRVShader *shd;
+    int err;
+    uint8_t *spv_data;
+    size_t spv_len;
+    void *spv_opaque = NULL;
     TransposeVulkanContext *s = ctx->priv;
     FFVulkanContext *vkctx = &s->vkctx;
-    const int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
 
-    FFVulkanDescriptorSetBinding image_descs[] = {
+    const int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
+    FFVkSPIRVShader *shd = &s->shd;
+    FFVkSPIRVCompiler *spv;
+    FFVulkanDescriptorSetBinding *desc;
+
+    spv = ff_vk_spirv_init();
+    if (!spv) {
+        av_log(ctx, AV_LOG_ERROR, "Unable to initialize SPIR-V compiler!\n");
+        return AVERROR_EXTERNAL;
+    }
+
+    ff_vk_qf_init(vkctx, &s->qf, VK_QUEUE_COMPUTE_BIT);
+    RET(ff_vk_exec_pool_init(vkctx, &s->qf, &s->e, s->qf.nb_queues*4, 0, 0, 0, NULL));
+    RET(ff_vk_init_sampler(vkctx, &s->sampler, 1, VK_FILTER_LINEAR));
+    RET(ff_vk_shader_init(&s->pl, &s->shd, "transpose_compute",
+                          VK_SHADER_STAGE_COMPUTE_BIT, 0));
+
+    ff_vk_shader_set_compute_sizes(&s->shd, 32, 1, 1);
+
+    desc = (FFVulkanDescriptorSetBinding []) {
         {
             .name       = "input_images",
             .type       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             .dimensions = 2,
             .elems      = planes,
             .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
-            .updater    = s->input_images,
+            .samplers   = DUP_SAMPLER(s->sampler),
         },
         {
             .name       = "output_images",
@@ -64,154 +85,49 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
             .dimensions = 2,
             .elems      = planes,
             .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
-            .updater    = s->output_images,
         },
     };
 
-    image_descs[0].sampler = ff_vk_init_sampler(vkctx, 1, VK_FILTER_LINEAR);
-    if (!image_descs[0].sampler)
-            return AVERROR_EXTERNAL;
+    RET(ff_vk_pipeline_descriptor_set_add(vkctx, &s->pl, shd, desc, 2, 0, 0));
 
-    ff_vk_qf_init(vkctx, &s->qf, VK_QUEUE_COMPUTE_BIT, 0);
-
-    {
-        s->pl = ff_vk_create_pipeline(vkctx, &s->qf);
-        if (!s->pl)
-            return AVERROR(ENOMEM);
-
-        shd = ff_vk_init_shader(s->pl, "transpose_compute", image_descs[0].stages);
-        if (!shd)
-            return AVERROR(ENOMEM);
-
-        ff_vk_set_compute_shader_sizes(shd, (int [3]){ CGS, 1, 1 });
-        RET(ff_vk_add_descriptor_set(vkctx, s->pl, shd, image_descs, FF_ARRAY_ELEMS(image_descs), 0));
-
-        GLSLC(0, void main()                                               );
-        GLSLC(0, {                                                         );
-        GLSLC(1,     ivec2 size;                                           );
-        GLSLC(1,     ivec2 pos = ivec2(gl_GlobalInvocationID.xy);          );
-        for (int i = 0; i < planes; i++) {
-            GLSLC(0,                                                       );
-            GLSLF(1, size = imageSize(output_images[%i]);                ,i);
-            GLSLC(1, if (IS_WITHIN(pos, size)) {                           );
-            if (s->dir == TRANSPOSE_CCLOCK)
-                GLSLF(2, vec4 res = texture(input_images[%i], ivec2(size.y - pos.y, pos.x)); ,i);
-            else if (s->dir == TRANSPOSE_CLOCK_FLIP || s->dir == TRANSPOSE_CLOCK) {
-                GLSLF(2, vec4 res = texture(input_images[%i], ivec2(size.yx - pos.yx));      ,i);
-                if (s->dir == TRANSPOSE_CLOCK)
-                    GLSLC(2, pos = ivec2(pos.x, size.y - pos.y);           );
-            } else
-                GLSLF(2, vec4 res = texture(input_images[%i], pos.yx);   ,i);
-            GLSLF(2,     imageStore(output_images[%i], pos, res);        ,i);
-            GLSLC(1, }                                                     );
-        }
-        GLSLC(0, }                                                         );
-
-        RET(ff_vk_compile_shader(vkctx, shd, "main"));
-        RET(ff_vk_init_pipeline_layout(vkctx, s->pl));
-        RET(ff_vk_init_compute_pipeline(vkctx, s->pl));
+    GLSLC(0, void main()                                               );
+    GLSLC(0, {                                                         );
+    GLSLC(1,     ivec2 size;                                           );
+    GLSLC(1,     ivec2 pos = ivec2(gl_GlobalInvocationID.xy);          );
+    for (int i = 0; i < planes; i++) {
+        GLSLC(0,                                                       );
+        GLSLF(1, size = imageSize(output_images[%i]);                ,i);
+        GLSLC(1, if (IS_WITHIN(pos, size)) {                           );
+        if (s->dir == TRANSPOSE_CCLOCK)
+            GLSLF(2, vec4 res = texture(input_images[%i], ivec2(size.y - pos.y, pos.x)); ,i);
+        else if (s->dir == TRANSPOSE_CLOCK_FLIP || s->dir == TRANSPOSE_CLOCK) {
+            GLSLF(2, vec4 res = texture(input_images[%i], ivec2(size.yx - pos.yx));      ,i);
+            if (s->dir == TRANSPOSE_CLOCK)
+                GLSLC(2, pos = ivec2(pos.x, size.y - pos.y);           );
+        } else
+            GLSLF(2, vec4 res = texture(input_images[%i], pos.yx);   ,i);
+        GLSLF(2,     imageStore(output_images[%i], pos, res);        ,i);
+        GLSLC(1, }                                                     );
     }
+    GLSLC(0, }                                                         );
 
-    RET(ff_vk_create_exec_ctx(vkctx, &s->exec, &s->qf));
+    RET(spv->compile_shader(spv, ctx, shd, &spv_data, &spv_len, "main",
+                            &spv_opaque));
+    RET(ff_vk_shader_create(vkctx, shd, spv_data, spv_len, "main"));
+
+    RET(ff_vk_init_compute_pipeline(vkctx, &s->pl, shd));
+    RET(ff_vk_exec_pipeline_register(vkctx, &s->e, &s->pl));
+
     s->initialized = 1;
-
-fail:
-    return err;
-}
-
-static int process_frames(AVFilterContext *avctx, AVFrame *outframe, AVFrame *inframe)
-{
-    int err = 0;
-    VkCommandBuffer cmd_buf;
-    TransposeVulkanContext *s = avctx->priv;
-    FFVulkanContext *vkctx = &s->vkctx;
-    FFVulkanFunctions *vk = &s->vkctx.vkfn;
-    const int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
-
-    AVVkFrame *in  = (AVVkFrame *)inframe->data[0];
-    AVVkFrame *out = (AVVkFrame *)outframe->data[0];
-
-    const VkFormat *input_formats  = av_vkfmt_from_pixfmt(s->vkctx.input_format);
-    const VkFormat *output_formats = av_vkfmt_from_pixfmt(s->vkctx.output_format);
-
-    ff_vk_start_exec_recording(vkctx, s->exec);
-    cmd_buf = ff_vk_get_exec_buf(s->exec);
-
-    for (int i = 0; i < planes; i++) {
-        RET(ff_vk_create_imageview(vkctx, s->exec,
-                                   &s->input_images[i].imageView, in->img[i],
-                                   input_formats[i],
-                                   ff_comp_identity_map));
-
-        RET(ff_vk_create_imageview(vkctx, s->exec,
-                                   &s->output_images[i].imageView, out->img[i],
-                                   output_formats[i],
-                                   ff_comp_identity_map));
-
-        s->input_images[i].imageLayout  = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        s->output_images[i].imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-    }
-
-    ff_vk_update_descriptor_set(vkctx, s->pl, 0);
-
-    for (int i = 0; i < planes; i++) {
-        VkImageMemoryBarrier barriers[] = {
-            {
-                .sType                       = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                .srcAccessMask               = 0,
-                .dstAccessMask               = VK_ACCESS_SHADER_READ_BIT,
-                .oldLayout                   = in->layout[i],
-                .newLayout                   = s->input_images[i].imageLayout,
-                .srcQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED,
-                .image                       = in->img[i],
-                .subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                .subresourceRange.levelCount = 1,
-                .subresourceRange.layerCount = 1,
-            },
-            {
-                .sType                       = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                .srcAccessMask               = 0,
-                .dstAccessMask               = VK_ACCESS_SHADER_WRITE_BIT,
-                .oldLayout                   = out->layout[i],
-                .newLayout                   = s->output_images[i].imageLayout,
-                .srcQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED,
-                .image                       = out->img[i],
-                .subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                .subresourceRange.levelCount = 1,
-                .subresourceRange.layerCount = 1,
-            },
-        };
-
-        vk->CmdPipelineBarrier(cmd_buf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                               VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0,
-                               0, NULL, 0, NULL, FF_ARRAY_ELEMS(barriers), barriers);
-
-        in->layout[i]  = barriers[0].newLayout;
-        in->access[i]  = barriers[0].dstAccessMask;
-
-        out->layout[i] = barriers[1].newLayout;
-        out->access[i] = barriers[1].dstAccessMask;
-    }
-
-    ff_vk_bind_pipeline_exec(vkctx, s->exec, s->pl);
-    vk->CmdDispatch(cmd_buf, FFALIGN(s->vkctx.output_width, CGS)/CGS,
-                    s->vkctx.output_height, 1);
-
-    ff_vk_add_exec_dep(vkctx, s->exec, inframe, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
-    ff_vk_add_exec_dep(vkctx, s->exec, outframe, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
-
-    err = ff_vk_submit_exec_queue(vkctx, s->exec);
-    if (err)
-        return err;
-
-    ff_vk_qf_rotate(&s->qf);
 
     return 0;
 
 fail:
-    ff_vk_discard_exec_deps(s->exec);
+    if (spv_opaque)
+        spv->free_shader(spv, &spv_opaque);
+    if (spv)
+        spv->uninit(&spv);
+
     return err;
 }
 
@@ -235,7 +151,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     if (!s->initialized)
         RET(init_filter(ctx, in));
 
-    RET(process_frames(ctx, out, in));
+    RET(ff_vk_filter_process_simple(&s->vkctx, &s->e, &s->pl, out, in,
+                                    s->sampler, NULL, 0));
 
     RET(av_frame_copy_props(out, in));
 
@@ -259,6 +176,17 @@ fail:
 static av_cold void transpose_vulkan_uninit(AVFilterContext *avctx)
 {
     TransposeVulkanContext *s = avctx->priv;
+    FFVulkanContext *vkctx = &s->vkctx;
+    FFVulkanFunctions *vk = &vkctx->vkfn;
+
+    ff_vk_exec_pool_free(vkctx, &s->e);
+    ff_vk_pipeline_free(vkctx, &s->pl);
+    ff_vk_shader_free(vkctx, &s->shd);
+
+    if (s->sampler)
+        vk->DestroySampler(vkctx->hwctx->act_dev, s->sampler,
+                           vkctx->hwctx->alloc);
+
     ff_vk_uninit(&s->vkctx);
 
     s->initialized = 0;
