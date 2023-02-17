@@ -1,5 +1,7 @@
 /*
  * copyright (c) 2021-2022 Wu Jianhua <jianhua.wu@intel.com>
+ * Copyright (c) Lynne
+ *
  * The blend modes are based on the blend.c.
  *
  * This file is part of FFmpeg.
@@ -22,11 +24,10 @@
 #include "libavutil/random_seed.h"
 #include "libavutil/opt.h"
 #include "vulkan_filter.h"
+#include "vulkan_spirv.h"
 #include "internal.h"
 #include "framesync.h"
 #include "blend.h"
-
-#define CGS 32
 
 #define IN_TOP    0
 #define IN_BOTTOM 1
@@ -40,20 +41,18 @@ typedef struct FilterParamsVulkan {
 
 typedef struct BlendVulkanContext {
     FFVulkanContext vkctx;
-    FFVkQueueFamilyCtx qf;
-    FFVkExecContext *exec;
-    FFVulkanPipeline *pl;
     FFFrameSync fs;
 
-    VkDescriptorImageInfo top_images[3];
-    VkDescriptorImageInfo bottom_images[3];
-    VkDescriptorImageInfo output_images[3];
+    int initialized;
+    FFVulkanPipeline pl;
+    FFVkExecPool e;
+    FFVkQueueFamilyCtx qf;
+    FFVkSPIRVShader shd;
+    VkSampler sampler;
 
     FilterParamsVulkan params[4];
     double all_opacity;
     enum BlendMode all_mode;
-
-    int initialized;
 } BlendVulkanContext;
 
 #define DEFINE_BLEND_MODE(MODE, EXPR) \
@@ -125,223 +124,103 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
 static av_cold int init_filter(AVFilterContext *avctx)
 {
     int err = 0;
-    FFVkSampler *sampler;
-    FFVkSPIRVShader *shd;
+    uint8_t *spv_data;
+    size_t spv_len;
+    void *spv_opaque = NULL;
     BlendVulkanContext *s = avctx->priv;
     FFVulkanContext *vkctx = &s->vkctx;
     const int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
+    FFVkSPIRVShader *shd = &s->shd;
+    FFVkSPIRVCompiler *spv;
+    FFVulkanDescriptorSetBinding *desc;
 
-    ff_vk_qf_init(vkctx, &s->qf, VK_QUEUE_COMPUTE_BIT, 0);
-
-    sampler = ff_vk_init_sampler(vkctx, 1, VK_FILTER_LINEAR);
-    if (!sampler)
+    spv = ff_vk_spirv_init();
+    if (!spv) {
+        av_log(avctx, AV_LOG_ERROR, "Unable to initialize SPIR-V compiler!\n");
         return AVERROR_EXTERNAL;
-
-    s->pl = ff_vk_create_pipeline(vkctx, &s->qf);
-    if (!s->pl)
-        return AVERROR(ENOMEM);
-
-    {
-        FFVulkanDescriptorSetBinding image_descs[] = {
-            {
-                .name       = "top_images",
-                .type       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                .dimensions = 2,
-                .elems      = planes,
-                .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
-                .updater    = s->top_images,
-                .sampler    = sampler,
-            },
-            {
-                .name       = "bottom_images",
-                .type       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                .dimensions = 2,
-                .elems      = planes,
-                .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
-                .updater    = s->bottom_images,
-                .sampler    = sampler,
-            },
-            {
-                .name       = "output_images",
-                .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-                .mem_layout = ff_vk_shader_rep_fmt(s->vkctx.output_format),
-                .mem_quali  = "writeonly",
-                .dimensions = 2,
-                .elems      = planes,
-                .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
-                .updater    = s->output_images,
-            },
-        };
-
-        shd = ff_vk_init_shader(s->pl, "blend_compute", image_descs[0].stages);
-        if (!shd)
-            return AVERROR(ENOMEM);
-
-        ff_vk_set_compute_shader_sizes(shd, (int [3]){ CGS, CGS, 1 });
-        RET(ff_vk_add_descriptor_set(vkctx, s->pl, shd, image_descs, FF_ARRAY_ELEMS(image_descs), 0));
-
-        for (int i = 0, j = 0; i < planes; i++) {
-            for (j = 0; j < i; j++)
-                if (s->params[i].blend_func == s->params[j].blend_func)
-                    break;
-            /* note: the bracket is needed, for GLSLD is a macro with multiple statements. */
-            if (j == i) {
-                GLSLD(s->params[i].blend_func);
-            }
-        }
-
-        GLSLC(0, void main()                                                    );
-        GLSLC(0, {                                                              );
-        GLSLC(1,     ivec2 size;                                                );
-        GLSLC(1,     const ivec2 pos = ivec2(gl_GlobalInvocationID.xy);         );
-        for (int i = 0; i < planes; i++) {
-            GLSLC(0,                                                            );
-            GLSLF(1, size = imageSize(output_images[%i]);                     ,i);
-            GLSLC(1, if (IS_WITHIN(pos, size)) {                                );
-            GLSLF(2,     const vec4 top = texture(top_images[%i], pos);       ,i);
-            GLSLF(2,     const vec4 bottom = texture(bottom_images[%i], pos); ,i);
-            GLSLF(2,     const float opacity = %f;                            ,s->params[i].opacity);
-            GLSLF(2,     vec4 dst = %s(top, bottom, opacity);                 ,s->params[i].blend);
-            GLSLC(0,                                                            );
-            GLSLF(2,     imageStore(output_images[%i], pos, dst);             ,i);
-            GLSLC(1, }                                                          );
-        }
-        GLSLC(0, }                                                              );
-
-        RET(ff_vk_compile_shader(vkctx, shd, "main"));
-        RET(ff_vk_init_pipeline_layout(vkctx, s->pl));
-        RET(ff_vk_init_compute_pipeline(vkctx, s->pl));
     }
 
-    RET(ff_vk_create_exec_ctx(vkctx, &s->exec, &s->qf));
+    ff_vk_qf_init(vkctx, &s->qf, VK_QUEUE_COMPUTE_BIT);
+    RET(ff_vk_exec_pool_init(vkctx, &s->qf, &s->e, s->qf.nb_queues*4, 0, 0, 0, NULL));
+    RET(ff_vk_init_sampler(vkctx, &s->sampler, 1, VK_FILTER_NEAREST));
+    RET(ff_vk_shader_init(&s->pl, &s->shd, "blend_compute",
+                          VK_SHADER_STAGE_COMPUTE_BIT, 0));
+
+    ff_vk_shader_set_compute_sizes(&s->shd, 32, 32, 1);
+
+    desc = (FFVulkanDescriptorSetBinding []) {
+        {
+            .name       = "top_images",
+            .type       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .dimensions = 2,
+            .elems      = planes,
+            .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
+            .samplers   = DUP_SAMPLER(s->sampler),
+        },
+        {
+            .name       = "bottom_images",
+            .type       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .dimensions = 2,
+            .elems      = planes,
+            .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
+            .samplers   = DUP_SAMPLER(s->sampler),
+        },
+        {
+            .name       = "output_images",
+            .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .mem_layout = ff_vk_shader_rep_fmt(s->vkctx.output_format),
+            .mem_quali  = "writeonly",
+            .dimensions = 2,
+            .elems      = planes,
+            .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
+        },
+    };
+
+    RET(ff_vk_pipeline_descriptor_set_add(vkctx, &s->pl, shd, desc, 3, 0, 0));
+
+    for (int i = 0, j = 0; i < planes; i++) {
+        for (j = 0; j < i; j++)
+            if (s->params[i].blend_func == s->params[j].blend_func)
+                break;
+        /* note: the bracket is needed, for GLSLD is a macro with multiple statements. */
+        if (j == i) {
+            GLSLD(s->params[i].blend_func);
+        }
+    }
+
+    GLSLC(0, void main()                                                    );
+    GLSLC(0, {                                                              );
+    GLSLC(1,     ivec2 size;                                                );
+    GLSLC(1,     const ivec2 pos = ivec2(gl_GlobalInvocationID.xy);         );
+    for (int i = 0; i < planes; i++) {
+        GLSLC(0,                                                            );
+        GLSLF(1, size = imageSize(output_images[%i]);                     ,i);
+        GLSLC(1, if (IS_WITHIN(pos, size)) {                                );
+        GLSLF(2,     const vec4 top = texture(top_images[%i], pos);       ,i);
+        GLSLF(2,     const vec4 bottom = texture(bottom_images[%i], pos); ,i);
+        GLSLF(2,     const float opacity = %f;                            ,s->params[i].opacity);
+        GLSLF(2,     vec4 dst = %s(top, bottom, opacity);                 ,s->params[i].blend);
+        GLSLC(0,                                                            );
+        GLSLF(2,     imageStore(output_images[%i], pos, dst);             ,i);
+        GLSLC(1, }                                                          );
+    }
+    GLSLC(0, }                                                              );
+
+    RET(spv->compile_shader(spv, avctx, shd, &spv_data, &spv_len, "main",
+                            &spv_opaque));
+    RET(ff_vk_shader_create(vkctx, shd, spv_data, spv_len, "main"));
+
+    RET(ff_vk_init_compute_pipeline(vkctx, &s->pl, shd));
+    RET(ff_vk_exec_pipeline_register(vkctx, &s->e, &s->pl));
 
     s->initialized = 1;
 
 fail:
-    return err;
-}
+    if (spv_opaque)
+        spv->free_shader(spv, &spv_opaque);
+    if (spv)
+        spv->uninit(&spv);
 
-static int process_frames(AVFilterContext *avctx, AVFrame *out_frame, AVFrame *top_frame, AVFrame *bottom_frame)
-{
-    int err = 0;
-    VkCommandBuffer cmd_buf;
-    BlendVulkanContext *s = avctx->priv;
-    FFVulkanContext *vkctx = &s->vkctx;
-    FFVulkanFunctions *vk = &s->vkctx.vkfn;
-    const int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
-
-    AVVkFrame *out    = (AVVkFrame *)out_frame->data[0];
-    AVVkFrame *top    = (AVVkFrame *)top_frame->data[0];
-    AVVkFrame *bottom = (AVVkFrame *)bottom_frame->data[0];
-
-    AVHWFramesContext *top_fc    = (AVHWFramesContext*)top_frame->hw_frames_ctx->data;
-    AVHWFramesContext *bottom_fc = (AVHWFramesContext*)bottom_frame->hw_frames_ctx->data;
-
-    const VkFormat *top_formats    = av_vkfmt_from_pixfmt(top_fc->sw_format);
-    const VkFormat *bottom_formats = av_vkfmt_from_pixfmt(bottom_fc->sw_format);
-    const VkFormat *output_formats = av_vkfmt_from_pixfmt(s->vkctx.output_format);
-
-    ff_vk_start_exec_recording(vkctx, s->exec);
-    cmd_buf = ff_vk_get_exec_buf(s->exec);
-
-    for (int i = 0; i < planes; i++) {
-        RET(ff_vk_create_imageview(vkctx, s->exec,
-                                   &s->top_images[i].imageView, top->img[i],
-                                   top_formats[i],
-                                   ff_comp_identity_map));
-
-        RET(ff_vk_create_imageview(vkctx, s->exec,
-                                   &s->bottom_images[i].imageView, bottom->img[i],
-                                   bottom_formats[i],
-                                   ff_comp_identity_map));
-
-        RET(ff_vk_create_imageview(vkctx, s->exec,
-                                   &s->output_images[i].imageView, out->img[i],
-                                   output_formats[i],
-                                   ff_comp_identity_map));
-
-        s->top_images[i].imageLayout    = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        s->bottom_images[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        s->output_images[i].imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-    }
-
-    ff_vk_update_descriptor_set(vkctx, s->pl, 0);
-
-    for (int i = 0; i < planes; i++) {
-        VkImageMemoryBarrier barriers[] = {
-            {
-                .sType                       = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                .srcAccessMask               = 0,
-                .dstAccessMask               = VK_ACCESS_SHADER_READ_BIT,
-                .oldLayout                   = top->layout[i],
-                .newLayout                   = s->top_images[i].imageLayout,
-                .srcQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED,
-                .image                       = top->img[i],
-                .subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                .subresourceRange.levelCount = 1,
-                .subresourceRange.layerCount = 1,
-            },
-            {
-                .sType                       = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                .srcAccessMask               = 0,
-                .dstAccessMask               = VK_ACCESS_SHADER_READ_BIT,
-                .oldLayout                   = bottom->layout[i],
-                .newLayout                   = s->bottom_images[i].imageLayout,
-                .srcQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED,
-                .image                       = bottom->img[i],
-                .subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                .subresourceRange.levelCount = 1,
-                .subresourceRange.layerCount = 1,
-            },
-            {
-                .sType                       = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                .srcAccessMask               = 0,
-                .dstAccessMask               = VK_ACCESS_SHADER_WRITE_BIT,
-                .oldLayout                   = out->layout[i],
-                .newLayout                   = s->output_images[i].imageLayout,
-                .srcQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED,
-                .image                       = out->img[i],
-                .subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                .subresourceRange.levelCount = 1,
-                .subresourceRange.layerCount = 1,
-            },
-        };
-
-        vk->CmdPipelineBarrier(cmd_buf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                               VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0,
-                               0, NULL, 0, NULL, FF_ARRAY_ELEMS(barriers), barriers);
-
-        top->layout[i] = barriers[0].newLayout;
-        top->access[i] = barriers[0].dstAccessMask;
-
-        bottom->layout[i] = barriers[1].newLayout;
-        bottom->access[i] = barriers[1].dstAccessMask;
-
-        out->layout[i] = barriers[2].newLayout;
-        out->access[i] = barriers[2].dstAccessMask;
-    }
-
-    ff_vk_bind_pipeline_exec(vkctx, s->exec, s->pl);
-    vk->CmdDispatch(cmd_buf, FFALIGN(s->vkctx.output_width, CGS) / CGS,
-                    FFALIGN(s->vkctx.output_height, CGS) / CGS, 1);
-
-    ff_vk_add_exec_dep(vkctx, s->exec, top_frame, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
-    ff_vk_add_exec_dep(vkctx, s->exec, bottom_frame, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
-    ff_vk_add_exec_dep(vkctx, s->exec, out_frame, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
-
-    err = ff_vk_submit_exec_queue(vkctx, s->exec);
-    if (err)
-        return err;
-
-    ff_vk_qf_rotate(&s->qf);
-
-    return 0;
-
-fail:
-    ff_vk_discard_exec_deps(s->exec);
     return err;
 }
 
@@ -375,7 +254,9 @@ static int blend_frame(FFFrameSync *fs)
         RET(init_filter(avctx));
     }
 
-    RET(process_frames(avctx, out, top, bottom));
+    RET(ff_vk_filter_process_Nin(&s->vkctx, &s->e, &s->pl,
+                                 out, (AVFrame *[]){ top, bottom }, 2,
+                                 s->sampler, NULL, 0));
 
     return ff_filter_frame(outlink, out);
 
@@ -396,10 +277,19 @@ static av_cold int init(AVFilterContext *avctx)
 static av_cold void uninit(AVFilterContext *avctx)
 {
     BlendVulkanContext *s = avctx->priv;
+    FFVulkanContext *vkctx = &s->vkctx;
+    FFVulkanFunctions *vk = &vkctx->vkfn;
 
-    ff_framesync_uninit(&s->fs);
+    ff_vk_exec_pool_free(vkctx, &s->e);
+    ff_vk_pipeline_free(vkctx, &s->pl);
+    ff_vk_shader_free(vkctx, &s->shd);
+
+    if (s->sampler)
+        vk->DestroySampler(vkctx->hwctx->act_dev, s->sampler,
+                           vkctx->hwctx->alloc);
 
     ff_vk_uninit(&s->vkctx);
+    ff_framesync_uninit(&s->fs);
 
     s->initialized = 0;
 }
