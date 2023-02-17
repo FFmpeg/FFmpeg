@@ -16074,6 +16074,18 @@ Automatic selection based on internal heuristics. This is the default.
 Performs no tone-mapping, just clips out-of-range colors. Retains perfect color
 accuracy for in-range colors but completely destroys out-of-range information.
 Does not perform any black point adaptation. Not configurable.
+@item st2094-40
+EETF from SMPTE ST 2094-40 Annex B, which applies the Bezier curves from HDR10+
+dynamic metadata based on Bezier curves to perform tone-mapping. The OOTF used
+is adjusted based on the ratio between the targeted and actual display peak
+luminances.
+@item st2094-10
+EETF from SMPTE ST 2094-10 Annex B.2, which takes into account the input signal
+average luminance in addition to the maximum/minimum. The configurable contrast
+parameter influences the slope of the linear output segment, defaulting to
+@code{1.0} for no increase/decrease in contrast. Note that this does not
+currently include the subjective gain/offset/gamma controls defined in Annex
+B.3.
 @item bt.2390
 EETF from the ITU-R Report BT.2390, a hermite spline roll-off with linear
 segment. The knee point offset is configurable. Note that this parameter

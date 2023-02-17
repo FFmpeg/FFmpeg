@@ -29,6 +29,8 @@
 enum {
     TONE_MAP_AUTO,
     TONE_MAP_CLIP,
+    TONE_MAP_ST2094_40,
+    TONE_MAP_ST2094_10,
     TONE_MAP_BT2390,
     TONE_MAP_BT2446A,
     TONE_MAP_SPLINE,
@@ -41,16 +43,20 @@ enum {
 };
 
 static const struct pl_tone_map_function * const tonemapping_funcs[TONE_MAP_COUNT] = {
-    [TONE_MAP_AUTO]     = &pl_tone_map_auto,
-    [TONE_MAP_CLIP]     = &pl_tone_map_clip,
-    [TONE_MAP_BT2390]   = &pl_tone_map_bt2390,
-    [TONE_MAP_BT2446A]  = &pl_tone_map_bt2446a,
-    [TONE_MAP_SPLINE]   = &pl_tone_map_spline,
-    [TONE_MAP_REINHARD] = &pl_tone_map_reinhard,
-    [TONE_MAP_MOBIUS]   = &pl_tone_map_mobius,
-    [TONE_MAP_HABLE]    = &pl_tone_map_hable,
-    [TONE_MAP_GAMMA]    = &pl_tone_map_gamma,
-    [TONE_MAP_LINEAR]   = &pl_tone_map_linear,
+    [TONE_MAP_AUTO]      = &pl_tone_map_auto,
+    [TONE_MAP_CLIP]      = &pl_tone_map_clip,
+#if PL_API_VER >= 246
+    [TONE_MAP_ST2094_40] = &pl_tone_map_st2094_40,
+    [TONE_MAP_ST2094_10] = &pl_tone_map_st2094_10,
+#endif
+    [TONE_MAP_BT2390]    = &pl_tone_map_bt2390,
+    [TONE_MAP_BT2446A]   = &pl_tone_map_bt2446a,
+    [TONE_MAP_SPLINE]    = &pl_tone_map_spline,
+    [TONE_MAP_REINHARD]  = &pl_tone_map_reinhard,
+    [TONE_MAP_MOBIUS]    = &pl_tone_map_mobius,
+    [TONE_MAP_HABLE]     = &pl_tone_map_hable,
+    [TONE_MAP_GAMMA]     = &pl_tone_map_gamma,
+    [TONE_MAP_LINEAR]    = &pl_tone_map_linear,
 };
 
 typedef struct LibplaceboContext {
@@ -790,6 +796,10 @@ static const AVOption libplacebo_options[] = {
     { "tonemapping", "Tone-mapping algorithm", OFFSET(tonemapping), AV_OPT_TYPE_INT, {.i64 = TONE_MAP_AUTO}, 0, TONE_MAP_COUNT - 1, DYNAMIC, "tonemap" },
         { "auto", "Automatic selection", 0, AV_OPT_TYPE_CONST, {.i64 = TONE_MAP_AUTO}, 0, 0, STATIC, "tonemap" },
         { "clip", "No tone mapping (clip", 0, AV_OPT_TYPE_CONST, {.i64 = TONE_MAP_CLIP}, 0, 0, STATIC, "tonemap" },
+#if PL_API_VER >= 246
+        { "st2094-40", "SMPTE ST 2094-40", 0, AV_OPT_TYPE_CONST, {.i64 = TONE_MAP_ST2094_40}, 0, 0, STATIC, "tonemap" },
+        { "st2094-10", "SMPTE ST 2094-10", 0, AV_OPT_TYPE_CONST, {.i64 = TONE_MAP_ST2094_10}, 0, 0, STATIC, "tonemap" },
+#endif
         { "bt.2390", "ITU-R BT.2390 EETF", 0, AV_OPT_TYPE_CONST, {.i64 = TONE_MAP_BT2390}, 0, 0, STATIC, "tonemap" },
         { "bt.2446a", "ITU-R BT.2446 Method A", 0, AV_OPT_TYPE_CONST, {.i64 = TONE_MAP_BT2446A}, 0, 0, STATIC, "tonemap" },
         { "spline", "Single-pivot polynomial spline", 0, AV_OPT_TYPE_CONST, {.i64 = TONE_MAP_SPLINE}, 0, 0, STATIC, "tonemap" },
