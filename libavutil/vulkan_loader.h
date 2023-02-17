@@ -48,6 +48,7 @@ static inline uint64_t ff_vk_extensions_to_mask(const char * const *extensions,
         { VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME,     FF_VK_EXT_EXTERNAL_WIN32_MEMORY  },
         { VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME,  FF_VK_EXT_EXTERNAL_WIN32_SEM     },
 #endif
+        { VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME,         FF_VK_EXT_DESCRIPTOR_BUFFER,     },
     };
 
     FFVulkanExtensions mask = 0x0;
