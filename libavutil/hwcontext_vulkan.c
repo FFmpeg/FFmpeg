@@ -2200,16 +2200,13 @@ static int prepare_frame(AVHWFramesContext *hwfc, VulkanExecCtx *ectx,
         break;
     }
 
-    /* Change the image layout to something more optimal for writes.
-     * This also signals the newly created semaphore, making it usable
-     * for synchronization */
     for (int i = 0; i < nb_images; i++) {
         img_bar[i] = (VkImageMemoryBarrier2) {
             .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
             .pNext = NULL,
-            .srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
-            .srcAccessMask = 0x0,
-            .dstStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT,
+            .srcStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+            .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+            .srcAccessMask = frame->access[i],
             .dstAccessMask = new_access,
             .oldLayout = frame->layout[i],
             .newLayout = new_layout,
@@ -2222,9 +2219,6 @@ static int prepare_frame(AVHWFramesContext *hwfc, VulkanExecCtx *ectx,
                 .levelCount = 1,
             },
         };
-
-        frame->layout[i] = img_bar[i].newLayout;
-        frame->access[i] = img_bar[i].dstAccessMask;
     }
 
     vk->CmdPipelineBarrier2(get_buf_exec_ctx(hwfc, ectx), &(VkDependencyInfo) {
@@ -2234,6 +2228,13 @@ static int prepare_frame(AVHWFramesContext *hwfc, VulkanExecCtx *ectx,
         });
 
     err = submit_exec_ctx(hwfc, ectx, &s_info, frame, 0);
+    if (err >= 0) {
+        for (int i = 0; i < nb_images; i++) {
+            frame->layout[i] = img_bar[i].newLayout;
+            frame->access[i] = img_bar[i].dstAccessMask;
+            frame->queue_family[i] = img_bar[i].dstQueueFamilyIndex;
+        }
+    }
     vkfc->unlock_frame(hwfc, frame);
 
     return err;
