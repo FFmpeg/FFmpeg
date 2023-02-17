@@ -492,7 +492,7 @@ av_cold static int auto_matrix(SwrContext *s)
 
 av_cold int swri_rematrix_init(SwrContext *s){
     int i, j;
-    int nb_in  = s->used_ch_count;
+    int nb_in  = s->used_ch_layout.nb_channels;
     int nb_out = s->out.ch_count;
 
     s->mix_any_f = NULL;

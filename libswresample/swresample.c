@@ -161,6 +161,7 @@ static void clear_context(SwrContext *s){
     free_temp(&s->dither.temp);
     av_channel_layout_uninit(&s->in_ch_layout);
     av_channel_layout_uninit(&s->out_ch_layout);
+    av_channel_layout_uninit(&s->used_ch_layout);
     swri_audio_convert_free(&s-> in_convert);
     swri_audio_convert_free(&s->out_convert);
     swri_audio_convert_free(&s->full_convert);
@@ -176,6 +177,7 @@ av_cold void swr_free(SwrContext **ss){
         clear_context(s);
         av_channel_layout_uninit(&s->user_in_chlayout);
         av_channel_layout_uninit(&s->user_out_chlayout);
+        av_channel_layout_uninit(&s->user_used_chlayout);
 
         if (s->resampler)
             s->resampler->free(&s->resample);
@@ -211,12 +213,20 @@ av_cold int swr_init(struct SwrContext *s){
         av_log(s, AV_LOG_ERROR, "Requested output sample rate %d is invalid\n", s->out_sample_rate);
         return AVERROR(EINVAL);
     }
-    s->used_ch_count = s->user_used_ch_count;
 #if FF_API_OLD_CHANNEL_LAYOUT
     s->out.ch_count  = s-> user_out_ch_count;
     s-> in.ch_count  = s->  user_in_ch_count;
 
     // if the old/new fields are set inconsistently, prefer the old ones
+    if (s->user_used_ch_count && s->user_used_ch_count != s->user_used_chlayout.nb_channels) {
+        av_channel_layout_uninit(&s->used_ch_layout);
+        s->used_ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
+        s->used_ch_layout.nb_channels = s->user_used_ch_count;
+    } else if (av_channel_layout_check(&s->user_used_chlayout)) {
+        ret = av_channel_layout_copy(&s->used_ch_layout, &s->user_used_chlayout);
+        if (ret < 0)
+            return ret;
+    }
     if ((s->user_in_ch_count && s->user_in_ch_count != s->user_in_chlayout.nb_channels) ||
         (s->user_in_ch_layout && (s->user_in_chlayout.order != AV_CHANNEL_ORDER_NATIVE ||
                                   s->user_in_chlayout.u.mask != s->user_in_ch_layout))) {
@@ -243,9 +253,9 @@ av_cold int swr_init(struct SwrContext *s){
     } else if (av_channel_layout_check(&s->user_out_chlayout))
         av_channel_layout_copy(&s->out_ch_layout, &s->user_out_chlayout);
 
-    if (!s->out.ch_count && !s->user_out_ch_layout)
+    if (!s->out.ch_count)
         s->out.ch_count  = s->out_ch_layout.nb_channels;
-    if (!s-> in.ch_count && !s-> user_in_ch_layout)
+    if (!s-> in.ch_count)
         s-> in.ch_count  = s->in_ch_layout.nb_channels;
 
     if (!(ret = av_channel_layout_check(&s->in_ch_layout)) || s->in_ch_layout.nb_channels > SWR_CH_MAX) {
@@ -281,6 +291,7 @@ av_cold int swr_init(struct SwrContext *s){
 
     ret  = av_channel_layout_copy(&s->in_ch_layout, &s->user_in_chlayout);
     ret |= av_channel_layout_copy(&s->out_ch_layout, &s->user_out_chlayout);
+    ret |= av_channel_layout_copy(&s->used_ch_layout, &s->user_used_chlayout);
     if (ret < 0)
         return ret;
 #endif
@@ -299,16 +310,19 @@ av_cold int swr_init(struct SwrContext *s){
             return AVERROR(EINVAL);
     }
 
-    if(!s->used_ch_count)
-        s->used_ch_count= s->in.ch_count;
+    if (!av_channel_layout_check(&s->used_ch_layout))
+        av_channel_layout_default(&s->used_ch_layout, s->in.ch_count);
 
-    if (s->used_ch_count && s->in_ch_layout.order != AV_CHANNEL_ORDER_UNSPEC && s->used_ch_count != s->in_ch_layout.nb_channels) {
-        av_log(s, AV_LOG_WARNING, "Input channel layout has a different number of channels than the number of used channels, ignoring layout\n");
+    if (s->used_ch_layout.nb_channels != s->in_ch_layout.nb_channels)
         av_channel_layout_uninit(&s->in_ch_layout);
-    }
 
-    if (s->in_ch_layout.order == AV_CHANNEL_ORDER_UNSPEC)
-        av_channel_layout_default(&s->in_ch_layout, s->used_ch_count);
+    if (s->used_ch_layout.order == AV_CHANNEL_ORDER_UNSPEC)
+        av_channel_layout_default(&s->used_ch_layout, s->used_ch_layout.nb_channels);
+    if (s->in_ch_layout.order == AV_CHANNEL_ORDER_UNSPEC) {
+        ret = av_channel_layout_copy(&s->in_ch_layout, &s->used_ch_layout);
+        if (ret < 0)
+            return ret;
+    }
     if (s->out_ch_layout.order == AV_CHANNEL_ORDER_UNSPEC)
         av_channel_layout_default(&s->out_ch_layout, s->out.ch_count);
 
@@ -389,8 +403,8 @@ av_cold int swr_init(struct SwrContext *s){
 #define RSC 1 //FIXME finetune
     if(!s-> in.ch_count)
         s-> in.ch_count = s->in_ch_layout.nb_channels;
-    if(!s->used_ch_count)
-        s->used_ch_count= s->in.ch_count;
+    if (!av_channel_layout_check(&s->used_ch_layout))
+        av_channel_layout_default(&s->used_ch_layout, s->in.ch_count);
     if(!s->out.ch_count)
         s->out.ch_count = s->out_ch_layout.nb_channels;
 
@@ -410,23 +424,23 @@ av_cold int swr_init(struct SwrContext *s){
     }
 #endif
     av_channel_layout_describe(&s->in_ch_layout, l1, sizeof(l1));
-    if (s->in_ch_layout.order != AV_CHANNEL_ORDER_UNSPEC && s->used_ch_count != s->in_ch_layout.nb_channels) {
-        av_log(s, AV_LOG_ERROR, "Input channel layout %s mismatches specified channel count %d\n", l1, s->used_ch_count);
+    if (s->in_ch_layout.order != AV_CHANNEL_ORDER_UNSPEC && s->used_ch_layout.nb_channels != s->in_ch_layout.nb_channels) {
+        av_log(s, AV_LOG_ERROR, "Input channel layout %s mismatches specified channel count %d\n", l1, s->used_ch_layout.nb_channels);
         ret = AVERROR(EINVAL);
         goto fail;
     }
 
     if ((   s->out_ch_layout.order == AV_CHANNEL_ORDER_UNSPEC
-         || s-> in_ch_layout.order == AV_CHANNEL_ORDER_UNSPEC) && s->used_ch_count != s->out.ch_count && !s->rematrix_custom) {
+         || s-> in_ch_layout.order == AV_CHANNEL_ORDER_UNSPEC) && s->used_ch_layout.nb_channels != s->out.ch_count && !s->rematrix_custom) {
         av_log(s, AV_LOG_ERROR, "Rematrix is needed between %s and %s "
                "but there is not enough information to do it\n", l1, l2);
         ret = AVERROR(EINVAL);
         goto fail;
     }
 
-av_assert0(s->used_ch_count);
+av_assert0(s->used_ch_layout.nb_channels);
 av_assert0(s->out.ch_count);
-    s->resample_first= RSC*s->out.ch_count/s->used_ch_count - RSC < s->out_sample_rate/(float)s-> in_sample_rate - 1.0;
+    s->resample_first= RSC*s->out.ch_count/s->used_ch_layout.nb_channels - RSC < s->out_sample_rate/(float)s-> in_sample_rate - 1.0;
 
     s->in_buffer= s->in;
     s->silence  = s->in;
@@ -442,7 +456,7 @@ av_assert0(s->out.ch_count);
     }
 
     s->in_convert = swri_audio_convert_alloc(s->int_sample_fmt,
-                                             s-> in_sample_fmt, s->used_ch_count, s->channel_map, 0);
+                                             s-> in_sample_fmt, s->used_ch_layout.nb_channels, s->channel_map, 0);
     s->out_convert= swri_audio_convert_alloc(s->out_sample_fmt,
                                              s->int_sample_fmt, s->out.ch_count, NULL, 0);
 
@@ -457,9 +471,9 @@ av_assert0(s->out.ch_count);
 
     if(s->channel_map){
         s->postin.ch_count=
-        s->midbuf.ch_count= s->used_ch_count;
+        s->midbuf.ch_count= s->used_ch_layout.nb_channels;
         if(s->resample)
-            s->in_buffer.ch_count= s->used_ch_count;
+            s->in_buffer.ch_count= s->used_ch_layout.nb_channels;
     }
     if(!s->resample_first){
         s->midbuf.ch_count= s->out.ch_count;
@@ -697,7 +711,7 @@ static int swr_convert_internal(struct SwrContext *s, AudioData *out, int out_co
     if((ret=swri_realloc_audio(&s->postin, in_count))<0)
         return ret;
     if(s->resample_first){
-        av_assert0(s->midbuf.ch_count == s->used_ch_count);
+        av_assert0(s->midbuf.ch_count == s->used_ch_layout.nb_channels);
         if((ret=swri_realloc_audio(&s->midbuf, out_count))<0)
             return ret;
     }else{
