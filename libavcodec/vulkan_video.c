@@ -33,6 +33,12 @@ const FFVkCodecMap ff_vk_codec_map[AV_CODEC_ID_FIRST_AUDIO] = {
                            FF_VK_EXT_VIDEO_DECODE_H265,
                            VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR
     },
+    [AV_CODEC_ID_AV1] = {
+                           0,
+                           0,
+                           FF_VK_EXT_VIDEO_DECODE_AV1,
+                           0x01000000 /* TODO fix this */
+    },
 };
 
 #define ASPECT_2PLANE (VK_IMAGE_ASPECT_PLANE_0_BIT | VK_IMAGE_ASPECT_PLANE_1_BIT)

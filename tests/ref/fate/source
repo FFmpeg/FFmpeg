@@ -23,6 +23,8 @@ compat/djgpp/math.h
 compat/float/float.h
 compat/float/limits.h
 libavcodec/bitstream_template.h
+libavcodec/vulkan_video_codec_av1std.h
+libavcodec/vulkan_video_codec_av1std_decode.h
 tools/decode_simple.h
 Use of av_clip() where av_clip_uintp2() could be used:
 Use of av_clip() where av_clip_intp2() could be used:

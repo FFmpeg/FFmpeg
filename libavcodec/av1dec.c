@@ -450,7 +450,8 @@ static int get_pixel_format(AVCodecContext *avctx)
                      CONFIG_AV1_D3D11VA_HWACCEL * 2 + \
                      CONFIG_AV1_NVDEC_HWACCEL + \
                      CONFIG_AV1_VAAPI_HWACCEL + \
-                     CONFIG_AV1_VDPAU_HWACCEL)
+                     CONFIG_AV1_VDPAU_HWACCEL + \
+                     CONFIG_AV1_VULKAN_HWACCEL)
     enum AVPixelFormat pix_fmts[HWACCEL_MAX + 2], *fmtp = pix_fmts;
 
     if (seq->seq_profile == 2 && seq->color_config.high_bitdepth)
@@ -531,6 +532,9 @@ static int get_pixel_format(AVCodecContext *avctx)
 #if CONFIG_AV1_VDPAU_HWACCEL
         *fmtp++ = AV_PIX_FMT_VDPAU;
 #endif
+#if CONFIG_AV1_VULKAN_HWACCEL
+        *fmtp++ = AV_PIX_FMT_VULKAN;
+#endif
         break;
     case AV_PIX_FMT_YUV420P10:
 #if CONFIG_AV1_DXVA2_HWACCEL
@@ -548,6 +552,44 @@ static int get_pixel_format(AVCodecContext *avctx)
 #endif
 #if CONFIG_AV1_VDPAU_HWACCEL
         *fmtp++ = AV_PIX_FMT_VDPAU;
+#endif
+#if CONFIG_AV1_VULKAN_HWACCEL
+        *fmtp++ = AV_PIX_FMT_VULKAN;
+#endif
+        break;
+    case AV_PIX_FMT_YUV420P12:
+#if CONFIG_AV1_VULKAN_HWACCEL
+        *fmtp++ = AV_PIX_FMT_VULKAN;
+#endif
+        break;
+    case AV_PIX_FMT_YUV422P:
+#if CONFIG_AV1_VULKAN_HWACCEL
+        *fmtp++ = AV_PIX_FMT_VULKAN;
+#endif
+        break;
+    case AV_PIX_FMT_YUV422P10:
+#if CONFIG_AV1_VULKAN_HWACCEL
+        *fmtp++ = AV_PIX_FMT_VULKAN;
+#endif
+        break;
+    case AV_PIX_FMT_YUV422P12:
+#if CONFIG_AV1_VULKAN_HWACCEL
+        *fmtp++ = AV_PIX_FMT_VULKAN;
+#endif
+        break;
+    case AV_PIX_FMT_YUV444P:
+#if CONFIG_AV1_VULKAN_HWACCEL
+        *fmtp++ = AV_PIX_FMT_VULKAN;
+#endif
+        break;
+    case AV_PIX_FMT_YUV444P10:
+#if CONFIG_AV1_VULKAN_HWACCEL
+        *fmtp++ = AV_PIX_FMT_VULKAN;
+#endif
+        break;
+    case AV_PIX_FMT_YUV444P12:
+#if CONFIG_AV1_VULKAN_HWACCEL
+        *fmtp++ = AV_PIX_FMT_VULKAN;
 #endif
         break;
     case AV_PIX_FMT_GRAY8:
@@ -1507,6 +1549,9 @@ const FFCodec ff_av1_decoder = {
 #endif
 #if CONFIG_AV1_VDPAU_HWACCEL
         HWACCEL_VDPAU(av1),
+#endif
+#if CONFIG_AV1_VULKAN_HWACCEL
+        HWACCEL_VULKAN(av1),
 #endif
 
         NULL

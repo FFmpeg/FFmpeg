@@ -59,6 +59,8 @@ typedef struct FFVulkanDecodeContext {
 
     int dedicated_dpb; /* Oddity  #1 - separate DPB images */
     int layered_dpb;   /* Madness #1 - layered  DPB images */
+    int external_fg;   /* Oddity  #2 - hardware can't apply film grain */
+    uint32_t frame_id_alloc_mask; /* For AV1 only */
 
     /* Thread-local state below */
     AVBufferPool *tmp_pool; /* Pool for temporary data, if needed (HEVC) */
