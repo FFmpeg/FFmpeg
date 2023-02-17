@@ -99,6 +99,7 @@ struct SwrContext {
     enum AVSampleFormat  in_sample_fmt;             ///< input sample format
     enum AVSampleFormat int_sample_fmt;             ///< internal sample format (AV_SAMPLE_FMT_FLTP or AV_SAMPLE_FMT_S16P)
     enum AVSampleFormat out_sample_fmt;             ///< output sample format
+    AVChannelLayout used_ch_layout;                 ///< number of used input channels (mapped channel count if channel_map, otherwise in.ch_count)
     AVChannelLayout  in_ch_layout;                  ///< input channel layout
     AVChannelLayout out_ch_layout;                  ///< output channel layout
     int      in_sample_rate;                        ///< input sample rate
@@ -111,16 +112,16 @@ struct SwrContext {
     float rematrix_maxval;                          ///< maximum value for rematrixing output
     int matrix_encoding;                            /**< matrixed stereo encoding */
     const int *channel_map;                         ///< channel index (or -1 if muted channel) map
-    int used_ch_count;                              ///< number of used input channels (mapped channel count if channel_map, otherwise in.ch_count)
     int engine;
 
-    int user_used_ch_count;                         ///< User set used channel count
 #if FF_API_OLD_CHANNEL_LAYOUT
+    int user_used_ch_count;                         ///< User set used channel count
     int user_in_ch_count;                           ///< User set input channel count
     int user_out_ch_count;                          ///< User set output channel count
     int64_t user_in_ch_layout;                      ///< User set input channel layout
     int64_t user_out_ch_layout;                     ///< User set output channel layout
 #endif
+    AVChannelLayout user_used_chlayout;             ///< User set used channel layout
     AVChannelLayout user_in_chlayout;               ///< User set input channel layout
     AVChannelLayout user_out_chlayout;              ///< User set output channel layout
     enum AVSampleFormat user_int_sample_fmt;        ///< User set internal sample format

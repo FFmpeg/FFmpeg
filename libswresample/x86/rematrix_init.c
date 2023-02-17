@@ -33,7 +33,7 @@ D(int16, sse2)
 av_cold int swri_rematrix_init_x86(struct SwrContext *s){
 #if HAVE_X86ASM
     int mm_flags = av_get_cpu_flags();
-    int nb_in  = s->used_ch_count;
+    int nb_in  = s->used_ch_layout.nb_channels;
     int nb_out = s->out.ch_count;
     int num    = nb_in * nb_out;
     int i,j;
