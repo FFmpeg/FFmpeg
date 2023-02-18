@@ -22,6 +22,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "demux.h"
 #include "internal.h"
 
@@ -84,7 +85,9 @@ static int wavarc_read_header(AVFormatContext *s)
     if (ret < 0)
         return ret;
     memcpy(par->extradata, data, sizeof(data));
-    avio_read(pb, par->extradata + sizeof(data), fmt_len);
+    ret = ffio_read_size(pb, par->extradata + sizeof(data), fmt_len);
+    if (ret < 0)
+        return ret;
 
     par->codec_type = AVMEDIA_TYPE_AUDIO;
     par->codec_id   = AV_CODEC_ID_WAVARC;
