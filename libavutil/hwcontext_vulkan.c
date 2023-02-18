@@ -2675,144 +2675,6 @@ static int vulkan_transfer_get_formats(AVHWFramesContext *hwfc,
     return 0;
 }
 
-typedef struct VulkanMapping {
-    AVVkFrame *frame;
-    int flags;
-} VulkanMapping;
-
-static void vulkan_unmap_frame(AVHWFramesContext *hwfc, HWMapDescriptor *hwmap)
-{
-    VulkanMapping *map = hwmap->priv;
-    AVVulkanDeviceContext *hwctx = hwfc->device_ctx->hwctx;
-    const int planes = av_pix_fmt_count_planes(hwfc->sw_format);
-    VulkanDevicePriv *p = hwfc->device_ctx->internal->priv;
-    FFVulkanFunctions *vk = &p->vkfn;
-
-    /* Check if buffer needs flushing */
-    if ((map->flags & AV_HWFRAME_MAP_WRITE) &&
-        !(map->frame->flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
-        VkResult ret;
-        VkMappedMemoryRange flush_ranges[AV_NUM_DATA_POINTERS] = { { 0 } };
-
-        for (int i = 0; i < planes; i++) {
-            flush_ranges[i].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-            flush_ranges[i].memory = map->frame->mem[i];
-            flush_ranges[i].size   = VK_WHOLE_SIZE;
-        }
-
-        ret = vk->FlushMappedMemoryRanges(hwctx->act_dev, planes,
-                                          flush_ranges);
-        if (ret != VK_SUCCESS) {
-            av_log(hwfc, AV_LOG_ERROR, "Failed to flush memory: %s\n",
-                   vk_ret2str(ret));
-        }
-    }
-
-    for (int i = 0; i < planes; i++)
-        vk->UnmapMemory(hwctx->act_dev, map->frame->mem[i]);
-
-    av_free(map);
-}
-
-static int vulkan_map_frame_to_mem(AVHWFramesContext *hwfc, AVFrame *dst,
-                                   const AVFrame *src, int flags)
-{
-    VkResult ret;
-    int err, nb_mem = 0, mapped_mem_count = 0, mem_planes = 0;
-    AVVkFrame *f = (AVVkFrame *)src->data[0];
-    AVVulkanDeviceContext *hwctx = hwfc->device_ctx->hwctx;
-    AVVulkanFramesContext *hwfctx = hwfc->hwctx;
-    const int planes = av_pix_fmt_count_planes(hwfc->sw_format);
-    VulkanDevicePriv *p = hwfc->device_ctx->internal->priv;
-    FFVulkanFunctions *vk = &p->vkfn;
-
-    VulkanMapping *map = av_mallocz(sizeof(VulkanMapping));
-    if (!map)
-        return AVERROR(EINVAL);
-
-    if (src->format != AV_PIX_FMT_VULKAN) {
-        av_log(hwfc, AV_LOG_ERROR, "Cannot map from pixel format %s!\n",
-               av_get_pix_fmt_name(src->format));
-        err = AVERROR(EINVAL);
-        goto fail;
-    }
-
-    if (!(f->flags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) ||
-        !(hwfctx->tiling == VK_IMAGE_TILING_LINEAR)) {
-        av_log(hwfc, AV_LOG_ERROR, "Unable to map frame, not host visible "
-               "and linear!\n");
-        err = AVERROR(EINVAL);
-        goto fail;
-    }
-
-    dst->width  = src->width;
-    dst->height = src->height;
-
-    for (int i = 0; i < AV_NUM_DATA_POINTERS; i++)
-        nb_mem += !!f->mem[i];
-
-    for (int i = 0; i < nb_mem; i++) {
-        ret = vk->MapMemory(hwctx->act_dev, f->mem[i], 0,
-                            VK_WHOLE_SIZE, 0, (void **)&dst->data[i]);
-        if (ret != VK_SUCCESS) {
-            av_log(hwfc, AV_LOG_ERROR, "Failed to map %ith frame memory: %s\n",
-                   i, vk_ret2str(ret));
-            err = AVERROR_EXTERNAL;
-            goto fail;
-        }
-        mapped_mem_count++;
-    }
-
-    for (int i = 0; i < planes; i++)
-        dst->data[i] = dst->data[i] + f->offset[i];
-
-    /* Check if the memory contents matter */
-    if (((flags & AV_HWFRAME_MAP_READ) || !(flags & AV_HWFRAME_MAP_OVERWRITE)) &&
-        !(f->flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
-        VkMappedMemoryRange map_mem_ranges[AV_NUM_DATA_POINTERS] = { { 0 } };
-        for (int i = 0; i < nb_mem; i++) {
-            map_mem_ranges[i].sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-            map_mem_ranges[i].size = VK_WHOLE_SIZE;
-            map_mem_ranges[i].memory = f->mem[i];
-        }
-
-        ret = vk->InvalidateMappedMemoryRanges(hwctx->act_dev, nb_mem,
-                                               map_mem_ranges);
-        if (ret != VK_SUCCESS) {
-            av_log(hwfc, AV_LOG_ERROR, "Failed to invalidate memory: %s\n",
-                   vk_ret2str(ret));
-            err = AVERROR_EXTERNAL;
-            goto fail;
-        }
-    }
-
-    for (int i = 0; i < planes; i++) {
-        VkImageSubresource sub = {
-            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-        };
-        VkSubresourceLayout layout;
-        vk->GetImageSubresourceLayout(hwctx->act_dev, f->img[i], &sub, &layout);
-        dst->linesize[i] = layout.rowPitch;
-    }
-
-    map->frame = f;
-    map->flags = flags;
-
-    err = ff_hwframe_map_create(src->hw_frames_ctx, dst, src,
-                                &vulkan_unmap_frame, map);
-    if (err < 0)
-        goto fail;
-
-    return 0;
-
-fail:
-    for (int i = 0; i < mapped_mem_count; i++)
-        vk->UnmapMemory(hwctx->act_dev, f->mem[i]);
-
-    av_free(map);
-    return err;
-}
-
 #if CONFIG_LIBDRM
 static void vulkan_unmap_from_drm(AVHWFramesContext *hwfc, HWMapDescriptor *hwmap)
 {
@@ -3692,8 +3554,9 @@ static int vulkan_map_from(AVHWFramesContext *hwfc, AVFrame *dst,
 #endif
 #endif
     default:
-        return vulkan_map_frame_to_mem(hwfc, dst, src, flags);
+        break;
     }
+    return AVERROR(ENOSYS);
 }
 
 typedef struct ImageBuffer {
@@ -4099,23 +3962,6 @@ static int vulkan_transfer_data(AVHWFramesContext *hwfc, const AVFrame *vkf,
 
     if (swf->width > hwfc->width || swf->height > hwfc->height)
         return AVERROR(EINVAL);
-
-    /* For linear, host visiable images */
-    if (fc->tiling == VK_IMAGE_TILING_LINEAR &&
-        f->flags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) {
-        AVFrame *map = av_frame_alloc();
-        if (!map)
-            return AVERROR(ENOMEM);
-        map->format = swf->format;
-
-        err = vulkan_map_frame_to_mem(hwfc, map, vkf, AV_HWFRAME_MAP_WRITE);
-        if (err)
-            return err;
-
-        err = av_frame_copy((AVFrame *)(from ? swf : map), from ? map : swf);
-        av_frame_free(&map);
-        return err;
-    }
 
     /* Create buffers */
     for (int i = 0; i < planes; i++) {
