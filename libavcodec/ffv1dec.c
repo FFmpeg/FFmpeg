@@ -477,6 +477,11 @@ static int read_extra_header(FFV1Context *f)
         return AVERROR_INVALIDDATA;
     }
 
+    if (f->num_h_slices > MAX_SLICES / f->num_v_slices) {
+        av_log(f->avctx, AV_LOG_ERROR, "slice count unsupported\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
     f->quant_table_count = get_symbol(c, state, 0);
     if (f->quant_table_count > (unsigned)MAX_QUANT_TABLES || !f->quant_table_count) {
         av_log(f->avctx, AV_LOG_ERROR, "quant table count %d is invalid\n", f->quant_table_count);
