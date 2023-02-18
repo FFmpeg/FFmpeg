@@ -464,7 +464,16 @@ static int ff_eac3_parse_header(AC3DecodeContext *s)
     if (get_bits1(gbc)) {
         int addbsil = get_bits(gbc, 6);
         for (i = 0; i < addbsil + 1; i++) {
-            skip_bits(gbc, 8); // skip additional bit stream info
+            if (i == 0) {
+                /* In this 8 bit chunk, the LSB is equal to flag_ec3_extension_type_a
+                   which can be used to detect Atmos presence */
+                skip_bits(gbc, 7);
+                if (get_bits1(gbc)) {
+                    s->eac3_extension_type_a = 1;
+                }
+            } else {
+                skip_bits(gbc, 8); // skip additional bit stream info
+            }
         }
     }
 

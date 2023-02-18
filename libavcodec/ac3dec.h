@@ -102,6 +102,7 @@ typedef struct AC3DecodeContext {
     int eac3;                               ///< indicates if current frame is E-AC-3
     int eac3_frame_dependent_found;         ///< bitstream has E-AC-3 dependent frame(s)
     int eac3_subsbtreamid_found;            ///< bitstream has E-AC-3 additional substream(s)
+    int eac3_extension_type_a;              ///< bitstream has E-AC-3 extension type A enabled frame(s)
     int dolby_surround_mode;                ///< dolby surround mode                    (dsurmod)
     int dolby_surround_ex_mode;             ///< dolby surround ex mode                 (dsurexmod)
     int dolby_headphone_mode;               ///< dolby headphone mode                   (dheadphonmod)
