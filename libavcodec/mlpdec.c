@@ -42,6 +42,7 @@
 #include "mlpdsp.h"
 #include "mlp.h"
 #include "config.h"
+#include "profiles.h"
 
 /** number of bits used for VLC lookup - longest Huffman code is 9 */
 #if ARCH_ARM
@@ -391,6 +392,14 @@ static int read_major_sync(MLPDecodeContext *m, GetBitContext *gb)
 
     m->num_substreams        = mh.num_substreams;
     m->substream_info        = mh.substream_info;
+
+    /*  If there is a 4th substream and the MSB of substream_info is set,
+     *  there is a 16-channel spatial presentation (Atmos in TrueHD).
+     */
+    if (m->avctx->codec_id == AV_CODEC_ID_TRUEHD
+            && m->num_substreams == 4 && m->substream_info >> 7 == 1) {
+        m->avctx->profile     = FF_PROFILE_TRUEHD_ATMOS;
+    }
 
     /* limit to decoding 3 substreams, as the 4th is used by Dolby Atmos for non-audio data */
     m->max_decoded_substream = FFMIN(m->num_substreams - 1, 2);
@@ -1452,5 +1461,6 @@ const FFCodec ff_truehd_decoder = {
     FF_CODEC_DECODE_CB(read_access_unit),
     .flush          = mlp_decode_flush,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
+    .p.profiles     = NULL_IF_CONFIG_SMALL(ff_truehd_profiles),
 };
 #endif /* CONFIG_TRUEHD_DECODER */

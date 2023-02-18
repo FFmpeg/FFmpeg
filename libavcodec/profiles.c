@@ -50,6 +50,11 @@ const AVProfile ff_eac3_profiles[] = {
   { FF_PROFILE_UNKNOWN },
 };
 
+const AVProfile ff_truehd_profiles[] = {
+  { FF_PROFILE_TRUEHD_ATMOS,   "Dolby TrueHD + Dolby Atmos"},
+  { FF_PROFILE_UNKNOWN },
+};
+
 const AVProfile ff_dnxhd_profiles[] = {
   { FF_PROFILE_DNXHD,      "DNXHD"},
   { FF_PROFILE_DNXHR_LB,   "DNXHR LB"},

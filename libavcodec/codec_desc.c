@@ -2960,6 +2960,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "truehd",
         .long_name = NULL_IF_CONFIG_SMALL("TrueHD"),
         .props     = AV_CODEC_PROP_LOSSLESS,
+        .profiles  = NULL_IF_CONFIG_SMALL(ff_truehd_profiles),
     },
     {
         .id        = AV_CODEC_ID_MP4ALS,

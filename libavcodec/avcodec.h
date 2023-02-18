@@ -1593,6 +1593,8 @@ typedef struct AVCodecContext {
 
 #define FF_PROFILE_EAC3_DDP_ATMOS         30
 
+#define FF_PROFILE_TRUEHD_ATMOS           30
+
 #define FF_PROFILE_MPEG2_422    0
 #define FF_PROFILE_MPEG2_HIGH   1
 #define FF_PROFILE_MPEG2_SS     2
