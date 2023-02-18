@@ -1584,12 +1584,15 @@ typedef struct AVCodecContext {
 #define FF_PROFILE_DNXHR_HQX     4
 #define FF_PROFILE_DNXHR_444     5
 
-#define FF_PROFILE_DTS         20
-#define FF_PROFILE_DTS_ES      30
-#define FF_PROFILE_DTS_96_24   40
-#define FF_PROFILE_DTS_HD_HRA  50
-#define FF_PROFILE_DTS_HD_MA   60
-#define FF_PROFILE_DTS_EXPRESS 70
+#define FF_PROFILE_DTS                20
+#define FF_PROFILE_DTS_ES             30
+#define FF_PROFILE_DTS_96_24          40
+#define FF_PROFILE_DTS_HD_HRA         50
+#define FF_PROFILE_DTS_HD_MA          60
+#define FF_PROFILE_DTS_EXPRESS        70
+#define FF_PROFILE_DTS_HD_MA_X        61
+#define FF_PROFILE_DTS_HD_MA_X_IMAX   62
+
 
 #define FF_PROFILE_EAC3_DDP_ATMOS         30
 

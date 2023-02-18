@@ -135,6 +135,9 @@ typedef struct DCAXllDecoder {
 
     DCADSPContext   *dcadsp;
 
+    int    x_syncword_present;        ///< Syncword for extension data at end of frame (DTS:X) is present
+    int    x_imax_syncword_present;   ///< Syncword for extension data at end of frame (DTS:X IMAX) is present
+
     int     output_mask;
     int32_t *output_samples[DCA_SPEAKER_COUNT];
 } DCAXllDecoder;

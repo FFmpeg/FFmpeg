@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "avcodec.h"
 #include "libavutil/channel_layout.h"
 #include "dcadec.h"
 #include "dcadata.h"
@@ -1054,6 +1055,22 @@ static int parse_frame(DCAXllDecoder *s, const uint8_t *data, int size, DCAExssA
         return ret;
     if ((ret = parse_band_data(s)) < 0)
         return ret;
+
+     if (s->frame_size * 8 > FFALIGN(get_bits_count(&s->gb), 32)) {
+        unsigned int extradata_syncword;
+
+        // Align to dword
+        skip_bits_long(&s->gb, -get_bits_count(&s->gb) & 31);
+
+        extradata_syncword = show_bits_long(&s->gb, 32);
+
+        if (extradata_syncword == DCA_SYNCWORD_XLL_X) {
+            s->x_syncword_present = 1;
+        } else if ((extradata_syncword >> 1) == (DCA_SYNCWORD_XLL_X_IMAX >> 1)) {
+            s->x_imax_syncword_present = 1;
+        }
+    }
+
     if (ff_dca_seek_bits(&s->gb, s->frame_size * 8)) {
         av_log(s->avctx, AV_LOG_ERROR, "Read past end of XLL frame\n");
         return AVERROR_INVALIDDATA;
@@ -1428,8 +1445,15 @@ int ff_dca_xll_filter_frame(DCAXllDecoder *s, AVFrame *frame)
         return AVERROR(EINVAL);
     }
 
+    if (s->x_imax_syncword_present) {
+        avctx->profile = FF_PROFILE_DTS_HD_MA_X_IMAX;
+    } else if (s->x_syncword_present) {
+        avctx->profile = FF_PROFILE_DTS_HD_MA_X;
+    } else {
+        avctx->profile = FF_PROFILE_DTS_HD_MA;
+    }
+
     avctx->bits_per_raw_sample = p->storage_bit_res;
-    avctx->profile = FF_PROFILE_DTS_HD_MA;
     avctx->bit_rate = 0;
 
     frame->nb_samples = nsamples = s->nframesamples << (s->nfreqbands - 1);
