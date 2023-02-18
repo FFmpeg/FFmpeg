@@ -192,6 +192,8 @@ static int decode_1dif(AVCodecContext *avctx,
         if (block_type < 4 && block_type >= 0) {
             k = 1 + (avctx->sample_fmt == AV_SAMPLE_FMT_S16P);
             k = get_urice(gb, k) + 1;
+            if (k > 32)
+                return AVERROR_INVALIDDATA;
         }
 
         switch (block_type) {
@@ -282,6 +284,8 @@ static int decode_2slp(AVCodecContext *avctx,
         if (block_type < 5 && block_type >= 0) {
             k = 1 + (avctx->sample_fmt == AV_SAMPLE_FMT_S16P);
             k = get_urice(gb, k) + 1;
+            if (k > 32)
+                return AVERROR_INVALIDDATA;
         }
 
         switch (block_type) {
