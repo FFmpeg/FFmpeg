@@ -2,19 +2,19 @@ The last version increases of all libraries were on 2023-02-09
 
 API changes, most recent first:
 
-2023-02-16 - xxxxxxxxxx - lavf 60.2.100 - avformat.h
+2023-02-16 - 927042b409 - lavf 60.2.100 - avformat.h
   Deprecate AVFormatContext io_close callback.
   The superior io_close2 callback should be used instead.
 
-2023-02-13 - xxxxxxxxxx - lavu 58.1.100 - frame.h
+2023-02-13 - 2296078397 - lavu 58.1.100 - frame.h
   Deprecate AVFrame.coded_picture_number and display_picture_number.
   Their usefulness is questionable and very few decoders set them.
 
-2023-02-13 - xxxxxxxxxx - lavc 60.2.100 - avcodec.h
+2023-02-13 - 6b6f7db819 - lavc 60.2.100 - avcodec.h
   Add AVCodecContext.frame_num as a 64bit version of frame_number.
   Deprecate AVCodecContext.frame_number.
 
-2023-02-12 - xxxxxxxxxx - lavfi 9.1.100 - avfilter.h
+2023-02-12 - d1b9a3ddb4 - lavfi 9.1.100 - avfilter.h
   Add filtergraph segment parsing API.
   New structs:
     - AVFilterGraphSegment
@@ -29,47 +29,47 @@ API changes, most recent first:
     - avfilter_graph_segment_link()
     - avfilter_graph_segment_apply()
 
-2023-02-xx - xxxxxxxxxx - lavu 58.0.100 - csp.h
+2023-02-09 - 719a93f4e4 - lavu 58.0.100 - csp.h
   Add av_csp_approximate_trc_gamma() and av_csp_trc_func_from_id().
   Add av_csp_trc_function.
 
-2023-02-xx - xxxxxxxxxx - lavc 60.0.100 - avcodec.h
+2023-02-09 - 868a31b42d - lavc 60.0.100 - avcodec.h
   avcodec_decode_subtitle2() now accepts const AVPacket*.
 
-2023-0x-xx - xxxxxxxxxx - lavc 59.63.100
+2023-02-04 - d02340b9e3 - lavc 59.63.100
   Allow AV_CODEC_FLAG_COPY_OPAQUE to be used with decoders.
 
-2023-01-29 - xxxxxxxxxx - lavc 59.59.100 - avcodec.h
+2023-01-29 - a1a80f2e64 - lavc 59.59.100 - avcodec.h
   Add AV_CODEC_FLAG_COPY_OPAQUE and AV_CODEC_FLAG_FRAME_DURATION.
 
-2023-01-13 - xxxxxxxxxx - lavu 57.44.100 - ambient_viewing_environment.h frame.h
+2023-01-13 - 002d0ec740 - lavu 57.44.100 - ambient_viewing_environment.h frame.h
   Adds a new structure for holding H.274 Ambient Viewing Environment metadata,
   AVAmbientViewingEnvironment.
   Adds a new AVFrameSideDataType entry AV_FRAME_DATA_AMBIENT_VIEWING_ENVIRONMENT
   for it.
 
-2022-12-xx - xxxxxxxxxx - lavc 59.55.100 - avcodec.h
+2022-12-10 - 7a8d78f7e3 - lavc 59.55.100 - avcodec.h
   Add AV_HWACCEL_FLAG_UNSAFE_OUTPUT.
 
-2022-11-xx - xxxxxxxxxx - lavu 57.43.100 - tx.h
+2022-11-24 - e97368eba5 - lavu 57.43.100 - tx.h
   Add AV_TX_FLOAT_DCT, AV_TX_DOUBLE_DCT and AV_TX_INT32_DCT.
 
-2022-xx-xx - xxxxxxxxxx - lavu 57.42.100 - dict.h
+2022-11-06 - 9dad237928 - lavu 57.42.100 - dict.h
   Add av_dict_iterate().
 
-2022-11-03 - xxxxxxxxxx - lavu 57.41.100 - channel_layout.h
+2022-11-03 - 6228ba141d - lavu 57.41.100 - channel_layout.h
   Add AV_CH_LAYOUT_7POINT1_TOP_BACK and AV_CHANNEL_LAYOUT_7POINT1_TOP_BACK.
 
-2022-10-30 - xxxxxxxxxx - lavu 57.40.100 - channel_layout.h
+2022-10-30 - 83e918de71 - lavu 57.40.100 - channel_layout.h
   Add AV_CH_LAYOUT_CUBE and AV_CHANNEL_LAYOUT_CUBE.
 
-2022-10-11 - xxxxxxxxxx - lavu 57.39.101 - pixfmt.h
+2022-10-11 - 479747645f - lavu 57.39.101 - pixfmt.h
   Add AV_PIX_FMT_RGBF32 and AV_PIX_FMT_RGBAF32.
 
 2022-10-05 - 37d5ddc317 - lavu 57.39.100 - cpu.h
   Add AV_CPU_FLAG_RVB_BASIC.
 
-2022-10-03 - xxxxxxxxxx - lavf 59.34.100 - avio.h
+2022-10-03 - d09776d486 - lavf 59.34.100 - avio.h
   Make AVIODirContext an opaque type in a future major version bump.
 
 2022-09-27 - 0c0a3deb18 - lavu 57.38.100 - cpu.h
@@ -77,7 +77,7 @@ API changes, most recent first:
   AV_CPU_FLAG_RVV_I32, AV_CPU_FLAG_RVV_F32, AV_CPU_FLAG_RVV_I64,
   AV_CPU_FLAG_RVV_F64
 
-2022-09-26 - xxxxxxxxxx - lavc 59.48.100 - avcodec.h
+2022-09-26 - a02a0e8db4 - lavc 59.48.100 - avcodec.h
   Deprecate avcodec_enum_to_chroma_pos() and avcodec_chroma_pos_to_enum().
   Use av_chroma_location_enum_to_pos() or av_chroma_location_pos_to_enum()
   instead.
@@ -87,19 +87,19 @@ API changes, most recent first:
   Add AV_PIX_FMT_RGBF32BE, AV_PIX_FMT_RGBF32LE, AV_PIX_FMT_RGBAF32BE,
   AV_PIX_FMT_RGBAF32LE.
 
-2022-09-26 - xxxxxxxxxx - lavc 59.47.100 - avcodec.h defs.h
+2022-09-26 - cf856d8957 - lavc 59.47.100 - avcodec.h defs.h
   Move the AV_EF_* and FF_COMPLIANCE_* defines from avcodec.h to defs.h.
 
-2022-09-03 - xxxxxxxxxx - lavu 57.36.100 - pixfmt.h
+2022-09-03 - d75c4693fe - lavu 57.36.100 - pixfmt.h
   Add AV_PIX_FMT_P012, AV_PIX_FMT_Y212, AV_PIX_FMT_XV30, AV_PIX_FMT_XV36
 
-2022-09-03 - xxxxxxxxxx - lavu 57.35.100 - file.h
+2022-09-03 - dea9744560 - lavu 57.35.100 - file.h
   Deprecate av_tempfile() without replacement.
 
-2022-08-03 - xxxxxxxxxx - lavu 57.34.100 - pixfmt.h
+2022-08-03 - cc5a5c9860 - lavu 57.34.100 - pixfmt.h
   Add AV_PIX_FMT_VUYX.
 
-2022-08-xx - xxxxxxxxxx - lavf 59 - avformat.h
+2022-08-22 - 14726571dd - lavf 59 - avformat.h
   Deprecate av_stream_get_end_pts() without replacement.
 
 2022-08-19 - 352799dca8 - lavc 59.42.102 - codec_id.h
@@ -109,28 +109,28 @@ API changes, most recent first:
 2022-08-07 - e95b08a7dd - lavu 57.33.101 - pixfmt.h
   Add AV_PIX_FMT_RGBAF16{BE,LE} pixel formats.
 
-2022-08-xx - xxxxxxxxxx - lavu 57.33.100 - hwcontext_qsv.h
+2022-08-12 - e0bbdbe0a6 - lavu 57.33.100 - hwcontext_qsv.h
   Add loader field to AVQSVDeviceContext
 
-2022-08-03 - xxxxxxxxxx - lavu 57.32.100 - pixfmt.h
+2022-08-03 - 6ab8a9d375 - lavu 57.32.100 - pixfmt.h
   Add AV_PIX_FMT_VUYA.
 
-2022-08-xx - xxxxxxxxxx - lavc 59.41.100 - avcodec.h codec.h
+2022-08-02 - e3838b856f - lavc 59.41.100 - avcodec.h codec.h
   Add AV_CODEC_FLAG_RECON_FRAME and AV_CODEC_CAP_ENCODER_RECON_FRAME.
   avcodec_receive_frame() may now be used on encoders when
   AV_CODEC_FLAG_RECON_FRAME is active.
 
-2022-08-xx - xxxxxxxxxx - lavu 57.31.100 - frame.h
+2022-08-02 - eede1d2927 - lavu 57.31.100 - frame.h
   av_frame_make_writable() may now be called on non-refcounted
   frames and will make a refcounted copy out of them.
   Previously an error was returned in such cases.
 
-2022-07-xx - xxxxxxxxx - lavc 59.40.100 - avcodec.h
+2022-07-30 - e1a0f2df3d - lavc 59.40.100 - avcodec.h
   Add the AV_CODEC_FLAG2_ICC_PROFILES flag to AVCodecContext, to enable
   automatic reading and writing of embedded ICC profiles in image files.
   The "flags2" option now supports the corresponding flag "icc_profiles".
 
-2022-07-xx - xxxxxxxxxx - lavu 57.30.100 - frame.h
+2022-07-19 - 4397f9a5a0 - lavu 57.30.100 - frame.h
   Add AVFrame.duration, deprecate AVFrame.pkt_duration.
 
 -------- 8< --------- FFmpeg 5.1 was cut here -------- 8< ---------
