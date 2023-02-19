@@ -1,6 +1,8 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version <next>:
+
 version 6.0:
 - Radiance HDR image support
 - ddagrab (Desktop Duplication) video capture filter
