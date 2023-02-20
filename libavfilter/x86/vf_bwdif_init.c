@@ -42,11 +42,9 @@ void ff_bwdif_filter_line_12bit_ssse3(void *dst, void *prev, void *cur, void *ne
                                       int mrefs2, int prefs3, int mrefs3, int prefs4,
                                       int mrefs4, int parity, int clip_max);
 
-av_cold void ff_bwdif_init_x86(BWDIFContext *bwdif)
+av_cold void ff_bwdif_init_x86(BWDIFContext *bwdif, int bit_depth)
 {
-    YADIFContext *yadif = &bwdif->yadif;
     int cpu_flags = av_get_cpu_flags();
-    int bit_depth = (!yadif->csp) ? 8 : yadif->csp->comp[0].depth;
 
     if (bit_depth <= 8) {
         if (EXTERNAL_SSE2(cpu_flags))
