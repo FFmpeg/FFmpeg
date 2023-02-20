@@ -724,7 +724,7 @@ static int decode_filter(RKAContext *s, ChContext *ctx, ACoder *ac, int off, uns
             src = &ctx->buf1[off + -1];
             for (int i = 0; i < filt.size && i < 15; i++)
                 sum += filt.coeffs[i] * (unsigned)src[-i];
-            sum = sum * 2;
+            sum = sum * 2U;
             for (int i = 15; i < filt.size; i++)
                 sum += filt.coeffs[i] * (unsigned)src[-i];
             sum = sum >> 6;
