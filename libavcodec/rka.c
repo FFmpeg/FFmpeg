@@ -723,16 +723,16 @@ static int decode_filter(RKAContext *s, ChContext *ctx, ACoder *ac, int off, uns
             last_val = val;
             src = &ctx->buf1[off + -1];
             for (int i = 0; i < filt.size && i < 15; i++)
-                sum += filt.coeffs[i] * src[-i];
+                sum += filt.coeffs[i] * (unsigned)src[-i];
             sum = sum * 2;
             for (int i = 15; i < filt.size; i++)
-                sum += filt.coeffs[i] * src[-i];
+                sum += filt.coeffs[i] * (unsigned)src[-i];
             sum = sum >> 6;
             if (ctx->cmode == 0) {
                 if (bits == 0) {
                     ctx->buf1[off] = sum + val;
                 } else {
-                    ctx->buf1[off] = (val + (sum >> bits) << bits) +
+                    ctx->buf1[off] = (val + (sum >> bits)) * (1 << bits) +
                         (((1U << bits) - 1U) & ctx->buf1[off + -1]);
                 }
                 ctx->buf0[off] = ctx->buf1[off] + ctx->buf0[off + -1];
