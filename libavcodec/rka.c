@@ -691,7 +691,7 @@ static int decode_filter(RKAContext *s, ChContext *ctx, ACoder *ac, int off, uns
     else
         split = size >> 4;
 
-    if (size <= 0)
+    if (size <= 1)
         return 0;
 
     for (int x = 0; x < size;) {
