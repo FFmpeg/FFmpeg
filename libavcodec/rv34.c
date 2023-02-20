@@ -1549,8 +1549,7 @@ int ff_rv34_decode_update_thread_context(AVCodecContext *dst, const AVCodecConte
 static int get_slice_offset(AVCodecContext *avctx, const uint8_t *buf, int n, int slice_count, int buf_size)
 {
     if (n < slice_count) {
-        if(avctx->slice_count) return avctx->slice_offset[n];
-        else                   return AV_RL32(buf + n*8 - 4) == 1 ? AV_RL32(buf + n*8) :  AV_RB32(buf + n*8);
+        return AV_RL32(buf + n*8 - 4) == 1 ? AV_RL32(buf + n*8) :  AV_RB32(buf + n*8);
     } else
         return buf_size;
 }
@@ -1623,13 +1622,10 @@ int ff_rv34_decode_frame(AVCodecContext *avctx, AVFrame *pict,
         return 0;
     }
 
-    if(!avctx->slice_count){
-        slice_count = (*buf++) + 1;
-        slices_hdr = buf + 4;
-        buf += 8 * slice_count;
-        buf_size -= 1 + 8 * slice_count;
-    }else
-        slice_count = avctx->slice_count;
+    slice_count = (*buf++) + 1;
+    slices_hdr = buf + 4;
+    buf += 8 * slice_count;
+    buf_size -= 1 + 8 * slice_count;
 
     offset = get_slice_offset(avctx, slices_hdr, 0, slice_count, buf_size);
     //parse first slice header to check whether this frame can be decoded
