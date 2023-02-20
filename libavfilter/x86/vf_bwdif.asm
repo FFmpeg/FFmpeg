@@ -26,18 +26,22 @@
 
 %include "libavutil/x86/x86util.asm"
 
-SECTION_RODATA
+SECTION_RODATA 32
 
-pw_coefhf:  times 4 dw  1016, 5570
-pw_coefhf1: times 8 dw -3801
-pw_coefsp:  times 4 dw  5077, -981
-pw_splfdif: times 4 dw  -768,  768
+pw_coefhf:  times 8 dw  1016, 5570
+pw_coefhf1: times 16 dw -3801
+pw_coefsp:  times 8 dw  5077, -981
+pw_splfdif: times 8 dw  -768,  768
 
 SECTION .text
 
 %macro LOAD8 2
+    %if mmsize == 32
+        pmovzxbw %1, %2
+    %else
     movh         %1, %2
     punpcklbw    %1, m7
+    %endif
 %endmacro
 
 %macro LOAD12 2
@@ -45,8 +49,14 @@ SECTION .text
 %endmacro
 
 %macro DISP8 0
+    %if mmsize == 32
+        vextracti128  xm1,    m2, 1
+        packuswb      xm2,   xm1
+        movu         [dstq], xm2
+    %else
     packuswb     m2, m2
     movh     [dstq], m2
+    %endif
 %endmacro
 
 %macro DISP12 0
@@ -244,8 +254,12 @@ cglobal bwdif_filter_line_12bit, 4, 9, 13, 0, dst, prev, cur, next, w, \
                                               prefs, mrefs, prefs2, mrefs2, \
                                               prefs3, mrefs3, prefs4, \
                                               mrefs4, parity, clip_max
+    %if mmsize == 32
+        vpbroadcastw m12, WORD clip_maxm
+    %else
     movd        m12, DWORD clip_maxm
     SPLATW      m12, m12, 0
+    %endif
 %else
 cglobal bwdif_filter_line_12bit, 4, 6, 8, 80, dst, prev, cur, next, w, \
                                               prefs, mrefs, prefs2, mrefs2, \
@@ -264,3 +278,8 @@ INIT_XMM ssse3
 BWDIF
 INIT_XMM sse2
 BWDIF
+
+%if HAVE_AVX2_EXTERNAL && ARCH_X86_64
+INIT_YMM avx2
+BWDIF
+%endif
