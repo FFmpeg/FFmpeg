@@ -90,7 +90,6 @@ typedef struct AC3DecodeContext {
     int lfe_on;                             ///< lfe channel in use
     int dialog_normalization[2];            ///< dialog level in dBFS                   (dialnorm)
     int compression_exists[2];              ///< compression field is valid for frame   (compre)
-    int compression_gain[2];                ///< gain to apply for heavy compression    (compr)
     int channel_map;                        ///< custom channel map                     (chanmap)
     int preferred_downmix;                  ///< Preferred 2-channel downmix mode       (dmixmod)
     int center_mix_level;                   ///< Center mix level index
@@ -100,7 +99,6 @@ typedef struct AC3DecodeContext {
     int lfe_mix_level_exists;               ///< indicates if lfemixlevcod is specified (lfemixlevcode)
     int lfe_mix_level;                      ///< LFE mix level index                    (lfemixlevcod)
     int eac3;                               ///< indicates if current frame is E-AC-3
-    int eac3_frame_dependent_found;         ///< bitstream has E-AC-3 dependent frame(s)
     int eac3_subsbtreamid_found;            ///< bitstream has E-AC-3 additional substream(s)
     int eac3_extension_type_a;              ///< bitstream has E-AC-3 extension type A enabled frame(s)
     int dolby_surround_mode;                ///< dolby surround mode                    (dsurmod)
