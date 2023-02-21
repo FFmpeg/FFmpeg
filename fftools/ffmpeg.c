@@ -1072,6 +1072,8 @@ static void do_subtitle_out(OutputFile *of,
     /* XXX: signal it in the codec context ? */
     if (enc->codec_id == AV_CODEC_ID_DVB_SUBTITLE)
         nb = 2;
+    else if (enc->codec_id == AV_CODEC_ID_ASS)
+        nb = FFMAX(sub->num_rects, 1);
     else
         nb = 1;
 
@@ -1080,7 +1082,7 @@ static void do_subtitle_out(OutputFile *of,
     if (output_files[ost->file_index]->start_time != AV_NOPTS_VALUE)
         pts -= output_files[ost->file_index]->start_time;
     for (i = 0; i < nb; i++) {
-        unsigned save_num_rects = sub->num_rects;
+        AVSubtitle local_sub = *sub;
 
         if (!check_recording_time(ost, pts, AV_TIME_BASE_Q))
             return;
@@ -1089,19 +1091,22 @@ static void do_subtitle_out(OutputFile *of,
         if (ret < 0)
             report_and_exit(AVERROR(ENOMEM));
 
-        sub->pts = pts;
+        local_sub.pts = pts;
         // start_display_time is required to be 0
-        sub->pts               += av_rescale_q(sub->start_display_time, (AVRational){ 1, 1000 }, AV_TIME_BASE_Q);
-        sub->end_display_time  -= sub->start_display_time;
-        sub->start_display_time = 0;
-        if (i == 1)
-            sub->num_rects = 0;
+        local_sub.pts               += av_rescale_q(sub->start_display_time, (AVRational){ 1, 1000 }, AV_TIME_BASE_Q);
+        local_sub.end_display_time  -= sub->start_display_time;
+        local_sub.start_display_time = 0;
+
+        if (enc->codec_id == AV_CODEC_ID_DVB_SUBTITLE && i == 1)
+            local_sub.num_rects = 0;
+        else if (enc->codec_id == AV_CODEC_ID_ASS && sub->num_rects > 0) {
+            local_sub.num_rects = 1;
+            local_sub.rects += i;
+        }
 
         ost->frames_encoded++;
 
-        subtitle_out_size = avcodec_encode_subtitle(enc, pkt->data, pkt->size, sub);
-        if (i == 1)
-            sub->num_rects = save_num_rects;
+        subtitle_out_size = avcodec_encode_subtitle(enc, pkt->data, pkt->size, &local_sub);
         if (subtitle_out_size < 0) {
             av_log(ost, AV_LOG_FATAL, "Subtitle encoding failed\n");
             exit_program(1);
