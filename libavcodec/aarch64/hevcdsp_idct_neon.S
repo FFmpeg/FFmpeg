@@ -25,6 +25,7 @@
  */
 
 #include "libavutil/aarch64/asm.S"
+#include "neon.S"
 
 const trans, align=4
         .short          64, 83, 64, 36
@@ -279,20 +280,9 @@ endfunc
          sub            \out3, v28.4s, v30.4s
 .endm
 
-.macro transpose8_4x4 r0, r1, r2, r3
-        trn1            v2.8h, \r0\().8h, \r1\().8h
-        trn2            v3.8h, \r0\().8h, \r1\().8h
-        trn1            v4.8h, \r2\().8h, \r3\().8h
-        trn2            v5.8h, \r2\().8h, \r3\().8h
-        trn1            \r0\().4s, v2.4s, v4.4s
-        trn2            \r2\().4s, v2.4s, v4.4s
-        trn1            \r1\().4s, v3.4s, v5.4s
-        trn2            \r3\().4s, v3.4s, v5.4s
-.endm
-
 .macro transpose_8x8 r0, r1, r2, r3, r4, r5, r6, r7
-        transpose8_4x4  \r0, \r1, \r2, \r3
-        transpose8_4x4  \r4, \r5, \r6, \r7
+        transpose_4x8H  \r0, \r1, \r2, \r3, v2, v3, v4, v5
+        transpose_4x8H  \r4, \r5, \r6, \r7, v2, v3, v4, v5
 .endm
 
 .macro tr_8x4 shift, in0,in0t, in1,in1t, in2,in2t, in3,in3t, in4,in4t, in5,in5t, in6,in6t, in7,in7t, p1, p2
