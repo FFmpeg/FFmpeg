@@ -626,6 +626,10 @@ static int FUNC(tile_info)(CodedBitstreamContext *ctx, RWContext *rw,
 
         tile_width_sb = (sb_cols + (1 << current->tile_cols_log2) - 1) >>
             current->tile_cols_log2;
+
+        for (int off = 0, i = 0; off < sb_cols; off += tile_width_sb)
+            current->tile_start_col_sb[i++] = off;
+
         current->tile_cols = (sb_cols + tile_width_sb - 1) / tile_width_sb;
 
         min_log2_tile_rows = FFMAX(min_log2_tiles - current->tile_cols_log2, 0);
@@ -634,6 +638,10 @@ static int FUNC(tile_info)(CodedBitstreamContext *ctx, RWContext *rw,
 
         tile_height_sb = (sb_rows + (1 << current->tile_rows_log2) - 1) >>
             current->tile_rows_log2;
+
+        for (int off = 0, i = 0; off < sb_rows; off += tile_height_sb)
+            current->tile_start_row_sb[i++] = off;
+
         current->tile_rows = (sb_rows + tile_height_sb - 1) / tile_height_sb;
 
         for (i = 0; i < current->tile_cols - 1; i++)
@@ -652,6 +660,7 @@ static int FUNC(tile_info)(CodedBitstreamContext *ctx, RWContext *rw,
 
         start_sb = 0;
         for (i = 0; start_sb < sb_cols && i < AV1_MAX_TILE_COLS; i++) {
+            current->tile_start_col_sb[i] = start_sb;
             max_width = FFMIN(sb_cols - start_sb, max_tile_width_sb);
             ns(max_width, width_in_sbs_minus_1[i], 1, i);
             size_sb = current->width_in_sbs_minus_1[i] + 1;
@@ -669,6 +678,7 @@ static int FUNC(tile_info)(CodedBitstreamContext *ctx, RWContext *rw,
 
         start_sb = 0;
         for (i = 0; start_sb < sb_rows && i < AV1_MAX_TILE_ROWS; i++) {
+            current->tile_start_row_sb[i] = start_sb;
             max_height = FFMIN(sb_rows - start_sb, max_tile_height_sb);
             ns(max_height, height_in_sbs_minus_1[i], 1, i);
             size_sb = current->height_in_sbs_minus_1[i] + 1;
