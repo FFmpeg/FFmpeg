@@ -759,6 +759,8 @@ extern const FFCodec ff_pcm_mulaw_at_decoder;
 extern const FFCodec ff_qdmc_at_decoder;
 extern const FFCodec ff_qdm2_at_decoder;
 extern FFCodec ff_libaom_av1_encoder;
+/* preferred over libaribb24 */
+extern const FFCodec ff_libaribcaption_decoder;
 extern const FFCodec ff_libaribb24_decoder;
 extern const FFCodec ff_libcelt_decoder;
 extern const FFCodec ff_libcodec2_encoder;

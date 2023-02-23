@@ -353,6 +353,156 @@ Enabled by default.
 
 @end table
 
+@section libaribcaption
+
+Yet another ARIB STD-B24 caption decoder using external @dfn{libaribcaption}
+library.
+
+Implements profiles A and C of the Japanse ARIB STD-B24 standard,
+Brazilian ABNT NBR 15606-1, and Philippines version of ISDB-T.
+
+Requires the presence of the libaribcaption headers and library
+(@url{https://github.com/xqq/libaribcaption}) during configuration.
+You need to explicitly configure the build with @code{--enable-libaribcaption}.
+If both @dfn{libaribb24} and @dfn{libaribcaption} are enabled, @dfn{libaribcaption}
+decoder precedes.
+
+@subsection libaribcaption Decoder Options
+
+@table @option
+
+@item -sub_type @var{subtitle_type}
+Specifies the format of the decoded subtitles.
+
+@table @samp
+@item bitmap
+Graphical image.
+@item ass
+ASS formatted text.
+@item text
+Simple text based output without formatting.
+@end table
+
+The default is @dfn{ass} as same as @dfn{libaribb24} decoder.
+Some present players (e.g., @dfn{mpv}) expect ASS format for ARIB caption.
+
+@item -caption_encoding @var{encoding_scheme}
+Specifies the encoding scheme of input subtitle text.
+
+@table @samp
+@item auto
+Automatically detect text encoding.
+@item jis
+8bit-char JIS encoding defined in ARIB STD B24.
+This encoding used in Japan for ISDB captions.
+@item utf8
+UTF-8 encoding defined in ARIB STD B24.
+This encoding is used in Philippines for ISDB-T captions.
+@item latin
+Latin character encoding defined in ABNT NBR 15606-1.
+This encoding is used in South America for SBTVD / ISDB-Tb captions.
+@end table
+
+The default is @dfn{ass} as same as @dfn{libaribb24} decoder.
+Some present players (e.g., @dfn{mpv}) expect ASS format for ARIB caption.
+
+@item -font @var{font_name[,font_name2,...]}
+Specify comma-separated list of font family names to be used for @dfn{bitmap}
+or @dfn{ass} type subtitle rendering.
+Only first font name is used for @dfn{ass} type subtitle.
+
+If not specified, use internaly defined default font family.
+
+@item -ass_single_rect @var{boolean}
+ARIB STD-B24 specifies that some captions may be displayed at different
+positions at a time (multi-rectangle subtitle).
+Since some players (e.g., old @dfn{mpv}) can't handle multiple ASS rectangles
+in a single AVSubtitle, or multiple ASS rectangles of indeterminate duration
+with the same start timestamp, this option can change the behavior so that
+all the texts are displayed in a single ASS rectangle.
+
+The default is @var{false}.
+
+If your player cannot handle AVSubtitles with multiple ASS rectangles properly,
+set this option to @var{true} or define @env{ASS_SINGLE_RECT=1} to change
+default behavior at compilation.
+
+@item -replace_fullwidth_ascii @var{boolean}
+Specify whether to replace MSZ (Middle Size, half width) fullwidth
+alphanumerics with halfwidth alphanumerics.
+
+The default is @var{true}.
+
+@item -force_outline_text @var{boolean}
+Specify whether always render outline text for all characters regardless of
+the indication by charactor style.
+
+The default is @var{false}.
+
+@item -outline_width @var{number} (0.0 - 3.0)
+Specify width for outline text, in dots (relative).
+
+The default is @var{1.5}.
+
+@item -ignore_background @var{boolean}
+Specify whether to ignore background color rendering.
+
+The default is @var{false}.
+
+@item -ignore_ruby @var{boolean}
+Specify whether to ignore rendering for ruby-like (furigana) characters.
+
+The default is @var{false}.
+
+@item -replace_drcs @var{boolean}
+Specify whether to render replaced DRCS characters as Unicode characters.
+
+The default is @var{true}.
+
+@item -canvas_size @var{image_size}
+Specify the resolution of the canvas to render subtitles to; usually, this
+should be frame size of input video.
+This only applies when @code{-subtitle_type} is set to @var{bitmap}.
+
+The libaribcaption decoder assumes input frame size for bitmap rendering as below:
+@enumerate
+@item
+PROFILE_A : 1440 x 1080 with SAR (PAR) 4:3
+@item
+PROFILE_C : 320 x 180 with SAR (PAR) 1:1
+@end enumerate
+
+If actual frame size of input video does not match above assumption,
+the rendered captions may be distorted.
+To make the captions undistorted, add @code{-canvas_size} option to specify
+actual input video size.
+
+Note that the @code{-canvas_size} option is not required for video with
+different size but same aspect ratio.
+In such cases, the caption will be stretched or shrunk to actual video size
+if @code{-canvas_size} option is not specified.
+If @code{-canvas_size} option is specified with different size,
+the caption will be stretched or shrunk as specified size with calculated SAR.
+
+@end table
+
+@subsection libaribcaption decoder usage examples
+
+Display MPEG-TS file with ARIB subtitle by @code{ffplay} tool:
+@example
+ffplay -sub_type bitmap MPEG.TS
+@end example
+
+Display MPEG-TS file with input frame size 1920x1080 by @code{ffplay} tool:
+@example
+ffplay -sub_type bitmap -canvas_size 1920x1080 MPEG.TS
+@end example
+
+Embed ARIB subtitle in transcoded video:
+@example
+ffmpeg -sub_type bitmap -i src.m2t -filter_complex "[0:v][0:s]overlay" -vcodec h264 dest.mp4
+@end example
+
 @section dvbsub
 
 @subsection Options

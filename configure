@@ -218,6 +218,7 @@ External library support:
   --enable-lcms2           enable ICC profile support via LittleCMS 2 [no]
   --enable-libaom          enable AV1 video encoding/decoding via libaom [no]
   --enable-libaribb24      enable ARIB text and caption decoding via libaribb24 [no]
+  --enable-libaribcaption  enable ARIB text and caption decoding via libaribcaption [no]
   --enable-libass          enable libass subtitles rendering,
                            needed for subtitles and ass filter [no]
   --enable-libbluray       enable BluRay reading using libbluray [no]
@@ -1805,6 +1806,7 @@ EXTERNAL_LIBRARY_LIST="
     ladspa
     lcms2
     libaom
+    libaribcaption
     libass
     libbluray
     libbs2b
@@ -3331,6 +3333,7 @@ libaom_av1_decoder_deps="libaom"
 libaom_av1_encoder_deps="libaom"
 libaom_av1_encoder_select="extract_extradata_bsf"
 libaribb24_decoder_deps="libaribb24"
+libaribcaption_decoder_deps="libaribcaption"
 libcelt_decoder_deps="libcelt"
 libcodec2_decoder_deps="libcodec2"
 libcodec2_encoder_deps="libcodec2"
@@ -6569,6 +6572,7 @@ enabled libaom            && require_pkg_config libaom "aom >= 1.0.0" aom/aom_co
 enabled libaribb24        && { check_pkg_config libaribb24 "aribb24 > 1.0.3" "aribb24/aribb24.h" arib_instance_new ||
                                { enabled gpl && require_pkg_config libaribb24 aribb24 "aribb24/aribb24.h" arib_instance_new; } ||
                                die "ERROR: libaribb24 requires version higher than 1.0.3 or --enable-gpl."; }
+enabled libaribcaption    && require_pkg_config libaribcaption "libaribcaption >= 0.1.0" "aribcaption/aribcaption.h" aribcc_context_alloc
 enabled lv2               && require_pkg_config lv2 lilv-0 "lilv/lilv.h" lilv_world_new
 enabled libiec61883       && require libiec61883 libiec61883/iec61883.h iec61883_cmp_connect -lraw1394 -lavc1394 -lrom1394 -liec61883
 enabled libass            && require_pkg_config libass "libass >= 0.11.0" ass/ass.h ass_library_init
