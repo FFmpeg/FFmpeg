@@ -1319,8 +1319,17 @@ static int vaapi_map_to_drm_esh(AVHWFramesContext *hwfc, AVFrame *dst,
     surface_id = (VASurfaceID)(uintptr_t)src->data[3];
 
     export_flags = VA_EXPORT_SURFACE_SEPARATE_LAYERS;
-    if (flags & AV_HWFRAME_MAP_READ)
+    if (flags & AV_HWFRAME_MAP_READ) {
         export_flags |= VA_EXPORT_SURFACE_READ_ONLY;
+
+        vas = vaSyncSurface(hwctx->display, surface_id);
+        if (vas != VA_STATUS_SUCCESS) {
+            av_log(hwfc, AV_LOG_ERROR, "Failed to sync surface "
+                   "%#x: %d (%s).\n", surface_id, vas, vaErrorStr(vas));
+            return AVERROR(EIO);
+        }
+    }
+
     if (flags & AV_HWFRAME_MAP_WRITE)
         export_flags |= VA_EXPORT_SURFACE_WRITE_ONLY;
 
