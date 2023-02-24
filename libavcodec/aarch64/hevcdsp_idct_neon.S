@@ -246,6 +246,43 @@ function hevc_add_residual_32x32_16_neon, export=0
         ret
 endfunc
 
+.macro tr_4x4 in0, in1, in2, in3, out0, out1, out2, out3, shift
+         sshll          v20.4s, \in0, #6
+         sshll          v21.4s, \in0, #6
+         smull          v22.4s, \in1, v4.h[1]
+         smull          v23.4s, \in1, v4.h[3]
+         smlal          v20.4s, \in2, v4.h[0] //e0
+         smlsl          v21.4s, \in2, v4.h[0] //e1
+         smlal          v22.4s, \in3, v4.h[3] //o0
+         smlsl          v23.4s, \in3, v4.h[1] //o1
+
+         add            v24.4s, v20.4s, v22.4s
+         sub            v20.4s, v20.4s, v22.4s
+         add            v22.4s, v21.4s, v23.4s
+         sub            v21.4s, v21.4s, v23.4s
+         sqrshrn        \out0, v24.4s, #\shift
+         sqrshrn        \out3, v20.4s, #\shift
+         sqrshrn        \out1, v22.4s, #\shift
+         sqrshrn        \out2, v21.4s, #\shift
+.endm
+
+.macro idct_4x4 bitdepth
+function ff_hevc_idct_4x4_\bitdepth\()_neon, export=1
+        ld1             {v0.4h-v3.4h}, [x0]
+
+        movrel          x1, trans
+        ld1             {v4.4h}, [x1]
+
+        tr_4x4          v0.4h, v1.4h, v2.4h, v3.4h, v16.4h, v17.4h, v18.4h, v19.4h, 7
+        transpose_4x8H  v16, v17, v18, v19, v26, v27, v28, v29
+
+        tr_4x4          v16.4h, v17.4h, v18.4h, v19.4h, v0.4h, v1.4h, v2.4h, v3.4h, 20 - \bitdepth
+        transpose_4x8H  v0, v1, v2, v3, v26, v27, v28, v29
+        st1             {v0.4h-v3.4h}, [x0]
+        ret
+endfunc
+.endm
+
 .macro sum_sub out, in, c, op, p
   .ifc \op, +
         smlal\p         \out, \in, \c
@@ -567,6 +604,9 @@ function ff_hevc_idct_16x16_\bitdepth\()_neon, export=1
         ret
 endfunc
 .endm
+
+idct_4x4 8
+idct_4x4 10
 
 idct_8x8 8
 idct_8x8 10
