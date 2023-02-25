@@ -903,10 +903,8 @@ static int thread_get_buffer_internal(AVCodecContext *avctx, AVFrame *f, int fla
         return ff_get_buffer(avctx, f, flags);
 
     p = avctx->internal->thread_ctx;
-FF_DISABLE_DEPRECATION_WARNINGS
     if (atomic_load(&p->state) != STATE_SETTING_UP &&
         ffcodec(avctx->codec)->update_thread_context) {
-FF_ENABLE_DEPRECATION_WARNINGS
         av_log(avctx, AV_LOG_ERROR, "get_buffer() cannot be called after ff_thread_finish_setup()\n");
         return -1;
     }
