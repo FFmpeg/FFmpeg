@@ -262,3 +262,7 @@ rgbf32be        planes: 1, linesizes: 768   0   0   0, plane_sizes: 36864     0 
 rgbf32le        planes: 1, linesizes: 768   0   0   0, plane_sizes: 36864     0     0     0, plane_offsets:     0     0     0, total_size: 36864
 rgbaf32be       planes: 1, linesizes: 1024   0   0   0, plane_sizes: 49152     0     0     0, plane_offsets:     0     0     0, total_size: 49152
 rgbaf32le       planes: 1, linesizes: 1024   0   0   0, plane_sizes: 49152     0     0     0, plane_offsets:     0     0     0, total_size: 49152
+p212be          planes: 2, linesizes: 128 128   0   0, plane_sizes:  6144  6144     0     0, plane_offsets:  6144     0     0, total_size: 12288
+p212le          planes: 2, linesizes: 128 128   0   0, plane_sizes:  6144  6144     0     0, plane_offsets:  6144     0     0, total_size: 12288
+p412be          planes: 2, linesizes: 128 256   0   0, plane_sizes:  6144 12288     0     0, plane_offsets:  6144     0     0, total_size: 18432
+p412le          planes: 2, linesizes: 128 256   0   0, plane_sizes:  6144 12288     0     0, plane_offsets:  6144     0     0, total_size: 18432

@@ -420,6 +420,12 @@ enum AVPixelFormat {
     AV_PIX_FMT_RGBAF32BE,   ///< IEEE-754 single precision packed RGBA 32:32:32:32, 128bpp, RGBARGBA..., big-endian
     AV_PIX_FMT_RGBAF32LE,   ///< IEEE-754 single precision packed RGBA 32:32:32:32, 128bpp, RGBARGBA..., little-endian
 
+    AV_PIX_FMT_P212BE,      ///< interleaved chroma YUV 4:2:2, 24bpp, data in the high bits, big-endian
+    AV_PIX_FMT_P212LE,      ///< interleaved chroma YUV 4:2:2, 24bpp, data in the high bits, little-endian
+
+    AV_PIX_FMT_P412BE,      ///< interleaved chroma YUV 4:4:4, 36bpp, data in the high bits, big-endian
+    AV_PIX_FMT_P412LE,      ///< interleaved chroma YUV 4:4:4, 36bpp, data in the high bits, little-endian
+
     AV_PIX_FMT_NB         ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
 };
 
@@ -518,6 +524,8 @@ enum AVPixelFormat {
 
 #define AV_PIX_FMT_P210       AV_PIX_FMT_NE(P210BE, P210LE)
 #define AV_PIX_FMT_P410       AV_PIX_FMT_NE(P410BE, P410LE)
+#define AV_PIX_FMT_P212       AV_PIX_FMT_NE(P212BE, P212LE)
+#define AV_PIX_FMT_P412       AV_PIX_FMT_NE(P412BE, P412LE)
 #define AV_PIX_FMT_P216       AV_PIX_FMT_NE(P216BE, P216LE)
 #define AV_PIX_FMT_P416       AV_PIX_FMT_NE(P416BE, P416LE)
 
