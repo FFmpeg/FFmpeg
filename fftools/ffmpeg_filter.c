@@ -362,7 +362,7 @@ fail:
 
 static int filter_opt_apply(AVFilterContext *f, const char *key, const char *val)
 {
-    const AVOption *o;
+    const AVOption *o = NULL;
     int ret;
 
     ret = av_opt_set(f, key, val, AV_OPT_SEARCH_CHILDREN);
