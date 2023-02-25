@@ -67,8 +67,12 @@ isNBPS:
   p012le
   p210be
   p210le
+  p212be
+  p212le
   p410be
   p410le
+  p412be
+  p412le
   x2bgr10be
   x2bgr10le
   x2rgb10be
@@ -160,8 +164,10 @@ isBE:
   p012be
   p016be
   p210be
+  p212be
   p216be
   p410be
+  p412be
   p416be
   rgb444be
   rgb48be
@@ -226,10 +232,14 @@ isYUV:
   p016le
   p210be
   p210le
+  p212be
+  p212le
   p216be
   p216le
   p410be
   p410le
+  p412be
+  p412le
   p416be
   p416le
   uyvy422
@@ -338,10 +348,14 @@ isPlanarYUV:
   p016le
   p210be
   p210le
+  p212be
+  p212le
   p216be
   p216le
   p410be
   p410le
+  p412be
+  p412le
   p416be
   p416le
   yuv410p
@@ -431,10 +445,14 @@ isSemiPlanarYUV:
   p016le
   p210be
   p210le
+  p212be
+  p212le
   p216be
   p216le
   p410be
   p410le
+  p412be
+  p412le
   p416be
   p416le
 
@@ -853,10 +871,14 @@ Planar:
   p016le
   p210be
   p210le
+  p212be
+  p212le
   p216be
   p216le
   p410be
   p410le
+  p412be
+  p412le
   p416be
   p416le
   yuv410p
@@ -1029,8 +1051,12 @@ DataInHighBits:
   p012le
   p210be
   p210le
+  p212be
+  p212le
   p410be
   p410le
+  p412be
+  p412le
   xv36be
   xv36le
   xyz12be

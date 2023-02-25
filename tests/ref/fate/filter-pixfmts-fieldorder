@@ -58,10 +58,14 @@ nv24                4fdbef26042c77f012df114e666efdb2
 nv42                59608290fece913e6b7d61edf581a529
 p210be              ca2ce2c25db43dcd14729b2a72a7c604
 p210le              755363012d8801b96ead2e8b1b4d2ab8
+p212be              b28ae205def3434349347f8c0d94b707
+p212le              90fe12fa6ac4d8d2631c082d2b9a5d74
 p216be              17741c0cdb65914ad13c5114121a175f
 p216le              c0c888ab7bde56638732344076b3b2ba
 p410be              b6d65b820198ca6ff0103d9794727792
 p410le              2771dd3ae54a439921f51c29e79b6799
+p412be              2d0c876b68f25ac0e8326faa81d911d8
+p412le              ab400cb3fa1aa16c3af8c58efa679979
 p416be              a0f8b5acad8fafc45fc7b2275fac1d84
 p416le              2e73af44eb933580da59981176848dcc
 rgb0                2e3d8c91c7a83d451593dfd06607ff39
