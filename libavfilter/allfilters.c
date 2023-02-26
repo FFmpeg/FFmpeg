@@ -197,6 +197,7 @@ extern const AVFilter ff_vf_bm3d;
 extern const AVFilter ff_vf_boxblur;
 extern const AVFilter ff_vf_boxblur_opencl;
 extern const AVFilter ff_vf_bwdif;
+extern const AVFilter ff_vf_bwdif_vulkan;
 extern const AVFilter ff_vf_cas;
 extern const AVFilter ff_vf_ccrepack;
 extern const AVFilter ff_vf_chromaber_vulkan;
