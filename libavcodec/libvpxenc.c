@@ -1979,6 +1979,45 @@ static av_cold int vp9_init(AVCodecContext *avctx)
     return vpx_init(avctx, vpx_codec_vp9_cx());
 }
 
+static const enum AVPixelFormat vp9_pix_fmts_highcol[] = {
+    AV_PIX_FMT_YUV420P,
+    AV_PIX_FMT_YUVA420P,
+    AV_PIX_FMT_YUV422P,
+    AV_PIX_FMT_YUV440P,
+    AV_PIX_FMT_YUV444P,
+    AV_PIX_FMT_GBRP,
+    AV_PIX_FMT_NONE
+};
+
+static const enum AVPixelFormat vp9_pix_fmts_highbd[] = {
+    AV_PIX_FMT_YUV420P,
+    AV_PIX_FMT_YUVA420P,
+    AV_PIX_FMT_YUV422P,
+    AV_PIX_FMT_YUV440P,
+    AV_PIX_FMT_YUV444P,
+    AV_PIX_FMT_YUV420P10,
+    AV_PIX_FMT_YUV422P10,
+    AV_PIX_FMT_YUV440P10,
+    AV_PIX_FMT_YUV444P10,
+    AV_PIX_FMT_YUV420P12,
+    AV_PIX_FMT_YUV422P12,
+    AV_PIX_FMT_YUV440P12,
+    AV_PIX_FMT_YUV444P12,
+    AV_PIX_FMT_GBRP,
+    AV_PIX_FMT_GBRP10,
+    AV_PIX_FMT_GBRP12,
+    AV_PIX_FMT_NONE
+};
+
+static av_cold void vp9_init_static(FFCodec *codec)
+{
+    vpx_codec_caps_t codec_caps = vpx_codec_get_caps(vpx_codec_vp9_cx());
+    if (codec_caps & VPX_CODEC_CAP_HIGHBITDEPTH)
+        codec->p.pix_fmts = vp9_pix_fmts_highbd;
+    else
+        codec->p.pix_fmts = vp9_pix_fmts_highcol;
+}
+
 static const AVClass class_vp9 = {
     .class_name = "libvpx-vp9 encoder",
     .item_name  = av_default_item_name,
@@ -2003,6 +2042,6 @@ FFCodec ff_libvpx_vp9_encoder = {
     .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE |
                       FF_CODEC_CAP_AUTO_THREADS,
     .defaults       = defaults,
-    .init_static_data = ff_vp9_init_static,
+    .init_static_data = vp9_init_static,
 };
 #endif /* CONFIG_LIBVPX_VP9_ENCODER */
