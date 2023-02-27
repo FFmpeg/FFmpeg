@@ -391,6 +391,5 @@ FFCodec ff_libvpx_vp9_decoder = {
     FF_CODEC_DECODE_CB(vpx_decode),
     .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE |
                       FF_CODEC_CAP_AUTO_THREADS,
-    .init_static_data = ff_vp9_init_static,
 };
 #endif /* CONFIG_LIBVPX_VP9_DECODER */
