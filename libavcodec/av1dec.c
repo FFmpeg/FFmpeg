@@ -270,7 +270,9 @@ static void skip_mode_params(AV1DecContext *s)
     int second_forward_idx, second_forward_hint;
     int ref_hint, dist, i;
 
-    if (!header->skip_mode_present)
+    if (header->frame_type == AV1_FRAME_KEY ||
+        header->frame_type == AV1_FRAME_INTRA_ONLY ||
+        !header->reference_select || !seq->enable_order_hint)
         return;
 
     forward_idx  = -1;
