@@ -119,7 +119,7 @@ QPEL_FUNC(ff_hevc_put_qpel_h3v3_neon_8);
 
 #define QPEL_FUNC_UW_PIX(name) \
     void name(uint8_t *dst, ptrdiff_t dststride, const uint8_t *_src, ptrdiff_t _srcstride, \
-                                   int height, intptr_t mx, intptr_t my, int width);
+                                   int height, intptr_t mx, intptr_t my, int width)
 QPEL_FUNC_UW_PIX(ff_hevc_put_qpel_uw_pixels_w4_neon_8);
 QPEL_FUNC_UW_PIX(ff_hevc_put_qpel_uw_pixels_w8_neon_8);
 QPEL_FUNC_UW_PIX(ff_hevc_put_qpel_uw_pixels_w16_neon_8);
@@ -131,7 +131,7 @@ QPEL_FUNC_UW_PIX(ff_hevc_put_qpel_uw_pixels_w64_neon_8);
 
 #define QPEL_FUNC_UW(name) \
     void name(uint8_t *dst, ptrdiff_t dststride, const uint8_t *_src, ptrdiff_t _srcstride, \
-              int width, int height, const int16_t* src2, ptrdiff_t src2stride);
+              int width, int height, const int16_t* src2, ptrdiff_t src2stride)
 QPEL_FUNC_UW(ff_hevc_put_qpel_uw_pixels_neon_8);
 QPEL_FUNC_UW(ff_hevc_put_qpel_uw_v1_neon_8);
 QPEL_FUNC_UW(ff_hevc_put_qpel_uw_v2_neon_8);
