@@ -68,6 +68,14 @@ struct FrameListData {
 
 typedef struct FrameData {
     int64_t pts;
+    int64_t duration;
+
+#if FF_API_REORDERED_OPAQUE
+    int64_t      reordered_opaque;
+#endif
+    void        *frame_opaque;
+    AVBufferRef *frame_opaque_ref;
+
     AVBufferRef *hdr10_plus;
 } FrameData;
 
@@ -329,32 +337,101 @@ static av_cold void free_frame_list(struct FrameListData *list)
     }
 }
 
+static void frame_data_uninit(FrameData *fd)
+{
+    av_buffer_unref(&fd->frame_opaque_ref);
+    av_buffer_unref(&fd->hdr10_plus);
+}
+
 static av_cold void fifo_free(AVFifo **fifo)
 {
     FrameData fd;
     while (av_fifo_read(*fifo, &fd, 1) >= 0)
-        av_buffer_unref(&fd.hdr10_plus);
+        frame_data_uninit(&fd);
     av_fifo_freep2(fifo);
 }
 
-static int frame_data_apply(AVFifo *fifo, AVPacket *pkt)
+static int frame_data_submit(AVCodecContext *avctx, AVFifo *fifo,
+                             const AVFrame *frame)
+{
+    VPxContext *ctx = avctx->priv_data;
+    const struct vpx_codec_enc_cfg *enccfg = ctx->encoder.config.enc;
+
+    FrameData fd = { .pts = frame->pts };
+
+    AVFrameSideData *av_uninit(sd);
+    int ret;
+
+#if CONFIG_LIBVPX_VP9_ENCODER
+    // Keep HDR10+ if it has bit depth higher than 8 and
+    // it has PQ trc (SMPTE2084).
+    sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DYNAMIC_HDR_PLUS);
+    if (avctx->codec_id == AV_CODEC_ID_VP9 && sd &&
+        enccfg->g_bit_depth > 8 && avctx->color_trc == AVCOL_TRC_SMPTE2084) {
+        fd.hdr10_plus = av_buffer_ref(sd->buf);
+        if (!fd.hdr10_plus)
+            return AVERROR(ENOMEM);
+    }
+#endif
+
+    fd.duration     = frame->duration;
+    fd.frame_opaque = frame->opaque;
+    if (avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE && frame->opaque_ref) {
+        ret = av_buffer_replace(&fd.frame_opaque_ref, frame->opaque_ref);
+        if (ret < 0)
+            goto fail;
+    }
+#if FF_API_REORDERED_OPAQUE
+FF_DISABLE_DEPRECATION_WARNINGS
+    fd.reordered_opaque = frame->reordered_opaque;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
+    ret = av_fifo_write(fifo, &fd, 1);
+    if (ret < 0)
+        goto fail;
+
+    return 0;
+fail:
+    frame_data_uninit(&fd);
+    return ret;
+}
+
+static int frame_data_apply(AVCodecContext *avctx, AVFifo *fifo, AVPacket *pkt)
 {
     FrameData fd;
     uint8_t *data;
     if (!pkt || av_fifo_peek(fifo, &fd, 1, 0) < 0)
         return 0;
-    if (!fd.hdr10_plus || fd.pts != pkt->pts)
+    if (fd.pts != pkt->pts)
         return 0;
     av_fifo_drain2(fifo, 1);
 
-    data = av_packet_new_side_data(pkt, AV_PKT_DATA_DYNAMIC_HDR10_PLUS, fd.hdr10_plus->size);
-    if (!data) {
+#if FF_API_REORDERED_OPAQUE
+FF_DISABLE_DEPRECATION_WARNINGS
+    avctx->reordered_opaque = fd.reordered_opaque;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
+    pkt->duration = fd.duration;
+    if (avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE) {
+        pkt->opaque         = fd.frame_opaque;
+        pkt->opaque_ref     = fd.frame_opaque_ref;
+        fd.frame_opaque_ref = NULL;
+    }
+    av_buffer_unref(&fd.frame_opaque_ref);
+
+    if (fd.hdr10_plus) {
+        data = av_packet_new_side_data(pkt, AV_PKT_DATA_DYNAMIC_HDR10_PLUS, fd.hdr10_plus->size);
+        if (!data) {
+            av_buffer_unref(&fd.hdr10_plus);
+            return AVERROR(ENOMEM);
+        }
+
+        memcpy(data, fd.hdr10_plus->data, fd.hdr10_plus->size);
         av_buffer_unref(&fd.hdr10_plus);
-        return AVERROR(ENOMEM);
     }
 
-    memcpy(data, fd.hdr10_plus->data, fd.hdr10_plus->size);
-    av_buffer_unref(&fd.hdr10_plus);
     return 0;
 }
 
@@ -914,17 +991,14 @@ static av_cold int vpx_init(AVCodecContext *avctx,
         return AVERROR(EINVAL);
     }
 
+    ctx->fifo = av_fifo_alloc2(1, sizeof(FrameData), AV_FIFO_FLAG_AUTO_GROW);
+    if (!ctx->fifo)
+        return AVERROR(ENOMEM);
+
 #if CONFIG_LIBVPX_VP9_ENCODER
     if (avctx->codec_id == AV_CODEC_ID_VP9) {
         if (set_pix_fmt(avctx, codec_caps, &enccfg, &flags, &img_fmt))
             return AVERROR(EINVAL);
-        // Keep HDR10+ if it has bit depth higher than 8 and
-        // it has PQ trc (SMPTE2084).
-        if (enccfg.g_bit_depth > 8 && avctx->color_trc == AVCOL_TRC_SMPTE2084) {
-            ctx->fifo = av_fifo_alloc2(1, sizeof(FrameData), AV_FIFO_FLAG_AUTO_GROW);
-            if (!ctx->fifo)
-                return AVERROR(ENOMEM);
-        }
     }
 #endif
 
@@ -1285,11 +1359,9 @@ static int storeframe(AVCodecContext *avctx, struct FrameListData *cx_frame,
         AV_WB64(side_data, 1);
         memcpy(side_data + 8, alpha_cx_frame->buf, alpha_cx_frame->sz);
     }
-    if (ctx->fifo) {
-        int err = frame_data_apply(ctx->fifo, pkt);
-        if (err < 0)
-            return err;
-    }
+    ret = frame_data_apply(avctx, ctx->fifo, pkt);
+    if (ret < 0)
+        return ret;
 
     return pkt->size;
 }
@@ -1703,24 +1775,9 @@ static int vpx_encode(AVCodecContext *avctx, AVPacket *pkt,
             }
         }
 
-        if (ctx->fifo) {
-            AVFrameSideData *hdr10_plus_metadata;
-            // Add HDR10+ metadata to queue.
-            hdr10_plus_metadata = av_frame_get_side_data(frame, AV_FRAME_DATA_DYNAMIC_HDR_PLUS);
-            if (hdr10_plus_metadata) {
-                int err;
-                FrameData data;
-                data.pts = frame->pts;
-                data.hdr10_plus = av_buffer_ref(hdr10_plus_metadata->buf);
-                if (!data.hdr10_plus)
-                    return AVERROR(ENOMEM);
-                err = av_fifo_write(ctx->fifo, &data, 1);
-                if (err < 0) {
-                    av_buffer_unref(&data.hdr10_plus);
-                    return err;
-                }
-            }
-        }
+        res = frame_data_submit(avctx, ctx->fifo, frame);
+        if (res < 0)
+            return res;
     }
 
     // this is for encoding with preset temporal layering patterns defined in
@@ -1953,7 +2010,8 @@ const FFCodec ff_libvpx_vp8_encoder = {
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_VP8,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
-                      AV_CODEC_CAP_OTHER_THREADS,
+                      AV_CODEC_CAP_OTHER_THREADS            |
+                      AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_data_size = sizeof(VPxContext),
     .init           = vp8_init,
     FF_CODEC_ENCODE_CB(vpx_encode),
@@ -2025,7 +2083,8 @@ FFCodec ff_libvpx_vp9_encoder = {
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_VP9,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
-                      AV_CODEC_CAP_OTHER_THREADS,
+                      AV_CODEC_CAP_OTHER_THREADS            |
+                      AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .p.profiles     = NULL_IF_CONFIG_SMALL(ff_vp9_profiles),
     .p.priv_class   = &class_vp9,
     .p.wrapper_name = "libvpx",
