@@ -34,7 +34,7 @@
 #include "libavutil/common.h"
 #include "libavutil/libm.h"
 #include "libavutil/mathematics.h"
-#include "libavutil/mem.h"
+#include "libavutil/mem_internal.h"
 #define NR_ALLPASS_BANDS20 30
 #define NR_ALLPASS_BANDS34 50
 #define PS_AP_LINKS 3
