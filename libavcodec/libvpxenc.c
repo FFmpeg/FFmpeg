@@ -401,11 +401,16 @@ static int frame_data_apply(AVCodecContext *avctx, AVFifo *fifo, AVPacket *pkt)
 {
     FrameData fd;
     uint8_t *data;
+    int ret = 0;
+
     if (av_fifo_peek(fifo, &fd, 1, 0) < 0)
         return 0;
-    if (fd.pts != pkt->pts)
-        return 0;
-    av_fifo_drain2(fifo, 1);
+    if (fd.pts != pkt->pts) {
+        av_log(avctx, AV_LOG_WARNING,
+               "Mismatching timestamps: libvpx %"PRId64" queued %"PRId64"; "
+               "this is a bug, please report it\n", pkt->pts, fd.pts);
+        goto skip;
+    }
 
 #if FF_API_REORDERED_OPAQUE
 FF_DISABLE_DEPRECATION_WARNINGS
@@ -419,20 +424,22 @@ FF_ENABLE_DEPRECATION_WARNINGS
         pkt->opaque_ref     = fd.frame_opaque_ref;
         fd.frame_opaque_ref = NULL;
     }
-    av_buffer_unref(&fd.frame_opaque_ref);
 
     if (fd.hdr10_plus) {
         data = av_packet_new_side_data(pkt, AV_PKT_DATA_DYNAMIC_HDR10_PLUS, fd.hdr10_plus->size);
         if (!data) {
-            av_buffer_unref(&fd.hdr10_plus);
-            return AVERROR(ENOMEM);
+            ret = AVERROR(ENOMEM);
+            goto skip;
         }
 
         memcpy(data, fd.hdr10_plus->data, fd.hdr10_plus->size);
-        av_buffer_unref(&fd.hdr10_plus);
     }
 
-    return 0;
+skip:
+    av_fifo_drain2(fifo, 1);
+    frame_data_uninit(&fd);
+
+    return ret;
 }
 
 static av_cold int codecctl_int(AVCodecContext *avctx,
