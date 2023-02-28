@@ -66,10 +66,10 @@ struct FrameListData {
     struct FrameListData *next;
 };
 
-typedef struct FrameHDR10Plus {
+typedef struct FrameData {
     int64_t pts;
     AVBufferRef *hdr10_plus;
-} FrameHDR10Plus;
+} FrameData;
 
 typedef struct VPxEncoderContext {
     AVClass *class;
@@ -130,7 +130,9 @@ typedef struct VPxEncoderContext {
     int corpus_complexity;
     int tpl_model;
     int min_gf_interval;
-    AVFifo *hdr10_plus_fifo;
+
+    // This FIFO is used to propagate various properties from frames to packets.
+    AVFifo *fifo;
     /**
      * If the driver does not support ROI then warn the first time we
      * encounter a frame with ROI side data.
@@ -327,32 +329,32 @@ static av_cold void free_frame_list(struct FrameListData *list)
     }
 }
 
-static av_cold void free_hdr10_plus_fifo(AVFifo **fifo)
+static av_cold void fifo_free(AVFifo **fifo)
 {
-    FrameHDR10Plus frame_hdr10_plus;
-    while (av_fifo_read(*fifo, &frame_hdr10_plus, 1) >= 0)
-        av_buffer_unref(&frame_hdr10_plus.hdr10_plus);
+    FrameData fd;
+    while (av_fifo_read(*fifo, &fd, 1) >= 0)
+        av_buffer_unref(&fd.hdr10_plus);
     av_fifo_freep2(fifo);
 }
 
-static int copy_hdr10_plus_to_pkt(AVFifo *fifo, AVPacket *pkt)
+static int frame_data_apply(AVFifo *fifo, AVPacket *pkt)
 {
-    FrameHDR10Plus frame_hdr10_plus;
+    FrameData fd;
     uint8_t *data;
-    if (!pkt || av_fifo_peek(fifo, &frame_hdr10_plus, 1, 0) < 0)
+    if (!pkt || av_fifo_peek(fifo, &fd, 1, 0) < 0)
         return 0;
-    if (!frame_hdr10_plus.hdr10_plus || frame_hdr10_plus.pts != pkt->pts)
+    if (!fd.hdr10_plus || fd.pts != pkt->pts)
         return 0;
     av_fifo_drain2(fifo, 1);
 
-    data = av_packet_new_side_data(pkt, AV_PKT_DATA_DYNAMIC_HDR10_PLUS, frame_hdr10_plus.hdr10_plus->size);
+    data = av_packet_new_side_data(pkt, AV_PKT_DATA_DYNAMIC_HDR10_PLUS, fd.hdr10_plus->size);
     if (!data) {
-        av_buffer_unref(&frame_hdr10_plus.hdr10_plus);
+        av_buffer_unref(&fd.hdr10_plus);
         return AVERROR(ENOMEM);
     }
 
-    memcpy(data, frame_hdr10_plus.hdr10_plus->data, frame_hdr10_plus.hdr10_plus->size);
-    av_buffer_unref(&frame_hdr10_plus.hdr10_plus);
+    memcpy(data, fd.hdr10_plus->data, fd.hdr10_plus->size);
+    av_buffer_unref(&fd.hdr10_plus);
     return 0;
 }
 
@@ -447,8 +449,8 @@ static av_cold int vpx_free(AVCodecContext *avctx)
     av_freep(&avctx->stats_out);
     free_frame_list(ctx->coded_frame_list);
     free_frame_list(ctx->alpha_coded_frame_list);
-    if (ctx->hdr10_plus_fifo)
-        free_hdr10_plus_fifo(&ctx->hdr10_plus_fifo);
+    if (ctx->fifo)
+        fifo_free(&ctx->fifo);
     return 0;
 }
 
@@ -919,9 +921,8 @@ static av_cold int vpx_init(AVCodecContext *avctx,
         // Keep HDR10+ if it has bit depth higher than 8 and
         // it has PQ trc (SMPTE2084).
         if (enccfg.g_bit_depth > 8 && avctx->color_trc == AVCOL_TRC_SMPTE2084) {
-            ctx->hdr10_plus_fifo = av_fifo_alloc2(1, sizeof(FrameHDR10Plus),
-                                                  AV_FIFO_FLAG_AUTO_GROW);
-            if (!ctx->hdr10_plus_fifo)
+            ctx->fifo = av_fifo_alloc2(1, sizeof(FrameData), AV_FIFO_FLAG_AUTO_GROW);
+            if (!ctx->fifo)
                 return AVERROR(ENOMEM);
         }
     }
@@ -1284,8 +1285,8 @@ static int storeframe(AVCodecContext *avctx, struct FrameListData *cx_frame,
         AV_WB64(side_data, 1);
         memcpy(side_data + 8, alpha_cx_frame->buf, alpha_cx_frame->sz);
     }
-    if (ctx->hdr10_plus_fifo) {
-        int err = copy_hdr10_plus_to_pkt(ctx->hdr10_plus_fifo, pkt);
+    if (ctx->fifo) {
+        int err = frame_data_apply(ctx->fifo, pkt);
         if (err < 0)
             return err;
     }
@@ -1702,18 +1703,18 @@ static int vpx_encode(AVCodecContext *avctx, AVPacket *pkt,
             }
         }
 
-        if (ctx->hdr10_plus_fifo) {
+        if (ctx->fifo) {
             AVFrameSideData *hdr10_plus_metadata;
             // Add HDR10+ metadata to queue.
             hdr10_plus_metadata = av_frame_get_side_data(frame, AV_FRAME_DATA_DYNAMIC_HDR_PLUS);
             if (hdr10_plus_metadata) {
                 int err;
-                struct FrameHDR10Plus data;
+                FrameData data;
                 data.pts = frame->pts;
                 data.hdr10_plus = av_buffer_ref(hdr10_plus_metadata->buf);
                 if (!data.hdr10_plus)
                     return AVERROR(ENOMEM);
-                err = av_fifo_write(ctx->hdr10_plus_fifo, &data, 1);
+                err = av_fifo_write(ctx->fifo, &data, 1);
                 if (err < 0) {
                     av_buffer_unref(&data.hdr10_plus);
                     return err;
