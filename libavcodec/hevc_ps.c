@@ -1087,7 +1087,8 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
     if (sps->vui_present)
         decode_vui(gb, avctx, apply_defdispwin, sps);
 
-    if (get_bits1(gb)) { // sps_extension_flag
+    sps->sps_extension_present_flag = get_bits1(gb);
+    if (sps->sps_extension_present_flag) {
         sps->sps_range_extension_flag      = get_bits1(gb);
         sps->sps_multilayer_extension_flag = get_bits1(gb);
         sps->sps_3d_extension_flag         = get_bits1(gb);
