@@ -1284,11 +1284,11 @@ static int storeframe(AVCodecContext *avctx, struct FrameListData *cx_frame,
         AV_WB64(side_data, 1);
         memcpy(side_data + 8, alpha_cx_frame->buf, alpha_cx_frame->sz);
     }
-        if (ctx->hdr10_plus_fifo) {
-            int err = copy_hdr10_plus_to_pkt(ctx->hdr10_plus_fifo, pkt);
-            if (err < 0)
-                return err;
-        }
+    if (ctx->hdr10_plus_fifo) {
+        int err = copy_hdr10_plus_to_pkt(ctx->hdr10_plus_fifo, pkt);
+        if (err < 0)
+            return err;
+    }
 
     return pkt->size;
 }
