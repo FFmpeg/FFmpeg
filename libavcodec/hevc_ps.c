@@ -904,7 +904,8 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
                                    sps->height, 0, avctx)) < 0)
         return ret;
 
-    if (get_bits1(gb)) { // pic_conformance_flag
+    sps->conformance_window_flag = get_bits1(gb);
+    if (sps->conformance_window_flag) {
         int vert_mult  = hevc_sub_height_c[sps->chroma_format_idc];
         int horiz_mult = hevc_sub_width_c[sps->chroma_format_idc];
         sps->pic_conf_win.left_offset   = get_ue_golomb_long(gb) * horiz_mult;

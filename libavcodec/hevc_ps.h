@@ -191,6 +191,7 @@ typedef struct HEVCSPS {
 
     HEVCWindow output_window;
 
+    uint8_t conformance_window_flag;
     HEVCWindow pic_conf_win;
 
     HEVCHdrParams hdr;
