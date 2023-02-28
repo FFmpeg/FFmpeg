@@ -21,6 +21,7 @@
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "audio_frame_queue.h"
@@ -53,6 +54,7 @@ typedef struct AACContext {
     int prog_ref;
     int metadata_mode;
     AACENC_MetaData metaDataSetup;
+    int delay_sent;
 
     AudioFrameQueue afq;
 } AACContext;
@@ -406,7 +408,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     int out_buffer_identifier = OUT_BITSTREAM_DATA;
     int out_buffer_size, out_buffer_element_size;
     void *out_ptr;
-    int ret;
+    int ret, discard_padding;
     uint8_t dummy_buf[1];
     AACENC_ERROR err;
 
@@ -468,6 +470,27 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     /* Get the next frame pts & duration */
     ff_af_queue_remove(&s->afq, avctx->frame_size, &avpkt->pts,
                        &avpkt->duration);
+
+    discard_padding = avctx->frame_size - avpkt->duration;
+    // Check if subtraction resulted in an overflow
+    if ((discard_padding < avctx->frame_size) != (avpkt->duration > 0)) {
+        av_log(avctx, AV_LOG_ERROR, "discard padding overflow\n");
+        av_packet_unref(avpkt);
+        return AVERROR(EINVAL);
+    }
+    if ((!s->delay_sent && avctx->initial_padding > 0) || discard_padding > 0) {
+        uint8_t *side_data =
+            av_packet_new_side_data(avpkt, AV_PKT_DATA_SKIP_SAMPLES, 10);
+        if (!side_data) {
+            av_packet_unref(avpkt);
+            return AVERROR(ENOMEM);
+        }
+        if (!s->delay_sent) {
+            AV_WL32(side_data, avctx->initial_padding);
+            s->delay_sent = 1;
+        }
+        AV_WL32(side_data + 4, discard_padding);
+    }
 
     avpkt->size     = out_args.numOutBytes;
     *got_packet_ptr = 1;
