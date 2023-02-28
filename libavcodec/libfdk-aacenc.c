@@ -46,6 +46,13 @@ typedef struct AACContext {
     int latm;
     int header_period;
     int vbr;
+    int drc_profile;
+    int drc_target_ref;
+    int comp_profile;
+    int comp_target_ref;
+    int prog_ref;
+    int metadata_mode;
+    AACENC_MetaData metaDataSetup;
 
     AudioFrameQueue afq;
 } AACContext;
@@ -64,6 +71,11 @@ static const AVOption aac_enc_options[] = {
     { "latm", "Output LATM/LOAS encapsulated data", offsetof(AACContext, latm), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM },
     { "header_period", "StreamMuxConfig and PCE repetition period (in frames)", offsetof(AACContext, header_period), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 0xffff, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM },
     { "vbr", "VBR mode (1-5)", offsetof(AACContext, vbr), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 5, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM },
+    { "drc_profile", "The desired compression profile for AAC DRC", offsetof(AACContext, drc_profile), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 256, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM },
+    { "drc_target_ref", "Expected target reference level at decoder side in dB (for clipping prevention/limiter)", offsetof(AACContext, drc_target_ref), AV_OPT_TYPE_INT, { .i64 = 0.0 }, -31.75, 0, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM },
+    { "comp_profile", "The desired compression profile for AAC DRC", offsetof(AACContext, comp_profile), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 256, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM },
+    { "comp_target_ref", "Expected target reference level at decoder side in dB (for clipping prevention/limiter)", offsetof(AACContext, comp_target_ref), AV_OPT_TYPE_INT, { .i64 = 0.0 }, -31.75, 0, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM },
+    { "prog_ref", "The program reference level or dialog level in dB", offsetof(AACContext, prog_ref), AV_OPT_TYPE_INT, { .i64 = 0.0 }, -31.75, 0, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM },
     FF_AAC_PROFILE_OPTS
     { NULL }
 };
@@ -319,6 +331,30 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         }
     }
 
+    s->metadata_mode = 0;
+    if (s->prog_ref) {
+        s->metadata_mode = 1;
+        s->metaDataSetup.prog_ref_level_present = 1;
+        s->metaDataSetup.prog_ref_level = s->prog_ref << 16;
+    }
+    if (s->drc_profile) {
+        s->metadata_mode = 1;
+        s->metaDataSetup.drc_profile = s->drc_profile;
+        s->metaDataSetup.drc_TargetRefLevel = s->drc_target_ref << 16;
+        if (s->comp_profile) {
+            /* Including the comp_profile means that we need to set the mode to ETSI */
+            s->metadata_mode = 2;
+            s->metaDataSetup.comp_profile = s->comp_profile;
+            s->metaDataSetup.comp_TargetRefLevel = s->comp_target_ref << 16;
+        }
+    }
+
+    if ((err = aacEncoder_SetParam(s->handle, AACENC_METADATA_MODE, s->metadata_mode)) != AACENC_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Unable to set metadata mode to %d: %s\n",
+                s->metadata_mode, aac_get_error(err));
+        goto error;
+    }
+
     if ((err = aacEncEncode(s->handle, NULL, NULL, NULL, NULL)) != AACENC_OK) {
         av_log(avctx, AV_LOG_ERROR, "Unable to initialize the encoder: %s\n",
                aac_get_error(err));
@@ -363,11 +399,13 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     AACENC_BufDesc in_buf   = { 0 }, out_buf = { 0 };
     AACENC_InArgs  in_args  = { 0 };
     AACENC_OutArgs out_args = { 0 };
-    int in_buffer_identifier = IN_AUDIO_DATA;
-    int in_buffer_size, in_buffer_element_size;
+    void* inBuffer[] = { 0, &s->metaDataSetup };
+    int in_buffer_identifiers[] = { IN_AUDIO_DATA, IN_METADATA_SETUP };
+    int in_buffer_element_sizes[] = { 2, sizeof(AACENC_MetaData) };
+    int in_buffer_sizes[] = { 0, sizeof(s->metaDataSetup) };
     int out_buffer_identifier = OUT_BITSTREAM_DATA;
     int out_buffer_size, out_buffer_element_size;
-    void *in_ptr, *out_ptr;
+    void *out_ptr;
     int ret;
     uint8_t dummy_buf[1];
     AACENC_ERROR err;
@@ -376,13 +414,12 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     if (!frame) {
         /* Must be a non-null pointer, even if it's a dummy. We could use
          * the address of anything else on the stack as well. */
-        in_ptr               = dummy_buf;
-        in_buffer_size       = 0;
+        inBuffer[0]          = dummy_buf;
 
         in_args.numInSamples = -1;
     } else {
-        in_ptr               = frame->data[0];
-        in_buffer_size       = 2 * avctx->ch_layout.nb_channels * frame->nb_samples;
+        inBuffer[0]          = frame->data[0];
+        in_buffer_sizes[0]   = 2 * avctx->ch_layout.nb_channels * frame->nb_samples;
 
         in_args.numInSamples = avctx->ch_layout.nb_channels * frame->nb_samples;
 
@@ -391,12 +428,16 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             return ret;
     }
 
-    in_buffer_element_size   = 2;
-    in_buf.numBufs           = 1;
-    in_buf.bufs              = &in_ptr;
-    in_buf.bufferIdentifiers = &in_buffer_identifier;
-    in_buf.bufSizes          = &in_buffer_size;
-    in_buf.bufElSizes        = &in_buffer_element_size;
+    if (s->metadata_mode == 0) {
+        in_buf.numBufs       = 1;
+    } else {
+        in_buf.numBufs       = 2;
+    }
+
+    in_buf.bufs              = (void**)inBuffer;
+    in_buf.bufferIdentifiers = in_buffer_identifiers;
+    in_buf.bufSizes          = in_buffer_sizes;
+    in_buf.bufElSizes        = in_buffer_element_sizes;
 
     /* The maximum packet size is 6144 bits aka 768 bytes per channel. */
     ret = ff_alloc_packet(avctx, avpkt, FFMAX(8192, 768 * avctx->ch_layout.nb_channels));
