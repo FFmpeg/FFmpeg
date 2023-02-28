@@ -203,6 +203,7 @@ typedef struct HEVCSPS {
     unsigned int log2_max_poc_lsb;
     int pcm_enabled_flag;
 
+    uint8_t sublayer_ordering_info_flag;
     int max_sub_layers;
     struct {
         int max_dec_pic_buffering;

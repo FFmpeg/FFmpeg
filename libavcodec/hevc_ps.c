@@ -855,7 +855,7 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
 {
     HEVCWindow *ow;
     int ret = 0;
-    int bit_depth_chroma, start, sublayer_ordering_info, num_comps;
+    int bit_depth_chroma, start, num_comps;
     int i, j;
 
     // Coded parameters
@@ -961,8 +961,8 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
         return AVERROR_INVALIDDATA;
     }
 
-    sublayer_ordering_info = get_bits1(gb);
-    start = sublayer_ordering_info ? 0 : sps->max_sub_layers - 1;
+    sps->sublayer_ordering_info_flag = get_bits1(gb);
+    start = sps->sublayer_ordering_info_flag ? 0 : sps->max_sub_layers - 1;
     for (i = start; i < sps->max_sub_layers; i++) {
         sps->temporal_layer[i].max_dec_pic_buffering = get_ue_golomb_long(gb) + 1;
         sps->temporal_layer[i].num_reorder_pics      = get_ue_golomb_long(gb);
@@ -983,7 +983,7 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
         }
     }
 
-    if (!sublayer_ordering_info) {
+    if (!sps->sublayer_ordering_info_flag) {
         for (i = 0; i < start; i++) {
             sps->temporal_layer[i].max_dec_pic_buffering = sps->temporal_layer[start].max_dec_pic_buffering;
             sps->temporal_layer[i].num_reorder_pics      = sps->temporal_layer[start].num_reorder_pics;
