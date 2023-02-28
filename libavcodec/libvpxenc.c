@@ -63,7 +63,6 @@ struct FrameListData {
     uint32_t flags;                  /**< flags for this frame */
     uint64_t sse[4];
     int have_sse;                    /**< true if we have pending sse[] */
-    uint64_t frame_number;
     struct FrameListData *next;
 };
 
@@ -84,7 +83,6 @@ typedef struct VPxEncoderContext {
     int deadline; //i.e., RT/GOOD/BEST
     uint64_t sse[4];
     int have_sse; /**< true if we have pending sse[] */
-    uint64_t frame_number;
     struct FrameListData *coded_frame_list;
     struct FrameListData *alpha_coded_frame_list;
 
@@ -1220,9 +1218,8 @@ static inline void cx_pktcpy(struct FrameListData *dst,
     dst->sz       = src->data.frame.sz;
     dst->buf      = src->data.frame.buf;
     dst->have_sse = 0;
-    /* For alt-ref frame, don't store PSNR or increment frame_number */
+    /* For alt-ref frame, don't store PSNR */
     if (!(dst->flags & VPX_FRAME_IS_INVISIBLE)) {
-        dst->frame_number = ++ctx->frame_number;
         dst->have_sse = ctx->have_sse;
         if (ctx->have_sse) {
             /* associate last-seen SSE to the frame. */
@@ -1232,8 +1229,6 @@ static inline void cx_pktcpy(struct FrameListData *dst,
             memcpy(dst->sse, ctx->sse, sizeof(dst->sse));
             ctx->have_sse = 0;
         }
-    } else {
-        dst->frame_number = -1;   /* sanity marker */
     }
 }
 
@@ -1289,13 +1284,11 @@ static int storeframe(AVCodecContext *avctx, struct FrameListData *cx_frame,
         AV_WB64(side_data, 1);
         memcpy(side_data + 8, alpha_cx_frame->buf, alpha_cx_frame->sz);
     }
-    if (cx_frame->frame_number != -1) {
         if (ctx->hdr10_plus_fifo) {
             int err = copy_hdr10_plus_to_pkt(ctx->hdr10_plus_fifo, pkt);
             if (err < 0)
                 return err;
         }
-    }
 
     return pkt->size;
 }
