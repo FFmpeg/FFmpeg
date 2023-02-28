@@ -58,8 +58,6 @@ struct FrameListData {
     size_t sz;                       /**< length of compressed data */
     int64_t pts;                     /**< time stamp to show frame
                                           (in timebase units) */
-    unsigned long duration;          /**< duration to show frame
-                                          (in timebase units) */
     uint32_t flags;                  /**< flags for this frame */
     uint64_t sse[4];
     int have_sse;                    /**< true if we have pending sse[] */
@@ -1295,7 +1293,6 @@ static inline void cx_pktcpy(struct FrameListData *dst,
                              VPxContext *ctx)
 {
     dst->pts      = src->data.frame.pts;
-    dst->duration = src->data.frame.duration;
     dst->flags    = src->data.frame.flags;
     dst->sz       = src->data.frame.sz;
     dst->buf      = src->data.frame.buf;
