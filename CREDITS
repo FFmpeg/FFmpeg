@@ -1,6 +1,6 @@
-See the Git history of the project (git://source.ffmpeg.org/ffmpeg) to
+See the Git history of the project (https://git.ffmpeg.org/ffmpeg) to
 get the names of people who have contributed to FFmpeg.
 
 To check the log, you can type the command "git log" in the FFmpeg
 source directory, or browse the online repository at
-http://source.ffmpeg.org.
+https://git.ffmpeg.org/ffmpeg
