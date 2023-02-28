@@ -855,7 +855,7 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
 {
     HEVCWindow *ow;
     int ret = 0;
-    int bit_depth_chroma, start, vui_present, sublayer_ordering_info, num_comps;
+    int bit_depth_chroma, start, sublayer_ordering_info, num_comps;
     int i, j;
 
     // Coded parameters
@@ -1082,8 +1082,8 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
     sps->sps_temporal_mvp_enabled_flag          = get_bits1(gb);
     sps->sps_strong_intra_smoothing_enable_flag = get_bits1(gb);
     sps->vui.common.sar = (AVRational){0, 1};
-    vui_present = get_bits1(gb);
-    if (vui_present)
+    sps->vui_present = get_bits1(gb);
+    if (sps->vui_present)
         decode_vui(gb, avctx, apply_defdispwin, sps);
 
     if (get_bits1(gb)) { // sps_extension_flag

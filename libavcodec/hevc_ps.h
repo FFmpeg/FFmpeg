@@ -211,6 +211,7 @@ typedef struct HEVCSPS {
     } temporal_layer[HEVC_MAX_SUB_LAYERS];
     uint8_t temporal_id_nesting_flag;
 
+    int vui_present;
     VUI vui;
     PTL ptl;
 
