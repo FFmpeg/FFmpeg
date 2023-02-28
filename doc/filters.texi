@@ -21593,9 +21593,11 @@ ffmpeg -i input1.mkv -i input2.mkv -filter_complex "[0:v][1:v] signature=nb_inpu
 @anchor{siti}
 @section siti
 
-Calculate Spatial Info (SI) and Temporal Info (TI) scores for a video, as defined
-in ITU-T P.910: Subjective video quality assessment methods for multimedia
-applications. Available PDF at @url{https://www.itu.int/rec/T-REC-P.910-199909-S/en }.
+Calculate Spatial Information (SI) and Temporal Information (TI) scores for a video,
+as defined in ITU-T Rec. P.910 (11/21): Subjective video quality assessment methods
+for multimedia applications. Available PDF at @url{https://www.itu.int/rec/T-REC-P.910-202111-S/en}.
+Note that this is a legacy implementation that corresponds to a superseded recommendation.
+Refer to ITU-T Rec. P.910 (07/22) for the latest version: @url{https://www.itu.int/rec/T-REC-P.910-202207-I/en}
 
 It accepts the following option:
 
