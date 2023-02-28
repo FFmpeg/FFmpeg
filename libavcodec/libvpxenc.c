@@ -401,7 +401,7 @@ static int frame_data_apply(AVCodecContext *avctx, AVFifo *fifo, AVPacket *pkt)
 {
     FrameData fd;
     uint8_t *data;
-    if (!pkt || av_fifo_peek(fifo, &fd, 1, 0) < 0)
+    if (av_fifo_peek(fifo, &fd, 1, 0) < 0)
         return 0;
     if (fd.pts != pkt->pts)
         return 0;
