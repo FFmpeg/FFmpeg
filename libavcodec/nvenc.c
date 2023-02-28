@@ -178,6 +178,8 @@ static void reorder_queue_flush(AVFifo *queue)
 {
     FrameData fd;
 
+    av_assert0(queue);
+
     while (av_fifo_read(queue, &fd, 1) >= 0)
         av_buffer_unref(&fd.frame_opaque_ref);
 }
@@ -1853,8 +1855,11 @@ av_cold int ff_nvenc_encode_close(AVCodecContext *avctx)
         p_nvenc->nvEncEncodePicture(ctx->nvencoder, &params);
     }
 
-    reorder_queue_flush(ctx->reorder_queue);
-    av_fifo_freep2(&ctx->reorder_queue);
+    if (ctx->reorder_queue) {
+        reorder_queue_flush(ctx->reorder_queue);
+        av_fifo_freep2(&ctx->reorder_queue);
+    }
+
     av_fifo_freep2(&ctx->output_surface_ready_queue);
     av_fifo_freep2(&ctx->output_surface_queue);
     av_fifo_freep2(&ctx->unused_surface_queue);
