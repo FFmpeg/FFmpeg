@@ -56,7 +56,7 @@ The members of the TC can be elected from outside of the GA. Candidates for elec
 
 The conflict resolution process is detailed in the resolution process document.
 
-The TC can be contacted at <tc@ffmpeg>.
+The TC can be contacted at <tc@@ffmpeg>.
 
 @anchor{Resolution Process}
 @section Resolution Process
@@ -140,7 +140,7 @@ The members of the CC can be elected from outside of the GA. Candidates for elec
 
 The CC is governed by and responsible for enforcing the Code of Conduct.
 
-The CC can be contacted at <cc@ffmpeg>.
+The CC can be contacted at <cc@@ffmpeg>.
 
 @anchor{Code of Conduct}
 @chapter Code of Conduct
