@@ -273,9 +273,16 @@ static av_cold int init_video(AVFilterContext *ctx)
 {
     BufferSourceContext *c = ctx->priv;
 
-    if (c->pix_fmt == AV_PIX_FMT_NONE || !c->w || !c->h ||
-        av_q2d(c->time_base) <= 0) {
-        av_log(ctx, AV_LOG_ERROR, "Invalid parameters provided.\n");
+    if (c->pix_fmt == AV_PIX_FMT_NONE) {
+        av_log(ctx, AV_LOG_ERROR, "Unspecified pixel format\n");
+        return AVERROR(EINVAL);
+    }
+    if (c->w <= 0 || c->h <= 0) {
+        av_log(ctx, AV_LOG_ERROR, "Invalid size %dx%d\n", c->w, c->h);
+        return AVERROR(EINVAL);
+    }
+    if (av_q2d(c->time_base) <= 0) {
+        av_log(ctx, AV_LOG_ERROR, "Invalid time base %d/%d\n", c->time_base.num, c->time_base.den);
         return AVERROR(EINVAL);
     }
 
