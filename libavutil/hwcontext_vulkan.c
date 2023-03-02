@@ -1145,7 +1145,7 @@ static void free_exec_ctx(AVHWFramesContext *hwfc, VulkanExecCtx *cmd)
 
     av_freep(&cmd->queues);
     av_freep(&cmd->bufs);
-    cmd->pool = NULL;
+    cmd->pool = VK_NULL_HANDLE;
 }
 
 static VkCommandBuffer get_buf_exec_ctx(AVHWFramesContext *hwfc, VulkanExecCtx *cmd)
