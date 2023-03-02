@@ -78,18 +78,13 @@ typedef struct VulkanQueueCtx {
     unsigned int buf_deps_alloc_size;
 } VulkanQueueCtx;
 
-typedef struct VulkanExecCtx {
-    VkCommandPool pool;
-    VkCommandBuffer *bufs;
-    VulkanQueueCtx *queues;
-    int nb_queues;
-    int cur_queue_idx;
-} VulkanExecCtx;
-
 typedef struct VulkanDevicePriv {
     /* Vulkan library and loader functions */
     void *libvulkan;
-    FFVulkanFunctions vkfn;
+
+    FFVulkanContext    vkctx;
+    FFVkQueueFamilyCtx compute_qf;
+    FFVkQueueFamilyCtx transfer_qf;
 
     /* Properties */
     VkPhysicalDeviceProperties2 props;
@@ -111,9 +106,6 @@ typedef struct VulkanDevicePriv {
     /* Debug callback */
     VkDebugUtilsMessengerEXT debug_ctx;
 
-    /* Extensions */
-    FFVulkanExtensions extensions;
-
     /* Settings */
     int use_linear_images;
 
@@ -129,11 +121,11 @@ typedef struct VulkanDevicePriv {
 
 typedef struct VulkanFramesPriv {
     /* Image conversions */
-    VulkanExecCtx conv_ctx;
+    FFVkExecPool compute_exec;
 
     /* Image transfers */
-    VulkanExecCtx upload_ctx;
-    VulkanExecCtx download_ctx;
+    FFVkExecPool upload_exec;
+    FFVkExecPool download_exec;
 
     /* Modifier info list to free at uninit */
     VkImageDrmFormatModifierListCreateInfoEXT *modifier_info;
@@ -292,7 +284,7 @@ static int vkfmt_from_pixfmt2(AVHWDeviceContext *dev_ctx, enum AVPixelFormat p,
 {
     AVVulkanDeviceContext *hwctx = dev_ctx->hwctx;
     VulkanDevicePriv *priv = dev_ctx->internal->priv;
-    FFVulkanFunctions *vk = &priv->vkfn;
+    FFVulkanFunctions *vk = &priv->vkctx.vkfn;
 
     const VkFormatFeatureFlagBits2 basic_flags = VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
                                                  VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT  |
@@ -356,31 +348,6 @@ static int vkfmt_from_pixfmt2(AVHWDeviceContext *dev_ctx, enum AVPixelFormat p,
     }
 
     return AVERROR(EINVAL);
-}
-
-static const void *vk_find_struct(const void *chain, VkStructureType stype)
-{
-    const VkBaseInStructure *in = chain;
-    while (in) {
-        if (in->sType == stype)
-            return in;
-
-        in = in->pNext;
-    }
-
-    return NULL;
-}
-
-static void vk_link_struct(void *chain, void *in)
-{
-    VkBaseOutStructure *out = chain;
-    if (!in)
-        return;
-
-    while (out->pNext)
-        out = out->pNext;
-
-    out->pNext = in;
 }
 
 static int load_libvulkan(AVHWDeviceContext *ctx)
@@ -453,47 +420,6 @@ static const VulkanOptExtension optional_device_exts[] = {
     { VK_KHR_VIDEO_DECODE_H265_EXTENSION_NAME,                FF_VK_EXT_VIDEO_DECODE_H265      },
 };
 
-/* Converts return values to strings */
-static const char *vk_ret2str(VkResult res)
-{
-#define CASE(VAL) case VAL: return #VAL
-    switch (res) {
-    CASE(VK_SUCCESS);
-    CASE(VK_NOT_READY);
-    CASE(VK_TIMEOUT);
-    CASE(VK_EVENT_SET);
-    CASE(VK_EVENT_RESET);
-    CASE(VK_INCOMPLETE);
-    CASE(VK_ERROR_OUT_OF_HOST_MEMORY);
-    CASE(VK_ERROR_OUT_OF_DEVICE_MEMORY);
-    CASE(VK_ERROR_INITIALIZATION_FAILED);
-    CASE(VK_ERROR_DEVICE_LOST);
-    CASE(VK_ERROR_MEMORY_MAP_FAILED);
-    CASE(VK_ERROR_LAYER_NOT_PRESENT);
-    CASE(VK_ERROR_EXTENSION_NOT_PRESENT);
-    CASE(VK_ERROR_FEATURE_NOT_PRESENT);
-    CASE(VK_ERROR_INCOMPATIBLE_DRIVER);
-    CASE(VK_ERROR_TOO_MANY_OBJECTS);
-    CASE(VK_ERROR_FORMAT_NOT_SUPPORTED);
-    CASE(VK_ERROR_FRAGMENTED_POOL);
-    CASE(VK_ERROR_SURFACE_LOST_KHR);
-    CASE(VK_ERROR_NATIVE_WINDOW_IN_USE_KHR);
-    CASE(VK_SUBOPTIMAL_KHR);
-    CASE(VK_ERROR_OUT_OF_DATE_KHR);
-    CASE(VK_ERROR_INCOMPATIBLE_DISPLAY_KHR);
-    CASE(VK_ERROR_VALIDATION_FAILED_EXT);
-    CASE(VK_ERROR_INVALID_SHADER_NV);
-    CASE(VK_ERROR_OUT_OF_POOL_MEMORY);
-    CASE(VK_ERROR_INVALID_EXTERNAL_HANDLE);
-    CASE(VK_ERROR_NOT_PERMITTED_EXT);
-    CASE(VK_ERROR_INVALID_DRM_FORMAT_MODIFIER_PLANE_LAYOUT_EXT);
-    CASE(VK_ERROR_INVALID_DEVICE_ADDRESS_EXT);
-    CASE(VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT);
-    default: return "Unknown error";
-    }
-#undef CASE
-}
-
 static VkBool32 VKAPI_CALL vk_dbg_callback(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
                                            VkDebugUtilsMessageTypeFlagsEXT messageType,
                                            const VkDebugUtilsMessengerCallbackDataEXT *data,
@@ -544,7 +470,7 @@ static int check_extensions(AVHWDeviceContext *ctx, int dev, AVDictionary *opts,
     const char *tstr;
     const char **extension_names = NULL;
     VulkanDevicePriv *p = ctx->internal->priv;
-    FFVulkanFunctions *vk = &p->vkfn;
+    FFVulkanFunctions *vk = &p->vkctx.vkfn;
     AVVulkanDeviceContext *hwctx = ctx->hwctx;
     int err = 0, found, extensions_found = 0;
 
@@ -607,7 +533,7 @@ static int check_extensions(AVHWDeviceContext *ctx, int dev, AVDictionary *opts,
             continue;
 
         av_log(ctx, AV_LOG_VERBOSE, "Using %s extension %s\n", mod, tstr);
-        p->extensions |= optional_exts[i].flag;
+        p->vkctx.extensions |= optional_exts[i].flag;
         ADD_VAL_TO_LIST(extension_names, extensions_found, tstr);
     }
 
@@ -623,7 +549,7 @@ static int check_extensions(AVHWDeviceContext *ctx, int dev, AVDictionary *opts,
         if (found) {
             av_log(ctx, AV_LOG_VERBOSE, "Using %s extension %s\n", mod, tstr);
             ADD_VAL_TO_LIST(extension_names, extensions_found, tstr);
-            p->extensions |= FF_VK_EXT_DEBUG_UTILS;
+            p->vkctx.extensions |= FF_VK_EXT_DEBUG_UTILS;
         } else {
             av_log(ctx, AV_LOG_ERROR, "Debug extension \"%s\" not found!\n",
                    tstr);
@@ -675,7 +601,7 @@ static int check_validation_layers(AVHWDeviceContext *ctx, AVDictionary *opts,
 
     int found = 0, err = 0;
     VulkanDevicePriv *priv = ctx->internal->priv;
-    FFVulkanFunctions *vk = &priv->vkfn;
+    FFVulkanFunctions *vk = &priv->vkctx.vkfn;
 
     uint32_t sup_layer_count;
     VkLayerProperties *sup_layers;
@@ -782,7 +708,7 @@ static int create_instance(AVHWDeviceContext *ctx, AVDictionary *opts)
     int err = 0, debug_mode = 0;
     VkResult ret;
     VulkanDevicePriv *p = ctx->internal->priv;
-    FFVulkanFunctions *vk = &p->vkfn;
+    FFVulkanFunctions *vk = &p->vkctx.vkfn;
     AVVulkanDeviceContext *hwctx = ctx->hwctx;
     VkApplicationInfo application_info = {
         .sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO,
@@ -810,7 +736,7 @@ static int create_instance(AVHWDeviceContext *ctx, AVDictionary *opts)
             return err;
     }
 
-    err = ff_vk_load_functions(ctx, vk, p->extensions, 0, 0);
+    err = ff_vk_load_functions(ctx, vk, p->vkctx.extensions, 0, 0);
     if (err < 0) {
         av_log(ctx, AV_LOG_ERROR, "Unable to load instance enumeration functions!\n");
         return err;
@@ -846,12 +772,12 @@ static int create_instance(AVHWDeviceContext *ctx, AVDictionary *opts)
     /* Check for errors */
     if (ret != VK_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "Instance creation failure: %s\n",
-               vk_ret2str(ret));
+               ff_vk_ret2str(ret));
         err = AVERROR_EXTERNAL;
         goto fail;
     }
 
-    err = ff_vk_load_functions(ctx, vk, p->extensions, 1, 0);
+    err = ff_vk_load_functions(ctx, vk, p->vkctx.extensions, 1, 0);
     if (err < 0) {
         av_log(ctx, AV_LOG_ERROR, "Unable to load instance functions!\n");
         goto fail;
@@ -912,7 +838,7 @@ static int find_device(AVHWDeviceContext *ctx, VulkanDeviceSelection *select)
     uint32_t num;
     VkResult ret;
     VulkanDevicePriv *p = ctx->internal->priv;
-    FFVulkanFunctions *vk = &p->vkfn;
+    FFVulkanFunctions *vk = &p->vkctx.vkfn;
     VkPhysicalDevice *devices = NULL;
     VkPhysicalDeviceIDProperties *idp = NULL;
     VkPhysicalDeviceProperties2 *prop = NULL;
@@ -921,7 +847,7 @@ static int find_device(AVHWDeviceContext *ctx, VulkanDeviceSelection *select)
 
     ret = vk->EnumeratePhysicalDevices(hwctx->inst, &num, NULL);
     if (ret != VK_SUCCESS || !num) {
-        av_log(ctx, AV_LOG_ERROR, "No devices found: %s!\n", vk_ret2str(ret));
+        av_log(ctx, AV_LOG_ERROR, "No devices found: %s!\n", ff_vk_ret2str(ret));
         return AVERROR(ENODEV);
     }
 
@@ -932,7 +858,7 @@ static int find_device(AVHWDeviceContext *ctx, VulkanDeviceSelection *select)
     ret = vk->EnumeratePhysicalDevices(hwctx->inst, &num, devices);
     if (ret != VK_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "Failed enumerating devices: %s\n",
-               vk_ret2str(ret));
+               ff_vk_ret2str(ret));
         err = AVERROR(ENODEV);
         goto end;
     }
@@ -1092,7 +1018,7 @@ static int setup_queue_families(AVHWDeviceContext *ctx, VkDeviceCreateInfo *cd)
     float *weights;
     VkQueueFamilyProperties *qf = NULL;
     VulkanDevicePriv *p = ctx->internal->priv;
-    FFVulkanFunctions *vk = &p->vkfn;
+    FFVulkanFunctions *vk = &p->vkctx.vkfn;
     AVVulkanDeviceContext *hwctx = ctx->hwctx;
     int graph_index, comp_index, tx_index, enc_index, dec_index;
 
@@ -1220,241 +1146,10 @@ static int setup_queue_families(AVHWDeviceContext *ctx, VkDeviceCreateInfo *cd)
     return 0;
 }
 
-static int create_exec_ctx(AVHWFramesContext *hwfc, VulkanExecCtx *cmd,
-                           int queue_family_index, int num_queues)
-{
-    VkResult ret;
-    AVVulkanDeviceContext *hwctx = hwfc->device_ctx->hwctx;
-    VulkanDevicePriv *p = hwfc->device_ctx->internal->priv;
-    FFVulkanFunctions *vk = &p->vkfn;
-
-    VkCommandPoolCreateInfo cqueue_create = {
-        .sType              = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-        .flags              = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-        .queueFamilyIndex   = queue_family_index,
-    };
-    VkCommandBufferAllocateInfo cbuf_create = {
-        .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-        .commandBufferCount = num_queues,
-    };
-
-    cmd->nb_queues = num_queues;
-
-    /* Create command pool */
-    ret = vk->CreateCommandPool(hwctx->act_dev, &cqueue_create,
-                                hwctx->alloc, &cmd->pool);
-    if (ret != VK_SUCCESS) {
-        av_log(hwfc, AV_LOG_ERROR, "Command pool creation failure: %s\n",
-               vk_ret2str(ret));
-        return AVERROR_EXTERNAL;
-    }
-
-    cmd->bufs = av_mallocz(num_queues * sizeof(*cmd->bufs));
-    if (!cmd->bufs)
-        return AVERROR(ENOMEM);
-
-    cbuf_create.commandPool = cmd->pool;
-
-    /* Allocate command buffer */
-    ret = vk->AllocateCommandBuffers(hwctx->act_dev, &cbuf_create, cmd->bufs);
-    if (ret != VK_SUCCESS) {
-        av_log(hwfc, AV_LOG_ERROR, "Command buffer alloc failure: %s\n",
-               vk_ret2str(ret));
-        av_freep(&cmd->bufs);
-        return AVERROR_EXTERNAL;
-    }
-
-    cmd->queues = av_mallocz(num_queues * sizeof(*cmd->queues));
-    if (!cmd->queues)
-        return AVERROR(ENOMEM);
-
-    for (int i = 0; i < num_queues; i++) {
-        VulkanQueueCtx *q = &cmd->queues[i];
-        vk->GetDeviceQueue(hwctx->act_dev, queue_family_index, i, &q->queue);
-        q->was_synchronous = 1;
-        q->qf = queue_family_index;
-        q->qidx = i;
-    }
-
-    return 0;
-}
-
-static void free_exec_ctx(AVHWFramesContext *hwfc, VulkanExecCtx *cmd)
-{
-    AVVulkanDeviceContext *hwctx = hwfc->device_ctx->hwctx;
-    VulkanDevicePriv *p = hwfc->device_ctx->internal->priv;
-    FFVulkanFunctions *vk = &p->vkfn;
-
-    if (cmd->queues) {
-        for (int i = 0; i < cmd->nb_queues; i++) {
-            VulkanQueueCtx *q = &cmd->queues[i];
-
-            /* Make sure all queues have finished executing */
-            if (q->fence && !q->was_synchronous) {
-                vk->WaitForFences(hwctx->act_dev, 1, &q->fence, VK_TRUE, UINT64_MAX);
-                vk->ResetFences(hwctx->act_dev, 1, &q->fence);
-            }
-
-            /* Free the fence */
-            if (q->fence)
-                vk->DestroyFence(hwctx->act_dev, q->fence, hwctx->alloc);
-
-            /* Free buffer dependencies */
-            for (int j = 0; j < q->nb_buf_deps; j++)
-                av_buffer_unref(&q->buf_deps[j]);
-            av_free(q->buf_deps);
-        }
-    }
-
-    if (cmd->bufs)
-        vk->FreeCommandBuffers(hwctx->act_dev, cmd->pool, cmd->nb_queues, cmd->bufs);
-    if (cmd->pool)
-        vk->DestroyCommandPool(hwctx->act_dev, cmd->pool, hwctx->alloc);
-
-    av_freep(&cmd->queues);
-    av_freep(&cmd->bufs);
-    cmd->pool = VK_NULL_HANDLE;
-}
-
-static VkCommandBuffer get_buf_exec_ctx(AVHWFramesContext *hwfc, VulkanExecCtx *cmd)
-{
-    return cmd->bufs[cmd->cur_queue_idx];
-}
-
-static void unref_exec_ctx_deps(AVHWFramesContext *hwfc, VulkanExecCtx *cmd)
-{
-    VulkanQueueCtx *q = &cmd->queues[cmd->cur_queue_idx];
-
-    for (int j = 0; j < q->nb_buf_deps; j++)
-        av_buffer_unref(&q->buf_deps[j]);
-    q->nb_buf_deps = 0;
-}
-
-static int wait_start_exec_ctx(AVHWFramesContext *hwfc, VulkanExecCtx *cmd)
-{
-    VkResult ret;
-    AVVulkanDeviceContext *hwctx = hwfc->device_ctx->hwctx;
-    VulkanQueueCtx *q = &cmd->queues[cmd->cur_queue_idx];
-    VulkanDevicePriv *p = hwfc->device_ctx->internal->priv;
-    FFVulkanFunctions *vk = &p->vkfn;
-
-    VkCommandBufferBeginInfo cmd_start = {
-        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-    };
-
-    /* Create the fence and don't wait for it initially */
-    if (!q->fence) {
-        VkFenceCreateInfo fence_spawn = {
-            .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-        };
-        ret = vk->CreateFence(hwctx->act_dev, &fence_spawn, hwctx->alloc,
-                              &q->fence);
-        if (ret != VK_SUCCESS) {
-            av_log(hwfc, AV_LOG_ERROR, "Failed to queue frame fence: %s\n",
-                   vk_ret2str(ret));
-            return AVERROR_EXTERNAL;
-        }
-    } else if (!q->was_synchronous) {
-        vk->WaitForFences(hwctx->act_dev, 1, &q->fence, VK_TRUE, UINT64_MAX);
-        vk->ResetFences(hwctx->act_dev, 1, &q->fence);
-    }
-
-    /* Discard queue dependencies */
-    unref_exec_ctx_deps(hwfc, cmd);
-
-    ret = vk->BeginCommandBuffer(cmd->bufs[cmd->cur_queue_idx], &cmd_start);
-    if (ret != VK_SUCCESS) {
-        av_log(hwfc, AV_LOG_ERROR, "Unable to init command buffer: %s\n",
-               vk_ret2str(ret));
-        return AVERROR_EXTERNAL;
-    }
-
-    return 0;
-}
-
-static int add_buf_dep_exec_ctx(AVHWFramesContext *hwfc, VulkanExecCtx *cmd,
-                                AVBufferRef * const *deps, int nb_deps)
-{
-    AVBufferRef **dst;
-    VulkanQueueCtx *q = &cmd->queues[cmd->cur_queue_idx];
-
-    if (!deps || !nb_deps)
-        return 0;
-
-    dst = av_fast_realloc(q->buf_deps, &q->buf_deps_alloc_size,
-                          (q->nb_buf_deps + nb_deps) * sizeof(*dst));
-    if (!dst)
-        goto err;
-
-    q->buf_deps = dst;
-
-    for (int i = 0; i < nb_deps; i++) {
-        q->buf_deps[q->nb_buf_deps] = av_buffer_ref(deps[i]);
-        if (!q->buf_deps[q->nb_buf_deps])
-            goto err;
-        q->nb_buf_deps++;
-    }
-
-    return 0;
-
-err:
-    unref_exec_ctx_deps(hwfc, cmd);
-    return AVERROR(ENOMEM);
-}
-
-static int submit_exec_ctx(AVHWFramesContext *hwfc, VulkanExecCtx *cmd,
-                           VkSubmitInfo *s_info, AVVkFrame *f, int synchronous)
-{
-    VkResult ret;
-    VulkanQueueCtx *q = &cmd->queues[cmd->cur_queue_idx];
-    VulkanDevicePriv *p = hwfc->device_ctx->internal->priv;
-    AVVulkanDeviceContext *hwctx = hwfc->device_ctx->hwctx;
-    FFVulkanFunctions *vk = &p->vkfn;
-
-    ret = vk->EndCommandBuffer(cmd->bufs[cmd->cur_queue_idx]);
-    if (ret != VK_SUCCESS) {
-        av_log(hwfc, AV_LOG_ERROR, "Unable to finish command buffer: %s\n",
-               vk_ret2str(ret));
-        unref_exec_ctx_deps(hwfc, cmd);
-        return AVERROR_EXTERNAL;
-    }
-
-    s_info->pCommandBuffers = &cmd->bufs[cmd->cur_queue_idx];
-    s_info->commandBufferCount = 1;
-
-    hwctx->lock_queue(hwfc->device_ctx, q->qf, q->qidx);
-    ret = vk->QueueSubmit(q->queue, 1, s_info, q->fence);
-    hwctx->unlock_queue(hwfc->device_ctx, q->qf, q->qidx);
-    if (ret != VK_SUCCESS) {
-        av_log(hwfc, AV_LOG_ERROR, "Queue submission failure: %s\n",
-               vk_ret2str(ret));
-        unref_exec_ctx_deps(hwfc, cmd);
-        return AVERROR_EXTERNAL;
-    }
-
-    if (f)
-        for (int i = 0; i < s_info->signalSemaphoreCount; i++)
-            f->sem_value[i]++;
-
-    q->was_synchronous = synchronous;
-
-    if (synchronous) {
-        vk->WaitForFences(hwctx->act_dev, 1, &q->fence, VK_TRUE, UINT64_MAX);
-        vk->ResetFences(hwctx->act_dev, 1, &q->fence);
-        unref_exec_ctx_deps(hwfc, cmd);
-    } else { /* Rotate queues */
-        cmd->cur_queue_idx = (cmd->cur_queue_idx + 1) % cmd->nb_queues;
-    }
-
-    return 0;
-}
-
 static void vulkan_device_free(AVHWDeviceContext *ctx)
 {
     VulkanDevicePriv *p = ctx->internal->priv;
-    FFVulkanFunctions *vk = &p->vkfn;
+    FFVulkanFunctions *vk = &p->vkctx.vkfn;
     AVVulkanDeviceContext *hwctx = ctx->hwctx;
 
     if (hwctx->act_dev)
@@ -1488,7 +1183,7 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     VkResult ret;
     AVDictionaryEntry *opt_d;
     VulkanDevicePriv *p = ctx->internal->priv;
-    FFVulkanFunctions *vk = &p->vkfn;
+    FFVulkanFunctions *vk = &p->vkctx.vkfn;
     AVVulkanDeviceContext *hwctx = ctx->hwctx;
 
     /*
@@ -1591,7 +1286,7 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
 
     if (ret != VK_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "Device creation failure: %s\n",
-               vk_ret2str(ret));
+               ff_vk_ret2str(ret));
         for (int i = 0; i < dev_info.enabledExtensionCount; i++)
             av_free((void *)dev_info.ppEnabledExtensionNames[i]);
         av_free((void *)dev_info.ppEnabledExtensionNames);
@@ -1633,7 +1328,7 @@ static int vulkan_device_init(AVHWDeviceContext *ctx)
     uint32_t qf_num;
     AVVulkanDeviceContext *hwctx = ctx->hwctx;
     VulkanDevicePriv *p = ctx->internal->priv;
-    FFVulkanFunctions *vk = &p->vkfn;
+    FFVulkanFunctions *vk = &p->vkctx.vkfn;
     VkQueueFamilyProperties *qf;
     int graph_index, comp_index, tx_index, enc_index, dec_index;
 
@@ -1642,13 +1337,13 @@ static int vulkan_device_init(AVHWDeviceContext *ctx)
         for (int j = 0; j < FF_ARRAY_ELEMS(optional_device_exts); j++) {
             if (!strcmp(hwctx->enabled_dev_extensions[i],
                         optional_device_exts[j].name)) {
-                p->extensions |= optional_device_exts[j].flag;
+                p->vkctx.extensions |= optional_device_exts[j].flag;
                 break;
             }
         }
     }
 
-    err = ff_vk_load_functions(ctx, vk, p->extensions, 1, 1);
+    err = ff_vk_load_functions(ctx, vk, p->vkctx.extensions, 1, 1);
     if (err < 0) {
         av_log(ctx, AV_LOG_ERROR, "Unable to load functions!\n");
         return err;
@@ -1668,7 +1363,7 @@ static int vulkan_device_init(AVHWDeviceContext *ctx)
            p->props.properties.limits.minMemoryMapAlignment);
     av_log(ctx, AV_LOG_VERBOSE, "    nonCoherentAtomSize:                %"PRIu64"\n",
            p->props.properties.limits.nonCoherentAtomSize);
-    if (p->extensions & FF_VK_EXT_EXTERNAL_HOST_MEMORY)
+    if (p->vkctx.extensions & FF_VK_EXT_EXTERNAL_HOST_MEMORY)
         av_log(ctx, AV_LOG_VERBOSE, "    minImportedHostPointerAlignment:    %"PRIu64"\n",
                p->hprops.minImportedHostPointerAlignment);
 
@@ -1756,6 +1451,13 @@ static int vulkan_device_init(AVHWDeviceContext *ctx)
 
     /* Get device capabilities */
     vk->GetPhysicalDeviceMemoryProperties(hwctx->phys_dev, &p->mprops);
+
+    p->vkctx.device = ctx;
+    p->vkctx.hwctx = hwctx;
+
+    ff_vk_load_props(&p->vkctx);
+    ff_vk_qf_init(&p->vkctx, &p->compute_qf, VK_QUEUE_COMPUTE_BIT);
+    ff_vk_qf_init(&p->vkctx, &p->transfer_qf, VK_QUEUE_TRANSFER_BIT);
 
     return 0;
 }
@@ -1921,7 +1623,7 @@ static int alloc_mem(AVHWDeviceContext *ctx, VkMemoryRequirements *req,
     VkResult ret;
     int index = -1;
     VulkanDevicePriv *p = ctx->internal->priv;
-    FFVulkanFunctions *vk = &p->vkfn;
+    FFVulkanFunctions *vk = &p->vkctx.vkfn;
     AVVulkanDeviceContext *dev_hwctx = ctx->hwctx;
     VkMemoryAllocateInfo alloc_info = {
         .sType          = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
@@ -1963,7 +1665,7 @@ static int alloc_mem(AVHWDeviceContext *ctx, VkMemoryRequirements *req,
                              dev_hwctx->alloc, mem);
     if (ret != VK_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "Failed to allocate memory: %s\n",
-               vk_ret2str(ret));
+               ff_vk_ret2str(ret));
         return AVERROR(ENOMEM);
     }
 
@@ -2014,7 +1716,7 @@ static void vulkan_frame_free(void *opaque, uint8_t *data)
     AVHWFramesContext *hwfc = opaque;
     AVVulkanDeviceContext *hwctx = hwfc->device_ctx->hwctx;
     VulkanDevicePriv *p = hwfc->device_ctx->internal->priv;
-    FFVulkanFunctions *vk = &p->vkfn;
+    FFVulkanFunctions *vk = &p->vkctx.vkfn;
     int nb_images = ff_vk_count_images(f);
 
     VkSemaphoreWaitInfo sem_wait = {
@@ -2044,8 +1746,7 @@ static int alloc_bind_mem(AVHWFramesContext *hwfc, AVVkFrame *f,
     VkResult ret;
     AVHWDeviceContext *ctx = hwfc->device_ctx;
     VulkanDevicePriv *p = ctx->internal->priv;
-    FFVulkanFunctions *vk = &p->vkfn;
-    AVVulkanFramesContext *hwfctx = hwfc->hwctx;
+    FFVulkanFunctions *vk = &p->vkctx.vkfn;
     VkBindImageMemoryInfo bind_info[AV_NUM_DATA_POINTERS] = { { 0 } };
 
     AVVulkanDeviceContext *hwctx = ctx->hwctx;
@@ -2101,7 +1802,7 @@ static int alloc_bind_mem(AVHWFramesContext *hwfc, AVVkFrame *f,
     ret = vk->BindImageMemory2(hwctx->act_dev, img_cnt, bind_info);
     if (ret != VK_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "Failed to bind memory: %s\n",
-               vk_ret2str(ret));
+               ff_vk_ret2str(ret));
         return AVERROR_EXTERNAL;
     }
 
@@ -2116,128 +1817,86 @@ enum PrepMode {
     PREP_MODE_DECODING_DPB,
 };
 
-static int prepare_frame(AVHWFramesContext *hwfc, VulkanExecCtx *ectx,
+static int prepare_frame(AVHWFramesContext *hwfc, FFVkExecPool *ectx,
                          AVVkFrame *frame, enum PrepMode pmode)
 {
     int err;
-    uint32_t src_qf, dst_qf;
+    VulkanDevicePriv *p = hwfc->device_ctx->internal->priv;
+    FFVulkanFunctions *vk = &p->vkctx.vkfn;
+    VkImageMemoryBarrier2 img_bar[AV_NUM_DATA_POINTERS];
+    int nb_img_bar = 0;
+
+    uint32_t dst_qf = VK_QUEUE_FAMILY_IGNORED;
     VkImageLayout new_layout;
     VkAccessFlags2 new_access;
-    AVVulkanFramesContext *vkfc = hwfc->hwctx;
-    VulkanDevicePriv *p = hwfc->device_ctx->internal->priv;
-    FFVulkanFunctions *vk = &p->vkfn;
-    uint64_t sem_sig_val[AV_NUM_DATA_POINTERS];
-    int nb_images = ff_vk_count_images(frame);
+    VkPipelineStageFlagBits2 src_stage = VK_PIPELINE_STAGE_2_NONE;
 
-    VkImageMemoryBarrier2 img_bar[AV_NUM_DATA_POINTERS] = { 0 };
-    VkDependencyInfo dep_info;
-
-    VkTimelineSemaphoreSubmitInfo s_timeline_sem_info = {
-        .sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,
-        .pSignalSemaphoreValues = sem_sig_val,
-        .signalSemaphoreValueCount = nb_images,
+    /* This is dirty - but it works. The vulkan.c dependency system doesn't
+     * free non-refcounted frames, and non-refcounted hardware frames cannot
+     * happen anywhere outside of here. */
+    AVBufferRef tmp_ref = {
+        .data = (uint8_t *)hwfc,
+    };
+    AVFrame tmp_frame = {
+        .data[0] = (uint8_t *)frame,
+        .hw_frames_ctx = &tmp_ref,
     };
 
-    VkSubmitInfo s_info = {
-        .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-        .pNext                = &s_timeline_sem_info,
-        .pSignalSemaphores    = frame->sem,
-        .signalSemaphoreCount = nb_images,
-    };
+    VkCommandBuffer cmd_buf;
+    FFVkExecContext *exec = ff_vk_exec_get(ectx);
+    cmd_buf = exec->buf;
+    ff_vk_exec_start(&p->vkctx, exec);
 
-    VkPipelineStageFlagBits wait_st[AV_NUM_DATA_POINTERS];
-
-    if ((err = wait_start_exec_ctx(hwfc, ectx)))
+    err = ff_vk_exec_add_dep_frame(&p->vkctx, exec, &tmp_frame,
+                                   VK_PIPELINE_STAGE_2_NONE,
+                                   VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT);
+    if (err < 0)
         return err;
-
-    vkfc->lock_frame(hwfc, frame);
-
-    for (int i = 0; i < nb_images; i++) {
-        wait_st[i] = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        sem_sig_val[i] = frame->sem_value[i] + 1;
-    }
 
     switch (pmode) {
     case PREP_MODE_WRITE:
         new_layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
         new_access = VK_ACCESS_TRANSFER_WRITE_BIT;
-        src_qf     = VK_QUEUE_FAMILY_IGNORED;
-        dst_qf     = VK_QUEUE_FAMILY_IGNORED;
         break;
     case PREP_MODE_EXTERNAL_IMPORT:
         new_layout = VK_IMAGE_LAYOUT_GENERAL;
         new_access = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
-        src_qf     = VK_QUEUE_FAMILY_EXTERNAL_KHR;
-        dst_qf     = VK_QUEUE_FAMILY_IGNORED;
-        s_timeline_sem_info.pWaitSemaphoreValues = frame->sem_value;
-        s_timeline_sem_info.waitSemaphoreValueCount = nb_images;
-        s_info.pWaitSemaphores = frame->sem;
-        s_info.pWaitDstStageMask = wait_st;
-        s_info.waitSemaphoreCount = nb_images;
         break;
     case PREP_MODE_EXTERNAL_EXPORT:
         new_layout = VK_IMAGE_LAYOUT_GENERAL;
         new_access = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
-        src_qf     = VK_QUEUE_FAMILY_IGNORED;
         dst_qf     = VK_QUEUE_FAMILY_EXTERNAL_KHR;
-        s_timeline_sem_info.pWaitSemaphoreValues = frame->sem_value;
-        s_timeline_sem_info.waitSemaphoreValueCount = nb_images;
-        s_info.pWaitSemaphores = frame->sem;
-        s_info.pWaitDstStageMask = wait_st;
-        s_info.waitSemaphoreCount = nb_images;
+        src_stage  = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
         break;
     case PREP_MODE_DECODING_DST:
         new_layout = VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR;
         new_access = VK_ACCESS_TRANSFER_WRITE_BIT;
-        src_qf     = VK_QUEUE_FAMILY_IGNORED;
-        dst_qf     = VK_QUEUE_FAMILY_IGNORED;
         break;
     case PREP_MODE_DECODING_DPB:
         new_layout = VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR;
         new_access = VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
-        src_qf     = VK_QUEUE_FAMILY_IGNORED;
-        dst_qf     = VK_QUEUE_FAMILY_IGNORED;
         break;
     }
 
-    for (int i = 0; i < nb_images; i++) {
-        img_bar[i] = (VkImageMemoryBarrier2) {
-            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-            .pNext = NULL,
-            .srcStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-            .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-            .srcAccessMask = frame->access[i],
-            .dstAccessMask = new_access,
-            .oldLayout = frame->layout[i],
-            .newLayout = new_layout,
-            .srcQueueFamilyIndex = src_qf,
-            .dstQueueFamilyIndex = dst_qf,
-            .image = frame->img[i],
-            .subresourceRange = (VkImageSubresourceRange) {
-                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                .layerCount = VK_REMAINING_ARRAY_LAYERS,
-                .levelCount = 1,
-            },
-        };
-    }
+    ff_vk_frame_barrier(&p->vkctx, exec, &tmp_frame, img_bar, &nb_img_bar,
+                        src_stage,
+                        VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                        new_access, new_layout, dst_qf);
 
-    vk->CmdPipelineBarrier2(get_buf_exec_ctx(hwfc, ectx), &(VkDependencyInfo) {
+    vk->CmdPipelineBarrier2(cmd_buf, &(VkDependencyInfo) {
             .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
             .pImageMemoryBarriers = img_bar,
-            .imageMemoryBarrierCount = nb_images,
+            .imageMemoryBarrierCount = nb_img_bar,
         });
 
-    err = submit_exec_ctx(hwfc, ectx, &s_info, frame, 0);
-    if (err >= 0) {
-        for (int i = 0; i < nb_images; i++) {
-            frame->layout[i] = img_bar[i].newLayout;
-            frame->access[i] = img_bar[i].dstAccessMask;
-            frame->queue_family[i] = img_bar[i].dstQueueFamilyIndex;
-        }
-    }
-    vkfc->unlock_frame(hwfc, frame);
+    err = ff_vk_exec_submit(&p->vkctx, exec);
+    if (err < 0)
+        return err;
 
-    return err;
+    /* We can do this because there are no real dependencies */
+    ff_vk_exec_discard_deps(&p->vkctx, exec);
+
+    return 0;
 }
 
 static inline void get_plane_wh(uint32_t *w, uint32_t *h, enum AVPixelFormat format,
@@ -2267,9 +1926,8 @@ static int create_frame(AVHWFramesContext *hwfc, AVVkFrame **frame,
     AVVulkanFramesContext *hwfc_vk = hwfc->hwctx;
     AVHWDeviceContext *ctx = hwfc->device_ctx;
     VulkanDevicePriv *p = ctx->internal->priv;
-    FFVulkanFunctions *vk = &p->vkfn;
+    FFVulkanFunctions *vk = &p->vkctx.vkfn;
     AVVulkanDeviceContext *hwctx = ctx->hwctx;
-    AVVulkanFramesContext *frames = hwfc->hwctx;
 
     VkExportSemaphoreCreateInfo ext_sem_info = {
         .sType = VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_CREATE_INFO,
@@ -2285,9 +1943,9 @@ static int create_frame(AVHWFramesContext *hwfc, AVVkFrame **frame,
     VkSemaphoreTypeCreateInfo sem_type_info = {
         .sType         = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
 #ifdef _WIN32
-        .pNext         = p->extensions & FF_VK_EXT_EXTERNAL_WIN32_SEM ? &ext_sem_info : NULL,
+        .pNext         = p->vkctx.extensions & FF_VK_EXT_EXTERNAL_WIN32_SEM ? &ext_sem_info : NULL,
 #else
-        .pNext         = p->extensions & FF_VK_EXT_EXTERNAL_FD_SEM ? &ext_sem_info : NULL,
+        .pNext         = p->vkctx.extensions & FF_VK_EXT_EXTERNAL_FD_SEM ? &ext_sem_info : NULL,
 #endif
         .semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE,
         .initialValue  = 0,
@@ -2334,7 +1992,7 @@ static int create_frame(AVHWFramesContext *hwfc, AVVkFrame **frame,
                               hwctx->alloc, &f->img[i]);
         if (ret != VK_SUCCESS) {
             av_log(ctx, AV_LOG_ERROR, "Image creation failure: %s\n",
-                   vk_ret2str(ret));
+                   ff_vk_ret2str(ret));
             err = AVERROR(EINVAL);
             goto fail;
         }
@@ -2344,7 +2002,7 @@ static int create_frame(AVHWFramesContext *hwfc, AVVkFrame **frame,
                                   hwctx->alloc, &f->sem[i]);
         if (ret != VK_SUCCESS) {
             av_log(hwctx, AV_LOG_ERROR, "Failed to create semaphore: %s\n",
-                   vk_ret2str(ret));
+                   ff_vk_ret2str(ret));
             return AVERROR_EXTERNAL;
         }
 
@@ -2375,11 +2033,11 @@ static void try_export_flags(AVHWFramesContext *hwfc,
     AVVulkanFramesContext *hwctx = hwfc->hwctx;
     AVVulkanDeviceContext *dev_hwctx = hwfc->device_ctx->hwctx;
     VulkanDevicePriv *p = hwfc->device_ctx->internal->priv;
-    FFVulkanFunctions *vk = &p->vkfn;
+    FFVulkanFunctions *vk = &p->vkctx.vkfn;
 
     const VkImageDrmFormatModifierListCreateInfoEXT *drm_mod_info =
-        vk_find_struct(hwctx->create_pnext,
-                       VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_LIST_CREATE_INFO_EXT);
+        ff_vk_find_struct(hwctx->create_pnext,
+                          VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_LIST_CREATE_INFO_EXT);
     int has_mods = hwctx->tiling == VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT && drm_mod_info;
     int nb_mods;
 
@@ -2446,12 +2104,12 @@ static AVBufferRef *vulkan_pool_alloc(void *opaque, size_t size)
     };
 
 #ifdef _WIN32
-    if (p->extensions & FF_VK_EXT_EXTERNAL_WIN32_MEMORY)
+    if (p->vkctx.extensions & FF_VK_EXT_EXTERNAL_WIN32_MEMORY)
         try_export_flags(hwfc, &eiinfo.handleTypes, &e, IsWindows8OrGreater()
                              ? VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT
                              : VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT);
 #else
-    if (p->extensions & FF_VK_EXT_EXTERNAL_FD_MEMORY)
+    if (p->vkctx.extensions & FF_VK_EXT_EXTERNAL_FD_MEMORY)
         try_export_flags(hwfc, &eiinfo.handleTypes, &e,
                          VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT);
 #endif
@@ -2473,11 +2131,11 @@ static AVBufferRef *vulkan_pool_alloc(void *opaque, size_t size)
 
     if ( (hwctx->usage & VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR) &&
         !(hwctx->usage & VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR))
-        err = prepare_frame(hwfc, &fp->conv_ctx, f, PREP_MODE_DECODING_DPB);
+        err = prepare_frame(hwfc, &fp->compute_exec, f, PREP_MODE_DECODING_DPB);
     else if (hwctx->usage & VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR)
-        err = prepare_frame(hwfc, &fp->conv_ctx, f, PREP_MODE_DECODING_DST);
+        err = prepare_frame(hwfc, &fp->compute_exec, f, PREP_MODE_DECODING_DST);
     else
-        err = prepare_frame(hwfc, &fp->conv_ctx, f, PREP_MODE_WRITE);
+        err = prepare_frame(hwfc, &fp->compute_exec, f, PREP_MODE_WRITE);
     if (err)
         goto fail;
 
@@ -2505,6 +2163,7 @@ static void unlock_frame(AVHWFramesContext *fc, AVVkFrame *vkf)
 
 static void vulkan_frames_uninit(AVHWFramesContext *hwfc)
 {
+    VulkanDevicePriv *p = hwfc->device_ctx->internal->priv;
     VulkanFramesPriv *fp = hwfc->internal->priv;
 
     if (fp->modifier_info) {
@@ -2513,9 +2172,9 @@ static void vulkan_frames_uninit(AVHWFramesContext *hwfc)
         av_freep(&fp->modifier_info);
     }
 
-    free_exec_ctx(hwfc, &fp->conv_ctx);
-    free_exec_ctx(hwfc, &fp->upload_ctx);
-    free_exec_ctx(hwfc, &fp->download_ctx);
+    ff_vk_exec_pool_free(&p->vkctx, &fp->compute_exec);
+    ff_vk_exec_pool_free(&p->vkctx, &fp->upload_exec);
+    ff_vk_exec_pool_free(&p->vkctx, &fp->download_exec);
 }
 
 static int vulkan_frames_init(AVHWFramesContext *hwfc)
@@ -2524,7 +2183,6 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
     AVVkFrame *f;
     AVVulkanFramesContext *hwctx = hwfc->hwctx;
     VulkanFramesPriv *fp = hwfc->internal->priv;
-    AVVulkanDeviceContext *dev_hwctx = hwfc->device_ctx->hwctx;
     VulkanDevicePriv *p = hwfc->device_ctx->internal->priv;
     VkImageUsageFlagBits supported_usage;
     const struct FFVkFormatEntry *fmt;
@@ -2609,20 +2267,18 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
     if (!hwctx->unlock_frame)
         hwctx->unlock_frame = unlock_frame;
 
-    err = create_exec_ctx(hwfc, &fp->conv_ctx,
-                          dev_hwctx->queue_family_comp_index,
-                          dev_hwctx->nb_comp_queues);
+    err = ff_vk_exec_pool_init(&p->vkctx, &p->compute_qf, &fp->compute_exec,
+                               p->compute_qf.nb_queues*4, 0, 0, 0, NULL);
     if (err)
         return err;
 
-    err = create_exec_ctx(hwfc, &fp->upload_ctx,
-                          dev_hwctx->queue_family_tx_index,
-                          dev_hwctx->nb_tx_queues);
+    err = ff_vk_exec_pool_init(&p->vkctx, &p->transfer_qf, &fp->upload_exec,
+                               p->transfer_qf.nb_queues*4, 0, 0, 0, NULL);
     if (err)
         return err;
 
-    err = create_exec_ctx(hwfc, &fp->download_ctx,
-                          dev_hwctx->queue_family_tx_index, 1);
+    err = ff_vk_exec_pool_init(&p->vkctx, &p->transfer_qf, &fp->download_exec,
+                               p->transfer_qf.nb_queues*4, 0, 0, 0, NULL);
     if (err)
         return err;
 
@@ -2682,7 +2338,7 @@ static void vulkan_unmap_from_drm(AVHWFramesContext *hwfc, HWMapDescriptor *hwma
     AVVkFrame *f = hwmap->priv;
     AVVulkanDeviceContext *hwctx = hwfc->device_ctx->hwctx;
     VulkanDevicePriv *p = hwfc->device_ctx->internal->priv;
-    FFVulkanFunctions *vk = &p->vkfn;
+    FFVulkanFunctions *vk = &p->vkctx.vkfn;
     const int nb_images = ff_vk_count_images(f);
 
     VkSemaphoreWaitInfo wait_info = {
@@ -2749,8 +2405,7 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
     AVHWDeviceContext *ctx = hwfc->device_ctx;
     AVVulkanDeviceContext *hwctx = ctx->hwctx;
     VulkanDevicePriv *p = ctx->internal->priv;
-    FFVulkanFunctions *vk = &p->vkfn;
-    AVVulkanFramesContext *hwfctx = hwfc->hwctx;
+    FFVulkanFunctions *vk = &p->vkctx.vkfn;
     VulkanFramesPriv *fp = hwfc->internal->priv;
     const AVDRMFrameDescriptor *desc = (AVDRMFrameDescriptor *)src->data[0];
     VkBindImageMemoryInfo bind_info[AV_DRM_MAX_PLANES];
@@ -2854,7 +2509,7 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
                                                           &fmt_props, &props_ret);
         if (ret != VK_SUCCESS) {
             av_log(ctx, AV_LOG_ERROR, "Cannot map DRM frame to Vulkan: %s\n",
-                   vk_ret2str(ret));
+                   ff_vk_ret2str(ret));
             err = AVERROR_EXTERNAL;
             goto fail;
         }
@@ -2877,7 +2532,7 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
                               hwctx->alloc, &f->img[i]);
         if (ret != VK_SUCCESS) {
             av_log(ctx, AV_LOG_ERROR, "Image creation failure: %s\n",
-                   vk_ret2str(ret));
+                   ff_vk_ret2str(ret));
             err = AVERROR(EINVAL);
             goto fail;
         }
@@ -2886,7 +2541,7 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
                                   hwctx->alloc, &f->sem[i]);
         if (ret != VK_SUCCESS) {
             av_log(hwctx, AV_LOG_ERROR, "Failed to create semaphore: %s\n",
-                   vk_ret2str(ret));
+                   ff_vk_ret2str(ret));
             return AVERROR_EXTERNAL;
         }
 
@@ -2940,7 +2595,7 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
                                            idesc.fd, &fdmp);
         if (ret != VK_SUCCESS) {
             av_log(hwfc, AV_LOG_ERROR, "Failed to get FD properties: %s\n",
-                   vk_ret2str(ret));
+                   ff_vk_ret2str(ret));
             err = AVERROR_EXTERNAL;
             close(idesc.fd);
             goto fail;
@@ -2992,12 +2647,12 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
     ret = vk->BindImageMemory2(hwctx->act_dev, bind_counts, bind_info);
     if (ret != VK_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "Failed to bind memory: %s\n",
-               vk_ret2str(ret));
+               ff_vk_ret2str(ret));
         err = AVERROR_EXTERNAL;
         goto fail;
     }
 
-    err = prepare_frame(hwfc, &fp->conv_ctx, f, PREP_MODE_EXTERNAL_IMPORT);
+    err = prepare_frame(hwfc, &fp->compute_exec, f, PREP_MODE_EXTERNAL_IMPORT);
     if (err)
         goto fail;
 
@@ -3097,7 +2752,7 @@ static int vulkan_export_to_cuda(AVHWFramesContext *hwfc,
     const int planes = av_pix_fmt_count_planes(hwfc->sw_format);
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(hwfc->sw_format);
     VulkanDevicePriv *p = ctx->internal->priv;
-    FFVulkanFunctions *vk = &p->vkfn;
+    FFVulkanFunctions *vk = &p->vkctx.vkfn;
 
     AVHWFramesContext *cuda_fc = (AVHWFramesContext*)cuda_hwfc->data;
     AVHWDeviceContext *cuda_cu = cuda_fc->device_ctx;
@@ -3157,7 +2812,7 @@ static int vulkan_export_to_cuda(AVHWFramesContext *hwfc,
                                               &ext_desc.handle.win32.handle);
             if (ret != VK_SUCCESS) {
                 av_log(hwfc, AV_LOG_ERROR, "Unable to export the image as a Win32 Handle: %s!\n",
-                       vk_ret2str(ret));
+                       ff_vk_ret2str(ret));
                 err = AVERROR_EXTERNAL;
                 goto fail;
             }
@@ -3185,7 +2840,7 @@ static int vulkan_export_to_cuda(AVHWFramesContext *hwfc,
                                      &ext_desc.handle.fd);
             if (ret != VK_SUCCESS) {
                 av_log(hwfc, AV_LOG_ERROR, "Unable to export the image as a FD: %s!\n",
-                       vk_ret2str(ret));
+                       ff_vk_ret2str(ret));
                 err = AVERROR_EXTERNAL;
                 goto fail;
             }
@@ -3228,7 +2883,7 @@ static int vulkan_export_to_cuda(AVHWFramesContext *hwfc,
 #endif
             if (ret != VK_SUCCESS) {
                 av_log(ctx, AV_LOG_ERROR, "Failed to export semaphore: %s\n",
-                       vk_ret2str(ret));
+                       ff_vk_ret2str(ret));
                 err = AVERROR_EXTERNAL;
                 goto fail;
             }
@@ -3276,7 +2931,7 @@ static int vulkan_transfer_data_from_cuda(AVHWFramesContext *hwfc,
 
     dst_f = (AVVkFrame *)dst->data[0];
 
-    err = prepare_frame(hwfc, &fp->upload_ctx, dst_f, PREP_MODE_EXTERNAL_EXPORT);
+    err = prepare_frame(hwfc, &fp->upload_exec, dst_f, PREP_MODE_EXTERNAL_EXPORT);
     if (err < 0)
         return err;
 
@@ -3336,7 +2991,7 @@ static int vulkan_transfer_data_from_cuda(AVHWFramesContext *hwfc,
 
     av_log(hwfc, AV_LOG_VERBOSE, "Transfered CUDA image to Vulkan!\n");
 
-    return err = prepare_frame(hwfc, &fp->upload_ctx, dst_f, PREP_MODE_EXTERNAL_IMPORT);
+    return err = prepare_frame(hwfc, &fp->upload_exec, dst_f, PREP_MODE_EXTERNAL_IMPORT);
 
 fail:
     CHECK_CU(cu->cuCtxPopCurrent(&dummy));
@@ -3356,13 +3011,13 @@ static int vulkan_map_to(AVHWFramesContext *hwfc, AVFrame *dst,
 #if CONFIG_LIBDRM
 #if CONFIG_VAAPI
     case AV_PIX_FMT_VAAPI:
-        if (p->extensions & FF_VK_EXT_DRM_MODIFIER_FLAGS)
+        if (p->vkctx.extensions & FF_VK_EXT_DRM_MODIFIER_FLAGS)
             return vulkan_map_from_vaapi(hwfc, dst, src, flags);
         else
             return AVERROR(ENOSYS);
 #endif
     case AV_PIX_FMT_DRM_PRIME:
-        if (p->extensions & FF_VK_EXT_DRM_MODIFIER_FLAGS)
+        if (p->vkctx.extensions & FF_VK_EXT_DRM_MODIFIER_FLAGS)
             return vulkan_map_from_drm(hwfc, dst, src, flags);
         else
             return AVERROR(ENOSYS);
@@ -3403,7 +3058,7 @@ static int vulkan_map_to_drm(AVHWFramesContext *hwfc, AVFrame *dst,
     VkResult ret;
     AVVkFrame *f = (AVVkFrame *)src->data[0];
     VulkanDevicePriv *p = hwfc->device_ctx->internal->priv;
-    FFVulkanFunctions *vk = &p->vkfn;
+    FFVulkanFunctions *vk = &p->vkctx.vkfn;
     VulkanFramesPriv *fp = hwfc->internal->priv;
     AVVulkanDeviceContext *hwctx = hwfc->device_ctx->hwctx;
     AVVulkanFramesContext *hwfctx = hwfc->hwctx;
@@ -3421,7 +3076,7 @@ static int vulkan_map_to_drm(AVHWFramesContext *hwfc, AVFrame *dst,
     if (!drm_desc)
         return AVERROR(ENOMEM);
 
-    err = prepare_frame(hwfc, &fp->conv_ctx, f, PREP_MODE_EXTERNAL_EXPORT);
+    err = prepare_frame(hwfc, &fp->compute_exec, f, PREP_MODE_EXTERNAL_EXPORT);
     if (err < 0)
         goto end;
 
@@ -3542,13 +3197,13 @@ static int vulkan_map_from(AVHWFramesContext *hwfc, AVFrame *dst,
     switch (dst->format) {
 #if CONFIG_LIBDRM
     case AV_PIX_FMT_DRM_PRIME:
-        if (p->extensions & FF_VK_EXT_DRM_MODIFIER_FLAGS)
+        if (p->vkctx.extensions & FF_VK_EXT_DRM_MODIFIER_FLAGS)
             return vulkan_map_to_drm(hwfc, dst, src, flags);
         else
             return AVERROR(ENOSYS);
 #if CONFIG_VAAPI
     case AV_PIX_FMT_VAAPI:
-        if (p->extensions & FF_VK_EXT_DRM_MODIFIER_FLAGS)
+        if (p->vkctx.extensions & FF_VK_EXT_DRM_MODIFIER_FLAGS)
             return vulkan_map_to_vaapi(hwfc, dst, src, flags);
         else
             return AVERROR(ENOSYS);
@@ -3560,29 +3215,6 @@ static int vulkan_map_from(AVHWFramesContext *hwfc, AVFrame *dst,
     return AVERROR(ENOSYS);
 }
 
-typedef struct ImageBuffer {
-    VkBuffer buf;
-    VkDeviceMemory mem;
-    VkMemoryPropertyFlagBits flags;
-    int mapped_mem;
-} ImageBuffer;
-
-static void free_buf(void *opaque, uint8_t *data)
-{
-    AVHWDeviceContext *ctx = opaque;
-    AVVulkanDeviceContext *hwctx = ctx->hwctx;
-    VulkanDevicePriv *p = ctx->internal->priv;
-    FFVulkanFunctions *vk = &p->vkfn;
-    ImageBuffer *vkbuf = (ImageBuffer *)data;
-
-    if (vkbuf->buf)
-        vk->DestroyBuffer(hwctx->act_dev, vkbuf->buf, hwctx->alloc);
-    if (vkbuf->mem)
-        vk->FreeMemory(hwctx->act_dev, vkbuf->mem, hwctx->alloc);
-
-    av_free(data);
-}
-
 static size_t get_req_buffer_size(VulkanDevicePriv *p, int *stride, int height)
 {
     size_t size;
@@ -3592,202 +3224,6 @@ static size_t get_req_buffer_size(VulkanDevicePriv *p, int *stride, int height)
     return size;
 }
 
-static int create_buf(AVHWDeviceContext *ctx, AVBufferRef **buf,
-                      VkBufferUsageFlags usage, VkMemoryPropertyFlagBits flags,
-                      size_t size, uint32_t req_memory_bits, int host_mapped,
-                      void *create_pnext, void *alloc_pnext)
-{
-    int err;
-    VkResult ret;
-    int use_ded_mem;
-    AVVulkanDeviceContext *hwctx = ctx->hwctx;
-    VulkanDevicePriv *p = ctx->internal->priv;
-    FFVulkanFunctions *vk = &p->vkfn;
-
-    VkBufferCreateInfo buf_spawn = {
-        .sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        .pNext       = create_pnext,
-        .usage       = usage,
-        .size        = size,
-        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-    };
-
-    VkBufferMemoryRequirementsInfo2 req_desc = {
-        .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2,
-    };
-    VkMemoryDedicatedAllocateInfo ded_alloc = {
-        .sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
-        .pNext = alloc_pnext,
-    };
-    VkMemoryDedicatedRequirements ded_req = {
-        .sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,
-    };
-    VkMemoryRequirements2 req = {
-        .sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,
-        .pNext = &ded_req,
-    };
-
-    ImageBuffer *vkbuf = av_mallocz(sizeof(*vkbuf));
-    if (!vkbuf)
-        return AVERROR(ENOMEM);
-
-    vkbuf->mapped_mem = host_mapped;
-
-    ret = vk->CreateBuffer(hwctx->act_dev, &buf_spawn, NULL, &vkbuf->buf);
-    if (ret != VK_SUCCESS) {
-        av_log(ctx, AV_LOG_ERROR, "Failed to create buffer: %s\n",
-               vk_ret2str(ret));
-        err = AVERROR_EXTERNAL;
-        goto fail;
-    }
-
-    req_desc.buffer = vkbuf->buf;
-
-    vk->GetBufferMemoryRequirements2(hwctx->act_dev, &req_desc, &req);
-
-    /* In case the implementation prefers/requires dedicated allocation */
-    use_ded_mem = ded_req.prefersDedicatedAllocation |
-                  ded_req.requiresDedicatedAllocation;
-    if (use_ded_mem)
-        ded_alloc.buffer = vkbuf->buf;
-
-    /* Additional requirements imposed on us */
-    if (req_memory_bits)
-        req.memoryRequirements.memoryTypeBits &= req_memory_bits;
-
-    err = alloc_mem(ctx, &req.memoryRequirements, flags,
-                    use_ded_mem ? &ded_alloc : (void *)ded_alloc.pNext,
-                    &vkbuf->flags, &vkbuf->mem);
-    if (err)
-        goto fail;
-
-    ret = vk->BindBufferMemory(hwctx->act_dev, vkbuf->buf, vkbuf->mem, 0);
-    if (ret != VK_SUCCESS) {
-        av_log(ctx, AV_LOG_ERROR, "Failed to bind memory to buffer: %s\n",
-               vk_ret2str(ret));
-        err = AVERROR_EXTERNAL;
-        goto fail;
-    }
-
-    *buf = av_buffer_create((uint8_t *)vkbuf, sizeof(*vkbuf), free_buf, ctx, 0);
-    if (!(*buf)) {
-        err = AVERROR(ENOMEM);
-        goto fail;
-    }
-
-    return 0;
-
-fail:
-    free_buf(ctx, (uint8_t *)vkbuf);
-    return err;
-}
-
-/* Skips mapping of host mapped buffers but still invalidates them */
-static int map_buffers(AVHWDeviceContext *ctx, AVBufferRef **bufs, uint8_t *mem[],
-                       int nb_buffers, int invalidate)
-{
-    VkResult ret;
-    AVVulkanDeviceContext *hwctx = ctx->hwctx;
-    VulkanDevicePriv *p = ctx->internal->priv;
-    FFVulkanFunctions *vk = &p->vkfn;
-    VkMappedMemoryRange invalidate_ctx[AV_NUM_DATA_POINTERS];
-    int invalidate_count = 0;
-
-    for (int i = 0; i < nb_buffers; i++) {
-        ImageBuffer *vkbuf = (ImageBuffer *)bufs[i]->data;
-        if (vkbuf->mapped_mem)
-            continue;
-
-        ret = vk->MapMemory(hwctx->act_dev, vkbuf->mem, 0,
-                            VK_WHOLE_SIZE, 0, (void **)&mem[i]);
-        if (ret != VK_SUCCESS) {
-            av_log(ctx, AV_LOG_ERROR, "Failed to map buffer memory: %s\n",
-                   vk_ret2str(ret));
-            return AVERROR_EXTERNAL;
-        }
-    }
-
-    if (!invalidate)
-        return 0;
-
-    for (int i = 0; i < nb_buffers; i++) {
-        ImageBuffer *vkbuf = (ImageBuffer *)bufs[i]->data;
-        const VkMappedMemoryRange ival_buf = {
-            .sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
-            .memory = vkbuf->mem,
-            .size   = VK_WHOLE_SIZE,
-        };
-
-        /* For host imported memory Vulkan says to use platform-defined
-         * sync methods, but doesn't really say not to call flush or invalidate
-         * on original host pointers. It does explicitly allow to do that on
-         * host-mapped pointers which are then mapped again using vkMapMemory,
-         * but known implementations return the original pointers when mapped
-         * again. */
-        if (vkbuf->flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
-            continue;
-
-        invalidate_ctx[invalidate_count++] = ival_buf;
-    }
-
-    if (invalidate_count) {
-        ret = vk->InvalidateMappedMemoryRanges(hwctx->act_dev, invalidate_count,
-                                               invalidate_ctx);
-        if (ret != VK_SUCCESS)
-            av_log(ctx, AV_LOG_WARNING, "Failed to invalidate memory: %s\n",
-                   vk_ret2str(ret));
-    }
-
-    return 0;
-}
-
-static int unmap_buffers(AVHWDeviceContext *ctx, AVBufferRef **bufs,
-                         int nb_buffers, int flush)
-{
-    int err = 0;
-    VkResult ret;
-    AVVulkanDeviceContext *hwctx = ctx->hwctx;
-    VulkanDevicePriv *p = ctx->internal->priv;
-    FFVulkanFunctions *vk = &p->vkfn;
-    VkMappedMemoryRange flush_ctx[AV_NUM_DATA_POINTERS];
-    int flush_count = 0;
-
-    if (flush) {
-        for (int i = 0; i < nb_buffers; i++) {
-            ImageBuffer *vkbuf = (ImageBuffer *)bufs[i]->data;
-            const VkMappedMemoryRange flush_buf = {
-                .sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
-                .memory = vkbuf->mem,
-                .size   = VK_WHOLE_SIZE,
-            };
-
-            if (vkbuf->flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
-                continue;
-
-            flush_ctx[flush_count++] = flush_buf;
-        }
-    }
-
-    if (flush_count) {
-        ret = vk->FlushMappedMemoryRanges(hwctx->act_dev, flush_count, flush_ctx);
-        if (ret != VK_SUCCESS) {
-            av_log(ctx, AV_LOG_ERROR, "Failed to flush memory: %s\n",
-                    vk_ret2str(ret));
-            err = AVERROR_EXTERNAL; /* We still want to try to unmap them */
-        }
-    }
-
-    for (int i = 0; i < nb_buffers; i++) {
-        ImageBuffer *vkbuf = (ImageBuffer *)bufs[i]->data;
-        if (vkbuf->mapped_mem)
-            continue;
-
-        vk->UnmapMemory(hwctx->act_dev, vkbuf->mem);
-    }
-
-    return err;
-}
-
 static int transfer_image_buf(AVHWFramesContext *hwfc, AVFrame *f,
                               AVBufferRef **bufs, size_t *buf_offsets,
                               const int *buf_stride, int w,
@@ -3795,86 +3231,46 @@ static int transfer_image_buf(AVHWFramesContext *hwfc, AVFrame *f,
 {
     int err;
     AVVkFrame *frame = (AVVkFrame *)f->data[0];
-    AVVulkanFramesContext *vkfc = hwfc->hwctx;
     VulkanFramesPriv *fp = hwfc->internal->priv;
     VulkanDevicePriv *p = hwfc->device_ctx->internal->priv;
-    FFVulkanFunctions *vk = &p->vkfn;
-
-    int bar_num = 0;
-    VkPipelineStageFlagBits sem_wait_dst[AV_NUM_DATA_POINTERS];
+    FFVulkanFunctions *vk = &p->vkctx.vkfn;
+    VkImageMemoryBarrier2 img_bar[AV_NUM_DATA_POINTERS];
+    int nb_img_bar = 0;
 
     const int nb_images = ff_vk_count_images(frame);
     int pixfmt_planes = av_pix_fmt_count_planes(pix_fmt);
-
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
 
-    VkImageMemoryBarrier img_bar[AV_NUM_DATA_POINTERS] = { 0 };
-    VulkanExecCtx *ectx = to_buf ? &fp->download_ctx : &fp->upload_ctx;
-    VkCommandBuffer cmd_buf = get_buf_exec_ctx(hwfc, ectx);
+    VkCommandBuffer cmd_buf;
+    FFVkExecContext *exec = ff_vk_exec_get(to_buf ? &fp->download_exec :
+                                                    &fp->upload_exec);
+    cmd_buf = exec->buf;
+    ff_vk_exec_start(&p->vkctx, exec);
 
-    uint64_t sem_signal_values[AV_NUM_DATA_POINTERS];
+    err = ff_vk_exec_add_dep_buf(&p->vkctx, exec, bufs, pixfmt_planes, 1);
+    if (err < 0)
+        return err;
 
-    VkTimelineSemaphoreSubmitInfo s_timeline_sem_info = {
-        .sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,
-        .pWaitSemaphoreValues = frame->sem_value,
-        .pSignalSemaphoreValues = sem_signal_values,
-        .waitSemaphoreValueCount = nb_images,
-        .signalSemaphoreValueCount = nb_images,
-    };
+    err = ff_vk_exec_add_dep_frame(&p->vkctx, exec, f,
+                                   VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                                   VK_PIPELINE_STAGE_2_TRANSFER_BIT);
+    if (err < 0)
+        return err;
 
-    VkSubmitInfo s_info = {
-        .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-        .pNext                = &s_timeline_sem_info,
-        .pSignalSemaphores    = frame->sem,
-        .pWaitSemaphores      = frame->sem,
-        .pWaitDstStageMask    = sem_wait_dst,
-        .signalSemaphoreCount = nb_images,
-        .waitSemaphoreCount   = nb_images,
-    };
+    ff_vk_frame_barrier(&p->vkctx, exec, f, img_bar, &nb_img_bar,
+                        VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                        VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,
+                        to_buf ? VK_ACCESS_TRANSFER_READ_BIT :
+                                 VK_ACCESS_TRANSFER_WRITE_BIT,
+                        to_buf ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL :
+                                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                        VK_QUEUE_FAMILY_IGNORED);
 
-    vkfc->lock_frame(hwfc, frame);
-
-    if ((err = wait_start_exec_ctx(hwfc, ectx)))
-        goto end;
-
-    for (int i = 0; i < nb_images; i++)
-        sem_signal_values[i] = frame->sem_value[i] + 1;
-
-    /* Change the image layout to something more optimal for transfers */
-    for (int i = 0; i < nb_images; i++) {
-        VkImageLayout new_layout = to_buf ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL :
-                                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        VkAccessFlags new_access = to_buf ? VK_ACCESS_TRANSFER_READ_BIT :
-                                            VK_ACCESS_TRANSFER_WRITE_BIT;
-
-        sem_wait_dst[i] = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-
-        /* If the layout matches and we have read access skip the barrier */
-        if ((frame->layout[i] == new_layout) && (frame->access[i] & new_access))
-            continue;
-
-        img_bar[bar_num].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        img_bar[bar_num].srcAccessMask = 0x0;
-        img_bar[bar_num].dstAccessMask = new_access;
-        img_bar[bar_num].oldLayout = frame->layout[i];
-        img_bar[bar_num].newLayout = new_layout;
-        img_bar[bar_num].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        img_bar[bar_num].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        img_bar[bar_num].image = frame->img[i];
-        img_bar[bar_num].subresourceRange.levelCount = 1;
-        img_bar[bar_num].subresourceRange.layerCount = 1;
-        img_bar[bar_num].subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-
-        frame->layout[i] = img_bar[bar_num].newLayout;
-        frame->access[i] = img_bar[bar_num].dstAccessMask;
-
-        bar_num++;
-    }
-
-    if (bar_num)
-        vk->CmdPipelineBarrier(cmd_buf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                               VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
-                               0, NULL, 0, NULL, bar_num, img_bar);
+    vk->CmdPipelineBarrier2(cmd_buf, &(VkDependencyInfo) {
+            .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+            .pImageMemoryBarriers = img_bar,
+            .imageMemoryBarrierCount = nb_img_bar,
+        });
 
     /* Schedule a copy for each plane */
     for (int i = 0; i < pixfmt_planes; i++) {
@@ -3884,7 +3280,7 @@ static int transfer_image_buf(AVHWFramesContext *hwfc, AVFrame *f,
                                               VK_IMAGE_ASPECT_PLANE_1_BIT,
                                               VK_IMAGE_ASPECT_PLANE_2_BIT, };
 
-        ImageBuffer *vkbuf = (ImageBuffer *)bufs[i]->data;
+        FFVkBuffer *vkbuf = (FFVkBuffer *)bufs[i]->data;
         VkBufferImageCopy buf_reg = {
             .bufferOffset = buf_offsets[i],
             .bufferRowLength = buf_stride[i] / desc->comp[i].step,
@@ -3894,44 +3290,32 @@ static int transfer_image_buf(AVHWFramesContext *hwfc, AVFrame *f,
             .imageOffset = { 0, 0, 0, },
         };
 
-        int p_w, p_h;
+        uint32_t p_w, p_h;
         get_plane_wh(&p_w, &p_h, pix_fmt, w, h, i);
 
         buf_reg.bufferImageHeight = p_h;
         buf_reg.imageExtent = (VkExtent3D){ p_w, p_h, 1, };
 
         if (to_buf)
-            vk->CmdCopyImageToBuffer(cmd_buf, frame->img[idx], frame->layout[idx],
-                                     vkbuf->buf, 1, &buf_reg);
+            vk->CmdCopyImageToBuffer(cmd_buf, frame->img[idx],
+                                     img_bar[0].newLayout,
+                                     vkbuf->buf,
+                                     1, &buf_reg);
         else
             vk->CmdCopyBufferToImage(cmd_buf, vkbuf->buf, frame->img[idx],
-                                     frame->layout[idx], 1, &buf_reg);
+                                     img_bar[0].newLayout,
+                                     1, &buf_reg);
     }
 
-    /* When uploading, do this asynchronously if the source is refcounted by
-     * keeping the buffers as a submission dependency.
-     * The hwcontext is guaranteed to not be freed until all frames are freed
-     * in the frames_unint function.
-     * When downloading to buffer, do this synchronously and wait for the
-     * queue submission to finish executing */
-    if (!to_buf) {
-        int ref;
-        for (ref = 0; ref < AV_NUM_DATA_POINTERS; ref++) {
-            if (!f->buf[ref])
-                break;
-            if ((err = add_buf_dep_exec_ctx(hwfc, ectx, &f->buf[ref], 1)))
-                goto end;
-        }
-        if (ref && (err = add_buf_dep_exec_ctx(hwfc, ectx, bufs, pixfmt_planes)))
-            goto end;
-        err = submit_exec_ctx(hwfc, ectx, &s_info, frame, !ref);
-    } else {
-        err = submit_exec_ctx(hwfc, ectx, &s_info, frame,    1);
-    }
+    err = ff_vk_exec_submit(&p->vkctx, exec);
+    if (err < 0)
+        return err;
 
-end:
-    vkfc->unlock_frame(hwfc, frame);
-    return err;
+    /* Wait for the operation to complete when downloading */
+    if (to_buf)
+        ff_vk_exec_wait(&p->vkctx, exec);
+
+    return 0;
 }
 
 static int vulkan_transfer_data(AVHWFramesContext *hwfc, const AVFrame *vkf,
@@ -3939,22 +3323,21 @@ static int vulkan_transfer_data(AVHWFramesContext *hwfc, const AVFrame *vkf,
 {
     int err = 0;
     VkResult ret;
-    AVVkFrame *f = (AVVkFrame *)vkf->data[0];
     AVHWDeviceContext *dev_ctx = hwfc->device_ctx;
     AVVulkanDeviceContext *hwctx = dev_ctx->hwctx;
-    AVVulkanFramesContext *fc = hwfc->hwctx;
     VulkanDevicePriv *p = hwfc->device_ctx->internal->priv;
-    FFVulkanFunctions *vk = &p->vkfn;
+    FFVulkanFunctions *vk = &p->vkctx.vkfn;
 
     AVFrame tmp;
+    FFVkBuffer *vkbufs[AV_NUM_DATA_POINTERS];
     AVBufferRef *bufs[AV_NUM_DATA_POINTERS] = { 0 };
     size_t buf_offsets[AV_NUM_DATA_POINTERS] = { 0 };
 
-    int p_w, p_h;
+    uint32_t p_w, p_h;
     const int planes = av_pix_fmt_count_planes(swf->format);
 
     int host_mapped[AV_NUM_DATA_POINTERS] = { 0 };
-    const int map_host = !!(p->extensions & FF_VK_EXT_EXTERNAL_HOST_MEMORY);
+    const int map_host = !!(p->vkctx.extensions & FF_VK_EXT_EXTERNAL_HOST_MEMORY);
 
     if ((swf->format != AV_PIX_FMT_NONE && !av_vkfmt_from_pixfmt(swf->format))) {
         av_log(hwfc, AV_LOG_ERROR, "Unsupported software frame pixel format!\n");
@@ -4001,8 +3384,7 @@ static int vulkan_transfer_data(AVHWFramesContext *hwfc, const AVFrame *vkf,
                                                         import_desc.handleType,
                                                         import_desc.pHostPointer,
                                                         &p_props);
-
-            if (ret == VK_SUCCESS) {
+            if (ret == VK_SUCCESS && p_props.memoryTypeBits) {
                 host_mapped[i] = 1;
                 buf_offsets[i] = offs;
             }
@@ -4011,20 +3393,23 @@ static int vulkan_transfer_data(AVHWFramesContext *hwfc, const AVFrame *vkf,
         if (!host_mapped[i])
             req_size = get_req_buffer_size(p, &tmp.linesize[i], p_h);
 
-        err = create_buf(dev_ctx, &bufs[i],
-                         from ? VK_BUFFER_USAGE_TRANSFER_DST_BIT :
-                                VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-                         req_size, p_props.memoryTypeBits, host_mapped[i],
-                         host_mapped[i] ? &create_desc : NULL,
-                         host_mapped[i] ? &import_desc : NULL);
-        if (err)
+        err = ff_vk_create_avbuf(&p->vkctx, &bufs[i], req_size,
+                                host_mapped[i] ? &create_desc : NULL,
+                                host_mapped[i] ? &import_desc : NULL,
+                                from ? VK_BUFFER_USAGE_TRANSFER_DST_BIT :
+                                       VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                (host_mapped[i] ?
+                                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT : 0x0));
+        if (err < 0)
             goto end;
+
+        vkbufs[i] = (FFVkBuffer *)bufs[i]->data;
     }
 
     if (!from) {
         /* Map, copy image TO buffer (which then goes to the VkImage), unmap */
-        if ((err = map_buffers(dev_ctx, bufs, tmp.data, planes, 0)))
+        if ((err = ff_vk_map_buffers(&p->vkctx, vkbufs, tmp.data, planes, 0)))
             goto end;
 
         for (int i = 0; i < planes; i++) {
@@ -4039,7 +3424,7 @@ static int vulkan_transfer_data(AVHWFramesContext *hwfc, const AVFrame *vkf,
                                 p_h);
         }
 
-        if ((err = unmap_buffers(dev_ctx, bufs, planes, 1)))
+        if ((err = ff_vk_unmap_buffers(&p->vkctx, vkbufs, planes, 1)))
             goto end;
     }
 
@@ -4050,7 +3435,7 @@ static int vulkan_transfer_data(AVHWFramesContext *hwfc, const AVFrame *vkf,
 
     if (from) {
         /* Map, copy buffer (which came FROM the VkImage) to the frame, unmap */
-        if ((err = map_buffers(dev_ctx, bufs, tmp.data, planes, 0)))
+        if ((err = ff_vk_map_buffers(&p->vkctx, vkbufs, tmp.data, planes, 0)))
             goto end;
 
         for (int i = 0; i < planes; i++) {
@@ -4065,7 +3450,7 @@ static int vulkan_transfer_data(AVHWFramesContext *hwfc, const AVFrame *vkf,
                                         p_h);
         }
 
-        if ((err = unmap_buffers(dev_ctx, bufs, planes, 1)))
+        if ((err = ff_vk_unmap_buffers(&p->vkctx, vkbufs, planes, 1)))
             goto end;
     }
 
@@ -4085,11 +3470,11 @@ static int vulkan_transfer_data_to(AVHWFramesContext *hwfc, AVFrame *dst,
 #if CONFIG_CUDA
     case AV_PIX_FMT_CUDA:
 #ifdef _WIN32
-        if ((p->extensions & FF_VK_EXT_EXTERNAL_WIN32_MEMORY) &&
-            (p->extensions & FF_VK_EXT_EXTERNAL_WIN32_SEM))
+        if ((p->vkctx.extensions & FF_VK_EXT_EXTERNAL_WIN32_MEMORY) &&
+            (p->vkctx.extensions & FF_VK_EXT_EXTERNAL_WIN32_SEM))
 #else
-        if ((p->extensions & FF_VK_EXT_EXTERNAL_FD_MEMORY) &&
-            (p->extensions & FF_VK_EXT_EXTERNAL_FD_SEM))
+        if ((p->vkctx.extensions & FF_VK_EXT_EXTERNAL_FD_MEMORY) &&
+            (p->vkctx.extensions & FF_VK_EXT_EXTERNAL_FD_SEM))
 #endif
             return vulkan_transfer_data_from_cuda(hwfc, dst, src);
 #endif
@@ -4123,7 +3508,7 @@ static int vulkan_transfer_data_to_cuda(AVHWFramesContext *hwfc, AVFrame *dst,
 
     dst_f = (AVVkFrame *)src->data[0];
 
-    err = prepare_frame(hwfc, &fp->upload_ctx, dst_f, PREP_MODE_EXTERNAL_EXPORT);
+    err = prepare_frame(hwfc, &fp->upload_exec, dst_f, PREP_MODE_EXTERNAL_EXPORT);
     if (err < 0)
         return err;
 
@@ -4183,7 +3568,7 @@ static int vulkan_transfer_data_to_cuda(AVHWFramesContext *hwfc, AVFrame *dst,
 
     av_log(hwfc, AV_LOG_VERBOSE, "Transfered Vulkan image to CUDA!\n");
 
-    return prepare_frame(hwfc, &fp->upload_ctx, dst_f, PREP_MODE_EXTERNAL_IMPORT);
+    return prepare_frame(hwfc, &fp->upload_exec, dst_f, PREP_MODE_EXTERNAL_IMPORT);
 
 fail:
     CHECK_CU(cu->cuCtxPopCurrent(&dummy));
@@ -4203,11 +3588,11 @@ static int vulkan_transfer_data_from(AVHWFramesContext *hwfc, AVFrame *dst,
 #if CONFIG_CUDA
     case AV_PIX_FMT_CUDA:
 #ifdef _WIN32
-        if ((p->extensions & FF_VK_EXT_EXTERNAL_WIN32_MEMORY) &&
-            (p->extensions & FF_VK_EXT_EXTERNAL_WIN32_SEM))
+        if ((p->vkctx.extensions & FF_VK_EXT_EXTERNAL_WIN32_MEMORY) &&
+            (p->vkctx.extensions & FF_VK_EXT_EXTERNAL_WIN32_SEM))
 #else
-        if ((p->extensions & FF_VK_EXT_EXTERNAL_FD_MEMORY) &&
-            (p->extensions & FF_VK_EXT_EXTERNAL_FD_SEM))
+        if ((p->vkctx.extensions & FF_VK_EXT_EXTERNAL_FD_MEMORY) &&
+            (p->vkctx.extensions & FF_VK_EXT_EXTERNAL_FD_SEM))
 #endif
             return vulkan_transfer_data_to_cuda(hwfc, dst, src);
 #endif
