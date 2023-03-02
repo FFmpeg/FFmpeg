@@ -88,7 +88,7 @@ static int dynamic_set_parameter(AVCodecContext *avctx)
     if (current_setting_number < setting_number &&
         frame_number == dynamic_setting[current_setting_number].frame_number) {
         AVDictionaryEntry *e = NULL;
-        ret = str_to_dict(dynamic_setting[current_setting_number].optstr, &opts);
+        ret = str_to_dict(dynamic_setting[current_setting_number++].optstr, &opts);
         if (ret < 0) {
             fprintf(stderr, "The dynamic parameter is wrong\n");
             goto fail;
