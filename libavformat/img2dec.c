@@ -850,7 +850,7 @@ static int jpegxl_probe(const AVProbeData *p)
     if (AV_RL16(b) != FF_JPEGXL_CODESTREAM_SIGNATURE_LE)
         return 0;
 #if CONFIG_IMAGE_JPEGXL_PIPE_DEMUXER
-    if (ff_jpegxl_verify_codestream_header(p->buf, p->buf_size) >= 0)
+    if (ff_jpegxl_verify_codestream_header(p->buf, p->buf_size, 1) >= 0)
         return AVPROBE_SCORE_MAX - 2;
 #endif
     return 0;

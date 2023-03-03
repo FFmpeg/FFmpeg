@@ -208,7 +208,7 @@ static void jpegxl_skip_bit_depth(GetBitContext *gb)
  * validate a Jpeg XL Extra Channel Info bundle
  * @return >= 0 upon valid, < 0 upon invalid
  */
-static int jpegxl_read_extra_channel_info(GetBitContext *gb)
+static int jpegxl_read_extra_channel_info(GetBitContext *gb, int validate_level)
 {
     int all_default = jxl_bits(1);
     uint32_t type, name_len = 0;
@@ -217,7 +217,7 @@ static int jpegxl_read_extra_channel_info(GetBitContext *gb)
         type = jxl_enum();
         if (type > 63)
             return -1; /* enum types cannot be 64+ */
-        if (type == FF_JPEGXL_CT_BLACK)
+        if (type == FF_JPEGXL_CT_BLACK && validate_level)
             return -1;
         jpegxl_skip_bit_depth(gb);
         jxl_u32(0, 3, 4, 1, 0, 0, 0, 3); /* dim-shift */
@@ -242,12 +242,12 @@ static int jpegxl_read_extra_channel_info(GetBitContext *gb)
     return 0;
 }
 
-/* verify that a codestream header is valid */
-int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen)
+int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen, int validate_level)
 {
     GetBitContext gbi, *gb = &gbi;
     int all_default, extra_fields = 0;
     int xyb_encoded = 1, have_icc_profile = 0;
+    int animation_offset = 0;
     uint32_t num_extra_channels;
     uint64_t extensions;
     int ret;
@@ -259,7 +259,7 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen)
     if (jxl_bits(16) != FF_JPEGXL_CODESTREAM_SIGNATURE_LE)
         return -1;
 
-    if (jpegxl_read_size_header(gb) < 0)
+    if (jpegxl_read_size_header(gb) < 0 && validate_level)
         return -1;
 
     all_default = jxl_bits(1);
@@ -285,6 +285,7 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen)
 
         /* animation header */
         if (jxl_bits(1)) {
+            animation_offset = get_bits_count(gb);
             jxl_u32(100, 1000, 1, 1, 0, 0, 10, 30);
             jxl_u32(1, 1001, 1, 1, 0, 0, 8, 10);
             jxl_u32(0, 0, 0, 0, 0, 3, 16, 32);
@@ -296,14 +297,14 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen)
         jpegxl_skip_bit_depth(gb);
 
         /* modular_16bit_buffers must equal 1 */
-        if (!jxl_bits(1))
+        if (!jxl_bits(1) && validate_level)
             return -1;
 
         num_extra_channels = jxl_u32(0, 1, 2, 1, 0, 0, 4, 12);
-        if (num_extra_channels > 4)
+        if (num_extra_channels > 4 && validate_level)
             return -1;
         for (uint32_t i = 0; i < num_extra_channels; i++) {
-            if (jpegxl_read_extra_channel_info(gb) < 0)
+            if (jpegxl_read_extra_channel_info(gb, validate_level) < 0)
                 return -1;
         }
 
@@ -392,5 +393,5 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen)
     if (get_bits_left(gb) < 0)
         return -1;
 
-    return 0;
+    return animation_offset;
 }
