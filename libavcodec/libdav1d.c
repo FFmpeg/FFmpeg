@@ -33,6 +33,7 @@
 #include "bytestream.h"
 #include "codec_internal.h"
 #include "decode.h"
+#include "dynamic_hdr10_plus.h"
 #include "internal.h"
 
 #define FF_DAV1D_VERSION_AT_LEAST(x,y) \
@@ -511,12 +512,14 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
     if (p->itut_t35) {
         GetByteContext gb;
-        unsigned int user_identifier;
+        int provider_code;
 
         bytestream2_init(&gb, p->itut_t35->payload, p->itut_t35->payload_size);
-        bytestream2_skip(&gb, 1); // terminal provider code
-        bytestream2_skip(&gb, 1); // terminal provider oriented code
-        user_identifier = bytestream2_get_be32(&gb);
+
+        provider_code = bytestream2_get_be16(&gb);
+        switch (provider_code) {
+        case 0x31: { // atsc_provider_code
+        uint32_t user_identifier = bytestream2_get_be32(&gb);
         switch (user_identifier) {
         case MKBETAG('G', 'A', '9', '4'): { // closed captions
             AVBufferRef *buf = NULL;
@@ -534,6 +537,31 @@ FF_ENABLE_DEPRECATION_WARNINGS
             break;
         }
         default: // ignore unsupported identifiers
+            break;
+        }
+        }
+        case 0x3C: { // smpte_provider_code
+            AVDynamicHDRPlus *hdrplus;
+            int provider_oriented_code = bytestream2_get_be16(&gb);
+            int application_identifier = bytestream2_get_byte(&gb);
+
+            if (p->itut_t35->country_code != 0xB5 ||
+                provider_oriented_code != 1 || application_identifier != 4)
+                break;
+
+            hdrplus = av_dynamic_hdr_plus_create_side_data(frame);
+            if (!hdrplus) {
+                res = AVERROR(ENOMEM);
+                goto fail;
+            }
+
+            res = ff_parse_itu_t_t35_to_dynamic_hdr10_plus(hdrplus, gb.buffer,
+                                                           bytestream2_get_bytes_left(&gb));
+            if (res < 0)
+                goto fail;
+            break;
+        }
+        default: // ignore unsupported provider codes
             break;
         }
     }
