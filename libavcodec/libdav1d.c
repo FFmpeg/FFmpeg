@@ -519,26 +519,26 @@ FF_ENABLE_DEPRECATION_WARNINGS
         provider_code = bytestream2_get_be16(&gb);
         switch (provider_code) {
         case 0x31: { // atsc_provider_code
-        uint32_t user_identifier = bytestream2_get_be32(&gb);
-        switch (user_identifier) {
-        case MKBETAG('G', 'A', '9', '4'): { // closed captions
-            AVBufferRef *buf = NULL;
+            uint32_t user_identifier = bytestream2_get_be32(&gb);
+            switch (user_identifier) {
+            case MKBETAG('G', 'A', '9', '4'): { // closed captions
+                AVBufferRef *buf = NULL;
 
-            res = ff_parse_a53_cc(&buf, gb.buffer, bytestream2_get_bytes_left(&gb));
-            if (res < 0)
-                goto fail;
-            if (!res)
+                res = ff_parse_a53_cc(&buf, gb.buffer, bytestream2_get_bytes_left(&gb));
+                if (res < 0)
+                    goto fail;
+                if (!res)
+                    break;
+
+                if (!av_frame_new_side_data_from_buf(frame, AV_FRAME_DATA_A53_CC, buf))
+                    av_buffer_unref(&buf);
+
+                c->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
                 break;
-
-            if (!av_frame_new_side_data_from_buf(frame, AV_FRAME_DATA_A53_CC, buf))
-                av_buffer_unref(&buf);
-
-            c->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
-            break;
-        }
-        default: // ignore unsupported identifiers
-            break;
-        }
+            }
+            default: // ignore unsupported identifiers
+                break;
+            }
         }
         case 0x3C: { // smpte_provider_code
             AVDynamicHDRPlus *hdrplus;
