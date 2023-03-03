@@ -356,7 +356,7 @@ struct ConnectionAttempt {
 static int start_connect_attempt(struct ConnectionAttempt *attempt,
                                  struct addrinfo **ptr, int timeout_ms,
                                  URLContext *h,
-                                 void (*customize_fd)(void *, int), void *customize_ctx)
+                                 int (*customize_fd)(void *, int, int), void *customize_ctx)
 {
     struct addrinfo *ai = *ptr;
     int ret;
@@ -371,8 +371,14 @@ static int start_connect_attempt(struct ConnectionAttempt *attempt,
 
     ff_socket_nonblock(attempt->fd, 1);
 
-    if (customize_fd)
-        customize_fd(customize_ctx, attempt->fd);
+    if (customize_fd) {
+        ret = customize_fd(customize_ctx, attempt->fd, ai->ai_family);
+        if (ret) {
+            closesocket(attempt->fd);
+            attempt->fd = -1;
+            return ret;
+        }
+    }
 
     while ((ret = connect(attempt->fd, ai->ai_addr, ai->ai_addrlen))) {
         ret = ff_neterrno();
@@ -402,7 +408,7 @@ static int start_connect_attempt(struct ConnectionAttempt *attempt,
 
 int ff_connect_parallel(struct addrinfo *addrs, int timeout_ms_per_address,
                         int parallel, URLContext *h, int *fd,
-                        void (*customize_fd)(void *, int), void *customize_ctx)
+                        int (*customize_fd)(void *, int, int), void *customize_ctx)
 {
     struct ConnectionAttempt attempts[3];
     struct pollfd pfd[3];

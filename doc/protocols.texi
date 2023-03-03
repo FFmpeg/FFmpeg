@@ -1882,6 +1882,12 @@ The list of supported options follows.
 Listen for an incoming connection. 0 disables listen, 1 enables listen in
 single client mode, 2 enables listen in multi-client mode. Default value is 0.
 
+@item local_addr=@var{addr}
+Local IP address of a network interface used for tcp socket connect.
+
+@item local_port=@var{port}
+Local port used for tcp socket connect.
+
 @item timeout=@var{microseconds}
 Set raise error timeout, expressed in microseconds.
 

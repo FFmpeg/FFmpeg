@@ -336,6 +336,6 @@ void ff_log_net_error(void *ctx, int level, const char* prefix);
  */
 int ff_connect_parallel(struct addrinfo *addrs, int timeout_ms_per_address,
                         int parallel, URLContext *h, int *fd,
-                        void (*customize_fd)(void *, int), void *customize_ctx);
+                        int (*customize_fd)(void *, int, int), void *customize_ctx);
 
 #endif /* AVFORMAT_NETWORK_H */
