@@ -207,7 +207,7 @@ static int chctx_init(RKAContext *s, ChContext *c,
     c->bprob[0] = s->bprob[0];
     c->bprob[1] = s->bprob[1];
 
-    c->srate_pad = (sample_rate << 13) / 44100 & 0xFFFFFFFCU;
+    c->srate_pad = ((int64_t)sample_rate << 13) / 44100 & 0xFFFFFFFCU;
     c->pos_idx = 1;
 
     for (int i = 0; i < FF_ARRAY_ELEMS(s->bprob[0]); i++)
