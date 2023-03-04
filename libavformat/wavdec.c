@@ -730,6 +730,10 @@ smv_retry:
                 goto smv_out;
             }
             size = avio_rl24(s->pb);
+            if (size > wav->smv_block_size) {
+                ret = AVERROR_EOF;
+                goto smv_out;
+            }
             ret  = av_get_packet(s->pb, pkt, size);
             if (ret < 0)
                 goto smv_out;
