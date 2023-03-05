@@ -97,15 +97,12 @@ static CodeBook unpack_codebook(GetBitContext* gb, unsigned depth,
     cb.size = size;
     for (i = 0; i < size; i++) {
         unsigned mask_bits = get_bits(gb, 4);
-        unsigned color0 = get_bits(gb, 15);
-        unsigned color1 = get_bits(gb, 15);
+        unsigned color[2];
+        color[0] = get_bits(gb, 15);
+        color[1] = get_bits(gb, 15);
 
-        for (j = 0; j < 4; j++) {
-            if (mask_bits & (1 << j))
-                cb.blocks[i].pixels[j] = color1;
-            else
-                cb.blocks[i].pixels[j] = color0;
-        }
+        for (j = 0; j < 4; j++)
+            cb.blocks[i].pixels[j] = color[(mask_bits>>j) & 1];
     }
     return cb;
 }
