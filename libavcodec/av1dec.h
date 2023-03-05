@@ -23,6 +23,7 @@
 
 #include <stdint.h>
 
+#include "libavutil/fifo.h"
 #include "libavutil/buffer.h"
 #include "libavutil/frame.h"
 #include "libavutil/pixfmt.h"
@@ -73,6 +74,13 @@ typedef struct AV1DecContext {
     AVBufferRef *header_ref;
     AV1RawFrameHeader *raw_frame_header;
     TileGroupInfo *tile_group_info;
+
+    AVBufferRef *cll_ref;
+    AV1RawMetadataHDRCLL *cll;
+    AVBufferRef *mdcv_ref;
+    AV1RawMetadataHDRMDCV *mdcv;
+    AVFifo *itut_t35_fifo;
+
     uint16_t tile_num;
     uint16_t tg_start;
     uint16_t tg_end;
