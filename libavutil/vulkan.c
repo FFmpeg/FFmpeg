@@ -90,9 +90,13 @@ int ff_vk_load_props(FFVulkanContext *s)
     s->hprops = (VkPhysicalDeviceExternalMemoryHostPropertiesEXT) {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT,
     };
+    s->subgroup_props = (VkPhysicalDeviceSubgroupSizeControlProperties) {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES,
+        .pNext = &s->hprops,
+    };
     s->desc_buf_props = (VkPhysicalDeviceDescriptorBufferPropertiesEXT) {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_PROPERTIES_EXT,
-        .pNext = &s->hprops,
+        .pNext = &s->subgroup_props,
     };
     s->driver_props = (VkPhysicalDeviceDriverProperties) {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES,
@@ -1287,12 +1291,19 @@ void ff_vk_frame_barrier(FFVulkanContext *s, FFVkExecContext *e,
 }
 
 int ff_vk_shader_init(FFVulkanPipeline *pl, FFVkSPIRVShader *shd, const char *name,
-                      VkShaderStageFlags stage)
+                      VkShaderStageFlags stage, uint32_t required_subgroup_size)
 {
     av_bprint_init(&shd->src, 0, AV_BPRINT_SIZE_UNLIMITED);
 
     shd->shader.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     shd->shader.stage = stage;
+
+    if (required_subgroup_size) {
+        shd->shader.flags |= VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT;
+        shd->shader.pNext = &shd->subgroup_info;
+        shd->subgroup_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO;
+        shd->subgroup_info.requiredSubgroupSize = required_subgroup_size;
+    }
 
     shd->name = name;
 

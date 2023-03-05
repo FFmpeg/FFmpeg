@@ -61,6 +61,7 @@ typedef struct FFVkSPIRVShader {
     AVBPrint src;
     int local_size[3];                      /* Compute shader workgroup sizes */
     VkPipelineShaderStageCreateInfo shader;
+    VkPipelineShaderStageRequiredSubgroupSizeCreateInfo subgroup_info;
 } FFVkSPIRVShader;
 
 typedef struct FFVulkanDescriptorSetBinding {
@@ -217,6 +218,7 @@ typedef struct FFVulkanContext {
     VkPhysicalDeviceMemoryProperties mprops;
     VkPhysicalDeviceExternalMemoryHostPropertiesEXT hprops;
     VkPhysicalDeviceDescriptorBufferPropertiesEXT desc_buf_props;
+    VkPhysicalDeviceSubgroupSizeControlProperties subgroup_props;
     VkQueueFamilyQueryResultStatusPropertiesKHR *query_props;
     VkQueueFamilyVideoPropertiesKHR *video_props;
     VkQueueFamilyProperties2 *qf_props;
@@ -400,7 +402,7 @@ int ff_vk_init_sampler(FFVulkanContext *s, VkSampler *sampler,
  * Shader management.
  */
 int ff_vk_shader_init(FFVulkanPipeline *pl, FFVkSPIRVShader *shd, const char *name,
-                      VkShaderStageFlags stage);
+                      VkShaderStageFlags stage, uint32_t required_subgroup_size);
 void ff_vk_shader_set_compute_sizes(FFVkSPIRVShader *shd, int x, int y, int z);
 void ff_vk_shader_print(void *ctx, FFVkSPIRVShader *shd, int prio);
 int ff_vk_shader_create(FFVulkanContext *s, FFVkSPIRVShader *shd,
