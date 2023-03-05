@@ -89,7 +89,7 @@ static CodeBook unpack_codebook(GetBitContext* gb, unsigned depth,
     unsigned i, j;
     CodeBook cb = { 0 };
 
-    if (size >= INT_MAX / 34 || get_bits_left(gb) < size * 34)
+    if (size >= INT_MAX / 34 || get_bits_left(gb) < (int)size * 34)
         return cb;
 
     if (size >= INT_MAX / sizeof(MacroBlock))
