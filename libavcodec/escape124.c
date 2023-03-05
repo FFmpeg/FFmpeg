@@ -89,11 +89,6 @@ static CodeBook unpack_codebook(GetBitContext* gb, unsigned depth,
     unsigned i, j;
     CodeBook cb = { 0 };
 
-    if (size >= INT_MAX / 34 || get_bits_left(gb) < (int)size * 34)
-        return cb;
-
-    if (size >= INT_MAX / sizeof(MacroBlock))
-        return cb;
     cb.blocks = av_malloc(size ? size * sizeof(MacroBlock) : 1);
     if (!cb.blocks)
         return cb;
@@ -225,7 +220,7 @@ static int escape124_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     // represent a lower bound of the space needed for skipped superblocks. Non
     // skipped SBs need more space.
     if (get_bits_left(&gb) < 64 + s->num_superblocks * 23LL / 4320)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     frame_flags = get_bits_long(&gb, 32);
     frame_size  = get_bits_long(&gb, 32);
@@ -276,9 +271,14 @@ static int escape124_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             }
 
             av_freep(&s->codebooks[i].blocks);
+            if (cb_size >= INT_MAX / 34 || get_bits_left(&gb) < (int)cb_size * 34)
+                return AVERROR_INVALIDDATA;
+
+            if (cb_size >= INT_MAX / sizeof(MacroBlock))
+                return AVERROR_INVALIDDATA;
             s->codebooks[i] = unpack_codebook(&gb, cb_depth, cb_size);
             if (!s->codebooks[i].blocks)
-                return -1;
+                return AVERROR(ENOMEM);
         }
     }
 
