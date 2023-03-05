@@ -379,27 +379,27 @@ static int write_audio_frame(AVFormatContext *oc, OutputStream *ost)
 /**************************************************************/
 /* video output */
 
-static AVFrame *alloc_picture(enum AVPixelFormat pix_fmt, int width, int height)
+static AVFrame *alloc_frame(enum AVPixelFormat pix_fmt, int width, int height)
 {
-    AVFrame *picture;
+    AVFrame *frame;
     int ret;
 
-    picture = av_frame_alloc();
-    if (!picture)
+    frame = av_frame_alloc();
+    if (!frame)
         return NULL;
 
-    picture->format = pix_fmt;
-    picture->width  = width;
-    picture->height = height;
+    frame->format = pix_fmt;
+    frame->width  = width;
+    frame->height = height;
 
     /* allocate the buffers for the frame data */
-    ret = av_frame_get_buffer(picture, 0);
+    ret = av_frame_get_buffer(frame, 0);
     if (ret < 0) {
         fprintf(stderr, "Could not allocate frame data.\n");
         exit(1);
     }
 
-    return picture;
+    return frame;
 }
 
 static void open_video(AVFormatContext *oc, const AVCodec *codec,
@@ -420,7 +420,7 @@ static void open_video(AVFormatContext *oc, const AVCodec *codec,
     }
 
     /* allocate and init a re-usable frame */
-    ost->frame = alloc_picture(c->pix_fmt, c->width, c->height);
+    ost->frame = alloc_frame(c->pix_fmt, c->width, c->height);
     if (!ost->frame) {
         fprintf(stderr, "Could not allocate video frame\n");
         exit(1);
@@ -431,9 +431,9 @@ static void open_video(AVFormatContext *oc, const AVCodec *codec,
      * output format. */
     ost->tmp_frame = NULL;
     if (c->pix_fmt != AV_PIX_FMT_YUV420P) {
-        ost->tmp_frame = alloc_picture(AV_PIX_FMT_YUV420P, c->width, c->height);
+        ost->tmp_frame = alloc_frame(AV_PIX_FMT_YUV420P, c->width, c->height);
         if (!ost->tmp_frame) {
-            fprintf(stderr, "Could not allocate temporary picture\n");
+            fprintf(stderr, "Could not allocate temporary video frame\n");
             exit(1);
         }
     }
