@@ -165,6 +165,18 @@ FATE_MOV_FFMPEG-$(call TRANSCODE, PCM_S16LE, MOV, WAV_DEMUXER PAN_FILTER) \
 fate-mov-channel-description: tests/data/asynth-44100-1.wav tests/data/filtergraphs/mov-channel-description
 fate-mov-channel-description: CMD = transcode wav $(TARGET_PATH)/tests/data/asynth-44100-1.wav mov "-filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/mov-channel-description -map [outFL] -map [outFR] -map [outFC] -map [outLFE] -map [outBL] -map [outBR] -map [outDL] -map [outDR] -c:a pcm_s16le" "-map 0 -c copy -frames:a 0"
 
+# Test PCM in mp4 and channel layout
+FATE_MOV_FFMPEG-$(call TRANSCODE, PCM_S16LE, MOV, WAV_DEMUXER PAN_FILTER) \
+                          += fate-mov-mp4-pcm
+fate-mov-mp4-pcm: tests/data/asynth-44100-1.wav tests/data/filtergraphs/mov-mp4-pcm
+fate-mov-mp4-pcm: CMD = transcode wav $(TARGET_PATH)/tests/data/asynth-44100-1.wav mp4 "-filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/mov-mp4-pcm -map [mono] -map [stereo] -map [2.1] -map [5.1] -map [7.1] -c:a pcm_s16le" "-map 0 -c copy -frames:a 0"
+
+# Test floating sample format PCM in mp4 and unusual channel layout
+FATE_MOV_FFMPEG-$(call TRANSCODE, PCM_S16LE, MOV, WAV_DEMUXER PAN_FILTER) \
+                          += fate-mov-mp4-pcm-float
+fate-mov-mp4-pcm-float: tests/data/asynth-44100-1.wav
+fate-mov-mp4-pcm-float: CMD = transcode wav $(TARGET_PATH)/tests/data/asynth-44100-1.wav mp4 "-af aresample,pan=FL+LFE+BR|c0=c0|c1=c0|c2=c0 -c:a pcm_f32le" "-map 0 -c copy -frames:a 0"
+
 FATE_FFMPEG += $(FATE_MOV_FFMPEG-yes)
 
 fate-mov: $(FATE_MOV) $(FATE_MOV_FFMPEG-yes) $(FATE_MOV_FFPROBE) $(FATE_MOV_FASTSTART) $(FATE_MOV_FFMPEG_FFPROBE-yes)
