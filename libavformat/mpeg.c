@@ -549,6 +549,9 @@ redo:
     } else if (es_type == STREAM_TYPE_AUDIO_AC3) {
         codec_id = AV_CODEC_ID_AC3;
         type     = AVMEDIA_TYPE_AUDIO;
+    } else if (es_type == 0x90) {
+        codec_id = AV_CODEC_ID_PCM_ALAW;
+        type     = AVMEDIA_TYPE_AUDIO;
     } else if (m->imkh_cctv && es_type == 0x91) {
         codec_id = AV_CODEC_ID_PCM_MULAW;
         type     = AVMEDIA_TYPE_AUDIO;
