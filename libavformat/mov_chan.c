@@ -551,3 +551,299 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
 
     return 0;
 }
+
+/* ISO/IEC 23001-8, 8.2 */
+static const AVChannelLayout iso_channel_configuration[] = {
+    // 0: any setup
+    {},
+
+    // 1: centre front
+    AV_CHANNEL_LAYOUT_MONO,
+
+    // 2: left front, right front
+    AV_CHANNEL_LAYOUT_STEREO,
+
+    // 3: centre front, left front, right front
+    AV_CHANNEL_LAYOUT_SURROUND,
+
+    // 4: centre front, left front, right front, rear centre
+    AV_CHANNEL_LAYOUT_4POINT0,
+
+    // 5: centre front, left front, right front, left surround, right surround
+    AV_CHANNEL_LAYOUT_5POINT0,
+
+    // 6: 5 + LFE
+    AV_CHANNEL_LAYOUT_5POINT1,
+
+    // 7: centre front, left front centre, right front centre,
+    // left front, right front, left surround, right surround, LFE
+    AV_CHANNEL_LAYOUT_7POINT1_WIDE,
+
+    // 8: channel1, channel2
+    AV_CHANNEL_LAYOUT_STEREO_DOWNMIX,
+
+    // 9: left front, right front, rear centre
+    AV_CHANNEL_LAYOUT_2_1,
+
+    // 10: left front, right front, left surround, right surround
+    AV_CHANNEL_LAYOUT_2_2,
+
+    // 11: centre front, left front, right front, left surround, right surround, rear centre, LFE
+    AV_CHANNEL_LAYOUT_6POINT1,
+
+    // 12: centre front, left front, right front
+    // left surround, right surround
+    // rear surround left, rear surround right
+    // LFE
+    AV_CHANNEL_LAYOUT_7POINT1,
+
+    // 13:
+    AV_CHANNEL_LAYOUT_22POINT2,
+
+    // 14:
+    AV_CHANNEL_LAYOUT_7POINT1_TOP_BACK,
+
+    // TODO: 15 - 20
+};
+
+/* ISO/IEC 23001-8, table 8 */
+static const enum AVChannel iso_channel_position[] = {
+    // 0: left front
+    AV_CHAN_FRONT_LEFT,
+
+    // 1: right front
+    AV_CHAN_FRONT_RIGHT,
+
+    // 2: centre front
+    AV_CHAN_FRONT_CENTER,
+
+    // 3: low frequence enhancement
+    AV_CHAN_LOW_FREQUENCY,
+
+    // 4: left surround
+    // TODO
+    AV_CHAN_NONE,
+
+    // 5: right surround
+    // TODO
+    AV_CHAN_NONE,
+
+    // 6: left front centre
+    AV_CHAN_FRONT_LEFT_OF_CENTER,
+
+    // 7: right front centre
+    AV_CHAN_FRONT_RIGHT_OF_CENTER,
+
+    // 8: rear surround left
+    AV_CHAN_BACK_LEFT,
+
+    // 9: rear surround right
+    AV_CHAN_BACK_RIGHT,
+
+    // 10: rear centre
+    AV_CHAN_BACK_CENTER,
+
+    // 11: left surround direct
+    AV_CHAN_SURROUND_DIRECT_LEFT,
+
+    // 12: right surround direct
+    AV_CHAN_SURROUND_DIRECT_RIGHT,
+
+    // 13: left side surround
+    AV_CHAN_SIDE_LEFT,
+
+    // 14: right side surround
+    AV_CHAN_SIDE_RIGHT,
+
+    // 15: left wide front
+    AV_CHAN_WIDE_LEFT,
+
+    // 16: right wide front
+    AV_CHAN_WIDE_RIGHT,
+
+    // 17: left front vertical height
+    AV_CHAN_TOP_FRONT_LEFT,
+
+    // 18: right front vertical height
+    AV_CHAN_TOP_FRONT_RIGHT,
+
+    // 19: centre front vertical height
+    AV_CHAN_TOP_FRONT_CENTER,
+
+    // 20: left surround vertical height rear
+    AV_CHAN_TOP_BACK_LEFT,
+
+    // 21: right surround vertical height rear
+    AV_CHAN_TOP_BACK_RIGHT,
+
+    // 22: centre vertical height rear
+    AV_CHAN_TOP_BACK_CENTER,
+
+    // 23: left vertical height side surround
+    AV_CHAN_TOP_SIDE_LEFT,
+
+    // 24: right vertical height side surround
+    AV_CHAN_TOP_SIDE_RIGHT,
+
+    // 25: top centre surround
+    AV_CHAN_TOP_CENTER,
+
+    // 26: low frequency enhancement 2
+    AV_CHAN_LOW_FREQUENCY_2,
+
+    // 27: left front vertical bottom
+    AV_CHAN_BOTTOM_FRONT_LEFT,
+
+    // 28: right front vertical bottom
+    AV_CHAN_BOTTOM_FRONT_RIGHT,
+
+    // 29: centre front vertical bottom
+    AV_CHAN_BOTTOM_FRONT_CENTER,
+
+    // 30: left vertical height surround
+    // TODO
+    AV_CHAN_NONE,
+
+    // 31: right vertical height surround
+    // TODO
+    AV_CHAN_NONE,
+
+    // 32, 33, 34, 35, reserved
+    AV_CHAN_NONE,
+    AV_CHAN_NONE,
+    AV_CHAN_NONE,
+    AV_CHAN_NONE,
+
+    // 36: low frequency enhancement 3
+    AV_CHAN_NONE,
+
+    // 37: left edge of screen
+    AV_CHAN_NONE,
+    // 38: right edge of screen
+    AV_CHAN_NONE,
+    // 39: half-way between centre of screen and left edge of screen
+    AV_CHAN_NONE,
+    // 40: half-way between centre of screen and right edge of screen
+    AV_CHAN_NONE,
+
+    // 41: left back surround
+    AV_CHAN_NONE,
+
+    // 42: right back surround
+    AV_CHAN_NONE,
+
+    // 43 - 125: reserved
+    // 126: explicit position
+    // 127: unknown /undefined
+};
+
+int ff_mov_get_channel_config_from_layout(const AVChannelLayout *layout, int *config)
+{
+    // Set default value which means any setup in 23001-8
+    *config = 0;
+    for (int i = 0; i < FF_ARRAY_ELEMS(iso_channel_configuration); i++) {
+        if (!av_channel_layout_compare(layout, iso_channel_configuration + i)) {
+            *config = i;
+            break;
+        }
+    }
+
+    return 0;
+}
+
+int ff_mov_get_channel_layout_from_config(int config, AVChannelLayout *layout)
+{
+    if (config > 0 && config < FF_ARRAY_ELEMS(iso_channel_configuration)) {
+        av_channel_layout_copy(layout, &iso_channel_configuration[config]);
+        return 0;
+    }
+
+    return -1;
+}
+
+int ff_mov_get_channel_positions_from_layout(const AVChannelLayout *layout,
+                                             uint8_t *position, int position_num)
+{
+    enum AVChannel channel;
+
+    if (position_num < layout->nb_channels)
+        return AVERROR(EINVAL);
+
+    for (int i = 0; i < layout->nb_channels; i++) {
+        position[i] = 127;
+        channel = av_channel_layout_channel_from_index(layout, i);
+        if (channel == AV_CHAN_NONE)
+            return AVERROR(EINVAL);
+
+        for (int j = 0; j < FF_ARRAY_ELEMS(iso_channel_position); j++) {
+            if (iso_channel_position[j] == channel) {
+                position[i] = j;
+                break;
+            }
+        }
+        if (position[i] == 127)
+            return AVERROR(EINVAL);
+    }
+
+    return 0;
+}
+
+int ff_mov_get_layout_from_channel_positions(const uint8_t *position, int position_num,
+                                             AVChannelLayout *layout)
+{
+    int ret;
+    enum AVChannel channel;
+
+    av_channel_layout_uninit(layout);
+
+    if (position_num <= 63) {
+        layout->order = AV_CHANNEL_ORDER_NATIVE;
+        layout->nb_channels = position_num;
+        for (int i = 0; i < position_num; i++) {
+            if (position[i] >= FF_ARRAY_ELEMS(iso_channel_position)) {
+                ret = AVERROR_PATCHWELCOME;
+                goto error;
+            }
+
+            channel = iso_channel_position[position[i]];
+            // unsupported layout
+            if (channel == AV_CHAN_NONE) {
+                ret = AVERROR_PATCHWELCOME;
+                goto error;
+            }
+
+            layout->u.mask |= 1ULL << channel;
+        }
+    } else {
+        layout->order = AV_CHANNEL_ORDER_CUSTOM;
+        layout->nb_channels = position_num;
+        layout->u.map = av_calloc(position_num, sizeof(*layout->u.map));
+        if (!layout->u.map) {
+            ret = AVERROR(ENOMEM);
+            goto error;
+        }
+
+        for (int i = 0; i < position_num; i++) {
+            if (position[i] >= FF_ARRAY_ELEMS(iso_channel_position)) {
+                ret = AVERROR_PATCHWELCOME;
+                goto error;
+            }
+
+            channel = iso_channel_position[position[i]];
+            // unsupported layout
+            if (channel == AV_CHAN_NONE) {
+                ret = AVERROR_PATCHWELCOME;
+                goto error;
+            }
+
+            layout->u.map[i].id = channel;
+        }
+    }
+
+
+    return 0;
+
+error:
+    av_channel_layout_uninit(layout);
+    return ret;
+}

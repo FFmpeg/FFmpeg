@@ -163,4 +163,30 @@ int ff_mov_get_channel_layout_tag(const AVCodecParameters *par,
 int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
                      int64_t size);
 
+/**
+ * Get ISO/IEC 23001-8 ChannelConfiguration from AVChannelLayout.
+ *
+ */
+int ff_mov_get_channel_config_from_layout(const AVChannelLayout *layout, int *config);
+
+/**
+ * Get AVChannelLayout from ISO/IEC 23001-8 ChannelConfiguration.
+ *
+ * @return 0 for success, -1 for doesn't match, layout is untouched on failure
+ */
+
+int ff_mov_get_channel_layout_from_config(int config, AVChannelLayout *layout);
+
+/**
+ * Get ISO/IEC 23001-8 OutputChannelPosition from AVChannelLayout.
+ */
+int ff_mov_get_channel_positions_from_layout(const AVChannelLayout *layout,
+                                             uint8_t *position, int position_num);
+
+/**
+ * Get AVChannelLayout from ISO/IEC 23001-8 OutputChannelPosition.
+ */
+int ff_mov_get_layout_from_channel_positions(const uint8_t *position, int position_num,
+                                             AVChannelLayout *layout);
+
 #endif /* AVFORMAT_MOV_CHAN_H */
