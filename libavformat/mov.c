@@ -1591,6 +1591,10 @@ static int mov_read_pcmc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     int format_flags;
     int version, flags;
+    int pcm_sample_size;
+    AVFormatContext *fc = c->fc;
+    AVStream *st;
+    MOVStreamContext *sc;
 
     if (atom.size < 6) {
         av_log(c->fc, AV_LOG_ERROR, "Empty pcmC box\n");
@@ -1608,6 +1612,51 @@ static int mov_read_pcmc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
 
     format_flags = avio_r8(pb);
+    pcm_sample_size = avio_r8(pb);
+
+    if (fc->nb_streams < 1)
+        return AVERROR_INVALIDDATA;
+
+    st = fc->streams[fc->nb_streams - 1];
+    sc = st->priv_data;
+
+    if (sc->format == MOV_MP4_FPCM_TAG) {
+        switch (pcm_sample_size) {
+        case 32:
+            st->codecpar->codec_id = AV_CODEC_ID_PCM_F32BE;
+            break;
+        case 64:
+            st->codecpar->codec_id = AV_CODEC_ID_PCM_F64BE;
+            break;
+        default:
+            av_log(fc, AV_LOG_ERROR, "invalid pcm_sample_size %d for %s\n",
+                                     pcm_sample_size,
+                                     av_fourcc2str(sc->format));
+            return AVERROR_INVALIDDATA;
+        }
+    } else if (sc->format == MOV_MP4_IPCM_TAG) {
+        switch (pcm_sample_size) {
+        case 16:
+            st->codecpar->codec_id = AV_CODEC_ID_PCM_S16BE;
+            break;
+        case 24:
+            st->codecpar->codec_id = AV_CODEC_ID_PCM_S24BE;
+            break;
+        case 32:
+            st->codecpar->codec_id = AV_CODEC_ID_PCM_S32BE;
+            break;
+        default:
+            av_log(fc, AV_LOG_ERROR, "invalid pcm_sample_size %d for %s\n",
+                                     pcm_sample_size,
+                                     av_fourcc2str(sc->format));
+            return AVERROR_INVALIDDATA;
+        }
+    } else {
+        av_log(fc, AV_LOG_ERROR, "'pcmC' with invalid sample entry '%s'\n",
+                av_fourcc2str(sc->format));
+        return AVERROR_INVALIDDATA;
+    }
+
     if (format_flags & 1) // indicates little-endian format. If not present, big-endian format is used
         set_last_stream_little_endian(c->fc);
 
