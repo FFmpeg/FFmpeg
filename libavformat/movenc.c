@@ -1179,6 +1179,68 @@ static int mov_write_btrt_tag(AVIOContext *pb, MOVTrack *track)
     return update_size(pb, pos);
 }
 
+static int mov_write_chnl_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *track)
+{
+    int64_t pos = avio_tell(pb);
+    int config = 0;
+    int ret;
+    uint8_t *speaker_pos = NULL;
+    const AVChannelLayout *layout = &track->par->ch_layout;
+
+    ret = ff_mov_get_channel_config_from_layout(layout, &config);
+    if (ret || !config) {
+        config = 0;
+        speaker_pos = av_malloc(layout->nb_channels);
+        ret = ff_mov_get_channel_positions_from_layout(layout,
+                speaker_pos, layout->nb_channels);
+        if (ret) {
+            char buf[128] = {};
+
+            av_freep(&speaker_pos);
+            av_channel_layout_describe(layout, buf, sizeof(buf));
+            av_log(s, AV_LOG_ERROR, "unsupported channel layout %s\n", buf);
+            return ret;
+        }
+    }
+
+    avio_wb32(pb, 0); /* size */
+    ffio_wfourcc(pb, "chnl");
+    avio_wb32(pb, 0); /* version & flags */
+
+    avio_w8(pb, 1); /* stream_structure */
+    avio_w8(pb, config);
+    if (config) {
+        avio_wb64(pb, 0);
+    } else {
+        for (int i = 0; i < layout->nb_channels; i++)
+            avio_w8(pb, speaker_pos[i]);
+        av_freep(&speaker_pos);
+    }
+
+    return update_size(pb, pos);
+}
+
+static int mov_write_pcmc_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *track)
+{
+    int64_t pos = avio_tell(pb);
+    int format_flags;
+
+    avio_wb32(pb, 0); /* size */
+    ffio_wfourcc(pb, "pcmC");
+    avio_wb32(pb, 0); /* version & flags */
+
+    /* 0x01: indicates little-endian format */
+    format_flags = (track->par->codec_id == AV_CODEC_ID_PCM_F32LE ||
+                    track->par->codec_id == AV_CODEC_ID_PCM_F64LE ||
+                    track->par->codec_id == AV_CODEC_ID_PCM_S16LE ||
+                    track->par->codec_id == AV_CODEC_ID_PCM_S24LE ||
+                    track->par->codec_id == AV_CODEC_ID_PCM_S32LE);
+    avio_w8(pb, format_flags);
+    avio_w8(pb, track->par->bits_per_raw_sample);
+
+    return update_size(pb, pos);
+}
+
 static int mov_write_audio_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContext *mov, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
@@ -1305,7 +1367,13 @@ static int mov_write_audio_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
         ret = mov_write_dops_tag(s, pb, track);
     else if (track->par->codec_id == AV_CODEC_ID_TRUEHD)
         ret = mov_write_dmlp_tag(s, pb, track);
-    else if (track->vos_len > 0)
+    else if (tag == MOV_MP4_IPCM_TAG || tag == MOV_MP4_FPCM_TAG) {
+        if (track->par->ch_layout.nb_channels > 1)
+            ret = mov_write_chnl_tag(s, pb, track);
+        if (ret < 0)
+            return ret;
+        ret = mov_write_pcmc_tag(s, pb, track);
+    } else if (track->vos_len > 0)
         ret = mov_write_glbl_tag(pb, track);
 
     if (ret < 0)
@@ -7744,6 +7812,20 @@ static const AVCodecTag codec_mp4_tags[] = {
     { AV_CODEC_ID_MPEGH_3D_AUDIO,  MKTAG('m', 'h', 'm', '1') },
     { AV_CODEC_ID_TTML,            MOV_MP4_TTML_TAG          },
     { AV_CODEC_ID_TTML,            MOV_ISMV_TTML_TAG         },
+
+    /* ISO/IEC 23003-5 integer formats */
+    { AV_CODEC_ID_PCM_S16BE,       MOV_MP4_IPCM_TAG          },
+    { AV_CODEC_ID_PCM_S16LE,       MOV_MP4_IPCM_TAG          },
+    { AV_CODEC_ID_PCM_S24BE,       MOV_MP4_IPCM_TAG          },
+    { AV_CODEC_ID_PCM_S24LE,       MOV_MP4_IPCM_TAG          },
+    { AV_CODEC_ID_PCM_S32BE,       MOV_MP4_IPCM_TAG          },
+    { AV_CODEC_ID_PCM_S32LE,       MOV_MP4_IPCM_TAG          },
+    /* ISO/IEC 23003-5 floating-point formats */
+    { AV_CODEC_ID_PCM_F32BE,       MOV_MP4_FPCM_TAG          },
+    { AV_CODEC_ID_PCM_F32LE,       MOV_MP4_FPCM_TAG          },
+    { AV_CODEC_ID_PCM_F64BE,       MOV_MP4_FPCM_TAG          },
+    { AV_CODEC_ID_PCM_F64LE,       MOV_MP4_FPCM_TAG          },
+
     { AV_CODEC_ID_NONE,               0 },
 };
 #if CONFIG_MP4_MUXER || CONFIG_PSP_MUXER
