@@ -877,33 +877,27 @@ function func_tr_32x4_\name
         vld1.s16        {q0}, [r9, :128]!
         vld1.s16        {q1}, [r9, :128]
         add             r4, sp, #2048
+        mov             r2, #64
+        mov             r8, #-64
 
         bl              tr_block1
         mov             r1, r11
-        mov             r2, #64
-        mov             r8, #-64
         add             r3, r11, #(56 + 3 * 64)
         scale_store     \shift
 
         bl              tr_block2
         add             r1, r11, #8
         add             r3, r11, #(48 + 3 * 64)
-        mov             r2, #64
-        mov             r8, #-64
         scale_store     \shift
 
         bl              tr_block3
         add             r1, r11, #16
         add             r3, r11, #(40 + 3 * 64)
-        mov             r2, #64
-        mov             r8, #-64
         scale_store     \shift
 
         bl              tr_block4
         add             r1, r11, #24
         add             r3, r11, #(32 + 3 * 64)
-        mov             r2, #64
-        mov             r8, #-64
         scale_store     \shift
 
         bx               r10
