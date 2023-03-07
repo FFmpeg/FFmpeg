@@ -752,6 +752,16 @@ static int update_context_with_frame_header(AVCodecContext *avctx,
     return 0;
 }
 
+static const CodedBitstreamUnitType decompose_unit_types[] = {
+    AV1_OBU_FRAME,
+    AV1_OBU_FRAME_HEADER,
+    AV1_OBU_METADATA,
+    AV1_OBU_REDUNDANT_FRAME_HEADER,
+    AV1_OBU_SEQUENCE_HEADER,
+    AV1_OBU_TEMPORAL_DELIMITER,
+    AV1_OBU_TILE_GROUP,
+};
+
 static av_cold int av1_decode_init(AVCodecContext *avctx)
 {
     AV1DecContext *s = avctx->priv_data;
@@ -780,6 +790,9 @@ static av_cold int av1_decode_init(AVCodecContext *avctx)
     ret = ff_cbs_init(&s->cbc, AV_CODEC_ID_AV1, avctx);
     if (ret < 0)
         return ret;
+
+    s->cbc->decompose_unit_types    = decompose_unit_types;
+    s->cbc->nb_decompose_unit_types = FF_ARRAY_ELEMS(decompose_unit_types);
 
     s->itut_t35_fifo = av_fifo_alloc2(1, sizeof(AV1RawMetadataITUTT35),
                                       AV_FIFO_FLAG_AUTO_GROW);
