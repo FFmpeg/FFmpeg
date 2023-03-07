@@ -138,6 +138,10 @@ fate-vp9-05-resize: REF = $(SRC_PATH)/tests/ref/fate/vp9-05-resize
 fate-vp9-encparams: CMD = venc_data $(TARGET_SAMPLES)/vp9-test-vectors/vp90-2-segmentation-aq-akiyo.webm 0 5
 FATE_SAMPLES_DUMP_DATA-$(call DEMDEC, MATROSKA, VP9) += fate-vp9-encparams
 
+FATE_VP9-$(call ALLYES, MATROSKA_DEMUXER VP9_PARSER VP9_SUPERFRAME_SPLIT_BSF \
+                        VP9_SUPERFRAME_BSF FILE_PROTOCOL FRAMECRC_MUXER) += fate-vp9-superframe-bsf
+fate-vp9-superframe-bsf: CMD = framecrc -i $(TARGET_SAMPLES)/vp9-test-vectors/vp90-2-segmentation-sf-akiyo.webm -c:v copy -bsf:v vp9_superframe_split,vp9_superframe
+
 FATE_VP9-$(call DEMDEC, MATROSKA, VP9) += fate-vp9-encparams
 
 FATE_SAMPLES_FFMPEG += $(FATE_VP9-yes)
