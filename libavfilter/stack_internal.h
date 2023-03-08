@@ -19,6 +19,12 @@
 #ifndef AVFILTER_STACK_INTERNAL_H
 #define AVFILTER_STACK_INTERNAL_H
 
+#include <stdint.h>
+
+#include "libavutil/attributes.h"
+#include "framesync.h"
+#include "vaapi_vpp.h"
+
 enum {
     STACK_H = 0,
     STACK_V = 1,
