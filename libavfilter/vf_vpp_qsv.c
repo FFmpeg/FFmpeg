@@ -714,7 +714,8 @@ static const AVOption vpp_options[] = {
 
 static int vpp_query_formats(AVFilterContext *ctx)
 {
-    int ret;
+    VPPContext *vpp = ctx->priv;
+    int ret, i = 0;
     static const enum AVPixelFormat in_pix_fmts[] = {
         AV_PIX_FMT_YUV420P,
         AV_PIX_FMT_NV12,
@@ -727,17 +728,25 @@ static int vpp_query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_QSV,
         AV_PIX_FMT_NONE
     };
-    static const enum AVPixelFormat out_pix_fmts[] = {
-        AV_PIX_FMT_NV12,
-        AV_PIX_FMT_P010,
-        AV_PIX_FMT_QSV,
-        AV_PIX_FMT_NONE
-    };
+    static enum AVPixelFormat out_pix_fmts[4];
 
     ret = ff_formats_ref(ff_make_format_list(in_pix_fmts),
                          &ctx->inputs[0]->outcfg.formats);
     if (ret < 0)
         return ret;
+
+    /* User specifies the output format */
+    if (vpp->out_format == AV_PIX_FMT_NV12 ||
+        vpp->out_format == AV_PIX_FMT_P010)
+        out_pix_fmts[i++] = vpp->out_format;
+    else {
+        out_pix_fmts[i++] = AV_PIX_FMT_NV12;
+        out_pix_fmts[i++] = AV_PIX_FMT_P010;
+    }
+
+    out_pix_fmts[i++] = AV_PIX_FMT_QSV;
+    out_pix_fmts[i++] = AV_PIX_FMT_NONE;
+
     return ff_formats_ref(ff_make_format_list(out_pix_fmts),
                           &ctx->outputs[0]->incfg.formats);
 }
