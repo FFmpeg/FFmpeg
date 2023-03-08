@@ -45,27 +45,26 @@ static int ass_encode_frame(AVCodecContext *avctx,
                             unsigned char *buf, int bufsize,
                             const AVSubtitle *sub)
 {
-    int i, len, total_len = 0;
+    int len;
 
-    for (i=0; i<sub->num_rects; i++) {
-        const char *ass = sub->rects[i]->ass;
-
-        if (sub->rects[i]->type != SUBTITLE_ASS) {
-            av_log(avctx, AV_LOG_ERROR, "Only SUBTITLE_ASS type supported.\n");
-            return AVERROR(EINVAL);
-        }
-
-        len = av_strlcpy(buf+total_len, ass, bufsize-total_len);
-
-        if (len > bufsize-total_len-1) {
-            av_log(avctx, AV_LOG_ERROR, "Buffer too small for ASS event.\n");
-            return AVERROR_BUFFER_TOO_SMALL;
-        }
-
-        total_len += len;
+    if (sub->num_rects != 1) {
+        av_log(avctx, AV_LOG_ERROR, "Only one rect per AVSubtitle is supported in ASS.\n");
+        return AVERROR_INVALIDDATA;
     }
 
-    return total_len;
+    if (sub->rects[0]->type != SUBTITLE_ASS) {
+        av_log(avctx, AV_LOG_ERROR, "Only SUBTITLE_ASS type supported.\n");
+        return AVERROR(EINVAL);
+    }
+
+    len = av_strlcpy(buf, sub->rects[0]->ass, bufsize);
+
+    if (len > bufsize - 1) {
+        av_log(avctx, AV_LOG_ERROR, "Buffer too small for ASS event.\n");
+        return AVERROR_BUFFER_TOO_SMALL;
+    }
+
+    return len;
 }
 
 #if CONFIG_SSA_ENCODER
