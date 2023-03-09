@@ -151,6 +151,8 @@ static int zlib_decomp(AVCodecContext *avctx, const uint8_t *src, int src_len, i
     if (expected != (unsigned int)c->zstream.total_out) {
         av_log(avctx, AV_LOG_ERROR, "Decoded size differs (%d != %lu)\n",
                expected, c->zstream.total_out);
+        if (expected > (unsigned int)c->zstream.total_out)
+            return (unsigned int)c->zstream.total_out;
         return AVERROR_UNKNOWN;
     }
     return c->zstream.total_out;
@@ -281,12 +283,13 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
             ret = zlib_decomp(avctx, buf + 8 + mthread_inlen, len - 8 - mthread_inlen,
                               mthread_outlen, mthread_outlen);
             if (ret < 0) return ret;
+            len = c->decomp_size;
         } else {
             int ret = zlib_decomp(avctx, buf, len, 0, c->decomp_size);
             if (ret < 0) return ret;
+            len = ret;
         }
         encoded = c->decomp_buf;
-        len = c->decomp_size;
         break;
 #endif
     default:
@@ -524,7 +527,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         partial_h_supported = 1;
         break;
     case IMGTYPE_RGB24:
-        c->decomp_size = basesize * 3;
+        c->decomp_size = FFALIGN(avctx->width*3, 4) * avctx->height;
         max_decomp_size = max_basesize * 3;
         avctx->pix_fmt = AV_PIX_FMT_BGR24;
         av_log(avctx, AV_LOG_DEBUG, "Image type is RGB 24.\n");
