@@ -184,8 +184,10 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
         param->min_qp_allowed       = avctx->qmin;
     }
     param->max_bit_rate             = avctx->rc_max_rate;
-    if (avctx->bit_rate && avctx->rc_buffer_size)
-        param->maximum_buffer_size_ms = avctx->rc_buffer_size * 1000LL / avctx->bit_rate;
+    if ((avctx->bit_rate > 0 || avctx->rc_max_rate > 0) && avctx->rc_buffer_size)
+        param->maximum_buffer_size_ms =
+            avctx->rc_buffer_size * 1000LL /
+            FFMAX(avctx->bit_rate, avctx->rc_max_rate);
 
     if (svt_enc->crf > 0) {
         param->qp                   = svt_enc->crf;
@@ -302,7 +304,8 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
     avctx->bit_rate       = param->rate_control_mode > 0 ?
                             param->target_bit_rate : 0;
     avctx->rc_max_rate    = param->max_bit_rate;
-    avctx->rc_buffer_size = param->maximum_buffer_size_ms * avctx->bit_rate / 1000LL;
+    avctx->rc_buffer_size = param->maximum_buffer_size_ms *
+                            FFMAX(avctx->bit_rate, avctx->rc_max_rate) / 1000LL;
 
     if (avctx->bit_rate || avctx->rc_max_rate || avctx->rc_buffer_size) {
         AVCPBProperties *cpb_props = ff_add_cpb_side_data(avctx);
