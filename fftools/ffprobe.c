@@ -79,6 +79,12 @@
 #  define pthread_mutex_unlock(a) do{}while(0)
 #endif
 
+// attached as opaque_ref to packets/frames
+typedef struct FrameData {
+    int64_t pkt_pos;
+    int     pkt_size;
+} FrameData;
+
 typedef struct InputStream {
     AVStream *st;
 
@@ -2571,6 +2577,7 @@ static void show_subtitle(WriterContext *w, AVSubtitle *sub, AVStream *stream,
 static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
                        AVFormatContext *fmt_ctx)
 {
+    FrameData *fd = frame->opaque_ref ? (FrameData*)frame->opaque_ref->data : NULL;
     AVBPrint pbuf;
     char val_str[128];
     const char *s;
@@ -2599,10 +2606,10 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
 #endif
     print_duration_ts  ("duration",          frame->duration);
     print_duration_time("duration_time",     frame->duration, &stream->time_base);
-    if (frame->pkt_pos != -1) print_fmt    ("pkt_pos", "%"PRId64, frame->pkt_pos);
-    else                      print_str_opt("pkt_pos", "N/A");
-    if (frame->pkt_size != -1) print_val    ("pkt_size", frame->pkt_size, unit_byte_str);
-    else                       print_str_opt("pkt_size", "N/A");
+    if (fd && fd->pkt_pos != -1)  print_fmt    ("pkt_pos", "%"PRId64, fd->pkt_pos);
+    else                          print_str_opt("pkt_pos", "N/A");
+    if (fd && fd->pkt_size != -1) print_val    ("pkt_size", fd->pkt_size, unit_byte_str);
+    else                          print_str_opt("pkt_size", "N/A");
 
     switch (stream->codecpar->codec_type) {
         AVRational sar;
@@ -2911,6 +2918,15 @@ static int read_interval_packets(WriterContext *w, InputFile *ifile,
             }
             if (do_read_frames) {
                 int packet_new = 1;
+                FrameData *fd;
+
+                pkt->opaque_ref = av_buffer_allocz(sizeof(*fd));
+                if (!pkt->opaque_ref)
+                    return AVERROR(ENOMEM);
+                fd = (FrameData*)pkt->opaque_ref->data;
+                fd->pkt_pos  = pkt->pos;
+                fd->pkt_size = pkt->size;
+
                 while (process_frame(w, ifile, frame, pkt, &packet_new) > 0);
             }
         }
@@ -3404,6 +3420,8 @@ static int open_input_file(InputFile *ifile, const char *filename,
                 // That is in fact possible but not trivial
                 av_dict_set(&codec_opts, "threads", "1", 0);
             }
+
+            av_dict_set(&opts, "flags", "+copy_opaque", AV_DICT_MULTIKEY);
 
             ist->dec_ctx->pkt_timebase = stream->time_base;
 
