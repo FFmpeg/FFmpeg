@@ -219,7 +219,9 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
                 if (c->decomp_size != mszh_dlen) {
                     av_log(avctx, AV_LOG_ERROR, "Decoded size differs (%d != %d)\n",
                            c->decomp_size, mszh_dlen);
-                    return AVERROR_INVALIDDATA;
+                    if (c->decomp_size != mszh_dlen &&
+                        c->decomp_size != mszh_dlen + 2) // YUV420 306x306 is missing 2 bytes
+                        return AVERROR_INVALIDDATA;
                 }
                 encoded = c->decomp_buf;
                 len = mszh_dlen;
