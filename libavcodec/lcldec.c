@@ -406,6 +406,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
                 v_out[ col >> 1     ] = *encoded++ + 128;
                 v_out[(col >> 1) + 1] = *encoded++ + 128;
             }
+            if (col && col < width) {
+                u_out[ col >> 1     ] = u_out[(col>>1) - 1];
+                v_out[ col >> 1     ] = v_out[(col>>1) - 1];
+            }
+
             y_out -= frame->linesize[0];
             u_out -= frame->linesize[1];
             v_out -= frame->linesize[2];
@@ -426,6 +431,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
                 encoded += 4;
                 u_out[col >> 2] = *encoded++ + 128;
                 v_out[col >> 2] = *encoded++ + 128;
+            }
+            if (col && col < width) {
+                u_out[col >> 2] = u_out[(col>>2) - 1];
+                v_out[col >> 2] = v_out[(col>>2) - 1];
             }
             y_out -= frame->linesize[0];
             u_out -= frame->linesize[1];
@@ -486,6 +495,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
                                 FFALIGN(avctx->height, 4);
     unsigned int max_decomp_size;
     int subsample_h, subsample_v;
+    int partial_h_supported = 0;
 
     if (avctx->extradata_size < 8) {
         av_log(avctx, AV_LOG_ERROR, "Extradata size too small.\n");
@@ -507,14 +517,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_DEBUG, "Image type is YUV 1:1:1.\n");
         break;
     case IMGTYPE_YUV422:
-        c->decomp_size = basesize * 2;
+        c->decomp_size = (avctx->width & ~3) * avctx->height * 2;
         max_decomp_size = max_basesize * 2;
         avctx->pix_fmt = AV_PIX_FMT_YUV422P;
         av_log(avctx, AV_LOG_DEBUG, "Image type is YUV 4:2:2.\n");
-        if (avctx->width % 4) {
-            avpriv_request_sample(avctx, "Unsupported dimensions");
-            return AVERROR_INVALIDDATA;
-        }
+        partial_h_supported = 1;
         break;
     case IMGTYPE_RGB24:
         c->decomp_size = basesize * 3;
@@ -523,10 +530,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_DEBUG, "Image type is RGB 24.\n");
         break;
     case IMGTYPE_YUV411:
-        c->decomp_size = basesize / 2 * 3;
+        c->decomp_size = (avctx->width & ~3) * avctx->height / 2 * 3;
         max_decomp_size = max_basesize / 2 * 3;
         avctx->pix_fmt = AV_PIX_FMT_YUV411P;
         av_log(avctx, AV_LOG_DEBUG, "Image type is YUV 4:1:1.\n");
+        partial_h_supported = 1;
         break;
     case IMGTYPE_YUV211:
         c->decomp_size = basesize * 2;
@@ -546,7 +554,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     }
 
     av_pix_fmt_get_chroma_sub_sample(avctx->pix_fmt, &subsample_h, &subsample_v);
-    if (avctx->width % (1<<subsample_h) || avctx->height % (1<<subsample_v)) {
+    if ((avctx->width % (1<<subsample_h) && !partial_h_supported) || avctx->height % (1<<subsample_v)) {
         avpriv_request_sample(avctx, "Unsupported dimensions");
         return AVERROR_INVALIDDATA;
     }
