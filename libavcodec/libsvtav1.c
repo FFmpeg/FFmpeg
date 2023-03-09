@@ -27,6 +27,8 @@
 #include "libavutil/common.h"
 #include "libavutil/frame.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/intreadwrite.h"
+#include "libavutil/mastering_display_metadata.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/avassert.h"
@@ -134,6 +136,71 @@ static int alloc_buffer(EbSvtAv1EncConfiguration *config, SvtContext *svt_enc)
 
     return 0;
 
+}
+
+static void handle_mdcv(struct EbSvtAv1MasteringDisplayInfo *dst,
+                        const AVMasteringDisplayMetadata *mdcv)
+{
+    if (mdcv->has_primaries) {
+        const struct EbSvtAv1ChromaPoints *const points[] = {
+            &dst->r,
+            &dst->g,
+            &dst->b,
+        };
+
+        for (int i = 0; i < 3; i++) {
+            const struct EbSvtAv1ChromaPoints *dst = points[i];
+            const AVRational *src = mdcv->display_primaries[i];
+
+            AV_WB16(&dst->x,
+                    av_rescale_q(1, src[0], (AVRational){ 1, (1 << 16) }));
+            AV_WB16(&dst->y,
+                    av_rescale_q(1, src[1], (AVRational){ 1, (1 << 16) }));
+        }
+
+        AV_WB16(&dst->white_point.x,
+                av_rescale_q(1, mdcv->white_point[0],
+                             (AVRational){ 1, (1 << 16) }));
+        AV_WB16(&dst->white_point.y,
+                av_rescale_q(1, mdcv->white_point[1],
+                             (AVRational){ 1, (1 << 16) }));
+    }
+
+    if (mdcv->has_luminance) {
+        AV_WB32(&dst->max_luma,
+                av_rescale_q(1, mdcv->max_luminance,
+                             (AVRational){ 1, (1 << 8) }));
+        AV_WB32(&dst->min_luma,
+                av_rescale_q(1, mdcv->min_luminance,
+                             (AVRational){ 1, (1 << 14) }));
+    }
+}
+
+static void handle_side_data(AVCodecContext *avctx,
+                             EbSvtAv1EncConfiguration *param)
+{
+    const AVFrameSideData *cll_sd =
+        av_frame_side_data_get(
+            (const AVFrameSideData **)avctx->decoded_side_data,
+            avctx->nb_decoded_side_data, AV_FRAME_DATA_CONTENT_LIGHT_LEVEL);
+    const AVFrameSideData *mdcv_sd =
+        av_frame_side_data_get(
+            (const AVFrameSideData **)avctx->decoded_side_data,
+            avctx->nb_decoded_side_data,
+            AV_FRAME_DATA_MASTERING_DISPLAY_METADATA);
+
+    if (cll_sd) {
+        const AVContentLightMetadata *cll =
+            (AVContentLightMetadata *)cll_sd->data;
+
+        AV_WB16(&param->content_light_level.max_cll, cll->MaxCLL);
+        AV_WB16(&param->content_light_level.max_fall, cll->MaxFALL);
+    }
+
+    if (mdcv_sd) {
+        handle_mdcv(&param->mastering_display,
+                    (AVMasteringDisplayMetadata *)mdcv_sd->data);
+    }
 }
 
 static int config_enc_params(EbSvtAv1EncConfiguration *param,
@@ -253,6 +320,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     /* 2 = IDR, closed GOP, 1 = CRA, open GOP */
     param->intra_refresh_type = avctx->flags & AV_CODEC_FLAG_CLOSED_GOP ? 2 : 1;
+
+    handle_side_data(avctx, param);
 
 #if SVT_AV1_CHECK_VERSION(0, 9, 1)
     while ((en = av_dict_get(svt_enc->svtav1_opts, "", en, AV_DICT_IGNORE_SUFFIX))) {

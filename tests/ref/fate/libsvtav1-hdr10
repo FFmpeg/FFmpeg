@@ -1,0 +1,14 @@
+frames.frame.0.side_data_list.side_data.0.side_data_type="Mastering display metadata"
+frames.frame.0.side_data_list.side_data.0.red_x="17367/65536"
+frames.frame.0.side_data_list.side_data.0.red_y="45220/65536"
+frames.frame.0.side_data_list.side_data.0.green_x="9830/65536"
+frames.frame.0.side_data_list.side_data.0.green_y="3932/65536"
+frames.frame.0.side_data_list.side_data.0.blue_x="44564/65536"
+frames.frame.0.side_data_list.side_data.0.blue_y="20972/65536"
+frames.frame.0.side_data_list.side_data.0.white_point_x="20493/65536"
+frames.frame.0.side_data_list.side_data.0.white_point_y="21561/65536"
+frames.frame.0.side_data_list.side_data.0.min_luminance="82/16384"
+frames.frame.0.side_data_list.side_data.0.max_luminance="256000/256"
+frames.frame.0.side_data_list.side_data.1.side_data_type="Content light level metadata"
+frames.frame.0.side_data_list.side_data.1.max_content=1000
+frames.frame.0.side_data_list.side_data.1.max_average=200
