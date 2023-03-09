@@ -173,8 +173,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     int row, col;
     unsigned char *encoded = avpkt->data, *outptr;
     uint8_t *y_out, *u_out, *v_out;
-    unsigned int width = avctx->width; // Real image width
-    unsigned int height = avctx->height; // Real image height
+    int width = avctx->width; // Real image width
+    int height = avctx->height; // Real image height
     unsigned int mszh_dlen;
     unsigned char yq, y1q, uq, vq;
     int uqvq, ret;
