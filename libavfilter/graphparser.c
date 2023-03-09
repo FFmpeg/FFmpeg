@@ -475,7 +475,7 @@ int avfilter_graph_segment_parse(AVFilterGraph *graph, const char *graph_str,
 
     graph_str += strspn(graph_str, WHITESPACES);
 
-    ret = parse_sws_flags(&graph_str, &seg->scale_sws_opts, &graph);
+    ret = parse_sws_flags(&graph_str, &seg->scale_sws_opts, graph);
     if (ret < 0)
         goto fail;
 
