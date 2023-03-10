@@ -68,7 +68,9 @@ enum var_name {
     VAR_X,
     VAR_Y,
     VAR_N,
+#if FF_API_FRAME_PKT
     VAR_POS,
+#endif
     VAR_T,
     VAR_VARS_NB
 };
@@ -87,7 +89,9 @@ static const char *const var_names[] = {
     "x",
     "y",
     "n",            ///< number of frame
+#if FF_API_FRAME_PKT
     "pos",          ///< position in the file
+#endif
     "t",            ///< timestamp expressed in seconds
     NULL
 };
@@ -238,8 +242,6 @@ static int overlay_cuda_blend(FFFrameSync *fs)
 
     AVFrame *input_main, *input_overlay;
 
-    int pos = 0;
-
     ctx->cu_ctx = cuda_ctx;
 
     // read main and overlay frames from inputs
@@ -268,11 +270,19 @@ static int overlay_cuda_blend(FFFrameSync *fs)
     }
 
     if (ctx->eval_mode == EVAL_MODE_FRAME) {
-        pos = input_main->pkt_pos;
         ctx->var_values[VAR_N] = inlink->frame_count_out;
         ctx->var_values[VAR_T] = input_main->pts == AV_NOPTS_VALUE ?
             NAN : input_main->pts * av_q2d(inlink->time_base);
-        ctx->var_values[VAR_POS] = pos == -1 ? NAN : pos;
+
+#if FF_API_FRAME_PKT
+FF_DISABLE_DEPRECATION_WARNINGS
+        {
+            int64_t pos = input_main->pkt_pos;
+            ctx->var_values[VAR_POS] = pos == -1 ? NAN : pos;
+        }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
         ctx->var_values[VAR_OVERLAY_W] = ctx->var_values[VAR_OW] = input_overlay->width;
         ctx->var_values[VAR_OVERLAY_H] = ctx->var_values[VAR_OH] = input_overlay->height;
         ctx->var_values[VAR_MAIN_W   ] = ctx->var_values[VAR_MW] = input_main->width;
@@ -280,8 +290,8 @@ static int overlay_cuda_blend(FFFrameSync *fs)
 
         eval_expr(avctx);
 
-        av_log(avctx, AV_LOG_DEBUG, "n:%f t:%f pos:%f x:%f xi:%d y:%f yi:%d\n",
-               ctx->var_values[VAR_N], ctx->var_values[VAR_T], ctx->var_values[VAR_POS],
+        av_log(avctx, AV_LOG_DEBUG, "n:%f t:%f x:%f xi:%d y:%f yi:%d\n",
+               ctx->var_values[VAR_N], ctx->var_values[VAR_T],
                ctx->var_values[VAR_X], ctx->x_position,
                ctx->var_values[VAR_Y], ctx->y_position);
     }
@@ -355,7 +365,9 @@ static int config_input_overlay(AVFilterLink *inlink)
     s->var_values[VAR_Y]   = NAN;
     s->var_values[VAR_N]   = 0;
     s->var_values[VAR_T]   = NAN;
+#if FF_API_FRAME_PKT
     s->var_values[VAR_POS] = NAN;
+#endif
 
     if ((ret = set_expr(&s->x_pexpr, s->x_expr, "x", ctx)) < 0 ||
         (ret = set_expr(&s->y_pexpr, s->y_expr, "y", ctx)) < 0)

@@ -134,7 +134,9 @@ enum var_name {
     VAR_PREV_SELECTED_N,
 
     VAR_KEY,
+#if FF_API_FRAME_PKT
     VAR_POS,
+#endif
 
     VAR_SCENE,
 
@@ -339,7 +341,11 @@ static void select_frame(AVFilterContext *ctx, AVFrame *frame)
     select->var_values[VAR_N  ] = inlink->frame_count_out;
     select->var_values[VAR_PTS] = TS2D(frame->pts);
     select->var_values[VAR_T  ] = TS2D(frame->pts) * av_q2d(inlink->time_base);
+#if FF_API_FRAME_PKT
+FF_DISABLE_DEPRECATION_WARNINGS
     select->var_values[VAR_POS] = frame->pkt_pos == -1 ? NAN : frame->pkt_pos;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     select->var_values[VAR_KEY] = frame->key_frame;
     select->var_values[VAR_CONCATDEC_SELECT] = get_concatdec_select(frame, av_rescale_q(frame->pts, inlink->time_base, AV_TIME_BASE_Q));
 

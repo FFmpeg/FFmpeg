@@ -48,7 +48,9 @@ static const char *const var_names[] = {
     "nb_channels",         ///< number of channels
     "nb_consumed_samples", ///< number of samples consumed by the filter
     "nb_samples",          ///< number of samples in the current frame
+#if FF_API_FRAME_PKT
     "pos",                 ///< position in the file of the frame
+#endif
     "pts",                 ///< frame presentation timestamp
     "sample_rate",         ///< sample rate
     "startpts",            ///< PTS at start of stream
@@ -288,7 +290,9 @@ static int config_output(AVFilterLink *outlink)
     vol->var_values[VAR_N] =
     vol->var_values[VAR_NB_CONSUMED_SAMPLES] =
     vol->var_values[VAR_NB_SAMPLES] =
+#if FF_API_FRAME_PKT
     vol->var_values[VAR_POS] =
+#endif
     vol->var_values[VAR_PTS] =
     vol->var_values[VAR_STARTPTS] =
     vol->var_values[VAR_STARTT] =
@@ -330,7 +334,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     AVFilterLink *outlink = inlink->dst->outputs[0];
     int nb_samples        = buf->nb_samples;
     AVFrame *out_buf;
-    int64_t pos;
     AVFrameSideData *sd = av_frame_get_side_data(buf, AV_FRAME_DATA_REPLAYGAIN);
     int ret;
 
@@ -380,8 +383,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     vol->var_values[VAR_T  ] = TS2T(buf->pts, inlink->time_base);
     vol->var_values[VAR_N  ] = inlink->frame_count_out;
 
-    pos = buf->pkt_pos;
-    vol->var_values[VAR_POS] = pos == -1 ? NAN : pos;
+#if FF_API_FRAME_PKT
+FF_DISABLE_DEPRECATION_WARNINGS
+    {
+        int64_t pos;
+        pos = buf->pkt_pos;
+        vol->var_values[VAR_POS] = pos == -1 ? NAN : pos;
+    }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     if (vol->eval_mode == EVAL_MODE_FRAME)
         set_volume(ctx);
 

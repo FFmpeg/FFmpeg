@@ -1074,7 +1074,11 @@ static int set_output_frame(AVCodecContext *avctx, AVFrame *frame,
 
     frame->pts = pkt->pts;
     frame->pkt_dts = pkt->dts;
+#if FF_API_FRAME_PKT
+FF_DISABLE_DEPRECATION_WARNINGS
     frame->pkt_size = pkt->size;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     *got_frame = 1;
 

@@ -45,7 +45,9 @@ static const char *const var_names[] = {
     "N",           ///< frame / sample number (starting at zero)
     "NB_CONSUMED_SAMPLES", ///< number of samples consumed by the filter (only audio)
     "NB_SAMPLES",  ///< number of samples in the current frame (only audio)
+#if FF_API_FRAME_PKT
     "POS",         ///< original position in the file of the frame
+#endif
     "PREV_INPTS",  ///< previous  input PTS
     "PREV_INT",    ///< previous  input time in seconds
     "PREV_OUTPTS", ///< previous output PTS
@@ -70,7 +72,9 @@ enum var_name {
     VAR_N,
     VAR_NB_CONSUMED_SAMPLES,
     VAR_NB_SAMPLES,
+#if FF_API_FRAME_PKT
     VAR_POS,
+#endif
     VAR_PREV_INPTS,
     VAR_PREV_INT,
     VAR_PREV_OUTPTS,
@@ -161,7 +165,11 @@ static double eval_pts(SetPTSContext *setpts, AVFilterLink *inlink, AVFrame *fra
     }
     setpts->var_values[VAR_PTS       ] = TS2D(pts);
     setpts->var_values[VAR_T         ] = TS2T(pts, inlink->time_base);
+#if FF_API_FRAME_PKT
+FF_DISABLE_DEPRECATION_WARNINGS
     setpts->var_values[VAR_POS       ] = !frame || frame->pkt_pos == -1 ? NAN : frame->pkt_pos;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     setpts->var_values[VAR_RTCTIME   ] = av_gettime();
 
     if (frame) {
@@ -187,11 +195,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     frame->pts = D2TS(d);
 
     av_log(inlink->dst, AV_LOG_TRACE,
-            "N:%"PRId64" PTS:%s T:%f POS:%s",
+            "N:%"PRId64" PTS:%s T:%f",
             (int64_t)setpts->var_values[VAR_N],
             d2istr(setpts->var_values[VAR_PTS]),
-            setpts->var_values[VAR_T],
-            d2istr(setpts->var_values[VAR_POS]));
+            setpts->var_values[VAR_T]);
     switch (inlink->type) {
     case AVMEDIA_TYPE_VIDEO:
         av_log(inlink->dst, AV_LOG_TRACE, " INTERLACED:%"PRId64,
@@ -242,10 +249,9 @@ static int activate(AVFilterContext *ctx)
     if (ff_inlink_acknowledge_status(inlink, &status, &pts)) {
         double d = eval_pts(setpts, inlink, NULL, pts);
 
-        av_log(ctx, AV_LOG_TRACE, "N:EOF PTS:%s T:%f POS:%s -> PTS:%s T:%f\n",
+        av_log(ctx, AV_LOG_TRACE, "N:EOF PTS:%s T:%f -> PTS:%s T:%f\n",
                d2istr(setpts->var_values[VAR_PTS]),
                setpts->var_values[VAR_T],
-               d2istr(setpts->var_values[VAR_POS]),
                d2istr(d), TS2T(d, inlink->time_base));
         ff_outlink_set_status(outlink, status, D2TS(d));
         return 0;

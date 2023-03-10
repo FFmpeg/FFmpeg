@@ -213,12 +213,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
     av_channel_layout_describe(&buf->ch_layout, chlayout_str, sizeof(chlayout_str));
 
     av_log(ctx, AV_LOG_INFO,
-           "n:%"PRId64" pts:%s pts_time:%s pos:%"PRId64" "
+           "n:%"PRId64" pts:%s pts_time:%s "
            "fmt:%s channels:%d chlayout:%s rate:%d nb_samples:%d "
            "checksum:%08"PRIX32" ",
            inlink->frame_count_out,
            av_ts2str(buf->pts), av_ts2timestr(buf->pts, &inlink->time_base),
-           buf->pkt_pos,
            av_get_sample_fmt_name(buf->format), buf->ch_layout.nb_channels, chlayout_str,
            buf->sample_rate, buf->nb_samples,
            checksum);

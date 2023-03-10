@@ -79,8 +79,12 @@ static void uavs3d_output_callback(uavs3d_io_frm_t *dec_frame) {
 
     frm->pts       = dec_frame->pts;
     frm->pkt_dts   = dec_frame->dts;
+#if FF_API_FRAME_PKT
+FF_DISABLE_DEPRECATION_WARNINGS
     frm->pkt_pos   = dec_frame->pkt_pos;
     frm->pkt_size  = dec_frame->pkt_size;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 #if FF_API_FRAME_PICTURE_NUMBER
 FF_DISABLE_DEPRECATION_WARNINGS
     frm->coded_picture_number   = dec_frame->dtr;
@@ -175,8 +179,12 @@ static int libuavs3d_decode_frame(AVCodecContext *avctx, AVFrame *frm,
         uavs3d_io_frm_t *frm_dec = &h->dec_frame;
 
         buf_end = buf + buf_size;
+#if FF_API_FRAME_PKT
+FF_DISABLE_DEPRECATION_WARNINGS
         frm_dec->pkt_pos  = avpkt->pos;
         frm_dec->pkt_size = avpkt->size;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
         while (!finish) {
             int bs_len;

@@ -34,7 +34,9 @@ enum var_name {
     VAR_X,
     VAR_Y,
     VAR_N,
+#if FF_API_FRAME_PKT
     VAR_POS,
+#endif
     VAR_T,
     VAR_VARS_NB
 };

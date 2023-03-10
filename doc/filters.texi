@@ -299,7 +299,8 @@ timestamp expressed in seconds, NAN if the input timestamp is unknown
 sequential number of the input frame, starting from 0
 
 @item pos
-the position in the file of the input frame, NAN if unknown
+the position in the file of the input frame, NAN if unknown; deprecated, do
+not use
 
 @item w
 @item h
@@ -3004,10 +3005,6 @@ depends on the filter input pad, and is usually 1/@var{sample_rate}.
 
 @item pts_time
 The presentation timestamp of the input frame in seconds.
-
-@item pos
-position of the frame in the input stream, -1 if this information in
-unavailable and/or meaningless (for example in case of synthetic audio)
 
 @item fmt
 The sample format.
@@ -7306,7 +7303,7 @@ number of samples consumed by the filter
 @item nb_samples
 number of samples in the current frame
 @item pos
-original frame position in the file
+original frame position in the file; deprecated, do not use
 @item pts
 frame PTS
 @item sample_rate
@@ -10428,7 +10425,8 @@ pixel format "yuv422p" @var{hsub} is 2 and @var{vsub} is 1.
 The number of the input frame, starting from 0.
 
 @item pos
-the position in the file of the input frame, NAN if unknown
+the position in the file of the input frame, NAN if unknown; deprecated,
+do not use
 
 @item t
 The timestamp expressed in seconds. It's NAN if the input timestamp is unknown.
@@ -12772,7 +12770,7 @@ frame count of the input frame starting from 0
 
 @item pos
 byte position of the corresponding packet in the input file, NAN if
-unspecified
+unspecified; deprecated, do not use
 
 @item r
 frame rate of the input video, NAN if the input frame rate is unknown
@@ -18148,7 +18146,8 @@ format. For example for the pixel format "yuv422p" @var{hsub} is 2 and
 the number of input frame, starting from 0
 
 @item pos
-the position in the file of the input frame, NAN if unknown
+the position in the file of the input frame, NAN if unknown; deprecated,
+do not use
 
 @item t
 The timestamp, expressed in seconds. It's NAN if the input timestamp is unknown.
@@ -18157,7 +18156,7 @@ The timestamp, expressed in seconds. It's NAN if the input timestamp is unknown.
 
 This filter also supports the @ref{framesync} options.
 
-Note that the @var{n}, @var{pos}, @var{t} variables are available only
+Note that the @var{n}, @var{t} variables are available only
 when evaluation is done @emph{per frame}, and will evaluate to NAN
 when @option{eval} is set to @samp{init}.
 
@@ -18312,6 +18311,7 @@ The ordinal index of the main input frame, starting from 0.
 
 @item pos
 The byte offset position in the file of the main input frame, NAN if unknown.
+Deprecated, do not use.
 
 @item t
 The timestamp of the main input frame, expressed in seconds, NAN if unknown.
@@ -20196,6 +20196,7 @@ seconds. Only available with @code{eval=frame}.
 The position (byte offset) of the frame in the input stream, or NaN if
 this information is unavailable and/or meaningless (for example in case of synthetic video).
 Only available with @code{eval=frame}.
+Deprecated, do not use.
 @end table
 
 @subsection Examples
@@ -20528,6 +20529,7 @@ seconds. Only available with @code{eval=frame}.
 The position (byte offset) of the frame in the input stream, or NaN if
 this information is unavailable and/or meaningless (for example in case of synthetic video).
 Only available with @code{eval=frame}.
+Deprecated, do not use.
 @end table
 
 @section scale2ref
@@ -21150,10 +21152,6 @@ time base units. The time base unit depends on the filter input pad.
 @item pts_time
 The Presentation TimeStamp of the input frame, expressed as a number of
 seconds.
-
-@item pos
-The position of the frame in the input stream, or -1 if this information is
-unavailable and/or meaningless (for example in case of synthetic video).
 
 @item fmt
 The pixel format name.
@@ -22235,7 +22233,8 @@ The number of the input frame, starting from 0.
 The timestamp expressed in seconds. It's NAN if the input timestamp is unknown.
 
 @item pos
-the position in the file of the input frame, NAN if unknown
+the position in the file of the input frame, NAN if unknown; deprecated,
+do not use
 @end table
 
 @subsection Commands
@@ -28910,7 +28909,7 @@ This is 1 if the filtered frame is a key-frame, 0 otherwise.
 
 @item pos
 the position in the file of the filtered frame, -1 if the information
-is not available (e.g. for synthetic video)
+is not available (e.g. for synthetic video); deprecated, do not use
 
 @item scene @emph{(video only)}
 value between 0 and 1 to indicate a new scene; a low value reflects a low
@@ -29100,7 +29099,7 @@ constants:
 @table @option
 @item POS
 Original position in the file of the frame, or undefined if undefined
-for the current frame.
+for the current frame. Deprecated, do not use.
 
 @item PTS
 The presentation timestamp in input.
@@ -29248,7 +29247,7 @@ the time in seconds of the current frame
 
 @item POS
 original position in the file of the frame, or undefined if undefined
-for the current frame
+for the current frame; deprecated, do not use
 
 @item PREV_INPTS
 The previous input PTS.

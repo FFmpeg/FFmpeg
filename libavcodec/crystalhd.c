@@ -549,9 +549,13 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
 
     frame->pts = pkt_pts;
 
-    frame->pkt_pos = -1;
     frame->duration = 0;
+#if FF_API_FRAME_PKT
+FF_DISABLE_DEPRECATION_WARNINGS
+    frame->pkt_pos = -1;
     frame->pkt_size = -1;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     if (!priv->need_second_field) {
         *got_frame       = 1;

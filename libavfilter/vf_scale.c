@@ -56,7 +56,9 @@ static const char *const var_names[] = {
     "ovsub",
     "n",
     "t",
+#if FF_API_FRAME_PKT
     "pos",
+#endif
     "main_w",
     "main_h",
     "main_a",
@@ -84,7 +86,9 @@ enum var_name {
     VAR_OVSUB,
     VAR_N,
     VAR_T,
+#if FF_API_FRAME_PKT
     VAR_POS,
+#endif
     VAR_S2R_MAIN_W,
     VAR_S2R_MAIN_H,
     VAR_S2R_MAIN_A,
@@ -205,7 +209,9 @@ static int check_exprs(AVFilterContext *ctx)
     if (scale->eval_mode == EVAL_MODE_INIT &&
         (vars_w[VAR_N]            || vars_h[VAR_N]           ||
          vars_w[VAR_T]            || vars_h[VAR_T]           ||
+#if FF_API_FRAME_PKT
          vars_w[VAR_POS]          || vars_h[VAR_POS]         ||
+#endif
          vars_w[VAR_S2R_MAIN_N]   || vars_h[VAR_S2R_MAIN_N]  ||
          vars_w[VAR_S2R_MAIN_T]   || vars_h[VAR_S2R_MAIN_T]  ||
          vars_w[VAR_S2R_MAIN_POS] || vars_h[VAR_S2R_MAIN_POS]) ) {
@@ -738,8 +744,16 @@ static int scale_frame(AVFilterLink *link, AVFrame *in, AVFrame **frame_out)
         if (scale->eval_mode == EVAL_MODE_FRAME &&
             !frame_changed &&
             ctx->filter != &ff_vf_scale2ref &&
-            !(vars_w[VAR_N] || vars_w[VAR_T] || vars_w[VAR_POS]) &&
-            !(vars_h[VAR_N] || vars_h[VAR_T] || vars_h[VAR_POS]) &&
+            !(vars_w[VAR_N] || vars_w[VAR_T]
+#if FF_API_FRAME_PKT
+              || vars_w[VAR_POS]
+#endif
+              ) &&
+            !(vars_h[VAR_N] || vars_h[VAR_T]
+#if FF_API_FRAME_PKT
+              || vars_h[VAR_POS]
+#endif
+              ) &&
             scale->w && scale->h)
             goto scale;
 
@@ -761,11 +775,19 @@ static int scale_frame(AVFilterLink *link, AVFrame *in, AVFrame **frame_out)
         if (ctx->filter == &ff_vf_scale2ref) {
             scale->var_values[VAR_S2R_MAIN_N] = link->frame_count_out;
             scale->var_values[VAR_S2R_MAIN_T] = TS2T(in->pts, link->time_base);
+#if FF_API_FRAME_PKT
+FF_DISABLE_DEPRECATION_WARNINGS
             scale->var_values[VAR_S2R_MAIN_POS] = in->pkt_pos == -1 ? NAN : in->pkt_pos;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
         } else {
             scale->var_values[VAR_N] = link->frame_count_out;
             scale->var_values[VAR_T] = TS2T(in->pts, link->time_base);
+#if FF_API_FRAME_PKT
+FF_DISABLE_DEPRECATION_WARNINGS
             scale->var_values[VAR_POS] = in->pkt_pos == -1 ? NAN : in->pkt_pos;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
         }
 
         link->dst->inputs[0]->format = in->format;
@@ -915,7 +937,11 @@ static int filter_frame_ref(AVFilterLink *link, AVFrame *in)
     if (scale->eval_mode == EVAL_MODE_FRAME) {
         scale->var_values[VAR_N] = link->frame_count_out;
         scale->var_values[VAR_T] = TS2T(in->pts, link->time_base);
+#if FF_API_FRAME_PKT
+FF_DISABLE_DEPRECATION_WARNINGS
         scale->var_values[VAR_POS] = in->pkt_pos == -1 ? NAN : in->pkt_pos;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     }
 
     return ff_filter_frame(outlink, in);

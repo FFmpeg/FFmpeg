@@ -48,8 +48,12 @@ FF_DISABLE_DEPRECATION_WARNINGS
     frame->pkt_duration        = 0;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
+#if FF_API_FRAME_PKT
+FF_DISABLE_DEPRECATION_WARNINGS
     frame->pkt_pos             = -1;
     frame->pkt_size            = -1;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     frame->time_base           = (AVRational){ 0, 1 };
     frame->key_frame           = 1;
     frame->sample_aspect_ratio = (AVRational){ 0, 1 };
@@ -279,8 +283,12 @@ static int frame_copy_props(AVFrame *dst, const AVFrame *src, int force_copy)
     dst->sample_rate            = src->sample_rate;
     dst->opaque                 = src->opaque;
     dst->pkt_dts                = src->pkt_dts;
+#if FF_API_FRAME_PKT
+FF_DISABLE_DEPRECATION_WARNINGS
     dst->pkt_pos                = src->pkt_pos;
     dst->pkt_size               = src->pkt_size;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 #if FF_API_PKT_DURATION
 FF_DISABLE_DEPRECATION_WARNINGS
     dst->pkt_duration           = src->pkt_duration;
