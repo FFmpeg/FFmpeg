@@ -2542,3 +2542,105 @@ int ff_Build_SDK_INT(AVCodecContext *avctx)
 
     return ret;
 }
+
+static struct {
+    enum FFAMediaFormatColorRange mf_range;
+    enum AVColorRange range;
+} color_range_map[] = {
+    { COLOR_RANGE_FULL,     AVCOL_RANGE_JPEG },
+    { COLOR_RANGE_LIMITED,  AVCOL_RANGE_MPEG },
+};
+
+static struct {
+    enum FFAMediaFormatColorStandard mf_standard;
+    enum AVColorSpace space;
+} color_space_map[] = {
+    { COLOR_STANDARD_BT709,         AVCOL_SPC_BT709         },
+    { COLOR_STANDARD_BT601_PAL,     AVCOL_SPC_BT470BG       },
+    { COLOR_STANDARD_BT601_NTSC,    AVCOL_SPC_SMPTE170M     },
+    { COLOR_STANDARD_BT2020,        AVCOL_SPC_BT2020_NCL    },
+};
+
+static struct {
+    enum FFAMediaFormatColorStandard mf_standard;
+    enum AVColorPrimaries primaries;
+} color_primaries_map[] = {
+    { COLOR_STANDARD_BT709,         AVCOL_PRI_BT709     },
+    { COLOR_STANDARD_BT601_PAL,     AVCOL_PRI_BT470BG   },
+    { COLOR_STANDARD_BT601_NTSC,    AVCOL_PRI_SMPTE170M },
+    { COLOR_STANDARD_BT2020,        AVCOL_PRI_BT2020    },
+};
+
+static struct {
+    enum FFAMediaFormatColorTransfer mf_transfer;
+    enum AVColorTransferCharacteristic transfer;
+} color_transfer_map[] = {
+    { COLOR_TRANSFER_LINEAR,        AVCOL_TRC_LINEAR        },
+    { COLOR_TRANSFER_SDR_VIDEO,     AVCOL_TRC_SMPTE170M     },
+    { COLOR_TRANSFER_ST2084,        AVCOL_TRC_SMPTEST2084   },
+    { COLOR_TRANSFER_HLG,           AVCOL_TRC_ARIB_STD_B67  },
+};
+
+enum AVColorRange ff_AMediaFormatColorRange_to_AVColorRange(int color_range)
+{
+    for (int i = 0; i < FF_ARRAY_ELEMS(color_range_map); i++)
+        if (color_range_map[i].mf_range == color_range)
+            return color_range_map[i].range;
+
+    return AVCOL_RANGE_UNSPECIFIED;
+}
+
+int ff_AMediaFormatColorRange_from_AVColorRange(enum AVColorRange color_range)
+{
+    for (int i = 0; i < FF_ARRAY_ELEMS(color_range_map); i++)
+        if (color_range_map[i].range == color_range)
+            return color_range_map[i].mf_range;
+    return COLOR_RANGE_UNSPECIFIED;
+}
+
+enum AVColorSpace ff_AMediaFormatColorStandard_to_AVColorSpace(int color_standard)
+{
+    for (int i = 0; i < FF_ARRAY_ELEMS(color_space_map); i++)
+        if (color_space_map[i].mf_standard == color_standard)
+            return color_space_map[i].space;
+
+    return AVCOL_SPC_UNSPECIFIED;
+}
+
+int ff_AMediaFormatColorStandard_from_AVColorSpace(enum AVColorSpace color_space)
+{
+    for (int i = 0; i < FF_ARRAY_ELEMS(color_space_map); i++)
+        if (color_space_map[i].space == color_space)
+            return color_space_map[i].mf_standard;
+
+    return COLOR_STANDARD_UNSPECIFIED;
+}
+
+enum AVColorPrimaries ff_AMediaFormatColorStandard_to_AVColorPrimaries(int color_standard)
+{
+    for (int i = 0; i < FF_ARRAY_ELEMS(color_primaries_map); i++)
+        if (color_primaries_map[i].mf_standard == color_standard)
+            return color_primaries_map[i].primaries;
+
+    return AVCOL_PRI_UNSPECIFIED;
+}
+
+enum AVColorTransferCharacteristic
+ff_AMediaFormatColorTransfer_to_AVColorTransfer(int color_transfer)
+{
+    for (int i = 0; i < FF_ARRAY_ELEMS(color_transfer_map); i++)
+        if (color_transfer_map[i].mf_transfer == color_transfer)
+            return color_transfer_map[i].transfer;
+
+    return AVCOL_TRC_UNSPECIFIED;
+}
+
+int ff_AMediaFormatColorTransfer_from_AVColorTransfer(
+    enum AVColorTransferCharacteristic color_transfer)
+{
+    for (int i = 0; i < FF_ARRAY_ELEMS(color_transfer_map); i++)
+        if (color_transfer_map[i].transfer == color_transfer)
+            return color_transfer_map[i].mf_transfer;
+
+    return COLOR_TRANSFER_UNSPECIFIED;
+}

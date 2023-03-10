@@ -345,4 +345,77 @@ static inline int ff_AMediaCodec_signalEndOfInputStream(FFAMediaCodec *codec)
 
 int ff_Build_SDK_INT(AVCodecContext *avctx);
 
+enum FFAMediaFormatColorRange {
+    COLOR_RANGE_UNSPECIFIED = 0x0,
+    COLOR_RANGE_FULL        = 0x1,
+    COLOR_RANGE_LIMITED     = 0x2,
+};
+
+enum FFAMediaFormatColorStandard {
+    COLOR_STANDARD_UNSPECIFIED  = 0x0,
+    COLOR_STANDARD_BT709        = 0x1,
+    COLOR_STANDARD_BT601_PAL    = 0x2,
+    COLOR_STANDARD_BT601_NTSC   = 0x4,
+    COLOR_STANDARD_BT2020       = 0x6,
+};
+
+enum FFAMediaFormatColorTransfer {
+    COLOR_TRANSFER_UNSPECIFIED = 0x0,
+    COLOR_TRANSFER_LINEAR      = 0x1,
+    COLOR_TRANSFER_SDR_VIDEO   = 0x3,
+    COLOR_TRANSFER_ST2084      = 0x6,
+    COLOR_TRANSFER_HLG         = 0x7,
+};
+
+/**
+ * Map MediaFormat color range to AVColorRange.
+ *
+ * return AVCOL_RANGE_UNSPECIFIED when failed.
+ */
+enum AVColorRange ff_AMediaFormatColorRange_to_AVColorRange(int color_range);
+
+/**
+ * Map AVColorRange to MediaFormat color range.
+ *
+ * return COLOR_RANGE_UNSPECIFIED when failed.
+ */
+int ff_AMediaFormatColorRange_from_AVColorRange(enum AVColorRange color_range);
+
+/**
+ * Map MediaFormat color standard to AVColorSpace.
+ *
+ * return AVCOL_SPC_UNSPECIFIED when failed.
+ */
+enum AVColorSpace ff_AMediaFormatColorStandard_to_AVColorSpace(int color_standard);
+
+/**
+ * Map AVColorSpace to MediaFormat color standard.
+ *
+ * return COLOR_STANDARD_UNSPECIFIED when failed.
+ */
+int ff_AMediaFormatColorStandard_from_AVColorSpace(enum AVColorSpace color_space);
+
+/**
+ * Map MediaFormat color standard to AVColorPrimaries.
+ *
+ * return AVCOL_PRI_UNSPECIFIED when failed.
+ */
+enum AVColorPrimaries ff_AMediaFormatColorStandard_to_AVColorPrimaries(int color_standard);
+
+/**
+ * Map MediaFormat color transfer to AVColorTransferCharacteristic.
+ *
+ * return AVCOL_TRC_UNSPECIFIED when failed.
+ */
+enum AVColorTransferCharacteristic
+ff_AMediaFormatColorTransfer_to_AVColorTransfer(int color_transfer);
+
+/**
+ * Map AVColorTransferCharacteristic to MediaFormat color transfer.
+ *
+ * return COLOR_TRANSFER_UNSPECIFIED when failed.
+ */
+int ff_AMediaFormatColorTransfer_from_AVColorTransfer(
+    enum AVColorTransferCharacteristic color_transfer);
+
 #endif /* AVCODEC_MEDIACODEC_WRAPPER_H */
