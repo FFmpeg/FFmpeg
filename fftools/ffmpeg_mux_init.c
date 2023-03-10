@@ -2063,7 +2063,7 @@ static void parse_forced_key_frames(KeyframeForceCtx *kf, const Muxer *mux,
         if (next)
             *next++ = 0;
 
-        if (!memcmp(p, "chapters", 8)) {
+        if (strstr(p, "chapters") == p) {
             AVChapter * const *ch = mux->fc->chapters;
             unsigned int    nb_ch = mux->fc->nb_chapters;
             int j;
