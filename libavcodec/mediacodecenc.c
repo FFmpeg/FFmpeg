@@ -243,6 +243,16 @@ static av_cold int mediacodec_init(AVCodecContext *avctx)
         }
     }
 
+    ret = ff_AMediaFormatColorRange_from_AVColorRange(avctx->color_range);
+    if (ret != COLOR_RANGE_UNSPECIFIED)
+        ff_AMediaFormat_setInt32(format, "color-range", ret);
+    ret = ff_AMediaFormatColorStandard_from_AVColorSpace(avctx->colorspace);
+    if (ret != COLOR_STANDARD_UNSPECIFIED)
+        ff_AMediaFormat_setInt32(format, "color-standard", ret);
+    ret = ff_AMediaFormatColorTransfer_from_AVColorTransfer(avctx->color_trc);
+    if (ret != COLOR_TRANSFER_UNSPECIFIED)
+        ff_AMediaFormat_setInt32(format, "color-transfer", ret);
+
     if (avctx->bit_rate)
         ff_AMediaFormat_setInt32(format, "bitrate", avctx->bit_rate);
     if (s->bitrate_mode >= 0)
