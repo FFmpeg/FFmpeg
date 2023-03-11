@@ -282,6 +282,22 @@ stream_remux(){
         run ffprobe${PROGSUF}${EXECSUF} -bitexact $ffprobe_opts $tencfile || return
 }
 
+# this function is for testing external encoders,
+# where the precise output is not controlled by us
+# we can still test e.g. that the output can be decoded correctly
+enc_external(){
+    srcfile=$1
+    enc_fmt=$2
+    enc_opt=$3
+    probe_opt=$4
+
+    srcfile=$(target_path $srcfile)
+    encfile=$(target_path "${outdir}/${test}.${enc_fmt}")
+
+    ffmpeg -i $srcfile $enc_opt -f $enc_fmt -y $encfile || return
+    run ffprobe${PROGSUF}${EXECSUF} -bitexact $probe_opt $encfile || return
+}
+
 # FIXME: There is a certain duplication between the avconv-related helper
 # functions above and below that should be refactored.
 ffmpeg2="$target_exec ${target_path}/ffmpeg${PROGSUF}${EXECSUF}"
