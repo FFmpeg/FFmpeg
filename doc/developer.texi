@@ -217,6 +217,7 @@ int myfunc(int my_parameter)
 ...
 @end example
 
+@anchor{Naming conventions}
 @section Naming conventions
 
 Names of functions, variables, and struct members must be lowercase, using
@@ -387,22 +388,6 @@ time-frame (12h for build failures and security fixes, 3 days small changes,
 Also note, the maintainer can simply ask for more time to review!
 
 @section Code
-@subheading API/ABI changes should be discussed before they are made.
-Do not change behavior of the programs (renaming options etc) or public
-API or ABI without first discussing it on the ffmpeg-devel mailing list.
-Do not remove widely used functionality or features (redundant code can be removed).
-
-@subheading Remember to check if you need to bump versions for libav*.
-Depending on the change, you may need to change the version integer.
-Incrementing the first component means no backward compatibility to
-previous versions (e.g. removal of a function from the public API).
-Incrementing the second component means backward compatible change
-(e.g. addition of a function to the public API or extension of an
-existing data structure).
-Incrementing the third component means a noteworthy binary compatible
-change (e.g. encoder bug fix that matters for the decoder). The third
-component always starts at 100 to distinguish FFmpeg from Libav.
-
 @subheading Warnings for correct code may be disabled if there is no other option.
 Compiler warnings indicate potential bugs or code with bad style. If a type of
 warning always points to correct and clean code, that warning should
@@ -416,6 +401,151 @@ or obfuscates the code.
 Never write to unallocated memory, never write over the end of arrays,
 always check values read from some untrusted source before using them
 as array index or other risky things.
+
+@section Library public interfaces
+Every library in FFmpeg provides a set of public APIs in its installed headers,
+which are those listed in the variable @code{HEADERS} in that library's
+@file{Makefile}. All identifiers defined in those headers (except for those
+explicitly documented otherwise), and corresponding symbols exported from
+compiled shared or static libraries are considered public interfaces and must
+comply with the API and ABI compatibility rules described in this section.
+
+Public APIs must be backward compatible within a given major version. I.e. any
+valid user code that compiles and works with a given library version must still
+compile and work with any later version, as long as the major version number is
+unchanged. "Valid user code" here means code that is calling our APIs in a
+documented and/or intended manner and is not relying on any undefined behavior.
+Incrementing the major version may break backward compatibility, but only to the
+extent described in @ref{Major version bumps}.
+
+We also guarantee backward ABI compatibility for shared and static libraries.
+I.e. it should be possible to replace a shared or static build of our library
+with a build of any later version (re-linking the user binary in the static
+case) without breaking any valid user binaries, as long as the major version
+number remains unchanged.
+
+@subsection Adding new interfaces
+Any new public identifiers in installed headers are considered new API - this
+includes new functions, structs, macros, enum values, typedefs, new fields in
+existing functions, new installed headers, etc. Consider the following
+guidelines when adding new APIs.
+
+@subsubheading Motivation
+While new APIs can be added relatively easily, changing or removing them is much
+harder due to abovementioned compatibility requirements. You should then
+consider carefully whether the functionality you are adding really needs to be
+exposed to our callers as new public API.
+
+Your new API should have at least one well-established use case outside of the
+library that cannot be easily achieved with existing APIs. Every library in
+FFmpeg also has a defined scope - your new API must fit within it.
+
+@subsubheading Replacing existing APIs
+If your new API is replacing an existing one, it should be strictly superior to
+it, so that the advantages of using the new API outweight the cost to the
+callers of changing their code. After adding the new API you should then
+deprecate the old one and schedule it for removal, as described in
+@ref{Removing interfaces}.
+
+If you deem an existing API deficient and want to fix it, the preferred approach
+in most cases is to add a differently-named replacement and deprecate the
+existing API rather than modify it. It is important to make the changes visible
+to our callers (e.g. through compile- or run-time deprecation warnings) and make
+it clear how to transition to the new API (e.g. in the Doxygen documentation or
+on the wiki).
+
+@subsubheading API design
+The FFmpeg libraries are used by a variety of callers to perform a wide range of
+multimedia-related processing tasks. You should therefore - within reason - try
+to design your new API for the broadest feasible set of use cases and avoid
+unnecessarily limiting it to a specific type of callers (e.g. just media
+playback or just transcoding).
+
+@subsubheading Consistency
+Check whether similar APIs already exist in FFmpeg. If they do, try to model
+your new addition on them to achieve better overall consistency.
+
+The naming of your new identifiers should follow the @ref{Naming conventions}
+and be aligned with other similar APIs, if applicable.
+
+@subsubheading Extensibility
+You should also consider how your API might be extended in the future in a
+backward-compatible way. If you are adding a new struct @code{AVFoo}, the
+standard approach is requiring the caller to always allocate it through a
+constructor function, typically named @code{av_foo_alloc()}. This way new fields
+may be added to the end of the struct without breaking ABI compatibility.
+Typically you will also want a destructor - @code{av_foo_free(AVFoo**)} that
+frees the indirectly supplied object (and its contents, if applicable) and
+writes @code{NULL} to the supplied pointer, thus eliminating the potential
+dangling pointer in the caller's memory.
+
+If you are adding new functions, consider whether it might be desirable to tweak
+their behavior in the future - you may want to add a flags argument, even though
+it would be unused initially.
+
+@subsubheading Documentation
+All new APIs must be documented as Doxygen-formatted comments above the
+identifiers you add to the public headers. You should also briefly mention the
+change in @file{doc/APIchanges}.
+
+@subsubheading Bump the version
+Backward-incompatible API or ABI changes require incrementing (bumping) the
+major version number, as described in @ref{Major version bumps}. Major
+bumps are significant events that happen on a schedule - so if your change
+strictly requires one you should add it under @code{#if} preprocesor guards that
+disable it until the next major bump happens.
+
+New APIs that can be added without breaking API or ABI compatibility require
+bumping the minor version number.
+
+Incrementing the third (micro) version component means a noteworthy binary
+compatible change (e.g. encoder bug fix that matters for the decoder). The third
+component always starts at 100 to distinguish FFmpeg from Libav.
+
+@anchor{Removing interfaces}
+@subsection Removing interfaces
+Due to abovementioned compatibility guarantees, removing APIs is an involved
+process that should only be undertaken with good reason. Typically a deficient,
+restrictive, or otherwise inadequate API is replaced by a superior one, though
+it does at times happen that we remove an API without any replacement (e.g. when
+the feature it provides is deemed not worth the maintenance effort, out of scope
+of the project, fundamentally flawed, etc.).
+
+The removal has two steps - first the API is deprecated and scheduled for
+removal, but remains present and functional. The second step is actually
+removing the API - this is described in @ref{Major version bumps}.
+
+To deprecate an API you should signal to our users that they should stop using
+it. E.g. if you intend to remove struct members or functions, you should mark
+them with @code{attribute_deprecated}. When this cannot be done, it may be
+possible to detect the use of the deprecated API at runtime and print a warning
+(though take care not to print it too often). You should also document the
+deprecation (and the replacement, if applicable) in the relevant Doxygen
+documentation block.
+
+Finally, you should define a deprecation guard along the lines of
+@code{#define FF_API_<FOO> (LIBAVBAR_VERSION_MAJOR < XX)} (where XX is the major
+version in which the API will be removed) in @file{libavbar/version_major.h}
+(@file{version.h} in case of @code{libavutil}). Then wrap all uses of the
+deprecated API in @code{#if FF_API_<FOO> .... #endif}, so that the code will
+automatically get disabled once the major version reaches XX. You can also use
+@code{FF_DISABLE_DEPRECATION_WARNINGS} and @code{FF_ENABLE_DEPRECATION_WARNINGS}
+to suppress compiler deprecation warnings inside these guards. You should test
+that the code compiles and works with the guard macro evaluating to both true
+and false.
+
+@anchor{Major version bumps}
+@subsection Major version bumps
+A major version bump signifies an API and/or ABI compatibility break. To reduce
+the negative effects on our callers, who are required to adapt their code,
+backward-incompatible changes during a major bump should be limited to:
+@itemize @bullet
+@item
+Removing previously deprecated APIs.
+
+@item
+Performing ABI- but not API-breaking changes, like reordering struct contents.
+@end itemize
 
 @section Documentation/Other
 @subheading Subscribe to the ffmpeg-devel mailing list.
