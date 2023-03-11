@@ -1,0 +1,15 @@
+frames.frame.0.side_data_list.side_data.0.side_data_type="H.26[45] User Data Unregistered SEI message"
+frames.frame.0.side_data_list.side_data.1.side_data_type="Mastering display metadata"
+frames.frame.0.side_data_list.side_data.1.red_x="13250/50000"
+frames.frame.0.side_data_list.side_data.1.red_y="34500/50000"
+frames.frame.0.side_data_list.side_data.1.green_x="7500/50000"
+frames.frame.0.side_data_list.side_data.1.green_y="3000/50000"
+frames.frame.0.side_data_list.side_data.1.blue_x="34000/50000"
+frames.frame.0.side_data_list.side_data.1.blue_y="16000/50000"
+frames.frame.0.side_data_list.side_data.1.white_point_x="15635/50000"
+frames.frame.0.side_data_list.side_data.1.white_point_y="16450/50000"
+frames.frame.0.side_data_list.side_data.1.min_luminance="50/10000"
+frames.frame.0.side_data_list.side_data.1.max_luminance="10000000/10000"
+frames.frame.0.side_data_list.side_data.2.side_data_type="Content light level metadata"
+frames.frame.0.side_data_list.side_data.2.max_content=1000
+frames.frame.0.side_data_list.side_data.2.max_average=200
