@@ -12,5 +12,10 @@ FATE_ENC_EXTERNAL-$(call ENCDEC, LIBX264 HEVC, MOV, LIBX264_HDR10 HEVC_DEMUXER H
 fate-libx264-hdr10: CMD = enc_external $(TARGET_SAMPLES)/hevc/hdr10_plus_h265_sample.hevc \
     mp4 "-c:v libx264" "-show_frames -show_entries frame=side_data_list -of flat"
 
+# test for x265 MDCV and CLL passthrough during encoding
+FATE_ENC_EXTERNAL-$(call ENCDEC, LIBX265 HEVC, MOV, HEVC_DEMUXER) += fate-libx265-hdr10
+fate-libx265-hdr10: CMD = enc_external $(TARGET_SAMPLES)/hevc/hdr10_plus_h265_sample.hevc \
+    mp4 "-c:v libx265" "-show_frames -show_entries frame=side_data_list -of flat"
+
 FATE_SAMPLES_FFMPEG_FFPROBE += $(FATE_ENC_EXTERNAL-yes)
 fate-enc-external: $(FATE_ENC_EXTERNAL-yes)
