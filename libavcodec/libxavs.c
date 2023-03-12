@@ -141,7 +141,7 @@ static int XAVS_frame(AVCodecContext *avctx, AVPacket *pkt,
 
         x4->pic.i_pts  = frame->pts;
         x4->pic.i_type = XAVS_TYPE_AUTO;
-        x4->pts_buffer[avctx->frame_number % (avctx->max_b_frames+1)] = frame->pts;
+        x4->pts_buffer[avctx->frame_num % (avctx->max_b_frames+1)] = frame->pts;
     }
 
     if (xavs_encoder_encode(x4->enc, &nal, &nnal,
