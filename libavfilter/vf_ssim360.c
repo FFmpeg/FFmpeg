@@ -1624,7 +1624,7 @@ static int config_output(AVFilterLink *outlink)
         memset(s->ssim360_percentile_sum, 0, sizeof(s->ssim360_percentile_sum));
 
         for (int i = 0; i < s->nb_components; i++) {
-            s->ssim360_hist[i] = av_calloc(SSIM360_HIST_SIZE, sizeof(*s->ssim360_hist));
+            FF_ALLOCZ_TYPED_ARRAY(s->ssim360_hist[i], SSIM360_HIST_SIZE);
             if (!s->ssim360_hist[i])
                 return AVERROR(ENOMEM);
         }
