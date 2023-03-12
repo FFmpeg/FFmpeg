@@ -1612,9 +1612,9 @@ static void mkv_write_dovi(AVFormatContext *s, AVIOContext *pb, AVStream *st)
                                 + (2 + 1 + 4) + (2 + 1 + ISOM_DVCC_DVVC_SIZE);
 
         if (dovi->dv_profile > 7) {
-            type = MKBETAG('d', 'v', 'v', 'C');
+            type = MATROSKA_BLOCK_ADD_ID_TYPE_DVVC;
         } else {
-            type = MKBETAG('d', 'v', 'c', 'C');
+            type = MATROSKA_BLOCK_ADD_ID_TYPE_DVCC;
         }
 
         ff_isom_put_dvcc_dvvc(s, buf, dovi);
@@ -2657,7 +2657,7 @@ static int mkv_write_block(void *logctx, MatroskaMuxContext *mkv,
                                         &side_data_size);
     if (side_data && side_data_size >= 8 &&
         // Only the Codec-specific BlockMore (id == 1) is currently supported.
-        (additional_id = AV_RB64(side_data)) == 1) {
+        (additional_id = AV_RB64(side_data)) == MATROSKA_BLOCK_ADD_ID_TYPE_OPAQUE) {
         ebml_writer_open_master(&writer, MATROSKA_ID_BLOCKADDITIONS);
         ebml_writer_open_master(&writer, MATROSKA_ID_BLOCKMORE);
         /* Until dbc50f8a our demuxer used a wrong default value

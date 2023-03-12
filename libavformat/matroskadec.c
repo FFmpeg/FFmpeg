@@ -767,7 +767,7 @@ static EbmlSyntax matroska_segments[] = {
 };
 
 static EbmlSyntax matroska_blockmore[] = {
-    { MATROSKA_ID_BLOCKADDID,      EBML_UINT, 0, 0, offsetof(MatroskaBlockMore,additional_id), { .u = 1 } },
+    { MATROSKA_ID_BLOCKADDID,      EBML_UINT, 0, 0, offsetof(MatroskaBlockMore,additional_id), { .u = MATROSKA_BLOCK_ADD_ID_OPAQUE } },
     { MATROSKA_ID_BLOCKADDITIONAL, EBML_BIN,  0, 0, offsetof(MatroskaBlockMore,additional) },
     CHILD_OF(matroska_blockadditions)
 };
@@ -2404,8 +2404,8 @@ static int mkv_parse_block_addition_mappings(AVFormatContext *s, AVStream *st, M
             }
             track->blockaddid_itu_t_t35 = 1;
             break;
-        case MKBETAG('d','v','c','C'):
-        case MKBETAG('d','v','v','C'):
+        case MATROSKA_BLOCK_ADD_ID_TYPE_DVCC:
+        case MATROSKA_BLOCK_ADD_ID_TYPE_DVVC:
             if ((ret = mkv_parse_dvcc_dvvc(s, st, track, &mapping->extradata)) < 0)
                 return ret;
 
