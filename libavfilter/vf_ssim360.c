@@ -1274,10 +1274,6 @@ static int parse_heatmaps(void *logctx, HeatmapList **proot,
             ret = AVERROR(ENOMEM);
             goto fail;
         }
-        if (!line) {
-            av_freep(&line);
-            break;
-        }
 
         // first value is frame id
         av_strtok(line, ",", &saveptr);
