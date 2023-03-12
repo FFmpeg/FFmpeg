@@ -40,6 +40,7 @@
 #include "libavutil/dict.h"
 #include "libavutil/dict_internal.h"
 #include "libavutil/display.h"
+#include "libavutil/hdr_dynamic_metadata.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/lzo.h"
@@ -284,6 +285,7 @@ typedef struct MatroskaTrack {
     int needs_decoding;
     uint64_t max_block_additional_id;
     EbmlList block_addition_mappings;
+    int blockaddid_itu_t_t35;
 
     uint32_t palette[AVPALETTE_COUNT];
     int has_palette;
@@ -422,6 +424,8 @@ typedef struct MatroskaDemuxContext {
     int num_level1_elems;
 
     MatroskaCluster current_cluster;
+
+    int is_webm;
 
     /* WebM DASH Manifest live flag */
     int is_live;
@@ -2378,7 +2382,7 @@ static int mkv_parse_dvcc_dvvc(AVFormatContext *s, AVStream *st, const MatroskaT
     return ff_isom_parse_dvcc_dvvc(s, st, bin->data, bin->size);
 }
 
-static int mkv_parse_block_addition_mappings(AVFormatContext *s, AVStream *st, const MatroskaTrack *track)
+static int mkv_parse_block_addition_mappings(AVFormatContext *s, AVStream *st, MatroskaTrack *track)
 {
     const EbmlList *mappings_list = &track->block_addition_mappings;
     MatroskaBlockAdditionMapping *mappings = mappings_list->elem;
@@ -2388,6 +2392,18 @@ static int mkv_parse_block_addition_mappings(AVFormatContext *s, AVStream *st, c
         MatroskaBlockAdditionMapping *mapping = &mappings[i];
 
         switch (mapping->type) {
+        case MATROSKA_BLOCK_ADD_ID_TYPE_ITU_T_T35:
+            if (mapping->value != MATROSKA_BLOCK_ADD_ID_ITU_T_T35) {
+                int strict = s->strict_std_compliance >= FF_COMPLIANCE_STRICT;
+                av_log(s, strict ? AV_LOG_ERROR : AV_LOG_WARNING,
+                       "Invalid Block Addition Value 0x%"PRIx64" for Block Addition Mapping Type "
+                       "\"ITU T.35 metadata\"\n", mapping->value);
+                if (!strict)
+                    break;
+                return AVERROR_INVALIDDATA;
+            }
+            track->blockaddid_itu_t_t35 = 1;
+            break;
         case MKBETAG('d','v','c','C'):
         case MKBETAG('d','v','v','C'):
             if ((ret = mkv_parse_dvcc_dvvc(s, st, track, &mapping->extradata)) < 0)
@@ -2814,10 +2830,12 @@ static int matroska_parse_tracks(AVFormatContext *s)
             AV_WL16(extradata, 0x410);
         } else if (codec_id == AV_CODEC_ID_PRORES && track->codec_priv.size == 4) {
             fourcc = AV_RL32(track->codec_priv.data);
-        } else if (codec_id == AV_CODEC_ID_VP9 && track->codec_priv.size) {
+        } else if (codec_id == AV_CODEC_ID_VP9) {
             /* we don't need any value stored in CodecPrivate.
                make sure that it's not exported as extradata. */
             track->codec_priv.size = 0;
+            /* Assume BlockAddID 4 is ITU-T T.35 metadata if WebM */
+            track->blockaddid_itu_t_t35 = matroska->is_webm;
         } else if (codec_id == AV_CODEC_ID_ARIB_CAPTION && track->codec_priv.size == 3) {
             int component_tag = track->codec_priv.data[0];
             int data_component_id = AV_RB16(track->codec_priv.data + 1);
@@ -3081,6 +3099,8 @@ static int matroska_read_header(AVFormatContext *s)
             return AVERROR_INVALIDDATA;
         }
     }
+    matroska->is_webm = !strcmp(ebml.doctype, "webm");
+
     ebml_free(ebml_syntax, &ebml);
 
     matroska->pkt = si->parse_pkt;
@@ -3615,12 +3635,58 @@ static int matroska_parse_webvtt(MatroskaDemuxContext *matroska,
 }
 
 static int matroska_parse_block_additional(MatroskaDemuxContext *matroska,
-                                           AVPacket *pkt,
+                                           MatroskaTrack *track, AVPacket *pkt,
                                            const uint8_t *data, int size, uint64_t id)
 {
-    uint8_t *side_data = av_packet_new_side_data(pkt,
-                                                 AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL,
-                                                 size + (size_t)8);
+    uint8_t *side_data;
+    int res;
+
+    switch (id) {
+    case 4: {
+        GetByteContext bc;
+        int country_code, provider_code;
+        int provider_oriented_code, application_identifier;
+        size_t hdrplus_size;
+        AVDynamicHDRPlus *hdrplus;
+
+        if (!track->blockaddid_itu_t_t35 || size < 6)
+            break; //ignore
+
+        bytestream2_init(&bc, data, size);
+
+        /* ITU-T T.35 metadata */
+        country_code  = bytestream2_get_byteu(&bc);
+        provider_code = bytestream2_get_be16u(&bc);
+
+        if (country_code != 0xB5 || provider_code != 0x3C)
+            break; // ignore
+
+        provider_oriented_code = bytestream2_get_be16u(&bc);
+        application_identifier = bytestream2_get_byteu(&bc);
+
+        if (provider_oriented_code != 1 || application_identifier != 4)
+            break; // ignore
+
+        hdrplus = av_dynamic_hdr_plus_alloc(&hdrplus_size);
+        if (!hdrplus)
+            return AVERROR(ENOMEM);
+
+        if ((res = av_dynamic_hdr_plus_from_t35(hdrplus, bc.buffer,
+                                                bytestream2_get_bytes_left(&bc))) < 0 ||
+            (res = av_packet_add_side_data(pkt, AV_PKT_DATA_DYNAMIC_HDR10_PLUS,
+                                           (uint8_t *)hdrplus, hdrplus_size)) < 0) {
+            av_free(hdrplus);
+            return res;
+        }
+
+        return 0;
+    }
+    default:
+        break;
+    }
+
+    side_data = av_packet_new_side_data(pkt, AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL,
+                                        size + (size_t)8);
     if (!side_data)
         return AVERROR(ENOMEM);
 
@@ -3692,7 +3758,7 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
         if (!more->additional.size)
             continue;
 
-        res = matroska_parse_block_additional(matroska, pkt, more->additional.data,
+        res = matroska_parse_block_additional(matroska, track, pkt, more->additional.data,
                                               more->additional.size, more->additional_id);
         if (res < 0) {
             av_packet_unref(pkt);

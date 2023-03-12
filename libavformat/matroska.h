@@ -360,7 +360,10 @@ typedef enum {
 
 typedef enum {
   MATROSKA_BLOCK_ADD_ID_TYPE_DEFAULT                = 0,
+  MATROSKA_BLOCK_ADD_ID_TYPE_ITU_T_T35              = 4,
 } MatroskaBlockAddIDType;
+
+#define MATROSKA_BLOCK_ADD_ID_ITU_T_T35 4
 
 /*
  * Matroska Codec IDs, strings
