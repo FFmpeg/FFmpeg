@@ -311,11 +311,8 @@ static void reconfig_encoder(AVCodecContext *ctx, const AVFrame *frame)
     }
 }
 
-static void free_picture(AVCodecContext *ctx)
+static void free_picture(x264_picture_t *pic)
 {
-    X264Context *x4 = ctx->priv_data;
-    x264_picture_t *pic = &x4->pic;
-
     for (int i = 0; i < pic->extra_sei.num_payloads; i++)
         av_free(pic->extra_sei.payloads[i].payload);
     av_freep(&pic->extra_sei.payloads);
@@ -554,7 +551,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     return 0;
 
 fail:
-    free_picture(ctx);
+    free_picture(pic);
     *ppic = NULL;
     return ret;
 }
