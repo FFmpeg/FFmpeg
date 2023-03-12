@@ -106,8 +106,8 @@ static int amr_nb_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     enum Mode dec_mode;
     int packet_size, ret;
 
-    ff_dlog(avctx, "amr_decode_frame buf=%p buf_size=%d frame_count=%d!!\n",
-            buf, buf_size, avctx->frame_number);
+    ff_dlog(avctx, "amr_decode_frame buf=%p buf_size=%d frame_count=%"PRId64"!!\n",
+            buf, buf_size, avctx->frame_num);
 
     /* get output buffer */
     frame->nb_samples = 160;
