@@ -349,13 +349,17 @@ typedef struct MatroskaLevel {
     uint64_t length;
 } MatroskaLevel;
 
+typedef struct MatroskaBlockMore {
+    uint64_t additional_id;
+    EbmlBin  additional;
+} MatroskaBlockMore;
+
 typedef struct MatroskaBlock {
     uint64_t duration;
     CountedElement reference;
     uint64_t non_simple;
     EbmlBin  bin;
-    uint64_t additional_id;
-    EbmlBin  additional;
+    EbmlList blockmore;
     int64_t  discard_padding;
 } MatroskaBlock;
 
@@ -759,13 +763,13 @@ static EbmlSyntax matroska_segments[] = {
 };
 
 static EbmlSyntax matroska_blockmore[] = {
-    { MATROSKA_ID_BLOCKADDID,      EBML_UINT, 0, 0, offsetof(MatroskaBlock,additional_id), { .u = 1 } },
-    { MATROSKA_ID_BLOCKADDITIONAL, EBML_BIN,  0, 0, offsetof(MatroskaBlock,additional) },
+    { MATROSKA_ID_BLOCKADDID,      EBML_UINT, 0, 0, offsetof(MatroskaBlockMore,additional_id), { .u = 1 } },
+    { MATROSKA_ID_BLOCKADDITIONAL, EBML_BIN,  0, 0, offsetof(MatroskaBlockMore,additional) },
     CHILD_OF(matroska_blockadditions)
 };
 
 static EbmlSyntax matroska_blockadditions[] = {
-    { MATROSKA_ID_BLOCKMORE, EBML_NEST, 0, 0, 0, {.n = matroska_blockmore} },
+    { MATROSKA_ID_BLOCKMORE, EBML_NEST, 0, sizeof(MatroskaBlockMore), offsetof(MatroskaBlock, blockmore), { .n = matroska_blockmore } },
     CHILD_OF(matroska_blockgroup)
 };
 
@@ -3610,12 +3614,28 @@ static int matroska_parse_webvtt(MatroskaDemuxContext *matroska,
     return 0;
 }
 
+static int matroska_parse_block_additional(MatroskaDemuxContext *matroska,
+                                           AVPacket *pkt,
+                                           const uint8_t *data, int size, uint64_t id)
+{
+    uint8_t *side_data = av_packet_new_side_data(pkt,
+                                                 AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL,
+                                                 size + (size_t)8);
+    if (!side_data)
+        return AVERROR(ENOMEM);
+
+    AV_WB64(side_data, id);
+    memcpy(side_data + 8, data, size);
+
+    return 0;
+}
+
 static int matroska_parse_frame(MatroskaDemuxContext *matroska,
                                 MatroskaTrack *track, AVStream *st,
                                 AVBufferRef *buf, uint8_t *data, int pkt_size,
                                 uint64_t timecode, uint64_t lace_duration,
                                 int64_t pos, int is_keyframe,
-                                uint8_t *additional, uint64_t additional_id, int additional_size,
+                                MatroskaBlockMore *blockmore, int nb_blockmore,
                                 int64_t discard_padding)
 {
     uint8_t *pkt_data = data;
@@ -3647,7 +3667,7 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
         buf = NULL;
     }
 
-    if (!pkt_size && !additional_size)
+    if (!pkt_size && !nb_blockmore)
         goto no_output;
 
     if (!buf)
@@ -3666,16 +3686,18 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
     pkt->flags        = is_keyframe;
     pkt->stream_index = st->index;
 
-    if (additional_size > 0) {
-        uint8_t *side_data = av_packet_new_side_data(pkt,
-                                                     AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL,
-                                                     additional_size + 8);
-        if (!side_data) {
+    for (int i = 0; i < nb_blockmore; i++) {
+        MatroskaBlockMore *more = &blockmore[i];
+
+        if (!more->additional.size)
+            continue;
+
+        res = matroska_parse_block_additional(matroska, pkt, more->additional.data,
+                                              more->additional.size, more->additional_id);
+        if (res < 0) {
             av_packet_unref(pkt);
-            return AVERROR(ENOMEM);
+            return res;
         }
-        AV_WB64(side_data, additional_id);
-        memcpy(side_data + 8, additional, additional_size);
     }
 
     if (discard_padding) {
@@ -3721,7 +3743,7 @@ fail:
 static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf, uint8_t *data,
                                 int size, int64_t pos, uint64_t cluster_time,
                                 uint64_t block_duration, int is_keyframe,
-                                uint8_t *additional, uint64_t additional_id, int additional_size,
+                                MatroskaBlockMore *blockmore, int nb_blockmore,
                                 int64_t cluster_pos, int64_t discard_padding)
 {
     uint64_t timecode = AV_NOPTS_VALUE;
@@ -3856,7 +3878,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf
             res = matroska_parse_frame(matroska, track, st, buf, out_data,
                                        out_size, timecode, lace_duration,
                                        pos, !n ? is_keyframe : 0,
-                                       additional, additional_id, additional_size,
+                                       blockmore, nb_blockmore,
                                        discard_padding);
             if (res)
                 return res;
@@ -3897,14 +3919,12 @@ static int matroska_parse_cluster(MatroskaDemuxContext *matroska)
 
         if (res >= 0 && block->bin.size > 0) {
             int is_keyframe = block->non_simple ? block->reference.count == 0 : -1;
-            uint8_t* additional = block->additional.size > 0 ?
-                                    block->additional.data : NULL;
 
             res = matroska_parse_block(matroska, block->bin.buf, block->bin.data,
                                        block->bin.size, block->bin.pos,
                                        cluster->timecode, block->duration,
-                                       is_keyframe, additional, block->additional_id,
-                                       block->additional.size, cluster->pos,
+                                       is_keyframe, block->blockmore.elem,
+                                       block->blockmore.nb_elem, cluster->pos,
                                        block->discard_padding);
         }
 
