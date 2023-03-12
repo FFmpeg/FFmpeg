@@ -503,6 +503,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (sei_data) {
             pic->extra_sei.payloads = av_mallocz(sizeof(pic->extra_sei.payloads[0]));
             if (pic->extra_sei.payloads == NULL) {
+                av_free(sei_data);
                 ret = AVERROR(ENOMEM);
                 goto fail;
             }
