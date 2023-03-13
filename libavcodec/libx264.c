@@ -498,19 +498,19 @@ FF_ENABLE_DEPRECATION_WARNINGS
             goto fail;
 
         if (sei_data) {
-            pic->extra_sei.payloads = av_mallocz(sizeof(pic->extra_sei.payloads[0]));
-            if (pic->extra_sei.payloads == NULL) {
+            sei->payloads = av_mallocz(sizeof(sei->payloads[0]));
+            if (!sei->payloads) {
                 av_free(sei_data);
                 ret = AVERROR(ENOMEM);
                 goto fail;
             }
 
-            pic->extra_sei.sei_free = av_free;
+            sei->sei_free = av_free;
 
-            pic->extra_sei.payloads[0].payload_size = sei_size;
-            pic->extra_sei.payloads[0].payload = sei_data;
-            pic->extra_sei.num_payloads = 1;
-            pic->extra_sei.payloads[0].payload_type = 4;
+            sei->payloads[0].payload_size = sei_size;
+            sei->payloads[0].payload      = sei_data;
+            sei->payloads[0].payload_type = 4;
+            sei->num_payloads = 1;
         }
     }
 
