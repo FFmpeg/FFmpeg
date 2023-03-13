@@ -97,7 +97,6 @@ typedef struct LibplaceboContext {
     float polar_cutoff;
     int disable_linear;
     int disable_builtin;
-    int force_icc_lut;
     int force_dither;
     int disable_fbos;
 
@@ -139,6 +138,7 @@ typedef struct LibplaceboContext {
     float desat_exp;
     int gamut_warning;
     int gamut_clipping;
+    int force_icc_lut;
 #endif
 
      /* pl_dither_params */
@@ -463,7 +463,6 @@ static int process_frames(AVFilterContext *avctx, AVFrame *out, AVFrame *in)
         .polar_cutoff = s->polar_cutoff,
         .disable_linear_scaling = s->disable_linear,
         .disable_builtin_scalers = s->disable_builtin,
-        .force_icc_lut = s->force_icc_lut,
         .force_dither = s->force_dither,
         .disable_fbos = s->disable_fbos,
     };
@@ -855,7 +854,9 @@ static const AVOption libplacebo_options[] = {
     { "polar_cutoff", "Polar LUT cutoff", OFFSET(polar_cutoff), AV_OPT_TYPE_FLOAT, {.dbl = 0}, 0.0, 1.0, DYNAMIC },
     { "disable_linear", "Disable linear scaling", OFFSET(disable_linear), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DYNAMIC },
     { "disable_builtin", "Disable built-in scalers", OFFSET(disable_builtin), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DYNAMIC },
-    { "force_icc_lut", "Force the use of a full ICC 3DLUT for color mapping", OFFSET(force_icc_lut), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DYNAMIC },
+#if FF_API_LIBPLACEBO_OPTS
+    { "force_icc_lut", "Deprecated, does nothing", OFFSET(force_icc_lut), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DYNAMIC | AV_OPT_FLAG_DEPRECATED },
+#endif
     { "force_dither", "Force dithering", OFFSET(force_dither), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DYNAMIC },
     { "disable_fbos", "Force-disable FBOs", OFFSET(disable_fbos), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DYNAMIC },
     { NULL },

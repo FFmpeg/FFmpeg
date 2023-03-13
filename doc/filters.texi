@@ -16242,9 +16242,6 @@ Disable linear light scaling.
 @item disable_builtin
 Disable built-in GPU sampling (forces LUT).
 
-@item force_icc_lut
-Force the use of a full ICC 3DLUT for gamut mapping.
-
 @item disable_fbos
 Forcibly disable FBOs, resulting in loss of almost all functionality, but
 offering the maximum possible speed.
