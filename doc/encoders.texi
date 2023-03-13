@@ -3188,8 +3188,8 @@ recommended value) and do not set a size constraint.
 
 @section QSV Encoders
 
-The family of Intel QuickSync Video encoders (MPEG-2, H.264, HEVC, JPEG/MJPEG
-and VP9)
+The family of Intel QuickSync Video encoders (MPEG-2, H.264, HEVC, JPEG/MJPEG,
+VP9, AV1)
 
 @subsection Ratecontrol Method
 The ratecontrol method is selected as follows:
