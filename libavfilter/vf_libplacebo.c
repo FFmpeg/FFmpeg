@@ -132,11 +132,14 @@ typedef struct LibplaceboContext {
     int inverse_tonemapping;
     float crosstalk;
     int tonemapping_lut_size;
+
+#if FF_API_LIBPLACEBO_OPTS
     /* for backwards compatibility */
     float desat_str;
     float desat_exp;
     int gamut_warning;
     int gamut_clipping;
+#endif
 
      /* pl_dither_params */
     int dithering;
@@ -380,6 +383,7 @@ static int process_frames(AVFilterContext *avctx, AVFrame *out, AVFrame *in)
         pl_rect2df_aspect_set(&target.crop, aspect, s->pad_crop_ratio);
     }
 
+#if FF_API_LIBPLACEBO_OPTS
     /* backwards compatibility with older API */
     if (!tonemapping_mode && (s->desat_str >= 0.0f || s->desat_exp >= 0.0f)) {
         float str = s->desat_str < 0.0f ? 0.9f : s->desat_str;
@@ -397,6 +401,7 @@ static int process_frames(AVFilterContext *avctx, AVFrame *out, AVFrame *in)
         gamut_mode = PL_GAMUT_WARN;
     if (s->gamut_clipping)
         gamut_mode = PL_GAMUT_DESATURATE;
+#endif
 
     /* Update render params */
     params = (struct pl_render_params) {
@@ -818,11 +823,14 @@ static const AVOption libplacebo_options[] = {
     { "inverse_tonemapping", "Inverse tone mapping (range expansion)", OFFSET(inverse_tonemapping), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DYNAMIC },
     { "tonemapping_crosstalk", "Crosstalk factor for tone-mapping", OFFSET(crosstalk), AV_OPT_TYPE_FLOAT, {.dbl = 0.04}, 0.0, 0.30, DYNAMIC },
     { "tonemapping_lut_size", "Tone-mapping LUT size", OFFSET(tonemapping_lut_size), AV_OPT_TYPE_INT, {.i64 = 256}, 2, 1024, DYNAMIC },
+
+#if FF_API_LIBPLACEBO_OPTS
     /* deprecated options for backwards compatibility, defaulting to -1 to not override the new defaults */
     { "desaturation_strength", "Desaturation strength", OFFSET(desat_str), AV_OPT_TYPE_FLOAT, {.dbl = -1.0}, -1.0, 1.0, DYNAMIC | AV_OPT_FLAG_DEPRECATED },
     { "desaturation_exponent", "Desaturation exponent", OFFSET(desat_exp), AV_OPT_TYPE_FLOAT, {.dbl = -1.0}, -1.0, 10.0, DYNAMIC | AV_OPT_FLAG_DEPRECATED },
     { "gamut_warning", "Highlight out-of-gamut colors", OFFSET(gamut_warning), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DYNAMIC | AV_OPT_FLAG_DEPRECATED },
     { "gamut_clipping", "Enable colorimetric gamut clipping", OFFSET(gamut_clipping), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DYNAMIC | AV_OPT_FLAG_DEPRECATED },
+#endif
 
     { "dithering", "Dither method to use", OFFSET(dithering), AV_OPT_TYPE_INT, {.i64 = PL_DITHER_BLUE_NOISE}, -1, PL_DITHER_METHOD_COUNT - 1, DYNAMIC, "dither" },
         { "none", "Disable dithering", 0, AV_OPT_TYPE_CONST, {.i64 = -1}, 0, 0, STATIC, "dither" },

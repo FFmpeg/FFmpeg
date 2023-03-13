@@ -35,4 +35,6 @@
  * the public API and may change, break or disappear at any time.
  */
 
+#define FF_API_LIBPLACEBO_OPTS (LIBAVFILTER_VERSION_MAJOR < 10)
+
 #endif /* AVFILTER_VERSION_MAJOR_H */
