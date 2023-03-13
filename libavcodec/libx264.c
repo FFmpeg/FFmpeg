@@ -189,28 +189,6 @@ static int encode_nals(AVCodecContext *ctx, AVPacket *pkt,
     return 1;
 }
 
-static int avfmt2_num_planes(int avfmt)
-{
-    switch (avfmt) {
-    case AV_PIX_FMT_YUV420P:
-    case AV_PIX_FMT_YUVJ420P:
-    case AV_PIX_FMT_YUV420P9:
-    case AV_PIX_FMT_YUV420P10:
-    case AV_PIX_FMT_YUV444P:
-        return 3;
-
-    case AV_PIX_FMT_BGR0:
-    case AV_PIX_FMT_BGR24:
-    case AV_PIX_FMT_RGB24:
-    case AV_PIX_FMT_GRAY8:
-    case AV_PIX_FMT_GRAY10:
-        return 1;
-
-    default:
-        return 3;
-    }
-}
-
 static void reconfig_encoder(AVCodecContext *ctx, const AVFrame *frame)
 {
     X264Context *x4 = ctx->priv_data;
@@ -440,7 +418,7 @@ static int setup_frame(AVCodecContext *ctx, const AVFrame *frame,
 #endif
     if (bit_depth > 8)
         pic->img.i_csp |= X264_CSP_HIGH_DEPTH;
-    pic->img.i_plane = avfmt2_num_planes(ctx->pix_fmt);
+    pic->img.i_plane = av_pix_fmt_count_planes(ctx->pix_fmt);
 
     for (int i = 0; i < pic->img.i_plane; i++) {
         pic->img.plane[i]    = frame->data[i];
