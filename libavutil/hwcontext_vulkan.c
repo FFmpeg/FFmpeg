@@ -42,14 +42,17 @@
 #include "vulkan.h"
 #include "vulkan_loader.h"
 
+#if CONFIG_VAAPI
+#include "hwcontext_vaapi.h"
+#endif
+
 #if CONFIG_LIBDRM
+#if CONFIG_VAAPI
+#include <va/va_drmcommon.h>
+#endif
 #include <xf86drm.h>
 #include <drm_fourcc.h>
 #include "hwcontext_drm.h"
-#if CONFIG_VAAPI
-#include <va/va_drmcommon.h>
-#include "hwcontext_vaapi.h"
-#endif
 #endif
 
 #if CONFIG_CUDA
@@ -1627,7 +1630,6 @@ static int vulkan_device_derive(AVHWDeviceContext *ctx,
      * by the following checks (e.g. non-PCIe ARM GPU), having an empty
      * dev_select will mean it'll get picked. */
     switch(src_ctx->type) {
-#if CONFIG_LIBDRM
 #if CONFIG_VAAPI
     case AV_HWDEVICE_TYPE_VAAPI: {
         AVVAAPIDeviceContext *src_hwctx = src_ctx->hwctx;
@@ -1644,6 +1646,7 @@ static int vulkan_device_derive(AVHWDeviceContext *ctx,
         return vulkan_device_create_internal(ctx, &dev_select, opts, flags);
     }
 #endif
+#if CONFIG_LIBDRM
     case AV_HWDEVICE_TYPE_DRM: {
         AVDRMDeviceContext *src_hwctx = src_ctx->hwctx;
 
