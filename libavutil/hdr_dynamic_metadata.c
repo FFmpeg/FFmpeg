@@ -22,6 +22,7 @@
 #include "mem.h"
 #include "libavcodec/defs.h"
 #include "libavcodec/get_bits.h"
+#include "libavcodec/put_bits.h"
 
 #define T35_PAYLOAD_MAX_SIZE 907
 
@@ -233,5 +234,152 @@ int av_dynamic_hdr_plus_from_t35(AVDynamicHDRPlus *s, const uint8_t *data,
         }
     }
 
+    return 0;
+}
+
+int av_dynamic_hdr_plus_to_t35(const AVDynamicHDRPlus *s, uint8_t **data, size_t *size)
+{
+    uint8_t *buf;
+    size_t size_bits, size_bytes;
+    PutBitContext pbc, *pb = &pbc;
+
+    if (!s || !data)
+        return AVERROR(EINVAL);
+
+    /**
+     * Buffer size per CTA-861-H p.253-254:
+     * 48 header bits (excluded from the serialized payload)
+     * 8 bits for application_mode
+     * 2 bits for num_windows
+     * 153 bits for window geometry, for each window above 1
+     * 27 bits for targeted_system_display_maximum_luminance
+     * 1-2511 bits for targeted system display peak luminance information
+     * 82-442 bits per window for pixel distribution information
+     * 1-2511 bits for mastering display peak luminance information
+     * 1-179 bits per window for tonemapping information
+     * 1-7 bits per window for color saturation mapping information
+     * Total: 123-7249 bits, excluding trimmed header bits
+     */
+    size_bits = 8;
+
+    size_bits += 2;
+
+    for (int w = 1; w < s->num_windows; w++)
+        size_bits += 153;
+
+    size_bits += 27;
+
+    size_bits += 1;
+    if (s->targeted_system_display_actual_peak_luminance_flag)
+        size_bits += 10 +
+                     s->num_rows_targeted_system_display_actual_peak_luminance *
+                     s->num_cols_targeted_system_display_actual_peak_luminance * 4;
+
+    for (int w = 0; w < s->num_windows; w++)
+        size_bits += 72 + s->params[w].num_distribution_maxrgb_percentiles * 24 + 10;
+
+    size_bits += 1;
+    if (s->mastering_display_actual_peak_luminance_flag)
+        size_bits += 10 +
+                     s->num_rows_mastering_display_actual_peak_luminance *
+                     s->num_cols_mastering_display_actual_peak_luminance * 4;
+
+    for (int w = 0; w < s->num_windows; w++) {
+        size_bits += 1;
+        if (s->params[w].tone_mapping_flag)
+            size_bits += 28 + s->params[w].num_bezier_curve_anchors * 10;
+
+        size_bits += 1;
+        if (s->params[w].color_saturation_mapping_flag)
+            size_bits += 6;
+    }
+
+    size_bytes = (size_bits + 7) / 8;
+
+    buf = av_mallocz(size_bytes);
+    if (!buf)
+        return AVERROR(ENOMEM);
+
+    init_put_bits(pb, buf, size_bytes);
+
+    // application_mode is set to Application Version 1
+    put_bits(pb, 8, 1);
+
+    // Payload as per CTA-861-H p.253-254
+    put_bits(pb, 2, s->num_windows);
+
+    for (int w = 1; w < s->num_windows; w++) {
+        put_bits(pb, 16, s->params[w].window_upper_left_corner_x.num / s->params[w].window_upper_left_corner_x.den);
+        put_bits(pb, 16, s->params[w].window_upper_left_corner_y.num / s->params[w].window_upper_left_corner_y.den);
+        put_bits(pb, 16, s->params[w].window_lower_right_corner_x.num / s->params[w].window_lower_right_corner_x.den);
+        put_bits(pb, 16, s->params[w].window_lower_right_corner_y.num / s->params[w].window_lower_right_corner_y.den);
+        put_bits(pb, 16, s->params[w].center_of_ellipse_x);
+        put_bits(pb, 16, s->params[w].center_of_ellipse_y);
+        put_bits(pb, 8, s->params[w].rotation_angle);
+        put_bits(pb, 16, s->params[w].semimajor_axis_internal_ellipse);
+        put_bits(pb, 16, s->params[w].semimajor_axis_external_ellipse);
+        put_bits(pb, 16, s->params[w].semiminor_axis_external_ellipse);
+        put_bits(pb, 1, s->params[w].overlap_process_option);
+    }
+
+    put_bits(pb, 27, s->targeted_system_display_maximum_luminance.num * luminance_den /
+        s->targeted_system_display_maximum_luminance.den);
+    put_bits(pb, 1, s->targeted_system_display_actual_peak_luminance_flag);
+    if (s->targeted_system_display_actual_peak_luminance_flag) {
+        put_bits(pb, 5, s->num_rows_targeted_system_display_actual_peak_luminance);
+        put_bits(pb, 5, s->num_cols_targeted_system_display_actual_peak_luminance);
+        for (int i = 0; i < s->num_rows_targeted_system_display_actual_peak_luminance; i++) {
+            for (int j = 0; j < s->num_cols_targeted_system_display_actual_peak_luminance; j++)
+                put_bits(pb, 4, s->targeted_system_display_actual_peak_luminance[i][j].num * peak_luminance_den /
+                    s->targeted_system_display_actual_peak_luminance[i][j].den);
+        }
+    }
+
+    for (int w = 0; w < s->num_windows; w++) {
+        for (int i = 0; i < 3; i++)
+            put_bits(pb, 17, s->params[w].maxscl[i].num * rgb_den / s->params[w].maxscl[i].den);
+        put_bits(pb, 17, s->params[w].average_maxrgb.num * rgb_den / s->params[w].average_maxrgb.den);
+        put_bits(pb, 4, s->params[w].num_distribution_maxrgb_percentiles);
+        for (int i = 0; i < s->params[w].num_distribution_maxrgb_percentiles; i++) {
+            put_bits(pb, 7, s->params[w].distribution_maxrgb[i].percentage);
+            put_bits(pb, 17, s->params[w].distribution_maxrgb[i].percentile.num * rgb_den /
+                s->params[w].distribution_maxrgb[i].percentile.den);
+        }
+        put_bits(pb, 10, s->params[w].fraction_bright_pixels.num * fraction_pixel_den /
+            s->params[w].fraction_bright_pixels.den);
+    }
+
+    put_bits(pb, 1, s->mastering_display_actual_peak_luminance_flag);
+    if (s->mastering_display_actual_peak_luminance_flag) {
+        put_bits(pb, 5, s->num_rows_mastering_display_actual_peak_luminance);
+        put_bits(pb, 5, s->num_cols_mastering_display_actual_peak_luminance);
+        for (int i = 0; i < s->num_rows_mastering_display_actual_peak_luminance; i++) {
+            for (int j = 0; j < s->num_cols_mastering_display_actual_peak_luminance; j++)
+                put_bits(pb, 4, s->mastering_display_actual_peak_luminance[i][j].num * peak_luminance_den /
+                    s->mastering_display_actual_peak_luminance[i][j].den);
+        }
+    }
+
+    for (int w = 0; w < s->num_windows; w++) {
+        put_bits(pb, 1, s->params[w].tone_mapping_flag);
+        if (s->params[w].tone_mapping_flag) {
+            put_bits(pb, 12, s->params[w].knee_point_x.num * knee_point_den / s->params[w].knee_point_x.den);
+            put_bits(pb, 12, s->params[w].knee_point_y.num * knee_point_den / s->params[w].knee_point_y.den);
+            put_bits(pb, 4, s->params[w].num_bezier_curve_anchors);
+            for (int i = 0; i < s->params[w].num_bezier_curve_anchors; i++)
+                put_bits(pb, 10, s->params[w].bezier_curve_anchors[i].num * bezier_anchor_den /
+                    s->params[w].bezier_curve_anchors[i].den);
+            put_bits(pb, 1, s->params[w].color_saturation_mapping_flag);
+            if (s->params[w].color_saturation_mapping_flag)
+                put_bits(pb, 6, s->params[w].color_saturation_weight.num * saturation_weight_den /
+                    s->params[w].color_saturation_weight.den);
+        }
+    }
+
+    flush_put_bits(pb);
+
+    *data = buf;
+    if (size)
+        *size = size_bytes;
     return 0;
 }

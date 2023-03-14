@@ -353,4 +353,16 @@ AVDynamicHDRPlus *av_dynamic_hdr_plus_create_side_data(AVFrame *frame);
 int av_dynamic_hdr_plus_from_t35(AVDynamicHDRPlus *s, const uint8_t *data,
                                  size_t size);
 
+/**
+ * Serialize dynamic HDR10+ metadata to a user data registered ITU-T T.35 buffer,
+ * excluding the first 48 bytes of the header, and beginning with the application mode.
+ * @param s A pointer containing the decoded AVDynamicHDRPlus structure.
+ * @param data A pointer to a byte buffer to be allocated and filled
+ *             with the serialized metadata.
+ * @param size A pointer to a size to be set to the returned buffer's size (optional).
+ *
+ * @return >= 0 on success. Otherwise, returns the appropriate AVERROR.
+ */
+int av_dynamic_hdr_plus_to_t35(const AVDynamicHDRPlus *s, uint8_t **data, size_t *size);
+
 #endif /* AVUTIL_HDR_DYNAMIC_METADATA_H */
