@@ -63,8 +63,8 @@ static int write_header(AVFormatContext *s)
         if (trailer)
             trailer = strstr(trailer, "\n");
 
-        if (trailer++) {
-            header_size = (trailer - par->extradata);
+        if (trailer) {
+            header_size = (++trailer - par->extradata);
             ass->trailer_size = par->extradata_size - header_size;
             if (ass->trailer_size)
                 ass->trailer = trailer;
