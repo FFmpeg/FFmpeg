@@ -696,6 +696,9 @@ static int create_instance(AVHWDeviceContext *ctx, AVDictionary *opts)
                                               LIBAVUTIL_VERSION_MINOR,
                                               LIBAVUTIL_VERSION_MICRO),
     };
+    VkValidationFeaturesEXT validation_features = {
+        .sType = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT,
+    };
     VkInstanceCreateInfo inst_props = {
         .sType            = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
         .pApplicationInfo = &application_info,
@@ -725,6 +728,17 @@ static int create_instance(AVHWDeviceContext *ctx, AVDictionary *opts)
     hwctx->nb_enabled_inst_extensions = inst_props.enabledExtensionCount;
     if (err < 0)
         goto fail;
+
+    if (debug_mode) {
+        VkValidationFeatureEnableEXT feat_list[] = {
+            VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_EXT,
+            VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_RESERVE_BINDING_SLOT_EXT,
+            VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT,
+        };
+        validation_features.pEnabledValidationFeatures = feat_list;
+        validation_features.enabledValidationFeatureCount = FF_ARRAY_ELEMS(feat_list);
+        inst_props.pNext = &validation_features;
+    }
 
     /* Try to create the instance */
     ret = vk->CreateInstance(&inst_props, hwctx->alloc, &hwctx->inst);
