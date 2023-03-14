@@ -51,6 +51,7 @@
 #include "libavcodec/golomb.h"
 #include "libavcodec/h264.h"
 #include "libavcodec/packet_internal.h"
+#include "libavcodec/rangecoder.h"
 #include "libavcodec/startcode.h"
 #include "avformat.h"
 #include "avio_internal.h"
@@ -102,6 +103,7 @@ typedef struct MXFStreamContext {
     int b_picture_count;     ///< maximum number of consecutive b pictures, used in mpeg-2 descriptor
     int low_delay;           ///< low delay, used in mpeg-2 descriptor
     int avc_intra;
+    int micro_version;       ///< format micro_version, used in ffv1 descriptor
 } MXFStreamContext;
 
 typedef struct MXFContainerEssenceEntry {
@@ -130,6 +132,7 @@ enum ULIndex {
     INDEX_H264,
     INDEX_S436M,
     INDEX_PRORES,
+    INDEX_FFV1,
 };
 
 static const struct {
@@ -144,6 +147,7 @@ static const struct {
     { AV_CODEC_ID_JPEG2000,   INDEX_JPEG2000 },
     { AV_CODEC_ID_H264,       INDEX_H264 },
     { AV_CODEC_ID_PRORES,     INDEX_PRORES },
+    { AV_CODEC_ID_FFV1,       INDEX_FFV1 },
     { AV_CODEC_ID_NONE }
 };
 
@@ -151,6 +155,7 @@ static void mxf_write_wav_desc(AVFormatContext *s, AVStream *st);
 static void mxf_write_aes3_desc(AVFormatContext *s, AVStream *st);
 static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st);
 static void mxf_write_h264_desc(AVFormatContext *s, AVStream *st);
+static void mxf_write_ffv1_desc(AVFormatContext *s, AVStream *st);
 static void mxf_write_cdci_desc(AVFormatContext *s, AVStream *st);
 static void mxf_write_generic_sound_desc(AVFormatContext *s, AVStream *st);
 static void mxf_write_s436m_anc_desc(AVFormatContext *s, AVStream *st);
@@ -208,6 +213,11 @@ static const MXFContainerEssenceEntry mxf_essence_container_uls[] = {
       { 0x06,0x0E,0x2B,0x34,0x01,0x02,0x01,0x01,0x0d,0x01,0x03,0x01,0x15,0x01,0x17,0x00 },
       { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0d,0x04,0x01,0x02,0x02,0x03,0x06,0x03,0x00 },
       mxf_write_cdci_desc },
+    // FFV1
+    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0d,0x0d,0x01,0x03,0x01,0x02,0x23,0x01,0x00 },
+      { 0x06,0x0E,0x2B,0x34,0x01,0x02,0x01,0x01,0x0d,0x01,0x03,0x01,0x15,0x01,0x1d,0x00 },
+      { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0d,0x04,0x01,0x02,0x02,0x03,0x09,0x00,0x00 },
+      mxf_write_ffv1_desc },
     { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },
       { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },
       { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },
@@ -230,6 +240,15 @@ static const UID mxf_d10_container_uls[] = {
     { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x0D,0x01,0x03,0x01,0x02,0x01,0x04,0x01 }, // D-10 525/50 NTSC 40mb/s
     { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x0D,0x01,0x03,0x01,0x02,0x01,0x05,0x01 }, // D-10 625/50 PAL 30mb/s
     { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x0D,0x01,0x03,0x01,0x02,0x01,0x06,0x01 }, // D-10 525/50 NTSC 30mb/s
+};
+
+
+static const UID mxf_ffv1_codec_uls[] = {
+    { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x0D,0x04,0x01,0x02,0x02,0x03,0x09,0x01,0x00 }, // FFV1 version 0
+    { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x0D,0x04,0x01,0x02,0x02,0x03,0x09,0x02,0x00 }, // FFV1 version 1
+    { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x0D,0x04,0x01,0x02,0x02,0x03,0x09,0x03,0x00 }, // FFV1 version 2 (was only experimental)
+    { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x0D,0x04,0x01,0x02,0x02,0x03,0x09,0x04,0x00 }, // FFV1 version 3
+    { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x0D,0x04,0x01,0x02,0x02,0x03,0x09,0x05,0x00 }, // FFV1 version 4
 };
 
 static const uint8_t product_uid[]          = { 0xAD,0xAB,0x44,0x24,0x2f,0x25,0x4d,0xc7,0x92,0xff,0x29,0xbd,0x00,0x0c,0x00,0x02};
@@ -390,6 +409,10 @@ static const MXFLocalTagPair mxf_local_tag_batch[] = {
     { 0x8302, FF_MXF_MasteringDisplayWhitePointChromaticity },
     { 0x8303, FF_MXF_MasteringDisplayMaximumLuminance },
     { 0x8304, FF_MXF_MasteringDisplayMinimumLuminance },
+    // FFV1
+    { 0xDFD9, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x0E,0x04,0x01,0x06,0x0C,0x06,0x00,0x00,0x00}}, /* FFV1 Micro-version */
+    { 0xDFDA, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x0E,0x04,0x01,0x06,0x0C,0x05,0x00,0x00,0x00}}, /* FFV1 Version */
+    { 0xDFDB, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x0E,0x04,0x01,0x06,0x0C,0x01,0x00,0x00,0x00}}, /* FFV1 Initialization Metadata */
 };
 
 #define MXF_NUM_TAGS FF_ARRAY_ELEMS(mxf_local_tag_batch)
@@ -526,7 +549,7 @@ static void mxf_write_primer_pack(AVFormatContext *s)
     MXFContext *mxf = s->priv_data;
     AVIOContext *pb = s->pb;
     int local_tag_number = MXF_NUM_TAGS, i;
-    int will_have_avc_tags = 0, will_have_mastering_tags = 0;
+    int will_have_avc_tags = 0, will_have_mastering_tags = 0, will_have_ffv1_tags = 0;
 
     for (i = 0; i < s->nb_streams; i++) {
         MXFStreamContext *sc = s->streams[i]->priv_data;
@@ -536,6 +559,9 @@ static void mxf_write_primer_pack(AVFormatContext *s)
         if (av_stream_get_side_data(s->streams[i], AV_PKT_DATA_MASTERING_DISPLAY_METADATA, NULL)) {
             will_have_mastering_tags = 1;
         }
+        if (s->streams[i]->codecpar->codec_id == AV_CODEC_ID_FFV1) {
+            will_have_ffv1_tags = 1;
+        }
     }
 
     if (!mxf->store_user_comments) {
@@ -544,8 +570,11 @@ static void mxf_write_primer_pack(AVFormatContext *s)
         mxf_mark_tag_unused(mxf, 0x5003);
     }
 
-    if (!will_have_avc_tags) {
+    if (!will_have_avc_tags && !will_have_ffv1_tags) {
         mxf_mark_tag_unused(mxf, 0x8100);
+    }
+
+    if (!will_have_avc_tags) {
         mxf_mark_tag_unused(mxf, 0x8200);
         mxf_mark_tag_unused(mxf, 0x8201);
         mxf_mark_tag_unused(mxf, 0x8202);
@@ -556,6 +585,12 @@ static void mxf_write_primer_pack(AVFormatContext *s)
         mxf_mark_tag_unused(mxf, 0x8302);
         mxf_mark_tag_unused(mxf, 0x8303);
         mxf_mark_tag_unused(mxf, 0x8304);
+    }
+
+    if (!will_have_ffv1_tags) {
+        mxf_mark_tag_unused(mxf, 0xDFD9);
+        mxf_mark_tag_unused(mxf, 0xDFDA);
+        mxf_mark_tag_unused(mxf, 0xDFDB);
     }
 
     for (i = 0; i < MXF_NUM_TAGS; i++) {
@@ -1094,9 +1129,11 @@ static const UID mxf_mpegvideo_descriptor_key = { 0x06,0x0E,0x2B,0x34,0x02,0x53,
 static const UID mxf_wav_descriptor_key       = { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x48,0x00 };
 static const UID mxf_aes3_descriptor_key      = { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x47,0x00 };
 static const UID mxf_cdci_descriptor_key      = { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0D,0x01,0x01,0x01,0x01,0x01,0x28,0x00 };
+static const UID mxf_rgba_descriptor_key      = { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0D,0x01,0x01,0x01,0x01,0x01,0x29,0x00 };
 static const UID mxf_generic_sound_descriptor_key = { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0D,0x01,0x01,0x01,0x01,0x01,0x42,0x00 };
 
 static const UID mxf_avc_subdescriptor_key = { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x6E,0x00 };
+static const UID mxf_ffv1_subdescriptor_key = { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x81,0x03 };
 
 static inline uint16_t rescale_mastering_chroma(AVRational q)
 {
@@ -1198,6 +1235,7 @@ static int64_t mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID
         avio_wb32(pb, -((st->codecpar->height - display_height)&1));
     }
 
+    if (key != mxf_rgba_descriptor_key) {
     // component depth
     mxf_write_local_tag(s, 4, 0x3301);
     avio_wb32(pb, sc->component_depth);
@@ -1234,6 +1272,7 @@ static int64_t mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID
         mxf_write_local_tag(s, 4, 0x3306);
         avio_wb32(pb, color);
     }
+    } // if (key != mxf_rgba_descriptor_key)
 
     if (sc->signal_standard) {
         mxf_write_local_tag(s, 1, 0x3215);
@@ -1329,6 +1368,13 @@ static int64_t mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID
         mxf_write_uuid(pb, AVCSubDescriptor, 0);
     }
 
+    if (st->codecpar->codec_id == AV_CODEC_ID_FFV1) {
+        // write ffv1 sub descriptor ref
+        mxf_write_local_tag(s, 8 + 16, 0x8100);
+        mxf_write_refs_count(pb, 1);
+        mxf_write_uuid(pb, FFV1SubDescriptor, 0);
+    }
+
     return pos;
 }
 
@@ -1385,6 +1431,47 @@ static void mxf_write_h264_desc(AVFormatContext *s, AVStream *st)
         mxf_update_klv_size(s->pb, pos);
         mxf_write_avc_subdesc(s, st);
     }
+}
+
+static void mxf_write_ffv1_subdesc(AVFormatContext *s, AVStream *st)
+{
+    AVIOContext *pb = s->pb;
+    MXFStreamContext *sc = st->priv_data;
+    int64_t pos;
+
+    avio_write(pb, mxf_ffv1_subdescriptor_key, 16);
+    klv_encode_ber4_length(pb, 0);
+    pos = avio_tell(pb);
+
+    mxf_write_local_tag(s, 16, 0x3C0A);
+    mxf_write_uuid(pb, FFV1SubDescriptor, 0);
+
+    if (st->codecpar->extradata_size) {
+        mxf_write_local_tag(s, st->codecpar->extradata_size, 0xDFDB);
+        avio_write(pb, st->codecpar->extradata, st->codecpar->extradata_size); // FFV1InitializationMetadata
+    }
+
+    mxf_write_local_tag(s, 2, 0xDFDA);
+    avio_wb16(pb, (*sc->codec_ul)[14]); // FFV1Version
+
+    if (st->codecpar->extradata_size) {
+        mxf_write_local_tag(s, 2, 0xDFD9);
+        avio_wb16(pb, sc->micro_version); // FFV1MicroVersion
+    }
+
+    mxf_update_klv_size(s->pb, pos);
+}
+
+static void mxf_write_ffv1_desc(AVFormatContext *s, AVStream *st)
+{
+    int is_rgb, pos;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(st->codecpar->format);
+    av_assert0(desc);
+    is_rgb = desc->flags & AV_PIX_FMT_FLAG_RGB;
+
+    pos = mxf_write_cdci_common(s, st, is_rgb ? mxf_rgba_descriptor_key : mxf_cdci_descriptor_key);
+    mxf_update_klv_size(s->pb, pos);
+    mxf_write_ffv1_subdesc(s, st);
 }
 
 static void mxf_write_s436m_anc_desc(AVFormatContext *s, AVStream *st)
@@ -2347,6 +2434,73 @@ static int mxf_parse_h264_frame(AVFormatContext *s, AVStream *st,
     return 1;
 }
 
+static inline int get_ffv1_unsigned_symbol(RangeCoder *c, uint8_t *state) {
+    if(get_rac(c, state+0))
+        return 0;
+    else{
+        int i, e;
+        unsigned a;
+        e= 0;
+        while(get_rac(c, state+1 + FFMIN(e,9))){ //1..10
+            e++;
+            if (e > 31)
+                return AVERROR_INVALIDDATA;
+        }
+
+        a= 1;
+        for(i=e-1; i>=0; i--){
+            a += a + get_rac(c, state+22 + FFMIN(i,9)); //22..31
+        }
+
+        return a;
+    }
+}
+#define FFV1_CONTEXT_SIZE 32
+static int mxf_parse_ffv1_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt)
+{
+    MXFContext *mxf = s->priv_data;
+    MXFStreamContext *sc = st->priv_data;
+    uint8_t state[FFV1_CONTEXT_SIZE];
+    RangeCoder c;
+    unsigned v;
+
+    sc->frame_size = pkt->size;
+
+    if (mxf->header_written)
+        return 1;
+
+    memset(state, 128, sizeof(state));
+    if (st->codecpar->extradata) {
+        ff_init_range_decoder(&c, st->codecpar->extradata, st->codecpar->extradata_size);
+        ff_build_rac_states(&c, 0.05 * (1LL << 32), 256 - 8);
+        v = get_ffv1_unsigned_symbol(&c, state);
+        av_assert0(v >= 2);
+        if (v > 4) {
+            return 0;
+        }
+        sc->micro_version = get_ffv1_unsigned_symbol(&c, state);
+    } else {
+        uint8_t keystate = 128;
+        ff_init_range_decoder(&c, pkt->data, pkt->size);
+        ff_build_rac_states(&c, 0.05 * (1LL << 32), 256 - 8);
+        get_rac(&c, &keystate); // keyframe
+        v = get_ffv1_unsigned_symbol(&c, state);
+        av_assert0(v < 2);
+    }
+    sc->codec_ul = &mxf_ffv1_codec_uls[v];
+
+    if (st->codecpar->field_order > AV_FIELD_PROGRESSIVE) {
+        sc->interlaced = 1;
+        sc->field_dominance = st->codecpar->field_order == (st->codecpar->field_order == AV_FIELD_TT || st->codecpar->field_order == AV_FIELD_TB) ? 1 : 2;
+    }
+    sc->aspect_ratio.num = st->codecpar->width * st->codecpar->sample_aspect_ratio.num;
+    sc->aspect_ratio.den = st->codecpar->height * st->codecpar->sample_aspect_ratio.den;
+    av_reduce(&sc->aspect_ratio.num, &sc->aspect_ratio.den,
+              sc->aspect_ratio.num, sc->aspect_ratio.den, INT_MAX);
+
+    return 1;
+}
+
 static const UID mxf_mpeg2_codec_uls[] = {
     { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x03,0x04,0x01,0x02,0x02,0x01,0x01,0x10,0x00 }, // MP-ML I-Frame
     { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x03,0x04,0x01,0x02,0x02,0x01,0x01,0x11,0x00 }, // MP-ML Long GOP
@@ -2956,6 +3110,11 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
     } else if (st->codecpar->codec_id == AV_CODEC_ID_H264) {
         if (!mxf_parse_h264_frame(s, st, pkt, &ie)) {
             av_log(s, AV_LOG_ERROR, "could not get h264 profile\n");
+            return -1;
+        }
+    } else if (st->codecpar->codec_id == AV_CODEC_ID_FFV1) {
+        if (!mxf_parse_ffv1_frame(s, st, pkt)) {
+            av_log(s, AV_LOG_ERROR, "could not get ffv1 version\n");
             return -1;
         }
     }

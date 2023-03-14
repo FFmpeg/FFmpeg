@@ -8,6 +8,7 @@ FATE_LAVF_CONTAINER-$(call ENCDEC2, MPEG4,      MP2,       MATROSKA)           +
 FATE_LAVF_CONTAINER-$(call ENCDEC2, MPEG4,      PCM_ALAW,  MOV)                += mov mov_rtphint ismv
 FATE_LAVF_CONTAINER-$(call ENCDEC,  MPEG4,                 MOV)                += mp4
 FATE_LAVF_CONTAINER-$(call ENCDEC2, MPEG1VIDEO, MP2,       MPEG1SYSTEM MPEGPS) += mpg
+FATE_LAVF_CONTAINER-$(call ENCDEC , FFV1,                  MXF)                += mxf_ffv1
 FATE_LAVF_CONTAINER-$(call ENCDEC2, MPEG2VIDEO, PCM_S16LE, MXF)                += mxf mxf_dv25 mxf_dvcpro50
 FATE_LAVF_CONTAINER-$(call ENCDEC2, MPEG2VIDEO, PCM_S16LE, MXF_D10 MXF)        += mxf_d10
 FATE_LAVF_CONTAINER-$(call ENCDEC2, DNXHD,      PCM_S16LE, MXF_OPATOM MXF)     += mxf_opatom mxf_opatom_audio
@@ -55,6 +56,7 @@ fate-lavf-mxf: CMD = lavf_container_timecode "-ar 48000 -bf 2 -threads 1"
 fate-lavf-mxf_d10: CMD = lavf_container "-ar 48000 -ac 2" "-r 25 -vf scale=720:576,pad=720:608:0:32 -c:v mpeg2video -g 0 -flags +ildct+low_delay -dc 10 -non_linear_quant 1 -intra_vlc 1 -qscale 1 -ps 1 -qmin 1 -rc_max_vbv_use 1 -rc_min_vbv_use 1 -pix_fmt yuv422p -minrate 30000k -maxrate 30000k -b 30000k -bufsize 1200000 -top 1 -rc_init_occupancy 1200000 -qmax 12 -f mxf_d10"
 fate-lavf-mxf_dv25: CMD = lavf_container "-ar 48000 -ac 2" "-r 25 -vf scale=720:576,setdar=4/3 -c:v dvvideo -pix_fmt yuv420p -b 25000k -top 0 -f mxf"
 fate-lavf-mxf_dvcpro50: CMD = lavf_container "-ar 48000 -ac 2" "-r 25 -vf scale=720:576,setdar=16/9 -c:v dvvideo -pix_fmt yuv422p -b 50000k -top 0 -f mxf"
+fate-lavf-mxf_ffv1: CMD = lavf_container "-an" "-r 25 -vf scale=720:576,setdar=4/3 -c:v ffv1 -level 3 -pix_fmt yuv420p -f mxf"
 fate-lavf-mxf_opatom: CMD = lavf_container "" "-s 1920x1080 -c:v dnxhd -pix_fmt yuv422p -vb 36M -f mxf_opatom -map 0"
 fate-lavf-mxf_opatom_audio: CMD = lavf_container "-ar 48000 -ac 1" "-f mxf_opatom -mxf_audio_edit_rate 25 -map 1"
 fate-lavf-smjpeg:  CMD = lavf_container "" "-f smjpeg"
