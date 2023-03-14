@@ -50,6 +50,8 @@
 #if CONFIG_VAAPI
 #include <va/va_drmcommon.h>
 #endif
+#include <sys/sysmacros.h>
+#include <sys/stat.h>
 #include <xf86drm.h>
 #include <drm_fourcc.h>
 #include "hwcontext_drm.h"
@@ -356,6 +358,7 @@ static const VulkanOptExtension optional_device_exts[] = {
     { VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME,                  FF_VK_EXT_NO_FLAG                },
     { VK_KHR_SAMPLER_YCBCR_CONVERSION_EXTENSION_NAME,         FF_VK_EXT_NO_FLAG                },
     { VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME,                FF_VK_EXT_DESCRIPTOR_BUFFER,     },
+    { VK_EXT_PHYSICAL_DEVICE_DRM_EXTENSION_NAME,              FF_VK_EXT_DEVICE_DRM             },
 
     /* Imports/exports */
     { VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME,               FF_VK_EXT_EXTERNAL_FD_MEMORY     },
@@ -762,8 +765,11 @@ fail:
 typedef struct VulkanDeviceSelection {
     uint8_t uuid[VK_UUID_SIZE]; /* Will use this first unless !has_uuid */
     int has_uuid;
-    const char *name; /* Will use this second unless NULL */
-    uint32_t pci_device; /* Will use this third unless 0x0 */
+    uint32_t drm_major; /* Will use this second unless !has_drm */
+    uint32_t drm_minor; /* Will use this second unless !has_drm */
+    uint32_t has_drm; /* has drm node info */
+    const char *name; /* Will use this third unless NULL */
+    uint32_t pci_device; /* Will use this fourth unless 0x0 */
     uint32_t vendor_id; /* Last resort to find something deterministic */
     int index; /* Finally fall back to index */
 } VulkanDeviceSelection;
@@ -790,6 +796,7 @@ static int find_device(AVHWDeviceContext *ctx, VulkanDeviceSelection *select)
     VkPhysicalDevice *devices = NULL;
     VkPhysicalDeviceIDProperties *idp = NULL;
     VkPhysicalDeviceProperties2 *prop = NULL;
+    VkPhysicalDeviceDrmPropertiesEXT *drm_prop = NULL;
     AVVulkanDeviceContext *hwctx = ctx->hwctx;
 
     ret = vk->EnumeratePhysicalDevices(hwctx->inst, &num, NULL);
@@ -822,8 +829,20 @@ static int find_device(AVHWDeviceContext *ctx, VulkanDeviceSelection *select)
         goto end;
     }
 
+    if (p->vkctx.extensions & FF_VK_EXT_DEVICE_DRM) {
+        drm_prop = av_calloc(num, sizeof(*drm_prop));
+        if (!drm_prop) {
+            err = AVERROR(ENOMEM);
+            goto end;
+        }
+    }
+
     av_log(ctx, AV_LOG_VERBOSE, "GPU listing:\n");
     for (int i = 0; i < num; i++) {
+        if (p->vkctx.extensions & FF_VK_EXT_DEVICE_DRM) {
+            drm_prop[i].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRM_PROPERTIES_EXT;
+            idp[i].pNext = &drm_prop[i];
+        }
         idp[i].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES;
         prop[i].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
         prop[i].pNext = &idp[i];
@@ -843,6 +862,20 @@ static int find_device(AVHWDeviceContext *ctx, VulkanDeviceSelection *select)
              }
         }
         av_log(ctx, AV_LOG_ERROR, "Unable to find device by given UUID!\n");
+        err = AVERROR(ENODEV);
+        goto end;
+    } else if ((p->vkctx.extensions & FF_VK_EXT_DEVICE_DRM) && select->has_drm) {
+        for (int i = 0; i < num; i++) {
+            if ((select->drm_major == drm_prop[i].primaryMajor &&
+                 select->drm_minor == drm_prop[i].primaryMinor) ||
+                (select->drm_major == drm_prop[i].renderMajor &&
+                 select->drm_minor == drm_prop[i].renderMinor)) {
+                choice = i;
+                goto end;
+             }
+        }
+        av_log(ctx, AV_LOG_ERROR, "Unable to find device by given DRM node numbers %i:%i!\n",
+               select->drm_major, select->drm_minor);
         err = AVERROR(ENODEV);
         goto end;
     } else if (select->name) {
@@ -904,6 +937,7 @@ end:
     av_free(devices);
     av_free(prop);
     av_free(idp);
+    av_free(drm_prop);
 
     return err;
 }
@@ -1648,12 +1682,26 @@ static int vulkan_device_derive(AVHWDeviceContext *ctx,
 #endif
 #if CONFIG_LIBDRM
     case AV_HWDEVICE_TYPE_DRM: {
+        int err;
+        struct stat drm_node_info;
+        drmDevice *drm_dev_info;
         AVDRMDeviceContext *src_hwctx = src_ctx->hwctx;
 
-        drmDevice *drm_dev_info;
-        int err = drmGetDevice(src_hwctx->fd, &drm_dev_info);
+        err = fstat(src_hwctx->fd, &drm_node_info);
         if (err) {
-            av_log(ctx, AV_LOG_ERROR, "Unable to get device info from DRM fd!\n");
+            av_log(ctx, AV_LOG_ERROR, "Unable to get node info from DRM fd: %s!\n",
+                   av_err2str(AVERROR(errno)));
+            return AVERROR_EXTERNAL;
+        }
+
+        dev_select.drm_major = major(drm_node_info.st_dev);
+        dev_select.drm_minor = minor(drm_node_info.st_dev);
+        dev_select.has_drm   = 1;
+
+        err = drmGetDevice(src_hwctx->fd, &drm_dev_info);
+        if (err) {
+            av_log(ctx, AV_LOG_ERROR, "Unable to get device info from DRM fd: %s!\n",
+                   av_err2str(AVERROR(errno)));
             return AVERROR_EXTERNAL;
         }
 

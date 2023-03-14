@@ -38,6 +38,7 @@ typedef enum FFVulkanExtensions {
     FF_VK_EXT_EXTERNAL_WIN32_SEM     = 1ULL <<  7, /* VK_KHR_external_semaphore_win32 */
 #endif
     FF_VK_EXT_DESCRIPTOR_BUFFER      = 1ULL <<  8, /* VK_EXT_descriptor_buffer */
+    FF_VK_EXT_DEVICE_DRM             = 1ULL <<  9, /* VK_EXT_physical_device_drm */
 
     FF_VK_EXT_NO_FLAG                = 1ULL << 31,
 } FFVulkanExtensions;
