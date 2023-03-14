@@ -547,6 +547,7 @@ static int decode_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
 
     if (codec->cb_type == FF_CODEC_CB_TYPE_RECEIVE_FRAME) {
         ret = codec->cb.receive_frame(avctx, frame);
+        emms_c();
     } else
         ret = decode_simple_receive_frame(avctx, frame);
 
