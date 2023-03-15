@@ -7359,7 +7359,6 @@ enable frame_thread_encoder
 # they are kept disabled for now, but will be removed if
 # nobody updates and re-enables them
 disable mcdeint_filter
-disable uspp_filter
 
 enabled asm || { arch=c; disable $ARCH_LIST $ARCH_EXT_LIST; }
 

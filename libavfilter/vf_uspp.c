@@ -53,6 +53,7 @@ typedef struct USPPContext {
     int outbuf_size;
     uint8_t *outbuf;
     AVCodecContext *avctx_enc[BLOCK*BLOCK];
+    AVCodecContext *avctx_dec[BLOCK*BLOCK];
     AVPacket *pkt;
     AVFrame *frame;
     AVFrame *frame_dec;
@@ -244,7 +245,6 @@ static void filter(USPPContext *p, uint8_t *dst[3], uint8_t *src[3],
         const int BLOCKc = BLOCK >> p->hsub;
         int offset;
         AVPacket *pkt = p->pkt;
-        int got_pkt_ptr;
 
         av_packet_unref(pkt);
         pkt->data = p->outbuf;
@@ -255,14 +255,28 @@ static void filter(USPPContext *p, uint8_t *dst[3], uint8_t *src[3],
         p->frame->data[2] = p->src[2] + x1c  + y1c  * p->frame->linesize[2];
         p->frame->format  = p->avctx_enc[i]->pix_fmt;
 
-        ret = avcodec_encode_video2(p->avctx_enc[i], pkt, p->frame, &got_pkt_ptr);
+        ret = avcodec_send_frame(p->avctx_enc[i], p->frame);
         if (ret < 0) {
-            av_log(p->avctx_enc[i], AV_LOG_ERROR, "Encoding failed\n");
+            av_log(p->avctx_enc[i], AV_LOG_ERROR, "Error sending a frame for encoding\n");
             continue;
         }
-        av_packet_unref(pkt);
+        ret = avcodec_receive_packet(p->avctx_enc[i], pkt);
+        if (ret < 0) {
+            av_log(p->avctx_enc[i], AV_LOG_ERROR, "Error receiving a packet from encoding\n");
+            continue;
+        }
 
-        p->frame_dec = p->avctx_enc[i]->coded_frame;
+        ret = avcodec_send_packet(p->avctx_dec[i], pkt);
+        av_packet_unref(pkt);
+        if (ret < 0) {
+            av_log(p->avctx_dec[i], AV_LOG_ERROR, "Error sending a packet for decoding\n");
+            continue;
+        }
+        ret = avcodec_receive_frame(p->avctx_dec[i], p->frame_dec);
+        if (ret < 0) {
+            av_log(p->avctx_dec[i], AV_LOG_ERROR, "Error receiving a frame from decoding\n");
+            continue;
+        }
 
         offset = (BLOCK-x1) + (BLOCK-y1) * p->frame_dec->linesize[0];
 
@@ -315,8 +329,13 @@ static int config_input(AVFilterLink *inlink)
     int i;
 
     const AVCodec *enc = avcodec_find_encoder(AV_CODEC_ID_SNOW);
+    const AVCodec *dec = avcodec_find_decoder(AV_CODEC_ID_SNOW);
     if (!enc) {
         av_log(ctx, AV_LOG_ERROR, "SNOW encoder not found.\n");
+        return AVERROR(EINVAL);
+    }
+    if (!dec) {
+        av_log(ctx, AV_LOG_ERROR, "SNOW decoder not found.\n");
         return AVERROR(EINVAL);
     }
 
@@ -341,15 +360,20 @@ static int config_input(AVFilterLink *inlink)
     }
 
     for (i = 0; i < (1<<uspp->log2_count); i++) {
-        AVCodecContext *avctx_enc;
+        AVCodecContext *avctx_enc, *avctx_dec;
         AVDictionary *opts = NULL;
         int ret;
 
         if (!(uspp->avctx_enc[i] = avcodec_alloc_context3(NULL)))
             return AVERROR(ENOMEM);
+        if (!(uspp->avctx_dec[i] = avcodec_alloc_context3(NULL)))
+            return AVERROR(ENOMEM);
 
         avctx_enc = uspp->avctx_enc[i];
+        avctx_dec = uspp->avctx_dec[i];
+        avctx_dec->width =
         avctx_enc->width = width + BLOCK;
+        avctx_dec->height =
         avctx_enc->height = height + BLOCK;
         avctx_enc->time_base = (AVRational){1,25};  // meaningless
         avctx_enc->gop_size = INT_MAX;
@@ -358,16 +382,23 @@ static int config_input(AVFilterLink *inlink)
         avctx_enc->flags = AV_CODEC_FLAG_QSCALE | AV_CODEC_FLAG_LOW_DELAY;
         avctx_enc->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
         avctx_enc->global_quality = 123;
-        av_dict_set(&opts, "no_bitstream", "1", 0);
         ret = avcodec_open2(avctx_enc, enc, &opts);
         av_dict_free(&opts);
         if (ret < 0)
             return ret;
         av_assert0(avctx_enc->codec);
+
+
+        ret = avcodec_open2(avctx_dec, dec, NULL);
+        if (ret < 0)
+            return ret;
+
     }
 
     uspp->outbuf_size = (width + BLOCK) * (height + BLOCK) * 10;
     if (!(uspp->frame = av_frame_alloc()))
+        return AVERROR(ENOMEM);
+    if (!(uspp->frame_dec = av_frame_alloc()))
         return AVERROR(ENOMEM);
     if (!(uspp->pkt = av_packet_alloc()))
         return AVERROR(ENOMEM);
@@ -460,8 +491,10 @@ static av_cold void uninit(AVFilterContext *ctx)
         av_freep(&uspp->src[i]);
     }
 
-    for (i = 0; i < (1 << uspp->log2_count); i++)
+    for (i = 0; i < (1 << uspp->log2_count); i++) {
         avcodec_free_context(&uspp->avctx_enc[i]);
+        avcodec_free_context(&uspp->avctx_dec[i]);
+    }
 
     av_freep(&uspp->non_b_qp_table);
     av_freep(&uspp->outbuf);
