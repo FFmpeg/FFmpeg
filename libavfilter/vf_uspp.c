@@ -46,6 +46,7 @@ typedef struct USPPContext {
     int log2_count;
     int hsub, vsub;
     int qp;
+    char *codec_name;
     enum AVVideoEncParamsType qscale_type;
     int temp_stride[3];
     uint8_t *src[3];
@@ -68,6 +69,7 @@ static const AVOption uspp_options[] = {
     { "quality",       "set quality",                          OFFSET(log2_count),    AV_OPT_TYPE_INT, {.i64 = 3}, 0, MAX_LEVEL, FLAGS },
     { "qp",            "force a constant quantizer parameter", OFFSET(qp),            AV_OPT_TYPE_INT, {.i64 = 0}, 0, 63,        FLAGS },
     { "use_bframe_qp", "use B-frames' QP",                     OFFSET(use_bframe_qp), AV_OPT_TYPE_BOOL,{.i64 = 0}, 0, 1,         FLAGS },
+    { "codec",         "Codec name",                           OFFSET(codec_name),    AV_OPT_TYPE_STRING, {.str = "snow"}, 0, 0, FLAGS },
     { NULL }
 };
 
@@ -327,15 +329,14 @@ static int config_input(AVFilterLink *inlink)
     const int width  = inlink->w;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     int i;
-
-    const AVCodec *enc = avcodec_find_encoder(AV_CODEC_ID_SNOW);
-    const AVCodec *dec = avcodec_find_decoder(AV_CODEC_ID_SNOW);
+    const AVCodec *enc = avcodec_find_encoder_by_name(uspp->codec_name);
+    const AVCodec *dec = avcodec_find_decoder_by_name(uspp->codec_name);
     if (!enc) {
-        av_log(ctx, AV_LOG_ERROR, "SNOW encoder not found.\n");
+        av_log(ctx, AV_LOG_ERROR, "encoder %s not found.\n", uspp->codec_name);
         return AVERROR(EINVAL);
     }
     if (!dec) {
-        av_log(ctx, AV_LOG_ERROR, "SNOW decoder not found.\n");
+        av_log(ctx, AV_LOG_ERROR, "decoder %s not found.\n", uspp->codec_name);
         return AVERROR(EINVAL);
     }
 

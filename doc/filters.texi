@@ -23364,6 +23364,9 @@ that value the speed drops by a factor of approximately 2.  Default value is
 @item qp
 Force a constant quantization parameter. If not set, the filter will use the QP
 from the video stream (if available).
+
+@item codec
+Use specified codec instead of snow.
 @end table
 
 @section v360
