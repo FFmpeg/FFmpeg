@@ -802,7 +802,12 @@ void hw_device_free_all(void);
 
 int hw_device_setup_for_decode(InputStream *ist);
 int hw_device_setup_for_encode(OutputStream *ost);
-int hw_device_setup_for_filter(FilterGraph *fg);
+/**
+ * Get a hardware device to be used with this filtergraph.
+ * The returned reference is owned by the callee, the caller
+ * must ref it explicitly for long-term use.
+ */
+AVBufferRef *hw_device_for_filter(void);
 
 int hwaccel_decode_init(AVCodecContext *avctx);
 
