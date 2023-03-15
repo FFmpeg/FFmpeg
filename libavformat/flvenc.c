@@ -1023,13 +1023,15 @@ fail:
 static int flv_check_bitstream(AVFormatContext *s, AVStream *st,
                                const AVPacket *pkt)
 {
-    int ret = 1;
-
     if (st->codecpar->codec_id == AV_CODEC_ID_AAC) {
         if (pkt->size > 2 && (AV_RB16(pkt->data) & 0xfff0) == 0xfff0)
-            ret = ff_stream_add_bitstream_filter(st, "aac_adtstoasc", NULL);
+            return ff_stream_add_bitstream_filter(st, "aac_adtstoasc", NULL);
     }
-    return ret;
+    if (!st->codecpar->extradata_size &&
+            (st->codecpar->codec_id == AV_CODEC_ID_H264 ||
+             st->codecpar->codec_id == AV_CODEC_ID_MPEG4))
+        return ff_stream_add_bitstream_filter(st, "extract_extradata", NULL);
+    return 1;
 }
 
 static void flv_deinit(AVFormatContext *s)
