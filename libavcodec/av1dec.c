@@ -911,6 +911,7 @@ static int export_itut_t35(AVCodecContext *avctx, AVFrame *frame,
         default: // ignore unsupported identifiers
             break;
         }
+        break;
     }
     case 0x3C: { // smpte_provider_code
         AVDynamicHDRPlus *hdrplus;
