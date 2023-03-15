@@ -44,6 +44,7 @@
 typedef struct USPPContext {
     const AVClass *av_class;
     int log2_count;
+    int count;
     int hsub, vsub;
     int qp;
     char *codec_name;
@@ -55,12 +56,13 @@ typedef struct USPPContext {
     uint8_t *outbuf;
     AVCodecContext *avctx_enc[BLOCK*BLOCK];
     AVCodecContext *avctx_dec[BLOCK*BLOCK];
-    AVPacket *pkt;
-    AVFrame *frame;
-    AVFrame *frame_dec;
+    AVPacket *pkt            [BLOCK*BLOCK];
+    AVFrame *frame           [BLOCK*BLOCK];
+    AVFrame *frame_dec       [BLOCK*BLOCK];
     int8_t *non_b_qp_table;
     int non_b_qp_stride;
     int use_bframe_qp;
+    int quality;
 } USPPContext;
 
 #define OFFSET(x) offsetof(USPPContext, x)
@@ -188,13 +190,87 @@ static void store_slice_c(uint8_t *dst, const uint16_t *src,
     }
 }
 
-static void filter(USPPContext *p, uint8_t *dst[3], uint8_t *src[3],
+static int filter_1phase(AVFilterContext *ctx, void *arg, int i, int nb_jobs)
+{
+    USPPContext *p = ctx->priv;
+    int ret, x, y;
+    int width  = ctx->inputs[0]->w;
+    int height = ctx->inputs[0]->h;
+
+    const int x1 = offset[i+nb_jobs-1][0];
+    const int y1 = offset[i+nb_jobs-1][1];
+    const int x1c = x1 >> p->hsub;
+    const int y1c = y1 >> p->vsub;
+    const int BLOCKc = BLOCK >> p->hsub;
+    int offset;
+    AVPacket *pkt = p->pkt[i];
+
+    av_packet_unref(pkt);
+    pkt->data = p->outbuf;
+    pkt->size = p->outbuf_size;
+
+    p->frame[i]->linesize[0] = p->temp_stride[0];
+    p->frame[i]->linesize[1] = p->temp_stride[1];
+    p->frame[i]->linesize[2] = p->temp_stride[2];
+    p->frame[i]->height = height + BLOCK;
+    p->frame[i]->width  = width + BLOCK;
+    p->frame[i]->data[0] = p->src[0] + x1   + y1   * p->frame[i]->linesize[0];
+    p->frame[i]->data[1] = p->src[1] + x1c  + y1c  * p->frame[i]->linesize[1];
+    p->frame[i]->data[2] = p->src[2] + x1c  + y1c  * p->frame[i]->linesize[2];
+    p->frame[i]->format  = p->avctx_enc[i]->pix_fmt;
+    p->frame[i]->quality = p->quality;
+
+    ret = avcodec_send_frame(p->avctx_enc[i], p->frame[i]);
+    if (ret < 0) {
+        av_log(p->avctx_enc[i], AV_LOG_ERROR, "Error sending a frame for encoding\n");
+        return ret;
+    }
+    ret = avcodec_receive_packet(p->avctx_enc[i], pkt);
+    if (ret < 0) {
+        av_log(p->avctx_enc[i], AV_LOG_ERROR, "Error receiving a packet from encoding\n");
+        return ret;
+    }
+
+    ret = avcodec_send_packet(p->avctx_dec[i], pkt);
+    av_packet_unref(pkt);
+    if (ret < 0) {
+        av_log(p->avctx_dec[i], AV_LOG_ERROR, "Error sending a packet for decoding\n");
+        return ret;
+    }
+    ret = avcodec_receive_frame(p->avctx_dec[i], p->frame_dec[i]);
+    if (ret < 0) {
+        av_log(p->avctx_dec[i], AV_LOG_ERROR, "Error receiving a frame from decoding\n");
+        return ret;
+    }
+
+    offset = (BLOCK-x1) + (BLOCK-y1) * p->frame_dec[i]->linesize[0];
+
+    for (y = 0; y < height; y++)
+        for (x = 0; x < width; x++)
+            p->temp[0][x + y * p->temp_stride[0]] += p->frame_dec[i]->data[0][x + y * p->frame_dec[i]->linesize[0] + offset];
+
+
+    if (!p->frame_dec[i]->data[2] || !p->temp[2])
+        return 0;
+
+    offset = (BLOCKc-x1c) + (BLOCKc-y1c) * p->frame_dec[i]->linesize[1];
+
+    for (y = 0; y < AV_CEIL_RSHIFT(height, p->vsub); y++) {
+        for (x = 0; x < AV_CEIL_RSHIFT(width, p->hsub); x++) {
+            p->temp[1][x + y * p->temp_stride[1]] += p->frame_dec[i]->data[1][x + y * p->frame_dec[i]->linesize[1] + offset];
+            p->temp[2][x + y * p->temp_stride[2]] += p->frame_dec[i]->data[2][x + y * p->frame_dec[i]->linesize[2] + offset];
+        }
+    }
+
+    return 0;
+}
+
+static void filter(AVFilterContext *ctx, uint8_t *dst[3], uint8_t *src[3],
                    int dst_stride[3], int src_stride[3], int width,
                    int height, uint8_t *qp_store, int qp_stride)
 {
+    USPPContext *p = ctx->priv;
     int x, y, i, j;
-    const int count = 1<<p->log2_count;
-    int ret;
 
     for (i = 0; i < 3; i++) {
         int is_chroma = !!i;
@@ -219,12 +295,11 @@ static void filter(USPPContext *p, uint8_t *dst[3], uint8_t *src[3],
             memcpy(p->src[i] + (h+block  +y) * stride, p->src[i] + (h-y+block-1) * stride, stride);
         }
 
-        p->frame->linesize[i] = stride;
         memset(p->temp[i], 0, (h + 2 * block) * stride * sizeof(int16_t));
     }
 
     if (p->qp)
-        p->frame->quality = p->qp * FF_QP2LAMBDA;
+        p->quality = p->qp * FF_QP2LAMBDA;
     else {
         int qpsum=0;
         int qpcount = (height>>4) * (height>>4);
@@ -233,71 +308,11 @@ static void filter(USPPContext *p, uint8_t *dst[3], uint8_t *src[3],
             for (x = 0; x < (width>>4); x++)
                 qpsum += qp_store[x + y * qp_stride];
         }
-        p->frame->quality = ff_norm_qscale((qpsum + qpcount/2) / qpcount, p->qscale_type) * FF_QP2LAMBDA;
+        p->quality = ff_norm_qscale((qpsum + qpcount/2) / qpcount, p->qscale_type) * FF_QP2LAMBDA;
     }
 //    init per MB qscale stuff FIXME
-    p->frame->height = height + BLOCK;
-    p->frame->width  = width + BLOCK;
 
-    for (i = 0; i < count; i++) {
-        const int x1 = offset[i+count-1][0];
-        const int y1 = offset[i+count-1][1];
-        const int x1c = x1 >> p->hsub;
-        const int y1c = y1 >> p->vsub;
-        const int BLOCKc = BLOCK >> p->hsub;
-        int offset;
-        AVPacket *pkt = p->pkt;
-
-        av_packet_unref(pkt);
-        pkt->data = p->outbuf;
-        pkt->size = p->outbuf_size;
-
-        p->frame->data[0] = p->src[0] + x1   + y1   * p->frame->linesize[0];
-        p->frame->data[1] = p->src[1] + x1c  + y1c  * p->frame->linesize[1];
-        p->frame->data[2] = p->src[2] + x1c  + y1c  * p->frame->linesize[2];
-        p->frame->format  = p->avctx_enc[i]->pix_fmt;
-
-        ret = avcodec_send_frame(p->avctx_enc[i], p->frame);
-        if (ret < 0) {
-            av_log(p->avctx_enc[i], AV_LOG_ERROR, "Error sending a frame for encoding\n");
-            continue;
-        }
-        ret = avcodec_receive_packet(p->avctx_enc[i], pkt);
-        if (ret < 0) {
-            av_log(p->avctx_enc[i], AV_LOG_ERROR, "Error receiving a packet from encoding\n");
-            continue;
-        }
-
-        ret = avcodec_send_packet(p->avctx_dec[i], pkt);
-        av_packet_unref(pkt);
-        if (ret < 0) {
-            av_log(p->avctx_dec[i], AV_LOG_ERROR, "Error sending a packet for decoding\n");
-            continue;
-        }
-        ret = avcodec_receive_frame(p->avctx_dec[i], p->frame_dec);
-        if (ret < 0) {
-            av_log(p->avctx_dec[i], AV_LOG_ERROR, "Error receiving a frame from decoding\n");
-            continue;
-        }
-
-        offset = (BLOCK-x1) + (BLOCK-y1) * p->frame_dec->linesize[0];
-
-        for (y = 0; y < height; y++)
-            for (x = 0; x < width; x++)
-                p->temp[0][x + y * p->temp_stride[0]] += p->frame_dec->data[0][x + y * p->frame_dec->linesize[0] + offset];
-
-        if (!src[2] || !dst[2])
-            continue;
-
-        offset = (BLOCKc-x1c) + (BLOCKc-y1c) * p->frame_dec->linesize[1];
-
-        for (y = 0; y < AV_CEIL_RSHIFT(height, p->vsub); y++) {
-            for (x = 0; x < AV_CEIL_RSHIFT(width, p->hsub); x++) {
-                p->temp[1][x + y * p->temp_stride[1]] += p->frame_dec->data[1][x + y * p->frame_dec->linesize[1] + offset];
-                p->temp[2][x + y * p->temp_stride[2]] += p->frame_dec->data[2][x + y * p->frame_dec->linesize[2] + offset];
-            }
-        }
-    }
+    ff_filter_execute(ctx, filter_1phase, NULL, NULL, p->count);
 
     for (j = 0; j < 3; j++) {
         int is_chroma = !!j;
@@ -342,6 +357,7 @@ static int config_input(AVFilterLink *inlink)
 
     uspp->hsub = desc->log2_chroma_w;
     uspp->vsub = desc->log2_chroma_h;
+    uspp->count = 1<<uspp->log2_count;
 
     for (i = 0; i < 3; i++) {
         int is_chroma = !!i;
@@ -360,7 +376,7 @@ static int config_input(AVFilterLink *inlink)
             return AVERROR(ENOMEM);
     }
 
-    for (i = 0; i < (1<<uspp->log2_count); i++) {
+    for (i = 0; i < uspp->count; i++) {
         AVCodecContext *avctx_enc, *avctx_dec;
         AVDictionary *opts = NULL;
         int ret;
@@ -383,6 +399,8 @@ static int config_input(AVFilterLink *inlink)
         avctx_enc->flags = AV_CODEC_FLAG_QSCALE | AV_CODEC_FLAG_LOW_DELAY;
         avctx_enc->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
         avctx_enc->global_quality = 123;
+        avctx_dec->thread_count =
+        avctx_enc->thread_count = 1; // We do threading in the filter with muiltiple codecs
         ret = avcodec_open2(avctx_enc, enc, &opts);
         av_dict_free(&opts);
         if (ret < 0)
@@ -394,15 +412,15 @@ static int config_input(AVFilterLink *inlink)
         if (ret < 0)
             return ret;
 
+        if (!(uspp->frame[i] = av_frame_alloc()))
+            return AVERROR(ENOMEM);
+        if (!(uspp->frame_dec[i] = av_frame_alloc()))
+            return AVERROR(ENOMEM);
+        if (!(uspp->pkt[i] = av_packet_alloc()))
+            return AVERROR(ENOMEM);
     }
 
     uspp->outbuf_size = (width + BLOCK) * (height + BLOCK) * 10;
-    if (!(uspp->frame = av_frame_alloc()))
-        return AVERROR(ENOMEM);
-    if (!(uspp->frame_dec = av_frame_alloc()))
-        return AVERROR(ENOMEM);
-    if (!(uspp->pkt = av_packet_alloc()))
-        return AVERROR(ENOMEM);
     if (!(uspp->outbuf = av_malloc(uspp->outbuf_size)))
         return AVERROR(ENOMEM);
 
@@ -464,7 +482,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 out->height = in->height;
             }
 
-            filter(uspp, out->data, in->data, out->linesize, in->linesize,
+            filter(ctx, out->data, in->data, out->linesize, in->linesize,
                    inlink->w, inlink->h, qp_table, qp_stride);
         }
     }
@@ -492,15 +510,16 @@ static av_cold void uninit(AVFilterContext *ctx)
         av_freep(&uspp->src[i]);
     }
 
-    for (i = 0; i < (1 << uspp->log2_count); i++) {
+    for (i = 0; i < uspp->count; i++) {
         avcodec_free_context(&uspp->avctx_enc[i]);
         avcodec_free_context(&uspp->avctx_dec[i]);
+        av_frame_free(&uspp->frame[i]);
+        av_frame_free(&uspp->frame_dec[i]);
+        av_packet_free(&uspp->pkt[i]);
     }
 
     av_freep(&uspp->non_b_qp_table);
     av_freep(&uspp->outbuf);
-    av_packet_free(&uspp->pkt);
-    av_frame_free(&uspp->frame);
 }
 
 static const AVFilterPad uspp_inputs[] = {
@@ -528,5 +547,5 @@ const AVFilter ff_vf_uspp = {
     FILTER_OUTPUTS(uspp_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
     .priv_class      = &uspp_class,
-    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
+    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
 };
