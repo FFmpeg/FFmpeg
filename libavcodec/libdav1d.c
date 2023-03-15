@@ -539,6 +539,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             default: // ignore unsupported identifiers
                 break;
             }
+            break;
         }
         case 0x3C: { // smpte_provider_code
             AVDynamicHDRPlus *hdrplus;
