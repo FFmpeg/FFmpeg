@@ -500,5 +500,6 @@ const AVFilter ff_vf_blend_vulkan = {
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_VULKAN),
     .priv_class      = &blend_vulkan_class,
     .flags_internal  = FF_FILTER_FLAG_HWFRAME_AWARE,
+    .flags          = AVFILTER_FLAG_HWDEVICE,
     .process_command = &process_command,
 };

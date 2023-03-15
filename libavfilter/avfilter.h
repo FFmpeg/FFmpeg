@@ -131,6 +131,11 @@ enum AVMediaType avfilter_pad_get_type(const AVFilterPad *pads, int pad_idx);
  *   received by the filter on one of its inputs.
  */
 #define AVFILTER_FLAG_METADATA_ONLY         (1 << 3)
+
+/**
+ * The filter can create hardware frames using AVFilterContext.hw_device_ctx.
+ */
+#define AVFILTER_FLAG_HWDEVICE              (1 << 4)
 /**
  * Some filters support a generic "enable" expression option that can be used
  * to enable or disable a filter in the timeline. Filters supporting this
@@ -444,6 +449,10 @@ struct AVFilterContext {
      * in particular, a filter which consumes or processes hardware frames will
      * instead use the hw_frames_ctx field in AVFilterLink to carry the
      * hardware context information.
+     *
+     * May be set by the caller on filters flagged with AVFILTER_FLAG_HWDEVICE
+     * before initializing the filter with avfilter_init_str() or
+     * avfilter_init_dict().
      */
     AVBufferRef *hw_device_ctx;
 

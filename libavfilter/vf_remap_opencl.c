@@ -351,4 +351,5 @@ const AVFilter ff_vf_remap_opencl = {
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_OPENCL),
     .priv_class    = &remap_opencl_class,
     .flags_internal  = FF_FILTER_FLAG_HWFRAME_AWARE,
+    .flags          = AVFILTER_FLAG_HWDEVICE,
 };

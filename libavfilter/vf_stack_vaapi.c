@@ -234,20 +234,20 @@ static int vaapi_stack_query_formats(AVFilterContext *avctx)
 #if CONFIG_HSTACK_VAAPI_FILTER
 
 DEFINE_HSTACK_OPTIONS(vaapi);
-DEFINE_STACK_FILTER(hstack, vaapi, "VA-API");
+DEFINE_STACK_FILTER(hstack, vaapi, "VA-API", 0);
 
 #endif
 
 #if CONFIG_VSTACK_VAAPI_FILTER
 
 DEFINE_VSTACK_OPTIONS(vaapi);
-DEFINE_STACK_FILTER(vstack, vaapi, "VA-API");
+DEFINE_STACK_FILTER(vstack, vaapi, "VA-API", 0);
 
 #endif
 
 #if CONFIG_XSTACK_VAAPI_FILTER
 
 DEFINE_XSTACK_OPTIONS(vaapi);
-DEFINE_STACK_FILTER(xstack, vaapi, "VA-API");
+DEFINE_STACK_FILTER(xstack, vaapi, "VA-API", 0);
 
 #endif

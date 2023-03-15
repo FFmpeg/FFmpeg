@@ -390,6 +390,7 @@ const AVFilter ff_vf_boxblur_opencl = {
     FILTER_OUTPUTS(avgblur_opencl_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_OPENCL),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
+    .flags          = AVFILTER_FLAG_HWDEVICE,
 };
 
 #endif /* CONFIG_BOXBLUR_OPENCL_FILTER */

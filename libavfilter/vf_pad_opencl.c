@@ -391,5 +391,6 @@ const AVFilter ff_vf_pad_opencl = {
     FILTER_INPUTS(pad_opencl_inputs),
     FILTER_OUTPUTS(pad_opencl_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_OPENCL),
-    .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE
+    .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
+    .flags          = AVFILTER_FLAG_HWDEVICE,
 };

@@ -235,20 +235,20 @@ static int qsv_stack_query_formats(AVFilterContext *ctx)
 #if CONFIG_HSTACK_QSV_FILTER
 
 DEFINE_HSTACK_OPTIONS(qsv);
-DEFINE_STACK_FILTER(hstack, qsv, "Quick Sync Video");
+DEFINE_STACK_FILTER(hstack, qsv, "Quick Sync Video", AVFILTER_FLAG_HWDEVICE);
 
 #endif
 
 #if CONFIG_VSTACK_QSV_FILTER
 
 DEFINE_VSTACK_OPTIONS(qsv);
-DEFINE_STACK_FILTER(vstack, qsv, "Quick Sync Video");
+DEFINE_STACK_FILTER(vstack, qsv, "Quick Sync Video", AVFILTER_FLAG_HWDEVICE);
 
 #endif
 
 #if CONFIG_XSTACK_QSV_FILTER
 
 DEFINE_XSTACK_OPTIONS(qsv);
-DEFINE_STACK_FILTER(xstack, qsv, "Quick Sync Video");
+DEFINE_STACK_FILTER(xstack, qsv, "Quick Sync Video", AVFILTER_FLAG_HWDEVICE);
 
 #endif

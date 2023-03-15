@@ -362,7 +362,8 @@ const AVFilter ff_vf_program_opencl = {
     .description    = NULL_IF_CONFIG_SMALL("Filter video using an OpenCL program"),
     .priv_size      = sizeof(ProgramOpenCLContext),
     .priv_class     = &program_opencl_class,
-    .flags          = AVFILTER_FLAG_DYNAMIC_INPUTS,
+    .flags          = AVFILTER_FLAG_DYNAMIC_INPUTS |
+                      AVFILTER_FLAG_HWDEVICE,
     .preinit        = &program_opencl_framesync_preinit,
     .init           = &program_opencl_init,
     .uninit         = &program_opencl_uninit,
@@ -421,6 +422,7 @@ const AVFilter ff_vsrc_openclsrc = {
     FILTER_OUTPUTS(openclsrc_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_OPENCL),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
+    .flags          = AVFILTER_FLAG_HWDEVICE,
 };
 
 #endif

@@ -373,6 +373,7 @@ const AVFilter ff_vf_convolution_opencl = {
     FILTER_OUTPUTS(convolution_opencl_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_OPENCL),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
+    .flags          = AVFILTER_FLAG_HWDEVICE,
 };
 
 #endif /* CONFIG_CONVOLUTION_OPENCL_FILTER */
@@ -399,6 +400,7 @@ const AVFilter ff_vf_sobel_opencl = {
     FILTER_OUTPUTS(convolution_opencl_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_OPENCL),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
+    .flags          = AVFILTER_FLAG_HWDEVICE,
 };
 
 #endif /* CONFIG_SOBEL_OPENCL_FILTER */
@@ -425,6 +427,7 @@ const AVFilter ff_vf_prewitt_opencl = {
     FILTER_OUTPUTS(convolution_opencl_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_OPENCL),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
+    .flags          = AVFILTER_FLAG_HWDEVICE,
 };
 
 #endif /* CONFIG_PREWITT_OPENCL_FILTER */
@@ -451,6 +454,7 @@ const AVFilter ff_vf_roberts_opencl = {
     FILTER_OUTPUTS(convolution_opencl_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_OPENCL),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
+    .flags          = AVFILTER_FLAG_HWDEVICE,
 };
 
 #endif /* CONFIG_ROBERTS_OPENCL_FILTER */

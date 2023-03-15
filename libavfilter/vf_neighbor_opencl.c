@@ -312,6 +312,7 @@ const AVFilter ff_vf_dilation_opencl = {
     FILTER_OUTPUTS(neighbor_opencl_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_OPENCL),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
+    .flags          = AVFILTER_FLAG_HWDEVICE,
 };
 
 #endif /* CONFIG_DILATION_OPENCL_FILTER */
