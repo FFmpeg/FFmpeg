@@ -323,6 +323,10 @@ static av_cold int mediacodec_init(AVCodecContext *avctx)
         goto bailout;
 
     mediacodec_output_format(avctx);
+    if (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER)
+        av_log(avctx, AV_LOG_WARNING,
+                "Mediacodec encoder doesn't support AV_CODEC_FLAG_GLOBAL_HEADER. "
+                "Use extract_extradata bsf when necessary.\n");
 
     s->frame = av_frame_alloc();
     if (!s->frame)
