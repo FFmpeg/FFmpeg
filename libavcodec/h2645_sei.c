@@ -27,13 +27,13 @@
 
 #include "libavutil/ambient_viewing_environment.h"
 #include "libavutil/display.h"
+#include "libavutil/hdr_dynamic_metadata.h"
 #include "libavutil/film_grain_params.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/stereo3d.h"
 
 #include "atsc_a53.h"
 #include "avcodec.h"
-#include "dynamic_hdr10_plus.h"
 #include "dynamic_hdr_vivid.h"
 #include "get_bits.h"
 #include "golomb.h"
@@ -52,8 +52,8 @@ static int decode_registered_user_data_dynamic_hdr_plus(HEVCSEIDynamicHDRPlus *s
     if (!metadata)
         return AVERROR(ENOMEM);
 
-    err = ff_parse_itu_t_t35_to_dynamic_hdr10_plus(metadata, gb->buffer,
-                                                   bytestream2_get_bytes_left(gb));
+    err = av_dynamic_hdr_plus_from_t35(metadata, gb->buffer,
+                                       bytestream2_get_bytes_left(gb));
     if (err < 0) {
         av_free(metadata);
         return err;

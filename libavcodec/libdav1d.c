@@ -24,6 +24,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/cpu.h"
 #include "libavutil/film_grain_params.h"
+#include "libavutil/hdr_dynamic_metadata.h"
 #include "libavutil/mastering_display_metadata.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
@@ -33,7 +34,6 @@
 #include "bytestream.h"
 #include "codec_internal.h"
 #include "decode.h"
-#include "dynamic_hdr10_plus.h"
 #include "internal.h"
 
 #define FF_DAV1D_VERSION_AT_LEAST(x,y) \
@@ -556,8 +556,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 goto fail;
             }
 
-            res = ff_parse_itu_t_t35_to_dynamic_hdr10_plus(hdrplus, gb.buffer,
-                                                           bytestream2_get_bytes_left(&gb));
+            res = av_dynamic_hdr_plus_from_t35(hdrplus, gb.buffer,
+                                               bytestream2_get_bytes_left(&gb));
             if (res < 0)
                 goto fail;
             break;

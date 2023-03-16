@@ -20,6 +20,7 @@
 
 #include "config_components.h"
 
+#include "libavutil/hdr_dynamic_metadata.h"
 #include "libavutil/film_grain_params.h"
 #include "libavutil/mastering_display_metadata.h"
 #include "libavutil/pixdesc.h"
@@ -30,7 +31,6 @@
 #include "bytestream.h"
 #include "codec_internal.h"
 #include "decode.h"
-#include "dynamic_hdr10_plus.h"
 #include "hwconfig.h"
 #include "profiles.h"
 #include "thread.h"
@@ -926,8 +926,8 @@ static int export_itut_t35(AVCodecContext *avctx, AVFrame *frame,
         if (!hdrplus)
             return AVERROR(ENOMEM);
 
-        ret = ff_parse_itu_t_t35_to_dynamic_hdr10_plus(hdrplus, gb.buffer,
-                                                       bytestream2_get_bytes_left(&gb));
+        ret = av_dynamic_hdr_plus_from_t35(hdrplus, gb.buffer,
+                                           bytestream2_get_bytes_left(&gb));
         if (ret < 0)
             return ret;
         break;
