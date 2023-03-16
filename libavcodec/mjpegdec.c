@@ -571,10 +571,15 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         case 0x22221100:
         case 0x22112200:
         case 0x11222200:
-            if (s->bits <= 8) s->avctx->pix_fmt = s->cs_itu601 ? AV_PIX_FMT_YUV444P : AV_PIX_FMT_YUVJ444P;
-            else
+            if (s->bits > 8)
                 goto unk_pixfmt;
-            s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
+            if (s->adobe_transform == 0 || s->component_id[0] == 'R' &&
+                    s->component_id[1] == 'G' && s->component_id[2] == 'B') {
+                s->avctx->pix_fmt = AV_PIX_FMT_GBRP;
+            } else {
+                s->avctx->pix_fmt = s->cs_itu601 ? AV_PIX_FMT_YUV444P : AV_PIX_FMT_YUVJ444P;
+                s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
+            }
             break;
         case 0x11000000:
         case 0x13000000:
@@ -671,10 +676,6 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         }
         if ((AV_RB32(s->upscale_h) || AV_RB32(s->upscale_v)) && s->avctx->lowres) {
             avpriv_report_missing_feature(s->avctx, "Lowres for weird subsampling");
-            return AVERROR_PATCHWELCOME;
-        }
-        if ((AV_RB32(s->upscale_h) || AV_RB32(s->upscale_v)) && s->progressive && s->avctx->pix_fmt == AV_PIX_FMT_GBRP) {
-            avpriv_report_missing_feature(s->avctx, "progressive for weird subsampling");
             return AVERROR_PATCHWELCOME;
         }
         if (s->ls) {
@@ -1696,9 +1697,6 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s, const uint8_t *mb_bitmask,
         s->nb_blocks[i] = s->h_count[index] * s->v_count[index];
         s->h_scount[i]  = s->h_count[index];
         s->v_scount[i]  = s->v_count[index];
-
-        if((nb_components == 1 || nb_components == 3) && s->nb_components == 3 && s->avctx->pix_fmt == AV_PIX_FMT_GBR24P)
-            index = (index+2)%3;
 
         s->comp_index[i] = index;
 
@@ -2722,6 +2720,15 @@ the_end:
             }
         }
     }
+
+    if (s->avctx->pix_fmt == AV_PIX_FMT_GBRP) {
+        av_assert0(s->nb_components == 3);
+        FFSWAP(uint8_t *, frame->data[0], frame->data[2]);
+        FFSWAP(uint8_t *, frame->data[0], frame->data[1]);
+        FFSWAP(int, frame->linesize[0], frame->linesize[2]);
+        FFSWAP(int, frame->linesize[0], frame->linesize[1]);
+    }
+
     if (s->adobe_transform == 0 && s->avctx->pix_fmt == AV_PIX_FMT_GBRAP) {
         int w = s->picture_ptr->width;
         int h = s->picture_ptr->height;
