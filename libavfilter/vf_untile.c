@@ -134,8 +134,8 @@ static int activate(AVFilterContext *ctx)
         if (!(s->desc->flags & AV_PIX_FMT_FLAG_PAL)) {
             for (i = 1; i < 3; i ++) {
                 if (out->data[i]) {
-                    out->data[i] += (y >> s->desc->log2_chroma_w) * out->linesize[i];
-                    out->data[i] += (x >> s->desc->log2_chroma_h) * s->max_step[i];
+                    out->data[i] += (y >> s->desc->log2_chroma_h) * out->linesize[i];
+                    out->data[i] += (x >> s->desc->log2_chroma_w) * s->max_step[i];
                 }
             }
         }
