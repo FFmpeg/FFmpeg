@@ -314,6 +314,9 @@ FATE_FILTER_VSYNTH-$(call FILTERDEMDEC, TRIM, IMAGE2, PGM) += $(FATE_TRIM)
 FATE_FILTER-$(call FILTERFRAMECRC, TESTSRC2 UNTILE) += fate-filter-untile
 fate-filter-untile: CMD = framecrc -lavfi testsrc2=d=1:r=2,untile=2x2
 
+FATE_FILTER-$(call FILTERFRAMECRC, TESTSRC2 UNTILE) += fate-filter-untile-yuv422p
+fate-filter-untile-yuv422p: CMD = framecrc -lavfi testsrc2=d=1:r=2,format=yuv422p,untile=2x2
+
 FATE_FILTER_VSYNTH_PGMYUV-$(CONFIG_UNSHARP_FILTER) += fate-filter-unsharp
 fate-filter-unsharp: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf unsharp=11:11:-1.5:11:11:-1.5
 
