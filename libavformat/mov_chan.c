@@ -555,7 +555,7 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
 /* ISO/IEC 23001-8, 8.2 */
 static const AVChannelLayout iso_channel_configuration[] = {
     // 0: any setup
-    {},
+    {0},
 
     // 1: centre front
     AV_CHANNEL_LAYOUT_MONO,

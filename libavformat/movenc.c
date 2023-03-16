@@ -1194,7 +1194,7 @@ static int mov_write_chnl_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *tra
         ret = ff_mov_get_channel_positions_from_layout(layout,
                 speaker_pos, layout->nb_channels);
         if (ret) {
-            char buf[128] = {};
+            char buf[128] = {0};
 
             av_freep(&speaker_pos);
             av_channel_layout_describe(layout, buf, sizeof(buf));
