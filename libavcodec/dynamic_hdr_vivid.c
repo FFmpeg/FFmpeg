@@ -98,26 +98,38 @@ int ff_parse_itu_t_t35_to_dynamic_hdr_vivid(AVDynamicHDRVivid *s, const uint8_t 
                             return AVERROR_INVALIDDATA;
                         tm_params->three_Spline_enable_flag = get_bits(gb, 1);
                         if (tm_params->three_Spline_enable_flag) {
+                            AVHDRVivid3SplineParams *three_spline;
+
                             if (get_bits_left(gb) < 1 + tm_params->three_Spline_num * (2 + 12 + 28 + 1))
                                 return AVERROR_INVALIDDATA;
                             tm_params->three_Spline_num = get_bits(gb, 1) + 1;
+                            if (tm_params->three_Spline_num > FF_ARRAY_ELEMS(tm_params->three_spline))
+                                return AVERROR_INVALIDDATA;
                             for (int j = 0; j < tm_params->three_Spline_num; j++) {
-                                tm_params->three_Spline_TH_mode = get_bits(gb, 2);
-                                if (tm_params->three_Spline_TH_mode == 0 || tm_params->three_Spline_TH_mode == 2) {
+                                three_spline = &tm_params->three_spline[j];
+                                three_spline->th_mode = get_bits(gb, 2);
+                                if (three_spline->th_mode == 0 || three_spline->th_mode == 2) {
                                     if (get_bits_left(gb) < 8)
                                         return AVERROR_INVALIDDATA;
-                                    tm_params->three_Spline_TH_enable_MB = (AVRational){get_bits(gb, 8),  255};
+                                    three_spline->th_enable_mb = (AVRational){get_bits(gb, 8),  255};
                                 }
-                                tm_params->three_Spline_TH_enable = (AVRational){get_bits(gb, 12),  4095};
-                                tm_params->three_Spline_TH_Delta1 = (AVRational){get_bits(gb, 10),  1023};
-                                tm_params->three_Spline_TH_Delta2 = (AVRational){get_bits(gb, 10),  1023};
-                                tm_params->three_Spline_enable_Strength = (AVRational){get_bits(gb,  8),  255};
+                                three_spline->th_enable = (AVRational){get_bits(gb, 12),  4095};
+                                three_spline->th_delta1 = (AVRational){get_bits(gb, 10),  1023};
+                                three_spline->th_delta2 = (AVRational){get_bits(gb, 10),  1023};
+                                three_spline->enable_strength = (AVRational){get_bits(gb,  8),  255};
                             }
-                        } else {
-                            tm_params->three_Spline_num     = 1;
-                            tm_params->three_Spline_TH_mode = 0;
+#if FF_API_HDR_VIVID_THREE_SPLINE
+                            three_spline = &tm_params->three_spline[0];
+FF_DISABLE_DEPRECATION_WARNINGS
+                            tm_params->three_Spline_TH_mode = three_spline->th_mode;
+                            tm_params->three_Spline_TH_enable_MB = three_spline->th_enable_mb;
+                            tm_params->three_Spline_TH_enable = three_spline->th_enable;
+                            tm_params->three_Spline_TH_Delta1 = three_spline->th_delta1;
+                            tm_params->three_Spline_TH_Delta2 = three_spline->th_delta2;
+                            tm_params->three_Spline_enable_Strength = three_spline->enable_strength;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
                         }
-
                     }
                 }
             }
