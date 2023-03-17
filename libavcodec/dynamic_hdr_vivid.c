@@ -91,7 +91,7 @@ int ff_parse_itu_t_t35_to_dynamic_hdr_vivid(AVDynamicHDRVivid *s, const uint8_t 
                         tm_params->base_param_k3 = get_bits(gb, 4);
                         tm_params->base_param_Delta_enable_mode = get_bits(gb, 3);
                         tm_params->base_param_Delta = (AVRational){get_bits(gb, 7), base_param_Delta_den};
-
+                    }
                         if (get_bits_left(gb) < 1)
                             return AVERROR_INVALIDDATA;
                         tm_params->three_Spline_enable_flag = get_bits(gb, 1);
@@ -128,7 +128,6 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
                         }
-                    }
                 }
             }
 
