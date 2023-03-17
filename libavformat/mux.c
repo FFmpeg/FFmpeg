@@ -304,7 +304,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 par->codec_tag = av_codec_get_tag(of->p.codec_tag, par->codec_id);
         }
 
-        if (par->codec_type != AVMEDIA_TYPE_ATTACHMENT)
+        if (par->codec_type != AVMEDIA_TYPE_ATTACHMENT &&
+            par->codec_id != AV_CODEC_ID_SMPTE_2038)
             si->nb_interleaved_streams++;
     }
     si->interleave_packet = of->interleave_packet;
@@ -942,7 +943,8 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *pkt,
             ++stream_count;
         } else if (par->codec_type != AVMEDIA_TYPE_ATTACHMENT &&
                    par->codec_id != AV_CODEC_ID_VP8 &&
-                   par->codec_id != AV_CODEC_ID_VP9) {
+                   par->codec_id != AV_CODEC_ID_VP9 &&
+                   par->codec_id != AV_CODEC_ID_SMPTE_2038) {
             ++noninterleaved_count;
         }
     }
