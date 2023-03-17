@@ -445,6 +445,9 @@ static int graph_parse(AVFilterGraph *graph, const char *desc,
     AVFilterGraphSegment *seg;
     int ret;
 
+    *inputs  = NULL;
+    *outputs = NULL;
+
     ret = avfilter_graph_segment_parse(graph, desc, 0, &seg);
     if (ret < 0)
         return ret;
