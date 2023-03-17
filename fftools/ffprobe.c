@@ -2246,14 +2246,16 @@ static void print_dynamic_hdr_vivid(WriterContext *w, const AVDynamicHDRVivid *m
                 print_int("3Spline_enable_flag", tm_params->three_Spline_enable_flag);
                 if (tm_params->three_Spline_enable_flag) {
                     print_int("3Spline_num", tm_params->three_Spline_num);
-                    print_int("3Spline_TH_mode", tm_params->three_Spline_TH_mode);
 
                     for (int j = 0; j < tm_params->three_Spline_num; j++) {
-                        print_q("3Spline_TH_enable_MB", tm_params->three_Spline_TH_enable_MB, '/');
-                        print_q("3Spline_TH_enable", tm_params->three_Spline_TH_enable, '/');
-                        print_q("3Spline_TH_Delta1", tm_params->three_Spline_TH_Delta1, '/');
-                        print_q("3Spline_TH_Delta2", tm_params->three_Spline_TH_Delta2, '/');
-                        print_q("3Spline_enable_Strength", tm_params->three_Spline_enable_Strength, '/');
+                        const AVHDRVivid3SplineParams *three_spline = &tm_params->three_spline[j];
+                        print_int("3Spline_TH_mode", three_spline->th_mode);
+                        if (three_spline->th_mode == 0 || three_spline->th_mode == 2)
+                            print_q("3Spline_TH_enable_MB", three_spline->th_enable_mb, '/');
+                        print_q("3Spline_TH_enable", three_spline->th_enable, '/');
+                        print_q("3Spline_TH_Delta1", three_spline->th_delta1, '/');
+                        print_q("3Spline_TH_Delta2", three_spline->th_delta2, '/');
+                        print_q("3Spline_enable_Strength", three_spline->enable_strength, '/');
                     }
                 }
             }
