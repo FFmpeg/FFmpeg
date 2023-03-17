@@ -354,19 +354,20 @@ static void dump_dynamic_hdr_vivid(AVFilterContext *ctx, AVFrameSideData *sd)
                 av_log(ctx, AV_LOG_INFO, "3Spline_enable_flag[%d][%d]: %d, ",
                        w, i, tm_params->three_Spline_enable_flag);
                 if (tm_params->three_Spline_enable_flag) {
-                    av_log(ctx, AV_LOG_INFO, "3Spline_TH_mode[%d][%d]:  %d, ", w, i, tm_params->three_Spline_TH_mode);
-
                     for (int j = 0; j < tm_params->three_Spline_num; j++) {
-                        av_log(ctx, AV_LOG_INFO, "3Spline_TH_enable_MB[%d][%d][%d]: %.4f, ",
-                                w, i, j, av_q2d(tm_params->three_Spline_TH_enable_MB));
+                        const AVHDRVivid3SplineParams *three_spline = &tm_params->three_spline[j];
+                        av_log(ctx, AV_LOG_INFO, "3Spline_TH_mode[%d][%d]:  %d, ", w, i, three_spline->th_mode);
+                        if (three_spline->th_mode == 0 || three_spline->th_mode == 2)
+                            av_log(ctx, AV_LOG_INFO, "3Spline_TH_enable_MB[%d][%d][%d]: %.4f, ",
+                                    w, i, j, av_q2d(three_spline->th_enable_mb));
                         av_log(ctx, AV_LOG_INFO, "3Spline_TH_enable[%d][%d][%d]: %.4f, ",
-                                w, i, j, av_q2d(tm_params->three_Spline_TH_enable));
+                                w, i, j, av_q2d(three_spline->th_enable));
                         av_log(ctx, AV_LOG_INFO, "3Spline_TH_Delta1[%d][%d][%d]: %.4f, ",
-                                w, i, j, av_q2d(tm_params->three_Spline_TH_Delta1));
+                                w, i, j, av_q2d(three_spline->th_delta1));
                         av_log(ctx, AV_LOG_INFO, "3Spline_TH_Delta2[%d][%d][%d]: %.4f, ",
-                                w, i, j, av_q2d(tm_params->three_Spline_TH_Delta2));
+                                w, i, j, av_q2d(three_spline->th_delta2));
                         av_log(ctx, AV_LOG_INFO, "3Spline_enable_Strength[%d][%d][%d]: %.4f, ",
-                                w, i, j, av_q2d(tm_params->three_Spline_enable_Strength));
+                                w, i, j, av_q2d(three_spline->enable_strength));
                     }
                 }
             }
