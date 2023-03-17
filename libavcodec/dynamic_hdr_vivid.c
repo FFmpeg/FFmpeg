@@ -46,7 +46,8 @@ int ff_parse_itu_t_t35_to_dynamic_hdr_vivid(AVDynamicHDRVivid *s, const uint8_t 
         return AVERROR_INVALIDDATA;
 
     s->system_start_code = get_bits(gb, 8);
-    if (s->system_start_code == 0x01) {
+    // T/UWA 005.1-2022, table 11
+    if (s->system_start_code >= 0x01 && s->system_start_code <= 0x07) {
         s->num_windows = 1;
 
         if (get_bits_left(gb) < 12 * 4 * s->num_windows)
