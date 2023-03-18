@@ -63,14 +63,19 @@ static void free_side_data(AVFrameSideData **ptr_sd)
     av_freep(ptr_sd);
 }
 
-static void wipe_side_data(AVFrame *frame)
+static void wipe_side_data(AVFrameSideData ***sd, int *nb_side_data)
 {
-    for (int i = 0; i < frame->nb_side_data; i++) {
-        free_side_data(&frame->side_data[i]);
+    for (int i = 0; i < *nb_side_data; i++) {
+        free_side_data(&((*sd)[i]));
     }
-    frame->nb_side_data = 0;
+    *nb_side_data = 0;
 
-    av_freep(&frame->side_data);
+    av_freep(sd);
+}
+
+static void frame_side_data_wipe(AVFrame *frame)
+{
+    wipe_side_data(&frame->side_data, &frame->nb_side_data);
 }
 
 AVFrame *av_frame_alloc(void)
@@ -288,7 +293,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             sd_dst = av_frame_new_side_data(dst, sd_src->type,
                                             sd_src->size);
             if (!sd_dst) {
-                wipe_side_data(dst);
+                frame_side_data_wipe(dst);
                 return AVERROR(ENOMEM);
             }
             memcpy(sd_dst->data, sd_src->data, sd_src->size);
@@ -297,7 +302,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             sd_dst = av_frame_new_side_data_from_buf(dst, sd_src->type, ref);
             if (!sd_dst) {
                 av_buffer_unref(&ref);
-                wipe_side_data(dst);
+                frame_side_data_wipe(dst);
                 return AVERROR(ENOMEM);
             }
         }
@@ -437,7 +442,7 @@ int av_frame_replace(AVFrame *dst, const AVFrame *src)
     if (ret < 0)
         goto fail;
 
-    wipe_side_data(dst);
+    frame_side_data_wipe(dst);
     av_dict_free(&dst->metadata);
     ret = frame_copy_props(dst, src, 0);
     if (ret < 0)
@@ -536,7 +541,7 @@ void av_frame_unref(AVFrame *frame)
     if (!frame)
         return;
 
-    wipe_side_data(frame);
+    frame_side_data_wipe(frame);
 
     for (int i = 0; i < FF_ARRAY_ELEMS(frame->buf); i++)
         av_buffer_unref(&frame->buf[i]);
