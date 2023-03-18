@@ -52,7 +52,7 @@ static int colorkey_opencl_init(AVFilterContext *avctx)
     cl_int cle;
     int err;
 
-    err = ff_opencl_filter_load_program(avctx, &ff_opencl_source_colorkey, 1);
+    err = ff_opencl_filter_load_program(avctx, &ff_source_colorkey_cl, 1);
     if (err < 0)
         goto fail;
 

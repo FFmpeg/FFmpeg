@@ -19,19 +19,19 @@
 #ifndef AVFILTER_OPENCL_SOURCE_H
 #define AVFILTER_OPENCL_SOURCE_H
 
-extern const char *ff_opencl_source_avgblur;
-extern const char *ff_opencl_source_colorkey;
-extern const char *ff_opencl_source_colorspace_common;
-extern const char *ff_opencl_source_convolution;
-extern const char *ff_opencl_source_deshake;
-extern const char *ff_opencl_source_neighbor;
-extern const char *ff_opencl_source_nlmeans;
-extern const char *ff_opencl_source_overlay;
-extern const char *ff_opencl_source_pad;
-extern const char *ff_opencl_source_remap;
-extern const char *ff_opencl_source_tonemap;
-extern const char *ff_opencl_source_transpose;
-extern const char *ff_opencl_source_unsharp;
-extern const char *ff_opencl_source_xfade;
+extern const char *ff_source_avgblur_cl;
+extern const char *ff_source_colorkey_cl;
+extern const char *ff_source_colorspace_common_cl;
+extern const char *ff_source_convolution_cl;
+extern const char *ff_source_deshake_cl;
+extern const char *ff_source_neighbor_cl;
+extern const char *ff_source_nlmeans_cl;
+extern const char *ff_source_overlay_cl;
+extern const char *ff_source_pad_cl;
+extern const char *ff_source_remap_cl;
+extern const char *ff_source_tonemap_cl;
+extern const char *ff_source_transpose_cl;
+extern const char *ff_source_unsharp_cl;
+extern const char *ff_source_xfade_cl;
 
 #endif /* AVFILTER_OPENCL_SOURCE_H */

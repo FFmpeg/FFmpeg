@@ -98,7 +98,7 @@ static int nlmeans_opencl_init(AVFilterContext *avctx, int width, int height)
     if (!ctx->patch_size_uv)
         ctx->patch_size_uv = ctx->patch_size;
 
-    err = ff_opencl_filter_load_program(avctx, &ff_opencl_source_nlmeans, 1);
+    err = ff_opencl_filter_load_program(avctx, &ff_source_nlmeans_cl, 1);
     if (err < 0)
         goto fail;
 

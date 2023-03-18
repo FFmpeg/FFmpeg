@@ -651,10 +651,17 @@ TESTPROGS = drawutils filtfmts formats integral
 TOOLS-$(CONFIG_LIBZMQ) += zmqsend
 
 clean::
-	$(RM) $(CLEANSUFFIXES:%=libavfilter/dnn/%) $(CLEANSUFFIXES:%=libavfilter/opencl/%)
+	$(RM) $(CLEANSUFFIXES:%=libavfilter/dnn/%) $(CLEANSUFFIXES:%=libavfilter/opencl/%) \
+              $(CLEANSUFFIXES:%=libavfilter/vulkan/%)
 
 OPENCL = $(subst $(SRC_PATH)/,,$(wildcard $(SRC_PATH)/libavfilter/opencl/*.cl))
 .SECONDARY: $(OPENCL:.cl=.c)
 libavfilter/opencl/%.c: TAG = OPENCL
 libavfilter/opencl/%.c: $(SRC_PATH)/libavfilter/opencl/%.cl
-	$(M)$(SRC_PATH)/tools/cl2c $< $@
+	$(M)$(SRC_PATH)/tools/source2c $< $@
+
+VULKAN = $(subst $(SRC_PATH)/,,$(wildcard $(SRC_PATH)/libavfilter/vulkan/*.comp))
+.SECONDARY: $(VULKAN:.comp=.c)
+libavfilter/vulkan/%.c: TAG = OPENCL
+libavfilter/vulkan/%.c: $(SRC_PATH)/libavfilter/vulkan/%.comp
+	$(M)$(SRC_PATH)/tools/source2c $< $@

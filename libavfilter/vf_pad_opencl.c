@@ -93,7 +93,7 @@ static int pad_opencl_init(AVFilterContext *avctx, AVFrame *input_frame)
     ctx->hsub = desc->log2_chroma_w;
     ctx->vsub = desc->log2_chroma_h;
 
-    err = ff_opencl_filter_load_program(avctx, &ff_opencl_source_pad, 1);
+    err = ff_opencl_filter_load_program(avctx, &ff_source_pad_cl, 1);
     if (err < 0)
         goto fail;
 

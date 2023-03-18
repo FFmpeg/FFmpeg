@@ -73,7 +73,7 @@ static int remap_opencl_load(AVFilterContext *avctx,
 {
     RemapOpenCLContext *ctx = avctx->priv;
     cl_int cle;
-    const char *source = ff_opencl_source_remap;
+    const char *source = ff_source_remap_cl;
     const char *kernel = kernels[ctx->interp];
     const AVPixFmtDescriptor *main_desc;
     int err, main_planes;

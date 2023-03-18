@@ -1,7 +1,6 @@
 #!/bin/sh
-# Convert an OpenCL source file into a C source file containing the
-# OpenCL source as a C string.  Also adds a #line directive so that
-# compiler messages are useful.
+# Convert a source file into a C source file containing the
+# source code as a C string.
 
 # This file is part of FFmpeg.
 #
@@ -22,12 +21,11 @@
 input="$1"
 output="$2"
 
-name=$(basename "$input" | sed 's/.cl$//')
+name=$(basename "$input" | sed 's/\./_/')
 
 cat >$output <<EOF
 // Generated from $input
-const char *ff_opencl_source_$name =
-"#line 1 \"$input\"\n"
+const char *ff_source_$name =
 EOF
 
 # Convert \ to \\ and " to \", then add " to the start and end of the line.
