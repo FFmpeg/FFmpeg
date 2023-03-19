@@ -1,5 +1,5 @@
-27af80eecea4f15f415f22841bc699d5 *tests/data/fate/matroska-pgs-remux-durations.matroska
-49760 tests/data/fate/matroska-pgs-remux-durations.matroska
+2c78a4337f61f24175a8ffe06087e581 *tests/data/fate/matroska-pgs-remux-durations.matroska
+49771 tests/data/fate/matroska-pgs-remux-durations.matroska
 #tb 0: 1/1000
 #media_type 0: subtitle
 #codec_id 0: hdmv_pgs_subtitle

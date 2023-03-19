@@ -1,5 +1,5 @@
-ff83530bf89f9ab1df0d181bb848c475 *tests/data/fate/matroska-avoid-negative-ts.matroska
-973063 tests/data/fate/matroska-avoid-negative-ts.matroska
+6a1a524a5700de7b94bce5a283bbe8b9 *tests/data/fate/matroska-avoid-negative-ts.matroska
+973085 tests/data/fate/matroska-avoid-negative-ts.matroska
 #extradata 0:       22, 0x2885037c
 #tb 0: 1/1000
 #media_type 0: video
