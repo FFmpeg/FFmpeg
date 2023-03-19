@@ -747,6 +747,23 @@ AVFrameSideData *av_frame_new_side_data(AVFrame *frame,
     return ret;
 }
 
+AVFrameSideData *av_frame_side_data_new(AVFrameSideData ***sd, int *nb_sd,
+                                        enum AVFrameSideDataType type,
+                                        size_t size, unsigned int flags)
+{
+    AVBufferRef     *buf = av_buffer_alloc(size);
+    AVFrameSideData *ret = NULL;
+
+    if (flags & AV_FRAME_SIDE_DATA_FLAG_UNIQUE)
+        remove_side_data(sd, nb_sd, type);
+
+    ret = add_side_data_from_buf(sd, nb_sd, type, buf);
+    if (!ret)
+        av_buffer_unref(&buf);
+
+    return ret;
+}
+
 AVFrameSideData *av_frame_get_side_data(const AVFrame *frame,
                                         enum AVFrameSideDataType type)
 {

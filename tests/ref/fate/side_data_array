@@ -1,0 +1,14 @@
+Initial addition results with duplicates:
+sd 0, Ambient viewing environment
+sd 1, Content light level metadata: MaxCLL: 1
+sd 2, Content light level metadata: MaxCLL: 2
+sd 3, Content light level metadata: MaxCLL: 3
+sd 4, Spherical Mapping
+sd 5, Content light level metadata: MaxCLL: 4
+sd 6, Content light level metadata: MaxCLL: 5
+sd 7, Content light level metadata: MaxCLL: 6
+
+Final state after a single 'no-duplicates' addition:
+sd 0, Ambient viewing environment
+sd 1, Spherical Mapping
+sd 2, Content light level metadata: MaxCLL: 1337
