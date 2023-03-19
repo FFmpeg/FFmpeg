@@ -188,6 +188,8 @@ typedef struct mkv_track {
     int64_t         last_timestamp;
     int64_t         duration;
     int64_t         duration_offset;
+    uint64_t        max_blockaddid;
+    int64_t         blockadditionmapping_offset;
     int             codecpriv_offset;
     unsigned        codecpriv_size;     ///< size reserved for CodecPrivate excluding header+length field
     int64_t         ts_offset;
@@ -1597,11 +1599,20 @@ static int mkv_write_stereo_mode(AVFormatContext *s, EbmlWriter *writer,
     return 0;
 }
 
-static void mkv_write_dovi(AVFormatContext *s, AVIOContext *pb, AVStream *st)
+static void mkv_write_blockadditionmapping(AVFormatContext *s, MatroskaMuxContext *mkv,
+                                           AVIOContext *pb, mkv_track *track, AVStream *st)
 {
 #if CONFIG_MATROSKA_MUXER
     AVDOVIDecoderConfigurationRecord *dovi = (AVDOVIDecoderConfigurationRecord *)
                                              av_stream_get_side_data(st, AV_PKT_DATA_DOVI_CONF, NULL);
+
+    if (IS_SEEKABLE(s->pb, mkv)) {
+        track->blockadditionmapping_offset = avio_tell(pb);
+        // We can't know at this point if there will be a block with BlockAdditions, so
+        // we either write the default value here, or a void element. Either of them will
+        // be overwritten when finishing the track.
+        put_ebml_uint(mkv->track.bc, MATROSKA_ID_TRACKMAXBLKADDID, 0);
+    }
 
     if (dovi && dovi->dv_profile <= 10) {
         ebml_master mapping;
@@ -1846,9 +1857,6 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
         if (ret < 0)
             return ret;
 
-        if (!IS_WEBM(mkv))
-            mkv_write_dovi(s, pb, st);
-
         break;
 
     case AVMEDIA_TYPE_AUDIO:
@@ -1923,6 +1931,9 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
         av_log(s, AV_LOG_ERROR, "Only audio, video, and subtitles are supported for Matroska.\n");
         return AVERROR(EINVAL);
     }
+
+    if (!IS_WEBM(mkv))
+        mkv_write_blockadditionmapping(s, mkv, pb, track, st);
 
     if (!IS_WEBM(mkv) || par->codec_id != AV_CODEC_ID_WEBVTT) {
         uint8_t *codecpriv;
@@ -2667,6 +2678,7 @@ static int mkv_write_block(void *logctx, MatroskaMuxContext *mkv,
                              side_data + 8, side_data_size - 8);
         ebml_writer_close_master(&writer);
         ebml_writer_close_master(&writer);
+        track->max_blockaddid = additional_id;
     }
 
     if (!force_blockgroup && writer.nb_elements == 2) {
@@ -3070,6 +3082,21 @@ after_cues:
 
     if (mkv->track.bc) {
         // write Tracks master
+        if (!IS_WEBM(mkv))
+            for (unsigned i = 0; i < s->nb_streams; i++) {
+                const mkv_track *track = &mkv->tracks[i];
+
+                if (!track->max_blockaddid)
+                    continue;
+
+                // We reserved a single byte to write this value.
+                av_assert0(track->max_blockaddid <= 0xFF);
+
+                avio_seek(mkv->track.bc, track->blockadditionmapping_offset, SEEK_SET);
+
+                put_ebml_uint(mkv->track.bc, MATROSKA_ID_TRACKMAXBLKADDID, track->max_blockaddid);
+            }
+
         avio_seek(pb, mkv->track.pos, SEEK_SET);
         ret = end_ebml_master_crc32(pb, &mkv->track.bc, mkv,
                                     MATROSKA_ID_TRACKS, 0, 0, 0);

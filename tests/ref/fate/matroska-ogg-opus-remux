@@ -1,5 +1,5 @@
-a3f98769fe55bc5234cf75fb1949749a *tests/data/fate/matroska-ogg-opus-remux.matroska
-10200 tests/data/fate/matroska-ogg-opus-remux.matroska
+b602a1a4aaa4fbca4b8aaf39b66d7235 *tests/data/fate/matroska-ogg-opus-remux.matroska
+10204 tests/data/fate/matroska-ogg-opus-remux.matroska
 #extradata 0:       19, 0x399c0471
 #tb 0: 1/1000
 #media_type 0: audio
@@ -57,7 +57,7 @@ dts_time=-0.007000
 duration=20
 duration_time=0.020000
 size=402
-pos=540
+pos=544
 flags=K__
 [/PACKET]
 [PACKET]
@@ -70,7 +70,7 @@ dts_time=0.013000
 duration=20
 duration_time=0.020000
 size=216
-pos=949
+pos=953
 flags=K__
 [/PACKET]
 [PACKET]
@@ -83,7 +83,7 @@ dts_time=0.033000
 duration=20
 duration_time=0.020000
 size=215
-pos=1172
+pos=1176
 flags=K__
 [/PACKET]
 [STREAM]

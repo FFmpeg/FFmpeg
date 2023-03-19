@@ -1,5 +1,5 @@
-31cdace875cb696973d5a493ce776eea *tests/data/fate/matroska-spherical-mono-remux.matroska
-161554 tests/data/fate/matroska-spherical-mono-remux.matroska
+dfc2e196ca14cce155b1a081a0628fd3 *tests/data/fate/matroska-spherical-mono-remux.matroska
+161562 tests/data/fate/matroska-spherical-mono-remux.matroska
 #extradata 0:       43, 0x2b0e0d7b
 #extradata 1:       43, 0x2b0e0d7b
 #tb 0: 1/1000
