@@ -989,6 +989,17 @@ int av_frame_apply_cropping(AVFrame *frame, int flags);
 const char *av_frame_side_data_name(enum AVFrameSideDataType type);
 
 /**
+ * Free all side data entries and their contents, then zeroes out the
+ * values which the pointers are pointing to.
+ *
+ * @param sd    pointer to array of side data to free. Will be set to NULL
+ *              upon return.
+ * @param nb_sd pointer to an integer containing the number of entries in
+ *              the array. Will be set to 0 upon return.
+ */
+void av_frame_side_data_free(AVFrameSideData ***sd, int *nb_sd);
+
+/**
  * @}
  */
 
