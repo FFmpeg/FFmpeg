@@ -75,6 +75,7 @@ typedef struct MCDeintContext {
     int parity;         ///< MCDeintParity
     int qp;
     AVPacket *pkt;
+    AVFrame *frame_dec;
     AVCodecContext *enc_ctx;
 } MCDeintContext;
 
@@ -116,6 +117,9 @@ static int config_props(AVFilterLink *inlink)
     mcdeint->pkt = av_packet_alloc();
     if (!mcdeint->pkt)
         return AVERROR(ENOMEM);
+    mcdeint->frame_dec = av_frame_alloc();
+    if (!mcdeint->frame_dec)
+        return AVERROR(ENOMEM);
     mcdeint->enc_ctx = avcodec_alloc_context3(enc);
     if (!mcdeint->enc_ctx)
         return AVERROR(ENOMEM);
@@ -126,7 +130,7 @@ static int config_props(AVFilterLink *inlink)
     enc_ctx->gop_size = INT_MAX;
     enc_ctx->max_b_frames = 0;
     enc_ctx->pix_fmt = AV_PIX_FMT_YUV420P;
-    enc_ctx->flags = AV_CODEC_FLAG_QSCALE | AV_CODEC_FLAG_LOW_DELAY;
+    enc_ctx->flags = AV_CODEC_FLAG_QSCALE | AV_CODEC_FLAG_LOW_DELAY | AV_CODEC_FLAG_RECON_FRAME;
     enc_ctx->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
     enc_ctx->global_quality = 1;
     enc_ctx->me_cmp = enc_ctx->me_sub_cmp = FF_CMP_SAD;
@@ -160,15 +164,16 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     av_packet_free(&mcdeint->pkt);
     avcodec_free_context(&mcdeint->enc_ctx);
+    av_frame_free(&mcdeint->frame_dec);
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
 {
     MCDeintContext *mcdeint = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
-    AVFrame *outpic, *frame_dec;
+    AVFrame *outpic, *frame_dec = mcdeint->frame_dec;
     AVPacket *pkt = mcdeint->pkt;
-    int x, y, i, ret, got_frame = 0;
+    int x, y, i, ret;
 
     outpic = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!outpic) {
@@ -178,11 +183,22 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
     av_frame_copy_props(outpic, inpic);
     inpic->quality = mcdeint->qp * FF_QP2LAMBDA;
 
-    ret = avcodec_encode_video2(mcdeint->enc_ctx, pkt, inpic, &got_frame);
-    if (ret < 0)
+    ret = avcodec_send_frame(mcdeint->enc_ctx, inpic);
+    if (ret < 0) {
+        av_log(mcdeint->enc_ctx, AV_LOG_ERROR, "Error sending a frame for encoding\n");
         goto end;
-
-    frame_dec = mcdeint->enc_ctx->coded_frame;
+    }
+    ret = avcodec_receive_packet(mcdeint->enc_ctx, pkt);
+    if (ret < 0) {
+        av_log(mcdeint->enc_ctx, AV_LOG_ERROR, "Error receiving a packet from encoding\n");
+        goto end;
+    }
+    av_packet_unref(pkt);
+    ret = avcodec_receive_frame(mcdeint->enc_ctx, frame_dec);
+    if (ret < 0) {
+        av_log(mcdeint->enc_ctx, AV_LOG_ERROR, "Error receiving a frame from encoding\n");
+        goto end;
+    }
 
     for (i = 0; i < 3; i++) {
         int is_chroma = !!i;

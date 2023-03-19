@@ -16986,8 +16986,6 @@ Apply motion-compensation deinterlacing.
 It needs one field per frame as input and must thus be used together
 with yadif=1/3 or equivalent.
 
-This filter is only available in ffmpeg version 4.4 or earlier.
-
 This filter accepts the following options:
 @table @option
 @item mode
