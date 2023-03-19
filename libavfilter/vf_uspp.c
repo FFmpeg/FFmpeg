@@ -231,16 +231,25 @@ static int filter_1phase(AVFilterContext *ctx, void *arg, int i, int nb_jobs)
         return ret;
     }
 
-    ret = avcodec_send_packet(p->avctx_dec[i], pkt);
-    av_packet_unref(pkt);
-    if (ret < 0) {
-        av_log(p->avctx_dec[i], AV_LOG_ERROR, "Error sending a packet for decoding\n");
-        return ret;
-    }
-    ret = avcodec_receive_frame(p->avctx_dec[i], p->frame_dec[i]);
-    if (ret < 0) {
-        av_log(p->avctx_dec[i], AV_LOG_ERROR, "Error receiving a frame from decoding\n");
-        return ret;
+    if (p->avctx_enc[i]->flags & AV_CODEC_FLAG_RECON_FRAME) {
+        av_packet_unref(pkt);
+        ret = avcodec_receive_frame(p->avctx_enc[i], p->frame_dec[i]);
+        if (ret < 0) {
+            av_log(p->avctx_dec[i], AV_LOG_ERROR, "Error receiving a frame from encoding\n");
+            return ret;
+        }
+    } else {
+        ret = avcodec_send_packet(p->avctx_dec[i], pkt);
+        av_packet_unref(pkt);
+        if (ret < 0) {
+            av_log(p->avctx_dec[i], AV_LOG_ERROR, "Error sending a packet for decoding\n");
+            return ret;
+        }
+        ret = avcodec_receive_frame(p->avctx_dec[i], p->frame_dec[i]);
+        if (ret < 0) {
+            av_log(p->avctx_dec[i], AV_LOG_ERROR, "Error receiving a frame from decoding\n");
+            return ret;
+        }
     }
 
     offset = (BLOCK-x1) + (BLOCK-y1) * p->frame_dec[i]->linesize[0];
@@ -383,23 +392,21 @@ static int config_input(AVFilterLink *inlink)
 
         if (!(uspp->avctx_enc[i] = avcodec_alloc_context3(NULL)))
             return AVERROR(ENOMEM);
-        if (!(uspp->avctx_dec[i] = avcodec_alloc_context3(NULL)))
-            return AVERROR(ENOMEM);
 
         avctx_enc = uspp->avctx_enc[i];
-        avctx_dec = uspp->avctx_dec[i];
-        avctx_dec->width =
         avctx_enc->width = width + BLOCK;
-        avctx_dec->height =
         avctx_enc->height = height + BLOCK;
         avctx_enc->time_base = (AVRational){1,25};  // meaningless
         avctx_enc->gop_size = INT_MAX;
         avctx_enc->max_b_frames = 0;
         avctx_enc->pix_fmt = inlink->format;
         avctx_enc->flags = AV_CODEC_FLAG_QSCALE | AV_CODEC_FLAG_LOW_DELAY;
+        if (enc->capabilities & AV_CODEC_CAP_ENCODER_RECON_FRAME) {
+            avctx_enc->flags |= AV_CODEC_FLAG_RECON_FRAME;
+            av_dict_set(&opts, "no_bitstream", "1", 0);
+        }
         avctx_enc->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
         avctx_enc->global_quality = 123;
-        avctx_dec->thread_count =
         avctx_enc->thread_count = 1; // We do threading in the filter with muiltiple codecs
         ret = avcodec_open2(avctx_enc, enc, &opts);
         av_dict_free(&opts);
@@ -408,9 +415,17 @@ static int config_input(AVFilterLink *inlink)
         av_assert0(avctx_enc->codec);
 
 
-        ret = avcodec_open2(avctx_dec, dec, NULL);
-        if (ret < 0)
-            return ret;
+        if (!(enc->capabilities & AV_CODEC_CAP_ENCODER_RECON_FRAME)) {
+            if (!(uspp->avctx_dec[i] = avcodec_alloc_context3(NULL)))
+                return AVERROR(ENOMEM);
+            avctx_dec = uspp->avctx_dec[i];
+            avctx_dec->width  = avctx_enc->width;
+            avctx_dec->height = avctx_enc->height;
+            avctx_dec->thread_count = 1;
+            ret = avcodec_open2(avctx_dec, dec, NULL);
+            if (ret < 0)
+                return ret;
+        }
 
         if (!(uspp->frame[i] = av_frame_alloc()))
             return AVERROR(ENOMEM);
