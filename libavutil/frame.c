@@ -679,23 +679,23 @@ AVBufferRef *av_frame_get_plane_buffer(const AVFrame *frame, int plane)
     return NULL;
 }
 
-AVFrameSideData *av_frame_new_side_data_from_buf(AVFrame *frame,
-                                                 enum AVFrameSideDataType type,
-                                                 AVBufferRef *buf)
+static AVFrameSideData *add_side_data_from_buf(AVFrameSideData ***sd,
+                                               int *nb_sd,
+                                               enum AVFrameSideDataType type,
+                                               AVBufferRef *buf)
 {
     AVFrameSideData *ret, **tmp;
 
     if (!buf)
         return NULL;
 
-    if (frame->nb_side_data > INT_MAX / sizeof(*frame->side_data) - 1)
+    if (*nb_sd > INT_MAX / sizeof(*sd) - 1)
         return NULL;
 
-    tmp = av_realloc(frame->side_data,
-                     (frame->nb_side_data + 1) * sizeof(*frame->side_data));
+    tmp = av_realloc(*sd, (*nb_sd + 1) * sizeof(*sd));
     if (!tmp)
         return NULL;
-    frame->side_data = tmp;
+    *sd = tmp;
 
     ret = av_mallocz(sizeof(*ret));
     if (!ret)
@@ -706,9 +706,18 @@ AVFrameSideData *av_frame_new_side_data_from_buf(AVFrame *frame,
     ret->size = buf->size;
     ret->type = type;
 
-    frame->side_data[frame->nb_side_data++] = ret;
+    (*sd)[(*nb_sd)++] = ret;
 
     return ret;
+}
+
+AVFrameSideData *av_frame_new_side_data_from_buf(AVFrame *frame,
+                                                 enum AVFrameSideDataType type,
+                                                 AVBufferRef *buf)
+{
+    return
+        add_side_data_from_buf(
+            &frame->side_data, &frame->nb_side_data, type, buf);
 }
 
 AVFrameSideData *av_frame_new_side_data(AVFrame *frame,
