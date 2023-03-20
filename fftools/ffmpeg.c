@@ -2848,9 +2848,6 @@ static int init_input_stream(InputStream *ist, char *error, int error_len)
         assert_avoptions(ist->decoder_opts);
     }
 
-    ist->next_pts = AV_NOPTS_VALUE;
-    ist->next_dts = AV_NOPTS_VALUE;
-
     return 0;
 }
 

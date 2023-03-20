@@ -675,6 +675,9 @@ static void add_input_streams(const OptionsContext *o, Demuxer *d)
         st->discard  = AVDISCARD_ALL;
         ist->nb_samples = 0;
         ist->first_dts = AV_NOPTS_VALUE;
+        ist->next_pts  = AV_NOPTS_VALUE;
+        ist->next_dts  = AV_NOPTS_VALUE;
+
         ds->min_pts = INT64_MAX;
         ds->max_pts = INT64_MIN;
 
