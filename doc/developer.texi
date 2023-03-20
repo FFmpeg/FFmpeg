@@ -24,6 +24,10 @@ generated from the headers
 the examples under @file{doc/examples}
 @end itemize
 
+For more detailed legal information about the use of FFmpeg in
+external programs read the @file{LICENSE} file in the source tree and
+consult @url{https://ffmpeg.org/legal.html}.
+
 If you modify FFmpeg code for your own use case, you are highly encouraged to
 @emph{submit your changes back to us}, using this document as a guide. There are
 both pragmatic and ideological reasons to do so:
@@ -39,10 +43,6 @@ design flaws in your code.
 By supporting the project you find useful you ensure it continues to be
 maintained and developed.
 @end itemize
-
-For more detailed legal information about the use of FFmpeg in
-external programs read the @file{LICENSE} file in the source tree and
-consult @url{https://ffmpeg.org/legal.html}.
 
 @section Contributing code
 
