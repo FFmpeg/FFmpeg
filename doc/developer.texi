@@ -44,8 +44,6 @@ By supporting the project you find useful you ensure it continues to be
 maintained and developed.
 @end itemize
 
-@section Contributing code
-
 All proposed code changes should be submitted for review to
 @url{mailto:ffmpeg-devel@@ffmpeg.org, the development mailing list}, as
 described in more detail in the @ref{Submitting patches} chapter. The code
