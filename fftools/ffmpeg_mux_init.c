@@ -2283,7 +2283,6 @@ int of_open(const OptionsContext *o, const char *filename)
         if (ost->enc_ctx && ost->ist) {
             InputStream *ist = ost->ist;
             ist->decoding_needed |= DECODING_FOR_OST;
-            ist->processing_needed = 1;
 
             if (ost->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO ||
                 ost->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
@@ -2294,8 +2293,6 @@ int of_open(const OptionsContext *o, const char *filename)
                     exit_program(1);
                 }
             }
-        } else if (ost->ist) {
-            ost->ist->processing_needed = 1;
         }
 
         /* set the filter output constraints */

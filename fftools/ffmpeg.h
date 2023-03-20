@@ -342,7 +342,6 @@ typedef struct InputStream {
     int decoding_needed;     /* non zero if the packets must be decoded in 'raw_fifo', see DECODING_FOR_* */
 #define DECODING_FOR_OST    1
 #define DECODING_FOR_FILTER 2
-    int processing_needed;   /* non zero if the packets must be processed */
     // should attach FrameData as opaque_ref after decoding
     int want_frame_data;
 

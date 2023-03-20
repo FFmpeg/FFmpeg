@@ -3648,7 +3648,7 @@ static void decode_flush(InputFile *ifile)
         InputStream *ist = ifile->streams[i];
         int ret;
 
-        if (!ist->processing_needed)
+        if (ist->discard)
             continue;
 
         do {
@@ -3793,7 +3793,7 @@ static int process_input(int file_index)
 
         for (i = 0; i < ifile->nb_streams; i++) {
             ist = ifile->streams[i];
-            if (ist->processing_needed) {
+            if (!ist->discard) {
                 ret = process_input_packet(ist, NULL, 0);
                 if (ret>0)
                     return 0;
