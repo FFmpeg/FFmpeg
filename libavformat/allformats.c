@@ -487,6 +487,7 @@ extern const AVInputFormat  ff_vpk_demuxer;
 extern const AVInputFormat  ff_vplayer_demuxer;
 extern const AVInputFormat  ff_vqf_demuxer;
 extern const AVInputFormat  ff_vvc_demuxer;
+extern const FFOutputFormat ff_vvc_muxer;
 extern const AVInputFormat  ff_w64_demuxer;
 extern const FFOutputFormat ff_w64_muxer;
 extern const AVInputFormat  ff_wady_demuxer;

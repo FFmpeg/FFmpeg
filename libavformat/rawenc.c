@@ -378,6 +378,29 @@ const FFOutputFormat ff_h264_muxer = {
 };
 #endif
 
+#if CONFIG_VVC_MUXER
+static int vvc_check_bitstream(AVFormatContext *s, AVStream *st,
+                                const AVPacket *pkt)
+{
+    if (pkt->size >= 5 && AV_RB32(pkt->data) != 0x0000001 &&
+                          AV_RB24(pkt->data) != 0x000001)
+        return ff_stream_add_bitstream_filter(st, "vvc_mp4toannexb", NULL);
+    return 1;
+}
+
+const FFOutputFormat ff_vvc_muxer = {
+    .p.name            = "vvc",
+    .p.long_name       = NULL_IF_CONFIG_SMALL("raw H.266/VVC video"),
+    .p.extensions      = "vvc,h266,266",
+    .p.audio_codec     = AV_CODEC_ID_NONE,
+    .p.video_codec     = AV_CODEC_ID_VVC,
+    .init              = force_one_stream,
+    .write_packet      = ff_raw_write_packet,
+    .check_bitstream   = vvc_check_bitstream,
+    .p.flags           = AVFMT_NOTIMESTAMPS,
+};
+#endif
+
 #if CONFIG_HEVC_MUXER
 static int hevc_check_bitstream(AVFormatContext *s, AVStream *st,
                                 const AVPacket *pkt)

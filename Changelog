@@ -22,7 +22,7 @@ version <next>:
 - bwdif_cuda filter
 - Microsoft RLE video encoder
 - Raw AC-4 muxer and demuxer
-- Raw VVC bitstream parser and demuxer
+- Raw VVC bitstream parser, muxer and demuxer
 - Bitstream filter for editing metadata in VVC streams
 - Bitstream filter for converting VVC from MP4 to Annex B
 
