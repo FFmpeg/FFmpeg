@@ -24,6 +24,7 @@ version <next>:
 - Raw AC-4 muxer and demuxer
 - Raw VVC bitstream parser
 - Bitstream filter for editing metadata in VVC streams
+- Bitstream filter for converting VVC from MP4 to Annex B
 
 version 6.0:
 - Radiance HDR image support
