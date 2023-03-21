@@ -60,12 +60,6 @@ void       sq_free(SyncQueue **sq);
 int sq_add_stream(SyncQueue *sq, int limiting);
 
 /**
- * Set the timebase for the stream with index stream_idx. Should be called
- * before sending any frames for this stream.
- */
-void sq_set_tb(SyncQueue *sq, unsigned int stream_idx, AVRational tb);
-
-/**
  * Limit the number of output frames for stream with index stream_idx
  * to max_frames.
  */

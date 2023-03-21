@@ -3194,9 +3194,6 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
     if (ost->bitexact)
         enc_ctx->flags |= AV_CODEC_FLAG_BITEXACT;
 
-    if (ost->sq_idx_encode >= 0)
-        sq_set_tb(of->sq_encode, ost->sq_idx_encode, enc_ctx->time_base);
-
     ost->mux_timebase = enc_ctx->time_base;
 
     return 0;

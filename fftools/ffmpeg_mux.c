@@ -586,9 +586,6 @@ int of_stream_init(OutputFile *of, OutputStream *ost)
     MuxStream *ms = ms_from_ost(ost);
     int ret;
 
-    if (ost->sq_idx_mux >= 0)
-        sq_set_tb(mux->sq_mux, ost->sq_idx_mux, ost->mux_timebase);
-
     /* initialize bitstream filters for the output stream
      * needs to be done here, because the codec id for streamcopy is not
      * known until now */

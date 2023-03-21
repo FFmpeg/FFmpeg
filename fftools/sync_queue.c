@@ -84,6 +84,26 @@ static int frame_null(const SyncQueue *sq, SyncQueueFrame frame)
     return (sq->type == SYNC_QUEUE_PACKETS) ? (frame.p == NULL) : (frame.f == NULL);
 }
 
+static void tb_update(const SyncQueue *sq, SyncQueueStream *st,
+                      const SyncQueueFrame frame)
+{
+    AVRational tb = (sq->type == SYNC_QUEUE_PACKETS) ?
+                    frame.p->time_base : frame.f->time_base;
+
+    av_assert0(tb.num > 0 && tb.den > 0);
+
+    if (tb.num == st->tb.num && tb.den == st->tb.den)
+        return;
+
+    // timebase should not change after the first frame
+    av_assert0(!av_fifo_can_read(st->fifo));
+
+    if (st->head_ts != AV_NOPTS_VALUE)
+        st->head_ts = av_rescale_q(st->head_ts, st->tb, tb);
+
+    st->tb = tb;
+}
+
 static void finish_stream(SyncQueue *sq, unsigned int stream_idx)
 {
     SyncQueueStream *st = &sq->streams[stream_idx];
@@ -241,14 +261,14 @@ int sq_send(SyncQueue *sq, unsigned int stream_idx, SyncQueueFrame frame)
     av_assert0(stream_idx < sq->nb_streams);
     st = &sq->streams[stream_idx];
 
-    av_assert0(st->tb.num > 0 && st->tb.den > 0);
-
     if (frame_null(sq, frame)) {
         finish_stream(sq, stream_idx);
         return 0;
     }
     if (st->finished)
         return AVERROR_EOF;
+
+    tb_update(sq, st, frame);
 
     ret = objpool_get(sq->pool, (void**)&dst);
     if (ret < 0)
@@ -373,21 +393,6 @@ int sq_add_stream(SyncQueue *sq, int limiting)
     st->limiting   = limiting;
 
     return sq->nb_streams++;
-}
-
-void sq_set_tb(SyncQueue *sq, unsigned int stream_idx, AVRational tb)
-{
-    SyncQueueStream *st;
-
-    av_assert0(stream_idx < sq->nb_streams);
-    st = &sq->streams[stream_idx];
-
-    av_assert0(!av_fifo_can_read(st->fifo));
-
-    if (st->head_ts != AV_NOPTS_VALUE)
-        st->head_ts = av_rescale_q(st->head_ts, st->tb, tb);
-
-    st->tb = tb;
 }
 
 void sq_limit_frames(SyncQueue *sq, unsigned int stream_idx, uint64_t frames)
