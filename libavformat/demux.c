@@ -121,6 +121,7 @@ static int set_codec_from_probe_data(AVFormatContext *s, AVStream *st,
         { "mpegvideo",  AV_CODEC_ID_MPEG2VIDEO,   AVMEDIA_TYPE_VIDEO    },
         { "truehd",     AV_CODEC_ID_TRUEHD,       AVMEDIA_TYPE_AUDIO    },
         { "evc",        AV_CODEC_ID_EVC,          AVMEDIA_TYPE_VIDEO    },
+        { "vvc",        AV_CODEC_ID_VVC,          AVMEDIA_TYPE_VIDEO    },
         { 0 }
     };
     int score;
@@ -753,7 +754,8 @@ static int64_t select_from_pts_buffer(AVStream *st, int64_t *pts_buffer, int64_t
 {
     FFStream *const sti = ffstream(st);
     int onein_oneout = st->codecpar->codec_id != AV_CODEC_ID_H264 &&
-                       st->codecpar->codec_id != AV_CODEC_ID_HEVC;
+                       st->codecpar->codec_id != AV_CODEC_ID_HEVC &&
+                       st->codecpar->codec_id != AV_CODEC_ID_VVC;
 
     if (!onein_oneout) {
         int delay = sti->avctx->has_b_frames;
@@ -943,7 +945,8 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     int64_t offset;
     AVRational duration;
     int onein_oneout = st->codecpar->codec_id != AV_CODEC_ID_H264 &&
-                       st->codecpar->codec_id != AV_CODEC_ID_HEVC;
+                       st->codecpar->codec_id != AV_CODEC_ID_HEVC &&
+                       st->codecpar->codec_id != AV_CODEC_ID_VVC;
 
     if (s->flags & AVFMT_FLAG_NOFILLIN)
         return;
