@@ -20,6 +20,7 @@
 #include "cbs_internal.h"
 #include "cbs_h264.h"
 #include "cbs_h265.h"
+#include "cbs_h266.h"
 #include "cbs_sei.h"
 
 static void cbs_free_user_data_registered(void *opaque, uint8_t *data)
@@ -132,6 +133,13 @@ static int cbs_sei_get_unit(CodedBitstreamContext *ctx,
         else
             sei_type = HEVC_NAL_SEI_SUFFIX;
         break;
+    case AV_CODEC_ID_H266:
+        highest_vcl_type = VVC_RSV_IRAP_11;
+        if (prefix)
+            sei_type = VVC_PREFIX_SEI_NUT;
+        else
+            sei_type = VVC_SUFFIX_SEI_NUT;
+        break;
     default:
         return AVERROR(EINVAL);
     }
@@ -207,6 +215,18 @@ static int cbs_sei_get_unit(CodedBitstreamContext *ctx,
             memcpy(unit->content, &sei, sizeof(sei));
         }
         break;
+    case AV_CODEC_ID_H266:
+        {
+            H266RawSEI sei = {
+                .nal_unit_header = {
+                    .nal_unit_type         = sei_type,
+                    .nuh_layer_id          = 0,
+                    .nuh_temporal_id_plus1 = 1,
+                },
+            };
+            memcpy(unit->content, &sei, sizeof(sei));
+        }
+        break;
     default:
         av_assert0(0);
     }
@@ -233,6 +253,15 @@ static int cbs_sei_get_message_list(CodedBitstreamContext *ctx,
             H265RawSEI *sei = unit->content;
             if (unit->type != HEVC_NAL_SEI_PREFIX &&
                 unit->type != HEVC_NAL_SEI_SUFFIX)
+                return AVERROR(EINVAL);
+            *list = &sei->message_list;
+        }
+        break;
+    case AV_CODEC_ID_H266:
+        {
+            H266RawSEI *sei = unit->content;
+            if (unit->type != VVC_PREFIX_SEI_NUT &&
+                unit->type != VVC_SUFFIX_SEI_NUT)
                 return AVERROR(EINVAL);
             *list = &sei->message_list;
         }

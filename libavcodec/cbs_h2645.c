@@ -24,9 +24,11 @@
 #include "cbs_internal.h"
 #include "cbs_h264.h"
 #include "cbs_h265.h"
+#include "cbs_h266.h"
 #include "h264.h"
 #include "h2645_parse.h"
 #include "hevc.h"
+#include "vvc.h"
 
 
 static int cbs_read_ue_golomb(CodedBitstreamContext *ctx, GetBitContext *gbc,
@@ -255,6 +257,7 @@ static int cbs_h265_payload_extension_present(GetBitContext *gbc, uint32_t paylo
 #define FUNC_NAME1(rw, codec, name) FUNC_NAME2(rw, codec, name)
 #define FUNC_H264(name) FUNC_NAME1(READWRITE, h264, name)
 #define FUNC_H265(name) FUNC_NAME1(READWRITE, h265, name)
+#define FUNC_H266(name) FUNC_NAME1(READWRITE, h266, name)
 #define FUNC_SEI(name)  FUNC_NAME1(READWRITE, sei,  name)
 
 #define SUBSCRIPTS(subs, ...) (subs > 0 ? ((int[subs + 1]){ subs, __VA_ARGS__ }) : NULL)
@@ -369,6 +372,10 @@ static int cbs_h2645_read_more_rbsp_data(GetBitContext *gbc)
 #include "cbs_h265_syntax_template.c"
 #undef FUNC
 
+#define FUNC(name) FUNC_H266(name)
+#include "cbs_h266_syntax_template.c"
+#undef FUNC
+
 #undef READ
 #undef READWRITE
 #undef RWContext
@@ -447,6 +454,10 @@ static int cbs_h2645_read_more_rbsp_data(GetBitContext *gbc)
 #include "cbs_h265_syntax_template.c"
 #undef FUNC
 
+#define FUNC(name) FUNC_H266(name)
+#include "cbs_h266_syntax_template.c"
+#undef FUNC
+
 #undef WRITE
 #undef READWRITE
 #undef RWContext
@@ -476,8 +487,9 @@ static int cbs_h2645_fragment_add_nals(CodedBitstreamContext *ctx,
         const H2645NAL *nal = &packet->nals[i];
         AVBufferRef *ref;
         size_t size = nal->size;
+        enum AVCodecID codec_id = ctx->codec->codec_id;
 
-        if (nal->nuh_layer_id > 0)
+        if (codec_id != AV_CODEC_ID_VVC && nal->nuh_layer_id > 0)
             continue;
 
         // Remove trailing zeroes.
@@ -512,6 +524,12 @@ static int cbs_h2645_split_fragment(CodedBitstreamContext *ctx,
     av_assert0(frag->data && frag->nb_units == 0);
     if (frag->data_size == 0)
         return 0;
+
+    if (codec_id == AV_CODEC_ID_VVC) {
+        //we deactive picture header here to avoid reuse previous au's ph.
+        CodedBitstreamH266Context *h266 = ctx->priv_data;
+        h266->priv.ph = NULL;
+    }
 
     if (header && frag->data[0] && codec_id == AV_CODEC_ID_H264) {
         // AVCC header.
@@ -640,6 +658,71 @@ static int cbs_h2645_split_fragment(CodedBitstreamContext *ctx,
                 return err;
         }
 
+    } else if(header && frag->data[0] && codec_id == AV_CODEC_ID_VVC) {
+        // VVCC header.
+        int ptl_present_flag, num_arrays;
+        int b, i, j;
+
+        priv->mp4 = 1;
+
+        bytestream2_init(&gbc, frag->data, frag->data_size);
+
+        b = bytestream2_get_byte(&gbc);
+        priv->nal_length_size = ((b >> 1) & 3) + 1;
+        ptl_present_flag = b & 1;
+
+        if(ptl_present_flag) {
+            int num_sublayers, num_bytes_constraint_info, num_sub_profiles;
+            num_sublayers = (bytestream2_get_be16u(&gbc) >> 4) & 7;
+            bytestream2_skip(&gbc, 1);
+
+            // begin VvcPTLRecord(num_sublayers);
+            num_bytes_constraint_info = bytestream2_get_byte(&gbc) & 0x3f;
+            bytestream2_skip(&gbc, 2 + num_bytes_constraint_info);
+            if(num_sublayers > 1) {
+                int count_present_flags = 0;
+                b = bytestream2_get_byte(&gbc);
+                for(i = num_sublayers - 2; i >= 0; i--) {
+                    if((b >> (7 - (num_sublayers - 2 - i))) & 0x01)
+                        count_present_flags++;
+                }
+                bytestream2_skip(&gbc, count_present_flags);
+            }
+            num_sub_profiles = bytestream2_get_byte(&gbc);
+            bytestream2_skip(&gbc, num_sub_profiles * 4);
+            // end VvcPTLRecord(num_sublayers);
+
+            bytestream2_skip(&gbc, 3 * 2);
+        }
+
+        num_arrays = bytestream2_get_byte(&gbc);
+        for(j = 0; j < num_arrays; j++) {
+            size_t start, end, size;
+            int nal_unit_type = bytestream2_get_byte(&gbc) & 0x1f;
+            unsigned int num_nalus = 1;
+            if(nal_unit_type != VVC_DCI_NUT && nal_unit_type != VVC_OPI_NUT)
+                num_nalus = bytestream2_get_be16u(&gbc);
+
+            start = bytestream2_tell(&gbc);
+            for(i = 0; i < num_nalus; i++) {
+                size = bytestream2_get_be16(&gbc);
+                bytestream2_skip(&gbc, size);
+            }
+            end = bytestream2_tell(&gbc);
+
+            err = ff_h2645_packet_split(&priv->read_packet,
+                                        frag->data + start, end - start,
+                                        ctx->log_ctx, 1, 2, AV_CODEC_ID_VVC, 1, 1);
+            if (err < 0) {
+                av_log(ctx->log_ctx, AV_LOG_ERROR, "Failed to split "
+                       "VVCC array %d (%d NAL units of type %d).\n",
+                       i, num_nalus, nal_unit_type);
+                return err;
+            }
+            err = cbs_h2645_fragment_add_nals(ctx, frag, &priv->read_packet);
+            if (err < 0)
+                return err;
+        }
     } else {
         // Annex B, or later MP4 with already-known parameters.
 
@@ -685,6 +768,46 @@ cbs_h2645_replace_ps(4, PPS, pps, pic_parameter_set_id)
 cbs_h2645_replace_ps(5, VPS, vps, vps_video_parameter_set_id)
 cbs_h2645_replace_ps(5, SPS, sps, sps_seq_parameter_set_id)
 cbs_h2645_replace_ps(5, PPS, pps, pps_pic_parameter_set_id)
+
+#define cbs_h266_replace_ps(h26n, ps_name, ps_var, id_element) \
+static int cbs_h26 ## h26n ## _replace_ ## ps_var(CodedBitstreamContext *ctx, \
+                                                  CodedBitstreamUnit *unit)  \
+{ \
+    CodedBitstreamH26 ## h26n ## Context *priv = ctx->priv_data; \
+    H26 ## h26n ## Raw ## ps_name *ps_var = unit->content; \
+    unsigned int id = ps_var->id_element; \
+    int err = ff_cbs_make_unit_refcounted(ctx, unit); \
+    if (err < 0) \
+        return err; \
+    av_buffer_unref(&priv->ps_var ## _ref[id]); \
+    av_assert0(unit->content_ref); \
+    priv->ps_var ## _ref[id] = av_buffer_ref(unit->content_ref); \
+    if (!priv->ps_var ## _ref[id]) \
+        return AVERROR(ENOMEM); \
+    priv->ps_var[id] = (H26 ## h26n ## Raw ## ps_name *)priv->ps_var ## _ref[id]->data; \
+    return 0; \
+}
+
+cbs_h266_replace_ps(6, VPS, vps, vps_video_parameter_set_id)
+cbs_h266_replace_ps(6, SPS, sps, sps_seq_parameter_set_id)
+cbs_h266_replace_ps(6, PPS, pps, pps_pic_parameter_set_id)
+
+static int cbs_h266_replace_ph(CodedBitstreamContext *ctx,
+                               CodedBitstreamUnit *unit)
+{
+    CodedBitstreamH266Context *h266 = ctx->priv_data;
+    int err;
+
+    h266->priv.ph = NULL;
+    err = ff_cbs_make_unit_refcounted(ctx, unit);
+    if (err < 0)
+        return err;
+    err = av_buffer_replace(&h266->priv.ph_ref, unit->content_ref);
+    if (err < 0)
+        return err;
+    h266->priv.ph = (H266RawPH*)h266->priv.ph_ref->data;
+    return 0;
+}
 
 static int cbs_h264_read_nal_unit(CodedBitstreamContext *ctx,
                                   CodedBitstreamUnit *unit)
@@ -923,6 +1046,130 @@ static int cbs_h265_read_nal_unit(CodedBitstreamContext *ctx,
         return AVERROR(ENOSYS);
     }
 
+    return 0;
+}
+
+static int cbs_h266_read_nal_unit(CodedBitstreamContext *ctx,
+                                  CodedBitstreamUnit *unit)
+{
+    GetBitContext gbc;
+    int err;
+
+    err = init_get_bits8(&gbc, unit->data, unit->data_size);
+    if (err < 0)
+        return err;
+
+    err = ff_cbs_alloc_unit_content(ctx, unit);
+    if (err < 0)
+        return err;
+
+    switch (unit->type) {
+    case VVC_VPS_NUT:
+        {
+            H266RawVPS *vps = unit->content;
+
+            err = cbs_h266_read_vps(ctx, &gbc, vps);
+            if (err < 0)
+                return err;
+
+            err = cbs_h266_replace_vps(ctx, unit);
+            if (err < 0)
+                return err;
+        }
+        break;
+    case VVC_SPS_NUT:
+        {
+            H266RawSPS *sps = unit->content;
+
+            err = cbs_h266_read_sps(ctx, &gbc, sps);
+            if (err < 0)
+                return err;
+
+            err = cbs_h266_replace_sps(ctx, unit);
+            if (err < 0)
+                return err;
+        }
+        break;
+
+    case VVC_PPS_NUT:
+        {
+            H266RawPPS *pps = unit->content;
+
+            err = cbs_h266_read_pps(ctx, &gbc, pps);
+            if (err < 0)
+                return err;
+
+            err = cbs_h266_replace_pps(ctx, unit);
+            if (err < 0)
+                return err;
+        }
+        break;
+
+    case VVC_PH_NUT:
+        {
+            H266RawPH *ph = unit->content;
+            err = cbs_h266_read_ph(ctx, &gbc, ph);
+            if (err < 0)
+                return err;
+            err = cbs_h266_replace_ph(ctx, unit);
+            if (err < 0)
+                return err;
+        }
+        break;
+
+    case VVC_TRAIL_NUT:
+    case VVC_STSA_NUT:
+    case VVC_RADL_NUT:
+    case VVC_RASL_NUT:
+    case VVC_IDR_W_RADL:
+    case VVC_IDR_N_LP:
+    case VVC_CRA_NUT:
+    case VVC_GDR_NUT:
+        {
+            H266RawSlice *slice = unit->content;
+            int pos, len;
+
+            err = cbs_h266_read_slice_header(ctx, &gbc, &slice->header);
+            if (err < 0)
+                return err;
+
+            if (!cbs_h2645_read_more_rbsp_data(&gbc))
+                return AVERROR_INVALIDDATA;
+
+            pos = get_bits_count(&gbc);
+            len = unit->data_size;
+
+            slice->data_size = len - pos / 8;
+            slice->data_ref  = av_buffer_ref(unit->data_ref);
+            if (!slice->data_ref)
+                return AVERROR(ENOMEM);
+            slice->data = unit->data + pos / 8;
+            slice->data_bit_start = pos % 8;
+        }
+        break;
+
+    case VVC_AUD_NUT:
+        {
+            err = cbs_h266_read_aud(ctx, &gbc, unit->content);
+            if (err < 0)
+                return err;
+        }
+        break;
+
+    case VVC_PREFIX_SEI_NUT:
+    case VVC_SUFFIX_SEI_NUT:
+        {
+            err = cbs_h266_read_sei(ctx, &gbc, unit->content,
+                                    unit->type == VVC_PREFIX_SEI_NUT);
+
+            if (err < 0)
+                return err;
+        }
+        break;
+
+    default:
+        return AVERROR(ENOSYS);
+    }
     return 0;
 }
 
@@ -1338,11 +1585,127 @@ static int cbs_h265_discarded_nal_unit(CodedBitstreamContext *ctx,
     return 0;
 }
 
+static int cbs_h266_write_nal_unit(CodedBitstreamContext *ctx,
+                                   CodedBitstreamUnit *unit,
+                                   PutBitContext *pbc)
+{
+    int err;
+
+    switch (unit->type) {
+    case VVC_VPS_NUT:
+        {
+            H266RawVPS *vps = unit->content;
+
+            err = cbs_h266_write_vps(ctx, pbc, vps);
+            if (err < 0)
+                return err;
+
+            err = cbs_h266_replace_vps(ctx, unit);
+            if (err < 0)
+                return err;
+        }
+        break;
+    case VVC_SPS_NUT:
+        {
+            H266RawSPS *sps = unit->content;
+
+            err = cbs_h266_write_sps(ctx, pbc, sps);
+            if (err < 0)
+                return err;
+
+            err = cbs_h266_replace_sps(ctx, unit);
+            if (err < 0)
+                return err;
+        }
+        break;
+
+    case VVC_PPS_NUT:
+        {
+            H266RawPPS *pps = unit->content;
+
+            err = cbs_h266_write_pps(ctx, pbc, pps);
+            if (err < 0)
+                return err;
+
+            err = cbs_h266_replace_pps(ctx, unit);
+            if (err < 0)
+                return err;
+        }
+        break;
+
+    case VVC_PH_NUT:
+        {
+            H266RawPH *ph = unit->content;
+            err = cbs_h266_write_ph(ctx, pbc, ph);
+            if (err < 0)
+                return err;
+
+            err = cbs_h266_replace_ph(ctx, unit);
+            if (err < 0)
+                return err;
+        }
+        break;
+
+    case VVC_TRAIL_NUT:
+    case VVC_STSA_NUT:
+    case VVC_RADL_NUT:
+    case VVC_RASL_NUT:
+    case VVC_IDR_W_RADL:
+    case VVC_IDR_N_LP:
+    case VVC_CRA_NUT:
+    case VVC_GDR_NUT:
+        {
+            H266RawSlice *slice = unit->content;
+
+            err = cbs_h266_write_slice_header(ctx, pbc, &slice->header);
+            if (err < 0)
+                return err;
+
+            if (slice->data) {
+                err = cbs_h2645_write_slice_data(ctx, pbc, slice->data,
+                                                 slice->data_size,
+                                                 slice->data_bit_start);
+                if (err < 0)
+                    return err;
+            } else {
+                // No slice data - that was just the header.
+            }
+        }
+        break;
+
+    case VVC_AUD_NUT:
+        {
+            err = cbs_h266_write_aud(ctx, pbc, unit->content);
+            if (err < 0)
+                return err;
+        }
+        break;
+
+    case VVC_PREFIX_SEI_NUT:
+    case VVC_SUFFIX_SEI_NUT:
+        {
+            err = cbs_h266_write_sei(ctx, pbc, unit->content,
+                                     unit->type == VVC_PREFIX_SEI_NUT);
+
+            if (err < 0)
+                return err;
+        }
+        break;
+
+    default:
+        av_log(ctx->log_ctx, AV_LOG_ERROR, "Write unimplemented for "
+               "NAL unit type %"PRIu32".\n", unit->type);
+        return AVERROR_PATCHWELCOME;
+    }
+
+    return 0;
+}
+
 static int cbs_h2645_unit_requires_zero_byte(enum AVCodecID codec_id,
                                              CodedBitstreamUnitType type,
                                              int nal_unit_index)
 {
-    // Section B.1.2 in H.264, section B.2.2 in H.265.
+    // Section B.1.2 in H.264, section B.2.2 in H.265, H.266.
     if (nal_unit_index == 0) {
         // Assume that this is the first NAL unit in an access unit.
         return 1;
@@ -1351,6 +1714,8 @@ static int cbs_h2645_unit_requires_zero_byte(enum AVCodecID codec_id,
         return type == H264_NAL_SPS || type == H264_NAL_PPS;
     if (codec_id == AV_CODEC_ID_HEVC)
         return type == HEVC_NAL_VPS || type == HEVC_NAL_SPS || type == HEVC_NAL_PPS;
+    if (codec_id == AV_CODEC_ID_VVC)
+        return type >= VVC_OPI_NUT && type <= VVC_SUFFIX_APS_NUT;
     return 0;
 }
 
@@ -1502,6 +1867,35 @@ static void cbs_h265_close(CodedBitstreamContext *ctx)
         av_buffer_unref(&h265->pps_ref[i]);
 }
 
+static void cbs_h266_flush(CodedBitstreamContext *ctx)
+{
+    CodedBitstreamH266Context *h266 = ctx->priv_data;
+
+    for (int i = 0; i < FF_ARRAY_ELEMS(h266->vps); i++) {
+        av_buffer_unref(&h266->vps_ref[i]);
+        h266->vps[i] = NULL;
+    }
+
+    for (int i = 0; i < FF_ARRAY_ELEMS(h266->sps); i++) {
+        av_buffer_unref(&h266->sps_ref[i]);
+        h266->sps[i] = NULL;
+    }
+    for (int i = 0; i < FF_ARRAY_ELEMS(h266->pps); i++) {
+        av_buffer_unref(&h266->pps_ref[i]);
+        h266->pps[i] = NULL;
+    }
+    av_buffer_unref(&h266->priv.ph_ref);
+    h266->priv.ph = NULL;
+}
+
+static void cbs_h266_close(CodedBitstreamContext *ctx)
+{
+    CodedBitstreamH266Context *h266 = ctx->priv_data;
+
+    cbs_h266_flush(ctx);
+    ff_h2645_packet_uninit(&h266->common.read_packet);
+ }
+
 static void cbs_h264_free_sei(void *opaque, uint8_t *content)
 {
     H264RawSEI *sei = (H264RawSEI*)content;
@@ -1556,6 +1950,33 @@ static const CodedBitstreamUnitTypeDescriptor cbs_h265_unit_types[] = {
     CBS_UNIT_TYPE_END_OF_LIST
 };
 
+static void cbs_h266_free_sei(void *opaque, uint8_t *content)
+{
+    H266RawSEI *sei = (H266RawSEI*)content;
+    ff_cbs_sei_free_message_list(&sei->message_list);
+    av_free(content);
+}
+
+static const CodedBitstreamUnitTypeDescriptor cbs_h266_unit_types[] = {
+    CBS_UNIT_TYPE_INTERNAL_REF(VVC_VPS_NUT, H266RawVPS, extension_data.data),
+    CBS_UNIT_TYPE_INTERNAL_REF(VVC_SPS_NUT, H266RawSPS, extension_data.data),
+    CBS_UNIT_TYPE_INTERNAL_REF(VVC_PPS_NUT, H266RawPPS, extension_data.data),
+
+    CBS_UNIT_TYPE_POD(VVC_PH_NUT , H266RawPH),
+    CBS_UNIT_TYPE_POD(VVC_AUD_NUT, H266RawAUD),
+
+    CBS_UNIT_RANGE_INTERNAL_REF(VVC_TRAIL_NUT, VVC_RASL_NUT,
+                                H266RawSlice, data),
+
+    CBS_UNIT_RANGE_INTERNAL_REF(VVC_IDR_W_RADL, VVC_GDR_NUT,
+                                H266RawSlice, data),
+
+    CBS_UNIT_TYPES_COMPLEX((VVC_PREFIX_SEI_NUT, VVC_SUFFIX_SEI_NUT),
+                           H266RawSEI, cbs_h266_free_sei),
+
+    CBS_UNIT_TYPE_END_OF_LIST
+};
+
 const CodedBitstreamType ff_cbs_type_h264 = {
     .codec_id          = AV_CODEC_ID_H264,
 
@@ -1588,6 +2009,22 @@ const CodedBitstreamType ff_cbs_type_h265 = {
 
     .flush             = &cbs_h265_flush,
     .close             = &cbs_h265_close,
+};
+
+const CodedBitstreamType ff_cbs_type_h266 = {
+    .codec_id          = AV_CODEC_ID_VVC,
+
+    .priv_data_size    = sizeof(CodedBitstreamH266Context),
+
+    .unit_types        = cbs_h266_unit_types,
+
+    .split_fragment    = &cbs_h2645_split_fragment,
+    .read_unit         = &cbs_h266_read_nal_unit,
+    .write_unit        = &cbs_h266_write_nal_unit,
+    .assemble_fragment = &cbs_h2645_assemble_fragment,
+
+    .flush             = &cbs_h266_flush,
+    .close             = &cbs_h266_close,
 };
 
 static const SEIMessageTypeDescriptor cbs_sei_common_types[] = {
@@ -1740,6 +2177,16 @@ static const SEIMessageTypeDescriptor cbs_sei_h265_types[] = {
     SEI_MESSAGE_TYPE_END
 };
 
+static const SEIMessageTypeDescriptor cbs_sei_h266_types[] = {
+    {
+        SEI_TYPE_DECODED_PICTURE_HASH,
+        0, 1,
+        sizeof(H266RawSEIDecodedPictureHash),
+        SEI_MESSAGE_RW(h266, sei_decoded_picture_hash),
+    },
+    SEI_MESSAGE_TYPE_END
+};
+
 const SEIMessageTypeDescriptor *ff_cbs_sei_find_type(CodedBitstreamContext *ctx,
                                                      int payload_type)
 {
@@ -1757,6 +2204,9 @@ const SEIMessageTypeDescriptor *ff_cbs_sei_find_type(CodedBitstreamContext *ctx,
         break;
     case AV_CODEC_ID_H265:
         codec_list = cbs_sei_h265_types;
+        break;
+    case AV_CODEC_ID_H266:
+        codec_list = cbs_sei_h266_types;
         break;
     default:
         return NULL;
