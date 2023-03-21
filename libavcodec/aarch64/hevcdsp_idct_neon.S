@@ -5,7 +5,7 @@
  *
  * Ported from arm/hevcdsp_idct_neon.S by
  * Copyright (c) 2020 Reimar Döffinger
- * Copyright (c) 2020 J. Dekker
+ * Copyright (c) 2023 J. Dekker <jdek@itanimul.li>
  *
  * This file is part of FFmpeg.
  *
@@ -37,13 +37,6 @@ const trans, align=4
         .short          61, 54, 46, 38
         .short          31, 22, 13, 4
 endconst
-
-.macro clip2 in1, in2, min, max
-        smax            \in1, \in1, \min
-        smax            \in2, \in2, \min
-        smin            \in1, \in1, \max
-        smin            \in2, \in2, \max
-.endm
 
 function ff_hevc_add_residual_4x4_8_neon, export=1
         ld1             {v0.8h-v1.8h}, [x1]
@@ -182,7 +175,7 @@ function hevc_add_residual_4x4_16_neon, export=0
         ld1             {v3.d}[1], [x12], x2
         movi            v4.8h, #0
         sqadd           v1.8h, v1.8h, v3.8h
-        clip2           v0.8h, v1.8h, v4.8h, v21.8h
+        clip            v4.8h, v21.8h, v0.8h, v1.8h
         st1             {v0.d}[0], [x0],  x2
         st1             {v0.d}[1], [x0],  x2
         st1             {v1.d}[0], [x0],  x2
@@ -201,7 +194,7 @@ function hevc_add_residual_8x8_16_neon, export=0
         sqadd           v0.8h, v0.8h, v2.8h
         ld1             {v3.8h}, [x12]
         sqadd           v1.8h, v1.8h, v3.8h
-        clip2           v0.8h, v1.8h, v4.8h, v21.8h
+        clip            v4.8h, v21.8h, v0.8h, v1.8h
         st1             {v0.8h}, [x0],  x2
         st1             {v1.8h}, [x12], x2
         bne             1b
@@ -221,8 +214,7 @@ function hevc_add_residual_16x16_16_neon, export=0
         sqadd           v1.8h, v1.8h, v17.8h
         sqadd           v2.8h, v2.8h, v18.8h
         sqadd           v3.8h, v3.8h, v19.8h
-        clip2           v0.8h, v1.8h, v20.8h, v21.8h
-        clip2           v2.8h, v3.8h, v20.8h, v21.8h
+        clip            v20.8h, v21.8h, v0.8h, v1.8h, v2.8h, v3.8h
         st1             {v0.8h-v1.8h}, [x0],  x2
         st1             {v2.8h-v3.8h}, [x12], x2
         bne             1b
@@ -239,8 +231,7 @@ function hevc_add_residual_32x32_16_neon, export=0
         sqadd           v1.8h, v1.8h, v17.8h
         sqadd           v2.8h, v2.8h, v18.8h
         sqadd           v3.8h, v3.8h, v19.8h
-        clip2           v0.8h, v1.8h, v20.8h, v21.8h
-        clip2           v2.8h, v3.8h, v20.8h, v21.8h
+        clip            v20.8h, v21.8h, v0.8h, v1.8h, v2.8h, v3.8h
         st1             {v0.8h-v3.8h}, [x0], x2
         bne             1b
         ret

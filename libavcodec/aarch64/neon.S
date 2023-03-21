@@ -1,6 +1,8 @@
 /*
  * This file is part of FFmpeg.
  *
+ * Copyright (c) 2023 J. Dekker <jdek@itanimul.li>
+ *
  * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -15,6 +17,15 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+.macro clip min, max, regs:vararg
+.irp x, \regs
+        smax            \x, \x, \min
+.endr
+.irp x, \regs
+        smin            \x, \x, \max
+.endr
+.endm
 
 .macro  transpose_8x8B  r0, r1, r2, r3, r4, r5, r6, r7, r8, r9
         trn1            \r8\().8B,  \r0\().8B,  \r1\().8B
