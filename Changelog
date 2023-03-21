@@ -23,6 +23,7 @@ version <next>:
 - Microsoft RLE video encoder
 - Raw AC-4 muxer and demuxer
 - Raw VVC bitstream parser
+- Bitstream filter for editing metadata in VVC streams
 
 version 6.0:
 - Radiance HDR image support
