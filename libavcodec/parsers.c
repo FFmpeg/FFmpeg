@@ -75,6 +75,7 @@ extern const AVCodecParser ff_vorbis_parser;
 extern const AVCodecParser ff_vp3_parser;
 extern const AVCodecParser ff_vp8_parser;
 extern const AVCodecParser ff_vp9_parser;
+extern const AVCodecParser ff_vvc_parser;
 extern const AVCodecParser ff_webp_parser;
 extern const AVCodecParser ff_xbm_parser;
 extern const AVCodecParser ff_xma_parser;
