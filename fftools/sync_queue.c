@@ -116,6 +116,11 @@ static int64_t frame_ts(const SyncQueue *sq, SyncQueueFrame frame)
            frame.f->pts + frame.f->duration;
 }
 
+static int frame_samples(const SyncQueue *sq, SyncQueueFrame frame)
+{
+    return (sq->type == SYNC_QUEUE_PACKETS) ? 0 : frame.f->nb_samples;
+}
+
 static int frame_null(const SyncQueue *sq, SyncQueueFrame frame)
 {
     return (sq->type == SYNC_QUEUE_PACKETS) ? (frame.p == NULL) : (frame.f == NULL);
@@ -293,7 +298,7 @@ int sq_send(SyncQueue *sq, unsigned int stream_idx, SyncQueueFrame frame)
     SyncQueueStream *st;
     SyncQueueFrame dst;
     int64_t ts;
-    int ret;
+    int ret, nb_samples;
 
     av_assert0(stream_idx < sq->nb_streams);
     st = &sq->streams[stream_idx];
@@ -312,6 +317,14 @@ int sq_send(SyncQueue *sq, unsigned int stream_idx, SyncQueueFrame frame)
         return ret;
 
     frame_move(sq, dst, frame);
+
+    nb_samples = frame_samples(sq, dst);
+    // make sure frame duration is consistent with sample count
+    if (nb_samples) {
+        av_assert0(dst.f->sample_rate > 0);
+        dst.f->duration = av_rescale_q(nb_samples, (AVRational){ 1, dst.f->sample_rate },
+                                       dst.f->time_base);
+    }
 
     ts = frame_ts(sq, dst);
 
