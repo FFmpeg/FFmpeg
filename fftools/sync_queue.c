@@ -96,6 +96,8 @@ struct SyncQueue {
 
     // pool of preallocated frames to avoid constant allocations
     ObjPool *pool;
+
+    int have_limiting;
 };
 
 static void frame_move(const SyncQueue *sq, SyncQueueFrame dst,
@@ -354,8 +356,9 @@ static int receive_for_stream(SyncQueue *sq, unsigned int stream_idx,
 
         /* We can release frames that do not end after the queue head.
          * Frames with no timestamps are just passed through with no conditions.
+         * Frames are also passed through when there are no limiting streams.
          */
-        if (cmp <= 0 || ts == AV_NOPTS_VALUE) {
+        if (cmp <= 0 || ts == AV_NOPTS_VALUE || !sq->have_limiting) {
             frame_move(sq, frame, peek);
             objpool_release(sq->pool, (void**)&peek);
             av_fifo_drain2(st->fifo, 1);
@@ -426,6 +429,8 @@ int sq_add_stream(SyncQueue *sq, int limiting)
     st->head_ts = AV_NOPTS_VALUE;
     st->frames_max = UINT64_MAX;
     st->limiting   = limiting;
+
+    sq->have_limiting |= limiting;
 
     return sq->nb_streams++;
 }
