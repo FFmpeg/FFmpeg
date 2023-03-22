@@ -98,6 +98,7 @@ typedef struct PNGDecContext {
     int bpp;
     int has_trns;
     uint8_t transparent_color_be[6];
+    int significant_bits;
 
     uint32_t palette[256];
     uint8_t *crow_buf;
@@ -716,6 +717,14 @@ static int populate_avctx_color_fields(AVCodecContext *avctx, AVFrame *frame)
     avctx->colorspace = frame->colorspace = AVCOL_SPC_RGB;
     avctx->color_range = frame->color_range = AVCOL_RANGE_JPEG;
 
+    /*
+     * tRNS sets alpha depth to full, so we ignore sBIT if set.
+     * As a result we must wait until now to set
+     * avctx->bits_per_raw_sample in case tRNS appears after sBIT
+     */
+    if (!s->has_trns && s->significant_bits > 0)
+        avctx->bits_per_raw_sample = s->significant_bits;
+
     return 0;
 }
 
@@ -994,6 +1003,41 @@ static int decode_iccp_chunk(PNGDecContext *s, GetByteContext *gb, AVFrame *f)
 fail:
     s->iccp_name[0] = 0;
     return ret;
+}
+
+static int decode_sbit_chunk(AVCodecContext *avctx, PNGDecContext *s,
+                             GetByteContext *gb)
+{
+    int bits = 0;
+    int channels;
+
+    if (!(s->hdr_state & PNG_IHDR)) {
+        av_log(avctx, AV_LOG_ERROR, "sBIT before IHDR\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    if (s->pic_state & PNG_IDAT) {
+        av_log(avctx, AV_LOG_ERROR, "sBIT after IDAT\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    channels = ff_png_get_nb_channels(s->color_type);
+
+    if (bytestream2_get_bytes_left(gb) != channels)
+        return AVERROR_INVALIDDATA;
+
+    for (int i = 0; i < channels; i++) {
+        int b = bytestream2_get_byteu(gb);
+        bits = FFMAX(b, bits);
+    }
+
+    if (bits < 0 || bits > s->bit_depth) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid significant bits: %d\n", bits);
+        return AVERROR_INVALIDDATA;
+    }
+    s->significant_bits = bits;
+
+    return 0;
 }
 
 static void handle_small_bpp(PNGDecContext *s, AVFrame *p)
@@ -1440,6 +1484,10 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
 
             break;
         }
+        case MKTAG('s', 'B', 'I', 'T'):
+            if ((ret = decode_sbit_chunk(avctx, s, &gb_chunk)) < 0)
+                goto fail;
+            break;
         case MKTAG('g', 'A', 'M', 'A'): {
             AVBPrint bp;
             char *gamma_str;
