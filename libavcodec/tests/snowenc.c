@@ -31,6 +31,7 @@ int main(void){
 #define width  256
 #define height 256
     int buffer[2][width*height];
+    short obuffer[width*height];
     SnowContext s;
     int i;
     AVLFG prng;
@@ -49,24 +50,28 @@ int main(void){
 
     printf("testing 5/3 DWT\n");
     for(i=0; i<width*height; i++)
-        buffer[0][i] = buffer[1][i] = av_lfg_get(&prng) % 54321 - 12345;
+        buffer[0][i] = buffer[1][i] = av_lfg_get(&prng) % 19000 - 9000;
 
     ff_spatial_dwt(buffer[0], s.temp_dwt_buffer, width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
-    ff_spatial_idwt((IDWTELEM*)buffer[0], s.temp_idwt_buffer, width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
+    for(i=0; i<width*height; i++)
+        obuffer[i] = buffer[0][i];
+    ff_spatial_idwt(obuffer, s.temp_idwt_buffer, width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
 
     for(i=0; i<width*height; i++)
-        if(buffer[0][i]!= buffer[1][i]) printf("fsck: %6d %12d %7d\n",i, buffer[0][i], buffer[1][i]);
+        if(buffer[1][i]!= obuffer[i]) printf("fsck: %4dx%4dx %12d %7d\n",i%width, i/width, buffer[1][i], obuffer[i]);
 
     printf("testing 9/7 DWT\n");
     s.spatial_decomposition_type=0;
     for(i=0; i<width*height; i++)
-        buffer[0][i] = buffer[1][i] = av_lfg_get(&prng) % 54321 - 12345;
+        buffer[0][i] = buffer[1][i] = av_lfg_get(&prng) % 11000 - 5000;
 
     ff_spatial_dwt(buffer[0], s.temp_dwt_buffer, width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
-    ff_spatial_idwt((IDWTELEM*)buffer[0], s.temp_idwt_buffer, width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
+    for(i=0; i<width*height; i++)
+        obuffer[i] = buffer[0][i];
+    ff_spatial_idwt(obuffer, s.temp_idwt_buffer, width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
 
     for(i=0; i<width*height; i++)
-        if(FFABS(buffer[0][i] - buffer[1][i])>20) printf("fsck: %6d %12d %7d\n",i, buffer[0][i], buffer[1][i]);
+        if(FFABS(buffer[1][i] - obuffer[i])>20) printf("fsck: %4dx%4d %12d %7d\n",i%width, i/width, buffer[1][i], obuffer[i]);
 
     {
     int level, orientation, x, y;
@@ -87,12 +92,12 @@ int main(void){
                 if(orientation&1) buf+=w;
                 if(orientation>1) buf+=stride>>1;
 
-                memset(buffer[0], 0, sizeof(int)*width*height);
+                memset(obuffer, 0, sizeof(short)*width*height);
                 buf[w/2 + h/2*stride]= 256*256;
-                ff_spatial_idwt((IDWTELEM*)buffer[0], s.temp_idwt_buffer, width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
+                ff_spatial_idwt(obuffer, s.temp_idwt_buffer, width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
                 for(y=0; y<height; y++){
                     for(x=0; x<width; x++){
-                        int64_t d= buffer[0][x + y*width];
+                        int64_t d= obuffer[x + y*width];
                         error += d*d;
                         if(FFABS(width/2-x)<9 && FFABS(height/2-y)<9 && level==2) printf("%8"PRId64" ", d);
                     }
