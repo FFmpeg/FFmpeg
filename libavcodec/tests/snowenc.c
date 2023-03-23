@@ -93,14 +93,14 @@ int main(void){
                 int w= width  >> (s.spatial_decomposition_count-level);
                 int h= height >> (s.spatial_decomposition_count-level);
                 int stride= width  << (s.spatial_decomposition_count-level);
-                DWTELEM *buf= buffer[0];
+                IDWTELEM *buf= obuffer;
                 int64_t error=0;
 
                 if(orientation&1) buf+=w;
                 if(orientation>1) buf+=stride>>1;
 
                 memset(obuffer, 0, sizeof(short)*width*height);
-                buf[w/2 + h/2*stride]= 256*256;
+                buf[w/2 + h/2*stride]= 8*256;
                 ff_spatial_idwt(obuffer, s.temp_idwt_buffer, width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
                 for(y=0; y<height; y++){
                     for(x=0; x<width; x++){
