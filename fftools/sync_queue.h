@@ -72,6 +72,16 @@ void sq_limit_frames(SyncQueue *sq, unsigned int stream_idx,
                      uint64_t max_frames);
 
 /**
+ * Set a constant output audio frame size, in samples. Can only be used with
+ * SYNC_QUEUE_FRAMES queues and audio streams.
+ *
+ * All output frames will have exactly frame_samples audio samples, except
+ * possibly for the last one, which may have fewer.
+ */
+void sq_frame_samples(SyncQueue *sq, unsigned int stream_idx,
+                      int frame_samples);
+
+/**
  * Submit a frame for the stream with index stream_idx.
  *
  * On success, the sync queue takes ownership of the frame and will reset the
