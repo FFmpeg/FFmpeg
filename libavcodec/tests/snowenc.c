@@ -37,6 +37,7 @@ int main(void){
     AVLFG prng;
     s.spatial_decomposition_count=6;
     s.spatial_decomposition_type=1;
+    int ret = 0;
 
     s.temp_dwt_buffer  = av_calloc(width, sizeof(*s.temp_dwt_buffer));
     s.temp_idwt_buffer = av_calloc(width, sizeof(*s.temp_idwt_buffer));
@@ -58,7 +59,10 @@ int main(void){
     ff_spatial_idwt(obuffer, s.temp_idwt_buffer, width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
 
     for(i=0; i<width*height; i++)
-        if(buffer[1][i]!= obuffer[i]) printf("fsck: %4dx%4dx %12d %7d\n",i%width, i/width, buffer[1][i], obuffer[i]);
+        if(buffer[1][i]!= obuffer[i]) {
+            printf("fsck: %4dx%4dx %12d %7d\n",i%width, i/width, buffer[1][i], obuffer[i]);
+            ret = 1;
+        }
 
     printf("testing 9/7 DWT\n");
     s.spatial_decomposition_type=0;
@@ -71,7 +75,10 @@ int main(void){
     ff_spatial_idwt(obuffer, s.temp_idwt_buffer, width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
 
     for(i=0; i<width*height; i++)
-        if(FFABS(buffer[1][i] - obuffer[i])>20) printf("fsck: %4dx%4d %12d %7d\n",i%width, i/width, buffer[1][i], obuffer[i]);
+        if(FFABS(buffer[1][i] - obuffer[i])>20) {
+            printf("fsck: %4dx%4d %12d %7d\n",i%width, i/width, buffer[1][i], obuffer[i]);
+            ret = 1;
+        }
 
     {
     int level, orientation, x, y;
@@ -137,5 +144,5 @@ int main(void){
         }
 
     }
-    return 0;
+    return ret;
 }
