@@ -107,6 +107,7 @@
         vshl.s16   q5, q5, #1
         vcgt.s16   q3, q0, q4
 
+        vmovn.i16  d6, q3
         vshr.s16   q1, q0, #2
         vmovn.i16  d6, q3
         vcgt.s16   q5, q1, q5
@@ -145,6 +146,7 @@
         vtrn.32    q2, q5
         vand       q5, q2
         vneg.s16   q6, q7
+        vmovn.i16  d4, q5
         vmovn.i16  d4, q2
         vmov       r8, s8
 
