@@ -1756,8 +1756,10 @@ static int mkv_write_track_video(AVFormatContext *s, MatroskaMuxContext *mkv,
     const AVDictionaryEntry *tag;
     int display_width_div = 1, display_height_div = 1;
     uint8_t color_space[4], projection_private[20];
+    const AVPacketSideData *sd;
     EBML_WRITER(MAX_FIELD_ORDER_ELEMS + MAX_STEREO_MODE_ELEMS      +
                 MAX_VIDEO_COLOR_ELEMS + MAX_VIDEO_PROJECTION_ELEMS + 8);
+    int cropped_width = par->width, cropped_height = par->height;
     int ret;
 
     ebml_writer_open_master(&writer, MATROSKA_ID_TRACKVIDEO);
@@ -1780,25 +1782,53 @@ static int mkv_write_track_video(AVFormatContext *s, MatroskaMuxContext *mkv,
          (tag = av_dict_get( s->metadata, "alpha_mode", NULL, 0))) && strtol(tag->value, NULL, 0))
         ebml_writer_add_uint(&writer, MATROSKA_ID_VIDEOALPHAMODE, 1);
 
+    sd = av_packet_side_data_get(st->codecpar->coded_side_data,
+                                 st->codecpar->nb_coded_side_data,
+                                 AV_PKT_DATA_FRAME_CROPPING);
+    if (sd && sd->size == sizeof(uint32_t) * 4) {
+        uint32_t top, bottom, left, right;
+
+        top    = AV_RL32(sd->data +  0);
+        bottom = AV_RL32(sd->data +  4);
+        left   = AV_RL32(sd->data +  8);
+        right  = AV_RL32(sd->data + 12);
+
+        if (left >= INT_MAX - right ||
+            top >= INT_MAX - bottom ||
+            (left + right) >= par->width ||
+            (top + bottom) >= par->height) {
+            av_log(s, AV_LOG_ERROR, "Invalid cropping dimensions in stream side data\n");
+            return AVERROR(EINVAL);
+        }
+
+        ebml_writer_add_uint(&writer, MATROSKA_ID_VIDEOPIXELCROPB, bottom);
+        ebml_writer_add_uint(&writer, MATROSKA_ID_VIDEOPIXELCROPT, top);
+        ebml_writer_add_uint(&writer, MATROSKA_ID_VIDEOPIXELCROPL, left);
+        ebml_writer_add_uint(&writer, MATROSKA_ID_VIDEOPIXELCROPR, right);
+
+        cropped_width  -= left + right;
+        cropped_height -= top + bottom;
+    }
+
     // write DisplayWidth and DisplayHeight, they contain the size of
     // a single source view and/or the display aspect ratio
     if (st->sample_aspect_ratio.num) {
-        int64_t d_width = av_rescale(par->width, st->sample_aspect_ratio.num, st->sample_aspect_ratio.den);
+        int64_t d_width = av_rescale(cropped_width, st->sample_aspect_ratio.num, st->sample_aspect_ratio.den);
         if (d_width > INT_MAX) {
             av_log(s, AV_LOG_ERROR, "Overflow in display width\n");
             return AVERROR(EINVAL);
         }
-        if (d_width != par->width || display_width_div != 1 || display_height_div != 1) {
+        if (d_width != cropped_width || display_width_div != 1 || display_height_div != 1) {
             if (IS_WEBM(mkv) || display_width_div != 1 || display_height_div != 1) {
                 ebml_writer_add_uint(&writer, MATROSKA_ID_VIDEODISPLAYWIDTH,
                                      d_width / display_width_div);
                 ebml_writer_add_uint(&writer, MATROSKA_ID_VIDEODISPLAYHEIGHT,
-                                     par->height / display_height_div);
+                                     cropped_height / display_height_div);
             } else {
                 AVRational display_aspect_ratio;
                 av_reduce(&display_aspect_ratio.num, &display_aspect_ratio.den,
-                            par->width  * (int64_t)st->sample_aspect_ratio.num,
-                            par->height * (int64_t)st->sample_aspect_ratio.den,
+                            cropped_width  * (int64_t)st->sample_aspect_ratio.num,
+                            cropped_height * (int64_t)st->sample_aspect_ratio.den,
                             1024 * 1024);
                 ebml_writer_add_uint(&writer, MATROSKA_ID_VIDEODISPLAYWIDTH,
                                      display_aspect_ratio.num);
@@ -1810,9 +1840,9 @@ static int mkv_write_track_video(AVFormatContext *s, MatroskaMuxContext *mkv,
         }
     } else if (display_width_div != 1 || display_height_div != 1) {
         ebml_writer_add_uint(&writer, MATROSKA_ID_VIDEODISPLAYWIDTH,
-                             par->width / display_width_div);
+                             cropped_width / display_width_div);
         ebml_writer_add_uint(&writer, MATROSKA_ID_VIDEODISPLAYHEIGHT,
-                             par->height / display_height_div);
+                             cropped_height / display_height_div);
     } else if (!IS_WEBM(mkv))
         ebml_writer_add_uint(&writer, MATROSKA_ID_VIDEODISPLAYUNIT,
                              MATROSKA_VIDEO_DISPLAYUNIT_UNKNOWN);
