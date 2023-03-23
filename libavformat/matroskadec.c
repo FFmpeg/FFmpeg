@@ -213,7 +213,13 @@ typedef struct MatroskaTrackVideo {
     uint64_t display_height;
     uint64_t pixel_width;
     uint64_t pixel_height;
+    uint64_t cropped_width;
+    uint64_t cropped_height;
     EbmlBin  color_space;
+    uint64_t pixel_cropt;
+    uint64_t pixel_cropl;
+    uint64_t pixel_cropb;
+    uint64_t pixel_cropr;
     uint64_t display_unit;
     uint64_t interlaced;
     uint64_t field_order;
@@ -527,10 +533,10 @@ static EbmlSyntax matroska_track_video[] = {
     { MATROSKA_ID_VIDEOALPHAMODE,      EBML_UINT,  0, 0, offsetof(MatroskaTrackVideo, alpha_mode), { .u = 0 } },
     { MATROSKA_ID_VIDEOCOLOR,          EBML_NEST,  0, sizeof(MatroskaTrackVideoColor), offsetof(MatroskaTrackVideo, color), { .n = matroska_track_video_color } },
     { MATROSKA_ID_VIDEOPROJECTION,     EBML_NEST,  0, 0, offsetof(MatroskaTrackVideo, projection), { .n = matroska_track_video_projection } },
-    { MATROSKA_ID_VIDEOPIXELCROPB,     EBML_NONE },
-    { MATROSKA_ID_VIDEOPIXELCROPT,     EBML_NONE },
-    { MATROSKA_ID_VIDEOPIXELCROPL,     EBML_NONE },
-    { MATROSKA_ID_VIDEOPIXELCROPR,     EBML_NONE },
+    { MATROSKA_ID_VIDEOPIXELCROPB,     EBML_UINT,  0, 0, offsetof(MatroskaTrackVideo, pixel_cropb), {.u = 0 } },
+    { MATROSKA_ID_VIDEOPIXELCROPT,     EBML_UINT,  0, 0, offsetof(MatroskaTrackVideo, pixel_cropt), {.u = 0 } },
+    { MATROSKA_ID_VIDEOPIXELCROPL,     EBML_UINT,  0, 0, offsetof(MatroskaTrackVideo, pixel_cropl), {.u = 0 } },
+    { MATROSKA_ID_VIDEOPIXELCROPR,     EBML_UINT,  0, 0, offsetof(MatroskaTrackVideo, pixel_cropr), {.u = 0 } },
     { MATROSKA_ID_VIDEODISPLAYUNIT,    EBML_UINT,  0, 0, offsetof(MatroskaTrackVideo, display_unit), { .u= MATROSKA_VIDEO_DISPLAYUNIT_PIXELS } },
     { MATROSKA_ID_VIDEOFLAGINTERLACED, EBML_UINT,  0, 0, offsetof(MatroskaTrackVideo, interlaced),  { .u = MATROSKA_VIDEO_INTERLACE_FLAG_UNDETERMINED } },
     { MATROSKA_ID_VIDEOFIELDORDER,     EBML_UINT,  0, 0, offsetof(MatroskaTrackVideo, field_order), { .u = MATROSKA_VIDEO_FIELDORDER_UNDETERMINED } },
@@ -2967,13 +2973,29 @@ static int mkv_parse_video(MatroskaTrack *track, AVStream *st,
     if (track->video.display_unit < MATROSKA_VIDEO_DISPLAYUNIT_UNKNOWN) {
         if (track->video.display_width       && track->video.display_height &&
             track->video.display_width != -1 && track->video.display_height != -1 &&
-            par->height  < INT64_MAX / track->video.display_width  / display_width_mul &&
-            par->width   < INT64_MAX / track->video.display_height / display_height_mul)
+            track->video.cropped_height < INT64_MAX / track->video.display_width  / display_width_mul &&
+            track->video.cropped_width  < INT64_MAX / track->video.display_height / display_height_mul)
             av_reduce(&st->sample_aspect_ratio.num,
                       &st->sample_aspect_ratio.den,
-                      par->height * track->video.display_width  * display_width_mul,
-                      par->width  * track->video.display_height * display_height_mul,
+                      track->video.cropped_height * track->video.display_width  * display_width_mul,
+                      track->video.cropped_width  * track->video.display_height * display_height_mul,
                       INT_MAX);
+    }
+    if (track->video.cropped_width  != track->video.pixel_width ||
+        track->video.cropped_height != track->video.pixel_height) {
+        uint8_t *cropping;
+        AVPacketSideData *sd = av_packet_side_data_new(&st->codecpar->coded_side_data,
+                                                       &st->codecpar->nb_coded_side_data,
+                                                       AV_PKT_DATA_FRAME_CROPPING,
+                                                       sizeof(uint32_t) * 4, 0);
+        if (!sd)
+            return AVERROR(ENOMEM);
+
+        cropping = sd->data;
+        bytestream_put_le32(&cropping, track->video.pixel_cropt);
+        bytestream_put_le32(&cropping, track->video.pixel_cropb);
+        bytestream_put_le32(&cropping, track->video.pixel_cropl);
+        bytestream_put_le32(&cropping, track->video.pixel_cropr);
     }
     if (par->codec_id != AV_CODEC_ID_HEVC)
         sti->need_parsing = AVSTREAM_PARSE_HEADERS;
@@ -3140,11 +3162,20 @@ static int matroska_parse_tracks(AVFormatContext *s)
                     track->default_duration = default_duration;
                 }
             }
+            if (track->video.pixel_cropl >= INT_MAX - track->video.pixel_cropr ||
+                track->video.pixel_cropt >= INT_MAX - track->video.pixel_cropb ||
+                (track->video.pixel_cropl + track->video.pixel_cropr) >= track->video.pixel_width ||
+                (track->video.pixel_cropt + track->video.pixel_cropb) >= track->video.pixel_height)
+                return AVERROR_INVALIDDATA;
+            track->video.cropped_width  = track->video.pixel_width  -
+                                          track->video.pixel_cropl  - track->video.pixel_cropr;
+            track->video.cropped_height = track->video.pixel_height -
+                                          track->video.pixel_cropt  - track->video.pixel_cropb;
             if (track->video.display_unit == MATROSKA_VIDEO_DISPLAYUNIT_PIXELS) {
                 if (track->video.display_width == -1)
-                    track->video.display_width = track->video.pixel_width;
+                    track->video.display_width = track->video.cropped_width;
                 if (track->video.display_height == -1)
-                    track->video.display_height = track->video.pixel_height;
+                    track->video.display_height = track->video.cropped_height;
             }
         } else if (track->type == MATROSKA_TRACK_TYPE_AUDIO) {
             if (!track->audio.out_samplerate)
