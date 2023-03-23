@@ -1544,10 +1544,10 @@ static void calculate_visual_weight(SnowContext *s, Plane *p){
     int level, orientation, x, y;
 
     for(level=0; level<s->spatial_decomposition_count; level++){
+        int64_t error=0;
         for(orientation=level ? 1 : 0; orientation<4; orientation++){
             SubBand *b= &p->band[level][orientation];
             IDWTELEM *ibuf= b->ibuf;
-            int64_t error=0;
 
             memset(s->spatial_idwt_buffer, 0, sizeof(*s->spatial_idwt_buffer)*width*height);
             ibuf[b->width/2 + b->height/2*b->stride]= 256*16;
@@ -1558,9 +1558,13 @@ static void calculate_visual_weight(SnowContext *s, Plane *p){
                     error += d*d;
                 }
             }
-
+            if (orientation == 2)
+                error /= 2;
             b->qlog= (int)(QROOT * log2(352256.0/sqrt(error)) + 0.5);
+            if (orientation != 1)
+                error = 0;
         }
+        p->band[level][1].qlog = p->band[level][2].qlog;
     }
 }
 
