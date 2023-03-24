@@ -1152,6 +1152,7 @@ int ff_dnn_execute_model_tf(const DNNModel *model, DNNExecBaseParams *exec_param
 
     ret = ff_dnn_fill_task(task, exec_params, tf_model, ctx->options.async, 1);
     if (ret != 0) {
+        av_log(ctx, AV_LOG_ERROR, "Fill task with invalid parameter(s).\n");
         av_freep(&task);
         return ret;
     }
