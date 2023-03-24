@@ -40,12 +40,28 @@
 #define INDENT_5 INDENT_4 INDENT_1
 #define INDENT_6 INDENT_5 INDENT_1
 #define C(N, S)          INDENT(N) #S "\n"
-#define GLSLC(N, S)      av_bprintf(&shd->src, C(N, S))
-#define GLSLA(...)       av_bprintf(&shd->src, __VA_ARGS__)
-#define GLSLF(N, S, ...) av_bprintf(&shd->src, C(N, S), __VA_ARGS__)
-#define GLSLD(D)         GLSLC(0, );                                           \
-                         av_bprint_append_data(&shd->src, D, strlen(D));       \
-                         GLSLC(0, )
+
+#define GLSLC(N, S)                     \
+    do {                                \
+        av_bprintf(&shd->src, C(N, S)); \
+    } while (0)
+
+#define GLSLA(...)                          \
+    do {                                    \
+        av_bprintf(&shd->src, __VA_ARGS__); \
+    } while (0)
+
+#define GLSLF(N, S, ...)                             \
+    do {                                             \
+        av_bprintf(&shd->src, C(N, S), __VA_ARGS__); \
+    } while (0)
+
+#define GLSLD(D)                                        \
+    do {                                                \
+        av_bprintf(&shd->src, "\n");                    \
+        av_bprint_append_data(&shd->src, D, strlen(D)); \
+        av_bprintf(&shd->src, "\n");                    \
+    } while (0)
 
 /* Helper, pretty much every Vulkan return value needs to be checked */
 #define RET(x)                                                                 \
