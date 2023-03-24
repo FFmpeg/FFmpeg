@@ -243,7 +243,7 @@ typedef struct RcOverride{
 #define AV_CODEC_FLAG_RECON_FRAME     (1 <<  6)
 /**
  * @par decoding
- * Request the decoder to propagate each packets AVPacket.opaque and
+ * Request the decoder to propagate each packet's AVPacket.opaque and
  * AVPacket.opaque_ref to its corresponding output AVFrame.
  *
  * @par encoding:
