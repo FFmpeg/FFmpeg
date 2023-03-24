@@ -457,6 +457,7 @@ static int load_tf_model(TFModel *tf_model, const char *model_filename)
     TF_DeleteSessionOptions(sess_opts);
     if (TF_GetCode(tf_model->status) != TF_OK)
     {
+        av_freep(&sess_config);
         av_log(ctx, AV_LOG_ERROR, "Failed to create new session with model graph\n");
         return DNN_GENERIC_ERROR;
     }
@@ -469,6 +470,7 @@ static int load_tf_model(TFModel *tf_model, const char *model_filename)
                       &init_op, 1, NULL, tf_model->status);
         if (TF_GetCode(tf_model->status) != TF_OK)
         {
+            av_freep(&sess_config);
             av_log(ctx, AV_LOG_ERROR, "Failed to run session when initializing\n");
             return DNN_GENERIC_ERROR;
         }
@@ -1125,6 +1127,7 @@ err:
     if (ff_safe_queue_push_back(tf_model->request_queue, request) < 0) {
         destroy_request_item(&request);
     }
+    ff_dnn_free_model_tf(&tf_model->model);
     return ret;
 }
 
@@ -1161,12 +1164,14 @@ int ff_dnn_execute_model_tf(const DNNModel *model, DNNExecBaseParams *exec_param
 
     ret = extract_lltask_from_task(task, tf_model->lltask_queue);
     if (ret != 0) {
+        av_freep(&task);
         av_log(ctx, AV_LOG_ERROR, "unable to extract last level task from task.\n");
         return ret;
     }
 
     request = ff_safe_queue_pop_front(tf_model->request_queue);
     if (!request) {
+        av_freep(&task);
         av_log(ctx, AV_LOG_ERROR, "unable to get infer request.\n");
         return AVERROR(EINVAL);
     }
