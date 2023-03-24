@@ -3175,8 +3175,6 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
         }
 
         break;
-    case AVMEDIA_TYPE_DATA:
-        break;
     default:
         abort();
         break;
