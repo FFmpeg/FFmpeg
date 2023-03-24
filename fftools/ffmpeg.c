@@ -3018,6 +3018,7 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
     InputStream *ist = ost->ist;
     AVCodecContext *enc_ctx = ost->enc_ctx;
     AVCodecContext *dec_ctx = NULL;
+    const AVCodec      *enc = enc_ctx->codec;
     OutputFile      *of = output_files[ost->file_index];
     int ret;
 
@@ -3044,9 +3045,9 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
             !ost->frame_rate.den))
             ost->frame_rate = ost->max_frame_rate;
 
-        if (enc_ctx->codec->supported_framerates && !ost->force_fps) {
-            int idx = av_find_nearest_q_idx(ost->frame_rate, enc_ctx->codec->supported_framerates);
-            ost->frame_rate = enc_ctx->codec->supported_framerates[idx];
+        if (enc->supported_framerates && !ost->force_fps) {
+            int idx = av_find_nearest_q_idx(ost->frame_rate, enc->supported_framerates);
+            ost->frame_rate = enc->supported_framerates[idx];
         }
         // reduce frame rate for mpeg4 to be within the spec limits
         if (enc_ctx->codec_id == AV_CODEC_ID_MPEG4) {
@@ -3119,7 +3120,7 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
                 frame->top_field_first = !!ost->top_field_first;
 
             if (frame->interlaced_frame) {
-                if (enc_ctx->codec->id == AV_CODEC_ID_MJPEG)
+                if (enc->id == AV_CODEC_ID_MJPEG)
                     enc_ctx->field_order = frame->top_field_first ? AV_FIELD_TT:AV_FIELD_BB;
                 else
                     enc_ctx->field_order = frame->top_field_first ? AV_FIELD_TB:AV_FIELD_BT;
@@ -3143,12 +3144,12 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
         }
         if (dec_ctx && dec_ctx->subtitle_header) {
             /* ASS code assumes this buffer is null terminated so add extra byte. */
-            ost->enc_ctx->subtitle_header = av_mallocz(dec_ctx->subtitle_header_size + 1);
-            if (!ost->enc_ctx->subtitle_header)
+            enc_ctx->subtitle_header = av_mallocz(dec_ctx->subtitle_header_size + 1);
+            if (!enc_ctx->subtitle_header)
                 return AVERROR(ENOMEM);
-            memcpy(ost->enc_ctx->subtitle_header, dec_ctx->subtitle_header,
+            memcpy(enc_ctx->subtitle_header, dec_ctx->subtitle_header,
                    dec_ctx->subtitle_header_size);
-            ost->enc_ctx->subtitle_header_size = dec_ctx->subtitle_header_size;
+            enc_ctx->subtitle_header_size = dec_ctx->subtitle_header_size;
         }
         if (ist && ist->dec->type == AVMEDIA_TYPE_SUBTITLE &&
             enc_ctx->codec_type == AVMEDIA_TYPE_SUBTITLE) {
@@ -3156,7 +3157,7 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
             AVCodecDescriptor const *input_descriptor =
                 avcodec_descriptor_get(ist->dec->id);
             AVCodecDescriptor const *output_descriptor =
-                avcodec_descriptor_get(ost->enc_ctx->codec_id);
+                avcodec_descriptor_get(enc_ctx->codec_id);
             if (input_descriptor)
                 input_props = input_descriptor->props & (AV_CODEC_PROP_TEXT_SUB | AV_CODEC_PROP_BITMAP_SUB);
             if (output_descriptor)
