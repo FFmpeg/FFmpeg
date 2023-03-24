@@ -724,23 +724,18 @@ early_exit:
     return float_pts;
 }
 
-static int init_output_stream(OutputStream *ost, AVFrame *frame,
-                              char *error, int error_len);
+static int init_output_stream(OutputStream *ost, AVFrame *frame);
 
 static int init_output_stream_wrapper(OutputStream *ost, AVFrame *frame,
                                       unsigned int fatal)
 {
     int ret = AVERROR_BUG;
-    char error[1024] = {0};
 
     if (ost->initialized)
         return 0;
 
-    ret = init_output_stream(ost, frame, error, sizeof(error));
+    ret = init_output_stream(ost, frame);
     if (ret < 0) {
-        av_log(ost, AV_LOG_ERROR, "Error initializing output stream: %s\n",
-               error);
-
         if (fatal)
             exit_program(1);
     }
@@ -3188,8 +3183,7 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
     return 0;
 }
 
-static int init_output_stream(OutputStream *ost, AVFrame *frame,
-                              char *error, int error_len)
+static int init_output_stream(OutputStream *ost, AVFrame *frame)
 {
     int ret = 0;
 
@@ -3212,19 +3206,16 @@ static int init_output_stream(OutputStream *ost, AVFrame *frame,
 
         ret = hw_device_setup_for_encode(ost);
         if (ret < 0) {
-            snprintf(error, error_len, "Device setup failed for "
-                     "encoder on output stream #%d:%d : %s",
-                     ost->file_index, ost->index, av_err2str(ret));
+            av_log(ost, AV_LOG_ERROR,
+                   "Encoding hardware device setup failed: %s\n", av_err2str(ret));
             return ret;
         }
 
         if ((ret = avcodec_open2(ost->enc_ctx, codec, &ost->encoder_opts)) < 0) {
             if (ret == AVERROR_EXPERIMENTAL)
                 abort_codec_experimental(codec, 1);
-            snprintf(error, error_len,
-                     "Error while opening encoder for output stream #%d:%d - "
-                     "maybe incorrect parameters such as bit_rate, rate, width or height",
-                    ost->file_index, ost->index);
+            av_log(ost, AV_LOG_ERROR, "Error while opening encoder - maybe "
+                   "incorrect parameters such as bit_rate, rate, width or height.\n");
             return ret;
         }
 
