@@ -1028,6 +1028,8 @@ static void do_audio_out(OutputFile *of, OutputStream *ost,
     AVCodecContext *enc = ost->enc_ctx;
     int ret;
 
+    init_output_stream_wrapper(ost, frame, 1);
+
     if (frame->pts == AV_NOPTS_VALUE)
         frame->pts = ost->next_pts;
     else {
@@ -1378,18 +1380,6 @@ static int reap_filters(int flush)
             continue;
         filter = ost->filter->filter;
 
-        /*
-         * Unlike video, with audio the audio frame size matters.
-         * Currently we are fully reliant on the lavfi filter chain to
-         * do the buffering deed for us, and thus the frame size parameter
-         * needs to be set accordingly. Where does one get the required
-         * frame size? From the initialized AVCodecContext of an audio
-         * encoder. Thus, if we have gotten to an audio stream, initialize
-         * the encoder earlier than receiving the first AVFrame.
-         */
-        if (av_buffersink_get_type(filter) == AVMEDIA_TYPE_AUDIO)
-            init_output_stream_wrapper(ost, NULL, 1);
-
         filtered_frame = ost->filtered_frame;
 
         while (1) {
@@ -1432,6 +1422,7 @@ static int reap_filters(int flush)
                 break;
             case AVMEDIA_TYPE_AUDIO:
                 if (!(enc->codec->capabilities & AV_CODEC_CAP_PARAM_CHANGE) &&
+                    avcodec_is_open(enc) &&
                     enc->ch_layout.nb_channels != filtered_frame->ch_layout.nb_channels) {
                     av_log(NULL, AV_LOG_ERROR,
                            "Audio filter graph output is not normalized and encoder does not support parameter changes\n");
@@ -3238,10 +3229,13 @@ static int init_output_stream(OutputStream *ost, AVFrame *frame,
                     ost->file_index, ost->index);
             return ret;
         }
-        if (codec->type == AVMEDIA_TYPE_AUDIO &&
-            !(codec->capabilities & AV_CODEC_CAP_VARIABLE_FRAME_SIZE))
-            av_buffersink_set_frame_size(ost->filter->filter,
-                                            ost->enc_ctx->frame_size);
+
+        if (ost->enc_ctx->frame_size) {
+            av_assert0(ost->sq_idx_encode >= 0);
+            sq_frame_samples(output_files[ost->file_index]->sq_encode,
+                             ost->sq_idx_encode, ost->enc_ctx->frame_size);
+        }
+
         assert_avoptions(ost->encoder_opts);
         if (ost->enc_ctx->bit_rate && ost->enc_ctx->bit_rate < 1000 &&
             ost->enc_ctx->codec_id != AV_CODEC_ID_CODEC2 /* don't complain about 700 bit/s modes */)
@@ -3331,12 +3325,8 @@ static int transcode_init(void)
 
     /*
      * initialize stream copy and subtitle/data streams.
-     * Encoded AVFrame based streams will get initialized as follows:
-     * - when the first AVFrame is received in do_video_out
-     * - just before the first AVFrame is received in either transcode_step
-     *   or reap_filters due to us requiring the filter chain buffer sink
-     *   to be configured with the correct audio frame size, which is only
-     *   known after the encoder is initialized.
+     * Encoded AVFrame based streams will get initialized when the first AVFrame
+     * is received in do_video_out
      */
     for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
         if (ost->enc_ctx &&
@@ -3943,30 +3933,6 @@ static int transcode_step(void)
     }
 
     if (ost->filter && ost->filter->graph->graph) {
-        /*
-         * Similar case to the early audio initialization in reap_filters.
-         * Audio is special in ffmpeg.c currently as we depend on lavfi's
-         * audio frame buffering/creation to get the output audio frame size
-         * in samples correct. The audio frame size for the filter chain is
-         * configured during the output stream initialization.
-         *
-         * Apparently avfilter_graph_request_oldest (called in
-         * transcode_from_filter just down the line) peeks. Peeking already
-         * puts one frame "ready to be given out", which means that any
-         * update in filter buffer sink configuration afterwards will not
-         * help us. And yes, even if it would be utilized,
-         * av_buffersink_get_samples is affected, as it internally utilizes
-         * the same early exit for peeked frames.
-         *
-         * In other words, if avfilter_graph_request_oldest would not make
-         * further filter chain configuration or usage of
-         * av_buffersink_get_samples useless (by just causing the return
-         * of the peeked AVFrame as-is), we could get rid of this additional
-         * early encoder initialization.
-         */
-        if (av_buffersink_get_type(ost->filter->filter) == AVMEDIA_TYPE_AUDIO)
-            init_output_stream_wrapper(ost, NULL, 1);
-
         if ((ret = transcode_from_filter(ost->filter->graph, &ist)) < 0)
             return ret;
         if (!ist)

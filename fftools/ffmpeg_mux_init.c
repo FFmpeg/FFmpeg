@@ -1451,7 +1451,7 @@ static void create_streams(Muxer *mux, const OptionsContext *o)
 static int setup_sync_queues(Muxer *mux, AVFormatContext *oc, int64_t buf_size_us)
 {
     OutputFile *of = &mux->of;
-    int nb_av_enc = 0, nb_interleaved = 0;
+    int nb_av_enc = 0, nb_audio_fs = 0, nb_interleaved = 0;
     int limit_frames = 0, limit_frames_av_enc = 0;
 
 #define IS_AV_ENC(ost, type)  \
@@ -1468,19 +1468,26 @@ static int setup_sync_queues(Muxer *mux, AVFormatContext *oc, int64_t buf_size_u
 
         nb_interleaved += IS_INTERLEAVED(type);
         nb_av_enc      += IS_AV_ENC(ost, type);
+        nb_audio_fs    += (ost->enc_ctx && type == AVMEDIA_TYPE_AUDIO &&
+                           !(ost->enc_ctx->codec->capabilities & AV_CODEC_CAP_VARIABLE_FRAME_SIZE));
 
         limit_frames        |=  ms->max_frames < INT64_MAX;
         limit_frames_av_enc |= (ms->max_frames < INT64_MAX) && IS_AV_ENC(ost, type);
     }
 
     if (!((nb_interleaved > 1 && of->shortest) ||
-          (nb_interleaved > 0 && limit_frames)))
+          (nb_interleaved > 0 && limit_frames) ||
+          nb_audio_fs))
         return 0;
 
-    /* if we have more than one encoded audio/video streams, or at least
-     * one encoded audio/video stream is frame-limited, then we
-     * synchronize them before encoding */
-    if ((of->shortest && nb_av_enc > 1) || limit_frames_av_enc) {
+    /* we use a sync queue before encoding when:
+     * - 'shortest' is in effect and we have two or more encoded audio/video
+     *   streams
+     * - at least one encoded audio/video stream is frame-limited, since
+     *   that has similar semantics to 'shortest'
+     * - at least one audio encoder requires constant frame sizes
+     */
+    if ((of->shortest && nb_av_enc > 1) || limit_frames_av_enc || nb_audio_fs) {
         of->sq_encode = sq_alloc(SYNC_QUEUE_FRAMES, buf_size_us);
         if (!of->sq_encode)
             return AVERROR(ENOMEM);

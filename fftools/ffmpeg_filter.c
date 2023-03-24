@@ -1242,14 +1242,6 @@ int configure_filtergraph(FilterGraph *fg)
 
     fg->reconfiguration = 1;
 
-    for (i = 0; i < fg->nb_outputs; i++) {
-        OutputStream *ost = fg->outputs[i]->ost;
-        if (ost->enc_ctx->codec_type == AVMEDIA_TYPE_AUDIO &&
-            !(ost->enc_ctx->codec->capabilities & AV_CODEC_CAP_VARIABLE_FRAME_SIZE))
-            av_buffersink_set_frame_size(ost->filter->filter,
-                                         ost->enc_ctx->frame_size);
-    }
-
     for (i = 0; i < fg->nb_inputs; i++) {
         AVFrame *tmp;
         while (av_fifo_read(fg->inputs[i]->frame_queue, &tmp, 1) >= 0) {
