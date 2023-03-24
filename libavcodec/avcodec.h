@@ -239,6 +239,15 @@ typedef struct RcOverride{
  *
  * Should only be used with encoders flagged with the
  * @ref AV_CODEC_CAP_ENCODER_RECON_FRAME capability.
+ *
+ * @note
+ * Each reconstructed frame returned by the encoder corresponds to the last
+ * encoded packet, i.e. the frames are returned in coded order rather than
+ * presentation order.
+ *
+ * @note
+ * Frame parameters (like pixel format or dimensions) do not have to match the
+ * AVCodecContext values. Make sure to use the values from the returned frame.
  */
 #define AV_CODEC_FLAG_RECON_FRAME     (1 <<  6)
 /**
