@@ -208,9 +208,11 @@ void ff_configure_buffers_for_index(AVFormatContext *s, int64_t time_tolerance)
                 for (; i2 < sti2->nb_index_entries; i2++) {
                     const AVIndexEntry *const e2 = &sti2->index_entries[i2];
                     int64_t e2_pts = av_rescale_q(e2->timestamp, st2->time_base, AV_TIME_BASE_Q);
+                    int64_t cur_delta;
                     if (e2_pts < e1_pts || e2_pts - (uint64_t)e1_pts < time_tolerance)
                         continue;
-                    pos_delta = FFMAX(pos_delta, e1->pos - e2->pos);
+                    cur_delta = FFABS(e1->pos - e2->pos);
+                    pos_delta = FFMAX(pos_delta, cur_delta);
                     break;
                 }
             }
