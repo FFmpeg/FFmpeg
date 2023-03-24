@@ -3179,92 +3179,92 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
     if (ost->bitexact)
         enc_ctx->flags |= AV_CODEC_FLAG_BITEXACT;
 
-        if (!av_dict_get(ost->encoder_opts, "threads", NULL, 0))
-            av_dict_set(&ost->encoder_opts, "threads", "auto", 0);
+    if (!av_dict_get(ost->encoder_opts, "threads", NULL, 0))
+        av_dict_set(&ost->encoder_opts, "threads", "auto", 0);
 
-        if (enc->capabilities & AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE) {
-            ret = av_dict_set(&ost->encoder_opts, "flags", "+copy_opaque", AV_DICT_MULTIKEY);
-            if (ret < 0)
-                return ret;
-        }
-
-        ret = hw_device_setup_for_encode(ost);
-        if (ret < 0) {
-            av_log(ost, AV_LOG_ERROR,
-                   "Encoding hardware device setup failed: %s\n", av_err2str(ret));
+    if (enc->capabilities & AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE) {
+        ret = av_dict_set(&ost->encoder_opts, "flags", "+copy_opaque", AV_DICT_MULTIKEY);
+        if (ret < 0)
             return ret;
+    }
+
+    ret = hw_device_setup_for_encode(ost);
+    if (ret < 0) {
+        av_log(ost, AV_LOG_ERROR,
+               "Encoding hardware device setup failed: %s\n", av_err2str(ret));
+        return ret;
+    }
+
+    if ((ret = avcodec_open2(ost->enc_ctx, enc, &ost->encoder_opts)) < 0) {
+        if (ret == AVERROR_EXPERIMENTAL)
+            abort_codec_experimental(enc, 1);
+        av_log(ost, AV_LOG_ERROR, "Error while opening encoder - maybe "
+               "incorrect parameters such as bit_rate, rate, width or height.\n");
+        return ret;
+    }
+
+    if (ost->enc_ctx->frame_size) {
+        av_assert0(ost->sq_idx_encode >= 0);
+        sq_frame_samples(output_files[ost->file_index]->sq_encode,
+                         ost->sq_idx_encode, ost->enc_ctx->frame_size);
+    }
+
+    assert_avoptions(ost->encoder_opts);
+    if (ost->enc_ctx->bit_rate && ost->enc_ctx->bit_rate < 1000 &&
+        ost->enc_ctx->codec_id != AV_CODEC_ID_CODEC2 /* don't complain about 700 bit/s modes */)
+        av_log(ost, AV_LOG_WARNING, "The bitrate parameter is set too low."
+                                    " It takes bits/s as argument, not kbits/s\n");
+
+    ret = avcodec_parameters_from_context(ost->st->codecpar, ost->enc_ctx);
+    if (ret < 0) {
+        av_log(ost, AV_LOG_FATAL,
+               "Error initializing the output stream codec context.\n");
+        exit_program(1);
+    }
+
+    if (ost->enc_ctx->nb_coded_side_data) {
+        int i;
+
+        for (i = 0; i < ost->enc_ctx->nb_coded_side_data; i++) {
+            const AVPacketSideData *sd_src = &ost->enc_ctx->coded_side_data[i];
+            uint8_t *dst_data;
+
+            dst_data = av_stream_new_side_data(ost->st, sd_src->type, sd_src->size);
+            if (!dst_data)
+                return AVERROR(ENOMEM);
+            memcpy(dst_data, sd_src->data, sd_src->size);
         }
+    }
 
-        if ((ret = avcodec_open2(ost->enc_ctx, enc, &ost->encoder_opts)) < 0) {
-            if (ret == AVERROR_EXPERIMENTAL)
-                abort_codec_experimental(enc, 1);
-            av_log(ost, AV_LOG_ERROR, "Error while opening encoder - maybe "
-                   "incorrect parameters such as bit_rate, rate, width or height.\n");
-            return ret;
-        }
-
-        if (ost->enc_ctx->frame_size) {
-            av_assert0(ost->sq_idx_encode >= 0);
-            sq_frame_samples(output_files[ost->file_index]->sq_encode,
-                             ost->sq_idx_encode, ost->enc_ctx->frame_size);
-        }
-
-        assert_avoptions(ost->encoder_opts);
-        if (ost->enc_ctx->bit_rate && ost->enc_ctx->bit_rate < 1000 &&
-            ost->enc_ctx->codec_id != AV_CODEC_ID_CODEC2 /* don't complain about 700 bit/s modes */)
-            av_log(ost, AV_LOG_WARNING, "The bitrate parameter is set too low."
-                                        " It takes bits/s as argument, not kbits/s\n");
-
-        ret = avcodec_parameters_from_context(ost->st->codecpar, ost->enc_ctx);
-        if (ret < 0) {
-            av_log(ost, AV_LOG_FATAL,
-                   "Error initializing the output stream codec context.\n");
-            exit_program(1);
-        }
-
-        if (ost->enc_ctx->nb_coded_side_data) {
-            int i;
-
-            for (i = 0; i < ost->enc_ctx->nb_coded_side_data; i++) {
-                const AVPacketSideData *sd_src = &ost->enc_ctx->coded_side_data[i];
-                uint8_t *dst_data;
-
-                dst_data = av_stream_new_side_data(ost->st, sd_src->type, sd_src->size);
-                if (!dst_data)
+    /*
+     * Add global input side data. For now this is naive, and copies it
+     * from the input stream's global side data. All side data should
+     * really be funneled over AVFrame and libavfilter, then added back to
+     * packet side data, and then potentially using the first packet for
+     * global side data.
+     */
+    if (ist) {
+        int i;
+        for (i = 0; i < ist->st->nb_side_data; i++) {
+            AVPacketSideData *sd = &ist->st->side_data[i];
+            if (sd->type != AV_PKT_DATA_CPB_PROPERTIES) {
+                uint8_t *dst = av_stream_new_side_data(ost->st, sd->type, sd->size);
+                if (!dst)
                     return AVERROR(ENOMEM);
-                memcpy(dst_data, sd_src->data, sd_src->size);
+                memcpy(dst, sd->data, sd->size);
+                if (ist->autorotate && sd->type == AV_PKT_DATA_DISPLAYMATRIX)
+                    av_display_rotation_set((int32_t *)dst, 0);
             }
         }
+    }
 
-        /*
-         * Add global input side data. For now this is naive, and copies it
-         * from the input stream's global side data. All side data should
-         * really be funneled over AVFrame and libavfilter, then added back to
-         * packet side data, and then potentially using the first packet for
-         * global side data.
-         */
-        if (ist) {
-            int i;
-            for (i = 0; i < ist->st->nb_side_data; i++) {
-                AVPacketSideData *sd = &ist->st->side_data[i];
-                if (sd->type != AV_PKT_DATA_CPB_PROPERTIES) {
-                    uint8_t *dst = av_stream_new_side_data(ost->st, sd->type, sd->size);
-                    if (!dst)
-                        return AVERROR(ENOMEM);
-                    memcpy(dst, sd->data, sd->size);
-                    if (ist->autorotate && sd->type == AV_PKT_DATA_DISPLAYMATRIX)
-                        av_display_rotation_set((int32_t *)dst, 0);
-                }
-            }
-        }
+    // copy timebase while removing common factors
+    if (ost->st->time_base.num <= 0 || ost->st->time_base.den <= 0)
+        ost->st->time_base = av_add_q(ost->enc_ctx->time_base, (AVRational){0, 1});
 
-        // copy timebase while removing common factors
-        if (ost->st->time_base.num <= 0 || ost->st->time_base.den <= 0)
-            ost->st->time_base = av_add_q(ost->enc_ctx->time_base, (AVRational){0, 1});
-
-        // copy estimated duration as a hint to the muxer
-        if (ost->st->duration <= 0 && ist && ist->st->duration > 0)
-            ost->st->duration = av_rescale_q(ist->st->duration, ist->st->time_base, ost->st->time_base);
+    // copy estimated duration as a hint to the muxer
+    if (ost->st->duration <= 0 && ist && ist->st->duration > 0)
+        ost->st->duration = av_rescale_q(ist->st->duration, ist->st->time_base, ost->st->time_base);
 
     ost->mux_timebase = enc_ctx->time_base;
 
