@@ -427,4 +427,5 @@ const AVFilter ff_vf_hwmap = {
     FILTER_OUTPUTS(hwmap_outputs),
     FILTER_QUERY_FUNC(hwmap_query_formats),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
+    .flags          = AVFILTER_FLAG_HWDEVICE,
 };

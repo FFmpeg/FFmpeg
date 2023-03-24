@@ -258,4 +258,5 @@ const AVFilter ff_vf_hwupload = {
     FILTER_OUTPUTS(hwupload_outputs),
     FILTER_QUERY_FUNC(hwupload_query_formats),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
+    .flags          = AVFILTER_FLAG_HWDEVICE,
 };
