@@ -3179,27 +3179,10 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
     if (ost->bitexact)
         enc_ctx->flags |= AV_CODEC_FLAG_BITEXACT;
 
-    ost->mux_timebase = enc_ctx->time_base;
-
-    return 0;
-}
-
-static int init_output_stream(OutputStream *ost, AVFrame *frame)
-{
-    int ret = 0;
-
-    if (ost->enc_ctx) {
-        const AVCodec *codec = ost->enc_ctx->codec;
-        InputStream *ist = ost->ist;
-
-        ret = init_output_stream_encode(ost, frame);
-        if (ret < 0)
-            return ret;
-
         if (!av_dict_get(ost->encoder_opts, "threads", NULL, 0))
             av_dict_set(&ost->encoder_opts, "threads", "auto", 0);
 
-        if (codec->capabilities & AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE) {
+        if (enc->capabilities & AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE) {
             ret = av_dict_set(&ost->encoder_opts, "flags", "+copy_opaque", AV_DICT_MULTIKEY);
             if (ret < 0)
                 return ret;
@@ -3212,9 +3195,9 @@ static int init_output_stream(OutputStream *ost, AVFrame *frame)
             return ret;
         }
 
-        if ((ret = avcodec_open2(ost->enc_ctx, codec, &ost->encoder_opts)) < 0) {
+        if ((ret = avcodec_open2(ost->enc_ctx, enc, &ost->encoder_opts)) < 0) {
             if (ret == AVERROR_EXPERIMENTAL)
-                abort_codec_experimental(codec, 1);
+                abort_codec_experimental(enc, 1);
             av_log(ost, AV_LOG_ERROR, "Error while opening encoder - maybe "
                    "incorrect parameters such as bit_rate, rate, width or height.\n");
             return ret;
@@ -3282,6 +3265,20 @@ static int init_output_stream(OutputStream *ost, AVFrame *frame)
         // copy estimated duration as a hint to the muxer
         if (ost->st->duration <= 0 && ist && ist->st->duration > 0)
             ost->st->duration = av_rescale_q(ist->st->duration, ist->st->time_base, ost->st->time_base);
+
+    ost->mux_timebase = enc_ctx->time_base;
+
+    return 0;
+}
+
+static int init_output_stream(OutputStream *ost, AVFrame *frame)
+{
+    int ret = 0;
+
+    if (ost->enc_ctx) {
+        ret = init_output_stream_encode(ost, frame);
+        if (ret < 0)
+            return ret;
     } else if (ost->ist) {
         ret = init_output_stream_streamcopy(ost);
         if (ret < 0)
