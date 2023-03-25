@@ -171,7 +171,10 @@ static int apply_unsharp_c(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
     return 0;
 }
 
-static void set_filter_param(UnsharpFilterParam *fp, int msize_x, int msize_y, float amount)
+#define MAX_SCALEBITS 25
+
+static int set_filter_param(AVFilterContext *ctx, const char *name, const char *short_name,
+                            UnsharpFilterParam *fp, int msize_x, int msize_y, float amount)
 {
     fp->msize_x = msize_x;
     fp->msize_y = msize_y;
@@ -181,20 +184,31 @@ static void set_filter_param(UnsharpFilterParam *fp, int msize_x, int msize_y, f
     fp->steps_y = msize_y / 2;
     fp->scalebits = (fp->steps_x + fp->steps_y) * 2;
     fp->halfscale = 1 << (fp->scalebits - 1);
+
+    if (fp->scalebits > MAX_SCALEBITS) {
+        av_log(ctx, AV_LOG_ERROR, "%s matrix size (%sx/2+%sy/2)*2=%d greater than maximum value %d\n",
+               name, short_name, short_name, fp->scalebits, MAX_SCALEBITS);
+        return AVERROR(EINVAL);
+    }
+
+    return 0;
 }
 
 static av_cold int init(AVFilterContext *ctx)
 {
     UnsharpContext *s = ctx->priv;
+    int ret;
 
-    set_filter_param(&s->luma,   s->lmsize_x, s->lmsize_y, s->lamount);
-    set_filter_param(&s->chroma, s->cmsize_x, s->cmsize_y, s->camount);
-    set_filter_param(&s->alpha,  s->amsize_x, s->amsize_y, s->aamount);
+#define SET_FILTER_PARAM(name_, short_)                                 \
+    ret = set_filter_param(ctx, #name_, #short_, &s->name_,             \
+                           s->short_##msize_x, s->short_##msize_y, s->short_##amount); \
+    if (ret < 0)                                                        \
+        return ret;                                                     \
 
-    if (s->luma.scalebits >= 26 || s->chroma.scalebits >= 26 || s->alpha.scalebits >= 26) {
-        av_log(ctx, AV_LOG_ERROR, "luma or chroma or alpha matrix size too big\n");
-        return AVERROR(EINVAL);
-    }
+    SET_FILTER_PARAM(luma, l);
+    SET_FILTER_PARAM(chroma, c);
+    SET_FILTER_PARAM(alpha, a);
+
     s->apply_unsharp = apply_unsharp_c;
     return 0;
 }
