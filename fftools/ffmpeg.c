@@ -49,7 +49,6 @@
 #include "libavutil/samplefmt.h"
 #include "libavutil/fifo.h"
 #include "libavutil/hwcontext.h"
-#include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/dict.h"
 #include "libavutil/display.h"
@@ -1202,13 +1201,14 @@ static enum AVPictureType forced_kf_apply(void *logctx, KeyframeForceCtx *kf,
         kf->expr_const_values[FKF_T] = pts_time;
         res = av_expr_eval(kf->pexpr,
                            kf->expr_const_values, NULL);
-        ff_dlog(NULL, "force_key_frame: n:%f n_forced:%f prev_forced_n:%f t:%f prev_forced_t:%f -> res:%f\n",
-                kf->expr_const_values[FKF_N],
-                kf->expr_const_values[FKF_N_FORCED],
-                kf->expr_const_values[FKF_PREV_FORCED_N],
-                kf->expr_const_values[FKF_T],
-                kf->expr_const_values[FKF_PREV_FORCED_T],
-                res);
+        av_log(logctx, AV_LOG_TRACE,
+               "force_key_frame: n:%f n_forced:%f prev_forced_n:%f t:%f prev_forced_t:%f -> res:%f\n",
+               kf->expr_const_values[FKF_N],
+               kf->expr_const_values[FKF_N_FORCED],
+               kf->expr_const_values[FKF_PREV_FORCED_N],
+               kf->expr_const_values[FKF_T],
+               kf->expr_const_values[FKF_PREV_FORCED_T],
+               res);
 
         kf->expr_const_values[FKF_N] += 1;
 
