@@ -811,6 +811,9 @@ AVBufferRef *hw_device_for_filter(void);
 int hwaccel_decode_init(AVCodecContext *avctx);
 
 int enc_open(OutputStream *ost, AVFrame *frame);
+void enc_subtitle(OutputFile *of, OutputStream *ost, AVSubtitle *sub);
+
+int check_recording_time(OutputStream *ost, int64_t ts, AVRational tb);
 
 /*
  * Initialize muxing state for the given stream, should be called

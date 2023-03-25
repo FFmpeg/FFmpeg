@@ -669,7 +669,7 @@ static void close_output_stream(OutputStream *ost)
         sq_send(of->sq_encode, ost->sq_idx_encode, SQFRAME(NULL));
 }
 
-static int check_recording_time(OutputStream *ost, int64_t ts, AVRational tb)
+int check_recording_time(OutputStream *ost, int64_t ts, AVRational tb)
 {
     OutputFile *of = output_files[ost->file_index];
 
@@ -1025,88 +1025,6 @@ static void do_audio_out(OutputFile *of, OutputStream *ost,
     ret = submit_encode_frame(of, ost, frame);
     if (ret < 0 && ret != AVERROR_EOF)
         exit_program(1);
-}
-
-static void do_subtitle_out(OutputFile *of,
-                            OutputStream *ost,
-                            AVSubtitle *sub)
-{
-    int subtitle_out_max_size = 1024 * 1024;
-    int subtitle_out_size, nb, i, ret;
-    AVCodecContext *enc;
-    AVPacket *pkt = ost->pkt;
-    int64_t pts;
-
-    if (sub->pts == AV_NOPTS_VALUE) {
-        av_log(ost, AV_LOG_ERROR, "Subtitle packets must have a pts\n");
-        if (exit_on_error)
-            exit_program(1);
-        return;
-    }
-
-    enc = ost->enc_ctx;
-
-    /* Note: DVB subtitle need one packet to draw them and one other
-       packet to clear them */
-    /* XXX: signal it in the codec context ? */
-    if (enc->codec_id == AV_CODEC_ID_DVB_SUBTITLE)
-        nb = 2;
-    else if (enc->codec_id == AV_CODEC_ID_ASS)
-        nb = FFMAX(sub->num_rects, 1);
-    else
-        nb = 1;
-
-    /* shift timestamp to honor -ss and make check_recording_time() work with -t */
-    pts = sub->pts;
-    if (output_files[ost->file_index]->start_time != AV_NOPTS_VALUE)
-        pts -= output_files[ost->file_index]->start_time;
-    for (i = 0; i < nb; i++) {
-        AVSubtitle local_sub = *sub;
-
-        if (!check_recording_time(ost, pts, AV_TIME_BASE_Q))
-            return;
-
-        ret = av_new_packet(pkt, subtitle_out_max_size);
-        if (ret < 0)
-            report_and_exit(AVERROR(ENOMEM));
-
-        local_sub.pts = pts;
-        // start_display_time is required to be 0
-        local_sub.pts               += av_rescale_q(sub->start_display_time, (AVRational){ 1, 1000 }, AV_TIME_BASE_Q);
-        local_sub.end_display_time  -= sub->start_display_time;
-        local_sub.start_display_time = 0;
-
-        if (enc->codec_id == AV_CODEC_ID_DVB_SUBTITLE && i == 1)
-            local_sub.num_rects = 0;
-        else if (enc->codec_id == AV_CODEC_ID_ASS && sub->num_rects > 0) {
-            local_sub.num_rects = 1;
-            local_sub.rects += i;
-        }
-
-        ost->frames_encoded++;
-
-        subtitle_out_size = avcodec_encode_subtitle(enc, pkt->data, pkt->size, &local_sub);
-        if (subtitle_out_size < 0) {
-            av_log(ost, AV_LOG_FATAL, "Subtitle encoding failed\n");
-            exit_program(1);
-        }
-
-        av_shrink_packet(pkt, subtitle_out_size);
-        pkt->time_base = ost->mux_timebase;
-        pkt->pts  = av_rescale_q(sub->pts, AV_TIME_BASE_Q, pkt->time_base);
-        pkt->duration = av_rescale_q(sub->end_display_time, (AVRational){ 1, 1000 }, pkt->time_base);
-        if (enc->codec_id == AV_CODEC_ID_DVB_SUBTITLE) {
-            /* XXX: the pts correction is handled here. Maybe handling
-               it in the codec would be better */
-            if (i == 0)
-                pkt->pts += av_rescale_q(sub->start_display_time, (AVRational){ 1, 1000 }, pkt->time_base);
-            else
-                pkt->pts += av_rescale_q(sub->end_display_time, (AVRational){ 1, 1000 }, pkt->time_base);
-        }
-        pkt->dts = pkt->pts;
-
-        of_output_packet(of, pkt, ost, 0);
-    }
 }
 
 /* Convert frame timestamps to the encoder timebase and decide how many times
@@ -2351,7 +2269,7 @@ static int process_subtitle(InputStream *ist, AVSubtitle *subtitle, int *got_out
             || ost->enc_ctx->codec_type != AVMEDIA_TYPE_SUBTITLE)
             continue;
 
-        do_subtitle_out(output_files[ost->file_index], ost, subtitle);
+        enc_subtitle(output_files[ost->file_index], ost, subtitle);
     }
 
 out:
