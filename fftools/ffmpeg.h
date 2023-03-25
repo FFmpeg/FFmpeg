@@ -707,6 +707,13 @@ typedef struct OutputFile {
     int bitexact;
 } OutputFile;
 
+// optionally attached as opaque_ref to decoded AVFrames
+typedef struct FrameData {
+    uint64_t   idx;
+    int64_t    pts;
+    AVRational tb;
+} FrameData;
+
 extern InputFile   **input_files;
 extern int        nb_input_files;
 
@@ -760,6 +767,11 @@ extern int copy_unknown_streams;
 
 extern int recast_media;
 
+extern FILE *vstats_file;
+
+extern int64_t nb_frames_dup;
+extern int64_t nb_frames_drop;
+
 #if FFMPEG_OPT_PSNR
 extern int do_psnr;
 #endif
@@ -788,6 +800,8 @@ int init_complex_filtergraph(FilterGraph *fg);
 void sub2video_update(InputStream *ist, int64_t heartbeat_pts, AVSubtitle *sub);
 
 int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *frame);
+int ifilter_parameters_from_codecpar(InputFilter *ifilter, AVCodecParameters *par);
+int ifilter_has_all_input_formats(FilterGraph *fg);
 
 int ffmpeg_parse_options(int argc, char **argv);
 
@@ -812,8 +826,8 @@ int hwaccel_decode_init(AVCodecContext *avctx);
 
 int enc_open(OutputStream *ost, AVFrame *frame);
 void enc_subtitle(OutputFile *of, OutputStream *ost, AVSubtitle *sub);
-
-int check_recording_time(OutputStream *ost, int64_t ts, AVRational tb);
+void enc_frame(OutputStream *ost, AVFrame *frame);
+void enc_flush(void);
 
 /*
  * Initialize muxing state for the given stream, should be called
@@ -860,6 +874,19 @@ int ifile_get_packet(InputFile *f, AVPacket **pkt);
 /* iterate over all input streams in all input files;
  * pass NULL to start iteration */
 InputStream *ist_iter(InputStream *prev);
+
+/* iterate over all output streams in all output files;
+ * pass NULL to start iteration */
+OutputStream *ost_iter(OutputStream *prev);
+
+static inline double psnr(double d)
+{
+    return -10.0 * log10(d);
+}
+
+void close_output_stream(OutputStream *ost);
+int trigger_fix_sub_duration_heartbeat(OutputStream *ost, const AVPacket *pkt);
+void update_benchmark(const char *fmt, ...);
 
 #define SPECIFIER_OPT_FMT_str  "%s"
 #define SPECIFIER_OPT_FMT_i    "%i"
