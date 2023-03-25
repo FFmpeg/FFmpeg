@@ -724,25 +724,6 @@ early_exit:
     return float_pts;
 }
 
-static int init_output_stream(OutputStream *ost, AVFrame *frame);
-
-static int init_output_stream_wrapper(OutputStream *ost, AVFrame *frame,
-                                      unsigned int fatal)
-{
-    int ret = AVERROR_BUG;
-
-    if (ost->initialized)
-        return 0;
-
-    ret = init_output_stream(ost, frame);
-    if (ret < 0) {
-        if (fatal)
-            exit_program(1);
-    }
-
-    return ret;
-}
-
 static double psnr(double d)
 {
     return -10.0 * log10(d);
@@ -1023,7 +1004,9 @@ static void do_audio_out(OutputFile *of, OutputStream *ost,
     AVCodecContext *enc = ost->enc_ctx;
     int ret;
 
-    init_output_stream_wrapper(ost, frame, 1);
+    ret = enc_open(ost, frame);
+    if (ret < 0)
+        exit_program(1);
 
     if (frame->pts == AV_NOPTS_VALUE)
         frame->pts = ost->next_pts;
@@ -1264,7 +1247,9 @@ static void do_video_out(OutputFile *of,
     InputStream *ist = ost->ist;
     AVFilterContext *filter = ost->filter->filter;
 
-    init_output_stream_wrapper(ost, next_picture, 1);
+    ret = enc_open(ost, next_picture);
+    if (ret < 0)
+        exit_program(1);
 
     frame_rate = av_buffersink_get_frame_rate(filter);
     if (frame_rate.num > 0 && frame_rate.den > 0)
@@ -1820,7 +1805,9 @@ static void flush_encoders(void)
                 of_output_packet(of, ost->pkt, ost, 1);
             }
 
-            init_output_stream_wrapper(ost, NULL, 1);
+            ret = enc_open(ost, NULL);
+            if (ret < 0)
+                exit_program(1);
         }
 
         if (enc->codec_type != AVMEDIA_TYPE_VIDEO && enc->codec_type != AVMEDIA_TYPE_AUDIO)
@@ -2967,23 +2954,25 @@ static int init_output_stream_streamcopy(OutputStream *ost)
     return 0;
 }
 
-static int init_output_stream(OutputStream *ost, AVFrame *frame)
+static int init_output_stream_nofilter(OutputStream *ost)
 {
     int ret = 0;
 
     if (ost->enc_ctx) {
-        ret = enc_open(ost, frame);
+        ret = enc_open(ost, NULL);
         if (ret < 0)
             return ret;
-    } else if (ost->ist) {
-        ret = init_output_stream_streamcopy(ost);
+    } else {
+        if (ost->ist) {
+            ret = init_output_stream_streamcopy(ost);
+            if (ret < 0)
+                return ret;
+        }
+
+        ret = of_stream_init(output_files[ost->file_index], ost);
         if (ret < 0)
             return ret;
     }
-
-    ret = of_stream_init(output_files[ost->file_index], ost);
-    if (ret < 0)
-        return ret;
 
     return ret;
 }
@@ -3017,7 +3006,7 @@ static int transcode_init(void)
              ost->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO))
             continue;
 
-        ret = init_output_stream_wrapper(ost, NULL, 0);
+        ret = init_output_stream_nofilter(ost);
         if (ret < 0)
             goto dump_format;
     }

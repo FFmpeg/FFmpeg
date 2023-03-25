@@ -93,6 +93,9 @@ int enc_open(OutputStream *ost, AVFrame *frame)
     OutputFile      *of = output_files[ost->file_index];
     int ret;
 
+    if (ost->initialized)
+        return 0;
+
     set_encoder_id(output_files[ost->file_index], ost);
 
     if (ist) {
@@ -337,6 +340,10 @@ int enc_open(OutputStream *ost, AVFrame *frame)
         ost->st->duration = av_rescale_q(ist->st->duration, ist->st->time_base, ost->st->time_base);
 
     ost->mux_timebase = enc_ctx->time_base;
+
+    ret = of_stream_init(of, ost);
+    if (ret < 0)
+        return ret;
 
     return 0;
 }
