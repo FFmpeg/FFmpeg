@@ -810,6 +810,8 @@ AVBufferRef *hw_device_for_filter(void);
 
 int hwaccel_decode_init(AVCodecContext *avctx);
 
+int enc_open(OutputStream *ost, AVFrame *frame);
+
 /*
  * Initialize muxing state for the given stream, should be called
  * after the codec/streamcopy setup has been done.
