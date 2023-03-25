@@ -762,10 +762,6 @@ static void do_audio_out(OutputFile *of, OutputStream *ost,
     AVCodecContext *enc = ost->enc_ctx;
     int ret;
 
-    ret = enc_open(ost, frame);
-    if (ret < 0)
-        exit_program(1);
-
     if (frame->pts == AV_NOPTS_VALUE)
         frame->pts = ost->next_pts;
     else {
@@ -967,10 +963,6 @@ static void do_video_out(OutputFile *of,
     InputStream *ist = ost->ist;
     AVFilterContext *filter = ost->filter->filter;
 
-    ret = enc_open(ost, next_picture);
-    if (ret < 0)
-        exit_program(1);
-
     frame_rate = av_buffersink_get_frame_rate(filter);
     if (frame_rate.num > 0 && frame_rate.den > 0)
         duration = 1/(av_q2d(frame_rate) * av_q2d(enc->time_base));
@@ -1062,6 +1054,11 @@ static void do_video_out(OutputFile *of,
 void enc_frame(OutputStream *ost, AVFrame *frame)
 {
     OutputFile *of = output_files[ost->file_index];
+    int ret;
+
+    ret = enc_open(ost, frame);
+    if (ret < 0)
+        exit_program(1);
 
     if (ost->enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO) do_video_out(of, ost, frame);
     else                                                do_audio_out(of, ost, frame);
