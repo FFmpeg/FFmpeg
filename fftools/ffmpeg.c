@@ -24,14 +24,14 @@
  */
 
 #include "config.h"
-#include <ctype.h>
-#include <string.h>
-#include <math.h>
-#include <stdlib.h>
+
 #include <errno.h>
 #include <limits.h>
 #include <stdatomic.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
 #if HAVE_IO_H
 #include <io.h>
@@ -39,34 +39,6 @@
 #if HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-
-#include "libavformat/avformat.h"
-#include "libavdevice/avdevice.h"
-#include "libswresample/swresample.h"
-#include "libavutil/opt.h"
-#include "libavutil/channel_layout.h"
-#include "libavutil/parseutils.h"
-#include "libavutil/samplefmt.h"
-#include "libavutil/fifo.h"
-#include "libavutil/hwcontext.h"
-#include "libavutil/intreadwrite.h"
-#include "libavutil/dict.h"
-#include "libavutil/display.h"
-#include "libavutil/mathematics.h"
-#include "libavutil/pixdesc.h"
-#include "libavutil/avstring.h"
-#include "libavutil/libm.h"
-#include "libavutil/imgutils.h"
-#include "libavutil/timestamp.h"
-#include "libavutil/bprint.h"
-#include "libavutil/time.h"
-#include "libavutil/thread.h"
-#include "libavutil/threadmessage.h"
-#include "libavcodec/version.h"
-
-# include "libavfilter/avfilter.h"
-# include "libavfilter/buffersrc.h"
-# include "libavfilter/buffersink.h"
 
 #if HAVE_SYS_RESOURCE_H
 #include <sys/time.h>
@@ -83,7 +55,6 @@
 #include <windows.h>
 #endif
 
-
 #if HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
@@ -97,13 +68,42 @@
 #include <conio.h>
 #endif
 
-#include <time.h>
-
-#include "ffmpeg.h"
-#include "cmdutils.h"
-#include "sync_queue.h"
-
 #include "libavutil/avassert.h"
+#include "libavutil/avstring.h"
+#include "libavutil/bprint.h"
+#include "libavutil/channel_layout.h"
+#include "libavutil/dict.h"
+#include "libavutil/display.h"
+#include "libavutil/fifo.h"
+#include "libavutil/hwcontext.h"
+#include "libavutil/imgutils.h"
+#include "libavutil/intreadwrite.h"
+#include "libavutil/libm.h"
+#include "libavutil/mathematics.h"
+#include "libavutil/opt.h"
+#include "libavutil/parseutils.h"
+#include "libavutil/pixdesc.h"
+#include "libavutil/samplefmt.h"
+#include "libavutil/thread.h"
+#include "libavutil/threadmessage.h"
+#include "libavutil/time.h"
+#include "libavutil/timestamp.h"
+
+#include "libavcodec/version.h"
+
+#include "libavformat/avformat.h"
+
+#include "libavdevice/avdevice.h"
+
+#include "libswresample/swresample.h"
+
+#include "libavfilter/avfilter.h"
+#include "libavfilter/buffersrc.h"
+#include "libavfilter/buffersink.h"
+
+#include "cmdutils.h"
+#include "ffmpeg.h"
+#include "sync_queue.h"
 
 const char program_name[] = "ffmpeg";
 const int program_birth_year = 2000;
