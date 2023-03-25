@@ -63,7 +63,6 @@
 #include "libavutil/thread.h"
 #include "libavutil/threadmessage.h"
 #include "libavcodec/version.h"
-#include "libavformat/os_support.h"
 
 # include "libavfilter/avfilter.h"
 # include "libavfilter/buffersrc.h"
