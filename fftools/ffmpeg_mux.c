@@ -643,6 +643,8 @@ static void ost_free(OutputStream **post)
         return;
     ms = ms_from_ost(ost);
 
+    enc_free(&ost->enc);
+
     if (ost->logfile) {
         if (fclose(ost->logfile))
             av_log(ms, AV_LOG_ERROR,
@@ -662,7 +664,6 @@ static void ost_free(OutputStream **post)
 
     av_frame_free(&ost->filtered_frame);
     av_frame_free(&ost->sq_frame);
-    av_frame_free(&ost->last_frame);
     av_packet_free(&ost->pkt);
     av_dict_free(&ost->encoder_opts);
 

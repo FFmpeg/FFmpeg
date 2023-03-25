@@ -462,6 +462,10 @@ static OutputStream *new_output_stream(Muxer *mux, const OptionsContext *o,
         if (!ost->enc_ctx)
             report_and_exit(AVERROR(ENOMEM));
 
+        ret = enc_alloc(&ost->enc, enc);
+        if (ret < 0)
+            report_and_exit(ret);
+
         av_strlcat(ms->log_name, "/",       sizeof(ms->log_name));
         av_strlcat(ms->log_name, enc->name, sizeof(ms->log_name));
     } else {
@@ -933,10 +937,6 @@ static OutputStream *new_video_stream(Muxer *mux, const OptionsContext *o, Input
         ost->avfilter = get_ost_filters(o, oc, ost);
         if (!ost->avfilter)
             exit_program(1);
-
-        ost->last_frame = av_frame_alloc();
-        if (!ost->last_frame)
-            report_and_exit(AVERROR(ENOMEM));
     } else
         check_streamcopy_filters(o, oc, ost, AVMEDIA_TYPE_VIDEO);
 

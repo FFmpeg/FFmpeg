@@ -43,7 +43,47 @@
 
 #include "libavformat/avformat.h"
 
+struct Encoder {
+    AVFrame *last_frame;
+};
+
 static uint64_t dup_warning = 1000;
+
+void enc_free(Encoder **penc)
+{
+    Encoder *enc = *penc;
+
+    if (!enc)
+        return;
+
+    av_frame_free(&enc->last_frame);
+
+    av_freep(penc);
+}
+
+int enc_alloc(Encoder **penc, const AVCodec *codec)
+{
+    Encoder *enc;
+
+    *penc = NULL;
+
+    enc = av_mallocz(sizeof(*enc));
+    if (!enc)
+        return AVERROR(ENOMEM);
+
+    if (codec->type == AVMEDIA_TYPE_VIDEO) {
+        enc->last_frame = av_frame_alloc();
+        if (!enc->last_frame)
+            goto fail;
+    }
+
+    *penc = enc;
+
+    return 0;
+fail:
+    enc_free(&enc);
+    return AVERROR(ENOMEM);
+}
 
 static void set_encoder_id(OutputFile *of, OutputStream *ost)
 {
@@ -919,6 +959,7 @@ static void do_video_out(OutputFile *of,
                          AVFrame *next_picture)
 {
     int ret;
+    Encoder *e = ost->enc;
     AVCodecContext *enc = ost->enc_ctx;
     AVRational frame_rate;
     int64_t nb_frames, nb_frames_prev, i;
@@ -965,7 +1006,7 @@ static void do_video_out(OutputFile *of,
         nb_frames_drop++;
         av_log(ost, AV_LOG_VERBOSE,
                "*** dropping frame %"PRId64" at ts %"PRId64"\n",
-               ost->vsync_frame_number, ost->last_frame->pts);
+               ost->vsync_frame_number, e->last_frame->pts);
     }
     if (nb_frames > (nb_frames_prev && ost->last_dropped) + (nb_frames > nb_frames_prev)) {
         if (nb_frames > dts_error_threshold * 30) {
@@ -987,8 +1028,8 @@ static void do_video_out(OutputFile *of,
     for (i = 0; i < nb_frames; i++) {
         AVFrame *in_picture;
 
-        if (i < nb_frames_prev && ost->last_frame->buf[0]) {
-            in_picture = ost->last_frame;
+        if (i < nb_frames_prev && e->last_frame->buf[0]) {
+            in_picture = e->last_frame;
         } else
             in_picture = next_picture;
 
@@ -1013,9 +1054,9 @@ static void do_video_out(OutputFile *of,
         ost->vsync_frame_number++;
     }
 
-    av_frame_unref(ost->last_frame);
+    av_frame_unref(e->last_frame);
     if (next_picture)
-        av_frame_move_ref(ost->last_frame, next_picture);
+        av_frame_move_ref(e->last_frame, next_picture);
 }
 
 void enc_frame(OutputStream *ost, AVFrame *frame)

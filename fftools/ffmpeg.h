@@ -557,6 +557,8 @@ typedef struct KeyframeForceCtx {
     int          dropped_keyframe;
 } KeyframeForceCtx;
 
+typedef struct Encoder Encoder;
+
 typedef struct OutputStream {
     const AVClass *class;
 
@@ -588,9 +590,9 @@ typedef struct OutputStream {
     AVRational mux_timebase;
     AVRational enc_timebase;
 
+    Encoder *enc;
     AVCodecContext *enc_ctx;
     AVFrame *filtered_frame;
-    AVFrame *last_frame;
     AVFrame *sq_frame;
     AVPacket *pkt;
     int64_t last_dropped;
@@ -823,6 +825,9 @@ int hw_device_setup_for_encode(OutputStream *ost);
 AVBufferRef *hw_device_for_filter(void);
 
 int hwaccel_decode_init(AVCodecContext *avctx);
+
+int enc_alloc(Encoder **penc, const AVCodec *codec);
+void enc_free(Encoder **penc);
 
 int enc_open(OutputStream *ost, AVFrame *frame);
 void enc_subtitle(OutputFile *of, OutputStream *ost, AVSubtitle *sub);
