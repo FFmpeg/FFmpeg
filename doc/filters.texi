@@ -13768,7 +13768,35 @@ value.
 
 @section find_rect
 
-Find a rectangular object
+Find a rectangular object in the input video.
+
+The object to search for must be specified as a gray8 image specified with the
+@option{object} option.
+
+For each possible match, a score is computed. If the score reaches the specified
+threshold, the object is considered found.
+
+If the input video contains multiple instances of the object, the filter will
+find only one of them.
+
+When an object is found, the following metadata entries are set in the matching
+frame:
+@table @option
+@item lavfi.rect.w
+width of object
+
+@item lavfi.rect.h
+height of object
+
+@item lavfi.rect.x
+x position of object
+
+@item lavfi.rect.y
+y position of object
+
+@item lavfi.rect.score
+match score of the found object
+@end table
 
 It accepts the following options:
 
@@ -13777,7 +13805,12 @@ It accepts the following options:
 Filepath of the object image, needs to be in gray8.
 
 @item threshold
-Detection threshold, default is 0.5.
+Detection threshold, expressed as a decimal number in the range 0-1.
+
+A threshold value of 0.01 means only exact matches, a threshold of 0.99 means
+almost everything matches.
+
+Default value is 0.5.
 
 @item mipmaps
 Number of mipmaps, default is 3.
@@ -13797,6 +13830,16 @@ Cover a rectangular object by the supplied image of a given video using @command
 @example
 ffmpeg -i file.ts -vf find_rect=newref.pgm,cover_rect=cover.jpg:mode=cover new.mkv
 @end example
+
+@item
+Find the position of an object in each frame using @command{ffprobe} and write
+it to a log file:
+@example
+ffprobe -f lavfi movie=test.mp4,find_rect=object=object.pgm:threshold=0.3 \
+  -show_entries frame=pkt_pts_time:frame_tags=lavfi.rect.x,lavfi.rect.y \
+  -of csv -o find_rect.csv
+@end example
+
 @end itemize
 
 @section floodfill
