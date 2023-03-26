@@ -1236,43 +1236,43 @@ static int64_t mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID
     }
 
     if (key != mxf_rgba_descriptor_key) {
-    // component depth
-    mxf_write_local_tag(s, 4, 0x3301);
-    avio_wb32(pb, sc->component_depth);
+        // component depth
+        mxf_write_local_tag(s, 4, 0x3301);
+        avio_wb32(pb, sc->component_depth);
 
-    // horizontal subsampling
-    mxf_write_local_tag(s, 4, 0x3302);
-    avio_wb32(pb, sc->h_chroma_sub_sample);
+        // horizontal subsampling
+        mxf_write_local_tag(s, 4, 0x3302);
+        avio_wb32(pb, sc->h_chroma_sub_sample);
 
-    // vertical subsampling
-    mxf_write_local_tag(s, 4, 0x3308);
-    avio_wb32(pb, sc->v_chroma_sub_sample);
+        // vertical subsampling
+        mxf_write_local_tag(s, 4, 0x3308);
+        avio_wb32(pb, sc->v_chroma_sub_sample);
 
-    // color siting
-    mxf_write_local_tag(s, 1, 0x3303);
-    avio_w8(pb, sc->color_siting);
+        // color siting
+        mxf_write_local_tag(s, 1, 0x3303);
+        avio_w8(pb, sc->color_siting);
 
-    // Padding Bits
-    mxf_write_local_tag(s, 2, 0x3307);
-    avio_wb16(pb, 0);
+        // Padding Bits
+        mxf_write_local_tag(s, 2, 0x3307);
+        avio_wb16(pb, 0);
 
-    if (st->codecpar->color_range != AVCOL_RANGE_UNSPECIFIED) {
-        int black = 0,
-            white = (1<<sc->component_depth) - 1,
-            color = (1<<sc->component_depth);
-        if (st->codecpar->color_range == AVCOL_RANGE_MPEG) {
-            black = 1   << (sc->component_depth - 4);
-            white = 235 << (sc->component_depth - 8);
-            color = (14 << (sc->component_depth - 4)) + 1;
+        if (st->codecpar->color_range != AVCOL_RANGE_UNSPECIFIED) {
+            int black = 0,
+                white = (1<<sc->component_depth) - 1,
+                color = (1<<sc->component_depth);
+            if (st->codecpar->color_range == AVCOL_RANGE_MPEG) {
+                black = 1   << (sc->component_depth - 4);
+                white = 235 << (sc->component_depth - 8);
+                color = (14 << (sc->component_depth - 4)) + 1;
+            }
+            mxf_write_local_tag(s, 4, 0x3304);
+            avio_wb32(pb, black);
+            mxf_write_local_tag(s, 4, 0x3305);
+            avio_wb32(pb, white);
+            mxf_write_local_tag(s, 4, 0x3306);
+            avio_wb32(pb, color);
         }
-        mxf_write_local_tag(s, 4, 0x3304);
-        avio_wb32(pb, black);
-        mxf_write_local_tag(s, 4, 0x3305);
-        avio_wb32(pb, white);
-        mxf_write_local_tag(s, 4, 0x3306);
-        avio_wb32(pb, color);
     }
-    } // if (key != mxf_rgba_descriptor_key)
 
     if (sc->signal_standard) {
         mxf_write_local_tag(s, 1, 0x3215);
