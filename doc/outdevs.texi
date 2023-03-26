@@ -421,13 +421,18 @@ For more information about SDL, check:
 
 @table @option
 
-@item window_title
-Set the SDL window title, if not specified default to the filename
-specified for the output device.
-
 @item icon_title
 Set the name of the iconified SDL window, if not specified it is set
 to the same value of @var{window_title}.
+
+@item window_enable_quit
+Enable quit action (using window button or keyboard key)
+when non-zero value is provided.
+Default value is 1 (enable quit action)
+
+@item window_fullscreen
+Set fullscreen mode when non-zero value is provided.
+Default value is zero.
 
 @item window_size
 Set the SDL window size, can be a string of the form
@@ -435,18 +440,13 @@ Set the SDL window size, can be a string of the form
 If not specified it defaults to the size of the input video,
 downscaled according to the aspect ratio.
 
+@item window_title
+Set the SDL window title, if not specified default to the filename
+specified for the output device.
+
 @item window_x
 @item window_y
 Set the position of the window on the screen.
-
-@item window_fullscreen
-Set fullscreen mode when non-zero value is provided.
-Default value is zero.
-
-@item window_enable_quit
-Enable quit action (using window button or keyboard key)
-when non-zero value is provided.
-Default value is 1 (enable quit action)
 @end table
 
 @subsection Interactive commands
