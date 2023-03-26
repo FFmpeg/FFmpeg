@@ -349,7 +349,7 @@ static int decode_2slp(AVCodecContext *avctx,
                 int sum = 15;
 
                 for (int o = 0; o < order; o++)
-                    sum += s->filter[ch][o] * samples[n + 70 - o - 1];
+                    sum += s->filter[ch][o] * (unsigned)samples[n + 70 - o - 1];
 
                 samples[n + 70] = get_srice(gb, k) + (sum >> 4);
             }
@@ -452,7 +452,7 @@ fail:
             const int *src = s->samples[ch] + s->offset;
 
             for (int n = 0; n < frame->nb_samples; n++)
-                dst[n] = src[n] * (1 << s->shift) + 0x80U;
+                dst[n] = src[n] * (1U << s->shift) + 0x80U;
         }
         break;
     case AV_SAMPLE_FMT_S16P:
@@ -461,7 +461,7 @@ fail:
             const int *src = s->samples[ch] + s->offset;
 
             for (int n = 0; n < frame->nb_samples; n++)
-                dst[n] = src[n] * (1 << s->shift);
+                dst[n] = src[n] * (1U << s->shift);
         }
         break;
     }
