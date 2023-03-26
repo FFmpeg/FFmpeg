@@ -214,6 +214,23 @@ In a complete filterchain all the unlabelled filter input and output
 pads must be connected. A filtergraph is considered valid if all the
 filter input and output pads of all the filterchains are connected.
 
+Leading and trailing whitespaces (space, tabs, or line feeds) separating tokens
+in the filtergraph specification are ignored. This means that the filtergraph
+can be expressed using empty lines and spaces to improve redability.
+
+For example, the filtergraph:
+@example
+testsrc,split[L1],hflip[L2];[L1][L2] hstack
+@end example
+
+can be represented as:
+@example
+testsrc,
+split [L1], hflip [L2];
+
+[L1][L2] hstack
+@end example
+
 Libavfilter will automatically insert @ref{scale} filters where format
 conversion is required. It is possible to specify swscale flags
 for those automatically inserted scalers by prepending
