@@ -421,14 +421,14 @@ For more information about SDL, check:
 
 @table @option
 
-@item icon_title
-Set the name of the iconified SDL window, if not specified it is set
-to the same value of @var{window_title}.
+@item window_borderless
+Set SDL window border off.
+Default value is 0 (enable window border).
 
 @item window_enable_quit
 Enable quit action (using window button or keyboard key)
 when non-zero value is provided.
-Default value is 1 (enable quit action)
+Default value is 1 (enable quit action).
 
 @item window_fullscreen
 Set fullscreen mode when non-zero value is provided.
