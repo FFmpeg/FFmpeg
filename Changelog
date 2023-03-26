@@ -2,6 +2,11 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 5.1.3:
+- avcodec/tests/snowenc: Fix 2nd test
+- avcodec/tests/snowenc: return a failure if DWT/IDWT mismatches
+- avcodec/snowenc: Fix visual weight calculation
+- avcodec/tests/snowenc: unbreak DWT tests
+- update for 5.1.3
 - avcodec/mpeg12dec: Check input size
 - avcodec/escape124: Fix some return codes
 - avcodec/escape124: fix signdness of end of input check
