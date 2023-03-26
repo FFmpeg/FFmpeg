@@ -282,6 +282,18 @@ previous string will finally result in:
 -vf "drawtext=text=this is a \\\\\\'string\\\\\\'\\\\: may contain one\\, or more\\, special characters"
 @end example
 
+In order to avoid cumbersome escaping when using a commandline tool accepting a
+filter specification as input, it is advisable to avoid direct inclusion of the
+filter or options specification in the shell.
+
+For example, in case of the @ref{drawtext,,drawtext filter}, you might prefer to
+use the @option{textfile} option in place of @option{text} to specify the text
+to render.
+
+When using the @command{ffmpeg} tool, you might consider to use the
+@ref{filter_script option,,-filter_script option,ffmpeg} or
+@ref{filter_complex_script option,,-filter_complex_script option,ffmpeg}.
+
 @chapter Timeline editing
 
 Some filters support a generic @option{enable} option. For the filters
@@ -12359,11 +12371,11 @@ braces is a function name, possibly followed by arguments separated by ':'.
 If the arguments contain special characters or delimiters (':' or '@}'),
 they should be escaped.
 
-Note that they probably must also be escaped as the value for the
-@option{text} option in the filter argument string and as the filter
-argument in the filtergraph description, and possibly also for the shell,
-that makes up to four levels of escaping; using a text file avoids these
-problems.
+Note that they probably must also be escaped as the value for the @option{text}
+option in the filter argument string and as the filter argument in the
+filtergraph description, and possibly also for the shell, that makes up to four
+levels of escaping; using a text file with the @option{textfile} option avoids
+these problems.
 
 The following functions are available:
 

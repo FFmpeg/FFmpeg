@@ -769,6 +769,7 @@ syntax.
 See the @ref{filter_complex_option,,-filter_complex option} if you
 want to create filtergraphs with multiple inputs and/or outputs.
 
+@anchor{filter_script option}
 @item -filter_script[:@var{stream_specifier}] @var{filename} (@emph{output,per-stream})
 This option is similar to @option{-filter}, the only difference is that its
 argument is the name of the file from which a filtergraph description is to be
@@ -1978,6 +1979,7 @@ The default is the number of available CPUs.
 Define a complex filtergraph, i.e. one with arbitrary number of inputs and/or
 outputs. Equivalent to @option{-filter_complex}.
 
+@anchor{filter_complex_script option}
 @item -filter_complex_script @var{filename} (@emph{global})
 This option is similar to @option{-filter_complex}, the only difference is that
 its argument is the name of the file from which a complex filtergraph
