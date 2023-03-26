@@ -3739,7 +3739,10 @@ static int mxf_read_header(AVFormatContext *s)
     while (!avio_feof(s->pb)) {
         const MXFMetadataReadTableEntry *metadata;
 
-        if (klv_read_packet(&klv, s->pb) < 0) {
+        ret = klv_read_packet(&klv, s->pb);
+        if (ret < 0 || IS_KLV_KEY(klv.key, ff_mxf_random_index_pack_key)) {
+            if (ret >= 0 && avio_size(s->pb) > klv.next_klv)
+                av_log(s, AV_LOG_WARNING, "data after the RandomIndexPack, assuming end of file\n");
             /* EOF - seek to previous partition or stop */
             if(mxf_parse_handle_partition_or_eof(mxf) <= 0)
                 break;
