@@ -106,6 +106,10 @@
       <!-- video attributes -->
       <xsd:attribute name="width"                  type="xsd:long"  />
       <xsd:attribute name="height"                 type="xsd:long"  />
+      <xsd:attribute name="crop_top"               type="xsd:long"  />
+      <xsd:attribute name="crop_bottom"            type="xsd:long"  />
+      <xsd:attribute name="crop_left"              type="xsd:long"  />
+      <xsd:attribute name="crop_right"             type="xsd:long"  />
       <xsd:attribute name="pix_fmt"                type="xsd:string"/>
       <xsd:attribute name="sample_aspect_ratio"    type="xsd:string"/>
       <xsd:attribute name="pict_type"              type="xsd:string"/>
