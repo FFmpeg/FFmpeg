@@ -836,6 +836,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
         const uint8_t *rawbuf;
         int raw_size;
     } *slices = NULL, *tmp;
+    unsigned slices_allocated = 0;
 
     v->second_field = 0;
 
@@ -859,6 +860,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
     //for advanced profile we may need to parse and unescape data
     if (avctx->codec_id == AV_CODEC_ID_VC1 || avctx->codec_id == AV_CODEC_ID_VC1IMAGE) {
         int buf_size2 = 0;
+        size_t next_allocated = 0;
         buf2 = av_mallocz(buf_size + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!buf2)
             return AVERROR(ENOMEM);
@@ -882,7 +884,8 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
                     int buf_size3;
                     if (avctx->hwaccel)
                         buf_start_second_field = start;
-                    tmp = av_realloc_array(slices, sizeof(*slices), n_slices+1);
+                    av_size_mult(sizeof(*slices), n_slices+1, &next_allocated);
+                    tmp = next_allocated ? av_fast_realloc(slices, &slices_allocated, next_allocated) : NULL;
                     if (!tmp) {
                         ret = AVERROR(ENOMEM);
                         goto err;
@@ -911,7 +914,8 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
                     break;
                 case VC1_CODE_SLICE: {
                     int buf_size3;
-                    tmp = av_realloc_array(slices, sizeof(*slices), n_slices+1);
+                    av_size_mult(sizeof(*slices), n_slices+1, &next_allocated);
+                    tmp = next_allocated ? av_fast_realloc(slices, &slices_allocated, next_allocated) : NULL;
                     if (!tmp) {
                         ret = AVERROR(ENOMEM);
                         goto err;
@@ -946,7 +950,8 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
             } else { // found field marker, unescape second field
                 if (avctx->hwaccel)
                     buf_start_second_field = divider;
-                tmp = av_realloc_array(slices, sizeof(*slices), n_slices+1);
+                av_size_mult(sizeof(*slices), n_slices+1, &next_allocated);
+                tmp = next_allocated ? av_fast_realloc(slices, &slices_allocated, next_allocated) : NULL;
                 if (!tmp) {
                     ret = AVERROR(ENOMEM);
                     goto err;
