@@ -12103,13 +12103,12 @@ The default value of @var{bordercolor} is "black".
 
 @item expansion
 Select how the @var{text} is expanded. Can be either @code{none},
-@code{strftime} (deprecated) or
-@code{normal} (default). See the @ref{drawtext_expansion, Text expansion} section
-below for details.
+@code{strftime} (deprecated) or @code{normal} (default). See the
+@ref{drawtext_expansion, Text expansion} section below for details.
 
 @item basetime
 Set a start time for the count. Value is in microseconds. Only applied
-in the deprecated strftime expansion mode. To emulate in normal expansion
+in the deprecated @code{strftime} expansion mode. To emulate in normal expansion
 mode use the @code{pts} function, supplying the start time (in seconds)
 as the second argument.
 
@@ -12340,10 +12339,12 @@ The current packet's size (in bytes).
 @anchor{drawtext_expansion}
 @subsection Text expansion
 
-If @option{expansion} is set to @code{strftime},
-the filter recognizes strftime() sequences in the provided text and
-expands them accordingly. Check the documentation of strftime(). This
-feature is deprecated.
+If @option{expansion} is set to @code{strftime}, the filter recognizes
+sequences accepted by the @code{strftime} C function in the provided
+text and expands them accordingly. Check the documentation of
+@code{strftime}. This feature is deprecated in favor of @code{normal}
+expansion with the @code{gmtime} or @code{localtime} expansion
+functions.
 
 If @option{expansion} is set to @code{none}, the text is printed verbatim.
 
@@ -12390,13 +12391,13 @@ It can be used to add padding with zeros from the left.
 
 @item gmtime
 The time at which the filter is running, expressed in UTC.
-It can accept an argument: a strftime() format string.
+It can accept an argument: a @code{strftime} C function format string.
 The format string is extended to support the variable @var{%[1-6]N}
 which prints fractions of the second with optionally specified number of digits.
 
 @item localtime
 The time at which the filter is running, expressed in the local time zone.
-It can accept an argument: a strftime() format string.
+It can accept an argument: a @code{strftime} C function format string.
 The format string is extended to support the variable @var{%[1-6]N}
 which prints fractions of the second with optionally specified number of digits.
 
@@ -12438,8 +12439,8 @@ If the format is set to @code{hms}, a third argument @code{24HH} may be
 supplied to present the hour part of the formatted timestamp in 24h format
 (00-23).
 
-If the format is set to @code{localtime} or @code{gmtime},
-a third argument may be supplied: a strftime() format string.
+If the format is set to @code{localtime} or @code{gmtime}, a third
+argument may be supplied: a @code{strftime} C function format string.
 By default, @var{YYYY-MM-DD HH:MM:SS} format will be used.
 @end table
 
@@ -12543,7 +12544,8 @@ drawtext="text='Test Text': fontsize=h/30: x=(w-text_w)/2: y=(h-text_h*2)"
 @end example
 
 @item
-Print the date of a real-time encoding (see strftime(3)):
+Print the date of a real-time encoding (see documentation for the
+@code{strftime} C function):
 @example
 drawtext='fontfile=FreeSans.ttf:text=%@{localtime\:%a %b %d %Y@}'
 @end example
