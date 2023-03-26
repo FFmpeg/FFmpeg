@@ -18652,6 +18652,8 @@ Frankie Sierra dithering v3 (error diffusion)
 Burkes dithering (error diffusion)
 @item atkinson
 Atkinson dithering by Bill Atkinson at Apple Computer (error diffusion)
+@item none
+Disable dithering.
 @end table
 
 Default is @var{sierra2_4a}.
