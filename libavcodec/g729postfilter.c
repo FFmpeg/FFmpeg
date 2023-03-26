@@ -350,7 +350,7 @@ static int16_t long_term_filter(AudioDSPContext *adsp, int pitch_delay_int,
         if (tmp > 0)
             L_temp0 >>= tmp;
         else
-            L_temp1 >>= -tmp;
+            L_temp1 >>= FFMIN(-tmp, 31);
 
         /* Check if longer filter increases the values of R'(k). */
         if (L_temp1 > L_temp0) {
