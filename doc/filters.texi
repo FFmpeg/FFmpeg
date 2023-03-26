@@ -20888,12 +20888,9 @@ It accepts the following parameters:
 @item r, ratio, dar (@code{setdar} only), sar (@code{setsar} only)
 Set the aspect ratio used by the filter.
 
-The parameter can be a floating point number string, an expression, or
-a string of the form @var{num}:@var{den}, where @var{num} and
-@var{den} are the numerator and denominator of the aspect ratio. If
-the parameter is not specified, it is assumed the value "0".
-In case the form "@var{num}:@var{den}" is used, the @code{:} character
-should be escaped.
+The parameter can be a floating point number string, or an expression. If the
+parameter is not specified, the value "0" is assumed, meaning that the same
+input value is used.
 
 @item max
 Set the maximum integer value to use for expressing numerator and
@@ -20902,19 +20899,14 @@ Default value is @code{100}.
 
 @end table
 
-The parameter @var{sar} is an expression containing
-the following constants:
+The parameter @var{sar} is an expression containing the following constants:
 
 @table @option
-@item E, PI, PHI
-These are approximated values for the mathematical constants e
-(Euler's number), pi (Greek pi), and phi (the golden ratio).
-
 @item w, h
 The input width and height.
 
 @item a
-These are the same as @var{w} / @var{h}.
+Same as @var{w} / @var{h}.
 
 @item sar
 The input sample aspect ratio.
