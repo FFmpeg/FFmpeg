@@ -4021,13 +4021,13 @@ static int mov_write_loci_tag(AVFormatContext *s, AVIOContext *pb)
         return 0;
 
     ptr = t->value;
-    longitude = strtod(ptr, &end);
+    latitude = strtod(ptr, &end);
     if (end == ptr) {
         av_log(s, AV_LOG_WARNING, "malformed location metadata\n");
         return 0;
     }
     ptr = end;
-    latitude = strtod(ptr, &end);
+    longitude = strtod(ptr, &end);
     if (end == ptr) {
         av_log(s, AV_LOG_WARNING, "malformed location metadata\n");
         return 0;
@@ -4048,8 +4048,8 @@ static int mov_write_loci_tag(AVFormatContext *s, AVIOContext *pb)
     avio_wb16(pb, lang);
     avio_write(pb, place, strlen(place) + 1);
     avio_w8(pb, 0);           /* role of place (0 == shooting location, 1 == real location, 2 == fictional location) */
-    avio_wb32(pb, latitude_fix);
     avio_wb32(pb, longitude_fix);
+    avio_wb32(pb, latitude_fix);
     avio_wb32(pb, altitude_fix);
     avio_write(pb, astronomical_body, strlen(astronomical_body) + 1);
     avio_w8(pb, 0);           /* additional notes, null terminated string */
