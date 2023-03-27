@@ -12,21 +12,21 @@ FATE_FILTER_SAMPLES-$(call FILTERDEMDEC, PERMS DELOGO, RM, RV30) += fate-filter-
 fate-filter-delogo: CMD = framecrc -i $(TARGET_SAMPLES)/real/rv30.rm -vf perms=random,delogo=show=0:x=290:y=25:w=26:h=16 -an
 
 FATE_BWDIF-$(call FILTERDEMDEC, BWDIF, MPEGTS, MPEG2VIDEO) += fate-filter-bwdif-mode0 fate-filter-bwdif-mode1
-fate-filter-bwdif-mode0: CMD = framecrc -flags bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/mpeg2_field_encoding.ts -frames:v 30 -vf bwdif=send_frame
-fate-filter-bwdif-mode1: CMD = framecrc -flags bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/mpeg2_field_encoding.ts -frames:v 59 -vf bwdif=send_field
+fate-filter-bwdif-mode0: CMD = framecrc -ec 0 -flags bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/mpeg2_field_encoding.ts -frames:v 30 -vf bwdif=send_frame
+fate-filter-bwdif-mode1: CMD = framecrc -ec 0 -flags bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/mpeg2_field_encoding.ts -frames:v 59 -vf bwdif=send_field
 
 FATE_BWDIF-$(call FILTERDEMDEC, BWDIF SCALE, MPEGTS, MPEG2VIDEO) += fate-filter-bwdif10
-fate-filter-bwdif10: CMD = framecrc -flags bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/mpeg2_field_encoding.ts -flags bitexact -pix_fmt yuv420p10le -frames:v 30 -vf scale,bwdif=0
+fate-filter-bwdif10: CMD = framecrc -ec 0 -flags bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/mpeg2_field_encoding.ts -flags bitexact -pix_fmt yuv420p10le -frames:v 30 -vf scale,bwdif=0
 
 FATE_FILTER_SAMPLES-yes += $(FATE_BWDIF-yes)
 
 FATE_YADIF-$(call FILTERDEMDEC, YADIF, MPEGTS, MPEG2VIDEO) += fate-filter-yadif-mode0 fate-filter-yadif-mode1
-fate-filter-yadif-mode0: CMD = framecrc -flags bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/mpeg2_field_encoding.ts -frames:v 30 -vf yadif=0
-fate-filter-yadif-mode1: CMD = framecrc -flags bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/mpeg2_field_encoding.ts -frames:v 59 -vf yadif=1
+fate-filter-yadif-mode0: CMD = framecrc -ec 0 -flags bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/mpeg2_field_encoding.ts -frames:v 30 -vf yadif=0
+fate-filter-yadif-mode1: CMD = framecrc -ec 0 -flags bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/mpeg2_field_encoding.ts -frames:v 59 -vf yadif=1
 
 FATE_YADIF-$(call FILTERDEMDEC, YADIF SCALE, MPEGTS, MPEG2VIDEO) += fate-filter-yadif10 fate-filter-yadif16
-fate-filter-yadif10: CMD = framecrc -flags bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/mpeg2_field_encoding.ts -flags bitexact -pix_fmt yuv420p10le -frames:v 30 -vf scale,yadif=0
-fate-filter-yadif16: CMD = framecrc -flags bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/mpeg2_field_encoding.ts -flags bitexact -pix_fmt yuv420p16le -frames:v 30 -vf scale,yadif=0
+fate-filter-yadif10: CMD = framecrc -ec 0 -flags bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/mpeg2_field_encoding.ts -flags bitexact -pix_fmt yuv420p10le -frames:v 30 -vf scale,yadif=0
+fate-filter-yadif16: CMD = framecrc -ec 0 -flags bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/mpeg2_field_encoding.ts -flags bitexact -pix_fmt yuv420p16le -frames:v 30 -vf scale,yadif=0
 
 FATE_FILTER_SAMPLES-yes += $(FATE_YADIF-yes)
 

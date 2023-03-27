@@ -255,7 +255,7 @@ fate-mpeg2-field-enc: CMD = framecrc -flags +bitexact -idct simple -i $(TARGET_S
 fate-mpeg2-ticket186: CMD = framecrc -flags +bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/t.mpg -an
 
 FATE_VIDEO-$(call FRAMECRC, MPEGVIDEO, MPEG2VIDEO) += fate-mpeg2-ticket6677
-fate-mpeg2-ticket6677: CMD = framecrc -flags +bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/sony-ct3.bs
+fate-mpeg2-ticket6677: CMD = framecrc -ec 0 -flags +bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/sony-ct3.bs
 
 FATE_VIDEO-$(call FRAMECRC, MV, MVC1, SCALE_FILTER) += fate-mv-mvc1
 fate-mv-mvc1: CMD = framecrc -i $(TARGET_SAMPLES)/mv/posture.mv -an -frames 25 -pix_fmt rgb555le -vf scale
