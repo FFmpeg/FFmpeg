@@ -49,24 +49,32 @@ Do not mix input and output files -- first specify all input files, then all
 output files. Also do not mix options which belong to different files. All
 options apply ONLY to the next input or output file and are reset between files.
 
+Some simple examples follow.
+
 @itemize
 @item
-To set the video bitrate of the output file to 64 kbit/s:
+Convert an input media file to a different format, by re-encoding media streams:
 @example
-ffmpeg -i input.avi -b:v 64k -bufsize 64k output.avi
+ffmpeg -i input.avi output.mp4
 @end example
 
 @item
-To force the frame rate of the output file to 24 fps:
+Set the video bitrate of the output file to 64 kbit/s:
 @example
-ffmpeg -i input.avi -r 24 output.avi
+ffmpeg -i input.avi -b:v 64k -bufsize 64k output.mp4
 @end example
 
 @item
-To force the frame rate of the input file (valid for raw formats only)
-to 1 fps and the frame rate of the output file to 24 fps:
+Force the frame rate of the output file to 24 fps:
 @example
-ffmpeg -r 1 -i input.m2v -r 24 output.avi
+ffmpeg -i input.avi -r 24 output.mp4
+@end example
+
+@item
+Force the frame rate of the input file (valid for raw formats only) to 1 fps and
+the frame rate of the output file to 24 fps:
+@example
+ffmpeg -r 1 -i input.m2v -r 24 output.mp4
 @end example
 @end itemize
 
