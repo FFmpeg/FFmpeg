@@ -24,8 +24,8 @@ FATE_LAVF_CONTAINER_RESAMPLE := asf avi dv_pal dv_ntsc gxf_pal gxf_ntsc  \
 FATE_LAVF_CONTAINER-$(!CONFIG_ARESAMPLE_FILTER) := $(filter-out $(FATE_LAVF_CONTAINER_RESAMPLE),$(FATE_LAVF_CONTAINER-yes))
 
 FATE_LAVF_CONTAINER_SCALE := dv dv_pal dv_ntsc flm gxf gxf_pal gxf_ntsc \
-                             mxf_dv25 mxf_dvcpro50 mxf_d10 mxf_opatom   \
-                             smjpeg
+                             mxf_dv25 mxf_dvcpro50 mxf_dvcpro100 mxf_d10 \
+                             mxf_ffv1 mxf_opatom smjpeg
 FATE_LAVF_CONTAINER-$(!CONFIG_SCALE_FILTER) := $(filter-out $(FATE_LAVF_CONTAINER_SCALE),$(FATE_LAVF_CONTAINER-yes))
 
 FATE_LAVF_CONTAINER = $(FATE_LAVF_CONTAINER-yes:%=fate-lavf-%)
