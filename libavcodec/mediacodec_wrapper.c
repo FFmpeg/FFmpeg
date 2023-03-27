@@ -319,10 +319,23 @@ int ff_AMediaCodecProfile_getProfileFromAVCodecContext(AVCodecContext *avctx)
     static const int HEVCProfileMain10HDR10 = 0x1000;
     static const int HEVCProfileMain10HDR10Plus = 0x2000;
 
+    static const int VP9Profile0 = 0x01;
+    static const int VP9Profile1 = 0x02;
+    static const int VP9Profile2 = 0x04;
+    static const int VP9Profile3 = 0x08;
+    static const int VP9Profile2HDR = 0x1000;
+    static const int VP9Profile3HDR = 0x2000;
+    static const int VP9Profile2HDR10Plus = 0x4000;
+    static const int VP9Profile3HDR10Plus = 0x8000;
+
     // Unused yet.
     (void)AVCProfileConstrainedHigh;
     (void)HEVCProfileMain10HDR10;
     (void)HEVCProfileMain10HDR10Plus;
+    (void)VP9Profile2HDR;
+    (void)VP9Profile3HDR;
+    (void)VP9Profile2HDR10Plus;
+    (void)VP9Profile3HDR10Plus;
 
     if (avctx->codec_id == AV_CODEC_ID_H264) {
         switch(avctx->profile) {
@@ -356,6 +369,17 @@ int ff_AMediaCodecProfile_getProfileFromAVCodecContext(AVCodecContext *avctx)
             return HEVCProfileMainStill;
         case FF_PROFILE_HEVC_MAIN_10:
             return HEVCProfileMain10;
+        }
+    } else if (avctx->codec_id == AV_CODEC_ID_VP9) {
+        switch (avctx->profile) {
+        case FF_PROFILE_VP9_0:
+            return VP9Profile0;
+        case FF_PROFILE_VP9_1:
+            return VP9Profile1;
+        case FF_PROFILE_VP9_2:
+            return VP9Profile2;
+         case FF_PROFILE_VP9_3:
+            return VP9Profile3;
         }
     }
 

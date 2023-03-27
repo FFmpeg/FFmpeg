@@ -164,6 +164,9 @@ static av_cold int mediacodec_init(AVCodecContext *avctx)
     case AV_CODEC_ID_HEVC:
         codec_mime = "video/hevc";
         break;
+    case AV_CODEC_ID_VP9:
+        codec_mime = "video/x-vnd.on2.vp9";
+        break;
     default:
         av_assert0(0);
     }
@@ -764,3 +767,61 @@ static const AVOption hevc_options[] = {
 DECLARE_MEDIACODEC_ENCODER(hevc, "H.265", AV_CODEC_ID_HEVC)
 
 #endif  // CONFIG_HEVC_MEDIACODEC_ENCODER
+
+#if CONFIG_VP9_MEDIACODEC_ENCODER
+
+enum MediaCodecVP9Level {
+    VP9Level1  = 0x1,
+    VP9Level11  = 0x2,
+    VP9Level2  = 0x4,
+    VP9Level21  = 0x8,
+    VP9Level3 = 0x10,
+    VP9Level31 = 0x20,
+    VP9Level4  = 0x40,
+    VP9Level41  = 0x80,
+    VP9Level5 = 0x100,
+    VP9Level51 = 0x200,
+    VP9Level52  = 0x400,
+    VP9Level6  = 0x800,
+    VP9Level61 = 0x1000,
+    VP9Level62 = 0x2000,
+};
+
+static const AVOption vp9_options[] = {
+    COMMON_OPTION
+    { "level", "Specify tier and level",
+                OFFSET(level), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, VE, "level" },
+    { "1",     "Level 1",
+                0, AV_OPT_TYPE_CONST, { .i64 = VP9Level1  },  0, 0, VE,  "level" },
+    { "1.1",   "Level 1.1",
+                0, AV_OPT_TYPE_CONST, { .i64 = VP9Level11 },  0, 0, VE,  "level" },
+    { "2",     "Level 2",
+                0, AV_OPT_TYPE_CONST, { .i64 = VP9Level2  },  0, 0, VE,  "level" },
+    { "2.1",   "Level 2.1",
+                0, AV_OPT_TYPE_CONST, { .i64 = VP9Level21 },  0, 0, VE,  "level" },
+    { "3",     "Level 3",
+                0, AV_OPT_TYPE_CONST, { .i64 = VP9Level3  },  0, 0, VE,  "level" },
+    { "3.1",   "Level 3.1",
+                0, AV_OPT_TYPE_CONST, { .i64 = VP9Level31 },  0, 0, VE,  "level" },
+    { "4",     "Level 4",
+                0, AV_OPT_TYPE_CONST, { .i64 = VP9Level4  },  0, 0, VE,  "level" },
+    { "4.1",   "Level 4.1",
+                0, AV_OPT_TYPE_CONST, { .i64 = VP9Level41 },  0, 0, VE,  "level" },
+    { "5",     "Level 5",
+                0, AV_OPT_TYPE_CONST, { .i64 = VP9Level5  },  0, 0, VE,  "level" },
+    { "5.1",   "Level 5.1",
+                0, AV_OPT_TYPE_CONST, { .i64 = VP9Level51 },  0, 0, VE,  "level" },
+    { "5.2",   "Level 5.2",
+                0, AV_OPT_TYPE_CONST, { .i64 = VP9Level52 },  0, 0, VE,  "level" },
+    { "6",     "Level 6",
+                0, AV_OPT_TYPE_CONST, { .i64 = VP9Level6  },  0, 0, VE,  "level" },
+    { "6.1",   "Level 4.1",
+                0, AV_OPT_TYPE_CONST, { .i64 = VP9Level61 },  0, 0, VE,  "level" },
+    { "6.2",   "Level 6.2",
+                0, AV_OPT_TYPE_CONST, { .i64 = VP9Level62 },  0, 0, VE,  "level" },
+    { NULL, }
+};
+
+DECLARE_MEDIACODEC_ENCODER(vp9, "VP9", AV_CODEC_ID_VP9)
+
+#endif  // CONFIG_VP9_MEDIACODEC_ENCODER
