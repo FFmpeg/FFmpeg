@@ -44,6 +44,9 @@
 #include "libavformat/avformat.h"
 
 struct Encoder {
+    /* predicted pts of the next frame to be encoded */
+    int64_t next_pts;
+
     AVFrame *last_frame;
     /* number of frames emitted by the video-encoding sync code */
     int64_t vsync_frame_number;
@@ -761,11 +764,12 @@ static int submit_encode_frame(OutputFile *of, OutputStream *ost,
 static void do_audio_out(OutputFile *of, OutputStream *ost,
                          AVFrame *frame)
 {
+    Encoder          *e = ost->enc;
     AVCodecContext *enc = ost->enc_ctx;
     int ret;
 
     if (frame->pts == AV_NOPTS_VALUE)
-        frame->pts = ost->next_pts;
+        frame->pts = e->next_pts;
     else {
         int64_t start_time = (of->start_time == AV_NOPTS_VALUE) ? 0 : of->start_time;
         frame->pts =
@@ -777,7 +781,7 @@ static void do_audio_out(OutputFile *of, OutputStream *ost,
     if (!check_recording_time(ost, frame->pts, frame->time_base))
         return;
 
-    ost->next_pts = frame->pts + frame->nb_samples;
+    e->next_pts = frame->pts + frame->nb_samples;
 
     ret = submit_encode_frame(of, ost, frame);
     if (ret < 0 && ret != AVERROR_EOF)
@@ -840,7 +844,7 @@ static void video_sync_process(OutputFile *of, OutputStream *ost,
     double sync_ipts = adjust_frame_pts_to_encoder_tb(of, ost, next_picture);
     /* delta0 is the "drift" between the input frame (next_picture) and
      * where it would fall in the output. */
-    delta0 = sync_ipts - ost->next_pts;
+    delta0 = sync_ipts - e->next_pts;
     delta  = delta0 + duration;
 
     // tracks the number of times the PREVIOUS frame should be duplicated,
@@ -857,7 +861,7 @@ static void video_sync_process(OutputFile *of, OutputStream *ost,
             av_log(ost, AV_LOG_VERBOSE, "Past duration %f too large\n", -delta0);
         } else
             av_log(ost, AV_LOG_DEBUG, "Clipping frame in rate conversion by %f\n", -delta0);
-        sync_ipts = ost->next_pts;
+        sync_ipts = e->next_pts;
         duration += delta0;
         delta0 = 0;
     }
@@ -868,7 +872,7 @@ static void video_sync_process(OutputFile *of, OutputStream *ost,
             av_log(ost, AV_LOG_DEBUG, "Not duplicating %d initial frames\n", (int)lrintf(delta0));
             delta = duration;
             delta0 = 0;
-            ost->next_pts = llrint(sync_ipts);
+            e->next_pts = llrint(sync_ipts);
         }
     case VSYNC_CFR:
         // FIXME set to 0.5 after we fix some dts/pts bugs like in avidec.c
@@ -887,13 +891,13 @@ static void video_sync_process(OutputFile *of, OutputStream *ost,
         if (delta <= -0.6)
             *nb_frames = 0;
         else if (delta > 0.6)
-            ost->next_pts = llrint(sync_ipts);
+            e->next_pts = llrint(sync_ipts);
         next_picture->duration = duration;
         break;
     case VSYNC_DROP:
     case VSYNC_PASSTHROUGH:
         next_picture->duration = duration;
-        ost->next_pts = llrint(sync_ipts);
+        e->next_pts = llrint(sync_ipts);
         break;
     default:
         av_assert0(0);
@@ -1031,7 +1035,7 @@ static void do_video_out(OutputFile *of,
         if (!in_picture)
             return;
 
-        in_picture->pts = ost->next_pts;
+        in_picture->pts = e->next_pts;
 
         if (!check_recording_time(ost, in_picture->pts, ost->enc_ctx->time_base))
             return;
@@ -1045,7 +1049,7 @@ static void do_video_out(OutputFile *of,
         else if (ret < 0)
             exit_program(1);
 
-        ost->next_pts++;
+        e->next_pts++;
         e->vsync_frame_number++;
     }
 

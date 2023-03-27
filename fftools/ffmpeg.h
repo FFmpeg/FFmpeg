@@ -571,9 +571,6 @@ typedef struct OutputStream {
     InputStream *ist;
 
     AVStream *st;            /* stream in the output file */
-    /* predicted pts of the next frame to be encoded
-     * audio/video encoding only */
-    int64_t next_pts;
     /* dts of the last packet sent to the muxing queue, in AV_TIME_BASE_Q */
     int64_t last_mux_dts;
     /* pts of the last frame received from the filters, in AV_TIME_BASE_Q */
