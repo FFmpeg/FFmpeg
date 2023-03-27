@@ -571,8 +571,6 @@ typedef struct OutputStream {
     InputStream *ist;
 
     AVStream *st;            /* stream in the output file */
-    /* number of frames emitted by the video-encoding sync code */
-    int64_t vsync_frame_number;
     /* predicted pts of the next frame to be encoded
      * audio/video encoding only */
     int64_t next_pts;

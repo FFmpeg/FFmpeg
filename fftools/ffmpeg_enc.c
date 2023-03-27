@@ -45,6 +45,8 @@
 
 struct Encoder {
     AVFrame *last_frame;
+    /* number of frames emitted by the video-encoding sync code */
+    int64_t vsync_frame_number;
 };
 
 static uint64_t dup_warning = 1000;
@@ -832,6 +834,7 @@ static void video_sync_process(OutputFile *of, OutputStream *ost,
                                AVFrame *next_picture, double duration,
                                int64_t *nb_frames, int64_t *nb_frames_prev)
 {
+    Encoder *e = ost->enc;
     double delta0, delta;
 
     double sync_ipts = adjust_frame_pts_to_encoder_tb(of, ost, next_picture);
@@ -861,7 +864,7 @@ static void video_sync_process(OutputFile *of, OutputStream *ost,
 
     switch (ost->vsync_method) {
     case VSYNC_VSCFR:
-        if (ost->vsync_frame_number == 0 && delta0 >= 0.5) {
+        if (e->vsync_frame_number == 0 && delta0 >= 0.5) {
             av_log(ost, AV_LOG_DEBUG, "Not duplicating %d initial frames\n", (int)lrintf(delta0));
             delta = duration;
             delta0 = 0;
@@ -869,7 +872,7 @@ static void video_sync_process(OutputFile *of, OutputStream *ost,
         }
     case VSYNC_CFR:
         // FIXME set to 0.5 after we fix some dts/pts bugs like in avidec.c
-        if (frame_drop_threshold && delta < frame_drop_threshold && ost->vsync_frame_number) {
+        if (frame_drop_threshold && delta < frame_drop_threshold && e->vsync_frame_number) {
             *nb_frames = 0;
         } else if (delta < -1.1)
             *nb_frames = 0;
@@ -998,7 +1001,7 @@ static void do_video_out(OutputFile *of,
         nb_frames_drop++;
         av_log(ost, AV_LOG_VERBOSE,
                "*** dropping frame %"PRId64" at ts %"PRId64"\n",
-               ost->vsync_frame_number, e->last_frame->pts);
+               e->vsync_frame_number, e->last_frame->pts);
     }
     if (nb_frames > (nb_frames_prev && ost->last_dropped) + (nb_frames > nb_frames_prev)) {
         if (nb_frames > dts_error_threshold * 30) {
@@ -1043,7 +1046,7 @@ static void do_video_out(OutputFile *of,
             exit_program(1);
 
         ost->next_pts++;
-        ost->vsync_frame_number++;
+        e->vsync_frame_number++;
     }
 
     av_frame_unref(e->last_frame);
