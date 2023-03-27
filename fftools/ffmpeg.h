@@ -370,7 +370,8 @@ typedef struct InputStream {
     int64_t first_dts;       ///< dts of the first packet read for this stream (in AV_TIME_BASE units)
     int64_t       dts;       ///< dts of the last packet read for this stream (in AV_TIME_BASE units)
 
-    int64_t       next_pts;  ///< synthetic pts for the next decode frame (in AV_TIME_BASE units)
+    /* predicted pts of the next decoded frame, in AV_TIME_BASE */
+    int64_t       next_pts;
     int64_t       pts;       ///< current pts of the decoded frame  (in AV_TIME_BASE units)
     int           wrap_correction_done;
 

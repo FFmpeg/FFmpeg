@@ -1670,7 +1670,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
     if (pkt && pkt->dts != AV_NOPTS_VALUE) {
         ist->next_dts = ist->dts = av_rescale_q(pkt->dts, ist->st->time_base, AV_TIME_BASE_Q);
         if (par->codec_type != AVMEDIA_TYPE_VIDEO || !ist->decoding_needed)
-            ist->next_pts = ist->pts = ist->dts;
+            ist->pts = ist->dts;
     }
 
     // while we have more to decode or while the decoder did output something on EOF
@@ -1811,7 +1811,6 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
             break;
         }
         ist->pts = ist->dts;
-        ist->next_pts = ist->next_dts;
     } else if (!ist->decoding_needed)
         eof_reached = 1;
 
