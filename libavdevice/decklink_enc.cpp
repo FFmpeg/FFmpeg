@@ -367,8 +367,93 @@ static void construct_cc(AVFormatContext *avctx, struct decklink_ctx *ctx,
     }
 }
 
+/* See SMPTE ST 2016-3:2009 */
+static void construct_afd(AVFormatContext *avctx, struct decklink_ctx *ctx,
+                          AVPacket *pkt, struct klvanc_line_set_s *vanc_lines,
+                          AVStream *st)
+{
+    struct klvanc_packet_afd_s *afd = NULL;
+    uint16_t *afd_words = NULL;
+    uint16_t len;
+    size_t size;
+    int f1_line = 12, f2_line = 0, ret;
+
+    const uint8_t *data = av_packet_get_side_data(pkt, AV_PKT_DATA_AFD, &size);
+    if (!data || size == 0)
+        return;
+
+    ret = klvanc_create_AFD(&afd);
+    if (ret)
+        return;
+
+    ret = klvanc_set_AFD_val(afd, data[0]);
+    if (ret) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid AFD value specified: %d\n",
+               data[0]);
+        klvanc_destroy_AFD(afd);
+        return;
+    }
+
+    /* Compute the AR flag based on the DAR (see ST 2016-1:2009 Sec 9.1).  Note, we treat
+       anything below 1.4 as 4:3 (as opposed to the standard 1.33), because there are lots
+       of streams in the field that aren't *exactly* 4:3 but a tiny bit larger after doing
+       the math... */
+    if (av_cmp_q((AVRational) {st->codecpar->width * st->codecpar->sample_aspect_ratio.num,
+                    st->codecpar->height * st->codecpar->sample_aspect_ratio.den}, (AVRational) {14, 10}) == 1)
+        afd->aspectRatio = ASPECT_16x9;
+    else
+        afd->aspectRatio = ASPECT_4x3;
+
+    ret = klvanc_convert_AFD_to_words(afd, &afd_words, &len);
+    if (ret) {
+        av_log(avctx, AV_LOG_ERROR, "Failed converting AFD packet to words\n");
+        goto out;
+    }
+
+    ret = klvanc_line_insert(ctx->vanc_ctx, vanc_lines, afd_words, len, f1_line, 0);
+    if (ret) {
+        av_log(avctx, AV_LOG_ERROR, "VANC line insertion failed\n");
+        goto out;
+    }
+
+    /* For interlaced video, insert into both fields.  Switching lines for field 2
+       derived from SMPTE RP 168:2009, Sec 6, Table 2. */
+    switch (ctx->bmd_mode) {
+    case bmdModeNTSC:
+    case bmdModeNTSC2398:
+        f2_line = 273 - 10 + f1_line;
+        break;
+    case bmdModePAL:
+        f2_line = 319 - 6 + f1_line;
+        break;
+    case bmdModeHD1080i50:
+    case bmdModeHD1080i5994:
+    case bmdModeHD1080i6000:
+        f2_line = 569 - 7 + f1_line;
+        break;
+    default:
+        f2_line = 0;
+        break;
+    }
+
+    if (f2_line > 0) {
+        ret = klvanc_line_insert(ctx->vanc_ctx, vanc_lines, afd_words, len, f2_line, 0);
+        if (ret) {
+            av_log(avctx, AV_LOG_ERROR, "VANC line insertion failed\n");
+            goto out;
+        }
+    }
+
+out:
+    if (afd)
+        klvanc_destroy_AFD(afd);
+    if (afd_words)
+        free(afd_words);
+}
+
 static int decklink_construct_vanc(AVFormatContext *avctx, struct decklink_ctx *ctx,
-                                   AVPacket *pkt, decklink_frame *frame)
+                                   AVPacket *pkt, decklink_frame *frame,
+                                   AVStream *st)
 {
     struct klvanc_line_set_s vanc_lines = { 0 };
     int ret = 0, i;
@@ -377,6 +462,7 @@ static int decklink_construct_vanc(AVFormatContext *avctx, struct decklink_ctx *
         return 0;
 
     construct_cc(avctx, ctx, pkt, &vanc_lines);
+    construct_afd(avctx, ctx, pkt, &vanc_lines, st);
 
     IDeckLinkVideoFrameAncillary *vanc;
     int result = ctx->dlo->CreateAncillaryData(bmdFormat10BitYUV, &vanc);
@@ -468,7 +554,7 @@ static int decklink_write_video_packet(AVFormatContext *avctx, AVPacket *pkt)
         frame = new decklink_frame(ctx, avpacket, st->codecpar->codec_id, ctx->bmd_height, ctx->bmd_width);
 
 #if CONFIG_LIBKLVANC
-        if (decklink_construct_vanc(avctx, ctx, pkt, frame))
+        if (decklink_construct_vanc(avctx, ctx, pkt, frame, st))
             av_log(avctx, AV_LOG_ERROR, "Failed to construct VANC\n");
 #endif
     }
