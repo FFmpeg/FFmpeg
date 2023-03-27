@@ -3493,7 +3493,7 @@ static OutputStream *choose_output(void)
                     ost->initialized, ost->inputs_done, ost->finished);
         }
 
-        if (!ost->initialized && !ost->inputs_done)
+        if (!ost->initialized && !ost->inputs_done && !ost->finished)
             return ost->unavailable ? NULL : ost;
 
         if (!ost->finished && opts < opts_min) {
