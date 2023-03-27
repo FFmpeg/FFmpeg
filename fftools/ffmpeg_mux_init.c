@@ -649,7 +649,6 @@ static OutputStream *new_output_stream(Muxer *mux, const OptionsContext *o,
         ost->ist->st->discard = ost->ist->user_set_discard;
     }
     ost->last_mux_dts = AV_NOPTS_VALUE;
-    ost->last_filter_pts = AV_NOPTS_VALUE;
 
     MATCH_PER_STREAM_OPT(copy_initial_nonkeyframes, i,
                          ost->copy_initial_nonkeyframes, oc, st);

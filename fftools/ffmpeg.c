@@ -697,8 +697,8 @@ static int reap_filters(int flush)
 
             if (filtered_frame->pts != AV_NOPTS_VALUE) {
                 AVRational tb = av_buffersink_get_time_base(filter);
-                ost->last_filter_pts = av_rescale_q(filtered_frame->pts, tb,
-                                                    AV_TIME_BASE_Q);
+                ost->filter->last_pts = av_rescale_q(filtered_frame->pts, tb,
+                                                     AV_TIME_BASE_Q);
                 filtered_frame->time_base = tb;
 
                 if (debug_ts)
@@ -2391,8 +2391,8 @@ static OutputStream *choose_output(void)
     for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
         int64_t opts;
 
-        if (ost->filter && ost->last_filter_pts != AV_NOPTS_VALUE) {
-            opts = ost->last_filter_pts;
+        if (ost->filter && ost->filter->last_pts != AV_NOPTS_VALUE) {
+            opts = ost->filter->last_pts;
         } else {
             opts = ost->last_mux_dts == AV_NOPTS_VALUE ?
                    INT64_MIN : ost->last_mux_dts;

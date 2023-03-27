@@ -176,6 +176,18 @@ static void choose_channel_layouts(OutputFilter *ofilter, AVBPrint *bprint)
     av_bprint_chars(bprint, ':', 1);
 }
 
+static OutputFilter *ofilter_alloc(FilterGraph *fg)
+{
+    OutputFilter *ofilter;
+
+    ofilter           = ALLOC_ARRAY_ELEM(fg->outputs, fg->nb_outputs);
+    ofilter->graph    = fg;
+    ofilter->format   = -1;
+    ofilter->last_pts = AV_NOPTS_VALUE;
+
+    return ofilter;
+}
+
 int init_simple_filtergraph(InputStream *ist, OutputStream *ost)
 {
     FilterGraph *fg = av_mallocz(sizeof(*fg));
@@ -186,10 +198,8 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost)
         report_and_exit(AVERROR(ENOMEM));
     fg->index = nb_filtergraphs;
 
-    ofilter = ALLOC_ARRAY_ELEM(fg->outputs, fg->nb_outputs);
-    ofilter->ost    = ost;
-    ofilter->graph  = fg;
-    ofilter->format = -1;
+    ofilter      = ofilter_alloc(fg);
+    ofilter->ost = ost;
 
     ost->filter = ofilter;
 
@@ -502,9 +512,8 @@ int init_complex_filtergraph(FilterGraph *fg)
         init_input_filter(fg, cur);
 
     for (cur = outputs; cur;) {
-        OutputFilter *const ofilter = ALLOC_ARRAY_ELEM(fg->outputs, fg->nb_outputs);
+        OutputFilter *const ofilter = ofilter_alloc(fg);
 
-        ofilter->graph   = fg;
         ofilter->out_tmp = cur;
         ofilter->type    = avfilter_pad_get_type(cur->filter_ctx->output_pads,
                                                                          cur->pad_idx);

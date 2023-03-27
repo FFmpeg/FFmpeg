@@ -314,6 +314,9 @@ typedef struct OutputFilter {
     const int *formats;
     const AVChannelLayout *ch_layouts;
     const int *sample_rates;
+
+    /* pts of the last frame received from this filter, in AV_TIME_BASE_Q */
+    int64_t last_pts;
 } OutputFilter;
 
 typedef struct FilterGraph {
@@ -573,8 +576,6 @@ typedef struct OutputStream {
     AVStream *st;            /* stream in the output file */
     /* dts of the last packet sent to the muxing queue, in AV_TIME_BASE_Q */
     int64_t last_mux_dts;
-    /* pts of the last frame received from the filters, in AV_TIME_BASE_Q */
-    int64_t last_filter_pts;
 
     // timestamp from which the streamcopied streams should start,
     // in AV_TIME_BASE_Q;
