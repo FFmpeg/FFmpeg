@@ -732,8 +732,13 @@ static int hls_slice_header(HEVCContext *s)
             else
                 sh->slice_temporal_mvp_enabled_flag = 0;
         } else {
-            s->sh.short_term_rps = NULL;
-            s->poc               = 0;
+            s->poc                              = 0;
+            sh->pic_order_cnt_lsb               = 0;
+            sh->short_term_ref_pic_set_sps_flag = 0;
+            sh->short_term_ref_pic_set_size     = 0;
+            sh->short_term_rps                  = NULL;
+            sh->long_term_ref_pic_set_size      = 0;
+            sh->slice_temporal_mvp_enabled_flag = 0;
         }
 
         /* 8.3.1 */
