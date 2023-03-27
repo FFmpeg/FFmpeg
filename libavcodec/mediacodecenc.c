@@ -167,6 +167,9 @@ static av_cold int mediacodec_init(AVCodecContext *avctx)
     case AV_CODEC_ID_VP9:
         codec_mime = "video/x-vnd.on2.vp9";
         break;
+    case AV_CODEC_ID_MPEG4:
+        codec_mime = "video/mp4v-es";
+        break;
     default:
         av_assert0(0);
     }
@@ -825,3 +828,49 @@ static const AVOption vp9_options[] = {
 DECLARE_MEDIACODEC_ENCODER(vp9, "VP9", AV_CODEC_ID_VP9)
 
 #endif  // CONFIG_VP9_MEDIACODEC_ENCODER
+
+#if CONFIG_MPEG4_MEDIACODEC_ENCODER
+
+enum MediaCodecMpeg4Level {
+    MPEG4Level0  = 0x01,
+    MPEG4Level0b  = 0x02,
+    MPEG4Level1 = 0x04,
+    MPEG4Level2  = 0x08,
+    MPEG4Level3 = 0x10,
+    MPEG4Level3b = 0x18,
+    MPEG4Level4 = 0x20,
+    MPEG4Level4a  = 0x40,
+    MPEG4Level5  = 0x80,
+    MPEG4Level6 = 0x100,
+};
+
+static const AVOption mpeg4_options[] = {
+    COMMON_OPTION
+    { "level", "Specify tier and level",
+                OFFSET(level), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, VE, "level" },
+    { "0",     "Level 0",
+                0, AV_OPT_TYPE_CONST, { .i64 = MPEG4Level0  },  0, 0, VE,  "level" },
+    { "0b",    "Level 0b",
+                0, AV_OPT_TYPE_CONST, { .i64 = MPEG4Level0b },  0, 0, VE,  "level" },
+    { "1",     "Level 1",
+                0, AV_OPT_TYPE_CONST, { .i64 = MPEG4Level1  },  0, 0, VE,  "level" },
+    { "2",     "Level 2",
+                0, AV_OPT_TYPE_CONST, { .i64 = MPEG4Level2 },  0, 0, VE,  "level" },
+    { "3",     "Level 3",
+                0, AV_OPT_TYPE_CONST, { .i64 = MPEG4Level3  },  0, 0, VE,  "level" },
+    { "3b",    "Level 3b",
+                0, AV_OPT_TYPE_CONST, { .i64 = MPEG4Level3b },  0, 0, VE,  "level" },
+    { "4",     "Level 4",
+                0, AV_OPT_TYPE_CONST, { .i64 = MPEG4Level4  },  0, 0, VE,  "level" },
+    { "4a",    "Level 4a",
+                0, AV_OPT_TYPE_CONST, { .i64 = MPEG4Level4a },  0, 0, VE,  "level" },
+    { "5",     "Level 5",
+                0, AV_OPT_TYPE_CONST, { .i64 = MPEG4Level5  },  0, 0, VE,  "level" },
+    { "6",     "Level 6",
+                0, AV_OPT_TYPE_CONST, { .i64 = MPEG4Level6  },  0, 0, VE,  "level" },
+    { NULL, }
+};
+
+DECLARE_MEDIACODEC_ENCODER(mpeg4, "MPEG-4", AV_CODEC_ID_MPEG4)
+
+#endif  // CONFIG_MPEG4_MEDIACODEC_ENCODER

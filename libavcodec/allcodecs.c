@@ -873,6 +873,7 @@ extern const FFCodec ff_mpeg2_qsv_encoder;
 extern const FFCodec ff_mpeg2_vaapi_encoder;
 extern const FFCodec ff_mpeg4_cuvid_decoder;
 extern const FFCodec ff_mpeg4_mediacodec_decoder;
+extern const FFCodec ff_mpeg4_mediacodec_encoder;
 extern const FFCodec ff_mpeg4_omx_encoder;
 extern const FFCodec ff_mpeg4_v4l2m2m_encoder;
 extern const FFCodec ff_prores_videotoolbox_encoder;
