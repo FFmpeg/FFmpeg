@@ -50,6 +50,10 @@ struct Encoder {
     AVFrame *last_frame;
     /* number of frames emitted by the video-encoding sync code */
     int64_t vsync_frame_number;
+    /* history of nb_frames_prev, i.e. the number of times the
+     * previous frame was duplicated by vsync code in recent
+     * do_video_out() calls */
+    int64_t frames_prev_hist[3];
 
     AVFrame *sq_frame;
 };
@@ -999,18 +1003,18 @@ static void do_video_out(OutputFile *of,
 
     if (!next_picture) {
         //end, flushing
-        nb_frames_prev = nb_frames = mid_pred(ost->last_nb0_frames[0],
-                                              ost->last_nb0_frames[1],
-                                              ost->last_nb0_frames[2]);
+        nb_frames_prev = nb_frames = mid_pred(e->frames_prev_hist[0],
+                                              e->frames_prev_hist[1],
+                                              e->frames_prev_hist[2]);
     } else {
         video_sync_process(of, ost, next_picture, duration,
                            &nb_frames, &nb_frames_prev);
     }
 
-    memmove(ost->last_nb0_frames + 1,
-            ost->last_nb0_frames,
-            sizeof(ost->last_nb0_frames[0]) * (FF_ARRAY_ELEMS(ost->last_nb0_frames) - 1));
-    ost->last_nb0_frames[0] = nb_frames_prev;
+    memmove(e->frames_prev_hist + 1,
+            e->frames_prev_hist,
+            sizeof(e->frames_prev_hist[0]) * (FF_ARRAY_ELEMS(e->frames_prev_hist) - 1));
+    e->frames_prev_hist[0] = nb_frames_prev;
 
     if (nb_frames_prev == 0 && ost->last_dropped) {
         nb_frames_drop++;
