@@ -127,7 +127,8 @@ static int sol_read_packet(AVFormatContext *s,
     int ret;
 
     if (avio_feof(s->pb))
-        return AVERROR(EIO);
+        return AVERROR_EOF;
+
     ret= av_get_packet(s->pb, pkt, MAX_SIZE);
     if (ret < 0)
         return ret;

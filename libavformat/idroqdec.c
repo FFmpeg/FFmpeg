@@ -107,7 +107,7 @@ static int roq_read_packet(AVFormatContext *s,
     while (!packet_read) {
 
         if (avio_feof(s->pb))
-            return AVERROR(EIO);
+            return AVERROR_EOF;
 
         /* get the next chunk preamble */
         if ((ret = avio_read(pb, preamble, RoQ_CHUNK_PREAMBLE_SIZE)) !=

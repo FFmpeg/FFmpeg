@@ -41,7 +41,7 @@ static int daud_packet(AVFormatContext *s, AVPacket *pkt) {
     AVIOContext *pb = s->pb;
     int ret, size;
     if (avio_feof(pb))
-        return AVERROR(EIO);
+        return AVERROR_EOF;
     size = avio_rb16(pb);
     avio_rb16(pb); // unknown
     ret = av_get_packet(pb, pkt, size);
