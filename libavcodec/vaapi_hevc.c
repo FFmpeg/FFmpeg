@@ -542,12 +542,6 @@ static int vaapi_hevc_decode_slice(AVCodecContext *avctx,
             pic->last_slice_param.rext.ChromaOffsetL0[i][1] = sh->chroma_offset_l0[i][1];
         }
 
-        for (i = 0; i < 15 && i < sh->nb_refs[L0]; i++) {
-            pic->last_slice_param.rext.luma_offset_l0[i] = sh->luma_offset_l0[i];
-            pic->last_slice_param.rext.ChromaOffsetL0[i][0] = sh->chroma_offset_l0[i][0];
-            pic->last_slice_param.rext.ChromaOffsetL0[i][1] = sh->chroma_offset_l0[i][1];
-        }
-
         if (sh->slice_type == HEVC_SLICE_B) {
             for (i = 0; i < 15 && i < sh->nb_refs[L1]; i++) {
                 pic->last_slice_param.rext.luma_offset_l1[i] = sh->luma_offset_l1[i];
