@@ -1505,10 +1505,6 @@ static int setup_sync_queues(Muxer *mux, AVFormatContext *oc, int64_t buf_size_u
             if (ost->sq_idx_encode < 0)
                 return ost->sq_idx_encode;
 
-            ost->sq_frame = av_frame_alloc();
-            if (!ost->sq_frame)
-                return AVERROR(ENOMEM);
-
             if (ms->max_frames != INT64_MAX)
                 sq_limit_frames(of->sq_encode, ost->sq_idx_encode, ms->max_frames);
         }

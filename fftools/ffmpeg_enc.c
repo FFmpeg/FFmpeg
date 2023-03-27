@@ -50,6 +50,8 @@ struct Encoder {
     AVFrame *last_frame;
     /* number of frames emitted by the video-encoding sync code */
     int64_t vsync_frame_number;
+
+    AVFrame *sq_frame;
 };
 
 static uint64_t dup_warning = 1000;
@@ -62,6 +64,7 @@ void enc_free(Encoder **penc)
         return;
 
     av_frame_free(&enc->last_frame);
+    av_frame_free(&enc->sq_frame);
 
     av_freep(penc);
 }
@@ -139,6 +142,7 @@ static void init_encoder_time_base(OutputStream *ost, AVRational default_time_ba
 int enc_open(OutputStream *ost, AVFrame *frame)
 {
     InputStream *ist = ost->ist;
+    Encoder              *e = ost->enc;
     AVCodecContext *enc_ctx = ost->enc_ctx;
     AVCodecContext *dec_ctx = NULL;
     const AVCodec      *enc = enc_ctx->codec;
@@ -326,6 +330,12 @@ int enc_open(OutputStream *ost, AVFrame *frame)
             av_log(ost, AV_LOG_ERROR, "Error while opening encoder - maybe "
                    "incorrect parameters such as bit_rate, rate, width or height.\n");
         return ret;
+    }
+
+    if (ost->sq_idx_encode >= 0) {
+        e->sq_frame = av_frame_alloc();
+        if (!e->sq_frame)
+            return AVERROR(ENOMEM);
     }
 
     if (ost->enc_ctx->frame_size) {
@@ -718,16 +728,17 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
 static int submit_encode_frame(OutputFile *of, OutputStream *ost,
                                AVFrame *frame)
 {
+    Encoder *e = ost->enc;
     int ret;
 
     if (ost->sq_idx_encode < 0)
         return encode_frame(of, ost, frame);
 
     if (frame) {
-        ret = av_frame_ref(ost->sq_frame, frame);
+        ret = av_frame_ref(e->sq_frame, frame);
         if (ret < 0)
             return ret;
-        frame = ost->sq_frame;
+        frame = e->sq_frame;
     }
 
     ret = sq_send(of->sq_encode, ost->sq_idx_encode,
@@ -740,7 +751,7 @@ static int submit_encode_frame(OutputFile *of, OutputStream *ost,
     }
 
     while (1) {
-        AVFrame *enc_frame = ost->sq_frame;
+        AVFrame *enc_frame = e->sq_frame;
 
         ret = sq_receive(of->sq_encode, ost->sq_idx_encode,
                                SQFRAME(enc_frame));
