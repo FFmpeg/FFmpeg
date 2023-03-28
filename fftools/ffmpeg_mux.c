@@ -602,7 +602,7 @@ int of_write_trailer(OutputFile *of)
 {
     Muxer *mux = mux_from_of(of);
     AVFormatContext *fc = mux->fc;
-    int ret;
+    int ret, mux_result = 0;
 
     if (!mux->tq) {
         av_log(mux, AV_LOG_ERROR,
@@ -611,14 +611,12 @@ int of_write_trailer(OutputFile *of)
         return AVERROR(EINVAL);
     }
 
-    ret = thread_stop(mux);
-    if (ret < 0)
-        main_return_code = ret;
+    mux_result = thread_stop(mux);
 
     ret = av_write_trailer(fc);
     if (ret < 0) {
         av_log(mux, AV_LOG_ERROR, "Error writing trailer: %s\n", av_err2str(ret));
-        return ret;
+        mux_result = err_merge(mux_result, ret);
     }
 
     mux->last_filesize = filesize(fc->pb);
@@ -627,11 +625,11 @@ int of_write_trailer(OutputFile *of)
         ret = avio_closep(&fc->pb);
         if (ret < 0) {
             av_log(mux, AV_LOG_ERROR, "Error closing file: %s\n", av_err2str(ret));
-            return ret;
+            mux_result = err_merge(mux_result, ret);
         }
     }
 
-    return 0;
+    return mux_result;
 }
 
 static void ost_free(OutputStream **post)

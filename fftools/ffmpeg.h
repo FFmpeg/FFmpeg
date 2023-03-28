@@ -756,7 +756,6 @@ extern const OptionDef options[];
 extern HWDevice *filter_hw_device;
 
 extern unsigned nb_output_dumped;
-extern int main_return_code;
 
 extern int ignore_unknown_streams;
 extern int copy_unknown_streams;
@@ -886,6 +885,17 @@ static inline double psnr(double d)
 void close_output_stream(OutputStream *ost);
 int trigger_fix_sub_duration_heartbeat(OutputStream *ost, const AVPacket *pkt);
 void update_benchmark(const char *fmt, ...);
+
+/**
+ * Merge two return codes - return one of the error codes if at least one of
+ * them was negative, 0 otherwise.
+ * Currently just picks the first one, eventually we might want to do something
+ * more sophisticated, like sorting them by priority.
+ */
+static inline int err_merge(int err0, int err1)
+{
+    return (err0 < 0) ? err0 : FFMIN(err1, 0);
+}
 
 #define SPECIFIER_OPT_FMT_str  "%s"
 #define SPECIFIER_OPT_FMT_i    "%i"

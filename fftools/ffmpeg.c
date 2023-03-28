@@ -318,7 +318,6 @@ static volatile int received_sigterm = 0;
 static volatile int received_nb_signals = 0;
 static atomic_int transcode_init_done = ATOMIC_VAR_INIT(0);
 static volatile int ffmpeg_exited = 0;
-int main_return_code = 0;
 static int64_t copy_ts_first_pts = AV_NOPTS_VALUE;
 
 static void
@@ -2951,9 +2950,8 @@ static int transcode(void)
 
     /* write the trailer if needed */
     for (i = 0; i < nb_output_files; i++) {
-        ret = of_write_trailer(output_files[i]);
-        if (ret < 0 && exit_on_error)
-            exit_program(1);
+        int err = of_write_trailer(output_files[i]);
+        ret = err_merge(ret, err);
     }
 
     /* dump report by using the first video and audio streams */
@@ -2975,7 +2973,7 @@ static int transcode(void)
         exit_program(1);
     }
 
-    return 0;
+    return ret;
 }
 
 static BenchmarkTimeStamps get_benchmark_time_stamps(void)
@@ -3061,9 +3059,8 @@ int main(int argc, char **argv)
     }
 
     current_time = ti = get_benchmark_time_stamps();
-    if (transcode() < 0)
-        exit_program(1);
-    if (do_benchmark) {
+    ret = transcode();
+    if (ret >= 0 && do_benchmark) {
         int64_t utime, stime, rtime;
         current_time = get_benchmark_time_stamps();
         utime = current_time.user_usec - ti.user_usec;
@@ -3078,6 +3075,7 @@ int main(int argc, char **argv)
     if ((decode_error_stat[0] + decode_error_stat[1]) * max_error_rate < decode_error_stat[1])
         exit_program(69);
 
-    exit_program(received_nb_signals ? 255 : main_return_code);
-    return main_return_code;
+    ret = received_nb_signals ? 255 : ret;
+    exit_program(ret);
+    return ret;
 }
