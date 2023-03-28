@@ -2905,7 +2905,7 @@ static int transcode(void)
 
     ret = transcode_init();
     if (ret < 0)
-        goto fail;
+        return ret;
 
     if (stdin_interaction) {
         av_log(NULL, AV_LOG_INFO, "Press [q] to stop, [?] for help\n");
@@ -2975,11 +2975,7 @@ static int transcode(void)
 
     hw_device_free_all();
 
-    /* finished ! */
-    ret = 0;
-
- fail:
-    return ret;
+    return 0;
 }
 
 static BenchmarkTimeStamps get_benchmark_time_stamps(void)
