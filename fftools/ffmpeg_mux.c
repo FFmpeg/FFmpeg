@@ -641,15 +641,30 @@ static void mux_final_stats(Muxer *mux)
 {
     OutputFile *of = &mux->of;
     uint64_t total_packets = 0, total_size = 0;
+    uint64_t video_size = 0, audio_size = 0, subtitle_size = 0,
+             extra_size = 0, other_size = 0;
+
+    uint8_t overhead[16] = "unknown";
+    int64_t file_size = of_filesize(of);
 
     av_log(of, AV_LOG_VERBOSE, "Output file #%d (%s):\n",
            of->index, of->url);
 
     for (int j = 0; j < of->nb_streams; j++) {
         OutputStream *ost = of->streams[j];
-        enum AVMediaType type = ost->st->codecpar->codec_type;
+        const AVCodecParameters *par = ost->st->codecpar;
+        const  enum AVMediaType type = par->codec_type;
+        const uint64_t s = ost->data_size_mux;
 
-        total_size    += ost->data_size_mux;
+        switch (type) {
+        case AVMEDIA_TYPE_VIDEO:    video_size    += s; break;
+        case AVMEDIA_TYPE_AUDIO:    audio_size    += s; break;
+        case AVMEDIA_TYPE_SUBTITLE: subtitle_size += s; break;
+        default:                    other_size    += s; break;
+        }
+
+        extra_size    += par->extradata_size;
+        total_size    += s;
         total_packets += atomic_load(&ost->packets_written);
 
         av_log(of, AV_LOG_VERBOSE, "  Output stream #%d:%d (%s): ",
@@ -663,13 +678,28 @@ static void mux_final_stats(Muxer *mux)
         }
 
         av_log(of, AV_LOG_VERBOSE, "%"PRIu64" packets muxed (%"PRIu64" bytes); ",
-               atomic_load(&ost->packets_written), ost->data_size_mux);
+               atomic_load(&ost->packets_written), s);
 
         av_log(of, AV_LOG_VERBOSE, "\n");
     }
 
     av_log(of, AV_LOG_VERBOSE, "  Total: %"PRIu64" packets (%"PRIu64" bytes) muxed\n",
            total_packets, total_size);
+
+    if (total_size && file_size > 0 && file_size >= total_size) {
+        snprintf(overhead, sizeof(overhead), "%f%%",
+                 100.0 * (file_size - total_size) / total_size);
+    }
+
+    av_log(of, AV_LOG_INFO,
+           "video:%1.0fkB audio:%1.0fkB subtitle:%1.0fkB other streams:%1.0fkB "
+           "global headers:%1.0fkB muxing overhead: %s\n",
+           video_size    / 1024.0,
+           audio_size    / 1024.0,
+           subtitle_size / 1024.0,
+           other_size    / 1024.0,
+           extra_size    / 1024.0,
+           overhead);
 }
 
 int of_write_trailer(OutputFile *of)

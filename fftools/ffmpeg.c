@@ -738,42 +738,9 @@ static int reap_filters(int flush)
     return 0;
 }
 
-static void print_final_stats(int64_t total_size)
+static void print_final_stats(void)
 {
-    uint64_t video_size = 0, audio_size = 0, extra_size = 0, other_size = 0;
-    uint64_t subtitle_size = 0;
-    uint64_t data_size = 0;
-    float percent = -1.0;
     int i, j;
-
-    for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
-        AVCodecParameters *par = ost->st->codecpar;
-        const uint64_t s = ost->data_size_mux;
-
-        switch (par->codec_type) {
-            case AVMEDIA_TYPE_VIDEO:    video_size    += s; break;
-            case AVMEDIA_TYPE_AUDIO:    audio_size    += s; break;
-            case AVMEDIA_TYPE_SUBTITLE: subtitle_size += s; break;
-            default:                    other_size    += s; break;
-        }
-        extra_size += par->extradata_size;
-        data_size  += s;
-    }
-
-    if (data_size && total_size>0 && total_size >= data_size)
-        percent = 100.0 * (total_size - data_size) / data_size;
-
-    av_log(NULL, AV_LOG_INFO, "video:%1.0fkB audio:%1.0fkB subtitle:%1.0fkB other streams:%1.0fkB global headers:%1.0fkB muxing overhead: ",
-           video_size / 1024.0,
-           audio_size / 1024.0,
-           subtitle_size / 1024.0,
-           other_size / 1024.0,
-           extra_size / 1024.0);
-    if (percent >= 0.0)
-        av_log(NULL, AV_LOG_INFO, "%f%%", percent);
-    else
-        av_log(NULL, AV_LOG_INFO, "unknown");
-    av_log(NULL, AV_LOG_INFO, "\n");
 
     /* print verbose per-stream stats */
     for (i = 0; i < nb_input_files; i++) {
@@ -1005,7 +972,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
     first_report = 0;
 
     if (is_last_report)
-        print_final_stats(total_size);
+        print_final_stats();
 }
 
 int ifilter_parameters_from_codecpar(InputFilter *ifilter, AVCodecParameters *par)
