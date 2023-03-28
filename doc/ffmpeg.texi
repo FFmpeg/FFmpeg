@@ -1051,8 +1051,6 @@ Specify which version of the vstats format to use. Default is @code{2}. See the
 top=1/bottom=0/auto=-1 field first
 @item -vtag @var{fourcc/tag} (@emph{output})
 Force video tag/fourcc. This is an alias for @code{-tag:v}.
-@item -qphist (@emph{global})
-Show QP histogram
 @item -vbsf @var{bitstream_filter}
 Deprecated see -bsf
 

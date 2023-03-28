@@ -80,7 +80,6 @@ int debug_ts          = 0;
 int exit_on_error     = 0;
 int abort_on_flags    = 0;
 int print_stats       = -1;
-int qp_hist           = 0;
 int stdin_interaction = 1;
 float max_error_rate  = 2.0/3;
 char *filter_nbthreads;
@@ -1344,6 +1343,14 @@ int opt_timelimit(void *optctx, const char *opt, const char *arg)
     return 0;
 }
 
+#if FFMPEG_OPT_QPHIST
+static int opt_qphist(void *optctx, const char *opt, const char *arg)
+{
+    av_log(NULL, AV_LOG_WARNING, "Option -%s is deprecated and has no effect\n", opt);
+    return 0;
+}
+#endif
+
 #define OFFSET(x) offsetof(OptionsContext, x)
 const OptionDef options[] = {
     /* main options */
@@ -1627,8 +1634,10 @@ const OptionDef options[] = {
     { "vtag",         OPT_VIDEO | HAS_ARG | OPT_EXPERT  | OPT_PERFILE |
                       OPT_INPUT | OPT_OUTPUT,                                    { .func_arg = opt_old2new },
         "force video tag/fourcc", "fourcc/tag" },
-    { "qphist",       OPT_VIDEO | OPT_BOOL | OPT_EXPERT ,                        { &qp_hist },
-        "show QP histogram" },
+#if FFMPEG_OPT_QPHIST
+    { "qphist",       OPT_VIDEO | OPT_EXPERT ,                        { .func_arg = opt_qphist },
+        "deprecated, does nothing" },
+#endif
     { "fps_mode",     OPT_VIDEO | HAS_ARG | OPT_STRING | OPT_EXPERT |
                       OPT_SPEC | OPT_OUTPUT,                                     { .off = OFFSET(fps_mode) },
         "set framerate mode for matching video streams; overrides vsync" },

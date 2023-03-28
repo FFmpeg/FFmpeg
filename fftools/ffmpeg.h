@@ -54,6 +54,7 @@
 #define FFMPEG_OPT_MAP_CHANNEL 1
 #define FFMPEG_OPT_MAP_SYNC 1
 #define FFMPEG_ROTATION_METADATA 1
+#define FFMPEG_OPT_QPHIST 1
 
 enum VideoSyncMethod {
     VSYNC_AUTO = -1,
@@ -738,7 +739,6 @@ extern int exit_on_error;
 extern int abort_on_flags;
 extern int print_stats;
 extern int64_t stats_period;
-extern int qp_hist;
 extern int stdin_interaction;
 extern AVIOContext *progress_avio;
 extern float max_error_rate;

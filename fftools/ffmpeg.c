@@ -748,7 +748,6 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
     int64_t pts = INT64_MIN + 1;
     static int64_t last_time = -1;
     static int first_report = 1;
-    static int qp_histogram[52];
     int hours, mins, secs, us;
     const char *hours_sign;
     int ret;
@@ -794,14 +793,6 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
                        ost->file_index, ost->index, q);
             if (is_last_report)
                 av_bprintf(&buf, "L");
-            if (qp_hist) {
-                int j;
-                int qp = lrintf(q);
-                if (qp >= 0 && qp < FF_ARRAY_ELEMS(qp_histogram))
-                    qp_histogram[qp]++;
-                for (j = 0; j < 32; j++)
-                    av_bprintf(&buf, "%X", av_log2(qp_histogram[j] + 1));
-            }
 
             if (enc && (enc->flags & AV_CODEC_FLAG_PSNR) &&
                 (ost->pict_type != AV_PICTURE_TYPE_NONE || is_last_report)) {
@@ -2321,7 +2312,6 @@ static int check_keyboard_interaction(int64_t cur_time)
     }
     if (key == '+') av_log_set_level(av_log_get_level()+10);
     if (key == '-') av_log_set_level(av_log_get_level()-10);
-    if (key == 's') qp_hist     ^= 1;
     if (key == 'c' || key == 'C'){
         char buf[4096], target[64], command[256], arg[256] = {0};
         double time;
