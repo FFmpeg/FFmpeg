@@ -551,6 +551,8 @@ static void ffmpeg_cleanup(int ret)
     av_freep(&vstats_filename);
     of_enc_stats_close();
 
+    hw_device_free_all();
+
     av_freep(&filter_nbthreads);
 
     av_freep(&input_files);
@@ -2972,8 +2974,6 @@ static int transcode(void)
         av_log(NULL, AV_LOG_FATAL, "Empty output\n");
         exit_program(1);
     }
-
-    hw_device_free_all();
 
     return 0;
 }
