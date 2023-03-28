@@ -738,46 +738,6 @@ static int reap_filters(int flush)
     return 0;
 }
 
-static void print_final_stats(void)
-{
-    int i, j;
-
-    /* print verbose per-stream stats */
-    for (i = 0; i < nb_input_files; i++) {
-        InputFile *f = input_files[i];
-        uint64_t total_packets = 0, total_size = 0;
-
-        av_log(NULL, AV_LOG_VERBOSE, "Input file #%d (%s):\n",
-               i, f->ctx->url);
-
-        for (j = 0; j < f->nb_streams; j++) {
-            InputStream *ist = f->streams[j];
-            enum AVMediaType type = ist->par->codec_type;
-
-            total_size    += ist->data_size;
-            total_packets += ist->nb_packets;
-
-            av_log(NULL, AV_LOG_VERBOSE, "  Input stream #%d:%d (%s): ",
-                   i, j, av_get_media_type_string(type));
-            av_log(NULL, AV_LOG_VERBOSE, "%"PRIu64" packets read (%"PRIu64" bytes); ",
-                   ist->nb_packets, ist->data_size);
-
-            if (ist->decoding_needed) {
-                av_log(NULL, AV_LOG_VERBOSE, "%"PRIu64" frames decoded",
-                       ist->frames_decoded);
-                if (type == AVMEDIA_TYPE_AUDIO)
-                    av_log(NULL, AV_LOG_VERBOSE, " (%"PRIu64" samples)", ist->samples_decoded);
-                av_log(NULL, AV_LOG_VERBOSE, "; ");
-            }
-
-            av_log(NULL, AV_LOG_VERBOSE, "\n");
-        }
-
-        av_log(NULL, AV_LOG_VERBOSE, "  Total: %"PRIu64" packets (%"PRIu64" bytes) demuxed\n",
-               total_packets, total_size);
-    }
-}
-
 static void print_report(int is_last_report, int64_t timer_start, int64_t cur_time)
 {
     AVBPrint buf, buf_script;
@@ -970,9 +930,6 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
     }
 
     first_report = 0;
-
-    if (is_last_report)
-        print_final_stats();
 }
 
 int ifilter_parameters_from_codecpar(InputFilter *ifilter, AVCodecParameters *par)
