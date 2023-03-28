@@ -63,6 +63,9 @@ typedef struct MuxStream {
     /* dts of the last packet sent to the muxer, in the stream timebase
      * used for making up missing dts values */
     int64_t last_mux_dts;
+
+    // combined size of all the packets sent to the muxer
+    uint64_t data_size_mux;
 } MuxStream;
 
 typedef struct Muxer {

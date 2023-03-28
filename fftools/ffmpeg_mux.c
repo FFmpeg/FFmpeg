@@ -128,7 +128,7 @@ static int write_packet(Muxer *mux, OutputStream *ost, AVPacket *pkt)
     }
     ms->last_mux_dts = pkt->dts;
 
-    ost->data_size_mux += pkt->size;
+    ms->data_size_mux += pkt->size;
     frame_num = atomic_fetch_add(&ost->packets_written, 1);
 
     pkt->stream_index = ost->index;
@@ -652,9 +652,10 @@ static void mux_final_stats(Muxer *mux)
 
     for (int j = 0; j < of->nb_streams; j++) {
         OutputStream *ost = of->streams[j];
+        MuxStream     *ms = ms_from_ost(ost);
         const AVCodecParameters *par = ost->st->codecpar;
         const  enum AVMediaType type = par->codec_type;
-        const uint64_t s = ost->data_size_mux;
+        const uint64_t s = ms->data_size_mux;
 
         switch (type) {
         case AVMEDIA_TYPE_VIDEO:    video_size    += s; break;
