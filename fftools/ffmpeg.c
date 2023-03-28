@@ -745,7 +745,6 @@ static void print_final_stats(int64_t total_size)
     uint64_t data_size = 0;
     float percent = -1.0;
     int i, j;
-    int pass1_used = 1;
 
     for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
         AVCodecParameters *par = ost->st->codecpar;
@@ -759,10 +758,6 @@ static void print_final_stats(int64_t total_size)
         }
         extra_size += par->extradata_size;
         data_size  += s;
-        if (ost->enc_ctx &&
-            (ost->enc_ctx->flags & (AV_CODEC_FLAG_PASS1 | AV_CODEC_FLAG_PASS2))
-            != AV_CODEC_FLAG_PASS1)
-            pass1_used = 0;
     }
 
     if (data_size && total_size>0 && total_size >= data_size)
@@ -847,14 +842,6 @@ static void print_final_stats(int64_t total_size)
 
         av_log(NULL, AV_LOG_VERBOSE, "  Total: %"PRIu64" packets (%"PRIu64" bytes) muxed\n",
                total_packets, total_size);
-    }
-    if(video_size + data_size + audio_size + subtitle_size + extra_size == 0){
-        av_log(NULL, AV_LOG_WARNING, "Output file is empty, nothing was encoded ");
-        if (pass1_used) {
-            av_log(NULL, AV_LOG_WARNING, "\n");
-        } else {
-            av_log(NULL, AV_LOG_WARNING, "(check -ss / -t / -frames parameters if used)\n");
-        }
     }
 }
 
@@ -2902,7 +2889,6 @@ static int transcode(void)
     int ret, i;
     InputStream *ist;
     int64_t timer_start;
-    int64_t total_packets_written = 0;
 
     ret = transcode_init();
     if (ret < 0)
@@ -2956,22 +2942,6 @@ static int transcode(void)
 
     /* dump report by using the first video and audio streams */
     print_report(1, timer_start, av_gettime_relative());
-
-    /* close each encoder */
-    for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
-        uint64_t packets_written;
-        packets_written = atomic_load(&ost->packets_written);
-        total_packets_written += packets_written;
-        if (!packets_written && (abort_on_flags & ABORT_ON_FLAG_EMPTY_OUTPUT_STREAM)) {
-            av_log(ost, AV_LOG_FATAL, "Empty output\n");
-            exit_program(1);
-        }
-    }
-
-    if (!total_packets_written && (abort_on_flags & ABORT_ON_FLAG_EMPTY_OUTPUT)) {
-        av_log(NULL, AV_LOG_FATAL, "Empty output\n");
-        exit_program(1);
-    }
 
     return ret;
 }

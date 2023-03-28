@@ -598,6 +598,45 @@ int of_stream_init(OutputFile *of, OutputStream *ost)
     return mux_check_init(mux);
 }
 
+static int check_written(OutputFile *of)
+{
+    int64_t total_packets_written = 0;
+    int pass1_used = 1;
+    int ret = 0;
+
+    for (int i = 0; i < of->nb_streams; i++) {
+        OutputStream *ost = of->streams[i];
+        uint64_t packets_written = atomic_load(&ost->packets_written);
+
+        total_packets_written += packets_written;
+
+        if (ost->enc_ctx &&
+            (ost->enc_ctx->flags & (AV_CODEC_FLAG_PASS1 | AV_CODEC_FLAG_PASS2))
+             != AV_CODEC_FLAG_PASS1)
+            pass1_used = 0;
+
+        if (!packets_written &&
+            (abort_on_flags & ABORT_ON_FLAG_EMPTY_OUTPUT_STREAM)) {
+            av_log(ost, AV_LOG_FATAL, "Empty output stream\n");
+            ret = err_merge(ret, AVERROR(EINVAL));
+        }
+    }
+
+    if (!total_packets_written) {
+        int level = AV_LOG_WARNING;
+
+        if (abort_on_flags & ABORT_ON_FLAG_EMPTY_OUTPUT) {
+            ret = err_merge(ret, AVERROR(EINVAL));
+            level = AV_LOG_FATAL;
+        }
+
+        av_log(of, level, "Output file is empty, nothing was encoded%s\n",
+               pass1_used ? "" : "(check -ss / -t / -frames parameters if used)");
+    }
+
+    return ret;
+}
+
 int of_write_trailer(OutputFile *of)
 {
     Muxer *mux = mux_from_of(of);
@@ -628,6 +667,10 @@ int of_write_trailer(OutputFile *of)
             mux_result = err_merge(mux_result, ret);
         }
     }
+
+    // check whether anything was actually written
+    ret = check_written(of);
+    mux_result = err_merge(mux_result, ret);
 
     return mux_result;
 }
