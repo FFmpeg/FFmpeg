@@ -311,7 +311,12 @@ static int vorbis_header(AVFormatContext *s, int idx)
     if (!(pkt_type & 1))
         return priv->vp ? 0 : AVERROR_INVALIDDATA;
 
-    if (os->psize < 1 || pkt_type > 5)
+    if (pkt_type > 5) {
+        av_log(s, AV_LOG_VERBOSE, "Ignoring packet with unknown type %d\n", pkt_type);
+        return 1;
+    }
+
+    if (os->psize < 1)
         return AVERROR_INVALIDDATA;
 
     if (priv->packet[pkt_type >> 1])
