@@ -809,40 +809,6 @@ static void print_final_stats(int64_t total_size)
         av_log(NULL, AV_LOG_VERBOSE, "  Total: %"PRIu64" packets (%"PRIu64" bytes) demuxed\n",
                total_packets, total_size);
     }
-
-    for (i = 0; i < nb_output_files; i++) {
-        OutputFile *of = output_files[i];
-        uint64_t total_packets = 0, total_size = 0;
-
-        av_log(NULL, AV_LOG_VERBOSE, "Output file #%d (%s):\n",
-               i, of->url);
-
-        for (j = 0; j < of->nb_streams; j++) {
-            OutputStream *ost = of->streams[j];
-            enum AVMediaType type = ost->st->codecpar->codec_type;
-
-            total_size    += ost->data_size_mux;
-            total_packets += atomic_load(&ost->packets_written);
-
-            av_log(NULL, AV_LOG_VERBOSE, "  Output stream #%d:%d (%s): ",
-                   i, j, av_get_media_type_string(type));
-            if (ost->enc_ctx) {
-                av_log(NULL, AV_LOG_VERBOSE, "%"PRIu64" frames encoded",
-                       ost->frames_encoded);
-                if (type == AVMEDIA_TYPE_AUDIO)
-                    av_log(NULL, AV_LOG_VERBOSE, " (%"PRIu64" samples)", ost->samples_encoded);
-                av_log(NULL, AV_LOG_VERBOSE, "; ");
-            }
-
-            av_log(NULL, AV_LOG_VERBOSE, "%"PRIu64" packets muxed (%"PRIu64" bytes); ",
-                   atomic_load(&ost->packets_written), ost->data_size_mux);
-
-            av_log(NULL, AV_LOG_VERBOSE, "\n");
-        }
-
-        av_log(NULL, AV_LOG_VERBOSE, "  Total: %"PRIu64" packets (%"PRIu64" bytes) muxed\n",
-               total_packets, total_size);
-    }
 }
 
 static void print_report(int is_last_report, int64_t timer_start, int64_t cur_time)
