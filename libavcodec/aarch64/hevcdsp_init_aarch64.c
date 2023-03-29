@@ -25,6 +25,18 @@
 #include "libavutil/aarch64/cpu.h"
 #include "libavcodec/hevcdsp.h"
 
+void ff_hevc_v_loop_filter_chroma_8_neon(uint8_t *_pix, ptrdiff_t _stride,
+                                         const int *_tc, const uint8_t *_no_p, const uint8_t *_no_q);
+void ff_hevc_v_loop_filter_chroma_10_neon(uint8_t *_pix, ptrdiff_t _stride,
+                                          const int *_tc, const uint8_t *_no_p, const uint8_t *_no_q);
+void ff_hevc_v_loop_filter_chroma_12_neon(uint8_t *_pix, ptrdiff_t _stride,
+                                          const int *_tc, const uint8_t *_no_p, const uint8_t *_no_q);
+void ff_hevc_h_loop_filter_chroma_8_neon(uint8_t *_pix, ptrdiff_t _stride,
+                                         const int *_tc, const uint8_t *_no_p, const uint8_t *_no_q);
+void ff_hevc_h_loop_filter_chroma_10_neon(uint8_t *_pix, ptrdiff_t _stride,
+                                          const int *_tc, const uint8_t *_no_p, const uint8_t *_no_q);
+void ff_hevc_h_loop_filter_chroma_12_neon(uint8_t *_pix, ptrdiff_t _stride,
+                                          const int *_tc, const uint8_t *_no_p, const uint8_t *_no_q);
 void ff_hevc_add_residual_4x4_8_neon(uint8_t *_dst, const int16_t *coeffs,
                                      ptrdiff_t stride);
 void ff_hevc_add_residual_4x4_10_neon(uint8_t *_dst, const int16_t *coeffs,
@@ -117,6 +129,8 @@ av_cold void ff_hevc_dsp_init_aarch64(HEVCDSPContext *c, const int bit_depth)
     if (!have_neon(av_get_cpu_flags())) return;
 
     if (bit_depth == 8) {
+        c->hevc_h_loop_filter_chroma   = ff_hevc_h_loop_filter_chroma_8_neon;
+        c->hevc_v_loop_filter_chroma   = ff_hevc_v_loop_filter_chroma_8_neon;
         c->add_residual[0]             = ff_hevc_add_residual_4x4_8_neon;
         c->add_residual[1]             = ff_hevc_add_residual_8x8_8_neon;
         c->add_residual[2]             = ff_hevc_add_residual_16x16_8_neon;
@@ -167,6 +181,8 @@ av_cold void ff_hevc_dsp_init_aarch64(HEVCDSPContext *c, const int bit_depth)
         c->put_hevc_qpel_bi[9][0][1]   = ff_hevc_put_hevc_qpel_bi_h16_8_neon;
     }
     if (bit_depth == 10) {
+        c->hevc_h_loop_filter_chroma   = ff_hevc_h_loop_filter_chroma_10_neon;
+        c->hevc_v_loop_filter_chroma   = ff_hevc_v_loop_filter_chroma_10_neon;
         c->add_residual[0]             = ff_hevc_add_residual_4x4_10_neon;
         c->add_residual[1]             = ff_hevc_add_residual_8x8_10_neon;
         c->add_residual[2]             = ff_hevc_add_residual_16x16_10_neon;
@@ -180,6 +196,8 @@ av_cold void ff_hevc_dsp_init_aarch64(HEVCDSPContext *c, const int bit_depth)
         c->idct_dc[3]                  = ff_hevc_idct_32x32_dc_10_neon;
     }
     if (bit_depth == 12) {
+        c->hevc_h_loop_filter_chroma   = ff_hevc_h_loop_filter_chroma_12_neon;
+        c->hevc_v_loop_filter_chroma   = ff_hevc_v_loop_filter_chroma_12_neon;
         c->add_residual[0]             = ff_hevc_add_residual_4x4_12_neon;
         c->add_residual[1]             = ff_hevc_add_residual_8x8_12_neon;
         c->add_residual[2]             = ff_hevc_add_residual_16x16_12_neon;
