@@ -699,7 +699,6 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
 {
     OutputStream *ost = ofilter->ost;
     OutputFile    *of = output_files[ost->file_index];
-    AVCodecContext *codec  = ost->enc_ctx;
     AVFilterContext *last_filter = out->filter_ctx;
     int pad_idx = out->pad_idx;
     AVBPrint args;
@@ -749,9 +748,6 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
         av_bprint_clear(&args);
     }
 #endif
-
-    if (codec->ch_layout.order == AV_CHANNEL_ORDER_UNSPEC)
-        av_channel_layout_default(&codec->ch_layout, codec->ch_layout.nb_channels);
 
     choose_sample_fmts(ofilter,     &args);
     choose_sample_rates(ofilter,    &args);
