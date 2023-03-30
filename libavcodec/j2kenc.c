@@ -1841,7 +1841,7 @@ const FFCodec ff_jpeg2000_encoder = {
     .close          = j2kenc_destroy,
     .p.pix_fmts     = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_RGB24, AV_PIX_FMT_YUV444P, AV_PIX_FMT_GRAY8,
-        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P,
+        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV440P,
         AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P,
         AV_PIX_FMT_PAL8,
         AV_PIX_FMT_RGB48, AV_PIX_FMT_GRAY16,
