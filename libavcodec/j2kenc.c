@@ -1542,7 +1542,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     s->lambda = s->picture->quality * LAMBDA_SCALE;
 
-    if (avctx->pix_fmt == AV_PIX_FMT_BGR48 || avctx->pix_fmt == AV_PIX_FMT_GRAY16)
+    if (s->cbps[0] > 8)
         copy_frame_16(s);
     else
         copy_frame_8(s);
