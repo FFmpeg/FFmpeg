@@ -721,11 +721,10 @@ static void encode_cblk(Jpeg2000EncoderContext *s, Jpeg2000T1Context *t1, Jpeg20
 
     if (max == 0){
         cblk->nonzerobits = 0;
-        bpno = 0;
     } else{
         cblk->nonzerobits = av_log2(max) + 1 - NMSEDEC_FRACBITS;
-        bpno = cblk->nonzerobits - 1;
     }
+    bpno = cblk->nonzerobits - 1;
 
     cblk->data[0] = 0;
     ff_mqc_initenc(&t1->mqc, cblk->data + 1);
