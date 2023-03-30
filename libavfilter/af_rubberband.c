@@ -100,7 +100,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     if (s->first_pts == AV_NOPTS_VALUE)
         s->first_pts = in->pts;
 
-    rubberband_process(s->rbs, (const float *const *)in->data, in->nb_samples, ff_outlink_get_status(inlink));
+    rubberband_process(s->rbs, (const float *const *)in->extended_data, in->nb_samples, ff_outlink_get_status(inlink));
     s->nb_samples_in += in->nb_samples;
 
     nb_samples = rubberband_available(s->rbs);
@@ -113,7 +113,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         out->pts = s->first_pts + av_rescale_q(s->nb_samples_out,
                      (AVRational){ 1, outlink->sample_rate },
                      outlink->time_base);
-        nb_samples = rubberband_retrieve(s->rbs, (float *const *)out->data, nb_samples);
+        nb_samples = rubberband_retrieve(s->rbs, (float *const *)out->extended_data, nb_samples);
         out->nb_samples = nb_samples;
         ret = ff_filter_frame(outlink, out);
         s->nb_samples_out += nb_samples;
