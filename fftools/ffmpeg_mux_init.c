@@ -2247,7 +2247,8 @@ int of_open(const OptionsContext *o, const char *filename)
 
     err = avformat_alloc_output_context2(&oc, NULL, o->format, filename);
     if (!oc) {
-        print_error(filename, err);
+        av_log(mux, AV_LOG_FATAL, "Error initializing the muxer for %s: %s\n",
+               filename, av_err2str(err));
         exit_program(1);
     }
     mux->fc = oc;
@@ -2334,11 +2335,12 @@ int of_open(const OptionsContext *o, const char *filename)
     }
 
     /* check filename in case of an image number is expected */
-    if (oc->oformat->flags & AVFMT_NEEDNUMBER) {
-        if (!av_filename_number_test(oc->url)) {
-            print_error(oc->url, AVERROR(EINVAL));
-            exit_program(1);
-        }
+    if (oc->oformat->flags & AVFMT_NEEDNUMBER && !av_filename_number_test(oc->url)) {
+        av_log(mux, AV_LOG_FATAL,
+               "Output filename '%s' does not contain a numeric pattern like "
+               "'%%d', which is required by output format '%s'.\n",
+               oc->url, oc->oformat->name);
+        exit_program(1);
     }
 
     if (!(oc->oformat->flags & AVFMT_NOFILE)) {
@@ -2349,7 +2351,8 @@ int of_open(const OptionsContext *o, const char *filename)
         if ((err = avio_open2(&oc->pb, filename, AVIO_FLAG_WRITE,
                               &oc->interrupt_callback,
                               &mux->opts)) < 0) {
-            print_error(filename, err);
+            av_log(mux, AV_LOG_FATAL, "Error opening output %s: %s\n",
+                   filename, av_err2str(err));
             exit_program(1);
         }
     } else if (strcmp(oc->oformat->name, "image2")==0 && !av_filename_number_test(filename))
