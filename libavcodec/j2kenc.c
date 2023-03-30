@@ -115,6 +115,7 @@ typedef struct {
 
     int width, height; ///< image width and height
     uint8_t cbps[4]; ///< bits per sample in particular components
+    uint8_t comp_remap[4];
     int chroma_shift[2];
     uint8_t planar;
     int ncomponents;
@@ -512,17 +513,18 @@ static int init_tiles(Jpeg2000EncoderContext *s)
             Jpeg2000Tile *tile = s->tile + tileno;                                                                          \
             if (s->planar){                                                                                                 \
                 for (compno = 0; compno < s->ncomponents; compno++){                                                        \
+                    int icompno = s->comp_remap[compno];                                                                    \
                     Jpeg2000Component *comp = tile->comp + compno;                                                          \
                     int *dst = comp->i_data;                                                                                \
                     int cbps = s->cbps[compno];                                                                             \
-                    line = (const PIXEL*)s->picture->data[compno]                                                           \
-                           + comp->coord[1][0] * (s->picture->linesize[compno] / sizeof(PIXEL))                             \
+                    line = (const PIXEL*)s->picture->data[icompno]                                                           \
+                           + comp->coord[1][0] * (s->picture->linesize[icompno] / sizeof(PIXEL))                             \
                            + comp->coord[0][0];                                                                             \
                     for (y = comp->coord[1][0]; y < comp->coord[1][1]; y++){                                                \
                         const PIXEL *ptr = line;                                                                            \
                         for (x = comp->coord[0][0]; x < comp->coord[0][1]; x++)                                             \
                             *dst++ = *ptr++ - (1 << (cbps - 1));                                                            \
-                        line += s->picture->linesize[compno] / sizeof(PIXEL);                                               \
+                        line += s->picture->linesize[icompno] / sizeof(PIXEL);                                               \
                     }                                                                                                       \
                 }                                                                                                           \
             } else{                                                                                                         \
@@ -1763,6 +1765,7 @@ static av_cold int j2kenc_init(AVCodecContext *avctx)
     s->ncomponents = desc->nb_components;
     for (i = 0; i < 3; i++) {
         s->cbps[i] = desc->comp[i].depth;
+        s->comp_remap[i] = i; //default
     }
 
     if ((desc->flags & AV_PIX_FMT_FLAG_PLANAR) && s->ncomponents > 1) {
@@ -1771,6 +1774,11 @@ static av_cold int j2kenc_init(AVCodecContext *avctx)
                                                s->chroma_shift, s->chroma_shift + 1);
         if (ret)
             return ret;
+        if (desc->flags & AV_PIX_FMT_FLAG_RGB) {
+            s->comp_remap[0] = 2;
+            s->comp_remap[1] = 0;
+            s->comp_remap[2] = 1;
+        }
     }
 
     ff_thread_once(&init_static_once, init_luts);
