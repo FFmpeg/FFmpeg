@@ -1716,6 +1716,7 @@ static av_cold int j2kenc_init(AVCodecContext *avctx)
     Jpeg2000EncoderContext *s = avctx->priv_data;
     Jpeg2000CodingStyle *codsty = &s->codsty;
     Jpeg2000QuantStyle  *qntsty = &s->qntsty;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
 
     s->avctx = avctx;
     av_log(s->avctx, AV_LOG_DEBUG, "init\n");
@@ -1758,20 +1759,13 @@ static av_cold int j2kenc_init(AVCodecContext *avctx)
     s->width = avctx->width;
     s->height = avctx->height;
 
+    s->ncomponents = desc->nb_components;
     for (i = 0; i < 3; i++) {
-        if (avctx->pix_fmt == AV_PIX_FMT_GRAY16 || avctx->pix_fmt == AV_PIX_FMT_RGB48)
-            s->cbps[i] = 16;
-        else
-            s->cbps[i] = 8;
+        s->cbps[i] = desc->comp[i].depth;
     }
 
-    if (avctx->pix_fmt == AV_PIX_FMT_RGB24 || avctx->pix_fmt == AV_PIX_FMT_RGB48){
-        s->ncomponents = 3;
-    } else if (avctx->pix_fmt == AV_PIX_FMT_GRAY8 || avctx->pix_fmt == AV_PIX_FMT_PAL8 || avctx->pix_fmt == AV_PIX_FMT_GRAY16){
-        s->ncomponents = 1;
-    } else{ // planar YUV
+    if ((desc->flags & AV_PIX_FMT_FLAG_PLANAR) && s->ncomponents > 1) {
         s->planar = 1;
-        s->ncomponents = 3;
         ret = av_pix_fmt_get_chroma_sub_sample(avctx->pix_fmt,
                                                s->chroma_shift, s->chroma_shift + 1);
         if (ret)
