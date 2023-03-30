@@ -55,6 +55,7 @@ typedef struct AACContext {
     int metadata_mode;
     AACENC_MetaData metaDataSetup;
     int delay_sent;
+    int frame_length;
 
     AudioFrameQueue afq;
 } AACContext;
@@ -78,6 +79,7 @@ static const AVOption aac_enc_options[] = {
     { "comp_profile", "The desired compression profile for AAC DRC", offsetof(AACContext, comp_profile), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 256, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM },
     { "comp_target_ref", "Expected target reference level at decoder side in dB (for clipping prevention/limiter)", offsetof(AACContext, comp_target_ref), AV_OPT_TYPE_INT, { .i64 = 0.0 }, -31.75, 0, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM },
     { "prog_ref", "The program reference level or dialog level in dB", offsetof(AACContext, prog_ref), AV_OPT_TYPE_INT, { .i64 = 0.0 }, -31.75, 0, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM },
+    { "frame_length", "The desired frame length", offsetof(AACContext, frame_length), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 1024, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM },
     FF_AAC_PROFILE_OPTS
     { NULL }
 };
@@ -161,6 +163,15 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         if ((err = aacEncoder_SetParam(s->handle, AACENC_SBR_MODE,
                                        1)) != AACENC_OK) {
             av_log(avctx, AV_LOG_ERROR, "Unable to enable SBR for ELD: %s\n",
+                   aac_get_error(err));
+            goto error;
+        }
+    }
+
+    if (s->frame_length >= 0) {
+        if ((err = aacEncoder_SetParam(s->handle, AACENC_GRANULE_LENGTH,
+                                       s->frame_length)) != AACENC_OK) {
+            av_log(avctx, AV_LOG_ERROR, "Unable to set granule length: %s\n",
                    aac_get_error(err));
             goto error;
         }
