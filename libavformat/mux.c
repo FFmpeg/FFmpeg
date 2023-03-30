@@ -102,7 +102,7 @@ int avformat_alloc_output_context2(AVFormatContext **avctx, const AVOutputFormat
         if (format) {
             oformat = av_guess_format(format, NULL, NULL);
             if (!oformat) {
-                av_log(s, AV_LOG_ERROR, "Requested output format '%s' is not a suitable output format\n", format);
+                av_log(s, AV_LOG_ERROR, "Requested output format '%s' is not known.\n", format);
                 ret = AVERROR(EINVAL);
                 goto error;
             }
@@ -110,8 +110,10 @@ int avformat_alloc_output_context2(AVFormatContext **avctx, const AVOutputFormat
             oformat = av_guess_format(NULL, filename, NULL);
             if (!oformat) {
                 ret = AVERROR(EINVAL);
-                av_log(s, AV_LOG_ERROR, "Unable to find a suitable output format for '%s'\n",
-                       filename);
+                av_log(s, AV_LOG_ERROR,
+                       "Unable to choose an output format for '%s'; "
+                       "use a standard extension for the filename or specify "
+                       "the format manually.\n", filename);
                 goto error;
             }
         }
