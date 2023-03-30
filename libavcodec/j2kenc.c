@@ -1188,7 +1188,7 @@ static const AVOption options[] = {
     { "tile_height",   "Tile Height",       OFFSET(tile_height),   AV_OPT_TYPE_INT,   { .i64 = 256         }, 1,     1<<30,           VE, },
     { "pred",          "DWT Type",          OFFSET(pred),          AV_OPT_TYPE_INT,   { .i64 = 0           }, 0,         1,           VE, "pred"        },
     { "dwt97int",      NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = 0           }, INT_MIN, INT_MAX,       VE, "pred"        },
-    { "dwt53",         NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = 0           }, INT_MIN, INT_MAX,       VE, "pred"        },
+    { "dwt53",         NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = 1           }, INT_MIN, INT_MAX,       VE, "pred"        },
 
     { NULL }
 };
