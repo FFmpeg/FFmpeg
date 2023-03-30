@@ -1736,7 +1736,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     if (avctx->pix_fmt == AV_PIX_FMT_PAL8 && (s->pred != FF_DWT97_INT || s->format != CODEC_JP2)) {
         av_log(s->avctx, AV_LOG_WARNING, "Forcing lossless jp2 for pal8\n");
-        s->pred = FF_DWT97_INT;
+        s->pred = 1;
         s->format = CODEC_JP2;
     }
 
