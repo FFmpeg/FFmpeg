@@ -782,7 +782,6 @@ extern const FFCodec ff_libopencore_amrnb_encoder;
 extern const FFCodec ff_libopencore_amrnb_decoder;
 extern const FFCodec ff_libopencore_amrwb_decoder;
 extern const FFCodec ff_libopenjpeg_encoder;
-extern const FFCodec ff_libopenjpeg_decoder;
 extern const FFCodec ff_libopus_encoder;
 extern const FFCodec ff_libopus_decoder;
 extern const FFCodec ff_librav1e_encoder;
