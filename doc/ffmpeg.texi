@@ -17,9 +17,9 @@ ffmpeg [@var{global_options}] @{[@var{input_file_options}] -i @file{input_url}@}
 @chapter Description
 @c man begin DESCRIPTION
 
-@command{ffmpeg} is a very fast video and audio converter that can also grab from
-a live audio/video source. It can also convert between arbitrary sample
-rates and resize video on the fly with a high quality polyphase filter.
+@command{ffmpeg} is a universal media converter. It can read a wide variety of
+inputs - including live grabbing/recording devices - filter, and transcode them
+into a plethora of output formats.
 
 @command{ffmpeg} reads from an arbitrary number of input "files" (which can be regular
 files, pipes, network streams, grabbing devices, etc.), specified by the
