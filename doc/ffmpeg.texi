@@ -2584,7 +2584,7 @@ ffmpeg-devices(1), ffmpeg-protocols(1), ffmpeg-filters(1)
 @ignore
 
 @setfilename ffmpeg
-@settitle ffmpeg video converter
+@settitle ffmpeg media converter
 
 @end ignore
 
