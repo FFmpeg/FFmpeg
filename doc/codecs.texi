@@ -889,9 +889,11 @@ Possible values:
 @table @samp
 @item tv
 @item mpeg
+@item limited
 MPEG (219*2^(n-8))
 @item pc
 @item jpeg
+@item full
 JPEG (2^n-1)
 @end table
 
