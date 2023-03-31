@@ -809,8 +809,15 @@ static enum AVPixelFormat get_pixel_format(H264Context *h, int force_callback)
                 *fmt++ = AV_PIX_FMT_YUV444P10;
         } else if (CHROMA422(h))
             *fmt++ = AV_PIX_FMT_YUV422P10;
-        else
+        else {
+#if CONFIG_H264_VAAPI_HWACCEL
+            // Just add as candidate. Whether VAProfileH264High10 usable or
+            // not is decided by vaapi_decode_make_config() defined in FFmpeg
+            // and vaQueryCodingProfile() defined in libva.
+            *fmt++ = AV_PIX_FMT_VAAPI;
+#endif
             *fmt++ = AV_PIX_FMT_YUV420P10;
+        }
         break;
     case 12:
         if (CHROMA444(h)) {
