@@ -789,6 +789,11 @@ about 80-96 kbps/channel
 @end table
 
 Default value is 0.
+
+@item frame_length
+Set the audio frame length in samples. Default value is the internal
+default of the library. Refer to the library's documentation for information
+about supported values.
 @end table
 
 @subsection Examples
