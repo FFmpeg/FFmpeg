@@ -306,7 +306,7 @@ int enc_open(OutputStream *ost, AVFrame *frame)
 
         break;
     default:
-        abort();
+        av_assert0(0);
         break;
     }
 
