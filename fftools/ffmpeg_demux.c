@@ -485,7 +485,7 @@ static void demux_final_stats(Demuxer *d)
     InputFile *f = &d->f;
     uint64_t total_packets = 0, total_size = 0;
 
-    av_log(NULL, AV_LOG_VERBOSE, "Input file #%d (%s):\n",
+    av_log(f, AV_LOG_VERBOSE, "Input file #%d (%s):\n",
            f->index, f->ctx->url);
 
     for (int j = 0; j < f->nb_streams; j++) {
@@ -495,23 +495,23 @@ static void demux_final_stats(Demuxer *d)
         total_size    += ist->data_size;
         total_packets += ist->nb_packets;
 
-        av_log(NULL, AV_LOG_VERBOSE, "  Input stream #%d:%d (%s): ",
+        av_log(f, AV_LOG_VERBOSE, "  Input stream #%d:%d (%s): ",
                f->index, j, av_get_media_type_string(type));
-        av_log(NULL, AV_LOG_VERBOSE, "%"PRIu64" packets read (%"PRIu64" bytes); ",
+        av_log(f, AV_LOG_VERBOSE, "%"PRIu64" packets read (%"PRIu64" bytes); ",
                ist->nb_packets, ist->data_size);
 
         if (ist->decoding_needed) {
-            av_log(NULL, AV_LOG_VERBOSE, "%"PRIu64" frames decoded",
+            av_log(f, AV_LOG_VERBOSE, "%"PRIu64" frames decoded",
                    ist->frames_decoded);
             if (type == AVMEDIA_TYPE_AUDIO)
-                av_log(NULL, AV_LOG_VERBOSE, " (%"PRIu64" samples)", ist->samples_decoded);
-            av_log(NULL, AV_LOG_VERBOSE, "; ");
+                av_log(f, AV_LOG_VERBOSE, " (%"PRIu64" samples)", ist->samples_decoded);
+            av_log(f, AV_LOG_VERBOSE, "; ");
         }
 
-        av_log(NULL, AV_LOG_VERBOSE, "\n");
+        av_log(f, AV_LOG_VERBOSE, "\n");
     }
 
-    av_log(NULL, AV_LOG_VERBOSE, "  Total: %"PRIu64" packets (%"PRIu64" bytes) demuxed\n",
+    av_log(f, AV_LOG_VERBOSE, "  Total: %"PRIu64" packets (%"PRIu64" bytes) demuxed\n",
            total_packets, total_size);
 }
 
