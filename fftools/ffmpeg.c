@@ -948,9 +948,6 @@ static int check_output_constraints(InputStream *ist, OutputStream *ost)
 {
     OutputFile *of = output_files[ost->file_index];
 
-    if (ost->ist != ist)
-        return 0;
-
     if (ost->finished & MUXER_FINISHED)
         return 0;
 
@@ -1468,7 +1465,8 @@ static int process_subtitle(InputStream *ist, AVSubtitle *subtitle, int *got_out
     if (!subtitle->num_rects)
         goto out;
 
-    for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
+    for (int oidx = 0; oidx < ist->nb_outputs; oidx++) {
+        OutputStream *ost = ist->outputs[oidx];
         if (!check_output_constraints(ist, ost) || !ost->enc_ctx
             || ost->enc_ctx->codec_type != AVMEDIA_TYPE_SUBTITLE)
             continue;
@@ -1830,7 +1828,8 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
     } else if (!ist->decoding_needed)
         eof_reached = 1;
 
-    for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
+    for (int oidx = 0; oidx < ist->nb_outputs; oidx++) {
+        OutputStream *ost = ist->outputs[oidx];
         if (!check_output_constraints(ist, ost) || ost->enc_ctx ||
             (!pkt && no_eof))
             continue;
@@ -2577,13 +2576,11 @@ static int process_input(int file_index)
             }
 
             /* mark all outputs that don't go through lavfi as finished */
-            for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
-                if (ost->ist == ist &&
-                    (!ost->enc_ctx || ost->enc_ctx->codec_type == AVMEDIA_TYPE_SUBTITLE)) {
-                    OutputFile *of = output_files[ost->file_index];
-                    close_output_stream(ost);
-                    of_output_packet(of, ost->pkt, ost, 1);
-                }
+            for (int oidx = 0; oidx < ist->nb_outputs; oidx++) {
+                OutputStream *ost = ist->outputs[oidx];
+                OutputFile    *of = output_files[ost->file_index];
+                close_output_stream(ost);
+                of_output_packet(of, ost->pkt, ost, 1);
             }
         }
 

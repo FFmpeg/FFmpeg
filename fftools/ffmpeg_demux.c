@@ -528,6 +528,7 @@ static void ist_free(InputStream **pist)
     avsubtitle_free(&ist->prev_sub.subtitle);
     av_frame_free(&ist->sub2video.frame);
     av_freep(&ist->filters);
+    av_freep(&ist->outputs);
     av_freep(&ist->hwaccel_device);
     av_freep(&ist->dts_buffer);
 
@@ -557,6 +558,12 @@ void ifile_close(InputFile **pf)
     avformat_close_input(&f->ctx);
 
     av_freep(pf);
+}
+
+void ist_output_add(InputStream *ist, OutputStream *ost)
+{
+    GROW_ARRAY(ist->outputs, ist->nb_outputs);
+    ist->outputs[ist->nb_outputs - 1] = ost;
 }
 
 static const AVCodec *choose_decoder(const OptionsContext *o, AVFormatContext *s, AVStream *st,

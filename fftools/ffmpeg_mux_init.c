@@ -647,6 +647,9 @@ static OutputStream *new_output_stream(Muxer *mux, const OptionsContext *o,
     if (ost->ist) {
         ost->ist->discard = 0;
         ost->ist->st->discard = ost->ist->user_set_discard;
+
+        if (!(ost->enc && (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO)))
+            ist_output_add(ost->ist, ost);
     }
     ost->last_mux_dts = AV_NOPTS_VALUE;
 

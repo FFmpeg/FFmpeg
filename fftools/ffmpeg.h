@@ -416,6 +416,14 @@ typedef struct InputStream {
     InputFilter **filters;
     int        nb_filters;
 
+    /*
+     * Output targets that do not go through lavfi, i.e. subtitles or
+     * streamcopy. Those two cases are distinguished by the OutputStream
+     * having an encoder or not.
+     */
+    struct OutputStream **outputs;
+    int                nb_outputs;
+
     int reinit_filters;
 
     /* hwaccel options */
@@ -866,6 +874,8 @@ void ifile_close(InputFile **f);
  * - a negative error code on failure
  */
 int ifile_get_packet(InputFile *f, AVPacket **pkt);
+
+void ist_output_add(InputStream *ist, OutputStream *ost);
 
 /* iterate over all input streams in all input files;
  * pass NULL to start iteration */
