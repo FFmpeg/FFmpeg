@@ -864,6 +864,8 @@ accordingly].
 
 @section Adding files to the fate-suite dataset
 
+If you need a sample uploaded send a mail to samples-request.
+
 When there is no muxer or encoder available to generate test media for a
 specific test then the media has to be included in the fate-suite.
 First please make sure that the sample file is as small as possible to test the
