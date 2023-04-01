@@ -964,7 +964,7 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
         if (!ost->copy_prior_start &&
             (pkt->pts == AV_NOPTS_VALUE ?
              ist->pts < ost->ts_copy_start :
-             pkt->pts < av_rescale_q(ost->ts_copy_start, AV_TIME_BASE_Q, ist->st->time_base)))
+             pkt->pts < av_rescale_q(ost->ts_copy_start, AV_TIME_BASE_Q, pkt->time_base)))
             return;
 
         if (of->start_time != AV_NOPTS_VALUE && ist->pts < of->start_time)
@@ -995,7 +995,7 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
     opkt->time_base = ost->mux_timebase;
 
     if (pkt->pts != AV_NOPTS_VALUE)
-        opkt->pts = av_rescale_q(pkt->pts, ist->st->time_base, opkt->time_base) - ost_tb_start_time;
+        opkt->pts = av_rescale_q(pkt->pts, pkt->time_base, opkt->time_base) - ost_tb_start_time;
 
     if (pkt->dts == AV_NOPTS_VALUE) {
         opkt->dts = av_rescale_q(ist->dts, AV_TIME_BASE_Q, opkt->time_base);
@@ -1003,16 +1003,16 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
         int duration = av_get_audio_frame_duration2(ist->par, pkt->size);
         if(!duration)
             duration = ist->par->frame_size;
-        opkt->dts = av_rescale_delta(ist->st->time_base, pkt->dts,
+        opkt->dts = av_rescale_delta(pkt->time_base, pkt->dts,
                                     (AVRational){1, ist->par->sample_rate}, duration,
                                     &ist->filter_in_rescale_delta_last, opkt->time_base);
         /* dts will be set immediately afterwards to what pts is now */
         opkt->pts = opkt->dts - ost_tb_start_time;
     } else
-        opkt->dts = av_rescale_q(pkt->dts, ist->st->time_base, opkt->time_base);
+        opkt->dts = av_rescale_q(pkt->dts, pkt->time_base, opkt->time_base);
     opkt->dts -= ost_tb_start_time;
 
-    opkt->duration = av_rescale_q(pkt->duration, ist->st->time_base, opkt->time_base);
+    opkt->duration = av_rescale_q(pkt->duration, pkt->time_base, opkt->time_base);
 
     {
         int ret = trigger_fix_sub_duration_heartbeat(ost, pkt);
