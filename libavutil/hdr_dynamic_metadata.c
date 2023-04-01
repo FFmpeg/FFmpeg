@@ -18,13 +18,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "avassert.h"
 #include "hdr_dynamic_metadata.h"
 #include "mem.h"
 #include "libavcodec/defs.h"
 #include "libavcodec/get_bits.h"
 #include "libavcodec/put_bits.h"
-
-#define T35_PAYLOAD_MAX_SIZE 907
 
 static const int64_t luminance_den = 1;
 static const int32_t peak_luminance_den = 15;
@@ -62,14 +61,14 @@ AVDynamicHDRPlus *av_dynamic_hdr_plus_create_side_data(AVFrame *frame)
 int av_dynamic_hdr_plus_from_t35(AVDynamicHDRPlus *s, const uint8_t *data,
                                  size_t size)
 {
-    uint8_t padded_buf[T35_PAYLOAD_MAX_SIZE + AV_INPUT_BUFFER_PADDING_SIZE];
+    uint8_t padded_buf[AV_HDR_PLUS_MAX_PAYLOAD_SIZE + AV_INPUT_BUFFER_PADDING_SIZE];
     GetBitContext gbc, *gb = &gbc;
     int ret;
 
     if (!s)
         return AVERROR(ENOMEM);
 
-    if (size > T35_PAYLOAD_MAX_SIZE)
+    if (size > AV_HDR_PLUS_MAX_PAYLOAD_SIZE)
         return AVERROR(EINVAL);
 
     memcpy(padded_buf, data, size);
@@ -243,8 +242,10 @@ int av_dynamic_hdr_plus_to_t35(const AVDynamicHDRPlus *s, uint8_t **data, size_t
     size_t size_bits, size_bytes;
     PutBitContext pbc, *pb = &pbc;
 
-    if (!s || !data)
+    if (!s)
         return AVERROR(EINVAL);
+    if ((!data || *data) && !size)
+       return AVERROR(EINVAL);
 
     /**
      * Buffer size per CTA-861-H p.253-254:
@@ -296,9 +297,20 @@ int av_dynamic_hdr_plus_to_t35(const AVDynamicHDRPlus *s, uint8_t **data, size_t
 
     size_bytes = (size_bits + 7) / 8;
 
-    buf = av_mallocz(size_bytes);
-    if (!buf)
-        return AVERROR(ENOMEM);
+    av_assert0(size_bytes <= AV_HDR_PLUS_MAX_PAYLOAD_SIZE);
+
+    if (!data) {
+        *size = size_bytes;
+        return 0;
+    } else if (*data) {
+        if (*size < size_bytes)
+            return AVERROR_BUFFER_TOO_SMALL;
+        buf = *data;
+    } else {
+        buf = av_malloc(size_bytes);
+        if (!buf)
+            return AVERROR(ENOMEM);
+    }
 
     init_put_bits(pb, buf, size_bytes);
 
