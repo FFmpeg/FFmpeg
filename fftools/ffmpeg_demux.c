@@ -194,15 +194,17 @@ static void ts_fixup(Demuxer *d, AVPacket *pkt, int *repeat_pict)
     const int64_t start_time = ifile->start_time_effective;
     int64_t duration;
 
+    pkt->time_base = ist->st->time_base;
+
 #define SHOW_TS_DEBUG(tag_)                                             \
     if (debug_ts) {                                                     \
         av_log(ist, AV_LOG_INFO, "%s -> ist_index:%d:%d type:%s "       \
                "pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s duration:%s duration_time:%s\n", \
                tag_, ifile->index, pkt->stream_index,                   \
                av_get_media_type_string(ist->st->codecpar->codec_type), \
-               av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &ist->st->time_base), \
-               av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &ist->st->time_base), \
-               av_ts2str(pkt->duration), av_ts2timestr(pkt->duration, &ist->st->time_base)); \
+               av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &pkt->time_base), \
+               av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &pkt->time_base), \
+               av_ts2str(pkt->duration), av_ts2timestr(pkt->duration, &pkt->time_base)); \
     }
 
     SHOW_TS_DEBUG("demuxer");
@@ -211,7 +213,7 @@ static void ts_fixup(Demuxer *d, AVPacket *pkt, int *repeat_pict)
         ist->st->pts_wrap_bits < 64) {
         int64_t stime, stime2;
 
-        stime = av_rescale_q(start_time, AV_TIME_BASE_Q, ist->st->time_base);
+        stime = av_rescale_q(start_time, AV_TIME_BASE_Q, pkt->time_base);
         stime2= stime + (1ULL<<ist->st->pts_wrap_bits);
         ist->wrap_correction_done = 1;
 
@@ -226,16 +228,16 @@ static void ts_fixup(Demuxer *d, AVPacket *pkt, int *repeat_pict)
     }
 
     if (pkt->dts != AV_NOPTS_VALUE)
-        pkt->dts += av_rescale_q(ifile->ts_offset, AV_TIME_BASE_Q, ist->st->time_base);
+        pkt->dts += av_rescale_q(ifile->ts_offset, AV_TIME_BASE_Q, pkt->time_base);
     if (pkt->pts != AV_NOPTS_VALUE)
-        pkt->pts += av_rescale_q(ifile->ts_offset, AV_TIME_BASE_Q, ist->st->time_base);
+        pkt->pts += av_rescale_q(ifile->ts_offset, AV_TIME_BASE_Q, pkt->time_base);
 
     if (pkt->pts != AV_NOPTS_VALUE)
         pkt->pts *= ds->ts_scale;
     if (pkt->dts != AV_NOPTS_VALUE)
         pkt->dts *= ds->ts_scale;
 
-    duration = av_rescale_q(d->duration, d->time_base, ist->st->time_base);
+    duration = av_rescale_q(d->duration, d->time_base, pkt->time_base);
     if (pkt->pts != AV_NOPTS_VALUE) {
         pkt->pts += duration;
         ds->max_pts = FFMAX(pkt->pts, ds->max_pts);
