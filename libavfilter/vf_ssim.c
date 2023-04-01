@@ -358,6 +358,13 @@ static int do_ssim(FFFrameSync *fs)
         td.planeheight[n] = s->planeheight[n];
     }
 
+    if (master->color_range != ref->color_range) {
+        av_log(ctx, AV_LOG_WARNING, "master and reference "
+               "frames use different color ranges (%s != %s)\n",
+               av_color_range_name(master->color_range),
+               av_color_range_name(ref->color_range));
+    }
+
     ff_filter_execute(ctx, s->ssim_plane, &td, NULL,
                       FFMIN((s->planeheight[1] + 3) >> 2, s->nb_threads));
 
