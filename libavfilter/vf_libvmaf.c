@@ -141,6 +141,13 @@ static int do_vmaf(FFFrameSync *fs)
     if (ctx->is_disabled || !ref)
         return ff_filter_frame(ctx->outputs[0], dist);
 
+    if (dist->color_range != ref->color_range) {
+        av_log(ctx, AV_LOG_WARNING, "distorted and reference "
+               "frames use different color ranges (%s != %s)\n",
+               av_color_range_name(dist->color_range),
+               av_color_range_name(ref->color_range));
+    }
+
     err = copy_picture_data(ref, &pic_ref, s->bpc);
     if (err) {
         av_log(s, AV_LOG_ERROR, "problem during vmaf_picture_alloc.\n");
