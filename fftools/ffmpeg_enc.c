@@ -440,6 +440,9 @@ void enc_subtitle(OutputFile *of, OutputStream *ost, AVSubtitle *sub)
             exit_program(1);
         return;
     }
+    if (ost->finished ||
+        (of->start_time != AV_NOPTS_VALUE && sub->pts < of->start_time))
+        return;
 
     enc = ost->enc_ctx;
 

@@ -941,22 +941,6 @@ int ifilter_parameters_from_codecpar(InputFilter *ifilter, AVCodecParameters *pa
     return 0;
 }
 
-/*
- * Check whether a packet from ist should be written into ost at this time
- */
-static int check_output_constraints(InputStream *ist, OutputStream *ost)
-{
-    OutputFile *of = output_files[ost->file_index];
-
-    if (ost->finished & MUXER_FINISHED)
-        return 0;
-
-    if (of->start_time != AV_NOPTS_VALUE && ist->pts < of->start_time)
-        return 0;
-
-    return 1;
-}
-
 static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *pkt)
 {
     OutputFile *of = output_files[ost->file_index];
@@ -1471,8 +1455,7 @@ static int process_subtitle(InputStream *ist, AVSubtitle *subtitle, int *got_out
 
     for (int oidx = 0; oidx < ist->nb_outputs; oidx++) {
         OutputStream *ost = ist->outputs[oidx];
-        if (!check_output_constraints(ist, ost) || !ost->enc_ctx
-            || ost->enc_ctx->codec_type != AVMEDIA_TYPE_SUBTITLE)
+        if (!ost->enc_ctx || ost->enc_ctx->codec_type != AVMEDIA_TYPE_SUBTITLE)
             continue;
 
         enc_subtitle(output_files[ost->file_index], ost, subtitle);
