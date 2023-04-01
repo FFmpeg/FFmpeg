@@ -188,6 +188,13 @@ static int do_psnr(FFFrameSync *fs)
         td.planeheight[c] = s->planeheight[c];
     }
 
+    if (master->color_range != ref->color_range) {
+        av_log(ctx, AV_LOG_WARNING, "master and reference "
+               "frames use different color ranges (%s != %s)\n",
+               av_color_range_name(master->color_range),
+               av_color_range_name(ref->color_range));
+    }
+
     ff_filter_execute(ctx, compute_images_mse, &td, NULL,
                       FFMIN(s->planeheight[1], s->nb_threads));
 
