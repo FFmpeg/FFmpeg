@@ -976,10 +976,14 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
         !ost->copy_initial_nonkeyframes)
         return;
 
-    if (!ost->streamcopy_started && !ost->copy_prior_start) {
-        if (pkt->pts == AV_NOPTS_VALUE ?
-            ist->pts < ost->ts_copy_start :
-            pkt->pts < av_rescale_q(ost->ts_copy_start, AV_TIME_BASE_Q, ist->st->time_base))
+    if (!ost->streamcopy_started) {
+        if (!ost->copy_prior_start &&
+            (pkt->pts == AV_NOPTS_VALUE ?
+             ist->pts < ost->ts_copy_start :
+             pkt->pts < av_rescale_q(ost->ts_copy_start, AV_TIME_BASE_Q, ist->st->time_base)))
+            return;
+
+        if (of->start_time != AV_NOPTS_VALUE && ist->pts < of->start_time)
             return;
     }
 
@@ -1830,8 +1834,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
 
     for (int oidx = 0; oidx < ist->nb_outputs; oidx++) {
         OutputStream *ost = ist->outputs[oidx];
-        if (!check_output_constraints(ist, ost) || ost->enc_ctx ||
-            (!pkt && no_eof))
+        if (ost->enc_ctx || (!pkt && no_eof))
             continue;
 
         do_streamcopy(ist, ost, pkt);
