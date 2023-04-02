@@ -1794,9 +1794,9 @@ typedef struct AVCodecContext {
     enum AVPixelFormat sw_pix_fmt;
 
     /**
-     * Timebase in which pkt_dts/pts and AVPacket.dts/pts are.
-     * - encoding unused.
-     * - decoding set by user.
+     * Timebase in which pkt_dts/pts and AVPacket.dts/pts are expressed.
+     * - encoding: unused.
+     * - decoding: set by user.
      */
     AVRational pkt_timebase;
 
