@@ -220,10 +220,10 @@ fate-vsynth%-jpegls:             ENCOPTS = -sws_flags neighbor+full_chroma_int
 fate-vsynth%-jpegls:             DECOPTS = -sws_flags area
 
 FATE_VCODEC_SCALE-$(call ENCDEC, JPEG2000, AVI) += jpeg2000 jpeg2000-97 jpeg2000-gbrp12 jpeg2000-yuva444p16
-fate-vsynth%-jpeg2000:                ENCOPTS = -qscale 7 -strict experimental -pred 1 -pix_fmt rgb24
-fate-vsynth%-jpeg2000-97:             ENCOPTS = -qscale 7 -strict experimental -pix_fmt rgb24
-fate-vsynth%-jpeg2000-gbrp12:         ENCOPTS = -qscale 5 -strict experimental -pred 1 -pix_fmt gbrp12
-fate-vsynth%-jpeg2000-yuva444p16:     ENCOPTS = -qscale 8 -strict experimental -pred 1 -pix_fmt yuva444p16
+fate-vsynth%-jpeg2000:                ENCOPTS = -qscale 7 -pred 1 -pix_fmt rgb24
+fate-vsynth%-jpeg2000-97:             ENCOPTS = -qscale 7 -pix_fmt rgb24
+fate-vsynth%-jpeg2000-gbrp12:         ENCOPTS = -qscale 5 -pred 1 -pix_fmt gbrp12
+fate-vsynth%-jpeg2000-yuva444p16:     ENCOPTS = -qscale 8 -pred 1 -pix_fmt yuva444p16
 
 FATE_VCODEC-$(call ENCDEC, LJPEG MJPEG, AVI) += ljpeg
 fate-vsynth%-ljpeg:              ENCOPTS = -strict -1
