@@ -2266,7 +2266,8 @@ static int nvenc_set_timestamp(AVCodecContext *avctx,
     dts = reorder_queue_dequeue(ctx->reorder_queue, avctx, pkt);
 
     if (avctx->codec_descriptor->props & AV_CODEC_PROP_REORDER) {
-        pkt->dts = dts - FFMAX(ctx->encode_config.frameIntervalP - 1, 0) * FFMAX(avctx->ticks_per_frame, 1);
+        pkt->dts = dts -
+            FFMAX(ctx->encode_config.frameIntervalP - 1, 0) * FFMAX(avctx->ticks_per_frame, 1) * FFMAX(avctx->time_base.num, 1);
     } else {
         pkt->dts = pkt->pts;
     }
