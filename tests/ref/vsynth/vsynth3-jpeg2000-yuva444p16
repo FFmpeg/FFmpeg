@@ -1,0 +1,4 @@
+afdff47e9c71d912153e59a56afdf2a9 *tests/data/fate/vsynth3-jpeg2000-yuva444p16.avi
+194250 tests/data/fate/vsynth3-jpeg2000-yuva444p16.avi
+9e0ef11f8c85206a950a919cb679f129 *tests/data/fate/vsynth3-jpeg2000-yuva444p16.out.rawvideo
+stddev:   10.72 PSNR: 27.53 MAXDIFF:   82 bytes:    86700/    86700

@@ -1,0 +1,4 @@
+e9c56e128cf980db7c8e965d2afc0ea6 *tests/data/fate/vsynth_lena-jpeg2000-yuva444p16.avi
+11109882 tests/data/fate/vsynth_lena-jpeg2000-yuva444p16.avi
+3e1a4f9ca46c2dd3fd997c01a0dfb130 *tests/data/fate/vsynth_lena-jpeg2000-yuva444p16.out.rawvideo
+stddev:   11.67 PSNR: 26.79 MAXDIFF:  150 bytes:  7603200/  7603200

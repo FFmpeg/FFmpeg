@@ -1,0 +1,4 @@
+1ca41231325bbacd1dc3b60785ba7fcc *tests/data/fate/vsynth3-jpeg2000-gbrp12.avi
+143116 tests/data/fate/vsynth3-jpeg2000-gbrp12.avi
+3a84f9e8db1b0f1f5dbf14062eb7975d *tests/data/fate/vsynth3-jpeg2000-gbrp12.out.rawvideo
+stddev:    3.83 PSNR: 36.45 MAXDIFF:   42 bytes:    86700/    86700

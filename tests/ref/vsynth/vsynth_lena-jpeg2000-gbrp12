@@ -1,0 +1,4 @@
+04c3662db7b6e91640c94877a631a277 *tests/data/fate/vsynth_lena-jpeg2000-gbrp12.avi
+8023408 tests/data/fate/vsynth_lena-jpeg2000-gbrp12.avi
+c7e9b9e26292975e04046984aa3646cd *tests/data/fate/vsynth_lena-jpeg2000-gbrp12.out.rawvideo
+stddev:    0.81 PSNR: 49.93 MAXDIFF:   12 bytes:  7603200/  7603200
