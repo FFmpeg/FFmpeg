@@ -3804,6 +3804,7 @@ static int process_input(int file_index)
                 if (ost->ist == ist &&
                     (!ost->enc_ctx || ost->enc_ctx->codec_type == AVMEDIA_TYPE_SUBTITLE)) {
                     OutputFile *of = output_files[ost->file_index];
+                    close_output_stream(ost);
                     of_output_packet(of, ost->pkt, ost, 1);
                 }
             }
