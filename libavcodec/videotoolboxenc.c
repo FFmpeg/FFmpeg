@@ -120,7 +120,7 @@ do{                                                                     \
 
 static pthread_once_t once_ctrl = PTHREAD_ONCE_INIT;
 
-static void loadVTEncSymbols(){
+static void loadVTEncSymbols(void){
     compat_keys.CMVideoFormatDescriptionGetHEVCParameterSetAtIndex =
         (getParameterSetAtIndex)dlsym(
             RTLD_DEFAULT,
@@ -1650,8 +1650,8 @@ static int find_sei_end(AVCodecContext *avctx,
 {
     int nal_type;
     size_t sei_payload_size = 0;
-    *sei_end = NULL;
     uint8_t *nal_start = nal_data;
+    *sei_end = NULL;
 
     if (!nal_size)
         return 0;
@@ -2041,7 +2041,7 @@ static int vtenc_cm_to_avpacket(
                 return AVERROR_EXTERNAL;
             }
 
-            int status = get_params_size(avctx, vid_fmt, &header_size);
+            status = get_params_size(avctx, vid_fmt, &header_size);
             if (status) return status;
         }
 
