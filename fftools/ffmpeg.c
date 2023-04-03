@@ -944,7 +944,6 @@ int ifilter_parameters_from_codecpar(InputFilter *ifilter, AVCodecParameters *pa
 static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *pkt)
 {
     OutputFile *of = output_files[ost->file_index];
-    InputFile   *f = input_files [ist->file_index];
     int64_t start_time = (of->start_time == AV_NOPTS_VALUE) ? 0 : of->start_time;
     int64_t ost_tb_start_time = av_rescale_q(start_time, AV_TIME_BASE_Q, ost->mux_timebase);
     AVPacket *opkt = ost->pkt;
@@ -975,18 +974,6 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
         ist->pts >= of->recording_time + start_time) {
         close_output_stream(ost);
         return;
-    }
-
-    if (f->recording_time != INT64_MAX) {
-        start_time = 0;
-        if (copy_ts) {
-            start_time += f->start_time != AV_NOPTS_VALUE ? f->start_time : 0;
-            start_time += start_at_zero ? 0 : f->start_time_effective;
-        }
-        if (ist->pts >= f->recording_time + start_time) {
-            close_output_stream(ost);
-            return;
-        }
     }
 
     if (av_packet_ref(opkt, pkt) < 0)
@@ -1636,10 +1623,12 @@ static int send_filter_eof(InputStream *ist)
 /* pkt = NULL means EOF (needed to flush decoder buffers) */
 static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eof)
 {
+    InputFile *f = input_files[ist->file_index];
     const AVCodecParameters *par = ist->par;
     int ret = 0;
     int repeating = 0;
     int eof_reached = 0;
+    int duration_exceeded;
 
     AVPacket *avpkt = ist->pkt;
 
@@ -1814,10 +1803,26 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
     } else if (!ist->decoding_needed)
         eof_reached = 1;
 
+    duration_exceeded = 0;
+    if (f->recording_time != INT64_MAX) {
+        int64_t start_time = 0;
+        if (copy_ts) {
+            start_time += f->start_time != AV_NOPTS_VALUE ? f->start_time : 0;
+            start_time += start_at_zero ? 0 : f->start_time_effective;
+        }
+        if (ist->pts >= f->recording_time + start_time)
+            duration_exceeded = 1;
+    }
+
     for (int oidx = 0; oidx < ist->nb_outputs; oidx++) {
         OutputStream *ost = ist->outputs[oidx];
         if (ost->enc_ctx || (!pkt && no_eof))
             continue;
+
+        if (duration_exceeded) {
+            close_output_stream(ost);
+            continue;
+        }
 
         do_streamcopy(ist, ost, pkt);
     }
