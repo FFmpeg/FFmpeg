@@ -1,33 +1,73 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
-import sys, subprocess
+import argparse
+import logging
+import shlex
+import subprocess
 
-if len(sys.argv) > 2:
-    ifile  = sys.argv[1]
-    encopt = sys.argv[2:-1]
-    ofile  = sys.argv[-1]
-else:
-    print 'usage: %s <input> [encode_options] <output>' % sys.argv[0]
-    sys.exit(1)
+HELP = '''
+Normalize audio input.
 
-analysis_cmd  = 'ffprobe -v error -of compact=p=0:nk=1 '
-analysis_cmd += '-show_entries frame_tags=lavfi.r128.I -f lavfi '
-analysis_cmd += "amovie='%s',ebur128=metadata=1" % ifile
-try:
-    probe_out = subprocess.check_output(analysis_cmd, shell=True)
-except subprocess.CalledProcessError, e:
-    sys.exit(e.returncode)
-loudness = ref = -23
-for line in probe_out.splitlines():
-    sline = line.rstrip()
-    if sline:
-        loudness = sline
-adjust = ref - float(loudness)
-if abs(adjust) < 0.0001:
-    print 'No normalization needed for ' + ifile
-else:
-    print "Adjust %s by %.1fdB" % (ifile, adjust)
-    norm_cmd  = ['ffmpeg', '-i', ifile, '-af', 'volume=%fdB' % adjust]
-    norm_cmd += encopt + [ofile]
-    print ' => %s' % ' '.join(norm_cmd)
-    subprocess.call(norm_cmd)
+The command uses ffprobe to analyze an input file with the ebur128
+filter, and finally run ffmpeg to normalize the input depending on the
+computed adjustment.
+
+ffmpeg encoding arguments can be passed through the extra arguments
+after options, for example as in:
+normalize.py --input input.mp3 --output output.mp3 -- -loglevel debug -y
+'''
+
+logging.basicConfig(format='normalize|%(levelname)s> %(message)s', level=logging.INFO)
+log = logging.getLogger()
+
+
+class Formatter(
+    argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter
+):
+    pass
+
+
+def normalize():
+    parser = argparse.ArgumentParser(description=HELP, formatter_class=Formatter)
+    parser.add_argument('--input', '-i', required=True, help='specify input file')
+    parser.add_argument('--output', '-o', required=True, help='specify output file')
+    parser.add_argument('--dry-run', '-n', help='simulate commands', action='store_true')
+    parser.add_argument('encode_arguments', nargs='*', help='specify encode options used for the actual encoding')
+
+    args = parser.parse_args()
+
+    analysis_cmd = [
+        'ffprobe', '-v', 'error', '-of', 'compact=p=0:nk=1',
+        '-show_entries', 'frame_tags=lavfi.r128.I', '-f', 'lavfi',
+        f"amovie='{args.input}',ebur128=metadata=1"
+    ]
+
+    def _run_command(cmd, dry_run=False):
+        log.info(f"Running command:\n$ {shlex.join(cmd)}")
+        if not dry_run:
+            result = subprocess.run(cmd, check=True, stdout=subprocess.PIPE)
+            return result
+
+    result = _run_command(analysis_cmd)
+
+    loudness = ref = -23
+    for line in result.stdout.splitlines():
+        sline = line.rstrip()
+        if sline:
+            loudness = sline
+
+    adjust = ref - float(loudness)
+    if abs(adjust) < 0.0001:
+        logging.info(f"No normalization needed for '{args.input}'")
+        return
+
+    logging.info(f"Adjusting '{args.input}' by {adjust:.2f}dB...")
+    normalize_cmd = [
+        'ffmpeg', '-i', args.input, '-af', f'volume={adjust:.2f}dB'
+    ] + args.encode_arguments + [args.output]
+
+    _run_command(normalize_cmd, args.dry_run)
+
+
+if __name__ == '__main__':
+    normalize()
