@@ -439,6 +439,11 @@ static int read_extra_header(FFV1Context *f)
         av_log(f->avctx, AV_LOG_ERROR, "Invalid version in global header\n");
         return AVERROR_INVALIDDATA;
     }
+    if (f->version > 4) {
+        av_log(f->avctx, AV_LOG_ERROR, "unsupported version %d\n",
+            f->version);
+        return AVERROR_PATCHWELCOME;
+    }
     if (f->version > 2) {
         c->bytestream_end -= 4;
         f->micro_version = get_symbol(c, state, 0);
