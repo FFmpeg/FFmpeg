@@ -914,85 +914,6 @@ int ifilter_parameters_from_codecpar(InputFilter *ifilter, AVCodecParameters *pa
     return 0;
 }
 
-/**
- * @param dts predicted packet dts in AV_TIME_BASE_Q
- */
-static void do_streamcopy(InputStream *ist, OutputStream *ost,
-                          const AVPacket *pkt, int64_t dts)
-{
-    OutputFile *of = output_files[ost->file_index];
-    int64_t start_time = (of->start_time == AV_NOPTS_VALUE) ? 0 : of->start_time;
-    int64_t ost_tb_start_time = av_rescale_q(start_time, AV_TIME_BASE_Q, ost->mux_timebase);
-    AVPacket *opkt = ost->pkt;
-
-    av_packet_unref(opkt);
-    // EOF: flush output bitstream filters.
-    if (!pkt) {
-        of_output_packet(of, opkt, ost, 1);
-        return;
-    }
-
-    if (!ost->streamcopy_started && !(pkt->flags & AV_PKT_FLAG_KEY) &&
-        !ost->copy_initial_nonkeyframes)
-        return;
-
-    if (!ost->streamcopy_started) {
-        if (!ost->copy_prior_start &&
-            (pkt->pts == AV_NOPTS_VALUE ?
-             dts < ost->ts_copy_start :
-             pkt->pts < av_rescale_q(ost->ts_copy_start, AV_TIME_BASE_Q, pkt->time_base)))
-            return;
-
-        if (of->start_time != AV_NOPTS_VALUE && dts < of->start_time)
-            return;
-    }
-
-    if (of->recording_time != INT64_MAX &&
-        dts >= of->recording_time + start_time) {
-        close_output_stream(ost);
-        return;
-    }
-
-    if (av_packet_ref(opkt, pkt) < 0)
-        exit_program(1);
-
-    opkt->time_base = ost->mux_timebase;
-
-    if (pkt->pts != AV_NOPTS_VALUE)
-        opkt->pts = av_rescale_q(pkt->pts, pkt->time_base, opkt->time_base) - ost_tb_start_time;
-
-    if (pkt->dts == AV_NOPTS_VALUE) {
-        opkt->dts = av_rescale_q(dts, AV_TIME_BASE_Q, opkt->time_base);
-    } else if (ost->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-        int duration = av_get_audio_frame_duration2(ist->par, pkt->size);
-        if(!duration)
-            duration = ist->par->frame_size;
-        opkt->dts = av_rescale_delta(pkt->time_base, pkt->dts,
-                                    (AVRational){1, ist->par->sample_rate}, duration,
-                                    &ist->filter_in_rescale_delta_last, opkt->time_base);
-        /* dts will be set immediately afterwards to what pts is now */
-        opkt->pts = opkt->dts - ost_tb_start_time;
-    } else
-        opkt->dts = av_rescale_q(pkt->dts, pkt->time_base, opkt->time_base);
-    opkt->dts -= ost_tb_start_time;
-
-    opkt->duration = av_rescale_q(pkt->duration, pkt->time_base, opkt->time_base);
-
-    {
-        int ret = trigger_fix_sub_duration_heartbeat(ost, pkt);
-        if (ret < 0) {
-            av_log(NULL, AV_LOG_ERROR,
-                   "Subtitle heartbeat logic failed in %s! (%s)\n",
-                   __func__, av_err2str(ret));
-            exit_program(1);
-        }
-    }
-
-    of_output_packet(of, opkt, ost, 0);
-
-    ost->streamcopy_started = 1;
-}
-
 static void check_decode_result(InputStream *ist, int *got_output, int ret)
 {
     if (*got_output || ret<0)
@@ -1847,7 +1768,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
             continue;
         }
 
-        do_streamcopy(ist, ost, pkt, ist->dts);
+        of_streamcopy(ist, ost, pkt, ist->dts);
     }
 
     return !eof_reached;

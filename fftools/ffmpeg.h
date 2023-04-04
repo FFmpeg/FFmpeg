@@ -872,6 +872,13 @@ void of_enc_stats_close(void);
  * must be supplied in this case.
  */
 void of_output_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost, int eof);
+
+/**
+ * @param dts predicted packet dts in AV_TIME_BASE_Q
+ */
+void of_streamcopy(InputStream *ist, OutputStream *ost,
+                   const AVPacket *pkt, int64_t dts);
+
 int64_t of_filesize(OutputFile *of);
 
 int ifile_open(const OptionsContext *o, const char *filename);
