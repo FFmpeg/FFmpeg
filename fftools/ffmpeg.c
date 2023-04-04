@@ -941,7 +941,11 @@ int ifilter_parameters_from_codecpar(InputFilter *ifilter, AVCodecParameters *pa
     return 0;
 }
 
-static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *pkt)
+/**
+ * @param dts predicted packet dts in AV_TIME_BASE_Q
+ */
+static void do_streamcopy(InputStream *ist, OutputStream *ost,
+                          const AVPacket *pkt, int64_t dts)
 {
     OutputFile *of = output_files[ost->file_index];
     int64_t start_time = (of->start_time == AV_NOPTS_VALUE) ? 0 : of->start_time;
@@ -962,16 +966,16 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
     if (!ost->streamcopy_started) {
         if (!ost->copy_prior_start &&
             (pkt->pts == AV_NOPTS_VALUE ?
-             ist->pts < ost->ts_copy_start :
+             dts < ost->ts_copy_start :
              pkt->pts < av_rescale_q(ost->ts_copy_start, AV_TIME_BASE_Q, pkt->time_base)))
             return;
 
-        if (of->start_time != AV_NOPTS_VALUE && ist->pts < of->start_time)
+        if (of->start_time != AV_NOPTS_VALUE && dts < of->start_time)
             return;
     }
 
     if (of->recording_time != INT64_MAX &&
-        ist->pts >= of->recording_time + start_time) {
+        dts >= of->recording_time + start_time) {
         close_output_stream(ost);
         return;
     }
@@ -985,7 +989,7 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
         opkt->pts = av_rescale_q(pkt->pts, pkt->time_base, opkt->time_base) - ost_tb_start_time;
 
     if (pkt->dts == AV_NOPTS_VALUE) {
-        opkt->dts = av_rescale_q(ist->dts, AV_TIME_BASE_Q, opkt->time_base);
+        opkt->dts = av_rescale_q(dts, AV_TIME_BASE_Q, opkt->time_base);
     } else if (ost->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         int duration = av_get_audio_frame_duration2(ist->par, pkt->size);
         if(!duration)
@@ -1639,7 +1643,6 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
         if (pkt && pkt->pts != AV_NOPTS_VALUE && !ist->decoding_needed) {
             ist->first_dts =
             ist->dts += av_rescale_q(pkt->pts, ist->st->time_base, AV_TIME_BASE_Q);
-            ist->pts = ist->dts; //unused but better to set it to a value thats not totally wrong
         }
         ist->saw_first_ts = 1;
     }
@@ -1658,7 +1661,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
 
     if (pkt && pkt->dts != AV_NOPTS_VALUE) {
         ist->next_dts = ist->dts = av_rescale_q(pkt->dts, ist->st->time_base, AV_TIME_BASE_Q);
-        if (par->codec_type != AVMEDIA_TYPE_VIDEO || !ist->decoding_needed)
+        if (par->codec_type != AVMEDIA_TYPE_VIDEO)
             ist->pts = ist->dts;
     }
 
@@ -1810,7 +1813,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
             start_time += f->start_time != AV_NOPTS_VALUE ? f->start_time : 0;
             start_time += start_at_zero ? 0 : f->start_time_effective;
         }
-        if (ist->pts >= f->recording_time + start_time)
+        if (ist->dts >= f->recording_time + start_time)
             duration_exceeded = 1;
     }
 
@@ -1824,7 +1827,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
             continue;
         }
 
-        do_streamcopy(ist, ost, pkt);
+        do_streamcopy(ist, ost, pkt, ist->dts);
     }
 
     return !eof_reached;
