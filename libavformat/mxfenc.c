@@ -2493,6 +2493,10 @@ static int mxf_parse_ffv1_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt)
         if (v > 4) {
             return 0;
         }
+        if (v > 4) {
+            av_log(s, AV_LOG_ERROR, "unsupported ffv1 version %d\n", v);
+            return 0;
+        }
         sc->micro_version = get_ffv1_unsigned_symbol(&c, state);
     } else {
         uint8_t keystate = 128;
