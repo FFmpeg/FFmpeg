@@ -1,6 +1,6 @@
 ac2e8f528dae4e4d610fa3517d2c94fb *tests/data/fate/h264_redundant_pps-mov.h264
 187284 tests/data/fate/h264_redundant_pps-mov.h264
-#tb 0: 1/24
+#tb 0: 1001/24000
 #media_type 0: video
 #codec_id 0: rawvideo
 #dimensions 0: 640x360
