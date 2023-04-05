@@ -668,6 +668,11 @@ static void compute_frame_duration(AVFormatContext *s, int *pnum, int *pden,
         if (st->r_frame_rate.num && (!pc || !codec_framerate.num)) {
             *pnum = st->r_frame_rate.den;
             *pden = st->r_frame_rate.num;
+        } else if ((s->iformat->flags & AVFMT_NOTIMESTAMPS) &&
+                   !codec_framerate.num &&
+                   st->avg_frame_rate.num && st->avg_frame_rate.den) {
+            *pnum = st->avg_frame_rate.den;
+            *pden = st->avg_frame_rate.num;
         } else if (st->time_base.num * 1000LL > st->time_base.den) {
             *pnum = st->time_base.num;
             *pden = st->time_base.den;
