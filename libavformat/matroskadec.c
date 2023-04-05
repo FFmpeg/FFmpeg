@@ -2392,17 +2392,23 @@ static int mkv_parse_block_addition_mappings(AVFormatContext *s, AVStream *st, M
         MatroskaBlockAdditionMapping *mapping = &mappings[i];
 
         switch (mapping->type) {
+        case MATROSKA_BLOCK_ADD_ID_TYPE_DEFAULT:
+            av_log(s, AV_LOG_DEBUG,
+                   "Explicit block Addition Mapping type \"Use BlockAddIDValue\", value %"PRIu64","
+                   " name \"%s\" found.\n", mapping->value, mapping->name ? mapping->name : "");
+            break;
+        case MATROSKA_BLOCK_ADD_ID_TYPE_OPAQUE:
         case MATROSKA_BLOCK_ADD_ID_TYPE_ITU_T_T35:
-            if (mapping->value != MATROSKA_BLOCK_ADD_ID_ITU_T_T35) {
+            if (mapping->value != mapping->type) {
                 int strict = s->strict_std_compliance >= FF_COMPLIANCE_STRICT;
                 av_log(s, strict ? AV_LOG_ERROR : AV_LOG_WARNING,
                        "Invalid Block Addition Value 0x%"PRIx64" for Block Addition Mapping Type "
-                       "\"ITU T.35 metadata\"\n", mapping->value);
-                if (!strict)
-                    break;
-                return AVERROR_INVALIDDATA;
+                       "0x%"PRIx64", name \"%s\"\n", mapping->value, mapping->type,
+                       mapping->name ? mapping->name : "");
+                if (strict)
+                    return AVERROR_INVALIDDATA;
             }
-            track->blockaddid_itu_t_t35 = 1;
+            track->blockaddid_itu_t_t35 |= mapping->type == MATROSKA_BLOCK_ADD_ID_TYPE_ITU_T_T35;
             break;
         case MATROSKA_BLOCK_ADD_ID_TYPE_DVCC:
         case MATROSKA_BLOCK_ADD_ID_TYPE_DVVC:
@@ -2412,8 +2418,18 @@ static int mkv_parse_block_addition_mappings(AVFormatContext *s, AVStream *st, M
             break;
         default:
             av_log(s, AV_LOG_DEBUG,
-                   "Unknown block additional mapping type 0x%"PRIx64", value %"PRIu64", name \"%s\"\n",
+                   "Unknown Block Addition Mapping type 0x%"PRIx64", value %"PRIu64", name \"%s\"\n",
                    mapping->type, mapping->value, mapping->name ? mapping->name : "");
+            if (mapping->value < 2) {
+                int strict = s->strict_std_compliance >= FF_COMPLIANCE_STRICT;
+                av_log(s, strict ? AV_LOG_ERROR : AV_LOG_WARNING,
+                       "Invalid Block Addition value 0x%"PRIu64" for unknown Block Addition Mapping "
+                       "type %"PRIx64", name \"%s\"\n", mapping->value, mapping->type,
+                       mapping->name ? mapping->name : "");
+                if (strict)
+                    return AVERROR_INVALIDDATA;
+            }
+            break;
         }
     }
 
@@ -3638,11 +3654,28 @@ static int matroska_parse_block_additional(MatroskaDemuxContext *matroska,
                                            MatroskaTrack *track, AVPacket *pkt,
                                            const uint8_t *data, int size, uint64_t id)
 {
+    const EbmlList *mappings_list = &track->block_addition_mappings;
+    MatroskaBlockAdditionMapping *mappings = mappings_list->elem, *mapping = NULL;
     uint8_t *side_data;
     int res;
 
+    for (int i = 0; i < mappings_list->nb_elem; i++) {
+        if (id != mappings[i].value)
+            continue;
+        mapping = &mappings[i];
+        break;
+    }
+
+    if (id != 1 && !matroska->is_webm && !mapping) {
+        av_log(matroska->ctx, AV_LOG_WARNING, "BlockAddID %"PRIu64" has no mapping. Skipping\n", id);
+        return 0;
+    }
+
+    if (mapping && mapping->type)
+        id = mapping->type;
+
     switch (id) {
-    case 4: {
+    case MATROSKA_BLOCK_ADD_ID_TYPE_ITU_T_T35: {
         GetByteContext bc;
         int country_code, provider_code;
         int provider_oriented_code, application_identifier;
@@ -3678,13 +3711,9 @@ static int matroska_parse_block_additional(MatroskaDemuxContext *matroska,
             av_free(hdrplus);
             return res;
         }
-
-        return 0;
-    }
-    default:
         break;
     }
-
+    default:
     side_data = av_packet_new_side_data(pkt, AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL,
                                         size + (size_t)8);
     if (!side_data)
@@ -3692,6 +3721,8 @@ static int matroska_parse_block_additional(MatroskaDemuxContext *matroska,
 
     AV_WB64(side_data, id);
     memcpy(side_data + 8, data, size);
+        break;
+    }
 
     return 0;
 }
