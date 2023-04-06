@@ -508,18 +508,18 @@ static void flv_write_codec_header(AVFormatContext* s, AVCodecParameters* par, i
             if (!par->extradata_size && (flv->flags & FLV_AAC_SEQ_HEADER_DETECT)) {
                 PutBitContext pbc;
                 int samplerate_index;
-                int channels = flv->audio_par->ch_layout.nb_channels
-                        - (flv->audio_par->ch_layout.nb_channels == 8 ? 1 : 0);
+                int channels = par->ch_layout.nb_channels
+                        - (par->ch_layout.nb_channels == 8 ? 1 : 0);
                 uint8_t data[2];
 
                 for (samplerate_index = 0; samplerate_index < 16;
                         samplerate_index++)
-                    if (flv->audio_par->sample_rate
+                    if (par->sample_rate
                             == ff_mpeg4audio_sample_rates[samplerate_index])
                         break;
 
                 init_put_bits(&pbc, data, sizeof(data));
-                put_bits(&pbc, 5, flv->audio_par->profile + 1); //profile
+                put_bits(&pbc, 5, par->profile + 1); //profile
                 put_bits(&pbc, 4, samplerate_index); //sample rate index
                 put_bits(&pbc, 4, channels);
                 put_bits(&pbc, 1, 0); //frame length - 1024 samples
