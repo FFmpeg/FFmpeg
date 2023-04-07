@@ -3714,13 +3714,13 @@ static int matroska_parse_block_additional(MatroskaDemuxContext *matroska,
         break;
     }
     default:
-    side_data = av_packet_new_side_data(pkt, AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL,
-                                        size + (size_t)8);
-    if (!side_data)
-        return AVERROR(ENOMEM);
+        side_data = av_packet_new_side_data(pkt, AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL,
+                                            size + (size_t)8);
+        if (!side_data)
+            return AVERROR(ENOMEM);
 
-    AV_WB64(side_data, id);
-    memcpy(side_data + 8, data, size);
+        AV_WB64(side_data, id);
+        memcpy(side_data + 8, data, size);
         break;
     }
 
