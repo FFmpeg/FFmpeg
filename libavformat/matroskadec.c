@@ -3659,6 +3659,16 @@ static int matroska_parse_block_additional(MatroskaDemuxContext *matroska,
     uint8_t *side_data;
     int res;
 
+    if (!matroska->is_webm && track->max_block_additional_id && id > track->max_block_additional_id) {
+        int strict = matroska->ctx->strict_std_compliance >= FF_COMPLIANCE_STRICT;
+        av_log(matroska->ctx, strict ? AV_LOG_ERROR : AV_LOG_WARNING,
+               "BlockAddID %"PRIu64" is higher than the reported MaxBlockAdditionID %"PRIu64" "
+               "for Track with TrackNumber %"PRIu64"\n", id, track->max_block_additional_id,
+               track->num);
+        if (strict)
+            return AVERROR_INVALIDDATA;
+    }
+
     for (int i = 0; i < mappings_list->nb_elem; i++) {
         if (id != mappings[i].value)
             continue;
@@ -3766,6 +3776,17 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
 
     if (!pkt_size && !nb_blockmore)
         goto no_output;
+
+    if (!matroska->is_webm && nb_blockmore && !track->max_block_additional_id) {
+        int strict = matroska->ctx->strict_std_compliance >= FF_COMPLIANCE_STRICT;
+        av_log(matroska->ctx, strict ? AV_LOG_ERROR : AV_LOG_WARNING,
+               "Unexpected BlockAdditions found in a Block from Track with TrackNumber %"PRIu64" "
+               "where MaxBlockAdditionID is 0\n", track->num);
+        if (strict) {
+            res = AVERROR_INVALIDDATA;
+            goto fail;
+        }
+    }
 
     if (!buf)
         pkt->buf = av_buffer_create(pkt_data, pkt_size + AV_INPUT_BUFFER_PADDING_SIZE,
