@@ -1379,12 +1379,20 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output, int64_
     }
 
     if (debug_ts) {
-        av_log(NULL, AV_LOG_INFO, "decoder -> ist_index:%d type:video "
-               "frame_pts:%s frame_pts_time:%s best_effort_ts:%"PRId64" best_effort_ts_time:%s keyframe:%d frame_type:%d time_base:%d/%d\n",
-               ist->st->index, av_ts2str(decoded_frame->pts),
+        av_log(ist, AV_LOG_INFO,
+               "decoder -> pts:%s pts_time:%s "
+               "pkt_dts:%s pkt_dts_time:%s "
+               "best_effort_ts:%"PRId64" best_effort_ts_time:%s "
+               "duration:%s duration_time:%s "
+               "keyframe:%d frame_type:%d time_base:%d/%d\n",
+               av_ts2str(decoded_frame->pts),
                av_ts2timestr(decoded_frame->pts, &ist->st->time_base),
+               av_ts2str(decoded_frame->pkt_dts),
+               av_ts2timestr(decoded_frame->pkt_dts, &ist->st->time_base),
                best_effort_timestamp,
                av_ts2timestr(best_effort_timestamp, &ist->st->time_base),
+               av_ts2str(decoded_frame->duration),
+               av_ts2timestr(decoded_frame->duration, &ist->st->time_base),
                decoded_frame->key_frame, decoded_frame->pict_type,
                ist->st->time_base.num, ist->st->time_base.den);
     }
