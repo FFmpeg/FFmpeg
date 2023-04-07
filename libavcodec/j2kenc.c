@@ -1853,7 +1853,7 @@ const FFCodec ff_jpeg2000_encoder = {
         AV_PIX_FMT_YUV440P,                      AV_PIX_FMT_YUV440P10, AV_PIX_FMT_YUV440P12,
         AV_PIX_FMT_YUV411P,
         AV_PIX_FMT_YUV410P,
-
+        AV_PIX_FMT_YA8,                                           AV_PIX_FMT_YA16,
         AV_PIX_FMT_RGBA,                                          AV_PIX_FMT_RGBA64,
         AV_PIX_FMT_GBRAP, AV_PIX_FMT_GBRAP10, AV_PIX_FMT_GBRAP12, AV_PIX_FMT_GBRAP16,
         AV_PIX_FMT_YUVA420P, AV_PIX_FMT_YUVA420P9, AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA420P16,
