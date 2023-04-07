@@ -1,6 +1,55 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 4.4.4:
+- avcodec/tests/snowenc: Fix 2nd test
+- avcodec/tests/snowenc: return a failure if DWT/IDWT mismatches
+- avcodec/snowenc: Fix visual weight calculation
+- avcodec/tests/snowenc: unbreak DWT tests
+- avcodec/vp3: Add missing check for av_malloc
+- avformat/nutdec: Add check for avformat_new_stream
+- avcodec/mpeg12dec: Check input size
+- avcodec/escape124: Fix some return codes
+- avcodec/escape124: fix signdness of end of input check
+- Use https for repository links
+- avcodec/rpzaenc: stop accessing out of bounds frame
+- avcodec/motionpixels: Mask pixels to valid values
+- avcodec/xpmdec: Check size before allocation to avoid truncation
+- avcodec/bink: Avoid undefined out of array end pointers in binkb_decode_plane()
+- avcodec/bink: Fix off by 1 error in ref end
+- avcodec/utils: Ensure linesize for SVQ3
+- avcodec/utils: allocate a line more for VC1 and WMV3
+- avcodec/videodsp_template: Adjust pointers to avoid undefined pointer things
+- avcodec/pngdec: Check deloco index more exactly
+- avcodec/ffv1dec: Check that num h/v slices is supported
+- avformat/mov: Check samplesize and offset to avoid integer overflow
+- avcodec/pictordec: Remove mid exit branch
+- avcodec/eac3dec: avoid float noise in fixed mode addition to overflow
+- avcodec/utils: use 32pixel alignment for bink
+- avcodec/scpr3: Check bx
+- avcodec/012v: Order operations for odd size handling
+- avcodec/eatgq: : Check index increments in tgq_decode_block()
+- avcodec/scpr: Test bx before use
+- avformat/mxfdec: Use 64bit in remainder
+- avcodec/sunrast: Fix maplength check
+- avcodec/wavpack: Avoid undefined shift in get_tail()
+- avcodec/wavpack: Check for end of input in wv_unpack_dsd_high()
+- avformat/id3v2: Check taglen in read_uslt()
+- avcodec/tiff: Ignore tile_count
+- avcodec/ffv1dec: restructure slice coordinate reading a bit
+- avcodec/mlpdec: Check max matrix instead of max channel in noise check
+- swscale/input: Use more unsigned intermediates
+- avcodec/alsdec: The minimal block is at least 7 bits
+- avformat/replaygain: avoid undefined / negative abs
+- swscale/output: Bias 16bps output calculations to improve non overflowing range
+- avcodec/speedhq: Check buf_size to be big enough for DC
+- avcodec/ffv1dec: Fail earlier if prior context is corrupted
+- avcodec/nvenc: fix b-frame DTS behavior with fractional framerates
+- avfilter/vf_untile: swap the chroma shift values used for plane offsets
+- avcodec/nvenc: fix vbv buffer size in cq mode
+- avcodec/mjpegenc: take into account component count when writing the SOF header size
+- swscale: aarch64: Fix yuv2rgb with negative stride
+
 version 4.4.3:
 - avformat/vividas: Check packet size
 - configure: link to libatomic when it's present
