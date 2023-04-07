@@ -32,6 +32,7 @@ extern "C" {
 
 extern "C" {
 #include "libavformat/avformat.h"
+#include "libavcodec/bytestream.h"
 #include "libavutil/internal.h"
 #include "libavutil/imgutils.h"
 #include "avdevice.h"
@@ -243,19 +244,32 @@ static int decklink_setup_audio(AVFormatContext *avctx, AVStream *st)
         av_log(avctx, AV_LOG_ERROR, "Only one audio stream is supported!\n");
         return -1;
     }
-    if (c->sample_rate != 48000) {
-        av_log(avctx, AV_LOG_ERROR, "Unsupported sample rate!"
-               " Only 48kHz is supported.\n");
+
+    if (c->codec_id == AV_CODEC_ID_AC3) {
+        /* Regardless of the number of channels in the codec, we're only
+           using 2 SDI audio channels at 48000Hz */
+        ctx->channels = 2;
+    } else if (c->codec_id == AV_CODEC_ID_PCM_S16LE) {
+        if (c->sample_rate != 48000) {
+            av_log(avctx, AV_LOG_ERROR, "Unsupported sample rate!"
+                   " Only 48kHz is supported.\n");
+            return -1;
+        }
+        if (c->ch_layout.nb_channels != 2 && c->ch_layout.nb_channels != 8 && c->ch_layout.nb_channels != 16) {
+            av_log(avctx, AV_LOG_ERROR, "Unsupported number of channels!"
+                   " Only 2, 8 or 16 channels are supported.\n");
+            return -1;
+        }
+        ctx->channels = c->ch_layout.nb_channels;
+    } else {
+        av_log(avctx, AV_LOG_ERROR, "Unsupported codec specified!"
+               " Only PCM_S16LE and AC-3 are supported.\n");
         return -1;
     }
-    if (c->ch_layout.nb_channels != 2 && c->ch_layout.nb_channels != 8 && c->ch_layout.nb_channels != 16) {
-        av_log(avctx, AV_LOG_ERROR, "Unsupported number of channels!"
-               " Only 2, 8 or 16 channels are supported.\n");
-        return -1;
-    }
+
     if (ctx->dlo->EnableAudioOutput(bmdAudioSampleRate48kHz,
                                     bmdAudioSampleType16bitInteger,
-                                    c->ch_layout.nb_channels,
+                                    ctx->channels,
                                     bmdAudioOutputStreamTimestamped) != S_OK) {
         av_log(avctx, AV_LOG_ERROR, "Could not enable audio output!\n");
         return -1;
@@ -266,11 +280,49 @@ static int decklink_setup_audio(AVFormatContext *avctx, AVStream *st)
     }
 
     /* The device expects the sample rate to be fixed. */
-    avpriv_set_pts_info(st, 64, 1, c->sample_rate);
-    ctx->channels = c->ch_layout.nb_channels;
+    avpriv_set_pts_info(st, 64, 1, 48000);
 
     ctx->audio = 1;
 
+    return 0;
+}
+
+/* Wrap the AC-3 packet into an S337 payload that is in S16LE format which can be easily
+   injected into the PCM stream.  Note: despite the function name, only AC-3 is implemented */
+static int create_s337_payload(AVPacket *pkt, uint8_t **outbuf, int *outsize)
+{
+    /* Note: if the packet size is not divisible by four, we need to make the actual
+       payload larger to ensure it ends on an two channel S16LE boundary */
+    int payload_size = FFALIGN(pkt->size, 4) + 8;
+    uint16_t bitcount = pkt->size * 8;
+    uint8_t *s337_payload;
+    PutByteContext pb;
+
+    /* Sanity check:  According to SMPTE ST 340:2015 Sec 4.1, the AC-3 sync frame will
+       exactly match the 1536 samples of baseband (PCM) audio that it represents.  */
+    if (pkt->size > 1536)
+        return AVERROR(EINVAL);
+
+    /* Encapsulate AC3 syncframe into SMPTE 337 packet */
+    s337_payload = (uint8_t *) av_malloc(payload_size);
+    if (s337_payload == NULL)
+        return AVERROR(ENOMEM);
+    bytestream2_init_writer(&pb, s337_payload, payload_size);
+    bytestream2_put_le16u(&pb, 0xf872); /* Sync word 1 */
+    bytestream2_put_le16u(&pb, 0x4e1f); /* Sync word 1 */
+    bytestream2_put_le16u(&pb, 0x0001); /* Burst Info, including data type (1=ac3) */
+    bytestream2_put_le16u(&pb, bitcount); /* Length code */
+    for (int i = 0; i < (pkt->size - 1); i += 2)
+        bytestream2_put_le16u(&pb, (pkt->data[i] << 8) | pkt->data[i+1]);
+
+    /* Ensure final payload is aligned on 4-byte boundary */
+    if (pkt->size & 1)
+        bytestream2_put_le16u(&pb, pkt->data[pkt->size - 1] << 8);
+    if ((pkt->size & 3 == 1) || (pkt->size & 3 == 2))
+        bytestream2_put_le16u(&pb, 0);
+
+    *outsize = payload_size;
+    *outbuf = s337_payload;
     return 0;
 }
 
@@ -617,21 +669,39 @@ static int decklink_write_audio_packet(AVFormatContext *avctx, AVPacket *pkt)
 {
     struct decklink_cctx *cctx = (struct decklink_cctx *)avctx->priv_data;
     struct decklink_ctx *ctx = (struct decklink_ctx *)cctx->ctx;
-    int sample_count = pkt->size / (ctx->channels << 1);
+    AVStream *st = avctx->streams[pkt->stream_index];
+    int sample_count;
     uint32_t buffered;
+    uint8_t *outbuf = NULL;
+    int ret = 0;
 
     ctx->dlo->GetBufferedAudioSampleFrameCount(&buffered);
     if (pkt->pts > 1 && !buffered)
         av_log(avctx, AV_LOG_WARNING, "There's no buffered audio."
                " Audio will misbehave!\n");
 
-    if (ctx->dlo->ScheduleAudioSamples(pkt->data, sample_count, pkt->pts,
-                                       bmdAudioSampleRate48kHz, NULL) != S_OK) {
-        av_log(avctx, AV_LOG_ERROR, "Could not schedule audio samples.\n");
-        return AVERROR(EIO);
+    if (st->codecpar->codec_id == AV_CODEC_ID_AC3) {
+        /* Encapsulate AC3 syncframe into SMPTE 337 packet */
+        int outbuf_size;
+        ret = create_s337_payload(pkt, &outbuf, &outbuf_size);
+        if (ret < 0)
+            return ret;
+        sample_count = outbuf_size / 4;
+    } else {
+        sample_count = pkt->size / (ctx->channels << 1);
+        outbuf = pkt->data;
     }
 
-    return 0;
+    if (ctx->dlo->ScheduleAudioSamples(outbuf, sample_count, pkt->pts,
+                                       bmdAudioSampleRate48kHz, NULL) != S_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Could not schedule audio samples.\n");
+        ret = AVERROR(EIO);
+    }
+
+    if (st->codecpar->codec_id == AV_CODEC_ID_AC3)
+        av_freep(&outbuf);
+
+    return ret;
 }
 
 extern "C" {
