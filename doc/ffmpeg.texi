@@ -1888,9 +1888,19 @@ ffmpeg -i inurl -streamid 0:33 -streamid 1:36 out.ts
 @end example
 
 @item -bsf[:@var{stream_specifier}] @var{bitstream_filters} (@emph{output,per-stream})
-Set bitstream filters for matching streams. @var{bitstream_filters} is
-a comma-separated list of bitstream filters. Use the @code{-bsfs} option
-to get the list of bitstream filters.
+Apply bitstream filters to matching streams.
+
+@var{bitstream_filters} is a comma-separated list of bitstream filter
+specifications. The specified bitstream filters are applied to coded packets in
+the order they are written in. Each bitstream filter specification is of the
+form
+@example
+@var{filter}[=@var{optname0}=@var{optval0}:@var{optname1}=@var{optval1}:...]
+@end example
+Any of the ',=:' characters that are to be a part of an option value need to be
+escaped with a backslash.
+
+Use the @code{-bsfs} option to get the list of bitstream filters.
 @example
 ffmpeg -i h264.mp4 -c:v copy -bsf:v h264_mp4toannexb -an out.h264
 @end example
