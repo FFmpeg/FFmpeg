@@ -2389,16 +2389,18 @@ static int mkv_parse_block_addition_mappings(AVFormatContext *s, AVStream *st, M
 
     for (int i = 0; i < mappings_list->nb_elem; i++) {
         MatroskaBlockAdditionMapping *mapping = &mappings[i];
+        uint64_t type = mapping->type;
 
         switch (mapping->type) {
         case MATROSKA_BLOCK_ADD_ID_TYPE_DEFAULT:
             av_log(s, AV_LOG_DEBUG,
                    "Explicit block Addition Mapping type \"Use BlockAddIDValue\", value %"PRIu64","
                    " name \"%s\" found.\n", mapping->value, mapping->name ? mapping->name : "");
-            break;
+            type = MATROSKA_BLOCK_ADD_ID_TYPE_OPAQUE;
+            // fall-through
         case MATROSKA_BLOCK_ADD_ID_TYPE_OPAQUE:
         case MATROSKA_BLOCK_ADD_ID_TYPE_ITU_T_T35:
-            if (mapping->value != mapping->type) {
+            if (mapping->value != type) {
                 int strict = s->strict_std_compliance >= FF_COMPLIANCE_STRICT;
                 av_log(s, strict ? AV_LOG_ERROR : AV_LOG_WARNING,
                        "Invalid Block Addition Value 0x%"PRIx64" for Block Addition Mapping Type "
