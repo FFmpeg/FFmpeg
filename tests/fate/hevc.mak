@@ -210,7 +210,7 @@ FATE_HEVC-$(call FRAMECRC, HEVC, HEVC, HEVC_PARSER SCALE_FILTER) +=         \
                                                     $(HEVC_TESTS_422_10BIN) \
                                                     $(HEVC_TESTS_444_12BIT) \
 
-fate-hevc-paramchange-yuv420p-yuv420p10: CMD = framecrc -vsync passthrough -i $(TARGET_SAMPLES)/hevc/paramchange_yuv420p_yuv420p10.hevc -sws_flags area+accurate_rnd+bitexact
+fate-hevc-paramchange-yuv420p-yuv420p10: CMD = framecrc -i $(TARGET_SAMPLES)/hevc/paramchange_yuv420p_yuv420p10.hevc -fps_mode passthrough -sws_flags area+accurate_rnd+bitexact
 FATE_HEVC-$(call FRAMECRC, HEVC, HEVC, HEVC_PARSER SCALE_FILTER LARGE_TESTS) += fate-hevc-paramchange-yuv420p-yuv420p10
 
 tests/data/hevc-mp4.mov: TAG = GEN

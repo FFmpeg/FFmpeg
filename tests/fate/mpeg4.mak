@@ -8,7 +8,7 @@ FATE_MPEG4-$(call FRAMEMD5, M4V, MPEG4, SCALE_FILTER) := $(addprefix fate-mpeg4-
 fate-mpeg4-bsf-unpack-bframes: CMD = md5 -i $(TARGET_SAMPLES)/mpeg4/packed_bframes.avi -flags +bitexact -fflags +bitexact -c:v copy -bsf mpeg4_unpack_bframes -f avi
 FATE_MPEG4-$(call DEMMUX, AVI, AVI, MPEG4_UNPACK_BFRAMES_BSF) += fate-mpeg4-bsf-unpack-bframes
 
-fate-mpeg4-packed: CMD = framecrc -flags +bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg4/packed_bframes.avi -flags +bitexact -fflags +bitexact -vsync cfr
+fate-mpeg4-packed: CMD = framecrc -flags +bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg4/packed_bframes.avi -flags +bitexact -fflags +bitexact -fps_mode cfr
 FATE_MPEG4-$(call FRAMECRC, AVI, MPEG4) += fate-mpeg4-packed
 
 FATE_MPEG4-$(call ALLYES, FILE_PROTOCOL M4V_DEMUXER MPEG4_DECODER SCALE_FILTER \

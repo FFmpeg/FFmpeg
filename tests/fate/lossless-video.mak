@@ -15,9 +15,9 @@ fate-lagarith-red: CMD = framecrc -i $(TARGET_SAMPLES)/lagarith/lagarith-red.avi
 
 FATE_LAGARITH += fate-lagarith-ticket4119 fate-lagarith-ticket4119-cfr fate-lagarith-ticket4119-vfr fate-lagarith-ticket4119-pass
 fate-lagarith-ticket4119: CMD = framecrc -i $(TARGET_SAMPLES)/lagarith/lagarith-1.3.27-black-frames-and-off-by-ones.avi
-fate-lagarith-ticket4119-cfr : CMD = framecrc -i $(TARGET_SAMPLES)/lagarith/lagarith-1.3.27-black-frames-and-off-by-ones.avi -vsync cfr
-fate-lagarith-ticket4119-vfr : CMD = framecrc -i $(TARGET_SAMPLES)/lagarith/lagarith-1.3.27-black-frames-and-off-by-ones.avi -vsync vfr
-fate-lagarith-ticket4119-pass: CMD = framecrc -i $(TARGET_SAMPLES)/lagarith/lagarith-1.3.27-black-frames-and-off-by-ones.avi -vsync passthrough
+fate-lagarith-ticket4119-cfr : CMD = framecrc -i $(TARGET_SAMPLES)/lagarith/lagarith-1.3.27-black-frames-and-off-by-ones.avi -fps_mode cfr
+fate-lagarith-ticket4119-vfr : CMD = framecrc -i $(TARGET_SAMPLES)/lagarith/lagarith-1.3.27-black-frames-and-off-by-ones.avi -fps_mode vfr
+fate-lagarith-ticket4119-pass: CMD = framecrc -i $(TARGET_SAMPLES)/lagarith/lagarith-1.3.27-black-frames-and-off-by-ones.avi -fps_mode passthrough
 
 FATE_LAGARITH-$(call FRAMECRC, AVI, LAGARITH) += $(FATE_LAGARITH)
 
