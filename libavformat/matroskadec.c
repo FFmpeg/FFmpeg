@@ -285,7 +285,6 @@ typedef struct MatroskaTrack {
     int needs_decoding;
     uint64_t max_block_additional_id;
     EbmlList block_addition_mappings;
-    int blockaddid_itu_t_t35;
 
     uint32_t palette[AVPALETTE_COUNT];
     int has_palette;
@@ -2408,7 +2407,6 @@ static int mkv_parse_block_addition_mappings(AVFormatContext *s, AVStream *st, M
                 if (strict)
                     return AVERROR_INVALIDDATA;
             }
-            track->blockaddid_itu_t_t35 |= mapping->type == MATROSKA_BLOCK_ADD_ID_TYPE_ITU_T_T35;
             break;
         case MATROSKA_BLOCK_ADD_ID_TYPE_DVCC:
         case MATROSKA_BLOCK_ADD_ID_TYPE_DVVC:
@@ -2850,8 +2848,6 @@ static int matroska_parse_tracks(AVFormatContext *s)
             /* we don't need any value stored in CodecPrivate.
                make sure that it's not exported as extradata. */
             track->codec_priv.size = 0;
-            /* Assume BlockAddID 4 is ITU-T T.35 metadata if WebM */
-            track->blockaddid_itu_t_t35 = matroska->is_webm;
         } else if (codec_id == AV_CODEC_ID_ARIB_CAPTION && track->codec_priv.size == 3) {
             int component_tag = track->codec_priv.data[0];
             int data_component_id = AV_RB16(track->codec_priv.data + 1);
@@ -3692,7 +3688,7 @@ static int matroska_parse_block_additional(MatroskaDemuxContext *matroska,
         size_t hdrplus_size;
         AVDynamicHDRPlus *hdrplus;
 
-        if (!track->blockaddid_itu_t_t35 || size < 6)
+        if (size < 6)
             break; //ignore
 
         bytestream2_init(&bc, data, size);
