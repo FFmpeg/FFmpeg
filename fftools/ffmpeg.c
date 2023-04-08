@@ -1371,6 +1371,9 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output, int64_
         ist->nb_dts_buffer--;
     }
 
+    if (best_effort_timestamp == AV_NOPTS_VALUE)
+        best_effort_timestamp = av_rescale_q(ist->pts, AV_TIME_BASE_Q, ist->st->time_base);
+
     if(best_effort_timestamp != AV_NOPTS_VALUE) {
         int64_t ts = av_rescale_q(decoded_frame->pts = best_effort_timestamp, ist->st->time_base, AV_TIME_BASE_Q);
 
