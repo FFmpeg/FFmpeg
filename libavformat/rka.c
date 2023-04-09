@@ -72,7 +72,7 @@ static int rka_read_header(AVFormatContext *s)
     if (channels == 0)
         return AVERROR_INVALIDDATA;
     bps = par->extradata[13];
-    if (bps == 0)
+    if (bps < 8)
         return AVERROR_INVALIDDATA;
     size_offset = avio_rl32(s->pb);
     framepos = avio_tell(s->pb);
