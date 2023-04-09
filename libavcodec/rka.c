@@ -737,7 +737,7 @@ static int decode_filter(RKAContext *s, ChContext *ctx, ACoder *ac, int off, uns
                 }
                 ctx->buf0[off] = ctx->buf1[off] + ctx->buf0[off + -1];
             } else {
-                val *= 1 << ctx->cmode;
+                val *= 1U << ctx->cmode;
                 sum += ctx->buf0[off + -1] + val;
                 switch (s->bps) {
                 case 16: sum = av_clip_int16(sum); break;
