@@ -1333,19 +1333,12 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output, int64_
     AVFrame *decoded_frame = ist->decoded_frame;
     int ret = 0, err = 0;
     int64_t best_effort_timestamp;
-    int64_t dts = AV_NOPTS_VALUE;
 
     // With fate-indeo3-2, we're getting 0-sized packets before EOF for some
     // reason. This seems like a semi-critical bug. Don't trigger EOF, and
     // skip the packet.
     if (!eof && pkt && pkt->size == 0)
         return 0;
-
-    if (ist->dts != AV_NOPTS_VALUE)
-        dts = av_rescale_q(ist->dts, AV_TIME_BASE_Q, ist->st->time_base);
-    if (pkt) {
-        pkt->dts = dts; // ffmpeg.c probably shouldn't do this
-    }
 
     update_benchmark(NULL);
     ret = decode(ist, ist->dec_ctx, decoded_frame, got_output, pkt);

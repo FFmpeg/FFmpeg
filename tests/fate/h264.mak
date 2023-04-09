@@ -365,7 +365,7 @@ fate-h264-conformance-frext-hpcadq_brcm_b:        CMD = framecrc -i $(TARGET_SAM
 fate-h264-conformance-frext-hpcafl_bcrm_c:        CMD = framecrc -i $(TARGET_SAMPLES)/h264-conformance/FRext/HPCAFL_BRCM_C.264
 fate-h264-conformance-frext-hpcaflnl_bcrm_c:      CMD = framecrc -i $(TARGET_SAMPLES)/h264-conformance/FRext/HPCAFLNL_BRCM_C.264
 fate-h264-conformance-frext-hpcalq_brcm_b:        CMD = framecrc -i $(TARGET_SAMPLES)/h264-conformance/FRext/HPCALQ_BRCM_B.264
-fate-h264-conformance-frext-hpcamapalq_bcrm_b:    CMD = framecrc -i $(TARGET_SAMPLES)/h264-conformance/FRext/HPCAMAPALQ_BRCM_B.264 -vsync passthrough
+fate-h264-conformance-frext-hpcamapalq_bcrm_b:    CMD = framecrc -i $(TARGET_SAMPLES)/h264-conformance/FRext/HPCAMAPALQ_BRCM_B.264
 fate-h264-conformance-frext-hpcamolq_brcm_b:      CMD = framecrc -i $(TARGET_SAMPLES)/h264-conformance/FRext/HPCAMOLQ_BRCM_B.264
 fate-h264-conformance-frext-hpcanl_brcm_c:        CMD = framecrc -i $(TARGET_SAMPLES)/h264-conformance/FRext/HPCANL_BRCM_C.264
 fate-h264-conformance-frext-hpcaq2lq_brcm_b:      CMD = framecrc -i $(TARGET_SAMPLES)/h264-conformance/FRext/HPCAQ2LQ_BRCM_B.264
@@ -444,7 +444,7 @@ fate-h264-mixed-nal-coding:                       CMD = framecrc -i $(TARGET_SAM
 fate-h264-ref-pic-mod-overflow:                   CMD = framecrc -i $(TARGET_SAMPLES)/h264/ref-pic-mod-overflow.h264
 fate-h264-twofields-packet:                       CMD = framecrc -i $(TARGET_SAMPLES)/h264/twofields_packet.mp4 -an -frames 30
 fate-h264-unescaped-extradata:                    CMD = framecrc -i $(TARGET_SAMPLES)/h264/unescaped_extradata.mp4 -an -frames 10
-fate-h264-3386:                                   CMD = framecrc -i $(TARGET_SAMPLES)/h264/bbc2.sample.h264 -fps_mode passthrough
+fate-h264-3386:                                   CMD = framecrc -i $(TARGET_SAMPLES)/h264/bbc2.sample.h264
 fate-h264-missing-frame:                          CMD = framecrc -i $(TARGET_SAMPLES)/h264/nondeterministic_cut.h264
 fate-h264-timecode:                               CMD = framecrc -i $(TARGET_SAMPLES)/h264/crew_cif_timecode-2.h264
 
