@@ -805,7 +805,8 @@ void ff_er_frame_start(ERContext *s)
 static int er_supported(ERContext *s)
 {
     if(s->avctx->hwaccel && s->avctx->hwaccel->decode_slice           ||
-       !s->cur_pic.f
+       !s->cur_pic.f                                                  ||
+       s->cur_pic.field_picture
     )
         return 0;
     return 1;
@@ -907,12 +908,6 @@ void ff_er_frame_end(ERContext *s)
                           (s->avctx->skip_top + s->avctx->skip_bottom)) {
         return;
     }
-
-    if (!s->warned_fields && (s->cur_pic.field_picture || s->cur_pic.f->interlaced_frame)) {
-        av_log(s->avctx, AV_LOG_WARNING, "Error concealment is not fully implemented for field pictures.\n");
-        s->warned_fields = 1;
-    }
-
     linesize = s->cur_pic.f->linesize;
 
     if (   s->avctx->codec_id == AV_CODEC_ID_MPEG2VIDEO
