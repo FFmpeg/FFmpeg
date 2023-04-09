@@ -444,7 +444,7 @@ fate-h264-mixed-nal-coding:                       CMD = framecrc -i $(TARGET_SAM
 fate-h264-ref-pic-mod-overflow:                   CMD = framecrc -i $(TARGET_SAMPLES)/h264/ref-pic-mod-overflow.h264
 fate-h264-twofields-packet:                       CMD = framecrc -i $(TARGET_SAMPLES)/h264/twofields_packet.mp4 -an -frames 30
 fate-h264-unescaped-extradata:                    CMD = framecrc -i $(TARGET_SAMPLES)/h264/unescaped_extradata.mp4 -an -frames 10
-fate-h264-3386:                                   CMD = framecrc -i $(TARGET_SAMPLES)/h264/bbc2.sample.h264
+fate-h264-3386:                                   CMD = framecrc -i $(TARGET_SAMPLES)/h264/bbc2.sample.h264 -fps_mode passthrough
 fate-h264-missing-frame:                          CMD = framecrc -i $(TARGET_SAMPLES)/h264/nondeterministic_cut.h264
 fate-h264-timecode:                               CMD = framecrc -i $(TARGET_SAMPLES)/h264/crew_cif_timecode-2.h264
 

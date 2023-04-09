@@ -373,6 +373,12 @@ typedef struct InputStream {
     /* predicted pts of the next decoded frame, in AV_TIME_BASE */
     int64_t       next_pts;
     int64_t       pts;       ///< current pts of the decoded frame  (in AV_TIME_BASE units)
+
+    // pts/estimated duration of the last decoded video frame
+    // in decoder timebase
+    int64_t last_frame_pts;
+    int64_t last_frame_duration_est;
+
     int           wrap_correction_done;
 
     // the value of AVCodecParserContext.repeat_pict from the AVStream parser
@@ -444,9 +450,6 @@ typedef struct InputStream {
     // number of frames/samples retrieved from the decoder
     uint64_t frames_decoded;
     uint64_t samples_decoded;
-
-    int64_t *dts_buffer;
-    int nb_dts_buffer;
 
     int got_output;
 } InputStream;

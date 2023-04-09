@@ -532,7 +532,6 @@ static void ist_free(InputStream **pist)
     av_freep(&ist->filters);
     av_freep(&ist->outputs);
     av_freep(&ist->hwaccel_device);
-    av_freep(&ist->dts_buffer);
 
     avcodec_free_context(&ist->dec_ctx);
     avcodec_parameters_free(&ist->par);
@@ -878,6 +877,8 @@ static void add_input_streams(const OptionsContext *o, Demuxer *d)
             MATCH_PER_STREAM_OPT(top_field_first, i, ist->top_field_first, ic, st);
 
             ist->framerate_guessed = av_guess_frame_rate(ic, st, NULL);
+
+            ist->last_frame_pts = AV_NOPTS_VALUE;
 
             break;
         case AVMEDIA_TYPE_AUDIO: {

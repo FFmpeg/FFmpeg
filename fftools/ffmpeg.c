@@ -1275,11 +1275,63 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output,
     return err < 0 ? err : ret;
 }
 
+static int64_t video_duration_estimate(const InputStream *ist, const AVFrame *frame)
+{
+    const InputFile   *ifile = input_files[ist->file_index];
+    const int container_nots = !!(ifile->ctx->iformat->flags & AVFMT_NOTIMESTAMPS);
+    int64_t codec_duration = 0;
+
+    // XXX lavf currently makes up frame durations when they are not provided by
+    // the container. As there is no way to reliably distinguish real container
+    // durations from the fake made-up ones, we use heuristics based on whether
+    // the container has timestamps. Eventually lavf should stop making up
+    // durations, then this should be simplified.
+
+    // prefer frame duration for containers with timestamps
+    if (frame->duration > 0 && !container_nots)
+        return frame->duration;
+
+    if (ist->dec_ctx->framerate.den && ist->dec_ctx->framerate.num) {
+        int ticks = frame->repeat_pict >= 0 ?
+                    frame->repeat_pict + 1  :
+                    ist->dec_ctx->ticks_per_frame;
+        codec_duration = av_rescale_q(ticks, av_inv_q(ist->dec_ctx->framerate),
+                                      ist->st->time_base);
+    }
+
+    // prefer codec-layer duration for containers without timestamps
+    if (codec_duration > 0 && container_nots)
+        return codec_duration;
+
+    // when timestamps are available, repeat last frame's actual duration
+    // (i.e. pts difference between this and last frame)
+    if (frame->pts != AV_NOPTS_VALUE && ist->last_frame_pts != AV_NOPTS_VALUE &&
+        frame->pts > ist->last_frame_pts)
+        return frame->pts - ist->last_frame_pts;
+
+    // try frame/codec duration
+    if (frame->duration > 0)
+        return frame->duration;
+    if (codec_duration > 0)
+        return codec_duration;
+
+    // try average framerate
+    if (ist->st->avg_frame_rate.num && ist->st->avg_frame_rate.den) {
+        int64_t d = av_rescale_q(1, av_inv_q(ist->st->avg_frame_rate),
+                                 ist->st->time_base);
+        if (d > 0)
+            return d;
+    }
+
+    // last resort is last frame's estimated duration, and 1
+    return FFMAX(ist->last_frame_duration_est, 1);
+}
+
 static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output, int64_t *duration_pts, int eof,
                         int *decode_failed)
 {
     AVFrame *decoded_frame = ist->decoded_frame;
-    int i, ret = 0, err = 0;
+    int ret = 0, err = 0;
     int64_t best_effort_timestamp;
     int64_t dts = AV_NOPTS_VALUE;
 
@@ -1293,16 +1345,6 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output, int64_
         dts = av_rescale_q(ist->dts, AV_TIME_BASE_Q, ist->st->time_base);
     if (pkt) {
         pkt->dts = dts; // ffmpeg.c probably shouldn't do this
-    }
-
-    // The old code used to set dts on the drain packet, which does not work
-    // with the new API anymore.
-    if (eof) {
-        void *new = av_realloc_array(ist->dts_buffer, ist->nb_dts_buffer + 1, sizeof(ist->dts_buffer[0]));
-        if (!new)
-            return AVERROR(ENOMEM);
-        ist->dts_buffer = new;
-        ist->dts_buffer[ist->nb_dts_buffer++] = dts;
     }
 
     update_benchmark(NULL);
@@ -1363,13 +1405,10 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output, int64_
     if (ist->framerate.num)
         best_effort_timestamp = ist->cfr_next_pts++;
 
-    if (eof && best_effort_timestamp == AV_NOPTS_VALUE && ist->nb_dts_buffer > 0) {
-        best_effort_timestamp = ist->dts_buffer[0];
-
-        for (i = 0; i < ist->nb_dts_buffer - 1; i++)
-            ist->dts_buffer[i] = ist->dts_buffer[i + 1];
-        ist->nb_dts_buffer--;
-    }
+    // no timestamp available - extrapolate from previous frame duration
+    if (best_effort_timestamp == AV_NOPTS_VALUE &&
+        ist->last_frame_pts != AV_NOPTS_VALUE)
+        best_effort_timestamp = ist->last_frame_pts + ist->last_frame_duration_est;
 
     if (best_effort_timestamp == AV_NOPTS_VALUE)
         best_effort_timestamp = av_rescale_q(ist->pts, AV_TIME_BASE_Q, ist->st->time_base);
@@ -1380,6 +1419,10 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output, int64_
         if (ts != AV_NOPTS_VALUE)
             ist->next_pts = ist->pts = ts;
     }
+
+    // update timestamp history
+    ist->last_frame_duration_est = video_duration_estimate(ist, decoded_frame);
+    ist->last_frame_pts          = decoded_frame->pts;
 
     if (debug_ts) {
         av_log(ist, AV_LOG_INFO,
