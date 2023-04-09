@@ -155,7 +155,7 @@ static MacroBlock decode_macroblock(Escape124Context* s, GetBitContext* gb,
 
     // This condition can occur with invalid bitstreams and
     // *codebook_index == 2
-    if (block_index >= s->codebooks[*codebook_index].size)
+    if (block_index >= s->codebooks[*codebook_index].size || !s->codebooks[*codebook_index].blocks)
         return (MacroBlock) { { 0 } };
 
     return s->codebooks[*codebook_index].blocks[block_index];
