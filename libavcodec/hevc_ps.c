@@ -1392,6 +1392,10 @@ static int pps_multilayer_extension(GetBitContext *gb, AVCodecContext *avctx,
         pps->pps_scaling_list_ref_layer_id = get_bits(gb, 6);
 
     pps->num_ref_loc_offsets = get_ue_golomb_long(gb);
+    if (pps->num_ref_loc_offsets > FF_ARRAY_ELEMS(pps->ref_loc_offset_layer_id)) {
+        pps->num_ref_loc_offsets = 0;
+        return AVERROR_INVALIDDATA;
+    }
     for (int i = 0; i < pps->num_ref_loc_offsets; i++) {
         pps->ref_loc_offset_layer_id[i] = get_bits(gb, 6);
         pps->scaled_ref_layer_offset_present_flag[i] = get_bits1(gb);
