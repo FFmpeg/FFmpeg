@@ -600,7 +600,7 @@ int av_frame_copy_props(AVFrame *dst, const AVFrame *src)
     return frame_copy_props(dst, src, 1);
 }
 
-AVBufferRef *av_frame_get_plane_buffer(AVFrame *frame, int plane)
+AVBufferRef *av_frame_get_plane_buffer(const AVFrame *frame, int plane)
 {
     uint8_t *data;
     int planes;

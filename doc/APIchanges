@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2023-02-09
 
 API changes, most recent first:
 
+2023-04-10 - xxxxxxxxxx - lavu 58.6.100 - frame.h
+  av_frame_get_plane_buffer() now accepts const AVFrame*.
+
 2023-04-04 - xxxxxxxxxx - lavu 58.6.100 - hdr_dynamic_metadata.h
   Add AV_HDR_PLUS_MAX_PAYLOAD_SIZE.
   av_dynamic_hdr_plus_create_side_data() now accepts a user provided
