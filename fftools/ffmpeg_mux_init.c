@@ -37,6 +37,7 @@
 #include "libavutil/avutil.h"
 #include "libavutil/bprint.h"
 #include "libavutil/dict.h"
+#include "libavutil/display.h"
 #include "libavutil/getenv_utf8.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
@@ -839,6 +840,142 @@ static void new_stream_subtitle(Muxer *mux, const OptionsContext *o,
     }
 }
 
+static int streamcopy_init(const Muxer *mux, const OptionsContext *o,
+                           OutputStream *ost)
+{
+    const InputStream   *ist        = ost->ist;
+    const InputFile     *ifile      = input_files[ist->file_index];
+
+    AVCodecParameters   *par        = ost->st->codecpar;
+    uint32_t             codec_tag  = par->codec_tag;
+
+    AVCodecContext      *codec_ctx  = NULL;
+    AVDictionary        *codec_opts = NULL;
+    int ret = 0;
+
+    codec_ctx = avcodec_alloc_context3(NULL);
+    if (!codec_ctx)
+        return AVERROR(ENOMEM);
+
+    ret = avcodec_parameters_to_context(codec_ctx, ist->par);
+    if (ret >= 0)
+        ret = av_opt_set_dict(codec_ctx, &ost->encoder_opts);
+    if (ret < 0) {
+        av_log(ost, AV_LOG_FATAL,
+               "Error setting up codec context options.\n");
+        goto fail;
+    }
+
+    ret = avcodec_parameters_from_context(par, codec_ctx);
+    if (ret < 0) {
+        av_log(ost, AV_LOG_FATAL,
+               "Error getting reference codec parameters.\n");
+        goto fail;
+    }
+
+    if (!codec_tag) {
+        const struct AVCodecTag * const *ct = mux->fc->oformat->codec_tag;
+        unsigned int codec_tag_tmp;
+        if (!ct || av_codec_get_id (ct, par->codec_tag) == par->codec_id ||
+            !av_codec_get_tag2(ct, par->codec_id, &codec_tag_tmp))
+            codec_tag = par->codec_tag;
+    }
+
+    par->codec_tag = codec_tag;
+
+    if (!ost->frame_rate.num)
+        ost->frame_rate = ist->framerate;
+
+    if (ost->frame_rate.num)
+        ost->st->avg_frame_rate = ost->frame_rate;
+    else
+        ost->st->avg_frame_rate = ist->st->avg_frame_rate;
+
+    ret = avformat_transfer_internal_stream_timing_info(mux->fc->oformat,
+                                                        ost->st, ist->st, copy_tb);
+    if (ret < 0)
+        goto fail;
+
+    // copy timebase while removing common factors
+    if (ost->st->time_base.num <= 0 || ost->st->time_base.den <= 0) {
+        if (ost->frame_rate.num)
+            ost->st->time_base = av_inv_q(ost->frame_rate);
+        else
+            ost->st->time_base = av_add_q(av_stream_get_codec_timebase(ost->st), (AVRational){0, 1});
+    }
+
+    // copy estimated duration as a hint to the muxer
+    if (ost->st->duration <= 0 && ist->st->duration > 0)
+        ost->st->duration = av_rescale_q(ist->st->duration, ist->st->time_base, ost->st->time_base);
+
+    if (!ost->copy_prior_start) {
+        ost->ts_copy_start = (mux->of.start_time == AV_NOPTS_VALUE) ?
+                             0 : mux->of.start_time;
+        if (copy_ts && ifile->start_time != AV_NOPTS_VALUE) {
+            ost->ts_copy_start = FFMAX(ost->ts_copy_start,
+                                       ifile->start_time + ifile->ts_offset);
+        }
+    }
+
+    if (ist->st->nb_side_data) {
+        for (int i = 0; i < ist->st->nb_side_data; i++) {
+            const AVPacketSideData *sd_src = &ist->st->side_data[i];
+            uint8_t *dst_data;
+
+            dst_data = av_stream_new_side_data(ost->st, sd_src->type, sd_src->size);
+            if (!dst_data) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
+            memcpy(dst_data, sd_src->data, sd_src->size);
+        }
+    }
+
+#if FFMPEG_ROTATION_METADATA
+    if (ost->rotate_overridden) {
+        uint8_t *sd = av_stream_new_side_data(ost->st, AV_PKT_DATA_DISPLAYMATRIX,
+                                              sizeof(int32_t) * 9);
+        if (sd)
+            av_display_rotation_set((int32_t *)sd, -ost->rotate_override_value);
+    }
+#endif
+
+    switch (par->codec_type) {
+    case AVMEDIA_TYPE_AUDIO:
+        if ((par->block_align == 1 || par->block_align == 1152 || par->block_align == 576) &&
+            par->codec_id == AV_CODEC_ID_MP3)
+            par->block_align = 0;
+        if (par->codec_id == AV_CODEC_ID_AC3)
+            par->block_align = 0;
+        break;
+    case AVMEDIA_TYPE_VIDEO: {
+        AVRational sar;
+        if (ost->frame_aspect_ratio.num) { // overridden by the -aspect cli option
+            sar =
+                av_mul_q(ost->frame_aspect_ratio,
+                         (AVRational){ par->height, par->width });
+            av_log(ost, AV_LOG_WARNING, "Overriding aspect ratio "
+                   "with stream copy may produce invalid files\n");
+            }
+        else if (ist->st->sample_aspect_ratio.num)
+            sar = ist->st->sample_aspect_ratio;
+        else
+            sar = par->sample_aspect_ratio;
+        ost->st->sample_aspect_ratio = par->sample_aspect_ratio = sar;
+        ost->st->avg_frame_rate = ist->st->avg_frame_rate;
+        ost->st->r_frame_rate = ist->st->r_frame_rate;
+        break;
+        }
+    }
+
+    ost->mux_timebase = ist->st->time_base;
+
+fail:
+    avcodec_free_context(&codec_ctx);
+    av_dict_free(&codec_opts);
+    return ret;
+}
+
 static OutputStream *ost_add(Muxer *mux, const OptionsContext *o,
                              enum AVMediaType type, InputStream *ist)
 {
@@ -1087,6 +1224,12 @@ static OutputStream *ost_add(Muxer *mux, const OptionsContext *o,
     case AVMEDIA_TYPE_DATA:       new_stream_data      (mux, o, ost); break;
     case AVMEDIA_TYPE_ATTACHMENT: new_stream_attachment(mux, o, ost); break;
     default:                      new_stream_unknown   (mux, o, ost); break;
+    }
+
+    if (ost->ist && !ost->enc) {
+        ret = streamcopy_init(mux, o, ost);
+        if (ret < 0)
+            exit_program(1);
     }
 
     return ost;
