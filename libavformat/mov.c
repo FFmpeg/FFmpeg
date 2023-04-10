@@ -1515,14 +1515,22 @@ static int mov_read_moof(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return mov_read_default(c, pb, atom);
 }
 
-static void mov_metadata_creation_time(AVDictionary **metadata, int64_t time, void *logctx)
+static void mov_metadata_creation_time(MOVContext *c, AVIOContext *pb, AVDictionary **metadata, int version)
 {
+    int64_t time;
+    if (version == 1) {
+        time = avio_rb64(pb);
+        avio_rb64(pb);
+    } else {
+        time = avio_rb32(pb);
+        avio_rb32(pb); /* modification time */
+    }
     if (time) {
         if (time >= 2082844800)
             time -= 2082844800;  /* seconds between 1904-01-01 and Epoch */
 
         if ((int64_t)(time * 1000000ULL) / 1000000 != time) {
-            av_log(logctx, AV_LOG_DEBUG, "creation_time is not representable\n");
+            av_log(c->fc, AV_LOG_DEBUG, "creation_time is not representable\n");
             return;
         }
 
@@ -1537,7 +1545,6 @@ static int mov_read_mdhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     int version;
     char language[4] = {0};
     unsigned lang;
-    int64_t creation_time;
 
     if (c->fc->nb_streams < 1)
         return 0;
@@ -1555,14 +1562,7 @@ static int mov_read_mdhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return AVERROR_PATCHWELCOME;
     }
     avio_rb24(pb); /* flags */
-    if (version == 1) {
-        creation_time = avio_rb64(pb);
-        avio_rb64(pb);
-    } else {
-        creation_time = avio_rb32(pb);
-        avio_rb32(pb); /* modification time */
-    }
-    mov_metadata_creation_time(&st->metadata, creation_time, c->fc);
+    mov_metadata_creation_time(c, pb, &st->metadata, version);
 
     sc->time_scale = avio_rb32(pb);
     if (sc->time_scale <= 0) {
@@ -1587,18 +1587,10 @@ static int mov_read_mdhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 static int mov_read_mvhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     int i;
-    int64_t creation_time;
     int version = avio_r8(pb); /* version */
     avio_rb24(pb); /* flags */
 
-    if (version == 1) {
-        creation_time = avio_rb64(pb);
-        avio_rb64(pb);
-    } else {
-        creation_time = avio_rb32(pb);
-        avio_rb32(pb); /* modification time */
-    }
-    mov_metadata_creation_time(&c->fc->metadata, creation_time, c->fc);
+    mov_metadata_creation_time(c, pb, &c->fc->metadata, version);
     c->time_scale = avio_rb32(pb); /* time scale */
     if (c->time_scale <= 0) {
         av_log(c->fc, AV_LOG_ERROR, "Invalid mvhd time scale %d, defaulting to 1\n", c->time_scale);
