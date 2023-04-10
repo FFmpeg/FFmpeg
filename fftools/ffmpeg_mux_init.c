@@ -917,18 +917,16 @@ static int streamcopy_init(const Muxer *mux, const OptionsContext *o,
         }
     }
 
-    if (ist->st->nb_side_data) {
-        for (int i = 0; i < ist->st->nb_side_data; i++) {
-            const AVPacketSideData *sd_src = &ist->st->side_data[i];
-            uint8_t *dst_data;
+    for (int i = 0; i < ist->st->nb_side_data; i++) {
+        const AVPacketSideData *sd_src = &ist->st->side_data[i];
+        uint8_t *dst_data;
 
-            dst_data = av_stream_new_side_data(ost->st, sd_src->type, sd_src->size);
-            if (!dst_data) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
-            memcpy(dst_data, sd_src->data, sd_src->size);
+        dst_data = av_stream_new_side_data(ost->st, sd_src->type, sd_src->size);
+        if (!dst_data) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
         }
+        memcpy(dst_data, sd_src->data, sd_src->size);
     }
 
 #if FFMPEG_ROTATION_METADATA
