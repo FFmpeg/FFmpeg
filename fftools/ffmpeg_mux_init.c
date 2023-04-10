@@ -418,9 +418,6 @@ static MuxStream *mux_stream_alloc(Muxer *mux, enum AVMediaType type)
     return ms;
 }
 
-static OutputStream *new_output_stream(Muxer *mux, const OptionsContext *o,
-                                       enum AVMediaType type, InputStream *ist);
-
 static char *get_ost_filters(const OptionsContext *o, AVFormatContext *oc,
                              OutputStream *ost)
 {
@@ -471,14 +468,13 @@ static void parse_matrix_coeffs(void *logctx, uint16_t *dest, const char *str)
     }
 }
 
-static OutputStream *new_video_stream(Muxer *mux, const OptionsContext *o, InputStream *ist)
+static void new_stream_video(Muxer *mux, const OptionsContext *o,
+                             OutputStream *ost)
 {
     AVFormatContext *oc = mux->fc;
     AVStream *st;
-    OutputStream *ost;
     char *frame_rate = NULL, *max_frame_rate = NULL, *frame_aspect_ratio = NULL;
 
-    ost = new_output_stream(mux, o, AVMEDIA_TYPE_VIDEO, ist);
     st  = ost->st;
 
     MATCH_PER_STREAM_OPT(frame_rates, str, frame_rate, oc, st);
@@ -703,17 +699,14 @@ static OutputStream *new_video_stream(Muxer *mux, const OptionsContext *o, Input
             exit_program(1);
     } else
         check_streamcopy_filters(o, oc, ost, AVMEDIA_TYPE_VIDEO);
-
-    return ost;
 }
 
-static OutputStream *new_audio_stream(Muxer *mux, const OptionsContext *o, InputStream *ist)
+static void new_stream_audio(Muxer *mux, const OptionsContext *o,
+                             OutputStream *ost)
 {
     AVFormatContext *oc = mux->fc;
     AVStream *st;
-    OutputStream *ost;
 
-    ost = new_output_stream(mux, o, AVMEDIA_TYPE_AUDIO, ist);
     st  = ost->st;
 
 
@@ -801,49 +794,37 @@ static OutputStream *new_audio_stream(Muxer *mux, const OptionsContext *o, Input
 #endif
     } else
         check_streamcopy_filters(o, oc, ost, AVMEDIA_TYPE_AUDIO);
-
-    return ost;
 }
 
-static OutputStream *new_data_stream(Muxer *mux, const OptionsContext *o, InputStream *ist)
+static void new_stream_data(Muxer *mux, const OptionsContext *o,
+                            OutputStream *ost)
 {
-    OutputStream *ost;
-
-    ost = new_output_stream(mux, o, AVMEDIA_TYPE_DATA, ist);
     if (ost->enc_ctx) {
         av_log(ost, AV_LOG_FATAL, "Data stream encoding not supported yet (only streamcopy)\n");
         exit_program(1);
     }
-
-    return ost;
 }
 
-static OutputStream *new_unknown_stream(Muxer *mux, const OptionsContext *o, InputStream *ist)
+static void new_stream_unknown(Muxer *mux, const OptionsContext *o,
+                               OutputStream *ost)
 {
-    OutputStream *ost;
-
-    ost = new_output_stream(mux, o, AVMEDIA_TYPE_UNKNOWN, ist);
     if (ost->enc_ctx) {
         av_log(ost, AV_LOG_FATAL, "Unknown stream encoding not supported yet (only streamcopy)\n");
         exit_program(1);
     }
-
-    return ost;
 }
 
-static OutputStream *new_attachment_stream(Muxer *mux, const OptionsContext *o, InputStream *ist)
+static void new_stream_attachment(Muxer *mux, const OptionsContext *o,
+                                  OutputStream *ost)
 {
-    OutputStream *ost = new_output_stream(mux, o, AVMEDIA_TYPE_ATTACHMENT, ist);
     ost->finished    = 1;
-    return ost;
 }
 
-static OutputStream *new_subtitle_stream(Muxer *mux, const OptionsContext *o, InputStream *ist)
+static void new_stream_subtitle(Muxer *mux, const OptionsContext *o,
+                                OutputStream *ost)
 {
     AVStream *st;
-    OutputStream *ost;
 
-    ost = new_output_stream(mux, o, AVMEDIA_TYPE_SUBTITLE, ist);
     st  = ost->st;
 
     if (ost->enc_ctx) {
@@ -856,12 +837,10 @@ static OutputStream *new_subtitle_stream(Muxer *mux, const OptionsContext *o, In
             exit_program(1);
         }
     }
-
-    return ost;
 }
 
-static OutputStream *new_output_stream(Muxer *mux, const OptionsContext *o,
-                                       enum AVMediaType type, InputStream *ist)
+static OutputStream *ost_add(Muxer *mux, const OptionsContext *o,
+                             enum AVMediaType type, InputStream *ist)
 {
     AVFormatContext *oc = mux->fc;
     MuxStream     *ms;
@@ -1101,6 +1080,15 @@ static OutputStream *new_output_stream(Muxer *mux, const OptionsContext *o,
     MATCH_PER_STREAM_OPT(copy_initial_nonkeyframes, i,
                          ost->copy_initial_nonkeyframes, oc, st);
 
+    switch (type) {
+    case AVMEDIA_TYPE_VIDEO:      new_stream_video     (mux, o, ost); break;
+    case AVMEDIA_TYPE_AUDIO:      new_stream_audio     (mux, o, ost); break;
+    case AVMEDIA_TYPE_SUBTITLE:   new_stream_subtitle  (mux, o, ost); break;
+    case AVMEDIA_TYPE_DATA:       new_stream_data      (mux, o, ost); break;
+    case AVMEDIA_TYPE_ATTACHMENT: new_stream_attachment(mux, o, ost); break;
+    default:                      new_stream_unknown   (mux, o, ost); break;
+    }
+
     return ost;
 }
 
@@ -1110,8 +1098,8 @@ static void init_output_filter(OutputFilter *ofilter, const OptionsContext *o,
     OutputStream *ost;
 
     switch (ofilter->type) {
-    case AVMEDIA_TYPE_VIDEO: ost = new_video_stream(mux, o, NULL); break;
-    case AVMEDIA_TYPE_AUDIO: ost = new_audio_stream(mux, o, NULL); break;
+    case AVMEDIA_TYPE_VIDEO: ost = ost_add(mux, o, AVMEDIA_TYPE_VIDEO, NULL); break;
+    case AVMEDIA_TYPE_AUDIO: ost = ost_add(mux, o, AVMEDIA_TYPE_AUDIO, NULL); break;
     default:
         av_log(mux, AV_LOG_FATAL, "Only video and audio filters are supported "
                "currently.\n");
@@ -1193,7 +1181,7 @@ static void map_auto_video(Muxer *mux, const OptionsContext *o)
        }
     }
     if (best_ist)
-        new_video_stream(mux, o, best_ist);
+        ost_add(mux, o, AVMEDIA_TYPE_VIDEO, best_ist);
 }
 
 static void map_auto_audio(Muxer *mux, const OptionsContext *o)
@@ -1235,7 +1223,7 @@ static void map_auto_audio(Muxer *mux, const OptionsContext *o)
        }
     }
     if (best_ist)
-        new_audio_stream(mux, o, best_ist);
+        ost_add(mux, o, AVMEDIA_TYPE_AUDIO, best_ist);
 }
 
 static void map_auto_subtitle(Muxer *mux, const OptionsContext *o)
@@ -1270,7 +1258,7 @@ static void map_auto_subtitle(Muxer *mux, const OptionsContext *o)
                 input_descriptor && output_descriptor &&
                 (!input_descriptor->props ||
                  !output_descriptor->props)) {
-                new_subtitle_stream(mux, o, ist);
+                ost_add(mux, o, AVMEDIA_TYPE_SUBTITLE, ist);
                 break;
             }
         }
@@ -1290,7 +1278,7 @@ static void map_auto_data(Muxer *mux, const OptionsContext *o)
             continue;
         if (ist->st->codecpar->codec_type == AVMEDIA_TYPE_DATA &&
             ist->st->codecpar->codec_id == codec_id )
-            new_data_stream(mux, o, ist);
+            ost_add(mux, o, AVMEDIA_TYPE_DATA, ist);
     }
 }
 
@@ -1339,18 +1327,8 @@ loop_end:
         if(o->    data_disable && ist->st->codecpar->codec_type == AVMEDIA_TYPE_DATA)
             return;
 
-        switch (ist->st->codecpar->codec_type) {
-        case AVMEDIA_TYPE_VIDEO:      new_video_stream     (mux, o, ist); break;
-        case AVMEDIA_TYPE_AUDIO:      new_audio_stream     (mux, o, ist); break;
-        case AVMEDIA_TYPE_SUBTITLE:   new_subtitle_stream  (mux, o, ist); break;
-        case AVMEDIA_TYPE_DATA:       new_data_stream      (mux, o, ist); break;
-        case AVMEDIA_TYPE_ATTACHMENT: new_attachment_stream(mux, o, ist); break;
-        case AVMEDIA_TYPE_UNKNOWN:
-            if (copy_unknown_streams) {
-                new_unknown_stream   (mux, o, ist);
-                break;
-            }
-        default:
+        if (ist->st->codecpar->codec_type == AVMEDIA_TYPE_UNKNOWN &&
+            !copy_unknown_streams) {
             av_log(mux, ignore_unknown_streams ? AV_LOG_WARNING : AV_LOG_FATAL,
                    "Cannot map stream #%d:%d - unsupported type.\n",
                    map->file_index, map->stream_index);
@@ -1361,7 +1339,10 @@ loop_end:
                        "If you want them copied, please use -copy_unknown\n");
                 exit_program(1);
             }
+            return;
         }
+
+        ost_add(mux, o, ist->st->codecpar->codec_type, ist);
     }
 }
 
@@ -1395,7 +1376,7 @@ static void of_add_attachments(Muxer *mux, const OptionsContext *o)
         avio_read(pb, attachment, len);
         memset(attachment + len, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
-        ost = new_attachment_stream(mux, o, NULL);
+        ost = ost_add(mux, o, AVMEDIA_TYPE_ATTACHMENT, NULL);
         ost->attachment_filename       = o->attachments[i];
         ost->st->codecpar->extradata      = attachment;
         ost->st->codecpar->extradata_size = len;
