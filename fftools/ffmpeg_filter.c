@@ -212,11 +212,10 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost)
     if (!ifilter->frame_queue)
         report_and_exit(AVERROR(ENOMEM));
 
-    GROW_ARRAY(ist->filters, ist->nb_filters);
-    ist->filters[ist->nb_filters - 1] = ifilter;
-
     GROW_ARRAY(filtergraphs, nb_filtergraphs);
     filtergraphs[nb_filtergraphs - 1] = fg;
+
+    ist_filter_add(ist, ifilter);
 
     return 0;
 }
@@ -319,8 +318,7 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
     if (!ifilter->frame_queue)
         report_and_exit(AVERROR(ENOMEM));
 
-    GROW_ARRAY(ist->filters, ist->nb_filters);
-    ist->filters[ist->nb_filters - 1] = ifilter;
+    ist_filter_add(ist, ifilter);
 }
 
 static int read_binary(const char *path, uint8_t **data, int *len)

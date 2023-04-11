@@ -567,6 +567,12 @@ void ist_output_add(InputStream *ist, OutputStream *ost)
     ist->outputs[ist->nb_outputs - 1] = ost;
 }
 
+void ist_filter_add(InputStream *ist, InputFilter *ifilter)
+{
+    GROW_ARRAY(ist->filters, ist->nb_filters);
+    ist->filters[ist->nb_filters - 1] = ifilter;
+}
+
 static const AVCodec *choose_decoder(const OptionsContext *o, AVFormatContext *s, AVStream *st,
                                      enum HWAccelID hwaccel_id, enum AVHWDeviceType hwaccel_device_type)
 

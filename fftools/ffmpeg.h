@@ -880,6 +880,7 @@ void ifile_close(InputFile **f);
 int ifile_get_packet(InputFile *f, AVPacket **pkt);
 
 void ist_output_add(InputStream *ist, OutputStream *ost);
+void ist_filter_add(InputStream *ist, InputFilter *ifilter);
 
 /* iterate over all input streams in all input files;
  * pass NULL to start iteration */
