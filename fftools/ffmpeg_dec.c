@@ -27,11 +27,6 @@
 
 #include "ffmpeg.h"
 
-static void abort_codec_experimental(const AVCodec *c, int encoder)
-{
-    exit_program(1);
-}
-
 static enum AVPixelFormat get_format(AVCodecContext *s, const enum AVPixelFormat *pix_fmts)
 {
     InputStream *ist = s->opaque;
@@ -123,7 +118,7 @@ int dec_open(InputStream *ist)
 
     if ((ret = avcodec_open2(ist->dec_ctx, codec, &ist->decoder_opts)) < 0) {
         if (ret == AVERROR_EXPERIMENTAL)
-            abort_codec_experimental(codec, 0);
+            exit_program(1);
 
         av_log(ist, AV_LOG_ERROR, "Error while opening decoder: %s\n",
                av_err2str(ret));
