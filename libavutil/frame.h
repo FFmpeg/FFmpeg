@@ -587,6 +587,15 @@ typedef struct AVFrame {
  */
 #define AV_FRAME_FLAG_DISCARD   (1 << 2)
 /**
+ * A flag to mark frames whose content is interlaced.
+ */
+#define AV_FRAME_FLAG_INTERLACED (1 << 3)
+/**
+ * A flag to mark frames where the top field is displayed first if the content
+ * is interlaced.
+ */
+#define AV_FRAME_FLAG_TOP_FIELD_FIRST (1 << 4)
+/**
  * @}
  */
 
