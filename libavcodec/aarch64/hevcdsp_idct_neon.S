@@ -6,6 +6,7 @@
  * Ported from arm/hevcdsp_idct_neon.S by
  * Copyright (c) 2020 Reimar Döffinger
  * Copyright (c) 2023 J. Dekker <jdek@itanimul.li>
+ * Copyright (c) 2023 xu fulong <839789740@qq.com>
  *
  * This file is part of FFmpeg.
  *
@@ -477,34 +478,52 @@ endfunc
         sqrshrn2        \out3\().8h, \in7, \shift
 .endm
 
-.macro transpose16_4x4_2 r0, r1, r2, r3
+// use temp register to transpose, then we can reuse it
+.macro transpose16_4x4_2 r0, r1, r2, r3, tmp0, tmp1, tmp2, tmp3, tmp4, tmp5
         // lower halves
-        trn1            v2.4h, \r0\().4h, \r1\().4h
-        trn2            v3.4h, \r0\().4h, \r1\().4h
-        trn1            v4.4h, \r2\().4h, \r3\().4h
-        trn2            v5.4h, \r2\().4h, \r3\().4h
-        trn1            v6.2s, v2.2s, v4.2s
-        trn2            v7.2s, v2.2s, v4.2s
-        trn1            v2.2s, v3.2s, v5.2s
-        trn2            v4.2s, v3.2s, v5.2s
-        mov             \r0\().d[0], v6.d[0]
-        mov             \r2\().d[0], v7.d[0]
-        mov             \r1\().d[0], v2.d[0]
-        mov             \r3\().d[0], v4.d[0]
+        trn1            \tmp0\().4h, \r0\().4h, \r1\().4h
+        trn2            \tmp1\().4h, \r0\().4h, \r1\().4h
+        trn1            \tmp2\().4h, \r2\().4h, \r3\().4h
+        trn2            \tmp3\().4h, \r2\().4h, \r3\().4h
+        trn1            \tmp4\().2s, \tmp0\().2s, \tmp2\().2s
+        trn2            \tmp5\().2s, \tmp0\().2s, \tmp2\().2s
+        trn1            \tmp0\().2s, \tmp1\().2s, \tmp3\().2s
+        trn2            \tmp2\().2s, \tmp1\().2s, \tmp3\().2s
+        mov             \r0\().d[0], \tmp4\().d[0]
+        mov             \r2\().d[0], \tmp5\().d[0]
+        mov             \r1\().d[0], \tmp0\().d[0]
+        mov             \r3\().d[0], \tmp2\().d[0]
 
         // upper halves in reverse order
-        trn1            v2.8h, \r3\().8h, \r2\().8h
-        trn2            v3.8h, \r3\().8h, \r2\().8h
-        trn1            v4.8h, \r1\().8h, \r0\().8h
-        trn2            v5.8h, \r1\().8h, \r0\().8h
-        trn1            v6.4s, v2.4s, v4.4s
-        trn2            v7.4s, v2.4s, v4.4s
-        trn1            v2.4s, v3.4s, v5.4s
-        trn2            v4.4s, v3.4s, v5.4s
-        mov             \r3\().d[1], v6.d[1]
-        mov             \r1\().d[1], v7.d[1]
-        mov             \r2\().d[1], v2.d[1]
-        mov             \r0\().d[1], v4.d[1]
+        trn1            \tmp0\().8h, \r3\().8h, \r2\().8h
+        trn2            \tmp1\().8h, \r3\().8h, \r2\().8h
+        trn1            \tmp2\().8h, \r1\().8h, \r0\().8h
+        trn2            \tmp3\().8h, \r1\().8h, \r0\().8h
+        trn1            \tmp4\().4s, \tmp0\().4s, \tmp2\().4s
+        trn2            \tmp5\().4s, \tmp0\().4s, \tmp2\().4s
+        trn1            \tmp0\().4s, \tmp1\().4s, \tmp3\().4s
+        trn2            \tmp2\().4s, \tmp1\().4s, \tmp3\().4s
+        mov             \r3\().d[1], \tmp4\().d[1]
+        mov             \r1\().d[1], \tmp5\().d[1]
+        mov             \r2\().d[1], \tmp0\().d[1]
+        mov             \r0\().d[1], \tmp2\().d[1]
+.endm
+
+// stores in0, in2, in4, in6 ascending from off1 and
+// stores in1, in3, in5, in7 descending from off2
+.macro store_to_stack off1, off2, in0, in2, in4, in6, in7, in5, in3, in1
+        add             x1, sp, #\off1
+        add             x3, sp, #\off2
+        mov             x2, #-16
+        mov             x4, #16
+        st1             {\in0}, [x1], x4
+        st1             {\in1}, [x3], x2
+        st1             {\in2}, [x1], x4
+        st1             {\in3}, [x3], x2
+        st1             {\in4}, [x1], x4
+        st1             {\in5}, [x3], x2
+        st1             {\in6}, [x1]
+        st1             {\in7}, [x3]
 .endm
 
 .macro tr_16x4 name, shift, offset, step
@@ -543,27 +562,34 @@ function func_tr_16x4_\name
 
         add              x4, sp, #\offset
         ld1             {v16.4s-v19.4s}, [x4], #64
-
         butterfly16     v16.4s, v21.4s, v17.4s, v22.4s, v18.4s, v23.4s, v19.4s, v24.4s
+    .if \shift > 0
         scale           v29, v30, v31, v24, v20.4s, v16.4s, v21.4s, v17.4s, v22.4s, v18.4s, v23.4s, v19.4s, \shift
-        transpose16_4x4_2 v29, v30, v31, v24
+        transpose16_4x4_2 v29, v30, v31, v24, v2, v3, v4, v5, v6, v7
         mov              x1,  x6
         add              x3,  x6, #(24 +3*32)
         mov              x2, #32
         mov              x4, #-32
         store16         v29.d, v30.d, v31.d, v24.d, x4
+    .else
+       store_to_stack  \offset, (\offset + 240), v20.4s, v21.4s, v22.4s, v23.4s, v19.4s, v18.4s, v17.4s, v16.4s
+    .endif
 
         add             x4, sp, #(\offset + 64)
         ld1             {v16.4s-v19.4s}, [x4]
         butterfly16     v16.4s, v25.4s, v17.4s, v26.4s, v18.4s, v27.4s, v19.4s, v28.4s
+   .if \shift > 0
         scale           v29, v30, v31, v20, v20.4s, v16.4s, v25.4s, v17.4s, v26.4s, v18.4s, v27.4s, v19.4s, \shift
-        transpose16_4x4_2 v29, v30, v31, v20
+        transpose16_4x4_2 v29, v30, v31, v20, v2, v3, v4, v5, v6, v7
 
         add              x1,  x6, #8
         add              x3,  x6, #(16 + 3 * 32)
         mov              x2, #32
         mov              x4, #-32
         store16         v29.d, v30.d, v31.d, v20.d, x4
+   .else
+       store_to_stack (\offset + 64), (\offset + 176), v20.4s, v25.4s, v26.4s, v27.4s, v19.4s, v18.4s, v17.4s, v16.4s
+   .endif
 
         ret
 endfunc
@@ -596,6 +622,203 @@ function ff_hevc_idct_16x16_\bitdepth\()_neon, export=1
 endfunc
 .endm
 
+.macro load32
+        add             x1,  x5, #64
+        add             x3,  x1, #128
+        mov             x2,  #256
+        ld1             {v4.d}[0],  [x1], x2
+        ld1             {v4.d}[1],  [x3], x2
+        ld1             {v5.d}[0],  [x1], x2
+        ld1             {v5.d}[1],  [x3], x2
+        ld1             {v6.d}[0],  [x1], x2
+        ld1             {v6.d}[1],  [x3], x2
+        ld1             {v7.d}[0],  [x1], x2
+        ld1             {v7.d}[1],  [x3], x2
+        ld1             {v16.d}[0], [x1], x2
+        ld1             {v16.d}[1], [x3], x2
+        ld1             {v17.d}[0], [x1], x2
+        ld1             {v17.d}[1], [x3], x2
+        ld1             {v18.d}[0], [x1], x2
+        ld1             {v18.d}[1], [x3], x2
+        ld1             {v19.d}[0], [x1], x2
+        ld1             {v19.d}[1], [x3], x2
+.endm
+
+.macro add_member32 in, t0, t1, t2, t3, op0, op1, op2, op3, p
+        sum_sub v24.4s, \in, \t0, \op0, \p
+        sum_sub v25.4s, \in, \t1, \op1, \p
+        sum_sub v26.4s, \in, \t2, \op2, \p
+        sum_sub v27.4s, \in, \t3, \op3, \p
+.endm
+
+.macro butterfly32 in0, in1, in2, in3, out
+        add             \out, \in0, \in1
+        sub             \in0, \in0, \in1
+        add             \in1, \in2, \in3
+        sub             \in2, \in2, \in3
+.endm
+
+.macro multiply in
+        smull           v24.4s, v4.4h, \in\().h[0]
+        smull           v25.4s, v4.4h, \in\().h[1]
+        smull           v26.4s, v4.4h, \in\().h[2]
+        smull           v27.4s, v4.4h, \in\().h[3]
+.endm
+
+.macro scale_store shift
+        ld1             {v28.8h-v31.8h}, [x4], #64
+        butterfly32     v28.4s, v24.4s, v29.4s, v25.4s, v2.4s
+        butterfly32     v30.4s, v26.4s, v31.4s, v27.4s, v3.4s
+        scale           v20, v21, v22, v23, v2.4s, v28.4s, v24.4s, v29.4s, v3.4s, v30.4s, v26.4s, v31.4s, \shift
+
+        transpose16_4x4_2 v20, v21, v22, v23, v24, v25, v26, v27, v28, v29
+        store16         v20.d, v21.d, v22.d, v23.d, x8
+
+        // reload coefficients
+        ld1             {v2.4h-v3.4h}, [x9]
+.endm
+
+function tr_block1
+        multiply        v0
+        add_member32    v4.8h,  v0.h[1], v1.h[0], v1.h[3], v2.h[2], +, +, +, +, 2
+        add_member32    v5.4h,  v0.h[2], v1.h[3], v3.h[0], v3.h[2], +, +, +, -
+        add_member32    v5.8h,  v0.h[3], v2.h[2], v3.h[2], v1.h[3], +, +, -, -, 2
+        add_member32    v6.4h,  v1.h[0], v3.h[1], v2.h[1], v0.h[0], +, +, -, -
+        add_member32    v6.8h,  v1.h[1], v3.h[3], v1.h[0], v1.h[2], +, -, -, -, 2
+        add_member32    v7.4h,  v1.h[2], v3.h[0], v0.h[0], v3.h[1], +, -, -, -
+        add_member32    v7.8h,  v1.h[3], v2.h[1], v1.h[1], v2.h[3], +, -, -, +, 2
+        add_member32    v16.4h, v2.h[0], v1.h[2], v2.h[2], v1.h[0], +, -, -, +
+        add_member32    v16.8h, v2.h[1], v0.h[3], v3.h[3], v0.h[2], +, -, -, +, 2
+        add_member32    v17.4h, v2.h[2], v0.h[1], v2.h[3], v2.h[1], +, -, +, +
+        add_member32    v17.8h, v2.h[3], v0.h[2], v1.h[2], v3.h[3], +, -, +, -, 2
+        add_member32    v18.4h, v3.h[0], v1.h[1], v0.h[1], v2.h[0], +, -, +, -
+        add_member32    v18.8h, v3.h[1], v2.h[0], v0.h[3], v0.h[1], +, -, +, -, 2
+        add_member32    v19.4h, v3.h[2], v2.h[3], v2.h[0], v1.h[1], +, -, +, -
+        add_member32    v19.8h, v3.h[3], v3.h[2], v3.h[1], v3.h[0], +, -, +, -, 2
+        ret
+endfunc
+
+function tr_block2
+        multiply        v1
+        add_member32    v4.8h,  v3.h[1], v3.h[3], v3.h[0], v2.h[1], +, -, -, -, 2
+        add_member32    v5.4h,  v2.h[1], v1.h[0], v0.h[0], v1.h[1], -, -, -, -
+        add_member32    v5.8h,  v0.h[0], v1.h[2], v3.h[1], v2.h[3], -, -, -, +, 2
+        add_member32    v6.4h,  v2.h[0], v3.h[2], v1.h[1], v0.h[3], -, +, +, +
+        add_member32    v6.8h,  v3.h[2], v0.h[3], v1.h[3], v3.h[1], +, +, +, -, 2
+        add_member32    v7.4h,  v1.h[1], v1.h[3], v2.h[3], v0.h[0], +, +, -, -
+        add_member32    v7.8h,  v0.h[3], v3.h[1], v0.h[1], v3.h[3], +, -, -, +, 2
+        add_member32    v16.4h, v3.h[0], v0.h[2], v3.h[2], v0.h[1], +, -, -, +
+        add_member32    v16.8h, v2.h[2], v2.h[0], v1.h[0], v3.h[2], -, -, +, +, 2
+        add_member32    v17.4h, v0.h[1], v3.h[0], v2.h[0], v0.h[2], -, +, +, -
+        add_member32    v17.8h, v1.h[3], v0.h[1], v2.h[2], v3.h[0], -, +, -, -, 2
+        add_member32    v18.4h, v3.h[3], v2.h[1], v0.h[2], v1.h[0], +, +, -, +
+        add_member32    v18.8h, v1.h[2], v2.h[3], v3.h[3], v2.h[2], +, -, -, +, 2
+        add_member32    v19.4h, v0.h[2], v0.h[1], v0.h[3], v1.h[2], +, -, +, -
+        add_member32    v19.8h, v2.h[3], v2.h[2], v2.h[1], v2.h[0], +, -, +, -, 2
+        ret
+endfunc
+
+function tr_block3
+        multiply        v2
+        add_member32    v4.8h,  v1.h[2], v0.h[3], v0.h[0], v0.h[2], -, -, -, -, 2
+        add_member32    v5.4h,  v2.h[2], v3.h[3], v2.h[3], v1.h[2], -, -, +, +
+        add_member32    v5.8h,  v1.h[0], v0.h[2], v2.h[1], v3.h[3], +, +, +, -, 2
+        add_member32    v6.4h,  v3.h[0], v2.h[2], v0.h[1], v1.h[3], +, -, -, -
+        add_member32    v6.8h,  v0.h[2], v2.h[0], v3.h[0], v0.h[0], -, -, +, +, 2
+        add_member32    v7.4h,  v3.h[2], v1.h[0], v2.h[0], v2.h[2], -, +, +, -
+        add_member32    v7.8h,  v0.h[0], v3.h[2], v0.h[2], v3.h[0], +, +, -, -, 2
+        add_member32    v16.4h, v3.h[3], v0.h[1], v3.h[1], v0.h[3], -, -, +, +
+        add_member32    v16.8h, v0.h[1], v2.h[3], v1.h[3], v1.h[1], -, +, +, -, 2
+        add_member32    v17.4h, v3.h[1], v1.h[3], v0.h[3], v3.h[2], +, +, -, +
+        add_member32    v17.8h, v0.h[3], v1.h[1], v3.h[2], v2.h[0], +, -, +, +, 2
+        add_member32    v18.4h, v2.h[3], v3.h[1], v1.h[2], v0.h[1], -, -, +, -
+        add_member32    v18.8h, v1.h[1], v0.h[0], v1.h[0], v2.h[1], -, +, -, +, 2
+        add_member32    v19.4h, v2.h[1], v3.h[0], v3.h[3], v3.h[1], +, -, +, +
+        add_member32    v19.8h, v1.h[3], v1.h[2], v1.h[1], v1.h[0], +, -, +, -, 2
+        ret
+endfunc
+
+function tr_block4
+        multiply        v3
+        add_member32    v4.8h,  v1.h[1], v2.h[0], v2.h[3], v3.h[2], -, -, -, -, 2
+        add_member32    v5.4h,  v0.h[0], v0.h[3], v2.h[0], v3.h[1], +, +, +, +
+        add_member32    v5.8h,  v2.h[0], v0.h[0], v1.h[1], v3.h[0], -, -, -, -, 2
+        add_member32    v6.4h,  v3.h[3], v1.h[2], v0.h[2], v2.h[3], +, +, +, +
+        add_member32    v6.8h,  v2.h[1], v2.h[3], v0.h[0], v2.h[2], +, -, -, -, 2
+        add_member32    v7.4h,  v0.h[2], v3.h[3], v0.h[3], v2.h[1], -, -, +, +
+        add_member32    v7.8h,  v1.h[0], v2.h[2], v1.h[2], v2.h[0], +, +, -, -, 2
+        add_member32    v16.4h, v2.h[3], v1.h[1], v2.h[1], v1.h[3], -, -, +, +
+        add_member32    v16.8h, v3.h[1], v0.h[1], v3.h[0], v1.h[2], -, +, -, -, 2
+        add_member32    v17.4h, v1.h[2], v1.h[0], v3.h[3], v1.h[1], +, -, +, +
+        add_member32    v17.8h, v0.h[1], v2.h[1], v3.h[1], v1.h[0], -, +, +, -, 2
+        add_member32    v18.4h, v1.h[3], v3.h[2], v2.h[2], v0.h[3], +, -, -, +
+        add_member32    v18.8h, v3.h[2], v3.h[0], v1.h[3], v0.h[2], -, -, +, -, 2
+        add_member32    v19.4h, v2.h[2], v1.h[3], v1.h[0], v0.h[1], -, +, -, +
+        add_member32    v19.8h, v0.h[3], v0.h[2], v0.h[1], v0.h[0], +, -, +, -, 2
+        ret
+endfunc
+
+.macro tr_32x4 name, shift
+function func_tr_32x4_\name
+        mov             x10, x30
+        bl              func_tr_16x4_noscale
+
+        load32
+        movrel          x9, trans, 32
+        ld1             {v0.4h-v1.4h}, [x9], #16
+        ld1             {v2.4h-v3.4h}, [x9]
+        add             x4, sp, #2048
+        mov             x2, #64
+        mov             x8, #-64
+
+        bl              tr_block1
+        mov             x1, x11
+        add             x3, x11, #(56 + 3 * 64)
+        scale_store     \shift
+
+        bl              tr_block2
+        add             x1, x11, #8
+        add             x3, x11, #(48 + 3 * 64)
+        scale_store     \shift
+
+        bl              tr_block3
+        add             x1, x11, #16
+        add             x3, x11, #(40 + 3 * 64)
+        scale_store     \shift
+
+        bl              tr_block4
+        add             x1, x11, #24
+        add             x3, x11, #(32 + 3 * 64)
+        scale_store     \shift
+
+        br               x10
+endfunc
+.endm
+
+.macro idct_32x32 bitdepth
+function ff_hevc_idct_32x32_\bitdepth\()_neon, export=1
+        mov             x15, x30
+        // allocate a temp buffer
+        sub             sp,  sp,  #2432
+
+.irp i, 0, 1, 2, 3, 4, 5, 6, 7
+        add             x5, x0, #(8 * \i)
+        add             x11, sp, #(8 * \i * 32)
+        bl              func_tr_32x4_firstpass
+.endr
+
+.irp i, 0, 1, 2, 3, 4, 5, 6, 7
+        add             x5, sp, #(8 * \i)
+        add             x11, x0, #(8 * \i * 32)
+        bl              func_tr_32x4_secondpass_\bitdepth
+.endr
+
+        add             sp,  sp,  #2432
+        mov             x30, x15
+        ret
+endfunc
+.endm
+
 idct_4x4 8
 idct_4x4 10
 
@@ -605,9 +828,19 @@ idct_8x8 10
 tr_16x4 firstpass, 7, 512, 1
 tr_16x4 secondpass_8, 20 - 8, 512, 1
 tr_16x4 secondpass_10, 20 - 10, 512, 1
+tr_16x4 noscale, 0, 2048, 4
 
 idct_16x16 8
 idct_16x16 10
+
+.ltorg
+tr_32x4 firstpass, 7
+tr_32x4 secondpass_8, 20 - 8
+tr_32x4 secondpass_10, 20 - 10
+.ltorg
+
+idct_32x32 8
+idct_32x32 10
 
 // void ff_hevc_idct_NxN_dc_DEPTH_neon(int16_t *coeffs)
 .macro idct_dc size, bitdepth

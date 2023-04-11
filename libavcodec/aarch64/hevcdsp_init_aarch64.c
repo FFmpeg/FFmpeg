@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2020 Reimar Döffinger
+ * Copyright (c) 2023 xu fulong <839789740@qq.com>
  *
  * This file is part of FFmpeg.
  *
@@ -67,6 +68,8 @@ void ff_hevc_idct_8x8_8_neon(int16_t *coeffs, int col_limit);
 void ff_hevc_idct_8x8_10_neon(int16_t *coeffs, int col_limit);
 void ff_hevc_idct_16x16_8_neon(int16_t *coeffs, int col_limit);
 void ff_hevc_idct_16x16_10_neon(int16_t *coeffs, int col_limit);
+void ff_hevc_idct_32x32_8_neon(int16_t *coeffs, int col_limit);
+void ff_hevc_idct_32x32_10_neon(int16_t *coeffs, int col_limit);
 void ff_hevc_idct_4x4_dc_8_neon(int16_t *coeffs);
 void ff_hevc_idct_8x8_dc_8_neon(int16_t *coeffs);
 void ff_hevc_idct_16x16_dc_8_neon(int16_t *coeffs);
@@ -138,6 +141,7 @@ av_cold void ff_hevc_dsp_init_aarch64(HEVCDSPContext *c, const int bit_depth)
         c->idct[0]                     = ff_hevc_idct_4x4_8_neon;
         c->idct[1]                     = ff_hevc_idct_8x8_8_neon;
         c->idct[2]                     = ff_hevc_idct_16x16_8_neon;
+        c->idct[3]                     = ff_hevc_idct_32x32_8_neon;
         c->idct_dc[0]                  = ff_hevc_idct_4x4_dc_8_neon;
         c->idct_dc[1]                  = ff_hevc_idct_8x8_dc_8_neon;
         c->idct_dc[2]                  = ff_hevc_idct_16x16_dc_8_neon;
@@ -190,6 +194,7 @@ av_cold void ff_hevc_dsp_init_aarch64(HEVCDSPContext *c, const int bit_depth)
         c->idct[0]                     = ff_hevc_idct_4x4_10_neon;
         c->idct[1]                     = ff_hevc_idct_8x8_10_neon;
         c->idct[2]                     = ff_hevc_idct_16x16_10_neon;
+        c->idct[3]                     = ff_hevc_idct_32x32_10_neon;
         c->idct_dc[0]                  = ff_hevc_idct_4x4_dc_10_neon;
         c->idct_dc[1]                  = ff_hevc_idct_8x8_dc_10_neon;
         c->idct_dc[2]                  = ff_hevc_idct_16x16_dc_10_neon;
