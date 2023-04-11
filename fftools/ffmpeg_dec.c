@@ -83,53 +83,53 @@ static enum AVPixelFormat get_format(AVCodecContext *s, const enum AVPixelFormat
 
 int dec_open(InputStream *ist)
 {
-        const AVCodec *codec = ist->dec;
+    const AVCodec *codec = ist->dec;
     int ret;
 
-        if (!codec) {
-            av_log(ist, AV_LOG_ERROR,
-                   "Decoding requested, but no decoder found for: %s\n",
-                    avcodec_get_name(ist->dec_ctx->codec_id));
-            return AVERROR(EINVAL);
-        }
+    if (!codec) {
+        av_log(ist, AV_LOG_ERROR,
+               "Decoding requested, but no decoder found for: %s\n",
+                avcodec_get_name(ist->dec_ctx->codec_id));
+        return AVERROR(EINVAL);
+    }
 
-        ist->dec_ctx->opaque                = ist;
-        ist->dec_ctx->get_format            = get_format;
+    ist->dec_ctx->opaque                = ist;
+    ist->dec_ctx->get_format            = get_format;
 
-        if (ist->dec_ctx->codec_id == AV_CODEC_ID_DVB_SUBTITLE &&
-           (ist->decoding_needed & DECODING_FOR_OST)) {
-            av_dict_set(&ist->decoder_opts, "compute_edt", "1", AV_DICT_DONT_OVERWRITE);
-            if (ist->decoding_needed & DECODING_FOR_FILTER)
-                av_log(NULL, AV_LOG_WARNING, "Warning using DVB subtitles for filtering and output at the same time is not fully supported, also see -compute_edt [0|1]\n");
-        }
+    if (ist->dec_ctx->codec_id == AV_CODEC_ID_DVB_SUBTITLE &&
+       (ist->decoding_needed & DECODING_FOR_OST)) {
+        av_dict_set(&ist->decoder_opts, "compute_edt", "1", AV_DICT_DONT_OVERWRITE);
+        if (ist->decoding_needed & DECODING_FOR_FILTER)
+            av_log(NULL, AV_LOG_WARNING, "Warning using DVB subtitles for filtering and output at the same time is not fully supported, also see -compute_edt [0|1]\n");
+    }
 
-        /* Useful for subtitles retiming by lavf (FIXME), skipping samples in
-         * audio, and video decoders such as cuvid or mediacodec */
-        ist->dec_ctx->pkt_timebase = ist->st->time_base;
+    /* Useful for subtitles retiming by lavf (FIXME), skipping samples in
+     * audio, and video decoders such as cuvid or mediacodec */
+    ist->dec_ctx->pkt_timebase = ist->st->time_base;
 
-        if (!av_dict_get(ist->decoder_opts, "threads", NULL, 0))
-            av_dict_set(&ist->decoder_opts, "threads", "auto", 0);
-        /* Attached pics are sparse, therefore we would not want to delay their decoding till EOF. */
-        if (ist->st->disposition & AV_DISPOSITION_ATTACHED_PIC)
-            av_dict_set(&ist->decoder_opts, "threads", "1", 0);
+    if (!av_dict_get(ist->decoder_opts, "threads", NULL, 0))
+        av_dict_set(&ist->decoder_opts, "threads", "auto", 0);
+    /* Attached pics are sparse, therefore we would not want to delay their decoding till EOF. */
+    if (ist->st->disposition & AV_DISPOSITION_ATTACHED_PIC)
+        av_dict_set(&ist->decoder_opts, "threads", "1", 0);
 
-        ret = hw_device_setup_for_decode(ist);
-        if (ret < 0) {
-            av_log(ist, AV_LOG_ERROR,
-                   "Hardware device setup failed for decoder: %s\n",
-                   av_err2str(ret));
-            return ret;
-        }
+    ret = hw_device_setup_for_decode(ist);
+    if (ret < 0) {
+        av_log(ist, AV_LOG_ERROR,
+               "Hardware device setup failed for decoder: %s\n",
+               av_err2str(ret));
+        return ret;
+    }
 
-        if ((ret = avcodec_open2(ist->dec_ctx, codec, &ist->decoder_opts)) < 0) {
-            if (ret == AVERROR_EXPERIMENTAL)
-                abort_codec_experimental(codec, 0);
+    if ((ret = avcodec_open2(ist->dec_ctx, codec, &ist->decoder_opts)) < 0) {
+        if (ret == AVERROR_EXPERIMENTAL)
+            abort_codec_experimental(codec, 0);
 
-            av_log(ist, AV_LOG_ERROR, "Error while opening decoder: %s\n",
-                   av_err2str(ret));
-            return ret;
-        }
-        assert_avoptions(ist->decoder_opts);
+        av_log(ist, AV_LOG_ERROR, "Error while opening decoder: %s\n",
+               av_err2str(ret));
+        return ret;
+    }
+    assert_avoptions(ist->decoder_opts);
 
     return 0;
 }
