@@ -44,10 +44,11 @@
 
 int avcodec_default_execute(AVCodecContext *c, int (*func)(AVCodecContext *c2, void *arg2), void *arg, int *ret, int count, int size)
 {
-    int i;
+    size_t i;
 
     for (i = 0; i < count; i++) {
-        int r = func(c, (char *)arg + i * size);
+        size_t offset = i * size;
+        int r = func(c, FF_PTR_ADD((char *)arg, offset));
         if (ret)
             ret[i] = r;
     }
