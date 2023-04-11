@@ -10,6 +10,7 @@ ALLAVPROGS   = $(AVBASENAMES:%=%$(PROGSSUF)$(EXESUF))
 ALLAVPROGS_G = $(AVBASENAMES:%=%$(PROGSSUF)_g$(EXESUF))
 
 OBJS-ffmpeg +=                  \
+    fftools/ffmpeg_dec.o        \
     fftools/ffmpeg_demux.o      \
     fftools/ffmpeg_enc.o        \
     fftools/ffmpeg_filter.o     \
