@@ -1853,23 +1853,6 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
     return !eof_reached;
 }
 
-static int init_output_stream_nofilter(OutputStream *ost)
-{
-    int ret = 0;
-
-    if (ost->enc_ctx) {
-        ret = enc_open(ost, NULL);
-        if (ret < 0)
-            return ret;
-    } else {
-        ret = of_stream_init(output_files[ost->file_index], ost);
-        if (ret < 0)
-            return ret;
-    }
-
-    return ret;
-}
-
 static int transcode_init(void)
 {
     int ret = 0;
@@ -1880,22 +1863,6 @@ static int transcode_init(void)
         if (ifile->readrate || ifile->rate_emu)
             for (int j = 0; j < ifile->nb_streams; j++)
                 ifile->streams[j]->start = av_gettime_relative();
-    }
-
-    /*
-     * initialize stream copy and subtitle/data streams.
-     * Encoded AVFrame based streams will get initialized when the first AVFrame
-     * is received in do_video_out
-     */
-    for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
-        if (ost->enc_ctx &&
-            (ost->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO ||
-             ost->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO))
-            continue;
-
-        ret = init_output_stream_nofilter(ost);
-        if (ret < 0)
-            goto dump_format;
     }
 
     /* discard unused programs */
@@ -1914,7 +1881,6 @@ static int transcode_init(void)
         }
     }
 
- dump_format:
     /* dump the stream mapping */
     av_log(NULL, AV_LOG_INFO, "Stream mapping:\n");
     for (InputStream *ist = ist_iter(NULL); ist; ist = ist_iter(ist)) {

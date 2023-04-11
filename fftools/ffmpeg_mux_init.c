@@ -2317,6 +2317,23 @@ static void validate_enc_avopt(Muxer *mux, const AVDictionary *codec_avopt)
     av_dict_free(&unused_opts);
 }
 
+static int init_output_stream_nofilter(OutputStream *ost)
+{
+    int ret = 0;
+
+    if (ost->enc_ctx) {
+        ret = enc_open(ost, NULL);
+        if (ret < 0)
+            return ret;
+    } else {
+        ret = of_stream_init(output_files[ost->file_index], ost);
+        if (ret < 0)
+            return ret;
+    }
+
+    return ret;
+}
+
 static const char *output_file_item_name(void *obj)
 {
     const Muxer *mux = obj;
@@ -2511,6 +2528,21 @@ int of_open(const OptionsContext *o, const char *filename)
     }
 
     of->url        = filename;
+
+    /* initialize stream copy and subtitle/data streams.
+     * Encoded AVFrame based streams will get initialized when the first AVFrame
+     * is received in do_video_out
+     */
+    for (int i = 0; i < of->nb_streams; i++) {
+        OutputStream *ost = of->streams[i];
+
+        if (ost->filter)
+            continue;
+
+        err = init_output_stream_nofilter(ost);
+        if (err < 0)
+            report_and_exit(err);
+    }
 
     /* write the header for files with no streams */
     if (of->format->flags & AVFMT_NOSTREAMS && oc->nb_streams == 0) {
