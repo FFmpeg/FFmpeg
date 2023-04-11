@@ -1203,13 +1203,6 @@ static OutputStream *ost_add(Muxer *mux, const OptionsContext *o,
     if (ost->enc_ctx && av_get_exact_bits_per_sample(ost->enc_ctx->codec_id) == 24)
         av_dict_set(&ost->swr_opts, "output_sample_bits", "24", 0);
 
-    if (ost->ist) {
-        ost->ist->discard = 0;
-        ost->ist->st->discard = ost->ist->user_set_discard;
-
-        if (!(ost->enc && (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO)))
-            ist_output_add(ost->ist, ost);
-    }
     ost->last_mux_dts = AV_NOPTS_VALUE;
 
     MATCH_PER_STREAM_OPT(copy_initial_nonkeyframes, i,
@@ -1222,6 +1215,25 @@ static OutputStream *ost_add(Muxer *mux, const OptionsContext *o,
     case AVMEDIA_TYPE_DATA:       new_stream_data      (mux, o, ost); break;
     case AVMEDIA_TYPE_ATTACHMENT: new_stream_attachment(mux, o, ost); break;
     default:                      new_stream_unknown   (mux, o, ost); break;
+    }
+
+    if (ost->ist) {
+        ost->ist->discard = 0;
+        ost->ist->st->discard = ost->ist->user_set_discard;
+
+        if (ost->enc)
+            ost->ist->decoding_needed |= DECODING_FOR_OST;
+
+        if (ost->enc &&
+            (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO)) {
+            ret = init_simple_filtergraph(ost->ist, ost);
+            if (ret < 0) {
+                av_log(ost, AV_LOG_ERROR,
+                       "Error initializing a simple filtergraph\n");
+                exit_program(1);
+            }
+        } else
+            ist_output_add(ost->ist, ost);
     }
 
     if (ost->ist && !ost->enc) {
@@ -2410,24 +2422,8 @@ int of_open(const OptionsContext *o, const char *filename)
     /* check if all codec options have been used */
     validate_enc_avopt(mux, o->g->codec_opts);
 
-    /* set the decoding_needed flags and create simple filtergraphs */
     for (int i = 0; i < of->nb_streams; i++) {
         OutputStream *ost = of->streams[i];
-
-        if (ost->enc_ctx && ost->ist) {
-            InputStream *ist = ost->ist;
-            ist->decoding_needed |= DECODING_FOR_OST;
-
-            if (ost->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO ||
-                ost->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-                err = init_simple_filtergraph(ist, ost);
-                if (err < 0) {
-                    av_log(ost, AV_LOG_ERROR,
-                           "Error initializing a simple filtergraph\n");
-                    exit_program(1);
-                }
-            }
-        }
 
         /* set the filter output constraints */
         if (ost->filter) {
