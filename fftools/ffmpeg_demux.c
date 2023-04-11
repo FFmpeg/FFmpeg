@@ -566,6 +566,12 @@ static void ist_use(InputStream *ist, int decoding_needed)
     ist->discard          = 0;
     ist->st->discard      = ist->user_set_discard;
     ist->decoding_needed |= decoding_needed;
+
+    if (decoding_needed && !avcodec_is_open(ist->dec_ctx)) {
+        int ret = dec_open(ist);
+        if (ret < 0)
+            report_and_exit(ret);
+    }
 }
 
 void ist_output_add(InputStream *ist, OutputStream *ost)

@@ -1882,11 +1882,6 @@ static int transcode_init(void)
                 ifile->streams[j]->start = av_gettime_relative();
     }
 
-    /* init input streams */
-    for (InputStream *ist = ist_iter(NULL); ist; ist = ist_iter(ist))
-        if (ist->decoding_needed && (ret = dec_open(ist)) < 0)
-            goto dump_format;
-
     /*
      * initialize stream copy and subtitle/data streams.
      * Encoded AVFrame based streams will get initialized when the first AVFrame
