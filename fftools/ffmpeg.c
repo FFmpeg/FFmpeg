@@ -1907,15 +1907,16 @@ static enum AVPixelFormat get_format(AVCodecContext *s, const enum AVPixelFormat
     return *p;
 }
 
-static int init_input_stream(InputStream *ist, char *error, int error_len)
+static int init_input_stream(InputStream *ist)
 {
     int ret;
 
     if (ist->decoding_needed) {
         const AVCodec *codec = ist->dec;
         if (!codec) {
-            snprintf(error, error_len, "Decoder (codec %s) not found for input stream #%d:%d",
-                    avcodec_get_name(ist->dec_ctx->codec_id), ist->file_index, ist->st->index);
+            av_log(ist, AV_LOG_ERROR,
+                   "Decoding requested, but no decoder found for: %s\n",
+                    avcodec_get_name(ist->dec_ctx->codec_id));
             return AVERROR(EINVAL);
         }
 
@@ -1941,9 +1942,9 @@ static int init_input_stream(InputStream *ist, char *error, int error_len)
 
         ret = hw_device_setup_for_decode(ist);
         if (ret < 0) {
-            snprintf(error, error_len, "Device setup failed for "
-                     "decoder on input stream #%d:%d : %s",
-                     ist->file_index, ist->st->index, av_err2str(ret));
+            av_log(ist, AV_LOG_ERROR,
+                   "Hardware device setup failed for decoder: %s\n",
+                   av_err2str(ret));
             return ret;
         }
 
@@ -1951,10 +1952,8 @@ static int init_input_stream(InputStream *ist, char *error, int error_len)
             if (ret == AVERROR_EXPERIMENTAL)
                 abort_codec_experimental(codec, 0);
 
-            snprintf(error, error_len,
-                     "Error while opening decoder for input stream "
-                     "#%d:%d : %s",
-                     ist->file_index, ist->st->index, av_err2str(ret));
+            av_log(ist, AV_LOG_ERROR, "Error while opening decoder: %s\n",
+                   av_err2str(ret));
             return ret;
         }
         assert_avoptions(ist->decoder_opts);
@@ -1983,7 +1982,6 @@ static int init_output_stream_nofilter(OutputStream *ost)
 static int transcode_init(void)
 {
     int ret = 0;
-    char error[1024] = {0};
 
     /* init framerate emulation */
     for (int i = 0; i < nb_input_files; i++) {
@@ -1995,7 +1993,7 @@ static int transcode_init(void)
 
     /* init input streams */
     for (InputStream *ist = ist_iter(NULL); ist; ist = ist_iter(ist))
-        if ((ret = init_input_stream(ist, error, sizeof(error))) < 0)
+        if ((ret = init_input_stream(ist)) < 0)
             goto dump_format;
 
     /*
@@ -2105,10 +2103,8 @@ static int transcode_init(void)
         av_log(NULL, AV_LOG_INFO, "\n");
     }
 
-    if (ret) {
-        av_log(NULL, AV_LOG_ERROR, "%s\n", error);
+    if (ret)
         return ret;
-    }
 
     atomic_store(&transcode_init_done, 1);
 
