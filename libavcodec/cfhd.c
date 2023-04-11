@@ -1087,8 +1087,8 @@ finish:
                     dst  += dst_linesize;
                 }
             } else {
-                av_log(avctx, AV_LOG_DEBUG, "interlaced frame ? %d", pic->interlaced_frame);
-                pic->interlaced_frame = 1;
+                av_log(avctx, AV_LOG_DEBUG, "interlaced frame ? %d", !!(pic->flags & AV_FRAME_FLAG_INTERLACED));
+                pic->flags |= AV_FRAME_FLAG_INTERLACED;
                 low    = s->plane[plane].subband[0];
                 high   = s->plane[plane].subband[7];
                 output = s->plane[plane].l_h[6];
@@ -1284,7 +1284,7 @@ finish:
                     dst  += dst_linesize;
                 }
             } else {
-                pic->interlaced_frame = 1;
+                pic->flags |= AV_FRAME_FLAG_INTERLACED;
                 low    = s->plane[plane].l_h[7];
                 high   = s->plane[plane].subband[14];
                 output = s->plane[plane].l_h[6];

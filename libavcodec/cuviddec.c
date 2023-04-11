@@ -631,10 +631,11 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-        frame->interlaced_frame = !parsed_frame.is_deinterlacing && !parsed_frame.dispinfo.progressive_frame;
+        if (!parsed_frame.is_deinterlacing && !parsed_frame.dispinfo.progressive_frame)
+            frame->flags |= AV_FRAME_FLAG_INTERLACED;
 
-        if (frame->interlaced_frame)
-            frame->top_field_first = parsed_frame.dispinfo.top_field_first;
+        if ((frame->flags & AV_FRAME_FLAG_INTERLACED) && parsed_frame.dispinfo.top_field_first)
+            frame->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
     } else if (ctx->decoder_flushing) {
         ret = AVERROR_EOF;
     } else {

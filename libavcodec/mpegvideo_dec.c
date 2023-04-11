@@ -331,15 +331,15 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     s->current_picture_ptr = pic;
     // FIXME use only the vars from current_pic
-    s->current_picture_ptr->f->top_field_first = s->top_field_first;
+    s->current_picture_ptr->f->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST * !!s->top_field_first;
     if (s->codec_id == AV_CODEC_ID_MPEG1VIDEO ||
         s->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
         if (s->picture_structure != PICT_FRAME)
-            s->current_picture_ptr->f->top_field_first =
-                (s->picture_structure == PICT_TOP_FIELD) == s->first_field;
+            s->current_picture_ptr->f->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST *
+                ((s->picture_structure == PICT_TOP_FIELD) == s->first_field);
     }
-    s->current_picture_ptr->f->interlaced_frame = !s->progressive_frame &&
-                                                 !s->progressive_sequence;
+    s->current_picture_ptr->f->flags |= AV_FRAME_FLAG_INTERLACED * (!s->progressive_frame &&
+                                                                    !s->progressive_sequence);
     s->current_picture_ptr->field_picture      =  s->picture_structure != PICT_FRAME;
 
     s->current_picture_ptr->f->pict_type = s->pict_type;

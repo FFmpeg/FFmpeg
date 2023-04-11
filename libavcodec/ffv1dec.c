@@ -217,13 +217,13 @@ static int decode_slice_header(const FFV1Context *f, FFV1Context *fs)
 
     ps = get_symbol(c, state, 0);
     if (ps == 1) {
-        f->cur->interlaced_frame = 1;
-        f->cur->top_field_first  = 1;
+        f->cur->flags |= AV_FRAME_FLAG_INTERLACED;
+        f->cur->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
     } else if (ps == 2) {
-        f->cur->interlaced_frame = 1;
-        f->cur->top_field_first  = 0;
+        f->cur->flags |= AV_FRAME_FLAG_INTERLACED;
+        f->cur->flags &= ~AV_FRAME_FLAG_TOP_FIELD_FIRST;
     } else if (ps == 3) {
-        f->cur->interlaced_frame = 0;
+        f->cur->flags &= ~AV_FRAME_FLAG_INTERLACED;
     }
     f->cur->sample_aspect_ratio.num = get_symbol(c, state, 0);
     f->cur->sample_aspect_ratio.den = get_symbol(c, state, 0);
@@ -881,9 +881,9 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
 
     if (f->version < 3 && avctx->field_order > AV_FIELD_PROGRESSIVE) {
         /* we have interlaced material flagged in container */
-        p->interlaced_frame = 1;
+        p->flags |= AV_FRAME_FLAG_INTERLACED;
         if (avctx->field_order == AV_FIELD_TT || avctx->field_order == AV_FIELD_TB)
-            p->top_field_first = 1;
+            p->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
     }
 
     f->avctx = avctx;

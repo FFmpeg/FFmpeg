@@ -441,8 +441,8 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
             s->height < ((s->orig_height * 3) / 4)) {
             s->interlaced                    = 1;
             s->bottom_field                  = s->interlace_polarity;
-            s->picture_ptr->interlaced_frame = 1;
-            s->picture_ptr->top_field_first  = !s->interlace_polarity;
+            s->picture_ptr->flags |= AV_FRAME_FLAG_INTERLACED;
+            s->picture_ptr->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST * !s->interlace_polarity;
             height *= 2;
         }
 

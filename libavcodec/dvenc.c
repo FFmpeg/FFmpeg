@@ -1048,9 +1048,9 @@ static inline int dv_write_pack(enum DVPackType pack_id, DVEncContext *c,
     int fs;
 
     if (c->avctx->height >= 720)
-        fs = c->avctx->height == 720 || c->frame->top_field_first ? 0x40 : 0x00;
+        fs = c->avctx->height == 720 || (c->frame->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST) ? 0x40 : 0x00;
     else
-        fs = c->frame->top_field_first ? 0x00 : 0x40;
+        fs = (c->frame->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST) ? 0x00 : 0x40;
 
     if (DV_PROFILE_IS_HD(c->sys) ||
         (int)(av_q2d(c->avctx->sample_aspect_ratio) *

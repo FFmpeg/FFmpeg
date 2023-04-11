@@ -2634,7 +2634,7 @@ static int nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
         pic_params.outputBitstream = in_surf->output_surface;
 
         if (avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) {
-            if (frame->top_field_first)
+            if (frame->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST)
                 pic_params.pictureStruct = NV_ENC_PIC_STRUCT_FIELD_TOP_BOTTOM;
             else
                 pic_params.pictureStruct = NV_ENC_PIC_STRUCT_FIELD_BOTTOM_TOP;

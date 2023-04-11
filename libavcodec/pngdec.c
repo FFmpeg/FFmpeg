@@ -841,7 +841,7 @@ static int decode_idat_chunk(AVCodecContext *avctx, PNGDecContext *s,
 
         p->pict_type        = AV_PICTURE_TYPE_I;
         p->key_frame        = 1;
-        p->interlaced_frame = !!s->interlace_type;
+        p->flags |= AV_FRAME_FLAG_INTERLACED * !!s->interlace_type;
 
         if ((ret = populate_avctx_color_fields(avctx, p)) < 0)
             return ret;

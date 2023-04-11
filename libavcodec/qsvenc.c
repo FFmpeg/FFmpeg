@@ -1947,8 +1947,8 @@ static int submit_frame(QSVEncContext *q, const AVFrame *frame,
         qf->surface.Info = q->param.mfx.FrameInfo;
 
         qf->surface.Info.PicStruct =
-            !frame->interlaced_frame ? MFX_PICSTRUCT_PROGRESSIVE :
-            frame->top_field_first   ? MFX_PICSTRUCT_FIELD_TFF :
+            !(frame->flags & AV_FRAME_FLAG_INTERLACED) ? MFX_PICSTRUCT_PROGRESSIVE :
+            (frame->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST) ? MFX_PICSTRUCT_FIELD_TFF :
                                        MFX_PICSTRUCT_FIELD_BFF;
         if (frame->repeat_pict == 1)
             qf->surface.Info.PicStruct |= MFX_PICSTRUCT_FIELD_REPEATED;
@@ -2402,7 +2402,7 @@ static int encode_frame(AVCodecContext *avctx, QSVEncContext *q,
         goto free;
     }
 
-    if (ret == MFX_WRN_INCOMPATIBLE_VIDEO_PARAM && frame && frame->interlaced_frame)
+    if (ret == MFX_WRN_INCOMPATIBLE_VIDEO_PARAM && frame && (frame->flags & AV_FRAME_FLAG_INTERLACED))
         print_interlace_msg(avctx, q);
 
     ret = 0;

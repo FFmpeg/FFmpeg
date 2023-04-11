@@ -207,9 +207,9 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *pic,
 
     if (avctx->field_order > AV_FIELD_PROGRESSIVE) {
         /* we have interlaced material flagged in container */
-        pic->interlaced_frame = 1;
+        pic->flags |= AV_FRAME_FLAG_INTERLACED;
         if (avctx->field_order == AV_FIELD_TT || avctx->field_order == AV_FIELD_TB)
-            pic->top_field_first = 1;
+            pic->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
     }
 
     *got_frame      = 1;

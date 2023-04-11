@@ -1155,9 +1155,10 @@ static int h264_export_frame_props(H264Context *h)
     const SPS *sps = h->ps.sps;
     H264Picture *cur = h->cur_pic_ptr;
     AVFrame *out = cur->f;
+    int interlaced_frame = 0, top_field_first = 0;
     int ret;
 
-    out->interlaced_frame = 0;
+    out->flags &= ~AV_FRAME_FLAG_INTERLACED;
     out->repeat_pict      = 0;
 
     /* Signal interlacing information externally. */
@@ -1181,15 +1182,15 @@ static int h264_export_frame_props(H264Context *h)
             break;
         case H264_SEI_PIC_STRUCT_TOP_FIELD:
         case H264_SEI_PIC_STRUCT_BOTTOM_FIELD:
-            out->interlaced_frame = 1;
+            interlaced_frame = 1;
             break;
         case H264_SEI_PIC_STRUCT_TOP_BOTTOM:
         case H264_SEI_PIC_STRUCT_BOTTOM_TOP:
             if (FIELD_OR_MBAFF_PICTURE(h))
-                out->interlaced_frame = 1;
+                interlaced_frame = 1;
             else
                 // try to flag soft telecine progressive
-                out->interlaced_frame = h->prev_interlaced_frame;
+                interlaced_frame = !!h->prev_interlaced_frame;
             break;
         case H264_SEI_PIC_STRUCT_TOP_BOTTOM_TOP:
         case H264_SEI_PIC_STRUCT_BOTTOM_TOP_BOTTOM:
@@ -1208,34 +1209,33 @@ static int h264_export_frame_props(H264Context *h)
 
         if ((pt->ct_type & 3) &&
             pt->pic_struct <= H264_SEI_PIC_STRUCT_BOTTOM_TOP)
-            out->interlaced_frame = (pt->ct_type & (1 << 1)) != 0;
+            interlaced_frame = ((pt->ct_type & (1 << 1)) != 0);
     } else {
         /* Derive interlacing flag from used decoding process. */
-        out->interlaced_frame = FIELD_OR_MBAFF_PICTURE(h);
+        interlaced_frame = !!FIELD_OR_MBAFF_PICTURE(h);
     }
-    h->prev_interlaced_frame = out->interlaced_frame;
+    h->prev_interlaced_frame = interlaced_frame;
 
     if (cur->field_poc[0] != cur->field_poc[1]) {
         /* Derive top_field_first from field pocs. */
-        out->top_field_first = cur->field_poc[0] < cur->field_poc[1];
+        top_field_first = (cur->field_poc[0] < cur->field_poc[1]);
     } else {
         if (sps->pic_struct_present_flag && h->sei.picture_timing.present) {
             /* Use picture timing SEI information. Even if it is a
              * information of a past frame, better than nothing. */
             if (h->sei.picture_timing.pic_struct == H264_SEI_PIC_STRUCT_TOP_BOTTOM ||
                 h->sei.picture_timing.pic_struct == H264_SEI_PIC_STRUCT_TOP_BOTTOM_TOP)
-                out->top_field_first = 1;
-            else
-                out->top_field_first = 0;
-        } else if (out->interlaced_frame) {
+                top_field_first = 1;
+        } else if (interlaced_frame) {
             /* Default to top field first when pic_struct_present_flag
              * is not set but interlaced frame detected */
-            out->top_field_first = 1;
-        } else {
+            top_field_first = 1;
+        } // else
             /* Most likely progressive */
-            out->top_field_first = 0;
-        }
     }
+
+    out->flags |= (AV_FRAME_FLAG_INTERLACED * interlaced_frame) |
+                  (AV_FRAME_FLAG_TOP_FIELD_FIRST * top_field_first);
 
     ret = ff_h2645_sei_to_frame(out, &h->sei.common, AV_CODEC_ID_H264, h->avctx,
                                 &sps->vui, sps->bit_depth_luma, sps->bit_depth_chroma,

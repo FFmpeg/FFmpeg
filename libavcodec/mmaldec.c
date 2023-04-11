@@ -622,8 +622,10 @@ static int ffmal_copy_frame(AVCodecContext *avctx,  AVFrame *frame,
     MMALDecodeContext *ctx = avctx->priv_data;
     int ret = 0;
 
-    frame->interlaced_frame = ctx->interlaced_frame;
-    frame->top_field_first = ctx->top_field_first;
+    if (ctx->interlaced_frame)
+        frame->flags |= AV_FRAME_FLAG_INTERLACED;
+    if (ctx->top_field_first)
+        frame->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
 
     if (avctx->pix_fmt == AV_PIX_FMT_MMAL) {
         if (!ctx->pool_out)

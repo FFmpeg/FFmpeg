@@ -543,9 +543,9 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
         av_image_copy_plane(dst, dStride, src, sStride, bwidth, height);
     }
 
-    frame->interlaced_frame = interlaced;
+    frame->flags |= AV_FRAME_FLAG_INTERLACED * !!interlaced;
     if (interlaced)
-        frame->top_field_first = !bottom_first;
+        frame->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST * !bottom_first;
 
     frame->pts = pkt_pts;
 

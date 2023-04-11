@@ -60,10 +60,10 @@ static void fill_vaapi_pic(VAPictureHEVC *va_pic, const HEVCFrame *pic, int rps_
     if (pic->flags & HEVC_FRAME_FLAG_LONG_REF)
         va_pic->flags |= VA_PICTURE_HEVC_LONG_TERM_REFERENCE;
 
-    if (pic->frame->interlaced_frame) {
+    if (pic->frame->flags & AV_FRAME_FLAG_INTERLACED) {
         va_pic->flags |= VA_PICTURE_HEVC_FIELD_PIC;
 
-        if (!pic->frame->top_field_first)
+        if (!(pic->frame->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST))
             va_pic->flags |= VA_PICTURE_HEVC_BOTTOM_FIELD;
     }
 }
