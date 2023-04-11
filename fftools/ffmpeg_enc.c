@@ -653,6 +653,9 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
                    av_ts2str(frame->pts), av_ts2timestr(frame->pts, &enc->time_base),
                    enc->time_base.num, enc->time_base.den);
         }
+
+        if (frame->sample_aspect_ratio.num && !ost->frame_aspect_ratio.num)
+            enc->sample_aspect_ratio = frame->sample_aspect_ratio;
     }
 
     update_benchmark(NULL);

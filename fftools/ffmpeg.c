@@ -711,9 +711,6 @@ static int reap_filters(int flush)
 
             switch (av_buffersink_get_type(filter)) {
             case AVMEDIA_TYPE_VIDEO:
-                if (!ost->frame_aspect_ratio.num)
-                    enc->sample_aspect_ratio = filtered_frame->sample_aspect_ratio;
-
                 enc_frame(ost, filtered_frame);
                 break;
             case AVMEDIA_TYPE_AUDIO:
