@@ -108,7 +108,7 @@ static int check_opt_bitexact(void *ctx, const AVDictionary *opts,
 static int choose_encoder(const OptionsContext *o, AVFormatContext *s,
                           OutputStream *ost, const AVCodec **enc)
 {
-    enum AVMediaType type = ost->st->codecpar->codec_type;
+    enum AVMediaType type = ost->type;
     char *codec_name = NULL;
 
     *enc = NULL;
@@ -117,7 +117,7 @@ static int choose_encoder(const OptionsContext *o, AVFormatContext *s,
         MATCH_PER_STREAM_OPT(codec_names, str, codec_name, s, ost->st);
         if (!codec_name) {
             ost->st->codecpar->codec_id = av_guess_codec(s->oformat, NULL, s->url,
-                                                         NULL, ost->st->codecpar->codec_type);
+                                                         NULL, ost->type);
             *enc = avcodec_find_encoder(ost->st->codecpar->codec_id);
             if (!*enc) {
                 av_log(ost, AV_LOG_FATAL, "Automatic encoder selection failed "
@@ -127,7 +127,7 @@ static int choose_encoder(const OptionsContext *o, AVFormatContext *s,
                 return AVERROR_ENCODER_NOT_FOUND;
             }
         } else if (strcmp(codec_name, "copy")) {
-            *enc = find_codec_or_die(ost, codec_name, ost->st->codecpar->codec_type, 1);
+            *enc = find_codec_or_die(ost, codec_name, ost->type, 1);
             ost->st->codecpar->codec_id = (*enc)->id;
         }
     }
@@ -410,6 +410,7 @@ static MuxStream *mux_stream_alloc(Muxer *mux, enum AVMediaType type)
 
     ms->ost.file_index = mux->of.index;
     ms->ost.index      = mux->of.nb_streams - 1;
+    ms->ost.type       = type;
 
     ms->ost.class = &output_stream_class;
 
@@ -422,8 +423,6 @@ static MuxStream *mux_stream_alloc(Muxer *mux, enum AVMediaType type)
 static char *get_ost_filters(const OptionsContext *o, AVFormatContext *oc,
                              OutputStream *ost)
 {
-    AVStream *st = ost->st;
-
     if (ost->filters_script && ost->filters) {
         av_log(ost, AV_LOG_ERROR, "Both -filter and -filter_script set\n");
         exit_program(1);
@@ -434,8 +433,7 @@ static char *get_ost_filters(const OptionsContext *o, AVFormatContext *oc,
     else if (ost->filters)
         return av_strdup(ost->filters);
 
-    return av_strdup(st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO ?
-                     "null" : "anull");
+    return av_strdup(ost->type == AVMEDIA_TYPE_VIDEO ? "null" : "anull");
 }
 
 static void check_streamcopy_filters(const OptionsContext *o, AVFormatContext *oc,
@@ -1597,7 +1595,7 @@ static int setup_sync_queues(Muxer *mux, AVFormatContext *oc, int64_t buf_size_u
     for (int i = 0; i < oc->nb_streams; i++) {
         OutputStream *ost = of->streams[i];
         MuxStream     *ms = ms_from_ost(ost);
-        enum AVMediaType type = ost->st->codecpar->codec_type;
+        enum AVMediaType type = ost->type;
 
         ost->sq_idx_encode = -1;
         ost->sq_idx_mux    = -1;
@@ -1631,7 +1629,7 @@ static int setup_sync_queues(Muxer *mux, AVFormatContext *oc, int64_t buf_size_u
         for (int i = 0; i < oc->nb_streams; i++) {
             OutputStream *ost = of->streams[i];
             MuxStream     *ms = ms_from_ost(ost);
-            enum AVMediaType type = ost->st->codecpar->codec_type;
+            enum AVMediaType type = ost->type;
 
             if (!IS_AV_ENC(ost, type))
                 continue;
@@ -1660,7 +1658,7 @@ static int setup_sync_queues(Muxer *mux, AVFormatContext *oc, int64_t buf_size_u
         for (int i = 0; i < oc->nb_streams; i++) {
             OutputStream *ost = of->streams[i];
             MuxStream     *ms = ms_from_ost(ost);
-            enum AVMediaType type = ost->st->codecpar->codec_type;
+            enum AVMediaType type = ost->type;
 
             if (!IS_INTERLEAVED(type))
                 continue;
@@ -2116,7 +2114,7 @@ static int set_dispositions(Muxer *mux, const OptionsContext *o)
     for (int i = 0; i < ctx->nb_streams; i++) {
         OutputStream *ost = of->streams[i];
 
-        nb_streams[ost->st->codecpar->codec_type]++;
+        nb_streams[ost->type]++;
 
         MATCH_PER_STREAM_OPT(disposition, str, dispositions[i], ctx, ost->st);
 
@@ -2126,7 +2124,7 @@ static int set_dispositions(Muxer *mux, const OptionsContext *o)
             ost->st->disposition = ost->ist->st->disposition;
 
             if (ost->st->disposition & AV_DISPOSITION_DEFAULT)
-                have_default[ost->st->codecpar->codec_type] = 1;
+                have_default[ost->type] = 1;
         }
     }
 
@@ -2149,7 +2147,7 @@ static int set_dispositions(Muxer *mux, const OptionsContext *o)
         // "Suitable" means the first of that type, skipping attached pictures.
         for (int i = 0; i < ctx->nb_streams; i++) {
             OutputStream *ost = of->streams[i];
-            enum AVMediaType type = ost->st->codecpar->codec_type;
+            enum AVMediaType type = ost->type;
 
             if (nb_streams[type] < 2 || have_default[type] ||
                 ost->st->disposition & AV_DISPOSITION_ATTACHED_PIC)
@@ -2242,7 +2240,7 @@ static int process_forced_keyframes(Muxer *mux, const OptionsContext *o)
 
         MATCH_PER_STREAM_OPT(forced_key_frames, str, forced_keyframes, mux->fc, ost->st);
 
-        if (!(ost->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
+        if (!(ost->type == AVMEDIA_TYPE_VIDEO &&
               ost->enc_ctx && forced_keyframes))
             continue;
 

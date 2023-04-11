@@ -578,6 +578,8 @@ typedef struct Encoder Encoder;
 typedef struct OutputStream {
     const AVClass *class;
 
+    enum AVMediaType type;
+
     int file_index;          /* file index */
     int index;               /* stream index in the output file */
 

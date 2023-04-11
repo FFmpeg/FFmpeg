@@ -748,12 +748,12 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
         const AVCodecContext * const enc = ost->enc_ctx;
         const float q = enc ? ost->quality / (float) FF_QP2LAMBDA : -1;
 
-        if (vid && ost->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+        if (vid && ost->type == AVMEDIA_TYPE_VIDEO) {
             av_bprintf(&buf, "q=%2.1f ", q);
             av_bprintf(&buf_script, "stream_%d_%d_q=%.1f\n",
                        ost->file_index, ost->index, q);
         }
-        if (!vid && ost->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+        if (!vid && ost->type == AVMEDIA_TYPE_VIDEO) {
             float fps;
             uint64_t frame_number = atomic_load(&ost->packets_written);
 

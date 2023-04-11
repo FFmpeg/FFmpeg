@@ -62,7 +62,6 @@ static int write_packet(Muxer *mux, OutputStream *ost, AVPacket *pkt)
 {
     MuxStream *ms = ms_from_ost(ost);
     AVFormatContext *s = mux->fc;
-    AVStream *st = ost->st;
     int64_t fs;
     uint64_t frame_num;
     int ret;
@@ -74,10 +73,10 @@ static int write_packet(Muxer *mux, OutputStream *ost, AVPacket *pkt)
         goto fail;
     }
 
-    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && ost->vsync_method == VSYNC_DROP)
+    if (ost->type == AVMEDIA_TYPE_VIDEO && ost->vsync_method == VSYNC_DROP)
         pkt->pts = pkt->dts = AV_NOPTS_VALUE;
 
-    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+    if (ost->type == AVMEDIA_TYPE_VIDEO) {
         if (ost->frame_rate.num && ost->is_cfr) {
             if (pkt->duration > 0)
                 av_log(ost, AV_LOG_WARNING, "Overriding packet duration by frame rate, this should not happen\n");
@@ -101,12 +100,12 @@ static int write_packet(Muxer *mux, OutputStream *ost, AVPacket *pkt)
                      - FFMIN3(pkt->pts, pkt->dts, ms->last_mux_dts + 1)
                      - FFMAX3(pkt->pts, pkt->dts, ms->last_mux_dts + 1);
         }
-        if ((st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO || st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO || st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE) &&
+        if ((ost->type == AVMEDIA_TYPE_AUDIO || ost->type == AVMEDIA_TYPE_VIDEO || ost->type == AVMEDIA_TYPE_SUBTITLE) &&
             pkt->dts != AV_NOPTS_VALUE &&
             ms->last_mux_dts != AV_NOPTS_VALUE) {
             int64_t max = ms->last_mux_dts + !(s->oformat->flags & AVFMT_TS_NONSTRICT);
             if (pkt->dts < max) {
-                int loglevel = max - pkt->dts > 2 || st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO ? AV_LOG_WARNING : AV_LOG_DEBUG;
+                int loglevel = max - pkt->dts > 2 || ost->type == AVMEDIA_TYPE_VIDEO ? AV_LOG_WARNING : AV_LOG_DEBUG;
                 if (exit_on_error)
                     loglevel = AV_LOG_ERROR;
                 av_log(s, loglevel, "Non-monotonous DTS in output stream "
@@ -136,7 +135,7 @@ static int write_packet(Muxer *mux, OutputStream *ost, AVPacket *pkt)
     if (debug_ts) {
         av_log(ost, AV_LOG_INFO, "muxer <- type:%s "
                 "pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s duration:%s duration_time:%s size:%d\n",
-                av_get_media_type_string(st->codecpar->codec_type),
+                av_get_media_type_string(ost->type),
                 av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &ost->st->time_base),
                 av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &ost->st->time_base),
                 av_ts2str(pkt->duration), av_ts2timestr(pkt->duration, &ost->st->time_base),
