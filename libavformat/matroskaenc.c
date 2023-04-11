@@ -2715,7 +2715,7 @@ static int mkv_write_block(void *logctx, MatroskaMuxContext *mkv,
         ret = av_dynamic_hdr_plus_to_t35((AVDynamicHDRPlus *)side_data, &payload,
                                          &payload_size);
         if (ret < 0)
-            return ret;
+            goto fail;
 
         mkv_write_blockadditional(&writer, buf, buf_size,
                                   MATROSKA_BLOCK_ADD_ID_ITU_T_T35);
@@ -2738,6 +2738,7 @@ static int mkv_write_block(void *logctx, MatroskaMuxContext *mkv,
                              track->last_timestamp - ts);
 
     ret = ebml_writer_write(&writer, pb);
+fail:
     av_free(buf);
 
     return ret;
