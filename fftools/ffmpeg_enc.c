@@ -789,6 +789,13 @@ static void do_audio_out(OutputFile *of, OutputStream *ost,
     AVCodecContext *enc = ost->enc_ctx;
     int ret;
 
+    if (!(enc->codec->capabilities & AV_CODEC_CAP_PARAM_CHANGE) &&
+        enc->ch_layout.nb_channels != frame->ch_layout.nb_channels) {
+        av_log(ost, AV_LOG_ERROR,
+               "Audio channel count changed and encoder does not support parameter changes\n");
+        return;
+    }
+
     if (frame->pts == AV_NOPTS_VALUE)
         frame->pts = e->next_pts;
     else {

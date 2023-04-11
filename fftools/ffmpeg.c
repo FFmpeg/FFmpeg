@@ -669,7 +669,6 @@ static int reap_filters(int flush)
     /* Reap all buffers present in the buffer sinks */
     for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
         AVFilterContext *filter;
-        AVCodecContext *enc = ost->enc_ctx;
         int ret = 0;
 
         if (!ost->filter || !ost->filter->graph->graph)
@@ -709,25 +708,7 @@ static int reap_filters(int flush)
                            tb.num, tb.den);
             }
 
-            switch (av_buffersink_get_type(filter)) {
-            case AVMEDIA_TYPE_VIDEO:
-                enc_frame(ost, filtered_frame);
-                break;
-            case AVMEDIA_TYPE_AUDIO:
-                if (!(enc->codec->capabilities & AV_CODEC_CAP_PARAM_CHANGE) &&
-                    avcodec_is_open(enc) &&
-                    enc->ch_layout.nb_channels != filtered_frame->ch_layout.nb_channels) {
-                    av_log(NULL, AV_LOG_ERROR,
-                           "Audio filter graph output is not normalized and encoder does not support parameter changes\n");
-                    break;
-                }
-                enc_frame(ost, filtered_frame);
-                break;
-            default:
-                // TODO support subtitle filters
-                av_assert0(0);
-            }
-
+            enc_frame(ost, filtered_frame);
             av_frame_unref(filtered_frame);
         }
     }
