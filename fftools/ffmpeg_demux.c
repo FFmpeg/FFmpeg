@@ -561,14 +561,25 @@ void ifile_close(InputFile **pf)
     av_freep(pf);
 }
 
+static void ist_use(InputStream *ist, int decoding_needed)
+{
+    ist->discard          = 0;
+    ist->st->discard      = ist->user_set_discard;
+    ist->decoding_needed |= decoding_needed;
+}
+
 void ist_output_add(InputStream *ist, OutputStream *ost)
 {
+    ist_use(ist, ost->enc ? DECODING_FOR_OST : 0);
+
     GROW_ARRAY(ist->outputs, ist->nb_outputs);
     ist->outputs[ist->nb_outputs - 1] = ost;
 }
 
-void ist_filter_add(InputStream *ist, InputFilter *ifilter)
+void ist_filter_add(InputStream *ist, InputFilter *ifilter, int is_simple)
 {
+    ist_use(ist, is_simple ? DECODING_FOR_OST : DECODING_FOR_FILTER);
+
     GROW_ARRAY(ist->filters, ist->nb_filters);
     ist->filters[ist->nb_filters - 1] = ifilter;
 }

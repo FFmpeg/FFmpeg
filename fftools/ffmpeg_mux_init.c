@@ -1218,12 +1218,6 @@ static OutputStream *ost_add(Muxer *mux, const OptionsContext *o,
     }
 
     if (ost->ist) {
-        ost->ist->discard = 0;
-        ost->ist->st->discard = ost->ist->user_set_discard;
-
-        if (ost->enc)
-            ost->ist->decoding_needed |= DECODING_FOR_OST;
-
         if (ost->enc &&
             (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO)) {
             ret = init_simple_filtergraph(ost->ist, ost);

@@ -215,7 +215,7 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost)
     GROW_ARRAY(filtergraphs, nb_filtergraphs);
     filtergraphs[nb_filtergraphs - 1] = fg;
 
-    ist_filter_add(ist, ifilter);
+    ist_filter_add(ist, ifilter, 1);
 
     return 0;
 }
@@ -303,10 +303,6 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
     }
     av_assert0(ist);
 
-    ist->discard         = 0;
-    ist->decoding_needed |= DECODING_FOR_FILTER;
-    ist->st->discard = AVDISCARD_NONE;
-
     ifilter = ALLOC_ARRAY_ELEM(fg->inputs, fg->nb_inputs);
     ifilter->ist    = ist;
     ifilter->graph  = fg;
@@ -318,7 +314,7 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
     if (!ifilter->frame_queue)
         report_and_exit(AVERROR(ENOMEM));
 
-    ist_filter_add(ist, ifilter);
+    ist_filter_add(ist, ifilter, 0);
 }
 
 static int read_binary(const char *path, uint8_t **data, int *len)
