@@ -256,8 +256,12 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
+#if FF_API_FRAME_KEY
+FF_DISABLE_DEPRECATION_WARNINGS
     if (copy->key_frame)
         copy->flags |= AV_FRAME_FLAG_KEY;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     ret = ff_filter_frame(ctx->outputs[0], copy);
     if (ret < 0)

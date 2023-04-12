@@ -192,8 +192,12 @@ int ff_encode_get_frame(AVCodecContext *avctx, AVFrame *frame)
 
     av_frame_move_ref(frame, avci->buffer_frame);
 
+#if FF_API_FRAME_KEY
+FF_DISABLE_DEPRECATION_WARNINGS
     if (frame->key_frame)
         frame->flags |= AV_FRAME_FLAG_KEY;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 #if FF_API_INTERLACED_FRAME
 FF_DISABLE_DEPRECATION_WARNINGS
     if (frame->interlaced_frame)

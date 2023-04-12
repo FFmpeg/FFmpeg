@@ -416,10 +416,15 @@ typedef struct AVFrame {
      */
     int format;
 
+#if FF_API_FRAME_KEY
     /**
      * 1 -> keyframe, 0-> not
+     *
+     * @deprecated Use AV_FRAME_FLAG_KEY instead
      */
+    attribute_deprecated
     int key_frame;
+#endif
 
     /**
      * Picture type of the frame.
