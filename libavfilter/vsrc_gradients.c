@@ -398,6 +398,7 @@ static int activate(AVFilterContext *ctx)
             return AVERROR(ENOMEM);
 
         frame->key_frame           = 1;
+        frame->flags              |= AV_FRAME_FLAG_KEY;
 #if FF_API_INTERLACED_FRAME
 FF_DISABLE_DEPRECATION_WARNINGS
         frame->interlaced_frame    = 0;

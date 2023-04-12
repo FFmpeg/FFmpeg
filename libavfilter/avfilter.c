@@ -59,7 +59,7 @@ static void tlog_ref(void *ctx, AVFrame *ref, int end)
                 ref->width, ref->height,
                 !(ref->flags & AV_FRAME_FLAG_INTERLACED) ? 'P' : /* Progressive  */
                 (ref->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST) ? 'T' : 'B', /* Top / Bottom */
-                ref->key_frame,
+                !!(ref->flags & AV_FRAME_FLAG_KEY),
                 av_get_picture_type_char(ref->pict_type));
     }
     if (ref->nb_samples) {

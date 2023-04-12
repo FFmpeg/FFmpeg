@@ -72,7 +72,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         p += frame->linesize[0];
     }
 
-    if (frame->key_frame)
+    if (frame->flags & AV_FRAME_FLAG_KEY)
         s->last_keyframe = s->frame;
 
     pblack = s->nblack * 100 / (inlink->w * inlink->h);

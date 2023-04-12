@@ -346,7 +346,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
     select->var_values[VAR_POS] = frame->pkt_pos == -1 ? NAN : frame->pkt_pos;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
-    select->var_values[VAR_KEY] = frame->key_frame;
+    select->var_values[VAR_KEY] = !!(frame->flags & AV_FRAME_FLAG_KEY);
     select->var_values[VAR_CONCATDEC_SELECT] = get_concatdec_select(frame, av_rescale_q(frame->pts, inlink->time_base, AV_TIME_BASE_Q));
 
     switch (inlink->type) {
@@ -375,7 +375,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
            select->var_values[VAR_N],
            select->var_values[VAR_PTS],
            select->var_values[VAR_T],
-           frame->key_frame);
+           !!(frame->flags & AV_FRAME_FLAG_KEY));
 
     switch (inlink->type) {
     case AVMEDIA_TYPE_VIDEO:
