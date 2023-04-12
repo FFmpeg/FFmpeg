@@ -257,13 +257,16 @@ int enc_open(OutputStream *ost, AVFrame *frame)
         if (frame) {
             if (enc_ctx->flags & (AV_CODEC_FLAG_INTERLACED_DCT | AV_CODEC_FLAG_INTERLACED_ME) &&
                 ost->top_field_first >= 0)
-                frame->top_field_first = !!ost->top_field_first;
-
-            if (frame->interlaced_frame) {
-                if (enc->id == AV_CODEC_ID_MJPEG)
-                    enc_ctx->field_order = frame->top_field_first ? AV_FIELD_TT:AV_FIELD_BB;
+                if (ost->top_field_first)
+                    frame->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
                 else
-                    enc_ctx->field_order = frame->top_field_first ? AV_FIELD_TB:AV_FIELD_BT;
+                    frame->flags &= ~AV_FRAME_FLAG_TOP_FIELD_FIRST;
+
+            if (frame->flags & AV_FRAME_FLAG_INTERLACED) {
+                if (enc->id == AV_CODEC_ID_MJPEG)
+                    enc_ctx->field_order = (frame->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST) ? AV_FIELD_TT:AV_FIELD_BB;
+                else
+                    enc_ctx->field_order = (frame->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST) ? AV_FIELD_TB:AV_FIELD_BT;
             } else
                 enc_ctx->field_order = AV_FIELD_PROGRESSIVE;
         }

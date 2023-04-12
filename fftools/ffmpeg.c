@@ -1098,7 +1098,7 @@ static int decode_video(InputStream *ist, const AVPacket *pkt, int *got_output,
         return ret;
 
     if(ist->top_field_first>=0)
-        decoded_frame->top_field_first = ist->top_field_first;
+        decoded_frame->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
 
     ist->frames_decoded++;
 

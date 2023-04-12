@@ -2640,8 +2640,8 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
         print_int("display_picture_number", frame->display_picture_number);
     )
 #endif
-        print_int("interlaced_frame",       frame->interlaced_frame);
-        print_int("top_field_first",        frame->top_field_first);
+        print_int("interlaced_frame",       !!(frame->flags & AV_FRAME_FLAG_INTERLACED));
+        print_int("top_field_first",        !!(frame->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST));
         print_int("repeat_pict",            frame->repeat_pict);
 
         print_color_range(w, frame->color_range);
