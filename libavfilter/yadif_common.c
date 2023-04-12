@@ -43,7 +43,11 @@ static int return_frame(AVFilterContext *ctx, int is_second)
             return AVERROR(ENOMEM);
 
         av_frame_copy_props(yadif->out, yadif->cur);
+#if FF_API_INTERLACED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
         yadif->out->interlaced_frame = 0;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
         yadif->out->flags &= ~AV_FRAME_FLAG_INTERLACED;
         if (yadif->current_field == YADIF_FIELD_BACK_END)
             yadif->current_field = YADIF_FIELD_END;
@@ -149,7 +153,11 @@ int ff_yadif_filter_frame(AVFilterLink *link, AVFrame *frame)
         return AVERROR(ENOMEM);
 
     av_frame_copy_props(yadif->out, yadif->cur);
+#if FF_API_INTERLACED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     yadif->out->interlaced_frame = 0;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     yadif->out->flags &= ~AV_FRAME_FLAG_INTERLACED;
 
     if (yadif->out->pts != AV_NOPTS_VALUE)
