@@ -2594,7 +2594,7 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
     if (s) print_str    ("media_type", s);
     else   print_str_opt("media_type", "unknown");
     print_int("stream_index",           stream->index);
-    print_int("key_frame",              frame->key_frame);
+    print_int("key_frame",           !!(frame->flags & AV_FRAME_FLAG_KEY));
     print_ts  ("pts",                   frame->pts);
     print_time("pts_time",              frame->pts, &stream->time_base);
     print_ts  ("pkt_dts",               frame->pkt_dts);

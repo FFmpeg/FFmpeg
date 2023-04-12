@@ -1005,11 +1005,11 @@ static enum AVPictureType forced_kf_apply(void *logctx, KeyframeForceCtx *kf,
             goto force_keyframe;
         }
     } else if (kf->type == KF_FORCE_SOURCE &&
-               in_picture->key_frame == 1 && !dup_idx) {
+               (in_picture->flags & AV_FRAME_FLAG_KEY) && !dup_idx) {
             goto force_keyframe;
     } else if (kf->type == KF_FORCE_SOURCE_NO_DROP && !dup_idx) {
         kf->dropped_keyframe = 0;
-        if ((in_picture->key_frame == 1) || kf->dropped_keyframe)
+        if ((in_picture->flags & AV_FRAME_FLAG_KEY) || kf->dropped_keyframe)
             goto force_keyframe;
     }
 
@@ -1064,7 +1064,7 @@ static void do_video_out(OutputFile *of, OutputStream *ost, AVFrame *frame)
         }
     }
     ost->last_dropped = nb_frames == nb_frames_prev && frame;
-    ost->kf.dropped_keyframe = ost->last_dropped && frame && frame->key_frame;
+    ost->kf.dropped_keyframe = ost->last_dropped && frame && (frame->flags & AV_FRAME_FLAG_KEY);
 
     /* duplicates frame if needed */
     for (i = 0; i < nb_frames; i++) {
