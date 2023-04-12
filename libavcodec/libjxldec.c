@@ -411,7 +411,7 @@ static int libjxl_decode_frame(AVCodecContext *avctx, AVFrame *frame, int *got_f
             /* full image is one frame, even if animated */
             av_log(avctx, AV_LOG_DEBUG, "FULL_IMAGE event emitted\n");
             frame->pict_type = AV_PICTURE_TYPE_I;
-            frame->key_frame = 1;
+            frame->flags |= AV_FRAME_FLAG_KEY;
             if (ctx->iccp) {
                 AVFrameSideData *sd = av_frame_new_side_data_from_buf(frame, AV_FRAME_DATA_ICC_PROFILE, ctx->iccp);
                 if (!sd)

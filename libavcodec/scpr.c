@@ -516,18 +516,18 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
         s->version = 1;
         s->get_freq = get_freq0;
         s->decode = decode0;
-        frame->key_frame = 1;
+        frame->flags |= AV_FRAME_FLAG_KEY;
         ret = decompress_i(avctx, (uint32_t *)s->current_frame->data[0],
                            s->current_frame->linesize[0] / 4);
     } else if (type == 18) {
         s->version = 2;
         s->get_freq = get_freq;
         s->decode = decode;
-        frame->key_frame = 1;
+        frame->flags |= AV_FRAME_FLAG_KEY;
         ret = decompress_i(avctx, (uint32_t *)s->current_frame->data[0],
                            s->current_frame->linesize[0] / 4);
     } else if (type == 34) {
-        frame->key_frame = 1;
+        frame->flags |= AV_FRAME_FLAG_KEY;
         s->version = 3;
         ret = decompress_i3(avctx, (uint32_t *)s->current_frame->data[0],
                             s->current_frame->linesize[0] / 4);
@@ -538,7 +538,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
         if (bytestream2_get_bytes_left(gb) < 3)
             return AVERROR_INVALIDDATA;
 
-        frame->key_frame = 1;
+        frame->flags |= AV_FRAME_FLAG_KEY;
         bytestream2_skip(gb, 1);
         if (avctx->bits_per_coded_sample == 16) {
             uint16_t value = bytestream2_get_le16(gb);
@@ -557,7 +557,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
             dst += s->current_frame->linesize[0] / 4;
         }
     } else if (type == 0 || type == 1) {
-        frame->key_frame = 0;
+        frame->flags &= ~AV_FRAME_FLAG_KEY;
 
         if (s->version == 1 || s->version == 2)
             ret = decompress_p(avctx, (uint32_t *)s->current_frame->data[0],
@@ -612,7 +612,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
         }
     }
 
-    frame->pict_type = frame->key_frame ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
+    frame->pict_type = (frame->flags & AV_FRAME_FLAG_KEY) ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
 
     FFSWAP(AVFrame *, s->current_frame, s->last_frame);
 

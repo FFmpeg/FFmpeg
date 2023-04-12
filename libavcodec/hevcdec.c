@@ -2910,7 +2910,10 @@ static int hevc_frame_start(HEVCContext *s)
         goto fail;
     }
 
-    s->ref->frame->key_frame = IS_IRAP(s);
+    if (IS_IRAP(s))
+        s->ref->frame->flags |= AV_FRAME_FLAG_KEY;
+    else
+        s->ref->frame->flags &= ~AV_FRAME_FLAG_KEY;
 
     s->ref->needs_fg = s->sei.common.film_grain_characteristics.present &&
         !(s->avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN) &&

@@ -463,7 +463,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
         goto fail;
 
     frame->pkt_dts = pkt->pts;
-    frame->key_frame = p->frame_hdr->frame_type == DAV1D_FRAME_TYPE_KEY;
+    if (p->frame_hdr->frame_type == DAV1D_FRAME_TYPE_KEY)
+        frame->flags |= AV_FRAME_FLAG_KEY;
+    else
+        frame->flags &= ~AV_FRAME_FLAG_KEY;
 
     switch (p->frame_hdr->frame_type) {
     case DAV1D_FRAME_TYPE_KEY:

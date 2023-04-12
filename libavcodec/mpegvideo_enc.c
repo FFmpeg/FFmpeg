@@ -1703,7 +1703,10 @@ static int frame_start(MpegEncContext *s)
     }
 
     s->current_picture_ptr->f->pict_type = s->pict_type;
-    s->current_picture_ptr->f->key_frame = s->pict_type == AV_PICTURE_TYPE_I;
+    if (s->pict_type == AV_PICTURE_TYPE_I)
+        s->current_picture.f->flags |= AV_FRAME_FLAG_KEY;
+    else
+        s->current_picture.f->flags &= ~AV_FRAME_FLAG_KEY;
 
     ff_mpeg_unref_picture(s->avctx, &s->current_picture);
     if ((ret = ff_mpeg_ref_picture(s->avctx, &s->current_picture,
@@ -1979,7 +1982,7 @@ vbv_retry:
                 return ret;
         }
 
-        if (s->current_picture.f->key_frame)
+        if (s->current_picture.f->flags & AV_FRAME_FLAG_KEY)
             pkt->flags |= AV_PKT_FLAG_KEY;
         if (s->mb_info)
             av_packet_shrink_side_data(pkt, AV_PKT_DATA_H263_MB_INFO, s->mb_info_size);
@@ -3783,12 +3786,17 @@ static int encode_picture(MpegEncContext *s)
     }
 
     //FIXME var duplication
-    s->current_picture_ptr->f->key_frame =
-    s->current_picture.f->key_frame = s->pict_type == AV_PICTURE_TYPE_I; //FIXME pic_ptr
+    if (s->pict_type == AV_PICTURE_TYPE_I) {
+        s->current_picture_ptr->f->flags |= AV_FRAME_FLAG_KEY; //FIXME pic_ptr
+        s->current_picture.f->flags |= AV_FRAME_FLAG_KEY;
+    } else {
+        s->current_picture_ptr->f->flags &= ~AV_FRAME_FLAG_KEY; //FIXME pic_ptr
+        s->current_picture.f->flags &= ~AV_FRAME_FLAG_KEY;
+    }
     s->current_picture_ptr->f->pict_type =
     s->current_picture.f->pict_type = s->pict_type;
 
-    if (s->current_picture.f->key_frame)
+    if (s->current_picture.f->flags & AV_FRAME_FLAG_KEY)
         s->picture_in_gop_number=0;
 
     s->mb_x = s->mb_y = 0;

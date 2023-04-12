@@ -1186,7 +1186,7 @@ static int vp8_lossless_decode_frame(AVCodecContext *avctx, AVFrame *p,
 
     *got_frame   = 1;
     p->pict_type = AV_PICTURE_TYPE_I;
-    p->key_frame = 1;
+    p->flags |= AV_FRAME_FLAG_KEY;
     ret          = data_size;
 
 free_and_return:

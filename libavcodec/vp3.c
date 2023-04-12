@@ -2677,7 +2677,10 @@ static int vp3_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
     s->current_frame.f->pict_type = s->keyframe ? AV_PICTURE_TYPE_I
                                                 : AV_PICTURE_TYPE_P;
-    s->current_frame.f->key_frame = s->keyframe;
+    if (s->keyframe)
+        s->current_frame.f->flags |= AV_FRAME_FLAG_KEY;
+    else
+        s->current_frame.f->flags &= ~AV_FRAME_FLAG_KEY;
     if ((ret = ff_thread_get_ext_buffer(avctx, &s->current_frame,
                                         AV_GET_BUFFER_FLAG_REF)) < 0)
         goto error;

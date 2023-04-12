@@ -643,7 +643,10 @@ retry:
 
     // for skipping the frame
     s->current_picture.f->pict_type = s->pict_type;
-    s->current_picture.f->key_frame = s->pict_type == AV_PICTURE_TYPE_I;
+    if (s->pict_type == AV_PICTURE_TYPE_I)
+        s->current_picture.f->flags |= AV_FRAME_FLAG_KEY;
+    else
+        s->current_picture.f->flags &= ~AV_FRAME_FLAG_KEY;
 
     if ((avctx->skip_frame >= AVDISCARD_NONREF && s->pict_type == AV_PICTURE_TYPE_B) ||
         (avctx->skip_frame >= AVDISCARD_NONKEY && s->pict_type != AV_PICTURE_TYPE_I) ||

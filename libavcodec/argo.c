@@ -666,7 +666,10 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
         return ret;
 
     frame->pict_type = s->key ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
-    frame->key_frame = s->key;
+    if (s->key)
+        frame->flags |= AV_FRAME_FLAG_KEY;
+    else
+        frame->flags &= ~AV_FRAME_FLAG_KEY;
     *got_frame = 1;
 
     return avpkt->size;

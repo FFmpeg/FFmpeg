@@ -660,7 +660,10 @@ static int mss2_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                     frame->linesize[0] * (avctx->height - 1);
     c->rgb_stride = -frame->linesize[0];
 
-    frame->key_frame = keyframe;
+    if (keyframe)
+        frame->flags |= AV_FRAME_FLAG_KEY;
+    else
+        frame->flags &= ~AV_FRAME_FLAG_KEY;
     frame->pict_type = keyframe ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
 
     if (is_555) {

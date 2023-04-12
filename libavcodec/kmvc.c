@@ -288,10 +288,10 @@ static int decode_frame(AVCodecContext * avctx, AVFrame *frame,
     }
 
     if (header & KMVC_KEYFRAME) {
-        frame->key_frame = 1;
+        frame->flags |= AV_FRAME_FLAG_KEY;
         frame->pict_type = AV_PICTURE_TYPE_I;
     } else {
-        frame->key_frame = 0;
+        frame->flags &= ~AV_FRAME_FLAG_KEY;
         frame->pict_type = AV_PICTURE_TYPE_P;
     }
 

@@ -57,7 +57,7 @@ static int tmv_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     }
 
     frame->pict_type = AV_PICTURE_TYPE_I;
-    frame->key_frame = 1;
+    frame->flags |= AV_FRAME_FLAG_KEY;
     dst              = frame->data[0];
 
     frame->palette_has_changed = 1;

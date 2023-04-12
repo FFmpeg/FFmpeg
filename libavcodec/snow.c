@@ -606,7 +606,7 @@ int ff_snow_frame_start(SnowContext *s){
     }else{
         int i;
         for(i=0; i<s->max_ref_frames && s->last_picture[i]->data[0]; i++)
-            if(i && s->last_picture[i-1]->key_frame)
+            if(i && (s->last_picture[i-1]->flags & AV_FRAME_FLAG_KEY))
                 break;
         s->ref_frames= i;
         if(s->ref_frames==0){
@@ -617,7 +617,10 @@ int ff_snow_frame_start(SnowContext *s){
     if ((ret = ff_snow_get_buffer(s, s->current_picture)) < 0)
         return ret;
 
-    s->current_picture->key_frame= s->keyframe;
+    if (s->keyframe)
+        s->current_picture->flags |= AV_FRAME_FLAG_KEY;
+    else
+        s->current_picture->flags &= ~AV_FRAME_FLAG_KEY;
 
     return 0;
 }

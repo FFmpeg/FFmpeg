@@ -110,12 +110,12 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     // flip upside down, add difference frame
     if (buf[0] & 1) { // keyframe
         c->pic->pict_type = AV_PICTURE_TYPE_I;
-        c->pic->key_frame = 1;
+        c->pic->flags |= AV_FRAME_FLAG_KEY;
               copy_frame_default(c->pic, c->decomp_buf,
                                  c->linelen, c->height);
     } else {
         c->pic->pict_type = AV_PICTURE_TYPE_P;
-        c->pic->key_frame = 0;
+        c->pic->flags &= ~AV_FRAME_FLAG_KEY;
               add_frame_default(c->pic, c->decomp_buf,
                                 c->linelen, c->height);
     }

@@ -185,7 +185,10 @@ static int aom_decode(AVCodecContext *avctx, AVFrame *picture,
             aom_codec_frame_flags_t flags;
             ret = aom_codec_control(&ctx->decoder, AOMD_GET_FRAME_FLAGS, &flags);
             if (ret == AOM_CODEC_OK) {
-                picture->key_frame = !!(flags & AOM_FRAME_IS_KEY);
+                if (flags & AOM_FRAME_IS_KEY)
+                    picture->flags |= AV_FRAME_FLAG_KEY;
+                else
+                    picture->flags &= ~AV_FRAME_FLAG_KEY;
                 if (flags & (AOM_FRAME_IS_KEY | AOM_FRAME_IS_INTRAONLY))
                     picture->pict_type = AV_PICTURE_TYPE_I;
                 else if (flags & AOM_FRAME_IS_SWITCH)

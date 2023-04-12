@@ -1100,7 +1100,10 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
         return AVERROR_INVALIDDATA;
 
     s->key_frame = (avpkt->flags & AV_PKT_FLAG_KEY);
-    frame->key_frame = s->key_frame;
+    if (s->key_frame)
+        frame->flags |= AV_FRAME_FLAG_KEY;
+    else
+        frame->flags &= ~AV_FRAME_FLAG_KEY;
     frame->pict_type = s->key_frame ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
 
     if (!s->key_frame) {
@@ -1171,7 +1174,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
         return ret;
 
-    if (frame->key_frame) {
+    if (frame->flags & AV_FRAME_FLAG_KEY) {
         if (!s->dct && !s->rgb)
             ret = decode_raw_intra(avctx, gbyte, frame);
         else if (!s->dct && s->rgb)

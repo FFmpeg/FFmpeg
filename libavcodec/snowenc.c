@@ -1763,7 +1763,7 @@ redo_frame:
                 ff_build_rac_states(c, (1LL<<32)/20, 256-8);
                 pic->pict_type= AV_PICTURE_TYPE_I;
                 s->keyframe=1;
-                s->current_picture->key_frame=1;
+                s->current_picture->flags |= AV_FRAME_FLAG_KEY;
                 goto redo_frame;
             }
 
@@ -1891,7 +1891,7 @@ redo_frame:
     }
 
     pkt->size = ff_rac_terminate(c, 0);
-    if (s->current_picture->key_frame)
+    if (s->current_picture->flags & AV_FRAME_FLAG_KEY)
         pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
 

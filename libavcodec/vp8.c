@@ -2732,7 +2732,10 @@ int vp78_decode_frame(AVCodecContext *avctx, AVFrame *rframe, int *got_frame,
         goto err;
     }
 
-    curframe->tf.f->key_frame = s->keyframe;
+    if (s->keyframe)
+        curframe->tf.f->flags |= AV_FRAME_FLAG_KEY;
+    else
+        curframe->tf.f->flags &= ~AV_FRAME_FLAG_KEY;
     curframe->tf.f->pict_type = s->keyframe ? AV_PICTURE_TYPE_I
                                             : AV_PICTURE_TYPE_P;
     if ((ret = vp8_alloc_frame(s, curframe, referenced)) < 0)

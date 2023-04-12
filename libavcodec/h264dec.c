@@ -849,7 +849,7 @@ static int output_frame(H264Context *h, AVFrame *dst, H264Picture *srcp)
     av_dict_set(&dst->metadata, "stereo_mode", ff_h264_sei_stereo_mode(&h->sei.common.frame_packing), 0);
 
     if (srcp->sei_recovery_frame_cnt == 0)
-        dst->key_frame = 1;
+        dst->flags |= AV_FRAME_FLAG_KEY;
 
     if (h->avctx->export_side_data & AV_CODEC_EXPORT_DATA_VIDEO_ENC_PARAMS) {
         ret = h264_export_enc_params(dst, srcp);
@@ -951,7 +951,7 @@ static int send_next_delayed_frame(H264Context *h, AVFrame *dst_frame,
     out_idx = 0;
     for (i = 1;
          h->delayed_pic[i] &&
-         !h->delayed_pic[i]->f->key_frame &&
+         !(h->delayed_pic[i]->f->flags & AV_FRAME_FLAG_KEY) &&
          !h->delayed_pic[i]->mmco_reset;
          i++)
         if (h->delayed_pic[i]->poc < out->poc) {

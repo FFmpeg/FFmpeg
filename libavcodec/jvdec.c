@@ -211,7 +211,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     }
 
     if (video_size) {
-        s->frame->key_frame           = 1;
+        s->frame->flags |= AV_FRAME_FLAG_KEY;
         s->frame->pict_type           = AV_PICTURE_TYPE_I;
         s->frame->palette_has_changed = s->palette_has_changed;
         s->palette_has_changed        = 0;

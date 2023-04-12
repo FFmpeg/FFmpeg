@@ -1613,7 +1613,10 @@ static int vp9_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     if ((ret = vp9_frame_alloc(avctx, &s->s.frames[CUR_FRAME])) < 0)
         return ret;
     f = s->s.frames[CUR_FRAME].tf.f;
-    f->key_frame = s->s.h.keyframe;
+    if (s->s.h.keyframe)
+        f->flags |= AV_FRAME_FLAG_KEY;
+    else
+        f->flags &= ~AV_FRAME_FLAG_KEY;
     f->pict_type = (s->s.h.keyframe || s->s.h.intraonly) ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
 
     if (s->s.frames[REF_FRAME_SEGMAP].tf.f->buf[0] &&

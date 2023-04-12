@@ -332,7 +332,7 @@ static int photocd_decode_frame(AVCodecContext *avctx, AVFrame *p,
         return ret;
 
     p->pict_type = AV_PICTURE_TYPE_I;
-    p->key_frame = 1;
+    p->flags |= AV_FRAME_FLAG_KEY;
 
     bytestream2_init(gb, avpkt->data, avpkt->size);
 

@@ -47,7 +47,7 @@ static int y216_decode_frame(AVCodecContext *avctx, AVFrame *pic,
     if ((ret = ff_get_buffer(avctx, pic, 0)) < 0)
         return ret;
 
-    pic->key_frame = 1;
+    pic->flags |= AV_FRAME_FLAG_KEY;
     pic->pict_type = AV_PICTURE_TYPE_I;
 
     y = (uint16_t *)pic->data[0];

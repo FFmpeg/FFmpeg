@@ -2230,7 +2230,10 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
         s->hq_picture    = (parse_code & 0xF8) == 0xE8;          /* [DIRAC_STD] is_hq_picture()       */
         s->dc_prediction = (parse_code & 0x28) == 0x08;          /* [DIRAC_STD] using_dc_prediction() */
         pic->reference   = (parse_code & 0x0C) == 0x0C;          /* [DIRAC_STD] is_reference()        */
-        pic->avframe->key_frame = s->num_refs == 0;              /* [DIRAC_STD] is_intra()            */
+        if (s->num_refs == 0)                                    /* [DIRAC_STD] is_intra()            */
+             pic->avframe->flags |= AV_FRAME_FLAG_KEY;
+        else
+             pic->avframe->flags &= ~AV_FRAME_FLAG_KEY;
         pic->avframe->pict_type = s->num_refs + 1;               /* Definition of AVPictureType in avutil.h */
 
         /* VC-2 Low Delay has a different parse code than the Dirac Low Delay */

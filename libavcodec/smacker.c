@@ -393,11 +393,13 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     bytestream2_init(&gb2, avpkt->data, avpkt->size);
     flags = bytestream2_get_byteu(&gb2);
     smk->pic->palette_has_changed = flags & 1;
-    smk->pic->key_frame = !!(flags & 2);
-    if (smk->pic->key_frame)
+    if (flags & 2) {
+        smk->pic->flags |= AV_FRAME_FLAG_KEY;
         smk->pic->pict_type = AV_PICTURE_TYPE_I;
-    else
+    } else {
+        smk->pic->flags &= ~AV_FRAME_FLAG_KEY;
         smk->pic->pict_type = AV_PICTURE_TYPE_P;
+    }
 
     for(i = 0; i < 256; i++)
         *pal++ = 0xFFU << 24 | bytestream2_get_be24u(&gb2);

@@ -96,7 +96,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
         av_log(NULL, AV_LOG_WARNING, "Error frame type in uavs3d: %d.\n", dec_frame->type);
     } else {
         frm->pict_type = ff_avs3_image_type[dec_frame->type];
-        frm->key_frame = (frm->pict_type == AV_PICTURE_TYPE_I);
+        if (frm->pict_type == AV_PICTURE_TYPE_I)
+            frm->flags |= AV_FRAME_FLAG_KEY;
+        else
+            frm->flags &= ~AV_FRAME_FLAG_KEY;
     }
 
     for (i = 0; i < 3; i++) {

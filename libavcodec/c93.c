@@ -147,10 +147,10 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     b = bytestream2_get_byte(&gb);
     if (b & C93_FIRST_FRAME) {
         newpic->pict_type = AV_PICTURE_TYPE_I;
-        newpic->key_frame = 1;
+        newpic->flags |= AV_FRAME_FLAG_KEY;
     } else {
         newpic->pict_type = AV_PICTURE_TYPE_P;
-        newpic->key_frame = 0;
+        newpic->flags &= ~AV_FRAME_FLAG_KEY;
     }
 
     for (y = 0; y < HEIGHT; y += 8) {

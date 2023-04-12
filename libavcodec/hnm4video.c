@@ -420,7 +420,7 @@ static int hnm_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             postprocess_current_frame(avctx);
         copy_processed_frame(avctx, frame);
         frame->pict_type = AV_PICTURE_TYPE_I;
-        frame->key_frame = 1;
+        frame->flags |= AV_FRAME_FLAG_KEY;
         memcpy(frame->data[1], hnm->palette, 256 * 4);
         *got_frame = 1;
     } else if (chunk_id == HNM4_CHUNK_ID_IU) {
@@ -438,7 +438,7 @@ static int hnm_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         }
         copy_processed_frame(avctx, frame);
         frame->pict_type = AV_PICTURE_TYPE_P;
-        frame->key_frame = 0;
+        frame->flags &= ~AV_FRAME_FLAG_KEY;
         memcpy(frame->data[1], hnm->palette, 256 * 4);
         *got_frame = 1;
         FFSWAP(uint8_t *, hnm->current, hnm->previous);

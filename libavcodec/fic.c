@@ -406,11 +406,11 @@ static int fic_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                               NULL, nslices, sizeof(ctx->slice_data[0]))) < 0)
         return ret;
 
-    ctx->frame->key_frame = 1;
+    ctx->frame->flags |= AV_FRAME_FLAG_KEY;
     ctx->frame->pict_type = AV_PICTURE_TYPE_I;
     for (slice = 0; slice < nslices; slice++) {
         if (ctx->slice_data[slice].p_frame) {
-            ctx->frame->key_frame = 0;
+            ctx->frame->flags &= ~AV_FRAME_FLAG_KEY;
             ctx->frame->pict_type = AV_PICTURE_TYPE_P;
             break;
         }

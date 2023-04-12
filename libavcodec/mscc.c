@@ -200,7 +200,7 @@ inflate_error:
                s->uncomp_buf + s->bpp * j * avctx->width, s->bpp * avctx->width);
     }
 
-    frame->key_frame = 1;
+    frame->flags |= AV_FRAME_FLAG_KEY;
     frame->pict_type = AV_PICTURE_TYPE_I;
 
     *got_frame = 1;

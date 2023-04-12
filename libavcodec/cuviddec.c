@@ -599,7 +599,10 @@ static int cuvid_output_frame(AVCodecContext *avctx, AVFrame *frame)
             goto error;
         }
 
-        frame->key_frame = ctx->key_frame[parsed_frame.dispinfo.picture_index];
+        if (ctx->key_frame[parsed_frame.dispinfo.picture_index])
+            frame->flags |= AV_FRAME_FLAG_KEY;
+        else
+            frame->flags &= ~AV_FRAME_FLAG_KEY;
         ctx->key_frame[parsed_frame.dispinfo.picture_index] = 0;
 
         frame->width = avctx->width;

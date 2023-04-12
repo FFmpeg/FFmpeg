@@ -304,7 +304,10 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
     if ((ret = av_frame_ref(ref, p)) < 0)
         return ret;
 
-    p->key_frame = intra;
+    if (intra)
+        p->flags |= AV_FRAME_FLAG_KEY;
+    else
+        p->flags &= ~AV_FRAME_FLAG_KEY;
     p->pict_type = intra ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
 
     *got_frame      = 1;

@@ -740,7 +740,10 @@ static int mss3_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
 
     if ((ret = ff_reget_buffer(avctx, c->pic, 0)) < 0)
         return ret;
-    c->pic->key_frame = keyframe;
+    if (keyframe)
+        c->pic->flags |= AV_FRAME_FLAG_KEY;
+    else
+        c->pic->flags &= ~AV_FRAME_FLAG_KEY;
     c->pic->pict_type = keyframe ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
     if (!bytestream2_get_bytes_left(&gb)) {
         if ((ret = av_frame_ref(rframe, c->pic)) < 0)

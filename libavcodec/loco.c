@@ -206,7 +206,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
 
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
         return ret;
-    p->key_frame = 1;
+    p->flags |= AV_FRAME_FLAG_KEY;
 
 #define ADVANCE_BY_DECODED do { \
     if (decoded < 0 || decoded >= buf_size) goto buf_too_small; \

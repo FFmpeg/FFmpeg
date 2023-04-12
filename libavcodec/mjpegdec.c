@@ -745,7 +745,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
 
         if (s->avctx->skip_frame == AVDISCARD_ALL) {
             s->picture_ptr->pict_type = AV_PICTURE_TYPE_I;
-            s->picture_ptr->key_frame = 1;
+            s->picture_ptr->flags |= AV_FRAME_FLAG_KEY;
             s->got_picture            = 1;
             return 0;
         }
@@ -754,7 +754,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         if (ff_get_buffer(s->avctx, s->picture_ptr, AV_GET_BUFFER_FLAG_REF) < 0)
             return -1;
         s->picture_ptr->pict_type = AV_PICTURE_TYPE_I;
-        s->picture_ptr->key_frame = 1;
+        s->picture_ptr->flags |= AV_FRAME_FLAG_KEY;
         s->got_picture            = 1;
 
         // Lets clear the palette to avoid leaving uninitialized values in it

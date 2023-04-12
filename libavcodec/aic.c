@@ -393,7 +393,7 @@ static int aic_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
     ctx->frame            = frame;
     ctx->frame->pict_type = AV_PICTURE_TYPE_I;
-    ctx->frame->key_frame = 1;
+    ctx->frame->flags |= AV_FRAME_FLAG_KEY;
 
     off = FFALIGN(AIC_HDR_SIZE + ctx->num_x_slices * ctx->mb_height * 2, 4);
 

@@ -237,7 +237,7 @@ static int tgq_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    frame->key_frame = 1;
+    frame->flags |= AV_FRAME_FLAG_KEY;
     frame->pict_type = AV_PICTURE_TYPE_I;
 
     for (y = 0; y < FFALIGN(avctx->height, 16) >> 4; y++)

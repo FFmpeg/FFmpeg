@@ -501,7 +501,7 @@ static int gif_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
             return AVERROR(ENOMEM);
 
         s->frame->pict_type = AV_PICTURE_TYPE_I;
-        s->frame->key_frame = 1;
+        s->frame->flags |= AV_FRAME_FLAG_KEY;
         s->keyframe_ok = 1;
     } else {
         if (!s->keyframe_ok) {
@@ -513,7 +513,7 @@ static int gif_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
             return ret;
 
         s->frame->pict_type = AV_PICTURE_TYPE_P;
-        s->frame->key_frame = 0;
+        s->frame->flags &= ~AV_FRAME_FLAG_KEY;
     }
 
     ret = gif_parse_next_image(s, s->frame);

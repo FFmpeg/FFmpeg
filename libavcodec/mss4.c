@@ -503,7 +503,10 @@ static int mss4_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
 
     if ((ret = ff_reget_buffer(avctx, c->pic, 0)) < 0)
         return ret;
-    c->pic->key_frame = (frame_type == INTRA_FRAME);
+    if (frame_type == INTRA_FRAME)
+        c->pic->flags |= AV_FRAME_FLAG_KEY;
+    else
+        c->pic->flags &= ~AV_FRAME_FLAG_KEY;
     c->pic->pict_type = (frame_type == INTRA_FRAME) ? AV_PICTURE_TYPE_I
                                                    : AV_PICTURE_TYPE_P;
     if (frame_type == SKIP_FRAME) {

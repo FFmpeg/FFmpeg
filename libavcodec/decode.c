@@ -570,6 +570,9 @@ static int decode_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
     }
 
     if (!ret) {
+        if (avctx->codec_type != AVMEDIA_TYPE_VIDEO)
+            frame->flags |= AV_FRAME_FLAG_KEY;
+        frame->key_frame = !!(frame->flags & AV_FRAME_FLAG_KEY);
 #if FF_API_INTERLACED_FRAME
 FF_DISABLE_DEPRECATION_WARNINGS
         frame->interlaced_frame = !!(frame->flags & AV_FRAME_FLAG_INTERLACED);

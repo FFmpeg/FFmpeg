@@ -290,7 +290,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
     AVRational aspect_ratio = s->avctx->sample_aspect_ratio;
     int aspect_ratio_info;
 
-    if (!s->current_picture.f->key_frame)
+    if (!(s->current_picture.f->flags & AV_FRAME_FLAG_KEY))
         return;
 
     if (aspect_ratio.num == 0 || aspect_ratio.den == 0)

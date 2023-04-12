@@ -195,7 +195,10 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
         }
     }
 
-    s->prev_frame->key_frame = intra;
+    if (intra)
+        s->prev_frame->flags |= AV_FRAME_FLAG_KEY;
+    else
+        s->prev_frame->flags &= ~AV_FRAME_FLAG_KEY;
     s->prev_frame->pict_type = intra ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
 
     if ((ret = av_frame_ref(frame, s->prev_frame)) < 0)

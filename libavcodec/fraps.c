@@ -216,7 +216,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *f,
     }
 
     f->pict_type = AV_PICTURE_TYPE_I;
-    f->key_frame = 1;
+    f->flags |= AV_FRAME_FLAG_KEY;
 
     avctx->pix_fmt = version & 1 ? is_pal ? AV_PIX_FMT_PAL8 : AV_PIX_FMT_BGR24 : AV_PIX_FMT_YUVJ420P;
     avctx->color_range = version & 1 ? AVCOL_RANGE_UNSPECIFIED

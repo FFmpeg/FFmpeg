@@ -350,7 +350,7 @@ static void vp56_mc(VP56Context *s, int b, int plane, uint8_t *src,
 
     if (s->avctx->skip_loop_filter >= AVDISCARD_ALL ||
         (s->avctx->skip_loop_filter >= AVDISCARD_NONKEY
-         && !s->frames[VP56_FRAME_CURRENT]->key_frame))
+         && !(s->frames[VP56_FRAME_CURRENT]->flags & AV_FRAME_FLAG_KEY)))
         deblock_filtering = 0;
 
     dx = s->mv[b].x / s->vp56_coord_div[b];
@@ -493,7 +493,7 @@ static int vp56_decode_mb(VP56Context *s, int row, int col, int is_alpha)
     VP56mb mb_type;
     int ret;
 
-    if (s->frames[VP56_FRAME_CURRENT]->key_frame)
+    if (s->frames[VP56_FRAME_CURRENT]->flags & AV_FRAME_FLAG_KEY)
         mb_type = VP56_MB_INTRA;
     else
         mb_type = vp56_decode_mv(s, row, col);
@@ -511,7 +511,7 @@ static int vp56_conceal_mb(VP56Context *s, int row, int col, int is_alpha)
 {
     VP56mb mb_type;
 
-    if (s->frames[VP56_FRAME_CURRENT]->key_frame)
+    if (s->frames[VP56_FRAME_CURRENT]->flags & AV_FRAME_FLAG_KEY)
         mb_type = VP56_MB_INTRA;
     else
         mb_type = vp56_conceal_mv(s, row, col);
@@ -596,6 +596,7 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
             if (s->alpha_context)
                 av_frame_unref(s->alpha_context->frames[i]);
         }
+        s->frames[VP56_FRAME_CURRENT]->flags |= AV_FRAME_FLAG_KEY; //FIXME
     }
 
     ret = ff_get_buffer(avctx, p, AV_GET_BUFFER_FLAG_REF);
@@ -670,7 +671,7 @@ static int ff_vp56_decode_mbs(AVCodecContext *avctx, void *data,
     int res;
     int damaged = 0;
 
-    if (p->key_frame) {
+    if (p->flags & AV_FRAME_FLAG_KEY) {
         p->pict_type = AV_PICTURE_TYPE_I;
         s->default_models_init(s);
         for (block=0; block<s->mb_height*s->mb_width; block++)
@@ -762,7 +763,7 @@ static int ff_vp56_decode_mbs(AVCodecContext *avctx, void *data,
         s->have_undamaged_frame = 1;
 
 next:
-    if (p->key_frame || s->golden_frame) {
+    if ((p->flags & AV_FRAME_FLAG_KEY) || s->golden_frame) {
         av_frame_unref(s->frames[VP56_FRAME_GOLDEN]);
         if ((res = av_frame_ref(s->frames[VP56_FRAME_GOLDEN], p)) < 0)
             return res;

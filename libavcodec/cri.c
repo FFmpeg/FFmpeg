@@ -408,7 +408,7 @@ skip:
     }
 
     p->pict_type = AV_PICTURE_TYPE_I;
-    p->key_frame = 1;
+    p->flags |= AV_FRAME_FLAG_KEY;
 
     *got_frame = 1;
 

@@ -501,7 +501,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
      * in later.
      * See decode_nal_units().
      */
-    pic->f->key_frame = 0;
+    pic->f->flags   &= ~AV_FRAME_FLAG_KEY;
     pic->mmco_reset  = 0;
     pic->recovered   = 0;
     pic->invalid_gap = 0;
@@ -1326,7 +1326,7 @@ static int h264_select_output_frame(H264Context *h)
     out     = h->delayed_pic[0];
     out_idx = 0;
     for (i = 1; h->delayed_pic[i] &&
-                !h->delayed_pic[i]->f->key_frame &&
+                !(h->delayed_pic[i]->f->flags & AV_FRAME_FLAG_KEY) &&
                 !h->delayed_pic[i]->mmco_reset;
          i++)
         if (h->delayed_pic[i]->poc < out->poc) {
@@ -1334,7 +1334,7 @@ static int h264_select_output_frame(H264Context *h)
             out_idx = i;
         }
     if (h->avctx->has_b_frames == 0 &&
-        (h->delayed_pic[0]->f->key_frame || h->delayed_pic[0]->mmco_reset))
+        ((h->delayed_pic[0]->f->flags & AV_FRAME_FLAG_KEY) || h->delayed_pic[0]->mmco_reset))
         h->next_outputed_poc = INT_MIN;
     out_of_order = out->poc < h->next_outputed_poc;
 
@@ -1345,7 +1345,7 @@ static int h264_select_output_frame(H264Context *h)
     }
     if (!out_of_order && pics > h->avctx->has_b_frames) {
         h->next_output_pic = out;
-        if (out_idx == 0 && h->delayed_pic[0] && (h->delayed_pic[0]->f->key_frame || h->delayed_pic[0]->mmco_reset)) {
+        if (out_idx == 0 && h->delayed_pic[0] && ((h->delayed_pic[0]->f->flags & AV_FRAME_FLAG_KEY) || h->delayed_pic[0]->mmco_reset)) {
             h->next_outputed_poc = INT_MIN;
         } else
             h->next_outputed_poc = out->poc;
@@ -1635,7 +1635,7 @@ static int h264_field_start(H264Context *h, const H264SliceContext *sl,
         }
     }
 
-    h->cur_pic_ptr->f->key_frame |= (nal->type == H264_NAL_IDR_SLICE);
+    h->cur_pic_ptr->f->flags |= AV_FRAME_FLAG_KEY * !!(nal->type == H264_NAL_IDR_SLICE);
 
     if (nal->type == H264_NAL_IDR_SLICE ||
         (h->recovery_frame == h->poc.frame_num && nal->ref_idc)) {

@@ -286,11 +286,11 @@ static int mxpeg_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                                              AV_GET_BUFFER_FLAG_REF)) < 0)
                         return ret;
                     jpg->picture_ptr->pict_type = AV_PICTURE_TYPE_P;
-                    jpg->picture_ptr->key_frame = 0;
+                    jpg->picture_ptr->flags &= ~AV_FRAME_FLAG_KEY;
                     jpg->got_picture = 1;
                 } else {
                     jpg->picture_ptr->pict_type = AV_PICTURE_TYPE_I;
-                    jpg->picture_ptr->key_frame = 1;
+                    jpg->picture_ptr->flags |= AV_FRAME_FLAG_KEY;
                 }
 
                 if (s->got_mxm_bitmask) {

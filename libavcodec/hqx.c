@@ -504,7 +504,7 @@ static int hqx_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
     avctx->execute2(avctx, decode_slice_thread, NULL, NULL, 16);
 
-    ctx->pic->key_frame = 1;
+    ctx->pic->flags |= AV_FRAME_FLAG_KEY;
     ctx->pic->pict_type = AV_PICTURE_TYPE_I;
 
     *got_picture_ptr = 1;

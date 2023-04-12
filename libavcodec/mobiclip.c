@@ -1235,7 +1235,7 @@ static int mobiclip_decode(AVCodecContext *avctx, AVFrame *rframe,
 
     if (get_bits1(gb)) {
         frame->pict_type = AV_PICTURE_TYPE_I;
-        frame->key_frame = 1;
+        frame->flags |= AV_FRAME_FLAG_KEY;
         s->moflex = get_bits1(gb);
         s->dct_tab_idx = get_bits1(gb);
 
@@ -1256,7 +1256,7 @@ static int mobiclip_decode(AVCodecContext *avctx, AVFrame *rframe,
         memset(motion, 0, s->motion_size);
 
         frame->pict_type = AV_PICTURE_TYPE_P;
-        frame->key_frame = 0;
+        frame->flags &= ~AV_FRAME_FLAG_KEY;
         s->dct_tab_idx = 0;
 
         ret = setup_qtables(avctx, s->quantizer + (int64_t)get_se_golomb(gb));

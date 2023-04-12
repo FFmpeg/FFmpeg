@@ -173,7 +173,7 @@ static int screenpresso_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     /* Usual properties */
     if (keyframe) {
         frame->pict_type = AV_PICTURE_TYPE_I;
-        frame->key_frame = 1;
+        frame->flags |= AV_FRAME_FLAG_KEY;
     } else {
         frame->pict_type = AV_PICTURE_TYPE_P;
     }

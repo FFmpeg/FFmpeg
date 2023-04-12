@@ -623,9 +623,8 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     get_qtable(s->intraq_tab[0], s->intra_quant, luma_tab);
     get_qtable(s->intraq_tab[1], s->intra_quant, chroma_tab);
 
-    frame->key_frame = s->is_inter == 0;
-
-    if (frame->key_frame) {
+    if (s->is_inter == 0) {
+        frame->flags |= AV_FRAME_FLAG_KEY;
         ret = decode_intra(avctx, gb, frame);
         if (ret < 0)
             return ret;
@@ -638,6 +637,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
             return AVERROR_INVALIDDATA;
         }
 
+        frame->flags &= ~AV_FRAME_FLAG_KEY;
         ret = decode_inter(avctx, gb, frame, s->prev_frame);
         if (ret < 0)
             return ret;

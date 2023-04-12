@@ -61,7 +61,7 @@ static int avs_decode_frame(AVCodecContext * avctx, AVFrame *picture,
     if ((ret = ff_reget_buffer(avctx, p, 0)) < 0)
         return ret;
     p->pict_type = AV_PICTURE_TYPE_P;
-    p->key_frame = 0;
+    p->flags &= ~AV_FRAME_FLAG_KEY;
 
     out    = p->data[0];
     stride = p->linesize[0];
@@ -97,7 +97,7 @@ static int avs_decode_frame(AVCodecContext * avctx, AVFrame *picture,
     switch (sub_type) {
     case AVS_I_FRAME:
         p->pict_type = AV_PICTURE_TYPE_I;
-        p->key_frame = 1;
+        p->flags |= AV_FRAME_FLAG_KEY;
     case AVS_P_FRAME_3X3:
         vect_w = 3;
         vect_h = 3;

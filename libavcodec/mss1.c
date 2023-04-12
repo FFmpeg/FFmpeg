@@ -165,12 +165,12 @@ static int mss1_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
         c->corrupted = 0;
         ff_mss12_slicecontext_reset(&ctx->sc);
         pal_changed        = decode_pal(c, &acoder);
-        ctx->pic->key_frame = 1;
+        ctx->pic->flags |= AV_FRAME_FLAG_KEY;
         ctx->pic->pict_type = AV_PICTURE_TYPE_I;
     } else {
         if (c->corrupted)
             return AVERROR_INVALIDDATA;
-        ctx->pic->key_frame = 0;
+        ctx->pic->flags &= ~AV_FRAME_FLAG_KEY;
         ctx->pic->pict_type = AV_PICTURE_TYPE_P;
     }
     c->corrupted = ff_mss12_decode_rect(&ctx->sc, &acoder, 0, 0,

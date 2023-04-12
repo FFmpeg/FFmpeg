@@ -343,7 +343,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
     s->current_picture_ptr->field_picture      =  s->picture_structure != PICT_FRAME;
 
     s->current_picture_ptr->f->pict_type = s->pict_type;
-    s->current_picture_ptr->f->key_frame = s->pict_type == AV_PICTURE_TYPE_I;
+    if (s->pict_type == AV_PICTURE_TYPE_I)
+        s->current_picture.f->flags |= AV_FRAME_FLAG_KEY;
+    else
+        s->current_picture.f->flags &= ~AV_FRAME_FLAG_KEY;
 
     if ((ret = ff_mpeg_ref_picture(s->avctx, &s->current_picture,
                                    s->current_picture_ptr)) < 0)
@@ -382,7 +385,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         s->last_picture_ptr = &s->picture[idx];
 
         s->last_picture_ptr->reference    = 3;
-        s->last_picture_ptr->f->key_frame = 0;
+        s->last_picture_ptr->f->flags &= ~AV_FRAME_FLAG_KEY;
         s->last_picture_ptr->f->pict_type = AV_PICTURE_TYPE_P;
 
         if (alloc_picture(s, s->last_picture_ptr) < 0) {
@@ -424,7 +427,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         s->next_picture_ptr = &s->picture[idx];
 
         s->next_picture_ptr->reference   = 3;
-        s->next_picture_ptr->f->key_frame = 0;
+        s->next_picture_ptr->f->flags &= ~AV_FRAME_FLAG_KEY;
         s->next_picture_ptr->f->pict_type = AV_PICTURE_TYPE_P;
 
         if (alloc_picture(s, s->next_picture_ptr) < 0) {

@@ -846,7 +846,10 @@ static int av1_frame_alloc(AVCodecContext *avctx, AV1Frame *f)
         goto fail;
 
     frame = f->f;
-    frame->key_frame = header->frame_type == AV1_FRAME_KEY;
+    if (header->frame_type == AV1_FRAME_KEY)
+        frame->flags |= AV_FRAME_FLAG_KEY;
+    else
+        frame->flags &= ~AV_FRAME_FLAG_KEY;
 
     switch (header->frame_type) {
     case AV1_FRAME_KEY:

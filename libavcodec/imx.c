@@ -59,9 +59,9 @@ static int imx_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
 
     if (ff_copy_palette(imx->pal, avpkt, avctx)) {
         frame->palette_has_changed = 1;
-        frame->key_frame = 1;
+        frame->flags |= AV_FRAME_FLAG_KEY;
     } else {
-        frame->key_frame = 0;
+        frame->flags &= ~AV_FRAME_FLAG_KEY;
         frame->palette_has_changed = 0;
     }
 
@@ -92,7 +92,7 @@ static int imx_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                     break;
             }
 
-            frame->key_frame = 0;
+            frame->flags &= ~AV_FRAME_FLAG_KEY;
             break;
         case 1:
             if (len == 0) {
@@ -114,7 +114,7 @@ static int imx_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                         break;
                 }
 
-                frame->key_frame = 0;
+                frame->flags &= ~AV_FRAME_FLAG_KEY;
             } else {
                 while (len > 0) {
                     fill = bytestream2_get_byte(&gb);
@@ -150,7 +150,7 @@ static int imx_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
         }
     }
 
-    frame->pict_type = frame->key_frame ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
+    frame->pict_type = (frame->flags & AV_FRAME_FLAG_KEY) ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
 
     if ((ret = av_frame_ref(rframe, frame)) < 0)
         return ret;

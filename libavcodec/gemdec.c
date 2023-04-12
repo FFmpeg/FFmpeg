@@ -180,7 +180,7 @@ static int gem_decode_frame(AVCodecContext *avctx, AVFrame *p,
         return ret;
 
     p->pict_type = AV_PICTURE_TYPE_I;
-    p->key_frame = 1;
+    p->flags |= AV_FRAME_FLAG_KEY;
     p->palette_has_changed = 1;
     palette = (uint32_t  *)p->data[1];
 

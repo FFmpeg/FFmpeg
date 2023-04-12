@@ -427,7 +427,8 @@ int ff_v4l2_buffer_buf_to_avframe(AVFrame *frame, V4L2Buffer *avbuf)
         return ret;
 
     /* 2. get frame information */
-    frame->key_frame = !!(avbuf->buf.flags & V4L2_BUF_FLAG_KEYFRAME);
+    if (avbuf->buf.flags & V4L2_BUF_FLAG_KEYFRAME)
+        frame->flags |= AV_FRAME_FLAG_KEY;
     frame->color_primaries = v4l2_get_color_primaries(avbuf);
     frame->colorspace = v4l2_get_color_space(avbuf);
     frame->color_range = v4l2_get_color_range(avbuf);
