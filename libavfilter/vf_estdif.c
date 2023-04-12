@@ -345,8 +345,8 @@ static int deinterlace_slice(AVFilterContext *ctx, void *arg,
     const int rslope = s->rslope;
     const int redge = s->redge;
     const int depth = s->depth;
-    const int interlaced = in->interlaced_frame;
-    const int tff = (s->field == (s->parity == -1 ? interlaced ? in->top_field_first : 1 :
+    const int interlaced = !!(in->flags & AV_FRAME_FLAG_INTERLACED);
+    const int tff = (s->field == (s->parity == -1 ? interlaced ? (in->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST) : 1 :
                                   s->parity ^ 1));
 
     for (int plane = 0; plane < s->nb_planes; plane++) {
@@ -444,6 +444,7 @@ static int filter(AVFilterContext *ctx, AVFrame *in, int64_t pts, int64_t durati
         return AVERROR(ENOMEM);
     av_frame_copy_props(out, in);
     out->interlaced_frame = 0;
+    out->flags &= ~AV_FRAME_FLAG_INTERLACED;
     out->pts = pts;
     out->duration = duration;
 
@@ -502,7 +503,7 @@ static int config_input(AVFilterLink *inlink)
         return 0;
     }
 
-    if ((s->deint && !s->prev->interlaced_frame) || ctx->is_disabled) {
+    if ((s->deint && !(s->prev->flags & AV_FRAME_FLAG_INTERLACED)) || ctx->is_disabled) {
         s->prev->pts *= 2;
         s->prev->duration *= 2;
         ret = ff_filter_frame(ctx->outputs[0], s->prev);

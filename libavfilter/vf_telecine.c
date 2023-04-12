@@ -206,6 +206,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
         }
         s->frame[nout]->interlaced_frame = 1;
         s->frame[nout]->top_field_first  = !s->first_field;
+        s->frame[nout]->flags |= AV_FRAME_FLAG_INTERLACED;
+        if (s->first_field)
+            s->frame[nout]->flags &= ~AV_FRAME_FLAG_TOP_FIELD_FIRST;
+        else
+            s->frame[nout]->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
         nout++;
         len--;
         s->occupied = 0;
@@ -225,6 +230,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
                                 s->planeheight[i]);
         s->frame[nout]->interlaced_frame = inpicref->interlaced_frame;
         s->frame[nout]->top_field_first  = inpicref->top_field_first;
+        s->frame[nout]->flags |= (inpicref->flags & (AV_FRAME_FLAG_INTERLACED | AV_FRAME_FLAG_TOP_FIELD_FIRST));
         nout++;
         len -= 2;
     }
@@ -241,8 +247,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
 
     for (i = 0; i < nout; i++) {
         AVFrame *frame = av_frame_clone(s->frame[i]);
-        int interlaced = frame ? frame->interlaced_frame : 0;
-        int tff        = frame ? frame->top_field_first  : 0;
+        int interlaced = frame ? !!(frame->flags & AV_FRAME_FLAG_INTERLACED)      : 0;
+        int tff        = frame ? !!(frame->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST) : 0;
 
         if (!frame) {
             av_frame_free(&inpicref);
@@ -252,6 +258,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
         av_frame_copy_props(frame, inpicref);
         frame->interlaced_frame = interlaced;
         frame->top_field_first  = tff;
+        if (interlaced)
+            frame->flags |= AV_FRAME_FLAG_INTERLACED;
+        else
+            frame->flags &= ~AV_FRAME_FLAG_INTERLACED;
+        if (tff)
+            frame->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
+        else
+            frame->flags &= ~AV_FRAME_FLAG_TOP_FIELD_FIRST;
         frame->pts = ((s->start_time == AV_NOPTS_VALUE) ? 0 : s->start_time) +
                      av_rescale(outlink->frame_count_in, s->ts_unit.num,
                                 s->ts_unit.den);

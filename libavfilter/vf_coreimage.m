@@ -303,6 +303,7 @@ static int request_frame(AVFilterLink *link)
     frame->duration            = 1;
     frame->key_frame           = 1;
     frame->interlaced_frame    = 0;
+    frame->flags              &= ~AV_FRAME_FLAG_INTERLACED;
     frame->pict_type           = AV_PICTURE_TYPE_I;
     frame->sample_aspect_ratio = ctx->sar;
 

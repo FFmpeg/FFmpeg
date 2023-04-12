@@ -128,9 +128,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     /* set field */
     if (s->field_mode == MODE_PROG) {
         frame->interlaced_frame = 0;
+        frame->flags &= ~AV_FRAME_FLAG_INTERLACED;
     } else if (s->field_mode != MODE_AUTO) {
         frame->interlaced_frame = 1;
         frame->top_field_first = s->field_mode;
+        frame->flags |= AV_FRAME_FLAG_INTERLACED;
+        if (s->field_mode)
+            frame->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
+        else
+            frame->flags &= ~AV_FRAME_FLAG_TOP_FIELD_FIRST;
     }
 
     /* set range */

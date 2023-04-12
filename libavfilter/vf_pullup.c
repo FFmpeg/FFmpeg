@@ -670,7 +670,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                   (const uint8_t**)in->data, in->linesize,
                   inlink->format, inlink->w, inlink->h);
 
-    p = in->interlaced_frame ? !in->top_field_first : 0;
+    p = (in->flags & AV_FRAME_FLAG_INTERLACED) ?
+        !(in->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST) : 0;
     pullup_submit_field(s, b, p  );
     pullup_submit_field(s, b, p^1);
 

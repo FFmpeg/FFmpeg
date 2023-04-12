@@ -57,8 +57,8 @@ static void tlog_ref(void *ctx, AVFrame *ref, int end)
         ff_tlog(ctx, " a:%d/%d s:%dx%d i:%c iskey:%d type:%c",
                 ref->sample_aspect_ratio.num, ref->sample_aspect_ratio.den,
                 ref->width, ref->height,
-                !ref->interlaced_frame     ? 'P' :         /* Progressive  */
-                ref->top_field_first ? 'T' : 'B',    /* Top / Bottom */
+                !(ref->flags & AV_FRAME_FLAG_INTERLACED) ? 'P' : /* Progressive  */
+                (ref->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST) ? 'T' : 'B', /* Top / Bottom */
                 ref->key_frame,
                 av_get_picture_type_char(ref->pict_type));
     }

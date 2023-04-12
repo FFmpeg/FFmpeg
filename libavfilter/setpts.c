@@ -174,7 +174,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     if (frame) {
         if (inlink->type == AVMEDIA_TYPE_VIDEO) {
-            setpts->var_values[VAR_INTERLACED] = frame->interlaced_frame;
+            setpts->var_values[VAR_INTERLACED] = !!(frame->flags & AV_FRAME_FLAG_INTERLACED);
         } else if (inlink->type == AVMEDIA_TYPE_AUDIO) {
             setpts->var_values[VAR_S] = frame->nb_samples;
             setpts->var_values[VAR_NB_SAMPLES] = frame->nb_samples;

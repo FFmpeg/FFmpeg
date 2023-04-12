@@ -356,8 +356,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     case AVMEDIA_TYPE_VIDEO:
         select->var_values[VAR_INTERLACE_TYPE] =
-            !frame->interlaced_frame ? INTERLACE_TYPE_P :
-        frame->top_field_first ? INTERLACE_TYPE_T : INTERLACE_TYPE_B;
+            !(frame->flags & AV_FRAME_FLAG_INTERLACED) ? INTERLACE_TYPE_P :
+        (frame->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST) ? INTERLACE_TYPE_T : INTERLACE_TYPE_B;
         select->var_values[VAR_PICT_TYPE] = frame->pict_type;
         if (select->do_scene_detect) {
             char buf[32];
@@ -380,8 +380,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
     switch (inlink->type) {
     case AVMEDIA_TYPE_VIDEO:
         av_log(inlink->dst, AV_LOG_DEBUG, " interlace_type:%c pict_type:%c scene:%f",
-               (!frame->interlaced_frame) ? 'P' :
-               frame->top_field_first     ? 'T' : 'B',
+               !(frame->flags & AV_FRAME_FLAG_INTERLACED)     ? 'P' :
+               (frame->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST) ? 'T' : 'B',
                av_get_picture_type_char(frame->pict_type),
                select->var_values[VAR_SCENE]);
         break;

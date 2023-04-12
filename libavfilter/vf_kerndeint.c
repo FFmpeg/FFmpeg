@@ -142,6 +142,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
     }
     av_frame_copy_props(outpic, inpic);
     outpic->interlaced_frame = 0;
+    outpic->flags &= ~AV_FRAME_FLAG_INTERLACED;
 
     for (plane = 0; plane < 4 && inpic->data[plane] && inpic->linesize[plane]; plane++) {
         h = plane == 0 ? inlink->h : AV_CEIL_RSHIFT(inlink->h, kerndeint->vsub);

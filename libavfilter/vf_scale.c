@@ -884,7 +884,8 @@ scale:
               (int64_t)in->sample_aspect_ratio.den * outlink->w * link->h,
               INT_MAX);
 
-    if (scale->interlaced>0 || (scale->interlaced<0 && in->interlaced_frame)) {
+    if (scale->interlaced>0 || (scale->interlaced<0 &&
+        (in->flags & AV_FRAME_FLAG_INTERLACED))) {
         ret = scale_field(scale, out, in, 0);
         if (ret >= 0)
             ret = scale_field(scale, out, in, 1);

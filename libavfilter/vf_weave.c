@@ -150,6 +150,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     out->pts = s->double_weave ? s->prev->pts : in->pts / 2;
     out->interlaced_frame = 1;
     out->top_field_first = !s->first_field;
+    out->flags |= AV_FRAME_FLAG_INTERLACED;
+    if (s->first_field)
+        out->flags &= ~AV_FRAME_FLAG_TOP_FIELD_FIRST;
+    else
+        out->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
 
     if (!s->double_weave)
         av_frame_free(&in);

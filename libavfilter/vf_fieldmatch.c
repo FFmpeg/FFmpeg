@@ -714,7 +714,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     in = fm->src;
 
     /* parity */
-    order = fm->order != FM_PARITY_AUTO ? fm->order : (in->interlaced_frame ? in->top_field_first : 1);
+    order = fm->order != FM_PARITY_AUTO ? fm->order : ((in->flags & AV_FRAME_FLAG_INTERLACED) ?
+                                                       !!(in->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST) : 1);
     field = fm->field != FM_PARITY_AUTO ? fm->field : order;
     av_assert0(order == 0 || order == 1 || field == 0 || field == 1);
     fxo = field ^ order ? fxo1m : fxo0m;
@@ -820,15 +821,21 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     /* mark the frame we are unable to match properly as interlaced so a proper
      * de-interlacer can take the relay */
     dst->interlaced_frame = interlaced_frame;
-    if (dst->interlaced_frame) {
+    if (interlaced_frame) {
+        dst->flags |= AV_FRAME_FLAG_INTERLACED;
         av_log(ctx, AV_LOG_WARNING, "Frame #%"PRId64" at %s is still interlaced\n",
                outlink->frame_count_in, av_ts2timestr(in->pts, &inlink->time_base));
         dst->top_field_first = field;
-    }
+        if (field)
+            dst->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
+        else
+            dst->flags &= ~AV_FRAME_FLAG_TOP_FIELD_FIRST;
+    } else
+        dst->flags &= ~AV_FRAME_FLAG_INTERLACED;
 
     av_log(ctx, AV_LOG_DEBUG, "SC:%d | COMBS: %3d %3d %3d %3d %3d (combpel=%d)"
            " match=%d combed=%s\n", sc, combs[0], combs[1], combs[2], combs[3], combs[4],
-           fm->combpel, match, dst->interlaced_frame ? "YES" : "NO");
+           fm->combpel, match, (dst->flags & AV_FRAME_FLAG_INTERLACED) ? "YES" : "NO");
 
 fail:
     for (i = 0; i < FF_ARRAY_ELEMS(gen_frames); i++)

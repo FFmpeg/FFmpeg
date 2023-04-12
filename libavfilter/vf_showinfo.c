@@ -722,8 +722,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
            desc->name,
            frame->sample_aspect_ratio.num, frame->sample_aspect_ratio.den,
            frame->width, frame->height,
-           !frame->interlaced_frame ? 'P' :         /* Progressive  */
-           frame->top_field_first   ? 'T' : 'B',    /* Top / Bottom */
+           !(frame->flags & AV_FRAME_FLAG_INTERLACED)     ? 'P' :         /* Progressive  */
+           (frame->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST) ? 'T' : 'B',    /* Top / Bottom */
            frame->key_frame,
            av_get_picture_type_char(frame->pict_type));
 

@@ -247,6 +247,11 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
+    if (copy->interlaced_frame)
+        copy->flags |= AV_FRAME_FLAG_INTERLACED;
+    if (copy->top_field_first)
+        copy->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
+
     ret = ff_filter_frame(ctx->outputs[0], copy);
     if (ret < 0)
         return ret;

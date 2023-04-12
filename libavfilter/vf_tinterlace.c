@@ -393,6 +393,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
         out->height = outlink->h;
         out->interlaced_frame = 1;
         out->top_field_first = 1;
+        out->flags |= AV_FRAME_FLAG_INTERLACED | AV_FRAME_FLAG_TOP_FIELD_FIRST;
         out->sample_aspect_ratio = av_mul_q(cur->sample_aspect_ratio, av_make_q(2, 1));
 
         /* write odd frame lines into the upper field of the new frame */
@@ -444,7 +445,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
          * halving the frame rate and preserving image height */
     case MODE_INTERLEAVE_TOP:    /* top    field first */
     case MODE_INTERLEAVE_BOTTOM: /* bottom field first */
-        if ((tinterlace->flags & TINTERLACE_FLAG_BYPASS_IL) && cur->interlaced_frame) {
+        if ((tinterlace->flags & TINTERLACE_FLAG_BYPASS_IL) && (cur->flags & AV_FRAME_FLAG_INTERLACED)) {
             av_log(ctx, AV_LOG_WARNING,
                    "video is already interlaced, adjusting framerate only\n");
             out = av_frame_clone(cur);
@@ -461,6 +462,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
         av_frame_copy_props(out, cur);
         out->interlaced_frame = 1;
         out->top_field_first = tff;
+        out->flags |= AV_FRAME_FLAG_INTERLACED;
+        if (tff)
+            out->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
+        else
+            out->flags &= ~AV_FRAME_FLAG_TOP_FIELD_FIRST;
 
         /* copy upper/lower field from cur */
         copy_picture_field(tinterlace, out->data, out->linesize,
@@ -482,6 +488,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
         if (!out)
             return AVERROR(ENOMEM);
         out->interlaced_frame = 1;
+        out->flags |= AV_FRAME_FLAG_INTERLACED;
         if (cur->pts != AV_NOPTS_VALUE)
             out->pts = cur->pts*2;
 
@@ -490,13 +497,18 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
             return ret;
 
         /* output mix of current and next frame */
-        tff = next->top_field_first;
+        tff = !!(next->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST);
         out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
         if (!out)
             return AVERROR(ENOMEM);
         av_frame_copy_props(out, next);
         out->interlaced_frame = 1;
         out->top_field_first = !tff;
+        out->flags |= AV_FRAME_FLAG_INTERLACED;
+        if (tff)
+            out->flags &= ~AV_FRAME_FLAG_TOP_FIELD_FIRST;
+        else
+            out->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
 
         if (next->pts != AV_NOPTS_VALUE && cur->pts != AV_NOPTS_VALUE)
             out->pts = cur->pts + next->pts;

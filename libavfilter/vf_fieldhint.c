@@ -218,9 +218,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     switch (hint) {
     case '+':
         out->interlaced_frame = 1;
+        out->flags |= AV_FRAME_FLAG_INTERLACED;
         break;
     case '-':
         out->interlaced_frame = 0;
+        out->flags &= ~AV_FRAME_FLAG_INTERLACED;
         break;
     case '=':
         break;

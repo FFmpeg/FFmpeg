@@ -93,11 +93,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         s->frame->pts = AV_NOPTS_VALUE;
     }
 
-    if ((state == 0 && !in->top_field_first) ||
-        (state == 1 &&  in->top_field_first)) {
+    if ((state == 0 && !(in->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST)) ||
+        (state == 1 &&  (in->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST))) {
         av_log(ctx, AV_LOG_WARNING, "Unexpected field flags: "
                                     "state=%d top_field_first=%d repeat_first_field=%d\n",
-                                    state, in->top_field_first, in->repeat_pict);
+                                    state, !!(in->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST),
+                                    in->repeat_pict);
         state ^= 1;
     }
 

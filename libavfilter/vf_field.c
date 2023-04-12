@@ -74,6 +74,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
 
     inpicref->height = outlink->h;
     inpicref->interlaced_frame = 0;
+    inpicref->flags &= ~AV_FRAME_FLAG_INTERLACED;
 
     for (i = 0; i < field->nb_planes; i++) {
         if (field->type == FIELD_TYPE_BOTTOM)
