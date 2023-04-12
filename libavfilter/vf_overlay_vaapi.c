@@ -237,6 +237,7 @@ static int overlay_vaapi_blend(FFFrameSync *fs)
         params[1].blend_state = &blend_state;
 
         params[1].surface       = (VASurfaceID)(uintptr_t)input_overlay->data[3];
+        params[1].surface_region = NULL;
         params[1].output_region = &overlay_region;
     }
 
