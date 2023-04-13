@@ -1698,6 +1698,9 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s, const uint8_t *mb_bitmask,
         s->h_scount[i]  = s->h_count[index];
         s->v_scount[i]  = s->v_count[index];
 
+        if(nb_components == 3 && s->nb_components == 3 && s->avctx->pix_fmt == AV_PIX_FMT_GBRP)
+            index = (index+2)%3;
+
         s->comp_index[i] = index;
 
         s->dc_index[i] = get_bits(&s->gb, 4);
@@ -2721,7 +2724,7 @@ the_end:
         }
     }
 
-    if (s->avctx->pix_fmt == AV_PIX_FMT_GBRP) {
+    if (s->avctx->pix_fmt == AV_PIX_FMT_GBRP && s->progressive) {
         av_assert0(s->nb_components == 3);
         FFSWAP(uint8_t *, frame->data[0], frame->data[2]);
         FFSWAP(uint8_t *, frame->data[0], frame->data[1]);
