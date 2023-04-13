@@ -908,7 +908,7 @@ static int streamcopy_init(const Muxer *mux, const OptionsContext *o,
     if (ost->st->duration <= 0 && ist->st->duration > 0)
         ost->st->duration = av_rescale_q(ist->st->duration, ist->st->time_base, ost->st->time_base);
 
-    if (!ost->copy_prior_start) {
+    if (!ms->copy_prior_start) {
         ms->ts_copy_start = (mux->of.start_time == AV_NOPTS_VALUE) ?
                             0 : mux->of.start_time;
         if (copy_ts && ifile->start_time != AV_NOPTS_VALUE) {
@@ -1156,8 +1156,8 @@ static OutputStream *ost_add(Muxer *mux, const OptionsContext *o,
         }
     }
 
-    ost->copy_prior_start = -1;
-    MATCH_PER_STREAM_OPT(copy_prior_start, i, ost->copy_prior_start, oc ,st);
+    ms->copy_prior_start = -1;
+    MATCH_PER_STREAM_OPT(copy_prior_start, i, ms->copy_prior_start, oc ,st);
 
     MATCH_PER_STREAM_OPT(bitstream_filters, str, bsfs, oc, st);
     if (bsfs && *bsfs) {

@@ -398,7 +398,7 @@ void of_streamcopy(OutputStream *ost, const AVPacket *pkt, int64_t dts)
         return;
 
     if (!ms->streamcopy_started) {
-        if (!ost->copy_prior_start &&
+        if (!ms->copy_prior_start &&
             (pkt->pts == AV_NOPTS_VALUE ?
              dts < ms->ts_copy_start :
              pkt->pts < av_rescale_q(ms->ts_copy_start, AV_TIME_BASE_Q, pkt->time_base)))

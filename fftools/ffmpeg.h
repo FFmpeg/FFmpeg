@@ -659,7 +659,6 @@ typedef struct OutputStream {
 
     const char *attachment_filename;
     int copy_initial_nonkeyframes;
-    int copy_prior_start;
 
     int keep_pix_fmt;
 
