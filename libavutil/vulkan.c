@@ -107,8 +107,21 @@ int ff_vk_load_props(FFVulkanContext *s)
         .pNext = &s->driver_props,
     };
 
+    s->atomic_float_feats = (VkPhysicalDeviceShaderAtomicFloatFeaturesEXT) {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT,
+    };
+    s->feats_12 = (VkPhysicalDeviceVulkan12Features) {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
+        .pNext = &s->atomic_float_feats,
+    };
+    s->feats = (VkPhysicalDeviceFeatures2) {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
+        .pNext = &s->feats_12,
+    };
+
     vk->GetPhysicalDeviceProperties2(s->hwctx->phys_dev, &s->props);
     vk->GetPhysicalDeviceMemoryProperties(s->hwctx->phys_dev, &s->mprops);
+    vk->GetPhysicalDeviceFeatures2(s->hwctx->phys_dev, &s->feats);
 
     if (s->qf_props)
         return 0;

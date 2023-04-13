@@ -96,6 +96,7 @@ typedef struct VulkanDevicePriv {
     VkPhysicalDeviceVulkan12Features device_features_1_2;
     VkPhysicalDeviceVulkan13Features device_features_1_3;
     VkPhysicalDeviceDescriptorBufferFeaturesEXT desc_buf_features;
+    VkPhysicalDeviceShaderAtomicFloatFeaturesEXT atomic_float_features;
 
     /* Queues */
     pthread_mutex_t **qf_mutex;
@@ -401,6 +402,7 @@ static const VulkanOptExtension optional_device_exts[] = {
     { VK_KHR_SAMPLER_YCBCR_CONVERSION_EXTENSION_NAME,         FF_VK_EXT_NO_FLAG                },
     { VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME,                FF_VK_EXT_DESCRIPTOR_BUFFER,     },
     { VK_EXT_PHYSICAL_DEVICE_DRM_EXTENSION_NAME,              FF_VK_EXT_DEVICE_DRM             },
+    { VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME,              FF_VK_EXT_ATOMIC_FLOAT           },
 
     /* Imports/exports */
     { VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME,               FF_VK_EXT_EXTERNAL_FD_MEMORY     },
@@ -1195,9 +1197,13 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     VkPhysicalDeviceTimelineSemaphoreFeatures timeline_features = {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES,
     };
+    VkPhysicalDeviceShaderAtomicFloatFeaturesEXT atomic_float_features = {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT,
+        .pNext = &timeline_features,
+    };
     VkPhysicalDeviceDescriptorBufferFeaturesEXT desc_buf_features = {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT,
-        .pNext = &timeline_features,
+        .pNext = &atomic_float_features,
     };
     VkPhysicalDeviceVulkan13Features dev_features_1_3 = {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES,
@@ -1229,6 +1235,10 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     p->device_features_1_3.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
     p->device_features_1_3.pNext = &p->desc_buf_features;
     p->desc_buf_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT;
+    p->desc_buf_features.pNext = &p->atomic_float_features;
+    p->atomic_float_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT;
+    p->atomic_float_features.pNext = NULL;
+
     ctx->free = vulkan_device_free;
 
     /* Create an instance if not given one */
@@ -1285,6 +1295,9 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
 
     p->desc_buf_features.descriptorBuffer = desc_buf_features.descriptorBuffer;
     p->desc_buf_features.descriptorBufferPushDescriptors = desc_buf_features.descriptorBufferPushDescriptors;
+
+    p->atomic_float_features.shaderBufferFloat32Atomics = atomic_float_features.shaderBufferFloat32Atomics;
+    p->atomic_float_features.shaderBufferFloat32AtomicAdd = atomic_float_features.shaderBufferFloat32AtomicAdd;
 
     dev_info.pNext = &hwctx->device_features;
 
