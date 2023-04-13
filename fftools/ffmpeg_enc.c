@@ -56,6 +56,9 @@ struct Encoder {
     int64_t frames_prev_hist[3];
 
     AVFrame *sq_frame;
+
+    // combined size of all the packets received from the encoder
+    uint64_t data_size;
 };
 
 static uint64_t dup_warning = 1000;
@@ -513,6 +516,7 @@ void enc_stats_write(OutputStream *ost, EncStats *es,
                      const AVFrame *frame, const AVPacket *pkt,
                      uint64_t frame_num)
 {
+    Encoder      *e = ost->enc;
     AVIOContext *io = es->io;
     AVRational   tb = frame ? frame->time_base : pkt->time_base;
     int64_t     pts = frame ? frame->pts : pkt->pts;
@@ -564,7 +568,7 @@ void enc_stats_write(OutputStream *ost, EncStats *es,
             }
             case ENC_STATS_AVG_BITRATE: {
                 double duration = pkt->dts * av_q2d(tb);
-                avio_printf(io, "%g",  duration > 0 ? 8.0 * ost->data_size_enc / duration : -1.);
+                avio_printf(io, "%g",  duration > 0 ? 8.0 * e->data_size / duration : -1.);
                 continue;
             }
             default: av_assert0(0);
@@ -577,6 +581,7 @@ void enc_stats_write(OutputStream *ost, EncStats *es,
 
 static void update_video_stats(OutputStream *ost, const AVPacket *pkt, int write_vstats)
 {
+    Encoder        *e = ost->enc;
     const uint8_t *sd = av_packet_get_side_data(pkt, AV_PKT_DATA_QUALITY_STATS,
                                                 NULL);
     AVCodecContext *enc = ost->enc_ctx;
@@ -624,14 +629,15 @@ static void update_video_stats(OutputStream *ost, const AVPacket *pkt, int write
         ti1 = 0.01;
 
     bitrate     = (pkt->size * 8) / av_q2d(enc->time_base) / 1000.0;
-    avg_bitrate = (double)(ost->data_size_enc * 8) / ti1 / 1000.0;
+    avg_bitrate = (double)(e->data_size * 8) / ti1 / 1000.0;
     fprintf(vstats_file, "s_size= %8.0fkB time= %0.3f br= %7.1fkbits/s avg_br= %7.1fkbits/s ",
-           (double)ost->data_size_enc / 1024, ti1, bitrate, avg_bitrate);
+           (double)e->data_size / 1024, ti1, bitrate, avg_bitrate);
     fprintf(vstats_file, "type= %c\n", av_get_picture_type_char(ost->pict_type));
 }
 
 static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
 {
+    Encoder            *e = ost->enc;
     AVCodecContext   *enc = ost->enc_ctx;
     AVPacket         *pkt = ost->pkt;
     const char *type_desc = av_get_media_type_string(enc->codec_type);
@@ -725,7 +731,7 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
             exit_program(1);
         }
 
-        ost->data_size_enc += pkt->size;
+        e->data_size += pkt->size;
 
         ost->packets_encoded++;
 
