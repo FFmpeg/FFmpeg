@@ -133,6 +133,7 @@ typedef enum FFVulkanExtensions {
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CreateBuffer)                            \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              BindBufferMemory)                        \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              GetBufferDeviceAddress)                    \
+    MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CmdFillBuffer)                             \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              DestroyBuffer)                           \
                                                                                          \
     /* Image */                                                                          \
