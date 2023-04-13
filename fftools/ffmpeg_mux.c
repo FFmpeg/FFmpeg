@@ -393,11 +393,11 @@ void of_streamcopy(OutputStream *ost, const AVPacket *pkt, int64_t dts)
         return;
     }
 
-    if (!ost->streamcopy_started && !(pkt->flags & AV_PKT_FLAG_KEY) &&
+    if (!ms->streamcopy_started && !(pkt->flags & AV_PKT_FLAG_KEY) &&
         !ost->copy_initial_nonkeyframes)
         return;
 
-    if (!ost->streamcopy_started) {
+    if (!ms->streamcopy_started) {
         if (!ost->copy_prior_start &&
             (pkt->pts == AV_NOPTS_VALUE ?
              dts < ms->ts_copy_start :
@@ -451,7 +451,7 @@ void of_streamcopy(OutputStream *ost, const AVPacket *pkt, int64_t dts)
 
     of_output_packet(of, opkt, ost, 0);
 
-    ost->streamcopy_started = 1;
+    ms->streamcopy_started = 1;
 }
 
 static int thread_stop(Muxer *mux)
