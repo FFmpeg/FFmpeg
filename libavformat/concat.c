@@ -296,6 +296,8 @@ static av_cold int concatf_open(URLContext *h, const char *uri, int flags)
     av_bprint_finalize(&bp, NULL);
     data->length = i;
 
+    if (!data->length)
+        err = AVERROR_INVALIDDATA;
     if (err < 0)
         concat_close(h);
 
