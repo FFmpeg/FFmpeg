@@ -606,8 +606,11 @@ static OutputStream *new_output_stream(Muxer *mux, const OptionsContext *o,
     MATCH_PER_STREAM_OPT(codec_tags, str, codec_tag, oc, st);
     if (codec_tag) {
         uint32_t tag = strtol(codec_tag, &next, 0);
-        if (*next)
-            tag = AV_RL32(codec_tag);
+        if (*next) {
+            uint8_t buf[4] = { 0 };
+            memcpy(buf, codec_tag, FFMIN(sizeof(buf), strlen(codec_tag)));
+            tag = AV_RL32(buf);
+        }
         ost->st->codecpar->codec_tag = tag;
         if (ost->enc_ctx)
             ost->enc_ctx->codec_tag = tag;
