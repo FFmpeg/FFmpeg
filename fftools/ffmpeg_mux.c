@@ -425,11 +425,11 @@ void of_streamcopy(InputStream *ist, OutputStream *ost,
     if (pkt->dts == AV_NOPTS_VALUE) {
         opkt->dts = av_rescale_q(dts, AV_TIME_BASE_Q, opkt->time_base);
     } else if (ost->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-        int duration = av_get_audio_frame_duration2(ist->par, pkt->size);
+        int duration = av_get_audio_frame_duration2(ost->par_in, pkt->size);
         if(!duration)
-            duration = ist->par->frame_size;
+            duration = ost->par_in->frame_size;
         opkt->dts = av_rescale_delta(pkt->time_base, pkt->dts,
-                                    (AVRational){1, ist->par->sample_rate}, duration,
+                                    (AVRational){1, ost->par_in->sample_rate}, duration,
                                     &ist->filter_in_rescale_delta_last, opkt->time_base);
         /* dts will be set immediately afterwards to what pts is now */
         opkt->pts = opkt->dts - ost_tb_start_time;
