@@ -64,6 +64,9 @@ typedef struct MuxStream {
      * used for making up missing dts values */
     int64_t last_mux_dts;
 
+    // audio streamcopy - state for av_rescale_delta()
+    int64_t ts_rescale_delta_last;
+
     // combined size of all the packets sent to the muxer
     uint64_t data_size_mux;
 } MuxStream;

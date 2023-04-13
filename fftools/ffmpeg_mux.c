@@ -378,10 +378,10 @@ fail:
 
 }
 
-void of_streamcopy(InputStream *ist, OutputStream *ost,
-                   const AVPacket *pkt, int64_t dts)
+void of_streamcopy(OutputStream *ost, const AVPacket *pkt, int64_t dts)
 {
     OutputFile *of = output_files[ost->file_index];
+    MuxStream  *ms = ms_from_ost(ost);
     int64_t start_time = (of->start_time == AV_NOPTS_VALUE) ? 0 : of->start_time;
     int64_t ost_tb_start_time = av_rescale_q(start_time, AV_TIME_BASE_Q, ost->mux_timebase);
     AVPacket *opkt = ost->pkt;
@@ -430,7 +430,7 @@ void of_streamcopy(InputStream *ist, OutputStream *ost,
             duration = ost->par_in->frame_size;
         opkt->dts = av_rescale_delta(pkt->time_base, pkt->dts,
                                     (AVRational){1, ost->par_in->sample_rate}, duration,
-                                    &ist->filter_in_rescale_delta_last, opkt->time_base);
+                                    &ms->ts_rescale_delta_last, opkt->time_base);
         /* dts will be set immediately afterwards to what pts is now */
         opkt->pts = opkt->dts - ost_tb_start_time;
     } else
