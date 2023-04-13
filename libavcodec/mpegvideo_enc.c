@@ -902,8 +902,10 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
 
     s->quant_precision = 5;
 
-    ff_set_cmp(&s->mecc, s->mecc.ildct_cmp,      avctx->ildct_cmp);
-    ff_set_cmp(&s->mecc, s->mecc.frame_skip_cmp, s->frame_skip_cmp);
+    ret  = ff_set_cmp(&s->mecc, s->mecc.ildct_cmp,      avctx->ildct_cmp);
+    ret |= ff_set_cmp(&s->mecc, s->mecc.frame_skip_cmp, s->frame_skip_cmp);
+    if (ret < 0)
+        return AVERROR(EINVAL);
 
     if (CONFIG_H263_ENCODER && s->out_format == FMT_H263) {
         ff_h263_encode_init(s);

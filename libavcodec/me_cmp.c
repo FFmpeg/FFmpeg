@@ -473,8 +473,9 @@ static int zero_cmp(MpegEncContext *s, const uint8_t *a, const uint8_t *b,
     return 0;
 }
 
-void ff_set_cmp(MECmpContext *c, me_cmp_func *cmp, int type)
+int ff_set_cmp(MECmpContext *c, me_cmp_func *cmp, int type)
 {
+    int ret = 0;
     int i;
 
     memset(cmp, 0, sizeof(void *) * 6);
@@ -533,9 +534,13 @@ void ff_set_cmp(MECmpContext *c, me_cmp_func *cmp, int type)
 #endif
         default:
             av_log(NULL, AV_LOG_ERROR,
-                   "internal error in cmp function selection\n");
+                   "invalid cmp function selection\n");
+            ret = -1;
+            break;
         }
     }
+
+    return ret;
 }
 
 #define BUTTERFLY2(o1, o2, i1, i2)              \
