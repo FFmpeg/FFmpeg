@@ -45,7 +45,7 @@ static const uint32_t pixel_mask[3] = { 0xffffffff, 0x03ff03ff, 0x0fff0fff };
         }                                                   \
     } while (0)
 
-static void check_deblock_chroma(HEVCDSPContext h, int bit_depth)
+static void check_deblock_chroma(HEVCDSPContext *h, int bit_depth)
 {
     int32_t tc[2] = { 0, 0 };
     // no_p, no_q can only be { 0,0 } for the simpler assembly (non *_c
@@ -57,7 +57,7 @@ static void check_deblock_chroma(HEVCDSPContext h, int bit_depth)
 
     declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *pix, ptrdiff_t stride, int32_t *tc, uint8_t *no_p, uint8_t *no_q);
 
-    if (check_func(h.hevc_h_loop_filter_chroma, "hevc_h_loop_filter_chroma%d", bit_depth)) {
+    if (check_func(h->hevc_h_loop_filter_chroma, "hevc_h_loop_filter_chroma%d", bit_depth)) {
         for (int i = 0; i < 4; i++) {
             randomize_buffers(buf0, buf1, BUF_SIZE);
             // see betatable[] in hevc_filter.c
@@ -72,7 +72,7 @@ static void check_deblock_chroma(HEVCDSPContext h, int bit_depth)
         bench_new(buf1 + BUF_OFFSET, BUF_STRIDE, tc, no_p, no_q);
     }
 
-    if (check_func(h.hevc_v_loop_filter_chroma, "hevc_v_loop_filter_chroma%d", bit_depth)) {
+    if (check_func(h->hevc_v_loop_filter_chroma, "hevc_v_loop_filter_chroma%d", bit_depth)) {
         for (int i = 0; i < 4; i++) {
             randomize_buffers(buf0, buf1, BUF_SIZE);
             // see betatable[] in hevc_filter.c
@@ -95,7 +95,7 @@ void checkasm_check_hevc_deblock(void)
     for (bit_depth = 8; bit_depth <= 12; bit_depth += 2) {
         HEVCDSPContext h;
         ff_hevc_dsp_init(&h, bit_depth);
-        check_deblock_chroma(h, bit_depth);
+        check_deblock_chroma(&h, bit_depth);
     }
     report("chroma");
 }

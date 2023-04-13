@@ -66,7 +66,7 @@ static void compare_add_res(int size, ptrdiff_t stride, int overflow_test, int m
     bench_new(dst1, res1, stride);
 }
 
-static void check_add_res(HEVCDSPContext h, int bit_depth)
+static void check_add_res(HEVCDSPContext *h, int bit_depth)
 {
     int i;
     int mask = bit_depth == 8 ? 0xFFFF : bit_depth == 10 ? 0x03FF : 0x07FF;
@@ -76,7 +76,7 @@ static void check_add_res(HEVCDSPContext h, int bit_depth)
         int size = block_size * block_size;
         ptrdiff_t stride = block_size << (bit_depth > 8);
 
-        if (check_func(h.add_residual[i - 2], "hevc_add_res_%dx%d_%d", block_size, block_size, bit_depth)) {
+        if (check_func(h->add_residual[i - 2], "hevc_add_res_%dx%d_%d", block_size, block_size, bit_depth)) {
             compare_add_res(size, stride, 0, mask);
             // overflow test for res = -32768
             compare_add_res(size, stride, 1, mask);
@@ -92,7 +92,7 @@ void checkasm_check_hevc_add_res(void)
         HEVCDSPContext h;
 
         ff_hevc_dsp_init(&h, bit_depth);
-        check_add_res(h, bit_depth);
+        check_add_res(&h, bit_depth);
     }
     report("add_residual");
 }

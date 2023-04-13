@@ -35,7 +35,7 @@
             buf[j] = rnd() & 0xFFFF;       \
     } while (0)
 
-static void check_add_int16(HuffYUVDSPContext c, unsigned mask, int width, const char * name)
+static void check_add_int16(HuffYUVDSPContext *c, unsigned mask, int width, const char * name)
 {
     uint16_t *src0 = av_mallocz(width * sizeof(uint16_t));
     uint16_t *src1 = av_mallocz(width * sizeof(uint16_t));
@@ -50,7 +50,7 @@ static void check_add_int16(HuffYUVDSPContext c, unsigned mask, int width, const
     randomize_buffers(src0, width);
     memcpy(src1, src0, width * sizeof(uint16_t));
 
-    if (check_func(c.add_int16, "%s", name)) {
+    if (check_func(c->add_int16, "%s", name)) {
         call_ref(dst0, src0, mask, width);
         call_new(dst1, src1, mask, width);
         if (memcmp(dst0, dst1, width * sizeof(uint16_t)))
@@ -72,10 +72,10 @@ void checkasm_check_huffyuvdsp(void)
     ff_huffyuvdsp_init(&c, AV_PIX_FMT_YUV422P);
 
     /*! test width not multiple of mmsize */
-    check_add_int16(c, 65535, width, "add_int16_rnd_width");
+    check_add_int16(&c, 65535, width, "add_int16_rnd_width");
     report("add_int16_rnd_width");
 
     /*! test always with the same size (for perf test) */
-    check_add_int16(c, 65535, 16*128, "add_int16_128");
+    check_add_int16(&c, 65535, 16*128, "add_int16_128");
     report("add_int16_128");
 }
