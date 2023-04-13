@@ -841,6 +841,8 @@ static void new_stream_subtitle(Muxer *mux, const OptionsContext *o,
 static int streamcopy_init(const Muxer *mux, const OptionsContext *o,
                            OutputStream *ost)
 {
+    MuxStream           *ms         = ms_from_ost(ost);
+
     const InputStream   *ist        = ost->ist;
     const InputFile     *ifile      = input_files[ist->file_index];
 
@@ -907,11 +909,11 @@ static int streamcopy_init(const Muxer *mux, const OptionsContext *o,
         ost->st->duration = av_rescale_q(ist->st->duration, ist->st->time_base, ost->st->time_base);
 
     if (!ost->copy_prior_start) {
-        ost->ts_copy_start = (mux->of.start_time == AV_NOPTS_VALUE) ?
-                             0 : mux->of.start_time;
+        ms->ts_copy_start = (mux->of.start_time == AV_NOPTS_VALUE) ?
+                            0 : mux->of.start_time;
         if (copy_ts && ifile->start_time != AV_NOPTS_VALUE) {
-            ost->ts_copy_start = FFMAX(ost->ts_copy_start,
-                                       ifile->start_time + ifile->ts_offset);
+            ms->ts_copy_start = FFMAX(ms->ts_copy_start,
+                                      ifile->start_time + ifile->ts_offset);
         }
     }
 
