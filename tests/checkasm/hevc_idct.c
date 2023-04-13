@@ -84,6 +84,27 @@ static void check_idct_dc(HEVCDSPContext h, int bit_depth)
     }
 }
 
+static void check_transform_luma(HEVCDSPContext *h, int bit_depth)
+{
+    LOCAL_ALIGNED(32, int16_t, coeffs0, [32 * 32]);
+    LOCAL_ALIGNED(32, int16_t, coeffs1, [32 * 32]);
+
+    int block_size = 4;
+    int size = block_size * block_size;
+    declare_func_emms(AV_CPU_FLAG_MMXEXT, void, int16_t *coeffs);
+
+    randomize_buffers(coeffs0, size);
+    memcpy(coeffs1, coeffs0, sizeof(*coeffs0) * size);
+
+    if (check_func(h->transform_4x4_luma, "hevc_transform_luma_4x4_%d", bit_depth)) {
+        call_ref(coeffs0);
+        call_new(coeffs1);
+        if (memcmp(coeffs0, coeffs1, sizeof(*coeffs0) * size))
+            fail();
+        bench_new(coeffs1);
+    }
+}
+
 void checkasm_check_hevc_idct(void)
 {
     int bit_depth;
@@ -103,4 +124,12 @@ void checkasm_check_hevc_idct(void)
         check_idct(h, bit_depth);
     }
     report("idct");
+
+    for (bit_depth = 8; bit_depth <= 12; bit_depth += 2) {
+        HEVCDSPContext h;
+
+        ff_hevc_dsp_init(&h, bit_depth);
+        check_transform_luma(&h, bit_depth);
+    }
+    report("transform_luma");
 }
