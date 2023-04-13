@@ -842,6 +842,54 @@ tr_32x4 secondpass_10, 20 - 10
 idct_32x32 8
 idct_32x32 10
 
+.macro tr4_luma_shift r0, r1, r2, r3, shift
+        saddl       v0.4s, \r0, \r2         // c0 = src0 + src2
+        saddl       v1.4s, \r2, \r3         // c1 = src2 + src3
+        ssubl       v2.4s, \r0, \r3         // c2 = src0 - src3
+        smull       v3.4s, \r1, v21.4h      // c3 = 74 * src1
+
+        saddl       v7.4s, \r0, \r3         // src0 + src3
+        ssubw       v7.4s, v7.4s, \r2       // src0 - src2 + src3
+        mul         v7.4s, v7.4s, v18.4s    // dst2 = 74 * (src0 - src2 + src3)
+
+        mul         v5.4s, v0.4s, v19.4s    // 29 * c0
+        mul         v6.4s, v1.4s, v20.4s    // 55 * c1
+        add         v5.4s, v5.4s, v6.4s     // 29 * c0 + 55 * c1
+        add         v5.4s, v5.4s, v3.4s     // dst0 = 29 * c0 + 55 * c1 + c3
+
+        mul         v1.4s, v1.4s, v19.4s    // 29 * c1
+        mul         v6.4s, v2.4s, v20.4s    // 55 * c2
+        sub         v6.4s, v6.4s, v1.4s     // 55 * c2 - 29 * c1
+        add         v6.4s, v6.4s, v3.4s     // dst1 = 55 * c2 - 29 * c1 + c3
+
+        mul         v0.4s, v0.4s, v20.4s    // 55 * c0
+        mul         v2.4s, v2.4s, v19.4s    // 29 * c2
+        add         v0.4s, v0.4s, v2.4s     // 55 * c0 + 29 * c2
+        sub         v0.4s, v0.4s, v3.4s     // dst3 = 55 * c0 + 29 * c2 - c3
+
+        sqrshrn     \r0, v5.4s, \shift
+        sqrshrn     \r1, v6.4s, \shift
+        sqrshrn     \r2, v7.4s, \shift
+        sqrshrn     \r3, v0.4s, \shift
+.endm
+
+function ff_hevc_transform_luma_4x4_neon_8, export=1
+        ld1            {v28.4h-v31.4h}, [x0]
+        movi           v18.4s, #74
+        movi           v19.4s, #29
+        movi           v20.4s, #55
+        movi           v21.4h, #74
+
+        tr4_luma_shift v28.4h, v29.4h, v30.4h, v31.4h, #7
+        transpose_4x4H v28, v29, v30, v31, v22, v23, v24, v25
+
+        tr4_luma_shift v28.4h, v29.4h, v30.4h, v31.4h, #12
+        transpose_4x4H v28, v29, v30, v31, v22, v23, v24, v25
+
+        st1            {v28.4h-v31.4h}, [x0]
+        ret
+endfunc
+
 // void ff_hevc_idct_NxN_dc_DEPTH_neon(int16_t *coeffs)
 .macro idct_dc size, bitdepth
 function ff_hevc_idct_\size\()x\size\()_dc_\bitdepth\()_neon, export=1
