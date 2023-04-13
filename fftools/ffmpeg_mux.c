@@ -556,9 +556,9 @@ static int bsf_init(MuxStream *ms)
     int ret;
 
     if (!ctx)
-        return 0;
+        return avcodec_parameters_copy(ost->st->codecpar, ost->par_in);
 
-    ret = avcodec_parameters_copy(ctx->par_in, ost->st->codecpar);
+    ret = avcodec_parameters_copy(ctx->par_in, ost->par_in);
     if (ret < 0)
         return ret;
 
@@ -767,6 +767,8 @@ static void ost_free(OutputStream **post)
             av_packet_free(&pkt);
         av_fifo_freep2(&ms->muxing_queue);
     }
+
+    avcodec_parameters_free(&ost->par_in);
 
     av_bsf_free(&ms->bsf_ctx);
 
