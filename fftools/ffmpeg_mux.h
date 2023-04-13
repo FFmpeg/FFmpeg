@@ -75,6 +75,7 @@ typedef struct MuxStream {
     // combined size of all the packets sent to the muxer
     uint64_t data_size_mux;
 
+    int copy_initial_nonkeyframes;
     int copy_prior_start;
     int streamcopy_started;
 } MuxStream;

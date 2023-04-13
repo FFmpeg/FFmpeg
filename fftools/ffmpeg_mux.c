@@ -394,7 +394,7 @@ void of_streamcopy(OutputStream *ost, const AVPacket *pkt, int64_t dts)
     }
 
     if (!ms->streamcopy_started && !(pkt->flags & AV_PKT_FLAG_KEY) &&
-        !ost->copy_initial_nonkeyframes)
+        !ms->copy_initial_nonkeyframes)
         return;
 
     if (!ms->streamcopy_started) {

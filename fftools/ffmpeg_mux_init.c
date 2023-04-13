@@ -1212,7 +1212,7 @@ static OutputStream *ost_add(Muxer *mux, const OptionsContext *o,
     ost->last_mux_dts = AV_NOPTS_VALUE;
 
     MATCH_PER_STREAM_OPT(copy_initial_nonkeyframes, i,
-                         ost->copy_initial_nonkeyframes, oc, st);
+                         ms->copy_initial_nonkeyframes, oc, st);
 
     switch (type) {
     case AVMEDIA_TYPE_VIDEO:      new_stream_video     (mux, o, ost); break;
