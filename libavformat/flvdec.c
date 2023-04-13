@@ -79,6 +79,8 @@ typedef struct FLVContext {
     int64_t last_ts;
     int64_t time_offset;
     int64_t time_pos;
+
+    uint8_t exheader;
 } FLVContext;
 
 /* AMF date type */
@@ -302,12 +304,24 @@ static void flv_set_audio_codec(AVFormatContext *s, AVStream *astream,
     }
 }
 
-static int flv_same_video_codec(AVCodecParameters *vpar, int flags)
+static int flv_same_video_codec(AVFormatContext *s, AVCodecParameters *vpar, int flags)
 {
     int flv_codecid = flags & FLV_VIDEO_CODECID_MASK;
+    FLVContext *flv = s->priv_data;
 
     if (!vpar->codec_id && !vpar->codec_tag)
         return 1;
+
+    if (flv->exheader) {
+        uint8_t *codec_id_str = (uint8_t *)s->pb->buf_ptr;
+        uint32_t codec_id = codec_id_str[3] | codec_id_str[2] << 8 | codec_id_str[1] << 16 | codec_id_str[0] << 24;
+        switch(codec_id) {
+            case MKBETAG('h', 'v', 'c', '1'):
+                return vpar->codec_id == AV_CODEC_ID_HEVC;
+            default:
+                break;
+        }
+    }
 
     switch (flv_codecid) {
     case FLV_CODECID_H263:
@@ -331,9 +345,24 @@ static int flv_set_video_codec(AVFormatContext *s, AVStream *vstream,
                                int flv_codecid, int read)
 {
     FFStream *const vstreami = ffstream(vstream);
+    FLVContext *flv = s->priv_data;
     int ret = 0;
     AVCodecParameters *par = vstream->codecpar;
     enum AVCodecID old_codec_id = vstream->codecpar->codec_id;
+    flv_codecid &= FLV_VIDEO_CODECID_MASK;
+
+    if (flv->exheader) {
+        uint32_t codec_id = avio_rb32(s->pb);
+
+        switch(codec_id) {
+            case MKBETAG('h', 'v', 'c', '1'):
+                par->codec_id = AV_CODEC_ID_HEVC;
+                vstreami->need_parsing = AVSTREAM_PARSE_HEADERS;
+                return 4;
+            default:
+                break;
+        }
+    }
     switch (flv_codecid) {
     case FLV_CODECID_H263:
         par->codec_id = AV_CODEC_ID_FLV1;
@@ -796,6 +825,7 @@ static int flv_read_header(AVFormatContext *s)
     s->start_time = 0;
     flv->sum_flv_tag_size = 0;
     flv->last_keyframe_stream_index = -1;
+    flv->exheader = 0;
 
     return 0;
 }
@@ -1071,6 +1101,11 @@ retry:
     } else if (type == FLV_TAG_TYPE_VIDEO) {
         stream_type = FLV_STREAM_TYPE_VIDEO;
         flags    = avio_r8(s->pb);
+        /*
+         * Reference Enhancing FLV 2023-03-v1.0.0-B.8
+         * https://github.com/veovera/enhanced-rtmp/blob/main/enhanced-rtmp-v1.pdf
+         * */
+        flv->exheader = (flags >> 7) & 1;
         size--;
         if ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_VIDEO_INFO_CMD)
             goto skip;
@@ -1129,7 +1164,7 @@ skip:
                 break;
         } else if (stream_type == FLV_STREAM_TYPE_VIDEO) {
             if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
-                (s->video_codec_id || flv_same_video_codec(st->codecpar, flags)))
+                (s->video_codec_id || flv_same_video_codec(s, st->codecpar, flags)))
                 break;
         } else if (stream_type == FLV_STREAM_TYPE_SUBTITLE) {
             if (st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE)
@@ -1230,7 +1265,7 @@ retry_duration:
             avcodec_parameters_free(&par);
         }
     } else if (stream_type == FLV_STREAM_TYPE_VIDEO) {
-        int ret = flv_set_video_codec(s, st, flags & FLV_VIDEO_CODECID_MASK, 1);
+        int ret = flv_set_video_codec(s, st, flags, 1);
         if (ret < 0)
             return ret;
         size -= ret;
@@ -1242,16 +1277,23 @@ retry_duration:
 
     if (st->codecpar->codec_id == AV_CODEC_ID_AAC ||
         st->codecpar->codec_id == AV_CODEC_ID_H264 ||
-        st->codecpar->codec_id == AV_CODEC_ID_MPEG4) {
-        int type = avio_r8(s->pb);
-        size--;
+        st->codecpar->codec_id == AV_CODEC_ID_MPEG4 ||
+        st->codecpar->codec_id == AV_CODEC_ID_HEVC) {
+        int type = 0;
+        if (flv->exheader && stream_type == FLV_STREAM_TYPE_VIDEO) {
+            type = flags & 0x0F;
+        } else {
+            type = avio_r8(s->pb);
+            size--;
+        }
 
         if (size < 0) {
             ret = AVERROR_INVALIDDATA;
             goto leave;
         }
 
-        if (st->codecpar->codec_id == AV_CODEC_ID_H264 || st->codecpar->codec_id == AV_CODEC_ID_MPEG4) {
+        if (st->codecpar->codec_id == AV_CODEC_ID_H264 || st->codecpar->codec_id == AV_CODEC_ID_MPEG4 ||
+            (st->codecpar->codec_id == AV_CODEC_ID_HEVC && type == PacketTypeCodedFrames)) {
             // sign extension
             int32_t cts = (avio_rb24(s->pb) + 0xff800000) ^ 0xff800000;
             pts = av_sat_add64(dts, cts);
@@ -1267,7 +1309,7 @@ retry_duration:
             }
         }
         if (type == 0 && (!st->codecpar->extradata || st->codecpar->codec_id == AV_CODEC_ID_AAC ||
-            st->codecpar->codec_id == AV_CODEC_ID_H264)) {
+            st->codecpar->codec_id == AV_CODEC_ID_H264 || st->codecpar->codec_id == AV_CODEC_ID_HEVC)) {
             AVDictionaryEntry *t;
 
             if (st->codecpar->extradata) {
