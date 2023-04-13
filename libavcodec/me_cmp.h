@@ -89,7 +89,7 @@ void ff_me_cmp_init_ppc(MECmpContext *c, AVCodecContext *avctx);
 void ff_me_cmp_init_x86(MECmpContext *c, AVCodecContext *avctx);
 void ff_me_cmp_init_mips(MECmpContext *c, AVCodecContext *avctx);
 
-void ff_set_cmp(MECmpContext *c, me_cmp_func *cmp, int type);
+int ff_set_cmp(MECmpContext *c, me_cmp_func *cmp, int type);
 
 void ff_dsputil_init_dwt(MECmpContext *c);
 

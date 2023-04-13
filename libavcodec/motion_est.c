@@ -309,6 +309,7 @@ int ff_init_me(MpegEncContext *s){
     MotionEstContext * const c= &s->me;
     int cache_size= FFMIN(ME_MAP_SIZE>>ME_MAP_SHIFT, 1<<ME_MAP_SHIFT);
     int dia_size= FFMAX(FFABS(s->avctx->dia_size)&255, FFABS(s->avctx->pre_dia_size)&255);
+    int ret;
 
     if(FFMIN(s->avctx->dia_size, s->avctx->pre_dia_size) < -FFMIN(ME_MAP_SIZE, MAX_SAB_SIZE)){
         av_log(s->avctx, AV_LOG_ERROR, "ME_MAP size is too small for SAB diamond\n");
@@ -324,10 +325,12 @@ int ff_init_me(MpegEncContext *s){
         av_log(s->avctx, AV_LOG_INFO, "ME_MAP size may be a little small for the selected diamond size\n");
     }
 
-    ff_set_cmp(&s->mecc, s->mecc.me_pre_cmp, c->avctx->me_pre_cmp);
-    ff_set_cmp(&s->mecc, s->mecc.me_cmp,     c->avctx->me_cmp);
-    ff_set_cmp(&s->mecc, s->mecc.me_sub_cmp, c->avctx->me_sub_cmp);
-    ff_set_cmp(&s->mecc, s->mecc.mb_cmp,     c->avctx->mb_cmp);
+    ret  = ff_set_cmp(&s->mecc, s->mecc.me_pre_cmp, c->avctx->me_pre_cmp);
+    ret |= ff_set_cmp(&s->mecc, s->mecc.me_cmp,     c->avctx->me_cmp);
+    ret |= ff_set_cmp(&s->mecc, s->mecc.me_sub_cmp, c->avctx->me_sub_cmp);
+    ret |= ff_set_cmp(&s->mecc, s->mecc.mb_cmp,     c->avctx->mb_cmp);
+    if (ret < 0)
+        return ret;
 
     c->flags    = get_flags(c, 0, c->avctx->me_cmp    &FF_CMP_CHROMA);
     c->sub_flags= get_flags(c, 0, c->avctx->me_sub_cmp&FF_CMP_CHROMA);
