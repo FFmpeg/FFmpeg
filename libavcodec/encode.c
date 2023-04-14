@@ -457,13 +457,6 @@ static int encode_send_frame_internal(AVCodecContext *avctx, const AVFrame *src)
 
 finish:
 
-#if FF_API_PKT_DURATION
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (dst->pkt_duration && dst->pkt_duration != dst->duration)
-        dst->duration = dst->pkt_duration;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     if (avctx->codec->type == AVMEDIA_TYPE_VIDEO) {
         ret = encode_generate_icc_profile(avctx, dst);
         if (ret < 0)
