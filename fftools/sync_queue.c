@@ -431,7 +431,7 @@ static int receive_samples(SyncQueue *sq, SyncQueueStream *st,
         offset_audio(src.f, nb_samples);
         st->samples_queued -= nb_samples;
 
-        return 0;
+        goto finish;
     }
 
     // otherwise allocate a new frame and copy the data
@@ -473,6 +473,10 @@ static int receive_samples(SyncQueue *sq, SyncQueueStream *st,
 
         dst->nb_samples += to_copy;
     }
+
+finish:
+    dst->duration   = av_rescale_q(nb_samples, (AVRational){ 1, dst->sample_rate },
+                                   dst->time_base);
 
     return 0;
 
