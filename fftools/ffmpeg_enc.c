@@ -811,6 +811,8 @@ static void do_audio_out(OutputFile *of, OutputStream *ost,
             av_rescale_q(start_time, AV_TIME_BASE_Q,   enc->time_base);
     }
     frame->time_base = enc->time_base;
+    frame->duration  = av_rescale_q(frame->nb_samples, (AVRational){1, frame->sample_rate},
+                                    enc->time_base);
 
     if (!check_recording_time(ost, frame->pts, frame->time_base))
         return;
