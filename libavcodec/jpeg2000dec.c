@@ -43,6 +43,7 @@
 #include "jpeg2000dsp.h"
 #include "profiles.h"
 #include "jpeg2000dec.h"
+#include "jpeg2000htdec.h"
 
 #define JP2_SIG_TYPE    0x6A502020
 #define JP2_SIG_VALUE   0x0D0A870A
@@ -440,12 +441,12 @@ static int get_cox(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c)
     c->cblk_style = bytestream2_get_byteu(&s->g);
     if (c->cblk_style != 0) { // cblk style
         if (c->cblk_style & JPEG2000_CTSY_HTJ2K_M || c->cblk_style & JPEG2000_CTSY_HTJ2K_F) {
-            av_log(s->avctx, AV_LOG_ERROR, "Support for High throughput JPEG 2000 is not yet available\n");
-            return AVERROR_PATCHWELCOME;
+            av_log(s->avctx,AV_LOG_TRACE,"High Throughput jpeg 2000 codestream.\n");
+        } else {
+            av_log(s->avctx, AV_LOG_WARNING, "extra cblk styles %X\n", c->cblk_style);
+            if (c->cblk_style & JPEG2000_CBLK_BYPASS)
+                av_log(s->avctx, AV_LOG_WARNING, "Selective arithmetic coding bypass\n");
         }
-        av_log(s->avctx, AV_LOG_WARNING, "extra cblk styles %X\n", c->cblk_style);
-        if (c->cblk_style & JPEG2000_CBLK_BYPASS)
-            av_log(s->avctx, AV_LOG_WARNING, "Selective arithmetic coding bypass\n");
     }
     c->transform = bytestream2_get_byteu(&s->g); // DWT transformation type
     /* set integer 9/7 DWT in case of BITEXACT flag */
@@ -1070,13 +1071,15 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
                 return incl;
 
             if (!cblk->npasses) {
-                int v = expn[bandno] + numgbits - 1 -
-                        tag_tree_decode(s, prec->zerobits + cblkno, 100);
+                int zbp = tag_tree_decode(s, prec->zerobits + cblkno, 100);
+                int v = expn[bandno] + numgbits - 1 - zbp;
+
                 if (v < 0 || v > 30) {
                     av_log(s->avctx, AV_LOG_ERROR,
                            "nonzerobits %d invalid or unsupported\n", v);
                     return AVERROR_INVALIDDATA;
                 }
+                cblk->zbp = zbp;
                 cblk->nonzerobits = v;
             }
             if ((newpasses = getnpasses(s)) < 0)
@@ -1117,8 +1120,23 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
                     }
                 }
 
-                if ((ret = get_bits(s, av_log2(newpasses1) + cblk->lblock)) < 0)
-                    return ret;
+                if (newpasses > 1 && (codsty->cblk_style & JPEG2000_CTSY_HTJ2K_F)) {
+                    // Retrieve pass lengths for each pass
+                    int href_passes =  (cblk->npasses + newpasses - 1) % 3;
+                    int eb = av_log2(newpasses - href_passes);
+                    int extra_bit = newpasses > 2 ? 1 : 0;
+                    if ((ret = get_bits(s, llen + eb + 3)) < 0)
+                        return ret;
+                    cblk->pass_lengths[0] = ret;
+                    if ((ret = get_bits(s, llen + 3 + extra_bit)) < 0)
+                        return ret;
+                    cblk->pass_lengths[1] = ret;
+                    ret = cblk->pass_lengths[0] + cblk->pass_lengths[1];
+                } else {
+                    if ((ret = get_bits(s, av_log2(newpasses1) + cblk->lblock)) < 0)
+                        return ret;
+                    cblk->pass_lengths[0] = ret;
+                }
                 if (ret > cblk->data_allocated) {
                     size_t new_size = FFMAX(2*cblk->data_allocated, ret);
                     void *new = av_realloc(cblk->data, new_size);
@@ -1867,9 +1885,12 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
 
     /* Loop on tile components */
     for (compno = 0; compno < s->ncomponents; compno++) {
-        Jpeg2000Component *comp     = tile->comp + compno;
-        Jpeg2000CodingStyle *codsty = tile->codsty + compno;
+        Jpeg2000Component *comp      = tile->comp   + compno;
+        Jpeg2000CodingStyle *codsty  = tile->codsty + compno;
+        Jpeg2000QuantStyle *quantsty = tile->qntsty + compno;
+
         int coded = 0;
+        int subbandno = 0;
 
         t1.stride = (1<<codsty->log2_cblk_width) + 2;
 
@@ -1877,7 +1898,7 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
         for (reslevelno = 0; reslevelno < codsty->nreslevels2decode; reslevelno++) {
             Jpeg2000ResLevel *rlevel = comp->reslevel + reslevelno;
             /* Loop on bands */
-            for (bandno = 0; bandno < rlevel->nbands; bandno++) {
+            for (bandno = 0; bandno < rlevel->nbands; bandno++, subbandno++) {
                 int nb_precincts, precno;
                 Jpeg2000Band *band = rlevel->band + bandno;
                 int cblkno = 0, bandpos;
@@ -1897,12 +1918,23 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
                     for (cblkno = 0;
                          cblkno < prec->nb_codeblocks_width * prec->nb_codeblocks_height;
                          cblkno++) {
-                        int x, y;
+                        int x, y, ret;
+                        /* See Rec. ITU-T T.800, Equation E-2 */
+                        int magp = quantsty->expn[subbandno] + quantsty->nguardbits - 1;
+
                         Jpeg2000Cblk *cblk = prec->cblk + cblkno;
-                        int ret = decode_cblk(s, codsty, &t1, cblk,
-                                    cblk->coord[0][1] - cblk->coord[0][0],
-                                    cblk->coord[1][1] - cblk->coord[1][0],
-                                    bandpos, comp->roi_shift);
+
+                        if (codsty->cblk_style & JPEG2000_CTSY_HTJ2K_F)
+                            ret = ff_jpeg2000_decode_htj2k(s, codsty, &t1, cblk,
+                                                           cblk->coord[0][1] - cblk->coord[0][0],
+                                                           cblk->coord[1][1] - cblk->coord[1][0],
+                                                           magp, comp->roi_shift);
+                        else
+                            ret = decode_cblk(s, codsty, &t1, cblk,
+                                              cblk->coord[0][1] - cblk->coord[0][0],
+                                              cblk->coord[1][1] - cblk->coord[1][0],
+                                              bandpos, comp->roi_shift);
+
                         if (ret)
                             coded = 1;
                         else
