@@ -23,9 +23,9 @@
 
 #include "config.h"
 
-#if CONFIG_VAAPI
+#if CONFIG_VAAPI && !defined(_WIN32) // Do not enable for libva-win32 on Windows
 #define AVCODEC_QSV_LINUX_SESSION_HANDLE
-#endif //CONFIG_VAAPI
+#endif //CONFIG_VAAPI && !defined(_WIN32)
 
 #ifdef AVCODEC_QSV_LINUX_SESSION_HANDLE
 #include <stdio.h>
@@ -35,7 +35,6 @@
 #endif
 #include <fcntl.h>
 #include <va/va.h>
-#include <va/va_drm.h>
 #include "libavutil/hwcontext_vaapi.h"
 #endif
 
