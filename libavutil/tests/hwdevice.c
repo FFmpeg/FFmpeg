@@ -140,7 +140,7 @@ static const struct {
     { AV_HWDEVICE_TYPE_OPENCL,
       { "0.0", "0.1", "1.0", "1.1" } },
     { AV_HWDEVICE_TYPE_VAAPI,
-      { "/dev/dri/renderD128", "/dev/dri/renderD129", ":0" } },
+      { "/dev/dri/renderD128", "/dev/dri/renderD129", ":0", "0", "1" } },
 };
 
 static int test_device_type(enum AVHWDeviceType type)

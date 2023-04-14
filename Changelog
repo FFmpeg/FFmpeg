@@ -4,6 +4,7 @@ releases are sorted from youngest to oldest.
 version <next>:
 - libaribcaption decoder
 - Playdate video decoder and demuxer
+- Extend VAAPI support for libva-win32 on Windows
 
 version 6.0:
 - Radiance HDR image support

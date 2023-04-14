@@ -2316,6 +2316,7 @@ SYSTEM_LIBRARIES="
     bcrypt
     vaapi_drm
     vaapi_x11
+    vaapi_win32
     vdpau_x11
 "
 
@@ -3827,7 +3828,7 @@ swscale_suggest="libm stdatomic"
 
 avcodec_extralibs="pthreads_extralibs iconv_extralibs dxva2_extralibs lcms2_extralibs"
 avfilter_extralibs="pthreads_extralibs"
-avutil_extralibs="d3d11va_extralibs mediacodec_extralibs nanosleep_extralibs pthreads_extralibs vaapi_drm_extralibs vaapi_x11_extralibs vdpau_x11_extralibs"
+avutil_extralibs="d3d11va_extralibs mediacodec_extralibs nanosleep_extralibs pthreads_extralibs vaapi_drm_extralibs vaapi_x11_extralibs vaapi_win32_extralibs vdpau_x11_extralibs"
 
 # programs
 ffmpeg_deps="avcodec avfilter avformat threads"
@@ -6948,6 +6949,21 @@ test_cpp <<EOF && enable uwp && d3d11va_extralibs="-ldxgi -ld3d11"
 #endif
 EOF
 
+# vaapi_win32 requires linking directly to dxgi if not building for
+# the desktop api partition
+test_cpp <<EOF && enable uwp && vaapi_win32_extralibs="-ldxgi"
+#ifdef WINAPI_FAMILY
+#include <winapifamily.h>
+#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
+#error desktop, not uwp
+#else
+// WINAPI_FAMILY_APP, WINAPI_FAMILY_PHONE_APP => UWP
+#endif
+#else
+#error no family set
+#endif
+EOF
+
 # mediafoundation requires linking directly to mfplat if building for uwp target
 enabled uwp && mediafoundation_extralibs="-lmfplat -lmfuuid -lole32 -lstrmiids" || mediafoundation_extralibs="-lmfuuid -lole32 -lstrmiids"
 
@@ -6958,7 +6974,14 @@ enabled vaapi &&
     check_pkg_config vaapi "libva >= 0.35.0" "va/va.h" vaInitialize
 
 if enabled vaapi; then
-    check_pkg_config vaapi_drm "libva-drm" "va/va_drm.h" vaGetDisplayDRM
+    case $target_os in
+        mingw32*|mingw64*|win32|win64)
+            check_pkg_config vaapi_win32 "libva-win32" "va/va_win32.h" vaGetDisplayWin32
+            ;;
+        *)
+            check_pkg_config vaapi_drm "libva-drm" "va/va_drm.h" vaGetDisplayDRM
+            ;;
+    esac
 
     if enabled xlib_x11; then
         check_pkg_config vaapi_x11 "libva-x11" "va/va_x11.h" vaGetDisplay
