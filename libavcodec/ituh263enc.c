@@ -865,6 +865,11 @@ av_cold void ff_h263_encode_init(MpegEncContext *s)
         s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
     }
 
+    if (s->lmin > s->lmax) {
+        av_log(s->avctx, AV_LOG_WARNING, "Clipping lmin value to %d\n", s->lmax);
+        s->lmin = s->lmax;
+    }
+
     ff_thread_once(&init_static_once, h263_encode_init_static);
 }
 

@@ -798,6 +798,11 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
                                                 AV_CODEC_FLAG_INTERLACED_ME) ||
                                 s->alternate_scan);
 
+    if (s->lmin > s->lmax) {
+        av_log(avctx, AV_LOG_WARNING, "Clipping lmin value to %d\n", s->lmax);
+        s->lmin = s->lmax;
+    }
+
     /* init */
     ff_mpv_idct_init(s);
     if ((ret = ff_mpv_common_init(s)) < 0)
