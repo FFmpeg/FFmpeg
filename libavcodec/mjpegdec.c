@@ -3013,6 +3013,8 @@ static void smv_process_frame(AVCodecContext *avctx, AVFrame *frame)
     frame->crop_top    = FFMIN(s->smv_next_frame * avctx->height, frame->height);
     frame->crop_bottom = frame->height - (s->smv_next_frame + 1) * avctx->height;
 
+    if (s->smv_frame->pts != AV_NOPTS_VALUE)
+        s->smv_frame->pts += s->smv_frame->duration;
     s->smv_next_frame = (s->smv_next_frame + 1) % s->smv_frames_per_jpeg;
 
     if (s->smv_next_frame == 0)
@@ -3043,6 +3045,9 @@ static int smvjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
 
     if (!got_frame)
         return AVERROR(EAGAIN);
+
+    // packet duration covers all the frames in the packet
+    s->smv_frame->duration /= s->smv_frames_per_jpeg;
 
 return_frame:
     av_assert0(s->smv_frame->buf[0]);
