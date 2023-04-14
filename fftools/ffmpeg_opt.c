@@ -1767,7 +1767,7 @@ const OptionDef options[] = {
 
 #if CONFIG_VAAPI
     { "vaapi_device", HAS_ARG | OPT_EXPERT, { .func_arg = opt_vaapi_device },
-        "set VAAPI hardware device (DRM path or X11 display name)", "device" },
+        "set VAAPI hardware device (DirectX adapter index, DRM path or X11 display name)", "device" },
 #endif
 
 #if CONFIG_QSV

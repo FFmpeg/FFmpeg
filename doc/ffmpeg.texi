@@ -1169,9 +1169,10 @@ Choose the first device and use the primary device context.
 @var{device} is the number of the Direct3D 11 display adapter.
 
 @item vaapi
-@var{device} is either an X11 display name or a DRM render node.
+@var{device} is either an X11 display name, a DRM render node or a DirectX adapter index.
 If not specified, it will attempt to open the default X11 display (@emph{$DISPLAY})
-and then the first DRM render node (@emph{/dev/dri/renderD128}).
+and then the first DRM render node (@emph{/dev/dri/renderD128}), or the default
+DirectX adapter on Windows.
 
 @item vdpau
 @var{device} is an X11 display name.
