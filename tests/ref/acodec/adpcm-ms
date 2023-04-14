@@ -1,4 +1,4 @@
-a407b87daeef5b25dfb6c5b3f519e9c1 *tests/data/fate/acodec-adpcm-ms.wav
+ed29590dc005c64940c46cfe4a0e8eba *tests/data/fate/acodec-adpcm-ms.wav
 268378 tests/data/fate/acodec-adpcm-ms.wav
 7be370f937c51e8a967e6a3d08d5156a *tests/data/fate/acodec-adpcm-ms.out.wav
 stddev: 1050.01 PSNR: 35.91 MAXDIFF:29806 bytes:  1058400/  1060576

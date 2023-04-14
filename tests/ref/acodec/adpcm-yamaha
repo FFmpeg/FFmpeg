@@ -1,4 +1,4 @@
-245c194e84d482a70ca89de9c0bbd591 *tests/data/fate/acodec-adpcm-yamaha.wav
+4719ae6d28c4b13c270caefb34fde140 *tests/data/fate/acodec-adpcm-yamaha.wav
 265274 tests/data/fate/acodec-adpcm-yamaha.wav
 758b4aee62964831d0a335ada9672104 *tests/data/fate/acodec-adpcm-yamaha.out.wav
 stddev: 1242.71 PSNR: 34.44 MAXDIFF:39960 bytes:  1058400/  1060864

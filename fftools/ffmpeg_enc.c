@@ -325,6 +325,8 @@ int enc_open(OutputStream *ost, AVFrame *frame)
             return ret;
     }
 
+    av_dict_set(&ost->encoder_opts, "flags", "+frame_duration", AV_DICT_MULTIKEY);
+
     ret = hw_device_setup_for_encode(ost);
     if (ret < 0) {
         av_log(ost, AV_LOG_ERROR,

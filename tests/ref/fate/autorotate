@@ -1,5 +1,5 @@
-e432aa783e79208a61052f6ced525fff *tests/data/fate/autorotate.mov
-197358 tests/data/fate/autorotate.mov
+701a366a5b97ea92b0e25f5d059a0dd6 *tests/data/fate/autorotate.mov
+197366 tests/data/fate/autorotate.mov
 #extradata 0:       34, 0x9d7d073f
 #tb 0: 1/15360
 #media_type 0: video

@@ -76,15 +76,6 @@ static int write_packet(Muxer *mux, OutputStream *ost, AVPacket *pkt)
     if (ost->type == AVMEDIA_TYPE_VIDEO && ost->vsync_method == VSYNC_DROP)
         pkt->pts = pkt->dts = AV_NOPTS_VALUE;
 
-    if (ost->type == AVMEDIA_TYPE_VIDEO) {
-        if (ost->frame_rate.num && ost->is_cfr) {
-            if (pkt->duration > 0)
-                av_log(ost, AV_LOG_WARNING, "Overriding packet duration by frame rate, this should not happen\n");
-            pkt->duration = av_rescale_q(1, av_inv_q(ost->frame_rate),
-                                         pkt->time_base);
-        }
-    }
-
     av_packet_rescale_ts(pkt, pkt->time_base, ost->st->time_base);
     pkt->time_base = ost->st->time_base;
 
