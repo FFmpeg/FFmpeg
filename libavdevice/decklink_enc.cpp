@@ -318,7 +318,7 @@ static int create_s337_payload(AVPacket *pkt, uint8_t **outbuf, int *outsize)
     /* Ensure final payload is aligned on 4-byte boundary */
     if (pkt->size & 1)
         bytestream2_put_le16u(&pb, pkt->data[pkt->size - 1] << 8);
-    if ((pkt->size & 3 == 1) || (pkt->size & 3 == 2))
+    if ((pkt->size & 3) == 1 || (pkt->size & 3) == 2)
         bytestream2_put_le16u(&pb, 0);
 
     *outsize = payload_size;
