@@ -3269,14 +3269,20 @@ static int64_t calc_pts_duration(MOVMuxContext *mov, MOVTrack *track)
     return end - start;
 }
 
+static int mov_mdhd_mvhd_tkhd_version(MOVMuxContext *mov, MOVTrack *track, int64_t duration)
+{
+    if (track && track->mode == MODE_ISM)
+        return 1;
+    if (duration < INT32_MAX)
+        return 0;
+    return 1;
+}
+
 static int mov_write_mdhd_tag(AVIOContext *pb, MOVMuxContext *mov,
                               MOVTrack *track)
 {
     int64_t duration = calc_samples_pts_duration(mov, track);
-    int version = duration < INT32_MAX ? 0 : 1;
-
-    if (track->mode == MODE_ISM)
-        version = 1;
+    int version = mov_mdhd_mvhd_tkhd_version(mov, track, duration);
 
     (version == 1) ? avio_wb32(pb, 44) : avio_wb32(pb, 32); /* size */
     ffio_wfourcc(pb, "mdhd");
@@ -3362,8 +3368,6 @@ static int mov_write_tkhd_tag(AVIOContext *pb, MOVMuxContext *mov,
         else
             duration *= mov->avif_loop_count;
 
-     version = duration < INT32_MAX ? 0 : 1;
-
     if (st) {
         if (mov->per_stream_grouping)
             group = st->index;
@@ -3379,8 +3383,7 @@ static int mov_write_tkhd_tag(AVIOContext *pb, MOVMuxContext *mov,
     if (track->flags & MOV_TRACK_ENABLED)
         flags |= MOV_TKHD_FLAG_ENABLED;
 
-    if (track->mode == MODE_ISM)
-        version = 1;
+    version = mov_mdhd_mvhd_tkhd_version(mov, track, duration);
 
     (version == 1) ? avio_wb32(pb, 104) : avio_wb32(pb, 92); /* size */
     ffio_wfourcc(pb, "tkhd");
@@ -3863,7 +3866,7 @@ static int mov_write_mvhd_tag(AVIOContext *pb, MOVMuxContext *mov)
         max_track_id  = 1;
     }
 
-    version = max_track_len < UINT32_MAX ? 0 : 1;
+    version = mov_mdhd_mvhd_tkhd_version(mov, NULL, max_track_len);
     avio_wb32(pb, version == 1 ? 120 : 108); /* size */
 
     ffio_wfourcc(pb, "mvhd");
