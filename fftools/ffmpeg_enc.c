@@ -877,9 +877,16 @@ static void video_sync_process(OutputFile *of, OutputStream *ost,
                                int64_t *nb_frames, int64_t *nb_frames_prev)
 {
     Encoder *e = ost->enc;
-    double delta0, delta;
+    double delta0, delta, sync_ipts;
 
-    double sync_ipts = adjust_frame_pts_to_encoder_tb(of, ost, frame);
+    if (!frame) {
+        *nb_frames_prev = *nb_frames = mid_pred(e->frames_prev_hist[0],
+                                                e->frames_prev_hist[1],
+                                                e->frames_prev_hist[2]);
+        goto finish;
+    }
+
+    sync_ipts = adjust_frame_pts_to_encoder_tb(of, ost, frame);
     /* delta0 is the "drift" between the input frame and
      * where it would fall in the output. */
     delta0 = sync_ipts - e->next_pts;
@@ -940,6 +947,12 @@ static void video_sync_process(OutputFile *of, OutputStream *ost,
     default:
         av_assert0(0);
     }
+
+finish:
+    memmove(e->frames_prev_hist + 1,
+            e->frames_prev_hist,
+            sizeof(e->frames_prev_hist[0]) * (FF_ARRAY_ELEMS(e->frames_prev_hist) - 1));
+    e->frames_prev_hist[0] = *nb_frames_prev;
 }
 
 static enum AVPictureType forced_kf_apply(void *logctx, KeyframeForceCtx *kf,
@@ -1015,20 +1028,8 @@ static void do_video_out(OutputFile *of, OutputStream *ost, AVFrame *frame)
     if (duration <= 0 && frame_rate.num > 0 && frame_rate.den > 0)
         duration = 1/(av_q2d(frame_rate) * av_q2d(enc->time_base));
 
-    if (!frame) {
-        //end, flushing
-        nb_frames_prev = nb_frames = mid_pred(e->frames_prev_hist[0],
-                                              e->frames_prev_hist[1],
-                                              e->frames_prev_hist[2]);
-    } else {
-        video_sync_process(of, ost, frame, duration,
-                           &nb_frames, &nb_frames_prev);
-    }
-
-    memmove(e->frames_prev_hist + 1,
-            e->frames_prev_hist,
-            sizeof(e->frames_prev_hist[0]) * (FF_ARRAY_ELEMS(e->frames_prev_hist) - 1));
-    e->frames_prev_hist[0] = nb_frames_prev;
+    video_sync_process(of, ost, frame, duration,
+                       &nb_frames, &nb_frames_prev);
 
     if (nb_frames_prev == 0 && ost->last_dropped) {
         nb_frames_drop++;
