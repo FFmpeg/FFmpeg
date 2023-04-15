@@ -1630,8 +1630,10 @@ MOV/MP4/ISMV (Smooth Streaming) muxer.
 The mov/mp4/ismv muxer supports fragmentation. Normally, a MOV/MP4
 file has all the metadata about all packets stored in one location
 (written at the end of the file, it can be moved to the start for
-better playback by adding @var{faststart} to the @var{movflags}, or
-using the @command{qt-faststart} tool). A fragmented
+better playback by adding @code{+faststart} to the @code{-movflags}, or
+using the @command{qt-faststart} tool).
+
+A fragmented
 file consists of a number of fragments, where packets and metadata
 about these packets are stored together. Writing a fragmented
 file has the advantage that the file is decodable even if the
@@ -1641,40 +1643,34 @@ very long files (since writing normal MOV/MP4 files stores info about
 every single packet in memory until the file is closed). The downside
 is that it is less compatible with other applications.
 
+Fragmentation is enabled by setting one of the options that define
+how to cut the file into fragments: @code{-frag_duration}, @code{-frag_size},
+@code{-min_frag_duration}, @code{-movflags +frag_keyframe} and
+@code{-movflags +frag_custom}. If more than one condition is specified,
+fragments are cut when one of the specified conditions is fulfilled. The
+exception to this is @code{-min_frag_duration}, which has to be fulfilled for
+any of the other conditions to apply.
+
 @subsection Options
 
-Fragmentation is enabled by setting one of the AVOptions that define
-how to cut the file into fragments:
-
 @table @option
-@item -moov_size @var{bytes}
-Reserves space for the moov atom at the beginning of the file instead of placing the
-moov atom at the end. If the space reserved is insufficient, muxing will fail.
-@item -movflags frag_keyframe
-Start a new fragment at each video keyframe.
-@item -frag_duration @var{duration}
+@item frag_duration @var{duration}
 Create fragments that are @var{duration} microseconds long.
-@item -frag_size @var{size}
+@item frag_size @var{size}
 Create fragments that contain up to @var{size} bytes of payload data.
-@item -movflags frag_custom
+@item min_frag_duration @var{duration}
+Don't create fragments that are shorter than @var{duration} microseconds long.
+@item movflags @var{flags}
+Set various muxing switches. The following flags can be used:
+@table @samp
+@item frag_keyframe
+Start a new fragment at each video keyframe.
+@item frag_custom
 Allow the caller to manually choose when to cut fragments, by
 calling @code{av_write_frame(ctx, NULL)} to write a fragment with
 the packets written so far. (This is only useful with other
 applications integrating libavformat, not from @command{ffmpeg}.)
-@item -min_frag_duration @var{duration}
-Don't create fragments that are shorter than @var{duration} microseconds long.
-@end table
-
-If more than one condition is specified, fragments are cut when
-one of the specified conditions is fulfilled. The exception to this is
-@code{-min_frag_duration}, which has to be fulfilled for any of the other
-conditions to apply.
-
-Additionally, the way the output file is written can be adjusted
-through a few other options:
-
-@table @option
-@item -movflags empty_moov
+@item empty_moov
 Write an initial moov atom directly at the start of the file, without
 describing any samples in it. Generally, an mdat/moov pair is written
 at the start of the file, as a normal MOV/MP4 file, containing only
@@ -1683,43 +1679,40 @@ mdat atom, and the moov atom only describes the tracks but has
 a zero duration.
 
 This option is implicitly set when writing ismv (Smooth Streaming) files.
-@item -movflags separate_moof
+@item separate_moof
 Write a separate moof (movie fragment) atom for each track. Normally,
 packets for all tracks are written in a moof atom (which is slightly
 more efficient), but with this option set, the muxer writes one moof/mdat
 pair for each track, making it easier to separate tracks.
 
 This option is implicitly set when writing ismv (Smooth Streaming) files.
-@item -movflags skip_sidx
+@item skip_sidx
 Skip writing of sidx atom. When bitrate overhead due to sidx atom is high,
 this option could be used for cases where sidx atom is not mandatory.
 When global_sidx flag is enabled, this option will be ignored.
-@item -movflags faststart
+@item faststart
 Run a second pass moving the index (moov atom) to the beginning of the file.
 This operation can take a while, and will not work in various situations such
 as fragmented output, thus it is not enabled by default.
-@item -movflags rtphint
+@item rtphint
 Add RTP hinting tracks to the output file.
-@item -movflags disable_chpl
+@item disable_chpl
 Disable Nero chapter markers (chpl atom).  Normally, both Nero chapters
 and a QuickTime chapter track are written to the file. With this option
 set, only the QuickTime chapter track will be written. Nero chapters can
 cause failures when the file is reprocessed with certain tagging programs, like
 mp3Tag 2.61a and iTunes 11.3, most likely other versions are affected as well.
-@item -movflags omit_tfhd_offset
+@item omit_tfhd_offset
 Do not write any absolute base_data_offset in tfhd atoms. This avoids
 tying fragments to absolute byte positions in the file/streams.
-@item -movflags default_base_moof
+@item default_base_moof
 Similarly to the omit_tfhd_offset, this flag avoids writing the
 absolute base_data_offset field in tfhd atoms, but does so by using
 the new default-base-is-moof flag instead. This flag is new from
 14496-12:2012. This may make the fragments easier to parse in certain
 circumstances (avoiding basing track fragment location calculations
 on the implicit end of the previous track fragment).
-@item -write_tmcd
-Specify @code{on} to force writing a timecode track, @code{off} to disable it
-and @code{auto} to write a timecode track only for mov and mp4 output (default).
-@item -movflags negative_cts_offsets
+@item negative_cts_offsets
 Enables utilization of version 1 of the CTTS box, in which the CTS offsets can
 be negative. This enables the initial sample to have DTS/CTS of zero, and
 reduces the need for edit lists for some cases such as video tracks with
@@ -1727,15 +1720,24 @@ B-frames. Additionally, eases conformance with the DASH-IF interoperability
 guidelines.
 
 This option is implicitly set when writing ismv (Smooth Streaming) files.
+@end table
 
-@item -write_btrt @var{bool}
+@item moov_size @var{bytes}
+Reserves space for the moov atom at the beginning of the file instead of placing the
+moov atom at the end. If the space reserved is insufficient, muxing will fail.
+
+@item write_tmcd
+Specify @code{on} to force writing a timecode track, @code{off} to disable it
+and @code{auto} to write a timecode track only for mov and mp4 output (default).
+
+@item write_btrt @var{bool}
 Force or disable writing bitrate box inside stsd box of a track.
 The box contains decoding buffer size (in bytes), maximum bitrate and
 average bitrate for the track. The box will be skipped if none of these values
 can be computed.
 Default is @code{-1} or @code{auto}, which will write the box only in MP4 mode.
 
-@item -write_prft
+@item write_prft
 Write producer time reference box (PRFT) with a specified time source for the
 NTP field in the PRFT box. Set value as @samp{wallclock} to specify timesource
 as wallclock time and @samp{pts} to specify timesource as input packets' PTS
@@ -1746,15 +1748,15 @@ where PTS values are set as as wallclock time at the source. For example, an
 encoding use case with decklink capture source where @option{video_pts} and
 @option{audio_pts} are set to @samp{abs_wallclock}.
 
-@item -empty_hdlr_name @var{bool}
+@item empty_hdlr_name @var{bool}
 Enable to skip writing the name inside a @code{hdlr} box.
 Default is @code{false}.
 
-@item -movie_timescale @var{scale}
+@item movie_timescale @var{scale}
 Set the timescale written in the movie header box (@code{mvhd}).
 Range is 1 to INT_MAX. Default is 1000.
 
-@item -video_track_timescale @var{scale}
+@item video_track_timescale @var{scale}
 Set the timescale used for video tracks. Range is 0 to INT_MAX.
 If set to @code{0}, the timescale is automatically set based on
 the native stream time base. Default is 0.
