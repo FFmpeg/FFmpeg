@@ -389,7 +389,7 @@ int main(int argc, char **argv)
     // samples. One moov+mdat with 1 second of data and one moof+mdat with 1
     // second of data.
     init_out("non-empty-moov");
-    av_dict_set(&opts, "movflags", "frag_keyframe", 0);
+    av_dict_set(&opts, "movflags", "+frag_keyframe", 0);
     init(0, 0);
     mux_gops(2);
     finish();
@@ -398,7 +398,7 @@ int main(int argc, char **argv)
     // Write a similar file, but with B-frames and audio preroll, handled
     // via an edit list.
     init_out("non-empty-moov-elst");
-    av_dict_set(&opts, "movflags", "frag_keyframe", 0);
+    av_dict_set(&opts, "movflags", "+frag_keyframe", 0);
     av_dict_set(&opts, "use_editlist", "1", 0);
     init(1, 1);
     mux_gops(2);
@@ -410,7 +410,7 @@ int main(int argc, char **argv)
     // of the first audio packet is > 0, but it is set to zero since edit
     // lists aren't used, increasing the duration of the first packet instead.
     init_out("non-empty-moov-no-elst");
-    av_dict_set(&opts, "movflags", "frag_keyframe", 0);
+    av_dict_set(&opts, "movflags", "+frag_keyframe", 0);
     av_dict_set(&opts, "use_editlist", "0", 0);
     init(1, 0);
     mux_gops(2);
@@ -420,7 +420,7 @@ int main(int argc, char **argv)
     format = "ismv";
     // Write an ISMV, with B-frames and audio preroll.
     init_out("ismv");
-    av_dict_set(&opts, "movflags", "frag_keyframe", 0);
+    av_dict_set(&opts, "movflags", "+frag_keyframe", 0);
     init(1, 1);
     mux_gops(2);
     finish();
@@ -430,7 +430,7 @@ int main(int argc, char **argv)
     // An initial moov that doesn't contain any samples, followed by two
     // moof+mdat pairs.
     init_out("empty-moov");
-    av_dict_set(&opts, "movflags", "frag_keyframe+empty_moov", 0);
+    av_dict_set(&opts, "movflags", "+frag_keyframe+empty_moov", 0);
     av_dict_set(&opts, "use_editlist", "0", 0);
     init(0, 0);
     mux_gops(2);
@@ -442,7 +442,7 @@ int main(int argc, char **argv)
     // pts/dts 0. avoid_negative_ts behaves in the same way as
     // in non-empty-moov-no-elst above.
     init_out("empty-moov-no-elst");
-    av_dict_set(&opts, "movflags", "frag_keyframe+empty_moov", 0);
+    av_dict_set(&opts, "movflags", "+frag_keyframe+empty_moov", 0);
     init(1, 0);
     mux_gops(2);
     finish();
@@ -454,7 +454,7 @@ int main(int argc, char **argv)
     // This should trigger a warning - we check that the warning is produced.
     init_count_warnings();
     init_out("empty-moov-no-elst-no-adjust");
-    av_dict_set(&opts, "movflags", "frag_keyframe+empty_moov", 0);
+    av_dict_set(&opts, "movflags", "+frag_keyframe+empty_moov", 0);
     av_dict_set(&opts, "avoid_negative_ts", "disabled", 0);
     init(1, 0);
     mux_gops(2);
@@ -467,7 +467,7 @@ int main(int argc, char **argv)
     // Verify that delay_moov produces the same as empty_moov for
     // simple input
     init_out("delay-moov");
-    av_dict_set(&opts, "movflags", "frag_keyframe+delay_moov", 0);
+    av_dict_set(&opts, "movflags", "+frag_keyframe+delay_moov", 0);
     av_dict_set(&opts, "use_editlist", "0", 0);
     init(0, 0);
     mux_gops(2);
@@ -477,7 +477,7 @@ int main(int argc, char **argv)
 
     // Test writing content that requires an edit list using delay_moov
     init_out("delay-moov-elst");
-    av_dict_set(&opts, "movflags", "frag_keyframe+delay_moov", 0);
+    av_dict_set(&opts, "movflags", "+frag_keyframe+delay_moov", 0);
     init(1, 1);
     mux_gops(2);
     finish();
@@ -486,7 +486,7 @@ int main(int argc, char **argv)
     // Test writing a file with one track lacking packets, with delay_moov.
     skip_write_audio = 1;
     init_out("delay-moov-empty-track");
-    av_dict_set(&opts, "movflags", "frag_keyframe+delay_moov", 0);
+    av_dict_set(&opts, "movflags", "+frag_keyframe+delay_moov", 0);
     init(0, 0);
     mux_gops(2);
     // The automatic flushing shouldn't output anything, since we're still
@@ -501,7 +501,7 @@ int main(int argc, char **argv)
     // Check that manually flushing still outputs things as expected. This
     // produces two fragments, while the one above produces only one.
     init_out("delay-moov-empty-track-flush");
-    av_dict_set(&opts, "movflags", "frag_custom+delay_moov", 0);
+    av_dict_set(&opts, "movflags", "+frag_custom+delay_moov", 0);
     init(0, 0);
     mux_gops(1);
     av_write_frame(ctx, NULL); // Force writing the moov
@@ -519,7 +519,7 @@ int main(int argc, char **argv)
     // Verify that the header written by delay_moov when manually flushed
     // is identical to the one by empty_moov.
     init_out("empty-moov-header");
-    av_dict_set(&opts, "movflags", "frag_keyframe+empty_moov", 0);
+    av_dict_set(&opts, "movflags", "+frag_keyframe+empty_moov", 0);
     av_dict_set(&opts, "use_editlist", "0", 0);
     init(0, 0);
     close_out();
@@ -542,7 +542,7 @@ int main(int argc, char **argv)
     finish();
 
     init_out("delay-moov-header");
-    av_dict_set(&opts, "movflags", "frag_custom+delay_moov", 0);
+    av_dict_set(&opts, "movflags", "+frag_custom+delay_moov", 0);
     av_dict_set(&opts, "use_editlist", "0", 0);
     init(0, 0);
     check(out_size == 0, "Output written during init with delay_moov");
@@ -563,7 +563,7 @@ int main(int argc, char **argv)
     // Verify that we can produce an identical second fragment without
     // writing the first one. First write the reference fragments that
     // we want to reproduce.
-    av_dict_set(&opts, "movflags", "frag_custom+empty_moov+dash", 0);
+    av_dict_set(&opts, "movflags", "+frag_custom+empty_moov+dash", 0);
     init(0, 0);
     mux_gops(1);
     av_write_frame(ctx, NULL); // Output the first fragment
@@ -576,7 +576,7 @@ int main(int argc, char **argv)
 
     // Produce the same second fragment without actually writing the first
     // one before.
-    av_dict_set(&opts, "movflags", "frag_custom+empty_moov+dash+frag_discont", 0);
+    av_dict_set(&opts, "movflags", "+frag_custom+empty_moov+dash+frag_discont", 0);
     av_dict_set(&opts, "fragment_index", "2", 0);
     av_dict_set(&opts, "avoid_negative_ts", "disabled", 0);
     av_dict_set(&opts, "use_editlist", "0", 0);
@@ -591,7 +591,7 @@ int main(int argc, char **argv)
 
     // Produce the same thing by using delay_moov, which requires a slightly
     // different call sequence.
-    av_dict_set(&opts, "movflags", "frag_custom+delay_moov+dash+frag_discont", 0);
+    av_dict_set(&opts, "movflags", "+frag_custom+delay_moov+dash+frag_discont", 0);
     av_dict_set(&opts, "fragment_index", "2", 0);
     init(0, 0);
     skip_gops(1);
@@ -607,7 +607,7 @@ int main(int argc, char **argv)
     // Test discontinuously written fragments with B-frames (where the
     // assumption of starting at pts=0 works) but not with audio preroll
     // (which can't be guessed).
-    av_dict_set(&opts, "movflags", "frag_custom+delay_moov+dash", 0);
+    av_dict_set(&opts, "movflags", "+frag_custom+delay_moov+dash", 0);
     init(1, 0);
     mux_gops(1);
     init_out("delay-moov-elst-init");
@@ -622,7 +622,7 @@ int main(int argc, char **argv)
     memcpy(content, hash, HASH_SIZE);
     finish();
 
-    av_dict_set(&opts, "movflags", "frag_custom+delay_moov+dash+frag_discont", 0);
+    av_dict_set(&opts, "movflags", "+frag_custom+delay_moov+dash+frag_discont", 0);
     av_dict_set(&opts, "fragment_index", "2", 0);
     init(1, 0);
     skip_gops(1);
@@ -640,7 +640,7 @@ int main(int argc, char **argv)
 
     // Test discontinuously written fragments with B-frames and audio preroll,
     // properly signaled.
-    av_dict_set(&opts, "movflags", "frag_custom+delay_moov+dash", 0);
+    av_dict_set(&opts, "movflags", "+frag_custom+delay_moov+dash", 0);
     init(1, 1);
     mux_gops(1);
     init_out("delay-moov-elst-signal-init");
@@ -655,7 +655,7 @@ int main(int argc, char **argv)
     memcpy(content, hash, HASH_SIZE);
     finish();
 
-    av_dict_set(&opts, "movflags", "frag_custom+delay_moov+dash+frag_discont", 0);
+    av_dict_set(&opts, "movflags", "+frag_custom+delay_moov+dash+frag_discont", 0);
     av_dict_set(&opts, "fragment_index", "2", 0);
     init(1, 1);
     signal_init_ts();
@@ -673,7 +673,7 @@ int main(int argc, char **argv)
 
 
     // Test muxing discontinuous fragments with very large (> (1<<31)) timestamps.
-    av_dict_set(&opts, "movflags", "frag_custom+delay_moov+dash+frag_discont", 0);
+    av_dict_set(&opts, "movflags", "+frag_custom+delay_moov+dash+frag_discont", 0);
     av_dict_set(&opts, "fragment_index", "2", 0);
     init(1, 1);
     signal_init_ts();
@@ -700,7 +700,7 @@ int main(int argc, char **argv)
     // match - the input stream starts at pts=-2048, but that part is excluded
     // by the edit list.
     init_out("vfr");
-    av_dict_set(&opts, "movflags", "frag_keyframe+delay_moov+dash", 0);
+    av_dict_set(&opts, "movflags", "+frag_keyframe+delay_moov+dash", 0);
     init_fps(1, 1, 3);
     mux_frames(gop_size/2, 0);
     duration /= 10;
@@ -719,7 +719,7 @@ int main(int argc, char **argv)
     init_count_warnings();
     clear_duration = 1;
     init_out("vfr-noduration");
-    av_dict_set(&opts, "movflags", "frag_keyframe+delay_moov+dash", 0);
+    av_dict_set(&opts, "movflags", "+frag_keyframe+delay_moov+dash", 0);
     init_fps(1, 1, 3);
     mux_frames(gop_size/2, 0);
     duration /= 10;
@@ -735,7 +735,7 @@ int main(int argc, char **argv)
     // this will cause write_data_type to be called with the type unknown.
     force_iobuf_size = 1500;
     init_out("large_frag");
-    av_dict_set(&opts, "movflags", "frag_keyframe+delay_moov", 0);
+    av_dict_set(&opts, "movflags", "+frag_keyframe+delay_moov", 0);
     init_fps(1, 1, 3);
     mux_gops(2);
     finish();
@@ -748,7 +748,7 @@ int main(int argc, char **argv)
     // the expected, but we simulate dropped frames at one point.
     do_interleave = 1;
     init_out("vfr-noduration-interleave");
-    av_dict_set(&opts, "movflags", "frag_keyframe+delay_moov", 0);
+    av_dict_set(&opts, "movflags", "+frag_keyframe+delay_moov", 0);
     av_dict_set(&opts, "frag_duration", "650000", 0);
     init_fps(1, 1, 30);
     mux_frames(gop_size/2, 0);
@@ -771,7 +771,7 @@ int main(int argc, char **argv)
     // with negative cts values, removing the edit list for the
     // video track.
     init_out("delay-moov-elst-neg-cts");
-    av_dict_set(&opts, "movflags", "frag_keyframe+delay_moov+negative_cts_offsets", 0);
+    av_dict_set(&opts, "movflags", "+frag_keyframe+delay_moov+negative_cts_offsets", 0);
     init(1, 1);
     mux_gops(2);
     finish();
@@ -781,7 +781,7 @@ int main(int argc, char **argv)
     // with negative cts values, avoiding any edit lists, allowing
     // to use empty_moov instead of delay_moov.
     init_out("empty-moov-neg-cts");
-    av_dict_set(&opts, "movflags", "frag_keyframe+empty_moov+negative_cts_offsets", 0);
+    av_dict_set(&opts, "movflags", "+frag_keyframe+empty_moov+negative_cts_offsets", 0);
     init(1, 0);
     mux_gops(2);
     finish();
