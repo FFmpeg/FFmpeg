@@ -1524,10 +1524,13 @@ static void mov_metadata_creation_time(MOVContext *c, AVIOContext *pb, AVDiction
     } else {
         time = avio_rb32(pb);
         avio_rb32(pb); /* modification time */
+        if (time > 0 && time < 2082844800) {
+            av_log(c->fc, AV_LOG_WARNING, "Detected creation time before 1970, parsing as unix timestamp.\n");
+            time += 2082844800;
+        }
     }
     if (time) {
-        if (time >= 2082844800)
-            time -= 2082844800;  /* seconds between 1904-01-01 and Epoch */
+        time -= 2082844800;  /* seconds between 1904-01-01 and Epoch */
 
         if ((int64_t)(time * 1000000ULL) / 1000000 != time) {
             av_log(c->fc, AV_LOG_DEBUG, "creation_time is not representable\n");
