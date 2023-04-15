@@ -325,7 +325,6 @@ typedef struct FilterGraph {
     const char    *graph_desc;
 
     AVFilterGraph *graph;
-    int reconfiguration;
     // true when the filtergraph contains only meta filters
     // that do not modify the frame data
     int is_meta;

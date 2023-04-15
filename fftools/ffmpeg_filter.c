@@ -1239,8 +1239,6 @@ int configure_filtergraph(FilterGraph *fg)
             goto fail;
     }
 
-    fg->reconfiguration = 1;
-
     for (i = 0; i < fg->nb_inputs; i++) {
         AVFrame *tmp;
         while (av_fifo_read(fg->inputs[i]->frame_queue, &tmp, 1) >= 0) {
