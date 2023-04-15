@@ -179,6 +179,7 @@ static int push_frame(AVFilterContext *ctx, unsigned in_no, AVFrame *buf)
     struct concat_in *in = &cat->in[in_no];
 
     buf->pts = av_rescale_q(buf->pts, inlink->time_base, outlink->time_base);
+    buf->duration = av_rescale_q(buf->duration, inlink->time_base, outlink->time_base);
     in->pts = buf->pts;
     in->nb_frames++;
     /* add duration to input PTS */
