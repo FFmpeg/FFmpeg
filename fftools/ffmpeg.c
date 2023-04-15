@@ -1713,7 +1713,6 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
             }
             break;
         }
-        ist->pts = ist->dts;
     } else if (!ist->decoding_needed)
         eof_reached = 1;
 
