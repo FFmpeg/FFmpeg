@@ -1005,24 +1005,17 @@ static void do_video_out(OutputFile *of,
     AVRational frame_rate;
     int64_t nb_frames, nb_frames_prev, i;
     double duration = 0;
-    InputStream *ist = ost->ist;
     AVFilterContext *filter = ost->filter->filter;
 
-    frame_rate = av_buffersink_get_frame_rate(filter);
-    if (frame_rate.num > 0 && frame_rate.den > 0)
-        duration = 1/(av_q2d(frame_rate) * av_q2d(enc->time_base));
+    if (next_picture)
+        duration = lrintf(next_picture->duration * av_q2d(next_picture->time_base) / av_q2d(enc->time_base));
 
-    if(ist && ist->st->start_time != AV_NOPTS_VALUE && ist->first_dts != AV_NOPTS_VALUE && ost->frame_rate.num)
+    if (duration <= 0 && ost->frame_rate.num)
         duration = FFMIN(duration, 1/(av_q2d(ost->frame_rate) * av_q2d(enc->time_base)));
 
-    if (!ost->filters_script &&
-        !ost->filters &&
-        (nb_filtergraphs == 0 || !filtergraphs[0]->graph_desc) &&
-        next_picture &&
-        ist &&
-        lrintf(next_picture->duration * av_q2d(ist->st->time_base) / av_q2d(enc->time_base)) > 0) {
-        duration = lrintf(next_picture->duration * av_q2d(ist->st->time_base) / av_q2d(enc->time_base));
-    }
+    frame_rate = av_buffersink_get_frame_rate(filter);
+    if (duration <= 0 && frame_rate.num > 0 && frame_rate.den > 0)
+        duration = 1/(av_q2d(frame_rate) * av_q2d(enc->time_base));
 
     if (!next_picture) {
         //end, flushing
