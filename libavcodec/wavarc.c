@@ -343,6 +343,8 @@ static int decode_2slp(AVCodecContext *avctx,
             break;
         case 0:
             order = get_urice(gb, 2);
+            if ((unsigned)order >= FF_ARRAY_ELEMS(s->filter[ch]))
+                return AVERROR_INVALIDDATA;
             for (int o = 0; o < order; o++)
                 s->filter[ch][o] = get_srice(gb, 2);
             for (int n = 0; n < s->nb_samples; n++) {
