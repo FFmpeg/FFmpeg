@@ -1579,11 +1579,11 @@ static int adpcm_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                     nibble[0] = sign_extend(byte & 15, 4);
                     nibble[1] = sign_extend(byte >> 4, 4);
 
-                    out[2+n*2] = (nibble[0]*(scale<<14) + (history[0]*29336) - (history[1]*13136)) >> 14;
+                    out[2+n*2] = nibble[0]*scale + ((history[0]*3667 - history[1]*1642) >> 11);
                     history[1] = history[0];
                     history[0] = out[2+n*2];
 
-                    out[2+n*2+1] = (nibble[1]*(scale<<14) + (history[0]*29336) - (history[1]*13136)) >> 14;
+                    out[2+n*2+1] = nibble[1]*scale + ((history[0]*3667 - history[1]*1642) >> 11);
                     history[1] = history[0];
                     history[0] = out[2+n*2+1];
                 }
