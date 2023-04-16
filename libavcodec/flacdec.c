@@ -513,7 +513,7 @@ static int decode_subframe_lpc_33bps(FLACContext *s, int64_t *decoded,
     for (i = pred_order; i < s->blocksize; i++, decoded++) {
         int64_t sum = 0;
         for (j = 0; j < pred_order; j++)
-            sum += (int64_t)coeffs[j] * decoded[j];
+            sum += (int64_t)coeffs[j] * (uint64_t)decoded[j];
         decoded[j] = residual[i] + (sum >> qlevel);
     }
 
