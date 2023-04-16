@@ -43,8 +43,8 @@ OBJS=$(addsuffix .o,$(EXAMPLES))
 # the following examples make explicit use of the math library
 avcodec:           LDLIBS += -lm
 encode_audio:      LDLIBS += -lm
-muxing:            LDLIBS += -lm
-resampling_audio:  LDLIBS += -lm
+mux:               LDLIBS += -lm
+resample_audio:    LDLIBS += -lm
 
 .phony: all clean-test clean
 
