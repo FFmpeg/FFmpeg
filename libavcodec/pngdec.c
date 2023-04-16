@@ -876,7 +876,7 @@ static int decode_trns_chunk(AVCodecContext *avctx, PNGDecContext *s,
     return 0;
 }
 
-static int decode_iccp_chunk(PNGDecContext *s, GetByteContext *gb, AVFrame *f)
+static int decode_iccp_chunk(PNGDecContext *s, GetByteContext *gb)
 {
     int ret, cnt = 0;
     AVBPrint bp;
@@ -1313,7 +1313,7 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
             break;
         }
         case MKTAG('i', 'C', 'C', 'P'): {
-            if ((ret = decode_iccp_chunk(s, &gb_chunk, p)) < 0)
+            if ((ret = decode_iccp_chunk(s, &gb_chunk)) < 0)
                 goto fail;
             break;
         }
