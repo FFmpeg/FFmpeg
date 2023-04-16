@@ -317,7 +317,7 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
     }
 
     if (s->codec_id == AV_CODEC_ID_IFF_ILBM) {
-        w_align = FFMAX(w_align, 8);
+        w_align = FFMAX(w_align, 16);
     }
 
     *width  = FFALIGN(*width, w_align);
