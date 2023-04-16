@@ -1557,6 +1557,10 @@ static int pps_scc_extension(GetBitContext *gb, AVCodecContext *avctx,
             pps->luma_bit_depth_entry = get_ue_golomb_31(gb) + 8;
             if (!pps->monochrome_palette_flag)
                 pps->chroma_bit_depth_entry = get_ue_golomb_31(gb) + 8;
+
+            if (pps->chroma_bit_depth_entry > 16 || pps->chroma_bit_depth_entry > 16)
+                return AVERROR_INVALIDDATA;
+
             num_comps = pps->monochrome_palette_flag ? 1 : 3;
             for (int comp = 0; comp < num_comps; comp++) {
                 int bit_depth = !comp ? pps->luma_bit_depth_entry : pps->chroma_bit_depth_entry;
