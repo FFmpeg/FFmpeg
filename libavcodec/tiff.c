@@ -1416,7 +1416,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
             s->sub_ifd = ff_tget(&s->gb, TIFF_LONG, s->le); /** Only get the first SubIFD */
         break;
     case DNG_LINEARIZATION_TABLE:
-        if (count > FF_ARRAY_ELEMS(s->dng_lut))
+        if (count < 1 || count > FF_ARRAY_ELEMS(s->dng_lut))
             return AVERROR_INVALIDDATA;
         for (int i = 0; i < count; i++)
             s->dng_lut[i] = ff_tget(&s->gb, type, s->le);
