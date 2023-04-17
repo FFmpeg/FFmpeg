@@ -84,6 +84,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     if(!c->prev)
         c->prev = av_malloc(avctx->width * 3 * (avctx->height + 3));
+    if (!c->prev)
+        return AVERROR(ENOMEM);
     prevptr = c->prev + avctx->width * 3 * (FFALIGN(avctx->height, 4) - 1);
     src = (const uint16_t*)(p->data[0] + p->linesize[0]*(FFALIGN(avctx->height, 4) - 1));
     if(c->keyint >= avctx->keyint_min)
