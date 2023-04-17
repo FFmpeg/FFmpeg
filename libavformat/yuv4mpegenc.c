@@ -195,13 +195,14 @@ static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     /* The following code presumes all planes to be non-interleaved. */
     for (int k = 0; k < desc->nb_components; k++) {
-        int plane_height = height, plane_width = width * desc->comp[k].step;
+        int plane_height = height, plane_width = width;
         const uint8_t *ptr = frame->data[k];
 
         if (desc->nb_components >= 3 && (k == 1 || k == 2)) { /* chroma? */
             plane_width  = AV_CEIL_RSHIFT(plane_width,  desc->log2_chroma_w);
             plane_height = AV_CEIL_RSHIFT(plane_height, desc->log2_chroma_h);
         }
+        plane_width *= desc->comp[k].step;
 
         for (int i = 0; i < plane_height; i++) {
             avio_write(pb, ptr, plane_width);
