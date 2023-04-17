@@ -1692,6 +1692,8 @@ int ff_rv34_decode_frame(AVCodecContext *avctx, AVFrame *pict,
             int i;
 
             r->tmp_b_block_base = av_malloc(s->linesize * 48);
+            if (!r->tmp_b_block_base)
+                return AVERROR(ENOMEM);
             for (i = 0; i < 2; i++)
                 r->tmp_b_block_y[i] = r->tmp_b_block_base
                                       + i * 16 * s->linesize;
