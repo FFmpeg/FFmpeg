@@ -3,6 +3,7 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 - libaribcaption decoder
+- Playdate video decoder
 
 version 6.0:
 - Radiance HDR image support
