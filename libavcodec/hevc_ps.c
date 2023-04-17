@@ -1384,18 +1384,17 @@ static void colour_mapping_table(GetBitContext *gb, HEVCPPS *pps)
 }
 
 static int pps_multilayer_extension(GetBitContext *gb, AVCodecContext *avctx,
-                                    HEVCPPS *pps, HEVCSPS *sps)
+                                    HEVCPPS *pps, HEVCSPS *sps, HEVCVPS *vps)
 {
     pps->poc_reset_info_present_flag = get_bits1(gb);
     pps->pps_infer_scaling_list_flag = get_bits1(gb);
     if (pps->pps_infer_scaling_list_flag)
         pps->pps_scaling_list_ref_layer_id = get_bits(gb, 6);
 
-    pps->num_ref_loc_offsets = get_ue_golomb_long(gb);
-    if (pps->num_ref_loc_offsets > FF_ARRAY_ELEMS(pps->ref_loc_offset_layer_id)) {
-        pps->num_ref_loc_offsets = 0;
+    pps->num_ref_loc_offsets = get_ue_golomb(gb);
+    if (pps->num_ref_loc_offsets > vps->vps_max_layers - 1)
         return AVERROR_INVALIDDATA;
-    }
+
     for (int i = 0; i < pps->num_ref_loc_offsets; i++) {
         pps->ref_loc_offset_layer_id[i] = get_bits(gb, 6);
         pps->scaled_ref_layer_offset_present_flag[i] = get_bits1(gb);
@@ -1693,6 +1692,7 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
                            HEVCParamSets *ps)
 {
     HEVCSPS      *sps = NULL;
+    HEVCVPS      *vps = NULL;
     int i, ret = 0;
     unsigned int pps_id = 0;
     ptrdiff_t nal_size;
@@ -1753,6 +1753,7 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
         goto err;
     }
     sps = (HEVCSPS *)ps->sps_list[pps->sps_id]->data;
+    vps = (HEVCVPS *)ps->vps_list[sps->vps_id]->data;
 
     pps->dependent_slice_segments_enabled_flag = get_bits1(gb);
     pps->output_flag_present_flag              = get_bits1(gb);
@@ -1921,7 +1922,7 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
         }
 
         if (pps->pps_multilayer_extension_flag) {
-            if ((ret = pps_multilayer_extension(gb, avctx, pps, sps)) < 0)
+            if ((ret = pps_multilayer_extension(gb, avctx, pps, sps, vps)) < 0)
                 goto err;
         }
 

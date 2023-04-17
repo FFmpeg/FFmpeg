@@ -314,7 +314,7 @@ typedef struct HEVCPPS {
     uint8_t poc_reset_info_present_flag;
     uint8_t pps_infer_scaling_list_flag;
     uint8_t pps_scaling_list_ref_layer_id;
-    uint16_t num_ref_loc_offsets;
+    uint8_t num_ref_loc_offsets;
     uint8_t ref_loc_offset_layer_id[64];
     uint8_t scaled_ref_layer_offset_present_flag[64];
     int8_t scaled_ref_layer_left_offset[64];
