@@ -604,7 +604,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
                 if (s->bits <= 8) s->avctx->pix_fmt = AV_PIX_FMT_GBRP;
                 else
                     goto unk_pixfmt;
-                s->upscale_v[0] = s->upscale_v[1] = 1;
+                s->upscale_v[1] = s->upscale_v[2] = 1;
             } else {
                 if (pix_fmt_id == 0x14111100)
                     s->upscale_v[1] = s->upscale_v[2] = 1;
@@ -619,7 +619,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
                 if (s->bits <= 8) s->avctx->pix_fmt = AV_PIX_FMT_GBRP;
                 else
                     goto unk_pixfmt;
-                s->upscale_h[0] = s->upscale_h[1] = 1;
+                s->upscale_h[1] = s->upscale_h[2] = 1;
             } else {
                 if (s->bits <= 8) s->avctx->pix_fmt = s->cs_itu601 ? AV_PIX_FMT_YUV422P : AV_PIX_FMT_YUVJ422P;
                 else              s->avctx->pix_fmt = AV_PIX_FMT_YUV422P16;
@@ -1698,9 +1698,6 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s, const uint8_t *mb_bitmask,
         s->h_scount[i]  = s->h_count[index];
         s->v_scount[i]  = s->v_count[index];
 
-        if(nb_components == 3 && s->nb_components == 3 && s->avctx->pix_fmt == AV_PIX_FMT_GBRP)
-            index = (index+2)%3;
-
         s->comp_index[i] = index;
 
         s->dc_index[i] = get_bits(&s->gb, 4);
@@ -2724,7 +2721,7 @@ the_end:
         }
     }
 
-    if (s->avctx->pix_fmt == AV_PIX_FMT_GBRP && s->progressive) {
+    if (s->avctx->pix_fmt == AV_PIX_FMT_GBRP) {
         av_assert0(s->nb_components == 3);
         FFSWAP(uint8_t *, frame->data[0], frame->data[2]);
         FFSWAP(uint8_t *, frame->data[0], frame->data[1]);
