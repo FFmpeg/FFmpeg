@@ -420,33 +420,36 @@ static MuxStream *mux_stream_alloc(Muxer *mux, enum AVMediaType type)
     return ms;
 }
 
-static char *get_ost_filters(const OptionsContext *o, AVFormatContext *oc,
-                             OutputStream *ost)
+static int ost_get_filters(const OptionsContext *o, AVFormatContext *oc,
+                           OutputStream *ost)
 {
+    MATCH_PER_STREAM_OPT(filter_scripts, str, ost->filters_script, oc, ost->st);
+    MATCH_PER_STREAM_OPT(filters,        str, ost->filters,        oc, ost->st);
+
+    if (!ost->enc) {
+        if (ost->filters_script || ost->filters) {
+            av_log(ost, AV_LOG_ERROR,
+                   "%s '%s' was specified, but codec copy was selected. "
+                   "Filtering and streamcopy cannot be used together.\n",
+                   ost->filters ? "Filtergraph" : "Filtergraph script",
+                   ost->filters ? ost->filters : ost->filters_script);
+            return AVERROR(ENOSYS);
+        }
+        return 0;
+    }
+
     if (ost->filters_script && ost->filters) {
         av_log(ost, AV_LOG_ERROR, "Both -filter and -filter_script set\n");
         exit_program(1);
     }
 
     if (ost->filters_script)
-        return file_read(ost->filters_script);
+        ost->avfilter = file_read(ost->filters_script);
     else if (ost->filters)
-        return av_strdup(ost->filters);
-
-    return av_strdup(ost->type == AVMEDIA_TYPE_VIDEO ? "null" : "anull");
-}
-
-static void check_streamcopy_filters(const OptionsContext *o, AVFormatContext *oc,
-                                     OutputStream *ost, enum AVMediaType type)
-{
-    if (ost->filters_script || ost->filters) {
-        av_log(ost, AV_LOG_ERROR,
-               "%s '%s' was defined, but codec copy was selected.\n"
-               "Filtering and streamcopy cannot be used together.\n",
-               ost->filters ? "Filtergraph" : "Filtergraph script",
-               ost->filters ? ost->filters : ost->filters_script);
-        exit_program(1);
-    }
+        ost->avfilter = av_strdup(ost->filters);
+    else
+        ost->avfilter = av_strdup(ost->type == AVMEDIA_TYPE_VIDEO ? "null" : "anull");
+    return ost->avfilter ? 0 : AVERROR(ENOMEM);
 }
 
 static void parse_matrix_coeffs(void *logctx, uint16_t *dest, const char *str)
@@ -503,9 +506,6 @@ static void new_stream_video(Muxer *mux, const OptionsContext *o,
         }
         ost->frame_aspect_ratio = q;
     }
-
-    MATCH_PER_STREAM_OPT(filter_scripts, str, ost->filters_script, oc, st);
-    MATCH_PER_STREAM_OPT(filters,        str, ost->filters,        oc, st);
 
     if (ost->enc_ctx) {
         AVCodecContext *video_enc = ost->enc_ctx;
@@ -692,12 +692,7 @@ static void new_stream_video(Muxer *mux, const OptionsContext *o,
             }
         }
         ost->is_cfr = (ost->vsync_method == VSYNC_CFR || ost->vsync_method == VSYNC_VSCFR);
-
-        ost->avfilter = get_ost_filters(o, oc, ost);
-        if (!ost->avfilter)
-            exit_program(1);
-    } else
-        check_streamcopy_filters(o, oc, ost, AVMEDIA_TYPE_VIDEO);
+    }
 }
 
 static void new_stream_audio(Muxer *mux, const OptionsContext *o,
@@ -707,10 +702,6 @@ static void new_stream_audio(Muxer *mux, const OptionsContext *o,
     AVStream *st;
 
     st  = ost->st;
-
-
-    MATCH_PER_STREAM_OPT(filter_scripts, str, ost->filters_script, oc, st);
-    MATCH_PER_STREAM_OPT(filters,        str, ost->filters,        oc, st);
 
     if (ost->enc_ctx) {
         AVCodecContext *audio_enc = ost->enc_ctx;
@@ -757,10 +748,6 @@ static void new_stream_audio(Muxer *mux, const OptionsContext *o,
         MATCH_PER_STREAM_OPT(apad, str, ost->apad, oc, st);
         ost->apad = av_strdup(ost->apad);
 
-        ost->avfilter = get_ost_filters(o, oc, ost);
-        if (!ost->avfilter)
-            exit_program(1);
-
 #if FFMPEG_OPT_MAP_CHANNEL
         /* check for channel mapping for this audio stream */
         for (int n = 0; n < o->nb_audio_channel_maps; n++) {
@@ -791,8 +778,7 @@ static void new_stream_audio(Muxer *mux, const OptionsContext *o,
             }
         }
 #endif
-    } else
-        check_streamcopy_filters(o, oc, ost, AVMEDIA_TYPE_AUDIO);
+    }
 }
 
 static void new_stream_data(Muxer *mux, const OptionsContext *o,
@@ -1221,6 +1207,12 @@ static OutputStream *ost_add(Muxer *mux, const OptionsContext *o,
     case AVMEDIA_TYPE_DATA:       new_stream_data      (mux, o, ost); break;
     case AVMEDIA_TYPE_ATTACHMENT: new_stream_attachment(mux, o, ost); break;
     default:                      new_stream_unknown   (mux, o, ost); break;
+    }
+
+    if (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO) {
+        ret = ost_get_filters(o, oc, ost);
+        if (ret < 0)
+            exit_program(1);
     }
 
     if (ost->ist) {
