@@ -1245,16 +1245,7 @@ static OutputStream *ost_add(Muxer *mux, const OptionsContext *o,
 static void init_output_filter(OutputFilter *ofilter, const OptionsContext *o,
                                Muxer *mux)
 {
-    OutputStream *ost;
-
-    switch (ofilter->type) {
-    case AVMEDIA_TYPE_VIDEO: ost = ost_add(mux, o, AVMEDIA_TYPE_VIDEO, NULL); break;
-    case AVMEDIA_TYPE_AUDIO: ost = ost_add(mux, o, AVMEDIA_TYPE_AUDIO, NULL); break;
-    default:
-        av_log(mux, AV_LOG_FATAL, "Only video and audio filters are supported "
-               "currently.\n");
-        exit_program(1);
-    }
+    OutputStream *ost = ost_add(mux, o, ofilter->type, NULL);
 
     ost->filter       = ofilter;
 
