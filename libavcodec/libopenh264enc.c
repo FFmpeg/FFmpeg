@@ -313,7 +313,6 @@ static av_cold int svc_encode_init(AVCodecContext *avctx)
     param.sSpatialLayers[0].uiVideoFormat = VF_UNDEF;
 
     if (avctx->color_range != AVCOL_RANGE_UNSPECIFIED) {
-        param.sSpatialLayers[0].bVideoSignalTypePresent = true;
         param.sSpatialLayers[0].bFullRange = (avctx->color_range == AVCOL_RANGE_JPEG);
     }  else if (avctx->pix_fmt == AV_PIX_FMT_YUVJ420P)
         param.sSpatialLayers[0].bFullRange = 1;
@@ -321,7 +320,6 @@ static av_cold int svc_encode_init(AVCodecContext *avctx)
     if (avctx->colorspace != AVCOL_SPC_UNSPECIFIED      ||
         avctx->color_primaries != AVCOL_PRI_UNSPECIFIED ||
         avctx->color_trc != AVCOL_TRC_UNSPECIFIED) {
-        param.sSpatialLayers[0].bVideoSignalTypePresent = true;
         param.sSpatialLayers[0].bColorDescriptionPresent = true;
     }
 
@@ -331,6 +329,9 @@ static av_cold int svc_encode_init(AVCodecContext *avctx)
         param.sSpatialLayers[0].uiColorPrimaries = avctx->color_primaries;
     if (avctx->color_trc != AVCOL_TRC_UNSPECIFIED)
         param.sSpatialLayers[0].uiTransferCharacteristics = avctx->color_trc;
+
+    param.sSpatialLayers[0].bVideoSignalTypePresent =
+        (param.sSpatialLayers[0].bFullRange || param.sSpatialLayers[0].bColorDescriptionPresent);
 #endif
 
     if ((*s->encoder)->InitializeExt(s->encoder, &param) != cmResultSuccess) {
