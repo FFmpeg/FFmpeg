@@ -814,6 +814,8 @@ int ifilter_has_all_input_formats(FilterGraph *fg);
  */
 FilterGraph *fg_create(char *graph_desc);
 
+void fg_free(FilterGraph **pfg);
+
 /**
  * Perform a step of transcoding for the specified filter graph.
  *
