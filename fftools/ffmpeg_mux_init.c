@@ -423,43 +423,45 @@ static MuxStream *mux_stream_alloc(Muxer *mux, enum AVMediaType type)
 static int ost_get_filters(const OptionsContext *o, AVFormatContext *oc,
                            OutputStream *ost)
 {
-    MATCH_PER_STREAM_OPT(filter_scripts, str, ost->filters_script, oc, ost->st);
-    MATCH_PER_STREAM_OPT(filters,        str, ost->filters,        oc, ost->st);
+    const char *filters = NULL, *filters_script = NULL;
+
+    MATCH_PER_STREAM_OPT(filter_scripts, str, filters_script, oc, ost->st);
+    MATCH_PER_STREAM_OPT(filters,        str, filters,        oc, ost->st);
 
     if (!ost->enc) {
-        if (ost->filters_script || ost->filters) {
+        if (filters_script || filters) {
             av_log(ost, AV_LOG_ERROR,
                    "%s '%s' was specified, but codec copy was selected. "
                    "Filtering and streamcopy cannot be used together.\n",
-                   ost->filters ? "Filtergraph" : "Filtergraph script",
-                   ost->filters ? ost->filters : ost->filters_script);
+                   filters ? "Filtergraph" : "Filtergraph script",
+                   filters ? filters : filters_script);
             return AVERROR(ENOSYS);
         }
         return 0;
     }
 
     if (!ost->ist) {
-        if (ost->filters_script || ost->filters) {
+        if (filters_script || filters) {
             av_log(ost, AV_LOG_ERROR,
                    "%s '%s' was specified for a stream fed from a complex "
                    "filtergraph. Simple and complex filtering cannot be used "
                    "together for the same stream.\n",
-                   ost->filters ? "Filtergraph" : "Filtergraph script",
-                   ost->filters ? ost->filters : ost->filters_script);
+                   filters ? "Filtergraph" : "Filtergraph script",
+                   filters ? filters : filters_script);
             return AVERROR(EINVAL);
         }
         return 0;
     }
 
-    if (ost->filters_script && ost->filters) {
+    if (filters_script && filters) {
         av_log(ost, AV_LOG_ERROR, "Both -filter and -filter_script set\n");
         exit_program(1);
     }
 
-    if (ost->filters_script)
-        ost->avfilter = file_read(ost->filters_script);
-    else if (ost->filters)
-        ost->avfilter = av_strdup(ost->filters);
+    if (filters_script)
+        ost->avfilter = file_read(filters_script);
+    else if (filters)
+        ost->avfilter = av_strdup(filters);
     else
         ost->avfilter = av_strdup(ost->type == AVMEDIA_TYPE_VIDEO ? "null" : "anull");
     return ost->avfilter ? 0 : AVERROR(ENOMEM);

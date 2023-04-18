@@ -639,8 +639,6 @@ typedef struct OutputStream {
 
     OutputFilter *filter;
     char *avfilter;
-    char *filters;         ///< filtergraph associated to the -filter option
-    char *filters_script;  ///< filtergraph script associated to the -filter_script option
 
     AVDictionary *encoder_opts;
     AVDictionary *sws_dict;
