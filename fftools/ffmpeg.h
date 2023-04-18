@@ -55,6 +55,7 @@
 #define FFMPEG_OPT_MAP_SYNC 1
 #define FFMPEG_ROTATION_METADATA 1
 #define FFMPEG_OPT_QPHIST 1
+#define FFMPEG_OPT_ADRIFT_THRESHOLD 1
 
 enum VideoSyncMethod {
     VSYNC_AUTO = -1,
@@ -728,7 +729,6 @@ extern int        nb_filtergraphs;
 extern char *vstats_filename;
 extern char *sdp_filename;
 
-extern float audio_drift_threshold;
 extern float dts_delta_threshold;
 extern float dts_error_threshold;
 
