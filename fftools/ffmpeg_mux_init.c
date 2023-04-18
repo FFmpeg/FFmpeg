@@ -1242,7 +1242,8 @@ static OutputStream *ost_add(Muxer *mux, const OptionsContext *o,
     return ost;
 }
 
-static void init_output_filter(OutputFilter *ofilter, const OptionsContext *o,
+// add a new output stream fed by the provided filtergraph output
+static void ost_add_from_filter(OutputFilter *ofilter, const OptionsContext *o,
                                Muxer *mux)
 {
     OutputStream *ost = ost_add(mux, o, ofilter->type, NULL);
@@ -1438,7 +1439,7 @@ loop_end:
                    "in any defined filter graph, or was already used elsewhere.\n", map->linklabel);
             exit_program(1);
         }
-        init_output_filter(ofilter, o, mux);
+        ost_add_from_filter(ofilter, o, mux);
     } else {
         ist = input_files[map->file_index]->streams[map->stream_index];
         if (ist->user_set_discard == AVDISCARD_ALL) {
@@ -1537,7 +1538,7 @@ static void create_streams(Muxer *mux, const OptionsContext *o)
             case AVMEDIA_TYPE_AUDIO:    auto_disable_a = 1; break;
             case AVMEDIA_TYPE_SUBTITLE: auto_disable_s = 1; break;
             }
-            init_output_filter(ofilter, o, mux);
+            ost_add_from_filter(ofilter, o, mux);
         }
     }
 
