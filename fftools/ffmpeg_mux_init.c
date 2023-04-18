@@ -1259,7 +1259,6 @@ static void init_output_filter(OutputFilter *ofilter, const OptionsContext *o,
     ost->filter       = ofilter;
 
     ofilter->ost      = ost;
-    ofilter->format   = -1;
 
     if (!ost->enc_ctx) {
         av_log(ost, AV_LOG_ERROR, "Streamcopy requested for output stream fed "
