@@ -1026,10 +1026,6 @@ static OutputStream *ost_add(Muxer *mux, const OptionsContext *o,
         av_strlcat(ms->log_name, "/copy", sizeof(ms->log_name));
     }
 
-    ost->filtered_frame = av_frame_alloc();
-    if (!ost->filtered_frame)
-        report_and_exit(AVERROR(ENOMEM));
-
     ost->pkt = av_packet_alloc();
     if (!ost->pkt)
         report_and_exit(AVERROR(ENOMEM));

@@ -38,6 +38,18 @@
 #include "libavutil/samplefmt.h"
 #include "libavutil/timestamp.h"
 
+typedef struct FilterGraphPriv {
+    FilterGraph fg;
+
+    // frame for temporarily holding output from the filtergraph
+    AVFrame *frame;
+} FilterGraphPriv;
+
+static FilterGraphPriv *fgp_from_fg(FilterGraph *fg)
+{
+    return (FilterGraphPriv*)fg;
+}
+
 // FIXME: YUV420P etc. are actually supported with full color range,
 // yet the latter information isn't available here.
 static const enum AVPixelFormat *get_compliance_normal_pix_fmts(const AVCodec *codec, const enum AVPixelFormat default_formats[])
@@ -192,9 +204,11 @@ static OutputFilter *ofilter_alloc(FilterGraph *fg)
 void fg_free(FilterGraph **pfg)
 {
     FilterGraph *fg = *pfg;
+    FilterGraphPriv *fgp;
 
     if (!fg)
         return;
+    fgp = fgp_from_fg(fg);
 
     avfilter_graph_free(&fg->graph);
     for (int j = 0; j < fg->nb_inputs; j++) {
@@ -230,16 +244,22 @@ void fg_free(FilterGraph **pfg)
     av_freep(&fg->outputs);
     av_freep(&fg->graph_desc);
 
+    av_frame_free(&fgp->frame);
+
     av_freep(pfg);
 }
 
 FilterGraph *fg_create(char *graph_desc)
 {
-    FilterGraph *fg;
+    FilterGraphPriv *fgp = allocate_array_elem(&filtergraphs, sizeof(*fgp), &nb_filtergraphs);
+    FilterGraph      *fg = &fgp->fg;
 
-    fg = ALLOC_ARRAY_ELEM(filtergraphs, nb_filtergraphs);
     fg->index      = nb_filtergraphs - 1;
     fg->graph_desc = graph_desc;
+
+    fgp->frame = av_frame_alloc();
+    if (!fgp->frame)
+        report_and_exit(AVERROR(ENOMEM));
 
     return fg;
 }
@@ -1350,18 +1370,19 @@ int filtergraph_is_simple(FilterGraph *fg)
 
 int reap_filters(int flush)
 {
-    AVFrame *filtered_frame = NULL;
-
     /* Reap all buffers present in the buffer sinks */
     for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
+        FilterGraphPriv *fgp;
+        AVFrame *filtered_frame;
         AVFilterContext *filter;
         int ret = 0;
 
         if (!ost->filter || !ost->filter->graph->graph)
             continue;
         filter = ost->filter->filter;
+        fgp    = fgp_from_fg(ost->filter->graph);
 
-        filtered_frame = ost->filtered_frame;
+        filtered_frame = fgp->frame;
 
         while (1) {
             ret = av_buffersink_get_frame_flags(filter, filtered_frame,

@@ -845,7 +845,6 @@ static void ost_free(OutputStream **post)
 
     av_bsf_free(&ms->bsf_ctx);
 
-    av_frame_free(&ost->filtered_frame);
     av_packet_free(&ost->pkt);
     av_dict_free(&ost->encoder_opts);
 
