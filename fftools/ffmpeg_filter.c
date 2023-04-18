@@ -196,39 +196,39 @@ void fg_free(FilterGraph **pfg)
     if (!fg)
         return;
 
-        avfilter_graph_free(&fg->graph);
-        for (int j = 0; j < fg->nb_inputs; j++) {
-            InputFilter *ifilter = fg->inputs[j];
-            struct InputStream *ist = ifilter->ist;
+    avfilter_graph_free(&fg->graph);
+    for (int j = 0; j < fg->nb_inputs; j++) {
+        InputFilter *ifilter = fg->inputs[j];
+        struct InputStream *ist = ifilter->ist;
 
-            if (ifilter->frame_queue) {
-                AVFrame *frame;
-                while (av_fifo_read(ifilter->frame_queue, &frame, 1) >= 0)
-                    av_frame_free(&frame);
-                av_fifo_freep2(&ifilter->frame_queue);
-            }
-            av_freep(&ifilter->displaymatrix);
-            if (ist->sub2video.sub_queue) {
-                AVSubtitle sub;
-                while (av_fifo_read(ist->sub2video.sub_queue, &sub, 1) >= 0)
-                    avsubtitle_free(&sub);
-                av_fifo_freep2(&ist->sub2video.sub_queue);
-            }
-            av_buffer_unref(&ifilter->hw_frames_ctx);
-            av_freep(&ifilter->name);
-            av_freep(&fg->inputs[j]);
+        if (ifilter->frame_queue) {
+            AVFrame *frame;
+            while (av_fifo_read(ifilter->frame_queue, &frame, 1) >= 0)
+                av_frame_free(&frame);
+            av_fifo_freep2(&ifilter->frame_queue);
         }
-        av_freep(&fg->inputs);
-        for (int j = 0; j < fg->nb_outputs; j++) {
-            OutputFilter *ofilter = fg->outputs[j];
+        av_freep(&ifilter->displaymatrix);
+        if (ist->sub2video.sub_queue) {
+            AVSubtitle sub;
+            while (av_fifo_read(ist->sub2video.sub_queue, &sub, 1) >= 0)
+                avsubtitle_free(&sub);
+            av_fifo_freep2(&ist->sub2video.sub_queue);
+        }
+        av_buffer_unref(&ifilter->hw_frames_ctx);
+        av_freep(&ifilter->name);
+        av_freep(&fg->inputs[j]);
+    }
+    av_freep(&fg->inputs);
+    for (int j = 0; j < fg->nb_outputs; j++) {
+        OutputFilter *ofilter = fg->outputs[j];
 
-            avfilter_inout_free(&ofilter->out_tmp);
-            av_freep(&ofilter->name);
-            av_channel_layout_uninit(&ofilter->ch_layout);
-            av_freep(&fg->outputs[j]);
-        }
-        av_freep(&fg->outputs);
-        av_freep(&fg->graph_desc);
+        avfilter_inout_free(&ofilter->out_tmp);
+        av_freep(&ofilter->name);
+        av_channel_layout_uninit(&ofilter->ch_layout);
+        av_freep(&fg->outputs[j]);
+    }
+    av_freep(&fg->outputs);
+    av_freep(&fg->graph_desc);
 
     av_freep(pfg);
 }
