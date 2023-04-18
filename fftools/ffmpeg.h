@@ -799,6 +799,9 @@ int init_complex_filtergraph(FilterGraph *fg);
 
 void sub2video_update(InputStream *ist, int64_t heartbeat_pts, AVSubtitle *sub);
 
+int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame, int keep_reference);
+int ifilter_send_eof(InputFilter *ifilter, int64_t pts);
+
 int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *frame);
 int ifilter_parameters_from_codecpar(InputFilter *ifilter, AVCodecParameters *par);
 int ifilter_has_all_input_formats(FilterGraph *fg);
@@ -810,6 +813,23 @@ int ifilter_has_all_input_formats(FilterGraph *fg);
  *                   takes ownership of it.
  */
 FilterGraph *fg_create(char *graph_desc);
+
+/**
+ * Perform a step of transcoding for the specified filter graph.
+ *
+ * @param[in]  graph     filter graph to consider
+ * @param[out] best_ist  input stream where a frame would allow to continue
+ * @return  0 for success, <0 for error
+ */
+int fg_transcode_step(FilterGraph *graph, InputStream **best_ist);
+
+/**
+ * Get and encode new output from any of the filtergraphs, without causing
+ * activity.
+ *
+ * @return  0 for success, <0 for severe errors
+ */
+int reap_filters(int flush);
 
 int ffmpeg_parse_options(int argc, char **argv);
 

@@ -36,6 +36,7 @@
 #include "libavutil/pixfmt.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/samplefmt.h"
+#include "libavutil/timestamp.h"
 
 // FIXME: YUV420P etc. are actually supported with full color range,
 // yet the latter information isn't available here.
@@ -1299,4 +1300,205 @@ int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *frame)
 int filtergraph_is_simple(FilterGraph *fg)
 {
     return !fg->graph_desc;
+}
+
+int reap_filters(int flush)
+{
+    AVFrame *filtered_frame = NULL;
+
+    /* Reap all buffers present in the buffer sinks */
+    for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
+        AVFilterContext *filter;
+        int ret = 0;
+
+        if (!ost->filter || !ost->filter->graph->graph)
+            continue;
+        filter = ost->filter->filter;
+
+        filtered_frame = ost->filtered_frame;
+
+        while (1) {
+            ret = av_buffersink_get_frame_flags(filter, filtered_frame,
+                                               AV_BUFFERSINK_FLAG_NO_REQUEST);
+            if (ret < 0) {
+                if (ret != AVERROR(EAGAIN) && ret != AVERROR_EOF) {
+                    av_log(NULL, AV_LOG_WARNING,
+                           "Error in av_buffersink_get_frame_flags(): %s\n", av_err2str(ret));
+                } else if (flush && ret == AVERROR_EOF) {
+                    if (av_buffersink_get_type(filter) == AVMEDIA_TYPE_VIDEO)
+                        enc_frame(ost, NULL);
+                }
+                break;
+            }
+            if (ost->finished) {
+                av_frame_unref(filtered_frame);
+                continue;
+            }
+
+            if (filtered_frame->pts != AV_NOPTS_VALUE) {
+                AVRational tb = av_buffersink_get_time_base(filter);
+                ost->filter->last_pts = av_rescale_q(filtered_frame->pts, tb,
+                                                     AV_TIME_BASE_Q);
+                filtered_frame->time_base = tb;
+
+                if (debug_ts)
+                    av_log(NULL, AV_LOG_INFO, "filter_raw -> pts:%s pts_time:%s time_base:%d/%d\n",
+                           av_ts2str(filtered_frame->pts),
+                           av_ts2timestr(filtered_frame->pts, &tb),
+                           tb.num, tb.den);
+            }
+
+            enc_frame(ost, filtered_frame);
+            av_frame_unref(filtered_frame);
+        }
+    }
+
+    return 0;
+}
+
+int ifilter_send_eof(InputFilter *ifilter, int64_t pts)
+{
+    int ret;
+
+    ifilter->eof = 1;
+
+    if (ifilter->filter) {
+        ret = av_buffersrc_close(ifilter->filter, pts, AV_BUFFERSRC_FLAG_PUSH);
+        if (ret < 0)
+            return ret;
+    } else {
+        // the filtergraph was never configured
+        if (ifilter->format < 0) {
+            ret = ifilter_parameters_from_codecpar(ifilter, ifilter->ist->par);
+            if (ret < 0)
+                return ret;
+        }
+        if (ifilter->format < 0 && (ifilter->type == AVMEDIA_TYPE_AUDIO || ifilter->type == AVMEDIA_TYPE_VIDEO)) {
+            av_log(NULL, AV_LOG_ERROR, "Cannot determine format of input stream %d:%d after EOF\n", ifilter->ist->file_index, ifilter->ist->st->index);
+            return AVERROR_INVALIDDATA;
+        }
+    }
+
+    return 0;
+}
+
+int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame, int keep_reference)
+{
+    FilterGraph *fg = ifilter->graph;
+    AVFrameSideData *sd;
+    int need_reinit, ret;
+    int buffersrc_flags = AV_BUFFERSRC_FLAG_PUSH;
+
+    if (keep_reference)
+        buffersrc_flags |= AV_BUFFERSRC_FLAG_KEEP_REF;
+
+    /* determine if the parameters for this input changed */
+    need_reinit = ifilter->format != frame->format;
+
+    switch (ifilter->ist->par->codec_type) {
+    case AVMEDIA_TYPE_AUDIO:
+        need_reinit |= ifilter->sample_rate    != frame->sample_rate ||
+                       av_channel_layout_compare(&ifilter->ch_layout, &frame->ch_layout);
+        break;
+    case AVMEDIA_TYPE_VIDEO:
+        need_reinit |= ifilter->width  != frame->width ||
+                       ifilter->height != frame->height;
+        break;
+    }
+
+    if (!ifilter->ist->reinit_filters && fg->graph)
+        need_reinit = 0;
+
+    if (!!ifilter->hw_frames_ctx != !!frame->hw_frames_ctx ||
+        (ifilter->hw_frames_ctx && ifilter->hw_frames_ctx->data != frame->hw_frames_ctx->data))
+        need_reinit = 1;
+
+    if (sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DISPLAYMATRIX)) {
+        if (!ifilter->displaymatrix || memcmp(sd->data, ifilter->displaymatrix, sizeof(int32_t) * 9))
+            need_reinit = 1;
+    } else if (ifilter->displaymatrix)
+        need_reinit = 1;
+
+    if (need_reinit) {
+        ret = ifilter_parameters_from_frame(ifilter, frame);
+        if (ret < 0)
+            return ret;
+    }
+
+    /* (re)init the graph if possible, otherwise buffer the frame and return */
+    if (need_reinit || !fg->graph) {
+        if (!ifilter_has_all_input_formats(fg)) {
+            AVFrame *tmp = av_frame_clone(frame);
+            if (!tmp)
+                return AVERROR(ENOMEM);
+
+            ret = av_fifo_write(ifilter->frame_queue, &tmp, 1);
+            if (ret < 0)
+                av_frame_free(&tmp);
+
+            return ret;
+        }
+
+        ret = reap_filters(1);
+        if (ret < 0 && ret != AVERROR_EOF) {
+            av_log(NULL, AV_LOG_ERROR, "Error while filtering: %s\n", av_err2str(ret));
+            return ret;
+        }
+
+        ret = configure_filtergraph(fg);
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Error reinitializing filters!\n");
+            return ret;
+        }
+    }
+
+    ret = av_buffersrc_add_frame_flags(ifilter->filter, frame, buffersrc_flags);
+    if (ret < 0) {
+        if (ret != AVERROR_EOF)
+            av_log(NULL, AV_LOG_ERROR, "Error while filtering: %s\n", av_err2str(ret));
+        return ret;
+    }
+
+    return 0;
+}
+
+int fg_transcode_step(FilterGraph *graph, InputStream **best_ist)
+{
+    int i, ret;
+    int nb_requests, nb_requests_max = 0;
+    InputFilter *ifilter;
+    InputStream *ist;
+
+    *best_ist = NULL;
+    ret = avfilter_graph_request_oldest(graph->graph);
+    if (ret >= 0)
+        return reap_filters(0);
+
+    if (ret == AVERROR_EOF) {
+        ret = reap_filters(1);
+        for (i = 0; i < graph->nb_outputs; i++)
+            close_output_stream(graph->outputs[i]->ost);
+        return ret;
+    }
+    if (ret != AVERROR(EAGAIN))
+        return ret;
+
+    for (i = 0; i < graph->nb_inputs; i++) {
+        ifilter = graph->inputs[i];
+        ist = ifilter->ist;
+        if (input_files[ist->file_index]->eagain ||
+            input_files[ist->file_index]->eof_reached)
+            continue;
+        nb_requests = av_buffersrc_get_nb_failed_requests(ifilter->filter);
+        if (nb_requests > nb_requests_max) {
+            nb_requests_max = nb_requests;
+            *best_ist = ist;
+        }
+    }
+
+    if (!*best_ist)
+        for (i = 0; i < graph->nb_outputs; i++)
+            graph->outputs[i]->ost->unavailable = 1;
+
+    return 0;
 }
