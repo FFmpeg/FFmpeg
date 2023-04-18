@@ -1311,7 +1311,7 @@ fail:
     return ret;
 }
 
-int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *frame)
+static int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *frame)
 {
     AVFrameSideData *sd;
     int ret;

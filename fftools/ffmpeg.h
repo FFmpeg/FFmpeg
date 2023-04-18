@@ -794,7 +794,6 @@ void sub2video_update(InputStream *ist, int64_t heartbeat_pts, AVSubtitle *sub);
 int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame, int keep_reference);
 int ifilter_send_eof(InputFilter *ifilter, int64_t pts);
 
-int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *frame);
 int ifilter_parameters_from_codecpar(InputFilter *ifilter, AVCodecParameters *par);
 int ifilter_has_all_input_formats(FilterGraph *fg);
 
