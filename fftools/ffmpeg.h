@@ -803,6 +803,14 @@ int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *frame);
 int ifilter_parameters_from_codecpar(InputFilter *ifilter, AVCodecParameters *par);
 int ifilter_has_all_input_formats(FilterGraph *fg);
 
+/**
+ * Create a new filtergraph in the global filtergraph list.
+ *
+ * @param graph_desc Graph description; an av_malloc()ed string, filtergraph
+ *                   takes ownership of it.
+ */
+FilterGraph *fg_create(char *graph_desc);
+
 int ffmpeg_parse_options(int argc, char **argv);
 
 void enc_stats_write(OutputStream *ost, EncStats *es,

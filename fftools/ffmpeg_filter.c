@@ -188,15 +188,26 @@ static OutputFilter *ofilter_alloc(FilterGraph *fg)
     return ofilter;
 }
 
+FilterGraph *fg_create(char *graph_desc)
+{
+    FilterGraph *fg;
+
+    fg = ALLOC_ARRAY_ELEM(filtergraphs, nb_filtergraphs);
+    fg->index      = nb_filtergraphs - 1;
+    fg->graph_desc = graph_desc;
+
+    return fg;
+}
+
 int init_simple_filtergraph(InputStream *ist, OutputStream *ost)
 {
-    FilterGraph *fg = av_mallocz(sizeof(*fg));
+    FilterGraph *fg;
     OutputFilter *ofilter;
     InputFilter  *ifilter;
 
+    fg = fg_create(NULL);
     if (!fg)
         report_and_exit(AVERROR(ENOMEM));
-    fg->index = nb_filtergraphs;
 
     ofilter      = ofilter_alloc(fg);
     ofilter->ost = ost;
@@ -211,9 +222,6 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost)
     ifilter->frame_queue = av_fifo_alloc2(8, sizeof(AVFrame*), AV_FIFO_FLAG_AUTO_GROW);
     if (!ifilter->frame_queue)
         report_and_exit(AVERROR(ENOMEM));
-
-    GROW_ARRAY(filtergraphs, nb_filtergraphs);
-    filtergraphs[nb_filtergraphs - 1] = fg;
 
     ist_filter_add(ist, ifilter, 1);
 
