@@ -438,6 +438,19 @@ static int ost_get_filters(const OptionsContext *o, AVFormatContext *oc,
         return 0;
     }
 
+    if (!ost->ist) {
+        if (ost->filters_script || ost->filters) {
+            av_log(ost, AV_LOG_ERROR,
+                   "%s '%s' was specified for a stream fed from a complex "
+                   "filtergraph. Simple and complex filtering cannot be used "
+                   "together for the same stream.\n",
+                   ost->filters ? "Filtergraph" : "Filtergraph script",
+                   ost->filters ? ost->filters : ost->filters_script);
+            return AVERROR(EINVAL);
+        }
+        return 0;
+    }
+
     if (ost->filters_script && ost->filters) {
         av_log(ost, AV_LOG_ERROR, "Both -filter and -filter_script set\n");
         exit_program(1);
@@ -1260,18 +1273,6 @@ static void init_output_filter(OutputFilter *ofilter, const OptionsContext *o,
         av_log(ost, AV_LOG_ERROR, "Streamcopy requested for output stream fed "
                "from a complex filtergraph. Filtering and streamcopy "
                "cannot be used together.\n");
-        exit_program(1);
-    }
-
-    if (ost->avfilter && (ost->filters || ost->filters_script)) {
-        const char *opt = ost->filters ? "-vf/-af/-filter" : "-filter_script";
-        av_log(ost, AV_LOG_ERROR,
-               "%s '%s' was specified through the %s option "
-               "for output stream %d:%d, which is fed from a complex filtergraph.\n"
-               "%s and -filter_complex cannot be used together for the same stream.\n",
-               ost->filters ? "Filtergraph" : "Filtergraph script",
-               ost->filters ? ost->filters : ost->filters_script,
-               opt, ost->file_index, ost->index, opt);
         exit_program(1);
     }
 
