@@ -1035,27 +1035,6 @@ static int configure_input_audio_filter(FilterGraph *fg, InputFilter *ifilter,
         return ret;
     last_filter = ifilter->filter;
 
-#define AUTO_INSERT_FILTER_INPUT(opt_name, filter_name, arg) do {                 \
-    AVFilterContext *filt_ctx;                                              \
-                                                                            \
-    av_log(NULL, AV_LOG_INFO, opt_name " is forwarded to lavfi "            \
-           "similarly to -af " filter_name "=%s.\n", arg);                  \
-                                                                            \
-    snprintf(name, sizeof(name), "graph_%d_%s_in_%d_%d",      \
-                fg->index, filter_name, ist->file_index, ist->st->index);   \
-    ret = avfilter_graph_create_filter(&filt_ctx,                           \
-                                       avfilter_get_by_name(filter_name),   \
-                                       name, arg, NULL, fg->graph);         \
-    if (ret < 0)                                                            \
-        return ret;                                                         \
-                                                                            \
-    ret = avfilter_link(last_filter, 0, filt_ctx, 0);                       \
-    if (ret < 0)                                                            \
-        return ret;                                                         \
-                                                                            \
-    last_filter = filt_ctx;                                                 \
-} while (0)
-
     snprintf(name, sizeof(name), "trim for input stream %d:%d",
              ist->file_index, ist->st->index);
     if (copy_ts) {
