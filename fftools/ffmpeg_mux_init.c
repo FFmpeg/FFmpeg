@@ -839,8 +839,7 @@ static void new_stream_subtitle(Muxer *mux, const OptionsContext *o,
     }
 }
 
-static int streamcopy_init(const Muxer *mux, const OptionsContext *o,
-                           OutputStream *ost)
+static int streamcopy_init(const Muxer *mux, OutputStream *ost)
 {
     MuxStream           *ms         = ms_from_ost(ost);
 
@@ -1244,7 +1243,7 @@ static OutputStream *ost_add(Muxer *mux, const OptionsContext *o,
     }
 
     if (ost->ist && !ost->enc) {
-        ret = streamcopy_init(mux, o, ost);
+        ret = streamcopy_init(mux, ost);
         if (ret < 0)
             exit_program(1);
     }
@@ -1946,7 +1945,7 @@ static int copy_chapters(InputFile *ifile, OutputFile *ofile, AVFormatContext *o
 static int copy_metadata(Muxer *mux, AVFormatContext *ic,
                          const char *outspec, const char *inspec,
                          int *metadata_global_manual, int *metadata_streams_manual,
-                         int *metadata_chapters_manual, const OptionsContext *o)
+                         int *metadata_chapters_manual)
 {
     AVFormatContext *oc = mux->fc;
     AVDictionary **meta_in = NULL;
@@ -2050,7 +2049,7 @@ static void copy_meta(Muxer *mux, const OptionsContext *o)
                       in_file_index >= 0 ? input_files[in_file_index]->ctx : NULL,
                       o->metadata_map[i].specifier, *p ? p + 1 : p,
                       &metadata_global_manual, &metadata_streams_manual,
-                      &metadata_chapters_manual, o);
+                      &metadata_chapters_manual);
     }
 
     /* copy chapters */

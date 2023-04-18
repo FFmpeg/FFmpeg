@@ -261,7 +261,7 @@ finish:
     return ret == AVERROR_EOF ? 0 : ret;
 }
 
-static int queue_packet(Muxer *mux, OutputStream *ost, AVPacket *pkt)
+static int queue_packet(OutputStream *ost, AVPacket *pkt)
 {
     MuxStream *ms = ms_from_ost(ost);
     AVPacket *tmp_pkt = NULL;
@@ -311,7 +311,7 @@ static int submit_packet(Muxer *mux, AVPacket *pkt, OutputStream *ost)
         return thread_submit_packet(mux, ost, pkt);
     } else {
         /* the muxer is not initialized yet, buffer the packet */
-        ret = queue_packet(mux, ost, pkt);
+        ret = queue_packet(ost, pkt);
         if (ret < 0) {
             if (pkt)
                 av_packet_unref(pkt);
