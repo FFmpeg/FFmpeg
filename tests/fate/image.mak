@@ -337,6 +337,15 @@ fate-jpg-12bpp: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/jpg/12bpp.jpg -
 FATE_JPG += fate-jpg-jfif
 fate-jpg-jfif: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/jpg/20242.jpg
 
+FATE_JPG += fate-jpg-rgb-baseline
+fate-jpg-rgb-baseline: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/jpg/george-insect-rgb-baseline.jpg
+
+FATE_JPG += fate-jpg-rgb-progressive
+fate-jpg-rgb-progressive: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/jpg/george-insect-rgb-progressive.jpg
+
+FATE_JPG += fate-jpg-rgb-221
+fate-jpg-rgb-221: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/jpg/george-insect-rgb-xyb.jpg
+
 FATE_JPG_TRANSCODE-$(call TRANSCODE, MJPEG, MJPEG IMAGE_JPEG_PIPE, IMAGE_PNG_PIPE_DEMUXER PNG_DECODER SCALE_FILTER) += fate-jpg-icc
 fate-jpg-icc: CMD = transcode png_pipe $(TARGET_SAMPLES)/png1/lena-int_rgb24.png mjpeg "-vf scale" "" "-show_frames"
 
