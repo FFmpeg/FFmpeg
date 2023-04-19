@@ -767,6 +767,7 @@ OBJS-$(CONFIG_VP7_DECODER)             += vp8.o vp8data.o vpx_rac.o
 OBJS-$(CONFIG_VP8_DECODER)             += vp8.o vp8data.o vpx_rac.o
 OBJS-$(CONFIG_VP8_CUVID_DECODER)       += cuviddec.o
 OBJS-$(CONFIG_VP8_MEDIACODEC_DECODER)  += mediacodecdec.o
+OBJS-$(CONFIG_VP8_MEDIACODEC_ENCODER)  += mediacodecenc.o
 OBJS-$(CONFIG_VP8_QSV_DECODER)         += qsvdec.o
 OBJS-$(CONFIG_VP8_RKMPP_DECODER)       += rkmppdec.o
 OBJS-$(CONFIG_VP8_VAAPI_ENCODER)       += vaapi_encode_vp8.o

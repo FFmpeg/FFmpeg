@@ -881,6 +881,7 @@ extern const FFCodec ff_prores_videotoolbox_encoder;
 extern const FFCodec ff_vc1_cuvid_decoder;
 extern const FFCodec ff_vp8_cuvid_decoder;
 extern const FFCodec ff_vp8_mediacodec_decoder;
+extern const FFCodec ff_vp8_mediacodec_encoder;
 extern const FFCodec ff_vp8_qsv_decoder;
 extern const FFCodec ff_vp8_v4l2m2m_encoder;
 extern const FFCodec ff_vp8_vaapi_encoder;

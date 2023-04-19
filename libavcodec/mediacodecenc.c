@@ -164,6 +164,9 @@ static av_cold int mediacodec_init(AVCodecContext *avctx)
     case AV_CODEC_ID_HEVC:
         codec_mime = "video/hevc";
         break;
+    case AV_CODEC_ID_VP8:
+        codec_mime = "video/x-vnd.on2.vp8";
+        break;
     case AV_CODEC_ID_VP9:
         codec_mime = "video/x-vnd.on2.vp9";
         break;
@@ -777,6 +780,34 @@ static const AVOption hevc_options[] = {
 DECLARE_MEDIACODEC_ENCODER(hevc, "H.265", AV_CODEC_ID_HEVC)
 
 #endif  // CONFIG_HEVC_MEDIACODEC_ENCODER
+
+#if CONFIG_VP8_MEDIACODEC_ENCODER
+
+enum MediaCodecVP8Level {
+    VP8Level_Version0 = 0x01,
+    VP8Level_Version1 = 0x02,
+    VP8Level_Version2 = 0x04,
+    VP8Level_Version3 = 0x08,
+};
+
+static const AVOption vp8_options[] = {
+    COMMON_OPTION
+    { "level", "Specify tier and level",
+                OFFSET(level), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, VE, "level" },
+    { "V0",    "Level Version 0",
+                0, AV_OPT_TYPE_CONST, { .i64 = VP8Level_Version0 },  0, 0, VE,  "level" },
+    { "V1",    "Level Version 1",
+                0, AV_OPT_TYPE_CONST, { .i64 = VP8Level_Version1 },  0, 0, VE,  "level" },
+    { "V2",    "Level Version 2",
+                0, AV_OPT_TYPE_CONST, { .i64 = VP8Level_Version2 },  0, 0, VE,  "level" },
+    { "V3",    "Level Version 3",
+                0, AV_OPT_TYPE_CONST, { .i64 = VP8Level_Version3 },  0, 0, VE,  "level" },
+    { NULL, }
+};
+
+DECLARE_MEDIACODEC_ENCODER(vp8, "VP8", AV_CODEC_ID_VP8)
+
+#endif  // CONFIG_VP8_MEDIACODEC_ENCODER
 
 #if CONFIG_VP9_MEDIACODEC_ENCODER
 
