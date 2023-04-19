@@ -767,36 +767,6 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
             if (is_last_report)
                 av_bprintf(&buf, "L");
 
-            if (enc && (enc->flags & AV_CODEC_FLAG_PSNR) &&
-                (ost->pict_type != AV_PICTURE_TYPE_NONE || is_last_report)) {
-                int j;
-                double error, error_sum = 0;
-                double scale, scale_sum = 0;
-                double p;
-                char type[3] = { 'Y','U','V' };
-                av_bprintf(&buf, "PSNR=");
-                for (j = 0; j < 3; j++) {
-                    if (is_last_report) {
-                        error = enc->error[j];
-                        scale = enc->width * enc->height * 255.0 * 255.0 * frame_number;
-                    } else {
-                        error = ost->error[j];
-                        scale = enc->width * enc->height * 255.0 * 255.0;
-                    }
-                    if (j)
-                        scale /= 4;
-                    error_sum += error;
-                    scale_sum += scale;
-                    p = psnr(error / scale);
-                    av_bprintf(&buf, "%c:%2.2f ", type[j], p);
-                    av_bprintf(&buf_script, "stream_%d_%d_psnr_%c=%2.2f\n",
-                               ost->file_index, ost->index, type[j] | 32, p);
-                }
-                p = psnr(error_sum / scale_sum);
-                av_bprintf(&buf, "*:%2.2f ", psnr(error_sum / scale_sum));
-                av_bprintf(&buf_script, "stream_%d_%d_psnr_all=%2.2f\n",
-                           ost->file_index, ost->index, p);
-            }
             vid = 1;
         }
         /* compute min output value */
