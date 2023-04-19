@@ -514,10 +514,16 @@ FF_ENABLE_DEPRECATION_WARNINGS
         light->MaxFALL = p->content_light->max_frame_average_light_level;
     }
     if (p->itut_t35) {
+#if FF_DAV1D_VERSION_AT_LEAST(6,9)
+        for (size_t i = 0; i < p->n_itut_t35; i++) {
+            const Dav1dITUTT35 *itut_t35 = &p->itut_t35[i];
+#else
+        const Dav1dITUTT35 *itut_t35 = p->itut_t35;
+#endif
         GetByteContext gb;
         int provider_code;
 
-        bytestream2_init(&gb, p->itut_t35->payload, p->itut_t35->payload_size);
+        bytestream2_init(&gb, itut_t35->payload, itut_t35->payload_size);
 
         provider_code = bytestream2_get_be16(&gb);
         switch (provider_code) {
@@ -549,7 +555,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             int provider_oriented_code = bytestream2_get_be16(&gb);
             int application_identifier = bytestream2_get_byte(&gb);
 
-            if (p->itut_t35->country_code != 0xB5 ||
+            if (itut_t35->country_code != 0xB5 ||
                 provider_oriented_code != 1 || application_identifier != 4)
                 break;
 
@@ -568,6 +574,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
         default: // ignore unsupported provider codes
             break;
         }
+#if FF_DAV1D_VERSION_AT_LEAST(6,9)
+        }
+#endif
     }
     if (p->frame_hdr->film_grain.present && (!dav1d->apply_grain ||
         (c->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN))) {
