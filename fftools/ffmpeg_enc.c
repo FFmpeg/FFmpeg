@@ -587,11 +587,12 @@ static void update_video_stats(OutputStream *ost, const AVPacket *pkt, int write
     const uint8_t *sd = av_packet_get_side_data(pkt, AV_PKT_DATA_QUALITY_STATS,
                                                 NULL);
     AVCodecContext *enc = ost->enc_ctx;
+    enum AVPictureType pict_type;
     int64_t frame_number;
     double ti1, bitrate, avg_bitrate;
 
     ost->quality   = sd ? AV_RL32(sd) : -1;
-    ost->pict_type = sd ? sd[4] : AV_PICTURE_TYPE_NONE;
+    pict_type      = sd ? sd[4] : AV_PICTURE_TYPE_NONE;
 
     for (int i = 0; i<FF_ARRAY_ELEMS(ost->error); i++) {
         if (sd && i < sd[5])
@@ -634,7 +635,7 @@ static void update_video_stats(OutputStream *ost, const AVPacket *pkt, int write
     avg_bitrate = (double)(e->data_size * 8) / ti1 / 1000.0;
     fprintf(vstats_file, "s_size= %8.0fkB time= %0.3f br= %7.1fkbits/s avg_br= %7.1fkbits/s ",
            (double)e->data_size / 1024, ti1, bitrate, avg_bitrate);
-    fprintf(vstats_file, "type= %c\n", av_get_picture_type_char(ost->pict_type));
+    fprintf(vstats_file, "type= %c\n", av_get_picture_type_char(pict_type));
 }
 
 static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
