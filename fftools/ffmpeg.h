@@ -671,9 +671,6 @@ typedef struct OutputStream {
     /* packet quality factor */
     int quality;
 
-    /* frame encode sum of squared error values */
-    int64_t error[4];
-
     int sq_idx_encode;
     int sq_idx_mux;
 
@@ -919,11 +916,6 @@ InputStream *ist_iter(InputStream *prev);
 /* iterate over all output streams in all output files;
  * pass NULL to start iteration */
 OutputStream *ost_iter(OutputStream *prev);
-
-static inline double psnr(double d)
-{
-    return -10.0 * log10(d);
-}
 
 void close_output_stream(OutputStream *ost);
 int trigger_fix_sub_duration_heartbeat(OutputStream *ost, const AVPacket *pkt);

@@ -581,6 +581,11 @@ void enc_stats_write(OutputStream *ost, EncStats *es,
     avio_flush(io);
 }
 
+static inline double psnr(double d)
+{
+    return -10.0 * log10(d);
+}
+
 static void update_video_stats(OutputStream *ost, const AVPacket *pkt, int write_vstats)
 {
     Encoder        *e = ost->enc;
@@ -590,15 +595,16 @@ static void update_video_stats(OutputStream *ost, const AVPacket *pkt, int write
     enum AVPictureType pict_type;
     int64_t frame_number;
     double ti1, bitrate, avg_bitrate;
+    double psnr_val = -1;
 
     ost->quality   = sd ? AV_RL32(sd) : -1;
     pict_type      = sd ? sd[4] : AV_PICTURE_TYPE_NONE;
 
-    for (int i = 0; i<FF_ARRAY_ELEMS(ost->error); i++) {
-        if (sd && i < sd[5])
-            ost->error[i] = AV_RL64(sd + 8 + 8*i);
-        else
-            ost->error[i] = -1;
+    if ((enc->flags & AV_CODEC_FLAG_PSNR) && sd && sd[5]) {
+        // FIXME the scaling assumes 8bit
+        double error = AV_RL64(sd + 8) / (enc->width * enc->height * 255.0 * 255.0);
+        if (error >= 0 && error <= 1)
+            psnr_val = psnr(error);
     }
 
     if (!write_vstats)
@@ -622,8 +628,8 @@ static void update_video_stats(OutputStream *ost, const AVPacket *pkt, int write
                 ost->quality / (float)FF_QP2LAMBDA);
     }
 
-    if (ost->error[0]>=0 && (enc->flags & AV_CODEC_FLAG_PSNR))
-        fprintf(vstats_file, "PSNR= %6.2f ", psnr(ost->error[0] / (enc->width * enc->height * 255.0 * 255.0)));
+    if (psnr_val >= 0)
+        fprintf(vstats_file, "PSNR= %6.2f ", psnr_val);
 
     fprintf(vstats_file,"f_size= %6d ", pkt->size);
     /* compute pts value */
