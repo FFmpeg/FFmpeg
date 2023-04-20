@@ -4650,12 +4650,8 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
      * Advanced edit list support does not work with fragemented MP4s, which
      * have stsc, stsz, stco, and stts with zero entries in the moov atom.
      * In these files, trun atoms may be streamed in.
-     *
-     * It cannot be used with use_mfra_for = {pts,dts} either, as the index
-     * is not complete, but filled in as more trun atoms are read, as well.
      */
-    if (!sc->stts_count || c->use_mfra_for != FF_MOV_FLAG_MFRA_AUTO &&
-        c->advanced_editlist) {
+    if (!sc->stts_count && c->advanced_editlist) {
 
         av_log(c->fc, AV_LOG_VERBOSE, "advanced_editlist does not work with fragmented "
                                       "MP4. disabling.\n");
