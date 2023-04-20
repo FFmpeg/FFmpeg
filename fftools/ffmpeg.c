@@ -1768,40 +1768,6 @@ static int check_keyboard_interaction(int64_t cur_time)
                    "only %d given in string '%s'\n", n, buf);
         }
     }
-    if (key == 'd' || key == 'D'){
-        int debug=0;
-        if(key == 'D') {
-            InputStream *ist = ist_iter(NULL);
-
-            if (ist)
-                debug = ist->dec_ctx->debug << 1;
-
-            if(!debug) debug = 1;
-            while (debug & FF_DEBUG_DCT_COEFF) //unsupported, would just crash
-                debug += debug;
-        }else{
-            char buf[32];
-            int k = 0;
-            i = 0;
-            set_tty_echo(1);
-            while ((k = read_key()) != '\n' && k != '\r' && i < sizeof(buf)-1)
-                if (k > 0)
-                    buf[i++] = k;
-            buf[i] = 0;
-            set_tty_echo(0);
-            fprintf(stderr, "\n");
-            if (k <= 0 || sscanf(buf, "%d", &debug)!=1)
-                fprintf(stderr,"error parsing debug value\n");
-        }
-        for (InputStream *ist = ist_iter(NULL); ist; ist = ist_iter(ist))
-            ist->dec_ctx->debug = debug;
-        for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
-            if (ost->enc_ctx)
-                ost->enc_ctx->debug = debug;
-        }
-        if(debug) av_log_set_level(AV_LOG_DEBUG);
-        fprintf(stderr,"debug=%d\n", debug);
-    }
     if (key == '?'){
         fprintf(stderr, "key    function\n"
                         "?      show this help\n"
@@ -1809,7 +1775,6 @@ static int check_keyboard_interaction(int64_t cur_time)
                         "-      decrease verbosity\n"
                         "c      Send command to first matching filter supporting it\n"
                         "C      Send/Queue command to all matching filters\n"
-                        "D      cycle through available debug modes\n"
                         "h      dump packets/hex press to cycle through the 3 states\n"
                         "q      quit\n"
                         "s      Show QP histogram\n"
