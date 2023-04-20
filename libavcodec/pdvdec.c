@@ -113,6 +113,13 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     return avpkt->size;
 }
 
+static void decode_flush(AVCodecContext *avctx)
+{
+    PDVContext *s = avctx->priv_data;
+
+    av_frame_unref(s->previous_frame);
+}
+
 const FFCodec ff_pdv_decoder = {
     .p.name         = "pdv",
     CODEC_LONG_NAME("PDV (PlayDate Video)"),
@@ -120,8 +127,10 @@ const FFCodec ff_pdv_decoder = {
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_PDV,
     .p.capabilities = AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
+    .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM |
+                      FF_CODEC_CAP_INIT_CLEANUP,
     .init           = decode_init,
     .close          = decode_end,
+    .flush          = decode_flush,
     FF_CODEC_DECODE_CB(decode_frame),
 };
