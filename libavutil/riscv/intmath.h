@@ -69,35 +69,13 @@ static av_always_inline av_const int av_clip_intp2_rvi(int a, int p)
     return b;
 }
 
-#if defined (__riscv_zbb) && (__riscv_zbb > 0) && HAVE_INLINE_ASM
-
-#define av_popcount av_popcount_rvb
-static av_always_inline av_const int av_popcount_rvb(uint32_t x)
-{
-    int ret;
-
+#if defined (__GNUC__) || defined (__clang__)
+#define av_popcount   __builtin_popcount
 #if (__riscv_xlen >= 64)
-    __asm__ ("cpopw %0, %1\n" : "=r" (ret) : "r" (x));
+#define av_popcount64 __builtin_popcountl
 #else
-    __asm__ ("cpop %0, %1\n" : "=r" (ret) : "r" (x));
+#define av_popcount64 __builtin_popcountll
 #endif
-    return ret;
-}
-
-#if (__riscv_xlen >= 64)
-#define av_popcount64 av_popcount64_rvb
-static av_always_inline av_const int av_popcount64_rvb(uint64_t x)
-{
-    int ret;
-
-#if (__riscv_xlen >= 128)
-    __asm__ ("cpopd %0, %1\n" : "=r" (ret) : "r" (x));
-#else
-    __asm__ ("cpop %0, %1\n" : "=r" (ret) : "r" (x));
 #endif
-    return ret;
-}
-#endif /* __riscv_xlen >= 64 */
-#endif /* __riscv_zbb */
 
 #endif /* AVUTIL_RISCV_INTMATH_H */
