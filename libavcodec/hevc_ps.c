@@ -1762,8 +1762,14 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
 
     pps->cabac_init_present_flag = get_bits1(gb);
 
-    pps->num_ref_idx_l0_default_active = get_ue_golomb_long(gb) + 1;
-    pps->num_ref_idx_l1_default_active = get_ue_golomb_long(gb) + 1;
+    pps->num_ref_idx_l0_default_active = get_ue_golomb_31(gb) + 1;
+    pps->num_ref_idx_l1_default_active = get_ue_golomb_31(gb) + 1;
+    if (pps->num_ref_idx_l0_default_active >= HEVC_MAX_REFS ||
+        pps->num_ref_idx_l1_default_active >= HEVC_MAX_REFS) {
+        av_log(avctx, AV_LOG_ERROR, "Too many default refs in PPS: %d/%d.\n",
+               pps->num_ref_idx_l0_default_active, pps->num_ref_idx_l1_default_active);
+        goto err;
+    }
 
     pps->pic_init_qp_minus26 = get_se_golomb(gb);
 
