@@ -649,8 +649,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_AUTOMATIC);
     av_bprint_init(&buf_script, 0, AV_BPRINT_SIZE_AUTOMATIC);
     for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
-        const AVCodecContext * const enc = ost->enc_ctx;
-        const float q = enc ? ost->quality / (float) FF_QP2LAMBDA : -1;
+        const float q = ost->enc ? ost->quality / (float) FF_QP2LAMBDA : -1;
 
         if (vid && ost->type == AVMEDIA_TYPE_VIDEO) {
             av_bprintf(&buf, "q=%2.1f ", q);
@@ -1155,7 +1154,7 @@ static int process_subtitle(InputStream *ist, AVSubtitle *subtitle, int *got_out
 
     for (int oidx = 0; oidx < ist->nb_outputs; oidx++) {
         OutputStream *ost = ist->outputs[oidx];
-        if (!ost->enc_ctx || ost->enc_ctx->codec_type != AVMEDIA_TYPE_SUBTITLE)
+        if (!ost->enc || ost->type != AVMEDIA_TYPE_SUBTITLE)
             continue;
 
         enc_subtitle(output_files[ost->file_index], ost, subtitle);
@@ -1527,7 +1526,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
 
     for (int oidx = 0; oidx < ist->nb_outputs; oidx++) {
         OutputStream *ost = ist->outputs[oidx];
-        if (ost->enc_ctx || (!pkt && no_eof))
+        if (ost->enc || (!pkt && no_eof))
             continue;
 
         if (duration_exceeded) {
