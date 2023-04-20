@@ -64,6 +64,11 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     uint8_t *dst, *prev = prev_frame->data[0];
     int ret, zret;
 
+    if (avctx->skip_frame >= AVDISCARD_ALL ||
+        (avctx->skip_frame >= AVDISCARD_NONINTRA &&
+         !(avpkt->flags & AV_PKT_FLAG_KEY)))
+        return avpkt->size;
+
     zret = inflateReset(zstream);
     if (zret != Z_OK) {
         av_log(avctx, AV_LOG_ERROR, "Could not reset inflate: %d.\n", zret);
