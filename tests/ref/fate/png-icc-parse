@@ -16,6 +16,10 @@ pkt_pos=0
 pkt_size=40194
 width=128
 height=128
+crop_top=0
+crop_bottom=0
+crop_left=0
+crop_right=0
 pix_fmt=rgb24
 sample_aspect_ratio=1:1
 pict_type=I
@@ -25,7 +29,7 @@ interlaced_frame=1
 top_field_first=0
 repeat_pict=0
 color_range=pc
-color_space=unknown
+color_space=gbr
 color_primaries=bt709
 color_transfer=iec61966-2-1
 chroma_location=unspecified
@@ -33,16 +37,5 @@ chroma_location=unspecified
 side_data_type=ICC profile
 name=Photoshop ICC profile
 size=3144
-[/SIDE_DATA]
-[SIDE_DATA]
-side_data_type=Mastering display metadata
-red_x=63999/100000
-red_y=33001/100000
-green_x=30000/100000
-green_y=60000/100000
-blue_x=15000/100000
-blue_y=5999/100000
-white_point_x=31269/100000
-white_point_y=32899/100000
 [/SIDE_DATA]
 [/FRAME]
