@@ -1,13 +1,13 @@
 2e7e01c821c111466e7a2844826b7f6d *tests/data/fate/mov-mp4-ttml-dfxp.mp4
 8519 tests/data/fate/mov-mp4-ttml-dfxp.mp4
 #tb 0: 1/1000
-#media_type 0: data
-#codec_id 0: none
+#media_type 0: subtitle
+#codec_id 0: ttml
 0,          0,          0,    68500,     7866, 0x456c36b7
 {
     "packets": [
         {
-            "codec_type": "data",
+            "codec_type": "subtitle",
             "stream_index": 0,
             "pts": 0,
             "pts_time": "0.000000",
@@ -26,7 +26,8 @@
     "streams": [
         {
             "index": 0,
-            "codec_type": "data",
+            "codec_name": "ttml",
+            "codec_type": "subtitle",
             "codec_tag_string": "dfxp",
             "codec_tag": "0x70786664",
             "time_base": "1/1000",
