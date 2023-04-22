@@ -535,6 +535,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     if (changed_csp) {
         av_frame_remove_side_data(out, AV_FRAME_DATA_MASTERING_DISPLAY_METADATA);
         av_frame_remove_side_data(out, AV_FRAME_DATA_CONTENT_LIGHT_LEVEL);
+        av_frame_remove_side_data(out, AV_FRAME_DATA_ICC_PROFILE);
     }
     if (s->apply_dovi || changed_csp) {
         av_frame_remove_side_data(out, AV_FRAME_DATA_DOVI_RPU_BUFFER);
