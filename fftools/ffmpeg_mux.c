@@ -214,9 +214,15 @@ static void *muxer_thread(void *arg)
         ost = of->streams[stream_idx];
         ret = sync_queue_process(mux, ost, ret < 0 ? NULL : pkt, &stream_eof);
         av_packet_unref(pkt);
-        if (ret == AVERROR_EOF && stream_eof)
-            tq_receive_finish(mux->tq, stream_idx);
-        else if (ret < 0) {
+        if (ret == AVERROR_EOF) {
+            if (stream_eof) {
+                tq_receive_finish(mux->tq, stream_idx);
+            } else {
+                av_log(mux, AV_LOG_VERBOSE, "Muxer returned EOF\n");
+                ret = 0;
+                break;
+            }
+        } else if (ret < 0) {
             av_log(mux, AV_LOG_ERROR, "Error muxing a packet\n");
             break;
         }
