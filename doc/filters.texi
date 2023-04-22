@@ -16331,16 +16331,6 @@ This filter supports almost all of the above options as @ref{commands}.
 @subsection Examples
 @itemize
 @item
-Complete example for how to initialize the Vulkan device, upload frames to the
-GPU, perform filter conversion to yuv420p, and download frames back to the CPU
-for output. Note that in specific cases you can get around the need to perform
-format conversion by specifying the correct @code{format} filter option
-corresponding to the input frames.
-@example
-ffmpeg -i $INPUT -init_hw_device vulkan -vf hwupload,libplacebo=format=yuv420p,hwdownload,format=yuv420p $OUTPUT
-@end example
-
-@item
 Tone-map input to standard gamut BT.709 output:
 @example
 libplacebo=colorspace=bt709:color_primaries=bt709:color_trc=bt709:range=tv
