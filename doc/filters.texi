@@ -16369,6 +16369,12 @@ since otherwise the VRAM roundtrip will more than offset any expected speedup.
 @example
 ffmpeg -export_side_data +film_grain ... -vf libplacebo=apply_filmgrain=true
 @end example
+
+@item
+Interop with VAAPI hwdec to avoid round-tripping through RAM:
+@example
+ffmpeg -init_hw_device vulkan -hwaccel vaapi -hwaccel_output_format vaapi ... -vf libplacebo
+@end example
 @end itemize
 
 @section libvmaf
