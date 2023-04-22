@@ -855,6 +855,8 @@ static int decode(InputStream *ist, AVCodecContext *avctx,
             fd->idx = avctx->frame_num - 1;
         }
 
+        frame->time_base = avctx->pkt_timebase;
+
         *got_frame = 1;
     }
 
@@ -885,7 +887,6 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output,
     AVFrame *decoded_frame = ist->decoded_frame;
     AVCodecContext *avctx = ist->dec_ctx;
     int ret, err = 0;
-    AVRational decoded_frame_tb;
 
     update_benchmark(NULL);
     ret = decode(ist, avctx, decoded_frame, got_output, pkt);
@@ -909,23 +910,24 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output,
     ist->next_dts += ((int64_t)AV_TIME_BASE * decoded_frame->nb_samples) /
                      decoded_frame->sample_rate;
 
-    if (decoded_frame->pts != AV_NOPTS_VALUE) {
-        decoded_frame_tb   = ist->st->time_base;
-    }else {
+    if (decoded_frame->pts == AV_NOPTS_VALUE) {
         decoded_frame->pts = ist->dts;
-        decoded_frame_tb   = AV_TIME_BASE_Q;
+        decoded_frame->time_base = AV_TIME_BASE_Q;
     }
     if (pkt && pkt->duration && ist->prev_pkt_pts != AV_NOPTS_VALUE &&
         pkt->pts != AV_NOPTS_VALUE && pkt->pts - ist->prev_pkt_pts > pkt->duration)
         ist->filter_in_rescale_delta_last = AV_NOPTS_VALUE;
     if (pkt)
         ist->prev_pkt_pts = pkt->pts;
-    if (decoded_frame->pts != AV_NOPTS_VALUE)
-        decoded_frame->pts = av_rescale_delta(decoded_frame_tb, decoded_frame->pts,
-                                              (AVRational){1, decoded_frame->sample_rate},
-                                              decoded_frame->nb_samples,
+    if (decoded_frame->pts != AV_NOPTS_VALUE) {
+        AVRational tb_filter = (AVRational){1, decoded_frame->sample_rate};
+        decoded_frame->pts = av_rescale_delta(decoded_frame->time_base, decoded_frame->pts,
+                                              tb_filter, decoded_frame->nb_samples,
                                               &ist->filter_in_rescale_delta_last,
-                                              (AVRational){1, decoded_frame->sample_rate});
+                                              tb_filter);
+        decoded_frame->time_base = tb_filter;
+    }
+
     ist->nb_samples = decoded_frame->nb_samples;
     err = send_frame_to_filters(ist, decoded_frame);
 
