@@ -545,6 +545,18 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
             }
             av_assert0(s->nb_components == 4);
             break;
+        case 0x11412100:
+            if (s->bits > 8)
+                goto unk_pixfmt;
+            if (s->component_id[0] == 'R' && s->component_id[1] == 'G' && s->component_id[2] == 'B') {
+                s->avctx->pix_fmt = AV_PIX_FMT_GBRP;
+                s->upscale_h[0] = 4;
+                s->upscale_h[1] = 0;
+                s->upscale_h[2] = 1;
+            } else {
+                goto unk_pixfmt;
+            }
+            break;
         case 0x22111122:
         case 0x22111111:
             if (s->adobe_transform == 0 && s->bits <= 8) {
@@ -626,6 +638,15 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
                 s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
             }
             break;
+        case 0x11311100:
+            if (s->bits > 8)
+                goto unk_pixfmt;
+            if (s->component_id[0] == 'R' && s->component_id[1] == 'G' && s->component_id[2] == 'B')
+                s->avctx->pix_fmt = AV_PIX_FMT_GBRP;
+            else
+                goto unk_pixfmt;
+            s->upscale_h[0] = s->upscale_h[2] = 2;
+            break;
         case 0x31111100:
             if (s->bits > 8)
                 goto unk_pixfmt;
@@ -635,6 +656,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
             break;
         case 0x22121100:
         case 0x22111200:
+        case 0x41211100:
             if (s->bits <= 8) s->avctx->pix_fmt = s->cs_itu601 ? AV_PIX_FMT_YUV422P : AV_PIX_FMT_YUVJ422P;
             else
                 goto unk_pixfmt;
@@ -2605,6 +2627,8 @@ the_end:
                    avctx->pix_fmt == AV_PIX_FMT_YUVJ440P ||
                    avctx->pix_fmt == AV_PIX_FMT_YUV440P  ||
                    avctx->pix_fmt == AV_PIX_FMT_YUVA444P ||
+                   avctx->pix_fmt == AV_PIX_FMT_YUVJ422P ||
+                   avctx->pix_fmt == AV_PIX_FMT_YUV422P  ||
                    avctx->pix_fmt == AV_PIX_FMT_YUVJ420P ||
                    avctx->pix_fmt == AV_PIX_FMT_YUV420P  ||
                    avctx->pix_fmt == AV_PIX_FMT_YUV420P16||
@@ -2654,6 +2678,24 @@ the_end:
                     for (index = w - 3; index > 0; index--) {
                         line[index] = (line[index / 3] + line[(index + 1) / 3] + line[(index + 2) / 3] + 1) / 3;
                     }
+                } else if (s->upscale_h[p] == 4){
+                    if (is16bit) {
+                        uint16_t *line16 = (uint16_t *) line;
+                        line16[w - 1] = line16[(w - 1) >> 2];
+                        if (w > 1)
+                            line16[w - 2] = (line16[(w - 1) >> 2] * 3 + line16[(w - 2) >> 2]) >> 2;
+                        if (w > 2)
+                            line16[w - 3] = (line16[(w - 1) >> 2] + line16[(w - 2) >> 2]) >> 1;
+                    } else {
+                        line[w - 1] = line[(w - 1) >> 2];
+                        if (w > 1)
+                            line[w - 2] = (line[(w - 1) >> 2] * 3 + line[(w - 2) >> 2]) >> 2;
+                        if (w > 2)
+                            line[w - 3] = (line[(w - 1) >> 2] + line[(w - 2) >> 2]) >> 1;
+                    }
+                    for (index = w - 4; index > 0; index--)
+                        line[index] = (line[(index + 3) >> 2] + line[(index + 2) >> 2]
+                            + line[(index + 1) >> 2] + line[index >> 2]) >> 2;
                 }
                 line += s->linesize[p];
             }
