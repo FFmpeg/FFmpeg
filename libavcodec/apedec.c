@@ -944,7 +944,7 @@ static void long_filter_high_3800(int32_t *buffer, int order, int shift, int len
 {
     int i, j;
     int32_t dotprod, sign;
-    int32_t coeffs[256], delay[256];
+    int32_t coeffs[256], delay[256+256], *delayp = delay;
 
     if (order >= length)
         return;
@@ -956,13 +956,16 @@ static void long_filter_high_3800(int32_t *buffer, int order, int shift, int len
         dotprod = 0;
         sign = APESIGN(buffer[i]);
         for (j = 0; j < order; j++) {
-            dotprod += delay[j] * (unsigned)coeffs[j];
-            coeffs[j] += ((delay[j] >> 31) | 1) * sign;
+            dotprod += delayp[j] * (unsigned)coeffs[j];
+            coeffs[j] += ((delayp[j] >> 31) | 1) * sign;
         }
         buffer[i] -= (unsigned)(dotprod >> shift);
-        for (j = 0; j < order - 1; j++)
-            delay[j] = delay[j + 1];
-        delay[order - 1] = buffer[i];
+        delayp ++;
+        delayp[order - 1] = buffer[i];
+        if (delayp - delay == 256) {
+            memcpy(delay, delayp, sizeof(*delay)*256);
+            delayp = delay;
+        }
     }
 }
 
