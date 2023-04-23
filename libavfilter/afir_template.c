@@ -251,7 +251,7 @@ static void fn(convert_channel)(AVFilterContext *ctx, AudioFIRContext *s, int ch
     ftype *time = (ftype *)s->norm_ir[selir]->extended_data[ch];
     ftype *tempin = (ftype *)seg->tempin->extended_data[ch];
     ftype *tempout = (ftype *)seg->tempout->extended_data[ch];
-    ctype *coeff = (ctype *)seg->coeff[selir]->extended_data[ch];
+    ctype *coeff = (ctype *)seg->coeff->extended_data[ch];
     const int remaining = nb_taps - (seg->input_offset + coeff_partition * seg->part_size);
     const int size = remaining >= seg->part_size ? seg->part_size : remaining;
 
@@ -285,19 +285,18 @@ static void fn(fir_fadd)(AudioFIRContext *s, ftype *dst, const ftype *src, int n
     }
 }
 
-static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int offset)
+static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int offset, int selir)
 {
     AudioFIRContext *s = ctx->priv;
     const ftype *in = (const ftype *)s->in->extended_data[ch] + offset;
     ftype *blockout, *ptr = (ftype *)out->extended_data[ch] + offset;
     const int min_part_size = s->min_part_size;
     const int nb_samples = FFMIN(min_part_size, out->nb_samples - offset);
-    const int nb_segments = s->nb_segments;
+    const int nb_segments = s->nb_segments[selir];
     const float dry_gain = s->dry_gain;
-    const int selir = s->selir;
 
     for (int segment = 0; segment < nb_segments; segment++) {
-        AudioFIRSegment *seg = &s->seg[segment];
+        AudioFIRSegment *seg = &s->seg[selir][segment];
         ftype *src = (ftype *)seg->input->extended_data[ch];
         ftype *dst = (ftype *)seg->output->extended_data[ch];
         ftype *sumin = (ftype *)seg->sumin->extended_data[ch];
@@ -337,62 +336,10 @@ static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int offse
 
         memset(sumin, 0, sizeof(*sumin) * seg->fft_length);
 
-        if (seg->loading[ch] < nb_partitions) {
-            j = seg->part_index[ch] <= 0 ? nb_partitions - 1 : seg->part_index[ch] - 1;
-            for (int i = 0; i < nb_partitions; i++) {
-                const int input_partition = j;
-                const int coeff_partition = i;
-                const int coffset = coeff_partition * seg->coeff_size;
-                const ftype *blockout = (const ftype *)seg->blockout->extended_data[ch] + input_partition * seg->block_size;
-                const ctype *coeff = ((const ctype *)seg->coeff[selir]->extended_data[ch]) + coffset;
-
-                if (j == 0)
-                    j = nb_partitions;
-                j--;
-
-#if DEPTH == 32
-                s->afirdsp.fcmul_add(sumin, blockout, (const ftype *)coeff, part_size);
-#else
-                s->afirdsp.dcmul_add(sumin, blockout, (const ftype *)coeff, part_size);
-#endif
-            }
-
-            seg->itx_fn(seg->itx[ch], sumout, sumin, sizeof(ctype));
-            memcpy(dst + part_size, sumout + part_size, part_size * sizeof(*buf));
-            memset(sumin, 0, sizeof(*sumin) * seg->fft_length);
-        }
-
         blockout = (ftype *)seg->blockout->extended_data[ch] + seg->part_index[ch] * seg->block_size;
         memset(tempin + part_size, 0, sizeof(*tempin) * (seg->block_size - part_size));
         memcpy(tempin, src, sizeof(*src) * part_size);
         seg->tx_fn(seg->tx[ch], blockout, tempin, sizeof(ftype));
-
-        if (seg->loading[ch] < nb_partitions) {
-            const int selir = s->prev_selir;
-
-            j = seg->part_index[ch];
-            for (int i = 0; i < nb_partitions; i++) {
-                const int input_partition = j;
-                const int coeff_partition = i;
-                const int coffset = coeff_partition * seg->coeff_size;
-                const ftype *blockout = (const ftype *)seg->blockout->extended_data[ch] + input_partition * seg->block_size;
-                const ctype *coeff = ((const ctype *)seg->coeff[selir]->extended_data[ch]) + coffset;
-
-                if (j == 0)
-                    j = nb_partitions;
-                j--;
-
-#if DEPTH == 32
-                s->afirdsp.fcmul_add(sumin, blockout, (const ftype *)coeff, part_size);
-#else
-                s->afirdsp.dcmul_add(sumin, blockout, (const ftype *)coeff, part_size);
-#endif
-            }
-
-            seg->itx_fn(seg->itx[ch], sumout, sumin, sizeof(ctype));
-            memcpy(dst + 2 * part_size, sumout, 2 * part_size * sizeof(*dst));
-            memset(sumin, 0, sizeof(*sumin) * seg->fft_length);
-        }
 
         j = seg->part_index[ch];
         for (int i = 0; i < nb_partitions; i++) {
@@ -400,7 +347,7 @@ static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int offse
             const int coeff_partition = i;
             const int coffset = coeff_partition * seg->coeff_size;
             const ftype *blockout = (const ftype *)seg->blockout->extended_data[ch] + input_partition * seg->block_size;
-            const ctype *coeff = ((const ctype *)seg->coeff[selir]->extended_data[ch]) + coffset;
+            const ctype *coeff = ((const ctype *)seg->coeff->extended_data[ch]) + coffset;
 
             if (j == 0)
                 j = nb_partitions;
@@ -415,44 +362,39 @@ static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int offse
 
         seg->itx_fn(seg->itx[ch], sumout, sumin, sizeof(ctype));
 
-        if (seg->loading[ch] < nb_partitions) {
-            ftype *ptr1 = dst + part_size;
-            ftype *ptr2 = dst + part_size * 2;
-            ftype *ptr3 = dst + part_size * 3;
-            ftype *ptr4 = dst + part_size * 4;
-            if (seg->loading[ch] == 0)
-                memcpy(ptr4, buf, sizeof(*ptr4) * part_size);
-            for (int n = 0; n < part_size; n++)
-                ptr2[n] += ptr4[n];
+        fn(fir_fadd)(s, buf, sumout, part_size);
+        memcpy(dst, buf, part_size * sizeof(*dst));
+        memcpy(buf, sumout + part_size, part_size * sizeof(*buf));
 
-            if (seg->loading[ch] < nb_partitions - 1)
-                memcpy(ptr4, ptr3, part_size * sizeof(*dst));
-            for (int n = 0; n < part_size; n++)
-                ptr1[n] += sumout[n];
-
-            if (seg->loading[ch] == nb_partitions - 1)
-                memcpy(buf, sumout + part_size, part_size * sizeof(*buf));
-
-            for (int i = 0; i < part_size; i++) {
-                const ftype factor = (part_size * seg->loading[ch] + i) / (ftype)(part_size * nb_partitions);
-                const ftype ifactor = 1 - factor;
-                dst[i] = ptr1[i] * factor + ptr2[i] * ifactor;
+        if (s->selir != s->prev_selir) {
+            if (selir == s->selir) {
+                if (s->loading[ch] <= min_part_size) {
+                    for (int n = 0; n < nb_samples; n++)
+                        ptr[n] += dst[n] * ((n + 1.f) / nb_samples);
+                }
+            } else {
+                fn(fir_fadd)(s, ptr, dst, nb_samples);
             }
         } else {
-            fn(fir_fadd)(s, buf, sumout, part_size);
-            memcpy(dst, buf, part_size * sizeof(*dst));
-            memcpy(buf, sumout + part_size, part_size * sizeof(*buf));
+            fn(fir_fadd)(s, ptr, dst, nb_samples);
         }
-
-        fn(fir_fadd)(s, ptr, dst, nb_samples);
 
         if (part_size != min_part_size)
             memmove(src, src + min_part_size, (seg->input_size - min_part_size) * sizeof(*src));
 
         seg->part_index[ch] = (seg->part_index[ch] + 1) % nb_partitions;
-        if (seg->loading[ch] < nb_partitions)
-            seg->loading[ch]++;
     }
+
+    if (selir != s->selir) {
+        if (s->loading[ch] <= min_part_size) {
+            for (int n = 0; n < nb_samples; n++)
+                ptr[n] *= (nb_samples - n * 1.f) / nb_samples;
+        }
+        return 0;
+    }
+
+    if (s->selir != s->prev_selir)
+        s->loading[ch] -= min_part_size;
 
     if (s->wet_gain == 1.f)
         return 0;
