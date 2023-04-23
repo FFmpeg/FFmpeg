@@ -955,9 +955,20 @@ static void long_filter_high_3800(int32_t *buffer, int order, int shift, int len
     for (i = order; i < length; i++) {
         dotprod = 0;
         sign = APESIGN(buffer[i]);
-        for (j = 0; j < order; j++) {
-            dotprod += delayp[j] * (unsigned)coeffs[j];
-            coeffs[j] += ((delayp[j] >> 31) | 1) * sign;
+        if (sign == 1) {
+            for (j = 0; j < order; j++) {
+                dotprod += delayp[j] * (unsigned)coeffs[j];
+                coeffs[j] += (delayp[j] >> 31) | 1;
+            }
+        } else if (sign == -1) {
+            for (j = 0; j < order; j++) {
+                dotprod += delayp[j] * (unsigned)coeffs[j];
+                coeffs[j] -= (delayp[j] >> 31) | 1;
+            }
+        } else {
+            for (j = 0; j < order; j++) {
+                dotprod += delayp[j] * (unsigned)coeffs[j];
+            }
         }
         buffer[i] -= (unsigned)(dotprod >> shift);
         delayp ++;
