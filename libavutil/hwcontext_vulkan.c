@@ -1264,6 +1264,7 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
 
     p->device_features_1_2.timelineSemaphore = 1;
     p->device_features_1_2.bufferDeviceAddress = dev_features_1_2.bufferDeviceAddress;
+    p->device_features_1_2.hostQueryReset = dev_features_1_2.hostQueryReset;
     p->device_features_1_2.storagePushConstant8 = dev_features_1_2.storagePushConstant8;
     p->device_features_1_2.shaderInt8 = dev_features_1_2.shaderInt8;
     p->device_features_1_2.storageBuffer8BitAccess = dev_features_1_2.storageBuffer8BitAccess;
@@ -1274,6 +1275,8 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     p->device_features_1_2.vulkanMemoryModelDeviceScope = dev_features_1_2.vulkanMemoryModelDeviceScope;
     p->device_features_1_2.hostQueryReset = dev_features_1_2.hostQueryReset;
 
+    p->device_features_1_3.dynamicRendering = dev_features_1_3.dynamicRendering;
+    p->device_features_1_3.maintenance4 = dev_features_1_3.maintenance4;
     p->device_features_1_3.synchronization2 = dev_features_1_3.synchronization2;
     p->device_features_1_3.computeFullSubgroups = dev_features_1_3.computeFullSubgroups;
     p->device_features_1_3.shaderZeroInitializeWorkgroupMemory = dev_features_1_3.shaderZeroInitializeWorkgroupMemory;
