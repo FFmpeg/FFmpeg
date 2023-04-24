@@ -603,7 +603,7 @@ static int init_vulkan(AVFilterContext *avctx, const AVVulkanDeviceContext *hwct
                 .count = hwctx->nb_tx_queues,
             },
             /* This is the highest version created by hwcontext_vulkan.c */
-            .max_api_version = VK_API_VERSION_1_2,
+            .max_api_version = VK_API_VERSION_1_3,
         ));
     } else {
         s->vulkan = pl_vulkan_create(s->log, pl_vulkan_params(
