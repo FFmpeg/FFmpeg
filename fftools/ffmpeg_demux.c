@@ -864,7 +864,9 @@ static void add_input_streams(const OptionsContext *o, Demuxer *d)
         }
 
         ist->filter_in_rescale_delta_last = AV_NOPTS_VALUE;
-        ist->prev_pkt_pts = AV_NOPTS_VALUE;
+
+        ist->last_frame_pts = AV_NOPTS_VALUE;
+        ist->last_frame_tb  = (AVRational){ 1, 1 };
 
         ist->dec_ctx = avcodec_alloc_context3(ist->dec);
         if (!ist->dec_ctx)
@@ -904,8 +906,6 @@ static void add_input_streams(const OptionsContext *o, Demuxer *d)
             MATCH_PER_STREAM_OPT(top_field_first, i, ist->top_field_first, ic, st);
 
             ist->framerate_guessed = av_guess_frame_rate(ic, st, NULL);
-
-            ist->last_frame_pts = AV_NOPTS_VALUE;
 
             break;
         case AVMEDIA_TYPE_AUDIO: {

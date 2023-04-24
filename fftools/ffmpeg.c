@@ -881,6 +881,85 @@ static int send_frame_to_filters(InputStream *ist, AVFrame *decoded_frame)
     return ret;
 }
 
+static AVRational audio_samplerate_update(InputStream *ist, const AVFrame *frame)
+{
+    const int prev = ist->last_frame_tb.den;
+    const int sr   = frame->sample_rate;
+
+    AVRational tb_new;
+    int64_t gcd;
+
+    if (frame->sample_rate == ist->last_frame_sample_rate)
+        goto finish;
+
+    gcd  = av_gcd(prev, sr);
+
+    if (prev / gcd >= INT_MAX / sr) {
+        av_log(ist, AV_LOG_WARNING,
+               "Audio timestamps cannot be represented exactly after "
+               "sample rate change: %d -> %d\n", prev, sr);
+
+        // LCM of 192000, 44100, allows to represent all common samplerates
+        tb_new = (AVRational){ 1, 28224000 };
+    } else
+        tb_new = (AVRational){ 1, prev / gcd * sr };
+
+    // keep the frame timebase if it is strictly better than
+    // the samplerate-defined one
+    if (frame->time_base.num == 1 && frame->time_base.den > tb_new.den &&
+        !(frame->time_base.den % tb_new.den))
+        tb_new = frame->time_base;
+
+    if (ist->last_frame_pts != AV_NOPTS_VALUE)
+        ist->last_frame_pts = av_rescale_q(ist->last_frame_pts,
+                                           ist->last_frame_tb, tb_new);
+    ist->last_frame_duration_est = av_rescale_q(ist->last_frame_duration_est,
+                                                ist->last_frame_tb, tb_new);
+
+    ist->last_frame_tb          = tb_new;
+    ist->last_frame_sample_rate = frame->sample_rate;
+
+finish:
+    return ist->last_frame_tb;
+}
+
+static void audio_ts_process(InputStream *ist, AVFrame *frame)
+{
+    AVRational tb_filter = (AVRational){1, frame->sample_rate};
+    AVRational tb;
+    int64_t pts_pred;
+
+    // on samplerate change, choose a new internal timebase for timestamp
+    // generation that can represent timestamps from all the samplerates
+    // seen so far
+    tb = audio_samplerate_update(ist, frame);
+    pts_pred = ist->last_frame_pts == AV_NOPTS_VALUE ? 0 :
+               ist->last_frame_pts + ist->last_frame_duration_est;
+
+    if (frame->pts == AV_NOPTS_VALUE) {
+        frame->pts = pts_pred;
+        frame->time_base = tb;
+    } else if (ist->last_frame_pts != AV_NOPTS_VALUE &&
+               frame->pts > av_rescale_q_rnd(pts_pred, tb, frame->time_base,
+                                             AV_ROUND_UP)) {
+        // there was a gap in timestamps, reset conversion state
+        ist->filter_in_rescale_delta_last = AV_NOPTS_VALUE;
+    }
+
+    frame->pts = av_rescale_delta(frame->time_base, frame->pts,
+                                  tb, frame->nb_samples,
+                                  &ist->filter_in_rescale_delta_last, tb);
+
+    ist->last_frame_pts          = frame->pts;
+    ist->last_frame_duration_est = av_rescale_q(frame->nb_samples,
+                                                tb_filter, tb);
+
+    // finally convert to filtering timebase
+    frame->pts       = av_rescale_q(frame->pts, tb, tb_filter);
+    frame->duration  = frame->nb_samples;
+    frame->time_base = tb_filter;
+}
+
 static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output,
                         int *decode_failed)
 {
@@ -910,23 +989,7 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output,
     ist->next_dts += ((int64_t)AV_TIME_BASE * decoded_frame->nb_samples) /
                      decoded_frame->sample_rate;
 
-    if (decoded_frame->pts == AV_NOPTS_VALUE) {
-        decoded_frame->pts = ist->dts;
-        decoded_frame->time_base = AV_TIME_BASE_Q;
-    }
-    if (pkt && pkt->duration && ist->prev_pkt_pts != AV_NOPTS_VALUE &&
-        pkt->pts != AV_NOPTS_VALUE && pkt->pts - ist->prev_pkt_pts > pkt->duration)
-        ist->filter_in_rescale_delta_last = AV_NOPTS_VALUE;
-    if (pkt)
-        ist->prev_pkt_pts = pkt->pts;
-    if (decoded_frame->pts != AV_NOPTS_VALUE) {
-        AVRational tb_filter = (AVRational){1, decoded_frame->sample_rate};
-        decoded_frame->pts = av_rescale_delta(decoded_frame->time_base, decoded_frame->pts,
-                                              tb_filter, decoded_frame->nb_samples,
-                                              &ist->filter_in_rescale_delta_last,
-                                              tb_filter);
-        decoded_frame->time_base = tb_filter;
-    }
+    audio_ts_process(ist, decoded_frame);
 
     ist->nb_samples = decoded_frame->nb_samples;
     err = send_frame_to_filters(ist, decoded_frame);
@@ -1076,6 +1139,7 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output, int64_
     // update timestamp history
     ist->last_frame_duration_est = video_duration_estimate(ist, decoded_frame);
     ist->last_frame_pts          = decoded_frame->pts;
+    ist->last_frame_tb           = decoded_frame->time_base;
 
     if (debug_ts) {
         av_log(ist, AV_LOG_INFO,
