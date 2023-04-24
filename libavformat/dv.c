@@ -437,10 +437,13 @@ int avpriv_dv_produce_packet(DVDemuxContext *c, AVPacket *pkt,
         return size;
 
     for (i = 0; i < c->ach; i++) {
-        c->audio_pkt[i].pos  = pos;
-        c->audio_pkt[i].size = size;
-        c->audio_pkt[i].pts  = (c->sys->height == 720) ? (c->frames & ~1) : c->frames;
-        c->audio_pkt[i].duration = 1;
+        DVPacket *dpkt = &c->audio_pkt[i];
+
+        dpkt->pos      = pos;
+        dpkt->size     = size;
+        dpkt->pts      = (c->sys->height == 720) ? (c->frames & ~1) : c->frames;
+        dpkt->duration = 1;
+
         ppcm[i] = c->audio_buf[i];
     }
     if (c->ach)
