@@ -292,6 +292,8 @@ static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int offse
     ftype *blockout, *ptr = (ftype *)out->extended_data[ch] + offset;
     const int min_part_size = s->min_part_size;
     const int nb_samples = FFMIN(min_part_size, out->nb_samples - offset);
+    const ftype *xfade0 = (const ftype *)s->xfade[0]->extended_data[ch];
+    const ftype *xfade1 = (const ftype *)s->xfade[1]->extended_data[ch];
     const int nb_segments = s->nb_segments[selir];
     const float dry_gain = s->dry_gain;
 
@@ -370,7 +372,7 @@ static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int offse
             if (selir == s->selir) {
                 if (s->loading[ch] <= min_part_size) {
                     for (int n = 0; n < nb_samples; n++)
-                        ptr[n] += dst[n] * ((n + 1.f) / nb_samples);
+                        ptr[n] += dst[n] * xfade0[n];
                 }
             } else {
                 fn(fir_fadd)(s, ptr, dst, nb_samples);
@@ -388,7 +390,7 @@ static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int offse
     if (selir != s->selir) {
         if (s->loading[ch] <= min_part_size) {
             for (int n = 0; n < nb_samples; n++)
-                ptr[n] *= (nb_samples - n * 1.f) / nb_samples;
+                ptr[n] *= xfade1[n];
         }
         return 0;
     }

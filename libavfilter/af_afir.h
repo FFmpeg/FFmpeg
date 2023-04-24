@@ -90,6 +90,7 @@ typedef struct AudioFIRContext {
     AudioFIRSegment seg[MAX_IR_STREAMS][1024];
 
     AVFrame *in;
+    AVFrame *xfade[2];
     AVFrame *ir[MAX_IR_STREAMS];
     AVFrame *norm_ir[MAX_IR_STREAMS];
     AVFrame *video;

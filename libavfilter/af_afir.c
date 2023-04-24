@@ -298,8 +298,6 @@ static int convert_coeffs(AVFilterContext *ctx, int selir)
         part_size = 1 << av_log2(s->minp);
         max_part_size = 1 << av_log2(s->maxp);
 
-        s->min_part_size = part_size;
-
         for (int i = 0; left > 0; i++) {
             int step = part_size == max_part_size ? INT_MAX : 1 + (i == 0);
             int nb_partitions = FFMIN(step, (left + part_size - 1) / part_size);
@@ -592,6 +590,36 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (!s->loading)
         return AVERROR(ENOMEM);
 
+    s->xfade[0] = ff_get_audio_buffer(outlink, s->min_part_size);
+    s->xfade[1] = ff_get_audio_buffer(outlink, s->min_part_size);
+    if (!s->xfade[0] || !s->xfade[1])
+        return AVERROR(ENOMEM);
+
+    switch (s->format) {
+    case AV_SAMPLE_FMT_FLTP:
+        for (int ch = 0; ch < s->nb_channels; ch++) {
+            float *dst0 = (float *)s->xfade[0]->extended_data[ch];
+            float *dst1 = (float *)s->xfade[1]->extended_data[ch];
+
+            for (int n = 0; n < s->min_part_size; n++) {
+                dst0[n] = (n + 1.f) / s->min_part_size;
+                dst1[n] = 1.f - dst0[n];
+            }
+        }
+        break;
+    case AV_SAMPLE_FMT_DBLP:
+        for (int ch = 0; ch < s->nb_channels; ch++) {
+            double *dst0 = (double *)s->xfade[0]->extended_data[ch];
+            double *dst1 = (double *)s->xfade[1]->extended_data[ch];
+
+            for (int n = 0; n < s->min_part_size; n++) {
+                dst0[n] = (n + 1.0) / s->min_part_size;
+                dst1[n] = 1.0 - dst0[n];
+            }
+        }
+        break;
+    }
+
     return 0;
 }
 
@@ -609,6 +637,9 @@ static av_cold void uninit(AVFilterContext *ctx)
         av_frame_free(&s->ir[i]);
         av_frame_free(&s->norm_ir[i]);
     }
+
+    av_frame_free(&s->xfade[0]);
+    av_frame_free(&s->xfade[1]);
 
     av_frame_free(&s->video);
 }
@@ -690,6 +721,8 @@ static av_cold int init(AVFilterContext *ctx)
         return AVERROR(ENOMEM);
 
     ff_afir_init(&s->afirdsp);
+
+    s->min_part_size = 1 << av_log2(s->minp);
 
     return 0;
 }
