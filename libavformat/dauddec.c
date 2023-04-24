@@ -21,6 +21,7 @@
 
 #include "libavutil/channel_layout.h"
 #include "avformat.h"
+#include "internal.h"
 
 static int daud_header(AVFormatContext *s) {
     AVStream *st = avformat_new_stream(s, NULL);
@@ -34,6 +35,9 @@ static int daud_header(AVFormatContext *s) {
     st->codecpar->bit_rate = 3 * 6 * 96000 * 8;
     st->codecpar->block_align = 3 * 6;
     st->codecpar->bits_per_coded_sample = 24;
+
+    avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
+
     return 0;
 }
 
