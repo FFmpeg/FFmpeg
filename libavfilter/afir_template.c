@@ -285,15 +285,13 @@ static void fn(fir_fadd)(AudioFIRContext *s, ftype *dst, const ftype *src, int n
     }
 }
 
-static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int offset, int selir)
+static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int ioffset, int offset, int selir)
 {
     AudioFIRContext *s = ctx->priv;
-    const ftype *in = (const ftype *)s->in->extended_data[ch] + offset;
+    const ftype *in = (const ftype *)s->in->extended_data[ch] + ioffset;
     ftype *blockout, *ptr = (ftype *)out->extended_data[ch] + offset;
     const int min_part_size = s->min_part_size;
     const int nb_samples = FFMIN(min_part_size, out->nb_samples - offset);
-    const ftype *xfade0 = (const ftype *)s->xfade[0]->extended_data[ch];
-    const ftype *xfade1 = (const ftype *)s->xfade[1]->extended_data[ch];
     const int nb_segments = s->nb_segments[selir];
     const float dry_gain = s->dry_gain;
 
@@ -368,35 +366,13 @@ static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int offse
         memcpy(dst, buf, part_size * sizeof(*dst));
         memcpy(buf, sumout + part_size, part_size * sizeof(*buf));
 
-        if (s->selir != s->prev_selir) {
-            if (selir == s->selir) {
-                if (s->loading[ch] <= min_part_size) {
-                    for (int n = 0; n < nb_samples; n++)
-                        ptr[n] += dst[n] * xfade0[n];
-                }
-            } else {
-                fn(fir_fadd)(s, ptr, dst, nb_samples);
-            }
-        } else {
-            fn(fir_fadd)(s, ptr, dst, nb_samples);
-        }
+        fn(fir_fadd)(s, ptr, dst, nb_samples);
 
         if (part_size != min_part_size)
             memmove(src, src + min_part_size, (seg->input_size - min_part_size) * sizeof(*src));
 
         seg->part_index[ch] = (seg->part_index[ch] + 1) % nb_partitions;
     }
-
-    if (selir != s->selir) {
-        if (s->loading[ch] <= min_part_size) {
-            for (int n = 0; n < nb_samples; n++)
-                ptr[n] *= xfade1[n];
-        }
-        return 0;
-    }
-
-    if (s->selir != s->prev_selir)
-        s->loading[ch] -= min_part_size;
 
     if (s->wet_gain == 1.f)
         return 0;

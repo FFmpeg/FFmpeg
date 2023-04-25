@@ -112,16 +112,59 @@ static int fir_channel(AVFilterContext *ctx, AVFrame *out, int ch)
     for (int offset = 0; offset < out->nb_samples; offset += min_part_size) {
         switch (s->format) {
         case AV_SAMPLE_FMT_FLTP:
-            if (prev_selir != selir)
-                fir_quantum_float(ctx, out, ch, offset, prev_selir);
-            fir_quantum_float(ctx, out, ch, offset, selir);
+            if (prev_selir != selir) {
+                const float *xfade0 = (const float *)s->xfade[0]->extended_data[ch];
+                const float *xfade1 = (const float *)s->xfade[1]->extended_data[ch];
+                float *src0 = (float *)s->fadein[0]->extended_data[ch];
+                float *src1 = (float *)s->fadein[1]->extended_data[ch];
+                float *dst = ((float *)out->extended_data[ch]) + offset;
+
+                memset(src0, 0, min_part_size * sizeof(float));
+                memset(src1, 0, min_part_size * sizeof(float));
+
+                fir_quantum_float(ctx, s->fadein[0], ch, offset, 0, prev_selir);
+                fir_quantum_float(ctx, s->fadein[1], ch, offset, 0, selir);
+
+                if (s->loading[ch] > 0 && s->loading[ch] <= min_part_size) {
+                    for (int n = 0; n < min_part_size; n++)
+                        dst[n] = xfade1[n] * src0[n] + xfade0[n] * src1[n];
+                    s->loading[ch] = 0;
+                } else {
+                    memcpy(dst, src0, min_part_size * sizeof(float));
+                }
+            } else {
+                fir_quantum_float(ctx, out, ch, offset, offset, selir);
+            }
             break;
         case AV_SAMPLE_FMT_DBLP:
-            if (prev_selir != selir)
-                fir_quantum_double(ctx, out, ch, offset, prev_selir);
-            fir_quantum_double(ctx, out, ch, offset, selir);
+            if (prev_selir != selir) {
+                const double *xfade0 = (const double *)s->xfade[0]->extended_data[ch];
+                const double *xfade1 = (const double *)s->xfade[1]->extended_data[ch];
+                double *src0 = (double *)s->fadein[0]->extended_data[ch];
+                double *src1 = (double *)s->fadein[1]->extended_data[ch];
+                double *dst = ((double *)out->extended_data[ch]) + offset;
+
+                memset(src0, 0, min_part_size * sizeof(double));
+                memset(src1, 0, min_part_size * sizeof(double));
+
+                fir_quantum_double(ctx, s->fadein[0], ch, offset, 0, prev_selir);
+                fir_quantum_double(ctx, s->fadein[1], ch, offset, 0, selir);
+
+                if (s->loading[ch] > 0 && s->loading[ch] <= min_part_size) {
+                    for (int n = 0; n < min_part_size; n++)
+                        dst[n] = xfade1[n] * src0[n] + xfade0[n] * src1[n];
+                    s->loading[ch] = 0;
+                } else {
+                    memcpy(dst, src0, min_part_size * sizeof(double));
+                }
+            } else {
+                fir_quantum_double(ctx, out, ch, offset, offset, selir);
+            }
             break;
         }
+
+        if (selir != prev_selir && s->loading[ch] > 0)
+            s->loading[ch] -= min_part_size;
     }
 
     return 0;
@@ -299,10 +342,11 @@ static int convert_coeffs(AVFilterContext *ctx, int selir)
         max_part_size = 1 << av_log2(s->maxp);
 
         for (int i = 0; left > 0; i++) {
-            int step = part_size == max_part_size ? INT_MAX : 1 + (i == 0);
+            int step = (part_size == max_part_size) ? INT_MAX : 1 + (i == 0);
             int nb_partitions = FFMIN(step, (left + part_size - 1) / part_size);
 
             s->nb_segments[selir] = i + 1;
+            s->max_offset[selir] = offset;
             ret = init_segment(ctx, &s->seg[selir][i], selir, offset, nb_partitions, part_size, i);
             if (ret < 0)
                 return ret;
@@ -311,8 +355,6 @@ static int convert_coeffs(AVFilterContext *ctx, int selir)
             part_size *= 2;
             part_size = FFMIN(part_size, max_part_size);
         }
-
-        s->max_offset[selir] = offset;
     }
 
 skip:
@@ -455,7 +497,7 @@ static int activate(AVFilterContext *ctx)
 
     if (s->selir != s->prev_selir && s->loading[0] <= 0) {
         for (int ch = 0; ch < s->nb_channels; ch++)
-            s->loading[ch] = s->max_offset[s->selir] + s->min_part_size;
+            s->loading[ch] = s->max_offset[s->selir] + s->max_part_size;
     }
 
     available = ff_inlink_queued_samples(ctx->inputs[0]);
@@ -464,11 +506,8 @@ static int activate(AVFilterContext *ctx)
     if (ret > 0)
         ret = fir_frame(s, in, outlink);
 
-    if (s->selir != s->prev_selir && s->loading[0] <= 0) {
+    if (s->selir != s->prev_selir && s->loading[0] <= 0)
         s->prev_selir = s->selir;
-        for (int ch = 0; ch < s->nb_channels; ch++)
-            s->loading[ch] = 0;
-    }
 
     if (ret < 0)
         return ret;
@@ -590,6 +629,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (!s->loading)
         return AVERROR(ENOMEM);
 
+    s->fadein[0] = ff_get_audio_buffer(outlink, s->min_part_size);
+    s->fadein[1] = ff_get_audio_buffer(outlink, s->min_part_size);
+    if (!s->fadein[0] || !s->fadein[1])
+        return AVERROR(ENOMEM);
+
     s->xfade[0] = ff_get_audio_buffer(outlink, s->min_part_size);
     s->xfade[1] = ff_get_audio_buffer(outlink, s->min_part_size);
     if (!s->xfade[0] || !s->xfade[1])
@@ -637,6 +681,9 @@ static av_cold void uninit(AVFilterContext *ctx)
         av_frame_free(&s->ir[i]);
         av_frame_free(&s->norm_ir[i]);
     }
+
+    av_frame_free(&s->fadein[0]);
+    av_frame_free(&s->fadein[1]);
 
     av_frame_free(&s->xfade[0]);
     av_frame_free(&s->xfade[1]);
@@ -723,6 +770,7 @@ static av_cold int init(AVFilterContext *ctx)
     ff_afir_init(&s->afirdsp);
 
     s->min_part_size = 1 << av_log2(s->minp);
+    s->max_part_size = 1 << av_log2(s->maxp);
 
     return 0;
 }
