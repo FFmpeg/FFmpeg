@@ -984,8 +984,6 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output,
 
     /* increment next_dts to use for the case where the input stream does not
        have timestamps or there are multiple frames in the packet */
-    ist->next_pts += ((int64_t)AV_TIME_BASE * decoded_frame->nb_samples) /
-                     decoded_frame->sample_rate;
     ist->next_dts += ((int64_t)AV_TIME_BASE * decoded_frame->nb_samples) /
                      decoded_frame->sample_rate;
 
@@ -1127,10 +1125,7 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output, int64_
                                 ist->last_frame_pts + ist->last_frame_duration_est;
 
     if(best_effort_timestamp != AV_NOPTS_VALUE) {
-        int64_t ts = av_rescale_q(decoded_frame->pts = best_effort_timestamp, ist->st->time_base, AV_TIME_BASE_Q);
-
-        if (ts != AV_NOPTS_VALUE)
-            ist->next_pts = ist->pts = ts;
+        decoded_frame->pts = best_effort_timestamp;
     }
 
     // update timestamp history
@@ -1406,7 +1401,6 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
     if (!ist->saw_first_ts) {
         ist->first_dts =
         ist->dts = ist->st->avg_frame_rate.num ? - ist->dec_ctx->has_b_frames * AV_TIME_BASE / av_q2d(ist->st->avg_frame_rate) : 0;
-        ist->pts = 0;
         if (pkt && pkt->pts != AV_NOPTS_VALUE && !ist->decoding_needed) {
             ist->first_dts =
             ist->dts += av_rescale_q(pkt->pts, pkt->time_base, AV_TIME_BASE_Q);
@@ -1416,8 +1410,6 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
 
     if (ist->next_dts == AV_NOPTS_VALUE)
         ist->next_dts = ist->dts;
-    if (ist->next_pts == AV_NOPTS_VALUE)
-        ist->next_pts = ist->pts;
 
     if (pkt) {
         av_packet_unref(avpkt);
@@ -1428,8 +1420,6 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
 
     if (pkt && pkt->dts != AV_NOPTS_VALUE) {
         ist->next_dts = ist->dts = av_rescale_q(pkt->dts, pkt->time_base, AV_TIME_BASE_Q);
-        if (par->codec_type != AVMEDIA_TYPE_VIDEO)
-            ist->pts = ist->dts;
     }
 
     // while we have more to decode or while the decoder did output something on EOF
@@ -1439,7 +1429,6 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
         int got_output = 0;
         int decode_failed = 0;
 
-        ist->pts = ist->next_pts;
         ist->dts = ist->next_dts;
 
         switch (par->codec_type) {
@@ -1469,13 +1458,6 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
                     ist->next_dts = AV_NOPTS_VALUE;
             }
 
-            if (got_output) {
-                if (duration_pts > 0) {
-                    ist->next_pts += av_rescale_q(duration_pts, ist->st->time_base, AV_TIME_BASE_Q);
-                } else {
-                    ist->next_pts += duration_dts;
-                }
-            }
             av_packet_unref(avpkt);
             break;
         case AVMEDIA_TYPE_SUBTITLE:
