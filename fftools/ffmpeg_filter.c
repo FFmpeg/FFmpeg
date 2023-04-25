@@ -55,6 +55,8 @@ static FilterGraphPriv *fgp_from_fg(FilterGraph *fg)
 typedef struct InputFilterPriv {
     InputFilter ifilter;
 
+    AVRational time_base;
+
     AVFifo *frame_queue;
 } InputFilterPriv;
 
@@ -971,13 +973,13 @@ static int sub2video_prepare(InputStream *ist, InputFilter *ifilter)
 static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
                                         AVFilterInOut *in)
 {
+    InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
+
     AVFilterContext *last_filter;
     const AVFilter *buffer_filt = avfilter_get_by_name("buffer");
     const AVPixFmtDescriptor *desc;
     InputStream *ist = ifilter->ist;
     InputFile     *f = input_files[ist->file_index];
-    AVRational tb = ist->framerate.num ? av_inv_q(ist->framerate) :
-                                         ist->st->time_base;
     AVRational fr = ist->framerate;
     AVRational sar;
     AVBPrint args;
@@ -1006,6 +1008,9 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
             goto fail;
     }
 
+    ifp->time_base =  ist->framerate.num ? av_inv_q(ist->framerate) :
+                                           ist->st->time_base;
+
     sar = ifilter->sample_aspect_ratio;
     if(!sar.den)
         sar = (AVRational){0,1};
@@ -1014,7 +1019,7 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
              "video_size=%dx%d:pix_fmt=%d:time_base=%d/%d:"
              "pixel_aspect=%d/%d",
              ifilter->width, ifilter->height, ifilter->format,
-             tb.num, tb.den, sar.num, sar.den);
+             ifp->time_base.num, ifp->time_base.den, sar.num, sar.den);
     if (fr.num && fr.den)
         av_bprintf(&args, ":frame_rate=%d/%d", fr.num, fr.den);
     snprintf(name, sizeof(name), "graph %d input from stream %d:%d", fg->index,
@@ -1096,6 +1101,7 @@ fail:
 static int configure_input_audio_filter(FilterGraph *fg, InputFilter *ifilter,
                                         AVFilterInOut *in)
 {
+    InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
     AVFilterContext *last_filter;
     const AVFilter *abuffer_filt = avfilter_get_by_name("abuffer");
     InputStream *ist = ifilter->ist;
@@ -1110,9 +1116,11 @@ static int configure_input_audio_filter(FilterGraph *fg, InputFilter *ifilter,
         return AVERROR(EINVAL);
     }
 
+    ifp->time_base = (AVRational){ 1, ifilter->sample_rate };
+
     av_bprint_init(&args, 0, AV_BPRINT_SIZE_AUTOMATIC);
     av_bprintf(&args, "time_base=%d/%d:sample_rate=%d:sample_fmt=%s",
-             1, ifilter->sample_rate,
+               ifp->time_base.num, ifp->time_base.den,
              ifilter->sample_rate,
              av_get_sample_fmt_name(ifilter->format));
     if (av_channel_layout_check(&ifilter->ch_layout) &&
