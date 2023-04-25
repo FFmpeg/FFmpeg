@@ -1454,13 +1454,17 @@ int reap_filters(int flush)
     return 0;
 }
 
-int ifilter_send_eof(InputFilter *ifilter, int64_t pts)
+int ifilter_send_eof(InputFilter *ifilter, int64_t pts, AVRational tb)
 {
+    InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
     int ret;
 
     ifilter->eof = 1;
 
     if (ifilter->filter) {
+        pts = av_rescale_q_rnd(pts, tb, ifp->time_base,
+                               AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX);
+
         ret = av_buffersrc_close(ifilter->filter, pts, AV_BUFFERSRC_FLAG_PUSH);
         if (ret < 0)
             return ret;

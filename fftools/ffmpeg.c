@@ -1320,12 +1320,9 @@ static int transcode_subtitles(InputStream *ist, const AVPacket *pkt,
 static int send_filter_eof(InputStream *ist)
 {
     int i, ret;
-    /* TODO keep pts also in stream time base to avoid converting back */
-    int64_t pts = av_rescale_q_rnd(ist->pts, AV_TIME_BASE_Q, ist->st->time_base,
-                                   AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX);
 
     for (i = 0; i < ist->nb_filters; i++) {
-        ret = ifilter_send_eof(ist->filters[i], pts);
+        ret = ifilter_send_eof(ist->filters[i], ist->pts, AV_TIME_BASE_Q);
         if (ret < 0)
             return ret;
     }
