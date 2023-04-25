@@ -1382,7 +1382,9 @@ static int send_filter_eof(InputStream *ist)
     int i, ret;
 
     for (i = 0; i < ist->nb_filters; i++) {
-        ret = ifilter_send_eof(ist->filters[i], ist->pts, AV_TIME_BASE_Q);
+        int64_t end_pts = ist->last_frame_pts == AV_NOPTS_VALUE ? AV_NOPTS_VALUE :
+                          ist->last_frame_pts + ist->last_frame_duration_est;
+        ret = ifilter_send_eof(ist->filters[i], end_pts, ist->last_frame_tb);
         if (ret < 0)
             return ret;
     }
