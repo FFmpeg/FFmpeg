@@ -170,6 +170,9 @@ static av_cold int mediacodec_init(AVCodecContext *avctx)
     case AV_CODEC_ID_MPEG4:
         codec_mime = "video/mp4v-es";
         break;
+    case AV_CODEC_ID_AV1:
+        codec_mime = "video/av01";
+        break;
     default:
         av_assert0(0);
     }
@@ -878,3 +881,91 @@ static const AVOption mpeg4_options[] = {
 DECLARE_MEDIACODEC_ENCODER(mpeg4, "MPEG-4", AV_CODEC_ID_MPEG4)
 
 #endif  // CONFIG_MPEG4_MEDIACODEC_ENCODER
+
+#if CONFIG_AV1_MEDIACODEC_ENCODER
+
+enum MediaCodecAV1Level {
+    AV1Level2  = 0x1,
+    AV1Level21 = 0x2,
+    AV1Level22 = 0x4,
+    AV1Level23 = 0x8,
+    AV1Level3  = 0x10,
+    AV1Level31 = 0x20,
+    AV1Level32 = 0x40,
+    AV1Level33 = 0x80,
+    AV1Level4  = 0x100,
+    AV1Level41 = 0x200,
+    AV1Level42 = 0x400,
+    AV1Level43 = 0x800,
+    AV1Level5  = 0x1000,
+    AV1Level51 = 0x2000,
+    AV1Level52 = 0x4000,
+    AV1Level53 = 0x8000,
+    AV1Level6  = 0x10000,
+    AV1Level61 = 0x20000,
+    AV1Level62 = 0x40000,
+    AV1Level63 = 0x80000,
+    AV1Level7  = 0x100000,
+    AV1Level71 = 0x200000,
+    AV1Level72 = 0x400000,
+    AV1Level73 = 0x800000,
+};
+
+static const AVOption av1_options[] = {
+    COMMON_OPTION
+    { "level", "Specify tier and level",
+                OFFSET(level), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, VE, "level" },
+    { "2",     "Level 2",
+                0, AV_OPT_TYPE_CONST, { .i64 = AV1Level2  },  0, 0, VE,  "level" },
+    { "2.1",    "Level 2.1",
+                0, AV_OPT_TYPE_CONST, { .i64 = AV1Level21 },  0, 0, VE,  "level" },
+    { "2.2",    "Level 2.2",
+                0, AV_OPT_TYPE_CONST, { .i64 = AV1Level22 },  0, 0, VE,  "level" },
+    { "2.3",    "Level 2.3",
+                0, AV_OPT_TYPE_CONST, { .i64 = AV1Level23 },  0, 0, VE,  "level" },
+    { "3",      "Level 3",
+                0, AV_OPT_TYPE_CONST, { .i64 = AV1Level3  },  0, 0, VE,  "level" },
+    { "3.1",    "Level 3.1",
+                0, AV_OPT_TYPE_CONST, { .i64 = AV1Level31 },  0, 0, VE,  "level" },
+    { "3.2",    "Level 3.2",
+                0, AV_OPT_TYPE_CONST, { .i64 = AV1Level32 },  0, 0, VE,  "level" },
+    { "3.3",    "Level 3.3",
+                0, AV_OPT_TYPE_CONST, { .i64 = AV1Level33 },  0, 0, VE,  "level" },
+    { "4",      "Level 4",
+                0, AV_OPT_TYPE_CONST, { .i64 = AV1Level4  },  0, 0, VE,  "level" },
+    { "4.1",    "Level 4.1",
+                0, AV_OPT_TYPE_CONST, { .i64 = AV1Level41 },  0, 0, VE,  "level" },
+    { "4.2",    "Level 4.2",
+                0, AV_OPT_TYPE_CONST, { .i64 = AV1Level42 },  0, 0, VE,  "level" },
+    { "4.3",    "Level 4.3",
+                0, AV_OPT_TYPE_CONST, { .i64 = AV1Level43 },  0, 0, VE,  "level" },
+    { "5",      "Level 5",
+                0, AV_OPT_TYPE_CONST, { .i64 = AV1Level5  },  0, 0, VE,  "level" },
+    { "5.1",    "Level 5.1",
+                0, AV_OPT_TYPE_CONST, { .i64 = AV1Level51 },  0, 0, VE,  "level" },
+    { "5.2",    "Level 5.2",
+                0, AV_OPT_TYPE_CONST, { .i64 = AV1Level52 },  0, 0, VE,  "level" },
+    { "5.3",    "Level 5.3",
+                0, AV_OPT_TYPE_CONST, { .i64 = AV1Level53 },  0, 0, VE,  "level" },
+    { "6",      "Level 6",
+                0, AV_OPT_TYPE_CONST, { .i64 = AV1Level6  },  0, 0, VE,  "level" },
+    { "6.1",    "Level 6.1",
+                0, AV_OPT_TYPE_CONST, { .i64 = AV1Level61 },  0, 0, VE,  "level" },
+    { "6.2",    "Level 6.2",
+                0, AV_OPT_TYPE_CONST, { .i64 = AV1Level62 },  0, 0, VE,  "level" },
+    { "6.3",    "Level 6.3",
+                0, AV_OPT_TYPE_CONST, { .i64 = AV1Level63 },  0, 0, VE,  "level" },
+    { "7",      "Level 7",
+                0, AV_OPT_TYPE_CONST, { .i64 = AV1Level7  },  0, 0, VE,  "level" },
+    { "7.1",    "Level 7.1",
+                0, AV_OPT_TYPE_CONST, { .i64 = AV1Level71 },  0, 0, VE,  "level" },
+    { "7.2",    "Level 7.2",
+                0, AV_OPT_TYPE_CONST, { .i64 = AV1Level72 },  0, 0, VE,  "level" },
+    { "7.3",    "Level 7.3",
+                0, AV_OPT_TYPE_CONST, { .i64 = AV1Level73 },  0, 0, VE,  "level" },
+    { NULL, }
+};
+
+DECLARE_MEDIACODEC_ENCODER(av1, "AV1", AV_CODEC_ID_AV1)
+
+#endif  // CONFIG_AV1_MEDIACODEC_ENCODER

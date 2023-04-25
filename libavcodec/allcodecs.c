@@ -836,6 +836,7 @@ extern const FFCodec ff_libaom_av1_decoder;
 extern const FFCodec ff_av1_decoder;
 extern const FFCodec ff_av1_cuvid_decoder;
 extern const FFCodec ff_av1_mediacodec_decoder;
+extern const FFCodec ff_av1_mediacodec_encoder;
 extern const FFCodec ff_av1_nvenc_encoder;
 extern const FFCodec ff_av1_qsv_decoder;
 extern const FFCodec ff_av1_qsv_encoder;
