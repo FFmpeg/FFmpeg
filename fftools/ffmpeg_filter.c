@@ -203,6 +203,21 @@ static OutputFilter *ofilter_alloc(FilterGraph *fg)
     return ofilter;
 }
 
+static InputFilter *ifilter_alloc(FilterGraph *fg)
+{
+    InputFilter *ifilter;
+
+    ifilter         = ALLOC_ARRAY_ELEM(fg->inputs, fg->nb_inputs);
+    ifilter->graph  = fg;
+    ifilter->format = -1;
+
+    ifilter->frame_queue = av_fifo_alloc2(8, sizeof(AVFrame*), AV_FIFO_FLAG_AUTO_GROW);
+    if (!ifilter->frame_queue)
+        report_and_exit(AVERROR(ENOMEM));
+
+    return ifilter;
+}
+
 void fg_free(FilterGraph **pfg)
 {
     FilterGraph *fg = *pfg;
@@ -281,14 +296,8 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost)
 
     ost->filter = ofilter;
 
-    ifilter = ALLOC_ARRAY_ELEM(fg->inputs, fg->nb_inputs);
+    ifilter         = ifilter_alloc(fg);
     ifilter->ist    = ist;
-    ifilter->graph  = fg;
-    ifilter->format = -1;
-
-    ifilter->frame_queue = av_fifo_alloc2(8, sizeof(AVFrame*), AV_FIFO_FLAG_AUTO_GROW);
-    if (!ifilter->frame_queue)
-        report_and_exit(AVERROR(ENOMEM));
 
     ist_filter_add(ist, ifilter, 1);
 
@@ -379,16 +388,10 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
     }
     av_assert0(ist);
 
-    ifilter = ALLOC_ARRAY_ELEM(fg->inputs, fg->nb_inputs);
+    ifilter = ifilter_alloc(fg);
     ifilter->ist    = ist;
-    ifilter->graph  = fg;
-    ifilter->format = -1;
     ifilter->type   = ist->st->codecpar->codec_type;
     ifilter->name   = describe_filter_link(fg, in, 1);
-
-    ifilter->frame_queue = av_fifo_alloc2(8, sizeof(AVFrame*), AV_FIFO_FLAG_AUTO_GROW);
-    if (!ifilter->frame_queue)
-        report_and_exit(AVERROR(ENOMEM));
 
     ist_filter_add(ist, ifilter, 0);
 }
