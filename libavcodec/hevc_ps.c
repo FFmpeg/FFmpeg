@@ -1529,9 +1529,9 @@ static int pps_scc_extension(GetBitContext *gb, AVCodecContext *avctx,
     pps->pps_curr_pic_ref_enabled_flag = get_bits1(gb);
     if (pps->residual_adaptive_colour_transform_enabled_flag = get_bits1(gb)) {
         pps->pps_slice_act_qp_offsets_present_flag = get_bits1(gb);
-        pps->pps_act_y_qp_offset  = get_se_golomb_long(gb) - 5;
-        pps->pps_act_cb_qp_offset = get_se_golomb_long(gb) - 5;
-        pps->pps_act_cr_qp_offset = get_se_golomb_long(gb) - 3;
+        pps->pps_act_y_qp_offset  = get_se_golomb(gb) - 5;
+        pps->pps_act_cb_qp_offset = get_se_golomb(gb) - 5;
+        pps->pps_act_cr_qp_offset = get_se_golomb(gb) - 3;
 
 #define CHECK_QP_OFFSET(name) (pps->pps_act_ ## name ## _qp_offset <= -12 || \
                                pps->pps_act_ ## name ## _qp_offset >= 12)
