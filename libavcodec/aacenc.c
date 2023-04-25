@@ -1106,6 +1106,18 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         too_many_bits = FFMIN(too_many_bits, 6144 * s->channels - 3);
         too_few_bits = FFMIN(FFMAX(rate_bits - rate_bits/4, target_bits), too_many_bits);
 
+        /* When strict bit-rate control is demanded */
+        if (avctx->bit_rate_tolerance == 0) {
+            if (rate_bits < frame_bits) {
+                float ratio = ((float)rate_bits) / frame_bits;
+                s->lambda *= FFMIN(0.9f, ratio);
+                continue;
+            }
+            /* reset lambda when solution is found */
+            s->lambda = avctx->global_quality > 0 ? avctx->global_quality : 120;
+            break;
+        }
+
         /* When using ABR, be strict (but only for increasing) */
         too_few_bits = too_few_bits - too_few_bits/8;
         too_many_bits = too_many_bits + too_many_bits/2;
