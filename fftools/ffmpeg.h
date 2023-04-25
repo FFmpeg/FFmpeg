@@ -277,8 +277,6 @@ typedef struct InputFilter {
     uint8_t            *name;
     enum AVMediaType    type;   // AVMEDIA_TYPE_SUBTITLE for sub2video
 
-    AVFifo *frame_queue;
-
     // parameters configured for this input
     int format;
 

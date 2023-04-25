@@ -52,6 +52,17 @@ static FilterGraphPriv *fgp_from_fg(FilterGraph *fg)
     return (FilterGraphPriv*)fg;
 }
 
+typedef struct InputFilterPriv {
+    InputFilter ifilter;
+
+    AVFifo *frame_queue;
+} InputFilterPriv;
+
+static InputFilterPriv *ifp_from_ifilter(InputFilter *ifilter)
+{
+    return (InputFilterPriv*)ifilter;
+}
+
 // FIXME: YUV420P etc. are actually supported with full color range,
 // yet the latter information isn't available here.
 static const enum AVPixelFormat *get_compliance_normal_pix_fmts(const AVCodec *codec, const enum AVPixelFormat default_formats[])
@@ -205,14 +216,15 @@ static OutputFilter *ofilter_alloc(FilterGraph *fg)
 
 static InputFilter *ifilter_alloc(FilterGraph *fg)
 {
-    InputFilter *ifilter;
+    InputFilterPriv *ifp = allocate_array_elem(&fg->inputs, sizeof(*ifp),
+                                               &fg->nb_inputs);
+    InputFilter *ifilter = &ifp->ifilter;
 
-    ifilter         = ALLOC_ARRAY_ELEM(fg->inputs, fg->nb_inputs);
     ifilter->graph  = fg;
     ifilter->format = -1;
 
-    ifilter->frame_queue = av_fifo_alloc2(8, sizeof(AVFrame*), AV_FIFO_FLAG_AUTO_GROW);
-    if (!ifilter->frame_queue)
+    ifp->frame_queue = av_fifo_alloc2(8, sizeof(AVFrame*), AV_FIFO_FLAG_AUTO_GROW);
+    if (!ifp->frame_queue)
         report_and_exit(AVERROR(ENOMEM));
 
     return ifilter;
@@ -230,13 +242,14 @@ void fg_free(FilterGraph **pfg)
     avfilter_graph_free(&fg->graph);
     for (int j = 0; j < fg->nb_inputs; j++) {
         InputFilter *ifilter = fg->inputs[j];
+        InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
         struct InputStream *ist = ifilter->ist;
 
-        if (ifilter->frame_queue) {
+        if (ifp->frame_queue) {
             AVFrame *frame;
-            while (av_fifo_read(ifilter->frame_queue, &frame, 1) >= 0)
+            while (av_fifo_read(ifp->frame_queue, &frame, 1) >= 0)
                 av_frame_free(&frame);
-            av_fifo_freep2(&ifilter->frame_queue);
+            av_fifo_freep2(&ifp->frame_queue);
         }
         av_freep(&ifilter->displaymatrix);
         if (ist->sub2video.sub_queue) {
@@ -1302,8 +1315,9 @@ int configure_filtergraph(FilterGraph *fg)
     }
 
     for (i = 0; i < fg->nb_inputs; i++) {
+        InputFilterPriv *ifp = ifp_from_ifilter(fg->inputs[i]);
         AVFrame *tmp;
-        while (av_fifo_read(fg->inputs[i]->frame_queue, &tmp, 1) >= 0) {
+        while (av_fifo_read(ifp->frame_queue, &tmp, 1) >= 0) {
             ret = av_buffersrc_add_frame(fg->inputs[i]->filter, tmp);
             av_frame_free(&tmp);
             if (ret < 0)
@@ -1460,6 +1474,7 @@ int ifilter_send_eof(InputFilter *ifilter, int64_t pts)
 
 int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame, int keep_reference)
 {
+    InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
     FilterGraph *fg = ifilter->graph;
     AVFrameSideData *sd;
     int need_reinit, ret;
@@ -1508,7 +1523,7 @@ int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame, int keep_reference)
             if (!tmp)
                 return AVERROR(ENOMEM);
 
-            ret = av_fifo_write(ifilter->frame_queue, &tmp, 1);
+            ret = av_fifo_write(ifp->frame_queue, &tmp, 1);
             if (ret < 0)
                 av_frame_free(&tmp);
 
