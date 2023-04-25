@@ -1122,12 +1122,9 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output, int64_
         best_effort_timestamp = ist->cfr_next_pts++;
 
     // no timestamp available - extrapolate from previous frame duration
-    if (best_effort_timestamp == AV_NOPTS_VALUE &&
-        ist->last_frame_pts != AV_NOPTS_VALUE)
-        best_effort_timestamp = ist->last_frame_pts + ist->last_frame_duration_est;
-
     if (best_effort_timestamp == AV_NOPTS_VALUE)
-        best_effort_timestamp = av_rescale_q(ist->pts, AV_TIME_BASE_Q, ist->st->time_base);
+        best_effort_timestamp = ist->last_frame_pts == AV_NOPTS_VALUE ? 0 :
+                                ist->last_frame_pts + ist->last_frame_duration_est;
 
     if(best_effort_timestamp != AV_NOPTS_VALUE) {
         int64_t ts = av_rescale_q(decoded_frame->pts = best_effort_timestamp, ist->st->time_base, AV_TIME_BASE_Q);
