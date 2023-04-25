@@ -1849,6 +1849,12 @@ Always use double-floating point precision sample format.
 @end table
 
 Default value is auto.
+
+@item irload
+Set when to load IR stream. Can be @code{init} or @code{access}.
+First one load and prepares all IRs on initialization, second one
+once on first access of specific IR.
+Default is @code{init}.
 @end table
 
 @subsection Examples

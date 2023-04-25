@@ -472,27 +472,35 @@ static int activate(AVFilterContext *ctx)
     FF_FILTER_FORWARD_STATUS_BACK_ALL(ctx->outputs[0], ctx);
     if (s->response)
         FF_FILTER_FORWARD_STATUS_BACK_ALL(ctx->outputs[1], ctx);
-    if (!s->eof_coeffs[s->selir]) {
-        ret = check_ir(ctx->inputs[1 + s->selir]);
-        if (ret < 0)
-            return ret;
 
-        if (ff_outlink_get_status(ctx->inputs[1 + s->selir]) == AVERROR_EOF)
-            s->eof_coeffs[s->selir] = 1;
+    for (int i = 0; i < s->nb_irs; i++) {
+        const int selir = i;
 
-        if (!s->eof_coeffs[s->selir]) {
-            if (ff_outlink_frame_wanted(ctx->outputs[0]))
-                ff_inlink_request_frame(ctx->inputs[1 + s->selir]);
-            else if (s->response && ff_outlink_frame_wanted(ctx->outputs[1]))
-                ff_inlink_request_frame(ctx->inputs[1 + s->selir]);
-            return 0;
+        if (s->ir_load && selir != s->selir)
+            continue;
+
+        if (!s->eof_coeffs[selir]) {
+            ret = check_ir(ctx->inputs[1 + selir]);
+            if (ret < 0)
+                return ret;
+
+            if (ff_outlink_get_status(ctx->inputs[1 + selir]) == AVERROR_EOF)
+                s->eof_coeffs[selir] = 1;
+
+            if (!s->eof_coeffs[selir]) {
+                if (ff_outlink_frame_wanted(ctx->outputs[0]))
+                    ff_inlink_request_frame(ctx->inputs[1 + selir]);
+                else if (s->response && ff_outlink_frame_wanted(ctx->outputs[1]))
+                    ff_inlink_request_frame(ctx->inputs[1 + selir]);
+                return 0;
+            }
         }
-    }
 
-    if (!s->have_coeffs[s->selir] && s->eof_coeffs[s->selir]) {
-        ret = convert_coeffs(ctx, s->selir);
-        if (ret < 0)
-            return ret;
+        if (!s->have_coeffs[selir] && s->eof_coeffs[selir]) {
+            ret = convert_coeffs(ctx, selir);
+            if (ret < 0)
+                return ret;
+        }
     }
 
     if (s->selir != s->prev_selir && s->loading[0] <= 0) {
@@ -830,6 +838,9 @@ static const AVOption afir_options[] = {
     {  "auto", "set auto processing precision",                   0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, AF, "precision" },
     {  "float", "set single-floating point processing precision", 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, AF, "precision" },
     {  "double","set double-floating point processing precision", 0, AV_OPT_TYPE_CONST, {.i64=2}, 0, 0, AF, "precision" },
+    { "irload", "set IR loading type", OFFSET(ir_load), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, AF, "irload" },
+    {  "init",   "load all IRs on init", 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, AF, "irload" },
+    {  "access", "load IR on access",    0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, AF, "irload" },
     { NULL }
 };
 
