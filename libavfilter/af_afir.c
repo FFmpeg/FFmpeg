@@ -112,7 +112,7 @@ static int fir_channel(AVFilterContext *ctx, AVFrame *out, int ch)
     for (int offset = 0; offset < out->nb_samples; offset += min_part_size) {
         switch (s->format) {
         case AV_SAMPLE_FMT_FLTP:
-            if (prev_selir != selir) {
+            if (prev_selir != selir && s->loading[ch] != 0) {
                 const float *xfade0 = (const float *)s->xfade[0]->extended_data[ch];
                 const float *xfade1 = (const float *)s->xfade[1]->extended_data[ch];
                 float *src0 = (float *)s->fadein[0]->extended_data[ch];
@@ -125,7 +125,7 @@ static int fir_channel(AVFilterContext *ctx, AVFrame *out, int ch)
                 fir_quantum_float(ctx, s->fadein[0], ch, offset, 0, prev_selir);
                 fir_quantum_float(ctx, s->fadein[1], ch, offset, 0, selir);
 
-                if (s->loading[ch] > 0 && s->loading[ch] <= min_part_size) {
+                if (s->loading[ch] > s->max_offset[selir]) {
                     for (int n = 0; n < min_part_size; n++)
                         dst[n] = xfade1[n] * src0[n] + xfade0[n] * src1[n];
                     s->loading[ch] = 0;
@@ -137,7 +137,7 @@ static int fir_channel(AVFilterContext *ctx, AVFrame *out, int ch)
             }
             break;
         case AV_SAMPLE_FMT_DBLP:
-            if (prev_selir != selir) {
+            if (prev_selir != selir && s->loading[ch] != 0) {
                 const double *xfade0 = (const double *)s->xfade[0]->extended_data[ch];
                 const double *xfade1 = (const double *)s->xfade[1]->extended_data[ch];
                 double *src0 = (double *)s->fadein[0]->extended_data[ch];
@@ -150,7 +150,7 @@ static int fir_channel(AVFilterContext *ctx, AVFrame *out, int ch)
                 fir_quantum_double(ctx, s->fadein[0], ch, offset, 0, prev_selir);
                 fir_quantum_double(ctx, s->fadein[1], ch, offset, 0, selir);
 
-                if (s->loading[ch] > 0 && s->loading[ch] <= min_part_size) {
+                if (s->loading[ch] > s->max_offset[selir]) {
                     for (int n = 0; n < min_part_size; n++)
                         dst[n] = xfade1[n] * src0[n] + xfade0[n] * src1[n];
                     s->loading[ch] = 0;
@@ -163,8 +163,8 @@ static int fir_channel(AVFilterContext *ctx, AVFrame *out, int ch)
             break;
         }
 
-        if (selir != prev_selir && s->loading[ch] > 0)
-            s->loading[ch] -= min_part_size;
+        if (selir != prev_selir && s->loading[ch] != 0)
+            s->loading[ch] += min_part_size;
     }
 
     return 0;
@@ -346,11 +346,11 @@ static int convert_coeffs(AVFilterContext *ctx, int selir)
             int nb_partitions = FFMIN(step, (left + part_size - 1) / part_size);
 
             s->nb_segments[selir] = i + 1;
-            s->max_offset[selir] = offset;
             ret = init_segment(ctx, &s->seg[selir][i], selir, offset, nb_partitions, part_size, i);
             if (ret < 0)
                 return ret;
             offset += nb_partitions * part_size;
+            s->max_offset[selir] = offset;
             left -= nb_partitions * part_size;
             part_size *= 2;
             part_size = FFMIN(part_size, max_part_size);
@@ -503,18 +503,13 @@ static int activate(AVFilterContext *ctx)
         }
     }
 
-    if (s->selir != s->prev_selir && s->loading[0] <= 0) {
-        for (int ch = 0; ch < s->nb_channels; ch++)
-            s->loading[ch] = s->max_offset[s->selir] + s->max_part_size;
-    }
-
     available = ff_inlink_queued_samples(ctx->inputs[0]);
     wanted = FFMAX(s->min_part_size, (available / s->min_part_size) * s->min_part_size);
     ret = ff_inlink_consume_samples(ctx->inputs[0], wanted, wanted, &in);
     if (ret > 0)
         ret = fir_frame(s, in, outlink);
 
-    if (s->selir != s->prev_selir && s->loading[0] <= 0)
+    if (s->selir != s->prev_selir && s->loading[0] == 0)
         s->prev_selir = s->selir;
 
     if (ret < 0)
@@ -799,8 +794,12 @@ static int process_command(AVFilterContext *ctx,
         return ret;
 
     s->selir = FFMIN(s->nb_irs - 1, s->selir);
-    if (s->selir != prev_selir)
+    if (s->selir != prev_selir) {
         s->prev_selir = prev_selir;
+
+        for (int ch = 0; ch < s->nb_channels; ch++)
+            s->loading[ch] = 1;
+    }
 
     return 0;
 }
