@@ -822,7 +822,7 @@ int ifilter_has_all_input_formats(FilterGraph *fg)
 // it again with pkt=NULL. pkt==NULL is treated differently from pkt->size==0
 // (pkt==NULL means get more output, pkt->size==0 is a flush/drain packet)
 static int decode(InputStream *ist, AVCodecContext *avctx,
-                  AVFrame *frame, int *got_frame, AVPacket *pkt)
+                  AVFrame *frame, int *got_frame, const AVPacket *pkt)
 {
     int ret;
 
@@ -960,7 +960,7 @@ static void audio_ts_process(InputStream *ist, AVFrame *frame)
     frame->time_base = tb_filter;
 }
 
-static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output,
+static int decode_audio(InputStream *ist, const AVPacket *pkt, int *got_output,
                         int *decode_failed)
 {
     AVFrame *decoded_frame = ist->decoded_frame;
@@ -1048,8 +1048,8 @@ static int64_t video_duration_estimate(const InputStream *ist, const AVFrame *fr
     return FFMAX(ist->last_frame_duration_est, 1);
 }
 
-static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output, int64_t *duration_pts, int eof,
-                        int *decode_failed)
+static int decode_video(InputStream *ist, const AVPacket *pkt, int *got_output,
+                        int64_t *duration_pts, int eof, int *decode_failed)
 {
     AVFrame *decoded_frame = ist->decoded_frame;
     int ret = 0, err = 0;
