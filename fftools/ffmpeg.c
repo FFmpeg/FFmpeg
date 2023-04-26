@@ -982,11 +982,6 @@ static int decode_audio(InputStream *ist, const AVPacket *pkt, int *got_output,
     ist->samples_decoded += decoded_frame->nb_samples;
     ist->frames_decoded++;
 
-    /* increment next_dts to use for the case where the input stream does not
-       have timestamps or there are multiple frames in the packet */
-    ist->next_dts += ((int64_t)AV_TIME_BASE * decoded_frame->nb_samples) /
-                     decoded_frame->sample_rate;
-
     audio_ts_process(ist, decoded_frame);
 
     ist->nb_samples = decoded_frame->nb_samples;
@@ -1401,7 +1396,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
     if (!ist->saw_first_ts) {
         ist->first_dts =
         ist->dts = ist->st->avg_frame_rate.num ? - ist->dec_ctx->has_b_frames * AV_TIME_BASE / av_q2d(ist->st->avg_frame_rate) : 0;
-        if (pkt && pkt->pts != AV_NOPTS_VALUE && !ist->decoding_needed) {
+        if (pkt && pkt->pts != AV_NOPTS_VALUE) {
             ist->first_dts =
             ist->dts += av_rescale_q(pkt->pts, pkt->time_base, AV_TIME_BASE_Q);
         }
@@ -1424,12 +1419,9 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
 
     // while we have more to decode or while the decoder did output something on EOF
     while (ist->decoding_needed) {
-        int64_t duration_dts = 0;
         int64_t duration_pts = 0;
         int got_output = 0;
         int decode_failed = 0;
-
-        ist->dts = ist->next_dts;
 
         switch (par->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
@@ -1440,23 +1432,6 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
         case AVMEDIA_TYPE_VIDEO:
             ret = decode_video    (ist, repeating ? NULL : avpkt, &got_output, &duration_pts, !pkt,
                                    &decode_failed);
-            if (!repeating || !pkt || got_output) {
-                if (pkt && pkt->duration) {
-                    duration_dts = av_rescale_q(pkt->duration, pkt->time_base, AV_TIME_BASE_Q);
-                } else if(ist->dec_ctx->framerate.num != 0 && ist->dec_ctx->framerate.den != 0) {
-                    int ticks = ist->last_pkt_repeat_pict >= 0 ?
-                                ist->last_pkt_repeat_pict + 1  :
-                                ist->dec_ctx->ticks_per_frame;
-                    duration_dts = ((int64_t)AV_TIME_BASE *
-                                    ist->dec_ctx->framerate.den * ticks) /
-                                    ist->dec_ctx->framerate.num / ist->dec_ctx->ticks_per_frame;
-                }
-
-                if(ist->dts != AV_NOPTS_VALUE && duration_dts) {
-                    ist->next_dts += duration_dts;
-                }else
-                    ist->next_dts = AV_NOPTS_VALUE;
-            }
 
             av_packet_unref(avpkt);
             break;
@@ -1520,8 +1495,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
         }
     }
 
-    /* handle stream copy */
-    if (!ist->decoding_needed && pkt) {
+    if (pkt) {
         ist->dts = ist->next_dts;
         switch (par->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
@@ -1551,7 +1525,9 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
             }
             break;
         }
-    } else if (!ist->decoding_needed)
+    }
+
+    if (!pkt && !ist->decoding_needed)
         eof_reached = 1;
 
     duration_exceeded = 0;

@@ -1,4 +1,4 @@
-d4a9481090a8bab1a3f072a8108a1d6a *tests/data/fate/cover-art-aiff-id3v2-remux.aiff
+330ad2bf538e91a31752b38024461df1 *tests/data/fate/cover-art-aiff-id3v2-remux.aiff
 608914 tests/data/fate/cover-art-aiff-id3v2-remux.aiff
 #tb 0: 1/44100
 #media_type 0: audio
@@ -12,24 +12,24 @@ d4a9481090a8bab1a3f072a8108a1d6a *tests/data/fate/cover-art-aiff-id3v2-remux.aif
 #sar 1: 1/1
 #tb 2: 1/90000
 #media_type 2: video
-#codec_id 2: mjpeg
+#codec_id 2: png
 #dimensions 2: 350x350
 #sar 2: 1/1
 #tb 3: 1/90000
 #media_type 3: video
-#codec_id 3: png
+#codec_id 3: bmp
 #dimensions 3: 350x350
-#sar 3: 1/1
+#sar 3: 0/1
 #tb 4: 1/90000
 #media_type 4: video
-#codec_id 4: bmp
+#codec_id 4: mjpeg
 #dimensions 4: 350x350
-#sar 4: 0/1
+#sar 4: 1/1
 0,          0,          0,     1024,     4096, 0xdac4695d
 1,          0,          0,        0,    19650, 0xd5662610
-2,          0,          0,        0,    19650, 0xd5662610
-3,          0,          0,        0,   184497, 0xc33f8d44
-4,          0,          0,        0,   368254, 0xfa7f4bd8
+2,          0,          0,        0,   184497, 0xc33f8d44
+3,          0,          0,        0,   368254, 0xfa7f4bd8
+4,          0,          0,        0,    19650, 0xd5662610
 0,       1024,       1024,     1024,     4096, 0xad05c909
 0,       2048,       2048,     1024,     4096, 0x97e3b8f8
 0,       3072,       3072,     1024,     4096, 0xb08180fa
@@ -47,24 +47,24 @@ TAG:comment=Other
 [/STREAM]
 [STREAM]
 index=2
-codec_name=mjpeg
-DISPOSITION:attached_pic=1
-TAG:title=fourth
-TAG:comment=Composer
-[/STREAM]
-[STREAM]
-index=3
 codec_name=png
 DISPOSITION:attached_pic=1
 TAG:title=second
 TAG:comment=Illustration
 [/STREAM]
 [STREAM]
-index=4
+index=3
 codec_name=bmp
 DISPOSITION:attached_pic=1
 TAG:title=third
 TAG:comment=Conductor
+[/STREAM]
+[STREAM]
+index=4
+codec_name=mjpeg
+DISPOSITION:attached_pic=1
+TAG:title=fourth
+TAG:comment=Composer
 [/STREAM]
 [FORMAT]
 TAG:artist=Мельница
