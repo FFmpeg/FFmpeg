@@ -1375,28 +1375,11 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
 
     AVPacket *avpkt = ist->pkt;
 
-    if (!ist->saw_first_ts) {
-        ist->first_dts =
-        ist->dts = ist->st->avg_frame_rate.num ? - ist->dec_ctx->has_b_frames * AV_TIME_BASE / av_q2d(ist->st->avg_frame_rate) : 0;
-        if (pkt && pkt->pts != AV_NOPTS_VALUE) {
-            ist->first_dts =
-            ist->dts += av_rescale_q(pkt->pts, pkt->time_base, AV_TIME_BASE_Q);
-        }
-        ist->saw_first_ts = 1;
-    }
-
-    if (ist->next_dts == AV_NOPTS_VALUE)
-        ist->next_dts = ist->dts;
-
     if (pkt) {
         av_packet_unref(avpkt);
         ret = av_packet_ref(avpkt, pkt);
         if (ret < 0)
             return ret;
-    }
-
-    if (pkt && pkt->dts != AV_NOPTS_VALUE) {
-        ist->next_dts = ist->dts = av_rescale_q(pkt->dts, pkt->time_base, AV_TIME_BASE_Q);
     }
 
     // while we have more to decode or while the decoder did output something on EOF
@@ -1474,39 +1457,6 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
         if (ret < 0) {
             av_log(NULL, AV_LOG_FATAL, "Error marking filters as finished\n");
             exit_program(1);
-        }
-    }
-
-    if (pkt) {
-        ist->dts = ist->next_dts;
-        switch (par->codec_type) {
-        case AVMEDIA_TYPE_AUDIO:
-            av_assert1(pkt->duration >= 0);
-            if (par->sample_rate) {
-                ist->next_dts += ((int64_t)AV_TIME_BASE * par->frame_size) /
-                                  par->sample_rate;
-            } else {
-                ist->next_dts += av_rescale_q(pkt->duration, pkt->time_base, AV_TIME_BASE_Q);
-            }
-            break;
-        case AVMEDIA_TYPE_VIDEO:
-            if (ist->framerate.num) {
-                // TODO: Remove work-around for c99-to-c89 issue 7
-                AVRational time_base_q = AV_TIME_BASE_Q;
-                int64_t next_dts = av_rescale_q(ist->next_dts, time_base_q, av_inv_q(ist->framerate));
-                ist->next_dts = av_rescale_q(next_dts + 1, av_inv_q(ist->framerate), time_base_q);
-            } else if (pkt->duration) {
-                ist->next_dts += av_rescale_q(pkt->duration, pkt->time_base, AV_TIME_BASE_Q);
-            } else if(ist->dec_ctx->framerate.num != 0) {
-                int fields = (ist->codec_desc &&
-                              (ist->codec_desc->props & AV_CODEC_PROP_FIELDS)) ?
-                             ist->last_pkt_repeat_pict + 1 : 2;
-                AVRational field_rate = av_mul_q(ist->dec_ctx->framerate,
-                                                 (AVRational){ 2, 1 });
-
-                ist->next_dts += av_rescale_q(fields, av_inv_q(field_rate), AV_TIME_BASE_Q);
-            }
-            break;
         }
     }
 
@@ -1900,6 +1850,58 @@ static void ts_discontinuity_process(InputFile *ifile, InputStream *ist,
         ts_discontinuity_detect(ifile, ist, pkt);
 }
 
+static void ist_dts_update(InputStream *ist, AVPacket *pkt)
+{
+    const AVCodecParameters *par = ist->par;
+
+    if (!ist->saw_first_ts) {
+        ist->first_dts =
+        ist->dts = ist->st->avg_frame_rate.num ? - ist->dec_ctx->has_b_frames * AV_TIME_BASE / av_q2d(ist->st->avg_frame_rate) : 0;
+        if (pkt->pts != AV_NOPTS_VALUE) {
+            ist->first_dts =
+            ist->dts += av_rescale_q(pkt->pts, pkt->time_base, AV_TIME_BASE_Q);
+        }
+        ist->saw_first_ts = 1;
+    }
+
+    if (ist->next_dts == AV_NOPTS_VALUE)
+        ist->next_dts = ist->dts;
+
+    if (pkt->dts != AV_NOPTS_VALUE)
+        ist->next_dts = ist->dts = av_rescale_q(pkt->dts, pkt->time_base, AV_TIME_BASE_Q);
+
+        ist->dts = ist->next_dts;
+        switch (par->codec_type) {
+        case AVMEDIA_TYPE_AUDIO:
+            av_assert1(pkt->duration >= 0);
+            if (par->sample_rate) {
+                ist->next_dts += ((int64_t)AV_TIME_BASE * par->frame_size) /
+                                  par->sample_rate;
+            } else {
+                ist->next_dts += av_rescale_q(pkt->duration, pkt->time_base, AV_TIME_BASE_Q);
+            }
+            break;
+        case AVMEDIA_TYPE_VIDEO:
+            if (ist->framerate.num) {
+                // TODO: Remove work-around for c99-to-c89 issue 7
+                AVRational time_base_q = AV_TIME_BASE_Q;
+                int64_t next_dts = av_rescale_q(ist->next_dts, time_base_q, av_inv_q(ist->framerate));
+                ist->next_dts = av_rescale_q(next_dts + 1, av_inv_q(ist->framerate), time_base_q);
+            } else if (pkt->duration) {
+                ist->next_dts += av_rescale_q(pkt->duration, pkt->time_base, AV_TIME_BASE_Q);
+            } else if(ist->dec_ctx->framerate.num != 0) {
+                int fields = (ist->codec_desc &&
+                              (ist->codec_desc->props & AV_CODEC_PROP_FIELDS)) ?
+                             ist->last_pkt_repeat_pict + 1 : 2;
+                AVRational field_rate = av_mul_q(ist->dec_ctx->framerate,
+                                                 (AVRational){ 2, 1 });
+
+                ist->next_dts += av_rescale_q(fields, av_inv_q(field_rate), AV_TIME_BASE_Q);
+            }
+            break;
+        }
+}
+
 /*
  * Return
  * - 0 -- one packet was read and processed
@@ -1984,6 +1986,9 @@ static int process_input(int file_index)
 
     // detect and try to correct for timestamp discontinuities
     ts_discontinuity_process(ifile, ist, pkt);
+
+    // update estimated/predicted dts
+    ist_dts_update(ist, pkt);
 
     if (debug_ts) {
         av_log(NULL, AV_LOG_INFO, "demuxer+ffmpeg -> ist_index:%d:%d type:%s pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s duration:%s duration_time:%s off:%s off_time:%s\n",
