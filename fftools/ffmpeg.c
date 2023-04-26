@@ -1870,36 +1870,36 @@ static void ist_dts_update(InputStream *ist, AVPacket *pkt)
     if (pkt->dts != AV_NOPTS_VALUE)
         ist->next_dts = ist->dts = av_rescale_q(pkt->dts, pkt->time_base, AV_TIME_BASE_Q);
 
-        ist->dts = ist->next_dts;
-        switch (par->codec_type) {
-        case AVMEDIA_TYPE_AUDIO:
-            av_assert1(pkt->duration >= 0);
-            if (par->sample_rate) {
-                ist->next_dts += ((int64_t)AV_TIME_BASE * par->frame_size) /
-                                  par->sample_rate;
-            } else {
-                ist->next_dts += av_rescale_q(pkt->duration, pkt->time_base, AV_TIME_BASE_Q);
-            }
-            break;
-        case AVMEDIA_TYPE_VIDEO:
-            if (ist->framerate.num) {
-                // TODO: Remove work-around for c99-to-c89 issue 7
-                AVRational time_base_q = AV_TIME_BASE_Q;
-                int64_t next_dts = av_rescale_q(ist->next_dts, time_base_q, av_inv_q(ist->framerate));
-                ist->next_dts = av_rescale_q(next_dts + 1, av_inv_q(ist->framerate), time_base_q);
-            } else if (pkt->duration) {
-                ist->next_dts += av_rescale_q(pkt->duration, pkt->time_base, AV_TIME_BASE_Q);
-            } else if(ist->dec_ctx->framerate.num != 0) {
-                int fields = (ist->codec_desc &&
-                              (ist->codec_desc->props & AV_CODEC_PROP_FIELDS)) ?
-                             ist->last_pkt_repeat_pict + 1 : 2;
-                AVRational field_rate = av_mul_q(ist->dec_ctx->framerate,
-                                                 (AVRational){ 2, 1 });
-
-                ist->next_dts += av_rescale_q(fields, av_inv_q(field_rate), AV_TIME_BASE_Q);
-            }
-            break;
+    ist->dts = ist->next_dts;
+    switch (par->codec_type) {
+    case AVMEDIA_TYPE_AUDIO:
+        av_assert1(pkt->duration >= 0);
+        if (par->sample_rate) {
+            ist->next_dts += ((int64_t)AV_TIME_BASE * par->frame_size) /
+                              par->sample_rate;
+        } else {
+            ist->next_dts += av_rescale_q(pkt->duration, pkt->time_base, AV_TIME_BASE_Q);
         }
+        break;
+    case AVMEDIA_TYPE_VIDEO:
+        if (ist->framerate.num) {
+            // TODO: Remove work-around for c99-to-c89 issue 7
+            AVRational time_base_q = AV_TIME_BASE_Q;
+            int64_t next_dts = av_rescale_q(ist->next_dts, time_base_q, av_inv_q(ist->framerate));
+            ist->next_dts = av_rescale_q(next_dts + 1, av_inv_q(ist->framerate), time_base_q);
+        } else if (pkt->duration) {
+            ist->next_dts += av_rescale_q(pkt->duration, pkt->time_base, AV_TIME_BASE_Q);
+        } else if(ist->dec_ctx->framerate.num != 0) {
+            int fields = (ist->codec_desc &&
+                          (ist->codec_desc->props & AV_CODEC_PROP_FIELDS)) ?
+                         ist->last_pkt_repeat_pict + 1 : 2;
+            AVRational field_rate = av_mul_q(ist->dec_ctx->framerate,
+                                             (AVRational){ 2, 1 });
+
+            ist->next_dts += av_rescale_q(fields, av_inv_q(field_rate), AV_TIME_BASE_Q);
+        }
+        break;
+    }
 }
 
 /*
