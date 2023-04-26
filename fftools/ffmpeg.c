@@ -1961,9 +1961,6 @@ static int process_input(int file_index)
     ist->data_size += pkt->size;
     ist->nb_packets++;
 
-    if (ist->discard)
-        goto discard_packet;
-
     /* add the stream-global side data to the first packet */
     if (ist->nb_packets == 1) {
         for (i = 0; i < ist->st->nb_side_data; i++) {
@@ -2002,7 +1999,6 @@ static int process_input(int file_index)
 
     process_input_packet(ist, pkt, 0);
 
-discard_packet:
     av_packet_free(&pkt);
 
     return 0;

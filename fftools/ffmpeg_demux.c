@@ -318,7 +318,8 @@ static void *input_thread(void *arg)
 
         /* the following test is needed in case new streams appear
            dynamically in stream : we ignore them */
-        if (pkt->stream_index >= f->nb_streams) {
+        if (pkt->stream_index >= f->nb_streams ||
+            f->streams[pkt->stream_index]->discard) {
             report_new_stream(d, pkt);
             av_packet_unref(pkt);
             continue;
