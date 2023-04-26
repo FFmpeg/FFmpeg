@@ -608,11 +608,10 @@ static int push_main_audio_sequence(xmlNodePtr audio_sequence_elem, FFIMFCPL *cp
         ret = fill_trackfile_resource(resource_elem,
                                       &vt->resources[vt->resource_count],
                                       cpl);
-        vt->resource_count++;
-        if (ret) {
+        if (ret)
             av_log(NULL, AV_LOG_ERROR, "Invalid Resource\n");
-            continue;
-        }
+        else
+            vt->resource_count++;
 
         resource_elem = xmlNextElementSibling(resource_elem);
     }
@@ -691,11 +690,10 @@ static int push_main_image_2d_sequence(xmlNodePtr image_sequence_elem, FFIMFCPL 
         ret = fill_trackfile_resource(resource_elem,
                                       &cpl->main_image_2d_track->resources[cpl->main_image_2d_track->resource_count],
                                       cpl);
-        cpl->main_image_2d_track->resource_count++;
-        if (ret) {
+        if (ret)
             av_log(NULL, AV_LOG_ERROR, "Invalid Resource\n");
-            continue;
-        }
+        else
+            cpl->main_image_2d_track->resource_count++;
 
         resource_elem = xmlNextElementSibling(resource_elem);
     }
