@@ -257,6 +257,26 @@ static void ts_fixup(Demuxer *d, AVPacket *pkt, int *repeat_pict)
     SHOW_TS_DEBUG("demuxer+tsfixup");
 }
 
+// process an input packet into a message to send to the consumer thread
+// src is always cleared by this function
+static int input_packet_process(Demuxer *d, DemuxMsg *msg, AVPacket *src)
+{
+    AVPacket *pkt;
+
+    pkt = av_packet_alloc();
+    if (!pkt) {
+        av_packet_unref(src);
+        return AVERROR(ENOMEM);
+    }
+    av_packet_move_ref(pkt, src);
+
+    ts_fixup(d, pkt, &msg->repeat_pict);
+
+    msg->pkt = pkt;
+
+    return 0;
+}
+
 static void thread_set_name(InputFile *f)
 {
     char name[16];
@@ -336,15 +356,10 @@ static void *input_thread(void *arg)
             }
         }
 
-        ts_fixup(d, pkt, &msg.repeat_pict);
-
-        msg.pkt = av_packet_alloc();
-        if (!msg.pkt) {
-            av_packet_unref(pkt);
-            ret = AVERROR(ENOMEM);
+        ret = input_packet_process(d, &msg, pkt);
+        if (ret < 0)
             break;
-        }
-        av_packet_move_ref(msg.pkt, pkt);
+
         ret = av_thread_message_queue_send(d->in_thread_queue, &msg, flags);
         if (flags && ret == AVERROR(EAGAIN)) {
             flags = 0;
