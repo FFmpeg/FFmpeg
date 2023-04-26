@@ -218,6 +218,45 @@ const char *cpl_doc =
     "</SegmentList>"
     "</CompositionPlaylist>";
 
+    const char *cpl_bad_resource_doc =
+    "<CompositionPlaylist xmlns=\"http://www.smpte-ra.org/schemas/2067-3/2016\""
+    " xmlns:cc=\"http://www.smpte-ra.org/schemas/2067-2/2016\""
+    " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">"
+    "<Id>urn:uuid:8713c020-2489-45f5-a9f7-87be539e20b5</Id>"
+    "<IssueDate>2021-07-13T17:06:22Z</IssueDate>"
+    "<Creator language=\"en\">FFMPEG</Creator>"
+    "<ContentTitle>FFMPEG sample content</ContentTitle>"
+    "<EssenceDescriptorList>"
+    "  <EssenceDescriptor>"
+    "    <Id>urn:uuid:8e097bb0-cff7-4969-a692-bad47bfb528f</Id>"
+    "  </EssenceDescriptor>"
+    "</EssenceDescriptorList>"
+    "<CompositionTimecode>"
+    "<TimecodeDropFrame>false</TimecodeDropFrame>"
+    "<TimecodeRate>24</TimecodeRate>"
+    "<TimecodeStartAddress>02:10:01.23</TimecodeStartAddress>"
+    "</CompositionTimecode>"
+    "<EditRate>24000 1001</EditRate>"
+    "<SegmentList>"
+    "<Segment>"
+    "<Id>urn:uuid:81fed4e5-9722-400a-b9d1-7f2bd21df4b6</Id>"
+    "<SequenceList>"
+    "<cc:MainImageSequence>"
+    "<Id>urn:uuid:6ae100b0-92d1-41be-9321-85e0933dfc42</Id>"
+    "<TrackId>urn:uuid:e8ef9653-565c-479c-8039-82d4547973c5</TrackId>"
+    "<ResourceList>"
+    "<Resource xsi:type=\"TrackFileResourceType\">"
+    "<Id>urn:uuid:7d418acb-07a3-4e57-984c-b8ea2f7de4ec</Id>"
+    "<IntrinsicDuration>24</IntrinsicDuration>"
+    "<SourceEncoding>urn:uuid:f00e49a8-0dec-4e6c-95e7-078df988b751</SourceEncoding>"
+    "</Resource>"
+    "</ResourceList>"
+    "</cc:MainImageSequence>"
+    "</SequenceList>"
+    "</Segment>"
+    "</SegmentList>"
+    "</CompositionPlaylist>";
+
 const char *cpl_bad_doc = "<Composition></Composition>";
 
 const char *asset_map_doc =
@@ -351,6 +390,27 @@ static int test_bad_cpl_parsing(FFIMFCPL **cpl)
     int ret;
 
     doc = xmlReadMemory(cpl_bad_doc, strlen(cpl_bad_doc), NULL, NULL, 0);
+    if (doc == NULL) {
+        printf("XML parsing failed.\n");
+        return 1;
+    }
+
+    ret = ff_imf_parse_cpl_from_xml_dom(doc, cpl);
+    xmlFreeDoc(doc);
+    if (ret) {
+        printf("CPL parsing failed.\n");
+        return ret;
+    }
+
+    return 0;
+}
+
+static int test_bad_resource_cpl_parsing(FFIMFCPL **cpl)
+{
+    xmlDocPtr doc;
+    int ret;
+
+    doc = xmlReadMemory(cpl_bad_resource_doc, strlen(cpl_bad_resource_doc), NULL, NULL, 0);
     if (doc == NULL) {
         printf("XML parsing failed.\n");
         return 1;
@@ -532,6 +592,11 @@ int main(int argc, char *argv[])
         ret = 1;
     }
     printf("#### End failing test ####\n");
+
+    printf("#### The following should emit errors ####\n");
+    if (test_bad_resource_cpl_parsing(&cpl) != 0)
+        ret = 1;
+    printf("#### End emission of errors ####\n");
 
     return ret;
 }

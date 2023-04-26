@@ -53,3 +53,5 @@ For asset: 4:
 #### The following should fail ####
 CPL parsing failed.
 #### End failing test ####
+#### The following should emit errors ####
+#### End emission of errors ####
