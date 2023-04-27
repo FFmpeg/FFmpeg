@@ -59,6 +59,9 @@ struct Encoder {
 
     // combined size of all the packets received from the encoder
     uint64_t data_size;
+
+    // number of packets received from the encoder
+    uint64_t packets_encoded;
 };
 
 static uint64_t dup_warning = 1000;
@@ -619,7 +622,7 @@ static void update_video_stats(OutputStream *ost, const AVPacket *pkt, int write
         }
     }
 
-    frame_number = ost->packets_encoded;
+    frame_number = e->packets_encoded;
     if (vstats_version <= 1) {
         fprintf(vstats_file, "frame= %5"PRId64" q= %2.1f ", frame_number,
                 ost->quality / (float)FF_QP2LAMBDA);
@@ -708,7 +711,7 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
             update_video_stats(ost, pkt, !!vstats_filename);
         if (ost->enc_stats_post.io)
             enc_stats_write(ost, &ost->enc_stats_post, NULL, pkt,
-                            ost->packets_encoded);
+                            e->packets_encoded);
 
         if (debug_ts) {
             av_log(ost, AV_LOG_INFO, "encoder -> type:%s "
@@ -742,7 +745,7 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
 
         e->data_size += pkt->size;
 
-        ost->packets_encoded++;
+        e->packets_encoded++;
 
         of_output_packet(of, pkt, ost, 0);
     }
