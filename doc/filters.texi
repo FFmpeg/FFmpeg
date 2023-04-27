@@ -11403,9 +11403,6 @@ See @url{http://openaccess.thecvf.com/content_ECCV_2018/papers/Xia_Li_Recurrent_
 Training as well as model generation scripts are provided in
 the repository at @url{https://github.com/XueweiMeng/derain_filter.git}.
 
-Native model files (.model) can be generated from TensorFlow model
-files (.pb) by using tools/python/convert.py
-
 The filter accepts the following options:
 
 @table @option
@@ -11426,21 +11423,16 @@ Specify which DNN backend to use for model loading and execution. This option ac
 the following values:
 
 @table @samp
-@item native
-Native implementation of DNN loading and execution.
-
 @item tensorflow
 TensorFlow backend. To enable this backend you
 need to install the TensorFlow for C library (see
 @url{https://www.tensorflow.org/install/lang_c}) and configure FFmpeg with
 @code{--enable-libtensorflow}
 @end table
-Default value is @samp{native}.
 
 @item model
 Set path to model file specifying network architecture and its parameters.
-Note that different backends use different file formats. TensorFlow and native
-backend can load files for only its format.
+Note that different backends use different file formats. TensorFlow can load files for only its format.
 @end table
 
 To get full functionality (such as async execution), please use the @ref{dnn_processing} filter.
@@ -11764,9 +11756,6 @@ Specify which DNN backend to use for model loading and execution. This option ac
 the following values:
 
 @table @samp
-@item native
-Native implementation of DNN loading and execution.
-
 @item tensorflow
 TensorFlow backend. To enable this backend you
 need to install the TensorFlow for C library (see
@@ -11782,14 +11771,9 @@ be needed if the header files and libraries are not installed into system path)
 
 @end table
 
-Default value is @samp{native}.
-
 @item model
 Set path to model file specifying network architecture and its parameters.
-Note that different backends use different file formats. TensorFlow, OpenVINO and native
-backend can load files for only its format.
-
-Native model file (.model) can be generated from TensorFlow model file (.pb) by using tools/python/convert.py
+Note that different backends use different file formats. TensorFlow, OpenVINO backend can load files for only its format.
 
 @item input
 Set the input name of the dnn network.
@@ -11813,12 +11797,6 @@ please use tools/python/tf_sess_config.py to get the configs of TensorFlow backe
 Remove rain in rgb24 frame with can.pb (see @ref{derain} filter):
 @example
 ./ffmpeg -i rain.jpg -vf format=rgb24,dnn_processing=dnn_backend=tensorflow:model=can.pb:input=x:output=y derain.jpg
-@end example
-
-@item
-Halve the pixel value of the frame with format gray32f:
-@example
-ffmpeg -i input.jpg -vf format=grayf32,dnn_processing=model=halve_gray_float.model:input=dnn_in:output=dnn_out:dnn_backend=native -y out.native.png
 @end example
 
 @item
@@ -21878,9 +21856,6 @@ Training scripts as well as scripts for model file (.pb) saving can be found at
 @url{https://github.com/XueweiMeng/sr/tree/sr_dnn_native}. Original repository
 is at @url{https://github.com/HighVoltageRocknRoll/sr.git}.
 
-Native model files (.model) can be generated from TensorFlow model
-files (.pb) by using tools/python/convert.py
-
 The filter accepts the following options:
 
 @table @option
@@ -21889,9 +21864,6 @@ Specify which DNN backend to use for model loading and execution. This option ac
 the following values:
 
 @table @samp
-@item native
-Native implementation of DNN loading and execution.
-
 @item tensorflow
 TensorFlow backend. To enable this backend you
 need to install the TensorFlow for C library (see
@@ -21899,13 +21871,10 @@ need to install the TensorFlow for C library (see
 @code{--enable-libtensorflow}
 @end table
 
-Default value is @samp{native}.
-
 @item model
 Set path to model file specifying network architecture and its parameters.
-Note that different backends use different file formats. TensorFlow backend
-can load files for both formats, while native backend can load files for only
-its format.
+Note that different backends use different file formats. TensorFlow, OpenVINO backend
+can load files for only its format.
 
 @item scale_factor
 Set scale factor for SRCNN model. Allowed values are @code{2}, @code{3} and @code{4}.
