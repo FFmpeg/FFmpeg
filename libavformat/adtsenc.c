@@ -127,14 +127,14 @@ static int adts_write_header(AVFormatContext *s)
     return 0;
 }
 
-static int adts_write_frame_header(ADTSContext *ctx,
+static int adts_write_frame_header(AVFormatContext *s, ADTSContext *ctx,
                                    uint8_t *buf, int size, int pce_size)
 {
     PutBitContext pb;
 
     unsigned full_frame_size = (unsigned)ADTS_HEADER_SIZE + size + pce_size;
     if (full_frame_size > ADTS_MAX_FRAME_BYTES) {
-        av_log(NULL, AV_LOG_ERROR, "ADTS frame size too large: %u (max %d)\n",
+        av_log(s, AV_LOG_ERROR, "frame size too large: %u (max %d)\n",
                full_frame_size, ADTS_MAX_FRAME_BYTES);
         return AVERROR_INVALIDDATA;
     }
@@ -192,7 +192,7 @@ static int adts_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
     if (adts->write_adts) {
-        int err = adts_write_frame_header(adts, buf, pkt->size,
+        int err = adts_write_frame_header(s, adts, buf, pkt->size,
                                              adts->pce_size);
         if (err < 0)
             return err;
