@@ -323,7 +323,6 @@ typedef struct OutputFilter {
 
 typedef struct FilterGraph {
     int            index;
-    const char    *graph_desc;
 
     AVFilterGraph *graph;
     // true when the filtergraph contains only meta filters

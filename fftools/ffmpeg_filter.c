@@ -41,6 +41,8 @@
 typedef struct FilterGraphPriv {
     FilterGraph fg;
 
+    const char *graph_desc;
+
     // frame for temporarily holding output from the filtergraph
     AVFrame *frame;
 } FilterGraphPriv;
@@ -242,7 +244,7 @@ void fg_free(FilterGraph **pfg)
         av_freep(&fg->outputs[j]);
     }
     av_freep(&fg->outputs);
-    av_freep(&fg->graph_desc);
+    av_freep(&fgp->graph_desc);
 
     av_frame_free(&fgp->frame);
 
@@ -255,7 +257,7 @@ FilterGraph *fg_create(char *graph_desc)
     FilterGraph      *fg = &fgp->fg;
 
     fg->index      = nb_filtergraphs - 1;
-    fg->graph_desc = graph_desc;
+    fgp->graph_desc = graph_desc;
 
     fgp->frame = av_frame_alloc();
     if (!fgp->frame)
@@ -312,6 +314,7 @@ static char *describe_filter_link(FilterGraph *fg, AVFilterInOut *inout, int in)
 
 static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
 {
+    FilterGraphPriv *fgp = fgp_from_fg(fg);
     InputStream *ist = NULL;
     enum AVMediaType type = avfilter_pad_get_type(in->filter_ctx->input_pads, in->pad_idx);
     InputFilter *ifilter;
@@ -332,7 +335,7 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
 
         if (file_idx < 0 || file_idx >= nb_input_files) {
             av_log(NULL, AV_LOG_FATAL, "Invalid file index %d in filtergraph description %s.\n",
-                   file_idx, fg->graph_desc);
+                   file_idx, fgp->graph_desc);
             exit_program(1);
         }
         s = input_files[file_idx]->ctx;
@@ -350,13 +353,13 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
         }
         if (!st) {
             av_log(NULL, AV_LOG_FATAL, "Stream specifier '%s' in filtergraph description %s "
-                   "matches no streams.\n", p, fg->graph_desc);
+                   "matches no streams.\n", p, fgp->graph_desc);
             exit_program(1);
         }
         ist = input_files[file_idx]->streams[st->index];
         if (ist->user_set_discard == AVDISCARD_ALL) {
             av_log(NULL, AV_LOG_FATAL, "Stream specifier '%s' in filtergraph description %s "
-                   "matches a disabled input stream.\n", p, fg->graph_desc);
+                   "matches a disabled input stream.\n", p, fgp->graph_desc);
             exit_program(1);
         }
     } else {
@@ -562,6 +565,7 @@ fail:
 
 int init_complex_filtergraph(FilterGraph *fg)
 {
+    FilterGraphPriv *fgp = fgp_from_fg(fg);
     AVFilterInOut *inputs, *outputs, *cur;
     AVFilterGraph *graph;
     int ret = 0;
@@ -573,7 +577,7 @@ int init_complex_filtergraph(FilterGraph *fg)
         return AVERROR(ENOMEM);
     graph->nb_threads = 1;
 
-    ret = graph_parse(graph, fg->graph_desc, &inputs, &outputs, NULL);
+    ret = graph_parse(graph, fgp->graph_desc, &inputs, &outputs, NULL);
     if (ret < 0)
         goto fail;
 
@@ -1181,11 +1185,12 @@ static int graph_is_meta(AVFilterGraph *graph)
 
 int configure_filtergraph(FilterGraph *fg)
 {
+    FilterGraphPriv *fgp = fgp_from_fg(fg);
     AVBufferRef *hw_device;
     AVFilterInOut *inputs, *outputs, *cur;
     int ret, i, simple = filtergraph_is_simple(fg);
     const char *graph_desc = simple ? fg->outputs[0]->ost->avfilter :
-                                      fg->graph_desc;
+                                      fgp->graph_desc;
 
     cleanup_filtergraph(fg);
     if (!(fg->graph = avfilter_graph_alloc()))
@@ -1365,7 +1370,8 @@ static int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *fr
 
 int filtergraph_is_simple(FilterGraph *fg)
 {
-    return !fg->graph_desc;
+    FilterGraphPriv *fgp = fgp_from_fg(fg);
+    return !fgp->graph_desc;
 }
 
 int reap_filters(int flush)
