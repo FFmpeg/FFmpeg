@@ -44,7 +44,6 @@ static const AVOption derain_options[] = {
     { "derain",      "derain filter flag",          0,                      AV_OPT_TYPE_CONST,  { .i64 = 0 },    0, 0, FLAGS, "type" },
     { "dehaze",      "dehaze filter flag",          0,                      AV_OPT_TYPE_CONST,  { .i64 = 1 },    0, 0, FLAGS, "type" },
     { "dnn_backend", "DNN backend",                 OFFSET(dnnctx.backend_type),   AV_OPT_TYPE_INT,    { .i64 = 1 },    0, 1, FLAGS, "backend" },
-    { "native",      "native backend flag",         0,                      AV_OPT_TYPE_CONST,  { .i64 = 0 },    0, 0, FLAGS, "backend" },
 #if (CONFIG_LIBTENSORFLOW == 1)
     { "tensorflow",  "tensorflow backend flag",     0,                      AV_OPT_TYPE_CONST,  { .i64 = 1 },    0, 0, FLAGS, "backend" },
 #endif
