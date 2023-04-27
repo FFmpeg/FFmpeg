@@ -380,12 +380,6 @@ typedef struct InputStream {
 
     int           wrap_correction_done;
 
-    // the value of AVCodecParserContext.repeat_pict from the AVStream parser
-    // for the last packet returned from ifile_get_packet()
-    // -1 if unknown
-    // FIXME: this is a hack, the avstream parser should not be used
-    int last_pkt_repeat_pict;
-
     int64_t filter_in_rescale_delta_last;
 
     // when forcing constant input framerate through -r,
