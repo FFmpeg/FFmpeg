@@ -1368,6 +1368,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
 {
     InputFile *f = input_files[ist->file_index];
     const AVCodecParameters *par = ist->par;
+    int64_t dts_est = AV_NOPTS_VALUE;
     int ret = 0;
     int repeating = 0;
     int eof_reached = 0;
@@ -1463,6 +1464,11 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
     if (!pkt && !ist->decoding_needed)
         eof_reached = 1;
 
+    if (pkt && pkt->opaque_ref) {
+        DemuxPktData *pd = (DemuxPktData*)pkt->opaque_ref->data;
+        dts_est = pd->dts_est;
+    }
+
     duration_exceeded = 0;
     if (f->recording_time != INT64_MAX) {
         int64_t start_time = 0;
@@ -1470,7 +1476,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
             start_time += f->start_time != AV_NOPTS_VALUE ? f->start_time : 0;
             start_time += start_at_zero ? 0 : f->start_time_effective;
         }
-        if (ist->dts >= f->recording_time + start_time)
+        if (dts_est >= f->recording_time + start_time)
             duration_exceeded = 1;
     }
 
@@ -1484,7 +1490,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
             continue;
         }
 
-        of_streamcopy(ost, pkt, ist->dts);
+        of_streamcopy(ost, pkt, dts_est);
     }
 
     return !eof_reached;
@@ -1899,6 +1905,18 @@ static void ist_dts_update(InputStream *ist, AVPacket *pkt)
             ist->next_dts += av_rescale_q(fields, av_inv_q(field_rate), AV_TIME_BASE_Q);
         }
         break;
+    }
+
+    av_assert0(!pkt->opaque_ref);
+    if (ist->streamcopy_needed) {
+        DemuxPktData *pd;
+
+        pkt->opaque_ref = av_buffer_allocz(sizeof(*pd));
+        if (!pkt->opaque_ref)
+            report_and_exit(AVERROR(ENOMEM));
+        pd = (DemuxPktData*)pkt->opaque_ref->data;
+
+        pd->dts_est = ist->dts;
     }
 }
 
