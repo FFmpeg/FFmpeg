@@ -294,6 +294,7 @@ static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int ioffs
     const int nb_samples = FFMIN(min_part_size, out->nb_samples - offset);
     const int nb_segments = s->nb_segments[selir];
     const float dry_gain = s->dry_gain;
+    const float wet_gain = s->wet_gain;
 
     for (int segment = 0; segment < nb_segments; segment++) {
         AudioFIRSegment *seg = &s->seg[selir][segment];
@@ -310,7 +311,9 @@ static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int ioffs
         int j;
 
         seg->part_index[ch] = seg->part_index[ch] % nb_partitions;
-        if (min_part_size >= 8) {
+        if (dry_gain == 1.f) {
+            memcpy(src + input_offset, in, nb_samples * sizeof(*src));
+        } else if (min_part_size >= 8) {
 #if DEPTH == 32
             s->fdsp->vector_fmul_scalar(src + input_offset, in, dry_gain, FFALIGN(nb_samples, 4));
 #else
@@ -374,19 +377,19 @@ static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int ioffs
         seg->part_index[ch] = (seg->part_index[ch] + 1) % nb_partitions;
     }
 
-    if (s->wet_gain == 1.f)
+    if (wet_gain == 1.f)
         return 0;
 
     if (min_part_size >= 8) {
 #if DEPTH == 32
-        s->fdsp->vector_fmul_scalar(ptr, ptr, s->wet_gain, FFALIGN(nb_samples, 4));
+        s->fdsp->vector_fmul_scalar(ptr, ptr, wet_gain, FFALIGN(nb_samples, 4));
 #else
-        s->fdsp->vector_dmul_scalar(ptr, ptr, s->wet_gain, FFALIGN(nb_samples, 8));
+        s->fdsp->vector_dmul_scalar(ptr, ptr, wet_gain, FFALIGN(nb_samples, 8));
 #endif
         emms_c();
     } else {
         for (int n = 0; n < nb_samples; n++)
-            ptr[n] *= s->wet_gain;
+            ptr[n] *= wet_gain;
     }
 
     return 0;
