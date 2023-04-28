@@ -104,6 +104,12 @@ typedef struct PerThreadContext {
     int hwaccel_serializing;
     int async_serializing;
 
+    // set to 1 in ff_thread_finish_setup() when a threadsafe hwaccel is used;
+    // cannot check hwaccel caps directly, because
+    // worked threads clear hwaccel state for thread-unsafe hwaccels
+    // after each decode call
+    int hwaccel_threadsafe;
+
     atomic_int debug_threads;       ///< Set if the FF_DEBUG_THREADS option is set.
 } PerThreadContext;
 
@@ -117,8 +123,8 @@ typedef struct FrameThreadContext {
     unsigned    pthread_init_cnt;  ///< Number of successfully initialized mutexes/conditions
     pthread_mutex_t buffer_mutex;  ///< Mutex used to protect get/release_buffer().
     /**
-     * This lock is used for ensuring threads run in serial when hwaccel
-     * is used.
+     * This lock is used for ensuring threads run in serial when thread-unsafe
+     * hwaccel is used.
      */
     pthread_mutex_t hwaccel_mutex;
     pthread_mutex_t async_mutex;
@@ -133,12 +139,18 @@ typedef struct FrameThreadContext {
                                     * While it is set, ff_thread_en/decode_frame won't return any results.
                                     */
 
-    /* hwaccel state is temporarily stored here in order to transfer its ownership
-     * to the next decoding thread without the need for extra synchronization */
+    /* hwaccel state for thread-unsafe hwaccels is temporarily stored here in
+     * order to transfer its ownership to the next decoding thread without the
+     * need for extra synchronization */
     const AVHWAccel *stash_hwaccel;
     void            *stash_hwaccel_context;
     void            *stash_hwaccel_priv;
 } FrameThreadContext;
+
+static int hwaccel_serial(const AVCodecContext *avctx)
+{
+    return avctx->hwaccel && !(avctx->hwaccel->caps_internal & HWACCEL_CAP_THREAD_SAFE);
+}
 
 static void async_lock(FrameThreadContext *fctx)
 {
@@ -202,9 +214,9 @@ static attribute_align_arg void *frame_worker_thread(void *arg)
          * cannot be true here. */
         av_assert0(!p->hwaccel_serializing);
 
-        /* if the previous thread uses hwaccel then we take the lock to ensure
-         * the threads don't run concurrently */
-        if (avctx->hwaccel) {
+        /* if the previous thread uses thread-unsafe hwaccel then we take the
+         * lock to ensure the threads don't run concurrently */
+        if (hwaccel_serial(avctx)) {
             pthread_mutex_lock(&p->parent->hwaccel_mutex);
             p->hwaccel_serializing = 1;
         }
@@ -220,7 +232,8 @@ static attribute_align_arg void *frame_worker_thread(void *arg)
             ff_thread_finish_setup(avctx);
 
         if (p->hwaccel_serializing) {
-            /* wipe hwaccel state to avoid stale pointers lying around;
+            /* wipe hwaccel state for thread-unsafe hwaccels to avoid stale
+             * pointers lying around;
              * the state was transferred to FrameThreadContext in
              * ff_thread_finish_setup(), so nothing is leaked */
             avctx->hwaccel                     = NULL;
@@ -230,7 +243,8 @@ static attribute_align_arg void *frame_worker_thread(void *arg)
             p->hwaccel_serializing = 0;
             pthread_mutex_unlock(&p->parent->hwaccel_mutex);
         }
-        av_assert0(!avctx->hwaccel);
+        av_assert0(!avctx->hwaccel ||
+                   (avctx->hwaccel->caps_internal & HWACCEL_CAP_THREAD_SAFE));
 
         if (p->async_serializing) {
             p->async_serializing = 0;
@@ -332,8 +346,49 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (codec->update_thread_context_for_user)
             err = codec->update_thread_context_for_user(dst, src);
     } else {
-        if (codec->update_thread_context)
+        const PerThreadContext *p_src = src->internal->thread_ctx;
+        PerThreadContext       *p_dst = dst->internal->thread_ctx;
+
+        if (codec->update_thread_context) {
             err = codec->update_thread_context(dst, src);
+            if (err < 0)
+                return err;
+        }
+
+        // reset dst hwaccel state if needed
+        av_assert0(p_dst->hwaccel_threadsafe ||
+                   (!dst->hwaccel && !dst->internal->hwaccel_priv_data));
+        if (p_dst->hwaccel_threadsafe &&
+            (!p_src->hwaccel_threadsafe || dst->hwaccel != src->hwaccel)) {
+            ff_hwaccel_uninit(dst);
+            p_dst->hwaccel_threadsafe = 0;
+        }
+
+        // propagate hwaccel state for threadsafe hwaccels
+        if (p_src->hwaccel_threadsafe) {
+            if (!dst->hwaccel) {
+                if (src->hwaccel->priv_data_size) {
+                    av_assert0(src->hwaccel->update_thread_context);
+
+                    dst->internal->hwaccel_priv_data =
+                            av_mallocz(src->hwaccel->priv_data_size);
+                    if (!dst->internal->hwaccel_priv_data)
+                        return AVERROR(ENOMEM);
+                }
+                dst->hwaccel = src->hwaccel;
+            }
+            av_assert0(dst->hwaccel == src->hwaccel);
+
+            if (src->hwaccel->update_thread_context) {
+                err = src->hwaccel->update_thread_context(dst, src);
+                if (err < 0) {
+                    av_log(dst, AV_LOG_ERROR, "Error propagating hwaccel state\n");
+                    ff_hwaccel_uninit(dst);
+                    return err;
+                }
+            }
+            p_dst->hwaccel_threadsafe = 1;
+        }
     }
 
     return err;
@@ -441,10 +496,12 @@ static int submit_packet(PerThreadContext *p, AVCodecContext *user_avctx,
     }
 
     /* transfer the stashed hwaccel state, if any */
-    av_assert0(!p->avctx->hwaccel);
-    FFSWAP(const AVHWAccel*, p->avctx->hwaccel,                     fctx->stash_hwaccel);
-    FFSWAP(void*,            p->avctx->hwaccel_context,             fctx->stash_hwaccel_context);
-    FFSWAP(void*,            p->avctx->internal->hwaccel_priv_data, fctx->stash_hwaccel_priv);
+    av_assert0(!p->avctx->hwaccel || p->hwaccel_threadsafe);
+    if (!p->hwaccel_threadsafe) {
+        FFSWAP(const AVHWAccel*, p->avctx->hwaccel,                     fctx->stash_hwaccel);
+        FFSWAP(void*,            p->avctx->hwaccel_context,             fctx->stash_hwaccel_context);
+        FFSWAP(void*,            p->avctx->internal->hwaccel_priv_data, fctx->stash_hwaccel_priv);
+    }
 
     av_packet_unref(p->avpkt);
     ret = av_packet_ref(p->avpkt, avpkt);
@@ -598,7 +655,10 @@ void ff_thread_finish_setup(AVCodecContext *avctx) {
 
     if (!(avctx->active_thread_type&FF_THREAD_FRAME)) return;
 
-    if (avctx->hwaccel && !p->hwaccel_serializing) {
+    p->hwaccel_threadsafe = avctx->hwaccel &&
+                            (avctx->hwaccel->caps_internal & HWACCEL_CAP_THREAD_SAFE);
+
+    if (hwaccel_serial(avctx) && !p->hwaccel_serializing) {
         pthread_mutex_lock(&p->parent->hwaccel_mutex);
         p->hwaccel_serializing = 1;
     }
@@ -611,13 +671,16 @@ void ff_thread_finish_setup(AVCodecContext *avctx) {
         async_lock(p->parent);
     }
 
-    /* save hwaccel state for passing to the next thread;
+    /* thread-unsafe hwaccels share a single private data instance, so we
+     * save hwaccel state for passing to the next thread;
      * this is done here so that this worker thread can wipe its own hwaccel
      * state after decoding, without requiring synchronization */
     av_assert0(!p->parent->stash_hwaccel);
-    p->parent->stash_hwaccel         = avctx->hwaccel;
-    p->parent->stash_hwaccel_context = avctx->hwaccel_context;
-    p->parent->stash_hwaccel_priv    = avctx->internal->hwaccel_priv_data;
+    if (hwaccel_serial(avctx)) {
+        p->parent->stash_hwaccel         = avctx->hwaccel;
+        p->parent->stash_hwaccel_context = avctx->hwaccel_context;
+        p->parent->stash_hwaccel_priv    = avctx->internal->hwaccel_priv_data;
+    }
 
     pthread_mutex_lock(&p->progress_mutex);
     if(atomic_load(&p->state) == STATE_SETUP_FINISHED){

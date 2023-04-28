@@ -2253,6 +2253,12 @@ typedef struct AVHWAccel {
      * that avctx->hwaccel_priv_data is invalid.
      */
     int (*frame_params)(AVCodecContext *avctx, AVBufferRef *hw_frames_ctx);
+
+    /**
+     * Copy necessary context variables from a previous thread context to the current one.
+     * For thread-safe hwaccels only.
+     */
+    int (*update_thread_context)(AVCodecContext *dst, const AVCodecContext *src);
 } AVHWAccel;
 
 /**
