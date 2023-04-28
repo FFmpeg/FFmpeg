@@ -1026,7 +1026,7 @@ static int64_t video_duration_estimate(const InputStream *ist, const AVFrame *fr
 }
 
 static int decode_video(InputStream *ist, const AVPacket *pkt, int *got_output,
-                        int64_t *duration_pts, int eof, int *decode_failed)
+                        int eof, int *decode_failed)
 {
     AVFrame *decoded_frame = ist->decoded_frame;
     int ret = 0, err = 0;
@@ -1091,7 +1091,6 @@ static int decode_video(InputStream *ist, const AVPacket *pkt, int *got_output,
     }
 
     best_effort_timestamp= decoded_frame->best_effort_timestamp;
-    *duration_pts = decoded_frame->duration;
 
     if (ist->framerate.num)
         best_effort_timestamp = ist->cfr_next_pts++;
@@ -1385,7 +1384,6 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
 
     // while we have more to decode or while the decoder did output something on EOF
     while (ist->decoding_needed) {
-        int64_t duration_pts = 0;
         int got_output = 0;
         int decode_failed = 0;
 
@@ -1396,7 +1394,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
             av_packet_unref(avpkt);
             break;
         case AVMEDIA_TYPE_VIDEO:
-            ret = decode_video    (ist, repeating ? NULL : avpkt, &got_output, &duration_pts, !pkt,
+            ret = decode_video    (ist, repeating ? NULL : avpkt, &got_output, !pkt,
                                    &decode_failed);
 
             av_packet_unref(avpkt);
