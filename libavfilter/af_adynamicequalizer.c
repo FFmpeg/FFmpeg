@@ -199,16 +199,25 @@ static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
             if (detection > 0)
                 state[5] = fmax(state[5], detect);
 
-            if (direction == 0 && mode == 0 && detect < threshold)
-                detect = 1. / av_clipd(1. + makeup + (threshold - detect) * ratio, 1., range);
-            else if (direction == 0 && mode == 1 && detect < threshold)
-                detect = av_clipd(1. + makeup + (threshold - detect) * ratio, 1., range);
-            else if (direction == 1 && mode == 0 && detect > threshold)
-                detect = 1. / av_clipd(1. + makeup + (detect - threshold) * ratio, 1., range);
-            else if (direction == 1 && mode == 1 && detect > threshold)
-                detect = av_clipd(1. + makeup + (detect - threshold) * ratio, 1., range);
-            else
-                detect = 1.;
+            if (direction == 0) {
+                if (detect < threshold) {
+                    if (mode == 0)
+                        detect = 1. / av_clipd(1. + makeup + (threshold - detect) * ratio, 1., range);
+                    else
+                        detect = av_clipd(1. + makeup + (threshold - detect) * ratio, 1., range);
+                } else {
+                    detect = 1.;
+                }
+            } else {
+                if (detect > threshold) {
+                    if (mode == 0)
+                        detect = 1. / av_clipd(1. + makeup + (detect - threshold) * ratio, 1., range);
+                    else
+                        detect = av_clipd(1. + makeup + (detect - threshold) * ratio, 1., range);
+                } else {
+                    detect = 1.;
+                }
+            }
 
             if (direction == 0) {
                 if (detect > state[4]) {
