@@ -78,7 +78,7 @@ static char *dup_cfstring_to_utf8(CFStringRef w)
 class decklink_output_callback;
 class decklink_input_callback;
 
-typedef struct AVPacketQueue {
+typedef struct DecklinkPacketQueue {
     PacketList pkt_list;
     int nb_packets;
     unsigned long long size;
@@ -87,7 +87,7 @@ typedef struct AVPacketQueue {
     pthread_cond_t cond;
     AVFormatContext *avctx;
     int64_t max_q_size;
-} AVPacketQueue;
+} DecklinkPacketQueue;
 
 struct decklink_ctx {
     /* DeckLink SDK interfaces */
@@ -111,7 +111,7 @@ struct decklink_ctx {
     int supports_vanc;
 
     /* Capture buffer queue */
-    AVPacketQueue queue;
+    DecklinkPacketQueue queue;
 
     AVCCFifo *cc_fifo;      ///< closed captions
 
@@ -234,5 +234,12 @@ void ff_decklink_list_devices_legacy(AVFormatContext *avctx, int show_inputs, in
 int ff_decklink_list_formats(AVFormatContext *avctx, decklink_direction_t direction = DIRECTION_OUT);
 void ff_decklink_cleanup(AVFormatContext *avctx);
 int ff_decklink_init_device(AVFormatContext *avctx, const char* name);
+
+void ff_decklink_packet_queue_init(AVFormatContext *avctx, DecklinkPacketQueue *q);
+void ff_decklink_packet_queue_flush(DecklinkPacketQueue *q);
+void ff_decklink_packet_queue_end(DecklinkPacketQueue *q);
+unsigned long long ff_decklink_packet_queue_size(DecklinkPacketQueue *q);
+int ff_decklink_packet_queue_put(DecklinkPacketQueue *q, AVPacket *pkt);
+int ff_decklink_packet_queue_get(DecklinkPacketQueue *q, AVPacket *pkt, int block);
 
 #endif /* AVDEVICE_DECKLINK_COMMON_H */
