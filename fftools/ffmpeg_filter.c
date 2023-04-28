@@ -352,11 +352,13 @@ static int read_binary(const char *path, uint8_t **data, int *len)
 
     *len = fsize;
 
-    return 0;
+    ret = 0;
 fail:
     avio_close(io);
-    av_freep(data);
-    *len = 0;
+    if (ret < 0) {
+        av_freep(data);
+        *len = 0;
+    }
     return ret;
 }
 
