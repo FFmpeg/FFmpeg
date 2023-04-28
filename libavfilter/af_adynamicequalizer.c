@@ -41,7 +41,8 @@ typedef struct AudioDynamicEqualizerContext {
     int mode;
     int direction;
     int detection;
-    int type;
+    int tftype;
+    int dftype;
 
     AVFrame *state;
 } AudioDynamicEqualizerContext;
@@ -105,12 +106,14 @@ static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     const int end = (in->ch_layout.nb_channels * (jobnr+1)) / nb_jobs;
     const int detection = s->detection;
     const int direction = s->direction;
+    const int dftype = s->dftype;
+    const int tftype = s->tftype;
     const int mode = s->mode;
-    const int type = s->type;
-    double da[3], dm[3];
+    double k, da[3], dm[3];
 
-    {
-        double k = 1. / dqfactor;
+    switch (dftype) {
+    case 0:
+        k = 1. / dqfactor;
 
         da[0] = 1. / (1. + dg * (dg + k));
         da[1] = dg * da[0];
@@ -119,6 +122,40 @@ static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
         dm[0] = 0.;
         dm[1] = k;
         dm[2] = 0.;
+        break;
+    case 1:
+        k = 1. / dqfactor;
+
+        da[0] = 1. / (1. + dg * (dg + k));
+        da[1] = dg * da[0];
+        da[2] = dg * da[1];
+
+        dm[0] = 0.;
+        dm[1] = 0.;
+        dm[2] = 1.;
+        break;
+    case 2:
+        k = 1. / dqfactor;
+
+        da[0] = 1. / (1. + dg * (dg + k));
+        da[1] = dg * da[0];
+        da[2] = dg * da[1];
+
+        dm[0] = 0.;
+        dm[1] = -k;
+        dm[2] = -1.;
+        break;
+    case 3:
+        k = 1. / dqfactor;
+
+        da[0] = 1. / (1. + dg * (dg + k));
+        da[1] = dg * da[0];
+        da[2] = dg * da[1];
+
+        dm[0] = 0.;
+        dm[1] = -k;
+        dm[2] = -2.;
+        break;
     }
 
     for (int ch = start; ch < end; ch++) {
@@ -169,7 +206,7 @@ static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
             if (state[4] != detect || n == 0) {
                 state[4] = gain = detect;
 
-                switch (type) {
+                switch (tftype) {
                 case 0:
                     k = 1. / (tqfactor * gain);
 
@@ -279,10 +316,15 @@ static const AVOption adynamicequalizer_options[] = {
     {   "listen",   0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=-1},       0, 0,       FLAGS, "mode" },
     {   "cut",      0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=0},        0, 0,       FLAGS, "mode" },
     {   "boost",    0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=1},        0, 0,       FLAGS, "mode" },
-    { "tftype",     "set target filter type",  OFFSET(type),       AV_OPT_TYPE_INT,    {.i64=0},        0, 2,       FLAGS, "type" },
-    {   "bell",     0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=0},        0, 0,       FLAGS, "type" },
-    {   "lowshelf", 0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=1},        0, 0,       FLAGS, "type" },
-    {   "highshelf",0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=2},        0, 0,       FLAGS, "type" },
+    { "dftype",     "set detection filter type",OFFSET(dftype),    AV_OPT_TYPE_INT,    {.i64=0},        0, 3,       FLAGS, "dftype" },
+    {   "bandpass", 0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=0},        0, 0,       FLAGS, "dftype" },
+    {   "lowpass",  0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=1},        0, 0,       FLAGS, "dftype" },
+    {   "highpass", 0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=2},        0, 0,       FLAGS, "dftype" },
+    {   "peak",     0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=3},        0, 0,       FLAGS, "dftype" },
+    { "tftype",     "set target filter type",  OFFSET(tftype),     AV_OPT_TYPE_INT,    {.i64=0},        0, 2,       FLAGS, "tftype" },
+    {   "bell",     0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=0},        0, 0,       FLAGS, "tftype" },
+    {   "lowshelf", 0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=1},        0, 0,       FLAGS, "tftype" },
+    {   "highshelf",0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=2},        0, 0,       FLAGS, "tftype" },
     { "direction",  "set direction",           OFFSET(direction),  AV_OPT_TYPE_INT,    {.i64=0},        0, 1,       FLAGS, "direction" },
     {   "downward", 0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=0},        0, 0,       FLAGS, "direction" },
     {   "upward",   0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=1},        0, 0,       FLAGS, "direction" },

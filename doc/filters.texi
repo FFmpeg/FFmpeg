@@ -1007,15 +1007,15 @@ A description of the accepted options follows.
 @table @option
 @item threshold
 Set the detection threshold used to trigger equalization.
-Threshold detection is using bandpass filter.
+Threshold detection is using detection filter.
 Default value is 0. Allowed range is from 0 to 100.
 
 @item dfrequency
-Set the detection frequency in Hz used for bandpass filter used to trigger equalization.
+Set the detection frequency in Hz used for detection filter used to trigger equalization.
 Default value is 1000 Hz. Allowed range is between 2 and 1000000 Hz.
 
 @item dqfactor
-Set the detection resonance factor for bandpass filter used to trigger equalization.
+Set the detection resonance factor for detection filter used to trigger equalization.
 Default value is 1. Allowed range is from 0.001 to 1000.
 
 @item tfrequency
@@ -1053,13 +1053,24 @@ Set the mode of filter operation, can be one of the following:
 
 @table @samp
 @item listen
-Output only isolated bandpass signal.
+Output only isolated detection signal.
 @item cut
 Cut frequencies above detection threshold.
 @item boost
 Boost frequencies bellow detection threshold.
 @end table
 Default mode is @samp{cut}.
+
+@item dftype
+Set the type of detection filter, can be one of the following:
+
+@table @samp
+@item bandpass
+@item lowpass
+@item highpass
+@item peak
+@end table
+Default type is @samp{bandpass}.
 
 @item tftype
 Set the type of target filter, can be one of the following:
