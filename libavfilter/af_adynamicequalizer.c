@@ -44,6 +44,7 @@ typedef struct AudioDynamicEqualizerContext {
     int tftype;
     int dftype;
 
+    double da[3], dm[3];
     AVFrame *state;
 } AudioDynamicEqualizerContext;
 
@@ -65,7 +66,7 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
-static double get_svf(double in, double *m, double *a, double *b)
+static double get_svf(double in, const double *m, const double *a, double *b)
 {
     const double v0 = in;
     const double v3 = v0 - b[1];
@@ -82,34 +83,25 @@ typedef struct ThreadData {
     AVFrame *in, *out;
 } ThreadData;
 
-static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+static double get_coef(double x, double sr)
+{
+    return exp(-1000. / (x * sr));
+}
+
+static int filter_prepare(AVFilterContext *ctx)
 {
     AudioDynamicEqualizerContext *s = ctx->priv;
-    ThreadData *td = arg;
-    AVFrame *in = td->in;
-    AVFrame *out = td->out;
-    const double sample_rate = in->sample_rate;
-    const double makeup = s->makeup;
-    const double ratio = s->ratio;
-    const double range = s->range;
+    const double sample_rate = ctx->inputs[0]->sample_rate;
     const double dfrequency = fmin(s->dfrequency, sample_rate * 0.5);
-    const double tfrequency = fmin(s->tfrequency, sample_rate * 0.5);
-    const double release = s->release_coef;
-    const double irelease = 1. - release;
-    const double attack = s->attack_coef;
-    const double iattack = 1. - attack;
-    const double dqfactor = s->dqfactor;
-    const double tqfactor = s->tqfactor;
-    const double fg = tan(M_PI * tfrequency / sample_rate);
     const double dg = tan(M_PI * dfrequency / sample_rate);
-    const int start = (in->ch_layout.nb_channels * jobnr) / nb_jobs;
-    const int end = (in->ch_layout.nb_channels * (jobnr+1)) / nb_jobs;
-    const int detection = s->detection;
-    const int direction = s->direction;
+    const double dqfactor = s->dqfactor;
     const int dftype = s->dftype;
-    const int tftype = s->tftype;
-    const int mode = s->mode;
-    double k, da[3], dm[3];
+    double *da = s->da;
+    double *dm = s->dm;
+    double k;
+
+    s->attack_coef = get_coef(s->attack, sample_rate);
+    s->release_coef = get_coef(s->release, sample_rate);
 
     switch (dftype) {
     case 0:
@@ -157,6 +149,35 @@ static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
         dm[2] = -2.;
         break;
     }
+
+    return 0;
+}
+
+static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    AudioDynamicEqualizerContext *s = ctx->priv;
+    ThreadData *td = arg;
+    AVFrame *in = td->in;
+    AVFrame *out = td->out;
+    const double sample_rate = in->sample_rate;
+    const double makeup = s->makeup;
+    const double ratio = s->ratio;
+    const double range = s->range;
+    const double tfrequency = fmin(s->tfrequency, sample_rate * 0.5);
+    const double release = s->release_coef;
+    const double irelease = 1. - release;
+    const double attack = s->attack_coef;
+    const double iattack = 1. - attack;
+    const double tqfactor = s->tqfactor;
+    const double fg = tan(M_PI * tfrequency / sample_rate);
+    const int start = (in->ch_layout.nb_channels * jobnr) / nb_jobs;
+    const int end = (in->ch_layout.nb_channels * (jobnr+1)) / nb_jobs;
+    const int detection = s->detection;
+    const int direction = s->direction;
+    const int tftype = s->tftype;
+    const int mode = s->mode;
+    const double *da = s->da;
+    const double *dm = s->dm;
 
     for (int ch = start; ch < end; ch++) {
         const double *src = (const double *)in->extended_data[ch];
@@ -254,16 +275,10 @@ static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     return 0;
 }
 
-static double get_coef(double x, double sr)
-{
-    return exp(-1000. / (x * sr));
-}
-
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
-    AudioDynamicEqualizerContext *s = ctx->priv;
     ThreadData td;
     AVFrame *out;
 
@@ -278,11 +293,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         av_frame_copy_props(out, in);
     }
 
-    s->attack_coef = get_coef(s->attack, in->sample_rate);
-    s->release_coef = get_coef(s->release, in->sample_rate);
-
     td.in = in;
     td.out = out;
+    filter_prepare(ctx);
     ff_filter_execute(ctx, filter_channels, &td, NULL,
                      FFMIN(outlink->ch_layout.nb_channels, ff_filter_get_nb_threads(ctx)));
 
