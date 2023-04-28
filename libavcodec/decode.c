@@ -1111,12 +1111,10 @@ int avcodec_get_hw_frames_parameters(AVCodecContext *avctx,
 }
 
 static int hwaccel_init(AVCodecContext *avctx,
-                        const AVCodecHWConfigInternal *hw_config)
+                        const AVHWAccel *hwaccel)
 {
-    const AVHWAccel *hwaccel;
     int err;
 
-    hwaccel = hw_config->hwaccel;
     if (hwaccel->capabilities & AV_HWACCEL_CODEC_CAP_EXPERIMENTAL &&
         avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
         av_log(avctx, AV_LOG_WARNING, "Ignoring experimental hwaccel: %s\n",
@@ -1137,7 +1135,7 @@ static int hwaccel_init(AVCodecContext *avctx,
         if (err < 0) {
             av_log(avctx, AV_LOG_ERROR, "Failed setup for format %s: "
                    "hwaccel initialisation returned error.\n",
-                   av_get_pix_fmt_name(hw_config->public.pix_fmt));
+                   av_get_pix_fmt_name(hwaccel->pix_fmt));
             av_freep(&avctx->internal->hwaccel_priv_data);
             avctx->hwaccel = NULL;
             return err;
@@ -1271,7 +1269,7 @@ int ff_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt)
         if (hw_config->hwaccel) {
             av_log(avctx, AV_LOG_DEBUG, "Format %s requires hwaccel "
                    "initialisation.\n", desc->name);
-            err = hwaccel_init(avctx, hw_config);
+            err = hwaccel_init(avctx, hw_config->hwaccel);
             if (err < 0)
                 goto try_again;
         }
