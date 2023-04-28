@@ -39,6 +39,7 @@
 #include "decode.h"
 #include "encode.h"
 #include "frame_thread_encoder.h"
+#include "hwconfig.h"
 #include "internal.h"
 #include "thread.h"
 
@@ -459,9 +460,7 @@ av_cold int avcodec_close(AVCodecContext *avctx)
 
         av_buffer_unref(&avci->pool);
 
-        if (avctx->hwaccel && avctx->hwaccel->uninit)
-            avctx->hwaccel->uninit(avctx);
-        av_freep(&avci->hwaccel_priv_data);
+        ff_hwaccel_uninit(avctx);
 
         av_bsf_free(&avci->bsf);
 

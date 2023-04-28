@@ -1145,7 +1145,7 @@ static int hwaccel_init(AVCodecContext *avctx,
     return 0;
 }
 
-static void hwaccel_uninit(AVCodecContext *avctx)
+void ff_hwaccel_uninit(AVCodecContext *avctx)
 {
     if (avctx->hwaccel && avctx->hwaccel->uninit)
         avctx->hwaccel->uninit(avctx);
@@ -1184,7 +1184,7 @@ int ff_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt)
 
     for (;;) {
         // Remove the previous hwaccel, if there was one.
-        hwaccel_uninit(avctx);
+        ff_hwaccel_uninit(avctx);
 
         user_choice = avctx->get_format(avctx, choices);
         if (user_choice == AV_PIX_FMT_NONE) {

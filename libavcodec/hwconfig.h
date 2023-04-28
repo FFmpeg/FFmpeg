@@ -39,6 +39,7 @@ typedef struct AVCodecHWConfigInternal {
     const AVHWAccel *hwaccel;
 } AVCodecHWConfigInternal;
 
+void ff_hwaccel_uninit(AVCodecContext *avctx);
 
 // These macros are used to simplify AVCodecHWConfigInternal definitions.
 
