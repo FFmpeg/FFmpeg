@@ -481,20 +481,20 @@ fail:
 static void readrate_sleep(Demuxer *d)
 {
     InputFile *f = &d->f;
-        int64_t file_start = copy_ts * (
-                              (f->start_time_effective != AV_NOPTS_VALUE ? f->start_time_effective * !start_at_zero : 0) +
-                              (f->start_time != AV_NOPTS_VALUE ? f->start_time : 0)
-                             );
-        int64_t burst_until = AV_TIME_BASE * d->readrate_initial_burst;
-        for (int i = 0; i < f->nb_streams; i++) {
-            InputStream *ist = f->streams[i];
-            int64_t stream_ts_offset, pts, now;
-            stream_ts_offset = FFMAX(ist->first_dts != AV_NOPTS_VALUE ? ist->first_dts : 0, file_start);
-            pts = av_rescale(ist->dts, 1000000, AV_TIME_BASE);
-            now = (av_gettime_relative() - ist->start) * f->readrate + stream_ts_offset;
-            if (pts - burst_until > now)
-                av_usleep(pts - burst_until - now);
-        }
+    int64_t file_start = copy_ts * (
+                          (f->start_time_effective != AV_NOPTS_VALUE ? f->start_time_effective * !start_at_zero : 0) +
+                          (f->start_time != AV_NOPTS_VALUE ? f->start_time : 0)
+                         );
+    int64_t burst_until = AV_TIME_BASE * d->readrate_initial_burst;
+    for (int i = 0; i < f->nb_streams; i++) {
+        InputStream *ist = f->streams[i];
+        int64_t stream_ts_offset, pts, now;
+        stream_ts_offset = FFMAX(ist->first_dts != AV_NOPTS_VALUE ? ist->first_dts : 0, file_start);
+        pts = av_rescale(ist->dts, 1000000, AV_TIME_BASE);
+        now = (av_gettime_relative() - ist->start) * f->readrate + stream_ts_offset;
+        if (pts - burst_until > now)
+            av_usleep(pts - burst_until - now);
+    }
 }
 
 static void thread_set_name(InputFile *f)
