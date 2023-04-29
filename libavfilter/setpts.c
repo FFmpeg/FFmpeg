@@ -63,6 +63,7 @@ static const char *const var_names[] = {
     "S",           //   Number of samples in the current frame
     "SR",          //   Audio sample rate
     "FR",          ///< defined only for constant frame-rate video
+    "T_CHANGE",    ///< time of first frame after latest command was applied
     NULL
 };
 
@@ -90,7 +91,8 @@ enum var_name {
     VAR_S,
     VAR_SR,
     VAR_FR,
-    VAR_VARS_NB
+    VAR_T_CHANGE,
+    VAR_VARS_NB,
 };
 
 typedef struct SetPTSContext {
@@ -120,6 +122,7 @@ static av_cold int init(AVFilterContext *ctx)
     setpts->var_values[VAR_PREV_OUTT]   = NAN;
     setpts->var_values[VAR_STARTPTS]    = NAN;
     setpts->var_values[VAR_STARTT]      = NAN;
+    setpts->var_values[VAR_T_CHANGE]    = NAN;
     return 0;
 }
 
@@ -162,6 +165,9 @@ static double eval_pts(SetPTSContext *setpts, AVFilterLink *inlink, AVFrame *fra
     if (isnan(setpts->var_values[VAR_STARTPTS])) {
         setpts->var_values[VAR_STARTPTS] = TS2D(pts);
         setpts->var_values[VAR_STARTT  ] = TS2T(pts, inlink->time_base);
+    }
+    if (isnan(setpts->var_values[VAR_T_CHANGE])) {
+        setpts->var_values[VAR_T_CHANGE] = TS2T(pts, inlink->time_base);
     }
     setpts->var_values[VAR_PTS       ] = TS2D(pts);
     setpts->var_values[VAR_T         ] = TS2T(pts, inlink->time_base);
@@ -269,14 +275,45 @@ static av_cold void uninit(AVFilterContext *ctx)
     setpts->expr = NULL;
 }
 
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *arg,
+                           char *res, int res_len, int flags)
+{
+    SetPTSContext *setpts = ctx->priv;
+    AVExpr *new_expr;
+    int ret;
+
+    ret = ff_filter_process_command(ctx, cmd, arg, res, res_len, flags);
+
+    if (ret < 0)
+        return ret;
+
+    if (!strcmp(cmd, "expr")) {
+        ret = av_expr_parse(&new_expr, arg, var_names, NULL, NULL, NULL, NULL, 0, ctx);
+        // Only free and replace previous expression if new one succeeds,
+        // otherwise defensively keep everything intact even if reporting an error.
+        if (ret < 0) {
+            av_log(ctx, AV_LOG_ERROR, "Error while parsing expression '%s'\n", arg);
+        } else {
+            av_expr_free(setpts->expr);
+            setpts->expr = new_expr;
+            setpts->var_values[VAR_T_CHANGE] = NAN;
+        }
+    } else {
+        ret = AVERROR(EINVAL);
+    }
+
+    return ret;
+}
+
 #define OFFSET(x) offsetof(SetPTSContext, x)
 #define V AV_OPT_FLAG_VIDEO_PARAM
 #define A AV_OPT_FLAG_AUDIO_PARAM
+#define R AV_OPT_FLAG_RUNTIME_PARAM
 #define F AV_OPT_FLAG_FILTERING_PARAM
 
 #if CONFIG_SETPTS_FILTER
 static const AVOption setpts_options[] = {
-    { "expr", "Expression determining the frame timestamp", OFFSET(expr_str), AV_OPT_TYPE_STRING, { .str = "PTS" }, .flags = V|F },
+    { "expr", "Expression determining the frame timestamp", OFFSET(expr_str), AV_OPT_TYPE_STRING, { .str = "PTS" }, .flags = V|F|R },
     { NULL }
 };
 AVFILTER_DEFINE_CLASS(setpts);
@@ -297,12 +334,13 @@ static const AVFilterPad avfilter_vf_setpts_outputs[] = {
 };
 
 const AVFilter ff_vf_setpts = {
-    .name      = "setpts",
-    .description = NULL_IF_CONFIG_SMALL("Set PTS for the output video frame."),
-    .init      = init,
-    .activate  = activate,
-    .uninit    = uninit,
-    .flags     = AVFILTER_FLAG_METADATA_ONLY,
+    .name            = "setpts",
+    .description     = NULL_IF_CONFIG_SMALL("Set PTS for the output video frame."),
+    .init            = init,
+    .activate        = activate,
+    .uninit          = uninit,
+    .process_command = process_command,
+    .flags           = AVFILTER_FLAG_METADATA_ONLY,
 
     .priv_size = sizeof(SetPTSContext),
     .priv_class = &setpts_class,
@@ -315,7 +353,7 @@ const AVFilter ff_vf_setpts = {
 #if CONFIG_ASETPTS_FILTER
 
 static const AVOption asetpts_options[] = {
-    { "expr", "Expression determining the frame timestamp", OFFSET(expr_str), AV_OPT_TYPE_STRING, { .str = "PTS" }, .flags = A|F },
+    { "expr", "Expression determining the frame timestamp", OFFSET(expr_str), AV_OPT_TYPE_STRING, { .str = "PTS" }, .flags = A|F|R },
     { NULL }
 };
 AVFILTER_DEFINE_CLASS(asetpts);
@@ -336,14 +374,15 @@ static const AVFilterPad asetpts_outputs[] = {
 };
 
 const AVFilter ff_af_asetpts = {
-    .name        = "asetpts",
-    .description = NULL_IF_CONFIG_SMALL("Set PTS for the output audio frame."),
-    .init        = init,
-    .activate    = activate,
-    .uninit      = uninit,
-    .priv_size   = sizeof(SetPTSContext),
-    .priv_class  = &asetpts_class,
-    .flags       = AVFILTER_FLAG_METADATA_ONLY,
+    .name            = "asetpts",
+    .description     = NULL_IF_CONFIG_SMALL("Set PTS for the output audio frame."),
+    .init            = init,
+    .activate        = activate,
+    .uninit          = uninit,
+    .process_command = process_command,
+    .priv_size       = sizeof(SetPTSContext),
+    .priv_class      = &asetpts_class,
+    .flags           = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(asetpts_inputs),
     FILTER_OUTPUTS(asetpts_outputs),
 };

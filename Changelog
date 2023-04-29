@@ -9,6 +9,7 @@ version <next>:
 - arls filter
 - ffmpeg CLI new option: -readrate_initial_burst
 - zoneplate video source filter
+- command support in the setpts and asetpts filters
 
 version 6.0:
 - Radiance HDR image support

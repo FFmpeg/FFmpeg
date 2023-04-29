@@ -29644,6 +29644,9 @@ The wallclock (RTC) time at the start of the movie in microseconds.
 @item TB
 The timebase of the input timestamps.
 
+@item T_CHANGE
+Time of the first frame after command was applied or time of the first frame if no commands.
+
 @end table
 
 @subsection Examples
@@ -29698,6 +29701,10 @@ asetpts=N/SR/TB
 @end example
 
 @end itemize
+
+@subsection Commands
+
+Both filters support all above options as @ref{commands}.
 
 @section setrange
 
