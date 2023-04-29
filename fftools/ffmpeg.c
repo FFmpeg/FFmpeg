@@ -1667,19 +1667,6 @@ static int transcode_init(void)
     return 0;
 }
 
-/* Return 1 if there remain streams where more output is wanted, 0 otherwise. */
-static int need_output(void)
-{
-    for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
-        if (ost->finished)
-            continue;
-
-        return 1;
-    }
-
-    return 0;
-}
-
 /**
  * Select the output stream to process.
  *
@@ -2044,21 +2031,10 @@ discard_packet:
  *
  * @return  0 for success, <0 for error
  */
-static int transcode_step(void)
+static int transcode_step(OutputStream *ost)
 {
-    OutputStream *ost;
     InputStream  *ist = NULL;
     int ret;
-
-    ret = choose_output(&ost);
-    if (ret == AVERROR(EAGAIN)) {
-        reset_eagain();
-        av_usleep(10000);
-        return 0;
-    } else if (ret < 0) {
-        av_log(NULL, AV_LOG_VERBOSE, "No more inputs to read from, finishing.\n");
-        return AVERROR_EOF;
-    }
 
     if (ost->filter && !ost->filter->graph->graph) {
         if (ifilter_has_all_input_formats(ost->filter->graph)) {
@@ -2126,6 +2102,7 @@ static int transcode(void)
     timer_start = av_gettime_relative();
 
     while (!received_sigterm) {
+        OutputStream *ost;
         int64_t cur_time= av_gettime_relative();
 
         /* if 'q' pressed, exits */
@@ -2133,13 +2110,18 @@ static int transcode(void)
             if (check_keyboard_interaction(cur_time) < 0)
                 break;
 
-        /* check if there's any stream where output is still needed */
-        if (!need_output()) {
+        ret = choose_output(&ost);
+        if (ret == AVERROR(EAGAIN)) {
+            reset_eagain();
+            av_usleep(10000);
+            continue;
+        } else if (ret < 0) {
             av_log(NULL, AV_LOG_VERBOSE, "No more output streams to write to, finishing.\n");
+            ret = 0;
             break;
         }
 
-        ret = transcode_step();
+        ret = transcode_step(ost);
         if (ret < 0 && ret != AVERROR_EOF) {
             av_log(NULL, AV_LOG_ERROR, "Error while filtering: %s\n", av_err2str(ret));
             break;
