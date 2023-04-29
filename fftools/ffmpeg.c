@@ -1683,9 +1683,11 @@ static int need_output(void)
 /**
  * Select the output stream to process.
  *
- * @return  selected output stream, or NULL if none available
+ * @retval 0 an output stream was selected
+ * @retval AVERROR(EAGAIN) need to wait until more input is available
+ * @retval AVERROR_EOF no more streams need output
  */
-static OutputStream *choose_output(void)
+static int choose_output(OutputStream **post)
 {
     int64_t opts_min = INT64_MAX;
     OutputStream *ost_min = NULL;
@@ -1704,15 +1706,19 @@ static OutputStream *choose_output(void)
                     ost->initialized, ost->inputs_done, ost->finished);
         }
 
-        if (!ost->initialized && !ost->inputs_done && !ost->finished)
-            return ost->unavailable ? NULL : ost;
-
+        if (!ost->initialized && !ost->inputs_done && !ost->finished) {
+            ost_min = ost;
+            break;
+        }
         if (!ost->finished && opts < opts_min) {
             opts_min = opts;
-            ost_min  = ost->unavailable ? NULL : ost;
+            ost_min  = ost;
         }
     }
-    return ost_min;
+    if (!ost_min)
+        return AVERROR_EOF;
+    *post = ost_min;
+    return ost_min->unavailable ? AVERROR(EAGAIN) : 0;
 }
 
 static void set_tty_echo(int on)
@@ -1797,14 +1803,6 @@ static int check_keyboard_interaction(int64_t cur_time)
                         "s      Show QP histogram\n"
         );
     }
-    return 0;
-}
-
-static int got_eagain(void)
-{
-    for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost))
-        if (ost->unavailable)
-            return 1;
     return 0;
 }
 
@@ -2052,13 +2050,12 @@ static int transcode_step(void)
     InputStream  *ist = NULL;
     int ret;
 
-    ost = choose_output();
-    if (!ost) {
-        if (got_eagain()) {
-            reset_eagain();
-            av_usleep(10000);
-            return 0;
-        }
+    ret = choose_output(&ost);
+    if (ret == AVERROR(EAGAIN)) {
+        reset_eagain();
+        av_usleep(10000);
+        return 0;
+    } else if (ret < 0) {
         av_log(NULL, AV_LOG_VERBOSE, "No more inputs to read from, finishing.\n");
         return AVERROR_EOF;
     }
