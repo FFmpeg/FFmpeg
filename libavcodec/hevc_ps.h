@@ -219,7 +219,7 @@ typedef struct HEVCSPS {
     int palette_max_size;
     int delta_palette_max_predictor_size;
     int sps_palette_predictor_initializers_present_flag;
-    int sps_num_palette_predictor_initializers_minus1;
+    int sps_num_palette_predictor_initializers;
     int sps_palette_predictor_initializer[3][HEVC_MAX_PALETTE_PREDICTOR_SIZE];
     int motion_vector_resolution_control_idc;
     int intra_boundary_filtering_disabled_flag;

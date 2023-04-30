@@ -259,7 +259,7 @@ static int vaapi_hevc_start_frame(AVCodecContext          *avctx,
     pre_palette_size = pps->pps_palette_predictor_initializers_present_flag ?
                        pps->pps_num_palette_predictor_initializers :
                        (sps->sps_palette_predictor_initializers_present_flag ?
-                       sps->sps_num_palette_predictor_initializers_minus1 + 1 :
+                       sps->sps_num_palette_predictor_initializers :
                        0);
 
     if (avctx->profile == FF_PROFILE_HEVC_SCC) {

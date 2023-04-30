@@ -1140,17 +1140,24 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
             sps->sps_curr_pic_ref_enabled_flag = get_bits1(gb);
             sps->palette_mode_enabled_flag     = get_bits1(gb);
             if (sps->palette_mode_enabled_flag) {
-                sps->palette_max_size = get_ue_golomb_long(gb);
-                sps->delta_palette_max_predictor_size = get_ue_golomb_long(gb);
+                sps->palette_max_size = get_ue_golomb(gb);
+                sps->delta_palette_max_predictor_size = get_ue_golomb(gb);
                 sps->sps_palette_predictor_initializers_present_flag = get_bits1(gb);
 
                 if (sps->sps_palette_predictor_initializers_present_flag) {
-                    sps->sps_num_palette_predictor_initializers_minus1 = get_ue_golomb_long(gb);
+                    sps->sps_num_palette_predictor_initializers = get_ue_golomb(gb) + 1;
+                    if (sps->sps_num_palette_predictor_initializers > HEVC_MAX_PALETTE_PREDICTOR_SIZE) {
+                        av_log(avctx, AV_LOG_ERROR,
+                               "sps_num_palette_predictor_initializers out of range: %u\n",
+                               sps->sps_num_palette_predictor_initializers);
+                        return AVERROR_INVALIDDATA;
+                    }
                     num_comps = !sps->chroma_format_idc ? 1 : 3;
-                    for (int comp = 0; comp < num_comps; comp++)
-                        for (i = 0; i <= sps->sps_num_palette_predictor_initializers_minus1; i++)
-                            sps->sps_palette_predictor_initializer[comp][i] =
-                                    get_bits(gb, !comp ? sps->bit_depth : sps->bit_depth_chroma);
+                    for (int comp = 0; comp < num_comps; comp++) {
+                        int bit_depth = !comp ? sps->bit_depth : sps->bit_depth_chroma;
+                        for (i = 0; i < sps->sps_num_palette_predictor_initializers; i++)
+                            sps->sps_palette_predictor_initializer[comp][i] = get_bits(gb, bit_depth);
+                    }
                 }
             }
             sps->motion_vector_resolution_control_idc   = get_bits(gb, 2);
