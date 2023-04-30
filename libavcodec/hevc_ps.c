@@ -927,8 +927,18 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
         sps->output_window = sps->pic_conf_win;
     }
 
-    sps->bit_depth   = get_ue_golomb_long(gb) + 8;
-    bit_depth_chroma = get_ue_golomb_long(gb) + 8;
+    sps->bit_depth = get_ue_golomb_31(gb) + 8;
+    if (sps->bit_depth > 16) {
+        av_log(avctx, AV_LOG_ERROR, "Luma bit depth (%d) is out of range\n",
+               sps->bit_depth);
+        return AVERROR_INVALIDDATA;
+    }
+    bit_depth_chroma = get_ue_golomb_31(gb) + 8;
+    if (bit_depth_chroma > 16) {
+        av_log(avctx, AV_LOG_ERROR, "Chroma bit depth (%d) is out of range\n",
+               bit_depth_chroma);
+        return AVERROR_INVALIDDATA;
+    }
     if (sps->chroma_format_idc && bit_depth_chroma != sps->bit_depth) {
         av_log(avctx, AV_LOG_ERROR,
                "Luma bit depth (%d) is different from chroma bit depth (%d), "
