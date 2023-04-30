@@ -55,6 +55,8 @@ static FilterGraphPriv *fgp_from_fg(FilterGraph *fg)
 typedef struct InputFilterPriv {
     InputFilter ifilter;
 
+    int eof;
+
     AVRational time_base;
 
     AVFifo *frame_queue;
@@ -1353,7 +1355,8 @@ int configure_filtergraph(FilterGraph *fg)
 
     /* send the EOFs for the finished inputs */
     for (i = 0; i < fg->nb_inputs; i++) {
-        if (fg->inputs[i]->eof) {
+        InputFilterPriv *ifp = ifp_from_ifilter(fg->inputs[i]);
+        if (ifp->eof) {
             ret = av_buffersrc_add_frame(fg->inputs[i]->filter, NULL);
             if (ret < 0)
                 goto fail;
@@ -1500,7 +1503,7 @@ int ifilter_send_eof(InputFilter *ifilter, int64_t pts, AVRational tb)
     InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
     int ret;
 
-    ifilter->eof = 1;
+    ifp->eof = 1;
 
     if (ifilter->filter) {
         pts = av_rescale_q_rnd(pts, tb, ifp->time_base,
