@@ -24,9 +24,10 @@
  */
 
 #include "../dnn_interface.h"
-#include "dnn_backend_tf.h"
-#include "dnn_backend_openvino.h"
 #include "libavutil/mem.h"
+
+extern const DNNModule ff_dnn_backend_openvino;
+extern const DNNModule ff_dnn_backend_tf;
 
 DNNModule *ff_get_dnn_module(DNNBackendType backend_type)
 {
@@ -40,11 +41,7 @@ DNNModule *ff_get_dnn_module(DNNBackendType backend_type)
     switch(backend_type){
     case DNN_TF:
     #if (CONFIG_LIBTENSORFLOW == 1)
-        dnn_module->load_model = &ff_dnn_load_model_tf;
-        dnn_module->execute_model = &ff_dnn_execute_model_tf;
-        dnn_module->get_result = &ff_dnn_get_result_tf;
-        dnn_module->flush = &ff_dnn_flush_tf;
-        dnn_module->free_model = &ff_dnn_free_model_tf;
+        *dnn_module = ff_dnn_backend_tf;
     #else
         av_freep(&dnn_module);
         return NULL;
@@ -52,11 +49,7 @@ DNNModule *ff_get_dnn_module(DNNBackendType backend_type)
         break;
     case DNN_OV:
     #if (CONFIG_LIBOPENVINO == 1)
-        dnn_module->load_model = &ff_dnn_load_model_ov;
-        dnn_module->execute_model = &ff_dnn_execute_model_ov;
-        dnn_module->get_result = &ff_dnn_get_result_ov;
-        dnn_module->flush = &ff_dnn_flush_ov;
-        dnn_module->free_model = &ff_dnn_free_model_ov;
+        *dnn_module = ff_dnn_backend_openvino;
     #else
         av_freep(&dnn_module);
         return NULL;
