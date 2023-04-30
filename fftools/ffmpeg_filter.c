@@ -61,6 +61,8 @@ typedef struct InputFilterPriv {
 
     AVFifo *frame_queue;
 
+    int32_t *displaymatrix;
+
     // fallback parameters to use when no input is ever sent
     struct {
         int                 format;
@@ -270,7 +272,7 @@ void fg_free(FilterGraph **pfg)
                 av_frame_free(&frame);
             av_fifo_freep2(&ifp->frame_queue);
         }
-        av_freep(&ifilter->displaymatrix);
+        av_freep(&ifp->displaymatrix);
         if (ist->sub2video.sub_queue) {
             AVSubtitle sub;
             while (av_fifo_read(ist->sub2video.sub_queue, &sub, 1) >= 0)
@@ -1061,7 +1063,7 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
 
     // TODO: insert hwaccel enabled filters like transpose_vaapi into the graph
     if (ist->autorotate && !(desc->flags & AV_PIX_FMT_FLAG_HWACCEL)) {
-        int32_t *displaymatrix = ifilter->displaymatrix;
+        int32_t *displaymatrix = ifp->displaymatrix;
         double theta;
 
         if (!displaymatrix)
@@ -1407,6 +1409,7 @@ int ifilter_parameters_from_dec(InputFilter *ifilter, const AVCodecContext *dec)
 
 static int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *frame)
 {
+    InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
     AVFrameSideData *sd;
     int ret;
 
@@ -1423,10 +1426,10 @@ static int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *fr
     if (ret < 0)
         return ret;
 
-    av_freep(&ifilter->displaymatrix);
+    av_freep(&ifp->displaymatrix);
     sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DISPLAYMATRIX);
     if (sd)
-        ifilter->displaymatrix = av_memdup(sd->data, sizeof(int32_t) * 9);
+        ifp->displaymatrix = av_memdup(sd->data, sizeof(int32_t) * 9);
 
     if (frame->hw_frames_ctx) {
         ifilter->hw_frames_ctx = av_buffer_ref(frame->hw_frames_ctx);
@@ -1567,9 +1570,9 @@ int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame, int keep_reference)
         need_reinit = 1;
 
     if (sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DISPLAYMATRIX)) {
-        if (!ifilter->displaymatrix || memcmp(sd->data, ifilter->displaymatrix, sizeof(int32_t) * 9))
+        if (!ifp->displaymatrix || memcmp(sd->data, ifp->displaymatrix, sizeof(int32_t) * 9))
             need_reinit = 1;
-    } else if (ifilter->displaymatrix)
+    } else if (ifp->displaymatrix)
         need_reinit = 1;
 
     if (need_reinit) {
