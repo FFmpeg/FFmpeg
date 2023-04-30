@@ -474,8 +474,6 @@ static int load_tf_model(TFModel *tf_model, const char *model_filename)
     return 0;
 }
 
-#define NAME_BUFFER_SIZE 256
-
 static void dnn_free_model_tf(DNNModel **model)
 {
     TFModel *tf_model;
