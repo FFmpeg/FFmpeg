@@ -60,11 +60,12 @@ static void sdr(AVFilterContext *ctx, const AVFrame *u, const AVFrame *v)
 static int activate(AVFilterContext *ctx)
 {
     AudioSDRContext *s = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
     int ret, status;
     int available;
     int64_t pts;
 
-    FF_FILTER_FORWARD_STATUS_BACK_ALL(ctx->outputs[0], ctx);
+    FF_FILTER_FORWARD_STATUS_BACK_ALL(outlink, ctx);
 
     available = FFMIN(ff_inlink_queued_samples(ctx->inputs[0]), ff_inlink_queued_samples(ctx->inputs[1]));
     if (available > 0) {
@@ -83,21 +84,22 @@ static int activate(AVFilterContext *ctx)
         av_frame_free(&s->cache[1]);
         out = s->cache[0];
         out->nb_samples = available;
-        out->pts = s->pts;
+        out->pts = av_rescale_q(s->pts, av_make_q(1, outlink->sample_rate), outlink->time_base);
+        out->duration = av_rescale_q(out->nb_samples, av_make_q(1, outlink->sample_rate), outlink->time_base);
         s->pts += available;
         s->cache[0] = NULL;
 
-        return ff_filter_frame(ctx->outputs[0], out);
+        return ff_filter_frame(outlink, out);
     }
 
     for (int i = 0; i < 2; i++) {
         if (ff_inlink_acknowledge_status(ctx->inputs[i], &status, &pts)) {
-            ff_outlink_set_status(ctx->outputs[0], status, s->pts);
+            ff_outlink_set_status(outlink, status, s->pts);
             return 0;
         }
     }
 
-    if (ff_outlink_frame_wanted(ctx->outputs[0])) {
+    if (ff_outlink_frame_wanted(outlink)) {
         for (int i = 0; i < 2; i++) {
             if (ff_inlink_queued_samples(ctx->inputs[i]) > 0)
                 continue;
