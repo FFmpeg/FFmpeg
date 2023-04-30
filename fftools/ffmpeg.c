@@ -2018,34 +2018,11 @@ static int transcode_step(OutputStream *ost)
     InputStream  *ist = NULL;
     int ret;
 
-    if (ost->filter && !ost->filter->graph->graph) {
-        if (ifilter_has_all_input_formats(ost->filter->graph)) {
-            ret = configure_filtergraph(ost->filter->graph);
-            if (ret < 0) {
-                av_log(NULL, AV_LOG_ERROR, "Error reinitializing filters!\n");
-                return ret;
-            }
-        }
-    }
-
-    if (ost->filter && ost->filter->graph->graph) {
+    if (ost->filter) {
         if ((ret = fg_transcode_step(ost->filter->graph, &ist)) < 0)
             return ret;
         if (!ist)
             return 0;
-    } else if (ost->filter) {
-        int i;
-        for (i = 0; i < ost->filter->graph->nb_inputs; i++) {
-            InputFilter *ifilter = ost->filter->graph->inputs[i];
-            if (!ifilter->ist->got_output && !input_files[ifilter->ist->file_index]->eof_reached) {
-                ist = ifilter->ist;
-                break;
-            }
-        }
-        if (!ist) {
-            ost->inputs_done = 1;
-            return 0;
-        }
     } else {
         ist = ost->ist;
         av_assert0(ist);

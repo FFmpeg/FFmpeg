@@ -1623,6 +1623,33 @@ int fg_transcode_step(FilterGraph *graph, InputStream **best_ist)
     InputFilter *ifilter;
     InputStream *ist;
 
+    if (!graph->graph && ifilter_has_all_input_formats(graph)) {
+        // graph has not been configured yet, but everything is ready;
+        // this can happen for graphs with no inputs, or when some input
+        // EOF'ed with zero frames and fallback parameters were used
+        ret = configure_filtergraph(graph);
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Error reinitializing filters!\n");
+            return ret;
+        }
+    }
+
+    if (!graph->graph) {
+        for (int i = 0; i < graph->nb_inputs; i++) {
+            InputFilter *ifilter = graph->inputs[i];
+            if (!ifilter->ist->got_output && !input_files[ifilter->ist->file_index]->eof_reached) {
+                *best_ist = ifilter->ist;
+                return 0;
+            }
+        }
+
+        // graph not configured, but all inputs are either initialized or EOF
+        for (int i = 0; i < graph->nb_outputs; i++)
+            graph->outputs[i]->ost->inputs_done = 1;
+
+        return 0;
+    }
+
     *best_ist = NULL;
     ret = avfilter_graph_request_oldest(graph->graph);
     if (ret >= 0)
