@@ -735,7 +735,7 @@ static void infer_completion_callback(void *args) {
         outputs[i].width = TF_Dim(infer_request->output_tensors[i], 2);
         outputs[i].channels = TF_Dim(infer_request->output_tensors[i], 3);
         outputs[i].data = TF_TensorData(infer_request->output_tensors[i]);
-        outputs[i].dt = TF_TensorType(infer_request->output_tensors[i]);
+        outputs[i].dt = (DNNDataType)TF_TensorType(infer_request->output_tensors[i]);
     }
     switch (tf_model->model->func_type) {
     case DFT_PROCESS_FRAME:
