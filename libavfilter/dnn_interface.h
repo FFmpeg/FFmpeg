@@ -123,6 +123,6 @@ typedef struct DNNModule{
 } DNNModule;
 
 // Initializes DNNModule depending on chosen backend.
-const DNNModule *ff_get_dnn_module(DNNBackendType backend_type);
+const DNNModule *ff_get_dnn_module(DNNBackendType backend_type, void *log_ctx);
 
 #endif

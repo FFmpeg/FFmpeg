@@ -68,7 +68,7 @@ int ff_dnn_init(DnnContext *ctx, DNNFunctionType func_type, AVFilterContext *fil
         return AVERROR(EINVAL);
     }
 
-    ctx->dnn_module = ff_get_dnn_module(ctx->backend_type);
+    ctx->dnn_module = ff_get_dnn_module(ctx->backend_type, filter_ctx);
     if (!ctx->dnn_module) {
         av_log(filter_ctx, AV_LOG_ERROR, "could not create DNN module for requested backend\n");
         return AVERROR(ENOMEM);
