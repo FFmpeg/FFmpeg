@@ -1620,7 +1620,6 @@ int fg_transcode_step(FilterGraph *graph, InputStream **best_ist)
 {
     int i, ret;
     int nb_requests, nb_requests_max = 0;
-    InputFilter *ifilter;
     InputStream *ist;
 
     if (!graph->graph && ifilter_has_all_input_formats(graph)) {
@@ -1637,7 +1636,8 @@ int fg_transcode_step(FilterGraph *graph, InputStream **best_ist)
     if (!graph->graph) {
         for (int i = 0; i < graph->nb_inputs; i++) {
             InputFilter *ifilter = graph->inputs[i];
-            if (!ifilter->ist->got_output && !input_files[ifilter->ist->file_index]->eof_reached) {
+            InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
+            if (!ifilter->ist->got_output && !ifp->eof) {
                 *best_ist = ifilter->ist;
                 return 0;
             }
@@ -1665,10 +1665,11 @@ int fg_transcode_step(FilterGraph *graph, InputStream **best_ist)
         return ret;
 
     for (i = 0; i < graph->nb_inputs; i++) {
-        ifilter = graph->inputs[i];
+        InputFilter *ifilter = graph->inputs[i];
+        InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
+
         ist = ifilter->ist;
-        if (input_files[ist->file_index]->eagain ||
-            input_files[ist->file_index]->eof_reached)
+        if (input_files[ist->file_index]->eagain || ifp->eof)
             continue;
         nb_requests = av_buffersrc_get_nb_failed_requests(ifilter->filter);
         if (nb_requests > nb_requests_max) {
