@@ -21,6 +21,7 @@
 
 #include "avfilter.h"
 
+extern const AVFilter ff_af_aap;
 extern const AVFilter ff_af_abench;
 extern const AVFilter ff_af_acompressor;
 extern const AVFilter ff_af_acontrast;

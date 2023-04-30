@@ -418,6 +418,63 @@ build.
 
 Below is a description of the currently available audio filters.
 
+@section aap
+Apply Affine Projection algorithm to the first audio stream using the second audio stream.
+
+This adaptive filter is used to estimate unknown audio based on multiple input audio samples.
+Affine projection algorithm can make trade-offs between computation complexity with convergence speed.
+
+A description of the accepted options follows.
+
+@table @option
+@item order
+Set the filter order.
+
+@item projection
+Set the projection order.
+
+@item mu
+Set the filter mu.
+
+@item delta
+Set the coefficient to initialize internal covariance matrix.
+
+@item out_mode
+Set the filter output samples. It accepts the following values:
+@table @option
+@item i
+Pass the 1st input.
+
+@item d
+Pass the 2nd input.
+
+@item o
+Pass difference between desired, 2nd input and error signal estimate.
+
+@item n
+Pass difference between input, 1st input and error signal estimate.
+
+@item e
+Pass error signal estimated samples.
+
+Default value is @var{o}.
+@end table
+
+@item precision
+Set which precision to use when processing samples.
+
+@table @option
+@item auto
+Auto pick internal sample format depending on other filters.
+
+@item float
+Always use single-floating point precision sample format.
+
+@item double
+Always use double-floating point precision sample format.
+@end table
+@end table
+
 @section acompressor
 
 A compressor is mainly used to reduce the dynamic range of a signal.

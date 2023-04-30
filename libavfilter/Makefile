@@ -35,6 +35,7 @@ OBJS-$(CONFIG_DNN)                           += dnn_filter_common.o
 include $(SRC_PATH)/libavfilter/dnn/Makefile
 
 # audio filters
+OBJS-$(CONFIG_AAP_FILTER)                    += af_aap.o
 OBJS-$(CONFIG_ABENCH_FILTER)                 += f_bench.o
 OBJS-$(CONFIG_ACOMPRESSOR_FILTER)            += af_sidechaincompress.o
 OBJS-$(CONFIG_ACONTRAST_FILTER)              += af_acontrast.o
