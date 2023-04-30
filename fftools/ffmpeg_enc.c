@@ -1140,16 +1140,6 @@ void enc_flush(void)
                    "Finishing stream without any data written to it.\n");
 
             if (ost->filter && !fg->graph) {
-                int x;
-                for (x = 0; x < fg->nb_inputs; x++) {
-                    InputFilter *ifilter = fg->inputs[x];
-                    if (ifilter->format < 0 &&
-                        ifilter_parameters_from_codecpar(ifilter, ifilter->ist->par) < 0) {
-                        av_log(ost, AV_LOG_ERROR, "Error copying paramerets from input stream\n");
-                        exit_program(1);
-                    }
-                }
-
                 if (!ifilter_has_all_input_formats(fg))
                     continue;
 
