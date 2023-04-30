@@ -625,7 +625,7 @@ static int fill_model_input_tf(TFModel *tf_model, TFRequestItem *request) {
     DNNData input;
     LastLevelTaskItem *lltask;
     TaskItem *task;
-    TFInferRequest *infer_request;
+    TFInferRequest *infer_request = NULL;
     TFContext *ctx = &tf_model->ctx;
     int ret = 0;
 
