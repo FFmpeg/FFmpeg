@@ -61,6 +61,8 @@ typedef struct InputFilterPriv {
 
     AVFifo *frame_queue;
 
+    AVBufferRef *hw_frames_ctx;
+
     int32_t *displaymatrix;
 
     // fallback parameters to use when no input is ever sent
@@ -282,7 +284,7 @@ void fg_free(FilterGraph **pfg)
 
         av_channel_layout_uninit(&ifp->fallback.ch_layout);
 
-        av_buffer_unref(&ifilter->hw_frames_ctx);
+        av_buffer_unref(&ifp->hw_frames_ctx);
         av_freep(&ifilter->name);
         av_freep(&fg->inputs[j]);
     }
@@ -1051,7 +1053,7 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
     if ((ret = avfilter_graph_create_filter(&ifilter->filter, buffer_filt, name,
                                             args.str, NULL, fg->graph)) < 0)
         goto fail;
-    par->hw_frames_ctx = ifilter->hw_frames_ctx;
+    par->hw_frames_ctx = ifp->hw_frames_ctx;
     ret = av_buffersrc_parameters_set(ifilter->filter, par);
     if (ret < 0)
         goto fail;
@@ -1413,7 +1415,7 @@ static int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *fr
     AVFrameSideData *sd;
     int ret;
 
-    av_buffer_unref(&ifilter->hw_frames_ctx);
+    av_buffer_unref(&ifp->hw_frames_ctx);
 
     ifilter->format = frame->format;
 
@@ -1432,8 +1434,8 @@ static int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *fr
         ifp->displaymatrix = av_memdup(sd->data, sizeof(int32_t) * 9);
 
     if (frame->hw_frames_ctx) {
-        ifilter->hw_frames_ctx = av_buffer_ref(frame->hw_frames_ctx);
-        if (!ifilter->hw_frames_ctx)
+        ifp->hw_frames_ctx = av_buffer_ref(frame->hw_frames_ctx);
+        if (!ifp->hw_frames_ctx)
             return AVERROR(ENOMEM);
     }
 
@@ -1565,8 +1567,8 @@ int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame, int keep_reference)
     if (!ifilter->ist->reinit_filters && fg->graph)
         need_reinit = 0;
 
-    if (!!ifilter->hw_frames_ctx != !!frame->hw_frames_ctx ||
-        (ifilter->hw_frames_ctx && ifilter->hw_frames_ctx->data != frame->hw_frames_ctx->data))
+    if (!!ifp->hw_frames_ctx != !!frame->hw_frames_ctx ||
+        (ifp->hw_frames_ctx && ifp->hw_frames_ctx->data != frame->hw_frames_ctx->data))
         need_reinit = 1;
 
     if (sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DISPLAYMATRIX)) {

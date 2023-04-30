@@ -286,8 +286,6 @@ typedef struct InputFilter {
 
     int sample_rate;
     AVChannelLayout ch_layout;
-
-    AVBufferRef *hw_frames_ctx;
 } InputFilter;
 
 typedef struct OutputFilter {
