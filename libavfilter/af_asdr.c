@@ -79,7 +79,8 @@ static int activate(AVFilterContext *ctx)
             }
         }
 
-        sdr(ctx, s->cache[0], s->cache[1]);
+        if (!ctx->is_disabled)
+            sdr(ctx, s->cache[0], s->cache[1]);
 
         av_frame_free(&s->cache[1]);
         out = s->cache[0];
@@ -168,7 +169,8 @@ const AVFilter ff_af_asdr = {
     .priv_size      = sizeof(AudioSDRContext),
     .activate       = activate,
     .uninit         = uninit,
-    .flags          = AVFILTER_FLAG_METADATA_ONLY,
+    .flags          = AVFILTER_FLAG_METADATA_ONLY |
+                      AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
     FILTER_SINGLE_SAMPLEFMT(AV_SAMPLE_FMT_DBLP),
