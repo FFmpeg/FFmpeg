@@ -29,37 +29,19 @@
 extern const DNNModule ff_dnn_backend_openvino;
 extern const DNNModule ff_dnn_backend_tf;
 
-DNNModule *ff_get_dnn_module(DNNBackendType backend_type)
+const DNNModule *ff_get_dnn_module(DNNBackendType backend_type)
 {
-    DNNModule *dnn_module;
-
-    dnn_module = av_mallocz(sizeof(DNNModule));
-    if(!dnn_module){
-        return NULL;
-    }
-
     switch(backend_type){
-    case DNN_TF:
     #if (CONFIG_LIBTENSORFLOW == 1)
-        *dnn_module = ff_dnn_backend_tf;
-    #else
-        av_freep(&dnn_module);
-        return NULL;
+    case DNN_TF:
+        return &ff_dnn_backend_tf;
     #endif
-        break;
-    case DNN_OV:
     #if (CONFIG_LIBOPENVINO == 1)
-        *dnn_module = ff_dnn_backend_openvino;
-    #else
-        av_freep(&dnn_module);
-        return NULL;
+    case DNN_OV:
+        return &ff_dnn_backend_openvino;
     #endif
-        break;
     default:
         av_log(NULL, AV_LOG_ERROR, "Module backend_type is not supported or enabled.\n");
-        av_freep(&dnn_module);
         return NULL;
     }
-
-    return dnn_module;
 }

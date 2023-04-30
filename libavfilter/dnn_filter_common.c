@@ -158,6 +158,5 @@ void ff_dnn_uninit(DnnContext *ctx)
 {
     if (ctx->dnn_module) {
         (ctx->dnn_module->free_model)(&ctx->model);
-        av_freep(&ctx->dnn_module);
     }
 }
