@@ -769,24 +769,6 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
     first_report = 0;
 }
 
-int ifilter_parameters_from_codecpar(InputFilter *ifilter, AVCodecParameters *par)
-{
-    int ret;
-
-    // We never got any input. Set a fake format, which will
-    // come from libavformat.
-    ifilter->format                 = par->format;
-    ifilter->sample_rate            = par->sample_rate;
-    ifilter->width                  = par->width;
-    ifilter->height                 = par->height;
-    ifilter->sample_aspect_ratio    = par->sample_aspect_ratio;
-    ret = av_channel_layout_copy(&ifilter->ch_layout, &par->ch_layout);
-    if (ret < 0)
-        return ret;
-
-    return 0;
-}
-
 static void check_decode_result(InputStream *ist, int *got_output, int ret)
 {
     if (*got_output || ret<0)

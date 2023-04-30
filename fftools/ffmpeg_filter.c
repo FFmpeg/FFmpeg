@@ -58,6 +58,19 @@ typedef struct InputFilterPriv {
     AVRational time_base;
 
     AVFifo *frame_queue;
+
+    // fallback parameters to use when no input is ever sent
+    struct {
+        int                 format;
+
+        int                 width;
+        int                 height;
+        AVRational          sample_aspect_ratio;
+
+        int                 sample_rate;
+        AVChannelLayout     ch_layout;
+    } fallback;
+
 } InputFilterPriv;
 
 static InputFilterPriv *ifp_from_ifilter(InputFilter *ifilter)
@@ -225,6 +238,8 @@ static InputFilter *ifilter_alloc(FilterGraph *fg)
     ifilter->graph  = fg;
     ifilter->format = -1;
 
+    ifp->fallback.format = -1;
+
     ifp->frame_queue = av_fifo_alloc2(8, sizeof(AVFrame*), AV_FIFO_FLAG_AUTO_GROW);
     if (!ifp->frame_queue)
         report_and_exit(AVERROR(ENOMEM));
@@ -260,6 +275,9 @@ void fg_free(FilterGraph **pfg)
                 avsubtitle_free(&sub);
             av_fifo_freep2(&ist->sub2video.sub_queue);
         }
+
+        av_channel_layout_uninit(&ifp->fallback.ch_layout);
+
         av_buffer_unref(&ifilter->hw_frames_ctx);
         av_freep(&ifilter->name);
         av_freep(&fg->inputs[j]);
@@ -1361,6 +1379,29 @@ fail:
     return ret;
 }
 
+int ifilter_parameters_from_dec(InputFilter *ifilter, const AVCodecContext *dec)
+{
+    InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
+
+    if (dec->codec_type == AVMEDIA_TYPE_VIDEO) {
+        ifp->fallback.format                 = dec->pix_fmt;
+        ifp->fallback.width                  = dec->width;
+        ifp->fallback.height                 = dec->height;
+        ifp->fallback.sample_aspect_ratio    = dec->sample_aspect_ratio;
+    } else {
+        int ret;
+
+        ifp->fallback.format                 = dec->sample_fmt;
+        ifp->fallback.sample_rate            = dec->sample_rate;
+
+        ret = av_channel_layout_copy(&ifp->fallback.ch_layout, &dec->ch_layout);
+        if (ret < 0)
+            return ret;
+    }
+
+    return 0;
+}
+
 static int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *frame)
 {
     AVFrameSideData *sd;
@@ -1469,12 +1510,18 @@ int ifilter_send_eof(InputFilter *ifilter, int64_t pts, AVRational tb)
         if (ret < 0)
             return ret;
     } else {
-        // the filtergraph was never configured
-        if (ifilter->format < 0) {
-            ret = ifilter_parameters_from_codecpar(ifilter, ifilter->ist->par);
-            if (ret < 0)
-                return ret;
-        }
+        // the filtergraph was never configured, use the fallback parameters
+        ifilter->format                 = ifp->fallback.format;
+        ifilter->sample_rate            = ifp->fallback.sample_rate;
+        ifilter->width                  = ifp->fallback.width;
+        ifilter->height                 = ifp->fallback.height;
+        ifilter->sample_aspect_ratio    = ifp->fallback.sample_aspect_ratio;
+
+        ret = av_channel_layout_copy(&ifilter->ch_layout,
+                                     &ifp->fallback.ch_layout);
+        if (ret < 0)
+            return ret;
+
         if (ifilter->format < 0 && (ifilter->type == AVMEDIA_TYPE_AUDIO || ifilter->type == AVMEDIA_TYPE_VIDEO)) {
             av_log(NULL, AV_LOG_ERROR, "Cannot determine format of input stream %d:%d after EOF\n", ifilter->ist->file_index, ifilter->ist->st->index);
             return AVERROR_INVALIDDATA;

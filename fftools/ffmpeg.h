@@ -788,7 +788,13 @@ void sub2video_update(InputStream *ist, int64_t heartbeat_pts, AVSubtitle *sub);
 int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame, int keep_reference);
 int ifilter_send_eof(InputFilter *ifilter, int64_t pts, AVRational tb);
 
-int ifilter_parameters_from_codecpar(InputFilter *ifilter, AVCodecParameters *par);
+/**
+ * Set up fallback filtering parameters from a decoder context. They will only
+ * be used if no frames are ever sent on this input, otherwise the actual
+ * parameters are taken from the frame.
+ */
+int ifilter_parameters_from_dec(InputFilter *ifilter, const AVCodecContext *dec);
+
 int ifilter_has_all_input_formats(FilterGraph *fg);
 
 /**
