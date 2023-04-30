@@ -1415,7 +1415,9 @@ static int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *fr
     AVFrameSideData *sd;
     int ret;
 
-    av_buffer_unref(&ifp->hw_frames_ctx);
+    ret = av_buffer_replace(&ifp->hw_frames_ctx, frame->hw_frames_ctx);
+    if (ret < 0)
+        return ret;
 
     ifilter->format = frame->format;
 
@@ -1432,12 +1434,6 @@ static int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *fr
     sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DISPLAYMATRIX);
     if (sd)
         ifp->displaymatrix = av_memdup(sd->data, sizeof(int32_t) * 9);
-
-    if (frame->hw_frames_ctx) {
-        ifp->hw_frames_ctx = av_buffer_ref(frame->hw_frames_ctx);
-        if (!ifp->hw_frames_ctx)
-            return AVERROR(ENOMEM);
-    }
 
     return 0;
 }
