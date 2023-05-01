@@ -15997,9 +15997,30 @@ in source frames.
 @table @option
 @item w
 @item h
-Set the output video dimension expression. Default value is the input dimension.
+Set the output video dimension expression. Default values are @code{iw} and
+@code{ih}.
 
 Allows for the same expressions as the @ref{scale} filter.
+
+@item crop_x
+@item crop_y
+Set the input crop x/y expressions, default values are @code{(iw-cw)/2} and
+@code{(ih-ch)/2}.
+
+@item crop_w
+@item crop_h
+Set the input crop width/height expressions, default values are @code{iw} and
+@code{ih}.
+
+@item pos_x
+@item pos_y
+Set the output placement x/y expressions, default values are @code{(ow-pw)/2}
+and @code{(oh-ph)/2}.
+
+@item pos_w
+@item pos_h
+Set the output placement width/height expressions, default values are @code{ow}
+and @code{oh}.
 
 @item format
 Set the output format override. If unset (the default), frames will be output
@@ -16012,9 +16033,9 @@ Work the same as the identical @ref{scale} filter options.
 
 @item normalize_sar
 If enabled, output frames will always have a pixel aspect ratio of 1:1. This
-will introduce padding/cropping as necessary. If disabled (the default), any
-aspect ratio mismatches, including those from e.g. anamorphic video sources,
-are forwarded to the output pixel aspect ratio.
+will introduce additional padding/cropping as necessary. If disabled (the
+default), any aspect ratio mismatches, including those from e.g. anamorphic
+video sources, are forwarded to the output pixel aspect ratio.
 
 @item pad_crop_ratio
 Specifies a ratio (between @code{0.0} and @code{1.0}) between padding and
@@ -16026,7 +16047,7 @@ approaches.
 
 @item fillcolor
 Set the color used to fill the output area not covered by the output image, for
-example as a result of @ref{normalize_sar}. For the general syntax of this
+example as a result of @option{normalize_sar}. For the general syntax of this
 option, check the @ref{color syntax,,"Color" section in the ffmpeg-utils
 manual,ffmpeg-utils}. Defaults to @code{black}.
 
@@ -16049,6 +16070,30 @@ Apply Dolby Vision RPU metadata if present in source frames, and strip it from
 the output. Enabled by default. Note that Dolby Vision will always output
 BT.2020+PQ, overriding the usual input frame metadata. These will also be
 picked as the values of @code{auto} for the respective frame output options.
+@end table
+
+In addition to the expression constants documented for the @ref{scale} filter,
+the @option{crop_w}, @option{crop_h}, @option{crop_x}, @option{crop_y},
+@option{pos_w}, @option{pos_h}, @option{pos_x} and @option{pos_y} options can
+also contain the following constants:
+
+@table @option
+@item crop_w, cw
+@item crop_h, ch
+The computed values of @option{crop_w} and @option{crop_h}.
+
+@item pos_w, pw
+@item pos_h, ph
+The computed values of @option{pos_w} and @option{pos_h}.
+
+@item in_t, t
+The input frame timestamp, in seconds. NAN if input timestamp is unknown.
+
+@item out_t, ot
+The input frame timestamp, in seconds. NAN if input timestamp is unknown.
+
+@item n
+The input frame number, starting with 0.
 @end table
 
 @subsubsection Scaling

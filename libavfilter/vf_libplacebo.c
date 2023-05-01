@@ -16,6 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/eval.h"
 #include "libavutil/file.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
@@ -60,6 +61,50 @@ static const struct pl_tone_map_function * const tonemapping_funcs[TONE_MAP_COUN
     [TONE_MAP_LINEAR]    = &pl_tone_map_linear,
 };
 
+static const char *const var_names[] = {
+    "in_w", "iw",   ///< width  of the input video frame
+    "in_h", "ih",   ///< height of the input video frame
+    "out_w", "ow",  ///< width  of the output video frame
+    "out_h", "oh",  ///< height of the output video frame
+    "crop_w", "cw", ///< evaluated input crop width
+    "crop_h", "ch", ///< evaluated input crop height
+    "pos_w", "pw",  ///< evaluated output placement width
+    "pos_h", "ph",  ///< evaluated output placement height
+    "a",            ///< iw/ih
+    "sar",          ///< input pixel aspect ratio
+    "dar",          ///< output pixel aspect ratio
+    "hsub",         ///< input horizontal subsampling factor
+    "vsub",         ///< input vertical subsampling factor
+    "ohsub",        ///< output horizontal subsampling factor
+    "ovsub",        ///< output vertical subsampling factor
+    "in_t", "t",    ///< input frame pts
+    "out_t", "ot",  ///< output frame pts
+    "n",            ///< number of frame
+    NULL,
+};
+
+enum var_name {
+    VAR_IN_W,   VAR_IW,
+    VAR_IN_H,   VAR_IH,
+    VAR_OUT_W,  VAR_OW,
+    VAR_OUT_H,  VAR_OH,
+    VAR_CROP_W, VAR_CW,
+    VAR_CROP_H, VAR_CH,
+    VAR_POS_W,  VAR_PW,
+    VAR_POS_H,  VAR_PH,
+    VAR_A,
+    VAR_SAR,
+    VAR_DAR,
+    VAR_HSUB,
+    VAR_VSUB,
+    VAR_OHSUB,
+    VAR_OVSUB,
+    VAR_IN_T,   VAR_T,
+    VAR_OUT_T,  VAR_OT,
+    VAR_N,
+    VAR_VARS_NB
+};
+
 typedef struct LibplaceboContext {
     /* lavfi vulkan*/
     FFVulkanContext vkctx;
@@ -75,8 +120,16 @@ typedef struct LibplaceboContext {
     char *out_format_string;
     enum AVPixelFormat out_format;
     char *fillcolor;
+    double var_values[VAR_VARS_NB];
     char *w_expr;
     char *h_expr;
+    char *crop_x_expr, *crop_y_expr;
+    char *crop_w_expr, *crop_h_expr;
+    char *pos_x_expr, *pos_y_expr;
+    char *pos_w_expr, *pos_h_expr;
+    // Parsed expressions for input/output crop
+    AVExpr *crop_x_pexpr, *crop_y_pexpr, *crop_w_pexpr, *crop_h_pexpr;
+    AVExpr *pos_x_pexpr, *pos_y_pexpr, *pos_w_pexpr, *pos_h_pexpr;
     AVRational target_sar;
     float pad_crop_ratio;
     int force_original_aspect_ratio;
@@ -249,6 +302,7 @@ static void libplacebo_uninit(AVFilterContext *avctx);
 
 static int libplacebo_init(AVFilterContext *avctx)
 {
+    int err = 0;
     LibplaceboContext *s = avctx->priv;
 
     /* Create libplacebo log context */
@@ -273,8 +327,28 @@ static int libplacebo_init(AVFilterContext *avctx)
         s->out_format = AV_PIX_FMT_NONE;
     }
 
+    RET(av_expr_parse(&s->crop_x_pexpr, s->crop_x_expr, var_names,
+                      NULL, NULL, NULL, NULL, 0, s));
+    RET(av_expr_parse(&s->crop_y_pexpr, s->crop_y_expr, var_names,
+                      NULL, NULL, NULL, NULL, 0, s));
+    RET(av_expr_parse(&s->crop_w_pexpr, s->crop_w_expr, var_names,
+                      NULL, NULL, NULL, NULL, 0, s));
+    RET(av_expr_parse(&s->crop_h_pexpr, s->crop_h_expr, var_names,
+                      NULL, NULL, NULL, NULL, 0, s));
+    RET(av_expr_parse(&s->pos_x_pexpr, s->pos_x_expr, var_names,
+                      NULL, NULL, NULL, NULL, 0, s));
+    RET(av_expr_parse(&s->pos_y_pexpr, s->pos_y_expr, var_names,
+                      NULL, NULL, NULL, NULL, 0, s));
+    RET(av_expr_parse(&s->pos_w_pexpr, s->pos_w_expr, var_names,
+                      NULL, NULL, NULL, NULL, 0, s));
+    RET(av_expr_parse(&s->pos_h_pexpr, s->pos_h_expr, var_names,
+                      NULL, NULL, NULL, NULL, 0, s));
+
     /* Note: s->vulkan etc. are initialized later, when hwctx is available */
     return 0;
+
+fail:
+    return err;
 }
 
 static int init_vulkan(AVFilterContext *avctx)
@@ -364,6 +438,15 @@ static void libplacebo_uninit(AVFilterContext *avctx)
     pl_log_destroy(&s->log);
     ff_vk_uninit(&s->vkctx);
     s->gpu = NULL;
+
+    av_expr_free(s->crop_x_pexpr);
+    av_expr_free(s->crop_y_pexpr);
+    av_expr_free(s->crop_w_pexpr);
+    av_expr_free(s->crop_h_pexpr);
+    av_expr_free(s->pos_x_pexpr);
+    av_expr_free(s->pos_y_pexpr);
+    av_expr_free(s->pos_w_pexpr);
+    av_expr_free(s->pos_h_pexpr);
 }
 
 static int process_frames(AVFilterContext *avctx, AVFrame *out, AVFrame *in)
@@ -397,6 +480,25 @@ static int process_frames(AVFilterContext *avctx, AVFrame *out, AVFrame *in)
 
     if (!s->apply_filmgrain)
         image.film_grain.type = PL_FILM_GRAIN_NONE;
+
+    s->var_values[VAR_CROP_W] = s->var_values[VAR_CW] =
+        av_expr_eval(s->crop_w_pexpr, s->var_values, NULL);
+    s->var_values[VAR_CROP_H] = s->var_values[VAR_CH] =
+        av_expr_eval(s->crop_h_pexpr, s->var_values, NULL);
+    s->var_values[VAR_POS_W]  = s->var_values[VAR_PW] =
+        av_expr_eval(s->pos_w_pexpr, s->var_values, NULL);
+    s->var_values[VAR_POS_H]  = s->var_values[VAR_PH] =
+        av_expr_eval(s->pos_h_pexpr, s->var_values, NULL);
+
+    image.crop.x0 = av_expr_eval(s->crop_x_pexpr, s->var_values, NULL);
+    image.crop.y0 = av_expr_eval(s->crop_y_pexpr, s->var_values, NULL);
+    image.crop.x1 = image.crop.x0 + s->var_values[VAR_CROP_W];
+    image.crop.y1 = image.crop.y0 + s->var_values[VAR_CROP_H];
+
+    target.crop.x0 = av_expr_eval(s->pos_x_pexpr, s->var_values, NULL);
+    target.crop.y0 = av_expr_eval(s->pos_y_pexpr, s->var_values, NULL);
+    target.crop.x1 = target.crop.x0 + s->var_values[VAR_POS_W];
+    target.crop.y1 = target.crop.y0 + s->var_values[VAR_POS_H];
 
     if (s->target_sar.num) {
         float aspect = pl_rect2df_aspect(&target.crop) * av_q2d(s->target_sar);
@@ -530,6 +632,18 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     out->width = outlink->w;
     out->height = outlink->h;
 
+    /* Dynamic variables */
+    s->var_values[VAR_IN_T]   = s->var_values[VAR_T] =
+        in->pts == AV_NOPTS_VALUE ? NAN : in->pts * av_q2d(link->time_base);
+    s->var_values[VAR_OUT_T]  = s->var_values[VAR_OT] =
+        out->pts == AV_NOPTS_VALUE ? NAN : out->pts * av_q2d(outlink->time_base);
+    s->var_values[VAR_N]      = link->frame_count_out;
+    /* Will be evaluated/set by `process_frames` */
+    s->var_values[VAR_CROP_W] = s->var_values[VAR_CW] = NAN;
+    s->var_values[VAR_CROP_H] = s->var_values[VAR_CH] = NAN;
+    s->var_values[VAR_POS_W]  = s->var_values[VAR_PW] = NAN;
+    s->var_values[VAR_POS_H]  = s->var_values[VAR_PH] = NAN;
+
     if (s->apply_dovi && av_frame_get_side_data(in, AV_FRAME_DATA_DOVI_METADATA)) {
         /* Output of dovi reshaping is always BT.2020+PQ, so infer the correct
          * output colorspace defaults */
@@ -660,6 +774,8 @@ static int libplacebo_config_output(AVFilterLink *outlink)
     AVFilterContext *avctx = outlink->src;
     LibplaceboContext *s   = avctx->priv;
     AVFilterLink *inlink   = outlink->src->inputs[0];
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+    const AVPixFmtDescriptor *out_desc = av_pix_fmt_desc_get(outlink->format);
     AVHWFramesContext *hwfc;
     AVVulkanFramesContext *vkfc;
     AVRational scale_sar;
@@ -686,6 +802,21 @@ static int libplacebo_config_output(AVFilterLink *outlink)
         if (inlink->sample_aspect_ratio.num)
             outlink->sample_aspect_ratio = scale_sar;
     }
+
+    /* Static variables */
+    s->var_values[VAR_IN_W]     = s->var_values[VAR_IW] = inlink->w;
+    s->var_values[VAR_IN_H]     = s->var_values[VAR_IH] = inlink->h;
+    s->var_values[VAR_OUT_W]    = s->var_values[VAR_OW] = outlink->w;
+    s->var_values[VAR_OUT_H]    = s->var_values[VAR_OH] = outlink->h;
+    s->var_values[VAR_A]        = (double) inlink->w / inlink->h;
+    s->var_values[VAR_SAR]      = inlink->sample_aspect_ratio.num ?
+        av_q2d(inlink->sample_aspect_ratio) : 1.0;
+    s->var_values[VAR_DAR]      = outlink->sample_aspect_ratio.num ?
+        av_q2d(outlink->sample_aspect_ratio) : 1.0;
+    s->var_values[VAR_HSUB]     = 1 << desc->log2_chroma_w;
+    s->var_values[VAR_VSUB]     = 1 << desc->log2_chroma_h;
+    s->var_values[VAR_OHSUB]    = 1 << out_desc->log2_chroma_w;
+    s->var_values[VAR_OVSUB]    = 1 << out_desc->log2_chroma_h;
 
     if (outlink->format != AV_PIX_FMT_VULKAN)
         return 0;
@@ -714,15 +845,23 @@ fail:
 #define DYNAMIC (STATIC | AV_OPT_FLAG_RUNTIME_PARAM)
 
 static const AVOption libplacebo_options[] = {
-    { "w", "Output video width",  OFFSET(w_expr), AV_OPT_TYPE_STRING, {.str = "iw"}, .flags = STATIC },
-    { "h", "Output video height", OFFSET(h_expr), AV_OPT_TYPE_STRING, {.str = "ih"}, .flags = STATIC },
+    { "w", "Output video frame width",  OFFSET(w_expr), AV_OPT_TYPE_STRING, {.str = "iw"}, .flags = STATIC },
+    { "h", "Output video frame height", OFFSET(h_expr), AV_OPT_TYPE_STRING, {.str = "ih"}, .flags = STATIC },
+    { "crop_x", "Input video crop x", OFFSET(crop_x_expr), AV_OPT_TYPE_STRING, {.str = "(iw-cw)/2"}, .flags = DYNAMIC },
+    { "crop_y", "Input video crop y", OFFSET(crop_y_expr), AV_OPT_TYPE_STRING, {.str = "(ih-ch)/2"}, .flags = DYNAMIC },
+    { "crop_w", "Input video crop w", OFFSET(crop_w_expr), AV_OPT_TYPE_STRING, {.str = "iw"}, .flags = DYNAMIC },
+    { "crop_h", "Input video crop h", OFFSET(crop_h_expr), AV_OPT_TYPE_STRING, {.str = "ih"}, .flags = DYNAMIC },
+    { "pos_x", "Output video placement x", OFFSET(pos_x_expr), AV_OPT_TYPE_STRING, {.str = "(ow-pw)/2"}, .flags = DYNAMIC },
+    { "pos_y", "Output video placement y", OFFSET(pos_y_expr), AV_OPT_TYPE_STRING, {.str = "(oh-ph)/2"}, .flags = DYNAMIC },
+    { "pos_w", "Output video placement w", OFFSET(pos_w_expr), AV_OPT_TYPE_STRING, {.str = "ow"}, .flags = DYNAMIC },
+    { "pos_h", "Output video placement h", OFFSET(pos_h_expr), AV_OPT_TYPE_STRING, {.str = "oh"}, .flags = DYNAMIC },
     { "format", "Output video format", OFFSET(out_format_string), AV_OPT_TYPE_STRING, .flags = STATIC },
     { "force_original_aspect_ratio", "decrease or increase w/h if necessary to keep the original AR", OFFSET(force_original_aspect_ratio), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 2, STATIC, "force_oar" },
         { "disable",  NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 0 }, 0, 0, STATIC, "force_oar" },
         { "decrease", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 1 }, 0, 0, STATIC, "force_oar" },
         { "increase", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 2 }, 0, 0, STATIC, "force_oar" },
     { "force_divisible_by", "enforce that the output resolution is divisible by a defined integer when force_original_aspect_ratio is used", OFFSET(force_divisible_by), AV_OPT_TYPE_INT, { .i64 = 1 }, 1, 256, STATIC },
-    { "normalize_sar", "force SAR normalization to 1:1", OFFSET(normalize_sar), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, STATIC },
+    { "normalize_sar", "force SAR normalization to 1:1 by adjusting pos_x/y/w/h", OFFSET(normalize_sar), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, STATIC },
     { "pad_crop_ratio", "ratio between padding and cropping when normalizing SAR (0=pad, 1=crop)", OFFSET(pad_crop_ratio), AV_OPT_TYPE_FLOAT, {.dbl=0.0}, 0.0, 1.0, DYNAMIC },
     { "fillcolor", "Background fill color", OFFSET(fillcolor), AV_OPT_TYPE_STRING, {.str = "black"}, .flags = DYNAMIC },
 
