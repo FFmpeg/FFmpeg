@@ -211,6 +211,18 @@ typedef struct AVCodecParameters {
      * Audio only. The channel layout and number of channels.
      */
     AVChannelLayout ch_layout;
+
+    /**
+     * Video only. Number of frames per second, for streams with constant frame
+     * durations. Should be set to { 0, 1 } when some frames have differing
+     * durations or if the value is not known.
+     *
+     * @note This field correponds to values that are stored in codec-level
+     * headers and is typically overridden by container/transport-layer
+     * timestamps, when available. It should thus be used only as a last resort,
+     * when no higher-level timing information is available.
+     */
+    AVRational framerate;
 } AVCodecParameters;
 
 /**

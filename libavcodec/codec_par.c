@@ -46,6 +46,7 @@ static void codec_parameters_reset(AVCodecParameters *par)
     par->color_space         = AVCOL_SPC_UNSPECIFIED;
     par->chroma_location     = AVCHROMA_LOC_UNSPECIFIED;
     par->sample_aspect_ratio = (AVRational){ 0, 1 };
+    par->framerate           = (AVRational){ 0, 1 };
     par->profile             = FF_PROFILE_UNKNOWN;
     par->level               = FF_LEVEL_UNKNOWN;
 }
@@ -126,6 +127,7 @@ int avcodec_parameters_from_context(AVCodecParameters *par,
         par->chroma_location     = codec->chroma_sample_location;
         par->sample_aspect_ratio = codec->sample_aspect_ratio;
         par->video_delay         = codec->has_b_frames;
+        par->framerate           = codec->framerate;
         break;
     case AVMEDIA_TYPE_AUDIO:
         par->format           = codec->sample_fmt;
@@ -207,6 +209,7 @@ int avcodec_parameters_to_context(AVCodecContext *codec,
         codec->chroma_sample_location = par->chroma_location;
         codec->sample_aspect_ratio    = par->sample_aspect_ratio;
         codec->has_b_frames           = par->video_delay;
+        codec->framerate              = par->framerate;
         break;
     case AVMEDIA_TYPE_AUDIO:
         codec->sample_fmt       = par->format;
