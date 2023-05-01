@@ -38,10 +38,10 @@ AVFrame *ff_default_get_audio_buffer(AVFilterLink *link, int nb_samples)
 {
     AVFrame *frame = NULL;
     int channels = link->ch_layout.nb_channels;
+    int align = av_cpu_max_align();
 #if FF_API_OLD_CHANNEL_LAYOUT
 FF_DISABLE_DEPRECATION_WARNINGS
     int channel_layout_nb_channels = av_get_channel_layout_nb_channels(link->channel_layout);
-    int align = av_cpu_max_align();
 
     av_assert0(channels == channel_layout_nb_channels || !channel_layout_nb_channels);
 FF_ENABLE_DEPRECATION_WARNINGS
