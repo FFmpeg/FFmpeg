@@ -196,7 +196,7 @@ static int theora_packet(AVFormatContext *s, int idx)
         if(s->streams[idx]->start_time == AV_NOPTS_VALUE && os->lastpts != AV_NOPTS_VALUE) {
             s->streams[idx]->start_time = os->lastpts;
             if (s->streams[idx]->duration > 0)
-                s->streams[idx]->duration -= s->streams[idx]->start_time;
+                s->streams[idx]->duration = av_sat_sub64(s->streams[idx]->duration, s->streams[idx]->start_time);
         }
     }
 
