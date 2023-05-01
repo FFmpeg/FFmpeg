@@ -732,7 +732,7 @@ static int decode_filter(RKAContext *s, ChContext *ctx, ACoder *ac, int off, uns
                 if (bits == 0) {
                     ctx->buf1[off] = sum + val;
                 } else {
-                    ctx->buf1[off] = (val + (sum >> bits)) * (1 << bits) +
+                    ctx->buf1[off] = (val + (sum >> bits)) * (1U << bits) +
                         (((1U << bits) - 1U) & ctx->buf1[off + -1]);
                 }
                 ctx->buf0[off] = ctx->buf1[off] + ctx->buf0[off + -1];
