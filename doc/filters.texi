@@ -2674,10 +2674,13 @@ Pass the 1st input.
 Pass the 2nd input.
 
 @item o
-Pass filtered samples.
+Pass difference between desired, 2nd input and error signal estimate.
 
 @item n
-Pass difference between desired and filtered samples.
+Pass difference between input, 1st input and error signal estimate.
+
+@item e
+Pass error signal estimated samples.
 
 Default value is @var{o}.
 @end table

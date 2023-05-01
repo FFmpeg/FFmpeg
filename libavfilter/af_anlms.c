@@ -34,6 +34,7 @@ enum OutModes {
     DESIRED_MODE,
     OUT_MODE,
     NOISE_MODE,
+    ERROR_MODE,
     NB_OMODES
 };
 
@@ -73,6 +74,7 @@ static const AVOption anlms_options[] = {
     {  "d", "desired",               0,          AV_OPT_TYPE_CONST,    {.i64=DESIRED_MODE}, 0, 0, AT, "mode" },
     {  "o", "output",                0,          AV_OPT_TYPE_CONST,    {.i64=OUT_MODE},     0, 0, AT, "mode" },
     {  "n", "noise",                 0,          AV_OPT_TYPE_CONST,    {.i64=NOISE_MODE},   0, 0, AT, "mode" },
+    {  "e", "error",                 0,          AV_OPT_TYPE_CONST,    {.i64=ERROR_MODE},   0, 0, AT, "mode" },
     { NULL }
 };
 
@@ -102,7 +104,7 @@ static float process_sample(AudioNLMSContext *s, float input, float desired,
     const int order = s->order;
     const float leakage = s->leakage;
     const float mu = s->mu;
-    const float a = 1.f - leakage * mu;
+    const float a = 1.f - leakage;
     float sum, output, e, norm, b;
     int offset = *offsetp;
 
@@ -116,7 +118,7 @@ static float process_sample(AudioNLMSContext *s, float input, float desired,
     norm = s->eps + sum;
     b = mu * e / norm;
     if (s->anlmf)
-        b *= 4.f * e * e;
+        b *= e * e;
 
     memcpy(tmp, delay + offset, order * sizeof(float));
 
@@ -129,8 +131,9 @@ static float process_sample(AudioNLMSContext *s, float input, float desired,
     switch (s->output_mode) {
     case IN_MODE:       output = input;         break;
     case DESIRED_MODE:  output = desired;       break;
-    case OUT_MODE: /*output = output;*/         break;
-    case NOISE_MODE: output = desired - output; break;
+    case OUT_MODE:   output = desired - output; break;
+    case NOISE_MODE: output = input - output;   break;
+    case ERROR_MODE:                            break;
     }
     return output;
 }
