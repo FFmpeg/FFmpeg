@@ -93,7 +93,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
             return AVERROR_INVALIDDATA;
         }
 
-        if (!(avpkt->flags & AV_PKT_FLAG_KEY)) {
+        if (prev && !(avpkt->flags & AV_PKT_FLAG_KEY)) {
             for (int j = 0; j < (avctx->width + 7) >> 3; j++)
                 dst[j] ^= prev[j];
             prev += prev_frame->linesize[0];
