@@ -18,6 +18,7 @@
 
 #include "libavutil/file.h"
 #include "libavutil/opt.h"
+#include "libavutil/parseutils.h"
 #include "internal.h"
 #include "vulkan_filter.h"
 #include "scale_eval.h"
@@ -73,6 +74,7 @@ typedef struct LibplaceboContext {
     /* settings */
     char *out_format_string;
     enum AVPixelFormat out_format;
+    char *fillcolor;
     char *w_expr;
     char *h_expr;
     AVRational target_sar;
@@ -223,6 +225,24 @@ static int find_scaler(AVFilterContext *avctx,
 
     av_log(avctx, AV_LOG_ERROR, "No such scaler preset '%s'.\n", name);
     return AVERROR(EINVAL);
+}
+
+static int parse_fillcolor(AVFilterContext *avctx,
+                           struct pl_render_params *params,
+                           const char *color_str)
+{
+    int err = 0;
+    uint8_t color_rgba[4];
+
+    RET(av_parse_color(color_rgba, color_str, -1, avctx));
+    params->background_color[0] = (float) color_rgba[0] / UINT8_MAX;
+    params->background_color[1] = (float) color_rgba[1] / UINT8_MAX;
+    params->background_color[2] = (float) color_rgba[2] / UINT8_MAX;
+    params->background_transparency = 1.0f - (float) color_rgba[3] / UINT8_MAX;
+    return 0;
+
+fail:
+    return err;
 }
 
 static void libplacebo_uninit(AVFilterContext *avctx);
@@ -469,6 +489,7 @@ static int process_frames(AVFilterContext *avctx, AVFrame *out, AVFrame *in)
 
     RET(find_scaler(avctx, &params.upscaler, s->upscaler));
     RET(find_scaler(avctx, &params.downscaler, s->downscaler));
+    RET(parse_fillcolor(avctx, &params, s->fillcolor));
 
     pl_render_image(s->renderer, &image, &target, &params);
     pl_unmap_avframe(s->gpu, &image);
@@ -703,6 +724,7 @@ static const AVOption libplacebo_options[] = {
     { "force_divisible_by", "enforce that the output resolution is divisible by a defined integer when force_original_aspect_ratio is used", OFFSET(force_divisible_by), AV_OPT_TYPE_INT, { .i64 = 1 }, 1, 256, STATIC },
     { "normalize_sar", "force SAR normalization to 1:1", OFFSET(normalize_sar), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, STATIC },
     { "pad_crop_ratio", "ratio between padding and cropping when normalizing SAR (0=pad, 1=crop)", OFFSET(pad_crop_ratio), AV_OPT_TYPE_FLOAT, {.dbl=0.0}, 0.0, 1.0, DYNAMIC },
+    { "fillcolor", "Background fill color", OFFSET(fillcolor), AV_OPT_TYPE_STRING, {.str = "black"}, .flags = DYNAMIC },
 
     {"colorspace", "select colorspace", OFFSET(colorspace), AV_OPT_TYPE_INT, {.i64=-1}, -1, AVCOL_SPC_NB-1, DYNAMIC, "colorspace"},
     {"auto", "keep the same colorspace",  0, AV_OPT_TYPE_CONST, {.i64=-1},                          INT_MIN, INT_MAX, STATIC, "colorspace"},

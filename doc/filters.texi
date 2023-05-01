@@ -16024,6 +16024,12 @@ content with black borders, while a value of @code{1.0} always crops off parts
 of the content. Intermediate values are possible, leading to a mix of the two
 approaches.
 
+@item fillcolor
+Set the color used to fill the output area not covered by the output image, for
+example as a result of @ref{normalize_sar}. For the general syntax of this
+option, check the @ref{color syntax,,"Color" section in the ffmpeg-utils
+manual,ffmpeg-utils}. Defaults to @code{black}.
+
 @item colorspace
 @item color_primaries
 @item color_trc
