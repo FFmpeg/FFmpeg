@@ -2878,6 +2878,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                     st->r_frame_rate.den = st->time_base.num;
                 }
             }
+            st->codecpar->framerate = avctx->framerate;
             if (sti->display_aspect_ratio.num && sti->display_aspect_ratio.den) {
                 AVRational hw_ratio = { avctx->height, avctx->width };
                 st->sample_aspect_ratio = av_mul_q(sti->display_aspect_ratio,
