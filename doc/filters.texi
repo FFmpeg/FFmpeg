@@ -15982,8 +15982,7 @@ ffmpeg -i input.mov -vf lensfun=make=Canon:model="Canon EOS 100D":lens_model="Ca
 @section libplacebo
 
 Flexible GPU-accelerated processing filter based on libplacebo
-(@url{https://code.videolan.org/videolan/libplacebo}). Note that this filter
-currently only accepts Vulkan input frames.
+(@url{https://code.videolan.org/videolan/libplacebo}).
 
 @subsection Options
 
