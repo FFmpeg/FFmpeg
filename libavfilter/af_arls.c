@@ -33,6 +33,7 @@ enum OutModes {
     DESIRED_MODE,
     OUT_MODE,
     NOISE_MODE,
+    ERROR_MODE,
     NB_OMODES
 };
 
@@ -70,6 +71,7 @@ static const AVOption arls_options[] = {
     {  "d", "desired", 0, AV_OPT_TYPE_CONST, {.i64=DESIRED_MODE}, 0, 0, AT, "mode" },
     {  "o", "output",  0, AV_OPT_TYPE_CONST, {.i64=OUT_MODE},     0, 0, AT, "mode" },
     {  "n", "noise",   0, AV_OPT_TYPE_CONST, {.i64=NOISE_MODE},   0, 0, AT, "mode" },
+    {  "e", "error",   0, AV_OPT_TYPE_CONST, {.i64=ERROR_MODE},   0, 0, AT, "mode" },
     { NULL }
 };
 
@@ -156,6 +158,7 @@ static float process_sample(AudioRLSContext *s, float input, float desired, int 
     case DESIRED_MODE:  output = desired;       break;
     case OUT_MODE:   output = desired - output; break;
     case NOISE_MODE: output = input - output;   break;
+    case ERROR_MODE:                            break;
     }
     return output;
 }
