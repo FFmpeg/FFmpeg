@@ -80,7 +80,7 @@ static int av1_read_header(AVFormatContext *s)
     st->codecpar->codec_id = AV_CODEC_ID_AV1;
     sti->need_parsing = AVSTREAM_PARSE_HEADERS;
 
-    sti->avctx->framerate = c->framerate;
+    st->avg_frame_rate = c->framerate;
     // taken from rawvideo demuxers
     avpriv_set_pts_info(st, 64, 1, 1200000);
 
