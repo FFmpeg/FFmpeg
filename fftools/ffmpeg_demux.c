@@ -450,13 +450,12 @@ int ifile_get_packet(InputFile *f, AVPacket **pkt)
             return ret;
     }
 
-    if (f->readrate || f->rate_emu) {
+    if (f->readrate) {
         int i;
         int64_t file_start = copy_ts * (
                               (f->start_time_effective != AV_NOPTS_VALUE ? f->start_time_effective * !start_at_zero : 0) +
                               (f->start_time != AV_NOPTS_VALUE ? f->start_time : 0)
                              );
-        float scale = f->rate_emu ? 1.0 : f->readrate;
         int64_t burst_until = AV_TIME_BASE * d->readrate_initial_burst;
         for (i = 0; i < f->nb_streams; i++) {
             InputStream *ist = f->streams[i];
@@ -464,7 +463,7 @@ int ifile_get_packet(InputFile *f, AVPacket **pkt)
             if (!ist->nb_packets) continue;
             stream_ts_offset = FFMAX(ist->first_dts != AV_NOPTS_VALUE ? ist->first_dts : 0, file_start);
             pts = av_rescale(ist->dts, 1000000, AV_TIME_BASE);
-            now = (av_gettime_relative() - ist->start) * scale + stream_ts_offset;
+            now = (av_gettime_relative() - ist->start) * f->readrate + stream_ts_offset;
             if (pts - burst_until > now)
                 return AVERROR(EAGAIN);
         }
@@ -1223,7 +1222,6 @@ int ifile_open(const OptionsContext *o, const char *filename)
     f->input_sync_ref = o->input_sync_ref;
     f->input_ts_offset = o->input_ts_offset;
     f->ts_offset  = o->input_ts_offset - (copy_ts ? (start_at_zero && ic->start_time != AV_NOPTS_VALUE ? ic->start_time : 0) : timestamp);
-    f->rate_emu   = o->rate_emu;
     f->accurate_seek = o->accurate_seek;
     d->loop = o->loop;
     d->duration = 0;
@@ -1234,12 +1232,14 @@ int ifile_open(const OptionsContext *o, const char *filename)
         av_log(d, AV_LOG_ERROR, "Option -readrate is %0.3f; it must be non-negative.\n", f->readrate);
         exit_program(1);
     }
-    if (f->readrate && f->rate_emu) {
-        av_log(d, AV_LOG_WARNING, "Both -readrate and -re set. Using -readrate %0.3f.\n", f->readrate);
-        f->rate_emu = 0;
+    if (o->rate_emu) {
+        if (f->readrate) {
+            av_log(d, AV_LOG_WARNING, "Both -readrate and -re set. Using -readrate %0.3f.\n", f->readrate);
+        } else
+            f->readrate = 1.0f;
     }
 
-    if (f->readrate || f->rate_emu) {
+    if (f->readrate) {
         d->readrate_initial_burst = o->readrate_initial_burst ? o->readrate_initial_burst : 0.5;
         if (d->readrate_initial_burst < 0.0) {
             av_log(d, AV_LOG_ERROR,

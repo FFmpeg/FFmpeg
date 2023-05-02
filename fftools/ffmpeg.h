@@ -484,7 +484,6 @@ typedef struct InputFile {
     InputStream **streams;
     int        nb_streams;
 
-    int rate_emu;
     float readrate;
     int accurate_seek;
 
