@@ -1708,6 +1708,9 @@ it may cause packet loss.
 It is useful for when flow speed of output packets is important, such as live streaming.
 @item -re (@emph{input})
 Read input at native frame rate. This is equivalent to setting @code{-readrate 1}.
+@item -readrate_initial_burst @var{seconds}
+Set an initial read burst time, in seconds, after which @option{-re/-readrate}
+will be enforced.
 @item -vsync @var{parameter} (@emph{global})
 @itemx -fps_mode[:@var{stream_specifier}] @var{parameter} (@emph{output,per-stream})
 Set video sync method / framerate mode. vsync is applied to all output video streams

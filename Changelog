@@ -7,6 +7,7 @@ version <next>:
 - Extend VAAPI support for libva-win32 on Windows
 - afireqsrc audio source filter
 - arls filter
+- ffmpeg CLI new option: -readrate_initial_burst
 
 version 6.0:
 - Radiance HDR image support
