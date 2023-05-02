@@ -461,7 +461,7 @@ int ifile_get_packet(InputFile *f, AVPacket **pkt)
         for (i = 0; i < f->nb_streams; i++) {
             InputStream *ist = f->streams[i];
             int64_t stream_ts_offset, pts, now;
-            if (!ist->nb_packets || (ist->decoding_needed && !ist->got_output)) continue;
+            if (!ist->nb_packets) continue;
             stream_ts_offset = FFMAX(ist->first_dts != AV_NOPTS_VALUE ? ist->first_dts : 0, file_start);
             pts = av_rescale(ist->dts, 1000000, AV_TIME_BASE);
             now = (av_gettime_relative() - ist->start) * scale + stream_ts_offset;
@@ -1240,7 +1240,7 @@ int ifile_open(const OptionsContext *o, const char *filename)
     }
 
     if (f->readrate || f->rate_emu) {
-        d->readrate_initial_burst = o->readrate_initial_burst ? o->readrate_initial_burst : 0.0;
+        d->readrate_initial_burst = o->readrate_initial_burst ? o->readrate_initial_burst : 0.5;
         if (d->readrate_initial_burst < 0.0) {
             av_log(d, AV_LOG_ERROR,
                    "Option -readrate_initial_burst is %0.3f; it must be non-negative.\n",
