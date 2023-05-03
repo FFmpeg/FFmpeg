@@ -2532,8 +2532,15 @@ static int hls_probe(const AVProbeData *p)
 
     if (strstr(p->buf, "#EXT-X-STREAM-INF:")     ||
         strstr(p->buf, "#EXT-X-TARGETDURATION:") ||
-        strstr(p->buf, "#EXT-X-MEDIA-SEQUENCE:"))
+        strstr(p->buf, "#EXT-X-MEDIA-SEQUENCE:")) {
+
+        if (!av_match_ext(p->filename, "m3u8,hls,m3u")) {
+            av_log(NULL, AV_LOG_ERROR, "Not detecting m3u8/hls with non standard extension\n");
+            return 0;
+        }
+
         return AVPROBE_SCORE_MAX;
+    }
     return 0;
 }
 
