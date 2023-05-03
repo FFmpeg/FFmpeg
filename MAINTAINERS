@@ -543,6 +543,7 @@ LoongArch                               Shiyou Yin
 Mac OS X / PowerPC                      Romain Dolbeau, Guillaume Poirier
 Amiga / PowerPC                         Colin Ward
 Linux / PowerPC                         Lauri Kasanen
+RISC-V                                  Rémi Denis-Courmont
 Windows MinGW                           Alex Beregszaszi, Ramiro Polla
 Windows Cygwin                          Victor Paesa
 Windows MSVC                            Matthew Oliver, Hendrik Leppkes
