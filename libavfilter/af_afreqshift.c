@@ -66,6 +66,7 @@ static void pfilter_channel_## name(AVFilterContext *ctx,     \
     type *o1 = (type *)s->o1->extended_data[ch];              \
     type *i2 = (type *)s->i2->extended_data[ch];              \
     type *o2 = (type *)s->o2->extended_data[ch];              \
+    const int nb_coeffs = s->nb_coeffs;                       \
     const type *c = s->cc;                                    \
     const type level = s->level;                              \
     type shift = s->shift * M_PI;                             \
@@ -76,7 +77,7 @@ static void pfilter_channel_## name(AVFilterContext *ctx,     \
         type xn1 = src[n], xn2 = src[n];                      \
         type I, Q;                                            \
                                                               \
-        for (int j = 0; j < s->nb_coeffs; j++) {              \
+        for (int j = 0; j < nb_coeffs; j++) {                 \
             I = c[j] * (xn1 + o2[j]) - i2[j];                 \
             i2[j] = i1[j];                                    \
             i1[j] = xn1;                                      \
@@ -85,7 +86,7 @@ static void pfilter_channel_## name(AVFilterContext *ctx,     \
             xn1 = I;                                          \
         }                                                     \
                                                               \
-        for (int j = s->nb_coeffs; j < s->nb_coeffs*2; j++) { \
+        for (int j = nb_coeffs; j < nb_coeffs*2; j++) {       \
             Q = c[j] * (xn2 + o2[j]) - i2[j];                 \
             i2[j] = i1[j];                                    \
             i1[j] = xn2;                                      \
@@ -93,7 +94,7 @@ static void pfilter_channel_## name(AVFilterContext *ctx,     \
             o1[j] = Q;                                        \
             xn2 = Q;                                          \
         }                                                     \
-        Q = o2[s->nb_coeffs * 2 - 1];                         \
+        Q = o2[nb_coeffs * 2 - 1];                            \
                                                               \
         dst[n] = (I * cos_theta - Q * sin_theta) * level;     \
     }                                                         \
@@ -115,6 +116,7 @@ static void ffilter_channel_## name(AVFilterContext *ctx,     \
     type *o1 = (type *)s->o1->extended_data[ch];              \
     type *i2 = (type *)s->i2->extended_data[ch];              \
     type *o2 = (type *)s->o2->extended_data[ch];              \
+    const int nb_coeffs = s->nb_coeffs;                       \
     const type *c = s->cc;                                    \
     const type level = s->level;                              \
     type ts = 1. / in->sample_rate;                           \
@@ -125,7 +127,7 @@ static void ffilter_channel_## name(AVFilterContext *ctx,     \
         type xn1 = src[n], xn2 = src[n];                      \
         type I, Q, theta;                                     \
                                                               \
-        for (int j = 0; j < s->nb_coeffs; j++) {              \
+        for (int j = 0; j < nb_coeffs; j++) {                 \
             I = c[j] * (xn1 + o2[j]) - i2[j];                 \
             i2[j] = i1[j];                                    \
             i1[j] = xn1;                                      \
@@ -134,7 +136,7 @@ static void ffilter_channel_## name(AVFilterContext *ctx,     \
             xn1 = I;                                          \
         }                                                     \
                                                               \
-        for (int j = s->nb_coeffs; j < s->nb_coeffs*2; j++) { \
+        for (int j = nb_coeffs; j < nb_coeffs*2; j++) {       \
             Q = c[j] * (xn2 + o2[j]) - i2[j];                 \
             i2[j] = i1[j];                                    \
             i1[j] = xn2;                                      \
@@ -142,7 +144,7 @@ static void ffilter_channel_## name(AVFilterContext *ctx,     \
             o1[j] = Q;                                        \
             xn2 = Q;                                          \
         }                                                     \
-        Q = o2[s->nb_coeffs * 2 - 1];                         \
+        Q = o2[nb_coeffs * 2 - 1];                            \
                                                               \
         theta = 2. * M_PI * fmod(shift * (N + n) * ts, 1.);   \
         dst[n] = (I * cos(theta) - Q * sin(theta)) * level;   \
