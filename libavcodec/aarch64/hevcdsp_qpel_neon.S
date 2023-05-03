@@ -30,6 +30,13 @@ const qpel_filters, align=4
         .byte           0,  1, -5, 17, 58,-10, 4, -1
 endconst
 
+const qpel_filters_abs, align=4
+        .byte           0,  0,  0,  0,  0,  0, 0,  0
+        .byte           1,  4, 10, 58, 17,  5, 1,  0
+        .byte           1,  4, 11, 40, 40, 11, 4,  1
+        .byte           0,  1,  5, 17, 58, 10, 4,  1
+endconst
+
 .macro load_filter m
         movrel          x15, qpel_filters
         add             x15, x15, \m, lsl #3
@@ -482,3 +489,706 @@ endfunc
 put_hevc qpel
 put_hevc qpel_uni
 put_hevc qpel_bi
+
+
+function ff_hevc_put_hevc_pel_uni_w_pixels4_8_neon, export=1
+        mov             w10, #-6
+        sub             w10, w10, w5
+        dup             v30.8h, w6
+        dup             v31.4s, w10
+        dup             v29.4s, w7
+1:
+        ldr             s0, [x2]
+        ldr             s1, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        ushll           v0.8h, v0.8b, #6
+        ushll           v1.8h, v1.8b, #6
+        smull           v0.4s, v0.4h, v30.4h
+        smull           v1.4s, v1.4h, v30.4h
+        sqrshl          v0.4s, v0.4s, v31.4s
+        sqrshl          v1.4s, v1.4s, v31.4s
+        sqadd           v0.4s, v0.4s, v29.4s
+        sqadd           v1.4s, v1.4s, v29.4s
+        sqxtn           v0.4h, v0.4s
+        sqxtn           v1.4h, v1.4s
+        sqxtun          v0.8b, v0.8h
+        sqxtun          v1.8b, v1.8h
+        str             s0, [x0]
+        str             s1, [x0, x1]
+        add             x0, x0, x1, lsl #1
+        subs            w4, w4, #2
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_pel_uni_w_pixels6_8_neon, export=1
+        mov             w10, #-6
+        sub             w10, w10, w5
+        dup             v30.8h, w6
+        dup             v31.4s, w10
+        dup             v29.4s, w7
+        sub             x1, x1, #4
+1:
+        ldr             d0, [x2]
+        ldr             d1, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        ushll           v0.8h, v0.8b, #6
+        ushll           v1.8h, v1.8b, #6
+        smull           v4.4s, v0.4h, v30.4h
+        smull2          v5.4s, v0.8h, v30.8h
+        smull           v6.4s, v1.4h, v30.4h
+        smull2          v7.4s, v1.8h, v30.8h
+        sqrshl          v4.4s, v4.4s, v31.4s
+        sqrshl          v5.4s, v5.4s, v31.4s
+        sqrshl          v6.4s, v6.4s, v31.4s
+        sqrshl          v7.4s, v7.4s, v31.4s
+        sqadd           v4.4s, v4.4s, v29.4s
+        sqadd           v5.4s, v5.4s, v29.4s
+        sqadd           v6.4s, v6.4s, v29.4s
+        sqadd           v7.4s, v7.4s, v29.4s
+        sqxtn           v0.4h, v4.4s
+        sqxtn2          v0.8h, v5.4s
+        sqxtn           v1.4h, v6.4s
+        sqxtn2          v1.8h, v7.4s
+        sqxtun          v0.8b, v0.8h
+        sqxtun          v1.8b, v1.8h
+        str             s0, [x0], #4
+        st1             {v0.h}[2], [x0], x1
+        str             s1, [x0], #4
+        st1             {v1.h}[2], [x0], x1
+        subs            w4, w4, #2
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_pel_uni_w_pixels8_8_neon, export=1
+        mov             w10, #-6
+        sub             w10, w10, w5
+        dup             v30.8h, w6
+        dup             v31.4s, w10
+        dup             v29.4s, w7
+1:
+        ldr             d0, [x2]
+        ldr             d1, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        ushll           v0.8h, v0.8b, #6
+        ushll           v1.8h, v1.8b, #6
+        smull           v4.4s, v0.4h, v30.4h
+        smull2          v5.4s, v0.8h, v30.8h
+        smull           v6.4s, v1.4h, v30.4h
+        smull2          v7.4s, v1.8h, v30.8h
+        sqrshl          v4.4s, v4.4s, v31.4s
+        sqrshl          v5.4s, v5.4s, v31.4s
+        sqrshl          v6.4s, v6.4s, v31.4s
+        sqrshl          v7.4s, v7.4s, v31.4s
+        sqadd           v4.4s, v4.4s, v29.4s
+        sqadd           v5.4s, v5.4s, v29.4s
+        sqadd           v6.4s, v6.4s, v29.4s
+        sqadd           v7.4s, v7.4s, v29.4s
+        sqxtn           v0.4h, v4.4s
+        sqxtn2          v0.8h, v5.4s
+        sqxtn           v1.4h, v6.4s
+        sqxtn2          v1.8h, v7.4s
+        sqxtun          v0.8b, v0.8h
+        sqxtun          v1.8b, v1.8h
+        str             d0, [x0]
+        str             d1, [x0, x1]
+        add             x0, x0, x1, lsl #1
+        subs            w4, w4, #2
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_pel_uni_w_pixels12_8_neon, export=1
+        mov             w10, #-6
+        sub             w10, w10, w5
+        dup             v30.8h, w6
+        dup             v31.4s, w10
+        dup             v29.4s, w7
+        sub             x1, x1, #8
+1:
+        ldr             q0, [x2]
+        ldr             q1, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        ushll           v4.8h, v0.8b, #6
+        ushll2          v5.8h, v0.16b, #6
+        ushll           v6.8h, v1.8b, #6
+        ushll2          v7.8h, v1.16b, #6
+        smull           v16.4s, v4.4h, v30.4h
+        smull2          v17.4s, v4.8h, v30.8h
+        smull           v18.4s, v5.4h, v30.4h
+        smull2          v19.4s, v5.8h, v30.8h
+        smull           v20.4s, v6.4h, v30.4h
+        smull2          v21.4s, v6.8h, v30.8h
+        smull           v22.4s, v7.4h, v30.4h
+        smull2          v23.4s, v7.8h, v30.8h
+
+        sqrshl          v16.4s, v16.4s, v31.4s
+        sqrshl          v17.4s, v17.4s, v31.4s
+        sqrshl          v18.4s, v18.4s, v31.4s
+        sqrshl          v19.4s, v19.4s, v31.4s
+        sqrshl          v20.4s, v20.4s, v31.4s
+        sqrshl          v21.4s, v21.4s, v31.4s
+        sqrshl          v22.4s, v22.4s, v31.4s
+        sqrshl          v23.4s, v23.4s, v31.4s
+        sqadd           v16.4s, v16.4s, v29.4s
+        sqadd           v17.4s, v17.4s, v29.4s
+        sqadd           v18.4s, v18.4s, v29.4s
+        sqadd           v19.4s, v19.4s, v29.4s
+        sqadd           v20.4s, v20.4s, v29.4s
+        sqadd           v21.4s, v21.4s, v29.4s
+        sqadd           v22.4s, v22.4s, v29.4s
+        sqadd           v23.4s, v23.4s, v29.4s
+        sqxtn           v0.4h, v16.4s
+        sqxtn2          v0.8h, v17.4s
+        sqxtn           v1.4h, v18.4s
+        sqxtn2          v1.8h, v19.4s
+        sqxtn           v2.4h, v20.4s
+        sqxtn2          v2.8h, v21.4s
+        sqxtn           v3.4h, v22.4s
+        sqxtn2          v3.8h, v23.4s
+        sqxtun          v0.8b, v0.8h
+        sqxtun2         v0.16b, v1.8h
+        sqxtun          v2.8b, v2.8h
+        sqxtun2         v2.16b, v3.8h
+        str             d0, [x0], #8
+        st1             {v0.s}[2], [x0], x1
+        str             d2, [x0], #8
+        st1             {v2.s}[2], [x0], x1
+        subs            w4, w4, #2
+        b.ne            1b
+        ret
+endfunc
+
+.macro PEL_UNI_W_PIXEL_CALC     s0, t0, t1, d0, d1, d2, d3
+        ushll           \t0\().8h, \s0\().8b, #6
+        ushll2          \t1\().8h, \s0\().16b, #6
+        smull           \d0\().4s, \t0\().4h, v30.4h
+        smull2          \d1\().4s, \t0\().8h, v30.8h
+        smull           \d2\().4s, \t1\().4h, v30.4h
+        smull2          \d3\().4s, \t1\().8h, v30.8h
+        sqrshl          \d0\().4s, \d0\().4s, v31.4s
+        sqrshl          \d1\().4s, \d1\().4s, v31.4s
+        sqrshl          \d2\().4s, \d2\().4s, v31.4s
+        sqrshl          \d3\().4s, \d3\().4s, v31.4s
+        sqadd           \d0\().4s, \d0\().4s, v29.4s
+        sqadd           \d1\().4s, \d1\().4s, v29.4s
+        sqadd           \d2\().4s, \d2\().4s, v29.4s
+        sqadd           \d3\().4s, \d3\().4s, v29.4s
+        sqxtn           \t0\().4h, \d0\().4s
+        sqxtn2          \t0\().8h, \d1\().4s
+        sqxtn           \t1\().4h, \d2\().4s
+        sqxtn2          \t1\().8h, \d3\().4s
+        sqxtun          \s0\().8b,  \t0\().8h
+        sqxtun2         \s0\().16b, \t1\().8h
+.endm
+
+
+function ff_hevc_put_hevc_pel_uni_w_pixels16_8_neon, export=1
+        mov             w10, #-6
+        sub             w10, w10, w5
+        dup             v30.8h, w6
+        dup             v31.4s, w10
+        dup             v29.4s, w7
+1:
+        ldr             q0, [x2]
+        ldr             q1, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        PEL_UNI_W_PIXEL_CALC v0, v4, v5, v16, v17, v18, v19
+        PEL_UNI_W_PIXEL_CALC v1, v6, v7, v20, v21, v22, v23
+        str             q0, [x0]
+        str             q1, [x0, x1]
+        add             x0, x0, x1, lsl #1
+        subs            w4, w4, #2
+        b.ne            1b
+        ret
+endfunc
+
+
+
+function ff_hevc_put_hevc_pel_uni_w_pixels24_8_neon, export=1
+        mov             w10, #-6
+        sub             w10, w10, w5
+        dup             v30.8h, w6
+        dup             v31.4s, w10
+        dup             v29.4s, w7
+1:
+        ld1             {v0.16b, v1.16b}, [x2], x3
+        ushll           v4.8h, v0.8b, #6
+        ushll2          v5.8h, v0.16b, #6
+        ushll           v6.8h, v1.8b, #6
+        smull           v16.4s, v4.4h, v30.4h
+        smull2          v17.4s, v4.8h, v30.8h
+        smull           v18.4s, v5.4h, v30.4h
+        smull2          v19.4s, v5.8h, v30.8h
+        smull           v20.4s, v6.4h, v30.4h
+        smull2          v21.4s, v6.8h, v30.8h
+        sqrshl          v16.4s, v16.4s, v31.4s
+        sqrshl          v17.4s, v17.4s, v31.4s
+        sqrshl          v18.4s, v18.4s, v31.4s
+        sqrshl          v19.4s, v19.4s, v31.4s
+        sqrshl          v20.4s, v20.4s, v31.4s
+        sqrshl          v21.4s, v21.4s, v31.4s
+        sqadd           v16.4s, v16.4s, v29.4s
+        sqadd           v17.4s, v17.4s, v29.4s
+        sqadd           v18.4s, v18.4s, v29.4s
+        sqadd           v19.4s, v19.4s, v29.4s
+        sqadd           v20.4s, v20.4s, v29.4s
+        sqadd           v21.4s, v21.4s, v29.4s
+        sqxtn           v0.4h, v16.4s
+        sqxtn2          v0.8h, v17.4s
+        sqxtn           v1.4h, v18.4s
+        sqxtn2          v1.8h, v19.4s
+        sqxtn           v2.4h, v20.4s
+        sqxtn2          v2.8h, v21.4s
+        sqxtun          v0.8b, v0.8h
+        sqxtun          v1.8b, v1.8h
+        sqxtun          v2.8b, v2.8h
+        st1             {v0.8b, v1.8b, v2.8b}, [x0], x1
+        subs            w4, w4, #1
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_pel_uni_w_pixels32_8_neon, export=1
+        mov             w10, #-6
+        sub             w10, w10, w5
+        dup             v30.8h, w6
+        dup             v31.4s, w10
+        dup             v29.4s, w7
+1:
+        ld1             {v0.16b, v1.16b}, [x2], x3
+        PEL_UNI_W_PIXEL_CALC v0, v4, v5, v16, v17, v18, v19
+        PEL_UNI_W_PIXEL_CALC v1, v6, v7, v20, v21, v22, v23
+        st1             {v0.16b, v1.16b}, [x0], x1
+        subs            w4, w4, #1
+        b.ne            1b
+        ret
+endfunc
+
+
+function ff_hevc_put_hevc_pel_uni_w_pixels48_8_neon, export=1
+        mov             w10, #-6
+        sub             w10, w10, w5
+        dup             v30.8h, w6
+        dup             v31.4s, w10
+        dup             v29.4s, w7
+1:
+        ld1             {v0.16b, v1.16b, v2.16b}, [x2], x3
+        PEL_UNI_W_PIXEL_CALC v0, v4, v5, v16, v17, v18, v19
+        PEL_UNI_W_PIXEL_CALC v1, v6, v7, v20, v21, v22, v23
+        PEL_UNI_W_PIXEL_CALC v2, v4, v5, v16, v17, v18, v19
+        st1             {v0.16b, v1.16b, v2.16b}, [x0], x1
+        subs            w4, w4, #1
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_pel_uni_w_pixels64_8_neon, export=1
+        mov             w10, #-6
+        sub             w10, w10, w5
+        dup             v30.8h, w6
+        dup             v31.4s, w10
+        dup             v29.4s, w7
+1:
+        ld1             {v0.16b, v1.16b, v2.16b, v3.16b}, [x2], x3
+        PEL_UNI_W_PIXEL_CALC v0, v4, v5, v16, v17, v18, v19
+        PEL_UNI_W_PIXEL_CALC v1, v6, v7, v20, v21, v22, v23
+        PEL_UNI_W_PIXEL_CALC v2, v4, v5, v16, v17, v18, v19
+        PEL_UNI_W_PIXEL_CALC v3, v6, v7, v20, v21, v22, v23
+        st1             {v0.16b, v1.16b, v2.16b, v3.16b}, [x0], x1
+        subs            w4, w4, #1
+        b.ne            1b
+        ret
+endfunc
+
+.macro QPEL_UNI_W_V_HEADER
+        ldur            x12, [sp, #8]          // my
+        sub             x2, x2, x3, lsl #1
+        sub             x2, x2, x3
+        movrel          x9, qpel_filters_abs
+        add             x9, x9, x12, lsl #3
+        ldr             d28, [x9]
+        dup             v0.16b, v28.b[0]
+        dup             v1.16b, v28.b[1]
+        dup             v2.16b, v28.b[2]
+        dup             v3.16b, v28.b[3]
+        dup             v4.16b, v28.b[4]
+        dup             v5.16b, v28.b[5]
+        dup             v6.16b, v28.b[6]
+        dup             v7.16b, v28.b[7]
+
+        mov             w10, #-6
+        sub             w10, w10, w5
+        dup             v30.8h, w6              // wx
+        dup             v31.4s, w10             // shift
+        dup             v29.4s, w7              // ox
+.endm
+
+.macro QPEL_FILTER_B dst, src0, src1, src2, src3, src4, src5, src6, src7
+        umull           \dst\().8h, \src1\().8b, v1.8b
+        umlsl           \dst\().8h, \src0\().8b, v0.8b
+        umlsl           \dst\().8h, \src2\().8b, v2.8b
+        umlal           \dst\().8h, \src3\().8b, v3.8b
+        umlal           \dst\().8h, \src4\().8b, v4.8b
+        umlsl           \dst\().8h, \src5\().8b, v5.8b
+        umlal           \dst\().8h, \src6\().8b, v6.8b
+        umlsl           \dst\().8h, \src7\().8b, v7.8b
+.endm
+
+.macro QPEL_FILTER_B2 dst, src0, src1, src2, src3, src4, src5, src6, src7
+        umull2          \dst\().8h, \src1\().16b, v1.16b
+        umlsl2          \dst\().8h, \src0\().16b, v0.16b
+        umlsl2          \dst\().8h, \src2\().16b, v2.16b
+        umlal2          \dst\().8h, \src3\().16b, v3.16b
+        umlal2          \dst\().8h, \src4\().16b, v4.16b
+        umlsl2          \dst\().8h, \src5\().16b, v5.16b
+        umlal2          \dst\().8h, \src6\().16b, v6.16b
+        umlsl2          \dst\().8h, \src7\().16b, v7.16b
+.endm
+
+.macro  QPEL_UNI_W_V_4
+        smull           v24.4s, v24.4h, v30.4h
+        sqrshl          v24.4s, v24.4s, v31.4s
+        sqadd           v24.4s, v24.4s, v29.4s
+        sqxtn           v24.4h, v24.4s
+        sqxtun          v24.8b, v24.8h
+        st1             {v24.s}[0], [x0], x1
+.endm
+
+function ff_hevc_put_hevc_qpel_uni_w_v4_8_neon, export=1
+        QPEL_UNI_W_V_HEADER
+        ldr             s16, [x2]
+        ldr             s17, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        ldr             s18, [x2]
+        ldr             s19, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        ldr             s20, [x2]
+        ldr             s21, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        ldr             s22, [x2]
+
+1:      ldr             s23, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        QPEL_FILTER_B   v24, v16, v17, v18, v19, v20, v21, v22, v23
+        QPEL_UNI_W_V_4
+        subs            w4, w4, #1
+        b.eq            2f
+
+        ldr             s16, [x2]
+        QPEL_FILTER_B   v24, v17, v18, v19, v20, v21, v22, v23, v16
+        QPEL_UNI_W_V_4
+        subs            w4, w4, #1
+        b.eq            2f
+
+        ldr             s17, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        QPEL_FILTER_B   v24, v18, v19, v20, v21, v22, v23, v16, v17
+        QPEL_UNI_W_V_4
+        subs            w4, w4, #1
+        b.eq            2f
+
+        ldr             s18, [x2]
+        QPEL_FILTER_B   v24, v19, v20, v21, v22, v23, v16, v17, v18
+        QPEL_UNI_W_V_4
+        subs            w4, w4, #1
+        b.eq            2f
+
+        ldr             s19, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        QPEL_FILTER_B   v24, v20, v21, v22, v23, v16, v17, v18, v19
+        QPEL_UNI_W_V_4
+        subs            w4, w4, #1
+        b.eq            2f
+
+        ldr             s20, [x2]
+        QPEL_FILTER_B   v24, v21, v22, v23, v16, v17, v18, v19, v20
+        QPEL_UNI_W_V_4
+        subs            w4, w4, #1
+        b.eq            2f
+
+        ldr             s21, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        QPEL_FILTER_B   v24, v22, v23, v16, v17, v18, v19, v20, v21
+        QPEL_UNI_W_V_4
+        subs            w4, w4, #1
+        b.eq            2f
+
+        ldr             s22, [x2]
+        QPEL_FILTER_B   v24, v23, v16, v17, v18, v19, v20, v21, v22
+        QPEL_UNI_W_V_4
+        subs            w4, w4, #1
+        b.ne            1b
+2:
+        ret
+endfunc
+
+.macro QPEL_UNI_W_V_8
+        smull           v24.4s, v26.4h, v30.4h
+        smull2          v25.4s, v26.8h, v30.8h
+        sqrshl          v24.4s, v24.4s, v31.4s
+        sqrshl          v25.4s, v25.4s, v31.4s
+        sqadd           v24.4s, v24.4s, v29.4s
+        sqadd           v25.4s, v25.4s, v29.4s
+        sqxtn           v24.4h, v24.4s
+        sqxtn2          v24.8h, v25.4s
+        sqxtun          v24.8b, v24.8h
+        st1             {v24.d}[0], [x0], x1
+.endm
+
+function ff_hevc_put_hevc_qpel_uni_w_v8_8_neon, export=1
+        QPEL_UNI_W_V_HEADER
+        ldr             d16, [x2]
+        ldr             d17, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        ldr             d18, [x2]
+        ldr             d19, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        ldr             d20, [x2]
+        ldr             d21, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        ldr             d22, [x2]
+
+1:      ldr             d23, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        QPEL_FILTER_B   v26, v16, v17, v18, v19, v20, v21, v22, v23
+        QPEL_UNI_W_V_8
+        subs            w4, w4, #1
+        b.eq            2f
+
+        ldr             d16, [x2]
+        QPEL_FILTER_B   v26, v17, v18, v19, v20, v21, v22, v23, v16
+        QPEL_UNI_W_V_8
+        subs            w4, w4, #1
+        b.eq            2f
+
+        ldr             d17, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        QPEL_FILTER_B   v26, v18, v19, v20, v21, v22, v23, v16, v17
+        QPEL_UNI_W_V_8
+        subs            w4, w4, #1
+        b.eq            2f
+
+        ldr             d18, [x2]
+        QPEL_FILTER_B   v26, v19, v20, v21, v22, v23, v16, v17, v18
+        QPEL_UNI_W_V_8
+        subs            w4, w4, #1
+        b.eq            2f
+
+        ldr             d19, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        QPEL_FILTER_B   v26, v20, v21, v22, v23, v16, v17, v18, v19
+        QPEL_UNI_W_V_8
+        subs            w4, w4, #1
+        b.eq            2f
+
+        ldr             d20, [x2]
+        QPEL_FILTER_B   v26, v21, v22, v23, v16, v17, v18, v19, v20
+        QPEL_UNI_W_V_8
+        subs            w4, w4, #1
+        b.eq            2f
+
+        ldr             d21, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        QPEL_FILTER_B   v26, v22, v23, v16, v17, v18, v19, v20, v21
+        QPEL_UNI_W_V_8
+        subs            w4, w4, #1
+        b.eq            2f
+
+        ldr             d22, [x2]
+        QPEL_FILTER_B   v26, v23, v16, v17, v18, v19, v20, v21, v22
+        QPEL_UNI_W_V_8
+        subs            w4, w4, #1
+        b.ne            1b
+2:
+        ret
+endfunc
+
+.macro QPEL_UNI_W_V_16
+        smull           v24.4s, v26.4h, v30.4h
+        smull2          v25.4s, v26.8h, v30.8h
+        smull           v26.4s, v27.4h, v30.4h
+        smull2          v27.4s, v27.8h, v30.8h
+        sqrshl          v24.4s, v24.4s, v31.4s
+        sqrshl          v25.4s, v25.4s, v31.4s
+        sqrshl          v26.4s, v26.4s, v31.4s
+        sqrshl          v27.4s, v27.4s, v31.4s
+        sqadd           v24.4s, v24.4s, v29.4s
+        sqadd           v25.4s, v25.4s, v29.4s
+        sqadd           v26.4s, v26.4s, v29.4s
+        sqadd           v27.4s, v27.4s, v29.4s
+        sqxtn           v24.4h, v24.4s
+        sqxtn2          v24.8h, v25.4s
+        sqxtn           v26.4h, v26.4s
+        sqxtn2          v26.8h, v27.4s
+        sqxtun          v24.8b, v24.8h
+        sqxtun2         v24.16b, v26.8h
+        st1             {v24.16b}, [x0], x1
+.endm
+
+function ff_hevc_put_hevc_qpel_uni_w_v16_8_neon, export=1
+        QPEL_UNI_W_V_HEADER
+        ldr             q16, [x2]
+        ldr             q17, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        ldr             q18, [x2]
+        ldr             q19, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        ldr             q20, [x2]
+        ldr             q21, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        ldr             q22, [x2]
+
+1:      ldr             q23, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        QPEL_FILTER_B   v26, v16, v17, v18, v19, v20, v21, v22, v23
+        QPEL_FILTER_B2  v27, v16, v17, v18, v19, v20, v21, v22, v23
+        QPEL_UNI_W_V_16
+        subs            w4, w4, #1
+        b.eq            2f
+
+        ldr             q16, [x2]
+        QPEL_FILTER_B   v26, v17, v18, v19, v20, v21, v22, v23, v16
+        QPEL_FILTER_B2  v27, v17, v18, v19, v20, v21, v22, v23, v16
+        QPEL_UNI_W_V_16
+        subs            w4, w4, #1
+        b.eq            2f
+
+        ldr             q17, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        QPEL_FILTER_B   v26, v18, v19, v20, v21, v22, v23, v16, v17
+        QPEL_FILTER_B2  v27, v18, v19, v20, v21, v22, v23, v16, v17
+        QPEL_UNI_W_V_16
+        subs            w4, w4, #1
+        b.eq            2f
+
+        ldr             q18, [x2]
+        QPEL_FILTER_B   v26, v19, v20, v21, v22, v23, v16, v17, v18
+        QPEL_FILTER_B2  v27, v19, v20, v21, v22, v23, v16, v17, v18
+        QPEL_UNI_W_V_16
+        subs            w4, w4, #1
+        b.eq            2f
+
+        ldr             q19, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        QPEL_FILTER_B   v26, v20, v21, v22, v23, v16, v17, v18, v19
+        QPEL_FILTER_B2  v27, v20, v21, v22, v23, v16, v17, v18, v19
+        QPEL_UNI_W_V_16
+        subs            w4, w4, #1
+        b.eq            2f
+
+        ldr             q20, [x2]
+        QPEL_FILTER_B   v26, v21, v22, v23, v16, v17, v18, v19, v20
+        QPEL_FILTER_B2  v27, v21, v22, v23, v16, v17, v18, v19, v20
+        QPEL_UNI_W_V_16
+        subs            w4, w4, #1
+        b.eq            2f
+
+        ldr             q21, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        QPEL_FILTER_B   v26, v22, v23, v16, v17, v18, v19, v20, v21
+        QPEL_FILTER_B2  v27, v22, v23, v16, v17, v18, v19, v20, v21
+        QPEL_UNI_W_V_16
+        subs            w4, w4, #1
+        b.eq            2f
+
+        ldr             q22, [x2]
+        QPEL_FILTER_B   v26, v23, v16, v17, v18, v19, v20, v21, v22
+        QPEL_FILTER_B2  v27, v23, v16, v17, v18, v19, v20, v21, v22
+        QPEL_UNI_W_V_16
+        subs            w4, w4, #1
+        b.ne            1b
+2:
+        ret
+endfunc
+
+function ff_hevc_put_hevc_qpel_uni_w_v64_8_neon, export=1
+        QPEL_UNI_W_V_HEADER
+        ldur            w13, [sp, #16]
+        mov             x14, x0
+        mov             x15, x2
+        mov             w11, w4
+
+3:
+        ldr             q16, [x2]
+        ldr             q17, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        ldr             q18, [x2]
+        ldr             q19, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        ldr             q20, [x2]
+        ldr             q21, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        ldr             q22, [x2]
+
+
+1:      ldr             q23, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        QPEL_FILTER_B   v26, v16, v17, v18, v19, v20, v21, v22, v23
+        QPEL_FILTER_B2  v27, v16, v17, v18, v19, v20, v21, v22, v23
+        QPEL_UNI_W_V_16
+        subs            w4, w4, #1
+        b.eq            2f
+
+        ldr             q16, [x2]
+        QPEL_FILTER_B   v26, v17, v18, v19, v20, v21, v22, v23, v16
+        QPEL_FILTER_B2  v27, v17, v18, v19, v20, v21, v22, v23, v16
+        QPEL_UNI_W_V_16
+        subs            w4, w4, #1
+        b.eq            2f
+
+        ldr             q17, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        QPEL_FILTER_B   v26, v18, v19, v20, v21, v22, v23, v16, v17
+        QPEL_FILTER_B2  v27, v18, v19, v20, v21, v22, v23, v16, v17
+        QPEL_UNI_W_V_16
+        subs            w4, w4, #1
+        b.eq            2f
+
+        ldr             q18, [x2]
+        QPEL_FILTER_B   v26, v19, v20, v21, v22, v23, v16, v17, v18
+        QPEL_FILTER_B2  v27, v19, v20, v21, v22, v23, v16, v17, v18
+        QPEL_UNI_W_V_16
+        subs            w4, w4, #1
+        b.eq            2f
+
+        ldr             q19, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        QPEL_FILTER_B   v26, v20, v21, v22, v23, v16, v17, v18, v19
+        QPEL_FILTER_B2  v27, v20, v21, v22, v23, v16, v17, v18, v19
+        QPEL_UNI_W_V_16
+        subs            w4, w4, #1
+        b.eq            2f
+
+        ldr             q20, [x2]
+        QPEL_FILTER_B   v26, v21, v22, v23, v16, v17, v18, v19, v20
+        QPEL_FILTER_B2  v27, v21, v22, v23, v16, v17, v18, v19, v20
+        QPEL_UNI_W_V_16
+        subs            w4, w4, #1
+        b.eq            2f
+
+        ldr             q21, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        QPEL_FILTER_B   v26, v22, v23, v16, v17, v18, v19, v20, v21
+        QPEL_FILTER_B2  v27, v22, v23, v16, v17, v18, v19, v20, v21
+        QPEL_UNI_W_V_16
+        subs            w4, w4, #1
+        b.eq            2f
+
+        ldr             q22, [x2]
+        QPEL_FILTER_B   v26, v23, v16, v17, v18, v19, v20, v21, v22
+        QPEL_FILTER_B2  v27, v23, v16, v17, v18, v19, v20, v21, v22
+        QPEL_UNI_W_V_16
+        subs            w4, w4, #1
+        b.ne            1b
+2:
+        subs            w13, w13, #16
+        add             x14, x14, #16
+        add             x15, x15, #16
+        mov             x0, x14
+        mov             x2, x15
+        mov             w4, w11
+        b.hi            3b
+        ret
+endfunc
