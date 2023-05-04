@@ -1295,8 +1295,12 @@ static int aom_encode(AVCodecContext *avctx, AVPacket *pkt,
         if (frame->duration > ULONG_MAX) {
             av_log(avctx, AV_LOG_WARNING,
                    "Frame duration too large: %"PRId64"\n", frame->duration);
-        } else
-            duration = frame->duration ? frame->duration : avctx->ticks_per_frame;
+        } else if (frame->duration)
+            duration = frame->duration;
+        else if (avctx->framerate.num > 0 && avctx->framerate.den > 0)
+            duration = av_rescale_q(1, av_inv_q(avctx->framerate), avctx->time_base);
+        else
+            duration = avctx->ticks_per_frame ? avctx->ticks_per_frame : 1;
 
         switch (frame->color_range) {
         case AVCOL_RANGE_MPEG:
