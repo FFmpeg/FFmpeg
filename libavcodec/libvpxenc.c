@@ -1692,6 +1692,7 @@ static int vpx_encode(AVCodecContext *avctx, AVPacket *pkt,
     const struct vpx_codec_enc_cfg *enccfg = ctx->encoder.config.enc;
     vpx_svc_layer_id_t layer_id;
     int layer_id_valid = 0;
+    unsigned long duration = 0;
 
     if (avctx->qmax >= 0 && enccfg->rc_max_quantizer != avctx->qmax) {
         struct vpx_codec_enc_cfg cfg = *enccfg;
@@ -1820,8 +1821,18 @@ static int vpx_encode(AVCodecContext *avctx, AVPacket *pkt,
 #endif
     }
 
+    if (frame && frame->duration > ULONG_MAX) {
+        av_log(avctx, AV_LOG_WARNING,
+               "Frame duration too large: %"PRId64"\n", frame->duration);
+    } else if (frame && frame->duration)
+        duration = frame->duration;
+    else if (avctx->framerate.num > 0 && avctx->framerate.den > 0)
+        duration = av_rescale_q(1, av_inv_q(avctx->framerate), avctx->time_base);
+    else
+        duration = avctx->ticks_per_frame ? avctx->ticks_per_frame : 1;
+
     res = vpx_codec_encode(&ctx->encoder, rawimg, timestamp,
-                           avctx->ticks_per_frame, flags, ctx->deadline);
+                           duration, flags, ctx->deadline);
     if (res != VPX_CODEC_OK) {
         log_encoder_error(avctx, "Error encoding frame");
         return AVERROR_INVALIDDATA;
@@ -1829,7 +1840,7 @@ static int vpx_encode(AVCodecContext *avctx, AVPacket *pkt,
 
     if (ctx->is_alpha) {
         res = vpx_codec_encode(&ctx->encoder_alpha, rawimg_alpha, timestamp,
-                               avctx->ticks_per_frame, flags, ctx->deadline);
+                               duration, flags, ctx->deadline);
         if (res != VPX_CODEC_OK) {
             log_encoder_error(avctx, "Error encoding alpha frame");
             return AVERROR_INVALIDDATA;
