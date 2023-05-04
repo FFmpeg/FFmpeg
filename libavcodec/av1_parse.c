@@ -108,3 +108,17 @@ void ff_av1_packet_uninit(AV1Packet *pkt)
     av_freep(&pkt->obus);
     pkt->obus_allocated = pkt->obus_allocated_size = 0;
 }
+
+AVRational ff_av1_framerate(int64_t ticks_per_frame, int64_t units_per_tick,
+                            int64_t time_scale)
+{
+    AVRational fr;
+
+    if (ticks_per_frame && units_per_tick && time_scale &&
+        ticks_per_frame < INT64_MAX / units_per_tick    &&
+        av_reduce(&fr.den, &fr.num, units_per_tick * ticks_per_frame,
+                  time_scale, INT_MAX))
+        return fr;
+
+    return (AVRational){ 0, 1 };
+}

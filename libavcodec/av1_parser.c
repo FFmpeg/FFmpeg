@@ -21,6 +21,8 @@
  */
 
 #include "libavutil/avassert.h"
+
+#include "av1_parse.h"
 #include "cbs.h"
 #include "cbs_av1.h"
 #include "parser.h"
@@ -162,11 +164,10 @@ static int av1_parser_parse(AVCodecParserContext *ctx,
     avctx->color_trc = (enum AVColorTransferCharacteristic) color->transfer_characteristics;
     avctx->color_range = color->color_range ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
 
-    if (seq->timing_info_present_flag) {
-        const AV1RawTimingInfo *timing = &seq->timing_info;
-        av_reduce(&avctx->framerate.den, &avctx->framerate.num,
-                  timing->num_units_in_display_tick, timing->time_scale, INT_MAX);
-    }
+    if (seq->timing_info_present_flag)
+        avctx->framerate = ff_av1_framerate(1LL + seq->timing_info.num_ticks_per_picture_minus_1,
+                                            seq->timing_info.num_units_in_display_tick,
+                                            seq->timing_info.time_scale);
 
 end:
     ff_cbs_fragment_reset(td);
