@@ -380,7 +380,7 @@ static int init_model_ov(OVModel *ov_model, const char *input_name, const char *
     if (status != OK) {
         if (status == NOT_FOUND) {
             av_log(ctx, AV_LOG_ERROR, "Could not find \"%s\" in model, failed to set output layout as NHWC, "\
-                                      "all output(s) are: \"%s\"\n", input_name, ov_model->all_output_names);
+                                      "all output(s) are: \"%s\"\n", output_name, ov_model->all_output_names);
         } else{
             av_log(ctx, AV_LOG_ERROR, "Failed to set layout as NHWC for output %s\n", output_name);
         }
