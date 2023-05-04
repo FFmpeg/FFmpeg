@@ -30,6 +30,7 @@
 #include "libavutil/opt.h"
 
 #include "atsc_a53.h"
+#include "av1_parse.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "codec_internal.h"
@@ -154,12 +155,9 @@ static void libdav1d_init_params(AVCodecContext *c, const Dav1dSequenceHeader *s
     else
         c->pix_fmt = pix_fmt[seq->layout][seq->hbd];
 
-    if (seq->num_units_in_tick && seq->time_scale) {
-        av_reduce(&c->framerate.den, &c->framerate.num,
-                  seq->num_units_in_tick, seq->time_scale, INT_MAX);
-        if (seq->equal_picture_interval)
-            c->ticks_per_frame = seq->num_ticks_per_picture;
-    }
+    c->framerate = ff_av1_framerate(seq->num_ticks_per_picture,
+                                    (unsigned)seq->num_units_in_tick,
+                                    (unsigned)seq->time_scale);
 
    if (seq->film_grain_present)
        c->properties |= FF_CODEC_PROPERTY_FILM_GRAIN;
