@@ -117,7 +117,13 @@ static av_cold int amf_encode_init_av1(AVCodecContext* avctx)
         framerate = AMFConstructRate(avctx->framerate.num, avctx->framerate.den);
     }
     else {
-        framerate = AMFConstructRate(avctx->time_base.den, avctx->time_base.num * avctx->ticks_per_frame);
+FF_DISABLE_DEPRECATION_WARNINGS
+        framerate = AMFConstructRate(avctx->time_base.den, avctx->time_base.num
+#if FF_API_TICKS_PER_FRAME
+                                     * avctx->ticks_per_frame
+#endif
+                                     );
+FF_ENABLE_DEPRECATION_WARNINGS
     }
 
     if ((ret = ff_amf_encode_init(avctx)) < 0)

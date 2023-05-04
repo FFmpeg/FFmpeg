@@ -139,7 +139,13 @@ static av_cold int svc_encode_init(AVCodecContext *avctx)
     if (avctx->framerate.num > 0 && avctx->framerate.den > 0) {
         param.fMaxFrameRate = av_q2d(avctx->framerate);
     } else {
-        param.fMaxFrameRate = 1.0 / av_q2d(avctx->time_base) / FFMAX(avctx->ticks_per_frame, 1);
+FF_DISABLE_DEPRECATION_WARNINGS
+        param.fMaxFrameRate = 1.0 / av_q2d(avctx->time_base)
+#if FF_API_TICKS_PER_FRAME
+                                  / FFMAX(avctx->ticks_per_frame, 1)
+#endif
+                                  ;
+FF_ENABLE_DEPRECATION_WARNINGS
     }
     param.iPicWidth                  = avctx->width;
     param.iPicHeight                 = avctx->height;

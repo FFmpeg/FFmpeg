@@ -60,7 +60,13 @@ static double get_fps(AVCodecContext *avctx)
     if (avctx->framerate.num > 0 && avctx->framerate.den > 0)
         return av_q2d(avctx->framerate);
 
-    return 1.0 / av_q2d(avctx->time_base) / FFMAX(avctx->ticks_per_frame, 1);
+FF_DISABLE_DEPRECATION_WARNINGS
+    return 1.0 / av_q2d(avctx->time_base)
+#if FF_API_TICKS_PER_FRAME
+        / FFMAX(avctx->ticks_per_frame, 1)
+#endif
+        ;
+FF_ENABLE_DEPRECATION_WARNINGS
 }
 
 static inline double qp2bits(RateControlEntry *rce, double qp)

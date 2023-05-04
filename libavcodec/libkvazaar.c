@@ -86,7 +86,13 @@ static av_cold int libkvazaar_init(AVCodecContext *avctx)
         cfg->framerate_denom = avctx->framerate.den;
     } else {
         cfg->framerate_num   = avctx->time_base.den;
-        cfg->framerate_denom = avctx->time_base.num * avctx->ticks_per_frame;
+FF_DISABLE_DEPRECATION_WARNINGS
+        cfg->framerate_denom = avctx->time_base.num
+#if FF_API_TICKS_PER_FRAME
+            * avctx->ticks_per_frame
+#endif
+            ;
+FF_ENABLE_DEPRECATION_WARNINGS
     }
     cfg->target_bitrate = avctx->bit_rate;
     cfg->vui.sar_width  = avctx->sample_aspect_ratio.num;

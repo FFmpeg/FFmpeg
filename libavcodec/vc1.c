@@ -418,6 +418,14 @@ static int decode_sequence_header_adv(VC1Context *v, GetBitContext *gb)
            v->s.loop_filter, v->chromaformat, v->broadcast, v->interlace,
            v->tfcntrflag, v->finterpflag);
 
+#if FF_API_TICKS_PER_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (v->broadcast) { // Pulldown may be present
+        v->s.avctx->ticks_per_frame = 2;
+    }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
     v->psf = get_bits1(gb);
     if (v->psf) { //PsF, 6.1.13
         av_log(v->s.avctx, AV_LOG_ERROR, "Progressive Segmented Frame mode: not supported (yet)\n");
@@ -466,9 +474,6 @@ static int decode_sequence_header_adv(VC1Context *v, GetBitContext *gb)
                     v->s.avctx->framerate.den = ff_vc1_fps_dr[dr - 1];
                     v->s.avctx->framerate.num = ff_vc1_fps_nr[nr - 1] * 1000;
                 }
-            }
-            if (v->broadcast) { // Pulldown may be present
-                v->s.avctx->ticks_per_frame = 2;
             }
         }
 

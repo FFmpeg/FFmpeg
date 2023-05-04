@@ -1087,7 +1087,6 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
     // process pulldown flags
     s->current_picture_ptr->f->repeat_pict = 0;
     // Pulldown flags are only valid when 'broadcast' has been set.
-    // So ticks_per_frame will be 2
     if (v->rff) {
         // repeat field
         s->current_picture_ptr->f->repeat_pict = 1;

@@ -710,7 +710,6 @@ int avformat_transfer_internal_stream_timing_info(const AVOutputFormat *ofmt,
     AVRational dec_ctx_tb = dec_ctx->framerate.num ? av_inv_q(av_mul_q(dec_ctx->framerate, mul))
                                                    : (ist->codecpar->codec_type == AVMEDIA_TYPE_AUDIO ? (AVRational){0, 1}
                                                                                                       : ist->time_base);
-
     enc_ctx->time_base = ist->time_base;
     /*
      * Avi is a special case here because it supports variable fps but
@@ -727,7 +726,11 @@ int avformat_transfer_internal_stream_timing_info(const AVOutputFormat *ofmt,
             || copy_tb == AVFMT_TBCF_R_FRAMERATE) {
             enc_ctx->time_base.num = ist->r_frame_rate.den;
             enc_ctx->time_base.den = 2*ist->r_frame_rate.num;
+#if FF_API_TICKS_PER_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
             enc_ctx->ticks_per_frame = 2;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
         } else
 #endif
             if (copy_tb == AVFMT_TBCF_AUTO && dec_ctx->framerate.num &&
@@ -736,9 +739,13 @@ int avformat_transfer_internal_stream_timing_info(const AVOutputFormat *ofmt,
                    || (copy_tb == AVFMT_TBCF_DECODER &&
                        (dec_ctx->framerate.num || ist->codecpar->codec_type == AVMEDIA_TYPE_AUDIO))) {
             enc_ctx->time_base = dec_ctx_tb;
-            enc_ctx->time_base.num *= dec_ctx->ticks_per_frame;
             enc_ctx->time_base.den *= 2;
+#if FF_API_TICKS_PER_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
+            enc_ctx->time_base.num *= dec_ctx->ticks_per_frame;
             enc_ctx->ticks_per_frame = 2;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
         }
     } else if (!(ofmt->flags & AVFMT_VARIABLE_FPS)
                && !av_match_name(ofmt->name, "mov,mp4,3gp,3g2,psp,ipod,ismv,f4v")) {
@@ -748,7 +755,11 @@ int avformat_transfer_internal_stream_timing_info(const AVOutputFormat *ofmt,
             || (copy_tb == AVFMT_TBCF_DECODER &&
                 (dec_ctx->framerate.num || ist->codecpar->codec_type == AVMEDIA_TYPE_AUDIO))) {
             enc_ctx->time_base = dec_ctx_tb;
+#if FF_API_TICKS_PER_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
             enc_ctx->time_base.num *= dec_ctx->ticks_per_frame;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
         }
     }
 

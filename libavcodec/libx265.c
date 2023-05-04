@@ -220,7 +220,13 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
         ctx->params->fpsDenom    = avctx->framerate.den;
     } else {
         ctx->params->fpsNum      = avctx->time_base.den;
-        ctx->params->fpsDenom    = avctx->time_base.num * avctx->ticks_per_frame;
+FF_DISABLE_DEPRECATION_WARNINGS
+        ctx->params->fpsDenom    = avctx->time_base.num
+#if FF_API_TICKS_PER_FRAME
+                                   * avctx->ticks_per_frame
+#endif
+                                   ;
+FF_ENABLE_DEPRECATION_WARNINGS
     }
     ctx->params->sourceWidth     = avctx->width;
     ctx->params->sourceHeight    = avctx->height;

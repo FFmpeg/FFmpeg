@@ -775,7 +775,6 @@ Possible values:
 @end table
 @item rc_max_vbv_use @var{float} (@emph{encoding,video})
 @item rc_min_vbv_use @var{float} (@emph{encoding,video})
-@item ticks_per_frame @var{integer} (@emph{decoding/encoding,audio,video})
 
 @item color_primaries @var{integer} (@emph{decoding/encoding,video})
 Possible values:

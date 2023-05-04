@@ -382,7 +382,11 @@ static av_cold int h264_decode_init(AVCodecContext *avctx)
         return AVERROR_UNKNOWN;
     }
 
+#if FF_API_TICKS_PER_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     avctx->ticks_per_frame = 2;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     if (!avctx->internal->is_copy) {
         if (avctx->extradata_size > 0 && avctx->extradata) {

@@ -957,7 +957,7 @@ static int h264_slice_header_init(H264Context *h)
         if (h->x264_build < 44U)
             den *= 2;
         av_reduce(&h->avctx->framerate.den, &h->avctx->framerate.num,
-                  sps->num_units_in_tick * h->avctx->ticks_per_frame, den, 1 << 30);
+                  sps->num_units_in_tick * 2, den, 1 << 30);
     }
 
     ff_h264_free_tables(h);
