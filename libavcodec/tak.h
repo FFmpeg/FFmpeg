@@ -149,8 +149,6 @@ int ff_tak_check_crc(const uint8_t *buf, unsigned int buf_size);
  */
 int avpriv_tak_parse_streaminfo(TAKStreamInfo *s, const uint8_t *buf, int size);
 
-void ff_tak_parse_streaminfo(TAKStreamInfo *s, GetBitContext *gb);
-
 /**
  * Validate and decode a frame header.
  * @param      avctx             AVCodecContext to use as av_log() context
