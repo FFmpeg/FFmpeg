@@ -57,6 +57,9 @@ void ff_write_pass1_stats(MpegEncContext *s)
 
 static double get_fps(AVCodecContext *avctx)
 {
+    if (avctx->framerate.num > 0 && avctx->framerate.den > 0)
+        return av_q2d(avctx->framerate);
+
     return 1.0 / av_q2d(avctx->time_base) / FFMAX(avctx->ticks_per_frame, 1);
 }
 
