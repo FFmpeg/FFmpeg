@@ -520,6 +520,10 @@ static int try_push_frame(AVFilterContext *ctx)
     }
 
     frame->nb_samples     = nb_samples;
+    frame->duration = av_rescale_q(frame->nb_samples,
+                                   av_make_q(1, outlink->sample_rate),
+                                   outlink->time_base);
+
 #if FF_API_OLD_CHANNEL_LAYOUT
 FF_DISABLE_DEPRECATION_WARNINGS
     frame->channel_layout = outlink->channel_layout;
