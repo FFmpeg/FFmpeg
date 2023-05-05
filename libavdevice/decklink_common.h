@@ -31,6 +31,7 @@
 
 extern "C" {
 #include "libavcodec/packet_internal.h"
+#include "libavfilter/ccfifo.h"
 }
 #include "libavutil/thread.h"
 #include "decklink_common_c.h"
@@ -111,6 +112,8 @@ struct decklink_ctx {
 
     /* Capture buffer queue */
     AVPacketQueue queue;
+
+    AVCCFifo *cc_fifo;      ///< closed captions
 
     /* Streams present */
     int audio;
