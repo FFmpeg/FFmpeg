@@ -28,6 +28,14 @@
 #include <libplacebo/utils/libav.h>
 #include <libplacebo/vulkan.h>
 
+/* Backwards compatibility with older libplacebo */
+#if PL_API_VER < 276
+static inline AVFrame *pl_get_mapped_avframe(const struct pl_frame *frame)
+{
+    return frame->user_data;
+}
+#endif
+
 enum {
     TONE_MAP_AUTO,
     TONE_MAP_CLIP,
@@ -555,35 +563,27 @@ fail:
     return err;
 }
 
-static int process_frames(AVFilterContext *avctx, AVFrame *out, AVFrame *in)
+static void update_crops(AVFilterContext *ctx,
+                         struct pl_frame *image,
+                         struct pl_frame *target,
+                         const double target_pts)
 {
-    int err = 0, ok;
-    LibplaceboContext *s = avctx->priv;
-    const AVPixFmtDescriptor *outdesc = av_pix_fmt_desc_get(out->format);
-    struct pl_frame image, target;
-    ok = pl_map_avframe_ex(s->gpu, &image, pl_avframe_params(
-        .frame    = in,
-        .tex      = s->tex,
-        .map_dovi = s->apply_dovi,
-    ));
+    LibplaceboContext *s = ctx->priv;
+    const AVFrame *in = pl_get_mapped_avframe(image);
+    const AVFilterLink *inlink = ctx->inputs[0];
+    const double in_pts = in->pts * av_q2d(inlink->time_base);
 
-    if (outdesc->flags & AV_PIX_FMT_FLAG_HWACCEL) {
-        ok &= pl_map_avframe_ex(s->gpu, &target, pl_avframe_params(
-            .frame    = out,
-            .map_dovi = false,
-        ));
-    } else {
-        ok &= pl_frame_recreate_from_avframe(s->gpu, &target, s->tex + 4, out);
-    }
+    s->var_values[VAR_IN_T]   = s->var_values[VAR_T]  = in_pts;
+    s->var_values[VAR_OUT_T]  = s->var_values[VAR_OT] = target_pts;
+    s->var_values[VAR_N]      = inlink->frame_count_out;
 
-    if (!ok) {
-        err = AVERROR_EXTERNAL;
-        goto fail;
-    }
+    /* Clear these explicitly to avoid leaking previous frames' state */
+    s->var_values[VAR_CROP_W] = s->var_values[VAR_CW] = NAN;
+    s->var_values[VAR_CROP_H] = s->var_values[VAR_CH] = NAN;
+    s->var_values[VAR_POS_W]  = s->var_values[VAR_PW] = NAN;
+    s->var_values[VAR_POS_H]  = s->var_values[VAR_PH] = NAN;
 
-    if (!s->apply_filmgrain)
-        image.film_grain.type = PL_FILM_GRAIN_NONE;
-
+    /* Evaluate crop/pos dimensions first, and placement second */
     s->var_values[VAR_CROP_W] = s->var_values[VAR_CW] =
         av_expr_eval(s->crop_w_pexpr, s->var_values, NULL);
     s->var_values[VAR_CROP_H] = s->var_values[VAR_CH] =
@@ -593,71 +593,38 @@ static int process_frames(AVFilterContext *avctx, AVFrame *out, AVFrame *in)
     s->var_values[VAR_POS_H]  = s->var_values[VAR_PH] =
         av_expr_eval(s->pos_h_pexpr, s->var_values, NULL);
 
-    image.crop.x0 = av_expr_eval(s->crop_x_pexpr, s->var_values, NULL);
-    image.crop.y0 = av_expr_eval(s->crop_y_pexpr, s->var_values, NULL);
-    image.crop.x1 = image.crop.x0 + s->var_values[VAR_CROP_W];
-    image.crop.y1 = image.crop.y0 + s->var_values[VAR_CROP_H];
+    image->crop.x0 = av_expr_eval(s->crop_x_pexpr, s->var_values, NULL);
+    image->crop.y0 = av_expr_eval(s->crop_y_pexpr, s->var_values, NULL);
+    image->crop.x1 = image->crop.x0 + s->var_values[VAR_CROP_W];
+    image->crop.y1 = image->crop.y0 + s->var_values[VAR_CROP_H];
 
-    target.crop.x0 = av_expr_eval(s->pos_x_pexpr, s->var_values, NULL);
-    target.crop.y0 = av_expr_eval(s->pos_y_pexpr, s->var_values, NULL);
-    target.crop.x1 = target.crop.x0 + s->var_values[VAR_POS_W];
-    target.crop.y1 = target.crop.y0 + s->var_values[VAR_POS_H];
+    target->crop.x0 = av_expr_eval(s->pos_x_pexpr, s->var_values, NULL);
+    target->crop.y0 = av_expr_eval(s->pos_y_pexpr, s->var_values, NULL);
+    target->crop.x1 = target->crop.x0 + s->var_values[VAR_POS_W];
+    target->crop.y1 = target->crop.y0 + s->var_values[VAR_POS_H];
 
     if (s->target_sar.num) {
-        float aspect = pl_rect2df_aspect(&target.crop) * av_q2d(s->target_sar);
-        pl_rect2df_aspect_set(&target.crop, aspect, s->pad_crop_ratio);
+        float aspect = pl_rect2df_aspect(&target->crop) * av_q2d(s->target_sar);
+        pl_rect2df_aspect_set(&target->crop, aspect, s->pad_crop_ratio);
     }
-
-    pl_render_image(s->renderer, &image, &target, &s->params);
-    pl_unmap_avframe(s->gpu, &image);
-
-    if (outdesc->flags & AV_PIX_FMT_FLAG_HWACCEL) {
-        pl_unmap_avframe(s->gpu, &target);
-    } else if (!pl_download_avframe(s->gpu, &target, out)) {
-        err = AVERROR_EXTERNAL;
-        goto fail;
-    }
-
-    /* Flush the command queues for performance */
-    pl_gpu_flush(s->gpu);
-    return 0;
-
-fail:
-    pl_unmap_avframe(s->gpu, &image);
-    pl_unmap_avframe(s->gpu, &target);
-    return err;
 }
 
-static int filter_frame(AVFilterLink *link, AVFrame *in)
+/* Construct and emit an output frame for `image` */
+static int output_frame(AVFilterContext *ctx, struct pl_frame *image)
 {
-    int err, changed_csp;
-    AVFilterContext *ctx = link->dst;
+    int err = 0, ok, changed_csp;
     LibplaceboContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-
+    const AVPixFmtDescriptor *outdesc = av_pix_fmt_desc_get(outlink->format);
     AVFrame *out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-    if (!out) {
-        err = AVERROR(ENOMEM);
-        goto fail;
-    }
-
-    pl_log_level_update(s->log, get_log_level());
+    const AVFrame *in = pl_get_mapped_avframe(image);
+    struct pl_frame target;
+    if (!out)
+        return AVERROR(ENOMEM);
 
     RET(av_frame_copy_props(out, in));
     out->width = outlink->w;
     out->height = outlink->h;
-
-    /* Dynamic variables */
-    s->var_values[VAR_IN_T]   = s->var_values[VAR_T] =
-        in->pts == AV_NOPTS_VALUE ? NAN : in->pts * av_q2d(link->time_base);
-    s->var_values[VAR_OUT_T]  = s->var_values[VAR_OT] =
-        out->pts == AV_NOPTS_VALUE ? NAN : out->pts * av_q2d(outlink->time_base);
-    s->var_values[VAR_N]      = link->frame_count_out;
-    /* Will be evaluated/set by `process_frames` */
-    s->var_values[VAR_CROP_W] = s->var_values[VAR_CW] = NAN;
-    s->var_values[VAR_CROP_H] = s->var_values[VAR_CH] = NAN;
-    s->var_values[VAR_POS_W]  = s->var_values[VAR_PW] = NAN;
-    s->var_values[VAR_POS_H]  = s->var_values[VAR_PH] = NAN;
 
     if (s->apply_dovi && av_frame_get_side_data(in, AV_FRAME_DATA_DOVI_METADATA)) {
         /* Output of dovi reshaping is always BT.2020+PQ, so infer the correct
@@ -694,16 +661,63 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     if (s->apply_filmgrain)
         av_frame_remove_side_data(out, AV_FRAME_DATA_FILM_GRAIN_PARAMS);
 
-    RET(process_frames(ctx, out, in));
+    /* Map, render and unmap output frame */
+    if (outdesc->flags & AV_PIX_FMT_FLAG_HWACCEL) {
+        ok = pl_map_avframe_ex(s->gpu, &target, pl_avframe_params(
+            .frame    = out,
+            .map_dovi = false,
+        ));
+    } else {
+        ok = pl_frame_recreate_from_avframe(s->gpu, &target, s->tex + 4, out);
+    }
+    if (!ok) {
+        err = AVERROR_EXTERNAL;
+        goto fail;
+    }
 
-    av_frame_free(&in);
+    update_crops(ctx, image, &target, out->pts * av_q2d(outlink->time_base));
+    pl_render_image(s->renderer, image, &target, &s->params);
 
+    if (outdesc->flags & AV_PIX_FMT_FLAG_HWACCEL) {
+        pl_unmap_avframe(s->gpu, &target);
+    } else if (!pl_download_avframe(s->gpu, &target, out)) {
+        err = AVERROR_EXTERNAL;
+        goto fail;
+    }
     return ff_filter_frame(outlink, out);
 
 fail:
-    av_frame_free(&in);
     av_frame_free(&out);
     return err;
+}
+
+static int filter_frame(AVFilterLink *link, AVFrame *in)
+{
+    int ret, ok;
+    AVFilterContext *ctx = link->dst;
+    LibplaceboContext *s = ctx->priv;
+    struct pl_frame image;
+
+    pl_log_level_update(s->log, get_log_level());
+
+    /* Map input frame */
+    ok = pl_map_avframe_ex(s->gpu, &image, pl_avframe_params(
+        .frame      = in,
+        .tex        = s->tex,
+        .map_dovi   = s->apply_dovi,
+    ));
+    av_frame_free(&in);
+
+    if (!s->apply_filmgrain)
+        image.film_grain.type = PL_FILM_GRAIN_NONE;
+
+    if (!ok)
+        return AVERROR_EXTERNAL;
+
+    ret = output_frame(ctx, &image);
+
+    pl_unmap_avframe(s->gpu, &image);
+    return ret;
 }
 
 static int libplacebo_query_format(AVFilterContext *ctx)
