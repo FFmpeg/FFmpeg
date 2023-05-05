@@ -990,10 +990,10 @@ static int64_t video_duration_estimate(const InputStream *ist, const AVFrame *fr
         return frame->duration;
 
     if (ist->dec_ctx->framerate.den && ist->dec_ctx->framerate.num) {
-        int ticks = frame->repeat_pict >= 0 ?
-                    frame->repeat_pict + 1  :
-                    ist->dec_ctx->ticks_per_frame;
-        codec_duration = av_rescale_q(ticks, av_inv_q(ist->dec_ctx->framerate),
+        int fields = frame->repeat_pict + 2;
+        AVRational field_rate = av_mul_q(ist->dec_ctx->framerate,
+                                         (AVRational){ 2, 1 });
+        codec_duration = av_rescale_q(fields, av_inv_q(field_rate),
                                       ist->st->time_base);
     }
 
