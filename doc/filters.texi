@@ -6058,6 +6058,16 @@ ReplayGain scanner filter. This filter takes an audio stream as an input and
 outputs it unchanged.
 At end of filtering it displays @code{track_gain} and @code{track_peak}.
 
+The filter accepts the following exported read-only options:
+
+@table @option
+@item track_gain
+Exported track gain in dB at end of stream.
+
+@item track_peak
+Exported track peak at end of stream.
+@end table
+
 @section resample
 
 Convert the audio sample format, sample rate and channel layout. It is

@@ -23,8 +23,11 @@
  * ReplayGain scanner
  */
 
+#include <float.h>
+
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/opt.h"
 #include "audio.h"
 #include "avfilter.h"
 #include "internal.h"
@@ -306,8 +309,11 @@ static const ReplayGainFreqInfo freqinfos[] =
 };
 
 typedef struct ReplayGainContext {
+    const AVClass *class;
+
     uint32_t histogram[HISTOGRAM_SLOTS];
     float peak;
+    float gain;
     int yule_hist_i, butter_hist_i;
     const double *yule_coeff_a;
     const double *yule_coeff_b;
@@ -576,13 +582,22 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, in);
 }
 
-static av_cold void uninit(AVFilterContext *ctx)
+static int request_frame(AVFilterLink *outlink)
 {
+    AVFilterContext *ctx = outlink->src;
     ReplayGainContext *s = ctx->priv;
-    float gain = calc_replaygain(s->histogram);
+    int ret = 0;
 
-    av_log(ctx, AV_LOG_INFO, "track_gain = %+.2f dB\n", gain);
-    av_log(ctx, AV_LOG_INFO, "track_peak = %.6f\n", s->peak);
+    ret = ff_request_frame(ctx->inputs[0]);
+
+    if (ret == AVERROR_EOF) {
+        s->gain = calc_replaygain(s->histogram);
+
+        av_log(ctx, AV_LOG_INFO, "track_gain = %+.2f dB\n", s->gain);
+        av_log(ctx, AV_LOG_INFO, "track_peak = %.6f\n", s->peak);
+    }
+
+    return ret;
 }
 
 static const AVFilterPad replaygain_inputs[] = {
@@ -598,14 +613,26 @@ static const AVFilterPad replaygain_outputs[] = {
     {
         .name = "default",
         .type = AVMEDIA_TYPE_AUDIO,
+        .request_frame = request_frame,
     },
 };
+
+#define OFFSET(x) offsetof(ReplayGainContext, x)
+#define FLAGS AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_EXPORT|AV_OPT_FLAG_READONLY
+
+static const AVOption replaygain_options[] = {
+    { "track_gain", "track gain (dB)", OFFSET(gain), AV_OPT_TYPE_FLOAT,{.dbl=0}, -FLT_MAX, FLT_MAX, FLAGS },
+    { "track_peak", "track peak",      OFFSET(peak), AV_OPT_TYPE_FLOAT,{.dbl=0}, -FLT_MAX, FLT_MAX, FLAGS },
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(replaygain);
 
 const AVFilter ff_af_replaygain = {
     .name          = "replaygain",
     .description   = NULL_IF_CONFIG_SMALL("ReplayGain scanner."),
-    .uninit        = uninit,
     .priv_size     = sizeof(ReplayGainContext),
+    .priv_class    = &replaygain_class,
     .flags         = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(replaygain_inputs),
     FILTER_OUTPUTS(replaygain_outputs),
