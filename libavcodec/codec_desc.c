@@ -38,14 +38,20 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "mpeg1video",
         .long_name = NULL_IF_CONFIG_SMALL("MPEG-1 video"),
-        .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
+        .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER |
+                     // FIXME this is strigly speaking not true, as MPEG-1 does
+                     // not allow field coding, but our mpeg12 code (decoder and
+                     // parser) can sometimes change codec id at runtime, so
+                     // this is safer
+                     AV_CODEC_PROP_FIELDS,
     },
     {
         .id        = AV_CODEC_ID_MPEG2VIDEO,
         .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "mpeg2video",
         .long_name = NULL_IF_CONFIG_SMALL("MPEG-2 video"),
-        .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
+        .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER |
+                     AV_CODEC_PROP_FIELDS,
         .profiles  = NULL_IF_CONFIG_SMALL(ff_mpeg2_video_profiles),
     },
     {
@@ -225,7 +231,8 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "h264",
         .long_name = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
-        .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_LOSSLESS | AV_CODEC_PROP_REORDER,
+        .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_LOSSLESS |
+                     AV_CODEC_PROP_REORDER | AV_CODEC_PROP_FIELDS,
         .profiles  = NULL_IF_CONFIG_SMALL(ff_h264_profiles),
     },
     {
@@ -529,7 +536,8 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "vc1",
         .long_name = NULL_IF_CONFIG_SMALL("SMPTE VC-1"),
-        .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
+        .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER |
+                     AV_CODEC_PROP_FIELDS,
         .profiles  = NULL_IF_CONFIG_SMALL(ff_vc1_profiles),
     },
     {

@@ -90,6 +90,12 @@ typedef struct AVCodecDescriptor {
  * equal.
  */
 #define AV_CODEC_PROP_REORDER       (1 << 3)
+
+/**
+ * Video codec supports separate coding of fields in interlaced frames.
+ */
+#define AV_CODEC_PROP_FIELDS        (1 << 4)
+
 /**
  * Subtitle codec is bitmap based
  * Decoded AVSubtitle data can be read from the AVSubtitleRect->pict field.
