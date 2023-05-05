@@ -109,14 +109,6 @@ enum TransformType {
     NB_TTYPE,
 };
 
-typedef struct ChanCache {
-    double i1, i2;
-    double o1, o2;
-    double ri1, ri2;
-    double ro1, ro2;
-    int clippings;
-} ChanCache;
-
 typedef struct BiquadsContext {
     const AVClass *class;
 
@@ -139,24 +131,26 @@ typedef struct BiquadsContext {
     int normalize;
     int order;
 
-    double a0, a1, a2;
-    double b0, b1, b2;
+    double a_double[3];
+    double b_double[3];
 
-    double oa0, oa1, oa2;
-    double ob0, ob1, ob2;
+    float a_float[3];
+    float b_float[3];
+
+    double oa[3];
+    double ob[3];
 
     AVFrame *block[3];
 
-    ChanCache *cache;
+    int *clip;
+    AVFrame *cache[2];
     int block_align;
 
     int64_t pts;
     int nb_samples;
 
     void (*filter)(struct BiquadsContext *s, const void *ibuf, void *obuf, int len,
-                   double *i1, double *i2, double *o1, double *o2,
-                   double b0, double b1, double b2, double a0, double a1, double a2, int *clippings,
-                   int disabled);
+                   void *cache, int *clip, int disabled);
 } BiquadsContext;
 
 static int query_formats(AVFilterContext *ctx)
@@ -202,27 +196,26 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_all_samplerates(ctx);
 }
 
-#define BIQUAD_FILTER(name, type, min, max, need_clipping)                    \
+#define BIQUAD_FILTER(name, type, ftype, min, max, need_clipping)             \
 static void biquad_## name (BiquadsContext *s,                                \
                             const void *input, void *output, int len,         \
-                            double *in1, double *in2,                         \
-                            double *out1, double *out2,                       \
-                            double b0, double b1, double b2,                  \
-                            double a0, double a1, double a2, int *clippings,  \
-                            int disabled)                                     \
+                            void *cache, int *clippings, int disabled)        \
 {                                                                             \
     const type *ibuf = input;                                                 \
     type *obuf = output;                                                      \
-    double i1 = *in1;                                                         \
-    double i2 = *in2;                                                         \
-    double o1 = *out1;                                                        \
-    double o2 = *out2;                                                        \
-    double wet = s->mix;                                                      \
-    double dry = 1. - wet;                                                    \
-    double out;                                                               \
+    ftype *fcache = cache;                                                    \
+    ftype i1 = fcache[0], i2 = fcache[1], o1 = fcache[2], o2 = fcache[3];     \
+    ftype *a = s->a_##ftype;                                                  \
+    ftype *b = s->b_##ftype;                                                  \
+    ftype a1 = -a[1];                                                         \
+    ftype a2 = -a[2];                                                         \
+    ftype b0 = b[0];                                                          \
+    ftype b1 = b[1];                                                          \
+    ftype b2 = b[2];                                                          \
+    ftype wet = s->mix;                                                       \
+    ftype dry = 1. - wet;                                                     \
+    ftype out;                                                                \
     int i;                                                                    \
-    a1 = -a1;                                                                 \
-    a2 = -a2;                                                                 \
                                                                               \
     for (i = 0; i+1 < len; i++) {                                             \
         o2 = i2 * b2 + i1 * b1 + ibuf[i] * b0 + o2 * a2 + o1 * a1;            \
@@ -256,7 +249,7 @@ static void biquad_## name (BiquadsContext *s,                                \
         }                                                                     \
     }                                                                         \
     if (i < len) {                                                            \
-        double o0 = ibuf[i] * b0 + i1 * b1 + i2 * b2 + o1 * a1 + o2 * a2;     \
+        ftype o0 = ibuf[i] * b0 + i1 * b1 + i2 * b2 + o1 * a1 + o2 * a2;      \
         i2 = i1;                                                              \
         i1 = ibuf[i];                                                         \
         o2 = o1;                                                              \
@@ -274,36 +267,37 @@ static void biquad_## name (BiquadsContext *s,                                \
             obuf[i] = out;                                                    \
         }                                                                     \
     }                                                                         \
-    *in1  = i1;                                                               \
-    *in2  = i2;                                                               \
-    *out1 = o1;                                                               \
-    *out2 = o2;                                                               \
+    fcache[0] = i1;                                                           \
+    fcache[1] = i2;                                                           \
+    fcache[2] = o1;                                                           \
+    fcache[3] = o2;                                                           \
 }
 
-BIQUAD_FILTER(s16, int16_t, INT16_MIN, INT16_MAX, 1)
-BIQUAD_FILTER(s32, int32_t, INT32_MIN, INT32_MAX, 1)
-BIQUAD_FILTER(flt, float,   -1., 1., 0)
-BIQUAD_FILTER(dbl, double,  -1., 1., 0)
+BIQUAD_FILTER(s16, int16_t, float,  INT16_MIN, INT16_MAX, 1)
+BIQUAD_FILTER(s32, int32_t, double, INT32_MIN, INT32_MAX, 1)
+BIQUAD_FILTER(flt, float,   float,  -1.f, 1.f, 0)
+BIQUAD_FILTER(dbl, double,  double, -1.,  1.,  0)
 
-#define BIQUAD_DII_FILTER(name, type, min, max, need_clipping)                \
+#define BIQUAD_DII_FILTER(name, type, ftype, min, max, need_clipping)         \
 static void biquad_dii_## name (BiquadsContext *s,                            \
                             const void *input, void *output, int len,         \
-                            double *z1, double *z2,                           \
-                            double *unused1, double *unused2,                 \
-                            double b0, double b1, double b2,                  \
-                            double a0, double a1, double a2, int *clippings,  \
-                            int disabled)                                     \
+                            void *cache, int *clippings, int disabled)        \
 {                                                                             \
     const type *ibuf = input;                                                 \
     type *obuf = output;                                                      \
-    double w1 = *z1;                                                          \
-    double w2 = *z2;                                                          \
-    double wet = s->mix;                                                      \
-    double dry = 1. - wet;                                                    \
-    double in, out, w0;                                                       \
-                                                                              \
-    a1 = -a1;                                                                 \
-    a2 = -a2;                                                                 \
+    ftype *fcache = cache;                                                    \
+    ftype *a = s->a_##ftype;                                                  \
+    ftype *b = s->b_##ftype;                                                  \
+    ftype a1 = -a[1];                                                         \
+    ftype a2 = -a[2];                                                         \
+    ftype b0 = b[0];                                                          \
+    ftype b1 = b[1];                                                          \
+    ftype b2 = b[2];                                                          \
+    ftype w1 = fcache[0];                                                     \
+    ftype w2 = fcache[1];                                                     \
+    ftype wet = s->mix;                                                       \
+    ftype dry = 1. - wet;                                                     \
+    ftype in, out, w0;                                                        \
                                                                               \
     for (int i = 0; i < len; i++) {                                           \
         in = ibuf[i];                                                         \
@@ -324,39 +318,40 @@ static void biquad_dii_## name (BiquadsContext *s,                            \
             obuf[i] = out;                                                    \
         }                                                                     \
     }                                                                         \
-    *z1 = w1;                                                                 \
-    *z2 = w2;                                                                 \
+    fcache[0] = w1;                                                           \
+    fcache[1] = w2;                                                           \
 }
 
-BIQUAD_DII_FILTER(s16, int16_t, INT16_MIN, INT16_MAX, 1)
-BIQUAD_DII_FILTER(s32, int32_t, INT32_MIN, INT32_MAX, 1)
-BIQUAD_DII_FILTER(flt, float,   -1., 1., 0)
-BIQUAD_DII_FILTER(dbl, double,  -1., 1., 0)
+BIQUAD_DII_FILTER(s16, int16_t, float,  INT16_MIN, INT16_MAX, 1)
+BIQUAD_DII_FILTER(s32, int32_t, double, INT32_MIN, INT32_MAX, 1)
+BIQUAD_DII_FILTER(flt, float,   float,  -1.f, 1.f, 0)
+BIQUAD_DII_FILTER(dbl, double,  double, -1.,  1.,  0)
 
-#define BIQUAD_TDI_FILTER(name, type, min, max, need_clipping)                \
+#define BIQUAD_TDI_FILTER(name, type, ftype, min, max, need_clipping)         \
 static void biquad_tdi_## name (BiquadsContext *s,                            \
                             const void *input, void *output, int len,         \
-                            double *z1, double *z2,                           \
-                            double *z3, double *z4,                           \
-                            double b0, double b1, double b2,                  \
-                            double a0, double a1, double a2, int *clippings,  \
-                            int disabled)                                     \
+                            void *cache, int *clippings, int disabled)        \
 {                                                                             \
     const type *ibuf = input;                                                 \
     type *obuf = output;                                                      \
-    double s1 = *z1;                                                          \
-    double s2 = *z2;                                                          \
-    double s3 = *z3;                                                          \
-    double s4 = *z4;                                                          \
-    double wet = s->mix;                                                      \
-    double dry = 1. - wet;                                                    \
-    double in, out;                                                           \
-                                                                              \
-    a1 = -a1;                                                                 \
-    a2 = -a2;                                                                 \
+    ftype *fcache = cache;                                                    \
+    ftype *a = s->a_##ftype;                                                  \
+    ftype *b = s->b_##ftype;                                                  \
+    ftype a1 = -a[1];                                                         \
+    ftype a2 = -a[2];                                                         \
+    ftype b0 = b[0];                                                          \
+    ftype b1 = b[1];                                                          \
+    ftype b2 = b[2];                                                          \
+    ftype s1 = fcache[0];                                                     \
+    ftype s2 = fcache[1];                                                     \
+    ftype s3 = fcache[2];                                                     \
+    ftype s4 = fcache[3];                                                     \
+    ftype wet = s->mix;                                                       \
+    ftype dry = 1. - wet;                                                     \
+    ftype in, out;                                                            \
                                                                               \
     for (int i = 0; i < len; i++) {                                           \
-        double t1, t2, t3, t4;                                                \
+        ftype t1, t2, t3, t4;                                                 \
         in = ibuf[i] + s1;                                                    \
         t1 = in * a1 + s2;                                                    \
         t2 = in * a2;                                                         \
@@ -378,36 +373,37 @@ static void biquad_tdi_## name (BiquadsContext *s,                            \
         }                                                                     \
     }                                                                         \
                                                                               \
-    *z1 = s1;                                                                 \
-    *z2 = s2;                                                                 \
-    *z3 = s3;                                                                 \
-    *z4 = s4;                                                                 \
+    fcache[0] = s1;                                                           \
+    fcache[1] = s2;                                                           \
+    fcache[2] = s3;                                                           \
+    fcache[3] = s4;                                                           \
 }
 
-BIQUAD_TDI_FILTER(s16, int16_t, INT16_MIN, INT16_MAX, 1)
-BIQUAD_TDI_FILTER(s32, int32_t, INT32_MIN, INT32_MAX, 1)
-BIQUAD_TDI_FILTER(flt, float,   -1., 1., 0)
-BIQUAD_TDI_FILTER(dbl, double,  -1., 1., 0)
+BIQUAD_TDI_FILTER(s16, int16_t, float,  INT16_MIN, INT16_MAX, 1)
+BIQUAD_TDI_FILTER(s32, int32_t, double, INT32_MIN, INT32_MAX, 1)
+BIQUAD_TDI_FILTER(flt, float,   float,  -1.f, 1.f, 0)
+BIQUAD_TDI_FILTER(dbl, double,  double, -1.,  1.,  0)
 
-#define BIQUAD_TDII_FILTER(name, type, min, max, need_clipping)               \
+#define BIQUAD_TDII_FILTER(name, type, ftype, min, max, need_clipping)        \
 static void biquad_tdii_## name (BiquadsContext *s,                           \
                             const void *input, void *output, int len,         \
-                            double *z1, double *z2,                           \
-                            double *unused1, double *unused2,                 \
-                            double b0, double b1, double b2,                  \
-                            double a0, double a1, double a2, int *clippings,  \
-                            int disabled)                                     \
+                            void *cache, int *clippings, int disabled)        \
 {                                                                             \
     const type *ibuf = input;                                                 \
     type *obuf = output;                                                      \
-    double w1 = *z1;                                                          \
-    double w2 = *z2;                                                          \
-    double wet = s->mix;                                                      \
-    double dry = 1. - wet;                                                    \
-    double in, out;                                                           \
-                                                                              \
-    a1 = -a1;                                                                 \
-    a2 = -a2;                                                                 \
+    ftype *fcache = cache;                                                    \
+    ftype *a = s->a_##ftype;                                                  \
+    ftype *b = s->b_##ftype;                                                  \
+    ftype a1 = -a[1];                                                         \
+    ftype a2 = -a[2];                                                         \
+    ftype b0 = b[0];                                                          \
+    ftype b1 = b[1];                                                          \
+    ftype b2 = b[2];                                                          \
+    ftype w1 = fcache[0];                                                     \
+    ftype w2 = fcache[1];                                                     \
+    ftype wet = s->mix;                                                       \
+    ftype dry = 1. - wet;                                                     \
+    ftype in, out;                                                            \
                                                                               \
     for (int i = 0; i < len; i++) {                                           \
         in = ibuf[i];                                                         \
@@ -427,33 +423,36 @@ static void biquad_tdii_## name (BiquadsContext *s,                           \
             obuf[i] = out;                                                    \
         }                                                                     \
     }                                                                         \
-    *z1 = w1;                                                                 \
-    *z2 = w2;                                                                 \
+    fcache[0] = w1;                                                           \
+    fcache[1] = w2;                                                           \
 }
 
-BIQUAD_TDII_FILTER(s16, int16_t, INT16_MIN, INT16_MAX, 1)
-BIQUAD_TDII_FILTER(s32, int32_t, INT32_MIN, INT32_MAX, 1)
-BIQUAD_TDII_FILTER(flt, float,   -1., 1., 0)
-BIQUAD_TDII_FILTER(dbl, double,  -1., 1., 0)
+BIQUAD_TDII_FILTER(s16, int16_t, float,  INT16_MIN, INT16_MAX, 1)
+BIQUAD_TDII_FILTER(s32, int32_t, double, INT32_MIN, INT32_MAX, 1)
+BIQUAD_TDII_FILTER(flt, float,   float,  -1.f, 1.f, 0)
+BIQUAD_TDII_FILTER(dbl, double,  double, -1.,  1.,  0)
 
-#define BIQUAD_LATT_FILTER(name, type, min, max, need_clipping)               \
+#define BIQUAD_LATT_FILTER(name, type, ftype, min, max, need_clipping)        \
 static void biquad_latt_## name (BiquadsContext *s,                           \
                            const void *input, void *output, int len,          \
-                           double *z1, double *z2,                            \
-                           double *unused1, double *unused2,                  \
-                           double v0, double v1, double v2,                   \
-                           double unused, double k0, double k1,               \
-                           int *clippings,                                    \
-                           int disabled)                                      \
+                           void *cache, int *clippings, int disabled)         \
 {                                                                             \
     const type *ibuf = input;                                                 \
     type *obuf = output;                                                      \
-    double s0 = *z1;                                                          \
-    double s1 = *z2;                                                          \
-    double wet = s->mix;                                                      \
-    double dry = 1. - wet;                                                    \
-    double in, out;                                                           \
-    double t0, t1;                                                            \
+    ftype *fcache = cache;                                                    \
+    ftype *a = s->a_##ftype;                                                  \
+    ftype *b = s->b_##ftype;                                                  \
+    ftype k0 = a[1];                                                          \
+    ftype k1 = a[2];                                                          \
+    ftype v0 = b[0];                                                          \
+    ftype v1 = b[1];                                                          \
+    ftype v2 = b[2];                                                          \
+    ftype s0 = fcache[0];                                                     \
+    ftype s1 = fcache[1];                                                     \
+    ftype wet = s->mix;                                                       \
+    ftype dry = 1. - wet;                                                     \
+    ftype in, out;                                                            \
+    ftype t0, t1;                                                             \
                                                                               \
     for (int i = 0; i < len; i++) {                                           \
         out  = 0.;                                                            \
@@ -483,32 +482,36 @@ static void biquad_latt_## name (BiquadsContext *s,                           \
             obuf[i] = out;                                                    \
         }                                                                     \
     }                                                                         \
-    *z1 = s0;                                                                 \
-    *z2 = s1;                                                                 \
+    fcache[0] = s0;                                                           \
+    fcache[1] = s1;                                                           \
 }
 
-BIQUAD_LATT_FILTER(s16, int16_t, INT16_MIN, INT16_MAX, 1)
-BIQUAD_LATT_FILTER(s32, int32_t, INT32_MIN, INT32_MAX, 1)
-BIQUAD_LATT_FILTER(flt, float,   -1., 1., 0)
-BIQUAD_LATT_FILTER(dbl, double,  -1., 1., 0)
+BIQUAD_LATT_FILTER(s16, int16_t, float,  INT16_MIN, INT16_MAX, 1)
+BIQUAD_LATT_FILTER(s32, int32_t, double, INT32_MIN, INT32_MAX, 1)
+BIQUAD_LATT_FILTER(flt, float,   float,  -1.f, 1.f, 0)
+BIQUAD_LATT_FILTER(dbl, double,  double, -1.,  1.,  0)
 
-#define BIQUAD_SVF_FILTER(name, type, min, max, need_clipping)                \
+#define BIQUAD_SVF_FILTER(name, type, ftype, min, max, need_clipping)         \
 static void biquad_svf_## name (BiquadsContext *s,                            \
                            const void *input, void *output, int len,          \
-                           double *y0, double *y1,                            \
-                           double *unused1, double *unused2,                  \
-                           double b0, double b1, double b2,                   \
-                           double a0, double a1, double a2, int *clippings,   \
-                           int disabled)                                      \
+                           void *cache, int *clippings, int disabled)         \
 {                                                                             \
     const type *ibuf = input;                                                 \
     type *obuf = output;                                                      \
-    double s0 = *y0;                                                          \
-    double s1 = *y1;                                                          \
-    double wet = s->mix;                                                      \
-    double dry = 1. - wet;                                                    \
-    double in, out;                                                           \
-    double t0, t1;                                                            \
+    ftype *fcache = cache;                                                    \
+    ftype *a = s->a_##ftype;                                                  \
+    ftype *b = s->b_##ftype;                                                  \
+    ftype a1 = a[1];                                                          \
+    ftype a2 = a[2];                                                          \
+    ftype b0 = b[0];                                                          \
+    ftype b1 = b[1];                                                          \
+    ftype b2 = b[2];                                                          \
+    ftype s0 = fcache[0];                                                     \
+    ftype s1 = fcache[1];                                                     \
+    ftype wet = s->mix;                                                       \
+    ftype dry = 1. - wet;                                                     \
+    ftype in, out;                                                            \
+    ftype t0, t1;                                                             \
                                                                               \
     for (int i = 0; i < len; i++) {                                           \
         in   = ibuf[i];                                                       \
@@ -531,41 +534,46 @@ static void biquad_svf_## name (BiquadsContext *s,                            \
             obuf[i] = out;                                                    \
         }                                                                     \
     }                                                                         \
-    *y0 = s0;                                                                 \
-    *y1 = s1;                                                                 \
+    fcache[0] = s0;                                                           \
+    fcache[1] = s1;                                                           \
 }
 
-BIQUAD_SVF_FILTER(s16, int16_t, INT16_MIN, INT16_MAX, 1)
-BIQUAD_SVF_FILTER(s32, int32_t, INT32_MIN, INT32_MAX, 1)
-BIQUAD_SVF_FILTER(flt, float,   -1., 1., 0)
-BIQUAD_SVF_FILTER(dbl, double,  -1., 1., 0)
+BIQUAD_SVF_FILTER(s16, int16_t, float,  INT16_MIN, INT16_MAX, 1)
+BIQUAD_SVF_FILTER(s32, int32_t, double, INT32_MIN, INT32_MAX, 1)
+BIQUAD_SVF_FILTER(flt, float,   float,  -1.f, 1.f, 0)
+BIQUAD_SVF_FILTER(dbl, double,  double, -1.,  1.,  0)
 
-#define BIQUAD_ZDF_FILTER(name, type, min, max, need_clipping)                \
+#define BIQUAD_ZDF_FILTER(name, type, ftype, min, max, need_clipping, two)    \
 static void biquad_zdf_## name (BiquadsContext *s,                            \
                            const void *input, void *output, int len,          \
-                           double *y0, double *y1,                            \
-                           double *unused1, double *unused2,                  \
-                           double m0, double m1, double m2,                   \
-                           double a0, double a1, double a2, int *clippings,   \
-                           int disabled)                                      \
+                           void *cache, int *clippings, int disabled)         \
 {                                                                             \
     const type *ibuf = input;                                                 \
     type *obuf = output;                                                      \
-    double b0 = *y0;                                                          \
-    double b1 = *y1;                                                          \
-    double wet = s->mix;                                                      \
-    double dry = 1. - wet;                                                    \
-    double out;                                                               \
+    ftype *fcache = cache;                                                    \
+    ftype *a = s->a_##ftype;                                                  \
+    ftype *b = s->b_##ftype;                                                  \
+    ftype m0 = b[0];                                                          \
+    ftype m1 = b[1];                                                          \
+    ftype m2 = b[2];                                                          \
+    ftype a0 = a[0];                                                          \
+    ftype a1 = a[1];                                                          \
+    ftype a2 = a[2];                                                          \
+    ftype b0 = fcache[0];                                                     \
+    ftype b1 = fcache[1];                                                     \
+    ftype wet = s->mix;                                                       \
+    ftype dry = 1. - wet;                                                     \
+    ftype out;                                                                \
                                                                               \
     for (int i = 0; i < len; i++) {                                           \
-        const double in = ibuf[i];                                            \
-        const double v0 = in;                                                 \
-        const double v3 = v0 - b1;                                            \
-        const double v1 = a0 * b0 + a1 * v3;                                  \
-        const double v2 = b1 + a1 * b0 + a2 * v3;                             \
+        const ftype in = ibuf[i];                                             \
+        const ftype v0 = in;                                                  \
+        const ftype v3 = v0 - b1;                                             \
+        const ftype v1 = a0 * b0 + a1 * v3;                                   \
+        const ftype v2 = b1 + a1 * b0 + a2 * v3;                              \
                                                                               \
-        b0 = 2. * v1 - b0;                                                    \
-        b1 = 2. * v2 - b1;                                                    \
+        b0 = two * v1 - b0;                                                   \
+        b1 = two * v2 - b1;                                                   \
                                                                               \
         out = m0 * v0 + m1 * v1 + m2 * v2;                                    \
         out = out * wet + in * dry;                                           \
@@ -581,30 +589,30 @@ static void biquad_zdf_## name (BiquadsContext *s,                            \
             obuf[i] = out;                                                    \
         }                                                                     \
     }                                                                         \
-    *y0 = b0;                                                                 \
-    *y1 = b1;                                                                 \
+    fcache[0] = b0;                                                           \
+    fcache[1] = b1;                                                           \
 }
 
-BIQUAD_ZDF_FILTER(s16, int16_t, INT16_MIN, INT16_MAX, 1)
-BIQUAD_ZDF_FILTER(s32, int32_t, INT32_MIN, INT32_MAX, 1)
-BIQUAD_ZDF_FILTER(flt, float,   -1., 1., 0)
-BIQUAD_ZDF_FILTER(dbl, double,  -1., 1., 0)
+BIQUAD_ZDF_FILTER(s16, int16_t, float,  INT16_MIN, INT16_MAX, 1, 2.f)
+BIQUAD_ZDF_FILTER(s32, int32_t, double, INT32_MIN, INT32_MAX, 1, 2.0)
+BIQUAD_ZDF_FILTER(flt, float,   float,  -1.f, 1.f, 0, 2.f)
+BIQUAD_ZDF_FILTER(dbl, double,  double, -1.,  1.,  0, 2.0)
 
 static void convert_dir2latt(BiquadsContext *s)
 {
     double k0, k1, v0, v1, v2;
 
-    k1 = s->a2;
-    k0 = s->a1 / (1. + k1);
-    v2 = s->b2;
-    v1 = s->b1 - v2 * s->a1;
-    v0 = s->b0 - v1 * k0 - v2 * k1;
+    k1 = s->a_double[2];
+    k0 = s->a_double[1] / (1. + k1);
+    v2 = s->b_double[2];
+    v1 = s->b_double[1] - v2 * s->a_double[1];
+    v0 = s->b_double[0] - v1 * k0 - v2 * k1;
 
-    s->a1 = k0;
-    s->a2 = k1;
-    s->b0 = v0;
-    s->b1 = v1;
-    s->b2 = v2;
+    s->a_double[1] = k0;
+    s->a_double[2] = k1;
+    s->b_double[0] = v0;
+    s->b_double[1] = v1;
+    s->b_double[2] = v2;
 }
 
 static void convert_dir2svf(BiquadsContext *s)
@@ -612,17 +620,17 @@ static void convert_dir2svf(BiquadsContext *s)
     double a[2];
     double b[3];
 
-    a[0] = -s->a1;
-    a[1] = -s->a2;
-    b[0] = s->b1 - s->a1 * s->b0;
-    b[1] = s->b2 - s->a2 * s->b0;
-    b[2] = s->b0;
+    a[0] = -s->a_double[1];
+    a[1] = -s->a_double[2];
+    b[0] = s->b_double[1] - s->a_double[1] * s->b_double[0];
+    b[1] = s->b_double[2] - s->a_double[2] * s->b_double[0];
+    b[2] = s->b_double[0];
 
-    s->a1 = a[0];
-    s->a2 = a[1];
-    s->b0 = b[0];
-    s->b1 = b[1];
-    s->b2 = b[2];
+    s->a_double[1] = a[0];
+    s->a_double[2] = a[1];
+    s->b_double[0] = b[0];
+    s->b_double[1] = b[1];
+    s->b_double[2] = b[2];
 }
 
 static double convert_width2qfactor(double width,
@@ -669,12 +677,12 @@ static void convert_dir2zdf(BiquadsContext *s, int sample_rate)
 
     switch (s->filter_type) {
     case biquad:
-        a[0] = s->oa0;
-        a[1] = s->oa1;
-        a[2] = s->oa2;
-        m[0] = s->ob0;
-        m[1] = s->ob1;
-        m[2] = s->ob2;
+        a[0] = s->oa[0];
+        a[1] = s->oa[1];
+        a[2] = s->oa[2];
+        m[0] = s->ob[0];
+        m[1] = s->ob[1];
+        m[2] = s->ob[2];
         break;
     case equalizer:
         A = ff_exp10(s->gain / 40.);
@@ -776,12 +784,12 @@ static void convert_dir2zdf(BiquadsContext *s, int sample_rate)
         av_assert0(0);
     }
 
-    s->a0 = a[0];
-    s->a1 = a[1];
-    s->a2 = a[2];
-    s->b0 = m[0];
-    s->b1 = m[1];
-    s->b2 = m[2];
+    s->a_double[0] = a[0];
+    s->a_double[1] = a[1];
+    s->a_double[2] = a[2];
+    s->b_double[0] = m[0];
+    s->b_double[1] = m[1];
+    s->b_double[2] = m[2];
 }
 
 static int config_filter(AVFilterLink *outlink, int reset)
@@ -831,20 +839,20 @@ static int config_filter(AVFilterLink *outlink, int reset)
 
     switch (s->filter_type) {
     case biquad:
-        s->a0 = s->oa0;
-        s->a1 = s->oa1;
-        s->a2 = s->oa2;
-        s->b0 = s->ob0;
-        s->b1 = s->ob1;
-        s->b2 = s->ob2;
+        s->a_double[0] = s->oa[0];
+        s->a_double[1] = s->oa[1];
+        s->a_double[2] = s->oa[2];
+        s->b_double[0] = s->ob[0];
+        s->b_double[1] = s->ob[1];
+        s->b_double[2] = s->ob[2];
         break;
     case equalizer:
-        s->a0 =   1 + alpha / A;
-        s->a1 =  -2 * cos(w0);
-        s->a2 =   1 - alpha / A;
-        s->b0 =   1 + alpha * A;
-        s->b1 =  -2 * cos(w0);
-        s->b2 =   1 - alpha * A;
+        s->a_double[0] =   1 + alpha / A;
+        s->a_double[1] =  -2 * cos(w0);
+        s->a_double[2] =   1 - alpha / A;
+        s->b_double[0] =   1 + alpha * A;
+        s->b_double[1] =  -2 * cos(w0);
+        s->b_double[2] =   1 - alpha * A;
         break;
     case bass:
         beta = sqrt((A * A + 1) - (A - 1) * (A - 1));
@@ -858,19 +866,19 @@ static int config_filter(AVFilterLink *outlink, int reset)
             double beta0 = ((1 + A) + (1 - A) * alpha1) * 0.5;
             double beta1 = ((1 - A) + (1 + A) * alpha1) * 0.5;
 
-            s->a0 = 1 + ro * alpha1;
-            s->a1 = -ro - alpha1;
-            s->a2 = 0;
-            s->b0 = beta0 + ro * beta1;
-            s->b1 = -beta1 - ro * beta0;
-            s->b2 = 0;
+            s->a_double[0] = 1 + ro * alpha1;
+            s->a_double[1] = -ro - alpha1;
+            s->a_double[2] = 0;
+            s->b_double[0] = beta0 + ro * beta1;
+            s->b_double[1] = -beta1 - ro * beta0;
+            s->b_double[2] = 0;
         } else {
-            s->a0 =          (A + 1) + (A - 1) * cos(w0) + beta * alpha;
-            s->a1 =    -2 * ((A - 1) + (A + 1) * cos(w0));
-            s->a2 =          (A + 1) + (A - 1) * cos(w0) - beta * alpha;
-            s->b0 =     A * ((A + 1) - (A - 1) * cos(w0) + beta * alpha);
-            s->b1 = 2 * A * ((A - 1) - (A + 1) * cos(w0));
-            s->b2 =     A * ((A + 1) - (A - 1) * cos(w0) - beta * alpha);
+            s->a_double[0] =          (A + 1) + (A - 1) * cos(w0) + beta * alpha;
+            s->a_double[1] =    -2 * ((A - 1) + (A + 1) * cos(w0));
+            s->a_double[2] =          (A + 1) + (A - 1) * cos(w0) - beta * alpha;
+            s->b_double[0] =     A * ((A + 1) - (A - 1) * cos(w0) + beta * alpha);
+            s->b_double[1] = 2 * A * ((A - 1) - (A + 1) * cos(w0));
+            s->b_double[2] =     A * ((A + 1) - (A - 1) * cos(w0) - beta * alpha);
         }
         break;
     case treble:
@@ -884,97 +892,97 @@ static int config_filter(AVFilterLink *outlink, int reset)
             double beta0 = ((1 + A) + (1 - A) * alpha1) * 0.5;
             double beta1 = ((1 - A) + (1 + A) * alpha1) * 0.5;
 
-            s->a0 = 1 + ro * alpha1;
-            s->a1 = ro + alpha1;
-            s->a2 = 0;
-            s->b0 = beta0 + ro * beta1;
-            s->b1 = beta1 + ro * beta0;
-            s->b2 = 0;
+            s->a_double[0] = 1 + ro * alpha1;
+            s->a_double[1] = ro + alpha1;
+            s->a_double[2] = 0;
+            s->b_double[0] = beta0 + ro * beta1;
+            s->b_double[1] = beta1 + ro * beta0;
+            s->b_double[2] = 0;
         } else {
-            s->a0 =          (A + 1) - (A - 1) * cos(w0) + beta * alpha;
-            s->a1 =     2 * ((A - 1) - (A + 1) * cos(w0));
-            s->a2 =          (A + 1) - (A - 1) * cos(w0) - beta * alpha;
-            s->b0 =     A * ((A + 1) + (A - 1) * cos(w0) + beta * alpha);
-            s->b1 =-2 * A * ((A - 1) + (A + 1) * cos(w0));
-            s->b2 =     A * ((A + 1) + (A - 1) * cos(w0) - beta * alpha);
+            s->a_double[0] =          (A + 1) - (A - 1) * cos(w0) + beta * alpha;
+            s->a_double[1] =     2 * ((A - 1) - (A + 1) * cos(w0));
+            s->a_double[2] =          (A + 1) - (A - 1) * cos(w0) - beta * alpha;
+            s->b_double[0] =     A * ((A + 1) + (A - 1) * cos(w0) + beta * alpha);
+            s->b_double[1] =-2 * A * ((A - 1) + (A + 1) * cos(w0));
+            s->b_double[2] =     A * ((A + 1) + (A - 1) * cos(w0) - beta * alpha);
         }
         break;
     case bandpass:
         if (s->csg) {
-            s->a0 =  1 + alpha;
-            s->a1 = -2 * cos(w0);
-            s->a2 =  1 - alpha;
-            s->b0 =  sin(w0) / 2;
-            s->b1 =  0;
-            s->b2 = -sin(w0) / 2;
+            s->a_double[0] =  1 + alpha;
+            s->a_double[1] = -2 * cos(w0);
+            s->a_double[2] =  1 - alpha;
+            s->b_double[0] =  sin(w0) / 2;
+            s->b_double[1] =  0;
+            s->b_double[2] = -sin(w0) / 2;
         } else {
-            s->a0 =  1 + alpha;
-            s->a1 = -2 * cos(w0);
-            s->a2 =  1 - alpha;
-            s->b0 =  alpha;
-            s->b1 =  0;
-            s->b2 = -alpha;
+            s->a_double[0] =  1 + alpha;
+            s->a_double[1] = -2 * cos(w0);
+            s->a_double[2] =  1 - alpha;
+            s->b_double[0] =  alpha;
+            s->b_double[1] =  0;
+            s->b_double[2] = -alpha;
         }
         break;
     case bandreject:
-        s->a0 =  1 + alpha;
-        s->a1 = -2 * cos(w0);
-        s->a2 =  1 - alpha;
-        s->b0 =  1;
-        s->b1 = -2 * cos(w0);
-        s->b2 =  1;
+        s->a_double[0] =  1 + alpha;
+        s->a_double[1] = -2 * cos(w0);
+        s->a_double[2] =  1 - alpha;
+        s->b_double[0] =  1;
+        s->b_double[1] = -2 * cos(w0);
+        s->b_double[2] =  1;
         break;
     case lowpass:
         if (s->poles == 1) {
-            s->a0 = 1;
-            s->a1 = -exp(-w0);
-            s->a2 = 0;
-            s->b0 = 1 + s->a1;
-            s->b1 = 0;
-            s->b2 = 0;
+            s->a_double[0] = 1;
+            s->a_double[1] = -exp(-w0);
+            s->a_double[2] = 0;
+            s->b_double[0] = 1 + s->a_double[1];
+            s->b_double[1] = 0;
+            s->b_double[2] = 0;
         } else {
-            s->a0 =  1 + alpha;
-            s->a1 = -2 * cos(w0);
-            s->a2 =  1 - alpha;
-            s->b0 = (1 - cos(w0)) / 2;
-            s->b1 =  1 - cos(w0);
-            s->b2 = (1 - cos(w0)) / 2;
+            s->a_double[0] =  1 + alpha;
+            s->a_double[1] = -2 * cos(w0);
+            s->a_double[2] =  1 - alpha;
+            s->b_double[0] = (1 - cos(w0)) / 2;
+            s->b_double[1] =  1 - cos(w0);
+            s->b_double[2] = (1 - cos(w0)) / 2;
         }
         break;
     case highpass:
         if (s->poles == 1) {
-            s->a0 = 1;
-            s->a1 = -exp(-w0);
-            s->a2 = 0;
-            s->b0 = (1 - s->a1) / 2;
-            s->b1 = -s->b0;
-            s->b2 = 0;
+            s->a_double[0] = 1;
+            s->a_double[1] = -exp(-w0);
+            s->a_double[2] = 0;
+            s->b_double[0] = (1 - s->a_double[1]) / 2;
+            s->b_double[1] = -s->b_double[0];
+            s->b_double[2] = 0;
         } else {
-            s->a0 =   1 + alpha;
-            s->a1 =  -2 * cos(w0);
-            s->a2 =   1 - alpha;
-            s->b0 =  (1 + cos(w0)) / 2;
-            s->b1 = -(1 + cos(w0));
-            s->b2 =  (1 + cos(w0)) / 2;
+            s->a_double[0] =   1 + alpha;
+            s->a_double[1] =  -2 * cos(w0);
+            s->a_double[2] =   1 - alpha;
+            s->b_double[0] =  (1 + cos(w0)) / 2;
+            s->b_double[1] = -(1 + cos(w0));
+            s->b_double[2] =  (1 + cos(w0)) / 2;
         }
         break;
     case allpass:
         switch (s->order) {
         case 1:
-            s->a0 = 1.;
-            s->a1 = -(1. - K) / (1. + K);
-            s->a2 = 0.;
-            s->b0 = s->a1;
-            s->b1 = s->a0;
-            s->b2 = 0.;
+            s->a_double[0] = 1.;
+            s->a_double[1] = -(1. - K) / (1. + K);
+            s->a_double[2] = 0.;
+            s->b_double[0] = s->a_double[1];
+            s->b_double[1] = s->a_double[0];
+            s->b_double[2] = 0.;
             break;
         case 2:
-            s->a0 =  1 + alpha;
-            s->a1 = -2 * cos(w0);
-            s->a2 =  1 - alpha;
-            s->b0 =  1 - alpha;
-            s->b1 = -2 * cos(w0);
-            s->b2 =  1 + alpha;
+            s->a_double[0] =  1 + alpha;
+            s->a_double[1] = -2 * cos(w0);
+            s->a_double[2] =  1 - alpha;
+            s->b_double[0] =  1 - alpha;
+            s->b_double[1] = -2 * cos(w0);
+            s->b_double[2] =  1 + alpha;
         break;
         }
         break;
@@ -982,40 +990,55 @@ static int config_filter(AVFilterLink *outlink, int reset)
         av_assert0(0);
     }
 
-    av_log(ctx, AV_LOG_VERBOSE, "a=%f %f %f:b=%f %f %f\n", s->a0, s->a1, s->a2, s->b0, s->b1, s->b2);
+    av_log(ctx, AV_LOG_VERBOSE, "a=%f %f %f:b=%f %f %f\n",
+           s->a_double[0], s->a_double[1], s->a_double[2],
+           s->b_double[0], s->b_double[1], s->b_double[2]);
 
-    s->a1 /= s->a0;
-    s->a2 /= s->a0;
-    s->b0 /= s->a0;
-    s->b1 /= s->a0;
-    s->b2 /= s->a0;
-    s->a0 /= s->a0;
+    s->a_double[1] /= s->a_double[0];
+    s->a_double[2] /= s->a_double[0];
+    s->b_double[0] /= s->a_double[0];
+    s->b_double[1] /= s->a_double[0];
+    s->b_double[2] /= s->a_double[0];
+    s->a_double[0] /= s->a_double[0];
 
-    if (s->normalize && fabs(s->b0 + s->b1 + s->b2) > 1e-6) {
-        double factor = (s->a0 + s->a1 + s->a2) / (s->b0 + s->b1 + s->b2);
+    if (s->normalize && fabs(s->b_double[0] + s->b_double[1] + s->b_double[2]) > 1e-6) {
+        double factor = (s->a_double[0] + s->a_double[1] + s->a_double[2]) /
+                        (s->b_double[0] + s->b_double[1] + s->b_double[2]);
 
-        s->b0 *= factor;
-        s->b1 *= factor;
-        s->b2 *= factor;
+        s->b_double[0] *= factor;
+        s->b_double[1] *= factor;
+        s->b_double[2] *= factor;
     }
 
     switch (s->filter_type) {
     case tiltshelf:
-        s->b0 /= A;
-        s->b1 /= A;
-        s->b2 /= A;
+        s->b_double[0] /= A;
+        s->b_double[1] /= A;
+        s->b_double[2] /= A;
         break;
     }
 
-    s->cache = av_realloc_f(s->cache, sizeof(ChanCache), inlink->ch_layout.nb_channels);
-    if (!s->cache)
+    if (!s->cache[0])
+        s->cache[0] = ff_get_audio_buffer(outlink, 4 * sizeof(double));
+    if (!s->clip)
+        s->clip = av_calloc(outlink->ch_layout.nb_channels, sizeof(*s->clip));
+    if (!s->cache[0] || !s->clip)
         return AVERROR(ENOMEM);
-    if (reset)
-        memset(s->cache, 0, sizeof(ChanCache) * inlink->ch_layout.nb_channels);
+    if (reset) {
+        av_samples_set_silence(s->cache[0]->extended_data, 0, s->cache[0]->nb_samples,
+                               s->cache[0]->ch_layout.nb_channels, s->cache[0]->format);
+    }
 
     if (reset && s->block_samples > 0) {
+        if (!s->cache[1])
+            s->cache[1] = ff_get_audio_buffer(outlink, 4 * sizeof(double));
+        if (!s->cache[1])
+            return AVERROR(ENOMEM);
+        av_samples_set_silence(s->cache[1]->extended_data, 0, s->cache[1]->nb_samples,
+                               s->cache[1]->ch_layout.nb_channels, s->cache[1]->format);
         for (int i = 0; i < 3; i++) {
-            s->block[i] = ff_get_audio_buffer(outlink, s->block_samples * 2);
+            if (!s->block[i])
+                s->block[i] = ff_get_audio_buffer(outlink, s->block_samples * 2);
             if (!s->block[i])
                 return AVERROR(ENOMEM);
             av_samples_set_silence(s->block[i]->extended_data, 0, s->block_samples * 2,
@@ -1145,16 +1168,23 @@ static int config_filter(AVFilterLink *outlink, int reset)
         break;
     default:
         av_assert0(0);
-     }
+    }
 
-     s->block_align = av_get_bytes_per_sample(inlink->format);
+    s->block_align = av_get_bytes_per_sample(inlink->format);
 
-     if (s->transform_type == LATT)
-         convert_dir2latt(s);
-     else if (s->transform_type == SVF)
-         convert_dir2svf(s);
-     else if (s->transform_type == ZDF)
-         convert_dir2zdf(s, inlink->sample_rate);
+    if (s->transform_type == LATT)
+        convert_dir2latt(s);
+    else if (s->transform_type == SVF)
+        convert_dir2svf(s);
+    else if (s->transform_type == ZDF)
+        convert_dir2zdf(s, inlink->sample_rate);
+
+    s->a_float[0] = s->a_double[0];
+    s->a_float[1] = s->a_double[1];
+    s->a_float[2] = s->a_double[2];
+    s->b_float[0] = s->b_double[0];
+    s->b_float[1] = s->b_double[1];
+    s->b_float[2] = s->b_double[2];
 
     return 0;
 }
@@ -1227,8 +1257,7 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
 
         if (!s->block_samples) {
             s->filter(s, buf->extended_data[ch], out_buf->extended_data[ch], buf->nb_samples,
-                      &s->cache[ch].i1, &s->cache[ch].i2, &s->cache[ch].o1, &s->cache[ch].o2,
-                      s->b0, s->b1, s->b2, s->a0, s->a1, s->a2, &s->cache[ch].clippings, ctx->is_disabled);
+                      s->cache[0]->extended_data[ch], s->clip+ch, ctx->is_disabled);
         } else if (td->eof) {
             memcpy(out_buf->extended_data[ch], s->block[1]->extended_data[ch] + s->block_align * s->block_samples,
                    s->nb_samples * s->block_align);
@@ -1238,25 +1267,19 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
             memset(s->block[0]->extended_data[ch] + s->block_align * (s->block_samples + buf->nb_samples),
                    0, (s->block_samples - buf->nb_samples) * s->block_align);
             s->filter(s, s->block[0]->extended_data[ch], s->block[1]->extended_data[ch], s->block_samples,
-                      &s->cache[ch].i1, &s->cache[ch].i2, &s->cache[ch].o1, &s->cache[ch].o2,
-                      s->b0, s->b1, s->b2, s->a0, s->a1, s->a2, &s->cache[ch].clippings, ctx->is_disabled);
-            s->cache[ch].ri1 = s->cache[ch].i1;
-            s->cache[ch].ri2 = s->cache[ch].i2;
-            s->cache[ch].ro1 = s->cache[ch].o1;
-            s->cache[ch].ro2 = s->cache[ch].o2;
+                      s->cache[0]->extended_data[ch], s->clip+ch, ctx->is_disabled);
+            av_samples_copy(s->cache[1]->extended_data, s->cache[0]->extended_data, 0, 0,
+                            s->cache[0]->nb_samples, s->cache[0]->ch_layout.nb_channels,
+                            s->cache[0]->format);
             s->filter(s, s->block[0]->extended_data[ch] + s->block_samples * s->block_align,
                       s->block[1]->extended_data[ch] + s->block_samples * s->block_align,
-                      s->block_samples,
-                      &s->cache[ch].ri1, &s->cache[ch].ri2, &s->cache[ch].ro1, &s->cache[ch].ro2,
-                      s->b0, s->b1, s->b2, s->a0, s->a1, s->a2, &s->cache[ch].clippings, ctx->is_disabled);
+                      s->block_samples, s->cache[1]->extended_data[ch], s->clip+ch,
+                      ctx->is_disabled);
             reverse_samples(s->block[2], s->block[1], ch, 0, 0, 2 * s->block_samples);
-            s->cache[ch].ri1 = 0.;
-            s->cache[ch].ri2 = 0.;
-            s->cache[ch].ro1 = 0.;
-            s->cache[ch].ro2 = 0.;
+            av_samples_set_silence(s->cache[1]->extended_data, 0, s->cache[1]->nb_samples,
+                                   s->cache[1]->ch_layout.nb_channels, s->cache[1]->format);
             s->filter(s, s->block[2]->extended_data[ch], s->block[2]->extended_data[ch], 2 * s->block_samples,
-                      &s->cache[ch].ri1, &s->cache[ch].ri2, &s->cache[ch].ro1, &s->cache[ch].ro2,
-                      s->b0, s->b1, s->b2, s->a0, s->a1, s->a2, &s->cache[ch].clippings, ctx->is_disabled);
+                      s->cache[1]->extended_data[ch], s->clip+ch, ctx->is_disabled);
             reverse_samples(s->block[1], s->block[2], ch, 0, 0, 2 * s->block_samples);
             memcpy(out_buf->extended_data[ch], s->block[1]->extended_data[ch],
                    s->block_samples * s->block_align);
@@ -1309,10 +1332,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf, int eof)
                       FFMIN(outlink->ch_layout.nb_channels, ff_filter_get_nb_threads(ctx)));
 
     for (ch = 0; ch < outlink->ch_layout.nb_channels; ch++) {
-        if (s->cache[ch].clippings > 0)
+        if (s->clip[ch] > 0)
             av_log(ctx, AV_LOG_WARNING, "Channel %d clipping %d times. Please reduce gain.\n",
-                   ch, s->cache[ch].clippings);
-        s->cache[ch].clippings = 0;
+                   ch, s->clip[ch]);
+        s->clip[ch] = 0;
     }
 
     if (s->block_samples > 0) {
@@ -1402,7 +1425,9 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     for (int i = 0; i < 3; i++)
         av_frame_free(&s->block[i]);
-    av_freep(&s->cache);
+    av_frame_free(&s->cache[0]);
+    av_frame_free(&s->cache[1]);
+    av_freep(&s->clip);
     av_channel_layout_uninit(&s->ch_layout);
 }
 
@@ -1657,12 +1682,12 @@ DEFINE_BIQUAD_FILTER(allpass, "Apply a two-pole all-pass filter.");
 #endif  /* CONFIG_ALLPASS_FILTER */
 #if CONFIG_BIQUAD_FILTER
 static const AVOption biquad_options[] = {
-    {"a0", NULL, OFFSET(oa0), AV_OPT_TYPE_DOUBLE, {.dbl=1}, INT32_MIN, INT32_MAX, FLAGS},
-    {"a1", NULL, OFFSET(oa1), AV_OPT_TYPE_DOUBLE, {.dbl=0}, INT32_MIN, INT32_MAX, FLAGS},
-    {"a2", NULL, OFFSET(oa2), AV_OPT_TYPE_DOUBLE, {.dbl=0}, INT32_MIN, INT32_MAX, FLAGS},
-    {"b0", NULL, OFFSET(ob0), AV_OPT_TYPE_DOUBLE, {.dbl=0}, INT32_MIN, INT32_MAX, FLAGS},
-    {"b1", NULL, OFFSET(ob1), AV_OPT_TYPE_DOUBLE, {.dbl=0}, INT32_MIN, INT32_MAX, FLAGS},
-    {"b2", NULL, OFFSET(ob2), AV_OPT_TYPE_DOUBLE, {.dbl=0}, INT32_MIN, INT32_MAX, FLAGS},
+    {"a0", NULL, OFFSET(oa[0]), AV_OPT_TYPE_DOUBLE, {.dbl=1}, INT32_MIN, INT32_MAX, FLAGS},
+    {"a1", NULL, OFFSET(oa[1]), AV_OPT_TYPE_DOUBLE, {.dbl=0}, INT32_MIN, INT32_MAX, FLAGS},
+    {"a2", NULL, OFFSET(oa[2]), AV_OPT_TYPE_DOUBLE, {.dbl=0}, INT32_MIN, INT32_MAX, FLAGS},
+    {"b0", NULL, OFFSET(ob[0]), AV_OPT_TYPE_DOUBLE, {.dbl=0}, INT32_MIN, INT32_MAX, FLAGS},
+    {"b1", NULL, OFFSET(ob[1]), AV_OPT_TYPE_DOUBLE, {.dbl=0}, INT32_MIN, INT32_MAX, FLAGS},
+    {"b2", NULL, OFFSET(ob[2]), AV_OPT_TYPE_DOUBLE, {.dbl=0}, INT32_MIN, INT32_MAX, FLAGS},
     MIX_CHANNELS_NORMALIZE_OPTION(1, "all", 0),
     TRANSFORM_OPTION(DI),
     PRECISION_OPTION(-1),
