@@ -304,7 +304,7 @@ static int request_frame(AVFilterLink *link)
 #if FF_API_FRAME_KEY
     frame->key_frame           = 1;
 #endif
-    frame->flags              |= AV_FRAME_FLAG_KEY
+    frame->flags              |= AV_FRAME_FLAG_KEY;
 #if FF_API_INTERLACED_FRAME
     frame->interlaced_frame    = 0;
 #endif
