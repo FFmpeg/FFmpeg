@@ -16,6 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/eval.h"
 #include "libavutil/file.h"
 #include "libavutil/opt.h"
@@ -26,6 +27,7 @@
 
 #include <libplacebo/renderer.h>
 #include <libplacebo/utils/libav.h>
+#include <libplacebo/utils/frame_queue.h>
 #include <libplacebo/vulkan.h>
 
 /* Backwards compatibility with older libplacebo */
@@ -122,7 +124,8 @@ typedef struct LibplaceboContext {
     pl_vulkan vulkan;
     pl_gpu gpu;
     pl_renderer renderer;
-    pl_tex tex[8];
+    pl_queue queue;
+    pl_tex tex[4];
 
     /* settings */
     char *out_format_string;
@@ -392,6 +395,7 @@ static int update_settings(AVFilterContext *ctx)
         .num_hooks = s->num_hooks,
 
         .skip_anti_aliasing = s->skip_aa,
+        .skip_caching_single_frame = true,
         .polar_cutoff = s->polar_cutoff,
         .disable_linear_scaling = s->disable_linear,
         .disable_builtin_scalers = s->disable_builtin,
@@ -509,6 +513,7 @@ static int init_vulkan(AVFilterContext *avctx, const AVVulkanDeviceContext *hwct
     /* Create the renderer */
     s->gpu = s->vulkan->gpu;
     s->renderer = pl_renderer_create(s->log, s->gpu);
+    s->queue = pl_queue_create(s->gpu);
 
     /* Parse the user shaders, if requested */
     if (s->shader_bin_len)
@@ -535,6 +540,7 @@ static void libplacebo_uninit(AVFilterContext *avctx)
     for (int i = 0; i < s->num_hooks; i++)
         pl_mpv_user_shader_destroy(&s->hooks[i]);
     pl_renderer_destroy(&s->renderer);
+    pl_queue_destroy(&s->queue);
     pl_vulkan_destroy(&s->vulkan);
     pl_log_destroy(&s->log);
     ff_vk_uninit(&s->vkctx);
@@ -564,69 +570,92 @@ fail:
 }
 
 static void update_crops(AVFilterContext *ctx,
-                         struct pl_frame *image,
-                         struct pl_frame *target,
-                         const double target_pts)
+                         struct pl_frame_mix *mix, struct pl_frame *target,
+                         uint64_t ref_sig, double base_pts)
 {
     LibplaceboContext *s = ctx->priv;
-    const AVFrame *in = pl_get_mapped_avframe(image);
-    const AVFilterLink *inlink = ctx->inputs[0];
-    const double in_pts = in->pts * av_q2d(inlink->time_base);
 
-    s->var_values[VAR_IN_T]   = s->var_values[VAR_T]  = in_pts;
-    s->var_values[VAR_OUT_T]  = s->var_values[VAR_OT] = target_pts;
-    s->var_values[VAR_N]      = inlink->frame_count_out;
+    for (int i = 0; i < mix->num_frames; i++) {
+        // Mutate the `pl_frame.crop` fields in-place. This is fine because we
+        // own the entire pl_queue, and hence, the pointed-at frames.
+        struct pl_frame *image = (struct pl_frame *) mix->frames[i];
+        double image_pts = base_pts + mix->timestamps[i];
 
-    /* Clear these explicitly to avoid leaking previous frames' state */
-    s->var_values[VAR_CROP_W] = s->var_values[VAR_CW] = NAN;
-    s->var_values[VAR_CROP_H] = s->var_values[VAR_CH] = NAN;
-    s->var_values[VAR_POS_W]  = s->var_values[VAR_PW] = NAN;
-    s->var_values[VAR_POS_H]  = s->var_values[VAR_PH] = NAN;
+        /* Update dynamic variables */
+        s->var_values[VAR_IN_T]   = s->var_values[VAR_T]  = image_pts;
+        s->var_values[VAR_OUT_T]  = s->var_values[VAR_OT] = base_pts;
+        s->var_values[VAR_N]      = ctx->outputs[0]->frame_count_out;
 
-    /* Evaluate crop/pos dimensions first, and placement second */
-    s->var_values[VAR_CROP_W] = s->var_values[VAR_CW] =
-        av_expr_eval(s->crop_w_pexpr, s->var_values, NULL);
-    s->var_values[VAR_CROP_H] = s->var_values[VAR_CH] =
-        av_expr_eval(s->crop_h_pexpr, s->var_values, NULL);
-    s->var_values[VAR_POS_W]  = s->var_values[VAR_PW] =
-        av_expr_eval(s->pos_w_pexpr, s->var_values, NULL);
-    s->var_values[VAR_POS_H]  = s->var_values[VAR_PH] =
-        av_expr_eval(s->pos_h_pexpr, s->var_values, NULL);
+        /* Clear these explicitly to avoid leaking previous frames' state */
+        s->var_values[VAR_CROP_W] = s->var_values[VAR_CW] = NAN;
+        s->var_values[VAR_CROP_H] = s->var_values[VAR_CH] = NAN;
+        s->var_values[VAR_POS_W]  = s->var_values[VAR_PW] = NAN;
+        s->var_values[VAR_POS_H]  = s->var_values[VAR_PH] = NAN;
 
-    image->crop.x0 = av_expr_eval(s->crop_x_pexpr, s->var_values, NULL);
-    image->crop.y0 = av_expr_eval(s->crop_y_pexpr, s->var_values, NULL);
-    image->crop.x1 = image->crop.x0 + s->var_values[VAR_CROP_W];
-    image->crop.y1 = image->crop.y0 + s->var_values[VAR_CROP_H];
+        /* Compute dimensions first and placement second */
+        s->var_values[VAR_CROP_W] = s->var_values[VAR_CW] =
+            av_expr_eval(s->crop_w_pexpr, s->var_values, NULL);
+        s->var_values[VAR_CROP_H] = s->var_values[VAR_CH] =
+            av_expr_eval(s->crop_h_pexpr, s->var_values, NULL);
+        s->var_values[VAR_POS_W]  = s->var_values[VAR_PW] =
+            av_expr_eval(s->pos_w_pexpr, s->var_values, NULL);
+        s->var_values[VAR_POS_H]  = s->var_values[VAR_PH] =
+            av_expr_eval(s->pos_h_pexpr, s->var_values, NULL);
 
-    target->crop.x0 = av_expr_eval(s->pos_x_pexpr, s->var_values, NULL);
-    target->crop.y0 = av_expr_eval(s->pos_y_pexpr, s->var_values, NULL);
-    target->crop.x1 = target->crop.x0 + s->var_values[VAR_POS_W];
-    target->crop.y1 = target->crop.y0 + s->var_values[VAR_POS_H];
+        image->crop.x0 = av_expr_eval(s->crop_x_pexpr, s->var_values, NULL);
+        image->crop.y0 = av_expr_eval(s->crop_y_pexpr, s->var_values, NULL);
+        image->crop.x1 = image->crop.x0 + s->var_values[VAR_CROP_W];
+        image->crop.y1 = image->crop.y0 + s->var_values[VAR_CROP_H];
 
-    if (s->target_sar.num) {
-        float aspect = pl_rect2df_aspect(&target->crop) * av_q2d(s->target_sar);
-        pl_rect2df_aspect_set(&target->crop, aspect, s->pad_crop_ratio);
+        if (mix->signatures[i] == ref_sig) {
+            /* Only update the target crop once, for the 'reference' frame */
+            target->crop.x0 = av_expr_eval(s->pos_x_pexpr, s->var_values, NULL);
+            target->crop.y0 = av_expr_eval(s->pos_y_pexpr, s->var_values, NULL);
+            target->crop.x1 = target->crop.x0 + s->var_values[VAR_POS_W];
+            target->crop.y1 = target->crop.y0 + s->var_values[VAR_POS_H];
+
+            if (s->target_sar.num) {
+                float aspect = pl_rect2df_aspect(&target->crop) * av_q2d(s->target_sar);
+                pl_rect2df_aspect_set(&target->crop, aspect, s->pad_crop_ratio);
+            }
+        }
     }
 }
 
-/* Construct and emit an output frame for `image` */
-static int output_frame(AVFilterContext *ctx, struct pl_frame *image)
+/* Construct and emit an output frame for a given frame mix */
+static int output_frame_mix(AVFilterContext *ctx,
+                            struct pl_frame_mix *mix,
+                            int64_t pts)
 {
     int err = 0, ok, changed_csp;
     LibplaceboContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     const AVPixFmtDescriptor *outdesc = av_pix_fmt_desc_get(outlink->format);
-    AVFrame *out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-    const AVFrame *in = pl_get_mapped_avframe(image);
     struct pl_frame target;
+    const AVFrame *ref;
+    AVFrame *out;
+    uint64_t ref_sig;
+    if (!mix->num_frames)
+        return 0;
+
+    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out)
         return AVERROR(ENOMEM);
 
-    RET(av_frame_copy_props(out, in));
+    /* Use the last frame before current PTS value as reference */
+    for (int i = 0; i < mix->num_frames; i++) {
+        if (i && mix->timestamps[i] > 0.0f)
+            break;
+        ref = pl_get_mapped_avframe(mix->frames[i]);
+        ref_sig = mix->signatures[i];
+    }
+
+    RET(av_frame_copy_props(out, ref));
+    out->pts = pts;
     out->width = outlink->w;
     out->height = outlink->h;
 
-    if (s->apply_dovi && av_frame_get_side_data(in, AV_FRAME_DATA_DOVI_METADATA)) {
+    if (s->apply_dovi && av_frame_get_side_data(ref, AV_FRAME_DATA_DOVI_METADATA)) {
         /* Output of dovi reshaping is always BT.2020+PQ, so infer the correct
          * output colorspace defaults */
         out->colorspace = AVCOL_SPC_BT2020_NCL;
@@ -643,10 +672,10 @@ static int output_frame(AVFilterContext *ctx, struct pl_frame *image)
     if (s->color_primaries >= 0)
         out->color_primaries = s->color_primaries;
 
-    changed_csp = in->colorspace      != out->colorspace     ||
-                  in->color_range     != out->color_range    ||
-                  in->color_trc       != out->color_trc      ||
-                  in->color_primaries != out->color_primaries;
+    changed_csp = ref->colorspace      != out->colorspace     ||
+                  ref->color_range     != out->color_range    ||
+                  ref->color_trc       != out->color_trc      ||
+                  ref->color_primaries != out->color_primaries;
 
     /* Strip side data if no longer relevant */
     if (changed_csp) {
@@ -668,15 +697,15 @@ static int output_frame(AVFilterContext *ctx, struct pl_frame *image)
             .map_dovi = false,
         ));
     } else {
-        ok = pl_frame_recreate_from_avframe(s->gpu, &target, s->tex + 4, out);
+        ok = pl_frame_recreate_from_avframe(s->gpu, &target, s->tex, out);
     }
     if (!ok) {
         err = AVERROR_EXTERNAL;
         goto fail;
     }
 
-    update_crops(ctx, image, &target, out->pts * av_q2d(outlink->time_base));
-    pl_render_image(s->renderer, image, &target, &s->params);
+    update_crops(ctx, mix, &target, ref_sig, out->pts * av_q2d(outlink->time_base));
+    pl_render_image_mix(s->renderer, mix, &target, &s->params);
 
     if (outdesc->flags & AV_PIX_FMT_FLAG_HWACCEL) {
         pl_unmap_avframe(s->gpu, &target);
@@ -691,33 +720,78 @@ fail:
     return err;
 }
 
+static bool map_frame(pl_gpu gpu, pl_tex *tex,
+                      const struct pl_source_frame *src,
+                      struct pl_frame *out)
+{
+    AVFrame *avframe = src->frame_data;
+    LibplaceboContext *s = avframe->opaque;
+    bool ok = pl_map_avframe_ex(gpu, out, pl_avframe_params(
+        .frame      = avframe,
+        .tex        = tex,
+        .map_dovi   = s->apply_dovi,
+    ));
+
+    if (!s->apply_filmgrain)
+        out->film_grain.type = PL_FILM_GRAIN_NONE;
+
+    av_frame_free(&avframe);
+    return ok;
+}
+
+static void unmap_frame(pl_gpu gpu, struct pl_frame *frame,
+                        const struct pl_source_frame *src)
+{
+    pl_unmap_avframe(gpu, frame);
+}
+
+static void discard_frame(const struct pl_source_frame *src)
+{
+    AVFrame *avframe = src->frame_data;
+    av_frame_free(&avframe);
+}
+
 static int filter_frame(AVFilterLink *link, AVFrame *in)
 {
-    int ret, ok;
     AVFilterContext *ctx = link->dst;
     LibplaceboContext *s = ctx->priv;
-    struct pl_frame image;
+    AVFilterLink *outlink = ctx->outputs[0];
+    enum pl_queue_status status;
+    struct pl_frame_mix mix;
 
     pl_log_level_update(s->log, get_log_level());
 
-    /* Map input frame */
-    ok = pl_map_avframe_ex(s->gpu, &image, pl_avframe_params(
-        .frame      = in,
-        .tex        = s->tex,
-        .map_dovi   = s->apply_dovi,
+    /* Push input frame */
+    in->opaque = s;
+    pl_queue_push(s->queue, &(struct pl_source_frame) {
+        .pts         = in->pts * av_q2d(link->time_base),
+        .duration    = in->duration * av_q2d(link->time_base),
+        .first_field = pl_field_from_avframe(in),
+        .frame_data  = in,
+        .map         = map_frame,
+        .unmap       = unmap_frame,
+        .discard     = discard_frame,
+    });
+
+    /* Immediately return an output frame for the same PTS */
+    av_assert1(!av_cmp_q(link->time_base, outlink->time_base));
+    status = pl_queue_update(s->queue, &mix, pl_queue_params(
+        .pts            = in->pts * av_q2d(outlink->time_base),
+        .radius         = pl_frame_mix_radius(&s->params),
+        .vsync_duration = av_q2d(av_inv_q(outlink->frame_rate)),
     ));
-    av_frame_free(&in);
 
-    if (!s->apply_filmgrain)
-        image.film_grain.type = PL_FILM_GRAIN_NONE;
-
-    if (!ok)
+    switch (status) {
+    case PL_QUEUE_MORE: // TODO: switch to activate() and handle properly
+    case PL_QUEUE_OK:
+        return output_frame_mix(ctx, &mix, in->pts);
+    case PL_QUEUE_EOF:
+        return 0;
+    case PL_QUEUE_ERR:
         return AVERROR_EXTERNAL;
+    }
 
-    ret = output_frame(ctx, &image);
-
-    pl_unmap_avframe(s->gpu, &image);
-    return ret;
+    return AVERROR_BUG;
 }
 
 static int libplacebo_query_format(AVFilterContext *ctx)
