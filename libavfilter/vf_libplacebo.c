@@ -143,6 +143,7 @@ typedef struct LibplaceboContext {
     int color_trc;
 
     /* pl_render_params */
+    struct pl_render_params params;
     char *upscaler;
     char *downscaler;
     int lut_entries;
@@ -156,6 +157,7 @@ typedef struct LibplaceboContext {
     int disable_fbos;
 
     /* pl_deband_params */
+    struct pl_deband_params deband_params;
     int deband;
     int deband_iterations;
     float deband_threshold;
@@ -163,6 +165,7 @@ typedef struct LibplaceboContext {
     float deband_grain;
 
     /* pl_color_adjustment */
+    struct pl_color_adjustment color_adjustment;
     float brightness;
     float contrast;
     float saturation;
@@ -170,6 +173,7 @@ typedef struct LibplaceboContext {
     float gamma;
 
     /* pl_peak_detect_params */
+    struct pl_peak_detect_params peak_detect_params;
     int peakdetect;
     float smoothing;
     float min_peak;
@@ -178,6 +182,7 @@ typedef struct LibplaceboContext {
     float overshoot;
 
     /* pl_color_map_params */
+    struct pl_color_map_params color_map_params;
     int intent;
     int gamut_mode;
     int tonemapping;
@@ -196,12 +201,14 @@ typedef struct LibplaceboContext {
     int force_icc_lut;
 #endif
 
-     /* pl_dither_params */
+    /* pl_dither_params */
+    struct pl_dither_params dither_params;
     int dithering;
     int dither_lut_size;
     int dither_temporal;
 
     /* pl_cone_params */
+    struct pl_cone_params cone_params;
     int cones;
     float cone_str;
 
@@ -280,18 +287,112 @@ static int find_scaler(AVFilterContext *avctx,
     return AVERROR(EINVAL);
 }
 
-static int parse_fillcolor(AVFilterContext *avctx,
-                           struct pl_render_params *params,
-                           const char *color_str)
+static int update_settings(AVFilterContext *ctx)
 {
     int err = 0;
+    LibplaceboContext *s = ctx->priv;
+    enum pl_tone_map_mode tonemapping_mode = s->tonemapping_mode;
+    enum pl_gamut_mode gamut_mode = s->gamut_mode;
     uint8_t color_rgba[4];
 
-    RET(av_parse_color(color_rgba, color_str, -1, avctx));
-    params->background_color[0] = (float) color_rgba[0] / UINT8_MAX;
-    params->background_color[1] = (float) color_rgba[1] / UINT8_MAX;
-    params->background_color[2] = (float) color_rgba[2] / UINT8_MAX;
-    params->background_transparency = 1.0f - (float) color_rgba[3] / UINT8_MAX;
+    RET(av_parse_color(color_rgba, s->fillcolor, -1, s));
+
+#if FF_API_LIBPLACEBO_OPTS
+    /* backwards compatibility with older API */
+    if (!tonemapping_mode && (s->desat_str >= 0.0f || s->desat_exp >= 0.0f)) {
+        float str = s->desat_str < 0.0f ? 0.9f : s->desat_str;
+        float exp = s->desat_exp < 0.0f ? 0.2f : s->desat_exp;
+        if (str >= 0.9f && exp <= 0.1f) {
+            tonemapping_mode = PL_TONE_MAP_RGB;
+        } else if (str > 0.1f) {
+            tonemapping_mode = PL_TONE_MAP_HYBRID;
+        } else {
+            tonemapping_mode = PL_TONE_MAP_LUMA;
+        }
+    }
+
+    if (s->gamut_warning)
+        gamut_mode = PL_GAMUT_WARN;
+    if (s->gamut_clipping)
+        gamut_mode = PL_GAMUT_DESATURATE;
+#endif
+
+    s->deband_params = *pl_deband_params(
+        .iterations = s->deband_iterations,
+        .threshold = s->deband_threshold,
+        .radius = s->deband_radius,
+        .grain = s->deband_grain,
+    );
+
+    s->color_adjustment = (struct pl_color_adjustment) {
+        .brightness = s->brightness,
+        .contrast = s->contrast,
+        .saturation = s->saturation,
+        .hue = s->hue,
+        .gamma = s->gamma,
+    };
+
+    s->peak_detect_params = *pl_peak_detect_params(
+        .smoothing_period = s->smoothing,
+        .minimum_peak = s->min_peak,
+        .scene_threshold_low = s->scene_low,
+        .scene_threshold_high = s->scene_high,
+        .overshoot_margin = s->overshoot,
+    );
+
+    s->color_map_params = *pl_color_map_params(
+        .intent = s->intent,
+        .gamut_mode = gamut_mode,
+        .tone_mapping_function = tonemapping_funcs[s->tonemapping],
+        .tone_mapping_param = s->tonemapping_param,
+        .tone_mapping_mode = tonemapping_mode,
+        .inverse_tone_mapping = s->inverse_tonemapping,
+        .tone_mapping_crosstalk = s->crosstalk,
+        .lut_size = s->tonemapping_lut_size,
+    );
+
+    s->dither_params = *pl_dither_params(
+        .method = s->dithering,
+        .lut_size = s->dither_lut_size,
+        .temporal = s->dither_temporal,
+    );
+
+    s->cone_params = *pl_cone_params(
+        .cones = s->cones,
+        .strength = s->cone_str,
+    );
+
+    s->params = *pl_render_params(
+        .lut_entries = s->lut_entries,
+        .antiringing_strength = s->antiringing,
+        .background_transparency = 1.0f - (float) color_rgba[3] / UINT8_MAX,
+        .background_color = {
+            (float) color_rgba[0] / UINT8_MAX,
+            (float) color_rgba[1] / UINT8_MAX,
+            (float) color_rgba[2] / UINT8_MAX,
+        },
+
+        .deband_params = s->deband ? &s->deband_params : NULL,
+        .sigmoid_params = s->sigmoid ? &pl_sigmoid_default_params : NULL,
+        .color_adjustment = &s->color_adjustment,
+        .peak_detect_params = s->peakdetect ? &s->peak_detect_params : NULL,
+        .color_map_params = &s->color_map_params,
+        .dither_params = s->dithering >= 0 ? &s->dither_params : NULL,
+        .cone_params = s->cones ? &s->cone_params : NULL,
+
+        .hooks = s->hooks,
+        .num_hooks = s->num_hooks,
+
+        .skip_anti_aliasing = s->skip_aa,
+        .polar_cutoff = s->polar_cutoff,
+        .disable_linear_scaling = s->disable_linear,
+        .disable_builtin_scalers = s->disable_builtin,
+        .force_dither = s->force_dither,
+        .disable_fbos = s->disable_fbos,
+    );
+
+    RET(find_scaler(ctx, &s->params.upscaler, s->upscaler));
+    RET(find_scaler(ctx, &s->params.downscaler, s->downscaler));
     return 0;
 
 fail:
@@ -327,6 +428,7 @@ static int libplacebo_init(AVFilterContext *avctx)
         s->out_format = AV_PIX_FMT_NONE;
     }
 
+    RET(update_settings(avctx));
     RET(av_expr_parse(&s->crop_x_pexpr, s->crop_x_expr, var_names,
                       NULL, NULL, NULL, NULL, 0, s));
     RET(av_expr_parse(&s->crop_y_pexpr, s->crop_y_expr, var_names,
@@ -440,14 +542,24 @@ static void libplacebo_uninit(AVFilterContext *avctx)
     av_expr_free(s->pos_h_pexpr);
 }
 
+static int libplacebo_process_command(AVFilterContext *ctx, const char *cmd,
+                                      const char *arg, char *res, int res_len,
+                                      int flags)
+{
+    int err = 0;
+    RET(ff_filter_process_command(ctx, cmd, arg, res, res_len, flags));
+    RET(update_settings(ctx));
+    return 0;
+
+fail:
+    return err;
+}
+
 static int process_frames(AVFilterContext *avctx, AVFrame *out, AVFrame *in)
 {
     int err = 0, ok;
     LibplaceboContext *s = avctx->priv;
-    struct pl_render_params params;
-    enum pl_tone_map_mode tonemapping_mode = s->tonemapping_mode;
     const AVPixFmtDescriptor *outdesc = av_pix_fmt_desc_get(out->format);
-    enum pl_gamut_mode gamut_mode = s->gamut_mode;
     struct pl_frame image, target;
     ok = pl_map_avframe_ex(s->gpu, &image, pl_avframe_params(
         .frame    = in,
@@ -496,95 +608,7 @@ static int process_frames(AVFilterContext *avctx, AVFrame *out, AVFrame *in)
         pl_rect2df_aspect_set(&target.crop, aspect, s->pad_crop_ratio);
     }
 
-#if FF_API_LIBPLACEBO_OPTS
-    /* backwards compatibility with older API */
-    if (!tonemapping_mode && (s->desat_str >= 0.0f || s->desat_exp >= 0.0f)) {
-        float str = s->desat_str < 0.0f ? 0.9f : s->desat_str;
-        float exp = s->desat_exp < 0.0f ? 0.2f : s->desat_exp;
-        if (str >= 0.9f && exp <= 0.1f) {
-            tonemapping_mode = PL_TONE_MAP_RGB;
-        } else if (str > 0.1f) {
-            tonemapping_mode = PL_TONE_MAP_HYBRID;
-        } else {
-            tonemapping_mode = PL_TONE_MAP_LUMA;
-        }
-    }
-
-    if (s->gamut_warning)
-        gamut_mode = PL_GAMUT_WARN;
-    if (s->gamut_clipping)
-        gamut_mode = PL_GAMUT_DESATURATE;
-#endif
-
-    /* Update render params */
-    params = (struct pl_render_params) {
-        PL_RENDER_DEFAULTS
-        .lut_entries = s->lut_entries,
-        .antiringing_strength = s->antiringing,
-
-        .deband_params = !s->deband ? NULL : pl_deband_params(
-            .iterations = s->deband_iterations,
-            .threshold = s->deband_threshold,
-            .radius = s->deband_radius,
-            .grain = s->deband_grain,
-        ),
-
-        .sigmoid_params = s->sigmoid ? &pl_sigmoid_default_params : NULL,
-
-        .color_adjustment = &(struct pl_color_adjustment) {
-            .brightness = s->brightness,
-            .contrast = s->contrast,
-            .saturation = s->saturation,
-            .hue = s->hue,
-            .gamma = s->gamma,
-        },
-
-        .peak_detect_params = !s->peakdetect ? NULL : pl_peak_detect_params(
-            .smoothing_period = s->smoothing,
-            .minimum_peak = s->min_peak,
-            .scene_threshold_low = s->scene_low,
-            .scene_threshold_high = s->scene_high,
-            .overshoot_margin = s->overshoot,
-        ),
-
-        .color_map_params = pl_color_map_params(
-            .intent = s->intent,
-            .gamut_mode = gamut_mode,
-            .tone_mapping_function = tonemapping_funcs[s->tonemapping],
-            .tone_mapping_param = s->tonemapping_param,
-            .tone_mapping_mode = tonemapping_mode,
-            .inverse_tone_mapping = s->inverse_tonemapping,
-            .tone_mapping_crosstalk = s->crosstalk,
-            .lut_size = s->tonemapping_lut_size,
-        ),
-
-        .dither_params = s->dithering < 0 ? NULL : pl_dither_params(
-            .method = s->dithering,
-            .lut_size = s->dither_lut_size,
-            .temporal = s->dither_temporal,
-        ),
-
-        .cone_params = !s->cones ? NULL : pl_cone_params(
-            .cones = s->cones,
-            .strength = s->cone_str,
-        ),
-
-        .hooks = s->hooks,
-        .num_hooks = s->num_hooks,
-
-        .skip_anti_aliasing = s->skip_aa,
-        .polar_cutoff = s->polar_cutoff,
-        .disable_linear_scaling = s->disable_linear,
-        .disable_builtin_scalers = s->disable_builtin,
-        .force_dither = s->force_dither,
-        .disable_fbos = s->disable_fbos,
-    };
-
-    RET(find_scaler(avctx, &params.upscaler, s->upscaler));
-    RET(find_scaler(avctx, &params.downscaler, s->downscaler));
-    RET(parse_fillcolor(avctx, &params, s->fillcolor));
-
-    pl_render_image(s->renderer, &image, &target, &params);
+    pl_render_image(s->renderer, &image, &target, &s->params);
     pl_unmap_avframe(s->gpu, &image);
 
     if (outdesc->flags & AV_PIX_FMT_FLAG_HWACCEL) {
@@ -1052,7 +1076,7 @@ const AVFilter ff_vf_libplacebo = {
     .priv_size      = sizeof(LibplaceboContext),
     .init           = &libplacebo_init,
     .uninit         = &libplacebo_uninit,
-    .process_command = &ff_filter_process_command,
+    .process_command = &libplacebo_process_command,
     FILTER_INPUTS(libplacebo_inputs),
     FILTER_OUTPUTS(libplacebo_outputs),
     FILTER_QUERY_FUNC(libplacebo_query_format),
