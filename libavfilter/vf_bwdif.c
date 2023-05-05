@@ -297,6 +297,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_frame_free(&yadif->prev);
     av_frame_free(&yadif->cur );
     av_frame_free(&yadif->next);
+    ff_ccfifo_freep(&yadif->cc_fifo);
 }
 
 static const enum AVPixelFormat pix_fmts[] = {
@@ -332,6 +333,13 @@ static int config_props(AVFilterLink *link)
 
     if(yadif->mode&1)
         link->frame_rate = av_mul_q(link->src->inputs[0]->frame_rate, (AVRational){2,1});
+    else
+        link->frame_rate = ctx->inputs[0]->frame_rate;
+
+    if (!(yadif->cc_fifo = ff_ccfifo_alloc(link->frame_rate, ctx))) {
+        av_log(ctx, AV_LOG_ERROR, "Failure to setup CC FIFO queue\n");
+        return AVERROR(ENOMEM);
+    }
 
     if (link->w < 3 || link->h < 4) {
         av_log(ctx, AV_LOG_ERROR, "Video of less than 3 columns or 4 lines is not supported\n");

@@ -22,6 +22,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "ccfifo.h"
 
 enum YADIFMode {
     YADIF_MODE_SEND_FRAME           = 0, ///< send 1 frame for each frame
@@ -76,6 +77,7 @@ typedef struct YADIFContext {
     int eof;
     uint8_t *temp_line;
     int temp_line_size;
+    AVCCFifo *cc_fifo;
 
     /*
      * An algorithm that treats first and/or last fields in a sequence

@@ -65,6 +65,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
             yadif->out->pts = AV_NOPTS_VALUE;
         }
     }
+
+    ff_ccfifo_inject(yadif->cc_fifo, yadif->out);
     ret = ff_filter_frame(ctx->outputs[0], yadif->out);
 
     yadif->frame_pending = (yadif->mode&1) && !is_second;
@@ -100,6 +102,8 @@ int ff_yadif_filter_frame(AVFilterLink *link, AVFrame *frame)
     YADIFContext *yadif = ctx->priv;
 
     av_assert0(frame);
+
+    ff_ccfifo_extract(yadif->cc_fifo, frame);
 
     if (yadif->frame_pending)
         return_frame(ctx, 1);
@@ -142,6 +146,7 @@ int ff_yadif_filter_frame(AVFilterLink *link, AVFrame *frame)
         if (!yadif->out)
             return AVERROR(ENOMEM);
 
+        ff_ccfifo_inject(yadif->cc_fifo, yadif->out);
         av_frame_free(&yadif->prev);
         if (yadif->out->pts != AV_NOPTS_VALUE)
             yadif->out->pts *= 2;
