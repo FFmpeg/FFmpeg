@@ -14,6 +14,7 @@ OBJS = allfilters.o                                                     \
        buffersink.o                                                     \
        buffersrc.o                                                      \
        colorspace.o                                                     \
+       ccfifo.o                                                         \
        drawutils.o                                                      \
        fifo.o                                                           \
        formats.o                                                        \
