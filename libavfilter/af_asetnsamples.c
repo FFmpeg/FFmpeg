@@ -39,7 +39,7 @@ typedef struct ASNSContext {
 } ASNSContext;
 
 #define OFFSET(x) offsetof(ASNSContext, x)
-#define FLAGS AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+#define FLAGS AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption asetnsamples_options[] = {
     { "nb_out_samples", "set the number of per-frame output samples", OFFSET(nb_out_samples), AV_OPT_TYPE_INT, {.i64=1024}, 1, INT_MAX, FLAGS },
@@ -123,4 +123,5 @@ const AVFilter ff_af_asetnsamples = {
     FILTER_INPUTS(asetnsamples_inputs),
     FILTER_OUTPUTS(asetnsamples_outputs),
     .activate    = activate,
+    .process_command = ff_filter_process_command,
 };
