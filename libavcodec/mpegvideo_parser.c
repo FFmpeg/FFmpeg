@@ -129,6 +129,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
                 s->pict_type = (buf[1] >> 3) & 7;
                 if (bytes_left >= 4)
                     vbv_delay = ((buf[1] & 0x07) << 13) | (buf[2] << 5) | (buf[3] >> 3);
+                s->repeat_pict = 1;
             }
             break;
         case SEQ_START_CODE:
@@ -186,7 +187,6 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
                         progressive_frame = buf[4] & (1 << 7);
 
                         /* check if we must repeat the frame */
-                        s->repeat_pict = 1;
                         if (repeat_first_field) {
                             if (pc->progressive_sequence) {
                                 if (top_field_first)
