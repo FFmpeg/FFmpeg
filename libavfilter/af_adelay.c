@@ -44,8 +44,11 @@ typedef struct AudioDelayContext {
     int block_align;
     int64_t padding;
     int64_t max_delay;
+    int64_t offset;
     int64_t next_pts;
     int eof;
+
+    AVFrame *input;
 
     void (*delay_channel)(ChanDelay *d, int nb_samples,
                           const uint8_t *src, uint8_t *dst);
@@ -187,6 +190,7 @@ static int config_input(AVFilterLink *inlink)
     char *p, *saveptr = NULL;
     int i;
 
+    s->next_pts = AV_NOPTS_VALUE;
     s->chandelay = av_calloc(inlink->ch_layout.nb_channels, sizeof(*s->chandelay));
     if (!s->chandelay)
         return AVERROR(ENOMEM);
@@ -224,6 +228,10 @@ static int config_input(AVFilterLink *inlink)
 
             d->delay -= s->padding;
         }
+
+        s->offset = av_rescale_q(s->padding,
+                                 av_make_q(1, inlink->sample_rate),
+                                 inlink->time_base);
     }
 
     for (i = 0; i < s->nb_delays; i++) {
@@ -323,11 +331,16 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     AVFrame *out_frame;
     int i;
 
-    if (ctx->is_disabled || !s->delays)
+    if (ctx->is_disabled || !s->delays) {
+        s->input = NULL;
         return ff_filter_frame(outlink, frame);
+    }
+
+    s->next_pts = av_rescale_q(frame->pts, inlink->time_base, outlink->time_base);
 
     out_frame = ff_get_audio_buffer(outlink, frame->nb_samples);
     if (!out_frame) {
+        s->input = NULL;
         av_frame_free(&frame);
         return AVERROR(ENOMEM);
     }
@@ -344,9 +357,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             s->delay_channel(d, frame->nb_samples, src, dst);
     }
 
-    out_frame->pts = s->next_pts;
-    s->next_pts += av_rescale_q(frame->nb_samples, (AVRational){1, outlink->sample_rate}, outlink->time_base);
+    out_frame->pts = s->next_pts + s->offset;
+    out_frame->duration = av_rescale_q(out_frame->nb_samples, (AVRational){1, outlink->sample_rate}, outlink->time_base);
+    s->next_pts += out_frame->duration;
     av_frame_free(&frame);
+    s->input = NULL;
     return ff_filter_frame(outlink, out_frame);
 }
 
@@ -361,6 +376,20 @@ static int activate(AVFilterContext *ctx)
 
     FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
 
+    if (!s->input) {
+        ret = ff_inlink_consume_frame(inlink, &s->input);
+        if (ret < 0)
+            return ret;
+    }
+
+    if (ff_inlink_acknowledge_status(inlink, &status, &pts)) {
+        if (status == AVERROR_EOF)
+            s->eof = 1;
+    }
+
+    if (s->next_pts == AV_NOPTS_VALUE && pts != AV_NOPTS_VALUE)
+        s->next_pts = av_rescale_q(pts, inlink->time_base, outlink->time_base);
+
     if (s->padding) {
         int nb_samples = FFMIN(s->padding, 2048);
 
@@ -374,24 +403,17 @@ static int activate(AVFilterContext *ctx)
                                outlink->ch_layout.nb_channels,
                                frame->format);
 
+        frame->duration = av_rescale_q(frame->nb_samples,
+                                       (AVRational){1, outlink->sample_rate},
+                                       outlink->time_base);
         frame->pts = s->next_pts;
-        if (s->next_pts != AV_NOPTS_VALUE)
-            s->next_pts += av_rescale_q(nb_samples, (AVRational){1, outlink->sample_rate}, outlink->time_base);
+        s->next_pts += frame->duration;
 
         return ff_filter_frame(outlink, frame);
     }
 
-    ret = ff_inlink_consume_frame(inlink, &frame);
-    if (ret < 0)
-        return ret;
-
-    if (ret > 0)
-        return filter_frame(inlink, frame);
-
-    if (ff_inlink_acknowledge_status(inlink, &status, &pts)) {
-        if (status == AVERROR_EOF)
-            s->eof = 1;
-    }
+    if (s->input)
+        return filter_frame(inlink, s->input);
 
     if (s->eof && s->max_delay) {
         int nb_samples = FFMIN(s->max_delay, 2048);
@@ -406,7 +428,11 @@ static int activate(AVFilterContext *ctx)
                                outlink->ch_layout.nb_channels,
                                frame->format);
 
+        frame->duration = av_rescale_q(frame->nb_samples,
+                                       (AVRational){1, outlink->sample_rate},
+                                       outlink->time_base);
         frame->pts = s->next_pts;
+        s->next_pts += frame->duration;
         return filter_frame(inlink, frame);
     }
 
