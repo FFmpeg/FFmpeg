@@ -447,26 +447,17 @@ static int init_converted_samples(uint8_t ***converted_input_samples,
     int error;
 
     /* Allocate as many pointers as there are audio channels.
-     * Each pointer will later point to the audio samples of the corresponding
+     * Each pointer will point to the audio samples of the corresponding
      * channels (although it may be NULL for interleaved formats).
-     */
-    if (!(*converted_input_samples = calloc(output_codec_context->ch_layout.nb_channels,
-                                            sizeof(**converted_input_samples)))) {
-        fprintf(stderr, "Could not allocate converted input sample pointers\n");
-        return AVERROR(ENOMEM);
-    }
-
-    /* Allocate memory for the samples of all channels in one consecutive
+     * Allocate memory for the samples of all channels in one consecutive
      * block for convenience. */
-    if ((error = av_samples_alloc(*converted_input_samples, NULL,
+    if ((error = av_samples_alloc_array_and_samples(converted_input_samples, NULL,
                                   output_codec_context->ch_layout.nb_channels,
                                   frame_size,
                                   output_codec_context->sample_fmt, 0)) < 0) {
         fprintf(stderr,
                 "Could not allocate converted input samples (error '%s')\n",
                 av_err2str(error));
-        av_freep(&(*converted_input_samples)[0]);
-        free(*converted_input_samples);
         return error;
     }
     return 0;
@@ -598,10 +589,9 @@ static int read_decode_convert_and_store(AVAudioFifo *fifo,
     ret = 0;
 
 cleanup:
-    if (converted_input_samples) {
+    if (converted_input_samples)
         av_freep(&converted_input_samples[0]);
-        free(converted_input_samples);
-    }
+    av_freep(&converted_input_samples);
     av_frame_free(&input_frame);
 
     return ret;
