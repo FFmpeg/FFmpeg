@@ -266,5 +266,3 @@ static int fn(filter_channels)(AVFilterContext *ctx, void *arg, int jobnr, int n
 
     return 0;
 }
-
-
