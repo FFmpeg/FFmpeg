@@ -8,6 +8,7 @@ version <next>:
 - afireqsrc audio source filter
 - arls filter
 - ffmpeg CLI new option: -readrate_initial_burst
+- zoneplate video source filter
 
 version 6.0:
 - Radiance HDR image support

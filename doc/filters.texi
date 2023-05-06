@@ -28083,6 +28083,104 @@ Set max jump for single pan destination. Allowed range is from 1 to 10000.
 Set fractal type, can be default @code{carpet} or @code{triangle}.
 @end table
 
+@section zoneplate
+Generate a zoneplate test video pattern.
+
+This source accepts the following options:
+
+@table @option
+@item size, s
+Set frame size. For the syntax of this option, check the @ref{video size syntax,,"Video
+size" section in the ffmpeg-utils manual,ffmpeg-utils}. Default value is "320x240".
+
+@item rate, r
+Set frame rate, expressed as number of frames per second. Default
+value is "25".
+
+@item duration, d
+Set the duration of the sourced video. See
+@ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) manual,ffmpeg-utils}
+for the accepted syntax.
+
+If not specified, or the expressed duration is negative, the video is
+supposed to be generated forever.
+
+@item sar
+Set the sample aspect ratio of the sourced video.
+
+@item precision
+Set precision in bits for look-up table for sine calculations. Default value is 10.
+Allowed range is from 4 to 16.
+
+@item xo
+Set horizontal axis offset for output signal. Default value is 0.
+
+@item yo
+Set vertical axis offset for output signal. Default value is 0.
+
+@item to
+Set time axis offset for output signal. Default value is 0.
+
+@item k0
+Set 0-order, constant added to signal phase. Default value is 0.
+
+@item kx
+Set 1-order, phase factor multiplier for horizontal axis. Default value is 0.
+
+@item ky
+Set 1-order, phase factor multiplier for vertical axis. Default value is 0.
+
+@item kt
+Set 1-order, phase factor multiplier for time axis. Default value is 0.
+
+@item kxt, kyt, kxy
+Set phase factor multipliers for combination of spatial and temporal axis.
+Default value is 0.
+
+@item kx2
+Set 2-order, phase factor multiplier for horizontal axis. Default value is 0.
+
+@item ky2
+Set 2-order, phase factor multiplier for vertical axis. Default value is 0.
+
+@item kt2
+Set 2-order, phase factor multiplier for time axis. Default value is 0.
+
+@item ku
+Set the constant added to final phase to produce chroma-blue component of signal.
+Default value is 0.
+
+@item kv
+Set the constant added to final phase to produce chroma-red component of signal.
+Default value is 0.
+@end table
+
+@subsection Commands
+
+This source supports the some above options as @ref{commands}.
+
+@subsection Examples
+
+@itemize
+@item
+Generate horizontal color sine sweep:
+@example
+zoneplate=ku=512:kv=0:kt2=0:kx2=256:s=wvga:xo=-426:kt=11
+@end example
+
+@item
+Generate vertical color sine sweep:
+@example
+zoneplate=ku=512:kv=0:kt2=0:ky2=156:s=wvga:yo=-240:kt=11
+@end example
+
+@item
+Generate circular zone-plate:
+@example
+zoneplate=ku=512:kv=100:kt2=0:ky2=256:kx2=556:s=wvga:yo=0:kt=11
+@end example
+@end itemize
+
 @c man end VIDEO SOURCES
 
 @chapter Video Sinks
