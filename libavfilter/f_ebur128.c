@@ -26,6 +26,7 @@
  * @todo implement start/stop/reset through filter command injection
  */
 
+#include <float.h>
 #include <math.h>
 
 #include "libavutil/avassert.h"
@@ -80,7 +81,9 @@ typedef struct EBUR128Context {
 
     /* peak metering */
     int peak_mode;                  ///< enabled peak modes
+    double true_peak;               ///< global true peak
     double *true_peaks;             ///< true peaks per channel
+    double sample_peak;             ///< global sample peak
     double *sample_peaks;           ///< sample peaks per channel
     double *true_peaks_per_frame;   ///< true peaks in a frame per channel
 #if CONFIG_SWRESAMPLE
@@ -159,6 +162,8 @@ enum {
 #define A AV_OPT_FLAG_AUDIO_PARAM
 #define V AV_OPT_FLAG_VIDEO_PARAM
 #define F AV_OPT_FLAG_FILTERING_PARAM
+#define X AV_OPT_FLAG_EXPORT
+#define R AV_OPT_FLAG_READONLY
 static const AVOption ebur128_options[] = {
     { "video", "set video output", OFFSET(do_video), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, V|F },
     { "size",  "set video size",   OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str = "640x480"}, 0, 0, V|F },
@@ -185,6 +190,12 @@ static const AVOption ebur128_options[] = {
         { "LUFS",       "display absolute values (LUFS)",          0, AV_OPT_TYPE_CONST, {.i64 = SCALE_TYPE_ABSOLUTE}, INT_MIN, INT_MAX, V|F, "scaletype" },
         { "relative",   "display values relative to target (LU)",  0, AV_OPT_TYPE_CONST, {.i64 = SCALE_TYPE_RELATIVE}, INT_MIN, INT_MAX, V|F, "scaletype" },
         { "LU",         "display values relative to target (LU)",  0, AV_OPT_TYPE_CONST, {.i64 = SCALE_TYPE_RELATIVE}, INT_MIN, INT_MAX, V|F, "scaletype" },
+    { "integrated", "integrated loudness (LUFS)", OFFSET(integrated_loudness), AV_OPT_TYPE_DOUBLE, {.dbl = 0}, -DBL_MAX, DBL_MAX, A|F|X|R },
+    { "range", "loudness range (LU)", OFFSET(loudness_range), AV_OPT_TYPE_DOUBLE, {.dbl = 0}, -DBL_MAX, DBL_MAX, A|F|X|R },
+    { "lra_low", "LRA low (LUFS)", OFFSET(lra_low), AV_OPT_TYPE_DOUBLE, {.dbl = 0}, -DBL_MAX, DBL_MAX, A|F|X|R },
+    { "lra_high", "LRA high (LUFS)", OFFSET(lra_high), AV_OPT_TYPE_DOUBLE, {.dbl = 0}, -DBL_MAX, DBL_MAX, A|F|X|R },
+    { "sample_peak", "sample peak (dBFS)", OFFSET(sample_peak), AV_OPT_TYPE_DOUBLE, {.dbl = 0}, -DBL_MAX, DBL_MAX, A|F|X|R },
+    { "true_peak", "true peak (dBFS)", OFFSET(true_peak), AV_OPT_TYPE_DOUBLE, {.dbl = 0}, -DBL_MAX, DBL_MAX, A|F|X|R },
     { NULL },
 };
 
@@ -701,6 +712,20 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             ebur128->i3000.cache[ch][bin_id_3000] = bin;
         }
 
+#define FIND_PEAK(global, sp, ptype) do {                        \
+    int ch;                                                      \
+    double maxpeak;                                              \
+    maxpeak = 0.0;                                               \
+    if (ebur128->peak_mode & PEAK_MODE_ ## ptype ## _PEAKS) {    \
+        for (ch = 0; ch < ebur128->nb_channels; ch++)            \
+            maxpeak = FFMAX(maxpeak, sp[ch]);                    \
+        global = DBFS(maxpeak);                                  \
+    }                                                            \
+} while (0)
+
+        FIND_PEAK(ebur128->sample_peak, ebur128->sample_peaks, SAMPLES);
+        FIND_PEAK(ebur128->true_peak,   ebur128->true_peaks,   TRUE);
+
         /* For integrated loudness, gating blocks are 400ms long with 75%
          * overlap (see BS.1770-2 p5), so a re-computation is needed each 100ms
          * (4800 samples at 48kHz). */
@@ -1023,7 +1048,6 @@ static int query_formats(AVFilterContext *ctx)
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
-    int i;
     EBUR128Context *ebur128 = ctx->priv;
 
     /* dual-mono correction */
@@ -1047,21 +1071,15 @@ static av_cold void uninit(AVFilterContext *ctx)
            ebur128->loudness_range,      ebur128->i3000.rel_threshold,
            ebur128->lra_low, ebur128->lra_high);
 
-#define PRINT_PEAK_SUMMARY(str, sp, ptype) do {                  \
-    int ch;                                                      \
-    double maxpeak;                                              \
-    maxpeak = 0.0;                                               \
+#define PRINT_PEAK_SUMMARY(str, value, ptype) do {               \
     if (ebur128->peak_mode & PEAK_MODE_ ## ptype ## _PEAKS) {    \
-        for (ch = 0; ch < ebur128->nb_channels; ch++)            \
-            maxpeak = FFMAX(maxpeak, sp[ch]);                    \
         av_log(ctx, AV_LOG_INFO, "\n\n  " str " peak:\n"         \
-               "    Peak:      %5.1f dBFS",                      \
-               DBFS(maxpeak));                                   \
+               "    Peak:      %5.1f dBFS", value);              \
     }                                                            \
 } while (0)
 
-    PRINT_PEAK_SUMMARY("Sample", ebur128->sample_peaks, SAMPLES);
-    PRINT_PEAK_SUMMARY("True",   ebur128->true_peaks,   TRUE);
+    PRINT_PEAK_SUMMARY("Sample", ebur128->sample_peak, SAMPLES);
+    PRINT_PEAK_SUMMARY("True",   ebur128->true_peak,   TRUE);
     av_log(ctx, AV_LOG_INFO, "\n");
 
     av_freep(&ebur128->y_line_ref);
@@ -1076,7 +1094,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&ebur128->i3000.sum);
     av_freep(&ebur128->i400.histogram);
     av_freep(&ebur128->i3000.histogram);
-    for (i = 0; i < ebur128->nb_channels; i++) {
+    for (int i = 0; i < ebur128->nb_channels; i++) {
         if (ebur128->i400.cache)
             av_freep(&ebur128->i400.cache[i]);
         if (ebur128->i3000.cache)

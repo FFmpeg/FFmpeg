@@ -28726,6 +28726,24 @@ live mixing).
 Sets the display scale for the loudness. Valid parameters are @code{absolute}
 (in LUFS) or @code{relative} (LU) relative to the target. This only affects the
 video output, not the summary or continuous log output.
+
+@item integrated
+Read-only exported value for measured integrated loudness, in LUFS.
+
+@item range
+Read-only exported value for measured loudness range, in LU.
+
+@item lra_low
+Read-only exported value for measured LRA low, in LUFS.
+
+@item lra_high
+Read-only exported value for measured LRA high, in LUFS.
+
+@item sample_peak
+Read-only exported value for measured sample peak, in dBFS.
+
+@item true_peak
+Read-only exported value for measured true peak, in dBFS.
 @end table
 
 @subsection Examples
