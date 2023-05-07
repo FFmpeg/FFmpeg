@@ -436,10 +436,6 @@ typedef struct InputStream {
     enum AVPixelFormat hwaccel_pix_fmt;
 
     /* stats */
-    // combined size of all the packets read
-    uint64_t data_size;
-    /* number of packets successfully read for this stream */
-    uint64_t nb_packets;
     // number of frames/samples retrieved from the decoder
     uint64_t frames_decoded;
     uint64_t samples_decoded;

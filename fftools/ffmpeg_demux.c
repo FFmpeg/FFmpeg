@@ -62,6 +62,11 @@ typedef struct DemuxStream {
 
     int64_t min_pts; /* pts with the smallest value in a current stream */
     int64_t max_pts; /* pts with the higher value in a current stream */
+
+    /* number of packets successfully read for this stream */
+    uint64_t nb_packets;
+    // combined size of all the packets read
+    uint64_t data_size;
 } DemuxStream;
 
 typedef struct Demuxer {
@@ -419,6 +424,7 @@ static int input_packet_process(Demuxer *d, DemuxMsg *msg, AVPacket *src)
 {
     InputFile     *f = &d->f;
     InputStream *ist = f->streams[src->stream_index];
+    DemuxStream  *ds = ds_from_ist(ist);
     AVPacket *pkt;
     int ret = 0;
 
@@ -433,11 +439,11 @@ static int input_packet_process(Demuxer *d, DemuxMsg *msg, AVPacket *src)
     if (ret < 0)
         goto fail;
 
-    ist->data_size += pkt->size;
-    ist->nb_packets++;
+    ds->data_size += pkt->size;
+    ds->nb_packets++;
 
     /* add the stream-global side data to the first packet */
-    if (ist->nb_packets == 1) {
+    if (ds->nb_packets == 1) {
         for (int i = 0; i < ist->st->nb_side_data; i++) {
             AVPacketSideData *src_sd = &ist->st->side_data[i];
             uint8_t *dst_data;
@@ -710,15 +716,16 @@ static void demux_final_stats(Demuxer *d)
 
     for (int j = 0; j < f->nb_streams; j++) {
         InputStream *ist = f->streams[j];
+        DemuxStream  *ds = ds_from_ist(ist);
         enum AVMediaType type = ist->par->codec_type;
 
-        total_size    += ist->data_size;
-        total_packets += ist->nb_packets;
+        total_size    += ds->data_size;
+        total_packets += ds->nb_packets;
 
         av_log(f, AV_LOG_VERBOSE, "  Input stream #%d:%d (%s): ",
                f->index, j, av_get_media_type_string(type));
         av_log(f, AV_LOG_VERBOSE, "%"PRIu64" packets read (%"PRIu64" bytes); ",
-               ist->nb_packets, ist->data_size);
+               ds->nb_packets, ds->data_size);
 
         if (ist->decoding_needed) {
             av_log(f, AV_LOG_VERBOSE, "%"PRIu64" frames decoded",
