@@ -350,6 +350,7 @@ typedef struct InputStream {
     AVCodecParameters *par;
     AVCodecContext *dec_ctx;
     const AVCodec *dec;
+    const AVCodecDescriptor *codec_desc;
     AVFrame *decoded_frame;
     AVPacket *pkt;
 

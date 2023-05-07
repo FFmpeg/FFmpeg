@@ -1498,12 +1498,13 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
             } else if (pkt->duration) {
                 ist->next_dts += av_rescale_q(pkt->duration, pkt->time_base, AV_TIME_BASE_Q);
             } else if(ist->dec_ctx->framerate.num != 0) {
-                int ticks = ist->last_pkt_repeat_pict >= 0 ?
-                            ist->last_pkt_repeat_pict + 1  :
-                            ist->dec_ctx->ticks_per_frame;
-                ist->next_dts += ((int64_t)AV_TIME_BASE *
-                                  ist->dec_ctx->framerate.den * ticks) /
-                                  ist->dec_ctx->framerate.num / ist->dec_ctx->ticks_per_frame;
+                int fields = (ist->codec_desc &&
+                              (ist->codec_desc->props & AV_CODEC_PROP_FIELDS)) ?
+                             ist->last_pkt_repeat_pict + 1 : 2;
+                AVRational field_rate = av_mul_q(ist->dec_ctx->framerate,
+                                                 (AVRational){ 2, 1 });
+
+                ist->next_dts += av_rescale_q(fields, av_inv_q(field_rate), AV_TIME_BASE_Q);
             }
             break;
         }

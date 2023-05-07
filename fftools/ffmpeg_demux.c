@@ -951,6 +951,8 @@ static void add_input_streams(const OptionsContext *o, Demuxer *d)
             av_log(ist, AV_LOG_ERROR, "Error initializing the decoder context.\n");
             exit_program(1);
         }
+
+        ist->codec_desc = avcodec_descriptor_get(ist->par->codec_id);
     }
 }
 
