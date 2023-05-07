@@ -490,6 +490,110 @@ put_hevc qpel
 put_hevc qpel_uni
 put_hevc qpel_bi
 
+function ff_hevc_put_hevc_pel_uni_pixels4_8_neon, export=1
+1:
+        ldr             s0, [x2]
+        ldr             s1, [x2, x3]
+        subs            w4, w4, #2
+        add             x2, x2, x3, lsl #1
+        str             s0, [x0]
+        str             s1, [x0, x1]
+        add             x0, x0, x1, lsl #1
+        b.hi            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_pel_uni_pixels6_8_neon, export=1
+        sub             x1, x1, #4
+1:
+        ldr             d0, [x2]
+        ldr             d1, [x2, x3]
+        subs            w4, w4, #2
+        add             x2, x2, x3, lsl #1
+        str             s0, [x0], #4
+        st1             {v0.h}[2], [x0], x1
+        str             s1, [x0], #4
+        st1             {v1.h}[2], [x0], x1
+        b.hi            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_pel_uni_pixels8_8_neon, export=1
+1:
+        ldr             d0, [x2]
+        ldr             d1, [x2, x3]
+        subs            w4, w4, #2
+        add             x2, x2, x3, lsl #1
+        str             d0, [x0]
+        str             d1, [x0, x1]
+        add             x0, x0, x1, lsl #1
+        b.hi            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_pel_uni_pixels12_8_neon, export=1
+        sub             x1, x1, #8
+1:
+        ldr             q0, [x2]
+        ldr             q1, [x2, x3]
+        subs            w4, w4, #2
+        add             x2, x2, x3, lsl #1
+        str             d0, [x0], #8
+        st1             {v0.s}[2], [x0], x1
+        str             d1, [x0], #8
+        st1             {v1.s}[2], [x0], x1
+        b.hi            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_pel_uni_pixels16_8_neon, export=1
+1:
+        ldr             q0, [x2]
+        ldr             q1, [x2, x3]
+        subs            w4, w4, #2
+        add             x2, x2, x3, lsl #1
+        str             q0, [x0]
+        str             q1, [x0, x1]
+        add             x0, x0, x1, lsl #1
+        b.hi            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_pel_uni_pixels24_8_neon, export=1
+1:
+        ld1             {v0.8b, v1.8b, v2.8b}, [x2], x3
+        subs            w4, w4, #1
+        st1             {v0.8b, v1.8b, v2.8b}, [x0], x1
+        b.hi            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_pel_uni_pixels32_8_neon, export=1
+1:
+        ld1             {v0.16b, v1.16b}, [x2], x3
+        subs            w4, w4, #1
+        st1             {v0.16b, v1.16b}, [x0], x1
+        b.hi            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_pel_uni_pixels48_8_neon, export=1
+1:
+        ld1             {v0.16b, v1.16b, v2.16b}, [x2], x3
+        subs            w4, w4, #1
+        st1             {v0.16b, v1.16b, v2.16b}, [x0], x1
+        b.hi            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_pel_uni_pixels64_8_neon, export=1
+1:
+        ld1             {v0.16b, v1.16b, v2.16b, v3.16b}, [x2], x3
+        subs            w4, w4, #1
+        st1             {v0.16b, v1.16b, v2.16b, v3.16b}, [x0], x1
+        b.hi            1b
+        ret
+endfunc
 
 function ff_hevc_put_hevc_pel_uni_w_pixels4_8_neon, export=1
         mov             w10, #-6
