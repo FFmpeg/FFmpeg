@@ -491,8 +491,22 @@ typedef struct AVFrame {
     void *opaque;
 
     /**
-     * When decoding, this signals how much the picture must be delayed.
-     * extra_delay = repeat_pict / (2*fps)
+     * Number of fields in this frame which should be repeated, i.e. the total
+     * duration of this frame should be repeat_pict + 2 normal field durations.
+     *
+     * For interlaced frames this field may be set to 1, which signals that this
+     * frame should be presented as 3 fields: beginning with the first field (as
+     * determined by AV_FRAME_FLAG_TOP_FIELD_FIRST being set or not), followed
+     * by the second field, and then the first field again.
+     *
+     * For progressive frames this field may be set to a multiple of 2, which
+     * signals that this frame's duration should be (repeat_pict + 2) / 2
+     * normal frame durations.
+     *
+     * @note This field is computed from MPEG2 repeat_first_field flag and its
+     * associated flags, H.264 pic_struct from picture timing SEI, and
+     * their analogues in other codecs. Typically it should only be used when
+     * higher-layer timing information is not available.
      */
     int repeat_pict;
 
