@@ -139,6 +139,8 @@ typedef struct LibplaceboContext {
     double var_values[VAR_VARS_NB];
     char *w_expr;
     char *h_expr;
+    char *fps_string;
+    AVRational fps; ///< parsed FPS, or 0/0 for "none"
     char *crop_x_expr, *crop_y_expr;
     char *crop_w_expr, *crop_h_expr;
     char *pos_x_expr, *pos_y_expr;
@@ -166,6 +168,7 @@ typedef struct LibplaceboContext {
     float antiringing;
     int sigmoid;
     int skip_aa;
+    int skip_cache;
     float polar_cutoff;
     int disable_linear;
     int disable_builtin;
@@ -400,7 +403,7 @@ static int update_settings(AVFilterContext *ctx)
         .num_hooks = s->num_hooks,
 
         .skip_anti_aliasing = s->skip_aa,
-        .skip_caching_single_frame = true,
+        .skip_caching_single_frame = s->skip_cache,
         .polar_cutoff = s->polar_cutoff,
         .disable_linear_scaling = s->disable_linear,
         .disable_builtin_scalers = s->disable_builtin,
@@ -465,6 +468,8 @@ static int libplacebo_init(AVFilterContext *avctx)
 
     /* Initialize dynamic filter state */
     s->out_pts = av_fifo_alloc2(1, sizeof(int64_t), AV_FIFO_FLAG_AUTO_GROW);
+    if (strcmp(s->fps_string, "none") != 0)
+        RET(av_parse_video_rate(&s->fps, s->fps_string));
 
     /* Note: s->vulkan etc. are initialized later, when hwctx is available */
     return 0;
@@ -663,6 +668,8 @@ static int output_frame_mix(AVFilterContext *ctx,
     out->pts = pts;
     out->width = outlink->w;
     out->height = outlink->h;
+    if (s->fps.num)
+        out->duration = 1;
 
     if (s->apply_dovi && av_frame_get_side_data(ref, AV_FRAME_DATA_DOVI_METADATA)) {
         /* Output of dovi reshaping is always BT.2020+PQ, so infer the correct
@@ -784,9 +791,11 @@ static int libplacebo_activate(AVFilterContext *ctx)
             .discard     = discard_frame,
         });
 
-        /* Internally queue an output frame for the same PTS */
-        av_assert1(!av_cmp_q(link->time_base, outlink->time_base));
-        av_fifo_write(s->out_pts, &in->pts, 1);
+        if (!s->fps.num) {
+            /* Internally queue an output frame for the same PTS */
+            av_assert1(!av_cmp_q(link->time_base, outlink->time_base));
+            av_fifo_write(s->out_pts, &in->pts, 1);
+        }
     }
 
     if (ret < 0)
@@ -799,7 +808,8 @@ static int libplacebo_activate(AVFilterContext *ctx)
             /* Signal EOF to pl_queue, and enqueue this output frame to
              * make sure we see PL_QUEUE_EOF returned eventually */
             pl_queue_push(s->queue, NULL);
-            av_fifo_write(s->out_pts, &pts, 1);
+            if (!s->fps.num)
+                av_fifo_write(s->out_pts, &pts, 1);
         } else {
             ff_outlink_set_status(outlink, status, pts);
             return 0;
@@ -810,7 +820,9 @@ static int libplacebo_activate(AVFilterContext *ctx)
         struct pl_frame_mix mix;
         enum pl_queue_status ret;
 
-        if (av_fifo_peek(s->out_pts, &pts, 1, 0) < 0) {
+        if (s->fps.num) {
+            pts = outlink->frame_count_out;
+        } else if (av_fifo_peek(s->out_pts, &pts, 1, 0) < 0) {
             ff_inlink_request_frame(inlink);
             return 0;
         }
@@ -826,7 +838,8 @@ static int libplacebo_activate(AVFilterContext *ctx)
             ff_inlink_request_frame(inlink);
             return 0;
         case PL_QUEUE_OK:
-            av_fifo_drain2(s->out_pts, 1);
+            if (!s->fps.num)
+                av_fifo_drain2(s->out_pts, 1);
             return output_frame_mix(ctx, &mix, pts);
         case PL_QUEUE_EOF:
             ff_outlink_set_status(outlink, AVERROR_EOF, pts);
@@ -942,6 +955,7 @@ static int libplacebo_config_output(AVFilterLink *outlink)
     AVVulkanFramesContext *vkfc;
     AVRational scale_sar;
 
+    /* Frame dimensions */
     RET(ff_scale_eval_dimensions(s, s->w_expr, s->h_expr, inlink, outlink,
                                  &outlink->w, &outlink->h));
 
@@ -963,6 +977,15 @@ static int libplacebo_config_output(AVFilterLink *outlink)
          * was set to something nonzero */
         if (inlink->sample_aspect_ratio.num)
             outlink->sample_aspect_ratio = scale_sar;
+    }
+
+    /* Frame rate */
+    if (s->fps.num) {
+        outlink->frame_rate = s->fps;
+        outlink->time_base = av_inv_q(s->fps);
+        s->skip_cache = av_cmp_q(inlink->frame_rate, s->fps) > 0;
+    } else {
+        s->skip_cache = true;
     }
 
     /* Static variables */
@@ -1009,6 +1032,7 @@ fail:
 static const AVOption libplacebo_options[] = {
     { "w", "Output video frame width",  OFFSET(w_expr), AV_OPT_TYPE_STRING, {.str = "iw"}, .flags = STATIC },
     { "h", "Output video frame height", OFFSET(h_expr), AV_OPT_TYPE_STRING, {.str = "ih"}, .flags = STATIC },
+    { "fps", "Output video frame rate", OFFSET(fps_string), AV_OPT_TYPE_STRING, {.str = "none"}, .flags = STATIC },
     { "crop_x", "Input video crop x", OFFSET(crop_x_expr), AV_OPT_TYPE_STRING, {.str = "(iw-cw)/2"}, .flags = DYNAMIC },
     { "crop_y", "Input video crop y", OFFSET(crop_y_expr), AV_OPT_TYPE_STRING, {.str = "(ih-ch)/2"}, .flags = DYNAMIC },
     { "crop_w", "Input video crop w", OFFSET(crop_w_expr), AV_OPT_TYPE_STRING, {.str = "iw"}, .flags = DYNAMIC },

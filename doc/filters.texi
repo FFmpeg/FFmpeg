@@ -16044,6 +16044,13 @@ and @code{(oh-ph)/2}.
 Set the output placement width/height expressions, default values are @code{ow}
 and @code{oh}.
 
+@item fps
+Set the output frame rate. This can be rational, e.g. @code{60000/1001}. If
+set to the special string @code{none} (the default), input timestamps will
+instead be passed through to the output unmodified. Otherwise, the input video
+frames will be interpolated as necessary to rescale the video to the specified
+target framerate, in a manner as determined by the @option{frame_mixer} option.
+
 @item format
 Set the output format override. If unset (the default), frames will be output
 in the same format as the respective input frames. Otherwise, format conversion
