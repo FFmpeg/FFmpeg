@@ -527,17 +527,17 @@ static void readrate_sleep(Demuxer *d)
 
 static void discard_unused_programs(InputFile *ifile)
 {
-        for (int j = 0; j < ifile->ctx->nb_programs; j++) {
-            AVProgram *p = ifile->ctx->programs[j];
-            int discard  = AVDISCARD_ALL;
+    for (int j = 0; j < ifile->ctx->nb_programs; j++) {
+        AVProgram *p = ifile->ctx->programs[j];
+        int discard  = AVDISCARD_ALL;
 
-            for (int k = 0; k < p->nb_stream_indexes; k++)
-                if (!ifile->streams[p->stream_index[k]]->discard) {
-                    discard = AVDISCARD_DEFAULT;
-                    break;
-                }
-            p->discard = discard;
-        }
+        for (int k = 0; k < p->nb_stream_indexes; k++)
+            if (!ifile->streams[p->stream_index[k]]->discard) {
+                discard = AVDISCARD_DEFAULT;
+                break;
+            }
+        p->discard = discard;
+    }
 }
 
 static void thread_set_name(InputFile *f)
