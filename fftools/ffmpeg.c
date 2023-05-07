@@ -779,8 +779,8 @@ static void check_decode_result(InputStream *ist, int *got_output, int ret)
 
     if (*got_output && ist) {
         if (ist->decoded_frame->decode_error_flags || (ist->decoded_frame->flags & AV_FRAME_FLAG_CORRUPT)) {
-            av_log(NULL, exit_on_error ? AV_LOG_FATAL : AV_LOG_WARNING,
-                   "%s: corrupt decoded frame in stream %d\n", input_files[ist->file_index]->ctx->url, ist->st->index);
+            av_log(ist, exit_on_error ? AV_LOG_FATAL : AV_LOG_WARNING,
+                   "corrupt decoded frame\n");
             if (exit_on_error)
                 exit_program(1);
         }
