@@ -442,6 +442,9 @@ typedef struct InputFile {
 
     int index;
 
+    // input format has no timestamps
+    int format_nots;
+
     AVFormatContext *ctx;
     int eof_reached;      /* true if eof reached */
     int eagain;           /* true if last read attempt returned EAGAIN */

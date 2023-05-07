@@ -1504,6 +1504,8 @@ int ifile_open(const OptionsContext *o, const char *filename)
     d->duration = 0;
     d->time_base = (AVRational){ 1, 1 };
 
+    f->format_nots = !!(ic->iformat->flags & AVFMT_NOTIMESTAMPS);
+
     f->readrate = o->readrate ? o->readrate : 0.0;
     if (f->readrate < 0.0f) {
         av_log(d, AV_LOG_ERROR, "Option -readrate is %0.3f; it must be non-negative.\n", f->readrate);

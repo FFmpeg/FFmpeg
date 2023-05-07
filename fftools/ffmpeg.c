@@ -976,7 +976,6 @@ static int decode_audio(InputStream *ist, const AVPacket *pkt, int *got_output,
 static int64_t video_duration_estimate(const InputStream *ist, const AVFrame *frame)
 {
     const InputFile   *ifile = input_files[ist->file_index];
-    const int container_nots = !!(ifile->ctx->iformat->flags & AVFMT_NOTIMESTAMPS);
     int64_t codec_duration = 0;
 
     // XXX lavf currently makes up frame durations when they are not provided by
@@ -986,7 +985,7 @@ static int64_t video_duration_estimate(const InputStream *ist, const AVFrame *fr
     // durations, then this should be simplified.
 
     // prefer frame duration for containers with timestamps
-    if (frame->duration > 0 && !container_nots)
+    if (frame->duration > 0 && !ifile->format_nots)
         return frame->duration;
 
     if (ist->dec_ctx->framerate.den && ist->dec_ctx->framerate.num) {
@@ -998,7 +997,7 @@ static int64_t video_duration_estimate(const InputStream *ist, const AVFrame *fr
     }
 
     // prefer codec-layer duration for containers without timestamps
-    if (codec_duration > 0 && container_nots)
+    if (codec_duration > 0 && ifile->format_nots)
         return codec_duration;
 
     // when timestamps are available, repeat last frame's actual duration
