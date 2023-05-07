@@ -60,6 +60,8 @@ typedef struct DemuxStream {
 
     double ts_scale;
 
+    int streamcopy_needed;
+
     int wrap_correction_done;
     int saw_first_ts;
     ///< dts of the first packet read for this stream (in AV_TIME_BASE units)
@@ -346,7 +348,7 @@ static int ist_dts_update(DemuxStream *ds, AVPacket *pkt)
     }
 
     av_assert0(!pkt->opaque_ref);
-    if (ist->streamcopy_needed) {
+    if (ds->streamcopy_needed) {
         DemuxPktData *pd;
 
         pkt->opaque_ref = av_buffer_allocz(sizeof(*pd));
@@ -806,10 +808,12 @@ void ifile_close(InputFile **pf)
 
 static void ist_use(InputStream *ist, int decoding_needed)
 {
+    DemuxStream *ds = ds_from_ist(ist);
+
     ist->discard          = 0;
     ist->st->discard      = ist->user_set_discard;
     ist->decoding_needed |= decoding_needed;
-    ist->streamcopy_needed |= !decoding_needed;
+    ds->streamcopy_needed |= !decoding_needed;
 
     if (decoding_needed && !avcodec_is_open(ist->dec_ctx)) {
         int ret = dec_open(ist);

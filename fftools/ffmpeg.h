@@ -343,7 +343,6 @@ typedef struct InputStream {
     int discard;             /* true if stream data should be discarded */
     int user_set_discard;
     int decoding_needed;     /* non zero if the packets must be decoded in 'raw_fifo', see DECODING_FOR_* */
-    int streamcopy_needed;
 #define DECODING_FOR_OST    1
 #define DECODING_FOR_FILTER 2
     // should attach FrameData as opaque_ref after decoding
