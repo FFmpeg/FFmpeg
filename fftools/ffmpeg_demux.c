@@ -641,14 +641,14 @@ static void *input_thread(void *arg)
         if (flags && ret == AVERROR(EAGAIN)) {
             flags = 0;
             ret = av_thread_message_queue_send(d->in_thread_queue, &msg, flags);
-            av_log(f->ctx, AV_LOG_WARNING,
+            av_log(f, AV_LOG_WARNING,
                    "Thread message queue blocking; consider raising the "
                    "thread_queue_size option (current value: %d)\n",
                    d->thread_queue_size);
         }
         if (ret < 0) {
             if (ret != AVERROR_EOF)
-                av_log(f->ctx, AV_LOG_ERROR,
+                av_log(f, AV_LOG_ERROR,
                        "Unable to send packet to main thread: %s\n",
                        av_err2str(ret));
             av_packet_free(&msg.pkt);
