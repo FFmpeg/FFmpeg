@@ -362,8 +362,6 @@ typedef struct InputStream {
 
     AVRational framerate_guessed;
 
-    int64_t       start;     /* time when read started */
-
     // pts/estimated duration of the last decoded frame
     // * in decoder timebase for video,
     // * in last_frame_tb (may change during decoding) for audio

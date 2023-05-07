@@ -1498,14 +1498,6 @@ static int transcode_init(void)
 {
     int ret = 0;
 
-    /* init framerate emulation */
-    for (int i = 0; i < nb_input_files; i++) {
-        InputFile *ifile = input_files[i];
-        if (ifile->readrate)
-            for (int j = 0; j < ifile->nb_streams; j++)
-                ifile->streams[j]->start = av_gettime_relative();
-    }
-
     /* discard unused programs */
     for (int i = 0; i < nb_input_files; i++) {
         InputFile *ifile = input_files[i];

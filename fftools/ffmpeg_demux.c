@@ -88,6 +88,8 @@ typedef struct Demuxer {
     // name used for logging
     char log_name[32];
 
+    int64_t wallclock_start;
+
     /* number of times input stream should be looped */
     int loop;
     /* actual duration of the longest stream in a file at the moment when
@@ -517,7 +519,7 @@ static void readrate_sleep(Demuxer *d)
         int64_t stream_ts_offset, pts, now;
         stream_ts_offset = FFMAX(ds->first_dts != AV_NOPTS_VALUE ? ds->first_dts : 0, file_start);
         pts = av_rescale(ds->dts, 1000000, AV_TIME_BASE);
-        now = (av_gettime_relative() - ist->start) * f->readrate + stream_ts_offset;
+        now = (av_gettime_relative() - d->wallclock_start) * f->readrate + stream_ts_offset;
         if (pts - burst_until > now)
             av_usleep(pts - burst_until - now);
     }
@@ -545,6 +547,8 @@ static void *input_thread(void *arg)
     }
 
     thread_set_name(f);
+
+    d->wallclock_start = av_gettime_relative();
 
     while (1) {
         DemuxMsg msg = { NULL };
