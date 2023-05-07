@@ -64,6 +64,12 @@ typedef struct DemuxStream {
     ///< dts of the first packet read for this stream (in AV_TIME_BASE units)
     int64_t first_dts;
 
+    /* predicted dts of the next packet read for this stream or (when there are
+     * several frames in a packet) of the next frame in current packet (in AV_TIME_BASE units) */
+    int64_t       next_dts;
+    ///< dts of the last packet read for this stream (in AV_TIME_BASE units)
+    int64_t       dts;
+
     int64_t min_pts; /* pts with the smallest value in a current stream */
     int64_t max_pts; /* pts with the higher value in a current stream */
 
@@ -197,25 +203,26 @@ static int seek_to_start(Demuxer *d)
 static void ts_discontinuity_detect(InputFile *ifile, InputStream *ist,
                                     AVPacket *pkt)
 {
+    DemuxStream *ds = ds_from_ist(ist);
     const int fmt_is_discont = ifile->ctx->iformat->flags & AVFMT_TS_DISCONT;
     int disable_discontinuity_correction = copy_ts;
     int64_t pkt_dts = av_rescale_q_rnd(pkt->dts, pkt->time_base, AV_TIME_BASE_Q,
                                        AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX);
 
-    if (copy_ts && ist->next_dts != AV_NOPTS_VALUE &&
+    if (copy_ts && ds->next_dts != AV_NOPTS_VALUE &&
         fmt_is_discont && ist->st->pts_wrap_bits < 60) {
         int64_t wrap_dts = av_rescale_q_rnd(pkt->dts + (1LL<<ist->st->pts_wrap_bits),
                                             pkt->time_base, AV_TIME_BASE_Q,
                                             AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
-        if (FFABS(wrap_dts - ist->next_dts) < FFABS(pkt_dts - ist->next_dts)/10)
+        if (FFABS(wrap_dts - ds->next_dts) < FFABS(pkt_dts - ds->next_dts)/10)
             disable_discontinuity_correction = 0;
     }
 
-    if (ist->next_dts != AV_NOPTS_VALUE && !disable_discontinuity_correction) {
-        int64_t delta = pkt_dts - ist->next_dts;
+    if (ds->next_dts != AV_NOPTS_VALUE && !disable_discontinuity_correction) {
+        int64_t delta = pkt_dts - ds->next_dts;
         if (fmt_is_discont) {
             if (FFABS(delta) > 1LL * dts_delta_threshold * AV_TIME_BASE ||
-                pkt_dts + AV_TIME_BASE/10 < ist->dts) {
+                pkt_dts + AV_TIME_BASE/10 < ds->dts) {
                 ifile->ts_offset_discont -= delta;
                 av_log(NULL, AV_LOG_WARNING,
                        "timestamp discontinuity for stream #%d:%d "
@@ -229,19 +236,23 @@ static void ts_discontinuity_detect(InputFile *ifile, InputStream *ist,
             }
         } else {
             if (FFABS(delta) > 1LL * dts_error_threshold * AV_TIME_BASE) {
-                av_log(NULL, AV_LOG_WARNING, "DTS %"PRId64", next:%"PRId64" st:%d invalid dropping\n", pkt->dts, ist->next_dts, pkt->stream_index);
+                av_log(NULL, AV_LOG_WARNING,
+                       "DTS %"PRId64", next:%"PRId64" st:%d invalid dropping\n",
+                       pkt->dts, ds->next_dts, pkt->stream_index);
                 pkt->dts = AV_NOPTS_VALUE;
             }
             if (pkt->pts != AV_NOPTS_VALUE){
                 int64_t pkt_pts = av_rescale_q(pkt->pts, pkt->time_base, AV_TIME_BASE_Q);
-                delta = pkt_pts - ist->next_dts;
+                delta = pkt_pts - ds->next_dts;
                 if (FFABS(delta) > 1LL * dts_error_threshold * AV_TIME_BASE) {
-                    av_log(NULL, AV_LOG_WARNING, "PTS %"PRId64", next:%"PRId64" invalid dropping st:%d\n", pkt->pts, ist->next_dts, pkt->stream_index);
+                    av_log(NULL, AV_LOG_WARNING,
+                           "PTS %"PRId64", next:%"PRId64" invalid dropping st:%d\n",
+                           pkt->pts, ds->next_dts, pkt->stream_index);
                     pkt->pts = AV_NOPTS_VALUE;
                 }
             }
         }
-    } else if (ist->next_dts == AV_NOPTS_VALUE && !copy_ts &&
+    } else if (ds->next_dts == AV_NOPTS_VALUE && !copy_ts &&
                fmt_is_discont && ifile->last_ts != AV_NOPTS_VALUE) {
         int64_t delta = pkt_dts - ifile->last_ts;
         if (FFABS(delta) > 1LL * dts_delta_threshold * AV_TIME_BASE) {
@@ -285,39 +296,39 @@ static int ist_dts_update(DemuxStream *ds, AVPacket *pkt)
 
     if (!ds->saw_first_ts) {
         ds->first_dts =
-        ist->dts = ist->st->avg_frame_rate.num ? - ist->par->video_delay * AV_TIME_BASE / av_q2d(ist->st->avg_frame_rate) : 0;
+        ds->dts = ist->st->avg_frame_rate.num ? - ist->par->video_delay * AV_TIME_BASE / av_q2d(ist->st->avg_frame_rate) : 0;
         if (pkt->pts != AV_NOPTS_VALUE) {
             ds->first_dts =
-            ist->dts += av_rescale_q(pkt->pts, pkt->time_base, AV_TIME_BASE_Q);
+            ds->dts += av_rescale_q(pkt->pts, pkt->time_base, AV_TIME_BASE_Q);
         }
         ds->saw_first_ts = 1;
     }
 
-    if (ist->next_dts == AV_NOPTS_VALUE)
-        ist->next_dts = ist->dts;
+    if (ds->next_dts == AV_NOPTS_VALUE)
+        ds->next_dts = ds->dts;
 
     if (pkt->dts != AV_NOPTS_VALUE)
-        ist->next_dts = ist->dts = av_rescale_q(pkt->dts, pkt->time_base, AV_TIME_BASE_Q);
+        ds->next_dts = ds->dts = av_rescale_q(pkt->dts, pkt->time_base, AV_TIME_BASE_Q);
 
-    ist->dts = ist->next_dts;
+    ds->dts = ds->next_dts;
     switch (par->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
         av_assert1(pkt->duration >= 0);
         if (par->sample_rate) {
-            ist->next_dts += ((int64_t)AV_TIME_BASE * par->frame_size) /
+            ds->next_dts += ((int64_t)AV_TIME_BASE * par->frame_size) /
                               par->sample_rate;
         } else {
-            ist->next_dts += av_rescale_q(pkt->duration, pkt->time_base, AV_TIME_BASE_Q);
+            ds->next_dts += av_rescale_q(pkt->duration, pkt->time_base, AV_TIME_BASE_Q);
         }
         break;
     case AVMEDIA_TYPE_VIDEO:
         if (ist->framerate.num) {
             // TODO: Remove work-around for c99-to-c89 issue 7
             AVRational time_base_q = AV_TIME_BASE_Q;
-            int64_t next_dts = av_rescale_q(ist->next_dts, time_base_q, av_inv_q(ist->framerate));
-            ist->next_dts = av_rescale_q(next_dts + 1, av_inv_q(ist->framerate), time_base_q);
+            int64_t next_dts = av_rescale_q(ds->next_dts, time_base_q, av_inv_q(ist->framerate));
+            ds->next_dts = av_rescale_q(next_dts + 1, av_inv_q(ist->framerate), time_base_q);
         } else if (pkt->duration) {
-            ist->next_dts += av_rescale_q(pkt->duration, pkt->time_base, AV_TIME_BASE_Q);
+            ds->next_dts += av_rescale_q(pkt->duration, pkt->time_base, AV_TIME_BASE_Q);
         } else if (ist->par->framerate.num != 0) {
             AVRational field_rate = av_mul_q(ist->par->framerate,
                                              (AVRational){ 2, 1 });
@@ -328,7 +339,7 @@ static int ist_dts_update(DemuxStream *ds, AVPacket *pkt)
                 av_stream_get_parser(ist->st))
                 fields = 1 + av_stream_get_parser(ist->st)->repeat_pict;
 
-            ist->next_dts += av_rescale_q(fields, av_inv_q(field_rate), AV_TIME_BASE_Q);
+            ds->next_dts += av_rescale_q(fields, av_inv_q(field_rate), AV_TIME_BASE_Q);
         }
         break;
     }
@@ -342,7 +353,7 @@ static int ist_dts_update(DemuxStream *ds, AVPacket *pkt)
             return AVERROR(ENOMEM);
         pd = (DemuxPktData*)pkt->opaque_ref->data;
 
-        pd->dts_est = ist->dts;
+        pd->dts_est = ds->dts;
     }
 
     return 0;
@@ -502,7 +513,7 @@ static void readrate_sleep(Demuxer *d)
         DemuxStream  *ds = ds_from_ist(ist);
         int64_t stream_ts_offset, pts, now;
         stream_ts_offset = FFMAX(ds->first_dts != AV_NOPTS_VALUE ? ds->first_dts : 0, file_start);
-        pts = av_rescale(ist->dts, 1000000, AV_TIME_BASE);
+        pts = av_rescale(ds->dts, 1000000, AV_TIME_BASE);
         now = (av_gettime_relative() - ist->start) * f->readrate + stream_ts_offset;
         if (pts - burst_until > now)
             av_usleep(pts - burst_until - now);
@@ -983,7 +994,7 @@ static void add_input_streams(const OptionsContext *o, Demuxer *d)
         st->discard  = AVDISCARD_ALL;
         ist->nb_samples = 0;
         ds->first_dts   = AV_NOPTS_VALUE;
-        ist->next_dts  = AV_NOPTS_VALUE;
+        ds->next_dts    = AV_NOPTS_VALUE;
 
         ds->min_pts = INT64_MAX;
         ds->max_pts = INT64_MIN;

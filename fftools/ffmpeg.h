@@ -364,10 +364,6 @@ typedef struct InputStream {
     AVRational framerate_guessed;
 
     int64_t       start;     /* time when read started */
-    /* predicted dts of the next packet read for this stream or (when there are
-     * several frames in a packet) of the next frame in current packet (in AV_TIME_BASE units) */
-    int64_t       next_dts;
-    int64_t       dts;       ///< dts of the last packet read for this stream (in AV_TIME_BASE units)
 
     // pts/estimated duration of the last decoded frame
     // * in decoder timebase for video,
