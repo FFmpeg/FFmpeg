@@ -60,6 +60,7 @@ typedef struct DemuxStream {
 
     double ts_scale;
 
+    int wrap_correction_done;
     int saw_first_ts;
     ///< dts of the first packet read for this stream (in AV_TIME_BASE units)
     int64_t first_dts;
@@ -383,21 +384,21 @@ static int ts_fixup(Demuxer *d, AVPacket *pkt)
 
     SHOW_TS_DEBUG("demuxer");
 
-    if (!ist->wrap_correction_done && start_time != AV_NOPTS_VALUE &&
+    if (!ds->wrap_correction_done && start_time != AV_NOPTS_VALUE &&
         ist->st->pts_wrap_bits < 64) {
         int64_t stime, stime2;
 
         stime = av_rescale_q(start_time, AV_TIME_BASE_Q, pkt->time_base);
         stime2= stime + (1ULL<<ist->st->pts_wrap_bits);
-        ist->wrap_correction_done = 1;
+        ds->wrap_correction_done = 1;
 
         if(stime2 > stime && pkt->dts != AV_NOPTS_VALUE && pkt->dts > stime + (1LL<<(ist->st->pts_wrap_bits-1))) {
             pkt->dts -= 1ULL<<ist->st->pts_wrap_bits;
-            ist->wrap_correction_done = 0;
+            ds->wrap_correction_done = 0;
         }
         if(stime2 > stime && pkt->pts != AV_NOPTS_VALUE && pkt->pts > stime + (1LL<<(ist->st->pts_wrap_bits-1))) {
             pkt->pts -= 1ULL<<ist->st->pts_wrap_bits;
-            ist->wrap_correction_done = 0;
+            ds->wrap_correction_done = 0;
         }
     }
 

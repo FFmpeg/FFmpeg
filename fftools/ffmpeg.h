@@ -373,8 +373,6 @@ typedef struct InputStream {
     AVRational    last_frame_tb;
     int           last_frame_sample_rate;
 
-    int           wrap_correction_done;
-
     int64_t filter_in_rescale_delta_last;
 
     // when forcing constant input framerate through -r,
