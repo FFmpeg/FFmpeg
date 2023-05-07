@@ -1405,7 +1405,8 @@ int ifile_open(const OptionsContext *o, const char *filename)
     /* open the input file with generic avformat function */
     err = avformat_open_input(&ic, filename, file_iformat, &o->g->format_opts);
     if (err < 0) {
-        print_error(filename, err);
+        av_log(d, AV_LOG_ERROR,
+               "Error opening input: %s\n", av_err2str(err));
         if (err == AVERROR_PROTOCOL_NOT_FOUND)
             av_log(d, AV_LOG_ERROR, "Did you mean file:%s?\n", filename);
         exit_program(1);

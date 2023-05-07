@@ -1756,12 +1756,10 @@ static void decode_flush(InputFile *ifile)
 static int process_input(int file_index)
 {
     InputFile *ifile = input_files[file_index];
-    AVFormatContext *is;
     InputStream *ist;
     AVPacket *pkt;
     int ret, i;
 
-    is  = ifile->ctx;
     ret = ifile_get_packet(ifile, &pkt);
 
     if (ret == AVERROR(EAGAIN)) {
@@ -1775,7 +1773,8 @@ static int process_input(int file_index)
     }
     if (ret < 0) {
         if (ret != AVERROR_EOF) {
-            print_error(is->url, ret);
+            av_log(ifile, AV_LOG_ERROR,
+                   "Error retrieving a packet from demuxer: %s\n", av_err2str(ret));
             if (exit_on_error)
                 exit_program(1);
         }

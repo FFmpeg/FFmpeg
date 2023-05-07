@@ -139,7 +139,9 @@ static int write_packet(Muxer *mux, OutputStream *ost, AVPacket *pkt)
 
     ret = av_interleaved_write_frame(s, pkt);
     if (ret < 0) {
-        print_error("av_interleaved_write_frame()", ret);
+        av_log(ost, AV_LOG_ERROR,
+               "Error submitting a packet to the muxer: %s\n",
+               av_err2str(ret));
         goto fail;
     }
 
