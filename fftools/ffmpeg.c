@@ -1493,11 +1493,8 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
     return !eof_reached;
 }
 
-static int transcode_init(void)
+static void print_stream_maps(void)
 {
-    int ret = 0;
-
-    /* dump the stream mapping */
     av_log(NULL, AV_LOG_INFO, "Stream mapping:\n");
     for (InputStream *ist = ist_iter(NULL); ist; ist = ist_iter(ist)) {
         for (int j = 0; j < ist->nb_filters; j++) {
@@ -1570,13 +1567,6 @@ static int transcode_init(void)
             av_log(NULL, AV_LOG_INFO, " (copy)");
         av_log(NULL, AV_LOG_INFO, "\n");
     }
-
-    if (ret)
-        return ret;
-
-    atomic_store(&transcode_init_done, 1);
-
-    return 0;
 }
 
 /**
@@ -1854,9 +1844,9 @@ static int transcode(void)
     InputStream *ist;
     int64_t timer_start;
 
-    ret = transcode_init();
-    if (ret < 0)
-        return ret;
+    print_stream_maps();
+
+    atomic_store(&transcode_init_done, 1);
 
     if (stdin_interaction) {
         av_log(NULL, AV_LOG_INFO, "Press [q] to stop, [?] for help\n");
