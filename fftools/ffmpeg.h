@@ -367,7 +367,6 @@ typedef struct InputStream {
     /* predicted dts of the next packet read for this stream or (when there are
      * several frames in a packet) of the next frame in current packet (in AV_TIME_BASE units) */
     int64_t       next_dts;
-    int64_t first_dts;       ///< dts of the first packet read for this stream (in AV_TIME_BASE units)
     int64_t       dts;       ///< dts of the last packet read for this stream (in AV_TIME_BASE units)
 
     // pts/estimated duration of the last decoded frame
@@ -388,7 +387,6 @@ typedef struct InputStream {
 
     int64_t nb_samples; /* number of samples in the last decoded audio frame before looping */
 
-    int saw_first_ts;
     AVDictionary *decoder_opts;
     AVRational framerate;               /* framerate forced with -r */
     int top_field_first;

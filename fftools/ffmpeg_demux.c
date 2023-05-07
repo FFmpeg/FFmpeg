@@ -60,6 +60,10 @@ typedef struct DemuxStream {
 
     double ts_scale;
 
+    int saw_first_ts;
+    ///< dts of the first packet read for this stream (in AV_TIME_BASE units)
+    int64_t first_dts;
+
     int64_t min_pts; /* pts with the smallest value in a current stream */
     int64_t max_pts; /* pts with the higher value in a current stream */
 
@@ -274,18 +278,19 @@ static void ts_discontinuity_process(InputFile *ifile, InputStream *ist,
         ts_discontinuity_detect(ifile, ist, pkt);
 }
 
-static int ist_dts_update(InputStream *ist, AVPacket *pkt)
+static int ist_dts_update(DemuxStream *ds, AVPacket *pkt)
 {
+    InputStream *ist = &ds->ist;
     const AVCodecParameters *par = ist->par;
 
-    if (!ist->saw_first_ts) {
-        ist->first_dts =
+    if (!ds->saw_first_ts) {
+        ds->first_dts =
         ist->dts = ist->st->avg_frame_rate.num ? - ist->par->video_delay * AV_TIME_BASE / av_q2d(ist->st->avg_frame_rate) : 0;
         if (pkt->pts != AV_NOPTS_VALUE) {
-            ist->first_dts =
+            ds->first_dts =
             ist->dts += av_rescale_q(pkt->pts, pkt->time_base, AV_TIME_BASE_Q);
         }
-        ist->saw_first_ts = 1;
+        ds->saw_first_ts = 1;
     }
 
     if (ist->next_dts == AV_NOPTS_VALUE)
@@ -411,7 +416,7 @@ static int ts_fixup(Demuxer *d, AVPacket *pkt)
     ts_discontinuity_process(ifile, ist, pkt);
 
     // update estimated/predicted dts
-    ret = ist_dts_update(ist, pkt);
+    ret = ist_dts_update(ds, pkt);
     if (ret < 0)
         return ret;
 
@@ -494,8 +499,9 @@ static void readrate_sleep(Demuxer *d)
     int64_t burst_until = AV_TIME_BASE * d->readrate_initial_burst;
     for (int i = 0; i < f->nb_streams; i++) {
         InputStream *ist = f->streams[i];
+        DemuxStream  *ds = ds_from_ist(ist);
         int64_t stream_ts_offset, pts, now;
-        stream_ts_offset = FFMAX(ist->first_dts != AV_NOPTS_VALUE ? ist->first_dts : 0, file_start);
+        stream_ts_offset = FFMAX(ds->first_dts != AV_NOPTS_VALUE ? ds->first_dts : 0, file_start);
         pts = av_rescale(ist->dts, 1000000, AV_TIME_BASE);
         now = (av_gettime_relative() - ist->start) * f->readrate + stream_ts_offset;
         if (pts - burst_until > now)
@@ -976,7 +982,7 @@ static void add_input_streams(const OptionsContext *o, Demuxer *d)
         ist->discard = 1;
         st->discard  = AVDISCARD_ALL;
         ist->nb_samples = 0;
-        ist->first_dts = AV_NOPTS_VALUE;
+        ds->first_dts   = AV_NOPTS_VALUE;
         ist->next_dts  = AV_NOPTS_VALUE;
 
         ds->min_pts = INT64_MAX;
