@@ -991,9 +991,8 @@ This input device reads data from the open output pads of a libavfilter
 filtergraph.
 
 For each filtergraph open output, the input device will create a
-corresponding stream which is mapped to the generated output. Currently
-only video data is supported. The filtergraph is specified through the
-option @option{graph}.
+corresponding stream which is mapped to the generated output.
+The filtergraph is specified through the option @option{graph}.
 
 @subsection Options
 
