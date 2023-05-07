@@ -1498,22 +1498,6 @@ static int transcode_init(void)
 {
     int ret = 0;
 
-    /* discard unused programs */
-    for (int i = 0; i < nb_input_files; i++) {
-        InputFile *ifile = input_files[i];
-        for (int j = 0; j < ifile->ctx->nb_programs; j++) {
-            AVProgram *p = ifile->ctx->programs[j];
-            int discard  = AVDISCARD_ALL;
-
-            for (int k = 0; k < p->nb_stream_indexes; k++)
-                if (!ifile->streams[p->stream_index[k]]->discard) {
-                    discard = AVDISCARD_DEFAULT;
-                    break;
-                }
-            p->discard = discard;
-        }
-    }
-
     /* dump the stream mapping */
     av_log(NULL, AV_LOG_INFO, "Stream mapping:\n");
     for (InputStream *ist = ist_iter(NULL); ist; ist = ist_iter(ist)) {
