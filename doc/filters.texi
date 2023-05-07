@@ -9543,7 +9543,7 @@ Set the red highlight spot. Allowed range is from -1.0 to 1.0.
 Default value is 0.
 
 @item bh
-Set the red highlight spot. Allowed range is from -1.0 to 1.0.
+Set the blue highlight spot. Allowed range is from -1.0 to 1.0.
 Default value is 0.
 
 @item saturation
