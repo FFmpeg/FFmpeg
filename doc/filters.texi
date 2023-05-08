@@ -7951,6 +7951,9 @@ Specify a value used to seed the PRNG.
 
 @item nb_samples, n
 Set the number of samples per each output frame, default is 1024.
+
+@item density
+Set the density (0.0 - 1.0) for the velvet noise generator, default is 0.05.
 @end table
 
 @subsection Examples
