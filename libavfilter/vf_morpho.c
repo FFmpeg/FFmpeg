@@ -95,6 +95,8 @@ typedef struct chord_set {
     unsigned nb_elements;
 } chord_set;
 
+#define MAX_THREADS 64
+
 typedef struct MorphoContext {
     const AVClass *class;
     FFFrameSync fs;
@@ -102,7 +104,7 @@ typedef struct MorphoContext {
     chord_set SE[4];
     IPlane SEimg[4];
     IPlane g[4], f[4], h[4];
-    LUT Ty[2][4];
+    LUT Ty[MAX_THREADS][2][4];
 
     int mode;
     int planes;
@@ -460,14 +462,14 @@ static void line_erode(IPlane *g, LUT *Ty, chord_set *SE, int y, int tid)
     }
 }
 
-static int dilate(IPlane *g, IPlane *f, chord_set *SE, LUT *Ty)
+static int dilate(IPlane *g, IPlane *f, chord_set *SE, LUT *Ty, int y0, int y1)
 {
-    int ret = compute_max_lut(Ty, f, SE, 0, 1);
+    int ret = compute_max_lut(Ty, f, SE, y0, 1);
     if (ret < 0)
         return ret;
 
-    line_dilate(g, Ty, SE, 0, 0);
-    for (int y = 1; y < f->h; y++) {
+    line_dilate(g, Ty, SE, y0, 0);
+    for (int y = y0 + 1; y < y1; y++) {
         update_max_lut(f, Ty, SE, y, 0, 1);
         line_dilate(g, Ty, SE, y, 0);
     }
@@ -475,14 +477,14 @@ static int dilate(IPlane *g, IPlane *f, chord_set *SE, LUT *Ty)
     return 0;
 }
 
-static int erode(IPlane *g, IPlane *f, chord_set *SE, LUT *Ty)
+static int erode(IPlane *g, IPlane *f, chord_set *SE, LUT *Ty, int y0, int y1)
 {
-    int ret = compute_min_lut(Ty, f, SE, 0, 1);
+    int ret = compute_min_lut(Ty, f, SE, y0, 1);
     if (ret < 0)
         return ret;
 
-    line_erode(g, Ty, SE, 0, 0);
-    for (int y = 1; y < f->h; y++) {
+    line_erode(g, Ty, SE, y0, 0);
+    for (int y = y0 + 1; y < y1; y++) {
         update_min_lut(f, Ty, SE, y, 0, 1);
         line_erode(g, Ty, SE, y, 0);
     }
@@ -490,15 +492,15 @@ static int erode(IPlane *g, IPlane *f, chord_set *SE, LUT *Ty)
     return 0;
 }
 
-static void difference(IPlane *g, IPlane *f)
+static void difference(IPlane *g, IPlane *f, int y0, int y1)
 {
-    for (int y = 0; y < f->h; y++)
+    for (int y = y0; y < y1; y++)
         f->diff_in_place(g->img[y], f->img[y], f->w);
 }
 
-static void difference2(IPlane *g, IPlane *f)
+static void difference2(IPlane *g, IPlane *f, int y0, int y1)
 {
-    for (int y = 0; y < f->h; y++)
+    for (int y = y0; y < y1; y++)
         f->diff_rin_place(g->img[y], f->img[y], f->w);
 }
 
@@ -785,12 +787,133 @@ static int activate(AVFilterContext *ctx)
     return ff_framesync_activate(&s->fs);
 }
 
+typedef struct ThreadData {
+    AVFrame *in, *out;
+} ThreadData;
+
+static int morpho_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    MorphoContext *s = ctx->priv;
+    ThreadData *td = arg;
+    AVFrame *out = td->out;
+    AVFrame *in = td->in;
+    int ret;
+
+    for (int p = 0; p < s->nb_planes; p++) {
+        const int width = s->planewidth[p];
+        const int height = s->planeheight[p];
+        const int y0 = (height *  jobnr   ) / nb_jobs;
+        const int y1 = (height * (jobnr+1)) / nb_jobs;
+        const int depth = s->depth;
+
+        if (ctx->is_disabled || !(s->planes & (1 << p))) {
+copy:
+            av_image_copy_plane(out->data[p] + y0 * out->linesize[p],
+                out->linesize[p],
+                in->data[p] + y0 * in->linesize[p],
+                in->linesize[p],
+                width * ((depth + 7) / 8),
+                y1 - y0);
+            continue;
+        }
+
+        if (s->SE[p].minX == INT16_MAX ||
+            s->SE[p].minY == INT16_MAX ||
+            s->SE[p].maxX == INT16_MIN ||
+            s->SE[p].maxY == INT16_MIN)
+            goto copy;
+
+        switch (s->mode) {
+        case ERODE:
+            ret = erode(&s->g[p], &s->f[p], &s->SE[p], &s->Ty[jobnr][0][p], y0, y1);
+            break;
+        case DILATE:
+        case GRADIENT:
+            ret = dilate(&s->g[p], &s->f[p], &s->SE[p], &s->Ty[jobnr][0][p], y0, y1);
+            break;
+        case OPEN:
+        case TOPHAT:
+            ret = erode(&s->h[p], &s->f[p], &s->SE[p], &s->Ty[jobnr][0][p], y0, y1);
+            break;
+        case CLOSE:
+        case BLACKHAT:
+            ret = dilate(&s->h[p], &s->f[p], &s->SE[p], &s->Ty[jobnr][0][p], y0, y1);
+            break;
+        default:
+            av_assert0(0);
+        }
+
+        if (ret < 0)
+            return ret;
+    }
+
+    return 0;
+}
+
+static int morpho_sliceX(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    MorphoContext *s = ctx->priv;
+    int ret;
+
+    for (int p = 0; p < s->nb_planes; p++) {
+        const int height = s->planeheight[p];
+        const int y0 = (height *  jobnr   ) / nb_jobs;
+        const int y1 = (height * (jobnr+1)) / nb_jobs;
+
+        if (ctx->is_disabled || !(s->planes & (1 << p))) {
+copy:
+            continue;
+        }
+
+        if (s->SE[p].minX == INT16_MAX ||
+            s->SE[p].minY == INT16_MAX ||
+            s->SE[p].maxX == INT16_MIN ||
+            s->SE[p].maxY == INT16_MIN)
+            goto copy;
+
+        switch (s->mode) {
+        case OPEN:
+            ret = dilate(&s->g[p], &s->h[p], &s->SE[p], &s->Ty[jobnr][1][p], y0, y1);
+            break;
+        case CLOSE:
+            ret = erode(&s->g[p], &s->h[p], &s->SE[p], &s->Ty[jobnr][1][p], y0, y1);
+            break;
+        case GRADIENT:
+            ret = erode(&s->h[p], &s->f[p], &s->SE[p], &s->Ty[jobnr][1][p], y0, y1);
+            if (ret < 0)
+                break;
+            difference(&s->g[p], &s->h[p], y0, y1);
+            break;
+        case TOPHAT:
+            ret = dilate(&s->g[p], &s->h[p], &s->SE[p], &s->Ty[jobnr][1][p], y0, y1);
+            if (ret < 0)
+                break;
+            difference2(&s->g[p], &s->f[p], y0, y1);
+            break;
+        case BLACKHAT:
+            ret = erode(&s->g[p], &s->h[p], &s->SE[p], &s->Ty[jobnr][1][p], y0, y1);
+            if (ret < 0)
+                break;
+            difference(&s->g[p], &s->f[p], y0, y1);
+            break;
+        default:
+            av_assert0(0);
+        }
+
+        if (ret < 0)
+            return ret;
+    }
+
+    return 0;
+}
+
 static int do_morpho(FFFrameSync *fs)
 {
     AVFilterContext *ctx = fs->parent;
     AVFilterLink *outlink = ctx->outputs[0];
     MorphoContext *s = ctx->priv;
     AVFrame *in = NULL, *structurepic = NULL;
+    ThreadData td;
     AVFrame *out;
     int ret;
 
@@ -812,6 +935,12 @@ static int do_morpho(FFFrameSync *fs)
         const int ssrc_linesize = structurepic->linesize[p];
         const int swidth = s->splanewidth[p];
         const int sheight = s->splaneheight[p];
+        const uint8_t *src = in->data[p];
+        int src_linesize = in->linesize[p];
+        uint8_t *dst = out->data[p];
+        int dst_linesize = out->linesize[p];
+        const int width = s->planewidth[p];
+        const int height = s->planeheight[p];
         const int depth = s->depth;
         int type_size = s->type_size;
 
@@ -826,34 +955,6 @@ static int do_morpho(FFFrameSync *fs)
                 goto fail;
             s->got_structure[p] = 1;
         }
-    }
-
-    for (int p = 0; p < s->nb_planes; p++) {
-        const uint8_t *src = in->data[p];
-        int src_linesize = in->linesize[p];
-        uint8_t *dst = out->data[p];
-        int dst_linesize = out->linesize[p];
-        const int width = s->planewidth[p];
-        const int height = s->planeheight[p];
-        const int depth = s->depth;
-        int type_size = s->type_size;
-
-        if (ctx->is_disabled || !(s->planes & (1 << p))) {
-copy:
-            av_image_copy_plane(out->data[p] + 0 * out->linesize[p],
-                out->linesize[p],
-                in->data[p] + 0 * in->linesize[p],
-                in->linesize[p],
-                width * ((depth + 7) / 8),
-                height);
-            continue;
-        }
-
-        if (s->SE[p].minX == INT16_MAX ||
-            s->SE[p].minY == INT16_MAX ||
-            s->SE[p].maxX == INT16_MIN ||
-            s->SE[p].maxY == INT16_MIN)
-            goto copy;
 
         ret = read_iplane(&s->f[p], src, src_linesize, width, height, 1, type_size, depth);
         if (ret < 0)
@@ -864,72 +965,27 @@ copy:
             goto fail;
 
         switch (s->mode) {
-        case ERODE:
-            ret = erode(&s->g[p], &s->f[p], &s->SE[p], &s->Ty[0][p]);
-            break;
-        case DILATE:
-            ret = dilate(&s->g[p], &s->f[p], &s->SE[p], &s->Ty[0][p]);
-            break;
         case OPEN:
-            ret = read_iplane(&s->h[p], s->temp->data[p], s->temp->linesize[p], width, height, 1, type_size, depth);
-            if (ret < 0)
-                break;
-            ret = erode(&s->h[p], &s->f[p], &s->SE[p], &s->Ty[0][p]);
-            if (ret < 0)
-                break;
-            ret = dilate(&s->g[p], &s->h[p], &s->SE[p], &s->Ty[1][p]);
-            break;
         case CLOSE:
-            ret = read_iplane(&s->h[p], s->temp->data[p], s->temp->linesize[p], width, height, 1, type_size, depth);
-            if (ret < 0)
-                break;
-            ret = dilate(&s->h[p], &s->f[p], &s->SE[p], &s->Ty[0][p]);
-            if (ret < 0)
-                break;
-            ret = erode(&s->g[p], &s->h[p], &s->SE[p], &s->Ty[1][p]);
-            break;
         case GRADIENT:
-            ret = read_iplane(&s->h[p], s->temp->data[p], s->temp->linesize[p], width, height, 1, type_size, depth);
-            if (ret < 0)
-                break;
-            ret = dilate(&s->g[p], &s->f[p], &s->SE[p], &s->Ty[0][p]);
-            if (ret < 0)
-                break;
-            ret = erode(&s->h[p], &s->f[p], &s->SE[p], &s->Ty[1][p]);
-            if (ret < 0)
-                break;
-            difference(&s->g[p], &s->h[p]);
-            break;
         case TOPHAT:
-            ret = read_iplane(&s->h[p], s->temp->data[p], s->temp->linesize[p], width, height, 1, type_size, depth);
-            if (ret < 0)
-                break;
-            ret = erode(&s->h[p], &s->f[p], &s->SE[p], &s->Ty[0][p]);
-            if (ret < 0)
-                break;
-            ret = dilate(&s->g[p], &s->h[p], &s->SE[p], &s->Ty[1][p]);
-            if (ret < 0)
-                break;
-            difference2(&s->g[p], &s->f[p]);
-            break;
         case BLACKHAT:
             ret = read_iplane(&s->h[p], s->temp->data[p], s->temp->linesize[p], width, height, 1, type_size, depth);
-            if (ret < 0)
-                break;
-            ret = dilate(&s->h[p], &s->f[p], &s->SE[p], &s->Ty[0][p]);
-            if (ret < 0)
-                break;
-            ret = erode(&s->g[p], &s->h[p], &s->SE[p], &s->Ty[1][p]);
-            if (ret < 0)
-                break;
-            difference(&s->g[p], &s->f[p]);
             break;
-        default:
-            av_assert0(0);
         }
 
         if (ret < 0)
             goto fail;
+    }
+
+    td.in = in; td.out = out;
+    ret = ff_filter_execute(ctx, morpho_slice, &td, NULL,
+                            FFMIN3(s->planeheight[1], s->planeheight[2],
+                                   FFMIN(MAX_THREADS, ff_filter_get_nb_threads(ctx))));
+    if (ret == 0 && (s->mode != ERODE && s->mode != DILATE)) {
+        ff_filter_execute(ctx, morpho_sliceX, NULL, NULL,
+                          FFMIN3(s->planeheight[1], s->planeheight[2],
+                                 FFMIN(MAX_THREADS, ff_filter_get_nb_threads(ctx))));
     }
 
     av_frame_free(&in);
@@ -984,8 +1040,10 @@ static av_cold void uninit(AVFilterContext *ctx)
         free_iplane(&s->g[p]);
         free_iplane(&s->h[p]);
         free_chord_set(&s->SE[p]);
-        free_lut(&s->Ty[0][p]);
-        free_lut(&s->Ty[1][p]);
+        for (int n = 0; n < MAX_THREADS; n++) {
+            free_lut(&s->Ty[n][0][p]);
+            free_lut(&s->Ty[n][1][p]);
+        }
     }
 
     ff_framesync_uninit(&s->fs);
@@ -1027,6 +1085,7 @@ const AVFilter ff_vf_morpho = {
     FILTER_INPUTS(morpho_inputs),
     FILTER_OUTPUTS(morpho_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
+    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                       AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };
