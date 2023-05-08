@@ -808,29 +808,12 @@ static int do_morpho(FFFrameSync *fs)
     av_frame_copy_props(out, in);
 
     for (int p = 0; p < s->nb_planes; p++) {
-        const uint8_t *src = in->data[p];
-        int src_linesize = in->linesize[p];
         const uint8_t *ssrc = structurepic->data[p];
         const int ssrc_linesize = structurepic->linesize[p];
-        uint8_t *dst = out->data[p];
-        int dst_linesize = out->linesize[p];
         const int swidth = s->splanewidth[p];
         const int sheight = s->splaneheight[p];
-        const int width = s->planewidth[p];
-        const int height = s->planeheight[p];
         const int depth = s->depth;
         int type_size = s->type_size;
-
-        if (ctx->is_disabled || !(s->planes & (1 << p))) {
-copy:
-            av_image_copy_plane(out->data[p] + 0 * out->linesize[p],
-                out->linesize[p],
-                in->data[p] + 0 * in->linesize[p],
-                in->linesize[p],
-                width * ((s->depth + 7) / 8),
-                height);
-            continue;
-        }
 
         if (!s->got_structure[p] || s->structures) {
             free_chord_set(&s->SE[p]);
@@ -842,6 +825,28 @@ copy:
             if (ret < 0)
                 goto fail;
             s->got_structure[p] = 1;
+        }
+    }
+
+    for (int p = 0; p < s->nb_planes; p++) {
+        const uint8_t *src = in->data[p];
+        int src_linesize = in->linesize[p];
+        uint8_t *dst = out->data[p];
+        int dst_linesize = out->linesize[p];
+        const int width = s->planewidth[p];
+        const int height = s->planeheight[p];
+        const int depth = s->depth;
+        int type_size = s->type_size;
+
+        if (ctx->is_disabled || !(s->planes & (1 << p))) {
+copy:
+            av_image_copy_plane(out->data[p] + 0 * out->linesize[p],
+                out->linesize[p],
+                in->data[p] + 0 * in->linesize[p],
+                in->linesize[p],
+                width * ((depth + 7) / 8),
+                height);
+            continue;
         }
 
         if (s->SE[p].minX == INT16_MAX ||
