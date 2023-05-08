@@ -318,7 +318,7 @@ static void free_lut(LUT *table)
 }
 
 static int alloc_lut_if_necessary(LUT *Ty, IPlane *f, chord_set *SE,
-                                  int y, int num, enum MorphModes mode)
+                                  int num, enum MorphModes mode)
 {
     if (!Ty->arr || Ty->I != SE->Lnum ||
         Ty->X != f->w ||
@@ -387,7 +387,7 @@ static void update_min_lut(IPlane *f, LUT *Ty, chord_set *SE, int y, int tid, in
 
 static int compute_min_lut(LUT *Ty, IPlane *f, chord_set *SE, int y, int num)
 {
-    int ret = alloc_lut_if_necessary(Ty, f, SE, y, num, ERODE);
+    int ret = alloc_lut_if_necessary(Ty, f, SE, num, ERODE);
     if (ret < 0)
         return ret;
 
@@ -428,7 +428,7 @@ static void update_max_lut(IPlane *f, LUT *Ty, chord_set *SE, int y, int tid, in
 
 static int compute_max_lut(LUT *Ty, IPlane *f, chord_set *SE, int y, int num)
 {
-    int ret = alloc_lut_if_necessary(Ty, f, SE, y, num, DILATE);
+    int ret = alloc_lut_if_necessary(Ty, f, SE, num, DILATE);
     if (ret < 0)
         return ret;
 
