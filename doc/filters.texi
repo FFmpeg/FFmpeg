@@ -17656,6 +17656,13 @@ number of previous sequentially dropped frames.
 
 Default value is 0.
 
+@item keep
+Set the maximum number of consecutive similar frames to ignore before to start dropping them.
+If the value is 0, the frame is dropped disregarding the
+number of previous sequentially similar frames.
+
+Default value is 0.
+
 @item hi
 @item lo
 @item frac
