@@ -499,7 +499,9 @@ const FFCodec ff_wavarc_decoder = {
     FF_CODEC_DECODE_CB(wavarc_decode),
     .close            = wavarc_close,
     .p.capabilities   = AV_CODEC_CAP_DR1 |
+#if FF_API_SUBFRAMES
                         AV_CODEC_CAP_SUBFRAMES |
+#endif
                         AV_CODEC_CAP_DELAY,
     .p.sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_U8P,
                                                         AV_SAMPLE_FMT_S16P,

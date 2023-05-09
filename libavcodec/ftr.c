@@ -203,6 +203,10 @@ const FFCodec ff_ftr_decoder = {
     .close          = ftr_close,
     .flush          = ftr_flush,
     .priv_data_size = sizeof(FTRContext),
-    .p.capabilities = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DR1,
+    .p.capabilities =
+#if FF_API_SUBFRAMES
+                      AV_CODEC_CAP_SUBFRAMES |
+#endif
+                      AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };

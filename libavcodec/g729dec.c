@@ -760,7 +760,11 @@ const FFCodec ff_g729_decoder = {
     .init           = decoder_init,
     FF_CODEC_DECODE_CB(decode_frame),
     .close          = decode_close,
-    .p.capabilities = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DR1,
+    .p.capabilities =
+#if FF_API_SUBFRAMES
+                      AV_CODEC_CAP_SUBFRAMES |
+#endif
+                      AV_CODEC_CAP_DR1,
 };
 
 const FFCodec ff_acelp_kelvin_decoder = {
@@ -772,5 +776,9 @@ const FFCodec ff_acelp_kelvin_decoder = {
     .init           = decoder_init,
     FF_CODEC_DECODE_CB(decode_frame),
     .close          = decode_close,
-    .p.capabilities = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DR1,
+    .p.capabilities =
+#if FF_API_SUBFRAMES
+                      AV_CODEC_CAP_SUBFRAMES |
+#endif
+                      AV_CODEC_CAP_DR1,
 };

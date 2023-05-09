@@ -80,6 +80,7 @@
  */
 #define AV_CODEC_CAP_SMALL_LAST_FRAME    (1 <<  6)
 
+#if FF_API_SUBFRAMES
 /**
  * Codec can output multiple frames per AVPacket
  * Normally demuxers return one frame at a time, demuxers which do not do
@@ -92,6 +93,8 @@
  * as a last resort.
  */
 #define AV_CODEC_CAP_SUBFRAMES           (1 <<  8)
+#endif
+
 /**
  * Codec is experimental and is thus avoided in favor of non experimental
  * encoders

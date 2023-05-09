@@ -428,8 +428,10 @@ const FFCodec ff_bonk_decoder = {
     FF_CODEC_DECODE_CB(bonk_decode),
     .close            = bonk_close,
     .p.capabilities   = AV_CODEC_CAP_DELAY |
-                        AV_CODEC_CAP_DR1 |
-                        AV_CODEC_CAP_SUBFRAMES,
+#if FF_API_SUBFRAMES
+                        AV_CODEC_CAP_SUBFRAMES |
+#endif
+                        AV_CODEC_CAP_DR1,
     .caps_internal    = FF_CODEC_CAP_INIT_CLEANUP,
     .p.sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
                                                         AV_SAMPLE_FMT_NONE },
