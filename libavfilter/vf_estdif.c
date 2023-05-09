@@ -346,7 +346,7 @@ static int deinterlace_slice(AVFilterContext *ctx, void *arg,
     const int redge = s->redge;
     const int depth = s->depth;
     const int interlaced = !!(in->flags & AV_FRAME_FLAG_INTERLACED);
-    const int tff = (s->field == (s->parity == -1 ? interlaced ? (in->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST) : 1 :
+    const int tff = (s->field == (s->parity == -1 ? interlaced ? !!(in->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST) : 1 :
                                   s->parity ^ 1));
 
     for (int plane = 0; plane < s->nb_planes; plane++) {
