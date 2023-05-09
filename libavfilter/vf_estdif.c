@@ -35,9 +35,9 @@ typedef struct ESTDIFContext {
     int deint;            ///< which frames to deinterlace
     int rslope;           ///< best edge slope search radius
     int redge;            ///< best edge match search radius
-    float ecost;          ///< edge cost for edge matching
-    float mcost;          ///< middle cost for edge matching
-    float dcost;          ///< distance cost for edge matching
+    int ecost;            ///< edge cost for edge matching
+    int mcost;            ///< middle cost for edge matching
+    int dcost;            ///< distance cost for edge matching
     int interp;           ///< type of interpolation
     int linesize[4];      ///< bytes of pixel data per line for each plane
     int planewidth[4];    ///< width of each plane
@@ -92,11 +92,11 @@ static const AVOption estdif_options[] = {
     { "deint",  "specify which frames to deinterlace", OFFSET(deint), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS, "deint" },
     CONST("all",        "deinterlace all frames",                       0, "deint"),
     CONST("interlaced", "only deinterlace frames marked as interlaced", 1, "deint"),
-    { "rslope", "specify the search radius for edge slope tracing", OFFSET(rslope), AV_OPT_TYPE_INT, {.i64=1}, 1, MAX_R, FLAGS, },
-    { "redge",  "specify the search radius for best edge matching", OFFSET(redge),  AV_OPT_TYPE_INT, {.i64=2}, 0, MAX_R, FLAGS, },
-    { "ecost",  "specify the edge cost for edge matching",          OFFSET(ecost),  AV_OPT_TYPE_FLOAT,{.dbl=1},0,9,FLAGS, },
-    { "mcost",  "specify the middle cost for edge matching",        OFFSET(mcost),  AV_OPT_TYPE_FLOAT,{.dbl=0.5}, 0, 1,  FLAGS, },
-    { "dcost",  "specify the distance cost for edge matching",      OFFSET(dcost),  AV_OPT_TYPE_FLOAT,{.dbl=0.5}, 0, 1,  FLAGS, },
+    { "rslope", "specify the search radius for edge slope tracing", OFFSET(rslope), AV_OPT_TYPE_INT, {.i64=1}, 1, MAX_R, FLAGS },
+    { "redge",  "specify the search radius for best edge matching", OFFSET(redge),  AV_OPT_TYPE_INT, {.i64=2}, 0, MAX_R, FLAGS },
+    { "ecost",  "specify the edge cost for edge matching",          OFFSET(ecost),  AV_OPT_TYPE_INT, {.i64=2}, 0, 50, FLAGS },
+    { "mcost",  "specify the middle cost for edge matching",        OFFSET(mcost),  AV_OPT_TYPE_INT, {.i64=1}, 0, 50, FLAGS },
+    { "dcost",  "specify the distance cost for edge matching",      OFFSET(dcost),  AV_OPT_TYPE_INT, {.i64=1}, 0, 50, FLAGS },
     { "interp", "specify the type of interpolation",                OFFSET(interp), AV_OPT_TYPE_INT, {.i64=1}, 0, 2,     FLAGS, "interp" },
     CONST("2p", "two-point interpolation",  0, "interp"),
     CONST("4p", "four-point interpolation", 1, "interp"),
@@ -265,10 +265,10 @@ static void interpolate_##ss(ESTDIFContext *s, uint8_t *ddst,                  \
     const type *const next2_line = (const type *const)nnext2_line;             \
     const type *const next3_line = (const type *const)nnext3_line;             \
     const int interp = s->interp;                                              \
-    const int ecost = s->ecost * 32.f;                                         \
+    const int ecost = s->ecost;                                                \
     const int dcost = s->dcost * s->max;                                       \
     const int end = width - 1;                                                 \
-    const atype mcost = s->mcost * s->redge * 4.f;                             \
+    const int mcost = s->mcost;                                                \
     atype sd[S], sD[S], di = 0;                                                \
     atype dmin = amax;                                                         \
     int k = *K;                                                                \
