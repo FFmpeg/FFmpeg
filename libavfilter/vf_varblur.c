@@ -39,7 +39,8 @@ typedef struct VarBlurContext {
     int planewidth[4];
     int planeheight[4];
 
-    AVFrame *sat;
+    uint8_t *sat[4];
+    int sat_linesize[4];
     int nb_planes;
 
     void (*compute_sat)(const uint8_t *ssrc,
@@ -90,6 +91,7 @@ static const enum AVPixelFormat pix_fmts[] = {
     AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
     AV_PIX_FMT_GBRAP, AV_PIX_FMT_GBRAP10, AV_PIX_FMT_GBRAP12, AV_PIX_FMT_GBRAP16,
     AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY14, AV_PIX_FMT_GRAY16,
+    AV_PIX_FMT_GBRPF32, AV_PIX_FMT_GBRAPF32,
     AV_PIX_FMT_NONE
 };
 
@@ -104,7 +106,7 @@ static void compute_sat##depth(const uint8_t *ssrc,  \
     stype *dst = (stype *)dstp;                      \
                                                      \
     linesize /= (depth / 8);                         \
-    dst_linesize /= (depth / 2);                     \
+    dst_linesize /= sizeof(stype);                   \
     dst += dst_linesize;                             \
                                                      \
     for (int y = 0; y < h; y++) {                    \
@@ -122,6 +124,7 @@ static void compute_sat##depth(const uint8_t *ssrc,  \
 
 COMPUTE_SAT(uint8_t,  uint32_t, 8)
 COMPUTE_SAT(uint16_t, uint64_t, 16)
+COMPUTE_SAT(float,    double,   32)
 
 typedef struct ThreadData {
     AVFrame *in, *out, *radius;
@@ -144,12 +147,12 @@ static int blur_plane##bits(AVFilterContext *ctx,              \
                             int slice_start, int slice_end)    \
 {                                                              \
     VarBlurContext *s = ctx->priv;                             \
-    const int ddepth = s->depth;                               \
+    const int ddepth = (bits == 32) ? 1 : s->depth;            \
     const int dst_linesize = ddst_linesize / (bits / 8);       \
-    const int ptr_linesize = pptr_linesize / (bits / 2);       \
+    const int ptr_linesize = pptr_linesize / sizeof(stype);    \
     const int rptr_linesize = rrptr_linesize / (bits / 8);     \
-    const type *rptr = (const type *)rrptr + slice_start * rptr_linesize; \
-    type *dst = (type *)ddst + slice_start * dst_linesize;     \
+    const type *rptr = ((const type *)rrptr) + slice_start * rptr_linesize; \
+    type *dst = ((type *)ddst) + slice_start * dst_linesize;   \
     const stype *ptr = (stype *)pptr;                          \
     const float minr = 2.f * s->min_radius + 1.f;              \
     const float maxr = 2.f * s->max_radius + 1.f;              \
@@ -182,7 +185,10 @@ static int blur_plane##bits(AVFilterContext *ctx,              \
             stype p0 = (br + tl - bl - tr) / div;              \
             stype n0 = (nbr + ntl - nbl - ntr) / ndiv;         \
                                                                \
-            dst[x] = av_clip_uintp2_c(lrintf(                  \
+            if (bits == 32)                                    \
+                dst[x] = lerpf(p0, n0, factor);                \
+            else                                               \
+                dst[x] = av_clip_uintp2_c(lrintf(              \
                                       lerpf(p0, n0, factor)),  \
                                       ddepth);                 \
         }                                                      \
@@ -196,6 +202,7 @@ static int blur_plane##bits(AVFilterContext *ctx,              \
 
 BLUR_PLANE(uint8_t,  uint32_t, 8)
 BLUR_PLANE(uint16_t, uint64_t, 16)
+BLUR_PLANE(float,    double,   32)
 
 static int blur_planes(AVFilterContext *ctx, void *arg,
                        int jobnr, int nb_jobs)
@@ -215,8 +222,8 @@ static int blur_planes(AVFilterContext *ctx, void *arg,
         const int dst_linesize = out->linesize[plane];
         const uint8_t *rptr = radius->data[plane];
         const int rptr_linesize = radius->linesize[plane];
-        uint8_t *ptr = s->sat->data[plane];
-        const int ptr_linesize = s->sat->linesize[plane];
+        uint8_t *ptr = s->sat[plane];
+        const int ptr_linesize = s->sat_linesize[plane];
         const uint8_t *src = in->data[plane];
         uint8_t *dst = out->data[plane];
 
@@ -263,8 +270,8 @@ static int blur_frame(AVFilterContext *ctx, AVFrame *in, AVFrame *radius)
         const int height = s->planeheight[plane];
         const int width = s->planewidth[plane];
         const int linesize = in->linesize[plane];
-        uint8_t *ptr = s->sat->data[plane];
-        const int ptr_linesize = s->sat->linesize[plane];
+        uint8_t *ptr = s->sat[plane];
+        const int ptr_linesize = s->sat_linesize[plane];
         const uint8_t *src = in->data[plane];
 
         if (!(s->planes & (1 << plane)))
@@ -333,8 +340,8 @@ static int config_output(AVFilterLink *outlink)
     outlink->frame_rate = inlink->frame_rate;
 
     s->depth = desc->comp[0].depth;
-    s->blur_plane = s->depth <= 8 ? blur_plane8 : blur_plane16;
-    s->compute_sat = s->depth <= 8 ? compute_sat8 : compute_sat16;
+    s->blur_plane = s->depth <= 8 ? blur_plane8 : s->depth <= 16 ? blur_plane16 : blur_plane32;
+    s->compute_sat = s->depth <= 8 ? compute_sat8 : s->depth <= 16 ? compute_sat16 : compute_sat32;
 
     s->planewidth[1]  = s->planewidth[2]  = AV_CEIL_RSHIFT(outlink->w, desc->log2_chroma_w);
     s->planewidth[0]  = s->planewidth[3]  = outlink->w;
@@ -343,9 +350,12 @@ static int config_output(AVFilterLink *outlink)
 
     s->nb_planes = av_pix_fmt_count_planes(outlink->format);
 
-    s->sat = ff_get_video_buffer(outlink, (outlink->w + 1) * 4 * ((s->depth + 7) / 8), outlink->h + 1);
-    if (!s->sat)
-        return AVERROR(ENOMEM);
+    for (int p = 0; p < s->nb_planes; p++) {
+        s->sat_linesize[p] = (outlink->w + 1) * (4 + 4 * (s->depth > 8));
+        s->sat[p] = av_calloc(s->sat_linesize[p], outlink->h + 1);
+        if (!s->sat[p])
+            return AVERROR(ENOMEM);
+    }
 
     s->fs.on_event = varblur_frame;
     if ((ret = ff_framesync_init_dualinput(&s->fs, ctx)) < 0)
@@ -362,7 +372,8 @@ static av_cold void uninit(AVFilterContext *ctx)
     VarBlurContext *s = ctx->priv;
 
     ff_framesync_uninit(&s->fs);
-    av_frame_free(&s->sat);
+    for (int p = 0; p < 4; p++)
+        av_freep(&s->sat[p]);
 }
 
 static const AVFilterPad varblur_inputs[] = {
