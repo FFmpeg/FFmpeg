@@ -339,26 +339,8 @@ static const uint8_t vp8_dct_cat1_prob[] = {
 static const uint8_t vp8_dct_cat2_prob[] = {
     165, 145, 0
 };
-static const uint8_t vp8_dct_cat3_prob[] = {
-    173, 148, 140, 0
-};
-static const uint8_t vp8_dct_cat4_prob[] = {
-    176, 155, 140, 135, 0
-};
-static const uint8_t vp8_dct_cat5_prob[] = {
-    180, 157, 141, 134, 130, 0
-};
-static const uint8_t vp8_dct_cat6_prob[] = {
-    254, 254, 243, 230, 196, 177, 153, 140, 133, 130, 129, 0
-};
 
-// only used for cat3 and above; cat 1 and 2 are referenced directly
-const uint8_t *const ff_vp8_dct_cat_prob[] = {
-    vp8_dct_cat3_prob,
-    vp8_dct_cat4_prob,
-    vp8_dct_cat5_prob,
-    vp8_dct_cat6_prob,
-};
+extern const uint8_t *const ff_vp8_dct_cat_prob[];
 
 static const uint8_t vp8_token_default_probs[4][8][3][NUM_DCT_TOKENS - 1] = {
     {

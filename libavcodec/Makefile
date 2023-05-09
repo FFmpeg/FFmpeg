@@ -762,8 +762,8 @@ OBJS-$(CONFIG_VP3_DECODER)             += vp3.o jpegquanttables.o
 OBJS-$(CONFIG_VP5_DECODER)             += vp5.o vp56.o vp56data.o vpx_rac.o
 OBJS-$(CONFIG_VP6_DECODER)             += vp6.o vp56.o vp56data.o \
                                           vp6dsp.o vpx_rac.o
-OBJS-$(CONFIG_VP7_DECODER)             += vp8.o vpx_rac.o
-OBJS-$(CONFIG_VP8_DECODER)             += vp8.o vpx_rac.o
+OBJS-$(CONFIG_VP7_DECODER)             += vp8.o vp8data.o vpx_rac.o
+OBJS-$(CONFIG_VP8_DECODER)             += vp8.o vp8data.o vpx_rac.o
 OBJS-$(CONFIG_VP8_CUVID_DECODER)       += cuviddec.o
 OBJS-$(CONFIG_VP8_MEDIACODEC_DECODER)  += mediacodecdec.o
 OBJS-$(CONFIG_VP8_QSV_DECODER)         += qsvdec.o
