@@ -864,6 +864,13 @@ Enable the encoder to use ABR when set to 1. The @command{lame}
 @option{--abr} sets the target bitrate, while this options only
 tells FFmpeg to use ABR still relies on @option{b} to set bitrate.
 
+@item copyright (@emph{-c})
+Set MPEG audio copyright flag when set to 1. The default value is 0
+(disabled).
+
+@item original (@emph{-o})
+Set MPEG audio original flag when set to 1. The default value is 1
+(enabled).
 @end table
 
 @section libopencore-amrnb
