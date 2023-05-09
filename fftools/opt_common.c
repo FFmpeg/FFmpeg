@@ -291,8 +291,6 @@ static void print_codec(const AVCodec *c)
         printf("delay ");
     if (c->capabilities & AV_CODEC_CAP_SMALL_LAST_FRAME)
         printf("small ");
-    if (c->capabilities & AV_CODEC_CAP_SUBFRAMES)
-        printf("subframes ");
     if (c->capabilities & AV_CODEC_CAP_EXPERIMENTAL)
         printf("exp ");
     if (c->capabilities & AV_CODEC_CAP_CHANNEL_CONF)
