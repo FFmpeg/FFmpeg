@@ -266,11 +266,12 @@ static void interpolate_##ss(ESTDIFContext *s, uint8_t *ddst,                  \
     const type *const next3_line = (const type *const)nnext3_line;             \
     const int interp = s->interp;                                              \
     const int ecost = s->ecost;                                                \
-    const int dcost = s->dcost * s->max;                                       \
-    const int end = width - 1;                                                 \
+    const int dcost = s->dcost;                                                \
     const int mcost = s->mcost;                                                \
     atype sd[S], sD[S], di = 0;                                                \
+    const int end = width - 1;                                                 \
     atype dmin = amax;                                                         \
+    int id = 0, iD = 0;                                                        \
     int k = *K;                                                                \
                                                                                \
     for (int i = -rslope; i <= rslope && abs(k) > rslope; i++) {               \
@@ -288,7 +289,11 @@ static void interpolate_##ss(ESTDIFContext *s, uint8_t *ddst,                  \
         sD[i + rslope] += mcost * cost_##ss(prev_line,  next_line,  end, x, i);\
         sD[i + rslope] += dcost * abs(i);                                      \
                                                                                \
-        dmin = FFMIN(sD[i + rslope], dmin);                                    \
+        if (dmin > sD[i + rslope]) {                                           \
+            dmin = sD[i + rslope];                                             \
+            di = 1;                                                            \
+            iD = i;                                                            \
+        }                                                                      \
     }                                                                          \
                                                                                \
     for (int i = -rslope; i <= rslope; i++) {                                  \
@@ -306,23 +311,14 @@ static void interpolate_##ss(ESTDIFContext *s, uint8_t *ddst,                  \
         sd[i + rslope] += mcost * cost_##ss(prev_line, next_line, end, x, k+i);\
         sd[i + rslope] += dcost * abs(k + i);                                  \
                                                                                \
-        dmin = FFMIN(sd[i + rslope], dmin);                                    \
-    }                                                                          \
-                                                                               \
-    for (int i = -rslope; i <= rslope && abs(k) > rslope; i++) {               \
-        if (dmin == sD[i + rslope]) {                                          \
-            di = 1;                                                            \
-            k = i;                                                             \
-            break;                                                             \
+        if (dmin > sd[i + rslope]) {                                           \
+            dmin = sd[i + rslope];                                             \
+            di = 0;                                                            \
+            id = i;                                                            \
         }                                                                      \
     }                                                                          \
                                                                                \
-    for (int i = -rslope; i <= rslope && !di; i++) {                           \
-        if (dmin == sd[i + rslope]) {                                          \
-            k += i;                                                            \
-            break;                                                             \
-        }                                                                      \
-    }                                                                          \
+    k = di ? iD : k + id;                                                      \
                                                                                \
     dst[x] = s->mid_##ss[interp](prev_line, next_line,                         \
                                  prev2_line, next2_line,                       \
