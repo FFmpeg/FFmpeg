@@ -190,6 +190,7 @@ fate-copy-shortest1: CMD = framemd5 -auto_conversion_filters -fflags +bitexact -
 fate-copy-shortest2: CMD = framemd5 -auto_conversion_filters -fflags +bitexact -flags +bitexact -f lavfi -i "sine=3000:d=10" -i $(TARGET_PATH)/tests/data/audio_shorter_than_video.nut -filter_complex "[0:a:0][1:a:0]amix=inputs=2[audio]" -map 1:v:0 -map "[audio]" -fflags +bitexact -flags +bitexact -c:v copy -c:a ac3_fixed -shortest
 
 fate-streamcopy: $(FATE_STREAMCOPY-yes)
+FATE_SAMPLES_FFMPEG-yes += $(FATE_STREAMCOPY-yes)
 
 FATE_SAMPLES_FFMPEG-$(call TRANSCODE, RAWVIDEO, MATROSKA, MOV_DEMUXER QTRLE_DECODER) += fate-rgb24-mkv
 fate-rgb24-mkv: CMD = transcode "mov" $(TARGET_SAMPLES)/qtrle/aletrek-rle.mov\
@@ -217,8 +218,6 @@ fate-ffmpeg-bsf-remove-e: CMD = transcode "mpeg" $(TARGET_SAMPLES)/mpeg2/matrixb
 
 FATE_SAMPLES_FFMPEG-$(call DEMMUX, APNG, FRAMECRC, SETTS_BSF PIPE_PROTOCOL) += fate-ffmpeg-setts-bsf
 fate-ffmpeg-setts-bsf: CMD = framecrc -i $(TARGET_SAMPLES)/apng/clock.png -c:v copy -bsf:v "setts=duration=if(eq(NEXT_PTS\,NOPTS)\,PREV_OUTDURATION\,(NEXT_PTS-PTS)/2):ts=PTS/2" -fflags +bitexact
-
-FATE_SAMPLES_FFMPEG-yes += $(FATE_STREAMCOPY-yes)
 
 FATE_TIME_BASE-$(call PARSERDEMDEC, MPEGVIDEO, MPEGPS, MPEG2VIDEO, MPEGVIDEO_DEMUXER MXF_MUXER) += fate-time_base
 fate-time_base: CMD = md5 -i $(TARGET_SAMPLES)/mpeg2/dvd_single_frame.vob -an -sn -c:v copy -r 25 -time_base 1001:30000 -fflags +bitexact -f mxf
