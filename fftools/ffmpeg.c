@@ -1029,7 +1029,6 @@ static int decode_video(InputStream *ist, const AVPacket *pkt, int *got_output,
 {
     AVFrame *frame = ist->decoded_frame;
     int ret = 0, err = 0;
-    int64_t best_effort_timestamp;
 
     // With fate-indeo3-2, we're getting 0-sized packets before EOF for some
     // reason. This seems like a semi-critical bug. Don't trigger EOF, and
@@ -1089,19 +1088,15 @@ static int decode_video(InputStream *ist, const AVPacket *pkt, int *got_output,
             goto fail;
     }
 
-    best_effort_timestamp = frame->best_effort_timestamp;
+    frame->pts = frame->best_effort_timestamp;
 
     if (ist->framerate.num)
-        best_effort_timestamp = ist->cfr_next_pts++;
+        frame->pts = ist->cfr_next_pts++;
 
     // no timestamp available - extrapolate from previous frame duration
-    if (best_effort_timestamp == AV_NOPTS_VALUE)
-        best_effort_timestamp = ist->last_frame_pts == AV_NOPTS_VALUE ? 0 :
-                                ist->last_frame_pts + ist->last_frame_duration_est;
-
-    if(best_effort_timestamp != AV_NOPTS_VALUE) {
-        frame->pts = best_effort_timestamp;
-    }
+    if (frame->pts == AV_NOPTS_VALUE)
+        frame->pts = ist->last_frame_pts == AV_NOPTS_VALUE ? 0 :
+                     ist->last_frame_pts + ist->last_frame_duration_est;
 
     // update timestamp history
     ist->last_frame_duration_est = video_duration_estimate(ist, frame);
@@ -1112,15 +1107,12 @@ static int decode_video(InputStream *ist, const AVPacket *pkt, int *got_output,
         av_log(ist, AV_LOG_INFO,
                "decoder -> pts:%s pts_time:%s "
                "pkt_dts:%s pkt_dts_time:%s "
-               "best_effort_ts:%"PRId64" best_effort_ts_time:%s "
                "duration:%s duration_time:%s "
                "keyframe:%d frame_type:%d time_base:%d/%d\n",
                av_ts2str(frame->pts),
                av_ts2timestr(frame->pts, &ist->st->time_base),
                av_ts2str(frame->pkt_dts),
                av_ts2timestr(frame->pkt_dts, &ist->st->time_base),
-               best_effort_timestamp,
-               av_ts2timestr(best_effort_timestamp, &ist->st->time_base),
                av_ts2str(frame->duration),
                av_ts2timestr(frame->duration, &ist->st->time_base),
                !!(frame->flags & AV_FRAME_FLAG_KEY), frame->pict_type,
