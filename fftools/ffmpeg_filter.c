@@ -55,6 +55,9 @@ static FilterGraphPriv *fgp_from_fg(FilterGraph *fg)
 typedef struct InputFilterPriv {
     InputFilter ifilter;
 
+    // used to hold submitted input
+    AVFrame *frame;
+
     int eof;
 
     AVRational time_base;
@@ -244,6 +247,10 @@ static InputFilter *ifilter_alloc(FilterGraph *fg)
     ifilter->graph  = fg;
     ifilter->format = -1;
 
+    ifp->frame = av_frame_alloc();
+    if (!ifp->frame)
+        report_and_exit(AVERROR(ENOMEM));
+
     ifp->fallback.format = -1;
 
     ifp->frame_queue = av_fifo_alloc2(8, sizeof(AVFrame*), AV_FIFO_FLAG_AUTO_GROW);
@@ -283,6 +290,8 @@ void fg_free(FilterGraph **pfg)
         }
 
         av_channel_layout_uninit(&ifp->fallback.ch_layout);
+
+        av_frame_free(&ifp->frame);
 
         av_buffer_unref(&ifp->hw_frames_ctx);
         av_freep(&ifilter->name);
@@ -1541,10 +1550,6 @@ int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame, int keep_reference)
     FilterGraph *fg = ifilter->graph;
     AVFrameSideData *sd;
     int need_reinit, ret;
-    int buffersrc_flags = AV_BUFFERSRC_FLAG_PUSH;
-
-    if (keep_reference)
-        buffersrc_flags |= AV_BUFFERSRC_FLAG_KEEP_REF;
 
     /* determine if the parameters for this input changed */
     need_reinit = ifilter->format != frame->format;
@@ -1606,8 +1611,22 @@ int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame, int keep_reference)
         }
     }
 
-    ret = av_buffersrc_add_frame_flags(ifilter->filter, frame, buffersrc_flags);
+    if (keep_reference) {
+        ret = av_frame_ref(ifp->frame, frame);
+        if (ret < 0)
+            return ret;
+    } else
+        av_frame_move_ref(ifp->frame, frame);
+    frame = ifp->frame;
+
+    frame->pts       = av_rescale_q(frame->pts,      frame->time_base, ifp->time_base);
+    frame->duration  = av_rescale_q(frame->duration, frame->time_base, ifp->time_base);
+    frame->time_base = ifp->time_base;
+
+    ret = av_buffersrc_add_frame_flags(ifilter->filter, frame,
+                                       AV_BUFFERSRC_FLAG_PUSH);
     if (ret < 0) {
+        av_frame_unref(frame);
         if (ret != AVERROR_EOF)
             av_log(NULL, AV_LOG_ERROR, "Error while filtering: %s\n", av_err2str(ret));
         return ret;
