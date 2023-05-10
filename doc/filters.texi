@@ -31253,6 +31253,10 @@ Set stream output duration. By default duration is unlimited.
 Set foreground/background/additional color.
 @end table
 
+@subsection Commands
+
+This source supports the some above options as @ref{commands}.
+
 @anchor{movie}
 @section movie
 
