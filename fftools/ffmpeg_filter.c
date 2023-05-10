@@ -1622,6 +1622,11 @@ int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame, int keep_reference)
     frame->pts       = av_rescale_q(frame->pts,      frame->time_base, ifp->time_base);
     frame->duration  = av_rescale_q(frame->duration, frame->time_base, ifp->time_base);
     frame->time_base = ifp->time_base;
+#if LIBAVUTIL_VERSION_MAJOR < 59
+    AV_NOWARN_DEPRECATED(
+    frame->pkt_duration = frame->duration;
+    )
+#endif
 
     ret = av_buffersrc_add_frame_flags(ifilter->filter, frame,
                                        AV_BUFFERSRC_FLAG_PUSH);
