@@ -385,8 +385,11 @@ FF_DISABLE_DEPRECATION_WARNINGS
     outsamples->channels = outlink->ch_layout.nb_channels;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
-    if ((ret = av_channel_layout_copy(&outsamples->ch_layout, &outlink->ch_layout)) < 0)
+    if ((ret = av_channel_layout_copy(&outsamples->ch_layout, &outlink->ch_layout)) < 0) {
+        av_frame_free(&outsamples);
+        av_frame_free(&insamples);
         return ret;
+    }
 
     ret = ff_filter_frame(outlink, outsamples);
     av_frame_free(&insamples);
