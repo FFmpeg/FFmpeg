@@ -993,7 +993,7 @@ static int64_t video_duration_estimate(const InputStream *ist, const AVFrame *fr
         AVRational field_rate = av_mul_q(ist->dec_ctx->framerate,
                                          (AVRational){ 2, 1 });
         codec_duration = av_rescale_q(fields, av_inv_q(field_rate),
-                                      ist->st->time_base);
+                                      frame->time_base);
     }
 
     // prefer codec-layer duration for containers without timestamps
@@ -1015,7 +1015,7 @@ static int64_t video_duration_estimate(const InputStream *ist, const AVFrame *fr
     // try average framerate
     if (ist->st->avg_frame_rate.num && ist->st->avg_frame_rate.den) {
         int64_t d = av_rescale_q(1, av_inv_q(ist->st->avg_frame_rate),
-                                 ist->st->time_base);
+                                 frame->time_base);
         if (d > 0)
             return d;
     }
@@ -1110,13 +1110,13 @@ static int decode_video(InputStream *ist, const AVPacket *pkt, int *got_output,
                "duration:%s duration_time:%s "
                "keyframe:%d frame_type:%d time_base:%d/%d\n",
                av_ts2str(frame->pts),
-               av_ts2timestr(frame->pts, &ist->st->time_base),
+               av_ts2timestr(frame->pts, &frame->time_base),
                av_ts2str(frame->pkt_dts),
-               av_ts2timestr(frame->pkt_dts, &ist->st->time_base),
+               av_ts2timestr(frame->pkt_dts, &frame->time_base),
                av_ts2str(frame->duration),
-               av_ts2timestr(frame->duration, &ist->st->time_base),
+               av_ts2timestr(frame->duration, &frame->time_base),
                !!(frame->flags & AV_FRAME_FLAG_KEY), frame->pict_type,
-               ist->st->time_base.num, ist->st->time_base.den);
+               frame->time_base.num, frame->time_base.den);
     }
 
     if (ist->st->sample_aspect_ratio.num)
