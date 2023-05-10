@@ -531,7 +531,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     if ((ret = av_channel_layout_copy(&frame->ch_layout, &outlink->ch_layout)) < 0)
-        return ret;
+        goto fail;
     frame->sample_rate    = outlink->sample_rate;
     frame->format         = outlink->format;
     frame->pts            = s->input_frames[0]->pts;
