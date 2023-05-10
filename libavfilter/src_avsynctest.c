@@ -170,7 +170,7 @@ static av_cold int config_props(AVFilterLink *outlink)
 
 #define FPI 0x8000
 
-static int32_t sin32(int32_t x, int shift)
+static int32_t sin32(int32_t x, AVRational scale)
 {
     const double pi = M_PI;
     const int32_t a = ((2.0 * pi) * (1 << 24));
@@ -194,7 +194,8 @@ static int32_t sin32(int32_t x, int shift)
     result = a + t2;
     result *= x;
     result += (1U << 31);
-    result >>= (32 - shift);
+    result >>= 17;
+    result = av_rescale(result, scale.num, scale.den);
 
     return result;
 }
@@ -203,7 +204,7 @@ static int audio_frame(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     AVSyncTestContext *s = ctx->priv;
-    const int a = lrintf(s->amplitude * 15);
+    const AVRational a = av_d2q(s->amplitude, 32768);
     int64_t duration[2];
     int64_t delta;
     AVFrame *out;
