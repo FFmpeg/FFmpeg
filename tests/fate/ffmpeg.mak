@@ -223,3 +223,7 @@ FATE_TIME_BASE-$(call PARSERDEMDEC, MPEGVIDEO, MPEGPS, MPEG2VIDEO, MPEGVIDEO_DEM
 fate-time_base: CMD = md5 -i $(TARGET_SAMPLES)/mpeg2/dvd_single_frame.vob -an -sn -c:v copy -r 25 -time_base 1001:30000 -fflags +bitexact -f mxf
 
 FATE_SAMPLES_FFMPEG-yes += $(FATE_TIME_BASE-yes)
+
+# test -r used as an input option
+fate-ffmpeg-input-r: CMD = framecrc -r 27 -i $(TARGET_SAMPLES)/mpeg2/sony-ct3.bs
+FATE_SAMPLES_FFMPEG-$(call FRAMECRC, MPEGVIDEO, MPEG2VIDEO) += fate-ffmpeg-input-r
