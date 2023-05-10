@@ -164,6 +164,7 @@ typedef struct LibplaceboContext {
     struct pl_render_params params;
     char *upscaler;
     char *downscaler;
+    char *frame_mixer;
     int lut_entries;
     float antiringing;
     int sigmoid;
@@ -285,17 +286,19 @@ static int parse_shader(AVFilterContext *avctx, const void *shader, size_t len)
 
 static int find_scaler(AVFilterContext *avctx,
                        const struct pl_filter_config **opt,
-                       const char *name)
+                       const char *name, int frame_mixing)
 {
-    const struct pl_filter_preset *preset;
+    const struct pl_filter_preset *preset, *presets_avail;
+    presets_avail = frame_mixing ? pl_frame_mixers : pl_scale_filters;
+
     if (!strcmp(name, "help")) {
         av_log(avctx, AV_LOG_INFO, "Available scaler presets:\n");
-        for (preset = pl_scale_filters; preset->name; preset++)
+        for (preset = presets_avail; preset->name; preset++)
             av_log(avctx, AV_LOG_INFO, "    %s\n", preset->name);
         return AVERROR_EXIT;
     }
 
-    for (preset = pl_scale_filters; preset->name; preset++) {
+    for (preset = presets_avail; preset->name; preset++) {
         if (!strcmp(name, preset->name)) {
             *opt = preset->filter;
             return 0;
@@ -411,8 +414,9 @@ static int update_settings(AVFilterContext *ctx)
         .disable_fbos = s->disable_fbos,
     );
 
-    RET(find_scaler(ctx, &s->params.upscaler, s->upscaler));
-    RET(find_scaler(ctx, &s->params.downscaler, s->downscaler));
+    RET(find_scaler(ctx, &s->params.upscaler, s->upscaler, 0));
+    RET(find_scaler(ctx, &s->params.downscaler, s->downscaler, 0));
+    RET(find_scaler(ctx, &s->params.frame_mixer, s->frame_mixer, 1));
     return 0;
 
 fail:
@@ -1110,6 +1114,7 @@ static const AVOption libplacebo_options[] = {
 
     { "upscaler", "Upscaler function", OFFSET(upscaler), AV_OPT_TYPE_STRING, {.str = "spline36"}, .flags = DYNAMIC },
     { "downscaler", "Downscaler function", OFFSET(downscaler), AV_OPT_TYPE_STRING, {.str = "mitchell"}, .flags = DYNAMIC },
+    { "frame_mixer", "Frame mixing function", OFFSET(frame_mixer), AV_OPT_TYPE_STRING, {.str = "none"}, .flags = DYNAMIC },
     { "lut_entries", "Number of scaler LUT entries", OFFSET(lut_entries), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 256, DYNAMIC },
     { "antiringing", "Antiringing strength (for non-EWA filters)", OFFSET(antiringing), AV_OPT_TYPE_FLOAT, {.dbl = 0.0}, 0.0, 1.0, DYNAMIC },
     { "sigmoid", "Enable sigmoid upscaling", OFFSET(sigmoid), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, DYNAMIC },

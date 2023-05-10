@@ -16177,6 +16177,31 @@ Cubic BC spline with parameters recommended by Mitchell and Netravali. Very
 little ringing.
 @end table
 
+@item frame_mixer
+Controls the kernel used for mixing frames temporally. The default value is
+@code{none}, which disables frame mixing. For a full list of possible values,
+pass @code{help} to this option. The most important values are:
+@table @samp
+@item none
+Disables frame mixing, giving a result equivalent to "nearest neighbour"
+semantics.
+
+@item oversample
+Oversamples the input video to create a "Smooth Motion"-type effect: if an
+output frame would exactly fall on the transition between two video frames, it
+is blended according to the relative overlap. This is the recommended option
+whenever preserving the original subjective appearance is desired.
+
+@item mitchell_clamp
+Larger filter kernel that smoothly interpolates multiple frames in a manner
+designed to eliminate ringing and other artefacts as much as possible. This is
+the recommended option wherever maximum visual smoothness is desired.
+
+@item linear
+Linear blend/fade between frames. Especially useful for constructing e.g.
+slideshows.
+@end table
+
 @item lut_entries
 Configures the size of scaler LUTs, ranging from @code{1} to @code{256}. The
 default of @code{0} will pick libplacebo's internal default, typically
@@ -16532,6 +16557,12 @@ libplacebo=colorspace=bt709:color_primaries=bt709:color_trc=bt709:range=tv
 Rescale input to fit into standard 1080p, with high quality scaling:
 @example
 libplacebo=w=1920:h=1080:force_original_aspect_ratio=decrease:normalize_sar=true:upscaler=ewa_lanczos:downscaler=ewa_lanczos
+@end example
+
+@item
+Interpolate low FPS / VFR input to smoothed constant 60 fps output:
+@example
+libplacebo=fps=60:frame_mixer=mitchell_clamp
 @end example
 
 @item
