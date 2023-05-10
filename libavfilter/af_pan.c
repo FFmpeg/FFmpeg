@@ -391,9 +391,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
         return ret;
     }
 
-    ret = ff_filter_frame(outlink, outsamples);
     av_frame_free(&insamples);
-    return ret;
+    return ff_filter_frame(outlink, outsamples);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
