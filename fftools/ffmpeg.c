@@ -985,7 +985,7 @@ static int64_t video_duration_estimate(const InputStream *ist, const AVFrame *fr
     // durations, then this should be simplified.
 
     // prefer frame duration for containers with timestamps
-    if (frame->duration > 0 && !ifile->format_nots)
+    if (frame->duration > 0 && (!ifile->format_nots || ist->framerate.num))
         return frame->duration;
 
     if (ist->dec_ctx->framerate.den && ist->dec_ctx->framerate.num) {
@@ -1090,8 +1090,12 @@ static int decode_video(InputStream *ist, const AVPacket *pkt, int *got_output,
 
     frame->pts = frame->best_effort_timestamp;
 
-    if (ist->framerate.num)
-        frame->pts = ist->cfr_next_pts++;
+    // forced fixed framerate
+    if (ist->framerate.num) {
+        frame->pts       = AV_NOPTS_VALUE;
+        frame->duration  = 1;
+        frame->time_base = av_inv_q(ist->framerate);
+    }
 
     // no timestamp available - extrapolate from previous frame duration
     if (frame->pts == AV_NOPTS_VALUE)

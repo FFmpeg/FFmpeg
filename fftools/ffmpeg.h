@@ -372,10 +372,6 @@ typedef struct InputStream {
 
     int64_t filter_in_rescale_delta_last;
 
-    // when forcing constant input framerate through -r,
-    // this contains the pts that will be given to the next decoded frame
-    int64_t cfr_next_pts;
-
     int64_t nb_samples; /* number of samples in the last decoded audio frame before looping */
 
     AVDictionary *decoder_opts;
