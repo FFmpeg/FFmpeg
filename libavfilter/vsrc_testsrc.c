@@ -2167,6 +2167,7 @@ ZONEPLATE_SLICE(16, uint16_t)
 static void zoneplate_fill_picture(AVFilterContext *ctx, AVFrame *frame)
 {
     TestSourceContext *test = ctx->priv;
+    frame->color_range = AVCOL_RANGE_JPEG;
     ff_filter_execute(ctx, test->fill_slice_fn, frame, NULL,
                       FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
 }
