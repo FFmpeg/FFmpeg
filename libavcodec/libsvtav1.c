@@ -170,7 +170,7 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
         param->look_ahead_distance    = svt_enc->la_depth;
 #endif
 
-    if (svt_enc->enc_mode >= 0)
+    if (svt_enc->enc_mode >= -1)
         param->enc_mode             = svt_enc->enc_mode;
 
     if (avctx->bit_rate) {
@@ -593,7 +593,7 @@ static const AVOption options[] = {
         { "high", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, 0, 0, VE, "tier" },
 #endif
     { "preset", "Encoding preset",
-      OFFSET(enc_mode), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, MAX_ENC_PRESET, VE },
+      OFFSET(enc_mode), AV_OPT_TYPE_INT, { .i64 = -2 }, -2, MAX_ENC_PRESET, VE },
 
     FF_AV1_PROFILE_OPTS
 
