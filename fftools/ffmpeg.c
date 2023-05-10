@@ -1027,7 +1027,7 @@ static int64_t video_duration_estimate(const InputStream *ist, const AVFrame *fr
 static int decode_video(InputStream *ist, const AVPacket *pkt, int *got_output,
                         int eof, int *decode_failed)
 {
-    AVFrame *decoded_frame = ist->decoded_frame;
+    AVFrame *frame = ist->decoded_frame;
     int ret = 0, err = 0;
     int64_t best_effort_timestamp;
 
@@ -1038,7 +1038,7 @@ static int decode_video(InputStream *ist, const AVPacket *pkt, int *got_output,
         return 0;
 
     update_benchmark(NULL);
-    ret = decode(ist, ist->dec_ctx, decoded_frame, got_output, pkt);
+    ret = decode(ist, ist->dec_ctx, frame, got_output, pkt);
     update_benchmark("decode_video %d.%d", ist->file_index, ist->st->index);
     if (ret < 0)
         *decode_failed = 1;
@@ -1062,13 +1062,13 @@ static int decode_video(InputStream *ist, const AVPacket *pkt, int *got_output,
         check_decode_result(ist, got_output, ret);
 
     if (*got_output && ret >= 0) {
-        if (ist->dec_ctx->width  != decoded_frame->width ||
-            ist->dec_ctx->height != decoded_frame->height ||
-            ist->dec_ctx->pix_fmt != decoded_frame->format) {
+        if (ist->dec_ctx->width  != frame->width ||
+            ist->dec_ctx->height != frame->height ||
+            ist->dec_ctx->pix_fmt != frame->format) {
             av_log(NULL, AV_LOG_DEBUG, "Frame parameters mismatch context %d,%d,%d != %d,%d,%d\n",
-                decoded_frame->width,
-                decoded_frame->height,
-                decoded_frame->format,
+                frame->width,
+                frame->height,
+                frame->format,
                 ist->dec_ctx->width,
                 ist->dec_ctx->height,
                 ist->dec_ctx->pix_fmt);
@@ -1079,17 +1079,17 @@ static int decode_video(InputStream *ist, const AVPacket *pkt, int *got_output,
         return ret;
 
     if(ist->top_field_first>=0)
-        decoded_frame->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
+        frame->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
 
     ist->frames_decoded++;
 
-    if (ist->hwaccel_retrieve_data && decoded_frame->format == ist->hwaccel_pix_fmt) {
-        err = ist->hwaccel_retrieve_data(ist->dec_ctx, decoded_frame);
+    if (ist->hwaccel_retrieve_data && frame->format == ist->hwaccel_pix_fmt) {
+        err = ist->hwaccel_retrieve_data(ist->dec_ctx, frame);
         if (err < 0)
             goto fail;
     }
 
-    best_effort_timestamp= decoded_frame->best_effort_timestamp;
+    best_effort_timestamp = frame->best_effort_timestamp;
 
     if (ist->framerate.num)
         best_effort_timestamp = ist->cfr_next_pts++;
@@ -1100,13 +1100,13 @@ static int decode_video(InputStream *ist, const AVPacket *pkt, int *got_output,
                                 ist->last_frame_pts + ist->last_frame_duration_est;
 
     if(best_effort_timestamp != AV_NOPTS_VALUE) {
-        decoded_frame->pts = best_effort_timestamp;
+        frame->pts = best_effort_timestamp;
     }
 
     // update timestamp history
-    ist->last_frame_duration_est = video_duration_estimate(ist, decoded_frame);
-    ist->last_frame_pts          = decoded_frame->pts;
-    ist->last_frame_tb           = decoded_frame->time_base;
+    ist->last_frame_duration_est = video_duration_estimate(ist, frame);
+    ist->last_frame_pts          = frame->pts;
+    ist->last_frame_tb           = frame->time_base;
 
     if (debug_ts) {
         av_log(ist, AV_LOG_INFO,
@@ -1115,25 +1115,25 @@ static int decode_video(InputStream *ist, const AVPacket *pkt, int *got_output,
                "best_effort_ts:%"PRId64" best_effort_ts_time:%s "
                "duration:%s duration_time:%s "
                "keyframe:%d frame_type:%d time_base:%d/%d\n",
-               av_ts2str(decoded_frame->pts),
-               av_ts2timestr(decoded_frame->pts, &ist->st->time_base),
-               av_ts2str(decoded_frame->pkt_dts),
-               av_ts2timestr(decoded_frame->pkt_dts, &ist->st->time_base),
+               av_ts2str(frame->pts),
+               av_ts2timestr(frame->pts, &ist->st->time_base),
+               av_ts2str(frame->pkt_dts),
+               av_ts2timestr(frame->pkt_dts, &ist->st->time_base),
                best_effort_timestamp,
                av_ts2timestr(best_effort_timestamp, &ist->st->time_base),
-               av_ts2str(decoded_frame->duration),
-               av_ts2timestr(decoded_frame->duration, &ist->st->time_base),
-               !!(decoded_frame->flags & AV_FRAME_FLAG_KEY), decoded_frame->pict_type,
+               av_ts2str(frame->duration),
+               av_ts2timestr(frame->duration, &ist->st->time_base),
+               !!(frame->flags & AV_FRAME_FLAG_KEY), frame->pict_type,
                ist->st->time_base.num, ist->st->time_base.den);
     }
 
     if (ist->st->sample_aspect_ratio.num)
-        decoded_frame->sample_aspect_ratio = ist->st->sample_aspect_ratio;
+        frame->sample_aspect_ratio = ist->st->sample_aspect_ratio;
 
-    err = send_frame_to_filters(ist, decoded_frame);
+    err = send_frame_to_filters(ist, frame);
 
 fail:
-    av_frame_unref(decoded_frame);
+    av_frame_unref(frame);
     return err < 0 ? err : ret;
 }
 
