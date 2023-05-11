@@ -1468,7 +1468,7 @@ ffmpeg -f v4l2 -r 1 -i /dev/video0 -f image2 -strftime 1 "%Y-%m-%d_%H-%M-%S.jpg"
 
 You can set the file name with current frame's PTS:
 @example
-ffmpeg -f v4l2 -r 1 -i /dev/video0 -copyts -f image2 -frame_pts true %d.jpg"
+ffmpeg -f v4l2 -r 1 -i /dev/video0 -copyts -f image2 -frame_pts true %d.jpg
 @end example
 
 A more complex example is to publish contents of your desktop directly to a
