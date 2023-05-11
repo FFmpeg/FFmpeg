@@ -351,56 +351,47 @@ fail:
     return err;
 }
 
-static int init_vulkan(AVFilterContext *avctx)
+static int init_vulkan(AVFilterContext *avctx, const AVVulkanDeviceContext *hwctx)
 {
     int err = 0;
     LibplaceboContext *s = avctx->priv;
-    const AVHWDeviceContext *avhwctx;
-    const AVVulkanDeviceContext *hwctx;
     uint8_t *buf = NULL;
     size_t buf_len;
 
-    if (!avctx->hw_device_ctx) {
-        av_log(s, AV_LOG_ERROR, "Missing vulkan hwdevice for vf_libplacebo.\n");
-        return AVERROR(EINVAL);
+    if (hwctx) {
+        /* Import libavfilter vulkan context into libplacebo */
+        s->vulkan = pl_vulkan_import(s->log, pl_vulkan_import_params(
+            .instance       = hwctx->inst,
+            .get_proc_addr  = hwctx->get_proc_addr,
+            .phys_device    = hwctx->phys_dev,
+            .device         = hwctx->act_dev,
+            .extensions     = hwctx->enabled_dev_extensions,
+            .num_extensions = hwctx->nb_enabled_dev_extensions,
+            .features       = &hwctx->device_features,
+            .queue_graphics = {
+                .index = hwctx->queue_family_index,
+                .count = hwctx->nb_graphics_queues,
+            },
+            .queue_compute = {
+                .index = hwctx->queue_family_comp_index,
+                .count = hwctx->nb_comp_queues,
+            },
+            .queue_transfer = {
+                .index = hwctx->queue_family_tx_index,
+                .count = hwctx->nb_tx_queues,
+            },
+            /* This is the highest version created by hwcontext_vulkan.c */
+            .max_api_version = VK_API_VERSION_1_2,
+        ));
+    } else {
+        s->vulkan = pl_vulkan_create(s->log, pl_vulkan_params(
+            .queue_count = 0, /* enable all queues for parallelization */
+        ));
     }
-
-    avhwctx = (AVHWDeviceContext *) avctx->hw_device_ctx->data;
-    if (avhwctx->type != AV_HWDEVICE_TYPE_VULKAN) {
-        av_log(s, AV_LOG_ERROR, "Expected vulkan hwdevice for vf_libplacebo, got %s.\n",
-            av_hwdevice_get_type_name(avhwctx->type));
-        return AVERROR(EINVAL);
-    }
-
-    hwctx = avhwctx->hwctx;
-
-    /* Import libavfilter vulkan context into libplacebo */
-    s->vulkan = pl_vulkan_import(s->log, pl_vulkan_import_params(
-        .instance       = hwctx->inst,
-        .get_proc_addr  = hwctx->get_proc_addr,
-        .phys_device    = hwctx->phys_dev,
-        .device         = hwctx->act_dev,
-        .extensions     = hwctx->enabled_dev_extensions,
-        .num_extensions = hwctx->nb_enabled_dev_extensions,
-        .features       = &hwctx->device_features,
-        .queue_graphics = {
-            .index = hwctx->queue_family_index,
-            .count = hwctx->nb_graphics_queues,
-        },
-        .queue_compute = {
-            .index = hwctx->queue_family_comp_index,
-            .count = hwctx->nb_comp_queues,
-        },
-        .queue_transfer = {
-            .index = hwctx->queue_family_tx_index,
-            .count = hwctx->nb_tx_queues,
-        },
-        /* This is the highest version created by hwcontext_vulkan.c */
-        .max_api_version = VK_API_VERSION_1_2,
-    ));
 
     if (!s->vulkan) {
-        av_log(s, AV_LOG_ERROR, "Failed importing vulkan device to libplacebo!\n");
+        av_log(s, AV_LOG_ERROR, "Failed %s Vulkan device!\n",
+               hwctx ? "importing" : "creating");
         err = AVERROR_EXTERNAL;
         goto fail;
     }
@@ -695,10 +686,17 @@ static int libplacebo_query_format(AVFilterContext *ctx)
 {
     int err;
     LibplaceboContext *s = ctx->priv;
+    const AVVulkanDeviceContext *vkhwctx = NULL;
     const AVPixFmtDescriptor *desc = NULL;
     AVFilterFormats *infmts = NULL, *outfmts = NULL;
 
-    RET(init_vulkan(ctx));
+    if (ctx->hw_device_ctx) {
+        const AVHWDeviceContext *avhwctx = (void *) ctx->hw_device_ctx->data;
+        if (avhwctx->type == AV_HWDEVICE_TYPE_VULKAN)
+            vkhwctx = avhwctx->hwctx;
+    }
+
+    RET(init_vulkan(ctx, vkhwctx));
 
     while ((desc = av_pix_fmt_desc_next(desc))) {
         enum AVPixelFormat pixfmt = av_pix_fmt_desc_get_id(desc);
@@ -709,6 +707,11 @@ static int libplacebo_query_format(AVFilterContext *ctx)
         if (av_get_bits_per_pixel(desc) > 64)
             continue;
 #endif
+
+        if (pixfmt == AV_PIX_FMT_VULKAN) {
+            if (!vkhwctx || vkhwctx->act_dev != s->vulkan->device)
+                continue;
+        }
 
         if (!pl_test_pixfmt(s->gpu, pixfmt))
             continue;
