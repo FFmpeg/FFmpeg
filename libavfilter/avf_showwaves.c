@@ -591,7 +591,7 @@ static int push_single_pic(AVFilterLink *outlink)
 
     av_log(ctx, AV_LOG_DEBUG, "Create frame averaging %"PRId64" samples per column\n", column_max_samples);
 
-    memset(sum, 0, nb_channels);
+    memset(sum, 0, nb_channels * sizeof(*sum));
 
     for (node = showwaves->audio_frames; node; node = node->next) {
         int i;
