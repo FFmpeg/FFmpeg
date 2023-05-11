@@ -1533,6 +1533,14 @@ int ifilter_send_eof(InputFilter *ifilter, int64_t pts, AVRational tb)
                                          &ifp->fallback.ch_layout);
             if (ret < 0)
                 return ret;
+
+            if (ifilter_has_all_input_formats(ifilter->graph)) {
+                ret = configure_filtergraph(ifilter->graph);
+                if (ret < 0) {
+                    av_log(NULL, AV_LOG_ERROR, "Error initializing filters!\n");
+                    return ret;
+                }
+            }
         }
 
         if (ifilter->format < 0 && (ifilter->type == AVMEDIA_TYPE_AUDIO || ifilter->type == AVMEDIA_TYPE_VIDEO)) {
