@@ -331,16 +331,16 @@ static void angle_transform(float *x, float *y, float angle)
     if (angle == 90.f)
         return;
 
-    reference = angle * (float)M_PI / 180.f;
+    reference = angle * M_PIf / 180.f;
     r = hypotf(*x, *y);
     a = atan2f(*x, *y);
 
     r /= r_distance(a);
 
-    if (fabsf(a) <= (float)M_PI_4)
-        a *= reference / (float)M_PI_2;
+    if (fabsf(a) <= M_PI_4f)
+        a *= reference / M_PI_2f;
     else
-        a = (float)M_PI + (-2.f * (float)M_PI + reference) * ((float)M_PI - fabsf(a)) * FFDIFFSIGN(a, 0.f) / (3.f * (float)M_PI_2);
+        a = M_PIf + (-2.f * M_PIf + reference) * (M_PIf - fabsf(a)) * FFDIFFSIGN(a, 0.f) / (3.f * M_PI_2f);
 
     r *= r_distance(a);
 
@@ -367,16 +367,16 @@ static void focus_transform(float *x, float *y, float focus)
 static void stereo_position(float a, float p, float *x, float *y)
 {
     av_assert2(a >= -1.f && a <= 1.f);
-    av_assert2(p >= 0.f && p <= (float)M_PI);
-    *x = av_clipf(a+a*fmaxf(0.f, p*p-(float)M_PI_2), -1.f, 1.f);
-    *y = av_clipf(cosf(a*(float)M_PI_2+(float)M_PI)*cosf((float)M_PI_2-p/(float)M_PI)*(float)M_LN10+1.f, -1.f, 1.f);
+    av_assert2(p >= 0.f && p <= M_PIf);
+    *x = av_clipf(a+a*fmaxf(0.f, p*p-M_PI_2f), -1.f, 1.f);
+    *y = av_clipf(cosf(a*M_PI_2f+M_PIf)*cosf(M_PI_2f-p/M_PIf)*M_LN10f+1.f, -1.f, 1.f);
 }
 
 static inline void get_lfe(int output_lfe, int n, float lowcut, float highcut,
                            float *lfe_mag, float c_mag, float *mag_total, int lfe_mode)
 {
     if (output_lfe && n < highcut) {
-        *lfe_mag    = n < lowcut ? 1.f : .5f*(1.f+cosf((float)M_PI*(lowcut-n)/(lowcut-highcut)));
+        *lfe_mag    = n < lowcut ? 1.f : .5f*(1.f+cosf(M_PIf*(lowcut-n)/(lowcut-highcut)));
         *lfe_mag   *= c_mag;
         if (lfe_mode)
             *mag_total -= *lfe_mag;
@@ -779,8 +779,8 @@ static void filter_stereo(AVFilterContext *ctx)
 
         mag_sum = mag_sum < MIN_MAG_SUM ? 1.f : mag_sum;
         mag_dif = (l_mag - r_mag) / mag_sum;
-        if (phase_dif > (float)M_PI)
-            phase_dif = 2.f * (float)M_PI - phase_dif;
+        if (phase_dif > M_PIf)
+            phase_dif = 2.f * M_PIf - phase_dif;
 
         stereo_position(mag_dif, phase_dif, &x, &y);
         angle_transform(&x, &y, angle);
@@ -835,8 +835,8 @@ static void filter_2_1(AVFilterContext *ctx)
 
         mag_sum = mag_sum < MIN_MAG_SUM ? 1.f : mag_sum;
         mag_dif = (l_mag - r_mag) / mag_sum;
-        if (phase_dif > (float)M_PI)
-            phase_dif = 2.f * (float)M_PI - phase_dif;
+        if (phase_dif > M_PIf)
+            phase_dif = 2.f * M_PIf - phase_dif;
 
         stereo_position(mag_dif, phase_dif, &x, &y);
         angle_transform(&x, &y, angle);
@@ -893,8 +893,8 @@ static void filter_surround(AVFilterContext *ctx)
 
         mag_sum = mag_sum < MIN_MAG_SUM ? 1.f : mag_sum;
         mag_dif = (l_mag - r_mag) / mag_sum;
-        if (phase_dif > (float)M_PI)
-            phase_dif = 2.f * (float)M_PI - phase_dif;
+        if (phase_dif > M_PIf)
+            phase_dif = 2.f * M_PIf - phase_dif;
 
         stereo_position(mag_dif, phase_dif, &x, &y);
         angle_transform(&x, &y, angle);
@@ -951,11 +951,11 @@ static void filter_5_0_side(AVFilterContext *ctx)
         float xl, yl;
         float xr, yr;
 
-        if (phase_difl > (float)M_PI)
-            phase_difl = 2.f * (float)M_PI - phase_difl;
+        if (phase_difl > M_PIf)
+            phase_difl = 2.f * M_PIf - phase_difl;
 
-        if (phase_difr > (float)M_PI)
-            phase_difr = 2.f * (float)M_PI - phase_difr;
+        if (phase_difr > M_PIf)
+            phase_difr = 2.f * M_PIf - phase_difr;
 
         stereo_position(mag_difl, phase_difl, &xl, &yl);
         stereo_position(mag_difr, phase_difr, &xr, &yr);
@@ -1011,11 +1011,11 @@ static void filter_5_1_side(AVFilterContext *ctx)
         float xl, yl;
         float xr, yr;
 
-        if (phase_difl > (float)M_PI)
-            phase_difl = 2.f * (float)M_PI - phase_difl;
+        if (phase_difl > M_PIf)
+            phase_difl = 2.f * M_PIf - phase_difl;
 
-        if (phase_difr > (float)M_PI)
-            phase_difr = 2.f * (float)M_PI - phase_difr;
+        if (phase_difr > M_PIf)
+            phase_difr = 2.f * M_PIf - phase_difr;
 
         stereo_position(mag_difl, phase_difl, &xl, &yl);
         stereo_position(mag_difr, phase_difr, &xr, &yr);
@@ -1071,11 +1071,11 @@ static void filter_5_1_back(AVFilterContext *ctx)
         float xl, yl;
         float xr, yr;
 
-        if (phase_difl > (float)M_PI)
-            phase_difl = 2.f * (float)M_PI - phase_difl;
+        if (phase_difl > M_PIf)
+            phase_difl = 2.f * M_PIf - phase_difl;
 
-        if (phase_difr > (float)M_PI)
-            phase_difr = 2.f * (float)M_PI - phase_difr;
+        if (phase_difr > M_PIf)
+            phase_difr = 2.f * M_PIf - phase_difr;
 
         stereo_position(mag_difl, phase_difl, &xl, &yl);
         stereo_position(mag_difr, phase_difr, &xr, &yr);
