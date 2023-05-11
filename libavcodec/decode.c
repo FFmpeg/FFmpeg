@@ -1087,6 +1087,15 @@ int avcodec_get_hw_frames_parameters(AVCodecContext *avctx,
     if (!frames_ref)
         return AVERROR(ENOMEM);
 
+    if (!avctx->internal->hwaccel_priv_data) {
+        avctx->internal->hwaccel_priv_data =
+            av_mallocz(hwa->priv_data_size);
+        if (!avctx->internal->hwaccel_priv_data) {
+            av_buffer_unref(&frames_ref);
+            return AVERROR(ENOMEM);
+        }
+    }
+
     ret = hwa->frame_params(avctx, frames_ref);
     if (ret >= 0) {
         AVHWFramesContext *frames_ctx = (AVHWFramesContext*)frames_ref->data;
@@ -1122,7 +1131,7 @@ static int hwaccel_init(AVCodecContext *avctx,
         return AVERROR_PATCHWELCOME;
     }
 
-    if (hwaccel->priv_data_size) {
+    if (!avctx->internal->hwaccel_priv_data && hwaccel->priv_data_size) {
         avctx->internal->hwaccel_priv_data =
             av_mallocz(hwaccel->priv_data_size);
         if (!avctx->internal->hwaccel_priv_data)
@@ -1287,6 +1296,9 @@ int ff_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt)
             choices[i] = choices[i + 1];
         --n;
     }
+
+    if (ret < 0)
+        ff_hwaccel_uninit(avctx);
 
     av_freep(&choices);
     return ret;
