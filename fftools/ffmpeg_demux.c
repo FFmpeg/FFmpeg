@@ -848,6 +848,12 @@ static int ist_use(InputStream *ist, int decoding_needed)
 {
     DemuxStream *ds = ds_from_ist(ist);
 
+    if (ist->user_set_discard == AVDISCARD_ALL) {
+        av_log(ist, AV_LOG_ERROR, "Cannot %s a disabled input stream\n",
+               decoding_needed ? "decode" : "streamcopy");
+        return AVERROR(EINVAL);
+    }
+
     ist->discard          = 0;
     ist->st->discard      = ist->user_set_discard;
     ist->decoding_needed |= decoding_needed;

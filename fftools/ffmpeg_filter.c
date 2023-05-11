@@ -417,11 +417,6 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
             exit_program(1);
         }
         ist = input_files[file_idx]->streams[st->index];
-        if (ist->user_set_discard == AVDISCARD_ALL) {
-            av_log(NULL, AV_LOG_FATAL, "Stream specifier '%s' in filtergraph description %s "
-                   "matches a disabled input stream.\n", p, fgp->graph_desc);
-            exit_program(1);
-        }
     } else {
         ist = ist_find_unused(type);
         if (!ist) {
