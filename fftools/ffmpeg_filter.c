@@ -1521,17 +1521,19 @@ int ifilter_send_eof(InputFilter *ifilter, int64_t pts, AVRational tb)
         if (ret < 0)
             return ret;
     } else {
-        // the filtergraph was never configured, use the fallback parameters
-        ifilter->format                 = ifp->fallback.format;
-        ifilter->sample_rate            = ifp->fallback.sample_rate;
-        ifilter->width                  = ifp->fallback.width;
-        ifilter->height                 = ifp->fallback.height;
-        ifilter->sample_aspect_ratio    = ifp->fallback.sample_aspect_ratio;
+        if (ifilter->format < 0) {
+            // the filtergraph was never configured, use the fallback parameters
+            ifilter->format                 = ifp->fallback.format;
+            ifilter->sample_rate            = ifp->fallback.sample_rate;
+            ifilter->width                  = ifp->fallback.width;
+            ifilter->height                 = ifp->fallback.height;
+            ifilter->sample_aspect_ratio    = ifp->fallback.sample_aspect_ratio;
 
-        ret = av_channel_layout_copy(&ifilter->ch_layout,
-                                     &ifp->fallback.ch_layout);
-        if (ret < 0)
-            return ret;
+            ret = av_channel_layout_copy(&ifilter->ch_layout,
+                                         &ifp->fallback.ch_layout);
+            if (ret < 0)
+                return ret;
+        }
 
         if (ifilter->format < 0 && (ifilter->type == AVMEDIA_TYPE_AUDIO || ifilter->type == AVMEDIA_TYPE_VIDEO)) {
             av_log(NULL, AV_LOG_ERROR, "Cannot determine format of input stream %d:%d after EOF\n", ifilter->ist->file_index, ifilter->ist->st->index);
