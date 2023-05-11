@@ -420,13 +420,7 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
             exit_program(1);
         }
     } else {
-        /* find the first unused stream of corresponding type */
-        for (ist = ist_iter(NULL); ist; ist = ist_iter(ist)) {
-            if (ist->user_set_discard == AVDISCARD_ALL)
-                continue;
-            if (ist->dec_ctx->codec_type == type && ist->discard)
-                break;
-        }
+        ist = ist_find_unused(type);
         if (!ist) {
             av_log(NULL, AV_LOG_FATAL, "Cannot find a matching stream for "
                    "unlabeled input pad %d on filter %s\n", in->pad_idx,

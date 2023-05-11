@@ -882,6 +882,11 @@ int ifile_get_packet(InputFile *f, AVPacket **pkt);
 void ist_output_add(InputStream *ist, OutputStream *ost);
 void ist_filter_add(InputStream *ist, InputFilter *ifilter, int is_simple);
 
+/**
+ * Find an unused input stream of given type.
+ */
+InputStream *ist_find_unused(enum AVMediaType type);
+
 /* iterate over all input streams in all input files;
  * pass NULL to start iteration */
 InputStream *ist_iter(InputStream *prev);

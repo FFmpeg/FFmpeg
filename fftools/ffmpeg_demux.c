@@ -130,6 +130,16 @@ static Demuxer *demuxer_from_ifile(InputFile *f)
     return (Demuxer*)f;
 }
 
+InputStream *ist_find_unused(enum AVMediaType type)
+{
+    for (InputStream *ist = ist_iter(NULL); ist; ist = ist_iter(ist)) {
+        if (ist->par->codec_type == type && ist->discard &&
+            ist->user_set_discard != AVDISCARD_ALL)
+            return ist;
+    }
+    return NULL;
+}
+
 static void report_new_stream(Demuxer *d, const AVPacket *pkt)
 {
     AVStream *st = d->f.ctx->streams[pkt->stream_index];
