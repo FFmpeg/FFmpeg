@@ -334,6 +334,7 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost)
     FilterGraph *fg;
     OutputFilter *ofilter;
     InputFilter  *ifilter;
+    int ret;
 
     fg = fg_create(NULL);
     if (!fg)
@@ -347,7 +348,9 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost)
     ifilter         = ifilter_alloc(fg);
     ifilter->ist    = ist;
 
-    ist_filter_add(ist, ifilter, 1);
+    ret = ist_filter_add(ist, ifilter, 1);
+    if (ret < 0)
+        return ret;
 
     return 0;
 }
@@ -375,7 +378,7 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
     InputStream *ist = NULL;
     enum AVMediaType type = avfilter_pad_get_type(in->filter_ctx->input_pads, in->pad_idx);
     InputFilter *ifilter;
-    int i;
+    int i, ret;
 
     // TODO: support other filter types
     if (type != AVMEDIA_TYPE_VIDEO && type != AVMEDIA_TYPE_AUDIO) {
@@ -435,7 +438,13 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
     ifilter->type   = ist->st->codecpar->codec_type;
     ifilter->name   = describe_filter_link(fg, in, 1);
 
-    ist_filter_add(ist, ifilter, 0);
+    ret = ist_filter_add(ist, ifilter, 0);
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_ERROR,
+               "Error binding an input stream to complex filtergraph input %s.\n",
+               in->name ? in->name : "");
+        exit_program(1);
+    }
 }
 
 static int read_binary(const char *path, uint8_t **data, int *len)

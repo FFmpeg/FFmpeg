@@ -1225,8 +1225,14 @@ static OutputStream *ost_add(Muxer *mux, const OptionsContext *o,
                        "Error initializing a simple filtergraph\n");
                 exit_program(1);
             }
-        } else
-            ist_output_add(ost->ist, ost);
+        } else {
+            ret = ist_output_add(ost->ist, ost);
+            if (ret < 0) {
+                av_log(ost, AV_LOG_ERROR,
+                       "Error binding an input stream\n");
+                exit_program(1);
+            }
+        }
     }
 
     if (ost->ist && !ost->enc) {

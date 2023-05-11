@@ -879,8 +879,8 @@ void ifile_close(InputFile **f);
  */
 int ifile_get_packet(InputFile *f, AVPacket **pkt);
 
-void ist_output_add(InputStream *ist, OutputStream *ost);
-void ist_filter_add(InputStream *ist, InputFilter *ifilter, int is_simple);
+int ist_output_add(InputStream *ist, OutputStream *ost);
+int ist_filter_add(InputStream *ist, InputFilter *ifilter, int is_simple);
 
 /**
  * Find an unused input stream of given type.

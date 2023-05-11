@@ -844,7 +844,7 @@ void ifile_close(InputFile **pf)
     av_freep(pf);
 }
 
-static void ist_use(InputStream *ist, int decoding_needed)
+static int ist_use(InputStream *ist, int decoding_needed)
 {
     DemuxStream *ds = ds_from_ist(ist);
 
@@ -856,23 +856,33 @@ static void ist_use(InputStream *ist, int decoding_needed)
     if (decoding_needed && !avcodec_is_open(ist->dec_ctx)) {
         int ret = dec_open(ist);
         if (ret < 0)
-            report_and_exit(ret);
+            return ret;
     }
+
+    return 0;
 }
 
-void ist_output_add(InputStream *ist, OutputStream *ost)
-{
-    ist_use(ist, ost->enc ? DECODING_FOR_OST : 0);
-
-    GROW_ARRAY(ist->outputs, ist->nb_outputs);
-    ist->outputs[ist->nb_outputs - 1] = ost;
-}
-
-void ist_filter_add(InputStream *ist, InputFilter *ifilter, int is_simple)
+int ist_output_add(InputStream *ist, OutputStream *ost)
 {
     int ret;
 
-    ist_use(ist, is_simple ? DECODING_FOR_OST : DECODING_FOR_FILTER);
+    ret = ist_use(ist, ost->enc ? DECODING_FOR_OST : 0);
+    if (ret < 0)
+        return ret;
+
+    GROW_ARRAY(ist->outputs, ist->nb_outputs);
+    ist->outputs[ist->nb_outputs - 1] = ost;
+
+    return 0;
+}
+
+int ist_filter_add(InputStream *ist, InputFilter *ifilter, int is_simple)
+{
+    int ret;
+
+    ret = ist_use(ist, is_simple ? DECODING_FOR_OST : DECODING_FOR_FILTER);
+    if (ret < 0)
+        return ret;
 
     GROW_ARRAY(ist->filters, ist->nb_filters);
     ist->filters[ist->nb_filters - 1] = ifilter;
@@ -880,7 +890,9 @@ void ist_filter_add(InputStream *ist, InputFilter *ifilter, int is_simple)
     // initialize fallback parameters for filtering
     ret = ifilter_parameters_from_dec(ifilter, ist->dec_ctx);
     if (ret < 0)
-        report_and_exit(ret);
+        return ret;
+
+    return 0;
 }
 
 static const AVCodec *choose_decoder(const OptionsContext *o, AVFormatContext *s, AVStream *st,
