@@ -371,7 +371,7 @@ av_cold int ff_decklink_write_trailer(AVFormatContext *avctx)
     klvanc_context_destroy(ctx->vanc_ctx);
 #endif
 
-    ff_ccfifo_freep(&ctx->cc_fifo);
+    ff_ccfifo_uninit(&ctx->cc_fifo);
     av_freep(&cctx->ctx);
 
     return 0;
@@ -527,15 +527,15 @@ out:
    that will later be handled by construct_cc... */
 static void parse_608subs(AVFormatContext *avctx, struct decklink_ctx *ctx, AVPacket *pkt)
 {
-    size_t cc_size = ff_ccfifo_getoutputsize(ctx->cc_fifo);
+    size_t cc_size = ff_ccfifo_getoutputsize(&ctx->cc_fifo);
     uint8_t *cc_data;
 
-    if (!ff_ccfifo_ccdetected(ctx->cc_fifo))
+    if (!ff_ccfifo_ccdetected(&ctx->cc_fifo))
         return;
 
     cc_data = av_packet_new_side_data(pkt, AV_PKT_DATA_A53_CC, cc_size);
     if (cc_data)
-        ff_ccfifo_injectbytes(ctx->cc_fifo, cc_data, cc_size);
+        ff_ccfifo_injectbytes(&ctx->cc_fifo, cc_data, cc_size);
 }
 
 static int decklink_construct_vanc(AVFormatContext *avctx, struct decklink_ctx *ctx,
@@ -745,7 +745,7 @@ static int decklink_write_subtitle_packet(AVFormatContext *avctx, AVPacket *pkt)
     struct decklink_cctx *cctx = (struct decklink_cctx *)avctx->priv_data;
     struct decklink_ctx *ctx = (struct decklink_ctx *)cctx->ctx;
 
-    ff_ccfifo_extractbytes(ctx->cc_fifo, pkt->data, pkt->size);
+    ff_ccfifo_extractbytes(&ctx->cc_fifo, pkt->data, pkt->size);
 
     return 0;
 }
@@ -831,9 +831,9 @@ av_cold int ff_decklink_write_header(AVFormatContext *avctx)
             avpriv_set_pts_info(st, 64, ctx->bmd_tb_num, ctx->bmd_tb_den);
     }
 
-    if (!(ctx->cc_fifo = ff_ccfifo_alloc(av_make_q(ctx->bmd_tb_den, ctx->bmd_tb_num), avctx))) {
+    ret = ff_ccfifo_init(&ctx->cc_fifo, av_make_q(ctx->bmd_tb_den, ctx->bmd_tb_num), avctx);
+    if (ret < 0) {
         av_log(ctx, AV_LOG_ERROR, "Failure to setup CC FIFO queue\n");
-        ret = AVERROR(ENOMEM);
         goto error;
     }
 

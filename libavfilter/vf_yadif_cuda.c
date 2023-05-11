@@ -205,7 +205,7 @@ static av_cold void deint_cuda_uninit(AVFilterContext *ctx)
     av_frame_free(&y->prev);
     av_frame_free(&y->cur);
     av_frame_free(&y->next);
-    ff_ccfifo_freep(&y->cc_fifo);
+    ff_ccfifo_uninit(&y->cc_fifo);
 
     av_buffer_unref(&s->device_ref);
     s->hwctx = NULL;
@@ -295,9 +295,9 @@ static int config_output(AVFilterLink *link)
     else
         link->frame_rate = ctx->inputs[0]->frame_rate;
 
-    if (!(y->cc_fifo = ff_ccfifo_alloc(link->frame_rate, ctx))) {
+    ret = ff_ccfifo_init(&y->cc_fifo, link->frame_rate, ctx);
+    if (ret < 0) {
         av_log(ctx, AV_LOG_ERROR, "Failure to setup CC FIFO queue\n");
-        ret = AVERROR(ENOMEM);
         goto exit;
     }
 

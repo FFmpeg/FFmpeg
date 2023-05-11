@@ -78,7 +78,7 @@ typedef struct TInterlaceContext {
     const AVPixFmtDescriptor *csp;
     void (*lowpass_line)(uint8_t *dstp, ptrdiff_t width, const uint8_t *srcp,
                          ptrdiff_t mref, ptrdiff_t pref, int clip_max);
-    AVCCFifo *cc_fifo;
+    CCFifo cc_fifo;
 } TInterlaceContext;
 
 void ff_tinterlace_init_x86(TInterlaceContext *interlace);

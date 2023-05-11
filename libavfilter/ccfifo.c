@@ -23,18 +23,6 @@
 
 #include "ccfifo.h"
 
-struct AVCCFifo {
-    AVFifo *cc_608_fifo;
-    AVFifo *cc_708_fifo;
-    AVRational framerate;
-    int expected_cc_count;
-    int expected_608;
-    int cc_detected;
-    int passthrough;
-    int passthrough_warning;
-    void *log_ctx;
-};
-
 #define MAX_CC_ELEMENTS 128
 #define CC_BYTES_PER_ENTRY 3
 
@@ -55,25 +43,18 @@ const static struct cc_lookup cc_lookup_vals[] = {
     { 60000, 1001, 10, 1},
 };
 
-void ff_ccfifo_freep(AVCCFifo **ccf)
+void ff_ccfifo_uninit(CCFifo *ccf)
 {
-    AVCCFifo *tmp = *ccf;
-    if (tmp) {
-        av_fifo_freep2(&tmp->cc_608_fifo);
-        av_fifo_freep2(&tmp->cc_708_fifo);
-    }
-    av_freep(ccf);
+    av_fifo_freep2(&ccf->cc_608_fifo);
+    av_fifo_freep2(&ccf->cc_708_fifo);
+    memset(ccf, 0, sizeof(*ccf));
 }
 
-AVCCFifo *ff_ccfifo_alloc(AVRational framerate, void *log_ctx)
+int ff_ccfifo_init(CCFifo *ccf, AVRational framerate, void *log_ctx)
 {
-    AVCCFifo *ccf;
     int i;
 
-    ccf = av_mallocz(sizeof(*ccf));
-    if (!ccf)
-        return NULL;
-
+    memset(ccf, 0, sizeof(*ccf));
     ccf->log_ctx = log_ctx;
     ccf->framerate = framerate;
 
@@ -101,24 +82,24 @@ AVCCFifo *ff_ccfifo_alloc(AVRational framerate, void *log_ctx)
         ccf->passthrough = 1;
     }
 
-    return ccf;
+    return 0;
 
 error:
-    ff_ccfifo_freep(&ccf);
-    return NULL;
+    ff_ccfifo_uninit(ccf);
+    return AVERROR(ENOMEM);
 }
 
-int ff_ccfifo_getoutputsize(AVCCFifo *ccf)
+int ff_ccfifo_getoutputsize(CCFifo *ccf)
 {
     return ccf->expected_cc_count * CC_BYTES_PER_ENTRY;
 }
 
-int ff_ccfifo_ccdetected(AVCCFifo *ccf)
+int ff_ccfifo_ccdetected(CCFifo *ccf)
 {
     return ccf->cc_detected;
 }
 
-int ff_ccfifo_injectbytes(AVCCFifo *ccf, uint8_t *cc_data, size_t len)
+int ff_ccfifo_injectbytes(CCFifo *ccf, uint8_t *cc_data, size_t len)
 {
     int cc_608_tuples = 0;
     int cc_708_tuples = 0;
@@ -159,7 +140,7 @@ int ff_ccfifo_injectbytes(AVCCFifo *ccf, uint8_t *cc_data, size_t len)
     return 0;
 }
 
-int ff_ccfifo_inject(AVCCFifo *ccf, AVFrame *frame)
+int ff_ccfifo_inject(CCFifo *ccf, AVFrame *frame)
 {
     AVFrameSideData *sd;
     int ret;
@@ -180,7 +161,7 @@ int ff_ccfifo_inject(AVCCFifo *ccf, AVFrame *frame)
     return 0;
 }
 
-int ff_ccfifo_extractbytes(AVCCFifo *ccf, uint8_t *cc_bytes, size_t len)
+int ff_ccfifo_extractbytes(CCFifo *ccf, uint8_t *cc_bytes, size_t len)
 {
     int cc_count = len / CC_BYTES_PER_ENTRY;
 
@@ -209,7 +190,7 @@ int ff_ccfifo_extractbytes(AVCCFifo *ccf, uint8_t *cc_bytes, size_t len)
 /* Read the A53 side data, discard padding, and put 608/708 into
    queues so we can ensure they get into the output frames at
    the correct rate... */
-int ff_ccfifo_extract(AVCCFifo *ccf, AVFrame *frame)
+int ff_ccfifo_extract(CCFifo *ccf, AVFrame *frame)
 {
     AVFrameSideData *side_data = av_frame_get_side_data(frame, AV_FRAME_DATA_A53_CC);
     if (side_data) {

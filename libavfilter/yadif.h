@@ -77,7 +77,7 @@ typedef struct YADIFContext {
     int eof;
     uint8_t *temp_line;
     int temp_line_size;
-    AVCCFifo *cc_fifo;
+    CCFifo cc_fifo;
 
     /*
      * An algorithm that treats first and/or last fields in a sequence

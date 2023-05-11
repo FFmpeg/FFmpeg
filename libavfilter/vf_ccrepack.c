@@ -37,7 +37,7 @@
 typedef struct CCRepackContext
 {
     const AVClass *class;
-    AVCCFifo *cc_fifo;
+    CCFifo cc_fifo;
 } CCRepackContext;
 
 static const AVOption ccrepack_options[] = {
@@ -50,9 +50,10 @@ static int config_input(AVFilterLink *link)
 {
     CCRepackContext *ctx = link->dst->priv;
 
-    if (!(ctx->cc_fifo = ff_ccfifo_alloc(link->frame_rate, ctx))) {
+    int ret = ff_ccfifo_init(&ctx->cc_fifo, link->frame_rate, ctx);
+    if (ret < 0) {
         av_log(ctx, AV_LOG_ERROR, "Failure to setup CC FIFO queue\n");
-        return AVERROR(ENOMEM);
+        return ret;
     }
 
     return 0;
@@ -63,8 +64,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     CCRepackContext *ctx = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
 
-    ff_ccfifo_extract(ctx->cc_fifo, frame);
-    ff_ccfifo_inject(ctx->cc_fifo, frame);
+    ff_ccfifo_extract(&ctx->cc_fifo, frame);
+    ff_ccfifo_inject(&ctx->cc_fifo, frame);
 
     return ff_filter_frame(outlink, frame);
 }
@@ -72,7 +73,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 static av_cold void uninit(AVFilterContext *ctx)
 {
     CCRepackContext *s = ctx->priv;
-    ff_ccfifo_freep(&s->cc_fifo);
+    ff_ccfifo_uninit(&s->cc_fifo);
 }
 
 static const AVFilterPad avfilter_vf_ccrepack_inputs[] = {

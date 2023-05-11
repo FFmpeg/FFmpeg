@@ -33,25 +33,33 @@
 #include "libavutil/frame.h"
 #include "libavutil/fifo.h"
 
-typedef struct AVCCFifo AVCCFifo;
+typedef struct CCFifo {
+    AVFifo *cc_608_fifo;
+    AVFifo *cc_708_fifo;
+    AVRational framerate;
+    int expected_cc_count;
+    int expected_608;
+    int cc_detected;
+    int passthrough;
+    int passthrough_warning;
+    void *log_ctx;
+} CCFifo;
 
 /**
- * Allocate an AVCCFifo.
+ * Initialize a CCFifo.
  *
  * @param framerate   output framerate
  * @param log_ctx     used for any av_log() calls
- * @return            newly allocated AVCCFifo, or NULL on error
+ * @return            Zero on success, or negative AVERROR code on failure.
  */
-AVCCFifo *ff_ccfifo_alloc(AVRational framerate, void *log_ctx);
+int ff_ccfifo_init(CCFifo *ccf, AVRational framerate, void *log_ctx);
 
 /**
- * Free an AVCCFifo
+ * Free all memory allocated in a CCFifo and clear the context.
  *
- * @param ccf Pointer to the pointer to the AVCCFifo which should be freed
- * @note `*ptr = NULL` is safe and leads to no action.
+ * @param ccf Pointer to the CCFifo which should be uninitialized
  */
-void ff_ccfifo_freep(AVCCFifo **ccf);
-
+void ff_ccfifo_uninit(CCFifo *ccf);
 
 /**
  * Extract CC data from an AVFrame
@@ -61,17 +69,17 @@ void ff_ccfifo_freep(AVCCFifo **ccf);
  * as it will be re-inserted at the appropriate rate later in the
  * filter.
  *
- * @param af          AVCCFifo to write to
+ * @param af          CCFifo to write to
  * @param frame       AVFrame with the video frame to operate on
  * @return            Zero on success, or negative AVERROR
  *                    code on failure.
  */
-int ff_ccfifo_extract(AVCCFifo *ccf, AVFrame *frame);
+int ff_ccfifo_extract(CCFifo *ccf, AVFrame *frame);
 
 /**
  *Just like ff_ccfifo_extract(), but takes the raw bytes instead of an AVFrame
  */
-int ff_ccfifo_extractbytes(AVCCFifo *ccf, uint8_t *data, size_t len);
+int ff_ccfifo_extractbytes(CCFifo *ccf, uint8_t *data, size_t len);
 
 /**
  * Provide the size in bytes of an output buffer to allocate
@@ -80,7 +88,7 @@ int ff_ccfifo_extractbytes(AVCCFifo *ccf, uint8_t *data, size_t len);
  * an appropriately sized buffer and pass it to ff_ccfifo_injectbytes()
  *
  */
-int ff_ccfifo_getoutputsize(AVCCFifo *ccf);
+int ff_ccfifo_getoutputsize(CCFifo *ccf);
 
 /**
  * Insert CC data from the FIFO into an AVFrame (as side data)
@@ -88,23 +96,23 @@ int ff_ccfifo_getoutputsize(AVCCFifo *ccf);
  * Dequeue the appropriate number of CC tuples based on the
  * frame rate, and insert them into the AVFrame
  *
- * @param af          AVCCFifo to read from
+ * @param af          CCFifo to read from
  * @param frame       AVFrame with the video frame to operate on
  * @return            Zero on success, or negative AVERROR
  *                    code on failure.
  */
-int ff_ccfifo_inject(AVCCFifo *ccf, AVFrame *frame);
+int ff_ccfifo_inject(CCFifo *ccf, AVFrame *frame);
 
 /**
  * Just like ff_ccfifo_inject(), but takes the raw bytes to insert the CC data
  * int rather than an AVFrame
  */
-int ff_ccfifo_injectbytes(AVCCFifo *ccf, uint8_t *data, size_t len);
+int ff_ccfifo_injectbytes(CCFifo *ccf, uint8_t *data, size_t len);
 
 /**
  * Returns 1 if captions have been found as a prior call
  * to ff_ccfifo_extract() or ff_ccfifo_extractbytes()
  */
-int ff_ccfifo_ccdetected(AVCCFifo *ccf);
+int ff_ccfifo_ccdetected(CCFifo *ccf);
 
 #endif /* AVFILTER_CCFIFO_H */

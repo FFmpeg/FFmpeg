@@ -261,7 +261,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_frame_free(&yadif->prev);
     av_frame_free(&yadif->cur );
     av_frame_free(&yadif->next);
-    ff_ccfifo_freep(&yadif->cc_fifo);
+    ff_ccfifo_uninit(&yadif->cc_fifo);
 }
 
 static const enum AVPixelFormat pix_fmts[] = {
@@ -286,6 +286,7 @@ static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     YADIFContext *s = ctx->priv;
+    int ret;
 
     outlink->time_base = av_mul_q(ctx->inputs[0]->time_base, (AVRational){1, 2});
     outlink->w             = ctx->inputs[0]->w;
@@ -297,9 +298,10 @@ static int config_output(AVFilterLink *outlink)
     else
         outlink->frame_rate = ctx->inputs[0]->frame_rate;
 
-    if (!(s->cc_fifo = ff_ccfifo_alloc(outlink->frame_rate, ctx))) {
+    ret = ff_ccfifo_init(&s->cc_fifo, outlink->frame_rate, ctx);
+    if (ret < 0) {
         av_log(ctx, AV_LOG_ERROR, "Failure to setup CC FIFO queue\n");
-        return AVERROR(ENOMEM);
+        return ret;
     }
 
     if (outlink->w < 3 || outlink->h < 3) {

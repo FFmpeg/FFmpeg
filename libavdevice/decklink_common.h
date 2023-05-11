@@ -113,7 +113,7 @@ struct decklink_ctx {
     /* Capture buffer queue */
     DecklinkPacketQueue queue;
 
-    AVCCFifo *cc_fifo;      ///< closed captions
+    CCFifo cc_fifo;      ///< closed captions
 
     /* Streams present */
     int audio;
