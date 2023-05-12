@@ -748,8 +748,10 @@ static int reduce_formats_on_filter(AVFilterContext *filter)
                 (KNOWN(fmt) || fmts->all_counts)) {
                 /* Turn the infinite list into a singleton */
                 fmts->all_layouts = fmts->all_counts  = 0;
-                if (ff_add_channel_layout(&outlink->incfg.channel_layouts, fmt) < 0)
-                    ret = 1;
+                ret = ff_add_channel_layout(&outlink->incfg.channel_layouts, fmt);
+                if (ret < 0)
+                    return ret;
+                ret = 1;
                 break;
             }
 
