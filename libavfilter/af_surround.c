@@ -74,6 +74,7 @@ typedef struct AudioSurroundContext {
     float focus;
     int   win_size;
     int   win_func;
+    float win_gain;
     float overlap;
 
     float all_x;
@@ -637,7 +638,7 @@ static void upmix_7_1_5_0_side(AVFilterContext *ctx,
 {
     float fl_mag, fr_mag, ls_mag, rs_mag, lb_mag, rb_mag;
     float *dstc, *dstl, *dstr, *dstls, *dstrs, *dstlb, *dstrb, *dstlfe;
-    float lfe_mag, c_phase, mag_total = (mag_totall + mag_totalr) * 0.5;
+    float lfe_mag, c_phase, mag_total = (mag_totall + mag_totalr) * 0.5f;
     AudioSurroundContext *s = ctx->priv;
 
     dstl  = (float *)s->output->extended_data[0];
@@ -1197,6 +1198,23 @@ fail:
         s->window_func_lut[i] = sqrtf(s->window_func_lut[i] / s->win_size);
     s->hop_size = FFMAX(1, s->win_size * (1. - s->overlap));
 
+    {
+        float max = 0.f, *temp_lut = av_calloc(s->win_size, sizeof(*temp_lut));
+        if (!temp_lut)
+            return AVERROR(ENOMEM);
+
+        for (int j = 0; j < s->win_size; j += s->hop_size) {
+            for (int i = 0; i < s->win_size; i++)
+                temp_lut[(i + j) % s->win_size] += s->window_func_lut[i];
+        }
+
+        for (int i = 0; i < s->win_size; i++)
+            max = fmaxf(temp_lut[i], max);
+        av_freep(&temp_lut);
+
+        s->win_gain = 1.f / (max * sqrtf(s->win_size));
+    }
+
     allchannels_spread(ctx);
 
     return 0;
@@ -1237,7 +1255,7 @@ static int fft_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 static int ifft_channel(AVFilterContext *ctx, AVFrame *out, int ch)
 {
     AudioSurroundContext *s = ctx->priv;
-    const float level_out = s->output_levels[ch];
+    const float level_out = s->output_levels[ch] * s->win_gain;
     float *dst, *ptr;
 
     dst = (float *)s->output_out->extended_data[ch];
