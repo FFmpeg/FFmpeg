@@ -747,6 +747,7 @@ static void filter_stereo(AVFilterContext *ctx)
     const float *srcl = (const float *)s->input->extended_data[0];
     const float *srcr = (const float *)s->input->extended_data[1];
     const int output_lfe = s->output_lfe && s->create_lfe;
+    const int rdft_size = s->rdft_size;
     const int lfe_mode = s->lfe_mode;
     const float highcut = s->highcut;
     const float lowcut = s->lowcut;
@@ -761,7 +762,7 @@ static void filter_stereo(AVFilterContext *ctx)
     float *xpos = s->x_pos;
     float *ypos = s->y_pos;
 
-    for (int n = 0; n < s->rdft_size; n++) {
+    for (int n = 0; n < rdft_size; n++) {
         float l_re = srcl[2 * n], r_re = srcr[2 * n];
         float l_im = srcl[2 * n + 1], r_im = srcr[2 * n + 1];
         float c_phase = atan2f(l_im + r_im, l_re + r_re);
@@ -801,6 +802,7 @@ static void filter_2_1(AVFilterContext *ctx)
     const float *srcl = (const float *)s->input->extended_data[0];
     const float *srcr = (const float *)s->input->extended_data[1];
     const float *srclfe = (const float *)s->input->extended_data[2];
+    const int rdft_size = s->rdft_size;
     const float angle = s->angle;
     const float focus = s->focus;
     float *magtotal = s->mag_total;
@@ -813,7 +815,7 @@ static void filter_2_1(AVFilterContext *ctx)
     float *xpos = s->x_pos;
     float *ypos = s->y_pos;
 
-    for (int n = 0; n < s->rdft_size; n++) {
+    for (int n = 0; n < rdft_size; n++) {
         float l_re = srcl[2 * n], r_re = srcr[2 * n];
         float l_im = srcl[2 * n + 1], r_im = srcr[2 * n + 1];
         float lfe_re = srclfe[2 * n], lfe_im = srclfe[2 * n + 1];
@@ -858,6 +860,7 @@ static void filter_surround(AVFilterContext *ctx)
     const float *srcr = (const float *)s->input->extended_data[1];
     const float *srcc = (const float *)s->input->extended_data[2];
     const int output_lfe = s->output_lfe && s->create_lfe;
+    const int rdft_size = s->rdft_size;
     const int lfe_mode = s->lfe_mode;
     const float highcut = s->highcut;
     const float lowcut = s->lowcut;
@@ -872,7 +875,7 @@ static void filter_surround(AVFilterContext *ctx)
     float *xpos = s->x_pos;
     float *ypos = s->y_pos;
 
-    for (int n = 0; n < s->rdft_size; n++) {
+    for (int n = 0; n < rdft_size; n++) {
         float l_re = srcl[2 * n], r_re = srcr[2 * n];
         float l_im = srcl[2 * n + 1], r_im = srcr[2 * n + 1];
         float c_re = srcc[2 * n], c_im = srcc[2 * n + 1];
@@ -910,6 +913,7 @@ static void filter_surround(AVFilterContext *ctx)
 static void filter_5_0_side(AVFilterContext *ctx)
 {
     AudioSurroundContext *s = ctx->priv;
+    const int rdft_size = s->rdft_size;
     float *srcl, *srcr, *srcc, *srcsl, *srcsr;
     int n;
 
@@ -919,7 +923,7 @@ static void filter_5_0_side(AVFilterContext *ctx)
     srcsl = (float *)s->input->extended_data[3];
     srcsr = (float *)s->input->extended_data[4];
 
-    for (n = 0; n < s->rdft_size; n++) {
+    for (n = 0; n < rdft_size; n++) {
         float fl_re = srcl[2 * n], fr_re = srcr[2 * n];
         float fl_im = srcl[2 * n + 1], fr_im = srcr[2 * n + 1];
         float c_re = srcc[2 * n], c_im = srcc[2 * n + 1];
@@ -967,6 +971,7 @@ static void filter_5_0_side(AVFilterContext *ctx)
 static void filter_5_1_side(AVFilterContext *ctx)
 {
     AudioSurroundContext *s = ctx->priv;
+    const int rdft_size = s->rdft_size;
     float *srcl, *srcr, *srcc, *srclfe, *srcsl, *srcsr;
     int n;
 
@@ -977,7 +982,7 @@ static void filter_5_1_side(AVFilterContext *ctx)
     srcsl = (float *)s->input->extended_data[4];
     srcsr = (float *)s->input->extended_data[5];
 
-    for (n = 0; n < s->rdft_size; n++) {
+    for (n = 0; n < rdft_size; n++) {
         float fl_re = srcl[2 * n], fr_re = srcr[2 * n];
         float fl_im = srcl[2 * n + 1], fr_im = srcr[2 * n + 1];
         float c_re = srcc[2 * n], c_im = srcc[2 * n + 1];
@@ -1026,6 +1031,7 @@ static void filter_5_1_side(AVFilterContext *ctx)
 static void filter_5_1_back(AVFilterContext *ctx)
 {
     AudioSurroundContext *s = ctx->priv;
+    const int rdft_size = s->rdft_size;
     float *srcl, *srcr, *srcc, *srclfe, *srcbl, *srcbr;
     int n;
 
@@ -1036,7 +1042,7 @@ static void filter_5_1_back(AVFilterContext *ctx)
     srcbl = (float *)s->input->extended_data[4];
     srcbr = (float *)s->input->extended_data[5];
 
-    for (n = 0; n < s->rdft_size; n++) {
+    for (n = 0; n < rdft_size; n++) {
         float fl_re = srcl[2 * n], fr_re = srcr[2 * n];
         float fl_im = srcl[2 * n + 1], fr_im = srcr[2 * n + 1];
         float c_re = srcc[2 * n], c_im = srcc[2 * n + 1];
