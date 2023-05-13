@@ -461,6 +461,6 @@ void *allocate_array_elem(void *array, size_t elem_size, int *nb_elems);
     char name[16];\
     snprintf(name, sizeof(name), "%d", rate);
 
-double get_rotation(int32_t *displaymatrix);
+double get_rotation(const int32_t *displaymatrix);
 
 #endif /* FFTOOLS_CMDUTILS_H */

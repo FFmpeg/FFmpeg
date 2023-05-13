@@ -994,7 +994,7 @@ void *allocate_array_elem(void *ptr, size_t elem_size, int *nb_elems)
     return new_elem;
 }
 
-double get_rotation(int32_t *displaymatrix)
+double get_rotation(const int32_t *displaymatrix)
 {
     double theta = 0;
     if (displaymatrix)
