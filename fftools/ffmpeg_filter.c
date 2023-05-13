@@ -83,7 +83,8 @@ typedef struct InputFilterPriv {
 
     AVBufferRef *hw_frames_ctx;
 
-    int32_t *displaymatrix;
+    int     displaymatrix_present;
+    int32_t displaymatrix[9];
 
     // fallback parameters to use when no input is ever sent
     struct {
@@ -302,7 +303,6 @@ void fg_free(FilterGraph **pfg)
                 av_frame_free(&frame);
             av_fifo_freep2(&ifp->frame_queue);
         }
-        av_freep(&ifp->displaymatrix);
         if (ist->sub2video.sub_queue) {
             AVSubtitle sub;
             while (av_fifo_read(ist->sub2video.sub_queue, &sub, 1) >= 0)
@@ -1094,7 +1094,7 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
         int32_t *displaymatrix = ifp->displaymatrix;
         double theta;
 
-        if (!displaymatrix)
+        if (!ifp->displaymatrix_present)
             displaymatrix = (int32_t *)av_stream_get_side_data(ist->st, AV_PKT_DATA_DISPLAYMATRIX, NULL);
         theta = get_rotation(displaymatrix);
 
@@ -1450,10 +1450,10 @@ static int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *fr
     if (ret < 0)
         return ret;
 
-    av_freep(&ifp->displaymatrix);
     sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DISPLAYMATRIX);
     if (sd)
-        ifp->displaymatrix = av_memdup(sd->data, sizeof(int32_t) * 9);
+        memcpy(ifp->displaymatrix, sd->data, sizeof(ifp->displaymatrix));
+    ifp->displaymatrix_present = !!sd;
 
     return 0;
 }
@@ -1611,9 +1611,10 @@ int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame, int keep_reference)
         need_reinit = 1;
 
     if (sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DISPLAYMATRIX)) {
-        if (!ifp->displaymatrix || memcmp(sd->data, ifp->displaymatrix, sizeof(int32_t) * 9))
+        if (!ifp->displaymatrix_present ||
+            memcmp(sd->data, ifp->displaymatrix, sizeof(ifp->displaymatrix)))
             need_reinit = 1;
-    } else if (ifp->displaymatrix)
+    } else if (ifp->displaymatrix_present)
         need_reinit = 1;
 
     if (need_reinit) {
