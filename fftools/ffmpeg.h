@@ -281,7 +281,6 @@ typedef struct InputFilter {
     AVFilterContext    *filter;
     struct FilterGraph *graph;
     uint8_t            *name;
-    enum AVMediaType    type;   // AVMEDIA_TYPE_SUBTITLE for sub2video
 } InputFilter;
 
 typedef struct OutputFilter {
