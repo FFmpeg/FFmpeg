@@ -88,7 +88,7 @@ int ff_ccfifo_extractbytes(CCFifo *ccf, uint8_t *data, size_t len);
  * an appropriately sized buffer and pass it to ff_ccfifo_injectbytes()
  *
  */
-int ff_ccfifo_getoutputsize(CCFifo *ccf);
+int ff_ccfifo_getoutputsize(const CCFifo *ccf);
 
 /**
  * Insert CC data from the FIFO into an AVFrame (as side data)
@@ -113,6 +113,6 @@ int ff_ccfifo_injectbytes(CCFifo *ccf, uint8_t *data, size_t len);
  * Returns 1 if captions have been found as a prior call
  * to ff_ccfifo_extract() or ff_ccfifo_extractbytes()
  */
-int ff_ccfifo_ccdetected(CCFifo *ccf);
+int ff_ccfifo_ccdetected(const CCFifo *ccf);
 
 #endif /* AVFILTER_CCFIFO_H */

@@ -89,12 +89,12 @@ error:
     return AVERROR(ENOMEM);
 }
 
-int ff_ccfifo_getoutputsize(CCFifo *ccf)
+int ff_ccfifo_getoutputsize(const CCFifo *ccf)
 {
     return ccf->expected_cc_count * CC_BYTES_PER_ENTRY;
 }
 
-int ff_ccfifo_ccdetected(CCFifo *ccf)
+int ff_ccfifo_ccdetected(const CCFifo *ccf)
 {
     return ccf->cc_detected;
 }
