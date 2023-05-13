@@ -283,15 +283,6 @@ typedef struct InputFilter {
     struct FilterGraph *graph;
     uint8_t            *name;
     enum AVMediaType    type;   // AVMEDIA_TYPE_SUBTITLE for sub2video
-
-    // parameters configured for this input
-    int format;
-
-    int width, height;
-    AVRational sample_aspect_ratio;
-
-    int sample_rate;
-    AVChannelLayout ch_layout;
 } InputFilter;
 
 typedef struct OutputFilter {
