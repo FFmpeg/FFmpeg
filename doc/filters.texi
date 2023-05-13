@@ -24950,6 +24950,12 @@ Set sample aspect ration to 1/1.
 Set sample aspect ratio to match input size of video
 @end table
 Default is @samp{none}.
+
+@item input
+Set input formats for filter to pick from.
+Can be @samp{all}, for selecting from all available formats,
+or @samp{first}, for selecting first available format.
+Default is @samp{first}.
 @end table
 
 @section weave, doubleweave
