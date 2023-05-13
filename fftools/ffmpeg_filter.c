@@ -60,8 +60,11 @@ typedef struct InputFilterPriv {
     // used to hold submitted input
     AVFrame *frame;
 
-    // AVMEDIA_TYPE_SUBTITLE for sub2video
+    // filter data type
     enum AVMediaType type;
+    // source data type: AVMEDIA_TYPE_SUBTITLE for sub2video,
+    // same as type otherwise
+    enum AVMediaType type_src;
 
     int eof;
 
@@ -267,7 +270,9 @@ static InputFilter *ifilter_alloc(FilterGraph *fg, InputStream *ist)
     ifp->format          = -1;
     ifp->fallback.format = -1;
     ifp->ist             = ist;
-    ifp->type            = ist->st->codecpar->codec_type;
+    ifp->type_src        = ist->st->codecpar->codec_type;
+    ifp->type            = ifp->type_src == AVMEDIA_TYPE_SUBTITLE ?
+                           AVMEDIA_TYPE_VIDEO : ifp->type_src;
 
     ifp->frame_queue = av_fifo_alloc2(8, sizeof(AVFrame*), AV_FIFO_FLAG_AUTO_GROW);
     if (!ifp->frame_queue)
@@ -1205,7 +1210,7 @@ static int configure_input_audio_filter(FilterGraph *fg, InputFilter *ifilter,
 static int configure_input_filter(FilterGraph *fg, InputFilter *ifilter,
                                   AVFilterInOut *in)
 {
-    switch (avfilter_pad_get_type(in->filter_ctx->input_pads, in->pad_idx)) {
+    switch (ifp_from_ifilter(ifilter)->type) {
     case AVMEDIA_TYPE_VIDEO: return configure_input_video_filter(fg, ifilter, in);
     case AVMEDIA_TYPE_AUDIO: return configure_input_audio_filter(fg, ifilter, in);
     default: av_assert0(0); return 0;
@@ -1459,8 +1464,8 @@ int ifilter_has_all_input_formats(FilterGraph *fg)
     int i;
     for (i = 0; i < fg->nb_inputs; i++) {
         InputFilterPriv *ifp = ifp_from_ifilter(fg->inputs[i]);
-        if (ifp->format < 0 && (ifp->type == AVMEDIA_TYPE_AUDIO ||
-                                ifp->type == AVMEDIA_TYPE_VIDEO))
+        if (ifp->format < 0 && (ifp->type_src == AVMEDIA_TYPE_AUDIO ||
+                                ifp->type_src == AVMEDIA_TYPE_VIDEO))
             return 0;
     }
     return 1;
@@ -1564,7 +1569,9 @@ int ifilter_send_eof(InputFilter *ifilter, int64_t pts, AVRational tb)
             }
         }
 
-        if (ifp->format < 0 && (ifp->type == AVMEDIA_TYPE_AUDIO || ifp->type == AVMEDIA_TYPE_VIDEO)) {
+        if (ifp->format < 0 &&
+            (ifp->type_src == AVMEDIA_TYPE_AUDIO ||
+             ifp->type_src == AVMEDIA_TYPE_VIDEO)) {
             av_log(NULL, AV_LOG_ERROR,
                    "Cannot determine format of input stream %d:%d after EOF\n",
                    ifp->ist->file_index, ifp->ist->st->index);
@@ -1585,7 +1592,7 @@ int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame, int keep_reference)
     /* determine if the parameters for this input changed */
     need_reinit = ifp->format != frame->format;
 
-    switch (ifp->ist->par->codec_type) {
+    switch (ifp->type) {
     case AVMEDIA_TYPE_AUDIO:
         need_reinit |= ifp->sample_rate    != frame->sample_rate ||
                        av_channel_layout_compare(&ifp->ch_layout, &frame->ch_layout);
