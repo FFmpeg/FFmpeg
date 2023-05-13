@@ -441,7 +441,7 @@ static int query_formats(AVFilterGraph *graph, void *log_ctx)
 
             neg = ff_filter_get_negotiation(link);
             av_assert0(neg);
-            for (neg_step = 1; neg_step < neg->nb_mergers; neg_step++) {
+            for (neg_step = 0; neg_step < neg->nb_mergers; neg_step++) {
                 const AVFilterFormatsMerger *m = &neg->mergers[neg_step];
                 void *a = FF_FIELD_AT(void *, m->offset, link->incfg);
                 void *b = FF_FIELD_AT(void *, m->offset, link->outcfg);
