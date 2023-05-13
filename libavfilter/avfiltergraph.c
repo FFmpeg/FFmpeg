@@ -1303,7 +1303,6 @@ int avfilter_graph_request_oldest(AVFilterGraph *graph)
     while (graph->sink_links_count) {
         oldest = graph->sink_links[0];
         if (oldest->dst->filter->activate) {
-            /* For now, buffersink is the only filter implementing activate. */
             r = av_buffersink_get_frame_flags(oldest->dst, NULL,
                                               AV_BUFFERSINK_FLAG_PEEK);
             if (r != AVERROR_EOF)
