@@ -787,18 +787,6 @@ static void check_decode_result(InputStream *ist, int *got_output, int ret)
     }
 }
 
-// Filters can be configured only if the formats of all inputs are known.
-int ifilter_has_all_input_formats(FilterGraph *fg)
-{
-    int i;
-    for (i = 0; i < fg->nb_inputs; i++) {
-        if (fg->inputs[i]->format < 0 && (fg->inputs[i]->type == AVMEDIA_TYPE_AUDIO ||
-                                          fg->inputs[i]->type == AVMEDIA_TYPE_VIDEO))
-            return 0;
-    }
-    return 1;
-}
-
 // This does not quite work like avcodec_decode_audio4/avcodec_decode_video2.
 // There is the following difference: if you got a frame, you must call
 // it again with pkt=NULL. pkt==NULL is treated differently from pkt->size==0

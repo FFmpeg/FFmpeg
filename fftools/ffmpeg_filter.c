@@ -1445,6 +1445,18 @@ static int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *fr
     return 0;
 }
 
+// Filters can be configured only if the formats of all inputs are known.
+int ifilter_has_all_input_formats(FilterGraph *fg)
+{
+    int i;
+    for (i = 0; i < fg->nb_inputs; i++) {
+        if (fg->inputs[i]->format < 0 && (fg->inputs[i]->type == AVMEDIA_TYPE_AUDIO ||
+                                          fg->inputs[i]->type == AVMEDIA_TYPE_VIDEO))
+            return 0;
+    }
+    return 1;
+}
+
 int filtergraph_is_simple(FilterGraph *fg)
 {
     FilterGraphPriv *fgp = fgp_from_fg(fg);
