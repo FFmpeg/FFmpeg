@@ -336,14 +336,19 @@ static av_cold int init(AVFilterContext *ctx)
     return 0;
 }
 
+static void free_frames(AVFilterContext *ctx)
+{
+    LoopContext *s = ctx->priv;
+
+    for (int i = 0; i < s->nb_frames; i++)
+        av_frame_free(&s->frames[i]);
+}
+
 static av_cold void uninit(AVFilterContext *ctx)
 {
     LoopContext *s = ctx->priv;
-    int i;
 
-    for (i = 0; i < s->nb_frames; i++)
-        av_frame_free(&s->frames[i]);
-
+    free_frames(ctx);
     av_freep(&s->frames);
     s->nb_frames = 0;
 }
@@ -368,6 +373,8 @@ static int push_frame(AVFilterContext *ctx)
         s->pts_offset += s->duration;
         if (s->loop > 0)
             s->loop--;
+        if (s->loop == 0)
+            free_frames(ctx);
     }
 
     return ret;
@@ -419,7 +426,12 @@ static int activate(AVFilterContext *ctx)
     AVFrame *frame = NULL;
     int ret, status;
 
-    FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
+    ret = ff_outlink_get_status(outlink);
+    if (ret) {
+        ff_inlink_set_status(inlink, ret);
+        free_frames(ctx);
+        return 0;
+    }
 
     update_time(ctx, inlink->time_base);
 
@@ -440,6 +452,7 @@ static int activate(AVFilterContext *ctx)
 
     if (s->eof && (!s->loop || !s->size)) {
         ff_outlink_set_status(outlink, AVERROR_EOF, s->eof_pts + s->pts_offset);
+        free_frames(ctx);
         return 0;
     }
 
