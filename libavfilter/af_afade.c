@@ -672,14 +672,27 @@ static int acrossfade_config_output(AVFilterLink *outlink)
     return 0;
 }
 
+static AVFrame *get_audio_buffer(AVFilterLink *inlink, int nb_samples)
+{
+    AVFilterContext *ctx = inlink->dst;
+    AudioFadeContext *s = ctx->priv;
+
+    return (s->crossfade_is_over ||
+            (ff_inlink_queued_samples(inlink) > s->nb_samples)) ?
+        ff_null_get_audio_buffer   (inlink, nb_samples) :
+        ff_default_get_audio_buffer(inlink, nb_samples);
+}
+
 static const AVFilterPad avfilter_af_acrossfade_inputs[] = {
     {
         .name         = "crossfade0",
         .type         = AVMEDIA_TYPE_AUDIO,
+        .get_buffer.audio = get_audio_buffer,
     },
     {
         .name         = "crossfade1",
         .type         = AVMEDIA_TYPE_AUDIO,
+        .get_buffer.audio = get_audio_buffer,
     },
 };
 

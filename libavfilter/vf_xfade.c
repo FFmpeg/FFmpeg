@@ -2042,14 +2042,25 @@ static int xfade_activate(AVFilterContext *ctx)
     return FFERROR_NOT_READY;
 }
 
+static AVFrame *get_video_buffer(AVFilterLink *inlink, int w, int h)
+{
+    XFadeContext *s = inlink->dst->priv;
+
+    return s->xfade_is_over || !s->need_second ?
+        ff_null_get_video_buffer   (inlink, w, h) :
+        ff_default_get_video_buffer(inlink, w, h);
+}
+
 static const AVFilterPad xfade_inputs[] = {
     {
         .name          = "main",
         .type          = AVMEDIA_TYPE_VIDEO,
+        .get_buffer.video = get_video_buffer,
     },
     {
         .name          = "xfade",
         .type          = AVMEDIA_TYPE_VIDEO,
+        .get_buffer.video = get_video_buffer,
     },
 };
 
