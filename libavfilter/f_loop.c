@@ -248,7 +248,11 @@ static int aactivate(AVFilterContext *ctx)
     update_time(ctx, inlink->time_base);
 
     if (!s->eof && (s->nb_samples < s->size || !s->loop || !s->size)) {
-        ret = ff_inlink_consume_frame(inlink, &frame);
+        const int in_nb_samples = FFMIN(1024, s->size - s->nb_samples);
+        if (in_nb_samples == 0)
+            ret = ff_inlink_consume_frame(inlink, &frame);
+        else
+            ret = ff_inlink_consume_samples(inlink, in_nb_samples, in_nb_samples, &frame);
         if (ret < 0)
             return ret;
         if (ret > 0)
