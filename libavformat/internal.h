@@ -705,6 +705,15 @@ int ff_unlock_avformat(void);
  */
 void ff_format_set_url(AVFormatContext *s, char *url);
 
+/**
+ * Return a positive value if the given url has one of the given
+ * extensions, negative AVERROR on error, 0 otherwise.
+ *
+ * @param url        url to check against the given extensions
+ * @param extensions a comma-separated list of filename extensions
+ */
+int ff_match_url_ext(const char *url, const char *extensions);
+
 struct FFOutputFormat;
 void avpriv_register_devices(const struct FFOutputFormat * const o[], const AVInputFormat * const i[]);
 

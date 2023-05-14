@@ -50,6 +50,31 @@ int av_match_ext(const char *filename, const char *extensions)
     return 0;
 }
 
+int ff_match_url_ext(const char *url, const char *extensions)
+{
+    const char *ext;
+    URLComponents uc;
+    int ret;
+    char scratchpad[128];
+
+    if (!url)
+        return 0;
+
+    ret = ff_url_decompose(&uc, url, NULL);
+    if (ret < 0 || !URL_COMPONENT_HAVE(uc, scheme))
+        return ret;
+    for (ext = uc.query; *ext != '.' && ext > uc.path; ext--)
+        ;
+
+    if (*ext != '.')
+        return 0;
+    if (uc.query - ext > sizeof(scratchpad))
+        return AVERROR(ENOMEM); //not enough memory in our scratchpad
+    av_strlcpy(scratchpad, ext + 1, FFMIN(sizeof(scratchpad), uc.query - ext));
+
+    return av_match_name(scratchpad, extensions);
+}
+
 const AVOutputFormat *av_guess_format(const char *short_name, const char *filename,
                                       const char *mime_type)
 {
