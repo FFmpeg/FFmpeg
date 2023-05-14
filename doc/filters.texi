@@ -2363,6 +2363,10 @@ Set maximal number of samples. Default is 0.
 
 @item start
 Set first sample of loop. Default is 0.
+
+@item time
+Set the time of loop start in seconds.
+Only used if option named @var{start} is set to @code{-1}.
 @end table
 
 @anchor{amerge}
@@ -16759,6 +16763,10 @@ Set maximal size in number of frames. Default is 0.
 
 @item start
 Set first frame of loop. Default is 0.
+
+@item time
+Set the time of loop start in seconds.
+Only used if option named @var{start} is set to @code{-1}.
 @end table
 
 @subsection Examples
