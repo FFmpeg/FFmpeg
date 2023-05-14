@@ -730,6 +730,15 @@ int ff_unlock_avformat(void);
  */
 void ff_format_set_url(AVFormatContext *s, char *url);
 
+/**
+ * Return a positive value if the given url has one of the given
+ * extensions, negative AVERROR on error, 0 otherwise.
+ *
+ * @param url        url to check against the given extensions
+ * @param extensions a comma-separated list of filename extensions
+ */
+int ff_match_url_ext(const char *url, const char *extensions);
+
 #define FF_PACKETLIST_FLAG_REF_PACKET (1 << 0) /**< Create a new reference for the packet instead of
                                                     transferring the ownership of the existing one to the
                                                     list. */
