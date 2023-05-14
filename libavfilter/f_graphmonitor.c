@@ -402,6 +402,7 @@ static int create_frame(AVFilterContext *ctx, int64_t pts)
     }
 
     out->pts = pts;
+    out->duration = 1;
     s->pts = pts + 1;
     return ff_filter_frame(outlink, out);
 error:
