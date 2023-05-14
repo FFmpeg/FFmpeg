@@ -14639,8 +14639,9 @@ Set video output size. Default is @var{hd720}.
 Set video opacity. Default is @var{0.9}. Allowed range is from @var{0} to @var{1}.
 
 @item mode, m
-Set output mode, can be @var{fulll} or @var{compact}.
+Set output mode, can be @var{full} or @var{compact} or @var{nozero}.
 In @var{compact} mode only filters with some queued frames have displayed stats.
+In @var{nozero} mode only non-zero stats values are displayed.
 
 @item flags, f
 Set flags which enable which stats are shown in video.

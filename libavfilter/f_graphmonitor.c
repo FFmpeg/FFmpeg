@@ -62,6 +62,13 @@ typedef struct GraphMonitorContext {
 } GraphMonitorContext;
 
 enum {
+    MODE_FULL,
+    MODE_COMPACT,
+    MODE_NOZERO,
+    NB_MODES
+};
+
+enum {
     FLAG_QUEUE = 1 << 0,
     FLAG_FCIN  = 1 << 1,
     FLAG_FCOUT = 1 << 2,
@@ -88,11 +95,11 @@ static const AVOption graphmonitor_options[] = {
     { "s",    "set monitor size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str="hd720"}, 0, 0, VF },
     { "opacity", "set video opacity", OFFSET(opacity), AV_OPT_TYPE_FLOAT, {.dbl=.9}, 0, 1, VF },
     { "o",       "set video opacity", OFFSET(opacity), AV_OPT_TYPE_FLOAT, {.dbl=.9}, 0, 1, VF },
-    { "mode", "set mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=0}, 0, 2, VF, "mode" },
-    { "m",    "set mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=0}, 0, 2, VF, "mode" },
-        { "full",     NULL, 0, AV_OPT_TYPE_CONST, {.i64=0},   0, 0, VF, "mode" },
-        { "compact",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=1},   0, 0, VF, "mode" },
-        { "nozero",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=2},   0, 0, VF, "mode" },
+    { "mode", "set mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=0}, 0, NB_MODES-1, VF, "mode" },
+    { "m",    "set mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=0}, 0, NB_MODES-1, VF, "mode" },
+        { "full",     NULL, 0, AV_OPT_TYPE_CONST, {.i64=MODE_FULL},   0, 0, VF, "mode" },
+        { "compact",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=MODE_COMPACT},0, 0, VF, "mode" },
+        { "nozero",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=MODE_NOZERO}, 0, 0, VF, "mode" },
     { "flags", "set flags", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64=FLAG_QUEUE}, 0, INT_MAX, VF, "flags" },
     { "f",     "set flags", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64=FLAG_QUEUE}, 0, INT_MAX, VF, "flags" },
         { "queue",            NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_QUEUE},   0, 0, VF, "flags" },
@@ -248,7 +255,7 @@ static int draw_items(AVFilterContext *ctx, AVFrame *out,
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
     }
-    if (s->flags & FLAG_QUEUE) {
+    if ((s->flags & FLAG_QUEUE) && (s->mode != MODE_NOZERO || frames)) {
         snprintf(buffer, sizeof(buffer)-1, " | queue: ");
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
@@ -256,52 +263,52 @@ static int draw_items(AVFilterContext *ctx, AVFrame *out,
         drawtext(out, xpos, ypos, buffer, frames > 0 ? frames >= 10 ? frames >= 50 ? s->red : s->yellow : s->green : s->white);
         xpos += strlen(buffer) * 8;
     }
-    if (s->flags & FLAG_FCIN) {
+    if ((s->flags & FLAG_FCIN) && (s->mode != MODE_NOZERO || l->frame_count_in)) {
         snprintf(buffer, sizeof(buffer)-1, " | in: %"PRId64, l->frame_count_in);
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
     }
-    if (s->flags & FLAG_FCOUT) {
+    if ((s->flags & FLAG_FCOUT) && (s->mode != MODE_NOZERO || l->frame_count_out)) {
         snprintf(buffer, sizeof(buffer)-1, " | out: %"PRId64, l->frame_count_out);
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
     }
-    if (s->flags & FLAG_FC_DELTA) {
+    if ((s->flags & FLAG_FC_DELTA) && (s->mode != MODE_NOZERO || (l->frame_count_in - l->frame_count_out))) {
         snprintf(buffer, sizeof(buffer)-1, " | delta: %"PRId64, l->frame_count_in - l->frame_count_out);
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
     }
-    if (s->flags & FLAG_SCIN) {
+    if ((s->flags & FLAG_SCIN) && (s->mode != MODE_NOZERO || l->sample_count_in)) {
         snprintf(buffer, sizeof(buffer)-1, " | sin: %"PRId64, l->sample_count_in);
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
     }
-    if (s->flags & FLAG_SCOUT) {
+    if ((s->flags & FLAG_SCOUT) && (s->mode != MODE_NOZERO || l->sample_count_out)) {
         snprintf(buffer, sizeof(buffer)-1, " | sout: %"PRId64, l->sample_count_out);
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
     }
-    if (s->flags & FLAG_SC_DELTA) {
+    if ((s->flags & FLAG_SC_DELTA) && (s->mode != MODE_NOZERO || (l->sample_count_in - l->sample_count_out))) {
         snprintf(buffer, sizeof(buffer)-1, " | sdelta: %"PRId64, l->sample_count_in - l->sample_count_out);
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
     }
-    if (s->flags & FLAG_PTS) {
+    if ((s->flags & FLAG_PTS) && (s->mode != MODE_NOZERO || current_pts_us)) {
         snprintf(buffer, sizeof(buffer)-1, " | pts: %s", av_ts2str(current_pts_us));
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
     }
-    if (s->flags & FLAG_PTS_DELTA) {
+    if ((s->flags & FLAG_PTS_DELTA) && (s->mode != MODE_NOZERO || (current_pts_us - previous_pts_us))) {
         snprintf(buffer, sizeof(buffer)-1, " | pts_delta: %s", av_ts2str(current_pts_us - previous_pts_us));
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
     }
-    if (s->flags & FLAG_TIME) {
+    if ((s->flags & FLAG_TIME) && (s->mode != MODE_NOZERO || current_pts_us)) {
         snprintf(buffer, sizeof(buffer)-1, " | time: %s", av_ts2timestr(current_pts_us, &AV_TIME_BASE_Q));
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
     }
-    if (s->flags & FLAG_TIME_DELTA) {
+    if ((s->flags & FLAG_TIME_DELTA) && (s->mode != MODE_NOZERO || (current_pts_us - previous_pts_us))) {
         snprintf(buffer, sizeof(buffer)-1, " | time_delta: %s", av_ts2timestr(current_pts_us - previous_pts_us, &AV_TIME_BASE_Q));
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
@@ -345,7 +352,7 @@ static int create_frame(AVFilterContext *ctx, int64_t pts)
         AVFilterContext *filter = ctx->graph->filters[i];
         char buffer[1024] = { 0 };
 
-        if (s->mode && !filter_have_queued(filter))
+        if (s->mode == MODE_COMPACT && !filter_have_queued(filter))
             continue;
 
         xpos = 0;
@@ -357,7 +364,7 @@ static int create_frame(AVFilterContext *ctx, int64_t pts)
             AVFilterLink *l = filter->inputs[j];
             size_t frames = ff_inlink_queued_frames(l);
 
-            if (s->mode && !frames)
+            if (s->mode == MODE_COMPACT && !frames)
                 continue;
 
             xpos = 10;
@@ -377,7 +384,7 @@ static int create_frame(AVFilterContext *ctx, int64_t pts)
             AVFilterLink *l = filter->outputs[j];
             size_t frames = ff_inlink_queued_frames(l);
 
-            if (s->mode && !frames)
+            if (s->mode == MODE_COMPACT && !frames)
                 continue;
 
             xpos = 10;
