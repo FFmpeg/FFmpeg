@@ -176,7 +176,7 @@ static int FUNC(decoder_model_info)(CodedBitstreamContext *ctx, RWContext *rw,
     int err;
 
     fb(5, buffer_delay_length_minus_1);
-    fb(32, num_units_in_decoding_tick);
+    fc(32, num_units_in_decoding_tick, 1, MAX_UINT_BITS(32));
     fb(5,  buffer_removal_time_length_minus_1);
     fb(5,  frame_presentation_time_length_minus_1);
 
