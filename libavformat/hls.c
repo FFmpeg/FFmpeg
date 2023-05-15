@@ -2536,17 +2536,23 @@ static int hls_probe(const AVProbeData *p)
 
         int mime_ok = p->mime_type && !(
             av_strcasecmp(p->mime_type, "application/vnd.apple.mpegurl") &&
-            av_strcasecmp(p->mime_type, "audio/mpegurl") &&
+            av_strcasecmp(p->mime_type, "audio/mpegurl")
+            );
+
+        int mime_x = p->mime_type && !(
             av_strcasecmp(p->mime_type, "audio/x-mpegurl") &&
             av_strcasecmp(p->mime_type, "application/x-mpegurl")
             );
 
         if (!mime_ok &&
+            !mime_x &&
             !av_match_ext    (p->filename, "m3u8,hls,m3u") &&
              ff_match_url_ext(p->filename, "m3u8,hls,m3u") <= 0) {
-            av_log(NULL, AV_LOG_ERROR, "Not detecting m3u8/hls with non standard extension\n");
+            av_log(NULL, AV_LOG_ERROR, "Not detecting m3u8/hls with non standard extension and non standard mime type\n");
             return 0;
         }
+        if (mime_x)
+            av_log(NULL, AV_LOG_WARNING, "mime type is not rfc8216 compliant\n");
 
         return AVPROBE_SCORE_MAX;
     }
