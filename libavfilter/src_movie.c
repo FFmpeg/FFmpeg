@@ -23,7 +23,6 @@
  * @file
  * movie video source
  *
- * @todo use direct rendering (no allocation of a new frame)
  * @todo support a PTS correction mechanism
  */
 
@@ -156,6 +155,56 @@ static AVStream *find_stream(void *log, AVFormatContext *avf, const char *spec)
     return found;
 }
 
+static int get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags)
+{
+    int linesize_align[AV_NUM_DATA_POINTERS];
+    AVFilterLink *outlink = frame->opaque;
+    int w, h, ow, oh, copy = 0;
+    AVFrame *new;
+
+    h = oh = frame->height;
+    w = ow = frame->width;
+
+    copy = frame->format != outlink->format;
+    switch (avctx->codec_type) {
+    case AVMEDIA_TYPE_VIDEO:
+        if (w != outlink->w || h != outlink->h)
+            copy |= 1;
+        break;
+    case AVMEDIA_TYPE_AUDIO:
+        if (outlink->sample_rate != frame->sample_rate ||
+            av_channel_layout_compare(&outlink->ch_layout, &frame->ch_layout))
+            copy |= 1;
+        break;
+    }
+
+    if (copy || !(avctx->codec->capabilities & AV_CODEC_CAP_DR1))
+        return avcodec_default_get_buffer2(avctx, frame, flags);
+
+    switch (avctx->codec_type) {
+    case AVMEDIA_TYPE_VIDEO:
+        avcodec_align_dimensions2(avctx, &w, &h, linesize_align);
+        new = ff_default_get_video_buffer(outlink, w, h);
+        break;
+    case AVMEDIA_TYPE_AUDIO:
+        new = ff_default_get_audio_buffer(outlink, frame->nb_samples);
+        break;
+    default:
+        return -1;
+    }
+
+    av_frame_copy_props(new, frame);
+    av_frame_unref(frame);
+    av_frame_move_ref(frame, new);
+    av_frame_free(&new);
+
+    frame->opaque = outlink;
+    frame->width  = ow;
+    frame->height = oh;
+
+    return 0;
+}
+
 static int open_stream(AVFilterContext *ctx, MovieStream *st, int dec_threads)
 {
     const AVCodec *codec;
@@ -171,6 +220,8 @@ static int open_stream(AVFilterContext *ctx, MovieStream *st, int dec_threads)
     if (!st->codec_ctx)
         return AVERROR(ENOMEM);
 
+    st->codec_ctx->flags |= AV_CODEC_FLAG_COPY_OPAQUE;
+    st->codec_ctx->get_buffer2 = get_buffer;
     ret = avcodec_parameters_to_context(st->codec_ctx, st->st->codecpar);
     if (ret < 0)
         return ret;
@@ -479,8 +530,10 @@ static int movie_decode_packet(AVFilterContext *ctx)
     /* send the packet to its decoder, if any */
     pkt_out_id = pkt.stream_index > movie->max_stream_index ? -1 :
                  movie->out_index[pkt.stream_index];
-    if (pkt_out_id >= 0)
+    if (pkt_out_id >= 0) {
+        pkt.opaque = ctx->outputs[pkt_out_id];
         ret = avcodec_send_packet(movie->st[pkt_out_id].codec_ctx, &pkt);
+    }
     av_packet_unref(&pkt);
 
     return ret;
