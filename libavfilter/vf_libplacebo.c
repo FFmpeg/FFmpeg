@@ -197,7 +197,7 @@ typedef struct LibplaceboContext {
     float min_peak;
     float scene_low;
     float scene_high;
-    float overshoot;
+    float percentile;
 
     /* pl_color_map_params */
     struct pl_color_map_params color_map_params;
@@ -218,6 +218,7 @@ typedef struct LibplaceboContext {
     int intent;
     int tonemapping_mode;
     float crosstalk;
+    float overshoot;
 #endif
 
     /* pl_dither_params */
@@ -411,7 +412,12 @@ static int update_settings(AVFilterContext *ctx)
         .minimum_peak = s->min_peak,
         .scene_threshold_low = s->scene_low,
         .scene_threshold_high = s->scene_high,
+#if PL_API_VER >= 263
+        .percentile = s->percentile,
+#endif
+#if FF_API_LIBPLACEBO_OPTS && PL_API_VER < 256
         .overshoot_margin = s->overshoot,
+#endif
     );
 
     s->color_map_params = *pl_color_map_params(
@@ -1204,7 +1210,7 @@ static const AVOption libplacebo_options[] = {
     { "minimum_peak", "Peak detection minimum peak", OFFSET(min_peak), AV_OPT_TYPE_FLOAT, {.dbl = 1.0}, 0.0, 100.0, DYNAMIC },
     { "scene_threshold_low", "Scene change low threshold", OFFSET(scene_low), AV_OPT_TYPE_FLOAT, {.dbl = 5.5}, -1.0, 100.0, DYNAMIC },
     { "scene_threshold_high", "Scene change high threshold", OFFSET(scene_high), AV_OPT_TYPE_FLOAT, {.dbl = 10.0}, -1.0, 100.0, DYNAMIC },
-    { "overshoot", "Tone-mapping overshoot margin", OFFSET(overshoot), AV_OPT_TYPE_FLOAT, {.dbl = 0.05}, 0.0, 1.0, DYNAMIC },
+    { "percentile", "Peak detection percentile", OFFSET(percentile), AV_OPT_TYPE_FLOAT, {.dbl = 99.995}, 0.0, 100.0, DYNAMIC },
 
     { "gamut_mode", "Gamut-mapping mode", OFFSET(gamut_mode), AV_OPT_TYPE_INT, {.i64 = GAMUT_MAP_PERCEPTUAL}, 0, GAMUT_MAP_COUNT - 1, DYNAMIC, "gamut_mode" },
         { "clip", "Hard-clip (RGB per-channel)", 0, AV_OPT_TYPE_CONST, {.i64 = GAMUT_MAP_CLIP}, 0, 0, STATIC, "gamut_mode" },
@@ -1254,6 +1260,7 @@ static const AVOption libplacebo_options[] = {
         { "hybrid", "Hybrid of Luma/RGB", 0, AV_OPT_TYPE_CONST, {.i64 = 3}, 0, 0, STATIC, "tonemap_mode" },
         { "luma", "Luminance", 0, AV_OPT_TYPE_CONST, {.i64 = 4}, 0, 0, STATIC, "tonemap_mode" },
     { "tonemapping_crosstalk", "Crosstalk factor for tone-mapping", OFFSET(crosstalk), AV_OPT_TYPE_FLOAT, {.dbl = 0.04}, 0.0, 0.30, DYNAMIC | AV_OPT_FLAG_DEPRECATED },
+    { "overshoot", "Tone-mapping overshoot margin", OFFSET(overshoot), AV_OPT_TYPE_FLOAT, {.dbl = 0.05}, 0.0, 1.0, DYNAMIC | AV_OPT_FLAG_DEPRECATED },
 #endif
 
     { "dithering", "Dither method to use", OFFSET(dithering), AV_OPT_TYPE_INT, {.i64 = PL_DITHER_BLUE_NOISE}, -1, PL_DITHER_METHOD_COUNT - 1, DYNAMIC, "dither" },

@@ -16341,10 +16341,11 @@ logarithmic scale between @code{0.0} and @code{100.0}. Default to @code{5.5}
 and @code{10.0}, respectively. Setting either to a negative value disables
 this functionality.
 
-@item overshoot
-Peak smoothing overshoot margin, between @code{0.0} and @code{1.0}. Provides a
-safety margin to prevent clipping as a result of peak smoothing. Defaults to
-@code{0.05}, corresponding to a margin of 5%.
+@item percentile
+Which percentile of the frame brightness histogram to use as the source peak
+for tone-mapping. Defaults to @code{99.995}, a fairly conservative value.
+Setting this to @code{100.0} disables frame histogram measurement and instead
+uses the true peak brightness for tone-mapping.
 @end table
 
 @subsubsection Tone mapping
