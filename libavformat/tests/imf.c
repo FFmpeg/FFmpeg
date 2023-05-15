@@ -402,6 +402,9 @@ static int test_bad_cpl_parsing(FFIMFCPL **cpl)
         return ret;
     }
 
+    ff_imf_cpl_free(*cpl);
+    *cpl = NULL;
+
     return 0;
 }
 
@@ -422,6 +425,9 @@ static int test_bad_resource_cpl_parsing(FFIMFCPL **cpl)
         printf("CPL parsing failed.\n");
         return ret;
     }
+
+    ff_imf_cpl_free(*cpl);
+    *cpl = NULL;
 
     return 0;
 }
@@ -594,8 +600,11 @@ int main(int argc, char *argv[])
     printf("#### End failing test ####\n");
 
     printf("#### The following should emit errors ####\n");
-    if (test_bad_resource_cpl_parsing(&cpl) != 0)
+    if (test_bad_resource_cpl_parsing(&cpl) != 0) {
+        if (cpl)
+            printf("Improper cleanup after failed CPL parsing\n");
         ret = 1;
+    }
     printf("#### End emission of errors ####\n");
 
     return ret;
