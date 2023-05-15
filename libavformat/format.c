@@ -70,7 +70,7 @@ int ff_match_url_ext(const char *url, const char *extensions)
         return 0;
     if (uc.query - ext > sizeof(scratchpad))
         return AVERROR(ENOMEM); //not enough memory in our scratchpad
-    av_strlcpy(scratchpad, ext + 1, FFMIN(sizeof(scratchpad), uc.query - ext));
+    av_strlcpy(scratchpad, ext + 1, uc.query - ext);
 
     return av_match_name(scratchpad, extensions);
 }
