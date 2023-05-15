@@ -2541,9 +2541,9 @@ static int hls_probe(const AVProbeData *p)
             av_strcasecmp(p->mime_type, "application/x-mpegurl")
             );
 
-        if (!av_match_ext    (p->filename, "m3u8,hls,m3u") &&
-             ff_match_url_ext(p->filename, "m3u8,hls,m3u") <= 0 &&
-            !mime_ok) {
+        if (!mime_ok &&
+            !av_match_ext    (p->filename, "m3u8,hls,m3u") &&
+             ff_match_url_ext(p->filename, "m3u8,hls,m3u") <= 0) {
             av_log(NULL, AV_LOG_ERROR, "Not detecting m3u8/hls with non standard extension\n");
             return 0;
         }
