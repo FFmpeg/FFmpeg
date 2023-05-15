@@ -677,18 +677,31 @@ static int qsv_create_mfx_session(AVCodecContext *avctx,
 int ff_qsv_init_internal_session(AVCodecContext *avctx, QSVSession *qs,
                                  const char *load_plugins, int gpu_copy)
 {
+    mfxIMPL impls[] = {
 #if CONFIG_D3D11VA
-    mfxIMPL          impl = MFX_IMPL_AUTO_ANY | MFX_IMPL_VIA_D3D11;
-#else
-    mfxIMPL          impl = MFX_IMPL_AUTO_ANY;
+        MFX_IMPL_AUTO_ANY | MFX_IMPL_VIA_D3D11,
 #endif
+        MFX_IMPL_AUTO_ANY
+    };
+    mfxIMPL impl;
     mfxVersion        ver = { { QSV_VERSION_MINOR, QSV_VERSION_MAJOR } };
 
     const char *desc;
-    int ret = qsv_create_mfx_session(avctx, impl, &ver, gpu_copy, &qs->session,
+    int ret;
+
+    for (int i = 0; i < FF_ARRAY_ELEMS(impls); i++) {
+        ret = qsv_create_mfx_session(avctx, impls[i], &ver, gpu_copy, &qs->session,
                                      &qs->loader);
-    if (ret)
-        return ret;
+
+        if (ret == 0)
+            break;
+
+        if (i == FF_ARRAY_ELEMS(impls) - 1)
+            return ret;
+        else
+            av_log(avctx, AV_LOG_ERROR, "The current mfx implementation is not "
+                   "supported, try next mfx implementation.\n");
+    }
 
 #ifdef AVCODEC_QSV_LINUX_SESSION_HANDLE
     ret = ff_qsv_set_display_handle(avctx, qs);
