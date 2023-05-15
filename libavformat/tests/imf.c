@@ -257,7 +257,7 @@ const char *cpl_doc =
     "</SegmentList>"
     "</CompositionPlaylist>";
 
-const char *cpl_bad_doc = "<Composition></Composition>";
+const char *cpl_bad_empty_doc = "<Composition></Composition>";
 
 const char *asset_map_doc =
     "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>"
@@ -384,52 +384,31 @@ static int test_cpl_parsing(void)
     return 0;
 }
 
-static int test_bad_cpl_parsing(FFIMFCPL **cpl)
-{
+static int test_cpl_from_doc(FFIMFCPL **cpl, const char* cpl_doc, int should_pass) {
     xmlDocPtr doc;
     int ret;
 
-    doc = xmlReadMemory(cpl_bad_doc, strlen(cpl_bad_doc), NULL, NULL, 0);
+    doc = xmlReadMemory(cpl_doc, strlen(cpl_doc), NULL, NULL, 0);
     if (doc == NULL) {
         printf("XML parsing failed.\n");
-        return 1;
+        return should_pass;
     }
 
     ret = ff_imf_parse_cpl_from_xml_dom(doc, cpl);
     xmlFreeDoc(doc);
     if (ret) {
         printf("CPL parsing failed.\n");
-        return ret;
+        if (*cpl) {
+            printf("Improper cleanup after failed CPL parsing\n");
+            return 1;
+        }
+        return should_pass;
     }
 
     ff_imf_cpl_free(*cpl);
     *cpl = NULL;
 
-    return 0;
-}
-
-static int test_bad_resource_cpl_parsing(FFIMFCPL **cpl)
-{
-    xmlDocPtr doc;
-    int ret;
-
-    doc = xmlReadMemory(cpl_bad_resource_doc, strlen(cpl_bad_resource_doc), NULL, NULL, 0);
-    if (doc == NULL) {
-        printf("XML parsing failed.\n");
-        return 1;
-    }
-
-    ret = ff_imf_parse_cpl_from_xml_dom(doc, cpl);
-    xmlFreeDoc(doc);
-    if (ret) {
-        printf("CPL parsing failed.\n");
-        return ret;
-    }
-
-    ff_imf_cpl_free(*cpl);
-    *cpl = NULL;
-
-    return 0;
+    return !should_pass;
 }
 
 static int check_asset_locator_attributes(IMFAssetLocator *asset, IMFAssetLocator *expected_asset)
@@ -591,20 +570,13 @@ int main(int argc, char *argv[])
         ret = 1;
 
     printf("#### The following should fail ####\n");
-    if (test_bad_cpl_parsing(&cpl) == 0) {
+    if (test_cpl_from_doc(&cpl, cpl_bad_empty_doc, 0) != 0)
         ret = 1;
-    } else if (cpl) {
-        printf("Improper cleanup after failed CPL parsing\n");
-        ret = 1;
-    }
     printf("#### End failing test ####\n");
 
     printf("#### The following should emit errors ####\n");
-    if (test_bad_resource_cpl_parsing(&cpl) != 0) {
-        if (cpl)
-            printf("Improper cleanup after failed CPL parsing\n");
+    if (test_cpl_from_doc(&cpl, cpl_bad_resource_doc, 1) != 0)
         ret = 1;
-    }
     printf("#### End emission of errors ####\n");
 
     return ret;
