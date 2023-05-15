@@ -86,8 +86,9 @@ static int nvdec_mpeg4_start_frame(AVCodecContext *avctx, const uint8_t *buffer,
     };
 
     for (i = 0; i < 64; ++i) {
-        ppc->QuantMatrixIntra[i] = s->intra_matrix[i];
-        ppc->QuantMatrixInter[i] = s->inter_matrix[i];
+        int n = s->idsp.idct_permutation[i];
+        ppc->QuantMatrixIntra[i] = s->intra_matrix[n];
+        ppc->QuantMatrixInter[i] = s->inter_matrix[n];
     }
 
     // We need to pass the full frame buffer and not just the slice
