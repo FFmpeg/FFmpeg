@@ -78,8 +78,8 @@ static const char *const var_names[] = {
     "line_h", "lh",           ///< line height, same as max_glyph_h
     "main_h", "h", "H",       ///< height of the input video
     "main_w", "w", "W",       ///< width  of the input video
-    "max_glyph_a", "ascent",  ///< max glyph ascent
-    "max_glyph_d", "descent", ///< min glyph descent
+    "max_glyph_a", "ascent",  ///< max glyph ascender
+    "max_glyph_d", "descent", ///< min glyph descender
     "max_glyph_h",            ///< max glyph height
     "max_glyph_w",            ///< max glyph width
     "n",                      ///< number of frame
@@ -161,7 +161,7 @@ typedef struct DrawTextContext {
     int exp_mode;                   ///< expansion mode to use for the text
     int reinit;                     ///< tells if the filter is being reinited
 #if CONFIG_LIBFONTCONFIG
-    uint8_t *font;              ///< font to be used
+    uint8_t *font;                  ///< font to be used
 #endif
     uint8_t *fontfile;              ///< font to be used
     uint8_t *text;                  ///< text to be drawn
@@ -227,25 +227,25 @@ typedef struct DrawTextContext {
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 
 static const AVOption drawtext_options[]= {
-    {"fontfile",    "set font file",        OFFSET(fontfile),           AV_OPT_TYPE_STRING, {.str=NULL},  0, 0, FLAGS},
-    {"text",        "set text",             OFFSET(text),               AV_OPT_TYPE_STRING, {.str=NULL},  0, 0, FLAGS},
-    {"textfile",    "set text file",        OFFSET(textfile),           AV_OPT_TYPE_STRING, {.str=NULL},  0, 0, FLAGS},
-    {"fontcolor",   "set foreground color", OFFSET(fontcolor.rgba),     AV_OPT_TYPE_COLOR,  {.str="black"}, 0, 0, FLAGS},
+    {"fontfile",       "set font file",         OFFSET(fontfile),           AV_OPT_TYPE_STRING, {.str=NULL},  0, 0, FLAGS},
+    {"text",           "set text",              OFFSET(text),               AV_OPT_TYPE_STRING, {.str=NULL},  0, 0, FLAGS},
+    {"textfile",       "set text file",         OFFSET(textfile),           AV_OPT_TYPE_STRING, {.str=NULL},  0, 0, FLAGS},
+    {"fontcolor",      "set foreground color",  OFFSET(fontcolor.rgba),     AV_OPT_TYPE_COLOR,  {.str="black"}, 0, 0, FLAGS},
     {"fontcolor_expr", "set foreground color expression", OFFSET(fontcolor_expr), AV_OPT_TYPE_STRING, {.str=""}, 0, 0, FLAGS},
-    {"boxcolor",    "set box color",        OFFSET(boxcolor.rgba),      AV_OPT_TYPE_COLOR,  {.str="white"}, 0, 0, FLAGS},
-    {"bordercolor", "set border color",     OFFSET(bordercolor.rgba),   AV_OPT_TYPE_COLOR,  {.str="black"}, 0, 0, FLAGS},
-    {"shadowcolor", "set shadow color",     OFFSET(shadowcolor.rgba),   AV_OPT_TYPE_COLOR,  {.str="black"}, 0, 0, FLAGS},
-    {"box",         "set box",              OFFSET(draw_box),           AV_OPT_TYPE_BOOL,   {.i64=0},     0,        1       , FLAGS},
-    {"boxborderw",  "set box border width", OFFSET(boxborderw),         AV_OPT_TYPE_INT,    {.i64=0},     INT_MIN,  INT_MAX , FLAGS},
-    {"line_spacing",  "set line spacing in pixels", OFFSET(line_spacing),   AV_OPT_TYPE_INT,    {.i64=0},     INT_MIN,  INT_MAX,FLAGS},
-    {"fontsize",    "set font size",        OFFSET(fontsize_expr),      AV_OPT_TYPE_STRING, {.str=NULL},  0, 0 , FLAGS},
-    {"x",           "set x expression",     OFFSET(x_expr),             AV_OPT_TYPE_STRING, {.str="0"},   0, 0, FLAGS},
-    {"y",           "set y expression",     OFFSET(y_expr),             AV_OPT_TYPE_STRING, {.str="0"},   0, 0, FLAGS},
-    {"shadowx",     "set shadow x offset",  OFFSET(shadowx),            AV_OPT_TYPE_INT,    {.i64=0},     INT_MIN,  INT_MAX , FLAGS},
-    {"shadowy",     "set shadow y offset",  OFFSET(shadowy),            AV_OPT_TYPE_INT,    {.i64=0},     INT_MIN,  INT_MAX , FLAGS},
-    {"borderw",     "set border width",     OFFSET(borderw),            AV_OPT_TYPE_INT,    {.i64=0},     INT_MIN,  INT_MAX , FLAGS},
-    {"tabsize",     "set tab size",         OFFSET(tabsize),            AV_OPT_TYPE_INT,    {.i64=4},     0,        INT_MAX , FLAGS},
-    {"basetime",    "set base time",        OFFSET(basetime),           AV_OPT_TYPE_INT64,  {.i64=AV_NOPTS_VALUE}, INT64_MIN, INT64_MAX , FLAGS},
+    {"boxcolor",       "set box color",         OFFSET(boxcolor.rgba),      AV_OPT_TYPE_COLOR,  {.str="white"}, 0, 0, FLAGS},
+    {"bordercolor",    "set border color",      OFFSET(bordercolor.rgba),   AV_OPT_TYPE_COLOR,  {.str="black"}, 0, 0, FLAGS},
+    {"shadowcolor",    "set shadow color",      OFFSET(shadowcolor.rgba),   AV_OPT_TYPE_COLOR,  {.str="black"}, 0, 0, FLAGS},
+    {"box",            "set box",               OFFSET(draw_box),           AV_OPT_TYPE_BOOL,   {.i64=0},     0, 1, FLAGS},
+    {"boxborderw",     "set box borders width", OFFSET(boxborderw),         AV_OPT_TYPE_INT,    {.i64=0},     INT_MIN, INT_MAX, FLAGS},
+    {"line_spacing",   "set line spacing in pixels", OFFSET(line_spacing),  AV_OPT_TYPE_INT,    {.i64=0},     INT_MIN, INT_MAX, FLAGS},
+    {"fontsize",       "set font size",         OFFSET(fontsize_expr),      AV_OPT_TYPE_STRING, {.str=NULL},  0, 0, FLAGS},
+    {"x",              "set x expression",      OFFSET(x_expr),             AV_OPT_TYPE_STRING, {.str="0"},   0, 0, FLAGS},
+    {"y",              "set y expression",      OFFSET(y_expr),             AV_OPT_TYPE_STRING, {.str="0"},   0, 0, FLAGS},
+    {"shadowx",        "set shadow x offset",   OFFSET(shadowx),            AV_OPT_TYPE_INT,    {.i64=0},     INT_MIN, INT_MAX, FLAGS},
+    {"shadowy",        "set shadow y offset",   OFFSET(shadowy),            AV_OPT_TYPE_INT,    {.i64=0},     INT_MIN, INT_MAX, FLAGS},
+    {"borderw",        "set border width",      OFFSET(borderw),            AV_OPT_TYPE_INT,    {.i64=0},     INT_MIN, INT_MAX, FLAGS},
+    {"tabsize",        "set tab size",          OFFSET(tabsize),            AV_OPT_TYPE_INT,    {.i64=4},     0, INT_MAX, FLAGS},
+    {"basetime",       "set base time",         OFFSET(basetime),           AV_OPT_TYPE_INT64,  {.i64=AV_NOPTS_VALUE}, INT64_MIN, INT64_MAX, FLAGS},
 #if CONFIG_LIBFONTCONFIG
     { "font",        "Font name",            OFFSET(font),               AV_OPT_TYPE_STRING, { .str = "Sans" },           .flags = FLAGS },
 #endif
@@ -256,15 +256,15 @@ static const AVOption drawtext_options[]= {
         {"strftime", "set strftime expansion (deprecated)", OFFSET(exp_mode), AV_OPT_TYPE_CONST, {.i64=EXP_STRFTIME}, 0, 0, FLAGS, "expansion"},
 
     {"timecode",        "set initial timecode",             OFFSET(tc_opt_string), AV_OPT_TYPE_STRING,   {.str=NULL}, 0, 0, FLAGS},
-    {"tc24hmax",        "set 24 hours max (timecode only)", OFFSET(tc24hmax),      AV_OPT_TYPE_BOOL,     {.i64=0},           0,        1, FLAGS},
-    {"timecode_rate",   "set rate (timecode only)",         OFFSET(tc_rate),       AV_OPT_TYPE_RATIONAL, {.dbl=0},           0,  INT_MAX, FLAGS},
-    {"r",               "set rate (timecode only)",         OFFSET(tc_rate),       AV_OPT_TYPE_RATIONAL, {.dbl=0},           0,  INT_MAX, FLAGS},
-    {"rate",            "set rate (timecode only)",         OFFSET(tc_rate),       AV_OPT_TYPE_RATIONAL, {.dbl=0},           0,  INT_MAX, FLAGS},
-    {"reload",     "reload text file at specified frame interval", OFFSET(reload),     AV_OPT_TYPE_INT, {.i64=0}, 0, INT_MAX, FLAGS},
-    { "alpha",       "apply alpha while rendering", OFFSET(a_expr),      AV_OPT_TYPE_STRING, { .str = "1"     },          .flags = FLAGS },
-    {"fix_bounds", "check and fix text coords to avoid clipping", OFFSET(fix_bounds), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS},
-    {"start_number", "start frame number for n/frame_num variable", OFFSET(start_number), AV_OPT_TYPE_INT, {.i64=0}, 0, INT_MAX, FLAGS},
-    {"text_source", "the source of text", OFFSET(text_source_string), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 1, FLAGS },
+    {"tc24hmax",        "set 24 hours max (timecode only)", OFFSET(tc24hmax),      AV_OPT_TYPE_BOOL,     {.i64=0},    0, 1, FLAGS},
+    {"timecode_rate",   "set rate (timecode only)",         OFFSET(tc_rate),       AV_OPT_TYPE_RATIONAL, {.dbl=0},    0, INT_MAX, FLAGS},
+    {"r",               "set rate (timecode only)",         OFFSET(tc_rate),       AV_OPT_TYPE_RATIONAL, {.dbl=0},    0, INT_MAX, FLAGS},
+    {"rate",            "set rate (timecode only)",         OFFSET(tc_rate),       AV_OPT_TYPE_RATIONAL, {.dbl=0},    0, INT_MAX, FLAGS},
+    {"reload",          "reload text file at specified frame interval", OFFSET(reload), AV_OPT_TYPE_INT, {.i64=0},    0, INT_MAX, FLAGS},
+    {"alpha",           "apply alpha while rendering",      OFFSET(a_expr),        AV_OPT_TYPE_STRING,   {.str = "1"}, .flags = FLAGS},
+    {"fix_bounds",      "check and fix text coords to avoid clipping", OFFSET(fix_bounds), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS},
+    {"start_number",    "start frame number for n/frame_num variable", OFFSET(start_number), AV_OPT_TYPE_INT, {.i64=0}, 0, INT_MAX, FLAGS},
+    {"text_source",     "the source of text", OFFSET(text_source_string), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 1, FLAGS },
 
 #if CONFIG_LIBFRIBIDI
     {"text_shaping", "attempt to shape text before drawing", OFFSET(text_shaping), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, FLAGS},
@@ -324,9 +324,9 @@ static int glyph_cmp(const void *key, const void *b)
     int64_t diff = (int64_t)a->code - (int64_t)bb->code;
 
     if (diff != 0)
-         return diff > 0 ? 1 : -1;
+        return diff > 0 ? 1 : -1;
     else
-         return FFDIFFSIGN((int64_t)a->fontsize, (int64_t)bb->fontsize);
+        return FFDIFFSIGN((int64_t)a->fontsize, (int64_t)bb->fontsize);
 }
 
 /**
@@ -447,7 +447,6 @@ static av_cold int update_fontsize(AVFilterContext *ctx)
            return err;
 
         size = av_expr_eval(s->fontsize_pexpr, s->var_values, &s->prng);
-
         if (!isnan(size)) {
             roundedsize = round(size);
             // test for overflow before cast
@@ -455,7 +454,6 @@ static av_cold int update_fontsize(AVFilterContext *ctx)
                 av_log(ctx, AV_LOG_ERROR, "fontsize overflow\n");
                 return AVERROR(EINVAL);
             }
-
             fontsize = roundedsize;
         }
     }
@@ -556,7 +554,7 @@ static int load_font_fontconfig(AVFilterContext *ctx)
         goto fail;
     }
 
-    av_log(ctx, AV_LOG_INFO, "Using \"%s\"\n", filename);
+    av_log(ctx, AV_LOG_VERBOSE, "Using \"%s\"\n", filename);
     if (parse_err)
         s->default_fontsize = size + 0.5;
 
@@ -698,6 +696,7 @@ static int shape_text(AVFilterContext *ctx)
     s->text = tmp;
     len = fribidi_unicode_to_charset(FRIBIDI_CHAR_SET_UTF8,
                                      unicodestr, len, s->text);
+
     ret = 0;
 
 out:
@@ -888,15 +887,15 @@ static int config_input(AVFilterLink *inlink)
     ff_draw_color(&s->dc, &s->bordercolor, s->bordercolor.rgba);
     ff_draw_color(&s->dc, &s->boxcolor,    s->boxcolor.rgba);
 
-    s->var_values[VAR_w]     = s->var_values[VAR_W]     = s->var_values[VAR_MAIN_W] = inlink->w;
-    s->var_values[VAR_h]     = s->var_values[VAR_H]     = s->var_values[VAR_MAIN_H] = inlink->h;
-    s->var_values[VAR_SAR]   = inlink->sample_aspect_ratio.num ? av_q2d(inlink->sample_aspect_ratio) : 1;
-    s->var_values[VAR_DAR]   = (double)inlink->w / inlink->h * s->var_values[VAR_SAR];
-    s->var_values[VAR_HSUB]  = 1 << s->dc.hsub_max;
-    s->var_values[VAR_VSUB]  = 1 << s->dc.vsub_max;
-    s->var_values[VAR_X]     = NAN;
-    s->var_values[VAR_Y]     = NAN;
-    s->var_values[VAR_T]     = NAN;
+    s->var_values[VAR_w]    = s->var_values[VAR_W] = s->var_values[VAR_MAIN_W] = inlink->w;
+    s->var_values[VAR_h]    = s->var_values[VAR_H] = s->var_values[VAR_MAIN_H] = inlink->h;
+    s->var_values[VAR_SAR]  = inlink->sample_aspect_ratio.num ? av_q2d(inlink->sample_aspect_ratio) : 1;
+    s->var_values[VAR_DAR]  = (double)inlink->w / inlink->h * s->var_values[VAR_SAR];
+    s->var_values[VAR_HSUB] = 1 << s->dc.hsub_max;
+    s->var_values[VAR_VSUB] = 1 << s->dc.vsub_max;
+    s->var_values[VAR_X]    = NAN;
+    s->var_values[VAR_Y]    = NAN;
+    s->var_values[VAR_T]    = NAN;
 
     av_lfg_init(&s->prng, av_get_random_seed());
 
@@ -1423,7 +1422,7 @@ static int draw_text(AVFilterContext *ctx, AVFrame *frame,
 
     av_bprint_clear(bp);
 
-    if(s->basetime != AV_NOPTS_VALUE)
+    if (s->basetime != AV_NOPTS_VALUE)
         now= frame->pts*av_q2d(ctx->inputs[0]->time_base) + s->basetime/1000000;
 
     switch (s->exp_mode) {
