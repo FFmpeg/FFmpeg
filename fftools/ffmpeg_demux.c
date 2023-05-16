@@ -786,8 +786,9 @@ static void demux_final_stats(Demuxer *d)
                ds->nb_packets, ds->data_size);
 
         if (ist->decoding_needed) {
-            av_log(f, AV_LOG_VERBOSE, "%"PRIu64" frames decoded",
-                   ist->frames_decoded);
+            av_log(f, AV_LOG_VERBOSE,
+                   "%"PRIu64" frames decoded; %"PRIu64" decode errors",
+                   ist->frames_decoded, ist->decode_errors);
             if (type == AVMEDIA_TYPE_AUDIO)
                 av_log(f, AV_LOG_VERBOSE, " (%"PRIu64" samples)", ist->samples_decoded);
             av_log(f, AV_LOG_VERBOSE, "; ");

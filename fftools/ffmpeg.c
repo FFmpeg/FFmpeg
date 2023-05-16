@@ -121,7 +121,6 @@ static int64_t getmaxrss(void);
 
 int64_t nb_frames_dup = 0;
 int64_t nb_frames_drop = 0;
-static int64_t decode_error_stat[2];
 unsigned nb_output_dumped = 0;
 
 static BenchmarkTimeStamps current_time;
@@ -771,8 +770,8 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
 
 static void check_decode_result(InputStream *ist, int *got_output, int ret)
 {
-    if (*got_output || ret<0)
-        decode_error_stat[ret<0] ++;
+    if (ret < 0)
+        ist->decode_errors++;
 
     if (ret < 0 && exit_on_error)
         exit_program(1);
@@ -1807,14 +1806,15 @@ static int transcode_step(OutputStream *ost)
 /*
  * The following code is the main loop of the file converter
  */
-static int transcode(void)
+static int transcode(int *err_rate_exceeded)
 {
-    int ret, i;
+    int ret = 0, i;
     InputStream *ist;
     int64_t timer_start;
 
     print_stream_maps();
 
+    *err_rate_exceeded = 0;
     atomic_store(&transcode_init_done, 1);
 
     if (stdin_interaction) {
@@ -1855,9 +1855,20 @@ static int transcode(void)
 
     /* at the end of stream, we must flush the decoder buffers */
     for (ist = ist_iter(NULL); ist; ist = ist_iter(ist)) {
+        float err_rate;
+
         if (!input_files[ist->file_index]->eof_reached) {
             process_input_packet(ist, NULL, 0);
         }
+
+        err_rate = (ist->frames_decoded || ist->decode_errors) ?
+                   ist->decode_errors / (ist->frames_decoded + ist->decode_errors) : 0.f;
+        if (err_rate > max_error_rate) {
+            av_log(ist, AV_LOG_FATAL, "Decode error rate %g exceeds maximum %g\n",
+                   err_rate, max_error_rate);
+            *err_rate_exceeded = 1;
+        } else if (err_rate)
+            av_log(ist, AV_LOG_VERBOSE, "Decode error rate %g\n", err_rate);
     }
     enc_flush();
 
@@ -1921,7 +1932,7 @@ static int64_t getmaxrss(void)
 
 int main(int argc, char **argv)
 {
-    int ret;
+    int ret, err_rate_exceeded;
     BenchmarkTimeStamps ti;
 
     init_dynload();
@@ -1958,7 +1969,7 @@ int main(int argc, char **argv)
     }
 
     current_time = ti = get_benchmark_time_stamps();
-    ret = transcode();
+    ret = transcode(&err_rate_exceeded);
     if (ret >= 0 && do_benchmark) {
         int64_t utime, stime, rtime;
         current_time = get_benchmark_time_stamps();
@@ -1969,12 +1980,10 @@ int main(int argc, char **argv)
                "bench: utime=%0.3fs stime=%0.3fs rtime=%0.3fs\n",
                utime / 1000000.0, stime / 1000000.0, rtime / 1000000.0);
     }
-    av_log(NULL, AV_LOG_DEBUG, "%"PRIu64" frames successfully decoded, %"PRIu64" decoding errors\n",
-           decode_error_stat[0], decode_error_stat[1]);
-    if ((decode_error_stat[0] + decode_error_stat[1]) * max_error_rate < decode_error_stat[1])
-        exit_program(69);
 
-    ret = received_nb_signals ? 255 : ret;
+    ret = received_nb_signals ? 255 :
+          err_rate_exceeded   ?  69 : ret;
+
     exit_program(ret);
     return ret;
 }

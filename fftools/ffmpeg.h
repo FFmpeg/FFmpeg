@@ -413,6 +413,7 @@ typedef struct InputStream {
     // number of frames/samples retrieved from the decoder
     uint64_t frames_decoded;
     uint64_t samples_decoded;
+    uint64_t decode_errors;
 } InputStream;
 
 typedef struct LastFrameDuration {
