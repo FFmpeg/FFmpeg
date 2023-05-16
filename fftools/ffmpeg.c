@@ -1418,17 +1418,6 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
         if (!got_output)
             break;
 
-        // During draining, we might get multiple output frames in this loop.
-        // ffmpeg.c does not drain the filter chain on configuration changes,
-        // which means if we send multiple frames at once to the filters, and
-        // one of those frames changes configuration, the buffered frames will
-        // be lost. This can upset certain FATE tests.
-        // Decode only 1 frame per call on EOF to appease these FATE tests.
-        // The ideal solution would be to rewrite decoding to use the new
-        // decoding API in a better way.
-        if (!pkt)
-            break;
-
         repeating = 1;
     }
 
