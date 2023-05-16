@@ -90,36 +90,37 @@ enum {
 
 #define OFFSET(x) offsetof(GraphMonitorContext, x)
 #define VF AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+#define VFR AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption graphmonitor_options[] = {
     { "size", "set monitor size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str="hd720"}, 0, 0, VF },
     { "s",    "set monitor size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str="hd720"}, 0, 0, VF },
     { "opacity", "set video opacity", OFFSET(opacity), AV_OPT_TYPE_FLOAT, {.dbl=.9}, 0, 1, VF },
     { "o",       "set video opacity", OFFSET(opacity), AV_OPT_TYPE_FLOAT, {.dbl=.9}, 0, 1, VF },
-    { "mode", "set mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=0}, 0, NB_MODES-1, VF, "mode" },
-    { "m",    "set mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=0}, 0, NB_MODES-1, VF, "mode" },
-        { "full",     NULL, 0, AV_OPT_TYPE_CONST, {.i64=MODE_FULL},   0, 0, VF, "mode" },
-        { "compact",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=MODE_COMPACT},0, 0, VF, "mode" },
-        { "nozero",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=MODE_NOZERO}, 0, 0, VF, "mode" },
-        { "nozeroeof",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=MODE_NOZEROEOF}, 0, 0, VF, "mode" },
-    { "flags", "set flags", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64=FLAG_QUEUE}, 0, INT_MAX, VF, "flags" },
-    { "f",     "set flags", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64=FLAG_QUEUE}, 0, INT_MAX, VF, "flags" },
-        { "queue",            NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_QUEUE},   0, 0, VF, "flags" },
-        { "frame_count_in",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_FCOUT},   0, 0, VF, "flags" },
-        { "frame_count_out",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_FCIN},    0, 0, VF, "flags" },
-        { "frame_count_delta",NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_FC_DELTA},0, 0, VF, "flags" },
-        { "pts",              NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_PTS},     0, 0, VF, "flags" },
-        { "pts_delta",        NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_PTS_DELTA},0,0, VF, "flags" },
-        { "time",             NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_TIME},    0, 0, VF, "flags" },
-        { "time_delta",       NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_TIME_DELTA},0,0,VF, "flags" },
-        { "timebase",         NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_TB},      0, 0, VF, "flags" },
-        { "format",           NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_FMT},     0, 0, VF, "flags" },
-        { "size",             NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_SIZE},    0, 0, VF, "flags" },
-        { "rate",             NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_RATE},    0, 0, VF, "flags" },
-        { "eof",              NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_EOF},     0, 0, VF, "flags" },
-        { "sample_count_in",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_SCOUT},   0, 0, VF, "flags" },
-        { "sample_count_out", NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_SCIN},    0, 0, VF, "flags" },
-        { "sample_count_delta",NULL,0, AV_OPT_TYPE_CONST, {.i64=FLAG_SC_DELTA},0, 0, VF, "flags" },
+    { "mode", "set mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=0}, 0, NB_MODES-1, VFR, "mode" },
+    { "m",    "set mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=0}, 0, NB_MODES-1, VFR, "mode" },
+        { "full",     NULL, 0, AV_OPT_TYPE_CONST, {.i64=MODE_FULL},   0, 0, VFR, "mode" },
+        { "compact",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=MODE_COMPACT},0, 0, VFR, "mode" },
+        { "nozero",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=MODE_NOZERO}, 0, 0, VFR, "mode" },
+        { "nozeroeof",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=MODE_NOZEROEOF}, 0, 0, VFR, "mode" },
+    { "flags", "set flags", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64=FLAG_QUEUE}, 0, INT_MAX, VFR, "flags" },
+    { "f",     "set flags", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64=FLAG_QUEUE}, 0, INT_MAX, VFR, "flags" },
+        { "queue",            NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_QUEUE},   0, 0, VFR, "flags" },
+        { "frame_count_in",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_FCOUT},   0, 0, VFR, "flags" },
+        { "frame_count_out",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_FCIN},    0, 0, VFR, "flags" },
+        { "frame_count_delta",NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_FC_DELTA},0, 0, VFR, "flags" },
+        { "pts",              NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_PTS},     0, 0, VFR, "flags" },
+        { "pts_delta",        NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_PTS_DELTA},0,0, VFR, "flags" },
+        { "time",             NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_TIME},    0, 0, VFR, "flags" },
+        { "time_delta",       NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_TIME_DELTA},0,0,VFR, "flags" },
+        { "timebase",         NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_TB},      0, 0, VFR, "flags" },
+        { "format",           NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_FMT},     0, 0, VFR, "flags" },
+        { "size",             NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_SIZE},    0, 0, VFR, "flags" },
+        { "rate",             NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_RATE},    0, 0, VFR, "flags" },
+        { "eof",              NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_EOF},     0, 0, VFR, "flags" },
+        { "sample_count_in",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_SCOUT},   0, 0, VFR, "flags" },
+        { "sample_count_out", NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_SCIN},    0, 0, VFR, "flags" },
+        { "sample_count_delta",NULL,0, AV_OPT_TYPE_CONST, {.i64=FLAG_SC_DELTA},0, 0, VFR, "flags" },
     { "rate", "set video rate", OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, VF },
     { "r",    "set video rate", OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, VF },
     { NULL }
@@ -537,6 +538,7 @@ const AVFilter ff_vf_graphmonitor = {
     FILTER_INPUTS(graphmonitor_inputs),
     FILTER_OUTPUTS(graphmonitor_outputs),
     FILTER_QUERY_FUNC(query_formats),
+    .process_command = ff_filter_process_command,
 };
 
 #endif // CONFIG_GRAPHMONITOR_FILTER
@@ -569,5 +571,6 @@ const AVFilter ff_avf_agraphmonitor = {
     FILTER_INPUTS(agraphmonitor_inputs),
     FILTER_OUTPUTS(agraphmonitor_outputs),
     FILTER_QUERY_FUNC(query_formats),
+    .process_command = ff_filter_process_command,
 };
 #endif // CONFIG_AGRAPHMONITOR_FILTER
