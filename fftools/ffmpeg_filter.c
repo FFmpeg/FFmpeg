@@ -1700,7 +1700,7 @@ int fg_transcode_step(FilterGraph *graph, InputStream **best_ist)
         for (int i = 0; i < graph->nb_inputs; i++) {
             InputFilter *ifilter = graph->inputs[i];
             InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
-            if (!ifp->ist->got_output && !ifp->eof) {
+            if (ifp->format < 0 && !ifp->eof) {
                 *best_ist = ifp->ist;
                 return 0;
             }

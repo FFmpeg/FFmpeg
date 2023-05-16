@@ -1412,9 +1412,6 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
             break;
         }
 
-        if (got_output)
-            ist->got_output = 1;
-
         if (!got_output)
             break;
 
