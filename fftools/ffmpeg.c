@@ -1390,8 +1390,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
                 ret = AVERROR_EOF;
             av_packet_unref(avpkt);
             break;
-        default:
-            return -1;
+        default: av_assert0(0);
         }
 
         if (ret == AVERROR_EOF) {
