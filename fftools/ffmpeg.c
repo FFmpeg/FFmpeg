@@ -777,7 +777,7 @@ static void check_decode_result(InputStream *ist, int *got_output, int ret)
     if (ret < 0 && exit_on_error)
         exit_program(1);
 
-    if (*got_output && ist) {
+    if (*got_output && ist->dec_ctx->codec_type != AVMEDIA_TYPE_SUBTITLE) {
         if (ist->decoded_frame->decode_error_flags || (ist->decoded_frame->flags & AV_FRAME_FLAG_CORRUPT)) {
             av_log(ist, exit_on_error ? AV_LOG_FATAL : AV_LOG_WARNING,
                    "corrupt decoded frame\n");
@@ -1317,7 +1317,7 @@ static int transcode_subtitles(InputStream *ist, const AVPacket *pkt,
     int ret = avcodec_decode_subtitle2(ist->dec_ctx,
                                        &subtitle, got_output, pkt);
 
-    check_decode_result(NULL, got_output, ret);
+    check_decode_result(ist, got_output, ret);
 
     if (ret < 0 || !*got_output) {
         *decode_failed = 1;
