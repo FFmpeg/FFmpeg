@@ -276,6 +276,15 @@ static av_cold int libdav1d_init(AVCodecContext *c)
     if (res < 0)
         return AVERROR(ENOMEM);
 
+#if FF_DAV1D_VERSION_AT_LEAST(6,7)
+    res = dav1d_get_frame_delay(&s);
+    if (res < 0) // Should not happen
+        return AVERROR_EXTERNAL;
+
+    // When dav1d_get_frame_delay() returns 1, there's no delay whatsoever
+    c->delay = res > 1 ? res : 0;
+#endif
+
     return 0;
 }
 
