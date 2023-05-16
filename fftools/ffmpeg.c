@@ -1393,6 +1393,16 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
         }
 
         if (ret == AVERROR_EOF) {
+            /* after flushing, send an EOF on all the filter inputs attached to the stream */
+            /* except when looping we need to flush but not to send an EOF */
+            if (!no_eof) {
+                ret = send_filter_eof(ist);
+                if (ret < 0) {
+                    av_log(NULL, AV_LOG_FATAL, "Error marking filters as finished\n");
+                    exit_program(1);
+                }
+            }
+
             eof_reached = 1;
             break;
         }
@@ -1414,16 +1424,6 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
             break;
 
         repeating = 1;
-    }
-
-    /* after flushing, send an EOF on all the filter inputs attached to the stream */
-    /* except when looping we need to flush but not to send an EOF */
-    if (!pkt && ist->decoding_needed && eof_reached && !no_eof) {
-        int ret = send_filter_eof(ist);
-        if (ret < 0) {
-            av_log(NULL, AV_LOG_FATAL, "Error marking filters as finished\n");
-            exit_program(1);
-        }
     }
 
     if (!pkt && !ist->decoding_needed)
