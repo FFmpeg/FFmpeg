@@ -1026,3 +1026,24 @@ int ff_cbs_make_unit_writable(CodedBitstreamContext *ctx,
     av_buffer_unref(&ref);
     return 0;
 }
+
+void ff_cbs_discard_units(CodedBitstreamContext *ctx,
+                          CodedBitstreamFragment *frag,
+                          enum AVDiscard skip,
+                          int flags)
+{
+    if (!ctx->codec->discarded_unit)
+        return;
+
+    for (int i = frag->nb_units - 1; i >= 0; i--) {
+        if (ctx->codec->discarded_unit(ctx, &frag->units[i], skip)) {
+            // discard all units
+            if (!(flags & DISCARD_FLAG_KEEP_NON_VCL)) {
+                ff_cbs_fragment_free(frag);
+                return;
+            }
+
+            ff_cbs_delete_unit(frag, i);
+        }
+    }
+}

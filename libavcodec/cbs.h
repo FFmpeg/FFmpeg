@@ -26,6 +26,7 @@
 
 #include "codec_id.h"
 #include "codec_par.h"
+#include "defs.h"
 #include "packet.h"
 
 
@@ -432,5 +433,21 @@ int ff_cbs_make_unit_refcounted(CodedBitstreamContext *ctx,
 int ff_cbs_make_unit_writable(CodedBitstreamContext *ctx,
                               CodedBitstreamUnit *unit);
 
+enum CbsDiscardFlags {
+    DISCARD_FLAG_NONE = 0,
+
+    /**
+     * keep non-vcl units even if the picture has been dropped.
+     */
+    DISCARD_FLAG_KEEP_NON_VCL = 0x01,
+};
+
+/**
+ * Discard units accroding to 'skip'.
+ */
+void ff_cbs_discard_units(CodedBitstreamContext *ctx,
+                          CodedBitstreamFragment *frag,
+                          enum AVDiscard skip,
+                          int flags);
 
 #endif /* AVCODEC_CBS_H */

@@ -133,6 +133,12 @@ typedef struct CodedBitstreamType {
                       CodedBitstreamUnit *unit,
                       PutBitContext *pbc);
 
+    // Return 1 when the unit should be dropped according to 'skip',
+    // 0 otherwise.
+    int (*discarded_unit)(CodedBitstreamContext *ctx,
+                          const CodedBitstreamUnit *unit,
+                          enum AVDiscard skip);
+
     // Read the data from all of frag->units and assemble it into
     // a bitstream for the whole fragment.
     int (*assemble_fragment)(CodedBitstreamContext *ctx,
