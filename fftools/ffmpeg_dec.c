@@ -179,7 +179,7 @@ static int64_t video_duration_estimate(const InputStream *ist, const AVFrame *fr
     return FFMAX(ist->last_frame_duration_est, 1);
 }
 
-static int decode_video(InputStream *ist, AVFrame *frame)
+static int video_frame_process(InputStream *ist, AVFrame *frame)
 {
     // The following line may be required in some cases where there is no parser
     // or the parser does not has_b_frames correctly
@@ -462,7 +462,7 @@ int dec_packet(InputStream *ist, const AVPacket *pkt, int no_eof)
 
             audio_ts_process(ist, frame);
         } else {
-            ret = decode_video(ist, frame);
+            ret = video_frame_process(ist, frame);
             if (ret < 0) {
                 av_log(NULL, AV_LOG_FATAL, "Error while processing the decoded "
                        "data for stream #%d:%d\n", ist->file_index, ist->st->index);
