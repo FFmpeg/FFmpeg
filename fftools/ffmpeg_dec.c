@@ -232,17 +232,17 @@ static int decode_video(InputStream *ist, AVFrame *frame)
                    ist->par->video_delay);
     }
 
-        if (ist->dec_ctx->width  != frame->width ||
-            ist->dec_ctx->height != frame->height ||
-            ist->dec_ctx->pix_fmt != frame->format) {
-            av_log(NULL, AV_LOG_DEBUG, "Frame parameters mismatch context %d,%d,%d != %d,%d,%d\n",
-                frame->width,
-                frame->height,
-                frame->format,
-                ist->dec_ctx->width,
-                ist->dec_ctx->height,
-                ist->dec_ctx->pix_fmt);
-        }
+    if (ist->dec_ctx->width  != frame->width ||
+        ist->dec_ctx->height != frame->height ||
+        ist->dec_ctx->pix_fmt != frame->format) {
+        av_log(NULL, AV_LOG_DEBUG, "Frame parameters mismatch context %d,%d,%d != %d,%d,%d\n",
+            frame->width,
+            frame->height,
+            frame->format,
+            ist->dec_ctx->width,
+            ist->dec_ctx->height,
+            ist->dec_ctx->pix_fmt);
+    }
 
     if(ist->top_field_first>=0)
         frame->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
