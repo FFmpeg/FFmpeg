@@ -128,17 +128,6 @@ static void audio_ts_process(InputStream *ist, AVFrame *frame)
     frame->time_base = tb_filter;
 }
 
-static int decode_audio(InputStream *ist, AVFrame *decoded_frame)
-{
-    ist->samples_decoded += decoded_frame->nb_samples;
-
-    audio_ts_process(ist, decoded_frame);
-
-    ist->nb_samples = decoded_frame->nb_samples;
-
-    return 0;
-}
-
 static int64_t video_duration_estimate(const InputStream *ist, const AVFrame *frame)
 {
     const InputFile   *ifile = input_files[ist->file_index];
@@ -467,14 +456,18 @@ int dec_packet(InputStream *ist, const AVPacket *pkt, int no_eof)
 
         frame->time_base = dec->pkt_timebase;
 
-        ret = dec->codec_type == AVMEDIA_TYPE_AUDIO ?
-                decode_audio(ist, frame)            :
-                decode_video(ist, frame);
+        if (dec->codec_type == AVMEDIA_TYPE_AUDIO) {
+            ist->samples_decoded += frame->nb_samples;
+            ist->nb_samples       = frame->nb_samples;
 
-        if (ret < 0) {
-            av_log(NULL, AV_LOG_FATAL, "Error while processing the decoded "
-                   "data for stream #%d:%d\n", ist->file_index, ist->st->index);
-            exit_program(1);
+            audio_ts_process(ist, frame);
+        } else {
+            ret = decode_video(ist, frame);
+            if (ret < 0) {
+                av_log(NULL, AV_LOG_FATAL, "Error while processing the decoded "
+                       "data for stream #%d:%d\n", ist->file_index, ist->st->index);
+                exit_program(1);
+            }
         }
 
         ist->frames_decoded++;
