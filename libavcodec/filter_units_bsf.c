@@ -34,6 +34,8 @@ typedef struct FilterUnitsContext {
 
     const char *pass_types;
     const char *remove_types;
+    enum AVDiscard discard;
+    int discard_flags;
 
     enum {
         NOOP,
@@ -109,7 +111,7 @@ static int filter_units_filter(AVBSFContext *bsf, AVPacket *pkt)
     if (err < 0)
         return err;
 
-    if (ctx->mode == NOOP)
+    if (ctx->mode == NOOP && ctx->discard <= AVDISCARD_DEFAULT)
         return 0;
 
     err = ff_cbs_read_packet(ctx->cbc, frag, pkt);
@@ -118,6 +120,8 @@ static int filter_units_filter(AVBSFContext *bsf, AVPacket *pkt)
         goto fail;
     }
 
+    ff_cbs_discard_units(ctx->cbc, frag, ctx->discard, ctx->discard_flags);
+    if (ctx->mode != NOOP) {
     for (i = frag->nb_units - 1; i >= 0; i--) {
         for (j = 0; j < ctx->nb_types; j++) {
             if (frag->units[i].type == ctx->type_list[j])
@@ -126,6 +130,7 @@ static int filter_units_filter(AVBSFContext *bsf, AVPacket *pkt)
         if (ctx->mode == REMOVE ? j <  ctx->nb_types
                                 : j >= ctx->nb_types)
             ff_cbs_delete_unit(frag, i);
+    }
     }
 
     if (frag->nb_units == 0) {
@@ -175,7 +180,7 @@ static int filter_units_init(AVBSFContext *bsf)
             av_log(bsf, AV_LOG_ERROR, "Failed to parse remove_types.\n");
             return err;
         }
-    } else {
+    } else if (ctx->discard == AVDISCARD_NONE) {
         return 0;
     }
 
@@ -183,9 +188,11 @@ static int filter_units_init(AVBSFContext *bsf)
     if (err < 0)
         return err;
 
+    if (ctx->discard == AVDISCARD_NONE) {
     // Don't actually decompose anything, we only want the unit data.
     ctx->cbc->decompose_unit_types    = ctx->type_list;
     ctx->cbc->nb_decompose_unit_types = 0;
+    }
 
     if (bsf->par_in->extradata) {
         CodedBitstreamFragment *frag = &ctx->fragment;
@@ -225,6 +232,37 @@ static const AVOption filter_units_options[] = {
         OFFSET(remove_types), AV_OPT_TYPE_STRING,
         { .str = NULL }, .flags = FLAGS },
 
+    { "discard", "Remove the selected frames",
+        OFFSET(discard), AV_OPT_TYPE_INT,
+        { .i64 = AVDISCARD_NONE }, INT_MIN, INT_MAX, FLAGS, "discard"},
+    { "none" , "discard none",
+        0, AV_OPT_TYPE_CONST,
+        { .i64 = AVDISCARD_NONE }, INT_MIN, INT_MAX, FLAGS, "discard"},
+    { "default" , "discard none, but can be changed after dynamically",
+        0, AV_OPT_TYPE_CONST,
+        { .i64 = AVDISCARD_DEFAULT }, INT_MIN, INT_MAX, FLAGS, "discard"},
+    { "nonref", "discard all non-reference frames",
+        0, AV_OPT_TYPE_CONST,
+        { .i64 = AVDISCARD_NONREF }, INT_MIN, INT_MAX, FLAGS, "discard"},
+    { "bidir", "discard all bidirectional frames",
+        0, AV_OPT_TYPE_CONST,
+        { .i64 = AVDISCARD_BIDIR }, INT_MIN, INT_MAX, FLAGS, "discard"},
+    { "nonintra", "discard all frames except I frames",
+        0, AV_OPT_TYPE_CONST,
+        { .i64 = AVDISCARD_NONINTRA }, INT_MIN, INT_MAX, FLAGS, "discard"},
+    { "nonkey", "discard all frames except keyframes",
+        0, AV_OPT_TYPE_CONST,
+        { .i64 = AVDISCARD_NONKEY }, INT_MIN, INT_MAX, FLAGS, "discard"},
+    { "all", "discard all frames",
+        0, AV_OPT_TYPE_CONST,
+        { .i64 = AVDISCARD_ALL }, INT_MIN, INT_MAX, FLAGS, "discard"},
+
+    { "discard_flags", "flags to control the discard frame behavior",
+        OFFSET(discard_flags), AV_OPT_TYPE_FLAGS,
+        { .i64 = DISCARD_FLAG_NONE }, INT_MIN, INT_MAX, FLAGS, "discard_flags"},
+    { "keep_non_vcl", "non-vcl units even if the picture has been dropped",
+        0, AV_OPT_TYPE_CONST,
+        { .i64 = DISCARD_FLAG_KEEP_NON_VCL }, INT_MIN, INT_MAX, FLAGS, "discard_flags"},
     { NULL }
 };
 
