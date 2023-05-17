@@ -1431,7 +1431,6 @@ int main(int argc, char **argv)
         exit_program(1);
     }
 
-    /* file converter / grab */
     if (nb_output_files <= 0) {
         av_log(NULL, AV_LOG_FATAL, "At least one output file must be specified\n");
         exit_program(1);

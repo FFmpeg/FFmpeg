@@ -1569,7 +1569,6 @@ int ifile_open(const OptionsContext *o, const char *filename)
 
     d->thread_queue_size = o->thread_queue_size;
 
-    /* update the current parameters so that they match the one of the input stream */
     add_input_streams(o, d);
 
     /* dump the file content */
