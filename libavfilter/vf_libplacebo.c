@@ -56,23 +56,6 @@ enum {
     TONE_MAP_COUNT,
 };
 
-static const struct pl_tone_map_function * const tonemapping_funcs[TONE_MAP_COUNT] = {
-    [TONE_MAP_AUTO]      = &pl_tone_map_auto,
-    [TONE_MAP_CLIP]      = &pl_tone_map_clip,
-#if PL_API_VER >= 246
-    [TONE_MAP_ST2094_40] = &pl_tone_map_st2094_40,
-    [TONE_MAP_ST2094_10] = &pl_tone_map_st2094_10,
-#endif
-    [TONE_MAP_BT2390]    = &pl_tone_map_bt2390,
-    [TONE_MAP_BT2446A]   = &pl_tone_map_bt2446a,
-    [TONE_MAP_SPLINE]    = &pl_tone_map_spline,
-    [TONE_MAP_REINHARD]  = &pl_tone_map_reinhard,
-    [TONE_MAP_MOBIUS]    = &pl_tone_map_mobius,
-    [TONE_MAP_HABLE]     = &pl_tone_map_hable,
-    [TONE_MAP_GAMMA]     = &pl_tone_map_gamma,
-    [TONE_MAP_LINEAR]    = &pl_tone_map_linear,
-};
-
 static const char *const var_names[] = {
     "in_w", "iw",   ///< width  of the input video frame
     "in_h", "ih",   ///< height of the input video frame
@@ -269,6 +252,26 @@ static void pl_av_log(void *log_ctx, enum pl_log_level level, const char *msg)
     av_log(log_ctx, av_lev, "%s\n", msg);
 }
 
+static const struct pl_tone_map_function *pl_get_tonemapping_func(int tm) {
+    switch (tm) {
+    case TONE_MAP_AUTO:       return &pl_tone_map_auto;
+    case TONE_MAP_CLIP:       return &pl_tone_map_clip;
+#if PL_API_VER >= 246
+    case TONE_MAP_ST2094_40:  return &pl_tone_map_st2094_40;
+    case TONE_MAP_ST2094_10:  return &pl_tone_map_st2094_10;
+#endif
+    case TONE_MAP_BT2390:     return &pl_tone_map_bt2390;
+    case TONE_MAP_BT2446A:    return &pl_tone_map_bt2446a;
+    case TONE_MAP_SPLINE:     return &pl_tone_map_spline;
+    case TONE_MAP_REINHARD:   return &pl_tone_map_reinhard;
+    case TONE_MAP_MOBIUS:     return &pl_tone_map_mobius;
+    case TONE_MAP_HABLE:      return &pl_tone_map_hable;
+    case TONE_MAP_GAMMA:      return &pl_tone_map_gamma;
+    case TONE_MAP_LINEAR:     return &pl_tone_map_linear;
+    default: av_assert0(0);
+    }
+}
+
 static int parse_shader(AVFilterContext *avctx, const void *shader, size_t len)
 {
     LibplaceboContext *s = avctx->priv;
@@ -365,7 +368,7 @@ static int update_settings(AVFilterContext *ctx)
     s->color_map_params = *pl_color_map_params(
         .intent = s->intent,
         .gamut_mode = gamut_mode,
-        .tone_mapping_function = tonemapping_funcs[s->tonemapping],
+        .tone_mapping_function = pl_get_tonemapping_func(s->tonemapping),
         .tone_mapping_param = s->tonemapping_param,
         .tone_mapping_mode = tonemapping_mode,
         .inverse_tone_mapping = s->inverse_tonemapping,
