@@ -130,18 +130,13 @@ static void audio_ts_process(InputStream *ist, AVFrame *frame)
 
 static int decode_audio(InputStream *ist, AVFrame *decoded_frame)
 {
-    int ret, err = 0;
-
     ist->samples_decoded += decoded_frame->nb_samples;
-    ist->frames_decoded++;
 
     audio_ts_process(ist, decoded_frame);
 
     ist->nb_samples = decoded_frame->nb_samples;
-    err = send_frame_to_filters(ist, decoded_frame);
 
-    av_frame_unref(decoded_frame);
-    return err < 0 ? err : ret;
+    return 0;
 }
 
 static int64_t video_duration_estimate(const InputStream *ist, const AVFrame *frame)
@@ -197,8 +192,6 @@ static int64_t video_duration_estimate(const InputStream *ist, const AVFrame *fr
 
 static int decode_video(InputStream *ist, AVFrame *frame)
 {
-    int ret = 0, err = 0;
-
     // The following line may be required in some cases where there is no parser
     // or the parser does not has_b_frames correctly
     if (ist->par->video_delay < ist->dec_ctx->has_b_frames) {
@@ -229,12 +222,10 @@ static int decode_video(InputStream *ist, AVFrame *frame)
     if(ist->top_field_first>=0)
         frame->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
 
-    ist->frames_decoded++;
-
     if (ist->hwaccel_retrieve_data && frame->format == ist->hwaccel_pix_fmt) {
-        err = ist->hwaccel_retrieve_data(ist->dec_ctx, frame);
+        int err = ist->hwaccel_retrieve_data(ist->dec_ctx, frame);
         if (err < 0)
-            goto fail;
+            return err;
     }
 
     frame->pts = frame->best_effort_timestamp;
@@ -275,11 +266,7 @@ static int decode_video(InputStream *ist, AVFrame *frame)
     if (ist->st->sample_aspect_ratio.num)
         frame->sample_aspect_ratio = ist->st->sample_aspect_ratio;
 
-    err = send_frame_to_filters(ist, frame);
-
-fail:
-    av_frame_unref(frame);
-    return err < 0 ? err : ret;
+    return 0;
 }
 
 static void sub2video_flush(InputStream *ist)
@@ -489,6 +476,13 @@ int dec_packet(InputStream *ist, const AVPacket *pkt, int no_eof)
                    "data for stream #%d:%d\n", ist->file_index, ist->st->index);
             exit_program(1);
         }
+
+        ist->frames_decoded++;
+
+        ret = send_frame_to_filters(ist, frame);
+        av_frame_unref(frame);
+        if (ret < 0)
+            exit_program(1);
     }
 }
 
