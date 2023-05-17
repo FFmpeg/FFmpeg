@@ -31,24 +31,6 @@
 
 #include "ffmpeg.h"
 
-static void check_decode_result(InputStream *ist, int got_output, int ret)
-{
-    if (ret < 0)
-        ist->decode_errors++;
-
-    if (ret < 0 && exit_on_error)
-        exit_program(1);
-
-    if (got_output && ist->dec_ctx->codec_type != AVMEDIA_TYPE_SUBTITLE) {
-        if (ist->decoded_frame->decode_error_flags || (ist->decoded_frame->flags & AV_FRAME_FLAG_CORRUPT)) {
-            av_log(ist, exit_on_error ? AV_LOG_FATAL : AV_LOG_WARNING,
-                   "corrupt decoded frame\n");
-            if (exit_on_error)
-                exit_program(1);
-        }
-    }
-}
-
 static int send_frame_to_filters(InputStream *ist, AVFrame *decoded_frame)
 {
     int i, ret;
@@ -385,9 +367,8 @@ static int transcode_subtitles(InputStream *ist, const AVPacket *pkt)
                 av_err2str(ret));
         if (exit_on_error)
             exit_program(1);
+        ist->decode_errors++;
     }
-
-    check_decode_result(ist, got_output, ret);
 
     if (ret < 0 || !got_output) {
         if (!pkt->size)
@@ -452,9 +433,6 @@ int dec_packet(InputStream *ist, const AVPacket *pkt, int no_eof)
         update_benchmark("decode_%s %d.%d", type_desc,
                          ist->file_index, ist->st->index);
 
-        if (ret != AVERROR_EOF && ret != AVERROR(EAGAIN))
-            check_decode_result(ist, ret >= 0, ret);
-
         if (ret == AVERROR(EAGAIN)) {
             av_assert0(pkt); // should never happen during flushing
             return 0;
@@ -474,7 +452,15 @@ int dec_packet(InputStream *ist, const AVPacket *pkt, int no_eof)
             av_log(ist, AV_LOG_ERROR, "Decoding error: %s\n", av_err2str(ret));
             if (exit_on_error)
                 exit_program(1);
+            ist->decode_errors++;
             return ret;
+        }
+
+        if (frame->decode_error_flags || (frame->flags & AV_FRAME_FLAG_CORRUPT)) {
+            av_log(ist, exit_on_error ? AV_LOG_FATAL : AV_LOG_WARNING,
+                   "corrupt decoded frame\n");
+            if (exit_on_error)
+                exit_program(1);
         }
 
         if (ist->want_frame_data) {
