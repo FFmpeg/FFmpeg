@@ -1374,10 +1374,15 @@ static void colour_mapping_octants(GetBitContext *gb, HEVCPPS *pps, int inp_dept
         }
 }
 
-static void colour_mapping_table(GetBitContext *gb, HEVCPPS *pps)
+static int colour_mapping_table(GetBitContext *gb, AVCodecContext *avctx, HEVCPPS *pps)
 {
-    pps->num_cm_ref_layers_minus1 = get_ue_golomb_long(gb);
-    for (int i = 0; i <= pps->num_cm_ref_layers_minus1; i++)
+    pps->num_cm_ref_layers = get_ue_golomb(gb) + 1;
+    if (pps->num_cm_ref_layers > 62) {
+        av_log(avctx, AV_LOG_ERROR,
+               "num_cm_ref_layers_minus1 shall be in the range [0, 61].\n");
+        return AVERROR_INVALIDDATA;
+    }
+    for (int i = 0; i < pps->num_cm_ref_layers; i++)
         pps->cm_ref_layer_id[i] = get_bits(gb, 6);
 
     pps->cm_octant_depth = get_bits(gb, 2);
@@ -1397,6 +1402,8 @@ static void colour_mapping_table(GetBitContext *gb, HEVCPPS *pps)
     }
 
     colour_mapping_octants(gb, pps, 0, 0, 0, 0, 1 << pps->cm_octant_depth);
+
+    return 0;
 }
 
 static int pps_multilayer_extension(GetBitContext *gb, AVCodecContext *avctx,
@@ -1439,8 +1446,11 @@ static int pps_multilayer_extension(GetBitContext *gb, AVCodecContext *avctx,
     }
 
     pps->colour_mapping_enabled_flag = get_bits1(gb);
-    if (pps->colour_mapping_enabled_flag)
-        colour_mapping_table(gb, pps);
+    if (pps->colour_mapping_enabled_flag) {
+        int ret = colour_mapping_table(gb, avctx, pps);
+        if (ret < 0)
+            return ret;
+    }
 
     return 0;
 }
