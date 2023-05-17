@@ -1023,7 +1023,12 @@ If @var{pix_fmt} is a single @code{+}, ffmpeg selects the same pixel format
 as the input (or graph output) and automatic conversions are disabled.
 
 @item -sws_flags @var{flags} (@emph{input/output})
-Set SwScaler flags.
+Set default flags for the libswscale library. These flags are used by
+automatically inserted @code{scale} filters and those within simple
+filtergraphs, if not overridden within the filtergraph definition.
+
+See the @ref{scaler_options,,ffmpeg-scaler manual,ffmpeg-scaler} for a list
+of scaler options.
 
 @item -rc_override[:@var{stream_specifier}] @var{override} (@emph{output,per-stream})
 Rate control override for specific intervals, formatted as "int,int,int"
