@@ -1213,6 +1213,58 @@ static int cbs_h265_write_nal_unit(CodedBitstreamContext *ctx,
     return 0;
 }
 
+static int cbs_h264_discarded_nal_unit(CodedBitstreamContext *ctx,
+                                       const CodedBitstreamUnit *unit,
+                                       enum AVDiscard skip)
+{
+    H264RawNALUnitHeader *header;
+    H264RawSliceHeader *slice;
+    int slice_type_i, slice_type_b, slice_type_si;
+
+    if (skip <= AVDISCARD_DEFAULT)
+        return 0;
+
+    // keep non-VCL
+    if (unit->type != H264_NAL_SLICE &&
+        unit->type != H264_NAL_IDR_SLICE &&
+        unit->type != H264_NAL_AUXILIARY_SLICE)
+        return 0;
+
+    if (skip >= AVDISCARD_ALL)
+        return 1;
+
+    if (skip >= AVDISCARD_NONKEY && unit->type != H264_NAL_IDR_SLICE)
+        return 1;
+
+    header = (H264RawNALUnitHeader *)unit->content;
+    if (!header) {
+        av_log(ctx->log_ctx, AV_LOG_WARNING,
+                "h264 nal unit header is null, missing decompose?\n");
+        return 0;
+    }
+
+    if (skip >= AVDISCARD_NONREF && !header->nal_ref_idc)
+        return 1;
+
+    slice = (H264RawSliceHeader *)unit->content;
+    if (!slice) {
+        av_log(ctx->log_ctx, AV_LOG_WARNING,
+                "h264 slice header is null, missing decompose?\n");
+        return 0;
+    }
+
+    slice_type_i  = slice->slice_type % 5 == 2;
+    slice_type_b  = slice->slice_type % 5 == 1;
+    slice_type_si = slice->slice_type % 5 == 4;
+
+    if (skip >= AVDISCARD_BIDIR && slice_type_b)
+        return 1;
+    if (skip >= AVDISCARD_NONINTRA && !slice_type_i && !slice_type_si)
+        return 1;
+
+    return 0;
+}
+
 static int cbs_h2645_unit_requires_zero_byte(enum AVCodecID codec_id,
                                              CodedBitstreamUnitType type,
                                              int nal_unit_index)
@@ -1441,6 +1493,7 @@ const CodedBitstreamType ff_cbs_type_h264 = {
     .split_fragment    = &cbs_h2645_split_fragment,
     .read_unit         = &cbs_h264_read_nal_unit,
     .write_unit        = &cbs_h264_write_nal_unit,
+    .discarded_unit    = &cbs_h264_discarded_nal_unit,
     .assemble_fragment = &cbs_h2645_assemble_fragment,
 
     .flush             = &cbs_h264_flush,
