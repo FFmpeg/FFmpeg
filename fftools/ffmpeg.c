@@ -1344,18 +1344,10 @@ static int send_filter_eof(InputStream *ist)
     return 0;
 }
 
-/* pkt = NULL means EOF (needed to flush decoder buffers) */
-static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eof)
+static int dec_packet(InputStream *ist, const AVPacket *pkt, int no_eof)
 {
-    InputFile *f = input_files[ist->file_index];
-    const AVCodecParameters *par = ist->par;
-    int64_t dts_est = AV_NOPTS_VALUE;
-    int ret = 0;
-    int repeating = 0;
-    int eof_reached = 0;
-    int duration_exceeded;
-
     AVPacket *avpkt = ist->pkt;
+    int ret, repeating = 0;
 
     if (pkt) {
         av_packet_unref(avpkt);
@@ -1365,11 +1357,11 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
     }
 
     // while we have more to decode or while the decoder did output something on EOF
-    while (ist->decoding_needed) {
+    while (1) {
         int got_output = 0;
         int decode_failed = 0;
 
-        switch (par->codec_type) {
+        switch (ist->par->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
             ret = decode_audio    (ist, repeating ? NULL : avpkt, &got_output,
                                    &decode_failed);
@@ -1403,8 +1395,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
                 }
             }
 
-            eof_reached = 1;
-            break;
+            return AVERROR_EOF;
         }
 
         if (ret < 0) {
@@ -1417,16 +1408,28 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
             }
             if (!decode_failed || exit_on_error)
                 exit_program(1);
-            break;
+            return ret;
         }
 
         if (!got_output)
-            break;
+            return 0;
 
         repeating = 1;
     }
+}
 
-    if (!pkt && !ist->decoding_needed)
+/* pkt = NULL means EOF (needed to flush decoder buffers) */
+static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eof)
+{
+    InputFile *f = input_files[ist->file_index];
+    int64_t dts_est = AV_NOPTS_VALUE;
+    int ret = 0;
+    int eof_reached = 0;
+    int duration_exceeded;
+
+    if (ist->decoding_needed)
+        ret = dec_packet(ist, pkt, no_eof);
+    if (ret == AVERROR_EOF || (!pkt && !ist->decoding_needed))
         eof_reached = 1;
 
     if (pkt && pkt->opaque_ref) {
