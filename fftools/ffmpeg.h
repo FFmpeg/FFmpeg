@@ -795,10 +795,13 @@ void enc_stats_write(OutputStream *ost, EncStats *es,
                      uint64_t frame_num);
 
 HWDevice *hw_device_get_by_name(const char *name);
+HWDevice *hw_device_get_by_type(enum AVHWDeviceType type);
 int hw_device_init_from_string(const char *arg, HWDevice **dev);
+int hw_device_init_from_type(enum AVHWDeviceType type,
+                             const char *device,
+                             HWDevice **dev_out);
 void hw_device_free_all(void);
 
-int hw_device_setup_for_decode(InputStream *ist);
 int hw_device_setup_for_encode(OutputStream *ost);
 /**
  * Get a hardware device to be used with this filtergraph.
