@@ -122,15 +122,15 @@ static int filter_units_filter(AVBSFContext *bsf, AVPacket *pkt)
 
     ff_cbs_discard_units(ctx->cbc, frag, ctx->discard, ctx->discard_flags);
     if (ctx->mode != NOOP) {
-    for (i = frag->nb_units - 1; i >= 0; i--) {
-        for (j = 0; j < ctx->nb_types; j++) {
-            if (frag->units[i].type == ctx->type_list[j])
-                break;
+        for (i = frag->nb_units - 1; i >= 0; i--) {
+            for (j = 0; j < ctx->nb_types; j++) {
+                if (frag->units[i].type == ctx->type_list[j])
+                    break;
+            }
+            if (ctx->mode == REMOVE ? j <  ctx->nb_types
+                                    : j >= ctx->nb_types)
+                ff_cbs_delete_unit(frag, i);
         }
-        if (ctx->mode == REMOVE ? j <  ctx->nb_types
-                                : j >= ctx->nb_types)
-            ff_cbs_delete_unit(frag, i);
-    }
     }
 
     if (frag->nb_units == 0) {
@@ -189,9 +189,9 @@ static int filter_units_init(AVBSFContext *bsf)
         return err;
 
     if (ctx->discard == AVDISCARD_NONE) {
-    // Don't actually decompose anything, we only want the unit data.
-    ctx->cbc->decompose_unit_types    = ctx->type_list;
-    ctx->cbc->nb_decompose_unit_types = 0;
+        // Don't actually decompose anything, we only want the unit data.
+        ctx->cbc->decompose_unit_types    = ctx->type_list;
+        ctx->cbc->nb_decompose_unit_types = 0;
     }
 
     if (bsf->par_in->extradata) {
