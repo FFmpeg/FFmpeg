@@ -65,20 +65,28 @@ static const AVOption options[] = {
     { "quality",                "", 0, AV_OPT_TYPE_CONST, {.i64 = AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_QUALITY       }, 0, 0, VE, "quality" },
     { "high_quality",           "", 0, AV_OPT_TYPE_CONST, {.i64 = AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_HIGH_QUALITY  }, 0, 0, VE, "quality" },
 
-    { "rc",                     "Set the rate control mode",                OFFSET(rate_control_mode),              AV_OPT_TYPE_INT, {.i64 = AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD_UNKNOWN }, AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD_UNKNOWN, AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD_CBR, VE, "rc" },
+    { "rc",                     "Set the rate control mode",                OFFSET(rate_control_mode),              AV_OPT_TYPE_INT, {.i64 = AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD_UNKNOWN }, AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD_UNKNOWN, AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD_HIGH_QUALITY_CBR, VE, "rc" },
     { "cqp",                    "Constant Quantization Parameter",      0, AV_OPT_TYPE_CONST, {.i64 = AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD_CONSTANT_QP             }, 0, 0, VE, "rc" },
     { "vbr_latency",            "Latency Constrained Variable Bitrate", 0, AV_OPT_TYPE_CONST, {.i64 = AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD_LATENCY_CONSTRAINED_VBR }, 0, 0, VE, "rc" },
     { "vbr_peak",               "Peak Contrained Variable Bitrate",     0, AV_OPT_TYPE_CONST, {.i64 = AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD_PEAK_CONSTRAINED_VBR    }, 0, 0, VE, "rc" },
     { "cbr",                    "Constant Bitrate",                     0, AV_OPT_TYPE_CONST, {.i64 = AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD_CBR                     }, 0, 0, VE, "rc" },
+    { "qvbr",                   "Quality Variable Bitrate",             0, AV_OPT_TYPE_CONST, {.i64 = AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD_QUALITY_VBR             }, 0, 0, VE, "rc" },
+    { "hqvbr",                  "High Quality Variable Bitrate",        0, AV_OPT_TYPE_CONST, {.i64 = AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD_HIGH_QUALITY_VBR        }, 0, 0, VE, "rc" },
+    { "hqcbr",                  "High Quality Constant Bitrate",        0, AV_OPT_TYPE_CONST, {.i64 = AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD_HIGH_QUALITY_CBR        }, 0, 0, VE, "rc" },
+
+    { "qvbr_quality_level",     "Sets the QVBR quality level",              OFFSET(qvbr_quality_level),             AV_OPT_TYPE_INT,   {.i64 = -1 }, -1, 51, VE },
+
 
     { "header_insertion_mode",  "Set header insertion mode",                OFFSET(header_insertion_mode),          AV_OPT_TYPE_INT,{.i64 = AMF_VIDEO_ENCODER_AV1_HEADER_INSERTION_MODE_NONE }, AMF_VIDEO_ENCODER_AV1_HEADER_INSERTION_MODE_NONE, AMF_VIDEO_ENCODER_AV1_HEADER_INSERTION_MODE_KEY_FRAME_ALIGNED, VE, "hdrmode" },
     { "none",                   "", 0, AV_OPT_TYPE_CONST, {.i64 = AMF_VIDEO_ENCODER_AV1_HEADER_INSERTION_MODE_NONE              }, 0, 0, VE, "hdrmode" },
     { "gop",                    "", 0, AV_OPT_TYPE_CONST, {.i64 = AMF_VIDEO_ENCODER_AV1_HEADER_INSERTION_MODE_GOP_ALIGNED       }, 0, 0, VE, "hdrmode" },
     { "frame",                  "", 0, AV_OPT_TYPE_CONST, {.i64 = AMF_VIDEO_ENCODER_AV1_HEADER_INSERTION_MODE_KEY_FRAME_ALIGNED }, 0, 0, VE, "hdrmode" },
 
-    { "preanalysis",            "Enable preanalysis",                       OFFSET(preanalysis),                    AV_OPT_TYPE_BOOL, {.i64 = 0  }, 0, 1, VE},
+    { "preencode",              "Enable preencode",                       OFFSET(preencode),                        AV_OPT_TYPE_BOOL, {.i64 = 0  }, 0, 1, VE},
     { "enforce_hrd",            "Enforce HRD",                              OFFSET(enforce_hrd),                    AV_OPT_TYPE_BOOL, {.i64 = 0  }, 0, 1, VE},
     { "filler_data",            "Filler Data Enable",                       OFFSET(filler_data),                    AV_OPT_TYPE_BOOL, {.i64 = 0  }, 0, 1, VE},
+
+    { "high_motion_quality_boost_enable",   "Enable High motion quality boost mode",  OFFSET(hw_high_motion_quality_boost), AV_OPT_TYPE_BOOL,   {.i64 = -1 }, -1, 1, VE },
 
     // min_qp_i -> min_qp_intra, min_qp_p -> min_qp_inter
     { "min_qp_i",               "min quantization parameter for I-frame",   OFFSET(min_qp_i),                       AV_OPT_TYPE_INT, {.i64 = -1  }, -1, 255, VE },
@@ -94,6 +102,53 @@ static const AVOption options[] = {
     { "1080p",                  "", 0, AV_OPT_TYPE_CONST, {.i64 = AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_64X16_1080P_CODED_1082   }, 0, 0, VE, "align" },
     { "none",                   "", 0, AV_OPT_TYPE_CONST, {.i64 = AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_NO_RESTRICTIONS          }, 0, 0, VE, "align" },
 
+    { "log_to_dbg",     "Enable AMF logging to debug output",   OFFSET(log_to_dbg), AV_OPT_TYPE_BOOL,{.i64 = 0 }, 0, 1, VE },
+
+    //Pre Analysis options
+    { "preanalysis",                            "Enable preanalysis",                                           OFFSET(preanalysis),                            AV_OPT_TYPE_BOOL,   {.i64 = -1 }, -1, 1, VE },
+
+    { "pa_activity_type",                       "Set the type of activity analysis",                            OFFSET(pa_activity_type),                       AV_OPT_TYPE_INT,    {.i64 = -1 }, -1, AMF_PA_ACTIVITY_YUV, VE, "activity_type" },
+    { "y",                                      "activity y",   0, AV_OPT_TYPE_CONST, {.i64 = AMF_PA_ACTIVITY_Y     }, 0, 0, VE, "activity_type" },
+    { "yuv",                                    "activity yuv", 0, AV_OPT_TYPE_CONST, {.i64 = AMF_PA_ACTIVITY_YUV   }, 0, 0, VE, "activity_type" },
+
+    { "pa_scene_change_detection_enable",       "Enable scene change detection",                                OFFSET(pa_scene_change_detection),              AV_OPT_TYPE_BOOL,   {.i64 = -1 }, -1, 1, VE },
+
+    { "pa_scene_change_detection_sensitivity",  "Set the sensitivity of scene change detection",                OFFSET(pa_scene_change_detection_sensitivity),  AV_OPT_TYPE_INT,    {.i64 = -1 }, -1, AMF_PA_SCENE_CHANGE_DETECTION_SENSITIVITY_HIGH, VE, "scene_change_sensitivity" },
+    { "low",                                    "low scene change dectection sensitivity",      0, AV_OPT_TYPE_CONST, {.i64 = AMF_PA_SCENE_CHANGE_DETECTION_SENSITIVITY_LOW     }, 0, 0, VE, "scene_change_sensitivity" },
+    { "medium",                                 "medium scene change dectection sensitivity",   0, AV_OPT_TYPE_CONST, {.i64 = AMF_PA_SCENE_CHANGE_DETECTION_SENSITIVITY_MEDIUM  }, 0, 0, VE, "scene_change_sensitivity" },
+    { "high",                                   "high scene change dectection sensitivity",     0, AV_OPT_TYPE_CONST, {.i64 = AMF_PA_SCENE_CHANGE_DETECTION_SENSITIVITY_HIGH    }, 0, 0, VE, "scene_change_sensitivity" },
+
+    { "pa_static_scene_detection_enable",       "Enable static scene detection",                                OFFSET(pa_static_scene_detection),              AV_OPT_TYPE_BOOL,   {.i64 = -1 }, -1, 1, VE },
+
+    { "pa_static_scene_detection_sensitivity",  "Set the sensitivity of static scene detection",                OFFSET(pa_static_scene_detection_sensitivity),  AV_OPT_TYPE_INT,    {.i64 = -1 }, -1, AMF_PA_STATIC_SCENE_DETECTION_SENSITIVITY_HIGH, VE , "static_scene_sensitivity" },
+    { "low",                                    "low static scene dectection sensitivity",      0, AV_OPT_TYPE_CONST, {.i64 = AMF_PA_STATIC_SCENE_DETECTION_SENSITIVITY_LOW    }, 0, 0, VE, "static_scene_sensitivity" },
+    { "medium",                                 "medium static scene dectection sensitivity",   0, AV_OPT_TYPE_CONST, {.i64 = AMF_PA_STATIC_SCENE_DETECTION_SENSITIVITY_MEDIUM }, 0, 0, VE, "static_scene_sensitivity" },
+    { "high",                                   "high static scene dectection sensitivity",     0, AV_OPT_TYPE_CONST, {.i64 = AMF_PA_STATIC_SCENE_DETECTION_SENSITIVITY_HIGH   }, 0, 0, VE, "static_scene_sensitivity" },
+
+    { "pa_initial_qp_after_scene_change",       "The QP value that is used immediately after a scene change",   OFFSET(pa_initial_qp),                          AV_OPT_TYPE_INT,    {.i64 = -1 }, -1, 51, VE },
+    { "pa_max_qp_before_force_skip",            "The QP threshold to allow a skip frame",                       OFFSET(pa_max_qp),                              AV_OPT_TYPE_INT,    {.i64 = -1 }, -1, 51, VE },
+
+    { "pa_caq_strength",                        "Content Adaptive Quantization strength",                       OFFSET(pa_caq_strength),                        AV_OPT_TYPE_INT,    {.i64 = -1 }, -1, AMF_PA_CAQ_STRENGTH_HIGH, VE , "caq_strength" },
+    { "low",                                    "low Content Adaptive Quantization strength",       0, AV_OPT_TYPE_CONST, {.i64 = AMF_PA_CAQ_STRENGTH_LOW      }, 0, 0, VE, "caq_strength" },
+    { "medium",                                 "medium Content Adaptive Quantization strength",    0, AV_OPT_TYPE_CONST, {.i64 = AMF_PA_CAQ_STRENGTH_MEDIUM   }, 0, 0, VE, "caq_strength" },
+    { "high",                                   "high Content Adaptive Quantization strength",      0, AV_OPT_TYPE_CONST, {.i64 = AMF_PA_CAQ_STRENGTH_HIGH     }, 0, 0, VE, "caq_strength" },
+
+    { "pa_frame_sad_enable",                    "Enable Frame SAD algorithm",                                   OFFSET(pa_frame_sad),                           AV_OPT_TYPE_BOOL,   {.i64 = -1 }, -1, 1, VE },
+    { "pa_ltr_enable",                          "Enable long term reference frame management",                  OFFSET(pa_ltr),                                 AV_OPT_TYPE_BOOL,   {.i64 = -1 }, -1, 1, VE },
+    { "pa_lookahead_buffer_depth",              "Sets the PA lookahead buffer size",                            OFFSET(pa_lookahead_buffer_depth),              AV_OPT_TYPE_INT,    {.i64 = -1 }, -1, MAX_LOOKAHEAD_DEPTH, VE },
+
+    { "pa_paq_mode",                            "Sets the perceptual adaptive quantization mode",               OFFSET(pa_paq_mode),                            AV_OPT_TYPE_INT,    {.i64 = -1 }, -1, AMF_PA_PAQ_MODE_CAQ, VE , "paq_mode" },
+    { "none",                                   "no perceptual adaptive quantization",  0, AV_OPT_TYPE_CONST, {.i64 = AMF_PA_PAQ_MODE_NONE }, 0, 0, VE, "paq_mode" },
+    { "caq",                                    "caq perceptual adaptive quantization", 0, AV_OPT_TYPE_CONST, {.i64 = AMF_PA_PAQ_MODE_CAQ  }, 0, 0, VE, "paq_mode" },
+
+    { "pa_taq_mode",                            "Sets the temporal adaptive quantization mode",                 OFFSET(pa_taq_mode),                            AV_OPT_TYPE_INT,    {.i64 = -1 }, -1, AMF_PA_TAQ_MODE_2, VE , "taq_mode" },
+    { "none",                                   "no temporal adaptive quantization",        0, AV_OPT_TYPE_CONST, {.i64 = AMF_PA_TAQ_MODE_NONE }, 0, 0, VE, "taq_mode" },
+    { "1",                                      "temporal adaptive quantization mode 1",    0, AV_OPT_TYPE_CONST, {.i64 = AMF_PA_TAQ_MODE_1    }, 0, 0, VE, "taq_mode" },
+    { "2",                                      "temporal adaptive quantization mode 2",    0, AV_OPT_TYPE_CONST, {.i64 = AMF_PA_TAQ_MODE_2    }, 0, 0, VE, "taq_mode" },
+
+    { "pa_high_motion_quality_boost_mode",      "Sets the PA high motion quality boost mode",                   OFFSET(pa_high_motion_quality_boost_mode),      AV_OPT_TYPE_INT,    {.i64 = -1 }, -1, AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE_AUTO, VE , "high_motion_quality_boost_mode" },
+    { "none",                                   "no high motion quality boost",     0, AV_OPT_TYPE_CONST, {.i64 = AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE_NONE   }, 0, 0, VE, "high_motion_quality_boost_mode" },
+    { "auto",                                   "auto high motion quality boost",   0, AV_OPT_TYPE_CONST, {.i64 = AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE_AUTO   }, 0, 0, VE, "high_motion_quality_boost_mode" },
     { NULL }
 
 };
@@ -186,6 +241,26 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
     }
 
+    // Pre-Pass, Pre-Analysis, Two-Pass
+    if (ctx->rate_control_mode == AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD_CONSTANT_QP) {
+        AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_PREENCODE, 0);
+        if (ctx->preencode)
+            av_log(ctx, AV_LOG_WARNING, "Preencode is not supported by cqp Rate Control Method, automatically disabled\n");
+    }
+    else {
+        AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_PREENCODE, ctx->preencode);
+    }
+
+    if (ctx->rate_control_mode == AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD_QUALITY_VBR) {
+        if (ctx->qvbr_quality_level != -1) {
+            AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_QVBR_QUALITY_LEVEL, ctx->qvbr_quality_level);
+        }
+    }
+
+    if (ctx->hw_high_motion_quality_boost != -1) {
+        AMF_ASSIGN_PROPERTY_BOOL(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_HIGH_MOTION_QUALITY_BOOST, ((ctx->hw_high_motion_quality_boost == 0) ? false : true));
+    }
+
     AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD, ctx->rate_control_mode);
     if (avctx->rc_buffer_size) {
         AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_VBV_BUFFER_SIZE, avctx->rc_buffer_size);
@@ -197,9 +272,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
             AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_INITIAL_VBV_BUFFER_FULLNESS, amf_buffer_fullness);
         }
     }
-
-    // Pre-Pass, Pre-Analysis, Two-Pass
-    AMF_ASSIGN_PROPERTY_BOOL(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_PRE_ANALYSIS_ENABLE, ctx->preanalysis);
 
     // init dynamic rate control params
     if (ctx->max_au_size)
@@ -255,6 +327,56 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
     AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE, ctx->align);
 
+    if (ctx->preanalysis != -1) {
+        AMF_ASSIGN_PROPERTY_BOOL(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_PRE_ANALYSIS_ENABLE, !!((ctx->preanalysis == 0) ? false : true));
+    }
+
+    res = ctx->encoder->pVtbl->GetProperty(ctx->encoder, AMF_VIDEO_ENCODER_AV1_PRE_ANALYSIS_ENABLE, &var);
+    if ((int)var.int64Value)
+    {
+        if (ctx->pa_activity_type != -1) {
+            AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_PA_ACTIVITY_TYPE, ctx->pa_activity_type);
+        }
+        if (ctx->pa_scene_change_detection != -1) {
+            AMF_ASSIGN_PROPERTY_BOOL(res, ctx->encoder, AMF_PA_SCENE_CHANGE_DETECTION_ENABLE, ((ctx->pa_scene_change_detection == 0) ? false : true));
+        }
+        if (ctx->pa_scene_change_detection_sensitivity != -1) {
+            AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_PA_SCENE_CHANGE_DETECTION_SENSITIVITY, ctx->pa_scene_change_detection_sensitivity);
+        }
+        if (ctx->pa_static_scene_detection != -1) {
+            AMF_ASSIGN_PROPERTY_BOOL(res, ctx->encoder, AMF_PA_STATIC_SCENE_DETECTION_ENABLE, ((ctx->pa_static_scene_detection == 0) ? false : true));
+        }
+        if (ctx->pa_static_scene_detection_sensitivity != -1) {
+            AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_PA_STATIC_SCENE_DETECTION_SENSITIVITY, ctx->pa_static_scene_detection_sensitivity);
+        }
+        if (ctx->pa_initial_qp != -1) {
+            AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_PA_INITIAL_QP_AFTER_SCENE_CHANGE, ctx->pa_initial_qp);
+        }
+        if (ctx->pa_max_qp != -1) {
+            AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_PA_MAX_QP_BEFORE_FORCE_SKIP, ctx->pa_max_qp);
+        }
+        if (ctx->pa_caq_strength != -1) {
+            AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_PA_CAQ_STRENGTH, ctx->pa_caq_strength);
+        }
+        if (ctx->pa_frame_sad != -1) {
+            AMF_ASSIGN_PROPERTY_BOOL(res, ctx->encoder, AMF_PA_FRAME_SAD_ENABLE, ((ctx->pa_frame_sad == 0) ? false : true));
+        }
+        if (ctx->pa_paq_mode != -1) {
+            AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_PA_PAQ_MODE, ctx->pa_paq_mode);
+        }
+        if (ctx->pa_taq_mode != -1) {
+            AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_PA_TAQ_MODE, ctx->pa_taq_mode);
+        }
+        if (ctx->pa_ltr != -1) {
+            AMF_ASSIGN_PROPERTY_BOOL(res, ctx->encoder, AMF_PA_LTR_ENABLE, ((ctx->pa_ltr == 0) ? false : true));
+        }
+        if (ctx->pa_lookahead_buffer_depth != -1) {
+            AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_PA_LOOKAHEAD_BUFFER_DEPTH, ctx->pa_lookahead_buffer_depth);
+        }
+        if (ctx->pa_high_motion_quality_boost_mode != -1) {
+            AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE, ctx->pa_high_motion_quality_boost_mode);
+        }
+    }
 
     // init encoder
     res = ctx->encoder->pVtbl->Init(ctx->encoder, ctx->format, avctx->width, avctx->height);
@@ -297,7 +419,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_Q_INDEX_INTRA, ctx->qp_i);
     }
     AMF_ASSIGN_PROPERTY_BOOL(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_SKIP_FRAME, ctx->skip_frame);
-
 
     // fill extradata
     res = AMFVariantInit(&var);
