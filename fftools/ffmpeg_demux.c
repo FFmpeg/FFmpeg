@@ -781,6 +781,9 @@ static void demux_final_stats(Demuxer *d)
         DemuxStream  *ds = ds_from_ist(ist);
         enum AVMediaType type = ist->par->codec_type;
 
+        if (ist->discard || type == AVMEDIA_TYPE_ATTACHMENT)
+            continue;
+
         total_size    += ds->data_size;
         total_packets += ds->nb_packets;
 
