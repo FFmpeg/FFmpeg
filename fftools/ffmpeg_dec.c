@@ -456,25 +456,31 @@ out:
     return ret;
 }
 
-static int transcode_subtitles(InputStream *ist, const AVPacket *pkt,
-                               int *got_output, int *decode_failed)
+static int transcode_subtitles(InputStream *ist, const AVPacket *pkt)
 {
     AVSubtitle subtitle;
+    int got_output;
     int ret = avcodec_decode_subtitle2(ist->dec_ctx,
-                                       &subtitle, got_output, pkt);
+                                       &subtitle, &got_output, pkt);
 
-    check_decode_result(ist, got_output, ret);
+    if (ret < 0) {
+        av_log(ist, AV_LOG_ERROR, "Error decoding subtitles: %s\n",
+                av_err2str(ret));
+        if (exit_on_error)
+            exit_program(1);
+    }
 
-    if (ret < 0 || !*got_output) {
-        *decode_failed = 1;
+    check_decode_result(ist, &got_output, ret);
+
+    if (ret < 0 || !got_output) {
         if (!pkt->size)
             sub2video_flush(ist);
-        return ret;
+        return ret < 0 ? ret : AVERROR_EOF;
     }
 
     ist->frames_decoded++;
 
-    return process_subtitle(ist, &subtitle, got_output);
+    return process_subtitle(ist, &subtitle, &got_output);
 }
 
 static int send_filter_eof(InputStream *ist)
@@ -493,8 +499,12 @@ static int send_filter_eof(InputStream *ist)
 
 int dec_packet(InputStream *ist, const AVPacket *pkt, int no_eof)
 {
+    AVCodecContext *dec = ist->dec_ctx;
     AVPacket *avpkt = ist->pkt;
     int ret, repeating = 0;
+
+    if (dec->codec_type == AVMEDIA_TYPE_SUBTITLE)
+        return transcode_subtitles(ist, pkt ? pkt : ist->pkt);
 
     if (pkt) {
         av_packet_unref(avpkt);
@@ -518,14 +528,6 @@ int dec_packet(InputStream *ist, const AVPacket *pkt, int no_eof)
             ret = decode_video    (ist, repeating ? NULL : avpkt, &got_output, !pkt,
                                    &decode_failed);
 
-            av_packet_unref(avpkt);
-            break;
-        case AVMEDIA_TYPE_SUBTITLE:
-            if (repeating)
-                break;
-            ret = transcode_subtitles(ist, avpkt, &got_output, &decode_failed);
-            if (!pkt && ret >= 0)
-                ret = AVERROR_EOF;
             av_packet_unref(avpkt);
             break;
         default: av_assert0(0);
