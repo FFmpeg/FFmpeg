@@ -31,7 +31,7 @@
 
 #include "ffmpeg.h"
 
-static void check_decode_result(InputStream *ist, int *got_output, int ret)
+static void check_decode_result(InputStream *ist, int got_output, int ret)
 {
     if (ret < 0)
         ist->decode_errors++;
@@ -39,7 +39,7 @@ static void check_decode_result(InputStream *ist, int *got_output, int ret)
     if (ret < 0 && exit_on_error)
         exit_program(1);
 
-    if (*got_output && ist->dec_ctx->codec_type != AVMEDIA_TYPE_SUBTITLE) {
+    if (got_output && ist->dec_ctx->codec_type != AVMEDIA_TYPE_SUBTITLE) {
         if (ist->decoded_frame->decode_error_flags || (ist->decoded_frame->flags & AV_FRAME_FLAG_CORRUPT)) {
             av_log(ist, exit_on_error ? AV_LOG_FATAL : AV_LOG_WARNING,
                    "corrupt decoded frame\n");
@@ -47,52 +47,6 @@ static void check_decode_result(InputStream *ist, int *got_output, int ret)
                 exit_program(1);
         }
     }
-}
-
-// This does not quite work like avcodec_decode_audio4/avcodec_decode_video2.
-// There is the following difference: if you got a frame, you must call
-// it again with pkt=NULL. pkt==NULL is treated differently from pkt->size==0
-// (pkt==NULL means get more output, pkt->size==0 is a flush/drain packet)
-static int decode(InputStream *ist, AVCodecContext *avctx,
-                  AVFrame *frame, int *got_frame, const AVPacket *pkt)
-{
-    int ret;
-
-    *got_frame = 0;
-
-    if (pkt) {
-        ret = avcodec_send_packet(avctx, pkt);
-        // In particular, we don't expect AVERROR(EAGAIN), because we read all
-        // decoded frames with avcodec_receive_frame() until done.
-        if (ret < 0 && ret != AVERROR_EOF)
-            return ret;
-    }
-
-    ret = avcodec_receive_frame(avctx, frame);
-    if (ret < 0 && ret != AVERROR(EAGAIN))
-        return ret;
-    if (ret >= 0) {
-        if (ist->want_frame_data) {
-            FrameData *fd;
-
-            av_assert0(!frame->opaque_ref);
-            frame->opaque_ref = av_buffer_allocz(sizeof(*fd));
-            if (!frame->opaque_ref) {
-                av_frame_unref(frame);
-                return AVERROR(ENOMEM);
-            }
-            fd      = (FrameData*)frame->opaque_ref->data;
-            fd->pts = frame->pts;
-            fd->tb  = avctx->pkt_timebase;
-            fd->idx = avctx->frame_num - 1;
-        }
-
-        frame->time_base = avctx->pkt_timebase;
-
-        *got_frame = 1;
-    }
-
-    return 0;
 }
 
 static int send_frame_to_filters(InputStream *ist, AVFrame *decoded_frame)
@@ -192,24 +146,9 @@ static void audio_ts_process(InputStream *ist, AVFrame *frame)
     frame->time_base = tb_filter;
 }
 
-static int decode_audio(InputStream *ist, const AVPacket *pkt, int *got_output,
-                        int *decode_failed)
+static int decode_audio(InputStream *ist, AVFrame *decoded_frame)
 {
-    AVFrame *decoded_frame = ist->decoded_frame;
-    AVCodecContext *avctx = ist->dec_ctx;
     int ret, err = 0;
-
-    update_benchmark(NULL);
-    ret = decode(ist, avctx, decoded_frame, got_output, pkt);
-    update_benchmark("decode_audio %d.%d", ist->file_index, ist->st->index);
-    if (ret < 0)
-        *decode_failed = 1;
-
-    if (ret != AVERROR_EOF)
-        check_decode_result(ist, got_output, ret);
-
-    if (!*got_output || ret < 0)
-        return ret;
 
     ist->samples_decoded += decoded_frame->nb_samples;
     ist->frames_decoded++;
@@ -274,23 +213,9 @@ static int64_t video_duration_estimate(const InputStream *ist, const AVFrame *fr
     return FFMAX(ist->last_frame_duration_est, 1);
 }
 
-static int decode_video(InputStream *ist, const AVPacket *pkt, int *got_output,
-                        int eof, int *decode_failed)
+static int decode_video(InputStream *ist, AVFrame *frame)
 {
-    AVFrame *frame = ist->decoded_frame;
     int ret = 0, err = 0;
-
-    // With fate-indeo3-2, we're getting 0-sized packets before EOF for some
-    // reason. This seems like a semi-critical bug. Don't trigger EOF, and
-    // skip the packet.
-    if (!eof && pkt && pkt->size == 0)
-        return 0;
-
-    update_benchmark(NULL);
-    ret = decode(ist, ist->dec_ctx, frame, got_output, pkt);
-    update_benchmark("decode_video %d.%d", ist->file_index, ist->st->index);
-    if (ret < 0)
-        *decode_failed = 1;
 
     // The following line may be required in some cases where there is no parser
     // or the parser does not has_b_frames correctly
@@ -307,10 +232,6 @@ static int decode_video(InputStream *ist, const AVPacket *pkt, int *got_output,
                    ist->par->video_delay);
     }
 
-    if (ret != AVERROR_EOF)
-        check_decode_result(ist, got_output, ret);
-
-    if (*got_output && ret >= 0) {
         if (ist->dec_ctx->width  != frame->width ||
             ist->dec_ctx->height != frame->height ||
             ist->dec_ctx->pix_fmt != frame->format) {
@@ -322,10 +243,6 @@ static int decode_video(InputStream *ist, const AVPacket *pkt, int *got_output,
                 ist->dec_ctx->height,
                 ist->dec_ctx->pix_fmt);
         }
-    }
-
-    if (!*got_output || ret < 0)
-        return ret;
 
     if(ist->top_field_first>=0)
         frame->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
@@ -470,7 +387,7 @@ static int transcode_subtitles(InputStream *ist, const AVPacket *pkt)
             exit_program(1);
     }
 
-    check_decode_result(ist, &got_output, ret);
+    check_decode_result(ist, got_output, ret);
 
     if (ret < 0 || !got_output) {
         if (!pkt->size)
@@ -500,40 +417,48 @@ static int send_filter_eof(InputStream *ist)
 int dec_packet(InputStream *ist, const AVPacket *pkt, int no_eof)
 {
     AVCodecContext *dec = ist->dec_ctx;
-    AVPacket *avpkt = ist->pkt;
-    int ret, repeating = 0;
+    const char *type_desc = av_get_media_type_string(dec->codec_type);
+    int ret;
 
     if (dec->codec_type == AVMEDIA_TYPE_SUBTITLE)
         return transcode_subtitles(ist, pkt ? pkt : ist->pkt);
 
-    if (pkt) {
-        av_packet_unref(avpkt);
-        ret = av_packet_ref(avpkt, pkt);
-        if (ret < 0)
-            return ret;
+    // With fate-indeo3-2, we're getting 0-sized packets before EOF for some
+    // reason. This seems like a semi-critical bug. Don't trigger EOF, and
+    // skip the packet.
+    if (pkt && pkt->size == 0)
+        return 0;
+
+    ret = avcodec_send_packet(dec, pkt);
+    if (ret < 0 && !(ret == AVERROR_EOF && !pkt)) {
+        // In particular, we don't expect AVERROR(EAGAIN), because we read all
+        // decoded frames with avcodec_receive_frame() until done.
+        av_log(ist, AV_LOG_ERROR, "Error submitting %s to decoder: %s\n",
+               pkt ? "packet" : "EOF", av_err2str(ret));
+        if (exit_on_error)
+            exit_program(1);
+
+        if (ret != AVERROR_EOF)
+            ist->decode_errors++;
+
+        return ret;
     }
 
-    // while we have more to decode or while the decoder did output something on EOF
     while (1) {
-        int got_output = 0;
-        int decode_failed = 0;
+        AVFrame *frame = ist->decoded_frame;
 
-        switch (ist->par->codec_type) {
-        case AVMEDIA_TYPE_AUDIO:
-            ret = decode_audio    (ist, repeating ? NULL : avpkt, &got_output,
-                                   &decode_failed);
-            av_packet_unref(avpkt);
-            break;
-        case AVMEDIA_TYPE_VIDEO:
-            ret = decode_video    (ist, repeating ? NULL : avpkt, &got_output, !pkt,
-                                   &decode_failed);
+        update_benchmark(NULL);
+        ret = avcodec_receive_frame(dec, frame);
+        update_benchmark("decode_%s %d.%d", type_desc,
+                         ist->file_index, ist->st->index);
 
-            av_packet_unref(avpkt);
-            break;
-        default: av_assert0(0);
-        }
+        if (ret != AVERROR_EOF && ret != AVERROR(EAGAIN))
+            check_decode_result(ist, ret >= 0, ret);
 
-        if (ret == AVERROR_EOF) {
+        if (ret == AVERROR(EAGAIN)) {
+            av_assert0(pkt); // should never happen during flushing
+            return 0;
+        } else if (ret == AVERROR_EOF) {
             /* after flushing, send an EOF on all the filter inputs attached to the stream */
             /* except when looping we need to flush but not to send an EOF */
             if (!no_eof) {
@@ -545,25 +470,39 @@ int dec_packet(InputStream *ist, const AVPacket *pkt, int no_eof)
             }
 
             return AVERROR_EOF;
-        }
-
-        if (ret < 0) {
-            if (decode_failed) {
-                av_log(NULL, AV_LOG_ERROR, "Error while decoding stream #%d:%d: %s\n",
-                       ist->file_index, ist->st->index, av_err2str(ret));
-            } else {
-                av_log(NULL, AV_LOG_FATAL, "Error while processing the decoded "
-                       "data for stream #%d:%d\n", ist->file_index, ist->st->index);
-            }
-            if (!decode_failed || exit_on_error)
+        } else if (ret < 0) {
+            av_log(ist, AV_LOG_ERROR, "Decoding error: %s\n", av_err2str(ret));
+            if (exit_on_error)
                 exit_program(1);
             return ret;
         }
 
-        if (!got_output)
-            return 0;
+        if (ist->want_frame_data) {
+            FrameData *fd;
 
-        repeating = 1;
+            av_assert0(!frame->opaque_ref);
+            frame->opaque_ref = av_buffer_allocz(sizeof(*fd));
+            if (!frame->opaque_ref) {
+                av_frame_unref(frame);
+                report_and_exit(AVERROR(ENOMEM));
+            }
+            fd      = (FrameData*)frame->opaque_ref->data;
+            fd->pts = frame->pts;
+            fd->tb  = dec->pkt_timebase;
+            fd->idx = dec->frame_num - 1;
+        }
+
+        frame->time_base = dec->pkt_timebase;
+
+        ret = dec->codec_type == AVMEDIA_TYPE_AUDIO ?
+                decode_audio(ist, frame)            :
+                decode_video(ist, frame);
+
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_FATAL, "Error while processing the decoded "
+                   "data for stream #%d:%d\n", ist->file_index, ist->st->index);
+            exit_program(1);
+        }
     }
 }
 
