@@ -12,6 +12,18 @@ FATE_CBS_$(1) += fate-cbs-$(1)-$(2)
 fate-cbs-$(1)-$(2): CMD = md5 -c:v $(3) -i $(TARGET_SAMPLES)/$(4) -c:v copy -y -bsf:v $(1)_metadata -f $(5)
 endef
 
+define FATE_CBS_DISCARD_TEST
+# (codec, discard_type, sample_file, output_format, dep)
+FATE_CBS_$(1)_DISCARD += fate-cbs-$(1)-discard-$(2)
+tests/data/fate/cbs-$(1)-discard-$2.$(4): TAG = GEN
+tests/data/fate/cbs-$(1)-discard-$2.$(4): ffmpeg$(PROGSSUF)$(EXESUF) $(5) | tests/data
+	$(M)$(TARGET_EXEC) $(TARGET_PATH)/ffmpeg$(PROGSSUF)$(EXESUF) -nostdin \
+		-i $(3) -c:v copy -fflags +bitexact -an -bsf:v filter_units=discard=$(2) \
+	-f $(4) $(TARGET_PATH)/tests/data/fate/cbs-$(1)-discard-$(2).$(4) -y 2>/dev/null
+fate-cbs-$(1)-discard-$2: ffprobe tests/data/fate/cbs-$(1)-discard-$(2).$(4)
+fate-cbs-$(1)-discard-$2: CMD = ffprobe_demux $(TARGET_PATH)/tests/data/fate/cbs-$(1)-discard-$(2).$(4)
+endef
+
 # AV1 read/write
 
 FATE_CBS_AV1_CONFORMANCE_SAMPLES = \
@@ -66,6 +78,13 @@ $(foreach N,$(FATE_CBS_H264_CONFORMANCE_SAMPLES),$(eval $(call FATE_CBS_TEST,h26
 $(foreach N,$(FATE_CBS_H264_SAMPLES),$(eval $(call FATE_CBS_TEST,h264,$(basename $(N)),h264,h264/$(N),h264)))
 
 FATE_CBS_H264-$(call FATE_CBS_DEPS, H264, H264, H264, H264, H264) = $(FATE_CBS_h264)
+
+$(eval $(call FATE_CBS_DISCARD_TEST,h264,nonref,$(TARGET_SAMPLES)/h264/interlaced_crop.mp4,mp4))
+$(eval $(call FATE_CBS_DISCARD_TEST,h264,bidir,$(TARGET_SAMPLES)/h264/interlaced_crop.mp4,mp4))
+$(eval $(call FATE_CBS_DISCARD_TEST,h264,nonintra,$(TARGET_SAMPLES)/h264/interlaced_crop.mp4,mp4))
+$(eval $(call FATE_CBS_DISCARD_TEST,h264,nonkey,$(TARGET_SAMPLES)/h264/interlaced_crop.mp4,mp4))
+
+FATE_CBS_H264-$(call ALLYES, MP4_MUXER, H264_PARSER, FILTER_UNITS_BSF, H264_MUXER) += $(FATE_CBS_h264_DISCARD)
 
 
 FATE_H264_REDUNDANT_PPS-$(call REMUX, H264, MOV_DEMUXER H264_REDUNDANT_PPS_BSF   \
@@ -133,6 +152,14 @@ FATE_CBS_HEVC_SAMPLES =       \
 $(foreach N,$(FATE_CBS_HEVC_SAMPLES),$(eval $(call FATE_CBS_TEST,hevc,$(basename $(N)),hevc,hevc-conformance/$(N),hevc)))
 
 FATE_CBS_HEVC-$(call FATE_CBS_DEPS, HEVC, HEVC, HEVC, HEVC, HEVC) = $(FATE_CBS_hevc)
+
+$(eval $(call FATE_CBS_DISCARD_TEST,hevc,nonref,$(TARGET_PATH)/tests/data/hevc-mp4.mov,mp4,tests/data/hevc-mp4.mov))
+$(eval $(call FATE_CBS_DISCARD_TEST,hevc,bidir,$(TARGET_PATH)/tests/data/hevc-mp4.mov,mp4,tests/data/hevc-mp4.mov))
+$(eval $(call FATE_CBS_DISCARD_TEST,hevc,nonintra,$(TARGET_PATH)/tests/data/hevc-mp4.mov,mp4,tests/data/hevc-mp4.mov))
+$(eval $(call FATE_CBS_DISCARD_TEST,hevc,nonkey,$(TARGET_PATH)/tests/data/hevc-mp4.mov,mp4,tests/data/hevc-mp4.mov))
+
+FATE_CBS_HEVC-$(call ALLYES, MP4_MUXER, HEVC_PARSER, FILTER_UNITS_BSF, HEVC_MUXER) += $(FATE_CBS_hevc_DISCARD)
+
 FATE_SAMPLES_AVCONV += $(FATE_CBS_HEVC-yes)
 fate-cbs-hevc: $(FATE_CBS_HEVC-yes)
 
