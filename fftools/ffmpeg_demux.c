@@ -113,6 +113,8 @@ typedef struct Demuxer {
     int                   thread_queue_size;
     pthread_t             thread;
     int                   non_blocking;
+
+    int                   read_started;
 } Demuxer;
 
 typedef struct DemuxMsg {
@@ -734,6 +736,8 @@ static int thread_start(Demuxer *d)
         goto fail;
     }
 
+    d->read_started = 1;
+
     return 0;
 fail:
     av_thread_message_queue_free(&d->in_thread_queue);
@@ -833,7 +837,7 @@ void ifile_close(InputFile **pf)
 
     thread_stop(d);
 
-    if (f->ctx)
+    if (d->read_started)
         demux_final_stats(d);
 
     for (int i = 0; i < f->nb_streams; i++)
