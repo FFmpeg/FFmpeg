@@ -189,6 +189,11 @@ static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     avio_printf(s->pb, Y4M_FRAME_MAGIC "\n");
 
+    if (st->codecpar->codec_id == AV_CODEC_ID_RAWVIDEO) {
+        avio_write(pb, pkt->data, pkt->size);
+        return 0;
+    }
+
     width  = st->codecpar->width;
     height = st->codecpar->height;
     desc   = av_pix_fmt_desc_get(st->codecpar->format);
@@ -218,7 +223,8 @@ static int yuv4_init(AVFormatContext *s)
     if (s->nb_streams != 1)
         return AVERROR(EIO);
 
-    if (s->streams[0]->codecpar->codec_id != AV_CODEC_ID_WRAPPED_AVFRAME) {
+    if (s->streams[0]->codecpar->codec_id != AV_CODEC_ID_WRAPPED_AVFRAME &&
+        s->streams[0]->codecpar->codec_id != AV_CODEC_ID_RAWVIDEO) {
         av_log(s, AV_LOG_ERROR, "ERROR: Codec not supported.\n");
         return AVERROR_INVALIDDATA;
     }
