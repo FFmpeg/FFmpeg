@@ -1543,6 +1543,7 @@ int ifile_open(const OptionsContext *o, const char *filename)
     d->loop = o->loop;
     d->duration = 0;
     d->time_base = (AVRational){ 1, 1 };
+    d->nb_streams_warn = ic->nb_streams;
 
     f->format_nots = !!(ic->iformat->flags & AVFMT_NOTIMESTAMPS);
 
