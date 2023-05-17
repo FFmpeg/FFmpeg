@@ -345,24 +345,6 @@ int enc_open(OutputStream *ost, AVFrame *frame)
                    dec_ctx->subtitle_header_size);
             enc_ctx->subtitle_header_size = dec_ctx->subtitle_header_size;
         }
-        if (ist && ist->dec->type == AVMEDIA_TYPE_SUBTITLE &&
-            enc_ctx->codec_type == AVMEDIA_TYPE_SUBTITLE) {
-            int input_props = 0, output_props = 0;
-            AVCodecDescriptor const *input_descriptor =
-                avcodec_descriptor_get(ist->dec->id);
-            AVCodecDescriptor const *output_descriptor =
-                avcodec_descriptor_get(enc_ctx->codec_id);
-            if (input_descriptor)
-                input_props = input_descriptor->props & (AV_CODEC_PROP_TEXT_SUB | AV_CODEC_PROP_BITMAP_SUB);
-            if (output_descriptor)
-                output_props = output_descriptor->props & (AV_CODEC_PROP_TEXT_SUB | AV_CODEC_PROP_BITMAP_SUB);
-            if (input_props && output_props && input_props != output_props) {
-                av_log(ost, AV_LOG_ERROR,
-                       "Subtitle encoding currently only possible from text to text "
-                       "or bitmap to bitmap");
-                return AVERROR_INVALIDDATA;
-            }
-        }
 
         break;
     default:

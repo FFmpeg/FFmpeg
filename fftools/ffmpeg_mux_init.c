@@ -822,11 +822,28 @@ static void new_stream_subtitle(Muxer *mux, const OptionsContext *o,
 
     if (ost->enc_ctx) {
         AVCodecContext *subtitle_enc = ost->enc_ctx;
+
+        AVCodecDescriptor const *input_descriptor =
+            avcodec_descriptor_get(ost->ist->par->codec_id);
+        AVCodecDescriptor const *output_descriptor =
+            avcodec_descriptor_get(subtitle_enc->codec_id);
+        int input_props = 0, output_props = 0;
+
         char *frame_size = NULL;
 
         MATCH_PER_STREAM_OPT(frame_sizes, str, frame_size, mux->fc, st);
         if (frame_size && av_parse_video_size(&subtitle_enc->width, &subtitle_enc->height, frame_size) < 0) {
             av_log(ost, AV_LOG_FATAL, "Invalid frame size: %s.\n", frame_size);
+            exit_program(1);
+        }
+        if (input_descriptor)
+            input_props = input_descriptor->props & (AV_CODEC_PROP_TEXT_SUB | AV_CODEC_PROP_BITMAP_SUB);
+        if (output_descriptor)
+            output_props = output_descriptor->props & (AV_CODEC_PROP_TEXT_SUB | AV_CODEC_PROP_BITMAP_SUB);
+        if (input_props && output_props && input_props != output_props) {
+            av_log(ost, AV_LOG_ERROR,
+                   "Subtitle encoding currently only possible from text to text "
+                   "or bitmap to bitmap\n");
             exit_program(1);
         }
     }
