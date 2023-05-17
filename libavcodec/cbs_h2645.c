@@ -1265,6 +1265,79 @@ static int cbs_h264_discarded_nal_unit(CodedBitstreamContext *ctx,
     return 0;
 }
 
+static int cbs_h265_discarded_nal_unit(CodedBitstreamContext *ctx,
+                                       const CodedBitstreamUnit *unit,
+                                       enum AVDiscard skip)
+{
+    H265RawSliceHeader *slice;
+
+    if (skip <= AVDISCARD_DEFAULT)
+        return 0;
+
+    switch (unit->type) {
+    case HEVC_NAL_BLA_W_LP:
+    case HEVC_NAL_BLA_W_RADL:
+    case HEVC_NAL_BLA_N_LP:
+    case HEVC_NAL_IDR_W_RADL:
+    case HEVC_NAL_IDR_N_LP:
+    case HEVC_NAL_CRA_NUT:
+        // IRAP slice
+        if (skip < AVDISCARD_ALL)
+            return 0;
+        break;
+
+    case HEVC_NAL_TRAIL_R:
+    case HEVC_NAL_TRAIL_N:
+    case HEVC_NAL_TSA_N:
+    case HEVC_NAL_TSA_R:
+    case HEVC_NAL_STSA_N:
+    case HEVC_NAL_STSA_R:
+    case HEVC_NAL_RADL_N:
+    case HEVC_NAL_RADL_R:
+    case HEVC_NAL_RASL_N:
+    case HEVC_NAL_RASL_R:
+        // Slice
+        break;
+    default:
+        // Don't discard non-slice nal.
+        return 0;
+    }
+
+    if (skip >= AVDISCARD_NONKEY)
+        return 1;
+
+    slice = (H265RawSliceHeader *)unit->content;
+    if (!slice) {
+        av_log(ctx->log_ctx, AV_LOG_WARNING,
+                "h265 slice header is null, missing decompose?\n");
+        return 0;
+    }
+
+    if (skip >= AVDISCARD_NONINTRA && slice->slice_type != HEVC_SLICE_I)
+        return 1;
+    if (skip >= AVDISCARD_BIDIR && slice->slice_type == HEVC_SLICE_B)
+        return 1;
+
+    if (skip >= AVDISCARD_NONREF) {
+        switch (unit->type) {
+        case HEVC_NAL_TRAIL_N:
+        case HEVC_NAL_TSA_N:
+        case HEVC_NAL_STSA_N:
+        case HEVC_NAL_RADL_N:
+        case HEVC_NAL_RASL_N:
+        case HEVC_NAL_VCL_N10:
+        case HEVC_NAL_VCL_N12:
+        case HEVC_NAL_VCL_N14:
+            // non-ref
+            return 1;
+        default:
+            break;
+        }
+    }
+
+    return 0;
+}
+
 static int cbs_h2645_unit_requires_zero_byte(enum AVCodecID codec_id,
                                              CodedBitstreamUnitType type,
                                              int nal_unit_index)
@@ -1510,6 +1583,7 @@ const CodedBitstreamType ff_cbs_type_h265 = {
     .split_fragment    = &cbs_h2645_split_fragment,
     .read_unit         = &cbs_h265_read_nal_unit,
     .write_unit        = &cbs_h265_write_nal_unit,
+    .discarded_unit    = &cbs_h265_discarded_nal_unit,
     .assemble_fragment = &cbs_h2645_assemble_fragment,
 
     .flush             = &cbs_h265_flush,
