@@ -1292,6 +1292,8 @@ static int config_output(AVFilterLink *outlink)
             av_realloc_f(s->combine_buffer, s->w * 4,
                          sizeof(*s->combine_buffer));
     }
+    if (!s->combine_buffer)
+        return AVERROR(ENOMEM);
 
     av_log(ctx, AV_LOG_VERBOSE, "s:%dx%d FFT window size:%d\n",
            s->w, s->h, s->win_size);
