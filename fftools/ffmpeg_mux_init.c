@@ -1052,6 +1052,19 @@ static OutputStream *ost_add(Muxer *mux, const OptionsContext *o,
         av_strlcat(ms->log_name, "/copy", sizeof(ms->log_name));
     }
 
+    av_log(ost, AV_LOG_VERBOSE, "Created %s stream from ",
+           av_get_media_type_string(type));
+    if (ist)
+        av_log(ost, AV_LOG_VERBOSE, "input stream %d:%d",
+               ist->file_index, ist->index);
+    else if (ofilter)
+        av_log(ost, AV_LOG_VERBOSE, "complex filtergraph %d:[%s]\n",
+               ofilter->graph->index, ofilter->name);
+    else if (type == AVMEDIA_TYPE_ATTACHMENT)
+        av_log(ost, AV_LOG_VERBOSE, "attached file");
+    else av_assert0(0);
+    av_log(ost, AV_LOG_VERBOSE, "\n");
+
     ost->pkt = av_packet_alloc();
     if (!ost->pkt)
         report_and_exit(AVERROR(ENOMEM));
@@ -1451,6 +1464,10 @@ loop_end:
                    "in any defined filter graph, or was already used elsewhere.\n", map->linklabel);
             exit_program(1);
         }
+
+        av_log(mux, AV_LOG_VERBOSE, "Creating output stream from an explicitly "
+               "mapped complex filtergraph %d, output [%s]\n", fg->index, map->linklabel);
+
         ost_add(mux, o, ofilter->type, NULL, ofilter);
     } else {
         ist = input_files[map->file_index]->streams[map->stream_index];
@@ -1517,6 +1534,9 @@ static void of_add_attachments(Muxer *mux, const OptionsContext *o)
         avio_read(pb, attachment, len);
         memset(attachment + len, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
+        av_log(mux, AV_LOG_VERBOSE, "Creating attachment stream from file %s\n",
+               o->attachments[i]);
+
         ost = ost_add(mux, o, AVMEDIA_TYPE_ATTACHMENT, NULL, NULL);
         ost->attachment_filename       = o->attachments[i];
         ost->par_in->extradata         = attachment;
@@ -1550,11 +1570,21 @@ static void create_streams(Muxer *mux, const OptionsContext *o)
             case AVMEDIA_TYPE_AUDIO:    auto_disable_a = 1; break;
             case AVMEDIA_TYPE_SUBTITLE: auto_disable_s = 1; break;
             }
+
+            av_log(mux, AV_LOG_VERBOSE, "Creating output stream from unlabeled "
+                   "output of complex filtergraph %d.", fg->index);
+            if (!o->nb_stream_maps)
+                av_log(mux, AV_LOG_VERBOSE, " This overrides automatic %s mapping.",
+                       av_get_media_type_string(ofilter->type));
+            av_log(mux, AV_LOG_VERBOSE, "\n");
+
             ost_add(mux, o, ofilter->type, NULL, ofilter);
         }
     }
 
     if (!o->nb_stream_maps) {
+        av_log(mux, AV_LOG_VERBOSE, "No explicit maps, mapping streams automatically...\n");
+
         /* pick the "best" stream of each type */
         if (!auto_disable_v)
             map_auto_video(mux, o);
@@ -1565,6 +1595,8 @@ static void create_streams(Muxer *mux, const OptionsContext *o)
         if (!auto_disable_d)
             map_auto_data(mux, o);
     } else {
+        av_log(mux, AV_LOG_VERBOSE, "Adding streams from explicit maps...\n");
+
         for (int i = 0; i < o->nb_stream_maps; i++)
             map_manual(mux, o, &o->stream_maps[i]);
     }
