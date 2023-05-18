@@ -900,6 +900,7 @@ static int decode(AVCodecContext *avctx, AVSubtitle *sub,
         ret = ff_ass_add_rect2(sub, ctx->buffer[bidx].str, ctx->readorder++, 0, NULL, NULL, &nb_rect_allocated);
         if (ret < 0)
             return ret;
+        av_bprint_clear(&ctx->buffer[bidx]);
         sub->pts = ctx->buffer_time[1];
         sub->end_display_time = av_rescale_q(ctx->buffer_time[1] - ctx->buffer_time[0],
                                              AV_TIME_BASE_Q, ms_tb);
