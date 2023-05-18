@@ -33,6 +33,7 @@
 
 struct Decoder {
     AVFrame         *frame;
+    AVPacket        *pkt;
 };
 
 void dec_free(Decoder **pdec)
@@ -43,6 +44,7 @@ void dec_free(Decoder **pdec)
         return;
 
     av_frame_free(&dec->frame);
+    av_packet_free(&dec->pkt);
 
     av_freep(pdec);
 }
@@ -59,6 +61,10 @@ static int dec_alloc(Decoder **pdec)
 
     dec->frame = av_frame_alloc();
     if (!dec->frame)
+        goto fail;
+
+    dec->pkt = av_packet_alloc();
+    if (!dec->pkt)
         goto fail;
 
 
@@ -418,7 +424,7 @@ int dec_packet(InputStream *ist, const AVPacket *pkt, int no_eof)
     int ret;
 
     if (dec->codec_type == AVMEDIA_TYPE_SUBTITLE)
-        return transcode_subtitles(ist, pkt ? pkt : ist->pkt);
+        return transcode_subtitles(ist, pkt ? pkt : d->pkt);
 
     // With fate-indeo3-2, we're getting 0-sized packets before EOF for some
     // reason. This seems like a semi-critical bug. Don't trigger EOF, and

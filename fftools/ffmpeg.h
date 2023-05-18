@@ -349,7 +349,6 @@ typedef struct InputStream {
     AVCodecContext *dec_ctx;
     const AVCodec *dec;
     const AVCodecDescriptor *codec_desc;
-    AVPacket *pkt;
 
     AVRational framerate_guessed;
 

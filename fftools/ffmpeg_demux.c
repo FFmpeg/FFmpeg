@@ -817,7 +817,6 @@ static void ist_free(InputStream **pist)
 
     dec_free(&ist->decoder);
 
-    av_packet_free(&ist->pkt);
     av_dict_free(&ist->decoder_opts);
     avsubtitle_free(&ist->prev_sub.subtitle);
     av_frame_free(&ist->sub2video.frame);
@@ -1196,10 +1195,6 @@ static void add_input_streams(const OptionsContext *o, Demuxer *d)
             av_log(ist, AV_LOG_ERROR, "Error initializing the decoder context.\n");
             exit_program(1);
         }
-
-        ist->pkt = av_packet_alloc();
-        if (!ist->pkt)
-            report_and_exit(AVERROR(ENOMEM));
 
         if (o->bitexact)
             ist->dec_ctx->flags |= AV_CODEC_FLAG_BITEXACT;
