@@ -230,7 +230,11 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
         return ret;
     memcpy(frame->data[1], c->pal, AVPALETTE_SIZE);
+#if FF_API_PALETTE_HAS_CHANGED
+FF_DISABLE_DEPRECATION_WARNINGS
     frame->palette_has_changed = pc;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     outptr = frame->data[0];
     srcptr = c->decomp_buf;

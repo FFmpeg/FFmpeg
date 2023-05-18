@@ -293,7 +293,11 @@ static int cinvideo_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
         return res;
 
     memcpy(cin->frame->data[1], cin->palette, sizeof(cin->palette));
+#if FF_API_PALETTE_HAS_CHANGED
+FF_DISABLE_DEPRECATION_WARNINGS
     cin->frame->palette_has_changed = 1;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     for (y = 0; y < cin->avctx->height; ++y)
         memcpy(cin->frame->data[0] + (cin->avctx->height - 1 - y) * cin->frame->linesize[0],
                cin->bitmap_table[CIN_CUR_BMP] + y * cin->avctx->width,

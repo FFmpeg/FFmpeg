@@ -232,7 +232,11 @@ static int yop_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                                    (palette[i + firstcolor] >> 6) & 0x30303;
     }
 
+#if FF_API_PALETTE_HAS_CHANGED
+FF_DISABLE_DEPRECATION_WARNINGS
     frame->palette_has_changed = 1;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     for (y = 0; y < avctx->height; y += 2) {
         for (x = 0; x < avctx->width; x += 2) {

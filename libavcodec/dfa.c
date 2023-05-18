@@ -367,7 +367,11 @@ static int dfa_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                 s->pal[i] = bytestream2_get_be24(&gb) << 2;
                 s->pal[i] |= 0xFFU << 24 | (s->pal[i] >> 6) & 0x30303;
             }
+#if FF_API_PALETTE_HAS_CHANGED
+FF_DISABLE_DEPRECATION_WARNINGS
             frame->palette_has_changed = 1;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
         } else if (chunk_type <= 9) {
             if (decoder[chunk_type - 2](&gb, s->frame_buf, avctx->width, avctx->height)) {
                 av_log(avctx, AV_LOG_ERROR, "Error decoding %s chunk\n",

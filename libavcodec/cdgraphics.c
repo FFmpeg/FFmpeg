@@ -125,7 +125,11 @@ static void cdg_load_palette(CDGraphicsContext *cc, uint8_t *data, int low)
         b = ((color     ) & 0x000F) * 17;
         palette[i + array_offset] = (uint32_t)cc->alpha[i + array_offset] << 24 | r << 16 | g << 8 | b;
     }
+#if FF_API_PALETTE_HAS_CHANGED
+FF_DISABLE_DEPRECATION_WARNINGS
     cc->frame->palette_has_changed = 1;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 }
 
 static int cdg_tile_block(CDGraphicsContext *cc, uint8_t *data, int b)

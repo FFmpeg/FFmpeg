@@ -809,7 +809,11 @@ static int vqa_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
 
         /* make the palette available on the way out */
         memcpy(s->frame->data[1], s->palette, PALETTE_COUNT * 4);
+#if FF_API_PALETTE_HAS_CHANGED
+FF_DISABLE_DEPRECATION_WARNINGS
         s->frame->palette_has_changed = 1;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     } else if (avctx->pix_fmt == AV_PIX_FMT_RGB555LE) {
         if ((res = vqa_decode_frame_hicolor(s, s->frame)) < 0)
             return res;

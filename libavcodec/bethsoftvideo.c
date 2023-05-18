@@ -63,7 +63,11 @@ static int set_palette(BethsoftvidContext *ctx, GetByteContext *g)
         palette[a] = 0xFFU << 24 | bytestream2_get_be24u(g) * 4;
         palette[a] |= palette[a] >> 6 & 0x30303;
     }
+#if FF_API_PALETTE_HAS_CHANGED
+FF_DISABLE_DEPRECATION_WARNINGS
     ctx->frame->palette_has_changed = 1;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     return 0;
 }
 

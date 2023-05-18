@@ -284,7 +284,11 @@ FF_DISABLE_DEPRECATION_WARNINGS
     dst->top_field_first        = src->top_field_first;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
+#if FF_API_PALETTE_HAS_CHANGED
+FF_DISABLE_DEPRECATION_WARNINGS
     dst->palette_has_changed    = src->palette_has_changed;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     dst->sample_rate            = src->sample_rate;
     dst->opaque                 = src->opaque;
     dst->pkt_dts                = src->pkt_dts;

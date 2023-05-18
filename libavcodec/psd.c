@@ -532,7 +532,11 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *picture,
     }
 
     if (s->color_mode == PSD_INDEXED) {
+#if FF_API_PALETTE_HAS_CHANGED
+FF_DISABLE_DEPRECATION_WARNINGS
         picture->palette_has_changed = 1;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
         memcpy(picture->data[1], s->palette, AVPALETTE_SIZE);
     }
 

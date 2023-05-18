@@ -191,7 +191,11 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
         return ret;
     memset(frame->data[0], 0, s->height * frame->linesize[0]);
     frame->pict_type           = AV_PICTURE_TYPE_I;
+#if FF_API_PALETTE_HAS_CHANGED
+FF_DISABLE_DEPRECATION_WARNINGS
     frame->palette_has_changed = 1;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     pos_after_pal = bytestream2_tell(&s->g) + esize;
     palette = (uint32_t*)frame->data[1];

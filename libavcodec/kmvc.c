@@ -273,7 +273,14 @@ static int decode_frame(AVCodecContext * avctx, AVFrame *frame,
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
 
-    frame->palette_has_changed = ff_copy_palette(ctx->pal, avpkt, avctx);
+#if FF_API_PALETTE_HAS_CHANGED
+FF_DISABLE_DEPRECATION_WARNINGS
+    frame->palette_has_changed =
+#endif
+    ff_copy_palette(ctx->pal, avpkt, avctx);
+#if FF_API_PALETTE_HAS_CHANGED
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     header = bytestream2_get_byte(&ctx->g);
 
@@ -296,7 +303,11 @@ static int decode_frame(AVCodecContext * avctx, AVFrame *frame,
     }
 
     if (header & KMVC_PALETTE) {
+#if FF_API_PALETTE_HAS_CHANGED
+FF_DISABLE_DEPRECATION_WARNINGS
         frame->palette_has_changed = 1;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
         // palette starts from index 1 and has 127 entries
         for (i = 1; i <= ctx->palsize; i++) {
             ctx->pal[i] = 0xFFU << 24 | bytestream2_get_be24(&ctx->g);
@@ -305,7 +316,11 @@ static int decode_frame(AVCodecContext * avctx, AVFrame *frame,
 
     if (ctx->setpal) {
         ctx->setpal = 0;
+#if FF_API_PALETTE_HAS_CHANGED
+FF_DISABLE_DEPRECATION_WARNINGS
         frame->palette_has_changed = 1;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     }
 
     /* make the palette available on the way out */

@@ -106,7 +106,11 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
 
     /* make the palette available on the way out */
     if (c->avctx->pix_fmt == AV_PIX_FMT_PAL8) {
+#if FF_API_PALETTE_HAS_CHANGED
+FF_DISABLE_DEPRECATION_WARNINGS
         frame->palette_has_changed = palette_has_changed;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
         memcpy(frame->data[1], c->pal, AVPALETTE_SIZE);
     }
 

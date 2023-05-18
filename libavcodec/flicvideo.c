@@ -473,7 +473,11 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
     /* make the palette available on the way out */
     memcpy(s->frame->data[1], s->palette, AVPALETTE_SIZE);
     if (s->new_palette) {
+#if FF_API_PALETTE_HAS_CHANGED
+FF_DISABLE_DEPRECATION_WARNINGS
         s->frame->palette_has_changed = 1;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
         s->new_palette = 0;
     }
 

@@ -178,7 +178,11 @@ static int mss1_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     if (c->corrupted)
         return AVERROR_INVALIDDATA;
     memcpy(ctx->pic->data[1], c->pal, AVPALETTE_SIZE);
+#if FF_API_PALETTE_HAS_CHANGED
+FF_DISABLE_DEPRECATION_WARNINGS
     ctx->pic->palette_has_changed = pal_changed;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     if ((ret = av_frame_ref(rframe, ctx->pic)) < 0)
         return ret;

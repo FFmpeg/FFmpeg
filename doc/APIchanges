@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2023-02-09
 
 API changes, most recent first:
 
+2023-05-xx - xxxxxxxxxx - lavu 58 - frame.h
+  Deprecate AVFrame.palette_has_changed without replacement.
+
 2023-05-xx - xxxxxxxxxx - lavc 60 - avcodec.h
   Depreate AVCodecContext.ticks_per_frame in favor of
   AVCodecContext.framerate (encoding) and

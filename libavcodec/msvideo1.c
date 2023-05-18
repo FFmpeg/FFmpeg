@@ -312,7 +312,14 @@ static int msvideo1_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
         return ret;
 
     if (s->mode_8bit) {
-        s->frame->palette_has_changed = ff_copy_palette(s->pal, avpkt, avctx);
+#if FF_API_PALETTE_HAS_CHANGED
+FF_DISABLE_DEPRECATION_WARNINGS
+        s->frame->palette_has_changed =
+#endif
+        ff_copy_palette(s->pal, avpkt, avctx);
+#if FF_API_PALETTE_HAS_CHANGED
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     }
 
     if (s->mode_8bit)

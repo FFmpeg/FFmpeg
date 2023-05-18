@@ -528,10 +528,13 @@ typedef struct AVFrame {
     int top_field_first;
 #endif
 
+#if FF_API_PALETTE_HAS_CHANGED
     /**
      * Tell user application that palette has changed from previous frame.
      */
+    attribute_deprecated
     int palette_has_changed;
+#endif
 
 #if FF_API_REORDERED_OPAQUE
     /**
