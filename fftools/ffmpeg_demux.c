@@ -815,7 +815,8 @@ static void ist_free(InputStream **pist)
     if (!ist)
         return;
 
-    av_frame_free(&ist->decoded_frame);
+    dec_free(&ist->decoder);
+
     av_packet_free(&ist->pkt);
     av_dict_free(&ist->decoder_opts);
     avsubtitle_free(&ist->prev_sub.subtitle);
@@ -1195,10 +1196,6 @@ static void add_input_streams(const OptionsContext *o, Demuxer *d)
             av_log(ist, AV_LOG_ERROR, "Error initializing the decoder context.\n");
             exit_program(1);
         }
-
-        ist->decoded_frame = av_frame_alloc();
-        if (!ist->decoded_frame)
-            report_and_exit(AVERROR(ENOMEM));
 
         ist->pkt = av_packet_alloc();
         if (!ist->pkt)

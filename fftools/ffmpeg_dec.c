@@ -31,6 +31,45 @@
 
 #include "ffmpeg.h"
 
+struct Decoder {
+    AVFrame         *frame;
+};
+
+void dec_free(Decoder **pdec)
+{
+    Decoder *dec = *pdec;
+
+    if (!dec)
+        return;
+
+    av_frame_free(&dec->frame);
+
+    av_freep(pdec);
+}
+
+static int dec_alloc(Decoder **pdec)
+{
+    Decoder *dec;
+
+    *pdec = NULL;
+
+    dec = av_mallocz(sizeof(*dec));
+    if (!dec)
+        return AVERROR(ENOMEM);
+
+    dec->frame = av_frame_alloc();
+    if (!dec->frame)
+        goto fail;
+
+
+    *pdec = dec;
+
+    return 0;
+fail:
+    dec_free(&dec);
+    return AVERROR(ENOMEM);
+}
+
 static int send_frame_to_filters(InputStream *ist, AVFrame *decoded_frame)
 {
     int i, ret;
@@ -373,6 +412,7 @@ static int send_filter_eof(InputStream *ist)
 
 int dec_packet(InputStream *ist, const AVPacket *pkt, int no_eof)
 {
+    Decoder *d = ist->decoder;
     AVCodecContext *dec = ist->dec_ctx;
     const char *type_desc = av_get_media_type_string(dec->codec_type);
     int ret;
@@ -407,7 +447,7 @@ int dec_packet(InputStream *ist, const AVPacket *pkt, int no_eof)
     }
 
     while (1) {
-        AVFrame *frame = ist->decoded_frame;
+        AVFrame *frame = d->frame;
 
         update_benchmark(NULL);
         ret = avcodec_receive_frame(dec, frame);
@@ -689,6 +729,10 @@ int dec_open(InputStream *ist)
                 avcodec_get_name(ist->dec_ctx->codec_id));
         return AVERROR(EINVAL);
     }
+
+    ret = dec_alloc(&ist->decoder);
+    if (ret < 0)
+        return ret;
 
     ist->dec_ctx->opaque                = ist;
     ist->dec_ctx->get_format            = get_format;

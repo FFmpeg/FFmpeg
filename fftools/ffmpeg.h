@@ -324,6 +324,8 @@ typedef struct FilterGraph {
     int         nb_outputs;
 } FilterGraph;
 
+typedef struct Decoder Decoder;
+
 typedef struct InputStream {
     const AVClass *class;
 
@@ -343,10 +345,10 @@ typedef struct InputStream {
      * concurrently by the demuxing thread.
      */
     AVCodecParameters *par;
+    Decoder *decoder;
     AVCodecContext *dec_ctx;
     const AVCodec *dec;
     const AVCodecDescriptor *codec_desc;
-    AVFrame *decoded_frame;
     AVPacket *pkt;
 
     AVRational framerate_guessed;
@@ -812,6 +814,7 @@ AVBufferRef *hw_device_for_filter(void);
 int hwaccel_decode_init(AVCodecContext *avctx);
 
 int dec_open(InputStream *ist);
+void dec_free(Decoder **pdec);
 
 /**
  * Submit a packet for decoding
