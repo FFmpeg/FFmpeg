@@ -56,6 +56,9 @@ struct Encoder {
     int opened;
     int finished;
 
+    Scheduler      *sch;
+    unsigned        sch_idx;
+
     pthread_t       thread;
     /**
      * Queue for sending frames from the main thread to
@@ -113,7 +116,8 @@ void enc_free(Encoder **penc)
     av_freep(penc);
 }
 
-int enc_alloc(Encoder **penc, const AVCodec *codec)
+int enc_alloc(Encoder **penc, const AVCodec *codec,
+              Scheduler *sch, unsigned sch_idx)
 {
     Encoder *enc;
 
@@ -132,6 +136,9 @@ int enc_alloc(Encoder **penc, const AVCodec *codec)
     enc->pkt = av_packet_alloc();
     if (!enc->pkt)
         goto fail;
+
+    enc->sch     = sch;
+    enc->sch_idx = sch_idx;
 
     *penc = enc;
 
@@ -216,8 +223,6 @@ static int set_encoder_id(OutputFile *of, OutputStream *ost)
 
     return 0;
 }
-
-static void *encoder_thread(void *arg);
 
 static int enc_thread_start(OutputStream *ost)
 {
@@ -1001,7 +1006,7 @@ fail:
     return AVERROR(ENOMEM);
 }
 
-static void *encoder_thread(void *arg)
+void *encoder_thread(void *arg)
 {
     OutputStream *ost = arg;
     OutputFile    *of = output_files[ost->file_index];

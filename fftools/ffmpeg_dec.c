@@ -52,6 +52,9 @@ struct Decoder {
     AVFrame *sub_prev[2];
     AVFrame *sub_heartbeat;
 
+    Scheduler      *sch;
+    unsigned        sch_idx;
+
     pthread_t       thread;
     /**
      * Queue for sending coded packets from the main thread to
@@ -673,7 +676,7 @@ fail:
     return AVERROR(ENOMEM);
 }
 
-static void *decoder_thread(void *arg)
+void *decoder_thread(void *arg)
 {
     InputStream *ist = arg;
     InputFile *ifile = input_files[ist->file_index];
@@ -1045,7 +1048,7 @@ static int hw_device_setup_for_decode(InputStream *ist)
     return 0;
 }
 
-int dec_open(InputStream *ist)
+int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx)
 {
     Decoder *d;
     const AVCodec *codec = ist->dec;
@@ -1062,6 +1065,9 @@ int dec_open(InputStream *ist)
     if (ret < 0)
         return ret;
     d = ist->decoder;
+
+    d->sch     = sch;
+    d->sch_idx = sch_idx;
 
     if (codec->type == AVMEDIA_TYPE_SUBTITLE && ist->fix_sub_duration) {
         for (int i = 0; i < FF_ARRAY_ELEMS(d->sub_prev); i++) {

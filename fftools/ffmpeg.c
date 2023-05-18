@@ -99,6 +99,7 @@
 
 #include "cmdutils.h"
 #include "ffmpeg.h"
+#include "ffmpeg_sched.h"
 #include "ffmpeg_utils.h"
 #include "sync_queue.h"
 
@@ -1167,7 +1168,7 @@ static int transcode_step(OutputStream *ost, AVPacket *demux_pkt)
 /*
  * The following code is the main loop of the file converter
  */
-static int transcode(int *err_rate_exceeded)
+static int transcode(Scheduler *sch, int *err_rate_exceeded)
 {
     int ret = 0, i;
     InputStream *ist;
@@ -1305,6 +1306,8 @@ static int64_t getmaxrss(void)
 
 int main(int argc, char **argv)
 {
+    Scheduler *sch = NULL;
+
     int ret, err_rate_exceeded;
     BenchmarkTimeStamps ti;
 
@@ -1322,8 +1325,14 @@ int main(int argc, char **argv)
 
     show_banner(argc, argv, options);
 
+    sch = sch_alloc();
+    if (!sch) {
+        ret = AVERROR(ENOMEM);
+        goto finish;
+    }
+
     /* parse options and open all input/output files */
-    ret = ffmpeg_parse_options(argc, argv);
+    ret = ffmpeg_parse_options(argc, argv, sch);
     if (ret < 0)
         goto finish;
 
@@ -1341,7 +1350,7 @@ int main(int argc, char **argv)
     }
 
     current_time = ti = get_benchmark_time_stamps();
-    ret = transcode(&err_rate_exceeded);
+    ret = transcode(sch, &err_rate_exceeded);
     if (ret >= 0 && do_benchmark) {
         int64_t utime, stime, rtime;
         current_time = get_benchmark_time_stamps();
@@ -1361,5 +1370,8 @@ finish:
         ret = 0;
 
     ffmpeg_cleanup(ret);
+
+    sch_free(&sch);
+
     return ret;
 }

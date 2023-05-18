@@ -65,6 +65,9 @@ typedef struct FilterGraphPriv {
     // frame for sending output to the encoder
     AVFrame *frame_enc;
 
+    Scheduler       *sch;
+    unsigned         sch_idx;
+
     pthread_t        thread;
     /**
      * Queue for sending frames from the main thread to the filtergraph. Has
@@ -735,14 +738,19 @@ static int ifilter_bind_ist(InputFilter *ifilter, InputStream *ist)
 {
     InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
     FilterGraphPriv *fgp = fgp_from_fg(ifilter->graph);
-    int ret;
+    int ret, dec_idx;
 
     av_assert0(!ifp->ist);
 
     ifp->ist             = ist;
     ifp->type_src        = ist->st->codecpar->codec_type;
 
-    ret = ist_filter_add(ist, ifilter, filtergraph_is_simple(ifilter->graph));
+    dec_idx = ist_filter_add(ist, ifilter, filtergraph_is_simple(ifilter->graph));
+    if (dec_idx < 0)
+        return dec_idx;
+
+    ret = sch_connect(fgp->sch, SCH_DEC(dec_idx),
+                                SCH_FILTER_IN(fgp->sch_idx, ifp->index));
     if (ret < 0)
         return ret;
 
@@ -798,13 +806,15 @@ static int set_channel_layout(OutputFilterPriv *f, OutputStream *ost)
     return 0;
 }
 
-int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost)
+int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost,
+                     unsigned sched_idx_enc)
 {
     const OutputFile  *of = output_files[ost->file_index];
     OutputFilterPriv *ofp = ofp_from_ofilter(ofilter);
     FilterGraph  *fg = ofilter->graph;
     FilterGraphPriv *fgp = fgp_from_fg(fg);
     const AVCodec *c = ost->enc_ctx->codec;
+    int ret;
 
     av_assert0(!ofilter->ost);
 
@@ -886,6 +896,11 @@ int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost)
         }
         break;
     }
+
+    ret = sch_connect(fgp->sch, SCH_FILTER_OUT(fgp->sch_idx, ofp->index),
+                                SCH_ENC(sched_idx_enc));
+    if (ret < 0)
+        return ret;
 
     fgp->nb_outputs_bound++;
     av_assert0(fgp->nb_outputs_bound <= fg->nb_outputs);
@@ -1016,7 +1031,7 @@ static const AVClass fg_class = {
     .category   = AV_CLASS_CATEGORY_FILTER,
 };
 
-int fg_create(FilterGraph **pfg, char *graph_desc)
+int fg_create(FilterGraph **pfg, char *graph_desc, Scheduler *sch)
 {
     FilterGraphPriv *fgp;
     FilterGraph      *fg;
@@ -1037,6 +1052,7 @@ int fg_create(FilterGraph **pfg, char *graph_desc)
     fg->index      = nb_filtergraphs - 1;
     fgp->graph_desc = graph_desc;
     fgp->disable_conversions = !auto_conversion_filters;
+    fgp->sch                 = sch;
 
     snprintf(fgp->log_name, sizeof(fgp->log_name), "fc#%d", fg->index);
 
@@ -1104,6 +1120,12 @@ int fg_create(FilterGraph **pfg, char *graph_desc)
         goto fail;
     }
 
+    ret = sch_add_filtergraph(sch, fg->nb_inputs, fg->nb_outputs,
+                              filter_thread, fgp);
+    if (ret < 0)
+        goto fail;
+    fgp->sch_idx = ret;
+
 fail:
     avfilter_inout_free(&inputs);
     avfilter_inout_free(&outputs);
@@ -1116,13 +1138,14 @@ fail:
 }
 
 int init_simple_filtergraph(InputStream *ist, OutputStream *ost,
-                            char *graph_desc)
+                            char *graph_desc,
+                            Scheduler *sch, unsigned sched_idx_enc)
 {
     FilterGraph *fg;
     FilterGraphPriv *fgp;
     int ret;
 
-    ret = fg_create(&fg, graph_desc);
+    ret = fg_create(&fg, graph_desc, sch);
     if (ret < 0)
         return ret;
     fgp = fgp_from_fg(fg);
@@ -1148,7 +1171,7 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost,
     if (ret < 0)
         return ret;
 
-    ret = ofilter_bind_ost(fg->outputs[0], ost);
+    ret = ofilter_bind_ost(fg->outputs[0], ost, sched_idx_enc);
     if (ret < 0)
         return ret;
 

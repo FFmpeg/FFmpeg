@@ -297,7 +297,7 @@ fail:
     return AVERROR(ENOMEM);
 }
 
-static void *muxer_thread(void *arg)
+void *muxer_thread(void *arg)
 {
     Muxer     *mux = arg;
     OutputFile *of = &mux->of;
@@ -580,7 +580,9 @@ static int thread_start(Muxer *mux)
     return 0;
 }
 
-static int print_sdp(void)
+int print_sdp(const char *filename);
+
+int print_sdp(const char *filename)
 {
     char sdp[16384];
     int i;
@@ -613,19 +615,18 @@ static int print_sdp(void)
     if (ret < 0)
         goto fail;
 
-    if (!sdp_filename) {
+    if (!filename) {
         printf("SDP:\n%s\n", sdp);
         fflush(stdout);
     } else {
-        ret = avio_open2(&sdp_pb, sdp_filename, AVIO_FLAG_WRITE, &int_cb, NULL);
+        ret = avio_open2(&sdp_pb, filename, AVIO_FLAG_WRITE, &int_cb, NULL);
         if (ret < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Failed to open sdp file '%s'\n", sdp_filename);
+            av_log(NULL, AV_LOG_ERROR, "Failed to open sdp file '%s'\n", filename);
             goto fail;
         }
 
         avio_print(sdp_pb, sdp);
         avio_closep(&sdp_pb);
-        av_freep(&sdp_filename);
     }
 
     // SDP successfully written, allow muxer threads to start
@@ -661,7 +662,7 @@ int mux_check_init(Muxer *mux)
     nb_output_dumped++;
 
     if (sdp_filename || want_sdp) {
-        ret = print_sdp();
+        ret = print_sdp(sdp_filename);
         if (ret < 0) {
             av_log(NULL, AV_LOG_ERROR, "Error writing the SDP.\n");
             return ret;
@@ -983,6 +984,8 @@ void of_free(OutputFile **pof)
     for (int i = 0; i < of->nb_streams; i++)
         ost_free(&of->streams[i]);
     av_freep(&of->streams);
+
+    av_freep(&mux->sch_stream_idx);
 
     av_dict_free(&mux->opts);
 

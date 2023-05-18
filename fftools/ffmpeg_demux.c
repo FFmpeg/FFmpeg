@@ -20,6 +20,7 @@
 #include <stdint.h>
 
 #include "ffmpeg.h"
+#include "ffmpeg_sched.h"
 #include "ffmpeg_utils.h"
 #include "objpool.h"
 #include "thread_queue.h"
@@ -59,6 +60,9 @@ typedef struct DemuxStream {
 
     // name used for logging
     char log_name[32];
+
+    int sch_idx_stream;
+    int sch_idx_dec;
 
     double ts_scale;
 
@@ -108,6 +112,7 @@ typedef struct Demuxer {
 
     double readrate_initial_burst;
 
+    Scheduler            *sch;
     ThreadQueue          *thread_queue;
     int                   thread_queue_size;
     pthread_t             thread;
@@ -780,7 +785,9 @@ void ifile_close(InputFile **pf)
 
 static int ist_use(InputStream *ist, int decoding_needed)
 {
+    Demuxer      *d = demuxer_from_ifile(input_files[ist->file_index]);
     DemuxStream *ds = ds_from_ist(ist);
+    int ret;
 
     if (ist->user_set_discard == AVDISCARD_ALL) {
         av_log(ist, AV_LOG_ERROR, "Cannot %s a disabled input stream\n",
@@ -788,13 +795,32 @@ static int ist_use(InputStream *ist, int decoding_needed)
         return AVERROR(EINVAL);
     }
 
+    if (ds->sch_idx_stream < 0) {
+        ret = sch_add_demux_stream(d->sch, d->f.index);
+        if (ret < 0)
+            return ret;
+        ds->sch_idx_stream = ret;
+    }
+
     ist->discard          = 0;
     ist->st->discard      = ist->user_set_discard;
     ist->decoding_needed |= decoding_needed;
     ds->streamcopy_needed |= !decoding_needed;
 
-    if (decoding_needed && !avcodec_is_open(ist->dec_ctx)) {
-        int ret = dec_open(ist);
+    if (decoding_needed && ds->sch_idx_dec < 0) {
+        int is_audio = ist->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO;
+
+        ret = sch_add_dec(d->sch, decoder_thread, ist, d->loop && is_audio);
+        if (ret < 0)
+            return ret;
+        ds->sch_idx_dec = ret;
+
+        ret = sch_connect(d->sch, SCH_DSTREAM(d->f.index, ds->sch_idx_stream),
+                                  SCH_DEC(ds->sch_idx_dec));
+        if (ret < 0)
+            return ret;
+
+        ret = dec_open(ist, d->sch, ds->sch_idx_dec);
         if (ret < 0)
             return ret;
     }
@@ -804,6 +830,7 @@ static int ist_use(InputStream *ist, int decoding_needed)
 
 int ist_output_add(InputStream *ist, OutputStream *ost)
 {
+    DemuxStream *ds = ds_from_ist(ist);
     int ret;
 
     ret = ist_use(ist, ost->enc ? DECODING_FOR_OST : 0);
@@ -816,11 +843,12 @@ int ist_output_add(InputStream *ist, OutputStream *ost)
 
     ist->outputs[ist->nb_outputs - 1] = ost;
 
-    return 0;
+    return ost->enc ? ds->sch_idx_dec : ds->sch_idx_stream;
 }
 
 int ist_filter_add(InputStream *ist, InputFilter *ifilter, int is_simple)
 {
+    DemuxStream *ds = ds_from_ist(ist);
     int ret;
 
     ret = ist_use(ist, is_simple ? DECODING_FOR_OST : DECODING_FOR_FILTER);
@@ -838,7 +866,7 @@ int ist_filter_add(InputStream *ist, InputFilter *ifilter, int is_simple)
     if (ret < 0)
         return ret;
 
-    return 0;
+    return ds->sch_idx_dec;
 }
 
 static int choose_decoder(const OptionsContext *o, AVFormatContext *s, AVStream *st,
@@ -969,6 +997,9 @@ static DemuxStream *demux_stream_alloc(Demuxer *d, AVStream *st)
     ds = allocate_array_elem(&f->streams, sizeof(*ds), &f->nb_streams);
     if (!ds)
         return NULL;
+
+    ds->sch_idx_stream = -1;
+    ds->sch_idx_dec    = -1;
 
     ds->ist.st         = st;
     ds->ist.file_index = f->index;
@@ -1295,7 +1326,7 @@ static Demuxer *demux_alloc(void)
     return d;
 }
 
-int ifile_open(const OptionsContext *o, const char *filename)
+int ifile_open(const OptionsContext *o, const char *filename, Scheduler *sch)
 {
     Demuxer   *d;
     InputFile *f;
@@ -1321,6 +1352,11 @@ int ifile_open(const OptionsContext *o, const char *filename)
         return AVERROR(ENOMEM);
 
     f = &d->f;
+
+    ret = sch_add_demux(sch, input_thread, d);
+    if (ret < 0)
+        return ret;
+    d->sch = sch;
 
     if (stop_time != INT64_MAX && recording_time != INT64_MAX) {
         stop_time = INT64_MAX;

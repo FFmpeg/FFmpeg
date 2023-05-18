@@ -27,6 +27,7 @@
 #include <signal.h>
 
 #include "cmdutils.h"
+#include "ffmpeg_sched.h"
 #include "sync_queue.h"
 
 #include "libavformat/avformat.h"
@@ -721,7 +722,8 @@ int parse_and_set_vsync(const char *arg, int *vsync_var, int file_idx, int st_id
 int check_filter_outputs(void);
 int filtergraph_is_simple(const FilterGraph *fg);
 int init_simple_filtergraph(InputStream *ist, OutputStream *ost,
-                            char *graph_desc);
+                            char *graph_desc,
+                            Scheduler *sch, unsigned sch_idx_enc);
 int init_complex_filtergraph(FilterGraph *fg);
 
 int copy_av_subtitle(AVSubtitle *dst, const AVSubtitle *src);
@@ -746,7 +748,8 @@ void ifilter_sub2video_heartbeat(InputFilter *ifilter, int64_t pts, AVRational t
  */
 int ifilter_parameters_from_dec(InputFilter *ifilter, const AVCodecContext *dec);
 
-int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost);
+int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost,
+                     unsigned sched_idx_enc);
 
 /**
  * Create a new filtergraph in the global filtergraph list.
@@ -754,7 +757,7 @@ int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost);
  * @param graph_desc Graph description; an av_malloc()ed string, filtergraph
  *                   takes ownership of it.
  */
-int fg_create(FilterGraph **pfg, char *graph_desc);
+int fg_create(FilterGraph **pfg, char *graph_desc, Scheduler *sch);
 
 void fg_free(FilterGraph **pfg);
 
@@ -778,7 +781,7 @@ void fg_send_command(FilterGraph *fg, double time, const char *target,
  */
 int reap_filters(FilterGraph *fg, int flush);
 
-int ffmpeg_parse_options(int argc, char **argv);
+int ffmpeg_parse_options(int argc, char **argv, Scheduler *sch);
 
 void enc_stats_write(OutputStream *ost, EncStats *es,
                      const AVFrame *frame, const AVPacket *pkt,
@@ -801,7 +804,7 @@ AVBufferRef *hw_device_for_filter(void);
 
 int hwaccel_retrieve_data(AVCodecContext *avctx, AVFrame *input);
 
-int dec_open(InputStream *ist);
+int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx);
 void dec_free(Decoder **pdec);
 
 /**
@@ -815,7 +818,8 @@ void dec_free(Decoder **pdec);
  */
 int dec_packet(InputStream *ist, const AVPacket *pkt, int no_eof);
 
-int enc_alloc(Encoder **penc, const AVCodec *codec);
+int enc_alloc(Encoder **penc, const AVCodec *codec,
+              Scheduler *sch, unsigned sch_idx);
 void enc_free(Encoder **penc);
 
 int enc_open(OutputStream *ost, const AVFrame *frame);
@@ -831,7 +835,7 @@ int enc_flush(void);
  */
 int of_stream_init(OutputFile *of, OutputStream *ost);
 int of_write_trailer(OutputFile *of);
-int of_open(const OptionsContext *o, const char *filename);
+int of_open(const OptionsContext *o, const char *filename, Scheduler *sch);
 void of_free(OutputFile **pof);
 
 void of_enc_stats_close(void);
@@ -845,7 +849,7 @@ int of_streamcopy(OutputStream *ost, const AVPacket *pkt, int64_t dts);
 
 int64_t of_filesize(OutputFile *of);
 
-int ifile_open(const OptionsContext *o, const char *filename);
+int ifile_open(const OptionsContext *o, const char *filename, Scheduler *sch);
 void ifile_close(InputFile **f);
 
 /**
@@ -931,5 +935,9 @@ extern const char * const opt_name_frame_rates[];
 #if FFMPEG_OPT_TOP
 extern const char * const opt_name_top_field_first[];
 #endif
+
+void *muxer_thread(void *arg);
+void *decoder_thread(void *arg);
+void *encoder_thread(void *arg);
 
 #endif /* FFTOOLS_FFMPEG_H */

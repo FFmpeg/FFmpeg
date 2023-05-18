@@ -23,6 +23,7 @@
 #include "cmdutils.h"
 #include "ffmpeg.h"
 #include "ffmpeg_mux.h"
+#include "ffmpeg_sched.h"
 #include "fopen_utf8.h"
 
 #include "libavformat/avformat.h"
@@ -435,6 +436,9 @@ static MuxStream *mux_stream_alloc(Muxer *mux, enum AVMediaType type)
     ms->ost.type       = type;
 
     ms->ost.class = &output_stream_class;
+
+    ms->sch_idx     = -1;
+    ms->sch_idx_enc = -1;
 
     snprintf(ms->log_name, sizeof(ms->log_name), "%cost#%d:%d",
              type_str ? *type_str : '?', mux->of.index, ms->ost.index);
@@ -1127,6 +1131,22 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
     if (!ms)
         return AVERROR(ENOMEM);
 
+    // only streams with sources (i.e. not attachments)
+    // are handled by the scheduler
+    if (ist || ofilter) {
+        ret = GROW_ARRAY(mux->sch_stream_idx, mux->nb_sch_stream_idx);
+        if (ret < 0)
+            return ret;
+
+        ret = sch_add_mux_stream(mux->sch, mux->sch_idx);
+        if (ret < 0)
+            return ret;
+
+        av_assert0(ret == mux->nb_sch_stream_idx - 1);
+        mux->sch_stream_idx[ret] = ms->ost.index;
+        ms->sch_idx              = ret;
+    }
+
     ost = &ms->ost;
 
     if (o->streamid) {
@@ -1170,7 +1190,12 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
         if (!ost->enc_ctx)
             return AVERROR(ENOMEM);
 
-        ret = enc_alloc(&ost->enc, enc);
+        ret = sch_add_enc(mux->sch, encoder_thread, ost, NULL);
+        if (ret < 0)
+            return ret;
+        ms->sch_idx_enc = ret;
+
+        ret = enc_alloc(&ost->enc, enc, mux->sch, ms->sch_idx_enc);
         if (ret < 0)
             return ret;
 
@@ -1380,11 +1405,19 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
         ost->enc_ctx->global_quality = FF_QP2LAMBDA * qscale;
     }
 
-    ms->max_muxing_queue_size = 128;
-    MATCH_PER_STREAM_OPT(max_muxing_queue_size, i, ms->max_muxing_queue_size, oc, st);
+    if (ms->sch_idx >= 0) {
+        int max_muxing_queue_size       = 128;
+        int muxing_queue_data_threshold = 50 * 1024 * 1024;
 
-    ms->muxing_queue_data_threshold = 50*1024*1024;
-    MATCH_PER_STREAM_OPT(muxing_queue_data_threshold, i, ms->muxing_queue_data_threshold, oc, st);
+        MATCH_PER_STREAM_OPT(max_muxing_queue_size, i, max_muxing_queue_size, oc, st);
+        MATCH_PER_STREAM_OPT(muxing_queue_data_threshold, i, muxing_queue_data_threshold, oc, st);
+
+        sch_mux_stream_buffering(mux->sch, mux->sch_idx, ms->sch_idx,
+                                 max_muxing_queue_size, muxing_queue_data_threshold);
+
+        ms->max_muxing_queue_size       = max_muxing_queue_size;
+        ms->muxing_queue_data_threshold = muxing_queue_data_threshold;
+    }
 
     MATCH_PER_STREAM_OPT(bits_per_raw_sample, i, ost->bits_per_raw_sample,
                          oc, st);
@@ -1425,23 +1458,47 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
         (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO)) {
         if (ofilter) {
             ost->filter       = ofilter;
-            ret = ofilter_bind_ost(ofilter, ost);
+            ret = ofilter_bind_ost(ofilter, ost, ms->sch_idx_enc);
             if (ret < 0)
                 return ret;
         } else {
-            ret = init_simple_filtergraph(ost->ist, ost, filters);
+            ret = init_simple_filtergraph(ost->ist, ost, filters,
+                                          mux->sch, ms->sch_idx_enc);
             if (ret < 0) {
                 av_log(ost, AV_LOG_ERROR,
                        "Error initializing a simple filtergraph\n");
                 return ret;
             }
         }
+
+        ret = sch_connect(mux->sch, SCH_ENC(ms->sch_idx_enc),
+                                    SCH_MSTREAM(mux->sch_idx, ms->sch_idx));
+        if (ret < 0)
+            return ret;
     } else if (ost->ist) {
-        ret = ist_output_add(ost->ist, ost);
-        if (ret < 0) {
+        int sched_idx = ist_output_add(ost->ist, ost);
+        if (sched_idx < 0) {
             av_log(ost, AV_LOG_ERROR,
                    "Error binding an input stream\n");
-            return ret;
+            return sched_idx;
+        }
+        ms->sch_idx_src = sched_idx;
+
+        if (ost->enc) {
+            ret = sch_connect(mux->sch, SCH_DEC(sched_idx),
+                                        SCH_ENC(ms->sch_idx_enc));
+            if (ret < 0)
+                return ret;
+
+            ret = sch_connect(mux->sch, SCH_ENC(ms->sch_idx_enc),
+                                        SCH_MSTREAM(mux->sch_idx, ms->sch_idx));
+            if (ret < 0)
+                return ret;
+        } else {
+            ret = sch_connect(mux->sch, SCH_DSTREAM(ost->ist->file_index, sched_idx),
+                                        SCH_MSTREAM(ost->file_index, ms->sch_idx));
+            if (ret < 0)
+                return ret;
         }
     }
 
@@ -1836,6 +1893,26 @@ static int create_streams(Muxer *mux, const OptionsContext *o)
     ret = of_add_attachments(mux, o);
     if (ret < 0)
         return ret;
+
+    // setup fix_sub_duration_heartbeat mappings
+    for (unsigned i = 0; i < oc->nb_streams; i++) {
+        MuxStream *src = ms_from_ost(mux->of.streams[i]);
+
+        if (!src->ost.fix_sub_duration_heartbeat)
+            continue;
+
+        for (unsigned j = 0; j < oc->nb_streams; j++) {
+            MuxStream *dst = ms_from_ost(mux->of.streams[j]);
+
+            if (src == dst || dst->ost.type != AVMEDIA_TYPE_SUBTITLE ||
+                !dst->ost.enc || !dst->ost.ist || !dst->ost.ist->fix_sub_duration)
+                continue;
+
+            ret = sch_mux_sub_heartbeat_add(mux->sch, mux->sch_idx, src->sch_idx,
+                                            dst->sch_idx_src);
+
+        }
+    }
 
     if (!oc->nb_streams && !(oc->oformat->flags & AVFMT_NOSTREAMS)) {
         av_dump_format(oc, nb_output_files - 1, oc->url, 1);
@@ -2621,7 +2698,7 @@ static Muxer *mux_alloc(void)
     return mux;
 }
 
-int of_open(const OptionsContext *o, const char *filename)
+int of_open(const OptionsContext *o, const char *filename, Scheduler *sch)
 {
     Muxer *mux;
     AVFormatContext *oc;
@@ -2690,6 +2767,13 @@ int of_open(const OptionsContext *o, const char *filename)
         of->bitexact  = check_opt_bitexact(oc, mux->opts, "fflags",
                                            AVFMT_FLAG_BITEXACT);
     }
+
+    err = sch_add_mux(sch, muxer_thread, NULL, mux,
+                      !strcmp(oc->oformat->name, "rtp"));
+    if (err < 0)
+        return err;
+    mux->sch     = sch;
+    mux->sch_idx = err;
 
     /* create all output streams for this file */
     err = create_streams(mux, o);

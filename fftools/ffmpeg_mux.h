@@ -24,6 +24,7 @@
 #include <stdatomic.h>
 #include <stdint.h>
 
+#include "ffmpeg_sched.h"
 #include "thread_queue.h"
 
 #include "libavformat/avformat.h"
@@ -49,6 +50,10 @@ typedef struct MuxStream {
     AVPacket     *pkt;
 
     EncStats stats;
+
+    int sch_idx;
+    int sch_idx_enc;
+    int sch_idx_src;
 
     int64_t max_frames;
 
@@ -93,6 +98,13 @@ typedef struct Muxer {
     char log_name[32];
 
     AVFormatContext *fc;
+
+    Scheduler   *sch;
+    unsigned     sch_idx;
+
+    // OutputStream indices indexed by scheduler stream indices
+    int         *sch_stream_idx;
+    int       nb_sch_stream_idx;
 
     pthread_t    thread;
     ThreadQueue *tq;
