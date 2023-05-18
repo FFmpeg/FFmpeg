@@ -1181,11 +1181,6 @@ static void add_input_streams(const OptionsContext *o, Demuxer *d)
             exit_program(1);
         }
 
-        ist->filter_in_rescale_delta_last = AV_NOPTS_VALUE;
-
-        ist->last_frame_pts = AV_NOPTS_VALUE;
-        ist->last_frame_tb  = (AVRational){ 1, 1 };
-
         ist->dec_ctx = avcodec_alloc_context3(ist->dec);
         if (!ist->dec_ctx)
             report_and_exit(AVERROR(ENOMEM));

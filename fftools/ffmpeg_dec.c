@@ -34,6 +34,15 @@
 struct Decoder {
     AVFrame         *frame;
     AVPacket        *pkt;
+
+    // pts/estimated duration of the last decoded frame
+    // * in decoder timebase for video,
+    // * in last_frame_tb (may change during decoding) for audio
+    int64_t         last_frame_pts;
+    int64_t         last_frame_duration_est;
+    AVRational      last_frame_tb;
+    int64_t         last_filter_in_rescale_delta;
+    int             last_frame_sample_rate;
 };
 
 void dec_free(Decoder **pdec)
@@ -67,6 +76,9 @@ static int dec_alloc(Decoder **pdec)
     if (!dec->pkt)
         goto fail;
 
+    dec->last_filter_in_rescale_delta = AV_NOPTS_VALUE;
+    dec->last_frame_pts               = AV_NOPTS_VALUE;
+    dec->last_frame_tb                = (AVRational){ 1, 1 };
 
     *pdec = dec;
 
@@ -94,21 +106,22 @@ static int send_frame_to_filters(InputStream *ist, AVFrame *decoded_frame)
     return ret;
 }
 
-static AVRational audio_samplerate_update(InputStream *ist, const AVFrame *frame)
+static AVRational audio_samplerate_update(void *logctx, Decoder *d,
+                                          const AVFrame *frame)
 {
-    const int prev = ist->last_frame_tb.den;
+    const int prev = d->last_frame_tb.den;
     const int sr   = frame->sample_rate;
 
     AVRational tb_new;
     int64_t gcd;
 
-    if (frame->sample_rate == ist->last_frame_sample_rate)
+    if (frame->sample_rate == d->last_frame_sample_rate)
         goto finish;
 
     gcd  = av_gcd(prev, sr);
 
     if (prev / gcd >= INT_MAX / sr) {
-        av_log(ist, AV_LOG_WARNING,
+        av_log(logctx, AV_LOG_WARNING,
                "Audio timestamps cannot be represented exactly after "
                "sample rate change: %d -> %d\n", prev, sr);
 
@@ -123,20 +136,20 @@ static AVRational audio_samplerate_update(InputStream *ist, const AVFrame *frame
         !(frame->time_base.den % tb_new.den))
         tb_new = frame->time_base;
 
-    if (ist->last_frame_pts != AV_NOPTS_VALUE)
-        ist->last_frame_pts = av_rescale_q(ist->last_frame_pts,
-                                           ist->last_frame_tb, tb_new);
-    ist->last_frame_duration_est = av_rescale_q(ist->last_frame_duration_est,
-                                                ist->last_frame_tb, tb_new);
+    if (d->last_frame_pts != AV_NOPTS_VALUE)
+        d->last_frame_pts = av_rescale_q(d->last_frame_pts,
+                                         d->last_frame_tb, tb_new);
+    d->last_frame_duration_est = av_rescale_q(d->last_frame_duration_est,
+                                              d->last_frame_tb, tb_new);
 
-    ist->last_frame_tb          = tb_new;
-    ist->last_frame_sample_rate = frame->sample_rate;
+    d->last_frame_tb          = tb_new;
+    d->last_frame_sample_rate = frame->sample_rate;
 
 finish:
-    return ist->last_frame_tb;
+    return d->last_frame_tb;
 }
 
-static void audio_ts_process(InputStream *ist, AVFrame *frame)
+static void audio_ts_process(void *logctx, Decoder *d, AVFrame *frame)
 {
     AVRational tb_filter = (AVRational){1, frame->sample_rate};
     AVRational tb;
@@ -145,27 +158,27 @@ static void audio_ts_process(InputStream *ist, AVFrame *frame)
     // on samplerate change, choose a new internal timebase for timestamp
     // generation that can represent timestamps from all the samplerates
     // seen so far
-    tb = audio_samplerate_update(ist, frame);
-    pts_pred = ist->last_frame_pts == AV_NOPTS_VALUE ? 0 :
-               ist->last_frame_pts + ist->last_frame_duration_est;
+    tb = audio_samplerate_update(logctx, d, frame);
+    pts_pred = d->last_frame_pts == AV_NOPTS_VALUE ? 0 :
+               d->last_frame_pts + d->last_frame_duration_est;
 
     if (frame->pts == AV_NOPTS_VALUE) {
         frame->pts = pts_pred;
         frame->time_base = tb;
-    } else if (ist->last_frame_pts != AV_NOPTS_VALUE &&
+    } else if (d->last_frame_pts != AV_NOPTS_VALUE &&
                frame->pts > av_rescale_q_rnd(pts_pred, tb, frame->time_base,
                                              AV_ROUND_UP)) {
         // there was a gap in timestamps, reset conversion state
-        ist->filter_in_rescale_delta_last = AV_NOPTS_VALUE;
+        d->last_filter_in_rescale_delta = AV_NOPTS_VALUE;
     }
 
     frame->pts = av_rescale_delta(frame->time_base, frame->pts,
                                   tb, frame->nb_samples,
-                                  &ist->filter_in_rescale_delta_last, tb);
+                                  &d->last_filter_in_rescale_delta, tb);
 
-    ist->last_frame_pts          = frame->pts;
-    ist->last_frame_duration_est = av_rescale_q(frame->nb_samples,
-                                                tb_filter, tb);
+    d->last_frame_pts          = frame->pts;
+    d->last_frame_duration_est = av_rescale_q(frame->nb_samples,
+                                              tb_filter, tb);
 
     // finally convert to filtering timebase
     frame->pts       = av_rescale_q(frame->pts, tb, tb_filter);
@@ -175,6 +188,7 @@ static void audio_ts_process(InputStream *ist, AVFrame *frame)
 
 static int64_t video_duration_estimate(const InputStream *ist, const AVFrame *frame)
 {
+    const Decoder         *d = ist->decoder;
     const InputFile   *ifile = input_files[ist->file_index];
     int64_t codec_duration = 0;
 
@@ -202,9 +216,9 @@ static int64_t video_duration_estimate(const InputStream *ist, const AVFrame *fr
 
     // when timestamps are available, repeat last frame's actual duration
     // (i.e. pts difference between this and last frame)
-    if (frame->pts != AV_NOPTS_VALUE && ist->last_frame_pts != AV_NOPTS_VALUE &&
-        frame->pts > ist->last_frame_pts)
-        return frame->pts - ist->last_frame_pts;
+    if (frame->pts != AV_NOPTS_VALUE && d->last_frame_pts != AV_NOPTS_VALUE &&
+        frame->pts > d->last_frame_pts)
+        return frame->pts - d->last_frame_pts;
 
     // try frame/codec duration
     if (frame->duration > 0)
@@ -221,11 +235,13 @@ static int64_t video_duration_estimate(const InputStream *ist, const AVFrame *fr
     }
 
     // last resort is last frame's estimated duration, and 1
-    return FFMAX(ist->last_frame_duration_est, 1);
+    return FFMAX(d->last_frame_duration_est, 1);
 }
 
 static int video_frame_process(InputStream *ist, AVFrame *frame)
 {
+    Decoder *d = ist->decoder;
+
     // The following line may be required in some cases where there is no parser
     // or the parser does not has_b_frames correctly
     if (ist->par->video_delay < ist->dec_ctx->has_b_frames) {
@@ -273,13 +289,13 @@ static int video_frame_process(InputStream *ist, AVFrame *frame)
 
     // no timestamp available - extrapolate from previous frame duration
     if (frame->pts == AV_NOPTS_VALUE)
-        frame->pts = ist->last_frame_pts == AV_NOPTS_VALUE ? 0 :
-                     ist->last_frame_pts + ist->last_frame_duration_est;
+        frame->pts = d->last_frame_pts == AV_NOPTS_VALUE ? 0 :
+                     d->last_frame_pts + d->last_frame_duration_est;
 
     // update timestamp history
-    ist->last_frame_duration_est = video_duration_estimate(ist, frame);
-    ist->last_frame_pts          = frame->pts;
-    ist->last_frame_tb           = frame->time_base;
+    d->last_frame_duration_est = video_duration_estimate(ist, frame);
+    d->last_frame_pts          = frame->pts;
+    d->last_frame_tb           = frame->time_base;
 
     if (debug_ts) {
         av_log(ist, AV_LOG_INFO,
@@ -404,12 +420,13 @@ static int transcode_subtitles(InputStream *ist, const AVPacket *pkt)
 
 static int send_filter_eof(InputStream *ist)
 {
+    Decoder *d = ist->decoder;
     int i, ret;
 
     for (i = 0; i < ist->nb_filters; i++) {
-        int64_t end_pts = ist->last_frame_pts == AV_NOPTS_VALUE ? AV_NOPTS_VALUE :
-                          ist->last_frame_pts + ist->last_frame_duration_est;
-        ret = ifilter_send_eof(ist->filters[i], end_pts, ist->last_frame_tb);
+        int64_t end_pts = d->last_frame_pts == AV_NOPTS_VALUE ? AV_NOPTS_VALUE :
+                          d->last_frame_pts + d->last_frame_duration_est;
+        ret = ifilter_send_eof(ist->filters[i], end_pts, d->last_frame_tb);
         if (ret < 0)
             return ret;
     }
@@ -511,7 +528,7 @@ int dec_packet(InputStream *ist, const AVPacket *pkt, int no_eof)
             ist->samples_decoded += frame->nb_samples;
             ist->nb_samples       = frame->nb_samples;
 
-            audio_ts_process(ist, frame);
+            audio_ts_process(ist, ist->decoder, frame);
         } else {
             ret = video_frame_process(ist, frame);
             if (ret < 0) {

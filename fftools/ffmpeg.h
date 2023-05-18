@@ -352,16 +352,6 @@ typedef struct InputStream {
 
     AVRational framerate_guessed;
 
-    // pts/estimated duration of the last decoded frame
-    // * in decoder timebase for video,
-    // * in last_frame_tb (may change during decoding) for audio
-    int64_t last_frame_pts;
-    int64_t last_frame_duration_est;
-    AVRational    last_frame_tb;
-    int           last_frame_sample_rate;
-
-    int64_t filter_in_rescale_delta_last;
-
     int64_t nb_samples; /* number of samples in the last decoded audio frame before looping */
 
     AVDictionary *decoder_opts;
