@@ -494,7 +494,9 @@ int av_frame_replace(AVFrame *dst, const AVFrame *src)
             || src->data[2] || src->data[3])
             return av_frame_ref(dst, src);
 
-        return av_frame_copy_props(dst, src);
+        ret = frame_copy_props(dst, src, 0);
+        if (ret < 0)
+            goto fail;
     }
 
     dst->format         = src->format;
