@@ -62,11 +62,11 @@ typedef struct GraphMonitorContext {
 } GraphMonitorContext;
 
 enum {
-    MODE_FULL,
-    MODE_COMPACT,
-    MODE_NOZERO,
-    MODE_NOZEROEOF,
-    NB_MODES
+    MODE_FULL = 0,
+    MODE_COMPACT = 1,
+    MODE_NOZERO = 2,
+    MODE_NOEOF = 4,
+    MODE_MAX = 7
 };
 
 enum {
@@ -97,12 +97,12 @@ static const AVOption graphmonitor_options[] = {
     { "s",    "set monitor size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str="hd720"}, 0, 0, VF },
     { "opacity", "set video opacity", OFFSET(opacity), AV_OPT_TYPE_FLOAT, {.dbl=.9}, 0, 1, VF },
     { "o",       "set video opacity", OFFSET(opacity), AV_OPT_TYPE_FLOAT, {.dbl=.9}, 0, 1, VF },
-    { "mode", "set mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=0}, 0, NB_MODES-1, VFR, "mode" },
-    { "m",    "set mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=0}, 0, NB_MODES-1, VFR, "mode" },
-        { "full",     NULL, 0, AV_OPT_TYPE_CONST, {.i64=MODE_FULL},   0, 0, VFR, "mode" },
-        { "compact",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=MODE_COMPACT},0, 0, VFR, "mode" },
-        { "nozero",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=MODE_NOZERO}, 0, 0, VFR, "mode" },
-        { "nozeroeof",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=MODE_NOZEROEOF}, 0, 0, VFR, "mode" },
+    { "mode", "set mode", OFFSET(mode), AV_OPT_TYPE_FLAGS, {.i64=0}, 0, MODE_MAX, VFR, "mode" },
+    { "m",    "set mode", OFFSET(mode), AV_OPT_TYPE_FLAGS, {.i64=0}, 0, MODE_MAX, VFR, "mode" },
+        { "full",    NULL, 0, AV_OPT_TYPE_CONST, {.i64=MODE_FULL},   0, 0, VFR, "mode" },
+        { "compact", NULL, 0, AV_OPT_TYPE_CONST, {.i64=MODE_COMPACT},0, 0, VFR, "mode" },
+        { "nozero",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=MODE_NOZERO}, 0, 0, VFR, "mode" },
+        { "noeof",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=MODE_NOEOF},  0, 0, VFR, "mode" },
     { "flags", "set flags", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64=FLAG_QUEUE}, 0, INT_MAX, VFR, "flags" },
     { "f",     "set flags", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64=FLAG_QUEUE}, 0, INT_MAX, VFR, "flags" },
         { "queue",            NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_QUEUE},   0, 0, VFR, "flags" },
@@ -277,7 +277,7 @@ static int draw_items(AVFilterContext *ctx, AVFrame *out,
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
     }
-    if ((s->flags & FLAG_QUEUE) && (s->mode < MODE_NOZERO || frames)) {
+    if ((s->flags & FLAG_QUEUE) && (!(s->mode & MODE_NOZERO) || frames)) {
         snprintf(buffer, sizeof(buffer)-1, " | queue: ");
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
@@ -285,52 +285,52 @@ static int draw_items(AVFilterContext *ctx, AVFrame *out,
         drawtext(out, xpos, ypos, buffer, frames > 0 ? frames >= 10 ? frames >= 50 ? s->red : s->yellow : s->green : s->white);
         xpos += strlen(buffer) * 8;
     }
-    if ((s->flags & FLAG_FCIN) && (s->mode < MODE_NOZERO || l->frame_count_in)) {
+    if ((s->flags & FLAG_FCIN) && (!(s->mode & MODE_NOZERO) || l->frame_count_in)) {
         snprintf(buffer, sizeof(buffer)-1, " | in: %"PRId64, l->frame_count_in);
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
     }
-    if ((s->flags & FLAG_FCOUT) && (s->mode < MODE_NOZERO || l->frame_count_out)) {
+    if ((s->flags & FLAG_FCOUT) && (!(s->mode & MODE_NOZERO) || l->frame_count_out)) {
         snprintf(buffer, sizeof(buffer)-1, " | out: %"PRId64, l->frame_count_out);
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
     }
-    if ((s->flags & FLAG_FC_DELTA) && (s->mode < MODE_NOZERO || (l->frame_count_in - l->frame_count_out))) {
+    if ((s->flags & FLAG_FC_DELTA) && (!(s->mode & MODE_NOZERO) || (l->frame_count_in - l->frame_count_out))) {
         snprintf(buffer, sizeof(buffer)-1, " | delta: %"PRId64, l->frame_count_in - l->frame_count_out);
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
     }
-    if ((s->flags & FLAG_SCIN) && (s->mode < MODE_NOZERO || l->sample_count_in)) {
+    if ((s->flags & FLAG_SCIN) && (!(s->mode & MODE_NOZERO) || l->sample_count_in)) {
         snprintf(buffer, sizeof(buffer)-1, " | sin: %"PRId64, l->sample_count_in);
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
     }
-    if ((s->flags & FLAG_SCOUT) && (s->mode < MODE_NOZERO || l->sample_count_out)) {
+    if ((s->flags & FLAG_SCOUT) && (!(s->mode & MODE_NOZERO) || l->sample_count_out)) {
         snprintf(buffer, sizeof(buffer)-1, " | sout: %"PRId64, l->sample_count_out);
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
     }
-    if ((s->flags & FLAG_SC_DELTA) && (s->mode < MODE_NOZERO || (l->sample_count_in - l->sample_count_out))) {
+    if ((s->flags & FLAG_SC_DELTA) && (!(s->mode & MODE_NOZERO) || (l->sample_count_in - l->sample_count_out))) {
         snprintf(buffer, sizeof(buffer)-1, " | sdelta: %"PRId64, l->sample_count_in - l->sample_count_out);
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
     }
-    if ((s->flags & FLAG_PTS) && (s->mode < MODE_NOZERO || current_pts_us)) {
+    if ((s->flags & FLAG_PTS) && (!(s->mode & MODE_NOZERO) || current_pts_us)) {
         snprintf(buffer, sizeof(buffer)-1, " | pts: %s", av_ts2str(current_pts_us));
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
     }
-    if ((s->flags & FLAG_PTS_DELTA) && (s->mode < MODE_NOZERO || (current_pts_us - previous_pts_us))) {
+    if ((s->flags & FLAG_PTS_DELTA) && (!(s->mode & MODE_NOZERO) || (current_pts_us - previous_pts_us))) {
         snprintf(buffer, sizeof(buffer)-1, " | pts_delta: %s", av_ts2str(current_pts_us - previous_pts_us));
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
     }
-    if ((s->flags & FLAG_TIME) && (s->mode < MODE_NOZERO || current_pts_us)) {
+    if ((s->flags & FLAG_TIME) && (!(s->mode & MODE_NOZERO) || current_pts_us)) {
         snprintf(buffer, sizeof(buffer)-1, " | time: %s", av_ts2timestr(current_pts_us, &AV_TIME_BASE_Q));
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
     }
-    if ((s->flags & FLAG_TIME_DELTA) && (s->mode < MODE_NOZERO || (current_pts_us - previous_pts_us))) {
+    if ((s->flags & FLAG_TIME_DELTA) && (!(s->mode & MODE_NOZERO) || (current_pts_us - previous_pts_us))) {
         snprintf(buffer, sizeof(buffer)-1, " | time_delta: %s", av_ts2timestr(current_pts_us - previous_pts_us, &AV_TIME_BASE_Q));
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
@@ -374,10 +374,10 @@ static int create_frame(AVFilterContext *ctx, int64_t pts)
         AVFilterContext *filter = ctx->graph->filters[i];
         char buffer[1024] = { 0 };
 
-        if (s->mode == MODE_COMPACT && !filter_have_queued(filter))
+        if ((s->mode & MODE_COMPACT) && !filter_have_queued(filter))
             continue;
 
-        if (s->mode == MODE_NOZEROEOF && filter_have_eof(filter))
+        if ((s->mode & MODE_NOEOF) && filter_have_eof(filter))
             continue;
 
         xpos = 0;
@@ -389,10 +389,10 @@ static int create_frame(AVFilterContext *ctx, int64_t pts)
             AVFilterLink *l = filter->inputs[j];
             size_t frames = ff_inlink_queued_frames(l);
 
-            if (s->mode == MODE_COMPACT && !frames)
+            if ((s->mode & MODE_COMPACT) && !frames)
                 continue;
 
-            if (s->mode == MODE_NOZEROEOF && ff_outlink_get_status(l))
+            if ((s->mode & MODE_NOEOF) && ff_outlink_get_status(l))
                 continue;
 
             xpos = 10;
@@ -412,10 +412,10 @@ static int create_frame(AVFilterContext *ctx, int64_t pts)
             AVFilterLink *l = filter->outputs[j];
             size_t frames = ff_inlink_queued_frames(l);
 
-            if (s->mode == MODE_COMPACT && !frames)
+            if ((s->mode & MODE_COMPACT) && !frames)
                 continue;
 
-            if (s->mode == MODE_NOZEROEOF && ff_outlink_get_status(l))
+            if ((s->mode & MODE_NOEOF) && ff_outlink_get_status(l))
                 continue;
 
             xpos = 10;
