@@ -1882,6 +1882,62 @@ static int qsvenc_fill_padding_area(AVFrame *frame, int new_w, int new_h)
     return 0;
 }
 
+/* frame width / height have been aligned with the alignment */
+static int qsvenc_get_continuous_buffer(AVFrame *frame)
+{
+    int total_size;
+
+    switch (frame->format) {
+    case AV_PIX_FMT_NV12:
+        frame->linesize[0] = frame->width;
+        frame->linesize[1] = frame->linesize[0];
+        total_size = frame->linesize[0] * frame->height + frame->linesize[1] * frame->height / 2;
+        break;
+
+    case AV_PIX_FMT_P010:
+    case AV_PIX_FMT_P012:
+        frame->linesize[0] = 2 * frame->width;
+        frame->linesize[1] = frame->linesize[0];
+        total_size = frame->linesize[0] * frame->height + frame->linesize[1] * frame->height / 2;
+        break;
+
+    case AV_PIX_FMT_YUYV422:
+        frame->linesize[0] = 2 * frame->width;
+        frame->linesize[1] = 0;
+        total_size = frame->linesize[0] * frame->height;
+        break;
+
+    case AV_PIX_FMT_Y210:
+    case AV_PIX_FMT_VUYX:
+    case AV_PIX_FMT_XV30:
+    case AV_PIX_FMT_BGRA:
+    case AV_PIX_FMT_X2RGB10:
+        frame->linesize[0] = 4 * frame->width;
+        frame->linesize[1] = 0;
+        total_size = frame->linesize[0] * frame->height;
+        break;
+
+    default:
+        // This should never be reached
+        av_assert0(0);
+        return AVERROR(EINVAL);
+    }
+
+    frame->buf[0] = av_buffer_alloc(total_size);
+    if (!frame->buf[0])
+        return AVERROR(ENOMEM);
+
+    frame->data[0] = frame->buf[0]->data;
+    frame->extended_data = frame->data;
+
+    if (frame->format == AV_PIX_FMT_NV12 ||
+        frame->format == AV_PIX_FMT_P010 ||
+        frame->format == AV_PIX_FMT_P012)
+        frame->data[1] = frame->data[0] + frame->linesize[0] * frame->height;
+
+    return 0;
+}
+
 static int submit_frame(QSVEncContext *q, const AVFrame *frame,
                         QSVFrame **new_frame)
 {
@@ -1919,7 +1975,7 @@ static int submit_frame(QSVEncContext *q, const AVFrame *frame,
             qf->frame->format = frame->format;
 
             if (!qf->frame->data[0]) {
-                ret = av_frame_get_buffer(qf->frame, q->width_align);
+                ret = qsvenc_get_continuous_buffer(qf->frame);
                 if (ret < 0)
                     return ret;
             }
