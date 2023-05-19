@@ -248,12 +248,10 @@ static void ts_discontinuity_detect(Demuxer *d, InputStream *ist,
             if (FFABS(delta) > 1LL * dts_delta_threshold * AV_TIME_BASE ||
                 pkt_dts + AV_TIME_BASE/10 < ds->dts) {
                 d->ts_offset_discont -= delta;
-                av_log(NULL, AV_LOG_WARNING,
-                       "timestamp discontinuity for stream #%d:%d "
-                       "(id=%d, type=%s): %"PRId64", new offset= %"PRId64"\n",
-                       ist->file_index, ist->st->index, ist->st->id,
-                       av_get_media_type_string(ist->par->codec_type),
-                       delta, d->ts_offset_discont);
+                av_log(ist, AV_LOG_WARNING,
+                       "timestamp discontinuity "
+                       "(stream id=%d): %"PRId64", new offset= %"PRId64"\n",
+                       ist->st->id, delta, d->ts_offset_discont);
                 pkt->dts -= av_rescale_q(delta, AV_TIME_BASE_Q, pkt->time_base);
                 if (pkt->pts != AV_NOPTS_VALUE)
                     pkt->pts -= av_rescale_q(delta, AV_TIME_BASE_Q, pkt->time_base);
