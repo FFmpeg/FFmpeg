@@ -78,7 +78,7 @@ static void count_or_copy(uint8_t **out, uint64_t *out_size,
     *out_size += start_code_size + in_size;
 }
 
-static int h264_extradata_to_annexb(AVBSFContext *ctx, const int padding)
+static int h264_extradata_to_annexb(AVBSFContext *ctx)
 {
     H264BSFContext *s = ctx->priv_data;
     GetByteContext ogb, *gb = &ogb;
@@ -86,6 +86,7 @@ static int h264_extradata_to_annexb(AVBSFContext *ctx, const int padding)
     uint32_t total_size                 = 0;
     uint8_t *out                        = NULL, unit_nb, sps_done = 0;
     static const uint8_t nalu_header[4] = { 0, 0, 0, 1 };
+    const int padding                   = AV_INPUT_BUFFER_PADDING_SIZE;
     int length_size, pps_offset = 0;
 
     bytestream2_init(gb, ctx->par_in->extradata, ctx->par_in->extradata_size);
@@ -165,7 +166,7 @@ static int h264_mp4toannexb_init(AVBSFContext *ctx)
         av_log(ctx, AV_LOG_VERBOSE,
                "The input looks like it is Annex B already\n");
     } else if (extra_size >= 7) {
-        ret = h264_extradata_to_annexb(ctx, AV_INPUT_BUFFER_PADDING_SIZE);
+        ret = h264_extradata_to_annexb(ctx);
         if (ret < 0)
             return ret;
 
