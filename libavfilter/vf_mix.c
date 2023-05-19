@@ -161,27 +161,27 @@ typedef struct ThreadData {
             continue;                                                                           \
         }                                                                                       \
                                                                                                 \
-        for (int i = 0; i < s->nb_inputs; i++)                                                  \
+        for (int i = 0; i < nb_inputs; i++)                                                     \
             linesize[i] = in[i]->linesize[p];                                                   \
                                                                                                 \
-        for (int i = 0; i < s->nb_inputs; i++)                                                  \
+        for (int i = 0; i < nb_inputs; i++)                                                     \
             srcf[i] = in[i]->data[p] + slice_start * linesize[i];                               \
                                                                                                 \
         for (int y = slice_start; y < slice_end; y++) {                                         \
             for (int x = 0; x < width; x++) {                                                   \
                 float val = 0.f;                                                                \
                                                                                                 \
-                for (int i = 0; i < s->nb_inputs; i++) {                                        \
+                for (int i = 0; i < nb_inputs; i++) {                                           \
                     float src = *(type *)(srcf[i] + x * sizeof(type));                          \
                                                                                                 \
                     val += src * weights[i];                                                    \
                 }                                                                               \
                                                                                                 \
-                dst[x] = clip(fun(val * s->wfactor), 0, s->max);                                \
+                dst[x] = clip(fun(val * wfactor), 0, max);                                      \
             }                                                                                   \
                                                                                                 \
             dst += dst_linesize;                                                                \
-            for (int i = 0; i < s->nb_inputs; i++)                                              \
+            for (int i = 0; i < nb_inputs; i++)                                                 \
                 srcf[i] += linesize[i];                                                         \
         }                                                                                       \
     }
@@ -200,6 +200,9 @@ static int mix_frames(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const float *weights = s->weights;
     uint8_t **srcf = s->data + jobnr * s->nb_inputs;
     int *linesize = s->linesize + jobnr * s->nb_inputs;
+    const int nb_inputs = s->nb_inputs;
+    const float wfactor = s->wfactor;
+    const int max = s->max;
 
     if (s->depth <= 8) {
         MIX_SLICE(uint8_t, lrintf, CLIP8)
