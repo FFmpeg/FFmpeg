@@ -224,7 +224,9 @@ FATE_H264-$(call FRAMECRC, MOV, H264) += fate-h264-unescaped-extradata
 # this sample contains field-coded frames, with both fields in a single packet
 FATE_H264-$(call FRAMECRC, MOV, H264) += fate-h264-twofields-packet
 
-FATE_H264-$(call DEMMUX, MOV, H264, H264_MP4TOANNEXB_BSF) += fate-h264-bsf-mp4toannexb
+FATE_H264-$(call DEMMUX, MOV, H264, H264_MP4TOANNEXB_BSF) += fate-h264-bsf-mp4toannexb \
+                                                             fate-h264-bsf-mp4toannexb-2
+
 FATE_H264-$(call FRAMECRC, MATROSKA, H264) += fate-h264-direct-bff
 FATE_H264-$(call FRAMECRC, FLV, H264, SCALE_FILTER) += fate-h264-brokensps-2580
 FATE_H264-$(call FRAMECRC, MXF, H264, PCM_S24LE_DECODER SCALE_FILTER ARESAMPLE_FILTER) += fate-h264-xavc-4389
@@ -426,6 +428,10 @@ fate-h264-conformance-sva_nl1_b:                  CMD = framecrc -i $(TARGET_SAM
 fate-h264-conformance-sva_nl2_e:                  CMD = framecrc -i $(TARGET_SAMPLES)/h264-conformance/SVA_NL2_E.264
 
 fate-h264-bsf-mp4toannexb:                        CMD = md5 -i $(TARGET_SAMPLES)/h264/interlaced_crop.mp4 -c:v copy -f h264
+# First IDR is prefixed by SPS/PPS
+fate-h264-bsf-mp4toannexb-2:                      CMD = md5 -i $(TARGET_SAMPLES)/h264/ps_prefix_first_idr.mp4 -c:v copy -f h264
+fate-h264-bsf-mp4toannexb-2:                      CMP = oneline
+fate-h264-bsf-mp4toannexb-2:                      REF = cffcfa6a2d0b58c9de1f5785f099f41d
 
 fate-h264-crop-to-container:                      CMD = framemd5 -i $(TARGET_SAMPLES)/h264/crop-to-container-dims-canon.mov
 fate-h264-direct-bff:                             CMD = framecrc -i $(TARGET_SAMPLES)/h264/direct-bff.mkv
