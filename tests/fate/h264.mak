@@ -225,7 +225,8 @@ FATE_H264-$(call FRAMECRC, MOV, H264) += fate-h264-unescaped-extradata
 FATE_H264-$(call FRAMECRC, MOV, H264) += fate-h264-twofields-packet
 
 FATE_H264-$(call DEMMUX, MOV, H264, H264_MP4TOANNEXB_BSF) += fate-h264-bsf-mp4toannexb \
-                                                             fate-h264-bsf-mp4toannexb-2
+                                                             fate-h264-bsf-mp4toannexb-2 \
+                                                             fate-h264-bsf-mp4toannexb-new-extradata \
 
 FATE_H264-$(call FRAMECRC, MATROSKA, H264) += fate-h264-direct-bff
 FATE_H264-$(call FRAMECRC, FLV, H264, SCALE_FILTER) += fate-h264-brokensps-2580
@@ -432,6 +433,7 @@ fate-h264-bsf-mp4toannexb:                        CMD = md5 -i $(TARGET_SAMPLES)
 fate-h264-bsf-mp4toannexb-2:                      CMD = md5 -i $(TARGET_SAMPLES)/h264/ps_prefix_first_idr.mp4 -c:v copy -f h264
 fate-h264-bsf-mp4toannexb-2:                      CMP = oneline
 fate-h264-bsf-mp4toannexb-2:                      REF = cffcfa6a2d0b58c9de1f5785f099f41d
+fate-h264-bsf-mp4toannexb-new-extradata:          CMD = stream_remux mov $(TARGET_SAMPLES)/h264/extradata-reload-multi-stsd.mov "" h264 "-map 0:v"
 
 fate-h264-crop-to-container:                      CMD = framemd5 -i $(TARGET_SAMPLES)/h264/crop-to-container-dims-canon.mov
 fate-h264-direct-bff:                             CMD = framecrc -i $(TARGET_SAMPLES)/h264/direct-bff.mkv
