@@ -802,7 +802,6 @@ int hw_device_init_from_type(enum AVHWDeviceType type,
                              HWDevice **dev_out);
 void hw_device_free_all(void);
 
-int hw_device_setup_for_encode(OutputStream *ost);
 /**
  * Get a hardware device to be used with this filtergraph.
  * The returned reference is owned by the callee, the caller

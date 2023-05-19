@@ -103,6 +103,61 @@ fail:
     return AVERROR(ENOMEM);
 }
 
+static int hw_device_setup_for_encode(OutputStream *ost)
+{
+    const AVCodecHWConfig *config;
+    HWDevice *dev = NULL;
+    AVBufferRef *frames_ref = NULL;
+    int i;
+
+    if (ost->filter) {
+        frames_ref = av_buffersink_get_hw_frames_ctx(ost->filter->filter);
+        if (frames_ref &&
+            ((AVHWFramesContext*)frames_ref->data)->format ==
+            ost->enc_ctx->pix_fmt) {
+            // Matching format, will try to use hw_frames_ctx.
+        } else {
+            frames_ref = NULL;
+        }
+    }
+
+    for (i = 0;; i++) {
+        config = avcodec_get_hw_config(ost->enc_ctx->codec, i);
+        if (!config)
+            break;
+
+        if (frames_ref &&
+            config->methods & AV_CODEC_HW_CONFIG_METHOD_HW_FRAMES_CTX &&
+            (config->pix_fmt == AV_PIX_FMT_NONE ||
+             config->pix_fmt == ost->enc_ctx->pix_fmt)) {
+            av_log(ost->enc_ctx, AV_LOG_VERBOSE, "Using input "
+                   "frames context (format %s) with %s encoder.\n",
+                   av_get_pix_fmt_name(ost->enc_ctx->pix_fmt),
+                   ost->enc_ctx->codec->name);
+            ost->enc_ctx->hw_frames_ctx = av_buffer_ref(frames_ref);
+            if (!ost->enc_ctx->hw_frames_ctx)
+                return AVERROR(ENOMEM);
+            return 0;
+        }
+
+        if (!dev &&
+            config->methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX)
+            dev = hw_device_get_by_type(config->device_type);
+    }
+
+    if (dev) {
+        av_log(ost->enc_ctx, AV_LOG_VERBOSE, "Using device %s "
+               "(type %s) with %s encoder.\n", dev->name,
+               av_hwdevice_get_type_name(dev->type), ost->enc_ctx->codec->name);
+        ost->enc_ctx->hw_device_ctx = av_buffer_ref(dev->device_ref);
+        if (!ost->enc_ctx->hw_device_ctx)
+            return AVERROR(ENOMEM);
+    } else {
+        // No device required, or no device available.
+    }
+    return 0;
+}
+
 static void set_encoder_id(OutputFile *of, OutputStream *ost)
 {
     const char *cname = ost->enc_ctx->codec->name;
