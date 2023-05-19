@@ -63,7 +63,11 @@ typedef OSStatus (*getParameterSetAtIndex)(CMFormatDescriptionRef videoDesc,
                                            size_t *parameterSetCountOut,
                                            int *NALUnitHeaderLengthOut);
 
-//These symbols may not be present
+/*
+ * Keys that are not present in all versions of VideoToolbox need to be
+ * accessed from compat_keys, or it will cause compiler errors when compiling
+ * for older OS versions.
+ */
 static struct{
     CFStringRef kCVImageBufferColorPrimaries_ITU_R_2020;
     CFStringRef kCVImageBufferTransferFunction_ITU_R_2020;
