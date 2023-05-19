@@ -103,22 +103,18 @@ fail:
     return AVERROR(ENOMEM);
 }
 
-static int hw_device_setup_for_encode(OutputStream *ost)
+static int hw_device_setup_for_encode(OutputStream *ost, AVBufferRef *frames_ref)
 {
     const AVCodecHWConfig *config;
     HWDevice *dev = NULL;
-    AVBufferRef *frames_ref = NULL;
     int i;
 
-    if (ost->filter) {
-        frames_ref = av_buffersink_get_hw_frames_ctx(ost->filter->filter);
-        if (frames_ref &&
-            ((AVHWFramesContext*)frames_ref->data)->format ==
-            ost->enc_ctx->pix_fmt) {
-            // Matching format, will try to use hw_frames_ctx.
-        } else {
-            frames_ref = NULL;
-        }
+    if (frames_ref &&
+        ((AVHWFramesContext*)frames_ref->data)->format ==
+        ost->enc_ctx->pix_fmt) {
+        // Matching format, will try to use hw_frames_ctx.
+    } else {
+        frames_ref = NULL;
     }
 
     for (i = 0;; i++) {
@@ -388,7 +384,7 @@ int enc_open(OutputStream *ost, AVFrame *frame)
 
     av_dict_set(&ost->encoder_opts, "flags", "+frame_duration", AV_DICT_MULTIKEY);
 
-    ret = hw_device_setup_for_encode(ost);
+    ret = hw_device_setup_for_encode(ost, frame ? frame->hw_frames_ctx : NULL);
     if (ret < 0) {
         av_log(ost, AV_LOG_ERROR,
                "Encoding hardware device setup failed: %s\n", av_err2str(ret));
