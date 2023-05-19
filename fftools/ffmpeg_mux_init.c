@@ -792,7 +792,7 @@ static void new_stream_audio(Muxer *mux, const OptionsContext *o,
                     ist = ost->ist;
                 }
 
-                if (!ist || (ist->file_index == map->file_idx && ist->st->index == map->stream_idx)) {
+                if (!ist || (ist->file_index == map->file_idx && ist->index == map->stream_idx)) {
                     if (av_reallocp_array(&ost->audio_channels_map,
                                           ost->audio_channels_mapped + 1,
                                           sizeof(*ost->audio_channels_map)

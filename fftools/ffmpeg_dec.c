@@ -475,7 +475,7 @@ int dec_packet(InputStream *ist, const AVPacket *pkt, int no_eof)
         update_benchmark(NULL);
         ret = avcodec_receive_frame(dec, frame);
         update_benchmark("decode_%s %d.%d", type_desc,
-                         ist->file_index, ist->st->index);
+                         ist->file_index, ist->index);
 
         if (ret == AVERROR(EAGAIN)) {
             av_assert0(pkt); // should never happen during flushing
@@ -533,7 +533,7 @@ int dec_packet(InputStream *ist, const AVPacket *pkt, int no_eof)
             ret = video_frame_process(ist, frame);
             if (ret < 0) {
                 av_log(NULL, AV_LOG_FATAL, "Error while processing the decoded "
-                       "data for stream #%d:%d\n", ist->file_index, ist->st->index);
+                       "data for stream #%d:%d\n", ist->file_index, ist->index);
                 exit_program(1);
             }
         }
@@ -582,7 +582,7 @@ static enum AVPixelFormat get_format(AVCodecContext *s, const enum AVPixelFormat
                            "%s hwaccel requested for input stream #%d:%d, "
                            "but cannot be initialized.\n",
                            av_hwdevice_get_type_name(config->device_type),
-                           ist->file_index, ist->st->index);
+                           ist->file_index, ist->index);
                     return AV_PIX_FMT_NONE;
                 }
                 continue;

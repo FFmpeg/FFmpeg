@@ -1025,6 +1025,7 @@ static DemuxStream *demux_stream_alloc(Demuxer *d, AVStream *st)
 
     ds->ist.st         = st;
     ds->ist.file_index = f->index;
+    ds->ist.index      = st->index;
     ds->ist.class      = &input_stream_class;
 
     snprintf(ds->log_name, sizeof(ds->log_name), "%cist#%d:%d/%s",

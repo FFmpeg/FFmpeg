@@ -330,6 +330,8 @@ typedef struct InputStream {
     const AVClass *class;
 
     int file_index;
+    int index;
+
     AVStream *st;
     int discard;             /* true if stream data should be discarded */
     int user_set_discard;
