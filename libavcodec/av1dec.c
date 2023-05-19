@@ -32,6 +32,7 @@
 #include "bytestream.h"
 #include "codec_internal.h"
 #include "decode.h"
+#include "internal.h"
 #include "hwconfig.h"
 #include "profiles.h"
 #include "thread.h"
@@ -765,6 +766,7 @@ static av_cold int av1_decode_init(AVCodecContext *avctx)
     int ret;
 
     s->avctx = avctx;
+    s->pkt = avctx->internal->in_pkt;
     s->pix_fmt = AV_PIX_FMT_NONE;
 
     for (int i = 0; i < FF_ARRAY_ELEMS(s->ref); i++) {
@@ -1041,11 +1043,11 @@ static int export_film_grain(AVCodecContext *avctx, AVFrame *frame)
     return 0;
 }
 
-static int set_output_frame(AVCodecContext *avctx, AVFrame *frame,
-                            const AVPacket *pkt, int *got_frame)
+static int set_output_frame(AVCodecContext *avctx, AVFrame *frame)
 {
     AV1DecContext *s = avctx->priv_data;
     const AVFrame *srcframe = s->cur_frame.f;
+    AVPacket *pkt = s->pkt;
     int ret;
 
     // TODO: all layers
@@ -1076,10 +1078,11 @@ static int set_output_frame(AVCodecContext *avctx, AVFrame *frame,
 #if FF_API_FRAME_PKT
 FF_DISABLE_DEPRECATION_WARNINGS
     frame->pkt_size = pkt->size;
+    frame->pkt_pos = pkt->pos;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-    *got_frame = 1;
+    av_packet_unref(pkt);
 
     return 0;
 }
@@ -1145,22 +1148,13 @@ static int get_current_frame(AVCodecContext *avctx)
     return ret;
 }
 
-static int av1_decode_frame(AVCodecContext *avctx, AVFrame *frame,
-                            int *got_frame, AVPacket *pkt)
+static int av1_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
 {
     AV1DecContext *s = avctx->priv_data;
     AV1RawTileGroup *raw_tile_group = NULL;
-    int ret;
+    int i = 0, ret;
 
-    ret = ff_cbs_read_packet(s->cbc, &s->current_obu, pkt);
-    if (ret < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to read packet.\n");
-        goto end;
-    }
-    av_log(avctx, AV_LOG_DEBUG, "Total obu for this frame:%d.\n",
-           s->current_obu.nb_units);
-
-    for (int i = 0; i < s->current_obu.nb_units; i++) {
+    for (i = s->nb_unit; i < s->current_obu.nb_units; i++) {
         CodedBitstreamUnit *unit = &s->current_obu.units[i];
         AV1RawOBU *obu = unit->content;
         const AV1RawOBUHeader *header;
@@ -1252,12 +1246,13 @@ static int av1_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                 }
 
                 if (s->cur_frame.f->buf[0]) {
-                    ret = set_output_frame(avctx, frame, pkt, got_frame);
+                    ret = set_output_frame(avctx, frame);
                     if (ret < 0)
                         av_log(avctx, AV_LOG_ERROR, "Set output frame error.\n");
                 }
 
                 s->raw_frame_header = NULL;
+                i++;
 
                 goto end;
             }
@@ -1361,6 +1356,7 @@ static int av1_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         }
 
         if (raw_tile_group && (s->tile_num == raw_tile_group->tg_end + 1)) {
+            int show_frame = s->raw_frame_header->show_frame;
             if (avctx->hwaccel && s->cur_frame.f->buf[0]) {
                 ret = avctx->hwaccel->end_frame(avctx);
                 if (ret < 0) {
@@ -1376,7 +1372,7 @@ static int av1_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             }
 
             if (s->raw_frame_header->show_frame && s->cur_frame.f->buf[0]) {
-                ret = set_output_frame(avctx, frame, pkt, got_frame);
+                ret = set_output_frame(avctx, frame);
                 if (ret < 0) {
                     av_log(avctx, AV_LOG_ERROR, "Set output frame error\n");
                     goto end;
@@ -1384,13 +1380,55 @@ static int av1_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             }
             raw_tile_group = NULL;
             s->raw_frame_header = NULL;
+            if (show_frame) {
+                i++;
+                goto end;
+            }
         }
     }
 
+    ret = AVERROR(EAGAIN);
 end:
-    ff_cbs_fragment_reset(&s->current_obu);
-    if (ret < 0)
-        s->raw_frame_header = NULL;
+    av_assert0(i <= s->current_obu.nb_units);
+    s->nb_unit = i;
+
+    if ((ret < 0 && ret != AVERROR(EAGAIN)) || s->current_obu.nb_units == i) {
+        if (ret < 0)
+            s->raw_frame_header = NULL;
+        av_packet_unref(s->pkt);
+        ff_cbs_fragment_reset(&s->current_obu);
+        s->nb_unit = 0;
+    }
+
+    return ret;
+}
+
+static int av1_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+{
+    AV1DecContext *s = avctx->priv_data;
+    int ret;
+
+    do {
+        if (!s->current_obu.nb_units) {
+            ret = ff_decode_get_packet(avctx, s->pkt);
+            if (ret < 0)
+                return ret;
+
+            ret = ff_cbs_read_packet(s->cbc, &s->current_obu, s->pkt);
+            if (ret < 0) {
+                av_packet_unref(s->pkt);
+                av_log(avctx, AV_LOG_ERROR, "Failed to read packet.\n");
+                return ret;
+            }
+
+            s->nb_unit = 0;
+            av_log(avctx, AV_LOG_DEBUG, "Total OBUs on this packet: %d.\n",
+                   s->current_obu.nb_units);
+        }
+
+        ret = av1_receive_frame_internal(avctx, frame);
+    } while (ret == AVERROR(EAGAIN));
+
     return ret;
 }
 
@@ -1404,6 +1442,7 @@ static void av1_decode_flush(AVCodecContext *avctx)
 
     av1_frame_unref(avctx, &s->cur_frame);
     s->operating_point_idc = 0;
+    s->nb_unit = 0;
     s->raw_frame_header = NULL;
     s->raw_seq = NULL;
     s->cll = NULL;
@@ -1411,6 +1450,7 @@ static void av1_decode_flush(AVCodecContext *avctx)
     while (av_fifo_read(s->itut_t35_fifo, &itut_t35, 1) >= 0)
         av_buffer_unref(&itut_t35.payload_ref);
 
+    ff_cbs_fragment_reset(&s->current_obu);
     ff_cbs_flush(s->cbc);
 }
 
@@ -1437,14 +1477,13 @@ const FFCodec ff_av1_decoder = {
     .priv_data_size        = sizeof(AV1DecContext),
     .init                  = av1_decode_init,
     .close                 = av1_decode_free,
-    FF_CODEC_DECODE_CB(av1_decode_frame),
+    FF_CODEC_RECEIVE_FRAME_CB(av1_receive_frame),
     .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_AVOID_PROBING,
     .caps_internal         = FF_CODEC_CAP_INIT_CLEANUP |
                              FF_CODEC_CAP_SETS_PKT_DTS,
     .flush                 = av1_decode_flush,
     .p.profiles            = NULL_IF_CONFIG_SMALL(ff_av1_profiles),
     .p.priv_class          = &av1_class,
-    .bsfs                  = "av1_frame_split",
     .hw_configs            = (const AVCodecHWConfigInternal *const []) {
 #if CONFIG_AV1_DXVA2_HWACCEL
         HWACCEL_DXVA2(av1),

@@ -28,6 +28,7 @@
 #include "libavutil/frame.h"
 #include "libavutil/pixfmt.h"
 #include "avcodec.h"
+#include "packet.h"
 #include "cbs.h"
 #include "cbs_av1.h"
 
@@ -68,6 +69,7 @@ typedef struct AV1DecContext {
     enum AVPixelFormat pix_fmt;
     CodedBitstreamContext *cbc;
     CodedBitstreamFragment current_obu;
+    AVPacket *pkt;
 
     AVBufferRef *seq_ref;
     AV1RawSequenceHeader *raw_seq;
@@ -89,6 +91,8 @@ typedef struct AV1DecContext {
 
     AV1Frame ref[AV1_NUM_REF_FRAMES];
     AV1Frame cur_frame;
+
+    int nb_unit;
 
     // AVOptions
     int operating_point;
