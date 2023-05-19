@@ -227,6 +227,8 @@ FATE_H264-$(call FRAMECRC, MOV, H264) += fate-h264-twofields-packet
 FATE_H264-$(call DEMMUX, MOV, H264, H264_MP4TOANNEXB_BSF) += fate-h264-bsf-mp4toannexb \
                                                              fate-h264-bsf-mp4toannexb-2 \
                                                              fate-h264-bsf-mp4toannexb-new-extradata \
+                                                             fate-h264_mp4toannexb_ticket5927 \
+                                                             fate-h264_mp4toannexb_ticket5927_2 \
 
 FATE_H264-$(call FRAMECRC, MATROSKA, H264) += fate-h264-direct-bff
 FATE_H264-$(call FRAMECRC, FLV, H264, SCALE_FILTER) += fate-h264-brokensps-2580
@@ -434,6 +436,10 @@ fate-h264-bsf-mp4toannexb-2:                      CMD = md5 -i $(TARGET_SAMPLES)
 fate-h264-bsf-mp4toannexb-2:                      CMP = oneline
 fate-h264-bsf-mp4toannexb-2:                      REF = cffcfa6a2d0b58c9de1f5785f099f41d
 fate-h264-bsf-mp4toannexb-new-extradata:          CMD = stream_remux mov $(TARGET_SAMPLES)/h264/extradata-reload-multi-stsd.mov "" h264 "-map 0:v"
+fate-h264_mp4toannexb_ticket5927:                 CMD = transcode "mp4" $(TARGET_SAMPLES)/h264/thezerotheorem-cut.mp4 \
+                                                        h264 "-c:v copy -bsf:v h264_mp4toannexb -an" "-c:v copy"
+fate-h264_mp4toannexb_ticket5927_2:               CMD = transcode "mp4" $(TARGET_SAMPLES)/h264/thezerotheorem-cut.mp4 \
+                                                        h264 "-c:v copy -an" "-c:v copy"
 
 fate-h264-crop-to-container:                      CMD = framemd5 -i $(TARGET_SAMPLES)/h264/crop-to-container-dims-canon.mov
 fate-h264-direct-bff:                             CMD = framecrc -i $(TARGET_SAMPLES)/h264/direct-bff.mkv
