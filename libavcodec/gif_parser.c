@@ -24,9 +24,6 @@
  * GIF parser
  */
 
-#include "libavutil/bswap.h"
-#include "libavutil/common.h"
-
 #include "gif.h"
 #include "parser.h"
 
@@ -50,11 +47,13 @@ typedef struct GIFParseContext {
     int block_size;
     int etype;
     int delay;
+    int keyframe;
 } GIFParseContext;
 
 static int gif_find_frame_end(GIFParseContext *g, const uint8_t *buf,
                               int buf_size, void *logctx)
 {
+    ParseContext *pc = &g->pc;
     int index, next = END_NOT_FOUND;
 
     for (index = 0; index < buf_size; index++) {
@@ -63,9 +62,10 @@ static int gif_find_frame_end(GIFParseContext *g, const uint8_t *buf,
                 !memcmp(buf + index, gif89a_sig, 6)) {
                 g->state = GIF_HEADER;
                 g->found_sig++;
+                g->keyframe = 1;
             } else if (buf[index] == GIF_EXTENSION_INTRODUCER) {
                 g->state = GIF_EXTENSION;
-                g->found_start = 1;
+                g->found_start = pc->frame_start_found = 1;
             } else if (buf[index] == GIF_IMAGE_SEPARATOR) {
                 g->state = GIF_IMAGE;
             } else if (buf[index] == GIF_TRAILER) {
@@ -93,7 +93,7 @@ static int gif_find_frame_end(GIFParseContext *g, const uint8_t *buf,
         } else if (g->state == GIF_EXTENSION) {
             if (g->found_start && g->found_end && g->found_sig) {
                 next = index;
-                g->found_start = 0;
+                g->found_start = pc->frame_start_found = 0;
                 g->found_end = 0;
                 g->index = 0;
                 g->gct_flag = 0;
@@ -140,7 +140,7 @@ static int gif_find_frame_end(GIFParseContext *g, const uint8_t *buf,
             }
             g->index++;
         } else if (g->state == GIF_IMAGE) {
-            if (g->index == 8) {
+            if (g->index == 9) {
                 g->gct_flag = !!(buf[index] & 0x80);
                 g->gct_size = 3 * (1 << ((buf[index] & 0x07) + 1));
             }
@@ -165,14 +165,24 @@ static int gif_parse(AVCodecParserContext *s, AVCodecContext *avctx,
     GIFParseContext *g = s->priv_data;
     int next;
 
-    next = gif_find_frame_end(g, buf, buf_size, avctx);
-    if (ff_combine_frame(&g->pc, next, &buf, &buf_size) < 0) {
-        *poutbuf      = NULL;
-        *poutbuf_size = 0;
-        return buf_size;
+    *poutbuf_size = 0;
+    *poutbuf = NULL;
+
+    if (s->flags & PARSER_FLAG_COMPLETE_FRAMES) {
+        next = buf_size;
+    } else {
+        next = gif_find_frame_end(g, buf, buf_size, avctx);
+        if (ff_combine_frame(&g->pc, next, &buf, &buf_size) < 0) {
+            *poutbuf      = NULL;
+            *poutbuf_size = 0;
+            return buf_size;
+        }
     }
 
-    s->duration   = g->delay;
+    s->duration  = g->delay ? g->delay : 10;
+    s->key_frame = g->keyframe;
+    s->pict_type = g->keyframe ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
+    g->keyframe  = 0;
 
     *poutbuf      = buf;
     *poutbuf_size = buf_size;
