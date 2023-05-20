@@ -122,6 +122,11 @@ static struct{
     CFStringRef kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder;
     CFStringRef kVTVideoEncoderSpecification_RequireHardwareAcceleratedVideoEncoder;
     CFStringRef kVTVideoEncoderSpecification_EnableLowLatencyRateControl;
+    CFStringRef kVTCompressionPropertyKey_AllowOpenGOP;
+    CFStringRef kVTCompressionPropertyKey_MaximizePowerEfficiency;
+    CFStringRef kVTCompressionPropertyKey_ReferenceBufferCount;
+    CFStringRef kVTCompressionPropertyKey_MaxAllowedFrameQP;
+    CFStringRef kVTCompressionPropertyKey_MinAllowedFrameQP;
 
     getParameterSetAtIndex CMVideoFormatDescriptionGetHEVCParameterSetAtIndex;
 } compat_keys;
@@ -192,6 +197,13 @@ static void loadVTEncSymbols(void){
             "RequireHardwareAcceleratedVideoEncoder");
     GET_SYM(kVTVideoEncoderSpecification_EnableLowLatencyRateControl,
                 "EnableLowLatencyRateControl");
+    GET_SYM(kVTCompressionPropertyKey_AllowOpenGOP, "AllowOpenGOP");
+    GET_SYM(kVTCompressionPropertyKey_MaximizePowerEfficiency,
+            "MaximizePowerEfficiency");
+    GET_SYM(kVTCompressionPropertyKey_ReferenceBufferCount,
+            "ReferenceBufferCount");
+    GET_SYM(kVTCompressionPropertyKey_MaxAllowedFrameQP, "MaxAllowedFrameQP");
+    GET_SYM(kVTCompressionPropertyKey_MinAllowedFrameQP, "MinAllowedFrameQP");
 }
 
 #define AUTO_PROFILE 0
@@ -259,6 +271,10 @@ typedef struct VTEncContext {
 
     /* can't be bool type since AVOption will access it as int */
     int a53_cc;
+
+    int max_slice_bytes;
+    int power_efficient;
+    int max_ref_frames;
 } VTEncContext;
 
 static int vtenc_populate_extradata(AVCodecContext   *avctx,
@@ -1121,6 +1137,47 @@ static bool vtenc_qscale_enabled(void)
     return !TARGET_OS_IPHONE && TARGET_CPU_ARM64;
 }
 
+static void set_encoder_property_or_log(AVCodecContext *avctx,
+                                        CFStringRef key,
+                                        const char *print_option_name,
+                                        CFTypeRef value) {
+    int status;
+    VTEncContext *vtctx = avctx->priv_data;
+
+    status = VTSessionSetProperty(vtctx->session, key, value);
+    if (status == kVTPropertyNotSupportedErr) {
+        av_log(avctx,
+               AV_LOG_INFO,
+               "This device does not support the %s option. Value ignored.\n",
+               print_option_name);
+    } else if (status != 0) {
+        av_log(avctx,
+               AV_LOG_ERROR,
+               "Error setting %s: Error %d\n",
+               print_option_name,
+               status);
+    }
+}
+
+static int set_encoder_int_property_or_log(AVCodecContext* avctx,
+                                           CFStringRef key,
+                                           const char* print_option_name,
+                                           int value) {
+    CFNumberRef value_cfnum = CFNumberCreate(kCFAllocatorDefault,
+                                             kCFNumberIntType,
+                                             &value);
+
+    if (value_cfnum == NULL) {
+        return AVERROR(ENOMEM);
+    }
+
+    set_encoder_property_or_log(avctx, key, print_option_name, value_cfnum);
+
+    CFRelease(value_cfnum);
+
+    return 0;
+}
+
 static int vtenc_create_encoder(AVCodecContext   *avctx,
                                 CMVideoCodecType codec_type,
                                 CFStringRef      profile_level,
@@ -1488,6 +1545,64 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
 
         if (status) {
             av_log(avctx, AV_LOG_ERROR, "Error setting low latency property: %d\n", status);
+        }
+    }
+
+    if ((avctx->flags & AV_CODEC_FLAG_CLOSED_GOP) != 0) {
+        set_encoder_property_or_log(avctx,
+                                    compat_keys.kVTCompressionPropertyKey_AllowOpenGOP,
+                                    "AllowOpenGop",
+                                    kCFBooleanFalse);
+    }
+
+    if (avctx->qmin >= 0) {
+        status = set_encoder_int_property_or_log(avctx,
+                                                 compat_keys.kVTCompressionPropertyKey_MinAllowedFrameQP,
+                                                 "qmin",
+                                                 avctx->qmin);
+
+        if (status != 0) {
+            return status;
+        }
+    }
+
+    if (avctx->qmax >= 0) {
+        status = set_encoder_int_property_or_log(avctx,
+                                                 compat_keys.kVTCompressionPropertyKey_MaxAllowedFrameQP,
+                                                 "qmax",
+                                                 avctx->qmax);
+
+        if (status != 0) {
+            return status;
+        }
+    }
+
+    if (vtctx->max_slice_bytes >= 0 && avctx->codec_id == AV_CODEC_ID_H264) {
+        status = set_encoder_int_property_or_log(avctx,
+                                                 kVTCompressionPropertyKey_MaxH264SliceBytes,
+                                                 "max_slice_bytes",
+                                                 vtctx->max_slice_bytes);
+
+        if (status != 0) {
+            return status;
+        }
+    }
+
+    if (vtctx->power_efficient >= 0) {
+        set_encoder_property_or_log(avctx,
+                                    compat_keys.kVTCompressionPropertyKey_MaximizePowerEfficiency,
+                                    "power_efficient",
+                                    vtctx->power_efficient ? kCFBooleanTrue : kCFBooleanFalse);
+    }
+
+    if (vtctx->max_ref_frames > 0) {
+        status = set_encoder_int_property_or_log(avctx,
+                                                 compat_keys.kVTCompressionPropertyKey_ReferenceBufferCount,
+                                                 "max_ref_frames",
+                                                 vtctx->max_ref_frames);
+
+        if (status != 0) {
+            return status;
         }
     }
 
@@ -2768,6 +2883,11 @@ static const enum AVPixelFormat prores_pix_fmts[] = {
         OFFSET(frames_after), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE }, \
     { "prio_speed", "prioritize encoding speed", OFFSET(prio_speed), AV_OPT_TYPE_BOOL, \
         { .i64 = -1 }, -1, 1, VE }, \
+    { "power_efficient", "Set to 1 to enable more power-efficient encoding if supported.", \
+        OFFSET(power_efficient), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 1, VE }, \
+    { "max_ref_frames", \
+        "Sets the maximum number of reference frames. This only has an effect when the value is less than the maximum allowed by the profile/level.", \
+        OFFSET(max_ref_frames), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
 
 #define OFFSET(x) offsetof(VTEncContext, x)
 static const AVOption h264_options[] = {
@@ -2800,7 +2920,7 @@ static const AVOption h264_options[] = {
     { "a53cc", "Use A53 Closed Captions (if available)", OFFSET(a53_cc), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, VE },
 
     { "constant_bit_rate", "Require constant bit rate (macOS 13 or newer)", OFFSET(constant_bit_rate), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
-
+    { "max_slice_bytes", "Set the maximum number of bytes in an H.264 slice.", OFFSET(max_slice_bytes), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, INT_MAX, VE },
     COMMON_OPTIONS
     { NULL },
 };
