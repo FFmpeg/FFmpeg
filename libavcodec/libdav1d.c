@@ -316,20 +316,14 @@ static void libdav1d_user_data_free(const uint8_t *data, void *opaque) {
     av_packet_free(&pkt);
 }
 
-static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
+static int libdav1d_receive_frame_internal(AVCodecContext *c, Dav1dPicture *p)
 {
     Libdav1dContext *dav1d = c->priv_data;
     Dav1dData *data = &dav1d->data;
-    Dav1dPicture pic = { 0 }, *p = &pic;
-    AVPacket *pkt;
-    OpaqueData *od = NULL;
-#if FF_DAV1D_VERSION_AT_LEAST(5,1)
-    enum Dav1dEventFlags event_flags = 0;
-#endif
     int res;
 
     if (!data->sz) {
-        pkt = av_packet_alloc();
+        AVPacket *pkt = av_packet_alloc();
 
         if (!pkt)
             return AVERROR(ENOMEM);
@@ -341,6 +335,8 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
         }
 
         if (pkt->size) {
+            OpaqueData *od = NULL;
+
             res = dav1d_data_wrap(data, pkt->data, pkt->size,
                                   libdav1d_data_free, pkt->buf);
             if (res < 0) {
@@ -400,11 +396,30 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (res < 0) {
         if (res == AVERROR(EINVAL))
             res = AVERROR_INVALIDDATA;
-        else if (res == AVERROR(EAGAIN) && c->internal->draining)
-            res = AVERROR_EOF;
-
-        return res;
+        else if (res == AVERROR(EAGAIN))
+            res = c->internal->draining ? AVERROR_EOF : 1;
     }
+
+    return res;
+}
+
+static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
+{
+    Libdav1dContext *dav1d = c->priv_data;
+    Dav1dPicture pic = { 0 }, *p = &pic;
+    AVPacket *pkt;
+    OpaqueData *od = NULL;
+#if FF_DAV1D_VERSION_AT_LEAST(5,1)
+    enum Dav1dEventFlags event_flags = 0;
+#endif
+    int res;
+
+    do {
+        res = libdav1d_receive_frame_internal(c, p);
+    } while (res > 0);
+
+    if (res < 0)
+        return res;
 
     av_assert0(p->data[0] && p->allocator_data);
 
