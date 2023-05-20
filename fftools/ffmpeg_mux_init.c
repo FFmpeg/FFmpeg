@@ -985,7 +985,8 @@ fail:
 }
 
 static OutputStream *ost_add(Muxer *mux, const OptionsContext *o,
-                             enum AVMediaType type, InputStream *ist)
+                             enum AVMediaType type, InputStream *ist,
+                             OutputFilter *ofilter)
 {
     AVFormatContext *oc = mux->fc;
     MuxStream     *ms;
@@ -1040,6 +1041,14 @@ static OutputStream *ost_add(Muxer *mux, const OptionsContext *o,
         av_strlcat(ms->log_name, "/",       sizeof(ms->log_name));
         av_strlcat(ms->log_name, enc->name, sizeof(ms->log_name));
     } else {
+        if (ofilter) {
+            av_log(ost, AV_LOG_ERROR,
+                   "Streamcopy requested for output stream fed "
+                   "from a complex filtergraph. Filtering and streamcopy "
+                   "cannot be used together.\n");
+            exit_program(1);
+        }
+
         av_strlcat(ms->log_name, "/copy", sizeof(ms->log_name));
     }
 
@@ -1233,22 +1242,26 @@ static OutputStream *ost_add(Muxer *mux, const OptionsContext *o,
             exit_program(1);
     }
 
-    if (ost->ist) {
-        if (ost->enc &&
-            (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO)) {
+    if (ost->enc &&
+        (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO)) {
+        if (ofilter) {
+            ost->filter       = ofilter;
+            ofilter->ost      = ost;
+            avfilter_inout_free(&ofilter->out_tmp);
+        } else {
             ret = init_simple_filtergraph(ost->ist, ost);
             if (ret < 0) {
                 av_log(ost, AV_LOG_ERROR,
                        "Error initializing a simple filtergraph\n");
                 exit_program(1);
             }
-        } else {
-            ret = ist_output_add(ost->ist, ost);
-            if (ret < 0) {
-                av_log(ost, AV_LOG_ERROR,
-                       "Error binding an input stream\n");
-                exit_program(1);
-            }
+        }
+    } else if (ost->ist) {
+        ret = ist_output_add(ost->ist, ost);
+        if (ret < 0) {
+            av_log(ost, AV_LOG_ERROR,
+                   "Error binding an input stream\n");
+            exit_program(1);
         }
     }
 
@@ -1259,26 +1272,6 @@ static OutputStream *ost_add(Muxer *mux, const OptionsContext *o,
     }
 
     return ost;
-}
-
-// add a new output stream fed by the provided filtergraph output
-static void ost_add_from_filter(OutputFilter *ofilter, const OptionsContext *o,
-                               Muxer *mux)
-{
-    OutputStream *ost = ost_add(mux, o, ofilter->type, NULL);
-
-    ost->filter       = ofilter;
-
-    ofilter->ost      = ost;
-
-    if (!ost->enc_ctx) {
-        av_log(ost, AV_LOG_ERROR, "Streamcopy requested for output stream fed "
-               "from a complex filtergraph. Filtering and streamcopy "
-               "cannot be used together.\n");
-        exit_program(1);
-    }
-
-    avfilter_inout_free(&ofilter->out_tmp);
 }
 
 static void map_auto_video(Muxer *mux, const OptionsContext *o)
@@ -1329,7 +1322,7 @@ static void map_auto_video(Muxer *mux, const OptionsContext *o)
        }
     }
     if (best_ist)
-        ost_add(mux, o, AVMEDIA_TYPE_VIDEO, best_ist);
+        ost_add(mux, o, AVMEDIA_TYPE_VIDEO, best_ist, NULL);
 }
 
 static void map_auto_audio(Muxer *mux, const OptionsContext *o)
@@ -1371,7 +1364,7 @@ static void map_auto_audio(Muxer *mux, const OptionsContext *o)
        }
     }
     if (best_ist)
-        ost_add(mux, o, AVMEDIA_TYPE_AUDIO, best_ist);
+        ost_add(mux, o, AVMEDIA_TYPE_AUDIO, best_ist, NULL);
 }
 
 static void map_auto_subtitle(Muxer *mux, const OptionsContext *o)
@@ -1406,7 +1399,7 @@ static void map_auto_subtitle(Muxer *mux, const OptionsContext *o)
                 input_descriptor && output_descriptor &&
                 (!input_descriptor->props ||
                  !output_descriptor->props)) {
-                ost_add(mux, o, AVMEDIA_TYPE_SUBTITLE, ist);
+                ost_add(mux, o, AVMEDIA_TYPE_SUBTITLE, ist, NULL);
                 break;
             }
         }
@@ -1426,7 +1419,7 @@ static void map_auto_data(Muxer *mux, const OptionsContext *o)
             continue;
         if (ist->st->codecpar->codec_type == AVMEDIA_TYPE_DATA &&
             ist->st->codecpar->codec_id == codec_id )
-            ost_add(mux, o, AVMEDIA_TYPE_DATA, ist);
+            ost_add(mux, o, AVMEDIA_TYPE_DATA, ist, NULL);
     }
 }
 
@@ -1458,7 +1451,7 @@ loop_end:
                    "in any defined filter graph, or was already used elsewhere.\n", map->linklabel);
             exit_program(1);
         }
-        ost_add_from_filter(ofilter, o, mux);
+        ost_add(mux, o, ofilter->type, NULL, ofilter);
     } else {
         ist = input_files[map->file_index]->streams[map->stream_index];
         if (ist->user_set_discard == AVDISCARD_ALL) {
@@ -1490,7 +1483,7 @@ loop_end:
             return;
         }
 
-        ost_add(mux, o, ist->st->codecpar->codec_type, ist);
+        ost_add(mux, o, ist->st->codecpar->codec_type, ist, NULL);
     }
 }
 
@@ -1524,7 +1517,7 @@ static void of_add_attachments(Muxer *mux, const OptionsContext *o)
         avio_read(pb, attachment, len);
         memset(attachment + len, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
-        ost = ost_add(mux, o, AVMEDIA_TYPE_ATTACHMENT, NULL);
+        ost = ost_add(mux, o, AVMEDIA_TYPE_ATTACHMENT, NULL, NULL);
         ost->attachment_filename       = o->attachments[i];
         ost->par_in->extradata         = attachment;
         ost->par_in->extradata_size    = len;
@@ -1557,7 +1550,7 @@ static void create_streams(Muxer *mux, const OptionsContext *o)
             case AVMEDIA_TYPE_AUDIO:    auto_disable_a = 1; break;
             case AVMEDIA_TYPE_SUBTITLE: auto_disable_s = 1; break;
             }
-            ost_add_from_filter(ofilter, o, mux);
+            ost_add(mux, o, ofilter->type, NULL, ofilter);
         }
     }
 
