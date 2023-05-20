@@ -1172,18 +1172,8 @@ void enc_flush(void)
             av_log(ost, AV_LOG_WARNING,
                    "Finishing stream without any data written to it.\n");
 
-            if (ost->filter && !fg->graph) {
-                if (!ifilter_has_all_input_formats(fg))
-                    continue;
-
-                ret = configure_filtergraph(fg);
-                if (ret < 0) {
-                    av_log(ost, AV_LOG_ERROR, "Error configuring filter graph\n");
-                    exit_program(1);
-                }
-
-                of_output_packet(of, ost->pkt, ost, 1);
-            }
+            if (!fg->graph)
+                continue;
 
             ret = enc_open(ost, NULL);
             if (ret < 0)
