@@ -472,10 +472,6 @@ static int gif_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
 
     bytestream2_init(&s->gb, avpkt->data, avpkt->size);
 
-    s->frame->pts     = avpkt->pts;
-    s->frame->pkt_dts = avpkt->dts;
-    s->frame->duration = avpkt->duration;
-
     if (avpkt->size >= 6) {
         s->keyframe = memcmp(avpkt->data, gif87a_sig, 6) == 0 ||
                       memcmp(avpkt->data, gif89a_sig, 6) == 0;
@@ -522,6 +518,13 @@ static int gif_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
 
     if ((ret = av_frame_ref(rframe, s->frame)) < 0)
         return ret;
+    if (s->keyframe) {
+        rframe->pict_type = AV_PICTURE_TYPE_I;
+        rframe->flags |= AV_FRAME_FLAG_KEY;
+    } else {
+        rframe->pict_type = AV_PICTURE_TYPE_P;
+        rframe->flags &= ~AV_FRAME_FLAG_KEY;
+    }
     *got_frame = 1;
 
     return bytestream2_tell(&s->gb);
