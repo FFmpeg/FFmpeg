@@ -262,7 +262,6 @@ typedef struct CCaptionSubContext {
 
 static av_cold int init_decoder(AVCodecContext *avctx)
 {
-    int ret;
     CCaptionSubContext *ctx = avctx->priv_data;
 
     av_bprint_init(&ctx->buffer[0], 0, AV_BPRINT_SIZE_UNLIMITED);
@@ -272,7 +271,7 @@ static av_cold int init_decoder(AVCodecContext *avctx)
     ctx->bg_color = CCCOL_BLACK;
     ctx->rollup = 2;
     ctx->cursor_row = 10;
-    ret = ff_ass_subtitle_header(avctx, "Monospace",
+    return ff_ass_subtitle_header(avctx, "Monospace",
                                  ASS_DEFAULT_FONT_SIZE,
                                  ASS_DEFAULT_COLOR,
                                  ASS_DEFAULT_BACK_COLOR,
@@ -281,11 +280,6 @@ static av_cold int init_decoder(AVCodecContext *avctx)
                                  ASS_DEFAULT_UNDERLINE,
                                  3,
                                  ASS_DEFAULT_ALIGNMENT);
-    if (ret < 0) {
-        return ret;
-    }
-
-    return ret;
 }
 
 static av_cold int close_decoder(AVCodecContext *avctx)
