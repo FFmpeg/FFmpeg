@@ -508,9 +508,13 @@ static int vk_h264_end_frame(AVCodecContext *avctx)
     const H264Context *h = avctx->priv_data;
     H264Picture *pic = h->cur_pic_ptr;
     H264VulkanDecodePicture *hp = pic->hwaccel_picture_private;
+    FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
     FFVulkanDecodePicture *vp = &hp->vp;
     FFVulkanDecodePicture *rvp[H264_MAX_PICTURE_COUNT] = { 0 };
     AVFrame *rav[H264_MAX_PICTURE_COUNT] = { 0 };
+
+    if (!dec->session_params)
+        return AVERROR(EINVAL);
 
     for (int i = 0; i < vp->decode_info.referenceSlotCount; i++) {
         H264Picture *rp = hp->ref_src[i];
