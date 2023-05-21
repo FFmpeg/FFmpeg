@@ -62,6 +62,10 @@ typedef struct InputFilterPriv {
     // used to hold submitted input
     AVFrame *frame;
 
+    /* for filters that are not yet bound to an input stream,
+     * this stores the input linklabel, if any */
+    uint8_t *linklabel;
+
     // filter data type
     enum AVMediaType type;
     // source data type: AVMEDIA_TYPE_SUBTITLE for sub2video,
@@ -456,8 +460,6 @@ static int ifilter_bind_ist(InputFilter *ifilter, InputStream *ist)
 
     ifp->ist             = ist;
     ifp->type_src        = ist->st->codecpar->codec_type;
-    ifp->type            = ifp->type_src == AVMEDIA_TYPE_SUBTITLE ?
-                           AVMEDIA_TYPE_VIDEO : ifp->type_src;
 
     return 0;
 }
@@ -505,7 +507,7 @@ void fg_free(FilterGraph **pfg)
                 av_frame_free(&frame);
             av_fifo_freep2(&ifp->frame_queue);
         }
-        if (ist->sub2video.sub_queue) {
+        if (ist && ist->sub2video.sub_queue) {
             AVSubtitle sub;
             while (av_fifo_read(ist->sub2video.sub_queue, &sub, 1) >= 0)
                 avsubtitle_free(&sub);
@@ -517,6 +519,7 @@ void fg_free(FilterGraph **pfg)
         av_frame_free(&ifp->frame);
 
         av_buffer_unref(&ifp->hw_frames_ctx);
+        av_freep(&ifp->linklabel);
         av_freep(&ifilter->name);
         av_freep(&fg->inputs[j]);
     }
@@ -542,12 +545,58 @@ FilterGraph *fg_create(char *graph_desc)
     FilterGraphPriv *fgp = allocate_array_elem(&filtergraphs, sizeof(*fgp), &nb_filtergraphs);
     FilterGraph      *fg = &fgp->fg;
 
+    AVFilterInOut *inputs, *outputs;
+    AVFilterGraph *graph;
+    int ret = 0;
+
     fg->index      = nb_filtergraphs - 1;
     fgp->graph_desc = graph_desc;
 
     fgp->frame = av_frame_alloc();
     if (!fgp->frame)
         report_and_exit(AVERROR(ENOMEM));
+
+    /* this graph is only used for determining the kinds of inputs
+     * and outputs we have, and is discarded on exit from this function */
+    graph = avfilter_graph_alloc();
+    if (!graph)
+        report_and_exit(AVERROR(ENOMEM));
+    graph->nb_threads = 1;
+
+    ret = graph_parse(graph, fgp->graph_desc, &inputs, &outputs, NULL);
+    if (ret < 0)
+        goto fail;
+
+    for (AVFilterInOut *cur = inputs; cur; cur = cur->next) {
+        InputFilter *const ifilter = ifilter_alloc(fg);
+        InputFilterPriv       *ifp = ifp_from_ifilter(ifilter);
+
+        ifp->linklabel = cur->name;
+        cur->name      = NULL;
+
+        ifp->type      = avfilter_pad_get_type(cur->filter_ctx->input_pads,
+                                               cur->pad_idx);
+        ifilter->name  = describe_filter_link(fg, cur, 1);
+    }
+
+    for (AVFilterInOut *cur = outputs; cur; cur = cur->next) {
+        OutputFilter *const ofilter = ofilter_alloc(fg);
+
+        ofilter->linklabel = cur->name;
+        cur->name          = NULL;
+
+        ofilter->type      = avfilter_pad_get_type(cur->filter_ctx->output_pads,
+                                                   cur->pad_idx);
+        ofilter->name      = describe_filter_link(fg, cur, 0);
+    }
+
+fail:
+    avfilter_inout_free(&inputs);
+    avfilter_inout_free(&outputs);
+    avfilter_graph_free(&graph);
+
+    if (ret < 0)
+        report_and_exit(ret);
 
     return fg;
 }
@@ -557,8 +606,6 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost,
 {
     FilterGraph *fg;
     FilterGraphPriv *fgp;
-    OutputFilter *ofilter;
-    InputFilter  *ifilter;
     int ret;
 
     fg = fg_create(graph_desc);
@@ -568,26 +615,32 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost,
 
     fgp->is_simple = 1;
 
-    ofilter      = ofilter_alloc(fg);
-    ofilter->ost = ost;
+    if (fg->nb_inputs != 1 || fg->nb_outputs != 1) {
+        av_log(NULL, AV_LOG_ERROR, "Simple filtergraph '%s' was expected "
+               "to have exactly 1 input and 1 output. "
+               "However, it had %d input(s) and %d output(s). Please adjust, "
+               "or use a complex filtergraph (-filter_complex) instead.\n",
+               graph_desc, fg->nb_inputs, fg->nb_outputs);
+        return AVERROR(EINVAL);
+    }
 
-    ost->filter = ofilter;
+    fg->outputs[0]->ost = ost;
 
-    ifilter = ifilter_alloc(fg);
+    ost->filter = fg->outputs[0];
 
-    ret = ifilter_bind_ist(ifilter, ist);
+    ret = ifilter_bind_ist(fg->inputs[0], ist);
     if (ret < 0)
         return ret;
 
     return 0;
 }
 
-static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
+static void init_input_filter(FilterGraph *fg, InputFilter *ifilter)
 {
     FilterGraphPriv *fgp = fgp_from_fg(fg);
+    InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
     InputStream *ist = NULL;
-    enum AVMediaType type = avfilter_pad_get_type(in->filter_ctx->input_pads, in->pad_idx);
-    InputFilter *ifilter;
+    enum AVMediaType type = ifp->type;
     int i, ret;
 
     // TODO: support other filter types
@@ -597,11 +650,11 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
         exit_program(1);
     }
 
-    if (in->name) {
+    if (ifp->linklabel) {
         AVFormatContext *s;
         AVStream       *st = NULL;
         char *p;
-        int file_idx = strtol(in->name, &p, 0);
+        int file_idx = strtol(ifp->linklabel, &p, 0);
 
         if (file_idx < 0 || file_idx >= nb_input_files) {
             av_log(NULL, AV_LOG_FATAL, "Invalid file index %d in filtergraph description %s.\n",
@@ -631,63 +684,27 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
         ist = ist_find_unused(type);
         if (!ist) {
             av_log(NULL, AV_LOG_FATAL, "Cannot find a matching stream for "
-                   "unlabeled input pad %d on filter %s\n", in->pad_idx,
-                   in->filter_ctx->name);
+                   "unlabeled input pad %s\n", ifilter->name);
             exit_program(1);
         }
     }
     av_assert0(ist);
 
-    ifilter         = ifilter_alloc(fg);
-    ifilter->name   = describe_filter_link(fg, in, 1);
-
     ret = ifilter_bind_ist(ifilter, ist);
     if (ret < 0) {
         av_log(NULL, AV_LOG_ERROR,
                "Error binding an input stream to complex filtergraph input %s.\n",
-               in->name ? in->name : "");
+               ifilter->name);
         exit_program(1);
     }
 }
 
 int init_complex_filtergraph(FilterGraph *fg)
 {
-    FilterGraphPriv *fgp = fgp_from_fg(fg);
-    AVFilterInOut *inputs, *outputs, *cur;
-    AVFilterGraph *graph;
-    int ret = 0;
-
-    /* this graph is only used for determining the kinds of inputs
-     * and outputs we have, and is discarded on exit from this function */
-    graph = avfilter_graph_alloc();
-    if (!graph)
-        return AVERROR(ENOMEM);
-    graph->nb_threads = 1;
-
-    ret = graph_parse(graph, fgp->graph_desc, &inputs, &outputs, NULL);
-    if (ret < 0)
-        goto fail;
-
-    for (cur = inputs; cur; cur = cur->next)
-        init_input_filter(fg, cur);
-
-    for (cur = outputs; cur;) {
-        OutputFilter *const ofilter = ofilter_alloc(fg);
-
-        ofilter->linklabel = cur->name;
-        cur->name          = NULL;
-
-        ofilter->type    = avfilter_pad_get_type(cur->filter_ctx->output_pads,
-                                                                         cur->pad_idx);
-        ofilter->name    = describe_filter_link(fg, cur, 0);
-        cur = cur->next;
-    }
-
-fail:
-    avfilter_inout_free(&inputs);
-    avfilter_inout_free(&outputs);
-    avfilter_graph_free(&graph);
-    return ret;
+    // bind filtergraph inputs to input streams
+    for (int i = 0; i < fg->nb_inputs; i++)
+        init_input_filter(fg, fg->inputs[i]);
+    return 0;
 }
 
 static int insert_trim(int64_t start_time, int64_t duration,
@@ -1323,32 +1340,6 @@ int configure_filtergraph(FilterGraph *fg)
 
     if ((ret = graph_parse(fg->graph, graph_desc, &inputs, &outputs, hw_device)) < 0)
         goto fail;
-
-    if (simple && (!inputs || inputs->next || !outputs || outputs->next)) {
-        const char *num_inputs;
-        const char *num_outputs;
-        if (!outputs) {
-            num_outputs = "0";
-        } else if (outputs->next) {
-            num_outputs = ">1";
-        } else {
-            num_outputs = "1";
-        }
-        if (!inputs) {
-            num_inputs = "0";
-        } else if (inputs->next) {
-            num_inputs = ">1";
-        } else {
-            num_inputs = "1";
-        }
-        av_log(NULL, AV_LOG_ERROR, "Simple filtergraph '%s' was expected "
-               "to have exactly 1 input and 1 output."
-               " However, it had %s input(s) and %s output(s)."
-               " Please adjust, or use a complex filtergraph (-filter_complex) instead.\n",
-               graph_desc, num_inputs, num_outputs);
-        ret = AVERROR(EINVAL);
-        goto fail;
-    }
 
     for (cur = inputs, i = 0; cur; cur = cur->next, i++)
         if ((ret = configure_input_filter(fg, fg->inputs[i], cur)) < 0) {
