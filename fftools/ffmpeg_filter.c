@@ -41,6 +41,8 @@
 typedef struct FilterGraphPriv {
     FilterGraph fg;
 
+    int is_simple;
+
     const char *graph_desc;
 
     // frame for temporarily holding output from the filtergraph
@@ -353,6 +355,7 @@ FilterGraph *fg_create(char *graph_desc)
 int init_simple_filtergraph(InputStream *ist, OutputStream *ost)
 {
     FilterGraph *fg;
+    FilterGraphPriv *fgp;
     OutputFilter *ofilter;
     InputFilter  *ifilter;
     int ret;
@@ -360,6 +363,9 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost)
     fg = fg_create(NULL);
     if (!fg)
         report_and_exit(AVERROR(ENOMEM));
+    fgp = fgp_from_fg(fg);
+
+    fgp->is_simple = 1;
 
     ofilter      = ofilter_alloc(fg);
     ofilter->ost = ost;
@@ -1474,7 +1480,7 @@ int ifilter_has_all_input_formats(FilterGraph *fg)
 int filtergraph_is_simple(FilterGraph *fg)
 {
     FilterGraphPriv *fgp = fgp_from_fg(fg);
-    return !fgp->graph_desc;
+    return fgp->is_simple;
 }
 
 int reap_filters(int flush)
