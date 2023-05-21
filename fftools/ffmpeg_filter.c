@@ -464,10 +464,80 @@ static int ifilter_bind_ist(InputFilter *ifilter, InputStream *ist)
     return 0;
 }
 
+static void set_channel_layout(OutputFilter *f, OutputStream *ost)
+{
+    const AVCodec *c = ost->enc_ctx->codec;
+    int i, err;
+
+    if (ost->enc_ctx->ch_layout.order != AV_CHANNEL_ORDER_UNSPEC) {
+        /* Pass the layout through for all orders but UNSPEC */
+        err = av_channel_layout_copy(&f->ch_layout, &ost->enc_ctx->ch_layout);
+        if (err < 0)
+            report_and_exit(AVERROR(ENOMEM));
+        return;
+    }
+
+    /* Requested layout is of order UNSPEC */
+    if (!c->ch_layouts) {
+        /* Use the default native layout for the requested amount of channels when the
+           encoder doesn't have a list of supported layouts */
+        av_channel_layout_default(&f->ch_layout, ost->enc_ctx->ch_layout.nb_channels);
+        return;
+    }
+    /* Encoder has a list of supported layouts. Pick the first layout in it with the
+       same amount of channels as the requested layout */
+    for (i = 0; c->ch_layouts[i].nb_channels; i++) {
+        if (c->ch_layouts[i].nb_channels == ost->enc_ctx->ch_layout.nb_channels)
+            break;
+    }
+    if (c->ch_layouts[i].nb_channels) {
+        /* Use it if one is found */
+        err = av_channel_layout_copy(&f->ch_layout, &c->ch_layouts[i]);
+        if (err < 0)
+            report_and_exit(AVERROR(ENOMEM));
+        return;
+    }
+    /* If no layout for the amount of channels requested was found, use the default
+       native layout for it. */
+    av_channel_layout_default(&f->ch_layout, ost->enc_ctx->ch_layout.nb_channels);
+}
+
 void ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost)
 {
+    const AVCodec *c = ost->enc_ctx->codec;
+
     ofilter->ost = ost;
     av_freep(&ofilter->linklabel);
+
+    switch (ost->enc_ctx->codec_type) {
+    case AVMEDIA_TYPE_VIDEO:
+        ofilter->frame_rate = ost->frame_rate;
+        ofilter->width      = ost->enc_ctx->width;
+        ofilter->height     = ost->enc_ctx->height;
+        if (ost->enc_ctx->pix_fmt != AV_PIX_FMT_NONE) {
+            ofilter->format = ost->enc_ctx->pix_fmt;
+        } else {
+            ofilter->formats = c->pix_fmts;
+        }
+        break;
+    case AVMEDIA_TYPE_AUDIO:
+        if (ost->enc_ctx->sample_fmt != AV_SAMPLE_FMT_NONE) {
+            ofilter->format = ost->enc_ctx->sample_fmt;
+        } else {
+            ofilter->formats = c->sample_fmts;
+        }
+        if (ost->enc_ctx->sample_rate) {
+            ofilter->sample_rate = ost->enc_ctx->sample_rate;
+        } else {
+            ofilter->sample_rates = c->supported_samplerates;
+        }
+        if (ost->enc_ctx->ch_layout.nb_channels) {
+            set_channel_layout(ofilter, ost);
+        } else if (c->ch_layouts) {
+            ofilter->ch_layouts = c->ch_layouts;
+        }
+        break;
+    }
 }
 
 static InputFilter *ifilter_alloc(FilterGraph *fg)

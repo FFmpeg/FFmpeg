@@ -1886,44 +1886,6 @@ static void of_add_metadata(OutputFile *of, AVFormatContext *oc,
     }
 }
 
-static void set_channel_layout(OutputFilter *f, OutputStream *ost)
-{
-    const AVCodec *c = ost->enc_ctx->codec;
-    int i, err;
-
-    if (ost->enc_ctx->ch_layout.order != AV_CHANNEL_ORDER_UNSPEC) {
-        /* Pass the layout through for all orders but UNSPEC */
-        err = av_channel_layout_copy(&f->ch_layout, &ost->enc_ctx->ch_layout);
-        if (err < 0)
-            report_and_exit(AVERROR(ENOMEM));
-        return;
-    }
-
-    /* Requested layout is of order UNSPEC */
-    if (!c->ch_layouts) {
-        /* Use the default native layout for the requested amount of channels when the
-           encoder doesn't have a list of supported layouts */
-        av_channel_layout_default(&f->ch_layout, ost->enc_ctx->ch_layout.nb_channels);
-        return;
-    }
-    /* Encoder has a list of supported layouts. Pick the first layout in it with the
-       same amount of channels as the requested layout */
-    for (i = 0; c->ch_layouts[i].nb_channels; i++) {
-        if (c->ch_layouts[i].nb_channels == ost->enc_ctx->ch_layout.nb_channels)
-            break;
-    }
-    if (c->ch_layouts[i].nb_channels) {
-        /* Use it if one is found */
-        err = av_channel_layout_copy(&f->ch_layout, &c->ch_layouts[i]);
-        if (err < 0)
-            report_and_exit(AVERROR(ENOMEM));
-        return;
-    }
-    /* If no layout for the amount of channels requested was found, use the default
-       native layout for it. */
-    av_channel_layout_default(&f->ch_layout, ost->enc_ctx->ch_layout.nb_channels);
-}
-
 static int copy_chapters(InputFile *ifile, OutputFile *ofile, AVFormatContext *os,
                          int copy_metadata)
 {
@@ -2457,45 +2419,6 @@ int of_open(const OptionsContext *o, const char *filename)
 
     /* check if all codec options have been used */
     validate_enc_avopt(mux, o->g->codec_opts);
-
-    for (int i = 0; i < of->nb_streams; i++) {
-        OutputStream *ost = of->streams[i];
-
-        /* set the filter output constraints */
-        if (ost->filter) {
-            const AVCodec *c = ost->enc_ctx->codec;
-            OutputFilter *f = ost->filter;
-            switch (ost->enc_ctx->codec_type) {
-            case AVMEDIA_TYPE_VIDEO:
-                f->frame_rate = ost->frame_rate;
-                f->width      = ost->enc_ctx->width;
-                f->height     = ost->enc_ctx->height;
-                if (ost->enc_ctx->pix_fmt != AV_PIX_FMT_NONE) {
-                    f->format = ost->enc_ctx->pix_fmt;
-                } else {
-                    f->formats = c->pix_fmts;
-                }
-                break;
-            case AVMEDIA_TYPE_AUDIO:
-                if (ost->enc_ctx->sample_fmt != AV_SAMPLE_FMT_NONE) {
-                    f->format = ost->enc_ctx->sample_fmt;
-                } else {
-                    f->formats = c->sample_fmts;
-                }
-                if (ost->enc_ctx->sample_rate) {
-                    f->sample_rate = ost->enc_ctx->sample_rate;
-                } else {
-                    f->sample_rates = c->supported_samplerates;
-                }
-                if (ost->enc_ctx->ch_layout.nb_channels) {
-                    set_channel_layout(f, ost);
-                } else if (c->ch_layouts) {
-                    f->ch_layouts = c->ch_layouts;
-                }
-                break;
-            }
-        }
-    }
 
     /* check filename in case of an image number is expected */
     if (oc->oformat->flags & AVFMT_NEEDNUMBER && !av_filename_number_test(oc->url)) {
