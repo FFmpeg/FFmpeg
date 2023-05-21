@@ -464,6 +464,12 @@ static int ifilter_bind_ist(InputFilter *ifilter, InputStream *ist)
     return 0;
 }
 
+void ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost)
+{
+    ofilter->ost = ost;
+    av_freep(&ofilter->linklabel);
+}
+
 static InputFilter *ifilter_alloc(FilterGraph *fg)
 {
     InputFilterPriv *ifp = allocate_array_elem(&fg->inputs, sizeof(*ifp),
@@ -624,13 +630,13 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost,
         return AVERROR(EINVAL);
     }
 
-    fg->outputs[0]->ost = ost;
-
     ost->filter = fg->outputs[0];
 
     ret = ifilter_bind_ist(fg->inputs[0], ist);
     if (ret < 0)
         return ret;
+
+    ofilter_bind_ost(fg->outputs[0], ost);
 
     return 0;
 }

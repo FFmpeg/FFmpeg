@@ -1259,8 +1259,7 @@ static OutputStream *ost_add(Muxer *mux, const OptionsContext *o,
         (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO)) {
         if (ofilter) {
             ost->filter       = ofilter;
-            ofilter->ost      = ost;
-            av_freep(&ofilter->linklabel);
+            ofilter_bind_ost(ofilter, ost);
         } else {
             ret = init_simple_filtergraph(ost->ist, ost, filters);
             if (ret < 0) {
