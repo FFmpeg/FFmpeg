@@ -504,6 +504,7 @@ static void set_channel_layout(OutputFilter *f, OutputStream *ost)
 
 void ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost)
 {
+    FilterGraph  *fg = ofilter->graph;
     const AVCodec *c = ost->enc_ctx->codec;
 
     ofilter->ost = ost;
@@ -537,6 +538,23 @@ void ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost)
             ofilter->ch_layouts = c->ch_layouts;
         }
         break;
+    }
+
+    // if we have all input parameters and all outputs are bound,
+    // the graph can now be configured
+    if (ifilter_has_all_input_formats(fg)) {
+        int ret;
+
+        for (int i = 0; i < fg->nb_outputs; i++)
+            if (!fg->outputs[i]->ost)
+                return;
+
+        ret = configure_filtergraph(fg);
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Error configuring filter graph: %s\n",
+                   av_err2str(ret));
+            exit_program(1);
+        }
     }
 }
 
