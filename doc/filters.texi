@@ -25154,6 +25154,10 @@ Set one of available transition effects:
 @item zoomin
 @item fadefast
 @item fadeslow
+@item hlwind
+@item hrwind
+@item vuwind
+@item vdwind
 @end table
 Default transition effect is fade.
 

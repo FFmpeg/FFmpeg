@@ -76,6 +76,10 @@ enum XFadeTransitions {
     ZOOMIN,
     FADEFAST,
     FADESLOW,
+    HLWIND,
+    HRWIND,
+    VUWIND,
+    VDWIND,
     NB_TRANSITIONS,
 };
 
@@ -197,6 +201,10 @@ static const AVOption xfade_options[] = {
     {   "zoomin",     "zoom in transition",     0, AV_OPT_TYPE_CONST, {.i64=ZOOMIN},     0, 0, FLAGS, "transition" },
     {   "fadefast",   "fast fade transition",   0, AV_OPT_TYPE_CONST, {.i64=FADEFAST},   0, 0, FLAGS, "transition" },
     {   "fadeslow",   "slow fade transition",   0, AV_OPT_TYPE_CONST, {.i64=FADESLOW},   0, 0, FLAGS, "transition" },
+    {   "hlwind",     "hl wind transition",     0, AV_OPT_TYPE_CONST, {.i64=HLWIND},     0, 0, FLAGS, "transition" },
+    {   "hrwind",     "hr wind transition",     0, AV_OPT_TYPE_CONST, {.i64=HRWIND},     0, 0, FLAGS, "transition" },
+    {   "vuwind",     "vu wind transition",     0, AV_OPT_TYPE_CONST, {.i64=VUWIND},     0, 0, FLAGS, "transition" },
+    {   "vdwind",     "vd wind transition",     0, AV_OPT_TYPE_CONST, {.i64=VDWIND},     0, 0, FLAGS, "transition" },
     { "duration", "set cross fade duration", OFFSET(duration), AV_OPT_TYPE_DURATION, {.i64=1000000}, 0, 60000000, FLAGS },
     { "offset",   "set cross fade start relative to first input stream", OFFSET(offset), AV_OPT_TYPE_DURATION, {.i64=0}, INT64_MIN, INT64_MAX, FLAGS },
     { "expr",   "set expression for custom transition", OFFSET(custom_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
@@ -1738,6 +1746,68 @@ static void fadeslow##name##_transition(AVFilterContext *ctx,                   
 FADESLOW_TRANSITION(8, uint8_t, 1)
 FADESLOW_TRANSITION(16, uint16_t, 2)
 
+#define HWIND_TRANSITION(name, z, type, div, expr)                                   \
+static void h##z##wind##name##_transition(AVFilterContext *ctx,                      \
+                            const AVFrame *a, const AVFrame *b, AVFrame *out,        \
+                            float progress,                                          \
+                            int slice_start, int slice_end, int jobnr)               \
+{                                                                                    \
+    XFadeContext *s = ctx->priv;                                                     \
+    const int width = out->width;                                                    \
+                                                                                     \
+    for (int y = slice_start; y < slice_end; y++) {                                  \
+        const float r = frand(0, y);                                                 \
+        for (int x = 0; x < width; x++) {                                            \
+            const float fx = expr x / (float)width;                                  \
+            for (int p = 0; p < s->nb_planes; p++) {                                 \
+                const type *xf0 = (const type *)(a->data[p] + y * a->linesize[p]);   \
+                const type *xf1 = (const type *)(b->data[p] + y * b->linesize[p]);   \
+                type *dst = (type *)(out->data[p] + y * out->linesize[p]);           \
+                                                                                     \
+                dst[x] = mix(xf1[x], xf0[x], smoothstep(0.f,-0.2f,  fx * (1.f - 0.2f)\
+                                                        + 0.2f * r - (1.f - progress)\
+                                                        * (1.f + 0.2f)));            \
+            }                                                                        \
+        }                                                                            \
+    }                                                                                \
+}
+
+HWIND_TRANSITION(8,  l, uint8_t,  1, 1.f - )
+HWIND_TRANSITION(16, l, uint16_t, 2, 1.f - )
+HWIND_TRANSITION(8,  r, uint8_t,  1, )
+HWIND_TRANSITION(16, r, uint16_t, 2, )
+
+#define VWIND_TRANSITION(name, z, type, div, expr)                                   \
+static void v##z##wind##name##_transition(AVFilterContext *ctx,                      \
+                            const AVFrame *a, const AVFrame *b, AVFrame *out,        \
+                            float progress,                                          \
+                            int slice_start, int slice_end, int jobnr)               \
+{                                                                                    \
+    XFadeContext *s = ctx->priv;                                                     \
+    const int width = out->width;                                                    \
+                                                                                     \
+    for (int y = slice_start; y < slice_end; y++) {                                  \
+        const float fy = expr y / (float)out->height;                                \
+        for (int x = 0; x < width; x++) {                                            \
+            const float r = frand(x, 0);                                             \
+            for (int p = 0; p < s->nb_planes; p++) {                                 \
+                const type *xf0 = (const type *)(a->data[p] + y * a->linesize[p]);   \
+                const type *xf1 = (const type *)(b->data[p] + y * b->linesize[p]);   \
+                type *dst = (type *)(out->data[p] + y * out->linesize[p]);           \
+                                                                                     \
+                dst[x] = mix(xf1[x], xf0[x], smoothstep(0.f,-0.2f, fy * (1.f - 0.2f) \
+                                                        + 0.2f * r - (1.f - progress)\
+                                                        * (1.f + 0.2f)));            \
+            }                                                                        \
+        }                                                                            \
+    }                                                                                \
+}
+
+VWIND_TRANSITION(8,  u, uint8_t,  1, 1.f - )
+VWIND_TRANSITION(16, u, uint16_t, 2, 1.f - )
+VWIND_TRANSITION(8,  d, uint8_t,  1, )
+VWIND_TRANSITION(16, d, uint16_t, 2, )
+
 static inline double getpix(void *priv, double x, double y, int plane, int nb)
 {
     XFadeContext *s = priv;
@@ -1886,6 +1956,10 @@ static int config_output(AVFilterLink *outlink)
     case ZOOMIN:     s->transitionf = s->depth <= 8 ? zoomin8_transition     : zoomin16_transition;     break;
     case FADEFAST:   s->transitionf = s->depth <= 8 ? fadefast8_transition   : fadefast16_transition;   break;
     case FADESLOW:   s->transitionf = s->depth <= 8 ? fadeslow8_transition   : fadeslow16_transition;   break;
+    case HLWIND:     s->transitionf = s->depth <= 8 ? hlwind8_transition     : hlwind16_transition;     break;
+    case HRWIND:     s->transitionf = s->depth <= 8 ? hrwind8_transition     : hrwind16_transition;     break;
+    case VUWIND:     s->transitionf = s->depth <= 8 ? vuwind8_transition     : vuwind16_transition;     break;
+    case VDWIND:     s->transitionf = s->depth <= 8 ? vdwind8_transition     : vdwind16_transition;     break;
     default: return AVERROR_BUG;
     }
 
