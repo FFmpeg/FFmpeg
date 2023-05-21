@@ -37,7 +37,6 @@ typedef struct FITSContext {
     const AVClass *class;
     AVRational framerate;
     int first_image;
-    int64_t pts;
 } FITSContext;
 
 static int fits_probe(const AVProbeData *p)
@@ -61,7 +60,6 @@ static int fits_read_header(AVFormatContext *s)
     st->codecpar->codec_id = AV_CODEC_ID_FITS;
 
     avpriv_set_pts_info(st, 64, fits->framerate.den, fits->framerate.num);
-    fits->pts = 0;
     fits->first_image = 1;
     return 0;
 }
@@ -196,13 +194,11 @@ static int fits_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->size = avbuf.len - 80;
     av_freep(&buf);
     ret = avio_read(s->pb, pkt->data + pkt->size, size);
-    if (ret < 0) {
+    if (ret < 0)
         return ret;
-    }
 
     pkt->size += ret;
-    pkt->pts = fits->pts;
-    fits->pts++;
+    pkt->duration = 1;
 
     return 0;
 
