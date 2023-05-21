@@ -1260,7 +1260,7 @@ static OutputStream *ost_add(Muxer *mux, const OptionsContext *o,
         if (ofilter) {
             ost->filter       = ofilter;
             ofilter->ost      = ost;
-            avfilter_inout_free(&ofilter->out_tmp);
+            av_freep(&ofilter->linklabel);
         } else {
             ret = init_simple_filtergraph(ost->ist, ost, filters);
             if (ret < 0) {
@@ -1451,8 +1451,8 @@ static void map_manual(Muxer *mux, const OptionsContext *o, const StreamMap *map
         for (j = 0; j < nb_filtergraphs; j++) {
             fg = filtergraphs[j];
             for (k = 0; k < fg->nb_outputs; k++) {
-                AVFilterInOut *out = fg->outputs[k]->out_tmp;
-                if (out && !strcmp(out->name, map->linklabel)) {
+                const char *linklabel = fg->outputs[k]->linklabel;
+                if (linklabel && !strcmp(linklabel, map->linklabel)) {
                     ofilter = fg->outputs[k];
                     goto loop_end;
                 }
@@ -1562,7 +1562,7 @@ static void create_streams(Muxer *mux, const OptionsContext *o)
         for (int j = 0; j < fg->nb_outputs; j++) {
             OutputFilter *ofilter = fg->outputs[j];
 
-            if (!ofilter->out_tmp || ofilter->out_tmp->name)
+            if (ofilter->linklabel || ofilter->ost)
                 continue;
 
             switch (ofilter->type) {

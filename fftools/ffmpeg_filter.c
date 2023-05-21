@@ -324,7 +324,7 @@ void fg_free(FilterGraph **pfg)
     for (int j = 0; j < fg->nb_outputs; j++) {
         OutputFilter *ofilter = fg->outputs[j];
 
-        avfilter_inout_free(&ofilter->out_tmp);
+        av_freep(&ofilter->linklabel);
         av_freep(&ofilter->name);
         av_channel_layout_uninit(&ofilter->ch_layout);
         av_freep(&fg->outputs[j]);
@@ -661,16 +661,18 @@ int init_complex_filtergraph(FilterGraph *fg)
     for (cur = outputs; cur;) {
         OutputFilter *const ofilter = ofilter_alloc(fg);
 
-        ofilter->out_tmp = cur;
+        ofilter->linklabel = cur->name;
+        cur->name          = NULL;
+
         ofilter->type    = avfilter_pad_get_type(cur->filter_ctx->output_pads,
                                                                          cur->pad_idx);
         ofilter->name    = describe_filter_link(fg, cur, 0);
         cur = cur->next;
-        ofilter->out_tmp->next = NULL;
     }
 
 fail:
     avfilter_inout_free(&inputs);
+    avfilter_inout_free(&outputs);
     avfilter_graph_free(&graph);
     return ret;
 }

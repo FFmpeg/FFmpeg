@@ -289,8 +289,10 @@ typedef struct OutputFilter {
     struct FilterGraph  *graph;
     uint8_t             *name;
 
-    /* temporary storage until stream maps are processed */
-    AVFilterInOut       *out_tmp;
+    /* for filters that are not yet bound to an output stream,
+     * this stores the output linklabel, if any */
+    uint8_t             *linklabel;
+
     enum AVMediaType     type;
 
     /* desired output stream properties */
