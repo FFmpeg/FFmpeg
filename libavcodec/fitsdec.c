@@ -319,6 +319,7 @@ static const AVClass fits_decoder_class = {
     .item_name  = av_default_item_name,
     .option     = fits_options,
     .version    = LIBAVUTIL_VERSION_INT,
+    .category   = AV_CLASS_CATEGORY_DECODER,
 };
 
 const FFCodec ff_fits_decoder = {
