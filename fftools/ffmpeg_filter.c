@@ -258,7 +258,24 @@ static OutputFilter *ofilter_alloc(FilterGraph *fg)
     return ofilter;
 }
 
-static InputFilter *ifilter_alloc(FilterGraph *fg, InputStream *ist)
+static int ifilter_bind_ist(InputFilter *ifilter, InputStream *ist)
+{
+    InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
+    int ret;
+
+    ret = ist_filter_add(ist, ifilter, filtergraph_is_simple(ifilter->graph));
+    if (ret < 0)
+        return ret;
+
+    ifp->ist             = ist;
+    ifp->type_src        = ist->st->codecpar->codec_type;
+    ifp->type            = ifp->type_src == AVMEDIA_TYPE_SUBTITLE ?
+                           AVMEDIA_TYPE_VIDEO : ifp->type_src;
+
+    return 0;
+}
+
+static InputFilter *ifilter_alloc(FilterGraph *fg)
 {
     InputFilterPriv *ifp = allocate_array_elem(&fg->inputs, sizeof(*ifp),
                                                &fg->nb_inputs);
@@ -272,10 +289,6 @@ static InputFilter *ifilter_alloc(FilterGraph *fg, InputStream *ist)
 
     ifp->format          = -1;
     ifp->fallback.format = -1;
-    ifp->ist             = ist;
-    ifp->type_src        = ist->st->codecpar->codec_type;
-    ifp->type            = ifp->type_src == AVMEDIA_TYPE_SUBTITLE ?
-                           AVMEDIA_TYPE_VIDEO : ifp->type_src;
 
     ifp->frame_queue = av_fifo_alloc2(8, sizeof(AVFrame*), AV_FIFO_FLAG_AUTO_GROW);
     if (!ifp->frame_queue)
@@ -373,9 +386,9 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost,
 
     ost->filter = ofilter;
 
-    ifilter = ifilter_alloc(fg, ist);
+    ifilter = ifilter_alloc(fg);
 
-    ret = ist_filter_add(ist, ifilter, 1);
+    ret = ifilter_bind_ist(ifilter, ist);
     if (ret < 0)
         return ret;
 
@@ -455,10 +468,10 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
     }
     av_assert0(ist);
 
-    ifilter         = ifilter_alloc(fg, ist);
+    ifilter         = ifilter_alloc(fg);
     ifilter->name   = describe_filter_link(fg, in, 1);
 
-    ret = ist_filter_add(ist, ifilter, 0);
+    ret = ifilter_bind_ist(ifilter, ist);
     if (ret < 0) {
         av_log(NULL, AV_LOG_ERROR,
                "Error binding an input stream to complex filtergraph input %s.\n",
