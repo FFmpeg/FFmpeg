@@ -221,6 +221,7 @@ static const AVClass fits_demuxer_class = {
     .item_name  = av_default_item_name,
     .option     = fits_options,
     .version    = LIBAVUTIL_VERSION_INT,
+    .category   = AV_CLASS_CATEGORY_DEMUXER,
 };
 
 const AVInputFormat ff_fits_demuxer = {
