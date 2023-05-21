@@ -163,11 +163,18 @@ static int query_formats(AVFilterContext *ctx)
 
 static void clear_image(GraphMonitorContext *s, AVFrame *out, AVFilterLink *outlink)
 {
+    const int h = out->height;
+    const int w = out->width;
+    uint8_t *dst = out->data[0];
     int bg = AV_RN32(s->bg);
 
-    for (int i = 0; i < out->height; i++)
-        for (int j = 0; j < out->width; j++)
-            AV_WN32(out->data[0] + i * out->linesize[0] + j * 4, bg);
+    for (int j = 0; j < w; j++)
+        AV_WN32(dst + j * 4, bg);
+    dst += out->linesize[0];
+    for (int i = 1; i < h; i++) {
+        memcpy(dst, out->data[0], w * 4);
+        dst += out->linesize[0];
+    }
 }
 
 static void drawtext(AVFrame *pic, int x, int y, const char *txt, uint8_t *color)
@@ -250,9 +257,11 @@ static int draw_items(AVFilterContext *ctx,
     GraphMonitorContext *s = ctx->priv;
     int64_t previous_pts_us = s->cache[s->cache_index].previous_pts_us;
     int64_t current_pts_us = l->current_pts_us;
+    const int flags = s->flags;
+    const int mode = s->mode;
     char buffer[1024] = { 0 };
 
-    if (s->flags & FLAG_FMT) {
+    if (flags & FLAG_FMT) {
         if (l->type == AVMEDIA_TYPE_VIDEO) {
             snprintf(buffer, sizeof(buffer)-1, " | format: %s",
                      av_get_pix_fmt_name(l->format));
@@ -263,7 +272,7 @@ static int draw_items(AVFilterContext *ctx,
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
     }
-    if (s->flags & FLAG_SIZE) {
+    if (flags & FLAG_SIZE) {
         if (l->type == AVMEDIA_TYPE_VIDEO) {
             snprintf(buffer, sizeof(buffer)-1, " | size: %dx%d", l->w, l->h);
         } else if (l->type == AVMEDIA_TYPE_AUDIO) {
@@ -272,7 +281,7 @@ static int draw_items(AVFilterContext *ctx,
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
     }
-    if (s->flags & FLAG_RATE) {
+    if (flags & FLAG_RATE) {
         if (l->type == AVMEDIA_TYPE_VIDEO) {
             snprintf(buffer, sizeof(buffer)-1, " | fps: %d/%d", l->frame_rate.num, l->frame_rate.den);
         } else if (l->type == AVMEDIA_TYPE_AUDIO) {
@@ -281,12 +290,12 @@ static int draw_items(AVFilterContext *ctx,
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
     }
-    if (s->flags & FLAG_TB) {
+    if (flags & FLAG_TB) {
         snprintf(buffer, sizeof(buffer)-1, " | tb: %d/%d", l->time_base.num, l->time_base.den);
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
     }
-    if ((s->flags & FLAG_QUEUE) && (!(s->mode & MODE_NOZERO) || frames)) {
+    if ((flags & FLAG_QUEUE) && (!(mode & MODE_NOZERO) || frames)) {
         snprintf(buffer, sizeof(buffer)-1, " | queue: ");
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
@@ -294,62 +303,62 @@ static int draw_items(AVFilterContext *ctx,
         drawtext(out, xpos, ypos, buffer, frames > 0 ? frames >= 10 ? frames >= 50 ? s->red : s->yellow : s->green : s->white);
         xpos += strlen(buffer) * 8;
     }
-    if ((s->flags & FLAG_FCIN) && (!(s->mode & MODE_NOZERO) || l->frame_count_in)) {
+    if ((flags & FLAG_FCIN) && (!(mode & MODE_NOZERO) || l->frame_count_in)) {
         snprintf(buffer, sizeof(buffer)-1, " | in: %"PRId64, l->frame_count_in);
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
     }
-    if ((s->flags & FLAG_FCOUT) && (!(s->mode & MODE_NOZERO) || l->frame_count_out)) {
+    if ((flags & FLAG_FCOUT) && (!(mode & MODE_NOZERO) || l->frame_count_out)) {
         snprintf(buffer, sizeof(buffer)-1, " | out: %"PRId64, l->frame_count_out);
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
     }
-    if ((s->flags & FLAG_FC_DELTA) && (!(s->mode & MODE_NOZERO) || (l->frame_count_in - l->frame_count_out))) {
+    if ((flags & FLAG_FC_DELTA) && (!(mode & MODE_NOZERO) || (l->frame_count_in - l->frame_count_out))) {
         snprintf(buffer, sizeof(buffer)-1, " | delta: %"PRId64, l->frame_count_in - l->frame_count_out);
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
     }
-    if ((s->flags & FLAG_SCIN) && (!(s->mode & MODE_NOZERO) || l->sample_count_in)) {
+    if ((flags & FLAG_SCIN) && (!(mode & MODE_NOZERO) || l->sample_count_in)) {
         snprintf(buffer, sizeof(buffer)-1, " | sin: %"PRId64, l->sample_count_in);
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
     }
-    if ((s->flags & FLAG_SCOUT) && (!(s->mode & MODE_NOZERO) || l->sample_count_out)) {
+    if ((flags & FLAG_SCOUT) && (!(mode & MODE_NOZERO) || l->sample_count_out)) {
         snprintf(buffer, sizeof(buffer)-1, " | sout: %"PRId64, l->sample_count_out);
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
     }
-    if ((s->flags & FLAG_SC_DELTA) && (!(s->mode & MODE_NOZERO) || (l->sample_count_in - l->sample_count_out))) {
+    if ((flags & FLAG_SC_DELTA) && (!(mode & MODE_NOZERO) || (l->sample_count_in - l->sample_count_out))) {
         snprintf(buffer, sizeof(buffer)-1, " | sdelta: %"PRId64, l->sample_count_in - l->sample_count_out);
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
     }
-    if ((s->flags & FLAG_PTS) && (!(s->mode & MODE_NOZERO) || current_pts_us)) {
+    if ((flags & FLAG_PTS) && (!(mode & MODE_NOZERO) || current_pts_us)) {
         snprintf(buffer, sizeof(buffer)-1, " | pts: %s", av_ts2str(current_pts_us));
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
     }
-    if ((s->flags & FLAG_PTS_DELTA) && (!(s->mode & MODE_NOZERO) || (current_pts_us - previous_pts_us))) {
+    if ((flags & FLAG_PTS_DELTA) && (!(mode & MODE_NOZERO) || (current_pts_us - previous_pts_us))) {
         snprintf(buffer, sizeof(buffer)-1, " | pts_delta: %s", av_ts2str(current_pts_us - previous_pts_us));
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
     }
-    if ((s->flags & FLAG_TIME) && (!(s->mode & MODE_NOZERO) || current_pts_us)) {
+    if ((flags & FLAG_TIME) && (!(mode & MODE_NOZERO) || current_pts_us)) {
         snprintf(buffer, sizeof(buffer)-1, " | time: %s", av_ts2timestr(current_pts_us, &AV_TIME_BASE_Q));
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
     }
-    if ((s->flags & FLAG_TIME_DELTA) && (!(s->mode & MODE_NOZERO) || (current_pts_us - previous_pts_us))) {
+    if ((flags & FLAG_TIME_DELTA) && (!(mode & MODE_NOZERO) || (current_pts_us - previous_pts_us))) {
         snprintf(buffer, sizeof(buffer)-1, " | time_delta: %s", av_ts2timestr(current_pts_us - previous_pts_us, &AV_TIME_BASE_Q));
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
     }
-    if ((s->flags & FLAG_EOF) && ff_outlink_get_status(l)) {
+    if ((flags & FLAG_EOF) && ff_outlink_get_status(l)) {
         snprintf(buffer, sizeof(buffer)-1, " | eof");
         drawtext(out, xpos, ypos, buffer, s->blue);
         xpos += strlen(buffer) * 8;
     }
-    if ((s->flags & FLAG_DISABLED) && filter->is_disabled) {
+    if ((flags & FLAG_DISABLED) && filter->is_disabled) {
         snprintf(buffer, sizeof(buffer)-1, " | off");
         drawtext(out, xpos, ypos, buffer, s->gray);
         xpos += strlen(buffer) * 8;
