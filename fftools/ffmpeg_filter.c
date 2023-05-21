@@ -352,7 +352,8 @@ FilterGraph *fg_create(char *graph_desc)
     return fg;
 }
 
-int init_simple_filtergraph(InputStream *ist, OutputStream *ost)
+int init_simple_filtergraph(InputStream *ist, OutputStream *ost,
+                            char *graph_desc)
 {
     FilterGraph *fg;
     FilterGraphPriv *fgp;
@@ -360,7 +361,7 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost)
     InputFilter  *ifilter;
     int ret;
 
-    fg = fg_create(NULL);
+    fg = fg_create(graph_desc);
     if (!fg)
         report_and_exit(AVERROR(ENOMEM));
     fgp = fgp_from_fg(fg);
@@ -1263,8 +1264,7 @@ int configure_filtergraph(FilterGraph *fg)
     AVBufferRef *hw_device;
     AVFilterInOut *inputs, *outputs, *cur;
     int ret, i, simple = filtergraph_is_simple(fg);
-    const char *graph_desc = simple ? fg->outputs[0]->ost->avfilter :
-                                      fgp->graph_desc;
+    const char *graph_desc = fgp->graph_desc;
 
     cleanup_filtergraph(fg);
     if (!(fg->graph = avfilter_graph_alloc()))

@@ -853,7 +853,6 @@ static void ost_free(OutputStream **post)
     av_freep(&ost->kf.pts);
     av_expr_free(ost->kf.pexpr);
 
-    av_freep(&ost->avfilter);
     av_freep(&ost->logfile_prefix);
     av_freep(&ost->apad);
 

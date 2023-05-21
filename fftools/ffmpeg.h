@@ -590,7 +590,6 @@ typedef struct OutputStream {
     FILE *logfile;
 
     OutputFilter *filter;
-    char *avfilter;
 
     AVDictionary *encoder_opts;
     AVDictionary *sws_dict;
@@ -737,7 +736,8 @@ int parse_and_set_vsync(const char *arg, int *vsync_var, int file_idx, int st_id
 int configure_filtergraph(FilterGraph *fg);
 void check_filter_outputs(void);
 int filtergraph_is_simple(FilterGraph *fg);
-int init_simple_filtergraph(InputStream *ist, OutputStream *ost);
+int init_simple_filtergraph(InputStream *ist, OutputStream *ost,
+                            char *graph_desc);
 int init_complex_filtergraph(FilterGraph *fg);
 
 void sub2video_update(InputStream *ist, int64_t heartbeat_pts, AVSubtitle *sub);

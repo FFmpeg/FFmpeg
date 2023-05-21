@@ -432,7 +432,7 @@ static MuxStream *mux_stream_alloc(Muxer *mux, enum AVMediaType type)
 }
 
 static int ost_get_filters(const OptionsContext *o, AVFormatContext *oc,
-                           OutputStream *ost)
+                           OutputStream *ost, char **dst)
 {
     const char *filters = NULL, *filters_script = NULL;
 
@@ -470,12 +470,12 @@ static int ost_get_filters(const OptionsContext *o, AVFormatContext *oc,
     }
 
     if (filters_script)
-        ost->avfilter = file_read(filters_script);
+        *dst = file_read(filters_script);
     else if (filters)
-        ost->avfilter = av_strdup(filters);
+        *dst = av_strdup(filters);
     else
-        ost->avfilter = av_strdup(ost->type == AVMEDIA_TYPE_VIDEO ? "null" : "anull");
-    return ost->avfilter ? 0 : AVERROR(ENOMEM);
+        *dst = av_strdup(ost->type == AVMEDIA_TYPE_VIDEO ? "null" : "anull");
+    return *dst ? 0 : AVERROR(ENOMEM);
 }
 
 static void parse_matrix_coeffs(void *logctx, uint16_t *dest, const char *str)
@@ -995,7 +995,7 @@ static OutputStream *ost_add(Muxer *mux, const OptionsContext *o,
     AVStream *st = avformat_new_stream(oc, NULL);
     int ret = 0;
     const char *bsfs = NULL, *time_base = NULL;
-    char *next, *codec_tag = NULL;
+    char *filters = NULL, *next, *codec_tag = NULL;
     double qscale = -1;
     int i;
 
@@ -1250,7 +1250,7 @@ static OutputStream *ost_add(Muxer *mux, const OptionsContext *o,
     }
 
     if (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO) {
-        ret = ost_get_filters(o, oc, ost);
+        ret = ost_get_filters(o, oc, ost, &filters);
         if (ret < 0)
             exit_program(1);
     }
@@ -1262,7 +1262,7 @@ static OutputStream *ost_add(Muxer *mux, const OptionsContext *o,
             ofilter->ost      = ost;
             avfilter_inout_free(&ofilter->out_tmp);
         } else {
-            ret = init_simple_filtergraph(ost->ist, ost);
+            ret = init_simple_filtergraph(ost->ist, ost, filters);
             if (ret < 0) {
                 av_log(ost, AV_LOG_ERROR,
                        "Error initializing a simple filtergraph\n");
