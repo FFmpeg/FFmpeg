@@ -104,6 +104,7 @@ static int fits_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     bytes_left = padded_data_size - data_size;
     memset(bytestream, 0, bytes_left);
 
+    pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
 
     return 0;
