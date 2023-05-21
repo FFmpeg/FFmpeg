@@ -1195,6 +1195,11 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt,
                                      st->time_base,
                                      AV_ROUND_DOWN);
             }
+        } else if ((s->iformat->flags & AVFMT_NOTIMESTAMPS) && st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+            if (st->time_base.num > 0 && st->time_base.den > 0 &&
+                sti->parser->duration) {
+                out_pkt->duration = sti->parser->duration;
+            }
         }
 
         out_pkt->stream_index = st->index;
