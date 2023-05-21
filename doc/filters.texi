@@ -16461,42 +16461,20 @@ For tunable tone mapping functions, this parameter can be used to fine-tune the
 curve behavior. Refer to the documentation of @code{tonemapping}. The default
 value of @code{0.0} is replaced by the curve's preferred default setting.
 
-@item tonemapping_mode
-This option determines how the tone mapping function specified by
-@code{tonemapping} is applied to the colors in a scene. Possible values are:
-@table @samp
-@item auto
-Automatic selection based on internal heuristics. This is the default.
-@item rgb
-Apply the function per-channel in the RGB colorspace.
-Per-channel tone-mapping in RGB. Guarantees no clipping and heavily desaturates
-the output, but distorts the colors quite significantly. Very similar to the
-"Hollywood" look and feel.
-@item max
-Tone-mapping is performed on the brightest component found in the signal. Good
-at preserving details in highlights, but has a tendency to crush blacks.
-@item hybrid
-Tone-map per-channel for highlights and linearly (luma-based) for
-midtones/shadows, based on a fixed gamma @code{2.4} coefficient curve.
-@item luma
-Tone-map linearly on the luma component (CIE Y), and adjust (desaturate) the
-chromaticities to compensate using a simple constant factor. This is
-essentially the mode used in ITU-R BT.2446 method A.
-@end table
-
 @item inverse_tonemapping
 If enabled, this filter will also attempt stretching SDR signals to fill HDR
 output color volumes. Disabled by default.
-
-@item tonemapping_crosstalk
-Extra tone-mapping crosstalk factor, between @code{0.0} and @code{0.3}. This
-can help reduce issues tone-mapping certain bright spectral colors. Defaults to
-@code{0.04}.
 
 @item tonemapping_lut_size
 Size of the tone-mapping LUT, between @code{2} and @code{1024}. Defaults to
 @code{256}. Note that this figure is squared when combined with
 @code{peak_detect}.
+
+@item hybrid_mix
+If nonzero, this much of the upper range of the tone-mapped result is smoothly
+mixed with a per-channel (LMS) tone-mapped version. Helps avoid unnatural
+blown-out highlights when tone-mapping very bright, strongly saturated colors.
+Defaults to @code{0.2}.
 @end table
 
 @subsubsection Dithering

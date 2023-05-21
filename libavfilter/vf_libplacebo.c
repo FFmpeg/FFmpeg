@@ -204,10 +204,9 @@ typedef struct LibplaceboContext {
     int gamut_mode;
     int tonemapping;
     float tonemapping_param;
-    int tonemapping_mode;
     int inverse_tonemapping;
-    float crosstalk;
     int tonemapping_lut_size;
+    float hybrid_mix;
 
 #if FF_API_LIBPLACEBO_OPTS
     /* for backwards compatibility */
@@ -217,6 +216,8 @@ typedef struct LibplaceboContext {
     int gamut_clipping;
     int force_icc_lut;
     int intent;
+    int tonemapping_mode;
+    float crosstalk;
 #endif
 
     /* pl_dither_params */
@@ -359,24 +360,23 @@ static int update_settings(AVFilterContext *ctx)
 {
     int err = 0;
     LibplaceboContext *s = ctx->priv;
-    enum pl_tone_map_mode tonemapping_mode = s->tonemapping_mode;
     int gamut_mode = s->gamut_mode;
+    float hybrid_mix = s->hybrid_mix;
     uint8_t color_rgba[4];
 
     RET(av_parse_color(color_rgba, s->fillcolor, -1, s));
 
 #if FF_API_LIBPLACEBO_OPTS
     /* backwards compatibility with older API */
-    if (!tonemapping_mode && (s->desat_str >= 0.0f || s->desat_exp >= 0.0f)) {
-        float str = s->desat_str < 0.0f ? 0.9f : s->desat_str;
-        float exp = s->desat_exp < 0.0f ? 0.2f : s->desat_exp;
-        if (str >= 0.9f && exp <= 0.1f) {
-            tonemapping_mode = PL_TONE_MAP_RGB;
-        } else if (str > 0.1f) {
-            tonemapping_mode = PL_TONE_MAP_HYBRID;
-        } else {
-            tonemapping_mode = PL_TONE_MAP_LUMA;
-        }
+    switch (s->tonemapping_mode) {
+    case 0: /*PL_TONE_MAP_AUTO*/
+        if (s->desat_str >= 0.0f)
+            hybrid_mix = s->desat_str;
+        break;
+    case 1: /*PL_TONE_MAP_RGB*/     hybrid_mix = 1.0f; break;
+    case 2: /*PL_TONE_MAP_HYBRID*/  hybrid_mix = 0.2f; break;
+    case 3: /*PL_TONE_MAP_LUMA*/    hybrid_mix = 0.0f; break;
+    case 4: /*PL_TONE_MAP_MAX*/     hybrid_mix = 0.0f; break;
     }
 
     switch (s->intent) {
@@ -415,11 +415,15 @@ static int update_settings(AVFilterContext *ctx)
     );
 
     s->color_map_params = *pl_color_map_params(
+#if PL_API_VER >= 269
+        .hybrid_mix = hybrid_mix,
+#elif FF_API_LIBPLACEBO_OPTS
+        .tone_mapping_mode = s->tonemapping_mode,
+        .tone_mapping_crosstalk = s->crosstalk,
+#endif
         .tone_mapping_function = pl_get_tonemapping_func(s->tonemapping),
         .tone_mapping_param = s->tonemapping_param,
-        .tone_mapping_mode = tonemapping_mode,
         .inverse_tone_mapping = s->inverse_tonemapping,
-        .tone_mapping_crosstalk = s->crosstalk,
         .lut_size = s->tonemapping_lut_size,
     );
 
@@ -1228,15 +1232,9 @@ static const AVOption libplacebo_options[] = {
         { "gamma", "Gamma function with knee", 0, AV_OPT_TYPE_CONST, {.i64 = TONE_MAP_GAMMA}, 0, 0, STATIC, "tonemap" },
         { "linear", "Perceptually linear stretch", 0, AV_OPT_TYPE_CONST, {.i64 = TONE_MAP_LINEAR}, 0, 0, STATIC, "tonemap" },
     { "tonemapping_param", "Tunable parameter for some tone-mapping functions", OFFSET(tonemapping_param), AV_OPT_TYPE_FLOAT, {.dbl = 0.0}, 0.0, 100.0, .flags = DYNAMIC },
-    { "tonemapping_mode", "Tone-mapping mode", OFFSET(tonemapping_mode), AV_OPT_TYPE_INT, {.i64 = PL_TONE_MAP_AUTO}, 0, PL_TONE_MAP_MODE_COUNT - 1, DYNAMIC, "tonemap_mode" },
-        { "auto", "Automatic selection", 0, AV_OPT_TYPE_CONST, {.i64 = PL_TONE_MAP_AUTO}, 0, 0, STATIC, "tonemap_mode" },
-        { "rgb", "Per-channel (RGB)", 0, AV_OPT_TYPE_CONST, {.i64 = PL_TONE_MAP_RGB}, 0, 0, STATIC, "tonemap_mode" },
-        { "max", "Maximum component", 0, AV_OPT_TYPE_CONST, {.i64 = PL_TONE_MAP_MAX}, 0, 0, STATIC, "tonemap_mode" },
-        { "hybrid", "Hybrid of Luma/RGB", 0, AV_OPT_TYPE_CONST, {.i64 = PL_TONE_MAP_HYBRID}, 0, 0, STATIC, "tonemap_mode" },
-        { "luma", "Luminance", 0, AV_OPT_TYPE_CONST, {.i64 = PL_TONE_MAP_LUMA}, 0, 0, STATIC, "tonemap_mode" },
     { "inverse_tonemapping", "Inverse tone mapping (range expansion)", OFFSET(inverse_tonemapping), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DYNAMIC },
-    { "tonemapping_crosstalk", "Crosstalk factor for tone-mapping", OFFSET(crosstalk), AV_OPT_TYPE_FLOAT, {.dbl = 0.04}, 0.0, 0.30, DYNAMIC },
     { "tonemapping_lut_size", "Tone-mapping LUT size", OFFSET(tonemapping_lut_size), AV_OPT_TYPE_INT, {.i64 = 256}, 2, 1024, DYNAMIC },
+    { "hybrid_mix", "Tone-mapping hybrid LMS mixing coefficient", OFFSET(hybrid_mix), AV_OPT_TYPE_FLOAT, {.dbl = 0.20}, 0.0, 1.00, DYNAMIC },
 
 #if FF_API_LIBPLACEBO_OPTS
     /* deprecated options for backwards compatibility, defaulting to -1 to not override the new defaults */
@@ -1249,6 +1247,13 @@ static const AVOption libplacebo_options[] = {
         { "relative", "Relative colorimetric", 0, AV_OPT_TYPE_CONST, {.i64 = PL_INTENT_RELATIVE_COLORIMETRIC}, 0, 0, STATIC, "intent" },
         { "absolute", "Absolute colorimetric", 0, AV_OPT_TYPE_CONST, {.i64 = PL_INTENT_ABSOLUTE_COLORIMETRIC}, 0, 0, STATIC, "intent" },
         { "saturation", "Saturation mapping", 0, AV_OPT_TYPE_CONST, {.i64 = PL_INTENT_SATURATION}, 0, 0, STATIC, "intent" },
+    { "tonemapping_mode", "Tone-mapping mode", OFFSET(tonemapping_mode), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 4, DYNAMIC | AV_OPT_FLAG_DEPRECATED, "tonemap_mode" },
+        { "auto", "Automatic selection", 0, AV_OPT_TYPE_CONST, {.i64 = 0}, 0, 0, STATIC, "tonemap_mode" },
+        { "rgb", "Per-channel (RGB)", 0, AV_OPT_TYPE_CONST, {.i64 = 1}, 0, 0, STATIC, "tonemap_mode" },
+        { "max", "Maximum component", 0, AV_OPT_TYPE_CONST, {.i64 = 2}, 0, 0, STATIC, "tonemap_mode" },
+        { "hybrid", "Hybrid of Luma/RGB", 0, AV_OPT_TYPE_CONST, {.i64 = 3}, 0, 0, STATIC, "tonemap_mode" },
+        { "luma", "Luminance", 0, AV_OPT_TYPE_CONST, {.i64 = 4}, 0, 0, STATIC, "tonemap_mode" },
+    { "tonemapping_crosstalk", "Crosstalk factor for tone-mapping", OFFSET(crosstalk), AV_OPT_TYPE_FLOAT, {.dbl = 0.04}, 0.0, 0.30, DYNAMIC | AV_OPT_FLAG_DEPRECATED },
 #endif
 
     { "dithering", "Dither method to use", OFFSET(dithering), AV_OPT_TYPE_INT, {.i64 = PL_DITHER_BLUE_NOISE}, -1, PL_DITHER_METHOD_COUNT - 1, DYNAMIC, "dither" },
