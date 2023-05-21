@@ -697,6 +697,13 @@ static int output_frame_mix(AVFilterContext *ctx,
     if (s->color_primaries >= 0)
         out->color_primaries = s->color_primaries;
 
+    /* Sanity colorspace overrides */
+    if (outdesc->flags & AV_PIX_FMT_FLAG_RGB) {
+        out->colorspace = AVCOL_SPC_RGB;
+    } else if (out->colorspace == AVCOL_SPC_RGB) {
+        out->colorspace = AVCOL_SPC_UNSPECIFIED;
+    }
+
     changed_csp = ref->colorspace      != out->colorspace     ||
                   ref->color_range     != out->color_range    ||
                   ref->color_trc       != out->color_trc      ||
