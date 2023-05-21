@@ -72,6 +72,7 @@ enum {
 };
 
 enum {
+    FLAG_NONE  = 0 << 0,
     FLAG_QUEUE = 1 << 0,
     FLAG_FCIN  = 1 << 1,
     FLAG_FCOUT = 1 << 2,
@@ -109,7 +110,8 @@ static const AVOption graphmonitor_options[] = {
         { "nodisabled",NULL,0,AV_OPT_TYPE_CONST, {.i64=MODE_NODISABLED},0,0,VFR,"mode" },
     { "flags", "set flags", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64=FLAG_QUEUE}, 0, INT_MAX, VFR, "flags" },
     { "f",     "set flags", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64=FLAG_QUEUE}, 0, INT_MAX, VFR, "flags" },
-        { "queue",            NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_QUEUE},   0, 0, VFR, "flags" },
+        { "none",             NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_NONE},    0, 0, VFR, "flags" },
+        { "all",              NULL, 0, AV_OPT_TYPE_CONST, {.i64=INT_MAX},      0, 0, VFR, "flags" },
         { "frame_count_in",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_FCOUT},   0, 0, VFR, "flags" },
         { "frame_count_out",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_FCIN},    0, 0, VFR, "flags" },
         { "frame_count_delta",NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_FC_DELTA},0, 0, VFR, "flags" },
