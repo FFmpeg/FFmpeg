@@ -47,6 +47,8 @@ typedef struct GraphMonitorContext {
     int flags;
     AVRational frame_rate;
 
+    int eof;
+    int eof_frames;
     int64_t pts;
     int64_t next_pts;
     uint8_t white[4];
@@ -469,6 +471,8 @@ static int create_frame(AVFilterContext *ctx, int64_t pts)
     out->pts = pts;
     out->duration = 1;
     s->pts = pts + 1;
+    if (s->eof_frames)
+        s->eof_frames = 0;
     return ff_filter_frame(outlink, out);
 error:
     av_frame_free(&out);
@@ -481,10 +485,11 @@ static int activate(AVFilterContext *ctx)
     AVFilterLink *inlink = ctx->inputs[0];
     AVFilterLink *outlink = ctx->outputs[0];
     int64_t pts = AV_NOPTS_VALUE;
+    int status;
 
     FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
 
-    if (ff_inlink_queued_frames(inlink)) {
+    if (!s->eof && ff_inlink_queued_frames(inlink)) {
         AVFrame *frame = NULL;
         int ret;
 
@@ -502,13 +507,31 @@ static int activate(AVFilterContext *ctx)
         if (s->pts == AV_NOPTS_VALUE)
             s->pts = pts;
         s->next_pts = pts;
+    } else if (s->eof) {
+        s->next_pts = s->pts + 1;
+    }
+
+    if (s->eof && s->eof_frames == 0) {
+        ff_outlink_set_status(outlink, AVERROR_EOF, s->next_pts);
+        return 0;
     }
 
     if (s->pts < s->next_pts && ff_outlink_frame_wanted(outlink))
         return create_frame(ctx, s->pts);
 
-    FF_FILTER_FORWARD_STATUS(inlink, outlink);
-    FF_FILTER_FORWARD_WANTED(outlink, inlink);
+    if (!s->eof && ff_inlink_acknowledge_status(inlink, &status, &pts)) {
+        s->eof = 1;
+        s->eof_frames = 1;
+        ff_filter_set_ready(ctx, 100);
+        return 0;
+    }
+
+    if (!s->eof) {
+        FF_FILTER_FORWARD_WANTED(outlink, inlink);
+    } else {
+        ff_filter_set_ready(ctx, 100);
+        return 0;
+    }
 
     return FFERROR_NOT_READY;
 }
