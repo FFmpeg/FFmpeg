@@ -112,6 +112,7 @@ static const AVOption graphmonitor_options[] = {
     { "f",     "set flags", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64=FLAG_QUEUE}, 0, INT_MAX, VFR, "flags" },
         { "none",             NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_NONE},    0, 0, VFR, "flags" },
         { "all",              NULL, 0, AV_OPT_TYPE_CONST, {.i64=INT_MAX},      0, 0, VFR, "flags" },
+        { "queue",            NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_QUEUE},   0, 0, VFR, "flags" },
         { "frame_count_in",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_FCOUT},   0, 0, VFR, "flags" },
         { "frame_count_out",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_FCIN},    0, 0, VFR, "flags" },
         { "frame_count_delta",NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_FC_DELTA},0, 0, VFR, "flags" },
@@ -384,8 +385,9 @@ static int create_frame(AVFilterContext *ctx, int64_t pts)
 {
     GraphMonitorContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-    AVFrame *out;
     int ret, len, xpos, ypos = 0;
+    char buffer[1024];
+    AVFrame *out;
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out)
@@ -397,7 +399,6 @@ static int create_frame(AVFilterContext *ctx, int64_t pts)
 
     for (int i = 0; i < ctx->graph->nb_filters; i++) {
         AVFilterContext *filter = ctx->graph->filters[i];
-        char buffer[1024] = { 0 };
 
         if ((s->mode & MODE_COMPACT) && !filter_have_queued(filter))
             continue;
