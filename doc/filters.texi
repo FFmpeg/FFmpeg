@@ -16353,37 +16353,36 @@ gamut-mapping when dealing with mismatches between wide-gamut or HDR content.
 In general, libplacebo relies on accurate source tagging and mastering display
 gamut information to produce the best results.
 @table @option
-@item intent
-Rendering intent to use when adapting between different primary color gamuts
-(after tone-mapping).
-@table @samp
-@item perceptual
-Perceptual gamut mapping. Currently equivalent to relative colorimetric.
-@item relative
-Relative colorimetric. This is the default.
-@item absolute
-Absolute colorimetric.
-@item saturation
-Saturation mapping. Forcibly stretches the source gamut to the target gamut.
-@end table
-
 @item gamut_mode
 How to handle out-of-gamut colors that can occur as a result of colorimetric
 gamut mapping.
 @table @samp
 @item clip
-Do nothing, simply clip out-of-range colors to the RGB volume. This is the
-default.
-@item warn
-Highlight out-of-gamut pixels (by coloring them pink).
-@item darken
-Linearly reduces content brightness to preserves saturated details, followed by
-clipping the remaining out-of-gamut colors. As the name implies, this makes
-everything darker, but provides a good balance between preserving details and
-colors.
+Do nothing, simply clip out-of-range colors to the RGB volume. Low quality but
+extremely fast.
+@item perceptual
+Perceptually soft-clip colors to the gamut volume. This is the default.
+@item relative
+Relative colorimetric hard-clip. Similar to @code{perceptual} but without
+the soft knee.
+@item saturation
+Saturation mapping, maps primaries directly to primaries in RGB space.
+Not recommended except for artificial computer graphics for which a bright,
+saturated display is desired.
+@item absolute
+Absolute colorimetric hard-clip. Performs no adjustment of the white point.
 @item desaturate
 Hard-desaturates out-of-gamut colors towards white, while preserving the
-luminance. Has a tendency to shift colors.
+luminance. Has a tendency to distort the visual appearance of bright objects.
+@item darken
+Linearly reduces content brightness to preserves saturated details, followed by
+clipping the remaining out-of-gamut colors.
+@item warn
+Highlight out-of-gamut pixels (by inverting/marking them).
+@item linear
+Linearly reduces chromaticity of the entire image to make it fit within the
+target color volume. Be careful when using this on BT.2020 sources without
+proper mastering metadata, as doing so will lead to excessive desaturation.
 @end table
 
 @item tonemapping

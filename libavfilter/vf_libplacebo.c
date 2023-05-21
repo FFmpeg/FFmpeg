@@ -56,6 +56,19 @@ enum {
     TONE_MAP_COUNT,
 };
 
+enum {
+    GAMUT_MAP_CLIP,
+    GAMUT_MAP_PERCEPTUAL,
+    GAMUT_MAP_RELATIVE,
+    GAMUT_MAP_SATURATION,
+    GAMUT_MAP_ABSOLUTE,
+    GAMUT_MAP_DESATURATE,
+    GAMUT_MAP_DARKEN,
+    GAMUT_MAP_HIGHLIGHT,
+    GAMUT_MAP_LINEAR,
+    GAMUT_MAP_COUNT,
+};
+
 static const char *const var_names[] = {
     "in_w", "iw",   ///< width  of the input video frame
     "in_h", "ih",   ///< height of the input video frame
@@ -188,7 +201,6 @@ typedef struct LibplaceboContext {
 
     /* pl_color_map_params */
     struct pl_color_map_params color_map_params;
-    int intent;
     int gamut_mode;
     int tonemapping;
     float tonemapping_param;
@@ -204,6 +216,7 @@ typedef struct LibplaceboContext {
     int gamut_warning;
     int gamut_clipping;
     int force_icc_lut;
+    int intent;
 #endif
 
     /* pl_dither_params */
@@ -274,6 +287,34 @@ static const struct pl_tone_map_function *pl_get_tonemapping_func(int tm) {
     }
 }
 
+static void set_gamut_mode(struct pl_color_map_params *p, int gamut_mode)
+{
+    switch (gamut_mode) {
+#if PL_API_VER >= 269
+    case GAMUT_MAP_CLIP:       p->gamut_mapping = &pl_gamut_map_clip; return;
+    case GAMUT_MAP_PERCEPTUAL: p->gamut_mapping = &pl_gamut_map_perceptual; return;
+    case GAMUT_MAP_RELATIVE:   p->gamut_mapping = &pl_gamut_map_relative; return;
+    case GAMUT_MAP_SATURATION: p->gamut_mapping = &pl_gamut_map_saturation; return;
+    case GAMUT_MAP_ABSOLUTE:   p->gamut_mapping = &pl_gamut_map_absolute; return;
+    case GAMUT_MAP_DESATURATE: p->gamut_mapping = &pl_gamut_map_desaturate; return;
+    case GAMUT_MAP_DARKEN:     p->gamut_mapping = &pl_gamut_map_darken; return;
+    case GAMUT_MAP_HIGHLIGHT:  p->gamut_mapping = &pl_gamut_map_highlight; return;
+    case GAMUT_MAP_LINEAR:     p->gamut_mapping = &pl_gamut_map_linear; return;
+#else
+    case GAMUT_MAP_RELATIVE:   p->intent = PL_INTENT_RELATIVE_COLORIMETRIC; return;
+    case GAMUT_MAP_SATURATION: p->intent = PL_INTENT_SATURATION; return;
+    case GAMUT_MAP_ABSOLUTE:   p->intent = PL_INTENT_ABSOLUTE_COLORIMETRIC; return;
+    case GAMUT_MAP_DESATURATE: p->gamut_mode = PL_GAMUT_DESATURATE; return;
+    case GAMUT_MAP_DARKEN:     p->gamut_mode = PL_GAMUT_DARKEN; return;
+    case GAMUT_MAP_HIGHLIGHT:  p->gamut_mode = PL_GAMUT_WARN; return;
+    /* Use defaults for all other cases */
+    default: return;
+#endif
+    }
+
+    av_assert0(0);
+};
+
 static int parse_shader(AVFilterContext *avctx, const void *shader, size_t len)
 {
     LibplaceboContext *s = avctx->priv;
@@ -319,7 +360,7 @@ static int update_settings(AVFilterContext *ctx)
     int err = 0;
     LibplaceboContext *s = ctx->priv;
     enum pl_tone_map_mode tonemapping_mode = s->tonemapping_mode;
-    enum pl_gamut_mode gamut_mode = s->gamut_mode;
+    int gamut_mode = s->gamut_mode;
     uint8_t color_rgba[4];
 
     RET(av_parse_color(color_rgba, s->fillcolor, -1, s));
@@ -338,10 +379,16 @@ static int update_settings(AVFilterContext *ctx)
         }
     }
 
+    switch (s->intent) {
+    case PL_INTENT_SATURATION:            gamut_mode = GAMUT_MAP_SATURATION; break;
+    case PL_INTENT_RELATIVE_COLORIMETRIC: gamut_mode = GAMUT_MAP_RELATIVE; break;
+    case PL_INTENT_ABSOLUTE_COLORIMETRIC: gamut_mode = GAMUT_MAP_ABSOLUTE; break;
+    }
+
     if (s->gamut_warning)
-        gamut_mode = PL_GAMUT_WARN;
+        gamut_mode = GAMUT_MAP_HIGHLIGHT;
     if (s->gamut_clipping)
-        gamut_mode = PL_GAMUT_DESATURATE;
+        gamut_mode = GAMUT_MAP_DESATURATE;
 #endif
 
     s->deband_params = *pl_deband_params(
@@ -368,8 +415,6 @@ static int update_settings(AVFilterContext *ctx)
     );
 
     s->color_map_params = *pl_color_map_params(
-        .intent = s->intent,
-        .gamut_mode = gamut_mode,
         .tone_mapping_function = pl_get_tonemapping_func(s->tonemapping),
         .tone_mapping_param = s->tonemapping_param,
         .tone_mapping_mode = tonemapping_mode,
@@ -377,6 +422,8 @@ static int update_settings(AVFilterContext *ctx)
         .tone_mapping_crosstalk = s->crosstalk,
         .lut_size = s->tonemapping_lut_size,
     );
+
+    set_gamut_mode(&s->color_map_params, gamut_mode);
 
     s->dither_params = *pl_dither_params(
         .method = s->dithering,
@@ -1155,16 +1202,16 @@ static const AVOption libplacebo_options[] = {
     { "scene_threshold_high", "Scene change high threshold", OFFSET(scene_high), AV_OPT_TYPE_FLOAT, {.dbl = 10.0}, -1.0, 100.0, DYNAMIC },
     { "overshoot", "Tone-mapping overshoot margin", OFFSET(overshoot), AV_OPT_TYPE_FLOAT, {.dbl = 0.05}, 0.0, 1.0, DYNAMIC },
 
-    { "intent", "Rendering intent", OFFSET(intent), AV_OPT_TYPE_INT, {.i64 = PL_INTENT_RELATIVE_COLORIMETRIC}, 0, 3, DYNAMIC, "intent" },
-        { "perceptual", "Perceptual", 0, AV_OPT_TYPE_CONST, {.i64 = PL_INTENT_PERCEPTUAL}, 0, 0, STATIC, "intent" },
-        { "relative", "Relative colorimetric", 0, AV_OPT_TYPE_CONST, {.i64 = PL_INTENT_RELATIVE_COLORIMETRIC}, 0, 0, STATIC, "intent" },
-        { "absolute", "Absolute colorimetric", 0, AV_OPT_TYPE_CONST, {.i64 = PL_INTENT_ABSOLUTE_COLORIMETRIC}, 0, 0, STATIC, "intent" },
-        { "saturation", "Saturation mapping", 0, AV_OPT_TYPE_CONST, {.i64 = PL_INTENT_SATURATION}, 0, 0, STATIC, "intent" },
-    { "gamut_mode", "Gamut-mapping mode", OFFSET(gamut_mode), AV_OPT_TYPE_INT, {.i64 = PL_GAMUT_CLIP}, 0, PL_GAMUT_MODE_COUNT - 1, DYNAMIC, "gamut_mode" },
-        { "clip", "Hard-clip gamut boundary", 0, AV_OPT_TYPE_CONST, {.i64 = PL_GAMUT_CLIP}, 0, 0, STATIC, "gamut_mode" },
-        { "warn", "Highlight out-of-gamut colors", 0, AV_OPT_TYPE_CONST, {.i64 = PL_GAMUT_WARN}, 0, 0, STATIC, "gamut_mode" },
-        { "darken", "Darken image to fit gamut", 0, AV_OPT_TYPE_CONST, {.i64 = PL_GAMUT_DARKEN}, 0, 0, STATIC, "gamut_mode" },
-        { "desaturate", "Colorimetrically desaturate colors", 0, AV_OPT_TYPE_CONST, {.i64 = PL_GAMUT_DESATURATE}, 0, 0, STATIC, "gamut_mode" },
+    { "gamut_mode", "Gamut-mapping mode", OFFSET(gamut_mode), AV_OPT_TYPE_INT, {.i64 = GAMUT_MAP_PERCEPTUAL}, 0, GAMUT_MAP_COUNT - 1, DYNAMIC, "gamut_mode" },
+        { "clip", "Hard-clip (RGB per-channel)", 0, AV_OPT_TYPE_CONST, {.i64 = GAMUT_MAP_CLIP}, 0, 0, STATIC, "gamut_mode" },
+        { "perceptual", "Colorimetric soft clipping", 0, AV_OPT_TYPE_CONST, {.i64 = GAMUT_MAP_PERCEPTUAL}, 0, 0, STATIC, "gamut_mode" },
+        { "relative", "Relative colorimetric clipping", 0, AV_OPT_TYPE_CONST, {.i64 = GAMUT_MAP_RELATIVE}, 0, 0, STATIC, "gamut_mode" },
+        { "saturation", "Saturation mapping (RGB -> RGB)", 0, AV_OPT_TYPE_CONST, {.i64 = GAMUT_MAP_SATURATION}, 0, 0, STATIC, "gamut_mode" },
+        { "absolute", "Absolute colorimetric clipping", 0, AV_OPT_TYPE_CONST, {.i64 = GAMUT_MAP_ABSOLUTE}, 0, 0, STATIC, "gamut_mode" },
+        { "desaturate", "Colorimetrically desaturate colors towards white", 0, AV_OPT_TYPE_CONST, {.i64 = GAMUT_MAP_DESATURATE}, 0, 0, STATIC, "gamut_mode" },
+        { "darken", "Colorimetric clip with bias towards darkening image to fit gamut", 0, AV_OPT_TYPE_CONST, {.i64 = GAMUT_MAP_DARKEN}, 0, 0, STATIC, "gamut_mode" },
+        { "warn", "Highlight out-of-gamut colors", 0, AV_OPT_TYPE_CONST, {.i64 = GAMUT_MAP_HIGHLIGHT}, 0, 0, STATIC, "gamut_mode" },
+        { "linear", "Linearly reduce chromaticity to fit gamut", 0, AV_OPT_TYPE_CONST, {.i64 = GAMUT_MAP_LINEAR}, 0, 0, STATIC, "gamut_mode" },
     { "tonemapping", "Tone-mapping algorithm", OFFSET(tonemapping), AV_OPT_TYPE_INT, {.i64 = TONE_MAP_AUTO}, 0, TONE_MAP_COUNT - 1, DYNAMIC, "tonemap" },
         { "auto", "Automatic selection", 0, AV_OPT_TYPE_CONST, {.i64 = TONE_MAP_AUTO}, 0, 0, STATIC, "tonemap" },
         { "clip", "No tone mapping (clip", 0, AV_OPT_TYPE_CONST, {.i64 = TONE_MAP_CLIP}, 0, 0, STATIC, "tonemap" },
@@ -1196,7 +1243,12 @@ static const AVOption libplacebo_options[] = {
     { "desaturation_strength", "Desaturation strength", OFFSET(desat_str), AV_OPT_TYPE_FLOAT, {.dbl = -1.0}, -1.0, 1.0, DYNAMIC | AV_OPT_FLAG_DEPRECATED },
     { "desaturation_exponent", "Desaturation exponent", OFFSET(desat_exp), AV_OPT_TYPE_FLOAT, {.dbl = -1.0}, -1.0, 10.0, DYNAMIC | AV_OPT_FLAG_DEPRECATED },
     { "gamut_warning", "Highlight out-of-gamut colors", OFFSET(gamut_warning), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DYNAMIC | AV_OPT_FLAG_DEPRECATED },
-    { "gamut_clipping", "Enable colorimetric gamut clipping", OFFSET(gamut_clipping), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DYNAMIC | AV_OPT_FLAG_DEPRECATED },
+    { "gamut_clipping", "Enable desaturating colorimetric gamut clipping", OFFSET(gamut_clipping), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DYNAMIC | AV_OPT_FLAG_DEPRECATED },
+    { "intent", "Rendering intent", OFFSET(intent), AV_OPT_TYPE_INT, {.i64 = PL_INTENT_PERCEPTUAL}, 0, 3, DYNAMIC | AV_OPT_FLAG_DEPRECATED, "intent" },
+        { "perceptual", "Perceptual", 0, AV_OPT_TYPE_CONST, {.i64 = PL_INTENT_PERCEPTUAL}, 0, 0, STATIC, "intent" },
+        { "relative", "Relative colorimetric", 0, AV_OPT_TYPE_CONST, {.i64 = PL_INTENT_RELATIVE_COLORIMETRIC}, 0, 0, STATIC, "intent" },
+        { "absolute", "Absolute colorimetric", 0, AV_OPT_TYPE_CONST, {.i64 = PL_INTENT_ABSOLUTE_COLORIMETRIC}, 0, 0, STATIC, "intent" },
+        { "saturation", "Saturation mapping", 0, AV_OPT_TYPE_CONST, {.i64 = PL_INTENT_SATURATION}, 0, 0, STATIC, "intent" },
 #endif
 
     { "dithering", "Dither method to use", OFFSET(dithering), AV_OPT_TYPE_INT, {.i64 = PL_DITHER_BLUE_NOISE}, -1, PL_DITHER_METHOD_COUNT - 1, DYNAMIC, "dither" },
