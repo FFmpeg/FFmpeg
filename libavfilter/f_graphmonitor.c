@@ -54,6 +54,7 @@ typedef struct GraphMonitorContext {
     uint8_t red[4];
     uint8_t green[4];
     uint8_t blue[4];
+    uint8_t gray[4];
     uint8_t bg[4];
 
     CacheItem *cache;
@@ -66,7 +67,8 @@ enum {
     MODE_COMPACT = 1,
     MODE_NOZERO = 2,
     MODE_NOEOF = 4,
-    MODE_MAX = 7
+    MODE_NODISABLED = 8,
+    MODE_MAX = 15
 };
 
 enum {
@@ -86,6 +88,7 @@ enum {
     FLAG_TIME_DELTA = 1 << 13,
     FLAG_FC_DELTA = 1 << 14,
     FLAG_SC_DELTA = 1 << 15,
+    FLAG_DISABLED = 1 << 16,
 };
 
 #define OFFSET(x) offsetof(GraphMonitorContext, x)
@@ -103,6 +106,7 @@ static const AVOption graphmonitor_options[] = {
         { "compact", NULL, 0, AV_OPT_TYPE_CONST, {.i64=MODE_COMPACT},0, 0, VFR, "mode" },
         { "nozero",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=MODE_NOZERO}, 0, 0, VFR, "mode" },
         { "noeof",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=MODE_NOEOF},  0, 0, VFR, "mode" },
+        { "nodisabled",NULL,0,AV_OPT_TYPE_CONST, {.i64=MODE_NODISABLED},0,0,VFR,"mode" },
     { "flags", "set flags", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64=FLAG_QUEUE}, 0, INT_MAX, VFR, "flags" },
     { "f",     "set flags", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64=FLAG_QUEUE}, 0, INT_MAX, VFR, "flags" },
         { "queue",            NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_QUEUE},   0, 0, VFR, "flags" },
@@ -121,6 +125,7 @@ static const AVOption graphmonitor_options[] = {
         { "sample_count_in",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_SCOUT},   0, 0, VFR, "flags" },
         { "sample_count_out", NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_SCIN},    0, 0, VFR, "flags" },
         { "sample_count_delta",NULL,0, AV_OPT_TYPE_CONST, {.i64=FLAG_SC_DELTA},0, 0, VFR, "flags" },
+        { "disabled",         NULL, 0, AV_OPT_TYPE_CONST, {.i64=FLAG_DISABLED},0, 0, VFR, "flags" },
     { "rate", "set video rate", OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, VF },
     { "r",    "set video rate", OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, VF },
     { NULL }
@@ -233,7 +238,9 @@ static int filter_have_queued(AVFilterContext *filter)
     return 0;
 }
 
-static int draw_items(AVFilterContext *ctx, AVFrame *out,
+static int draw_items(AVFilterContext *ctx,
+                      AVFilterContext *filter,
+                      AVFrame *out,
                       int xpos, int ypos,
                       AVFilterLink *l,
                       size_t frames)
@@ -335,9 +342,14 @@ static int draw_items(AVFilterContext *ctx, AVFrame *out,
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
     }
-    if (s->flags & FLAG_EOF && ff_outlink_get_status(l)) {
+    if ((s->flags & FLAG_EOF) && ff_outlink_get_status(l)) {
         snprintf(buffer, sizeof(buffer)-1, " | eof");
         drawtext(out, xpos, ypos, buffer, s->blue);
+        xpos += strlen(buffer) * 8;
+    }
+    if ((s->flags & FLAG_DISABLED) && filter->is_disabled) {
+        snprintf(buffer, sizeof(buffer)-1, " | off");
+        drawtext(out, xpos, ypos, buffer, s->gray);
         xpos += strlen(buffer) * 8;
     }
 
@@ -380,6 +392,9 @@ static int create_frame(AVFilterContext *ctx, int64_t pts)
         if ((s->mode & MODE_NOEOF) && filter_have_eof(filter))
             continue;
 
+        if ((s->mode & MODE_NODISABLED) && filter->is_disabled)
+            continue;
+
         xpos = 0;
         drawtext(out, xpos, ypos, filter->name, s->white);
         xpos += strlen(filter->name) * 8 + 10;
@@ -401,7 +416,7 @@ static int create_frame(AVFilterContext *ctx, int64_t pts)
             xpos += strlen(buffer) * 8;
             drawtext(out, xpos, ypos, l->src->name, s->white);
             xpos += strlen(l->src->name) * 8 + 10;
-            ret = draw_items(ctx, out, xpos, ypos, l, frames);
+            ret = draw_items(ctx, filter, out, xpos, ypos, l, frames);
             if (ret < 0)
                 goto error;
             ypos += 10;
@@ -424,7 +439,7 @@ static int create_frame(AVFilterContext *ctx, int64_t pts)
             xpos += strlen(buffer) * 8;
             drawtext(out, xpos, ypos, l->dst->name, s->white);
             xpos += strlen(l->dst->name) * 8 + 10;
-            ret = draw_items(ctx, out, xpos, ypos, l, frames);
+            ret = draw_items(ctx, filter, out, xpos, ypos, l, frames);
             if (ret < 0)
                 goto error;
             ypos += 10;
@@ -489,6 +504,7 @@ static int config_output(AVFilterLink *outlink)
     s->red[0] = 255;
     s->green[1] = 255;
     s->blue[2] = 255;
+    s->gray[0] = s->gray[1] = s->gray[2] = 128;
     s->pts = AV_NOPTS_VALUE;
     s->next_pts = AV_NOPTS_VALUE;
     outlink->w = s->w;

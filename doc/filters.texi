@@ -14651,6 +14651,8 @@ Show only filters with queued frames.
 Show only filters with non-zero stats.
 @item noeof
 Show only filters with non-eof stat.
+@item nodisabled
+Show only filters that are enabled in timeline.
 @end table
 
 @item flags, f
@@ -14705,6 +14707,9 @@ Display number of samples given out from filter.
 
 @item sample_count_delta
 Display delta number of samples between above two values.
+
+@item disabled
+Show the timeline filter status.
 @end table
 
 @item rate, r
