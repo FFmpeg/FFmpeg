@@ -246,240 +246,6 @@ static void choose_channel_layouts(OutputFilter *ofilter, AVBPrint *bprint)
     av_bprint_chars(bprint, ':', 1);
 }
 
-static OutputFilter *ofilter_alloc(FilterGraph *fg)
-{
-    OutputFilter *ofilter;
-
-    ofilter           = ALLOC_ARRAY_ELEM(fg->outputs, fg->nb_outputs);
-    ofilter->graph    = fg;
-    ofilter->format   = -1;
-    ofilter->last_pts = AV_NOPTS_VALUE;
-
-    return ofilter;
-}
-
-static int ifilter_bind_ist(InputFilter *ifilter, InputStream *ist)
-{
-    InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
-    int ret;
-
-    ret = ist_filter_add(ist, ifilter, filtergraph_is_simple(ifilter->graph));
-    if (ret < 0)
-        return ret;
-
-    ifp->ist             = ist;
-    ifp->type_src        = ist->st->codecpar->codec_type;
-    ifp->type            = ifp->type_src == AVMEDIA_TYPE_SUBTITLE ?
-                           AVMEDIA_TYPE_VIDEO : ifp->type_src;
-
-    return 0;
-}
-
-static InputFilter *ifilter_alloc(FilterGraph *fg)
-{
-    InputFilterPriv *ifp = allocate_array_elem(&fg->inputs, sizeof(*ifp),
-                                               &fg->nb_inputs);
-    InputFilter *ifilter = &ifp->ifilter;
-
-    ifilter->graph  = fg;
-
-    ifp->frame = av_frame_alloc();
-    if (!ifp->frame)
-        report_and_exit(AVERROR(ENOMEM));
-
-    ifp->format          = -1;
-    ifp->fallback.format = -1;
-
-    ifp->frame_queue = av_fifo_alloc2(8, sizeof(AVFrame*), AV_FIFO_FLAG_AUTO_GROW);
-    if (!ifp->frame_queue)
-        report_and_exit(AVERROR(ENOMEM));
-
-    return ifilter;
-}
-
-void fg_free(FilterGraph **pfg)
-{
-    FilterGraph *fg = *pfg;
-    FilterGraphPriv *fgp;
-
-    if (!fg)
-        return;
-    fgp = fgp_from_fg(fg);
-
-    avfilter_graph_free(&fg->graph);
-    for (int j = 0; j < fg->nb_inputs; j++) {
-        InputFilter *ifilter = fg->inputs[j];
-        InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
-        InputStream     *ist = ifp->ist;
-
-        if (ifp->frame_queue) {
-            AVFrame *frame;
-            while (av_fifo_read(ifp->frame_queue, &frame, 1) >= 0)
-                av_frame_free(&frame);
-            av_fifo_freep2(&ifp->frame_queue);
-        }
-        if (ist->sub2video.sub_queue) {
-            AVSubtitle sub;
-            while (av_fifo_read(ist->sub2video.sub_queue, &sub, 1) >= 0)
-                avsubtitle_free(&sub);
-            av_fifo_freep2(&ist->sub2video.sub_queue);
-        }
-
-        av_channel_layout_uninit(&ifp->fallback.ch_layout);
-
-        av_frame_free(&ifp->frame);
-
-        av_buffer_unref(&ifp->hw_frames_ctx);
-        av_freep(&ifilter->name);
-        av_freep(&fg->inputs[j]);
-    }
-    av_freep(&fg->inputs);
-    for (int j = 0; j < fg->nb_outputs; j++) {
-        OutputFilter *ofilter = fg->outputs[j];
-
-        av_freep(&ofilter->linklabel);
-        av_freep(&ofilter->name);
-        av_channel_layout_uninit(&ofilter->ch_layout);
-        av_freep(&fg->outputs[j]);
-    }
-    av_freep(&fg->outputs);
-    av_freep(&fgp->graph_desc);
-
-    av_frame_free(&fgp->frame);
-
-    av_freep(pfg);
-}
-
-FilterGraph *fg_create(char *graph_desc)
-{
-    FilterGraphPriv *fgp = allocate_array_elem(&filtergraphs, sizeof(*fgp), &nb_filtergraphs);
-    FilterGraph      *fg = &fgp->fg;
-
-    fg->index      = nb_filtergraphs - 1;
-    fgp->graph_desc = graph_desc;
-
-    fgp->frame = av_frame_alloc();
-    if (!fgp->frame)
-        report_and_exit(AVERROR(ENOMEM));
-
-    return fg;
-}
-
-int init_simple_filtergraph(InputStream *ist, OutputStream *ost,
-                            char *graph_desc)
-{
-    FilterGraph *fg;
-    FilterGraphPriv *fgp;
-    OutputFilter *ofilter;
-    InputFilter  *ifilter;
-    int ret;
-
-    fg = fg_create(graph_desc);
-    if (!fg)
-        report_and_exit(AVERROR(ENOMEM));
-    fgp = fgp_from_fg(fg);
-
-    fgp->is_simple = 1;
-
-    ofilter      = ofilter_alloc(fg);
-    ofilter->ost = ost;
-
-    ost->filter = ofilter;
-
-    ifilter = ifilter_alloc(fg);
-
-    ret = ifilter_bind_ist(ifilter, ist);
-    if (ret < 0)
-        return ret;
-
-    return 0;
-}
-
-static char *describe_filter_link(FilterGraph *fg, AVFilterInOut *inout, int in)
-{
-    AVFilterContext *ctx = inout->filter_ctx;
-    AVFilterPad *pads = in ? ctx->input_pads  : ctx->output_pads;
-    int       nb_pads = in ? ctx->nb_inputs   : ctx->nb_outputs;
-    char *res;
-
-    if (nb_pads > 1)
-        res = av_strdup(ctx->filter->name);
-    else
-        res = av_asprintf("%s:%s", ctx->filter->name,
-                          avfilter_pad_get_name(pads, inout->pad_idx));
-    if (!res)
-        report_and_exit(AVERROR(ENOMEM));
-    return res;
-}
-
-static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
-{
-    FilterGraphPriv *fgp = fgp_from_fg(fg);
-    InputStream *ist = NULL;
-    enum AVMediaType type = avfilter_pad_get_type(in->filter_ctx->input_pads, in->pad_idx);
-    InputFilter *ifilter;
-    int i, ret;
-
-    // TODO: support other filter types
-    if (type != AVMEDIA_TYPE_VIDEO && type != AVMEDIA_TYPE_AUDIO) {
-        av_log(NULL, AV_LOG_FATAL, "Only video and audio filters supported "
-               "currently.\n");
-        exit_program(1);
-    }
-
-    if (in->name) {
-        AVFormatContext *s;
-        AVStream       *st = NULL;
-        char *p;
-        int file_idx = strtol(in->name, &p, 0);
-
-        if (file_idx < 0 || file_idx >= nb_input_files) {
-            av_log(NULL, AV_LOG_FATAL, "Invalid file index %d in filtergraph description %s.\n",
-                   file_idx, fgp->graph_desc);
-            exit_program(1);
-        }
-        s = input_files[file_idx]->ctx;
-
-        for (i = 0; i < s->nb_streams; i++) {
-            enum AVMediaType stream_type = s->streams[i]->codecpar->codec_type;
-            if (stream_type != type &&
-                !(stream_type == AVMEDIA_TYPE_SUBTITLE &&
-                  type == AVMEDIA_TYPE_VIDEO /* sub2video hack */))
-                continue;
-            if (check_stream_specifier(s, s->streams[i], *p == ':' ? p + 1 : p) == 1) {
-                st = s->streams[i];
-                break;
-            }
-        }
-        if (!st) {
-            av_log(NULL, AV_LOG_FATAL, "Stream specifier '%s' in filtergraph description %s "
-                   "matches no streams.\n", p, fgp->graph_desc);
-            exit_program(1);
-        }
-        ist = input_files[file_idx]->streams[st->index];
-    } else {
-        ist = ist_find_unused(type);
-        if (!ist) {
-            av_log(NULL, AV_LOG_FATAL, "Cannot find a matching stream for "
-                   "unlabeled input pad %d on filter %s\n", in->pad_idx,
-                   in->filter_ctx->name);
-            exit_program(1);
-        }
-    }
-    av_assert0(ist);
-
-    ifilter         = ifilter_alloc(fg);
-    ifilter->name   = describe_filter_link(fg, in, 1);
-
-    ret = ifilter_bind_ist(ifilter, ist);
-    if (ret < 0) {
-        av_log(NULL, AV_LOG_ERROR,
-               "Error binding an input stream to complex filtergraph input %s.\n",
-               in->name ? in->name : "");
-        exit_program(1);
-    }
-}
-
 static int read_binary(const char *path, uint8_t **data, int *len)
 {
     AVIOContext *io = NULL;
@@ -648,6 +414,240 @@ static int graph_parse(AVFilterGraph *graph, const char *desc,
 fail:
     avfilter_graph_segment_free(&seg);
     return ret;
+}
+
+static char *describe_filter_link(FilterGraph *fg, AVFilterInOut *inout, int in)
+{
+    AVFilterContext *ctx = inout->filter_ctx;
+    AVFilterPad *pads = in ? ctx->input_pads  : ctx->output_pads;
+    int       nb_pads = in ? ctx->nb_inputs   : ctx->nb_outputs;
+    char *res;
+
+    if (nb_pads > 1)
+        res = av_strdup(ctx->filter->name);
+    else
+        res = av_asprintf("%s:%s", ctx->filter->name,
+                          avfilter_pad_get_name(pads, inout->pad_idx));
+    if (!res)
+        report_and_exit(AVERROR(ENOMEM));
+    return res;
+}
+
+static OutputFilter *ofilter_alloc(FilterGraph *fg)
+{
+    OutputFilter *ofilter;
+
+    ofilter           = ALLOC_ARRAY_ELEM(fg->outputs, fg->nb_outputs);
+    ofilter->graph    = fg;
+    ofilter->format   = -1;
+    ofilter->last_pts = AV_NOPTS_VALUE;
+
+    return ofilter;
+}
+
+static int ifilter_bind_ist(InputFilter *ifilter, InputStream *ist)
+{
+    InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
+    int ret;
+
+    ret = ist_filter_add(ist, ifilter, filtergraph_is_simple(ifilter->graph));
+    if (ret < 0)
+        return ret;
+
+    ifp->ist             = ist;
+    ifp->type_src        = ist->st->codecpar->codec_type;
+    ifp->type            = ifp->type_src == AVMEDIA_TYPE_SUBTITLE ?
+                           AVMEDIA_TYPE_VIDEO : ifp->type_src;
+
+    return 0;
+}
+
+static InputFilter *ifilter_alloc(FilterGraph *fg)
+{
+    InputFilterPriv *ifp = allocate_array_elem(&fg->inputs, sizeof(*ifp),
+                                               &fg->nb_inputs);
+    InputFilter *ifilter = &ifp->ifilter;
+
+    ifilter->graph  = fg;
+
+    ifp->frame = av_frame_alloc();
+    if (!ifp->frame)
+        report_and_exit(AVERROR(ENOMEM));
+
+    ifp->format          = -1;
+    ifp->fallback.format = -1;
+
+    ifp->frame_queue = av_fifo_alloc2(8, sizeof(AVFrame*), AV_FIFO_FLAG_AUTO_GROW);
+    if (!ifp->frame_queue)
+        report_and_exit(AVERROR(ENOMEM));
+
+    return ifilter;
+}
+
+void fg_free(FilterGraph **pfg)
+{
+    FilterGraph *fg = *pfg;
+    FilterGraphPriv *fgp;
+
+    if (!fg)
+        return;
+    fgp = fgp_from_fg(fg);
+
+    avfilter_graph_free(&fg->graph);
+    for (int j = 0; j < fg->nb_inputs; j++) {
+        InputFilter *ifilter = fg->inputs[j];
+        InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
+        InputStream     *ist = ifp->ist;
+
+        if (ifp->frame_queue) {
+            AVFrame *frame;
+            while (av_fifo_read(ifp->frame_queue, &frame, 1) >= 0)
+                av_frame_free(&frame);
+            av_fifo_freep2(&ifp->frame_queue);
+        }
+        if (ist->sub2video.sub_queue) {
+            AVSubtitle sub;
+            while (av_fifo_read(ist->sub2video.sub_queue, &sub, 1) >= 0)
+                avsubtitle_free(&sub);
+            av_fifo_freep2(&ist->sub2video.sub_queue);
+        }
+
+        av_channel_layout_uninit(&ifp->fallback.ch_layout);
+
+        av_frame_free(&ifp->frame);
+
+        av_buffer_unref(&ifp->hw_frames_ctx);
+        av_freep(&ifilter->name);
+        av_freep(&fg->inputs[j]);
+    }
+    av_freep(&fg->inputs);
+    for (int j = 0; j < fg->nb_outputs; j++) {
+        OutputFilter *ofilter = fg->outputs[j];
+
+        av_freep(&ofilter->linklabel);
+        av_freep(&ofilter->name);
+        av_channel_layout_uninit(&ofilter->ch_layout);
+        av_freep(&fg->outputs[j]);
+    }
+    av_freep(&fg->outputs);
+    av_freep(&fgp->graph_desc);
+
+    av_frame_free(&fgp->frame);
+
+    av_freep(pfg);
+}
+
+FilterGraph *fg_create(char *graph_desc)
+{
+    FilterGraphPriv *fgp = allocate_array_elem(&filtergraphs, sizeof(*fgp), &nb_filtergraphs);
+    FilterGraph      *fg = &fgp->fg;
+
+    fg->index      = nb_filtergraphs - 1;
+    fgp->graph_desc = graph_desc;
+
+    fgp->frame = av_frame_alloc();
+    if (!fgp->frame)
+        report_and_exit(AVERROR(ENOMEM));
+
+    return fg;
+}
+
+int init_simple_filtergraph(InputStream *ist, OutputStream *ost,
+                            char *graph_desc)
+{
+    FilterGraph *fg;
+    FilterGraphPriv *fgp;
+    OutputFilter *ofilter;
+    InputFilter  *ifilter;
+    int ret;
+
+    fg = fg_create(graph_desc);
+    if (!fg)
+        report_and_exit(AVERROR(ENOMEM));
+    fgp = fgp_from_fg(fg);
+
+    fgp->is_simple = 1;
+
+    ofilter      = ofilter_alloc(fg);
+    ofilter->ost = ost;
+
+    ost->filter = ofilter;
+
+    ifilter = ifilter_alloc(fg);
+
+    ret = ifilter_bind_ist(ifilter, ist);
+    if (ret < 0)
+        return ret;
+
+    return 0;
+}
+
+static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
+{
+    FilterGraphPriv *fgp = fgp_from_fg(fg);
+    InputStream *ist = NULL;
+    enum AVMediaType type = avfilter_pad_get_type(in->filter_ctx->input_pads, in->pad_idx);
+    InputFilter *ifilter;
+    int i, ret;
+
+    // TODO: support other filter types
+    if (type != AVMEDIA_TYPE_VIDEO && type != AVMEDIA_TYPE_AUDIO) {
+        av_log(NULL, AV_LOG_FATAL, "Only video and audio filters supported "
+               "currently.\n");
+        exit_program(1);
+    }
+
+    if (in->name) {
+        AVFormatContext *s;
+        AVStream       *st = NULL;
+        char *p;
+        int file_idx = strtol(in->name, &p, 0);
+
+        if (file_idx < 0 || file_idx >= nb_input_files) {
+            av_log(NULL, AV_LOG_FATAL, "Invalid file index %d in filtergraph description %s.\n",
+                   file_idx, fgp->graph_desc);
+            exit_program(1);
+        }
+        s = input_files[file_idx]->ctx;
+
+        for (i = 0; i < s->nb_streams; i++) {
+            enum AVMediaType stream_type = s->streams[i]->codecpar->codec_type;
+            if (stream_type != type &&
+                !(stream_type == AVMEDIA_TYPE_SUBTITLE &&
+                  type == AVMEDIA_TYPE_VIDEO /* sub2video hack */))
+                continue;
+            if (check_stream_specifier(s, s->streams[i], *p == ':' ? p + 1 : p) == 1) {
+                st = s->streams[i];
+                break;
+            }
+        }
+        if (!st) {
+            av_log(NULL, AV_LOG_FATAL, "Stream specifier '%s' in filtergraph description %s "
+                   "matches no streams.\n", p, fgp->graph_desc);
+            exit_program(1);
+        }
+        ist = input_files[file_idx]->streams[st->index];
+    } else {
+        ist = ist_find_unused(type);
+        if (!ist) {
+            av_log(NULL, AV_LOG_FATAL, "Cannot find a matching stream for "
+                   "unlabeled input pad %d on filter %s\n", in->pad_idx,
+                   in->filter_ctx->name);
+            exit_program(1);
+        }
+    }
+    av_assert0(ist);
+
+    ifilter         = ifilter_alloc(fg);
+    ifilter->name   = describe_filter_link(fg, in, 1);
+
+    ret = ifilter_bind_ist(ifilter, ist);
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_ERROR,
+               "Error binding an input stream to complex filtergraph input %s.\n",
+               in->name ? in->name : "");
+        exit_program(1);
+    }
 }
 
 int init_complex_filtergraph(FilterGraph *fg)
