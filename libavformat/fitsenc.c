@@ -199,6 +199,7 @@ const FFOutputFormat ff_fits_muxer = {
     .p.audio_codec  = AV_CODEC_ID_NONE,
     .p.video_codec  = AV_CODEC_ID_FITS,
     .priv_data_size = sizeof(FITSContext),
-    .write_header = fits_write_header,
-    .write_packet = fits_write_packet,
+    .write_header   = fits_write_header,
+    .write_packet   = fits_write_packet,
+    .p.flags        = AVFMT_NOTIMESTAMPS,
 };

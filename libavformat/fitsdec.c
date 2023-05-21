@@ -228,4 +228,5 @@ const AVInputFormat ff_fits_demuxer = {
     .read_header    = fits_read_header,
     .read_packet    = fits_read_packet,
     .priv_class     = &fits_demuxer_class,
+    .flags          = AVFMT_NOTIMESTAMPS,
 };
