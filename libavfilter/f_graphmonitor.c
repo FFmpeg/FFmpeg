@@ -99,8 +99,8 @@ enum {
 static const AVOption graphmonitor_options[] = {
     { "size", "set monitor size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str="hd720"}, 0, 0, VF },
     { "s",    "set monitor size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str="hd720"}, 0, 0, VF },
-    { "opacity", "set video opacity", OFFSET(opacity), AV_OPT_TYPE_FLOAT, {.dbl=.9}, 0, 1, VF },
-    { "o",       "set video opacity", OFFSET(opacity), AV_OPT_TYPE_FLOAT, {.dbl=.9}, 0, 1, VF },
+    { "opacity", "set video opacity", OFFSET(opacity), AV_OPT_TYPE_FLOAT, {.dbl=.9}, 0, 1, VFR },
+    { "o",       "set video opacity", OFFSET(opacity), AV_OPT_TYPE_FLOAT, {.dbl=.9}, 0, 1, VFR },
     { "mode", "set mode", OFFSET(mode), AV_OPT_TYPE_FLAGS, {.i64=0}, 0, MODE_MAX, VFR, "mode" },
     { "m",    "set mode", OFFSET(mode), AV_OPT_TYPE_FLAGS, {.i64=0}, 0, MODE_MAX, VFR, "mode" },
         { "full",    NULL, 0, AV_OPT_TYPE_CONST, {.i64=MODE_FULL},   0, 0, VFR, "mode" },
@@ -393,6 +393,7 @@ static int create_frame(AVFilterContext *ctx, int64_t pts)
     if (!out)
         return AVERROR(ENOMEM);
 
+    s->bg[3] = 255 * s->opacity;
     clear_image(s, out, outlink);
 
     s->cache_index = 0;
@@ -516,7 +517,6 @@ static int config_output(AVFilterLink *outlink)
 {
     GraphMonitorContext *s = outlink->src->priv;
 
-    s->bg[3] = 255 * s->opacity;
     s->white[0] = s->white[1] = s->white[2] = 255;
     s->yellow[0] = s->yellow[1] = 255;
     s->red[0] = 255;
