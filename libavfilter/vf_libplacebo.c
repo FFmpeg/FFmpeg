@@ -114,6 +114,8 @@ typedef struct LibplaceboContext {
 
     /* filter state */
     AVFifo *out_pts; ///< timestamps of wanted output frames
+    int64_t status_pts;
+    int status;
 
     /* settings */
     char *out_format_string;
@@ -808,19 +810,12 @@ static int libplacebo_activate(AVFilterContext *ctx)
     if (ret < 0)
         return ret;
 
-    if (ff_inlink_acknowledge_status(inlink, &status, &pts)) {
+    if (!s->status && ff_inlink_acknowledge_status(inlink, &status, &pts)) {
         pts = av_rescale_q_rnd(pts, inlink->time_base, outlink->time_base,
                                AV_ROUND_UP);
-        if (status == AVERROR_EOF) {
-            /* Signal EOF to pl_queue, and enqueue this output frame to
-             * make sure we see PL_QUEUE_EOF returned eventually */
-            pl_queue_push(s->queue, NULL);
-            if (!s->fps.num)
-                av_fifo_write(s->out_pts, &pts, 1);
-        } else {
-            ff_outlink_set_status(outlink, status, pts);
-            return 0;
-        }
+        pl_queue_push(s->queue, NULL); /* Signal EOF to pl_queue */
+        s->status = status;
+        s->status_pts = pts;
     }
 
     if (ff_outlink_frame_wanted(outlink)) {
@@ -830,7 +825,17 @@ static int libplacebo_activate(AVFilterContext *ctx)
         if (s->fps.num) {
             pts = outlink->frame_count_out;
         } else if (av_fifo_peek(s->out_pts, &pts, 1, 0) < 0) {
-            ff_inlink_request_frame(inlink);
+            /* No frames queued */
+            if (s->status) {
+                pts = s->status_pts;
+            } else {
+                ff_inlink_request_frame(inlink);
+                return 0;
+            }
+        }
+
+        if (s->status && pts >= s->status_pts) {
+            ff_outlink_set_status(outlink, s->status, s->status_pts);
             return 0;
         }
 
