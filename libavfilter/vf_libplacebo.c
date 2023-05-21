@@ -269,7 +269,7 @@ static void pl_av_log(void *log_ctx, enum pl_log_level level, const char *msg)
     av_log(log_ctx, av_lev, "%s\n", msg);
 }
 
-static const struct pl_tone_map_function *pl_get_tonemapping_func(int tm) {
+static const struct pl_tone_map_function *get_tonemapping_func(int tm) {
     switch (tm) {
     case TONE_MAP_AUTO:       return &pl_tone_map_auto;
     case TONE_MAP_CLIP:       return &pl_tone_map_clip;
@@ -427,7 +427,7 @@ static int update_settings(AVFilterContext *ctx)
         .tone_mapping_mode = s->tonemapping_mode,
         .tone_mapping_crosstalk = s->crosstalk,
 #endif
-        .tone_mapping_function = pl_get_tonemapping_func(s->tonemapping),
+        .tone_mapping_function = get_tonemapping_func(s->tonemapping),
         .tone_mapping_param = s->tonemapping_param,
         .inverse_tone_mapping = s->inverse_tonemapping,
         .lut_size = s->tonemapping_lut_size,
