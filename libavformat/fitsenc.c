@@ -84,48 +84,48 @@ static int write_image_header(AVFormatContext *s)
     float datamax, datamin;
 
     switch (encctx->format) {
-        case AV_PIX_FMT_GRAY8:
-            bitpix = 8;
-            naxis = 2;
-            datamin = 0;
-            datamax = 255;
-            break;
-        case AV_PIX_FMT_GRAY16BE:
-            bitpix = 16;
-            naxis = 2;
-            bzero = 32768;
-            datamin = 0;
-            datamax = 65535;
-            break;
-        case AV_PIX_FMT_GBRP:
-        case AV_PIX_FMT_GBRAP:
-            bitpix = 8;
-            naxis = 3;
-            rgb = 1;
-            if (encctx->format == AV_PIX_FMT_GBRP) {
-                naxis3 = 3;
-            } else {
-                naxis3 = 4;
-            }
-            datamin = 0;
-            datamax = 255;
-            break;
-        case AV_PIX_FMT_GBRP16BE:
-        case AV_PIX_FMT_GBRAP16BE:
-            bitpix = 16;
-            naxis = 3;
-            rgb = 1;
-            if (encctx->format == AV_PIX_FMT_GBRP16BE) {
-                naxis3 = 3;
-            } else {
-                naxis3 = 4;
-            }
-            bzero = 32768;
-            datamin = 0;
-            datamax = 65535;
-            break;
-        default:
-            return AVERROR(EINVAL);
+    case AV_PIX_FMT_GRAY8:
+        bitpix = 8;
+        naxis = 2;
+        datamin = 0;
+        datamax = 255;
+        break;
+    case AV_PIX_FMT_GRAY16BE:
+        bitpix = 16;
+        naxis = 2;
+        bzero = 32768;
+        datamin = 0;
+        datamax = 65535;
+        break;
+    case AV_PIX_FMT_GBRP:
+    case AV_PIX_FMT_GBRAP:
+        bitpix = 8;
+        naxis = 3;
+        rgb = 1;
+        if (encctx->format == AV_PIX_FMT_GBRP) {
+            naxis3 = 3;
+        } else {
+            naxis3 = 4;
+        }
+        datamin = 0;
+        datamax = 255;
+        break;
+    case AV_PIX_FMT_GBRP16BE:
+    case AV_PIX_FMT_GBRAP16BE:
+        bitpix = 16;
+        naxis = 3;
+        rgb = 1;
+        if (encctx->format == AV_PIX_FMT_GBRP16BE) {
+            naxis3 = 3;
+        } else {
+            naxis3 = 4;
+        }
+        bzero = 32768;
+        datamin = 0;
+        datamax = 65535;
+        break;
+    default:
+        return AVERROR(EINVAL);
     }
 
     if (fitsctx->first_image) {
