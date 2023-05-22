@@ -71,7 +71,12 @@ AVFILTER_DEFINE_CLASS(tpad);
 
 static int query_formats(AVFilterContext *ctx)
 {
-    return ff_set_common_formats(ctx, ff_draw_supported_pixel_formats(0));
+    TPadContext *s = ctx->priv;
+    if ((s->stop_mode == MODE_ADD && s->pad_stop != 0) ||
+        (s->start_mode == MODE_ADD && s->pad_start != 0))
+        return ff_set_common_formats(ctx, ff_draw_supported_pixel_formats(0));
+
+    return ff_set_common_formats(ctx, ff_all_formats(AVMEDIA_TYPE_VIDEO));
 }
 
 static int activate(AVFilterContext *ctx)
@@ -190,8 +195,11 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     TPadContext *s = ctx->priv;
 
-    ff_draw_init(&s->draw, inlink->format, 0);
-    ff_draw_color(&s->draw, &s->color, s->rgba_color);
+    if ((s->stop_mode == MODE_ADD && s->pad_stop != 0) ||
+        (s->start_mode == MODE_ADD && s->pad_start != 0)) {
+        ff_draw_init(&s->draw, inlink->format, 0);
+        ff_draw_color(&s->draw, &s->color, s->rgba_color);
+    }
 
     if (s->start_duration)
         s->pad_start = av_rescale_q(s->start_duration, inlink->frame_rate, av_inv_q(AV_TIME_BASE_Q));
