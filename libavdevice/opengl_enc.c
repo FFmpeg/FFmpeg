@@ -594,7 +594,8 @@ static av_cold int opengl_read_limits(AVFormatContext *h)
     }
 
     av_log(h, AV_LOG_DEBUG, "OpenGL version: %s\n", version);
-    sscanf(version, "%d.%d", &major, &minor);
+    if (sscanf(version, "%d.%d", &major, &minor) != 2)
+        return AVERROR(ENOSYS);
 
     for (i = 0; required_extensions[i].extension; i++) {
         if (major < required_extensions[i].major &&
