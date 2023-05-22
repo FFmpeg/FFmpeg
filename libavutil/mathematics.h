@@ -288,6 +288,10 @@ int64_t av_rescale_delta(AVRational in_tb, int64_t in_ts,  AVRational fs_tb, int
  */
 int64_t av_add_stable(AVRational ts_tb, int64_t ts, AVRational inc_tb, int64_t inc);
 
+/**
+ * 0th order modified bessel function of the first kind.
+ */
+double av_bessel_i0(double x);
 
 /**
  * @}
