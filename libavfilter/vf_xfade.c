@@ -2067,9 +2067,13 @@ static int xfade_activate(AVFilterContext *ctx)
 
     if (s->xfade_is_over) {
         if (!s->eof[0]) {
-            ret = ff_inlink_consume_frame(ctx->inputs[0], &in);
-            if (ret > 0)
-                av_frame_free(&in);
+            if (ff_inlink_queued_frames(ctx->inputs[0]) > 0) {
+                ret = ff_inlink_consume_frame(ctx->inputs[0], &in);
+                if (ret > 0)
+                    av_frame_free(&in);
+            }
+            ff_inlink_set_status(ctx->inputs[0], AVERROR_EOF);
+            s->eof[0] = 1;
         }
         ret = ff_inlink_consume_frame(ctx->inputs[1], &in);
         if (ret < 0) {
