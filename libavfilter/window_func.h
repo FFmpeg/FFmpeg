@@ -59,19 +59,6 @@ enum WindowFunc     { WFUNC_RECT, WFUNC_HANNING, WFUNC_HAMMING, WFUNC_BLACKMAN,
         { "bohman",   "Bohman",           0, AV_OPT_TYPE_CONST, {.i64=WFUNC_BOHMAN},   0, 0, flag, "win_func" }, \
         { "kaiser",   "Kaiser",           0, AV_OPT_TYPE_CONST, {.i64=WFUNC_KAISER},   0, 0, flag, "win_func" }
 
-static inline double get_i0(double x)
-{
-    double y = 1.0, prev = 1.0, i = 1.0;
-
-    while (fabs(prev) > 1e-20) {
-        double summand = prev * x * x / (4 * i * i);
-        y += summand;
-        prev = summand;
-        i++;
-    }
-
-    return y;
-}
 
 static inline void generate_window_func(float *lut, int N, int win_func,
                                         float *overlap)
@@ -232,13 +219,15 @@ static inline void generate_window_func(float *lut, int N, int win_func,
         *overlap = 0.75;
         break;
     case WFUNC_KAISER:
+    {
+        double scale = 1.0 / av_bessel_i0(12.);
         for (n = 0; n < N; n++) {
             double x = 2.0 / (double)(N - 1);
-
-            lut[n] = get_i0(12. * sqrt(1. - SQR(n * x - 1.))) / get_i0(12.);
+            lut[n] = av_bessel_i0(12. * sqrt(1. - SQR(n * x - 1.))) * scale;
         }
         *overlap = 0.75;
         break;
+    }
     default:
         av_assert0(0);
     }
