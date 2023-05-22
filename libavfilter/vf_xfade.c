@@ -1406,6 +1406,7 @@ static void fadegrays##name##_transition(AVFilterContext *ctx,                  
         for (int x = 0; x < width; x++) {                                            \
             int bg[2][4];                                                            \
             if (is_rgb) {                                                            \
+                bg[0][0] = bg[1][0] = 0;                                             \
                 for (int p = 0; p < s->nb_planes; p++) {                             \
                     const type *xf0 = (const type *)(a->data[p] +                    \
                                                      y * a->linesize[p]);            \
