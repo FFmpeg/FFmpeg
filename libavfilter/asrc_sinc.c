@@ -91,27 +91,12 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_samplerates_from_list(ctx, sample_rates);
 }
 
-static float bessel_I_0(float x)
-{
-    float term = 1, sum = 1, last_sum, x2 = x / 2;
-    int i = 1;
-
-    do {
-        float y = x2 / i++;
-
-        last_sum = sum;
-        sum += term *= y * y;
-    } while (sum != last_sum);
-
-    return sum;
-}
-
 static float *make_lpf(int num_taps, float Fc, float beta, float rho,
                        float scale, int dc_norm)
 {
     int i, m = num_taps - 1;
     float *h = av_calloc(num_taps, sizeof(*h)), sum = 0;
-    float mult = scale / bessel_I_0(beta), mult1 = 1.f / (.5f * m + rho);
+    float mult = scale / av_bessel_i0(beta), mult1 = 1.f / (.5f * m + rho);
 
     if (!h)
         return NULL;
@@ -121,7 +106,7 @@ static float *make_lpf(int num_taps, float Fc, float beta, float rho,
     for (i = 0; i <= m / 2; i++) {
         float z = i - .5f * m, x = z * M_PI, y = z * mult1;
         h[i] = x ? sinf(Fc * x) / x : Fc;
-        sum += h[i] *= bessel_I_0(beta * sqrtf(1.f - y * y)) * mult;
+        sum += h[i] *= av_bessel_i0(beta * sqrtf(1.f - y * y)) * mult;
         if (m - i != i) {
             h[m - i] = h[i];
             sum += h[i];
