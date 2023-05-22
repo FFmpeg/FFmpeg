@@ -6431,7 +6431,7 @@ Set the count for trimming silence from the end of audio.
 To remove silence from the middle of a file, specify a @var{stop_periods}
 that is negative. This value is then treated as a positive value and is
 used to indicate the effect should restart processing as specified by
-@var{start_periods}, making it suitable for removing periods of silence
+@var{stop_periods}, making it suitable for removing periods of silence
 in the middle of the audio.
 Default value is @code{0}.
 
