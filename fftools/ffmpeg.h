@@ -751,8 +751,6 @@ void ifilter_sub2video_heartbeat(InputFilter *ifilter, int64_t pts, AVRational t
  */
 int ifilter_parameters_from_dec(InputFilter *ifilter, const AVCodecContext *dec);
 
-int ifilter_has_all_input_formats(FilterGraph *fg);
-
 void ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost);
 
 /**

@@ -537,6 +537,18 @@ fail:
     return ret;
 }
 
+// Filters can be configured only if the formats of all inputs are known.
+static int ifilter_has_all_input_formats(FilterGraph *fg)
+{
+    int i;
+    for (i = 0; i < fg->nb_inputs; i++) {
+        InputFilterPriv *ifp = ifp_from_ifilter(fg->inputs[i]);
+        if (ifp->format < 0)
+            return 0;
+    }
+    return 1;
+}
+
 static char *describe_filter_link(FilterGraph *fg, AVFilterInOut *inout, int in)
 {
     AVFilterContext *ctx = inout->filter_ctx;
@@ -1658,18 +1670,6 @@ static int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *fr
     ifp->displaymatrix_present = !!sd;
 
     return 0;
-}
-
-// Filters can be configured only if the formats of all inputs are known.
-int ifilter_has_all_input_formats(FilterGraph *fg)
-{
-    int i;
-    for (i = 0; i < fg->nb_inputs; i++) {
-        InputFilterPriv *ifp = ifp_from_ifilter(fg->inputs[i]);
-        if (ifp->format < 0)
-            return 0;
-    }
-    return 1;
 }
 
 int filtergraph_is_simple(FilterGraph *fg)
