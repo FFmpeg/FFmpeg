@@ -21,8 +21,6 @@
 #include "libavutil/attributes.h"
 #include "kbdwin.h"
 
-#define BESSEL_I0_ITER 50 // default: 50 iterations of Bessel I0 approximation
-
 av_cold void ff_kbd_window_init(float *window, float alpha, int n)
 {
    int i, j;
@@ -34,9 +32,7 @@ av_cold void ff_kbd_window_init(float *window, float alpha, int n)
 
    for (i = 0; i < n; i++) {
        tmp = i * (n - i) * alpha2;
-       bessel = 1.0;
-       for (j = BESSEL_I0_ITER; j > 0; j--)
-           bessel = bessel * tmp / (j * j) + 1;
+       bessel = av_bessel_i0(sqrt(tmp) * 2);
        sum += bessel;
        local_window[i] = sum;
    }
