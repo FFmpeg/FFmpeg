@@ -834,7 +834,9 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
         // for progressive video, the height should be aligned to 16 for
         // H.264.  For HEVC, depending on the version of MFX, it should be
         // either 32 or 16.  The lower number is better if possible.
-        q->height_align = avctx->codec_id == AV_CODEC_ID_HEVC ? 32 : 16;
+        // For AV1, it is 32
+        q->height_align = (avctx->codec_id == AV_CODEC_ID_HEVC ||
+                           avctx->codec_id == AV_CODEC_ID_AV1) ? 32 : 16;
     }
     q->param.mfx.FrameInfo.Height = FFALIGN(avctx->height, q->height_align);
 
