@@ -390,6 +390,11 @@ int dec_packet(InputStream *ist, const AVPacket *pkt, int no_eof)
     if (ret < 0 && !(ret == AVERROR_EOF && !pkt)) {
         // In particular, we don't expect AVERROR(EAGAIN), because we read all
         // decoded frames with avcodec_receive_frame() until done.
+        if (ret == AVERROR(EAGAIN)) {
+            av_log(ist, AV_LOG_FATAL, "A decoder returned an unexpected error code. "
+                                      "This is a bug, please report it.\n");
+            exit_program(1);
+        }
         av_log(ist, AV_LOG_ERROR, "Error submitting %s to decoder: %s\n",
                pkt ? "packet" : "EOF", av_err2str(ret));
         if (exit_on_error)
