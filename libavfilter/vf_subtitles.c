@@ -45,6 +45,8 @@
 #include "formats.h"
 #include "video.h"
 
+#define FF_ASS_FEATURE_WRAP_UNICODE     (LIBASS_VERSION >= 0x01600010)
+
 typedef struct AssContext {
     const AVClass *class;
     ASS_Library  *library;
@@ -61,6 +63,7 @@ typedef struct AssContext {
     int original_w, original_h;
     int shaping;
     FFDrawContext draw;
+    int wrap_unicode;
 } AssContext;
 
 #define OFFSET(x) offsetof(AssContext, x)
@@ -271,6 +274,9 @@ static const AVOption subtitles_options[] = {
     {"stream_index", "set stream index",             OFFSET(stream_index), AV_OPT_TYPE_INT,    { .i64 = -1 }, -1,       INT_MAX,  FLAGS},
     {"si",           "set stream index",             OFFSET(stream_index), AV_OPT_TYPE_INT,    { .i64 = -1 }, -1,       INT_MAX,  FLAGS},
     {"force_style",  "force subtitle style",         OFFSET(force_style),  AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, FLAGS},
+#if FF_ASS_FEATURE_WRAP_UNICODE
+    {"wrap_unicode", "break lines according to the Unicode Line Breaking Algorithm", OFFSET(wrap_unicode), AV_OPT_TYPE_BOOL, { .i64 = -1 }, -1, 1, FLAGS },
+#endif
     {NULL},
 };
 
@@ -431,6 +437,18 @@ static av_cold int init_subtitles(AVFilterContext *ctx)
     ret = avcodec_open2(dec_ctx, NULL, &codec_opts);
     if (ret < 0)
         goto end;
+
+#if FF_ASS_FEATURE_WRAP_UNICODE
+    /* Don't overwrite wrap automatically for native ASS */
+    if (ass->wrap_unicode == -1)
+        ass->wrap_unicode = st->codecpar->codec_id != AV_CODEC_ID_ASS;
+    if (ass->wrap_unicode) {
+        ret = ass_track_set_feature(ass->track, ASS_FEATURE_WRAP_UNICODE, 1);
+        if (ret < 0)
+            av_log(ctx, AV_LOG_WARNING,
+                   "libass wasn't built with ASS_FEATURE_WRAP_UNICODE support\n");
+    }
+#endif
 
     if (ass->force_style) {
         char **list = NULL;
