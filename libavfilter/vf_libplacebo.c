@@ -317,6 +317,8 @@ static void set_gamut_mode(struct pl_color_map_params *p, int gamut_mode)
     av_assert0(0);
 };
 
+static int update_settings(AVFilterContext *ctx);
+
 static int parse_shader(AVFilterContext *avctx, const void *shader, size_t len)
 {
     LibplaceboContext *s = avctx->priv;
@@ -329,7 +331,7 @@ static int parse_shader(AVFilterContext *avctx, const void *shader, size_t len)
     }
 
     s->hooks[s->num_hooks++] = hook;
-    return 0;
+    return update_settings(avctx);
 }
 
 static int find_scaler(AVFilterContext *avctx,
