@@ -1849,6 +1849,8 @@ static int set_stream_info_from_input_stream(AVStream *st, struct playlist *pls,
     // copy disposition
     st->disposition = ist->disposition;
 
+    av_dict_copy(&st->metadata, ist->metadata, 0);
+
     // copy side data
     for (int i = 0; i < ist->nb_side_data; i++) {
         const AVPacketSideData *sd_src = &ist->side_data[i];
