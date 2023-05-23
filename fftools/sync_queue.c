@@ -27,6 +27,7 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/mem.h"
 #include "libavutil/samplefmt.h"
+#include "libavutil/timestamp.h"
 
 #include "objpool.h"
 #include "sync_queue.h"
@@ -86,6 +87,8 @@ typedef struct SyncQueueStream {
 
 struct SyncQueue {
     enum SyncQueueType type;
+
+    void *logctx;
 
     /* no more frames will be sent for any stream */
     int finished;
@@ -169,6 +172,11 @@ static void finish_stream(SyncQueue *sq, unsigned int stream_idx)
 {
     SyncQueueStream *st = &sq->streams[stream_idx];
 
+    if (!st->finished)
+        av_log(sq->logctx, AV_LOG_DEBUG,
+               "sq: finish %u; head ts %s\n", stream_idx,
+               av_ts2timestr(st->head_ts, &st->tb));
+
     st->finished = 1;
 
     if (st->limiting && st->head_ts != AV_NOPTS_VALUE) {
@@ -186,8 +194,14 @@ static void finish_stream(SyncQueue *sq, unsigned int stream_idx)
         for (unsigned int i = 0; i < sq->nb_streams; i++) {
             SyncQueueStream *st1 = &sq->streams[i];
             if (st != st1 && st1->head_ts != AV_NOPTS_VALUE &&
-                av_compare_ts(st->head_ts, st->tb, st1->head_ts, st1->tb) <= 0)
+                av_compare_ts(st->head_ts, st->tb, st1->head_ts, st1->tb) <= 0) {
+                if (!st1->finished)
+                    av_log(sq->logctx, AV_LOG_DEBUG,
+                           "sq: finish secondary %u; head ts %s\n", i,
+                           av_ts2timestr(st1->head_ts, &st1->tb));
+
                 st1->finished = 1;
+            }
         }
     }
 
@@ -197,6 +211,8 @@ static void finish_stream(SyncQueue *sq, unsigned int stream_idx)
             return;
     }
     sq->finished = 1;
+
+    av_log(sq->logctx, AV_LOG_DEBUG, "sq: finish queue\n");
 }
 
 static void queue_head_update(SyncQueue *sq)
@@ -306,6 +322,9 @@ static int overflow_heartbeat(SyncQueue *sq, int stream_idx)
         if (st1->head_ts != AV_NOPTS_VALUE)
             ts = FFMAX(st1->head_ts + 1, ts);
 
+        av_log(sq->logctx, AV_LOG_DEBUG, "sq: %u overflow heardbeat %s -> %s\n",
+               i, av_ts2timestr(st1->head_ts, &st1->tb), av_ts2timestr(ts, &st1->tb));
+
         stream_update_ts(sq, i, ts);
     }
 
@@ -323,6 +342,7 @@ int sq_send(SyncQueue *sq, unsigned int stream_idx, SyncQueueFrame frame)
     st = &sq->streams[stream_idx];
 
     if (frame_null(sq, frame)) {
+        av_log(sq->logctx, AV_LOG_DEBUG, "sq: %u EOF\n", stream_idx);
         finish_stream(sq, stream_idx);
         return 0;
     }
@@ -347,6 +367,9 @@ int sq_send(SyncQueue *sq, unsigned int stream_idx, SyncQueueFrame frame)
 
     ts = frame_end(sq, dst, 0);
 
+    av_log(sq->logctx, AV_LOG_DEBUG, "sq: send %u ts %s\n", stream_idx,
+           av_ts2timestr(ts, &st->tb));
+
     ret = av_fifo_write(st->fifo, &dst, 1);
     if (ret < 0) {
         frame_move(sq, frame, dst);
@@ -364,8 +387,12 @@ int sq_send(SyncQueue *sq, unsigned int stream_idx, SyncQueueFrame frame)
     else
         st->frames_sent++;
 
-    if (st->frames_sent >= st->frames_max)
+    if (st->frames_sent >= st->frames_max) {
+        av_log(sq->logctx, AV_LOG_DEBUG, "sq: %u frames_max %"PRIu64" reached\n",
+               stream_idx, st->frames_max);
+
         finish_stream(sq, stream_idx);
+    }
 
     return 0;
 }
@@ -531,6 +558,12 @@ static int receive_for_stream(SyncQueue *sq, unsigned int stream_idx,
                 st->samples_queued -= frame_samples(sq, frame);
             }
 
+            av_log(sq->logctx, AV_LOG_DEBUG,
+                   "sq: receive %u ts %s queue head %d ts %s\n", stream_idx,
+                   av_ts2timestr(frame_end(sq, frame, 0), &st->tb),
+                   sq->head_stream,
+                   st_head ? av_ts2timestr(st_head->head_ts, &st_head->tb) : "N/A");
+
             return 0;
         }
     }
@@ -630,7 +663,7 @@ void sq_frame_samples(SyncQueue *sq, unsigned int stream_idx,
     sq->align_mask = av_cpu_max_align() - 1;
 }
 
-SyncQueue *sq_alloc(enum SyncQueueType type, int64_t buf_size_us)
+SyncQueue *sq_alloc(enum SyncQueueType type, int64_t buf_size_us, void *logctx)
 {
     SyncQueue *sq = av_mallocz(sizeof(*sq));
 
@@ -639,6 +672,7 @@ SyncQueue *sq_alloc(enum SyncQueueType type, int64_t buf_size_us)
 
     sq->type                 = type;
     sq->buf_size_us          = buf_size_us;
+    sq->logctx               = logctx;
 
     sq->head_stream          = -1;
     sq->head_finished_stream = -1;

@@ -1625,7 +1625,7 @@ static int setup_sync_queues(Muxer *mux, AVFormatContext *oc, int64_t buf_size_u
      * - at least one audio encoder requires constant frame sizes
      */
     if ((of->shortest && nb_av_enc > 1) || limit_frames_av_enc || nb_audio_fs) {
-        of->sq_encode = sq_alloc(SYNC_QUEUE_FRAMES, buf_size_us);
+        of->sq_encode = sq_alloc(SYNC_QUEUE_FRAMES, buf_size_us, mux);
         if (!of->sq_encode)
             return AVERROR(ENOMEM);
 
@@ -1650,7 +1650,7 @@ static int setup_sync_queues(Muxer *mux, AVFormatContext *oc, int64_t buf_size_u
     /* if there are any additional interleaved streams, then ALL the streams
      * are also synchronized before sending them to the muxer */
     if (nb_interleaved > nb_av_enc) {
-        mux->sq_mux = sq_alloc(SYNC_QUEUE_PACKETS, buf_size_us);
+        mux->sq_mux = sq_alloc(SYNC_QUEUE_PACKETS, buf_size_us, mux);
         if (!mux->sq_mux)
             return AVERROR(ENOMEM);
 

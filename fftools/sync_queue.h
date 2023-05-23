@@ -50,7 +50,7 @@ typedef struct SyncQueue SyncQueue;
  *
  * @param buf_size_us maximum duration that will be buffered in microseconds
  */
-SyncQueue *sq_alloc(enum SyncQueueType type, int64_t buf_size_us);
+SyncQueue *sq_alloc(enum SyncQueueType type, int64_t buf_size_us, void *logctx);
 void       sq_free(SyncQueue **sq);
 
 /**
