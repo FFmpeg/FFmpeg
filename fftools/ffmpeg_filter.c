@@ -104,6 +104,10 @@ typedef struct InputFilterPriv {
         AVChannelLayout     ch_layout;
     } fallback;
 
+    struct {
+        ///< queue of AVSubtitle* before filter init
+        AVFifo *queue;
+    } sub2video;
 } InputFilterPriv;
 
 static InputFilterPriv *ifp_from_ifilter(InputFilter *ifilter)
@@ -593,7 +597,6 @@ void fg_free(FilterGraph **pfg)
     for (int j = 0; j < fg->nb_inputs; j++) {
         InputFilter *ifilter = fg->inputs[j];
         InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
-        InputStream     *ist = ifp->ist;
 
         if (ifp->frame_queue) {
             AVFrame *frame;
@@ -601,11 +604,11 @@ void fg_free(FilterGraph **pfg)
                 av_frame_free(&frame);
             av_fifo_freep2(&ifp->frame_queue);
         }
-        if (ist && ist->sub2video.sub_queue) {
+        if (ifp->sub2video.queue) {
             AVSubtitle sub;
-            while (av_fifo_read(ist->sub2video.sub_queue, &sub, 1) >= 0)
+            while (av_fifo_read(ifp->sub2video.queue, &sub, 1) >= 0)
                 avsubtitle_free(&sub);
-            av_fifo_freep2(&ist->sub2video.sub_queue);
+            av_fifo_freep2(&ifp->sub2video.queue);
         }
 
         av_channel_layout_uninit(&ifp->fallback.ch_layout);
@@ -1495,10 +1498,11 @@ int configure_filtergraph(FilterGraph *fg)
 
     /* process queued up subtitle packets */
     for (i = 0; i < fg->nb_inputs; i++) {
-        InputStream *ist = ifp_from_ifilter(fg->inputs[i])->ist;
-        if (ist->sub2video.sub_queue && ist->sub2video.frame) {
+        InputFilterPriv *ifp = ifp_from_ifilter(fg->inputs[i]);
+        InputStream     *ist = ifp->ist;
+        if (ifp->sub2video.queue && ist->sub2video.frame) {
             AVSubtitle tmp;
-            while (av_fifo_read(ist->sub2video.sub_queue, &tmp, 1) >= 0) {
+            while (av_fifo_read(ifp->sub2video.queue, &tmp, 1) >= 0) {
                 sub2video_update(ist, INT64_MIN, &tmp);
                 avsubtitle_free(&tmp);
             }
@@ -1649,16 +1653,16 @@ int ifilter_sub2video(InputFilter *ifilter, const AVSubtitle *subtitle)
     } else {
         AVSubtitle sub;
 
-        if (!ist->sub2video.sub_queue)
-            ist->sub2video.sub_queue = av_fifo_alloc2(8, sizeof(AVSubtitle), AV_FIFO_FLAG_AUTO_GROW);
-        if (!ist->sub2video.sub_queue)
+        if (!ifp->sub2video.queue)
+            ifp->sub2video.queue = av_fifo_alloc2(8, sizeof(AVSubtitle), AV_FIFO_FLAG_AUTO_GROW);
+        if (!ifp->sub2video.queue)
             return AVERROR(ENOMEM);
 
         ret = copy_av_subtitle(&sub, subtitle);
         if (ret < 0)
             return ret;
 
-        ret = av_fifo_write(ist->sub2video.sub_queue, &sub, 1);
+        ret = av_fifo_write(ifp->sub2video.queue, &sub, 1);
         if (ret < 0) {
             avsubtitle_free(&sub);
             return ret;

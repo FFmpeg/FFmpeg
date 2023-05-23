@@ -374,7 +374,6 @@ typedef struct InputStream {
     struct sub2video {
         int64_t last_pts;
         int64_t end_pts;
-        AVFifo *sub_queue;    ///< queue of AVSubtitle* before filter init
         AVFrame *frame;
         int w, h;
         unsigned int initialize; ///< marks if sub2video_update should force an initialization
