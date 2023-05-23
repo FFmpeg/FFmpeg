@@ -211,7 +211,8 @@ static void sub2video_push_ref(InputStream *ist, int64_t pts)
     }
 }
 
-void sub2video_update(InputStream *ist, int64_t heartbeat_pts, AVSubtitle *sub)
+void sub2video_update(InputStream *ist, int64_t heartbeat_pts,
+                      const AVSubtitle *sub)
 {
     AVFrame *frame = ist->sub2video.frame;
     int8_t *dst;
@@ -754,7 +755,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
     first_report = 0;
 }
 
-static int copy_av_subtitle(AVSubtitle *dst, AVSubtitle *src)
+static int copy_av_subtitle(AVSubtitle *dst, const AVSubtitle *src)
 {
     int ret = AVERROR_BUG;
     AVSubtitle tmp = {

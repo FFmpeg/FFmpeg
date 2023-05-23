@@ -742,7 +742,8 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost,
                             char *graph_desc);
 int init_complex_filtergraph(FilterGraph *fg);
 
-void sub2video_update(InputStream *ist, int64_t heartbeat_pts, AVSubtitle *sub);
+void sub2video_update(InputStream *ist, int64_t heartbeat_pts,
+                      const AVSubtitle *sub);
 
 int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame, int keep_reference);
 int ifilter_send_eof(InputFilter *ifilter, int64_t pts, AVRational tb);
