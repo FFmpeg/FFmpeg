@@ -1638,6 +1638,36 @@ int reap_filters(int flush)
     return 0;
 }
 
+int ifilter_sub2video(InputFilter *ifilter, const AVSubtitle *subtitle)
+{
+    InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
+    InputStream     *ist = ifp->ist;
+    int ret;
+
+    if (ist->sub2video.frame) {
+        sub2video_update(ist, INT64_MIN, subtitle);
+    } else {
+        AVSubtitle sub;
+
+        if (!ist->sub2video.sub_queue)
+            ist->sub2video.sub_queue = av_fifo_alloc2(8, sizeof(AVSubtitle), AV_FIFO_FLAG_AUTO_GROW);
+        if (!ist->sub2video.sub_queue)
+            return AVERROR(ENOMEM);
+
+        ret = copy_av_subtitle(&sub, subtitle);
+        if (ret < 0)
+            return ret;
+
+        ret = av_fifo_write(ist->sub2video.sub_queue, &sub, 1);
+        if (ret < 0) {
+            avsubtitle_free(&sub);
+            return ret;
+        }
+    }
+
+    return 0;
+}
+
 int ifilter_send_eof(InputFilter *ifilter, int64_t pts, AVRational tb)
 {
     InputFilterPriv *ifp = ifp_from_ifilter(ifilter);

@@ -744,9 +744,11 @@ int init_complex_filtergraph(FilterGraph *fg);
 
 void sub2video_update(InputStream *ist, int64_t heartbeat_pts,
                       const AVSubtitle *sub);
+int copy_av_subtitle(AVSubtitle *dst, const AVSubtitle *src);
 
 int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame, int keep_reference);
 int ifilter_send_eof(InputFilter *ifilter, int64_t pts, AVRational tb);
+int ifilter_sub2video(InputFilter *ifilter, const AVSubtitle *sub);
 
 /**
  * Set up fallback filtering parameters from a decoder context. They will only

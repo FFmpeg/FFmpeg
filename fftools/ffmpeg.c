@@ -755,7 +755,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
     first_report = 0;
 }
 
-static int copy_av_subtitle(AVSubtitle *dst, const AVSubtitle *src)
+int copy_av_subtitle(AVSubtitle *dst, const AVSubtitle *src)
 {
     int ret = AVERROR_BUG;
     AVSubtitle tmp = {
