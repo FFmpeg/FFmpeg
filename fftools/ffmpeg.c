@@ -252,9 +252,8 @@ void sub2video_update(InputStream *ist, int64_t heartbeat_pts,
     ist->sub2video.initialize = 0;
 }
 
-static void sub2video_heartbeat(InputStream *ist, int64_t pts)
+static void sub2video_heartbeat(InputFile *infile, int64_t pts, AVRational tb)
 {
-    InputFile *infile = input_files[ist->file_index];
     int i, j, nb_reqs;
     int64_t pts2;
 
@@ -268,7 +267,7 @@ static void sub2video_heartbeat(InputStream *ist, int64_t pts)
             continue;
         /* subtitles seem to be usually muxed ahead of other streams;
            if not, subtracting a larger time here is necessary */
-        pts2 = av_rescale_q(pts, ist->st->time_base, ist2->st->time_base) - 1;
+        pts2 = av_rescale_q(pts, tb, ist2->st->time_base) - 1;
         /* do not send the heartbeat frame if the subtitle is already ahead */
         if (pts2 <= ist2->sub2video.last_pts)
             continue;
@@ -1231,7 +1230,7 @@ static int process_input(int file_index)
 
     ist = ifile->streams[pkt->stream_index];
 
-    sub2video_heartbeat(ist, pkt->pts);
+    sub2video_heartbeat(ifile, pkt->pts, pkt->time_base);
 
     process_input_packet(ist, pkt, 0);
 
