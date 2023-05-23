@@ -217,17 +217,26 @@ static void finish_stream(SyncQueue *sq, unsigned int stream_idx)
 
 static void queue_head_update(SyncQueue *sq)
 {
+    av_assert0(sq->have_limiting);
+
     if (sq->head_stream < 0) {
+        unsigned first_limiting = UINT_MAX;
+
         /* wait for one timestamp in each stream before determining
          * the queue head */
         for (unsigned int i = 0; i < sq->nb_streams; i++) {
             SyncQueueStream *st = &sq->streams[i];
-            if (st->limiting && st->head_ts == AV_NOPTS_VALUE)
+            if (!st->limiting)
+                continue;
+            if (st->head_ts == AV_NOPTS_VALUE)
                 return;
+            if (first_limiting == UINT_MAX)
+                first_limiting = i;
         }
 
         // placeholder value, correct one will be found below
-        sq->head_stream = 0;
+        av_assert0(first_limiting < UINT_MAX);
+        sq->head_stream = first_limiting;
     }
 
     for (unsigned int i = 0; i < sq->nb_streams; i++) {
