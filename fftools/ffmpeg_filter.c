@@ -458,12 +458,12 @@ static int ifilter_bind_ist(InputFilter *ifilter, InputStream *ist)
     InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
     int ret;
 
+    ifp->ist             = ist;
+    ifp->type_src        = ist->st->codecpar->codec_type;
+
     ret = ist_filter_add(ist, ifilter, filtergraph_is_simple(ifilter->graph));
     if (ret < 0)
         return ret;
-
-    ifp->ist             = ist;
-    ifp->type_src        = ist->st->codecpar->codec_type;
 
     return 0;
 }
@@ -1110,38 +1110,6 @@ void check_filter_outputs(void)
 
 static int sub2video_prepare(InputStream *ist, InputFilter *ifilter)
 {
-    InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
-    AVFormatContext *avf = input_files[ist->file_index]->ctx;
-    int i, w, h;
-
-    /* Compute the size of the canvas for the subtitles stream.
-       If the subtitles codecpar has set a size, use it. Otherwise use the
-       maximum dimensions of the video streams in the same file. */
-    w = ifp->width;
-    h = ifp->height;
-    if (!(w && h)) {
-        for (i = 0; i < avf->nb_streams; i++) {
-            if (avf->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-                w = FFMAX(w, avf->streams[i]->codecpar->width);
-                h = FFMAX(h, avf->streams[i]->codecpar->height);
-            }
-        }
-        if (!(w && h)) {
-            w = FFMAX(w, 720);
-            h = FFMAX(h, 576);
-        }
-        av_log(avf, AV_LOG_INFO, "sub2video: using %dx%d canvas\n", w, h);
-    }
-    ist->sub2video.w = ifp->width  = w;
-    ist->sub2video.h = ifp->height = h;
-
-    ifp->width  = ist->dec_ctx->width  ? ist->dec_ctx->width  : ist->sub2video.w;
-    ifp->height = ist->dec_ctx->height ? ist->dec_ctx->height : ist->sub2video.h;
-
-    /* rectangles are AV_PIX_FMT_PAL8, but we have no guarantee that the
-       palettes for all rectangles are identical or compatible */
-    ifp->format = AV_PIX_FMT_RGB32;
-
     ist->sub2video.frame = av_frame_alloc();
     if (!ist->sub2video.frame)
         return AVERROR(ENOMEM);
@@ -1525,7 +1493,7 @@ int ifilter_parameters_from_dec(InputFilter *ifilter, const AVCodecContext *dec)
         ifp->fallback.width                  = dec->width;
         ifp->fallback.height                 = dec->height;
         ifp->fallback.sample_aspect_ratio    = dec->sample_aspect_ratio;
-    } else {
+    } else if (dec->codec_type == AVMEDIA_TYPE_AUDIO) {
         int ret;
 
         ifp->fallback.format                 = dec->sample_fmt;
@@ -1534,6 +1502,17 @@ int ifilter_parameters_from_dec(InputFilter *ifilter, const AVCodecContext *dec)
         ret = av_channel_layout_copy(&ifp->fallback.ch_layout, &dec->ch_layout);
         if (ret < 0)
             return ret;
+    } else {
+        // for subtitles (i.e. sub2video) we set the actual parameters,
+        // rather than just fallback
+        ifp->width  = ifp->ist->sub2video.w;
+        ifp->height = ifp->ist->sub2video.h;
+
+        /* rectangles are AV_PIX_FMT_PAL8, but we have no guarantee that the
+           palettes for all rectangles are identical or compatible */
+        ifp->format = AV_PIX_FMT_RGB32;
+
+        av_log(NULL, AV_LOG_VERBOSE, "sub2video: using %dx%d canvas\n", ifp->width, ifp->height);
     }
 
     return 0;
@@ -1574,8 +1553,7 @@ int ifilter_has_all_input_formats(FilterGraph *fg)
     int i;
     for (i = 0; i < fg->nb_inputs; i++) {
         InputFilterPriv *ifp = ifp_from_ifilter(fg->inputs[i]);
-        if (ifp->format < 0 && (ifp->type_src == AVMEDIA_TYPE_AUDIO ||
-                                ifp->type_src == AVMEDIA_TYPE_VIDEO))
+        if (ifp->format < 0)
             return 0;
     }
     return 1;
@@ -1709,9 +1687,7 @@ int ifilter_send_eof(InputFilter *ifilter, int64_t pts, AVRational tb)
             }
         }
 
-        if (ifp->format < 0 &&
-            (ifp->type_src == AVMEDIA_TYPE_AUDIO ||
-             ifp->type_src == AVMEDIA_TYPE_VIDEO)) {
+        if (ifp->format < 0) {
             av_log(NULL, AV_LOG_ERROR,
                    "Cannot determine format of input stream %d:%d after EOF\n",
                    ifp->ist->file_index, ifp->ist->index);
