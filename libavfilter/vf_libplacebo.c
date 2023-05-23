@@ -317,23 +317,6 @@ static void set_gamut_mode(struct pl_color_map_params *p, int gamut_mode)
     av_assert0(0);
 };
 
-static int update_settings(AVFilterContext *ctx);
-
-static int parse_shader(AVFilterContext *avctx, const void *shader, size_t len)
-{
-    LibplaceboContext *s = avctx->priv;
-    const struct pl_hook *hook;
-
-    hook = pl_mpv_user_shader_parse(s->gpu, shader, len);
-    if (!hook) {
-        av_log(s, AV_LOG_ERROR, "Failed parsing custom shader!\n");
-        return AVERROR(EINVAL);
-    }
-
-    s->hooks[s->num_hooks++] = hook;
-    return update_settings(avctx);
-}
-
 static int find_scaler(AVFilterContext *avctx,
                        const struct pl_filter_config **opt,
                        const char *name, int frame_mixing)
@@ -485,6 +468,21 @@ static int update_settings(AVFilterContext *ctx)
 
 fail:
     return err;
+}
+
+static int parse_shader(AVFilterContext *avctx, const void *shader, size_t len)
+{
+    LibplaceboContext *s = avctx->priv;
+    const struct pl_hook *hook;
+
+    hook = pl_mpv_user_shader_parse(s->gpu, shader, len);
+    if (!hook) {
+        av_log(s, AV_LOG_ERROR, "Failed parsing custom shader!\n");
+        return AVERROR(EINVAL);
+    }
+
+    s->hooks[s->num_hooks++] = hook;
+    return update_settings(avctx);
 }
 
 static void libplacebo_uninit(AVFilterContext *avctx);
