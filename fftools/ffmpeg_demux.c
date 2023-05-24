@@ -817,7 +817,6 @@ static void ist_free(InputStream **pist)
 
     av_dict_free(&ist->decoder_opts);
     avsubtitle_free(&ist->prev_sub.subtitle);
-    av_frame_free(&ist->sub2video.frame);
     av_freep(&ist->filters);
     av_freep(&ist->outputs);
     av_freep(&ist->hwaccel_device);

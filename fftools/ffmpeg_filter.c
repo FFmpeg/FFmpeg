@@ -107,12 +107,125 @@ typedef struct InputFilterPriv {
     struct {
         ///< queue of AVSubtitle* before filter init
         AVFifo *queue;
+
+        AVFrame *frame;
+
+        int64_t last_pts;
+        int64_t end_pts;
+
+        ///< marks if sub2video_update should force an initialization
+        unsigned int initialize;
     } sub2video;
 } InputFilterPriv;
 
 static InputFilterPriv *ifp_from_ifilter(InputFilter *ifilter)
 {
     return (InputFilterPriv*)ifilter;
+}
+
+static int sub2video_get_blank_frame(InputFilterPriv *ifp)
+{
+    AVFrame *frame = ifp->sub2video.frame;
+    int ret;
+
+    av_frame_unref(frame);
+
+    frame->width  = ifp->width;
+    frame->height = ifp->height;
+    frame->format = ifp->format;
+
+    ret = av_frame_get_buffer(frame, 0);
+    if (ret < 0)
+        return ret;
+
+    memset(frame->data[0], 0, frame->height * frame->linesize[0]);
+
+    return 0;
+}
+
+static void sub2video_copy_rect(uint8_t *dst, int dst_linesize, int w, int h,
+                                AVSubtitleRect *r)
+{
+    uint32_t *pal, *dst2;
+    uint8_t *src, *src2;
+    int x, y;
+
+    if (r->type != SUBTITLE_BITMAP) {
+        av_log(NULL, AV_LOG_WARNING, "sub2video: non-bitmap subtitle\n");
+        return;
+    }
+    if (r->x < 0 || r->x + r->w > w || r->y < 0 || r->y + r->h > h) {
+        av_log(NULL, AV_LOG_WARNING, "sub2video: rectangle (%d %d %d %d) overflowing %d %d\n",
+            r->x, r->y, r->w, r->h, w, h
+        );
+        return;
+    }
+
+    dst += r->y * dst_linesize + r->x * 4;
+    src = r->data[0];
+    pal = (uint32_t *)r->data[1];
+    for (y = 0; y < r->h; y++) {
+        dst2 = (uint32_t *)dst;
+        src2 = src;
+        for (x = 0; x < r->w; x++)
+            *(dst2++) = pal[*(src2++)];
+        dst += dst_linesize;
+        src += r->linesize[0];
+    }
+}
+
+static void sub2video_push_ref(InputFilterPriv *ifp, int64_t pts)
+{
+    AVFrame *frame = ifp->sub2video.frame;
+    int ret;
+
+    av_assert1(frame->data[0]);
+    ifp->sub2video.last_pts = frame->pts = pts;
+    ret = av_buffersrc_add_frame_flags(ifp->ifilter.filter, frame,
+                                       AV_BUFFERSRC_FLAG_KEEP_REF |
+                                       AV_BUFFERSRC_FLAG_PUSH);
+    if (ret != AVERROR_EOF && ret < 0)
+        av_log(NULL, AV_LOG_WARNING, "Error while add the frame to buffer source(%s).\n",
+               av_err2str(ret));
+}
+
+static void sub2video_update(InputFilterPriv *ifp, int64_t heartbeat_pts,
+                             const AVSubtitle *sub)
+{
+    AVFrame *frame = ifp->sub2video.frame;
+    int8_t *dst;
+    int     dst_linesize;
+    int num_rects, i;
+    int64_t pts, end_pts;
+
+    if (sub) {
+        pts       = av_rescale_q(sub->pts + sub->start_display_time * 1000LL,
+                                 AV_TIME_BASE_Q, ifp->time_base);
+        end_pts   = av_rescale_q(sub->pts + sub->end_display_time   * 1000LL,
+                                 AV_TIME_BASE_Q, ifp->time_base);
+        num_rects = sub->num_rects;
+    } else {
+        /* If we are initializing the system, utilize current heartbeat
+           PTS as the start time, and show until the following subpicture
+           is received. Otherwise, utilize the previous subpicture's end time
+           as the fall-back value. */
+        pts       = ifp->sub2video.initialize ?
+                    heartbeat_pts : ifp->sub2video.end_pts;
+        end_pts   = INT64_MAX;
+        num_rects = 0;
+    }
+    if (sub2video_get_blank_frame(ifp) < 0) {
+        av_log(NULL, AV_LOG_ERROR,
+               "Impossible to get a blank canvas.\n");
+        return;
+    }
+    dst          = frame->data    [0];
+    dst_linesize = frame->linesize[0];
+    for (i = 0; i < num_rects; i++)
+        sub2video_copy_rect(dst, dst_linesize, frame->width, frame->height, sub->rects[i]);
+    sub2video_push_ref(ifp, pts);
+    ifp->sub2video.end_pts = end_pts;
+    ifp->sub2video.initialize = 0;
 }
 
 // FIXME: YUV420P etc. are actually supported with full color range,
@@ -465,6 +578,12 @@ static int ifilter_bind_ist(InputFilter *ifilter, InputStream *ist)
     if (ret < 0)
         return ret;
 
+    if (ifp->type_src == AVMEDIA_TYPE_SUBTITLE) {
+        ifp->sub2video.frame = av_frame_alloc();
+        if (!ifp->sub2video.frame)
+            return AVERROR(ENOMEM);
+    }
+
     return 0;
 }
 
@@ -610,6 +729,7 @@ void fg_free(FilterGraph **pfg)
                 avsubtitle_free(&sub);
             av_fifo_freep2(&ifp->sub2video.queue);
         }
+        av_frame_free(&ifp->sub2video.frame);
 
         av_channel_layout_uninit(&ifp->fallback.ch_layout);
 
@@ -1108,20 +1228,15 @@ void check_filter_outputs(void)
     }
 }
 
-static int sub2video_prepare(InputStream *ist, InputFilter *ifilter)
+static void sub2video_prepare(InputFilterPriv *ifp)
 {
-    ist->sub2video.frame = av_frame_alloc();
-    if (!ist->sub2video.frame)
-        return AVERROR(ENOMEM);
-    ist->sub2video.last_pts = INT64_MIN;
-    ist->sub2video.end_pts  = INT64_MIN;
+    ifp->sub2video.last_pts = INT64_MIN;
+    ifp->sub2video.end_pts  = INT64_MIN;
 
     /* sub2video structure has been (re-)initialized.
        Mark it as such so that the system will be
        initialized with the first received heartbeat. */
-    ist->sub2video.initialize = 1;
-
-    return 0;
+    ifp->sub2video.initialize = 1;
 }
 
 static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
@@ -1156,11 +1271,8 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
     if (!fr.num)
         fr = ist->framerate_guessed;
 
-    if (ist->dec_ctx->codec_type == AVMEDIA_TYPE_SUBTITLE) {
-        ret = sub2video_prepare(ist, ifilter);
-        if (ret < 0)
-            goto fail;
-    }
+    if (ifp->type_src == AVMEDIA_TYPE_SUBTITLE)
+        sub2video_prepare(ifp);
 
     ifp->time_base =  ist->framerate.num ? av_inv_q(ist->framerate) :
                                            ist->st->time_base;
@@ -1466,12 +1578,13 @@ int configure_filtergraph(FilterGraph *fg)
 
     /* process queued up subtitle packets */
     for (i = 0; i < fg->nb_inputs; i++) {
-        InputFilterPriv *ifp = ifp_from_ifilter(fg->inputs[i]);
-        InputStream     *ist = ifp->ist;
-        if (ifp->sub2video.queue && ist->sub2video.frame) {
+        InputFilter *ifilter = fg->inputs[i];
+        InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
+
+        if (ifp->type_src == AVMEDIA_TYPE_SUBTITLE && ifp->sub2video.queue) {
             AVSubtitle tmp;
             while (av_fifo_read(ifp->sub2video.queue, &tmp, 1) >= 0) {
-                sub2video_update(ist, INT64_MIN, &tmp);
+                sub2video_update(ifp, INT64_MIN, &tmp);
                 avsubtitle_free(&tmp);
             }
         }
@@ -1620,15 +1733,47 @@ int reap_filters(int flush)
     return 0;
 }
 
+void ifilter_sub2video_heartbeat(InputFilter *ifilter, int64_t pts, AVRational tb)
+{
+    InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
+    int64_t pts2;
+
+    if (!ifilter->graph->graph)
+        return;
+
+    /* subtitles seem to be usually muxed ahead of other streams;
+       if not, subtracting a larger time here is necessary */
+    pts2 = av_rescale_q(pts, tb, ifp->time_base) - 1;
+
+    /* do not send the heartbeat frame if the subtitle is already ahead */
+    if (pts2 <= ifp->sub2video.last_pts)
+        return;
+
+    if (pts2 >= ifp->sub2video.end_pts || ifp->sub2video.initialize)
+        /* if we have hit the end of the current displayed subpicture,
+           or if we need to initialize the system, update the
+           overlayed subpicture and its start/end times */
+        sub2video_update(ifp, pts2 + 1, NULL);
+
+    if (av_buffersrc_get_nb_failed_requests(ifilter->filter))
+        sub2video_push_ref(ifp, pts2);
+}
+
 int ifilter_sub2video(InputFilter *ifilter, const AVSubtitle *subtitle)
 {
     InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
-    InputStream     *ist = ifp->ist;
     int ret;
 
-    if (ist->sub2video.frame) {
-        sub2video_update(ist, INT64_MIN, subtitle);
-    } else {
+    if (ifilter->graph->graph) {
+        if (!subtitle) {
+            if (ifp->sub2video.end_pts < INT64_MAX)
+                sub2video_update(ifp, INT64_MAX, NULL);
+
+            return av_buffersrc_add_frame(ifilter->filter, NULL);
+        }
+
+        sub2video_update(ifp, INT64_MIN, subtitle);
+    } else if (subtitle) {
         AVSubtitle sub;
 
         if (!ifp->sub2video.queue)

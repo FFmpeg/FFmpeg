@@ -321,13 +321,8 @@ static int video_frame_process(InputStream *ist, AVFrame *frame)
 
 static void sub2video_flush(InputStream *ist)
 {
-    int i;
-    int ret;
-
-    if (ist->sub2video.end_pts < INT64_MAX)
-        sub2video_update(ist, INT64_MAX, NULL);
-    for (i = 0; i < ist->nb_filters; i++) {
-        ret = av_buffersrc_add_frame(ist->filters[i]->filter, NULL);
+    for (int i = 0; i < ist->nb_filters; i++) {
+        int ret = ifilter_sub2video(ist->filters[i], NULL);
         if (ret != AVERROR_EOF && ret < 0)
             av_log(NULL, AV_LOG_WARNING, "Flush the frame error.\n");
     }
