@@ -731,7 +731,7 @@ int parse_and_set_vsync(const char *arg, int *vsync_var, int file_idx, int st_id
 
 int configure_filtergraph(FilterGraph *fg);
 void check_filter_outputs(void);
-int filtergraph_is_simple(FilterGraph *fg);
+int filtergraph_is_simple(const FilterGraph *fg);
 int init_simple_filtergraph(InputStream *ist, OutputStream *ost,
                             char *graph_desc);
 int init_complex_filtergraph(FilterGraph *fg);

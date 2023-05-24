@@ -54,6 +54,11 @@ static FilterGraphPriv *fgp_from_fg(FilterGraph *fg)
     return (FilterGraphPriv*)fg;
 }
 
+static const FilterGraphPriv *cfgp_from_cfg(const FilterGraph *fg)
+{
+    return (const FilterGraphPriv*)fg;
+}
+
 typedef struct InputFilterPriv {
     InputFilter ifilter;
 
@@ -1674,9 +1679,9 @@ static int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *fr
     return 0;
 }
 
-int filtergraph_is_simple(FilterGraph *fg)
+int filtergraph_is_simple(const FilterGraph *fg)
 {
-    FilterGraphPriv *fgp = fgp_from_fg(fg);
+    const FilterGraphPriv *fgp = cfgp_from_cfg(fg);
     return fgp->is_simple;
 }
 
