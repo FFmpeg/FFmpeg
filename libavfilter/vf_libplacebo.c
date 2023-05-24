@@ -651,7 +651,7 @@ fail:
 
 static void update_crops(AVFilterContext *ctx,
                          struct pl_frame_mix *mix, struct pl_frame *target,
-                         uint64_t ref_sig, double base_pts)
+                         uint64_t ref_sig, double target_pts)
 {
     LibplaceboContext *s = ctx->priv;
 
@@ -659,11 +659,12 @@ static void update_crops(AVFilterContext *ctx,
         // Mutate the `pl_frame.crop` fields in-place. This is fine because we
         // own the entire pl_queue, and hence, the pointed-at frames.
         struct pl_frame *image = (struct pl_frame *) mix->frames[i];
-        double image_pts = base_pts + mix->timestamps[i];
+        const AVFrame *src = pl_get_mapped_avframe(image);
+        double image_pts = src->pts * av_q2d(ctx->inputs[0]->time_base);
 
         /* Update dynamic variables */
         s->var_values[VAR_IN_T]   = s->var_values[VAR_T]  = image_pts;
-        s->var_values[VAR_OUT_T]  = s->var_values[VAR_OT] = base_pts;
+        s->var_values[VAR_OUT_T]  = s->var_values[VAR_OT] = target_pts;
         s->var_values[VAR_N]      = ctx->outputs[0]->frame_count_out;
 
         /* Clear these explicitly to avoid leaking previous frames' state */
