@@ -148,6 +148,7 @@ typedef struct LibplaceboContext {
     AVExpr *pos_x_pexpr, *pos_y_pexpr, *pos_w_pexpr, *pos_h_pexpr;
     AVRational target_sar;
     float pad_crop_ratio;
+    float corner_rounding;
     int force_original_aspect_ratio;
     int force_divisible_by;
     int normalize_sar;
@@ -440,6 +441,9 @@ static int update_settings(AVFilterContext *ctx)
             (float) color_rgba[1] / UINT8_MAX,
             (float) color_rgba[2] / UINT8_MAX,
         },
+#if PL_API_VER >= 277
+        .corner_rounding = s->corner_rounding,
+#endif
 
         .deband_params = s->deband ? &s->deband_params : NULL,
         .sigmoid_params = s->sigmoid ? &pl_sigmoid_default_params : NULL,
@@ -1154,6 +1158,7 @@ static const AVOption libplacebo_options[] = {
     { "normalize_sar", "force SAR normalization to 1:1 by adjusting pos_x/y/w/h", OFFSET(normalize_sar), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, STATIC },
     { "pad_crop_ratio", "ratio between padding and cropping when normalizing SAR (0=pad, 1=crop)", OFFSET(pad_crop_ratio), AV_OPT_TYPE_FLOAT, {.dbl=0.0}, 0.0, 1.0, DYNAMIC },
     { "fillcolor", "Background fill color", OFFSET(fillcolor), AV_OPT_TYPE_STRING, {.str = "black"}, .flags = DYNAMIC },
+    { "corner_rounding", "Corner rounding radius", OFFSET(corner_rounding), AV_OPT_TYPE_FLOAT, {.dbl = 0.0}, 0.0, 1.0, .flags = DYNAMIC },
 
     {"colorspace", "select colorspace", OFFSET(colorspace), AV_OPT_TYPE_INT, {.i64=-1}, -1, AVCOL_SPC_NB-1, DYNAMIC, "colorspace"},
     {"auto", "keep the same colorspace",  0, AV_OPT_TYPE_CONST, {.i64=-1},                          INT_MIN, INT_MAX, STATIC, "colorspace"},

@@ -16164,6 +16164,12 @@ example as a result of @option{normalize_sar}. For the general syntax of this
 option, check the @ref{color syntax,,"Color" section in the ffmpeg-utils
 manual,ffmpeg-utils}. Defaults to @code{black}.
 
+@item corner_rounding
+Render frames with rounded corners. The value, given as a float ranging from
+@code{0.0} to @code{1.0}, indicates the relative degree of rounding, from fully
+square to fully circular. In other words, it gives the radius divided by half
+the smaller side length. Defaults to @code{0.0}.
+
 @item colorspace
 @item color_primaries
 @item color_trc
