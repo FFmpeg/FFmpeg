@@ -57,6 +57,8 @@ static FilterGraphPriv *fgp_from_fg(FilterGraph *fg)
 typedef struct InputFilterPriv {
     InputFilter ifilter;
 
+    AVFilterContext *filter;
+
     InputStream *ist;
 
     // used to hold submitted input
@@ -181,7 +183,7 @@ static void sub2video_push_ref(InputFilterPriv *ifp, int64_t pts)
 
     av_assert1(frame->data[0]);
     ifp->sub2video.last_pts = frame->pts = pts;
-    ret = av_buffersrc_add_frame_flags(ifp->ifilter.filter, frame,
+    ret = av_buffersrc_add_frame_flags(ifp->filter, frame,
                                        AV_BUFFERSRC_FLAG_KEEP_REF |
                                        AV_BUFFERSRC_FLAG_PUSH);
     if (ret != AVERROR_EOF && ret < 0)
@@ -1304,15 +1306,15 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
              ist->file_index, ist->index);
 
 
-    if ((ret = avfilter_graph_create_filter(&ifilter->filter, buffer_filt, name,
+    if ((ret = avfilter_graph_create_filter(&ifp->filter, buffer_filt, name,
                                             args.str, NULL, fg->graph)) < 0)
         goto fail;
     par->hw_frames_ctx = ifp->hw_frames_ctx;
-    ret = av_buffersrc_parameters_set(ifilter->filter, par);
+    ret = av_buffersrc_parameters_set(ifp->filter, par);
     if (ret < 0)
         goto fail;
     av_freep(&par);
-    last_filter = ifilter->filter;
+    last_filter = ifp->filter;
 
     desc = av_pix_fmt_desc_get(ifp->format);
     av_assert0(desc);
@@ -1410,11 +1412,11 @@ static int configure_input_audio_filter(FilterGraph *fg, InputFilter *ifilter,
     snprintf(name, sizeof(name), "graph_%d_in_%d_%d", fg->index,
              ist->file_index, ist->index);
 
-    if ((ret = avfilter_graph_create_filter(&ifilter->filter, abuffer_filt,
+    if ((ret = avfilter_graph_create_filter(&ifp->filter, abuffer_filt,
                                             name, args.str, NULL,
                                             fg->graph)) < 0)
         return ret;
-    last_filter = ifilter->filter;
+    last_filter = ifp->filter;
 
     snprintf(name, sizeof(name), "trim for input stream %d:%d",
              ist->file_index, ist->index);
@@ -1451,7 +1453,7 @@ static void cleanup_filtergraph(FilterGraph *fg)
     for (i = 0; i < fg->nb_outputs; i++)
         fg->outputs[i]->filter = (AVFilterContext *)NULL;
     for (i = 0; i < fg->nb_inputs; i++)
-        fg->inputs[i]->filter = (AVFilterContext *)NULL;
+        ifp_from_ifilter(fg->inputs[i])->filter = NULL;
     avfilter_graph_free(&fg->graph);
 }
 
@@ -1571,7 +1573,7 @@ int configure_filtergraph(FilterGraph *fg)
         InputFilterPriv *ifp = ifp_from_ifilter(fg->inputs[i]);
         AVFrame *tmp;
         while (av_fifo_read(ifp->frame_queue, &tmp, 1) >= 0) {
-            ret = av_buffersrc_add_frame(fg->inputs[i]->filter, tmp);
+            ret = av_buffersrc_add_frame(ifp->filter, tmp);
             av_frame_free(&tmp);
             if (ret < 0)
                 goto fail;
@@ -1582,7 +1584,7 @@ int configure_filtergraph(FilterGraph *fg)
     for (i = 0; i < fg->nb_inputs; i++) {
         InputFilterPriv *ifp = ifp_from_ifilter(fg->inputs[i]);
         if (ifp->eof) {
-            ret = av_buffersrc_add_frame(fg->inputs[i]->filter, NULL);
+            ret = av_buffersrc_add_frame(ifp->filter, NULL);
             if (ret < 0)
                 goto fail;
         }
@@ -1755,7 +1757,7 @@ void ifilter_sub2video_heartbeat(InputFilter *ifilter, int64_t pts, AVRational t
            overlayed subpicture and its start/end times */
         sub2video_update(ifp, pts2 + 1, NULL);
 
-    if (av_buffersrc_get_nb_failed_requests(ifilter->filter))
+    if (av_buffersrc_get_nb_failed_requests(ifp->filter))
         sub2video_push_ref(ifp, pts2);
 }
 
@@ -1769,7 +1771,7 @@ int ifilter_sub2video(InputFilter *ifilter, const AVSubtitle *subtitle)
             if (ifp->sub2video.end_pts < INT64_MAX)
                 sub2video_update(ifp, INT64_MAX, NULL);
 
-            return av_buffersrc_add_frame(ifilter->filter, NULL);
+            return av_buffersrc_add_frame(ifp->filter, NULL);
         }
 
         sub2video_update(ifp, INT64_MIN, subtitle);
@@ -1802,11 +1804,11 @@ int ifilter_send_eof(InputFilter *ifilter, int64_t pts, AVRational tb)
 
     ifp->eof = 1;
 
-    if (ifilter->filter) {
+    if (ifp->filter) {
         pts = av_rescale_q_rnd(pts, tb, ifp->time_base,
                                AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX);
 
-        ret = av_buffersrc_close(ifilter->filter, pts, AV_BUFFERSRC_FLAG_PUSH);
+        ret = av_buffersrc_close(ifp->filter, pts, AV_BUFFERSRC_FLAG_PUSH);
         if (ret < 0)
             return ret;
     } else {
@@ -1928,7 +1930,7 @@ int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame, int keep_reference)
     )
 #endif
 
-    ret = av_buffersrc_add_frame_flags(ifilter->filter, frame,
+    ret = av_buffersrc_add_frame_flags(ifp->filter, frame,
                                        AV_BUFFERSRC_FLAG_PUSH);
     if (ret < 0) {
         av_frame_unref(frame);
@@ -1984,7 +1986,7 @@ int fg_transcode_step(FilterGraph *graph, InputStream **best_ist)
         ist = ifp->ist;
         if (input_files[ist->file_index]->eagain || ifp->eof)
             continue;
-        nb_requests = av_buffersrc_get_nb_failed_requests(ifilter->filter);
+        nb_requests = av_buffersrc_get_nb_failed_requests(ifp->filter);
         if (nb_requests > nb_requests_max) {
             nb_requests_max = nb_requests;
             *best_ist = ist;

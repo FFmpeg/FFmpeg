@@ -278,7 +278,6 @@ typedef struct OptionsContext {
 } OptionsContext;
 
 typedef struct InputFilter {
-    AVFilterContext    *filter;
     struct FilterGraph *graph;
     uint8_t            *name;
 } InputFilter;
