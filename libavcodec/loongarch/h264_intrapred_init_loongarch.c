@@ -21,7 +21,7 @@
 
 #include "libavutil/loongarch/cpu.h"
 #include "libavcodec/h264pred.h"
-#include "h264_intrapred_lasx.h"
+#include "h264_intrapred_loongarch.h"
 
 av_cold void ff_h264_pred_init_loongarch(H264PredContext *h, int codec_id,
                                          const int bit_depth,
@@ -30,6 +30,22 @@ av_cold void ff_h264_pred_init_loongarch(H264PredContext *h, int codec_id,
     int cpu_flags = av_get_cpu_flags();
 
     if (bit_depth == 8) {
+        if (have_lsx(cpu_flags)) {
+            if (chroma_format_idc <= 1) {
+            }
+            if (codec_id == AV_CODEC_ID_VP7 || codec_id == AV_CODEC_ID_VP8) {
+            } else {
+                if (chroma_format_idc <= 1) {
+                }
+                if (codec_id == AV_CODEC_ID_SVQ3) {
+                    h->pred16x16[PLANE_PRED8x8] = ff_h264_pred16x16_plane_svq3_8_lsx;
+                } else if (codec_id == AV_CODEC_ID_RV40) {
+                    h->pred16x16[PLANE_PRED8x8] = ff_h264_pred16x16_plane_rv40_8_lsx;
+                } else {
+                    h->pred16x16[PLANE_PRED8x8] = ff_h264_pred16x16_plane_h264_8_lsx;
+                }
+            }
+        }
         if (have_lasx(cpu_flags)) {
             if (chroma_format_idc <= 1) {
             }

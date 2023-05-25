@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "h264chroma_lasx.h"
+#include "h264chroma_loongarch.h"
 #include "libavutil/attributes.h"
 #include "libavutil/loongarch/cpu.h"
 #include "libavcodec/h264chroma.h"
@@ -27,6 +27,14 @@
 av_cold void ff_h264chroma_init_loongarch(H264ChromaContext *c, int bit_depth)
 {
     int cpu_flags = av_get_cpu_flags();
+    if (have_lsx(cpu_flags)) {
+        if (bit_depth <= 8) {
+            c->put_h264_chroma_pixels_tab[0] = ff_put_h264_chroma_mc8_lsx;
+            c->avg_h264_chroma_pixels_tab[0] = ff_avg_h264_chroma_mc8_lsx;
+            c->put_h264_chroma_pixels_tab[1] = ff_put_h264_chroma_mc4_lsx;
+        }
+    }
+
     if (have_lasx(cpu_flags)) {
         if (bit_depth <= 8) {
             c->put_h264_chroma_pixels_tab[0] = ff_put_h264_chroma_mc8_lasx;
