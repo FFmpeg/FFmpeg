@@ -36,6 +36,17 @@
 #   define __has_feature(x) 0
 #endif
 
+#if HAVE_AS_ARCH_DIRECTIVE
+        .arch           AS_ARCH_LEVEL
+#endif
+
+#if HAVE_AS_ARCHEXT_DOTPROD_DIRECTIVE
+        .arch_extension dotprod
+#endif
+#if HAVE_AS_ARCHEXT_I8MM_DIRECTIVE
+        .arch_extension i8mm
+#endif
+
 
 /* Support macros for
  *   - Armv8.3-A Pointer Authentication and
