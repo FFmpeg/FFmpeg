@@ -3316,6 +3316,7 @@ Available keys for each channel are:
 @var{Number_of_NaNs}
 @var{Number_of_denormals}
 @var{Peak_count}
+@var{Abs_Peak_count}
 @var{Peak_level}
 @var{RMS_difference}
 @var{RMS_peak}
@@ -3340,6 +3341,7 @@ and for @code{Overall}:
 @var{Number_of_denormals}
 @var{Number_of_samples}
 @var{Peak_count}
+@var{Abs_Peak_count}
 @var{Peak_level}
 @var{RMS_difference}
 @var{RMS_level}
@@ -3432,6 +3434,10 @@ number of samples
 @item Peak_count
 number of occasions (not the number of samples) that the signal attained either
 @var{Min_level} or @var{Max_level}
+
+@item Abs_Peak_count
+number of occasions that the absolute samples taken from the signal attained
+max absolute value of @var{Min_level} and @var{Max_level}
 
 @item Peak_level
 standard peak level measured in dBFS

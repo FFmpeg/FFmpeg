@@ -58,6 +58,7 @@
 #define MEASURE_NOISE_FLOOR             (1 << 22)
 #define MEASURE_NOISE_FLOOR_COUNT       (1 << 23)
 #define MEASURE_ENTROPY                 (1 << 24)
+#define MEASURE_ABS_PEAK_COUNT          (1 << 25)
 
 #define MEASURE_MINMAXPEAK              (MEASURE_MIN_LEVEL | MEASURE_MAX_LEVEL | MEASURE_PEAK_LEVEL)
 
@@ -74,8 +75,10 @@ typedef struct ChannelStats {
     double min_diff, max_diff;
     double diff1_sum;
     double diff1_sum_x2;
+    double abs_peak;
     uint64_t mask, imask;
     uint64_t min_count, max_count;
+    uint64_t abs_peak_count;
     uint64_t noise_floor_count;
     uint64_t zero_runs;
     uint64_t nb_samples;
@@ -144,6 +147,7 @@ static const AVOption astats_options[] = {
       { "RMS_trough"                , "", 0, AV_OPT_TYPE_CONST, {.i64=MEASURE_RMS_TROUGH          }, 0, 0, FLAGS, "measure" },
       { "Zero_crossings"            , "", 0, AV_OPT_TYPE_CONST, {.i64=MEASURE_ZERO_CROSSINGS      }, 0, 0, FLAGS, "measure" },
       { "Zero_crossings_rate"       , "", 0, AV_OPT_TYPE_CONST, {.i64=MEASURE_ZERO_CROSSINGS_RATE }, 0, 0, FLAGS, "measure" },
+      { "Abs_Peak_count"            , "", 0, AV_OPT_TYPE_CONST, {.i64=MEASURE_ABS_PEAK_COUNT      }, 0, 0, FLAGS, "measure" },
     { "measure_overall", "Select the parameters which are measured overall", OFFSET(measure_overall), AV_OPT_TYPE_FLAGS, {.i64=MEASURE_ALL}, 0, UINT_MAX, FLAGS, "measure" },
     { NULL }
 };
@@ -159,6 +163,7 @@ static void reset_stats(AudioStatsContext *s)
 
         p->min = p->nmin = p->min_sigma_x2 = DBL_MAX;
         p->max = p->nmax = p->max_sigma_x2 =-DBL_MAX;
+        p->abs_peak = 0;
         p->min_non_zero = DBL_MAX;
         p->min_diff = DBL_MAX;
         p->max_diff = 0;
@@ -175,6 +180,7 @@ static void reset_stats(AudioStatsContext *s)
         p->imask = 0xFFFFFFFFFFFFFFFF;
         p->min_count = 0;
         p->max_count = 0;
+        p->abs_peak_count = 0;
         p->zero_runs = 0;
         p->nb_samples = 0;
         p->nb_nans = 0;
@@ -264,9 +270,16 @@ static inline void update_minmax(AudioStatsContext *s, ChannelStats *p, double d
 
 static inline void update_stat(AudioStatsContext *s, ChannelStats *p, double d, double nd, int64_t i)
 {
+    double abs_d = FFABS(d);
     double drop;
     int index;
 
+    if (p->abs_peak < abs_d) {
+        p->abs_peak = abs_d;
+        p->abs_peak_count = 1;
+    } else if (p->abs_peak == abs_d) {
+        p->abs_peak_count++;
+    }
     if (d < p->min) {
         p->min = d;
         p->nmin = nd;
@@ -398,6 +411,7 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
 {
     uint64_t mask = 0, imask = 0xFFFFFFFFFFFFFFFF, min_count = 0, max_count = 0, nb_samples = 0, noise_floor_count = 0;
     uint64_t nb_nans = 0, nb_infs = 0, nb_denormals = 0;
+    uint64_t abs_peak_count = 0;
     double min_runs = 0, max_runs = 0,
            min = DBL_MAX, max =-DBL_MAX, min_diff = DBL_MAX, max_diff = 0,
            nmin = DBL_MAX, nmax =-DBL_MAX,
@@ -435,6 +449,7 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
         entropy += p->entropy;
         min_count += p->min_count;
         max_count += p->max_count;
+        abs_peak_count += p->abs_peak_count;
         min_runs += p->min_runs;
         max_runs += p->max_runs;
         mask |= p->mask;
@@ -474,6 +489,8 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
             set_meta(metadata, c + 1, "Flat_factor", "%f", LINEAR_TO_DB((p->min_runs + p->max_runs) / (p->min_count + p->max_count)));
         if (s->measure_perchannel & MEASURE_PEAK_COUNT)
             set_meta(metadata, c + 1, "Peak_count", "%f", (float)(p->min_count + p->max_count));
+        if (s->measure_perchannel & MEASURE_ABS_PEAK_COUNT)
+            set_meta(metadata, c + 1, "Peak_count", "%f", p->abs_peak_count);
         if (s->measure_perchannel & MEASURE_NOISE_FLOOR)
             set_meta(metadata, c + 1, "Noise_floor", "%f", LINEAR_TO_DB(p->noise_floor));
         if (s->measure_perchannel & MEASURE_NOISE_FLOOR_COUNT)
@@ -525,6 +542,8 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
         set_meta(metadata, 0, "Overall.Flat_factor", "%f", LINEAR_TO_DB((min_runs + max_runs) / (min_count + max_count)));
     if (s->measure_overall & MEASURE_PEAK_COUNT)
         set_meta(metadata, 0, "Overall.Peak_count", "%f", (float)(min_count + max_count) / (double)s->nb_channels);
+    if (s->measure_overall & MEASURE_ABS_PEAK_COUNT)
+        set_meta(metadata, 0, "Overall.Abs_Peak_count", "%f", (float)(abs_peak_count) / (double)s->nb_channels);
     if (s->measure_overall & MEASURE_NOISE_FLOOR)
         set_meta(metadata, 0, "Overall.Noise_floor", "%f", LINEAR_TO_DB(noise_floor));
     if (s->measure_overall & MEASURE_NOISE_FLOOR_COUNT)
@@ -653,7 +672,7 @@ static void print_stats(AVFilterContext *ctx)
 {
     AudioStatsContext *s = ctx->priv;
     uint64_t mask = 0, imask = 0xFFFFFFFFFFFFFFFF, min_count = 0, max_count = 0, nb_samples = 0, noise_floor_count = 0;
-    uint64_t nb_nans = 0, nb_infs = 0, nb_denormals = 0;
+    uint64_t nb_nans = 0, nb_infs = 0, nb_denormals = 0, abs_peak_count = 0;
     double min_runs = 0, max_runs = 0,
            min = DBL_MAX, max =-DBL_MAX, min_diff = DBL_MAX, max_diff = 0,
            nmin = DBL_MAX, nmax =-DBL_MAX,
@@ -693,6 +712,7 @@ static void print_stats(AVFilterContext *ctx)
         entropy += p->entropy;
         min_count += p->min_count;
         max_count += p->max_count;
+        abs_peak_count += p->abs_peak_count;
         noise_floor_count += p->noise_floor_count;
         min_runs += p->min_runs;
         max_runs += p->max_runs;
@@ -736,6 +756,8 @@ static void print_stats(AVFilterContext *ctx)
             av_log(ctx, AV_LOG_INFO, "Flat factor: %f\n", LINEAR_TO_DB((p->min_runs + p->max_runs) / (p->min_count + p->max_count)));
         if (s->measure_perchannel & MEASURE_PEAK_COUNT)
             av_log(ctx, AV_LOG_INFO, "Peak count: %"PRId64"\n", p->min_count + p->max_count);
+        if (s->measure_perchannel & MEASURE_ABS_PEAK_COUNT)
+            av_log(ctx, AV_LOG_INFO, "Abs Peak count: %"PRId64"\n", p->abs_peak_count);
         if (s->measure_perchannel & MEASURE_NOISE_FLOOR)
             av_log(ctx, AV_LOG_INFO, "Noise floor dB: %f\n", LINEAR_TO_DB(p->noise_floor));
         if (s->measure_perchannel & MEASURE_NOISE_FLOOR_COUNT)
@@ -792,6 +814,8 @@ static void print_stats(AVFilterContext *ctx)
         av_log(ctx, AV_LOG_INFO, "Flat factor: %f\n", LINEAR_TO_DB((min_runs + max_runs) / (min_count + max_count)));
     if (s->measure_overall & MEASURE_PEAK_COUNT)
         av_log(ctx, AV_LOG_INFO, "Peak count: %f\n", (min_count + max_count) / (double)s->nb_channels);
+    if (s->measure_overall & MEASURE_ABS_PEAK_COUNT)
+        av_log(ctx, AV_LOG_INFO, "Abs Peak count: %f\n", abs_peak_count / (double)s->nb_channels);
     if (s->measure_overall & MEASURE_NOISE_FLOOR)
         av_log(ctx, AV_LOG_INFO, "Noise floor dB: %f\n", LINEAR_TO_DB(noise_floor));
     if (s->measure_overall & MEASURE_NOISE_FLOOR_COUNT)
