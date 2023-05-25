@@ -22,9 +22,18 @@
 
 int ff_get_cpu_flags_aarch64(void)
 {
-    return AV_CPU_FLAG_ARMV8 * HAVE_ARMV8 |
-           AV_CPU_FLAG_NEON  * HAVE_NEON  |
-           AV_CPU_FLAG_VFP   * HAVE_VFP;
+    int flags = AV_CPU_FLAG_ARMV8 * HAVE_ARMV8 |
+                AV_CPU_FLAG_NEON  * HAVE_NEON  |
+                AV_CPU_FLAG_VFP   * HAVE_VFP;
+
+#ifdef __ARM_FEATURE_DOTPROD
+    flags |= AV_CPU_FLAG_DOTPROD;
+#endif
+#ifdef __ARM_FEATURE_MATMUL_INT8
+    flags |= AV_CPU_FLAG_I8MM;
+#endif
+
+    return flags;
 }
 
 size_t ff_get_cpu_max_align_aarch64(void)
