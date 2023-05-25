@@ -27,8 +27,33 @@
 av_cold void ff_sws_init_swscale_loongarch(SwsContext *c)
 {
     int cpu_flags = av_get_cpu_flags();
+    if (have_lsx(cpu_flags)) {
+        ff_sws_init_output_lsx(c);
+        if (c->srcBpc == 8) {
+            if (c->dstBpc <= 14) {
+                c->hyScale = c->hcScale = ff_hscale_8_to_15_lsx;
+            } else {
+                c->hyScale = c->hcScale = ff_hscale_8_to_19_lsx;
+            }
+        } else {
+            c->hyScale = c->hcScale = c->dstBpc > 14 ? ff_hscale_16_to_19_lsx
+                                                     : ff_hscale_16_to_15_lsx;
+        }
+        switch (c->srcFormat) {
+        case AV_PIX_FMT_GBRAP:
+        case AV_PIX_FMT_GBRP:
+            {
+                c->readChrPlanar = planar_rgb_to_uv_lsx;
+                c->readLumPlanar = planar_rgb_to_y_lsx;
+            }
+            break;
+        }
+        if (c->dstBpc == 8)
+            c->yuv2planeX = ff_yuv2planeX_8_lsx;
+    }
+#if HAVE_LASX
     if (have_lasx(cpu_flags)) {
-        ff_sws_init_output_loongarch(c);
+        ff_sws_init_output_lasx(c);
         if (c->srcBpc == 8) {
             if (c->dstBpc <= 14) {
                 c->hyScale = c->hcScale = ff_hscale_8_to_15_lasx;
@@ -51,17 +76,21 @@ av_cold void ff_sws_init_swscale_loongarch(SwsContext *c)
         if (c->dstBpc == 8)
             c->yuv2planeX = ff_yuv2planeX_8_lasx;
     }
+#endif // #if HAVE_LASX
 }
 
 av_cold void rgb2rgb_init_loongarch(void)
 {
+#if HAVE_LASX
     int cpu_flags = av_get_cpu_flags();
     if (have_lasx(cpu_flags))
         interleaveBytes = ff_interleave_bytes_lasx;
+#endif // #if HAVE_LASX
 }
 
 av_cold SwsFunc ff_yuv2rgb_init_loongarch(SwsContext *c)
 {
+#if HAVE_LASX
     int cpu_flags = av_get_cpu_flags();
     if (have_lasx(cpu_flags)) {
         switch (c->dstFormat) {
@@ -91,5 +120,6 @@ av_cold SwsFunc ff_yuv2rgb_init_loongarch(SwsContext *c)
                     return yuv420_abgr32_lasx;
         }
     }
+#endif // #if HAVE_LASX
     return NULL;
 }

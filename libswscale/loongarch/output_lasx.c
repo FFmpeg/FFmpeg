@@ -1773,11 +1773,9 @@ YUV2RGBWRAPPER(yuv2, rgb_full, bgr4_byte_full,  AV_PIX_FMT_BGR4_BYTE, 0)
 YUV2RGBWRAPPER(yuv2, rgb_full, rgb4_byte_full,  AV_PIX_FMT_RGB4_BYTE, 0)
 YUV2RGBWRAPPER(yuv2, rgb_full, bgr8_full,   AV_PIX_FMT_BGR8,  0)
 YUV2RGBWRAPPER(yuv2, rgb_full, rgb8_full,   AV_PIX_FMT_RGB8,  0)
-#undef yuvTorgb
-#undef yuvTorgb_setup
 
 
-av_cold void ff_sws_init_output_loongarch(SwsContext *c)
+av_cold void ff_sws_init_output_lasx(SwsContext *c)
 {
 
     if(c->flags & SWS_FULL_CHR_H_INT) {

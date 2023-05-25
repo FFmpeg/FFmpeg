@@ -24,7 +24,45 @@
 
 #include "libswscale/swscale.h"
 #include "libswscale/swscale_internal.h"
+#include "config.h"
 
+void ff_hscale_8_to_15_lsx(SwsContext *c, int16_t *dst, int dstW,
+                           const uint8_t *src, const int16_t *filter,
+                           const int32_t *filterPos, int filterSize);
+
+void ff_hscale_8_to_19_lsx(SwsContext *c, int16_t *_dst, int dstW,
+                           const uint8_t *src, const int16_t *filter,
+                           const int32_t *filterPos, int filterSize);
+
+void ff_hscale_16_to_15_lsx(SwsContext *c, int16_t *_dst, int dstW,
+                            const uint8_t *_src, const int16_t *filter,
+                            const int32_t *filterPos, int filterSize);
+
+void ff_hscale_16_to_15_sub_lsx(SwsContext *c, int16_t *_dst, int dstW,
+                                const uint8_t *_src, const int16_t *filter,
+                                const int32_t *filterPos, int filterSize, int sh);
+
+void ff_hscale_16_to_19_lsx(SwsContext *c, int16_t *_dst, int dstW,
+                            const uint8_t *_src, const int16_t *filter,
+                            const int32_t *filterPos, int filterSize);
+
+void ff_hscale_16_to_19_sub_lsx(SwsContext *c, int16_t *_dst, int dstW,
+                                const uint8_t *_src, const int16_t *filter,
+                                const int32_t *filterPos, int filterSize, int sh);
+
+void planar_rgb_to_uv_lsx(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *src[4],
+                          int width, int32_t *rgb2yuv, void *opq);
+
+void planar_rgb_to_y_lsx(uint8_t *_dst, const uint8_t *src[4], int width,
+                         int32_t *rgb2yuv, void *opq);
+
+void ff_yuv2planeX_8_lsx(const int16_t *filter, int filterSize,
+                         const int16_t **src, uint8_t *dest, int dstW,
+                         const uint8_t *dither, int offset);
+
+av_cold void ff_sws_init_output_lsx(SwsContext *c);
+
+#if HAVE_LASX
 void ff_hscale_8_to_15_lasx(SwsContext *c, int16_t *dst, int dstW,
                             const uint8_t *src, const int16_t *filter,
                             const int32_t *filterPos, int filterSize);
@@ -69,10 +107,11 @@ void ff_interleave_bytes_lasx(const uint8_t *src1, const uint8_t *src2,
                               uint8_t *dest, int width, int height,
                               int src1Stride, int src2Stride, int dstStride);
 
-av_cold void ff_sws_init_output_loongarch(SwsContext *c);
-
 void ff_yuv2planeX_8_lasx(const int16_t *filter, int filterSize,
                           const int16_t **src, uint8_t *dest, int dstW,
                           const uint8_t *dither, int offset);
+
+av_cold void ff_sws_init_output_lasx(SwsContext *c);
+#endif // #if HAVE_LASX
 
 #endif /* SWSCALE_LOONGARCH_SWSCALE_LOONGARCH_H */

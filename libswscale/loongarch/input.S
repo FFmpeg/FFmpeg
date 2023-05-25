@@ -1,0 +1,285 @@
+/*
+ * Loongson LSX optimized swscale
+ *
+ * Copyright (c) 2023 Loongson Technology Corporation Limited
+ * Contributed by Lu Wang <wanglu@loongson.cn>
+ *
+ * This file is part of FFmpeg.
+ *
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * FFmpeg is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+#include "libavcodec/loongarch/loongson_asm.S"
+
+/* void planar_rgb_to_y_lsx(uint8_t *_dst, const uint8_t *src[4],
+ *                          int width, int32_t *rgb2yuv)
+ */
+function planar_rgb_to_y_lsx
+    ld.d            a5,     a1,    0
+    ld.d            a6,     a1,    8
+    ld.d            a7,     a1,    16
+
+    ld.w            t1,     a3,    0     // ry
+    ld.w            t2,     a3,    4     // gy
+    ld.w            t3,     a3,    8     // by
+    li.w            t4,     9
+    li.w            t5,     524544
+    li.w            t7,     4
+    li.w            t8,     8
+    vldi            vr7,    0
+    vreplgr2vr.w    vr1,    t1
+    vreplgr2vr.w    vr2,    t2
+    vreplgr2vr.w    vr3,    t3
+    vreplgr2vr.w    vr4,    t4
+    vreplgr2vr.w    vr5,    t5
+    bge             a2,     t8,    .WIDTH8
+    bge             a2,     t7,    .WIDTH4
+    blt             zero,   a2,    .WIDTH
+    b               .END
+
+.WIDTH8:
+    vld             vr8,    a5,    0
+    vld             vr9,    a6,    0
+    vld             vr10,   a7,    0
+    vilvl.b         vr11,   vr7,   vr8
+    vilvl.b         vr12,   vr7,   vr9
+    vilvl.b         vr13,   vr7,   vr10
+    vilvl.h         vr14,   vr7,   vr11
+    vilvl.h         vr15,   vr7,   vr12
+    vilvl.h         vr16,   vr7,   vr13
+    vilvh.h         vr17,   vr7,   vr11
+    vilvh.h         vr18,   vr7,   vr12
+    vilvh.h         vr19,   vr7,   vr13
+    vmul.w          vr20,   vr1,   vr16
+    vmul.w          vr21,   vr1,   vr19
+    vmadd.w         vr20,   vr2,   vr14
+    vmadd.w         vr20,   vr3,   vr15
+    vmadd.w         vr21,   vr2,   vr17
+    vmadd.w         vr21,   vr3,   vr18
+    vadd.w          vr20,   vr20,  vr5
+    vadd.w          vr21,   vr21,  vr5
+    vsra.w          vr20,   vr20,  vr4
+    vsra.w          vr21,   vr21,  vr4
+    vpickev.h       vr20,   vr21,  vr20
+    vst             vr20,   a0,    0
+    addi.d          a2,     a2,    -8
+    addi.d          a5,     a5,    8
+    addi.d          a6,     a6,    8
+    addi.d          a7,     a7,    8
+    addi.d          a0,     a0,    16
+    bge             a2,     t8,    .WIDTH8
+    bge             a2,     t7,    .WIDTH4
+    blt             zero,   a2,    .WIDTH
+    b               .END
+
+.WIDTH4:
+    vld             vr8,    a5,    0
+    vld             vr9,    a6,    0
+    vld             vr10,   a7,    0
+    vilvl.b         vr11,   vr7,   vr8
+    vilvl.b         vr12,   vr7,   vr9
+    vilvl.b         vr13,   vr7,   vr10
+    vilvl.h         vr14,   vr7,   vr11
+    vilvl.h         vr15,   vr7,   vr12
+    vilvl.h         vr16,   vr7,   vr13
+    vmul.w          vr17,   vr1,   vr16
+    vmadd.w         vr17,   vr2,   vr14
+    vmadd.w         vr17,   vr3,   vr15
+    vadd.w          vr17,   vr17,  vr5
+    vsra.w          vr17,   vr17,  vr4
+    vpickev.h       vr17,   vr17,  vr17
+    vstelm.d        vr17,   a0,    0,    0
+    addi.d          a2,     a2,    -4
+    addi.d          a5,     a5,    4
+    addi.d          a6,     a6,    4
+    addi.d          a7,     a7,    4
+    addi.d          a0,     a0,    8
+    bge             a2,     t7,    .WIDTH4
+    blt             zero,   a2,    .WIDTH
+    b               .END
+
+.WIDTH:
+    ld.bu           t0,     a5,    0
+    ld.bu           t4,     a6,    0
+    ld.bu           t6,     a7,    0
+    mul.w           t8,     t6,    t1
+    mul.w           t7,     t0,    t2
+    add.w           t8,     t8,    t7
+    mul.w           t7,     t4,    t3
+    add.w           t8,     t8,    t7
+    add.w           t8,     t8,    t5
+    srai.w          t8,     t8,    9
+    st.h            t8,     a0,    0
+    addi.d          a2,     a2,    -1
+    addi.d          a5,     a5,    1
+    addi.d          a6,     a6,    1
+    addi.d          a7,     a7,    1
+    addi.d          a0,     a0,    2
+    blt             zero,   a2,    .WIDTH
+.END:
+endfunc
+
+/* void planar_rgb_to_uv_lsx(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *src[4],
+ *                           int width, int32_t *rgb2yuv)
+ */
+function planar_rgb_to_uv_lsx
+    addi.d          sp,     sp,    -24
+    st.d            s1,     sp,    0
+    st.d            s2,     sp,    8
+    st.d            s3,     sp,    16
+
+    ld.d            a5,     a2,    0
+    ld.d            a6,     a2,    8
+    ld.d            a7,     a2,    16
+    ld.w            t1,     a4,    12     // ru
+    ld.w            t2,     a4,    16     // gu
+    ld.w            t3,     a4,    20     // bu
+    ld.w            s1,     a4,    24     // rv
+    ld.w            s2,     a4,    28     // gv
+    ld.w            s3,     a4,    32     // bv
+    li.w            t4,     9
+    li.w            t5,     4194560
+    li.w            t7,     4
+    li.w            t8,     8
+    vldi            vr0,    0
+    vreplgr2vr.w    vr1,    t1
+    vreplgr2vr.w    vr2,    t2
+    vreplgr2vr.w    vr3,    t3
+    vreplgr2vr.w    vr4,    s1
+    vreplgr2vr.w    vr5,    s2
+    vreplgr2vr.w    vr6,    s3
+    vreplgr2vr.w    vr7,    t4
+    vreplgr2vr.w    vr8,    t5
+    bge             a2,     t8,    .LOOP_WIDTH8
+    bge             a2,     t7,    .LOOP_WIDTH4
+    blt             zero,   a2,    .LOOP_WIDTH
+    b               .LOOP_END
+
+.LOOP_WIDTH8:
+    vld             vr9,    a5,    0
+    vld             vr10,   a6,    0
+    vld             vr11,   a7,    0
+    vilvl.b         vr9,    vr0,   vr9
+    vilvl.b         vr10,   vr0,   vr10
+    vilvl.b         vr11,   vr0,   vr11
+    vilvl.h         vr12,   vr0,   vr9
+    vilvl.h         vr13,   vr0,   vr10
+    vilvl.h         vr14,   vr0,   vr11
+    vilvh.h         vr15,   vr0,   vr9
+    vilvh.h         vr16,   vr0,   vr10
+    vilvh.h         vr17,   vr0,   vr11
+    vmul.w          vr18,   vr1,   vr14
+    vmul.w          vr19,   vr1,   vr17
+    vmul.w          vr20,   vr4,   vr14
+    vmul.w          vr21,   vr4,   vr17
+    vmadd.w         vr18,   vr2,   vr12
+    vmadd.w         vr18,   vr3,   vr13
+    vmadd.w         vr19,   vr2,   vr15
+    vmadd.w         vr19,   vr3,   vr16
+    vmadd.w         vr20,   vr5,   vr12
+    vmadd.w         vr20,   vr6,   vr13
+    vmadd.w         vr21,   vr5,   vr15
+    vmadd.w         vr21,   vr6,   vr16
+    vadd.w          vr18,   vr18,  vr8
+    vadd.w          vr19,   vr19,  vr8
+    vadd.w          vr20,   vr20,  vr8
+    vadd.w          vr21,   vr21,  vr8
+    vsra.w          vr18,   vr18,  vr7
+    vsra.w          vr19,   vr19,  vr7
+    vsra.w          vr20,   vr20,  vr7
+    vsra.w          vr21,   vr21,  vr7
+    vpickev.h       vr18,   vr19,  vr18
+    vpickev.h       vr20,   vr21,  vr20
+    vst             vr18,   a0,    0
+    vst             vr20,   a1,    0
+    addi.d          a3,     a3,    -8
+    addi.d          a5,     a5,    8
+    addi.d          a6,     a6,    8
+    addi.d          a7,     a7,    8
+    addi.d          a0,     a0,    16
+    addi.d          a1,     a1,    16
+    bge             a3,     t8,    .LOOP_WIDTH8
+    bge             a3,     t7,    .LOOP_WIDTH4
+    blt             zero,   a3,    .LOOP_WIDTH
+    b               .LOOP_END
+
+.LOOP_WIDTH4:
+    vld             vr9,    a5,    0
+    vld             vr10,   a6,    0
+    vld             vr11,   a7,    0
+    vilvl.b         vr9,    vr0,   vr9
+    vilvl.b         vr10,   vr0,   vr10
+    vilvl.b         vr11,   vr0,   vr11
+    vilvl.h         vr12,   vr0,   vr9
+    vilvl.h         vr13,   vr0,   vr10
+    vilvl.h         vr14,   vr0,   vr11
+    vmul.w          vr18,   vr1,   vr14
+    vmul.w          vr19,   vr4,   vr14
+    vmadd.w         vr18,   vr2,   vr12
+    vmadd.w         vr18,   vr3,   vr13
+    vmadd.w         vr19,   vr5,   vr12
+    vmadd.w         vr19,   vr6,   vr13
+    vadd.w          vr18,   vr18,  vr8
+    vadd.w          vr19,   vr19,  vr8
+    vsra.w          vr18,   vr18,  vr7
+    vsra.w          vr19,   vr19,  vr7
+    vpickev.h       vr18,   vr18,  vr18
+    vpickev.h       vr19,   vr19,  vr19
+    vstelm.d        vr18,   a0,    0,    0
+    vstelm.d        vr19,   a1,    0,    0
+    addi.d          a3,     a3,    -4
+    addi.d          a5,     a5,    4
+    addi.d          a6,     a6,    4
+    addi.d          a7,     a7,    4
+    addi.d          a0,     a0,    8
+    addi.d          a1,     a1,    8
+    bge             a3,     t7,    .LOOP_WIDTH4
+    blt             zero,   a3,    .LOOP_WIDTH
+    b               .LOOP_END
+
+.LOOP_WIDTH:
+    ld.bu           t0,     a5,    0
+    ld.bu           t4,     a6,    0
+    ld.bu           t6,     a7,    0
+    mul.w           t8,     t6,    t1
+    mul.w           t7,     t0,    t2
+    add.w           t8,     t8,    t7
+    mul.w           t7,     t4,    t3
+    add.w           t8,     t8,    t7
+    add.w           t8,     t8,    t5
+    srai.w          t8,     t8,    9
+    st.h            t8,     a0,    0
+    mul.w           t8,     t6,    s1
+    mul.w           t7,     t0,    s2
+    add.w           t8,     t8,    t7
+    mul.w           t7,     t4,    s3
+    add.w           t8,     t8,    t7
+    add.w           t8,     t8,    t5
+    srai.w          t8,     t8,    9
+    st.h            t8,     a1,    0
+    addi.d          a3,     a3,    -1
+    addi.d          a5,     a5,    1
+    addi.d          a6,     a6,    1
+    addi.d          a7,     a7,    1
+    addi.d          a0,     a0,    2
+    addi.d          a1,     a1,    2
+    blt             zero,   a3,    .LOOP_WIDTH
+
+.LOOP_END:
+    ld.d            s1,     sp,    0
+    ld.d            s2,     sp,    8
+    ld.d            s3,     sp,    16
+    addi.d          sp,     sp,    24
+endfunc
