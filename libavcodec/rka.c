@@ -750,7 +750,7 @@ static int decode_filter(RKAContext *s, ChContext *ctx, ACoder *ac, int off, uns
         }
         if (ctx->cmode2 != 0) {
             int sum = 0;
-            for (int i = (m << 6) / split; i > 0; i = i >> 1)
+            for (int i = (signed)((unsigned)m << 6) / split; i > 0; i = i >> 1)
                 sum++;
             sum = sum - (ctx->cmode2 + 7);
             ctx->cmode = FFMAX(sum, tab[ctx->cmode2]);
