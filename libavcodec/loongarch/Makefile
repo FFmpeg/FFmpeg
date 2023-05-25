@@ -12,7 +12,6 @@ OBJS-$(CONFIG_HEVC_DECODER)           += loongarch/hevcdsp_init_loongarch.o
 LASX-OBJS-$(CONFIG_H264CHROMA)        += loongarch/h264chroma_lasx.o
 LASX-OBJS-$(CONFIG_H264QPEL)          += loongarch/h264qpel_lasx.o
 LASX-OBJS-$(CONFIG_H264DSP)           += loongarch/h264dsp_lasx.o \
-                                         loongarch/h264idct_lasx.o \
                                          loongarch/h264_deblock_lasx.o
 LASX-OBJS-$(CONFIG_H264PRED)          += loongarch/h264_intrapred_lasx.o
 LASX-OBJS-$(CONFIG_VC1_DECODER)       += loongarch/vc1dsp_lasx.o
@@ -31,3 +30,5 @@ LSX-OBJS-$(CONFIG_HEVC_DECODER)       += loongarch/hevcdsp_lsx.o \
                                          loongarch/hevc_mc_bi_lsx.o \
                                          loongarch/hevc_mc_uni_lsx.o \
                                          loongarch/hevc_mc_uniw_lsx.o
+LSX-OBJS-$(CONFIG_H264DSP)            += loongarch/h264idct.o \
+                                         loongarch/h264idct_loongarch.o

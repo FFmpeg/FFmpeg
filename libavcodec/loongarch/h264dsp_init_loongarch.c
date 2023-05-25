@@ -21,13 +21,32 @@
  */
 
 #include "libavutil/loongarch/cpu.h"
-#include "h264dsp_lasx.h"
+#include "h264dsp_loongarch.h"
 
 av_cold void ff_h264dsp_init_loongarch(H264DSPContext *c, const int bit_depth,
                                        const int chroma_format_idc)
 {
     int cpu_flags = av_get_cpu_flags();
 
+    if (have_lsx(cpu_flags)) {
+        if (bit_depth == 8) {
+            c->h264_idct_add     = ff_h264_idct_add_8_lsx;
+            c->h264_idct8_add    = ff_h264_idct8_add_8_lsx;
+            c->h264_idct_dc_add  = ff_h264_idct_dc_add_8_lsx;
+            c->h264_idct8_dc_add = ff_h264_idct8_dc_add_8_lsx;
+
+            if (chroma_format_idc <= 1)
+                c->h264_idct_add8 = ff_h264_idct_add8_8_lsx;
+            else
+                c->h264_idct_add8 = ff_h264_idct_add8_422_8_lsx;
+
+            c->h264_idct_add16 = ff_h264_idct_add16_8_lsx;
+            c->h264_idct8_add4 = ff_h264_idct8_add4_8_lsx;
+            c->h264_luma_dc_dequant_idct = ff_h264_luma_dc_dequant_idct_8_lsx;
+            c->h264_idct_add16intra = ff_h264_idct_add16_intra_8_lsx;
+        }
+    }
+#if HAVE_LASX
     if (have_lasx(cpu_flags)) {
         if (chroma_format_idc <= 1)
             c->h264_loop_filter_strength = ff_h264_loop_filter_strength_lasx;
@@ -56,20 +75,10 @@ av_cold void ff_h264dsp_init_loongarch(H264DSPContext *c, const int bit_depth,
             c->biweight_h264_pixels_tab[1] = ff_biweight_h264_pixels8_8_lasx;
             c->biweight_h264_pixels_tab[2] = ff_biweight_h264_pixels4_8_lasx;
 
-            c->h264_idct_add = ff_h264_idct_add_lasx;
-            c->h264_idct8_add = ff_h264_idct8_addblk_lasx;
-            c->h264_idct_dc_add = ff_h264_idct4x4_addblk_dc_lasx;
-            c->h264_idct8_dc_add = ff_h264_idct8_dc_addblk_lasx;
-            c->h264_idct_add16 = ff_h264_idct_add16_lasx;
-            c->h264_idct8_add4 = ff_h264_idct8_add4_lasx;
-
-            if (chroma_format_idc <= 1)
-                c->h264_idct_add8 = ff_h264_idct_add8_lasx;
-            else
-                c->h264_idct_add8 = ff_h264_idct_add8_422_lasx;
-
-            c->h264_idct_add16intra = ff_h264_idct_add16_intra_lasx;
-            c->h264_luma_dc_dequant_idct = ff_h264_deq_idct_luma_dc_lasx;
+            c->h264_idct8_add    = ff_h264_idct8_add_8_lasx;
+            c->h264_idct8_dc_add = ff_h264_idct8_dc_add_8_lasx;
+            c->h264_idct8_add4   = ff_h264_idct8_add4_8_lasx;
         }
     }
+#endif // #if HAVE_LASX
 }

@@ -23,7 +23,7 @@
  */
 
 #include "libavutil/loongarch/loongson_intrinsics.h"
-#include "h264dsp_lasx.h"
+#include "h264dsp_loongarch.h"
 
 #define AVC_LPF_P1_OR_Q1(p0_or_q0_org_in, q0_or_p0_org_in,   \
                          p1_or_q1_org_in, p2_or_q2_org_in,   \

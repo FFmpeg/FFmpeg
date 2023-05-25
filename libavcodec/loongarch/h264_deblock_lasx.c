@@ -20,7 +20,7 @@
  */
 
 #include "libavcodec/bit_depth_template.c"
-#include "h264dsp_lasx.h"
+#include "h264dsp_loongarch.h"
 #include "libavutil/loongarch/loongson_intrinsics.h"
 
 #define H264_LOOP_FILTER_STRENGTH_ITERATION_LASX(edges, step, mask_mv, dir, \
