@@ -99,8 +99,8 @@ static void fn(queue_sample)(AVFilterContext *ctx,
         *window_pos = 0;
 }
 
-static ftype fn(compute_peak)(ftype *cache, ftype sample, ftype wsample,
-                              int window_size)
+static ftype fn(compute_avg)(ftype *cache, ftype sample, ftype wsample,
+                             int window_size, int *unused, int *unused2)
 {
     ftype r;
 
@@ -111,8 +111,49 @@ static ftype fn(compute_peak)(ftype *cache, ftype sample, ftype wsample,
     return r / window_size;
 }
 
+static ftype fn(compute_peak)(ftype *peak, ftype sample, ftype wsample,
+                              int size, int *ffront, int *bback)
+{
+    ftype r, abs_sample = FABS(sample);
+    int front = *ffront;
+    int back = *bback;
+
+    if (front != back && abs_sample > peak[front]) {
+        while (front != back) {
+            front--;
+            if (front < 0)
+                front = size - 1;
+        }
+    }
+
+    while (front != back && abs_sample > peak[back]) {
+        back++;
+        if (back >= size)
+            back = 0;
+    }
+
+    if (front != back && FABS(wsample) == peak[front]) {
+        front--;
+        if (front < 0)
+            front = size - 1;
+    }
+
+    back--;
+    if (back < 0)
+        back = size - 1;
+    av_assert2(back != front);
+    peak[back] = abs_sample;
+
+    r = peak[front];
+
+    *ffront = front;
+    *bback = back;
+
+    return r;
+}
+
 static ftype fn(compute_rms)(ftype *cache, ftype sample, ftype wsample,
-                             int window_size)
+                             int window_size, int *unused, int *unused2)
 {
     ftype r;
 
@@ -143,6 +184,9 @@ static void fn(filter_start)(AVFilterContext *ctx,
     const int start_duration = s->start_duration;
     ftype *start_cache = (ftype *)s->start_cache;
     const int start_silence = s->start_silence;
+    int window_size = start_window_nb_samples;
+    int *front = s->start_front;
+    int *back = s->start_back;
 
     fn(queue_sample)(ctx, src, start,
                      &s->start_queue_pos,
@@ -153,15 +197,20 @@ static void fn(filter_start)(AVFilterContext *ctx,
                      start_nb_samples,
                      start_window_nb_samples);
 
+    if (s->detection != D_PEAK)
+        window_size = s->start_window_size;
+
     for (int ch = 0; ch < nb_channels; ch++) {
         ftype start_sample = start[start_pos + ch];
         ftype start_ow = startw[start_wpos + ch];
         ftype tstart;
 
-        tstart = fn(s->compute)(start_cache + ch,
+        tstart = fn(s->compute)(start_cache + ch * start_window_nb_samples,
                                 start_sample,
                                 start_ow,
-                                s->start_window_size);
+                                window_size,
+                                front + ch,
+                                back + ch);
 
         startw[start_wpos + ch] = start_sample;
 
@@ -226,6 +275,9 @@ static void fn(filter_stop)(AVFilterContext *ctx,
     ftype *stop_cache = (ftype *)s->stop_cache;
     const int stop_silence = s->stop_silence;
     const int restart = s->restart;
+    int window_size = stop_window_nb_samples;
+    int *front = s->stop_front;
+    int *back = s->stop_back;
 
     fn(queue_sample)(ctx, src, stop,
                      &s->stop_queue_pos,
@@ -236,15 +288,20 @@ static void fn(filter_stop)(AVFilterContext *ctx,
                      stop_nb_samples,
                      stop_window_nb_samples);
 
+    if (s->detection != D_PEAK)
+        window_size = s->stop_window_size;
+
     for (int ch = 0; ch < nb_channels; ch++) {
         ftype stop_sample = stop[stop_pos + ch];
         ftype stop_ow = stopw[stop_wpos + ch];
         ftype tstop;
 
-        tstop = fn(s->compute)(stop_cache + ch,
+        tstop = fn(s->compute)(stop_cache + ch * stop_window_nb_samples,
                                stop_sample,
                                stop_ow,
-                               s->stop_window_size);
+                               window_size,
+                               front + ch,
+                               back + ch);
 
         stopw[stop_wpos + ch] = stop_sample;
 

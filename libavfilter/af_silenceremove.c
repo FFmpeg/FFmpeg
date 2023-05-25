@@ -33,8 +33,10 @@
 #include "internal.h"
 
 enum SilenceDetect {
-    D_PEAK,
+    D_AVG,
     D_RMS,
+    D_PEAK,
+    D_NB
 };
 
 enum ThresholdMode {
@@ -75,6 +77,12 @@ typedef struct SilenceRemoveContext {
     AVFrame *start_window;
     AVFrame *stop_window;
 
+    int *start_front;
+    int *start_back;
+
+    int *stop_front;
+    int *stop_back;
+
     int64_t window_duration;
 
     int start_window_pos;
@@ -100,8 +108,8 @@ typedef struct SilenceRemoveContext {
 
     int detection;
 
-    float (*compute_flt)(float *c, float s, float ws, int size);
-    double (*compute_dbl)(double *c, double s, double ws, int size);
+    float (*compute_flt)(float *c, float s, float ws, int size, int *front, int *back);
+    double (*compute_dbl)(double *c, double s, double ws, int size, int *front, int *back);
 } SilenceRemoveContext;
 
 #define OFFSET(x) offsetof(SilenceRemoveContext, x)
@@ -120,9 +128,10 @@ static const AVOption silenceremove_options[] = {
     { "stop_threshold",  "set threshold for stop silence detection",           OFFSET(stop_threshold),      AV_OPT_TYPE_DOUBLE,   {.dbl=0},     0,   DBL_MAX, AF },
     { "stop_silence",    "set stop duration of silence part to keep",          OFFSET(stop_silence_opt),    AV_OPT_TYPE_DURATION, {.i64=0},     0, INT32_MAX, AF },
     { "stop_mode",       "set which channel will trigger trimming from end",   OFFSET(stop_mode),           AV_OPT_TYPE_INT,      {.i64=T_ANY}, T_ANY, T_ALL, AF, "mode" },
-    { "detection",       "set how silence is detected",                        OFFSET(detection),           AV_OPT_TYPE_INT,      {.i64=D_RMS}, D_PEAK,D_RMS, AF, "detection" },
-    {   "peak",          "use absolute values of samples",                     0,                           AV_OPT_TYPE_CONST,    {.i64=D_PEAK},0,         0, AF, "detection" },
-    {   "rms",           "use squared values of samples",                      0,                           AV_OPT_TYPE_CONST,    {.i64=D_RMS}, 0,         0, AF, "detection" },
+    { "detection",       "set how silence is detected",                        OFFSET(detection),           AV_OPT_TYPE_INT,      {.i64=D_RMS}, 0,    D_NB-1, AF, "detection" },
+    {   "avg",           "use mean absolute values of samples",                0,                           AV_OPT_TYPE_CONST,    {.i64=D_AVG}, 0,         0, AF, "detection" },
+    {   "rms",           "use root mean squared values of samples",            0,                           AV_OPT_TYPE_CONST,    {.i64=D_RMS}, 0,         0, AF, "detection" },
+    {   "peak",          "use max absolute values of samples",                 0,                           AV_OPT_TYPE_CONST,    {.i64=D_PEAK},0,         0, AF, "detection" },
     { "window",          "set duration of window for silence detection",       OFFSET(window_duration_opt), AV_OPT_TYPE_DURATION, {.i64=20000}, 0, 100000000, AF },
     { NULL }
 };
@@ -201,7 +210,9 @@ static int config_output(AVFilterLink *outlink)
 
     s->start_window = ff_get_audio_buffer(outlink, s->window_duration);
     s->stop_window = ff_get_audio_buffer(outlink, s->window_duration);
-    if (!s->start_window || !s->stop_window)
+    s->start_cache = av_calloc(outlink->ch_layout.nb_channels, s->window_duration * sizeof(*s->start_cache));
+    s->stop_cache = av_calloc(outlink->ch_layout.nb_channels, s->window_duration * sizeof(*s->stop_cache));
+    if (!s->start_window || !s->stop_window || !s->start_cache || !s->stop_cache)
         return AVERROR(ENOMEM);
 
     s->start_queuef = ff_get_audio_buffer(outlink, s->start_silence + 1);
@@ -209,14 +220,20 @@ static int config_output(AVFilterLink *outlink)
     if (!s->start_queuef || !s->stop_queuef)
         return AVERROR(ENOMEM);
 
-    s->start_cache = av_calloc(outlink->ch_layout.nb_channels, sizeof(*s->start_cache));
-    s->stop_cache = av_calloc(outlink->ch_layout.nb_channels, sizeof(*s->stop_cache));
-    if (!s->start_cache || !s->stop_cache)
+    s->start_front = av_calloc(outlink->ch_layout.nb_channels, sizeof(*s->start_front));
+    s->start_back = av_calloc(outlink->ch_layout.nb_channels, sizeof(*s->start_back));
+    s->stop_front = av_calloc(outlink->ch_layout.nb_channels, sizeof(*s->stop_front));
+    s->stop_back = av_calloc(outlink->ch_layout.nb_channels, sizeof(*s->stop_back));
+    if (!s->start_front || !s->start_back || !s->stop_front || !s->stop_back)
         return AVERROR(ENOMEM);
 
     clear_windows(s);
 
     switch (s->detection) {
+    case D_AVG:
+        s->compute_flt = compute_avg_flt;
+        s->compute_dbl = compute_avg_dbl;
+        break;
     case D_PEAK:
         s->compute_flt = compute_peak_flt;
         s->compute_dbl = compute_peak_dbl;
@@ -374,8 +391,13 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_frame_free(&s->stop_window);
     av_frame_free(&s->start_queuef);
     av_frame_free(&s->stop_queuef);
+
     av_freep(&s->start_cache);
     av_freep(&s->stop_cache);
+    av_freep(&s->start_front);
+    av_freep(&s->start_back);
+    av_freep(&s->stop_front);
+    av_freep(&s->stop_back);
 }
 
 static const AVFilterPad silenceremove_inputs[] = {
