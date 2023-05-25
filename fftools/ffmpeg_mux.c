@@ -386,6 +386,11 @@ void of_streamcopy(OutputStream *ost, const AVPacket *pkt, int64_t dts)
     AVPacket *opkt = ost->pkt;
 
     av_packet_unref(opkt);
+
+    if (of->recording_time != INT64_MAX &&
+        dts >= of->recording_time + start_time)
+        pkt = NULL;
+
     // EOF: flush output bitstream filters.
     if (!pkt) {
         of_output_packet(of, opkt, ost, 1);
@@ -405,12 +410,6 @@ void of_streamcopy(OutputStream *ost, const AVPacket *pkt, int64_t dts)
 
         if (of->start_time != AV_NOPTS_VALUE && dts < of->start_time)
             return;
-    }
-
-    if (of->recording_time != INT64_MAX &&
-        dts >= of->recording_time + start_time) {
-        close_output_stream(ost);
-        return;
     }
 
     if (av_packet_ref(opkt, pkt) < 0)
