@@ -28,8 +28,8 @@ static void decorrelate_ls(int32_t *p1, int32_t *p2, int length)
     int i;
 
     for (i = 0; i < length; i++) {
-        int32_t a = p1[i];
-        int32_t b = p2[i];
+        uint32_t a = p1[i];
+        uint32_t b = p2[i];
         p2[i]     = a + b;
     }
 }
@@ -39,8 +39,8 @@ static void decorrelate_sr(int32_t *p1, int32_t *p2, int length)
     int i;
 
     for (i = 0; i < length; i++) {
-        int32_t a = p1[i];
-        int32_t b = p2[i];
+        uint32_t a = p1[i];
+        uint32_t b = p2[i];
         p1[i]     = b - a;
     }
 }
@@ -50,7 +50,7 @@ static void decorrelate_sm(int32_t *p1, int32_t *p2, int length)
     int i;
 
     for (i = 0; i < length; i++) {
-        int32_t a = p1[i];
+        uint32_t a = p1[i];
         int32_t b = p2[i];
         a        -= b >> 1;
         p1[i]     = a;
@@ -63,7 +63,7 @@ static void decorrelate_sf(int32_t *p1, int32_t *p2, int length, int dshift, int
     int i;
 
     for (i = 0; i < length; i++) {
-        int32_t a = p1[i];
+        uint32_t a = p1[i];
         int32_t b = p2[i];
         b         = (unsigned)((int)(dfactor * (unsigned)(b >> dshift) + 128) >> 8) << dshift;
         p1[i]     = b - a;
