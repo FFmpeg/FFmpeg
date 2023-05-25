@@ -61,6 +61,8 @@
 #   include "riscv/timer.h"
 #elif ARCH_X86
 #   include "x86/timer.h"
+#elif ARCH_LOONGARCH
+#   include "loongarch/timer.h"
 #endif
 
 #if !defined(AV_READ_TIME)
