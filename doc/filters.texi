@@ -22442,9 +22442,9 @@ Override default style or script info parameters of the subtitles. It accepts a
 string containing ASS style format @code{KEY=VALUE} couples separated by ",".
 
 @item wrap_unicode
-Break lines according to the Unicode Line Breaking Algorithm. Only available
-since libass version 0x01600010, and whether it's usable depends on the built
-of libass.
+Break lines according to the Unicode Line Breaking Algorithm. Availability requires
+at least libass release 0.17.0 (or LIBASS_VERSION 0x01600010), @emph{and} libass must
+have been built with libunibreak.
 
 The option is enabled by default except for native ASS.
 @end table
