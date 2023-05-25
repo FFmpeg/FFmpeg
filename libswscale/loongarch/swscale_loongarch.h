@@ -62,6 +62,24 @@ void ff_yuv2planeX_8_lsx(const int16_t *filter, int filterSize,
 
 av_cold void ff_sws_init_output_lsx(SwsContext *c);
 
+int yuv420_rgb24_lsx(SwsContext *c, const uint8_t *src[], int srcStride[],
+                     int srcSliceY, int srcSliceH, uint8_t *dst[], int dstStride[]);
+
+int yuv420_bgr24_lsx(SwsContext *c, const uint8_t *src[], int srcStride[],
+                     int srcSliceY, int srcSliceH, uint8_t *dst[], int dstStride[]);
+
+int yuv420_rgba32_lsx(SwsContext *c, const uint8_t *src[], int srcStride[],
+                      int srcSliceY, int srcSliceH, uint8_t *dst[], int dstStride[]);
+
+int yuv420_bgra32_lsx(SwsContext *c, const uint8_t *src[], int srcStride[],
+                      int srcSliceY, int srcSliceH, uint8_t *dst[], int dstStride[]);
+
+int yuv420_argb32_lsx(SwsContext *c, const uint8_t *src[], int srcStride[],
+                      int srcSliceY, int srcSliceH, uint8_t *dst[], int dstStride[]);
+
+int yuv420_abgr32_lsx(SwsContext *c, const uint8_t *src[], int srcStride[],
+                      int srcSliceY, int srcSliceH, uint8_t *dst[], int dstStride[]);
+
 #if HAVE_LASX
 void ff_hscale_8_to_15_lasx(SwsContext *c, int16_t *dst, int dstW,
                             const uint8_t *src, const int16_t *filter,

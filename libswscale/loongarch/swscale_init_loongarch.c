@@ -90,8 +90,8 @@ av_cold void rgb2rgb_init_loongarch(void)
 
 av_cold SwsFunc ff_yuv2rgb_init_loongarch(SwsContext *c)
 {
-#if HAVE_LASX
     int cpu_flags = av_get_cpu_flags();
+#if HAVE_LASX
     if (have_lasx(cpu_flags)) {
         switch (c->dstFormat) {
             case AV_PIX_FMT_RGB24:
@@ -121,5 +121,33 @@ av_cold SwsFunc ff_yuv2rgb_init_loongarch(SwsContext *c)
         }
     }
 #endif // #if HAVE_LASX
+    if (have_lsx(cpu_flags)) {
+        switch (c->dstFormat) {
+            case AV_PIX_FMT_RGB24:
+                return yuv420_rgb24_lsx;
+            case AV_PIX_FMT_BGR24:
+                return yuv420_bgr24_lsx;
+            case AV_PIX_FMT_RGBA:
+                if (CONFIG_SWSCALE_ALPHA && isALPHA(c->srcFormat)) {
+                    break;
+                } else
+                    return yuv420_rgba32_lsx;
+            case AV_PIX_FMT_ARGB:
+                if (CONFIG_SWSCALE_ALPHA && isALPHA(c->srcFormat)) {
+                    break;
+                } else
+                    return yuv420_argb32_lsx;
+            case AV_PIX_FMT_BGRA:
+                if (CONFIG_SWSCALE_ALPHA && isALPHA(c->srcFormat)) {
+                    break;
+                } else
+                    return yuv420_bgra32_lsx;
+            case AV_PIX_FMT_ABGR:
+                if (CONFIG_SWSCALE_ALPHA && isALPHA(c->srcFormat)) {
+                    break;
+                } else
+                    return yuv420_abgr32_lsx;
+        }
+    }
     return NULL;
 }
