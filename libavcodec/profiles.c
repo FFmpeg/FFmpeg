@@ -194,4 +194,10 @@ const AVProfile ff_arib_caption_profiles[] = {
     { FF_PROFILE_UNKNOWN }
 };
 
+const AVProfile ff_evc_profiles[] = {
+    { FF_PROFILE_EVC_BASELINE,             "Baseline"              },
+    { FF_PROFILE_EVC_MAIN,                 "Main"                  },
+    { FF_PROFILE_UNKNOWN },
+};
+
 #endif /* !CONFIG_SMALL */
