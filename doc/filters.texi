@@ -12363,7 +12363,17 @@ The default value of @var{box} is 0.
 
 @item boxborderw
 Set the width of the border to be drawn around the box using @var{boxcolor}.
-The default value of @var{boxborderw} is 0.
+The value must be specified using one of the following formats:
+@itemize @bullet
+@item @code{boxborderw=10} set the width of all the borders to 10
+@item @code{boxborderw=10|20} set the width of the top and bottom borders to 10
+    and the width of the left and right borders to 20
+@item @code{boxborderw=10|20|30} set the width of the top border to 10, the width
+    of the bottom border to 30 and the width of the left and right borders to 20
+@item @code{boxborderw=10|20|30|40} set the borders width to 10 (top), 20 (right),
+    30 (bottom), 40 (left)
+@end itemize
+The default value of @var{boxborderw} is "0".
 
 @item boxcolor
 The color to be used for drawing box around text. For the syntax of this

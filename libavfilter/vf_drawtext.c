@@ -256,7 +256,8 @@ typedef struct DrawTextContext {
 
     int line_spacing;               ///< lines spacing in pixels
     short int draw_box;             ///< draw box around text - true or false
-    int boxborderw;                 ///< box border width
+    char *boxborderw;               ///< box border width (padding)
+                                    ///  allowed formats: "all", "vert|oriz", "top|right|bottom|left"
     int bb_top;                     ///< the size of the top box border
     int bb_right;                   ///< the size of the right box border
     int bb_bottom;                  ///< the size of the bottom box border
@@ -316,7 +317,7 @@ static const AVOption drawtext_options[]= {
     {"bordercolor",    "set border color",      OFFSET(bordercolor.rgba),   AV_OPT_TYPE_COLOR,  {.str="black"}, 0, 0, FLAGS},
     {"shadowcolor",    "set shadow color",      OFFSET(shadowcolor.rgba),   AV_OPT_TYPE_COLOR,  {.str="black"}, 0, 0, FLAGS},
     {"box",            "set box",               OFFSET(draw_box),           AV_OPT_TYPE_BOOL,   {.i64=0},     0, 1, FLAGS},
-    {"boxborderw",     "set box borders width", OFFSET(boxborderw),         AV_OPT_TYPE_INT,    {.i64=0},     0, INT_MAX, FLAGS},
+    {"boxborderw",     "set box borders width", OFFSET(boxborderw),         AV_OPT_TYPE_STRING, {.str="0"},   0, 0, FLAGS},
     {"line_spacing",   "set line spacing in pixels", OFFSET(line_spacing),  AV_OPT_TYPE_INT,    {.i64=0},     INT_MIN, INT_MAX, FLAGS},
     {"fontsize",       "set font size",         OFFSET(fontsize_expr),      AV_OPT_TYPE_STRING, {.str=NULL},  0, 0, FLAGS},
     {"x",              "set x expression",      OFFSET(x_expr),             AV_OPT_TYPE_STRING, {.str="0"},   0, 0, FLAGS},
@@ -816,6 +817,23 @@ error:
     av_freep(&glyph);
     av_freep(&node);
     return ret;
+}
+
+// Convert a string formatted as "n1|n2|...|nN" into an integer array
+static int string_to_array(const char *source, int *result, int result_size)
+{
+    int counter = 0, size = strlen(source) + 1;
+    char *saveptr, *curval, *dup = av_malloc(size);
+    if (!dup)
+        return 0;
+    av_strlcpy(dup, source, size);
+    if (result_size > 0 && (curval = av_strtok(dup, "|", &saveptr))) {
+        do {
+            result[counter++] = atoi(curval);
+        } while ((curval = av_strtok(NULL, "|", &saveptr)) && counter < result_size);
+    }
+    av_free(dup);
+    return counter;
 }
 
 static av_cold int init(AVFilterContext *ctx)
@@ -1796,7 +1814,24 @@ static int draw_text(AVFilterContext *ctx, AVFrame *frame)
     update_color_with_alpha(s, &boxcolor   , s->boxcolor   );
 
     if (s->draw_box && s->boxborderw) {
-        s->bb_top = s->bb_right = s->bb_bottom = s->bb_left = s->boxborderw;
+        int bbsize[4];
+        int count;
+        count = string_to_array(s->boxborderw, bbsize, 4);
+        if (count == 1) {
+            s->bb_top = s->bb_right = s->bb_bottom = s->bb_left = bbsize[0];
+        } else if (count == 2) {
+            s->bb_top = s->bb_bottom = bbsize[0];
+            s->bb_right = s->bb_left = bbsize[1];
+        } else if (count == 3) {
+            s->bb_top = bbsize[0];
+            s->bb_right = s->bb_left = bbsize[1];
+            s->bb_bottom = bbsize[2];
+        } else if (count == 4) {
+            s->bb_top = bbsize[0];
+            s->bb_right = bbsize[1];
+            s->bb_bottom = bbsize[2];
+            s->bb_left = bbsize[3];
+        }
     } else {
         s->bb_top = s->bb_right = s->bb_bottom = s->bb_left = 0;
     }
