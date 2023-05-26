@@ -6461,7 +6461,7 @@ With @var{all}, only if all channels are detected as non-silence will cause
 stopped trimming of silence.
 
 @item detection
-Set how is silence detected. Can be @code{avg}, @code{rms} or @code{peak}.
+Set how is silence detected. Can be @code{avg}, @code{rms}, @code{median} or @code{peak}.
 Default value is @code{rms}.
 
 @item window
