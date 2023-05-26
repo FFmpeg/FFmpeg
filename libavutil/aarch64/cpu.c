@@ -83,6 +83,18 @@ static int detect_flags(void)
     return flags;
 }
 
+#elif defined(_WIN32)
+#include <windows.h>
+
+static int detect_flags(void)
+{
+    int flags = 0;
+#ifdef PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE
+    if (IsProcessorFeaturePresent(PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE))
+        flags |= AV_CPU_FLAG_DOTPROD;
+#endif
+    return flags;
+}
 #else
 
 static int detect_flags(void)
