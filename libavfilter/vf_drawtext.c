@@ -89,6 +89,10 @@ static const char *const var_names[] = {
     "max_glyph_d", "descent", ///< min glyph descender
     "max_glyph_h",            ///< max glyph height
     "max_glyph_w",            ///< max glyph width
+    "font_a",                 ///< font-defined ascent
+    "font_d",                 ///< font-defined descent
+    "top_a",                  ///< max glyph ascender of the top line
+    "bottom_d",               ///< max glyph descender of the bottom line
     "n",                      ///< number of frame
     "sar",
     "t",                      ///< timestamp expressed in seconds
@@ -136,6 +140,10 @@ enum var_name {
     VAR_MAX_GLYPH_D, VAR_DESCENT,
     VAR_MAX_GLYPH_H,
     VAR_MAX_GLYPH_W,
+    VAR_FONT_A,
+    VAR_FONT_D,
+    VAR_TOP_A,
+    VAR_BOTTOM_D,
     VAR_N,
     VAR_SAR,
     VAR_T,
@@ -1800,8 +1808,12 @@ static int draw_text(AVFilterContext *ctx, AVFrame *frame)
     s->var_values[VAR_MAX_GLYPH_W] = s->max_glyph_w;
     s->var_values[VAR_MAX_GLYPH_H] = s->max_glyph_h;
     s->var_values[VAR_MAX_GLYPH_A] = s->var_values[VAR_ASCENT] = POS_CEIL(metrics.max_y64, 64);
+    s->var_values[VAR_FONT_A] = s->face->size->metrics.ascender / 64;
     s->var_values[VAR_MAX_GLYPH_D] = s->var_values[VAR_DESCENT] = POS_CEIL(metrics.min_y64, 64);
+    s->var_values[VAR_FONT_D] = -s->face->size->metrics.descender / 64;
 
+    s->var_values[VAR_TOP_A] = POS_CEIL(metrics.offset_top64, 64);
+    s->var_values[VAR_BOTTOM_D] = -POS_CEIL(metrics.offset_bottom64, 64);
     s->var_values[VAR_LINE_H] = s->var_values[VAR_LH] = metrics.line_height64 / 64.;
 
     if (s->text_source == AV_FRAME_DATA_DETECTION_BBOXES) {

@@ -12597,6 +12597,18 @@ contained in the rendered text, it is equivalent to @var{ascent} -
 maximum glyph width, that is the maximum width for all the glyphs
 contained in the rendered text
 
+@item font_a
+the ascent size defined in the font metrics
+
+@item font_d
+the descent size defined in the font metrics
+
+@item top_a
+the maximum ascender of the glyphs of the first text line
+
+@item bottom_d
+the maximum descender of the glyphs of the last text line
+
 @item n
 the number of input frame, starting from 0
 
