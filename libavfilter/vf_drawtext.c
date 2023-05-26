@@ -309,12 +309,14 @@ typedef struct DrawTextContext {
 
     int boxw;                       ///< the value of the boxw parameter
     int boxh;                       ///< the value of the boxh parameter
+    uint8_t *text_align;            ///< the horizontal and vertical text alignment
 
     TextLine *lines;                ///< computed information about text lines
     int line_count;                 ///< the number of text lines
     uint32_t *tab_clusters;         ///< the position of tab characters in the text
     int tab_count;                  ///< the number of tab characters
     int blank_advance64;            ///< the size of the space character
+    int tab_warning_printed;        ///< ensure the tab warning to be printed only once
 } DrawTextContext;
 
 #define OFFSET(x) offsetof(DrawTextContext, x)
@@ -333,6 +335,7 @@ static const AVOption drawtext_options[]= {
     {"boxborderw",     "set box borders width", OFFSET(boxborderw),         AV_OPT_TYPE_STRING, {.str="0"},   0, 0, FLAGS},
     {"line_spacing",   "set line spacing in pixels", OFFSET(line_spacing),  AV_OPT_TYPE_INT,    {.i64=0},     INT_MIN, INT_MAX, FLAGS},
     {"fontsize",       "set font size",         OFFSET(fontsize_expr),      AV_OPT_TYPE_STRING, {.str=NULL},  0, 0, FLAGS},
+    {"text_align",     "set text alignment",    OFFSET(text_align),         AV_OPT_TYPE_STRING, {.str="TL"},  0, 0, FLAGS},
     {"x",              "set x expression",      OFFSET(x_expr),             AV_OPT_TYPE_STRING, {.str="0"},   0, 0, FLAGS},
     {"y",              "set y expression",      OFFSET(y_expr),             AV_OPT_TYPE_STRING, {.str="0"},   0, 0, FLAGS},
     {"boxw",           "set box width",         OFFSET(boxw),               AV_OPT_TYPE_INT,    {.i64=0},     0, INT_MAX, FLAGS},
@@ -851,6 +854,19 @@ static int string_to_array(const char *source, int *result, int result_size)
     return counter;
 }
 
+static int validate_text_align(char* text_align)
+{
+    int err = 0;
+    if (strlen(text_align) != 2
+        || strchr("LCRTMB", text_align[0]) == NULL || strchr("LCRTMB", text_align[1]) == NULL
+        || (strchr("TMB", text_align[0]) != NULL && strchr("LCR", text_align[1]) == NULL)
+        || (strchr("LCR", text_align[0]) != NULL && strchr("TMB", text_align[1]) == NULL)) {
+        err = AVERROR(EINVAL);
+    }
+
+    return err;
+}
+
 static av_cold int init(AVFilterContext *ctx)
 {
     int err;
@@ -914,6 +930,14 @@ static av_cold int init(AVFilterContext *ctx)
         av_log(ctx, AV_LOG_ERROR,
                "Either text, a valid file, a timecode or text source must be provided\n");
         return AVERROR(EINVAL);
+    }
+
+    if ((err = validate_text_align(s->text_align))) {
+        av_log(ctx, AV_LOG_ERROR,
+               "The value provided for parameter 'text_align' is not valid,\n");
+        av_log(ctx, AV_LOG_ERROR,
+               "please specify a two characters string containing only one letter for horizontal alignment ('LCR') and one for vertical alignment ('TMB')\n");
+        return err;
     }
 
 #if CONFIG_LIBFRIBIDI
@@ -1486,13 +1510,32 @@ static int draw_glyphs(DrawTextContext *s, AVFrame *frame,
     Glyph dummy = { 0 }, *glyph;
     FT_Bitmap bitmap;
     FT_BitmapGlyph b_glyph;
+    uint8_t j_center = 0, j_right = 0, j_middle = 0, j_bottom = 0;
+    int line_w, offset_y = 0;
     int clip_x = 0, clip_y = 0;
+
+    j_center = strstr(s->text_align, "C") > 0;
+    j_right = strstr(s->text_align, "R") > 0;
+    j_middle = strstr(s->text_align, "M") > 0;
+    j_bottom = strstr(s->text_align, "B") > 0;
+
+    if (j_middle) {
+        offset_y = (s->box_height - metrics->height) / 2;
+    } else if (j_bottom) {
+        offset_y = s->box_height - metrics->height;
+    }
+
+    if ((j_right || j_center) && !s->tab_warning_printed && s->tab_count > 0) {
+        s->tab_warning_printed = 1;
+        av_log(s, AV_LOG_WARNING, "Tab characters are only supported with left horizontal alignment\n");
+    }
 
     clip_x = FFMIN(metrics->rect_x + s->box_width + s->bb_right, frame->width);
     clip_y = FFMIN(metrics->rect_y + s->box_height + s->bb_bottom, frame->height);
 
     for (l = 0; l < s->line_count; ++l) {
         TextLine *line = &s->lines[l];
+        line_w = POS_CEIL(line->width64, 64);
         for (g = 0; g < line->hb_data.glyph_count; ++g) {
             info = &line->glyphs[g];
             dummy.fontsize = s->fontsize;
@@ -1506,9 +1549,15 @@ static int draw_glyphs(DrawTextContext *s, AVFrame *frame,
             b_glyph = borderw ? glyph->border_bglyph[idx] : glyph->bglyph[idx];
             bitmap = b_glyph->bitmap;
             x1 = x + info->x + b_glyph->left;
-            y1 = y + info->y - b_glyph->top;
+            y1 = y + info->y - b_glyph->top + offset_y;
             w1 = bitmap.width;
             h1 = bitmap.rows;
+
+            if (j_center) {
+                x1 += (s->box_width - line_w) / 2;
+            } else if (j_right) {
+                x1 += s->box_width - line_w;
+            }
 
             // Offset of the glyph's bitmap in the visible region
             dx = dy = 0;

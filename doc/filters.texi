@@ -12384,6 +12384,12 @@ The default value of @var{boxcolor} is "white".
 @item line_spacing
 Set the line spacing in pixels. The default value of @var{line_spacing} is 0.
 
+@item text_align
+Set the vertical and horizontal alignment of the text with respect to the box boundaries.
+The value must contain exactly two letters, one for the vertical alignment (T=top,
+M=middle, B=bottom) and one for the horizontal alignment (L=left, C=center, R=right).
+Please note that tab characters are only supported with the left horizontal alignment.
+
 @item borderw
 Set the width of the border to be drawn around the text using @var{bordercolor}.
 The default value of @var{borderw} is 0.
