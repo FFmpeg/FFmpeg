@@ -2348,6 +2348,7 @@ SYSTEM_FUNCS="
     strerror_r
     sysconf
     sysctl
+    sysctlbyname
     usleep
     UTGetOSTypeFromString
     VirtualAlloc
@@ -6394,6 +6395,7 @@ check_func_headers mach/mach_time.h mach_absolute_time
 check_func_headers stdlib.h getenv
 check_func_headers sys/stat.h lstat
 check_func_headers sys/auxv.h getauxval
+check_func_headers sys/sysctl.h sysctlbyname
 
 check_func_headers windows.h GetModuleHandle
 check_func_headers windows.h GetProcessAffinityMask
