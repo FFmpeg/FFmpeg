@@ -12791,10 +12791,33 @@ Full filter invocation with sendcmd would look like this:
 @example
 sendcmd=c='56.0 drawtext reinit fontsize=56\:fontcolor=green\:text=Hello\\ World'
 @end example
-@end table
 
 If the entire argument can't be parsed or applied as valid values then the filter will
 continue with its existing parameters.
+
+@end table
+
+The following options are also supported as @ref{commands}:
+
+@itemize @bullet
+@item x
+@item y
+@item alpha
+@item fontsize
+@item fontcolor
+@item boxcolor
+@item bordercolor
+@item shadowcolor
+@item box
+@item boxw
+@item boxh
+@item boxborderw
+@item line_spacing
+@item text_align
+@item shadowx
+@item shadowy
+@item borderw
+@end itemize
 
 @subsection Examples
 
