@@ -117,33 +117,49 @@ static ftype fn(compute_peak)(ftype *peak, ftype sample, ftype wsample,
     ftype r, abs_sample = FABS(sample);
     int front = *ffront;
     int back = *bback;
+    int empty = front == back && peak[front] == ZERO;
 
-    if (front != back && abs_sample > peak[front]) {
-        while (front != back) {
+    if (!empty && FABS(wsample) == peak[front]) {
+        peak[front] = ZERO;
+        if (back != front) {
+            front--;
+            if (front < 0)
+                front = size - 1;
+        }
+        empty = front == back;
+    }
+
+    if (!empty && abs_sample >= peak[front]) {
+        while (1) {
+            peak[front] = ZERO;
+            if (back == front) {
+                empty = 1;
+                break;
+            }
             front--;
             if (front < 0)
                 front = size - 1;
         }
     }
 
-    while (front != back && abs_sample > peak[back]) {
+    while (!empty && abs_sample >= peak[back]) {
+        peak[back] = ZERO;
+        if (back == front) {
+            empty = 1;
+            break;
+        }
         back++;
         if (back >= size)
             back = 0;
     }
 
-    if (front != back && FABS(wsample) == peak[front]) {
-        front--;
-        if (front < 0)
-            front = size - 1;
+    if (!empty) {
+        back--;
+        if (back < 0)
+            back = size - 1;
     }
 
-    back--;
-    if (back < 0)
-        back = size - 1;
-    av_assert2(back != front);
     peak[back] = abs_sample;
-
     r = peak[front];
 
     *ffront = front;
