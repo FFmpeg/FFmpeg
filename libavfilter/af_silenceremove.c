@@ -372,6 +372,12 @@ static int activate(AVFilterContext *ctx)
     if (ret < 0)
         return ret;
     if (ret > 0) {
+        if (s->start_periods == 1 && s->stop_periods == 0 &&
+            s->start_found_periods < 0) {
+            in->pts = s->next_pts;
+            s->next_pts += in->nb_samples;
+            return ff_filter_frame(outlink, in);
+        }
         if (s->start_periods == 0 && s->stop_periods == 0)
             return ff_filter_frame(outlink, in);
         return filter_frame(outlink, in);
