@@ -197,6 +197,9 @@ static void fn(filter_start)(AVFilterContext *ctx,
                      start_nb_samples,
                      start_window_nb_samples);
 
+    if (s->start_found_periods < 0)
+        goto skip;
+
     if (s->detection != D_PEAK)
         window_size = s->start_window_size;
 
@@ -244,6 +247,7 @@ static void fn(filter_start)(AVFilterContext *ctx,
         s->start_sample_count = 0;
     }
 
+skip:
     if (s->start_found_periods < 0) {
         const int dst_pos = out_nb_samples * nb_channels;
         for (int ch = 0; ch < nb_channels; ch++)
