@@ -294,15 +294,19 @@ static int filter_frame(AVFilterLink *outlink, AVFrame *in)
         srcf = (const float *)in->data[0];
         dstf = (float *)out->data[0];
         if (s->start_periods > 0 && s->stop_periods > 0) {
-            for (int n = 0; n < in_nb_samples; n++) {
-                filter_start_flt(ctx, srcf + n * nb_channels,
-                                 dstf, &out_nb_samples,
-                                 nb_channels);
+            const float *src = srcf;
+            if (s->start_found_periods >= 0) {
+                for (int n = 0; n < in_nb_samples; n++) {
+                    filter_start_flt(ctx, src + n * nb_channels,
+                                     dstf, &out_nb_samples,
+                                     nb_channels);
+                }
+                in_nb_samples = out_nb_samples;
+                out_nb_samples = 0;
+                src = dstf;
             }
-            in_nb_samples = out_nb_samples;
-            out_nb_samples = 0;
             for (int n = 0; n < in_nb_samples; n++) {
-                filter_stop_flt(ctx, dstf + n * nb_channels,
+                filter_stop_flt(ctx, src + n * nb_channels,
                                 dstf, &out_nb_samples,
                                 nb_channels);
             }
@@ -324,15 +328,19 @@ static int filter_frame(AVFilterLink *outlink, AVFrame *in)
         srcd = (const double *)in->data[0];
         dstd = (double *)out->data[0];
         if (s->start_periods > 0 && s->stop_periods > 0) {
-            for (int n = 0; n < in_nb_samples; n++) {
-                filter_start_dbl(ctx, srcd + n * nb_channels,
-                                 dstd, &out_nb_samples,
-                                 nb_channels);
+            const double *src = srcd;
+            if (s->start_found_periods >= 0) {
+                for (int n = 0; n < in_nb_samples; n++) {
+                    filter_start_dbl(ctx, src + n * nb_channels,
+                                     dstd, &out_nb_samples,
+                                     nb_channels);
+                }
+                in_nb_samples = out_nb_samples;
+                out_nb_samples = 0;
+                src = dstd;
             }
-            in_nb_samples = out_nb_samples;
-            out_nb_samples = 0;
             for (int n = 0; n < in_nb_samples; n++) {
-                filter_stop_dbl(ctx, dstd + n * nb_channels,
+                filter_stop_dbl(ctx, src + n * nb_channels,
                                 dstd, &out_nb_samples,
                                 nb_channels);
             }
