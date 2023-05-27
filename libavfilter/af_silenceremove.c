@@ -442,4 +442,5 @@ const AVFilter ff_af_silenceremove = {
     FILTER_SAMPLEFMTS(AV_SAMPLE_FMT_FLT,
                       AV_SAMPLE_FMT_DBL),
     .process_command = ff_filter_process_command,
+    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

@@ -318,9 +318,10 @@ static void fn(filter_start)(AVFilterContext *ctx,
     if (s->start_sample_count > start_duration) {
         s->start_found_periods++;
         if (s->start_found_periods >= start_periods) {
-            fn(flush)(dst, start, s->start_queue_pos, nb_channels,
-                      s->start_silence_count, start_nb_samples,
-                      &out_nb_samples);
+            if (!ctx->is_disabled)
+                fn(flush)(dst, start, s->start_queue_pos, nb_channels,
+                          s->start_silence_count, start_nb_samples,
+                          &out_nb_samples);
             s->start_silence_count = 0;
             s->start_found_periods = -1;
         }
@@ -329,7 +330,7 @@ static void fn(filter_start)(AVFilterContext *ctx,
     }
 
 skip:
-    if (s->start_found_periods < 0) {
+    if (s->start_found_periods < 0 || ctx->is_disabled) {
         const int dst_pos = out_nb_samples * nb_channels;
         for (int ch = 0; ch < nb_channels; ch++)
             dst[dst_pos + ch] = start[start_pos + ch];
@@ -401,7 +402,7 @@ static void fn(filter_stop)(AVFilterContext *ctx,
     if (restart && !stop_thres)
         s->stop_found_periods = 0;
 
-    if (s->stop_found_periods >= 0) {
+    if (s->stop_found_periods >= 0 || ctx->is_disabled) {
         if (s->found_nonsilence) {
             s->stop_sample_count += stop_thres;
             s->stop_sample_count *= stop_thres;
@@ -424,7 +425,7 @@ static void fn(filter_stop)(AVFilterContext *ctx,
         s->stop_sample_count = 0;
     }
 
-    if (s->stop_found_periods >= 0) {
+    if (s->stop_found_periods >= 0 || ctx->is_disabled) {
         const int dst_pos = out_nb_samples * nb_channels;
         for (int ch = 0; ch < nb_channels; ch++)
             dst[dst_pos + ch] = stop[stop_pos + ch];
