@@ -315,9 +315,6 @@ typedef struct FilterGraph {
     int            index;
 
     AVFilterGraph *graph;
-    // true when the filtergraph contains only meta filters
-    // that do not modify the frame data
-    int is_meta;
 
     InputFilter   **inputs;
     int          nb_inputs;
@@ -339,8 +336,6 @@ typedef struct InputStream {
     int decoding_needed;     /* non zero if the packets must be decoded in 'raw_fifo', see DECODING_FOR_* */
 #define DECODING_FOR_OST    1
 #define DECODING_FOR_FILTER 2
-    // should attach FrameData as opaque_ref after decoding
-    int want_frame_data;
 
     /**
      * Codec parameters - to be used by the decoding/streamcopy code.
@@ -653,6 +648,8 @@ typedef struct FrameData {
     AVRational tb;
 
     AVRational frame_rate_filter;
+
+    int        bits_per_raw_sample;
 } FrameData;
 
 extern InputFile   **input_files;

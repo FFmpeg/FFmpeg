@@ -198,6 +198,7 @@ int enc_open(OutputStream *ost, AVFrame *frame)
     AVCodecContext *dec_ctx = NULL;
     const AVCodec      *enc = enc_ctx->codec;
     OutputFile      *of = output_files[ost->file_index];
+    FrameData *fd = frame ? frame_data(frame) : NULL;
     int ret;
 
     if (e->opened)
@@ -219,8 +220,8 @@ int enc_open(OutputStream *ost, AVFrame *frame)
 
         if (ost->bits_per_raw_sample)
             enc_ctx->bits_per_raw_sample = ost->bits_per_raw_sample;
-        else if (dec_ctx && ost->filter->graph->is_meta)
-            enc_ctx->bits_per_raw_sample = FFMIN(dec_ctx->bits_per_raw_sample,
+        else if (fd)
+            enc_ctx->bits_per_raw_sample = FFMIN(fd->bits_per_raw_sample,
                                                  av_get_bytes_per_sample(enc_ctx->sample_fmt) << 3);
 
         enc_ctx->time_base = ost->enc_timebase.num > 0 ? ost->enc_timebase :
@@ -230,10 +231,8 @@ int enc_open(OutputStream *ost, AVFrame *frame)
     case AVMEDIA_TYPE_VIDEO: {
         AVRational fr = ost->frame_rate;
 
-        if (!fr.num && frame) {
-            FrameData *fd = frame_data(frame);
+        if (!fr.num && fd)
             fr = fd->frame_rate_filter;
-        }
         if (!fr.num && !ost->max_frame_rate.num) {
             fr = (AVRational){25, 1};
             av_log(ost, AV_LOG_WARNING,
@@ -282,8 +281,8 @@ int enc_open(OutputStream *ost, AVFrame *frame)
 
         if (ost->bits_per_raw_sample)
             enc_ctx->bits_per_raw_sample = ost->bits_per_raw_sample;
-        else if (dec_ctx && ost->filter->graph->is_meta)
-            enc_ctx->bits_per_raw_sample = FFMIN(dec_ctx->bits_per_raw_sample,
+        else if (fd)
+            enc_ctx->bits_per_raw_sample = FFMIN(fd->bits_per_raw_sample,
                                                  av_pix_fmt_desc_get(enc_ctx->pix_fmt)->comp[0].depth);
 
         if (frame) {

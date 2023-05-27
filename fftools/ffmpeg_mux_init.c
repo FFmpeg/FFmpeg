@@ -365,15 +365,11 @@ static int enc_stats_init(OutputStream *ost, EncStats *es, int pre,
 
                 c->type = fmt_specs[i].type;
 
-                if (fmt_specs[i].need_input_data) {
-                    if (ost->ist)
-                        ost->ist->want_frame_data = 1;
-                    else {
-                        av_log(ost, AV_LOG_WARNING,
-                               "Format directive '%s' is unavailable, because "
-                               "this output stream has no associated input stream\n",
-                               val);
-                    }
+                if (fmt_specs[i].need_input_data && !ost->ist) {
+                    av_log(ost, AV_LOG_WARNING,
+                           "Format directive '%s' is unavailable, because "
+                           "this output stream has no associated input stream\n",
+                           val);
                 }
 
                 break;

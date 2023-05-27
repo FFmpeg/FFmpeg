@@ -472,6 +472,7 @@ int dec_packet(InputStream *ist, const AVPacket *pkt, int no_eof)
 
     while (1) {
         AVFrame *frame = d->frame;
+        FrameData *fd;
 
         update_benchmark(NULL);
         ret = avcodec_receive_frame(dec, frame);
@@ -508,19 +509,17 @@ int dec_packet(InputStream *ist, const AVPacket *pkt, int no_eof)
                 exit_program(1);
         }
 
-        if (ist->want_frame_data) {
-            FrameData *fd;
 
-            av_assert0(!frame->opaque_ref);
-            fd      = frame_data(frame);
-            if (!fd) {
-                av_frame_unref(frame);
-                report_and_exit(AVERROR(ENOMEM));
-            }
-            fd->pts = frame->pts;
-            fd->tb  = dec->pkt_timebase;
-            fd->idx = dec->frame_num - 1;
+        av_assert0(!frame->opaque_ref);
+        fd      = frame_data(frame);
+        if (!fd) {
+            av_frame_unref(frame);
+            report_and_exit(AVERROR(ENOMEM));
         }
+        fd->pts                     = frame->pts;
+        fd->tb                      = dec->pkt_timebase;
+        fd->idx                     = dec->frame_num - 1;
+        fd->bits_per_raw_sample     = dec->bits_per_raw_sample;
 
         frame->time_base = dec->pkt_timebase;
 

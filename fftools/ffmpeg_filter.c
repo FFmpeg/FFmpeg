@@ -45,6 +45,9 @@ typedef struct FilterGraphPriv {
     char log_name[32];
 
     int is_simple;
+    // true when the filtergraph contains only meta filters
+    // that do not modify the frame data
+    int is_meta;
 
     const char *graph_desc;
 
@@ -1566,7 +1569,7 @@ static int configure_filtergraph(FilterGraph *fg)
     if ((ret = avfilter_graph_config(fg->graph, NULL)) < 0)
         goto fail;
 
-    fg->is_meta = graph_is_meta(fg->graph);
+    fgp->is_meta = graph_is_meta(fg->graph);
 
     /* limit the lists of allowed formats to the ones selected, to
      * make sure they stay the same if the filtergraph is reconfigured later */
@@ -1714,6 +1717,8 @@ int reap_filters(int flush)
         filtered_frame = fgp->frame;
 
         while (1) {
+            FrameData *fd;
+
             ret = av_buffersink_get_frame_flags(filter, filtered_frame,
                                                AV_BUFFERSINK_FLAG_NO_REQUEST);
             if (ret < 0) {
@@ -1744,15 +1749,19 @@ int reap_filters(int flush)
                            tb.num, tb.den);
             }
 
-            if (ost->type == AVMEDIA_TYPE_VIDEO) {
-                FrameData *fd = frame_data(filtered_frame);
-                if (!fd) {
-                    av_frame_unref(filtered_frame);
-                    report_and_exit(AVERROR(ENOMEM));
-                }
-
-                fd->frame_rate_filter = av_buffersink_get_frame_rate(filter);
+            fd = frame_data(filtered_frame);
+            if (!fd) {
+                av_frame_unref(filtered_frame);
+                report_and_exit(AVERROR(ENOMEM));
             }
+
+            // only use bits_per_raw_sample passed through from the decoder
+            // if the filtergraph did not touch the frame data
+            if (!fgp->is_meta)
+                fd->bits_per_raw_sample = 0;
+
+            if (ost->type == AVMEDIA_TYPE_VIDEO)
+                fd->frame_rate_filter = av_buffersink_get_frame_rate(filter);
 
             enc_frame(ost, filtered_frame);
             av_frame_unref(filtered_frame);
