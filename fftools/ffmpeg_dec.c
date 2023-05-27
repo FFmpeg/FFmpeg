@@ -499,12 +499,11 @@ int dec_packet(InputStream *ist, const AVPacket *pkt, int no_eof)
             FrameData *fd;
 
             av_assert0(!frame->opaque_ref);
-            frame->opaque_ref = av_buffer_allocz(sizeof(*fd));
-            if (!frame->opaque_ref) {
+            fd      = frame_data(frame);
+            if (!fd) {
                 av_frame_unref(frame);
                 report_and_exit(AVERROR(ENOMEM));
             }
-            fd      = (FrameData*)frame->opaque_ref->data;
             fd->pts = frame->pts;
             fd->tb  = dec->pkt_timebase;
             fd->idx = dec->frame_num - 1;

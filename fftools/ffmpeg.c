@@ -431,6 +431,17 @@ InputStream *ist_iter(InputStream *prev)
     return NULL;
 }
 
+FrameData *frame_data(AVFrame *frame)
+{
+    if (!frame->opaque_ref) {
+        frame->opaque_ref = av_buffer_allocz(sizeof(FrameData));
+        if (!frame->opaque_ref)
+            return NULL;
+    }
+
+    return (FrameData*)frame->opaque_ref->data;
+}
+
 void remove_avoptions(AVDictionary **a, AVDictionary *b)
 {
     const AVDictionaryEntry *t = NULL;
