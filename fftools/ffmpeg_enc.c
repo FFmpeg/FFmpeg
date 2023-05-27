@@ -62,6 +62,8 @@ struct Encoder {
 
     // number of packets received from the encoder
     uint64_t packets_encoded;
+
+    int opened;
 };
 
 static uint64_t dup_warning = 1000;
@@ -187,7 +189,7 @@ int enc_open(OutputStream *ost, AVFrame *frame)
     OutputFile      *of = output_files[ost->file_index];
     int ret;
 
-    if (ost->initialized)
+    if (e->opened)
         return 0;
 
     set_encoder_id(output_files[ost->file_index], ost);
@@ -361,6 +363,8 @@ int enc_open(OutputStream *ost, AVFrame *frame)
                    "incorrect parameters such as bit_rate, rate, width or height.\n");
         return ret;
     }
+
+    e->opened = 1;
 
     if (ost->sq_idx_encode >= 0) {
         e->sq_frame = av_frame_alloc();
@@ -1123,6 +1127,7 @@ void enc_flush(void)
     }
 
     for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
+        Encoder          *e = ost->enc;
         AVCodecContext *enc = ost->enc_ctx;
         OutputFile      *of = output_files[ost->file_index];
 
@@ -1131,7 +1136,7 @@ void enc_flush(void)
 
         // Try to enable encoding with no input frames.
         // Maybe we should just let encoding fail instead.
-        if (!ost->initialized) {
+        if (!e->opened) {
             FilterGraph *fg = ost->filter->graph;
 
             av_log(ost, AV_LOG_WARNING,
