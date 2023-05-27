@@ -161,6 +161,11 @@ NEON8_FNPROTO(pel_uni_w_pixels, (uint8_t *_dst, ptrdiff_t _dststride,
         int height, int denom, int wx, int ox,
         intptr_t mx, intptr_t my, int width),);
 
+NEON8_FNPROTO(epel_uni_w_v, (uint8_t *_dst,  ptrdiff_t _dststride,
+        const uint8_t *_src, ptrdiff_t _srcstride,
+        int height, int denom, int wx, int ox,
+        intptr_t mx, intptr_t my, int width),);
+
 NEON8_FNPROTO_PARTIAL_4(qpel_uni_w_v, (uint8_t *_dst,  ptrdiff_t _dststride,
         const uint8_t *_src, ptrdiff_t _srcstride,
         int height, int denom, int wx, int ox,
@@ -274,6 +279,7 @@ av_cold void ff_hevc_dsp_init_aarch64(HEVCDSPContext *c, const int bit_depth)
         NEON8_FNASSIGN(c->put_hevc_qpel_uni, 0, 0, pel_uni_pixels,);
         NEON8_FNASSIGN(c->put_hevc_epel_uni_w, 0, 0, pel_uni_w_pixels,);
         NEON8_FNASSIGN(c->put_hevc_qpel_uni_w, 0, 0, pel_uni_w_pixels,);
+        NEON8_FNASSIGN(c->put_hevc_epel_uni_w, 1, 0, epel_uni_w_v,);
         NEON8_FNASSIGN_PARTIAL_4(c->put_hevc_qpel_uni_w, 1, 0, qpel_uni_w_v,);
 
         if (have_i8mm(cpu_flags)) {

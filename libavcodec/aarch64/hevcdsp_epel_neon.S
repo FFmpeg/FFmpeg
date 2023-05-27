@@ -375,3 +375,506 @@ function ff_hevc_put_hevc_epel_uni_w_h64_8_neon_i8mm, export=1
 endfunc
 
 #endif
+
+
+.macro EPEL_UNI_W_V_HEADER
+        ldr             x12, [sp, #8]
+        movrel          x9, epel_filters
+        add             x9, x9, x12, lsl #2
+        ld4r            {v0.16b, v1.16b, v2.16b, v3.16b}, [x9] // filter
+        neg             v0.16b, v0.16b
+        neg             v3.16b, v3.16b
+        mov             w10, #-6
+        sub             w10, w10, w5
+        dup             v30.8h, w6
+        dup             v31.4s, w10
+        dup             v29.4s, w7
+        sub             x2, x2, x3
+.endm
+
+.macro EPEL_UNI_W_V4_CALC d0, s0, s1, s2, s3
+        movi            \d0\().2d, #0
+        umlsl           \d0\().8h, \s0\().8b, v0.8b
+        umlal           \d0\().8h, \s1\().8b, v1.8b
+        umlal           \d0\().8h, \s2\().8b, v2.8b
+        umlsl           \d0\().8h, \s3\().8b, v3.8b
+        smull           \d0\().4s, \d0\().4h, v30.4h
+        sqrshl          \d0\().4s, \d0\().4s, v31.4s
+        sqadd           \d0\().4s, \d0\().4s, v29.4s
+        sqxtn           \d0\().4h, \d0\().4s
+        sqxtun          \d0\().8b, \d0\().8h
+.endm
+
+function ff_hevc_put_hevc_epel_uni_w_v4_8_neon, export=1
+        EPEL_UNI_W_V_HEADER
+
+        ldr             s4, [x2]
+        ldr             s5, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        ldr             s6, [x2]
+1:
+        ldr             s7, [x2, x3]
+        subs            w4, w4, #1
+        add             x2, x2, x3, lsl #1
+        EPEL_UNI_W_V4_CALC v16, v4, v5, v6, v7
+        str             s16, [x0]
+        b.eq            2f
+        add             x0, x0, x1
+        ldr             s4, [x2]
+        subs            w4, w4, #1
+        EPEL_UNI_W_V4_CALC v17, v5, v6, v7, v4
+        str             s17, [x0]
+        add             x0, x0, x1
+        b.eq            2f
+        ldr             s5, [x2, x3]
+        subs            w4, w4, #1
+        add             x2, x2, x3, lsl #1
+        EPEL_UNI_W_V4_CALC v18, v6, v7, v4, v5
+        str             s18, [x0]
+        add             x0, x0, x1
+        b.eq            2f
+        ldr             s6, [x2]
+        subs            w4, w4, #1
+        EPEL_UNI_W_V4_CALC v19, v7, v4, v5, v6
+        str             s19, [x0]
+        add             x0, x0, x1
+        b.hi            1b
+2:
+        ret
+endfunc
+
+.macro EPEL_UNI_W_V8_CALC d0, s0, s1, s2, s3, t0, t1
+        movi            \d0\().2d, #0
+        umlsl           \d0\().8h, \s0\().8b, v0.8b
+        umlal           \d0\().8h, \s1\().8b, v1.8b
+        umlal           \d0\().8h, \s2\().8b, v2.8b
+        umlsl           \d0\().8h, \s3\().8b, v3.8b
+        smull           \t0\().4s, \d0\().4h, v30.4h
+        smull2          \t1\().4s, \d0\().8h, v30.8h
+        sqrshl          \t0\().4s, \t0\().4s, v31.4s
+        sqrshl          \t1\().4s, \t1\().4s, v31.4s
+        sqadd           \t0\().4s, \t0\().4s, v29.4s
+        sqadd           \t1\().4s, \t1\().4s, v29.4s
+        sqxtn           \d0\().4h, \t0\().4s
+        sqxtn2          \d0\().8h, \t1\().4s
+        sqxtun          \d0\().8b, \d0\().8h
+.endm
+
+function ff_hevc_put_hevc_epel_uni_w_v6_8_neon, export=1
+        EPEL_UNI_W_V_HEADER
+
+        sub             x1, x1, #4
+        ldr             d4, [x2]
+        ldr             d5, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        ldr             d6, [x2]
+1:
+        ldr             d7, [x2, x3]
+        subs            w4, w4, #1
+        add             x2, x2, x3, lsl #1
+        EPEL_UNI_W_V8_CALC v16, v4, v5, v6, v7, v20, v21
+        str             s16, [x0], #4
+        st1             {v16.h}[2], [x0], x1
+        b.eq            2f
+        ldr             d4, [x2]
+        subs            w4, w4, #1
+        EPEL_UNI_W_V8_CALC v17, v5, v6, v7, v4, v20, v21
+        str             s17, [x0], #4
+        st1             {v17.h}[2], [x0], x1
+        b.eq            2f
+        ldr             d5, [x2, x3]
+        subs            w4, w4, #1
+        add             x2, x2, x3, lsl #1
+        EPEL_UNI_W_V8_CALC v18, v6, v7, v4, v5, v20, v21
+        str             s18, [x0], #4
+        st1             {v18.h}[2], [x0], x1
+        b.eq            2f
+        ldr             d6, [x2]
+        subs            w4, w4, #1
+        EPEL_UNI_W_V8_CALC v19, v7, v4, v5, v6, v20, v21
+        str             s19, [x0], #4
+        st1             {v19.h}[2], [x0], x1
+        b.hi            1b
+2:
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_v8_8_neon, export=1
+        EPEL_UNI_W_V_HEADER
+
+        ldr             d4, [x2]
+        ldr             d5, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        ldr             d6, [x2]
+1:
+        ldr             d7, [x2, x3]
+        subs            w4, w4, #1
+        add             x2, x2, x3, lsl #1
+        EPEL_UNI_W_V8_CALC v16, v4, v5, v6, v7, v20, v21
+        str             d16, [x0]
+        add             x0, x0, x1
+        b.eq            2f
+        ldr             d4, [x2]
+        subs            w4, w4, #1
+        EPEL_UNI_W_V8_CALC v17, v5, v6, v7, v4, v20, v21
+        str             d17, [x0]
+        add             x0, x0, x1
+        b.eq            2f
+        ldr             d5, [x2, x3]
+        subs            w4, w4, #1
+        add             x2, x2, x3, lsl #1
+        EPEL_UNI_W_V8_CALC v18, v6, v7, v4, v5, v20, v21
+        str             d18, [x0]
+        add             x0, x0, x1
+        b.eq            2f
+        ldr             d6, [x2]
+        subs            w4, w4, #1
+        EPEL_UNI_W_V8_CALC v19, v7, v4, v5, v6, v20, v21
+        str             d19, [x0]
+        add             x0, x0, x1
+        b.hi            1b
+2:
+        ret
+endfunc
+
+.macro EPEL_UNI_W_V12_CALC d0, d1, s0, s1, s2, s3, t0, t1, t2, t3
+        movi            \d0\().2d, #0
+        movi            \d1\().2d, #0
+        umlsl           \d0\().8h, \s0\().8b, v0.8b
+        umlsl2          \d1\().8h, \s0\().16b, v0.16b
+        umlal           \d0\().8h, \s1\().8b, v1.8b
+        umlal2          \d1\().8h, \s1\().16b, v1.16b
+        umlal           \d0\().8h, \s2\().8b, v2.8b
+        umlal2          \d1\().8h, \s2\().16b, v2.16b
+        umlsl           \d0\().8h, \s3\().8b, v3.8b
+        umlsl2          \d1\().8h, \s3\().16b, v3.16b
+
+        smull           \t0\().4s, \d0\().4h, v30.4h
+        smull2          \t1\().4s, \d0\().8h, v30.8h
+        smull           \t2\().4s, \d1\().4h, v30.4h
+
+        sqrshl          \t0\().4s, \t0\().4s, v31.4s
+        sqrshl          \t1\().4s, \t1\().4s, v31.4s
+        sqrshl          \t2\().4s, \t2\().4s, v31.4s
+        sqadd           \t0\().4s, \t0\().4s, v29.4s
+        sqadd           \t1\().4s, \t1\().4s, v29.4s
+        sqadd           \t2\().4s, \t2\().4s, v29.4s
+
+        sqxtn           \d0\().4h, \t0\().4s
+        sqxtn2          \d0\().8h, \t1\().4s
+        sqxtn           \d1\().4h, \t2\().4s
+        sqxtun          \d0\().8b,  \d0\().8h
+        sqxtun2         \d0\().16b, \d1\().8h
+.endm
+
+function ff_hevc_put_hevc_epel_uni_w_v12_8_neon, export=1
+        EPEL_UNI_W_V_HEADER
+
+        ldr             q4, [x2]
+        ldr             q5, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        ldr             q6, [x2]
+        sub             x1, x1, #8
+1:
+        ldr             q7, [x2, x3]
+        subs            w4, w4, #1
+        add             x2, x2, x3, lsl #1
+        EPEL_UNI_W_V12_CALC v16, v17, v4, v5, v6, v7, v24, v25, v26, v27
+        str             d16, [x0], #8
+        st1             {v16.s}[2], [x0]
+        add             x0, x0, x1
+        b.eq            2f
+        ldr             q4, [x2]
+        subs            w4, w4, #1
+        EPEL_UNI_W_V12_CALC v18, v19, v5, v6, v7, v4, v24, v25, v26, v27
+        str             d18, [x0], #8
+        st1             {v18.s}[2], [x0]
+        add             x0, x0, x1
+        b.eq            2f
+        ldr             q5, [x2, x3]
+        subs            w4, w4, #1
+        add             x2, x2, x3, lsl #1
+        EPEL_UNI_W_V12_CALC v20, v21, v6, v7, v4, v5, v24, v25, v26, v27
+        str             d20, [x0], #8
+        st1             {v20.s}[2], [x0]
+        add             x0, x0, x1
+        b.eq            2f
+        ldr             q6, [x2]
+        subs            w4, w4, #1
+        EPEL_UNI_W_V12_CALC v22, v23, v7, v4, v5, v6, v24, v25, v26, v27
+        str             d22, [x0], #8
+        st1             {v22.s}[2], [x0]
+        add             x0, x0, x1
+        b.hi            1b
+2:
+        ret
+endfunc
+
+.macro EPEL_UNI_W_V16_CALC d0, d1, s0, s1, s2, s3, t0, t1, t2, t3
+        movi            \d0\().2d, #0
+        movi            \d1\().2d, #0
+        umlsl           \d0\().8h, \s0\().8b, v0.8b
+        umlsl2          \d1\().8h, \s0\().16b, v0.16b
+        umlal           \d0\().8h, \s1\().8b, v1.8b
+        umlal2          \d1\().8h, \s1\().16b, v1.16b
+        umlal           \d0\().8h, \s2\().8b, v2.8b
+        umlal2          \d1\().8h, \s2\().16b, v2.16b
+        umlsl           \d0\().8h, \s3\().8b, v3.8b
+        umlsl2          \d1\().8h, \s3\().16b, v3.16b
+
+        smull           \t0\().4s, \d0\().4h, v30.4h
+        smull2          \t1\().4s, \d0\().8h, v30.8h
+        smull           \t2\().4s, \d1\().4h, v30.4h
+        smull2          \t3\().4s, \d1\().8h, v30.8h
+
+        sqrshl          \t0\().4s, \t0\().4s, v31.4s
+        sqrshl          \t1\().4s, \t1\().4s, v31.4s
+        sqrshl          \t2\().4s, \t2\().4s, v31.4s
+        sqrshl          \t3\().4s, \t3\().4s, v31.4s
+        sqadd           \t0\().4s, \t0\().4s, v29.4s
+        sqadd           \t1\().4s, \t1\().4s, v29.4s
+        sqadd           \t2\().4s, \t2\().4s, v29.4s
+        sqadd           \t3\().4s, \t3\().4s, v29.4s
+
+        sqxtn           \d0\().4h, \t0\().4s
+        sqxtn2          \d0\().8h, \t1\().4s
+        sqxtn           \d1\().4h, \t2\().4s
+        sqxtn2          \d1\().8h, \t3\().4s
+        sqxtun          \d0\().8b,  \d0\().8h
+        sqxtun2         \d0\().16b, \d1\().8h
+.endm
+
+
+function ff_hevc_put_hevc_epel_uni_w_v16_8_neon, export=1
+        EPEL_UNI_W_V_HEADER
+
+        ldr             q4, [x2]
+        ldr             q5, [x2, x3]
+        add             x2, x2, x3, lsl #1
+        ldr             q6, [x2]
+1:
+        ldr             q7, [x2, x3]
+        subs            w4, w4, #1
+        add             x2, x2, x3, lsl #1
+        EPEL_UNI_W_V16_CALC v16, v17, v4, v5, v6, v7, v24, v25, v26, v27
+        str             q16, [x0]
+        add             x0, x0, x1
+        b.eq            2f
+        ldr             q4, [x2]
+        subs            w4, w4, #1
+        EPEL_UNI_W_V16_CALC v18, v19, v5, v6, v7, v4, v24, v25, v26, v27
+        str             q18, [x0]
+        add             x0, x0, x1
+        b.eq            2f
+        ldr             q5, [x2, x3]
+        subs            w4, w4, #1
+        add             x2, x2, x3, lsl #1
+        EPEL_UNI_W_V16_CALC v20, v21, v6, v7, v4, v5, v24, v25, v26, v27
+        str             q20, [x0]
+        add             x0, x0, x1
+        b.eq            2f
+        ldr             q6, [x2]
+        subs            w4, w4, #1
+        EPEL_UNI_W_V16_CALC v22, v23, v7, v4, v5, v6, v24, v25, v26, v27
+        str             q22, [x0]
+        add             x0, x0, x1
+        b.hi            1b
+2:
+        ret
+endfunc
+
+
+
+function ff_hevc_put_hevc_epel_uni_w_v24_8_neon, export=1
+        EPEL_UNI_W_V_HEADER
+
+        ldp             q16, q17, [x2]
+        add             x2, x2, x3
+        ldp             q18, q19, [x2]
+        add             x2, x2, x3
+        ldp             q20, q21, [x2]
+        add             x2, x2, x3
+1:
+        ldp             q22, q23, [x2]
+        subs            w4, w4, #1
+        add             x2, x2, x3
+        EPEL_UNI_W_V16_CALC v4, v5, v16, v18, v20, v22, v24, v25, v26, v27
+        EPEL_UNI_W_V8_CALC  v6, v17, v19, v21, v23, v24, v25
+        str             q4, [x0]
+        str             d6, [x0, #16]
+        add             x0, x0, x1
+        b.eq            2f
+        ldp             q16, q17, [x2]
+        subs            w4, w4, #1
+        add             x2, x2, x3
+        EPEL_UNI_W_V16_CALC v4, v5, v18, v20, v22, v16, v24, v25, v26, v27
+        EPEL_UNI_W_V8_CALC  v6, v19, v21, v23, v17, v24, v25
+        str             q4, [x0]
+        str             d6, [x0, #16]
+        add             x0, x0, x1
+        b.eq            2f
+        ldp             q18, q19, [x2]
+        subs            w4, w4, #1
+        add             x2, x2, x3
+        EPEL_UNI_W_V16_CALC v4, v5, v20, v22, v16, v18,  v24, v25, v26, v27
+        EPEL_UNI_W_V8_CALC  v6, v21, v23, v17, v19, v24, v25
+        str             q4, [x0]
+        str             d6, [x0, #16]
+        add             x0, x0, x1
+        b.eq            2f
+        ldp             q20, q21, [x2]
+        subs            w4, w4, #1
+        add             x2, x2, x3
+        EPEL_UNI_W_V16_CALC v4, v5, v22, v16, v18, v20, v24, v25, v26, v27
+        EPEL_UNI_W_V8_CALC  v6, v23, v17, v19, v21, v24, v25
+        str             q4, [x0]
+        str             d6, [x0, #16]
+        add             x0, x0, x1
+        b.hi            1b
+2:
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_v32_8_neon, export=1
+        EPEL_UNI_W_V_HEADER
+
+        ldp             q16, q17, [x2]
+        add             x2, x2, x3
+        ldp             q18, q19, [x2]
+        add             x2, x2, x3
+        ldp             q20, q21, [x2]
+        add             x2, x2, x3
+1:
+        ldp             q22, q23, [x2]
+        subs            w4, w4, #1
+        add             x2, x2, x3
+        EPEL_UNI_W_V16_CALC v4, v5, v16, v18, v20, v22, v24, v25, v26, v27
+        EPEL_UNI_W_V16_CALC v6, v7, v17, v19, v21, v23, v24, v25, v26, v27
+        str             q4, [x0]
+        str             q6, [x0, #16]
+        add             x0, x0, x1
+        b.eq            2f
+        ldp             q16, q17, [x2]
+        subs            w4, w4, #1
+        add             x2, x2, x3
+        EPEL_UNI_W_V16_CALC v4, v5, v18, v20, v22, v16, v24, v25, v26, v27
+        EPEL_UNI_W_V16_CALC v6, v7, v19, v21, v23, v17, v24, v25, v26, v27
+        str             q4, [x0]
+        str             q6, [x0, #16]
+        add             x0, x0, x1
+        b.eq            2f
+        ldp             q18, q19, [x2]
+        subs            w4, w4, #1
+        add             x2, x2, x3
+        EPEL_UNI_W_V16_CALC v4, v5, v20, v22, v16, v18,  v24, v25, v26, v27
+        EPEL_UNI_W_V16_CALC v6, v7, v21, v23, v17, v19, v24, v25, v26, v27
+        str             q4, [x0]
+        str             q6, [x0, #16]
+        add             x0, x0, x1
+        b.eq            2f
+        ldp             q20, q21, [x2]
+        subs            w4, w4, #1
+        add             x2, x2, x3
+        EPEL_UNI_W_V16_CALC v4, v5, v22, v16, v18, v20, v24, v25, v26, v27
+        EPEL_UNI_W_V16_CALC v6, v7, v23, v17, v19, v21, v24, v25, v26, v27
+        str             q4, [x0]
+        str             q6, [x0, #16]
+        add             x0, x0, x1
+        b.hi            1b
+2:
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_v48_8_neon, export=1
+        EPEL_UNI_W_V_HEADER
+        stp             d8, d9, [sp, #-32]!
+        stp             d10, d11, [sp, #16]
+
+        ld1             {v16.16b, v17.16b, v18.16b}, [x2], x3
+        ld1             {v19.16b, v20.16b, v21.16b}, [x2], x3
+        ld1             {v22.16b, v23.16b, v24.16b}, [x2], x3
+1:
+        ld1             {v25.16b, v26.16b, v27.16b}, [x2], x3
+        subs            w4, w4, #1
+        EPEL_UNI_W_V16_CALC v4, v6, v16, v19, v22, v25, v8, v9, v10, v11
+        EPEL_UNI_W_V16_CALC v5, v7, v17, v20, v23, v26, v8, v9, v10, v11
+        EPEL_UNI_W_V16_CALC v6, v7, v18, v21, v24, v27, v8, v9, v10, v11
+        st1             {v4.16b, v5.16b, v6.16b}, [x0], x1
+        b.eq            2f
+        ld1             {v16.16b, v17.16b, v18.16b}, [x2], x3
+        subs            w4, w4, #1
+        EPEL_UNI_W_V16_CALC v4, v6, v19, v22, v25, v16, v8, v9, v10, v11
+        EPEL_UNI_W_V16_CALC v5, v7, v20, v23, v26, v17, v8, v9, v10, v11
+        EPEL_UNI_W_V16_CALC v6, v7, v21, v24, v27, v18, v8, v9, v10, v11
+        st1             {v4.16b, v5.16b, v6.16b}, [x0], x1
+        b.eq            2f
+        ld1             {v19.16b, v20.16b, v21.16b}, [x2], x3
+        subs            w4, w4, #1
+        EPEL_UNI_W_V16_CALC v4, v6,  v22, v25, v16, v19, v8, v9, v10, v11
+        EPEL_UNI_W_V16_CALC v5, v7,  v23, v26, v17, v20, v8, v9, v10, v11
+        EPEL_UNI_W_V16_CALC v6, v7,  v24, v27, v18, v21, v8, v9, v10, v11
+        st1             {v4.16b, v5.16b, v6.16b}, [x0], x1
+        b.eq            2f
+        ld1             {v22.16b, v23.16b, v24.16b}, [x2], x3
+        subs            w4, w4, #1
+        EPEL_UNI_W_V16_CALC v4, v6,  v25, v16, v19, v22, v8, v9, v10, v11
+        EPEL_UNI_W_V16_CALC v5, v7,  v26, v17, v20, v23, v8, v9, v10, v11
+        EPEL_UNI_W_V16_CALC v6, v7,  v27, v18, v21, v24, v8, v9, v10, v11
+        st1             {v4.16b, v5.16b, v6.16b}, [x0], x1
+        b.hi            1b
+2:
+        ldp             d10, d11, [sp, #16]
+        ldp             d8, d9, [sp], #32
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_v64_8_neon, export=1
+        EPEL_UNI_W_V_HEADER
+        stp             d8, d9, [sp, #-64]!
+        stp             d10, d11, [sp, #16]
+        stp             d12, d13, [sp, #32]
+        stp             d14, d15, [sp, #48]
+
+        ld1             {v16.16b, v17.16b, v18.16b, v19.16b}, [x2], x3
+        ld1             {v20.16b, v21.16b, v22.16b, v23.16b}, [x2], x3
+        ld1             {v24.16b, v25.16b, v26.16b, v27.16b}, [x2], x3
+1:
+        ld1             {v12.16b, v13.16b, v14.16b, v15.16b}, [x2], x3
+        subs            w4, w4, #1
+        EPEL_UNI_W_V16_CALC v4, v6, v16, v20, v24, v12, v8, v9, v10, v11
+        EPEL_UNI_W_V16_CALC v5, v7, v17, v21, v25, v13, v8, v9, v10, v11
+        EPEL_UNI_W_V16_CALC v6, v7, v18, v22, v26, v14, v8, v9, v10, v11
+        EPEL_UNI_W_V16_CALC v7,v28, v19, v23, v27, v15, v8, v9, v10, v11
+        st1             {v4.16b, v5.16b, v6.16b, v7.16b}, [x0], x1
+        b.eq            2f
+        ld1             {v16.16b, v17.16b, v18.16b, v19.16b}, [x2], x3
+        subs            w4, w4, #1
+        EPEL_UNI_W_V16_CALC v4, v6, v20, v24, v12, v16, v8, v9, v10, v11
+        EPEL_UNI_W_V16_CALC v5, v7, v21, v25, v13, v17, v8, v9, v10, v11
+        EPEL_UNI_W_V16_CALC v6, v7, v22, v26, v14, v18, v8, v9, v10, v11
+        EPEL_UNI_W_V16_CALC v7,v28, v23, v27, v15, v19, v8, v9, v10, v11
+        st1             {v4.16b, v5.16b, v6.16b, v7.16b}, [x0], x1
+        b.eq            2f
+        ld1             {v20.16b, v21.16b, v22.16b, v23.16b}, [x2], x3
+        subs            w4, w4, #1
+        EPEL_UNI_W_V16_CALC v4, v6, v24, v12, v16, v20, v8, v9, v10, v11
+        EPEL_UNI_W_V16_CALC v5, v7, v25, v13, v17, v21, v8, v9, v10, v11
+        EPEL_UNI_W_V16_CALC v6, v7, v26, v14, v18, v22, v8, v9, v10, v11
+        EPEL_UNI_W_V16_CALC v7,v28, v27, v15, v19, v23, v8, v9, v10, v11
+        st1             {v4.16b, v5.16b, v6.16b, v7.16b}, [x0], x1
+        b.eq            2f
+        ld1             {v24.16b, v25.16b, v26.16b, v27.16b}, [x2], x3
+        subs            w4, w4, #1
+        EPEL_UNI_W_V16_CALC v4, v6, v12, v16, v20, v24, v8, v9, v10, v11
+        EPEL_UNI_W_V16_CALC v5, v7, v13, v17, v21, v25, v8, v9, v10, v11
+        EPEL_UNI_W_V16_CALC v6, v7, v14, v18, v22, v26, v8, v9, v10, v11
+        EPEL_UNI_W_V16_CALC v7,v28, v15, v19, v23, v27, v8, v9, v10, v11
+        st1             {v4.16b, v5.16b, v6.16b, v7.16b}, [x0], x1
+        b.hi            1b
+2:
+        ldp             d10, d11, [sp, #16]
+        ldp             d12, d13, [sp, #32]
+        ldp             d14, d15, [sp, #48]
+        ldp             d8, d9, [sp], #64
+        ret
+endfunc
