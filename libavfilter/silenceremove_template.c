@@ -23,6 +23,7 @@
 #undef SQRT
 #undef ZERO
 #undef ONE
+#undef TMIN
 #if DEPTH == 32
 #define SAMPLE_FORMAT flt
 #define SQRT sqrtf
@@ -31,6 +32,7 @@
 #define ftype float
 #define ZERO 0.f
 #define ONE 1.f
+#define TMIN -FLT_MAX
 #else
 #define SAMPLE_FORMAT dbl
 #define SQRT sqrt
@@ -39,6 +41,7 @@
 #define ftype double
 #define ZERO 0.0
 #define ONE 1.0
+#define TMIN -DBL_MAX
 #endif
 
 #define fn3(a,b)   a##_##b
@@ -233,6 +236,65 @@ static ftype fn(compute_peak)(ftype *peak, ftype sample, ftype wsample,
     return r;
 }
 
+static ftype fn(compute_ptp)(ftype *peak, ftype sample, ftype wsample,
+                             int size, int *ffront, int *bback)
+{
+    int front = *ffront;
+    int back = *bback;
+    int empty = front == back && peak[front] == TMIN;
+    ftype r, max, min;
+
+    if (!empty && wsample == peak[front]) {
+        peak[front] = TMIN;
+        if (back != front) {
+            front--;
+            if (front < 0)
+                front = size - 1;
+        }
+        empty = front == back;
+    }
+
+    if (!empty && sample >= peak[front]) {
+        while (1) {
+            peak[front] = TMIN;
+            if (back == front) {
+                empty = 1;
+                break;
+            }
+            front--;
+            if (front < 0)
+                front = size - 1;
+        }
+    }
+
+    while (!empty && sample >= peak[back]) {
+        peak[back] = TMIN;
+        if (back == front) {
+            empty = 1;
+            break;
+        }
+        back++;
+        if (back >= size)
+            back = 0;
+    }
+
+    if (!empty) {
+        back--;
+        if (back < 0)
+            back = size - 1;
+    }
+
+    peak[back] = sample;
+    max = peak[front];
+    min = (back == front) ? -sample : sample;
+    r = FABS(max - min);
+
+    *ffront = front;
+    *bback = back;
+
+    return r;
+}
+
 static ftype fn(compute_rms)(ftype *cache, ftype sample, ftype wsample,
                              int window_size, int *unused, int *unused2)
 {
@@ -281,7 +343,8 @@ static void fn(filter_start)(AVFilterContext *ctx,
     if (s->start_found_periods < 0)
         goto skip;
 
-    if (s->detection != D_PEAK && s->detection != D_MEDIAN)
+    if (s->detection != D_PEAK && s->detection != D_MEDIAN &&
+        s->detection != D_PTP)
         window_size = s->start_window_size;
 
     for (int ch = 0; ch < nb_channels; ch++) {
@@ -374,7 +437,8 @@ static void fn(filter_stop)(AVFilterContext *ctx,
                      stop_nb_samples,
                      stop_window_nb_samples);
 
-    if (s->detection != D_PEAK && s->detection != D_MEDIAN)
+    if (s->detection != D_PEAK && s->detection != D_MEDIAN &&
+        s->detection != D_PTP)
         window_size = s->stop_window_size;
 
     for (int ch = 0; ch < nb_channels; ch++) {

@@ -37,6 +37,7 @@ enum SilenceDetect {
     D_RMS,
     D_PEAK,
     D_MEDIAN,
+    D_PTP,
     D_NB
 };
 
@@ -135,6 +136,7 @@ static const AVOption silenceremove_options[] = {
     {   "rms",           "use root mean squared values of samples",            0,                           AV_OPT_TYPE_CONST,    {.i64=D_RMS}, 0,         0, AF, "detection" },
     {   "peak",          "use max absolute values of samples",                 0,                           AV_OPT_TYPE_CONST,    {.i64=D_PEAK},0,         0, AF, "detection" },
     {   "median",        "use median of absolute values of samples",           0,                           AV_OPT_TYPE_CONST,    {.i64=D_MEDIAN},0,       0, AF, "detection" },
+    {   "ptp",           "use absolute of max peak to min peak difference",    0,                           AV_OPT_TYPE_CONST,    {.i64=D_PTP}, 0,         0, AF, "detection" },
     { "window",          "set duration of window for silence detection",       OFFSET(window_duration_opt), AV_OPT_TYPE_DURATION, {.i64=20000}, 0, 100000000, AF },
     { NULL }
 };
@@ -236,6 +238,10 @@ static int config_output(AVFilterLink *outlink)
     case D_AVG:
         s->compute_flt = compute_avg_flt;
         s->compute_dbl = compute_avg_dbl;
+        break;
+    case D_PTP:
+        s->compute_flt = compute_ptp_flt;
+        s->compute_dbl = compute_ptp_dbl;
         break;
     case D_MEDIAN:
         s->compute_flt = compute_median_flt;
