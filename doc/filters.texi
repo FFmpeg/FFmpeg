@@ -6419,15 +6419,16 @@ trimming. Default is 0, which is equal to trimming all samples detected
 as silence.
 
 @item start_mode
-Specify mode of detection of silence end in start of multi-channel audio.
+Specify mode of detection of silence end at start of multi-channel audio.
 Can be @var{any} or @var{all}. Default is @var{any}.
-With @var{any}, any sample that is detected as non-silence will cause
-stopped trimming of silence.
-With @var{all}, only if all channels are detected as non-silence will cause
-stopped trimming of silence.
+With @var{any}, any sample from any channel that is detected as non-silence
+will trigger end of silence trimming at start of audio stream.
+With @var{all}, only if every sample from every channel is detected as non-silence
+will trigger end of silence trimming at start of audio stream, limited usage.
 
 @item stop_periods
-Set the count for trimming silence from the end of audio.
+Set the count for trimming silence from the end of audio. When specifying a
+positive value, it trims audio after it finds specified silence period.
 To remove silence from the middle of a file, specify a @var{stop_periods}
 that is negative. This value is then treated as a positive value and is
 used to indicate the effect should restart processing as specified by
@@ -6453,20 +6454,34 @@ trimming. Default is 0, which is equal to trimming all samples detected
 as silence.
 
 @item stop_mode
-Specify mode of detection of silence start in end of multi-channel audio.
-Can be @var{any} or @var{all}. Default is @var{any}.
-With @var{any}, any sample that is detected as non-silence will cause
-stopped trimming of silence.
-With @var{all}, only if all channels are detected as non-silence will cause
-stopped trimming of silence.
+Specify mode of detection of silence start after start of multi-channel audio.
+Can be @var{any} or @var{all}. Default is @var{all}.
+With @var{any}, any sample from any channel that is detected as silence
+will trigger start of silence trimming after start of audio stream, limited usage.
+With @var{all}, only if every sample from every channel is detected as silence
+will trigger start of silence trimming after start of audio stream.
 
 @item detection
-Set how is silence detected. Can be @code{avg}, @code{rms}, @code{median} or @code{peak}.
+Set how is silence detected.
+@table @option
+@item avg
+Mean of absolute values of samples in moving window.
+@item rms
+Root squared mean of absolute values of samples in moving window.
+@item peak
+Maximum of absolute values of samples in moving window.
+@item median
+Median of absolute values of samples in moving window.
+@end table
 Default value is @code{rms}.
 
 @item window
 Set duration in number of seconds used to calculate size of window in number
-of samples for detecting silence.
+of samples for detecting silence. Using @code{0} will effectively disable
+any windowing and use only single sample per channel for silence detection.
+In that case it may be needed to also set @option{start_silence} and/or
+@option{stop_silence} to nonzero values with also @option{start_duration} and/or
+@option{stop_duration} to nonzero values.
 Default value is @code{0.02}. Allowed range is from @code{0} to @code{10}.
 @end table
 
@@ -6494,6 +6509,25 @@ where there is more than 0 samples of digital silence in audio and digital
 silence is detected in all channels at same positions in stream:
 @example
 silenceremove=window=0:detection=peak:stop_mode=all:start_mode=all:stop_periods=-1:stop_threshold=0
+@end example
+
+@item
+Trim every 2nd encountered silence period from beginning to end where there is
+more than 1 second of silence per silence period in audio:
+@example
+silenceremove=stop_periods=-2:stop_duration=1:stop_threshold=-90dB
+@end example
+
+@item
+Similar as above, but keep maximum of 0.5 seconds of silence from each trimmed period:
+@example
+silenceremove=stop_periods=-2:stop_duration=1:stop_threshold=-90dB:stop_silence=0.5
+@end example
+
+@item
+Similar as above, but keep maximum of 1.5 seconds of silence from start of audio:
+@example
+silenceremove=stop_periods=-2:stop_duration=1:stop_threshold=-90dB:stop_silence=0.5:start_periods=1:start_duration=1:start_silence=1.5:stop_threshold=-90dB
 @end example
 @end itemize
 
