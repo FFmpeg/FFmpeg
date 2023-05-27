@@ -6497,6 +6497,10 @@ silenceremove=window=0:detection=peak:stop_mode=all:start_mode=all:stop_periods=
 @end example
 @end itemize
 
+@subsection Commands
+
+This filter supports some above options as @ref{commands}.
+
 @section sofalizer
 
 SOFAlizer uses head-related transfer functions (HRTFs) to create virtual
