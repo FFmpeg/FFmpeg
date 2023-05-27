@@ -283,7 +283,6 @@ typedef struct InputFilter {
 } InputFilter;
 
 typedef struct OutputFilter {
-    AVFilterContext     *filter;
     struct OutputStream *ost;
     struct FilterGraph  *graph;
     uint8_t             *name;

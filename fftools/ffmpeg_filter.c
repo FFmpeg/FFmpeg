@@ -137,6 +137,8 @@ static InputFilterPriv *ifp_from_ifilter(InputFilter *ifilter)
 typedef struct OutputFilterPriv {
     OutputFilter        ofilter;
 
+    AVFilterContext    *filter;
+
     /* desired output stream properties */
     int format;
     int width, height;
@@ -1094,7 +1096,7 @@ static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter,
     char name[255];
 
     snprintf(name, sizeof(name), "out_%d_%d", ost->file_index, ost->index);
-    ret = avfilter_graph_create_filter(&ofilter->filter,
+    ret = avfilter_graph_create_filter(&ofp->filter,
                                        avfilter_get_by_name("buffersink"),
                                        name, NULL, NULL, fg->graph);
 
@@ -1150,7 +1152,7 @@ static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter,
         return ret;
 
 
-    if ((ret = avfilter_link(last_filter, pad_idx, ofilter->filter, 0)) < 0)
+    if ((ret = avfilter_link(last_filter, pad_idx, ofp->filter, 0)) < 0)
         return ret;
 
     return 0;
@@ -1168,12 +1170,12 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
     int ret;
 
     snprintf(name, sizeof(name), "out_%d_%d", ost->file_index, ost->index);
-    ret = avfilter_graph_create_filter(&ofilter->filter,
+    ret = avfilter_graph_create_filter(&ofp->filter,
                                        avfilter_get_by_name("abuffersink"),
                                        name, NULL, NULL, fg->graph);
     if (ret < 0)
         return ret;
-    if ((ret = av_opt_set_int(ofilter->filter, "all_channel_counts", 1, AV_OPT_SEARCH_CHILDREN)) < 0)
+    if ((ret = av_opt_set_int(ofp->filter, "all_channel_counts", 1, AV_OPT_SEARCH_CHILDREN)) < 0)
         return ret;
 
 #define AUTO_INSERT_FILTER(opt_name, filter_name, arg) do {                 \
@@ -1256,7 +1258,7 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
     if (ret < 0)
         goto fail;
 
-    if ((ret = avfilter_link(last_filter, pad_idx, ofilter->filter, 0)) < 0)
+    if ((ret = avfilter_link(last_filter, pad_idx, ofp->filter, 0)) < 0)
         goto fail;
 fail:
     av_bprint_finalize(&args, NULL);
@@ -1504,7 +1506,7 @@ static void cleanup_filtergraph(FilterGraph *fg)
 {
     int i;
     for (i = 0; i < fg->nb_outputs; i++)
-        fg->outputs[i]->filter = (AVFilterContext *)NULL;
+        ofp_from_ofilter(fg->outputs[i])->filter = NULL;
     for (i = 0; i < fg->nb_inputs; i++)
         ifp_from_ifilter(fg->inputs[i])->filter = NULL;
     avfilter_graph_free(&fg->graph);
@@ -1609,7 +1611,7 @@ static int configure_filtergraph(FilterGraph *fg)
     for (i = 0; i < fg->nb_outputs; i++) {
         OutputFilter *ofilter = fg->outputs[i];
         OutputFilterPriv *ofp = ofp_from_ofilter(ofilter);
-        AVFilterContext *sink = ofilter->filter;
+        AVFilterContext *sink = ofp->filter;
 
         ofp->format = av_buffersink_get_format(sink);
 
@@ -1739,9 +1741,9 @@ int reap_filters(int flush)
 
         if (!ost->filter || !ost->filter->graph->graph)
             continue;
-        filter = ost->filter->filter;
         fgp    = fgp_from_fg(ost->filter->graph);
         ofp    = ofp_from_ofilter(ost->filter);
+        filter = ofp->filter;
 
         filtered_frame = fgp->frame;
 
