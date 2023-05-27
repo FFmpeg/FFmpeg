@@ -1711,6 +1711,16 @@ int reap_filters(int flush)
                            tb.num, tb.den);
             }
 
+            if (ost->type == AVMEDIA_TYPE_VIDEO) {
+                FrameData *fd = frame_data(filtered_frame);
+                if (!fd) {
+                    av_frame_unref(filtered_frame);
+                    report_and_exit(AVERROR(ENOMEM));
+                }
+
+                fd->frame_rate_filter = av_buffersink_get_frame_rate(filter);
+            }
+
             enc_frame(ost, filtered_frame);
             av_frame_unref(filtered_frame);
         }

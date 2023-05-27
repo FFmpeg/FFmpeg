@@ -655,6 +655,8 @@ typedef struct FrameData {
     uint64_t   idx;
     int64_t    pts;
     AVRational tb;
+
+    AVRational frame_rate_filter;
 } FrameData;
 
 extern InputFile   **input_files;

@@ -217,8 +217,10 @@ int enc_open(OutputStream *ost, AVFrame *frame)
     case AVMEDIA_TYPE_VIDEO: {
         AVRational fr = ost->frame_rate;
 
-        if (!fr.num)
-            fr = av_buffersink_get_frame_rate(ost->filter->filter);
+        if (!fr.num && frame) {
+            FrameData *fd = frame_data(frame);
+            fr = fd->frame_rate_filter;
+        }
         if (!fr.num && !ost->max_frame_rate.num) {
             fr = (AVRational){25, 1};
             av_log(ost, AV_LOG_WARNING,
@@ -1024,17 +1026,18 @@ static void do_video_out(OutputFile *of, OutputStream *ost, AVFrame *frame)
     int ret;
     Encoder *e = ost->enc;
     AVCodecContext *enc = ost->enc_ctx;
-    AVRational frame_rate;
     int64_t nb_frames, nb_frames_prev, i;
     double duration = 0;
-    AVFilterContext *filter = ost->filter->filter;
 
-    if (frame)
+    if (frame) {
+        FrameData *fd = frame_data(frame);
+
         duration = lrintf(frame->duration * av_q2d(frame->time_base) / av_q2d(enc->time_base));
 
-    frame_rate = av_buffersink_get_frame_rate(filter);
-    if (duration <= 0 && frame_rate.num > 0 && frame_rate.den > 0)
-        duration = 1/(av_q2d(frame_rate) * av_q2d(enc->time_base));
+        if (duration <= 0 &&
+            fd->frame_rate_filter.num > 0 && fd->frame_rate_filter.den > 0)
+            duration = 1 / (av_q2d(fd->frame_rate_filter) * av_q2d(enc->time_base));
+    }
 
     video_sync_process(of, ost, frame, duration,
                        &nb_frames, &nb_frames_prev);
