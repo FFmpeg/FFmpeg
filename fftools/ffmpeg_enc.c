@@ -1078,7 +1078,7 @@ static void do_video_out(OutputFile *of, OutputStream *ost, AVFrame *frame)
                        &nb_frames, &nb_frames_prev);
 
     if (nb_frames_prev == 0 && ost->last_dropped) {
-        nb_frames_drop++;
+        ost->nb_frames_drop++;
         av_log(ost, AV_LOG_VERBOSE,
                "*** dropping frame %"PRId64" at ts %"PRId64"\n",
                e->vsync_frame_number, e->last_frame->pts);
@@ -1086,12 +1086,12 @@ static void do_video_out(OutputFile *of, OutputStream *ost, AVFrame *frame)
     if (nb_frames > (nb_frames_prev && ost->last_dropped) + (nb_frames > nb_frames_prev)) {
         if (nb_frames > dts_error_threshold * 30) {
             av_log(ost, AV_LOG_ERROR, "%"PRId64" frame duplication too large, skipping\n", nb_frames - 1);
-            nb_frames_drop++;
+            ost->nb_frames_drop++;
             return;
         }
-        nb_frames_dup += nb_frames - (nb_frames_prev && ost->last_dropped) - (nb_frames > nb_frames_prev);
+        ost->nb_frames_dup += nb_frames - (nb_frames_prev && ost->last_dropped) - (nb_frames > nb_frames_prev);
         av_log(ost, AV_LOG_VERBOSE, "*** %"PRId64" dup!\n", nb_frames - 1);
-        if (nb_frames_dup > dup_warning) {
+        if (ost->nb_frames_dup > dup_warning) {
             av_log(ost, AV_LOG_WARNING, "More than %"PRIu64" frames duplicated\n", dup_warning);
             dup_warning *= 10;
         }

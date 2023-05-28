@@ -119,8 +119,6 @@ typedef struct BenchmarkTimeStamps {
 static BenchmarkTimeStamps get_benchmark_time_stamps(void);
 static int64_t getmaxrss(void);
 
-int64_t nb_frames_dup = 0;
-int64_t nb_frames_drop = 0;
 unsigned nb_output_dumped = 0;
 
 static BenchmarkTimeStamps current_time;
@@ -491,6 +489,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
     int64_t pts = INT64_MIN + 1;
     static int64_t last_time = -1;
     static int first_report = 1;
+    uint64_t nb_frames_dup = 0, nb_frames_drop = 0;
     int hours, mins, secs, us;
     const char *hours_sign;
     int ret;
@@ -535,6 +534,9 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
                        ost->file_index, ost->index, q);
             if (is_last_report)
                 av_bprintf(&buf, "L");
+
+            nb_frames_dup  = ost->nb_frames_dup;
+            nb_frames_drop = ost->nb_frames_drop;
 
             vid = 1;
         }

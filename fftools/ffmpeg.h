@@ -553,6 +553,9 @@ typedef struct OutputStream {
     Encoder *enc;
     AVCodecContext *enc_ctx;
     AVPacket *pkt;
+
+    uint64_t nb_frames_dup;
+    uint64_t nb_frames_drop;
     int64_t last_dropped;
 
     /* video only */
@@ -706,9 +709,6 @@ extern int copy_unknown_streams;
 extern int recast_media;
 
 extern FILE *vstats_file;
-
-extern int64_t nb_frames_dup;
-extern int64_t nb_frames_drop;
 
 #if FFMPEG_OPT_PSNR
 extern int do_psnr;
