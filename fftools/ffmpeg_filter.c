@@ -1075,26 +1075,6 @@ static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter,
         pad_idx     = 0;
     }
 
-    if (ost->frame_rate.num && 0) {
-        AVFilterContext *fps;
-        char args[255];
-
-        snprintf(args, sizeof(args), "fps=%d/%d", ost->frame_rate.num,
-                 ost->frame_rate.den);
-        snprintf(name, sizeof(name), "fps_out_%d_%d",
-                 ost->file_index, ost->index);
-        ret = avfilter_graph_create_filter(&fps, avfilter_get_by_name("fps"),
-                                           name, args, NULL, fg->graph);
-        if (ret < 0)
-            return ret;
-
-        ret = avfilter_link(last_filter, pad_idx, fps, 0);
-        if (ret < 0)
-            return ret;
-        last_filter = fps;
-        pad_idx = 0;
-    }
-
     snprintf(name, sizeof(name), "trim_out_%d_%d",
              ost->file_index, ost->index);
     ret = insert_trim(of->start_time, of->recording_time,
