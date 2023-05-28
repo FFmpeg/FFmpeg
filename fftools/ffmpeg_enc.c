@@ -179,22 +179,11 @@ static void set_encoder_id(OutputFile *of, OutputStream *ost)
 
 static void init_encoder_time_base(OutputStream *ost, AVRational default_time_base)
 {
-    InputStream *ist = ost->ist;
     AVCodecContext *enc_ctx = ost->enc_ctx;
 
     if (ost->enc_timebase.num > 0) {
         enc_ctx->time_base = ost->enc_timebase;
         return;
-    }
-
-    if (ost->enc_timebase.num < 0) {
-        if (ist) {
-            enc_ctx->time_base = ist->st->time_base;
-            return;
-        }
-
-        av_log(ost, AV_LOG_WARNING,
-               "Input stream data not available, using default time base\n");
     }
 
     enc_ctx->time_base = default_time_base;

@@ -1149,6 +1149,15 @@ static OutputStream *ost_add(Muxer *mux, const OptionsContext *o,
                 av_log(ost, AV_LOG_FATAL, "Invalid time base: %s\n", enc_time_base);
                 exit_program(1);
             }
+            if (q.num < 0) {
+                if (!ost->ist) {
+                    av_log(ost, AV_LOG_FATAL,
+                           "Cannot use input stream timebase for encoding - "
+                           "no input stream available\n");
+                    exit_program(1);
+                }
+                q = ost->ist->st->time_base;
+            }
             ost->enc_timebase = q;
         }
     } else {
