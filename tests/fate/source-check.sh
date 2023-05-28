@@ -14,6 +14,7 @@ git grep -L -E "This file is part of FFmpeg|This file is part of libswresample|"
 "Redistribution and use in source and binary forms, with or without modification|"\
 "This library is free software; you can redistribute it and/or|"\
 "This program is free software; you can redistribute it and/or modify|"\
+"Licensed under the Apache License|"\
 "This file is placed in the public domain" | grep -E '\.c$|\.h$|\.S$|\.asm$'
 
 echo Headers without standard inclusion guards:
