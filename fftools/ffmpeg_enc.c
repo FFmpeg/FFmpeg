@@ -1042,9 +1042,6 @@ static void do_video_out(OutputFile *of, OutputStream *ost, AVFrame *frame)
     if (frame)
         duration = lrintf(frame->duration * av_q2d(frame->time_base) / av_q2d(enc->time_base));
 
-    if (duration <= 0 && ost->frame_rate.num)
-        duration = FFMIN(duration, 1/(av_q2d(ost->frame_rate) * av_q2d(enc->time_base)));
-
     frame_rate = av_buffersink_get_frame_rate(filter);
     if (duration <= 0 && frame_rate.num > 0 && frame_rate.den > 0)
         duration = 1/(av_q2d(frame_rate) * av_q2d(enc->time_base));
