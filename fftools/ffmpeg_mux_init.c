@@ -1073,6 +1073,7 @@ static OutputStream *ost_add(Muxer *mux, const OptionsContext *o,
         AVIOContext *s = NULL;
         char *buf = NULL, *arg = NULL, *preset = NULL;
         const char *enc_stats_pre = NULL, *enc_stats_post = NULL, *mux_stats = NULL;
+        const char *enc_time_base = NULL;
 
         ost->encoder_opts = filter_codec_opts(o->g->codec_opts, enc->codec_id,
                                               oc, st, enc->codec);
@@ -1139,6 +1140,17 @@ static OutputStream *ost_add(Muxer *mux, const OptionsContext *o,
             if (ret < 0)
                 exit_program(1);
         }
+
+        MATCH_PER_STREAM_OPT(enc_time_bases, str, enc_time_base, oc, st);
+        if (enc_time_base) {
+            AVRational q;
+            if (av_parse_ratio(&q, enc_time_base, INT_MAX, 0, NULL) < 0 ||
+                q.den <= 0) {
+                av_log(ost, AV_LOG_FATAL, "Invalid time base: %s\n", enc_time_base);
+                exit_program(1);
+            }
+            ost->enc_timebase = q;
+        }
     } else {
         ost->encoder_opts = filter_codec_opts(o->g->codec_opts, AV_CODEC_ID_NONE, oc, st, NULL);
     }
@@ -1160,17 +1172,6 @@ static OutputStream *ost_add(Muxer *mux, const OptionsContext *o,
             exit_program(1);
         }
         st->time_base = q;
-    }
-
-    MATCH_PER_STREAM_OPT(enc_time_bases, str, time_base, oc, st);
-    if (time_base) {
-        AVRational q;
-        if (av_parse_ratio(&q, time_base, INT_MAX, 0, NULL) < 0 ||
-            q.den <= 0) {
-            av_log(ost, AV_LOG_FATAL, "Invalid time base: %s\n", time_base);
-            exit_program(1);
-        }
-        ost->enc_timebase = q;
     }
 
     ms->max_frames = INT64_MAX;
