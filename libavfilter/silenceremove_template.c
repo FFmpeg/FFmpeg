@@ -328,6 +328,7 @@ static void fn(filter_start)(AVFilterContext *ctx,
     ftype *start_cache = (ftype *)s->start_cache;
     const int start_silence = s->start_silence;
     int window_size = start_window_nb_samples;
+    const int cache_size = s->cache_size;
     int *front = s->start_front;
     int *back = s->start_back;
 
@@ -352,7 +353,7 @@ static void fn(filter_start)(AVFilterContext *ctx,
         ftype start_ow = startw[start_wpos + ch];
         ftype tstart;
 
-        tstart = fn(s->compute)(start_cache + ch * start_window_nb_samples,
+        tstart = fn(s->compute)(start_cache + ch * cache_size,
                                 start_sample,
                                 start_ow,
                                 window_size,
@@ -423,8 +424,9 @@ static void fn(filter_stop)(AVFilterContext *ctx,
     const int stop_duration = s->stop_duration;
     ftype *stop_cache = (ftype *)s->stop_cache;
     const int stop_silence = s->stop_silence;
-    const int restart = s->restart;
     int window_size = stop_window_nb_samples;
+    const int cache_size = s->cache_size;
+    const int restart = s->restart;
     int *front = s->stop_front;
     int *back = s->stop_back;
 
@@ -446,7 +448,7 @@ static void fn(filter_stop)(AVFilterContext *ctx,
         ftype stop_ow = stopw[stop_wpos + ch];
         ftype tstop;
 
-        tstop = fn(s->compute)(stop_cache + ch * stop_window_nb_samples,
+        tstop = fn(s->compute)(stop_cache + ch * cache_size,
                                stop_sample,
                                stop_ow,
                                window_size,

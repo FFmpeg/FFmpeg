@@ -94,6 +94,7 @@ typedef struct SilenceRemoveContext {
     int *stop_back;
 
     int64_t window_duration;
+    int cache_size;
 
     int start_window_pos;
     int start_window_size;
@@ -224,10 +225,22 @@ static int config_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     SilenceRemoveContext *s = ctx->priv;
 
+    switch (s->detection) {
+    case D_AVG:
+    case D_RMS:
+        s->cache_size = 1;
+        break;
+    case D_MEDIAN:
+    case D_PEAK:
+    case D_PTP:
+        s->cache_size = s->window_duration;
+        break;
+    }
+
     s->start_window = ff_get_audio_buffer(outlink, s->window_duration);
     s->stop_window = ff_get_audio_buffer(outlink, s->window_duration);
-    s->start_cache = av_calloc(outlink->ch_layout.nb_channels, s->window_duration * sizeof(*s->start_cache));
-    s->stop_cache = av_calloc(outlink->ch_layout.nb_channels, s->window_duration * sizeof(*s->stop_cache));
+    s->start_cache = av_calloc(outlink->ch_layout.nb_channels, s->cache_size * sizeof(*s->start_cache));
+    s->stop_cache = av_calloc(outlink->ch_layout.nb_channels, s->cache_size * sizeof(*s->stop_cache));
     if (!s->start_window || !s->stop_window || !s->start_cache || !s->stop_cache)
         return AVERROR(ENOMEM);
 
