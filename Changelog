@@ -10,6 +10,10 @@ version <next>:
 - ffmpeg CLI new option: -readrate_initial_burst
 - zoneplate video source filter
 - command support in the setpts and asetpts filters
+- Vulkan decode hwaccel, supporting H264, HEVC and AV1
+- color_vulkan filter
+- bwdif_vulkan filter
+- nlmeans_vulkan filter
 
 version 6.0:
 - Radiance HDR image support
