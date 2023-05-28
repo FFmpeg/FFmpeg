@@ -717,6 +717,674 @@ function ff_hevc_put_hevc_epel_uni_w_h64_8_neon_i8mm, export=1
         ret
 endfunc
 
+.macro epel_uni_w_hv_start
+        mov             x15, x5         //denom
+        mov             x16, x6         //wx
+        mov             x17, x7         //ox
+        add             w15, w15, #6    //shift = denom+6
+
+
+        ldp             x5, x6, [sp]
+        ldr             x7, [sp, #16]
+
+        stp             d14, d15, [sp, #-64]!
+        stp             d8, d9, [sp, #16]
+        stp             d10, d11, [sp, #32]
+        stp             d12, d13, [sp, #48]
+
+        dup             v13.8h, w16     //wx
+        dup             v14.4s, w17     //ox
+
+        mov             w17, #1
+        lsl             w17, w17, w15
+        lsr             w17, w17, #1
+        dup             v15.4s, w17
+
+        neg             w15, w15        // -shift
+        dup             v12.4s, w15     //shift
+.endm
+
+.macro epel_uni_w_hv_end
+        smull           v28.4s, v4.4h, v13.4h
+        smull2          v29.4s, v4.8h, v13.8h
+        add             v28.4s, v28.4s, v15.4s
+        add             v29.4s, v29.4s, v15.4s
+        sshl            v28.4s, v28.4s, v12.4s
+        sshl            v29.4s, v29.4s, v12.4s
+        add             v28.4s, v28.4s, v14.4s
+        add             v29.4s, v29.4s, v14.4s
+        sqxtn           v4.4h, v28.4s
+        sqxtn2          v4.8h, v29.4s
+.endm
+
+.macro epel_uni_w_hv_end2
+        smull           v28.4s, v4.4h, v13.4h
+        smull2          v29.4s, v4.8h, v13.8h
+        smull           v30.4s, v5.4h, v13.4h
+        smull2          v31.4s, v5.8h, v13.8h
+        add             v28.4s, v28.4s, v15.4s
+        add             v29.4s, v29.4s, v15.4s
+        add             v30.4s, v30.4s, v15.4s
+        add             v31.4s, v31.4s, v15.4s
+
+        sshl            v28.4s, v28.4s, v12.4s
+        sshl            v29.4s, v29.4s, v12.4s
+        sshl            v30.4s, v30.4s, v12.4s
+        sshl            v31.4s, v31.4s, v12.4s
+
+        add             v28.4s, v28.4s, v14.4s
+        add             v29.4s, v29.4s, v14.4s
+        add             v30.4s, v30.4s, v14.4s
+        add             v31.4s, v31.4s, v14.4s
+
+        sqxtn           v4.4h, v28.4s
+        sqxtn2          v4.8h, v29.4s
+        sqxtn           v5.4h, v30.4s
+        sqxtn2          v5.8h, v31.4s
+.endm
+
+.macro epel_uni_w_hv_end3
+        smull           v1.4s,  v4.4h, v13.4h
+        smull2          v2.4s,  v4.8h, v13.8h
+        smull           v28.4s, v5.4h, v13.4h
+        smull2          v29.4s, v5.8h, v13.8h
+        smull           v30.4s, v6.4h, v13.4h
+        smull2          v31.4s, v6.8h, v13.8h
+        add             v1.4s, v1.4s, v15.4s
+        add             v2.4s, v2.4s, v15.4s
+        add             v28.4s, v28.4s, v15.4s
+        add             v29.4s, v29.4s, v15.4s
+        add             v30.4s, v30.4s, v15.4s
+        add             v31.4s, v31.4s, v15.4s
+
+        sshl            v1.4s, v1.4s, v12.4s
+        sshl            v2.4s, v2.4s, v12.4s
+        sshl            v28.4s, v28.4s, v12.4s
+        sshl            v29.4s, v29.4s, v12.4s
+        sshl            v30.4s, v30.4s, v12.4s
+        sshl            v31.4s, v31.4s, v12.4s
+        add             v1.4s, v1.4s, v14.4s
+        add             v2.4s, v2.4s, v14.4s
+        add             v28.4s, v28.4s, v14.4s
+        add             v29.4s, v29.4s, v14.4s
+        add             v30.4s, v30.4s, v14.4s
+        add             v31.4s, v31.4s, v14.4s
+
+        sqxtn           v4.4h, v1.4s
+        sqxtn2          v4.8h, v2.4s
+        sqxtn           v5.4h, v28.4s
+        sqxtn2          v5.8h, v29.4s
+        sqxtn           v6.4h, v30.4s
+        sqxtn2          v6.8h, v31.4s
+.endm
+
+.macro calc_epelh dst, src0, src1, src2, src3
+        smull           \dst\().4s, \src0\().4h, v0.h[0]
+        smlal           \dst\().4s, \src1\().4h, v0.h[1]
+        smlal           \dst\().4s, \src2\().4h, v0.h[2]
+        smlal           \dst\().4s, \src3\().4h, v0.h[3]
+        sqshrn          \dst\().4h, \dst\().4s, #6
+.endm
+
+.macro calc_epelh2 dst, tmp, src0, src1, src2, src3
+        smull2          \tmp\().4s, \src0\().8h, v0.h[0]
+        smlal2          \tmp\().4s, \src1\().8h, v0.h[1]
+        smlal2          \tmp\().4s, \src2\().8h, v0.h[2]
+        smlal2          \tmp\().4s, \src3\().8h, v0.h[3]
+        sqshrn2         \dst\().8h, \tmp\().4s, #6
+.endm
+
+.macro load_epel_filterh freg, xreg
+        movrel          \xreg, epel_filters
+        add             \xreg, \xreg, \freg, lsl #2
+        ld1             {v0.8b}, [\xreg]
+        sxtl            v0.8h, v0.8b
+.endm
+
+function ff_hevc_put_hevc_epel_uni_w_hv4_8_neon_i8mm, export=1
+        epel_uni_w_hv_start
+        sxtw            x4, w4
+
+        add             x10, x4, #3
+        lsl             x10, x10, #7
+        sub             sp, sp, x10     // tmp_array
+        str             x30, [sp, #-48]!
+        stp             x4, x6, [sp, #16]
+        stp             x0, x1, [sp, #32]
+        add             x0, sp, #48
+        sub             x1, x2, x3
+        mov             x2, x3
+        add             x3, x4, #3
+        mov             x4, x5
+        bl              X(ff_hevc_put_hevc_epel_h4_8_neon_i8mm)
+        ldp             x4, x6, [sp, #16]
+        ldp             x0, x1, [sp, #32]
+        ldr             x30, [sp], #48
+        load_epel_filterh x6, x5
+        mov             x10, #(MAX_PB_SIZE * 2)
+        ld1             {v16.4h}, [sp], x10
+        ld1             {v17.4h}, [sp], x10
+        ld1             {v18.4h}, [sp], x10
+1:      ld1             {v19.4h}, [sp], x10
+        subs            x4, x4, #1
+        calc_epelh      v4, v16, v17, v18, v19
+        epel_uni_w_hv_end
+        sqxtun          v4.8b, v4.8h
+        str             s4, [x0]
+        add             x0, x0, x1
+        b.eq            2f
+
+        ld1             {v16.4h}, [sp], x10
+        subs            x4, x4, #1
+        calc_epelh      v4, v17, v18, v19, v16
+        epel_uni_w_hv_end
+        sqxtun          v4.8b, v4.8h
+        str             s4, [x0]
+        add             x0, x0, x1
+        b.eq            2f
+
+        ld1             {v17.4h}, [sp], x10
+        subs            x4, x4, #1
+        calc_epelh      v4, v18, v19, v16, v17
+        epel_uni_w_hv_end
+        sqxtun          v4.8b, v4.8h
+        str             s4, [x0]
+        add             x0, x0, x1
+        b.eq            2f
+
+        ld1             {v18.4h}, [sp], x10
+        subs            x4, x4, #1
+        calc_epelh      v4, v19, v16, v17, v18
+        epel_uni_w_hv_end
+        sqxtun          v4.8b, v4.8h
+        str             s4, [x0]
+        add             x0, x0, x1
+        b.ne            1b
+2:
+        ldp             d8, d9, [sp, #16]
+        ldp             d10, d11, [sp, #32]
+        ldp             d12, d13, [sp, #48]
+        ldp             d14, d15, [sp], #64
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_hv6_8_neon_i8mm, export=1
+        epel_uni_w_hv_start
+        sxtw            x4, w4
+
+        add             x10, x4, #3
+        lsl             x10, x10, #7
+        sub             sp, sp, x10     // tmp_array
+        str             x30, [sp, #-48]!
+        stp             x4, x6, [sp, #16]
+        stp             x0, x1, [sp, #32]
+        add             x0, sp, #48
+        sub             x1, x2, x3
+        mov             x2, x3
+        add             x3, x4, #3
+        mov             x4, x5
+        bl              X(ff_hevc_put_hevc_epel_h6_8_neon_i8mm)
+        ldp             x4, x6, [sp, #16]
+        ldp             x0, x1, [sp, #32]
+        ldr             x30, [sp], #48
+        load_epel_filterh x6, x5
+        sub             x1, x1, #4
+        mov             x10, #(MAX_PB_SIZE * 2)
+        ld1             {v16.8h}, [sp], x10
+        ld1             {v17.8h}, [sp], x10
+        ld1             {v18.8h}, [sp], x10
+1:      ld1             {v19.8h}, [sp], x10
+        subs            x4, x4, #1
+        calc_epelh      v4, v16, v17, v18, v19
+        calc_epelh2     v4, v5, v16, v17, v18, v19
+        epel_uni_w_hv_end
+        sqxtun          v4.8b, v4.8h
+        st1             {v4.s}[0], [x0], #4
+        st1             {v4.h}[2], [x0], x1
+        b.eq            2f
+
+        ld1             {v16.8h}, [sp], x10
+        subs            x4, x4, #1
+        calc_epelh      v4, v17, v18, v19, v16
+        calc_epelh2     v4, v5, v17, v18, v19, v16
+        epel_uni_w_hv_end
+        sqxtun          v4.8b, v4.8h
+        st1             {v4.s}[0], [x0], #4
+        st1             {v4.h}[2], [x0], x1
+        b.eq            2f
+
+        ld1             {v17.8h}, [sp], x10
+        subs            x4, x4, #1
+        calc_epelh      v4, v18, v19, v16, v17
+        calc_epelh2     v4, v5, v18, v19, v16, v17
+        epel_uni_w_hv_end
+        sqxtun          v4.8b, v4.8h
+        st1             {v4.s}[0], [x0], #4
+        st1             {v4.h}[2], [x0], x1
+        b.eq            2f
+
+        ld1             {v18.8h}, [sp], x10
+        subs            x4, x4, #1
+        calc_epelh      v4, v19, v16, v17, v18
+        calc_epelh2     v4, v5, v19, v16, v17, v18
+        epel_uni_w_hv_end
+        sqxtun          v4.8b, v4.8h
+        st1             {v4.s}[0], [x0], #4
+        st1             {v4.h}[2], [x0], x1
+        b.ne            1b
+2:
+        ldp             d8, d9, [sp, #16]
+        ldp             d10, d11, [sp, #32]
+        ldp             d12, d13, [sp, #48]
+        ldp             d14, d15, [sp], #64
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_hv8_8_neon_i8mm, export=1
+        epel_uni_w_hv_start
+        sxtw            x4, w4
+
+        add             x10, x4, #3
+        lsl             x10, x10, #7
+        sub             sp, sp, x10     // tmp_array
+        str             x30, [sp, #-48]!
+        stp             x4, x6, [sp, #16]
+        stp             x0, x1, [sp, #32]
+        add             x0, sp, #48
+        sub             x1, x2, x3
+        mov             x2, x3
+        add             x3, x4, #3
+        mov             x4, x5
+        bl              X(ff_hevc_put_hevc_epel_h8_8_neon_i8mm)
+        ldp             x4, x6, [sp, #16]
+        ldp             x0, x1, [sp, #32]
+        ldr             x30, [sp], #48
+        load_epel_filterh x6, x5
+        mov             x10, #(MAX_PB_SIZE * 2)
+        ld1             {v16.8h}, [sp], x10
+        ld1             {v17.8h}, [sp], x10
+        ld1             {v18.8h}, [sp], x10
+1:      ld1             {v19.8h}, [sp], x10
+        subs            x4, x4, #1
+        calc_epelh      v4, v16, v17, v18, v19
+        calc_epelh2     v4, v5, v16, v17, v18, v19
+        epel_uni_w_hv_end
+        sqxtun          v4.8b, v4.8h
+        st1             {v4.8b}, [x0], x1
+        b.eq            2f
+
+        ld1             {v16.8h}, [sp], x10
+        subs            x4, x4, #1
+        calc_epelh      v4, v17, v18, v19, v16
+        calc_epelh2     v4, v5, v17, v18, v19, v16
+        epel_uni_w_hv_end
+        sqxtun          v4.8b, v4.8h
+        st1             {v4.8b}, [x0], x1
+        b.eq            2f
+
+        ld1             {v17.8h}, [sp], x10
+        subs            x4, x4, #1
+        calc_epelh      v4, v18, v19, v16, v17
+        calc_epelh2     v4, v5, v18, v19, v16, v17
+        epel_uni_w_hv_end
+        sqxtun          v4.8b, v4.8h
+        st1             {v4.8b}, [x0], x1
+        b.eq            2f
+
+        ld1             {v18.8h}, [sp], x10
+        subs            x4, x4, #1
+        calc_epelh      v4, v19, v16, v17, v18
+        calc_epelh2     v4, v5, v19, v16, v17, v18
+        epel_uni_w_hv_end
+        sqxtun          v4.8b, v4.8h
+        st1             {v4.8b}, [x0], x1
+        b.ne            1b
+2:
+        ldp             d8, d9, [sp, #16]
+        ldp             d10, d11, [sp, #32]
+        ldp             d12, d13, [sp, #48]
+        ldp             d14, d15, [sp], #64
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_hv12_8_neon_i8mm, export=1
+        epel_uni_w_hv_start
+        sxtw            x4, w4
+
+        add             x10, x4, #3
+        lsl             x10, x10, #7
+        sub             sp, sp, x10     // tmp_array
+        str             x30, [sp, #-48]!
+        stp             x4, x6, [sp, #16]
+        stp             x0, x1, [sp, #32]
+        add             x0, sp, #48
+        sub             x1, x2, x3
+        mov             x2, x3
+        add             x3, x4, #3
+        mov             x4, x5
+        bl              X(ff_hevc_put_hevc_epel_h12_8_neon_i8mm)
+        ldp             x4, x6, [sp, #16]
+        ldp             x0, x1, [sp, #32]
+        ldr             x30, [sp], #48
+        load_epel_filterh x6, x5
+        sub             x1, x1, #8
+        mov             x10, #(MAX_PB_SIZE * 2)
+        ld1             {v16.8h, v17.8h}, [sp], x10
+        ld1             {v18.8h, v19.8h}, [sp], x10
+        ld1             {v20.8h, v21.8h}, [sp], x10
+1:      ld1             {v22.8h, v23.8h}, [sp], x10
+        subs            x4, x4, #1
+        calc_epelh      v4, v16, v18, v20, v22
+        calc_epelh2     v4, v5, v16, v18, v20, v22
+        calc_epelh      v5, v17, v19, v21, v23
+        epel_uni_w_hv_end2
+        sqxtun          v4.8b, v4.8h
+        sqxtun2         v4.16b, v5.8h
+        st1             {v4.8b}, [x0], #8
+        st1             {v4.s}[2], [x0], x1
+        b.eq            2f
+
+        ld1             {v16.8h, v17.8h}, [sp], x10
+        subs            x4, x4, #1
+        calc_epelh      v4, v18, v20, v22, v16
+        calc_epelh2     v4, v5, v18, v20, v22, v16
+        calc_epelh      v5, v19, v21, v23, v17
+        epel_uni_w_hv_end2
+        sqxtun          v4.8b, v4.8h
+        sqxtun2         v4.16b, v5.8h
+        st1             {v4.8b}, [x0], #8
+        st1             {v4.s}[2], [x0], x1
+        b.eq            2f
+
+        ld1             {v18.8h, v19.8h}, [sp], x10
+        subs            x4, x4, #1
+        calc_epelh      v4, v20, v22, v16, v18
+        calc_epelh2     v4, v5, v20, v22, v16, v18
+        calc_epelh      v5, v21, v23, v17, v19
+        epel_uni_w_hv_end2
+        sqxtun          v4.8b, v4.8h
+        sqxtun2         v4.16b, v5.8h
+        st1             {v4.8b}, [x0], #8
+        st1             {v4.s}[2], [x0], x1
+        b.eq            2f
+
+        ld1             {v20.8h, v21.8h}, [sp], x10
+        subs            x4, x4, #1
+        calc_epelh      v4, v22, v16, v18, v20
+        calc_epelh2     v4, v5, v22, v16, v18, v20
+        calc_epelh      v5, v23, v17, v19, v21
+        epel_uni_w_hv_end2
+        sqxtun          v4.8b, v4.8h
+        sqxtun2         v4.16b, v5.8h
+        st1             {v4.8b}, [x0], #8
+        st1             {v4.s}[2], [x0], x1
+        b.ne            1b
+2:
+        ldp             d8, d9, [sp, #16]
+        ldp             d10, d11, [sp, #32]
+        ldp             d12, d13, [sp, #48]
+        ldp             d14, d15, [sp], #64
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_hv16_8_neon_i8mm, export=1
+        epel_uni_w_hv_start
+        sxtw            x4, w4
+
+        add             x10, x4, #3
+        lsl             x10, x10, #7
+        sub             sp, sp, x10     // tmp_array
+        str             x30, [sp, #-48]!
+        stp             x4, x6, [sp, #16]
+        stp             x0, x1, [sp, #32]
+        add             x0, sp, #48
+        sub             x1, x2, x3
+        mov             x2, x3
+        add             x3, x4, #3
+        mov             x4, x5
+        bl              X(ff_hevc_put_hevc_epel_h16_8_neon_i8mm)
+        ldp             x4, x6, [sp, #16]
+        ldp             x0, x1, [sp, #32]
+        ldr             x30, [sp], #48
+        load_epel_filterh x6, x5
+        mov             x10, #(MAX_PB_SIZE * 2)
+        ld1             {v16.8h, v17.8h}, [sp], x10
+        ld1             {v18.8h, v19.8h}, [sp], x10
+        ld1             {v20.8h, v21.8h}, [sp], x10
+1:      ld1             {v22.8h, v23.8h}, [sp], x10
+        subs            x4, x4, #1
+        calc_epelh      v4, v16, v18, v20, v22
+        calc_epelh2     v4, v5, v16, v18, v20, v22
+        calc_epelh      v5, v17, v19, v21, v23
+        calc_epelh2     v5, v6, v17, v19, v21, v23
+        epel_uni_w_hv_end2
+        sqxtun          v4.8b, v4.8h
+        sqxtun2         v4.16b, v5.8h
+        st1             {v4.16b}, [x0], x1
+        b.eq            2f
+
+        ld1             {v16.8h, v17.8h}, [sp], x10
+        subs            x4, x4, #1
+        calc_epelh      v4, v18, v20, v22, v16
+        calc_epelh2     v4, v5, v18, v20, v22, v16
+        calc_epelh      v5, v19, v21, v23, v17
+        calc_epelh2     v5, v6, v19, v21, v23, v17
+        epel_uni_w_hv_end2
+        sqxtun          v4.8b, v4.8h
+        sqxtun2         v4.16b, v5.8h
+        st1             {v4.16b}, [x0], x1
+        b.eq            2f
+
+        ld1             {v18.8h, v19.8h}, [sp], x10
+        subs            x4, x4, #1
+        calc_epelh      v4, v20, v22, v16, v18
+        calc_epelh2     v4, v5, v20, v22, v16, v18
+        calc_epelh      v5, v21, v23, v17, v19
+        calc_epelh2     v5, v6, v21, v23, v17, v19
+        epel_uni_w_hv_end2
+        sqxtun          v4.8b, v4.8h
+        sqxtun2         v4.16b, v5.8h
+        st1             {v4.16b}, [x0], x1
+        b.eq            2f
+
+        ld1             {v20.8h, v21.8h}, [sp], x10
+        subs            x4, x4, #1
+        calc_epelh      v4, v22, v16, v18, v20
+        calc_epelh2     v4, v5, v22, v16, v18, v20
+        calc_epelh      v5, v23, v17, v19, v21
+        calc_epelh2     v5, v6, v23, v17, v19, v21
+        epel_uni_w_hv_end2
+        sqxtun          v4.8b, v4.8h
+        sqxtun2         v4.16b, v5.8h
+        st1             {v4.16b}, [x0], x1
+        b.ne            1b
+2:
+        ldp             d8, d9, [sp, #16]
+        ldp             d10, d11, [sp, #32]
+        ldp             d12, d13, [sp, #48]
+        ldp             d14, d15, [sp], #64
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_hv24_8_neon_i8mm, export=1
+        epel_uni_w_hv_start
+        sxtw            x4, w4
+
+        add             x10, x4, #3
+        lsl             x10, x10, #7
+        sub             sp, sp, x10     // tmp_array
+        str             x30, [sp, #-48]!
+        stp             x4, x6, [sp, #16]
+        stp             x0, x1, [sp, #32]
+        add             x0, sp, #48
+        sub             x1, x2, x3
+        mov             x2, x3
+        add             x3, x4, #3
+        mov             x4, x5
+        bl              X(ff_hevc_put_hevc_epel_h24_8_neon_i8mm)
+        ldp             x4, x6, [sp, #16]
+        ldp             x0, x1, [sp, #32]
+        ldr             x30, [sp], #48
+        load_epel_filterh x6, x5
+        mov             x10, #(MAX_PB_SIZE * 2)
+        ld1             {v16.8h, v17.8h, v18.8h}, [sp], x10
+        ld1             {v19.8h, v20.8h, v21.8h}, [sp], x10
+        ld1             {v22.8h, v23.8h, v24.8h}, [sp], x10
+1:      ld1             {v25.8h, v26.8h, v27.8h}, [sp], x10
+        subs            x4, x4, #1
+        calc_epelh      v4, v16, v19, v22, v25
+        calc_epelh2     v4, v5, v16, v19, v22, v25
+        calc_epelh      v5, v17, v20, v23, v26
+        calc_epelh2     v5, v6, v17, v20, v23, v26
+        calc_epelh      v6, v18, v21, v24, v27
+        calc_epelh2     v6, v7, v18, v21, v24, v27
+
+        epel_uni_w_hv_end3
+        sqxtun          v4.8b, v4.8h
+        sqxtun          v5.8b, v5.8h
+        sqxtun          v6.8b, v6.8h
+        st1             {v4.8b, v5.8b, v6.8b}, [x0], x1
+        b.eq            2f
+
+        ld1             {v16.8h, v17.8h, v18.8h}, [sp], x10
+        subs            x4, x4, #1
+        calc_epelh      v4, v19, v22, v25, v16
+        calc_epelh2     v4, v5, v19, v22, v25, v16
+        calc_epelh      v5, v20, v23, v26, v17
+        calc_epelh2     v5, v6, v20, v23, v26, v17
+        calc_epelh      v6, v21, v24, v27, v18
+        calc_epelh2     v6, v7, v21, v24, v27, v18
+        epel_uni_w_hv_end3
+
+        sqxtun          v4.8b, v4.8h
+        sqxtun          v5.8b, v5.8h
+        sqxtun          v6.8b, v6.8h
+        st1             {v4.8b, v5.8b, v6.8b}, [x0], x1
+        b.eq            2f
+
+        ld1             {v19.8h, v20.8h, v21.8h}, [sp], x10
+        subs            x4, x4, #1
+        calc_epelh      v4, v22, v25, v16, v19
+        calc_epelh2     v4, v5, v22, v25, v16, v19
+        calc_epelh      v5, v23, v26, v17, v20
+        calc_epelh2     v5, v6, v23, v26, v17, v20
+        calc_epelh      v6, v24, v27, v18, v21
+        calc_epelh2     v6, v7, v24, v27, v18, v21
+        epel_uni_w_hv_end3
+
+        sqxtun          v4.8b, v4.8h
+        sqxtun          v5.8b, v5.8h
+        sqxtun          v6.8b, v6.8h
+        st1             {v4.8b, v5.8b, v6.8b}, [x0], x1
+        b.eq            2f
+
+        ld1             {v22.8h, v23.8h, v24.8h}, [sp], x10
+        subs            x4, x4, #1
+        calc_epelh      v4, v25, v16, v19, v22
+        calc_epelh2     v4, v5, v25, v16, v19, v22
+        calc_epelh      v5, v26, v17, v20, v23
+        calc_epelh2     v5, v6, v26, v17, v20, v23
+        calc_epelh      v6, v27, v18, v21, v24
+        calc_epelh2     v6, v7, v27, v18, v21, v24
+        epel_uni_w_hv_end3
+
+        sqxtun          v4.8b, v4.8h
+        sqxtun          v5.8b, v5.8h
+        sqxtun          v6.8b, v6.8h
+        st1             {v4.8b, v5.8b, v6.8b}, [x0], x1
+        b.ne            1b
+2:
+        ldp             d8, d9, [sp, #16]
+        ldp             d10, d11, [sp, #32]
+        ldp             d12, d13, [sp, #48]
+        ldp             d14, d15, [sp], #64
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_hv32_8_neon_i8mm, export=1
+        ldp             x15, x16, [sp]
+        mov             x17, #16
+        stp             x15, x16, [sp, #-96]!
+        stp             x0, x30, [sp, #16]
+        stp             x1, x2, [sp, #32]
+        stp             x3, x4, [sp, #48]
+        stp             x5, x6, [sp, #64]
+        stp             x17, x7, [sp, #80]
+
+        bl              X(ff_hevc_put_hevc_epel_uni_w_hv16_8_neon_i8mm)
+        ldp             x0, x30, [sp, #16]
+        ldp             x1, x2, [sp, #32]
+        ldp             x3, x4, [sp, #48]
+        ldp             x5, x6, [sp, #64]
+        ldp             x17, x7, [sp, #80]
+        ldp             x15, x16, [sp], #96
+        add             x0, x0, #16
+        add             x2, x2, #16
+        mov             x17, #16
+        stp             x15, x16, [sp, #-32]!
+        stp             x17, x30, [sp, #16]
+        bl              X(ff_hevc_put_hevc_epel_uni_w_hv16_8_neon_i8mm)
+        ldp             x17, x30, [sp, #16]
+        ldp             x15, x16, [sp], #32
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_hv48_8_neon_i8mm, export=1
+        ldp             x15, x16, [sp]
+        mov             x17, #24
+        stp             x15, x16, [sp, #-96]!
+        stp             x0, x30, [sp, #16]
+        stp             x1, x2, [sp, #32]
+        stp             x3, x4, [sp, #48]
+        stp             x5, x6, [sp, #64]
+        stp             x17, x7, [sp, #80]
+        bl              X(ff_hevc_put_hevc_epel_uni_w_hv24_8_neon_i8mm)
+        ldp             x0, x30, [sp, #16]
+        ldp             x1, x2, [sp, #32]
+        ldp             x3, x4, [sp, #48]
+        ldp             x5, x6, [sp, #64]
+        ldp             x17, x7, [sp, #80]
+        ldp             x15, x16, [sp], #96
+        add             x0, x0, #24
+        add             x2, x2, #24
+        mov             x17, #24
+        stp             x15, x16, [sp, #-32]!
+        stp             x17, x30, [sp, #16]
+        bl              X(ff_hevc_put_hevc_epel_uni_w_hv24_8_neon_i8mm)
+        ldp             x17, x30, [sp, #16]
+        ldp             x15, x16, [sp], #32
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_hv64_8_neon_i8mm, export=1
+        ldp             x15, x16, [sp]
+        mov             x17, #32
+        stp             x15, x16, [sp, #-96]!
+        stp             x0, x30, [sp, #16]
+        stp             x1, x2, [sp, #32]
+        stp             x3, x4, [sp, #48]
+        stp             x5, x6, [sp, #64]
+        stp             x17, x7, [sp, #80]
+
+        bl              X(ff_hevc_put_hevc_epel_uni_w_hv32_8_neon_i8mm)
+        ldp             x0, x30, [sp, #16]
+        ldp             x1, x2, [sp, #32]
+        ldp             x3, x4, [sp, #48]
+        ldp             x5, x6, [sp, #64]
+        ldp             x17, x7, [sp, #80]
+        ldp             x15, x16, [sp], #96
+        add             x0, x0, #32
+        add             x2, x2, #32
+        mov             x17, #32
+        stp             x15, x16, [sp, #-32]!
+        stp             x17, x30, [sp, #16]
+        bl              X(ff_hevc_put_hevc_epel_uni_w_hv32_8_neon_i8mm)
+        ldp             x17, x30, [sp, #16]
+        ldp             x15, x16, [sp], #32
+        ret
+endfunc
+
+
 #endif
 
 
