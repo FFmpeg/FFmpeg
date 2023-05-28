@@ -666,6 +666,11 @@ int of_stream_init(OutputFile *of, OutputStream *ost)
     if (ret < 0)
         return ret;
 
+    if (ms->stream_duration) {
+        ost->st->duration = av_rescale_q(ms->stream_duration, ms->stream_duration_tb,
+                                         ost->st->time_base);
+    }
+
     ost->initialized = 1;
 
     return mux_check_init(mux);

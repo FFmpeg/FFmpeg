@@ -69,6 +69,9 @@ typedef struct MuxStream {
      * used for making up missing dts values */
     int64_t last_mux_dts;
 
+    int64_t    stream_duration;
+    AVRational stream_duration_tb;
+
     // audio streamcopy - state for av_rescale_delta()
     int64_t ts_rescale_delta_last;
 

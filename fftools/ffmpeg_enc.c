@@ -445,10 +445,6 @@ int enc_open(OutputStream *ost, AVFrame *frame)
     if (ost->st->time_base.num <= 0 || ost->st->time_base.den <= 0)
         ost->st->time_base = av_add_q(ost->enc_ctx->time_base, (AVRational){0, 1});
 
-    // copy estimated duration as a hint to the muxer
-    if (ost->st->duration <= 0 && ist && ist->st->duration > 0)
-        ost->st->duration = av_rescale_q(ist->st->duration, ist->st->time_base, ost->st->time_base);
-
     ost->mux_timebase = enc_ctx->time_base;
 
     ret = of_stream_init(of, ost);

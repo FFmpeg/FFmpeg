@@ -914,10 +914,6 @@ static int streamcopy_init(const Muxer *mux, OutputStream *ost)
             ost->st->time_base = av_add_q(av_stream_get_codec_timebase(ost->st), (AVRational){0, 1});
     }
 
-    // copy estimated duration as a hint to the muxer
-    if (ost->st->duration <= 0 && ist->st->duration > 0)
-        ost->st->duration = av_rescale_q(ist->st->duration, ist->st->time_base, ost->st->time_base);
-
     if (!ms->copy_prior_start) {
         ms->ts_copy_start = (mux->of.start_time == AV_NOPTS_VALUE) ?
                             0 : mux->of.start_time;
@@ -1281,6 +1277,12 @@ static OutputStream *ost_add(Muxer *mux, const OptionsContext *o,
         ret = streamcopy_init(mux, ost);
         if (ret < 0)
             exit_program(1);
+    }
+
+    // copy estimated duration as a hint to the muxer
+    if (ost->ist && ost->ist->st->duration > 0) {
+        ms->stream_duration    = ist->st->duration;
+        ms->stream_duration_tb = ist->st->time_base;
     }
 
     return ost;
