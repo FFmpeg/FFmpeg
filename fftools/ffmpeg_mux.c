@@ -334,6 +334,12 @@ void of_output_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost, int eof)
     if (!eof && pkt->dts != AV_NOPTS_VALUE)
         ost->last_mux_dts = av_rescale_q(pkt->dts, pkt->time_base, AV_TIME_BASE_Q);
 
+    /* rescale timestamps to the muxing timebase */
+    if (!eof) {
+        av_packet_rescale_ts(pkt, pkt->time_base, ost->mux_timebase);
+        pkt->time_base = ost->mux_timebase;
+    }
+
     /* apply the output bitstream filters */
     if (ms->bsf_ctx) {
         int bsf_eof = 0;

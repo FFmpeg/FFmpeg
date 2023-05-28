@@ -512,8 +512,8 @@ void enc_subtitle(OutputFile *of, OutputStream *ost, AVSubtitle *sub)
         }
 
         av_shrink_packet(pkt, subtitle_out_size);
-        pkt->time_base = ost->mux_timebase;
-        pkt->pts  = av_rescale_q(sub->pts, AV_TIME_BASE_Q, pkt->time_base);
+        pkt->time_base = AV_TIME_BASE_Q;
+        pkt->pts       = sub->pts;
         pkt->duration = av_rescale_q(sub->end_display_time, (AVRational){ 1, 1000 }, pkt->time_base);
         if (enc->codec_id == AV_CODEC_ID_DVB_SUBTITLE) {
             /* XXX: the pts correction is handled here. Maybe handling
@@ -724,19 +724,6 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
         if (ost->enc_stats_post.io)
             enc_stats_write(ost, &ost->enc_stats_post, NULL, pkt,
                             e->packets_encoded);
-
-        if (debug_ts) {
-            av_log(ost, AV_LOG_INFO, "encoder -> type:%s "
-                   "pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s "
-                   "duration:%s duration_time:%s\n",
-                   type_desc,
-                   av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &enc->time_base),
-                   av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &enc->time_base),
-                   av_ts2str(pkt->duration), av_ts2timestr(pkt->duration, &enc->time_base));
-        }
-
-        av_packet_rescale_ts(pkt, pkt->time_base, ost->mux_timebase);
-        pkt->time_base = ost->mux_timebase;
 
         if (debug_ts) {
             av_log(ost, AV_LOG_INFO, "encoder -> type:%s "
