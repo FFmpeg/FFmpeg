@@ -654,7 +654,6 @@ void ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost)
 
     switch (ost->enc_ctx->codec_type) {
     case AVMEDIA_TYPE_VIDEO:
-        ofilter->frame_rate = ost->frame_rate;
         ofilter->width      = ost->enc_ctx->width;
         ofilter->height     = ost->enc_ctx->height;
         if (ost->enc_ctx->pix_fmt != AV_PIX_FMT_NONE) {

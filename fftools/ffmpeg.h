@@ -296,7 +296,6 @@ typedef struct OutputFilter {
 
     /* desired output stream properties */
     int width, height;
-    AVRational frame_rate;
     int format;
     int sample_rate;
     AVChannelLayout ch_layout;
