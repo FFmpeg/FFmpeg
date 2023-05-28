@@ -214,11 +214,13 @@ int enc_open(OutputStream *ost, AVFrame *frame)
                              av_make_q(1, enc_ctx->sample_rate);
         break;
 
-    case AVMEDIA_TYPE_VIDEO:
-        if (!ost->frame_rate.num)
-            ost->frame_rate = av_buffersink_get_frame_rate(ost->filter->filter);
-        if (!ost->frame_rate.num && !ost->max_frame_rate.num) {
-            ost->frame_rate = (AVRational){25, 1};
+    case AVMEDIA_TYPE_VIDEO: {
+        AVRational fr = ost->frame_rate;
+
+        if (!fr.num)
+            fr = av_buffersink_get_frame_rate(ost->filter->filter);
+        if (!fr.num && !ost->max_frame_rate.num) {
+            fr = (AVRational){25, 1};
             av_log(ost, AV_LOG_WARNING,
                    "No information "
                    "about the input framerate is available. Falling "
@@ -227,22 +229,22 @@ int enc_open(OutputStream *ost, AVFrame *frame)
         }
 
         if (ost->max_frame_rate.num &&
-            (av_q2d(ost->frame_rate) > av_q2d(ost->max_frame_rate) ||
-            !ost->frame_rate.den))
-            ost->frame_rate = ost->max_frame_rate;
+            (av_q2d(fr) > av_q2d(ost->max_frame_rate) ||
+            !fr.den))
+            fr = ost->max_frame_rate;
 
         if (enc->supported_framerates && !ost->force_fps) {
-            int idx = av_find_nearest_q_idx(ost->frame_rate, enc->supported_framerates);
-            ost->frame_rate = enc->supported_framerates[idx];
+            int idx = av_find_nearest_q_idx(fr, enc->supported_framerates);
+            fr = enc->supported_framerates[idx];
         }
         // reduce frame rate for mpeg4 to be within the spec limits
         if (enc_ctx->codec_id == AV_CODEC_ID_MPEG4) {
-            av_reduce(&ost->frame_rate.num, &ost->frame_rate.den,
-                      ost->frame_rate.num, ost->frame_rate.den, 65535);
+            av_reduce(&fr.num, &fr.den,
+                      fr.num, fr.den, 65535);
         }
 
         enc_ctx->time_base = ost->enc_timebase.num > 0 ? ost->enc_timebase :
-                             av_inv_q(ost->frame_rate);
+                             av_inv_q(fr);
 
         if (!(enc_ctx->time_base.num && enc_ctx->time_base.den))
             enc_ctx->time_base = av_buffersink_get_time_base(ost->filter->filter);
@@ -277,9 +279,9 @@ int enc_open(OutputStream *ost, AVFrame *frame)
             enc_ctx->chroma_sample_location = frame->chroma_location;
         }
 
-        enc_ctx->framerate = ost->frame_rate;
+        enc_ctx->framerate = fr;
 
-        ost->st->avg_frame_rate = ost->frame_rate;
+        ost->st->avg_frame_rate = fr;
 
         // Field order: autodetection
         if (frame) {
@@ -307,6 +309,7 @@ int enc_open(OutputStream *ost, AVFrame *frame)
         }
 
         break;
+        }
     case AVMEDIA_TYPE_SUBTITLE:
         enc_ctx->time_base = AV_TIME_BASE_Q;
         if (!enc_ctx->width) {
