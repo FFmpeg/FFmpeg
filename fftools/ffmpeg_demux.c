@@ -1194,9 +1194,6 @@ static void add_input_streams(const OptionsContext *o, Demuxer *d)
 
         switch (par->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
-            // avformat_find_stream_info() doesn't set this for us anymore.
-            ist->dec_ctx->framerate = st->avg_frame_rate;
-
             MATCH_PER_STREAM_OPT(frame_rates, str, framerate, ic, st);
             if (framerate && av_parse_video_rate(&ist->framerate,
                                                  framerate) < 0) {
