@@ -1,0 +1,377 @@
+/* -*-arm64-*-
+ * vim: syntax=arm64asm
+ *
+ * This file is part of FFmpeg.
+ *
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * FFmpeg is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+#include "libavutil/aarch64/asm.S"
+#define MAX_PB_SIZE 64
+
+const epel_filters, align=4
+        .byte  0,  0,  0,  0
+        .byte -2, 58, 10, -2
+        .byte -4, 54, 16, -2
+        .byte -6, 46, 28, -4
+        .byte -4, 36, 36, -4
+        .byte -4, 28, 46, -6
+        .byte -2, 16, 54, -4
+        .byte -2, 10, 58, -2
+endconst
+
+#if HAVE_I8MM
+.macro EPEL_UNI_W_H_HEADER
+        ldr             x12, [sp]
+        sub             x2, x2, #1
+        movrel          x9, epel_filters
+        add             x9, x9, x12, lsl #2
+        ld1r            {v28.4s}, [x9]
+        mov             w10, #-6
+        sub             w10, w10, w5
+        dup             v30.4s, w6
+        dup             v31.4s, w10
+        dup             v29.4s, w7
+.endm
+
+
+function ff_hevc_put_hevc_epel_uni_w_h4_8_neon_i8mm, export=1
+        EPEL_UNI_W_H_HEADER
+1:
+        ld1             {v0.8b}, [x2], x3
+        subs            w4, w4, #1
+        ext             v1.8b, v0.8b, v0.8b, #1
+        ext             v2.8b, v0.8b, v0.8b, #2
+        ext             v3.8b, v0.8b, v0.8b, #3
+        trn1            v0.2s, v0.2s, v2.2s
+        trn1            v1.2s, v1.2s, v3.2s
+        zip1            v0.4s, v0.4s, v1.4s
+        movi            v16.2d, #0
+        usdot           v16.4s, v0.16b, v28.16b
+        mul             v16.4s, v16.4s, v30.4s
+        sqrshl          v16.4s, v16.4s, v31.4s
+        sqadd           v16.4s, v16.4s, v29.4s
+        sqxtn           v16.4h, v16.4s
+        sqxtun          v16.8b, v16.8h
+        str             s16, [x0]
+        add             x0, x0, x1
+        b.hi            1b
+        ret
+endfunc
+
+
+function ff_hevc_put_hevc_epel_uni_w_h6_8_neon_i8mm, export=1
+        EPEL_UNI_W_H_HEADER
+        sub             x1, x1, #4
+1:
+        ld1             {v0.16b}, [x2], x3
+        subs            w4, w4, #1
+        ext             v1.16b, v0.16b, v0.16b, #1
+        ext             v2.16b, v0.16b, v0.16b, #2
+        ext             v3.16b, v0.16b, v0.16b, #3
+        trn1            v4.2s, v0.2s, v1.2s
+        trn2            v6.2s, v0.2s, v1.2s
+        trn1            v5.2s, v2.2s, v3.2s
+        zip1            v4.2d, v4.2d, v5.2d
+        movi            v16.2d, #0
+        movi            v17.2d, #0
+        usdot           v16.4s, v4.16b, v28.16b
+        usdot           v17.2s, v6.8b, v28.8b
+        mul             v16.4s, v16.4s, v30.4s
+        mul             v17.2s, v17.2s, v30.2s
+        sqrshl          v16.4s, v16.4s, v31.4s
+        sqrshl          v17.2s, v17.2s, v31.2s
+        sqadd           v16.4s, v16.4s, v29.4s
+        sqadd           v17.2s, v17.2s, v29.2s
+        sqxtn           v16.4h, v16.4s
+        sqxtn2          v16.8h, v17.4s
+        sqxtun          v16.8b, v16.8h
+        str             s16, [x0], #4
+        st1             {v16.h}[2], [x0], x1
+        b.hi            1b
+        ret
+endfunc
+
+.macro  EPEL_UNI_W_H_CALC s0, s1, d0, d1
+        movi            \d0\().2d, #0
+        movi            \d1\().2d, #0
+        usdot           \d0\().4s, \s0\().16b, v28.16b
+        usdot           \d1\().4s, \s1\().16b, v28.16b
+        mul             \d0\().4s, \d0\().4s, v30.4s
+        mul             \d1\().4s, \d1\().4s, v30.4s
+        sqrshl          \d0\().4s, \d0\().4s, v31.4s
+        sqrshl          \d1\().4s, \d1\().4s, v31.4s
+        sqadd           \d0\().4s, \d0\().4s, v29.4s
+        sqadd           \d1\().4s, \d1\().4s, v29.4s
+.endm
+
+function ff_hevc_put_hevc_epel_uni_w_h8_8_neon_i8mm, export=1
+        EPEL_UNI_W_H_HEADER
+1:
+        ld1             {v0.16b}, [x2], x3
+        subs            w4, w4, #1
+        ext             v1.16b, v0.16b, v0.16b, #1
+        ext             v2.16b, v0.16b, v0.16b, #2
+        ext             v3.16b, v0.16b, v0.16b, #3
+        zip1            v4.4s, v0.4s, v2.4s
+        zip1            v5.4s, v1.4s, v3.4s
+        EPEL_UNI_W_H_CALC v4, v5, v16, v17
+        sqxtn           v16.4h, v16.4s
+        sqxtn           v17.4h, v17.4s
+        zip1            v16.8h, v16.8h, v17.8h
+        sqxtun          v16.8b, v16.8h
+        str             d16, [x0]
+        add             x0, x0, x1
+        b.hi            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_h12_8_neon_i8mm, export=1
+        EPEL_UNI_W_H_HEADER
+1:
+        ld1             {v0.16b}, [x2], x3
+        subs            w4, w4, #1
+        ext             v1.16b, v0.16b, v0.16b, #1
+        ext             v2.16b, v0.16b, v0.16b, #2
+        ext             v3.16b, v0.16b, v0.16b, #3
+        zip1            v4.4s, v0.4s, v2.4s
+        zip1            v5.4s, v1.4s, v3.4s
+        zip2            v6.4s, v0.4s, v2.4s
+        zip2            v7.4s, v1.4s, v3.4s
+        zip1            v6.4s, v6.4s, v7.4s
+        EPEL_UNI_W_H_CALC v4, v5, v16, v17
+        movi            v18.2d, #0
+        usdot           v18.4s, v6.16b, v28.16b
+        mul             v18.4s, v18.4s, v30.4s
+        sqrshl          v18.4s, v18.4s, v31.4s
+        sqadd           v18.4s, v18.4s, v29.4s
+        sqxtn           v16.4h, v16.4s
+        sqxtn           v17.4h, v17.4s
+        sqxtn           v18.4h, v18.4s
+        zip1            v16.8h, v16.8h, v17.8h
+        sqxtun          v16.8b, v16.8h
+        sqxtun          v18.8b, v18.8h
+        str             d16, [x0]
+        str             s18, [x0, #8]
+        add             x0, x0, x1
+        b.hi            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_h16_8_neon_i8mm, export=1
+        EPEL_UNI_W_H_HEADER
+1:
+        ld1             {v0.16b, v1.16b}, [x2], x3
+        subs            w4, w4, #1
+        ext             v4.16b, v0.16b, v1.16b, #1
+        ext             v5.16b, v0.16b, v1.16b, #2
+        ext             v6.16b, v0.16b, v1.16b, #3
+        zip1            v20.4s, v0.4s, v5.4s
+        zip1            v21.4s, v4.4s, v6.4s
+        zip2            v22.4s, v0.4s, v5.4s
+        zip2            v23.4s, v4.4s, v6.4s
+        EPEL_UNI_W_H_CALC v20, v21, v16, v17
+        EPEL_UNI_W_H_CALC v22, v23, v18, v19
+        sqxtn           v16.4h, v16.4s
+        sqxtn           v17.4h, v17.4s
+        sqxtn2          v16.8h, v18.4s
+        sqxtn2          v17.8h, v19.4s
+        sqxtun          v16.8b, v16.8h
+        sqxtun          v17.8b, v17.8h
+        st2             {v16.8b, v17.8b}, [x0], x1
+        b.hi            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_h24_8_neon_i8mm, export=1
+        EPEL_UNI_W_H_HEADER
+1:
+        ld1             {v0.16b, v1.16b}, [x2], x3
+        subs            w4, w4, #1
+        ext             v2.16b, v0.16b, v1.16b, #1
+        ext             v3.16b, v0.16b, v1.16b, #2
+        ext             v4.16b, v0.16b, v1.16b, #3
+        ext             v5.16b, v1.16b, v1.16b, #1
+        ext             v6.16b, v1.16b, v1.16b, #2
+        ext             v7.16b, v1.16b, v1.16b, #3
+        zip1            v20.4s, v0.4s, v3.4s
+        zip1            v21.4s, v2.4s, v4.4s
+        zip2            v22.4s, v0.4s, v3.4s
+        zip2            v23.4s, v2.4s, v4.4s
+        zip1            v24.4s, v1.4s, v6.4s
+        zip1            v25.4s, v5.4s, v7.4s
+        EPEL_UNI_W_H_CALC v20, v21, v16, v17
+        EPEL_UNI_W_H_CALC v22, v23, v18, v19
+        EPEL_UNI_W_H_CALC v24, v25, v26, v27
+        sqxtn           v16.4h, v16.4s
+        sqxtn           v17.4h, v17.4s
+        sqxtn           v18.4h, v18.4s
+        sqxtn           v19.4h, v19.4s
+        sqxtn           v26.4h, v26.4s
+        sqxtn           v27.4h, v27.4s
+        zip1            v16.8h, v16.8h, v17.8h
+        zip1            v18.8h, v18.8h, v19.8h
+        zip1            v26.8h, v26.8h, v27.8h
+        sqxtun          v16.8b, v16.8h
+        sqxtun2         v16.16b, v18.8h
+        sqxtun          v26.8b, v26.8h
+        str             q16, [x0]
+        str             d26, [x0, #16]
+        add             x0, x0, x1
+        b.hi            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_h32_8_neon_i8mm, export=1
+        EPEL_UNI_W_H_HEADER
+1:
+        ld1             {v0.16b, v1.16b, v2.16b}, [x2], x3
+        subs            w4, w4, #1
+        ext             v3.16b, v0.16b, v1.16b, #1
+        ext             v4.16b, v0.16b, v1.16b, #2
+        ext             v5.16b, v0.16b, v1.16b, #3
+        ext             v16.16b, v1.16b, v2.16b, #1
+        ext             v17.16b, v1.16b, v2.16b, #2
+        ext             v18.16b, v1.16b, v2.16b, #3
+        EPEL_UNI_W_H_CALC v0, v3, v6, v7
+        EPEL_UNI_W_H_CALC v4, v5, v19, v20
+        EPEL_UNI_W_H_CALC v1, v16, v21, v22
+        EPEL_UNI_W_H_CALC v17, v18, v23, v24
+        sqxtn           v6.4h, v6.4s
+        sqxtn2          v6.8h, v21.4s
+        sqxtn           v7.4h, v7.4s
+        sqxtn2          v7.8h, v22.4s
+        sqxtn           v19.4h, v19.4s
+        sqxtn2          v19.8h, v23.4s
+        sqxtn           v20.4h, v20.4s
+        sqxtn2          v20.8h, v24.4s
+        sqxtun          v0.8b, v6.8h
+        sqxtun          v1.8b, v7.8h
+        sqxtun          v2.8b, v19.8h
+        sqxtun          v3.8b, v20.8h
+        st4             {v0.8b, v1.8b, v2.8b, v3.8b}, [x0], x1
+        b.hi            1b
+        ret
+endfunc
+
+
+
+function ff_hevc_put_hevc_epel_uni_w_h48_8_neon_i8mm, export=1
+        EPEL_UNI_W_H_HEADER
+        sub             x1, x1, #32
+1:
+        ld1             {v0.16b, v1.16b, v2.16b, v3.16b}, [x2], x3
+        subs            w4, w4, #1
+        ext             v4.16b, v0.16b, v1.16b, #1
+        ext             v5.16b, v0.16b, v1.16b, #2
+        ext             v6.16b, v0.16b, v1.16b, #3
+        ext             v16.16b, v1.16b, v2.16b, #1
+        ext             v17.16b, v1.16b, v2.16b, #2
+        ext             v18.16b, v1.16b, v2.16b, #3
+        EPEL_UNI_W_H_CALC v0, v4, v19, v20
+        EPEL_UNI_W_H_CALC v5, v6, v21, v22
+        EPEL_UNI_W_H_CALC v1, v16, v23, v24
+        EPEL_UNI_W_H_CALC v17, v18, v25, v26
+        sqxtn           v19.4h, v19.4s
+        sqxtn2          v19.8h, v23.4s
+        sqxtn           v20.4h, v20.4s
+        sqxtn2          v20.8h, v24.4s
+        sqxtn           v21.4h, v21.4s
+        sqxtn2          v21.8h, v25.4s
+        sqxtn           v22.4h, v22.4s
+        sqxtn2          v22.8h, v26.4s
+        sqxtun          v19.8b, v19.8h
+        sqxtun          v20.8b, v20.8h
+        sqxtun          v21.8b, v21.8h
+        sqxtun          v22.8b, v22.8h
+        st4             {v19.8b, v20.8b, v21.8b, v22.8b}, [x0], #32
+        ext             v5.16b, v2.16b, v3.16b, #1
+        ext             v6.16b, v2.16b, v3.16b, #2
+        ext             v7.16b, v2.16b, v3.16b, #3
+        EPEL_UNI_W_H_CALC v2, v5, v19, v20
+        EPEL_UNI_W_H_CALC v6, v7, v21, v22
+        sqxtn           v19.4h, v19.4s
+        sqxtn           v20.4h, v20.4s
+        sqxtn           v21.4h, v21.4s
+        sqxtn           v22.4h, v22.4s
+        zip1            v4.8h, v19.8h, v21.8h
+        zip1            v5.8h, v20.8h, v22.8h
+        sqxtun          v4.8b, v4.8h
+        sqxtun          v5.8b, v5.8h
+        st2             {v4.8b, v5.8b}, [x0], x1
+        b.hi            1b
+        ret
+endfunc
+
+
+function ff_hevc_put_hevc_epel_uni_w_h64_8_neon_i8mm, export=1
+        EPEL_UNI_W_H_HEADER
+        sub             x1, x1, #32
+        sub             x3, x3, #64
+1:
+        ld1             {v0.16b, v1.16b, v2.16b, v3.16b}, [x2], #64
+        subs            w4, w4, #1
+        ext             v4.16b, v0.16b, v1.16b, #1
+        ext             v5.16b, v0.16b, v1.16b, #2
+        ext             v6.16b, v0.16b, v1.16b, #3
+        ext             v16.16b, v1.16b, v2.16b, #1
+        ext             v17.16b, v1.16b, v2.16b, #2
+        ext             v18.16b, v1.16b, v2.16b, #3
+        EPEL_UNI_W_H_CALC v0, v4, v19, v20
+        EPEL_UNI_W_H_CALC v5, v6, v21, v22
+        EPEL_UNI_W_H_CALC v1, v16, v23, v24
+        EPEL_UNI_W_H_CALC v17, v18, v25, v26
+        sqxtn           v19.4h, v19.4s
+        sqxtn2          v19.8h, v23.4s
+        sqxtn           v20.4h, v20.4s
+        sqxtn2          v20.8h, v24.4s
+        sqxtn           v21.4h, v21.4s
+        sqxtn2          v21.8h, v25.4s
+        sqxtn           v22.4h, v22.4s
+        sqxtn2          v22.8h, v26.4s
+        sqxtun          v19.8b, v19.8h
+        sqxtun          v20.8b, v20.8h
+        sqxtun          v21.8b, v21.8h
+        sqxtun          v22.8b, v22.8h
+        st4             {v19.8b, v20.8b, v21.8b, v22.8b}, [x0], #32
+        ld1             {v7.8b}, [x2], x3
+        ext             v4.16b, v2.16b, v3.16b, #1
+        ext             v5.16b, v2.16b, v3.16b, #2
+        ext             v6.16b, v2.16b, v3.16b, #3
+        ext             v16.16b, v3.16b, v7.16b, #1
+        ext             v17.16b, v3.16b, v7.16b, #2
+        ext             v18.16b, v3.16b, v7.16b, #3
+        EPEL_UNI_W_H_CALC v2, v4, v19, v20
+        EPEL_UNI_W_H_CALC v5, v6, v21, v22
+        EPEL_UNI_W_H_CALC v3, v16, v23, v24
+        EPEL_UNI_W_H_CALC v17, v18, v25, v26
+        sqxtn           v19.4h, v19.4s
+        sqxtn2          v19.8h, v23.4s
+        sqxtn           v20.4h, v20.4s
+        sqxtn2          v20.8h, v24.4s
+        sqxtn           v21.4h, v21.4s
+        sqxtn2          v21.8h, v25.4s
+        sqxtn           v22.4h, v22.4s
+        sqxtn2          v22.8h, v26.4s
+        sqxtun          v19.8b, v19.8h
+        sqxtun          v20.8b, v20.8h
+        sqxtun          v21.8b, v21.8h
+        sqxtun          v22.8b, v22.8h
+        st4             {v19.8b, v20.8b, v21.8b, v22.8b}, [x0], x1
+        b.hi            1b
+        ret
+endfunc
+
+#endif
