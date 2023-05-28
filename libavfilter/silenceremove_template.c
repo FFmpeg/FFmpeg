@@ -467,8 +467,10 @@ static void fn(filter_stop)(AVFilterContext *ctx,
         s->stop_found_periods = 0;
 
     if (s->stop_found_periods >= 0 || ctx->is_disabled) {
-        if (s->found_nonsilence)
+        if (s->found_nonsilence) {
             s->stop_sample_count += stop_thres;
+            s->stop_sample_count *= stop_thres;
+        }
     } else if (s->stop_silence_count > 0) {
         const int dst_pos = out_nb_samples * nb_channels;
         for (int ch = 0; ch < nb_channels; ch++)
