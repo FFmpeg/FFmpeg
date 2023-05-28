@@ -219,7 +219,24 @@ int enc_open(OutputStream *ost, AVFrame *frame)
         dec_ctx = ist->dec_ctx;
     }
 
-    if (enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO) {
+    switch (enc_ctx->codec_type) {
+    case AVMEDIA_TYPE_AUDIO:
+        enc_ctx->sample_fmt     = av_buffersink_get_format(ost->filter->filter);
+        enc_ctx->sample_rate    = av_buffersink_get_sample_rate(ost->filter->filter);
+        ret = av_buffersink_get_ch_layout(ost->filter->filter, &enc_ctx->ch_layout);
+        if (ret < 0)
+            return ret;
+
+        if (ost->bits_per_raw_sample)
+            enc_ctx->bits_per_raw_sample = ost->bits_per_raw_sample;
+        else if (dec_ctx && ost->filter->graph->is_meta)
+            enc_ctx->bits_per_raw_sample = FFMIN(dec_ctx->bits_per_raw_sample,
+                                                 av_get_bytes_per_sample(enc_ctx->sample_fmt) << 3);
+
+        init_encoder_time_base(ost, av_make_q(1, enc_ctx->sample_rate));
+        break;
+
+    case AVMEDIA_TYPE_VIDEO:
         if (!ost->frame_rate.num)
             ost->frame_rate = av_buffersink_get_frame_rate(ost->filter->filter);
         if (!ost->frame_rate.num && !ost->max_frame_rate.num) {
@@ -245,26 +262,7 @@ int enc_open(OutputStream *ost, AVFrame *frame)
             av_reduce(&ost->frame_rate.num, &ost->frame_rate.den,
                       ost->frame_rate.num, ost->frame_rate.den, 65535);
         }
-    }
 
-    switch (enc_ctx->codec_type) {
-    case AVMEDIA_TYPE_AUDIO:
-        enc_ctx->sample_fmt     = av_buffersink_get_format(ost->filter->filter);
-        enc_ctx->sample_rate    = av_buffersink_get_sample_rate(ost->filter->filter);
-        ret = av_buffersink_get_ch_layout(ost->filter->filter, &enc_ctx->ch_layout);
-        if (ret < 0)
-            return ret;
-
-        if (ost->bits_per_raw_sample)
-            enc_ctx->bits_per_raw_sample = ost->bits_per_raw_sample;
-        else if (dec_ctx && ost->filter->graph->is_meta)
-            enc_ctx->bits_per_raw_sample = FFMIN(dec_ctx->bits_per_raw_sample,
-                                                 av_get_bytes_per_sample(enc_ctx->sample_fmt) << 3);
-
-        init_encoder_time_base(ost, av_make_q(1, enc_ctx->sample_rate));
-        break;
-
-    case AVMEDIA_TYPE_VIDEO:
         init_encoder_time_base(ost, av_inv_q(ost->frame_rate));
 
         if (!(enc_ctx->time_base.num && enc_ctx->time_base.den))
