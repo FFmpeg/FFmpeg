@@ -177,18 +177,6 @@ static void set_encoder_id(OutputFile *of, OutputStream *ost)
                 AV_DICT_DONT_STRDUP_VAL | AV_DICT_DONT_OVERWRITE);
 }
 
-static void init_encoder_time_base(OutputStream *ost, AVRational default_time_base)
-{
-    AVCodecContext *enc_ctx = ost->enc_ctx;
-
-    if (ost->enc_timebase.num > 0) {
-        enc_ctx->time_base = ost->enc_timebase;
-        return;
-    }
-
-    enc_ctx->time_base = default_time_base;
-}
-
 int enc_open(OutputStream *ost, AVFrame *frame)
 {
     InputStream *ist = ost->ist;
@@ -222,7 +210,8 @@ int enc_open(OutputStream *ost, AVFrame *frame)
             enc_ctx->bits_per_raw_sample = FFMIN(dec_ctx->bits_per_raw_sample,
                                                  av_get_bytes_per_sample(enc_ctx->sample_fmt) << 3);
 
-        init_encoder_time_base(ost, av_make_q(1, enc_ctx->sample_rate));
+        enc_ctx->time_base = ost->enc_timebase.num > 0 ? ost->enc_timebase :
+                             av_make_q(1, enc_ctx->sample_rate);
         break;
 
     case AVMEDIA_TYPE_VIDEO:
@@ -252,7 +241,8 @@ int enc_open(OutputStream *ost, AVFrame *frame)
                       ost->frame_rate.num, ost->frame_rate.den, 65535);
         }
 
-        init_encoder_time_base(ost, av_inv_q(ost->frame_rate));
+        enc_ctx->time_base = ost->enc_timebase.num > 0 ? ost->enc_timebase :
+                             av_inv_q(ost->frame_rate);
 
         if (!(enc_ctx->time_base.num && enc_ctx->time_base.den))
             enc_ctx->time_base = av_buffersink_get_time_base(ost->filter->filter);
