@@ -286,8 +286,8 @@ static ftype fn(compute_ptp)(ftype *peak, ftype sample, ftype wsample,
 
     peak[back] = sample;
     max = peak[front];
-    min = (back == front) ? -sample : sample;
-    r = FABS(max - min);
+    min = sample;
+    r = FABS(min) + FABS(max - min);
 
     *ffront = front;
     *bback = back;
