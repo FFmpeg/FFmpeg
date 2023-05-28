@@ -861,6 +861,9 @@ static int streamcopy_init(const Muxer *mux, OutputStream *ost)
 
     AVCodecContext      *codec_ctx  = NULL;
     AVDictionary        *codec_opts = NULL;
+
+    AVRational           fr         = ost->frame_rate;
+
     int ret = 0;
 
     codec_ctx = avcodec_alloc_context3(NULL);
@@ -893,11 +896,11 @@ static int streamcopy_init(const Muxer *mux, OutputStream *ost)
 
     par->codec_tag = codec_tag;
 
-    if (!ost->frame_rate.num)
-        ost->frame_rate = ist->framerate;
+    if (!fr.num)
+        fr = ist->framerate;
 
-    if (ost->frame_rate.num)
-        ost->st->avg_frame_rate = ost->frame_rate;
+    if (fr.num)
+        ost->st->avg_frame_rate = fr;
     else
         ost->st->avg_frame_rate = ist->st->avg_frame_rate;
 
@@ -908,8 +911,8 @@ static int streamcopy_init(const Muxer *mux, OutputStream *ost)
 
     // copy timebase while removing common factors
     if (ost->st->time_base.num <= 0 || ost->st->time_base.den <= 0) {
-        if (ost->frame_rate.num)
-            ost->st->time_base = av_inv_q(ost->frame_rate);
+        if (fr.num)
+            ost->st->time_base = av_inv_q(fr);
         else
             ost->st->time_base = av_add_q(av_stream_get_codec_timebase(ost->st), (AVRational){0, 1});
     }
