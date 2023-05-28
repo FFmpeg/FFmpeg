@@ -6474,6 +6474,8 @@ Maximum of absolute values of samples in moving window.
 Median of absolute values of samples in moving window.
 @item ptp
 Absolute of max peak to min peak difference of samples in moving window.
+@item dev
+Standard deviation of values of samples in moving window.
 @end table
 Default value is @code{rms}.
 

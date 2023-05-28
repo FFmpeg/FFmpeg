@@ -307,6 +307,23 @@ static ftype fn(compute_rms)(ftype *cache, ftype sample, ftype wsample,
     return SQRT(r / window_size);
 }
 
+static ftype fn(compute_dev)(ftype *ss, ftype x, ftype px,
+                             int n, int *unused, int *unused2)
+{
+    ftype r;
+
+    ss[0] += x;
+    ss[0] -= px;
+
+    ss[1] += x * x;
+    ss[1] -= px * px;
+    ss[1] = FMAX(ss[1], ZERO);
+
+    r = FMAX(ss[1] - ss[0] * ss[0] / n, ZERO) / n;
+
+    return SQRT(r);
+}
+
 static void fn(filter_start)(AVFilterContext *ctx,
                              const ftype *src, ftype *dst,
                              int *nb_out_samples,
