@@ -888,9 +888,11 @@ static double adjust_frame_pts_to_encoder_tb(OutputFile *of, OutputStream *ost,
     float_pts = av_rescale_q(frame->pts, filter_tb, tb) -
                 av_rescale_q(start_time, AV_TIME_BASE_Q, tb);
     float_pts /= 1 << extra_bits;
-    // avoid exact midoints to reduce the chance of rounding differences, this
+    // when float_pts is not exactly an integer,
+    // avoid exact midpoints to reduce the chance of rounding differences, this
     // can be removed in case the fps code is changed to work with integers
-    float_pts += FFSIGN(float_pts) * 1.0 / (1<<17);
+    if (float_pts != llrint(float_pts))
+        float_pts += FFSIGN(float_pts) * 1.0 / (1<<17);
 
     frame->pts = av_rescale_q(frame->pts, filter_tb, enc->time_base) -
                  av_rescale_q(start_time, AV_TIME_BASE_Q, enc->time_base);
