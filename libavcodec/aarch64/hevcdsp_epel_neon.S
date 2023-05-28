@@ -33,6 +33,349 @@ const epel_filters, align=4
 endconst
 
 #if HAVE_I8MM
+
+.macro EPEL_H_HEADER
+        movrel          x5, epel_filters
+        add             x5, x5, x4, lsl #2
+        ld1r            {v30.4s}, [x5]
+        sub             x1, x1, #1
+        mov             x10, #(MAX_PB_SIZE * 2)
+.endm
+
+function ff_hevc_put_hevc_epel_h4_8_neon_i8mm, export=1
+        EPEL_H_HEADER
+1:      ld1             {v4.8b}, [x1], x2
+        subs            w3, w3, #1   // height
+        ext             v5.8b, v4.8b, v4.8b, #1
+        ext             v6.8b, v4.8b, v4.8b, #2
+        ext             v7.8b, v4.8b, v4.8b, #3
+        trn1            v4.2s, v4.2s, v5.2s
+        trn1            v6.2s, v6.2s, v7.2s
+        trn1            v4.2d, v4.2d, v6.2d
+        movi            v16.2d, #0
+        usdot           v16.4s, v4.16b, v30.16b
+        xtn             v16.4h, v16.4s
+        st1             {v16.4h}, [x0], x10
+        b.ne            1b
+        ret
+endfunc
+
+
+function ff_hevc_put_hevc_epel_h6_8_neon_i8mm, export=1
+        EPEL_H_HEADER
+1:      ld1             {v4.16b},  [x1], x2
+        subs            w3, w3, #1   // height
+        ext             v5.16b, v4.16b, v4.16b, #1
+        ext             v6.8b, v4.8b, v4.8b, #2
+        ext             v7.8b, v4.8b, v4.8b, #3
+        trn1            v16.2s, v4.2s, v5.2s
+        trn2            v17.2s, v4.2s, v5.2s
+        trn1            v6.2s, v6.2s, v7.2s
+        trn1            v16.2d, v16.2d, v6.2d
+        movi            v18.2d, #0
+        movi            v19.2d, #0
+        usdot           v18.4s, v16.16b, v30.16b
+        usdot           v19.2s, v17.8b, v30.8b
+        xtn             v18.4h, v18.4s
+        xtn             v19.4h, v19.4s
+        str             d18, [x0]
+        str             s19, [x0, #8]
+        add             x0, x0, x10
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_h8_8_neon_i8mm, export=1
+        EPEL_H_HEADER
+1:      ld1             {v4.16b}, [x1], x2
+        subs            w3, w3, #1   // height
+        ext             v5.16b, v4.16b, v4.16b, #1
+        ext             v6.16b, v4.16b, v4.16b, #2
+        ext             v7.16b, v4.16b, v4.16b, #3
+        zip1            v20.4s, v4.4s, v6.4s
+        zip1            v21.4s, v5.4s, v7.4s
+        movi            v16.2d, #0
+        movi            v17.2d, #0
+        usdot           v16.4s, v20.16b, v30.16b
+        usdot           v17.4s, v21.16b, v30.16b
+        xtn             v16.4h, v16.4s
+        xtn             v17.4h, v17.4s
+        st2             {v16.4h, v17.4h}, [x0], x10
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_h12_8_neon_i8mm, export=1
+        EPEL_H_HEADER
+1:      ld1             {v4.16b}, [x1], x2
+        subs            w3, w3, #1   // height
+        ext             v5.16b, v4.16b, v4.16b, #1
+        ext             v6.16b, v4.16b, v4.16b, #2
+        ext             v7.16b, v4.16b, v4.16b, #3
+        trn1            v20.2d, v4.2d, v6.2d
+        trn2            v22.2d, v4.2d, v6.2d
+        trn1            v21.2d, v5.2d, v7.2d
+        trn2            v23.2d, v5.2d, v7.2d
+        trn1            v4.4s, v20.4s, v21.4s
+        trn2            v5.4s, v20.4s, v21.4s
+        trn1            v6.4s, v22.4s, v23.4s
+        movi            v16.2d, #0
+        movi            v17.2d, #0
+        movi            v18.2d, #0
+        usdot           v16.4s, v4.16b, v30.16b
+        usdot           v17.4s, v5.16b, v30.16b
+        usdot           v18.4s, v6.16b, v30.16b
+        xtn             v16.4h, v16.4s
+        xtn2            v16.8h, v17.4s
+        xtn             v18.4h, v18.4s
+        str             q16, [x0]
+        str             d18, [x0, #16]
+        add             x0, x0, x10
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_h16_8_neon_i8mm, export=1
+        EPEL_H_HEADER
+1:      ld1             {v0.16b, v1.16b}, [x1], x2
+        subs            w3, w3, #1   // height
+        ext             v5.16b, v0.16b, v1.16b, #1
+        ext             v6.16b, v0.16b, v1.16b, #2
+        ext             v7.16b, v0.16b, v1.16b, #3
+        zip1            v20.4s, v0.4s, v6.4s
+        zip2            v22.4s, v0.4s, v6.4s
+        zip1            v21.4s, v5.4s, v7.4s
+        zip2            v23.4s, v5.4s, v7.4s
+        movi            v16.2d, #0
+        movi            v17.2d, #0
+        movi            v18.2d, #0
+        movi            v19.2d, #0
+        usdot           v16.4s, v20.16b, v30.16b
+        usdot           v17.4s, v21.16b, v30.16b
+        usdot           v18.4s, v22.16b, v30.16b
+        usdot           v19.4s, v23.16b, v30.16b
+        xtn             v16.4h, v16.4s
+        xtn2            v16.8h, v18.4s
+        xtn             v17.4h, v17.4s
+        xtn2            v17.8h, v19.4s
+        st2             {v16.8h, v17.8h}, [x0], x10
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_h24_8_neon_i8mm, export=1
+        EPEL_H_HEADER
+1:      ld1             {v0.16b, v1.16b}, [x1], x2
+        subs            w3, w3, #1   // height
+        ext             v5.16b, v0.16b, v1.16b, #1
+        ext             v6.16b, v0.16b, v1.16b, #2
+        ext             v7.16b, v0.16b, v1.16b, #3
+        ext             v26.16b, v1.16b, v1.16b, #1
+        ext             v27.16b, v1.16b, v1.16b, #2
+        ext             v28.16b, v1.16b, v1.16b, #3
+        movi            v16.2d, #0
+        movi            v17.2d, #0
+        movi            v18.2d, #0
+        movi            v19.2d, #0
+        movi            v20.2d, #0
+        movi            v21.2d, #0
+        movi            v22.2d, #0
+        movi            v23.2d, #0
+        usdot           v16.4s, v0.16b, v30.16b
+        usdot           v17.4s, v5.16b, v30.16b
+        usdot           v18.4s, v6.16b, v30.16b
+        usdot           v19.4s, v7.16b, v30.16b
+        usdot           v20.4s, v1.16b, v30.16b
+        usdot           v21.4s, v26.16b, v30.16b
+        usdot           v22.4s, v27.16b, v30.16b
+        usdot           v23.4s, v28.16b, v30.16b
+        xtn             v16.4h, v16.4s
+        xtn2            v16.8h, v20.4s
+        xtn             v17.4h, v17.4s
+        xtn2            v17.8h, v21.4s
+        xtn             v18.4h, v18.4s
+        xtn2            v18.8h, v22.4s
+        xtn             v19.4h, v19.4s
+        xtn2            v19.8h, v23.4s
+        zip1            v20.8h, v16.8h, v18.8h
+        zip1            v21.8h, v17.8h, v19.8h
+        zip2            v22.8h, v16.8h, v18.8h
+        zip2            v23.8h, v17.8h, v19.8h
+        zip1            v22.8h, v22.8h, v23.8h
+        add             x7, x0, #32
+        st2             {v20.8h, v21.8h}, [x0], x10
+        st1             {v22.8h}, [x7]
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_h32_8_neon_i8mm, export=1
+        EPEL_H_HEADER
+1:      ld1             {v0.16b, v1.16b, v2.16b}, [x1], x2
+        subs            w3, w3, #1   // height
+        ext             v5.16b, v0.16b, v1.16b, #1
+        ext             v6.16b, v0.16b, v1.16b, #2
+        ext             v7.16b, v0.16b, v1.16b, #3
+        ext             v26.16b, v1.16b, v2.16b, #1
+        ext             v27.16b, v1.16b, v2.16b, #2
+        ext             v28.16b, v1.16b, v2.16b, #3
+        movi            v16.2d, #0
+        movi            v17.2d, #0
+        movi            v18.2d, #0
+        movi            v19.2d, #0
+        movi            v20.2d, #0
+        movi            v21.2d, #0
+        movi            v22.2d, #0
+        movi            v23.2d, #0
+        usdot           v16.4s, v0.16b, v30.16b
+        usdot           v17.4s, v5.16b, v30.16b
+        usdot           v18.4s, v6.16b, v30.16b
+        usdot           v19.4s, v7.16b, v30.16b
+        usdot           v20.4s, v1.16b, v30.16b
+        usdot           v21.4s, v26.16b, v30.16b
+        usdot           v22.4s, v27.16b, v30.16b
+        usdot           v23.4s, v28.16b, v30.16b
+        xtn             v16.4h, v16.4s
+        xtn2            v16.8h, v20.4s
+        xtn             v17.4h, v17.4s
+        xtn2            v17.8h, v21.4s
+        xtn             v18.4h, v18.4s
+        xtn2            v18.8h, v22.4s
+        xtn             v19.4h, v19.4s
+        xtn2            v19.8h, v23.4s
+        st4             {v16.8h, v17.8h, v18.8h, v19.8h}, [x0], x10
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_h48_8_neon_i8mm, export=1
+        EPEL_H_HEADER
+1:      ld1             {v0.16b, v1.16b, v2.16b, v3.16b}, [x1], x2
+        subs            w3, w3, #1   // height
+        ext             v4.16b, v0.16b, v1.16b, #1
+        ext             v5.16b, v0.16b, v1.16b, #2
+        ext             v6.16b, v0.16b, v1.16b, #3
+        ext             v16.16b, v1.16b, v2.16b, #1
+        ext             v17.16b, v1.16b, v2.16b, #2
+        ext             v18.16b, v1.16b, v2.16b, #3
+        movi            v20.2d, #0
+        movi            v21.2d, #0
+        movi            v22.2d, #0
+        movi            v23.2d, #0
+        usdot           v20.4s, v0.16b, v30.16b
+        usdot           v21.4s, v4.16b, v30.16b
+        usdot           v22.4s, v5.16b, v30.16b
+        usdot           v23.4s, v6.16b, v30.16b
+        movi            v24.2d, #0
+        movi            v25.2d, #0
+        movi            v26.2d, #0
+        movi            v27.2d, #0
+        usdot           v24.4s, v1.16b, v30.16b
+        usdot           v25.4s, v16.16b, v30.16b
+        usdot           v26.4s, v17.16b, v30.16b
+        usdot           v27.4s, v18.16b, v30.16b
+        xtn             v20.4h, v20.4s
+        xtn2            v20.8h, v24.4s
+        xtn             v21.4h, v21.4s
+        xtn2            v21.8h, v25.4s
+        xtn             v22.4h, v22.4s
+        xtn2            v22.8h, v26.4s
+        xtn             v23.4h, v23.4s
+        xtn2            v23.8h, v27.4s
+        st4             {v20.8h, v21.8h, v22.8h, v23.8h}, [x0], x10
+        ext             v4.16b, v2.16b, v3.16b, #1
+        ext             v5.16b, v2.16b, v3.16b, #2
+        ext             v6.16b, v2.16b, v3.16b, #3
+        movi            v20.2d, #0
+        movi            v21.2d, #0
+        movi            v22.2d, #0
+        movi            v23.2d, #0
+        usdot           v20.4s, v2.16b, v30.16b
+        usdot           v21.4s, v4.16b, v30.16b
+        usdot           v22.4s, v5.16b, v30.16b
+        usdot           v23.4s, v6.16b, v30.16b
+        xtn             v20.4h, v20.4s
+        xtn2            v20.8h, v22.4s
+        xtn             v21.4h, v21.4s
+        xtn2            v21.8h, v23.4s
+        add             x7, x0, #64
+        st2             {v20.8h, v21.8h}, [x7]
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_h64_8_neon_i8mm, export=1
+        EPEL_H_HEADER
+        sub             x2, x2, #64
+1:      ld1             {v0.16b, v1.16b, v2.16b, v3.16b}, [x1], #64
+        subs            w3, w3, #1   // height
+        ext             v4.16b, v0.16b, v1.16b, #1
+        ext             v5.16b, v0.16b, v1.16b, #2
+        ext             v6.16b, v0.16b, v1.16b, #3
+        ext             v16.16b, v1.16b, v2.16b, #1
+        ext             v17.16b, v1.16b, v2.16b, #2
+        ext             v18.16b, v1.16b, v2.16b, #3
+        movi            v20.2d, #0
+        movi            v21.2d, #0
+        movi            v22.2d, #0
+        movi            v23.2d, #0
+        usdot           v20.4s, v0.16b, v30.16b
+        usdot           v21.4s, v4.16b, v30.16b
+        usdot           v22.4s, v5.16b, v30.16b
+        usdot           v23.4s, v6.16b, v30.16b
+        movi            v24.2d, #0
+        movi            v25.2d, #0
+        movi            v26.2d, #0
+        movi            v27.2d, #0
+        usdot           v24.4s, v1.16b, v30.16b
+        usdot           v25.4s, v16.16b, v30.16b
+        usdot           v26.4s, v17.16b, v30.16b
+        usdot           v27.4s, v18.16b, v30.16b
+        xtn             v20.4h, v20.4s
+        xtn2            v20.8h, v24.4s
+        xtn             v21.4h, v21.4s
+        xtn2            v21.8h, v25.4s
+        xtn             v22.4h, v22.4s
+        xtn2            v22.8h, v26.4s
+        xtn             v23.4h, v23.4s
+        xtn2            v23.8h, v27.4s
+        st4             {v20.8h, v21.8h, v22.8h, v23.8h}, [x0], #64
+        ld1             {v7.8b}, [x1], x2
+        ext             v4.16b, v2.16b, v3.16b, #1
+        ext             v5.16b, v2.16b, v3.16b, #2
+        ext             v6.16b, v2.16b, v3.16b, #3
+        ext             v16.16b, v3.16b, v7.16b, #1
+        ext             v17.16b, v3.16b, v7.16b, #2
+        ext             v18.16b, v3.16b, v7.16b, #3
+        movi            v20.2d, #0
+        movi            v21.2d, #0
+        movi            v22.2d, #0
+        movi            v23.2d, #0
+        usdot           v20.4s, v2.16b, v30.16b
+        usdot           v21.4s, v4.16b, v30.16b
+        usdot           v22.4s, v5.16b, v30.16b
+        usdot           v23.4s, v6.16b, v30.16b
+        movi            v24.2d, #0
+        movi            v25.2d, #0
+        movi            v26.2d, #0
+        movi            v27.2d, #0
+        usdot           v24.4s, v3.16b, v30.16b
+        usdot           v25.4s, v16.16b, v30.16b
+        usdot           v26.4s, v17.16b, v30.16b
+        usdot           v27.4s, v18.16b, v30.16b
+        xtn             v20.4h, v20.4s
+        xtn2            v20.8h, v24.4s
+        xtn             v21.4h, v21.4s
+        xtn2            v21.8h, v25.4s
+        xtn             v22.4h, v22.4s
+        xtn2            v22.8h, v26.4s
+        xtn             v23.4h, v23.4s
+        xtn2            v23.8h, v27.4s
+        st4             {v20.8h, v21.8h, v22.8h, v23.8h}, [x0], #64
+        b.ne            1b
+        ret
+endfunc
+
 .macro EPEL_UNI_W_H_HEADER
         ldr             x12, [sp]
         sub             x2, x2, #1
