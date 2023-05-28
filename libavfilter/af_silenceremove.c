@@ -41,6 +41,12 @@ enum SilenceDetect {
     D_NB
 };
 
+enum TimestampMode {
+    TS_WRITE,
+    TS_COPY,
+    TS_NB
+};
+
 enum ThresholdMode {
     T_ANY,
     T_ALL,
@@ -66,6 +72,8 @@ typedef struct SilenceRemoveContext {
     int64_t stop_silence_opt;
 
     int64_t window_duration_opt;
+
+    int timestamp_mode;
 
     int start_found_periods;
     int stop_found_periods;
@@ -138,6 +146,9 @@ static const AVOption silenceremove_options[] = {
     {   "median",        "use median of absolute values of samples",           0,                           AV_OPT_TYPE_CONST,    {.i64=D_MEDIAN},0,       0, AF, "detection" },
     {   "ptp",           "use absolute of max peak to min peak difference",    0,                           AV_OPT_TYPE_CONST,    {.i64=D_PTP}, 0,         0, AF, "detection" },
     { "window",          "set duration of window for silence detection",       OFFSET(window_duration_opt), AV_OPT_TYPE_DURATION, {.i64=20000}, 0, 100000000, AF },
+    { "timestamp",       "set how every output frame timestamp is processed",  OFFSET(timestamp_mode),      AV_OPT_TYPE_INT,      {.i64=TS_WRITE}, 0, TS_NB-1, AF, "timestamp" },
+    {   "write",         "full timestamps rewrite, keep only the start time",  0,                           AV_OPT_TYPE_CONST,    {.i64=TS_WRITE}, 0,       0, AF, "timestamp" },
+    {   "copy",          "non-dropped frames are left with same timestamp",    0,                           AV_OPT_TYPE_CONST,    {.i64=TS_COPY},  0,       0, AF, "timestamp" },
     { NULL }
 };
 
@@ -293,7 +304,10 @@ static int filter_frame(AVFilterLink *outlink, AVFrame *in)
         return AVERROR(ENOMEM);
     }
 
-    out->pts = s->next_pts;
+    if (s->timestamp_mode == TS_WRITE)
+        out->pts = s->next_pts;
+    else
+        out->pts = in->pts;
 
     switch (outlink->format) {
     case AV_SAMPLE_FMT_FLT:
@@ -395,7 +409,8 @@ static int activate(AVFilterContext *ctx)
     if (ret > 0) {
         if (s->start_periods == 1 && s->stop_periods == 0 &&
             s->start_found_periods < 0) {
-            in->pts = s->next_pts;
+            if (s->timestamp_mode == TS_WRITE)
+                in->pts = s->next_pts;
             s->next_pts += in->nb_samples;
             return ff_filter_frame(outlink, in);
         }

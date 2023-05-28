@@ -6485,6 +6485,16 @@ In that case it may be needed to also set @option{start_silence} and/or
 @option{stop_silence} to nonzero values with also @option{start_duration} and/or
 @option{stop_duration} to nonzero values.
 Default value is @code{0.02}. Allowed range is from @code{0} to @code{10}.
+
+@item timestamp
+Set processing mode of every audio frame output timestamp.
+@table @option
+@item write
+Full timestamps rewrite, keep only the start time for the first output frame.
+@item copy
+Non-dropped frames are left with same timestamp as input audio frame.
+@end table
+Defaults value is @code{write}.
 @end table
 
 @subsection Examples
