@@ -1079,7 +1079,7 @@ int ff_vk_get_pooled_buffer(FFVulkanContext *ctx, AVBufferPool **buf_pool,
     ff_vk_free_buf(ctx, data);
     memset(data, 0, sizeof(*data));
 
-    av_log(ctx, AV_LOG_DEBUG, "Allocating buffer of %lu bytes for pool %p\n",
+    av_log(ctx, AV_LOG_DEBUG, "Allocating buffer of %"SIZE_SPECIFIER" bytes for pool %p\n",
            size, *buf_pool);
 
     err = ff_vk_create_buf(ctx, data, size,
