@@ -544,23 +544,15 @@ fail:
     return err;
 }
 
-#if PL_API_VER >= 201
-# if PL_API_VER >= 278
+#if PL_API_VER >= 278
 static void lock_queue(void *priv, uint32_t qf, uint32_t qidx)
-# else
-static void lock_queue(void *priv, int qf, int qidx)
-# endif
 {
     AVHWDeviceContext *avhwctx = priv;
     const AVVulkanDeviceContext *hwctx = avhwctx->hwctx;
     hwctx->lock_queue(avhwctx, qf, qidx);
 }
 
-# if PL_API_VER >= 278
 static void unlock_queue(void *priv, uint32_t qf, uint32_t qidx)
-# else
-static void unlock_queue(void *priv, int qf, int qidx)
-# endif
 {
     AVHWDeviceContext *avhwctx = priv;
     const AVVulkanDeviceContext *hwctx = avhwctx->hwctx;
@@ -576,6 +568,7 @@ static int init_vulkan(AVFilterContext *avctx, const AVVulkanDeviceContext *hwct
     size_t buf_len;
 
     if (hwctx) {
+#if PL_API_VER >= 278
         /* Import libavfilter vulkan context into libplacebo */
         s->vulkan = pl_vulkan_import(s->log, pl_vulkan_import_params(
             .instance       = hwctx->inst,
@@ -585,11 +578,9 @@ static int init_vulkan(AVFilterContext *avctx, const AVVulkanDeviceContext *hwct
             .extensions     = hwctx->enabled_dev_extensions,
             .num_extensions = hwctx->nb_enabled_dev_extensions,
             .features       = &hwctx->device_features,
-#if PL_API_VER >= 201
             .lock_queue     = lock_queue,
             .unlock_queue   = unlock_queue,
             .queue_ctx      = avctx->hw_device_ctx->data,
-#endif
             .queue_graphics = {
                 .index = hwctx->queue_family_index,
                 .count = hwctx->nb_graphics_queues,
@@ -605,6 +596,13 @@ static int init_vulkan(AVFilterContext *avctx, const AVVulkanDeviceContext *hwct
             /* This is the highest version created by hwcontext_vulkan.c */
             .max_api_version = VK_API_VERSION_1_3,
         ));
+#else
+        av_log(s, AV_LOG_ERROR, "libplacebo version %s too old to import "
+               "Vulkan device, remove it or upgrade libplacebo to >= 5.278\n",
+               PL_VERSION);
+        err = AVERROR_EXTERNAL;
+        goto fail;
+#endif
     } else {
         s->vulkan = pl_vulkan_create(s->log, pl_vulkan_params(
             .queue_count = 0, /* enable all queues for parallelization */
