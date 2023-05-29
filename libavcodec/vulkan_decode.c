@@ -342,7 +342,7 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
 
         if (ret == VK_SUCCESS)
             av_log(avctx, prev_sub_res < 0 ? AV_LOG_ERROR : AV_LOG_DEBUG,
-                   "Result of previous frame decoding: %li\n", prev_sub_res);
+                   "Result of previous frame decoding: %"PRId64"\n", prev_sub_res);
     }
 
     sd_buf = (FFVkVideoBuffer *)vp->slices_buf->data;
