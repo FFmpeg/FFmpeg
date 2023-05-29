@@ -702,7 +702,6 @@ static VkResult vulkan_setup_profile(AVCodecContext *avctx,
 }
 
 static int vulkan_decode_get_profile(AVCodecContext *avctx, AVBufferRef *frames_ref,
-                                     int *width_align, int *height_align,
                                      enum AVPixelFormat *pix_fmt, VkFormat *vk_fmt,
                                      int *dpb_dedicate)
 {
@@ -841,10 +840,10 @@ static int vulkan_decode_get_profile(AVCodecContext *avctx, AVBufferRef *frames_
                " separate_references" : "");
 
     /* Check if decoding is possible with the given parameters */
-    if (avctx->coded_width  < caps->minCodedExtent.width   ||
-        avctx->coded_height < caps->minCodedExtent.height  ||
-        avctx->coded_width  > caps->maxCodedExtent.width   ||
-        avctx->coded_height > caps->maxCodedExtent.height)
+    if (avctx->width  < caps->minCodedExtent.width   ||
+        avctx->height < caps->minCodedExtent.height  ||
+        avctx->width  > caps->maxCodedExtent.width   ||
+        avctx->height > caps->maxCodedExtent.height)
         return AVERROR(EINVAL);
 
     if (!(avctx->hwaccel_flags & AV_HWACCEL_FLAG_IGNORE_LEVEL) &&
@@ -956,8 +955,6 @@ static int vulkan_decode_get_profile(AVCodecContext *avctx, AVBufferRef *frames_
     *pix_fmt = best_format;
     *vk_fmt = best_vkfmt;
 
-    *width_align = caps->pictureAccessGranularity.width;
-    *height_align = caps->pictureAccessGranularity.height;
     *dpb_dedicate = dec->dedicated_dpb;
 
     return 0;
@@ -966,7 +963,7 @@ static int vulkan_decode_get_profile(AVCodecContext *avctx, AVBufferRef *frames_
 int ff_vk_frame_params(AVCodecContext *avctx, AVBufferRef *hw_frames_ctx)
 {
     VkFormat vkfmt;
-    int err, width_align, height_align, dedicated_dpb;
+    int err, dedicated_dpb;
     AVHWFramesContext *frames_ctx = (AVHWFramesContext*)hw_frames_ctx->data;
     AVVulkanFramesContext *hwfc = frames_ctx->hwctx;
     FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
@@ -983,14 +980,13 @@ int ff_vk_frame_params(AVCodecContext *avctx, AVBufferRef *hw_frames_ctx)
     prof = &ctx->profile_data;
 
     err = vulkan_decode_get_profile(avctx, hw_frames_ctx,
-                                    &width_align, &height_align,
                                     &frames_ctx->sw_format, &vkfmt,
                                     &dedicated_dpb);
     if (err < 0)
         return err;
 
-    frames_ctx->width  = FFALIGN(avctx->coded_width, width_align);
-    frames_ctx->height = FFALIGN(avctx->coded_height, height_align);
+    frames_ctx->width  = avctx->width;
+    frames_ctx->height = avctx->height;
     frames_ctx->format = AV_PIX_FMT_VULKAN;
 
     hwfc->format[0]    = vkfmt;
