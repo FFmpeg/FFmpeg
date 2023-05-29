@@ -856,7 +856,7 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
     HEVCWindow *ow;
     int ret = 0;
     int bit_depth_chroma, start, num_comps;
-    int i, j;
+    int i;
 
     // Coded parameters
 
