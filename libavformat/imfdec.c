@@ -649,7 +649,7 @@ static int imf_read_header(AVFormatContext *s)
 
     av_log(s, AV_LOG_DEBUG, "start parsing IMF CPL: %s\n", s->url);
 
-    if ((ret = ff_imf_parse_cpl(s->pb, &c->cpl)) < 0)
+    if ((ret = ff_imf_parse_cpl(s, s->pb, &c->cpl)) < 0)
         return ret;
 
     tcr = av_dict_get(s->metadata, "timecode", NULL, 0);
