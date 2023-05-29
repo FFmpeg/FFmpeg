@@ -516,7 +516,7 @@ static int activate(AVFilterContext *ctx)
         return 0;
     }
 
-    if (s->pts < s->next_pts && ff_outlink_frame_wanted(outlink))
+    if (s->eof || (s->pts < s->next_pts && ff_outlink_frame_wanted(outlink)))
         return create_frame(ctx, s->pts);
 
     if (!s->eof && ff_inlink_acknowledge_status(inlink, &status, &pts)) {
