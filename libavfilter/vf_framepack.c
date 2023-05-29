@@ -142,7 +142,7 @@ static int config_output(AVFilterLink *outlink)
         height *= 2;
         break;
     default:
-        av_log(ctx, AV_LOG_ERROR, "Unknown packing mode.");
+        av_log(ctx, AV_LOG_ERROR, "Unknown packing mode.\n");
         return AVERROR_INVALIDDATA;
     }
 
@@ -405,14 +405,12 @@ static int activate(AVFilterContext *ctx)
     FF_FILTER_FORWARD_STATUS(ctx->inputs[1], outlink);
 
     if (ff_outlink_frame_wanted(ctx->outputs[0]) &&
-        !ff_outlink_get_status(ctx->inputs[0]) &&
         !s->input_views[0]) {
         ff_inlink_request_frame(ctx->inputs[0]);
         return 0;
     }
 
     if (ff_outlink_frame_wanted(ctx->outputs[0]) &&
-        !ff_outlink_get_status(ctx->inputs[1]) &&
         !s->input_views[1]) {
         ff_inlink_request_frame(ctx->inputs[1]);
         return 0;
