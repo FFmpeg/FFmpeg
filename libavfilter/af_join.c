@@ -52,6 +52,7 @@ typedef struct JoinContext {
     AVChannelLayout ch_layout;
 
     int64_t  eof_pts;
+    int eof;
 
     ChannelMap *channels;
 
@@ -556,10 +557,11 @@ fail:
     return ret;
 eof:
     for (i = 0; i < ctx->nb_inputs; i++) {
-        if (ff_outlink_get_status(ctx->inputs[i]) &&
+        if (s->eof &&
             ff_inlink_queued_samples(ctx->inputs[i]) <= 0 &&
             !s->input_frames[i]) {
             ff_outlink_set_status(outlink, AVERROR_EOF, s->eof_pts);
+            break;
         }
     }
 
@@ -580,11 +582,10 @@ static int activate(AVFilterContext *ctx)
         if (ret < 0) {
             return ret;
         } else if (ret == 0 && ff_inlink_acknowledge_status(ctx->inputs[0], &status, &pts)) {
-            ff_outlink_set_status(ctx->outputs[0], status, s->eof_pts);
-            return 0;
+            s->eof |= status == AVERROR_EOF;
         }
 
-        if (!s->input_frames[0] && ff_outlink_frame_wanted(ctx->outputs[0])) {
+        if (!s->eof && !s->input_frames[0] && ff_outlink_frame_wanted(ctx->outputs[0])) {
             ff_inlink_request_frame(ctx->inputs[0]);
             return 0;
         }
@@ -600,11 +601,10 @@ static int activate(AVFilterContext *ctx)
         if (ret < 0) {
             return ret;
         } else if (ff_inlink_acknowledge_status(ctx->inputs[i], &status, &pts)) {
-            ff_outlink_set_status(ctx->outputs[0], status, pts);
-            return 0;
+            s->eof |= status == AVERROR_EOF;
         }
 
-        if (!s->input_frames[i]) {
+        if (!s->eof && !s->input_frames[i]) {
             ff_inlink_request_frame(ctx->inputs[i]);
             return 0;
         }
