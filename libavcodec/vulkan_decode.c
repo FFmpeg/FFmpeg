@@ -671,7 +671,7 @@ static VkResult vulkan_setup_profile(AVCodecContext *avctx,
         h265_profile->sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_PROFILE_INFO_KHR;
         h265_profile->stdProfileIdc = cur_profile;
     } else if (avctx->codec_id == AV_CODEC_ID_AV1) {
-        dec_caps->pNext = &av1_caps;
+        dec_caps->pNext = av1_caps;
         usage->pNext = av1_profile;
         av1_profile->sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_PROFILE_INFO_MESA;
         av1_profile->stdProfileIdc = cur_profile;
