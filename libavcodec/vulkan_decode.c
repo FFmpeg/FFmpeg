@@ -581,8 +581,9 @@ static void free_common(void *opaque, uint8_t *data)
 
     ff_vk_video_common_uninit(s, &ctx->common);
 
-    vk->DestroySamplerYcbcrConversion(s->hwctx->act_dev, ctx->yuv_sampler,
-                                      s->hwctx->alloc);
+    if (ctx->yuv_sampler)
+        vk->DestroySamplerYcbcrConversion(s->hwctx->act_dev, ctx->yuv_sampler,
+                                          s->hwctx->alloc);
 
     ff_vk_uninit(s);
 }
