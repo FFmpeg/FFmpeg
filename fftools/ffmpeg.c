@@ -814,7 +814,6 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
     int64_t dts_est = AV_NOPTS_VALUE;
     int ret = 0;
     int eof_reached = 0;
-    int duration_exceeded;
 
     if (ist->decoding_needed) {
         ret = dec_packet(ist, pkt, no_eof);
@@ -829,7 +828,6 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
         dts_est = pd->dts_est;
     }
 
-    duration_exceeded = 0;
     if (f->recording_time != INT64_MAX) {
         int64_t start_time = 0;
         if (copy_ts) {
@@ -837,18 +835,13 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
             start_time += start_at_zero ? 0 : f->start_time_effective;
         }
         if (dts_est >= f->recording_time + start_time)
-            duration_exceeded = 1;
+            pkt = NULL;
     }
 
     for (int oidx = 0; oidx < ist->nb_outputs; oidx++) {
         OutputStream *ost = ist->outputs[oidx];
         if (ost->enc || (!pkt && no_eof))
             continue;
-
-        if (duration_exceeded) {
-            close_output_stream(ost);
-            continue;
-        }
 
         ret = of_streamcopy(ost, pkt, dts_est);
         if (ret < 0)
