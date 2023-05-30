@@ -1124,7 +1124,7 @@ static int process_input(int file_index)
             for (int oidx = 0; oidx < ist->nb_outputs; oidx++) {
                 OutputStream *ost = ist->outputs[oidx];
                 OutputFile    *of = output_files[ost->file_index];
-                close_output_stream(ost);
+
                 ret = of_output_packet(of, ost, NULL);
                 if (ret < 0)
                     return ret;
