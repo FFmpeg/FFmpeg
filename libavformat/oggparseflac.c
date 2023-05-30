@@ -20,7 +20,7 @@
 
 #include <stdlib.h>
 #include "libavcodec/avcodec.h"
-#include "libavcodec/get_bits.h"
+#include "libavcodec/bytestream.h"
 #include "libavcodec/flac.h"
 #include "avformat.h"
 #include "internal.h"
@@ -34,31 +34,28 @@ flac_header (AVFormatContext * s, int idx)
     struct ogg *ogg = s->priv_data;
     struct ogg_stream *os = ogg->streams + idx;
     AVStream *st = s->streams[idx];
-    GetBitContext gb;
+    GetByteContext gb;
     int mdt, ret;
 
     if (os->buf[os->pstart] == 0xff)
         return 0;
 
-    ret = init_get_bits8(&gb, os->buf + os->pstart, os->psize);
-    if (ret < 0)
-        return ret;
-
-    skip_bits1(&gb); /* metadata_last */
-    mdt = get_bits(&gb, 7);
+    bytestream2_init(&gb, os->buf + os->pstart, os->psize);
+    mdt = bytestream2_get_byte(&gb) & 0x7F;
 
     if (mdt == OGG_FLAC_METADATA_TYPE_STREAMINFO) {
-        uint8_t *streaminfo_start = os->buf + os->pstart + 5 + 4 + 4 + 4;
         uint32_t samplerate;
 
-        skip_bits_long(&gb, 4*8); /* "FLAC" */
-        if(get_bits(&gb, 8) != 1) /* unsupported major version */
+        if (bytestream2_get_bytes_left(&gb) < 4 + 4 + 4 + 4 + FLAC_STREAMINFO_SIZE)
+            return AVERROR_INVALIDDATA;
+        bytestream2_skipu(&gb, 4); /* "FLAC" */
+        if (bytestream2_get_byteu(&gb) != 1) /* unsupported major version */
             return -1;
-        skip_bits(&gb, 8 + 16);   /* minor version + header count */
-        skip_bits_long(&gb, 4*8); /* "fLaC" */
+        bytestream2_skipu(&gb, 1 + 2); /* minor version + header count */
+        bytestream2_skipu(&gb, 4); /* "fLaC" */
 
         /* METADATA_BLOCK_HEADER */
-        if (get_bits_long(&gb, 32) != FLAC_STREAMINFO_SIZE)
+        if (bytestream2_get_be32u(&gb) != FLAC_STREAMINFO_SIZE)
             return -1;
 
         st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
@@ -67,7 +64,7 @@ flac_header (AVFormatContext * s, int idx)
 
         if ((ret = ff_alloc_extradata(st->codecpar, FLAC_STREAMINFO_SIZE)) < 0)
             return ret;
-        memcpy(st->codecpar->extradata, streaminfo_start, st->codecpar->extradata_size);
+        bytestream2_get_bufferu(&gb, st->codecpar->extradata, FLAC_STREAMINFO_SIZE);
 
         samplerate = AV_RB24(st->codecpar->extradata + 10) >> 4;
         if (!samplerate)
