@@ -28,6 +28,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "avfilter.h"
@@ -241,28 +242,26 @@ static void draw_sample_point_rgba_full(uint8_t *buf, int height, int linesize,
                                    int16_t *prev_y,
                                    const uint8_t color[4], int h)
 {
-    if (h >= 0 && h < height) {
-        buf[h * linesize + 0] = color[0];
-        buf[h * linesize + 1] = color[1];
-        buf[h * linesize + 2] = color[2];
-        buf[h * linesize + 3] = color[3];
-    }
+    uint32_t clr = AV_RN32(color);
+    if (h >= 0 && h < height)
+        AV_WN32(buf + h * linesize, clr);
 }
 
 static void draw_sample_line_rgba_scale(uint8_t *buf, int height, int linesize,
                                         int16_t *prev_y,
                                         const uint8_t color[4], int h)
 {
-    int k;
     int start   = height/2;
     int end     = av_clip(h, 0, height-1);
+    uint8_t *bufk;
     if (start > end)
         FFSWAP(int16_t, start, end);
-    for (k = start; k < end; k++) {
-        buf[k * linesize + 0] += color[0];
-        buf[k * linesize + 1] += color[1];
-        buf[k * linesize + 2] += color[2];
-        buf[k * linesize + 3] += color[3];
+    bufk = buf + start * linesize;
+    for (int k = start; k < end; k++, bufk += linesize) {
+        bufk[0] += color[0];
+        bufk[1] += color[1];
+        bufk[2] += color[2];
+        bufk[3] += color[3];
     }
 }
 
@@ -270,24 +269,21 @@ static void draw_sample_line_rgba_full(uint8_t *buf, int height, int linesize,
                                        int16_t *prev_y,
                                        const uint8_t color[4], int h)
 {
-    int k;
     int start   = height/2;
     int end     = av_clip(h, 0, height-1);
+    uint32_t clr = AV_RN32(color);
+    uint8_t *bufk;
     if (start > end)
         FFSWAP(int16_t, start, end);
-    for (k = start; k < end; k++) {
-        buf[k * linesize + 0] = color[0];
-        buf[k * linesize + 1] = color[1];
-        buf[k * linesize + 2] = color[2];
-        buf[k * linesize + 3] = color[3];
-    }
+    bufk = buf + start * linesize;
+    for (int k = start; k < end; k++, bufk += linesize)
+        AV_WN32(bufk, clr);
 }
 
 static void draw_sample_p2p_rgba_scale(uint8_t *buf, int height, int linesize,
                                        int16_t *prev_y,
                                        const uint8_t color[4], int h)
 {
-    int k;
     if (h >= 0 && h < height) {
         buf[h * linesize + 0] += color[0];
         buf[h * linesize + 1] += color[1];
@@ -295,14 +291,16 @@ static void draw_sample_p2p_rgba_scale(uint8_t *buf, int height, int linesize,
         buf[h * linesize + 3] += color[3];
         if (*prev_y && h != *prev_y) {
             int start = *prev_y;
+            uint8_t *bufk;
             int end = av_clip(h, 0, height-1);
             if (start > end)
                 FFSWAP(int16_t, start, end);
-            for (k = start + 1; k < end; k++) {
-                buf[k * linesize + 0] += color[0];
-                buf[k * linesize + 1] += color[1];
-                buf[k * linesize + 2] += color[2];
-                buf[k * linesize + 3] += color[3];
+            bufk = buf + (start + 1) * linesize;
+            for (int k = start + 1; k < end; k++, bufk += linesize) {
+                bufk[0] += color[0];
+                bufk[1] += color[1];
+                bufk[2] += color[2];
+                bufk[3] += color[3];
             }
         }
     }
@@ -313,23 +311,18 @@ static void draw_sample_p2p_rgba_full(uint8_t *buf, int height, int linesize,
                                       int16_t *prev_y,
                                       const uint8_t color[4], int h)
 {
-    int k;
+    uint32_t clr = AV_RN32(color);
     if (h >= 0 && h < height) {
-        buf[h * linesize + 0] = color[0];
-        buf[h * linesize + 1] = color[1];
-        buf[h * linesize + 2] = color[2];
-        buf[h * linesize + 3] = color[3];
+        AV_WN32(buf + h * linesize, clr);
         if (*prev_y && h != *prev_y) {
             int start = *prev_y;
+            uint8_t *bufk;
             int end = av_clip(h, 0, height-1);
             if (start > end)
                 FFSWAP(int16_t, start, end);
-            for (k = start + 1; k < end; k++) {
-                buf[k * linesize + 0] = color[0];
-                buf[k * linesize + 1] = color[1];
-                buf[k * linesize + 2] = color[2];
-                buf[k * linesize + 3] = color[3];
-            }
+            bufk = buf + (start + 1) * linesize;
+            for (int k = start + 1; k < end; k++, bufk += linesize)
+                AV_WN32(bufk, clr);
         }
     }
     *prev_y = h;
@@ -339,29 +332,27 @@ static void draw_sample_cline_rgba_scale(uint8_t *buf, int height, int linesize,
                                          int16_t *prev_y,
                                          const uint8_t color[4], int h)
 {
-    int k;
     const int start = (height - h) / 2;
     const int end   = start + h;
-    for (k = start; k < end; k++) {
-        buf[k * linesize + 0] += color[0];
-        buf[k * linesize + 1] += color[1];
-        buf[k * linesize + 2] += color[2];
-        buf[k * linesize + 3] += color[3];
+    uint8_t *bufk = buf + start * linesize;
+    for (int k = start; k < end; k++, bufk += linesize) {
+        bufk[0] += color[0];
+        bufk[1] += color[1];
+        bufk[2] += color[2];
+        bufk[3] += color[3];
     }
 }
- static void draw_sample_cline_rgba_full(uint8_t *buf, int height, int linesize,
+
+static void draw_sample_cline_rgba_full(uint8_t *buf, int height, int linesize,
                                          int16_t *prev_y,
                                          const uint8_t color[4], int h)
 {
-    int k;
+    uint32_t clr = AV_RN32(color);
     const int start = (height - h) / 2;
     const int end   = start + h;
-    for (k = start; k < end; k++) {
-        buf[k * linesize + 0] = color[0];
-        buf[k * linesize + 1] = color[1];
-        buf[k * linesize + 2] = color[2];
-        buf[k * linesize + 3] = color[3];
-    }
+    uint8_t *bufk = buf + start * linesize;
+    for (int k = start; k < end; k++, bufk += linesize)
+        AV_WN32(bufk, clr);
 }
 
 static void draw_sample_point_gray(uint8_t *buf, int height, int linesize,
