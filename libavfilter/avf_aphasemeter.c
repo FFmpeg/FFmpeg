@@ -38,7 +38,8 @@
 
 typedef struct AudioPhaseMeterContext {
     const AVClass *class;
-    AVFrame *out;
+    AVFrame *out, *in;
+    int64_t last_pts;
     int do_video;
     int do_phasing_detection;
     int w, h;
@@ -51,6 +52,7 @@ typedef struct AudioPhaseMeterContext {
     int is_out_phase;
     int start_mono_presence;
     int start_out_phase_presence;
+    int nb_samples;
     float tolerance;
     float angle;
     float phase;
@@ -127,14 +129,10 @@ static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     AudioPhaseMeterContext *s = ctx->priv;
-    int nb_samples;
     s->duration = av_rescale(s->duration, inlink->sample_rate, AV_TIME_BASE);
 
-    if (s->do_video) {
-        nb_samples = FFMAX(1, av_rescale(inlink->sample_rate, s->frame_rate.den, s->frame_rate.num));
-        inlink->min_samples =
-        inlink->max_samples = nb_samples;
-    }
+    if (s->do_video)
+        s->nb_samples = FFMAX(1, av_rescale(inlink->sample_rate, s->frame_rate.den, s->frame_rate.num));
 
     return 0;
 }
@@ -144,10 +142,13 @@ static int config_video_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     AudioPhaseMeterContext *s = ctx->priv;
 
+    s->last_pts = AV_NOPTS_VALUE;
+
     outlink->w = s->w;
     outlink->h = s->h;
     outlink->sample_aspect_ratio = (AVRational){1,1};
     outlink->frame_rate = s->frame_rate;
+    outlink->time_base = av_inv_q(outlink->frame_rate);
 
     if (!strcmp(s->mpc_str, "none"))
         s->draw_median_phase = 0;
@@ -252,14 +253,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     int out_phase_measurement;
     float tolerance = 1.0f - s->tolerance;
     float angle = cosf(s->angle/180.0f*M_PIf);
+    int64_t new_pts;
 
     if (s->do_video && (!s->out || s->out->width  != outlink->w ||
                                    s->out->height != outlink->h)) {
         av_frame_free(&s->out);
         s->out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
         if (!s->out) {
-            av_frame_free(&in);
-            return AVERROR(ENOMEM);
+            ret = AVERROR(ENOMEM);
+            goto fail;
         }
 
         out = s->out;
@@ -267,10 +269,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             memset(out->data[0] + i * out->linesize[0], 0, outlink->w * 4);
     } else if (s->do_video) {
         ret = ff_inlink_make_frame_writable(outlink, &s->out);
-        if (ret < 0) {
-            av_frame_free(&in);
-            return ret;
-        }
+        if (ret < 0)
+            goto fail;
         out = s->out;
         for (i = outlink->h - 1; i >= 10; i--)
             memmove(out->data[0] + (i  ) * out->linesize[0],
@@ -328,18 +328,59 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         update_out_phase_detection(s, in, out_phase_measurement);
     }
 
-    if (s->do_video) {
+    if (s->do_video)
+        new_pts = av_rescale_q(in->pts, inlink->time_base, outlink->time_base);
+    if (s->do_video && new_pts != s->last_pts) {
         AVFrame *clone;
 
-        s->out->pts = in->pts;
-        s->out->duration = av_rescale_q(1, av_inv_q(outlink->frame_rate), outlink->time_base);
+        s->out->pts = s->last_pts = new_pts;
+        s->out->duration = 1;
 
         clone = av_frame_clone(s->out);
-        if (!clone)
-            return AVERROR(ENOMEM);
-        ff_filter_frame(outlink, clone);
+        if (!clone) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+        ret = ff_filter_frame(outlink, clone);
+        if (ret < 0)
+            goto fail;
     }
+    s->in = NULL;
     return ff_filter_frame(aoutlink, in);
+fail:
+    av_frame_free(&in);
+    s->in = NULL;
+    return ret;
+}
+
+static int activate(AVFilterContext *ctx)
+{
+    AVFilterLink *inlink = ctx->inputs[0];
+    AVFilterLink *outlink = ctx->outputs[0];
+    AudioPhaseMeterContext *s = ctx->priv;
+    int ret;
+
+    FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
+    if (s->do_video)
+        FF_FILTER_FORWARD_STATUS_BACK(ctx->outputs[1], inlink);
+
+    if (!s->in) {
+        if (s->nb_samples > 0)
+            ret = ff_inlink_consume_samples(inlink, s->nb_samples, s->nb_samples, &s->in);
+        else
+            ret = ff_inlink_consume_frame(inlink, &s->in);
+        if (ret < 0)
+            return ret;
+        if (ret > 0)
+            return filter_frame(inlink, s->in);
+    }
+
+    FF_FILTER_FORWARD_STATUS_ALL(inlink, ctx);
+    FF_FILTER_FORWARD_WANTED(outlink, inlink);
+    if (s->do_video)
+        FF_FILTER_FORWARD_WANTED(ctx->outputs[1], inlink);
+
+    return FFERROR_NOT_READY;
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -386,7 +427,6 @@ static const AVFilterPad inputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_AUDIO,
         .config_props = config_input,
-        .filter_frame = filter_frame,
     },
 };
 
@@ -397,6 +437,7 @@ const AVFilter ff_avf_aphasemeter = {
     .uninit        = uninit,
     .priv_size     = sizeof(AudioPhaseMeterContext),
     FILTER_INPUTS(inputs),
+    .activate      = activate,
     .outputs       = NULL,
     FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &aphasemeter_class,
