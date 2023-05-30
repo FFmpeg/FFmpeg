@@ -161,7 +161,7 @@ static int config_video_output(AVFilterLink *outlink)
 
 static inline int get_x(float phase, int w)
 {
-  return (phase + 1.) / 2. * (w - 1);
+  return (phase + 1.f) / 2.f * (w - 1.f);
 }
 
 static inline void add_metadata(AVFrame *insamples, const char *key, char *value)
@@ -251,7 +251,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     int mono_measurement;
     int out_phase_measurement;
     float tolerance = 1.0f - s->tolerance;
-    float angle = cosf(s->angle/180.0f*M_PI);
+    float angle = cosf(s->angle/180.0f*M_PIf);
 
     if (s->do_video && (!s->out || s->out->width  != outlink->w ||
                                    s->out->height != outlink->h)) {
