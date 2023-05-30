@@ -445,7 +445,7 @@ skip:
     return 0;
 }
 
-static int check_ir(AVFilterLink *link)
+static int check_ir(AVFilterLink *link, int selir)
 {
     AVFilterContext *ctx = link->dst;
     AudioFIRContext *s = ctx->priv;
@@ -457,6 +457,9 @@ static int check_ir(AVFilterLink *link)
         av_log(ctx, AV_LOG_ERROR, "Too big number of coefficients: %d > %d.\n", nb_taps, max_nb_taps);
         return AVERROR(EINVAL);
     }
+
+    if (ff_inlink_check_available_samples(link, nb_taps + 1) == 1)
+        s->eof_coeffs[selir] = 1;
 
     return 0;
 }
@@ -480,12 +483,9 @@ static int activate(AVFilterContext *ctx)
             continue;
 
         if (!s->eof_coeffs[selir]) {
-            ret = check_ir(ctx->inputs[1 + selir]);
+            ret = check_ir(ctx->inputs[1 + selir], selir);
             if (ret < 0)
                 return ret;
-
-            if (ff_outlink_get_status(ctx->inputs[1 + selir]) == AVERROR_EOF)
-                s->eof_coeffs[selir] = 1;
 
             if (!s->eof_coeffs[selir]) {
                 if (ff_outlink_frame_wanted(ctx->outputs[0]))
@@ -543,15 +543,13 @@ static int activate(AVFilterContext *ctx)
         }
     }
 
-    if (ff_outlink_frame_wanted(ctx->outputs[0]) &&
-        !ff_outlink_get_status(ctx->inputs[0])) {
+    if (ff_outlink_frame_wanted(ctx->outputs[0])) {
         ff_inlink_request_frame(ctx->inputs[0]);
         return 0;
     }
 
     if (s->response &&
-        ff_outlink_frame_wanted(ctx->outputs[1]) &&
-        !ff_outlink_get_status(ctx->inputs[0])) {
+        ff_outlink_frame_wanted(ctx->outputs[1])) {
         ff_inlink_request_frame(ctx->inputs[0]);
         return 0;
     }
