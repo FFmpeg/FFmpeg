@@ -148,25 +148,29 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
+#define BITCOUNTER(type, depth, one)                                        \
+        memset(counter, 0, sizeof(s->counter));                             \
+        for (int i = 0; i < nb_samples; i++) {                              \
+            const type x = in[i];                                           \
+            for (int j = 0; j < depth && x; j++)                            \
+                counter[j] += !!(x & (one << j));                           \
+        }
+
 #define BARS(type, depth, one)                                              \
     for (int ch = 0; ch < inlink->ch_layout.nb_channels; ch++) {            \
+        const int nb_samples = insamples->nb_samples;                       \
         const type *in = (const type *)insamples->extended_data[ch];        \
         const int w = outpicref->width / inlink->ch_layout.nb_channels;     \
         const int h = outpicref->height / depth;                            \
         const uint32_t color = AV_RN32(&s->fg[4 * ch]);                     \
+        uint64_t *counter = s->counter;                                     \
                                                                             \
-        memset(s->counter, 0, sizeof(s->counter));                          \
-        for (int i = 0; i < insamples->nb_samples; i++) {                   \
-            for (int j = 0; j < depth; j++) {                               \
-                if (in[i] & (one << j))                                     \
-                    s->counter[j]++;                                        \
-            }                                                               \
-        }                                                                   \
+        BITCOUNTER(type, depth, one)                                        \
                                                                             \
         for (int b = 0; b < depth; b++) {                                   \
             for (int j = 1; j < h - 1; j++) {                               \
                 uint8_t *dst = outpicref->data[0] + (b * h + j) * outpicref->linesize[0] + w * ch * 4; \
-                const int ww = (s->counter[depth - b - 1] / (float)insamples->nb_samples) * (w - 1); \
+                const int ww = (counter[depth - b - 1] / (float)nb_samples) * (w - 1); \
                                                                             \
                 for (int i = 0; i < ww; i++) {                              \
                     AV_WN32(&dst[i * 4], color);                            \
@@ -177,25 +181,21 @@ static int config_output(AVFilterLink *outlink)
 
 #define DO_TRACE(type, depth, one)                                          \
     for (int ch = 0; ch < inlink->ch_layout.nb_channels; ch++) {            \
+        const int nb_samples = insamples->nb_samples;                       \
         const int w = outpicref->width / inlink->ch_layout.nb_channels;     \
         const type *in = (const type *)insamples->extended_data[ch];        \
+        uint64_t *counter = s->counter;                                     \
         const int wb = w / depth;                                           \
         int wv;                                                             \
                                                                             \
-        memset(s->counter, 0, sizeof(s->counter));                          \
-        for (int i = 0; i < insamples->nb_samples; i++) {                   \
-            for (int j = 0; j < depth; j++) {                               \
-                if (in[i] & (one << j))                                     \
-                    s->counter[j]++;                                        \
-            }                                                               \
-        }                                                                   \
+        BITCOUNTER(type, depth, one)                                        \
                                                                             \
         for (int b = 0; b < depth; b++) {                                   \
             uint8_t colors[4];                                              \
             uint32_t color;                                                 \
             uint8_t *dst = outpicref->data[0] + w * ch * 4 + wb * b * 4 +   \
                            s->current_vpos * outpicref->linesize[0];        \
-            wv = (s->counter[depth - b - 1] * 255) / insamples->nb_samples; \
+            wv = (counter[depth - b - 1] * 255) / nb_samples;               \
             colors[0] = (wv * s->fg[ch * 4 + 0] + 127) / 255;               \
             colors[1] = (wv * s->fg[ch * 4 + 1] + 127) / 255;               \
             colors[2] = (wv * s->fg[ch * 4 + 2] + 127) / 255;               \
