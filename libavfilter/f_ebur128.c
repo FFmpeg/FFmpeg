@@ -295,7 +295,6 @@ static int config_video_output(AVFilterLink *outlink)
     int i, x, y;
     uint8_t *p;
     AVFilterContext *ctx = outlink->src;
-    AVFilterLink *inlink = ctx->inputs[0];
     EBUR128Context *ebur128 = ctx->priv;
     AVFrame *outpicref;
 
@@ -308,8 +307,8 @@ static int config_video_output(AVFilterLink *outlink)
     outlink->w = ebur128->w;
     outlink->h = ebur128->h;
     outlink->sample_aspect_ratio = (AVRational){1,1};
-    outlink->time_base = inlink->time_base;
     outlink->frame_rate = av_make_q(10, 1);
+    outlink->time_base = av_inv_q(outlink->frame_rate);
 
 #define PAD 8
 
@@ -430,7 +429,7 @@ static int config_audio_input(AVFilterLink *inlink)
      * can be more complex to integrate in the one-sample loop of
      * filter_frame()). */
     if (ebur128->metadata || (ebur128->peak_mode & PEAK_MODE_TRUE_PEAKS))
-        ebur128->nb_samples = inlink->sample_rate / 10;
+        ebur128->nb_samples = FFMAX(inlink->sample_rate / 10, 1);
     return 0;
 }
 
@@ -735,7 +734,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             AVFilterLink *outlink = ctx->outputs[0];
             const int64_t pts = insamples->pts +
                 av_rescale_q(idx_insample, (AVRational){ 1, inlink->sample_rate },
-                             outlink->time_base);
+                             ctx->outputs[ebur128->do_video]->time_base);
 
             ebur128->sample_count = 0;
 
@@ -887,7 +886,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                 }
 
                 /* set pts and push frame */
-                pic->pts = pts;
+                pic->pts = av_rescale_q(pts, inlink->time_base, outlink->time_base);
+                pic->duration = 1;
                 clone = av_frame_clone(pic);
                 if (!clone)
                     return AVERROR(ENOMEM);
