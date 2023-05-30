@@ -207,6 +207,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
     AudioHistogramContext *s = ctx->priv;
+    const int nb_samples = in->nb_samples;
     const int H = s->histogram_h;
     const int w = s->w;
     int c, y, n, p, bin, ret;
@@ -260,7 +261,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             const float *src = (const float *)in->extended_data[c];
             uint64_t *achistogram = &s->achistogram[(s->dmode == SINGLE ? 0: c) * w];
 
-            for (n = 0; n < in->nb_samples; n++) {
+            for (n = 0; n < nb_samples; n++) {
                 bin = s->get_bin(src[n], w);
 
                 achistogram[bin]++;
@@ -270,7 +271,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 uint64_t *shistogram = &s->shistogram[(s->dmode == SINGLE ? 0: c) * w];
                 const float *src2 = (const float *)s->in[s->first]->extended_data[c];
 
-                for (n = 0; n < in->nb_samples; n++) {
+                for (n = 0; n < nb_samples; n++) {
                     bin = s->get_bin(src2[n], w);
 
                     shistogram[bin]++;
@@ -283,7 +284,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             const float *src = (const float *)in->extended_data[c];
             uint64_t *achistogram = &s->achistogram[(s->dmode == SINGLE ? 0: c) * w];
 
-            for (n = 0; n < in->nb_samples; n++) {
+            for (n = 0; n < nb_samples; n++) {
                 bin = s->get_bin(src[n], w);
 
                 achistogram[bin]++;
@@ -293,7 +294,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 uint64_t *shistogram = &s->shistogram[(s->dmode == SINGLE ? 0: c) * w];
                 const float *src2 = (const float *)s->in[s->first]->extended_data[c];
 
-                for (n = 0; n < in->nb_samples; n++) {
+                for (n = 0; n < nb_samples; n++) {
                     bin = s->get_bin(src2[n], w);
 
                     shistogram[bin]++;
@@ -357,10 +358,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             h = aa * (H - 1);
 
             if (s->dmode == SINGLE) {
+                int start = H - h, end = H;
+                const int linesizey = s->out->linesize[0];
+                const int linesizea = s->out->linesize[3];
+                uint8_t *dsty = s->out->data[0] + start * linesizey;
+                uint8_t *dsta = s->out->data[3] + start * linesizea;
 
-                for (y = H - h; y < H; y++) {
-                    s->out->data[0][y * s->out->linesize[0] + n] = 255;
-                    s->out->data[3][y * s->out->linesize[0] + n] = 255;
+                for (y = start; y < end; y++, dsty += linesizey, dsta += linesizea) {
+                    dsty[n] = 255;
+                    dsta[n] = 255;
                 }
 
                 if (s->h - H > 0) {
@@ -372,18 +378,32 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                     s->out->data[3][s->ypos * s->out->linesize[3] + n] = 255;
                 }
             } else if (s->dmode == SEPARATE) {
+                int start = H - h, end = H;
                 float *out = &s->combine_buffer[3 * n];
+                const int linesizey = s->out->linesize[0];
+                const int linesizeu = s->out->linesize[1];
+                const int linesizev = s->out->linesize[2];
+                const int linesizea = s->out->linesize[3];
+                uint8_t *dsty = s->out->data[0] + start * linesizey;
+                uint8_t *dstu = s->out->data[1] + start * linesizeu;
+                uint8_t *dstv = s->out->data[2] + start * linesizev;
+                uint8_t *dsta = s->out->data[3] + start * linesizea;
                 int old;
 
-                old = s->out->data[0][(H - h) * s->out->linesize[0] + n];
-                for (y = H - h; y < H; y++) {
-                    if (s->out->data[0][y * s->out->linesize[0] + n] != old)
+                old = dsty[n];
+                for (y = start; y < end; y++) {
+                    if (dsty[n] != old)
                         break;
-                    old = s->out->data[0][y * s->out->linesize[0] + n];
-                    s->out->data[0][y * s->out->linesize[0] + n] = av_clip_uint8(yf);
-                    s->out->data[1][y * s->out->linesize[1] + n] = av_clip_uint8(128.f+uf);
-                    s->out->data[2][y * s->out->linesize[2] + n] = av_clip_uint8(128.f+vf);
-                    s->out->data[3][y * s->out->linesize[3] + n] = 255;
+                    old = dsty[n];
+                    dsty[n] = av_clip_uint8(yf);
+                    dstu[n] = av_clip_uint8(128.f+uf);
+                    dstv[n] = av_clip_uint8(128.f+vf);
+                    dsta[n] = 255;
+
+                    dsty += linesizey;
+                    dstu += linesizeu;
+                    dstv += linesizev;
+                    dsta += linesizea;
                 }
 
                 out[0] += aa * yf;
