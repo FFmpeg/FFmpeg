@@ -57,6 +57,9 @@ struct Encoder {
 
     AVFrame *sq_frame;
 
+    // packet for receiving encoded output
+    AVPacket *pkt;
+
     // combined size of all the packets received from the encoder
     uint64_t data_size;
 
@@ -78,6 +81,8 @@ void enc_free(Encoder **penc)
     av_frame_free(&enc->last_frame);
     av_frame_free(&enc->sq_frame);
 
+    av_packet_free(&enc->pkt);
+
     av_freep(penc);
 }
 
@@ -96,6 +101,10 @@ int enc_alloc(Encoder **penc, const AVCodec *codec)
         if (!enc->last_frame)
             goto fail;
     }
+
+    enc->pkt = av_packet_alloc();
+    if (!enc->pkt)
+        goto fail;
 
     *penc = enc;
 
@@ -454,10 +463,11 @@ static int check_recording_time(OutputStream *ost, int64_t ts, AVRational tb)
 
 void enc_subtitle(OutputFile *of, OutputStream *ost, AVSubtitle *sub)
 {
+    Encoder *e = ost->enc;
     int subtitle_out_max_size = 1024 * 1024;
     int subtitle_out_size, nb, i, ret;
     AVCodecContext *enc;
-    AVPacket *pkt = ost->pkt;
+    AVPacket *pkt = e->pkt;
     int64_t pts;
 
     if (sub->pts == AV_NOPTS_VALUE) {
@@ -669,7 +679,7 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
 {
     Encoder            *e = ost->enc;
     AVCodecContext   *enc = ost->enc_ctx;
-    AVPacket         *pkt = ost->pkt;
+    AVPacket         *pkt = e->pkt;
     const char *type_desc = av_get_media_type_string(enc->codec_type);
     const char    *action = frame ? "encode" : "flush";
     int ret;
