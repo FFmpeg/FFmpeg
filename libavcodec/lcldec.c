@@ -234,16 +234,19 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
             break;
         case COMP_MSZH_NOCOMP: {
             int bppx2;
+            int aligned_width = width;
             switch (c->imgtype) {
             case IMGTYPE_YUV111:
             case IMGTYPE_RGB24:
                 bppx2 = 6;
                 break;
             case IMGTYPE_YUV422:
+                aligned_width &= ~3;
             case IMGTYPE_YUV211:
                 bppx2 = 4;
                 break;
             case IMGTYPE_YUV411:
+                aligned_width &= ~3;
             case IMGTYPE_YUV420:
                 bppx2 = 3;
                 break;
@@ -251,7 +254,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
                 bppx2 = 0; // will error out below
                 break;
             }
-            if (len < ((width * height * bppx2) >> 1))
+            if (len < ((aligned_width * height * bppx2) >> 1))
                 return AVERROR_INVALIDDATA;
             break;
         }
@@ -317,8 +320,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
             }
             break;
         case IMGTYPE_YUV422:
+            pixel_ptr = 0;
             for (row = 0; row < height; row++) {
-                pixel_ptr = row * width * 2;
                 yq = uq = vq =0;
                 for (col = 0; col < width/4; col++) {
                     encoded[pixel_ptr] = yq -= encoded[pixel_ptr];
@@ -334,8 +337,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
             }
             break;
         case IMGTYPE_YUV411:
+            pixel_ptr = 0;
             for (row = 0; row < height; row++) {
-                pixel_ptr = row * width / 2 * 3;
                 yq = uq = vq =0;
                 for (col = 0; col < width/4; col++) {
                     encoded[pixel_ptr] = yq -= encoded[pixel_ptr];
