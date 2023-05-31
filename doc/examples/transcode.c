@@ -441,6 +441,10 @@ static int encode_write_frame(unsigned int stream_index, int flush)
     /* encode filtered frame */
     av_packet_unref(enc_pkt);
 
+    if (filt_frame && filt_frame->pts != AV_NOPTS_VALUE)
+        filt_frame->pts = av_rescale_q(filt_frame->pts, filt_frame->time_base,
+                                       stream->enc_ctx->time_base);
+
     ret = avcodec_send_frame(stream->enc_ctx, filt_frame);
 
     if (ret < 0)
@@ -495,6 +499,7 @@ static int filter_encode_write_frame(AVFrame *frame, unsigned int stream_index)
             break;
         }
 
+        filter->filtered_frame->time_base = av_buffersink_get_time_base(filter->buffersink_ctx);;
         filter->filtered_frame->pict_type = AV_PICTURE_TYPE_NONE;
         ret = encode_write_frame(stream_index, 0);
         av_frame_unref(filter->filtered_frame);
