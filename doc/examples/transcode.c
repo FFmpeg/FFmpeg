@@ -97,6 +97,11 @@ static int open_input_file(const char *filename)
                    "for stream #%u\n", i);
             return ret;
         }
+
+        /* Inform the decoder about the timebase for the packet timestamps.
+         * This is highly recommended, but not mandatory. */
+        codec_ctx->pkt_timebase = stream->time_base;
+
         /* Reencode video & audio and remux subtitles etc. */
         if (codec_ctx->codec_type == AVMEDIA_TYPE_VIDEO
                 || codec_ctx->codec_type == AVMEDIA_TYPE_AUDIO) {
