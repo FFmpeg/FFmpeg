@@ -844,18 +844,7 @@ void of_close(OutputFile **pof);
 
 void of_enc_stats_close(void);
 
-/*
- * Send a single packet to the output, applying any bitstream filters
- * associated with the output stream.  This may result in any number
- * of packets actually being written, depending on what bitstream
- * filters are applied.  The supplied packet is consumed and will be
- * blank (as if newly-allocated) when this function returns.
- *
- * If eof is set, instead indicate EOF to all bitstream filters and
- * therefore flush any delayed packets to the output.  A blank packet
- * must be supplied in this case.
- */
-void of_output_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost, int eof);
+void of_output_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt);
 
 /**
  * @param dts predicted packet dts in AV_TIME_BASE_Q

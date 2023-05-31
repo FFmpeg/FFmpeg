@@ -531,7 +531,7 @@ void enc_subtitle(OutputFile *of, OutputStream *ost, AVSubtitle *sub)
         }
         pkt->dts = pkt->pts;
 
-        of_output_packet(of, pkt, ost, 0);
+        of_output_packet(of, ost, pkt);
     }
 }
 
@@ -718,7 +718,7 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
             av_assert0(frame); // should never happen during flushing
             return 0;
         } else if (ret == AVERROR_EOF) {
-            of_output_packet(of, pkt, ost, 1);
+            of_output_packet(of, ost, NULL);
             return ret;
         } else if (ret < 0) {
             av_log(ost, AV_LOG_ERROR, "%s encoding failed\n", type_desc);
@@ -752,7 +752,7 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
 
         e->packets_encoded++;
 
-        of_output_packet(of, pkt, ost, 0);
+        of_output_packet(of, ost, pkt);
     }
 
     av_assert0(0);

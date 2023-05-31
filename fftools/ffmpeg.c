@@ -1112,7 +1112,7 @@ static int process_input(int file_index)
                 OutputStream *ost = ist->outputs[oidx];
                 OutputFile    *of = output_files[ost->file_index];
                 close_output_stream(ost);
-                of_output_packet(of, ost->pkt, ost, 1);
+                of_output_packet(of, ost, NULL);
             }
         }
 
