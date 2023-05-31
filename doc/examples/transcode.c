@@ -271,7 +271,7 @@ static int init_filter(FilteringContext* fctx, AVCodecContext *dec_ctx,
         snprintf(args, sizeof(args),
                 "video_size=%dx%d:pix_fmt=%d:time_base=%d/%d:pixel_aspect=%d/%d",
                 dec_ctx->width, dec_ctx->height, dec_ctx->pix_fmt,
-                dec_ctx->time_base.num, dec_ctx->time_base.den,
+                dec_ctx->pkt_timebase.num, dec_ctx->pkt_timebase.den,
                 dec_ctx->sample_aspect_ratio.num,
                 dec_ctx->sample_aspect_ratio.den);
 
@@ -311,7 +311,7 @@ static int init_filter(FilteringContext* fctx, AVCodecContext *dec_ctx,
         av_channel_layout_describe(&dec_ctx->ch_layout, buf, sizeof(buf));
         snprintf(args, sizeof(args),
                 "time_base=%d/%d:sample_rate=%d:sample_fmt=%s:channel_layout=%s",
-                dec_ctx->time_base.num, dec_ctx->time_base.den, dec_ctx->sample_rate,
+                dec_ctx->pkt_timebase.num, dec_ctx->pkt_timebase.den, dec_ctx->sample_rate,
                 av_get_sample_fmt_name(dec_ctx->sample_fmt),
                 buf);
         ret = avfilter_graph_create_filter(&buffersrc_ctx, buffersrc, "in",
@@ -549,9 +549,6 @@ int main(int argc, char **argv)
 
             av_log(NULL, AV_LOG_DEBUG, "Going to reencode&filter the frame\n");
 
-            av_packet_rescale_ts(packet,
-                                 ifmt_ctx->streams[stream_index]->time_base,
-                                 stream->dec_ctx->time_base);
             ret = avcodec_send_packet(stream->dec_ctx, packet);
             if (ret < 0) {
                 av_log(NULL, AV_LOG_ERROR, "Decoding failed\n");
