@@ -351,7 +351,7 @@ void of_output_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost, int eof)
         }
 
         while (!bsf_eof) {
-            ret = av_bsf_receive_packet(ms->bsf_ctx, pkt);
+            ret = av_bsf_receive_packet(ms->bsf_ctx, ms->bsf_pkt);
             if (ret == AVERROR(EAGAIN))
                 return;
             else if (ret == AVERROR_EOF)
@@ -361,7 +361,7 @@ void of_output_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost, int eof)
                 goto fail;
             }
 
-            ret = submit_packet(mux, bsf_eof ? NULL : pkt, ost);
+            ret = submit_packet(mux, bsf_eof ? NULL : ms->bsf_pkt, ost);
             if (ret < 0)
                 goto mux_fail;
         }
@@ -656,6 +656,10 @@ static int bsf_init(MuxStream *ms)
         return ret;
     ost->st->time_base = ctx->time_base_out;
 
+    ms->bsf_pkt = av_packet_alloc();
+    if (!ms->bsf_pkt)
+        return AVERROR(ENOMEM);
+
     return 0;
 }
 
@@ -856,6 +860,7 @@ static void ost_free(OutputStream **post)
     avcodec_parameters_free(&ost->par_in);
 
     av_bsf_free(&ms->bsf_ctx);
+    av_packet_free(&ms->bsf_pkt);
 
     av_packet_free(&ost->pkt);
     av_dict_free(&ost->encoder_opts);

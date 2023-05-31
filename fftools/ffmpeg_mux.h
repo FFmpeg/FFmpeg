@@ -44,6 +44,7 @@ typedef struct MuxStream {
     AVFifo *muxing_queue;
 
     AVBSFContext *bsf_ctx;
+    AVPacket     *bsf_pkt;
 
     EncStats stats;
 
