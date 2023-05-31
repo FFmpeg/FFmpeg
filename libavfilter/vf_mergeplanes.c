@@ -48,6 +48,7 @@ typedef struct MergePlanesContext {
     int planewidth[4];
     int planeheight[4];
     Mapping map[4];
+    const AVPixFmtDescriptor *indesc[4];
     const AVPixFmtDescriptor *outdesc;
 
     FFFrameSync fs;
@@ -171,7 +172,8 @@ static int process_frame(FFFrameSync *fs)
 
         av_image_copy_plane(out->data[i], out->linesize[i],
                             in[input]->data[plane], in[input]->linesize[plane],
-                            s->planewidth[i], s->planeheight[i]);
+                            s->planewidth[i] * ((s->indesc[input]->comp[plane].depth + 7) / 8),
+                            s->planeheight[i]);
     }
 
     return ff_filter_frame(outlink, out);
@@ -199,9 +201,9 @@ static int config_output(AVFilterLink *outlink)
     outlink->sample_aspect_ratio = ctx->inputs[0]->sample_aspect_ratio;
 
     s->planewidth[1]  =
-    s->planewidth[2]  = AV_CEIL_RSHIFT(((s->outdesc->comp[1].depth > 8) + 1) * outlink->w, s->outdesc->log2_chroma_w);
+    s->planewidth[2]  = AV_CEIL_RSHIFT(outlink->w, s->outdesc->log2_chroma_w);
     s->planewidth[0]  =
-    s->planewidth[3]  = ((s->outdesc->comp[0].depth > 8) + 1) * outlink->w;
+    s->planewidth[3]  = outlink->w;
     s->planeheight[1] =
     s->planeheight[2] = AV_CEIL_RSHIFT(outlink->h, s->outdesc->log2_chroma_h);
     s->planeheight[0] =
@@ -210,8 +212,7 @@ static int config_output(AVFilterLink *outlink)
     for (i = 0; i < s->nb_inputs; i++) {
         InputParam *inputp = &inputsp[i];
         AVFilterLink *inlink = ctx->inputs[i];
-        const AVPixFmtDescriptor *indesc = av_pix_fmt_desc_get(inlink->format);
-        int j;
+        s->indesc[i] = av_pix_fmt_desc_get(inlink->format);
 
         if (outlink->sample_aspect_ratio.num != inlink->sample_aspect_ratio.num ||
             outlink->sample_aspect_ratio.den != inlink->sample_aspect_ratio.den) {
@@ -227,17 +228,17 @@ static int config_output(AVFilterLink *outlink)
         }
 
         inputp->planewidth[1]  =
-        inputp->planewidth[2]  = AV_CEIL_RSHIFT(((indesc->comp[1].depth > 8) + 1) * inlink->w, indesc->log2_chroma_w);
+        inputp->planewidth[2]  = AV_CEIL_RSHIFT(inlink->w, s->indesc[i]->log2_chroma_w);
         inputp->planewidth[0]  =
-        inputp->planewidth[3]  = ((indesc->comp[0].depth > 8) + 1) * inlink->w;
+        inputp->planewidth[3]  = inlink->w;
         inputp->planeheight[1] =
-        inputp->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, indesc->log2_chroma_h);
+        inputp->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, s->indesc[i]->log2_chroma_h);
         inputp->planeheight[0] =
         inputp->planeheight[3] = inlink->h;
         inputp->nb_planes = av_pix_fmt_count_planes(inlink->format);
 
-        for (j = 0; j < inputp->nb_planes; j++)
-            inputp->depth[j] = indesc->comp[j].depth;
+        for (int j = 0; j < inputp->nb_planes; j++)
+            inputp->depth[j] = s->indesc[i]->comp[j].depth;
 
         in[i].time_base = inlink->time_base;
         in[i].sync   = 1;
