@@ -1064,8 +1064,8 @@ static OutputStream *ost_add(Muxer *mux, const OptionsContext *o,
     else av_assert0(0);
     av_log(ost, AV_LOG_VERBOSE, "\n");
 
-    ost->pkt = av_packet_alloc();
-    if (!ost->pkt)
+    ms->pkt = av_packet_alloc();
+    if (!ms->pkt)
         report_and_exit(AVERROR(ENOMEM));
 
     if (ost->enc_ctx) {

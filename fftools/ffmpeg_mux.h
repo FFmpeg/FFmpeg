@@ -46,6 +46,8 @@ typedef struct MuxStream {
     AVBSFContext *bsf_ctx;
     AVPacket     *bsf_pkt;
 
+    AVPacket     *pkt;
+
     EncStats stats;
 
     int64_t max_frames;

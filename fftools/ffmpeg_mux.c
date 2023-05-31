@@ -389,7 +389,7 @@ void of_streamcopy(OutputStream *ost, const AVPacket *pkt, int64_t dts)
     MuxStream  *ms = ms_from_ost(ost);
     int64_t start_time = (of->start_time == AV_NOPTS_VALUE) ? 0 : of->start_time;
     int64_t ost_tb_start_time = av_rescale_q(start_time, AV_TIME_BASE_Q, ost->mux_timebase);
-    AVPacket *opkt = ost->pkt;
+    AVPacket *opkt = ms->pkt;
 
     av_packet_unref(opkt);
 
@@ -862,7 +862,7 @@ static void ost_free(OutputStream **post)
     av_bsf_free(&ms->bsf_ctx);
     av_packet_free(&ms->bsf_pkt);
 
-    av_packet_free(&ost->pkt);
+    av_packet_free(&ms->pkt);
     av_dict_free(&ost->encoder_opts);
 
     av_freep(&ost->kf.pts);
