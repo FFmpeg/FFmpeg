@@ -7079,7 +7079,7 @@ enabled nvenc &&
     test_cc -I$source_path <<EOF || disable nvenc
 #include <ffnvcodec/nvEncodeAPI.h>
 NV_ENCODE_API_FUNCTION_LIST flist;
-void f(void) { struct { const GUID guid; } s[] = { { NV_ENC_PRESET_HQ_GUID } }; }
+void f(void) { struct { const GUID guid; } s[] = { { NV_ENC_CODEC_H264_GUID } }; }
 int main(void) { return 0; }
 EOF
 
