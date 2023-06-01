@@ -861,7 +861,7 @@ static inline int get_amv(Mpeg4DecContext *ctx, int n)
         for (y = 0; y < 16; y++) {
             int v;
 
-            v = mb_v + dy * y;
+            v = mb_v + (unsigned)dy * y;
             // FIXME optimize
             for (x = 0; x < 16; x++) {
                 sum += v >> shift;
