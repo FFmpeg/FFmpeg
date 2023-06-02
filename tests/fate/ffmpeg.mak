@@ -167,8 +167,8 @@ FATE_STREAMCOPY-$(call REMUX, PSP MOV, H264_PARSER H264_DECODER) += fate-copy-ps
 fate-copy-psp: CMD = transcode "mov" $(TARGET_SAMPLES)/h264/wwwq_cut.mp4\
                       psp "-c copy" "-codec copy"
 
-FATE_STREAMCOPY-$(call FRAMEMD5, FLV, H264) += fate-ffmpeg-streamloop
-fate-ffmpeg-streamloop: CMD = framemd5 -stream_loop 2 -i $(TARGET_SAMPLES)/flv/streamloop.flv -c copy
+FATE_STREAMCOPY-$(call FRAMEMD5, FLV, H264) += fate-ffmpeg-streamloop-copy
+fate-ffmpeg-streamloop-copy: CMD = framemd5 -stream_loop 2 -i $(TARGET_SAMPLES)/flv/streamloop.flv -c copy
 
 tests/data/audio_shorter_than_video.nut: TAG = GEN
 tests/data/audio_shorter_than_video.nut: tests/data/vsynth_lena.yuv
