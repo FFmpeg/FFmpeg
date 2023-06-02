@@ -385,10 +385,20 @@ out:
 
 static int transcode_subtitles(InputStream *ist, const AVPacket *pkt)
 {
+    AVPacket *flush_pkt = NULL;
     AVSubtitle subtitle;
     int got_output;
-    int ret = avcodec_decode_subtitle2(ist->dec_ctx,
-                                       &subtitle, &got_output, pkt);
+    int ret;
+
+    if (!pkt) {
+        flush_pkt = av_packet_alloc();
+        if (!flush_pkt)
+            return AVERROR(ENOMEM);
+    }
+
+    ret = avcodec_decode_subtitle2(ist->dec_ctx, &subtitle, &got_output,
+                                   pkt ? pkt : flush_pkt);
+    av_packet_free(&flush_pkt);
 
     if (ret < 0) {
         av_log(ist, AV_LOG_ERROR, "Error decoding subtitles: %s\n",
@@ -399,7 +409,7 @@ static int transcode_subtitles(InputStream *ist, const AVPacket *pkt)
     }
 
     if (ret < 0 || !got_output) {
-        if (!pkt->size)
+        if (!pkt)
             sub2video_flush(ist);
         return ret < 0 ? ret : AVERROR_EOF;
     }
@@ -432,7 +442,7 @@ int dec_packet(InputStream *ist, const AVPacket *pkt, int no_eof)
     int ret;
 
     if (dec->codec_type == AVMEDIA_TYPE_SUBTITLE)
-        return transcode_subtitles(ist, pkt ? pkt : d->pkt);
+        return transcode_subtitles(ist, pkt);
 
     // With fate-indeo3-2, we're getting 0-sized packets before EOF for some
     // reason. This seems like a semi-critical bug. Don't trigger EOF, and
