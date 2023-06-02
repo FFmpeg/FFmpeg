@@ -365,7 +365,6 @@ typedef struct InputStream {
     int fix_sub_duration;
     struct { /* previous decoded subtitle and related variables */
         int got_output;
-        int ret;
         AVSubtitle subtitle;
     } prev_sub;
 

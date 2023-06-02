@@ -346,14 +346,13 @@ int process_subtitle(InputStream *ist, AVSubtitle *subtitle, int *got_output)
             }
         }
         FFSWAP(int,        *got_output, ist->prev_sub.got_output);
-        FFSWAP(int,        ret,         ist->prev_sub.ret);
         FFSWAP(AVSubtitle, *subtitle,   ist->prev_sub.subtitle);
         if (end <= 0)
             goto out;
     }
 
     if (!*got_output)
-        return ret;
+        return 0;
 
     for (int i = 0; i < ist->nb_filters; i++) {
         ret = ifilter_sub2video(ist->filters[i], subtitle);
