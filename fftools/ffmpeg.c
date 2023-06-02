@@ -731,7 +731,6 @@ cleanup:
 static int fix_sub_duration_heartbeat(InputStream *ist, int64_t signal_pts)
 {
     int ret = AVERROR_BUG;
-    int got_output = 1;
     AVSubtitle *prev_subtitle = &ist->prev_sub.subtitle;
     AVSubtitle subtitle;
 
@@ -744,7 +743,7 @@ static int fix_sub_duration_heartbeat(InputStream *ist, int64_t signal_pts)
 
     subtitle.pts = signal_pts;
 
-    return process_subtitle(ist, &subtitle, &got_output);
+    return process_subtitle(ist, &subtitle);
 }
 
 int trigger_fix_sub_duration_heartbeat(OutputStream *ost, const AVPacket *pkt)

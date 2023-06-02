@@ -884,7 +884,7 @@ OutputStream *ost_iter(OutputStream *prev);
 
 void close_output_stream(OutputStream *ost);
 int trigger_fix_sub_duration_heartbeat(OutputStream *ost, const AVPacket *pkt);
-int process_subtitle(InputStream *ist, AVSubtitle *subtitle, int *got_output);
+int process_subtitle(InputStream *ist, AVSubtitle *subtitle);
 void update_benchmark(const char *fmt, ...);
 
 /**

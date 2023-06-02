@@ -328,8 +328,9 @@ static void sub2video_flush(InputStream *ist)
     }
 }
 
-int process_subtitle(InputStream *ist, AVSubtitle *subtitle, int *got_output)
+int process_subtitle(InputStream *ist, AVSubtitle *subtitle)
 {
+    int got_output = 1;
     int ret = 0;
 
     if (ist->fix_sub_duration) {
@@ -345,13 +346,13 @@ int process_subtitle(InputStream *ist, AVSubtitle *subtitle, int *got_output)
                 ist->prev_sub.subtitle.end_display_time = end;
             }
         }
-        FFSWAP(int,        *got_output, ist->prev_sub.got_output);
+        FFSWAP(int,         got_output, ist->prev_sub.got_output);
         FFSWAP(AVSubtitle, *subtitle,   ist->prev_sub.subtitle);
         if (end <= 0)
             goto out;
     }
 
-    if (!*got_output)
+    if (!got_output)
         return 0;
 
     for (int i = 0; i < ist->nb_filters; i++) {
@@ -402,7 +403,7 @@ static int transcode_subtitles(InputStream *ist, const AVPacket *pkt)
 
     ist->frames_decoded++;
 
-    return process_subtitle(ist, &subtitle, &got_output);
+    return process_subtitle(ist, &subtitle);
 }
 
 static int send_filter_eof(InputStream *ist)
