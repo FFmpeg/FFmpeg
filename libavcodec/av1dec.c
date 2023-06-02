@@ -850,7 +850,7 @@ static av_cold int av1_decode_init(AVCodecContext *avctx)
                                                avctx);
         if (ret < 0) {
             av_log(avctx, AV_LOG_WARNING, "Failed to read extradata.\n");
-            return ret;
+            goto end;
         }
 
         seq = ((CodedBitstreamAV1Context *)(s->cbc->priv_data))->sequence_header;
