@@ -730,6 +730,7 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost,
 int init_complex_filtergraph(FilterGraph *fg);
 
 int copy_av_subtitle(AVSubtitle *dst, const AVSubtitle *src);
+int subtitle_wrap_frame(AVFrame *frame, AVSubtitle *subtitle, int copy);
 
 /**
  * Get our axiliary frame data attached to the frame, allocating it
@@ -940,5 +941,15 @@ extern const char * const opt_name_codec_names[];
 extern const char * const opt_name_codec_tags[];
 extern const char * const opt_name_frame_rates[];
 extern const char * const opt_name_top_field_first[];
+
+static inline void pkt_move(void *dst, void *src)
+{
+    av_packet_move_ref(dst, src);
+}
+
+static inline void frame_move(void *dst, void *src)
+{
+    av_frame_move_ref(dst, src);
+}
 
 #endif /* FFTOOLS_FFMPEG_H */

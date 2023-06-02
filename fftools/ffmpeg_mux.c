@@ -475,11 +475,6 @@ static int thread_stop(Muxer *mux)
     return (int)(intptr_t)ret;
 }
 
-static void pkt_move(void *dst, void *src)
-{
-    av_packet_move_ref(dst, src);
-}
-
 static int thread_start(Muxer *mux)
 {
     AVFormatContext *fc = mux->fc;
