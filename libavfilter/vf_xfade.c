@@ -95,14 +95,23 @@ typedef struct XFadeContext {
     int depth;
     int is_rgb;
 
+    // PTS when the fade should start (in first inputs timebase)
+    int64_t start_pts;
+
+    // PTS offset between first and second input
+    int64_t inputs_offset_pts;
+
+    // Duration of the transition
     int64_t duration_pts;
-    int64_t offset_pts;
-    int64_t first_pts;
-    int64_t last_pts;
+
+    // Current PTS of the first input
     int64_t pts;
-    int xfade_is_over;
-    int need_second;
-    int eof[2];
+
+    // If frames are currently just passed through unmodified,
+    // like before and after the actual transition.
+    int passthrough;
+
+    int status[2];
     AVFrame *xf[2];
     int max_value;
     uint16_t black[4];
@@ -1935,12 +1944,10 @@ static int config_output(AVFilterLink *outlink)
     s->white[0] = s->white[3] = s->max_value;
     s->white[1] = s->white[2] = s->is_rgb ? s->max_value : s->max_value / 2;
 
-    s->first_pts = s->last_pts = s->pts = AV_NOPTS_VALUE;
+    s->start_pts = s->inputs_offset_pts = AV_NOPTS_VALUE;
 
     if (s->duration)
         s->duration_pts = av_rescale_q(s->duration, AV_TIME_BASE_Q, outlink->time_base);
-    if (s->offset)
-        s->offset_pts = av_rescale_q(s->offset, AV_TIME_BASE_Q, outlink->time_base);
 
     switch (s->transition) {
     case CUSTOM:     s->transitionf = s->depth <= 8 ? custom8_transition     : custom16_transition;     break;
@@ -2037,7 +2044,7 @@ static int xfade_frame(AVFilterContext *ctx, AVFrame *a, AVFrame *b)
 {
     XFadeContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-    float progress = av_clipf(1.f - ((float)(s->pts - s->first_pts - s->offset_pts) / s->duration_pts), 0.f, 1.f);
+    float progress = av_clipf(1.f - ((float)(s->pts - s->start_pts) / s->duration_pts), 0.f, 1.f);
     ThreadData td;
     AVFrame *out;
 
@@ -2055,99 +2062,128 @@ static int xfade_frame(AVFilterContext *ctx, AVFrame *a, AVFrame *b)
     return ff_filter_frame(outlink, out);
 }
 
-static int xfade_activate(AVFilterContext *ctx)
+static int forward_frame(XFadeContext *s,
+                         AVFilterLink *inlink, AVFilterLink *outlink)
 {
-    XFadeContext *s = ctx->priv;
-    AVFilterLink *outlink = ctx->outputs[0];
-    AVFrame *in = NULL;
+    int64_t status_pts;
     int ret = 0, status;
-    int64_t pts;
+    AVFrame *frame = NULL;
 
-    FF_FILTER_FORWARD_STATUS_BACK_ALL(outlink, ctx);
-
-    if (s->xfade_is_over) {
-        if (!s->eof[0]) {
-            if (ff_inlink_queued_frames(ctx->inputs[0]) > 0) {
-                ret = ff_inlink_consume_frame(ctx->inputs[0], &in);
-                if (ret > 0)
-                    av_frame_free(&in);
-            }
-            ff_inlink_set_status(ctx->inputs[0], AVERROR_EOF);
-            s->eof[0] = 1;
-        }
-        ret = ff_inlink_consume_frame(ctx->inputs[1], &in);
-        if (ret < 0) {
-            return ret;
-        } else if (ret > 0) {
-            in->pts = (in->pts - s->last_pts) + s->pts;
-            return ff_filter_frame(outlink, in);
-        } else if (ff_inlink_acknowledge_status(ctx->inputs[1], &status, &pts)) {
-            ff_outlink_set_status(outlink, status, s->pts);
-            return 0;
-        } else if (!ret) {
-            if (ff_outlink_frame_wanted(outlink))
-                ff_inlink_request_frame(ctx->inputs[1]);
-            return 0;
-        }
-    }
-
-    if (ff_inlink_queued_frames(ctx->inputs[0]) > 0) {
-        s->xf[0] = ff_inlink_peek_frame(ctx->inputs[0], 0);
-        if (s->xf[0]) {
-            if (s->first_pts == AV_NOPTS_VALUE) {
-                s->first_pts = s->xf[0]->pts;
-            }
-            s->pts = s->xf[0]->pts;
-            if (s->first_pts + s->offset_pts > s->xf[0]->pts) {
-                s->xf[0] = NULL;
-                s->need_second = 0;
-                ff_inlink_consume_frame(ctx->inputs[0], &in);
-                return ff_filter_frame(outlink, in);
-            }
-
-            s->need_second = 1;
-        }
-    }
-
-    if (s->xf[0] && ff_inlink_queued_frames(ctx->inputs[1]) > 0) {
-        ff_inlink_consume_frame(ctx->inputs[0], &s->xf[0]);
-        ff_inlink_consume_frame(ctx->inputs[1], &s->xf[1]);
-
-        s->last_pts = s->xf[1]->pts;
-        s->pts = s->xf[0]->pts;
-        if (s->xf[0]->pts - (s->first_pts + s->offset_pts) > s->duration_pts)
-            s->xfade_is_over = 1;
-        ret = xfade_frame(ctx, s->xf[0], s->xf[1]);
-        av_frame_free(&s->xf[0]);
-        av_frame_free(&s->xf[1]);
+    ret = ff_inlink_consume_frame(inlink, &frame);
+    if (ret < 0)
         return ret;
+
+    if (ret > 0) {
+        // If we do not have an offset yet, it's because we
+        // never got a first input. Just offset to 0
+        if (s->inputs_offset_pts == AV_NOPTS_VALUE)
+            s->inputs_offset_pts = -frame->pts;
+
+        // We got a frame, nothing to do other than adjusting the timestamp
+        frame->pts += s->inputs_offset_pts;
+        return ff_filter_frame(outlink, frame);
     }
 
-    if (ff_inlink_queued_frames(ctx->inputs[0]) > 0 &&
-        ff_inlink_queued_frames(ctx->inputs[1]) > 0) {
-        ff_filter_set_ready(ctx, 100);
+    // Forward status with our timestamp
+    if (ff_inlink_acknowledge_status(inlink, &status, &status_pts)) {
+        if (s->inputs_offset_pts == AV_NOPTS_VALUE)
+            s->inputs_offset_pts = -status_pts;
+
+        ff_outlink_set_status(outlink, status, status_pts + s->inputs_offset_pts);
         return 0;
     }
 
+    // No frame available, request one if needed
+    if (ff_outlink_frame_wanted(outlink))
+        ff_inlink_request_frame(inlink);
+
+    return 0;
+}
+
+static int xfade_activate(AVFilterContext *avctx)
+{
+    XFadeContext *s = avctx->priv;
+    AVFilterLink *in_a = avctx->inputs[0];
+    AVFilterLink *in_b = avctx->inputs[1];
+    AVFilterLink *outlink = avctx->outputs[0];
+    int64_t status_pts;
+
+    FF_FILTER_FORWARD_STATUS_BACK_ALL(outlink, avctx);
+
+    // Check if we already transitioned or first input ended prematurely,
+    // in which case just forward the frames from second input with adjusted
+    // timestamps until EOF.
+    if (s->status[0] && !s->status[1])
+        return forward_frame(s, in_b, outlink);
+
+    // We did not finish transitioning yet and the first stream
+    // did not end either, so check if there are more frames to consume.
+    if (ff_inlink_check_available_frame(in_a)) {
+        AVFrame *peeked_frame = ff_inlink_peek_frame(in_a, 0);
+        s->pts = peeked_frame->pts;
+
+        if (s->start_pts == AV_NOPTS_VALUE)
+            s->start_pts =
+                s->pts + av_rescale_q(s->offset, AV_TIME_BASE_Q, in_a->time_base);
+
+        // Check if we are not yet transitioning, in which case
+        // just request and forward the input frame.
+        if (s->start_pts > s->pts) {
+            s->passthrough = 1;
+            ff_inlink_consume_frame(in_a, &s->xf[0]);
+            return ff_filter_frame(outlink, s->xf[0]);
+        }
+        s->passthrough = 0;
+
+        // We are transitioning, so we need a frame from second input
+        if (ff_inlink_check_available_frame(in_b)) {
+            int ret;
+            ff_inlink_consume_frame(avctx->inputs[0], &s->xf[0]);
+            ff_inlink_consume_frame(avctx->inputs[1], &s->xf[1]);
+
+            // Calculate PTS offset to first input
+            if (s->inputs_offset_pts == AV_NOPTS_VALUE)
+                s->inputs_offset_pts = s->pts - s->xf[1]->pts;
+
+            // Check if we finished transitioning, in which case we
+            // report back EOF to first input as it is no longer needed.
+            if (s->pts - s->start_pts > s->duration_pts) {
+                s->status[0] = AVERROR_EOF;
+                ff_inlink_set_status(in_a, AVERROR_EOF);
+                s->passthrough = 1;
+            }
+            ret = xfade_frame(avctx, s->xf[0], s->xf[1]);
+            av_frame_free(&s->xf[0]);
+            av_frame_free(&s->xf[1]);
+            return ret;
+        }
+
+        // We did not get a frame from second input, check its status.
+        if (ff_inlink_acknowledge_status(in_b, &s->status[1], &status_pts)) {
+            // We should transition, but second input is EOF so just report EOF output now.
+            ff_outlink_set_status(outlink, s->status[1], s->pts);
+            return 0;
+        }
+
+        // We did not get a frame for second input but no EOF either, so just request more.
+        if (ff_outlink_frame_wanted(outlink)) {
+            ff_inlink_request_frame(in_b);
+            return 0;
+        }
+    }
+
+    // We did not get a frame from first input, check its status.
+    if (ff_inlink_acknowledge_status(in_a, &s->status[0], &status_pts)) {
+        // No more frames from first input, do not report EOF though, we will just
+        // forward the second input frames in the next activate calls.
+        s->passthrough = 1;
+        ff_filter_set_ready(avctx, 100);
+        return 0;
+    }
+
+    // We have no frames yet from first input and no EOF, so request some.
     if (ff_outlink_frame_wanted(outlink)) {
-        if (!s->eof[0] && ff_outlink_get_status(ctx->inputs[0])) {
-            s->eof[0] = 1;
-            s->xfade_is_over = 1;
-        }
-        if (!s->eof[1] && ff_outlink_get_status(ctx->inputs[1])) {
-            s->eof[1] = 1;
-        }
-        if (!s->eof[0] && !s->xf[0] && ff_inlink_queued_frames(ctx->inputs[0]) == 0)
-            ff_inlink_request_frame(ctx->inputs[0]);
-        if (!s->eof[1] && (s->need_second || s->eof[0]) && ff_inlink_queued_frames(ctx->inputs[1]) == 0)
-            ff_inlink_request_frame(ctx->inputs[1]);
-        if (s->eof[0] && s->eof[1] && (
-            ff_inlink_queued_frames(ctx->inputs[0]) <= 0 &&
-            ff_inlink_queued_frames(ctx->inputs[1]) <= 0)) {
-            ff_outlink_set_status(outlink, AVERROR_EOF, AV_NOPTS_VALUE);
-        } else if (s->xfade_is_over) {
-            ff_filter_set_ready(ctx, 100);
-        }
+        ff_inlink_request_frame(in_a);
         return 0;
     }
 
@@ -2158,7 +2194,7 @@ static AVFrame *get_video_buffer(AVFilterLink *inlink, int w, int h)
 {
     XFadeContext *s = inlink->dst->priv;
 
-    return s->xfade_is_over || !s->need_second ?
+    return s->passthrough ?
         ff_null_get_video_buffer   (inlink, w, h) :
         ff_default_get_video_buffer(inlink, w, h);
 }
