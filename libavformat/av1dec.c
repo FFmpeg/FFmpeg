@@ -124,13 +124,17 @@ static const AVClass av1_demuxer_class = {
 
 #if CONFIG_AV1_DEMUXER
 
-static int leb(AVIOContext *pb, uint32_t *len) {
+static int leb(AVIOContext *pb, uint32_t *len, int eof) {
     int more, i = 0;
     uint8_t byte;
     *len = 0;
     do {
         unsigned bits;
         byte = avio_r8(pb);
+        if (pb->error)
+            return pb->error;
+        if (pb->eof_reached)
+            return (eof && !i) ? AVERROR_EOF : AVERROR(EIO);
         more = byte & 0x80;
         bits = byte & 0x7f;
         if (i <= 3 || (i == 4 && bits < (1 << 4)))
@@ -139,8 +143,6 @@ static int leb(AVIOContext *pb, uint32_t *len) {
             return AVERROR_INVALIDDATA;
         if (++i == 8 && more)
             return AVERROR_INVALIDDATA;
-        if (pb->eof_reached || pb->error)
-            return pb->error ? pb->error : AVERROR(EIO);
     } while (more);
     return i;
 }
@@ -170,15 +172,15 @@ static int annexb_probe(const AVProbeData *p)
     ffio_init_context(&ctx, p->buf, p->buf_size, 0,
                       NULL, NULL, NULL, NULL);
 
-    ret = leb(pb, &temporal_unit_size);
+    ret = leb(pb, &temporal_unit_size, 1);
     if (ret < 0)
         return 0;
     cnt += ret;
-    ret = leb(pb, &frame_unit_size);
+    ret = leb(pb, &frame_unit_size, 0);
     if (ret < 0 || ((int64_t)frame_unit_size + ret) > temporal_unit_size)
         return 0;
     cnt += ret;
-    ret = leb(pb, &obu_unit_size);
+    ret = leb(pb, &obu_unit_size, 0);
     if (ret < 0 || ((int64_t)obu_unit_size + ret) >= frame_unit_size)
         return 0;
     cnt += ret;
@@ -196,7 +198,7 @@ static int annexb_probe(const AVProbeData *p)
     cnt += obu_unit_size;
 
     do {
-        ret = leb(pb, &obu_unit_size);
+        ret = leb(pb, &obu_unit_size, 0);
         if (ret < 0 || ((int64_t)obu_unit_size + ret) > frame_unit_size)
             return 0;
         cnt += ret;
@@ -234,19 +236,24 @@ retry:
     }
 
     if (!c->temporal_unit_size) {
-        len = leb(s->pb, &c->temporal_unit_size);
-        if (len < 0) return AVERROR_INVALIDDATA;
+        len = leb(s->pb, &c->temporal_unit_size, 1);
+        if (len == AVERROR_EOF) goto end;
+        else if (len < 0) return len;
     }
 
     if (!c->frame_unit_size) {
-        len = leb(s->pb, &c->frame_unit_size);
-        if (len < 0 || ((int64_t)c->frame_unit_size + len) > c->temporal_unit_size)
+        len = leb(s->pb, &c->frame_unit_size, 0);
+        if (len < 0)
+            return len;
+        if (((int64_t)c->frame_unit_size + len) > c->temporal_unit_size)
             return AVERROR_INVALIDDATA;
         c->temporal_unit_size -= len;
     }
 
-    len = leb(s->pb, &obu_unit_size);
-    if (len < 0 || ((int64_t)obu_unit_size + len) > c->frame_unit_size)
+    len = leb(s->pb, &obu_unit_size, 0);
+    if (len < 0)
+        return len;
+    if (((int64_t)obu_unit_size + len) > c->frame_unit_size)
         return AVERROR_INVALIDDATA;
 
     ret = av_get_packet(s->pb, pkt, obu_unit_size);
