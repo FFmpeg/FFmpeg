@@ -1180,6 +1180,7 @@ static void vulkan_device_free(AVHWDeviceContext *ctx)
 
 static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
                                          VulkanDeviceSelection *dev_select,
+                                         int disable_multiplane,
                                          AVDictionary *opts, int flags)
 {
     int err = 0;
@@ -1335,9 +1336,15 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     if (opt_d)
         p->use_linear_images = strtol(opt_d->value, NULL, 10);
 
-    opt_d = av_dict_get(opts, "disable_multiplane", NULL, 0);
-    if (opt_d)
-        p->disable_multiplane = strtol(opt_d->value, NULL, 10);
+    /*
+     * The disable_multiplane argument takes precedent over the option.
+     */
+    p->disable_multiplane = disable_multiplane;
+    if (!p->disable_multiplane) {
+        opt_d = av_dict_get(opts, "disable_multiplane", NULL, 0);
+        if (opt_d)
+            p->disable_multiplane = strtol(opt_d->value, NULL, 10);
+    }
 
     hwctx->enabled_dev_extensions = dev_info.ppEnabledExtensionNames;
     hwctx->nb_enabled_dev_extensions = dev_info.enabledExtensionCount;
@@ -1511,7 +1518,7 @@ static int vulkan_device_create(AVHWDeviceContext *ctx, const char *device,
         }
     }
 
-    return vulkan_device_create_internal(ctx, &dev_select, opts, flags);
+    return vulkan_device_create_internal(ctx, &dev_select, 0, opts, flags);
 }
 
 static int vulkan_device_derive(AVHWDeviceContext *ctx,
@@ -1537,7 +1544,7 @@ static int vulkan_device_derive(AVHWDeviceContext *ctx,
         if (strstr(vendor, "AMD"))
             dev_select.vendor_id = 0x1002;
 
-        return vulkan_device_create_internal(ctx, &dev_select, opts, flags);
+        return vulkan_device_create_internal(ctx, &dev_select, 0, opts, flags);
     }
 #endif
 #if CONFIG_LIBDRM
@@ -1570,7 +1577,7 @@ static int vulkan_device_derive(AVHWDeviceContext *ctx,
 
         drmFreeDevice(&drm_dev_info);
 
-        return vulkan_device_create_internal(ctx, &dev_select, opts, flags);
+        return vulkan_device_create_internal(ctx, &dev_select, 0, opts, flags);
     }
 #endif
 #if CONFIG_CUDA
@@ -1589,7 +1596,11 @@ static int vulkan_device_derive(AVHWDeviceContext *ctx,
 
         dev_select.has_uuid = 1;
 
-        return vulkan_device_create_internal(ctx, &dev_select, opts, flags);
+        /*
+         * CUDA is not able to import multiplane images, so always derive a
+         * Vulkan device with multiplane disabled.
+         */
+        return vulkan_device_create_internal(ctx, &dev_select, 1, opts, flags);
     }
 #endif
     default:
