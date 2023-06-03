@@ -126,11 +126,10 @@ static const AVClass av1_demuxer_class = {
 
 static int leb(AVIOContext *pb, uint32_t *len, int eof) {
     int more, i = 0;
-    uint8_t byte;
     *len = 0;
     do {
         unsigned bits;
-        byte = avio_r8(pb);
+        int byte = avio_r8(pb);
         if (pb->error)
             return pb->error;
         if (pb->eof_reached)
