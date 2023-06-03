@@ -66,10 +66,10 @@ struct Encoder {
     // number of packets received from the encoder
     uint64_t packets_encoded;
 
+    uint64_t dup_warning;
+
     int opened;
 };
-
-static uint64_t dup_warning = 1000;
 
 void enc_free(Encoder **penc)
 {
@@ -105,6 +105,8 @@ int enc_alloc(Encoder **penc, const AVCodec *codec)
     enc->pkt = av_packet_alloc();
     if (!enc->pkt)
         goto fail;
+
+    enc->dup_warning = 1000;
 
     *penc = enc;
 
@@ -1070,9 +1072,9 @@ static void do_video_out(OutputFile *of, OutputStream *ost, AVFrame *frame)
         }
         ost->nb_frames_dup += nb_frames - (nb_frames_prev && ost->last_dropped) - (nb_frames > nb_frames_prev);
         av_log(ost, AV_LOG_VERBOSE, "*** %"PRId64" dup!\n", nb_frames - 1);
-        if (ost->nb_frames_dup > dup_warning) {
-            av_log(ost, AV_LOG_WARNING, "More than %"PRIu64" frames duplicated\n", dup_warning);
-            dup_warning *= 10;
+        if (ost->nb_frames_dup > e->dup_warning) {
+            av_log(ost, AV_LOG_WARNING, "More than %"PRIu64" frames duplicated\n", e->dup_warning);
+            e->dup_warning *= 10;
         }
     }
     ost->last_dropped = nb_frames == nb_frames_prev && frame;
