@@ -1946,6 +1946,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
         .profiles  = NULL_IF_CONFIG_SMALL(ff_evc_profiles),
     },
+    {
+        .id        = AV_CODEC_ID_RTV1,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "rtv1",
+        .long_name = NULL_IF_CONFIG_SMALL("RTV1 (RivaTuner Video)"),
+        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+    },
 
     /* various PCM "codecs" */
     {

@@ -295,6 +295,7 @@ extern const FFCodec ff_roq_decoder;
 extern const FFCodec ff_rpza_encoder;
 extern const FFCodec ff_rpza_decoder;
 extern const FFCodec ff_rscc_decoder;
+extern const FFCodec ff_rtv1_decoder;
 extern const FFCodec ff_rv10_encoder;
 extern const FFCodec ff_rv10_decoder;
 extern const FFCodec ff_rv20_encoder;
