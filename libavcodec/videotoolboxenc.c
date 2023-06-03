@@ -108,6 +108,8 @@ static struct{
     CFStringRef kVTProfileLevel_H264_High_AutoLevel;
     CFStringRef kVTProfileLevel_H264_Extended_5_0;
     CFStringRef kVTProfileLevel_H264_Extended_AutoLevel;
+    CFStringRef kVTProfileLevel_H264_ConstrainedBaseline_AutoLevel;
+    CFStringRef kVTProfileLevel_H264_ConstrainedHigh_AutoLevel;
 
     CFStringRef kVTProfileLevel_HEVC_Main_AutoLevel;
     CFStringRef kVTProfileLevel_HEVC_Main10_AutoLevel;
@@ -171,6 +173,8 @@ static void loadVTEncSymbols(void){
     GET_SYM(kVTProfileLevel_H264_High_AutoLevel,     "H264_High_AutoLevel");
     GET_SYM(kVTProfileLevel_H264_Extended_5_0,       "H264_Extended_5_0");
     GET_SYM(kVTProfileLevel_H264_Extended_AutoLevel, "H264_Extended_AutoLevel");
+    GET_SYM(kVTProfileLevel_H264_ConstrainedBaseline_AutoLevel, "H264_ConstrainedBaseline_AutoLevel");
+    GET_SYM(kVTProfileLevel_H264_ConstrainedHigh_AutoLevel,     "H264_ConstrainedHigh_AutoLevel");
 
     GET_SYM(kVTProfileLevel_HEVC_Main_AutoLevel,     "HEVC_Main_AutoLevel");
     GET_SYM(kVTProfileLevel_HEVC_Main10_AutoLevel,   "HEVC_Main10_AutoLevel");
@@ -191,6 +195,7 @@ static void loadVTEncSymbols(void){
 }
 
 #define AUTO_PROFILE 0
+#define H264_PROFILE_CONSTRAINED_HIGH (FF_PROFILE_H264_HIGH | FF_PROFILE_H264_CONSTRAINED)
 
 typedef enum VTH264Entropy{
     VT_ENTROPY_NOT_SET,
@@ -749,6 +754,18 @@ static bool get_vt_h264_profile_level(AVCodecContext *avctx,
             }
             break;
 
+        case FF_PROFILE_H264_CONSTRAINED_BASELINE:
+            *profile_level_val =  compat_keys.kVTProfileLevel_H264_ConstrainedBaseline_AutoLevel;
+
+            if (vtctx->level != 0) {
+                av_log(avctx,
+                       AV_LOG_WARNING,
+                       "Level is auto-selected when constrained-baseline "
+                       "profile is used. The output may be encoded with a "
+                       "different level.\n");
+            }
+            break;
+
         case FF_PROFILE_H264_MAIN:
             switch (vtctx->level) {
                 case  0: *profile_level_val =
@@ -765,6 +782,18 @@ static bool get_vt_h264_profile_level(AVCodecContext *avctx,
                                   compat_keys.kVTProfileLevel_H264_Main_5_1;       break;
                 case 52: *profile_level_val =
                                   compat_keys.kVTProfileLevel_H264_Main_5_2;       break;
+            }
+            break;
+
+        case H264_PROFILE_CONSTRAINED_HIGH:
+            *profile_level_val =  compat_keys.kVTProfileLevel_H264_ConstrainedHigh_AutoLevel;
+
+            if (vtctx->level != 0) {
+                av_log(avctx,
+                      AV_LOG_WARNING,
+                       "Level is auto-selected when constrained-high profile "
+                       "is used. The output may be encoded with a different "
+                       "level.\n");
             }
             break;
 
@@ -2743,11 +2772,12 @@ static const enum AVPixelFormat prores_pix_fmts[] = {
 #define OFFSET(x) offsetof(VTEncContext, x)
 static const AVOption h264_options[] = {
     { "profile", "Profile", OFFSET(profile), AV_OPT_TYPE_INT64, { .i64 = AUTO_PROFILE }, 0, INT_MAX, VE, "profile" },
+    { "baseline",             "Baseline Profile",             0, AV_OPT_TYPE_CONST, { .i64 = FF_PROFILE_H264_BASELINE             }, INT_MIN, INT_MAX, VE, "profile" },
     { "constrained_baseline", "Constrained Baseline Profile", 0, AV_OPT_TYPE_CONST, { .i64 = FF_PROFILE_H264_CONSTRAINED_BASELINE }, INT_MIN, INT_MAX, VE, "profile" },
-    { "baseline", "Baseline Profile", 0, AV_OPT_TYPE_CONST, { .i64 = FF_PROFILE_H264_BASELINE }, INT_MIN, INT_MAX, VE, "profile" },
-    { "main",     "Main Profile",     0, AV_OPT_TYPE_CONST, { .i64 = FF_PROFILE_H264_MAIN     }, INT_MIN, INT_MAX, VE, "profile" },
-    { "high",     "High Profile",     0, AV_OPT_TYPE_CONST, { .i64 = FF_PROFILE_H264_HIGH     }, INT_MIN, INT_MAX, VE, "profile" },
-    { "extended", "Extend Profile",   0, AV_OPT_TYPE_CONST, { .i64 = FF_PROFILE_H264_EXTENDED }, INT_MIN, INT_MAX, VE, "profile" },
+    { "main",                 "Main Profile",                 0, AV_OPT_TYPE_CONST, { .i64 = FF_PROFILE_H264_MAIN                 }, INT_MIN, INT_MAX, VE, "profile" },
+    { "high",                 "High Profile",                 0, AV_OPT_TYPE_CONST, { .i64 = FF_PROFILE_H264_HIGH                 }, INT_MIN, INT_MAX, VE, "profile" },
+    { "constrained_high",     "Constrained High Profile",     0, AV_OPT_TYPE_CONST, { .i64 = H264_PROFILE_CONSTRAINED_HIGH        }, INT_MIN, INT_MAX, VE, "profile" },
+    { "extended",             "Extend Profile",               0, AV_OPT_TYPE_CONST, { .i64 = FF_PROFILE_H264_EXTENDED             }, INT_MIN, INT_MAX, VE, "profile" },
 
     { "level", "Level", OFFSET(level), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 52, VE, "level" },
     { "1.3", "Level 1.3, only available with Baseline Profile", 0, AV_OPT_TYPE_CONST, { .i64 = 13 }, INT_MIN, INT_MAX, VE, "level" },
