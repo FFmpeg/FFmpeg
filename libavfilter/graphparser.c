@@ -851,6 +851,32 @@ fail:
     return ret;
 }
 
+// print an error message if some options were not found
+static void log_unknown_opt(const AVFilterGraphSegment *seg)
+{
+    for (size_t i = 0; i < seg->nb_chains; i++) {
+        const AVFilterChain *ch = seg->chains[i];
+
+        for (size_t j = 0; j < ch->nb_filters; j++) {
+            const AVFilterParams *p = ch->filters[j];
+            const AVDictionaryEntry *e;
+
+            if (!p->filter)
+                continue;
+
+            e = av_dict_iterate(p->opts, NULL);
+
+            if (e) {
+                av_log(p->filter, AV_LOG_ERROR,
+                       "Could not set non-existent option '%s' to value '%s'\n",
+                       e->key, e->value);
+                return;
+            }
+        }
+    }
+
+}
+
 int avfilter_graph_segment_apply(AVFilterGraphSegment *seg, int flags,
                                  AVFilterInOut **inputs,
                                  AVFilterInOut **outputs)
@@ -868,6 +894,8 @@ int avfilter_graph_segment_apply(AVFilterGraphSegment *seg, int flags,
 
     ret = avfilter_graph_segment_apply_opts(seg, 0);
     if (ret < 0) {
+        if (ret == AVERROR_OPTION_NOT_FOUND)
+            log_unknown_opt(seg);
         av_log(seg->graph, AV_LOG_ERROR, "Error applying filter options\n");
         return ret;
     }
@@ -909,8 +937,11 @@ int avfilter_graph_parse_ptr(AVFilterGraph *graph, const char *filters,
         goto end;
 
     ret = avfilter_graph_segment_apply_opts(seg, 0);
-    if (ret < 0)
+    if (ret < 0) {
+        if (ret == AVERROR_OPTION_NOT_FOUND)
+            log_unknown_opt(seg);
         goto end;
+    }
 
     ret = avfilter_graph_segment_init(seg, 0);
     if (ret < 0)
@@ -988,6 +1019,9 @@ end:
     avfilter_graph_segment_free(&seg);
 
     if (ret < 0) {
+        av_log(graph, AV_LOG_ERROR, "Error processing filtergraph: %s\n",
+               av_err2str(ret));
+
         while (graph->nb_filters)
             avfilter_free(graph->filters[0]);
         av_freep(&graph->filters);
