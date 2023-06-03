@@ -227,3 +227,9 @@ FATE_SAMPLES_FFMPEG-yes += $(FATE_TIME_BASE-yes)
 # test -r used as an input option
 fate-ffmpeg-input-r: CMD = framecrc -r 27 -idct simple -i $(TARGET_SAMPLES)/mpeg2/sony-ct3.bs
 FATE_SAMPLES_FFMPEG-$(call FRAMECRC, MPEGVIDEO, MPEG2VIDEO) += fate-ffmpeg-input-r
+
+# file with completely undecodable TTA audio stream
+# by default should exit with error code 69
+fate-ffmpeg-error-rate-fail: CMD = ffmpeg -i $(TARGET_SAMPLES)/mkv/h264_tta_undecodable.mkv -c:v copy -f null -; test $$? -eq 69
+fate-ffmpeg-error-rate-pass: CMD = ffmpeg -i $(TARGET_SAMPLES)/mkv/h264_tta_undecodable.mkv -c:v copy -f null - -max_error_rate 1
+FATE_SAMPLES_FFMPEG-$(call ENCDEC, PCM_S16LE TTA, NULL MATROSKA) += fate-ffmpeg-error-rate-fail fate-ffmpeg-error-rate-pass
