@@ -134,7 +134,7 @@ static int leb(AVIOContext *pb, uint32_t *len, int eof) {
         if (pb->error)
             return pb->error;
         if (pb->eof_reached)
-            return (eof && !i) ? AVERROR_EOF : AVERROR(EIO);
+            return (eof && !i) ? AVERROR_EOF : AVERROR_INVALIDDATA;
         more = byte & 0x80;
         bits = byte & 0x7f;
         if (i <= 3 || (i == 4 && bits < (1 << 4)))
@@ -231,7 +231,7 @@ static int annexb_read_packet(AVFormatContext *s, AVPacket *pkt)
 retry:
     if (avio_feof(s->pb)) {
         if (c->temporal_unit_size || c->frame_unit_size)
-            return AVERROR(EIO);
+            return AVERROR_INVALIDDATA;
         goto end;
     }
 
@@ -260,7 +260,7 @@ retry:
     if (ret < 0)
         return ret;
     if (ret != obu_unit_size)
-        return AVERROR(EIO);
+        return AVERROR_INVALIDDATA;
 
     c->temporal_unit_size -= obu_unit_size + len;
     c->frame_unit_size -= obu_unit_size + len;
