@@ -2,6 +2,7 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 4.1.11:
+ avformat/nutdec: Add check for avformat_new_stream
  avformat/wavdec: Check that smv block fits in available space
  avcodec/tak: Check remaining bits in ff_tak_decode_frame_header()
  avcodec/utils: the IFF_ILBM implementation assumes that there are a multiple of 16 allocated
