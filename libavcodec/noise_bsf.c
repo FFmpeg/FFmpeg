@@ -45,6 +45,11 @@ static int noise(AVBSFContext *ctx, AVPacket *out)
     if (amount <= 0)
         return AVERROR(EINVAL);
 
+    if (ctx->par_in->codec_id == AV_CODEC_ID_WRAPPED_AVFRAME) {
+        av_log(ctx, AV_LOG_ERROR, "Wrapped AVFrame noising is unsupported\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
     ret = ff_bsf_get_packet(ctx, &in);
     if (ret < 0)
         return ret;
