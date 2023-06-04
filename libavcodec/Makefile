@@ -753,6 +753,7 @@ OBJS-$(CONFIG_VC2_ENCODER)             += vc2enc.o vc2enc_dwt.o diractab.o
 OBJS-$(CONFIG_VCR1_DECODER)            += vcr1.o
 OBJS-$(CONFIG_VMDAUDIO_DECODER)        += vmdaudio.o
 OBJS-$(CONFIG_VMDVIDEO_DECODER)        += vmdvideo.o
+OBJS-$(CONFIG_VMIX_DECODER)            += vmixdec.o
 OBJS-$(CONFIG_VMNC_DECODER)            += vmnc.o
 OBJS-$(CONFIG_VNULL_DECODER)           += null.o
 OBJS-$(CONFIG_VNULL_ENCODER)           += null.o

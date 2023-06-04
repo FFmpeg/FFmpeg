@@ -16,6 +16,7 @@ version <next>:
 - nlmeans_vulkan filter
 - RivaTuner video decoder
 - xfade_vulkan filter
+- vMix video decoder
 
 version 6.0:
 - Radiance HDR image support
