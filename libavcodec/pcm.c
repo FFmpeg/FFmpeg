@@ -578,7 +578,7 @@ const FFCodec ff_ ## name_ ## _decoder = {                                  \
     .priv_data_size = sizeof(PCMDecode),                                    \
     .init           = pcm_decode_init,                                      \
     FF_CODEC_DECODE_CB(pcm_decode_frame),                                    \
-    .p.capabilities = AV_CODEC_CAP_DR1,                                     \
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_PARAM_CHANGE,         \
     .p.sample_fmts  = (const enum AVSampleFormat[]){ sample_fmt_,           \
                                                      AV_SAMPLE_FMT_NONE },  \
 }
