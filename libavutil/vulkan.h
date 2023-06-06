@@ -23,6 +23,7 @@
 
 #include <stdatomic.h>
 
+#include "thread.h"
 #include "pixdesc.h"
 #include "bprint.h"
 #include "hwcontext.h"
@@ -152,6 +153,7 @@ typedef struct FFVulkanPipeline {
 typedef struct FFVkExecContext {
     int idx;
     const struct FFVkExecPool *parent;
+    pthread_mutex_t lock;
 
     /* Queue for the execution context */
     VkQueue queue;
