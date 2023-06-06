@@ -538,7 +538,6 @@ static enum AVPixelFormat get_format(AVCodecContext *s, const enum AVPixelFormat
 {
     InputStream *ist = s->opaque;
     const enum AVPixelFormat *p;
-    int ret;
 
     for (p = pix_fmts; *p != AV_PIX_FMT_NONE; p++) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(*p);
@@ -562,19 +561,7 @@ static enum AVPixelFormat get_format(AVCodecContext *s, const enum AVPixelFormat
             }
         }
         if (config && config->device_type == ist->hwaccel_device_type) {
-            ret = hwaccel_decode_init(s);
-            if (ret < 0) {
-                if (ist->hwaccel_id == HWACCEL_GENERIC) {
-                    av_log(NULL, AV_LOG_FATAL,
-                           "%s hwaccel requested for input stream #%d:%d, "
-                           "but cannot be initialized.\n",
-                           av_hwdevice_get_type_name(config->device_type),
-                           ist->file_index, ist->index);
-                    return AV_PIX_FMT_NONE;
-                }
-                continue;
-            }
-
+            ist->hwaccel_retrieve_data = hwaccel_retrieve_data;
             ist->hwaccel_pix_fmt = *p;
             break;
         }

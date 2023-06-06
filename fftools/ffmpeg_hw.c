@@ -297,7 +297,7 @@ void hw_device_free_all(void)
     nb_hw_devices = 0;
 }
 
-static int hwaccel_retrieve_data(AVCodecContext *avctx, AVFrame *input)
+int hwaccel_retrieve_data(AVCodecContext *avctx, AVFrame *input)
 {
     InputStream *ist = avctx->opaque;
     AVFrame *output = NULL;
@@ -337,15 +337,6 @@ static int hwaccel_retrieve_data(AVCodecContext *avctx, AVFrame *input)
 fail:
     av_frame_free(&output);
     return err;
-}
-
-int hwaccel_decode_init(AVCodecContext *avctx)
-{
-    InputStream *ist = avctx->opaque;
-
-    ist->hwaccel_retrieve_data = &hwaccel_retrieve_data;
-
-    return 0;
 }
 
 AVBufferRef *hw_device_for_filter(void)

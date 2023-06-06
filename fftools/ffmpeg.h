@@ -805,7 +805,7 @@ void hw_device_free_all(void);
  */
 AVBufferRef *hw_device_for_filter(void);
 
-int hwaccel_decode_init(AVCodecContext *avctx);
+int hwaccel_retrieve_data(AVCodecContext *avctx, AVFrame *input);
 
 int dec_open(InputStream *ist);
 void dec_free(Decoder **pdec);
