@@ -1149,8 +1149,6 @@ static void ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
             if (!ist->hwaccel_device)
                 report_and_exit(AVERROR(ENOMEM));
         }
-
-        ist->hwaccel_pix_fmt = AV_PIX_FMT_NONE;
     }
 
     ist->dec = choose_decoder(o, ic, st, ist->hwaccel_id, ist->hwaccel_device_type);

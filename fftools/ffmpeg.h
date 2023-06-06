@@ -393,8 +393,6 @@ typedef struct InputStream {
     char  *hwaccel_device;
     enum AVPixelFormat hwaccel_output_format;
 
-    enum AVPixelFormat hwaccel_pix_fmt;
-
     /* stats */
     // number of frames/samples retrieved from the decoder
     uint64_t frames_decoded;

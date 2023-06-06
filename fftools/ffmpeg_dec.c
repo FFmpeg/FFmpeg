@@ -35,6 +35,8 @@ struct Decoder {
     AVFrame         *frame;
     AVPacket        *pkt;
 
+    enum AVPixelFormat hwaccel_pix_fmt;
+
     // pts/estimated duration of the last decoded frame
     // * in decoder timebase for video,
     // * in last_frame_tb (may change during decoding) for audio
@@ -79,6 +81,7 @@ static int dec_alloc(Decoder **pdec)
     dec->last_filter_in_rescale_delta = AV_NOPTS_VALUE;
     dec->last_frame_pts               = AV_NOPTS_VALUE;
     dec->last_frame_tb                = (AVRational){ 1, 1 };
+    dec->hwaccel_pix_fmt              = AV_PIX_FMT_NONE;
 
     *pdec = dec;
 
@@ -272,7 +275,7 @@ static int video_frame_process(InputStream *ist, AVFrame *frame)
     if(ist->top_field_first>=0)
         frame->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
 
-    if (frame->format == ist->hwaccel_pix_fmt) {
+    if (frame->format == d->hwaccel_pix_fmt) {
         int err = hwaccel_retrieve_data(ist->dec_ctx, frame);
         if (err < 0)
             return err;
@@ -537,6 +540,7 @@ int dec_packet(InputStream *ist, const AVPacket *pkt, int no_eof)
 static enum AVPixelFormat get_format(AVCodecContext *s, const enum AVPixelFormat *pix_fmts)
 {
     InputStream *ist = s->opaque;
+    Decoder       *d = ist->decoder;
     const enum AVPixelFormat *p;
 
     for (p = pix_fmts; *p != AV_PIX_FMT_NONE; p++) {
@@ -561,7 +565,7 @@ static enum AVPixelFormat get_format(AVCodecContext *s, const enum AVPixelFormat
             }
         }
         if (config && config->device_type == ist->hwaccel_device_type) {
-            ist->hwaccel_pix_fmt = *p;
+            d->hwaccel_pix_fmt = *p;
             break;
         }
     }
