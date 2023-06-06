@@ -15,6 +15,7 @@ version <next>:
 - bwdif_vulkan filter
 - nlmeans_vulkan filter
 - RivaTuner video decoder
+- xfade_vulkan filter
 
 version 6.0:
 - Radiance HDR image support
