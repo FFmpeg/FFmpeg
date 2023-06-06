@@ -272,8 +272,8 @@ static int video_frame_process(InputStream *ist, AVFrame *frame)
     if(ist->top_field_first>=0)
         frame->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
 
-    if (ist->hwaccel_retrieve_data && frame->format == ist->hwaccel_pix_fmt) {
-        int err = ist->hwaccel_retrieve_data(ist->dec_ctx, frame);
+    if (frame->format == ist->hwaccel_pix_fmt) {
+        int err = hwaccel_retrieve_data(ist->dec_ctx, frame);
         if (err < 0)
             return err;
     }
@@ -561,7 +561,6 @@ static enum AVPixelFormat get_format(AVCodecContext *s, const enum AVPixelFormat
             }
         }
         if (config && config->device_type == ist->hwaccel_device_type) {
-            ist->hwaccel_retrieve_data = hwaccel_retrieve_data;
             ist->hwaccel_pix_fmt = *p;
             break;
         }
