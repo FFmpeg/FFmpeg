@@ -1035,231 +1035,231 @@ static DemuxStream *demux_stream_alloc(Demuxer *d, AVStream *st)
 static void ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
 {
     AVFormatContext *ic = d->f.ctx;
-        AVCodecParameters *par = st->codecpar;
-        DemuxStream *ds;
-        InputStream *ist;
-        char *framerate = NULL, *hwaccel_device = NULL;
-        const char *hwaccel = NULL;
-        char *hwaccel_output_format = NULL;
-        char *codec_tag = NULL;
-        char *next;
-        char *discard_str = NULL;
-        const AVClass *cc = avcodec_get_class();
-        const AVOption *discard_opt = av_opt_find(&cc, "skip_frame", NULL,
-                                                  0, AV_OPT_SEARCH_FAKE_OBJ);
-        int ret;
+    AVCodecParameters *par = st->codecpar;
+    DemuxStream *ds;
+    InputStream *ist;
+    char *framerate = NULL, *hwaccel_device = NULL;
+    const char *hwaccel = NULL;
+    char *hwaccel_output_format = NULL;
+    char *codec_tag = NULL;
+    char *next;
+    char *discard_str = NULL;
+    const AVClass *cc = avcodec_get_class();
+    const AVOption *discard_opt = av_opt_find(&cc, "skip_frame", NULL,
+                                              0, AV_OPT_SEARCH_FAKE_OBJ);
+    int ret;
 
-        ds  = demux_stream_alloc(d, st);
-        ist = &ds->ist;
+    ds  = demux_stream_alloc(d, st);
+    ist = &ds->ist;
 
-        ist->discard = 1;
-        st->discard  = AVDISCARD_ALL;
-        ist->nb_samples = 0;
-        ds->first_dts   = AV_NOPTS_VALUE;
-        ds->next_dts    = AV_NOPTS_VALUE;
+    ist->discard = 1;
+    st->discard  = AVDISCARD_ALL;
+    ist->nb_samples = 0;
+    ds->first_dts   = AV_NOPTS_VALUE;
+    ds->next_dts    = AV_NOPTS_VALUE;
 
-        ds->min_pts = INT64_MAX;
-        ds->max_pts = INT64_MIN;
+    ds->min_pts = INT64_MAX;
+    ds->max_pts = INT64_MIN;
 
-        ds->ts_scale = 1.0;
-        MATCH_PER_STREAM_OPT(ts_scale, dbl, ds->ts_scale, ic, st);
+    ds->ts_scale = 1.0;
+    MATCH_PER_STREAM_OPT(ts_scale, dbl, ds->ts_scale, ic, st);
 
-        ist->autorotate = 1;
-        MATCH_PER_STREAM_OPT(autorotate, i, ist->autorotate, ic, st);
+    ist->autorotate = 1;
+    MATCH_PER_STREAM_OPT(autorotate, i, ist->autorotate, ic, st);
 
-        MATCH_PER_STREAM_OPT(codec_tags, str, codec_tag, ic, st);
-        if (codec_tag) {
-            uint32_t tag = strtol(codec_tag, &next, 0);
-            if (*next) {
-                uint8_t buf[4] = { 0 };
-                memcpy(buf, codec_tag, FFMIN(sizeof(buf), strlen(codec_tag)));
-                tag = AV_RL32(buf);
-            }
-
-            st->codecpar->codec_tag = tag;
+    MATCH_PER_STREAM_OPT(codec_tags, str, codec_tag, ic, st);
+    if (codec_tag) {
+        uint32_t tag = strtol(codec_tag, &next, 0);
+        if (*next) {
+            uint8_t buf[4] = { 0 };
+            memcpy(buf, codec_tag, FFMIN(sizeof(buf), strlen(codec_tag)));
+            tag = AV_RL32(buf);
         }
 
-        if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-            add_display_matrix_to_stream(o, ic, ist);
+        st->codecpar->codec_tag = tag;
+    }
 
-            MATCH_PER_STREAM_OPT(hwaccels, str, hwaccel, ic, st);
-            MATCH_PER_STREAM_OPT(hwaccel_output_formats, str,
-                                 hwaccel_output_format, ic, st);
+    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+        add_display_matrix_to_stream(o, ic, ist);
 
-            if (!hwaccel_output_format && hwaccel && !strcmp(hwaccel, "cuvid")) {
-                av_log(ist, AV_LOG_WARNING,
-                    "WARNING: defaulting hwaccel_output_format to cuda for compatibility "
-                    "with old commandlines. This behaviour is DEPRECATED and will be removed "
-                    "in the future. Please explicitly set \"-hwaccel_output_format cuda\".\n");
-                ist->hwaccel_output_format = AV_PIX_FMT_CUDA;
-            } else if (!hwaccel_output_format && hwaccel && !strcmp(hwaccel, "qsv")) {
-                av_log(ist, AV_LOG_WARNING,
-                    "WARNING: defaulting hwaccel_output_format to qsv for compatibility "
-                    "with old commandlines. This behaviour is DEPRECATED and will be removed "
-                    "in the future. Please explicitly set \"-hwaccel_output_format qsv\".\n");
-                ist->hwaccel_output_format = AV_PIX_FMT_QSV;
-            } else if (!hwaccel_output_format && hwaccel && !strcmp(hwaccel, "mediacodec")) {
-                // There is no real AVHWFrameContext implementation. Set
-                // hwaccel_output_format to avoid av_hwframe_transfer_data error.
-                ist->hwaccel_output_format = AV_PIX_FMT_MEDIACODEC;
-            } else if (hwaccel_output_format) {
-                ist->hwaccel_output_format = av_get_pix_fmt(hwaccel_output_format);
-                if (ist->hwaccel_output_format == AV_PIX_FMT_NONE) {
-                    av_log(ist, AV_LOG_FATAL, "Unrecognised hwaccel output "
-                           "format: %s", hwaccel_output_format);
-                }
-            } else {
-                ist->hwaccel_output_format = AV_PIX_FMT_NONE;
+        MATCH_PER_STREAM_OPT(hwaccels, str, hwaccel, ic, st);
+        MATCH_PER_STREAM_OPT(hwaccel_output_formats, str,
+                             hwaccel_output_format, ic, st);
+
+        if (!hwaccel_output_format && hwaccel && !strcmp(hwaccel, "cuvid")) {
+            av_log(ist, AV_LOG_WARNING,
+                "WARNING: defaulting hwaccel_output_format to cuda for compatibility "
+                "with old commandlines. This behaviour is DEPRECATED and will be removed "
+                "in the future. Please explicitly set \"-hwaccel_output_format cuda\".\n");
+            ist->hwaccel_output_format = AV_PIX_FMT_CUDA;
+        } else if (!hwaccel_output_format && hwaccel && !strcmp(hwaccel, "qsv")) {
+            av_log(ist, AV_LOG_WARNING,
+                "WARNING: defaulting hwaccel_output_format to qsv for compatibility "
+                "with old commandlines. This behaviour is DEPRECATED and will be removed "
+                "in the future. Please explicitly set \"-hwaccel_output_format qsv\".\n");
+            ist->hwaccel_output_format = AV_PIX_FMT_QSV;
+        } else if (!hwaccel_output_format && hwaccel && !strcmp(hwaccel, "mediacodec")) {
+            // There is no real AVHWFrameContext implementation. Set
+            // hwaccel_output_format to avoid av_hwframe_transfer_data error.
+            ist->hwaccel_output_format = AV_PIX_FMT_MEDIACODEC;
+        } else if (hwaccel_output_format) {
+            ist->hwaccel_output_format = av_get_pix_fmt(hwaccel_output_format);
+            if (ist->hwaccel_output_format == AV_PIX_FMT_NONE) {
+                av_log(ist, AV_LOG_FATAL, "Unrecognised hwaccel output "
+                       "format: %s", hwaccel_output_format);
             }
-
-            if (hwaccel) {
-                // The NVDEC hwaccels use a CUDA device, so remap the name here.
-                if (!strcmp(hwaccel, "nvdec") || !strcmp(hwaccel, "cuvid"))
-                    hwaccel = "cuda";
-
-                if (!strcmp(hwaccel, "none"))
-                    ist->hwaccel_id = HWACCEL_NONE;
-                else if (!strcmp(hwaccel, "auto"))
-                    ist->hwaccel_id = HWACCEL_AUTO;
-                else {
-                    enum AVHWDeviceType type = av_hwdevice_find_type_by_name(hwaccel);
-                    if (type != AV_HWDEVICE_TYPE_NONE) {
-                        ist->hwaccel_id = HWACCEL_GENERIC;
-                        ist->hwaccel_device_type = type;
-                    }
-
-                    if (!ist->hwaccel_id) {
-                        av_log(ist, AV_LOG_FATAL, "Unrecognized hwaccel: %s.\n",
-                               hwaccel);
-                        av_log(ist, AV_LOG_FATAL, "Supported hwaccels: ");
-                        type = AV_HWDEVICE_TYPE_NONE;
-                        while ((type = av_hwdevice_iterate_types(type)) !=
-                               AV_HWDEVICE_TYPE_NONE)
-                            av_log(ist, AV_LOG_FATAL, "%s ",
-                                   av_hwdevice_get_type_name(type));
-                        av_log(ist, AV_LOG_FATAL, "\n");
-                        exit_program(1);
-                    }
-                }
-            }
-
-            MATCH_PER_STREAM_OPT(hwaccel_devices, str, hwaccel_device, ic, st);
-            if (hwaccel_device) {
-                ist->hwaccel_device = av_strdup(hwaccel_device);
-                if (!ist->hwaccel_device)
-                    report_and_exit(AVERROR(ENOMEM));
-            }
-
-            ist->hwaccel_pix_fmt = AV_PIX_FMT_NONE;
+        } else {
+            ist->hwaccel_output_format = AV_PIX_FMT_NONE;
         }
 
-        ist->dec = choose_decoder(o, ic, st, ist->hwaccel_id, ist->hwaccel_device_type);
-        ist->decoder_opts = filter_codec_opts(o->g->codec_opts, ist->st->codecpar->codec_id, ic, st, ist->dec);
+        if (hwaccel) {
+            // The NVDEC hwaccels use a CUDA device, so remap the name here.
+            if (!strcmp(hwaccel, "nvdec") || !strcmp(hwaccel, "cuvid"))
+                hwaccel = "cuda";
 
-        ist->reinit_filters = -1;
-        MATCH_PER_STREAM_OPT(reinit_filters, i, ist->reinit_filters, ic, st);
+            if (!strcmp(hwaccel, "none"))
+                ist->hwaccel_id = HWACCEL_NONE;
+            else if (!strcmp(hwaccel, "auto"))
+                ist->hwaccel_id = HWACCEL_AUTO;
+            else {
+                enum AVHWDeviceType type = av_hwdevice_find_type_by_name(hwaccel);
+                if (type != AV_HWDEVICE_TYPE_NONE) {
+                    ist->hwaccel_id = HWACCEL_GENERIC;
+                    ist->hwaccel_device_type = type;
+                }
 
-        MATCH_PER_STREAM_OPT(discard, str, discard_str, ic, st);
-        ist->user_set_discard = AVDISCARD_NONE;
+                if (!ist->hwaccel_id) {
+                    av_log(ist, AV_LOG_FATAL, "Unrecognized hwaccel: %s.\n",
+                           hwaccel);
+                    av_log(ist, AV_LOG_FATAL, "Supported hwaccels: ");
+                    type = AV_HWDEVICE_TYPE_NONE;
+                    while ((type = av_hwdevice_iterate_types(type)) !=
+                           AV_HWDEVICE_TYPE_NONE)
+                        av_log(ist, AV_LOG_FATAL, "%s ",
+                               av_hwdevice_get_type_name(type));
+                    av_log(ist, AV_LOG_FATAL, "\n");
+                    exit_program(1);
+                }
+            }
+        }
 
-        if ((o->video_disable && ist->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) ||
-            (o->audio_disable && ist->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) ||
-            (o->subtitle_disable && ist->st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE) ||
-            (o->data_disable && ist->st->codecpar->codec_type == AVMEDIA_TYPE_DATA))
-                ist->user_set_discard = AVDISCARD_ALL;
+        MATCH_PER_STREAM_OPT(hwaccel_devices, str, hwaccel_device, ic, st);
+        if (hwaccel_device) {
+            ist->hwaccel_device = av_strdup(hwaccel_device);
+            if (!ist->hwaccel_device)
+                report_and_exit(AVERROR(ENOMEM));
+        }
 
-        if (discard_str && av_opt_eval_int(&cc, discard_opt, discard_str, &ist->user_set_discard) < 0) {
-            av_log(ist, AV_LOG_ERROR, "Error parsing discard %s.\n",
-                    discard_str);
+        ist->hwaccel_pix_fmt = AV_PIX_FMT_NONE;
+    }
+
+    ist->dec = choose_decoder(o, ic, st, ist->hwaccel_id, ist->hwaccel_device_type);
+    ist->decoder_opts = filter_codec_opts(o->g->codec_opts, ist->st->codecpar->codec_id, ic, st, ist->dec);
+
+    ist->reinit_filters = -1;
+    MATCH_PER_STREAM_OPT(reinit_filters, i, ist->reinit_filters, ic, st);
+
+    MATCH_PER_STREAM_OPT(discard, str, discard_str, ic, st);
+    ist->user_set_discard = AVDISCARD_NONE;
+
+    if ((o->video_disable && ist->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) ||
+        (o->audio_disable && ist->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) ||
+        (o->subtitle_disable && ist->st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE) ||
+        (o->data_disable && ist->st->codecpar->codec_type == AVMEDIA_TYPE_DATA))
+            ist->user_set_discard = AVDISCARD_ALL;
+
+    if (discard_str && av_opt_eval_int(&cc, discard_opt, discard_str, &ist->user_set_discard) < 0) {
+        av_log(ist, AV_LOG_ERROR, "Error parsing discard %s.\n",
+                discard_str);
+        exit_program(1);
+    }
+
+    ist->dec_ctx = avcodec_alloc_context3(ist->dec);
+    if (!ist->dec_ctx)
+        report_and_exit(AVERROR(ENOMEM));
+
+    ret = avcodec_parameters_to_context(ist->dec_ctx, par);
+    if (ret < 0) {
+        av_log(ist, AV_LOG_ERROR, "Error initializing the decoder context.\n");
+        exit_program(1);
+    }
+
+    if (o->bitexact)
+        ist->dec_ctx->flags |= AV_CODEC_FLAG_BITEXACT;
+
+    switch (par->codec_type) {
+    case AVMEDIA_TYPE_VIDEO:
+        MATCH_PER_STREAM_OPT(frame_rates, str, framerate, ic, st);
+        if (framerate && av_parse_video_rate(&ist->framerate,
+                                             framerate) < 0) {
+            av_log(ist, AV_LOG_ERROR, "Error parsing framerate %s.\n",
+                   framerate);
             exit_program(1);
         }
 
-        ist->dec_ctx = avcodec_alloc_context3(ist->dec);
-        if (!ist->dec_ctx)
-            report_and_exit(AVERROR(ENOMEM));
+        ist->top_field_first = -1;
+        MATCH_PER_STREAM_OPT(top_field_first, i, ist->top_field_first, ic, st);
 
-        ret = avcodec_parameters_to_context(ist->dec_ctx, par);
-        if (ret < 0) {
-            av_log(ist, AV_LOG_ERROR, "Error initializing the decoder context.\n");
+        ist->framerate_guessed = av_guess_frame_rate(ic, st, NULL);
+
+        break;
+    case AVMEDIA_TYPE_AUDIO: {
+        int guess_layout_max = INT_MAX;
+        MATCH_PER_STREAM_OPT(guess_layout_max, i, guess_layout_max, ic, st);
+        guess_input_channel_layout(ist, guess_layout_max);
+        break;
+    }
+    case AVMEDIA_TYPE_DATA:
+    case AVMEDIA_TYPE_SUBTITLE: {
+        char *canvas_size = NULL;
+        MATCH_PER_STREAM_OPT(fix_sub_duration, i, ist->fix_sub_duration, ic, st);
+        MATCH_PER_STREAM_OPT(canvas_sizes, str, canvas_size, ic, st);
+        if (canvas_size &&
+            av_parse_video_size(&ist->dec_ctx->width, &ist->dec_ctx->height, canvas_size) < 0) {
+            av_log(ist, AV_LOG_FATAL, "Invalid canvas size: %s.\n", canvas_size);
             exit_program(1);
         }
 
-        if (o->bitexact)
-            ist->dec_ctx->flags |= AV_CODEC_FLAG_BITEXACT;
-
-        switch (par->codec_type) {
-        case AVMEDIA_TYPE_VIDEO:
-            MATCH_PER_STREAM_OPT(frame_rates, str, framerate, ic, st);
-            if (framerate && av_parse_video_rate(&ist->framerate,
-                                                 framerate) < 0) {
-                av_log(ist, AV_LOG_ERROR, "Error parsing framerate %s.\n",
-                       framerate);
-                exit_program(1);
-            }
-
-            ist->top_field_first = -1;
-            MATCH_PER_STREAM_OPT(top_field_first, i, ist->top_field_first, ic, st);
-
-            ist->framerate_guessed = av_guess_frame_rate(ic, st, NULL);
-
-            break;
-        case AVMEDIA_TYPE_AUDIO: {
-            int guess_layout_max = INT_MAX;
-            MATCH_PER_STREAM_OPT(guess_layout_max, i, guess_layout_max, ic, st);
-            guess_input_channel_layout(ist, guess_layout_max);
-            break;
-        }
-        case AVMEDIA_TYPE_DATA:
-        case AVMEDIA_TYPE_SUBTITLE: {
-            char *canvas_size = NULL;
-            MATCH_PER_STREAM_OPT(fix_sub_duration, i, ist->fix_sub_duration, ic, st);
-            MATCH_PER_STREAM_OPT(canvas_sizes, str, canvas_size, ic, st);
-            if (canvas_size &&
-                av_parse_video_size(&ist->dec_ctx->width, &ist->dec_ctx->height, canvas_size) < 0) {
-                av_log(ist, AV_LOG_FATAL, "Invalid canvas size: %s.\n", canvas_size);
-                exit_program(1);
-            }
-
-            /* Compute the size of the canvas for the subtitles stream.
-               If the subtitles codecpar has set a size, use it. Otherwise use the
-               maximum dimensions of the video streams in the same file. */
-            ist->sub2video.w = ist->dec_ctx->width;
-            ist->sub2video.h = ist->dec_ctx->height;
-            if (!(ist->sub2video.w && ist->sub2video.h)) {
-                for (int j = 0; j < ic->nb_streams; j++) {
-                    AVCodecParameters *par1 = ic->streams[j]->codecpar;
-                    if (par1->codec_type == AVMEDIA_TYPE_VIDEO) {
-                        ist->sub2video.w = FFMAX(ist->sub2video.w, par1->width);
-                        ist->sub2video.h = FFMAX(ist->sub2video.h, par1->height);
-                    }
+        /* Compute the size of the canvas for the subtitles stream.
+           If the subtitles codecpar has set a size, use it. Otherwise use the
+           maximum dimensions of the video streams in the same file. */
+        ist->sub2video.w = ist->dec_ctx->width;
+        ist->sub2video.h = ist->dec_ctx->height;
+        if (!(ist->sub2video.w && ist->sub2video.h)) {
+            for (int j = 0; j < ic->nb_streams; j++) {
+                AVCodecParameters *par1 = ic->streams[j]->codecpar;
+                if (par1->codec_type == AVMEDIA_TYPE_VIDEO) {
+                    ist->sub2video.w = FFMAX(ist->sub2video.w, par1->width);
+                    ist->sub2video.h = FFMAX(ist->sub2video.h, par1->height);
                 }
             }
-
-            if (!(ist->sub2video.w && ist->sub2video.h)) {
-                ist->sub2video.w = FFMAX(ist->sub2video.w, 720);
-                ist->sub2video.h = FFMAX(ist->sub2video.h, 576);
-            }
-
-            break;
-        }
-        case AVMEDIA_TYPE_ATTACHMENT:
-        case AVMEDIA_TYPE_UNKNOWN:
-            break;
-        default:
-            abort();
         }
 
-        ist->par = avcodec_parameters_alloc();
-        if (!ist->par)
-            report_and_exit(AVERROR(ENOMEM));
-
-        ret = avcodec_parameters_from_context(ist->par, ist->dec_ctx);
-        if (ret < 0) {
-            av_log(ist, AV_LOG_ERROR, "Error initializing the decoder context.\n");
-            exit_program(1);
+        if (!(ist->sub2video.w && ist->sub2video.h)) {
+            ist->sub2video.w = FFMAX(ist->sub2video.w, 720);
+            ist->sub2video.h = FFMAX(ist->sub2video.h, 576);
         }
 
-        ist->codec_desc = avcodec_descriptor_get(ist->par->codec_id);
+        break;
+    }
+    case AVMEDIA_TYPE_ATTACHMENT:
+    case AVMEDIA_TYPE_UNKNOWN:
+        break;
+    default:
+        abort();
+    }
+
+    ist->par = avcodec_parameters_alloc();
+    if (!ist->par)
+        report_and_exit(AVERROR(ENOMEM));
+
+    ret = avcodec_parameters_from_context(ist->par, ist->dec_ctx);
+    if (ret < 0) {
+        av_log(ist, AV_LOG_ERROR, "Error initializing the decoder context.\n");
+        exit_program(1);
+    }
+
+    ist->codec_desc = avcodec_descriptor_get(ist->par->codec_id);
 }
 
 static void dump_attachment(InputStream *ist, const char *filename)
