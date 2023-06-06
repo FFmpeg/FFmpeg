@@ -1032,15 +1032,9 @@ static DemuxStream *demux_stream_alloc(Demuxer *d, AVStream *st)
     return ds;
 }
 
-/* Add all the streams from the given input file to the demuxer */
-static void add_input_streams(const OptionsContext *o, Demuxer *d)
+static void ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
 {
-    InputFile       *f  = &d->f;
-    AVFormatContext *ic = f->ctx;
-    int i, ret;
-
-    for (i = 0; i < ic->nb_streams; i++) {
-        AVStream *st = ic->streams[i];
+    AVFormatContext *ic = d->f.ctx;
         AVCodecParameters *par = st->codecpar;
         DemuxStream *ds;
         InputStream *ist;
@@ -1053,6 +1047,7 @@ static void add_input_streams(const OptionsContext *o, Demuxer *d)
         const AVClass *cc = avcodec_get_class();
         const AVOption *discard_opt = av_opt_find(&cc, "skip_frame", NULL,
                                                   0, AV_OPT_SEARCH_FAKE_OBJ);
+        int ret;
 
         ds  = demux_stream_alloc(d, st);
         ist = &ds->ist;
@@ -1265,7 +1260,6 @@ static void add_input_streams(const OptionsContext *o, Demuxer *d)
         }
 
         ist->codec_desc = avcodec_descriptor_get(ist->par->codec_id);
-    }
 }
 
 static void dump_attachment(InputStream *ist, const char *filename)
@@ -1580,7 +1574,9 @@ int ifile_open(const OptionsContext *o, const char *filename)
 
     d->thread_queue_size = o->thread_queue_size;
 
-    add_input_streams(o, d);
+    /* Add all the streams from the given input file to the demuxer */
+    for (int i = 0; i < ic->nb_streams; i++)
+        ist_add(o, d, ic->streams[i]);
 
     /* dump the file content */
     av_dump_format(ic, f->index, filename, 0);
