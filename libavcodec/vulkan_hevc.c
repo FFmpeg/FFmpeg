@@ -788,7 +788,7 @@ static int vk_hevc_start_frame(AVCodecContext          *avctx,
         .NumDeltaPocsOfRefRpsIdx = h->sh.short_term_rps ? h->sh.short_term_rps->rps_idx_num_delta_pocs : 0,
         .PicOrderCntVal = h->poc,
         .NumBitsForSTRefPicSetInSlice = !h->sh.short_term_ref_pic_set_sps_flag ?
-                                         h->sh.bits_used_for_short_term_rps : 0,
+                                         h->sh.short_term_ref_pic_set_size : 0,
     };
 
     /* Fill in references */
