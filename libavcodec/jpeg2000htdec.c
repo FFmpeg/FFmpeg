@@ -1101,8 +1101,9 @@ static void jpeg2000_decode_sigprop_segment(Jpeg2000Cblk *cblk, uint16_t width,
  * See procedure decodeSigPropMag at Rec. ITU-T T.814, 7.5.
 */
 static int
-jpeg2000_decode_magref_segment(Jpeg2000Cblk *cblk, uint16_t width, uint16_t block_height, uint8_t *magref_segment,
-                       uint32_t magref_length, uint8_t pLSB, int32_t *sample_buf, uint8_t *block_states)
+jpeg2000_decode_magref_segment( uint16_t width, uint16_t block_height,
+                                uint8_t *magref_segment,uint32_t magref_length,
+                                uint8_t pLSB, int32_t *sample_buf, uint8_t *block_states)
 {
 
     StateVars mag_ref           = { 0 };
@@ -1260,10 +1261,17 @@ ff_jpeg2000_decode_htj2k(const Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c
         jpeg2000_decode_sigprop_segment(cblk, width, height, Dref, Lref,
                                 pLSB - 1, sample_buf, block_states);
 
-    if (cblk->npasses > 2)
-        if ((ret = jpeg2000_decode_magref_segment(cblk, width, height, Dref, Lref,
-                                          pLSB - 1, sample_buf, block_states)) < 0)
+    if (cblk->npasses > 2) {
+
+        if (Lref < 2){
+            av_log(s->avctx,AV_LOG_ERROR,"Invalid magnitude refinement length\n");
+            ret = AVERROR_INVALIDDATA;
             goto free;
+        }
+        if ((ret = jpeg2000_decode_magref_segment(width, height, Dref, Lref,
+                                                  pLSB - 1, sample_buf, block_states)) < 0)
+            goto free;
+    }
 
     pLSB = 31 - M_b;
 
