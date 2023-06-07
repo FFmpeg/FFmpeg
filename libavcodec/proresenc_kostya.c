@@ -1355,6 +1355,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
 
     avctx->codec_tag   = ctx->profile_info->tag;
+    avctx->profile = ctx->profile;
 
     av_log(avctx, AV_LOG_DEBUG,
            "profile %d, %d slices, interlacing: %s, %d bits per MB\n",
