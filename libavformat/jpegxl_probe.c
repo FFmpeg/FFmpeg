@@ -21,6 +21,7 @@
 
 #include "jpegxl_probe.h"
 
+#define UNCHECKED_BITSTREAM_READER 0
 #define BITSTREAM_READER_LE
 #include "libavcodec/get_bits.h"
 
@@ -293,6 +294,8 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen, int valid
             skip_bits_long(gb, 1);
         }
     }
+    if (get_bits_left(gb) < 1)
+        return AVERROR_INVALIDDATA;
 
     if (!all_default) {
         jpegxl_skip_bit_depth(gb);
@@ -307,6 +310,8 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen, int valid
         for (uint32_t i = 0; i < num_extra_channels; i++) {
             if (jpegxl_read_extra_channel_info(gb, validate_level) < 0)
                 return -1;
+            if (get_bits_left(gb) < 1)
+                return AVERROR_INVALIDDATA;
         }
 
         xyb_encoded = get_bits1(gb);
@@ -336,8 +341,11 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen, int valid
                             return -1;
                         if (primaries == FF_JPEGXL_PR_CUSTOM) {
                             /* ux/uy values for r,g,b */
-                            for (int i = 0; i < 6; i++)
+                            for (int i = 0; i < 6; i++) {
                                 jxl_u32(gb, 0, 524288, 1048576, 2097152, 19, 19, 20, 21);
+                                if (get_bits_left(gb) < 1)
+                                    return AVERROR_INVALIDDATA;
+                            }
                         }
                     }
                 }
@@ -363,10 +371,14 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen, int valid
             skip_bits_long(gb, 16 + 16 + 1 + 16);
 
         extensions = jpegxl_u64(gb);
+        if (get_bits_left(gb) < 1)
+            return AVERROR_INVALIDDATA;
         if (extensions) {
             for (int i = 0; i < 64; i++) {
                 if (extensions & (UINT64_C(1) << i))
                     jpegxl_u64(gb);
+                if (get_bits_left(gb) < 1)
+                    return AVERROR_INVALIDDATA;
             }
         }
     }
