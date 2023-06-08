@@ -20,6 +20,7 @@ version <next>:
 - Essential Video Coding parser, muxer and demuxer
 - Essential Video Coding frame merge bsf
 - bwdif_cuda filter
+- Microsoft RLE video encoder
 
 version 6.0:
 - Radiance HDR image support

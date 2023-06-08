@@ -1,0 +1,4 @@
+ee8f4d86f117d69919be69fbc976981a *tests/data/fate/vsynth3-msrle.avi
+72866 tests/data/fate/vsynth3-msrle.avi
+fa6042492a3116c1ae9a32b487caa677 *tests/data/fate/vsynth3-msrle.out.rawvideo
+stddev:    8.88 PSNR: 29.16 MAXDIFF:   51 bytes:    86700/    86700

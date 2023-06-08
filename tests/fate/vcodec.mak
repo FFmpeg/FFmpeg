@@ -338,6 +338,9 @@ fate-vsynth%-msmpeg4:            ENCOPTS = -qscale 10
 FATE_VCODEC-$(call ENCDEC, MSMPEG4V2, AVI) += msmpeg4v2
 fate-vsynth%-msmpeg4v2:          ENCOPTS = -qscale 10
 
+FATE_VCODEC_SCALE-$(call ENCDEC, MSRLE, AVI) += msrle
+fate-vsynth%-msrle:              CODEC   = msrle
+
 FATE_VCODEC_SCALE-$(call ENCDEC, PNG, AVI) += mpng
 fate-vsynth%-mpng:               CODEC   = png
 

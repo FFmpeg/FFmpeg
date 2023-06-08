@@ -228,6 +228,7 @@ extern const FFCodec ff_msmpeg4v3_encoder;
 extern const FFCodec ff_msmpeg4v3_decoder;
 extern const FFCodec ff_msmpeg4_crystalhd_decoder;
 extern const FFCodec ff_msp2_decoder;
+extern const FFCodec ff_msrle_encoder;
 extern const FFCodec ff_msrle_decoder;
 extern const FFCodec ff_mss1_decoder;
 extern const FFCodec ff_mss2_decoder;

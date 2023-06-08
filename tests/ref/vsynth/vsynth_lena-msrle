@@ -1,0 +1,4 @@
+9654924690cbaf6348ea798e442e819c *tests/data/fate/vsynth_lena-msrle.avi
+4671320 tests/data/fate/vsynth_lena-msrle.avi
+db453693ceae6f65c173dd716ee2662e *tests/data/fate/vsynth_lena-msrle.out.rawvideo
+stddev:    8.07 PSNR: 29.99 MAXDIFF:   32 bytes:  7603200/  7603200

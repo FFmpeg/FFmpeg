@@ -210,6 +210,7 @@ Codecs:
   mqc*                                  Nicolas Bertrand
   msmpeg4.c, msmpeg4data.h              Michael Niedermayer
   msrle.c                               Mike Melanson
+  msrleenc.c                            Tomas Härdin
   msvideo1.c                            Mike Melanson
   nuv.c                                 Reimar Doeffinger
   nvdec*, nvenc*                        Timo Rothenpieler

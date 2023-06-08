@@ -3061,6 +3061,20 @@ Video encoders can take input in either of nv12 or yuv420p form
 (some encoders support both, some support only either - in practice,
 nv12 is the safer choice, especially among HW encoders).
 
+@section Microsoft RLE
+
+Microsoft RLE aka MSRLE encoder.
+Only 8-bit palette mode supported.
+Compatible with Windows 3.1 and Windows 95.
+
+@subsection Options
+
+@table @option
+@item g @var{integer}
+Keyframe interval.
+A keyframe is inserted at least every @code{-g} frames, sometimes sooner.
+@end table
+
 @section mpeg2
 
 MPEG-2 video encoder.
