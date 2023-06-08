@@ -57,24 +57,25 @@ enum JpegXLPrimaries {
     FF_JPEGXL_PR_P3 = 11,
 };
 
-#define jxl_bits(n) get_bits_long(gb, (n))
-#define jxl_bits_skip(n) skip_bits_long(gb, (n))
-#define jxl_u32(c0, c1, c2, c3, u0, u1, u2, u3) jpegxl_u32(gb, \
-    (const uint32_t[]){c0, c1, c2, c3}, (const uint32_t[]){u0, u1, u2, u3})
-#define jxl_u64() jpegxl_u64(gb)
-#define jxl_enum() jxl_u32(0, 1, 2, 18, 0, 0, 4, 6)
-
 /* read a U32(c_i + u(u_i)) */
-static uint32_t jpegxl_u32(GetBitContext *gb,
-                           const uint32_t constants[4], const uint32_t ubits[4])
+static av_always_inline uint32_t jxl_u32(GetBitContext *gb,
+                        uint32_t c0, uint32_t c1, uint32_t c2, uint32_t c3,
+                        uint32_t u0, uint32_t u1, uint32_t u2, uint32_t u3)
 {
-    uint32_t ret, choice = jxl_bits(2);
+    const uint32_t constants[4] = {c0, c1, c2, c3};
+    const uint32_t ubits    [4] = {u0, u1, u2, u3};
+    uint32_t ret, choice = get_bits(gb, 2);
 
     ret = constants[choice];
     if (ubits[choice])
-        ret += jxl_bits(ubits[choice]);
+        ret += get_bits_long(gb, ubits[choice]);
 
     return ret;
+}
+
+static av_always_inline uint32_t jxl_enum(GetBitContext *gb)
+{
+    return jxl_u32(gb, 0, 1, 2, 18, 0, 0, 4, 6);
 }
 
 /* read a U64() */
@@ -82,24 +83,24 @@ static uint64_t jpegxl_u64(GetBitContext *gb)
 {
     uint64_t shift = 12, ret;
 
-    switch (jxl_bits(2)) {
+    switch (get_bits(gb, 2)) {
     case 0:
         ret = 0;
         break;
     case 1:
-        ret = 1 + jxl_bits(4);
+        ret = 1 + get_bits(gb, 4);
         break;
     case 2:
-        ret = 17 + jxl_bits(8);
+        ret = 17 + get_bits(gb, 8);
         break;
     case 3:
-        ret = jxl_bits(12);
-        while (jxl_bits(1)) {
+        ret = get_bits(gb, 12);
+        while (get_bits1(gb)) {
             if (shift < 60) {
-                ret |= (uint64_t)jxl_bits(8) << shift;
+                ret |= (uint64_t)get_bits(gb, 8) << shift;
                 shift += 8;
             } else {
-                ret |= (uint64_t)jxl_bits(4) << shift;
+                ret |= (uint64_t)get_bits(gb, 4) << shift;
                 break;
             }
         }
@@ -142,18 +143,18 @@ static int jpegxl_read_size_header(GetBitContext *gb)
 {
     uint32_t width, height;
 
-    if (jxl_bits(1)) {
+    if (get_bits1(gb)) {
         /* small size header */
-        height = (jxl_bits(5) + 1) << 3;
-        width = jpegxl_width_from_ratio(height, jxl_bits(3));
+        height = (get_bits(gb, 5) + 1) << 3;
+        width = jpegxl_width_from_ratio(height, get_bits(gb, 3));
         if (!width)
-            width = (jxl_bits(5) + 1) << 3;
+            width = (get_bits(gb, 5) + 1) << 3;
     } else {
         /* large size header */
-        height = 1 + jxl_u32(0, 0, 0, 0, 9, 13, 18, 30);
-        width = jpegxl_width_from_ratio(height, jxl_bits(3));
+        height = 1 + jxl_u32(gb, 0, 0, 0, 0, 9, 13, 18, 30);
+        width = jpegxl_width_from_ratio(height, get_bits(gb, 3));
         if (!width)
-            width = 1 + jxl_u32(0, 0, 0, 0, 9, 13, 18, 30);
+            width = 1 + jxl_u32(gb, 0, 0, 0, 0, 9, 13, 18, 30);
     }
     if (width > (1 << 18) || height > (1 << 18)
         || (width >> 4) * (height >> 4) > (1 << 20))
@@ -170,18 +171,18 @@ static int jpegxl_read_preview_header(GetBitContext *gb)
 {
     uint32_t width, height;
 
-    if (jxl_bits(1)) {
+    if (get_bits1(gb)) {
         /* coded height and width divided by eight */
-        height = jxl_u32(16, 32, 1, 33, 0, 0, 5, 9) << 3;
-        width = jpegxl_width_from_ratio(height, jxl_bits(3));
+        height = jxl_u32(gb, 16, 32, 1, 33, 0, 0, 5, 9) << 3;
+        width = jpegxl_width_from_ratio(height, get_bits(gb, 3));
         if (!width)
-            width = jxl_u32(16, 32, 1, 33, 0, 0, 5, 9) << 3;
+            width = jxl_u32(gb, 16, 32, 1, 33, 0, 0, 5, 9) << 3;
     } else {
         /* full height and width coded */
-        height = jxl_u32(1, 65, 321, 1345, 6, 8, 10, 12);
-        width = jpegxl_width_from_ratio(height, jxl_bits(3));
+        height = jxl_u32(gb, 1, 65, 321, 1345, 6, 8, 10, 12);
+        width = jpegxl_width_from_ratio(height, get_bits(gb, 3));
         if (!width)
-            width = jxl_u32(1, 65, 321, 1345, 6, 8, 10, 12);
+            width = jxl_u32(gb, 1, 65, 321, 1345, 6, 8, 10, 12);
     }
     if (width > 4096 || height > 4096)
         return -1;
@@ -194,13 +195,13 @@ static int jpegxl_read_preview_header(GetBitContext *gb)
  */
 static void jpegxl_skip_bit_depth(GetBitContext *gb)
 {
-    if (jxl_bits(1)) {
+    if (get_bits1(gb)) {
         /* float samples */
-        jxl_u32(32, 16, 24, 1, 0, 0, 0, 6); /* mantissa */
-        jxl_bits_skip(4); /* exponent */
+        jxl_u32(gb, 32, 16, 24, 1, 0, 0, 0, 6); /* mantissa */
+        skip_bits_long(gb, 4); /* exponent */
     } else {
         /* integer samples */
-        jxl_u32(8, 10, 12, 1, 0, 0, 0, 6);
+        jxl_u32(gb, 8, 10, 12, 1, 0, 0, 0, 6);
     }
 }
 
@@ -210,34 +211,34 @@ static void jpegxl_skip_bit_depth(GetBitContext *gb)
  */
 static int jpegxl_read_extra_channel_info(GetBitContext *gb, int validate_level)
 {
-    int all_default = jxl_bits(1);
+    int all_default = get_bits1(gb);
     uint32_t type, name_len = 0;
 
     if (!all_default) {
-        type = jxl_enum();
+        type = jxl_enum(gb);
         if (type > 63)
             return -1; /* enum types cannot be 64+ */
         if (type == FF_JPEGXL_CT_BLACK && validate_level)
             return -1;
         jpegxl_skip_bit_depth(gb);
-        jxl_u32(0, 3, 4, 1, 0, 0, 0, 3); /* dim-shift */
+        jxl_u32(gb, 0, 3, 4, 1, 0, 0, 0, 3); /* dim-shift */
         /* max of name_len is 1071 = 48 + 2^10 - 1 */
-        name_len = jxl_u32(0, 0, 16, 48, 0, 4, 5, 10);
+        name_len = jxl_u32(gb, 0, 0, 16, 48, 0, 4, 5, 10);
     } else {
         type = FF_JPEGXL_CT_ALPHA;
     }
 
     /* skip over the name */
-    jxl_bits_skip(8 * name_len);
+    skip_bits_long(gb, 8 * name_len);
 
     if (!all_default && type == FF_JPEGXL_CT_ALPHA)
-        jxl_bits_skip(1);
+        skip_bits1(gb);
 
     if (type == FF_JPEGXL_CT_SPOT_COLOR)
-        jxl_bits_skip(16 * 4);
+        skip_bits_long(gb, 16 * 4);
 
     if (type == FF_JPEGXL_CT_CFA)
-        jxl_u32(1, 0, 3, 19, 0, 2, 4, 8);
+        jxl_u32(gb, 1, 0, 3, 19, 0, 2, 4, 8);
 
     return 0;
 }
@@ -256,40 +257,40 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen, int valid
     if (ret < 0)
         return ret;
 
-    if (jxl_bits(16) != FF_JPEGXL_CODESTREAM_SIGNATURE_LE)
+    if (get_bits_long(gb, 16) != FF_JPEGXL_CODESTREAM_SIGNATURE_LE)
         return -1;
 
     if (jpegxl_read_size_header(gb) < 0 && validate_level)
         return -1;
 
-    all_default = jxl_bits(1);
+    all_default = get_bits1(gb);
     if (!all_default)
-        extra_fields = jxl_bits(1);
+        extra_fields = get_bits1(gb);
 
     if (extra_fields) {
-        jxl_bits_skip(3); /* orientation */
+        skip_bits_long(gb, 3); /* orientation */
 
         /*
          * intrinstic size
          * any size header here is valid, but as it
          * is variable length we have to read it
          */
-        if (jxl_bits(1))
+        if (get_bits1(gb))
             jpegxl_read_size_header(gb);
 
         /* preview header */
-        if (jxl_bits(1)) {
+        if (get_bits1(gb)) {
             if (jpegxl_read_preview_header(gb) < 0)
                 return -1;
         }
 
         /* animation header */
-        if (jxl_bits(1)) {
+        if (get_bits1(gb)) {
             animation_offset = get_bits_count(gb);
-            jxl_u32(100, 1000, 1, 1, 0, 0, 10, 30);
-            jxl_u32(1, 1001, 1, 1, 0, 0, 8, 10);
-            jxl_u32(0, 0, 0, 0, 0, 3, 16, 32);
-            jxl_bits_skip(1);
+            jxl_u32(gb, 100, 1000, 1, 1, 0, 0, 10, 30);
+            jxl_u32(gb, 1, 1001, 1, 1, 0, 0, 8, 10);
+            jxl_u32(gb, 0, 0, 0, 0, 0, 3, 16, 32);
+            skip_bits_long(gb, 1);
         }
     }
 
@@ -297,10 +298,10 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen, int valid
         jpegxl_skip_bit_depth(gb);
 
         /* modular_16bit_buffers must equal 1 */
-        if (!jxl_bits(1) && validate_level)
+        if (!get_bits1(gb) && validate_level)
             return -1;
 
-        num_extra_channels = jxl_u32(0, 1, 2, 1, 0, 0, 4, 12);
+        num_extra_channels = jxl_u32(gb, 0, 1, 2, 1, 0, 0, 4, 12);
         if (num_extra_channels > 4 && validate_level)
             return -1;
         for (uint32_t i = 0; i < num_extra_channels; i++) {
@@ -308,85 +309,85 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen, int valid
                 return -1;
         }
 
-        xyb_encoded = jxl_bits(1);
+        xyb_encoded = get_bits1(gb);
 
         /* color encoding bundle */
-        if (!jxl_bits(1)) {
+        if (!get_bits1(gb)) {
             uint32_t color_space;
-            have_icc_profile = jxl_bits(1);
-            color_space = jxl_enum();
+            have_icc_profile = get_bits1(gb);
+            color_space = jxl_enum(gb);
             if (color_space > 63)
                 return -1;
 
             if (!have_icc_profile) {
                 if (color_space != FF_JPEGXL_CS_XYB) {
-                    uint32_t white_point = jxl_enum();
+                    uint32_t white_point = jxl_enum(gb);
                     if (white_point > 63)
                         return -1;
                     if (white_point == FF_JPEGXL_WP_CUSTOM) {
                         /* ux and uy values */
-                        jxl_u32(0, 524288, 1048576, 2097152, 19, 19, 20, 21);
-                        jxl_u32(0, 524288, 1048576, 2097152, 19, 19, 20, 21);
+                        jxl_u32(gb, 0, 524288, 1048576, 2097152, 19, 19, 20, 21);
+                        jxl_u32(gb, 0, 524288, 1048576, 2097152, 19, 19, 20, 21);
                     }
                     if (color_space != FF_JPEGXL_CS_GRAY) {
                         /* primaries */
-                        uint32_t primaries = jxl_enum();
+                        uint32_t primaries = jxl_enum(gb);
                         if (primaries > 63)
                             return -1;
                         if (primaries == FF_JPEGXL_PR_CUSTOM) {
                             /* ux/uy values for r,g,b */
                             for (int i = 0; i < 6; i++)
-                                jxl_u32(0, 524288, 1048576, 2097152, 19, 19, 20, 21);
+                                jxl_u32(gb, 0, 524288, 1048576, 2097152, 19, 19, 20, 21);
                         }
                     }
                 }
 
                 /* transfer characteristics */
-                if (jxl_bits(1)) {
+                if (get_bits1(gb)) {
                     /* gamma */
-                    jxl_bits_skip(24);
+                    skip_bits_long(gb, 24);
                 } else {
                     /* transfer function */
-                    if (jxl_enum() > 63)
+                    if (jxl_enum(gb) > 63)
                         return -1;
                 }
 
                 /* rendering intent */
-                if (jxl_enum() > 63)
+                if (jxl_enum(gb) > 63)
                     return -1;
             }
         }
 
         /* tone mapping bundle */
-        if (extra_fields && !jxl_bits(1))
-            jxl_bits_skip(16 + 16 + 1 + 16);
+        if (extra_fields && !get_bits1(gb))
+            skip_bits_long(gb, 16 + 16 + 1 + 16);
 
-        extensions = jxl_u64();
+        extensions = jpegxl_u64(gb);
         if (extensions) {
             for (int i = 0; i < 64; i++) {
                 if (extensions & (UINT64_C(1) << i))
-                    jxl_u64();
+                    jpegxl_u64(gb);
             }
         }
     }
 
     /* default transform */
-    if (!jxl_bits(1)) {
+    if (!get_bits1(gb)) {
         /* opsin inverse matrix */
-        if (xyb_encoded && !jxl_bits(1))
-            jxl_bits_skip(16 * 16);
+        if (xyb_encoded && !get_bits1(gb))
+            skip_bits_long(gb, 16 * 16);
         /* cw_mask and default weights */
-        if (jxl_bits(1))
-            jxl_bits_skip(16 * 15);
-        if (jxl_bits(1))
-            jxl_bits_skip(16 * 55);
-        if (jxl_bits(1))
-            jxl_bits_skip(16 * 210);
+        if (get_bits1(gb))
+            skip_bits_long(gb, 16 * 15);
+        if (get_bits1(gb))
+            skip_bits_long(gb, 16 * 55);
+        if (get_bits1(gb))
+            skip_bits_long(gb, 16 * 210);
     }
 
     if (!have_icc_profile) {
         int bits_remaining = 7 - (get_bits_count(gb) - 1) % 8;
-        if (bits_remaining && jxl_bits(bits_remaining))
+        if (bits_remaining && get_bits(gb, bits_remaining))
             return -1;
     }
 
