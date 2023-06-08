@@ -595,6 +595,8 @@ static int ifilter_bind_ist(InputFilter *ifilter, InputStream *ist)
     InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
     int ret;
 
+    av_assert0(!ifp->ist);
+
     ifp->ist             = ist;
     ifp->type_src        = ist->st->codecpar->codec_type;
 
@@ -653,6 +655,8 @@ void ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost)
 {
     FilterGraph  *fg = ofilter->graph;
     const AVCodec *c = ost->enc_ctx->codec;
+
+    av_assert0(!ofilter->ost);
 
     ofilter->ost = ost;
     av_freep(&ofilter->linklabel);
