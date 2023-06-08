@@ -1171,7 +1171,15 @@ static int transcode_step(OutputStream *ost)
     if (ret < 0)
         return ret == AVERROR_EOF ? 0 : ret;
 
-    return reap_filters(0);
+    // process_input() above might have caused output to become available
+    // in multiple filtergraphs, so we process all of them
+    for (int i = 0; i < nb_filtergraphs; i++) {
+        ret = reap_filters(filtergraphs[i], 0);
+        if (ret < 0)
+            return ret;
+    }
+
+    return 0;
 }
 
 /*

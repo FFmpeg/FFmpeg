@@ -1695,23 +1695,22 @@ int filtergraph_is_simple(const FilterGraph *fg)
     return fgp->is_simple;
 }
 
-int reap_filters(int flush)
+int reap_filters(FilterGraph *fg, int flush)
 {
+    FilterGraphPriv    *fgp = fgp_from_fg(fg);
+    AVFrame *filtered_frame = fgp->frame;
+
+    if (!fg->graph)
+        return 0;
+
     /* Reap all buffers present in the buffer sinks */
-    for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
-        OutputFilterPriv *ofp;
-        FilterGraphPriv *fgp;
-        AVFrame *filtered_frame;
-        AVFilterContext *filter;
+    for (int i = 0; i < fg->nb_outputs; i++) {
+        OutputFilter   *ofilter = fg->outputs[i];
+        OutputStream       *ost = ofilter->ost;
+        OutputFilterPriv   *ofp = ofp_from_ofilter(ofilter);
+        AVFilterContext *filter = ofp->filter;
+
         int ret = 0;
-
-        if (!ost->filter || !ost->filter->graph->graph)
-            continue;
-        fgp    = fgp_from_fg(ost->filter->graph);
-        ofp    = ofp_from_ofilter(ost->filter);
-        filter = ofp->filter;
-
-        filtered_frame = fgp->frame;
 
         while (1) {
             FrameData *fd;
@@ -1931,7 +1930,7 @@ int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame, int keep_reference)
             return ret;
         }
 
-        ret = reap_filters(0);
+        ret = reap_filters(fg, 0);
         if (ret < 0 && ret != AVERROR_EOF) {
             av_log(fg, AV_LOG_ERROR, "Error while filtering: %s\n", av_err2str(ret));
             return ret;
@@ -2000,10 +1999,10 @@ int fg_transcode_step(FilterGraph *graph, InputStream **best_ist)
     *best_ist = NULL;
     ret = avfilter_graph_request_oldest(graph->graph);
     if (ret >= 0)
-        return reap_filters(0);
+        return reap_filters(graph, 0);
 
     if (ret == AVERROR_EOF) {
-        reap_filters(1);
+        reap_filters(graph, 1);
         for (int i = 0; i < graph->nb_outputs; i++) {
             OutputFilter *ofilter = graph->outputs[i];
             OutputFilterPriv *ofp = ofp_from_ofilter(ofilter);

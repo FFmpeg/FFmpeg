@@ -765,12 +765,12 @@ void fg_free(FilterGraph **pfg);
 int fg_transcode_step(FilterGraph *graph, InputStream **best_ist);
 
 /**
- * Get and encode new output from any of the filtergraphs, without causing
+ * Get and encode new output from specified filtergraph, without causing
  * activity.
  *
  * @return  0 for success, <0 for severe errors
  */
-int reap_filters(int flush);
+int reap_filters(FilterGraph *fg, int flush);
 
 int ffmpeg_parse_options(int argc, char **argv);
 
