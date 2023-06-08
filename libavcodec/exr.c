@@ -1119,7 +1119,6 @@ static int dwa_uncompress(const EXRContext *s, const uint8_t *src, int compresse
             }
 
             {
-                const float scale = s->pixel_type == EXR_FLOAT ? 2.f : 1.f;
                 const int o = s->nb_channels == 4;
                 float *bo = ((float *)td->uncompressed_data) +
                     y * td->xsize * s->nb_channels + td->xsize * (o + 0) + x;
@@ -1137,9 +1136,9 @@ static int dwa_uncompress(const EXRContext *s, const uint8_t *src, int compresse
 
                         convert(yb[idx], ub[idx], vb[idx], &bo[xx], &go[xx], &ro[xx]);
 
-                        bo[xx] = to_linear(bo[xx], scale);
-                        go[xx] = to_linear(go[xx], scale);
-                        ro[xx] = to_linear(ro[xx], scale);
+                        bo[xx] = to_linear(bo[xx], 1.f);
+                        go[xx] = to_linear(go[xx], 1.f);
+                        ro[xx] = to_linear(ro[xx], 1.f);
                     }
 
                     bo += td->xsize * s->nb_channels;
