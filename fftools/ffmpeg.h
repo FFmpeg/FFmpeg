@@ -311,6 +311,7 @@ typedef struct OutputFilter {
 } OutputFilter;
 
 typedef struct FilterGraph {
+    const AVClass *class;
     int            index;
 
     AVFilterGraph *graph;
