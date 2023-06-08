@@ -80,6 +80,14 @@ enum HWAccelID {
     HWACCEL_GENERIC,
 };
 
+enum FrameOpaque {
+    FRAME_OPAQUE_REAP_FILTERS = 1,
+    FRAME_OPAQUE_CHOOSE_INPUT,
+    FRAME_OPAQUE_SUB_HEARTBEAT,
+    FRAME_OPAQUE_EOF,
+    FRAME_OPAQUE_SEND_COMMAND,
+};
+
 typedef struct HWDevice {
     const char *name;
     enum AVHWDeviceType type;
@@ -730,7 +738,6 @@ const FrameData *frame_data_c(AVFrame *frame);
 
 int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame, int keep_reference);
 int ifilter_send_eof(InputFilter *ifilter, int64_t pts, AVRational tb);
-int ifilter_sub2video(InputFilter *ifilter, const AVFrame *frame);
 void ifilter_sub2video_heartbeat(InputFilter *ifilter, int64_t pts, AVRational tb);
 
 /**

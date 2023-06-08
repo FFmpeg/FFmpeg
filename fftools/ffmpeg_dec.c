@@ -147,11 +147,12 @@ fail:
 
 static int send_frame_to_filters(InputStream *ist, AVFrame *decoded_frame)
 {
-    int i, ret;
+    int i, ret = 0;
 
-    av_assert1(ist->nb_filters > 0); /* ensure ret is initialized */
     for (i = 0; i < ist->nb_filters; i++) {
-        ret = ifilter_send_frame(ist->filters[i], decoded_frame, i < ist->nb_filters - 1);
+        ret = ifilter_send_frame(ist->filters[i], decoded_frame,
+                                 i < ist->nb_filters - 1 ||
+                                 ist->dec->type == AVMEDIA_TYPE_SUBTITLE);
         if (ret == AVERROR_EOF)
             ret = 0; /* ignore */
         if (ret < 0) {
@@ -380,15 +381,6 @@ static int video_frame_process(InputStream *ist, AVFrame *frame)
     return 0;
 }
 
-static void sub2video_flush(InputStream *ist)
-{
-    for (int i = 0; i < ist->nb_filters; i++) {
-        int ret = ifilter_sub2video(ist->filters[i], NULL);
-        if (ret != AVERROR_EOF && ret < 0)
-            av_log(NULL, AV_LOG_WARNING, "Flush the frame error.\n");
-    }
-}
-
 static int process_subtitle(InputStream *ist, AVFrame *frame)
 {
     Decoder *d = ist->decoder;
@@ -426,14 +418,9 @@ static int process_subtitle(InputStream *ist, AVFrame *frame)
     if (!subtitle)
         return 0;
 
-    for (int i = 0; i < ist->nb_filters; i++) {
-        ret = ifilter_sub2video(ist->filters[i], frame);
-        if (ret < 0) {
-            av_log(ist, AV_LOG_ERROR, "Error sending a subtitle for filtering: %s\n",
-                   av_err2str(ret));
-            return ret;
-        }
-    }
+    ret = send_frame_to_filters(ist, frame);
+    if (ret < 0)
+        return ret;
 
     subtitle = (AVSubtitle*)frame->buf[0]->data;
     if (!subtitle->num_rects)
@@ -824,14 +811,10 @@ finish:
         return ret;
 
     // signal EOF to our downstreams
-    if (ist->dec->type == AVMEDIA_TYPE_SUBTITLE)
-        sub2video_flush(ist);
-    else {
-        ret = send_filter_eof(ist);
-        if (ret < 0) {
-            av_log(NULL, AV_LOG_FATAL, "Error marking filters as finished\n");
-            return ret;
-        }
+    ret = send_filter_eof(ist);
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_FATAL, "Error marking filters as finished\n");
+        return ret;
     }
 
     return AVERROR_EOF;
