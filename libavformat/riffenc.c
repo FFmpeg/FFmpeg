@@ -239,14 +239,16 @@ void ff_put_bmp_header(AVIOContext *pb, AVCodecParameters *par,
     /* depth */
     avio_wl16(pb, par->bits_per_coded_sample ? par->bits_per_coded_sample : 24);
     /* compression type */
-    avio_wl32(pb, par->codec_tag);
+    // MSRLE compatibility with Media Player 3.1 and Windows 95
+    avio_wl32(pb, par->codec_id == AV_CODEC_ID_MSRLE ? 1 : par->codec_tag);
     avio_wl32(pb, (par->width * par->height * (par->bits_per_coded_sample ? par->bits_per_coded_sample : 24)+7) / 8);
     avio_wl32(pb, 0);
     avio_wl32(pb, 0);
     /* Number of color indices in the color table that are used.
      * A value of 0 means 2^biBitCount indices, but this doesn't work
      * with Windows Media Player and files containing xxpc chunks. */
-    avio_wl32(pb, pal_avi ? 1 << par->bits_per_coded_sample : 0);
+    // MSRLE on Windows 95 requires a zero here
+    avio_wl32(pb, pal_avi && par->codec_id != AV_CODEC_ID_MSRLE ? 1 << par->bits_per_coded_sample : 0);
     avio_wl32(pb, 0);
 
     if (!ignore_extradata) {
