@@ -231,14 +231,14 @@ static void set_sps(const HEVCSPS *sps, int sps_idx,
                STD_VIDEO_H265_SCALING_LIST_16X16_NUM_ELEMENTS * sizeof(**vksps_scaling->ScalingList16x16));
 
     for (int i = 0; i < STD_VIDEO_H265_SCALING_LIST_32X32_NUM_LISTS; i++)
-        memcpy(vksps_scaling->ScalingList32x32[i], sps->scaling_list.sl[3][i],
+        memcpy(vksps_scaling->ScalingList32x32[i], sps->scaling_list.sl[3][i * 3],
                STD_VIDEO_H265_SCALING_LIST_32X32_NUM_ELEMENTS * sizeof(**vksps_scaling->ScalingList32x32));
 
     memcpy(vksps_scaling->ScalingListDCCoef16x16, sps->scaling_list.sl_dc[0],
            STD_VIDEO_H265_SCALING_LIST_16X16_NUM_LISTS * sizeof(*vksps_scaling->ScalingListDCCoef16x16));
 
-    memcpy(vksps_scaling->ScalingListDCCoef32x32, sps->scaling_list.sl_dc[1],
-           STD_VIDEO_H265_SCALING_LIST_32X32_NUM_LISTS * sizeof(*vksps_scaling->ScalingListDCCoef32x32));
+    for (int i = 0; i <  STD_VIDEO_H265_SCALING_LIST_32X32_NUM_LISTS; i++)
+        vksps_scaling->ScalingListDCCoef32x32[i] = sps->scaling_list.sl_dc[1][i * 3];
 
     *vksps_vui_header = (StdVideoH265HrdParameters) {
         .flags = (StdVideoH265HrdFlags) {
@@ -477,14 +477,14 @@ static void set_pps(const HEVCPPS *pps, const HEVCSPS *sps,
                STD_VIDEO_H265_SCALING_LIST_16X16_NUM_ELEMENTS * sizeof(**vkpps_scaling->ScalingList16x16));
 
     for (int i = 0; i < STD_VIDEO_H265_SCALING_LIST_32X32_NUM_LISTS; i++)
-        memcpy(vkpps_scaling->ScalingList32x32[i], pps->scaling_list.sl[3][i],
+        memcpy(vkpps_scaling->ScalingList32x32[i], pps->scaling_list.sl[3][i * 3],
                STD_VIDEO_H265_SCALING_LIST_32X32_NUM_ELEMENTS * sizeof(**vkpps_scaling->ScalingList32x32));
 
     memcpy(vkpps_scaling->ScalingListDCCoef16x16, pps->scaling_list.sl_dc[0],
            STD_VIDEO_H265_SCALING_LIST_16X16_NUM_LISTS * sizeof(*vkpps_scaling->ScalingListDCCoef16x16));
 
-    memcpy(vkpps_scaling->ScalingListDCCoef32x32, pps->scaling_list.sl_dc[1],
-           STD_VIDEO_H265_SCALING_LIST_32X32_NUM_LISTS * sizeof(*vkpps_scaling->ScalingListDCCoef32x32));
+    for (int i = 0; i <  STD_VIDEO_H265_SCALING_LIST_32X32_NUM_LISTS; i++)
+        vkpps_scaling->ScalingListDCCoef32x32[i] = sps->scaling_list.sl_dc[1][i * 3];
 
     *vkpps = (StdVideoH265PictureParameterSet) {
         .flags = (StdVideoH265PpsFlags) {
