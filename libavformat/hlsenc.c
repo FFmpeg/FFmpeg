@@ -355,9 +355,19 @@ static void write_codec_attr(AVStream *st, VariantStream *vs)
 
     if (st->codecpar->codec_id == AV_CODEC_ID_H264) {
         uint8_t *data = st->codecpar->extradata;
-        if (data && (data[0] | data[1] | data[2]) == 0 && data[3] == 1 && (data[4] & 0x1F) == 7) {
+        if (data) {
+            const uint8_t *p;
+
+            if (AV_RB32(data) == 0x01 && (data[4] & 0x1F) == 7)
+                p = &data[5];
+            else if (AV_RB24(data) == 0x01 && (data[3] & 0x1F) == 7)
+                p = &data[4];
+            else if (data[0] == 0x01)  /* avcC */
+                p = &data[1];
+            else
+                goto fail;
             snprintf(attr, sizeof(attr),
-                     "avc1.%02x%02x%02x", data[5], data[6], data[7]);
+                     "avc1.%02x%02x%02x", p[0], p[1], p[2]);
         } else {
             goto fail;
         }
