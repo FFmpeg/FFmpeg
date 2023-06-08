@@ -845,6 +845,12 @@ FilterGraph *fg_create(char *graph_desc)
         ofilter->name      = describe_filter_link(fg, cur, 0);
     }
 
+    if (!fg->nb_outputs) {
+        av_log(fg, AV_LOG_FATAL, "A filtergraph has zero outputs, this is not supported\n");
+        ret = AVERROR(ENOSYS);
+        goto fail;
+    }
+
 fail:
     avfilter_inout_free(&inputs);
     avfilter_inout_free(&outputs);
