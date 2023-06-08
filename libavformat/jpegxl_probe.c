@@ -261,8 +261,8 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen)
     if (get_bits_long(gb, 16) != FF_JPEGXL_CODESTREAM_SIGNATURE_LE)
         return -1;
 
-    if (jpegxl_read_size_header(gb) < 0)
-        return -1;
+    if ((ret = jpegxl_read_size_header(gb)) < 0)
+        return ret;
 
     all_default = get_bits1(gb);
     if (!all_default)
@@ -281,8 +281,9 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen)
 
         /* preview header */
         if (get_bits1(gb)) {
-            if (jpegxl_read_preview_header(gb) < 0)
-                return -1;
+            ret = jpegxl_read_preview_header(gb);
+            if (ret < 0)
+                return ret;
         }
 
         /* animation header */
@@ -307,8 +308,9 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen)
         if (num_extra_channels > 4)
             return -1;
         for (uint32_t i = 0; i < num_extra_channels; i++) {
-            if (jpegxl_read_extra_channel_info(gb) < 0)
-                return -1;
+            ret = jpegxl_read_extra_channel_info(gb);
+            if (ret < 0)
+                return ret;
             if (get_bits_left(gb) < 1)
                 return AVERROR_INVALIDDATA;
         }
