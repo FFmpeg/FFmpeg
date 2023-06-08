@@ -637,6 +637,7 @@ static av_always_inline void mpeg_motion_lowres(MpegEncContext *s,
     const int s_mask     = (2 << lowres) - 1;
     const int h_edge_pos = s->h_edge_pos >> lowres;
     const int v_edge_pos = s->v_edge_pos >> lowres;
+    int hc = s->chroma_y_shift ? (h+1-bottom_field)>>1 : h;
     linesize   = s->current_picture.f->linesize[0] << field_based;
     uvlinesize = s->current_picture.f->linesize[1] << field_based;
 
@@ -699,7 +700,7 @@ static av_always_inline void mpeg_motion_lowres(MpegEncContext *s,
     ptr_cr = ref_picture[2] + uvsrc_y * uvlinesize + uvsrc_x;
 
     if ((unsigned) src_x > FFMAX( h_edge_pos - (!!sx) - 2 * block_s,       0) || uvsrc_y<0 ||
-        (unsigned) src_y > FFMAX((v_edge_pos >> field_based) - (!!sy) - h, 0)) {
+        (unsigned) src_y > FFMAX((v_edge_pos >> field_based) - (!!sy) - FFMAX(h, hc<<s->chroma_y_shift), 0)) {
         s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer, ptr_y,
                                  linesize >> field_based, linesize >> field_based,
                                  17, 17 + field_based,
@@ -744,7 +745,6 @@ static av_always_inline void mpeg_motion_lowres(MpegEncContext *s,
     pix_op[lowres - 1](dest_y, ptr_y, linesize, h, sx, sy);
 
     if (!CONFIG_GRAY || !(s->avctx->flags & AV_CODEC_FLAG_GRAY)) {
-        int hc = s->chroma_y_shift ? (h+1-bottom_field)>>1 : h;
         uvsx = (uvsx << 2) >> lowres;
         uvsy = (uvsy << 2) >> lowres;
         if (hc) {
