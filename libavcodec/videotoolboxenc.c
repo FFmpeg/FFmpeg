@@ -252,7 +252,7 @@ typedef struct VTEncContext {
     int64_t first_pts;
     int64_t dts_delta;
 
-    int64_t profile;
+    int profile;
     int level;
     int entropy;
     int realtime;
@@ -443,7 +443,7 @@ static int count_nalus(size_t length_code_size,
 }
 
 static CMVideoCodecType get_cm_codec_type(AVCodecContext *avctx,
-                                          int64_t profile,
+                                          int profile,
                                           double alpha_quality)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt == AV_PIX_FMT_VIDEOTOOLBOX ? avctx->sw_pix_fmt : avctx->pix_fmt);
@@ -470,7 +470,7 @@ static CMVideoCodecType get_cm_codec_type(AVCodecContext *avctx,
             return MKBETAG('a','p','4','x'); // kCMVideoCodecType_AppleProRes4444XQ
 
         default:
-            av_log(avctx, AV_LOG_ERROR, "Unknown profile ID: %"PRId64", using auto\n", profile);
+            av_log(avctx, AV_LOG_ERROR, "Unknown profile ID: %d, using auto\n", profile);
         case FF_PROFILE_UNKNOWN:
             if (desc &&
                 ((desc->flags & AV_PIX_FMT_FLAG_ALPHA) ||
@@ -735,7 +735,7 @@ static bool get_vt_h264_profile_level(AVCodecContext *avctx,
                                       CFStringRef    *profile_level_val)
 {
     VTEncContext *vtctx = avctx->priv_data;
-    int64_t profile = vtctx->profile;
+    int profile = vtctx->profile;
 
     if (profile == AUTO_PROFILE && vtctx->level) {
         //Need to pick a profile if level is not auto-selected.
@@ -864,7 +864,7 @@ static bool get_vt_hevc_profile_level(AVCodecContext *avctx,
                                       CFStringRef    *profile_level_val)
 {
     VTEncContext *vtctx = avctx->priv_data;
-    int64_t profile = vtctx->profile;
+    int profile = vtctx->profile;
 
     *profile_level_val = NULL;
 
@@ -2891,7 +2891,7 @@ static const enum AVPixelFormat prores_pix_fmts[] = {
 
 #define OFFSET(x) offsetof(VTEncContext, x)
 static const AVOption h264_options[] = {
-    { "profile", "Profile", OFFSET(profile), AV_OPT_TYPE_INT64, { .i64 = AUTO_PROFILE }, 0, INT_MAX, VE, "profile" },
+    { "profile", "Profile", OFFSET(profile), AV_OPT_TYPE_INT, { .i64 = AUTO_PROFILE }, 0, INT_MAX, VE, "profile" },
     { "baseline",             "Baseline Profile",             0, AV_OPT_TYPE_CONST, { .i64 = FF_PROFILE_H264_BASELINE             }, INT_MIN, INT_MAX, VE, "profile" },
     { "constrained_baseline", "Constrained Baseline Profile", 0, AV_OPT_TYPE_CONST, { .i64 = FF_PROFILE_H264_CONSTRAINED_BASELINE }, INT_MIN, INT_MAX, VE, "profile" },
     { "main",                 "Main Profile",                 0, AV_OPT_TYPE_CONST, { .i64 = FF_PROFILE_H264_MAIN                 }, INT_MIN, INT_MAX, VE, "profile" },
@@ -2948,7 +2948,7 @@ const FFCodec ff_h264_videotoolbox_encoder = {
 };
 
 static const AVOption hevc_options[] = {
-    { "profile", "Profile", OFFSET(profile), AV_OPT_TYPE_INT64, { .i64 = AUTO_PROFILE }, 0, INT_MAX, VE, "profile" },
+    { "profile", "Profile", OFFSET(profile), AV_OPT_TYPE_INT, { .i64 = AUTO_PROFILE }, 0, INT_MAX, VE, "profile" },
     { "main",     "Main Profile",     0, AV_OPT_TYPE_CONST, { .i64 = FF_PROFILE_HEVC_MAIN    }, INT_MIN, INT_MAX, VE, "profile" },
     { "main10",   "Main10 Profile",   0, AV_OPT_TYPE_CONST, { .i64 = FF_PROFILE_HEVC_MAIN_10 }, INT_MIN, INT_MAX, VE, "profile" },
 
@@ -2985,7 +2985,7 @@ const FFCodec ff_hevc_videotoolbox_encoder = {
 };
 
 static const AVOption prores_options[] = {
-    { "profile", "Profile", OFFSET(profile), AV_OPT_TYPE_INT64, { .i64 = FF_PROFILE_UNKNOWN }, FF_PROFILE_UNKNOWN, FF_PROFILE_PRORES_XQ, VE, "profile" },
+    { "profile", "Profile", OFFSET(profile), AV_OPT_TYPE_INT, { .i64 = FF_PROFILE_UNKNOWN }, FF_PROFILE_UNKNOWN, FF_PROFILE_PRORES_XQ, VE, "profile" },
     { "auto",     "Automatically determine based on input format", 0, AV_OPT_TYPE_CONST, { .i64 = FF_PROFILE_UNKNOWN },            INT_MIN, INT_MAX, VE, "profile" },
     { "proxy",    "ProRes 422 Proxy",                              0, AV_OPT_TYPE_CONST, { .i64 = FF_PROFILE_PRORES_PROXY },       INT_MIN, INT_MAX, VE, "profile" },
     { "lt",       "ProRes 422 LT",                                 0, AV_OPT_TYPE_CONST, { .i64 = FF_PROFILE_PRORES_LT },          INT_MIN, INT_MAX, VE, "profile" },
