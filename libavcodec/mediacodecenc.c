@@ -36,6 +36,7 @@
 #include "mediacodec.h"
 #include "mediacodec_wrapper.h"
 #include "mediacodecdec_common.h"
+#include "profiles.h"
 
 #define INPUT_DEQUEUE_TIMEOUT_US 8000
 #define OUTPUT_DEQUEUE_TIMEOUT_US 8000
@@ -658,6 +659,16 @@ enum MediaCodecAvcLevel {
 
 static const AVOption h264_options[] = {
     COMMON_OPTION
+
+    FF_AVCTX_PROFILE_OPTION("baseline",             NULL, VIDEO, FF_PROFILE_H264_BASELINE)
+    FF_AVCTX_PROFILE_OPTION("constrained_baseline", NULL, VIDEO, FF_PROFILE_H264_CONSTRAINED_BASELINE)
+    FF_AVCTX_PROFILE_OPTION("main",                 NULL, VIDEO, FF_PROFILE_H264_MAIN)
+    FF_AVCTX_PROFILE_OPTION("extended",             NULL, VIDEO, FF_PROFILE_H264_EXTENDED)
+    FF_AVCTX_PROFILE_OPTION("high",                 NULL, VIDEO, FF_PROFILE_H264_HIGH)
+    FF_AVCTX_PROFILE_OPTION("high10",               NULL, VIDEO, FF_PROFILE_H264_HIGH_10)
+    FF_AVCTX_PROFILE_OPTION("high422",              NULL, VIDEO, FF_PROFILE_H264_HIGH_422)
+    FF_AVCTX_PROFILE_OPTION("high444",              NULL, VIDEO, FF_PROFILE_H264_HIGH_444)
+
     { "level", "Specify level",
                 OFFSET(level), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, VE, "level" },
     { "1",      "", 0, AV_OPT_TYPE_CONST, { .i64 = AVCLevel1  },  0, 0, VE, "level" },
@@ -720,6 +731,10 @@ enum MediaCodecHevcLevel {
 
 static const AVOption hevc_options[] = {
     COMMON_OPTION
+
+    FF_AVCTX_PROFILE_OPTION("main",   NULL, VIDEO, FF_PROFILE_HEVC_MAIN)
+    FF_AVCTX_PROFILE_OPTION("main10", NULL, VIDEO, FF_PROFILE_HEVC_MAIN_10)
+
     { "level", "Specify tier and level",
                 OFFSET(level), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, VE, "level" },
     { "m1",    "Main tier level 1",
@@ -830,6 +845,12 @@ enum MediaCodecVP9Level {
 
 static const AVOption vp9_options[] = {
     COMMON_OPTION
+
+    FF_AVCTX_PROFILE_OPTION("profile0",   NULL, VIDEO, FF_PROFILE_VP9_0)
+    FF_AVCTX_PROFILE_OPTION("profile1",   NULL, VIDEO, FF_PROFILE_VP9_1)
+    FF_AVCTX_PROFILE_OPTION("profile2",   NULL, VIDEO, FF_PROFILE_VP9_2)
+    FF_AVCTX_PROFILE_OPTION("profile3",   NULL, VIDEO, FF_PROFILE_VP9_3)
+
     { "level", "Specify tier and level",
                 OFFSET(level), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, VE, "level" },
     { "1",     "Level 1",
@@ -884,6 +905,9 @@ enum MediaCodecMpeg4Level {
 
 static const AVOption mpeg4_options[] = {
     COMMON_OPTION
+
+    FF_MPEG4_PROFILE_OPTS
+
     { "level", "Specify tier and level",
                 OFFSET(level), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, VE, "level" },
     { "0",     "Level 0",
@@ -944,6 +968,9 @@ enum MediaCodecAV1Level {
 
 static const AVOption av1_options[] = {
     COMMON_OPTION
+
+    FF_AV1_PROFILE_OPTS
+
     { "level", "Specify tier and level",
                 OFFSET(level), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, VE, "level" },
     { "2",     "Level 2",
