@@ -1746,6 +1746,9 @@ static av_cold int vtenc_init(AVCodecContext *avctx)
     pthread_mutex_init(&vtctx->lock, NULL);
     pthread_cond_init(&vtctx->cv_sample_sent, NULL);
 
+    // It can happen when user set avctx->profile directly.
+    if (vtctx->profile == FF_PROFILE_UNKNOWN)
+        vtctx->profile = avctx->profile;
     vtctx->session = NULL;
     status = vtenc_configure_encoder(avctx);
     if (status) return status;
