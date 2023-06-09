@@ -238,6 +238,11 @@ static int get_siz(Jpeg2000DecoderContext *s)
         return AVERROR_INVALIDDATA;
     }
 
+    if (s->reduction_factor && (s->image_offset_x || s->image_offset_y) ){
+        av_log(s->avctx, AV_LOG_ERROR, "reduction factor with image offsets is not fully implemented");
+        return AVERROR_PATCHWELCOME;
+    }
+
     s->ncomponents = ncomponents;
 
     if (s->tile_width <= 0 || s->tile_height <= 0) {
