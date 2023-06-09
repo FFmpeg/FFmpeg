@@ -133,6 +133,8 @@ static InputFilterPriv *ifp_from_ifilter(InputFilter *ifilter)
     return (InputFilterPriv*)ifilter;
 }
 
+static int configure_filtergraph(FilterGraph *fg);
+
 static int sub2video_get_blank_frame(InputFilterPriv *ifp)
 {
     AVFrame *frame = ifp->sub2video.frame;
@@ -1496,7 +1498,7 @@ static int graph_is_meta(AVFilterGraph *graph)
     return 1;
 }
 
-int configure_filtergraph(FilterGraph *fg)
+static int configure_filtergraph(FilterGraph *fg)
 {
     FilterGraphPriv *fgp = fgp_from_fg(fg);
     AVBufferRef *hw_device;
