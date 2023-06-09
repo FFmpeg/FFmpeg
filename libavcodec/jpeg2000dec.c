@@ -308,7 +308,7 @@ static int get_siz(Jpeg2000DecoderContext *s)
         dimy = FFMAX(dimy, ff_jpeg2000_ceildiv(o_dimy, s->cdy[i]));
     }
 
-    ret = ff_set_dimensions(s->avctx, dimx, dimy);
+    ret = ff_set_dimensions(s->avctx, dimx << s->avctx->lowres, dimy << s->avctx->lowres);
     if (ret < 0)
         return ret;
 
@@ -2425,6 +2425,14 @@ static int jp2_find_codestream(Jpeg2000DecoderContext *s)
 static av_cold int jpeg2000_decode_init(AVCodecContext *avctx)
 {
     Jpeg2000DecoderContext *s = avctx->priv_data;
+
+    if (avctx->lowres)
+        av_log(avctx, AV_LOG_WARNING, "lowres is overriden by reduction_factor but set anyway\n");
+    if (!s->reduction_factor && avctx->lowres < JPEG2000_MAX_RESLEVELS) {
+        s->reduction_factor = avctx->lowres;
+    }
+    if (avctx->lowres != s->reduction_factor && avctx->lowres)
+        return AVERROR(EINVAL);
 
     ff_jpeg2000dsp_init(&s->dsp);
     ff_jpeg2000_init_tier1_luts();
