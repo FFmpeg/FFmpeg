@@ -2,6 +2,7 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 3.4.13:
+ avcodec/noise_bsf: Check for wrapped frames
  avcodec/pngdec: Do not pass AVFrame into global header decode
  avformat/wavdec: Check that smv block fits in available space
  avcodec/tak: Check remaining bits in ff_tak_decode_frame_header()
