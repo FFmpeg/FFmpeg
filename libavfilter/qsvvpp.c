@@ -823,6 +823,14 @@ int ff_qsvvpp_init(AVFilterContext *avctx, QSVVPPParam *param)
     ff_qsvvpp_print_iopattern(avctx, s->vpp_param.IOPattern & 0x0F, "VPP");
     /* Print output memory mode */
     ff_qsvvpp_print_iopattern(avctx, s->vpp_param.IOPattern & 0xF0, "VPP");
+
+    ret = MFXVideoVPP_Query(s->session, &s->vpp_param, &s->vpp_param);
+    if (ret < 0) {
+        ret = ff_qsvvpp_print_error(avctx, ret, "Error querying VPP params");
+        goto failed;
+    } else if (ret > 0)
+        ff_qsvvpp_print_warning(avctx, ret, "Warning When querying VPP params");
+
     ret = MFXVideoVPP_Init(s->session, &s->vpp_param);
     if (ret < 0) {
         ret = ff_qsvvpp_print_error(avctx, ret, "Failed to create a qsvvpp");
