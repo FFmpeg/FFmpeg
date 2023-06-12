@@ -835,6 +835,7 @@ int ff_qsvvpp_init(AVFilterContext *avctx, QSVVPPParam *param)
     /* Print output memory mode */
     ff_qsvvpp_print_iopattern(avctx, s->vpp_param.IOPattern & 0xF0, "VPP");
 
+    /* Validate VPP params, but don't initial VPP session here */
     ret = MFXVideoVPP_Query(s->session, &s->vpp_param, &s->vpp_param);
     if (ret < 0) {
         ret = ff_qsvvpp_print_error(avctx, ret, "Error querying VPP params");
@@ -842,19 +843,37 @@ int ff_qsvvpp_init(AVFilterContext *avctx, QSVVPPParam *param)
     } else if (ret > 0)
         ff_qsvvpp_print_warning(avctx, ret, "Warning When querying VPP params");
 
-    ret = MFXVideoVPP_Init(s->session, &s->vpp_param);
-    if (ret < 0) {
-        ret = ff_qsvvpp_print_error(avctx, ret, "Failed to create a qsvvpp");
-        goto failed;
-    } else if (ret > 0)
-        ff_qsvvpp_print_warning(avctx, ret, "Warning When creating qsvvpp");
-
     return 0;
 
 failed:
     ff_qsvvpp_close(avctx);
 
     return ret;
+}
+
+static int qsvvpp_init_vpp_session(AVFilterContext *avctx, QSVVPPContext *s)
+{
+    int ret;
+
+    if (s->vpp_initted)
+        return 0;
+
+    /* Query VPP params again, including params for frame */
+    ret = MFXVideoVPP_Query(s->session, &s->vpp_param, &s->vpp_param);
+    if (ret < 0)
+        return ff_qsvvpp_print_error(avctx, ret, "Error querying VPP params");
+    else if (ret > 0)
+        ff_qsvvpp_print_warning(avctx, ret, "Warning When querying VPP params");
+
+    ret = MFXVideoVPP_Init(s->session, &s->vpp_param);
+    if (ret < 0)
+        return ff_qsvvpp_print_error(avctx, ret, "Failed to create a qsvvpp");
+    else if (ret > 0)
+        ff_qsvvpp_print_warning(avctx, ret, "Warning When creating qsvvpp");
+
+    s->vpp_initted = 1;
+
+    return 0;
 }
 
 int ff_qsvvpp_close(AVFilterContext *avctx)
@@ -865,6 +884,7 @@ int ff_qsvvpp_close(AVFilterContext *avctx)
         MFXVideoVPP_Close(s->session);
         MFXClose(s->session);
         s->session = NULL;
+        s->vpp_initted = 0;
     }
 
     /* release all the resources */
@@ -919,6 +939,10 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
             av_log(ctx, AV_LOG_ERROR, "Failed to query an output frame.\n");
             return AVERROR(ENOMEM);
         }
+
+        ret = qsvvpp_init_vpp_session(ctx, s);
+        if (ret)
+            return ret;
 
         do {
             ret = MFXVideoVPP_RunFrameVPPAsync(s->session, &in_frame->surface,

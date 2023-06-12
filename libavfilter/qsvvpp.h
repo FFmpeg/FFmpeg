@@ -90,6 +90,7 @@ typedef struct QSVVPPContext {
     AVFifo *async_fifo;
 
     mfxVersion ver;
+    int vpp_initted;
 } QSVVPPContext;
 
 typedef struct QSVVPPCrop {
