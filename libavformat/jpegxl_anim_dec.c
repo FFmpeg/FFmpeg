@@ -28,6 +28,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "libavcodec/bytestream.h"
 #define BITSTREAM_READER_LE
 #include "libavcodec/get_bits.h"
 
@@ -48,62 +49,65 @@ typedef struct JXLAnimDemuxContext {
  * returns the number of bytes consumed from input, may be greater than input_len
  * if the input doesn't end on an ISOBMFF-box boundary
  */
-static int jpegxl_collect_codestream_header(const uint8_t *input_buffer, int input_len, uint8_t *buffer, int buflen, int *copied) {
-    const uint8_t *b = input_buffer;
+static int jpegxl_collect_codestream_header(const uint8_t *input_buffer, int input_len,
+                                            uint8_t *buffer, int buflen, int *copied) {
+    GetByteContext gb;
     *copied = 0;
+    bytestream2_init(&gb, input_buffer, input_len);
 
     while (1) {
         uint64_t size;
         uint32_t tag;
         int head_size = 8;
 
-        if (b - input_buffer >= input_len - 16)
+        if (bytestream2_get_bytes_left(&gb) < 16)
             break;
 
-        size = AV_RB32(b);
-        b += 4;
+        size = bytestream2_get_be32(&gb);
         if (size == 1) {
-            size = AV_RB64(b);
-            b += 8;
+            size = bytestream2_get_be64(&gb);
             head_size = 16;
         }
         /* invalid ISOBMFF size */
-        if (size > 0 && size <= head_size)
+        if (size && size <= head_size)
             return AVERROR_INVALIDDATA;
-        if (size > 0)
+        if (size)
             size -= head_size;
 
-        tag = AV_RL32(b);
-        b += 4;
+        tag = bytestream2_get_le32(&gb);
         if (tag == MKTAG('j', 'x', 'l', 'p')) {
-            b += 4;
-            size -= 4;
+            if (bytestream2_get_bytes_left(&gb) < 4)
+                break;
+            bytestream2_skip(&gb, 4);
+            if (size) {
+                if (size <= 4)
+                    return AVERROR_INVALIDDATA;
+                size -= 4;
+            }
         }
+        /*
+         * size = 0 means "until EOF". this is legal but uncommon
+         * here we just set it to the remaining size of the probe buffer
+         */
+        if (!size)
+            size = bytestream2_get_bytes_left(&gb);
 
         if (tag == MKTAG('j', 'x', 'l', 'c') || tag == MKTAG('j', 'x', 'l', 'p')) {
-            /*
-             * size = 0 means "until EOF". this is legal but uncommon
-             * here we just set it to the remaining size of the probe buffer
-             * which at this point should always be nonnegative
-             */
-            if (size == 0 || size > input_len - (b - input_buffer))
-                size = input_len - (b - input_buffer);
-
             if (size > buflen - *copied)
                 size = buflen - *copied;
             /*
              * arbitrary chunking of the payload makes this memcpy hard to avoid
              * in practice this will only be performed one or two times at most
              */
-            memcpy(buffer + *copied, b, size);
-            *copied += size;
+            *copied += bytestream2_get_buffer(&gb, buffer + *copied, size);
+        } else {
+            bytestream2_skip(&gb, size);
         }
-        b += size;
-        if (b >= input_buffer + input_len || *copied >= buflen)
+        if (bytestream2_get_bytes_left(&gb) <= 0 || *copied >= buflen)
             break;
     }
 
-    return b - input_buffer;
+    return bytestream2_tell(&gb);
 }
 
 static int jpegxl_anim_probe(const AVProbeData *p)
