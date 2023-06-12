@@ -474,7 +474,7 @@ static QSVFrame *submit_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *p
 }
 
 /* get the output surface */
-static QSVFrame *query_frame(QSVVPPContext *s, AVFilterLink *outlink)
+static QSVFrame *query_frame(QSVVPPContext *s, AVFilterLink *outlink, const AVFrame *in)
 {
     AVFilterContext *ctx = outlink->src;
     QSVFrame        *out_frame;
@@ -493,6 +493,12 @@ static QSVFrame *query_frame(QSVVPPContext *s, AVFilterLink *outlink)
         if (!out_frame->frame)
             return NULL;
 
+        ret = av_frame_copy_props(out_frame->frame, in);
+        if (ret < 0) {
+            av_log(ctx, AV_LOG_ERROR, "Failed to copy metadata fields from src to dst.\n");
+            return NULL;
+        }
+
         ret = av_hwframe_get_buffer(outlink->hw_frames_ctx, out_frame->frame, 0);
         if (ret < 0) {
             av_log(ctx, AV_LOG_ERROR, "Can't allocate a surface.\n");
@@ -508,6 +514,12 @@ static QSVFrame *query_frame(QSVVPPContext *s, AVFilterLink *outlink)
                                                FFALIGN(outlink->h, 64));
         if (!out_frame->frame)
             return NULL;
+
+        ret = av_frame_copy_props(out_frame->frame, in);
+        if (ret < 0) {
+            av_log(ctx, AV_LOG_ERROR, "Failed to copy metadata fields from src to dst.\n");
+            return NULL;
+        }
 
         ret = map_frame_to_surface(out_frame->frame,
                                    &out_frame->surface);
@@ -884,7 +896,7 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
     }
 
     do {
-        out_frame = query_frame(s, outlink);
+        out_frame = query_frame(s, outlink, in_frame->frame);
         if (!out_frame) {
             av_log(ctx, AV_LOG_ERROR, "Failed to query an output frame.\n");
             return AVERROR(ENOMEM);
