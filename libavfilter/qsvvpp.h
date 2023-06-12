@@ -83,6 +83,8 @@ typedef struct QSVVPPContext {
     int eof;
     /** order with frame_out, sync */
     AVFifo *async_fifo;
+
+    mfxVersion ver;
 } QSVVPPContext;
 
 typedef struct QSVVPPCrop {

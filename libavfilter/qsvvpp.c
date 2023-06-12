@@ -655,6 +655,12 @@ static int init_vpp_session(AVFilterContext *avctx, QSVVPPContext *s)
     if (ret)
         return ret;
 
+    ret = MFXQueryVersion(s->session, &s->ver);
+    if (ret != MFX_ERR_NONE) {
+        av_log(avctx, AV_LOG_ERROR, "Error querying the runtime version\n");
+        return AVERROR_UNKNOWN;
+    }
+
     if (handle) {
         ret = MFXVideoCORE_SetHandle(s->session, handle_type, handle);
         if (ret != MFX_ERR_NONE)
