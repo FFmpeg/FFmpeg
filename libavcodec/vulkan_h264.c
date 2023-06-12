@@ -68,7 +68,14 @@ static int vk_h264_fill_pict(AVCodecContext *avctx, H264Picture **ref_src,
             .top_field_flag    = is_field ? !!(picture_structure & PICT_TOP_FIELD)    : 0,
             .bottom_field_flag = is_field ? !!(picture_structure & PICT_BOTTOM_FIELD) : 0,
             .used_for_long_term_reference = pic->reference && pic->long_ref,
-            .is_non_existing = 0,
+            /*
+             * flags.is_non_existing is used to indicate whether the picture is marked as
+             * “non-existing” as defined in section 8.2.5.2 of the ITU-T H.264 Specification;
+             * 8.2.5.2 Decoding process for gaps in frame_num
+             * corresponds to the code in h264_slice.c:h264_field_start,
+             * which sets the invalid_gap flag when decoding.
+             */
+            .is_non_existing = pic->invalid_gap,
         },
     };
 
