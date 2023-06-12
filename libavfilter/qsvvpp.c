@@ -536,6 +536,20 @@ static QSVFrame *query_frame(QSVVPPContext *s, AVFilterLink *outlink, const AVFr
     out_frame->frame->height = outlink->h;
     out_frame->surface.Info = s->vpp_param.vpp.Out;
 
+    for (int i = 0; i < s->vpp_param.NumExtParam; i++) {
+        mfxExtBuffer *extbuf = s->vpp_param.ExtParam[i];
+
+        if (extbuf->BufferId == MFX_EXTBUFF_VPP_DEINTERLACING) {
+            out_frame->frame->interlaced_frame = 0;
+            break;
+        }
+    }
+
+    out_frame->surface.Info.PicStruct =
+        !out_frame->frame->interlaced_frame ? MFX_PICSTRUCT_PROGRESSIVE :
+        (out_frame->frame->top_field_first ? MFX_PICSTRUCT_FIELD_TFF :
+         MFX_PICSTRUCT_FIELD_BFF);
+
     return out_frame;
 }
 
@@ -851,12 +865,15 @@ failed:
     return ret;
 }
 
-static int qsvvpp_init_vpp_session(AVFilterContext *avctx, QSVVPPContext *s)
+static int qsvvpp_init_vpp_session(AVFilterContext *avctx, QSVVPPContext *s, const QSVFrame *in, QSVFrame *out)
 {
     int ret;
 
     if (s->vpp_initted)
         return 0;
+
+    s->vpp_param.vpp.In.PicStruct = in->surface.Info.PicStruct;
+    s->vpp_param.vpp.Out.PicStruct = out->surface.Info.PicStruct;
 
     /* Query VPP params again, including params for frame */
     ret = MFXVideoVPP_Query(s->session, &s->vpp_param, &s->vpp_param);
@@ -940,7 +957,7 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
             return AVERROR(ENOMEM);
         }
 
-        ret = qsvvpp_init_vpp_session(ctx, s);
+        ret = qsvvpp_init_vpp_session(ctx, s, in_frame, out_frame);
         if (ret)
             return ret;
 
