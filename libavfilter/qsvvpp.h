@@ -74,9 +74,14 @@ typedef struct QSVVPPContext {
 #if QSV_HAVE_OPAQUE
     /** MFXVPP extern parameters */
     mfxExtOpaqueSurfaceAlloc opaque_alloc;
+#endif
+    /** store sequence parameters */
+    mfxExtBuffer      **seq_buffers;
+    int                 nb_seq_buffers;
+
+    /** store all parameters for vpp execution, including parameters per frame */
     mfxExtBuffer      **ext_buffers;
     int                 nb_ext_buffers;
-#endif
 
     int got_frame;
     int async_depth;

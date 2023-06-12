@@ -767,28 +767,39 @@ int ff_qsvvpp_init(AVFilterContext *avctx, QSVVPPParam *param)
         goto failed;
     }
 
+    s->nb_seq_buffers = param->num_ext_buf;
 #if QSV_HAVE_OPAQUE
-    if (IS_OPAQUE_MEMORY(s->in_mem_mode) || IS_OPAQUE_MEMORY(s->out_mem_mode)) {
-        s->nb_ext_buffers = param->num_ext_buf + 1;
+    if (IS_OPAQUE_MEMORY(s->in_mem_mode) || IS_OPAQUE_MEMORY(s->out_mem_mode))
+        s->nb_seq_buffers++;
+#endif
+
+    if (s->nb_seq_buffers) {
+        s->seq_buffers = av_calloc(s->nb_seq_buffers, sizeof(*s->seq_buffers));
+        if (!s->seq_buffers) {
+            ret = AVERROR(ENOMEM);
+            goto failed;
+        }
+
+        for (i = 0; i < param->num_ext_buf; i++)
+            s->seq_buffers[i]    = param->ext_buf[i];
+
+#if QSV_HAVE_OPAQUE
+        if (IS_OPAQUE_MEMORY(s->in_mem_mode) || IS_OPAQUE_MEMORY(s->out_mem_mode))
+            s->seq_buffers[i] = (mfxExtBuffer *)&s->opaque_alloc;
+#endif
+
+        s->nb_ext_buffers = s->nb_seq_buffers;
         s->ext_buffers = av_calloc(s->nb_ext_buffers, sizeof(*s->ext_buffers));
         if (!s->ext_buffers) {
             ret = AVERROR(ENOMEM);
             goto failed;
         }
 
-        s->ext_buffers[0] = (mfxExtBuffer *)&s->opaque_alloc;
-        for (i = 1; i < param->num_ext_buf; i++)
-            s->ext_buffers[i]    = param->ext_buf[i - 1];
-        s->vpp_param.ExtParam    = s->ext_buffers;
-        s->vpp_param.NumExtParam = s->nb_ext_buffers;
-    } else {
-        s->vpp_param.NumExtParam = param->num_ext_buf;
-        s->vpp_param.ExtParam    = param->ext_buf;
+        memcpy(s->ext_buffers, s->seq_buffers, s->nb_seq_buffers * sizeof(*s->seq_buffers));
     }
-#else
-    s->vpp_param.NumExtParam = param->num_ext_buf;
-    s->vpp_param.ExtParam    = param->ext_buf;
-#endif
+
+    s->vpp_param.ExtParam    = s->ext_buffers;
+    s->vpp_param.NumExtParam = s->nb_ext_buffers;
 
     s->got_frame = 0;
 
@@ -861,9 +872,8 @@ int ff_qsvvpp_close(AVFilterContext *avctx)
     clear_frame_list(&s->out_frame_list);
     av_freep(&s->surface_ptrs_in);
     av_freep(&s->surface_ptrs_out);
-#if QSV_HAVE_OPAQUE
+    av_freep(&s->seq_buffers);
     av_freep(&s->ext_buffers);
-#endif
     av_freep(&s->frame_infos);
     av_fifo_freep2(&s->async_fifo);
 
