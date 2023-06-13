@@ -113,6 +113,16 @@ enum var_name {
     VAR_VARS_NB
 };
 
+/* per-input dynamic filter state */
+typedef struct LibplaceboInput {
+    pl_renderer renderer;
+    pl_queue queue;
+    AVFilterLink *link;
+    AVFifo *out_pts; ///< timestamps of wanted output frames
+    int64_t status_pts;
+    int status;
+} LibplaceboInput;
+
 typedef struct LibplaceboContext {
     /* lavfi vulkan*/
     FFVulkanContext vkctx;
@@ -121,14 +131,10 @@ typedef struct LibplaceboContext {
     pl_log log;
     pl_vulkan vulkan;
     pl_gpu gpu;
-    pl_renderer renderer;
-    pl_queue queue;
     pl_tex tex[4];
 
-    /* filter state */
-    AVFifo *out_pts; ///< timestamps of wanted output frames
-    int64_t status_pts;
-    int status;
+    /* input state */
+    LibplaceboInput input;
 
     /* settings */
     char *out_format_string;
@@ -536,8 +542,6 @@ static int libplacebo_init(AVFilterContext *avctx)
     RET(av_expr_parse(&s->pos_h_pexpr, s->pos_h_expr, var_names,
                       NULL, NULL, NULL, NULL, 0, s));
 
-    /* Initialize dynamic filter state */
-    s->out_pts = av_fifo_alloc2(1, sizeof(int64_t), AV_FIFO_FLAG_AUTO_GROW);
     if (strcmp(s->fps_string, "none") != 0)
         RET(av_parse_video_rate(&s->fps, s->fps_string));
 
@@ -563,6 +567,28 @@ static void unlock_queue(void *priv, uint32_t qf, uint32_t qidx)
     hwctx->unlock_queue(avhwctx, qf, qidx);
 }
 #endif
+
+static int input_init(AVFilterContext *avctx, AVFilterLink *link,
+                      LibplaceboInput *input)
+{
+    LibplaceboContext *s = avctx->priv;
+
+    input->out_pts = av_fifo_alloc2(1, sizeof(int64_t), AV_FIFO_FLAG_AUTO_GROW);
+    if (!input->out_pts)
+        return AVERROR(ENOMEM);
+    input->queue = pl_queue_create(s->gpu);
+    input->renderer = pl_renderer_create(s->log, s->gpu);
+    input->link = link;
+
+    return 0;
+}
+
+static void input_uninit(LibplaceboInput *input)
+{
+    pl_renderer_destroy(&input->renderer);
+    pl_queue_destroy(&input->queue);
+    av_fifo_freep2(&input->out_pts);
+}
 
 static int init_vulkan(AVFilterContext *avctx, const AVVulkanDeviceContext *hwctx)
 {
@@ -620,10 +646,7 @@ static int init_vulkan(AVFilterContext *avctx, const AVVulkanDeviceContext *hwct
         goto fail;
     }
 
-    /* Create the renderer */
     s->gpu = s->vulkan->gpu;
-    s->renderer = pl_renderer_create(s->log, s->gpu);
-    s->queue = pl_queue_create(s->gpu);
 
     /* Parse the user shaders, if requested */
     if (s->shader_bin_len)
@@ -633,6 +656,9 @@ static int init_vulkan(AVFilterContext *avctx, const AVVulkanDeviceContext *hwct
         RET(av_file_map(s->shader_path, &buf, &buf_len, 0, s));
         RET(parse_shader(avctx, buf, buf_len));
     }
+
+    /* Initialize inputs */
+    RET(input_init(avctx, avctx->inputs[0], &s->input));
 
     /* fall through */
 fail:
@@ -649,8 +675,7 @@ static void libplacebo_uninit(AVFilterContext *avctx)
         pl_tex_destroy(s->gpu, &s->tex[i]);
     for (int i = 0; i < s->num_hooks; i++)
         pl_mpv_user_shader_destroy(&s->hooks[i]);
-    pl_renderer_destroy(&s->renderer);
-    pl_queue_destroy(&s->queue);
+    input_uninit(&s->input);
     pl_vulkan_destroy(&s->vulkan);
     pl_log_destroy(&s->log);
     ff_vk_uninit(&s->vkctx);
@@ -664,7 +689,6 @@ static void libplacebo_uninit(AVFilterContext *avctx)
     av_expr_free(s->pos_y_pexpr);
     av_expr_free(s->pos_w_pexpr);
     av_expr_free(s->pos_h_pexpr);
-    av_fifo_freep2(&s->out_pts);
 }
 
 static int libplacebo_process_command(AVFilterContext *ctx, const char *cmd,
@@ -826,7 +850,7 @@ static int output_frame_mix(AVFilterContext *ctx,
     }
 
     update_crops(ctx, mix, &target, ref_sig, out->pts * av_q2d(outlink->time_base));
-    pl_render_image_mix(s->renderer, mix, &target, &s->params);
+    pl_render_image_mix(s->input.renderer, mix, &target, &s->params);
 
     if (outdesc->flags & AV_PIX_FMT_FLAG_HWACCEL) {
         pl_unmap_avframe(s->gpu, &target);
@@ -886,7 +910,7 @@ static int libplacebo_activate(AVFilterContext *ctx)
 
     while ((ret = ff_inlink_consume_frame(inlink, &in)) > 0) {
         in->opaque = s;
-        pl_queue_push(s->queue, &(struct pl_source_frame) {
+        pl_queue_push(s->input.queue, &(struct pl_source_frame) {
             .pts         = in->pts * av_q2d(inlink->time_base),
             .duration    = in->duration * av_q2d(inlink->time_base),
             .first_field = pl_field_from_avframe(in),
@@ -899,19 +923,19 @@ static int libplacebo_activate(AVFilterContext *ctx)
         if (!s->fps.num) {
             /* Internally queue an output frame for the same PTS */
             av_assert1(!av_cmp_q(inlink->time_base, outlink->time_base));
-            av_fifo_write(s->out_pts, &in->pts, 1);
+            av_fifo_write(s->input.out_pts, &in->pts, 1);
         }
     }
 
     if (ret < 0)
         return ret;
 
-    if (!s->status && ff_inlink_acknowledge_status(inlink, &status, &pts)) {
+    if (!s->input.status && ff_inlink_acknowledge_status(inlink, &status, &pts)) {
         pts = av_rescale_q_rnd(pts, inlink->time_base, outlink->time_base,
                                AV_ROUND_UP);
-        pl_queue_push(s->queue, NULL); /* Signal EOF to pl_queue */
-        s->status = status;
-        s->status_pts = pts;
+        pl_queue_push(s->input.queue, NULL); /* Signal EOF to pl_queue */
+        s->input.status = status;
+        s->input.status_pts = pts;
     }
 
     if (ff_outlink_frame_wanted(outlink)) {
@@ -920,22 +944,22 @@ static int libplacebo_activate(AVFilterContext *ctx)
 
         if (s->fps.num) {
             pts = outlink->frame_count_out;
-        } else if (av_fifo_peek(s->out_pts, &pts, 1, 0) < 0) {
+        } else if (av_fifo_peek(s->input.out_pts, &pts, 1, 0) < 0) {
             /* No frames queued */
-            if (s->status) {
-                pts = s->status_pts;
+            if (s->input.status) {
+                pts = s->input.status_pts;
             } else {
                 ff_inlink_request_frame(inlink);
                 return 0;
             }
         }
 
-        if (s->status && pts >= s->status_pts) {
-            ff_outlink_set_status(outlink, s->status, s->status_pts);
+        if (s->input.status && pts >= s->input.status_pts) {
+            ff_outlink_set_status(outlink, s->input.status, s->input.status_pts);
             return 0;
         }
 
-        ret = pl_queue_update(s->queue, &mix, pl_queue_params(
+        ret = pl_queue_update(s->input.queue, &mix, pl_queue_params(
             .pts            = pts * av_q2d(outlink->time_base),
             .radius         = pl_frame_mix_radius(&s->params),
             .vsync_duration = av_q2d(av_inv_q(outlink->frame_rate)),
@@ -947,7 +971,7 @@ static int libplacebo_activate(AVFilterContext *ctx)
             return 0;
         case PL_QUEUE_OK:
             if (!s->fps.num)
-                av_fifo_drain2(s->out_pts, 1);
+                av_fifo_drain2(s->input.out_pts, 1);
             return output_frame_mix(ctx, &mix, pts);
         case PL_QUEUE_ERR:
             return AVERROR_EXTERNAL;
