@@ -445,6 +445,8 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
 
         st->codecpar->codec_tag = tag1;
         st->codecpar->codec_id  = ff_codec_get_id(ff_codec_bmp_tags, tag1);
+        if (!st->codecpar->codec_id)
+            st->codecpar->codec_id = ff_codec_get_id(ff_codec_bmp_tags_unofficial, tag1);
         if (tag1 == MKTAG('D', 'V', 'R', ' ')) {
             sti->need_parsing = AVSTREAM_PARSE_FULL;
             /* issue658 contains wrong w/h and MS even puts a fake seq header
@@ -459,6 +461,8 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
             sti->need_parsing = AVSTREAM_PARSE_FULL_ONCE;
         if (st->codecpar->codec_id == AV_CODEC_ID_MPEG4)
             sti->need_parsing = AVSTREAM_PARSE_FULL_ONCE;
+        if (st->codecpar->codec_id == AV_CODEC_ID_HEVC)
+            sti->need_parsing = AVSTREAM_PARSE_FULL;
     }
     pos2 = avio_tell(pb);
     avio_skip(pb, size - (pos2 - pos1 + 24));
