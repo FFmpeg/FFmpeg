@@ -460,7 +460,7 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
         if (st->codecpar->codec_id == AV_CODEC_ID_H264)
             sti->need_parsing = AVSTREAM_PARSE_FULL_ONCE;
         if (st->codecpar->codec_id == AV_CODEC_ID_MPEG4)
-            sti->need_parsing = AVSTREAM_PARSE_FULL_ONCE;
+            sti->need_parsing = AVSTREAM_PARSE_FULL;
         if (st->codecpar->codec_id == AV_CODEC_ID_HEVC)
             sti->need_parsing = AVSTREAM_PARSE_FULL;
     }
