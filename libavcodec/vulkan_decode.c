@@ -584,6 +584,8 @@ static void free_common(void *opaque, uint8_t *data)
                                           s->hwctx->alloc);
 
     ff_vk_uninit(s);
+
+    av_free(ctx);
 }
 
 static int vulkan_decode_bootstrap(AVCodecContext *avctx, AVBufferRef *frames_ref)
