@@ -1176,6 +1176,8 @@ static void vulkan_device_free(AVHWDeviceContext *ctx)
 
     RELEASE_PROPS(hwctx->enabled_inst_extensions, hwctx->nb_enabled_inst_extensions);
     RELEASE_PROPS(hwctx->enabled_dev_extensions, hwctx->nb_enabled_dev_extensions);
+
+    ff_vk_uninit(&p->vkctx);
 }
 
 static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
