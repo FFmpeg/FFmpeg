@@ -751,6 +751,10 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
             if (codec->close && p->thread_init != UNINITIALIZED)
                 codec->close(ctx);
 
+            /* When using a threadsafe hwaccel, this is where
+             * each thread's context is uninit'd and freed. */
+            ff_hwaccel_uninit(ctx);
+
             if (ctx->priv_data) {
                 if (codec->p.priv_class)
                     av_opt_free(ctx->priv_data);
