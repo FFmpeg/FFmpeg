@@ -26,8 +26,6 @@
 #include "vulkan_video.h"
 
 typedef struct FFVulkanDecodeProfileData {
-    VkVideoCapabilitiesKHR caps;
-    VkVideoDecodeCapabilitiesKHR dec_caps;
     VkVideoDecodeH264ProfileInfoKHR h264_profile;
     VkVideoDecodeH264ProfileInfoKHR h265_profile;
     VkVideoDecodeAV1ProfileInfoMESA av1_profile;
@@ -40,7 +38,9 @@ typedef struct FFVulkanDecodeShared {
     FFVulkanContext s;
     FFVkVideoCommon common;
     FFVkExecPool exec_pool;
-    FFVulkanDecodeProfileData profile_data;
+
+    VkVideoCapabilitiesKHR caps;
+    VkVideoDecodeCapabilitiesKHR dec_caps;
 
     AVBufferRef *dpb_hwfc_ref;  /* Only used for dedicated_dpb */
 
