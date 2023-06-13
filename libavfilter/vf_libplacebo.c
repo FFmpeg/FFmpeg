@@ -898,7 +898,7 @@ static int libplacebo_activate(AVFilterContext *ctx)
 
         if (!s->fps.num) {
             /* Internally queue an output frame for the same PTS */
-            av_assert1(!av_cmp_q(link->time_base, outlink->time_base));
+            av_assert1(!av_cmp_q(inlink->time_base, outlink->time_base));
             av_fifo_write(s->out_pts, &in->pts, 1);
         }
     }
