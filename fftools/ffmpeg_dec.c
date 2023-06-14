@@ -47,6 +47,12 @@ struct Decoder {
     int64_t         last_filter_in_rescale_delta;
     int             last_frame_sample_rate;
 
+    /* previous decoded subtitle and related variables */
+    struct {
+        int got_output;
+        AVSubtitle subtitle;
+    } prev_sub;
+
     pthread_t       thread;
     /**
      * Queue for sending coded packets from the main thread to
@@ -101,6 +107,8 @@ void dec_free(Decoder **pdec)
 
     av_frame_free(&dec->frame);
     av_packet_free(&dec->pkt);
+
+    avsubtitle_free(&dec->prev_sub.subtitle);
 
     av_freep(pdec);
 }
@@ -378,24 +386,25 @@ static void sub2video_flush(InputStream *ist)
 
 static int process_subtitle(InputStream *ist, AVSubtitle *subtitle)
 {
+    Decoder *d = ist->decoder;
     int got_output = 1;
     int ret = 0;
 
     if (ist->fix_sub_duration) {
         int end = 1;
-        if (ist->prev_sub.got_output) {
-            end = av_rescale(subtitle->pts - ist->prev_sub.subtitle.pts,
+        if (d->prev_sub.got_output) {
+            end = av_rescale(subtitle->pts - d->prev_sub.subtitle.pts,
                              1000, AV_TIME_BASE);
-            if (end < ist->prev_sub.subtitle.end_display_time) {
+            if (end < d->prev_sub.subtitle.end_display_time) {
                 av_log(NULL, AV_LOG_DEBUG,
                        "Subtitle duration reduced from %"PRId32" to %d%s\n",
-                       ist->prev_sub.subtitle.end_display_time, end,
+                       d->prev_sub.subtitle.end_display_time, end,
                        end <= 0 ? ", dropping it" : "");
-                ist->prev_sub.subtitle.end_display_time = end;
+                d->prev_sub.subtitle.end_display_time = end;
             }
         }
-        FFSWAP(int,         got_output, ist->prev_sub.got_output);
-        FFSWAP(AVSubtitle, *subtitle,   ist->prev_sub.subtitle);
+        FFSWAP(int,         got_output, d->prev_sub.got_output);
+        FFSWAP(AVSubtitle, *subtitle,   d->prev_sub.subtitle);
         if (end <= 0)
             goto out;
     }
@@ -430,8 +439,9 @@ out:
 
 int fix_sub_duration_heartbeat(InputStream *ist, int64_t signal_pts)
 {
+    Decoder *d = ist->decoder;
     int ret = AVERROR_BUG;
-    AVSubtitle *prev_subtitle = &ist->prev_sub.subtitle;
+    AVSubtitle *prev_subtitle = &d->prev_sub.subtitle;
     AVSubtitle subtitle;
 
     if (!ist->fix_sub_duration || !prev_subtitle->num_rects ||

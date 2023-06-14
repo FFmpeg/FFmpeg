@@ -359,10 +359,6 @@ typedef struct InputStream {
     int autorotate;
 
     int fix_sub_duration;
-    struct { /* previous decoded subtitle and related variables */
-        int got_output;
-        AVSubtitle subtitle;
-    } prev_sub;
 
     struct sub2video {
         int w, h;
