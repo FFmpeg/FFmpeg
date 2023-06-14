@@ -768,24 +768,6 @@ int subtitle_wrap_frame(AVFrame *frame, AVSubtitle *subtitle, int copy)
     return 0;
 }
 
-static int fix_sub_duration_heartbeat(InputStream *ist, int64_t signal_pts)
-{
-    int ret = AVERROR_BUG;
-    AVSubtitle *prev_subtitle = &ist->prev_sub.subtitle;
-    AVSubtitle subtitle;
-
-    if (!ist->fix_sub_duration || !prev_subtitle->num_rects ||
-        signal_pts <= prev_subtitle->pts)
-        return 0;
-
-    if ((ret = copy_av_subtitle(&subtitle, prev_subtitle)) < 0)
-        return ret;
-
-    subtitle.pts = signal_pts;
-
-    return process_subtitle(ist, &subtitle);
-}
-
 int trigger_fix_sub_duration_heartbeat(OutputStream *ost, const AVPacket *pkt)
 {
     OutputFile *of = output_files[ost->file_index];

@@ -376,7 +376,7 @@ static void sub2video_flush(InputStream *ist)
     }
 }
 
-int process_subtitle(InputStream *ist, AVSubtitle *subtitle)
+static int process_subtitle(InputStream *ist, AVSubtitle *subtitle)
 {
     int got_output = 1;
     int ret = 0;
@@ -426,6 +426,24 @@ int process_subtitle(InputStream *ist, AVSubtitle *subtitle)
 out:
     avsubtitle_free(subtitle);
     return ret;
+}
+
+int fix_sub_duration_heartbeat(InputStream *ist, int64_t signal_pts)
+{
+    int ret = AVERROR_BUG;
+    AVSubtitle *prev_subtitle = &ist->prev_sub.subtitle;
+    AVSubtitle subtitle;
+
+    if (!ist->fix_sub_duration || !prev_subtitle->num_rects ||
+        signal_pts <= prev_subtitle->pts)
+        return 0;
+
+    if ((ret = copy_av_subtitle(&subtitle, prev_subtitle)) < 0)
+        return ret;
+
+    subtitle.pts = signal_pts;
+
+    return process_subtitle(ist, &subtitle);
 }
 
 static int transcode_subtitles(InputStream *ist, const AVPacket *pkt,
