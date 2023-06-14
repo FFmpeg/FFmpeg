@@ -44,13 +44,6 @@
 #include "proresdata.h"
 #include "thread.h"
 
-static void permute(uint8_t *dst, const uint8_t *src, const uint8_t permutation[64])
-{
-    int i;
-    for (i = 0; i < 64; i++)
-        dst[i] = permutation[src[i]];
-}
-
 #define ALPHA_SHIFT_16_TO_10(alpha_val) (alpha_val >> 6)
 #define ALPHA_SHIFT_8_TO_10(alpha_val)  ((alpha_val << 2) | (alpha_val >> 6))
 #define ALPHA_SHIFT_16_TO_12(alpha_val) (alpha_val >> 4)
@@ -187,8 +180,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ff_init_scantable_permutation(idct_permutation,
                                   ctx->prodsp.idct_permutation_type);
 
-    permute(ctx->progressive_scan, ff_prores_progressive_scan, idct_permutation);
-    permute(ctx->interlaced_scan, ff_prores_interlaced_scan, idct_permutation);
+    ff_permute_scantable(ctx->progressive_scan, ff_prores_progressive_scan, idct_permutation);
+    ff_permute_scantable(ctx->interlaced_scan, ff_prores_interlaced_scan, idct_permutation);
 
     ctx->pix_fmt = AV_PIX_FMT_NONE;
 
@@ -304,7 +297,7 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
             av_log(avctx, AV_LOG_ERROR, "Header truncated\n");
             return AVERROR_INVALIDDATA;
         }
-        permute(ctx->qmat_luma, ctx->prodsp.idct_permutation, ptr);
+        ff_permute_scantable(ctx->qmat_luma, ctx->prodsp.idct_permutation, ptr);
         ptr += 64;
     } else {
         memset(ctx->qmat_luma, 4, 64);
@@ -315,7 +308,7 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
             av_log(avctx, AV_LOG_ERROR, "Header truncated\n");
             return AVERROR_INVALIDDATA;
         }
-        permute(ctx->qmat_chroma, ctx->prodsp.idct_permutation, ptr);
+        ff_permute_scantable(ctx->qmat_chroma, ctx->prodsp.idct_permutation, ptr);
     } else {
         memcpy(ctx->qmat_chroma, ctx->qmat_luma, 64);
     }
