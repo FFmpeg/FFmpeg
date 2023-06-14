@@ -736,7 +736,7 @@ FrameData *frame_data(AVFrame *frame);
 
 int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame, int keep_reference);
 int ifilter_send_eof(InputFilter *ifilter, int64_t pts, AVRational tb);
-int ifilter_sub2video(InputFilter *ifilter, const AVSubtitle *sub);
+int ifilter_sub2video(InputFilter *ifilter, const AVFrame *frame);
 void ifilter_sub2video_heartbeat(InputFilter *ifilter, int64_t pts, AVRational tb);
 
 /**

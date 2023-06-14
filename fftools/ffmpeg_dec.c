@@ -47,11 +47,9 @@ struct Decoder {
     int64_t         last_filter_in_rescale_delta;
     int             last_frame_sample_rate;
 
-    /* previous decoded subtitle and related variables */
-    struct {
-        int got_output;
-        AVSubtitle subtitle;
-    } prev_sub;
+    /* previous decoded subtitles */
+    AVFrame *sub_prev[2];
+    AVFrame *sub_heartbeat;
 
     pthread_t       thread;
     /**
@@ -108,7 +106,9 @@ void dec_free(Decoder **pdec)
     av_frame_free(&dec->frame);
     av_packet_free(&dec->pkt);
 
-    avsubtitle_free(&dec->prev_sub.subtitle);
+    for (int i = 0; i < FF_ARRAY_ELEMS(dec->sub_prev); i++)
+        av_frame_free(&dec->sub_prev[i]);
+    av_frame_free(&dec->sub_heartbeat);
 
     av_freep(pdec);
 }
@@ -384,45 +384,55 @@ static void sub2video_flush(InputStream *ist)
     }
 }
 
-static int process_subtitle(InputStream *ist, AVSubtitle *subtitle)
+static int process_subtitle(InputStream *ist, AVFrame *frame)
 {
     Decoder *d = ist->decoder;
-    int got_output = 1;
+    const AVSubtitle *subtitle = (AVSubtitle*)frame->buf[0]->data;
     int ret = 0;
 
     if (ist->fix_sub_duration) {
+        AVSubtitle *sub_prev = d->sub_prev[0]->buf[0] ?
+                               (AVSubtitle*)d->sub_prev[0]->buf[0]->data : NULL;
         int end = 1;
-        if (d->prev_sub.got_output) {
-            end = av_rescale(subtitle->pts - d->prev_sub.subtitle.pts,
+        if (sub_prev) {
+            end = av_rescale(subtitle->pts - sub_prev->pts,
                              1000, AV_TIME_BASE);
-            if (end < d->prev_sub.subtitle.end_display_time) {
+            if (end < sub_prev->end_display_time) {
                 av_log(NULL, AV_LOG_DEBUG,
                        "Subtitle duration reduced from %"PRId32" to %d%s\n",
-                       d->prev_sub.subtitle.end_display_time, end,
+                       sub_prev->end_display_time, end,
                        end <= 0 ? ", dropping it" : "");
-                d->prev_sub.subtitle.end_display_time = end;
+                sub_prev->end_display_time = end;
             }
         }
-        FFSWAP(int,         got_output, d->prev_sub.got_output);
-        FFSWAP(AVSubtitle, *subtitle,   d->prev_sub.subtitle);
+
+        av_frame_unref(d->sub_prev[1]);
+        av_frame_move_ref(d->sub_prev[1], frame);
+
+        frame    = d->sub_prev[0];
+        subtitle = frame->buf[0] ? (AVSubtitle*)frame->buf[0]->data : NULL;
+
+        FFSWAP(AVFrame*, d->sub_prev[0], d->sub_prev[1]);
+
         if (end <= 0)
-            goto out;
+            return 0;
     }
 
-    if (!got_output)
+    if (!subtitle)
         return 0;
 
     for (int i = 0; i < ist->nb_filters; i++) {
-        ret = ifilter_sub2video(ist->filters[i], subtitle);
+        ret = ifilter_sub2video(ist->filters[i], frame);
         if (ret < 0) {
             av_log(ist, AV_LOG_ERROR, "Error sending a subtitle for filtering: %s\n",
                    av_err2str(ret));
-            goto out;
+            return ret;
         }
     }
 
+    subtitle = (AVSubtitle*)frame->buf[0]->data;
     if (!subtitle->num_rects)
-        goto out;
+        return 0;
 
     for (int oidx = 0; oidx < ist->nb_outputs; oidx++) {
         OutputStream *ost = ist->outputs[oidx];
@@ -432,28 +442,30 @@ static int process_subtitle(InputStream *ist, AVSubtitle *subtitle)
         enc_subtitle(output_files[ost->file_index], ost, subtitle);
     }
 
-out:
-    avsubtitle_free(subtitle);
-    return ret;
+    return 0;
 }
 
 int fix_sub_duration_heartbeat(InputStream *ist, int64_t signal_pts)
 {
     Decoder *d = ist->decoder;
     int ret = AVERROR_BUG;
-    AVSubtitle *prev_subtitle = &d->prev_sub.subtitle;
-    AVSubtitle subtitle;
+    AVSubtitle *prev_subtitle = d->sub_prev[0]->buf[0] ?
+        (AVSubtitle*)d->sub_prev[0]->buf[0]->data : NULL;
+    AVSubtitle *subtitle;
 
-    if (!ist->fix_sub_duration || !prev_subtitle->num_rects ||
-        signal_pts <= prev_subtitle->pts)
+    if (!ist->fix_sub_duration || !prev_subtitle ||
+        !prev_subtitle->num_rects || signal_pts <= prev_subtitle->pts)
         return 0;
 
-    if ((ret = copy_av_subtitle(&subtitle, prev_subtitle)) < 0)
+    av_frame_unref(d->sub_heartbeat);
+    ret = subtitle_wrap_frame(d->sub_heartbeat, prev_subtitle, 1);
+    if (ret < 0)
         return ret;
 
-    subtitle.pts = signal_pts;
+    subtitle = (AVSubtitle*)d->sub_heartbeat->buf[0]->data;
+    subtitle->pts = signal_pts;
 
-    return process_subtitle(ist, &subtitle);
+    return process_subtitle(ist, d->sub_heartbeat);
 }
 
 static int transcode_subtitles(InputStream *ist, const AVPacket *pkt,
@@ -781,8 +793,7 @@ int dec_packet(InputStream *ist, const AVPacket *pkt, int no_eof)
 
         // process the decoded frame
         if (ist->dec->type == AVMEDIA_TYPE_SUBTITLE) {
-            AVSubtitle *sub = (AVSubtitle*)d->frame->buf[0]->data;
-            ret = process_subtitle(ist, sub);
+            ret = process_subtitle(ist, d->frame);
         } else {
             ret = send_frame_to_filters(ist, d->frame);
         }
@@ -1043,6 +1054,7 @@ static int hw_device_setup_for_decode(InputStream *ist)
 
 int dec_open(InputStream *ist)
 {
+    Decoder *d;
     const AVCodec *codec = ist->dec;
     int ret;
 
@@ -1056,6 +1068,18 @@ int dec_open(InputStream *ist)
     ret = dec_alloc(&ist->decoder);
     if (ret < 0)
         return ret;
+    d = ist->decoder;
+
+    if (codec->type == AVMEDIA_TYPE_SUBTITLE && ist->fix_sub_duration) {
+        for (int i = 0; i < FF_ARRAY_ELEMS(d->sub_prev); i++) {
+            d->sub_prev[i] = av_frame_alloc();
+            if (!d->sub_prev[i])
+                return AVERROR(ENOMEM);
+        }
+        d->sub_heartbeat = av_frame_alloc();
+        if (!d->sub_heartbeat)
+            return AVERROR(ENOMEM);
+    }
 
     ist->dec_ctx->opaque                = ist;
     ist->dec_ctx->get_format            = get_format;

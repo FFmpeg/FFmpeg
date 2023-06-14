@@ -118,9 +118,6 @@ typedef struct InputFilterPriv {
     } fallback;
 
     struct {
-        ///< queue of AVSubtitle* before filter init
-        AVFifo *queue;
-
         AVFrame *frame;
 
         int64_t last_pts;
@@ -748,12 +745,6 @@ void fg_free(FilterGraph **pfg)
             while (av_fifo_read(ifp->frame_queue, &frame, 1) >= 0)
                 av_frame_free(&frame);
             av_fifo_freep2(&ifp->frame_queue);
-        }
-        if (ifp->sub2video.queue) {
-            AVSubtitle sub;
-            while (av_fifo_read(ifp->sub2video.queue, &sub, 1) >= 0)
-                avsubtitle_free(&sub);
-            av_fifo_freep2(&ifp->sub2video.queue);
         }
         av_frame_free(&ifp->sub2video.frame);
 
@@ -1593,7 +1584,11 @@ static int configure_filtergraph(FilterGraph *fg)
         InputFilterPriv *ifp = ifp_from_ifilter(fg->inputs[i]);
         AVFrame *tmp;
         while (av_fifo_read(ifp->frame_queue, &tmp, 1) >= 0) {
-            ret = av_buffersrc_add_frame(ifp->filter, tmp);
+            if (ifp->type_src == AVMEDIA_TYPE_SUBTITLE) {
+                sub2video_update(ifp, INT64_MIN, (const AVSubtitle*)tmp->buf[0]->data);
+            } else {
+                ret = av_buffersrc_add_frame(ifp->filter, tmp);
+            }
             av_frame_free(&tmp);
             if (ret < 0)
                 goto fail;
@@ -1607,20 +1602,6 @@ static int configure_filtergraph(FilterGraph *fg)
             ret = av_buffersrc_add_frame(ifp->filter, NULL);
             if (ret < 0)
                 goto fail;
-        }
-    }
-
-    /* process queued up subtitle packets */
-    for (i = 0; i < fg->nb_inputs; i++) {
-        InputFilter *ifilter = fg->inputs[i];
-        InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
-
-        if (ifp->type_src == AVMEDIA_TYPE_SUBTITLE && ifp->sub2video.queue) {
-            AVSubtitle tmp;
-            while (av_fifo_read(ifp->sub2video.queue, &tmp, 1) >= 0) {
-                sub2video_update(ifp, INT64_MIN, &tmp);
-                avsubtitle_free(&tmp);
-            }
         }
     }
 
@@ -1797,35 +1778,29 @@ void ifilter_sub2video_heartbeat(InputFilter *ifilter, int64_t pts, AVRational t
         sub2video_push_ref(ifp, pts2);
 }
 
-int ifilter_sub2video(InputFilter *ifilter, const AVSubtitle *subtitle)
+int ifilter_sub2video(InputFilter *ifilter, const AVFrame *frame)
 {
     InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
     int ret;
 
     if (ifilter->graph->graph) {
-        if (!subtitle) {
+        if (!frame) {
             if (ifp->sub2video.end_pts < INT64_MAX)
                 sub2video_update(ifp, INT64_MAX, NULL);
 
             return av_buffersrc_add_frame(ifp->filter, NULL);
         }
 
-        sub2video_update(ifp, INT64_MIN, subtitle);
-    } else if (subtitle) {
-        AVSubtitle sub;
+        sub2video_update(ifp, INT64_MIN, (const AVSubtitle*)frame->buf[0]->data);
+    } else if (frame) {
+        AVFrame *tmp = av_frame_clone(frame);
 
-        if (!ifp->sub2video.queue)
-            ifp->sub2video.queue = av_fifo_alloc2(8, sizeof(AVSubtitle), AV_FIFO_FLAG_AUTO_GROW);
-        if (!ifp->sub2video.queue)
+        if (!tmp)
             return AVERROR(ENOMEM);
 
-        ret = copy_av_subtitle(&sub, subtitle);
-        if (ret < 0)
-            return ret;
-
-        ret = av_fifo_write(ifp->sub2video.queue, &sub, 1);
+        ret = av_fifo_write(ifp->frame_queue, &tmp, 1);
         if (ret < 0) {
-            avsubtitle_free(&sub);
+            av_frame_free(&tmp);
             return ret;
         }
     }
