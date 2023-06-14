@@ -1791,6 +1791,9 @@ int ifilter_sub2video(InputFilter *ifilter, const AVFrame *frame)
             return av_buffersrc_add_frame(ifp->filter, NULL);
         }
 
+        ifp->width  = frame->width  ? frame->width  : ifp->width;
+        ifp->height = frame->height ? frame->height : ifp->height;
+
         sub2video_update(ifp, INT64_MIN, (const AVSubtitle*)frame->buf[0]->data);
     } else if (frame) {
         AVFrame *tmp = av_frame_clone(frame);

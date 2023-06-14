@@ -509,6 +509,9 @@ static int transcode_subtitles(InputStream *ist, const AVPacket *pkt,
         return ret;
     }
 
+    frame->width  = ist->dec_ctx->width;
+    frame->height = ist->dec_ctx->height;
+
     ret = tq_send(d->queue_out, 0, frame);
     if (ret < 0)
         av_frame_unref(frame);
