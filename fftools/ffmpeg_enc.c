@@ -462,7 +462,7 @@ static int check_recording_time(OutputStream *ost, int64_t ts, AVRational tb)
     return 1;
 }
 
-void enc_subtitle(OutputFile *of, OutputStream *ost, AVSubtitle *sub)
+void enc_subtitle(OutputFile *of, OutputStream *ost, const AVSubtitle *sub)
 {
     Encoder *e = ost->enc;
     int subtitle_out_max_size = 1024 * 1024;
