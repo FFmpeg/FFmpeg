@@ -262,6 +262,8 @@ typedef struct DrawTextContext {
     int bb_right;                   ///< the size of the right box border
     int bb_bottom;                  ///< the size of the bottom box border
     int bb_left;                    ///< the size of the left box border
+    int box_width;                  ///< the width of box
+    int box_height;                 ///< the height of box
     int tabsize;                    ///< tab size
     int fix_bounds;                 ///< do we let it go out of frame bounds - t/f
 
@@ -297,6 +299,9 @@ typedef struct DrawTextContext {
 #endif
     AVDictionary *metadata;
 
+    int boxw;                       ///< the value of the boxw parameter
+    int boxh;                       ///< the value of the boxh parameter
+
     TextLine *lines;                ///< computed information about text lines
     int line_count;                 ///< the number of text lines
     uint32_t *tab_clusters;         ///< the position of tab characters in the text
@@ -322,6 +327,8 @@ static const AVOption drawtext_options[]= {
     {"fontsize",       "set font size",         OFFSET(fontsize_expr),      AV_OPT_TYPE_STRING, {.str=NULL},  0, 0, FLAGS},
     {"x",              "set x expression",      OFFSET(x_expr),             AV_OPT_TYPE_STRING, {.str="0"},   0, 0, FLAGS},
     {"y",              "set y expression",      OFFSET(y_expr),             AV_OPT_TYPE_STRING, {.str="0"},   0, 0, FLAGS},
+    {"boxw",           "set box width",         OFFSET(boxw),               AV_OPT_TYPE_INT,    {.i64=0},     0, INT_MAX, FLAGS},
+    {"boxh",           "set box height",        OFFSET(boxh),               AV_OPT_TYPE_INT,    {.i64=0},     0, INT_MAX, FLAGS},
     {"shadowx",        "set shadow x offset",   OFFSET(shadowx),            AV_OPT_TYPE_INT,    {.i64=0},     INT_MIN, INT_MAX, FLAGS},
     {"shadowy",        "set shadow y offset",   OFFSET(shadowy),            AV_OPT_TYPE_INT,    {.i64=0},     INT_MIN, INT_MAX, FLAGS},
     {"borderw",        "set border width",      OFFSET(borderw),            AV_OPT_TYPE_INT,    {.i64=0},     INT_MIN, INT_MAX, FLAGS},
@@ -1473,8 +1480,8 @@ static int draw_glyphs(DrawTextContext *s, AVFrame *frame,
     FT_BitmapGlyph b_glyph;
     int clip_x = 0, clip_y = 0;
 
-    clip_x = FFMIN(metrics->rect_x + metrics->width + s->bb_right, frame->width);
-    clip_y = FFMIN(metrics->rect_y + metrics->height + s->bb_bottom, frame->height);
+    clip_x = FFMIN(metrics->rect_x + s->box_width + s->bb_right, frame->width);
+    clip_y = FFMIN(metrics->rect_y + s->box_height + s->bb_bottom, frame->height);
 
     for (l = 0; l < s->line_count; ++l) {
         TextLine *line = &s->lines[l];
@@ -1907,6 +1914,9 @@ static int draw_text(AVFilterContext *ctx, AVFrame *frame)
     metrics.rect_x = s->x;
     metrics.rect_y = s->y;
 
+    s->box_width = s->boxw == 0 ? metrics.width : s->boxw;
+    s->box_height = s->boxh == 0 ? metrics.height : s->boxh;
+
     if (!s->draw_box) {
         // Create a border for the clipping region to take into account subpixel
         // errors in text measurement and effects.
@@ -1920,16 +1930,16 @@ static int draw_text(AVFilterContext *ctx, AVFrame *frame)
     /* Check if the whole box is out of the frame */
     is_outside = metrics.rect_x - s->bb_left >= width ||
                     metrics.rect_y - s->bb_top >= height ||
-                    metrics.rect_x + metrics.width + s->bb_right <= 0 ||
-                    metrics.rect_y + metrics.height + s->bb_bottom <= 0;
+                    metrics.rect_x + s->box_width + s->bb_right <= 0 ||
+                    metrics.rect_y + s->box_height + s->bb_bottom <= 0;
 
     if (!is_outside) {
         /* draw box */
         if (s->draw_box) {
             rec_x = metrics.rect_x - s->bb_left;
             rec_y = metrics.rect_y - s->bb_top;
-            rec_width = metrics.width + s->bb_right + s->bb_left;
-            rec_height = metrics.height + s->bb_bottom + s->bb_top;
+            rec_width = s->box_width + s->bb_right + s->bb_left;
+            rec_height = s->box_height + s->bb_bottom + s->bb_top;
             ff_blend_rectangle(&s->dc, &boxcolor,
                 frame->data, frame->linesize, width, height,
                 rec_x, rec_y, rec_width, rec_height);

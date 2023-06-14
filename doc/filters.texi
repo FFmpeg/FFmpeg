@@ -12478,6 +12478,14 @@ ffmpeg-utils manual,ffmpeg-utils}.
 
 The default value of @var{shadowcolor} is "black".
 
+@item boxw
+Set the width of the box to be drawn around text.
+The default value of @var{boxw} is computed automatically to match the text width
+
+@item boxh
+Set the height of the box to be drawn around text.
+The default value of @var{boxh} is computed automatically to match the text height
+
 @item shadowx
 @item shadowy
 The x and y offsets for the text shadow position with respect to the
