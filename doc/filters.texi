@@ -12390,6 +12390,16 @@ The value must contain exactly two letters, one for the vertical alignment (T=to
 M=middle, B=bottom) and one for the horizontal alignment (L=left, C=center, R=right).
 Please note that tab characters are only supported with the left horizontal alignment.
 
+@item y_align
+Specify what the @var{y} value is referred to. Possible values are:
+@itemize @bullet
+@item @code{text} the top of the highest glyph of the first text line is placed at @var{y}
+@item @code{baseline} the baseline of the first text line is placed at @var{y}
+@item @code{font} the baseline of the first text line is placed at @var{y} plus the
+    ascent (in pixels) defined in the font metrics
+@end itemize
+The default value of @var{y_align} is "text" for backward compatibility.
+
 @item borderw
 Set the width of the border to be drawn around the text using @var{bordercolor}.
 The default value of @var{borderw} is 0.

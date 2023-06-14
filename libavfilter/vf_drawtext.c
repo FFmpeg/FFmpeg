@@ -171,6 +171,12 @@ enum expansion_mode {
     EXP_STRFTIME,
 };
 
+enum y_alignment {
+    YA_TEXT,
+    YA_BASELINE,
+    YA_FONT,
+};
+
 typedef struct HarfbuzzData {
     hb_buffer_t* buf;
     hb_font_t* font;
@@ -310,6 +316,7 @@ typedef struct DrawTextContext {
     int boxw;                       ///< the value of the boxw parameter
     int boxh;                       ///< the value of the boxh parameter
     uint8_t *text_align;            ///< the horizontal and vertical text alignment
+    int y_align;                    ///< the value of the y_align parameter
 
     TextLine *lines;                ///< computed information about text lines
     int line_count;                 ///< the number of text lines
@@ -353,6 +360,10 @@ static const AVOption drawtext_options[]= {
         {"none",     "set no expansion",                    OFFSET(exp_mode), AV_OPT_TYPE_CONST, {.i64=EXP_NONE},     0, 0, FLAGS, "expansion"},
         {"normal",   "set normal expansion",                OFFSET(exp_mode), AV_OPT_TYPE_CONST, {.i64=EXP_NORMAL},   0, 0, FLAGS, "expansion"},
         {"strftime", "set strftime expansion (deprecated)", OFFSET(exp_mode), AV_OPT_TYPE_CONST, {.i64=EXP_STRFTIME}, 0, 0, FLAGS, "expansion"},
+    {"y_align",   "set the y alignment",    OFFSET(y_align), AV_OPT_TYPE_INT,  {.i64=YA_TEXT}, 0, 2, FLAGS, "y_align"},
+        {"text",     "y is referred to the top of the first text line", OFFSET(y_align), AV_OPT_TYPE_CONST, {.i64=YA_TEXT},     0, 0, FLAGS, "y_align"},
+        {"baseline", "y is referred to the baseline of the first line", OFFSET(y_align), AV_OPT_TYPE_CONST, {.i64=YA_BASELINE}, 0, 0, FLAGS, "y_align"},
+        {"font",     "y is referred to the font defined line metrics",  OFFSET(y_align), AV_OPT_TYPE_CONST, {.i64=YA_FONT},     0, 0, FLAGS, "y_align"},
 
     {"timecode",        "set initial timecode",             OFFSET(tc_opt_string), AV_OPT_TYPE_STRING,   {.str=NULL}, 0, 0, FLAGS},
     {"tc24hmax",        "set 24 hours max (timecode only)", OFFSET(tc24hmax),      AV_OPT_TYPE_BOOL,     {.i64=0},    0, 1, FLAGS},
@@ -958,11 +969,13 @@ static av_cold int init(AVFilterContext *ctx)
     if ((err = update_fontsize(ctx)) < 0)
         return err;
 
+    // Always init the stroker, may be needed if borderw is set via command
+    if (FT_Stroker_New(s->library, &s->stroker)) {
+        av_log(ctx, AV_LOG_ERROR, "Could not init FT stroker\n");
+        return AVERROR_EXTERNAL;
+    }
+
     if (s->borderw) {
-        if (FT_Stroker_New(s->library, &s->stroker)) {
-            av_log(ctx, AV_LOG_ERROR, "Coult not init FT stroker\n");
-            return AVERROR_EXTERNAL;
-        }
         FT_Stroker_Set(s->stroker, s->borderw << 6, FT_STROKER_LINECAP_ROUND,
                        FT_STROKER_LINEJOIN_ROUND, 0);
     }
@@ -1634,7 +1647,6 @@ static int measure_text(AVFilterContext *ctx, TextMetrics *metrics)
     int line_count = 0;
     uint32_t code = 0;
     Glyph *glyph = NULL;
-    int height64;
 
     int i, tab_idx = 0, last_tab_idx = 0, line_offset = 0;
     char* p;
@@ -1753,10 +1765,13 @@ continue_on_failed2:
     metrics->line_height64 = s->face->size->metrics.height;
 
     metrics->width = POS_CEIL(width64, 64);
-    height64 = (metrics->line_height64 + s->line_spacing * 64) *
-        (FFMAX(0, line_count - 1)) + first_max_y64 - cur_min_y64;
-    metrics->height = POS_CEIL(height64, 64);
-
+    if (s->y_align == YA_FONT) {
+        metrics->height = POS_CEIL(metrics->line_height64 * line_count, 64);
+    } else {
+        int height64 = (metrics->line_height64 + s->line_spacing * 64) *
+            (FFMAX(0, line_count - 1)) + first_max_y64 - cur_min_y64;
+        metrics->height = POS_CEIL(height64, 64);
+    }
     metrics->offset_top64 = first_max_y64;
     metrics->offset_right64 = last_max_x64;
     metrics->offset_bottom64 = cur_min_y64;
@@ -1929,7 +1944,13 @@ static int draw_text(AVFilterContext *ctx, AVFrame *frame)
     x = 0;
     y = 0;
     x64 = (int)(s->x * 64.);
-    y64 = (int)(s->y * 64. + metrics.offset_top64);
+    if (s->y_align == YA_FONT) {
+        y64 = (int)(s->y * 64. + s->face->size->metrics.ascender);
+    } else if (s->y_align == YA_BASELINE) {
+        y64 = (int)(s->y * 64.);
+    } else {
+        y64 = (int)(s->y * 64. + metrics.offset_top64);
+    }
 
     for (int l = 0; l < s->line_count; ++l) {
         TextLine *line = &s->lines[l];
@@ -1973,7 +1994,11 @@ static int draw_text(AVFilterContext *ctx, AVFrame *frame)
     }
 
     metrics.rect_x = s->x;
-    metrics.rect_y = s->y;
+    if (s->y_align == YA_BASELINE) {
+        metrics.rect_y = s->y - metrics.offset_top64 / 64;
+    } else {
+        metrics.rect_y = s->y;
+    }
 
     s->box_width = s->boxw == 0 ? metrics.width : s->boxw;
     s->box_height = s->boxh == 0 ? metrics.height : s->boxh;
