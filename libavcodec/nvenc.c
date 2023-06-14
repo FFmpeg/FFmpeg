@@ -2285,11 +2285,10 @@ static int nvenc_set_timestamp(AVCodecContext *avctx,
     if (avctx->codec_descriptor->props & AV_CODEC_PROP_REORDER) {
 FF_DISABLE_DEPRECATION_WARNINGS
         pkt->dts = dts -
-            FFMAX(ctx->encode_config.frameIntervalP - 1, 0)
 #if FF_API_TICKS_PER_FRAME
-            * FFMAX(avctx->ticks_per_frame, 1)
+            FFMAX(avctx->ticks_per_frame, 1) *
 #endif
-            * FFMAX(avctx->time_base.num, 1);
+            FFMAX(ctx->encode_config.frameIntervalP - 1, 0);
 FF_ENABLE_DEPRECATION_WARNINGS
     } else {
         pkt->dts = pkt->pts;
