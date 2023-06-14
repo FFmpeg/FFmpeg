@@ -660,7 +660,12 @@ static VkResult vulkan_setup_profile(AVCodecContext *avctx,
         dec_caps->pNext = h264_caps;
         usage->pNext = h264_profile;
         h264_profile->sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_INFO_KHR;
-        h264_profile->stdProfileIdc = cur_profile;
+
+        /* Vulkan transmits all the constrant_set flags, rather than wanting them
+         * merged in the profile IDC */
+        h264_profile->stdProfileIdc = cur_profile & ~(FF_PROFILE_H264_CONSTRAINED |
+                                                      FF_PROFILE_H264_INTRA);
+
         h264_profile->pictureLayout = avctx->field_order == AV_FIELD_UNKNOWN ||
                                       avctx->field_order == AV_FIELD_PROGRESSIVE ?
                                       VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_PROGRESSIVE_KHR :
