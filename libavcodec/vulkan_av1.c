@@ -448,9 +448,9 @@ static int vk_av1_start_frame(AVCodecContext          *avctx,
             },
             .gm_type = s->cur_frame.gm_type[i],
             .gm_params = {
-                frame_header->gm_params[i][0], frame_header->gm_params[i][1],
-                frame_header->gm_params[i][2], frame_header->gm_params[i][3],
-                frame_header->gm_params[i][4], frame_header->gm_params[i][5],
+                s->cur_frame.gm_params[i][0], s->cur_frame.gm_params[i][1],
+                s->cur_frame.gm_params[i][2], s->cur_frame.gm_params[i][3],
+                s->cur_frame.gm_params[i][4], s->cur_frame.gm_params[i][5],
             },
         };
     }
