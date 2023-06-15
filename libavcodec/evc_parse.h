@@ -350,4 +350,6 @@ EVCParserPPS *ff_evc_parse_pps(EVCParserContext *ctx, const uint8_t *bs, int bs_
 
 int ff_evc_parse_nal_unit(EVCParserContext *ctx, const uint8_t *buf, int buf_size, void *logctx);
 
+void ff_evc_parse_free(EVCParserContext *ctx);
+
 #endif /* AVCODEC_EVC_PARSE_H */

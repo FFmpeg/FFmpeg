@@ -765,3 +765,10 @@ int ff_evc_parse_nal_unit(EVCParserContext *ctx, const uint8_t *buf, int buf_siz
     return 0;
 }
 
+void ff_evc_parse_free(EVCParserContext *ctx) {
+    for (int i = 0; i < EVC_MAX_SPS_COUNT; i++)
+        av_freep(&ctx->sps[i]);
+
+    for (int i = 0; i < EVC_MAX_PPS_COUNT; i++)
+        av_freep(&ctx->pps[i]);
+}
