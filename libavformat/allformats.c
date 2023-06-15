@@ -154,6 +154,7 @@ extern const AVInputFormat  ff_ea_cdata_demuxer;
 extern const AVInputFormat  ff_eac3_demuxer;
 extern const FFOutputFormat ff_eac3_muxer;
 extern const AVInputFormat  ff_epaf_demuxer;
+extern const FFOutputFormat ff_evc_muxer;
 extern const FFOutputFormat ff_f4v_muxer;
 extern const AVInputFormat  ff_ffmetadata_demuxer;
 extern const FFOutputFormat ff_ffmetadata_muxer;

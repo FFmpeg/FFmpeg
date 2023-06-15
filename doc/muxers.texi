@@ -2122,6 +2122,12 @@ DTS Coherent Acoustics (DCA) audio.
 
 Dolby Digital Plus, also known as Enhanced AC-3, audio.
 
+@subsection evc
+
+MPEG-5 Essential Video Coding (EVC) / EVC / MPEG-5 Part 1 EVC video.
+
+Extensions: evc
+
 @subsection g722
 
 ITU-T G.722 audio.

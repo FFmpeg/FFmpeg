@@ -401,6 +401,19 @@ const FFOutputFormat ff_hevc_muxer = {
 };
 #endif
 
+#if CONFIG_EVC_MUXER
+const FFOutputFormat ff_evc_muxer = {
+    .p.name            = "evc",
+    .p.long_name       = NULL_IF_CONFIG_SMALL("raw EVC video"),
+    .p.extensions      = "evc",
+    .p.audio_codec     = AV_CODEC_ID_NONE,
+    .p.video_codec     = AV_CODEC_ID_EVC,
+    .init              = force_one_stream,
+    .write_packet      = ff_raw_write_packet,
+    .p.flags           = AVFMT_NOTIMESTAMPS,
+};
+#endif
+
 #if CONFIG_M4V_MUXER
 const FFOutputFormat ff_m4v_muxer = {
     .p.name            = "m4v",
