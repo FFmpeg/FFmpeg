@@ -197,17 +197,6 @@ static int evc_parse(AVCodecParserContext *s, AVCodecContext *avctx,
     return next;
 }
 
-static int evc_parser_init(AVCodecParserContext *s)
-{
-    EVCParserContext *ctx = s->priv_data;
-
-    memset(ctx->sps, 0, sizeof(EVCParserSPS *)*EVC_MAX_SPS_COUNT);
-    memset(ctx->pps, 0, sizeof(EVCParserPPS *)*EVC_MAX_PPS_COUNT);
-    memset(ctx->slice_header, 0, sizeof(EVCParserSliceHeader *)*EVC_MAX_PPS_COUNT);
-
-    return 0;
-}
-
 static void evc_parser_close(AVCodecParserContext *s)
 {
     EVCParserContext *ctx = s->priv_data;
@@ -229,7 +218,6 @@ static void evc_parser_close(AVCodecParserContext *s)
 const AVCodecParser ff_evc_parser = {
     .codec_ids      = { AV_CODEC_ID_EVC },
     .priv_data_size = sizeof(EVCParserContext),
-    .parser_init    = evc_parser_init,
     .parser_parse   = evc_parse,
     .parser_close   = evc_parser_close,
 };
