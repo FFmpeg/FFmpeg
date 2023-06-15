@@ -706,11 +706,21 @@ fail:
     return err;
 }
 
+static const AVFrame *ref_frame(const struct pl_frame_mix *mix)
+{
+    for (int i = 0; i < mix->num_frames; i++) {
+        if (i+1 == mix->num_frames || mix->timestamps[i+1] > 0)
+            return pl_get_mapped_avframe(mix->frames[i]);
+    }
+    return NULL;
+}
+
 static void update_crops(AVFilterContext *ctx,
                          struct pl_frame_mix *mix, struct pl_frame *target,
-                         uint64_t ref_sig, double target_pts)
+                         double target_pts)
 {
     LibplaceboContext *s = ctx->priv;
+    const AVFrame *ref = ref_frame(mix);
 
     for (int i = 0; i < mix->num_frames; i++) {
         // Mutate the `pl_frame.crop` fields in-place. This is fine because we
@@ -745,7 +755,7 @@ static void update_crops(AVFilterContext *ctx,
         image->crop.x1 = image->crop.x0 + s->var_values[VAR_CROP_W];
         image->crop.y1 = image->crop.y0 + s->var_values[VAR_CROP_H];
 
-        if (mix->signatures[i] == ref_sig) {
+        if (src == ref) {
             /* Only update the target crop once, for the 'reference' frame */
             target->crop.x0 = av_expr_eval(s->pos_x_pexpr, s->var_values, NULL);
             target->crop.y0 = av_expr_eval(s->pos_y_pexpr, s->var_values, NULL);
@@ -768,24 +778,15 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
     LibplaceboInput *in = &s->input;
     AVFilterLink *outlink = ctx->outputs[0];
     const AVPixFmtDescriptor *outdesc = av_pix_fmt_desc_get(outlink->format);
+    const AVFrame *ref = ref_frame(&in->mix);
     struct pl_frame target;
-    const AVFrame *ref;
     AVFrame *out;
-    uint64_t ref_sig;
-    if (!in->mix.num_frames)
+    if (!ref)
         return 0;
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out)
         return AVERROR(ENOMEM);
-
-    /* Use the last frame before current PTS value as reference */
-    for (int i = 0; i < in->mix.num_frames; i++) {
-        if (i && in->mix.timestamps[i] > 0.0f)
-            break;
-        ref = pl_get_mapped_avframe(in->mix.frames[i]);
-        ref_sig = in->mix.signatures[i];
-    }
 
     RET(av_frame_copy_props(out, ref));
     out->pts = pts;
@@ -850,7 +851,7 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
         goto fail;
     }
 
-    update_crops(ctx, &in->mix, &target, ref_sig, out->pts * av_q2d(outlink->time_base));
+    update_crops(ctx, &in->mix, &target, out->pts * av_q2d(outlink->time_base));
     pl_render_image_mix(in->renderer, &in->mix, &target, &s->params);
 
     if (outdesc->flags & AV_PIX_FMT_FLAG_HWACCEL) {
