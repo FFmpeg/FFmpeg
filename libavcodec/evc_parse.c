@@ -355,7 +355,7 @@ EVCParserPPS *ff_evc_parse_pps(EVCParserContext *ctx, const uint8_t *bs, int bs_
         return NULL;
 
     if(!ctx->pps[pps_pic_parameter_set_id]) {
-        if((ctx->pps[pps_pic_parameter_set_id] = av_malloc(sizeof(EVCParserSPS))) == NULL)
+        if ((ctx->pps[pps_pic_parameter_set_id] = av_malloc(sizeof(EVCParserPPS))) == NULL)
             return NULL;
     }
 
