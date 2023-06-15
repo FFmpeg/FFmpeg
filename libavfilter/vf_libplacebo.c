@@ -117,6 +117,8 @@ enum var_name {
 typedef struct LibplaceboInput {
     pl_renderer renderer;
     pl_queue queue;
+    enum pl_queue_status qstatus;
+    struct pl_frame_mix mix; ///< temporary storage
     AVFilterLink *link;
     AVFifo *out_pts; ///< timestamps of wanted output frames
     int64_t status_pts;
@@ -952,9 +954,6 @@ static int libplacebo_activate(AVFilterContext *ctx)
         return ret;
 
     if (ff_outlink_frame_wanted(outlink)) {
-        struct pl_frame_mix mix;
-        enum pl_queue_status ret;
-
         if (s->fps.num) {
             pts = outlink->frame_count_out;
         } else if (av_fifo_peek(in->out_pts, &pts, 1, 0) < 0) {
@@ -972,20 +971,20 @@ static int libplacebo_activate(AVFilterContext *ctx)
             return 0;
         }
 
-        ret = pl_queue_update(in->queue, &mix, pl_queue_params(
+        in->qstatus = pl_queue_update(in->queue, &in->mix, pl_queue_params(
             .pts            = pts * av_q2d(outlink->time_base),
             .radius         = pl_frame_mix_radius(&s->params),
             .vsync_duration = av_q2d(av_inv_q(outlink->frame_rate)),
         ));
 
-        switch (ret) {
+        switch (in->qstatus) {
         case PL_QUEUE_MORE:
             ff_inlink_request_frame(in->link);
             return 0;
         case PL_QUEUE_OK:
             if (!s->fps.num)
                 av_fifo_drain2(in->out_pts, 1);
-            return output_frame_mix(ctx, &mix, pts);
+            return output_frame_mix(ctx, &in->mix, pts);
         case PL_QUEUE_ERR:
             return AVERROR_EXTERNAL;
         }
