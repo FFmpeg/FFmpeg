@@ -760,20 +760,19 @@ static void update_crops(AVFilterContext *ctx,
     }
 }
 
-/* Construct and emit an output frame for a given frame mix */
-static int output_frame_mix(AVFilterContext *ctx,
-                            struct pl_frame_mix *mix,
-                            int64_t pts)
+/* Construct and emit an output frame for a given timestamp */
+static int output_frame(AVFilterContext *ctx, int64_t pts)
 {
     int err = 0, ok, changed_csp;
     LibplaceboContext *s = ctx->priv;
+    LibplaceboInput *in = &s->input;
     AVFilterLink *outlink = ctx->outputs[0];
     const AVPixFmtDescriptor *outdesc = av_pix_fmt_desc_get(outlink->format);
     struct pl_frame target;
     const AVFrame *ref;
     AVFrame *out;
     uint64_t ref_sig;
-    if (!mix->num_frames)
+    if (!in->mix.num_frames)
         return 0;
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
@@ -781,11 +780,11 @@ static int output_frame_mix(AVFilterContext *ctx,
         return AVERROR(ENOMEM);
 
     /* Use the last frame before current PTS value as reference */
-    for (int i = 0; i < mix->num_frames; i++) {
-        if (i && mix->timestamps[i] > 0.0f)
+    for (int i = 0; i < in->mix.num_frames; i++) {
+        if (i && in->mix.timestamps[i] > 0.0f)
             break;
-        ref = pl_get_mapped_avframe(mix->frames[i]);
-        ref_sig = mix->signatures[i];
+        ref = pl_get_mapped_avframe(in->mix.frames[i]);
+        ref_sig = in->mix.signatures[i];
     }
 
     RET(av_frame_copy_props(out, ref));
@@ -851,8 +850,8 @@ static int output_frame_mix(AVFilterContext *ctx,
         goto fail;
     }
 
-    update_crops(ctx, mix, &target, ref_sig, out->pts * av_q2d(outlink->time_base));
-    pl_render_image_mix(s->input.renderer, mix, &target, &s->params);
+    update_crops(ctx, &in->mix, &target, ref_sig, out->pts * av_q2d(outlink->time_base));
+    pl_render_image_mix(in->renderer, &in->mix, &target, &s->params);
 
     if (outdesc->flags & AV_PIX_FMT_FLAG_HWACCEL) {
         pl_unmap_avframe(s->gpu, &target);
@@ -984,7 +983,7 @@ static int libplacebo_activate(AVFilterContext *ctx)
         case PL_QUEUE_OK:
             if (!s->fps.num)
                 av_fifo_drain2(in->out_pts, 1);
-            return output_frame_mix(ctx, &in->mix, pts);
+            return output_frame(ctx, pts);
         case PL_QUEUE_ERR:
             return AVERROR_EXTERNAL;
         }
