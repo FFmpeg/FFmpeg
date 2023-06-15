@@ -786,12 +786,18 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
 {
     int err = 0, ok, changed_csp;
     LibplaceboContext *s = ctx->priv;
-    LibplaceboInput *in = &s->inputs[0];
     AVFilterLink *outlink = ctx->outputs[0];
     const AVPixFmtDescriptor *outdesc = av_pix_fmt_desc_get(outlink->format);
-    const AVFrame *ref = ref_frame(&in->mix);
     struct pl_frame target;
+    const AVFrame *ref = NULL;
     AVFrame *out;
+
+    /* Use the first active input as metadata reference */
+    for (int i = 0; i < s->nb_inputs; i++) {
+        const LibplaceboInput *in = &s->inputs[i];
+        if (in->qstatus == PL_QUEUE_OK && (ref = ref_frame(&in->mix)))
+            break;
+    }
     if (!ref)
         return 0;
 
@@ -862,8 +868,18 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
         goto fail;
     }
 
-    update_crops(ctx, in, &target, out->pts * av_q2d(outlink->time_base));
-    pl_render_image_mix(in->renderer, &in->mix, &target, &s->params);
+    /* Draw first frame opaque, others with blending */
+    s->params.skip_target_clearing = false;
+    s->params.blend_params = NULL;
+    for (int i = 0; i < s->nb_inputs; i++) {
+        LibplaceboInput *in = &s->inputs[i];
+        if (in->qstatus != PL_QUEUE_OK)
+            continue;
+        update_crops(ctx, in, &target, out->pts * av_q2d(outlink->time_base));
+        pl_render_image_mix(in->renderer, &in->mix, &target, &s->params);
+        s->params.skip_target_clearing = true;
+        s->params.blend_params = &pl_alpha_overlay;
+    }
 
     if (outdesc->flags & AV_PIX_FMT_FLAG_HWACCEL) {
         pl_unmap_avframe(s->gpu, &target);
