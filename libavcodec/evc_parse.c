@@ -367,8 +367,10 @@ EVCParserPPS *ff_evc_parse_pps(EVCParserContext *ctx, const uint8_t *bs, int bs_
     pps->pps_pic_parameter_set_id = pps_pic_parameter_set_id;
 
     pps->pps_seq_parameter_set_id = get_ue_golomb(&gb);
-    if (pps->pps_seq_parameter_set_id >= EVC_MAX_SPS_COUNT)
+    if (pps->pps_seq_parameter_set_id >= EVC_MAX_SPS_COUNT) {
+        av_freep(&ctx->pps[pps_pic_parameter_set_id]);
         return NULL;
+    }
 
     pps->num_ref_idx_default_active_minus1[0] = get_ue_golomb(&gb);
     pps->num_ref_idx_default_active_minus1[1] = get_ue_golomb(&gb);
