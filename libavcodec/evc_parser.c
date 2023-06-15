@@ -71,6 +71,7 @@ static int parse_nal_units(AVCodecParserContext *s, AVCodecContext *avctx, const
 
             s->format              = ctx->format;
 
+            avctx->framerate       = ctx->framerate;
             avctx->gop_size        = ctx->gop_size;
             avctx->delay           = ctx->delay;
             avctx->profile         = ctx->profile;

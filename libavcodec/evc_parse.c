@@ -605,14 +605,13 @@ int ff_evc_parse_nal_unit(EVCParserContext *ctx, const uint8_t *buf, int buf_siz
         if (sps->profile_idc == 1) ctx->profile = FF_PROFILE_EVC_MAIN;
         else ctx->profile = FF_PROFILE_EVC_BASELINE;
 
-        if (sps->vui_parameters_present_flag) {
-            if (sps->vui_parameters.timing_info_present_flag) {
-                int64_t num = sps->vui_parameters.num_units_in_tick;
-                int64_t den = sps->vui_parameters.time_scale;
-                if (num != 0 && den != 0)
-                    av_reduce(&ctx->framerate.den, &ctx->framerate.num, num, den, 1 << 30);
-            }
-        }
+        if (sps->vui_parameters_present_flag && sps->vui_parameters.timing_info_present_flag) {
+            int64_t num = sps->vui_parameters.num_units_in_tick;
+            int64_t den = sps->vui_parameters.time_scale;
+            if (num != 0 && den != 0)
+                av_reduce(&ctx->framerate.den, &ctx->framerate.num, num, den, 1 << 30);
+        } else
+            ctx->framerate = (AVRational) { 0, 1 };
 
         bit_depth = sps->bit_depth_chroma_minus8 + 8;
         ctx->format = AV_PIX_FMT_NONE;
