@@ -182,7 +182,6 @@ typedef struct LibplaceboContext {
     float antiringing;
     int sigmoid;
     int skip_aa;
-    int skip_cache;
     float polar_cutoff;
     int disable_linear;
     int disable_builtin;
@@ -471,7 +470,6 @@ static int update_settings(AVFilterContext *ctx)
         .num_hooks = s->num_hooks,
 
         .skip_anti_aliasing = s->skip_aa,
-        .skip_caching_single_frame = s->skip_cache,
         .polar_cutoff = s->polar_cutoff,
         .disable_linear_scaling = s->disable_linear,
         .disable_builtin_scalers = s->disable_builtin,
@@ -883,8 +881,10 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
     s->params.blend_params = NULL;
     for (int i = 0; i < s->nb_inputs; i++) {
         LibplaceboInput *in = &s->inputs[i];
+        int high_fps = av_cmp_q(in->link->frame_rate, outlink->frame_rate) > 0;
         if (in->qstatus != PL_QUEUE_OK)
             continue;
+        s->params.skip_caching_single_frame = high_fps;
         update_crops(ctx, in, &target, out->pts * av_q2d(outlink->time_base));
         pl_render_image_mix(in->renderer, &in->mix, &target, &s->params);
         s->params.skip_target_clearing = true;
@@ -1198,9 +1198,6 @@ static int libplacebo_config_output(AVFilterLink *outlink)
     if (s->fps.num) {
         outlink->frame_rate = s->fps;
         outlink->time_base = av_inv_q(s->fps);
-        s->skip_cache = av_cmp_q(inlink->frame_rate, s->fps) > 0;
-    } else {
-        s->skip_cache = true;
     }
 
     /* Static variables */
