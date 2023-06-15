@@ -59,11 +59,11 @@ enum OldSources {
     BINKB_NB_SRC
 };
 
-static const int binkb_bundle_sizes[BINKB_NB_SRC] = {
+static const uint8_t binkb_bundle_sizes[BINKB_NB_SRC] = {
     4, 8, 8, 5, 5, 11, 11, 4, 4, 7
 };
 
-static const int binkb_bundle_signed[BINKB_NB_SRC] = {
+static const uint8_t binkb_bundle_signed[BINKB_NB_SRC] = {
     0, 0, 0, 1, 1, 0, 1, 0, 0, 0
 };
 
