@@ -419,40 +419,33 @@ EVCParserPPS *ff_evc_parse_pps(EVCParserContext *ctx, const uint8_t *bs, int bs_
 }
 
 // @see ISO_IEC_23094-1 (7.3.2.6 Slice layer RBSP syntax)
-EVCParserSliceHeader *ff_evc_parse_slice_header(EVCParserContext *ctx, const uint8_t *bs, int bs_size)
+static int evc_parse_slice_header(EVCParserContext *ctx, EVCParserSliceHeader *sh, const uint8_t *bs, int bs_size)
 {
     GetBitContext gb;
-    EVCParserSliceHeader *sh;
     EVCParserPPS *pps;
     EVCParserSPS *sps;
 
     int num_tiles_in_slice = 0;
     int slice_pic_parameter_set_id;
+    int ret;
 
-    if (init_get_bits8(&gb, bs, bs_size) < 0)
-        return NULL;
+    if ((ret = init_get_bits8(&gb, bs, bs_size)) < 0)
+        return ret;
 
     slice_pic_parameter_set_id = get_ue_golomb(&gb);
 
     if (slice_pic_parameter_set_id < 0 || slice_pic_parameter_set_id >= EVC_MAX_PPS_COUNT)
-        return NULL;
-
-    if(!ctx->slice_header[slice_pic_parameter_set_id]) {
-        if((ctx->slice_header[slice_pic_parameter_set_id] = av_malloc(sizeof(EVCParserSliceHeader))) == NULL)
-            return NULL;
-    }
-
-    sh = ctx->slice_header[slice_pic_parameter_set_id];
-    memset(sh, 0, sizeof(*sh));
+        return AVERROR_INVALIDDATA;
 
     pps = ctx->pps[slice_pic_parameter_set_id];
     if(!pps)
-        return NULL;
+        return AVERROR_INVALIDDATA;
 
     sps = ctx->sps[slice_pic_parameter_set_id];
     if(!sps)
-        return NULL;
+        return AVERROR_INVALIDDATA;
 
+    memset(sh, 0, sizeof(*sh));
     sh->slice_pic_parameter_set_id = slice_pic_parameter_set_id;
 
     if (!pps->single_tile_in_pic_flag) {
@@ -540,7 +533,7 @@ EVCParserSliceHeader *ff_evc_parse_slice_header(EVCParserContext *ctx, const uin
     // If necessary, add the missing fields to the EVCParserSliceHeader structure
     // and then extend parser implementation
 
-    return sh;
+    return 0;
 }
 
 int ff_evc_parse_nal_unit(EVCParserContext *ctx, const uint8_t *buf, int buf_size, void *logctx)
@@ -660,17 +653,17 @@ int ff_evc_parse_nal_unit(EVCParserContext *ctx, const uint8_t *buf, int buf_siz
         break;
     case EVC_IDR_NUT:   // Coded slice of a IDR or non-IDR picture
     case EVC_NOIDR_NUT: {
-        EVCParserSliceHeader *sh;
+        EVCParserSliceHeader sh;
         EVCParserSPS *sps;
-        int slice_pic_parameter_set_id;
+        int ret;
 
-        sh = ff_evc_parse_slice_header(ctx, data, nalu_size);
-        if (!sh) {
+        ret = evc_parse_slice_header(ctx, &sh, data, nalu_size);
+        if (ret < 0) {
             av_log(logctx, AV_LOG_ERROR, "Slice header parsing error\n");
-            return AVERROR_INVALIDDATA;
+            return ret;
         }
 
-        switch (sh->slice_type) {
+        switch (sh.slice_type) {
         case EVC_SLICE_TYPE_B: {
             ctx->pict_type =  AV_PICTURE_TYPE_B;
             break;
@@ -692,8 +685,7 @@ int ff_evc_parse_nal_unit(EVCParserContext *ctx, const uint8_t *buf, int buf_siz
 
         // POC (picture order count of the current picture) derivation
         // @see ISO/IEC 23094-1:2020(E) 8.3.1 Decoding process for picture order count
-        slice_pic_parameter_set_id = sh->slice_pic_parameter_set_id;
-        sps = ctx->sps[slice_pic_parameter_set_id];
+        sps = ctx->sps[sh.slice_pic_parameter_set_id];
 
         if (sps && sps->sps_pocs_flag) {
 
@@ -709,20 +701,20 @@ int ff_evc_parse_nal_unit(EVCParserContext *ctx, const uint8_t *buf, int buf_siz
                 int prevPicOrderCntMsb = ctx->poc.PicOrderCntVal - prevPicOrderCntLsb;
 
 
-                if ((sh->slice_pic_order_cnt_lsb < prevPicOrderCntLsb) &&
-                    ((prevPicOrderCntLsb - sh->slice_pic_order_cnt_lsb) >= (MaxPicOrderCntLsb / 2)))
+                if ((sh.slice_pic_order_cnt_lsb < prevPicOrderCntLsb) &&
+                    ((prevPicOrderCntLsb - sh.slice_pic_order_cnt_lsb) >= (MaxPicOrderCntLsb / 2)))
 
                     PicOrderCntMsb = prevPicOrderCntMsb + MaxPicOrderCntLsb;
 
-                else if ((sh->slice_pic_order_cnt_lsb > prevPicOrderCntLsb) &&
-                         ((sh->slice_pic_order_cnt_lsb - prevPicOrderCntLsb) > (MaxPicOrderCntLsb / 2)))
+                else if ((sh.slice_pic_order_cnt_lsb > prevPicOrderCntLsb) &&
+                         ((sh.slice_pic_order_cnt_lsb - prevPicOrderCntLsb) > (MaxPicOrderCntLsb / 2)))
 
                     PicOrderCntMsb = prevPicOrderCntMsb - MaxPicOrderCntLsb;
 
                 else
                     PicOrderCntMsb = prevPicOrderCntMsb;
             }
-            ctx->poc.PicOrderCntVal = PicOrderCntMsb + sh->slice_pic_order_cnt_lsb;
+            ctx->poc.PicOrderCntVal = PicOrderCntMsb + sh.slice_pic_order_cnt_lsb;
 
         } else {
             if (nalu_type == EVC_IDR_NUT) {

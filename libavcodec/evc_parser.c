@@ -209,10 +209,8 @@ static void evc_parser_close(AVCodecParserContext *s)
 
     for(int i = 0; i < EVC_MAX_PPS_COUNT; i++) {
         EVCParserPPS *pps = ctx->pps[i];
-        EVCParserSliceHeader *sh = ctx->slice_header[i];
 
         av_freep(&pps);
-        av_freep(&sh);
     }
 }
 
