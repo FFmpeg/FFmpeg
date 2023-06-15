@@ -65,16 +65,17 @@ extern const FFBitStreamFilter ff_vp9_metadata_bsf;
 extern const FFBitStreamFilter ff_vp9_raw_reorder_bsf;
 extern const FFBitStreamFilter ff_vp9_superframe_bsf;
 extern const FFBitStreamFilter ff_vp9_superframe_split_bsf;
+extern const FFBitStreamFilter ff_evc_frame_merge_bsf;
 
 #include "libavcodec/bsf_list.c"
 
 const AVBitStreamFilter *av_bsf_iterate(void **opaque)
 {
-    uintptr_t i = (uintptr_t)*opaque;
+    uintptr_t i = (uintptr_t) * opaque;
     const FFBitStreamFilter *f = bitstream_filters[i];
 
     if (f) {
-        *opaque = (void*)(i + 1);
+        *opaque = (void *)(i + 1);
         return &f->p;
     }
     return NULL;
