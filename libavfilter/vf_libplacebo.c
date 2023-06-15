@@ -973,11 +973,11 @@ static int handle_input(AVFilterContext *ctx, LibplaceboInput *input)
 
 static int libplacebo_activate(AVFilterContext *ctx)
 {
-    int ret;
+    int ret, retry = 0;
     LibplaceboContext *s = ctx->priv;
     LibplaceboInput *in = &s->inputs[0];
     AVFilterLink *outlink = ctx->outputs[0];
-    int64_t pts;
+    int64_t pts, out_pts;
 
     FF_FILTER_FORWARD_STATUS_BACK_ALL(outlink, ctx);
     pl_log_level_update(s->log, get_log_level());
@@ -989,24 +989,31 @@ static int libplacebo_activate(AVFilterContext *ctx)
 
     if (ff_outlink_frame_wanted(outlink)) {
         if (s->fps.num) {
-            pts = outlink->frame_count_out;
-        } else if (av_fifo_peek(in->out_pts, &pts, 1, 0) < 0) {
-            /* No frames queued */
-            if (in->status) {
-                pts = in->status_pts;
-            } else {
-                ff_inlink_request_frame(in->link);
-                return 0;
+            out_pts = outlink->frame_count_out;
+        } else {
+            /* Determine the PTS of the next frame from any active input */
+            out_pts = INT64_MAX;
+            for (int i = 0; i < s->nb_inputs; i++) {
+                LibplaceboInput *in = &s->inputs[i];
+                if (av_fifo_peek(in->out_pts, &pts, 1, 0) >= 0) {
+                    out_pts = FFMIN(out_pts, pts);
+                } else if (!in->status) {
+                    ff_inlink_request_frame(in->link);
+                    retry = true;
+                }
             }
+
+            if (retry) /* some inputs are incomplete */
+                return 0;
         }
 
-        if (s->status && pts >= s->status_pts) {
+        if (s->status && out_pts >= s->status_pts) {
             ff_outlink_set_status(outlink, s->status, s->status_pts);
             return 0;
         }
 
         in->qstatus = pl_queue_update(in->queue, &in->mix, pl_queue_params(
-            .pts            = pts * av_q2d(outlink->time_base),
+            .pts            = out_pts * av_q2d(outlink->time_base),
             .radius         = pl_frame_mix_radius(&s->params),
             .vsync_duration = av_q2d(av_inv_q(outlink->frame_rate)),
         ));
@@ -1018,7 +1025,7 @@ static int libplacebo_activate(AVFilterContext *ctx)
         case PL_QUEUE_OK:
             if (!s->fps.num)
                 av_fifo_drain2(in->out_pts, 1);
-            return output_frame(ctx, pts);
+            return output_frame(ctx, out_pts);
         case PL_QUEUE_ERR:
             return AVERROR_EXTERNAL;
         }
