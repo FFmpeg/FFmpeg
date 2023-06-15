@@ -1131,7 +1131,8 @@ static int libplacebo_query_format(AVFilterContext *ctx)
         goto fail;
     }
 
-    RET(ff_formats_ref(infmts, &ctx->inputs[0]->outcfg.formats));
+    for (int i = 0; i < s->nb_inputs; i++)
+        RET(ff_formats_ref(infmts, &ctx->inputs[i]->outcfg.formats));
     RET(ff_formats_ref(outfmts, &ctx->outputs[0]->incfg.formats));
     return 0;
 
