@@ -949,9 +949,6 @@ static int libplacebo_activate(AVFilterContext *ctx)
             if (!s->fps.num)
                 av_fifo_drain2(s->out_pts, 1);
             return output_frame_mix(ctx, &mix, pts);
-        case PL_QUEUE_EOF:
-            ff_outlink_set_status(outlink, AVERROR_EOF, pts);
-            return 0;
         case PL_QUEUE_ERR:
             return AVERROR_EXTERNAL;
         }
