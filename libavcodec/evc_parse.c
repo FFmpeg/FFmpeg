@@ -200,6 +200,8 @@ EVCParserSPS *ff_evc_parse_sps(EVCParserContext *ctx, const uint8_t *bs, int bs_
     }
 
     sps = ctx->sps[sps_seq_parameter_set_id];
+    memset(sps, 0, sizeof(*sps));
+
     sps->sps_seq_parameter_set_id = sps_seq_parameter_set_id;
 
     // the Baseline profile is indicated by profile_idc eqal to 0
@@ -360,6 +362,7 @@ EVCParserPPS *ff_evc_parse_pps(EVCParserContext *ctx, const uint8_t *bs, int bs_
     }
 
     pps = ctx->pps[pps_pic_parameter_set_id];
+    memset(pps, 0, sizeof(*pps));
 
     pps->pps_pic_parameter_set_id = pps_pic_parameter_set_id;
 
@@ -440,6 +443,7 @@ EVCParserSliceHeader *ff_evc_parse_slice_header(EVCParserContext *ctx, const uin
     }
 
     sh = ctx->slice_header[slice_pic_parameter_set_id];
+    memset(sh, 0, sizeof(*sh));
 
     pps = ctx->pps[slice_pic_parameter_set_id];
     if(!pps)
