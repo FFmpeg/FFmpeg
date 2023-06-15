@@ -441,7 +441,7 @@ static int evc_parse_slice_header(EVCParserContext *ctx, EVCParserSliceHeader *s
     if(!pps)
         return AVERROR_INVALIDDATA;
 
-    sps = ctx->sps[slice_pic_parameter_set_id];
+    sps = ctx->sps[pps->pps_seq_parameter_set_id];
     if(!sps)
         return AVERROR_INVALIDDATA;
 
@@ -654,7 +654,8 @@ int ff_evc_parse_nal_unit(EVCParserContext *ctx, const uint8_t *buf, int buf_siz
     case EVC_IDR_NUT:   // Coded slice of a IDR or non-IDR picture
     case EVC_NOIDR_NUT: {
         EVCParserSliceHeader sh;
-        EVCParserSPS *sps;
+        const EVCParserSPS *sps;
+        const EVCParserPPS *pps;
         int ret;
 
         ret = evc_parse_slice_header(ctx, &sh, data, nalu_size);
@@ -685,9 +686,11 @@ int ff_evc_parse_nal_unit(EVCParserContext *ctx, const uint8_t *buf, int buf_siz
 
         // POC (picture order count of the current picture) derivation
         // @see ISO/IEC 23094-1:2020(E) 8.3.1 Decoding process for picture order count
-        sps = ctx->sps[sh.slice_pic_parameter_set_id];
+        pps = ctx->pps[sh.slice_pic_parameter_set_id];
+        sps = ctx->sps[pps->pps_seq_parameter_set_id];
+        av_assert0(sps && pps);
 
-        if (sps && sps->sps_pocs_flag) {
+        if (sps->sps_pocs_flag) {
 
             int PicOrderCntMsb = 0;
             ctx->poc.prevPicOrderCntVal = ctx->poc.PicOrderCntVal;
