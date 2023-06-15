@@ -1325,7 +1325,7 @@ Use persistent HTTP connections. Applicable only for HTTP output.
 @item timeout
 Set timeout for socket I/O operations. Applicable only for HTTP output.
 
-@item -ignore_io_errors
+@item ignore_io_errors
 Ignore IO errors during open, write and delete. Useful for long-duration runs with network output.
 
 @item headers
