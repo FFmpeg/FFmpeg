@@ -16224,6 +16224,11 @@ to preserve the source colorimetry and size as best as it can, but it will
 apply any embedded film grain, dolby vision metadata or anamorphic SAR present
 in source frames.
 @table @option
+@item inputs
+Set the number of inputs. This can be used, alongside the @code{idx} variable,
+to allow placing/blending multiple inputs inside the output frame. This
+effectively enables functionality similar to @ref{hstack}, @ref{overlay}, etc.
+
 @item w
 @item h
 Set the output video dimension expression. Default values are @code{iw} and

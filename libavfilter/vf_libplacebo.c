@@ -502,6 +502,7 @@ static int parse_shader(AVFilterContext *avctx, const void *shader, size_t len)
 }
 
 static void libplacebo_uninit(AVFilterContext *avctx);
+static int libplacebo_config_input(AVFilterLink *inlink);
 
 static int libplacebo_init(AVFilterContext *avctx)
 {
@@ -528,6 +529,17 @@ static int libplacebo_init(AVFilterContext *avctx)
         }
     } else {
         s->out_format = AV_PIX_FMT_NONE;
+    }
+
+    for (int i = 0; i < s->nb_inputs; i++) {
+        AVFilterPad pad = {
+            .name         = av_asprintf("input%d", i),
+            .type         = AVMEDIA_TYPE_VIDEO,
+            .config_props = &libplacebo_config_input,
+        };
+        if (!pad.name)
+            return AVERROR(ENOMEM);
+        RET(ff_append_inpad_free_name(avctx, &pad));
     }
 
     RET(update_settings(avctx));
@@ -665,7 +677,6 @@ static int init_vulkan(AVFilterContext *avctx, const AVVulkanDeviceContext *hwct
     }
 
     /* Initialize inputs */
-    s->nb_inputs = 1;
     s->inputs = av_calloc(s->nb_inputs, sizeof(*s->inputs));
     if (!s->inputs)
         return AVERROR(ENOMEM);
@@ -1252,6 +1263,7 @@ fail:
 #define DYNAMIC (STATIC | AV_OPT_FLAG_RUNTIME_PARAM)
 
 static const AVOption libplacebo_options[] = {
+    { "inputs", "Number of inputs", OFFSET(nb_inputs), AV_OPT_TYPE_INT, {.i64 = 1}, 1, INT_MAX, .flags = STATIC },
     { "w", "Output video frame width",  OFFSET(w_expr), AV_OPT_TYPE_STRING, {.str = "iw"}, .flags = STATIC },
     { "h", "Output video frame height", OFFSET(h_expr), AV_OPT_TYPE_STRING, {.str = "ih"}, .flags = STATIC },
     { "fps", "Output video frame rate", OFFSET(fps_string), AV_OPT_TYPE_STRING, {.str = "none"}, .flags = STATIC },
@@ -1443,14 +1455,6 @@ static const AVOption libplacebo_options[] = {
 
 AVFILTER_DEFINE_CLASS(libplacebo);
 
-static const AVFilterPad libplacebo_inputs[] = {
-    {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_VIDEO,
-        .config_props = &libplacebo_config_input,
-    },
-};
-
 static const AVFilterPad libplacebo_outputs[] = {
     {
         .name         = "default",
@@ -1467,10 +1471,9 @@ const AVFilter ff_vf_libplacebo = {
     .uninit         = &libplacebo_uninit,
     .activate       = &libplacebo_activate,
     .process_command = &libplacebo_process_command,
-    FILTER_INPUTS(libplacebo_inputs),
     FILTER_OUTPUTS(libplacebo_outputs),
     FILTER_QUERY_FUNC(libplacebo_query_format),
     .priv_class     = &libplacebo_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
-    .flags          = AVFILTER_FLAG_HWDEVICE,
+    .flags          = AVFILTER_FLAG_HWDEVICE | AVFILTER_FLAG_DYNAMIC_INPUTS,
 };
