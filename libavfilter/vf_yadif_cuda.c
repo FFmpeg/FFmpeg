@@ -38,8 +38,6 @@ typedef struct DeintCUDAContext {
     AVBufferRef         *input_frames_ref;
     AVHWFramesContext   *input_frames;
 
-    CUcontext   cu_ctx;
-    CUstream    stream;
     CUmodule    cu_module;
     CUfunction  cu_func_uchar;
     CUfunction  cu_func_uchar2;
@@ -109,7 +107,7 @@ static CUresult call_kernel(AVFilterContext *ctx, CUfunction func,
     ret = CHECK_CU(cu->cuLaunchKernel(func,
                                       DIV_UP(dst_width, BLOCKX), DIV_UP(dst_height, BLOCKY), 1,
                                       BLOCKX, BLOCKY, 1,
-                                      0, s->stream, args, NULL));
+                                      0, s->hwctx->stream, args, NULL));
 
 exit:
     if (tex_prev)
@@ -131,7 +129,7 @@ static void filter(AVFilterContext *ctx, AVFrame *dst,
     CUcontext dummy;
     int i, ret;
 
-    ret = CHECK_CU(cu->cuCtxPushCurrent(s->cu_ctx));
+    ret = CHECK_CU(cu->cuCtxPushCurrent(s->hwctx->cuda_ctx));
     if (ret < 0)
         return;
 
@@ -197,7 +195,7 @@ static av_cold void deint_cuda_uninit(AVFilterContext *ctx)
 
     if (s->hwctx && s->cu_module) {
         CudaFunctions *cu = s->hwctx->internal->cuda_dl;
-        CHECK_CU(cu->cuCtxPushCurrent(s->cu_ctx));
+        CHECK_CU(cu->cuCtxPushCurrent(s->hwctx->cuda_ctx));
         CHECK_CU(cu->cuModuleUnload(s->cu_module));
         CHECK_CU(cu->cuCtxPopCurrent(&dummy));
     }
@@ -253,8 +251,6 @@ static int config_output(AVFilterLink *link)
         return AVERROR(ENOMEM);
     }
     s->hwctx = ((AVHWDeviceContext*)s->device_ref->data)->hwctx;
-    s->cu_ctx = s->hwctx->cuda_ctx;
-    s->stream = s->hwctx->stream;
     cu = s->hwctx->internal->cuda_dl;
 
     link->hw_frames_ctx = av_hwframe_ctx_alloc(s->device_ref);
@@ -310,7 +306,7 @@ static int config_output(AVFilterLink *link)
     y->csp = av_pix_fmt_desc_get(output_frames->sw_format);
     y->filter = filter;
 
-    ret = CHECK_CU(cu->cuCtxPushCurrent(s->cu_ctx));
+    ret = CHECK_CU(cu->cuCtxPushCurrent(s->hwctx->cuda_ctx));
     if (ret < 0)
         goto exit;
 
