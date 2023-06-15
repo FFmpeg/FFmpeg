@@ -896,23 +896,19 @@ static void discard_frame(const struct pl_source_frame *src)
     av_frame_free(&avframe);
 }
 
-static int libplacebo_activate(AVFilterContext *ctx)
+static int handle_input(AVFilterContext *ctx, LibplaceboInput *input)
 {
     int ret, status;
     LibplaceboContext *s = ctx->priv;
-    AVFilterLink *inlink = ctx->inputs[0];
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *in;
     int64_t pts;
 
-    FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
-    pl_log_level_update(s->log, get_log_level());
-
-    while ((ret = ff_inlink_consume_frame(inlink, &in)) > 0) {
+    while ((ret = ff_inlink_consume_frame(input->link, &in)) > 0) {
         in->opaque = s;
-        pl_queue_push(s->input.queue, &(struct pl_source_frame) {
-            .pts         = in->pts * av_q2d(inlink->time_base),
-            .duration    = in->duration * av_q2d(inlink->time_base),
+        pl_queue_push(input->queue, &(struct pl_source_frame) {
+            .pts         = in->pts * av_q2d(input->link->time_base),
+            .duration    = in->duration * av_q2d(input->link->time_base),
             .first_field = pl_field_from_avframe(in),
             .frame_data  = in,
             .map         = map_frame,
@@ -922,21 +918,38 @@ static int libplacebo_activate(AVFilterContext *ctx)
 
         if (!s->fps.num) {
             /* Internally queue an output frame for the same PTS */
-            av_assert1(!av_cmp_q(inlink->time_base, outlink->time_base));
-            av_fifo_write(s->input.out_pts, &in->pts, 1);
+            pts = av_rescale_q(in->pts, input->link->time_base, outlink->time_base);
+            av_fifo_write(input->out_pts, &pts, 1);
         }
     }
 
     if (ret < 0)
         return ret;
 
-    if (!s->input.status && ff_inlink_acknowledge_status(inlink, &status, &pts)) {
-        pts = av_rescale_q_rnd(pts, inlink->time_base, outlink->time_base,
+    if (!input->status && ff_inlink_acknowledge_status(input->link, &status, &pts)) {
+        pts = av_rescale_q_rnd(pts, input->link->time_base, outlink->time_base,
                                AV_ROUND_UP);
-        pl_queue_push(s->input.queue, NULL); /* Signal EOF to pl_queue */
-        s->input.status = status;
-        s->input.status_pts = pts;
+        pl_queue_push(input->queue, NULL); /* Signal EOF to pl_queue */
+        input->status = status;
+        input->status_pts = pts;
     }
+
+    return 0;
+}
+
+static int libplacebo_activate(AVFilterContext *ctx)
+{
+    int ret;
+    LibplaceboContext *s = ctx->priv;
+    AVFilterLink *inlink = ctx->inputs[0];
+    AVFilterLink *outlink = ctx->outputs[0];
+    int64_t pts;
+
+    FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
+    pl_log_level_update(s->log, get_log_level());
+
+    if ((ret = handle_input(ctx, &s->input)) < 0)
+        return ret;
 
     if (ff_outlink_frame_wanted(outlink)) {
         struct pl_frame_mix mix;
