@@ -941,14 +941,14 @@ static int libplacebo_activate(AVFilterContext *ctx)
 {
     int ret;
     LibplaceboContext *s = ctx->priv;
-    AVFilterLink *inlink = ctx->inputs[0];
+    LibplaceboInput *in = &s->input;
     AVFilterLink *outlink = ctx->outputs[0];
     int64_t pts;
 
-    FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
+    FF_FILTER_FORWARD_STATUS_BACK(outlink, in->link);
     pl_log_level_update(s->log, get_log_level());
 
-    if ((ret = handle_input(ctx, &s->input)) < 0)
+    if ((ret = handle_input(ctx, in)) < 0)
         return ret;
 
     if (ff_outlink_frame_wanted(outlink)) {
@@ -957,22 +957,22 @@ static int libplacebo_activate(AVFilterContext *ctx)
 
         if (s->fps.num) {
             pts = outlink->frame_count_out;
-        } else if (av_fifo_peek(s->input.out_pts, &pts, 1, 0) < 0) {
+        } else if (av_fifo_peek(in->out_pts, &pts, 1, 0) < 0) {
             /* No frames queued */
-            if (s->input.status) {
-                pts = s->input.status_pts;
+            if (in->status) {
+                pts = in->status_pts;
             } else {
-                ff_inlink_request_frame(inlink);
+                ff_inlink_request_frame(in->link);
                 return 0;
             }
         }
 
-        if (s->input.status && pts >= s->input.status_pts) {
-            ff_outlink_set_status(outlink, s->input.status, s->input.status_pts);
+        if (in->status && pts >= in->status_pts) {
+            ff_outlink_set_status(outlink, in->status, in->status_pts);
             return 0;
         }
 
-        ret = pl_queue_update(s->input.queue, &mix, pl_queue_params(
+        ret = pl_queue_update(in->queue, &mix, pl_queue_params(
             .pts            = pts * av_q2d(outlink->time_base),
             .radius         = pl_frame_mix_radius(&s->params),
             .vsync_duration = av_q2d(av_inv_q(outlink->frame_rate)),
@@ -980,11 +980,11 @@ static int libplacebo_activate(AVFilterContext *ctx)
 
         switch (ret) {
         case PL_QUEUE_MORE:
-            ff_inlink_request_frame(inlink);
+            ff_inlink_request_frame(in->link);
             return 0;
         case PL_QUEUE_OK:
             if (!s->fps.num)
-                av_fifo_drain2(s->input.out_pts, 1);
+                av_fifo_drain2(in->out_pts, 1);
             return output_frame_mix(ctx, &mix, pts);
         case PL_QUEUE_ERR:
             return AVERROR_EXTERNAL;
