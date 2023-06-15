@@ -17,6 +17,8 @@ version <next>:
 - RivaTuner video decoder
 - xfade_vulkan filter
 - vMix video decoder
+- Essential Video Coding parser, muxer and demuxer
+- Essential Video Coding frame merge bsf
 
 version 6.0:
 - Radiance HDR image support
