@@ -41,6 +41,7 @@ extern const AVCodecParser ff_dvaudio_parser;
 extern const AVCodecParser ff_dvbsub_parser;
 extern const AVCodecParser ff_dvdsub_parser;
 extern const AVCodecParser ff_dvd_nav_parser;
+extern const AVCodecParser ff_evc_parser;
 extern const AVCodecParser ff_flac_parser;
 extern const AVCodecParser ff_ftr_parser;
 extern const AVCodecParser ff_g723_1_parser;
