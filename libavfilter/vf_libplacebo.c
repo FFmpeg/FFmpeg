@@ -979,11 +979,13 @@ static int libplacebo_activate(AVFilterContext *ctx)
     AVFilterLink *outlink = ctx->outputs[0];
     int64_t pts;
 
-    FF_FILTER_FORWARD_STATUS_BACK(outlink, in->link);
+    FF_FILTER_FORWARD_STATUS_BACK_ALL(outlink, ctx);
     pl_log_level_update(s->log, get_log_level());
 
-    if ((ret = handle_input(ctx, in)) < 0)
-        return ret;
+    for (int i = 0; i < s->nb_inputs; i++) {
+        if ((ret = handle_input(ctx, &s->inputs[i])) < 0)
+            return ret;
+    }
 
     if (ff_outlink_frame_wanted(outlink)) {
         if (s->fps.num) {
