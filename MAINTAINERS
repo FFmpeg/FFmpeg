@@ -417,6 +417,7 @@ Muxers/Demuxers:
   dv.c                                  Roman Shaposhnik
   electronicarts.c                      Peter Ross
   epafdec.c                             Paul B Mahol
+  evc*                                  Samsung (Dawid Kozinski)
   ffm*                                  Baptiste Coudurier
   flic.c                                Mike Melanson
   flvdec.c                              Michael Niedermayer
