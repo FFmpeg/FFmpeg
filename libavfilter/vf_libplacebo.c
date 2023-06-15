@@ -971,6 +971,13 @@ static int handle_input(AVFilterContext *ctx, LibplaceboInput *input)
     return 0;
 }
 
+static void drain_input_pts(LibplaceboInput *in, int64_t until)
+{
+    int64_t pts;
+    while (av_fifo_peek(in->out_pts, &pts, 1, 0) >= 0 && pts <= until)
+        av_fifo_drain2(in->out_pts, 1);
+}
+
 static int libplacebo_activate(AVFilterContext *ctx)
 {
     int ret, retry = 0;
@@ -1023,8 +1030,7 @@ static int libplacebo_activate(AVFilterContext *ctx)
             ff_inlink_request_frame(in->link);
             return 0;
         case PL_QUEUE_OK:
-            if (!s->fps.num)
-                av_fifo_drain2(in->out_pts, 1);
+            drain_input_pts(in, out_pts);
             return output_frame(ctx, out_pts);
         case PL_QUEUE_ERR:
             return AVERROR_EXTERNAL;
