@@ -1158,6 +1158,11 @@ static int libplacebo_config_input(AVFilterLink *inlink)
     return 0;
 }
 
+static inline AVRational max_q(AVRational a, AVRational b)
+{
+    return av_cmp_q(a, b) < 0 ? b : a;
+}
+
 static int libplacebo_config_output(AVFilterLink *outlink)
 {
     int err;
@@ -1198,6 +1203,16 @@ static int libplacebo_config_output(AVFilterLink *outlink)
     if (s->fps.num) {
         outlink->frame_rate = s->fps;
         outlink->time_base = av_inv_q(s->fps);
+    } else {
+        outlink->frame_rate = avctx->inputs[0]->frame_rate;
+        outlink->time_base = avctx->inputs[0]->time_base;
+        for (int i = 1; i < s->nb_inputs; i++) {
+            outlink->frame_rate = max_q(outlink->frame_rate,
+                                        avctx->inputs[i]->frame_rate);
+            outlink->time_base = av_gcd_q(outlink->time_base,
+                                          avctx->inputs[i]->time_base,
+                                          AV_TIME_BASE / 2, AV_TIME_BASE_Q);
+        }
     }
 
     /* Static variables */
