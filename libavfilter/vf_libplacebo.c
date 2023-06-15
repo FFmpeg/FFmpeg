@@ -881,7 +881,7 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
     s->params.blend_params = NULL;
     for (int i = 0; i < s->nb_inputs; i++) {
         LibplaceboInput *in = &s->inputs[i];
-        int high_fps = av_cmp_q(in->link->frame_rate, outlink->frame_rate) > 0;
+        int high_fps = av_cmp_q(in->link->frame_rate, outlink->frame_rate) >= 0;
         if (in->qstatus != PL_QUEUE_OK)
             continue;
         s->params.skip_caching_single_frame = high_fps;
