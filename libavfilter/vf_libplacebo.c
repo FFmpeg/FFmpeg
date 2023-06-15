@@ -138,6 +138,8 @@ typedef struct LibplaceboContext {
     /* input state */
     LibplaceboInput *inputs;
     int nb_inputs;
+    int64_t status_pts; ///< tracks status of most recently used input
+    int status;
 
     /* settings */
     char *out_format_string;
@@ -943,6 +945,11 @@ static int handle_input(AVFilterContext *ctx, LibplaceboInput *input)
         pl_queue_push(input->queue, NULL); /* Signal EOF to pl_queue */
         input->status = status;
         input->status_pts = pts;
+        if (!s->status || pts >= s->status_pts) {
+            /* Also propagate to output unless overwritten by later status change */
+            s->status = status;
+            s->status_pts = pts;
+        }
     }
 
     return 0;
@@ -975,8 +982,8 @@ static int libplacebo_activate(AVFilterContext *ctx)
             }
         }
 
-        if (in->status && pts >= in->status_pts) {
-            ff_outlink_set_status(outlink, in->status, in->status_pts);
+        if (s->status && pts >= s->status_pts) {
+            ff_outlink_set_status(outlink, s->status, s->status_pts);
             return 0;
         }
 
