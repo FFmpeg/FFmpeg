@@ -715,19 +715,18 @@ static const AVFrame *ref_frame(const struct pl_frame_mix *mix)
     return NULL;
 }
 
-static void update_crops(AVFilterContext *ctx,
-                         struct pl_frame_mix *mix, struct pl_frame *target,
-                         double target_pts)
+static void update_crops(AVFilterContext *ctx, LibplaceboInput *in,
+                         struct pl_frame *target, double target_pts)
 {
     LibplaceboContext *s = ctx->priv;
-    const AVFrame *ref = ref_frame(mix);
+    const AVFrame *ref = ref_frame(&in->mix);
 
-    for (int i = 0; i < mix->num_frames; i++) {
+    for (int i = 0; i < in->mix.num_frames; i++) {
         // Mutate the `pl_frame.crop` fields in-place. This is fine because we
         // own the entire pl_queue, and hence, the pointed-at frames.
-        struct pl_frame *image = (struct pl_frame *) mix->frames[i];
+        struct pl_frame *image = (struct pl_frame *) in->mix.frames[i];
         const AVFrame *src = pl_get_mapped_avframe(image);
-        double image_pts = src->pts * av_q2d(ctx->inputs[0]->time_base);
+        double image_pts = src->pts * av_q2d(in->link->time_base);
 
         /* Update dynamic variables */
         s->var_values[VAR_IN_T]   = s->var_values[VAR_T]  = image_pts;
@@ -851,7 +850,7 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
         goto fail;
     }
 
-    update_crops(ctx, &in->mix, &target, out->pts * av_q2d(outlink->time_base));
+    update_crops(ctx, in, &target, out->pts * av_q2d(outlink->time_base));
     pl_render_image_mix(in->renderer, &in->mix, &target, &s->params);
 
     if (outdesc->flags & AV_PIX_FMT_FLAG_HWACCEL) {
