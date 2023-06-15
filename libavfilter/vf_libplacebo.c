@@ -980,9 +980,8 @@ static void drain_input_pts(LibplaceboInput *in, int64_t until)
 
 static int libplacebo_activate(AVFilterContext *ctx)
 {
-    int ret, retry = 0;
+    int ret, ok = 0, retry = 0;
     LibplaceboContext *s = ctx->priv;
-    LibplaceboInput *in = &s->inputs[0];
     AVFilterLink *outlink = ctx->outputs[0];
     int64_t pts, out_pts;
 
@@ -1014,26 +1013,43 @@ static int libplacebo_activate(AVFilterContext *ctx)
                 return 0;
         }
 
-        if (s->status && out_pts >= s->status_pts) {
-            ff_outlink_set_status(outlink, s->status, s->status_pts);
-            return 0;
+        /* Update all input queues to the chosen out_pts */
+        for (int i = 0; i < s->nb_inputs; i++) {
+            LibplaceboInput *in = &s->inputs[i];
+            if (in->status && out_pts >= in->status_pts) {
+                in->qstatus = PL_QUEUE_EOF;
+                continue;
+            }
+
+            in->qstatus = pl_queue_update(in->queue, &in->mix, pl_queue_params(
+                .pts            = out_pts * av_q2d(outlink->time_base),
+                .radius         = pl_frame_mix_radius(&s->params),
+                .vsync_duration = av_q2d(av_inv_q(outlink->frame_rate)),
+            ));
+
+            switch (in->qstatus) {
+            case PL_QUEUE_MORE:
+                ff_inlink_request_frame(in->link);
+                retry = true;
+                break;
+            case PL_QUEUE_OK:
+                ok = true;
+                break;
+            case PL_QUEUE_ERR:
+                return AVERROR_EXTERNAL;
+            }
         }
 
-        in->qstatus = pl_queue_update(in->queue, &in->mix, pl_queue_params(
-            .pts            = out_pts * av_q2d(outlink->time_base),
-            .radius         = pl_frame_mix_radius(&s->params),
-            .vsync_duration = av_q2d(av_inv_q(outlink->frame_rate)),
-        ));
-
-        switch (in->qstatus) {
-        case PL_QUEUE_MORE:
-            ff_inlink_request_frame(in->link);
+        if (retry) {
             return 0;
-        case PL_QUEUE_OK:
-            drain_input_pts(in, out_pts);
+        } else if (ok) {
+            /* Got any valid frame mixes, drain PTS queue and render output */
+            for (int i = 0; i < s->nb_inputs; i++)
+                drain_input_pts(&s->inputs[i], out_pts);
             return output_frame(ctx, out_pts);
-        case PL_QUEUE_ERR:
-            return AVERROR_EXTERNAL;
+        } else if (s->status) {
+            ff_outlink_set_status(outlink, s->status, s->status_pts);
+            return 0;
         }
 
         return AVERROR_BUG;
