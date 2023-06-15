@@ -70,6 +70,7 @@ enum {
 };
 
 static const char *const var_names[] = {
+    "in_idx", "idx",///< index of input
     "in_w", "iw",   ///< width  of the input video frame
     "in_h", "ih",   ///< height of the input video frame
     "out_w", "ow",  ///< width  of the output video frame
@@ -92,6 +93,7 @@ static const char *const var_names[] = {
 };
 
 enum var_name {
+    VAR_IN_IDX, VAR_IDX,
     VAR_IN_W,   VAR_IW,
     VAR_IN_H,   VAR_IH,
     VAR_OUT_W,  VAR_OW,
@@ -115,6 +117,7 @@ enum var_name {
 
 /* per-input dynamic filter state */
 typedef struct LibplaceboInput {
+    int idx;
     pl_renderer renderer;
     pl_queue queue;
     enum pl_queue_status qstatus;
@@ -574,7 +577,7 @@ static void unlock_queue(void *priv, uint32_t qf, uint32_t qidx)
 #endif
 
 static int input_init(AVFilterContext *avctx, AVFilterLink *link,
-                      LibplaceboInput *input)
+                      LibplaceboInput *input, int idx)
 {
     LibplaceboContext *s = avctx->priv;
 
@@ -584,6 +587,7 @@ static int input_init(AVFilterContext *avctx, AVFilterLink *link,
     input->queue = pl_queue_create(s->gpu);
     input->renderer = pl_renderer_create(s->log, s->gpu);
     input->link = link;
+    input->idx = idx;
 
     return 0;
 }
@@ -668,7 +672,7 @@ static int init_vulkan(AVFilterContext *avctx, const AVVulkanDeviceContext *hwct
     if (!s->inputs)
         return AVERROR(ENOMEM);
     for (int i = 0; i < s->nb_inputs; i++)
-        RET(input_init(avctx, avctx->inputs[i], &s->inputs[i]));
+        RET(input_init(avctx, avctx->inputs[i], &s->inputs[i], i));
 
     /* fall through */
 fail:
@@ -741,6 +745,7 @@ static void update_crops(AVFilterContext *ctx, LibplaceboInput *in,
         double image_pts = src->pts * av_q2d(in->link->time_base);
 
         /* Update dynamic variables */
+        s->var_values[VAR_IN_IDX] = s->var_values[VAR_IDX] = in->idx;
         s->var_values[VAR_IN_W]   = s->var_values[VAR_IW] = in->link->w;
         s->var_values[VAR_IN_H]   = s->var_values[VAR_IH] = in->link->h;
         s->var_values[VAR_A]      = (double) in->link->w / in->link->h;

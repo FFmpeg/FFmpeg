@@ -16320,6 +16320,8 @@ the @option{crop_w}, @option{crop_h}, @option{crop_x}, @option{crop_y},
 also contain the following constants:
 
 @table @option
+@item in_idx, idx
+The (0-based) numeric index of the currently active input stream.
 @item crop_w, cw
 @item crop_h, ch
 The computed values of @option{crop_w} and @option{crop_h}.
