@@ -741,6 +741,11 @@ static void update_crops(AVFilterContext *ctx, LibplaceboInput *in,
         double image_pts = src->pts * av_q2d(in->link->time_base);
 
         /* Update dynamic variables */
+        s->var_values[VAR_IN_W]   = s->var_values[VAR_IW] = in->link->w;
+        s->var_values[VAR_IN_H]   = s->var_values[VAR_IH] = in->link->h;
+        s->var_values[VAR_A]      = (double) in->link->w / in->link->h;
+        s->var_values[VAR_SAR]    = in->link->sample_aspect_ratio.num ?
+            av_q2d(in->link->sample_aspect_ratio) : 1.0;
         s->var_values[VAR_IN_T]   = s->var_values[VAR_T]  = image_pts;
         s->var_values[VAR_OUT_T]  = s->var_values[VAR_OT] = target_pts;
         s->var_values[VAR_N]      = ctx->outputs[0]->frame_count_out;
@@ -1193,13 +1198,8 @@ static int libplacebo_config_output(AVFilterLink *outlink)
     }
 
     /* Static variables */
-    s->var_values[VAR_IN_W]     = s->var_values[VAR_IW] = inlink->w;
-    s->var_values[VAR_IN_H]     = s->var_values[VAR_IH] = inlink->h;
     s->var_values[VAR_OUT_W]    = s->var_values[VAR_OW] = outlink->w;
     s->var_values[VAR_OUT_H]    = s->var_values[VAR_OH] = outlink->h;
-    s->var_values[VAR_A]        = (double) inlink->w / inlink->h;
-    s->var_values[VAR_SAR]      = inlink->sample_aspect_ratio.num ?
-        av_q2d(inlink->sample_aspect_ratio) : 1.0;
     s->var_values[VAR_DAR]      = outlink->sample_aspect_ratio.num ?
         av_q2d(outlink->sample_aspect_ratio) : 1.0;
     s->var_values[VAR_HSUB]     = 1 << desc->log2_chroma_w;
