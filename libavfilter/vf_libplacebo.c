@@ -136,7 +136,8 @@ typedef struct LibplaceboContext {
     pl_tex tex[4];
 
     /* input state */
-    LibplaceboInput input;
+    LibplaceboInput *inputs;
+    int nb_inputs;
 
     /* settings */
     char *out_format_string;
@@ -660,7 +661,12 @@ static int init_vulkan(AVFilterContext *avctx, const AVVulkanDeviceContext *hwct
     }
 
     /* Initialize inputs */
-    RET(input_init(avctx, avctx->inputs[0], &s->input));
+    s->nb_inputs = 1;
+    s->inputs = av_calloc(s->nb_inputs, sizeof(*s->inputs));
+    if (!s->inputs)
+        return AVERROR(ENOMEM);
+    for (int i = 0; i < s->nb_inputs; i++)
+        RET(input_init(avctx, avctx->inputs[i], &s->inputs[i]));
 
     /* fall through */
 fail:
@@ -677,7 +683,11 @@ static void libplacebo_uninit(AVFilterContext *avctx)
         pl_tex_destroy(s->gpu, &s->tex[i]);
     for (int i = 0; i < s->num_hooks; i++)
         pl_mpv_user_shader_destroy(&s->hooks[i]);
-    input_uninit(&s->input);
+    if (s->inputs) {
+        for (int i = 0; i < s->nb_inputs; i++)
+            input_uninit(&s->inputs[i]);
+        av_freep(&s->inputs);
+    }
     pl_vulkan_destroy(&s->vulkan);
     pl_log_destroy(&s->log);
     ff_vk_uninit(&s->vkctx);
@@ -774,7 +784,7 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
 {
     int err = 0, ok, changed_csp;
     LibplaceboContext *s = ctx->priv;
-    LibplaceboInput *in = &s->input;
+    LibplaceboInput *in = &s->inputs[0];
     AVFilterLink *outlink = ctx->outputs[0];
     const AVPixFmtDescriptor *outdesc = av_pix_fmt_desc_get(outlink->format);
     const AVFrame *ref = ref_frame(&in->mix);
@@ -942,7 +952,7 @@ static int libplacebo_activate(AVFilterContext *ctx)
 {
     int ret;
     LibplaceboContext *s = ctx->priv;
-    LibplaceboInput *in = &s->input;
+    LibplaceboInput *in = &s->inputs[0];
     AVFilterLink *outlink = ctx->outputs[0];
     int64_t pts;
 
