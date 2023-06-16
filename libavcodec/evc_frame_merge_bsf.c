@@ -26,13 +26,11 @@
 #include "evc.h"
 #include "evc_parse.h"
 
-#define INIT_AU_BUF_CAPACITY 1024
-
 // Access unit data
 typedef struct AccessUnitBuffer {
     uint8_t *data;      // the data buffer
     size_t data_size;   // size of data in bytes
-    size_t capacity;    // buffer capacity
+    unsigned capacity;  // buffer capacity
 } AccessUnitBuffer;
 
 typedef struct EVCFMergeContext {
@@ -72,9 +70,8 @@ static int evc_frame_merge_filter(AVBSFContext *bsf, AVPacket *out)
 
     AVPacket *in = ctx->in;
 
-    int free_space = 0;
     size_t  nalu_size = 0;
-    uint8_t *nalu = NULL;
+    uint8_t *buffer, *nalu = NULL;
     int au_end_found = 0;
     int err;
 
@@ -102,15 +99,14 @@ static int evc_frame_merge_filter(AVBSFContext *bsf, AVPacket *out)
 
     au_end_found = end_of_access_unit_found(parser_ctx);
 
-    free_space = ctx->au_buffer.capacity - ctx->au_buffer.data_size;
-    while (free_space < in->size) {
-        ctx->au_buffer.capacity *= 2;
-        free_space = ctx->au_buffer.capacity - ctx->au_buffer.data_size;
-
-        if (free_space >= in->size)
-            ctx->au_buffer.data = av_realloc(ctx->au_buffer.data, ctx->au_buffer.capacity);
+    buffer = av_fast_realloc(ctx->au_buffer.data, &ctx->au_buffer.capacity,
+                             ctx->au_buffer.data_size + in->size);
+    if (!buffer) {
+        av_freep(&ctx->au_buffer.data);
+        return AVERROR(ENOMEM);
     }
 
+    ctx->au_buffer.data = buffer;
     memcpy(ctx->au_buffer.data + ctx->au_buffer.data_size, in->data, in->size);
 
     ctx->au_buffer.data_size += in->size;
@@ -142,10 +138,6 @@ static int evc_frame_merge_init(AVBSFContext *bsf)
     ctx->in  = av_packet_alloc();
     if (!ctx->in)
         return AVERROR(ENOMEM);
-
-    ctx->au_buffer.capacity = INIT_AU_BUF_CAPACITY;
-    ctx->au_buffer.data = av_malloc(INIT_AU_BUF_CAPACITY);
-    ctx->au_buffer.data_size = 0;
 
     return 0;
 }
