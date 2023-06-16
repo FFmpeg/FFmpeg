@@ -95,6 +95,7 @@ int ff_vaapi_vpp_config_input(AVFilterLink *inlink)
 int ff_vaapi_vpp_config_output(AVFilterLink *outlink)
 {
     AVFilterContext *avctx = outlink->src;
+    AVFilterLink   *inlink = avctx->inputs[0];
     VAAPIVPPContext *ctx   = avctx->priv;
     AVVAAPIHWConfig *hwconfig = NULL;
     AVHWFramesConstraints *constraints = NULL;
@@ -110,6 +111,17 @@ int ff_vaapi_vpp_config_output(AVFilterLink *outlink)
         ctx->output_width  = avctx->inputs[0]->w;
     if (!ctx->output_height)
         ctx->output_height = avctx->inputs[0]->h;
+
+    outlink->w = ctx->output_width;
+    outlink->h = ctx->output_height;
+
+    if (ctx->passthrough) {
+        if (inlink->hw_frames_ctx)
+            outlink->hw_frames_ctx = av_buffer_ref(inlink->hw_frames_ctx);
+        av_log(ctx, AV_LOG_VERBOSE, "Using VAAPI filter passthrough mode.\n");
+
+        return 0;
+    }
 
     av_assert0(ctx->input_frames);
     ctx->device_ref = av_buffer_ref(ctx->input_frames->device_ref);
@@ -213,9 +225,6 @@ int ff_vaapi_vpp_config_output(AVFilterLink *outlink)
                "context: %d (%s).\n", vas, vaErrorStr(vas));
         return AVERROR(EIO);
     }
-
-    outlink->w = ctx->output_width;
-    outlink->h = ctx->output_height;
 
     if (ctx->build_filter_params) {
         err = ctx->build_filter_params(avctx);

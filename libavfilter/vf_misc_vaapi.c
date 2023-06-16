@@ -131,6 +131,9 @@ static int misc_vaapi_filter_frame(AVFilterLink *inlink, AVFrame *input_frame)
            av_get_pix_fmt_name(input_frame->format),
            input_frame->width, input_frame->height, input_frame->pts);
 
+    if (vpp_ctx->passthrough)
+        return ff_filter_frame(outlink, input_frame);
+
     if (vpp_ctx->va_context == VA_INVALID_ID)
         return AVERROR(EINVAL);
 
@@ -176,11 +179,14 @@ fail:
 static av_cold int denoise_vaapi_init(AVFilterContext *avctx)
 {
     VAAPIVPPContext *vpp_ctx = avctx->priv;
+    DenoiseVAAPIContext *ctx = avctx->priv;
 
     ff_vaapi_vpp_ctx_init(avctx);
     vpp_ctx->pipeline_uninit     = ff_vaapi_vpp_pipeline_uninit;
     vpp_ctx->build_filter_params = denoise_vaapi_build_filter_params;
     vpp_ctx->output_format       = AV_PIX_FMT_NONE;
+    if (ctx->denoise == DENOISE_DEFAULT)
+        vpp_ctx->passthrough = 1;
 
     return 0;
 }
@@ -188,11 +194,14 @@ static av_cold int denoise_vaapi_init(AVFilterContext *avctx)
 static av_cold int sharpness_vaapi_init(AVFilterContext *avctx)
 {
     VAAPIVPPContext *vpp_ctx = avctx->priv;
+    SharpnessVAAPIContext *ctx = avctx->priv;
 
     ff_vaapi_vpp_ctx_init(avctx);
     vpp_ctx->pipeline_uninit     = ff_vaapi_vpp_pipeline_uninit;
     vpp_ctx->build_filter_params = sharpness_vaapi_build_filter_params;
     vpp_ctx->output_format       = AV_PIX_FMT_NONE;
+    if (ctx->sharpness == SHARPNESS_DEFAULT)
+        vpp_ctx->passthrough = 1;
 
     return 0;
 }

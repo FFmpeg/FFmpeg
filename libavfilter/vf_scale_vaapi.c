@@ -85,6 +85,16 @@ static int scale_vaapi_config_output(AVFilterLink *outlink)
     ff_scale_adjust_dimensions(inlink, &vpp_ctx->output_width, &vpp_ctx->output_height,
                                ctx->force_original_aspect_ratio, ctx->force_divisible_by);
 
+    if (inlink->w == vpp_ctx->output_width && inlink->h == vpp_ctx->output_height &&
+        (vpp_ctx->input_frames->sw_format == vpp_ctx->output_format ||
+         vpp_ctx->output_format == AV_PIX_FMT_NONE) &&
+        ctx->colour_primaries == AVCOL_PRI_UNSPECIFIED &&
+        ctx->colour_transfer == AVCOL_TRC_UNSPECIFIED &&
+        ctx->colour_matrix == AVCOL_SPC_UNSPECIFIED &&
+        ctx->colour_range == AVCOL_RANGE_UNSPECIFIED &&
+        ctx->chroma_location == AVCHROMA_LOC_UNSPECIFIED)
+        vpp_ctx->passthrough = 1;
+
     err = ff_vaapi_vpp_config_output(outlink);
     if (err < 0)
         return err;
@@ -110,6 +120,9 @@ static int scale_vaapi_filter_frame(AVFilterLink *inlink, AVFrame *input_frame)
     av_log(avctx, AV_LOG_DEBUG, "Filter input: %s, %ux%u (%"PRId64").\n",
            av_get_pix_fmt_name(input_frame->format),
            input_frame->width, input_frame->height, input_frame->pts);
+
+   if (vpp_ctx->passthrough)
+       return ff_filter_frame(outlink, input_frame);
 
     if (vpp_ctx->va_context == VA_INVALID_ID)
         return AVERROR(EINVAL);

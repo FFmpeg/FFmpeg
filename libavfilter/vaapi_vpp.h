@@ -56,6 +56,8 @@ typedef struct VAAPIVPPContext {
     VABufferID         filter_buffers[VAProcFilterCount];
     int                nb_filter_buffers;
 
+    int passthrough;
+
     int (*build_filter_params)(AVFilterContext *avctx);
 
     void (*pipeline_uninit)(AVFilterContext *avctx);
