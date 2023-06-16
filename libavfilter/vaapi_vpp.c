@@ -518,7 +518,6 @@ int ff_vaapi_vpp_init_params(AVFilterContext *avctx,
                              AVFrame *output_frame)
 {
     VAAPIVPPContext *ctx = avctx->priv;
-    VASurfaceID input_surface;
     int err;
 
     ctx->input_region = (VARectangle) {
@@ -534,10 +533,8 @@ int ff_vaapi_vpp_init_params(AVFilterContext *avctx,
     output_frame->crop_left   = 0;
     output_frame->crop_right  = 0;
 
-    input_surface = (VASurfaceID)(uintptr_t)input_frame->data[3],
-
     *params = (VAProcPipelineParameterBuffer) {
-        .surface                 = input_surface,
+        .surface                 = ff_vaapi_vpp_get_surface_id(input_frame),
         .surface_region          = &ctx->input_region,
         .output_region           = NULL,
         .output_background_color = VAAPI_VPP_BACKGROUND_BLACK,
@@ -623,7 +620,6 @@ int ff_vaapi_vpp_render_pictures(AVFilterContext *avctx,
                                  AVFrame *output_frame)
 {
     VAAPIVPPContext *ctx = avctx->priv;
-    VASurfaceID output_surface;
     VABufferID *params_ids;
     VAStatus vas;
     int err;
@@ -635,10 +631,8 @@ int ff_vaapi_vpp_render_pictures(AVFilterContext *avctx,
     for (int i = 0; i < cout; i++)
         params_ids[i] = VA_INVALID_ID;
 
-    output_surface = (VASurfaceID)(uintptr_t)output_frame->data[3];
-
     vas = vaBeginPicture(ctx->hwctx->display,
-                         ctx->va_context, output_surface);
+                         ctx->va_context, ff_vaapi_vpp_get_surface_id(output_frame));
     if (vas != VA_STATUS_SUCCESS) {
         av_log(avctx, AV_LOG_ERROR, "Failed to attach new picture: "
                "%d (%s).\n", vas, vaErrorStr(vas));

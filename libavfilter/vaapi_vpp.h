@@ -27,6 +27,11 @@
 
 #include "avfilter.h"
 
+static inline VASurfaceID ff_vaapi_vpp_get_surface_id(const AVFrame *frame)
+{
+    return (uintptr_t)frame->data[3];
+}
+
 // ARGB black, for VAProcPipelineParameterBuffer.output_background_color.
 #define VAAPI_VPP_BACKGROUND_BLACK 0xff000000
 
