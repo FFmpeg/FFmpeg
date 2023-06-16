@@ -82,7 +82,7 @@ static av_cold int ac3_fixed_mdct_init(AC3EncodeContext *s)
     if (!iwin)
         return AVERROR(ENOMEM);
 
-    ff_kbd_window_init(fwin, 5.0, AC3_BLOCK_SIZE);
+    avpriv_kbd_window_init(fwin, 5.0, AC3_BLOCK_SIZE);
     for (int i = 0; i < AC3_BLOCK_SIZE; i++)
         iwin[i] = lrintf(fwin[i] * (1 << 22));
 

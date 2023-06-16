@@ -1200,7 +1200,7 @@ static av_cold void init_tables(void)
         gain_tab[i] = exp2f((i - 960) / 64.0f);
 
     // short 1
-    ff_kbd_window_init(window, 3.0f, 128);
+    avpriv_kbd_window_init(window, 3.0f, 128);
     for (i = 0; i < 128; i++)
         window[128 + i] = window[127 - i];
 
@@ -1227,7 +1227,7 @@ static av_cold void init_tables(void)
         window[1088 + i] = 1.0f;
 
     // long
-    ff_kbd_window_init(window + 1408, 3.0f, 256);
+    avpriv_kbd_window_init(window + 1408, 3.0f, 256);
     for (i = 0; i < 640; i++)
         window[1664 + i] = 1.0f;
     for (i = 0; i < 256; i++)

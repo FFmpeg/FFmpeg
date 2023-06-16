@@ -48,8 +48,8 @@ DECLARE_ALIGNED(32, float,  ff_aac_kbd_short_128)[128];
 
 static av_cold void aac_float_common_init(void)
 {
-    ff_kbd_window_init(ff_aac_kbd_long_1024, 4.0, 1024);
-    ff_kbd_window_init(ff_aac_kbd_short_128, 6.0, 128);
+    avpriv_kbd_window_init(ff_aac_kbd_long_1024, 4.0, 1024);
+    avpriv_kbd_window_init(ff_aac_kbd_short_128, 6.0, 128);
     ff_init_ff_sine_windows(10);
     ff_init_ff_sine_windows(7);
 }

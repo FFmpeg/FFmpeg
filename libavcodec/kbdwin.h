@@ -22,7 +22,7 @@
 #include <stdint.h>
 
 /**
- * Maximum window size for ff_kbd_window_init.
+ * Maximum window size for avpriv_kbd_window_init.
  */
 #define FF_KBD_WINDOW_MAX 1024
 
@@ -34,7 +34,7 @@
  *
  * @return if n is larger than FF_KBD_WINDOW_MAX then AVERROR(ENOMEM) is possible
  */
-int ff_kbd_window_init(float *window, float alpha, int n);
-int ff_kbd_window_init_fixed(int32_t *window, float alpha, int n);
+int avpriv_kbd_window_init(float *window, float alpha, int n);
+int avpriv_kbd_window_init_fixed(int32_t *window, float alpha, int n);
 
 #endif /* AVCODEC_KBDWIN_H */

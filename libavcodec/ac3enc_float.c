@@ -92,7 +92,7 @@ static av_cold int ac3_float_mdct_init(AC3EncodeContext *s)
         return AVERROR(ENOMEM);
     }
 
-    ff_kbd_window_init(window, 5.0, AC3_BLOCK_SIZE);
+    avpriv_kbd_window_init(window, 5.0, AC3_BLOCK_SIZE);
     s->mdct_window = window;
 
     return av_tx_init(&s->tx, &s->tx_fn, AV_TX_FLOAT_MDCT, 0,

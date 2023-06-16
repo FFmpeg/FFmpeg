@@ -56,12 +56,12 @@ av_cold static int kbd_window_init(float *float_window, int *int_window, float a
    return 0;
 }
 
-av_cold int ff_kbd_window_init(float *window, float alpha, int n)
+av_cold int avpriv_kbd_window_init(float *window, float alpha, int n)
 {
     return kbd_window_init(window, NULL, alpha, n);
 }
 
-av_cold int ff_kbd_window_init_fixed(int32_t *window, float alpha, int n)
+av_cold int avpriv_kbd_window_init_fixed(int32_t *window, float alpha, int n)
 {
     return kbd_window_init(NULL, window, alpha, n);
 }
