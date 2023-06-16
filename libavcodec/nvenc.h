@@ -31,6 +31,7 @@ typedef void ID3D11Device;
 #include <ffnvcodec/nvEncodeAPI.h>
 
 #include "compat/cuda/dynlink_loader.h"
+#include "libavutil/buffer.h"
 #include "libavutil/fifo.h"
 #include "libavutil/opt.h"
 #include "hwconfig.h"
@@ -94,6 +95,18 @@ typedef struct NvencSurface
     NV_ENC_OUTPUT_PTR output_surface;
     NV_ENC_BUFFER_FORMAT format;
 } NvencSurface;
+
+typedef struct NvencFrameData
+{
+    int64_t duration;
+
+#if FF_API_REORDERED_OPAQUE
+    int64_t reordered_opaque;
+#endif
+
+    void        *frame_opaque;
+    AVBufferRef *frame_opaque_ref;
+} NvencFrameData;
 
 typedef struct NvencDynLoadFunctions
 {
@@ -172,6 +185,10 @@ typedef struct NvencContext
 
     int nb_surfaces;
     NvencSurface *surfaces;
+
+    NvencFrameData *frame_data_array;
+    int frame_data_array_nb;
+    int frame_data_array_pos;
 
     AVFifo *unused_surface_queue;
     AVFifo *output_surface_queue;
