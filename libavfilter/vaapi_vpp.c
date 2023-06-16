@@ -554,6 +554,10 @@ int ff_vaapi_vpp_init_params(AVFilterContext *avctx,
     if (err < 0)
         return err;
 
+    av_log(avctx, AV_LOG_DEBUG, "Filter frame from surface %#x to %#x.\n",
+           ff_vaapi_vpp_get_surface_id(input_frame),
+           ff_vaapi_vpp_get_surface_id(output_frame));
+
     return 0;
 }
 
