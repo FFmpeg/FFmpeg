@@ -117,12 +117,6 @@ typedef struct EVCParserContext {
     // Framerate value in the compressed bitstream
     AVRational framerate;
 
-    // Number of pictures in a group of pictures
-    int gop_size;
-
-    // Number of frames the decoded output will be delayed relative to the encoded input
-    int delay;
-
     int parsed_extradata;
 
 } EVCParserContext;

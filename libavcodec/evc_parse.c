@@ -225,7 +225,6 @@ int ff_evc_parse_nal_unit(EVCParserContext *ctx, const uint8_t *buf, int buf_siz
     switch(nalu_type) {
     case EVC_SPS_NUT: {
         EVCParserSPS *sps;
-        int SubGopLength;
         int bit_depth;
 
         sps = ff_evc_parse_sps(&ctx->ps, data, nalu_size);
@@ -244,11 +243,6 @@ int ff_evc_parse_nal_unit(EVCParserContext *ctx, const uint8_t *buf, int buf_siz
             ctx->width           = sps->pic_width_in_luma_samples;
             ctx->height          = sps->pic_height_in_luma_samples;
         }
-
-        SubGopLength = (int)pow(2.0, sps->log2_sub_gop_length);
-        ctx->gop_size = SubGopLength;
-
-        ctx->delay = (sps->sps_max_dec_pic_buffering_minus1) ? sps->sps_max_dec_pic_buffering_minus1 - 1 : SubGopLength + sps->max_num_tid0_ref_pics - 1;
 
         if (sps->profile_idc == 1) ctx->profile = FF_PROFILE_EVC_MAIN;
         else ctx->profile = FF_PROFILE_EVC_BASELINE;

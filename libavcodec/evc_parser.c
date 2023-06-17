@@ -72,8 +72,6 @@ static int parse_nal_units(AVCodecParserContext *s, AVCodecContext *avctx, const
             s->format              = ctx->format;
 
             avctx->framerate       = ctx->framerate;
-            avctx->gop_size        = ctx->gop_size;
-            avctx->delay           = ctx->delay;
             avctx->profile         = ctx->profile;
 
         } else if(ctx->nalu_type == EVC_NOIDR_NUT || ctx->nalu_type == EVC_IDR_NUT) {
