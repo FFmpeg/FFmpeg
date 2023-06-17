@@ -25263,6 +25263,10 @@ Set one of available transition effects:
 @item coverright
 @item coverup
 @item coverdown
+@item revealleft
+@item revealright
+@item revealup
+@item revealdown
 @end table
 Default transition effect is fade.
 
