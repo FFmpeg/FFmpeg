@@ -211,7 +211,6 @@ static int parse_nal_units(AVCodecParserContext *s, AVCodecContext *avctx, const
 {
     const uint8_t *data = buf;
     int data_size = buf_size;
-    int bytes_read = 0;
 
     while (data_size > 0) {
         int nalu_size = 0;
@@ -223,7 +222,6 @@ static int parse_nal_units(AVCodecParserContext *s, AVCodecContext *avctx, const
 
         nalu_size = evc_read_nal_unit_length(data, data_size, avctx);
 
-        bytes_read += EVC_NALU_LENGTH_PREFIX_SIZE;
 
         data += EVC_NALU_LENGTH_PREFIX_SIZE;
         data_size -= EVC_NALU_LENGTH_PREFIX_SIZE;
