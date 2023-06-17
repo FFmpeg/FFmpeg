@@ -325,7 +325,7 @@ again:
     if (s->ch_offset == 0) {
         frame->nb_samples = s->frame_len;
         if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
-            return ret;
+            goto fail;
         if (!new_pkt)
             frame->pts = AV_NOPTS_VALUE;
     }
@@ -334,8 +334,8 @@ again:
                      avctx->codec->id == AV_CODEC_ID_BINKAUDIO_DCT,
                      FFMIN(MAX_CHANNELS, s->channels - s->ch_offset), s->ch_offset)) {
         av_log(avctx, AV_LOG_ERROR, "Incomplete packet\n");
-        s->ch_offset = 0;
-        return AVERROR_INVALIDDATA;
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
     }
     s->ch_offset += MAX_CHANNELS;
     get_bits_align32(gb);
