@@ -202,7 +202,7 @@ static void evc_parser_close(AVCodecParserContext *s)
 {
     EVCParserContext *ctx = s->priv_data;
 
-    ff_evc_parse_free(ctx);
+    ff_evc_ps_free(&ctx->ps);
 }
 
 const AVCodecParser ff_evc_parser = {

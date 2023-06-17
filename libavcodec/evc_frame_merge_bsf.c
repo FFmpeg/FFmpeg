@@ -58,7 +58,7 @@ static void evc_frame_merge_flush(AVBSFContext *bsf)
 {
     EVCFMergeContext *ctx = bsf->priv_data;
 
-    ff_evc_parse_free(&ctx->parser_ctx);
+    ff_evc_ps_free(&ctx->parser_ctx.ps);
     av_packet_unref(ctx->in);
     ctx->au_buffer.data_size = 0;
 }
@@ -147,7 +147,7 @@ static void evc_frame_merge_close(AVBSFContext *bsf)
     EVCFMergeContext *ctx = bsf->priv_data;
 
     av_packet_free(&ctx->in);
-    ff_evc_parse_free(&ctx->parser_ctx);
+    ff_evc_ps_free(&ctx->parser_ctx.ps);
 
     ctx->au_buffer.capacity = 0;
     av_freep(&ctx->au_buffer.data);
