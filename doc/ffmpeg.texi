@@ -2145,8 +2145,8 @@ Input frame number. Index of the input frame (i.e. output by a decoder) that
 corresponds to this output frame or packet. -1 if unavailable.
 
 @item tb
-Encoder timebase, as a rational number @var{num/den}. Note that this may be
-different from the timebase used by the muxer.
+Timebase in which this frame/packet's timestamps are expressed, as a rational
+number @var{num/den}. Note that encoder and muxer may use different timebases.
 
 @item tbi
 Timebase for @var{ptsi}, as a rational number @var{num/den}. Available when
@@ -2169,30 +2169,38 @@ Presentation time of the frame or packet, as a decimal number. Equal to
 Presentation time of the input frame (see @var{ni}), as a decimal number. Equal
 to @var{ptsi} multiplied by @var{tbi}. Printed as inf when not available.
 
-@item dts
+@item dts (@emph{packet})
 Decoding timestamp of the packet, as an integer. Should be multiplied by the
-timebase to compute presentation time. Post-encoding only.
+timebase to compute presentation time.
 
-@item dt
+@item dt (@emph{packet})
 Decoding time of the frame or packet, as a decimal number. Equal to
 @var{dts} multiplied by @var{tb}.
 
-@item sn
-Number of audio samples sent to the encoder so far. Audio and pre-encoding only.
+@item sn (@emph{frame,audio})
+Number of audio samples sent to the encoder so far.
 
-@item samp
-Number of audio samples in the frame. Audio and pre-encoding only.
+@item samp (@emph{frame,audio})
+Number of audio samples in the frame.
 
-@item size
-Size of the encoded packet in bytes. Post-encoding only.
+@item size (@emph{packet})
+Size of the encoded packet in bytes.
 
-@item br
+@item br (@emph{packet})
 Current bitrate in bits per second. Post-encoding only.
 
-@item abr
+@item abr (@emph{packet})
 Average bitrate for the whole stream so far, in bits per second, -1 if it cannot
 be determined at this point. Post-encoding only.
 @end table
+
+Directives tagged with @emph{packet} may only be used with
+@option{-stats_enc_post_fmt} and @option{-stats_mux_pre_fmt}.
+
+Directives tagged with @emph{frame} may only be used with
+@option{-stats_enc_pre_fmt}.
+
+Directives tagged with @emph{audio} may only be used with audio streams.
 
 The default format strings are:
 @table @option
