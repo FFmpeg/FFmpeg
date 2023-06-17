@@ -35,20 +35,27 @@ typedef struct AccessUnitBuffer {
 
 typedef struct EVCFMergeContext {
     AVPacket *in;
-    EVCParserContext parser_ctx;
+    EVCParamSets ps;
+    EVCParserPoc poc;
     AccessUnitBuffer au_buffer;
 } EVCFMergeContext;
 
-static int end_of_access_unit_found(EVCParserContext *parser_ctx)
+static int end_of_access_unit_found(const EVCParamSets *ps, const EVCParserSliceHeader *sh,
+                                    const EVCParserPoc *poc, enum EVCNALUnitType nalu_type)
 {
-    if (parser_ctx->profile == 0) { // BASELINE profile
-        if (parser_ctx->nalu_type == EVC_NOIDR_NUT || parser_ctx->nalu_type == EVC_IDR_NUT)
+    EVCParserPPS *pps = ps->pps[sh->slice_pic_parameter_set_id];
+    EVCParserSPS *sps = ps->sps[pps->pps_seq_parameter_set_id];
+
+    av_assert0(sps && pps);
+
+    if (sps->profile_idc == 0) { // BASELINE profile
+        if (nalu_type == EVC_NOIDR_NUT || nalu_type == EVC_IDR_NUT)
             return 1;
     } else { // MAIN profile
-        if (parser_ctx->nalu_type == EVC_NOIDR_NUT) {
-            if (parser_ctx->poc.PicOrderCntVal != parser_ctx->poc.prevPicOrderCntVal)
+        if (nalu_type == EVC_NOIDR_NUT) {
+            if (poc->PicOrderCntVal != poc->prevPicOrderCntVal)
                 return 1;
-        } else if (parser_ctx->nalu_type == EVC_IDR_NUT)
+        } else if (nalu_type == EVC_IDR_NUT)
             return 1;
     }
     return 0;
@@ -58,7 +65,7 @@ static void evc_frame_merge_flush(AVBSFContext *bsf)
 {
     EVCFMergeContext *ctx = bsf->priv_data;
 
-    ff_evc_ps_free(&ctx->parser_ctx.ps);
+    ff_evc_ps_free(&ctx->ps);
     av_packet_unref(ctx->in);
     ctx->au_buffer.data_size = 0;
 }
@@ -66,12 +73,10 @@ static void evc_frame_merge_flush(AVBSFContext *bsf)
 static int evc_frame_merge_filter(AVBSFContext *bsf, AVPacket *out)
 {
     EVCFMergeContext *ctx = bsf->priv_data;
-    EVCParserContext *parser_ctx = &ctx->parser_ctx;
-
     AVPacket *in = ctx->in;
-
-    size_t  nalu_size = 0;
     uint8_t *buffer, *nalu = NULL;
+    enum EVCNALUnitType nalu_type;
+    int tid, nalu_size = 0;
     int au_end_found = 0;
     int err;
 
@@ -81,29 +86,91 @@ static int evc_frame_merge_filter(AVBSFContext *bsf, AVPacket *out)
 
     nalu_size = evc_read_nal_unit_length(in->data, EVC_NALU_LENGTH_PREFIX_SIZE, bsf);
     if (nalu_size <= 0) {
-        av_packet_unref(in);
-        return AVERROR_INVALIDDATA;
+        err = AVERROR_INVALIDDATA;
+        goto end;
     }
 
     nalu = in->data + EVC_NALU_LENGTH_PREFIX_SIZE;
     nalu_size = in->size - EVC_NALU_LENGTH_PREFIX_SIZE;
 
     // NAL unit parsing needed to determine if end of AU was found
-    err = ff_evc_parse_nal_unit(parser_ctx, nalu, nalu_size, bsf);
-    if (err < 0) {
-        av_log(bsf, AV_LOG_ERROR, "NAL Unit parsing error\n");
-        av_packet_unref(in);
-
-        return err;
+    if (nalu_size <= 0) {
+        av_log(bsf, AV_LOG_ERROR, "Invalid NAL unit size: (%d)\n", nalu_size);
+        err = AVERROR_INVALIDDATA;
+        goto end;
     }
 
-    au_end_found = end_of_access_unit_found(parser_ctx);
+    // @see ISO_IEC_23094-1_2020, 7.4.2.2 NAL unit header semantic (Table 4 - NAL unit type codes and NAL unit type classes)
+    // @see enum EVCNALUnitType in evc.h
+    nalu_type = evc_get_nalu_type(nalu, nalu_size, bsf);
+    if (nalu_type < EVC_NOIDR_NUT || nalu_type > EVC_UNSPEC_NUT62) {
+        av_log(bsf, AV_LOG_ERROR, "Invalid NAL unit type: (%d)\n", nalu_type);
+        err = AVERROR_INVALIDDATA;
+        goto end;
+    }
+
+    tid = ff_evc_get_temporal_id(nalu, nalu_size, bsf);
+    if (tid < 0) {
+        av_log(bsf, AV_LOG_ERROR, "Invalid temporial id: (%d)\n", tid);
+        err = AVERROR_INVALIDDATA;
+        goto end;
+    }
+
+    nalu += EVC_NALU_HEADER_SIZE;
+    nalu_size -= EVC_NALU_HEADER_SIZE;
+
+    switch (nalu_type) {
+    case EVC_SPS_NUT: {
+        EVCParserSPS *sps = ff_evc_parse_sps(&ctx->ps, nalu, nalu_size);
+        if (!sps) {
+            av_log(bsf, AV_LOG_ERROR, "SPS parsing error\n");
+            err = AVERROR_INVALIDDATA;
+            goto end;
+        }
+        break;
+    }
+    case EVC_PPS_NUT: {
+        EVCParserPPS *pps = ff_evc_parse_pps(&ctx->ps, nalu, nalu_size);
+        if (!pps) {
+            av_log(bsf, AV_LOG_ERROR, "PPS parsing error\n");
+            err = AVERROR_INVALIDDATA;
+            goto end;
+        }
+        break;
+    }
+    case EVC_IDR_NUT:   // Coded slice of a IDR or non-IDR picture
+    case EVC_NOIDR_NUT: {
+        EVCParserSliceHeader sh;
+
+        err = ff_evc_parse_slice_header(&sh, &ctx->ps, nalu_type, nalu, nalu_size);
+        if (err < 0) {
+            av_log(bsf, AV_LOG_ERROR, "Slice header parsing error\n");
+            goto end;
+        }
+
+        // POC (picture order count of the current picture) derivation
+        // @see ISO/IEC 23094-1:2020(E) 8.3.1 Decoding process for picture order count
+        err = ff_evc_derive_poc(&ctx->ps, &sh, &ctx->poc, nalu_type, tid);
+        if (err < 0)
+            goto end;
+
+        au_end_found = end_of_access_unit_found(&ctx->ps, &sh, &ctx->poc, nalu_type);
+
+        break;
+    }
+    case EVC_SEI_NUT:   // Supplemental Enhancement Information
+    case EVC_APS_NUT:   // Adaptation parameter set
+    case EVC_FD_NUT:    // Filler data
+    default:
+        break;
+    }
 
     buffer = av_fast_realloc(ctx->au_buffer.data, &ctx->au_buffer.capacity,
                              ctx->au_buffer.data_size + in->size);
     if (!buffer) {
         av_freep(&ctx->au_buffer.data);
-        return AVERROR(ENOMEM);
+        err = AVERROR_INVALIDDATA;
+        goto end;
     }
 
     ctx->au_buffer.data = buffer;
@@ -128,6 +195,9 @@ static int evc_frame_merge_filter(AVBSFContext *bsf, AVPacket *out)
     if (err < 0 && err != AVERROR(EAGAIN))
         ctx->au_buffer.data_size = 0;
 
+end:
+    if (err < 0)
+        av_packet_unref(in);
     return err;
 }
 
@@ -147,7 +217,7 @@ static void evc_frame_merge_close(AVBSFContext *bsf)
     EVCFMergeContext *ctx = bsf->priv_data;
 
     av_packet_free(&ctx->in);
-    ff_evc_ps_free(&ctx->parser_ctx.ps);
+    ff_evc_ps_free(&ctx->ps);
 
     ctx->au_buffer.capacity = 0;
     av_freep(&ctx->au_buffer.data);
