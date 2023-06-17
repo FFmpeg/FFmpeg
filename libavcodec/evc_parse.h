@@ -24,6 +24,13 @@
 #ifndef AVCODEC_EVC_PARSE_H
 #define AVCODEC_EVC_PARSE_H
 
+#include <stdint.h>
+
+#include "libavutil/intreadwrite.h"
+#include "libavutil/log.h"
+#include "libavutil/rational.h"
+#include "evc.h"
+
 #define EVC_MAX_QP_TABLE_SIZE   58
 #define NUM_CPB                 32
 
