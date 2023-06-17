@@ -80,6 +80,10 @@ enum XFadeTransitions {
     HRWIND,
     VUWIND,
     VDWIND,
+    COVERLEFT,
+    COVERRIGHT,
+    COVERUP,
+    COVERDOWN,
     NB_TRANSITIONS,
 };
 
@@ -214,6 +218,10 @@ static const AVOption xfade_options[] = {
     {   "hrwind",     "hr wind transition",     0, AV_OPT_TYPE_CONST, {.i64=HRWIND},     0, 0, FLAGS, "transition" },
     {   "vuwind",     "vu wind transition",     0, AV_OPT_TYPE_CONST, {.i64=VUWIND},     0, 0, FLAGS, "transition" },
     {   "vdwind",     "vd wind transition",     0, AV_OPT_TYPE_CONST, {.i64=VDWIND},     0, 0, FLAGS, "transition" },
+    {   "coverleft",  "cover left transition",  0, AV_OPT_TYPE_CONST, {.i64=COVERLEFT},  0, 0, FLAGS, "transition" },
+    {   "coverright", "cover right transition", 0, AV_OPT_TYPE_CONST, {.i64=COVERRIGHT}, 0, 0, FLAGS, "transition" },
+    {   "coverup",    "cover up transition",    0, AV_OPT_TYPE_CONST, {.i64=COVERUP},    0, 0, FLAGS, "transition" },
+    {   "coverdown",  "cover down transition",  0, AV_OPT_TYPE_CONST, {.i64=COVERDOWN},  0, 0, FLAGS, "transition" },
     { "duration", "set cross fade duration", OFFSET(duration), AV_OPT_TYPE_DURATION, {.i64=1000000}, 0, 60000000, FLAGS },
     { "offset",   "set cross fade start relative to first input stream", OFFSET(offset), AV_OPT_TYPE_DURATION, {.i64=0}, INT64_MIN, INT64_MAX, FLAGS },
     { "expr",   "set expression for custom transition", OFFSET(custom_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
@@ -1851,6 +1859,74 @@ VWIND_TRANSITION(16, u, uint16_t, 2, 1.f - )
 VWIND_TRANSITION(8,  d, uint8_t,  1, )
 VWIND_TRANSITION(16, d, uint16_t, 2, )
 
+#define COVERH_TRANSITION(dir, name, type, div, expr)                                \
+static void cover##dir##name##_transition(AVFilterContext *ctx,                      \
+                                 const AVFrame *a, const AVFrame *b, AVFrame *out,   \
+                                 float progress,                                     \
+                                 int slice_start, int slice_end, int jobnr)          \
+{                                                                                    \
+    XFadeContext *s = ctx->priv;                                                     \
+    const int height = slice_end - slice_start;                                      \
+    const int width = out->width;                                                    \
+    const int z = (expr progress) * width;                                           \
+                                                                                     \
+    for (int p = 0; p < s->nb_planes; p++) {                                         \
+        const type *xf0 = (const type *)(a->data[p] + slice_start * a->linesize[p]); \
+        const type *xf1 = (const type *)(b->data[p] + slice_start * b->linesize[p]); \
+        type *dst = (type *)(out->data[p] + slice_start * out->linesize[p]);         \
+                                                                                     \
+        for (int y = 0; y < height; y++) {                                           \
+            for (int x = 0; x < width; x++) {                                        \
+                const int zx = z + x;                                                \
+                const int zz = zx % width + width * (zx < 0);                        \
+                dst[x] = (zx >= 0) && (zx < width) ? xf1[zz] : xf0[x];               \
+            }                                                                        \
+                                                                                     \
+            dst += out->linesize[p] / div;                                           \
+            xf0 += a->linesize[p] / div;                                             \
+            xf1 += b->linesize[p] / div;                                             \
+        }                                                                            \
+    }                                                                                \
+}
+
+COVERH_TRANSITION(left,   8, uint8_t,  1, -)
+COVERH_TRANSITION(left,  16, uint16_t, 2, -)
+COVERH_TRANSITION(right,  8, uint8_t,  1, )
+COVERH_TRANSITION(right, 16, uint16_t, 2, )
+
+#define COVERV_TRANSITION(dir, name, type, div, expr)                               \
+static void cover##dir##name##_transition(AVFilterContext *ctx,                     \
+                                 const AVFrame *a, const AVFrame *b, AVFrame *out,  \
+                                 float progress,                                    \
+                                 int slice_start, int slice_end, int jobnr)         \
+{                                                                                   \
+    XFadeContext *s = ctx->priv;                                                    \
+    const int height = out->height;                                                 \
+    const int width = out->width;                                                   \
+    const int z = (expr progress) * height;                                         \
+                                                                                    \
+    for (int p = 0; p < s->nb_planes; p++) {                                        \
+        type *dst = (type *)(out->data[p] + slice_start * out->linesize[p]);        \
+                                                                                    \
+        for (int y = slice_start; y < slice_end; y++) {                             \
+            const int zy = z + y;                                                   \
+            const int zz = zy % height + height * (zy < 0);                         \
+            const type *xf0 = (const type *)(a->data[p] +  y * a->linesize[p]);     \
+            const type *xf1 = (const type *)(b->data[p] + zz * b->linesize[p]);     \
+                                                                                    \
+            for (int x = 0; x < width; x++)                                         \
+                dst[x] = (zy >= 0) && (zy < height) ? xf1[x] : xf0[x];              \
+                                                                                    \
+            dst += out->linesize[p] / div;                                          \
+        }                                                                           \
+    }                                                                               \
+}
+
+COVERV_TRANSITION(up,    8, uint8_t,  1, -)
+COVERV_TRANSITION(up,   16, uint16_t, 2, -)
+COVERV_TRANSITION(down,  8, uint8_t,  1, )
+COVERV_TRANSITION(down, 16, uint16_t, 2, )
+
 static inline double getpix(void *priv, double x, double y, int plane, int nb)
 {
     XFadeContext *s = priv;
@@ -2001,6 +2077,10 @@ static int config_output(AVFilterLink *outlink)
     case HRWIND:     s->transitionf = s->depth <= 8 ? hrwind8_transition     : hrwind16_transition;     break;
     case VUWIND:     s->transitionf = s->depth <= 8 ? vuwind8_transition     : vuwind16_transition;     break;
     case VDWIND:     s->transitionf = s->depth <= 8 ? vdwind8_transition     : vdwind16_transition;     break;
+    case COVERLEFT:  s->transitionf = s->depth <= 8 ? coverleft8_transition  : coverleft16_transition;  break;
+    case COVERRIGHT: s->transitionf = s->depth <= 8 ? coverright8_transition : coverright16_transition; break;
+    case COVERUP:    s->transitionf = s->depth <= 8 ? coverup8_transition    : coverup16_transition;    break;
+    case COVERDOWN:  s->transitionf = s->depth <= 8 ? coverdown8_transition  : coverdown16_transition;  break;
     default: return AVERROR_BUG;
     }
 

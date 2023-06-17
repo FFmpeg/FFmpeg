@@ -25259,6 +25259,10 @@ Set one of available transition effects:
 @item hrwind
 @item vuwind
 @item vdwind
+@item coverleft
+@item coverright
+@item coverup
+@item coverdown
 @end table
 Default transition effect is fade.
 
