@@ -81,46 +81,6 @@ typedef struct EVCParserPoc {
     int DocOffset;          // the decoding order count of the previous picture
 } EVCParserPoc;
 
-typedef struct EVCParserContext {
-    EVCParamSets ps;
-    EVCParserPoc poc;
-
-    int nuh_temporal_id;            // the value of TemporalId (shall be the same for all VCL NAL units of an Access Unit)
-    int nalu_type;                  // the current NALU type
-
-    // Dimensions of the decoded video intended for presentation.
-    int width;
-    int height;
-
-    // Dimensions of the coded video.
-    int coded_width;
-    int coded_height;
-
-    // The format of the coded data, corresponds to enum AVPixelFormat
-    int format;
-
-    // AV_PICTURE_TYPE_I, EVC_SLICE_TYPE_P, AV_PICTURE_TYPE_B
-    int pict_type;
-
-    // Set by parser to 1 for key frames and 0 for non-key frames
-    int key_frame;
-
-    // Picture number incremented in presentation or output order.
-    // This corresponds to EVCEVCParserPoc::PicOrderCntVal
-    int output_picture_number;
-
-    // profile
-    // 0: FF_PROFILE_EVC_BASELINE
-    // 1: FF_PROFILE_EVC_MAIN
-    int profile;
-
-    // Framerate value in the compressed bitstream
-    AVRational framerate;
-
-    int parsed_extradata;
-
-} EVCParserContext;
-
 static inline int evc_get_nalu_type(const uint8_t *bits, int bits_size, void *logctx)
 {
     int unit_type_plus1 = 0;
@@ -156,8 +116,6 @@ static inline uint32_t evc_read_nal_unit_length(const uint8_t *bits, int bits_si
 
 // nuh_temporal_id specifies a temporal identifier for the NAL unit
 int ff_evc_get_temporal_id(const uint8_t *bits, int bits_size, void *logctx);
-
-int ff_evc_parse_nal_unit(EVCParserContext *ctx, const uint8_t *buf, int buf_size, void *logctx);
 
 int ff_evc_parse_slice_header(EVCParserSliceHeader *sh, const EVCParamSets *ps,
                               enum EVCNALUnitType nalu_type, const uint8_t *buf, int buf_size);

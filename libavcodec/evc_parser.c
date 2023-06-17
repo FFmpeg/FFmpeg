@@ -25,6 +25,13 @@
 #include "evc.h"
 #include "evc_parse.h"
 
+typedef struct EVCParserContext {
+    EVCParamSets ps;
+    EVCParserPoc poc;
+
+    int parsed_extradata;
+} EVCParserContext;
+
 #define NUM_CHROMA_FORMATS      4   // @see ISO_IEC_23094-1 section 6.2 table 2
 
 static const enum AVPixelFormat pix_fmts_8bit[NUM_CHROMA_FORMATS] = {
