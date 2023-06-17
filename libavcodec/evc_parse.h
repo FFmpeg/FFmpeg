@@ -159,4 +159,9 @@ int ff_evc_get_temporal_id(const uint8_t *bits, int bits_size, void *logctx);
 
 int ff_evc_parse_nal_unit(EVCParserContext *ctx, const uint8_t *buf, int buf_size, void *logctx);
 
+// POC (picture order count of the current picture) derivation
+// @see ISO/IEC 23094-1:2020(E) 8.3.1 Decoding process for picture order count
+int ff_evc_derive_poc(const EVCParamSets *ps, const EVCParserSliceHeader *sh,
+                      EVCParserPoc *poc, enum EVCNALUnitType nalu_type, int tid);
+
 #endif /* AVCODEC_EVC_PARSE_H */

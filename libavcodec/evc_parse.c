@@ -187,6 +187,77 @@ static int evc_parse_slice_header(EVCParserContext *ctx, EVCParserSliceHeader *s
     return 0;
 }
 
+int ff_evc_derive_poc(const EVCParamSets *ps, const EVCParserSliceHeader *sh,
+                      EVCParserPoc *poc, enum EVCNALUnitType nalu_type, int tid)
+{
+    const EVCParserPPS *pps = ps->pps[sh->slice_pic_parameter_set_id];
+    const EVCParserSPS *sps;
+
+    if (!pps)
+        return AVERROR_INVALIDDATA;
+
+    sps = ps->sps[pps->pps_seq_parameter_set_id];
+    if (!sps)
+        return AVERROR_INVALIDDATA;
+
+    if (sps->sps_pocs_flag) {
+        int PicOrderCntMsb = 0;
+        poc->prevPicOrderCntVal = poc->PicOrderCntVal;
+
+        if (nalu_type == EVC_IDR_NUT)
+            PicOrderCntMsb = 0;
+        else {
+            int MaxPicOrderCntLsb = 1 << (sps->log2_max_pic_order_cnt_lsb_minus4 + 4);
+            int prevPicOrderCntLsb = poc->PicOrderCntVal & (MaxPicOrderCntLsb - 1);
+            int prevPicOrderCntMsb = poc->PicOrderCntVal - prevPicOrderCntLsb;
+
+            if ((sh->slice_pic_order_cnt_lsb < prevPicOrderCntLsb) &&
+                ((prevPicOrderCntLsb - sh->slice_pic_order_cnt_lsb) >= (MaxPicOrderCntLsb / 2)))
+                PicOrderCntMsb = prevPicOrderCntMsb + MaxPicOrderCntLsb;
+            else if ((sh->slice_pic_order_cnt_lsb > prevPicOrderCntLsb) &&
+                     ((sh->slice_pic_order_cnt_lsb - prevPicOrderCntLsb) > (MaxPicOrderCntLsb / 2)))
+                PicOrderCntMsb = prevPicOrderCntMsb - MaxPicOrderCntLsb;
+            else
+                PicOrderCntMsb = prevPicOrderCntMsb;
+        }
+        poc->PicOrderCntVal = PicOrderCntMsb + sh->slice_pic_order_cnt_lsb;
+    } else {
+        if (nalu_type == EVC_IDR_NUT) {
+            poc->PicOrderCntVal = 0;
+            poc->DocOffset = -1;
+        } else {
+            int SubGopLength = (int)pow(2.0, sps->log2_sub_gop_length);
+            if (tid == 0) {
+                poc->PicOrderCntVal = poc->prevPicOrderCntVal + SubGopLength;
+                poc->DocOffset = 0;
+                poc->prevPicOrderCntVal = poc->PicOrderCntVal;
+            } else {
+                int ExpectedTemporalId;
+                int PocOffset;
+                int prevDocOffset = poc->DocOffset;
+
+                poc->DocOffset = (prevDocOffset + 1) % SubGopLength;
+                if (poc->DocOffset == 0) {
+                    poc->prevPicOrderCntVal += SubGopLength;
+                    ExpectedTemporalId = 0;
+                } else
+                    ExpectedTemporalId = 1 + (int)log2(poc->DocOffset);
+                while (tid != ExpectedTemporalId) {
+                    poc->DocOffset = (poc->DocOffset + 1) % SubGopLength;
+                    if (poc->DocOffset == 0)
+                        ExpectedTemporalId = 0;
+                    else
+                        ExpectedTemporalId = 1 + (int)log2(poc->DocOffset);
+                }
+                PocOffset = (int)(SubGopLength * ((2.0 * poc->DocOffset + 1) / (int)pow(2.0, tid) - 2));
+                poc->PicOrderCntVal = poc->prevPicOrderCntVal + PocOffset;
+            }
+        }
+    }
+
+    return 0;
+}
+
 int ff_evc_parse_nal_unit(EVCParserContext *ctx, const uint8_t *buf, int buf_size, void *logctx)
 {
     int nalu_type, nalu_size;
@@ -299,8 +370,6 @@ int ff_evc_parse_nal_unit(EVCParserContext *ctx, const uint8_t *buf, int buf_siz
     case EVC_IDR_NUT:   // Coded slice of a IDR or non-IDR picture
     case EVC_NOIDR_NUT: {
         EVCParserSliceHeader sh;
-        const EVCParserSPS *sps;
-        const EVCParserPPS *pps;
         int ret;
 
         ret = evc_parse_slice_header(ctx, &sh, data, nalu_size);
@@ -331,72 +400,9 @@ int ff_evc_parse_nal_unit(EVCParserContext *ctx, const uint8_t *buf, int buf_siz
 
         // POC (picture order count of the current picture) derivation
         // @see ISO/IEC 23094-1:2020(E) 8.3.1 Decoding process for picture order count
-        pps = ctx->ps.pps[sh.slice_pic_parameter_set_id];
-        sps = ctx->ps.sps[pps->pps_seq_parameter_set_id];
-        av_assert0(sps && pps);
-
-        if (sps->sps_pocs_flag) {
-
-            int PicOrderCntMsb = 0;
-            ctx->poc.prevPicOrderCntVal = ctx->poc.PicOrderCntVal;
-
-            if (nalu_type == EVC_IDR_NUT)
-                PicOrderCntMsb = 0;
-            else {
-                int MaxPicOrderCntLsb = 1 << (sps->log2_max_pic_order_cnt_lsb_minus4 + 4);
-
-                int prevPicOrderCntLsb = ctx->poc.PicOrderCntVal & (MaxPicOrderCntLsb - 1);
-                int prevPicOrderCntMsb = ctx->poc.PicOrderCntVal - prevPicOrderCntLsb;
-
-
-                if ((sh.slice_pic_order_cnt_lsb < prevPicOrderCntLsb) &&
-                    ((prevPicOrderCntLsb - sh.slice_pic_order_cnt_lsb) >= (MaxPicOrderCntLsb / 2)))
-
-                    PicOrderCntMsb = prevPicOrderCntMsb + MaxPicOrderCntLsb;
-
-                else if ((sh.slice_pic_order_cnt_lsb > prevPicOrderCntLsb) &&
-                         ((sh.slice_pic_order_cnt_lsb - prevPicOrderCntLsb) > (MaxPicOrderCntLsb / 2)))
-
-                    PicOrderCntMsb = prevPicOrderCntMsb - MaxPicOrderCntLsb;
-
-                else
-                    PicOrderCntMsb = prevPicOrderCntMsb;
-            }
-            ctx->poc.PicOrderCntVal = PicOrderCntMsb + sh.slice_pic_order_cnt_lsb;
-
-        } else {
-            if (nalu_type == EVC_IDR_NUT) {
-                ctx->poc.PicOrderCntVal = 0;
-                ctx->poc.DocOffset = -1;
-            } else {
-                int SubGopLength = (int)pow(2.0, sps->log2_sub_gop_length);
-                if (tid == 0) {
-                    ctx->poc.PicOrderCntVal = ctx->poc.prevPicOrderCntVal + SubGopLength;
-                    ctx->poc.DocOffset = 0;
-                    ctx->poc.prevPicOrderCntVal = ctx->poc.PicOrderCntVal;
-                } else {
-                    int ExpectedTemporalId;
-                    int PocOffset;
-                    int prevDocOffset = ctx->poc.DocOffset;
-
-                    ctx->poc.DocOffset = (prevDocOffset + 1) % SubGopLength;
-                    if (ctx->poc.DocOffset == 0) {
-                        ctx->poc.prevPicOrderCntVal += SubGopLength;
-                        ExpectedTemporalId = 0;
-                    } else
-                        ExpectedTemporalId = 1 + (int)log2(ctx->poc.DocOffset);
-                    while (tid != ExpectedTemporalId) {
-                        ctx->poc.DocOffset = (ctx->poc.DocOffset + 1) % SubGopLength;
-                        if (ctx->poc.DocOffset == 0)
-                            ExpectedTemporalId = 0;
-                        else
-                            ExpectedTemporalId = 1 + (int)log2(ctx->poc.DocOffset);
-                    }
-                    PocOffset = (int)(SubGopLength * ((2.0 * ctx->poc.DocOffset + 1) / (int)pow(2.0, tid) - 2));
-                    ctx->poc.PicOrderCntVal = ctx->poc.prevPicOrderCntVal + PocOffset;
-                }
-            }
-        }
+        ret = ff_evc_derive_poc(&ctx->ps, &sh, &ctx->poc, nalu_type, tid);
+        if (ret < 0)
+            return ret;
 
         ctx->output_picture_number = ctx->poc.PicOrderCntVal;
         ctx->key_frame = (nalu_type == EVC_IDR_NUT) ? 1 : 0;
