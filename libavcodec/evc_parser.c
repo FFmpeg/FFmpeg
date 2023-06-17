@@ -25,6 +25,180 @@
 #include "evc.h"
 #include "evc_parse.h"
 
+#define NUM_CHROMA_FORMATS      4   // @see ISO_IEC_23094-1 section 6.2 table 2
+
+static const enum AVPixelFormat pix_fmts_8bit[NUM_CHROMA_FORMATS] = {
+    AV_PIX_FMT_GRAY8, AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV444P
+};
+
+static const enum AVPixelFormat pix_fmts_9bit[NUM_CHROMA_FORMATS] = {
+    AV_PIX_FMT_GRAY9, AV_PIX_FMT_YUV420P9, AV_PIX_FMT_YUV422P9, AV_PIX_FMT_YUV444P9
+};
+
+static const enum AVPixelFormat pix_fmts_10bit[NUM_CHROMA_FORMATS] = {
+    AV_PIX_FMT_GRAY10, AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10
+};
+
+static const enum AVPixelFormat pix_fmts_12bit[NUM_CHROMA_FORMATS] = {
+    AV_PIX_FMT_GRAY12, AV_PIX_FMT_YUV420P12, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV444P12
+};
+
+static const enum AVPixelFormat pix_fmts_14bit[NUM_CHROMA_FORMATS] = {
+    AV_PIX_FMT_GRAY14, AV_PIX_FMT_YUV420P14, AV_PIX_FMT_YUV422P14, AV_PIX_FMT_YUV444P14
+};
+
+static const enum AVPixelFormat pix_fmts_16bit[NUM_CHROMA_FORMATS] = {
+    AV_PIX_FMT_GRAY16, AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16
+};
+
+static int parse_nal_unit(AVCodecParserContext *s, AVCodecContext *avctx,
+                          const uint8_t *buf, int buf_size)
+{
+    EVCParserContext *ctx = s->priv_data;
+    int nalu_type, tid;
+
+    if (buf_size <= 0) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid NAL unit size: (%d)\n", buf_size);
+        return AVERROR_INVALIDDATA;
+    }
+
+    // @see ISO_IEC_23094-1_2020, 7.4.2.2 NAL unit header semantic (Table 4 - NAL unit type codes and NAL unit type classes)
+    // @see enum EVCNALUnitType in evc.h
+    nalu_type = evc_get_nalu_type(buf, buf_size, avctx);
+    if (nalu_type < EVC_NOIDR_NUT || nalu_type > EVC_UNSPEC_NUT62) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid NAL unit type: (%d)\n", nalu_type);
+        return AVERROR_INVALIDDATA;
+    }
+
+    tid = ff_evc_get_temporal_id(buf, buf_size, avctx);
+    if (tid < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid temporial id: (%d)\n", tid);
+        return AVERROR_INVALIDDATA;
+    }
+
+    buf += EVC_NALU_HEADER_SIZE;
+    buf_size -= EVC_NALU_HEADER_SIZE;
+
+    switch (nalu_type) {
+    case EVC_SPS_NUT: {
+        EVCParserSPS *sps = ff_evc_parse_sps(&ctx->ps, buf, buf_size);
+        if (!sps) {
+            av_log(avctx, AV_LOG_ERROR, "SPS parsing error\n");
+            return AVERROR_INVALIDDATA;
+        }
+        break;
+    }
+    case EVC_PPS_NUT: {
+        EVCParserPPS *pps = ff_evc_parse_pps(&ctx->ps, buf, buf_size);
+        if (!pps) {
+            av_log(avctx, AV_LOG_ERROR, "PPS parsing error\n");
+            return AVERROR_INVALIDDATA;
+        }
+        break;
+    }
+    case EVC_IDR_NUT:   // Coded slice of a IDR or non-IDR picture
+    case EVC_NOIDR_NUT: {
+        const EVCParserPPS *pps;
+        const EVCParserSPS *sps;
+        EVCParserSliceHeader sh;
+        int bit_depth;
+        int ret;
+
+        ret = ff_evc_parse_slice_header(&sh, &ctx->ps, nalu_type, buf, buf_size);
+        if (ret < 0) {
+            av_log(avctx, AV_LOG_ERROR, "Slice header parsing error\n");
+            return ret;
+        }
+
+        pps = ctx->ps.pps[sh.slice_pic_parameter_set_id];
+        sps = ctx->ps.sps[pps->pps_seq_parameter_set_id];
+        av_assert0(sps && pps);
+
+        s->coded_width  = sps->pic_width_in_luma_samples;
+        s->coded_height = sps->pic_height_in_luma_samples;
+
+        if (sps->picture_cropping_flag) {
+            s->width    = sps->pic_width_in_luma_samples  - sps->picture_crop_left_offset - sps->picture_crop_right_offset;
+            s->height   = sps->pic_height_in_luma_samples - sps->picture_crop_top_offset  - sps->picture_crop_bottom_offset;
+        } else {
+            s->width    = sps->pic_width_in_luma_samples;
+            s->height   = sps->pic_height_in_luma_samples;
+        }
+
+        switch (sh.slice_type) {
+        case EVC_SLICE_TYPE_B: {
+            s->pict_type =  AV_PICTURE_TYPE_B;
+            break;
+        }
+        case EVC_SLICE_TYPE_P: {
+            s->pict_type =  AV_PICTURE_TYPE_P;
+            break;
+        }
+        case EVC_SLICE_TYPE_I: {
+            s->pict_type =  AV_PICTURE_TYPE_I;
+            break;
+        }
+        default: {
+            s->pict_type =  AV_PICTURE_TYPE_NONE;
+        }
+        }
+
+        avctx->profile = sps->profile_idc;
+
+        if (sps->vui_parameters_present_flag && sps->vui_parameters.timing_info_present_flag) {
+            int64_t num = sps->vui_parameters.num_units_in_tick;
+            int64_t den = sps->vui_parameters.time_scale;
+            if (num != 0 && den != 0)
+                av_reduce(&avctx->framerate.den, &avctx->framerate.num, num, den, 1 << 30);
+        } else
+            avctx->framerate = (AVRational) { 0, 1 };
+
+        bit_depth = sps->bit_depth_chroma_minus8 + 8;
+        s->format = AV_PIX_FMT_NONE;
+
+        switch (bit_depth) {
+        case 8:
+            s->format = pix_fmts_8bit[sps->chroma_format_idc];
+            break;
+        case 9:
+            s->format = pix_fmts_9bit[sps->chroma_format_idc];
+            break;
+        case 10:
+            s->format = pix_fmts_10bit[sps->chroma_format_idc];
+            break;
+        case 12:
+            s->format = pix_fmts_12bit[sps->chroma_format_idc];
+            break;
+        case 14:
+            s->format = pix_fmts_14bit[sps->chroma_format_idc];
+            break;
+        case 16:
+            s->format = pix_fmts_16bit[sps->chroma_format_idc];
+            break;
+        }
+
+        s->key_frame = (nalu_type == EVC_IDR_NUT) ? 1 : 0;
+
+        // POC (picture order count of the current picture) derivation
+        // @see ISO/IEC 23094-1:2020(E) 8.3.1 Decoding process for picture order count
+        ret = ff_evc_derive_poc(&ctx->ps, &sh, &ctx->poc, nalu_type, tid);
+        if (ret < 0)
+            return ret;
+
+        s->output_picture_number = ctx->poc.PicOrderCntVal;
+
+        break;
+    }
+    case EVC_SEI_NUT:   // Supplemental Enhancement Information
+    case EVC_APS_NUT:   // Adaptation parameter set
+    case EVC_FD_NUT:    // Filler data
+    default:
+        break;
+    }
+
+    return 0;
+}
+
 /**
  * Parse NAL units of found picture and decode some basic information.
  *
@@ -35,13 +209,13 @@
  */
 static int parse_nal_units(AVCodecParserContext *s, AVCodecContext *avctx, const uint8_t *buf, int buf_size)
 {
-    EVCParserContext *ctx = s->priv_data;
     const uint8_t *data = buf;
     int data_size = buf_size;
     int bytes_read = 0;
-    int nalu_size = 0;
 
     while (data_size > 0) {
+        int nalu_size = 0;
+        int ret;
 
         // Buffer size is not enough for buffer to store NAL unit 4-bytes prefix (length)
         if (data_size < EVC_NALU_LENGTH_PREFIX_SIZE)
@@ -57,29 +231,10 @@ static int parse_nal_units(AVCodecParserContext *s, AVCodecContext *avctx, const
         if (data_size < nalu_size)
             return AVERROR_INVALIDDATA;
 
-        if (ff_evc_parse_nal_unit(ctx, data, nalu_size, avctx) != 0) {
+        ret = parse_nal_unit(s, avctx, data, nalu_size);
+        if (ret < 0) {
             av_log(avctx, AV_LOG_ERROR, "Parsing of NAL unit failed\n");
             return AVERROR_INVALIDDATA;
-        }
-
-        if(ctx->nalu_type == EVC_SPS_NUT) {
-
-            s->coded_width         = ctx->coded_width;
-            s->coded_height        = ctx->coded_height;
-            s->width               = ctx->width;
-            s->height              = ctx->height;
-
-            s->format              = ctx->format;
-
-            avctx->framerate       = ctx->framerate;
-            avctx->profile         = ctx->profile;
-
-        } else if(ctx->nalu_type == EVC_NOIDR_NUT || ctx->nalu_type == EVC_IDR_NUT) {
-
-            s->pict_type = ctx->pict_type;
-            s->key_frame = ctx->key_frame;
-            s->output_picture_number = ctx->output_picture_number;
-
         }
 
         data += nalu_size;
@@ -90,8 +245,10 @@ static int parse_nal_units(AVCodecParserContext *s, AVCodecContext *avctx, const
 
 // Decoding nal units from evcC (EVCDecoderConfigurationRecord)
 // @see @see ISO/IEC 14496-15:2021 Coding of audio-visual objects - Part 15: section 12.3.3.2
-static int decode_extradata(EVCParserContext *ctx, const uint8_t *data, int size, void *logctx)
+static int decode_extradata(AVCodecParserContext *s, AVCodecContext *avctx)
 {
+    const uint8_t *data = avctx->extradata;
+    int size = avctx->extradata_size;
     int ret = 0;
     GetByteContext gb;
 
@@ -108,7 +265,7 @@ static int decode_extradata(EVCParserContext *ctx, const uint8_t *data, int size
         // The value of this field shall be one of 0, 1, or 3 corresponding to a length encoded with 1, 2, or 4 bytes, respectively.
 
         if (bytestream2_get_bytes_left(&gb) < 18) {
-            av_log(logctx, AV_LOG_ERROR, "evcC %d too short\n", size);
+            av_log(avctx, AV_LOG_ERROR, "evcC %d too short\n", size);
             return AVERROR_INVALIDDATA;
         }
 
@@ -121,7 +278,7 @@ static int decode_extradata(EVCParserContext *ctx, const uint8_t *data, int size
         if( nalu_length_field_size != 1 &&
             nalu_length_field_size != 2 &&
             nalu_length_field_size != 4 ) {
-            av_log(logctx, AV_LOG_ERROR, "The length in bytes of the NALUnitLenght field in a EVC video stream has unsupported value of %d\n", nalu_length_field_size);
+            av_log(avctx, AV_LOG_ERROR, "The length in bytes of the NALUnitLenght field in a EVC video stream has unsupported value of %d\n", nalu_length_field_size);
             return AVERROR_INVALIDDATA;
         }
 
@@ -142,7 +299,7 @@ static int decode_extradata(EVCParserContext *ctx, const uint8_t *data, int size
                 int nal_unit_length = bytestream2_get_be16(&gb);
 
                 if (bytestream2_get_bytes_left(&gb) < nal_unit_length) {
-                    av_log(logctx, AV_LOG_ERROR, "Invalid NAL unit size in extradata.\n");
+                    av_log(avctx, AV_LOG_ERROR, "Invalid NAL unit size in extradata.\n");
                     return AVERROR_INVALIDDATA;
                 }
 
@@ -150,8 +307,8 @@ static int decode_extradata(EVCParserContext *ctx, const uint8_t *data, int size
                     nal_unit_type == EVC_PPS_NUT ||
                     nal_unit_type == EVC_APS_NUT ||
                     nal_unit_type == EVC_SEI_NUT ) {
-                    if (ff_evc_parse_nal_unit(ctx, gb.buffer, nal_unit_length, logctx) != 0) {
-                        av_log(logctx, AV_LOG_ERROR, "Parsing of NAL unit failed\n");
+                    if (parse_nal_unit(s, avctx, gb.buffer, nal_unit_length) != 0) {
+                        av_log(avctx, AV_LOG_ERROR, "Parsing of NAL unit failed\n");
                         return AVERROR_INVALIDDATA;
                     }
                 }
@@ -173,8 +330,11 @@ static int evc_parse(AVCodecParserContext *s, AVCodecContext *avctx,
     int ret;
     EVCParserContext *ctx = s->priv_data;
 
+    s->picture_structure = AV_PICTURE_STRUCTURE_FRAME;
+    s->key_frame = 0;
+
     if (avctx->extradata && !ctx->parsed_extradata) {
-        decode_extradata(ctx, avctx->extradata, avctx->extradata_size, avctx);
+        decode_extradata(s, avctx);
         ctx->parsed_extradata = 1;
     }
 
@@ -186,8 +346,6 @@ static int evc_parse(AVCodecParserContext *s, AVCodecContext *avctx,
         *poutbuf_size = 0;
         return buf_size;
     }
-
-    s->picture_structure = AV_PICTURE_STRUCTURE_FRAME;
 
     // poutbuf contains just one Access Unit
     *poutbuf      = buf;

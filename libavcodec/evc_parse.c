@@ -70,11 +70,12 @@ int ff_evc_get_temporal_id(const uint8_t *bits, int bits_size, void *logctx)
 }
 
 // @see ISO_IEC_23094-1 (7.3.2.6 Slice layer RBSP syntax)
-static int evc_parse_slice_header(EVCParserContext *ctx, EVCParserSliceHeader *sh, const uint8_t *bs, int bs_size)
+int ff_evc_parse_slice_header(EVCParserSliceHeader *sh, const EVCParamSets *ps,
+                              enum EVCNALUnitType nalu_type, const uint8_t *bs, int bs_size)
 {
     GetBitContext gb;
-    EVCParserPPS *pps;
-    EVCParserSPS *sps;
+    const EVCParserPPS *pps;
+    const EVCParserSPS *sps;
 
     int num_tiles_in_slice = 0;
     int slice_pic_parameter_set_id;
@@ -88,11 +89,11 @@ static int evc_parse_slice_header(EVCParserContext *ctx, EVCParserSliceHeader *s
     if (slice_pic_parameter_set_id < 0 || slice_pic_parameter_set_id >= EVC_MAX_PPS_COUNT)
         return AVERROR_INVALIDDATA;
 
-    pps = ctx->ps.pps[slice_pic_parameter_set_id];
+    pps = ps->pps[slice_pic_parameter_set_id];
     if(!pps)
         return AVERROR_INVALIDDATA;
 
-    sps = ctx->ps.sps[pps->pps_seq_parameter_set_id];
+    sps = ps->sps[pps->pps_seq_parameter_set_id];
     if(!sps)
         return AVERROR_INVALIDDATA;
 
@@ -121,7 +122,7 @@ static int evc_parse_slice_header(EVCParserContext *ctx, EVCParserSliceHeader *s
 
     sh->slice_type = get_ue_golomb(&gb);
 
-    if (ctx->nalu_type == EVC_IDR_NUT)
+    if (nalu_type == EVC_IDR_NUT)
         sh->no_output_of_prior_pics_flag = get_bits(&gb, 1);
 
     if (sps->sps_mmvd_flag && ((sh->slice_type == EVC_SLICE_TYPE_B) || (sh->slice_type == EVC_SLICE_TYPE_P)))
@@ -175,7 +176,7 @@ static int evc_parse_slice_header(EVCParserContext *ctx, EVCParserSliceHeader *s
         }
     }
 
-    if (ctx->nalu_type != EVC_IDR_NUT) {
+    if (nalu_type != EVC_IDR_NUT) {
         if (sps->sps_pocs_flag)
             sh->slice_pic_order_cnt_lsb = get_bits(&gb, sps->log2_max_pic_order_cnt_lsb_minus4 + 4);
     }
@@ -372,7 +373,7 @@ int ff_evc_parse_nal_unit(EVCParserContext *ctx, const uint8_t *buf, int buf_siz
         EVCParserSliceHeader sh;
         int ret;
 
-        ret = evc_parse_slice_header(ctx, &sh, data, nalu_size);
+        ret = ff_evc_parse_slice_header(&sh, &ctx->ps, nalu_type, data, nalu_size);
         if (ret < 0) {
             av_log(logctx, AV_LOG_ERROR, "Slice header parsing error\n");
             return ret;
