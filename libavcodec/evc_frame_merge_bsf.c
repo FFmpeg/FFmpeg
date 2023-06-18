@@ -120,24 +120,20 @@ static int evc_frame_merge_filter(AVBSFContext *bsf, AVPacket *out)
     nalu_size -= EVC_NALU_HEADER_SIZE;
 
     switch (nalu_type) {
-    case EVC_SPS_NUT: {
-        EVCParserSPS *sps = ff_evc_parse_sps(&ctx->ps, nalu, nalu_size);
-        if (!sps) {
+    case EVC_SPS_NUT:
+        err = ff_evc_parse_sps(&ctx->ps, nalu, nalu_size);
+        if (err < 0) {
             av_log(bsf, AV_LOG_ERROR, "SPS parsing error\n");
-            err = AVERROR_INVALIDDATA;
             goto end;
         }
         break;
-    }
-    case EVC_PPS_NUT: {
-        EVCParserPPS *pps = ff_evc_parse_pps(&ctx->ps, nalu, nalu_size);
-        if (!pps) {
+    case EVC_PPS_NUT:
+        err = ff_evc_parse_pps(&ctx->ps, nalu, nalu_size);
+        if (err < 0) {
             av_log(bsf, AV_LOG_ERROR, "PPS parsing error\n");
-            err = AVERROR_INVALIDDATA;
             goto end;
         }
         break;
-    }
     case EVC_IDR_NUT:   // Coded slice of a IDR or non-IDR picture
     case EVC_NOIDR_NUT: {
         EVCParserSliceHeader sh;

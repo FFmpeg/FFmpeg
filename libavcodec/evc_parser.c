@@ -63,6 +63,7 @@ static int parse_nal_unit(AVCodecParserContext *s, AVCodecContext *avctx,
 {
     EVCParserContext *ctx = s->priv_data;
     int nalu_type, tid;
+    int ret;
 
     if (buf_size <= 0) {
         av_log(avctx, AV_LOG_ERROR, "Invalid NAL unit size: (%d)\n", buf_size);
@@ -87,29 +88,26 @@ static int parse_nal_unit(AVCodecParserContext *s, AVCodecContext *avctx,
     buf_size -= EVC_NALU_HEADER_SIZE;
 
     switch (nalu_type) {
-    case EVC_SPS_NUT: {
-        EVCParserSPS *sps = ff_evc_parse_sps(&ctx->ps, buf, buf_size);
-        if (!sps) {
+    case EVC_SPS_NUT:
+        ret = ff_evc_parse_sps(&ctx->ps, buf, buf_size);
+        if (ret < 0) {
             av_log(avctx, AV_LOG_ERROR, "SPS parsing error\n");
-            return AVERROR_INVALIDDATA;
+            return ret;
         }
         break;
-    }
-    case EVC_PPS_NUT: {
-        EVCParserPPS *pps = ff_evc_parse_pps(&ctx->ps, buf, buf_size);
-        if (!pps) {
+    case EVC_PPS_NUT:
+        ret = ff_evc_parse_pps(&ctx->ps, buf, buf_size);
+        if (ret < 0) {
             av_log(avctx, AV_LOG_ERROR, "PPS parsing error\n");
-            return AVERROR_INVALIDDATA;
+            return ret;
         }
         break;
-    }
     case EVC_IDR_NUT:   // Coded slice of a IDR or non-IDR picture
     case EVC_NOIDR_NUT: {
         const EVCParserPPS *pps;
         const EVCParserSPS *sps;
         EVCParserSliceHeader sh;
         int bit_depth;
-        int ret;
 
         ret = ff_evc_parse_slice_header(&sh, &ctx->ps, nalu_type, buf, buf_size);
         if (ret < 0) {

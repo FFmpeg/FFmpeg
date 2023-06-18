@@ -132,26 +132,26 @@ static int vui_parameters(GetBitContext *gb, VUIParameters *vui)
 }
 
 // @see ISO_IEC_23094-1 (7.3.2.1 SPS RBSP syntax)
-EVCParserSPS *ff_evc_parse_sps(EVCParamSets *ps, const uint8_t *bs, int bs_size)
+int ff_evc_parse_sps(EVCParamSets *ps, const uint8_t *bs, int bs_size)
 {
     GetBitContext gb;
     EVCParserSPS *sps;
     int sps_seq_parameter_set_id;
+    int ret;
 
-    if (init_get_bits8(&gb, bs, bs_size) < 0)
-        return NULL;
+    ret = init_get_bits8(&gb, bs, bs_size);
+    if (ret < 0)
+        return ret;
 
     sps_seq_parameter_set_id = get_ue_golomb(&gb);
 
     if (sps_seq_parameter_set_id >= EVC_MAX_SPS_COUNT)
-        return NULL;
+        return AVERROR_INVALIDDATA;
 
-    if(!ps->sps[sps_seq_parameter_set_id]) {
-        if((ps->sps[sps_seq_parameter_set_id] = av_malloc(sizeof(EVCParserSPS))) == NULL)
-            return NULL;
-    }
+    sps = av_malloc(sizeof(*sps));
+    if (!sps)
+        return AVERROR(ENOMEM);
 
-    sps = ps->sps[sps_seq_parameter_set_id];
     memset(sps, 0, sizeof(*sps));
 
     sps->sps_seq_parameter_set_id = sps_seq_parameter_set_id;
@@ -284,7 +284,10 @@ EVCParserSPS *ff_evc_parse_sps(EVCParamSets *ps, const uint8_t *bs, int bs_size)
     // If necessary, add the missing fields to the EVCParserSPS structure
     // and then extend parser implementation
 
-    return sps;
+    av_freep(&ps->sps[sps_seq_parameter_set_id]);
+    ps->sps[sps_seq_parameter_set_id] = sps;
+
+    return 0;
 }
 
 // @see ISO_IEC_23094-1 (7.3.2.2 SPS RBSP syntax)
@@ -294,34 +297,33 @@ EVCParserSPS *ff_evc_parse_sps(EVCParamSets *ps, const uint8_t *bs, int bs_size)
 // If it will be needed, parse_sps function could be extended to handle VUI parameters parsing
 // to initialize fields of the AVCodecContex i.e. color_primaries, color_trc,color_range
 //
-EVCParserPPS *ff_evc_parse_pps(EVCParamSets *ps, const uint8_t *bs, int bs_size)
+int ff_evc_parse_pps(EVCParamSets *ps, const uint8_t *bs, int bs_size)
 {
     GetBitContext gb;
     EVCParserPPS *pps;
-
     int pps_pic_parameter_set_id;
+    int ret;
 
-    if (init_get_bits8(&gb, bs, bs_size) < 0)
-        return NULL;
+    ret = init_get_bits8(&gb, bs, bs_size);
+    if (ret < 0)
+        return ret;
 
     pps_pic_parameter_set_id = get_ue_golomb(&gb);
     if (pps_pic_parameter_set_id > EVC_MAX_PPS_COUNT)
-        return NULL;
+        return AVERROR_INVALIDDATA;
 
-    if(!ps->pps[pps_pic_parameter_set_id]) {
-        if ((ps->pps[pps_pic_parameter_set_id] = av_malloc(sizeof(EVCParserPPS))) == NULL)
-            return NULL;
-    }
+    pps = av_malloc(sizeof(*pps));
+    if (!pps)
+        return AVERROR(ENOMEM);
 
-    pps = ps->pps[pps_pic_parameter_set_id];
     memset(pps, 0, sizeof(*pps));
 
     pps->pps_pic_parameter_set_id = pps_pic_parameter_set_id;
 
     pps->pps_seq_parameter_set_id = get_ue_golomb(&gb);
     if (pps->pps_seq_parameter_set_id >= EVC_MAX_SPS_COUNT) {
-        av_freep(&ps->pps[pps_pic_parameter_set_id]);
-        return NULL;
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
     }
 
     pps->num_ref_idx_default_active_minus1[0] = get_ue_golomb(&gb);
@@ -369,7 +371,13 @@ EVCParserPPS *ff_evc_parse_pps(EVCParamSets *ps, const uint8_t *bs, int bs_size)
     if (pps->cu_qp_delta_enabled_flag)
         pps->log2_cu_qp_delta_area_minus6 = get_ue_golomb(&gb);
 
-    return pps;
+    av_freep(&ps->pps[pps_pic_parameter_set_id]);
+    ps->pps[pps_pic_parameter_set_id] = pps;
+
+    return 0;
+fail:
+    av_free(pps);
+    return ret;
 }
 
 void ff_evc_ps_free(EVCParamSets *ps) {

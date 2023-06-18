@@ -218,10 +218,10 @@ typedef struct EVCParamSets {
 } EVCParamSets;
 
 // @see ISO_IEC_23094-1 (7.3.2.1 SPS RBSP syntax)
-EVCParserSPS *ff_evc_parse_sps(EVCParamSets *ps, const uint8_t *bs, int bs_size);
+int ff_evc_parse_sps(EVCParamSets *ps, const uint8_t *bs, int bs_size);
 
 // @see ISO_IEC_23094-1 (7.3.2.2 SPS RBSP syntax)
-EVCParserPPS *ff_evc_parse_pps(EVCParamSets *ps, const uint8_t *bs, int bs_size);
+int ff_evc_parse_pps(EVCParamSets *ps, const uint8_t *bs, int bs_size);
 
 void ff_evc_ps_free(EVCParamSets *ps);
 
