@@ -49,7 +49,7 @@ typedef struct DisplaceContext {
 } DisplaceContext;
 
 #define OFFSET(x) offsetof(DisplaceContext, x)
-#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption displace_options[] = {
     { "edge", "set edge mode", OFFSET(edge), AV_OPT_TYPE_INT, {.i64=EDGE_SMEAR}, 0, EDGE_NB-1, FLAGS, "edge" },
@@ -422,4 +422,5 @@ const AVFilter ff_vf_displace = {
     .priv_class    = &displace_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
                      AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = ff_filter_process_command,
 };
