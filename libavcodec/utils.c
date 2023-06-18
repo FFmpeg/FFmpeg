@@ -3485,7 +3485,7 @@ int av_get_audio_frame_duration(AVCodecContext *avctx, int frame_bytes)
     if (sr > 0) {
         /* calc from sample rate */
         if (id == AV_CODEC_ID_TTA)
-            return 256 * sr / 245;
+            return 256ll * sr / 245;
 
         if (ch > 0) {
             /* calc from sample rate and channels */
