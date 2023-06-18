@@ -231,7 +231,7 @@ static int jpegxl_anim_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (ctx->initial && size < ctx->initial->size)
         size = ctx->initial->size;
 
-    if ((ret = av_new_packet(pkt, size) < 0))
+    if ((ret = av_new_packet(pkt, size)) < 0)
         return ret;
 
     if (ctx->initial) {
