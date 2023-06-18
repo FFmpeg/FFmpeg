@@ -41,7 +41,7 @@ typedef struct DRMeterContext {
     const AVClass *class;
     ChannelStats *chstats;
     int nb_channels;
-    uint64_t tc_samples;
+    int64_t tc_samples;
     double time_constant;
 } DRMeterContext;
 
@@ -59,11 +59,11 @@ static int config_output(AVFilterLink *outlink)
 {
     DRMeterContext *s = outlink->src->priv;
 
-    s->chstats = av_calloc(sizeof(*s->chstats), outlink->ch_layout.nb_channels);
+    s->chstats = av_calloc(outlink->ch_layout.nb_channels, sizeof(*s->chstats));
     if (!s->chstats)
         return AVERROR(ENOMEM);
     s->nb_channels = outlink->ch_layout.nb_channels;
-    s->tc_samples = s->time_constant * outlink->sample_rate + .5;
+    s->tc_samples = lrint(s->time_constant * outlink->sample_rate);
 
     return 0;
 }
@@ -73,7 +73,7 @@ static void finish_block(ChannelStats *p)
     int peak_bin, rms_bin;
     float peak, rms;
 
-    rms = sqrt(2 * p->sum / p->nb_samples);
+    rms = sqrtf(2.f * p->sum / p->nb_samples);
     peak = p->peak;
     rms_bin = av_clip(lrintf(rms * BINS), 0, BINS);
     peak_bin = av_clip(lrintf(peak * BINS), 0, BINS);
@@ -88,36 +88,33 @@ static void finish_block(ChannelStats *p)
 
 static void update_stat(DRMeterContext *s, ChannelStats *p, float sample)
 {
-    if (p->nb_samples >= s->tc_samples) {
-        finish_block(p);
-    }
-
-    p->peak = FFMAX(FFABS(sample), p->peak);
+    p->peak = fmaxf(fabsf(sample), p->peak);
     p->sum += sample * sample;
     p->nb_samples++;
+    if (p->nb_samples >= s->tc_samples)
+        finish_block(p);
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 {
     DRMeterContext *s = inlink->dst->priv;
     const int channels = s->nb_channels;
-    int i, c;
 
     switch (inlink->format) {
     case AV_SAMPLE_FMT_FLTP:
-        for (c = 0; c < channels; c++) {
+        for (int c = 0; c < channels; c++) {
             ChannelStats *p = &s->chstats[c];
             const float *src = (const float *)buf->extended_data[c];
 
-            for (i = 0; i < buf->nb_samples; i++, src++)
+            for (int i = 0; i < buf->nb_samples; i++, src++)
                 update_stat(s, p, *src);
         }
         break;
     case AV_SAMPLE_FMT_FLT: {
         const float *src = (const float *)buf->extended_data[0];
 
-        for (i = 0; i < buf->nb_samples; i++) {
-            for (c = 0; c < channels; c++, src++)
+        for (int i = 0; i < buf->nb_samples; i++) {
+            for (int c = 0; c < channels; c++, src++)
                 update_stat(s, &s->chstats[c], *src);
         }}
         break;
@@ -131,39 +128,42 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 static void print_stats(AVFilterContext *ctx)
 {
     DRMeterContext *s = ctx->priv;
-    float dr = 0;
-    int ch;
+    float dr = 0.f;
 
-    for (ch = 0; ch < s->nb_channels; ch++) {
+    for (int ch = 0; ch < s->nb_channels; ch++) {
         ChannelStats *p = &s->chstats[ch];
-        float chdr, secondpeak, rmssum = 0;
-        int i, j, first = 0;
+        float chdr, secondpeak, rmssum = 0.f;
+        int first = 0, last = lrintf(0.2f * p->blknum);
+        int peak_bin = BINS;
 
         if (!p->nb_samples) {
             av_log(ctx, AV_LOG_INFO, "No data, dynamic range not meassurable\n");
             return;
         }
 
-        finish_block(p);
+        if (p->nb_samples)
+            finish_block(p);
 
-        for (i = 0; i <= BINS; i++) {
-            if (p->peaks[BINS - i]) {
-                if (first || p->peaks[BINS - i] > 1)
+        for (int i = BINS; i >= 0; i--) {
+            if (p->peaks[i]) {
+                if (first || p->peaks[i] > 1) {
+                    peak_bin = i;
                     break;
+                }
                 first = 1;
             }
         }
 
-        secondpeak = (BINS - i) / (double)BINS;
+        secondpeak = peak_bin / (float)BINS;
 
-        for (i = BINS, j = 0; i >= 0 && j < 0.2 * p->blknum; i--) {
+        for (int64_t i = BINS, j = 0; i >= 0 && j < last; i--) {
             if (p->rms[i]) {
-                rmssum += SQR(i / (double)BINS);
+                rmssum += SQR(i / (float)BINS) * p->rms[i];
                 j += p->rms[i];
             }
         }
 
-        chdr = 20 * log10(secondpeak / sqrt(rmssum / (0.2 * p->blknum)));
+        chdr = 20.f * log10f(secondpeak / sqrtf(rmssum / (float)last));
         dr += chdr;
         av_log(ctx, AV_LOG_INFO, "Channel %d: DR: %g\n", ch + 1, chdr);
     }
