@@ -805,7 +805,10 @@ Lines with similar content should be aligned vertically when doing so
 improves readability.
 
 @item
-Consider adding a regression test for your code.
+Consider adding a regression test for your code. All new modules
+should be covered by tests. That includes demuxers, muxers, decoders, encoders
+filters, bitstream filters, parsers. If its not possible to do that, add
+an explanation why to your patchset, its ok to not test if theres a reason.
 
 @item
 If you added YASM code please check that things still work with --disable-yasm.
