@@ -157,7 +157,6 @@ static int evc_read_header(AVFormatContext *s)
     sti->need_parsing = AVSTREAM_PARSE_HEADERS;
 
     st->avg_frame_rate = c->framerate;
-    st->codecpar->framerate = c->framerate;
 
     // taken from rawvideo demuxers
     avpriv_set_pts_info(st, 64, 1, 1200000);
