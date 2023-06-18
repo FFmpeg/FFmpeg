@@ -116,7 +116,7 @@ static int decode_dcac(AVCodecContext *avctx,
                 dc_run--;
             } else {
                 dc_v = get_se_golomb_vmix(dc_gb);
-                dc += dc_v;
+                dc += (unsigned)dc_v;
                 if (!dc_v)
                     dc_run = get_ue_golomb_long(dc_gb);
             }
@@ -129,12 +129,12 @@ static int decode_dcac(AVCodecContext *avctx,
 
                 ac_v = get_se_golomb_vmix(ac_gb);
                 i = scan[n];
-                block[i] = (ac_v * factors[i]) >> 4;
+                block[i] = ((unsigned)ac_v * factors[i]) >> 4;
                 if (!ac_v)
                     ac_run = get_ue_golomb_long(ac_gb);
             }
 
-            block[0] = ((dc + add) * 16) >> 4;
+            block[0] = dc + add;
             s->idsp.idct_put(dst + x, linesize, block);
         }
 
