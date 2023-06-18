@@ -229,6 +229,10 @@ int ff_evc_parse_sps(EVCParamSets *ps, const uint8_t *bs, int bs_size)
 
     if (!sps->sps_pocs_flag || !sps->sps_rpl_flag) {
         sps->log2_sub_gop_length = get_ue_golomb(&gb);
+        if (sps->log2_sub_gop_length > 5U) {
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
+        }
         if (sps->log2_sub_gop_length == 0)
             sps->log2_ref_pic_gap_length = get_ue_golomb(&gb);
     }
@@ -288,6 +292,9 @@ int ff_evc_parse_sps(EVCParamSets *ps, const uint8_t *bs, int bs_size)
     ps->sps[sps_seq_parameter_set_id] = sps;
 
     return 0;
+fail:
+    av_free(sps);
+    return ret;
 }
 
 // @see ISO_IEC_23094-1 (7.3.2.2 SPS RBSP syntax)
