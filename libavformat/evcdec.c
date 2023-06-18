@@ -35,14 +35,6 @@
 
 #define RAW_PACKET_SIZE 1024
 
-typedef struct EVCParserContext {
-    int got_sps;
-    int got_pps;
-    int got_idr;
-    int got_nonidr;
-
-} EVCParserContext;
-
 typedef struct EVCDemuxContext {
     const AVClass *class;
     AVRational framerate;
@@ -103,10 +95,11 @@ static uint32_t read_nal_unit_length(const uint8_t *bits, int bits_size)
     return nalu_len;
 }
 
-static int parse_nal_units(const AVProbeData *p, EVCParserContext *ev)
+static int annexb_probe(const AVProbeData *p)
 {
     int nalu_type;
     size_t nalu_size;
+    int got_sps = 0, got_pps = 0, got_idr = 0, got_nonidr = 0;
     unsigned char *bits = (unsigned char *)p->buf;
     int bytes_to_read = p->buf_size;
 
@@ -123,27 +116,19 @@ static int parse_nal_units(const AVProbeData *p, EVCParserContext *ev)
         nalu_type = get_nalu_type(bits, bytes_to_read);
 
         if (nalu_type == EVC_SPS_NUT)
-            ev->got_sps++;
+            got_sps++;
         else if (nalu_type == EVC_PPS_NUT)
-            ev->got_pps++;
+            got_pps++;
         else if (nalu_type == EVC_IDR_NUT )
-            ev->got_idr++;
+            got_idr++;
         else if (nalu_type == EVC_NOIDR_NUT)
-            ev->got_nonidr++;
+            got_nonidr++;
 
         bits += nalu_size;
         bytes_to_read -= nalu_size;
     }
 
-    return 0;
-}
-
-static int annexb_probe(const AVProbeData *p)
-{
-    EVCParserContext ev = {0};
-    int ret = parse_nal_units(p, &ev);
-
-    if (ret == 0 && ev.got_sps && ev.got_pps && (ev.got_idr || ev.got_nonidr > 3))
+    if (got_sps && got_pps && (got_idr || got_nonidr > 3))
         return AVPROBE_SCORE_EXTENSION + 1;  // 1 more than .mpg
 
     return 0;
