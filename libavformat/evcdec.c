@@ -182,7 +182,7 @@ static int evc_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret;
     int32_t nalu_size;
-    int au_end_found;
+    int au_end_found = 0;
 
     EVCDemuxContext *const c = s->priv_data;
 
@@ -191,8 +191,6 @@ static int evc_read_packet(AVFormatContext *s, AVPacket *pkt)
         av_packet_unref(pkt);
         return AVERROR_EOF;
     }
-
-    au_end_found = 0;
 
     while(!au_end_found) {
 
@@ -229,9 +227,8 @@ static int evc_read_packet(AVFormatContext *s, AVPacket *pkt)
             av_log(s, AV_LOG_ERROR, "evc_frame_merge filter failed to "
                    "send output packet\n");
 
-        au_end_found = 1;
-        if (ret == AVERROR(EAGAIN))
-            au_end_found = 0;
+        if (ret != AVERROR(EAGAIN))
+            au_end_found = 1;
     }
 
     return ret;
