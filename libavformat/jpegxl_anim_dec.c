@@ -112,7 +112,7 @@ static int jpegxl_collect_codestream_header(const uint8_t *input_buffer, int inp
 
 static int jpegxl_anim_probe(const AVProbeData *p)
 {
-    uint8_t buffer[4096];
+    uint8_t buffer[4096 + AV_INPUT_BUFFER_PADDING_SIZE];
     int copied;
 
     /* this is a raw codestream */
@@ -127,7 +127,7 @@ static int jpegxl_anim_probe(const AVProbeData *p)
     if (AV_RL64(p->buf) != FF_JPEGXL_CONTAINER_SIGNATURE_LE)
         return 0;
 
-    if (jpegxl_collect_codestream_header(p->buf, p->buf_size, buffer, sizeof(buffer), &copied) <= 0 || copied <= 0)
+    if (jpegxl_collect_codestream_header(p->buf, p->buf_size, buffer, sizeof(buffer) - AV_INPUT_BUFFER_PADDING_SIZE, &copied) <= 0 || copied <= 0)
         return 0;
 
     if (ff_jpegxl_verify_codestream_header(buffer, copied, 0) >= 1)
@@ -142,7 +142,8 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     AVStream *st;
     int offset = 0;
-    uint8_t head[256];
+    uint8_t head[256 + AV_INPUT_BUFFER_PADDING_SIZE];
+    const int sizeofhead = sizeof(head) - AV_INPUT_BUFFER_PADDING_SIZE;
     int headsize = 0;
     int ctrl;
     AVRational tb;
@@ -151,7 +152,7 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
     uint64_t sig16 = avio_rl16(pb);
     if (sig16 == FF_JPEGXL_CODESTREAM_SIGNATURE_LE) {
         AV_WL16(head, sig16);
-        headsize = avio_read(s->pb, head + 2, sizeof(head) - 2);
+        headsize = avio_read(s->pb, head + 2, sizeofhead - 2);
         if (headsize < 0)
             return headsize;
         headsize += 2;
@@ -182,10 +183,10 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
                 if (av_buffer_realloc(&ctx->initial, ctx->initial->size + read) < 0)
                     return AVERROR(ENOMEM);
             }
-            jpegxl_collect_codestream_header(buf, read, head + headsize, sizeof(head) - headsize, &copied);
+            jpegxl_collect_codestream_header(buf, read, head + headsize, sizeofhead - headsize, &copied);
             memcpy(ctx->initial->data + (ctx->initial->size - read), buf, read);
             headsize += copied;
-            if (headsize >= sizeof(head) || read < sizeof(buf))
+            if (headsize >= sizeofhead || read < sizeof(buf))
                 break;
         }
     }
