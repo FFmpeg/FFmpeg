@@ -148,7 +148,7 @@ static void print_stats(AVFilterContext *ctx)
 
         for (i = 0; i <= BINS; i++) {
             if (p->peaks[BINS - i]) {
-                if (first)
+                if (first || p->peaks[BINS - i] > 1)
                     break;
                 first = 1;
             }
