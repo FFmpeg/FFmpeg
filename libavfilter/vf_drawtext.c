@@ -177,6 +177,13 @@ enum y_alignment {
     YA_FONT,
 };
 
+enum text_alignment {
+    TA_LEFT   = (1 << 0),
+    TA_RIGHT  = (1 << 1),
+    TA_TOP    = (1 << 2),
+    TA_BOTTOM = (1 << 3),
+};
+
 typedef struct HarfbuzzData {
     hb_buffer_t* buf;
     hb_font_t* font;
@@ -315,7 +322,7 @@ typedef struct DrawTextContext {
 
     int boxw;                       ///< the value of the boxw parameter
     int boxh;                       ///< the value of the boxh parameter
-    uint8_t *text_align;            ///< the horizontal and vertical text alignment
+    int text_align;                 ///< the horizontal and vertical text alignment
     int y_align;                    ///< the value of the y_align parameter
 
     TextLine *lines;                ///< computed information about text lines
@@ -343,7 +350,19 @@ static const AVOption drawtext_options[]= {
     {"boxborderw",     "set box borders width", OFFSET(boxborderw),         AV_OPT_TYPE_STRING, {.str="0"},   0, 0, TFLAGS},
     {"line_spacing",   "set line spacing in pixels", OFFSET(line_spacing),  AV_OPT_TYPE_INT,    {.i64=0},     INT_MIN, INT_MAX, TFLAGS},
     {"fontsize",       "set font size",         OFFSET(fontsize_expr),      AV_OPT_TYPE_STRING, {.str=NULL},  0, 0, TFLAGS},
-    {"text_align",     "set text alignment",    OFFSET(text_align),         AV_OPT_TYPE_STRING, {.str="TL"},  0, 0, TFLAGS},
+    {"text_align",     "set text alignment",    OFFSET(text_align),         AV_OPT_TYPE_FLAGS,  {.i64=0}, 0, (TA_LEFT|TA_RIGHT|TA_TOP|TA_BOTTOM), TFLAGS, "text_align"},
+        { "left",    NULL, 0, AV_OPT_TYPE_CONST, { .i64 = TA_LEFT   }, .flags = TFLAGS, .unit = "text_align" },
+        { "L",       NULL, 0, AV_OPT_TYPE_CONST, { .i64 = TA_LEFT   }, .flags = TFLAGS, .unit = "text_align" },
+        { "right",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = TA_RIGHT  }, .flags = TFLAGS, .unit = "text_align" },
+        { "R",       NULL, 0, AV_OPT_TYPE_CONST, { .i64 = TA_RIGHT  }, .flags = TFLAGS, .unit = "text_align" },
+        { "center",  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = (TA_LEFT|TA_RIGHT) }, .flags = TFLAGS, .unit = "text_align" },
+        { "C",       NULL, 0, AV_OPT_TYPE_CONST, { .i64 = (TA_LEFT|TA_RIGHT) }, .flags = TFLAGS, .unit = "text_align" },
+        { "top",     NULL, 0, AV_OPT_TYPE_CONST, { .i64 = TA_TOP    }, .flags = TFLAGS, .unit = "text_align" },
+        { "T",       NULL, 0, AV_OPT_TYPE_CONST, { .i64 = TA_TOP    }, .flags = TFLAGS, .unit = "text_align" },
+        { "bottom",  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = TA_BOTTOM }, .flags = TFLAGS, .unit = "text_align" },
+        { "B",       NULL, 0, AV_OPT_TYPE_CONST, { .i64 = TA_BOTTOM }, .flags = TFLAGS, .unit = "text_align" },
+        { "middle",  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = (TA_TOP|TA_BOTTOM) }, .flags = TFLAGS, .unit = "text_align" },
+        { "M",       NULL, 0, AV_OPT_TYPE_CONST, { .i64 = (TA_TOP|TA_BOTTOM) }, .flags = TFLAGS, .unit = "text_align" },
     {"x",              "set x expression",      OFFSET(x_expr),             AV_OPT_TYPE_STRING, {.str="0"},   0, 0, TFLAGS},
     {"y",              "set y expression",      OFFSET(y_expr),             AV_OPT_TYPE_STRING, {.str="0"},   0, 0, TFLAGS},
     {"boxw",           "set box width",         OFFSET(boxw),               AV_OPT_TYPE_INT,    {.i64=0},     0, INT_MAX, TFLAGS},
@@ -866,19 +885,6 @@ static int string_to_array(const char *source, int *result, int result_size)
     return counter;
 }
 
-static int validate_text_align(char* text_align)
-{
-    int err = 0;
-    if (strlen(text_align) != 2
-        || strchr("LCRTMB", text_align[0]) == NULL || strchr("LCRTMB", text_align[1]) == NULL
-        || (strchr("TMB", text_align[0]) != NULL && strchr("LCR", text_align[1]) == NULL)
-        || (strchr("LCR", text_align[0]) != NULL && strchr("TMB", text_align[1]) == NULL)) {
-        err = AVERROR(EINVAL);
-    }
-
-    return err;
-}
-
 static av_cold int init(AVFilterContext *ctx)
 {
     int err;
@@ -942,14 +948,6 @@ static av_cold int init(AVFilterContext *ctx)
         av_log(ctx, AV_LOG_ERROR,
                "Either text, a valid file, a timecode or text source must be provided\n");
         return AVERROR(EINVAL);
-    }
-
-    if ((err = validate_text_align(s->text_align))) {
-        av_log(ctx, AV_LOG_ERROR,
-               "The value provided for parameter 'text_align' is not valid,\n");
-        av_log(ctx, AV_LOG_ERROR,
-               "please specify a two characters string containing only one letter for horizontal alignment ('LCR') and one for vertical alignment ('TMB')\n");
-        return err;
     }
 
 #if CONFIG_LIBFRIBIDI
@@ -1148,11 +1146,6 @@ static int command(AVFilterContext *ctx, const char *cmd, const char *arg, char 
                         FT_STROKER_LINEJOIN_ROUND, 0);
             // Dispose the old border glyphs
             av_tree_enumerate(old->glyphs, NULL, NULL, glyph_enu_border_free);
-        } else if (strcmp(cmd, "text_align") == 0) {
-            if (validate_text_align(old->text_align) != 0) {
-                av_log(ctx, AV_LOG_ERROR,
-                    "Invalid command value '%s' for 'text_align'\n", old->text_align);
-            }
         } else if (strcmp(cmd, "fontsize") == 0) {
             av_expr_free(old->fontsize_pexpr);
             old->fontsize_pexpr = NULL;
@@ -1561,22 +1554,22 @@ static int draw_glyphs(DrawTextContext *s, AVFrame *frame,
     Glyph dummy = { 0 }, *glyph;
     FT_Bitmap bitmap;
     FT_BitmapGlyph b_glyph;
-    uint8_t j_center = 0, j_right = 0, j_middle = 0, j_bottom = 0;
+    uint8_t j_left = 0, j_right = 0, j_top = 0, j_bottom = 0;
     int line_w, offset_y = 0;
     int clip_x = 0, clip_y = 0;
 
-    j_center = strstr(s->text_align, "C") > 0;
-    j_right = strstr(s->text_align, "R") > 0;
-    j_middle = strstr(s->text_align, "M") > 0;
-    j_bottom = strstr(s->text_align, "B") > 0;
+    j_left = !!(s->text_align & TA_LEFT);
+    j_right = !!(s->text_align & TA_RIGHT);
+    j_top = !!(s->text_align & TA_TOP);
+    j_bottom = !!(s->text_align & TA_BOTTOM);
 
-    if (j_middle) {
+    if (j_top && j_bottom) {
         offset_y = (s->box_height - metrics->height) / 2;
     } else if (j_bottom) {
         offset_y = s->box_height - metrics->height;
     }
 
-    if ((j_right || j_center) && !s->tab_warning_printed && s->tab_count > 0) {
+    if ((!j_left || j_right) && !s->tab_warning_printed && s->tab_count > 0) {
         s->tab_warning_printed = 1;
         av_log(s, AV_LOG_WARNING, "Tab characters are only supported with left horizontal alignment\n");
     }
@@ -1604,7 +1597,7 @@ static int draw_glyphs(DrawTextContext *s, AVFrame *frame,
             w1 = bitmap.width;
             h1 = bitmap.rows;
 
-            if (j_center) {
+            if (j_left && j_right) {
                 x1 += (s->box_width - line_w) / 2;
             } else if (j_right) {
                 x1 += s->box_width - line_w;
