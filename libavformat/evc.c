@@ -134,8 +134,8 @@ static int evcc_parse_sps(const uint8_t *bs, int bs_size, EVCDecoderConfiguratio
 
     sps.level_idc = get_bits(&gb, 8);
 
-    sps.toolset_idc_h = get_bits(&gb, 32);
-    sps.toolset_idc_l = get_bits(&gb, 32);
+    sps.toolset_idc_h = get_bits_long(&gb, 32);
+    sps.toolset_idc_l = get_bits_long(&gb, 32);
 
     // 0 - monochrome
     // 1 - 4:2:0
