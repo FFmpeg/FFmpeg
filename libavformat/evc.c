@@ -117,7 +117,6 @@ typedef struct NALUList {
 static int evcc_parse_sps(const uint8_t *bs, int bs_size, EVCDecoderConfigurationRecord *evcc)
 {
     GetBitContext gb;
-    int sps_seq_parameter_set_id;
     EVCSPS sps;
 
     bs += EVC_NALU_HEADER_SIZE;
@@ -128,7 +127,7 @@ static int evcc_parse_sps(const uint8_t *bs, int bs_size, EVCDecoderConfiguratio
 
     sps.sps_seq_parameter_set_id = get_ue_golomb_long(&gb);
 
-    if (sps_seq_parameter_set_id >= EVC_MAX_SPS_COUNT)
+    if (sps.sps_seq_parameter_set_id >= EVC_MAX_SPS_COUNT)
         return 0;
 
     // the Baseline profile is indicated by profile_idc eqal to 0
