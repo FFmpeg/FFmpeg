@@ -20,7 +20,7 @@ tests/data/fate/cbs-$(1)-discard-$2.$(4): ffmpeg$(PROGSSUF)$(EXESUF) $(5) | test
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/ffmpeg$(PROGSSUF)$(EXESUF) -nostdin \
 		-i $(3) -c:v copy -fflags +bitexact -an -bsf:v filter_units=discard=$(2) \
 	-f $(4) $(TARGET_PATH)/tests/data/fate/cbs-$(1)-discard-$(2).$(4) -y 2>/dev/null
-fate-cbs-$(1)-discard-$2: ffprobe tests/data/fate/cbs-$(1)-discard-$(2).$(4)
+fate-cbs-$(1)-discard-$2: ffprobe$(PROGSSUF)$(EXESUF) tests/data/fate/cbs-$(1)-discard-$(2).$(4)
 fate-cbs-$(1)-discard-$2: CMD = ffprobe_demux $(TARGET_PATH)/tests/data/fate/cbs-$(1)-discard-$(2).$(4)
 endef
 
