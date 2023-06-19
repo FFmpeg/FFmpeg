@@ -177,7 +177,7 @@ int ff_evc_parse_sps(EVCParamSets *ps, const uint8_t *bs, int bs_size)
     sps->bit_depth_luma_minus8 = get_ue_golomb(&gb);
     sps->bit_depth_chroma_minus8 = get_ue_golomb(&gb);
 
-    sps->sps_btt_flag = get_bits(&gb, 1);
+    sps->sps_btt_flag = get_bits1(&gb);
     if (sps->sps_btt_flag) {
         sps->log2_ctu_size_minus5 = get_ue_golomb(&gb);
         sps->log2_min_cb_size_minus2 = get_ue_golomb(&gb);
@@ -186,43 +186,43 @@ int ff_evc_parse_sps(EVCParamSets *ps, const uint8_t *bs, int bs_size)
         sps->log2_diff_min_cb_min_tt_cb_size_minus2 = get_ue_golomb(&gb);
     }
 
-    sps->sps_suco_flag = get_bits(&gb, 1);
+    sps->sps_suco_flag = get_bits1(&gb);
     if (sps->sps_suco_flag) {
         sps->log2_diff_ctu_size_max_suco_cb_size = get_ue_golomb(&gb);
         sps->log2_diff_max_suco_min_suco_cb_size = get_ue_golomb(&gb);
     }
 
-    sps->sps_admvp_flag = get_bits(&gb, 1);
+    sps->sps_admvp_flag = get_bits1(&gb);
     if (sps->sps_admvp_flag) {
-        sps->sps_affine_flag = get_bits(&gb, 1);
-        sps->sps_amvr_flag = get_bits(&gb, 1);
-        sps->sps_dmvr_flag = get_bits(&gb, 1);
-        sps->sps_mmvd_flag = get_bits(&gb, 1);
-        sps->sps_hmvp_flag = get_bits(&gb, 1);
+        sps->sps_affine_flag = get_bits1(&gb);
+        sps->sps_amvr_flag = get_bits1(&gb);
+        sps->sps_dmvr_flag = get_bits1(&gb);
+        sps->sps_mmvd_flag = get_bits1(&gb);
+        sps->sps_hmvp_flag = get_bits1(&gb);
     }
 
-    sps->sps_eipd_flag =  get_bits(&gb, 1);
+    sps->sps_eipd_flag =  get_bits1(&gb);
     if (sps->sps_eipd_flag) {
-        sps->sps_ibc_flag = get_bits(&gb, 1);
+        sps->sps_ibc_flag = get_bits1(&gb);
         if (sps->sps_ibc_flag)
             sps->log2_max_ibc_cand_size_minus2 = get_ue_golomb(&gb);
     }
 
-    sps->sps_cm_init_flag = get_bits(&gb, 1);
+    sps->sps_cm_init_flag = get_bits1(&gb);
     if (sps->sps_cm_init_flag)
-        sps->sps_adcc_flag = get_bits(&gb, 1);
+        sps->sps_adcc_flag = get_bits1(&gb);
 
-    sps->sps_iqt_flag = get_bits(&gb, 1);
+    sps->sps_iqt_flag = get_bits1(&gb);
     if (sps->sps_iqt_flag)
-        sps->sps_ats_flag = get_bits(&gb, 1);
+        sps->sps_ats_flag = get_bits1(&gb);
 
-    sps->sps_addb_flag = get_bits(&gb, 1);
-    sps->sps_alf_flag = get_bits(&gb, 1);
-    sps->sps_htdf_flag = get_bits(&gb, 1);
-    sps->sps_rpl_flag = get_bits(&gb, 1);
-    sps->sps_pocs_flag = get_bits(&gb, 1);
-    sps->sps_dquant_flag = get_bits(&gb, 1);
-    sps->sps_dra_flag = get_bits(&gb, 1);
+    sps->sps_addb_flag = get_bits1(&gb);
+    sps->sps_alf_flag = get_bits1(&gb);
+    sps->sps_htdf_flag = get_bits1(&gb);
+    sps->sps_rpl_flag = get_bits1(&gb);
+    sps->sps_pocs_flag = get_bits1(&gb);
+    sps->sps_dquant_flag = get_bits1(&gb);
+    sps->sps_dra_flag = get_bits1(&gb);
 
     if (sps->sps_pocs_flag) {
         sps->log2_max_pic_order_cnt_lsb_minus4 = get_ue_golomb(&gb);
@@ -246,8 +246,8 @@ int ff_evc_parse_sps(EVCParamSets *ps, const uint8_t *bs, int bs_size)
         sps->max_num_tid0_ref_pics = get_ue_golomb(&gb);
     else {
         sps->sps_max_dec_pic_buffering_minus1 = get_ue_golomb(&gb);
-        sps->long_term_ref_pic_flag = get_bits(&gb, 1);
-        sps->rpl1_same_as_rpl0_flag = get_bits(&gb, 1);
+        sps->long_term_ref_pic_flag = get_bits1(&gb);
+        sps->rpl1_same_as_rpl0_flag = get_bits1(&gb);
         sps->num_ref_pic_list_in_sps[0] = get_ue_golomb(&gb);
 
         for (int i = 0; i < sps->num_ref_pic_list_in_sps[0]; ++i)
@@ -260,7 +260,7 @@ int ff_evc_parse_sps(EVCParamSets *ps, const uint8_t *bs, int bs_size)
         }
     }
 
-    sps->picture_cropping_flag = get_bits(&gb, 1);
+    sps->picture_cropping_flag = get_bits1(&gb);
 
     if (sps->picture_cropping_flag) {
         sps->picture_crop_left_offset = get_ue_golomb(&gb);
@@ -270,11 +270,11 @@ int ff_evc_parse_sps(EVCParamSets *ps, const uint8_t *bs, int bs_size)
     }
 
     if (sps->chroma_format_idc != 0) {
-        sps->chroma_qp_table_struct.chroma_qp_table_present_flag = get_bits(&gb, 1);
+        sps->chroma_qp_table_struct.chroma_qp_table_present_flag = get_bits1(&gb);
 
         if (sps->chroma_qp_table_struct.chroma_qp_table_present_flag) {
-            sps->chroma_qp_table_struct.same_qp_table_for_chroma = get_bits(&gb, 1);
-            sps->chroma_qp_table_struct.global_offset_flag = get_bits(&gb, 1);
+            sps->chroma_qp_table_struct.same_qp_table_for_chroma = get_bits1(&gb);
+            sps->chroma_qp_table_struct.global_offset_flag = get_bits1(&gb);
             for (int i = 0; i < (sps->chroma_qp_table_struct.same_qp_table_for_chroma ? 1 : 2); i++) {
                 sps->chroma_qp_table_struct.num_points_in_qp_table_minus1[i] = get_ue_golomb(&gb);
                 if (sps->chroma_qp_table_struct.num_points_in_qp_table_minus1[i] >= EVC_MAX_QP_TABLE_SIZE) {
@@ -289,7 +289,7 @@ int ff_evc_parse_sps(EVCParamSets *ps, const uint8_t *bs, int bs_size)
         }
     }
 
-    sps->vui_parameters_present_flag = get_bits(&gb, 1);
+    sps->vui_parameters_present_flag = get_bits1(&gb);
     if (sps->vui_parameters_present_flag)
         vui_parameters(&gb, &(sps->vui_parameters));
 
@@ -345,8 +345,8 @@ int ff_evc_parse_pps(EVCParamSets *ps, const uint8_t *bs, int bs_size)
     pps->num_ref_idx_default_active_minus1[0] = get_ue_golomb(&gb);
     pps->num_ref_idx_default_active_minus1[1] = get_ue_golomb(&gb);
     pps->additional_lt_poc_lsb_len = get_ue_golomb(&gb);
-    pps->rpl1_idx_present_flag = get_bits(&gb, 1);
-    pps->single_tile_in_pic_flag = get_bits(&gb, 1);
+    pps->rpl1_idx_present_flag = get_bits1(&gb);
+    pps->single_tile_in_pic_flag = get_bits1(&gb);
 
     if (!pps->single_tile_in_pic_flag) {
         pps->num_tile_columns_minus1 = get_ue_golomb(&gb);
@@ -356,7 +356,7 @@ int ff_evc_parse_pps(EVCParamSets *ps, const uint8_t *bs, int bs_size)
             ret = AVERROR_INVALIDDATA;
             goto fail;
         }
-        pps->uniform_tile_spacing_flag = get_bits(&gb, 1);
+        pps->uniform_tile_spacing_flag = get_bits1(&gb);
 
         if (!pps->uniform_tile_spacing_flag) {
             for (int i = 0; i < pps->num_tile_columns_minus1; i++)
@@ -365,7 +365,7 @@ int ff_evc_parse_pps(EVCParamSets *ps, const uint8_t *bs, int bs_size)
             for (int i = 0; i < pps->num_tile_rows_minus1; i++)
                 pps->tile_row_height_minus1[i] = get_ue_golomb(&gb);
         }
-        pps->loop_filter_across_tiles_enabled_flag = get_bits(&gb, 1);
+        pps->loop_filter_across_tiles_enabled_flag = get_bits1(&gb);
         pps->tile_offset_len_minus1 = get_ue_golomb(&gb);
     }
 
@@ -374,7 +374,7 @@ int ff_evc_parse_pps(EVCParamSets *ps, const uint8_t *bs, int bs_size)
         ret = AVERROR_INVALIDDATA;
         goto fail;
     }
-    pps->explicit_tile_id_flag = get_bits(&gb, 1);
+    pps->explicit_tile_id_flag = get_bits1(&gb);
 
     if (pps->explicit_tile_id_flag) {
         for (int i = 0; i <= pps->num_tile_rows_minus1; i++) {
@@ -384,14 +384,14 @@ int ff_evc_parse_pps(EVCParamSets *ps, const uint8_t *bs, int bs_size)
     }
 
     pps->pic_dra_enabled_flag = 0;
-    pps->pic_dra_enabled_flag = get_bits(&gb, 1);
+    pps->pic_dra_enabled_flag = get_bits1(&gb);
 
     if (pps->pic_dra_enabled_flag)
         pps->pic_dra_aps_id = get_bits(&gb, 5);
 
-    pps->arbitrary_slice_present_flag = get_bits(&gb, 1);
-    pps->constrained_intra_pred_flag = get_bits(&gb, 1);
-    pps->cu_qp_delta_enabled_flag = get_bits(&gb, 1);
+    pps->arbitrary_slice_present_flag = get_bits1(&gb);
+    pps->constrained_intra_pred_flag = get_bits1(&gb);
+    pps->cu_qp_delta_enabled_flag = get_bits1(&gb);
 
     if (pps->cu_qp_delta_enabled_flag)
         pps->log2_cu_qp_delta_area_minus6 = get_ue_golomb(&gb);
