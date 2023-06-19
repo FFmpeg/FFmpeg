@@ -148,7 +148,7 @@ int main(void){
         av_sincos_sf(i*(1ULL<<32)/36/4, &s, &c);
         errs = (double)s/ (1<<30) - sin(i*M_PI/36);
         errc = (double)c/ (1<<30) - cos(i*M_PI/36);
-        if (fabs(errs) > 0.00000002 || fabs(errc) >0.001) {
+        if (fabs(errs) > 0.000000004 || fabs(errc) >0.000000004) {
             printf("sincos FAIL %d %f %f %f %f\n", i, (float)s/ (1<<30), (float)c/ (1<<30), sin(i*M_PI/36), cos(i*M_PI/36));
         }
 
