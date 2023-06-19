@@ -75,14 +75,14 @@ int ff_evc_parse_slice_header(EVCParserSliceHeader *sh, const EVCParamSets *ps,
     sh->slice_pic_parameter_set_id = slice_pic_parameter_set_id;
 
     if (!pps->single_tile_in_pic_flag) {
-        sh->single_tile_in_slice_flag = get_bits(&gb, 1);
+        sh->single_tile_in_slice_flag = get_bits1(&gb);
         sh->first_tile_id = get_bits(&gb, pps->tile_id_len_minus1 + 1);
     } else
         sh->single_tile_in_slice_flag = 1;
 
     if (!sh->single_tile_in_slice_flag) {
         if (pps->arbitrary_slice_present_flag)
-            sh->arbitrary_slice_flag = get_bits(&gb, 1);
+            sh->arbitrary_slice_flag = get_bits1(&gb);
 
         if (!sh->arbitrary_slice_flag)
             sh->last_tile_id = get_bits(&gb, pps->tile_id_len_minus1 + 1);
@@ -97,21 +97,21 @@ int ff_evc_parse_slice_header(EVCParserSliceHeader *sh, const EVCParamSets *ps,
     sh->slice_type = get_ue_golomb(&gb);
 
     if (nalu_type == EVC_IDR_NUT)
-        sh->no_output_of_prior_pics_flag = get_bits(&gb, 1);
+        sh->no_output_of_prior_pics_flag = get_bits1(&gb);
 
     if (sps->sps_mmvd_flag && ((sh->slice_type == EVC_SLICE_TYPE_B) || (sh->slice_type == EVC_SLICE_TYPE_P)))
-        sh->mmvd_group_enable_flag = get_bits(&gb, 1);
+        sh->mmvd_group_enable_flag = get_bits1(&gb);
     else
         sh->mmvd_group_enable_flag = 0;
 
     if (sps->sps_alf_flag) {
         int ChromaArrayType = sps->chroma_format_idc;
 
-        sh->slice_alf_enabled_flag = get_bits(&gb, 1);
+        sh->slice_alf_enabled_flag = get_bits1(&gb);
 
         if (sh->slice_alf_enabled_flag) {
             sh->slice_alf_luma_aps_id = get_bits(&gb, 5);
-            sh->slice_alf_map_flag = get_bits(&gb, 1);
+            sh->slice_alf_map_flag = get_bits1(&gb);
             sh->slice_alf_chroma_idc = get_bits(&gb, 2);
 
             if ((ChromaArrayType == 1 || ChromaArrayType == 2) && sh->slice_alf_chroma_idc > 0)
@@ -140,12 +140,12 @@ int ff_evc_parse_slice_header(EVCParserSliceHeader *sh, const EVCParamSets *ps,
 
             if (sliceChromaAlfEnabledFlag) {
                 sh->slice_alf_chroma_aps_id = get_bits(&gb, 5);
-                sh->slice_alf_chroma_map_flag = get_bits(&gb, 1);
+                sh->slice_alf_chroma_map_flag = get_bits1(&gb);
             }
 
             if (sliceChroma2AlfEnabledFlag) {
                 sh->slice_alf_chroma2_aps_id = get_bits(&gb, 5);
-                sh->slice_alf_chroma2_map_flag = get_bits(&gb, 1);
+                sh->slice_alf_chroma2_map_flag = get_bits1(&gb);
             }
         }
     }
