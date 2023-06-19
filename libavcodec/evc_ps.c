@@ -104,8 +104,8 @@ static int vui_parameters(GetBitContext *gb, VUIParameters *vui)
 
     vui->timing_info_present_flag = get_bits(gb, 1);
     if (vui->timing_info_present_flag) {
-        vui->num_units_in_tick = get_bits(gb, 32);
-        vui->time_scale = get_bits(gb, 32);
+        vui->num_units_in_tick = get_bits_long(gb, 32);
+        vui->time_scale = get_bits_long(gb, 32);
         vui->fixed_pic_rate_flag = get_bits(gb, 1);
     }
     vui->nal_hrd_parameters_present_flag = get_bits(gb, 1);
