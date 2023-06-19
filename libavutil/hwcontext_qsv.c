@@ -665,6 +665,7 @@ static mfxStatus frame_get_hdl(mfxHDL pthis, mfxMemId mid, mfxHDL *hdl)
 
 static int qsv_d3d11_update_config(void *ctx, mfxHDL handle, mfxConfig cfg)
 {
+    int ret = AVERROR_UNKNOWN;
 #if CONFIG_D3D11VA
     mfxStatus sts;
     IDXGIAdapter *pDXGIAdapter;
@@ -679,7 +680,8 @@ static int qsv_d3d11_update_config(void *ctx, mfxHDL handle, mfxConfig cfg)
         hr = IDXGIDevice_GetAdapter(pDXGIDevice, &pDXGIAdapter);
         if (FAILED(hr)) {
             av_log(ctx, AV_LOG_ERROR, "Error IDXGIDevice_GetAdapter %d\n", hr);
-            goto fail;
+            IDXGIDevice_Release(pDXGIDevice);
+            return ret;
         }
 
         hr = IDXGIAdapter_GetDesc(pDXGIAdapter, &adapterDesc);
@@ -689,7 +691,7 @@ static int qsv_d3d11_update_config(void *ctx, mfxHDL handle, mfxConfig cfg)
         }
     } else {
         av_log(ctx, AV_LOG_ERROR, "Error ID3D11Device_QueryInterface %d\n", hr);
-        goto fail;
+        return ret;
     }
 
     impl_value.Type = MFX_VARIANT_TYPE_U16;
@@ -722,11 +724,13 @@ static int qsv_d3d11_update_config(void *ctx, mfxHDL handle, mfxConfig cfg)
         goto fail;
     }
 
-    return 0;
+    ret = 0;
 
 fail:
+    IDXGIAdapter_Release(pDXGIAdapter);
+    IDXGIDevice_Release(pDXGIDevice);
 #endif
-    return AVERROR_UNKNOWN;
+    return ret;
 }
 
 static int qsv_d3d9_update_config(void *ctx, mfxHDL handle, mfxConfig cfg)
