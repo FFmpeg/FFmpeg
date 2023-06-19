@@ -123,7 +123,7 @@ static int evcc_parse_sps(const uint8_t *bs, int bs_size, EVCDecoderConfiguratio
     if (init_get_bits8(&gb, bs, bs_size) < 0)
         return 0;
 
-    sps.sps_seq_parameter_set_id = get_ue_golomb(&gb);
+    sps.sps_seq_parameter_set_id = get_ue_golomb_long(&gb);
 
     if (sps_seq_parameter_set_id >= EVC_MAX_SPS_COUNT)
         return 0;
@@ -141,13 +141,13 @@ static int evcc_parse_sps(const uint8_t *bs, int bs_size, EVCDecoderConfiguratio
     // 1 - 4:2:0
     // 2 - 4:2:2
     // 3 - 4:4:4
-    sps.chroma_format_idc = get_ue_golomb(&gb);
+    sps.chroma_format_idc = get_ue_golomb_long(&gb);
 
-    sps.pic_width_in_luma_samples = get_ue_golomb(&gb);
-    sps.pic_height_in_luma_samples = get_ue_golomb(&gb);
+    sps.pic_width_in_luma_samples = get_ue_golomb_long(&gb);
+    sps.pic_height_in_luma_samples = get_ue_golomb_long(&gb);
 
-    sps.bit_depth_luma_minus8 = get_ue_golomb(&gb);
-    sps.bit_depth_chroma_minus8 = get_ue_golomb(&gb);
+    sps.bit_depth_luma_minus8 = get_ue_golomb_long(&gb);
+    sps.bit_depth_chroma_minus8 = get_ue_golomb_long(&gb);
 
     evcc->profile_idc = sps.profile_idc;
     evcc->level_idc = sps.level_idc;
