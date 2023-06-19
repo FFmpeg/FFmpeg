@@ -756,25 +756,28 @@ static int qsv_d3d9_update_config(void *ctx, mfxHDL handle, mfxConfig cfg)
     hr = IDirect3DDeviceManager9_LockDevice(devmgr, device_handle, &device, TRUE);
     if (FAILED(hr)) {
         av_log(ctx, AV_LOG_ERROR, "Error LockDevice %d\n", hr);
+        IDirect3DDeviceManager9_CloseDeviceHandle(devmgr, device_handle);
         goto fail;
     }
 
     hr = IDirect3DDevice9Ex_GetCreationParameters(device, &params);
     if (FAILED(hr)) {
         av_log(ctx, AV_LOG_ERROR, "Error IDirect3DDevice9_GetCreationParameters %d\n", hr);
+        IDirect3DDevice9Ex_Release(device);
         goto unlock;
     }
 
     hr = IDirect3DDevice9Ex_GetDirect3D(device, &d3d9ex);
     if (FAILED(hr)) {
         av_log(ctx, AV_LOG_ERROR, "Error IDirect3DDevice9Ex_GetAdapterLUID %d\n", hr);
+        IDirect3DDevice9Ex_Release(device);
         goto unlock;
     }
 
     hr = IDirect3D9Ex_GetAdapterLUID(d3d9ex, params.AdapterOrdinal, &luid);
     if (FAILED(hr)) {
         av_log(ctx, AV_LOG_ERROR, "Error IDirect3DDevice9Ex_GetAdapterLUID %d\n", hr);
-        goto unlock;
+        goto release;
     }
 
     impl_value.Type = MFX_VARIANT_TYPE_PTR;
@@ -784,13 +787,18 @@ static int qsv_d3d9_update_config(void *ctx, mfxHDL handle, mfxConfig cfg)
     if (sts != MFX_ERR_NONE) {
         av_log(ctx, AV_LOG_ERROR, "Error adding a MFX configuration"
                "DeviceLUID property: %d.\n", sts);
-        goto unlock;
+        goto release;
     }
 
     ret = 0;
 
+release:
+    IDirect3D9Ex_Release(d3d9ex);
+    IDirect3DDevice9Ex_Release(device);
+
 unlock:
     IDirect3DDeviceManager9_UnlockDevice(devmgr, device_handle, FALSE);
+    IDirect3DDeviceManager9_CloseDeviceHandle(devmgr, device_handle);
 fail:
 #endif
     return ret;
