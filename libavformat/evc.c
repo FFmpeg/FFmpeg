@@ -120,6 +120,9 @@ static int evcc_parse_sps(const uint8_t *bs, int bs_size, EVCDecoderConfiguratio
     int sps_seq_parameter_set_id;
     EVCSPS sps;
 
+    bs += EVC_NALU_HEADER_SIZE;
+    bs_size -= EVC_NALU_HEADER_SIZE;
+
     if (init_get_bits8(&gb, bs, bs_size) < 0)
         return 0;
 
@@ -368,6 +371,10 @@ int ff_isom_write_evcc(AVIOContext *pb, const uint8_t *data,
         if (bytes_to_read < nalu_size) break;
 
         nalu_type = evc_get_nalu_type(data, bytes_to_read, pb);
+        if (nalu_type < EVC_NOIDR_NUT || nalu_type > EVC_UNSPEC_NUT62) {
+            ret = AVERROR_INVALIDDATA;
+            goto end;
+        }
 
         // @see ISO/IEC 14496-15:2021 Coding of audio-visual objects - Part 15: section 12.3.3.3
         // NAL_unit_type indicates the type of the NAL units in the following array (which shall be all of that type);
