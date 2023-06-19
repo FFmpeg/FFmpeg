@@ -281,7 +281,7 @@ static av_unused void av_sincos_sf(int a, int *s, int *c)
                 (int64_t)av_sintbl_4_sf[(idx & 0x1f) + 1] * (a & 0x7ff) +
                 0x400) >> 11);
 
-    *c = (int)(((int64_t)cv * ct + (int64_t)sv * st + 0x20000000) >> 30);
+    *c = (int)(((int64_t)cv * ct - (int64_t)sv * st + 0x20000000) >> 30);
 
     *s = (int)(((int64_t)cv * st + (int64_t)sv * ct + 0x20000000) >> 30);
 }
