@@ -34,7 +34,7 @@ typedef struct AccessUnitBuffer {
 } AccessUnitBuffer;
 
 typedef struct EVCFMergeContext {
-    AVPacket *in;
+    AVPacket *in, *buffer_pkt;
     EVCParamSets ps;
     EVCParserPoc poc;
     AccessUnitBuffer au_buffer;
@@ -67,6 +67,7 @@ static void evc_frame_merge_flush(AVBSFContext *bsf)
 
     ff_evc_ps_free(&ctx->ps);
     av_packet_unref(ctx->in);
+    av_packet_unref(ctx->buffer_pkt);
     ctx->au_buffer.data_size = 0;
 }
 
@@ -146,7 +147,7 @@ static int parse_nal_unit(AVBSFContext *bsf, const uint8_t *buf, int buf_size)
 static int evc_frame_merge_filter(AVBSFContext *bsf, AVPacket *out)
 {
     EVCFMergeContext *ctx = bsf->priv_data;
-    AVPacket *in = ctx->in;
+    AVPacket *in = ctx->in, *buffer_pkt = ctx->buffer_pkt;
     size_t data_size;
     int au_end_found = 0, err;
 
@@ -161,6 +162,16 @@ static int evc_frame_merge_filter(AVBSFContext *bsf, AVPacket *out)
                 if (err == AVERROR_EOF && ctx->au_buffer.data_size > 0)
                     break;
                 return err;
+            }
+            /* Buffer packets with timestamps (there should be at most one per AU)
+             * or any packet if buffer_pkt is empty. The latter is needed to
+             * passthrough positions in case there are no timestamps like with
+             * the raw EVC demuxer. */
+            if (!buffer_pkt->data ||
+                in->pts != AV_NOPTS_VALUE && buffer_pkt->pts == AV_NOPTS_VALUE) {
+                err = av_packet_ref(buffer_pkt, in);
+                if (err < 0)
+                    goto end;
             }
         }
 
@@ -212,13 +223,18 @@ static int evc_frame_merge_filter(AVBSFContext *bsf, AVPacket *out)
     err = av_new_packet(out, data_size);
     if (err < 0)
         goto end;
+    err = av_packet_copy_props(out, buffer_pkt);
+    if (err < 0)
+        goto end;
 
+    av_packet_unref(buffer_pkt);
     memcpy(out->data, ctx->au_buffer.data, data_size);
 
     err = 0;
 end:
     if (err < 0) {
         av_packet_unref(in);
+        av_packet_unref(buffer_pkt);
         ctx->au_buffer.data_size = 0;
     }
     return err;
@@ -229,7 +245,8 @@ static int evc_frame_merge_init(AVBSFContext *bsf)
     EVCFMergeContext *ctx = bsf->priv_data;
 
     ctx->in  = av_packet_alloc();
-    if (!ctx->in)
+    ctx->buffer_pkt = av_packet_alloc();
+    if (!ctx->in || !ctx->buffer_pkt)
         return AVERROR(ENOMEM);
 
     return 0;
@@ -240,6 +257,7 @@ static void evc_frame_merge_close(AVBSFContext *bsf)
     EVCFMergeContext *ctx = bsf->priv_data;
 
     av_packet_free(&ctx->in);
+    av_packet_free(&ctx->buffer_pkt);
     ff_evc_ps_free(&ctx->ps);
 
     ctx->au_buffer.capacity = 0;
