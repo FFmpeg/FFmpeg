@@ -48,6 +48,7 @@
 #include "decode.h"
 #include "hwconfig.h"
 #include "internal.h"
+#include "packet_internal.h"
 #include "thread.h"
 
 typedef struct DecodeContext {
@@ -200,13 +201,10 @@ fail:
     return ret;
 }
 
-int ff_decode_get_packet(AVCodecContext *avctx, AVPacket *pkt)
+static int decode_get_packet(AVCodecContext *avctx, AVPacket *pkt)
 {
     AVCodecInternal *avci = avctx->internal;
     int ret;
-
-    if (avci->draining)
-        return AVERROR_EOF;
 
     ret = av_bsf_receive_packet(avci->bsf, pkt);
     if (ret == AVERROR_EOF)
@@ -228,6 +226,31 @@ int ff_decode_get_packet(AVCodecContext *avctx, AVPacket *pkt)
 finish:
     av_packet_unref(pkt);
     return ret;
+}
+
+int ff_decode_get_packet(AVCodecContext *avctx, AVPacket *pkt)
+{
+    AVCodecInternal *avci = avctx->internal;
+    DecodeContext     *dc = decode_ctx(avci);
+
+    if (avci->draining)
+        return AVERROR_EOF;
+
+    while (1) {
+        int ret = decode_get_packet(avctx, pkt);
+        if (ret == AVERROR(EAGAIN) &&
+            (!AVPACKET_IS_EMPTY(avci->buffer_pkt) || dc->draining_started)) {
+            ret = av_bsf_send_packet(avci->bsf, avci->buffer_pkt);
+            if (ret < 0) {
+                av_packet_unref(avci->buffer_pkt);
+                return ret;
+            }
+
+            continue;
+        }
+
+        return ret;
+    }
 }
 
 /**
@@ -650,12 +673,6 @@ int attribute_align_arg avcodec_send_packet(AVCodecContext *avctx, const AVPacke
             return ret;
     } else
         dc->draining_started = 1;
-
-    ret = av_bsf_send_packet(avci->bsf, avci->buffer_pkt);
-    if (ret < 0) {
-        av_packet_unref(avci->buffer_pkt);
-        return ret;
-    }
 
     if (!avci->buffer_frame->buf[0]) {
         ret = decode_receive_frame_internal(avctx, avci->buffer_frame);
