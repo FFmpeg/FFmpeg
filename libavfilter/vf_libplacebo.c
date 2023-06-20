@@ -775,10 +775,14 @@ static void update_crops(AVFilterContext *ctx, LibplaceboInput *in,
             av_expr_eval(s->crop_w_pexpr, s->var_values, NULL);
         s->var_values[VAR_CROP_H] = s->var_values[VAR_CH] =
             av_expr_eval(s->crop_h_pexpr, s->var_values, NULL);
+        s->var_values[VAR_CROP_W] = s->var_values[VAR_CW] =
+            av_expr_eval(s->crop_w_pexpr, s->var_values, NULL);
         s->var_values[VAR_POS_W]  = s->var_values[VAR_PW] =
             av_expr_eval(s->pos_w_pexpr, s->var_values, NULL);
         s->var_values[VAR_POS_H]  = s->var_values[VAR_PH] =
             av_expr_eval(s->pos_h_pexpr, s->var_values, NULL);
+        s->var_values[VAR_POS_W]  = s->var_values[VAR_PW] =
+            av_expr_eval(s->pos_w_pexpr, s->var_values, NULL);
 
         image->crop.x0 = av_expr_eval(s->crop_x_pexpr, s->var_values, NULL);
         image->crop.y0 = av_expr_eval(s->crop_y_pexpr, s->var_values, NULL);
