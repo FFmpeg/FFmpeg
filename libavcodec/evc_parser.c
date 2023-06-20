@@ -116,7 +116,11 @@ static int parse_nal_unit(AVCodecParserContext *s, AVCodecContext *avctx,
         EVCParserSliceHeader sh;
         int bit_depth;
 
-        ret = ff_evc_parse_slice_header(&sh, &ctx->ps, nalu_type, buf, buf_size);
+        ret = init_get_bits8(&gb, buf, buf_size);
+        if (ret < 0)
+            return ret;
+
+        ret = ff_evc_parse_slice_header(&gb, &sh, &ctx->ps, nalu_type);
         if (ret < 0) {
             av_log(avctx, AV_LOG_ERROR, "Slice header parsing error\n");
             return ret;

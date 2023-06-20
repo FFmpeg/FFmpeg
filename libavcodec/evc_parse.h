@@ -117,8 +117,8 @@ static inline uint32_t evc_read_nal_unit_length(const uint8_t *bits, int bits_si
 // nuh_temporal_id specifies a temporal identifier for the NAL unit
 int ff_evc_get_temporal_id(const uint8_t *bits, int bits_size, void *logctx);
 
-int ff_evc_parse_slice_header(EVCParserSliceHeader *sh, const EVCParamSets *ps,
-                              enum EVCNALUnitType nalu_type, const uint8_t *buf, int buf_size);
+int ff_evc_parse_slice_header(GetBitContext *gb, EVCParserSliceHeader *sh,
+                              const EVCParamSets *ps, enum EVCNALUnitType nalu_type);
 
 // POC (picture order count of the current picture) derivation
 // @see ISO/IEC 23094-1:2020(E) 8.3.1 Decoding process for picture order count

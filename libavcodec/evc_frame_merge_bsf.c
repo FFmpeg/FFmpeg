@@ -145,7 +145,11 @@ static int evc_frame_merge_filter(AVBSFContext *bsf, AVPacket *out)
     case EVC_NOIDR_NUT: {
         EVCParserSliceHeader sh;
 
-        err = ff_evc_parse_slice_header(&sh, &ctx->ps, nalu_type, nalu, nalu_size);
+        err = init_get_bits8(&gb, nalu, nalu_size);
+        if (err < 0)
+            return err;
+
+        err = ff_evc_parse_slice_header(&gb, &sh, &ctx->ps, nalu_type);
         if (err < 0) {
             av_log(bsf, AV_LOG_ERROR, "Slice header parsing error\n");
             goto end;

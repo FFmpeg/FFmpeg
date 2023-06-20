@@ -44,21 +44,15 @@ int ff_evc_get_temporal_id(const uint8_t *bits, int bits_size, void *logctx)
 }
 
 // @see ISO_IEC_23094-1 (7.3.2.6 Slice layer RBSP syntax)
-int ff_evc_parse_slice_header(EVCParserSliceHeader *sh, const EVCParamSets *ps,
-                              enum EVCNALUnitType nalu_type, const uint8_t *bs, int bs_size)
+int ff_evc_parse_slice_header(GetBitContext *gb, EVCParserSliceHeader *sh,
+                              const EVCParamSets *ps, enum EVCNALUnitType nalu_type)
 {
-    GetBitContext gb;
     const EVCParserPPS *pps;
     const EVCParserSPS *sps;
-
     int num_tiles_in_slice = 0;
     int slice_pic_parameter_set_id;
-    int ret;
 
-    if ((ret = init_get_bits8(&gb, bs, bs_size)) < 0)
-        return ret;
-
-    slice_pic_parameter_set_id = get_ue_golomb(&gb);
+    slice_pic_parameter_set_id = get_ue_golomb(gb);
 
     if (slice_pic_parameter_set_id < 0 || slice_pic_parameter_set_id >= EVC_MAX_PPS_COUNT)
         return AVERROR_INVALIDDATA;
@@ -75,47 +69,47 @@ int ff_evc_parse_slice_header(EVCParserSliceHeader *sh, const EVCParamSets *ps,
     sh->slice_pic_parameter_set_id = slice_pic_parameter_set_id;
 
     if (!pps->single_tile_in_pic_flag) {
-        sh->single_tile_in_slice_flag = get_bits1(&gb);
-        sh->first_tile_id = get_bits(&gb, pps->tile_id_len_minus1 + 1);
+        sh->single_tile_in_slice_flag = get_bits1(gb);
+        sh->first_tile_id = get_bits(gb, pps->tile_id_len_minus1 + 1);
     } else
         sh->single_tile_in_slice_flag = 1;
 
     if (!sh->single_tile_in_slice_flag) {
         if (pps->arbitrary_slice_present_flag)
-            sh->arbitrary_slice_flag = get_bits1(&gb);
+            sh->arbitrary_slice_flag = get_bits1(gb);
 
         if (!sh->arbitrary_slice_flag)
-            sh->last_tile_id = get_bits(&gb, pps->tile_id_len_minus1 + 1);
+            sh->last_tile_id = get_bits(gb, pps->tile_id_len_minus1 + 1);
         else {
-            sh->num_remaining_tiles_in_slice_minus1 = get_ue_golomb(&gb);
+            sh->num_remaining_tiles_in_slice_minus1 = get_ue_golomb(gb);
             num_tiles_in_slice = sh->num_remaining_tiles_in_slice_minus1 + 2;
             for (int i = 0; i < num_tiles_in_slice - 1; ++i)
-                sh->delta_tile_id_minus1[i] = get_ue_golomb(&gb);
+                sh->delta_tile_id_minus1[i] = get_ue_golomb(gb);
         }
     }
 
-    sh->slice_type = get_ue_golomb(&gb);
+    sh->slice_type = get_ue_golomb(gb);
 
     if (nalu_type == EVC_IDR_NUT)
-        sh->no_output_of_prior_pics_flag = get_bits1(&gb);
+        sh->no_output_of_prior_pics_flag = get_bits1(gb);
 
     if (sps->sps_mmvd_flag && ((sh->slice_type == EVC_SLICE_TYPE_B) || (sh->slice_type == EVC_SLICE_TYPE_P)))
-        sh->mmvd_group_enable_flag = get_bits1(&gb);
+        sh->mmvd_group_enable_flag = get_bits1(gb);
     else
         sh->mmvd_group_enable_flag = 0;
 
     if (sps->sps_alf_flag) {
         int ChromaArrayType = sps->chroma_format_idc;
 
-        sh->slice_alf_enabled_flag = get_bits1(&gb);
+        sh->slice_alf_enabled_flag = get_bits1(gb);
 
         if (sh->slice_alf_enabled_flag) {
-            sh->slice_alf_luma_aps_id = get_bits(&gb, 5);
-            sh->slice_alf_map_flag = get_bits1(&gb);
-            sh->slice_alf_chroma_idc = get_bits(&gb, 2);
+            sh->slice_alf_luma_aps_id = get_bits(gb, 5);
+            sh->slice_alf_map_flag = get_bits1(gb);
+            sh->slice_alf_chroma_idc = get_bits(gb, 2);
 
             if ((ChromaArrayType == 1 || ChromaArrayType == 2) && sh->slice_alf_chroma_idc > 0)
-                sh->slice_alf_chroma_aps_id =  get_bits(&gb, 5);
+                sh->slice_alf_chroma_aps_id =  get_bits(gb, 5);
         }
         if (ChromaArrayType == 3) {
             int sliceChromaAlfEnabledFlag = 0;
@@ -136,23 +130,23 @@ int ff_evc_parse_slice_header(EVCParserSliceHeader *sh, const EVCParamSets *ps,
             }
 
             if (!sh->slice_alf_enabled_flag)
-                sh->slice_alf_chroma_idc = get_bits(&gb, 2);
+                sh->slice_alf_chroma_idc = get_bits(gb, 2);
 
             if (sliceChromaAlfEnabledFlag) {
-                sh->slice_alf_chroma_aps_id = get_bits(&gb, 5);
-                sh->slice_alf_chroma_map_flag = get_bits1(&gb);
+                sh->slice_alf_chroma_aps_id = get_bits(gb, 5);
+                sh->slice_alf_chroma_map_flag = get_bits1(gb);
             }
 
             if (sliceChroma2AlfEnabledFlag) {
-                sh->slice_alf_chroma2_aps_id = get_bits(&gb, 5);
-                sh->slice_alf_chroma2_map_flag = get_bits1(&gb);
+                sh->slice_alf_chroma2_aps_id = get_bits(gb, 5);
+                sh->slice_alf_chroma2_map_flag = get_bits1(gb);
             }
         }
     }
 
     if (nalu_type != EVC_IDR_NUT) {
         if (sps->sps_pocs_flag)
-            sh->slice_pic_order_cnt_lsb = get_bits(&gb, sps->log2_max_pic_order_cnt_lsb_minus4 + 4);
+            sh->slice_pic_order_cnt_lsb = get_bits(gb, sps->log2_max_pic_order_cnt_lsb_minus4 + 4);
     }
 
     // @note
