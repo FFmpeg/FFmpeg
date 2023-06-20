@@ -207,12 +207,12 @@ int ff_vk_decode_add_slice(AVCodecContext *avctx, FFVulkanDecodePicture *vp,
                       ctx->caps.minBitstreamBufferSizeAlignment;
     new_size = FFALIGN(new_size, ctx->caps.minBitstreamBufferSizeAlignment);
 
-    slice_off = av_fast_realloc(vp->slice_off, &vp->slice_off_max,
+    slice_off = av_fast_realloc(dec->slice_off, &dec->slice_off_max,
                                 (nb + 1)*sizeof(slice_off));
     if (!slice_off)
         return AVERROR(ENOMEM);
 
-    *offsets = vp->slice_off = slice_off;
+    *offsets = dec->slice_off = slice_off;
     slice_off[nb] = vp->slices_size;
 
     vkbuf = vp->slices_buf ? (FFVkVideoBuffer *)vp->slices_buf->data : NULL;
@@ -537,9 +537,6 @@ void ff_vk_decode_free_frame(AVHWDeviceContext *dev_ctx, FFVulkanDecodePicture *
 
     /* Free slices data */
     av_buffer_unref(&vp->slices_buf);
-
-    /* TODO: use a pool in the decode context instead to avoid per-frame allocs. */
-    av_freep(&vp->slice_off);
 
     /* Destroy image view (out) */
     if (vp->img_view_out && vp->img_view_out != vp->img_view_dest)
@@ -1035,6 +1032,7 @@ int ff_vk_decode_uninit(AVCodecContext *avctx)
     av_buffer_pool_uninit(&dec->tmp_pool);
     av_buffer_unref(&dec->session_params);
     av_buffer_unref(&dec->shared_ref);
+    av_freep(&dec->slice_off);
     return 0;
 }
 

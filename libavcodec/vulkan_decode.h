@@ -66,6 +66,9 @@ typedef struct FFVulkanDecodeContext {
     AVBufferPool *tmp_pool; /* Pool for temporary data, if needed (HEVC) */
     size_t tmp_pool_ele_size;
     int params_changed;
+
+    uint32_t                       *slice_off;
+    unsigned int                    slice_off_max;
 } FFVulkanDecodeContext;
 
 typedef struct FFVulkanDecodePicture {
@@ -94,8 +97,6 @@ typedef struct FFVulkanDecodePicture {
     /* Slice data */
     AVBufferRef                    *slices_buf;
     size_t                          slices_size;
-    uint32_t                       *slice_off;
-    unsigned int                    slice_off_max;
 } FFVulkanDecodePicture;
 
 /**

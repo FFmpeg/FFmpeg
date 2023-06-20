@@ -463,7 +463,6 @@ static int vk_h264_start_frame(AVCodecContext          *avctx,
     hp->h264_pic_info = (VkVideoDecodeH264PictureInfoKHR) {
         .sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PICTURE_INFO_KHR,
         .pStdPictureInfo = &hp->h264pic,
-        .sliceCount = 0,
     };
 
     vp->decode_info = (VkVideoDecodeInfoKHR) {

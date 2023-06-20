@@ -855,7 +855,6 @@ static int vk_hevc_start_frame(AVCodecContext          *avctx,
         .sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_PICTURE_INFO_KHR,
         .pStdPictureInfo = &hp->h265pic,
         .sliceSegmentCount = 0,
-        .pSliceSegmentOffsets = vp->slice_off,
     };
 
     vp->decode_info = (VkVideoDecodeInfoKHR) {
