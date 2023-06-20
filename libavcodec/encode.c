@@ -790,8 +790,8 @@ void ff_encode_flush_buffers(AVCodecContext *avctx)
 {
     AVCodecInternal *avci = avctx->internal;
 
-        if (avci->in_frame)
-            av_frame_unref(avci->in_frame);
-        if (avci->recon_frame)
-            av_frame_unref(avci->recon_frame);
+    if (avci->in_frame)
+        av_frame_unref(avci->in_frame);
+    if (avci->recon_frame)
+        av_frame_unref(avci->recon_frame);
 }
