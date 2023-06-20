@@ -150,7 +150,9 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     if (avctx->extradata_size < 0 || avctx->extradata_size >= FF_MAX_EXTRADATA_SIZE)
         return AVERROR(EINVAL);
 
-    avci = av_mallocz(sizeof(*avci));
+    avci = av_codec_is_decoder(codec) ?
+        ff_decode_internal_alloc()    :
+        av_mallocz(sizeof(AVCodecInternal));
     if (!avci) {
         ret = AVERROR(ENOMEM);
         goto end;

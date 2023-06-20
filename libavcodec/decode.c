@@ -50,6 +50,18 @@
 #include "internal.h"
 #include "thread.h"
 
+typedef struct DecodeContext {
+    AVCodecInternal avci;
+
+    /* to prevent infinite loop on errors when draining */
+    int nb_draining_errors;
+} DecodeContext;
+
+static DecodeContext *decode_ctx(AVCodecInternal *avci)
+{
+    return (DecodeContext *)avci;
+}
+
 static int apply_param_change(AVCodecContext *avctx, const AVPacket *avpkt)
 {
     int ret;
@@ -439,7 +451,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             int nb_errors_max = 20 + (HAVE_THREADS && avctx->active_thread_type & FF_THREAD_FRAME ?
                                 avctx->thread_count : 1);
 
-            if (avci->nb_draining_errors++ >= nb_errors_max) {
+            if (decode_ctx(avci)->nb_draining_errors++ >= nb_errors_max) {
                 av_log(avctx, AV_LOG_ERROR, "Too many errors when draining, this is a bug. "
                        "Stop draining and force EOF.\n");
                 avci->draining_done = 1;
@@ -1753,5 +1765,10 @@ void ff_decode_flush_buffers(AVCodecContext *avctx)
 
     av_bsf_flush(avci->bsf);
 
-    avci->nb_draining_errors = 0;
+    decode_ctx(avci)->nb_draining_errors = 0;
+}
+
+AVCodecInternal *ff_decode_internal_alloc(void)
+{
+    return av_mallocz(sizeof(DecodeContext));
 }

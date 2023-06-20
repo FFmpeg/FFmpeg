@@ -28,6 +28,7 @@
 #include <stdint.h>
 
 #include "avcodec.h"
+#include "avcodec_internal.h"
 #include "codec_internal.h"
 #include "decode.h"
 #include "hwconfig.h"
@@ -815,7 +816,7 @@ static av_cold int init_thread(PerThreadContext *p, int *threads_to_free,
     p->parent = fctx;
     p->avctx  = copy;
 
-    copy->internal = av_mallocz(sizeof(*copy->internal));
+    copy->internal = ff_decode_internal_alloc();
     if (!copy->internal)
         return AVERROR(ENOMEM);
     copy->internal->thread_ctx = p;
