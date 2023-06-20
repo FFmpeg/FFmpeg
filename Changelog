@@ -21,6 +21,7 @@ version <next>:
 - Essential Video Coding frame merge bsf
 - bwdif_cuda filter
 - Microsoft RLE video encoder
+- Raw AC-4 muxer and demuxer
 
 version 6.0:
 - Radiance HDR image support
