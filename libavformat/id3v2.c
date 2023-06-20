@@ -246,7 +246,7 @@ static int decode_str(AVFormatContext *s, AVIOContext *pb, int encoding,
     int ret;
     uint8_t tmp;
     uint32_t ch = 1;
-    int left = *maxread;
+    int left = *maxread, dynsize;
     unsigned int (*get)(AVIOContext*) = avio_rb16;
     AVIOContext *dynbuf;
 
@@ -308,7 +308,9 @@ static int decode_str(AVFormatContext *s, AVIOContext *pb, int encoding,
     if (ch)
         avio_w8(dynbuf, 0);
 
-    avio_close_dyn_buf(dynbuf, dst);
+    dynsize = avio_close_dyn_buf(dynbuf, dst);
+    if (dynsize <= 0)
+        return AVERROR(ENOMEM);
     *maxread = left;
 
     return 0;
