@@ -27,6 +27,7 @@
 #include <stdint.h>
 
 #include "evc.h"
+#include "get_bits.h"
 
 #define EVC_MAX_QP_TABLE_SIZE   58
 #define NUM_CPB                 32
@@ -218,10 +219,10 @@ typedef struct EVCParamSets {
 } EVCParamSets;
 
 // @see ISO_IEC_23094-1 (7.3.2.1 SPS RBSP syntax)
-int ff_evc_parse_sps(EVCParamSets *ps, const uint8_t *bs, int bs_size);
+int ff_evc_parse_sps(GetBitContext *gb, EVCParamSets *ps);
 
 // @see ISO_IEC_23094-1 (7.3.2.2 SPS RBSP syntax)
-int ff_evc_parse_pps(EVCParamSets *ps, const uint8_t *bs, int bs_size);
+int ff_evc_parse_pps(GetBitContext *gb, EVCParamSets *ps);
 
 void ff_evc_ps_free(EVCParamSets *ps);
 

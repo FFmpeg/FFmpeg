@@ -75,6 +75,7 @@ static int evc_frame_merge_filter(AVBSFContext *bsf, AVPacket *out)
     EVCFMergeContext *ctx = bsf->priv_data;
     AVPacket *in = ctx->in;
     uint8_t *buffer, *nalu = NULL;
+    GetBitContext gb;
     enum EVCNALUnitType nalu_type;
     int tid, nalu_size = 0;
     int au_end_found = 0;
@@ -121,14 +122,20 @@ static int evc_frame_merge_filter(AVBSFContext *bsf, AVPacket *out)
 
     switch (nalu_type) {
     case EVC_SPS_NUT:
-        err = ff_evc_parse_sps(&ctx->ps, nalu, nalu_size);
+        err = init_get_bits8(&gb, nalu, nalu_size);
+        if (err < 0)
+            return err;
+        err = ff_evc_parse_sps(&gb, &ctx->ps);
         if (err < 0) {
             av_log(bsf, AV_LOG_ERROR, "SPS parsing error\n");
             goto end;
         }
         break;
     case EVC_PPS_NUT:
-        err = ff_evc_parse_pps(&ctx->ps, nalu, nalu_size);
+        err = init_get_bits8(&gb, nalu, nalu_size);
+        if (err < 0)
+            return err;
+        err = ff_evc_parse_pps(&gb, &ctx->ps);
         if (err < 0) {
             av_log(bsf, AV_LOG_ERROR, "PPS parsing error\n");
             goto end;

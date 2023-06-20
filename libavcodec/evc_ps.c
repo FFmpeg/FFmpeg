@@ -132,18 +132,13 @@ static int vui_parameters(GetBitContext *gb, VUIParameters *vui)
 }
 
 // @see ISO_IEC_23094-1 (7.3.2.1 SPS RBSP syntax)
-int ff_evc_parse_sps(EVCParamSets *ps, const uint8_t *bs, int bs_size)
+int ff_evc_parse_sps(GetBitContext *gb, EVCParamSets *ps)
 {
-    GetBitContext gb;
     EVCParserSPS *sps;
     int sps_seq_parameter_set_id;
     int ret;
 
-    ret = init_get_bits8(&gb, bs, bs_size);
-    if (ret < 0)
-        return ret;
-
-    sps_seq_parameter_set_id = get_ue_golomb(&gb);
+    sps_seq_parameter_set_id = get_ue_golomb(gb);
 
     if (sps_seq_parameter_set_id >= EVC_MAX_SPS_COUNT)
         return AVERROR_INVALIDDATA;
@@ -158,74 +153,74 @@ int ff_evc_parse_sps(EVCParamSets *ps, const uint8_t *bs, int bs_size)
 
     // the Baseline profile is indicated by profile_idc eqal to 0
     // the Main profile is indicated by profile_idc eqal to 1
-    sps->profile_idc = get_bits(&gb, 8);
+    sps->profile_idc = get_bits(gb, 8);
 
-    sps->level_idc = get_bits(&gb, 8);
+    sps->level_idc = get_bits(gb, 8);
 
-    skip_bits_long(&gb, 32); /* skip toolset_idc_h */
-    skip_bits_long(&gb, 32); /* skip toolset_idc_l */
+    skip_bits_long(gb, 32); /* skip toolset_idc_h */
+    skip_bits_long(gb, 32); /* skip toolset_idc_l */
 
     // 0 - monochrome
     // 1 - 4:2:0
     // 2 - 4:2:2
     // 3 - 4:4:4
-    sps->chroma_format_idc = get_ue_golomb(&gb);
+    sps->chroma_format_idc = get_ue_golomb(gb);
 
-    sps->pic_width_in_luma_samples = get_ue_golomb(&gb);
-    sps->pic_height_in_luma_samples = get_ue_golomb(&gb);
+    sps->pic_width_in_luma_samples = get_ue_golomb(gb);
+    sps->pic_height_in_luma_samples = get_ue_golomb(gb);
 
-    sps->bit_depth_luma_minus8 = get_ue_golomb(&gb);
-    sps->bit_depth_chroma_minus8 = get_ue_golomb(&gb);
+    sps->bit_depth_luma_minus8 = get_ue_golomb(gb);
+    sps->bit_depth_chroma_minus8 = get_ue_golomb(gb);
 
-    sps->sps_btt_flag = get_bits1(&gb);
+    sps->sps_btt_flag = get_bits1(gb);
     if (sps->sps_btt_flag) {
-        sps->log2_ctu_size_minus5 = get_ue_golomb(&gb);
-        sps->log2_min_cb_size_minus2 = get_ue_golomb(&gb);
-        sps->log2_diff_ctu_max_14_cb_size = get_ue_golomb(&gb);
-        sps->log2_diff_ctu_max_tt_cb_size = get_ue_golomb(&gb);
-        sps->log2_diff_min_cb_min_tt_cb_size_minus2 = get_ue_golomb(&gb);
+        sps->log2_ctu_size_minus5 = get_ue_golomb(gb);
+        sps->log2_min_cb_size_minus2 = get_ue_golomb(gb);
+        sps->log2_diff_ctu_max_14_cb_size = get_ue_golomb(gb);
+        sps->log2_diff_ctu_max_tt_cb_size = get_ue_golomb(gb);
+        sps->log2_diff_min_cb_min_tt_cb_size_minus2 = get_ue_golomb(gb);
     }
 
-    sps->sps_suco_flag = get_bits1(&gb);
+    sps->sps_suco_flag = get_bits1(gb);
     if (sps->sps_suco_flag) {
-        sps->log2_diff_ctu_size_max_suco_cb_size = get_ue_golomb(&gb);
-        sps->log2_diff_max_suco_min_suco_cb_size = get_ue_golomb(&gb);
+        sps->log2_diff_ctu_size_max_suco_cb_size = get_ue_golomb(gb);
+        sps->log2_diff_max_suco_min_suco_cb_size = get_ue_golomb(gb);
     }
 
-    sps->sps_admvp_flag = get_bits1(&gb);
+    sps->sps_admvp_flag = get_bits1(gb);
     if (sps->sps_admvp_flag) {
-        sps->sps_affine_flag = get_bits1(&gb);
-        sps->sps_amvr_flag = get_bits1(&gb);
-        sps->sps_dmvr_flag = get_bits1(&gb);
-        sps->sps_mmvd_flag = get_bits1(&gb);
-        sps->sps_hmvp_flag = get_bits1(&gb);
+        sps->sps_affine_flag = get_bits1(gb);
+        sps->sps_amvr_flag = get_bits1(gb);
+        sps->sps_dmvr_flag = get_bits1(gb);
+        sps->sps_mmvd_flag = get_bits1(gb);
+        sps->sps_hmvp_flag = get_bits1(gb);
     }
 
-    sps->sps_eipd_flag =  get_bits1(&gb);
+    sps->sps_eipd_flag =  get_bits1(gb);
     if (sps->sps_eipd_flag) {
-        sps->sps_ibc_flag = get_bits1(&gb);
+        sps->sps_ibc_flag = get_bits1(gb);
         if (sps->sps_ibc_flag)
-            sps->log2_max_ibc_cand_size_minus2 = get_ue_golomb(&gb);
+            sps->log2_max_ibc_cand_size_minus2 = get_ue_golomb(gb);
     }
 
-    sps->sps_cm_init_flag = get_bits1(&gb);
+    sps->sps_cm_init_flag = get_bits1(gb);
     if (sps->sps_cm_init_flag)
-        sps->sps_adcc_flag = get_bits1(&gb);
+        sps->sps_adcc_flag = get_bits1(gb);
 
-    sps->sps_iqt_flag = get_bits1(&gb);
+    sps->sps_iqt_flag = get_bits1(gb);
     if (sps->sps_iqt_flag)
-        sps->sps_ats_flag = get_bits1(&gb);
+        sps->sps_ats_flag = get_bits1(gb);
 
-    sps->sps_addb_flag = get_bits1(&gb);
-    sps->sps_alf_flag = get_bits1(&gb);
-    sps->sps_htdf_flag = get_bits1(&gb);
-    sps->sps_rpl_flag = get_bits1(&gb);
-    sps->sps_pocs_flag = get_bits1(&gb);
-    sps->sps_dquant_flag = get_bits1(&gb);
-    sps->sps_dra_flag = get_bits1(&gb);
+    sps->sps_addb_flag = get_bits1(gb);
+    sps->sps_alf_flag = get_bits1(gb);
+    sps->sps_htdf_flag = get_bits1(gb);
+    sps->sps_rpl_flag = get_bits1(gb);
+    sps->sps_pocs_flag = get_bits1(gb);
+    sps->sps_dquant_flag = get_bits1(gb);
+    sps->sps_dra_flag = get_bits1(gb);
 
     if (sps->sps_pocs_flag) {
-        sps->log2_max_pic_order_cnt_lsb_minus4 = get_ue_golomb(&gb);
+        sps->log2_max_pic_order_cnt_lsb_minus4 = get_ue_golomb(gb);
         if (sps->log2_max_pic_order_cnt_lsb_minus4 > 12U) {
             ret = AVERROR_INVALIDDATA;
             goto fail;
@@ -233,65 +228,65 @@ int ff_evc_parse_sps(EVCParamSets *ps, const uint8_t *bs, int bs_size)
     }
 
     if (!sps->sps_pocs_flag || !sps->sps_rpl_flag) {
-        sps->log2_sub_gop_length = get_ue_golomb(&gb);
+        sps->log2_sub_gop_length = get_ue_golomb(gb);
         if (sps->log2_sub_gop_length > 5U) {
             ret = AVERROR_INVALIDDATA;
             goto fail;
         }
         if (sps->log2_sub_gop_length == 0)
-            sps->log2_ref_pic_gap_length = get_ue_golomb(&gb);
+            sps->log2_ref_pic_gap_length = get_ue_golomb(gb);
     }
 
     if (!sps->sps_rpl_flag)
-        sps->max_num_tid0_ref_pics = get_ue_golomb(&gb);
+        sps->max_num_tid0_ref_pics = get_ue_golomb(gb);
     else {
-        sps->sps_max_dec_pic_buffering_minus1 = get_ue_golomb(&gb);
-        sps->long_term_ref_pic_flag = get_bits1(&gb);
-        sps->rpl1_same_as_rpl0_flag = get_bits1(&gb);
-        sps->num_ref_pic_list_in_sps[0] = get_ue_golomb(&gb);
+        sps->sps_max_dec_pic_buffering_minus1 = get_ue_golomb(gb);
+        sps->long_term_ref_pic_flag = get_bits1(gb);
+        sps->rpl1_same_as_rpl0_flag = get_bits1(gb);
+        sps->num_ref_pic_list_in_sps[0] = get_ue_golomb(gb);
 
         for (int i = 0; i < sps->num_ref_pic_list_in_sps[0]; ++i)
-            ref_pic_list_struct(&gb, &sps->rpls[0][i]);
+            ref_pic_list_struct(gb, &sps->rpls[0][i]);
 
         if (!sps->rpl1_same_as_rpl0_flag) {
-            sps->num_ref_pic_list_in_sps[1] = get_ue_golomb(&gb);
+            sps->num_ref_pic_list_in_sps[1] = get_ue_golomb(gb);
             for (int i = 0; i < sps->num_ref_pic_list_in_sps[1]; ++i)
-                ref_pic_list_struct(&gb, &sps->rpls[1][i]);
+                ref_pic_list_struct(gb, &sps->rpls[1][i]);
         }
     }
 
-    sps->picture_cropping_flag = get_bits1(&gb);
+    sps->picture_cropping_flag = get_bits1(gb);
 
     if (sps->picture_cropping_flag) {
-        sps->picture_crop_left_offset = get_ue_golomb(&gb);
-        sps->picture_crop_right_offset = get_ue_golomb(&gb);
-        sps->picture_crop_top_offset = get_ue_golomb(&gb);
-        sps->picture_crop_bottom_offset = get_ue_golomb(&gb);
+        sps->picture_crop_left_offset = get_ue_golomb(gb);
+        sps->picture_crop_right_offset = get_ue_golomb(gb);
+        sps->picture_crop_top_offset = get_ue_golomb(gb);
+        sps->picture_crop_bottom_offset = get_ue_golomb(gb);
     }
 
     if (sps->chroma_format_idc != 0) {
-        sps->chroma_qp_table_struct.chroma_qp_table_present_flag = get_bits1(&gb);
+        sps->chroma_qp_table_struct.chroma_qp_table_present_flag = get_bits1(gb);
 
         if (sps->chroma_qp_table_struct.chroma_qp_table_present_flag) {
-            sps->chroma_qp_table_struct.same_qp_table_for_chroma = get_bits1(&gb);
-            sps->chroma_qp_table_struct.global_offset_flag = get_bits1(&gb);
+            sps->chroma_qp_table_struct.same_qp_table_for_chroma = get_bits1(gb);
+            sps->chroma_qp_table_struct.global_offset_flag = get_bits1(gb);
             for (int i = 0; i < (sps->chroma_qp_table_struct.same_qp_table_for_chroma ? 1 : 2); i++) {
-                sps->chroma_qp_table_struct.num_points_in_qp_table_minus1[i] = get_ue_golomb(&gb);
+                sps->chroma_qp_table_struct.num_points_in_qp_table_minus1[i] = get_ue_golomb(gb);
                 if (sps->chroma_qp_table_struct.num_points_in_qp_table_minus1[i] >= EVC_MAX_QP_TABLE_SIZE) {
                     ret = AVERROR_INVALIDDATA;
                     goto fail;
                 }
                 for (int j = 0; j <= sps->chroma_qp_table_struct.num_points_in_qp_table_minus1[i]; j++) {
-                    sps->chroma_qp_table_struct.delta_qp_in_val_minus1[i][j] = get_bits(&gb, 6);
-                    sps->chroma_qp_table_struct.delta_qp_out_val[i][j] = get_se_golomb(&gb);
+                    sps->chroma_qp_table_struct.delta_qp_in_val_minus1[i][j] = get_bits(gb, 6);
+                    sps->chroma_qp_table_struct.delta_qp_out_val[i][j] = get_se_golomb(gb);
                 }
             }
         }
     }
 
-    sps->vui_parameters_present_flag = get_bits1(&gb);
+    sps->vui_parameters_present_flag = get_bits1(gb);
     if (sps->vui_parameters_present_flag)
-        vui_parameters(&gb, &(sps->vui_parameters));
+        vui_parameters(gb, &(sps->vui_parameters));
 
     // @note
     // If necessary, add the missing fields to the EVCParserSPS structure
@@ -313,18 +308,13 @@ fail:
 // If it will be needed, parse_sps function could be extended to handle VUI parameters parsing
 // to initialize fields of the AVCodecContex i.e. color_primaries, color_trc,color_range
 //
-int ff_evc_parse_pps(EVCParamSets *ps, const uint8_t *bs, int bs_size)
+int ff_evc_parse_pps(GetBitContext *gb, EVCParamSets *ps)
 {
-    GetBitContext gb;
     EVCParserPPS *pps;
     int pps_pic_parameter_set_id;
     int ret;
 
-    ret = init_get_bits8(&gb, bs, bs_size);
-    if (ret < 0)
-        return ret;
-
-    pps_pic_parameter_set_id = get_ue_golomb(&gb);
+    pps_pic_parameter_set_id = get_ue_golomb(gb);
     if (pps_pic_parameter_set_id > EVC_MAX_PPS_COUNT)
         return AVERROR_INVALIDDATA;
 
@@ -336,65 +326,65 @@ int ff_evc_parse_pps(EVCParamSets *ps, const uint8_t *bs, int bs_size)
 
     pps->pps_pic_parameter_set_id = pps_pic_parameter_set_id;
 
-    pps->pps_seq_parameter_set_id = get_ue_golomb(&gb);
+    pps->pps_seq_parameter_set_id = get_ue_golomb(gb);
     if (pps->pps_seq_parameter_set_id >= EVC_MAX_SPS_COUNT) {
         ret = AVERROR_INVALIDDATA;
         goto fail;
     }
 
-    pps->num_ref_idx_default_active_minus1[0] = get_ue_golomb(&gb);
-    pps->num_ref_idx_default_active_minus1[1] = get_ue_golomb(&gb);
-    pps->additional_lt_poc_lsb_len = get_ue_golomb(&gb);
-    pps->rpl1_idx_present_flag = get_bits1(&gb);
-    pps->single_tile_in_pic_flag = get_bits1(&gb);
+    pps->num_ref_idx_default_active_minus1[0] = get_ue_golomb(gb);
+    pps->num_ref_idx_default_active_minus1[1] = get_ue_golomb(gb);
+    pps->additional_lt_poc_lsb_len = get_ue_golomb(gb);
+    pps->rpl1_idx_present_flag = get_bits1(gb);
+    pps->single_tile_in_pic_flag = get_bits1(gb);
 
     if (!pps->single_tile_in_pic_flag) {
-        pps->num_tile_columns_minus1 = get_ue_golomb(&gb);
-        pps->num_tile_rows_minus1 = get_ue_golomb(&gb);
+        pps->num_tile_columns_minus1 = get_ue_golomb(gb);
+        pps->num_tile_rows_minus1 = get_ue_golomb(gb);
         if (pps->num_tile_columns_minus1 >= EVC_MAX_TILE_COLUMNS ||
             pps->num_tile_rows_minus1 >= EVC_MAX_TILE_ROWS) {
             ret = AVERROR_INVALIDDATA;
             goto fail;
         }
-        pps->uniform_tile_spacing_flag = get_bits1(&gb);
+        pps->uniform_tile_spacing_flag = get_bits1(gb);
 
         if (!pps->uniform_tile_spacing_flag) {
             for (int i = 0; i < pps->num_tile_columns_minus1; i++)
-                pps->tile_column_width_minus1[i] = get_ue_golomb(&gb);
+                pps->tile_column_width_minus1[i] = get_ue_golomb(gb);
 
             for (int i = 0; i < pps->num_tile_rows_minus1; i++)
-                pps->tile_row_height_minus1[i] = get_ue_golomb(&gb);
+                pps->tile_row_height_minus1[i] = get_ue_golomb(gb);
         }
-        pps->loop_filter_across_tiles_enabled_flag = get_bits1(&gb);
-        pps->tile_offset_len_minus1 = get_ue_golomb(&gb);
+        pps->loop_filter_across_tiles_enabled_flag = get_bits1(gb);
+        pps->tile_offset_len_minus1 = get_ue_golomb(gb);
     }
 
-    pps->tile_id_len_minus1 = get_ue_golomb(&gb);
+    pps->tile_id_len_minus1 = get_ue_golomb(gb);
     if (pps->tile_id_len_minus1 > 15U) {
         ret = AVERROR_INVALIDDATA;
         goto fail;
     }
-    pps->explicit_tile_id_flag = get_bits1(&gb);
+    pps->explicit_tile_id_flag = get_bits1(gb);
 
     if (pps->explicit_tile_id_flag) {
         for (int i = 0; i <= pps->num_tile_rows_minus1; i++) {
             for (int j = 0; j <= pps->num_tile_columns_minus1; j++)
-                pps->tile_id_val[i][j] = get_bits(&gb, pps->tile_id_len_minus1 + 1);
+                pps->tile_id_val[i][j] = get_bits(gb, pps->tile_id_len_minus1 + 1);
         }
     }
 
     pps->pic_dra_enabled_flag = 0;
-    pps->pic_dra_enabled_flag = get_bits1(&gb);
+    pps->pic_dra_enabled_flag = get_bits1(gb);
 
     if (pps->pic_dra_enabled_flag)
-        pps->pic_dra_aps_id = get_bits(&gb, 5);
+        pps->pic_dra_aps_id = get_bits(gb, 5);
 
-    pps->arbitrary_slice_present_flag = get_bits1(&gb);
-    pps->constrained_intra_pred_flag = get_bits1(&gb);
-    pps->cu_qp_delta_enabled_flag = get_bits1(&gb);
+    pps->arbitrary_slice_present_flag = get_bits1(gb);
+    pps->constrained_intra_pred_flag = get_bits1(gb);
+    pps->cu_qp_delta_enabled_flag = get_bits1(gb);
 
     if (pps->cu_qp_delta_enabled_flag)
-        pps->log2_cu_qp_delta_area_minus6 = get_ue_golomb(&gb);
+        pps->log2_cu_qp_delta_area_minus6 = get_ue_golomb(gb);
 
     av_freep(&ps->pps[pps_pic_parameter_set_id]);
     ps->pps[pps_pic_parameter_set_id] = pps;

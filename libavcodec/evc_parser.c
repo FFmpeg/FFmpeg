@@ -62,6 +62,7 @@ static int parse_nal_unit(AVCodecParserContext *s, AVCodecContext *avctx,
                           const uint8_t *buf, int buf_size)
 {
     EVCParserContext *ctx = s->priv_data;
+    GetBitContext gb;
     int nalu_type, tid;
     int ret;
 
@@ -89,14 +90,20 @@ static int parse_nal_unit(AVCodecParserContext *s, AVCodecContext *avctx,
 
     switch (nalu_type) {
     case EVC_SPS_NUT:
-        ret = ff_evc_parse_sps(&ctx->ps, buf, buf_size);
+        ret = init_get_bits8(&gb, buf, buf_size);
+        if (ret < 0)
+            return ret;
+        ret = ff_evc_parse_sps(&gb, &ctx->ps);
         if (ret < 0) {
             av_log(avctx, AV_LOG_ERROR, "SPS parsing error\n");
             return ret;
         }
         break;
     case EVC_PPS_NUT:
-        ret = ff_evc_parse_pps(&ctx->ps, buf, buf_size);
+        ret = init_get_bits8(&gb, buf, buf_size);
+        if (ret < 0)
+            return ret;
+        ret = ff_evc_parse_pps(&gb, &ctx->ps);
         if (ret < 0) {
             av_log(avctx, AV_LOG_ERROR, "PPS parsing error\n");
             return ret;
