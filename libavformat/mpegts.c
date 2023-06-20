@@ -1305,7 +1305,7 @@ skip:
                     p += sl_header_bytes;
                     buf_size -= sl_header_bytes;
                 }
-                if (pes->stream_type == 0x15 && buf_size >= 5) {
+                if (pes->st->codecpar->codec_id == AV_CODEC_ID_SMPTE_KLV && buf_size >= 5) {
                     /* skip metadata access unit header */
                     pes->pes_header_size += 5;
                     p += 5;
