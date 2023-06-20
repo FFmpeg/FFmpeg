@@ -183,14 +183,13 @@ static int evc_read_packet(AVFormatContext *s, AVPacket *pkt)
     int ret;
     int32_t nalu_size;
     int au_end_found = 0;
-
     EVCDemuxContext *const c = s->priv_data;
-
-    if (avio_feof(s->pb))
-        return AVERROR_EOF;
 
     while(!au_end_found) {
         uint8_t buf[EVC_NALU_LENGTH_PREFIX_SIZE];
+
+        if (avio_feof(s->pb))
+            goto end;
 
         ret = ffio_ensure_seekback(s->pb, EVC_NALU_LENGTH_PREFIX_SIZE);
         if (ret < 0)
@@ -212,6 +211,7 @@ static int evc_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (ret != (nalu_size + EVC_NALU_LENGTH_PREFIX_SIZE))
             return AVERROR_INVALIDDATA;
 
+end:
         ret = av_bsf_send_packet(c->bsf, pkt);
         if (ret < 0) {
             av_log(s, AV_LOG_ERROR, "Failed to send packet to "
