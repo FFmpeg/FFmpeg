@@ -50,4 +50,7 @@ int ff_encode_preinit(struct AVCodecContext *avctx);
  */
 int ff_decode_preinit(struct AVCodecContext *avctx);
 
+void ff_decode_flush_buffers(struct AVCodecContext *avctx);
+void ff_encode_flush_buffers(struct AVCodecContext *avctx);
+
 #endif // AVCODEC_AVCODEC_INTERNAL_H

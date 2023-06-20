@@ -1740,3 +1740,18 @@ AVBufferRef *ff_hwaccel_frame_priv_alloc(AVCodecContext *avctx,
 
     return ref;
 }
+
+void ff_decode_flush_buffers(AVCodecContext *avctx)
+{
+    AVCodecInternal *avci = avctx->internal;
+
+        av_packet_unref(avci->last_pkt_props);
+        av_packet_unref(avci->in_pkt);
+
+        avctx->pts_correction_last_pts =
+        avctx->pts_correction_last_dts = INT64_MIN;
+
+        av_bsf_flush(avci->bsf);
+
+    avci->nb_draining_errors = 0;
+}

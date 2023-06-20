@@ -785,3 +785,13 @@ int ff_encode_receive_frame(AVCodecContext *avctx, AVFrame *frame)
     av_frame_move_ref(frame, avci->recon_frame);
     return 0;
 }
+
+void ff_encode_flush_buffers(AVCodecContext *avctx)
+{
+    AVCodecInternal *avci = avctx->internal;
+
+        if (avci->in_frame)
+            av_frame_unref(avci->in_frame);
+        if (avci->recon_frame)
+            av_frame_unref(avci->recon_frame);
+}

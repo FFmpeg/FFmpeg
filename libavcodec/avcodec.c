@@ -383,23 +383,12 @@ void avcodec_flush_buffers(AVCodecContext *avctx)
                    "that doesn't support it\n");
             return;
         }
-        if (avci->in_frame)
-            av_frame_unref(avci->in_frame);
-        if (avci->recon_frame)
-            av_frame_unref(avci->recon_frame);
-    } else {
-        av_packet_unref(avci->last_pkt_props);
-        av_packet_unref(avci->in_pkt);
-
-        avctx->pts_correction_last_pts =
-        avctx->pts_correction_last_dts = INT64_MIN;
-
-        av_bsf_flush(avci->bsf);
-    }
+        ff_encode_flush_buffers(avctx);
+    } else
+        ff_decode_flush_buffers(avctx);
 
     avci->draining      = 0;
     avci->draining_done = 0;
-    avci->nb_draining_errors = 0;
     av_frame_unref(avci->buffer_frame);
     av_packet_unref(avci->buffer_pkt);
 
