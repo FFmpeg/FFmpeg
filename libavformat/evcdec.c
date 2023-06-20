@@ -181,7 +181,7 @@ fail:
 static int evc_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret;
-    int32_t nalu_size;
+    uint32_t nalu_size;
     int au_end_found = 0;
     EVCDemuxContext *const c = s->priv_data;
 
@@ -200,7 +200,7 @@ static int evc_read_packet(AVFormatContext *s, AVPacket *pkt)
             return ret;
 
         nalu_size = read_nal_unit_length((const uint8_t *)&buf, EVC_NALU_LENGTH_PREFIX_SIZE);
-        if (nalu_size <= 0)
+        if (!nalu_size || nalu_size > INT_MAX)
             return AVERROR_INVALIDDATA;
 
         avio_seek(s->pb, -EVC_NALU_LENGTH_PREFIX_SIZE, SEEK_CUR);
