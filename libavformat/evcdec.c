@@ -30,6 +30,7 @@
 
 #include "rawdec.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 
 
@@ -192,8 +193,12 @@ static int evc_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     while(!au_end_found) {
-
         uint8_t buf[EVC_NALU_LENGTH_PREFIX_SIZE];
+
+        ret = ffio_ensure_seekback(s->pb, EVC_NALU_LENGTH_PREFIX_SIZE);
+        if (ret < 0)
+            return ret;
+
         ret = avio_read(s->pb, (unsigned char *)&buf, EVC_NALU_LENGTH_PREFIX_SIZE);
         if (ret < 0) {
             av_packet_unref(pkt);
