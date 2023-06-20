@@ -21,28 +21,6 @@
 #include "evc.h"
 #include "evc_parse.h"
 
-// nuh_temporal_id specifies a temporal identifier for the NAL unit
-int ff_evc_get_temporal_id(const uint8_t *bits, int bits_size, void *logctx)
-{
-    int temporal_id = 0;
-    uint16_t t = 0;
-
-    if (bits_size < EVC_NALU_HEADER_SIZE) {
-        av_log(logctx, AV_LOG_ERROR, "Can't read NAL unit header\n");
-        return 0;
-    }
-
-    // forbidden_zero_bit
-    if ((bits[0] & 0x80) != 0)
-        return -1;
-
-    t = AV_RB16(bits);
-
-    temporal_id = (t >> 6) & 0x0007;
-
-    return temporal_id;
-}
-
 // @see ISO_IEC_23094-1 (7.3.2.6 Slice layer RBSP syntax)
 int ff_evc_parse_slice_header(GetBitContext *gb, EVCParserSliceHeader *sh,
                               const EVCParamSets *ps, enum EVCNALUnitType nalu_type)
