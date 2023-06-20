@@ -24,9 +24,39 @@
 
 #include <stdint.h>
 #include "libavutil/rational.h"
+#include "libavcodec/evc.h"
 #include "avio.h"
 
+static inline int evc_get_nalu_type(const uint8_t *bits, int bits_size)
+{
+    int unit_type_plus1 = 0;
 
+    if (bits_size >= EVC_NALU_HEADER_SIZE) {
+        unsigned char *p = (unsigned char *)bits;
+        // forbidden_zero_bit
+        if ((p[0] & 0x80) != 0)   // Cannot get bitstream information. Malformed bitstream.
+            return -1;
+
+        // nal_unit_type
+        unit_type_plus1 = (p[0] >> 1) & 0x3F;
+    }
+
+    return unit_type_plus1 - 1;
+}
+
+static inline uint32_t evc_read_nal_unit_length(const uint8_t *bits, int bits_size)
+{
+    uint32_t nalu_len = 0;
+
+    if (bits_size >= EVC_NALU_LENGTH_PREFIX_SIZE) {
+        unsigned char *p = (unsigned char *)bits;
+
+        for (int i = 0; i < EVC_NALU_LENGTH_PREFIX_SIZE; i++)
+            nalu_len = (nalu_len << 8) | p[i];
+    }
+
+    return nalu_len;
+}
 
 /**
  * Writes EVC sample metadata to the provided AVIOContext.

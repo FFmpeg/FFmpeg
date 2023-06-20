@@ -23,7 +23,6 @@
 #include "libavcodec/get_bits.h"
 #include "libavcodec/golomb.h"
 #include "libavcodec/evc.h"
-#include "libavcodec/evc_parse.h"
 #include "avformat.h"
 #include "avio.h"
 #include "evc.h"
@@ -361,7 +360,7 @@ int ff_isom_write_evcc(AVIOContext *pb, const uint8_t *data,
     evcc_init(&evcc);
 
     while (bytes_to_read > EVC_NALU_LENGTH_PREFIX_SIZE) {
-        nalu_size = evc_read_nal_unit_length(data, EVC_NALU_LENGTH_PREFIX_SIZE, pb);
+        nalu_size = evc_read_nal_unit_length(data, EVC_NALU_LENGTH_PREFIX_SIZE);
         if (nalu_size == 0) break;
 
         data += EVC_NALU_LENGTH_PREFIX_SIZE;
@@ -369,7 +368,7 @@ int ff_isom_write_evcc(AVIOContext *pb, const uint8_t *data,
 
         if (bytes_to_read < nalu_size) break;
 
-        nalu_type = evc_get_nalu_type(data, bytes_to_read, pb);
+        nalu_type = evc_get_nalu_type(data, bytes_to_read);
         if (nalu_type < EVC_NOIDR_NUT || nalu_type > EVC_UNSPEC_NUT62) {
             ret = AVERROR_INVALIDDATA;
             goto end;

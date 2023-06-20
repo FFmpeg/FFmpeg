@@ -31,6 +31,7 @@
 #include "rawdec.h"
 #include "avformat.h"
 #include "avio_internal.h"
+#include "evc.h"
 #include "internal.h"
 
 
@@ -59,43 +60,6 @@ static const AVClass evc_demuxer_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-static int get_nalu_type(const uint8_t *bits, int bits_size)
-{
-    int unit_type_plus1 = 0;
-
-    if (bits_size >= EVC_NALU_HEADER_SIZE) {
-        unsigned char *p = (unsigned char *)bits;
-        // forbidden_zero_bit
-        if ((p[0] & 0x80) != 0)   // Cannot get bitstream information. Malformed bitstream.
-            return -1;
-
-        // nal_unit_type
-        unit_type_plus1 = (p[0] >> 1) & 0x3F;
-    }
-
-    return unit_type_plus1 - 1;
-}
-
-static uint32_t read_nal_unit_length(const uint8_t *bits, int bits_size)
-{
-    uint32_t nalu_len = 0;
-
-    if (bits_size >= EVC_NALU_LENGTH_PREFIX_SIZE) {
-
-        int t = 0;
-        unsigned char *p = (unsigned char *)bits;
-
-        for (int i = 0; i < EVC_NALU_LENGTH_PREFIX_SIZE; i++)
-            t = (t << 8) | p[i];
-
-        nalu_len = t;
-        if (nalu_len == 0)   // Invalid bitstream size
-            return 0;
-    }
-
-    return nalu_len;
-}
-
 static int annexb_probe(const AVProbeData *p)
 {
     int nalu_type;
@@ -106,7 +70,7 @@ static int annexb_probe(const AVProbeData *p)
 
     while (bytes_to_read > EVC_NALU_LENGTH_PREFIX_SIZE) {
 
-        nalu_size = read_nal_unit_length(bits, EVC_NALU_LENGTH_PREFIX_SIZE);
+        nalu_size = evc_read_nal_unit_length(bits, EVC_NALU_LENGTH_PREFIX_SIZE);
         if (nalu_size == 0) break;
 
         bits += EVC_NALU_LENGTH_PREFIX_SIZE;
@@ -114,7 +78,7 @@ static int annexb_probe(const AVProbeData *p)
 
         if(bytes_to_read < nalu_size) break;
 
-        nalu_type = get_nalu_type(bits, bytes_to_read);
+        nalu_type = evc_get_nalu_type(bits, bytes_to_read);
 
         if (nalu_type == EVC_SPS_NUT)
             got_sps++;
@@ -199,7 +163,7 @@ static int evc_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (ret < 0)
             return ret;
 
-        nalu_size = read_nal_unit_length((const uint8_t *)&buf, EVC_NALU_LENGTH_PREFIX_SIZE);
+        nalu_size = evc_read_nal_unit_length((const uint8_t *)&buf, EVC_NALU_LENGTH_PREFIX_SIZE);
         if (!nalu_size || nalu_size > INT_MAX)
             return AVERROR_INVALIDDATA;
 
