@@ -41,6 +41,7 @@
 #include "libavutil/opt.h"
 
 #include "avcodec.h"
+#include "avcodec_internal.h"
 #include "bytestream.h"
 #include "bsf.h"
 #include "codec_internal.h"

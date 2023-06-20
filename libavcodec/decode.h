@@ -54,11 +54,6 @@ typedef struct FrameDecodeData {
 } FrameDecodeData;
 
 /**
- * avcodec_receive_frame() implementation for decoders.
- */
-int ff_decode_receive_frame(AVCodecContext *avctx, AVFrame *frame);
-
-/**
  * Called by decoders to get the next packet for decoding.
  *
  * @param pkt An empty packet to be filled with data.
@@ -98,12 +93,6 @@ int ff_attach_decode_data(AVFrame *frame);
  * with invalid size.
  */
 int ff_copy_palette(void *dst, const AVPacket *src, void *logctx);
-
-/**
- * Perform decoder initialization and validation.
- * Called when opening the decoder, before the FFCodec.init() call.
- */
-int ff_decode_preinit(AVCodecContext *avctx);
 
 /**
  * Check that the provided frame dimensions are valid and set them on the codec
