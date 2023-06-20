@@ -136,7 +136,6 @@ int ff_vk_decode_prepare_frame(FFVulkanDecodeContext *dec, AVFrame *pic,
     int err;
     FFVulkanDecodeShared *ctx = (FFVulkanDecodeShared *)dec->shared_ref->data;
 
-    vkpic->nb_slices = 0;
     vkpic->slices_size = 0;
 
     /* If the decoder made a blank frame to make up for a missing ref, or the
@@ -247,7 +246,6 @@ int ff_vk_decode_add_slice(AVCodecContext *avctx, FFVulkanDecodePicture *vp,
     memcpy(slices + vp->slices_size + startcode_len, data, size);
 
     *nb_slices = nb + 1;
-    vp->nb_slices++;
     vp->slices_size += startcode_len + size;
 
     return 0;

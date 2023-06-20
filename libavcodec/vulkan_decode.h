@@ -80,10 +80,6 @@ typedef struct FFVulkanDecodePicture {
     VkSemaphore                     sem;
     uint64_t                        sem_value;
 
-    /* State */
-    int                             update_params;
-    AVBufferRef                    *session_params;
-
     /* Current picture */
     VkVideoPictureResourceInfoKHR   ref;
     VkVideoReferenceSlotInfoKHR     ref_slot;
@@ -93,7 +89,6 @@ typedef struct FFVulkanDecodePicture {
     VkVideoReferenceSlotInfoKHR     ref_slots[36];
 
     /* Main decoding struct */
-    AVBufferRef                    *params_buf;
     VkVideoDecodeInfoKHR            decode_info;
 
     /* Slice data */
@@ -101,7 +96,6 @@ typedef struct FFVulkanDecodePicture {
     size_t                          slices_size;
     uint32_t                       *slice_off;
     unsigned int                    slice_off_max;
-    uint32_t                        nb_slices;
 } FFVulkanDecodePicture;
 
 /**
