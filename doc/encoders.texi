@@ -2738,6 +2738,10 @@ Only the mpeg2 and h264 decoders provide these. Default is 1 (on).
 @item udu_sei @var{boolean}
 Import user data unregistered SEI if available into output. Default is 0 (off).
 
+@item mb_info @var{boolean}
+Set mb_info data through AVFrameSideData, only useful when used from the
+API. Default is 0 (off).
+
 @item x264-params (N.A.)
 Override the x264 configuration using a :-separated list of key=value
 parameters.

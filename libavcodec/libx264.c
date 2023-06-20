@@ -30,6 +30,7 @@
 #include "libavutil/stereo3d.h"
 #include "libavutil/time.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/video_hint.h"
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "encode.h"
@@ -48,6 +49,9 @@
 // from x264.h, for quant_offsets, Macroblocks are 16x16
 // blocks of pixels (with respect to the luma plane)
 #define MB_SIZE 16
+#define MB_LSIZE 4
+#define MB_FLOOR(x)      ((x) >> (MB_LSIZE))
+#define MB_CEIL(x)       MB_FLOOR((x) + (MB_SIZE - 1))
 
 typedef struct X264Opaque {
 #if FF_API_REORDERED_OPAQUE
@@ -123,6 +127,8 @@ typedef struct X264Context {
      * encounter a frame with ROI side data.
      */
     int roi_warned;
+
+    int mb_info;
 } X264Context;
 
 static void X264_log(void *p, int level, const char *fmt, va_list args)
@@ -295,6 +301,7 @@ static void free_picture(x264_picture_t *pic)
         av_free(pic->extra_sei.payloads[i].payload);
     av_freep(&pic->extra_sei.payloads);
     av_freep(&pic->prop.quant_offsets);
+    av_freep(&pic->prop.mb_info);
     pic->extra_sei.num_payloads = 0;
 }
 
@@ -318,6 +325,74 @@ static enum AVPixelFormat csp_to_pixfmt(int csp)
     case X264_CSP_NV16:                         return AV_PIX_FMT_NV16;
     };
     return AV_PIX_FMT_NONE;
+}
+
+static void av_always_inline mbinfo_compute_changed_coords(const AVVideoRect *rect,
+                                                           int *min_x,
+                                                           int *max_x,
+                                                           int *min_y,
+                                                           int *max_y)
+{
+    *min_y = MB_FLOOR(rect->y);
+    *max_y = MB_CEIL(rect->y + rect->height);
+    *min_x = MB_FLOOR(rect->x);
+    *max_x = MB_CEIL(rect->x + rect->width);
+}
+
+static void av_always_inline mbinfo_compute_constant_coords(const AVVideoRect *rect,
+                                                            int *min_x,
+                                                            int *max_x,
+                                                            int *min_y,
+                                                            int *max_y)
+{
+    *min_y = MB_CEIL(rect->y);
+    *max_y = MB_FLOOR(rect->y + rect->height);
+    *min_x = MB_CEIL(rect->x);
+    *max_x = MB_FLOOR(rect->x + rect->width);
+}
+
+static int setup_mb_info(AVCodecContext *ctx, x264_picture_t *pic,
+                         const AVFrame *frame,
+                         const AVVideoHint *info)
+{
+    int mb_width = (frame->width + MB_SIZE - 1) / MB_SIZE;
+    int mb_height = (frame->height + MB_SIZE - 1) / MB_SIZE;
+
+    const AVVideoRect *mbinfo_rects;
+    int nb_rects;
+    uint8_t *mbinfo;
+
+    mbinfo_rects = (const AVVideoRect *)av_video_hint_rects(info);
+    nb_rects = info->nb_rects;
+
+    mbinfo = av_calloc(mb_width * mb_height, sizeof(*mbinfo));
+    if (!mbinfo)
+        return AVERROR(ENOMEM);
+
+#define COMPUTE_MBINFO(mbinfo_filler_, mbinfo_marker_, compute_coords_fn_) \
+    memset(mbinfo, mbinfo_filler_, sizeof(*mbinfo) * mb_width * mb_height); \
+                                                                        \
+    for (int i = 0; i < nb_rects; i++) {                                \
+        int min_x, max_x, min_y, max_y;                                 \
+                                                                        \
+        compute_coords_fn_(mbinfo_rects, &min_x, &max_x, &min_y, &max_y); \
+        for (int mb_y = min_y; mb_y < max_y; ++mb_y) {                  \
+            memset(mbinfo + mb_y * mb_width + min_x, mbinfo_marker_, max_x - min_x); \
+        }                                                               \
+                                                                        \
+        mbinfo_rects++;                                                 \
+    }                                                                   \
+
+    if (info->type == AV_VIDEO_HINT_TYPE_CHANGED) {
+        COMPUTE_MBINFO(X264_MBINFO_CONSTANT, 0, mbinfo_compute_changed_coords);
+    } else /* if (info->type == AV_VIDEO_HINT_TYPE_CHANGED) */ {
+        COMPUTE_MBINFO(0, X264_MBINFO_CONSTANT, mbinfo_compute_constant_coords);
+    }
+
+    pic->prop.mb_info = mbinfo;
+    pic->prop.mb_info_free = av_free;
+
+    return 0;
 }
 
 static int setup_roi(AVCodecContext *ctx, x264_picture_t *pic, int bit_depth,
@@ -404,6 +479,7 @@ static int setup_frame(AVCodecContext *ctx, const AVFrame *frame,
     int64_t wallclock = 0;
     int bit_depth, ret;
     AVFrameSideData *sd;
+    AVFrameSideData *mbinfo_sd;
 
     *ppic = NULL;
     if (!frame)
@@ -497,6 +573,17 @@ FF_ENABLE_DEPRECATION_WARNINGS
         ret = setup_roi(ctx, pic, bit_depth, frame, sd->data, sd->size);
         if (ret < 0)
             goto fail;
+    }
+
+    mbinfo_sd = av_frame_get_side_data(frame, AV_FRAME_DATA_VIDEO_HINT);
+    if (mbinfo_sd) {
+        int ret = setup_mb_info(ctx, pic, frame, (const AVVideoHint *)mbinfo_sd->data);
+        if (ret < 0) {
+            /* No need to fail here, this is not fatal. We just proceed with no
+             * mb_info and log a message */
+
+            av_log(ctx, AV_LOG_WARNING, "setup_mb_info failed with error: %s\n", av_err2str(ret));
+        }
     }
 
     if (x4->udu_sei) {
@@ -1102,6 +1189,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
     }
 
+    x4->params.analyse.b_mb_info = x4->mb_info;
+    x4->params.analyse.b_fast_pskip = 1;
+
     // update AVCodecContext with x264 parameters
     avctx->has_b_frames = x4->params.i_bframe ?
         x4->params.i_bframe_pyramid ? 2 : 1 : 0;
@@ -1311,6 +1401,7 @@ static const AVOption options[] = {
     { "noise_reduction", "Noise reduction",                               OFFSET(noise_reduction), AV_OPT_TYPE_INT, { .i64 = -1 }, INT_MIN, INT_MAX, VE },
     { "udu_sei",      "Use user data unregistered SEI if available",      OFFSET(udu_sei),  AV_OPT_TYPE_BOOL,   { .i64 = 0 }, 0, 1, VE },
     { "x264-params",  "Override the x264 configuration using a :-separated list of key=value parameters", OFFSET(x264_params), AV_OPT_TYPE_DICT, { 0 }, 0, 0, VE },
+    { "mb_info",      "Set mb_info data through AVSideData, only useful when used from the API", OFFSET(mb_info), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
     { NULL },
 };
 

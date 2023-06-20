@@ -27,6 +27,7 @@ version <next>:
 - Bitstream filter for converting VVC from MP4 to Annex B
 - scale_vt filter for videotoolbox
 - transpose_vt filter for videotoolbox
+- support for the P_SKIP hinting to speed up libx264 encoding
 
 version 6.0:
 - Radiance HDR image support
