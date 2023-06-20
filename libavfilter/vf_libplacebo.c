@@ -160,7 +160,6 @@ typedef struct LibplaceboContext {
     // Parsed expressions for input/output crop
     AVExpr *crop_x_pexpr, *crop_y_pexpr, *crop_w_pexpr, *crop_h_pexpr;
     AVExpr *pos_x_pexpr, *pos_y_pexpr, *pos_w_pexpr, *pos_h_pexpr;
-    AVRational target_sar;
     float pad_crop_ratio;
     float corner_rounding;
     int force_original_aspect_ratio;
@@ -795,9 +794,9 @@ static void update_crops(AVFilterContext *ctx, LibplaceboInput *in,
             target->crop.y0 = av_expr_eval(s->pos_y_pexpr, s->var_values, NULL);
             target->crop.x1 = target->crop.x0 + s->var_values[VAR_POS_W];
             target->crop.y1 = target->crop.y0 + s->var_values[VAR_POS_H];
-
-            if (s->target_sar.num) {
-                float aspect = pl_rect2df_aspect(&target->crop) * av_q2d(s->target_sar);
+            if (s->normalize_sar) {
+                float aspect = pl_rect2df_aspect(&image->crop);
+                aspect *= av_q2d(in->link->sample_aspect_ratio);
                 pl_rect2df_aspect_set(&target->crop, aspect, s->pad_crop_ratio);
             }
         }
@@ -1188,7 +1187,6 @@ static int libplacebo_config_output(AVFilterLink *outlink)
     const AVPixFmtDescriptor *out_desc = av_pix_fmt_desc_get(outlink->format);
     AVHWFramesContext *hwfc;
     AVVulkanFramesContext *vkfc;
-    AVRational scale_sar;
 
     /* Frame dimensions */
     RET(ff_scale_eval_dimensions(s, s->w_expr, s->h_expr, inlink, outlink,
@@ -1198,20 +1196,15 @@ static int libplacebo_config_output(AVFilterLink *outlink)
                                s->force_original_aspect_ratio,
                                s->force_divisible_by);
 
-    scale_sar = (AVRational){outlink->h * inlink->w, outlink->w * inlink->h};
-    if (inlink->sample_aspect_ratio.num)
-        scale_sar = av_mul_q(scale_sar, inlink->sample_aspect_ratio);
-
-    if (s->normalize_sar) {
-        /* Apply all SAR during scaling, so we don't need to set the out SAR */
+    if (s->normalize_sar || s->nb_inputs > 1) {
+        /* SAR is normalized, or we have multiple inputs, set out to 1:1 */
         outlink->sample_aspect_ratio = (AVRational){ 1, 1 };
-        s->target_sar = scale_sar;
     } else {
         /* This is consistent with other scale_* filters, which only
          * set the outlink SAR to be equal to the scale SAR iff the input SAR
          * was set to something nonzero */
         if (inlink->sample_aspect_ratio.num)
-            outlink->sample_aspect_ratio = scale_sar;
+            outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
     }
 
     /* Frame rate */
