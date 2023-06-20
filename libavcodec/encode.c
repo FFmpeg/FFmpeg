@@ -42,6 +42,12 @@ typedef struct EncodeContext {
      * This is used to set said flag generically for said encoders.
      */
     int intra_only_flag;
+
+    /**
+     * An audio frame with less than required samples has been submitted (and
+     * potentially padded with silence). Reject all subsequent frames.
+     */
+    int last_audio_frame;
 } EncodeContext;
 
 static EncodeContext *encode_ctx(AVCodecInternal *avci)
@@ -174,7 +180,7 @@ static int pad_last_frame(AVCodecContext *s, AVFrame *frame, const AVFrame *src,
 
 fail:
     av_frame_unref(frame);
-    s->internal->last_audio_frame = 0;
+    encode_ctx(s->internal)->last_audio_frame = 0;
     return ret;
 }
 
@@ -446,6 +452,7 @@ static int encode_generate_icc_profile(av_unused AVCodecContext *c, av_unused AV
 static int encode_send_frame_internal(AVCodecContext *avctx, const AVFrame *src)
 {
     AVCodecInternal *avci = avctx->internal;
+    EncodeContext     *ec = encode_ctx(avci);
     AVFrame *dst = avci->buffer_frame;
     int ret;
 
@@ -458,7 +465,7 @@ static int encode_send_frame_internal(AVCodecContext *avctx, const AVFrame *src)
         /* check for valid frame size */
         if (!(avctx->codec->capabilities & AV_CODEC_CAP_VARIABLE_FRAME_SIZE)) {
             /* if we already got an undersized frame, that must have been the last */
-            if (avctx->internal->last_audio_frame) {
+            if (ec->last_audio_frame) {
                 av_log(avctx, AV_LOG_ERROR, "frame_size (%d) was not respected for a non-last frame\n", avctx->frame_size);
                 return AVERROR(EINVAL);
             }
@@ -467,7 +474,7 @@ static int encode_send_frame_internal(AVCodecContext *avctx, const AVFrame *src)
                 return AVERROR(EINVAL);
             }
             if (src->nb_samples < avctx->frame_size) {
-                avctx->internal->last_audio_frame = 1;
+                ec->last_audio_frame = 1;
                 if (!(avctx->codec->capabilities & AV_CODEC_CAP_SMALL_LAST_FRAME)) {
                     int pad_samples = avci->pad_samples ? avci->pad_samples : avctx->frame_size;
                     int out_samples = (src->nb_samples + pad_samples - 1) / pad_samples * pad_samples;
