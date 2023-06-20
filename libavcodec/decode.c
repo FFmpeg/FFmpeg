@@ -674,7 +674,7 @@ int attribute_align_arg avcodec_send_packet(AVCodecContext *avctx, const AVPacke
     } else
         dc->draining_started = 1;
 
-    if (!avci->buffer_frame->buf[0]) {
+    if (!avci->buffer_frame->buf[0] && !dc->draining_started) {
         ret = decode_receive_frame_internal(avctx, avci->buffer_frame);
         if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF)
             return ret;
