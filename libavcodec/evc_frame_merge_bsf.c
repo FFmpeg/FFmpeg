@@ -74,57 +74,50 @@ static int evc_frame_merge_filter(AVBSFContext *bsf, AVPacket *out)
 {
     EVCFMergeContext *ctx = bsf->priv_data;
     AVPacket *in = ctx->in;
-    uint8_t *buffer, *nalu = NULL;
+    uint8_t *buffer;
     GetBitContext gb;
     enum EVCNALUnitType nalu_type;
-    int tid, nalu_size = 0;
-    int au_end_found = 0;
+    uint32_t nalu_size;
+    int tid, au_end_found = 0;
     int err;
 
     err = ff_bsf_get_packet_ref(bsf, in);
     if (err < 0)
         return err;
 
-    nalu_size = evc_read_nal_unit_length(in->data, EVC_NALU_LENGTH_PREFIX_SIZE, bsf);
-    if (nalu_size <= 0) {
-        err = AVERROR_INVALIDDATA;
-        goto end;
-    }
-
-    nalu = in->data + EVC_NALU_LENGTH_PREFIX_SIZE;
-    nalu_size = in->size - EVC_NALU_LENGTH_PREFIX_SIZE;
-
     // NAL unit parsing needed to determine if end of AU was found
-    if (nalu_size <= 0) {
+    nalu_size = evc_read_nal_unit_length(in->data, EVC_NALU_LENGTH_PREFIX_SIZE, bsf);
+    if (!nalu_size || nalu_size > INT_MAX) {
         av_log(bsf, AV_LOG_ERROR, "Invalid NAL unit size: (%d)\n", nalu_size);
         err = AVERROR_INVALIDDATA;
         goto end;
     }
 
+    err = init_get_bits8(&gb, in->data + EVC_NALU_LENGTH_PREFIX_SIZE, nalu_size);
+    if (err < 0)
+        return err;
+
     // @see ISO_IEC_23094-1_2020, 7.4.2.2 NAL unit header semantic (Table 4 - NAL unit type codes and NAL unit type classes)
     // @see enum EVCNALUnitType in evc.h
-    nalu_type = evc_get_nalu_type(nalu, nalu_size, bsf);
+    if (get_bits1(&gb)) {// forbidden_zero_bit
+        av_log(bsf, AV_LOG_ERROR, "Invalid NAL unit header\n");
+        err = AVERROR_INVALIDDATA;
+        goto end;
+    }
+
+    nalu_type = get_bits(&gb, 6) - 1;
     if (nalu_type < EVC_NOIDR_NUT || nalu_type > EVC_UNSPEC_NUT62) {
         av_log(bsf, AV_LOG_ERROR, "Invalid NAL unit type: (%d)\n", nalu_type);
         err = AVERROR_INVALIDDATA;
         goto end;
     }
 
-    tid = ff_evc_get_temporal_id(nalu, nalu_size, bsf);
-    if (tid < 0) {
-        av_log(bsf, AV_LOG_ERROR, "Invalid temporial id: (%d)\n", tid);
-        err = AVERROR_INVALIDDATA;
-        goto end;
-    }
-
-    nalu += EVC_NALU_HEADER_SIZE;
-    nalu_size -= EVC_NALU_HEADER_SIZE;
+    tid = get_bits(&gb, 3);
+    skip_bits(&gb, 5); // nuh_reserved_zero_5bits
+    skip_bits1(&gb);   // nuh_extension_flag
 
     switch (nalu_type) {
     case EVC_SPS_NUT:
-        err = init_get_bits8(&gb, nalu, nalu_size);
-        if (err < 0)
-            return err;
         err = ff_evc_parse_sps(&gb, &ctx->ps);
         if (err < 0) {
             av_log(bsf, AV_LOG_ERROR, "SPS parsing error\n");
@@ -132,9 +125,6 @@ static int evc_frame_merge_filter(AVBSFContext *bsf, AVPacket *out)
         }
         break;
     case EVC_PPS_NUT:
-        err = init_get_bits8(&gb, nalu, nalu_size);
-        if (err < 0)
-            return err;
         err = ff_evc_parse_pps(&gb, &ctx->ps);
         if (err < 0) {
             av_log(bsf, AV_LOG_ERROR, "PPS parsing error\n");
@@ -144,10 +134,6 @@ static int evc_frame_merge_filter(AVBSFContext *bsf, AVPacket *out)
     case EVC_IDR_NUT:   // Coded slice of a IDR or non-IDR picture
     case EVC_NOIDR_NUT: {
         EVCParserSliceHeader sh;
-
-        err = init_get_bits8(&gb, nalu, nalu_size);
-        if (err < 0)
-            return err;
 
         err = ff_evc_parse_slice_header(&gb, &sh, &ctx->ps, nalu_type);
         if (err < 0) {
