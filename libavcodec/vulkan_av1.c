@@ -513,13 +513,15 @@ static int vk_av1_decode_slice(AVCodecContext *avctx,
             .tg_end   = s->tg_end,
         };
 
-        err = ff_vk_decode_add_slice(avctx, vp, data, size, 0,
+        err = ff_vk_decode_add_slice(avctx, vp,
+                                     data + s->tile_group_info[i].tile_offset,
+                                     s->tile_group_info[i].tile_size, 0,
                                      &ap->tile_list.nb_tiles,
                                      &ap->tile_offsets);
         if (err < 0)
             return err;
 
-//        ap->tiles[ap->tile_list.nb_tiles - 1].offset = ap->tile_offsets[ap->tile_list.nb_tiles - 1];
+        ap->tiles[ap->tile_list.nb_tiles - 1].offset = ap->tile_offsets[ap->tile_list.nb_tiles - 1];
     }
 
     return 0;
