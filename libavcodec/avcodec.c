@@ -152,7 +152,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
 
     avci = av_codec_is_decoder(codec) ?
         ff_decode_internal_alloc()    :
-        av_mallocz(sizeof(AVCodecInternal));
+        ff_encode_internal_alloc();
     if (!avci) {
         ret = AVERROR(ENOMEM);
         goto end;

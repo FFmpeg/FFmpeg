@@ -33,6 +33,22 @@
 #include "frame_thread_encoder.h"
 #include "internal.h"
 
+typedef struct EncodeContext {
+    AVCodecInternal avci;
+
+    /**
+     * This is set to AV_PKT_FLAG_KEY for encoders that encode intra-only
+     * formats (i.e. whose codec descriptor has AV_CODEC_PROP_INTRA_ONLY set).
+     * This is used to set said flag generically for said encoders.
+     */
+    int intra_only_flag;
+} EncodeContext;
+
+static EncodeContext *encode_ctx(AVCodecInternal *avci)
+{
+    return (EncodeContext*)avci;
+}
+
 int ff_alloc_packet(AVCodecContext *avctx, AVPacket *avpkt, int64_t size)
 {
     if (size < 0 || size > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE) {
@@ -372,7 +388,7 @@ static int encode_receive_packet_internal(AVCodecContext *avctx, AVPacket *avpkt
     } else
         ret = encode_simple_receive_packet(avctx, avpkt);
     if (ret >= 0)
-        avpkt->flags |= avci->intra_only_flag;
+        avpkt->flags |= encode_ctx(avci)->intra_only_flag;
 
     if (ret == AVERROR_EOF)
         avci->draining_done = 1;
@@ -680,6 +696,7 @@ static int encode_preinit_audio(AVCodecContext *avctx)
 int ff_encode_preinit(AVCodecContext *avctx)
 {
     AVCodecInternal *avci = avctx->internal;
+    EncodeContext     *ec = encode_ctx(avci);
     int ret = 0;
 
     if (avctx->time_base.num <= 0 || avctx->time_base.den <= 0) {
@@ -710,7 +727,7 @@ int ff_encode_preinit(AVCodecContext *avctx)
         avctx->rc_initial_buffer_occupancy = avctx->rc_buffer_size * 3LL / 4;
 
     if (avctx->codec_descriptor->props & AV_CODEC_PROP_INTRA_ONLY)
-        avctx->internal->intra_only_flag = AV_PKT_FLAG_KEY;
+        ec->intra_only_flag = AV_PKT_FLAG_KEY;
 
     if (ffcodec(avctx->codec)->cb_type == FF_CODEC_CB_TYPE_ENCODE) {
         avci->in_frame = av_frame_alloc();
@@ -794,4 +811,9 @@ void ff_encode_flush_buffers(AVCodecContext *avctx)
         av_frame_unref(avci->in_frame);
     if (avci->recon_frame)
         av_frame_unref(avci->recon_frame);
+}
+
+AVCodecInternal *ff_encode_internal_alloc(void)
+{
+    return av_mallocz(sizeof(EncodeContext));
 }
