@@ -186,11 +186,8 @@ static int evc_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     EVCDemuxContext *const c = s->priv_data;
 
-    int eof = avio_feof (s->pb);
-    if(eof) {
-        av_packet_unref(pkt);
+    if (avio_feof(s->pb))
         return AVERROR_EOF;
-    }
 
     while(!au_end_found) {
         uint8_t buf[EVC_NALU_LENGTH_PREFIX_SIZE];
@@ -200,16 +197,12 @@ static int evc_read_packet(AVFormatContext *s, AVPacket *pkt)
             return ret;
 
         ret = avio_read(s->pb, (unsigned char *)&buf, EVC_NALU_LENGTH_PREFIX_SIZE);
-        if (ret < 0) {
-            av_packet_unref(pkt);
+        if (ret < 0)
             return ret;
-        }
 
         nalu_size = read_nal_unit_length((const uint8_t *)&buf, EVC_NALU_LENGTH_PREFIX_SIZE);
-        if(nalu_size <= 0) {
-            av_packet_unref(pkt);
-            return -1;
-        }
+        if (nalu_size <= 0)
+            return AVERROR_INVALIDDATA;
 
         avio_seek(s->pb, -EVC_NALU_LENGTH_PREFIX_SIZE, SEEK_CUR);
 
@@ -217,7 +210,7 @@ static int evc_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (ret < 0)
             return ret;
         if (ret != (nalu_size + EVC_NALU_LENGTH_PREFIX_SIZE))
-            return AVERROR(EIO);
+            return AVERROR_INVALIDDATA;
 
         ret = av_bsf_send_packet(c->bsf, pkt);
         if (ret < 0) {
