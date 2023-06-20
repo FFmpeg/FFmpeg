@@ -55,6 +55,11 @@ typedef struct DecodeContext {
 
     /* to prevent infinite loop on errors when draining */
     int nb_draining_errors;
+
+    /**
+     * The caller has submitted a NULL packet on input.
+     */
+    int draining_started;
 } DecodeContext;
 
 static DecodeContext *decode_ctx(AVCodecInternal *avci)
@@ -626,12 +631,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
 int attribute_align_arg avcodec_send_packet(AVCodecContext *avctx, const AVPacket *avpkt)
 {
     AVCodecInternal *avci = avctx->internal;
+    DecodeContext     *dc = decode_ctx(avci);
     int ret;
 
     if (!avcodec_is_open(avctx) || !av_codec_is_decoder(avctx->codec))
         return AVERROR(EINVAL);
 
-    if (avctx->internal->draining)
+    if (dc->draining_started)
         return AVERROR_EOF;
 
     if (avpkt && !avpkt->size && avpkt->data)
@@ -642,7 +648,8 @@ int attribute_align_arg avcodec_send_packet(AVCodecContext *avctx, const AVPacke
         ret = av_packet_ref(avci->buffer_pkt, avpkt);
         if (ret < 0)
             return ret;
-    }
+    } else
+        dc->draining_started = 1;
 
     ret = av_bsf_send_packet(avci->bsf, avci->buffer_pkt);
     if (ret < 0) {
@@ -1756,6 +1763,7 @@ AVBufferRef *ff_hwaccel_frame_priv_alloc(AVCodecContext *avctx,
 void ff_decode_flush_buffers(AVCodecContext *avctx)
 {
     AVCodecInternal *avci = avctx->internal;
+    DecodeContext     *dc = decode_ctx(avci);
 
     av_packet_unref(avci->last_pkt_props);
     av_packet_unref(avci->in_pkt);
@@ -1765,7 +1773,8 @@ void ff_decode_flush_buffers(AVCodecContext *avctx)
 
     av_bsf_flush(avci->bsf);
 
-    decode_ctx(avci)->nb_draining_errors = 0;
+    dc->nb_draining_errors = 0;
+    dc->draining_started   = 0;
 }
 
 AVCodecInternal *ff_decode_internal_alloc(void)
