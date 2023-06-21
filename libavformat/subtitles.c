@@ -145,6 +145,14 @@ AVPacket *ff_subtitles_queue_insert(FFDemuxSubtitlesQueue *q,
     return sub;
 }
 
+AVPacket *ff_subtitles_queue_insert_bprint(FFDemuxSubtitlesQueue *q,
+                                           const AVBPrint *event, int merge)
+{
+    if (!av_bprint_is_complete(event))
+        return NULL;
+    return ff_subtitles_queue_insert(q, event->str, event->len, merge);
+}
+
 static int cmp_pkt_sub_ts_pos(const void *a, const void *b)
 {
     const AVPacket *s1 = *(const AVPacket **)a;
@@ -347,13 +355,15 @@ int ff_smil_extract_next_text_chunk(FFTextReader *tr, AVBPrint *buf, char *c)
     do {
         av_bprint_chars(buf, *c, 1);
         *c = ff_text_r8(tr);
+        if (i == INT_MAX)
+            return AVERROR_INVALIDDATA;
         i++;
     } while (*c != end_chr && *c);
     if (end_chr == '>') {
         av_bprint_chars(buf, '>', 1);
         *c = 0;
     }
-    return i;
+    return av_bprint_is_complete(buf) ? i : AVERROR(ENOMEM);
 }
 
 const char *ff_smil_get_attr_ptr(const char *s, const char *attr)
@@ -381,7 +391,7 @@ static inline int is_eol(char c)
     return c == '\r' || c == '\n';
 }
 
-void ff_subtitles_read_text_chunk(FFTextReader *tr, AVBPrint *buf)
+int ff_subtitles_read_text_chunk(FFTextReader *tr, AVBPrint *buf)
 {
     char eol_buf[5], last_was_cr = 0;
     int n = 0, i = 0, nb_eol = 0;
@@ -421,15 +431,16 @@ void ff_subtitles_read_text_chunk(FFTextReader *tr, AVBPrint *buf)
         av_bprint_chars(buf, c, 1);
         n++;
     }
+    return av_bprint_is_complete(buf) ? 0 : AVERROR(ENOMEM);
 }
 
-void ff_subtitles_read_chunk(AVIOContext *pb, AVBPrint *buf)
+int ff_subtitles_read_chunk(AVIOContext *pb, AVBPrint *buf)
 {
     FFTextReader tr;
     tr.buf_pos = tr.buf_len = 0;
     tr.type = 0;
     tr.pb = pb;
-    ff_subtitles_read_text_chunk(&tr, buf);
+    return ff_subtitles_read_text_chunk(&tr, buf);
 }
 
 ptrdiff_t ff_subtitles_read_line(FFTextReader *tr, char *buf, size_t size)

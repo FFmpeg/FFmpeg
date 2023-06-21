@@ -68,6 +68,10 @@ static int sami_read_header(AVFormatContext *s)
         const int64_t pos = ff_text_pos(&tr) - (c != 0);
         int is_sync, is_body, n = ff_smil_extract_next_text_chunk(&tr, &buf, &c);
 
+        if (n < 0) {
+            res = n;
+            goto end;
+        }
         if (n == 0)
             break;
 
@@ -84,7 +88,7 @@ static int sami_read_header(AVFormatContext *s)
         if (!got_first_sync_point) {
             av_bprintf(&hdr_buf, "%s", buf.str);
         } else {
-            sub = ff_subtitles_queue_insert(&sami->q, buf.str, buf.len, !is_sync);
+            sub = ff_subtitles_queue_insert_bprint(&sami->q, &buf, !is_sync);
             if (!sub) {
                 res = AVERROR(ENOMEM);
                 av_bprint_finalize(&hdr_buf, NULL);

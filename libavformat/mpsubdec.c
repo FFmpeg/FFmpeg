@@ -116,9 +116,10 @@ static int mpsub_read_header(AVFormatContext *s)
             AVPacket *sub;
             const int64_t pos = avio_tell(s->pb);
 
-            ff_subtitles_read_chunk(s->pb, &buf);
+            res = ff_subtitles_read_chunk(s->pb, &buf);
+            if (res < 0) goto end;
             if (buf.len) {
-                sub = ff_subtitles_queue_insert(&mpsub->q, buf.str, buf.len, 0);
+                sub = ff_subtitles_queue_insert_bprint(&mpsub->q, &buf, 0);
                 if (!sub) {
                     res = AVERROR(ENOMEM);
                     goto end;

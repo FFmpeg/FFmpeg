@@ -80,6 +80,10 @@ static int realtext_read_header(AVFormatContext *s)
         const int64_t pos = ff_text_pos(&tr) - (c != 0);
         int n = ff_smil_extract_next_text_chunk(&tr, &buf, &c);
 
+        if (n < 0) {
+            res = n;
+            goto end;
+        }
         if (n == 0)
             break;
 
@@ -103,7 +107,7 @@ static int realtext_read_header(AVFormatContext *s)
             /* if we just read a <time> tag, introduce a new event, otherwise merge
              * with the previous one */
             int merge = !av_strncasecmp(buf.str, "<time", 5) ? 0 : 1;
-            sub = ff_subtitles_queue_insert(&rt->q, buf.str, buf.len, merge);
+            sub = ff_subtitles_queue_insert_bprint(&rt->q, &buf, merge);
             if (!sub) {
                 res = AVERROR(ENOMEM);
                 goto end;

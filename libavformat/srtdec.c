@@ -97,12 +97,14 @@ static int add_event(FFDemuxSubtitlesQueue *q, AVBPrint *buf, char *line_cache,
     if (append_cache && line_cache[0])
         av_bprintf(buf, "%s\n", line_cache);
     line_cache[0] = 0;
+    if (!av_bprint_is_complete(buf))
+        return AVERROR(ENOMEM);
 
     while (buf->len > 0 && buf->str[buf->len - 1] == '\n')
         buf->str[--buf->len] = 0;
 
     if (buf->len) {
-        AVPacket *sub = ff_subtitles_queue_insert(q, buf->str, buf->len, 0);
+        AVPacket *sub = ff_subtitles_queue_insert_bprint(q, buf, 0);
         if (!sub)
             return AVERROR(ENOMEM);
         av_bprint_clear(buf);
