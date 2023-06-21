@@ -199,8 +199,16 @@ static int evc_frame_merge_filter(AVBSFContext *bsf, AVPacket *out)
         au_end_found = err;
 
         nalu_size += EVC_NALU_LENGTH_PREFIX_SIZE;
+
+        data_size = ctx->au_buffer.data_size + nalu_size;
+        if (data_size > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE) {
+            av_log(bsf, AV_LOG_ERROR, "Assembled packet is too big\n");
+            err = AVERROR(ERANGE);
+            goto end;
+        }
+
         buffer = av_fast_realloc(ctx->au_buffer.data, &ctx->au_buffer.capacity,
-                                 ctx->au_buffer.data_size + nalu_size);
+                                 data_size);
         if (!buffer) {
             av_freep(&ctx->au_buffer.data);
             err = AVERROR_INVALIDDATA;
@@ -210,7 +218,7 @@ static int evc_frame_merge_filter(AVBSFContext *bsf, AVPacket *out)
         ctx->au_buffer.data = buffer;
         memcpy(ctx->au_buffer.data + ctx->au_buffer.data_size, in->data, nalu_size);
 
-        ctx->au_buffer.data_size += nalu_size;
+        ctx->au_buffer.data_size = data_size;
 
         in->data += nalu_size;
         in->size -= nalu_size;
