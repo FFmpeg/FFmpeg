@@ -65,7 +65,6 @@ typedef struct FFVulkanDecodeContext {
     /* Thread-local state below */
     AVBufferPool *tmp_pool; /* Pool for temporary data, if needed (HEVC) */
     size_t tmp_pool_ele_size;
-    int params_changed;
 
     uint32_t                       *slice_off;
     unsigned int                    slice_off_max;
@@ -119,9 +118,9 @@ int ff_vk_update_thread_context(AVCodecContext *dst, const AVCodecContext *src);
 int ff_vk_frame_params(AVCodecContext *avctx, AVBufferRef *hw_frames_ctx);
 
 /**
- * Sets FFVulkanDecodeContext.params_changed to 1.
+ * Removes current session parameters to recreate them
  */
-int ff_vk_params_changed(AVCodecContext *avctx, int t, const uint8_t *b, uint32_t s);
+int ff_vk_params_invalidate(AVCodecContext *avctx, int t, const uint8_t *b, uint32_t s);
 
 /**
  * Prepare a frame, creates the image view, and sets up the dpb fields.

@@ -379,12 +379,10 @@ static int vk_h264_start_frame(AVCodecContext          *avctx,
     H264VulkanDecodePicture *hp = pic->hwaccel_picture_private;
     FFVulkanDecodePicture *vp = &hp->vp;
 
-    if (!dec->session_params || dec->params_changed) {
-        av_buffer_unref(&dec->session_params);
+    if (!dec->session_params) {
         err = vk_h264_create_params(avctx, &dec->session_params);
         if (err < 0)
             return err;
-        dec->params_changed = 0;
     }
 
     /* Fill in main slot */
@@ -519,8 +517,14 @@ static int vk_h264_end_frame(AVCodecContext *avctx)
     FFVulkanDecodePicture *rvp[H264_MAX_PICTURE_COUNT] = { 0 };
     AVFrame *rav[H264_MAX_PICTURE_COUNT] = { 0 };
 
-    if (!dec->session_params)
-        return AVERROR(EINVAL);
+    if (!dec->session_params) {
+        int err = vk_h264_create_params(avctx, &dec->session_params);
+        if (err < 0)
+            return err;
+
+        hp->h264pic.seq_parameter_set_id = pic->pps->sps_id;
+        hp->h264pic.pic_parameter_set_id = pic->pps->pps_id;
+    }
 
     for (int i = 0; i < vp->decode_info.referenceSlotCount; i++) {
         H264Picture *rp = hp->ref_src[i];
@@ -560,7 +564,7 @@ const AVHWAccel ff_h264_vulkan_hwaccel = {
     .frame_priv_data_size  = sizeof(H264VulkanDecodePicture),
     .init                  = &ff_vk_decode_init,
     .update_thread_context = &ff_vk_update_thread_context,
-    .decode_params         = &ff_vk_params_changed,
+    .decode_params         = &ff_vk_params_invalidate,
     .flush                 = &ff_vk_decode_flush,
     .uninit                = &ff_vk_decode_uninit,
     .frame_params          = &ff_vk_frame_params,

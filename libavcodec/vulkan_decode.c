@@ -66,10 +66,10 @@ int ff_vk_update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
     return 0;
 }
 
-int ff_vk_params_changed(AVCodecContext *avctx, int t, const uint8_t *b, uint32_t s)
+int ff_vk_params_invalidate(AVCodecContext *avctx, int t, const uint8_t *b, uint32_t s)
 {
     FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
-    dec->params_changed = 1;
+    av_buffer_unref(&dec->session_params);
     return 0;
 }
 

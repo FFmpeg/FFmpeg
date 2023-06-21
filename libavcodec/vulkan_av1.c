@@ -229,12 +229,10 @@ static int vk_av1_start_frame(AVCodecContext          *avctx,
     const int apply_grain = !(avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN) &&
                             film_grain->apply_grain;
 
-    if (!dec->session_params || dec->params_changed) {
-        av_buffer_unref(&dec->session_params);
+    if (!dec->session_params) {
         err = vk_av1_create_params(avctx, &dec->session_params);
         if (err < 0)
             return err;
-        dec->params_changed = 0;
     }
 
     if (!ap->frame_id_set) {
@@ -530,11 +528,18 @@ static int vk_av1_decode_slice(AVCodecContext *avctx,
 static int vk_av1_end_frame(AVCodecContext *avctx)
 {
     const AV1DecContext *s = avctx->priv_data;
+    FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
     const AV1Frame *pic = &s->cur_frame;
     AV1VulkanDecodePicture *ap = pic->hwaccel_picture_private;
     FFVulkanDecodePicture *vp = &ap->vp;
     FFVulkanDecodePicture *rvp[AV1_NUM_REF_FRAMES] = { 0 };
     AVFrame *rav[AV1_NUM_REF_FRAMES] = { 0 };
+
+    if (!dec->session_params) {
+        int err = vk_av1_create_params(avctx, &dec->session_params);
+        if (err < 0)
+            return err;
+    }
 
     for (int i = 0; i < vp->decode_info.referenceSlotCount; i++) {
         const AV1Frame *rp = ap->ref_src[i];
@@ -578,7 +583,7 @@ const AVHWAccel ff_av1_vulkan_hwaccel = {
     .frame_priv_data_size  = sizeof(AV1VulkanDecodePicture),
     .init                  = &ff_vk_decode_init,
     .update_thread_context = &ff_vk_update_thread_context,
-    .decode_params         = &ff_vk_params_changed,
+    .decode_params         = &ff_vk_params_invalidate,
     .flush                 = &ff_vk_decode_flush,
     .uninit                = &ff_vk_decode_uninit,
     .frame_params          = &ff_vk_frame_params,
