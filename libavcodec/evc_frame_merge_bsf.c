@@ -188,18 +188,18 @@ static int evc_frame_merge_filter(AVBSFContext *bsf, AVPacket *out)
         au_end_found = err;
 
         nalu_size += EVC_NALU_LENGTH_PREFIX_SIZE;
-    buffer = av_fast_realloc(ctx->au_buffer.data, &ctx->au_buffer.capacity,
-                             ctx->au_buffer.data_size + nalu_size);
-    if (!buffer) {
-        av_freep(&ctx->au_buffer.data);
-        err = AVERROR_INVALIDDATA;
-        goto end;
-    }
+        buffer = av_fast_realloc(ctx->au_buffer.data, &ctx->au_buffer.capacity,
+                                 ctx->au_buffer.data_size + nalu_size);
+        if (!buffer) {
+            av_freep(&ctx->au_buffer.data);
+            err = AVERROR_INVALIDDATA;
+            goto end;
+        }
 
-    ctx->au_buffer.data = buffer;
-    memcpy(ctx->au_buffer.data + ctx->au_buffer.data_size, in->data, nalu_size);
+        ctx->au_buffer.data = buffer;
+        memcpy(ctx->au_buffer.data + ctx->au_buffer.data_size, in->data, nalu_size);
 
-    ctx->au_buffer.data_size += nalu_size;
+        ctx->au_buffer.data_size += nalu_size;
 
         in->data += nalu_size;
         in->size -= nalu_size;
@@ -208,12 +208,12 @@ static int evc_frame_merge_filter(AVBSFContext *bsf, AVPacket *out)
     av_packet_unref(in);
     data_size = ctx->au_buffer.data_size;
 
-        ctx->au_buffer.data_size = 0;
-        err = av_new_packet(out, data_size);
-        if (err < 0)
-            goto end;
+    ctx->au_buffer.data_size = 0;
+    err = av_new_packet(out, data_size);
+    if (err < 0)
+        goto end;
 
-        memcpy(out->data, ctx->au_buffer.data, data_size);
+    memcpy(out->data, ctx->au_buffer.data, data_size);
 
     err = 0;
 end:
