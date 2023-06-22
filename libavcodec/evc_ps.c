@@ -27,9 +27,9 @@
 static int ref_pic_list_struct(GetBitContext *gb, RefPicListStruct *rpl)
 {
     uint32_t delta_poc_st, strp_entry_sign_flag = 0;
-    rpl->ref_pic_num = get_ue_golomb(gb);
+    rpl->ref_pic_num = get_ue_golomb_long(gb);
     if (rpl->ref_pic_num > 0) {
-        delta_poc_st = get_ue_golomb(gb);
+        delta_poc_st = get_ue_golomb_long(gb);
 
         rpl->ref_pics[0] = delta_poc_st;
         if (rpl->ref_pics[0] != 0) {
@@ -40,7 +40,7 @@ static int ref_pic_list_struct(GetBitContext *gb, RefPicListStruct *rpl)
     }
 
     for (int i = 1; i < rpl->ref_pic_num; ++i) {
-        delta_poc_st = get_ue_golomb(gb);
+        delta_poc_st = get_ue_golomb_long(gb);
         if (delta_poc_st != 0)
             strp_entry_sign_flag = get_bits(gb, 1);
         rpl->ref_pics[i] = rpl->ref_pics[i - 1] + delta_poc_st * (1 - (strp_entry_sign_flag << 1));
@@ -52,12 +52,12 @@ static int ref_pic_list_struct(GetBitContext *gb, RefPicListStruct *rpl)
 // @see  ISO_IEC_23094-1 (E.2.2 HRD parameters syntax)
 static int hrd_parameters(GetBitContext *gb, HRDParameters *hrd)
 {
-    hrd->cpb_cnt_minus1 = get_ue_golomb(gb);
+    hrd->cpb_cnt_minus1 = get_ue_golomb_31(gb);
     hrd->bit_rate_scale = get_bits(gb, 4);
     hrd->cpb_size_scale = get_bits(gb, 4);
     for (int SchedSelIdx = 0; SchedSelIdx <= hrd->cpb_cnt_minus1; SchedSelIdx++) {
-        hrd->bit_rate_value_minus1[SchedSelIdx] = get_ue_golomb(gb);
-        hrd->cpb_size_value_minus1[SchedSelIdx] = get_ue_golomb(gb);
+        hrd->bit_rate_value_minus1[SchedSelIdx] = get_ue_golomb_long(gb);
+        hrd->cpb_size_value_minus1[SchedSelIdx] = get_ue_golomb_long(gb);
         hrd->cbr_flag[SchedSelIdx] = get_bits(gb, 1);
     }
     hrd->initial_cpb_removal_delay_length_minus1 = get_bits(gb, 5);
@@ -95,8 +95,8 @@ static int vui_parameters(GetBitContext *gb, VUIParameters *vui)
     }
     vui->chroma_loc_info_present_flag = get_bits(gb, 1);
     if (vui->chroma_loc_info_present_flag) {
-        vui->chroma_sample_loc_type_top_field = get_ue_golomb(gb);
-        vui->chroma_sample_loc_type_bottom_field = get_ue_golomb(gb);
+        vui->chroma_sample_loc_type_top_field = get_ue_golomb_31(gb);
+        vui->chroma_sample_loc_type_bottom_field = get_ue_golomb_31(gb);
     }
     vui->neutral_chroma_indication_flag = get_bits(gb, 1);
 
@@ -120,12 +120,12 @@ static int vui_parameters(GetBitContext *gb, VUIParameters *vui)
     vui->bitstream_restriction_flag = get_bits(gb, 1);
     if (vui->bitstream_restriction_flag) {
         vui->motion_vectors_over_pic_boundaries_flag = get_bits(gb, 1);
-        vui->max_bytes_per_pic_denom = get_ue_golomb(gb);
-        vui->max_bits_per_mb_denom = get_ue_golomb(gb);
-        vui->log2_max_mv_length_horizontal = get_ue_golomb(gb);
-        vui->log2_max_mv_length_vertical = get_ue_golomb(gb);
-        vui->num_reorder_pics = get_ue_golomb(gb);
-        vui->max_dec_pic_buffering = get_ue_golomb(gb);
+        vui->max_bytes_per_pic_denom = get_ue_golomb_31(gb);
+        vui->max_bits_per_mb_denom = get_ue_golomb_31(gb);
+        vui->log2_max_mv_length_horizontal = get_ue_golomb_31(gb);
+        vui->log2_max_mv_length_vertical = get_ue_golomb_31(gb);
+        vui->num_reorder_pics = get_ue_golomb_long(gb);
+        vui->max_dec_pic_buffering = get_ue_golomb_long(gb);
     }
 
     return 0;
@@ -135,7 +135,7 @@ static int vui_parameters(GetBitContext *gb, VUIParameters *vui)
 int ff_evc_parse_sps(GetBitContext *gb, EVCParamSets *ps)
 {
     EVCParserSPS *sps;
-    int sps_seq_parameter_set_id;
+    unsigned sps_seq_parameter_set_id;
     int ret;
 
     sps_seq_parameter_set_id = get_ue_golomb(gb);
@@ -164,27 +164,27 @@ int ff_evc_parse_sps(GetBitContext *gb, EVCParamSets *ps)
     // 1 - 4:2:0
     // 2 - 4:2:2
     // 3 - 4:4:4
-    sps->chroma_format_idc = get_ue_golomb(gb);
+    sps->chroma_format_idc = get_ue_golomb_31(gb);
 
-    sps->pic_width_in_luma_samples = get_ue_golomb(gb);
-    sps->pic_height_in_luma_samples = get_ue_golomb(gb);
+    sps->pic_width_in_luma_samples = get_ue_golomb_long(gb);
+    sps->pic_height_in_luma_samples = get_ue_golomb_long(gb);
 
-    sps->bit_depth_luma_minus8 = get_ue_golomb(gb);
-    sps->bit_depth_chroma_minus8 = get_ue_golomb(gb);
+    sps->bit_depth_luma_minus8 = get_ue_golomb_31(gb);
+    sps->bit_depth_chroma_minus8 = get_ue_golomb_31(gb);
 
     sps->sps_btt_flag = get_bits1(gb);
     if (sps->sps_btt_flag) {
-        sps->log2_ctu_size_minus5 = get_ue_golomb(gb);
-        sps->log2_min_cb_size_minus2 = get_ue_golomb(gb);
-        sps->log2_diff_ctu_max_14_cb_size = get_ue_golomb(gb);
-        sps->log2_diff_ctu_max_tt_cb_size = get_ue_golomb(gb);
-        sps->log2_diff_min_cb_min_tt_cb_size_minus2 = get_ue_golomb(gb);
+        sps->log2_ctu_size_minus2 = get_ue_golomb_long(gb);
+        sps->log2_min_cb_size_minus2 = get_ue_golomb_long(gb);
+        sps->log2_diff_ctu_max_14_cb_size = get_ue_golomb_long(gb);
+        sps->log2_diff_ctu_max_tt_cb_size = get_ue_golomb_long(gb);
+        sps->log2_diff_min_cb_min_tt_cb_size_minus2 = get_ue_golomb_long(gb);
     }
 
     sps->sps_suco_flag = get_bits1(gb);
     if (sps->sps_suco_flag) {
-        sps->log2_diff_ctu_size_max_suco_cb_size = get_ue_golomb(gb);
-        sps->log2_diff_max_suco_min_suco_cb_size = get_ue_golomb(gb);
+        sps->log2_diff_ctu_size_max_suco_cb_size = get_ue_golomb_long(gb);
+        sps->log2_diff_max_suco_min_suco_cb_size = get_ue_golomb_long(gb);
     }
 
     sps->sps_admvp_flag = get_bits1(gb);
@@ -238,9 +238,9 @@ int ff_evc_parse_sps(GetBitContext *gb, EVCParamSets *ps)
     }
 
     if (!sps->sps_rpl_flag)
-        sps->max_num_tid0_ref_pics = get_ue_golomb(gb);
+        sps->max_num_tid0_ref_pics = get_ue_golomb_31(gb);
     else {
-        sps->sps_max_dec_pic_buffering_minus1 = get_ue_golomb(gb);
+        sps->sps_max_dec_pic_buffering_minus1 = get_ue_golomb_long(gb);
         sps->long_term_ref_pic_flag = get_bits1(gb);
         sps->rpl1_same_as_rpl0_flag = get_bits1(gb);
         sps->num_ref_pic_list_in_sps[0] = get_ue_golomb(gb);
@@ -258,10 +258,10 @@ int ff_evc_parse_sps(GetBitContext *gb, EVCParamSets *ps)
     sps->picture_cropping_flag = get_bits1(gb);
 
     if (sps->picture_cropping_flag) {
-        sps->picture_crop_left_offset = get_ue_golomb(gb);
-        sps->picture_crop_right_offset = get_ue_golomb(gb);
-        sps->picture_crop_top_offset = get_ue_golomb(gb);
-        sps->picture_crop_bottom_offset = get_ue_golomb(gb);
+        sps->picture_crop_left_offset = get_ue_golomb_long(gb);
+        sps->picture_crop_right_offset = get_ue_golomb_long(gb);
+        sps->picture_crop_top_offset = get_ue_golomb_long(gb);
+        sps->picture_crop_bottom_offset = get_ue_golomb_long(gb);
     }
 
     if (sps->chroma_format_idc != 0) {
@@ -278,7 +278,7 @@ int ff_evc_parse_sps(GetBitContext *gb, EVCParamSets *ps)
                 }
                 for (int j = 0; j <= sps->chroma_qp_table_struct.num_points_in_qp_table_minus1[i]; j++) {
                     sps->chroma_qp_table_struct.delta_qp_in_val_minus1[i][j] = get_bits(gb, 6);
-                    sps->chroma_qp_table_struct.delta_qp_out_val[i][j] = get_se_golomb(gb);
+                    sps->chroma_qp_table_struct.delta_qp_out_val[i][j] = get_se_golomb_long(gb);
                 }
             }
         }
@@ -311,7 +311,7 @@ fail:
 int ff_evc_parse_pps(GetBitContext *gb, EVCParamSets *ps)
 {
     EVCParserPPS *pps;
-    int pps_pic_parameter_set_id;
+    unsigned pps_pic_parameter_set_id;
     int ret;
 
     pps_pic_parameter_set_id = get_ue_golomb(gb);
