@@ -28,11 +28,11 @@ int ff_evc_parse_slice_header(GetBitContext *gb, EVCParserSliceHeader *sh,
     const EVCParserPPS *pps;
     const EVCParserSPS *sps;
     int num_tiles_in_slice = 0;
-    int slice_pic_parameter_set_id;
+    unsigned slice_pic_parameter_set_id;
 
-    slice_pic_parameter_set_id = get_ue_golomb(gb);
+    slice_pic_parameter_set_id = get_ue_golomb_31(gb);
 
-    if (slice_pic_parameter_set_id < 0 || slice_pic_parameter_set_id >= EVC_MAX_PPS_COUNT)
+    if (slice_pic_parameter_set_id >= EVC_MAX_PPS_COUNT)
         return AVERROR_INVALIDDATA;
 
     pps = ps->pps[slice_pic_parameter_set_id];
@@ -59,14 +59,14 @@ int ff_evc_parse_slice_header(GetBitContext *gb, EVCParserSliceHeader *sh,
         if (!sh->arbitrary_slice_flag)
             sh->last_tile_id = get_bits(gb, pps->tile_id_len_minus1 + 1);
         else {
-            sh->num_remaining_tiles_in_slice_minus1 = get_ue_golomb(gb);
+            sh->num_remaining_tiles_in_slice_minus1 = get_ue_golomb_long(gb);
             num_tiles_in_slice = sh->num_remaining_tiles_in_slice_minus1 + 2;
             for (int i = 0; i < num_tiles_in_slice - 1; ++i)
-                sh->delta_tile_id_minus1[i] = get_ue_golomb(gb);
+                sh->delta_tile_id_minus1[i] = get_ue_golomb_long(gb);
         }
     }
 
-    sh->slice_type = get_ue_golomb(gb);
+    sh->slice_type = get_ue_golomb_31(gb);
 
     if (nalu_type == EVC_IDR_NUT)
         sh->no_output_of_prior_pics_flag = get_bits1(gb);
