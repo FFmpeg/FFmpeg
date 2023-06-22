@@ -901,6 +901,9 @@ static int vk_hevc_end_frame(AVCodecContext *avctx)
     FFVulkanDecodePicture *rvp[HEVC_MAX_REFS] = { 0 };
     AVFrame *rav[HEVC_MAX_REFS] = { 0 };
 
+    if (!hp->h265_pic_info.sliceSegmentCount)
+        return 0;
+
     if (!dec->session_params) {
         const HEVCSPS *sps = h->ps.sps;
         const HEVCPPS *pps = h->ps.pps;

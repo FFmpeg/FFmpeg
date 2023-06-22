@@ -517,6 +517,9 @@ static int vk_h264_end_frame(AVCodecContext *avctx)
     FFVulkanDecodePicture *rvp[H264_MAX_PICTURE_COUNT] = { 0 };
     AVFrame *rav[H264_MAX_PICTURE_COUNT] = { 0 };
 
+    if (!hp->h264_pic_info.sliceCount)
+        return 0;
+
     if (!dec->session_params) {
         int err = vk_h264_create_params(avctx, &dec->session_params);
         if (err < 0)

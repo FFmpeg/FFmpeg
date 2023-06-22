@@ -535,6 +535,9 @@ static int vk_av1_end_frame(AVCodecContext *avctx)
     FFVulkanDecodePicture *rvp[AV1_NUM_REF_FRAMES] = { 0 };
     AVFrame *rav[AV1_NUM_REF_FRAMES] = { 0 };
 
+    if (!ap->tile_list.nb_tiles)
+        return 0;
+
     if (!dec->session_params) {
         int err = vk_av1_create_params(avctx, &dec->session_params);
         if (err < 0)
