@@ -218,7 +218,7 @@ static const FFCodecDefault defaults[] = {
     { "qdiff", "-1" },
     { "qblur", "-1" },
     { "qcomp", "-1" },
-    { "g", "250" },
+    { "g", "-1" },
     { "bf", "-1" },
     { "refs", "0" },
     { NULL },
