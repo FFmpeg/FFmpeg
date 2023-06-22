@@ -28,10 +28,6 @@
 #include "evc.h"
 #include "avio_internal.h"
 
-// The length field that indicates the length in bytes of the following NAL unit is configured to be of 4 bytes
-#define EVC_NALU_LENGTH_PREFIX_SIZE        (4)  /* byte */
-#define EVC_NALU_HEADER_SIZE               (2)  /* byte */
-
 // @see ISO/IEC 14496-15:2021 Coding of audio-visual objects - Part 15: section 12.3.3.1
 enum {
     SPS_INDEX,
