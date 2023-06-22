@@ -33,6 +33,15 @@ errfile="${outdir}/${test}.err"
 cmpfile="${outdir}/${test}.diff"
 repfile="${outdir}/${test}.rep"
 
+case $threads in
+    random*)
+        threads_max=${threads#random}
+        [ -z "$threads_max" ] && threads_max=16
+        threads=$(awk "BEGIN { print 1+int(rand() * $threads_max) }" < /dev/null)
+        ;;
+esac
+
+
 target_path(){
     test ${1} = ${1#/} && p=${target_path}/
     echo ${p}${1}
@@ -630,6 +639,7 @@ fi
 if [ $err -eq 0 ] && test $report_type = "standard" ; then
     unset cmpo erro
 else
+    echo "threads=$threads" >> "$errfile"
     cmpo="$($base64 <$cmpfile)"
     erro="$($base64 <$errfile)"
 fi

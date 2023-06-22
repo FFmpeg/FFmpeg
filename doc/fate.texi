@@ -223,6 +223,14 @@ meaning only while running the regression tests.
 Specify how many threads to use while running regression tests, it is
 quite useful to detect thread-related regressions.
 
+This variable may be set to the string "random", optionally followed by a
+number, like "random99", This will cause each test to use a random number of
+threads. If a number is specified, it is used as a maximum number of threads,
+otherwise 16 is the maximum.
+
+In case a test fails, the thread count used for it will be written into the
+errfile.
+
 @item THREAD_TYPE
 Specify which threading strategy test, either @samp{slice} or @samp{frame},
 by default @samp{slice+frame}
