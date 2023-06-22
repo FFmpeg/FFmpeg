@@ -226,9 +226,6 @@ static int evcc_write(AVIOContext *pb, EVCDecoderConfigurationRecord *evcc)
     if (!sps_count || sps_count > EVC_MAX_SPS_COUNT)
         return AVERROR_INVALIDDATA;
 
-    if (!sps_count || sps_count > EVC_MAX_SPS_COUNT)
-        return AVERROR_INVALIDDATA;
-
     /* unsigned int(8) configurationVersion = 1; */
     avio_w8(pb, evcc->configurationVersion);
 
