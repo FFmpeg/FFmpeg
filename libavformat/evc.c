@@ -41,35 +41,6 @@ enum {
     NB_ARRAYS
 };
 
-// The sturcture reflects SPS RBSP(raw byte sequence payload) layout
-// @see ISO_IEC_23094-1 section 7.3.2.1
-//
-// The following descriptors specify the parsing process of each element
-// u(n) - unsigned integer using n bits
-// ue(v) - unsigned integer 0-th order Exp_Golomb-coded syntax element with the left bit first
-typedef struct EVCSPS {
-    int sps_seq_parameter_set_id;   // ue(v)
-    int profile_idc;                // u(8)
-    int level_idc;                  // u(8)
-    int toolset_idc_h;              // u(32)
-    int toolset_idc_l;              // u(32)
-    int chroma_format_idc;          // ue(v)
-    int pic_width_in_luma_samples;  // ue(v)
-    int pic_height_in_luma_samples; // ue(v)
-    int bit_depth_luma_minus8;      // ue(v)
-    int bit_depth_chroma_minus8;    // ue(v)
-
-    // @note
-    // Currently the structure does not reflect the entire SPS RBSP layout.
-    // It contains only the fields that are necessary to read from the NAL unit all the values
-    // necessary for the correct initialization of EVCDecoderConfigurationRecord
-
-    // @note
-    // If necessary, add the missing fields to the structure to reflect
-    // the contents of the entire NAL unit of the SPS type
-
-} EVCSPS;
-
 // @see ISO/IEC 14496-15:2021 Coding of audio-visual objects - Part 15: section 12.3.3.3
 typedef struct EVCNALUnitArray {
     uint8_t  array_completeness; // when equal to 1 indicates that all NAL units of the given type are in the following array
@@ -116,7 +87,7 @@ typedef struct NALUList {
 static int evcc_parse_sps(const uint8_t *bs, int bs_size, EVCDecoderConfigurationRecord *evcc)
 {
     GetBitContext gb;
-    EVCSPS sps;
+    unsigned sps_seq_parameter_set_id;
 
     bs += EVC_NALU_HEADER_SIZE;
     bs_size -= EVC_NALU_HEADER_SIZE;
@@ -124,41 +95,31 @@ static int evcc_parse_sps(const uint8_t *bs, int bs_size, EVCDecoderConfiguratio
     if (init_get_bits8(&gb, bs, bs_size) < 0)
         return 0;
 
-    sps.sps_seq_parameter_set_id = get_ue_golomb_long(&gb);
+    sps_seq_parameter_set_id = get_ue_golomb_31(&gb);
 
-    if (sps.sps_seq_parameter_set_id >= EVC_MAX_SPS_COUNT)
+    if (sps_seq_parameter_set_id >= EVC_MAX_SPS_COUNT)
         return 0;
 
     // the Baseline profile is indicated by profile_idc eqal to 0
     // the Main profile is indicated by profile_idc eqal to 1
-    sps.profile_idc = get_bits(&gb, 8);
+    evcc->profile_idc = get_bits(&gb, 8);
 
-    sps.level_idc = get_bits(&gb, 8);
+    evcc->level_idc = get_bits(&gb, 8);
 
-    sps.toolset_idc_h = get_bits_long(&gb, 32);
-    sps.toolset_idc_l = get_bits_long(&gb, 32);
+    evcc->toolset_idc_h = get_bits_long(&gb, 32);
+    evcc->toolset_idc_l = get_bits_long(&gb, 32);
 
     // 0 - monochrome
     // 1 - 4:2:0
     // 2 - 4:2:2
     // 3 - 4:4:4
-    sps.chroma_format_idc = get_ue_golomb_long(&gb);
+    evcc->chroma_format_idc = get_ue_golomb_31(&gb);
 
-    sps.pic_width_in_luma_samples = get_ue_golomb_long(&gb);
-    sps.pic_height_in_luma_samples = get_ue_golomb_long(&gb);
+    evcc->pic_width_in_luma_samples = get_ue_golomb_long(&gb);
+    evcc->pic_height_in_luma_samples = get_ue_golomb_long(&gb);
 
-    sps.bit_depth_luma_minus8 = get_ue_golomb_long(&gb);
-    sps.bit_depth_chroma_minus8 = get_ue_golomb_long(&gb);
-
-    evcc->profile_idc = sps.profile_idc;
-    evcc->level_idc = sps.level_idc;
-    evcc->toolset_idc_h = sps.toolset_idc_h;
-    evcc->toolset_idc_l = sps.toolset_idc_l;
-    evcc->chroma_format_idc = sps.chroma_format_idc;
-    evcc->bit_depth_luma_minus8 = sps.bit_depth_luma_minus8;
-    evcc->bit_depth_chroma_minus8 = sps.bit_depth_chroma_minus8;
-    evcc->pic_width_in_luma_samples = sps.pic_width_in_luma_samples;
-    evcc->pic_height_in_luma_samples = sps.pic_height_in_luma_samples;
+    evcc->bit_depth_luma_minus8 = get_ue_golomb_31(&gb);
+    evcc->bit_depth_chroma_minus8 = get_ue_golomb_31(&gb);
 
     return 0;
 }
