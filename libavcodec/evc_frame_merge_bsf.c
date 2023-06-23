@@ -228,15 +228,17 @@ static int evc_frame_merge_filter(AVBSFContext *bsf, AVPacket *out)
     data_size = ctx->au_buffer.data_size;
 
     ctx->au_buffer.data_size = 0;
-    err = av_new_packet(out, data_size);
-    if (err < 0)
-        goto end;
-    err = av_packet_copy_props(out, buffer_pkt);
+    // drop the data in buffer_pkt, if any, but keep the props
+    av_buffer_unref(&buffer_pkt->buf);
+    err = av_buffer_realloc(&buffer_pkt->buf, data_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (err < 0)
         goto end;
 
-    av_packet_unref(buffer_pkt);
+    buffer_pkt->data = buffer_pkt->buf->data;
+    buffer_pkt->size = data_size;
+    av_packet_move_ref(out, buffer_pkt);
     memcpy(out->data, ctx->au_buffer.data, data_size);
+    memset(out->data + data_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
     err = 0;
 end:
