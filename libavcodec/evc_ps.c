@@ -315,7 +315,7 @@ int ff_evc_parse_pps(GetBitContext *gb, EVCParamSets *ps)
     int ret;
 
     pps_pic_parameter_set_id = get_ue_golomb(gb);
-    if (pps_pic_parameter_set_id > EVC_MAX_PPS_COUNT)
+    if (pps_pic_parameter_set_id >= EVC_MAX_PPS_COUNT)
         return AVERROR_INVALIDDATA;
 
     pps = av_malloc(sizeof(*pps));
