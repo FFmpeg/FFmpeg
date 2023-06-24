@@ -1,4 +1,4 @@
-afdff47e9c71d912153e59a56afdf2a9 *tests/data/fate/vsynth3-jpeg2000-yuva444p16.avi
-194250 tests/data/fate/vsynth3-jpeg2000-yuva444p16.avi
-9e0ef11f8c85206a950a919cb679f129 *tests/data/fate/vsynth3-jpeg2000-yuva444p16.out.rawvideo
-stddev:   10.72 PSNR: 27.53 MAXDIFF:   82 bytes:    86700/    86700
+ae5951cee3db63c7c6f81d23b601c0fb *tests/data/fate/vsynth3-jpeg2000-yuva444p16.avi
+194668 tests/data/fate/vsynth3-jpeg2000-yuva444p16.avi
+d959793c1f0bb86b0fc509d5747e03c7 *tests/data/fate/vsynth3-jpeg2000-yuva444p16.out.rawvideo
+stddev:    3.06 PSNR: 38.39 MAXDIFF:   40 bytes:    86700/    86700

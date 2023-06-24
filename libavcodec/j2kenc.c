@@ -127,7 +127,7 @@ typedef struct {
     uint8_t *buf_end;
     int bit_index;
 
-    int64_t lambda;
+    uint64_t lambda;
 
     Jpeg2000CodingStyle codsty;
     Jpeg2000QuantStyle  qntsty;
@@ -1348,7 +1348,7 @@ static void makelayers(Jpeg2000EncoderContext *s, Jpeg2000Tile *tile)
     }
 }
 
-static int getcut(Jpeg2000Cblk *cblk, int64_t lambda, int dwt_norm)
+static int getcut(Jpeg2000Cblk *cblk, uint64_t lambda, int dwt_norm)
 {
     int passno, res = 0;
     for (passno = 0; passno < cblk->npasses; passno++){
