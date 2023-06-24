@@ -23,6 +23,8 @@
 
 #include "packet.h"
 
+#define AVPACKET_IS_EMPTY(pkt) (!(pkt)->data && !(pkt)->side_data_elems)
+
 typedef struct PacketListEntry {
     struct PacketListEntry *next;
     AVPacket pkt;
