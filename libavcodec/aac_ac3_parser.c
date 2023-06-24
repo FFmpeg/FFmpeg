@@ -95,6 +95,7 @@ get_next:
            duration in seconds is still correct (as is the number of bits in
            the frame). */
         if (avctx->codec_id != AV_CODEC_ID_AAC) {
+#if CONFIG_AC3_PARSER
             AC3HeaderInfo hdr, *phrd = &hdr;
             int offset = ff_ac3_find_syncword(buf, buf_size);
 
@@ -146,7 +147,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
             if (hdr.bitstream_mode == 0x7 && hdr.channels > 1)
                 avctx->audio_service_type = AV_AUDIO_SERVICE_TYPE_KARAOKE;
             bit_rate = hdr.bit_rate;
+#endif
         } else {
+#if CONFIG_AAC_PARSER
             AACADTSHeaderInfo hdr, *phrd = &hdr;
             int ret = avpriv_adts_header_parse(&phrd, buf, buf_size);
 
@@ -154,6 +157,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 return i;
 
             bit_rate = hdr.bit_rate;
+#endif
         }
 
         /* Calculate the average bit rate */
