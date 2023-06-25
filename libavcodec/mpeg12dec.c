@@ -2522,6 +2522,11 @@ static int decode_chunks(AVCodecContext *avctx, AVFrame *picture,
             }
             picture_start_code_seen = 1;
 
+            if (buf == avctx->extradata && avctx->codec_tag == AV_RL32("AVmp")) {
+                av_log(avctx, AV_LOG_WARNING, "ignoring picture start code in AVmp extradata\n");
+                break;
+            }
+
             if (s2->width <= 0 || s2->height <= 0) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid frame dimensions %dx%d.\n",
                        s2->width, s2->height);
