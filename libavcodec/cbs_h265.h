@@ -741,6 +741,12 @@ typedef struct H265RawSEI {
     SEIRawMessageList    message_list;
 } H265RawSEI;
 
+typedef struct H265RawFiller {
+    H265RawNALUnitHeader nal_unit_header;
+
+    uint32_t filler_size;
+} H265RawFiller;
+
 typedef struct CodedBitstreamH265Context {
     // Reader/writer context in common with the H.264 implementation.
     CodedBitstreamH2645Context common;

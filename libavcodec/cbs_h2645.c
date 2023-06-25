@@ -1055,6 +1055,14 @@ static int cbs_h265_read_nal_unit(CodedBitstreamContext *ctx,
         }
         break;
 
+    case HEVC_NAL_FD_NUT:
+        {
+            err = cbs_h265_read_filler(ctx, &gbc, unit->content);
+            if (err < 0)
+                return err;
+        }
+        break;
+
     case HEVC_NAL_SEI_PREFIX:
     case HEVC_NAL_SEI_SUFFIX:
         {
@@ -1492,6 +1500,14 @@ static int cbs_h265_write_nal_unit(CodedBitstreamContext *ctx,
     case HEVC_NAL_AUD:
         {
             err = cbs_h265_write_aud(ctx, pbc, unit->content);
+            if (err < 0)
+                return err;
+        }
+        break;
+
+    case HEVC_NAL_FD_NUT:
+        {
+            err = cbs_h265_write_filler(ctx, pbc, unit->content);
             if (err < 0)
                 return err;
         }
@@ -2006,6 +2022,7 @@ static const CodedBitstreamUnitTypeDescriptor cbs_h265_unit_types[] = {
     CBS_UNIT_TYPE_INTERNAL_REF(HEVC_NAL_PPS, H265RawPPS, extension_data.data),
 
     CBS_UNIT_TYPE_POD(HEVC_NAL_AUD, H265RawAUD),
+    CBS_UNIT_TYPE_POD(HEVC_NAL_FD_NUT, H265RawFiller),
 
     // Slices of non-IRAP pictures.
     CBS_UNIT_RANGE_INTERNAL_REF(HEVC_NAL_TRAIL_N, HEVC_NAL_RASL_R,

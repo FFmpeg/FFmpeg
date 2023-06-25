@@ -2364,3 +2364,32 @@ static int FUNC(sei)(CodedBitstreamContext *ctx, RWContext *rw,
 
     return 0;
 }
+
+
+static int FUNC(filler)(CodedBitstreamContext *ctx, RWContext *rw,
+                        H265RawFiller *current)
+{
+    int err;
+
+    HEADER("Filler Data");
+
+    CHECK(FUNC(nal_unit_header)(ctx, rw, &current->nal_unit_header,
+                                HEVC_NAL_FD_NUT));
+
+#ifdef READ
+    while (show_bits(rw, 8) == 0xff) {
+        fixed(8, ff_byte, 0xff);
+        ++current->filler_size;
+    }
+#else
+    {
+        uint32_t i;
+        for (i = 0; i < current->filler_size; i++)
+            fixed(8, ff_byte, 0xff);
+    }
+#endif
+
+    CHECK(FUNC(rbsp_trailing_bits)(ctx, rw));
+
+    return 0;
+}
