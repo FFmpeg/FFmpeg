@@ -520,6 +520,9 @@ static int vk_h264_end_frame(AVCodecContext *avctx)
     if (!hp->h264_pic_info.sliceCount)
         return 0;
 
+    if (!vp->slices_buf)
+        return AVERROR(EINVAL);
+
     if (!dec->session_params) {
         int err = vk_h264_create_params(avctx, &dec->session_params);
         if (err < 0)
