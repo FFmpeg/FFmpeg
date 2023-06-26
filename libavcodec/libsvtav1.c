@@ -242,8 +242,19 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
     if (avctx->level != FF_LEVEL_UNKNOWN)
         param->level = avctx->level;
 
-    if (avctx->gop_size > 0)
+    // gop_size == 1 case is handled when encoding each frame by setting
+    // pic_type to EB_AV1_KEY_PICTURE. For gop_size > 1, set the
+    // intra_period_length. Even though setting intra_period_length to 0 should
+    // work in this case, it does not.
+    // See: https://gitlab.com/AOMediaCodec/SVT-AV1/-/issues/2076
+    if (avctx->gop_size > 1)
         param->intra_period_length  = avctx->gop_size - 1;
+
+    // In order for SVT-AV1 to force keyframes by setting pic_type to
+    // EB_AV1_KEY_PICTURE on any frame, force_key_frames has to be set. Note
+    // that this does not force all frames to be keyframes (it only forces a
+    // keyframe with pic_type is set to EB_AV1_KEY_PICTURE).
+    param->force_key_frames = 1;
 
     if (avctx->framerate.num > 0 && avctx->framerate.den > 0) {
         param->frame_rate_numerator   = avctx->framerate.num;
@@ -461,6 +472,9 @@ static int eb_send_frame(AVCodecContext *avctx, const AVFrame *frame)
         headerPtr->pic_type = EB_AV1_INVALID_PICTURE;
         break;
     }
+
+    if (avctx->gop_size == 1)
+        headerPtr->pic_type = EB_AV1_KEY_PICTURE;
 
     svt_av1_enc_send_picture(svt_enc->svt_handle, headerPtr);
 
