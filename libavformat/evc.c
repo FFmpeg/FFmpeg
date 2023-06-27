@@ -93,7 +93,7 @@ static int evcc_parse_sps(const uint8_t *bs, int bs_size, EVCDecoderConfiguratio
     if (ret < 0)
         return ret;
 
-    sps_seq_parameter_set_id = get_ue_golomb_31(&gb);
+    sps_seq_parameter_set_id = get_ue_golomb_long(&gb);
 
     if (sps_seq_parameter_set_id >= EVC_MAX_SPS_COUNT)
         return AVERROR_INVALIDDATA;
@@ -111,15 +111,15 @@ static int evcc_parse_sps(const uint8_t *bs, int bs_size, EVCDecoderConfiguratio
     // 1 - 4:2:0
     // 2 - 4:2:2
     // 3 - 4:4:4
-    evcc->chroma_format_idc = get_ue_golomb_31(&gb);
+    evcc->chroma_format_idc = get_ue_golomb_long(&gb);
     if (evcc->chroma_format_idc > 3)
         return AVERROR_INVALIDDATA;
 
     evcc->pic_width_in_luma_samples = get_ue_golomb_long(&gb);
     evcc->pic_height_in_luma_samples = get_ue_golomb_long(&gb);
 
-    evcc->bit_depth_luma_minus8 = get_ue_golomb_31(&gb);
-    evcc->bit_depth_chroma_minus8 = get_ue_golomb_31(&gb);
+    evcc->bit_depth_luma_minus8 = get_ue_golomb_long(&gb);
+    evcc->bit_depth_chroma_minus8 = get_ue_golomb_long(&gb);
     // EVCDecoderConfigurationRecord can't store values > 7. Limit it to bit depth 14.
     if (evcc->bit_depth_luma_minus8 > 6 || evcc->bit_depth_chroma_minus8 > 6)
         return AVERROR_INVALIDDATA;
