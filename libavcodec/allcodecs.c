@@ -516,6 +516,7 @@ extern const FFCodec ff_nellymoser_decoder;
 extern const FFCodec ff_on2avc_decoder;
 extern const FFCodec ff_opus_encoder;
 extern const FFCodec ff_opus_decoder;
+extern const FFCodec ff_osq_decoder;
 extern const FFCodec ff_paf_audio_decoder;
 extern const FFCodec ff_qcelp_decoder;
 extern const FFCodec ff_qdm2_decoder;

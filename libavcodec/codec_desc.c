@@ -3413,6 +3413,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("AC-4"),
         .props     = AV_CODEC_PROP_LOSSY,
     },
+    {
+        .id        = AV_CODEC_ID_OSQ,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "osq",
+        .long_name = NULL_IF_CONFIG_SMALL("OSQ (Original Sound Quality)"),
+        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+    },
 
     /* subtitle codecs */
     {
