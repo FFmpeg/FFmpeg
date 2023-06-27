@@ -30,6 +30,7 @@ version <next>:
 - support for the P_SKIP hinting to speed up libx264 encoding
 - Support HEVC,VP9,AV1 codec in enhanced flv format
 - apsnr and asisdr audio filters
+- OSQ demuxer and decoder
 
 
 version 6.0:
