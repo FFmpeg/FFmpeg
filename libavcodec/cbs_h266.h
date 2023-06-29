@@ -80,7 +80,7 @@ typedef struct H266GeneralConstraintsInfo {
 
     /* inter */
     uint8_t gci_no_ref_pic_resampling_constraint_flag;
-    uint8_t gci_no_res_change_in_clvs_constraint_flag;;
+    uint8_t gci_no_res_change_in_clvs_constraint_flag;
     uint8_t gci_no_weighted_prediction_constraint_flag;
     uint8_t gci_no_ref_wraparound_constraint_flag;
     uint8_t gci_no_temporal_mvp_constraint_flag;
@@ -211,7 +211,7 @@ typedef struct H266RawVUI {
     uint8_t  vui_aspect_ratio_idc;
 
     uint16_t vui_sar_width;
-    uint16_t vui_sar_height;;
+    uint16_t vui_sar_height;
 
     uint8_t  vui_overscan_info_present_flag;
     uint8_t  vui_overscan_appropriate_flag;
