@@ -31,6 +31,7 @@
 #include "hevc.h"
 #include "startcode.h"
 #include "vc1_common.h"
+#include "vvc.h"
 
 typedef struct ExtractExtradataContext {
     const AVClass *class;
@@ -134,6 +135,9 @@ static int extract_extradata_av1(AVBSFContext *ctx, AVPacket *pkt,
 static int extract_extradata_h2645(AVBSFContext *ctx, AVPacket *pkt,
                                    uint8_t **data, int *size)
 {
+    static const int extradata_nal_types_vvc[] = {
+        VVC_VPS_NUT, VVC_SPS_NUT, VVC_PPS_NUT,
+    };
     static const int extradata_nal_types_hevc[] = {
         HEVC_NAL_VPS, HEVC_NAL_SPS, HEVC_NAL_PPS,
     };
@@ -148,7 +152,10 @@ static int extract_extradata_h2645(AVBSFContext *ctx, AVPacket *pkt,
     int nb_extradata_nal_types;
     int i, has_sps = 0, has_vps = 0, ret = 0;
 
-    if (ctx->par_in->codec_id == AV_CODEC_ID_HEVC) {
+    if (ctx->par_in->codec_id == AV_CODEC_ID_VVC) {
+        extradata_nal_types    = extradata_nal_types_vvc;
+        nb_extradata_nal_types = FF_ARRAY_ELEMS(extradata_nal_types_vvc);
+    } else if (ctx->par_in->codec_id == AV_CODEC_ID_HEVC) {
         extradata_nal_types    = extradata_nal_types_hevc;
         nb_extradata_nal_types = FF_ARRAY_ELEMS(extradata_nal_types_hevc);
     } else {
@@ -165,7 +172,10 @@ static int extract_extradata_h2645(AVBSFContext *ctx, AVPacket *pkt,
         H2645NAL *nal = &s->h2645_pkt.nals[i];
         if (val_in_array(extradata_nal_types, nb_extradata_nal_types, nal->type)) {
             extradata_size += nal->raw_size + 3;
-            if (ctx->par_in->codec_id == AV_CODEC_ID_HEVC) {
+            if (ctx->par_in->codec_id == AV_CODEC_ID_VVC) {
+                if (nal->type == VVC_SPS_NUT) has_sps = 1;
+                if (nal->type == VVC_VPS_NUT) has_vps = 1;
+            } else if (ctx->par_in->codec_id == AV_CODEC_ID_HEVC) {
                 if (nal->type == HEVC_NAL_SPS) has_sps = 1;
                 if (nal->type == HEVC_NAL_VPS) has_vps = 1;
             } else {
@@ -177,7 +187,8 @@ static int extract_extradata_h2645(AVBSFContext *ctx, AVPacket *pkt,
     }
 
     if (extradata_size &&
-        ((ctx->par_in->codec_id == AV_CODEC_ID_HEVC && has_sps && has_vps) ||
+        ((ctx->par_in->codec_id == AV_CODEC_ID_VVC  && has_sps) ||
+         (ctx->par_in->codec_id == AV_CODEC_ID_HEVC && has_sps && has_vps) ||
          (ctx->par_in->codec_id == AV_CODEC_ID_H264 && has_sps))) {
         AVBufferRef *filtered_buf = NULL;
         PutByteContext pb_filtered_data, pb_extradata;
@@ -335,6 +346,7 @@ static const struct {
     { AV_CODEC_ID_MPEG2VIDEO, extract_extradata_mpeg12  },
     { AV_CODEC_ID_MPEG4,      extract_extradata_mpeg4   },
     { AV_CODEC_ID_VC1,        extract_extradata_vc1     },
+    { AV_CODEC_ID_VVC,        extract_extradata_h2645   },
 };
 
 static int extract_extradata_init(AVBSFContext *ctx)
@@ -404,6 +416,7 @@ static const enum AVCodecID codec_ids[] = {
     AV_CODEC_ID_MPEG2VIDEO,
     AV_CODEC_ID_MPEG4,
     AV_CODEC_ID_VC1,
+    AV_CODEC_ID_VVC,
     AV_CODEC_ID_NONE,
 };
 
