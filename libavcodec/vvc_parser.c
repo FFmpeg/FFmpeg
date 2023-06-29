@@ -22,9 +22,7 @@
 
 #include "cbs.h"
 #include "cbs_h266.h"
-#include "internal.h"
 #include "parser.h"
-#include "decode.h"
 
 #define START_CODE 0x000001 ///< start_code_prefix_one_3bytes
 #define IS_IDR(nut)   (nut == VVC_IDR_W_RADL || nut == VVC_IDR_N_LP)
