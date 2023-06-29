@@ -745,7 +745,7 @@ static int decode_filter(RKAContext *s, ChContext *ctx, ACoder *ac, int off, uns
                 }
                 ctx->buf1[off] = sum - ctx->buf0[off + -1];
                 ctx->buf0[off] = sum;
-                m += FFABS(ctx->buf1[off]);
+                m += (unsigned)FFABS(ctx->buf1[off]);
             }
         }
         if (ctx->cmode2 != 0) {
