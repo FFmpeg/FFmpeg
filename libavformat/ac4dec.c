@@ -93,7 +93,7 @@ static int ac4_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-AVInputFormat ff_ac4_demuxer = {
+const AVInputFormat ff_ac4_demuxer = {
     .name           = "ac4",
     .long_name      = NULL_IF_CONFIG_SMALL("raw AC-4"),
     .read_probe     = ac4_probe,
