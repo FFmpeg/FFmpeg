@@ -5,11 +5,18 @@
 fate-cbs: fate-cbs-av1 fate-cbs-h264 fate-cbs-hevc fate-cbs-mpeg2 fate-cbs-vp9
 
 FATE_CBS_DEPS = $(call ALLYES, $(1)_DEMUXER $(2)_PARSER $(3)_METADATA_BSF $(4)_DECODER $(5)_MUXER)
+FATE_CBS_NO_DEC_DEPS = $(call ALLYES, $(1)_DEMUXER $(2)_PARSER $(3)_METADATA_BSF $(4)_MUXER)
 
 define FATE_CBS_TEST
 # (codec, test_name, sample_file, output_format)
 FATE_CBS_$(1) += fate-cbs-$(1)-$(2)
 fate-cbs-$(1)-$(2): CMD = md5 -c:v $(3) -i $(TARGET_SAMPLES)/$(4) -c:v copy -y -bsf:v $(1)_metadata -f $(5)
+endef
+
+define FATE_CBS_NO_DEC_TEST
+# (codec, test_name, sample_file, output_format)
+FATE_CBS_$(1) += fate-cbs-$(1)-$(2)
+fate-cbs-$(1)-$(2): CMD = md5 -i $(TARGET_SAMPLES)/$(3) -c:v copy -y -bsf:v $(1)_metadata -f $(4)
 endef
 
 define FATE_CBS_DISCARD_TEST
@@ -162,6 +169,39 @@ FATE_CBS_HEVC-$(call ALLYES, MP4_MUXER, HEVC_PARSER, FILTER_UNITS_BSF, HEVC_MUXE
 
 FATE_SAMPLES_AVCONV += $(FATE_CBS_HEVC-yes)
 fate-cbs-hevc: $(FATE_CBS_HEVC-yes)
+
+# H.266 read/write
+
+FATE_CBS_VVC_SAMPLES =        \
+    AUD_A_3.bit               \
+    BOUNDARY_A_3.bit          \
+    BUMP_A_2.bit              \
+    CodingToolsSets_A_2.bit   \
+    CROP_B_4.bit              \
+    HRD_A_3.bit               \
+    PHSH_B_1.bit              \
+    POC_A_1.bit               \
+    PPS_B_1.bit               \
+    RAP_A_1.bit               \
+    SAO_A_3.bit               \
+    SCALING_A_1.bit           \
+    SLICES_A_3.bit            \
+    SPS_B_1.bit               \
+    STILL_B_1.bit             \
+    SUBPIC_A_3.bit            \
+    TILE_A_2.bit              \
+    VPS_A_3.bit               \
+    WP_A_3.bit                \
+    WPP_A_3.bit               \
+    WRAP_A_4.bit              \
+
+
+$(foreach N,$(FATE_CBS_VVC_SAMPLES),$(eval $(call FATE_CBS_NO_DEC_TEST,vvc,$(basename $(N)),vvc-conformance/$(N),vvc)))
+
+FATE_CBS_VVC-$(call FATE_CBS_NO_DEC_DEPS, HEVC, HEVC, HEVC, HEVC) = $(FATE_CBS_vvc)
+
+FATE_SAMPLES_AVCONV += $(FATE_CBS_VVC-yes)
+fate-cbs-vvc: $(FATE_CBS_VVC-yes)
 
 # MPEG-2 read/write
 
