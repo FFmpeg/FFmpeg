@@ -2232,7 +2232,7 @@ static int FUNC(pred_weight_table) (CodedBitstreamContext *ctx, RWContext *rw,
 }
 
 static int FUNC(picture_header) (CodedBitstreamContext *ctx, RWContext *rw,
-                                 H266RawPH *current){
+                                 H266RawPictureHeader *current) {
     CodedBitstreamH266Context *h266 = ctx->priv_data;
     const H266RawVPS *vps;
     const H266RawSPS *sps;
@@ -2651,7 +2651,7 @@ static int FUNC(ph) (CodedBitstreamContext *ctx, RWContext *rw,
     HEADER("Picture Header");
 
     CHECK(FUNC(nal_unit_header) (ctx, rw, &current->nal_unit_header, VVC_PH_NUT));
-    CHECK(FUNC(picture_header) (ctx, rw, current));
+    CHECK(FUNC(picture_header) (ctx, rw, &current->ph_picture_header));
     CHECK(FUNC(rbsp_trailing_bits) (ctx, rw));
     return 0;
 }
@@ -2662,7 +2662,7 @@ static int FUNC(slice_header) (CodedBitstreamContext *ctx, RWContext *rw,
     CodedBitstreamH266Context *h266 = ctx->priv_data;
     const H266RawSPS *sps;
     const H266RawPPS *pps;
-    const H266RawPH *ph;
+    const H266RawPictureHeader *ph;
     const H266RefPicLists *ref_pic_lists;
     int err, i;
     uint8_t nal_unit_type, qp_bd_offset;
@@ -2675,12 +2675,11 @@ static int FUNC(slice_header) (CodedBitstreamContext *ctx, RWContext *rw,
 
     flag(sh_picture_header_in_slice_header_flag);
     if (current->sh_picture_header_in_slice_header_flag) {
+        // 7.4.8 if sh_picture_header_in_slice_header_flag is true, we do not have a PH NAL unit
         CHECK(FUNC(picture_header) (ctx, rw, &current->sh_picture_header));
         ph = &current->sh_picture_header;
-        //7.4.8 if sh_picture_header_in_slice_header_flag is true, we do not have PH NAL unit
-        h266->priv.ph = NULL;
     } else {
-        ph = h266->priv.ph;
+        ph = h266->ph;
         if (!ph) {
             av_log(ctx->log_ctx, AV_LOG_ERROR,
                    "Picture header not available.\n");
@@ -2822,7 +2821,7 @@ static int FUNC(slice_header) (CodedBitstreamContext *ctx, RWContext *rw,
               (ctx, rw, sps, pps, &current->sh_ref_pic_lists));
         ref_pic_lists = &current->sh_ref_pic_lists;
     } else {
-        ref_pic_lists = &h266->priv.ph->ph_ref_pic_lists;
+        ref_pic_lists = &ph->ph_ref_pic_lists;
     }
     if ((current->sh_slice_type != VVC_SLICE_TYPE_I &&
          ref_pic_lists->rpl_ref_list[0].num_ref_entries > 1) ||

@@ -581,8 +581,7 @@ typedef struct H266RawPredWeightTable {
     int16_t  delta_chroma_offset_l1[15][2];
 } H266RawPredWeightTable;
 
-typedef struct  H266RawPH {
-    H266RawNALUnitHeader nal_unit_header;
+typedef struct  H266RawPictureHeader {
     uint8_t  ph_gdr_or_irap_pic_flag;
     uint8_t  ph_non_ref_pic_flag;
     uint8_t  ph_gdr_pic_flag;
@@ -670,12 +669,17 @@ typedef struct  H266RawPH {
 
     uint8_t  ph_extension_length;
     uint8_t  ph_extension_data_byte[256];
+} H266RawPictureHeader;
+
+typedef struct H266RawPH {
+    H266RawNALUnitHeader nal_unit_header;
+    H266RawPictureHeader ph_picture_header;
 } H266RawPH;
 
 typedef struct  H266RawSliceHeader {
     H266RawNALUnitHeader nal_unit_header;
     uint8_t  sh_picture_header_in_slice_header_flag;
-    H266RawPH sh_picture_header;
+    H266RawPictureHeader sh_picture_header;
 
     uint16_t sh_subpic_id;
     uint16_t sh_slice_address;
@@ -770,14 +774,11 @@ typedef struct CodedBitstreamH266Context {
     AVBufferRef *vps_ref[VVC_MAX_VPS_COUNT];
     AVBufferRef *sps_ref[VVC_MAX_SPS_COUNT];
     AVBufferRef *pps_ref[VVC_MAX_PPS_COUNT];
+    AVBufferRef *ph_ref;
     H266RawVPS  *vps[VVC_MAX_SPS_COUNT];
     H266RawSPS  *sps[VVC_MAX_SPS_COUNT];
     H266RawPPS  *pps[VVC_MAX_PPS_COUNT];
-
-    struct {
-        AVBufferRef *ph_ref;
-        H266RawPH   *ph;
-    } priv;
+    H266RawPictureHeader *ph;
 } CodedBitstreamH266Context;
 
 #endif /* AVCODEC_CBS_H266_H */

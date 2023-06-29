@@ -31,7 +31,7 @@
 typedef struct PuInfo {
     const H266RawPPS *pps;
     const H266RawSPS *sps;
-    const H266RawPH *ph;
+    const H266RawPictureHeader *ph;
     const H266RawSlice *slice;
     int pic_type;
 } PuInfo;
@@ -155,7 +155,6 @@ static void set_parser_ctx(AVCodecParserContext *s, AVCodecContext *avctx,
     };
     const H266RawSPS *sps = pu->sps;
     const H266RawPPS *pps = pu->pps;
-    //const H266RawPH  *ph  = pu->ph;
     const H266RawNALUnitHeader *nal = &pu->slice->header.nal_unit_header;
 
     s->pict_type = pu->pic_type;
@@ -205,7 +204,7 @@ static void set_parser_ctx(AVCodecParserContext *s, AVCodecContext *avctx,
 //We follow the VTM.
 static void get_slice_poc(VVCParserContext *s, int *poc,
                           const H266RawSPS *sps,
-                          const H266RawPH *ph,
+                          const H266RawPictureHeader *ph,
                           const H266RawSliceHeader *slice, void *log_ctx)
 {
     int poc_msb, max_poc_lsb, poc_lsb;
@@ -251,7 +250,7 @@ static int is_au_start(VVCParserContext *s, const PuInfo *pu, void *log_ctx)
     AuDetector *d = &s->au_detector;
     const H266RawSPS *sps = pu->sps;
     const H266RawNALUnitHeader *nal = &pu->slice->header.nal_unit_header;
-    const H266RawPH *ph = pu->ph;
+    const H266RawPictureHeader *ph = pu->ph;
     const H266RawSlice *slice = pu->slice;
     int ret, poc, nut;
 
@@ -282,7 +281,8 @@ static int get_pu_info(PuInfo *info, const CodedBitstreamH266Context *h266,
         if (!nal)
             continue;
         if ( nal->nal_unit_type == VVC_PH_NUT ) {
-            info->ph = pu->units[i].content;
+            const H266RawPH *ph = pu->units[i].content;
+            info->ph = &ph->ph_picture_header;
         } else if (IS_H266_SLICE(nal->nal_unit_type)) {
             info->slice = pu->units[i].content;
             if (info->slice->header.sh_picture_header_in_slice_header_flag)

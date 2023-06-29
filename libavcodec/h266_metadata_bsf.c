@@ -48,7 +48,7 @@ static int h266_metadata_update_fragment(AVBSFContext *bsf, AVPacket *pkt,
             ff_cbs_delete_unit(pu, 0);
     } else if ( pkt && ctx->aud == BSF_ELEMENT_INSERT) {
         const H266RawSlice *first_slice = NULL;
-        const H266RawPH *ph = NULL;
+        const H266RawPictureHeader *ph = NULL;
         H266RawAUD *aud = &ctx->aud_nal;
         int pic_type = 0, temporal_id = 8, layer_id = 0;
         for (i = 0; i < pu->nb_units; i++) {
@@ -58,7 +58,8 @@ static int h266_metadata_update_fragment(AVBSFContext *bsf, AVPacket *pkt,
             if (nal->nuh_temporal_id_plus1 < temporal_id + 1)
                 temporal_id = nal->nuh_temporal_id_plus1 - 1;
             if ( nal->nal_unit_type == VVC_PH_NUT ) {
-                ph = pu->units[i].content;
+                const H266RawPH *header = pu->units[i].content;
+                ph = &header->ph_picture_header;
             } else if (IS_H266_SLICE(nal->nal_unit_type)) {
                 const H266RawSlice *slice = pu->units[i].content;
                 layer_id = nal->nuh_layer_id;

@@ -525,12 +525,6 @@ static int cbs_h2645_split_fragment(CodedBitstreamContext *ctx,
     if (frag->data_size == 0)
         return 0;
 
-    if (codec_id == AV_CODEC_ID_VVC) {
-        //we deactive picture header here to avoid reuse previous au's ph.
-        CodedBitstreamH266Context *h266 = ctx->priv_data;
-        h266->priv.ph = NULL;
-    }
-
     if (header && frag->data[0] && codec_id == AV_CODEC_ID_H264) {
         // AVCC header.
         size_t size, start, end;
@@ -793,19 +787,20 @@ cbs_h266_replace_ps(6, SPS, sps, sps_seq_parameter_set_id)
 cbs_h266_replace_ps(6, PPS, pps, pps_pic_parameter_set_id)
 
 static int cbs_h266_replace_ph(CodedBitstreamContext *ctx,
-                               CodedBitstreamUnit *unit)
+                               CodedBitstreamUnit *unit,
+                               H266RawPictureHeader *ph)
 {
     CodedBitstreamH266Context *h266 = ctx->priv_data;
     int err;
 
-    h266->priv.ph = NULL;
     err = ff_cbs_make_unit_refcounted(ctx, unit);
     if (err < 0)
         return err;
-    err = av_buffer_replace(&h266->priv.ph_ref, unit->content_ref);
+    av_assert0(unit->content_ref);
+    err = av_buffer_replace(&h266->ph_ref, unit->content_ref);
     if (err < 0)
         return err;
-    h266->priv.ph = (H266RawPH*)h266->priv.ph_ref->data;
+    h266->ph = ph;
     return 0;
 }
 
@@ -1111,7 +1106,7 @@ static int cbs_h266_read_nal_unit(CodedBitstreamContext *ctx,
             err = cbs_h266_read_ph(ctx, &gbc, ph);
             if (err < 0)
                 return err;
-            err = cbs_h266_replace_ph(ctx, unit);
+            err = cbs_h266_replace_ph(ctx, unit, &ph->ph_picture_header);
             if (err < 0)
                 return err;
         }
@@ -1138,6 +1133,12 @@ static int cbs_h266_read_nal_unit(CodedBitstreamContext *ctx,
 
             pos = get_bits_count(&gbc);
             len = unit->data_size;
+
+            if (slice->header.sh_picture_header_in_slice_header_flag) {
+                err = cbs_h266_replace_ph(ctx, unit, &slice->header.sh_picture_header);
+                if (err < 0)
+                    return err;
+            }
 
             slice->data_size = len - pos / 8;
             slice->data_ref  = av_buffer_ref(unit->data_ref);
@@ -1640,7 +1641,7 @@ static int cbs_h266_write_nal_unit(CodedBitstreamContext *ctx,
             if (err < 0)
                 return err;
 
-            err = cbs_h266_replace_ph(ctx, unit);
+            err = cbs_h266_replace_ph(ctx, unit, &ph->ph_picture_header);
             if (err < 0)
                 return err;
         }
@@ -1660,6 +1661,12 @@ static int cbs_h266_write_nal_unit(CodedBitstreamContext *ctx,
             err = cbs_h266_write_slice_header(ctx, pbc, &slice->header);
             if (err < 0)
                 return err;
+
+            if (slice->header.sh_picture_header_in_slice_header_flag) {
+                err = cbs_h266_replace_ph(ctx, unit, &slice->header.sh_picture_header);
+                if (err < 0)
+                    return err;
+            }
 
             if (slice->data) {
                 err = cbs_h2645_write_slice_data(ctx, pbc, slice->data,
@@ -1884,8 +1891,8 @@ static void cbs_h266_flush(CodedBitstreamContext *ctx)
         av_buffer_unref(&h266->pps_ref[i]);
         h266->pps[i] = NULL;
     }
-    av_buffer_unref(&h266->priv.ph_ref);
-    h266->priv.ph = NULL;
+    av_buffer_unref(&h266->ph_ref);
+    h266->ph = NULL;
 }
 
 static void cbs_h266_close(CodedBitstreamContext *ctx)
