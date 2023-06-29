@@ -143,11 +143,9 @@ int ff_evc_parse_sps(GetBitContext *gb, EVCParamSets *ps)
     if (sps_seq_parameter_set_id >= EVC_MAX_SPS_COUNT)
         return AVERROR_INVALIDDATA;
 
-    sps = av_malloc(sizeof(*sps));
+    sps = av_mallocz(sizeof(*sps));
     if (!sps)
         return AVERROR(ENOMEM);
-
-    memset(sps, 0, sizeof(*sps));
 
     sps->sps_seq_parameter_set_id = sps_seq_parameter_set_id;
 
@@ -318,11 +316,9 @@ int ff_evc_parse_pps(GetBitContext *gb, EVCParamSets *ps)
     if (pps_pic_parameter_set_id >= EVC_MAX_PPS_COUNT)
         return AVERROR_INVALIDDATA;
 
-    pps = av_malloc(sizeof(*pps));
+    pps = av_mallocz(sizeof(*pps));
     if (!pps)
         return AVERROR(ENOMEM);
-
-    memset(pps, 0, sizeof(*pps));
 
     pps->pps_pic_parameter_set_id = pps_pic_parameter_set_id;
 
