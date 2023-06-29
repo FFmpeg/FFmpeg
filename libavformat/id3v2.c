@@ -309,8 +309,10 @@ static int decode_str(AVFormatContext *s, AVIOContext *pb, int encoding,
         avio_w8(dynbuf, 0);
 
     dynsize = avio_close_dyn_buf(dynbuf, dst);
-    if (dynsize <= 0)
+    if (dynsize <= 0) {
+        av_freep(dst);
         return AVERROR(ENOMEM);
+    }
     *maxread = left;
 
     return 0;
