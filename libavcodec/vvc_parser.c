@@ -496,7 +496,7 @@ static av_cold int vvc_parser_init(AVCodecParserContext *s)
     return ret;
 }
 
-static void vvc_parser_close(AVCodecParserContext *s)
+static av_cold void vvc_parser_close(AVCodecParserContext *s)
 {
     VVCParserContext *ctx = s->priv_data;
 
