@@ -92,7 +92,7 @@ static const AVFilterPad avfilter_vf_ccrepack_outputs[] = {
     },
 };
 
-AVFilter ff_vf_ccrepack = {
+const AVFilter ff_vf_ccrepack = {
     .name        = "ccrepack",
     .description = NULL_IF_CONFIG_SMALL("Repack CEA-708 closed caption metadata"),
     .uninit      = uninit,
