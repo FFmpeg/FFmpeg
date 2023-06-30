@@ -1059,7 +1059,7 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
             if (current->sps_pic_width_max_in_luma_samples > ctb_size_y)
                 ubs(wlen, sps_subpic_width_minus1[0], 1, 0);
             else
-                infer(sps_subpic_width_minus1[i], tmp_width_val - 1);
+                infer(sps_subpic_width_minus1[0], tmp_width_val - 1);
             if (current->sps_pic_height_max_in_luma_samples > ctb_size_y)
                 ubs(hlen, sps_subpic_height_minus1[0], 1, 0);
             else
