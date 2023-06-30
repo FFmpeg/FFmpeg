@@ -639,12 +639,7 @@ static int FUNC(vps) (CodedBitstreamContext *ctx, RWContext *rw,
     CHECK(FUNC(nal_unit_header) (ctx, rw,
                                  &current->nal_unit_header, VVC_VPS_NUT));
 
-    ub(4, vps_video_parameter_set_id);
-    if (current->vps_video_parameter_set_id == 0) {
-        av_log(ctx->log_ctx, AV_LOG_ERROR,
-               "vps_video_parameter_set_id should > 0.\n");
-        return AVERROR_INVALIDDATA;
-    }
+    u(4, vps_video_parameter_set_id, 1, VVC_MAX_VPS_COUNT - 1);
     ub(6, vps_max_layers_minus1);
     u(3, vps_max_sublayers_minus1, 0, 6);
     if (current->vps_max_layers_minus1 > 0

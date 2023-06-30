@@ -775,7 +775,7 @@ typedef struct CodedBitstreamH266Context {
     AVBufferRef *sps_ref[VVC_MAX_SPS_COUNT];
     AVBufferRef *pps_ref[VVC_MAX_PPS_COUNT];
     AVBufferRef *ph_ref;
-    H266RawVPS  *vps[VVC_MAX_SPS_COUNT];
+    H266RawVPS  *vps[VVC_MAX_VPS_COUNT];
     H266RawSPS  *sps[VVC_MAX_SPS_COUNT];
     H266RawPPS  *pps[VVC_MAX_PPS_COUNT];
     H266RawPictureHeader *ph;
