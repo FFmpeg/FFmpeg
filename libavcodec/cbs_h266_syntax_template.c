@@ -514,9 +514,9 @@ static int FUNC(ref_pic_lists) (CodedBitstreamContext *ctx, RWContext *rw,
         ref_list = &current->rpl_ref_list[i];
 
         num_ltrp_entries = 0;
-        for (int i = 0; i < ref_list->num_ref_entries; i++) {
-            if (!ref_list->inter_layer_ref_pic_flag[i]) {
-                if (!ref_list->st_ref_pic_flag[i]) {
+        for (int k = 0; k < ref_list->num_ref_entries; k++) {
+            if (!ref_list->inter_layer_ref_pic_flag[k]) {
+                if (!ref_list->st_ref_pic_flag[k]) {
                     num_ltrp_entries++;
                 }
             }
