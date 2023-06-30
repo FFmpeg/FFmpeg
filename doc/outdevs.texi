@@ -235,6 +235,11 @@ Enable SMPTE Level A mode on the used output.
 Must be @samp{unset}, @samp{true} or @samp{false}.
 Defaults to @option{unset}.
 
+@item vanc_queue_size
+Sets maximum output buffer size in bytes for VANC data. If the buffering reaches this value,
+outgoing VANC data will be dropped.
+Defaults to @samp{1048576}.
+
 @end table
 
 @subsection Examples

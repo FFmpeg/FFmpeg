@@ -63,6 +63,7 @@ struct decklink_cctx {
     char *format_code;
     int raw_format;
     int64_t queue_size;
+    int64_t vanc_queue_size;
     int copyts;
     int64_t timestamp_align;
     int timing_offset;

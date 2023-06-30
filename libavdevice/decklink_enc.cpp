@@ -345,6 +345,25 @@ static int decklink_setup_subtitle(AVFormatContext *avctx, AVStream *st)
     return ret;
 }
 
+static int decklink_setup_data(AVFormatContext *avctx, AVStream *st)
+{
+    int ret = -1;
+
+    switch(st->codecpar->codec_id) {
+#if CONFIG_LIBKLVANC
+    case AV_CODEC_ID_SMPTE_2038:
+        /* No specific setup required */
+        ret = 0;
+        break;
+#endif
+    default:
+        av_log(avctx, AV_LOG_ERROR, "Unsupported data codec specified\n");
+        break;
+    }
+
+    return ret;
+}
+
 av_cold int ff_decklink_write_trailer(AVFormatContext *avctx)
 {
     struct decklink_cctx *cctx = (struct decklink_cctx *)avctx->priv_data;
@@ -370,6 +389,7 @@ av_cold int ff_decklink_write_trailer(AVFormatContext *avctx)
 #if CONFIG_LIBKLVANC
     klvanc_context_destroy(ctx->vanc_ctx);
 #endif
+    ff_decklink_packet_queue_end(&ctx->vanc_queue);
 
     ff_ccfifo_uninit(&ctx->cc_fifo);
     av_freep(&cctx->ctx);
@@ -551,6 +571,58 @@ static int decklink_construct_vanc(AVFormatContext *avctx, struct decklink_ctx *
     parse_608subs(avctx, ctx, pkt);
     construct_cc(avctx, ctx, pkt, &vanc_lines);
     construct_afd(avctx, ctx, pkt, &vanc_lines, st);
+
+    /* See if there any pending data packets to process */
+    while (ff_decklink_packet_queue_size(&ctx->vanc_queue) > 0) {
+        AVStream *vanc_st;
+        AVPacket vanc_pkt;
+        int64_t pts;
+
+        pts = ff_decklink_packet_queue_peekpts(&ctx->vanc_queue);
+        if (pts > ctx->last_pts) {
+            /* We haven't gotten to the video frame we are supposed to inject
+               the oldest VANC packet into yet, so leave it on the queue... */
+            break;
+        }
+
+        ret = ff_decklink_packet_queue_get(&ctx->vanc_queue, &vanc_pkt, 1);
+        if (vanc_pkt.pts + 1 < ctx->last_pts) {
+            av_log(avctx, AV_LOG_WARNING, "VANC packet too old, throwing away\n");
+            av_packet_unref(&vanc_pkt);
+            continue;
+        }
+
+        vanc_st = avctx->streams[vanc_pkt.stream_index];
+        if (vanc_st->codecpar->codec_id == AV_CODEC_ID_SMPTE_2038) {
+            struct klvanc_smpte2038_anc_data_packet_s *pkt_2038 = NULL;
+
+            klvanc_smpte2038_parse_pes_payload(vanc_pkt.data, vanc_pkt.size, &pkt_2038);
+            if (pkt_2038 == NULL) {
+                av_log(avctx, AV_LOG_ERROR, "failed to decode SMPTE 2038 PES packet");
+                av_packet_unref(&vanc_pkt);
+                continue;
+            }
+            for (int i = 0; i < pkt_2038->lineCount; i++) {
+                struct klvanc_smpte2038_anc_data_line_s *l = &pkt_2038->lines[i];
+                uint16_t *vancWords = NULL;
+                uint16_t vancWordCount;
+
+                if (klvanc_smpte2038_convert_line_to_words(l, &vancWords,
+                                                           &vancWordCount) < 0)
+                    break;
+
+                ret = klvanc_line_insert(ctx->vanc_ctx, &vanc_lines, vancWords,
+                                         vancWordCount, l->line_number, 0);
+                free(vancWords);
+                if (ret != 0) {
+                    av_log(avctx, AV_LOG_ERROR, "VANC line insertion failed\n");
+                    break;
+                }
+            }
+            klvanc_smpte2038_anc_data_packet_free(pkt_2038);
+        }
+        av_packet_unref(&vanc_pkt);
+    }
 
     IDeckLinkVideoFrameAncillary *vanc;
     int result = ctx->dlo->CreateAncillaryData(bmdFormat10BitYUV, &vanc);
@@ -750,6 +822,18 @@ static int decklink_write_subtitle_packet(AVFormatContext *avctx, AVPacket *pkt)
     return 0;
 }
 
+static int decklink_write_data_packet(AVFormatContext *avctx, AVPacket *pkt)
+{
+    struct decklink_cctx *cctx = (struct decklink_cctx *)avctx->priv_data;
+    struct decklink_ctx *ctx = (struct decklink_ctx *)cctx->ctx;
+
+    if (ff_decklink_packet_queue_put(&ctx->vanc_queue, pkt) < 0) {
+        av_log(avctx, AV_LOG_WARNING, "Failed to queue DATA packet\n");
+    }
+
+    return 0;
+}
+
 extern "C" {
 
 av_cold int ff_decklink_write_header(AVFormatContext *avctx)
@@ -814,6 +898,9 @@ av_cold int ff_decklink_write_header(AVFormatContext *avctx)
         } else if (c->codec_type == AVMEDIA_TYPE_VIDEO) {
             if (decklink_setup_video(avctx, st))
                 goto error;
+        } else if (c->codec_type == AVMEDIA_TYPE_DATA) {
+            if (decklink_setup_data(avctx, st))
+                goto error;
         } else if (c->codec_type == AVMEDIA_TYPE_SUBTITLE) {
             if (decklink_setup_subtitle(avctx, st))
                 goto error;
@@ -823,13 +910,16 @@ av_cold int ff_decklink_write_header(AVFormatContext *avctx)
         }
     }
 
+    /* Reconfigure the data/subtitle stream clocks to match the video */
     for (n = 0; n < avctx->nb_streams; n++) {
         AVStream *st = avctx->streams[n];
         AVCodecParameters *c = st->codecpar;
 
-        if(c->codec_type == AVMEDIA_TYPE_SUBTITLE)
+        if(c->codec_type == AVMEDIA_TYPE_DATA ||
+           c->codec_type == AVMEDIA_TYPE_SUBTITLE)
             avpriv_set_pts_info(st, 64, ctx->bmd_tb_num, ctx->bmd_tb_den);
     }
+    ff_decklink_packet_queue_init(avctx, &ctx->vanc_queue, cctx->vanc_queue_size);
 
     ret = ff_ccfifo_init(&ctx->cc_fifo, av_make_q(ctx->bmd_tb_den, ctx->bmd_tb_num), avctx);
     if (ret < 0) {
@@ -852,6 +942,8 @@ int ff_decklink_write_packet(AVFormatContext *avctx, AVPacket *pkt)
         return decklink_write_video_packet(avctx, pkt);
     else if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
         return decklink_write_audio_packet(avctx, pkt);
+    else if (st->codecpar->codec_type == AVMEDIA_TYPE_DATA)
+        return decklink_write_data_packet(avctx, pkt);
     else if (st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE)
         return decklink_write_subtitle_packet(avctx, pkt);
 

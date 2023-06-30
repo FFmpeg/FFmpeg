@@ -115,6 +115,9 @@ struct decklink_ctx {
 
     CCFifo cc_fifo;      ///< closed captions
 
+    /* Output VANC queue */
+    DecklinkPacketQueue vanc_queue;
+
     /* Streams present */
     int audio;
     int video;
@@ -241,5 +244,6 @@ void ff_decklink_packet_queue_end(DecklinkPacketQueue *q);
 unsigned long long ff_decklink_packet_queue_size(DecklinkPacketQueue *q);
 int ff_decklink_packet_queue_put(DecklinkPacketQueue *q, AVPacket *pkt);
 int ff_decklink_packet_queue_get(DecklinkPacketQueue *q, AVPacket *pkt, int block);
+int64_t ff_decklink_packet_queue_peekpts(DecklinkPacketQueue *q);
 
 #endif /* AVDEVICE_DECKLINK_COMMON_H */

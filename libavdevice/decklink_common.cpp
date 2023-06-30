@@ -484,6 +484,22 @@ int ff_decklink_packet_queue_get(DecklinkPacketQueue *q, AVPacket *pkt, int bloc
     return ret;
 }
 
+int64_t ff_decklink_packet_queue_peekpts(DecklinkPacketQueue *q)
+{
+    PacketListEntry *pkt1;
+    int64_t pts = -1;
+
+    pthread_mutex_lock(&q->mutex);
+    pkt1 = q->pkt_list.head;
+    if (pkt1) {
+        pts = pkt1->pkt.pts;
+    }
+    pthread_mutex_unlock(&q->mutex);
+
+    return pts;
+}
+
+
 int ff_decklink_list_devices(AVFormatContext *avctx,
                              struct AVDeviceInfoList *device_list,
                              int show_inputs, int show_outputs)
