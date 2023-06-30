@@ -1006,7 +1006,7 @@ following image formats are supported:
     @tab Also known as Microsoft Screen 3.
 @item Microsoft Expression Encoder Screen  @tab     @tab  X
     @tab Also known as Microsoft Titanium Screen 2.
-@item Microsoft RLE          @tab     @tab  X
+@item Microsoft RLE          @tab  X  @tab  X
 @item Microsoft Screen 1     @tab     @tab  X
     @tab Also known as Windows Media Video V7 Screen.
 @item Microsoft Screen 2     @tab     @tab  X
@@ -1066,6 +1066,8 @@ following image formats are supported:
 @item RealVideo 4.0          @tab     @tab  X
 @item Renderware TXD (TeXture Dictionary)  @tab     @tab  X
     @tab Texture dictionaries used by the Renderware Engine.
+@item RivaTuner Video        @tab     @tab  X
+    @tab fourcc: 'RTV1'
 @item RL2 video              @tab     @tab  X
     @tab used in some games by Entertainment Software Partners
 @item ScreenPressor          @tab     @tab  X
@@ -1102,6 +1104,8 @@ following image formats are supported:
 @item v408 QuickTime uncompressed 4:4:4:4          @tab  X  @tab  X
 @item v410 QuickTime uncompressed 4:4:4 10-bit     @tab  X  @tab  X
 @item VBLE Lossless Codec    @tab     @tab  X
+@item vMix Video             @tab     @tab  X
+    @tab fourcc: 'VMX1'
 @item VMware Screen Codec / VMware Video  @tab     @tab  X
     @tab Codec used in videos captured by VMware.
 @item Westwood Studios VQA (Vector Quantized Animation) video  @tab     @tab  X
