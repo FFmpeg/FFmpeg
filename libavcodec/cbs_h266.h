@@ -552,6 +552,7 @@ typedef struct H266RawPPS {
     uint16_t num_tiles_in_pic;
     uint16_t slice_height_in_ctus[VVC_MAX_SLICES];
     uint16_t num_slices_in_subpic[VVC_MAX_SLICES];
+    uint16_t sub_pic_id_val[VVC_MAX_SLICES];
 } H266RawPPS;
 
 typedef struct H266RawAUD {

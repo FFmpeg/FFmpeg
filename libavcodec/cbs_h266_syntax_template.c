@@ -1706,6 +1706,15 @@ static int FUNC(pps) (CodedBitstreamContext *ctx, RWContext *rw,
         }
     }
 
+    for (i = 0; i <= sps->sps_num_subpics_minus1; i++) {
+        if (sps->sps_subpic_id_mapping_explicitly_signalled_flag)
+            current->sub_pic_id_val[i] = current->pps_subpic_id_mapping_present_flag
+                                       ? current->pps_subpic_id[i]
+                                       : sps->sps_subpic_id[i];
+        else
+            current->sub_pic_id_val[i] = i;
+    }
+
     pic_width_in_ctbs_y = AV_CEIL_RSHIFT
         (current->pps_pic_width_in_luma_samples, (sps->sps_log2_ctu_size_minus5 + 5));
     pic_height_in_ctbs_y = AV_CEIL_RSHIFT(
@@ -2697,24 +2706,15 @@ static int FUNC(slice_header) (CodedBitstreamContext *ctx, RWContext *rw,
 
     if (sps->sps_subpic_info_present_flag) {
         ub(sps->sps_subpic_id_len_minus1 + 1, sh_subpic_id);
-        if (sps->sps_subpic_id_mapping_explicitly_signalled_flag) {
-            for (i = 0; i <= sps->sps_num_subpics_minus1; i++) {
-                uint16_t subpic_id_val =
-                    pps->pps_subpic_id_mapping_present_flag ?
-                    pps->pps_subpic_id[i] : sps->sps_subpic_id[i];
-                if (subpic_id_val == current->sh_subpic_id) {
-                    curr_subpic_idx = i;
-                    break;
-                }
+        for (i = 0; i <= sps->sps_num_subpics_minus1; i++) {
+            if (pps->sub_pic_id_val[i] == current->sh_subpic_id) {
+                curr_subpic_idx = i;
+                break;
             }
-        } else {
-            curr_subpic_idx = current->sh_subpic_id;
-            if (curr_subpic_idx > sps->sps_num_subpics_minus1) {
-                av_log(ctx->log_ctx, AV_LOG_ERROR,
-                       "sh_subpic_id(%d) should in range [0, %d]\n",
-                       curr_subpic_idx, sps->sps_num_subpics_minus1);
-                return AVERROR_INVALIDDATA;
-            }
+        }
+        if (i > sps->sps_num_subpics_minus1) {
+            av_log(ctx->log_ctx, AV_LOG_ERROR, "invalid CurrSubpicIdx %d\n", i);
+            return AVERROR_INVALIDDATA;
         }
     } else {
         curr_subpic_idx = 0;
