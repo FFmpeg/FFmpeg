@@ -86,7 +86,7 @@ FATE_CBS_DISCARD_TYPES = \
     nonintra \
     nonkey
 
-$(foreach N,$(FATE_CBS_DISCARD_TYPES),$(eval $(call FATE_CBS_DISCARD_TEST,h264,$(N),$(TARGET_SAMPLES)/h264/interlaced_crop.mp4,h264)))
+$(foreach N,$(FATE_CBS_DISCARD_TYPES),$(eval $(call FATE_CBS_DISCARD_TEST,h264,$(N),h264/interlaced_crop.mp4,h264)))
 
 FATE_CBS_H264-$(call ALLYES, MOV_DEMUXER, H264_MUXER, H264_PARSER, FILTER_UNITS_BSF) += $(FATE_CBS_h264_DISCARD)
 
@@ -157,7 +157,7 @@ $(foreach N,$(FATE_CBS_HEVC_SAMPLES),$(eval $(call FATE_CBS_TEST,hevc,$(basename
 
 FATE_CBS_HEVC-$(call FATE_CBS_DEPS, HEVC, HEVC, HEVC, HEVC, HEVC) = $(FATE_CBS_hevc)
 
-$(foreach N,$(FATE_CBS_DISCARD_TYPES),$(eval $(call FATE_CBS_DISCARD_TEST,hevc,$(N),$(TARGET_SAMPLES)/hevc-conformance/WPP_A_ericsson_MAIN10_2.bit,hevc)))
+$(foreach N,$(FATE_CBS_DISCARD_TYPES),$(eval $(call FATE_CBS_DISCARD_TEST,hevc,$(N),hevc-conformance/WPP_A_ericsson_MAIN10_2.bit,hevc)))
 
 FATE_CBS_HEVC-$(call ALLYES, HEVC_DEMUXER, HEVC_MUXER, HEVC_PARSER, FILTER_UNITS_BSF) += $(FATE_CBS_hevc_DISCARD)
 
