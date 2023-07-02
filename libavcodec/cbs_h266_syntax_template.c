@@ -1748,10 +1748,10 @@ static int FUNC(pps) (CodedBitstreamContext *ctx, RWContext *rw,
                      "Tile column width(%d) exceeds picture width\n",i);
               return AVERROR_INVALIDDATA;
           }
+          current->col_width_val[i] = current->pps_tile_column_width_minus1[i] + 1;
           remaining_size -= (current->pps_tile_column_width_minus1[i] + 1);
         }
-        unified_size = (i == 0 ? pic_width_in_ctbs_y :
-                        (current->pps_tile_column_width_minus1[i - 1] + 1));
+        unified_size = current->pps_tile_column_width_minus1[i - 1] + 1;
         while (remaining_size > 0) {
             if (current->num_tile_columns > VVC_MAX_TILE_COLUMNS) {
                 av_log(ctx->log_ctx, AV_LOG_ERROR,
@@ -1760,7 +1760,7 @@ static int FUNC(pps) (CodedBitstreamContext *ctx, RWContext *rw,
                 return AVERROR_INVALIDDATA;
             }
             unified_size = FFMIN(remaining_size, unified_size);
-            current->pps_tile_column_width_minus1[i] = unified_size - 1;
+            current->col_width_val[i] = unified_size;
             remaining_size -= unified_size;
             i++;
         }
@@ -1779,14 +1779,14 @@ static int FUNC(pps) (CodedBitstreamContext *ctx, RWContext *rw,
                      "Tile row height(%d) exceeds picture height\n",i);
               return AVERROR_INVALIDDATA;
           }
+          current->row_height_val[i] = current->pps_tile_row_height_minus1[i] + 1;
           remaining_size -= (current->pps_tile_row_height_minus1[i] + 1);
         }
-        unified_size = (i == 0 ? pic_height_in_ctbs_y :
-                        (current->pps_tile_row_height_minus1[i - 1] + 1));
+        unified_size = current->pps_tile_row_height_minus1[i - 1] + 1;
 
         while (remaining_size > 0) {
             unified_size = FFMIN(remaining_size, unified_size);
-            current->pps_tile_row_height_minus1[i] = unified_size - 1;
+            current->row_height_val[i] = unified_size;
             remaining_size -= unified_size;
             i++;
         }
@@ -1852,20 +1852,20 @@ static int FUNC(pps) (CodedBitstreamContext *ctx, RWContext *rw,
 
                 ctu_x = ctu_y = 0;
                 for (j = 0; j < tile_x; j++) {
-                    ctu_x += current->pps_tile_column_width_minus1[j] + 1;
+                    ctu_x += current->col_width_val[j];
                 }
                 for (j = 0; j < tile_y; j++) {
-                    ctu_y += current->pps_tile_row_height_minus1[j] + 1;
+                    ctu_y += current->row_height_val[j];
                 }
                 if (current->pps_slice_width_in_tiles_minus1[i] == 0 &&
                     current->pps_slice_height_in_tiles_minus1[i] == 0 &&
-                    current->pps_tile_row_height_minus1[tile_y] > 0) {
+                    current->row_height_val[tile_y] > 1) {
                     int num_slices_in_tile,
                         uniform_slice_height, remaining_height_in_ctbs_y;
                     remaining_height_in_ctbs_y =
-                        current->pps_tile_row_height_minus1[tile_y] + 1;
+                        current->row_height_val[tile_y];
                     ues(pps_num_exp_slices_in_tile[i],
-                        0, current->pps_tile_row_height_minus1[tile_y], 1, i);
+                        0, current->row_height_val[tile_y] - 1, 1, i);
                     if (current->pps_num_exp_slices_in_tile[i] == 0) {
                         num_slices_in_tile = 1;
                         slice_top_left_ctu_x[i] = ctu_x;
@@ -1875,7 +1875,7 @@ static int FUNC(pps) (CodedBitstreamContext *ctx, RWContext *rw,
                         for (j = 0; j < current->pps_num_exp_slices_in_tile[i];
                              j++) {
                             ues(pps_exp_slice_height_in_ctus_minus1[i][j], 0,
-                                current->pps_tile_row_height_minus1[tile_y], 2,
+                                current->row_height_val[tile_y] - 1, 2,
                                 i, j);
                             slice_height_in_ctus =
                                 current->
@@ -1890,7 +1890,7 @@ static int FUNC(pps) (CodedBitstreamContext *ctx, RWContext *rw,
                             remaining_height_in_ctbs_y -= slice_height_in_ctus;
                         }
                         uniform_slice_height = 1 +
-                            (j == 0 ? current->pps_tile_row_height_minus1[tile_y] :
+                            (j == 0 ? current->row_height_val[tile_y] - 1:
                             current->pps_exp_slice_height_in_ctus_minus1[i][j-1]);
                         while (remaining_height_in_ctbs_y > uniform_slice_height) {
                             current->slice_height_in_ctus[i + j] =
@@ -1919,7 +1919,7 @@ static int FUNC(pps) (CodedBitstreamContext *ctx, RWContext *rw,
                          j <= current->pps_slice_height_in_tiles_minus1[i];
                          j++) {
                         height +=
-                           current->pps_tile_row_height_minus1[tile_y + j] + 1;
+                           current->row_height_val[tile_y + j];
                     }
                     current->slice_height_in_ctus[i] = height;
 
@@ -1956,10 +1956,10 @@ static int FUNC(pps) (CodedBitstreamContext *ctx, RWContext *rw,
 
                 ctu_x = 0, ctu_y = 0;
                 for (j = 0; j < tile_x; j++) {
-                    ctu_x += current->pps_tile_column_width_minus1[j] + 1;
+                    ctu_x += current->col_width_val[j];
                 }
                 for (j = 0; j < tile_y; j++) {
-                    ctu_y += current->pps_tile_row_height_minus1[j] + 1;
+                    ctu_y += current->row_height_val[j];
                 }
                 slice_top_left_ctu_x[i] = ctu_x;
                 slice_top_left_ctu_y[i] = ctu_y;
@@ -1972,7 +1972,7 @@ static int FUNC(pps) (CodedBitstreamContext *ctx, RWContext *rw,
                 for (j = 0; j <= current->pps_slice_height_in_tiles_minus1[i];
                      j++) {
                     height +=
-                        current->pps_tile_row_height_minus1[tile_y + j] + 1;
+                        current->row_height_val[tile_y + j];
                 }
                 current->slice_height_in_ctus[i] = height;
 
@@ -2015,6 +2015,8 @@ static int FUNC(pps) (CodedBitstreamContext *ctx, RWContext *rw,
         infer(pps_tile_column_width_minus1[0], pic_width_in_ctbs_y - 1);
         infer(pps_num_exp_tile_rows_minus1, 0);
         infer(pps_tile_row_height_minus1[0], pic_height_in_ctbs_y - 1);
+        current->col_width_val[0] = pic_width_in_ctbs_y;
+        current->row_height_val[0] = pic_height_in_ctbs_y;
         current->num_tile_columns = 1;
         current->num_tile_rows = 1;
         current->num_tiles_in_pic = 1;
@@ -3037,7 +3039,7 @@ static int FUNC(slice_header) (CodedBitstreamContext *ctx, RWContext *rw,
                  current->sh_slice_address +
                  current->sh_num_tiles_in_slice_minus1; tile_idx++) {
                 tile_y = tile_idx / pps->num_tile_rows;
-                height = pps->pps_tile_row_height_minus1[tile_y] + 1;
+                height = pps->row_height_val[tile_y];
                 num_entry_points += (entropy_sync ? height : 1);
             }
         }
