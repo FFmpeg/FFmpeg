@@ -167,12 +167,17 @@ fate-cbs-hevc: $(FATE_CBS_HEVC-yes)
 # H.266 read/write
 
 FATE_CBS_VVC_SAMPLES =        \
+    APSALF_A_2.bit            \
+    APSLMCS_D_1.bit           \
+    APSMULT_A_4.bit           \
     AUD_A_3.bit               \
     BOUNDARY_A_3.bit          \
     BUMP_A_2.bit              \
     CodingToolsSets_A_2.bit   \
     CROP_B_4.bit              \
+    DCI_A_3.bit               \
     HRD_A_3.bit               \
+    OPI_B_3.bit               \
     PHSH_B_1.bit              \
     POC_A_1.bit               \
     PPS_B_1.bit               \
