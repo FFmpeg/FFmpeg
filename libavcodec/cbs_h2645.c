@@ -1059,6 +1059,14 @@ static int cbs_h266_read_nal_unit(CodedBitstreamContext *ctx,
         return err;
 
     switch (unit->type) {
+    case VVC_OPI_NUT:
+        {
+            err = cbs_h266_read_opi(ctx, &gbc, unit->content);
+
+            if (err < 0)
+                return err;
+        }
+        break;
     case VVC_VPS_NUT:
         {
             H266RawVPS *vps = unit->content;
@@ -1593,6 +1601,15 @@ static int cbs_h266_write_nal_unit(CodedBitstreamContext *ctx,
     int err;
 
     switch (unit->type) {
+    case VVC_OPI_NUT:
+        {
+            H266RawOPI *opi = unit->content;
+
+            err = cbs_h266_write_opi(ctx, pbc, opi);
+            if (err < 0)
+                return err;
+        }
+        break;
     case VVC_VPS_NUT:
         {
             H266RawVPS *vps = unit->content;
@@ -1965,6 +1982,7 @@ static void cbs_h266_free_sei(void *opaque, uint8_t *content)
 }
 
 static const CodedBitstreamUnitTypeDescriptor cbs_h266_unit_types[] = {
+    CBS_UNIT_TYPE_INTERNAL_REF(VVC_OPI_NUT, H266RawOPI, extension_data.data),
     CBS_UNIT_TYPE_INTERNAL_REF(VVC_VPS_NUT, H266RawVPS, extension_data.data),
     CBS_UNIT_TYPE_INTERNAL_REF(VVC_SPS_NUT, H266RawSPS, extension_data.data),
     CBS_UNIT_TYPE_INTERNAL_REF(VVC_PPS_NUT, H266RawPPS, extension_data.data),

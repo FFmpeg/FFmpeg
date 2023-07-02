@@ -230,6 +230,17 @@ typedef struct H266RawVUI {
     H266RawExtensionData extension_data;
 } H266RawVUI;
 
+typedef struct H266RawOPI {
+    H266RawNALUnitHeader nal_unit_header;
+
+    uint8_t opi_ols_info_present_flag;
+    uint8_t opi_htid_info_present_flag;
+    uint16_t opi_ols_idx;
+    uint8_t opi_htid_plus1;
+    uint8_t opi_extension_flag;
+    H266RawExtensionData extension_data;
+} H266RawOPI;
+
 typedef struct H266RawVPS {
     H266RawNALUnitHeader nal_unit_header;
 
