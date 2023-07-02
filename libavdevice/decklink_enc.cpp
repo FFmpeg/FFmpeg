@@ -420,7 +420,7 @@ static void construct_cc(AVFormatContext *avctx, struct decklink_ctx *ctx,
 
     ret = klvanc_set_framerate_EIA_708B(cdp, ctx->bmd_tb_num, ctx->bmd_tb_den);
     if (ret) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid framerate specified: %lld/%lld\n",
+        av_log(avctx, AV_LOG_ERROR, "Invalid framerate specified: %" PRId64 "/%" PRId64 "\n",
                ctx->bmd_tb_num, ctx->bmd_tb_den);
         klvanc_destroy_eia708_cdp(cdp);
         return;
