@@ -1,0 +1,4 @@
+6e97e428fb20e96a5b8fc8a21f427504 *tests/data/fate/vsynth2-smc.mov
+3475261 tests/data/fate/vsynth2-smc.mov
+df26a524cad8ebf0cf5ba4376c5f115f *tests/data/fate/vsynth2-smc.out.rawvideo
+stddev:    7.57 PSNR: 30.54 MAXDIFF:   35 bytes:  7603200/  7603200

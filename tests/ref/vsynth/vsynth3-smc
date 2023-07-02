@@ -1,0 +1,4 @@
+e4eb9909095e02577b59004e209ad8ec *tests/data/fate/vsynth3-smc.mov
+65521 tests/data/fate/vsynth3-smc.mov
+fa6042492a3116c1ae9a32b487caa677 *tests/data/fate/vsynth3-smc.out.rawvideo
+stddev:    8.88 PSNR: 29.16 MAXDIFF:   51 bytes:    86700/    86700

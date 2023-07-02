@@ -1,0 +1,4 @@
+037fa90a1ac659ff4dca22fb375dc7e1 *tests/data/fate/vsynth_lena-smc.mov
+3502732 tests/data/fate/vsynth_lena-smc.mov
+db453693ceae6f65c173dd716ee2662e *tests/data/fate/vsynth_lena-smc.out.rawvideo
+stddev:    8.07 PSNR: 29.99 MAXDIFF:   32 bytes:  7603200/  7603200
