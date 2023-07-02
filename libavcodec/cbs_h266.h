@@ -520,9 +520,9 @@ typedef struct H266RawPPS {
     uint8_t  pps_slice_chroma_qp_offsets_present_flag;
     uint8_t  pps_cu_chroma_qp_offset_list_enabled_flag;
     uint8_t  pps_chroma_qp_offset_list_len_minus1;
-    uint8_t  pps_cb_qp_offset_list[6];
-    uint8_t  pps_cr_qp_offset_list[6];
-    uint8_t  pps_joint_cbcr_qp_offset_list[6];
+    int8_t   pps_cb_qp_offset_list[6];
+    int8_t   pps_cr_qp_offset_list[6];
+    int8_t   pps_joint_cbcr_qp_offset_list[6];
     uint8_t  pps_deblocking_filter_control_present_flag;
     uint8_t  pps_deblocking_filter_override_enabled_flag;
     uint8_t  pps_deblocking_filter_disabled_flag;
