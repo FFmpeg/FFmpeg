@@ -712,7 +712,7 @@ static int FUNC(vps) (CodedBitstreamContext *ctx, RWContext *rw,
         }
         if (ols_mode_idc == 4 || ols_mode_idc == 0 || ols_mode_idc == 1)
             total_num_olss = current->vps_max_layers_minus1 + 1;
-        else if (ols_mode_idc = 2)
+        else if (ols_mode_idc == 2)
             total_num_olss = current->vps_num_output_layer_sets_minus2 + 2;
         else
             av_log(ctx->log_ctx, AV_LOG_ERROR,
