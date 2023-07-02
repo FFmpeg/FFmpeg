@@ -2015,9 +2015,9 @@ static int FUNC(pps) (CodedBitstreamContext *ctx, RWContext *rw,
         infer(pps_tile_column_width_minus1[0], pic_width_in_ctbs_y - 1);
         infer(pps_num_exp_tile_rows_minus1, 0);
         infer(pps_tile_row_height_minus1[0], pic_height_in_ctbs_y - 1);
-        infer(num_tile_columns, 1);
-        infer(num_tile_rows, 1);
-        infer(num_tiles_in_pic, 1);
+        current->num_tile_columns = 1;
+        current->num_tile_rows = 1;
+        current->num_tiles_in_pic = 1;
     }
 
     flag(pps_cabac_init_present_flag);
