@@ -76,6 +76,9 @@ enum {
     //7.4.3.3 The value of vps_max_sublayers_minus1 shall be in the range of 0 to 6, inclusive
     VVC_MAX_SUBLAYERS = 7,
 
+    //7.3.2.1 dci_num_ptls_minus1 is u(4)
+    VVC_MAX_DCI_PTLS = 16,
+
     //7.4.3.3 vps_num_ptls_minus1 is u(8)
     VVC_MAX_PTLS = 256,
 

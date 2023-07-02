@@ -241,6 +241,16 @@ typedef struct H266RawOPI {
     H266RawExtensionData extension_data;
 } H266RawOPI;
 
+typedef struct H266RawDCI {
+    H266RawNALUnitHeader nal_unit_header;
+
+    uint8_t dci_reserved_zero_4bits;
+    uint8_t dci_num_ptls_minus1;
+    H266RawProfileTierLevel dci_profile_tier_level[VVC_MAX_DCI_PTLS];
+    uint8_t dci_extension_flag;
+    H266RawExtensionData extension_data;
+} H266RawDCI;
+
 typedef struct H266RawVPS {
     H266RawNALUnitHeader nal_unit_header;
 
