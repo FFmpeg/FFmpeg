@@ -66,6 +66,12 @@ enum VVCSliceType {
     VVC_SLICE_TYPE_I = 2,
 };
 
+enum VVCAPSType {
+    VVC_ASP_TYPE_ALF     = 0,
+    VVC_ASP_TYPE_LMCS    = 1,
+    VVC_ASP_TYPE_SCALING = 2,
+};
+
 enum {
     //6.2 we can have 3 sample arrays
     VVC_MAX_SAMPLE_ARRAYS = 3,
@@ -94,6 +100,10 @@ enum {
 
     // 7.4.4.1: ptl_num_sub_profiles is u(8)
     VVC_MAX_SUB_PROFILES = 256,
+
+    // 7.4.3.18: The variable NumAlfFilters specifying the number of different adaptive loop
+    // filters is set equal to 25.
+    VVC_NUM_ALF_FILTERS = 25,
 
     // A.4.2: according to (1577), MaxDpbSize is bounded above by 2 * maxDpbPicBuf(8)
     VVC_MAX_DPB_SIZE = 16,

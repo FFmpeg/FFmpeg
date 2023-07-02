@@ -1116,6 +1116,16 @@ static int cbs_h266_read_nal_unit(CodedBitstreamContext *ctx,
         }
         break;
 
+    case VVC_PREFIX_APS_NUT:
+    case VVC_SUFFIX_APS_NUT:
+        {
+            err = cbs_h266_read_aps(ctx, &gbc, unit->content,
+                                    unit->type == VVC_PREFIX_APS_NUT);
+
+            if (err < 0)
+                return err;
+        }
+        break;
     case VVC_PH_NUT:
         {
             H266RawPH *ph = unit->content;
@@ -1668,6 +1678,15 @@ static int cbs_h266_write_nal_unit(CodedBitstreamContext *ctx,
         }
         break;
 
+    case VVC_PREFIX_APS_NUT:
+    case VVC_SUFFIX_APS_NUT:
+        {
+            err = cbs_h266_write_aps(ctx, pbc, unit->content,
+                                     unit->type == VVC_PREFIX_APS_NUT);
+            if (err < 0)
+                return err;
+        }
+        break;
     case VVC_PH_NUT:
         {
             H266RawPH *ph = unit->content;
@@ -2004,6 +2023,8 @@ static const CodedBitstreamUnitTypeDescriptor cbs_h266_unit_types[] = {
     CBS_UNIT_TYPE_INTERNAL_REF(VVC_VPS_NUT, H266RawVPS, extension_data.data),
     CBS_UNIT_TYPE_INTERNAL_REF(VVC_SPS_NUT, H266RawSPS, extension_data.data),
     CBS_UNIT_TYPE_INTERNAL_REF(VVC_PPS_NUT, H266RawPPS, extension_data.data),
+    CBS_UNIT_TYPE_INTERNAL_REF(VVC_PREFIX_APS_NUT, H266RawAPS, extension_data.data),
+    CBS_UNIT_TYPE_INTERNAL_REF(VVC_SUFFIX_APS_NUT, H266RawAPS, extension_data.data),
 
     CBS_UNIT_TYPE_POD(VVC_PH_NUT , H266RawPH),
     CBS_UNIT_TYPE_POD(VVC_AUD_NUT, H266RawAUD),

@@ -595,6 +595,52 @@ typedef struct H266RawPPS {
     uint16_t row_height_val[VVC_MAX_TILE_ROWS];
 } H266RawPPS;
 
+typedef struct H266RawAPS {
+    H266RawNALUnitHeader nal_unit_header;
+    uint8_t aps_params_type;
+    uint8_t aps_adaptation_parameter_set_id;
+    uint8_t aps_chroma_present_flag;
+
+    uint8_t alf_luma_filter_signal_flag;
+    uint8_t alf_chroma_filter_signal_flag;
+    uint8_t alf_cc_cb_filter_signal_flag;
+    uint8_t alf_cc_cr_filter_signal_flag;
+    uint8_t alf_luma_clip_flag;
+    uint8_t alf_luma_num_filters_signalled_minus1;
+    uint8_t alf_luma_coeff_delta_idx[VVC_NUM_ALF_FILTERS];
+    uint8_t alf_luma_coeff_abs[VVC_NUM_ALF_FILTERS][12];
+    uint8_t alf_luma_coeff_sign[VVC_NUM_ALF_FILTERS][12];
+    uint8_t alf_luma_clip_idx[VVC_NUM_ALF_FILTERS][12];
+    uint8_t alf_chroma_clip_flag;
+    uint8_t alf_chroma_num_alt_filters_minus1;
+    uint8_t alf_chroma_coeff_abs[8][6];
+    uint8_t alf_chroma_coeff_sign[8][6];
+    uint8_t alf_chroma_clip_idx[8][6];
+    uint8_t alf_cc_cb_filters_signalled_minus1;
+    uint8_t alf_cc_cb_mapped_coeff_abs[4][7];
+    uint8_t alf_cc_cb_coeff_sign[4][7];
+    uint8_t alf_cc_cr_filters_signalled_minus1;
+    uint8_t alf_cc_cr_mapped_coeff_abs[4][7];
+    uint8_t alf_cc_cr_coeff_sign[4][7];
+
+    uint8_t scaling_list_copy_mode_flag[28];
+    uint8_t scaling_list_pred_mode_flag[28];
+    uint8_t scaling_list_pred_id_delta[28];
+    int8_t  scaling_list_dc_coef[14];
+    int8_t  scaling_list_delta_coef[28][64];
+
+    uint8_t lmcs_min_bin_idx;
+    uint8_t lmcs_delta_max_bin_idx;
+    uint8_t lmcs_delta_cw_prec_minus1;
+    uint16_t lmcs_delta_abs_cw[16];
+    uint8_t lmcs_delta_sign_cw_flag[16];
+    uint8_t lmcs_delta_abs_crs;
+    uint8_t lmcs_delta_sign_crs_flag;
+
+    uint8_t aps_extension_flag;
+    H266RawExtensionData extension_data;
+} H266RawAPS;
+
 typedef struct H266RawAUD {
     H266RawNALUnitHeader nal_unit_header;
     uint8_t aud_irap_or_gdr_flag;

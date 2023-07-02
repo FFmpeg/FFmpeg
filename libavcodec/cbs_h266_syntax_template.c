@@ -2242,6 +2242,237 @@ static int FUNC(pps) (CodedBitstreamContext *ctx, RWContext *rw,
     return 0;
 }
 
+static int FUNC(alf_data)(CodedBitstreamContext *ctx, RWContext *rw,
+                          H266RawAPS *current)
+{
+    int err, j, k;
+
+    flag(alf_luma_filter_signal_flag);
+
+    if (current->aps_chroma_present_flag) {
+        flag(alf_chroma_filter_signal_flag);
+        flag(alf_cc_cb_filter_signal_flag);
+        flag(alf_cc_cr_filter_signal_flag);
+    } else {
+        infer(alf_chroma_filter_signal_flag, 0);
+        infer(alf_cc_cb_filter_signal_flag, 0);
+        infer(alf_cc_cr_filter_signal_flag, 0);
+    }
+
+    if (current->alf_luma_filter_signal_flag) {
+        flag(alf_luma_clip_flag);
+        ue(alf_luma_num_filters_signalled_minus1, 0, VVC_NUM_ALF_FILTERS - 1);
+        if (current->alf_luma_num_filters_signalled_minus1 > 0) {
+            unsigned int bits = av_ceil_log2(current->alf_luma_num_filters_signalled_minus1 + 1);
+            for (int filt_idx = 0; filt_idx < VVC_NUM_ALF_FILTERS; filt_idx++)
+                us(bits, alf_luma_coeff_delta_idx[filt_idx],
+                   0, current->alf_luma_num_filters_signalled_minus1,
+                   1, filt_idx);
+        }
+        for (int sf_idx = 0; sf_idx <= current->alf_luma_num_filters_signalled_minus1; sf_idx++)
+            for (j = 0; j < 12; j++) {
+                ues(alf_luma_coeff_abs[sf_idx][j], 0, 128, 2, sf_idx, j);
+                if (current->alf_luma_coeff_abs[sf_idx][j])
+                    ubs(1, alf_luma_coeff_sign[sf_idx][j], 2, sf_idx, j);
+                else
+                    infer(alf_luma_coeff_sign[sf_idx][j], 0);
+            }
+    } else {
+        infer(alf_luma_clip_flag, 0);
+        infer(alf_luma_num_filters_signalled_minus1, 0);
+    }
+    for (int sf_idx = 0; sf_idx <= current->alf_luma_num_filters_signalled_minus1; sf_idx++) {
+        for (j = 0; j < 12; j++) {
+            if (current->alf_luma_clip_flag)
+                ubs(2, alf_luma_clip_idx[sf_idx][j], 2, sf_idx, j);
+            else
+                infer(alf_luma_clip_idx[sf_idx][j], 0);
+        }
+    }
+
+    if (current->alf_chroma_filter_signal_flag) {
+        flag(alf_chroma_clip_flag);
+        ue(alf_chroma_num_alt_filters_minus1, 0, 7);
+    } else {
+        infer(alf_chroma_clip_flag, 0);
+        infer(alf_chroma_num_alt_filters_minus1, 0);
+    }
+    for (int alt_idx = 0; alt_idx <= current->alf_chroma_num_alt_filters_minus1; alt_idx++) {
+        for (j = 0; j < 6; j++) {
+            if (current->alf_chroma_filter_signal_flag)
+                ues(alf_chroma_coeff_abs[alt_idx][j], 0, 128, 2, alt_idx, j);
+            else
+                infer(alf_chroma_coeff_abs[alt_idx][j], 0);
+            if (current->alf_chroma_coeff_abs[alt_idx][j] > 0)
+                ubs(1, alf_chroma_coeff_sign[alt_idx][j], 2, alt_idx, j);
+            else
+                infer(alf_chroma_coeff_sign[alt_idx][j], 0);
+        }
+        for (j = 0; j < 6; j++) {
+            if (current->alf_chroma_clip_flag)
+                ubs(2, alf_chroma_clip_idx[alt_idx][j], 2, alt_idx, j);
+            else
+                infer(alf_chroma_clip_idx[alt_idx][j], 0);
+        }
+    }
+
+    if (current->alf_cc_cb_filter_signal_flag)
+        ue(alf_cc_cb_filters_signalled_minus1, 0, 3);
+    else
+        infer(alf_cc_cb_filters_signalled_minus1, 0);
+    for (k = 0; k <= current->alf_cc_cb_filters_signalled_minus1; k++) {
+        for (j = 0; j < 7; j++) {
+            if (current->alf_cc_cb_filter_signal_flag)
+                ubs(3, alf_cc_cb_mapped_coeff_abs[k][j], 2, k, j);
+            else
+                infer(alf_cc_cb_mapped_coeff_abs[k][j], 0);
+            if (current->alf_cc_cb_mapped_coeff_abs[k][j])
+                ubs(1, alf_cc_cb_coeff_sign[k][j], 2, k, j);
+            else
+                infer(alf_cc_cb_coeff_sign[k][j], 0);
+        }
+    }
+
+    if (current->alf_cc_cr_filter_signal_flag)
+        ue(alf_cc_cr_filters_signalled_minus1, 0, 3);
+    else
+        infer(alf_cc_cr_filters_signalled_minus1, 0);
+    for (k = 0; k < current->alf_cc_cr_filters_signalled_minus1 + 1; k++) {
+        for (j = 0; j < 7; j++) {
+            if (current->alf_cc_cr_filter_signal_flag)
+                ubs(3, alf_cc_cr_mapped_coeff_abs[k][j], 2, k, j);
+            else
+                infer(alf_cc_cr_mapped_coeff_abs[k][j], 0);
+            if (current->alf_cc_cr_mapped_coeff_abs[k][j])
+                ubs(1, alf_cc_cr_coeff_sign[k][j], 2, k, j);
+            else
+                infer(alf_cc_cr_coeff_sign[k][j], 0);
+        }
+    }
+
+    return 0;
+}
+
+static int FUNC(lmcs_data)(CodedBitstreamContext *ctx, RWContext *rw,
+                           H266RawAPS *current)
+{
+    int err, i, lmcs_max_bin_idx;
+
+    ue(lmcs_min_bin_idx, 0, 15);
+    ue(lmcs_delta_max_bin_idx, 0, 15);
+    ue(lmcs_delta_cw_prec_minus1, 0, 14);
+
+    lmcs_max_bin_idx = 15 - current->lmcs_delta_max_bin_idx;
+
+    if (lmcs_max_bin_idx < current->lmcs_min_bin_idx)
+        return AVERROR_INVALIDDATA;
+
+    for (i = current->lmcs_min_bin_idx; i <= lmcs_max_bin_idx; i++) {
+        ubs(current->lmcs_delta_cw_prec_minus1 + 1, lmcs_delta_abs_cw[i], 1, i);
+        if (current->lmcs_delta_abs_cw[i] > 0)
+            flags(lmcs_delta_sign_cw_flag[i], 1, i);
+        else
+            infer(lmcs_delta_sign_cw_flag[i], 0);
+    }
+
+    if (current->aps_chroma_present_flag) {
+        ub(3, lmcs_delta_abs_crs);
+        if (current->lmcs_delta_abs_crs > 0)
+            flag(lmcs_delta_sign_crs_flag);
+        else
+            infer(lmcs_delta_sign_crs_flag, 0);
+    } else {
+        infer(lmcs_delta_abs_crs, 0);
+        infer(lmcs_delta_sign_crs_flag, 0);
+    }
+
+    return 0;
+}
+
+static int FUNC(scaling_list_data)(CodedBitstreamContext *ctx, RWContext *rw,
+                                   H266RawAPS *current)
+{
+    // 7.4.3.4, deriving DiagScanOrder
+    static const uint8_t diag_scan_order[64][2] = {
+        { 0,  0, }, { 0,  1, }, { 1,  0, }, { 0,  2, }, { 1,  1, }, { 2,  0, }, { 0,  3, }, { 1,  2, },
+        { 2,  1, }, { 3,  0, }, { 0,  4, }, { 1,  3, }, { 2,  2, }, { 3,  1, }, { 4,  0, }, { 0,  5, },
+        { 1,  4, }, { 2,  3, }, { 3,  2, }, { 4,  1, }, { 5,  0, }, { 0,  6, }, { 1,  5, }, { 2,  4, },
+        { 3,  3, }, { 4,  2, }, { 5,  1, }, { 6,  0, }, { 0,  7, }, { 1,  6, }, { 2,  5, }, { 3,  4, },
+        { 4,  3, }, { 5,  2, }, { 6,  1, }, { 7,  0, }, { 1,  7, }, { 2,  6, }, { 3,  5, }, { 4,  4, },
+        { 5,  3, }, { 6,  2, }, { 7,  1, }, { 2,  7, }, { 3,  6, }, { 4,  5, }, { 5,  4, }, { 6,  3, },
+        { 7,  2, }, { 3,  7, }, { 4,  6, }, { 5,  5, }, { 6,  4, }, { 7,  3, }, { 4,  7, }, { 5,  6, },
+        { 6,  5, }, { 7,  4, }, { 5,  7, }, { 6,  6, }, { 7,  5, }, { 6,  7, }, { 7,  6, }, { 7,  7, }, };
+    int err;
+
+    for (int id = 0; id < 28; id ++) {
+        if (current->aps_chroma_present_flag || id % 3 == 2 || id == 27) {
+            flags(scaling_list_copy_mode_flag[id], 1, id);
+            if (!current->scaling_list_copy_mode_flag[id])
+                flags(scaling_list_pred_mode_flag[id], 1, id);
+            else
+                infer(scaling_list_pred_mode_flag[id], 0);
+            if ((current->scaling_list_copy_mode_flag[id] ||
+                 current->scaling_list_pred_mode_flag[id]) &&
+                 id != 0 && id != 2 && id != 8) {
+                int max_id_delta = (id < 2) ? id : ((id < 8) ? (id - 2) : (id - 8));
+                ues(scaling_list_pred_id_delta[id], 0, max_id_delta, 1, id);
+            }
+            if (!current->scaling_list_copy_mode_flag[id]) {
+                int matrix_size = id < 2 ? 2 : (id < 8 ? 4 : 8);
+                if (id > 13) {
+                    int idx = id - 14;
+                    ses(scaling_list_dc_coef[idx], -128, 127, 1, idx);
+                }
+                for (int i = 0; i < matrix_size * matrix_size; i++) {
+                    int x = diag_scan_order[i][0];
+                    int y = diag_scan_order[i][1];
+                    if (!(id > 25 && x >= 4 && y >= 4))
+                        ses(scaling_list_delta_coef[id][i], -128, 127, 2, id, i);
+                }
+            } else if (id > 13) {
+                int idx = id - 14;
+                infer(scaling_list_dc_coef[idx], 0);
+            }
+        } else {
+            infer(scaling_list_copy_mode_flag[id], 1);
+            infer(scaling_list_pred_mode_flag[id], 0);
+        }
+    }
+
+    return 0;
+}
+
+static int FUNC(aps)(CodedBitstreamContext *ctx, RWContext *rw,
+                     H266RawAPS *current, int prefix)
+{
+    int err;
+
+    if (prefix)
+        HEADER("Prefix Adaptation parameter set");
+    else
+        HEADER("Suffix Adaptation parameter set");
+
+    CHECK(FUNC(nal_unit_header)(ctx, rw, &current->nal_unit_header,
+                                prefix ? VVC_PREFIX_APS_NUT
+                                       : VVC_SUFFIX_APS_NUT));
+
+    ub(3, aps_params_type);
+    ub(5, aps_adaptation_parameter_set_id);
+    flag(aps_chroma_present_flag);
+    if (current->aps_params_type == VVC_ASP_TYPE_ALF)
+        CHECK(FUNC(alf_data)(ctx, rw, current));
+    else if(current->aps_params_type == VVC_ASP_TYPE_LMCS)
+        CHECK(FUNC(lmcs_data)(ctx, rw, current));
+    else if (current->aps_params_type == VVC_ASP_TYPE_SCALING)
+        CHECK(FUNC(scaling_list_data)(ctx, rw, current));
+    flag(aps_extension_flag);
+    if (current->aps_extension_flag)
+        CHECK(FUNC(extension_data) (ctx, rw, &current->extension_data));
+    CHECK(FUNC(rbsp_trailing_bits) (ctx, rw));
+
+    return 0;
+}
+
 static int FUNC(aud) (CodedBitstreamContext *ctx, RWContext *rw,
                      H266RawAUD *current)
 {
