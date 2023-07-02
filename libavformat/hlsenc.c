@@ -27,12 +27,6 @@
 #include <unistd.h>
 #endif
 
-#if CONFIG_GCRYPT
-#include <gcrypt.h>
-#elif CONFIG_OPENSSL
-#include <openssl/rand.h>
-#endif
-
 #include "libavutil/avassert.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/avstring.h"
@@ -40,6 +34,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
 #include "libavutil/log.h"
+#include "libavutil/random_seed.h"
 #include "libavutil/time.h"
 #include "libavutil/time_internal.h"
 
@@ -710,20 +705,6 @@ fail:
     return ret;
 }
 
-static int randomize(uint8_t *buf, int len)
-{
-#if CONFIG_GCRYPT
-    gcry_randomize(buf, len, GCRY_VERY_STRONG_RANDOM);
-    return 0;
-#elif CONFIG_OPENSSL
-    if (RAND_bytes(buf, len))
-        return 0;
-#else
-    return AVERROR(ENOSYS);
-#endif
-    return AVERROR(EINVAL);
-}
-
 static int do_encrypt(AVFormatContext *s, VariantStream *vs)
 {
     HLSContext *hls = s->priv_data;
@@ -775,7 +756,7 @@ static int do_encrypt(AVFormatContext *s, VariantStream *vs)
     if (!*hls->key_string) {
         AVDictionary *options = NULL;
         if (!hls->key) {
-            if ((ret = randomize(key, sizeof(key))) < 0) {
+            if ((ret = av_random_bytes(key, sizeof(key))) < 0) {
                 av_log(s, AV_LOG_ERROR, "Cannot generate a strong random key\n");
                 return ret;
             }
