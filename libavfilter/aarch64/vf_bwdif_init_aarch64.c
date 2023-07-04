@@ -36,6 +36,33 @@ void ff_bwdif_filter_line_neon(void *dst1, void *prev1, void *cur1, void *next1,
                                int prefs3, int mrefs3, int prefs4, int mrefs4,
                                int parity, int clip_max);
 
+void ff_bwdif_filter_line3_neon(void * dst1, int d_stride,
+                                const void * prev1, const void * cur1, const void * next1, int s_stride,
+                                int w, int parity, int clip_max);
+
+
+static void filter_line3_helper(void * dst1, int d_stride,
+                                const void * prev1, const void * cur1, const void * next1, int s_stride,
+                                int w, int parity, int clip_max)
+{
+    // Asm works on 16 byte chunks
+    // If w is a multiple of 16 then all is good - if not then if width rounded
+    // up to nearest 16 will fit in both src & dst strides then allow the asm
+    // to write over the padding bytes as that is almost certainly faster than
+    // having to invoke the C version to clean up the tail.
+    const int w1 = FFALIGN(w, 16);
+    const int w0 = clip_max != 255 ? 0 :
+                   d_stride <= w1 && s_stride <= w1 ? w : w & ~15;
+
+    ff_bwdif_filter_line3_neon(dst1, d_stride,
+                               prev1, cur1, next1, s_stride,
+                               w0, parity, clip_max);
+
+    if (w0 < w)
+        ff_bwdif_filter_line3_c((char *)dst1 + w0, d_stride,
+                                (const char *)prev1 + w0, (const char *)cur1 + w0, (const char *)next1 + w0, s_stride,
+                                w - w0, parity, clip_max);
+}
 
 static void filter_line_helper(void *dst1, void *prev1, void *cur1, void *next1,
                                int w, int prefs, int mrefs, int prefs2, int mrefs2,
@@ -93,5 +120,6 @@ ff_bwdif_init_aarch64(BWDIFContext *s, int bit_depth)
     s->filter_intra = filter_intra_helper;
     s->filter_line  = filter_line_helper;
     s->filter_edge  = filter_edge_helper;
+    s->filter_line3 = filter_line3_helper;
 }
 
