@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2023-02-09
 
 API changes, most recent first:
 
+2023-07-05 - xxxxxxxxxx - lavu 58.14.100 - random_seed.h
+  Add av_random_bytes()
+
 2023-05-29 - xxxxxxxxxx - lavc 60.16.100 - avcodec.h codec_id.h
   Add AV_CODEC_ID_EVC, FF_PROFILE_EVC_BASELINE, and FF_PROFILE_EVC_MAIN.
 
