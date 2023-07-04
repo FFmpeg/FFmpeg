@@ -83,6 +83,60 @@ void checkasm_check_vf_bwdif(void)
         report("bwdif10");
     }
 
+    {
+        LOCAL_ALIGNED_16(uint8_t, prev0, [11*WIDTH]);
+        LOCAL_ALIGNED_16(uint8_t, prev1, [11*WIDTH]);
+        LOCAL_ALIGNED_16(uint8_t, next0, [11*WIDTH]);
+        LOCAL_ALIGNED_16(uint8_t, next1, [11*WIDTH]);
+        LOCAL_ALIGNED_16(uint8_t, cur0,  [11*WIDTH]);
+        LOCAL_ALIGNED_16(uint8_t, cur1,  [11*WIDTH]);
+        LOCAL_ALIGNED_16(uint8_t, dst0,  [WIDTH*3]);
+        LOCAL_ALIGNED_16(uint8_t, dst1,  [WIDTH*3]);
+        const int stride = WIDTH;
+        const int mask = (1<<8)-1;
+        int spat;
+        int parity;
+
+        for (spat = 0; spat != 2; ++spat) {
+            for (parity = 0; parity != 2; ++parity) {
+                if (check_func(ctx_8.filter_edge, "bwdif8.edge.s%d.p%d", spat, parity)) {
+
+                    declare_func(void, void *dst1, void *prev1, void *cur1, void *next1,
+                                            int w, int prefs, int mrefs, int prefs2, int mrefs2,
+                                            int parity, int clip_max, int spat);
+
+                    randomize_buffers(prev0, prev1, mask, 11*WIDTH);
+                    randomize_buffers(next0, next1, mask, 11*WIDTH);
+                    randomize_buffers( cur0,  cur1, mask, 11*WIDTH);
+                    memset(dst0, 0xba, WIDTH * 3);
+                    memset(dst1, 0xba, WIDTH * 3);
+
+                    call_ref(dst0 + stride,
+                             prev0 + stride * 4, cur0 + stride * 4, next0 + stride * 4, WIDTH,
+                             stride, -stride, stride * 2, -stride * 2,
+                             parity, mask, spat);
+                    call_new(dst1 + stride,
+                             prev1 + stride * 4, cur1 + stride * 4, next1 + stride * 4, WIDTH,
+                             stride, -stride, stride * 2, -stride * 2,
+                             parity, mask, spat);
+
+                    if (memcmp(dst0, dst1, WIDTH*3)
+                            || memcmp(prev0, prev1, WIDTH*11)
+                            || memcmp(next0, next1, WIDTH*11)
+                            || memcmp( cur0,  cur1, WIDTH*11))
+                        fail();
+
+                    bench_new(dst1 + stride,
+                             prev1 + stride * 4, cur1 + stride * 4, next1 + stride * 4, WIDTH,
+                             stride, -stride, stride * 2, -stride * 2,
+                             parity, mask, spat);
+                }
+            }
+        }
+
+        report("bwdif8.edge");
+    }
+
     if (check_func(ctx_8.filter_intra, "bwdif8.intra")) {
         LOCAL_ALIGNED_16(uint8_t, cur0,  [11*WIDTH]);
         LOCAL_ALIGNED_16(uint8_t, cur1,  [11*WIDTH]);
