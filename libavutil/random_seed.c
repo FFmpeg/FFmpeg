@@ -30,6 +30,11 @@
 #include <windows.h>
 #include <bcrypt.h>
 #endif
+#if CONFIG_GCRYPT
+#include <gcrypt.h>
+#elif CONFIG_OPENSSL
+#include <openssl/rand.h>
+#endif
 #include <fcntl.h>
 #include <math.h>
 #include <time.h>
@@ -143,6 +148,17 @@ int av_random_bytes(uint8_t* buf, size_t len)
 #endif
 
     err = read_random(buf, len, "/dev/urandom");
+    if (!err)
+        return err;
+
+#if CONFIG_GCRYPT
+    gcry_randomize(buf, len, GCRY_VERY_STRONG_RANDOM);
+    return 0;
+#elif CONFIG_OPENSSL
+    if (RAND_bytes(buf, len) == 1)
+        return 0;
+    err = AVERROR_EXTERNAL;
+#endif
 
     return err;
 }
