@@ -150,9 +150,9 @@ static void filter_line_c(void *dst1, void *prev1, void *cur1, void *next1,
     FILTER2()
 }
 
-static void filter_edge(void *dst1, void *prev1, void *cur1, void *next1,
-                        int w, int prefs, int mrefs, int prefs2, int mrefs2,
-                        int parity, int clip_max, int spat)
+void ff_bwdif_filter_edge_c(void *dst1, void *prev1, void *cur1, void *next1,
+                            int w, int prefs, int mrefs, int prefs2, int mrefs2,
+                            int parity, int clip_max, int spat)
 {
     uint8_t *dst   = dst1;
     uint8_t *prev  = prev1;
@@ -364,7 +364,7 @@ av_cold void ff_bwdif_init_filter_line(BWDIFContext *s, int bit_depth)
     } else {
         s->filter_intra = ff_bwdif_filter_intra_c;
         s->filter_line  = filter_line_c;
-        s->filter_edge  = filter_edge;
+        s->filter_edge  = ff_bwdif_filter_edge_c;
     }
 
 #if ARCH_X86

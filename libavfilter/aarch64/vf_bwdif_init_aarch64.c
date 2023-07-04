@@ -24,9 +24,28 @@
 #include "libavfilter/bwdif.h"
 #include "libavutil/aarch64/cpu.h"
 
+void ff_bwdif_filter_edge_neon(void *dst1, void *prev1, void *cur1, void *next1,
+                               int w, int prefs, int mrefs, int prefs2, int mrefs2,
+                               int parity, int clip_max, int spat);
+
 void ff_bwdif_filter_intra_neon(void *dst1, void *cur1, int w, int prefs, int mrefs,
                                 int prefs3, int mrefs3, int parity, int clip_max);
 
+
+static void filter_edge_helper(void *dst1, void *prev1, void *cur1, void *next1,
+                               int w, int prefs, int mrefs, int prefs2, int mrefs2,
+                               int parity, int clip_max, int spat)
+{
+    const int w0 = clip_max != 255 ? 0 : w & ~15;
+
+    ff_bwdif_filter_edge_neon(dst1, prev1, cur1, next1, w0, prefs, mrefs, prefs2, mrefs2,
+                              parity, clip_max, spat);
+
+    if (w0 < w)
+        ff_bwdif_filter_edge_c((char *)dst1 + w0, (char *)prev1 + w0, (char *)cur1 + w0, (char *)next1 + w0,
+                               w - w0, prefs, mrefs, prefs2, mrefs2,
+                               parity, clip_max, spat);
+}
 
 static void filter_intra_helper(void *dst1, void *cur1, int w, int prefs, int mrefs,
                                 int prefs3, int mrefs3, int parity, int clip_max)
@@ -52,5 +71,6 @@ ff_bwdif_init_aarch64(BWDIFContext *s, int bit_depth)
         return;
 
     s->filter_intra = filter_intra_helper;
+    s->filter_edge  = filter_edge_helper;
 }
 

@@ -41,6 +41,10 @@ void ff_bwdif_init_filter_line(BWDIFContext *bwdif, int bit_depth);
 void ff_bwdif_init_x86(BWDIFContext *bwdif, int bit_depth);
 void ff_bwdif_init_aarch64(BWDIFContext *bwdif, int bit_depth);
 
+void ff_bwdif_filter_edge_c(void *dst1, void *prev1, void *cur1, void *next1,
+                            int w, int prefs, int mrefs, int prefs2, int mrefs2,
+                            int parity, int clip_max, int spat);
+
 void ff_bwdif_filter_intra_c(void *dst1, void *cur1, int w, int prefs, int mrefs,
                              int prefs3, int mrefs3, int parity, int clip_max);
 
