@@ -39,5 +39,9 @@ typedef struct BWDIFContext {
 
 void ff_bwdif_init_filter_line(BWDIFContext *bwdif, int bit_depth);
 void ff_bwdif_init_x86(BWDIFContext *bwdif, int bit_depth);
+void ff_bwdif_init_aarch64(BWDIFContext *bwdif, int bit_depth);
+
+void ff_bwdif_filter_intra_c(void *dst1, void *cur1, int w, int prefs, int mrefs,
+                             int prefs3, int mrefs3, int parity, int clip_max);
 
 #endif /* AVFILTER_BWDIF_H */

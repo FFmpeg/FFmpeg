@@ -122,8 +122,8 @@ typedef struct ThreadData {
         next2++; \
     }
 
-static void filter_intra(void *dst1, void *cur1, int w, int prefs, int mrefs,
-                         int prefs3, int mrefs3, int parity, int clip_max)
+void ff_bwdif_filter_intra_c(void *dst1, void *cur1, int w, int prefs, int mrefs,
+                             int prefs3, int mrefs3, int parity, int clip_max)
 {
     uint8_t *dst = dst1;
     uint8_t *cur = cur1;
@@ -362,13 +362,15 @@ av_cold void ff_bwdif_init_filter_line(BWDIFContext *s, int bit_depth)
         s->filter_line  = filter_line_c_16bit;
         s->filter_edge  = filter_edge_16bit;
     } else {
-        s->filter_intra = filter_intra;
+        s->filter_intra = ff_bwdif_filter_intra_c;
         s->filter_line  = filter_line_c;
         s->filter_edge  = filter_edge;
     }
 
 #if ARCH_X86
     ff_bwdif_init_x86(s, bit_depth);
+#elif ARCH_AARCH64
+    ff_bwdif_init_aarch64(s, bit_depth);
 #endif
 }
 
