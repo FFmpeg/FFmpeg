@@ -167,13 +167,16 @@ static int fn(filter_channels)(AVFilterContext *ctx, void *arg, int jobnr, int n
         ftype *dst = (ftype *)out->extended_data[ch];
         ftype *state = (ftype *)s->state->extended_data[ch];
         const ftype threshold = detection == 0 ? state[5] : s->threshold;
+        ftype fa[3], fm[3];
 
         if (detection < 0)
             state[5] = threshold;
 
+        memcpy(fa, state +  8, sizeof(fa));
+        memcpy(fm, state + 11, sizeof(fm));
+
         for (int n = 0; n < out->nb_samples; n++) {
             ftype detect, gain, v, listen;
-            ftype fa[3], fm[3];
             ftype k, g;
 
             detect = listen = fn(get_svf)(src[n], dm, da, state);
@@ -182,46 +185,32 @@ static int fn(filter_channels)(AVFilterContext *ctx, void *arg, int jobnr, int n
             if (detection > 0)
                 state[5] = FMAX(state[5], detect);
 
-            if (direction == 0) {
-                if (detect < threshold) {
-                    if (mode == 0)
-                        detect = ONE / CLIP(ONE + makeup + (threshold - detect) * ratio, ONE, range);
-                    else
-                        detect = CLIP(ONE + makeup + (threshold - detect) * ratio, ONE, range);
+            if (mode >= 0) {
+                if (direction == 0 && detect < threshold) {
+                    detect = CLIP(ONE + makeup + (threshold - detect) * ratio, ONE, range);
+                    if (!mode)
+                        detect = ONE / detect;
+                } else if (direction == 1 && detect > threshold) {
+                    detect = CLIP(ONE + makeup + (detect - threshold) * ratio, ONE, range);
+                    if (!mode)
+                        detect = ONE / detect;
                 } else {
                     detect = ONE;
                 }
-            } else {
-                if (detect > threshold) {
-                    if (mode == 0)
-                        detect = ONE / CLIP(ONE + makeup + (detect - threshold) * ratio, ONE, range);
-                    else
-                        detect = CLIP(ONE + makeup + (detect - threshold) * ratio, ONE, range);
-                } else {
-                    detect = ONE;
-                }
-            }
 
-            if (direction == 0) {
-                if (detect > state[4]) {
-                    detect = iattack * detect + attack * state[4];
-                } else {
-                    detect = irelease * detect + release * state[4];
-                }
-            } else {
-                if (detect < state[4]) {
+                if ((direction == 0 && detect > state[4]) || (direction == 1 && detect < state[4])) {
                     detect = iattack * detect + attack * state[4];
                 } else {
                     detect = irelease * detect + release * state[4];
                 }
             }
 
-            if (state[4] != detect || n == 0) {
+            if (state[4] != detect) {
                 state[4] = gain = detect;
 
                 switch (tftype) {
                 case 0:
-                    k = ONE / (tqfactor * gain);
+                    k = itqfactor / gain;
 
                     fa[0] = ONE / (ONE + fg * (fg + k));
                     fa[1] = fg * fa[0];
@@ -262,6 +251,9 @@ static int fn(filter_channels)(AVFilterContext *ctx, void *arg, int jobnr, int n
             v = mode == -1 ? listen : v;
             dst[n] = ctx->is_disabled ? src[n] : v;
         }
+
+        memcpy(state +  8, fa, sizeof(fa));
+        memcpy(state + 11, fm, sizeof(fm));
     }
 
     return 0;
