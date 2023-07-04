@@ -20,6 +20,7 @@
 #include "checkasm.h"
 #include "libavcodec/internal.h"
 #include "libavfilter/bwdif.h"
+#include "libavutil/mem_internal.h"
 
 #define WIDTH 256
 
@@ -80,5 +81,41 @@ void checkasm_check_vf_bwdif(void)
     if (check_func(ctx_10.filter_line, "bwdif10")) {
         BODY(uint16_t, 10);
         report("bwdif10");
+    }
+
+    if (check_func(ctx_8.filter_intra, "bwdif8.intra")) {
+        LOCAL_ALIGNED_16(uint8_t, cur0,  [11*WIDTH]);
+        LOCAL_ALIGNED_16(uint8_t, cur1,  [11*WIDTH]);
+        LOCAL_ALIGNED_16(uint8_t, dst0,  [WIDTH*3]);
+        LOCAL_ALIGNED_16(uint8_t, dst1,  [WIDTH*3]);
+        const int stride = WIDTH;
+        const int mask = (1<<8)-1;
+
+        declare_func(void, void *dst1, void *cur1, int w, int prefs, int mrefs,
+                     int prefs3, int mrefs3, int parity, int clip_max);
+
+        randomize_buffers( cur0,  cur1, mask, 11*WIDTH);
+        memset(dst0, 0xba, WIDTH * 3);
+        memset(dst1, 0xba, WIDTH * 3);
+
+        call_ref(dst0 + stride,
+                 cur0 + stride * 4, WIDTH,
+                 stride, -stride, stride * 3, -stride * 3,
+                 0, mask);
+        call_new(dst1 + stride,
+                 cur0 + stride * 4, WIDTH,
+                 stride, -stride, stride * 3, -stride * 3,
+                 0, mask);
+
+        if (memcmp(dst0, dst1, WIDTH*3)
+                || memcmp( cur0,  cur1, WIDTH*11))
+            fail();
+
+        bench_new(dst1 + stride,
+                  cur0 + stride * 4, WIDTH,
+                  stride, -stride, stride * 3, -stride * 3,
+                  0, mask);
+
+        report("bwdif8.intra");
     }
 }
