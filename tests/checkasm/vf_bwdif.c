@@ -28,6 +28,10 @@
     for (size_t i = 0; i < count; i++) \
         buf0[i] = buf1[i] = rnd() & mask
 
+#define randomize_overflow_check(buf0, buf1, mask, count) \
+    for (size_t i = 0; i < count; i++) \
+        buf0[i] = buf1[i] = (rnd() & 1) != 0 ? mask : 0;
+
 #define BODY(type, depth)                                                      \
     do {                                                                       \
         type prev0[9*WIDTH], prev1[9*WIDTH];                                   \
@@ -81,6 +85,83 @@ void checkasm_check_vf_bwdif(void)
     if (check_func(ctx_10.filter_line, "bwdif10")) {
         BODY(uint16_t, 10);
         report("bwdif10");
+    }
+
+    if (!ctx_8.filter_line3)
+        ctx_8.filter_line3 = ff_bwdif_filter_line3_c;
+
+    {
+        LOCAL_ALIGNED_16(uint8_t, prev0, [11*WIDTH]);
+        LOCAL_ALIGNED_16(uint8_t, prev1, [11*WIDTH]);
+        LOCAL_ALIGNED_16(uint8_t, next0, [11*WIDTH]);
+        LOCAL_ALIGNED_16(uint8_t, next1, [11*WIDTH]);
+        LOCAL_ALIGNED_16(uint8_t, cur0,  [11*WIDTH]);
+        LOCAL_ALIGNED_16(uint8_t, cur1,  [11*WIDTH]);
+        LOCAL_ALIGNED_16(uint8_t, dst0,  [WIDTH*3]);
+        LOCAL_ALIGNED_16(uint8_t, dst1,  [WIDTH*3]);
+        const int stride = WIDTH;
+        const int mask = (1<<8)-1;
+        int parity;
+
+        for (parity = 0; parity != 2; ++parity) {
+            if (check_func(ctx_8.filter_line3, "bwdif8.line3.rnd.p%d", parity)) {
+
+                declare_func(void, void * dst1, int d_stride,
+                                          const void * prev1, const void * cur1, const void * next1, int prefs,
+                                          int w, int parity, int clip_max);
+
+                randomize_buffers(prev0, prev1, mask, 11*WIDTH);
+                randomize_buffers(next0, next1, mask, 11*WIDTH);
+                randomize_buffers( cur0,  cur1, mask, 11*WIDTH);
+
+                call_ref(dst0, stride,
+                         prev0 + stride * 4, cur0 + stride * 4, next0 + stride * 4, stride,
+                         WIDTH, parity, mask);
+                call_new(dst1, stride,
+                         prev1 + stride * 4, cur1 + stride * 4, next1 + stride * 4, stride,
+                         WIDTH, parity, mask);
+
+                if (memcmp(dst0, dst1, WIDTH*3)
+                        || memcmp(prev0, prev1, WIDTH*11)
+                        || memcmp(next0, next1, WIDTH*11)
+                        || memcmp( cur0,  cur1, WIDTH*11))
+                    fail();
+
+                bench_new(dst1, stride,
+                         prev1 + stride * 4, cur1 + stride * 4, next1 + stride * 4, stride,
+                         WIDTH, parity, mask);
+            }
+        }
+
+        // Use just 0s and ~0s to try to provoke bad cropping or overflow
+        // Parity makes no difference to this test so just test 0
+        if (check_func(ctx_8.filter_line3, "bwdif8.line3.overflow")) {
+
+            declare_func(void, void * dst1, int d_stride,
+                                      const void * prev1, const void * cur1, const void * next1, int prefs,
+                                      int w, int parity, int clip_max);
+
+            randomize_overflow_check(prev0, prev1, mask, 11*WIDTH);
+            randomize_overflow_check(next0, next1, mask, 11*WIDTH);
+            randomize_overflow_check( cur0,  cur1, mask, 11*WIDTH);
+
+            call_ref(dst0, stride,
+                     prev0 + stride * 4, cur0 + stride * 4, next0 + stride * 4, stride,
+                     WIDTH, 0, mask);
+            call_new(dst1, stride,
+                     prev1 + stride * 4, cur1 + stride * 4, next1 + stride * 4, stride,
+                     WIDTH, 0, mask);
+
+            if (memcmp(dst0, dst1, WIDTH*3)
+                    || memcmp(prev0, prev1, WIDTH*11)
+                    || memcmp(next0, next1, WIDTH*11)
+                    || memcmp( cur0,  cur1, WIDTH*11))
+                fail();
+
+            // No point to benching
+        }
+
+        report("bwdif8.line3");
     }
 
     {
