@@ -132,10 +132,10 @@ void ff_bwdif_filter_intra_c(void *dst1, void *cur1, int w, int prefs, int mrefs
     FILTER_INTRA()
 }
 
-static void filter_line_c(void *dst1, void *prev1, void *cur1, void *next1,
-                          int w, int prefs, int mrefs, int prefs2, int mrefs2,
-                          int prefs3, int mrefs3, int prefs4, int mrefs4,
-                          int parity, int clip_max)
+void ff_bwdif_filter_line_c(void *dst1, void *prev1, void *cur1, void *next1,
+                            int w, int prefs, int mrefs, int prefs2, int mrefs2,
+                            int prefs3, int mrefs3, int prefs4, int mrefs4,
+                            int parity, int clip_max)
 {
     uint8_t *dst   = dst1;
     uint8_t *prev  = prev1;
@@ -363,7 +363,7 @@ av_cold void ff_bwdif_init_filter_line(BWDIFContext *s, int bit_depth)
         s->filter_edge  = filter_edge_16bit;
     } else {
         s->filter_intra = ff_bwdif_filter_intra_c;
-        s->filter_line  = filter_line_c;
+        s->filter_line  = ff_bwdif_filter_line_c;
         s->filter_edge  = ff_bwdif_filter_edge_c;
     }
 

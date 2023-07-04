@@ -31,6 +31,26 @@ void ff_bwdif_filter_edge_neon(void *dst1, void *prev1, void *cur1, void *next1,
 void ff_bwdif_filter_intra_neon(void *dst1, void *cur1, int w, int prefs, int mrefs,
                                 int prefs3, int mrefs3, int parity, int clip_max);
 
+void ff_bwdif_filter_line_neon(void *dst1, void *prev1, void *cur1, void *next1,
+                               int w, int prefs, int mrefs, int prefs2, int mrefs2,
+                               int prefs3, int mrefs3, int prefs4, int mrefs4,
+                               int parity, int clip_max);
+
+
+static void filter_line_helper(void *dst1, void *prev1, void *cur1, void *next1,
+                               int w, int prefs, int mrefs, int prefs2, int mrefs2,
+                               int prefs3, int mrefs3, int prefs4, int mrefs4,
+                               int parity, int clip_max)
+{
+    const int w0 = clip_max != 255 ? 0 : w & ~15;
+
+    ff_bwdif_filter_line_neon(dst1, prev1, cur1, next1,
+                              w0, prefs, mrefs, prefs2, mrefs2, prefs3, mrefs3, prefs4, mrefs4, parity, clip_max);
+
+    if (w0 < w)
+        ff_bwdif_filter_line_c((char *)dst1 + w0, (char *)prev1 + w0, (char *)cur1 + w0, (char *)next1 + w0,
+                               w - w0, prefs, mrefs, prefs2, mrefs2, prefs3, mrefs3, prefs4, mrefs4, parity, clip_max);
+}
 
 static void filter_edge_helper(void *dst1, void *prev1, void *cur1, void *next1,
                                int w, int prefs, int mrefs, int prefs2, int mrefs2,
@@ -71,6 +91,7 @@ ff_bwdif_init_aarch64(BWDIFContext *s, int bit_depth)
         return;
 
     s->filter_intra = filter_intra_helper;
+    s->filter_line  = filter_line_helper;
     s->filter_edge  = filter_edge_helper;
 }
 

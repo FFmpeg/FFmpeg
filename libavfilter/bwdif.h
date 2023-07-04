@@ -48,4 +48,9 @@ void ff_bwdif_filter_edge_c(void *dst1, void *prev1, void *cur1, void *next1,
 void ff_bwdif_filter_intra_c(void *dst1, void *cur1, int w, int prefs, int mrefs,
                              int prefs3, int mrefs3, int parity, int clip_max);
 
+void ff_bwdif_filter_line_c(void *dst1, void *prev1, void *cur1, void *next1,
+                            int w, int prefs, int mrefs, int prefs2, int mrefs2,
+                            int prefs3, int mrefs3, int prefs4, int mrefs4,
+                            int parity, int clip_max);
+
 #endif /* AVFILTER_BWDIF_H */
