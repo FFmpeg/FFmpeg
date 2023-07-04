@@ -358,7 +358,6 @@ static int dv_init_demux(AVFormatContext *s, DVDemuxContext *c)
     c->fctx                   = s;
     c->vst->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
     c->vst->codecpar->codec_id   = AV_CODEC_ID_DVVIDEO;
-    c->vst->codecpar->bit_rate   = 25000000;
     c->vst->start_time        = 0;
 
     avpriv_set_pts_info(c->vst, 64, 1, DV_TIMESCALE_VIDEO);
