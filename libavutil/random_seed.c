@@ -49,17 +49,20 @@
 static int read_random(uint32_t *dst, const char *file)
 {
 #if HAVE_UNISTD_H
-    int fd = avpriv_open(file, O_RDONLY);
-    int err = -1;
+    FILE *fp = avpriv_fopen_utf8(file, "r");
+    size_t err;
 
-    if (fd == -1)
-        return -1;
-    err = read(fd, dst, sizeof(*dst));
-    close(fd);
+    if (!fp)
+        return AVERROR_UNKNOWN;
+    err = fread(dst, 1, sizeof(*dst), fp);
+    fclose(fp);
 
-    return err;
+    if (err != sizeof(*dst))
+        return AVERROR_UNKNOWN;
+
+    return 0;
 #else
-    return -1;
+    return AVERROR(ENOSYS);
 #endif
 }
 
@@ -138,9 +141,7 @@ uint32_t av_get_random_seed(void)
     return arc4random();
 #endif
 
-    if (read_random(&seed, "/dev/urandom") == sizeof(seed))
-        return seed;
-    if (read_random(&seed, "/dev/random")  == sizeof(seed))
+    if (!read_random(&seed, "/dev/urandom"))
         return seed;
     return get_generic_seed();
 }
