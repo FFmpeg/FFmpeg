@@ -18598,28 +18598,28 @@ Set the format for the output video.
 It accepts the following values:
 @table @samp
 @item yuv420
-force YUV420 output
+force YUV 4:2:0 8-bit planar output
 
 @item yuv420p10
-force YUV420p10 output
+force YUV 4:2:0 10-bit planar output
 
 @item yuv422
-force YUV422 output
+force YUV 4:2:2 8-bit planar output
 
 @item yuv422p10
-force YUV422p10 output
+force YUV 4:2:2 10-bit planar output
 
 @item yuv444
-force YUV444 output
+force YUV 4:4:4 8-bit planar output
 
 @item yuv444p10
-force YUV444p10 output
+force YUV 4:4:4 10-bit planar output
 
 @item rgb
-force packed RGB output
+force RGB 8-bit packed output
 
 @item gbrp
-force planar RGB output
+force RGB 8-bit planar output
 
 @item auto
 automatically pick format
