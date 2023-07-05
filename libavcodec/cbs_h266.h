@@ -118,8 +118,16 @@ typedef struct H266GeneralConstraintsInfo {
     uint8_t gci_no_lmcs_constraint_flag;
     uint8_t gci_no_ladf_constraint_flag;
     uint8_t gci_no_virtual_boundaries_constraint_flag;
-    uint8_t gci_num_reserved_bits;
-    uint8_t gci_reserved_zero_bit[255];
+
+    uint8_t gci_num_additional_bits;
+    uint8_t gci_reserved_bit[255];
+
+    uint8_t gci_all_rap_pictures_constraint_flag;
+    uint8_t gci_no_extended_precision_processing_constraint_flag;
+    uint8_t gci_no_ts_residual_coding_rice_constraint_flag;
+    uint8_t gci_no_rrc_rice_extension_constraint_flag;
+    uint8_t gci_no_persistent_rice_adaptation_constraint_flag;
+    uint8_t gci_no_reverse_last_sig_coeff_constraint_flag;
 } H266GeneralConstraintsInfo;
 
 typedef struct H266RawProfileTierLevel {
@@ -472,6 +480,15 @@ typedef struct H266RawSPS {
 
     uint8_t  sps_extension_flag;
 
+    uint8_t  sps_range_extension_flag;
+    uint8_t  sps_extension_7bits;
+
+    uint8_t  sps_extended_precision_flag;
+    uint8_t  sps_ts_residual_coding_rice_present_in_sh_flag;
+    uint8_t  sps_rrc_rice_extension_flag;
+    uint8_t  sps_persistent_rice_adaptation_enabled_flag;
+    uint8_t  sps_reverse_last_sig_coeff_enabled_flag;
+
     H266RawExtensionData extension_data;
 
 } H266RawSPS;
@@ -757,6 +774,8 @@ typedef struct  H266RawSliceHeader {
 
     uint8_t  sh_sign_data_hiding_used_flag;
     uint8_t  sh_ts_residual_coding_disabled_flag;
+    uint8_t  sh_ts_residual_coding_rice_idx_minus1;
+    uint8_t  sh_reverse_last_sig_coeff_flag;
     uint16_t sh_slice_header_extension_length;
     uint8_t  sh_slice_header_extension_data_byte[256];
 
