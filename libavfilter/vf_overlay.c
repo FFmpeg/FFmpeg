@@ -156,7 +156,7 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
 
 static const enum AVPixelFormat alpha_pix_fmts[] = {
     AV_PIX_FMT_YUVA420P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA444P,
-    AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA422P10,
+    AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA444P10,
     AV_PIX_FMT_ARGB, AV_PIX_FMT_ABGR, AV_PIX_FMT_RGBA,
     AV_PIX_FMT_BGRA, AV_PIX_FMT_GBRAP, AV_PIX_FMT_NONE
 };
@@ -204,6 +204,13 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUVA444P, AV_PIX_FMT_NONE
     };
 
+    static const enum AVPixelFormat main_pix_fmts_yuv444p10[] = {
+        AV_PIX_FMT_YUV444P10, AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_NONE
+    };
+    static const enum AVPixelFormat overlay_pix_fmts_yuv444p10[] = {
+        AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_NONE
+    };
+
     static const enum AVPixelFormat main_pix_fmts_gbrp[] = {
         AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP, AV_PIX_FMT_NONE
     };
@@ -247,6 +254,10 @@ static int query_formats(AVFilterContext *ctx)
     case OVERLAY_FORMAT_YUV444:
         main_formats    = main_pix_fmts_yuv444;
         overlay_formats = overlay_pix_fmts_yuv444;
+        break;
+    case OVERLAY_FORMAT_YUV444P10:
+        main_formats    = main_pix_fmts_yuv444p10;
+        overlay_formats = overlay_pix_fmts_yuv444p10;
         break;
     case OVERLAY_FORMAT_RGB:
         main_formats    = main_pix_fmts_rgb;
@@ -759,6 +770,22 @@ static int blend_slice_yuva444(AVFilterContext *ctx, void *arg, int jobnr, int n
     return 0;
 }
 
+static int blend_slice_yuv444p10(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    OverlayContext *s = ctx->priv;
+    ThreadData *td = arg;
+    blend_slice_yuv_16_10bits(ctx, td->dst, td->src, 0, 0, 0, s->x, s->y, 1, jobnr, nb_jobs);
+    return 0;
+}
+
+static int blend_slice_yuva444p10(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    OverlayContext *s = ctx->priv;
+    ThreadData *td = arg;
+    blend_slice_yuv_16_10bits(ctx, td->dst, td->src, 0, 0, 1, s->x, s->y, 1, jobnr, nb_jobs);
+    return 0;
+}
+
 static int blend_slice_gbrp(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     OverlayContext *s = ctx->priv;
@@ -902,6 +929,9 @@ static int config_input_main(AVFilterLink *inlink)
     case OVERLAY_FORMAT_YUV444:
         s->blend_slice = s->main_has_alpha ? blend_slice_yuva444 : blend_slice_yuv444;
         break;
+    case OVERLAY_FORMAT_YUV444P10:
+        s->blend_slice = s->main_has_alpha ? blend_slice_yuva444p10 : blend_slice_yuv444p10;
+        break;
     case OVERLAY_FORMAT_RGB:
         s->blend_slice = s->main_has_alpha ? blend_slice_rgba : blend_slice_rgb;
         break;
@@ -924,6 +954,9 @@ static int config_input_main(AVFilterLink *inlink)
             break;
         case AV_PIX_FMT_YUVA444P:
             s->blend_slice = blend_slice_yuva444;
+            break;
+        case AV_PIX_FMT_YUVA444P10:
+            s->blend_slice = blend_slice_yuva444p10;
             break;
         case AV_PIX_FMT_ARGB:
         case AV_PIX_FMT_RGBA:
@@ -1084,6 +1117,7 @@ static const AVOption overlay_options[] = {
         { "yuv422", "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_YUV422}, .flags = FLAGS, .unit = "format" },
         { "yuv422p10", "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_YUV422P10}, .flags = FLAGS, .unit = "format" },
         { "yuv444", "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_YUV444}, .flags = FLAGS, .unit = "format" },
+        { "yuv444p10", "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_YUV444P10}, .flags = FLAGS, .unit = "format" },
         { "rgb",    "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_RGB},    .flags = FLAGS, .unit = "format" },
         { "gbrp",   "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_GBRP},   .flags = FLAGS, .unit = "format" },
         { "auto",   "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_AUTO},   .flags = FLAGS, .unit = "format" },

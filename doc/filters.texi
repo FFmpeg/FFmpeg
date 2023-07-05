@@ -18612,6 +18612,9 @@ force YUV422p10 output
 @item yuv444
 force YUV444 output
 
+@item yuv444p10
+force YUV444p10 output
+
 @item rgb
 force packed RGB output
 
