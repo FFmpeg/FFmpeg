@@ -868,7 +868,7 @@ static int output_frame(AVFilterContext *ctx)
     if (s->slide != SLIDE_FRAME || s->new_frame == 1) {
         int64_t pts_offset = s->new_frame ? 0LL : av_rescale(s->ihop_index, s->hop_size, s->ihop_size);
 
-        pts_offset = av_rescale_q(pts_offset, av_make_q(1, inlink->sample_rate), inlink->time_base);
+        pts_offset = av_rescale_q(pts_offset - 16384LL, av_make_q(1, inlink->sample_rate), inlink->time_base);
         s->outpicref->pts = av_rescale_q(s->in_pts + pts_offset, inlink->time_base, outlink->time_base);
         s->outpicref->duration = 1;
     }
