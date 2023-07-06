@@ -48,6 +48,7 @@ typedef struct FilterGraphPriv {
     // true when the filtergraph contains only meta filters
     // that do not modify the frame data
     int is_meta;
+    int disable_conversions;
 
     const char *graph_desc;
 
@@ -321,8 +322,6 @@ static const char *choose_pix_fmts(OutputFilter *ofilter, AVBPrint *bprint)
         av_opt_set(ost->enc_ctx, "strict", strict_dict->value, 0);
 
      if (ost->keep_pix_fmt) {
-        avfilter_graph_set_auto_convert(ofilter->graph->graph,
-                                            AVFILTER_AUTO_CONVERT_NONE);
         if (ost->enc_ctx->pix_fmt == AV_PIX_FMT_NONE)
             return NULL;
         return av_get_pix_fmt_name(ost->enc_ctx->pix_fmt);
@@ -679,6 +678,7 @@ void ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost)
 {
     OutputFilterPriv *ofp = ofp_from_ofilter(ofilter);
     FilterGraph  *fg = ofilter->graph;
+    FilterGraphPriv *fgp = fgp_from_fg(fg);
     const AVCodec *c = ost->enc_ctx->codec;
 
     av_assert0(!ofilter->ost);
@@ -695,6 +695,9 @@ void ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost)
         } else {
             ofp->formats = c->pix_fmts;
         }
+
+        fgp->disable_conversions |= ost->keep_pix_fmt;
+
         break;
     case AVMEDIA_TYPE_AUDIO:
         if (ost->enc_ctx->sample_fmt != AV_SAMPLE_FMT_NONE) {
@@ -830,6 +833,7 @@ FilterGraph *fg_create(char *graph_desc)
     fg->class       = &fg_class;
     fg->index      = nb_filtergraphs - 1;
     fgp->graph_desc = graph_desc;
+    fgp->disable_conversions = !auto_conversion_filters;
 
     snprintf(fgp->log_name, sizeof(fgp->log_name), "fc#%d", fg->index);
 
@@ -1587,7 +1591,7 @@ static int configure_filtergraph(FilterGraph *fg)
         configure_output_filter(fg, fg->outputs[i], cur);
     avfilter_inout_free(&outputs);
 
-    if (!auto_conversion_filters)
+    if (fgp->disable_conversions)
         avfilter_graph_set_auto_convert(fg->graph, AVFILTER_AUTO_CONVERT_NONE);
     if ((ret = avfilter_graph_config(fg->graph, NULL)) < 0)
         goto fail;
