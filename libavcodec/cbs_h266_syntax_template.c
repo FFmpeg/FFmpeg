@@ -1845,7 +1845,7 @@ static int FUNC(pps) (CodedBitstreamContext *ctx, RWContext *rw,
         }
         for (i = 0; i <= current->pps_num_exp_tile_rows_minus1; i++) {
             ues(pps_tile_row_height_minus1[i],
-                0, pic_height_in_ctbs_y - 1, 1, i);
+                0, pic_height_in_ctbs_y - exp_tile_height - 1, 1, i);
             exp_tile_height += current->pps_tile_row_height_minus1[i] + 1;
         }
 
