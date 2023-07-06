@@ -210,9 +210,9 @@ fate-vsynth%-h263p:              ENCOPTS = -qscale 2 -flags +aic -umv 1 -aiv 1 -
 FATE_VCODEC_SCALE-$(call ENCDEC, HUFFYUV, AVI) += huffyuv huffyuvbgr24 huffyuvbgra
 fate-vsynth%-huffyuv:            ENCOPTS = -c:v huffyuv -pix_fmt yuv422p -sws_flags neighbor
 fate-vsynth%-huffyuv:            DECOPTS = -sws_flags neighbor
-fate-vsynth%-huffyuvbgr24:       ENCOPTS = -c:v huffyuv -pix_fmt bgr24 -sws_flags neighbor
+fate-vsynth%-huffyuvbgr24:       ENCOPTS = -c:v huffyuv -pix_fmt rgb24 -sws_flags neighbor
 fate-vsynth%-huffyuvbgr24:       DECOPTS = -sws_flags neighbor
-fate-vsynth%-huffyuvbgra:        ENCOPTS = -c:v huffyuv -pix_fmt bgr32 -sws_flags neighbor
+fate-vsynth%-huffyuvbgra:        ENCOPTS = -c:v huffyuv -pix_fmt rgb32 -sws_flags neighbor
 fate-vsynth%-huffyuvbgra:        DECOPTS = -sws_flags neighbor
 
 FATE_VCODEC_SCALE-$(call ENCDEC, JPEGLS, AVI) += jpegls

@@ -27,7 +27,7 @@ fate-lavf-gbrp.fits: CMD = lavf_video "-pix_fmt gbrp"
 fate-lavf-gbrap.fits: CMD = lavf_video "-pix_fmt gbrap"
 fate-lavf-gbrp16be.fits: CMD = lavf_video "-pix_fmt gbrp16be"
 fate-lavf-gbrap16be.fits: CMD = lavf_video "-pix_fmt gbrap16be"
-fate-lavf-gif: CMD = lavf_video "-pix_fmt rgb24"
+fate-lavf-gif: CMD = lavf_video "-pix_fmt rgb8"
 
 FATE_AVCONV += $(FATE_LAVF_VIDEO)
 fate-lavf-video fate-lavf: $(FATE_LAVF_VIDEO)
