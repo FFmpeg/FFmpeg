@@ -133,6 +133,19 @@ static InputFilterPriv *ifp_from_ifilter(InputFilter *ifilter)
     return (InputFilterPriv*)ifilter;
 }
 
+typedef struct OutputFilterPriv {
+    OutputFilter        ofilter;
+
+    /* desired output stream properties */
+    int format;
+    int sample_rate;
+} OutputFilterPriv;
+
+static OutputFilterPriv *ofp_from_ofilter(OutputFilter *ofilter)
+{
+    return (OutputFilterPriv*)ofilter;
+}
+
 static int configure_filtergraph(FilterGraph *fg);
 
 static int sub2video_get_blank_frame(InputFilterPriv *ifp)
@@ -333,11 +346,12 @@ static const char *choose_pix_fmts(OutputFilter *ofilter, AVBPrint *bprint)
 #define DEF_CHOOSE_FORMAT(name, type, var, supported_list, none, printf_format, get_name) \
 static void choose_ ## name (OutputFilter *ofilter, AVBPrint *bprint)          \
 {                                                                              \
-    if (ofilter->var == none && !ofilter->supported_list)                      \
+    OutputFilterPriv *ofp = ofp_from_ofilter(ofilter);                         \
+    if (ofp->var == none && !ofilter->supported_list)                          \
         return;                                                                \
     av_bprintf(bprint, #name "=");                                             \
-    if (ofilter->var != none) {                                                \
-        av_bprintf(bprint, printf_format, get_name(ofilter->var));             \
+    if (ofp->var != none) {                                                    \
+        av_bprintf(bprint, printf_format, get_name(ofp->var));                 \
     } else {                                                                   \
         const type *p;                                                         \
                                                                                \
@@ -580,11 +594,14 @@ static char *describe_filter_link(FilterGraph *fg, AVFilterInOut *inout, int in)
 
 static OutputFilter *ofilter_alloc(FilterGraph *fg)
 {
+    OutputFilterPriv *ofp;
     OutputFilter *ofilter;
 
-    ofilter           = ALLOC_ARRAY_ELEM(fg->outputs, fg->nb_outputs);
+    ofp               = allocate_array_elem(&fg->outputs, sizeof(*ofp),
+                                            &fg->nb_outputs);
+    ofilter           = &ofp->ofilter;
     ofilter->graph    = fg;
-    ofilter->format   = -1;
+    ofp->format       = -1;
     ofilter->last_pts = AV_NOPTS_VALUE;
 
     return ofilter;
@@ -653,6 +670,7 @@ static void set_channel_layout(OutputFilter *f, OutputStream *ost)
 
 void ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost)
 {
+    OutputFilterPriv *ofp = ofp_from_ofilter(ofilter);
     FilterGraph  *fg = ofilter->graph;
     const AVCodec *c = ost->enc_ctx->codec;
 
@@ -666,19 +684,19 @@ void ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost)
         ofilter->width      = ost->enc_ctx->width;
         ofilter->height     = ost->enc_ctx->height;
         if (ost->enc_ctx->pix_fmt != AV_PIX_FMT_NONE) {
-            ofilter->format = ost->enc_ctx->pix_fmt;
+            ofp->format = ost->enc_ctx->pix_fmt;
         } else {
             ofilter->formats = c->pix_fmts;
         }
         break;
     case AVMEDIA_TYPE_AUDIO:
         if (ost->enc_ctx->sample_fmt != AV_SAMPLE_FMT_NONE) {
-            ofilter->format = ost->enc_ctx->sample_fmt;
+            ofp->format = ost->enc_ctx->sample_fmt;
         } else {
             ofilter->formats = c->sample_fmts;
         }
         if (ost->enc_ctx->sample_rate) {
-            ofilter->sample_rate = ost->enc_ctx->sample_rate;
+            ofp->sample_rate = ost->enc_ctx->sample_rate;
         } else {
             ofilter->sample_rates = c->supported_samplerates;
         }
@@ -1570,14 +1588,15 @@ static int configure_filtergraph(FilterGraph *fg)
      * make sure they stay the same if the filtergraph is reconfigured later */
     for (i = 0; i < fg->nb_outputs; i++) {
         OutputFilter *ofilter = fg->outputs[i];
+        OutputFilterPriv *ofp = ofp_from_ofilter(ofilter);
         AVFilterContext *sink = ofilter->filter;
 
-        ofilter->format = av_buffersink_get_format(sink);
+        ofp->format = av_buffersink_get_format(sink);
 
         ofilter->width  = av_buffersink_get_w(sink);
         ofilter->height = av_buffersink_get_h(sink);
 
-        ofilter->sample_rate    = av_buffersink_get_sample_rate(sink);
+        ofp->sample_rate    = av_buffersink_get_sample_rate(sink);
         av_channel_layout_uninit(&ofilter->ch_layout);
         ret = av_buffersink_get_ch_layout(sink, &ofilter->ch_layout);
         if (ret < 0)
