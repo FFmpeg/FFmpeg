@@ -24,6 +24,7 @@
 #include "libavutil/frame.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
+#include "libavutil/pixdesc.h"
 #include "libavutil/samplefmt.h"
 
 #include "avcodec.h"
@@ -576,15 +577,19 @@ static int encode_preinit_video(AVCodecContext *avctx)
     const AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(avctx->pix_fmt);
     int i;
 
+    if (!av_get_pix_fmt_name(avctx->pix_fmt)) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid video pixel format: %d\n",
+               avctx->pix_fmt);
+        return AVERROR(EINVAL);
+    }
+
     if (avctx->codec->pix_fmts) {
         for (i = 0; avctx->codec->pix_fmts[i] != AV_PIX_FMT_NONE; i++)
             if (avctx->pix_fmt == avctx->codec->pix_fmts[i])
                 break;
         if (avctx->codec->pix_fmts[i] == AV_PIX_FMT_NONE) {
-            char buf[128];
-            snprintf(buf, sizeof(buf), "%d", avctx->pix_fmt);
-            av_log(avctx, AV_LOG_ERROR, "Specified pixel format %s is invalid or not supported\n",
-                   (char *)av_x_if_null(av_get_pix_fmt_name(avctx->pix_fmt), buf));
+            av_log(avctx, AV_LOG_ERROR, "Specified pixel format %s is not supported\n",
+                   av_get_pix_fmt_name(avctx->pix_fmt));
             return AVERROR(EINVAL);
         }
         if (avctx->codec->pix_fmts[i] == AV_PIX_FMT_YUVJ420P ||
@@ -646,6 +651,12 @@ static int encode_preinit_audio(AVCodecContext *avctx)
 {
     int i;
 
+    if (!av_get_sample_fmt_name(avctx->sample_fmt)) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid audio sample format: %d\n",
+               avctx->sample_fmt);
+        return AVERROR(EINVAL);
+    }
+
     if (avctx->codec->sample_fmts) {
         for (i = 0; avctx->codec->sample_fmts[i] != AV_SAMPLE_FMT_NONE; i++) {
             if (avctx->sample_fmt == avctx->codec->sample_fmts[i])
@@ -658,10 +669,8 @@ static int encode_preinit_audio(AVCodecContext *avctx)
             }
         }
         if (avctx->codec->sample_fmts[i] == AV_SAMPLE_FMT_NONE) {
-            char buf[128];
-            snprintf(buf, sizeof(buf), "%d", avctx->sample_fmt);
-            av_log(avctx, AV_LOG_ERROR, "Specified sample format %s is invalid or not supported\n",
-                   (char *)av_x_if_null(av_get_sample_fmt_name(avctx->sample_fmt), buf));
+            av_log(avctx, AV_LOG_ERROR, "Specified sample format %s is not supported\n",
+                   av_get_sample_fmt_name(avctx->sample_fmt));
             return AVERROR(EINVAL);
         }
     }
