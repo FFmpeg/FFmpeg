@@ -658,6 +658,11 @@ static int encode_preinit_audio(AVCodecContext *avctx)
                avctx->sample_fmt);
         return AVERROR(EINVAL);
     }
+    if (avctx->sample_rate <= 0) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid audio sample rate: %d\n",
+               avctx->sample_rate);
+        return AVERROR(EINVAL);
+    }
 
     if (c->sample_fmts) {
         for (i = 0; c->sample_fmts[i] != AV_SAMPLE_FMT_NONE; i++) {
@@ -685,11 +690,6 @@ static int encode_preinit_audio(AVCodecContext *avctx)
                    avctx->sample_rate);
             return AVERROR(EINVAL);
         }
-    }
-    if (avctx->sample_rate < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Specified sample rate %d is not supported\n",
-                avctx->sample_rate);
-        return AVERROR(EINVAL);
     }
     if (c->ch_layouts) {
         for (i = 0; c->ch_layouts[i].nb_channels; i++) {
