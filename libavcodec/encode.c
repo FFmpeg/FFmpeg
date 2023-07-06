@@ -699,8 +699,8 @@ static int encode_preinit_audio(AVCodecContext *avctx)
         if (!c->ch_layouts[i].nb_channels) {
             char buf[512];
             int ret = av_channel_layout_describe(&avctx->ch_layout, buf, sizeof(buf));
-            if (ret > 0)
-                av_log(avctx, AV_LOG_ERROR, "Specified channel layout '%s' is not supported\n", buf);
+            av_log(avctx, AV_LOG_ERROR, "Specified channel layout '%s' is not supported\n",
+                   ret > 0 ? buf : "?");
             return AVERROR(EINVAL);
         }
     }
