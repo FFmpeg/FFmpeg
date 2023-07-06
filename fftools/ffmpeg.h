@@ -296,7 +296,6 @@ typedef struct OutputFilter {
 
     /* desired output stream properties */
     int width, height;
-    AVChannelLayout ch_layout;
 
     // those are only set if no format is specified and the encoder gives us multiple options
     // They point directly to the relevant lists of the encoder.

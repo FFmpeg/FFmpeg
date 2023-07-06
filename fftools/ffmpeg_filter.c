@@ -139,6 +139,7 @@ typedef struct OutputFilterPriv {
     /* desired output stream properties */
     int format;
     int sample_rate;
+    AVChannelLayout ch_layout;
 } OutputFilterPriv;
 
 static OutputFilterPriv *ofp_from_ofilter(OutputFilter *ofilter)
@@ -375,9 +376,10 @@ DEF_CHOOSE_FORMAT(sample_rates, int, sample_rate, sample_rates, 0,
 
 static void choose_channel_layouts(OutputFilter *ofilter, AVBPrint *bprint)
 {
-    if (av_channel_layout_check(&ofilter->ch_layout)) {
+    OutputFilterPriv *ofp = ofp_from_ofilter(ofilter);
+    if (av_channel_layout_check(&ofp->ch_layout)) {
         av_bprintf(bprint, "channel_layouts=");
-        av_channel_layout_describe_bprint(&ofilter->ch_layout, bprint);
+        av_channel_layout_describe_bprint(&ofp->ch_layout, bprint);
     } else if (ofilter->ch_layouts) {
         const AVChannelLayout *p;
 
@@ -630,7 +632,7 @@ static int ifilter_bind_ist(InputFilter *ifilter, InputStream *ist)
     return 0;
 }
 
-static void set_channel_layout(OutputFilter *f, OutputStream *ost)
+static void set_channel_layout(OutputFilterPriv *f, OutputStream *ost)
 {
     const AVCodec *c = ost->enc_ctx->codec;
     int i, err;
@@ -701,7 +703,7 @@ void ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost)
             ofilter->sample_rates = c->supported_samplerates;
         }
         if (ost->enc_ctx->ch_layout.nb_channels) {
-            set_channel_layout(ofilter, ost);
+            set_channel_layout(ofp, ost);
         } else if (c->ch_layouts) {
             ofilter->ch_layouts = c->ch_layouts;
         }
@@ -782,10 +784,11 @@ void fg_free(FilterGraph **pfg)
     av_freep(&fg->inputs);
     for (int j = 0; j < fg->nb_outputs; j++) {
         OutputFilter *ofilter = fg->outputs[j];
+        OutputFilterPriv *ofp = ofp_from_ofilter(ofilter);
 
         av_freep(&ofilter->linklabel);
         av_freep(&ofilter->name);
-        av_channel_layout_uninit(&ofilter->ch_layout);
+        av_channel_layout_uninit(&ofp->ch_layout);
         av_freep(&fg->outputs[j]);
     }
     av_freep(&fg->outputs);
@@ -1597,8 +1600,8 @@ static int configure_filtergraph(FilterGraph *fg)
         ofilter->height = av_buffersink_get_h(sink);
 
         ofp->sample_rate    = av_buffersink_get_sample_rate(sink);
-        av_channel_layout_uninit(&ofilter->ch_layout);
-        ret = av_buffersink_get_ch_layout(sink, &ofilter->ch_layout);
+        av_channel_layout_uninit(&ofp->ch_layout);
+        ret = av_buffersink_get_ch_layout(sink, &ofp->ch_layout);
         if (ret < 0)
             goto fail;
     }
