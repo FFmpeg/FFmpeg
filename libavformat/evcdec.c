@@ -65,7 +65,7 @@ static int annexb_probe(const AVProbeData *p)
     int nalu_type;
     size_t nalu_size;
     int got_sps = 0, got_pps = 0, got_idr = 0, got_nonidr = 0;
-    unsigned char *bits = (unsigned char *)p->buf;
+    const unsigned char *bits = p->buf;
     int bytes_to_read = p->buf_size;
 
     while (bytes_to_read > EVC_NALU_LENGTH_PREFIX_SIZE) {
@@ -159,11 +159,11 @@ static int evc_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (ret < 0)
             return ret;
 
-        ret = avio_read(s->pb, (unsigned char *)&buf, EVC_NALU_LENGTH_PREFIX_SIZE);
+        ret = avio_read(s->pb, buf, EVC_NALU_LENGTH_PREFIX_SIZE);
         if (ret < 0)
             return ret;
 
-        nalu_size = evc_read_nal_unit_length((const uint8_t *)&buf, EVC_NALU_LENGTH_PREFIX_SIZE);
+        nalu_size = evc_read_nal_unit_length(buf, EVC_NALU_LENGTH_PREFIX_SIZE);
         if (!nalu_size || nalu_size > INT_MAX)
             return AVERROR_INVALIDDATA;
 
