@@ -138,6 +138,7 @@ typedef struct OutputFilterPriv {
 
     /* desired output stream properties */
     int format;
+    int width, height;
     int sample_rate;
     AVChannelLayout ch_layout;
 } OutputFilterPriv;
@@ -683,8 +684,8 @@ void ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost)
 
     switch (ost->enc_ctx->codec_type) {
     case AVMEDIA_TYPE_VIDEO:
-        ofilter->width      = ost->enc_ctx->width;
-        ofilter->height     = ost->enc_ctx->height;
+        ofp->width      = ost->enc_ctx->width;
+        ofp->height     = ost->enc_ctx->height;
         if (ost->enc_ctx->pix_fmt != AV_PIX_FMT_NONE) {
             ofp->format = ost->enc_ctx->pix_fmt;
         } else {
@@ -1068,6 +1069,7 @@ static int insert_filter(AVFilterContext **last_filter, int *pad_idx,
 
 static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter, AVFilterInOut *out)
 {
+    OutputFilterPriv *ofp = ofp_from_ofilter(ofilter);
     OutputStream *ost = ofilter->ost;
     OutputFile    *of = output_files[ost->file_index];
     AVFilterContext *last_filter = out->filter_ctx;
@@ -1085,13 +1087,13 @@ static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter,
     if (ret < 0)
         return ret;
 
-    if ((ofilter->width || ofilter->height) && ofilter->ost->autoscale) {
+    if ((ofp->width || ofp->height) && ofilter->ost->autoscale) {
         char args[255];
         AVFilterContext *filter;
         const AVDictionaryEntry *e = NULL;
 
         snprintf(args, sizeof(args), "%d:%d",
-                 ofilter->width, ofilter->height);
+                 ofp->width, ofp->height);
 
         while ((e = av_dict_iterate(ost->sws_dict, e))) {
             av_strlcatf(args, sizeof(args), ":%s=%s", e->key, e->value);
@@ -1596,8 +1598,8 @@ static int configure_filtergraph(FilterGraph *fg)
 
         ofp->format = av_buffersink_get_format(sink);
 
-        ofilter->width  = av_buffersink_get_w(sink);
-        ofilter->height = av_buffersink_get_h(sink);
+        ofp->width  = av_buffersink_get_w(sink);
+        ofp->height = av_buffersink_get_h(sink);
 
         ofp->sample_rate    = av_buffersink_get_sample_rate(sink);
         av_channel_layout_uninit(&ofp->ch_layout);

@@ -294,9 +294,6 @@ typedef struct OutputFilter {
 
     enum AVMediaType     type;
 
-    /* desired output stream properties */
-    int width, height;
-
     // those are only set if no format is specified and the encoder gives us multiple options
     // They point directly to the relevant lists of the encoder.
     const int *formats;
