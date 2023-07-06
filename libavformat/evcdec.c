@@ -162,6 +162,8 @@ static int evc_read_packet(AVFormatContext *s, AVPacket *pkt)
         ret = avio_read(s->pb, buf, EVC_NALU_LENGTH_PREFIX_SIZE);
         if (ret < 0)
             return ret;
+        if (ret != EVC_NALU_LENGTH_PREFIX_SIZE)
+            return AVERROR_INVALIDDATA;
 
         nalu_size = evc_read_nal_unit_length(buf, EVC_NALU_LENGTH_PREFIX_SIZE);
         if (!nalu_size || nalu_size > INT_MAX)
