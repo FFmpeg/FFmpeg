@@ -141,6 +141,12 @@ typedef struct OutputFilterPriv {
     int width, height;
     int sample_rate;
     AVChannelLayout ch_layout;
+
+    // those are only set if no format is specified and the encoder gives us multiple options
+    // They point directly to the relevant lists of the encoder.
+    const int *formats;
+    const AVChannelLayout *ch_layouts;
+    const int *sample_rates;
 } OutputFilterPriv;
 
 static OutputFilterPriv *ofp_from_ofilter(OutputFilter *ofilter)
@@ -346,10 +352,9 @@ static const char *choose_pix_fmts(OutputFilter *ofilter, AVBPrint *bprint)
 /* Define a function for appending a list of allowed formats
  * to an AVBPrint. If nonempty, the list will have a header. */
 #define DEF_CHOOSE_FORMAT(name, type, var, supported_list, none, printf_format, get_name) \
-static void choose_ ## name (OutputFilter *ofilter, AVBPrint *bprint)          \
+static void choose_ ## name (OutputFilterPriv *ofp, AVBPrint *bprint)          \
 {                                                                              \
-    OutputFilterPriv *ofp = ofp_from_ofilter(ofilter);                         \
-    if (ofp->var == none && !ofilter->supported_list)                          \
+    if (ofp->var == none && !ofp->supported_list)                              \
         return;                                                                \
     av_bprintf(bprint, #name "=");                                             \
     if (ofp->var != none) {                                                    \
@@ -357,7 +362,7 @@ static void choose_ ## name (OutputFilter *ofilter, AVBPrint *bprint)          \
     } else {                                                                   \
         const type *p;                                                         \
                                                                                \
-        for (p = ofilter->supported_list; *p != none; p++) {                   \
+        for (p = ofp->supported_list; *p != none; p++) {                       \
             av_bprintf(bprint, printf_format "|", get_name(*p));               \
         }                                                                      \
         if (bprint->len > 0)                                                   \
@@ -375,17 +380,16 @@ DEF_CHOOSE_FORMAT(sample_fmts, enum AVSampleFormat, format, formats,
 DEF_CHOOSE_FORMAT(sample_rates, int, sample_rate, sample_rates, 0,
                   "%d", )
 
-static void choose_channel_layouts(OutputFilter *ofilter, AVBPrint *bprint)
+static void choose_channel_layouts(OutputFilterPriv *ofp, AVBPrint *bprint)
 {
-    OutputFilterPriv *ofp = ofp_from_ofilter(ofilter);
     if (av_channel_layout_check(&ofp->ch_layout)) {
         av_bprintf(bprint, "channel_layouts=");
         av_channel_layout_describe_bprint(&ofp->ch_layout, bprint);
-    } else if (ofilter->ch_layouts) {
+    } else if (ofp->ch_layouts) {
         const AVChannelLayout *p;
 
         av_bprintf(bprint, "channel_layouts=");
-        for (p = ofilter->ch_layouts; p->nb_channels; p++) {
+        for (p = ofp->ch_layouts; p->nb_channels; p++) {
             av_channel_layout_describe_bprint(p, bprint);
             av_bprintf(bprint, "|");
         }
@@ -689,24 +693,24 @@ void ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost)
         if (ost->enc_ctx->pix_fmt != AV_PIX_FMT_NONE) {
             ofp->format = ost->enc_ctx->pix_fmt;
         } else {
-            ofilter->formats = c->pix_fmts;
+            ofp->formats = c->pix_fmts;
         }
         break;
     case AVMEDIA_TYPE_AUDIO:
         if (ost->enc_ctx->sample_fmt != AV_SAMPLE_FMT_NONE) {
             ofp->format = ost->enc_ctx->sample_fmt;
         } else {
-            ofilter->formats = c->sample_fmts;
+            ofp->formats = c->sample_fmts;
         }
         if (ost->enc_ctx->sample_rate) {
             ofp->sample_rate = ost->enc_ctx->sample_rate;
         } else {
-            ofilter->sample_rates = c->supported_samplerates;
+            ofp->sample_rates = c->supported_samplerates;
         }
         if (ost->enc_ctx->ch_layout.nb_channels) {
             set_channel_layout(ofp, ost);
         } else if (c->ch_layouts) {
-            ofilter->ch_layouts = c->ch_layouts;
+            ofp->ch_layouts = c->ch_layouts;
         }
         break;
     }
@@ -1144,6 +1148,7 @@ static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter,
 
 static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter, AVFilterInOut *out)
 {
+    OutputFilterPriv *ofp = ofp_from_ofilter(ofilter);
     OutputStream *ost = ofilter->ost;
     OutputFile    *of = output_files[ost->file_index];
     AVFilterContext *last_filter = out->filter_ctx;
@@ -1196,9 +1201,9 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
     }
 #endif
 
-    choose_sample_fmts(ofilter,     &args);
-    choose_sample_rates(ofilter,    &args);
-    choose_channel_layouts(ofilter, &args);
+    choose_sample_fmts(ofp,     &args);
+    choose_sample_rates(ofp,    &args);
+    choose_channel_layouts(ofp, &args);
     if (!av_bprint_is_complete(&args)) {
         ret = AVERROR(ENOMEM);
         goto fail;

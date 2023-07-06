@@ -294,12 +294,6 @@ typedef struct OutputFilter {
 
     enum AVMediaType     type;
 
-    // those are only set if no format is specified and the encoder gives us multiple options
-    // They point directly to the relevant lists of the encoder.
-    const int *formats;
-    const AVChannelLayout *ch_layouts;
-    const int *sample_rates;
-
     /* pts of the last frame received from this filter, in AV_TIME_BASE_Q */
     int64_t last_pts;
 } OutputFilter;
