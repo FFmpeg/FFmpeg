@@ -26,6 +26,7 @@
 #undef FMIN
 #undef CLIP
 #undef SAMPLE_FORMAT
+#undef EPSILON
 #undef FABS
 #if DEPTH == 32
 #define SAMPLE_FORMAT float
@@ -39,6 +40,7 @@
 #define CLIP av_clipf
 #define FABS fabsf
 #define ftype float
+#define EPSILON (1.f / (1 << 22))
 #else
 #define SAMPLE_FORMAT double
 #define SQRT sqrt
@@ -51,6 +53,7 @@
 #define CLIP av_clipd
 #define FABS fabs
 #define ftype double
+#define EPSILON (1.0 / (1LL << 51))
 #endif
 
 #define fn3(a,b)   a##_##b
@@ -147,9 +150,7 @@ static int fn(filter_channels)(AVFilterContext *ctx, void *arg, int jobnr, int n
     const ftype range = s->range;
     const ftype tfrequency = FMIN(s->tfrequency, sample_rate * 0.5);
     const ftype release = s->release_coef;
-    const ftype irelease = ONE - release;
     const ftype attack = s->attack_coef;
-    const ftype iattack = ONE - attack;
     const ftype tqfactor = s->tqfactor;
     const ftype itqfactor = ONE / tqfactor;
     const ftype fg = TAN(M_PI * tfrequency / sample_rate);
@@ -198,10 +199,13 @@ static int fn(filter_channels)(AVFilterContext *ctx, void *arg, int jobnr, int n
                     detect = ONE;
                 }
 
-                if ((direction == 0 && detect > state[4]) || (direction == 1 && detect < state[4])) {
-                    detect = iattack * detect + attack * state[4];
-                } else {
-                    detect = irelease * detect + release * state[4];
+                {
+                    ftype delta = detect - state[4];
+
+                    if (delta > EPSILON)
+                        detect = state[4] + attack * delta;
+                    else if (delta < -EPSILON)
+                        detect = state[4] + release * delta;
                 }
             }
 

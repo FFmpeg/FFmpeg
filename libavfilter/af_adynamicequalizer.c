@@ -76,7 +76,7 @@ static int query_formats(AVFilterContext *ctx)
 
 static double get_coef(double x, double sr)
 {
-    return exp(-1000. / (x * sr));
+    return 1.0 - exp(-1000. / (x * sr));
 }
 
 typedef struct ThreadData {
