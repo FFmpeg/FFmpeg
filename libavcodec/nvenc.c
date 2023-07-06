@@ -1191,11 +1191,7 @@ static av_cold int nvenc_setup_h264_config(AVCodecContext *avctx)
         h264->maxNumRefFrames = ctx->dpb_size;
     }
 
-    if (ctx->intra_refresh) {
-        h264->idrPeriod = NVENC_INFINITE_GOPLENGTH;
-    } else if (cc->gopLength > 0) {
-        h264->idrPeriod = cc->gopLength;
-    }
+    h264->idrPeriod = cc->gopLength;
 
     if (IS_CBR(cc->rcParams.rateControlMode)) {
         h264->outputBufferingPeriodSEI = 1;
@@ -1318,11 +1314,7 @@ static av_cold int nvenc_setup_hevc_config(AVCodecContext *avctx)
         hevc->maxNumRefFramesInDPB = ctx->dpb_size;
     }
 
-    if (ctx->intra_refresh) {
-        hevc->idrPeriod = NVENC_INFINITE_GOPLENGTH;
-    } else if (cc->gopLength > 0) {
-        hevc->idrPeriod = cc->gopLength;
-    }
+    hevc->idrPeriod = cc->gopLength;
 
     if (IS_CBR(cc->rcParams.rateControlMode)) {
         hevc->outputBufferingPeriodSEI = 1;
@@ -1418,11 +1410,9 @@ static av_cold int nvenc_setup_av1_config(AVCodecContext *avctx)
         av1->intraRefreshPeriod = cc->gopLength;
         av1->intraRefreshCnt = cc->gopLength - 1;
         cc->gopLength = NVENC_INFINITE_GOPLENGTH;
-
-        av1->idrPeriod = NVENC_INFINITE_GOPLENGTH;
-    } else if (cc->gopLength > 0) {
-        av1->idrPeriod = cc->gopLength;
     }
+
+    av1->idrPeriod = cc->gopLength;
 
     if (IS_CBR(cc->rcParams.rateControlMode)) {
         av1->enableBitstreamPadding = 1;
