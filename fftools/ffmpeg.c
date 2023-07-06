@@ -941,10 +941,6 @@ static int choose_output(OutputStream **post)
         } else {
             opts = ost->last_mux_dts == AV_NOPTS_VALUE ?
                    INT64_MIN : ost->last_mux_dts;
-            if (ost->last_mux_dts == AV_NOPTS_VALUE)
-                av_log(ost, AV_LOG_DEBUG,
-                    "cur_dts is invalid [init:%d i_done:%d finish:%d] (this is harmless if it occurs once at the start per stream)\n",
-                    ost->initialized, ost->inputs_done, ost->finished);
         }
 
         if (!ost->initialized && !ost->inputs_done && !ost->finished) {
