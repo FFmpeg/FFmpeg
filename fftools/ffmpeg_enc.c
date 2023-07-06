@@ -1142,26 +1142,8 @@ void enc_flush(void)
         AVCodecContext *enc = ost->enc_ctx;
         OutputFile      *of = output_files[ost->file_index];
 
-        if (!enc)
-            continue;
-
-        // Try to enable encoding with no input frames.
-        // Maybe we should just let encoding fail instead.
-        if (!e->opened) {
-            FilterGraph *fg = ost->filter->graph;
-
-            av_log(ost, AV_LOG_WARNING,
-                   "Finishing stream without any data written to it.\n");
-
-            if (!fg->graph)
-                continue;
-
-            ret = enc_open(ost, NULL);
-            if (ret < 0)
-                exit_program(1);
-        }
-
-        if (enc->codec_type != AVMEDIA_TYPE_VIDEO && enc->codec_type != AVMEDIA_TYPE_AUDIO)
+        if (!enc || !e->opened ||
+            (enc->codec_type != AVMEDIA_TYPE_VIDEO && enc->codec_type != AVMEDIA_TYPE_AUDIO))
             continue;
 
         ret = submit_encode_frame(of, ost, NULL);
