@@ -984,6 +984,8 @@ int ff_filter_frame(AVFilterLink *link, AVFrame *frame)
             av_assert1(frame->width               == link->w);
             av_assert1(frame->height               == link->h);
         }
+
+        frame->sample_aspect_ratio = link->sample_aspect_ratio;
     } else {
         if (frame->format != link->format) {
             av_log(link->dst, AV_LOG_ERROR, "Format change is not supported\n");
