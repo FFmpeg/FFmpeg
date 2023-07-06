@@ -28,16 +28,6 @@
 #include "avcodec.h"
 #include "parser.h"
 
-typedef enum {
-    AAC_AC3_PARSE_ERROR_SYNC        = -0x1030c0a,
-    AAC_AC3_PARSE_ERROR_BSID        = -0x2030c0a,
-    AAC_AC3_PARSE_ERROR_SAMPLE_RATE = -0x3030c0a,
-    AAC_AC3_PARSE_ERROR_FRAME_SIZE  = -0x4030c0a,
-    AAC_AC3_PARSE_ERROR_FRAME_TYPE  = -0x5030c0a,
-    AAC_AC3_PARSE_ERROR_CRC         = -0x6030c0a,
-    AAC_AC3_PARSE_ERROR_CHANNEL_CFG = -0x7030c0a,
-} AACAC3ParseError;
-
 typedef struct AACAC3ParseContext {
     ParseContext pc;
     int header_size;

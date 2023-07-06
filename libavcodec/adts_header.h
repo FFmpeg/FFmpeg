@@ -25,6 +25,12 @@
 
 #include "get_bits.h"
 
+typedef enum {
+    AAC_PARSE_ERROR_SYNC        = -0x1030c0a,
+    AAC_PARSE_ERROR_SAMPLE_RATE = -0x3030c0a,
+    AAC_PARSE_ERROR_FRAME_SIZE  = -0x4030c0a,
+} AACParseError;
+
 typedef struct AACADTSHeaderInfo {
     uint32_t sample_rate;
     uint32_t samples;
@@ -42,9 +48,8 @@ typedef struct AACADTSHeaderInfo {
  * the first 54 bits.
  * @param[in]  gbc BitContext containing the first 54 bits of the frame.
  * @param[out] hdr Pointer to struct where header info is written.
- * @return Returns 0 on success, -1 if there is a sync word mismatch,
- * -2 if the version element is invalid, -3 if the sample rate
- * element is invalid, or -4 if the bit rate element is invalid.
+ * @return the size in bytes of the header parsed on success and
+ *         AAC_PARSE_ERROR_* values otherwise.
  */
 int ff_adts_header_parse(GetBitContext *gbc, AACADTSHeaderInfo *hdr);
 
@@ -56,9 +61,8 @@ int ff_adts_header_parse(GetBitContext *gbc, AACADTSHeaderInfo *hdr);
  * @param[out] phdr Pointer to pointer to struct AACADTSHeaderInfo for which
  * memory is allocated and header info is written into it. After using the header
  * information, the allocated memory must be freed by using av_free.
- * @return Returns 0 on success, -1 if there is a sync word mismatch,
- * -2 if the version element is invalid, -3 if the sample rate
- * element is invalid, or -4 if the bit rate element is invalid.
+ * @return 0 on success, AAC_PARSE_ERROR_* values on invalid input and
+ *         ordinary AVERROR codes otherwise.
  */
 int avpriv_adts_header_parse(AACADTSHeaderInfo **phdr, const uint8_t *buf, size_t size);
 

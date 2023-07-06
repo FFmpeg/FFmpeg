@@ -21,7 +21,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "aac_ac3_parser.h"
 #include "adts_header.h"
 #include "adts_parser.h"
 #include "get_bits.h"
@@ -35,7 +34,7 @@ int ff_adts_header_parse(GetBitContext *gbc, AACADTSHeaderInfo *hdr)
     memset(hdr, 0, sizeof(*hdr));
 
     if (get_bits(gbc, 12) != 0xfff)
-        return AAC_AC3_PARSE_ERROR_SYNC;
+        return AAC_PARSE_ERROR_SYNC;
 
     skip_bits1(gbc);             /* id */
     skip_bits(gbc, 2);           /* layer */
@@ -43,7 +42,7 @@ int ff_adts_header_parse(GetBitContext *gbc, AACADTSHeaderInfo *hdr)
     aot     = get_bits(gbc, 2);  /* profile_objecttype */
     sr      = get_bits(gbc, 4);  /* sample_frequency_index */
     if (!ff_mpeg4audio_sample_rates[sr])
-        return AAC_AC3_PARSE_ERROR_SAMPLE_RATE;
+        return AAC_PARSE_ERROR_SAMPLE_RATE;
     skip_bits1(gbc);             /* private_bit */
     ch = get_bits(gbc, 3);       /* channel_configuration */
 
@@ -55,7 +54,7 @@ int ff_adts_header_parse(GetBitContext *gbc, AACADTSHeaderInfo *hdr)
     skip_bits1(gbc);             /* copyright_identification_start */
     size = get_bits(gbc, 13);    /* aac_frame_length */
     if (size < AV_AAC_ADTS_HEADER_SIZE)
-        return AAC_AC3_PARSE_ERROR_FRAME_SIZE;
+        return AAC_PARSE_ERROR_FRAME_SIZE;
 
     skip_bits(gbc, 11);          /* adts_buffer_fullness */
     rdb = get_bits(gbc, 2);      /* number_of_raw_data_blocks_in_frame */

@@ -39,7 +39,6 @@
 #include "libavutil/opt.h"
 #include "libavutil/thread.h"
 #include "bswapdsp.h"
-#include "aac_ac3_parser.h"
 #include "ac3_parser_internal.h"
 #include "ac3dec.h"
 #include "ac3dec_data.h"
@@ -1538,19 +1537,19 @@ dependent_frame:
 
     if (err) {
         switch (err) {
-        case AAC_AC3_PARSE_ERROR_SYNC:
+        case AC3_PARSE_ERROR_SYNC:
             av_log(avctx, AV_LOG_ERROR, "frame sync error\n");
             return AVERROR_INVALIDDATA;
-        case AAC_AC3_PARSE_ERROR_BSID:
+        case AC3_PARSE_ERROR_BSID:
             av_log(avctx, AV_LOG_ERROR, "invalid bitstream id\n");
             break;
-        case AAC_AC3_PARSE_ERROR_SAMPLE_RATE:
+        case AC3_PARSE_ERROR_SAMPLE_RATE:
             av_log(avctx, AV_LOG_ERROR, "invalid sample rate\n");
             break;
-        case AAC_AC3_PARSE_ERROR_FRAME_SIZE:
+        case AC3_PARSE_ERROR_FRAME_SIZE:
             av_log(avctx, AV_LOG_ERROR, "invalid frame size\n");
             break;
-        case AAC_AC3_PARSE_ERROR_FRAME_TYPE:
+        case AC3_PARSE_ERROR_FRAME_TYPE:
             /* skip frame if CRC is ok. otherwise use error concealment. */
             /* TODO: add support for substreams */
             if (s->substreamid) {
@@ -1563,8 +1562,7 @@ dependent_frame:
                 av_log(avctx, AV_LOG_ERROR, "invalid frame type\n");
             }
             break;
-        case AAC_AC3_PARSE_ERROR_CRC:
-        case AAC_AC3_PARSE_ERROR_CHANNEL_CFG:
+        case AC3_PARSE_ERROR_CRC:
             break;
         default: // Normal AVERROR do not try to recover.
             *got_frame_ptr = 0;
@@ -1574,7 +1572,7 @@ dependent_frame:
         /* check that reported frame size fits in input buffer */
         if (s->frame_size > buf_size) {
             av_log(avctx, AV_LOG_ERROR, "incomplete frame\n");
-            err = AAC_AC3_PARSE_ERROR_FRAME_SIZE;
+            err = AC3_PARSE_ERROR_FRAME_SIZE;
         } else if (avctx->err_recognition & (AV_EF_CRCCHECK|AV_EF_CAREFUL)) {
             /* check for crc mismatch */
             if (av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0, &buf[2],
@@ -1582,7 +1580,7 @@ dependent_frame:
                 av_log(avctx, AV_LOG_ERROR, "frame CRC mismatch\n");
                 if (avctx->err_recognition & AV_EF_EXPLODE)
                     return AVERROR_INVALIDDATA;
-                err = AAC_AC3_PARSE_ERROR_CRC;
+                err = AC3_PARSE_ERROR_CRC;
             }
         }
     }
