@@ -270,46 +270,22 @@ static void sub2video_update(InputFilterPriv *ifp, int64_t heartbeat_pts,
     ifp->sub2video.initialize = 0;
 }
 
-// FIXME: YUV420P etc. are actually supported with full color range,
-// yet the latter information isn't available here.
-static const enum AVPixelFormat *get_compliance_normal_pix_fmts(const AVCodec *codec, const enum AVPixelFormat default_formats[])
-{
-    static const enum AVPixelFormat mjpeg_formats[] =
-        { AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ444P,
-          AV_PIX_FMT_NONE };
-
-    if (!strcmp(codec->name, "mjpeg")) {
-        return mjpeg_formats;
-    } else {
-        return default_formats;
-    }
-}
-
 /* May return NULL (no pixel format found), a static string or a string
  * backed by the bprint. Nothing has been written to the AVBPrint in case
  * NULL is returned. The AVBPrint provided should be clean. */
 static const char *choose_pix_fmts(OutputFilter *ofilter, AVBPrint *bprint)
 {
+    OutputFilterPriv *ofp = ofp_from_ofilter(ofilter);
     OutputStream *ost = ofilter->ost;
-    AVCodecContext *enc = ost->enc_ctx;
-    const AVDictionaryEntry *strict_dict = av_dict_get(ost->encoder_opts, "strict", NULL, 0);
-    if (strict_dict)
-        av_opt_set(ost->enc_ctx, "strict", strict_dict->value, 0);
 
-     if (ost->keep_pix_fmt) {
-        if (ost->enc_ctx->pix_fmt == AV_PIX_FMT_NONE)
-            return NULL;
-        return av_get_pix_fmt_name(ost->enc_ctx->pix_fmt);
+    if (ost->keep_pix_fmt) {
+        return ofp->format == AV_PIX_FMT_NONE ? NULL :
+               av_get_pix_fmt_name(ofp->format);
     }
-    if (ost->enc_ctx->pix_fmt != AV_PIX_FMT_NONE) {
-        return av_get_pix_fmt_name(enc->pix_fmt);
-    } else if (enc->codec->pix_fmts) {
-        const enum AVPixelFormat *p;
-
-        p = enc->codec->pix_fmts;
-        if (ost->enc_ctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL) {
-            p = get_compliance_normal_pix_fmts(enc->codec, p);
-        }
+    if (ofp->format != AV_PIX_FMT_NONE) {
+        return av_get_pix_fmt_name(ofp->format);
+    } else if (ofp->formats) {
+        const enum AVPixelFormat *p = ofp->formats;
 
         for (; *p != AV_PIX_FMT_NONE; p++) {
             const char *name = av_get_pix_fmt_name(*p);
@@ -668,6 +644,30 @@ void ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost)
             ofp->format = ost->enc_ctx->pix_fmt;
         } else {
             ofp->formats = c->pix_fmts;
+
+            // MJPEG encoder exports a full list of supported pixel formats,
+            // but the full-range ones are experimental-only.
+            // Restrict the auto-conversion list unless -strict experimental
+            // has been specified.
+            if (!strcmp(c->name, "mjpeg")) {
+                // FIXME: YUV420P etc. are actually supported with full color range,
+                // yet the latter information isn't available here.
+                static const enum AVPixelFormat mjpeg_formats[] =
+                    { AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ444P,
+                      AV_PIX_FMT_NONE };
+
+                const AVDictionaryEntry *strict = av_dict_get(ost->encoder_opts, "strict", NULL, 0);
+                int strict_val = ost->enc_ctx->strict_std_compliance;
+
+                if (strict) {
+                    const AVOption *o = av_opt_find(ost->enc_ctx, strict->key, NULL, 0, 0);
+                    av_assert0(o);
+                    av_opt_eval_int(ost->enc_ctx, o, strict->value, &strict_val);
+                }
+
+                if (strict_val > FF_COMPLIANCE_UNOFFICIAL)
+                    ofp->formats = mjpeg_formats;
+            }
         }
 
         fgp->disable_conversions |= ost->keep_pix_fmt;
