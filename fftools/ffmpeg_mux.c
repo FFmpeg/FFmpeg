@@ -39,6 +39,10 @@
 #include "libavformat/avformat.h"
 #include "libavformat/avio.h"
 
+typedef struct MuxThreadContext {
+    AVPacket *pkt;
+} MuxThreadContext;
+
 int want_sdp = 1;
 
 static Muxer *mux_from_of(OutputFile *of)
@@ -210,18 +214,40 @@ static void thread_set_name(OutputFile *of)
     ff_thread_setname(name);
 }
 
+static void mux_thread_uninit(MuxThreadContext *mt)
+{
+    av_packet_free(&mt->pkt);
+
+    memset(mt, 0, sizeof(*mt));
+}
+
+static int mux_thread_init(MuxThreadContext *mt)
+{
+    memset(mt, 0, sizeof(*mt));
+
+    mt->pkt = av_packet_alloc();
+    if (!mt->pkt)
+        goto fail;
+
+    return 0;
+
+fail:
+    mux_thread_uninit(mt);
+    return AVERROR(ENOMEM);
+}
+
 static void *muxer_thread(void *arg)
 {
     Muxer     *mux = arg;
     OutputFile *of = &mux->of;
-    AVPacket  *pkt = NULL;
+
+    MuxThreadContext mt;
+
     int        ret = 0;
 
-    pkt = av_packet_alloc();
-    if (!pkt) {
-        ret = AVERROR(ENOMEM);
+    ret = mux_thread_init(&mt);
+    if (ret < 0)
         goto finish;
-    }
 
     thread_set_name(of);
 
@@ -229,7 +255,7 @@ static void *muxer_thread(void *arg)
         OutputStream *ost;
         int stream_idx, stream_eof = 0;
 
-        ret = tq_receive(mux->tq, &stream_idx, pkt);
+        ret = tq_receive(mux->tq, &stream_idx, mt.pkt);
         if (stream_idx < 0) {
             av_log(mux, AV_LOG_VERBOSE, "All streams finished\n");
             ret = 0;
@@ -237,8 +263,8 @@ static void *muxer_thread(void *arg)
         }
 
         ost = of->streams[stream_idx];
-        ret = sync_queue_process(mux, ost, ret < 0 ? NULL : pkt, &stream_eof);
-        av_packet_unref(pkt);
+        ret = sync_queue_process(mux, ost, ret < 0 ? NULL : mt.pkt, &stream_eof);
+        av_packet_unref(mt.pkt);
         if (ret == AVERROR_EOF) {
             if (stream_eof) {
                 tq_receive_finish(mux->tq, stream_idx);
@@ -254,7 +280,7 @@ static void *muxer_thread(void *arg)
     }
 
 finish:
-    av_packet_free(&pkt);
+    mux_thread_uninit(&mt);
 
     for (unsigned int i = 0; i < mux->fc->nb_streams; i++)
         tq_receive_finish(mux->tq, i);
