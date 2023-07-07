@@ -1754,10 +1754,10 @@ int reap_filters(int flush)
                 if (ret != AVERROR(EAGAIN) && ret != AVERROR_EOF) {
                     av_log(fgp, AV_LOG_WARNING,
                            "Error in av_buffersink_get_frame_flags(): %s\n", av_err2str(ret));
-                } else if (flush && ret == AVERROR_EOF) {
-                    if (av_buffersink_get_type(filter) == AVMEDIA_TYPE_VIDEO)
-                        enc_frame(ost, NULL);
-                }
+                } else if (flush && ret == AVERROR_EOF && ofp->got_frame &&
+                           av_buffersink_get_type(filter) == AVMEDIA_TYPE_VIDEO)
+                    enc_frame(ost, NULL);
+
                 break;
             }
             if (ost->finished) {
