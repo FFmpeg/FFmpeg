@@ -569,8 +569,8 @@ void enc_stats_write(OutputStream *ost, EncStats *es,
 
     if ((frame && frame->opaque_ref) || (pkt && pkt->opaque_ref)) {
         fd   = (const FrameData*)(frame ? frame->opaque_ref->data : pkt->opaque_ref->data);
-        tbi  = fd->tb;
-        ptsi = fd->pts;
+        tbi  = fd->dec.tb;
+        ptsi = fd->dec.pts;
     }
 
     for (size_t i = 0; i < es->nb_components; i++) {
@@ -588,7 +588,7 @@ void enc_stats_write(OutputStream *ost, EncStats *es,
         case ENC_STATS_PTS_TIME_IN:     avio_printf(io, "%g",       ptsi == INT64_MAX ?
                                                                     INFINITY : ptsi * av_q2d(tbi)); continue;
         case ENC_STATS_FRAME_NUM:       avio_printf(io, "%"PRIu64,  frame_num);                     continue;
-        case ENC_STATS_FRAME_NUM_IN:    avio_printf(io, "%"PRIu64,  fd ? fd->idx : -1);             continue;
+        case ENC_STATS_FRAME_NUM_IN:    avio_printf(io, "%"PRIu64,  fd ? fd->dec.frame_num : -1);   continue;
         }
 
         if (frame) {

@@ -434,9 +434,15 @@ InputStream *ist_iter(InputStream *prev)
 FrameData *frame_data(AVFrame *frame)
 {
     if (!frame->opaque_ref) {
-        frame->opaque_ref = av_buffer_allocz(sizeof(FrameData));
+        FrameData *fd;
+
+        frame->opaque_ref = av_buffer_allocz(sizeof(*fd));
         if (!frame->opaque_ref)
             return NULL;
+        fd = (FrameData*)frame->opaque_ref->data;
+
+        fd->dec.frame_num = UINT64_MAX;
+        fd->dec.pts       = AV_NOPTS_VALUE;
     }
 
     return (FrameData*)frame->opaque_ref->data;

@@ -626,9 +626,13 @@ typedef struct OutputFile {
 
 // optionally attached as opaque_ref to decoded AVFrames
 typedef struct FrameData {
-    uint64_t   idx;
-    int64_t    pts;
-    AVRational tb;
+    // properties that come from the decoder
+    struct {
+        uint64_t   frame_num;
+
+        int64_t    pts;
+        AVRational tb;
+    } dec;
 
     AVRational frame_rate_filter;
 
