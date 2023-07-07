@@ -1803,8 +1803,7 @@ Try to make the choice automatically, in order to generate a sane output.
 Default value is -1.
 
 @item -enc_time_base[:@var{stream_specifier}] @var{timebase} (@emph{output,per-stream})
-Set the encoder timebase. @var{timebase} is a floating point number,
-and can assume one of the following values:
+Set the encoder timebase. @var{timebase} can assume one of the following values:
 
 @table @option
 @item 0
@@ -1818,11 +1817,11 @@ Use the timebase from the demuxer.
 @item filter
 Use the timebase from the filtergraph.
 
-@item >0
+@item a positive number
 Use the provided number as the timebase.
 
 This field can be provided as a ratio of two integers (e.g. 1:24, 1:48000)
-or as a floating point number (e.g. 0.04166, 2.0833e-5)
+or as a decimal number (e.g. 0.04166, 2.0833e-5)
 @end table
 
 Default value is 0.
