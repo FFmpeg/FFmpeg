@@ -264,8 +264,20 @@ int enc_open(OutputStream *ost, AVFrame *frame)
                       fr.num, fr.den, 65535);
         }
 
-        enc_ctx->time_base = ost->enc_timebase.num > 0 ? ost->enc_timebase :
-                             av_inv_q(fr);
+        if (ost->enc_timebase.num == ENC_TIME_BASE_DEMUX) {
+            if (fd->dec.tb.num <= 0 || fd->dec.tb.den <= 0) {
+                av_log(ost, AV_LOG_ERROR,
+                       "Demuxing timebase not available - cannot use it for encoding\n");
+                return AVERROR(EINVAL);
+            }
+
+            enc_ctx->time_base = fd->dec.tb;
+        } else if (ost->enc_timebase.num == ENC_TIME_BASE_FILTER) {
+            enc_ctx->time_base = frame->time_base;
+        } else {
+            enc_ctx->time_base = ost->enc_timebase.num > 0 ? ost->enc_timebase :
+                                 av_inv_q(fr);
+        }
 
         if (!(enc_ctx->time_base.num && enc_ctx->time_base.den))
             enc_ctx->time_base = frame->time_base;

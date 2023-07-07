@@ -56,6 +56,7 @@
 #define FFMPEG_ROTATION_METADATA 1
 #define FFMPEG_OPT_QPHIST 1
 #define FFMPEG_OPT_ADRIFT_THRESHOLD 1
+#define FFMPEG_OPT_ENC_TIME_BASE_NUM 1
 
 enum VideoSyncMethod {
     VSYNC_AUTO = -1,
@@ -64,6 +65,11 @@ enum VideoSyncMethod {
     VSYNC_VFR,
     VSYNC_VSCFR,
     VSYNC_DROP,
+};
+
+enum EncTimeBase {
+    ENC_TIME_BASE_DEMUX  = -1,
+    ENC_TIME_BASE_FILTER = -2,
 };
 
 #define MAX_STREAMS 1024    /* arbitrary sanity check value */

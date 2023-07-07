@@ -1812,10 +1812,11 @@ Assign a default value according to the media type.
 
 For video - use 1/framerate, for audio - use 1/samplerate.
 
-@item -1
-Use the input stream timebase when possible.
+@item demux
+Use the timebase from the demuxer.
 
-If an input stream is not available, the default timebase will be used.
+@item filter
+Use the timebase from the filtergraph.
 
 @item >0
 Use the provided number as the timebase.

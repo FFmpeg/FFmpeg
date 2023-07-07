@@ -1171,20 +1171,27 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
         MATCH_PER_STREAM_OPT(enc_time_bases, str, enc_time_base, oc, st);
         if (enc_time_base) {
             AVRational q;
-            if (av_parse_ratio(&q, enc_time_base, INT_MAX, 0, NULL) < 0 ||
-                q.den <= 0) {
-                av_log(ost, AV_LOG_FATAL, "Invalid time base: %s\n", enc_time_base);
-                return AVERROR(EINVAL);
-            }
-            if (q.num < 0) {
-                if (!ost->ist) {
-                    av_log(ost, AV_LOG_FATAL,
-                           "Cannot use input stream timebase for encoding - "
-                           "no input stream available\n");
-                    return AVERROR(EINVAL);
+            if (!strcmp(enc_time_base, "demux")) {
+                q = (AVRational){ ENC_TIME_BASE_DEMUX, 0 };
+            } else if (!strcmp(enc_time_base, "filter")) {
+                q = (AVRational){ ENC_TIME_BASE_FILTER, 0 };
+            } else {
+                ret = av_parse_ratio(&q, enc_time_base, INT_MAX, 0, NULL);
+                if (ret < 0 || q.den <= 0
+#if !FFMPEG_OPT_ENC_TIME_BASE_NUM
+                    || q.num < 0
+#endif
+                    ) {
+                    av_log(ost, AV_LOG_FATAL, "Invalid time base: %s\n", enc_time_base);
+                    return ret < 0 ? ret : AVERROR(EINVAL);
                 }
-                q = ost->ist->st->time_base;
+#if FFMPEG_OPT_ENC_TIME_BASE_NUM
+                if (q.num < 0)
+                    av_log(ost, AV_LOG_WARNING, "-enc_time_base -1 is deprecated,"
+                           " use -enc_timebase demux\n");
+#endif
             }
+
             ost->enc_timebase = q;
         }
     } else {
