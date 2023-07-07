@@ -34,8 +34,6 @@
 #include "libavutil/rational.h"
 #include "libavutil/timestamp.h"
 
-#include "libavfilter/buffersink.h"
-
 #include "libavcodec/avcodec.h"
 
 // FIXME private header, used for mid_pred()
@@ -198,11 +196,20 @@ int enc_open(OutputStream *ost, AVFrame *frame)
     AVCodecContext *dec_ctx = NULL;
     const AVCodec      *enc = enc_ctx->codec;
     OutputFile      *of = output_files[ost->file_index];
-    FrameData *fd = frame ? frame_data(frame) : NULL;
+    FrameData *fd;
     int ret;
 
     if (e->opened)
         return 0;
+
+    // frame is always non-NULL for audio and video
+    av_assert0(frame || (enc->type != AVMEDIA_TYPE_VIDEO && enc->type != AVMEDIA_TYPE_AUDIO));
+
+    if (frame) {
+        fd = frame_data(frame);
+        if (!fd)
+            return AVERROR(ENOMEM);
+    }
 
     set_encoder_id(output_files[ost->file_index], ost);
 
@@ -212,15 +219,15 @@ int enc_open(OutputStream *ost, AVFrame *frame)
 
     switch (enc_ctx->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
-        enc_ctx->sample_fmt     = av_buffersink_get_format(ost->filter->filter);
-        enc_ctx->sample_rate    = av_buffersink_get_sample_rate(ost->filter->filter);
-        ret = av_buffersink_get_ch_layout(ost->filter->filter, &enc_ctx->ch_layout);
+        enc_ctx->sample_fmt     = frame->format;
+        enc_ctx->sample_rate    = frame->sample_rate;
+        ret = av_channel_layout_copy(&enc_ctx->ch_layout, &frame->ch_layout);
         if (ret < 0)
             return ret;
 
         if (ost->bits_per_raw_sample)
             enc_ctx->bits_per_raw_sample = ost->bits_per_raw_sample;
-        else if (fd)
+        else
             enc_ctx->bits_per_raw_sample = FFMIN(fd->bits_per_raw_sample,
                                                  av_get_bytes_per_sample(enc_ctx->sample_fmt) << 3);
 
@@ -231,7 +238,7 @@ int enc_open(OutputStream *ost, AVFrame *frame)
     case AVMEDIA_TYPE_VIDEO: {
         AVRational fr = ost->frame_rate;
 
-        if (!fr.num && fd)
+        if (!fr.num)
             fr = fd->frame_rate_filter;
         if (!fr.num && !ost->max_frame_rate.num) {
             fr = (AVRational){25, 1};
@@ -261,7 +268,7 @@ int enc_open(OutputStream *ost, AVFrame *frame)
                              av_inv_q(fr);
 
         if (!(enc_ctx->time_base.num && enc_ctx->time_base.den))
-            enc_ctx->time_base = av_buffersink_get_time_base(ost->filter->filter);
+            enc_ctx->time_base = frame->time_base;
         if (   av_q2d(enc_ctx->time_base) < 0.001 && ost->vsync_method != VSYNC_PASSTHROUGH
            && (ost->vsync_method == VSYNC_CFR || ost->vsync_method == VSYNC_VSCFR ||
                (ost->vsync_method == VSYNC_AUTO && !(of->format->flags & AVFMT_VARIABLE_FPS)))){
@@ -270,18 +277,18 @@ int enc_open(OutputStream *ost, AVFrame *frame)
                                         "setting vsync/fps_mode to vfr\n");
         }
 
-        enc_ctx->width  = av_buffersink_get_w(ost->filter->filter);
-        enc_ctx->height = av_buffersink_get_h(ost->filter->filter);
+        enc_ctx->width  = frame->width;
+        enc_ctx->height = frame->height;
         enc_ctx->sample_aspect_ratio = ost->st->sample_aspect_ratio =
             ost->frame_aspect_ratio.num ? // overridden by the -aspect cli option
             av_mul_q(ost->frame_aspect_ratio, (AVRational){ enc_ctx->height, enc_ctx->width }) :
-            av_buffersink_get_sample_aspect_ratio(ost->filter->filter);
+            frame->sample_aspect_ratio;
 
-        enc_ctx->pix_fmt = av_buffersink_get_format(ost->filter->filter);
+        enc_ctx->pix_fmt = frame->format;
 
         if (ost->bits_per_raw_sample)
             enc_ctx->bits_per_raw_sample = ost->bits_per_raw_sample;
-        else if (fd)
+        else
             enc_ctx->bits_per_raw_sample = FFMIN(fd->bits_per_raw_sample,
                                                  av_pix_fmt_desc_get(enc_ctx->pix_fmt)->comp[0].depth);
 
