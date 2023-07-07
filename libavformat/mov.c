@@ -1911,7 +1911,7 @@ static int mov_read_alac(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
 static int mov_read_avss(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
-    return mov_read_extradata(c, pb, atom, AV_CODEC_ID_AVS);
+    return mov_read_extradata(c, pb, atom, AV_CODEC_ID_CAVS);
 }
 
 static int mov_read_jp2h(MOVContext *c, AVIOContext *pb, MOVAtom atom)
