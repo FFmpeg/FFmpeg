@@ -1780,9 +1780,11 @@ static int vpx_encode(AVCodecContext *avctx, AVPacket *pkt,
             }
         }
 
-        res = frame_data_submit(avctx, ctx->fifo, frame);
-        if (res < 0)
-            return res;
+        if (!(avctx->flags & AV_CODEC_FLAG_PASS1)) {
+            res = frame_data_submit(avctx, ctx->fifo, frame);
+            if (res < 0)
+                return res;
+        }
     }
 
     // this is for encoding with preset temporal layering patterns defined in
