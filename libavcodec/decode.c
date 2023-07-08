@@ -292,7 +292,6 @@ static int64_t guess_correct_pts(AVCodecContext *ctx,
 static int discard_samples(AVCodecContext *avctx, AVFrame *frame, int64_t *discarded_samples)
 {
     AVCodecInternal *avci = avctx->internal;
-    int ret = 0;
     AVFrameSideData *side;
     uint32_t discard_padding = 0;
     uint8_t skip_reason = 0;
@@ -309,26 +308,6 @@ static int discard_samples(AVCodecContext *avctx, AVFrame *frame, int64_t *disca
         discard_reason = AV_RL8(side->data + 9);
     }
 
-    if (frame->format == AV_SAMPLE_FMT_NONE)
-        frame->format = avctx->sample_fmt;
-    if (!frame->ch_layout.nb_channels) {
-        int ret2 = av_channel_layout_copy(&frame->ch_layout, &avctx->ch_layout);
-        if (ret2 < 0) {
-            ret = ret2;
-        }
-    }
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (!frame->channel_layout)
-        frame->channel_layout = avctx->ch_layout.order == AV_CHANNEL_ORDER_NATIVE ?
-                                avctx->ch_layout.u.mask : 0;
-    if (!frame->channels)
-        frame->channels = avctx->ch_layout.nb_channels;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-    if (!frame->sample_rate)
-        frame->sample_rate = avctx->sample_rate;
-
     if ((avctx->flags2 & AV_CODEC_FLAG2_SKIP_MANUAL)) {
         if (!side && (avci->skip_samples || discard_padding))
             side = av_frame_new_side_data(frame, AV_FRAME_DATA_SKIP_SAMPLES, 10);
@@ -339,7 +318,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             AV_WL8(side->data + 9, discard_reason);
             avci->skip_samples = 0;
         }
-        return ret;
+        return 0;
     }
     av_frame_remove_side_data(frame, AV_FRAME_DATA_SKIP_SAMPLES);
 
@@ -399,7 +378,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
     }
 
-    return ret;
+    return 0;
 }
 
 /*
@@ -449,14 +428,6 @@ FF_DISABLE_DEPRECATION_WARNINGS
                 frame->pkt_pos = pkt->pos;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
-            //FIXME these should be under if(!avctx->has_b_frames)
-            /* get_buffer is supposed to set frame parameters */
-            if (!(avctx->codec->capabilities & AV_CODEC_CAP_DR1)) {
-                if (!frame->sample_aspect_ratio.num)  frame->sample_aspect_ratio = avctx->sample_aspect_ratio;
-                if (!frame->width)                    frame->width               = avctx->width;
-                if (!frame->height)                   frame->height              = avctx->height;
-                if (frame->format == AV_PIX_FMT_NONE) frame->format              = avctx->pix_fmt;
-            }
         }
     }
     emms_c();
@@ -570,6 +541,45 @@ static int detect_colorspace(av_unused AVCodecContext *c, av_unused AVFrame *f)
 }
 #endif
 
+static int fill_frame_props(AVCodecContext *avctx, AVFrame *frame)
+{
+    int ret;
+
+    if (avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
+        //FIXME these should be under if(!avctx->has_b_frames)
+        /* get_buffer is supposed to set frame parameters */
+        if (!(avctx->codec->capabilities & AV_CODEC_CAP_DR1)) {
+            if (!frame->sample_aspect_ratio.num)  frame->sample_aspect_ratio = avctx->sample_aspect_ratio;
+            if (!frame->width)                    frame->width               = avctx->width;
+            if (!frame->height)                   frame->height              = avctx->height;
+            if (frame->format == AV_PIX_FMT_NONE) frame->format              = avctx->pix_fmt;
+        }
+    } else if (avctx->codec->type == AVMEDIA_TYPE_AUDIO) {
+        if (frame->format == AV_SAMPLE_FMT_NONE)
+            frame->format = avctx->sample_fmt;
+        if (!frame->ch_layout.nb_channels) {
+            ret = av_channel_layout_copy(&frame->ch_layout, &avctx->ch_layout);
+            if (ret < 0) {
+                av_frame_unref(frame);
+                return ret;
+            }
+        }
+#if FF_API_OLD_CHANNEL_LAYOUT
+FF_DISABLE_DEPRECATION_WARNINGS
+        if (!frame->channel_layout)
+            frame->channel_layout = avctx->ch_layout.order == AV_CHANNEL_ORDER_NATIVE ?
+                                    avctx->ch_layout.u.mask : 0;
+        if (!frame->channels)
+            frame->channels = avctx->ch_layout.nb_channels;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+        if (!frame->sample_rate)
+            frame->sample_rate = avctx->sample_rate;
+    }
+
+    return 0;
+}
+
 static int decode_simple_receive_frame(AVCodecContext *avctx, AVFrame *frame)
 {
     int ret;
@@ -621,6 +631,13 @@ static int decode_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
     if (!ret) {
         if (avctx->codec_type != AVMEDIA_TYPE_VIDEO)
             frame->flags |= AV_FRAME_FLAG_KEY;
+
+        ret = fill_missing_fields(avctx, frame);
+        if (ret < 0) {
+            av_frame_unref(frame);
+            return ret;
+        }
+
 #if FF_API_FRAME_KEY
 FF_DISABLE_DEPRECATION_WARNINGS
         frame->key_frame = !!(frame->flags & AV_FRAME_FLAG_KEY);
