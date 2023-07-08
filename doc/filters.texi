@@ -16664,12 +16664,6 @@ output color volumes. Disabled by default.
 Size of the tone-mapping LUT, between @code{2} and @code{1024}. Defaults to
 @code{256}. Note that this figure is squared when combined with
 @code{peak_detect}.
-
-@item hybrid_mix
-If nonzero, this much of the upper range of the tone-mapped result is smoothly
-mixed with a per-channel (LMS) tone-mapped version. Helps avoid unnatural
-blown-out highlights when tone-mapping very bright, strongly saturated colors.
-Defaults to @code{0.2}.
 @end table
 
 @subsubsection Dithering
