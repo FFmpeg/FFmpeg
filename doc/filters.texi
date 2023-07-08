@@ -16664,6 +16664,19 @@ output color volumes. Disabled by default.
 Size of the tone-mapping LUT, between @code{2} and @code{1024}. Defaults to
 @code{256}. Note that this figure is squared when combined with
 @code{peak_detect}.
+
+@item contrast_recovery
+Contrast recovery strength. If set to a value above @code{0.0}, the source
+image will be divided into high-frequency and low-frequency components, and a
+portion of the high-frequency image is added back onto the tone-mapped output.
+May cause excessive ringing artifacts for some HDR sources, but can improve the
+subjective sharpness and detail left over in the image after tone-mapping.
+Defaults to @code{0.30}.
+
+@item contrast_smoothness
+Contrast recovery lowpass kernel size. Defaults to @code{3.5}. Increasing or
+decreasing this will affect the visual appearance substantially. Has no effect
+when @code{contrast_recovery} is disabled.
 @end table
 
 @subsubsection Dithering

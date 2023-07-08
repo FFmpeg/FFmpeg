@@ -219,6 +219,8 @@ typedef struct LibplaceboContext {
     float tonemapping_param;
     int inverse_tonemapping;
     int tonemapping_lut_size;
+    float contrast_recovery;
+    float contrast_smoothness;
 
 #if FF_API_LIBPLACEBO_OPTS
     /* for backwards compatibility */
@@ -431,6 +433,10 @@ static int update_settings(AVFilterContext *ctx)
         .tone_mapping_param = s->tonemapping_param,
         .inverse_tone_mapping = s->inverse_tonemapping,
         .lut_size = s->tonemapping_lut_size,
+#if PL_API_VER >= 285
+        .contrast_recovery = s->contrast_recovery,
+        .contrast_smoothness = s->contrast_smoothness,
+#endif
     );
 
     set_gamut_mode(&s->color_map_params, gamut_mode);
@@ -1398,6 +1404,8 @@ static const AVOption libplacebo_options[] = {
     { "tonemapping_param", "Tunable parameter for some tone-mapping functions", OFFSET(tonemapping_param), AV_OPT_TYPE_FLOAT, {.dbl = 0.0}, 0.0, 100.0, .flags = DYNAMIC },
     { "inverse_tonemapping", "Inverse tone mapping (range expansion)", OFFSET(inverse_tonemapping), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DYNAMIC },
     { "tonemapping_lut_size", "Tone-mapping LUT size", OFFSET(tonemapping_lut_size), AV_OPT_TYPE_INT, {.i64 = 256}, 2, 1024, DYNAMIC },
+    { "contrast_recovery", "HDR contrast recovery strength", OFFSET(contrast_recovery), AV_OPT_TYPE_FLOAT, {.dbl = 0.30}, 0.0, 3.0, DYNAMIC },
+    { "contrast_smoothness", "HDR contrast recovery smoothness", OFFSET(contrast_smoothness), AV_OPT_TYPE_FLOAT, {.dbl = 3.50}, 1.0, 32.0, DYNAMIC },
 
 #if FF_API_LIBPLACEBO_OPTS
     /* deprecated options for backwards compatibility, defaulting to -1 to not override the new defaults */
