@@ -821,7 +821,7 @@ int enc_flush(void);
 int of_stream_init(OutputFile *of, OutputStream *ost);
 int of_write_trailer(OutputFile *of);
 int of_open(const OptionsContext *o, const char *filename);
-void of_close(OutputFile **pof);
+void of_free(OutputFile **pof);
 
 void of_enc_stats_close(void);
 

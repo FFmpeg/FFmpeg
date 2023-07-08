@@ -917,7 +917,7 @@ static void fc_close(AVFormatContext **pfc)
     *pfc = NULL;
 }
 
-void of_close(OutputFile **pof)
+void of_free(OutputFile **pof)
 {
     OutputFile *of = *pof;
     Muxer *mux;

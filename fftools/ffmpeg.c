@@ -362,9 +362,8 @@ static void ffmpeg_cleanup(int ret)
         fg_free(&filtergraphs[i]);
     av_freep(&filtergraphs);
 
-    /* close files */
     for (i = 0; i < nb_output_files; i++)
-        of_close(&output_files[i]);
+        of_free(&output_files[i]);
 
     for (i = 0; i < nb_input_files; i++)
         ifile_close(&input_files[i]);
