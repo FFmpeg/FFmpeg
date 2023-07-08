@@ -210,14 +210,22 @@ static int libjxl_get_icc(AVCodecContext *avctx)
     JxlDecoderStatus jret;
     /* an ICC profile is present, and we can meaningfully get it,
      * because the pixel data is not XYB-encoded */
+#if JPEGXL_NUMERIC_VERSION < JPEGXL_COMPUTE_NUMERIC_VERSION(0, 9, 0)
     jret = JxlDecoderGetICCProfileSize(ctx->decoder, &ctx->jxl_pixfmt, JXL_COLOR_PROFILE_TARGET_DATA, &icc_len);
+#else
+    jret = JxlDecoderGetICCProfileSize(ctx->decoder, JXL_COLOR_PROFILE_TARGET_DATA, &icc_len);
+#endif
     if (jret == JXL_DEC_SUCCESS && icc_len > 0) {
         av_buffer_unref(&ctx->iccp);
         ctx->iccp = av_buffer_alloc(icc_len);
         if (!ctx->iccp)
             return AVERROR(ENOMEM);
+#if JPEGXL_NUMERIC_VERSION < JPEGXL_COMPUTE_NUMERIC_VERSION(0, 9, 0)
         jret = JxlDecoderGetColorAsICCProfile(ctx->decoder, &ctx->jxl_pixfmt, JXL_COLOR_PROFILE_TARGET_DATA,
-                                                ctx->iccp->data, icc_len);
+                                              ctx->iccp->data, icc_len);
+#else
+        jret = JxlDecoderGetColorAsICCProfile(ctx->decoder, JXL_COLOR_PROFILE_TARGET_DATA, ctx->iccp->data, icc_len);
+#endif
         if (jret != JXL_DEC_SUCCESS) {
             av_log(avctx, AV_LOG_WARNING, "Unable to obtain ICC Profile\n");
             av_buffer_unref(&ctx->iccp);
@@ -253,12 +261,21 @@ static int libjxl_color_encoding_event(AVCodecContext *avctx, AVFrame *frame)
     /* set this flag if we need to fall back on wide gamut */
     int fallback = 0;
 
+#if JPEGXL_NUMERIC_VERSION < JPEGXL_COMPUTE_NUMERIC_VERSION(0, 9, 0)
     jret = JxlDecoderGetColorAsEncodedProfile(ctx->decoder, NULL, JXL_COLOR_PROFILE_TARGET_ORIGINAL, &jxl_color);
+#else
+    jret = JxlDecoderGetColorAsEncodedProfile(ctx->decoder, JXL_COLOR_PROFILE_TARGET_ORIGINAL, &jxl_color);
+#endif
     if (jret == JXL_DEC_SUCCESS) {
         /* enum values describe the colors of this image */
         jret = JxlDecoderSetPreferredColorProfile(ctx->decoder, &jxl_color);
         if (jret == JXL_DEC_SUCCESS)
-            jret = JxlDecoderGetColorAsEncodedProfile(ctx->decoder, &ctx->jxl_pixfmt, JXL_COLOR_PROFILE_TARGET_DATA, &jxl_color);
+#if JPEGXL_NUMERIC_VERSION < JPEGXL_COMPUTE_NUMERIC_VERSION(0, 9, 0)
+            jret = JxlDecoderGetColorAsEncodedProfile(ctx->decoder, &ctx->jxl_pixfmt,
+                                                      JXL_COLOR_PROFILE_TARGET_DATA, &jxl_color);
+#else
+            jret = JxlDecoderGetColorAsEncodedProfile(ctx->decoder, JXL_COLOR_PROFILE_TARGET_DATA, &jxl_color);
+#endif
         /* if we couldn't successfully request the pixel data space, we fall back on wide gamut */
         /* this code path is very unlikely to happen in practice */
         if (jret != JXL_DEC_SUCCESS)
