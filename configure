@@ -2301,7 +2301,7 @@ SYSTEM_FEATURES="
 SYSTEM_FUNCS="
     access
     aligned_malloc
-    arc4random
+    arc4random_buf
     clock_gettime
     closesocket
     CommandLineToArgvW
@@ -6381,7 +6381,7 @@ check_func  ${malloc_prefix}memalign            && enable memalign
 check_func  ${malloc_prefix}posix_memalign      && enable posix_memalign
 
 check_func  access
-check_func_headers stdlib.h arc4random
+check_func_headers stdlib.h arc4random_buf
 check_lib   clock_gettime time.h clock_gettime || check_lib clock_gettime time.h clock_gettime -lrt
 check_func  fcntl
 check_func  fork

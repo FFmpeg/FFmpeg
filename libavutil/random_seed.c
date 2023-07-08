@@ -142,7 +142,7 @@ int av_random_bytes(uint8_t* buf, size_t len)
     }
 #endif
 
-#if HAVE_ARC4RANDOM
+#if HAVE_ARC4RANDOM_BUF
     arc4random_buf(buf, len);
     return 0;
 #endif
