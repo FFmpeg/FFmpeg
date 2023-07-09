@@ -42,6 +42,7 @@ enum FrequencyScale {
     FSCALE_ERBS,
     FSCALE_SQRT,
     FSCALE_CBRT,
+    FSCALE_QDRT,
     NB_FSCALE
 };
 
@@ -131,6 +132,7 @@ static const AVOption showcwt_options[] = {
     {  "erbs",    "erbs",             0,                       AV_OPT_TYPE_CONST,{.i64=FSCALE_ERBS},   0, 0, FLAGS, "scale" },
     {  "sqrt",    "sqrt",             0,                       AV_OPT_TYPE_CONST,{.i64=FSCALE_SQRT},   0, 0, FLAGS, "scale" },
     {  "cbrt",    "cbrt",             0,                       AV_OPT_TYPE_CONST,{.i64=FSCALE_CBRT},   0, 0, FLAGS, "scale" },
+    {  "qdrt",    "qdrt",             0,                       AV_OPT_TYPE_CONST,{.i64=FSCALE_QDRT},   0, 0, FLAGS, "scale" },
     { "min",  "set minimum frequency", OFFSET(minimum_frequency), AV_OPT_TYPE_FLOAT, {.dbl = 20.}, 1, 2000, FLAGS },
     { "max",  "set maximum frequency", OFFSET(maximum_frequency), AV_OPT_TYPE_FLOAT, {.dbl = 20000.}, 0, 192000, FLAGS },
     { "logb", "set logarithmic basis", OFFSET(logarithmic_basis), AV_OPT_TYPE_FLOAT, {.dbl = 0.0001}, 0, 1, FLAGS },
@@ -252,6 +254,10 @@ static void frequency_band(float *frequency_band,
         case FSCALE_CBRT:
             frequency = frequency * frequency * frequency;
             frequency_derivative *= 3.f * powf(frequency, 2.f / 3.f);
+            break;
+        case FSCALE_QDRT:
+            frequency = frequency * frequency * frequency * frequency;
+            frequency_derivative *= 4.f * powf(frequency, 3.f / 4.f);
             break;
         }
 
@@ -699,6 +705,10 @@ static int config_output(AVFilterLink *outlink)
     case FSCALE_CBRT:
         minimum_frequency = cbrtf(minimum_frequency);
         maximum_frequency = cbrtf(maximum_frequency);
+        break;
+    case FSCALE_QDRT:
+        minimum_frequency = powf(minimum_frequency, 0.25f);
+        maximum_frequency = powf(maximum_frequency, 0.25f);
         break;
     }
 
