@@ -129,7 +129,7 @@ static int fn(filter_prepare)(AVFilterContext *ctx)
         da[1] = dg * da[0];
         da[2] = dg * da[1];
 
-        dm[0] = ZERO;
+        dm[0] = ONE;
         dm[1] = -k;
         dm[2] = -TWO;
         break;
