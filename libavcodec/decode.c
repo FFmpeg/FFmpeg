@@ -597,6 +597,14 @@ static int decode_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
     if (codec->cb_type == FF_CODEC_CB_TYPE_RECEIVE_FRAME) {
         ret = codec->cb.receive_frame(avctx, frame);
         emms_c();
+        if (!ret) {
+            if (avctx->codec->type == AVMEDIA_TYPE_VIDEO)
+                ret = (frame->flags & AV_FRAME_FLAG_DISCARD) ? AVERROR(EAGAIN) : 0;
+            else if (avctx->codec->type == AVMEDIA_TYPE_AUDIO) {
+                int64_t discarded_samples = 0;
+                ret = discard_samples(avctx, frame, &discarded_samples);
+            }
+        }
     } else
         ret = decode_simple_receive_frame(avctx, frame);
 
