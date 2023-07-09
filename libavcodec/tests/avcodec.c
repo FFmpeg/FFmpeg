@@ -175,6 +175,10 @@ int main(void){
                 !(codec->capabilities & AV_CODEC_CAP_FRAME_THREADS))
                 ERR("Decoder %s wants allocated progress without supporting"
                     "frame threads\n");
+            if (codec2->cb_type != FF_CODEC_CB_TYPE_DECODE &&
+                codec2->caps_internal & FF_CODEC_CAP_SETS_PKT_DTS)
+                ERR("Decoder %s is marked as setting pkt_dts when it doesn't have"
+                    "any effect\n");
         }
         if (priv_data_size_wrong(codec2))
             ERR_EXT("Private context of codec %s is impossibly-sized (size %d).",
