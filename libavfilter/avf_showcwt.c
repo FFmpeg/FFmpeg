@@ -40,6 +40,7 @@ enum FrequencyScale {
     FSCALE_BARK,
     FSCALE_MEL,
     FSCALE_ERBS,
+    FSCALE_SQRT,
     NB_FSCALE
 };
 
@@ -127,6 +128,7 @@ static const AVOption showcwt_options[] = {
     {  "bark",    "bark",             0,                       AV_OPT_TYPE_CONST,{.i64=FSCALE_BARK},   0, 0, FLAGS, "scale" },
     {  "mel",     "mel",              0,                       AV_OPT_TYPE_CONST,{.i64=FSCALE_MEL},    0, 0, FLAGS, "scale" },
     {  "erbs",    "erbs",             0,                       AV_OPT_TYPE_CONST,{.i64=FSCALE_ERBS},   0, 0, FLAGS, "scale" },
+    {  "sqrt",    "sqrt",             0,                       AV_OPT_TYPE_CONST,{.i64=FSCALE_SQRT},   0, 0, FLAGS, "scale" },
     { "min",  "set minimum frequency", OFFSET(minimum_frequency), AV_OPT_TYPE_FLOAT, {.dbl = 20.}, 1, 2000, FLAGS },
     { "max",  "set maximum frequency", OFFSET(maximum_frequency), AV_OPT_TYPE_FLOAT, {.dbl = 20000.}, 0, 192000, FLAGS },
     { "logb", "set logarithmic basis", OFFSET(logarithmic_basis), AV_OPT_TYPE_FLOAT, {.dbl = 0.0001}, 0, 1, FLAGS },
@@ -240,6 +242,10 @@ static void frequency_band(float *frequency_band,
         case FSCALE_ERBS:
             frequency = 676170.4f / (47.06538f - expf(frequency * 0.08950404f)) - 14678.49f;
             frequency_derivative *= (frequency * frequency + 14990.4 * frequency + 4577850.f) / 160514.f;
+            break;
+        case FSCALE_SQRT:
+            frequency = frequency * frequency;
+            frequency_derivative *= 2.f * sqrtf(frequency);
             break;
         }
 
@@ -679,6 +685,10 @@ static int config_output(AVFilterLink *outlink)
     case FSCALE_ERBS:
         minimum_frequency = 11.17268f * log(1.f + (46.06538f * minimum_frequency) / (minimum_frequency + 14678.49f));
         maximum_frequency = 11.17268f * log(1.f + (46.06538f * maximum_frequency) / (maximum_frequency + 14678.49f));
+        break;
+    case FSCALE_SQRT:
+        minimum_frequency = sqrtf(minimum_frequency);
+        maximum_frequency = sqrtf(maximum_frequency);
         break;
     }
 
