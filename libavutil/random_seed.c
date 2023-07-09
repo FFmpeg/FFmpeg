@@ -59,6 +59,7 @@ static int read_random(uint8_t *dst, size_t len, const char *file)
 
     if (!fp)
         return AVERROR_UNKNOWN;
+    setvbuf(fp, NULL, _IONBF, 0);
     err = fread(dst, 1, len, fp);
     fclose(fp);
 
