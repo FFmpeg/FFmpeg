@@ -456,7 +456,9 @@ av_cold int avcodec_close(AVCodecContext *avctx)
 
         av_bsf_free(&avci->bsf);
 
+#if FF_API_DROPCHANGED
         av_channel_layout_uninit(&avci->initial_ch_layout);
+#endif
 
 #if CONFIG_LCMS2
         ff_icc_context_uninit(&avci->icc);

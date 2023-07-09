@@ -773,7 +773,7 @@ fail:
 int ff_decode_receive_frame(AVCodecContext *avctx, AVFrame *frame)
 {
     AVCodecInternal *avci = avctx->internal;
-    int ret, changed;
+    int ret;
 
     if (!avcodec_is_open(avctx) || !av_codec_is_decoder(avctx->codec))
         return AVERROR(EINVAL);
@@ -803,6 +803,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
+#if FF_API_DROPCHANGED
     if (avctx->flags & AV_CODEC_FLAG_DROPCHANGED) {
 
         if (avctx->frame_num == 1) {
@@ -823,7 +824,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
 
         if (avctx->frame_num > 1) {
-            changed = avci->initial_format != frame->format;
+            int changed = avci->initial_format != frame->format;
 
             switch(avctx->codec_type) {
             case AVMEDIA_TYPE_VIDEO:
@@ -848,6 +849,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             }
         }
     }
+#endif
     return 0;
 fail:
     av_frame_unref(frame);
@@ -1772,6 +1774,11 @@ int ff_decode_preinit(AVCodecContext *avctx)
     ret = decode_bsfs_init(avctx);
     if (ret < 0)
         return ret;
+
+#if FF_API_DROPCHANGED
+    if (avctx->flags & AV_CODEC_FLAG_DROPCHANGED)
+        av_log(avctx, AV_LOG_WARNING, "The dropchanged flag is deprecated.\n");
+#endif
 
     return 0;
 }
