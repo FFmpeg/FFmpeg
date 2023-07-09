@@ -330,7 +330,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 s->bg = index < 16 ? ansi_to_cga[index] : index;
                 i += 2;
             } else if (m == 49) {
-                s->fg = ansi_to_cga[DEFAULT_BG_COLOR];
+                s->bg = ansi_to_cga[DEFAULT_BG_COLOR];
             } else {
                 avpriv_request_sample(avctx, "Unsupported rendition parameter");
             }
