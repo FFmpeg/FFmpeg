@@ -25,6 +25,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/float_dsp.h"
 #include "libavutil/cpu.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
@@ -89,6 +90,9 @@ typedef struct ShowCWTContext {
     AVFrame *outpicref;
     AVFrame *fft_in;
     AVFrame *fft_out;
+    AVFrame *dst_x;
+    AVFrame *src_x;
+    AVFrame *kernel_x;
     AVFrame *ifft_in;
     AVFrame *ifft_out;
     AVFrame *ch_out;
@@ -114,6 +118,8 @@ typedef struct ShowCWTContext {
     float minimum_frequency;
     float maximum_frequency;
     float deviation;
+
+    AVFloatDSPContext *fdsp;
 } ShowCWTContext;
 
 #define OFFSET(x) offsetof(ShowCWTContext, x)
@@ -172,6 +178,9 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_frame_free(&s->outpicref);
     av_frame_free(&s->fft_in);
     av_frame_free(&s->fft_out);
+    av_frame_free(&s->dst_x);
+    av_frame_free(&s->src_x);
+    av_frame_free(&s->kernel_x);
     av_frame_free(&s->ifft_in);
     av_frame_free(&s->ifft_out);
     av_frame_free(&s->ch_out);
@@ -187,6 +196,8 @@ static av_cold void uninit(AVFilterContext *ctx)
             av_tx_uninit(&s->ifft[n]);
         av_freep(&s->ifft);
     }
+
+    av_freep(&s->fdsp);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -483,18 +494,27 @@ static int run_channel_cwt(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
         AVComplexFloat *isrc = (AVComplexFloat *)s->ifft_in->extended_data[y];
         AVComplexFloat *idst = (AVComplexFloat *)s->ifft_out->extended_data[y];
         AVComplexFloat *chout = ((AVComplexFloat *)s->ch_out->extended_data[ch]) + y * ihop_size;
-        const float *kernel = (const float *)s->kernel->extended_data[y];
+        AVComplexFloat *dstx = (AVComplexFloat *)s->dst_x->extended_data[jobnr];
+        AVComplexFloat *srcx = (AVComplexFloat *)s->src_x->extended_data[jobnr];
+        AVComplexFloat *kernelx = (AVComplexFloat *)s->kernel_x->extended_data[jobnr];
+        const AVComplexFloat *kernel = (const AVComplexFloat *)s->kernel->extended_data[y];
         const unsigned *index = (const unsigned *)s->index;
         const int kernel_start = s->kernel_start[y];
         const int kernel_stop = s->kernel_stop[y];
+        const int kernel_range = kernel_stop - kernel_start;
+
+        memcpy(kernelx, kernel + kernel_start, sizeof(*kernel) * kernel_range);
+        memcpy(srcx, dst + kernel_start, sizeof(*dst) * kernel_range);
+
+        s->fdsp->vector_fmul((float *)dstx, (const float *)srcx,
+                             (const float *)kernelx, FFALIGN(kernel_range * 2, 16));
 
         memset(isrc, 0, sizeof(*isrc) * output_sample_count);
-        for (int i = kernel_start; i < kernel_stop; i++) {
-            const unsigned n = index[i];
-            const float ff = kernel[i];
+        for (int i = 0; i < kernel_range; i++) {
+            const unsigned n = index[i + kernel_start];
 
-            isrc[n].re += ff * dst[i].re;
-            isrc[n].im += ff * dst[i].im;
+            isrc[n].re += dstx[i].re;
+            isrc[n].im += dstx[i].im;
         }
 
         s->itx_fn(s->ifft[jobnr], idst, isrc, sizeof(*isrc));
@@ -515,7 +535,7 @@ static void compute_kernel(AVFilterContext *ctx)
     unsigned *index = s->index;
 
     for (int y = 0; y < fsize; y++) {
-        float *kernel = (float *)s->kernel->extended_data[y];
+        AVComplexFloat *kernel = (AVComplexFloat *)s->kernel->extended_data[y];
         int *kernel_start = s->kernel_start;
         int *kernel_stop = s->kernel_stop;
         float frequency = s->frequency_band[y*2];
@@ -527,18 +547,19 @@ static void compute_kernel(AVFilterContext *ctx)
 
             f = size - fabsf(f - size);
             ff = expf(-f*f*deviation) * scale_factor;
-            kernel[n] = ff;
+            kernel[n].re = ff;
+            kernel[n].im = ff;
         }
 
         for (int n = 0; n < size; n++) {
-            if (kernel[n] != 0.f) {
+            if (kernel[n].re != 0.f) {
                 kernel_start[y] = n;
                 break;
             }
         }
 
         for (int n = 0; n < size; n++) {
-            if (kernel[size - n - 1] != 0.f) {
+            if (kernel[size - n - 1].re != 0.f) {
                 kernel_stop[y] = size - n;
                 break;
             }
@@ -560,6 +581,10 @@ static int config_output(AVFilterLink *outlink)
     int ret;
 
     uninit(ctx);
+
+    s->fdsp = avpriv_float_dsp_alloc(0);
+    if (!s->fdsp)
+        return AVERROR(ENOMEM);
 
     switch (s->direction) {
     case DIRECTION_LR:
@@ -622,6 +647,9 @@ static int config_output(AVFilterLink *outlink)
     s->outpicref = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     s->fft_in = ff_get_audio_buffer(inlink, s->fft_in_size * 2);
     s->fft_out = ff_get_audio_buffer(inlink, s->fft_out_size * 2);
+    s->dst_x = av_frame_alloc();
+    s->src_x = av_frame_alloc();
+    s->kernel_x = av_frame_alloc();
     s->cache = ff_get_audio_buffer(inlink, s->fft_in_size * 2);
     s->ch_out = ff_get_audio_buffer(inlink, s->frequency_band_count * 2 * s->ihop_size);
     s->ifft_in = av_frame_alloc();
@@ -630,7 +658,7 @@ static int config_output(AVFilterLink *outlink)
     s->index = av_calloc(s->input_padding_size, sizeof(*s->index));
     s->kernel_start = av_calloc(s->frequency_band_count, sizeof(*s->kernel_start));
     s->kernel_stop = av_calloc(s->frequency_band_count, sizeof(*s->kernel_stop));
-    if (!s->outpicref || !s->fft_in || !s->fft_out ||
+    if (!s->outpicref || !s->fft_in || !s->fft_out || !s->src_x || !s->dst_x || !s->kernel_x ||
         !s->ifft_in || !s->ifft_out || !s->kernel_start || !s->kernel_stop ||
         !s->frequency_band || !s->kernel || !s->cache || !s->index)
         return AVERROR(ENOMEM);
@@ -650,9 +678,30 @@ static int config_output(AVFilterLink *outlink)
         return ret;
 
     s->kernel->format     = inlink->format;
-    s->kernel->nb_samples = s->input_padding_size;
+    s->kernel->nb_samples = s->input_padding_size * 2;
     s->kernel->ch_layout.nb_channels = s->frequency_band_count;
     ret = av_frame_get_buffer(s->kernel, 0);
+    if (ret < 0)
+        return ret;
+
+    s->src_x->format     = inlink->format;
+    s->src_x->nb_samples = s->fft_out_size * 2;
+    s->src_x->ch_layout.nb_channels = s->nb_threads;
+    ret = av_frame_get_buffer(s->src_x, 0);
+    if (ret < 0)
+        return ret;
+
+    s->dst_x->format     = inlink->format;
+    s->dst_x->nb_samples = s->fft_out_size * 2;
+    s->dst_x->ch_layout.nb_channels = s->nb_threads;
+    ret = av_frame_get_buffer(s->dst_x, 0);
+    if (ret < 0)
+        return ret;
+
+    s->kernel_x->format     = inlink->format;
+    s->kernel_x->nb_samples = s->fft_out_size * 2;
+    s->kernel_x->ch_layout.nb_channels = s->nb_threads;
+    ret = av_frame_get_buffer(s->kernel_x, 0);
     if (ret < 0)
         return ret;
 
