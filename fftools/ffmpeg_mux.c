@@ -166,8 +166,14 @@ static int sync_queue_process(Muxer *mux, OutputStream *ost, AVPacket *pkt, int 
 
         while (1) {
             ret = sq_receive(mux->sq_mux, -1, SQPKT(mux->sq_pkt));
-            if (ret < 0)
-                return (ret == AVERROR_EOF || ret == AVERROR(EAGAIN)) ? 0 : ret;
+            if (ret < 0) {
+                /* n.b.: We forward EOF from the sync queue, terminating muxing.
+                 * This assumes that if a muxing sync queue is present, then all
+                 * the streams use it. That is true currently, but may change in
+                 * the future, then this code needs to be revisited.
+                 */
+                return ret == AVERROR(EAGAIN) ? 0 : ret;
+            }
 
             ret = write_packet(mux, of->streams[ret],
                                mux->sq_pkt);
