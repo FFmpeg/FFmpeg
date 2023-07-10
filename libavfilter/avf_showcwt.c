@@ -1037,8 +1037,7 @@ static int activate(AVFilterContext *ctx)
         }
     }
 
-    if (s->eof && s->eof_pts != AV_NOPTS_VALUE &&
-        (s->old_pts + 1 >= s->eof_pts || (s->slide == SLIDE_FRAME))) {
+    if (s->eof) {
         if (s->slide == SLIDE_FRAME)
             ret = output_frame(ctx);
         ff_outlink_set_status(outlink, AVERROR_EOF, s->eof_pts);
