@@ -597,7 +597,6 @@ static int config_output(AVFilterLink *outlink)
         break;
     }
 
-    s->new_frame = 1;
     s->nb_threads = FFMIN(s->frequency_band_count, ff_filter_get_nb_threads(ctx));
     s->nb_channels = inlink->ch_layout.nb_channels;
     s->old_pts = AV_NOPTS_VALUE;
@@ -1010,10 +1009,8 @@ static int activate(AVFilterContext *ctx)
                 ff_filter_execute(ctx, run_channels_cwt_prepare, fin, NULL,
                                   FFMIN(s->nb_threads, s->nb_channels));
                 if (fin) {
-                    if ((s->hop_index == 0 && s->slide != SLIDE_FRAME) || s->new_frame) {
+                    if (s->hop_index == 0)
                         s->in_pts = fin->pts;
-                        s->new_frame = 0;
-                    }
                     s->hop_index += fin->nb_samples;
                     av_frame_free(&fin);
                 } else {
