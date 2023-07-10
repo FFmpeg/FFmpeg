@@ -590,7 +590,7 @@ static int config_output(AVFilterLink *outlink)
     s->input_sample_count = s->nb_consumed_samples;
     s->hop_size = s->nb_consumed_samples >> 1;
     s->input_padding_size = 65536;
-    s->output_padding_size = FFMAX(16, s->input_padding_size * s->pps / inlink->sample_rate);
+    s->output_padding_size = FFMAX(16, av_rescale(s->input_padding_size, s->pps, inlink->sample_rate));
 
     outlink->w = s->w;
     outlink->h = s->h;
