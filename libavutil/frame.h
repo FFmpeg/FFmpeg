@@ -214,6 +214,16 @@ enum AVFrameSideDataType {
      * Ambient viewing environment metadata, as defined by H.274.
      */
     AV_FRAME_DATA_AMBIENT_VIEWING_ENVIRONMENT,
+
+    /**
+     * Provide encoder-specific hinting information about changed/unchanged
+     * portions of a frame.  It can be used to pass information about which
+     * macroblocks can be skipped because they didn't change from the
+     * corresponding ones in the previous frame. This could be useful for
+     * applications which know this information in advance to speed up
+     * encoding.
+     */
+    AV_FRAME_DATA_VIDEO_HINT,
 };
 
 enum AVActiveFormatDescription {

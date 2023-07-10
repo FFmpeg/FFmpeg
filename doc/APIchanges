@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2023-02-09
 
 API changes, most recent first:
 
+2023-08-08 - xxxxxxxxxx - lavu 58.15.100 - video_hint.h
+  Add AVVideoHint API.
+
 2023-07-xx - xxxxxxxxxx - lavc 60 - avcodec.h
   Deprecate AV_CODEC_FLAG_DROPCHANGED without replacement.
 
