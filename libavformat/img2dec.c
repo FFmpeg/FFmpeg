@@ -36,7 +36,7 @@
 #include "avio_internal.h"
 #include "internal.h"
 #include "img2.h"
-#include "jpegxl_probe.h"
+#include "libavcodec/jpegxl_parse.h"
 #include "libavcodec/mjpeg.h"
 #include "libavcodec/vbn.h"
 #include "libavcodec/xwd.h"
@@ -850,7 +850,7 @@ static int jpegxl_probe(const AVProbeData *p)
     if (AV_RL16(b) != FF_JPEGXL_CODESTREAM_SIGNATURE_LE)
         return 0;
 #if CONFIG_IMAGE_JPEGXL_PIPE_DEMUXER
-    if (ff_jpegxl_verify_codestream_header(p->buf, p->buf_size, 1) >= 0)
+    if (ff_jpegxl_parse_codestream_header(p->buf, p->buf_size, NULL, 5) >= 0)
         return AVPROBE_SCORE_MAX - 2;
 #endif
     return 0;

@@ -28,96 +28,28 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "libavcodec/bytestream.h"
-#define BITSTREAM_READER_LE
-#include "libavcodec/get_bits.h"
-
+#include "libavcodec/jpegxl.h"
+#include "libavcodec/jpegxl_parse.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
 
 #include "avformat.h"
 #include "internal.h"
-#include "jpegxl_probe.h"
 
 typedef struct JXLAnimDemuxContext {
     AVBufferRef *initial;
 } JXLAnimDemuxContext;
 
-/*
- * copies as much of the codestream into the buffer as possible
- * pass a shorter buflen to request less
- * returns the number of bytes consumed from input, may be greater than input_len
- * if the input doesn't end on an ISOBMFF-box boundary
- */
-static int jpegxl_collect_codestream_header(const uint8_t *input_buffer, int input_len,
-                                            uint8_t *buffer, int buflen, int *copied) {
-    GetByteContext gb;
-    *copied = 0;
-    bytestream2_init(&gb, input_buffer, input_len);
-
-    while (1) {
-        uint64_t size;
-        uint32_t tag;
-        int head_size = 8;
-
-        if (bytestream2_get_bytes_left(&gb) < 16)
-            break;
-
-        size = bytestream2_get_be32(&gb);
-        if (size == 1) {
-            size = bytestream2_get_be64(&gb);
-            head_size = 16;
-        }
-        /* invalid ISOBMFF size */
-        if (size && size <= head_size)
-            return AVERROR_INVALIDDATA;
-        if (size)
-            size -= head_size;
-
-        tag = bytestream2_get_le32(&gb);
-        if (tag == MKTAG('j', 'x', 'l', 'p')) {
-            if (bytestream2_get_bytes_left(&gb) < 4)
-                break;
-            bytestream2_skip(&gb, 4);
-            if (size) {
-                if (size <= 4)
-                    return AVERROR_INVALIDDATA;
-                size -= 4;
-            }
-        }
-        /*
-         * size = 0 means "until EOF". this is legal but uncommon
-         * here we just set it to the remaining size of the probe buffer
-         */
-        if (!size)
-            size = bytestream2_get_bytes_left(&gb);
-
-        if (tag == MKTAG('j', 'x', 'l', 'c') || tag == MKTAG('j', 'x', 'l', 'p')) {
-            if (size > buflen - *copied)
-                size = buflen - *copied;
-            /*
-             * arbitrary chunking of the payload makes this memcpy hard to avoid
-             * in practice this will only be performed one or two times at most
-             */
-            *copied += bytestream2_get_buffer(&gb, buffer + *copied, size);
-        } else {
-            bytestream2_skip(&gb, size);
-        }
-        if (bytestream2_get_bytes_left(&gb) <= 0 || *copied >= buflen)
-            break;
-    }
-
-    return bytestream2_tell(&gb);
-}
-
 static int jpegxl_anim_probe(const AVProbeData *p)
 {
     uint8_t buffer[4096 + AV_INPUT_BUFFER_PADDING_SIZE];
-    int copied;
+    int copied = 0, ret;
+    FFJXLMetadata meta = { 0 };
 
     /* this is a raw codestream */
     if (AV_RL16(p->buf) == FF_JPEGXL_CODESTREAM_SIGNATURE_LE) {
-        if (ff_jpegxl_verify_codestream_header(p->buf, p->buf_size, 1) >= 1)
+        ret = ff_jpegxl_parse_codestream_header(p->buf, p->buf_size, &meta, 5);
+        if (ret >= 0 && meta.animation_offset > 0)
             return AVPROBE_SCORE_MAX;
 
         return 0;
@@ -127,10 +59,13 @@ static int jpegxl_anim_probe(const AVProbeData *p)
     if (AV_RL64(p->buf) != FF_JPEGXL_CONTAINER_SIGNATURE_LE)
         return 0;
 
-    if (jpegxl_collect_codestream_header(p->buf, p->buf_size, buffer, sizeof(buffer) - AV_INPUT_BUFFER_PADDING_SIZE, &copied) <= 0 || copied <= 0)
+    if (ff_jpegxl_collect_codestream_header(p->buf, p->buf_size, buffer,
+            sizeof(buffer) - AV_INPUT_BUFFER_PADDING_SIZE, &copied) <= 0
+            || copied <= 0)
         return 0;
 
-    if (ff_jpegxl_verify_codestream_header(buffer, copied, 0) >= 1)
+    ret = ff_jpegxl_parse_codestream_header(buffer, copied, &meta, 10);
+    if (ret >= 0 && meta.animation_offset > 0)
         return AVPROBE_SCORE_MAX;
 
     return 0;
@@ -141,13 +76,10 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
     JXLAnimDemuxContext *ctx = s->priv_data;
     AVIOContext *pb = s->pb;
     AVStream *st;
-    int offset = 0;
     uint8_t head[256 + AV_INPUT_BUFFER_PADDING_SIZE];
     const int sizeofhead = sizeof(head) - AV_INPUT_BUFFER_PADDING_SIZE;
-    int headsize = 0;
-    int ctrl;
-    AVRational tb;
-    GetBitContext gbi, *gb = &gbi;
+    int headsize = 0, ret;
+    FFJXLMetadata meta = { 0 };
 
     uint64_t sig16 = avio_rl16(pb);
     if (sig16 == FF_JPEGXL_CODESTREAM_SIGNATURE_LE) {
@@ -167,7 +99,7 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
             return AVERROR_INVALIDDATA;
         avio_skip(pb, 2); // first box always 12 bytes
         while (1) {
-            int copied;
+            int copied = 0;
             uint8_t buf[4096];
             int read = avio_read(pb, buf, sizeof(buf));
             if (read < 0)
@@ -183,20 +115,18 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
                 if (av_buffer_realloc(&ctx->initial, ctx->initial->size + read) < 0)
                     return AVERROR(ENOMEM);
             }
-            jpegxl_collect_codestream_header(buf, read, head + headsize, sizeofhead - headsize, &copied);
+            ff_jpegxl_collect_codestream_header(buf, read, head + headsize, sizeofhead - headsize, &copied);
             memcpy(ctx->initial->data + (ctx->initial->size - read), buf, read);
             headsize += copied;
             if (headsize >= sizeofhead || read < sizeof(buf))
                 break;
         }
     }
+
     /* offset in bits of the animation header */
-    offset = ff_jpegxl_verify_codestream_header(head, headsize, 0);
-    if (offset <= 0)
+    ret = ff_jpegxl_parse_codestream_header(head, headsize, &meta, 0);
+    if (ret < 0 || meta.animation_offset <= 0)
         return AVERROR_INVALIDDATA;
-    if (init_get_bits8(gb, head, headsize) < 0)
-        return AVERROR_INVALIDDATA;
-    skip_bits_long(gb, offset);
 
     st = avformat_new_stream(s, NULL);
     if (!st)
@@ -204,11 +134,8 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
 
     st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codecpar->codec_id   = AV_CODEC_ID_JPEGXL;
-    ctrl = get_bits(gb, 2);
-    tb.den = (const uint32_t[]){100, 1000, 1, 1}[ctrl] + get_bits_long(gb, (const uint32_t[]){0, 0, 10, 30}[ctrl]);
-    ctrl = get_bits(gb, 2);
-    tb.num = (const uint32_t[]){1, 1001, 1, 1}[ctrl] + get_bits_long(gb, (const uint32_t[]){0, 0, 8, 10}[ctrl]);
-    avpriv_set_pts_info(st, 1, tb.num, tb.den);
+    avpriv_set_pts_info(st, 1, meta.timebase.num, meta.timebase.den);
+    ffstream(st)->need_parsing = AVSTREAM_PARSE_FULL;
 
     return 0;
 }
@@ -222,17 +149,17 @@ static int jpegxl_anim_read_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t size;
     size_t offset = 0;
 
-    if ((size = avio_size(pb)) < 0)
+    size = avio_size(pb);
+    if (size < 0)
         return size;
-
-    /* animated JXL this big should not exist */
-    if (size > INT_MAX)
-        return AVERROR_INVALIDDATA;
+    if (size == 0)
+        size = 4096;
 
     if (ctx->initial && size < ctx->initial->size)
         size = ctx->initial->size;
 
-    if ((ret = av_new_packet(pkt, size)) < 0)
+    ret = av_new_packet(pkt, size);
+    if (ret < 0)
         return ret;
 
     if (ctx->initial) {
@@ -241,8 +168,11 @@ static int jpegxl_anim_read_packet(AVFormatContext *s, AVPacket *pkt)
         av_buffer_unref(&ctx->initial);
     }
 
-    if ((ret = avio_read(pb, pkt->data + offset, size - offset)) < 0)
+    ret = avio_read(pb, pkt->data + offset, size - offset);
+    if (ret < 0)
         return ret;
+    if (ret < size - offset)
+        pkt->size = ret + offset;
 
     return 0;
 }
@@ -265,7 +195,7 @@ const AVInputFormat ff_jpegxl_anim_demuxer = {
     .read_packet    = jpegxl_anim_read_packet,
     .read_close     = jpegxl_anim_close,
     .flags_internal = FF_FMT_INIT_CLEANUP,
-    .flags          = AVFMT_GENERIC_INDEX,
+    .flags          = AVFMT_GENERIC_INDEX | AVFMT_NOTIMESTAMPS,
     .mime_type      = "image/jxl",
     .extensions     = "jxl",
 };
