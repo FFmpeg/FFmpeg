@@ -96,6 +96,7 @@ typedef struct ShowCWTContext {
     AVFrame *ifft_in;
     AVFrame *ifft_out;
     AVFrame *ch_out;
+    AVFrame *bh_out;
     int nb_threads;
     int nb_channels;
     int nb_consumed_samples;
@@ -118,6 +119,8 @@ typedef struct ShowCWTContext {
     float minimum_frequency;
     float maximum_frequency;
     float deviation;
+    float bar_ratio;
+    int bar_size;
 
     AVFloatDSPContext *fdsp;
 } ShowCWTContext;
@@ -159,6 +162,7 @@ static const AVOption showcwt_options[] = {
     {  "rl", "right to left", 0, AV_OPT_TYPE_CONST,{.i64=DIRECTION_RL}, 0, 0, FLAGS, "direction" },
     {  "ud", "up to down",    0, AV_OPT_TYPE_CONST,{.i64=DIRECTION_UD}, 0, 0, FLAGS, "direction" },
     {  "du", "down to up",    0, AV_OPT_TYPE_CONST,{.i64=DIRECTION_DU}, 0, 0, FLAGS, "direction" },
+    { "bar", "set bar ratio", OFFSET(bar_ratio), AV_OPT_TYPE_FLOAT, {.dbl = 0.}, 0, 1, FLAGS },
     { NULL }
 };
 
@@ -184,6 +188,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_frame_free(&s->ifft_in);
     av_frame_free(&s->ifft_out);
     av_frame_free(&s->ch_out);
+    av_frame_free(&s->bh_out);
 
     if (s->fft) {
         for (int n = 0; n < s->nb_threads; n++)
@@ -315,6 +320,80 @@ static int run_channel_cwt_prepare(AVFilterContext *ctx, void *arg, int jobnr, i
     return 0;
 }
 
+#define DRAW_BAR_COLOR(x) \
+do { \
+    if (Y <= ht) { \
+        dstY[x] = 0; \
+        dstU[x] = 128; \
+        dstV[x] = 128; \
+    } else { \
+        float mul = (Y - ht) * bh[0]; \
+        dstY[x] = av_clip_uint8(lrintf(Y * mul * 255.f)); \
+        dstU[x] = av_clip_uint8(lrintf((U-0.5f) * 128.f + 128)); \
+        dstV[x] = av_clip_uint8(lrintf((V-0.5f) * 128.f + 128)); \
+    } \
+} while (0)
+
+static void draw_bar(ShowCWTContext *s, int y,
+                     float Y, float U, float V)
+{
+    float *bh = ((float *)s->bh_out->extended_data[0]) + y;
+    const ptrdiff_t ylinesize = s->outpicref->linesize[0];
+    const ptrdiff_t ulinesize = s->outpicref->linesize[1];
+    const ptrdiff_t vlinesize = s->outpicref->linesize[2];
+    const int direction = s->direction;
+    const int bar_size = s->bar_size;
+    const float rcp_bar_h = 1.f / bar_size;
+    uint8_t *dstY, *dstU, *dstV;
+    const int w_1 = s->w - 1;
+
+    bh[0] = 1.f / (Y + 0.0001f);
+    switch (direction) {
+        case DIRECTION_LR:
+            dstY = s->outpicref->data[0] + y * ylinesize;
+            dstU = s->outpicref->data[1] + y * ulinesize;
+            dstV = s->outpicref->data[2] + y * vlinesize;
+            for (int x = 0; x < bar_size; x++) {
+                float ht = (bar_size - x) * rcp_bar_h;
+                DRAW_BAR_COLOR(x);
+            }
+            break;
+        case DIRECTION_RL:
+            dstY = s->outpicref->data[0] + y * ylinesize;
+            dstU = s->outpicref->data[1] + y * ulinesize;
+            dstV = s->outpicref->data[2] + y * vlinesize;
+            for (int x = 0; x < bar_size; x++) {
+                float ht = x * rcp_bar_h;
+                DRAW_BAR_COLOR(w_1 - bar_size + x);
+            }
+            break;
+        case DIRECTION_UD:
+            dstY = s->outpicref->data[0] + w_1 - y;
+            dstU = s->outpicref->data[1] + w_1 - y;
+            dstV = s->outpicref->data[2] + w_1 - y;
+            for (int x = 0; x < bar_size; x++) {
+                float ht = (bar_size - x) * rcp_bar_h;
+                DRAW_BAR_COLOR(0);
+                dstY += ylinesize;
+                dstU += ulinesize;
+                dstV += vlinesize;
+            }
+            break;
+        case DIRECTION_DU:
+            dstY = s->outpicref->data[0] + w_1 - y + ylinesize * (s->h - 1 - bar_size);
+            dstU = s->outpicref->data[1] + w_1 - y + ulinesize * (s->h - 1 - bar_size);
+            dstV = s->outpicref->data[2] + w_1 - y + vlinesize * (s->h - 1 - bar_size);
+            for (int x = 0; x < bar_size; x++) {
+                float ht = x * rcp_bar_h;
+                DRAW_BAR_COLOR(0);
+                dstY += ylinesize;
+                dstU += ulinesize;
+                dstV += vlinesize;
+            }
+            break;
+    }
+}
+
 static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     ShowCWTContext *s = ctx->priv;
@@ -330,6 +409,7 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const int ihop_size = s->ihop_size;
     const int direction = s->direction;
     uint8_t *dstY, *dstU, *dstV, *dstA;
+    const int bar_size = s->bar_size;
     const int mode = s->mode;
     const int w_1 = s->w - 1;
     const int x = s->pos;
@@ -414,6 +494,9 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
                 dstV[0] = av_clip_uint8(lrintf(V * 255.f));
                 if (dstA)
                     dstA[0] = dstY[0];
+
+                if (bar_size > 0)
+                    draw_bar(s, y, Y, U, V);
             }
             break;
         case 3:
@@ -441,6 +524,9 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
                 dstV[0] = av_clip_uint8(lrintf(V * 255.f));
                 if (dstA)
                     dstA[0] = dstY[0];
+
+                if (bar_size > 0)
+                    draw_bar(s, y, Y, U, V);
             }
             break;
         case 2:
@@ -455,6 +541,8 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             dstV[0] = av_clip_uint8(lrintf(V * 255.f));
             if (dstA)
                 dstA[0] = dstY[0];
+            if (bar_size > 0)
+                draw_bar(s, y, Y, U, V);
             break;
         case 1:
             Y = atan2f(src[0].im, src[0].re);
@@ -463,6 +551,8 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             dstY[0] = av_clip_uint8(lrintf(Y * 255.f));
             if (dstA)
                 dstA[0] = dstY[0];
+            if (bar_size > 0)
+                draw_bar(s, y, Y, 0.5f, 0.5f);
             break;
         case 0:
             Y = hypotf(src[0].re, src[0].im);
@@ -471,6 +561,9 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             dstY[0] = av_clip_uint8(lrintf(Y * 255.f));
             if (dstA)
                 dstA[0] = dstY[0];
+
+            if (bar_size > 0)
+                draw_bar(s, y, Y, 0.5f, 0.5f);
             break;
         }
     }
@@ -589,10 +682,12 @@ static int config_output(AVFilterLink *outlink)
     switch (s->direction) {
     case DIRECTION_LR:
     case DIRECTION_RL:
+        s->bar_size = s->w * s->bar_ratio;
         s->frequency_band_count = s->h;
         break;
     case DIRECTION_UD:
     case DIRECTION_DU:
+        s->bar_size = s->h * s->bar_ratio;
         s->frequency_band_count = s->w;
         break;
     }
@@ -651,6 +746,7 @@ static int config_output(AVFilterLink *outlink)
     s->kernel_x = av_frame_alloc();
     s->cache = ff_get_audio_buffer(inlink, s->fft_in_size * 2);
     s->ch_out = ff_get_audio_buffer(inlink, s->frequency_band_count * 2 * s->ihop_size);
+    s->bh_out = ff_get_audio_buffer(inlink, s->frequency_band_count);
     s->ifft_in = av_frame_alloc();
     s->ifft_out = av_frame_alloc();
     s->kernel = av_frame_alloc();
@@ -658,8 +754,8 @@ static int config_output(AVFilterLink *outlink)
     s->kernel_start = av_calloc(s->frequency_band_count, sizeof(*s->kernel_start));
     s->kernel_stop = av_calloc(s->frequency_band_count, sizeof(*s->kernel_stop));
     if (!s->outpicref || !s->fft_in || !s->fft_out || !s->src_x || !s->dst_x || !s->kernel_x ||
-        !s->ifft_in || !s->ifft_out || !s->kernel_start || !s->kernel_stop ||
-        !s->frequency_band || !s->kernel || !s->cache || !s->index)
+        !s->ifft_in || !s->ifft_out || !s->kernel_start || !s->kernel_stop || !s->ch_out ||
+        !s->frequency_band || !s->kernel || !s->cache || !s->index || !s->bh_out)
         return AVERROR(ENOMEM);
 
     s->ifft_in->format     = inlink->format;
@@ -760,16 +856,16 @@ static int config_output(AVFilterLink *outlink)
 
     switch (s->direction) {
     case DIRECTION_LR:
-        s->pos = 0;
+        s->pos = s->bar_size;
         break;
     case DIRECTION_RL:
-        s->pos = s->w - 1;
+        s->pos = FFMAX(0, s->w - 2 - s->bar_size);
         break;
     case DIRECTION_UD:
-        s->pos = 0;
+        s->pos = s->bar_size;
         break;
     case DIRECTION_DU:
-        s->pos = s->h - 1;
+        s->pos = FFMAX(0, s->h - 2 - s->bar_size);
         break;
     }
 
@@ -802,7 +898,7 @@ static int output_frame(AVFilterContext *ctx)
             for (int p = 0; p < nb_planes; p++) {
                 ptrdiff_t linesize = s->outpicref->linesize[p];
 
-                for (int y = s->h - 1; y > 0; y--) {
+                for (int y = s->h - 1; y > s->bar_size; y--) {
                     uint8_t *dst = s->outpicref->data[p] + y * linesize;
 
                     memmove(dst, dst - linesize, s->w);
@@ -813,7 +909,7 @@ static int output_frame(AVFilterContext *ctx)
             for (int p = 0; p < nb_planes; p++) {
                 ptrdiff_t linesize = s->outpicref->linesize[p];
 
-                for (int y = 0; y < s->h - 1; y++) {
+                for (int y = 0; y < s->h - 2 - s->bar_size; y++) {
                     uint8_t *dst = s->outpicref->data[p] + y * linesize;
 
                     memmove(dst, dst + linesize, s->w);
@@ -833,28 +929,28 @@ static int output_frame(AVFilterContext *ctx)
         case DIRECTION_LR:
             s->pos++;
             if (s->pos >= s->w) {
-                s->pos = 0;
+                s->pos = s->bar_size;
                 s->new_frame = 1;
             }
             break;
         case DIRECTION_RL:
             s->pos--;
             if (s->pos < 0) {
-                s->pos = s->w - 1;
+                s->pos = FFMAX(0, s->w - 2 - s->bar_size);
                 s->new_frame = 1;
             }
             break;
         case DIRECTION_UD:
             s->pos++;
             if (s->pos >= s->h) {
-                s->pos = 0;
+                s->pos = s->bar_size;
                 s->new_frame = 1;
             }
             break;
         case DIRECTION_DU:
             s->pos--;
             if (s->pos < 0) {
-                s->pos = s->h - 1;
+                s->pos = FFMAX(0, s->h - 2 - s->bar_size);
                 s->new_frame = 1;
             }
             break;
@@ -864,13 +960,13 @@ static int output_frame(AVFilterContext *ctx)
         switch (s->direction) {
         case DIRECTION_UD:
         case DIRECTION_LR:
-            s->pos = 0;
+            s->pos = s->bar_size;
             break;
         case DIRECTION_RL:
-            s->pos = s->w - 1;
+            s->pos = FFMAX(0, s->w - 2 - s->bar_size);
             break;
         case DIRECTION_DU:
-            s->pos = s->h - 1;
+            s->pos = FFMAX(0, s->h - 2 - s->bar_size);
             break;
         }
         break;
