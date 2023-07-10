@@ -900,6 +900,7 @@ static int vk_hevc_end_frame(AVCodecContext *avctx)
     FFVulkanDecodePicture *vp = &hp->vp;
     FFVulkanDecodePicture *rvp[HEVC_MAX_REFS] = { 0 };
     AVFrame *rav[HEVC_MAX_REFS] = { 0 };
+    int err;
 
     if (!hp->h265_pic_info.sliceSegmentCount)
         return 0;
@@ -908,7 +909,19 @@ static int vk_hevc_end_frame(AVCodecContext *avctx)
         const HEVCSPS *sps = h->ps.sps;
         const HEVCPPS *pps = h->ps.pps;
 
-        int err = vk_hevc_create_params(avctx, &dec->session_params);
+        if (!pps) {
+            unsigned int pps_id = h->sh.pps_id;
+            if (pps_id < HEVC_MAX_PPS_COUNT && h->ps.pps_list[pps_id] != NULL)
+                pps = (const HEVCPPS *)h->ps.pps_list[pps_id]->data;
+        }
+
+        if (!pps) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Encountered frame without a valid active PPS reference.\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        err = vk_hevc_create_params(avctx, &dec->session_params);
         if (err < 0)
             return err;
 
