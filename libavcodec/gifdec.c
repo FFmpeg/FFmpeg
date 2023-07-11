@@ -489,28 +489,17 @@ static int gif_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
             return ret;
 
         av_frame_unref(s->frame);
-        if ((ret = ff_get_buffer(avctx, s->frame, 0)) < 0)
-            return ret;
-
         av_fast_malloc(&s->idx_line, &s->idx_line_size, s->screen_width);
         if (!s->idx_line)
             return AVERROR(ENOMEM);
-
-        s->frame->pict_type = AV_PICTURE_TYPE_I;
-        s->frame->flags |= AV_FRAME_FLAG_KEY;
-        s->keyframe_ok = 1;
-    } else {
-        if (!s->keyframe_ok) {
-            av_log(avctx, AV_LOG_ERROR, "cannot decode frame without keyframe\n");
-            return AVERROR_INVALIDDATA;
-        }
-
-        if ((ret = ff_reget_buffer(avctx, s->frame, 0)) < 0)
-            return ret;
-
-        s->frame->pict_type = AV_PICTURE_TYPE_P;
-        s->frame->flags &= ~AV_FRAME_FLAG_KEY;
+    } else if (!s->keyframe_ok) {
+        av_log(avctx, AV_LOG_ERROR, "cannot decode frame without keyframe\n");
+        return AVERROR_INVALIDDATA;
     }
+
+    ret = ff_reget_buffer(avctx, s->frame, 0);
+    if (ret < 0)
+        return ret;
 
     ret = gif_parse_next_image(s, s->frame);
     if (ret < 0)
@@ -518,13 +507,11 @@ static int gif_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
 
     if ((ret = av_frame_ref(rframe, s->frame)) < 0)
         return ret;
-    if (s->keyframe) {
-        rframe->pict_type = AV_PICTURE_TYPE_I;
-        rframe->flags |= AV_FRAME_FLAG_KEY;
-    } else {
-        rframe->pict_type = AV_PICTURE_TYPE_P;
-        rframe->flags &= ~AV_FRAME_FLAG_KEY;
-    }
+
+    rframe->pict_type = s->keyframe ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
+    rframe->flags     = AV_FRAME_FLAG_KEY * s->keyframe;
+    s->keyframe_ok   |= !!s->keyframe;
+
     *got_frame = 1;
 
     return bytestream2_tell(&s->gb);
