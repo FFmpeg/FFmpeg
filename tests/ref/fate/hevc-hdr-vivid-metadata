@@ -1,5 +1,13 @@
 [FRAME]
 [SIDE_DATA]
+side_data_type=Content light level metadata
+max_content=0
+max_average=0
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=H.26[45] User Data Unregistered SEI message
+[/SIDE_DATA]
+[SIDE_DATA]
 side_data_type=Mastering display metadata
 red_x=34000/50000
 red_y=16000/50000
@@ -11,14 +19,6 @@ white_point_x=15635/50000
 white_point_y=16450/50000
 min_luminance=50/10000
 max_luminance=40000000/10000
-[/SIDE_DATA]
-[SIDE_DATA]
-side_data_type=Content light level metadata
-max_content=0
-max_average=0
-[/SIDE_DATA]
-[SIDE_DATA]
-side_data_type=H.26[45] User Data Unregistered SEI message
 [/SIDE_DATA]
 [SIDE_DATA]
 side_data_type=HDR Dynamic Metadata CUVA 005.1 2021 (Vivid)

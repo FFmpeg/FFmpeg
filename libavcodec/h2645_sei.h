@@ -105,6 +105,14 @@ typedef struct H2645SEIFilmGrainCharacteristics {
     int persistence_flag;        //< HEVC  only
 } H2645SEIFilmGrainCharacteristics;
 
+typedef struct H2645SEIMasteringDisplay {
+    int present;
+    uint16_t display_primaries[3][2];
+    uint16_t white_point[2];
+    uint32_t max_luminance;
+    uint32_t min_luminance;
+} H2645SEIMasteringDisplay;
+
 typedef struct H2645SEI {
     H2645SEIA53Caption a53_caption;
     H2645SEIAFD afd;
@@ -116,6 +124,7 @@ typedef struct H2645SEI {
     H2645SEIAlternativeTransfer alternative_transfer;
     H2645SEIFilmGrainCharacteristics film_grain_characteristics;
     H2645SEIAmbientViewingEnvironment ambient_viewing_environment;
+    H2645SEIMasteringDisplay mastering_display;
 } H2645SEI;
 
 enum {

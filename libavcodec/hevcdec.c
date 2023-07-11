@@ -2763,53 +2763,9 @@ static int set_side_data(HEVCContext *s)
 
     // Decrement the mastering display flag when IRAP frame has no_rasl_output_flag=1
     // so the side data persists for the entire coded video sequence.
-    if (s->sei.mastering_display.present > 0 &&
+    if (s->sei.common.mastering_display.present > 0 &&
         IS_IRAP(s) && s->no_rasl_output_flag) {
-        s->sei.mastering_display.present--;
-    }
-    if (s->sei.mastering_display.present) {
-        // HEVC uses a g,b,r ordering, which we convert to a more natural r,g,b
-        const int mapping[3] = {2, 0, 1};
-        const int chroma_den = 50000;
-        const int luma_den = 10000;
-        int i;
-        AVMasteringDisplayMetadata *metadata =
-            av_mastering_display_metadata_create_side_data(out);
-        if (!metadata)
-            return AVERROR(ENOMEM);
-
-        for (i = 0; i < 3; i++) {
-            const int j = mapping[i];
-            metadata->display_primaries[i][0].num = s->sei.mastering_display.display_primaries[j][0];
-            metadata->display_primaries[i][0].den = chroma_den;
-            metadata->display_primaries[i][1].num = s->sei.mastering_display.display_primaries[j][1];
-            metadata->display_primaries[i][1].den = chroma_den;
-        }
-        metadata->white_point[0].num = s->sei.mastering_display.white_point[0];
-        metadata->white_point[0].den = chroma_den;
-        metadata->white_point[1].num = s->sei.mastering_display.white_point[1];
-        metadata->white_point[1].den = chroma_den;
-
-        metadata->max_luminance.num = s->sei.mastering_display.max_luminance;
-        metadata->max_luminance.den = luma_den;
-        metadata->min_luminance.num = s->sei.mastering_display.min_luminance;
-        metadata->min_luminance.den = luma_den;
-        metadata->has_luminance = 1;
-        metadata->has_primaries = 1;
-
-        av_log(s->avctx, AV_LOG_DEBUG, "Mastering Display Metadata:\n");
-        av_log(s->avctx, AV_LOG_DEBUG,
-               "r(%5.4f,%5.4f) g(%5.4f,%5.4f) b(%5.4f %5.4f) wp(%5.4f, %5.4f)\n",
-               av_q2d(metadata->display_primaries[0][0]),
-               av_q2d(metadata->display_primaries[0][1]),
-               av_q2d(metadata->display_primaries[1][0]),
-               av_q2d(metadata->display_primaries[1][1]),
-               av_q2d(metadata->display_primaries[2][0]),
-               av_q2d(metadata->display_primaries[2][1]),
-               av_q2d(metadata->white_point[0]), av_q2d(metadata->white_point[1]));
-        av_log(s->avctx, AV_LOG_DEBUG,
-               "min_luminance=%f, max_luminance=%f\n",
-               av_q2d(metadata->min_luminance), av_q2d(metadata->max_luminance));
+        s->sei.common.mastering_display.present--;
     }
     // Decrement the mastering display flag when IRAP frame has no_rasl_output_flag=1
     // so the side data persists for the entire coded video sequence.
@@ -3667,7 +3623,7 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     s->sei.common.frame_packing        = s0->sei.common.frame_packing;
     s->sei.common.display_orientation  = s0->sei.common.display_orientation;
     s->sei.common.alternative_transfer = s0->sei.common.alternative_transfer;
-    s->sei.mastering_display    = s0->sei.mastering_display;
+    s->sei.common.mastering_display    = s0->sei.common.mastering_display;
     s->sei.content_light        = s0->sei.content_light;
 
     ret = export_stream_params_from_sei(s);

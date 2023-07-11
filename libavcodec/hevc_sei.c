@@ -49,35 +49,6 @@ static int decode_nal_sei_decoded_picture_hash(HEVCSEIPictureHash *s,
     return 0;
 }
 
-static int decode_nal_sei_mastering_display_info(HEVCSEIMasteringDisplay *s,
-                                                 GetByteContext *gb)
-{
-    int i;
-
-    if (bytestream2_get_bytes_left(gb) < 24)
-        return AVERROR_INVALIDDATA;
-
-    // Mastering primaries
-    for (i = 0; i < 3; i++) {
-        s->display_primaries[i][0] = bytestream2_get_be16u(gb);
-        s->display_primaries[i][1] = bytestream2_get_be16u(gb);
-    }
-    // White point (x, y)
-    s->white_point[0] = bytestream2_get_be16u(gb);
-    s->white_point[1] = bytestream2_get_be16u(gb);
-
-    // Max and min luminance of mastering display
-    s->max_luminance = bytestream2_get_be32u(gb);
-    s->min_luminance = bytestream2_get_be32u(gb);
-
-    // As this SEI message comes before the first frame that references it,
-    // initialize the flag to 2 and decrement on IRAP access unit so it
-    // persists for the coded video sequence (e.g., between two IRAPs)
-    s->present = 2;
-
-    return 0;
-}
-
 static int decode_nal_sei_content_light_info(HEVCSEIContentLight *s,
                                              GetByteContext *gb)
 {
@@ -206,8 +177,6 @@ static int decode_nal_sei_prefix(GetBitContext *gb, GetByteContext *gbyte,
         return decode_nal_sei_decoded_picture_hash(&s->picture_hash, gbyte);
     case SEI_TYPE_PIC_TIMING:
         return decode_nal_sei_pic_timing(s, gb, ps, logctx);
-    case SEI_TYPE_MASTERING_DISPLAY_COLOUR_VOLUME:
-        return decode_nal_sei_mastering_display_info(&s->mastering_display, gbyte);
     case SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO:
         return decode_nal_sei_content_light_info(&s->content_light, gbyte);
     case SEI_TYPE_ACTIVE_PARAMETER_SETS:
