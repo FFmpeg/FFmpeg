@@ -1103,6 +1103,8 @@ static int process_input(int file_index)
                 ret = process_input_packet(ist, NULL, 0);
                 if (ret>0)
                     return 0;
+                else if (ret < 0)
+                    return ret;
             }
 
             /* mark all outputs that don't go through lavfi as finished */
@@ -1124,11 +1126,11 @@ static int process_input(int file_index)
 
     sub2video_heartbeat(ifile, pkt->pts, pkt->time_base);
 
-    process_input_packet(ist, pkt, 0);
+    ret = process_input_packet(ist, pkt, 0);
 
     av_packet_free(&pkt);
 
-    return 0;
+    return ret < 0 ? ret : 0;
 }
 
 /**
@@ -1219,7 +1221,8 @@ static int transcode(int *err_rate_exceeded)
         float err_rate;
 
         if (!input_files[ist->file_index]->eof_reached) {
-            process_input_packet(ist, NULL, 0);
+            int err = process_input_packet(ist, NULL, 0);
+            ret = err_merge(ret, err);
         }
 
         err_rate = (ist->frames_decoded || ist->decode_errors) ?
