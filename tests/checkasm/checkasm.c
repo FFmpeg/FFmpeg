@@ -27,6 +27,7 @@
 # define _GNU_SOURCE // for syscall (performance monitoring API), strsignal()
 #endif
 
+#include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -733,6 +734,14 @@ int main(int argc, char *argv[])
 #if ARCH_ARM && HAVE_ARMV5TE_EXTERNAL
     if (have_vfp(av_get_cpu_flags()) || have_neon(av_get_cpu_flags()))
         checkasm_checked_call = checkasm_checked_call_vfp;
+#endif
+#if ARCH_RISCV
+    struct sigaction act = {
+        .sa_handler = checkasm_handle_signal,
+        .sa_flags = 0,
+    };
+
+    sigaction(SIGILL, &act, NULL);
 #endif
 
     if (!tests[0].func || !cpus[0].flag) {

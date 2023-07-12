@@ -41,6 +41,7 @@ endconst
 
 checked_func:
         .quad   0
+        .quad   0
 
 saved_regs:
         /* Space to spill RA, SP, GP, TP, S0-S11 and FS0-FS11 */
@@ -52,6 +53,7 @@ func checkasm_set_function
         la.tls.ie t0, checked_func
         add     t0, tp, t0
         sd      a0, (t0)
+        sd      a1, 8(t0)
         ret
 endfunc
 
@@ -174,5 +176,15 @@ func checkasm_get_wrapper, v
         lla     a0, fail_fs_reg
         call    checkasm_fail_func
         j       4b
+endfunc
+
+func checkasm_handle_signal
+        mv      a1, a0
+        la.tls.ie a0, checked_func
+        add     a0, tp, a0
+        ld      a0, 8(a0)
+        beqz    a0, 8f
+        tail    siglongjmp
+8:      tail    abort /* No jump buffer to go to */
 endfunc
 #endif
