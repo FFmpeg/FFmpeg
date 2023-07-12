@@ -2245,8 +2245,8 @@ static int compare_int64(const void *a, const void *b)
     return FFDIFFSIGN(*(const int64_t *)a, *(const int64_t *)b);
 }
 
-static void parse_forced_key_frames(KeyframeForceCtx *kf, const Muxer *mux,
-                                    const char *spec)
+static int parse_forced_key_frames(KeyframeForceCtx *kf, const Muxer *mux,
+                                   const char *spec)
 {
     const char *p;
     int n = 1, i, size, index = 0;
@@ -2258,7 +2258,7 @@ static void parse_forced_key_frames(KeyframeForceCtx *kf, const Muxer *mux,
     size = n;
     pts = av_malloc_array(size, sizeof(*pts));
     if (!pts)
-        report_and_exit(AVERROR(ENOMEM));
+        return AVERROR(ENOMEM);
 
     p = spec;
     for (i = 0; i < n; i++) {
@@ -2275,7 +2275,7 @@ static void parse_forced_key_frames(KeyframeForceCtx *kf, const Muxer *mux,
             if (nb_ch > INT_MAX - size ||
                 !(pts = av_realloc_f(pts, size += nb_ch - 1,
                                      sizeof(*pts))))
-                report_and_exit(AVERROR(ENOMEM));
+                return AVERROR(ENOMEM);
             t = p[8] ? parse_time_or_die("force_key_frames", p + 8, 1) : 0;
 
             for (j = 0; j < nb_ch; j++) {
@@ -2297,6 +2297,8 @@ static void parse_forced_key_frames(KeyframeForceCtx *kf, const Muxer *mux,
     qsort(pts, size, sizeof(*pts), compare_int64);
     kf->nb_pts = size;
     kf->pts    = pts;
+
+    return 0;
 }
 
 static int process_forced_keyframes(Muxer *mux, const OptionsContext *o)
@@ -2331,7 +2333,9 @@ static int process_forced_keyframes(Muxer *mux, const OptionsContext *o)
         } else if (!strcmp(forced_keyframes, "source_no_drop")) {
             ost->kf.type = KF_FORCE_SOURCE_NO_DROP;
         } else {
-            parse_forced_key_frames(&ost->kf, mux, forced_keyframes);
+            int ret = parse_forced_key_frames(&ost->kf, mux, forced_keyframes);
+            if (ret < 0)
+                return ret;
         }
     }
 
