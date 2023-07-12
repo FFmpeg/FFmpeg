@@ -1349,7 +1349,7 @@ int ifile_open(const OptionsContext *o, const char *filename)
         int64_t start = start_time == AV_NOPTS_VALUE ? 0 : start_time;
         if (stop_time <= start) {
             av_log(d, AV_LOG_ERROR, "-to value smaller than -ss; aborting.\n");
-            exit_program(1);
+            return AVERROR(EINVAL);
         } else {
             recording_time = stop_time - start;
         }
@@ -1358,7 +1358,7 @@ int ifile_open(const OptionsContext *o, const char *filename)
     if (o->format) {
         if (!(file_iformat = av_find_input_format(o->format))) {
             av_log(d, AV_LOG_FATAL, "Unknown input format: '%s'\n", o->format);
-            exit_program(1);
+            return AVERROR(EINVAL);
         }
     }
 
@@ -1372,7 +1372,7 @@ int ifile_open(const OptionsContext *o, const char *filename)
     /* get default parameters from command line */
     ic = avformat_alloc_context();
     if (!ic)
-        report_and_exit(AVERROR(ENOMEM));
+        return AVERROR(ENOMEM);
     if (o->nb_audio_sample_rate) {
         av_dict_set_int(&o->g->format_opts, "sample_rate", o->audio_sample_rate[o->nb_audio_sample_rate - 1].u.i, 0);
     }
@@ -1446,7 +1446,7 @@ int ifile_open(const OptionsContext *o, const char *filename)
                "Error opening input: %s\n", av_err2str(err));
         if (err == AVERROR_PROTOCOL_NOT_FOUND)
             av_log(d, AV_LOG_ERROR, "Did you mean file:%s?\n", filename);
-        exit_program(1);
+        return err;
     }
 
     av_strlcat(d->log_name, "/",               sizeof(d->log_name));
@@ -1477,7 +1477,7 @@ int ifile_open(const OptionsContext *o, const char *filename)
             av_log(d, AV_LOG_FATAL, "could not find codec parameters\n");
             if (ic->nb_streams == 0) {
                 avformat_close_input(&ic);
-                exit_program(1);
+                return ret;
             }
         }
     }
@@ -1490,7 +1490,7 @@ int ifile_open(const OptionsContext *o, const char *filename)
     if (start_time_eof != AV_NOPTS_VALUE) {
         if (start_time_eof >= 0) {
             av_log(d, AV_LOG_ERROR, "-sseof value must be negative; aborting\n");
-            exit_program(1);
+            return AVERROR(EINVAL);
         }
         if (ic->duration > 0) {
             start_time = start_time_eof + ic->duration;
@@ -1547,7 +1547,7 @@ int ifile_open(const OptionsContext *o, const char *filename)
     f->readrate = o->readrate ? o->readrate : 0.0;
     if (f->readrate < 0.0f) {
         av_log(d, AV_LOG_ERROR, "Option -readrate is %0.3f; it must be non-negative.\n", f->readrate);
-        exit_program(1);
+        return AVERROR(EINVAL);
     }
     if (o->rate_emu) {
         if (f->readrate) {
@@ -1562,7 +1562,7 @@ int ifile_open(const OptionsContext *o, const char *filename)
             av_log(d, AV_LOG_ERROR,
                    "Option -readrate_initial_burst is %0.3f; it must be non-negative.\n",
                    d->readrate_initial_burst);
-            exit_program(1);
+            return AVERROR(EINVAL);
         }
     } else if (o->readrate_initial_burst) {
         av_log(d, AV_LOG_WARNING, "Option -readrate_initial_burst ignored "
@@ -1601,7 +1601,7 @@ int ifile_open(const OptionsContext *o, const char *filename)
         if (!(option->flags & AV_OPT_FLAG_DECODING_PARAM)) {
             av_log(d, AV_LOG_ERROR, "Codec AVOption %s (%s) is not a decoding "
                    "option.\n", e->key, option->help ? option->help : "");
-            exit_program(1);
+            return AVERROR(EINVAL);
         }
 
         av_log(d, AV_LOG_WARNING, "Codec AVOption %s (%s) has not been used "
