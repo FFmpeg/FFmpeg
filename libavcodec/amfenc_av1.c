@@ -77,7 +77,7 @@ static const AVOption options[] = {
     { "qvbr_quality_level",     "Sets the QVBR quality level",              OFFSET(qvbr_quality_level),             AV_OPT_TYPE_INT,   {.i64 = -1 }, -1, 51, VE },
 
 
-    { "header_insertion_mode",  "Set header insertion mode",                OFFSET(header_insertion_mode),          AV_OPT_TYPE_INT,{.i64 = AMF_VIDEO_ENCODER_AV1_HEADER_INSERTION_MODE_NONE }, AMF_VIDEO_ENCODER_AV1_HEADER_INSERTION_MODE_NONE, AMF_VIDEO_ENCODER_AV1_HEADER_INSERTION_MODE_KEY_FRAME_ALIGNED, VE, "hdrmode" },
+    { "header_insertion_mode",  "Set header insertion mode",                OFFSET(header_insertion_mode),          AV_OPT_TYPE_INT,{.i64 = -1 }, -1, AMF_VIDEO_ENCODER_AV1_HEADER_INSERTION_MODE_KEY_FRAME_ALIGNED, VE, "hdrmode" },
     { "none",                   "", 0, AV_OPT_TYPE_CONST, {.i64 = AMF_VIDEO_ENCODER_AV1_HEADER_INSERTION_MODE_NONE              }, 0, 0, VE, "hdrmode" },
     { "gop",                    "", 0, AV_OPT_TYPE_CONST, {.i64 = AMF_VIDEO_ENCODER_AV1_HEADER_INSERTION_MODE_GOP_ALIGNED       }, 0, 0, VE, "hdrmode" },
     { "frame",                  "", 0, AV_OPT_TYPE_CONST, {.i64 = AMF_VIDEO_ENCODER_AV1_HEADER_INSERTION_MODE_KEY_FRAME_ALIGNED }, 0, 0, VE, "hdrmode" },
@@ -220,7 +220,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
     // Picture control properties
     AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_GOP_SIZE, avctx->gop_size);
 
-    AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_HEADER_INSERTION_MODE, ctx->header_insertion_mode);
+    // Setup header insertion mode only if this option was defined explicitly
+    if (ctx->header_insertion_mode != -1)
+        AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_HEADER_INSERTION_MODE, ctx->header_insertion_mode);
 
     // Rate control
     // autodetect rate control method
