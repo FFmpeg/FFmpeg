@@ -1094,7 +1094,7 @@ static int process_input(int file_index)
             av_log(ifile, AV_LOG_ERROR,
                    "Error retrieving a packet from demuxer: %s\n", av_err2str(ret));
             if (exit_on_error)
-                exit_program(1);
+                return ret;
         }
 
         for (i = 0; i < ifile->nb_streams; i++) {
