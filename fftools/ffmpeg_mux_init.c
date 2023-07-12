@@ -1558,7 +1558,7 @@ static void of_add_attachments(Muxer *mux, const OptionsContext *o)
     }
 }
 
-static void create_streams(Muxer *mux, const OptionsContext *o)
+static int create_streams(Muxer *mux, const OptionsContext *o)
 {
     AVFormatContext *oc = mux->fc;
     int auto_disable_v = o->video_disable;
@@ -1616,8 +1616,10 @@ static void create_streams(Muxer *mux, const OptionsContext *o)
     if (!oc->nb_streams && !(oc->oformat->flags & AVFMT_NOSTREAMS)) {
         av_dump_format(oc, nb_output_files - 1, oc->url, 1);
         av_log(mux, AV_LOG_ERROR, "Output file does not contain any stream\n");
-        exit_program(1);
+        return AVERROR(EINVAL);
     }
+
+    return 0;
 }
 
 static int setup_sync_queues(Muxer *mux, AVFormatContext *oc, int64_t buf_size_us)
@@ -2426,7 +2428,9 @@ int of_open(const OptionsContext *o, const char *filename)
     }
 
     /* create all output streams for this file */
-    create_streams(mux, o);
+    err = create_streams(mux, o);
+    if (err < 0)
+        return err;
 
     /* check if all codec options have been used */
     validate_enc_avopt(mux, o->g->codec_opts);
