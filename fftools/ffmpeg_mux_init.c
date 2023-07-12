@@ -2089,7 +2089,7 @@ static int copy_metadata(Muxer *mux, AVFormatContext *ic,
     return 0;
 }
 
-static void copy_meta(Muxer *mux, const OptionsContext *o)
+static int copy_meta(Muxer *mux, const OptionsContext *o)
 {
     OutputFile      *of = &mux->of;
     AVFormatContext *oc = mux->fc;
@@ -2106,7 +2106,7 @@ static void copy_meta(Muxer *mux, const OptionsContext *o)
         if (in_file_index >= nb_input_files) {
             av_log(mux, AV_LOG_FATAL, "Invalid input file index %d while "
                    "processing metadata maps\n", in_file_index);
-            exit_program(1);
+            return AVERROR(EINVAL);
         }
         copy_metadata(mux,
                       in_file_index >= 0 ? input_files[in_file_index]->ctx : NULL,
@@ -2128,7 +2128,7 @@ static void copy_meta(Muxer *mux, const OptionsContext *o)
         } else {
             av_log(mux, AV_LOG_FATAL, "Invalid input file index %d in chapter mapping.\n",
                    chapters_input_file);
-            exit_program(1);
+            return AVERROR(EINVAL);
         }
     }
     if (chapters_input_file >= 0)
@@ -2157,6 +2157,8 @@ static void copy_meta(Muxer *mux, const OptionsContext *o)
                 av_dict_set(&ost->st->metadata, "encoder", NULL, 0);
             }
         }
+
+    return 0;
 }
 
 static int set_dispositions(Muxer *mux, const OptionsContext *o)
@@ -2533,7 +2535,9 @@ int of_open(const OptionsContext *o, const char *filename)
     oc->max_delay = (int)(o->mux_max_delay * AV_TIME_BASE);
 
     /* copy metadata and chapters from input files */
-    copy_meta(mux, o);
+    err = copy_meta(mux, o);
+    if (err < 0)
+        return err;
 
     of_add_programs(mux, o);
     of_add_metadata(of, oc, o);
