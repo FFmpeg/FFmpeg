@@ -2760,17 +2760,15 @@ static int set_side_data(HEVCContext *s)
     AVFrame *out = s->ref->frame;
     int ret;
 
-    // Decrement the mastering display flag when IRAP frame has no_rasl_output_flag=1
-    // so the side data persists for the entire coded video sequence.
-    if (s->sei.common.mastering_display.present > 0 &&
-        IS_IRAP(s) && s->no_rasl_output_flag) {
-        s->sei.common.mastering_display.present--;
-    }
-    // Decrement the mastering display flag when IRAP frame has no_rasl_output_flag=1
-    // so the side data persists for the entire coded video sequence.
-    if (s->sei.common.content_light.present > 0 &&
-        IS_IRAP(s) && s->no_rasl_output_flag) {
-        s->sei.common.content_light.present--;
+    // Decrement the mastering display and content light level flag when IRAP
+    // frame has no_rasl_output_flag=1 so the side data persists for the entire
+    // coded video sequence.
+    if (IS_IRAP(s) && s->no_rasl_output_flag) {
+        if (s->sei.common.mastering_display.present > 0)
+            s->sei.common.mastering_display.present--;
+
+        if (s->sei.common.content_light.present > 0)
+            s->sei.common.content_light.present--;
     }
 
     ret = ff_h2645_sei_to_frame(out, &s->sei.common, AV_CODEC_ID_HEVC, NULL,
