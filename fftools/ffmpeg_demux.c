@@ -1288,6 +1288,10 @@ static int dump_attachment(InputStream *ist, const char *filename)
     avio_write(out, st->codecpar->extradata, st->codecpar->extradata_size);
     ret = avio_close(out);
 
+    if (ret >= 0)
+        av_log(ist, AV_LOG_INFO, "Wrote attachment (%d bytes) to '%s'\n",
+               st->codecpar->extradata_size, filename);
+
     return ret;
 }
 
