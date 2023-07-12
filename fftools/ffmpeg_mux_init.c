@@ -987,13 +987,14 @@ static OutputStream *ost_add(Muxer *mux, const OptionsContext *o,
     MuxStream     *ms;
     OutputStream *ost;
     const AVCodec *enc;
-    AVStream *st = avformat_new_stream(oc, NULL);
+    AVStream *st;
     int ret = 0;
     const char *bsfs = NULL, *time_base = NULL;
     char *filters = NULL, *next, *codec_tag = NULL;
     double qscale = -1;
     int i;
 
+    st = avformat_new_stream(oc, NULL);
     if (!st)
         report_and_exit(AVERROR(ENOMEM));
 
