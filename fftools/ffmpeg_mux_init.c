@@ -1297,7 +1297,7 @@ static OutputStream *ost_add(Muxer *mux, const OptionsContext *o,
     return ost;
 }
 
-static void map_auto_video(Muxer *mux, const OptionsContext *o)
+static int map_auto_video(Muxer *mux, const OptionsContext *o)
 {
     AVFormatContext *oc = mux->fc;
     InputStream *best_ist = NULL;
@@ -1306,7 +1306,7 @@ static void map_auto_video(Muxer *mux, const OptionsContext *o)
 
     /* video: highest resolution */
     if (av_guess_codec(oc->oformat, NULL, oc->url, NULL, AVMEDIA_TYPE_VIDEO) == AV_CODEC_ID_NONE)
-        return;
+        return 0;
 
     qcr = avformat_query_codec(oc->oformat, oc->oformat->video_codec, 0);
     for (int j = 0; j < nb_input_files; j++) {
@@ -1346,9 +1346,11 @@ static void map_auto_video(Muxer *mux, const OptionsContext *o)
     }
     if (best_ist)
         ost_add(mux, o, AVMEDIA_TYPE_VIDEO, best_ist, NULL);
+
+    return 0;
 }
 
-static void map_auto_audio(Muxer *mux, const OptionsContext *o)
+static int map_auto_audio(Muxer *mux, const OptionsContext *o)
 {
     AVFormatContext *oc = mux->fc;
     InputStream *best_ist = NULL;
@@ -1356,7 +1358,7 @@ static void map_auto_audio(Muxer *mux, const OptionsContext *o)
 
         /* audio: most channels */
     if (av_guess_codec(oc->oformat, NULL, oc->url, NULL, AVMEDIA_TYPE_AUDIO) == AV_CODEC_ID_NONE)
-        return;
+        return 0;
 
     for (int j = 0; j < nb_input_files; j++) {
         InputFile *ifile = input_files[j];
@@ -1388,9 +1390,11 @@ static void map_auto_audio(Muxer *mux, const OptionsContext *o)
     }
     if (best_ist)
         ost_add(mux, o, AVMEDIA_TYPE_AUDIO, best_ist, NULL);
+
+    return 0;
 }
 
-static void map_auto_subtitle(Muxer *mux, const OptionsContext *o)
+static int map_auto_subtitle(Muxer *mux, const OptionsContext *o)
 {
     AVFormatContext *oc = mux->fc;
     char *subtitle_codec_name = NULL;
@@ -1398,7 +1402,7 @@ static void map_auto_subtitle(Muxer *mux, const OptionsContext *o)
         /* subtitles: pick first */
     MATCH_PER_TYPE_OPT(codec_names, str, subtitle_codec_name, oc, "s");
     if (!avcodec_find_encoder(oc->oformat->subtitle_codec) && !subtitle_codec_name)
-        return;
+        return 0;
 
     for (InputStream *ist = ist_iter(NULL); ist; ist = ist_iter(ist))
         if (ist->st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE) {
@@ -1426,16 +1430,18 @@ static void map_auto_subtitle(Muxer *mux, const OptionsContext *o)
                 break;
             }
         }
+
+    return 0;
 }
 
-static void map_auto_data(Muxer *mux, const OptionsContext *o)
+static int map_auto_data(Muxer *mux, const OptionsContext *o)
 {
     AVFormatContext *oc = mux->fc;
     /* Data only if codec id match */
     enum AVCodecID codec_id = av_guess_codec(oc->oformat, NULL, oc->url, NULL, AVMEDIA_TYPE_DATA);
 
     if (codec_id == AV_CODEC_ID_NONE)
-        return;
+        return 0;
 
     for (InputStream *ist = ist_iter(NULL); ist; ist = ist_iter(ist)) {
         if (ist->user_set_discard == AVDISCARD_ALL)
@@ -1444,14 +1450,16 @@ static void map_auto_data(Muxer *mux, const OptionsContext *o)
             ist->st->codecpar->codec_id == codec_id )
             ost_add(mux, o, AVMEDIA_TYPE_DATA, ist, NULL);
     }
+
+    return 0;
 }
 
-static void map_manual(Muxer *mux, const OptionsContext *o, const StreamMap *map)
+static int map_manual(Muxer *mux, const OptionsContext *o, const StreamMap *map)
 {
     InputStream *ist;
 
     if (map->disabled)
-        return;
+        return 0;
 
     if (map->linklabel) {
         FilterGraph *fg;
@@ -1472,7 +1480,7 @@ loop_end:
         if (!ofilter) {
             av_log(mux, AV_LOG_FATAL, "Output with label '%s' does not exist "
                    "in any defined filter graph, or was already used elsewhere.\n", map->linklabel);
-            exit_program(1);
+            return AVERROR(EINVAL);
         }
 
         av_log(mux, AV_LOG_VERBOSE, "Creating output stream from an explicitly "
@@ -1484,16 +1492,16 @@ loop_end:
         if (ist->user_set_discard == AVDISCARD_ALL) {
             av_log(mux, AV_LOG_FATAL, "Stream #%d:%d is disabled and cannot be mapped.\n",
                    map->file_index, map->stream_index);
-            exit_program(1);
+            return AVERROR(EINVAL);
         }
         if(o->subtitle_disable && ist->st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE)
-            return;
+            return 0;
         if(o->   audio_disable && ist->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
-            return;
+            return 0;
         if(o->   video_disable && ist->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
-            return;
+            return 0;
         if(o->    data_disable && ist->st->codecpar->codec_type == AVMEDIA_TYPE_DATA)
-            return;
+            return 0;
 
         if (ist->st->codecpar->codec_type == AVMEDIA_TYPE_UNKNOWN &&
             !copy_unknown_streams) {
@@ -1505,13 +1513,15 @@ loop_end:
                        "If you want unsupported types ignored instead "
                        "of failing, please use the -ignore_unknown option\n"
                        "If you want them copied, please use -copy_unknown\n");
-                exit_program(1);
+                return AVERROR(EINVAL);
             }
-            return;
+            return 0;
         }
 
         ost_add(mux, o, ist->st->codecpar->codec_type, ist, NULL);
     }
+
+    return 0;
 }
 
 static int of_add_attachments(Muxer *mux, const OptionsContext *o)
@@ -1583,11 +1593,21 @@ read_fail:
 
 static int create_streams(Muxer *mux, const OptionsContext *o)
 {
+    static const int (*map_func[])(Muxer *mux, const OptionsContext *o) = {
+        [AVMEDIA_TYPE_VIDEO]    = map_auto_video,
+        [AVMEDIA_TYPE_AUDIO]    = map_auto_audio,
+        [AVMEDIA_TYPE_SUBTITLE] = map_auto_subtitle,
+        [AVMEDIA_TYPE_DATA]     = map_auto_data,
+    };
+
     AVFormatContext *oc = mux->fc;
-    int auto_disable_v = o->video_disable;
-    int auto_disable_a = o->audio_disable;
-    int auto_disable_s = o->subtitle_disable;
-    int auto_disable_d = o->data_disable;
+
+    int auto_disable =
+        o->video_disable    * (1 << AVMEDIA_TYPE_VIDEO)    |
+        o->audio_disable    * (1 << AVMEDIA_TYPE_AUDIO)    |
+        o->subtitle_disable * (1 << AVMEDIA_TYPE_SUBTITLE) |
+        o->data_disable     * (1 << AVMEDIA_TYPE_DATA);
+
     int ret;
 
     /* create streams for all unlabeled output pads */
@@ -1599,11 +1619,7 @@ static int create_streams(Muxer *mux, const OptionsContext *o)
             if (ofilter->linklabel || ofilter->ost)
                 continue;
 
-            switch (ofilter->type) {
-            case AVMEDIA_TYPE_VIDEO:    auto_disable_v = 1; break;
-            case AVMEDIA_TYPE_AUDIO:    auto_disable_a = 1; break;
-            case AVMEDIA_TYPE_SUBTITLE: auto_disable_s = 1; break;
-            }
+            auto_disable |= 1 << ofilter->type;
 
             av_log(mux, AV_LOG_VERBOSE, "Creating output stream from unlabeled "
                    "output of complex filtergraph %d.", fg->index);
@@ -1620,19 +1636,21 @@ static int create_streams(Muxer *mux, const OptionsContext *o)
         av_log(mux, AV_LOG_VERBOSE, "No explicit maps, mapping streams automatically...\n");
 
         /* pick the "best" stream of each type */
-        if (!auto_disable_v)
-            map_auto_video(mux, o);
-        if (!auto_disable_a)
-            map_auto_audio(mux, o);
-        if (!auto_disable_s)
-            map_auto_subtitle(mux, o);
-        if (!auto_disable_d)
-            map_auto_data(mux, o);
+        for (int i = 0; i < FF_ARRAY_ELEMS(map_func); i++) {
+            if (!map_func[i] || auto_disable & (1 << i))
+                continue;
+            ret = map_func[i](mux, o);
+            if (ret < 0)
+                return ret;
+        }
     } else {
         av_log(mux, AV_LOG_VERBOSE, "Adding streams from explicit maps...\n");
 
-        for (int i = 0; i < o->nb_stream_maps; i++)
-            map_manual(mux, o, &o->stream_maps[i]);
+        for (int i = 0; i < o->nb_stream_maps; i++) {
+            ret = map_manual(mux, o, &o->stream_maps[i]);
+            if (ret < 0)
+                return ret;
+        }
     }
 
     ret = of_add_attachments(mux, o);
