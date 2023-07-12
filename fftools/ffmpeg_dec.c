@@ -439,7 +439,9 @@ static int process_subtitle(InputStream *ist, AVFrame *frame)
         if (!ost->enc || ost->type != AVMEDIA_TYPE_SUBTITLE)
             continue;
 
-        enc_subtitle(output_files[ost->file_index], ost, subtitle);
+        ret = enc_subtitle(output_files[ost->file_index], ost, subtitle);
+        if (ret < 0)
+            return ret;
     }
 
     return 0;

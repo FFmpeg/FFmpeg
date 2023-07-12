@@ -462,7 +462,7 @@ static int check_recording_time(OutputStream *ost, int64_t ts, AVRational tb)
     return 1;
 }
 
-void enc_subtitle(OutputFile *of, OutputStream *ost, const AVSubtitle *sub)
+int enc_subtitle(OutputFile *of, OutputStream *ost, const AVSubtitle *sub)
 {
     Encoder *e = ost->enc;
     int subtitle_out_max_size = 1024 * 1024;
@@ -473,13 +473,11 @@ void enc_subtitle(OutputFile *of, OutputStream *ost, const AVSubtitle *sub)
 
     if (sub->pts == AV_NOPTS_VALUE) {
         av_log(ost, AV_LOG_ERROR, "Subtitle packets must have a pts\n");
-        if (exit_on_error)
-            exit_program(1);
-        return;
+        return exit_on_error ? AVERROR(EINVAL) : 0;
     }
     if (ost->finished ||
         (of->start_time != AV_NOPTS_VALUE && sub->pts < of->start_time))
-        return;
+        return 0;
 
     enc = ost->enc_ctx;
 
@@ -501,11 +499,11 @@ void enc_subtitle(OutputFile *of, OutputStream *ost, const AVSubtitle *sub)
         AVSubtitle local_sub = *sub;
 
         if (!check_recording_time(ost, pts, AV_TIME_BASE_Q))
-            return;
+            return 0;
 
         ret = av_new_packet(pkt, subtitle_out_max_size);
         if (ret < 0)
-            report_and_exit(AVERROR(ENOMEM));
+            return AVERROR(ENOMEM);
 
         local_sub.pts = pts;
         // start_display_time is required to be 0
@@ -525,7 +523,7 @@ void enc_subtitle(OutputFile *of, OutputStream *ost, const AVSubtitle *sub)
         subtitle_out_size = avcodec_encode_subtitle(enc, pkt->data, pkt->size, &local_sub);
         if (subtitle_out_size < 0) {
             av_log(ost, AV_LOG_FATAL, "Subtitle encoding failed\n");
-            exit_program(1);
+            return subtitle_out_size;
         }
 
         av_shrink_packet(pkt, subtitle_out_size);
@@ -544,6 +542,8 @@ void enc_subtitle(OutputFile *of, OutputStream *ost, const AVSubtitle *sub)
 
         of_output_packet(of, ost, pkt);
     }
+
+    return 0;
 }
 
 void enc_stats_write(OutputStream *ost, EncStats *es,

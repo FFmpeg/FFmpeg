@@ -804,7 +804,7 @@ int enc_alloc(Encoder **penc, const AVCodec *codec);
 void enc_free(Encoder **penc);
 
 int enc_open(OutputStream *ost, AVFrame *frame);
-void enc_subtitle(OutputFile *of, OutputStream *ost, const AVSubtitle *sub);
+int enc_subtitle(OutputFile *of, OutputStream *ost, const AVSubtitle *sub);
 void enc_frame(OutputStream *ost, AVFrame *frame);
 void enc_flush(void);
 
