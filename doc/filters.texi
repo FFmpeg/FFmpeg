@@ -30784,6 +30784,13 @@ Direction from up to down.
 @item du
 Direction from down to up.
 @end table
+
+@item bar
+Set the ratio of bargraph display to display size. Default is 0.
+
+@item rotation
+Set color rotation, must be in [-1.0, 1.0] range.
+Default value is @code{0}.
 @end table
 
 @section showfreqs

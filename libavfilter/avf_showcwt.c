@@ -121,6 +121,7 @@ typedef struct ShowCWTContext {
     float deviation;
     float bar_ratio;
     int bar_size;
+    float rotation;
 
     AVFloatDSPContext *fdsp;
 } ShowCWTContext;
@@ -163,6 +164,7 @@ static const AVOption showcwt_options[] = {
     {  "ud", "up to down",    0, AV_OPT_TYPE_CONST,{.i64=DIRECTION_UD}, 0, 0, FLAGS, "direction" },
     {  "du", "down to up",    0, AV_OPT_TYPE_CONST,{.i64=DIRECTION_DU}, 0, 0, FLAGS, "direction" },
     { "bar", "set bar ratio", OFFSET(bar_ratio), AV_OPT_TYPE_FLOAT, {.dbl = 0.}, 0, 1, FLAGS },
+    { "rotation", "set color rotation", OFFSET(rotation), AV_OPT_TYPE_FLOAT, {.dbl = 0}, -1, 1, FLAGS },
     { NULL }
 };
 
@@ -407,6 +409,7 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const int end = (count * (jobnr+1)) / nb_jobs;
     const int ihop_index = s->ihop_index;
     const int ihop_size = s->ihop_size;
+    const float rotation = s->rotation;
     const int direction = s->direction;
     uint8_t *dstY, *dstU, *dstV, *dstA;
     const int bar_size = s->bar_size;
@@ -486,8 +489,14 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
                 v  = remap_log(v, log_factor);
 
                 Y  = z;
-                U  = 0.5f + z * sinf((v - u) * M_PI_2);
-                V  = 0.5f + z * sinf((u - v) * M_PI_2);
+                U  = sinf((v - u) * M_PI_2);
+                V  = sinf((u - v) * M_PI_2);
+
+                u  = U * cosf(rotation * M_PI) - V * sinf(rotation * M_PI);
+                v  = U * sinf(rotation * M_PI) + V * cosf(rotation * M_PI);
+
+                U  = 0.5f + 0.5f * z * u;
+                V  = 0.5f + 0.5f * z * v;
 
                 dstY[0] = av_clip_uint8(lrintf(Y * 255.f));
                 dstU[0] = av_clip_uint8(lrintf(U * 255.f));
@@ -515,8 +524,8 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
                     z = remap_log(z, log_factor);
 
                     Y += z * yf;
-                    U += z * yf * sinf(2.f * M_PI * ch * yf);
-                    V += z * yf * cosf(2.f * M_PI * ch * yf);
+                    U += z * yf * sinf(2.f * M_PI * (ch * yf + rotation));
+                    V += z * yf * cosf(2.f * M_PI * (ch * yf + rotation));
                 }
 
                 dstY[0] = av_clip_uint8(lrintf(Y * 255.f));
