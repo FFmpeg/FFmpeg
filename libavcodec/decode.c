@@ -293,25 +293,21 @@ static int discard_samples(AVCodecContext *avctx, AVFrame *frame, int64_t *disca
 {
     AVCodecInternal *avci = avctx->internal;
     int ret = 0;
-    uint8_t *side;
-    size_t side_size;
+    AVFrameSideData *side;
     uint32_t discard_padding = 0;
     uint8_t skip_reason = 0;
     uint8_t discard_reason = 0;
 
-    side = av_packet_get_side_data(avci->last_pkt_props, AV_PKT_DATA_SKIP_SAMPLES, &side_size);
-    if (side && side_size >= 10) {
-        avci->skip_samples = AV_RL32(side);
+    side = av_frame_get_side_data(frame, AV_FRAME_DATA_SKIP_SAMPLES);
+    if (side && side->size >= 10) {
+        avci->skip_samples = AV_RL32(side->data);
         avci->skip_samples = FFMAX(0, avci->skip_samples);
-        discard_padding = AV_RL32(side + 4);
+        discard_padding = AV_RL32(side->data + 4);
         av_log(avctx, AV_LOG_DEBUG, "skip %d / discard %d samples due to side data\n",
                avci->skip_samples, (int)discard_padding);
-        skip_reason = AV_RL8(side + 8);
-        discard_reason = AV_RL8(side + 9);
+        skip_reason = AV_RL8(side->data + 8);
+        discard_reason = AV_RL8(side->data + 9);
     }
-
-    if (!frame->buf[0])
-        return AVERROR(EAGAIN);
 
     if (frame->format == AV_SAMPLE_FMT_NONE)
         frame->format = avctx->sample_fmt;
@@ -333,15 +329,27 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (!frame->sample_rate)
         frame->sample_rate = avctx->sample_rate;
 
-    if ((frame->flags & AV_FRAME_FLAG_DISCARD) &&
-        !(avctx->flags2 & AV_CODEC_FLAG2_SKIP_MANUAL)) {
+    if ((avctx->flags2 & AV_CODEC_FLAG2_SKIP_MANUAL)) {
+        if (!side && (avci->skip_samples || discard_padding))
+            side = av_frame_new_side_data(frame, AV_FRAME_DATA_SKIP_SAMPLES, 10);
+        if (side && (avci->skip_samples || discard_padding)) {
+            AV_WL32(side->data, avci->skip_samples);
+            AV_WL32(side->data + 4, discard_padding);
+            AV_WL8(side->data + 8, skip_reason);
+            AV_WL8(side->data + 9, discard_reason);
+            avci->skip_samples = 0;
+        }
+        return ret;
+    }
+    av_frame_remove_side_data(frame, AV_FRAME_DATA_SKIP_SAMPLES);
+
+    if ((frame->flags & AV_FRAME_FLAG_DISCARD)) {
         avci->skip_samples = FFMAX(0, avci->skip_samples - frame->nb_samples);
         *discarded_samples += frame->nb_samples;
         return AVERROR(EAGAIN);
     }
 
-    if (avci->skip_samples > 0 &&
-        !(avctx->flags2 & AV_CODEC_FLAG2_SKIP_MANUAL)) {
+    if (avci->skip_samples > 0) {
         if (frame->nb_samples <= avci->skip_samples){
             *discarded_samples += frame->nb_samples;
             avci->skip_samples -= frame->nb_samples;
@@ -372,8 +380,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
     }
 
-    if (discard_padding > 0 && discard_padding <= frame->nb_samples &&
-        !(avctx->flags2 & AV_CODEC_FLAG2_SKIP_MANUAL)) {
+    if (discard_padding > 0 && discard_padding <= frame->nb_samples) {
         if (discard_padding == frame->nb_samples) {
             *discarded_samples += frame->nb_samples;
             return AVERROR(EAGAIN);
@@ -389,17 +396,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
             av_log(avctx, AV_LOG_DEBUG, "discard %d/%d samples\n",
                    (int)discard_padding, frame->nb_samples);
             frame->nb_samples -= discard_padding;
-        }
-    }
-
-    if ((avctx->flags2 & AV_CODEC_FLAG2_SKIP_MANUAL)) {
-        AVFrameSideData *fside = av_frame_new_side_data(frame, AV_FRAME_DATA_SKIP_SAMPLES, 10);
-        if (fside) {
-            AV_WL32(fside->data, avci->skip_samples);
-            AV_WL32(fside->data + 4, discard_padding);
-            AV_WL8(fside->data + 8, skip_reason);
-            AV_WL8(fside->data + 9, discard_reason);
-            avci->skip_samples = 0;
         }
     }
 
@@ -465,15 +461,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
     emms_c();
 
-    if (!got_frame)
-        av_frame_unref(frame);
-
     if (avctx->codec->type == AVMEDIA_TYPE_VIDEO) {
         ret = (!got_frame || frame->flags & AV_FRAME_FLAG_DISCARD)
                           ? AVERROR(EAGAIN)
                           : 0;
     } else if (avctx->codec->type == AVMEDIA_TYPE_AUDIO) {
-        ret = discard_samples(avctx, frame, discarded_samples);
+        ret =  !got_frame ? AVERROR(EAGAIN)
+                          : discard_samples(avctx, frame, discarded_samples);
     }
 
     if (ret == AVERROR(EAGAIN))
@@ -1386,6 +1380,7 @@ int ff_decode_frame_props_from_pkt(const AVCodecContext *avctx,
         { AV_PKT_DATA_ICC_PROFILE,                AV_FRAME_DATA_ICC_PROFILE },
         { AV_PKT_DATA_S12M_TIMECODE,              AV_FRAME_DATA_S12M_TIMECODE },
         { AV_PKT_DATA_DYNAMIC_HDR10_PLUS,         AV_FRAME_DATA_DYNAMIC_HDR_PLUS },
+        { AV_PKT_DATA_SKIP_SAMPLES,               AV_FRAME_DATA_SKIP_SAMPLES },
     };
 
     frame->pts          = pkt->pts;
