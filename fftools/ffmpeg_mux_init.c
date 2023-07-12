@@ -154,7 +154,8 @@ static char *get_line(AVIOContext *s, AVBPrint *bprint)
         av_bprint_chars(bprint, c, 1);
 
     if (!av_bprint_is_complete(bprint))
-        report_and_exit(AVERROR(ENOMEM));
+        return NULL;
+
     return bprint->str;
 }
 
@@ -462,7 +463,7 @@ static int ost_get_filters(const OptionsContext *o, AVFormatContext *oc,
 
     if (filters_script && filters) {
         av_log(ost, AV_LOG_ERROR, "Both -filter and -filter_script set\n");
-        exit_program(1);
+        return AVERROR(EINVAL);
     }
 
     if (filters_script)
@@ -474,7 +475,7 @@ static int ost_get_filters(const OptionsContext *o, AVFormatContext *oc,
     return *dst ? 0 : AVERROR(ENOMEM);
 }
 
-static void parse_matrix_coeffs(void *logctx, uint16_t *dest, const char *str)
+static int parse_matrix_coeffs(void *logctx, uint16_t *dest, const char *str)
 {
     int i;
     const char *p = str;
@@ -486,36 +487,39 @@ static void parse_matrix_coeffs(void *logctx, uint16_t *dest, const char *str)
         if (!p) {
             av_log(logctx, AV_LOG_FATAL,
                    "Syntax error in matrix \"%s\" at coeff %d\n", str, i);
-            exit_program(1);
+            return AVERROR(EINVAL);
         }
         p++;
     }
+
+    return 0;
 }
 
-static void new_stream_video(Muxer *mux, const OptionsContext *o,
-                             OutputStream *ost)
+static int new_stream_video(Muxer *mux, const OptionsContext *o,
+                            OutputStream *ost)
 {
     AVFormatContext *oc = mux->fc;
     AVStream *st;
     char *frame_rate = NULL, *max_frame_rate = NULL, *frame_aspect_ratio = NULL;
+    int ret = 0;
 
     st  = ost->st;
 
     MATCH_PER_STREAM_OPT(frame_rates, str, frame_rate, oc, st);
     if (frame_rate && av_parse_video_rate(&ost->frame_rate, frame_rate) < 0) {
         av_log(ost, AV_LOG_FATAL, "Invalid framerate value: %s\n", frame_rate);
-        exit_program(1);
+        return AVERROR(EINVAL);
     }
 
     MATCH_PER_STREAM_OPT(max_frame_rates, str, max_frame_rate, oc, st);
     if (max_frame_rate && av_parse_video_rate(&ost->max_frame_rate, max_frame_rate) < 0) {
         av_log(ost, AV_LOG_FATAL, "Invalid maximum framerate value: %s\n", max_frame_rate);
-        exit_program(1);
+        return AVERROR(EINVAL);
     }
 
     if (frame_rate && max_frame_rate) {
         av_log(ost, AV_LOG_ERROR, "Only one of -fpsmax and -r can be set for a stream.\n");
-        exit_program(1);
+        return AVERROR(EINVAL);
     }
 
     MATCH_PER_STREAM_OPT(frame_aspect_ratios, str, frame_aspect_ratio, oc, st);
@@ -524,7 +528,7 @@ static void new_stream_video(Muxer *mux, const OptionsContext *o,
         if (av_parse_ratio(&q, frame_aspect_ratio, 255, 0, NULL) < 0 ||
             q.num <= 0 || q.den <= 0) {
             av_log(ost, AV_LOG_FATAL, "Invalid aspect ratio: %s\n", frame_aspect_ratio);
-            exit_program(1);
+            return AVERROR(EINVAL);
         }
         ost->frame_aspect_ratio = q;
     }
@@ -540,9 +544,12 @@ static void new_stream_video(Muxer *mux, const OptionsContext *o,
         int i;
 
         MATCH_PER_STREAM_OPT(frame_sizes, str, frame_size, oc, st);
-        if (frame_size && av_parse_video_size(&video_enc->width, &video_enc->height, frame_size) < 0) {
-            av_log(ost, AV_LOG_FATAL, "Invalid frame size: %s.\n", frame_size);
-            exit_program(1);
+        if (frame_size) {
+            ret = av_parse_video_size(&video_enc->width, &video_enc->height, frame_size);
+            if (ret < 0) {
+                av_log(ost, AV_LOG_FATAL, "Invalid frame size: %s.\n", frame_size);
+                return AVERROR(EINVAL);
+            }
         }
 
         MATCH_PER_STREAM_OPT(frame_pix_fmts, str, frame_pix_fmt, oc, st);
@@ -553,29 +560,36 @@ static void new_stream_video(Muxer *mux, const OptionsContext *o,
         }
         if (frame_pix_fmt && (video_enc->pix_fmt = av_get_pix_fmt(frame_pix_fmt)) == AV_PIX_FMT_NONE) {
             av_log(ost, AV_LOG_FATAL, "Unknown pixel format requested: %s.\n", frame_pix_fmt);
-            exit_program(1);
+            return AVERROR(EINVAL);
         }
         st->sample_aspect_ratio = video_enc->sample_aspect_ratio;
 
         MATCH_PER_STREAM_OPT(intra_matrices, str, intra_matrix, oc, st);
         if (intra_matrix) {
             if (!(video_enc->intra_matrix = av_mallocz(sizeof(*video_enc->intra_matrix) * 64)))
-                report_and_exit(AVERROR(ENOMEM));
-            parse_matrix_coeffs(ost, video_enc->intra_matrix, intra_matrix);
+                return AVERROR(ENOMEM);
+
+            ret = parse_matrix_coeffs(ost, video_enc->intra_matrix, intra_matrix);
+            if (ret < 0)
+                return ret;
         }
         MATCH_PER_STREAM_OPT(chroma_intra_matrices, str, chroma_intra_matrix, oc, st);
         if (chroma_intra_matrix) {
             uint16_t *p = av_mallocz(sizeof(*video_enc->chroma_intra_matrix) * 64);
             if (!p)
-                report_and_exit(AVERROR(ENOMEM));
+                return AVERROR(ENOMEM);
             video_enc->chroma_intra_matrix = p;
-            parse_matrix_coeffs(ost, p, chroma_intra_matrix);
+            ret = parse_matrix_coeffs(ost, p, chroma_intra_matrix);
+            if (ret < 0)
+                return ret;
         }
         MATCH_PER_STREAM_OPT(inter_matrices, str, inter_matrix, oc, st);
         if (inter_matrix) {
             if (!(video_enc->inter_matrix = av_mallocz(sizeof(*video_enc->inter_matrix) * 64)))
-                report_and_exit(AVERROR(ENOMEM));
-            parse_matrix_coeffs(ost, video_enc->inter_matrix, inter_matrix);
+                return AVERROR(ENOMEM);
+            ret = parse_matrix_coeffs(ost, video_enc->inter_matrix, inter_matrix);
+            if (ret < 0)
+                return ret;
         }
 
         MATCH_PER_STREAM_OPT(rc_overrides, str, p, oc, st);
@@ -584,14 +598,14 @@ static void new_stream_video(Muxer *mux, const OptionsContext *o,
             int e = sscanf(p, "%d,%d,%d", &start, &end, &q);
             if (e != 3) {
                 av_log(ost, AV_LOG_FATAL, "error parsing rc_override\n");
-                exit_program(1);
+                return AVERROR(EINVAL);
             }
             video_enc->rc_override =
                 av_realloc_array(video_enc->rc_override,
                                  i + 1, sizeof(RcOverride));
             if (!video_enc->rc_override) {
                 av_log(ost, AV_LOG_FATAL, "Could not (re)allocate memory for rc_override.\n");
-                exit_program(1);
+                return AVERROR(ENOMEM);
             }
             video_enc->rc_override[i].start_frame = start;
             video_enc->rc_override[i].end_frame   = end;
@@ -631,7 +645,7 @@ static void new_stream_video(Muxer *mux, const OptionsContext *o,
         MATCH_PER_STREAM_OPT(passlogfiles, str, ost->logfile_prefix, oc, st);
         if (ost->logfile_prefix &&
             !(ost->logfile_prefix = av_strdup(ost->logfile_prefix)))
-            report_and_exit(AVERROR(ENOMEM));
+            return AVERROR(ENOMEM);
 
         if (do_pass) {
             int ost_idx = -1;
@@ -655,7 +669,7 @@ static void new_stream_video(Muxer *mux, const OptionsContext *o,
                     if (!logbuffer) {
                         av_log(ost, AV_LOG_FATAL, "Error reading log file '%s' for pass-2 encoding\n",
                                logfilename);
-                        exit_program(1);
+                        return AVERROR(EIO);
                     }
                     video_enc->stats_in = logbuffer;
                 }
@@ -665,7 +679,7 @@ static void new_stream_video(Muxer *mux, const OptionsContext *o,
                         av_log(ost, AV_LOG_FATAL,
                                "Cannot write log file '%s' for pass-1 encoding: %s\n",
                                logfilename, strerror(errno));
-                        exit_program(1);
+                        return AVERROR(errno);
                     }
                     ost->logfile = f;
                 }
@@ -687,7 +701,7 @@ static void new_stream_video(Muxer *mux, const OptionsContext *o,
               ost->vsync_method == VSYNC_CFR || ost->vsync_method == VSYNC_VSCFR)) {
             av_log(ost, AV_LOG_FATAL, "One of -r/-fpsmax was specified "
                    "together a non-CFR -vsync/-fps_mode. This is contradictory.\n");
-            exit_program(1);
+            return AVERROR(EINVAL);
         }
 
         if (ost->vsync_method == VSYNC_AUTO) {
@@ -715,13 +729,16 @@ static void new_stream_video(Muxer *mux, const OptionsContext *o,
         }
         ost->is_cfr = (ost->vsync_method == VSYNC_CFR || ost->vsync_method == VSYNC_VSCFR);
     }
+
+    return 0;
 }
 
-static void new_stream_audio(Muxer *mux, const OptionsContext *o,
-                             OutputStream *ost)
+static int new_stream_audio(Muxer *mux, const OptionsContext *o,
+                            OutputStream *ost)
 {
     AVFormatContext *oc = mux->fc;
     AVStream *st;
+    int ret = 0;
 
     st  = ost->st;
 
@@ -748,7 +765,7 @@ static void new_stream_audio(Muxer *mux, const OptionsContext *o,
                 if (!mask) {
 #endif
                     av_log(ost, AV_LOG_FATAL, "Unknown channel layout: %s\n", layout);
-                    exit_program(1);
+                    return AVERROR(EINVAL);
 #if FF_API_OLD_CHANNEL_LAYOUT
                 }
                 av_log(ost, AV_LOG_WARNING, "Channel layout '%s' uses a deprecated syntax.\n",
@@ -762,7 +779,7 @@ static void new_stream_audio(Muxer *mux, const OptionsContext *o,
         if (sample_fmt &&
             (audio_enc->sample_fmt = av_get_sample_fmt(sample_fmt)) == AV_SAMPLE_FMT_NONE) {
             av_log(ost, AV_LOG_FATAL, "Invalid sample format '%s'\n", sample_fmt);
-            exit_program(1);
+            return AVERROR(EINVAL);
         }
 
         MATCH_PER_STREAM_OPT(audio_sample_rate, i, audio_enc->sample_rate, oc, st);
@@ -789,11 +806,11 @@ static void new_stream_audio(Muxer *mux, const OptionsContext *o,
                 }
 
                 if (!ist || (ist->file_index == map->file_idx && ist->index == map->stream_idx)) {
-                    if (av_reallocp_array(&ost->audio_channels_map,
-                                          ost->audio_channels_mapped + 1,
-                                          sizeof(*ost->audio_channels_map)
-                                          ) < 0 )
-                        report_and_exit(AVERROR(ENOMEM));
+                    ret = av_reallocp_array(&ost->audio_channels_map,
+                                            ost->audio_channels_mapped + 1,
+                                            sizeof(*ost->audio_channels_map));
+                    if (ret < 0)
+                        return ret;
 
                     ost->audio_channels_map[ost->audio_channels_mapped++] = map->channel_idx;
                 }
@@ -801,16 +818,19 @@ static void new_stream_audio(Muxer *mux, const OptionsContext *o,
         }
 #endif
     }
+
+    return 0;
 }
 
-static void new_stream_attachment(Muxer *mux, const OptionsContext *o,
-                                  OutputStream *ost)
+static int new_stream_attachment(Muxer *mux, const OptionsContext *o,
+                                 OutputStream *ost)
 {
     ost->finished    = 1;
+    return 0;
 }
 
-static void new_stream_subtitle(Muxer *mux, const OptionsContext *o,
-                                OutputStream *ost)
+static int new_stream_subtitle(Muxer *mux, const OptionsContext *o,
+                               OutputStream *ost)
 {
     AVStream *st;
 
@@ -828,9 +848,12 @@ static void new_stream_subtitle(Muxer *mux, const OptionsContext *o,
         char *frame_size = NULL;
 
         MATCH_PER_STREAM_OPT(frame_sizes, str, frame_size, mux->fc, st);
-        if (frame_size && av_parse_video_size(&subtitle_enc->width, &subtitle_enc->height, frame_size) < 0) {
-            av_log(ost, AV_LOG_FATAL, "Invalid frame size: %s.\n", frame_size);
-            exit_program(1);
+        if (frame_size) {
+            int ret = av_parse_video_size(&subtitle_enc->width, &subtitle_enc->height, frame_size);
+            if (ret < 0) {
+                av_log(ost, AV_LOG_FATAL, "Invalid frame size: %s.\n", frame_size);
+                return ret;
+            }
         }
         if (input_descriptor)
             input_props = input_descriptor->props & (AV_CODEC_PROP_TEXT_SUB | AV_CODEC_PROP_BITMAP_SUB);
@@ -840,9 +863,11 @@ static void new_stream_subtitle(Muxer *mux, const OptionsContext *o,
             av_log(ost, AV_LOG_ERROR,
                    "Subtitle encoding currently only possible from text to text "
                    "or bitmap to bitmap\n");
-            exit_program(1);
+            return AVERROR(EINVAL);
         }
     }
+
+    return 0;
 }
 
 static int streamcopy_init(const Muxer *mux, OutputStream *ost)
@@ -1084,6 +1109,11 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
             do  {
                 av_bprint_clear(&bprint);
                 buf = get_line(s, &bprint);
+                if (!buf) {
+                    ret = AVERROR(ENOMEM);
+                    break;
+                }
+
                 if (!buf[0] || buf[0] == '#')
                     continue;
                 if (!(arg = strchr(buf, '='))) {
@@ -1250,11 +1280,13 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
                          ms->copy_initial_nonkeyframes, oc, st);
 
     switch (type) {
-    case AVMEDIA_TYPE_VIDEO:      new_stream_video     (mux, o, ost); break;
-    case AVMEDIA_TYPE_AUDIO:      new_stream_audio     (mux, o, ost); break;
-    case AVMEDIA_TYPE_SUBTITLE:   new_stream_subtitle  (mux, o, ost); break;
-    case AVMEDIA_TYPE_ATTACHMENT: new_stream_attachment(mux, o, ost); break;
+    case AVMEDIA_TYPE_VIDEO:      ret = new_stream_video     (mux, o, ost); break;
+    case AVMEDIA_TYPE_AUDIO:      ret = new_stream_audio     (mux, o, ost); break;
+    case AVMEDIA_TYPE_SUBTITLE:   ret = new_stream_subtitle  (mux, o, ost); break;
+    case AVMEDIA_TYPE_ATTACHMENT: ret = new_stream_attachment(mux, o, ost); break;
     }
+    if (ret < 0)
+        return ret;
 
     if (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO) {
         ret = ost_get_filters(o, oc, ost, &filters);
