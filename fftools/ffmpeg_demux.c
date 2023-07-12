@@ -964,8 +964,8 @@ static int guess_input_channel_layout(InputStream *ist, int guess_layout_max)
     return 1;
 }
 
-static void add_display_matrix_to_stream(const OptionsContext *o,
-                                         AVFormatContext *ctx, InputStream *ist)
+static int add_display_matrix_to_stream(const OptionsContext *o,
+                                        AVFormatContext *ctx, InputStream *ist)
 {
     AVStream *st = ist->st;
     double rotation = DBL_MAX;
@@ -982,12 +982,12 @@ static void add_display_matrix_to_stream(const OptionsContext *o,
     vflip_set    = vflip != -1;
 
     if (!rotation_set && !hflip_set && !vflip_set)
-        return;
+        return 0;
 
     buf = (int32_t *)av_stream_new_side_data(st, AV_PKT_DATA_DISPLAYMATRIX, sizeof(int32_t) * 9);
     if (!buf) {
         av_log(ist, AV_LOG_FATAL, "Failed to generate a display matrix!\n");
-        exit_program(1);
+        return AVERROR(ENOMEM);
     }
 
     av_display_rotation_set(buf,
@@ -996,6 +996,8 @@ static void add_display_matrix_to_stream(const OptionsContext *o,
     av_display_matrix_flip(buf,
                            hflip_set ? hflip : 0,
                            vflip_set ? vflip : 0);
+
+    return 0;
 }
 
 static const char *input_stream_item_name(void *obj)
@@ -1031,7 +1033,7 @@ static DemuxStream *demux_stream_alloc(Demuxer *d, AVStream *st)
     return ds;
 }
 
-static void ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
+static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
 {
     AVFormatContext *ic = d->f.ctx;
     AVCodecParameters *par = st->codecpar;
@@ -1079,7 +1081,9 @@ static void ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
     }
 
     if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-        add_display_matrix_to_stream(o, ic, ist);
+        ret = add_display_matrix_to_stream(o, ic, ist);
+        if (ret < 0)
+            return ret;
 
         MATCH_PER_STREAM_OPT(hwaccels, str, hwaccel, ic, st);
         MATCH_PER_STREAM_OPT(hwaccel_output_formats, str,
@@ -1137,7 +1141,7 @@ static void ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
                         av_log(ist, AV_LOG_FATAL, "%s ",
                                av_hwdevice_get_type_name(type));
                     av_log(ist, AV_LOG_FATAL, "\n");
-                    exit_program(1);
+                    return AVERROR(EINVAL);
                 }
             }
         }
@@ -1146,7 +1150,7 @@ static void ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
         if (hwaccel_device) {
             ist->hwaccel_device = av_strdup(hwaccel_device);
             if (!ist->hwaccel_device)
-                report_and_exit(AVERROR(ENOMEM));
+                return AVERROR(ENOMEM);
         }
     }
 
@@ -1165,20 +1169,22 @@ static void ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
         (o->data_disable && ist->st->codecpar->codec_type == AVMEDIA_TYPE_DATA))
             ist->user_set_discard = AVDISCARD_ALL;
 
-    if (discard_str && av_opt_eval_int(&cc, discard_opt, discard_str, &ist->user_set_discard) < 0) {
-        av_log(ist, AV_LOG_ERROR, "Error parsing discard %s.\n",
-                discard_str);
-        exit_program(1);
+    if (discard_str) {
+        ret = av_opt_eval_int(&cc, discard_opt, discard_str, &ist->user_set_discard);
+        if (ret  < 0) {
+            av_log(ist, AV_LOG_ERROR, "Error parsing discard %s.\n", discard_str);
+            return ret;
+        }
     }
 
     ist->dec_ctx = avcodec_alloc_context3(ist->dec);
     if (!ist->dec_ctx)
-        report_and_exit(AVERROR(ENOMEM));
+        return AVERROR(ENOMEM);
 
     ret = avcodec_parameters_to_context(ist->dec_ctx, par);
     if (ret < 0) {
         av_log(ist, AV_LOG_ERROR, "Error initializing the decoder context.\n");
-        exit_program(1);
+        return ret;
     }
 
     if (o->bitexact)
@@ -1187,11 +1193,13 @@ static void ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
     switch (par->codec_type) {
     case AVMEDIA_TYPE_VIDEO:
         MATCH_PER_STREAM_OPT(frame_rates, str, framerate, ic, st);
-        if (framerate && av_parse_video_rate(&ist->framerate,
-                                             framerate) < 0) {
-            av_log(ist, AV_LOG_ERROR, "Error parsing framerate %s.\n",
-                   framerate);
-            exit_program(1);
+        if (framerate) {
+            ret = av_parse_video_rate(&ist->framerate, framerate);
+            if (ret < 0) {
+                av_log(ist, AV_LOG_ERROR, "Error parsing framerate %s.\n",
+                       framerate);
+                return ret;
+            }
         }
 
         ist->top_field_first = -1;
@@ -1211,10 +1219,13 @@ static void ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
         char *canvas_size = NULL;
         MATCH_PER_STREAM_OPT(fix_sub_duration, i, ist->fix_sub_duration, ic, st);
         MATCH_PER_STREAM_OPT(canvas_sizes, str, canvas_size, ic, st);
-        if (canvas_size &&
-            av_parse_video_size(&ist->dec_ctx->width, &ist->dec_ctx->height, canvas_size) < 0) {
-            av_log(ist, AV_LOG_FATAL, "Invalid canvas size: %s.\n", canvas_size);
-            exit_program(1);
+        if (canvas_size) {
+            ret = av_parse_video_size(&ist->dec_ctx->width, &ist->dec_ctx->height,
+                                      canvas_size);
+            if (ret < 0) {
+                av_log(ist, AV_LOG_FATAL, "Invalid canvas size: %s.\n", canvas_size);
+                return ret;
+            }
         }
 
         /* Compute the size of the canvas for the subtitles stream.
@@ -1248,15 +1259,17 @@ static void ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
 
     ist->par = avcodec_parameters_alloc();
     if (!ist->par)
-        report_and_exit(AVERROR(ENOMEM));
+        return AVERROR(ENOMEM);
 
     ret = avcodec_parameters_from_context(ist->par, ist->dec_ctx);
     if (ret < 0) {
         av_log(ist, AV_LOG_ERROR, "Error initializing the decoder context.\n");
-        exit_program(1);
+        return ret;
     }
 
     ist->codec_desc = avcodec_descriptor_get(ist->par->codec_id);
+
+    return 0;
 }
 
 static int dump_attachment(InputStream *ist, const char *filename)
@@ -1579,8 +1592,11 @@ int ifile_open(const OptionsContext *o, const char *filename)
     d->thread_queue_size = o->thread_queue_size;
 
     /* Add all the streams from the given input file to the demuxer */
-    for (int i = 0; i < ic->nb_streams; i++)
-        ist_add(o, d, ic->streams[i]);
+    for (int i = 0; i < ic->nb_streams; i++) {
+        ret = ist_add(o, d, ic->streams[i]);
+        if (ret < 0)
+            return ret;
+    }
 
     /* dump the file content */
     av_dump_format(ic, f->index, filename, 0);
