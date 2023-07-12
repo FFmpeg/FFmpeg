@@ -562,7 +562,6 @@ static int new_stream_video(Muxer *mux, const OptionsContext *o,
             av_log(ost, AV_LOG_FATAL, "Unknown pixel format requested: %s.\n", frame_pix_fmt);
             return AVERROR(EINVAL);
         }
-        st->sample_aspect_ratio = video_enc->sample_aspect_ratio;
 
         MATCH_PER_STREAM_OPT(intra_matrices, str, intra_matrix, oc, st);
         if (intra_matrix) {
