@@ -666,10 +666,9 @@ int attribute_align_arg avcodec_send_packet(AVCodecContext *avctx, const AVPacke
     if (avpkt && !avpkt->size && avpkt->data)
         return AVERROR(EINVAL);
 
-    if (!AVPACKET_IS_EMPTY(avci->buffer_pkt))
-        return AVERROR(EAGAIN);
-
     if (avpkt && (avpkt->data || avpkt->side_data_elems)) {
+        if (!AVPACKET_IS_EMPTY(avci->buffer_pkt))
+            return AVERROR(EAGAIN);
         ret = av_packet_ref(avci->buffer_pkt, avpkt);
         if (ret < 0)
             return ret;
