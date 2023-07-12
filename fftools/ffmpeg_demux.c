@@ -1259,7 +1259,7 @@ static void ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
     ist->codec_desc = avcodec_descriptor_get(ist->par->codec_id);
 }
 
-static void dump_attachment(InputStream *ist, const char *filename)
+static int dump_attachment(InputStream *ist, const char *filename)
 {
     AVStream *st = ist->st;
     int ret;
@@ -1268,13 +1268,13 @@ static void dump_attachment(InputStream *ist, const char *filename)
 
     if (!st->codecpar->extradata_size) {
         av_log(ist, AV_LOG_WARNING, "No extradata to dump.\n");
-        return;
+        return 0;
     }
     if (!*filename && (e = av_dict_get(st->metadata, "filename", NULL, 0)))
         filename = e->value;
     if (!*filename) {
         av_log(ist, AV_LOG_FATAL, "No filename specified and no 'filename' tag");
-        exit_program(1);
+        return AVERROR(EINVAL);
     }
 
     assert_file_overwrite(filename);
@@ -1282,11 +1282,13 @@ static void dump_attachment(InputStream *ist, const char *filename)
     if ((ret = avio_open2(&out, filename, AVIO_FLAG_WRITE, &int_cb, NULL)) < 0) {
         av_log(ist, AV_LOG_FATAL, "Could not open file %s for writing.\n",
                filename);
-        exit_program(1);
+        return ret;
     }
 
     avio_write(out, st->codecpar->extradata, st->codecpar->extradata_size);
-    avio_close(out);
+    ret = avio_close(out);
+
+    return ret;
 }
 
 static const char *input_file_item_name(void *obj)
@@ -1617,8 +1619,11 @@ int ifile_open(const OptionsContext *o, const char *filename)
         for (j = 0; j < f->nb_streams; j++) {
             InputStream *ist = f->streams[j];
 
-            if (check_stream_specifier(ic, ist->st, o->dump_attachment[i].specifier) == 1)
-                dump_attachment(ist, o->dump_attachment[i].u.str);
+            if (check_stream_specifier(ic, ist->st, o->dump_attachment[i].specifier) == 1) {
+                ret = dump_attachment(ist, o->dump_attachment[i].u.str);
+                if (ret < 0)
+                    return ret;
+            }
         }
     }
 
