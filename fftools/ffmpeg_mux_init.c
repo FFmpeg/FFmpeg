@@ -1514,7 +1514,7 @@ loop_end:
     }
 }
 
-static void of_add_attachments(Muxer *mux, const OptionsContext *o)
+static int of_add_attachments(Muxer *mux, const OptionsContext *o)
 {
     OutputStream *ost;
     int err;
@@ -1528,20 +1528,42 @@ static void of_add_attachments(Muxer *mux, const OptionsContext *o)
         if ((err = avio_open2(&pb, o->attachments[i], AVIO_FLAG_READ, &int_cb, NULL)) < 0) {
             av_log(mux, AV_LOG_FATAL, "Could not open attachment file %s.\n",
                    o->attachments[i]);
-            exit_program(1);
+            return err;
         }
         if ((len = avio_size(pb)) <= 0) {
             av_log(mux, AV_LOG_FATAL, "Could not get size of the attachment %s.\n",
                    o->attachments[i]);
-            exit_program(1);
+            err = len ? len : AVERROR_INVALIDDATA;
+            goto read_fail;
         }
-        if (len > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE ||
-            !(attachment = av_malloc(len + AV_INPUT_BUFFER_PADDING_SIZE))) {
+        if (len > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE) {
             av_log(mux, AV_LOG_FATAL, "Attachment %s too large.\n",
                    o->attachments[i]);
-            exit_program(1);
+            err = AVERROR(ERANGE);
+            goto read_fail;
         }
-        avio_read(pb, attachment, len);
+
+        attachment = av_malloc(len + AV_INPUT_BUFFER_PADDING_SIZE);
+        if (!attachment) {
+            err = AVERROR(ENOMEM);
+            goto read_fail;
+        }
+
+        err = avio_read(pb, attachment, len);
+        if (err < 0)
+            av_log(mux, AV_LOG_FATAL, "Error reading attachment file %s: %s\n",
+                   o->attachments[i], av_err2str(err));
+        else if (err != len) {
+            av_log(mux, AV_LOG_FATAL, "Could not read all %"PRId64" bytes for "
+                   "attachment file %s\n", len, o->attachments[i]);
+            err = AVERROR(EIO);
+        }
+
+read_fail:
+        avio_closep(&pb);
+        if (err < 0)
+            return err;
+
         memset(attachment + len, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
         av_log(mux, AV_LOG_VERBOSE, "Creating attachment stream from file %s\n",
@@ -1554,8 +1576,9 @@ static void of_add_attachments(Muxer *mux, const OptionsContext *o)
 
         p = strrchr(o->attachments[i], '/');
         av_dict_set(&ost->st->metadata, "filename", (p && *p) ? p + 1 : o->attachments[i], AV_DICT_DONT_OVERWRITE);
-        avio_closep(&pb);
     }
+
+    return 0;
 }
 
 static int create_streams(Muxer *mux, const OptionsContext *o)
@@ -1565,6 +1588,7 @@ static int create_streams(Muxer *mux, const OptionsContext *o)
     int auto_disable_a = o->audio_disable;
     int auto_disable_s = o->subtitle_disable;
     int auto_disable_d = o->data_disable;
+    int ret;
 
     /* create streams for all unlabeled output pads */
     for (int i = 0; i < nb_filtergraphs; i++) {
@@ -1611,7 +1635,9 @@ static int create_streams(Muxer *mux, const OptionsContext *o)
             map_manual(mux, o, &o->stream_maps[i]);
     }
 
-    of_add_attachments(mux, o);
+    ret = of_add_attachments(mux, o);
+    if (ret < 0)
+        return ret;
 
     if (!oc->nb_streams && !(oc->oformat->flags & AVFMT_NOSTREAMS)) {
         av_dump_format(oc, nb_output_files - 1, oc->url, 1);
