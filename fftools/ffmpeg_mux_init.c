@@ -2342,7 +2342,7 @@ static int process_forced_keyframes(Muxer *mux, const OptionsContext *o)
     return 0;
 }
 
-static void validate_enc_avopt(Muxer *mux, const AVDictionary *codec_avopt)
+static int validate_enc_avopt(Muxer *mux, const AVDictionary *codec_avopt)
 {
     const AVClass *class  = avcodec_get_class();
     const AVClass *fclass = avformat_get_class();
@@ -2370,7 +2370,7 @@ static void validate_enc_avopt(Muxer *mux, const AVDictionary *codec_avopt)
         if (!(option->flags & AV_OPT_FLAG_ENCODING_PARAM)) {
             av_log(mux, AV_LOG_ERROR, "Codec AVOption %s (%s) is not an "
                    "encoding option.\n", e->key, option->help ? option->help : "");
-            exit_program(1);
+            return AVERROR(EINVAL);
         }
 
         // gop_timecode is injected by generic code but not always used
@@ -2384,6 +2384,8 @@ static void validate_enc_avopt(Muxer *mux, const AVDictionary *codec_avopt)
                "any stream.\n", e->key, option->help ? option->help : "");
     }
     av_dict_free(&unused_opts);
+
+    return 0;
 }
 
 static int init_output_stream_nofilter(OutputStream *ost)
@@ -2502,7 +2504,9 @@ int of_open(const OptionsContext *o, const char *filename)
         return err;
 
     /* check if all codec options have been used */
-    validate_enc_avopt(mux, o->g->codec_opts);
+    err = validate_enc_avopt(mux, o->g->codec_opts);
+    if (err < 0)
+        return err;
 
     /* check filename in case of an image number is expected */
     if (oc->oformat->flags & AVFMT_NEEDNUMBER && !av_filename_number_test(oc->url)) {
