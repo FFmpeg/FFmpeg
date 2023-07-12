@@ -839,7 +839,9 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
             continue;
         }
 
-        of_streamcopy(ost, pkt, dts_est);
+        ret = of_streamcopy(ost, pkt, dts_est);
+        if (ret < 0)
+            return ret;
     }
 
     return !eof_reached;

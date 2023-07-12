@@ -826,7 +826,7 @@ void of_output_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt);
 /**
  * @param dts predicted packet dts in AV_TIME_BASE_Q
  */
-void of_streamcopy(OutputStream *ost, const AVPacket *pkt, int64_t dts);
+int of_streamcopy(OutputStream *ost, const AVPacket *pkt, int64_t dts);
 
 int64_t of_filesize(OutputFile *of);
 
