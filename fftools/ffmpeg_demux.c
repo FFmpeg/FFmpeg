@@ -1286,7 +1286,6 @@ static void dump_attachment(InputStream *ist, const char *filename)
     }
 
     avio_write(out, st->codecpar->extradata, st->codecpar->extradata_size);
-    avio_flush(out);
     avio_close(out);
 }
 
