@@ -1782,76 +1782,66 @@ static int setup_sync_queues(Muxer *mux, AVFormatContext *oc, int64_t buf_size_u
     return 0;
 }
 
-static void of_add_programs(Muxer *mux, const OptionsContext *o)
+static int of_add_programs(Muxer *mux, const OptionsContext *o)
 {
     AVFormatContext *oc = mux->fc;
     /* process manually set programs */
     for (int i = 0; i < o->nb_program; i++) {
-        const char *p = o->program[i].u.str;
-        int progid = i+1;
+        AVDictionary *dict = NULL;
+        const AVDictionaryEntry *e;
         AVProgram *program;
+        int ret, progid = i + 1;
 
-        while(*p) {
-            const char *p2 = av_get_token(&p, ":");
-            const char *to_dealloc = p2;
-            char *key;
-            if (!p2)
-                break;
+        ret = av_dict_parse_string(&dict, o->program[i].u.str, "=", ":",
+                                   AV_DICT_MULTIKEY);
+        if (ret < 0) {
+            av_log(mux, AV_LOG_ERROR, "Error parsing program specification %s\n",
+                   o->program[i].u.str);
+            return ret;
+        }
 
-            if(*p) p++;
-
-            key = av_get_token(&p2, "=");
-            if (!key || !*p2) {
-                av_freep(&to_dealloc);
-                av_freep(&key);
-                break;
-            }
-            p2++;
-
-            if (!strcmp(key, "program_num"))
-                progid = strtol(p2, NULL, 0);
-            av_freep(&to_dealloc);
-            av_freep(&key);
+        e = av_dict_get(dict, "program_num", NULL, 0);
+        if (e) {
+            progid = strtol(e->value, NULL, 0);
+            av_dict_set(&dict, e->key, NULL, 0);
         }
 
         program = av_new_program(oc, progid);
-        if (!program)
-            report_and_exit(AVERROR(ENOMEM));
-
-        p = o->program[i].u.str;
-        while(*p) {
-            const char *p2 = av_get_token(&p, ":");
-            const char *to_dealloc = p2;
-            char *key;
-            if (!p2)
-                break;
-            if(*p) p++;
-
-            key = av_get_token(&p2, "=");
-            if (!key) {
-                av_log(mux, AV_LOG_FATAL,
-                       "No '=' character in program string %s.\n",
-                       p2);
-                exit_program(1);
-            }
-            if (!*p2)
-                exit_program(1);
-            p2++;
-
-            if (!strcmp(key, "title")) {
-                av_dict_set(&program->metadata, "title", p2, 0);
-            } else if (!strcmp(key, "program_num")) {
-            } else if (!strcmp(key, "st")) {
-                int st_num = strtol(p2, NULL, 0);
-                av_program_add_stream_index(oc, progid, st_num);
-            } else {
-                av_log(mux, AV_LOG_FATAL, "Unknown program key %s.\n", key);
-                exit_program(1);
-            }
-            av_freep(&to_dealloc);
-            av_freep(&key);
+        if (!program) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
         }
+
+        e = av_dict_get(dict, "title", NULL, 0);
+        if (e) {
+            av_dict_set(&program->metadata, e->key, e->value, 0);
+            av_dict_set(&dict, e->key, NULL, 0);
+        }
+
+        e = NULL;
+        while (e = av_dict_get(dict, "st", e, 0)) {
+            int st_num = strtol(e->value, NULL, 0);
+            av_program_add_stream_index(oc, progid, st_num);
+        }
+
+        // make sure that nothing but "st" entries are left in the dict
+        e = NULL;
+        while (e = av_dict_iterate(dict, e)) {
+            if (!strcmp(e->key, "st"))
+                continue;
+
+            av_log(mux, AV_LOG_FATAL, "Unknown program key %s.\n", e->key);
+            ret = AVERROR(EINVAL);
+            goto fail;
+        }
+
+fail:
+        av_dict_free(&dict);
+        if (ret < 0)
+            return ret;
     }
+
+    return 0;
 }
 
 /**
@@ -2547,7 +2537,10 @@ int of_open(const OptionsContext *o, const char *filename)
     if (err < 0)
         return err;
 
-    of_add_programs(mux, o);
+    err = of_add_programs(mux, o);
+    if (err < 0)
+        return err;
+
     of_add_metadata(of, oc, o);
 
     err = set_dispositions(mux, o);
