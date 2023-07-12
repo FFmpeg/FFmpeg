@@ -422,6 +422,23 @@ static int decode_nal_sei_mastering_display_info(H2645SEIMasteringDisplay *s,
     return 0;
 }
 
+static int decode_nal_sei_content_light_info(H2645SEIContentLight *s,
+                                             GetByteContext *gb)
+{
+    if (bytestream2_get_bytes_left(gb) < 4)
+        return AVERROR_INVALIDDATA;
+
+    // Max and average light levels
+    s->max_content_light_level     = bytestream2_get_be16u(gb);
+    s->max_pic_average_light_level = bytestream2_get_be16u(gb);
+    // As this SEI message comes before the first frame that references it,
+    // initialize the flag to 2 and decrement on IRAP access unit so it
+    // persists for the coded video sequence (e.g., between two IRAPs)
+    s->present = 2;
+
+    return  0;
+}
+
 int ff_h2645_sei_message_decode(H2645SEI *h, enum SEIType type,
                                 enum AVCodecID codec_id, GetBitContext *gb,
                                 GetByteContext *gbyte, void *logctx)
@@ -445,6 +462,8 @@ int ff_h2645_sei_message_decode(H2645SEI *h, enum SEIType type,
     case SEI_TYPE_MASTERING_DISPLAY_COLOUR_VOLUME:
         return decode_nal_sei_mastering_display_info(&h->mastering_display,
                                                      gbyte);
+    case SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO:
+        return decode_nal_sei_content_light_info(&h->content_light, gbyte);
     default:
         return FF_H2645_SEI_MESSAGE_UNHANDLED;
     }
@@ -730,6 +749,19 @@ int ff_h2645_sei_to_frame(AVFrame *frame, H2645SEI *sei,
                av_q2d(metadata->min_luminance), av_q2d(metadata->max_luminance));
     }
 
+    if (sei->content_light.present) {
+        AVContentLightMetadata *metadata =
+            av_content_light_metadata_create_side_data(frame);
+        if (!metadata)
+            return AVERROR(ENOMEM);
+        metadata->MaxCLL  = sei->content_light.max_content_light_level;
+        metadata->MaxFALL = sei->content_light.max_pic_average_light_level;
+
+        av_log(avctx, AV_LOG_DEBUG, "Content Light Level Metadata:\n");
+        av_log(avctx, AV_LOG_DEBUG, "MaxCLL=%d, MaxFALL=%d\n",
+               metadata->MaxCLL, metadata->MaxFALL);
+    }
+
     return 0;
 }
 
@@ -746,4 +778,5 @@ void ff_h2645_sei_reset(H2645SEI *s)
 
     s->ambient_viewing_environment.present = 0;
     s->mastering_display.present = 0;
+    s->content_light.present = 0;
 }

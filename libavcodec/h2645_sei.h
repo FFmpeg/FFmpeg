@@ -113,6 +113,12 @@ typedef struct H2645SEIMasteringDisplay {
     uint32_t min_luminance;
 } H2645SEIMasteringDisplay;
 
+typedef struct H2645SEIContentLight {
+    int present;
+    uint16_t max_content_light_level;
+    uint16_t max_pic_average_light_level;
+} H2645SEIContentLight;
+
 typedef struct H2645SEI {
     H2645SEIA53Caption a53_caption;
     H2645SEIAFD afd;
@@ -125,6 +131,7 @@ typedef struct H2645SEI {
     H2645SEIFilmGrainCharacteristics film_grain_characteristics;
     H2645SEIAmbientViewingEnvironment ambient_viewing_environment;
     H2645SEIMasteringDisplay mastering_display;
+    H2645SEIContentLight content_light;
 } H2645SEI;
 
 enum {

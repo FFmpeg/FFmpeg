@@ -53,12 +53,6 @@ typedef struct HEVCSEIPictureTiming {
     int picture_struct;
 } HEVCSEIPictureTiming;
 
-typedef struct HEVCSEIContentLight {
-    int present;
-    uint16_t max_content_light_level;
-    uint16_t max_pic_average_light_level;
-} HEVCSEIContentLight;
-
 typedef struct HEVCSEIAlternativeTransfer {
     int present;
     int preferred_transfer_characteristics;
@@ -88,7 +82,6 @@ typedef struct HEVCSEI {
     H2645SEI common;
     HEVCSEIPictureHash picture_hash;
     HEVCSEIPictureTiming picture_timing;
-    HEVCSEIContentLight content_light;
     int active_seq_parameter_set_id;
     HEVCSEITimeCode timecode;
 } HEVCSEI;

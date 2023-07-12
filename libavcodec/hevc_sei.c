@@ -49,23 +49,6 @@ static int decode_nal_sei_decoded_picture_hash(HEVCSEIPictureHash *s,
     return 0;
 }
 
-static int decode_nal_sei_content_light_info(HEVCSEIContentLight *s,
-                                             GetByteContext *gb)
-{
-    if (bytestream2_get_bytes_left(gb) < 4)
-        return AVERROR_INVALIDDATA;
-
-    // Max and average light levels
-    s->max_content_light_level     = bytestream2_get_be16u(gb);
-    s->max_pic_average_light_level = bytestream2_get_be16u(gb);
-    // As this SEI message comes before the first frame that references it,
-    // initialize the flag to 2 and decrement on IRAP access unit so it
-    // persists for the coded video sequence (e.g., between two IRAPs)
-    s->present = 2;
-
-    return  0;
-}
-
 static int decode_nal_sei_pic_timing(HEVCSEI *s, GetBitContext *gb,
                                      const HEVCParamSets *ps, void *logctx)
 {
@@ -177,8 +160,6 @@ static int decode_nal_sei_prefix(GetBitContext *gb, GetByteContext *gbyte,
         return decode_nal_sei_decoded_picture_hash(&s->picture_hash, gbyte);
     case SEI_TYPE_PIC_TIMING:
         return decode_nal_sei_pic_timing(s, gb, ps, logctx);
-    case SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO:
-        return decode_nal_sei_content_light_info(&s->content_light, gbyte);
     case SEI_TYPE_ACTIVE_PARAMETER_SETS:
         return decode_nal_sei_active_parameter_sets(s, gb, logctx);
     case SEI_TYPE_TIME_CODE:

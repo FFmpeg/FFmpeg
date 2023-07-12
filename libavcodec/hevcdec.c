@@ -31,7 +31,6 @@
 #include "libavutil/display.h"
 #include "libavutil/film_grain_params.h"
 #include "libavutil/internal.h"
-#include "libavutil/mastering_display_metadata.h"
 #include "libavutil/md5.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
@@ -2769,21 +2768,9 @@ static int set_side_data(HEVCContext *s)
     }
     // Decrement the mastering display flag when IRAP frame has no_rasl_output_flag=1
     // so the side data persists for the entire coded video sequence.
-    if (s->sei.content_light.present > 0 &&
+    if (s->sei.common.content_light.present > 0 &&
         IS_IRAP(s) && s->no_rasl_output_flag) {
-        s->sei.content_light.present--;
-    }
-    if (s->sei.content_light.present) {
-        AVContentLightMetadata *metadata =
-            av_content_light_metadata_create_side_data(out);
-        if (!metadata)
-            return AVERROR(ENOMEM);
-        metadata->MaxCLL  = s->sei.content_light.max_content_light_level;
-        metadata->MaxFALL = s->sei.content_light.max_pic_average_light_level;
-
-        av_log(s->avctx, AV_LOG_DEBUG, "Content Light Level Metadata:\n");
-        av_log(s->avctx, AV_LOG_DEBUG, "MaxCLL=%d, MaxFALL=%d\n",
-               metadata->MaxCLL, metadata->MaxFALL);
+        s->sei.common.content_light.present--;
     }
 
     ret = ff_h2645_sei_to_frame(out, &s->sei.common, AV_CODEC_ID_HEVC, NULL,
@@ -3624,7 +3611,7 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     s->sei.common.display_orientation  = s0->sei.common.display_orientation;
     s->sei.common.alternative_transfer = s0->sei.common.alternative_transfer;
     s->sei.common.mastering_display    = s0->sei.common.mastering_display;
-    s->sei.content_light        = s0->sei.content_light;
+    s->sei.common.content_light        = s0->sei.common.content_light;
 
     ret = export_stream_params_from_sei(s);
     if (ret < 0)
