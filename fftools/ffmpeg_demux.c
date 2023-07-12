@@ -1277,7 +1277,9 @@ static int dump_attachment(InputStream *ist, const char *filename)
         return AVERROR(EINVAL);
     }
 
-    assert_file_overwrite(filename);
+    ret = assert_file_overwrite(filename);
+    if (ret < 0)
+        return ret;
 
     if ((ret = avio_open2(&out, filename, AVIO_FLAG_WRITE, &int_cb, NULL)) < 0) {
         av_log(ist, AV_LOG_FATAL, "Could not open file %s for writing.\n",

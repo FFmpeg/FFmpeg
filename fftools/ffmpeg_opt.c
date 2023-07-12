@@ -652,13 +652,13 @@ const AVCodec *find_codec_or_die(void *logctx, const char *name,
     return codec;
 }
 
-void assert_file_overwrite(const char *filename)
+int assert_file_overwrite(const char *filename)
 {
     const char *proto_name = avio_find_protocol_name(filename);
 
     if (file_overwrite && no_file_overwrite) {
         fprintf(stderr, "Error, both -y and -n supplied. Exiting.\n");
-        exit_program(1);
+        return AVERROR(EINVAL);
     }
 
     if (!file_overwrite) {
@@ -670,13 +670,13 @@ void assert_file_overwrite(const char *filename)
                 signal(SIGINT, SIG_DFL);
                 if (!read_yesno()) {
                     av_log(NULL, AV_LOG_FATAL, "Not overwriting - exiting\n");
-                    exit_program(1);
+                    return AVERROR_EXIT;
                 }
                 term_init();
             }
             else {
                 av_log(NULL, AV_LOG_FATAL, "File '%s' already exists. Exiting.\n", filename);
-                exit_program(1);
+                return AVERROR_EXIT;
             }
         }
     }
@@ -689,10 +689,12 @@ void assert_file_overwrite(const char *filename)
              if (!strcmp(filename, file->ctx->url)) {
                  av_log(NULL, AV_LOG_FATAL, "Output %s same as Input #%d - exiting\n", filename, i);
                  av_log(NULL, AV_LOG_WARNING, "FFmpeg cannot edit existing files in-place.\n");
-                 exit_program(1);
+                 return AVERROR(EINVAL);
              }
         }
     }
+
+    return 0;
 }
 
 /* read file contents into a string */

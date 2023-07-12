@@ -700,7 +700,7 @@ void show_usage(void);
 void remove_avoptions(AVDictionary **a, AVDictionary *b);
 void assert_avoptions(AVDictionary *m);
 
-void assert_file_overwrite(const char *filename);
+int assert_file_overwrite(const char *filename);
 char *file_read(const char *filename);
 AVDictionary *strip_specifiers(const AVDictionary *dict);
 const AVCodec *find_codec_or_die(void *logctx, const char *name,

@@ -2442,7 +2442,9 @@ int of_open(const OptionsContext *o, const char *filename)
 
     if (!(oc->oformat->flags & AVFMT_NOFILE)) {
         /* test if it already exists to avoid losing precious files */
-        assert_file_overwrite(filename);
+        err = assert_file_overwrite(filename);
+        if (err < 0)
+            return err;
 
         /* open the file */
         if ((err = avio_open2(&oc->pb, filename, AVIO_FLAG_WRITE,
@@ -2452,8 +2454,11 @@ int of_open(const OptionsContext *o, const char *filename)
                    filename, av_err2str(err));
             return err;
         }
-    } else if (strcmp(oc->oformat->name, "image2")==0 && !av_filename_number_test(filename))
-        assert_file_overwrite(filename);
+    } else if (strcmp(oc->oformat->name, "image2")==0 && !av_filename_number_test(filename)) {
+        err = assert_file_overwrite(filename);
+        if (err < 0)
+            return err;
+    }
 
     if (o->mux_preload) {
         av_dict_set_int(&mux->opts, "preload", o->mux_preload*AV_TIME_BASE, 0);
