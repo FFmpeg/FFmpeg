@@ -2380,7 +2380,7 @@ int of_open(const OptionsContext *o, const char *filename)
         int64_t start_time = o->start_time == AV_NOPTS_VALUE ? 0 : o->start_time;
         if (stop_time <= start_time) {
             av_log(mux, AV_LOG_ERROR, "-to value smaller than -ss; aborting.\n");
-            exit_program(1);
+            return AVERROR(EINVAL);
         } else {
             recording_time = stop_time - start_time;
         }
@@ -2401,7 +2401,7 @@ int of_open(const OptionsContext *o, const char *filename)
     if (!oc) {
         av_log(mux, AV_LOG_FATAL, "Error initializing the muxer for %s: %s\n",
                filename, av_err2str(err));
-        exit_program(1);
+        return err;
     }
     mux->fc = oc;
 
@@ -2437,7 +2437,7 @@ int of_open(const OptionsContext *o, const char *filename)
                "Output filename '%s' does not contain a numeric pattern like "
                "'%%d', which is required by output format '%s'.\n",
                oc->url, oc->oformat->name);
-        exit_program(1);
+        return AVERROR(EINVAL);
     }
 
     if (!(oc->oformat->flags & AVFMT_NOFILE)) {
@@ -2450,7 +2450,7 @@ int of_open(const OptionsContext *o, const char *filename)
                               &mux->opts)) < 0) {
             av_log(mux, AV_LOG_FATAL, "Error opening output %s: %s\n",
                    filename, av_err2str(err));
-            exit_program(1);
+            return err;
         }
     } else if (strcmp(oc->oformat->name, "image2")==0 && !av_filename_number_test(filename))
         assert_file_overwrite(filename);
@@ -2469,7 +2469,7 @@ int of_open(const OptionsContext *o, const char *filename)
     err = set_dispositions(mux, o);
     if (err < 0) {
         av_log(mux, AV_LOG_FATAL, "Error setting output stream dispositions\n");
-        exit_program(1);
+        return err;
     }
 
     // parse forced keyframe specifications;
@@ -2477,13 +2477,13 @@ int of_open(const OptionsContext *o, const char *filename)
     err = process_forced_keyframes(mux, o);
     if (err < 0) {
         av_log(mux, AV_LOG_FATAL, "Error processing forced keyframes\n");
-        exit_program(1);
+        return err;
     }
 
     err = setup_sync_queues(mux, oc, o->shortest_buf_duration * AV_TIME_BASE);
     if (err < 0) {
         av_log(mux, AV_LOG_FATAL, "Error setting up output sync queues\n");
-        exit_program(1);
+        return err;
     }
 
     of->url        = filename;
@@ -2500,7 +2500,7 @@ int of_open(const OptionsContext *o, const char *filename)
 
         err = init_output_stream_nofilter(ost);
         if (err < 0)
-            report_and_exit(err);
+            return err;
     }
 
     /* write the header for files with no streams */
