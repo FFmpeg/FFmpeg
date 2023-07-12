@@ -1851,8 +1851,8 @@ fail:
  * @param index for type c/p, chapter/program index is written here
  * @param stream_spec for type s, the stream specifier is written here
  */
-static void parse_meta_type(void *logctx, const char *arg,
-                            char *type, int *index, const char **stream_spec)
+static int parse_meta_type(void *logctx, const char *arg,
+                           char *type, int *index, const char **stream_spec)
 {
     if (*arg) {
         *type = *arg;
@@ -1862,7 +1862,7 @@ static void parse_meta_type(void *logctx, const char *arg,
         case 's':
             if (*(++arg) && *arg != ':') {
                 av_log(logctx, AV_LOG_FATAL, "Invalid metadata specifier %s.\n", arg);
-                exit_program(1);
+                return AVERROR(EINVAL);
             }
             *stream_spec = *arg == ':' ? arg + 1 : "";
             break;
@@ -1873,14 +1873,16 @@ static void parse_meta_type(void *logctx, const char *arg,
             break;
         default:
             av_log(logctx, AV_LOG_FATAL, "Invalid metadata type %c.\n", *arg);
-            exit_program(1);
+            return AVERROR(EINVAL);
         }
     } else
         *type = 'g';
+
+    return 0;
 }
 
-static void of_add_metadata(OutputFile *of, AVFormatContext *oc,
-                            const OptionsContext *o)
+static int of_add_metadata(OutputFile *of, AVFormatContext *oc,
+                           const OptionsContext *o)
 {
     for (int i = 0; i < o->nb_metadata; i++) {
         AVDictionary **m;
@@ -1892,11 +1894,14 @@ static void of_add_metadata(OutputFile *of, AVFormatContext *oc,
         if (!val) {
             av_log(of, AV_LOG_FATAL, "No '=' character in metadata string %s.\n",
                    o->metadata[i].u.str);
-            exit_program(1);
+            return AVERROR(EINVAL);
         }
         *val++ = 0;
 
-        parse_meta_type(of, o->metadata[i].specifier, &type, &index, &stream_spec);
+        ret = parse_meta_type(of, o->metadata[i].specifier, &type, &index, &stream_spec);
+        if (ret < 0)
+            return ret;
+
         if (type == 's') {
             for (int j = 0; j < oc->nb_streams; j++) {
                 OutputStream *ost = of->streams[j];
@@ -1922,7 +1927,7 @@ static void of_add_metadata(OutputFile *of, AVFormatContext *oc,
                     }
 #endif
                 } else if (ret < 0)
-                    exit_program(1);
+                    return ret;
             }
         } else {
             switch (type) {
@@ -1932,24 +1937,26 @@ static void of_add_metadata(OutputFile *of, AVFormatContext *oc,
             case 'c':
                 if (index < 0 || index >= oc->nb_chapters) {
                     av_log(of, AV_LOG_FATAL, "Invalid chapter index %d in metadata specifier.\n", index);
-                    exit_program(1);
+                    return AVERROR(EINVAL);
                 }
                 m = &oc->chapters[index]->metadata;
                 break;
             case 'p':
                 if (index < 0 || index >= oc->nb_programs) {
                     av_log(of, AV_LOG_FATAL, "Invalid program index %d in metadata specifier.\n", index);
-                    exit_program(1);
+                    return AVERROR(EINVAL);
                 }
                 m = &oc->programs[index]->metadata;
                 break;
             default:
                 av_log(of, AV_LOG_FATAL, "Invalid metadata specifier %s.\n", o->metadata[i].specifier);
-                exit_program(1);
+                return AVERROR(EINVAL);
             }
             av_dict_set(m, o->metadata[i].u.str, *val ? val : NULL, 0);
         }
     }
+
+    return 0;
 }
 
 static int copy_chapters(InputFile *ifile, OutputFile *ofile, AVFormatContext *os,
@@ -2008,8 +2015,11 @@ static int copy_metadata(Muxer *mux, AVFormatContext *ic,
     const char *istream_spec = NULL, *ostream_spec = NULL;
     int idx_in = 0, idx_out = 0;
 
-    parse_meta_type(mux, inspec,  &type_in,  &idx_in,  &istream_spec);
-    parse_meta_type(mux, outspec, &type_out, &idx_out, &ostream_spec);
+    ret     = parse_meta_type(mux, inspec,  &type_in,  &idx_in,  &istream_spec);
+    if (ret >= 0)
+        ret = parse_meta_type(mux, outspec, &type_out, &idx_out, &ostream_spec);
+    if (ret < 0)
+        return ret;
 
     if (type_in == 'g' || type_out == 'g' || !*outspec)
         *metadata_global_manual = 1;
@@ -2026,7 +2036,7 @@ static int copy_metadata(Muxer *mux, AVFormatContext *ic,
     if ((index) < 0 || (index) >= (nb_elems)) {\
         av_log(mux, AV_LOG_FATAL, "Invalid %s index %d while processing metadata maps.\n",\
                 (desc), (index));\
-        exit_program(1);\
+        return AVERROR(EINVAL);\
     }
 
 #define SET_DICT(type, meta, context, index)\
@@ -2057,11 +2067,11 @@ static int copy_metadata(Muxer *mux, AVFormatContext *ic,
                 meta_in = &ic->streams[i]->metadata;
                 break;
             } else if (ret < 0)
-                exit_program(1);
+                return ret;
         }
         if (!meta_in) {
             av_log(mux, AV_LOG_FATAL, "Stream specifier %s does not match  any streams.\n", istream_spec);
-            exit_program(1);
+            return AVERROR(EINVAL);
         }
     }
 
@@ -2071,7 +2081,7 @@ static int copy_metadata(Muxer *mux, AVFormatContext *ic,
                 meta_out = &oc->streams[i]->metadata;
                 av_dict_copy(meta_out, *meta_in, AV_DICT_DONT_OVERWRITE);
             } else if (ret < 0)
-                exit_program(1);
+                return ret;
         }
     } else
         av_dict_copy(meta_out, *meta_in, AV_DICT_DONT_OVERWRITE);
@@ -2087,6 +2097,7 @@ static int copy_meta(Muxer *mux, const OptionsContext *o)
     int metadata_global_manual   = 0;
     int metadata_streams_manual  = 0;
     int metadata_chapters_manual = 0;
+    int ret;
 
     /* copy metadata */
     for (int i = 0; i < o->nb_metadata_map; i++) {
@@ -2098,11 +2109,13 @@ static int copy_meta(Muxer *mux, const OptionsContext *o)
                    "processing metadata maps\n", in_file_index);
             return AVERROR(EINVAL);
         }
-        copy_metadata(mux,
-                      in_file_index >= 0 ? input_files[in_file_index]->ctx : NULL,
-                      o->metadata_map[i].specifier, *p ? p + 1 : p,
-                      &metadata_global_manual, &metadata_streams_manual,
-                      &metadata_chapters_manual);
+        ret = copy_metadata(mux,
+                            in_file_index >= 0 ? input_files[in_file_index]->ctx : NULL,
+                            o->metadata_map[i].specifier, *p ? p + 1 : p,
+                            &metadata_global_manual, &metadata_streams_manual,
+                            &metadata_chapters_manual);
+        if (ret < 0)
+            return ret;
     }
 
     /* copy chapters */
@@ -2541,7 +2554,9 @@ int of_open(const OptionsContext *o, const char *filename)
     if (err < 0)
         return err;
 
-    of_add_metadata(of, oc, o);
+    err = of_add_metadata(of, oc, o);
+    if (err < 0)
+        return err;
 
     err = set_dispositions(mux, o);
     if (err < 0) {
