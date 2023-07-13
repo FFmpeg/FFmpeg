@@ -1115,9 +1115,6 @@ int dec_open(InputStream *ist)
     }
 
     if ((ret = avcodec_open2(ist->dec_ctx, codec, &ist->decoder_opts)) < 0) {
-        if (ret == AVERROR_EXPERIMENTAL)
-            exit_program(1);
-
         av_log(ist, AV_LOG_ERROR, "Error while opening decoder: %s\n",
                av_err2str(ret));
         return ret;
