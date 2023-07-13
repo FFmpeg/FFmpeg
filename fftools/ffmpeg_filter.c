@@ -538,16 +538,11 @@ static char *describe_filter_link(FilterGraph *fg, AVFilterInOut *inout, int in)
     AVFilterContext *ctx = inout->filter_ctx;
     AVFilterPad *pads = in ? ctx->input_pads  : ctx->output_pads;
     int       nb_pads = in ? ctx->nb_inputs   : ctx->nb_outputs;
-    char *res;
 
     if (nb_pads > 1)
-        res = av_strdup(ctx->filter->name);
-    else
-        res = av_asprintf("%s:%s", ctx->filter->name,
-                          avfilter_pad_get_name(pads, inout->pad_idx));
-    if (!res)
-        report_and_exit(AVERROR(ENOMEM));
-    return res;
+        return av_strdup(ctx->filter->name);
+    return av_asprintf("%s:%s", ctx->filter->name,
+                       avfilter_pad_get_name(pads, inout->pad_idx));
 }
 
 static OutputFilter *ofilter_alloc(FilterGraph *fg)
@@ -799,7 +794,7 @@ static const AVClass fg_class = {
     .category   = AV_CLASS_CATEGORY_FILTER,
 };
 
-FilterGraph *fg_create(char *graph_desc)
+int fg_create(FilterGraph **pfg, char *graph_desc)
 {
     FilterGraphPriv *fgp = allocate_array_elem(&filtergraphs, sizeof(*fgp), &nb_filtergraphs);
     FilterGraph      *fg = &fgp->fg;
@@ -807,6 +802,9 @@ FilterGraph *fg_create(char *graph_desc)
     AVFilterInOut *inputs, *outputs;
     AVFilterGraph *graph;
     int ret = 0;
+
+    if (pfg)
+        *pfg = fg;
 
     fg->class       = &fg_class;
     fg->index      = nb_filtergraphs - 1;
@@ -817,13 +815,13 @@ FilterGraph *fg_create(char *graph_desc)
 
     fgp->frame = av_frame_alloc();
     if (!fgp->frame)
-        report_and_exit(AVERROR(ENOMEM));
+        return AVERROR(ENOMEM);
 
     /* this graph is only used for determining the kinds of inputs
      * and outputs we have, and is discarded on exit from this function */
     graph = avfilter_graph_alloc();
     if (!graph)
-        report_and_exit(AVERROR(ENOMEM));
+        return AVERROR(ENOMEM);;
     graph->nb_threads = 1;
 
     ret = graph_parse(graph, fgp->graph_desc, &inputs, &outputs, NULL);
@@ -840,6 +838,10 @@ FilterGraph *fg_create(char *graph_desc)
         ifp->type      = avfilter_pad_get_type(cur->filter_ctx->input_pads,
                                                cur->pad_idx);
         ifilter->name  = describe_filter_link(fg, cur, 1);
+        if (!ifilter->name) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
     }
 
     for (AVFilterInOut *cur = outputs; cur; cur = cur->next) {
@@ -851,6 +853,10 @@ FilterGraph *fg_create(char *graph_desc)
         ofilter->type      = avfilter_pad_get_type(cur->filter_ctx->output_pads,
                                                    cur->pad_idx);
         ofilter->name      = describe_filter_link(fg, cur, 0);
+        if (!ofilter->name) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
     }
 
     if (!fg->nb_outputs) {
@@ -865,9 +871,9 @@ fail:
     avfilter_graph_free(&graph);
 
     if (ret < 0)
-        report_and_exit(ret);
+        return ret;
 
-    return fg;
+    return 0;
 }
 
 int init_simple_filtergraph(InputStream *ist, OutputStream *ost,
@@ -877,9 +883,9 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost,
     FilterGraphPriv *fgp;
     int ret;
 
-    fg = fg_create(graph_desc);
-    if (!fg)
-        report_and_exit(AVERROR(ENOMEM));
+    ret = fg_create(&fg, graph_desc);
+    if (ret < 0)
+        return ret;
     fgp = fgp_from_fg(fg);
 
     fgp->is_simple = 1;

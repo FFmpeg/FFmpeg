@@ -751,7 +751,7 @@ int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost);
  * @param graph_desc Graph description; an av_malloc()ed string, filtergraph
  *                   takes ownership of it.
  */
-FilterGraph *fg_create(char *graph_desc);
+int fg_create(FilterGraph **pfg, char *graph_desc);
 
 void fg_free(FilterGraph **pfg);
 
