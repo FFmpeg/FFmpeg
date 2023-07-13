@@ -908,7 +908,7 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost,
     return 0;
 }
 
-static void init_input_filter(FilterGraph *fg, InputFilter *ifilter)
+static int init_input_filter(FilterGraph *fg, InputFilter *ifilter)
 {
     FilterGraphPriv *fgp = fgp_from_fg(fg);
     InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
@@ -920,7 +920,7 @@ static void init_input_filter(FilterGraph *fg, InputFilter *ifilter)
     if (type != AVMEDIA_TYPE_VIDEO && type != AVMEDIA_TYPE_AUDIO) {
         av_log(fg, AV_LOG_FATAL, "Only video and audio filters supported "
                "currently.\n");
-        exit_program(1);
+        return AVERROR(ENOSYS);
     }
 
     if (ifp->linklabel) {
@@ -932,7 +932,7 @@ static void init_input_filter(FilterGraph *fg, InputFilter *ifilter)
         if (file_idx < 0 || file_idx >= nb_input_files) {
             av_log(fg, AV_LOG_FATAL, "Invalid file index %d in filtergraph description %s.\n",
                    file_idx, fgp->graph_desc);
-            exit_program(1);
+            return AVERROR(EINVAL);
         }
         s = input_files[file_idx]->ctx;
 
@@ -950,7 +950,7 @@ static void init_input_filter(FilterGraph *fg, InputFilter *ifilter)
         if (!st) {
             av_log(fg, AV_LOG_FATAL, "Stream specifier '%s' in filtergraph description %s "
                    "matches no streams.\n", p, fgp->graph_desc);
-            exit_program(1);
+            return AVERROR(EINVAL);
         }
         ist = input_files[file_idx]->streams[st->index];
     } else {
@@ -958,7 +958,7 @@ static void init_input_filter(FilterGraph *fg, InputFilter *ifilter)
         if (!ist) {
             av_log(fg, AV_LOG_FATAL, "Cannot find a matching stream for "
                    "unlabeled input pad %s\n", ifilter->name);
-            exit_program(1);
+            return AVERROR(EINVAL);
         }
     }
     av_assert0(ist);
@@ -968,15 +968,20 @@ static void init_input_filter(FilterGraph *fg, InputFilter *ifilter)
         av_log(fg, AV_LOG_ERROR,
                "Error binding an input stream to complex filtergraph input %s.\n",
                ifilter->name);
-        exit_program(1);
+        return ret;
     }
+
+    return 0;
 }
 
 int init_complex_filtergraph(FilterGraph *fg)
 {
     // bind filtergraph inputs to input streams
-    for (int i = 0; i < fg->nb_inputs; i++)
-        init_input_filter(fg, fg->inputs[i]);
+    for (int i = 0; i < fg->nb_inputs; i++) {
+        int ret = init_input_filter(fg, fg->inputs[i]);
+        if (ret < 0)
+            return ret;
+    }
     return 0;
 }
 
