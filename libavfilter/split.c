@@ -67,11 +67,15 @@ static int activate(AVFilterContext *ctx)
 {
     AVFilterLink *inlink = ctx->inputs[0];
     AVFrame *in;
-    int status, ret;
+    int status, ret, nb_eofs = 0;
     int64_t pts;
 
-    for (int i = 0; i < ctx->nb_outputs; i++) {
-        FF_FILTER_FORWARD_STATUS_BACK_ALL(ctx->outputs[i], ctx);
+    for (int i = 0; i < ctx->nb_outputs; i++)
+        nb_eofs += ff_outlink_get_status(ctx->outputs[i]) == AVERROR_EOF;
+
+    if (nb_eofs == ctx->nb_outputs) {
+        ff_inlink_set_status(inlink, AVERROR_EOF);
+        return 0;
     }
 
     ret = ff_inlink_consume_frame(inlink, &in);
