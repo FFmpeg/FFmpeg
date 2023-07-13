@@ -830,7 +830,7 @@ void of_close(OutputFile **pof);
 
 void of_enc_stats_close(void);
 
-void of_output_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt);
+int of_output_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt);
 
 /**
  * @param dts predicted packet dts in AV_TIME_BASE_Q
