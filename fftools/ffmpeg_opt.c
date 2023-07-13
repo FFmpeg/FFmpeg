@@ -128,8 +128,9 @@ static void uninit_options(OptionsContext *o)
 #if FFMPEG_OPT_MAP_CHANNEL
     av_freep(&o->audio_channel_maps);
 #endif
-    av_freep(&o->streamid_map);
     av_freep(&o->attachments);
+
+    av_dict_free(&o->streamid);
 }
 
 static void init_options(OptionsContext *o)
@@ -727,7 +728,6 @@ char *file_read(const char *filename)
 static int opt_streamid(void *optctx, const char *opt, const char *arg)
 {
     OptionsContext *o = optctx;
-    int idx;
     char *p;
     char idx_str[16];
 
@@ -737,13 +737,11 @@ static int opt_streamid(void *optctx, const char *opt, const char *arg)
         av_log(NULL, AV_LOG_FATAL,
                "Invalid value '%s' for option '%s', required syntax is 'index:value'\n",
                arg, opt);
-        exit_program(1);
+        return AVERROR(EINVAL);
     }
     *p++ = '\0';
-    idx = parse_number_or_die(opt, idx_str, OPT_INT, 0, MAX_STREAMS-1);
-    o->streamid_map = grow_array(o->streamid_map, sizeof(*o->streamid_map), &o->nb_streamid_map, idx+1);
-    o->streamid_map[idx] = parse_number_or_die(opt, p, OPT_INT, 0, INT_MAX);
-    return 0;
+
+    return av_dict_set(&o->streamid, idx_str, p, 0);
 }
 
 static int init_complex_filters(void)

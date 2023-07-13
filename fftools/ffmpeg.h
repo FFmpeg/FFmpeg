@@ -72,8 +72,6 @@ enum EncTimeBase {
     ENC_TIME_BASE_FILTER = -2,
 };
 
-#define MAX_STREAMS 1024    /* arbitrary sanity check value */
-
 enum HWAccelID {
     HWACCEL_NONE = 0,
     HWACCEL_AUTO,
@@ -183,9 +181,8 @@ typedef struct OptionsContext {
     int subtitle_disable;
     int data_disable;
 
-    /* indexed by output file stream index */
-    int   *streamid_map;
-    int nb_streamid_map;
+    // keys are stream indices
+    AVDictionary *streamid;
 
     SpecifierOpt *metadata;
     int        nb_metadata;

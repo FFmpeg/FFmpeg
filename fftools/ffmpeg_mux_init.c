@@ -1100,11 +1100,23 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
     if (!st)
         return AVERROR(ENOMEM);
 
-    if (oc->nb_streams - 1 < o->nb_streamid_map)
-        st->id = o->streamid_map[oc->nb_streams - 1];
-
     ms  = mux_stream_alloc(mux, type);
     ost = &ms->ost;
+
+    if (o->streamid) {
+        AVDictionaryEntry *e;
+        char idx[16], *p;
+        snprintf(idx, sizeof(idx), "%d", ost->index);
+
+        e = av_dict_get(o->streamid, idx, NULL, 0);
+        if (e) {
+            st->id = strtol(e->value, &p, 0);
+            if (!e->value[0] || *p) {
+                av_log(ost, AV_LOG_FATAL, "Invalid stream id: %s\n", e->value);
+                return AVERROR(EINVAL);
+            }
+        }
+    }
 
     ost->par_in = avcodec_parameters_alloc();
     if (!ost->par_in)
