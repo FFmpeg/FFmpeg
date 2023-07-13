@@ -816,7 +816,7 @@ finish:
     }
     // non-EOF errors here are all fatal
     if (ret < 0 && ret != AVERROR_EOF)
-        report_and_exit(ret);
+        return ret;
 
     // signal EOF to our downstreams
     if (ist->dec->type == AVMEDIA_TYPE_SUBTITLE)
@@ -825,7 +825,7 @@ finish:
         ret = send_filter_eof(ist);
         if (ret < 0) {
             av_log(NULL, AV_LOG_FATAL, "Error marking filters as finished\n");
-            exit_program(1);
+            return ret;
         }
     }
 

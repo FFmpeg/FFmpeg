@@ -814,8 +814,11 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
     int eof_reached = 0;
     int duration_exceeded;
 
-    if (ist->decoding_needed)
+    if (ist->decoding_needed) {
         ret = dec_packet(ist, pkt, no_eof);
+        if (ret < 0 && ret != AVERROR_EOF)
+            return ret;
+    }
     if (ret == AVERROR_EOF || (!pkt && !ist->decoding_needed))
         eof_reached = 1;
 
