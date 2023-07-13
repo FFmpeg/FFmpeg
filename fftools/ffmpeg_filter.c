@@ -270,20 +270,20 @@ static void sub2video_update(InputFilterPriv *ifp, int64_t heartbeat_pts,
     ifp->sub2video.initialize = 0;
 }
 
-/* May return NULL (no pixel format found), a static string or a string
- * backed by the bprint. Nothing has been written to the AVBPrint in case
+/* *dst may return be set to NULL (no pixel format found), a static string or a
+ * string backed by the bprint. Nothing has been written to the AVBPrint in case
  * NULL is returned. The AVBPrint provided should be clean. */
-static const char *choose_pix_fmts(OutputFilter *ofilter, AVBPrint *bprint)
+static int choose_pix_fmts(OutputFilter *ofilter, AVBPrint *bprint,
+                           const char **dst)
 {
     OutputFilterPriv *ofp = ofp_from_ofilter(ofilter);
     OutputStream *ost = ofilter->ost;
 
-    if (ost->keep_pix_fmt) {
-        return ofp->format == AV_PIX_FMT_NONE ? NULL :
+    *dst = NULL;
+
+    if (ost->keep_pix_fmt || ofp->format != AV_PIX_FMT_NONE) {
+        *dst = ofp->format == AV_PIX_FMT_NONE ? NULL :
                av_get_pix_fmt_name(ofp->format);
-    }
-    if (ofp->format != AV_PIX_FMT_NONE) {
-        return av_get_pix_fmt_name(ofp->format);
     } else if (ofp->formats) {
         const enum AVPixelFormat *p = ofp->formats;
 
@@ -292,10 +292,12 @@ static const char *choose_pix_fmts(OutputFilter *ofilter, AVBPrint *bprint)
             av_bprintf(bprint, "%s%c", name, p[1] == AV_PIX_FMT_NONE ? '\0' : '|');
         }
         if (!av_bprint_is_complete(bprint))
-            report_and_exit(AVERROR(ENOMEM));
-        return bprint->str;
-    } else
-        return NULL;
+            return AVERROR(ENOMEM);
+
+        *dst = bprint->str;
+    }
+
+    return 0;
 }
 
 /* Define a function for appending a list of allowed formats
@@ -1103,7 +1105,11 @@ static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter,
     }
 
     av_bprint_init(&bprint, 0, AV_BPRINT_SIZE_UNLIMITED);
-    if ((pix_fmts = choose_pix_fmts(ofilter, &bprint))) {
+    ret = choose_pix_fmts(ofilter, &bprint, &pix_fmts);
+    if (ret < 0)
+        return ret;
+
+    if (pix_fmts) {
         AVFilterContext *filter;
 
         ret = avfilter_graph_create_filter(&filter,
