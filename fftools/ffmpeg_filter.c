@@ -723,14 +723,14 @@ static InputFilter *ifilter_alloc(FilterGraph *fg)
 
     ifp->frame = av_frame_alloc();
     if (!ifp->frame)
-        report_and_exit(AVERROR(ENOMEM));
+        return NULL;
 
     ifp->format          = -1;
     ifp->fallback.format = -1;
 
     ifp->frame_queue = av_fifo_alloc2(8, sizeof(AVFrame*), AV_FIFO_FLAG_AUTO_GROW);
     if (!ifp->frame_queue)
-        report_and_exit(AVERROR(ENOMEM));
+        return NULL;
 
     return ifilter;
 }
@@ -1783,7 +1783,7 @@ int reap_filters(FilterGraph *fg, int flush)
             fd = frame_data(filtered_frame);
             if (!fd) {
                 av_frame_unref(filtered_frame);
-                report_and_exit(AVERROR(ENOMEM));
+                return AVERROR(ENOMEM);
             }
 
             // only use bits_per_raw_sample passed through from the decoder
