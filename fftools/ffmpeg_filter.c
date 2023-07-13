@@ -624,7 +624,7 @@ static void set_channel_layout(OutputFilterPriv *f, OutputStream *ost)
     av_channel_layout_default(&f->ch_layout, ost->enc_ctx->ch_layout.nb_channels);
 }
 
-void ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost)
+int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost)
 {
     OutputFilterPriv *ofp = ofp_from_ofilter(ofilter);
     FilterGraph  *fg = ofilter->graph;
@@ -699,15 +699,17 @@ void ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost)
 
         for (int i = 0; i < fg->nb_outputs; i++)
             if (!fg->outputs[i]->ost)
-                return;
+                return 0;
 
         ret = configure_filtergraph(fg);
         if (ret < 0) {
             av_log(fg, AV_LOG_ERROR, "Error configuring filter graph: %s\n",
                    av_err2str(ret));
-            exit_program(1);
+            return ret;
         }
     }
+
+    return 0;
 }
 
 static InputFilter *ifilter_alloc(FilterGraph *fg)
@@ -899,7 +901,9 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost,
     if (ret < 0)
         return ret;
 
-    ofilter_bind_ost(fg->outputs[0], ost);
+    ret = ofilter_bind_ost(fg->outputs[0], ost);
+    if (ret < 0)
+        return ret;
 
     return 0;
 }

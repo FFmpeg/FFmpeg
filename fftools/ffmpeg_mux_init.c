@@ -1382,7 +1382,9 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
         (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO)) {
         if (ofilter) {
             ost->filter       = ofilter;
-            ofilter_bind_ost(ofilter, ost);
+            ret = ofilter_bind_ost(ofilter, ost);
+            if (ret < 0)
+                return ret;
         } else {
             ret = init_simple_filtergraph(ost->ist, ost, filters);
             if (ret < 0) {
