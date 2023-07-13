@@ -165,19 +165,19 @@ static int hw_device_setup_for_encode(OutputStream *ost, AVBufferRef *frames_ref
     return 0;
 }
 
-static void set_encoder_id(OutputFile *of, OutputStream *ost)
+static int set_encoder_id(OutputFile *of, OutputStream *ost)
 {
     const char *cname = ost->enc_ctx->codec->name;
     uint8_t *encoder_string;
     int encoder_string_len;
 
     if (av_dict_get(ost->st->metadata, "encoder",  NULL, 0))
-        return;
+        return 0;
 
     encoder_string_len = sizeof(LIBAVCODEC_IDENT) + strlen(cname) + 2;
     encoder_string     = av_mallocz(encoder_string_len);
     if (!encoder_string)
-        report_and_exit(AVERROR(ENOMEM));
+        return AVERROR(ENOMEM);
 
     if (!of->bitexact && !ost->bitexact)
         av_strlcpy(encoder_string, LIBAVCODEC_IDENT " ", encoder_string_len);
@@ -186,6 +186,8 @@ static void set_encoder_id(OutputFile *of, OutputStream *ost)
     av_strlcat(encoder_string, cname, encoder_string_len);
     av_dict_set(&ost->st->metadata, "encoder",  encoder_string,
                 AV_DICT_DONT_STRDUP_VAL | AV_DICT_DONT_OVERWRITE);
+
+    return 0;
 }
 
 int enc_open(OutputStream *ost, AVFrame *frame)
@@ -211,7 +213,9 @@ int enc_open(OutputStream *ost, AVFrame *frame)
             return AVERROR(ENOMEM);
     }
 
-    set_encoder_id(output_files[ost->file_index], ost);
+    ret = set_encoder_id(output_files[ost->file_index], ost);
+    if (ret < 0)
+        return ret;
 
     if (ist) {
         dec_ctx = ist->dec_ctx;
@@ -413,7 +417,7 @@ int enc_open(OutputStream *ost, AVFrame *frame)
     if (ret < 0) {
         av_log(ost, AV_LOG_FATAL,
                "Error initializing the output stream codec context.\n");
-        exit_program(1);
+        return ret;
     }
 
     if (ost->enc_ctx->nb_coded_side_data) {
