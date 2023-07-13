@@ -495,6 +495,54 @@ static int parse_matrix_coeffs(void *logctx, uint16_t *dest, const char *str)
     return 0;
 }
 
+static int fmt_in_list(const int *formats, int format)
+{
+    for (; *formats != -1; formats++)
+        if (*formats == format)
+            return 1;
+    return 0;
+}
+
+static enum AVPixelFormat pix_fmt_parse(OutputStream *ost, const char *name)
+{
+    const enum AVPixelFormat *fmts = ost->enc_ctx->codec->pix_fmts;
+    enum AVPixelFormat fmt;
+
+    fmt = av_get_pix_fmt(name);
+    if (fmt == AV_PIX_FMT_NONE) {
+        av_log(ost, AV_LOG_FATAL, "Unknown pixel format requested: %s.\n", name);
+        return AV_PIX_FMT_NONE;
+    }
+
+    /* when the user specified-format is an alias for an endianness-specific
+     * one (e.g. rgb48 -> rgb48be/le), it gets translated into the native
+     * endianness by av_get_pix_fmt();
+     * the following code handles the case when the native endianness is not
+     * supported by the encoder, but the other one is */
+    if (fmts && !fmt_in_list(fmts, fmt)) {
+        const char *name_canonical = av_get_pix_fmt_name(fmt);
+        int len = strlen(name_canonical);
+
+        if (strcmp(name, name_canonical) &&
+            (!strcmp(name_canonical + len - 2, "le") ||
+             !strcmp(name_canonical + len - 2, "be"))) {
+            char name_other[64];
+            enum AVPixelFormat fmt_other;
+
+            snprintf(name_other, sizeof(name_other), "%s%ce",
+                     name, name_canonical[len - 2] == 'l' ? 'b' : 'l');
+            fmt_other = av_get_pix_fmt(name_other);
+            if (fmt_other != AV_PIX_FMT_NONE && fmt_in_list(fmts, fmt_other)) {
+                av_log(ost, AV_LOG_VERBOSE, "Mapping pixel format %s->%s\n",
+                       name, name_other);
+                fmt = fmt_other;
+            }
+        }
+    }
+
+    return fmt;
+}
+
 static int new_stream_video(Muxer *mux, const OptionsContext *o,
                             OutputStream *ost)
 {
@@ -558,9 +606,10 @@ static int new_stream_video(Muxer *mux, const OptionsContext *o,
             if (!*++frame_pix_fmt)
                 frame_pix_fmt = NULL;
         }
-        if (frame_pix_fmt && (video_enc->pix_fmt = av_get_pix_fmt(frame_pix_fmt)) == AV_PIX_FMT_NONE) {
-            av_log(ost, AV_LOG_FATAL, "Unknown pixel format requested: %s.\n", frame_pix_fmt);
-            return AVERROR(EINVAL);
+        if (frame_pix_fmt) {
+            video_enc->pix_fmt = pix_fmt_parse(ost, frame_pix_fmt);
+            if (video_enc->pix_fmt == AV_PIX_FMT_NONE)
+                return AVERROR(EINVAL);
         }
 
         MATCH_PER_STREAM_OPT(intra_matrices, str, intra_matrix, oc, st);
