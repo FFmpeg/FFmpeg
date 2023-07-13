@@ -25,7 +25,7 @@ func ff_alac_decorrelate_stereo_rvv, zve32x
         ld          a4, 8(a0)
         ld          a0, 0(a0)
 1:
-        vsetvli     t0, a1, e32, m1, ta, ma
+        vsetvli     t0, a1, e32, m4, ta, ma
         vle32.v     v24, (a4)
         sub         a1, a1, t0
         vle32.v     v16, (a0)
@@ -47,7 +47,7 @@ func ff_alac_append_extra_bits_mono_rvv, zve32x
         ld      a0, (a0)
         ld      a1, (a1)
 1:
-        vsetvli t0, a4, e32, m1, ta, ma
+        vsetvli t0, a4, e32, m8, ta, ma
         vle32.v v16, (a0)
         sub     a4, a4, t0
         vle32.v v24, (a1)
@@ -67,7 +67,7 @@ func ff_alac_append_extra_bits_stereo_rvv, zve32x
         ld      a7, 8(a1)
         ld      a1,  (a1)
 1:
-        vsetvli t0, a4, e32, m1, ta, ma
+        vsetvli t0, a4, e32, m8, ta, ma
         vle32.v v16, (a0)
         sub     a4, a4, t0
         vle32.v v0, (a6)
