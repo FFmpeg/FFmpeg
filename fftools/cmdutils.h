@@ -443,9 +443,6 @@ void *allocate_array_elem(void *array, size_t elem_size, int *nb_elems);
 #define GROW_ARRAY(array, nb_elems)\
     array = grow_array(array, sizeof(*array), &nb_elems, nb_elems + 1)
 
-#define ALLOC_ARRAY_ELEM(array, nb_elems)\
-    allocate_array_elem(&array, sizeof(*array[0]), &nb_elems)
-
 #define GET_PIX_FMT_NAME(pix_fmt)\
     const char *name = av_get_pix_fmt_name(pix_fmt);
 
