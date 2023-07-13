@@ -2773,8 +2773,12 @@ static int read_thread(void *arg)
     av_format_inject_global_side_data(ic);
 
     if (find_stream_info) {
-        AVDictionary **opts = setup_find_stream_info_opts(ic, codec_opts);
+        AVDictionary **opts;
         int orig_nb_streams = ic->nb_streams;
+
+        err = setup_find_stream_info_opts(ic, codec_opts, &opts);
+        if (err < 0)
+            report_and_exit(err);
 
         err = avformat_find_stream_info(ic, opts);
 

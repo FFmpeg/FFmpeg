@@ -1482,8 +1482,12 @@ int ifile_open(const OptionsContext *o, const char *filename)
         choose_decoder(o, ic, ic->streams[i], HWACCEL_NONE, AV_HWDEVICE_TYPE_NONE);
 
     if (o->find_stream_info) {
-        AVDictionary **opts = setup_find_stream_info_opts(ic, o->g->codec_opts);
+        AVDictionary **opts;
         int orig_nb_streams = ic->nb_streams;
+
+        ret = setup_find_stream_info_opts(ic, o->g->codec_opts, &opts);
+        if (ret < 0)
+            return ret;
 
         /* If not enough info to get the stream parameters, we decode the
            first frames to get it. (used in mpeg case for example) */

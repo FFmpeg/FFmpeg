@@ -645,8 +645,8 @@ static void add_opt(OptionParseContext *octx, const OptionDef *opt,
     g->opts[g->nb_opts - 1].val = val;
 }
 
-static void init_parse_context(OptionParseContext *octx,
-                               const OptionGroupDef *groups, int nb_groups)
+static int init_parse_context(OptionParseContext *octx,
+                              const OptionGroupDef *groups, int nb_groups)
 {
     static const OptionGroupDef global_group = { "global" };
     int i;
@@ -656,13 +656,15 @@ static void init_parse_context(OptionParseContext *octx,
     octx->nb_groups = nb_groups;
     octx->groups    = av_calloc(octx->nb_groups, sizeof(*octx->groups));
     if (!octx->groups)
-        report_and_exit(AVERROR(ENOMEM));
+        return AVERROR(ENOMEM);
 
     for (i = 0; i < octx->nb_groups; i++)
         octx->groups[i].group_def = &groups[i];
 
     octx->global_opts.group_def = &global_group;
     octx->global_opts.arg       = "";
+
+    return 0;
 }
 
 void uninit_parse_context(OptionParseContext *octx)
@@ -694,13 +696,17 @@ int split_commandline(OptionParseContext *octx, int argc, char *argv[],
                       const OptionDef *options,
                       const OptionGroupDef *groups, int nb_groups)
 {
+    int ret;
     int optindex = 1;
     int dashdash = -2;
 
     /* perform system-dependent conversions for arguments list */
     prepare_app_arguments(&argc, &argv);
 
-    init_parse_context(octx, groups, nb_groups);
+    ret = init_parse_context(octx, groups, nb_groups);
+    if (ret < 0)
+        return ret;
+
     av_log(NULL, AV_LOG_DEBUG, "Splitting the commandline.\n");
 
     while (optindex < argc) {
@@ -950,21 +956,27 @@ AVDictionary *filter_codec_opts(AVDictionary *opts, enum AVCodecID codec_id,
     return ret;
 }
 
-AVDictionary **setup_find_stream_info_opts(AVFormatContext *s,
-                                           AVDictionary *codec_opts)
+int setup_find_stream_info_opts(AVFormatContext *s,
+                                AVDictionary *codec_opts,
+                                AVDictionary ***dst)
 {
     int i;
     AVDictionary **opts;
 
+    *dst = NULL;
+
     if (!s->nb_streams)
-        return NULL;
+        return 0;
+
     opts = av_calloc(s->nb_streams, sizeof(*opts));
     if (!opts)
-        report_and_exit(AVERROR(ENOMEM));
+        return AVERROR(ENOMEM);
+
     for (i = 0; i < s->nb_streams; i++)
         opts[i] = filter_codec_opts(codec_opts, s->streams[i]->codecpar->codec_id,
                                     s, s->streams[i], NULL);
-    return opts;
+    *dst = opts;
+    return 0;
 }
 
 void *grow_array(void *array, int elem_size, int *size, int new_size)

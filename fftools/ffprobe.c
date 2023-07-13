@@ -3372,8 +3372,12 @@ static int open_input_file(InputFile *ifile, const char *filename,
         av_log(NULL, AV_LOG_WARNING, "Option %s skipped - not known to demuxer.\n", t->key);
 
     if (find_stream_info) {
-        AVDictionary **opts = setup_find_stream_info_opts(fmt_ctx, codec_opts);
+        AVDictionary **opts;
         int orig_nb_streams = fmt_ctx->nb_streams;
+
+        err = setup_find_stream_info_opts(fmt_ctx, codec_opts, &opts);
+        if (err < 0)
+            report_and_exit(err);
 
         err = avformat_find_stream_info(fmt_ctx, opts);
 
