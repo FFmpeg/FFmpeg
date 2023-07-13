@@ -835,8 +835,8 @@ static int submit_encode_frame(OutputFile *of, OutputStream *ost,
     }
 }
 
-static void do_audio_out(OutputFile *of, OutputStream *ost,
-                         AVFrame *frame)
+static int do_audio_out(OutputFile *of, OutputStream *ost,
+                        AVFrame *frame)
 {
     Encoder          *e = ost->enc;
     AVCodecContext *enc = ost->enc_ctx;
@@ -846,7 +846,7 @@ static void do_audio_out(OutputFile *of, OutputStream *ost,
         enc->ch_layout.nb_channels != frame->ch_layout.nb_channels) {
         av_log(ost, AV_LOG_ERROR,
                "Audio channel count changed and encoder does not support parameter changes\n");
-        return;
+        return 0;
     }
 
     if (frame->pts == AV_NOPTS_VALUE)
@@ -862,13 +862,12 @@ static void do_audio_out(OutputFile *of, OutputStream *ost,
                                     enc->time_base);
 
     if (!check_recording_time(ost, frame->pts, frame->time_base))
-        return;
+        return 0;
 
     e->next_pts = frame->pts + frame->nb_samples;
 
     ret = submit_encode_frame(of, ost, frame);
-    if (ret < 0 && ret != AVERROR_EOF)
-        exit_program(1);
+    return (ret < 0 && ret != AVERROR_EOF) ? ret : 0;
 }
 
 static double adjust_frame_pts_to_encoder_tb(OutputFile *of, OutputStream *ost,
@@ -1055,7 +1054,7 @@ force_keyframe:
 }
 
 /* May modify/reset frame */
-static void do_video_out(OutputFile *of, OutputStream *ost, AVFrame *frame)
+static int do_video_out(OutputFile *of, OutputStream *ost, AVFrame *frame)
 {
     int ret;
     Encoder *e = ost->enc;
@@ -1086,7 +1085,7 @@ static void do_video_out(OutputFile *of, OutputStream *ost, AVFrame *frame)
         if (nb_frames > dts_error_threshold * 30) {
             av_log(ost, AV_LOG_ERROR, "%"PRId64" frame duplication too large, skipping\n", nb_frames - 1);
             ost->nb_frames_drop++;
-            return;
+            return 0;
         }
         ost->nb_frames_dup += nb_frames - (nb_frames_prev && ost->last_dropped) - (nb_frames > nb_frames_prev);
         av_log(ost, AV_LOG_VERBOSE, "*** %"PRId64" dup!\n", nb_frames - 1);
@@ -1108,12 +1107,12 @@ static void do_video_out(OutputFile *of, OutputStream *ost, AVFrame *frame)
             in_picture = frame;
 
         if (!in_picture)
-            return;
+            return 0;
 
         in_picture->pts = e->next_pts;
 
         if (!check_recording_time(ost, in_picture->pts, ost->enc_ctx->time_base))
-            return;
+            return 0;
 
         in_picture->quality = enc->global_quality;
         in_picture->pict_type = forced_kf_apply(ost, &ost->kf, enc->time_base, in_picture, i);
@@ -1122,7 +1121,7 @@ static void do_video_out(OutputFile *of, OutputStream *ost, AVFrame *frame)
         if (ret == AVERROR_EOF)
             break;
         else if (ret < 0)
-            exit_program(1);
+            return ret;
 
         e->next_pts++;
         e->vsync_frame_number++;
@@ -1131,6 +1130,8 @@ static void do_video_out(OutputFile *of, OutputStream *ost, AVFrame *frame)
     av_frame_unref(e->last_frame);
     if (frame)
         av_frame_move_ref(e->last_frame, frame);
+
+    return 0;
 }
 
 int enc_frame(OutputStream *ost, AVFrame *frame)
@@ -1142,10 +1143,8 @@ int enc_frame(OutputStream *ost, AVFrame *frame)
     if (ret < 0)
         return ret;
 
-    if (ost->enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO) do_video_out(of, ost, frame);
-    else                                                do_audio_out(of, ost, frame);
-
-    return 0;
+    return ost->enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO ?
+           do_video_out(of, ost, frame) : do_audio_out(of, ost, frame);
 }
 
 void enc_flush(void)
