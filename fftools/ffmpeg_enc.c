@@ -637,7 +637,7 @@ static inline double psnr(double d)
     return -10.0 * log10(d);
 }
 
-static void update_video_stats(OutputStream *ost, const AVPacket *pkt, int write_vstats)
+static int update_video_stats(OutputStream *ost, const AVPacket *pkt, int write_vstats)
 {
     Encoder        *e = ost->enc;
     const uint8_t *sd = av_packet_get_side_data(pkt, AV_PKT_DATA_QUALITY_STATS,
@@ -659,14 +659,14 @@ static void update_video_stats(OutputStream *ost, const AVPacket *pkt, int write
     }
 
     if (!write_vstats)
-        return;
+        return 0;
 
     /* this is executed just the first time update_video_stats is called */
     if (!vstats_file) {
         vstats_file = fopen(vstats_filename, "w");
         if (!vstats_file) {
             perror("fopen");
-            exit_program(1);
+            return AVERROR(errno);
         }
     }
 
@@ -693,6 +693,8 @@ static void update_video_stats(OutputStream *ost, const AVPacket *pkt, int write
     fprintf(vstats_file, "s_size= %8.0fkB time= %0.3f br= %7.1fkbits/s avg_br= %7.1fkbits/s ",
            (double)e->data_size / 1024, ti1, bitrate, avg_bitrate);
     fprintf(vstats_file, "type= %c\n", av_get_picture_type_char(pict_type));
+
+    return 0;
 }
 
 static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
@@ -734,6 +736,8 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
     }
 
     while (1) {
+        av_packet_unref(pkt);
+
         ret = avcodec_receive_packet(enc, pkt);
         update_benchmark("%s_%s %d.%d", action, type_desc,
                          ost->file_index, ost->index);
@@ -755,8 +759,12 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
             return ret;
         }
 
-        if (enc->codec_type == AVMEDIA_TYPE_VIDEO)
-            update_video_stats(ost, pkt, !!vstats_filename);
+        if (enc->codec_type == AVMEDIA_TYPE_VIDEO) {
+            ret = update_video_stats(ost, pkt, !!vstats_filename);
+            if (ret < 0)
+                return ret;
+        }
+
         if (ost->enc_stats_post.io)
             enc_stats_write(ost, &ost->enc_stats_post, NULL, pkt,
                             e->packets_encoded);
@@ -775,7 +783,7 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
             av_log(NULL, AV_LOG_ERROR,
                    "Subtitle heartbeat logic failed in %s! (%s)\n",
                    __func__, av_err2str(ret));
-            exit_program(1);
+            return ret;
         }
 
         e->data_size += pkt->size;
