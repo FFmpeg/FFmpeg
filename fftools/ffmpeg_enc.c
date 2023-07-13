@@ -1147,7 +1147,7 @@ int enc_frame(OutputStream *ost, AVFrame *frame)
            do_video_out(of, ost, frame) : do_audio_out(of, ost, frame);
 }
 
-void enc_flush(void)
+int enc_flush(void)
 {
     int ret;
 
@@ -1168,6 +1168,8 @@ void enc_flush(void)
 
         ret = submit_encode_frame(of, ost, NULL);
         if (ret != AVERROR_EOF)
-            exit_program(1);
+            return ret;
     }
+
+    return 0;
 }

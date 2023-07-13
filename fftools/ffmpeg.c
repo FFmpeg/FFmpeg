@@ -1250,7 +1250,7 @@ static int transcode(int *err_rate_exceeded)
         } else if (err_rate)
             av_log(ist, AV_LOG_VERBOSE, "Decode error rate %g\n", err_rate);
     }
-    enc_flush();
+    ret = err_merge(ret, enc_flush());
 
     term_exit();
 
