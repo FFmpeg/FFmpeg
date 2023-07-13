@@ -583,7 +583,7 @@ static int ifilter_bind_ist(InputFilter *ifilter, InputStream *ist)
     return 0;
 }
 
-static void set_channel_layout(OutputFilterPriv *f, OutputStream *ost)
+static int set_channel_layout(OutputFilterPriv *f, OutputStream *ost)
 {
     const AVCodec *c = ost->enc_ctx->codec;
     int i, err;
@@ -592,8 +592,8 @@ static void set_channel_layout(OutputFilterPriv *f, OutputStream *ost)
         /* Pass the layout through for all orders but UNSPEC */
         err = av_channel_layout_copy(&f->ch_layout, &ost->enc_ctx->ch_layout);
         if (err < 0)
-            report_and_exit(AVERROR(ENOMEM));
-        return;
+            return err;
+        return 0;
     }
 
     /* Requested layout is of order UNSPEC */
@@ -601,7 +601,7 @@ static void set_channel_layout(OutputFilterPriv *f, OutputStream *ost)
         /* Use the default native layout for the requested amount of channels when the
            encoder doesn't have a list of supported layouts */
         av_channel_layout_default(&f->ch_layout, ost->enc_ctx->ch_layout.nb_channels);
-        return;
+        return 0;
     }
     /* Encoder has a list of supported layouts. Pick the first layout in it with the
        same amount of channels as the requested layout */
@@ -613,12 +613,14 @@ static void set_channel_layout(OutputFilterPriv *f, OutputStream *ost)
         /* Use it if one is found */
         err = av_channel_layout_copy(&f->ch_layout, &c->ch_layouts[i]);
         if (err < 0)
-            report_and_exit(AVERROR(ENOMEM));
-        return;
+            return err;
+        return 0;
     }
     /* If no layout for the amount of channels requested was found, use the default
        native layout for it. */
     av_channel_layout_default(&f->ch_layout, ost->enc_ctx->ch_layout.nb_channels);
+
+    return 0;
 }
 
 int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost)
@@ -682,7 +684,9 @@ int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost)
             ofp->sample_rates = c->supported_samplerates;
         }
         if (ost->enc_ctx->ch_layout.nb_channels) {
-            set_channel_layout(ofp, ost);
+            int ret = set_channel_layout(ofp, ost);
+            if (ret < 0)
+                return ret;
         } else if (c->ch_layouts) {
             ofp->ch_layouts = c->ch_layouts;
         }
