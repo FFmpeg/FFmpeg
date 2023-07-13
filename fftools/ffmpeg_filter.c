@@ -550,8 +550,10 @@ static OutputFilter *ofilter_alloc(FilterGraph *fg)
     OutputFilterPriv *ofp;
     OutputFilter *ofilter;
 
-    ofp               = allocate_array_elem(&fg->outputs, sizeof(*ofp),
-                                            &fg->nb_outputs);
+    ofp = allocate_array_elem(&fg->outputs, sizeof(*ofp), &fg->nb_outputs);
+    if (!ofp)
+        return NULL;
+
     ofilter           = &ofp->ofilter;
     ofilter->graph    = fg;
     ofp->format       = -1;
@@ -715,10 +717,14 @@ int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost)
 
 static InputFilter *ifilter_alloc(FilterGraph *fg)
 {
-    InputFilterPriv *ifp = allocate_array_elem(&fg->inputs, sizeof(*ifp),
-                                               &fg->nb_inputs);
-    InputFilter *ifilter = &ifp->ifilter;
+    InputFilterPriv *ifp;
+    InputFilter *ifilter;
 
+    ifp = allocate_array_elem(&fg->inputs, sizeof(*ifp), &fg->nb_inputs);
+    if (!ifp)
+        return NULL;
+
+    ifilter         = &ifp->ifilter;
     ifilter->graph  = fg;
 
     ifp->frame = av_frame_alloc();
@@ -800,12 +806,17 @@ static const AVClass fg_class = {
 
 int fg_create(FilterGraph **pfg, char *graph_desc)
 {
-    FilterGraphPriv *fgp = allocate_array_elem(&filtergraphs, sizeof(*fgp), &nb_filtergraphs);
-    FilterGraph      *fg = &fgp->fg;
+    FilterGraphPriv *fgp;
+    FilterGraph      *fg;
 
     AVFilterInOut *inputs, *outputs;
     AVFilterGraph *graph;
     int ret = 0;
+
+    fgp = allocate_array_elem(&filtergraphs, sizeof(*fgp), &nb_filtergraphs);
+    if (!fgp)
+        return AVERROR(ENOMEM);
+    fg = &fgp->fg;
 
     if (pfg)
         *pfg = fg;
@@ -850,6 +861,9 @@ int fg_create(FilterGraph **pfg, char *graph_desc)
 
     for (AVFilterInOut *cur = outputs; cur; cur = cur->next) {
         OutputFilter *const ofilter = ofilter_alloc(fg);
+
+        if (!ofilter)
+            goto fail;
 
         ofilter->linklabel = cur->name;
         cur->name          = NULL;

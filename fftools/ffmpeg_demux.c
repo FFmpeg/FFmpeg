@@ -1018,8 +1018,11 @@ static DemuxStream *demux_stream_alloc(Demuxer *d, AVStream *st)
 {
     const char *type_str = av_get_media_type_string(st->codecpar->codec_type);
     InputFile    *f = &d->f;
-    DemuxStream *ds = allocate_array_elem(&f->streams, sizeof(*ds),
-                                          &f->nb_streams);
+    DemuxStream *ds;
+
+    ds = allocate_array_elem(&f->streams, sizeof(*ds), &f->nb_streams);
+    if (!ds)
+        return NULL;
 
     ds->ist.st         = st;
     ds->ist.file_index = f->index;
@@ -1051,6 +1054,9 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
     int ret;
 
     ds  = demux_stream_alloc(d, st);
+    if (!ds)
+        return AVERROR(ENOMEM);
+
     ist = &ds->ist;
 
     ist->discard = 1;
@@ -1328,6 +1334,9 @@ static Demuxer *demux_alloc(void)
 {
     Demuxer *d = allocate_array_elem(&input_files, sizeof(*d), &nb_input_files);
 
+    if (!d)
+        return NULL;
+
     d->f.class = &input_file_class;
     d->f.index = nb_input_files - 1;
 
@@ -1358,6 +1367,9 @@ int ifile_open(const OptionsContext *o, const char *filename)
     int64_t recording_time = o->recording_time;
 
     d = demux_alloc();
+    if (!d)
+        return AVERROR(ENOMEM);
+
     f = &d->f;
 
     if (stop_time != INT64_MAX && recording_time != INT64_MAX) {

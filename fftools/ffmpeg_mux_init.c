@@ -413,8 +413,11 @@ static const AVClass output_stream_class = {
 static MuxStream *mux_stream_alloc(Muxer *mux, enum AVMediaType type)
 {
     const char *type_str = av_get_media_type_string(type);
-    MuxStream *ms = allocate_array_elem(&mux->of.streams, sizeof(*ms),
-                                        &mux->of.nb_streams);
+    MuxStream *ms;
+
+    ms = allocate_array_elem(&mux->of.streams, sizeof(*ms), &mux->of.nb_streams);
+    if (!ms)
+        return NULL;
 
     ms->ost.file_index = mux->of.index;
     ms->ost.index      = mux->of.nb_streams - 1;
@@ -1101,6 +1104,9 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
         return AVERROR(ENOMEM);
 
     ms  = mux_stream_alloc(mux, type);
+    if (!ms)
+        return AVERROR(ENOMEM);
+
     ost = &ms->ost;
 
     if (o->streamid) {
@@ -2557,6 +2563,9 @@ static Muxer *mux_alloc(void)
 {
     Muxer *mux = allocate_array_elem(&output_files, sizeof(*mux), &nb_output_files);
 
+    if (!mux)
+        return NULL;
+
     mux->of.class = &output_file_class;
     mux->of.index = nb_output_files - 1;
 
@@ -2576,6 +2585,9 @@ int of_open(const OptionsContext *o, const char *filename)
     int64_t stop_time      = o->stop_time;
 
     mux = mux_alloc();
+    if (!mux)
+        return AVERROR(ENOMEM);
+
     of  = &mux->of;
 
     if (stop_time != INT64_MAX && recording_time != INT64_MAX) {

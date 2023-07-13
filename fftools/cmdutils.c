@@ -1002,7 +1002,7 @@ void *allocate_array_elem(void *ptr, size_t elem_size, int *nb_elems)
 
     if (!(new_elem = av_mallocz(elem_size)) ||
         av_dynarray_add_nofree(ptr, nb_elems, new_elem) < 0)
-        report_and_exit(AVERROR(ENOMEM));
+        return NULL;
     return new_elem;
 }
 
