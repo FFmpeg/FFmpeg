@@ -1722,8 +1722,11 @@ int reap_filters(FilterGraph *fg, int flush)
                     av_log(fgp, AV_LOG_WARNING,
                            "Error in av_buffersink_get_frame_flags(): %s\n", av_err2str(ret));
                 } else if (flush && ret == AVERROR_EOF && ofp->got_frame &&
-                           av_buffersink_get_type(filter) == AVMEDIA_TYPE_VIDEO)
-                    enc_frame(ost, NULL);
+                           av_buffersink_get_type(filter) == AVMEDIA_TYPE_VIDEO) {
+                    ret = enc_frame(ost, NULL);
+                    if (ret < 0)
+                        return ret;
+                }
 
                 break;
             }
@@ -1759,8 +1762,11 @@ int reap_filters(FilterGraph *fg, int flush)
             if (ost->type == AVMEDIA_TYPE_VIDEO)
                 fd->frame_rate_filter = av_buffersink_get_frame_rate(filter);
 
-            enc_frame(ost, filtered_frame);
+            ret = enc_frame(ost, filtered_frame);
             av_frame_unref(filtered_frame);
+            if (ret < 0)
+                return ret;
+
             ofp->got_frame = 1;
         }
     }

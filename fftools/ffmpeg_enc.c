@@ -1129,17 +1129,19 @@ static void do_video_out(OutputFile *of, OutputStream *ost, AVFrame *frame)
         av_frame_move_ref(e->last_frame, frame);
 }
 
-void enc_frame(OutputStream *ost, AVFrame *frame)
+int enc_frame(OutputStream *ost, AVFrame *frame)
 {
     OutputFile *of = output_files[ost->file_index];
     int ret;
 
     ret = enc_open(ost, frame);
     if (ret < 0)
-        exit_program(1);
+        return ret;
 
     if (ost->enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO) do_video_out(of, ost, frame);
     else                                                do_audio_out(of, ost, frame);
+
+    return 0;
 }
 
 void enc_flush(void)

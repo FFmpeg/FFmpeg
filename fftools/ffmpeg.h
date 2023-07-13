@@ -814,7 +814,7 @@ void enc_free(Encoder **penc);
 
 int enc_open(OutputStream *ost, AVFrame *frame);
 int enc_subtitle(OutputFile *of, OutputStream *ost, const AVSubtitle *sub);
-void enc_frame(OutputStream *ost, AVFrame *frame);
+int enc_frame(OutputStream *ost, AVFrame *frame);
 void enc_flush(void);
 
 /*
