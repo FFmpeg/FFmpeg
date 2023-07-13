@@ -716,7 +716,7 @@ const AVCodec *find_codec_or_die(void *logctx, const char *name,
                                  enum AVMediaType type, int encoder);
 int parse_and_set_vsync(const char *arg, int *vsync_var, int file_idx, int st_idx, int is_global);
 
-void check_filter_outputs(void);
+int check_filter_outputs(void);
 int filtergraph_is_simple(const FilterGraph *fg);
 int init_simple_filtergraph(InputStream *ist, OutputStream *ost,
                             char *graph_desc);

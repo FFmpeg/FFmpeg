@@ -1301,7 +1301,9 @@ int ffmpeg_parse_options(int argc, char **argv)
 
     apply_sync_offsets();
 
-    check_filter_outputs();
+    ret = check_filter_outputs();
+    if (ret < 0)
+        goto fail;
 
 fail:
     uninit_parse_context(&octx);

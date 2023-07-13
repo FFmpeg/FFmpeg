@@ -1246,7 +1246,7 @@ static int configure_output_filter(FilterGraph *fg, OutputFilter *ofilter,
 {
     if (!ofilter->ost) {
         av_log(fg, AV_LOG_FATAL, "Filter %s has an unconnected output\n", ofilter->name);
-        exit_program(1);
+        return AVERROR(EINVAL);
     }
 
     switch (avfilter_pad_get_type(out->filter_ctx->output_pads, out->pad_idx)) {
@@ -1256,7 +1256,7 @@ static int configure_output_filter(FilterGraph *fg, OutputFilter *ofilter,
     }
 }
 
-void check_filter_outputs(void)
+int check_filter_outputs(void)
 {
     int i;
     for (i = 0; i < nb_filtergraphs; i++) {
@@ -1266,10 +1266,12 @@ void check_filter_outputs(void)
             if (!output->ost) {
                 av_log(filtergraphs[i], AV_LOG_FATAL,
                        "Filter %s has an unconnected output\n", output->name);
-                exit_program(1);
+                return AVERROR(EINVAL);
             }
         }
     }
+
+    return 0;
 }
 
 static void sub2video_prepare(InputFilterPriv *ifp)
@@ -1570,8 +1572,13 @@ static int configure_filtergraph(FilterGraph *fg)
         }
     avfilter_inout_free(&inputs);
 
-    for (cur = outputs, i = 0; cur; cur = cur->next, i++)
-        configure_output_filter(fg, fg->outputs[i], cur);
+    for (cur = outputs, i = 0; cur; cur = cur->next, i++) {
+        ret = configure_output_filter(fg, fg->outputs[i], cur);
+        if (ret < 0) {
+            avfilter_inout_free(&outputs);
+            goto fail;
+        }
+    }
     avfilter_inout_free(&outputs);
 
     if (fgp->disable_conversions)
