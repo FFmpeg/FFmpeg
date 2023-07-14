@@ -3795,22 +3795,18 @@ static int opt_input_file_i(void *optctx, const char *opt, const char *arg)
     return 0;
 }
 
-static void opt_output_file(void *optctx, const char *arg)
+static int opt_output_file_o(void *optctx, const char *opt, const char *arg)
 {
     if (output_filename) {
         av_log(NULL, AV_LOG_ERROR,
                 "Argument '%s' provided as output filename, but '%s' was already specified.\n",
                 arg, output_filename);
-        exit_program(1);
+        return AVERROR(EINVAL);
     }
     if (!strcmp(arg, "-"))
         arg = "fd:";
     output_filename = arg;
-}
 
-static int opt_output_file_o(void *optctx, const char *opt, const char *arg)
-{
-    opt_output_file(optctx, arg);
     return 0;
 }
 
