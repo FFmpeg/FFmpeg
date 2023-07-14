@@ -104,8 +104,8 @@ void exit_program(int ret)
     exit(ret);
 }
 
-double parse_number_or_die(const char *context, const char *numstr, int type,
-                           double min, double max)
+int parse_number(const char *context, const char *numstr, int type,
+                 double min, double max, double *dst)
 {
     char *tail;
     const char *error;
@@ -118,11 +118,13 @@ double parse_number_or_die(const char *context, const char *numstr, int type,
         error = "Expected int64 for %s but found %s\n";
     else if (type == OPT_INT && (int)d != d)
         error = "Expected int for %s but found %s\n";
-    else
-        return d;
+    else {
+        *dst = d;
+        return 0;
+    }
+
     av_log(NULL, AV_LOG_FATAL, error, context, numstr, min, max);
-    exit_program(1);
-    return 0;
+    return AVERROR(EINVAL);
 }
 
 int64_t parse_time_or_die(const char *context, const char *timestr,
@@ -262,6 +264,7 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
     void *dst = po->flags & (OPT_OFFSET | OPT_SPEC) ?
                 (uint8_t *)optctx + po->u.off : po->u.dst_ptr;
     int *dstcount;
+    double num;
     int ret;
 
     if (po->flags & OPT_SPEC) {
@@ -289,15 +292,31 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
             return AVERROR(ENOMEM);
         *(char **)dst = str;
     } else if (po->flags & OPT_BOOL || po->flags & OPT_INT) {
-        *(int *)dst = parse_number_or_die(opt, arg, OPT_INT64, INT_MIN, INT_MAX);
+        ret = parse_number(opt, arg, OPT_INT64, INT_MIN, INT_MAX, &num);
+        if (ret < 0)
+            return ret;
+
+        *(int *)dst = num;
     } else if (po->flags & OPT_INT64) {
-        *(int64_t *)dst = parse_number_or_die(opt, arg, OPT_INT64, INT64_MIN, INT64_MAX);
+        ret = parse_number(opt, arg, OPT_INT64, INT64_MIN, INT64_MAX, &num);
+        if (ret < 0)
+            return ret;
+
+        *(int64_t *)dst = num;
     } else if (po->flags & OPT_TIME) {
         *(int64_t *)dst = parse_time_or_die(opt, arg, 1);
     } else if (po->flags & OPT_FLOAT) {
-        *(float *)dst = parse_number_or_die(opt, arg, OPT_FLOAT, -INFINITY, INFINITY);
+        ret = parse_number(opt, arg, OPT_FLOAT, -INFINITY, INFINITY, &num);
+        if (ret < 0)
+            return ret;
+
+        *(float *)dst = num;
     } else if (po->flags & OPT_DOUBLE) {
-        *(double *)dst = parse_number_or_die(opt, arg, OPT_DOUBLE, -INFINITY, INFINITY);
+        ret = parse_number(opt, arg, OPT_DOUBLE, -INFINITY, INFINITY, &num);
+        if (ret < 0)
+            return ret;
+
+        *(double *)dst = num;
     } else if (po->u.func_arg) {
         int ret = po->u.func_arg(optctx, opt, arg);
         if (ret < 0) {

@@ -784,8 +784,11 @@ static int new_stream_video(Muxer *mux, const OptionsContext *o,
 
         ost->vsync_method = video_sync_method;
         MATCH_PER_STREAM_OPT(fps_mode, str, fps_mode, oc, st);
-        if (fps_mode)
-            parse_and_set_vsync(fps_mode, &ost->vsync_method, ost->file_index, ost->index, 0);
+        if (fps_mode) {
+            ret = parse_and_set_vsync(fps_mode, &ost->vsync_method, ost->file_index, ost->index, 0);
+            if (ret < 0)
+                return ret;
+        }
 
         if ((ost->frame_rate.num || ost->max_frame_rate.num) &&
             !(ost->vsync_method == VSYNC_AUTO ||

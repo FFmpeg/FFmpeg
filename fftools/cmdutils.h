@@ -100,8 +100,6 @@ int opt_timelimit(void *optctx, const char *opt, const char *arg);
 
 /**
  * Parse a string and return its corresponding value as a double.
- * Exit from the application if the string cannot be correctly
- * parsed or the corresponding value is invalid.
  *
  * @param context the context of the value to be set (e.g. the
  * corresponding command line option name)
@@ -111,8 +109,8 @@ int opt_timelimit(void *optctx, const char *opt, const char *arg);
  * @param min the minimum valid accepted value
  * @param max the maximum valid accepted value
  */
-double parse_number_or_die(const char *context, const char *numstr, int type,
-                           double min, double max);
+int parse_number(const char *context, const char *numstr, int type,
+                 double min, double max, double *dst);
 
 /**
  * Parse a string specifying a time and return its corresponding

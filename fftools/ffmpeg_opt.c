@@ -194,7 +194,14 @@ int parse_and_set_vsync(const char *arg, int *vsync_var, int file_idx, int st_id
     }
 
     if (is_global && *vsync_var == VSYNC_AUTO) {
-        video_sync_method = parse_number_or_die("vsync", arg, OPT_INT, VSYNC_AUTO, VSYNC_VFR);
+        int ret;
+        double num;
+
+        ret = parse_number("vsync", arg, OPT_INT, VSYNC_AUTO, VSYNC_VFR, &num);
+        if (ret < 0)
+            return ret;
+
+        video_sync_method = num;
         av_log(NULL, AV_LOG_WARNING, "Passing a number to -vsync is deprecated,"
                " use a string argument as described in the manual.\n");
     }
@@ -1104,8 +1111,7 @@ static int opt_audio_filters(void *optctx, const char *opt, const char *arg)
 static int opt_vsync(void *optctx, const char *opt, const char *arg)
 {
     av_log(NULL, AV_LOG_WARNING, "-vsync is deprecated. Use -fps_mode\n");
-    parse_and_set_vsync(arg, &video_sync_method, -1, -1, 1);
-    return 0;
+    return parse_and_set_vsync(arg, &video_sync_method, -1, -1, 1);
 }
 
 static int opt_timecode(void *optctx, const char *opt, const char *arg)
@@ -1353,8 +1359,15 @@ static int opt_progress(void *optctx, const char *opt, const char *arg)
 int opt_timelimit(void *optctx, const char *opt, const char *arg)
 {
 #if HAVE_SETRLIMIT
-    int lim = parse_number_or_die(opt, arg, OPT_INT64, 0, INT_MAX);
-    struct rlimit rl = { lim, lim + 1 };
+    int ret;
+    double lim;
+    struct rlimit rl;
+
+    ret = parse_number(opt, arg, OPT_INT64, 0, INT_MAX, &lim);
+    if (ret < 0)
+        return ret;
+
+    rl = (struct rlimit){ lim, lim + 1 };
     if (setrlimit(RLIMIT_CPU, &rl))
         perror("setrlimit");
 #else

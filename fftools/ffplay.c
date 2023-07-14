@@ -3440,13 +3440,23 @@ static void event_loop(VideoState *cur_stream)
 
 static int opt_width(void *optctx, const char *opt, const char *arg)
 {
-    screen_width = parse_number_or_die(opt, arg, OPT_INT64, 1, INT_MAX);
+    double num;
+    int ret = parse_number(opt, arg, OPT_INT64, 1, INT_MAX, &num);
+    if (ret < 0)
+        return ret;
+
+    screen_width = num;
     return 0;
 }
 
 static int opt_height(void *optctx, const char *opt, const char *arg)
 {
-    screen_height = parse_number_or_die(opt, arg, OPT_INT64, 1, INT_MAX);
+    double num;
+    int ret = parse_number(opt, arg, OPT_INT64, 1, INT_MAX, &num);
+    if (ret < 0)
+        return ret;
+
+    screen_height = num;
     return 0;
 }
 
@@ -3491,8 +3501,15 @@ static int opt_show_mode(void *optctx, const char *opt, const char *arg)
 {
     show_mode = !strcmp(arg, "video") ? SHOW_MODE_VIDEO :
                 !strcmp(arg, "waves") ? SHOW_MODE_WAVES :
-                !strcmp(arg, "rdft" ) ? SHOW_MODE_RDFT  :
-                parse_number_or_die(opt, arg, OPT_INT, 0, SHOW_MODE_NB-1);
+                !strcmp(arg, "rdft" ) ? SHOW_MODE_RDFT  : SHOW_MODE_NONE;
+
+    if (show_mode == SHOW_MODE_NONE) {
+        double num;
+        int ret = parse_number(opt, arg, OPT_INT, 0, SHOW_MODE_NB-1, &num);
+        if (ret < 0)
+            return ret;
+        show_mode = num;
+    }
     return 0;
 }
 
