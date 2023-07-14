@@ -667,7 +667,7 @@ static int bench_init_linux(void)
 
     state.sysfd = syscall(__NR_perf_event_open, &attr, 0, -1, -1, 0);
     if (state.sysfd == -1) {
-        perror("syscall");
+        perror("perf_event_open");
         return -1;
     }
     return 0;
