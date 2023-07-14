@@ -2285,8 +2285,9 @@ static int set_dispositions(Muxer *mux, const OptionsContext *o)
     OutputFile                    *of = &mux->of;
     AVFormatContext              *ctx = mux->fc;
 
-    int nb_streams[AVMEDIA_TYPE_NB]   = { 0 };
-    int have_default[AVMEDIA_TYPE_NB] = { 0 };
+    // indexed by type+1, because AVMEDIA_TYPE_UNKNOWN=-1
+    int nb_streams[AVMEDIA_TYPE_NB + 1]   = { 0 };
+    int have_default[AVMEDIA_TYPE_NB + 1] = { 0 };
     int have_manual = 0;
     int ret = 0;
 
@@ -2300,7 +2301,7 @@ static int set_dispositions(Muxer *mux, const OptionsContext *o)
     for (int i = 0; i < ctx->nb_streams; i++) {
         OutputStream *ost = of->streams[i];
 
-        nb_streams[ost->type]++;
+        nb_streams[ost->type + 1]++;
 
         MATCH_PER_STREAM_OPT(disposition, str, dispositions[i], ctx, ost->st);
 
@@ -2310,7 +2311,7 @@ static int set_dispositions(Muxer *mux, const OptionsContext *o)
             ost->st->disposition = ost->ist->st->disposition;
 
             if (ost->st->disposition & AV_DISPOSITION_DEFAULT)
-                have_default[ost->type] = 1;
+                have_default[ost->type + 1] = 1;
         }
     }
 
@@ -2335,12 +2336,12 @@ static int set_dispositions(Muxer *mux, const OptionsContext *o)
             OutputStream *ost = of->streams[i];
             enum AVMediaType type = ost->type;
 
-            if (nb_streams[type] < 2 || have_default[type] ||
+            if (nb_streams[type + 1] < 2 || have_default[type + 1] ||
                 ost->st->disposition & AV_DISPOSITION_ATTACHED_PIC)
                 continue;
 
             ost->st->disposition |= AV_DISPOSITION_DEFAULT;
-            have_default[type] = 1;
+            have_default[type + 1] = 1;
         }
     }
 
