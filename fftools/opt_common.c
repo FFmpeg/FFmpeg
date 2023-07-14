@@ -632,7 +632,7 @@ static int compare_codec_desc(const void *a, const void *b)
            strcmp((*da)->name, (*db)->name);
 }
 
-static unsigned get_codecs_sorted(const AVCodecDescriptor ***rcodecs)
+static int get_codecs_sorted(const AVCodecDescriptor ***rcodecs)
 {
     const AVCodecDescriptor *desc = NULL;
     const AVCodecDescriptor **codecs;
@@ -641,7 +641,7 @@ static unsigned get_codecs_sorted(const AVCodecDescriptor ***rcodecs)
     while ((desc = avcodec_descriptor_next(desc)))
         nb_codecs++;
     if (!(codecs = av_calloc(nb_codecs, sizeof(*codecs))))
-        report_and_exit(AVERROR(ENOMEM));
+        return AVERROR(ENOMEM);
     desc = NULL;
     while ((desc = avcodec_descriptor_next(desc)))
         codecs[i++] = desc;
@@ -666,7 +666,11 @@ static char get_media_type_char(enum AVMediaType type)
 int show_codecs(void *optctx, const char *opt, const char *arg)
 {
     const AVCodecDescriptor **codecs;
-    unsigned i, nb_codecs = get_codecs_sorted(&codecs);
+    unsigned i;
+    int nb_codecs = get_codecs_sorted(&codecs);
+
+    if (nb_codecs < 0)
+        return nb_codecs;
 
     printf("Codecs:\n"
            " D..... = Decoding supported\n"
