@@ -3350,7 +3350,7 @@ static int open_input_file(InputFile *ifile, const char *filename,
 
     fmt_ctx = avformat_alloc_context();
     if (!fmt_ctx)
-        report_and_exit(AVERROR(ENOMEM));
+        return AVERROR(ENOMEM);
 
     if (!av_dict_get(format_opts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE)) {
         av_dict_set(&format_opts, "scan_all_pmts", "1", AV_DICT_DONT_OVERWRITE);
@@ -3377,7 +3377,7 @@ static int open_input_file(InputFile *ifile, const char *filename,
 
         err = setup_find_stream_info_opts(fmt_ctx, codec_opts, &opts);
         if (err < 0)
-            report_and_exit(err);
+            return err;
 
         err = avformat_find_stream_info(fmt_ctx, opts);
 
