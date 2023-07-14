@@ -107,8 +107,7 @@ static int detect_flags(void)
 int ff_get_cpu_flags_aarch64(void)
 {
     int flags = AV_CPU_FLAG_ARMV8 * HAVE_ARMV8 |
-                AV_CPU_FLAG_NEON  * HAVE_NEON  |
-                AV_CPU_FLAG_VFP   * HAVE_VFP;
+                AV_CPU_FLAG_NEON  * HAVE_NEON;
 
 #ifdef __ARM_FEATURE_DOTPROD
     flags |= AV_CPU_FLAG_DOTPROD;

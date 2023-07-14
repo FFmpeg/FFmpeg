@@ -2668,7 +2668,7 @@ armv6t2_deps="arm"
 armv8_deps="aarch64"
 neon_deps_any="aarch64 arm"
 intrinsics_neon_deps="neon"
-vfp_deps_any="aarch64 arm"
+vfp_deps="arm"
 vfpv3_deps="vfp"
 setend_deps="arm"
 dotprod_deps="aarch64 neon"
@@ -6058,7 +6058,6 @@ if enabled aarch64; then
     enabled armv8 && check_insn armv8 'prfm   pldl1strm, [x0]'
     # internal assembler in clang 3.3 does not support this instruction
     enabled neon && check_insn neon 'ext   v0.8B, v0.8B, v1.8B, #1'
-    enabled vfp  && check_insn vfp  'fmadd d0,    d0,    d1,    d2'
 
     archext_list="dotprod i8mm"
     enabled dotprod && check_archext_insn dotprod 'udot v0.4s, v0.16b, v0.16b'
@@ -7705,7 +7704,6 @@ if enabled x86; then
 fi
 if enabled aarch64; then
     echo "NEON enabled              ${neon-no}"
-    echo "VFP enabled               ${vfp-no}"
     echo "DOTPROD enabled           ${dotprod-no}"
     echo "I8MM enabled              ${i8mm-no}"
 fi
