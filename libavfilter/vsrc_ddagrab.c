@@ -585,7 +585,7 @@ static int update_mouse_pointer(AVFilterContext *avctx, DXGI_OUTDUPL_FRAME_INFO 
     return 0;
 }
 
-static int next_frame_internal(AVFilterContext *avctx, ID3D11Texture2D **desktop_texture)
+static int next_frame_internal(AVFilterContext *avctx, ID3D11Texture2D **desktop_texture, int need_frame)
 {
     DXGI_OUTDUPL_FRAME_INFO frame_info;
     DdagrabContext *dda = avctx->priv;
@@ -608,18 +608,32 @@ static int next_frame_internal(AVFilterContext *avctx, ID3D11Texture2D **desktop
     if (dda->draw_mouse) {
         ret = update_mouse_pointer(avctx, &frame_info);
         if (ret < 0)
-            return ret;
+            goto error;
+    }
+
+    if (need_frame && (!frame_info.LastPresentTime.QuadPart || !frame_info.AccumulatedFrames)) {
+        ret = AVERROR(EAGAIN);
+        goto error;
     }
 
     hr = IDXGIResource_QueryInterface(desktop_resource, &IID_ID3D11Texture2D, (void**)desktop_texture);
-    IDXGIResource_Release(desktop_resource);
-    desktop_resource = NULL;
+    release_resource(&desktop_resource);
     if (FAILED(hr)) {
         av_log(avctx, AV_LOG_ERROR, "DXGIResource QueryInterface failed\n");
-        return AVERROR_EXTERNAL;
+        ret = AVERROR_EXTERNAL;
+        goto error;
     }
 
     return 0;
+
+error:
+    release_resource(&desktop_resource);
+
+    hr = IDXGIOutputDuplication_ReleaseFrame(dda->dxgi_outdupl);
+    if (FAILED(hr))
+        av_log(avctx, AV_LOG_ERROR, "DDA error ReleaseFrame failed!\n");
+
+    return ret;
 }
 
 static int probe_output_format(AVFilterContext *avctx)
@@ -631,7 +645,7 @@ static int probe_output_format(AVFilterContext *avctx)
     av_assert1(!dda->probed_texture);
 
     do {
-        ret = next_frame_internal(avctx, &dda->probed_texture);
+        ret = next_frame_internal(avctx, &dda->probed_texture, 1);
     } while(ret == AVERROR(EAGAIN));
     if (ret < 0)
         return ret;
@@ -918,7 +932,7 @@ static int ddagrab_request_frame(AVFilterLink *outlink)
     now -= dda->first_pts;
 
     if (!dda->probed_texture) {
-        ret = next_frame_internal(avctx, &cur_texture);
+        ret = next_frame_internal(avctx, &cur_texture, 0);
     } else {
         cur_texture = dda->probed_texture;
         dda->probed_texture = NULL;
