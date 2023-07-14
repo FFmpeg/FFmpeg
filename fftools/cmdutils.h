@@ -194,8 +194,8 @@ void show_help_default(const char *opt, const char *arg);
  * argument without a leading option name flag. NULL if such arguments do
  * not have to be processed.
  */
-void parse_options(void *optctx, int argc, char **argv, const OptionDef *options,
-                   void (* parse_arg_function)(void *optctx, const char*));
+int parse_options(void *optctx, int argc, char **argv, const OptionDef *options,
+                  int (* parse_arg_function)(void *optctx, const char*));
 
 /**
  * Parse one given option.

@@ -3501,17 +3501,19 @@ static int opt_show_mode(void *optctx, const char *opt, const char *arg)
     return 0;
 }
 
-static void opt_input_file(void *optctx, const char *filename)
+static int opt_input_file(void *optctx, const char *filename)
 {
     if (input_filename) {
         av_log(NULL, AV_LOG_FATAL,
                "Argument '%s' provided as input filename, but '%s' was already specified.\n",
                 filename, input_filename);
-        exit(1);
+        return AVERROR(EINVAL);
     }
     if (!strcmp(filename, "-"))
         filename = "fd:";
     input_filename = filename;
+
+    return 0;
 }
 
 static int opt_codec(void *optctx, const char *opt, const char *arg)
@@ -3630,7 +3632,7 @@ void show_help_default(const char *opt, const char *arg)
 /* Called from the main */
 int main(int argc, char **argv)
 {
-    int flags;
+    int flags, ret;
     VideoState *is;
 
     init_dynload();
@@ -3649,7 +3651,9 @@ int main(int argc, char **argv)
 
     show_banner(argc, argv, options);
 
-    parse_options(NULL, argc, argv, options, opt_input_file);
+    ret = parse_options(NULL, argc, argv, options, opt_input_file);
+    if (ret < 0)
+        exit(1);
 
     if (!input_filename) {
         show_usage();

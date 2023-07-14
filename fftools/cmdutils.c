@@ -364,8 +364,8 @@ int parse_option(void *optctx, const char *opt, const char *arg,
     return !!(po->flags & HAS_ARG);
 }
 
-void parse_options(void *optctx, int argc, char **argv, const OptionDef *options,
-                   void (*parse_arg_function)(void *, const char*))
+int parse_options(void *optctx, int argc, char **argv, const OptionDef *options,
+                  int (*parse_arg_function)(void *, const char*))
 {
     const char *opt;
     int optindex, handleoptions = 1, ret;
@@ -386,13 +386,18 @@ void parse_options(void *optctx, int argc, char **argv, const OptionDef *options
             opt++;
 
             if ((ret = parse_option(optctx, opt, argv[optindex], options)) < 0)
-                exit_program(1);
+                return ret;
             optindex += ret;
         } else {
-            if (parse_arg_function)
-                parse_arg_function(optctx, opt);
+            if (parse_arg_function) {
+                ret = parse_arg_function(optctx, opt);
+                if (ret < 0)
+                    return ret;
+            }
         }
     }
+
+    return 0;
 }
 
 int parse_optgroup(void *optctx, OptionGroup *g)
