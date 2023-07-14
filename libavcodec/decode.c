@@ -541,28 +541,31 @@ static int detect_colorspace(av_unused AVCodecContext *c, av_unused AVFrame *f)
 }
 #endif
 
-static int fill_frame_props(AVCodecContext *avctx, AVFrame *frame)
+static int fill_frame_props(const AVCodecContext *avctx, AVFrame *frame)
 {
     int ret;
 
+    if (frame->color_primaries == AVCOL_PRI_UNSPECIFIED)
+        frame->color_primaries = avctx->color_primaries;
+    if (frame->color_trc == AVCOL_TRC_UNSPECIFIED)
+        frame->color_trc = avctx->color_trc;
+    if (frame->colorspace == AVCOL_SPC_UNSPECIFIED)
+        frame->colorspace = avctx->colorspace;
+    if (frame->color_range == AVCOL_RANGE_UNSPECIFIED)
+        frame->color_range = avctx->color_range;
+    if (frame->chroma_location == AVCHROMA_LOC_UNSPECIFIED)
+        frame->chroma_location = avctx->chroma_sample_location;
+
     if (avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
-        //FIXME these should be under if(!avctx->has_b_frames)
-        /* get_buffer is supposed to set frame parameters */
-        if (!(avctx->codec->capabilities & AV_CODEC_CAP_DR1)) {
             if (!frame->sample_aspect_ratio.num)  frame->sample_aspect_ratio = avctx->sample_aspect_ratio;
-            if (!frame->width)                    frame->width               = avctx->width;
-            if (!frame->height)                   frame->height              = avctx->height;
             if (frame->format == AV_PIX_FMT_NONE) frame->format              = avctx->pix_fmt;
-        }
     } else if (avctx->codec->type == AVMEDIA_TYPE_AUDIO) {
         if (frame->format == AV_SAMPLE_FMT_NONE)
             frame->format = avctx->sample_fmt;
         if (!frame->ch_layout.nb_channels) {
             ret = av_channel_layout_copy(&frame->ch_layout, &avctx->ch_layout);
-            if (ret < 0) {
-                av_frame_unref(frame);
+            if (ret < 0)
                 return ret;
-            }
         }
 #if FF_API_OLD_CHANNEL_LAYOUT
 FF_DISABLE_DEPRECATION_WARNINGS
@@ -629,7 +632,12 @@ static int decode_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
     }
 
     if (!ret) {
-        if (avctx->codec_type != AVMEDIA_TYPE_VIDEO)
+        if (avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
+            if (!frame->width)
+                frame->width = avctx->width;
+            if (!frame->height)
+                frame->height = avctx->height;
+        } else
             frame->flags |= AV_FRAME_FLAG_KEY;
 
         ret = fill_frame_props(avctx, frame);
@@ -1453,9 +1461,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
 int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
 {
     const AVPacket *pkt = avctx->internal->last_pkt_props;
+    int ret;
 
     if (!(ffcodec(avctx->codec)->caps_internal & FF_CODEC_CAP_SETS_FRAME_PROPS)) {
-        int ret = ff_decode_frame_props_from_pkt(avctx, frame, pkt);
+        ret = ff_decode_frame_props_from_pkt(avctx, frame, pkt);
         if (ret < 0)
             return ret;
 #if FF_API_FRAME_PKT
@@ -1470,23 +1479,12 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-    if (frame->color_primaries == AVCOL_PRI_UNSPECIFIED)
-        frame->color_primaries = avctx->color_primaries;
-    if (frame->color_trc == AVCOL_TRC_UNSPECIFIED)
-        frame->color_trc = avctx->color_trc;
-    if (frame->colorspace == AVCOL_SPC_UNSPECIFIED)
-        frame->colorspace = avctx->colorspace;
-    if (frame->color_range == AVCOL_RANGE_UNSPECIFIED)
-        frame->color_range = avctx->color_range;
-    if (frame->chroma_location == AVCHROMA_LOC_UNSPECIFIED)
-        frame->chroma_location = avctx->chroma_sample_location;
+    ret = fill_frame_props(avctx, frame);
+    if (ret < 0)
+        return ret;
 
     switch (avctx->codec->type) {
     case AVMEDIA_TYPE_VIDEO:
-        frame->format              = avctx->pix_fmt;
-        if (!frame->sample_aspect_ratio.num)
-            frame->sample_aspect_ratio = avctx->sample_aspect_ratio;
-
         if (frame->width && frame->height &&
             av_image_check_sar(frame->width, frame->height,
                                frame->sample_aspect_ratio) < 0) {
@@ -1495,25 +1493,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
                    frame->sample_aspect_ratio.den);
             frame->sample_aspect_ratio = (AVRational){ 0, 1 };
         }
-
-        break;
-    case AVMEDIA_TYPE_AUDIO:
-        if (!frame->sample_rate)
-            frame->sample_rate    = avctx->sample_rate;
-        if (frame->format < 0)
-            frame->format         = avctx->sample_fmt;
-        if (!frame->ch_layout.nb_channels) {
-            int ret = av_channel_layout_copy(&frame->ch_layout, &avctx->ch_layout);
-            if (ret < 0)
-                return ret;
-        }
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-        frame->channels = frame->ch_layout.nb_channels;
-        frame->channel_layout = frame->ch_layout.order == AV_CHANNEL_ORDER_NATIVE ?
-                                frame->ch_layout.u.mask : 0;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         break;
     }
     return 0;
