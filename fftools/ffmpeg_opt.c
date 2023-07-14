@@ -326,7 +326,10 @@ static int opt_abort_on(void *optctx, const char *opt, const char *arg)
 
 static int opt_stats_period(void *optctx, const char *opt, const char *arg)
 {
-    int64_t user_stats_period = parse_time_or_die(opt, arg, 1);
+    int64_t user_stats_period;
+    int ret = av_parse_time(&user_stats_period, arg, 1);
+    if (ret < 0)
+        return ret;
 
     if (user_stats_period <= 0) {
         av_log(NULL, AV_LOG_ERROR, "stats_period %s must be positive.\n", arg);
@@ -636,8 +639,16 @@ static int opt_recording_timestamp(void *optctx, const char *opt, const char *ar
 {
     OptionsContext *o = optctx;
     char buf[128];
-    int64_t recording_timestamp = parse_time_or_die(opt, arg, 0) / 1E6;
-    struct tm time = *gmtime((time_t*)&recording_timestamp);
+    int64_t recording_timestamp;
+    int ret;
+    struct tm time;
+
+    ret = av_parse_time(&recording_timestamp, arg, 0);
+    if (ret < 0)
+        return ret;
+
+    recording_timestamp /= 1e6;
+    time = *gmtime((time_t*)&recording_timestamp);
     if (!strftime(buf, sizeof(buf), "creation_time=%Y-%m-%dT%H:%M:%S%z", &time))
         return -1;
     parse_option(o, "metadata", buf, options);

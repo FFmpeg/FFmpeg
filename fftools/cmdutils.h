@@ -112,23 +112,6 @@ int opt_timelimit(void *optctx, const char *opt, const char *arg);
 int parse_number(const char *context, const char *numstr, int type,
                  double min, double max, double *dst);
 
-/**
- * Parse a string specifying a time and return its corresponding
- * value as a number of microseconds. Exit from the application if
- * the string cannot be correctly parsed.
- *
- * @param context the context of the value to be set (e.g. the
- * corresponding command line option name)
- * @param timestr the string to be parsed
- * @param is_duration a flag which tells how to interpret timestr, if
- * not zero timestr is interpreted as a duration, otherwise as a
- * date
- *
- * @see av_parse_time()
- */
-int64_t parse_time_or_die(const char *context, const char *timestr,
-                          int is_duration);
-
 typedef struct SpecifierOpt {
     char *specifier;    /**< stream/chapter/program/... specifier */
     union {

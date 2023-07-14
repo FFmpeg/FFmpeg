@@ -127,18 +127,6 @@ int parse_number(const char *context, const char *numstr, int type,
     return AVERROR(EINVAL);
 }
 
-int64_t parse_time_or_die(const char *context, const char *timestr,
-                          int is_duration)
-{
-    int64_t us;
-    if (av_parse_time(&us, timestr, is_duration) < 0) {
-        av_log(NULL, AV_LOG_FATAL, "Invalid %s specification for %s: %s\n",
-               is_duration ? "duration" : "date", context, timestr);
-        exit_program(1);
-    }
-    return us;
-}
-
 void show_help_options(const OptionDef *options, const char *msg, int req_flags,
                        int rej_flags, int alt_flags)
 {
@@ -304,7 +292,12 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
 
         *(int64_t *)dst = num;
     } else if (po->flags & OPT_TIME) {
-        *(int64_t *)dst = parse_time_or_die(opt, arg, 1);
+        ret = av_parse_time(dst, arg, 1);
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Invalid duration for option %s: %s\n",
+                   opt, arg);
+            return ret;
+        }
     } else if (po->flags & OPT_FLOAT) {
         ret = parse_number(opt, arg, OPT_FLOAT, -INFINITY, INFINITY, &num);
         if (ret < 0)

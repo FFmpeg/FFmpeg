@@ -2399,11 +2399,11 @@ static int compare_int64(const void *a, const void *b)
     return FFDIFFSIGN(*(const int64_t *)a, *(const int64_t *)b);
 }
 
-static int parse_forced_key_frames(KeyframeForceCtx *kf, const Muxer *mux,
-                                   const char *spec)
+static int parse_forced_key_frames(void *log, KeyframeForceCtx *kf,
+                                   const Muxer *mux, const char *spec)
 {
     const char *p;
-    int n = 1, i, size, index = 0;
+    int n = 1, i, ret, size, index = 0;
     int64_t t, *pts;
 
     for (p = spec; *p; p++)
@@ -2430,7 +2430,16 @@ static int parse_forced_key_frames(KeyframeForceCtx *kf, const Muxer *mux,
                 !(pts = av_realloc_f(pts, size += nb_ch - 1,
                                      sizeof(*pts))))
                 return AVERROR(ENOMEM);
-            t = p[8] ? parse_time_or_die("force_key_frames", p + 8, 1) : 0;
+
+            if (p[8]) {
+                ret = av_parse_time(&t, p + 8, 1);
+                if (ret < 0) {
+                    av_log(log, AV_LOG_ERROR,
+                           "Invalid chapter time offset: %s\n", p + 8);
+                    goto fail;
+                }
+            } else
+                t = 0;
 
             for (j = 0; j < nb_ch; j++) {
                 const AVChapter *c = ch[j];
@@ -2441,7 +2450,13 @@ static int parse_forced_key_frames(KeyframeForceCtx *kf, const Muxer *mux,
 
         } else {
             av_assert1(index < size);
-            pts[index++] = parse_time_or_die("force_key_frames", p, 1);
+            ret = av_parse_time(&t, p, 1);
+            if (ret < 0) {
+                av_log(log, AV_LOG_ERROR, "Invalid keyframe time: %s\n", p);
+                goto fail;
+            }
+
+            pts[index++] = t;
         }
 
         p = next;
@@ -2453,6 +2468,9 @@ static int parse_forced_key_frames(KeyframeForceCtx *kf, const Muxer *mux,
     kf->pts    = pts;
 
     return 0;
+fail:
+    av_freep(&pts);
+    return ret;
 }
 
 static int process_forced_keyframes(Muxer *mux, const OptionsContext *o)
@@ -2487,7 +2505,7 @@ static int process_forced_keyframes(Muxer *mux, const OptionsContext *o)
         } else if (!strcmp(forced_keyframes, "source_no_drop")) {
             ost->kf.type = KF_FORCE_SOURCE_NO_DROP;
         } else {
-            int ret = parse_forced_key_frames(&ost->kf, mux, forced_keyframes);
+            int ret = parse_forced_key_frames(ost, &ost->kf, mux, forced_keyframes);
             if (ret < 0)
                 return ret;
         }

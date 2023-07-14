@@ -3485,18 +3485,6 @@ static int opt_sync(void *optctx, const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_seek(void *optctx, const char *opt, const char *arg)
-{
-    start_time = parse_time_or_die(opt, arg, 1);
-    return 0;
-}
-
-static int opt_duration(void *optctx, const char *opt, const char *arg)
-{
-    duration = parse_time_or_die(opt, arg, 1);
-    return 0;
-}
-
 static int opt_show_mode(void *optctx, const char *opt, const char *arg)
 {
     show_mode = !strcmp(arg, "video") ? SHOW_MODE_VIDEO :
@@ -3561,8 +3549,8 @@ static const OptionDef options[] = {
     { "ast", OPT_STRING | HAS_ARG | OPT_EXPERT, { &wanted_stream_spec[AVMEDIA_TYPE_AUDIO] }, "select desired audio stream", "stream_specifier" },
     { "vst", OPT_STRING | HAS_ARG | OPT_EXPERT, { &wanted_stream_spec[AVMEDIA_TYPE_VIDEO] }, "select desired video stream", "stream_specifier" },
     { "sst", OPT_STRING | HAS_ARG | OPT_EXPERT, { &wanted_stream_spec[AVMEDIA_TYPE_SUBTITLE] }, "select desired subtitle stream", "stream_specifier" },
-    { "ss", HAS_ARG, { .func_arg = opt_seek }, "seek to a given position in seconds", "pos" },
-    { "t", HAS_ARG, { .func_arg = opt_duration }, "play  \"duration\" seconds of audio/video", "duration" },
+    { "ss", HAS_ARG | OPT_TIME, { &start_time }, "seek to a given position in seconds", "pos" },
+    { "t",  HAS_ARG | OPT_TIME, { &duration }, "play  \"duration\" seconds of audio/video", "duration" },
     { "bytes", OPT_INT | HAS_ARG, { &seek_by_bytes }, "seek by bytes 0=off 1=on -1=auto", "val" },
     { "seek_interval", OPT_FLOAT | HAS_ARG, { &seek_interval }, "set seek interval for left/right keys, in seconds", "seconds" },
     { "nodisp", OPT_BOOL, { &display_disable }, "disable graphical display" },
