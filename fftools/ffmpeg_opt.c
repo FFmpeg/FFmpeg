@@ -190,7 +190,7 @@ int parse_and_set_vsync(const char *arg, int *vsync_var, int file_idx, int st_id
     else if (!is_global && !av_strcasecmp(arg, "auto"))  *vsync_var = VSYNC_AUTO;
     else if (!is_global) {
         av_log(NULL, AV_LOG_FATAL, "Invalid value %s specified for fps_mode of #%d:%d.\n", arg, file_idx, st_idx);
-        exit_program(1);
+        return AVERROR(EINVAL);
     }
 
     if (is_global && *vsync_var == VSYNC_AUTO) {
@@ -250,12 +250,12 @@ static int apply_sync_offsets(void)
         if (self->input_sync_ref == -1 || self->input_sync_ref == i) continue;
         if (self->input_sync_ref >= nb_input_files || self->input_sync_ref < -1) {
             av_log(NULL, AV_LOG_FATAL, "-isync for input %d references non-existent input %d.\n", i, self->input_sync_ref);
-            exit_program(1);
+            return AVERROR(EINVAL);
         }
 
         if (copy_ts && !start_at_zero) {
             av_log(NULL, AV_LOG_FATAL, "Use of -isync requires that start_at_zero be set if copyts is set.\n");
-            exit_program(1);
+            return AVERROR(EINVAL);
         }
 
         ref = input_files[self->input_sync_ref];
@@ -397,7 +397,7 @@ static int opt_map(void *optctx, const char *opt, const char *arg)
         m->linklabel = av_get_token(&c, "]");
         if (!m->linklabel) {
             av_log(NULL, AV_LOG_ERROR, "Invalid output link label: %s.\n", map);
-            exit_program(1);
+            return AVERROR(EINVAL);
         }
     } else {
         if (allow_unused = strchr(map, '?'))
@@ -405,7 +405,7 @@ static int opt_map(void *optctx, const char *opt, const char *arg)
         file_idx = strtol(map, &p, 0);
         if (file_idx >= nb_input_files || file_idx < 0) {
             av_log(NULL, AV_LOG_FATAL, "Invalid input file index: %d.\n", file_idx);
-            exit_program(1);
+            return AVERROR(EINVAL);
         }
         if (negative)
             /* disable some already defined maps */
@@ -443,11 +443,11 @@ static int opt_map(void *optctx, const char *opt, const char *arg)
         } else if (disabled) {
             av_log(NULL, AV_LOG_FATAL, "Stream map '%s' matches disabled streams.\n"
                                        "To ignore this, add a trailing '?' to the map.\n", arg);
-            exit_program(1);
+            return AVERROR(EINVAL);
         } else {
             av_log(NULL, AV_LOG_FATAL, "Stream map '%s' matches no streams.\n"
                                        "To ignore this, add a trailing '?' to the map.\n", arg);
-            exit_program(1);
+            return AVERROR(EINVAL);
         }
     }
 
@@ -509,7 +509,7 @@ static int opt_map_channel(void *optctx, const char *opt, const char *arg)
     if (n != 3 && n != 5) {
         av_log(NULL, AV_LOG_FATAL, "Syntax error, mapchan usage: "
                "[file.stream.channel|-1][:syncfile:syncstream]\n");
-        exit_program(1);
+        goto fail;
     }
 
     if (n != 5) // only file.stream.channel specified
@@ -519,19 +519,19 @@ static int opt_map_channel(void *optctx, const char *opt, const char *arg)
     if (m->file_idx < 0 || m->file_idx >= nb_input_files) {
         av_log(NULL, AV_LOG_FATAL, "mapchan: invalid input file index: %d\n",
                m->file_idx);
-        exit_program(1);
+        goto fail;
     }
     if (m->stream_idx < 0 ||
         m->stream_idx >= input_files[m->file_idx]->nb_streams) {
         av_log(NULL, AV_LOG_FATAL, "mapchan: invalid input file stream index #%d.%d\n",
                m->file_idx, m->stream_idx);
-        exit_program(1);
+        goto fail;
     }
     st = input_files[m->file_idx]->ctx->streams[m->stream_idx];
     if (st->codecpar->codec_type != AVMEDIA_TYPE_AUDIO) {
         av_log(NULL, AV_LOG_FATAL, "mapchan: stream #%d.%d is not an audio stream.\n",
                m->file_idx, m->stream_idx);
-        exit_program(1);
+        goto fail;
     }
     /* allow trailing ? to map_channel */
     if (allow_unused = strchr(mapchan, '?'))
@@ -545,12 +545,15 @@ static int opt_map_channel(void *optctx, const char *opt, const char *arg)
             av_log(NULL, AV_LOG_FATAL,  "mapchan: invalid audio channel #%d.%d.%d\n"
                     "To ignore this, add a trailing '?' to the map_channel.\n",
                     m->file_idx, m->stream_idx, m->channel_idx);
-            exit_program(1);
+            goto fail;
         }
 
     }
     av_free(mapchan);
     return 0;
+fail:
+    av_free(mapchan);
+    return AVERROR(EINVAL);
 }
 #endif
 
@@ -602,7 +605,7 @@ static int opt_init_hw_device(void *optctx, const char *opt, const char *arg)
                AV_HWDEVICE_TYPE_NONE)
             printf("%s\n", av_hwdevice_get_type_name(type));
         printf("\n");
-        exit_program(0);
+        return AVERROR_EXIT;
     } else {
         return hw_device_init_from_string(arg, NULL);
     }
@@ -819,7 +822,7 @@ static int opt_target(void *optctx, const char *opt, const char *arg)
         av_log(NULL, AV_LOG_FATAL, "Could not determine norm (PAL/NTSC/NTSC-Film) for target.\n");
         av_log(NULL, AV_LOG_FATAL, "Please prefix target with \"pal-\", \"ntsc-\" or \"film-\",\n");
         av_log(NULL, AV_LOG_FATAL, "or set a framerate with \"-r xxx\".\n");
-        exit_program(1);
+        return AVERROR(EINVAL);
     }
 
     if (!strcmp(arg, "vcd")) {
@@ -931,7 +934,7 @@ static int opt_vstats(void *optctx, const char *opt, const char *arg)
 
     if (!today) { // maybe tomorrow
         av_log(NULL, AV_LOG_FATAL, "Unable to get current time: %s\n", strerror(errno));
-        exit_program(1);
+        return AVERROR(errno);
     }
 
     snprintf(filename, sizeof(filename), "vstats_%02d%02d%02d.log", today->tm_hour, today->tm_min,
@@ -983,6 +986,7 @@ static int opt_preset(void *optctx, const char *opt, const char *arg)
     FILE *f=NULL;
     char filename[1000], line[1000], tmp_line[1000];
     const char *codec_name = NULL;
+    int ret = 0;
 
     tmp_line[0] = *opt;
     tmp_line[1] = 0;
@@ -993,7 +997,7 @@ static int opt_preset(void *optctx, const char *opt, const char *arg)
             av_log(NULL, AV_LOG_FATAL, "Please use -preset <speed> -qp 0\n");
         }else
             av_log(NULL, AV_LOG_FATAL, "File for preset '%s' not found\n", arg);
-        exit_program(1);
+        return AVERROR(ENOENT);
     }
 
     while (fgets(line, sizeof(line), f)) {
@@ -1005,7 +1009,8 @@ static int opt_preset(void *optctx, const char *opt, const char *arg)
         if (!av_strtok(key,   "=",    &value) ||
             !av_strtok(value, "\r\n", &endptr)) {
             av_log(NULL, AV_LOG_FATAL, "%s: Invalid syntax: '%s'\n", filename, line);
-            exit_program(1);
+            ret = AVERROR(EINVAL);
+            goto fail;
         }
         av_log(NULL, AV_LOG_DEBUG, "ffpreset[%s]: set '%s' = '%s'\n", filename, key, value);
 
@@ -1016,13 +1021,15 @@ static int opt_preset(void *optctx, const char *opt, const char *arg)
         else if (opt_default_new(o, key, value) < 0) {
             av_log(NULL, AV_LOG_FATAL, "%s: Invalid option or argument: '%s', parsed as '%s' = '%s'\n",
                    filename, line, key, value);
-            exit_program(1);
+            ret = AVERROR(EINVAL);
+            goto fail;
         }
     }
 
+fail:
     fclose(f);
 
-    return 0;
+    return ret;
 }
 
 static int opt_old2new(void *optctx, const char *opt, const char *arg)
@@ -1310,7 +1317,9 @@ int ffmpeg_parse_options(int argc, char **argv)
 
     correct_input_start_times();
 
-    apply_sync_offsets();
+    ret = apply_sync_offsets();
+    if (ret < 0)
+        goto fail;
 
     ret = check_filter_outputs();
     if (ret < 0)
