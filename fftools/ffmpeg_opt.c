@@ -1345,7 +1345,7 @@ int ffmpeg_parse_options(int argc, char **argv)
 
 fail:
     uninit_parse_context(&octx);
-    if (ret < 0) {
+    if (ret < 0 && ret != AVERROR_EXIT) {
         av_log(NULL, AV_LOG_FATAL, "Error %s: %s\n",
                errmsg ? errmsg : "", av_err2str(ret));
     }

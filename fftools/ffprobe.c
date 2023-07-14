@@ -4129,7 +4129,7 @@ int main(int argc, char **argv)
     show_banner(argc, argv, options);
     ret = parse_options(NULL, argc, argv, options, opt_input_file);
     if (ret < 0)
-        exit_program(1);
+        exit_program(ret == AVERROR_EXIT ? 0 : 1);
 
     if (do_show_log)
         av_log_set_callback(log_callback);

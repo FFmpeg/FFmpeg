@@ -3657,7 +3657,7 @@ int main(int argc, char **argv)
 
     ret = parse_options(NULL, argc, argv, options, opt_input_file);
     if (ret < 0)
-        exit(1);
+        exit(ret == AVERROR_EXIT ? 0 : 1);
 
     if (!input_filename) {
         show_usage();

@@ -1371,6 +1371,9 @@ int main(int argc, char **argv)
           err_rate_exceeded   ?  69 : ret;
 
 finish:
+    if (ret == AVERROR_EXIT)
+        ret = 0;
+
     exit_program(ret);
     return ret;
 }

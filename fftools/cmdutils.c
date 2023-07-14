@@ -320,7 +320,7 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
         }
     }
     if (po->flags & OPT_EXIT)
-        exit_program(0);
+        return AVERROR_EXIT;
 
     return 0;
 }
