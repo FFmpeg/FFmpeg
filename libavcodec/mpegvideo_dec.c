@@ -344,9 +344,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     s->current_picture_ptr->f->pict_type = s->pict_type;
     if (s->pict_type == AV_PICTURE_TYPE_I)
-        s->current_picture.f->flags |= AV_FRAME_FLAG_KEY;
+        s->current_picture_ptr->f->flags |= AV_FRAME_FLAG_KEY;
     else
-        s->current_picture.f->flags &= ~AV_FRAME_FLAG_KEY;
+        s->current_picture_ptr->f->flags &= ~AV_FRAME_FLAG_KEY;
 
     if ((ret = ff_mpeg_ref_picture(s->avctx, &s->current_picture,
                                    s->current_picture_ptr)) < 0)
