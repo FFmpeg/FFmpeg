@@ -333,10 +333,12 @@ int check_stream_specifier(AVFormatContext *s, AVStream *st, const char *spec);
  * @param st A stream from s for which the options should be filtered.
  * @param codec The particular codec for which the options should be filtered.
  *              If null, the default one is looked up according to the codec id.
- * @return a pointer to the created dictionary
+ * @param dst a pointer to the created dictionary
+ * @return a non-negative number on success, a negative error code on failure
  */
-AVDictionary *filter_codec_opts(const AVDictionary *opts, enum AVCodecID codec_id,
-                                AVFormatContext *s, AVStream *st, const AVCodec *codec);
+int filter_codec_opts(const AVDictionary *opts, enum AVCodecID codec_id,
+                      AVFormatContext *s, AVStream *st, const AVCodec *codec,
+                      AVDictionary **dst);
 
 /**
  * Setup AVCodecContext options for avformat_find_stream_info().

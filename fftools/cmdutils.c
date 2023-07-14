@@ -943,8 +943,9 @@ int check_stream_specifier(AVFormatContext *s, AVStream *st, const char *spec)
     return ret;
 }
 
-AVDictionary *filter_codec_opts(const AVDictionary *opts, enum AVCodecID codec_id,
-                                AVFormatContext *s, AVStream *st, const AVCodec *codec)
+int filter_codec_opts(const AVDictionary *opts, enum AVCodecID codec_id,
+                      AVFormatContext *s, AVStream *st, const AVCodec *codec,
+                      AVDictionary **dst)
 {
     AVDictionary    *ret = NULL;
     const AVDictionaryEntry *t = NULL;
@@ -977,12 +978,16 @@ AVDictionary *filter_codec_opts(const AVDictionary *opts, enum AVCodecID codec_i
         char *p = strchr(t->key, ':');
 
         /* check stream specification in opt name */
-        if (p)
-            switch (check_stream_specifier(s, st, p + 1)) {
-            case  1: *p = 0; break;
-            case  0:         continue;
-            default:         exit_program(1);
-            }
+        if (p) {
+            int err = check_stream_specifier(s, st, p + 1);
+            if (err < 0) {
+                av_dict_free(&ret);
+                return err;
+            } else if (!err)
+                continue;
+
+            *p = 0;
+        }
 
         if (av_opt_find(&cc, t->key, NULL, flags, AV_OPT_SEARCH_FAKE_OBJ) ||
             !codec ||
@@ -998,14 +1003,16 @@ AVDictionary *filter_codec_opts(const AVDictionary *opts, enum AVCodecID codec_i
         if (p)
             *p = ':';
     }
-    return ret;
+
+    *dst = ret;
+    return 0;
 }
 
 int setup_find_stream_info_opts(AVFormatContext *s,
                                 AVDictionary *codec_opts,
                                 AVDictionary ***dst)
 {
-    int i;
+    int ret;
     AVDictionary **opts;
 
     *dst = NULL;
@@ -1017,11 +1024,19 @@ int setup_find_stream_info_opts(AVFormatContext *s,
     if (!opts)
         return AVERROR(ENOMEM);
 
-    for (i = 0; i < s->nb_streams; i++)
-        opts[i] = filter_codec_opts(codec_opts, s->streams[i]->codecpar->codec_id,
-                                    s, s->streams[i], NULL);
+    for (int i = 0; i < s->nb_streams; i++) {
+        ret = filter_codec_opts(codec_opts, s->streams[i]->codecpar->codec_id,
+                                s, s->streams[i], NULL, &opts[i]);
+        if (ret < 0)
+            goto fail;
+    }
     *dst = opts;
     return 0;
+fail:
+    for (int i = 0; i < s->nb_streams; i++)
+        av_dict_free(&opts[i]);
+    av_freep(&opts);
+    return ret;
 }
 
 int grow_array(void **array, int elem_size, int *size, int new_size)

@@ -2584,7 +2584,11 @@ static int stream_component_open(VideoState *is, int stream_index)
     if (fast)
         avctx->flags2 |= AV_CODEC_FLAG2_FAST;
 
-    opts = filter_codec_opts(codec_opts, avctx->codec_id, ic, ic->streams[stream_index], codec);
+    ret = filter_codec_opts(codec_opts, avctx->codec_id, ic,
+                            ic->streams[stream_index], codec, &opts);
+    if (ret < 0)
+        goto fail;
+
     if (!av_dict_get(opts, "threads", NULL, 0))
         av_dict_set(&opts, "threads", "auto", 0);
     if (stream_lowres)

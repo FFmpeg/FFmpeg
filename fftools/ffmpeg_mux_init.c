@@ -1206,8 +1206,10 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
         const char *enc_stats_pre = NULL, *enc_stats_post = NULL, *mux_stats = NULL;
         const char *enc_time_base = NULL;
 
-        ost->encoder_opts = filter_codec_opts(o->g->codec_opts, enc->codec_id,
-                                              oc, st, enc->codec);
+        ret = filter_codec_opts(o->g->codec_opts, enc->codec_id,
+                                oc, st, enc->codec, &ost->encoder_opts);
+        if (ret < 0)
+            return ret;
 
         MATCH_PER_STREAM_OPT(presets, str, preset, oc, st);
         ost->autoscale = 1;
@@ -1305,7 +1307,10 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
             ost->enc_timebase = q;
         }
     } else {
-        ost->encoder_opts = filter_codec_opts(o->g->codec_opts, AV_CODEC_ID_NONE, oc, st, NULL);
+        ret = filter_codec_opts(o->g->codec_opts, AV_CODEC_ID_NONE, oc, st,
+                                NULL, &ost->encoder_opts);
+        if (ret < 0)
+            return ret;
     }
 
 

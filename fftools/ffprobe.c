@@ -3421,8 +3421,12 @@ static int open_input_file(InputFile *ifile, const char *filename,
             continue;
         }
         {
-            AVDictionary *opts = filter_codec_opts(codec_opts, stream->codecpar->codec_id,
-                                                   fmt_ctx, stream, codec);
+            AVDictionary *opts;
+
+            err = filter_codec_opts(codec_opts, stream->codecpar->codec_id,
+                                    fmt_ctx, stream, codec, &opts);
+            if (err < 0)
+                exit(1);
 
             ist->dec_ctx = avcodec_alloc_context3(codec);
             if (!ist->dec_ctx)
