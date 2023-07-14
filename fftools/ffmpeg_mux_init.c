@@ -139,7 +139,9 @@ static int choose_encoder(const OptionsContext *o, AVFormatContext *s,
             return AVERROR_ENCODER_NOT_FOUND;
         }
     } else if (strcmp(codec_name, "copy")) {
-        *enc = find_codec_or_die(ost, codec_name, ost->type, 1);
+        int ret = find_codec(ost, codec_name, ost->type, 1, enc);
+        if (ret < 0)
+            return ret;
         ost->par_in->codec_id = (*enc)->id;
     }
 

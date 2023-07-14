@@ -637,8 +637,8 @@ static int opt_recording_timestamp(void *optctx, const char *opt, const char *ar
     return 0;
 }
 
-const AVCodec *find_codec_or_die(void *logctx, const char *name,
-                                 enum AVMediaType type, int encoder)
+int find_codec(void *logctx, const char *name,
+               enum AVMediaType type, int encoder, const AVCodec **pcodec)
 {
     const AVCodecDescriptor *desc;
     const char *codec_string = encoder ? "encoder" : "decoder";
@@ -658,13 +658,16 @@ const AVCodec *find_codec_or_die(void *logctx, const char *name,
 
     if (!codec) {
         av_log(logctx, AV_LOG_FATAL, "Unknown %s '%s'\n", codec_string, name);
-        exit_program(1);
+        return encoder ? AVERROR_ENCODER_NOT_FOUND :
+                         AVERROR_DECODER_NOT_FOUND;
     }
     if (codec->type != type && !recast_media) {
         av_log(logctx, AV_LOG_FATAL, "Invalid %s type '%s'\n", codec_string, name);
-        exit_program(1);
+        return AVERROR(EINVAL);
     }
-    return codec;
+
+    *pcodec = codec;
+    return 0;;
 }
 
 int assert_file_overwrite(const char *filename)
