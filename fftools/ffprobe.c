@@ -381,17 +381,6 @@ static void log_callback(void *ptr, int level, const char *fmt, va_list vl)
 #endif
 }
 
-static void ffprobe_cleanup(int ret)
-{
-    int i;
-    for (i = 0; i < FF_ARRAY_ELEMS(sections); i++)
-        av_dict_free(&(sections[i].entries_to_show));
-
-#if HAVE_THREADS
-    pthread_mutex_destroy(&log_mutex);
-#endif
-}
-
 struct unit_value {
     union { double d; long long int i; } val;
     const char *unit;
@@ -4113,7 +4102,6 @@ int main(int argc, char **argv)
     }
 #endif
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
-    register_exit(ffprobe_cleanup);
 
     options = real_options;
     parse_loglevel(argc, argv, options);
@@ -4124,8 +4112,10 @@ int main(int argc, char **argv)
 
     show_banner(argc, argv, options);
     ret = parse_options(NULL, argc, argv, options, opt_input_file);
-    if (ret < 0)
-        exit_program(ret == AVERROR_EXIT ? 0 : 1);
+    if (ret < 0) {
+        ret = AVERROR_EXIT ? 0 : ret;
+        goto end;
+    }
 
     if (do_show_log)
         av_log_set_callback(log_callback);
@@ -4248,6 +4238,10 @@ end:
         av_dict_free(&(sections[i].entries_to_show));
 
     avformat_network_deinit();
+
+#if HAVE_THREADS
+    pthread_mutex_destroy(&log_mutex);
+#endif
 
     return ret < 0;
 }
