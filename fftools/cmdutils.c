@@ -262,6 +262,7 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
     void *dst = po->flags & (OPT_OFFSET | OPT_SPEC) ?
                 (uint8_t *)optctx + po->u.off : po->u.dst_ptr;
     int *dstcount;
+    int ret;
 
     if (po->flags & OPT_SPEC) {
         SpecifierOpt **so = dst;
@@ -269,7 +270,10 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
         char *str;
 
         dstcount = (int *)(so + 1);
-        *so = grow_array(*so, sizeof(**so), dstcount, *dstcount + 1);
+        ret = grow_array((void**)so, sizeof(**so), dstcount, *dstcount + 1);
+        if (ret < 0)
+            return ret;
+
         str = av_strdup(p ? p + 1 : "");
         if (!str)
             return AVERROR(ENOMEM);
@@ -979,21 +983,22 @@ int setup_find_stream_info_opts(AVFormatContext *s,
     return 0;
 }
 
-void *grow_array(void *array, int elem_size, int *size, int new_size)
+int grow_array(void **array, int elem_size, int *size, int new_size)
 {
     if (new_size >= INT_MAX / elem_size) {
         av_log(NULL, AV_LOG_ERROR, "Array too big.\n");
-        exit_program(1);
+        return AVERROR(ERANGE);
     }
     if (*size < new_size) {
-        uint8_t *tmp = av_realloc_array(array, new_size, elem_size);
+        uint8_t *tmp = av_realloc_array(*array, new_size, elem_size);
         if (!tmp)
-            report_and_exit(AVERROR(ENOMEM));
+            return AVERROR(ENOMEM);
         memset(tmp + *size*elem_size, 0, (new_size-*size) * elem_size);
         *size = new_size;
-        return tmp;
+        *array = tmp;
+        return 0;
     }
-    return array;
+    return 0;
 }
 
 void *allocate_array_elem(void *ptr, size_t elem_size, int *nb_elems)

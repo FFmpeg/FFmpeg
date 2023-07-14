@@ -416,15 +416,15 @@ FILE *get_preset_file(char *filename, size_t filename_size,
 
 /**
  * Realloc array to hold new_size elements of elem_size.
- * Calls exit() on failure.
  *
- * @param array array to reallocate
+ * @param array pointer to the array to reallocate, will be updated
+ *              with a new pointer on success
  * @param elem_size size in bytes of each element
  * @param size new element count will be written here
  * @param new_size number of elements to place in reallocated array
- * @return reallocated array
+ * @return a non-negative number on success, a negative error code on failure
  */
-void *grow_array(void *array, int elem_size, int *size, int new_size);
+int grow_array(void **array, int elem_size, int *size, int new_size);
 
 /**
  * Atomically add a new element to an array of pointers, i.e. allocate
@@ -440,7 +440,11 @@ void *grow_array(void *array, int elem_size, int *size, int new_size);
 void *allocate_array_elem(void *array, size_t elem_size, int *nb_elems);
 
 #define GROW_ARRAY(array, nb_elems)\
-    array = grow_array(array, sizeof(*array), &nb_elems, nb_elems + 1)
+do {                                                                        \
+    int _ret = grow_array((void**)&array, sizeof(*array), &nb_elems, nb_elems + 1); \
+    if (_ret < 0)                                                           \
+        report_and_exit(_ret);                                              \
+} while (0)
 
 #define GET_PIX_FMT_NAME(pix_fmt)\
     const char *name = av_get_pix_fmt_name(pix_fmt);
