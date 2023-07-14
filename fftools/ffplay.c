@@ -2784,8 +2784,12 @@ static int read_thread(void *arg)
         int orig_nb_streams = ic->nb_streams;
 
         err = setup_find_stream_info_opts(ic, codec_opts, &opts);
-        if (err < 0)
-            report_and_exit(err);
+        if (err < 0) {
+            av_log(NULL, AV_LOG_ERROR,
+                   "Error setting up avformat_find_stream_info() options\n");
+            ret = err;
+            goto fail;
+        }
 
         err = avformat_find_stream_info(ic, opts);
 
