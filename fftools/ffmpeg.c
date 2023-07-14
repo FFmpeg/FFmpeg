@@ -1339,17 +1339,19 @@ int main(int argc, char **argv)
     /* parse options and open all input/output files */
     ret = ffmpeg_parse_options(argc, argv);
     if (ret < 0)
-        exit_program(1);
+        goto finish;
 
     if (nb_output_files <= 0 && nb_input_files == 0) {
         show_usage();
         av_log(NULL, AV_LOG_WARNING, "Use -h to get full help or, even better, run 'man %s'\n", program_name);
-        exit_program(1);
+        ret = 1;
+        goto finish;
     }
 
     if (nb_output_files <= 0) {
         av_log(NULL, AV_LOG_FATAL, "At least one output file must be specified\n");
-        exit_program(1);
+        ret = 1;
+        goto finish;
     }
 
     current_time = ti = get_benchmark_time_stamps();
@@ -1368,6 +1370,7 @@ int main(int argc, char **argv)
     ret = received_nb_signals ? 255 :
           err_rate_exceeded   ?  69 : ret;
 
+finish:
     exit_program(ret);
     return ret;
 }
