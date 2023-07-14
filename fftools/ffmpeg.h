@@ -911,7 +911,7 @@ static inline int err_merge(int err0, int err1)
             so = &o->name[_i];\
             _matches++;\
         } else if (_ret < 0)\
-            exit_program(1);\
+            return _ret;\
     }\
     if (_matches > 1)\
        WARN_MULTIPLE_OPT_USAGE(name, type, so, st);\
