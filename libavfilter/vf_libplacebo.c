@@ -1141,6 +1141,11 @@ static int libplacebo_query_format(AVFilterContext *ctx)
             }
         }
 
+#if PL_API_VER >= 293
+        if (!pl_test_pixfmt_caps(s->gpu, pixfmt, PL_FMT_CAP_RENDERABLE))
+            continue;
+#endif
+
         RET(ff_add_format(&outfmts, pixfmt));
     }
 
