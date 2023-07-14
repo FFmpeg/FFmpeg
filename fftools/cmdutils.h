@@ -50,16 +50,6 @@ extern AVDictionary *format_opts, *codec_opts;
 extern int hide_banner;
 
 /**
- * Register a program-specific cleanup routine.
- */
-void register_exit(void (*cb)(int ret));
-
-/**
- * Wraps exit with a program-specific cleanup routine.
- */
-void exit_program(int ret) av_noreturn;
-
-/**
  * Initialize dynamic library loading
  */
 void init_dynload(void);

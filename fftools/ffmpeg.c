@@ -1324,8 +1324,6 @@ int main(int argc, char **argv)
 
     init_dynload();
 
-    register_exit(ffmpeg_cleanup);
-
     setvbuf(stderr,NULL,_IONBF,0); /* win32 runtime needs this */
 
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
@@ -1376,6 +1374,6 @@ finish:
     if (ret == AVERROR_EXIT)
         ret = 0;
 
-    exit_program(ret);
+    ffmpeg_cleanup(ret);
     return ret;
 }
