@@ -632,7 +632,7 @@ static int decode_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
         if (avctx->codec_type != AVMEDIA_TYPE_VIDEO)
             frame->flags |= AV_FRAME_FLAG_KEY;
 
-        ret = fill_missing_fields(avctx, frame);
+        ret = fill_frame_props(avctx, frame);
         if (ret < 0) {
             av_frame_unref(frame);
             return ret;
