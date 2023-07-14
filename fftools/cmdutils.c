@@ -609,13 +609,17 @@ static int match_group_separator(const OptionGroupDef *groups, int nb_groups,
  * @param group_idx which group definition should this group belong to
  * @param arg argument of the group delimiting option
  */
-static void finish_group(OptionParseContext *octx, int group_idx,
-                         const char *arg)
+static int finish_group(OptionParseContext *octx, int group_idx,
+                        const char *arg)
 {
     OptionGroupList *l = &octx->groups[group_idx];
     OptionGroup *g;
+    int ret;
 
-    GROW_ARRAY(l->groups, l->nb_groups);
+    ret = GROW_ARRAY(l->groups, l->nb_groups);
+    if (ret < 0)
+        return ret;
+
     g = &l->groups[l->nb_groups - 1];
 
     *g             = octx->cur_group;
@@ -632,21 +636,29 @@ static void finish_group(OptionParseContext *octx, int group_idx,
     swr_opts    = NULL;
 
     memset(&octx->cur_group, 0, sizeof(octx->cur_group));
+
+    return ret;
 }
 
 /*
  * Add an option instance to currently parsed group.
  */
-static void add_opt(OptionParseContext *octx, const OptionDef *opt,
-                    const char *key, const char *val)
+static int add_opt(OptionParseContext *octx, const OptionDef *opt,
+                   const char *key, const char *val)
 {
     int global = !(opt->flags & (OPT_PERFILE | OPT_SPEC | OPT_OFFSET));
     OptionGroup *g = global ? &octx->global_opts : &octx->cur_group;
+    int ret;
 
-    GROW_ARRAY(g->opts, g->nb_opts);
+    ret = GROW_ARRAY(g->opts, g->nb_opts);
+    if (ret < 0)
+        return ret;
+
     g->opts[g->nb_opts - 1].opt = opt;
     g->opts[g->nb_opts - 1].key = key;
     g->opts[g->nb_opts - 1].val = val;
+
+    return 0;
 }
 
 static int init_parse_context(OptionParseContext *octx,
@@ -726,7 +738,10 @@ int split_commandline(OptionParseContext *octx, int argc, char *argv[],
         }
         /* unnamed group separators, e.g. output filename */
         if (opt[0] != '-' || !opt[1] || dashdash+1 == optindex) {
-            finish_group(octx, 0, opt);
+            ret = finish_group(octx, 0, opt);
+            if (ret < 0)
+                return ret;
+
             av_log(NULL, AV_LOG_DEBUG, " matched as %s.\n", groups[0].name);
             continue;
         }
@@ -744,7 +759,10 @@ do {                                                                           \
         /* named group separators, e.g. -i */
         if ((ret = match_group_separator(groups, nb_groups, opt)) >= 0) {
             GET_ARG(arg);
-            finish_group(octx, ret, arg);
+            ret = finish_group(octx, ret, arg);
+            if (ret < 0)
+                return ret;
+
             av_log(NULL, AV_LOG_DEBUG, " matched as %s with argument '%s'.\n",
                    groups[ret].name, arg);
             continue;
@@ -762,7 +780,10 @@ do {                                                                           \
                 arg = "1";
             }
 
-            add_opt(octx, po, opt, arg);
+            ret = add_opt(octx, po, opt, arg);
+            if (ret < 0)
+                return ret;
+
             av_log(NULL, AV_LOG_DEBUG, " matched as option '%s' (%s) with "
                    "argument '%s'.\n", po->name, po->help, arg);
             continue;
@@ -787,7 +808,10 @@ do {                                                                           \
         if (opt[0] == 'n' && opt[1] == 'o' &&
             (po = find_option(options, opt + 2)) &&
             po->name && po->flags & OPT_BOOL) {
-            add_opt(octx, po, opt, "0");
+            ret = add_opt(octx, po, opt, "0");
+            if (ret < 0)
+                return ret;
+
             av_log(NULL, AV_LOG_DEBUG, " matched as option '%s' (%s) with "
                    "argument 0.\n", po->name, po->help);
             continue;

@@ -388,7 +388,10 @@ static const struct TextureFormatEntry {
 
 static int opt_add_vfilter(void *optctx, const char *opt, const char *arg)
 {
-    GROW_ARRAY(vfilters_list, nb_vfilters);
+    int ret = GROW_ARRAY(vfilters_list, nb_vfilters);
+    if (ret < 0)
+        return ret;
+
     vfilters_list[nb_vfilters - 1] = arg;
     return 0;
 }

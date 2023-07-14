@@ -440,11 +440,7 @@ int grow_array(void **array, int elem_size, int *size, int new_size);
 void *allocate_array_elem(void *array, size_t elem_size, int *nb_elems);
 
 #define GROW_ARRAY(array, nb_elems)\
-do {                                                                        \
-    int _ret = grow_array((void**)&array, sizeof(*array), &nb_elems, nb_elems + 1); \
-    if (_ret < 0)                                                           \
-        report_and_exit(_ret);                                              \
-} while (0)
+    grow_array((void**)&array, sizeof(*array), &nb_elems, nb_elems + 1)
 
 #define GET_PIX_FMT_NAME(pix_fmt)\
     const char *name = av_get_pix_fmt_name(pix_fmt);

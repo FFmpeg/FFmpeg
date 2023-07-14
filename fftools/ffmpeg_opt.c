@@ -361,6 +361,7 @@ static int opt_map(void *optctx, const char *opt, const char *arg)
     OptionsContext *o = optctx;
     StreamMap *m = NULL;
     int i, negative = 0, file_idx, disabled = 0;
+    int ret;
 #if FFMPEG_OPT_MAP_SYNC
     char *sync;
 #endif
@@ -387,7 +388,11 @@ static int opt_map(void *optctx, const char *opt, const char *arg)
     if (map[0] == '[') {
         /* this mapping refers to lavfi output */
         const char *c = map + 1;
-        GROW_ARRAY(o->stream_maps, o->nb_stream_maps);
+
+        ret = GROW_ARRAY(o->stream_maps, o->nb_stream_maps);
+        if (ret < 0)
+            return ret;
+
         m = &o->stream_maps[o->nb_stream_maps - 1];
         m->linklabel = av_get_token(&c, "]");
         if (!m->linklabel) {
@@ -421,7 +426,10 @@ static int opt_map(void *optctx, const char *opt, const char *arg)
                     disabled = 1;
                     continue;
                 }
-                GROW_ARRAY(o->stream_maps, o->nb_stream_maps);
+                ret = GROW_ARRAY(o->stream_maps, o->nb_stream_maps);
+                if (ret < 0)
+                    return ret;
+
                 m = &o->stream_maps[o->nb_stream_maps - 1];
 
                 m->file_index   = file_idx;
@@ -450,7 +458,10 @@ static int opt_map(void *optctx, const char *opt, const char *arg)
 static int opt_attach(void *optctx, const char *opt, const char *arg)
 {
     OptionsContext *o = optctx;
-    GROW_ARRAY(o->attachments, o->nb_attachments);
+    int ret = GROW_ARRAY(o->attachments, o->nb_attachments);
+    if (ret < 0)
+        return ret;
+
     o->attachments[o->nb_attachments - 1] = arg;
     return 0;
 }
@@ -459,7 +470,7 @@ static int opt_attach(void *optctx, const char *opt, const char *arg)
 static int opt_map_channel(void *optctx, const char *opt, const char *arg)
 {
     OptionsContext *o = optctx;
-    int n;
+    int n, ret;
     AVStream *st;
     AudioChannelMap *m;
     char *allow_unused;
@@ -474,7 +485,10 @@ static int opt_map_channel(void *optctx, const char *opt, const char *arg)
     if (!mapchan)
         return AVERROR(ENOMEM);
 
-    GROW_ARRAY(o->audio_channel_maps, o->nb_audio_channel_maps);
+    ret = GROW_ARRAY(o->audio_channel_maps, o->nb_audio_channel_maps);
+    if (ret < 0)
+        return ret;
+
     m = &o->audio_channel_maps[o->nb_audio_channel_maps - 1];
 
     /* muted channel syntax */

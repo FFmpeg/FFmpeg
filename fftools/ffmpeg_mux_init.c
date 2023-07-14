@@ -208,7 +208,9 @@ static int enc_stats_get_file(AVIOContext **io, const char *path)
             return 0;
         }
 
-    GROW_ARRAY(enc_stats_files, nb_enc_stats_files);
+    ret = GROW_ARRAY(enc_stats_files, nb_enc_stats_files);
+    if (ret < 0)
+        return ret;
 
     esf = &enc_stats_files[nb_enc_stats_files - 1];
 
@@ -320,7 +322,11 @@ static int enc_stats_init(OutputStream *ost, EncStats *es, int pre,
             return ret;
 
         if (val) {
-            GROW_ARRAY(es->components, es->nb_components);
+            ret = GROW_ARRAY(es->components, es->nb_components);
+            if (ret < 0) {
+                av_freep(&val);
+                return ret;
+            }
 
             c          = &es->components[es->nb_components - 1];
             c->type    = ENC_STATS_LITERAL;
@@ -351,7 +357,10 @@ static int enc_stats_init(OutputStream *ost, EncStats *es, int pre,
         }
         next++;
 
-        GROW_ARRAY(es->components, es->nb_components);
+        ret = GROW_ARRAY(es->components, es->nb_components);
+        if (ret < 0)
+            return ret;
+
         c = &es->components[es->nb_components - 1];
 
         for (size_t i = 0; i < FF_ARRAY_ELEMS(fmt_specs); i++) {

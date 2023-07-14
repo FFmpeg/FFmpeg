@@ -880,7 +880,10 @@ int ist_output_add(InputStream *ist, OutputStream *ost)
     if (ret < 0)
         return ret;
 
-    GROW_ARRAY(ist->outputs, ist->nb_outputs);
+    ret = GROW_ARRAY(ist->outputs, ist->nb_outputs);
+    if (ret < 0)
+        return ret;
+
     ist->outputs[ist->nb_outputs - 1] = ost;
 
     return 0;
@@ -894,7 +897,10 @@ int ist_filter_add(InputStream *ist, InputFilter *ifilter, int is_simple)
     if (ret < 0)
         return ret;
 
-    GROW_ARRAY(ist->filters, ist->nb_filters);
+    ret = GROW_ARRAY(ist->filters, ist->nb_filters);
+    if (ret < 0)
+        return ret;
+
     ist->filters[ist->nb_filters - 1] = ifilter;
 
     // initialize fallback parameters for filtering
