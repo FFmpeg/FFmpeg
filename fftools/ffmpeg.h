@@ -704,7 +704,7 @@ void term_exit(void);
 void show_usage(void);
 
 void remove_avoptions(AVDictionary **a, AVDictionary *b);
-void assert_avoptions(AVDictionary *m);
+int check_avoptions(AVDictionary *m);
 
 int assert_file_overwrite(const char *filename);
 char *file_read(const char *filename);

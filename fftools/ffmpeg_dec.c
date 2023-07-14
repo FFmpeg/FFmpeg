@@ -1119,7 +1119,10 @@ int dec_open(InputStream *ist)
                av_err2str(ret));
         return ret;
     }
-    assert_avoptions(ist->decoder_opts);
+
+    ret = check_avoptions(ist->decoder_opts);
+    if (ret < 0)
+        return ret;
 
     ret = dec_thread_start(ist);
     if (ret < 0) {

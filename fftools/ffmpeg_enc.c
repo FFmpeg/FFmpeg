@@ -407,7 +407,10 @@ int enc_open(OutputStream *ost, AVFrame *frame)
                          ost->sq_idx_encode, ost->enc_ctx->frame_size);
     }
 
-    assert_avoptions(ost->encoder_opts);
+    ret = check_avoptions(ost->encoder_opts);
+    if (ret < 0)
+        return ret;
+
     if (ost->enc_ctx->bit_rate && ost->enc_ctx->bit_rate < 1000 &&
         ost->enc_ctx->codec_id != AV_CODEC_ID_CODEC2 /* don't complain about 700 bit/s modes */)
         av_log(ost, AV_LOG_WARNING, "The bitrate parameter is set too low."
