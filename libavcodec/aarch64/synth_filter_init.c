@@ -28,7 +28,7 @@
 
 #include "asm-offsets.h"
 
-#if HAVE_NEON || HAVE_VFP
+#if HAVE_NEON
 AV_CHECK_OFFSET(FFTContext, imdct_half, IMDCT_HALF);
 #endif
 
