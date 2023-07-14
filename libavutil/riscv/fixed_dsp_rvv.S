@@ -23,7 +23,7 @@
 // (a0) = (a0) + (a1), (a1) = (a0) - (a1) [0..a2-1]
 func ff_butterflies_fixed_rvv, zve32x
 1:
-        vsetvli t0, a2, e32, m1, ta, ma
+        vsetvli t0, a2, e32, m4, ta, ma
         vle32.v v16, (a0)
         sub     a2, a2, t0
         vle32.v v24, (a1)
