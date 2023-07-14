@@ -715,6 +715,14 @@ static void bench_uninit(void)
 #endif
 }
 
+static int usage(const char *path)
+{
+    fprintf(stderr,
+            "Usage: %s [--bench] [--test=<pattern>] [--verbose] [seed]\n",
+            path);
+    return 1;
+}
+
 int main(int argc, char *argv[])
 {
     unsigned int seed = av_get_random_seed();
@@ -730,25 +738,29 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    while (argc > 1) {
-        if (!strncmp(argv[1], "--bench", 7)) {
+    for (i = 1; i < argc; i++) {
+        const char *arg = argv[i];
+        unsigned long l;
+        char *end;
+
+        if (!strncmp(arg, "--bench", 7)) {
             if (bench_init() < 0)
                 return 1;
-            if (argv[1][7] == '=') {
-                state.bench_pattern = argv[1] + 8;
+            if (arg[7] == '=') {
+                state.bench_pattern = arg + 8;
                 state.bench_pattern_len = strlen(state.bench_pattern);
             } else
                 state.bench_pattern = "";
-        } else if (!strncmp(argv[1], "--test=", 7)) {
-            state.test_name = argv[1] + 7;
-        } else if (!strcmp(argv[1], "--verbose") || !strcmp(argv[1], "-v")) {
+        } else if (!strncmp(arg, "--test=", 7)) {
+            state.test_name = arg + 7;
+        } else if (!strcmp(arg, "--verbose") || !strcmp(arg, "-v")) {
             state.verbose = 1;
+        } else if ((l = strtoul(arg, &end, 10)) <= UINT_MAX &&
+                   *end == '\0') {
+            seed = l;
         } else {
-            seed = strtoul(argv[1], NULL, 10);
+            return usage(argv[0]);
         }
-
-        argc--;
-        argv++;
     }
 
     fprintf(stderr, "checkasm: using random seed %u\n", seed);
