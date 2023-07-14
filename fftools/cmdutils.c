@@ -943,7 +943,7 @@ int check_stream_specifier(AVFormatContext *s, AVStream *st, const char *spec)
     return ret;
 }
 
-AVDictionary *filter_codec_opts(AVDictionary *opts, enum AVCodecID codec_id,
+AVDictionary *filter_codec_opts(const AVDictionary *opts, enum AVCodecID codec_id,
                                 AVFormatContext *s, AVStream *st, const AVCodec *codec)
 {
     AVDictionary    *ret = NULL;
