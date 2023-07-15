@@ -3762,8 +3762,8 @@ Set size of segment over which cross-correlation is calculated.
 Default is 256. Allowed range is from 2 to 131072.
 
 @item algo
-Set algorithm for cross-correlation. Can be @code{slow} or @code{fast}.
-Default is @code{slow}. Fast algorithm assumes mean values over any given segment
+Set algorithm for cross-correlation. Can be @code{slow} or @code{fast} or @code{best}.
+Default is @code{best}. Fast algorithm assumes mean values over any given segment
 are always zero and thus need much less calculations to make.
 This is generally not true, but is valid for typical audio streams.
 @end table
