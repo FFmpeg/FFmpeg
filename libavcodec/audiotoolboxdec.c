@@ -71,10 +71,12 @@ static UInt32 ffat_get_format_id(enum AVCodecID codec, int profile)
         return kAudioFormatAMR;
     case AV_CODEC_ID_EAC3:
         return kAudioFormatEnhancedAC3;
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1060
     case AV_CODEC_ID_GSM_MS:
         return kAudioFormatMicrosoftGSM;
     case AV_CODEC_ID_ILBC:
         return kAudioFormatiLBC;
+#endif
     case AV_CODEC_ID_MP1:
         return kAudioFormatMPEGLayer1;
     case AV_CODEC_ID_MP2:

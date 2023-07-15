@@ -69,15 +69,19 @@ static UInt32 ffat_get_format_id(enum AVCodecID codec, int profile)
             return kAudioFormatMPEG4AAC_HE_V2;
         case FF_PROFILE_AAC_LD:
             return kAudioFormatMPEG4AAC_LD;
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1060
         case FF_PROFILE_AAC_ELD:
             return kAudioFormatMPEG4AAC_ELD;
+#endif
         }
     case AV_CODEC_ID_ADPCM_IMA_QT:
         return kAudioFormatAppleIMA4;
     case AV_CODEC_ID_ALAC:
         return kAudioFormatAppleLossless;
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1060
     case AV_CODEC_ID_ILBC:
         return kAudioFormatiLBC;
+#endif
     case AV_CODEC_ID_PCM_ALAW:
         return kAudioFormatALaw;
     case AV_CODEC_ID_PCM_MULAW:
