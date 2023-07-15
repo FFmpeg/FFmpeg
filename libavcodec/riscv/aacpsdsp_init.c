@@ -46,7 +46,8 @@ av_cold void ff_psdsp_init_riscv(PSDSPContext *c)
         c->hybrid_analysis = ff_ps_hybrid_analysis_rvv;
 
         if (flags & AV_CPU_FLAG_RVB_ADDR) {
-            c->add_squares = ff_ps_add_squares_rvv;
+            if (flags & AV_CPU_FLAG_RVV_I64)
+                c->add_squares = ff_ps_add_squares_rvv;
             c->mul_pair_single = ff_ps_mul_pair_single_rvv;
             c->stereo_interpolate[0] = ff_ps_stereo_interpolate_rvv;
         }
