@@ -247,10 +247,10 @@ static void yae_release_buffers(ATempoContext *atempo)
 
 /* av_realloc is not aligned enough; fortunately, the data does not need to
  * be preserved */
-#define RE_MALLOC_OR_FAIL(field, field_size)                    \
+#define RE_MALLOC_OR_FAIL(field, field_size, element_size)      \
     do {                                                        \
         av_freep(&field);                                       \
-        field = av_calloc(field_size, 1);                       \
+        field = av_calloc(field_size, element_size);            \
         if (!field) {                                           \
             yae_release_buffers(atempo);                        \
             return AVERROR(ENOMEM);                             \
@@ -290,12 +290,12 @@ static int yae_reset(ATempoContext *atempo,
     }
 
     // initialize audio fragment buffers:
-    RE_MALLOC_OR_FAIL(atempo->frag[0].data, atempo->window * atempo->stride);
-    RE_MALLOC_OR_FAIL(atempo->frag[1].data, atempo->window * atempo->stride);
-    RE_MALLOC_OR_FAIL(atempo->frag[0].xdat_in, (atempo->window + 1) * sizeof(AVComplexFloat));
-    RE_MALLOC_OR_FAIL(atempo->frag[1].xdat_in, (atempo->window + 1) * sizeof(AVComplexFloat));
-    RE_MALLOC_OR_FAIL(atempo->frag[0].xdat, (atempo->window + 1) * sizeof(AVComplexFloat));
-    RE_MALLOC_OR_FAIL(atempo->frag[1].xdat, (atempo->window + 1) * sizeof(AVComplexFloat));
+    RE_MALLOC_OR_FAIL(atempo->frag[0].data, atempo->window, atempo->stride);
+    RE_MALLOC_OR_FAIL(atempo->frag[1].data, atempo->window, atempo->stride);
+    RE_MALLOC_OR_FAIL(atempo->frag[0].xdat_in, (atempo->window + 1), sizeof(AVComplexFloat));
+    RE_MALLOC_OR_FAIL(atempo->frag[1].xdat_in, (atempo->window + 1), sizeof(AVComplexFloat));
+    RE_MALLOC_OR_FAIL(atempo->frag[0].xdat, (atempo->window + 1), sizeof(AVComplexFloat));
+    RE_MALLOC_OR_FAIL(atempo->frag[1].xdat, (atempo->window + 1), sizeof(AVComplexFloat));
 
     // initialize rDFT contexts:
     av_tx_uninit(&atempo->real_to_complex);
@@ -313,14 +313,14 @@ static int yae_reset(ATempoContext *atempo,
         return AVERROR(ENOMEM);
     }
 
-    RE_MALLOC_OR_FAIL(atempo->correlation_in, (atempo->window + 1) * sizeof(AVComplexFloat));
-    RE_MALLOC_OR_FAIL(atempo->correlation, atempo->window * sizeof(AVComplexFloat));
+    RE_MALLOC_OR_FAIL(atempo->correlation_in, (atempo->window + 1), sizeof(AVComplexFloat));
+    RE_MALLOC_OR_FAIL(atempo->correlation, atempo->window, sizeof(AVComplexFloat));
 
     atempo->ring = atempo->window * 3;
-    RE_MALLOC_OR_FAIL(atempo->buffer, atempo->ring * atempo->stride);
+    RE_MALLOC_OR_FAIL(atempo->buffer, atempo->ring, atempo->stride);
 
     // initialize the Hann window function:
-    RE_MALLOC_OR_FAIL(atempo->hann, atempo->window * sizeof(float));
+    RE_MALLOC_OR_FAIL(atempo->hann, atempo->window, sizeof(float));
 
     for (i = 0; i < atempo->window; i++) {
         double t = (double)i / (double)(atempo->window - 1);
