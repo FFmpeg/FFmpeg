@@ -52,7 +52,9 @@
 #if CONFIG_VAAPI
 #include <va/va_drmcommon.h>
 #endif
+#ifdef __linux__
 #include <sys/sysmacros.h>
+#endif
 #include <sys/stat.h>
 #include <xf86drm.h>
 #include <drm_fourcc.h>
