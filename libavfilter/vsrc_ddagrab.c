@@ -533,8 +533,23 @@ static int update_mouse_pointer(AVFilterContext *avctx, DXGI_OUTDUPL_FRAME_INFO 
         return 0;
 
     if (frame_info->PointerPosition.Visible) {
-        dda->mouse_x = frame_info->PointerPosition.Position.x;
-        dda->mouse_y = frame_info->PointerPosition.Position.y;
+        switch (dda->output_desc.Rotation) {
+        case DXGI_MODE_ROTATION_ROTATE90:
+            dda->mouse_x = frame_info->PointerPosition.Position.y;
+            dda->mouse_y = dda->output_desc.DesktopCoordinates.right - dda->output_desc.DesktopCoordinates.left - frame_info->PointerPosition.Position.x - 1;
+            break;
+        case DXGI_MODE_ROTATION_ROTATE180:
+            dda->mouse_x = dda->output_desc.DesktopCoordinates.right - dda->output_desc.DesktopCoordinates.left - frame_info->PointerPosition.Position.x - 1;
+            dda->mouse_y = dda->output_desc.DesktopCoordinates.bottom - dda->output_desc.DesktopCoordinates.top - frame_info->PointerPosition.Position.y - 1;
+            break;
+        case DXGI_MODE_ROTATION_ROTATE270:
+            dda->mouse_x = dda->output_desc.DesktopCoordinates.bottom - dda->output_desc.DesktopCoordinates.top - frame_info->PointerPosition.Position.y - 1;
+            dda->mouse_y = frame_info->PointerPosition.Position.x;
+            break;
+        default:
+            dda->mouse_x = frame_info->PointerPosition.Position.x;
+            dda->mouse_y = frame_info->PointerPosition.Position.y;
+        }
     } else {
         dda->mouse_x = dda->mouse_y = -1;
     }
@@ -852,6 +867,41 @@ static int draw_mouse_pointer(AVFilterContext *avctx, AVFrame *frame)
 
         D3D11_SUBRESOURCE_DATA init_data = { 0 };
         D3D11_BUFFER_DESC buf_desc = { 0 };
+
+        switch (dda->output_desc.Rotation) {
+        case DXGI_MODE_ROTATION_ROTATE90:
+            vertices[ 0] = x;                   vertices[ 1] = y;
+            vertices[ 5] = x;                   vertices[ 6] = y - tex_desc.Width;
+            vertices[10] = x + tex_desc.Height; vertices[11] = y;
+            vertices[15] = x + tex_desc.Height; vertices[16] = y - tex_desc.Width;
+            vertices[ 3] = 0.0f; vertices[ 4] = 0.0f;
+            vertices[ 8] = 1.0f; vertices[ 9] = 0.0f;
+            vertices[13] = 0.0f; vertices[14] = 1.0f;
+            vertices[18] = 1.0f; vertices[19] = 1.0f;
+            break;
+        case DXGI_MODE_ROTATION_ROTATE180:
+            vertices[ 0] = x - tex_desc.Width; vertices[ 1] = y;
+            vertices[ 5] = x - tex_desc.Width; vertices[ 6] = y - tex_desc.Height;
+            vertices[10] = x;                  vertices[11] = y;
+            vertices[15] = x;                  vertices[16] = y - tex_desc.Height;
+            vertices[ 3] = 1.0f; vertices[ 4] = 0.0f;
+            vertices[ 8] = 1.0f; vertices[ 9] = 1.0f;
+            vertices[13] = 0.0f; vertices[14] = 0.0f;
+            vertices[18] = 0.0f; vertices[19] = 1.0f;
+            break;
+        case DXGI_MODE_ROTATION_ROTATE270:
+            vertices[ 0] = x - tex_desc.Height; vertices[ 1] = y + tex_desc.Width;
+            vertices[ 5] = x - tex_desc.Height; vertices[ 6] = y;
+            vertices[10] = x;                   vertices[11] = y + tex_desc.Width;
+            vertices[15] = x;                   vertices[16] = y;
+            vertices[ 3] = 1.0f; vertices[ 4] = 1.0f;
+            vertices[ 8] = 0.0f; vertices[ 9] = 1.0f;
+            vertices[13] = 1.0f; vertices[14] = 0.0f;
+            vertices[18] = 0.0f; vertices[19] = 0.0f;
+            break;
+        default:
+            break;
+        }
 
         num_vertices = sizeof(vertices) / (sizeof(FLOAT) * 5);
 
