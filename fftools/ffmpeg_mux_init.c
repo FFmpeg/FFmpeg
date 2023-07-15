@@ -503,6 +503,32 @@ static int fmt_in_list(const int *formats, int format)
     return 0;
 }
 
+static enum AVPixelFormat
+choose_pixel_fmt(const AVCodec *codec, enum AVPixelFormat target)
+{
+    const enum AVPixelFormat *p = codec->pix_fmts;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(target);
+    //FIXME: This should check for AV_PIX_FMT_FLAG_ALPHA after PAL8 pixel format without alpha is implemented
+    int has_alpha = desc ? desc->nb_components % 2 == 0 : 0;
+    enum AVPixelFormat best= AV_PIX_FMT_NONE;
+
+    for (; *p != AV_PIX_FMT_NONE; p++) {
+        best = av_find_best_pix_fmt_of_2(best, *p, target, has_alpha, NULL);
+        if (*p == target)
+            break;
+    }
+    if (*p == AV_PIX_FMT_NONE) {
+        if (target != AV_PIX_FMT_NONE)
+            av_log(NULL, AV_LOG_WARNING,
+                   "Incompatible pixel format '%s' for codec '%s', auto-selecting format '%s'\n",
+                   av_get_pix_fmt_name(target),
+                   codec->name,
+                   av_get_pix_fmt_name(best));
+        return best;
+    }
+    return target;
+}
+
 static enum AVPixelFormat pix_fmt_parse(OutputStream *ost, const char *name)
 {
     const enum AVPixelFormat *fmts = ost->enc_ctx->codec->pix_fmts;
@@ -539,6 +565,9 @@ static enum AVPixelFormat pix_fmt_parse(OutputStream *ost, const char *name)
             }
         }
     }
+
+    if (fmts && !fmt_in_list(fmts, fmt))
+        fmt = choose_pixel_fmt(ost->enc_ctx->codec, fmt);
 
     return fmt;
 }

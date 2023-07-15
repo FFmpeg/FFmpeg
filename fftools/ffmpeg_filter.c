@@ -285,38 +285,6 @@ static const enum AVPixelFormat *get_compliance_normal_pix_fmts(const AVCodec *c
     }
 }
 
-static enum AVPixelFormat
-choose_pixel_fmt(const AVCodec *codec, enum AVPixelFormat target,
-                 int strict_std_compliance)
-{
-    if (codec && codec->pix_fmts) {
-        const enum AVPixelFormat *p = codec->pix_fmts;
-        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(target);
-        //FIXME: This should check for AV_PIX_FMT_FLAG_ALPHA after PAL8 pixel format without alpha is implemented
-        int has_alpha = desc ? desc->nb_components % 2 == 0 : 0;
-        enum AVPixelFormat best= AV_PIX_FMT_NONE;
-
-        if (strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL) {
-            p = get_compliance_normal_pix_fmts(codec, p);
-        }
-        for (; *p != AV_PIX_FMT_NONE; p++) {
-            best = av_find_best_pix_fmt_of_2(best, *p, target, has_alpha, NULL);
-            if (*p == target)
-                break;
-        }
-        if (*p == AV_PIX_FMT_NONE) {
-            if (target != AV_PIX_FMT_NONE)
-                av_log(NULL, AV_LOG_WARNING,
-                       "Incompatible pixel format '%s' for codec '%s', auto-selecting format '%s'\n",
-                       av_get_pix_fmt_name(target),
-                       codec->name,
-                       av_get_pix_fmt_name(best));
-            return best;
-        }
-    }
-    return target;
-}
-
 /* May return NULL (no pixel format found), a static string or a string
  * backed by the bprint. Nothing has been written to the AVBPrint in case
  * NULL is returned. The AVBPrint provided should be clean. */
@@ -326,7 +294,6 @@ static const char *choose_pix_fmts(OutputFilter *ofilter, AVBPrint *bprint)
     AVCodecContext *enc = ost->enc_ctx;
     const AVDictionaryEntry *strict_dict = av_dict_get(ost->encoder_opts, "strict", NULL, 0);
     if (strict_dict)
-        // used by choose_pixel_fmt() and below
         av_opt_set(ost->enc_ctx, "strict", strict_dict->value, 0);
 
      if (ost->keep_pix_fmt) {
@@ -335,8 +302,7 @@ static const char *choose_pix_fmts(OutputFilter *ofilter, AVBPrint *bprint)
         return av_get_pix_fmt_name(ost->enc_ctx->pix_fmt);
     }
     if (ost->enc_ctx->pix_fmt != AV_PIX_FMT_NONE) {
-        return av_get_pix_fmt_name(choose_pixel_fmt(enc->codec, enc->pix_fmt,
-                                                    ost->enc_ctx->strict_std_compliance));
+        return av_get_pix_fmt_name(enc->pix_fmt);
     } else if (enc->codec->pix_fmts) {
         const enum AVPixelFormat *p;
 
