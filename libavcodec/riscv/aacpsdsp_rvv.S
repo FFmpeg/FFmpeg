@@ -22,13 +22,13 @@
 
 func ff_ps_add_squares_rvv, zve32f
 1:
-        vsetvli     t0, a2, e32, m1, ta, ma
+        vsetvli     t0, a2, e32, m4, ta, ma
         vlseg2e32.v v24, (a1)
         sub         a2, a2, t0
         vle32.v     v16, (a0)
         sh3add      a1, t0, a1
         vfmacc.vv   v16, v24, v24
-        vfmacc.vv   v16, v25, v25
+        vfmacc.vv   v16, v28, v28
         vse32.v     v16, (a0)
         sh2add      a0, t0, a0
         bnez        a2, 1b
