@@ -1648,7 +1648,7 @@ read_fail:
 
 static int create_streams(Muxer *mux, const OptionsContext *o)
 {
-    static const int (*map_func[])(Muxer *mux, const OptionsContext *o) = {
+    static int (* const map_func[])(Muxer *mux, const OptionsContext *o) = {
         [AVMEDIA_TYPE_VIDEO]    = map_auto_video,
         [AVMEDIA_TYPE_AUDIO]    = map_auto_audio,
         [AVMEDIA_TYPE_SUBTITLE] = map_auto_subtitle,
