@@ -1330,7 +1330,7 @@ fail:
 static void mkv_write_video_color(EbmlWriter *writer, const AVStream *st,
                                   const AVCodecParameters *par)
 {
-    const void *side_data;
+    const AVPacketSideData *side_data;
 
     ebml_writer_open_master(writer, MATROSKA_ID_VIDEOCOLOR);
 
@@ -1364,20 +1364,20 @@ static void mkv_write_video_color(EbmlWriter *writer, const AVStream *st,
                              (ypos >> 7) + 1);
     }
 
-    side_data = av_stream_get_side_data(st, AV_PKT_DATA_CONTENT_LIGHT_LEVEL,
-                                        NULL);
+    side_data = av_packet_side_data_get(st->codecpar->coded_side_data, st->codecpar->nb_coded_side_data,
+                                        AV_PKT_DATA_CONTENT_LIGHT_LEVEL);
     if (side_data) {
-        const AVContentLightMetadata *metadata = side_data;
+        const AVContentLightMetadata *metadata = (AVContentLightMetadata *)side_data->data;
         ebml_writer_add_uint(writer, MATROSKA_ID_VIDEOCOLORMAXCLL,
                              metadata->MaxCLL);
         ebml_writer_add_uint(writer, MATROSKA_ID_VIDEOCOLORMAXFALL,
                              metadata->MaxFALL);
     }
 
-    side_data = av_stream_get_side_data(st, AV_PKT_DATA_MASTERING_DISPLAY_METADATA,
-                                        NULL);
+    side_data = av_packet_side_data_get(st->codecpar->coded_side_data, st->codecpar->nb_coded_side_data,
+                                        AV_PKT_DATA_MASTERING_DISPLAY_METADATA);
     if (side_data) {
-        const AVMasteringDisplayMetadata *metadata = side_data;
+        const AVMasteringDisplayMetadata *metadata = (AVMasteringDisplayMetadata *)side_data->data;
         ebml_writer_open_master(writer, MATROSKA_ID_VIDEOCOLORMASTERINGMETA);
         if (metadata->has_primaries) {
             ebml_writer_add_float(writer, MATROSKA_ID_VIDEOCOLOR_RX,
@@ -1413,11 +1413,15 @@ static void mkv_write_video_color(EbmlWriter *writer, const AVStream *st,
 static void mkv_handle_rotation(void *logctx, const AVStream *st,
                                 double *yaw, double *roll)
 {
-    const int32_t *matrix =
-        (const int32_t*)av_stream_get_side_data(st, AV_PKT_DATA_DISPLAYMATRIX, NULL);
+    const int32_t *matrix;
+    const AVPacketSideData *side_data =
+        av_packet_side_data_get(st->codecpar->coded_side_data, st->codecpar->nb_coded_side_data,
+                                AV_PKT_DATA_DISPLAYMATRIX);
 
-    if (!matrix)
+    if (!side_data)
         return;
+
+    matrix = (int32_t *)side_data->data;
 
     /* Check whether this is an affine transformation */
     if (matrix[2] || matrix[5])
@@ -1465,13 +1469,15 @@ static int mkv_handle_spherical(void *logctx, EbmlWriter *writer,
                                 const AVStream *st, uint8_t private[],
                                 double *yaw, double *pitch, double *roll)
 {
-    const AVSphericalMapping *spherical =
-        (const AVSphericalMapping *)av_stream_get_side_data(st, AV_PKT_DATA_SPHERICAL,
-                                                            NULL);
+    const AVPacketSideData *sd = av_packet_side_data_get(st->codecpar->coded_side_data,
+                                                         st->codecpar->nb_coded_side_data,
+                                                         AV_PKT_DATA_SPHERICAL);
+    const AVSphericalMapping *spherical;
 
-    if (!spherical)
+    if (!sd)
         return 0;
 
+    spherical = (const AVSphericalMapping *)sd->data;
     if (spherical->projection != AV_SPHERICAL_EQUIRECTANGULAR      &&
         spherical->projection != AV_SPHERICAL_EQUIRECTANGULAR_TILE &&
         spherical->projection != AV_SPHERICAL_CUBEMAP) {
@@ -1631,6 +1637,7 @@ static int mkv_write_stereo_mode(AVFormatContext *s, EbmlWriter *writer,
             format = stereo_mode;
         }
     } else {
+        const AVPacketSideData *sd;
         const AVStereo3D *stereo;
         /* The following macro presumes all MATROSKA_VIDEO_STEREOMODE_TYPE_*
          * values to be in the range 0..254. */
@@ -1642,10 +1649,12 @@ static int mkv_write_stereo_mode(AVFormatContext *s, EbmlWriter *writer,
         };
         int fmt;
 
-        stereo = (const AVStereo3D*)av_stream_get_side_data(st, AV_PKT_DATA_STEREO3D,
-                                                            NULL);
-        if (!stereo)
+        sd = av_packet_side_data_get(st->codecpar->coded_side_data, st->codecpar->nb_coded_side_data,
+                                     AV_PKT_DATA_STEREO3D);
+        if (!sd)
             return 0;
+
+        stereo = (const AVStereo3D*)sd->data;
 
         /* A garbage AVStereo3D or something with no Matroska analogon. */
         if ((unsigned)stereo->type >= FF_ARRAY_ELEMS(conversion_table))
@@ -1684,6 +1693,7 @@ static void mkv_write_blockadditionmapping(AVFormatContext *s, const MatroskaMux
 {
 #if CONFIG_MATROSKA_MUXER
     const AVDOVIDecoderConfigurationRecord *dovi;
+    const AVPacketSideData *sd;
 
     if (IS_SEEKABLE(s->pb, mkv)) {
         track->blockadditionmapping_offset = avio_tell(pb);
@@ -1700,9 +1710,14 @@ static void mkv_write_blockadditionmapping(AVFormatContext *s, const MatroskaMux
         }
     }
 
-    dovi = (const AVDOVIDecoderConfigurationRecord *)
-           av_stream_get_side_data(st, AV_PKT_DATA_DOVI_CONF, NULL);
-    if (dovi && dovi->dv_profile <= 10) {
+    sd = av_packet_side_data_get(st->codecpar->coded_side_data, st->codecpar->nb_coded_side_data,
+                                 AV_PKT_DATA_DOVI_CONF);
+
+    if (!sd)
+        return;
+
+    dovi = (const AVDOVIDecoderConfigurationRecord *)sd->data;
+    if (dovi->dv_profile <= 10) {
         ebml_master mapping;
         uint8_t buf[ISOM_DVCC_DVVC_SIZE];
         uint32_t type;

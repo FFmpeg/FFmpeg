@@ -745,8 +745,10 @@ void ff_read_frame_flush(AVFormatContext *s)
         for (int j = 0; j < MAX_REORDER_DELAY + 1; j++)
             sti->pts_buffer[j] = AV_NOPTS_VALUE;
 
+#if FF_API_AVSTREAM_SIDE_DATA
         if (si->inject_global_side_data)
             sti->inject_global_side_data = 1;
+#endif
 
         sti->skip_samples = 0;
     }

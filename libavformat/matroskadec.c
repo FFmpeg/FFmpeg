@@ -2249,7 +2249,6 @@ static int mkv_stereo3d_conv(AVStream *st, MatroskaVideoStereoModeType stereo_mo
         STEREOMODE_STEREO3D_MAPPING(STEREO_MODE_CONV, NOTHING)
     };
     AVStereo3D *stereo;
-    int ret;
 
     stereo = av_stereo3d_alloc();
     if (!stereo)
@@ -2258,11 +2257,10 @@ static int mkv_stereo3d_conv(AVStream *st, MatroskaVideoStereoModeType stereo_mo
     stereo->type  = stereo_mode_conv[stereo_mode].type;
     stereo->flags = stereo_mode_conv[stereo_mode].flags;
 
-    ret = av_stream_add_side_data(st, AV_PKT_DATA_STEREO3D, (uint8_t *)stereo,
-                                  sizeof(*stereo));
-    if (ret < 0) {
+    if (!av_packet_side_data_add(&st->codecpar->coded_side_data, &st->codecpar->nb_coded_side_data,
+                                 AV_PKT_DATA_STEREO3D, stereo, sizeof(*stereo), 0)) {
         av_freep(&stereo);
-        return ret;
+        return AVERROR(ENOMEM);
     }
 
     return 0;
@@ -2309,28 +2307,27 @@ static int mkv_parse_video_color(AVStream *st, const MatroskaTrack *track) {
     }
     if (color->max_cll && color->max_fall) {
         size_t size = 0;
-        int ret;
         AVContentLightMetadata *metadata = av_content_light_metadata_alloc(&size);
         if (!metadata)
             return AVERROR(ENOMEM);
-        ret = av_stream_add_side_data(st, AV_PKT_DATA_CONTENT_LIGHT_LEVEL,
-                                      (uint8_t *)metadata, size);
-        if (ret < 0) {
+        if (!av_packet_side_data_add(&st->codecpar->coded_side_data, &st->codecpar->nb_coded_side_data,
+                                     AV_PKT_DATA_CONTENT_LIGHT_LEVEL, metadata, size, 0)) {
             av_freep(&metadata);
-            return ret;
+            return AVERROR(ENOMEM);
         }
         metadata->MaxCLL  = color->max_cll;
         metadata->MaxFALL = color->max_fall;
     }
 
     if (has_mastering_primaries || has_mastering_luminance) {
-        AVMasteringDisplayMetadata *metadata =
-            (AVMasteringDisplayMetadata*) av_stream_new_side_data(
-                st, AV_PKT_DATA_MASTERING_DISPLAY_METADATA,
-                sizeof(AVMasteringDisplayMetadata));
-        if (!metadata) {
+        AVMasteringDisplayMetadata *metadata;
+        AVPacketSideData *sd = av_packet_side_data_new(&st->codecpar->coded_side_data,
+                                                       &st->codecpar->nb_coded_side_data,
+                                                       AV_PKT_DATA_MASTERING_DISPLAY_METADATA,
+                                                       sizeof(AVMasteringDisplayMetadata), 0);
+        if (!sd)
             return AVERROR(ENOMEM);
-        }
+        metadata = (AVMasteringDisplayMetadata*)sd->data;
         memset(metadata, 0, sizeof(AVMasteringDisplayMetadata));
         if (has_mastering_primaries) {
             metadata->display_primaries[0][0] = av_d2q(mastering_meta->r_x, INT_MAX);
@@ -2356,6 +2353,7 @@ static int mkv_create_display_matrix(AVStream *st,
                                      const MatroskaTrackVideoProjection *proj,
                                      void *logctx)
 {
+    AVPacketSideData *sd;
     double pitch = proj->pitch, yaw = proj->yaw, roll = proj->roll;
     int32_t *matrix;
     int hflip;
@@ -2372,10 +2370,13 @@ static int mkv_create_display_matrix(AVStream *st,
                st->index, yaw, pitch, roll);
         return 0;
     }
-    matrix = (int32_t*)av_stream_new_side_data(st, AV_PKT_DATA_DISPLAYMATRIX,
-                                               9 * sizeof(*matrix));
-    if (!matrix)
+    sd = av_packet_side_data_new(&st->codecpar->coded_side_data,
+                                 &st->codecpar->nb_coded_side_data,
+                                 AV_PKT_DATA_DISPLAYMATRIX,
+                                 9 * sizeof(*matrix), 0);
+    if (!sd)
         return AVERROR(ENOMEM);
+    matrix = (int32_t*)sd->data;
 
     hflip = yaw != 0.0;
     /* ProjectionPoseRoll is in the counter-clockwise direction
@@ -2400,7 +2401,6 @@ static int mkv_parse_video_projection(AVStream *st, const MatroskaTrack *track,
     size_t spherical_size;
     uint32_t l = 0, t = 0, r = 0, b = 0;
     uint32_t padding = 0;
-    int ret;
 
     if (mkv_projection->private.size && priv_data[0] != 0) {
         av_log(logctx, AV_LOG_WARNING, "Unknown spherical metadata\n");
@@ -2476,11 +2476,10 @@ static int mkv_parse_video_projection(AVStream *st, const MatroskaTrack *track,
     spherical->bound_right  = r;
     spherical->bound_bottom = b;
 
-    ret = av_stream_add_side_data(st, AV_PKT_DATA_SPHERICAL, (uint8_t *)spherical,
-                                  spherical_size);
-    if (ret < 0) {
+    if (!av_packet_side_data_add(&st->codecpar->coded_side_data, &st->codecpar->nb_coded_side_data,
+                                 AV_PKT_DATA_SPHERICAL, spherical, spherical_size, 0)) {
         av_freep(&spherical);
-        return ret;
+        return AVERROR(ENOMEM);
     }
 
     return 0;

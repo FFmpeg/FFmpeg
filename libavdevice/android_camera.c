@@ -639,7 +639,7 @@ static int wait_for_image_format(AVFormatContext *avctx)
 static int add_display_matrix(AVFormatContext *avctx, AVStream *st)
 {
     AndroidCameraCtx *ctx = avctx->priv_data;
-    uint8_t *side_data;
+    AVPacketSideData *side_data;
     int32_t display_matrix[9];
 
     av_display_rotation_set(display_matrix, ctx->sensor_orientation);
@@ -648,14 +648,16 @@ static int add_display_matrix(AVFormatContext *avctx, AVStream *st)
         av_display_matrix_flip(display_matrix, 1, 0);
     }
 
-    side_data = av_stream_new_side_data(st,
-            AV_PKT_DATA_DISPLAYMATRIX, sizeof(display_matrix));
+    side_data = av_packet_side_data_new(&st->codecpar->side_data,
+                                        &st->codecpar->nb_side_data,
+                                        AV_PKT_DATA_DISPLAYMATRIX,
+                                        sizeof(display_matrix), 0);
 
     if (!side_data) {
         return AVERROR(ENOMEM);
     }
 
-    memcpy(side_data, display_matrix, sizeof(display_matrix));
+    memcpy(side_data->data, display_matrix, sizeof(display_matrix));
 
     return 0;
 }

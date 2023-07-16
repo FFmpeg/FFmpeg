@@ -342,8 +342,6 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
     lpcm_id = LPCM_ID;
 
     for (i = 0; i < ctx->nb_streams; i++) {
-        AVCPBProperties *props;
-
         st     = ctx->streams[i];
         stream = av_mallocz(sizeof(StreamInfo));
         if (!stream)
@@ -430,13 +428,19 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
             stream->max_buffer_size = 4 * 1024;
             s->audio_bound++;
             break;
-        case AVMEDIA_TYPE_VIDEO:
+        case AVMEDIA_TYPE_VIDEO: {
+            const AVPacketSideData *sd;
+            AVCPBProperties *props = NULL;
             if (st->codecpar->codec_id == AV_CODEC_ID_H264)
                 stream->id = h264_id++;
             else
                 stream->id = mpv_id++;
 
-            props = (AVCPBProperties*)av_stream_get_side_data(st, AV_PKT_DATA_CPB_PROPERTIES, NULL);
+            sd = av_packet_side_data_get(st->codecpar->coded_side_data,
+                                         st->codecpar->nb_coded_side_data,
+                                         AV_PKT_DATA_CPB_PROPERTIES);
+            if (sd)
+                props = (AVCPBProperties*)sd->data;
             if (props && props->buffer_size)
                 stream->max_buffer_size = 6 * 1024 + props->buffer_size / 8;
             else {
@@ -453,6 +457,7 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
             }
             s->video_bound++;
             break;
+        }
         case AVMEDIA_TYPE_SUBTITLE:
             stream->id              = mps_id++;
             stream->max_buffer_size = 16 * 1024;
@@ -470,12 +475,17 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
     audio_bitrate = 0;
     video_bitrate = 0;
     for (i = 0; i < ctx->nb_streams; i++) {
-        AVCPBProperties *props;
+        const AVPacketSideData *sd;
+        AVCPBProperties *props = NULL;
         int codec_rate;
         st     = ctx->streams[i];
         stream = (StreamInfo *)st->priv_data;
 
-        props = (AVCPBProperties*)av_stream_get_side_data(st, AV_PKT_DATA_CPB_PROPERTIES, NULL);
+        sd = av_packet_side_data_get(st->codecpar->coded_side_data,
+                                     st->codecpar->nb_coded_side_data,
+                                     AV_PKT_DATA_CPB_PROPERTIES);
+        if (sd)
+            props = (AVCPBProperties*)sd->data;
         if (props)
             codec_rate = props->max_bitrate;
         else

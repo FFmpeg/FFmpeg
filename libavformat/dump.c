@@ -431,11 +431,11 @@ static void dump_sidedata(void *ctx, const AVStream *st, const char *indent)
 {
     int i;
 
-    if (st->nb_side_data)
+    if (st->codecpar->nb_coded_side_data)
         av_log(ctx, AV_LOG_INFO, "%sSide data:\n", indent);
 
-    for (i = 0; i < st->nb_side_data; i++) {
-        const AVPacketSideData *sd = &st->side_data[i];
+    for (i = 0; i < st->codecpar->nb_coded_side_data; i++) {
+        const AVPacketSideData *sd = &st->codecpar->coded_side_data[i];
         av_log(ctx, AV_LOG_INFO, "%s  ", indent);
 
         switch (sd->type) {

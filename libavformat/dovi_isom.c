@@ -34,7 +34,6 @@ int ff_isom_parse_dvcc_dvvc(void *logctx, AVStream *st,
     uint32_t buf;
     AVDOVIDecoderConfigurationRecord *dovi;
     size_t dovi_size;
-    int ret;
 
     if (size > (1 << 30) || size < 4)
         return AVERROR_INVALIDDATA;
@@ -64,11 +63,10 @@ int ff_isom_parse_dvcc_dvvc(void *logctx, AVStream *st,
         dovi->dv_bl_signal_compatibility_id = 0;
     }
 
-    ret = av_stream_add_side_data(st, AV_PKT_DATA_DOVI_CONF,
-                                  (uint8_t *)dovi, dovi_size);
-    if (ret < 0) {
+    if (!av_packet_side_data_add(&st->codecpar->coded_side_data, &st->codecpar->nb_coded_side_data,
+                                 AV_PKT_DATA_DOVI_CONF, (uint8_t *)dovi, dovi_size, 0)) {
         av_free(dovi);
-        return ret;
+        return AVERROR(ENOMEM);
     }
 
     av_log(logctx, AV_LOG_TRACE, "DOVI in dvcC/dvvC/dvwC box, version: %d.%d, profile: %d, level: %d, "

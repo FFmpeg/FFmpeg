@@ -311,7 +311,9 @@ AVStream *avformat_new_stream(AVFormatContext *s, const AVCodec *c)
 
     st->sample_aspect_ratio = (AVRational) { 0, 1 };
 
+#if FF_API_AVSTREAM_SIDE_DATA
     sti->inject_global_side_data = si->inject_global_side_data;
+#endif
 
     sti->need_context_update = 1;
 

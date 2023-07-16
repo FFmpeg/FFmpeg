@@ -400,10 +400,10 @@ static int mp3_queue_flush(AVFormatContext *s)
 static void mp3_update_xing(AVFormatContext *s)
 {
     MP3Context  *mp3 = s->priv_data;
+    const AVPacketSideData *sd;
     AVReplayGain *rg;
     uint16_t tag_crc;
     uint8_t *toc;
-    size_t rg_size;
     int i;
     int64_t old_pos = avio_tell(s->pb);
 
@@ -423,11 +423,13 @@ static void mp3_update_xing(AVFormatContext *s)
     }
 
     /* write replaygain */
-    rg = (AVReplayGain*)av_stream_get_side_data(s->streams[0], AV_PKT_DATA_REPLAYGAIN,
-                                                &rg_size);
-    if (rg && rg_size >= sizeof(*rg)) {
+    sd = av_packet_side_data_get(s->streams[0]->codecpar->coded_side_data,
+                                 s->streams[0]->codecpar->nb_coded_side_data,
+                                 AV_PKT_DATA_REPLAYGAIN);
+    if (sd && sd->size >= sizeof(*rg)) {
         uint16_t val;
 
+        rg = (AVReplayGain *)sd->data;
         AV_WB32(mp3->xing_frame + mp3->xing_offset + 131,
                 av_rescale(rg->track_peak, 1 << 23, 100000));
 
