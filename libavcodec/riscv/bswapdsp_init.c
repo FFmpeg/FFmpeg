@@ -26,7 +26,6 @@
 #include "libavcodec/bswapdsp.h"
 
 void ff_bswap32_buf_rvb(uint32_t *dst, const uint32_t *src, int len);
-void ff_bswap32_buf_rvv(uint32_t *dst, const uint32_t *src, int len);
 void ff_bswap16_buf_rvv(uint16_t *dst, const uint16_t *src, int len);
 
 av_cold void ff_bswapdsp_init_riscv(BswapDSPContext *c)
@@ -39,10 +38,8 @@ av_cold void ff_bswapdsp_init_riscv(BswapDSPContext *c)
             c->bswap_buf = ff_bswap32_buf_rvb;
 #endif
 #if HAVE_RVV
-        if (flags & AV_CPU_FLAG_RVV_I32) {
-            c->bswap_buf = ff_bswap32_buf_rvv;
+        if (flags & AV_CPU_FLAG_RVV_I32)
             c->bswap16_buf = ff_bswap16_buf_rvv;
-        }
 #endif
     }
 }
