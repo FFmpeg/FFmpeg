@@ -25,6 +25,7 @@ version <next>:
 - Raw VVC bitstream parser, muxer and demuxer
 - Bitstream filter for editing metadata in VVC streams
 - Bitstream filter for converting VVC from MP4 to Annex B
+- scale_vt filter for videotoolbox
 
 version 6.0:
 - Radiance HDR image support
