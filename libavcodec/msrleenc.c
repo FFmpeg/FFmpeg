@@ -250,6 +250,8 @@ static int msrle_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     if (pict->data[1]) {
         uint8_t *side_data = av_packet_new_side_data(pkt, AV_PKT_DATA_PALETTE, AVPALETTE_SIZE);
+        if (!side_data)
+            return AVERROR(ENOMEM);
         memcpy(side_data, pict->data[1], AVPALETTE_SIZE);
     }
 
