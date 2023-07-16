@@ -37,7 +37,13 @@ typedef struct MSRLEContext {
 
 static av_cold int msrle_encode_init(AVCodecContext *avctx)
 {
+    MSRLEContext *s = avctx->priv_data;
+
     avctx->bits_per_coded_sample = 8;
+    s->last_frame = av_frame_alloc();
+    if (!s->last_frame)
+        return AVERROR(ENOMEM);
+
     return 0;
 }
 
@@ -265,13 +271,7 @@ static int msrle_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         s->curframe = 0;
     *got_packet = 1;
 
-    if (!s->last_frame)
-        s->last_frame = av_frame_alloc();
-    else
-        av_frame_unref(s->last_frame);
-
-    av_frame_ref(s->last_frame, pict);
-    return 0;
+    return av_frame_replace(s->last_frame, pict);
 }
 
 static int msrle_encode_close(AVCodecContext *avctx)
