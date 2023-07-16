@@ -45,18 +45,17 @@ func ff_bswap32_buf_rvv, zve32x
 endfunc
 
 func ff_bswap16_buf_rvv, zve32x
-        li      t2, 2
-        addi    t1, a0, 1
 1:
-        vsetvli    t0, a2, e8, m1, ta, ma
-        vlseg2e8.v v8, (a1)
-        sub        a2, a2, t0
-        sh1add     a1, t0, a1
-        vsse8.v    v8, (t1), t2
-        sh1add     t1, t0, t1
-        vsse8.v    v9, (a0), t2
-        sh1add     a0, t0, a0
-        bnez       a2, 1b
+        vsetvli t0, a2, e16, m8, ta, ma
+        vle16.v v8, (a1)
+        sub     a2, a2, t0
+        vsll.vi v16, v8, 8
+        sh1add  a1, t0, a1
+        vsrl.vi v24, v8, 8
+        vor.vv  v8, v16, v24
+        vse16.v v8, (a0)
+        sh1add  a0, t0, a0
+        bnez    a2, 1b
 
         ret
 endfunc
