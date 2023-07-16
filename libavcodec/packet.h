@@ -33,9 +33,9 @@
 #include "libavcodec/version_major.h"
 
 /**
- * @defgroup lavc_packet AVPacket
+ * @defgroup lavc_packet_side_data AVPacketSideData
  *
- * Types and functions for working with AVPacket.
+ * Types and functions for working with AVPacketSideData.
  * @{
  */
 enum AVPacketSideDataType {
@@ -317,6 +317,96 @@ typedef struct AVPacketSideData {
     size_t   size;
     enum AVPacketSideDataType type;
 } AVPacketSideData;
+
+/**
+ * Allocate a new packet side data.
+ *
+ * @param sd    pointer to an array of side data to which the side data should
+ *              be added. *sd may be NULL, in which case the array will be
+ *              initialized.
+ * @param nb_sd pointer to an integer containing the number of entries in
+ *              the array. The integer value will be increased by 1 on success.
+ * @param type  side data type
+ * @param size  desired side data size
+ * @param flags currently unused. Must be zero
+ *
+ * @return pointer to freshly allocated side data on success, or NULL otherwise.
+ */
+AVPacketSideData *av_packet_side_data_new(AVPacketSideData **psd, int *pnb_sd,
+                                          enum AVPacketSideDataType type,
+                                          size_t size, int flags);
+
+/**
+ * Wrap existing data as packet side data.
+ *
+ * @param sd    pointer to an array of side data to which the side data should
+ *              be added. *sd may be NULL, in which case the array will be
+ *              initialized
+ * @param nb_sd pointer to an integer containing the number of entries in
+ *              the array. The integer value will be increased by 1 on success.
+ * @param type  side data type
+ * @param data  a data array. It must be allocated with the av_malloc() family
+ *              of functions. The ownership of the data is transferred to the
+ *              side data array on success
+ * @param size  size of the data array
+ * @param flags currently unused. Must be zero
+ *
+ * @return pointer to freshly allocated side data on success, or NULL otherwise
+ *         On failure, the side data array is unchanged and the data remains
+ *         owned by the caller.
+ */
+AVPacketSideData *av_packet_side_data_add(AVPacketSideData **sd, int *nb_sd,
+                                          enum AVPacketSideDataType type,
+                                          void *data, size_t size, int flags);
+
+/**
+ * Get side information from a side data array.
+ *
+ * @param sd    the array from which the side data should be fetched
+ * @param nb_sd value containing the number of entries in the array.
+ * @param type  desired side information type
+ *
+ * @return pointer to side data if present or NULL otherwise
+ */
+const AVPacketSideData *av_packet_side_data_get(const AVPacketSideData *sd,
+                                                int nb_sd,
+                                                enum AVPacketSideDataType type);
+
+/**
+ * Remove side data of the given type from a side data array.
+ *
+ * @param sd    the array from which the side data should be removed
+ * @param nb_sd pointer to an integer containing the number of entries in
+ *              the array. Will be reduced by the amount of entries removed
+ *              upon return
+ * @param type  side information type
+ */
+void av_packet_side_data_remove(AVPacketSideData *sd, int *nb_sd,
+                                enum AVPacketSideDataType type);
+
+/**
+ * Convenience function to free all the side data stored in an array, and
+ * the array itself.
+ *
+ * @param sd    pointer to array of side data to free. Will be set to NULL
+ *              upon return.
+ * @param nb_sd pointer to an integer containing the number of entries in
+ *              the array. Will be set to 0 upon return.
+ */
+void av_packet_side_data_free(AVPacketSideData **sd, int *nb_sd);
+
+const char *av_packet_side_data_name(enum AVPacketSideDataType type);
+
+/**
+ * @}
+ */
+
+/**
+ * @defgroup lavc_packet AVPacket
+ *
+ * Types and functions for working with AVPacket.
+ * @{
+ */
 
 /**
  * This structure stores compressed data. It is typically exported by demuxers
@@ -602,8 +692,6 @@ int av_packet_shrink_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
  */
 uint8_t* av_packet_get_side_data(const AVPacket *pkt, enum AVPacketSideDataType type,
                                  size_t *size);
-
-const char *av_packet_side_data_name(enum AVPacketSideDataType type);
 
 /**
  * Pack a dictionary for use in side_data.

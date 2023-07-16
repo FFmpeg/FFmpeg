@@ -646,3 +646,103 @@ int ff_side_data_set_prft(AVPacket *pkt, int64_t timestamp)
 
     return 0;
 }
+
+const AVPacketSideData *av_packet_side_data_get(const AVPacketSideData *sd, int nb_sd,
+                                                enum AVPacketSideDataType type)
+{
+    for (int i = 0; i < nb_sd; i++)
+        if (sd[i].type == type)
+            return &sd[i];
+
+    return NULL;
+}
+
+static AVPacketSideData *packet_side_data_add(AVPacketSideData **psd, int *pnb_sd,
+                                              enum AVPacketSideDataType type,
+                                              void *data, size_t size)
+{
+    AVPacketSideData *sd = *psd, *tmp;
+    int nb_sd = *pnb_sd;
+
+    for (int i = 0; i < nb_sd; i++) {
+        if (sd[i].type != type)
+            continue;
+
+        av_free(sd[i].data);
+        sd[i].data = data;
+        sd[i].size = size;
+        return &sd[i];
+    }
+
+    if (nb_sd == INT_MAX)
+        return NULL;
+
+    tmp = av_realloc_array(sd, nb_sd + 1, sizeof(*tmp));
+    if (!tmp)
+        return NULL;
+
+    *psd = sd = tmp;
+    sd[nb_sd].type = type;
+    sd[nb_sd].data = data;
+    sd[nb_sd].size = size;
+    *pnb_sd = nb_sd + 1;
+
+    return &sd[nb_sd];
+}
+
+AVPacketSideData *av_packet_side_data_add(AVPacketSideData **psd, int *pnb_sd,
+                                          enum AVPacketSideDataType type,
+                                          void *data, size_t size, int flags)
+{
+    return packet_side_data_add(psd, pnb_sd, type, data, size);
+}
+
+AVPacketSideData *av_packet_side_data_new(AVPacketSideData **psd, int *pnb_sd,
+                                          enum AVPacketSideDataType type,
+                                          size_t size, int flags)
+{
+    AVPacketSideData *sd = NULL;
+    uint8_t *data;
+
+    if (size > SIZE_MAX - AV_INPUT_BUFFER_PADDING_SIZE)
+        return NULL;
+
+    data = av_malloc(size + AV_INPUT_BUFFER_PADDING_SIZE);
+    if (!data)
+        return NULL;
+    memset(data + size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
+
+    sd = packet_side_data_add(psd, pnb_sd, type, data, size);
+    if (!sd)
+        av_freep(&data);
+
+    return sd;
+}
+
+void av_packet_side_data_remove(AVPacketSideData *sd, int *pnb_sd,
+                                enum AVPacketSideDataType type)
+{
+    int nb_sd = *pnb_sd;
+
+    for (int i = nb_sd - 1; i >= 0; i--) {
+        if (sd[i].type != type)
+            continue;
+        av_free(sd[i].data);
+        sd[i] = sd[--nb_sd];
+        break;
+    }
+
+    *pnb_sd = nb_sd;
+}
+
+void av_packet_side_data_free(AVPacketSideData **psd, int *pnb_sd)
+{
+    AVPacketSideData *sd = *psd;
+    int nb_sd = *pnb_sd;
+
+    for (int i = 0; i < nb_sd; i++)
+        av_free(sd[i].data);
+
+    av_freep(psd);
+    *pnb_sd = 0;
+}
