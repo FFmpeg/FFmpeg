@@ -1741,6 +1741,30 @@ int filtergraph_is_simple(const FilterGraph *fg)
     return fgp->is_simple;
 }
 
+void fg_send_command(FilterGraph *fg, double time, const char *target,
+                     const char *command, const char *arg, int all_filters)
+{
+    int ret;
+
+    if (!fg->graph)
+        return;
+
+    if (time < 0) {
+        char response[4096];
+        ret = avfilter_graph_send_command(fg->graph, target, command, arg,
+                                          response, sizeof(response),
+                                          all_filters ? 0 : AVFILTER_CMD_FLAG_ONE);
+        fprintf(stderr, "Command reply for stream %d: ret:%d res:\n%s",
+                fg->index, ret, response);
+    } else if (!all_filters) {
+        fprintf(stderr, "Queuing commands only on filters supporting the specific command is unsupported\n");
+    } else {
+        ret = avfilter_graph_queue_command(fg->graph, target, command, arg, 0, time);
+        if (ret < 0)
+            fprintf(stderr, "Queuing command failed with error %s\n", av_err2str(ret));
+    }
+}
+
 static int fg_output_step(OutputFilterPriv *ofp, int flush)
 {
     FilterGraphPriv    *fgp = fgp_from_fg(ofp->ofilter.graph);

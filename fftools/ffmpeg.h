@@ -759,6 +759,9 @@ void fg_free(FilterGraph **pfg);
  */
 int fg_transcode_step(FilterGraph *graph, InputStream **best_ist);
 
+void fg_send_command(FilterGraph *fg, double time, const char *target,
+                     const char *command, const char *arg, int all_filters);
+
 /**
  * Get and encode new output from specified filtergraph, without causing
  * activity.

@@ -97,10 +97,6 @@
 
 #include "libswresample/swresample.h"
 
-#include "libavfilter/avfilter.h"
-#include "libavfilter/buffersrc.h"
-#include "libavfilter/buffersink.h"
-
 #include "cmdutils.h"
 #include "ffmpeg.h"
 #include "sync_queue.h"
@@ -977,7 +973,7 @@ static void set_tty_echo(int on)
 
 static int check_keyboard_interaction(int64_t cur_time)
 {
-    int i, ret, key;
+    int i, key;
     static int64_t last_time;
     if (received_nb_signals)
         return AVERROR_EXIT;
@@ -1010,23 +1006,9 @@ static int check_keyboard_interaction(int64_t cur_time)
             (n = sscanf(buf, "%63[^ ] %lf %255[^ ] %255[^\n]", target, &time, command, arg)) >= 3) {
             av_log(NULL, AV_LOG_DEBUG, "Processing command target:%s time:%f command:%s arg:%s",
                    target, time, command, arg);
-            for (i = 0; i < nb_filtergraphs; i++) {
-                FilterGraph *fg = filtergraphs[i];
-                if (fg->graph) {
-                    if (time < 0) {
-                        ret = avfilter_graph_send_command(fg->graph, target, command, arg, buf, sizeof(buf),
-                                                          key == 'c' ? AVFILTER_CMD_FLAG_ONE : 0);
-                        fprintf(stderr, "Command reply for stream %d: ret:%d res:\n%s", i, ret, buf);
-                    } else if (key == 'c') {
-                        fprintf(stderr, "Queuing commands only on filters supporting the specific command is unsupported\n");
-                        ret = AVERROR_PATCHWELCOME;
-                    } else {
-                        ret = avfilter_graph_queue_command(fg->graph, target, command, arg, 0, time);
-                        if (ret < 0)
-                            fprintf(stderr, "Queuing command failed with error %s\n", av_err2str(ret));
-                    }
-                }
-            }
+            for (i = 0; i < nb_filtergraphs; i++)
+                fg_send_command(filtergraphs[i], time, target, command, arg,
+                                key == 'C');
         } else {
             av_log(NULL, AV_LOG_ERROR,
                    "Parse error, at least 3 arguments were expected, "
