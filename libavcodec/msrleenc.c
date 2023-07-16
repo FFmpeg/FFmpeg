@@ -31,7 +31,6 @@
 #include "encode.h"
 
 typedef struct MSRLEContext {
-    const AVClass *class;
     int curframe;
     AVFrame *last_frame;
 } MSRLEContext;
@@ -282,12 +281,6 @@ static int msrle_encode_close(AVCodecContext *avctx)
     return 0;
 }
 
-static const AVClass msrle_class = {
-    .class_name = "Microsoft RLE encoder",
-    .item_name  = av_default_item_name,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
 const FFCodec ff_msrle_encoder = {
     .p.name         = "msrle",
     CODEC_LONG_NAME("Microsoft RLE"),
@@ -301,6 +294,5 @@ const FFCodec ff_msrle_encoder = {
     .p.pix_fmts     = (const enum AVPixelFormat[]){
         AV_PIX_FMT_PAL8, AV_PIX_FMT_NONE
     },
-    .p.priv_class   = &msrle_class,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
