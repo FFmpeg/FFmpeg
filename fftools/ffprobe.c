@@ -2314,16 +2314,9 @@ static void print_ambient_viewing_environment(WriterContext *w,
 
 static void print_pkt_side_data(WriterContext *w,
                                 AVCodecParameters *par,
-                                const AVPacketSideData *side_data,
-                                int nb_side_data,
-                                SectionID id_data_list,
+                                const AVPacketSideData *sd,
                                 SectionID id_data)
 {
-    int i;
-
-    writer_print_section_header(w, NULL, id_data_list);
-    for (i = 0; i < nb_side_data; i++) {
-        const AVPacketSideData *sd = &side_data[i];
         const char *name = av_packet_side_data_name(sd->type);
 
         writer_print_section_header(w, (void *)sd, id_data);
@@ -2417,9 +2410,6 @@ static void print_pkt_side_data(WriterContext *w,
         } else if (sd->type == AV_PKT_DATA_AFD && sd->size > 0) {
             print_int("active_format", *sd->data);
         }
-        writer_print_section_footer(w);
-    }
-    writer_print_section_footer(w);
 }
 
 static void print_private_data(WriterContext *w, void *priv_data)
@@ -2579,9 +2569,13 @@ static void show_packet(WriterContext *w, InputFile *ifile, AVPacket *pkt, int p
             av_dict_free(&dict);
         }
 
-        print_pkt_side_data(w, st->codecpar, pkt->side_data, pkt->side_data_elems,
-                            SECTION_ID_PACKET_SIDE_DATA_LIST,
-                            SECTION_ID_PACKET_SIDE_DATA);
+        writer_print_section_header(w, NULL, SECTION_ID_PACKET_SIDE_DATA_LIST);
+        for (int i = 0; i < pkt->side_data_elems; i++) {
+            print_pkt_side_data(w, st->codecpar, &pkt->side_data[i],
+                                SECTION_ID_PACKET_SIDE_DATA);
+            writer_print_section_footer(w);
+        }
+        writer_print_section_footer(w);
     }
 
     writer_print_section_footer(w);
@@ -3228,10 +3222,14 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
     if (do_show_stream_tags)
         ret = show_tags(w, stream->metadata, in_program ? SECTION_ID_PROGRAM_STREAM_TAGS : SECTION_ID_STREAM_TAGS);
 
-    if (stream->nb_side_data) {
-        print_pkt_side_data(w, stream->codecpar, stream->side_data, stream->nb_side_data,
-                            SECTION_ID_STREAM_SIDE_DATA_LIST,
-                            SECTION_ID_STREAM_SIDE_DATA);
+    if (stream->codecpar->nb_coded_side_data) {
+        writer_print_section_header(w, NULL, SECTION_ID_STREAM_SIDE_DATA_LIST);
+        for (int i = 0; i < stream->codecpar->nb_coded_side_data; i++) {
+            print_pkt_side_data(w, stream->codecpar, &stream->codecpar->coded_side_data[i],
+                                SECTION_ID_STREAM_SIDE_DATA);
+            writer_print_section_footer(w);
+        }
+        writer_print_section_footer(w);
     }
 
     writer_print_section_footer(w);
