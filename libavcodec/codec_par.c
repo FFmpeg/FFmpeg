@@ -27,11 +27,13 @@
 #include "libavutil/mem.h"
 #include "avcodec.h"
 #include "codec_par.h"
+#include "packet.h"
 
 static void codec_parameters_reset(AVCodecParameters *par)
 {
     av_freep(&par->extradata);
     av_channel_layout_uninit(&par->ch_layout);
+    av_packet_side_data_free(&par->coded_side_data, &par->nb_coded_side_data);
 
     memset(par, 0, sizeof(*par));
 
@@ -72,6 +74,35 @@ void avcodec_parameters_free(AVCodecParameters **ppar)
     av_freep(ppar);
 }
 
+static int codec_parameters_copy_side_data(AVPacketSideData **pdst, int *pnb_dst,
+                                           const AVPacketSideData *src, int nb_src)
+{
+    AVPacketSideData *dst;
+    int nb_dst = *pnb_dst;
+
+    if (!src)
+        return 0;
+
+    *pdst = dst = av_calloc(nb_src, sizeof(*dst));
+    if (!dst)
+        return AVERROR(ENOMEM);
+
+    for (int i = 0; i < nb_src; i++) {
+        const AVPacketSideData *src_sd = &src[i];
+        AVPacketSideData *dst_sd = &dst[i];
+
+        dst_sd->data = av_memdup(src_sd->data, src_sd->size);
+        if (!dst_sd->data)
+            return AVERROR(ENOMEM);
+
+        dst_sd->type = src_sd->type;
+        dst_sd->size = src_sd->size;
+        *pnb_dst = ++nb_dst;
+    }
+
+    return 0;
+}
+
 int avcodec_parameters_copy(AVCodecParameters *dst, const AVCodecParameters *src)
 {
     int ret;
@@ -82,6 +113,8 @@ int avcodec_parameters_copy(AVCodecParameters *dst, const AVCodecParameters *src
     dst->ch_layout      = (AVChannelLayout){0};
     dst->extradata      = NULL;
     dst->extradata_size = 0;
+    dst->coded_side_data      = NULL;
+    dst->nb_coded_side_data   = 0;
     if (src->extradata) {
         dst->extradata = av_mallocz(src->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!dst->extradata)
@@ -89,6 +122,10 @@ int avcodec_parameters_copy(AVCodecParameters *dst, const AVCodecParameters *src
         memcpy(dst->extradata, src->extradata, src->extradata_size);
         dst->extradata_size = src->extradata_size;
     }
+    ret = codec_parameters_copy_side_data(&dst->coded_side_data, &dst->nb_coded_side_data,
+                                           src->coded_side_data,  src->nb_coded_side_data);
+    if (ret < 0)
+        return ret;
 
     ret = av_channel_layout_copy(&dst->ch_layout, &src->ch_layout);
     if (ret < 0)
@@ -178,6 +215,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
         par->extradata_size = codec->extradata_size;
     }
 
+    ret = codec_parameters_copy_side_data(&par->coded_side_data, &par->nb_coded_side_data,
+                                          codec->coded_side_data, codec->nb_coded_side_data);
+    if (ret < 0)
+        return ret;
+
     return 0;
 }
 
@@ -261,6 +303,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
         memcpy(codec->extradata, par->extradata, par->extradata_size);
         codec->extradata_size = par->extradata_size;
     }
+
+    av_packet_side_data_free(&codec->coded_side_data, &codec->nb_coded_side_data);
+    ret = codec_parameters_copy_side_data(&codec->coded_side_data, &codec->nb_coded_side_data,
+                                          par->coded_side_data, par->nb_coded_side_data);
+    if (ret < 0)
+        return ret;
 
     return 0;
 }

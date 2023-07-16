@@ -2,6 +2,11 @@ The last version increases of all libraries were on 2023-02-09
 
 API changes, most recent first:
 
+2023-10-06 - xxxxxxxxxx - lavc 60.30.100 - codec_par.h
+  Added {nb_,}coded_side_data to AVCodecParameters.
+  The AVCodecParameters helpers will copy it to and from its AVCodecContext
+  namesake.
+
 2023-10-06 - xxxxxxxxxx - lavc 60.29.100 - packet.h
   Added av_packet_side_data_new(), av_packet_side_data_add(),
   av_packet_side_data_get(), av_packet_side_data_remove, and
