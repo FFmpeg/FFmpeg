@@ -1916,8 +1916,13 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
         AVFrameSideData *sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DISPLAYMATRIX);
         if (sd)
             displaymatrix = (int32_t *)sd->data;
-        if (!displaymatrix)
-            displaymatrix = (int32_t *)av_stream_get_side_data(is->video_st, AV_PKT_DATA_DISPLAYMATRIX, NULL);
+        if (!displaymatrix) {
+            const AVPacketSideData *sd = av_packet_side_data_get(is->video_st->codecpar->coded_side_data,
+                                                                 is->video_st->codecpar->nb_coded_side_data,
+                                                                 AV_PKT_DATA_DISPLAYMATRIX);
+            if (sd)
+                displaymatrix = (int32_t *)sd->data;
+        }
         theta = get_rotation(displaymatrix);
 
         if (fabs(theta - 90) < 1.0) {
