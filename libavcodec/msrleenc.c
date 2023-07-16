@@ -234,7 +234,8 @@ static int encode(AVCodecContext *avctx, AVPacket *pkt,
     }
     bytestream_put_be16(&data, 0x0001); // end of bitmap
     pkt->size = data - pkt->data;
-    return 0;}
+    return 0;
+}
 
 static int msrle_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                               const AVFrame *pict, int *got_packet)
