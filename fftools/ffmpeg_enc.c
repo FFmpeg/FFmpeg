@@ -457,20 +457,6 @@ int enc_open(OutputStream *ost, AVFrame *frame)
         return ret;
     }
 
-    if (ost->enc_ctx->nb_coded_side_data) {
-        int i;
-
-        for (i = 0; i < ost->enc_ctx->nb_coded_side_data; i++) {
-            const AVPacketSideData *sd_src = &ost->enc_ctx->coded_side_data[i];
-            uint8_t *dst_data;
-
-            dst_data = av_stream_new_side_data(ost->st, sd_src->type, sd_src->size);
-            if (!dst_data)
-                return AVERROR(ENOMEM);
-            memcpy(dst_data, sd_src->data, sd_src->size);
-        }
-    }
-
     /*
      * Add global input side data. For now this is naive, and copies it
      * from the input stream's global side data. All side data should
@@ -480,15 +466,17 @@ int enc_open(OutputStream *ost, AVFrame *frame)
      */
     if (ist) {
         int i;
-        for (i = 0; i < ist->st->nb_side_data; i++) {
-            AVPacketSideData *sd = &ist->st->side_data[i];
-            if (sd->type != AV_PKT_DATA_CPB_PROPERTIES) {
-                uint8_t *dst = av_stream_new_side_data(ost->st, sd->type, sd->size);
-                if (!dst)
+        for (i = 0; i < ist->st->codecpar->nb_coded_side_data; i++) {
+            AVPacketSideData *sd_src = &ist->st->codecpar->coded_side_data[i];
+            if (sd_src->type != AV_PKT_DATA_CPB_PROPERTIES) {
+                AVPacketSideData *sd_dst = av_packet_side_data_new(&ost->par_in->coded_side_data,
+                                                                   &ost->par_in->nb_coded_side_data,
+                                                                   sd_src->type, sd_src->size, 0);
+                if (!sd_dst)
                     return AVERROR(ENOMEM);
-                memcpy(dst, sd->data, sd->size);
-                if (ist->autorotate && sd->type == AV_PKT_DATA_DISPLAYMATRIX)
-                    av_display_rotation_set((int32_t *)dst, 0);
+                memcpy(sd_dst->data, sd_src->data, sd_src->size);
+                if (ist->autorotate && sd_src->type == AV_PKT_DATA_DISPLAYMATRIX)
+                    av_display_rotation_set((int32_t *)sd_dst->data, 0);
             }
         }
     }

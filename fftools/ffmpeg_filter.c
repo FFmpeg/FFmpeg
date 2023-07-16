@@ -1383,11 +1383,16 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
 
     // TODO: insert hwaccel enabled filters like transpose_vaapi into the graph
     if (ist->autorotate && !(desc->flags & AV_PIX_FMT_FLAG_HWACCEL)) {
+        const AVPacketSideData *sd = NULL;
         int32_t *displaymatrix = ifp->displaymatrix;
         double theta;
 
         if (!ifp->displaymatrix_present)
-            displaymatrix = (int32_t *)av_stream_get_side_data(ist->st, AV_PKT_DATA_DISPLAYMATRIX, NULL);
+            sd = av_packet_side_data_get(ist->st->codecpar->coded_side_data,
+                                         ist->st->codecpar->nb_coded_side_data,
+                                         AV_PKT_DATA_DISPLAYMATRIX);
+        if (sd)
+            displaymatrix = (int32_t *)sd->data;
         theta = get_rotation(displaymatrix);
 
         if (fabs(theta - 90) < 1.0) {

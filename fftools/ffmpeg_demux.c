@@ -482,8 +482,8 @@ static int input_packet_process(Demuxer *d, DemuxMsg *msg, AVPacket *src)
 
     /* add the stream-global side data to the first packet */
     if (ds->nb_packets == 1) {
-        for (int i = 0; i < ist->st->nb_side_data; i++) {
-            AVPacketSideData *src_sd = &ist->st->side_data[i];
+        for (int i = 0; i < ist->st->codecpar->nb_coded_side_data; i++) {
+            AVPacketSideData *src_sd = &ist->st->codecpar->coded_side_data[i];
             uint8_t *dst_data;
 
             if (src_sd->type == AV_PKT_DATA_DISPLAYMATRIX)
@@ -979,6 +979,7 @@ static int add_display_matrix_to_stream(const OptionsContext *o,
                                         AVFormatContext *ctx, InputStream *ist)
 {
     AVStream *st = ist->st;
+    AVPacketSideData *sd;
     double rotation = DBL_MAX;
     int hflip = -1, vflip = -1;
     int hflip_set = 0, vflip_set = 0, rotation_set = 0;
@@ -995,12 +996,16 @@ static int add_display_matrix_to_stream(const OptionsContext *o,
     if (!rotation_set && !hflip_set && !vflip_set)
         return 0;
 
-    buf = (int32_t *)av_stream_new_side_data(st, AV_PKT_DATA_DISPLAYMATRIX, sizeof(int32_t) * 9);
-    if (!buf) {
+    sd = av_packet_side_data_new(&st->codecpar->coded_side_data,
+                                 &st->codecpar->nb_coded_side_data,
+                                 AV_PKT_DATA_DISPLAYMATRIX,
+                                 sizeof(int32_t) * 9, 0);
+    if (!sd) {
         av_log(ist, AV_LOG_FATAL, "Failed to generate a display matrix!\n");
         return AVERROR(ENOMEM);
     }
 
+    buf = (int32_t *)sd->data;
     av_display_rotation_set(buf,
                             rotation_set ? -(rotation) : -0.0f);
 

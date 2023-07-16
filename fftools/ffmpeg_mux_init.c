@@ -1045,24 +1045,28 @@ static int streamcopy_init(const Muxer *mux, OutputStream *ost)
         }
     }
 
-    for (int i = 0; i < ist->st->nb_side_data; i++) {
-        const AVPacketSideData *sd_src = &ist->st->side_data[i];
-        uint8_t *dst_data;
+    for (int i = 0; i < ist->st->codecpar->nb_coded_side_data; i++) {
+        const AVPacketSideData *sd_src = &ist->st->codecpar->coded_side_data[i];
+        AVPacketSideData *sd_dst;
 
-        dst_data = av_stream_new_side_data(ost->st, sd_src->type, sd_src->size);
-        if (!dst_data) {
+        sd_dst = av_packet_side_data_new(&ost->st->codecpar->coded_side_data,
+                                         &ost->st->codecpar->nb_coded_side_data,
+                                         sd_src->type, sd_src->size, 0);
+        if (!sd_dst) {
             ret = AVERROR(ENOMEM);
             goto fail;
         }
-        memcpy(dst_data, sd_src->data, sd_src->size);
+        memcpy(sd_dst->data, sd_src->data, sd_src->size);
     }
 
 #if FFMPEG_ROTATION_METADATA
     if (ost->rotate_overridden) {
-        uint8_t *sd = av_stream_new_side_data(ost->st, AV_PKT_DATA_DISPLAYMATRIX,
-                                              sizeof(int32_t) * 9);
+        AVPacketSideData *sd = av_packet_side_data_new(&ost->st->codecpar->coded_side_data,
+                                                       &ost->st->codecpar->nb_coded_side_data,
+                                                       AV_PKT_DATA_DISPLAYMATRIX,
+                                                       sizeof(int32_t) * 9, 0);
         if (sd)
-            av_display_rotation_set((int32_t *)sd, -ost->rotate_override_value);
+            av_display_rotation_set((int32_t *)sd->data, -ost->rotate_override_value);
     }
 #endif
 
