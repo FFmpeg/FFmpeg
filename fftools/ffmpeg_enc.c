@@ -304,20 +304,17 @@ int enc_open(OutputStream *ost, AVFrame *frame)
             enc_ctx->bits_per_raw_sample = FFMIN(fd->bits_per_raw_sample,
                                                  av_pix_fmt_desc_get(enc_ctx->pix_fmt)->comp[0].depth);
 
-        if (frame) {
             enc_ctx->color_range            = frame->color_range;
             enc_ctx->color_primaries        = frame->color_primaries;
             enc_ctx->color_trc              = frame->color_trc;
             enc_ctx->colorspace             = frame->colorspace;
             enc_ctx->chroma_sample_location = frame->chroma_location;
-        }
 
         enc_ctx->framerate = fr;
 
         ost->st->avg_frame_rate = fr;
 
         // Field order: autodetection
-        if (frame) {
             if (enc_ctx->flags & (AV_CODEC_FLAG_INTERLACED_DCT | AV_CODEC_FLAG_INTERLACED_ME) &&
                 ost->top_field_first >= 0)
                 if (ost->top_field_first)
@@ -332,7 +329,6 @@ int enc_open(OutputStream *ost, AVFrame *frame)
                     enc_ctx->field_order = (frame->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST) ? AV_FIELD_TB:AV_FIELD_BT;
             } else
                 enc_ctx->field_order = AV_FIELD_PROGRESSIVE;
-        }
 
         // Field order: override
         if (ost->top_field_first == 0) {
