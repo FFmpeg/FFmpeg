@@ -64,7 +64,8 @@ static void write_run(AVCodecContext *avctx, uint8_t **data, int len, int value)
     }
 }
 
-static void write_absolute(AVCodecContext *avctx, uint8_t **data, uint8_t *line, int len)
+static void write_absolute(AVCodecContext *avctx, uint8_t **data,
+                           const uint8_t *line, int len)
 {
     // writing 255 would be wasteful here due to the padding requirement
     while (len >= 254) {
@@ -136,7 +137,8 @@ static void write_yskip(AVCodecContext *avctx, uint8_t **data, int yskip)
 }
 
 // used both to encode lines in keyframes and to encode lines between deltas
-static void encode_line(AVCodecContext *avctx, uint8_t **data, uint8_t *line, int length)
+static void encode_line(AVCodecContext *avctx, uint8_t **data,
+                        const uint8_t *line, int length)
 {
     int run = 0, last = -1, absstart = 0;
     if (length == 0)
@@ -192,8 +194,8 @@ static int encode(AVCodecContext *avctx, AVPacket *pkt,
         // compare to previous frame
         int yskip = 0; // we can encode large skips using deltas
         for (int y = avctx->height-1; y >= 0; y--) {
-            uint8_t *line = &pict->data[0][y*pict->linesize[0]];
-            uint8_t *prev = &s->last_frame->data[0][y*s->last_frame->linesize[0]];
+            const uint8_t *line = &pict->data[0][y*pict->linesize[0]];
+            const uint8_t *prev = &s->last_frame->data[0][y*s->last_frame->linesize[0]];
             // we need at least 5 pixels in a row for a delta to be worthwhile
             int delta = 0, linestart = 0, encoded = 0;
             for (int x = 0; x < avctx->width; x++) {
