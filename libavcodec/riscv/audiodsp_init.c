@@ -38,11 +38,13 @@ av_cold void ff_audiodsp_init_riscv(AudioDSPContext *c)
     if (flags & AV_CPU_FLAG_RVF)
         c->vector_clipf = ff_vector_clipf_rvf;
 #if HAVE_RVV
-    if (flags & AV_CPU_FLAG_RVV_I32) {
-        c->scalarproduct_int16 = ff_scalarproduct_int16_rvv;
-        c->vector_clip_int32 = ff_vector_clip_int32_rvv;
+    if (flags & AV_CPU_FLAG_RVB_ADDR) {
+        if (flags & AV_CPU_FLAG_RVV_I32) {
+            c->scalarproduct_int16 = ff_scalarproduct_int16_rvv;
+            c->vector_clip_int32 = ff_vector_clip_int32_rvv;
+        }
+        if (flags & AV_CPU_FLAG_RVV_F32)
+            c->vector_clipf = ff_vector_clipf_rvv;
     }
-    if (flags & AV_CPU_FLAG_RVV_F32)
-        c->vector_clipf = ff_vector_clipf_rvv;
 #endif
 }

@@ -248,6 +248,7 @@ static const struct {
     { "RVI",      "rvi",      AV_CPU_FLAG_RVI },
     { "RVF",      "rvf",      AV_CPU_FLAG_RVF },
     { "RVD",      "rvd",      AV_CPU_FLAG_RVD },
+    { "RVBaddr",  "rvb_a",    AV_CPU_FLAG_RVB_ADDR },
     { "RVBbasic", "rvb_b",    AV_CPU_FLAG_RVB_BASIC },
     { "RVVi32",   "rvv_i32",  AV_CPU_FLAG_RVV_I32 },
     { "RVVf32",   "rvv_f32",  AV_CPU_FLAG_RVV_F32 },

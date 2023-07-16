@@ -32,7 +32,7 @@ av_cold void ff_fixed_dsp_init_riscv(AVFixedDSPContext *fdsp)
 #if HAVE_RVV
     int flags = av_get_cpu_flags();
 
-    if (flags & AV_CPU_FLAG_RVV_I32)
+    if ((flags & AV_CPU_FLAG_RVV_I32) && (flags & AV_CPU_FLAG_RVB_ADDR))
         fdsp->butterflies_fixed = ff_butterflies_fixed_rvv;
 #endif
 }
