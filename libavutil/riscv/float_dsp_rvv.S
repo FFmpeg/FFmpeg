@@ -166,20 +166,22 @@ endfunc
 
 // a0 = (a0).(a1) [0..a2-1]
 func ff_scalarproduct_float_rvv, zve32f
-        vsetivli     zero, 1, e32, m1, ta, ma
-        vmv.s.x      v8, zero
+        vsetvli      t0, zero, e32, m8, ta, ma
+        vmv.v.x      v8, zero
+        vmv.s.x      v0, zero
 1:
-        vsetvli      t0, a2, e32, m1, ta, ma
+        vsetvli      t0, a2, e32, m8, tu, ma
         vle32.v      v16, (a0)
         sub          a2, a2, t0
         vle32.v      v24, (a1)
         sh2add       a0, t0, a0
-        vfmul.vv     v16, v16, v24
+        vfmacc.vv    v8, v16, v24
         sh2add       a1, t0, a1
-        vfredusum.vs v8, v16, v8
         bnez         a2, 1b
 
-        vfmv.f.s fa0, v8
+        vsetvli      t0, zero, e32, m8, ta, ma
+        vfredusum.vs v0, v8, v0
+        vfmv.f.s     fa0, v0
 NOHWF   fmv.x.w  a0, fa0
         ret
 endfunc
