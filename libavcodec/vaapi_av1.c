@@ -19,8 +19,7 @@
  */
 
 #include "libavutil/frame.h"
-#include "libavutil/pixdesc.h"
-#include "hwconfig.h"
+#include "hwaccel_internal.h"
 #include "vaapi_decode.h"
 #include "internal.h"
 #include "av1dec.h"

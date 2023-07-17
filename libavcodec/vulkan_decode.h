@@ -20,7 +20,7 @@
 #define AVCODEC_VULKAN_DECODE_H
 
 #include "decode.h"
-#include "hwconfig.h"
+#include "hwaccel_internal.h"
 #include "internal.h"
 
 #include "vulkan_video.h"

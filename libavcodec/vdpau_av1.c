@@ -25,7 +25,7 @@
 #include "avcodec.h"
 #include "internal.h"
 #include "av1dec.h"
-#include "hwconfig.h"
+#include "hwaccel_internal.h"
 #include "vdpau.h"
 #include "vdpau_internal.h"
 

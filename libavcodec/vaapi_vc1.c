@@ -22,11 +22,10 @@
 
 #include "config_components.h"
 
-#include "hwconfig.h"
+#include "hwaccel_internal.h"
 #include "mpegvideodec.h"
 #include "vaapi_decode.h"
 #include "vc1.h"
-#include "vc1data.h"
 
 /** Translate FFmpeg MV modes to VA API */
 static int get_VAMvModeVC1(enum MVModes mv_mode)

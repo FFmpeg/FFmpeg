@@ -22,7 +22,7 @@
 
 #include "h264dec.h"
 #include "h264_ps.h"
-#include "hwconfig.h"
+#include "hwaccel_internal.h"
 #include "vaapi_decode.h"
 
 /**

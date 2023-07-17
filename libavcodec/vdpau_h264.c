@@ -26,7 +26,7 @@
 #include "avcodec.h"
 #include "h264dec.h"
 #include "h264_ps.h"
-#include "hwconfig.h"
+#include "hwaccel_internal.h"
 #include "mpegutils.h"
 #include "vdpau.h"
 #include "vdpau_internal.h"

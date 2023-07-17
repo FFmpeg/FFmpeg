@@ -23,7 +23,7 @@
 #include "config_components.h"
 
 #include "h263.h"
-#include "hwconfig.h"
+#include "hwaccel_internal.h"
 #include "mpeg4videodec.h"
 #include "mpegvideo.h"
 #include "mpegvideodec.h"

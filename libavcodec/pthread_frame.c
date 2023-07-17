@@ -31,6 +31,7 @@
 #include "avcodec_internal.h"
 #include "codec_internal.h"
 #include "decode.h"
+#include "hwaccel_internal.h"
 #include "hwconfig.h"
 #include "internal.h"
 #include "pthread_internal.h"
