@@ -2794,8 +2794,6 @@ static int read_thread(void *arg)
     if (genpts)
         ic->flags |= AVFMT_FLAG_GENPTS;
 
-    av_format_inject_global_side_data(ic);
-
     if (find_stream_info) {
         AVDictionary **opts;
         int orig_nb_streams = ic->nb_streams;
