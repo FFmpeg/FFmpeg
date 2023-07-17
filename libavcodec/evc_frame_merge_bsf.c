@@ -18,13 +18,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "get_bits.h"
-#include "golomb.h"
 #include "bsf.h"
 #include "bsf_internal.h"
-#include "avcodec.h"
 
 #include "evc.h"
 #include "evc_parse.h"
+#include "evc_ps.h"
 
 // Access unit data
 typedef struct AccessUnitBuffer {

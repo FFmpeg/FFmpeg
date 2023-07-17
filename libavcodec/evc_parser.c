@@ -20,7 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "parser.h"
+#include "avcodec.h"
 #include "bytestream.h"
 #include "evc.h"
 #include "evc_parse.h"
