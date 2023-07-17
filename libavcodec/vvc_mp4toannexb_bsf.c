@@ -24,13 +24,11 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 
-#include "avcodec.h"
 #include "bsf.h"
 #include "bsf_internal.h"
 #include "bytestream.h"
+#include "defs.h"
 #include "vvc.h"
-
-#include "libavcodec/get_bits.h"
 
 #define MIN_VVCC_LENGTH 23
 
