@@ -12,8 +12,8 @@ fddfea5f05a7a9a0d187df9a72900055 *tests/data/fate/matroska-spherical-mono-remux.
 #codec_id 1: h264
 #dimensions 1: 1920x1080
 #sar 1: 0/1
-0,        -80,          0,       40,    69118, 0x73cb52f0, S=2,       12,       36
-1,        -80,          0,       40,    69118, 0x73cb52f0, S=2,       12,       36
+0,        -80,          0,       40,    69118, 0x73cb52f0
+1,        -80,          0,       40,    69118, 0x73cb52f0
 0,        -40,        160,       40,     1103, 0x082a059f, F=0x0
 1,        -40,        160,       40,     1103, 0x082a059f, F=0x0
 [STREAM]

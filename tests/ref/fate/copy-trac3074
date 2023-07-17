@@ -5,7 +5,7 @@
 #codec_id 0: eac3
 #sample_rate 0: 48000
 #channel_layout_name 0: stereo
-0,          0,          0,     1536,      512, 0x2beaf79f, S=1,        4
+0,          0,          0,     1536,      512, 0x2beaf79f
 0,       1536,       1536,     1536,      512, 0x29ddf9d6
 0,       3072,       3072,     1536,      512, 0xba0afa79
 0,       4608,       4608,     1536,      512, 0xe019f394

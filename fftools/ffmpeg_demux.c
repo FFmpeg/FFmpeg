@@ -480,28 +480,6 @@ static int input_packet_process(Demuxer *d, DemuxMsg *msg, AVPacket *src)
     ds->data_size += pkt->size;
     ds->nb_packets++;
 
-    /* add the stream-global side data to the first packet */
-    if (ds->nb_packets == 1) {
-        for (int i = 0; i < ist->st->codecpar->nb_coded_side_data; i++) {
-            AVPacketSideData *src_sd = &ist->st->codecpar->coded_side_data[i];
-            uint8_t *dst_data;
-
-            if (src_sd->type == AV_PKT_DATA_DISPLAYMATRIX)
-                continue;
-
-            if (av_packet_get_side_data(pkt, src_sd->type, NULL))
-                continue;
-
-            dst_data = av_packet_new_side_data(pkt, src_sd->type, src_sd->size);
-            if (!dst_data) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
-
-            memcpy(dst_data, src_sd->data, src_sd->size);
-        }
-    }
-
     if (debug_ts) {
         av_log(NULL, AV_LOG_INFO, "demuxer+ffmpeg -> ist_index:%d:%d type:%s pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s duration:%s duration_time:%s off:%s off_time:%s\n",
                f->index, pkt->stream_index,

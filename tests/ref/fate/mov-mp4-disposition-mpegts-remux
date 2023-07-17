@@ -10,9 +10,9 @@ adb3b95c07a5f3e0c86641dd62f01dae *tests/data/fate/mov-mp4-disposition-mpegts-rem
 #codec_id 1: ac3
 #sample_rate 1: 48000
 #channel_layout_name 1: stereo
-1,          0,          0,     1536,      768, 0xa63778d4, S=1,        4
+1,          0,          0,     1536,      768, 0xa63778d4
 1,       1536,       1536,     1536,      768, 0x7d577f3f
-0,       3072,       3072,     1536,      768, 0xc2867884, S=1,        4
+0,       3072,       3072,     1536,      768, 0xc2867884
 1,       3072,       3072,     1536,      768, 0xd86b7c8f
 0,       4608,       4608,     1536,      690, 0xa2714bf3
 1,       4608,       4608,     1536,      626, 0x09f4382f
