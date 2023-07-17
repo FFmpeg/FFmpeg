@@ -106,12 +106,11 @@ static int dnn_detect_post_proc_ov(AVFrame *frame, DNNData *output, AVFilterCont
         float x1     =      detections[i * detect_size + 5];
         float y1     =      detections[i * detect_size + 6];
 
-        bbox = av_get_detection_bbox(header, i);
-
         if (conf < conf_threshold) {
             continue;
         }
 
+        bbox = av_get_detection_bbox(header, header->nb_bboxes - nb_bboxes);
         bbox->x = (int)(x0 * frame->width);
         bbox->w = (int)(x1 * frame->width) - bbox->x;
         bbox->y = (int)(y0 * frame->height);
