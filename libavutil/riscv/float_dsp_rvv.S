@@ -23,7 +23,7 @@
 // (a0) = (a1) * (a2) [0..a3-1]
 func ff_vector_fmul_rvv, zve32f
 1:
-        vsetvli  t0, a3, e32, m1, ta, ma
+        vsetvli  t0, a3, e32, m8, ta, ma
         vle32.v  v16, (a1)
         sub      a3, a3, t0
         vle32.v  v24, (a2)
@@ -42,7 +42,7 @@ func ff_vector_fmac_scalar_rvv, zve32f
 NOHWF   fmv.w.x   fa0, a2
 NOHWF   mv        a2, a3
 1:
-        vsetvli   t0, a2, e32, m1, ta, ma
+        vsetvli   t0, a2, e32, m8, ta, ma
         slli      t1, t0, 2
         vle32.v   v24, (a1)
         sub       a2, a2, t0
@@ -61,7 +61,7 @@ func ff_vector_fmul_scalar_rvv, zve32f
 NOHWF   fmv.w.x  fa0, a2
 NOHWF   mv       a2, a3
 1:
-        vsetvli  t0, a2, e32, m1, ta, ma
+        vsetvli  t0, a2, e32, m8, ta, ma
         vle32.v  v16, (a1)
         sub      a2, a2, t0
         vfmul.vf v16, v16, fa0
@@ -82,7 +82,7 @@ func ff_vector_fmul_window_rvv, zve32f
         sh2add     t3, t1, a3
         li         t1, -4 // byte stride
 1:
-        vsetvli    t2, a4, e32, m1, ta, ma
+        vsetvli    t2, a4, e32, m4, ta, ma
         vle32.v    v16, (a1)
         slli       t4, t2, 2
         vlse32.v   v20, (a2), t1
@@ -109,7 +109,7 @@ endfunc
 // (a0) = (a1) * (a2) + (a3) [0..a4-1]
 func ff_vector_fmul_add_rvv, zve32f
 1:
-        vsetvli   t0, a4, e32, m1, ta, ma
+        vsetvli   t0, a4, e32, m8, ta, ma
         vle32.v   v8, (a1)
         sub       a4, a4, t0
         vle32.v   v16, (a2)
@@ -131,7 +131,7 @@ func ff_vector_fmul_reverse_rvv, zve32f
         li       t2, -4 // byte stride
         addi     a2, a2, -4
 1:
-        vsetvli  t0, a3, e32, m1, ta, ma
+        vsetvli  t0, a3, e32, m8, ta, ma
         slli     t1, t0, 2
         vle32.v  v16, (a1)
         sub      a3, a3, t0
@@ -149,7 +149,7 @@ endfunc
 // (a0) = (a0) + (a1), (a1) = (a0) - (a1) [0..a2-1]
 func ff_butterflies_float_rvv, zve32f
 1:
-        vsetvli  t0, a2, e32, m1, ta, ma
+        vsetvli  t0, a2, e32, m8, ta, ma
         vle32.v  v16, (a0)
         sub      a2, a2, t0
         vle32.v  v24, (a1)
@@ -187,7 +187,7 @@ endfunc
 // (a0) = (a1) * (a2) [0..a3-1]
 func ff_vector_dmul_rvv, zve64d
 1:
-        vsetvli  t0, a3, e64, m1, ta, ma
+        vsetvli  t0, a3, e64, m8, ta, ma
         vle64.v  v16, (a1)
         sub      a3, a3, t0
         vle64.v  v24, (a2)
@@ -206,7 +206,7 @@ func ff_vector_dmac_scalar_rvv, zve64d
 NOHWD   fmv.d.x   fa0, a2
 NOHWD   mv        a2, a3
 1:
-        vsetvli   t0, a2, e64, m1, ta, ma
+        vsetvli   t0, a2, e64, m8, ta, ma
         vle64.v   v24, (a1)
         sub       a2, a2, t0
         vle64.v   v16, (a0)
@@ -224,7 +224,7 @@ func ff_vector_dmul_scalar_rvv, zve64d
 NOHWD   fmv.d.x  fa0, a2
 NOHWD   mv       a2, a3
 1:
-        vsetvli  t0, a2, e64, m1, ta, ma
+        vsetvli  t0, a2, e64, m8, ta, ma
         vle64.v  v16, (a1)
         sub      a2, a2, t0
         vfmul.vf v16, v16, fa0
