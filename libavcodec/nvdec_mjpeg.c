@@ -69,7 +69,7 @@ static int nvdec_mjpeg_frame_params(AVCodecContext *avctx,
     return ff_nvdec_frame_params(avctx, hw_frames_ctx, 1, 0);
 }
 
-AVHWAccel ff_mjpeg_nvdec_hwaccel = {
+const AVHWAccel ff_mjpeg_nvdec_hwaccel = {
     .name                 = "mjpeg_nvdec",
     .type                 = AVMEDIA_TYPE_VIDEO,
     .id                   = AV_CODEC_ID_MJPEG,
