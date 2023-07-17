@@ -1,5 +1,14 @@
 [FRAME]
 [SIDE_DATA]
+side_data_type=3x3 displaymatrix
+displaymatrix=
+00000000:            0       65536           0
+00000001:       -65536           0           0
+00000002:     70778880           0  1073741824
+
+rotation=-90
+[/SIDE_DATA]
+[SIDE_DATA]
 side_data_type=H.26[45] User Data Unregistered SEI message
 [/SIDE_DATA]
 [SIDE_DATA]
@@ -125,6 +134,15 @@ source_diagonal=42
 [/SIDE_DATA]
 [/FRAME]
 [FRAME]
+[SIDE_DATA]
+side_data_type=3x3 displaymatrix
+displaymatrix=
+00000000:            0       65536           0
+00000001:       -65536           0           0
+00000002:     70778880           0  1073741824
+
+rotation=-90
+[/SIDE_DATA]
 [SIDE_DATA]
 side_data_type=Ambient viewing environment
 ambient_illuminance=3140000/10000
