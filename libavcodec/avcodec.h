@@ -1909,7 +1909,7 @@ typedef struct AVCodecContext {
     /**
      * Additional data associated with the entire coded stream.
      *
-     * - decoding: unused
+     * - decoding: may be set by user before calling avcodec_open2().
      * - encoding: may be set by libavcodec after avcodec_open2().
      */
     AVPacketSideData *coded_side_data;

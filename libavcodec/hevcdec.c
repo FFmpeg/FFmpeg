@@ -3343,8 +3343,15 @@ static int hevc_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     }
 
     sd = av_packet_get_side_data(avpkt, AV_PKT_DATA_DOVI_CONF, &sd_size);
-    if (sd && sd_size > 0)
+    if (sd && sd_size > 0) {
+        int old = s->dovi_ctx.dv_profile;
+
         ff_dovi_update_cfg(&s->dovi_ctx, (AVDOVIDecoderConfigurationRecord *) sd);
+        if (old)
+            av_log(avctx, AV_LOG_DEBUG,
+                   "New DOVI configuration record from input packet (profile %d -> %u).\n",
+                   old, s->dovi_ctx.dv_profile);
+    }
 
     s->ref = NULL;
     ret    = decode_nal_units(s, avpkt->data, avpkt->size);
@@ -3649,12 +3656,18 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     atomic_init(&s->wpp_err, 0);
 
     if (!avctx->internal->is_copy) {
+        const AVPacketSideData *sd;
+
         if (avctx->extradata_size > 0 && avctx->extradata) {
             ret = hevc_decode_extradata(s, avctx->extradata, avctx->extradata_size, 1);
             if (ret < 0) {
                 return ret;
             }
         }
+
+        sd = ff_get_coded_side_data(avctx, AV_PKT_DATA_DOVI_CONF);
+        if (sd && sd->size > 0)
+            ff_dovi_update_cfg(&s->dovi_ctx, (AVDOVIDecoderConfigurationRecord *) sd->data);
     }
 
     return 0;

@@ -153,4 +153,10 @@ int ff_side_data_update_matrix_encoding(AVFrame *frame,
 int ff_hwaccel_frame_priv_alloc(AVCodecContext *avctx, void **hwaccel_picture_private,
                                 AVBufferRef **hwaccel_priv_buf);
 
+/**
+ * Get side data of the given type from a decoding context.
+ */
+const AVPacketSideData *ff_get_coded_side_data(const AVCodecContext *avctx,
+                                               enum AVPacketSideDataType type);
+
 #endif /* AVCODEC_DECODE_H */

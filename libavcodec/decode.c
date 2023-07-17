@@ -1403,6 +1403,16 @@ int ff_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt)
     return ret;
 }
 
+const AVPacketSideData *ff_get_coded_side_data(const AVCodecContext *avctx,
+                                               enum AVPacketSideDataType type)
+{
+    for (int i = 0; i < avctx->nb_coded_side_data; i++)
+        if (avctx->coded_side_data[i].type == type)
+            return &avctx->coded_side_data[i];
+
+    return NULL;
+}
+
 static int add_metadata_from_side_data(const AVPacket *avpkt, AVFrame *frame)
 {
     size_t size;
