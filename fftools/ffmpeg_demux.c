@@ -22,8 +22,6 @@
 #include "ffmpeg.h"
 #include "ffmpeg_sched.h"
 #include "ffmpeg_utils.h"
-#include "objpool.h"
-#include "thread_queue.h"
 
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
@@ -35,7 +33,6 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/time.h"
 #include "libavutil/timestamp.h"
-#include "libavutil/thread.h"
 
 #include "libavcodec/packet.h"
 
@@ -66,7 +63,11 @@ typedef struct DemuxStream {
 
     double ts_scale;
 
+    // scheduler returned EOF for this stream
+    int finished;
+
     int streamcopy_needed;
+    int have_sub2video;
 
     int wrap_correction_done;
     int saw_first_ts;
@@ -101,6 +102,7 @@ typedef struct Demuxer {
 
     /* number of times input stream should be looped */
     int loop;
+    int have_audio_dec;
     /* duration of the looped segment of the input file */
     Timestamp duration;
     /* pts with the smallest/largest values ever seen */
@@ -113,11 +115,12 @@ typedef struct Demuxer {
     double readrate_initial_burst;
 
     Scheduler            *sch;
-    ThreadQueue          *thread_queue;
-    int                   thread_queue_size;
-    pthread_t             thread;
+
+    AVPacket             *pkt_heartbeat;
 
     int                   read_started;
+    int                   nb_streams_used;
+    int                   nb_streams_finished;
 } Demuxer;
 
 static DemuxStream *ds_from_ist(InputStream *ist)
@@ -153,7 +156,7 @@ static void report_new_stream(Demuxer *d, const AVPacket *pkt)
     d->nb_streams_warn = pkt->stream_index + 1;
 }
 
-static int seek_to_start(Demuxer *d)
+static int seek_to_start(Demuxer *d, Timestamp end_pts)
 {
     InputFile    *ifile = &d->f;
     AVFormatContext *is = ifile->ctx;
@@ -163,21 +166,10 @@ static int seek_to_start(Demuxer *d)
     if (ret < 0)
         return ret;
 
-    if (ifile->audio_ts_queue_size) {
-        int got_ts = 0;
-
-        while (got_ts < ifile->audio_ts_queue_size) {
-            Timestamp ts;
-            ret = av_thread_message_queue_recv(ifile->audio_ts_queue, &ts, 0);
-            if (ret < 0)
-                return ret;
-            got_ts++;
-
-            if (d->max_pts.ts == AV_NOPTS_VALUE ||
-                av_compare_ts(d->max_pts.ts, d->max_pts.tb, ts.ts, ts.tb) < 0)
-                d->max_pts = ts;
-        }
-    }
+    if (end_pts.ts != AV_NOPTS_VALUE &&
+        (d->max_pts.ts == AV_NOPTS_VALUE ||
+         av_compare_ts(d->max_pts.ts, d->max_pts.tb, end_pts.ts, end_pts.tb) < 0))
+        d->max_pts = end_pts;
 
     if (d->max_pts.ts != AV_NOPTS_VALUE) {
         int64_t min_pts = d->min_pts.ts == AV_NOPTS_VALUE ? 0 : d->min_pts.ts;
@@ -404,7 +396,7 @@ static int ts_fixup(Demuxer *d, AVPacket *pkt)
     duration = av_rescale_q(d->duration.ts, d->duration.tb, pkt->time_base);
     if (pkt->pts != AV_NOPTS_VALUE) {
         // audio decoders take precedence for estimating total file duration
-        int64_t pkt_duration = ifile->audio_ts_queue_size ? 0 : pkt->duration;
+        int64_t pkt_duration = d->have_audio_dec ? 0 : pkt->duration;
 
         pkt->pts += duration;
 
@@ -440,7 +432,7 @@ static int ts_fixup(Demuxer *d, AVPacket *pkt)
     return 0;
 }
 
-static int input_packet_process(Demuxer *d, AVPacket *pkt)
+static int input_packet_process(Demuxer *d, AVPacket *pkt, unsigned *send_flags)
 {
     InputFile     *f = &d->f;
     InputStream *ist = f->streams[pkt->stream_index];
@@ -450,6 +442,16 @@ static int input_packet_process(Demuxer *d, AVPacket *pkt)
     ret = ts_fixup(d, pkt);
     if (ret < 0)
         return ret;
+
+    if (f->recording_time != INT64_MAX) {
+        int64_t start_time = 0;
+        if (copy_ts) {
+            start_time += f->start_time != AV_NOPTS_VALUE ? f->start_time : 0;
+            start_time += start_at_zero ? 0 : f->start_time_effective;
+        }
+        if (ds->dts >= f->recording_time + start_time)
+            *send_flags |= DEMUX_SEND_STREAMCOPY_EOF;
+    }
 
     ds->data_size += pkt->size;
     ds->nb_packets++;
@@ -464,6 +466,8 @@ static int input_packet_process(Demuxer *d, AVPacket *pkt)
                av_ts2str(input_files[ist->file_index]->ts_offset),
                av_ts2timestr(input_files[ist->file_index]->ts_offset, &AV_TIME_BASE_Q));
     }
+
+    pkt->stream_index = ds->sch_idx_stream;
 
     return 0;
 }
@@ -486,6 +490,65 @@ static void readrate_sleep(Demuxer *d)
         if (pts - burst_until > now)
             av_usleep(pts - burst_until - now);
     }
+}
+
+static int do_send(Demuxer *d, DemuxStream *ds, AVPacket *pkt, unsigned flags,
+                   const char *pkt_desc)
+{
+    int ret;
+
+    ret = sch_demux_send(d->sch, d->f.index, pkt, flags);
+    if (ret == AVERROR_EOF) {
+        av_packet_unref(pkt);
+
+        av_log(ds, AV_LOG_VERBOSE, "All consumers of this stream are done\n");
+        ds->finished = 1;
+
+        if (++d->nb_streams_finished == d->nb_streams_used) {
+            av_log(d, AV_LOG_VERBOSE, "All consumers are done\n");
+            return AVERROR_EOF;
+        }
+    } else if (ret < 0) {
+        if (ret != AVERROR_EXIT)
+            av_log(d, AV_LOG_ERROR,
+                   "Unable to send %s packet to consumers: %s\n",
+                   pkt_desc, av_err2str(ret));
+        return ret;
+    }
+
+    return 0;
+}
+
+static int demux_send(Demuxer *d, DemuxStream *ds, AVPacket *pkt, unsigned flags)
+{
+    InputFile  *f = &d->f;
+    int ret;
+
+    // send heartbeat for sub2video streams
+    if (d->pkt_heartbeat && pkt->pts != AV_NOPTS_VALUE) {
+        for (int i = 0; i < f->nb_streams; i++) {
+            DemuxStream *ds1 = ds_from_ist(f->streams[i]);
+
+            if (ds1->finished || !ds1->have_sub2video)
+                continue;
+
+            d->pkt_heartbeat->pts          = pkt->pts;
+            d->pkt_heartbeat->time_base    = pkt->time_base;
+            d->pkt_heartbeat->stream_index = ds1->sch_idx_stream;
+            d->pkt_heartbeat->opaque       = (void*)(intptr_t)PKT_OPAQUE_SUB_HEARTBEAT;
+
+            ret = do_send(d, ds1, d->pkt_heartbeat, 0, "heartbeat");
+            if (ret < 0)
+                return ret;
+        }
+    }
+
+    ret = do_send(d, ds, pkt, flags, "demuxed");
+    if (ret < 0)
+        return ret;
+
+
+    return 0;
 }
 
 static void discard_unused_programs(InputFile *ifile)
@@ -527,9 +590,13 @@ static void *input_thread(void *arg)
 
     discard_unused_programs(f);
 
+    d->read_started    = 1;
     d->wallclock_start = av_gettime_relative();
 
     while (1) {
+        DemuxStream *ds;
+        unsigned send_flags = 0;
+
         ret = av_read_frame(f->ctx, pkt);
 
         if (ret == AVERROR(EAGAIN)) {
@@ -538,11 +605,13 @@ static void *input_thread(void *arg)
         }
         if (ret < 0) {
             if (d->loop) {
-                /* signal looping to the consumer thread */
+                /* signal looping to our consumers */
                 pkt->stream_index = -1;
-                ret = tq_send(d->thread_queue, 0, pkt);
+
+                ret = sch_demux_send(d->sch, f->index, pkt, 0);
                 if (ret >= 0)
-                    ret = seek_to_start(d);
+                    ret = seek_to_start(d, (Timestamp){ .ts = pkt->pts,
+                                                        .tb = pkt->time_base });
                 if (ret >= 0)
                     continue;
 
@@ -551,9 +620,11 @@ static void *input_thread(void *arg)
 
             if (ret == AVERROR_EOF)
                 av_log(d, AV_LOG_VERBOSE, "EOF while reading input\n");
-            else
+            else {
                 av_log(d, AV_LOG_ERROR, "Error during demuxing: %s\n",
                        av_err2str(ret));
+                ret = exit_on_error ? ret : 0;
+            }
 
             break;
         }
@@ -565,8 +636,9 @@ static void *input_thread(void *arg)
 
         /* the following test is needed in case new streams appear
            dynamically in stream : we ignore them */
-        if (pkt->stream_index >= f->nb_streams ||
-            f->streams[pkt->stream_index]->discard) {
+        ds = pkt->stream_index < f->nb_streams ?
+             ds_from_ist(f->streams[pkt->stream_index]) : NULL;
+        if (!ds || ds->ist.discard || ds->finished) {
             report_new_stream(d, pkt);
             av_packet_unref(pkt);
             continue;
@@ -583,122 +655,26 @@ static void *input_thread(void *arg)
             }
         }
 
-        ret = input_packet_process(d, pkt);
+        ret = input_packet_process(d, pkt, &send_flags);
         if (ret < 0)
             break;
 
         if (f->readrate)
             readrate_sleep(d);
 
-        ret = tq_send(d->thread_queue, 0, pkt);
-        if (ret < 0) {
-            if (ret != AVERROR_EOF)
-                av_log(f, AV_LOG_ERROR,
-                       "Unable to send packet to main thread: %s\n",
-                       av_err2str(ret));
+        ret = demux_send(d, ds, pkt, send_flags);
+        if (ret < 0)
             break;
-        }
     }
+
+    // EOF/EXIT is normal termination
+    if (ret == AVERROR_EOF || ret == AVERROR_EXIT)
+        ret = 0;
 
 finish:
-    av_assert0(ret < 0);
-    tq_send_finish(d->thread_queue, 0);
-
     av_packet_free(&pkt);
 
-    av_log(d, AV_LOG_VERBOSE, "Terminating demuxer thread\n");
-
-    return NULL;
-}
-
-static void thread_stop(Demuxer *d)
-{
-    InputFile *f = &d->f;
-
-    if (!d->thread_queue)
-        return;
-
-    tq_receive_finish(d->thread_queue, 0);
-
-    pthread_join(d->thread, NULL);
-
-    tq_free(&d->thread_queue);
-
-    av_thread_message_queue_free(&f->audio_ts_queue);
-}
-
-static int thread_start(Demuxer *d)
-{
-    int ret;
-    InputFile *f = &d->f;
-    ObjPool *op;
-
-    if (d->thread_queue_size <= 0)
-        d->thread_queue_size = (nb_input_files > 1 ? 8 : 1);
-
-    op = objpool_alloc_packets();
-    if (!op)
-        return AVERROR(ENOMEM);
-
-    d->thread_queue = tq_alloc(1, d->thread_queue_size, op, pkt_move);
-    if (!d->thread_queue) {
-        objpool_free(&op);
-        return AVERROR(ENOMEM);
-    }
-
-    if (d->loop) {
-        int nb_audio_dec = 0;
-
-        for (int i = 0; i < f->nb_streams; i++) {
-            InputStream *ist = f->streams[i];
-            nb_audio_dec += !!(ist->decoding_needed &&
-                               ist->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO);
-        }
-
-        if (nb_audio_dec) {
-            ret = av_thread_message_queue_alloc(&f->audio_ts_queue,
-                                                nb_audio_dec, sizeof(Timestamp));
-            if (ret < 0)
-                goto fail;
-            f->audio_ts_queue_size = nb_audio_dec;
-        }
-    }
-
-    if ((ret = pthread_create(&d->thread, NULL, input_thread, d))) {
-        av_log(d, AV_LOG_ERROR, "pthread_create failed: %s. Try to increase `ulimit -v` or decrease `ulimit -s`.\n", strerror(ret));
-        ret = AVERROR(ret);
-        goto fail;
-    }
-
-    d->read_started = 1;
-
-    return 0;
-fail:
-    tq_free(&d->thread_queue);
-    return ret;
-}
-
-int ifile_get_packet(InputFile *f, AVPacket *pkt)
-{
-    Demuxer *d = demuxer_from_ifile(f);
-    int ret, dummy;
-
-    if (!d->thread_queue) {
-        ret = thread_start(d);
-        if (ret < 0)
-            return ret;
-    }
-
-    ret = tq_receive(d->thread_queue, &dummy, pkt);
-    if (ret < 0)
-        return ret;
-
-    if (pkt->stream_index == -1) {
-        av_assert0(!pkt->data && !pkt->side_data_elems);
-        return 1;
-    }
-
-    return 0;
+    return (void*)(intptr_t)ret;
 }
 
 static void demux_final_stats(Demuxer *d)
@@ -769,8 +745,6 @@ void ifile_close(InputFile **pf)
     if (!f)
         return;
 
-    thread_stop(d);
-
     if (d->read_started)
         demux_final_stats(d);
 
@@ -779,6 +753,8 @@ void ifile_close(InputFile **pf)
     av_freep(&f->streams);
 
     avformat_close_input(&f->ctx);
+
+    av_packet_free(&d->pkt_heartbeat);
 
     av_freep(pf);
 }
@@ -802,7 +778,11 @@ static int ist_use(InputStream *ist, int decoding_needed)
         ds->sch_idx_stream = ret;
     }
 
-    ist->discard          = 0;
+    if (ist->discard) {
+        ist->discard = 0;
+        d->nb_streams_used++;
+    }
+
     ist->st->discard      = ist->user_set_discard;
     ist->decoding_needed |= decoding_needed;
     ds->streamcopy_needed |= !decoding_needed;
@@ -823,6 +803,8 @@ static int ist_use(InputStream *ist, int decoding_needed)
         ret = dec_open(ist, d->sch, ds->sch_idx_dec);
         if (ret < 0)
             return ret;
+
+        d->have_audio_dec |= is_audio;
     }
 
     return 0;
@@ -848,6 +830,7 @@ int ist_output_add(InputStream *ist, OutputStream *ost)
 
 int ist_filter_add(InputStream *ist, InputFilter *ifilter, int is_simple)
 {
+    Demuxer      *d = demuxer_from_ifile(input_files[ist->file_index]);
     DemuxStream *ds = ds_from_ist(ist);
     int ret;
 
@@ -865,6 +848,15 @@ int ist_filter_add(InputStream *ist, InputFilter *ifilter, int is_simple)
     ret = ifilter_parameters_from_dec(ifilter, ist->dec_ctx);
     if (ret < 0)
         return ret;
+
+    if (ist->dec_ctx->codec_type == AVMEDIA_TYPE_SUBTITLE) {
+        if (!d->pkt_heartbeat) {
+            d->pkt_heartbeat = av_packet_alloc();
+            if (!d->pkt_heartbeat)
+                return AVERROR(ENOMEM);
+        }
+        ds->have_sub2video = 1;
+    }
 
     return ds->sch_idx_dec;
 }
@@ -1606,8 +1598,6 @@ int ifile_open(const OptionsContext *o, const char *filename, Scheduler *sch)
         av_log(d, AV_LOG_WARNING, "Option -readrate_initial_burst ignored "
                "since neither -readrate nor -re were given\n");
     }
-
-    d->thread_queue_size = o->thread_queue_size;
 
     /* Add all the streams from the given input file to the demuxer */
     for (int i = 0; i < ic->nb_streams; i++) {

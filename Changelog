@@ -7,6 +7,8 @@ version <next>:
 - EVC encoding using external library libxeve
 - QOA decoder and demuxer
 - aap filter
+- demuxing, decoding, filtering, encoding, and muxing in the
+  ffmpeg CLI now all run in parallel
 
 version 6.1:
 - libaribcaption decoder
