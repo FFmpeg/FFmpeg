@@ -49,19 +49,29 @@ func ff_shuffle_bytes_2103_rvv, zve32x
 endfunc
 
 func ff_shuffle_bytes_1230_rvv, zve32x
-        addi    t1, a0, 2
-        addi    t2, a0, 3
-        addi    t3, a0, 0
-        addi    a0, a0, 1
-        j       1b
+        li      t1, 24
+        li      t2, 8
+        j       3f
 endfunc
 
 func ff_shuffle_bytes_3012_rvv, zve32x
-        addi    t1, a0, 0
-        addi    t2, a0, 1
-        addi    t3, a0, 2
-        addi    a0, a0, 3
-        j       1b
+        li      t1, 8
+        li      t2, 24
+3:
+        srai    a2, a2, 2
+4:
+        vsetvli t0, a2, e32, m8, ta, ma
+        vle32.v v8, (a0)
+        sub     a2, a2, t0
+        vsll.vx v16, v8, t1
+        sh2add  a0, t0, a0
+        vsrl.vx v8, v8, t2
+        vor.vv  v16, v16, v8
+        vse32.v v16, (a1)
+        sh2add  a1, t0, a1
+        bnez    a2, 4b
+
+        ret
 endfunc
 
 func ff_shuffle_bytes_3210_rvv, zve32x
