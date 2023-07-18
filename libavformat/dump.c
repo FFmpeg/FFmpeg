@@ -442,6 +442,23 @@ static void dump_s12m_timecode(void *ctx, const AVStream *st, const AVPacketSide
     }
 }
 
+static void dump_cropping(void *ctx, const AVPacketSideData *sd)
+{
+    uint32_t top, bottom, left, right;
+
+    if (sd->size < sizeof(uint32_t) * 4) {
+        av_log(ctx, AV_LOG_ERROR, "invalid data\n");
+        return;
+    }
+
+    top    = AV_RL32(sd->data +  0);
+    bottom = AV_RL32(sd->data +  4);
+    left   = AV_RL32(sd->data +  8);
+    right  = AV_RL32(sd->data + 12);
+
+    av_log(ctx, AV_LOG_INFO, "%d/%d/%d/%d", left, right, top, bottom);
+}
+
 static void dump_sidedata(void *ctx, const AVStream *st, const char *indent,
                           int log_level)
 {
@@ -515,6 +532,10 @@ static void dump_sidedata(void *ctx, const AVStream *st, const char *indent,
             break;
         case AV_PKT_DATA_AMBIENT_VIEWING_ENVIRONMENT:
             dump_ambient_viewing_environment_metadata(ctx, sd);
+            break;
+        case AV_PKT_DATA_FRAME_CROPPING:
+            av_log(ctx, AV_LOG_INFO, "Frame cropping: ");
+            dump_cropping(ctx, sd);
             break;
         default:
             av_log(ctx, log_level, "unknown side data type %d "
