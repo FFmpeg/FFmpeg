@@ -282,8 +282,6 @@ int ff_vk_exec_pool_init(FFVulkanContext *s, FFVkQueueFamilyCtx *qf,
     VkCommandPoolCreateInfo cqueue_create;
     VkCommandBufferAllocateInfo cbuf_create;
 
-    atomic_init(&pool->idx, 0);
-
     /* Create command pool */
     cqueue_create = (VkCommandPoolCreateInfo) {
         .sType              = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
@@ -472,7 +470,7 @@ VkResult ff_vk_exec_get_query(FFVulkanContext *s, FFVkExecContext *e,
 
 FFVkExecContext *ff_vk_exec_get(FFVkExecPool *pool)
 {
-    int idx = atomic_fetch_add_explicit(&pool->idx, 1, memory_order_relaxed);
+    uint32_t idx = pool->idx++;
     idx %= pool->pool_size;
     return &pool->contexts[idx];
 }

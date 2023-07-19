@@ -151,7 +151,7 @@ typedef struct FFVulkanPipeline {
 } FFVulkanPipeline;
 
 typedef struct FFVkExecContext {
-    int idx;
+    uint32_t idx;
     const struct FFVkExecPool *parent;
     pthread_mutex_t lock;
 
