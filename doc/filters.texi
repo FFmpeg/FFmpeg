@@ -19707,6 +19707,7 @@ Available LUTs:
 @item total
 @item spectral
 @item cool
+@item heat
 @end table
 
 @item opacity

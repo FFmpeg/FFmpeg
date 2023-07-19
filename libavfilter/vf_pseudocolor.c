@@ -69,6 +69,7 @@ enum Curves {
     SOLAR,
     SPECTRAL,
     COOL,
+    HEAT,
     NB_CURVES,
 };
 
@@ -89,6 +90,7 @@ enum Presets {
     PRESET_TOTAL,
     PRESET_SPECTRAL,
     PRESET_COOL,
+    PRESET_HEAT,
     NB_PRESETS,
 };
 
@@ -150,6 +152,16 @@ static double coolfunv(double x)
     return 0.25 * sin(2.0 * x * M_PI) + 0.5;
 }
 
+static double heatfunu(double x)
+{
+    return 0.25 * cos(2.0 * x * M_PI + M_PI) + 0.75;
+}
+
+static double heatfunv(double x)
+{
+    return 0.25 * sin(2.0 * x * M_PI) + 0.5;
+}
+
 static const Curve curves[] =
 {
     [MAGMA] = {{
@@ -202,6 +214,14 @@ static const Curve curves[] =
     .offset = { 0., 0., 0 },
     .yuv = 1,
     .fun = { coolfunu, limit, coolfunv }, },
+    [HEAT] = {{
+        { 0, 0, 0, 0, 0, 0, 1./256, 0 },
+        { 0, 0, 0, 0, 0, 0, 1./256, 0 },
+        { 0, 0, 0, 0, 0, 0, 1./256, 0 },
+    },
+    .offset = { 0., 0., 0 },
+    .yuv = 1,
+    .fun = { heatfunu, limit, heatfunv }, },
 };
 
 static const Preset presets[] =
@@ -222,6 +242,7 @@ static const Preset presets[] =
     [PRESET_SOLAR]   = { 1, &full_range, &curves[SOLAR],   NULL },
     [PRESET_SPECTRAL]= { 1, &full_range, &curves[SPECTRAL],NULL },
     [PRESET_COOL]    = { 1, &full_range, &curves[COOL],    NULL },
+    [PRESET_HEAT]= { 1, &full_range, &curves[HEAT],NULL },
 };
 
 typedef struct PseudoColorContext {
@@ -278,6 +299,7 @@ static const AVOption pseudocolor_options[] = {
     { "total",      NULL,                  0,                        AV_OPT_TYPE_CONST,  {.i64=PRESET_TOTAL},   .flags=FLAGS, "preset" },
     { "spectral",   NULL,                  0,                        AV_OPT_TYPE_CONST,  {.i64=PRESET_SPECTRAL},.flags = FLAGS, "preset" },
     { "cool",       NULL,                  0,                        AV_OPT_TYPE_CONST,  {.i64=PRESET_COOL},    .flags = FLAGS, "preset" },
+    { "heat",       NULL,                  0,                        AV_OPT_TYPE_CONST,  {.i64=PRESET_HEAT},    .flags = FLAGS, "preset" },
     { "opacity", "set pseudocolor opacity",OFFSET(opacity),          AV_OPT_TYPE_FLOAT,  {.dbl=1}, 0, 1, .flags = FLAGS },
     { NULL }
 };
