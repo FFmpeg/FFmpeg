@@ -102,7 +102,7 @@ void ff_kperf_init(void)
     ff_thread_once(&init_static_once, kperf_init);
 }
 
-uint64_t ff_kperf_cycles()
+uint64_t ff_kperf_cycles(void)
 {
     uint64_t counters[COUNTERS_COUNT];
     if (kpc_get_thread_counters(0, COUNTERS_COUNT, counters)) {
