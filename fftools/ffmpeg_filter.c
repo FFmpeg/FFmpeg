@@ -2010,9 +2010,8 @@ static int choose_input(const FilterGraph *fg, const FilterGraphThread *fgt)
     for (int i = 0; i < fg->nb_inputs; i++) {
         InputFilter *ifilter = fg->inputs[i];
         InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
-        InputStream     *ist = ifp->ist;
 
-        if (input_files[ist->file_index]->eagain || fgt->eof_in[i])
+        if (fgt->eof_in[i])
             continue;
 
         nb_requests = av_buffersrc_get_nb_failed_requests(ifp->filter);
@@ -2021,6 +2020,8 @@ static int choose_input(const FilterGraph *fg, const FilterGraphThread *fgt)
             best_input = i;
         }
     }
+
+    av_assert0(best_input >= 0);
 
     return best_input;
 }

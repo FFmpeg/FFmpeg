@@ -407,7 +407,6 @@ typedef struct InputFile {
 
     AVFormatContext *ctx;
     int eof_reached;      /* true if eof reached */
-    int eagain;           /* true if last read attempt returned EAGAIN */
     int64_t input_ts_offset;
     int input_sync_ref;
     /**
@@ -859,7 +858,7 @@ void ifile_close(InputFile **f);
  *     caller should flush decoders and read from this demuxer again
  * - a negative error code on failure
  */
-int ifile_get_packet(InputFile *f, AVPacket **pkt);
+int ifile_get_packet(InputFile *f, AVPacket *pkt);
 
 int ist_output_add(InputStream *ist, OutputStream *ost);
 int ist_filter_add(InputStream *ist, InputFilter *ifilter, int is_simple);
