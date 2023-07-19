@@ -1200,11 +1200,11 @@ static int opengl_draw(AVFormatContext *h, void *input, int repaint, int is_pkt)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     int ret;
 
+#if CONFIG_SDL2
     /* At this point, opengl->glcontext implies opengl->glcontext */
     if (opengl->glcontext)
         SDL_GL_MakeCurrent(opengl->window, opengl->glcontext);
 
-#if CONFIG_SDL2
     if (!opengl->no_window && (ret = opengl_sdl_process_events(h)) < 0)
         goto fail;
 #endif
