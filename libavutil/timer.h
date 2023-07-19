@@ -105,9 +105,9 @@
 #if CONFIG_LINUX_PERF
 
 #define START_TIMER                                                         \
-    static int linux_perf_fd;                                               \
+    static int linux_perf_fd = -1;                                          \
     uint64_t tperf;                                                         \
-    if (!linux_perf_fd) {                                                   \
+    if (linux_perf_fd == -1) {                                              \
         struct perf_event_attr attr = {                                     \
             .type           = PERF_TYPE_HARDWARE,                           \
             .size           = sizeof(struct perf_event_attr),               \
