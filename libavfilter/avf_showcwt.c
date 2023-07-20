@@ -634,12 +634,12 @@ static void compute_kernel(AVFilterContext *ctx)
     const float scale_factor = 1.f/(float)size;
     const int output_sample_count = s->output_sample_count;
     const int fsize = s->frequency_band_count;
+    int *kernel_start = s->kernel_start;
+    int *kernel_stop = s->kernel_stop;
     unsigned *index = s->index;
 
     for (int y = 0; y < fsize; y++) {
         AVComplexFloat *kernel = (AVComplexFloat *)s->kernel->extended_data[y];
-        int *kernel_start = s->kernel_start;
-        int *kernel_stop = s->kernel_stop;
         float frequency = s->frequency_band[y*2];
         float deviation = 1.f / (s->frequency_band[y*2+1] *
                                  output_sample_count);
