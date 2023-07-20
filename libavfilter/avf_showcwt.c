@@ -662,7 +662,7 @@ static void compute_kernel(AVFilterContext *ctx)
 
         for (int n = 0; n < size; n++) {
             if (kernel[size - n - 1].re != 0.f) {
-                kernel_stop[y] = size - n;
+                kernel_stop[y] = size - n - 1;
                 break;
             }
         }
