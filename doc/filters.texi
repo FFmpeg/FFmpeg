@@ -19711,6 +19711,10 @@ Available LUTs:
 @item spectral
 @item cool
 @item heat
+@item fiery
+@item blues
+@item green
+@item helix
 @end table
 
 @item opacity

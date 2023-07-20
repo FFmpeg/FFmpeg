@@ -70,6 +70,10 @@ enum Curves {
     SPECTRAL,
     COOL,
     HEAT,
+    FIERY,
+    BLUES,
+    GREEN,
+    HELIX,
     NB_CURVES,
 };
 
@@ -91,6 +95,10 @@ enum Presets {
     PRESET_SPECTRAL,
     PRESET_COOL,
     PRESET_HEAT,
+    PRESET_FIERY,
+    PRESET_BLUES,
+    PRESET_GREEN,
+    PRESET_HELIX,
     NB_PRESETS,
 };
 
@@ -162,6 +170,26 @@ static double heatfunv(double x)
     return 0.25 * sin(2.0 * x * M_PI) + 0.5;
 }
 
+static double fieryfunu(double x)
+{
+    return 0.75 - 0.25 * cos(2.0 * x * M_PI);
+}
+
+static double fieryfunv(double x)
+{
+    return 0.25 + 0.25 * cos(2.0 * x * M_PI);
+}
+
+static double helixfunu(double x)
+{
+    return 0.5 + 0.15 * sin(5.0 * x * M_PI + M_PI);
+}
+
+static double helixfunv(double x)
+{
+    return 0.5 + 0.15 * cos(6.0 * x * M_PI + M_PI_2);
+}
+
 static const Curve curves[] =
 {
     [MAGMA] = {{
@@ -222,6 +250,38 @@ static const Curve curves[] =
     .offset = { 0., 0., 0 },
     .yuv = 1,
     .fun = { heatfunu, limit, heatfunv }, },
+    [FIERY] = {{
+        { 0, 0, 0, 0, 0, 0, 1./256, 0 },
+        { 0, 0, 0, 0, 0, 0, 1./256, 0 },
+        { 0, 0, 0, 0, 0, 0, 1./256, 0 },
+    },
+    .offset = { 0., 0., 0 },
+    .yuv = 1,
+    .fun = { fieryfunu, limit, fieryfunv }, },
+    [BLUES] = {{
+        { 0, 0, 0, 0, 0, 0, 1./256, 0 },
+        { 0, 0, 0, 0, 0, 0, 1./256, 0 },
+        { 0, 0, 0, 0, 0, 0, 1./256, 0 },
+    },
+    .offset = { 0., 0., 0 },
+    .yuv = 1,
+    .fun = { fieryfunv, limit, fieryfunu }, },
+    [GREEN] = {{
+        { 0, 0, 0, 0, 0, 0, 1./256, 0 },
+        { 0, 0, 0, 0, 0, 0, 1./256, 0 },
+        { 0, 0, 0, 0, 0, 0, 1./256, 0 },
+    },
+    .offset = { 0., 0., 0 },
+    .yuv = 1,
+    .fun = { fieryfunv, limit, fieryfunv }, },
+    [HELIX] = {{
+        { 0, 0, 0, 0, 0, 0, 1./256, 0 },
+        { 0, 0, 0, 0, 0, 0, 1./256, 0 },
+        { 0, 0, 0, 0, 0, 0, 1./256, 0 },
+    },
+    .offset = { 0., 0., 0 },
+    .yuv = 1,
+    .fun = { helixfunu, limit, helixfunv }, },
 };
 
 static const Preset presets[] =
@@ -242,7 +302,11 @@ static const Preset presets[] =
     [PRESET_SOLAR]   = { 1, &full_range, &curves[SOLAR],   NULL },
     [PRESET_SPECTRAL]= { 1, &full_range, &curves[SPECTRAL],NULL },
     [PRESET_COOL]    = { 1, &full_range, &curves[COOL],    NULL },
-    [PRESET_HEAT]= { 1, &full_range, &curves[HEAT],NULL },
+    [PRESET_HEAT]    = { 1, &full_range, &curves[HEAT],    NULL },
+    [PRESET_FIERY]   = { 1, &full_range, &curves[FIERY],   NULL },
+    [PRESET_BLUES]   = { 1, &full_range, &curves[BLUES],   NULL },
+    [PRESET_GREEN]   = { 1, &full_range, &curves[GREEN],   NULL },
+    [PRESET_HELIX]   = { 1, &full_range, &curves[HELIX],   NULL },
 };
 
 typedef struct PseudoColorContext {
@@ -300,6 +364,10 @@ static const AVOption pseudocolor_options[] = {
     { "spectral",   NULL,                  0,                        AV_OPT_TYPE_CONST,  {.i64=PRESET_SPECTRAL},.flags = FLAGS, "preset" },
     { "cool",       NULL,                  0,                        AV_OPT_TYPE_CONST,  {.i64=PRESET_COOL},    .flags = FLAGS, "preset" },
     { "heat",       NULL,                  0,                        AV_OPT_TYPE_CONST,  {.i64=PRESET_HEAT},    .flags = FLAGS, "preset" },
+    { "fiery",      NULL,                  0,                        AV_OPT_TYPE_CONST,  {.i64=PRESET_FIERY},   .flags = FLAGS, "preset" },
+    { "blues",      NULL,                  0,                        AV_OPT_TYPE_CONST,  {.i64=PRESET_BLUES},   .flags = FLAGS, "preset" },
+    { "green",      NULL,                  0,                        AV_OPT_TYPE_CONST,  {.i64=PRESET_GREEN},   .flags = FLAGS, "preset" },
+    { "helix",      NULL,                  0,                        AV_OPT_TYPE_CONST,  {.i64=PRESET_HELIX},   .flags = FLAGS, "preset" },
     { "opacity", "set pseudocolor opacity",OFFSET(opacity),          AV_OPT_TYPE_FLOAT,  {.dbl=1}, 0, 1, .flags = FLAGS },
     { NULL }
 };
