@@ -253,8 +253,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
         break;
     }
 
+    av_freep(&codec->extradata);
     if (par->extradata) {
-        av_freep(&codec->extradata);
         codec->extradata = av_mallocz(par->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!codec->extradata)
             return AVERROR(ENOMEM);
