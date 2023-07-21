@@ -231,20 +231,24 @@ static int enc_choose_timebase(OutputStream *ost, AVFrame *frame)
     fr = ost->frame_rate;
     if (!fr.num)
         fr = fd->frame_rate_filter;
-    if (!fr.num && !ost->max_frame_rate.num) {
-        fr = (AVRational){25, 1};
-        av_log(ost, AV_LOG_WARNING,
-               "No information "
-               "about the input framerate is available. Falling "
-               "back to a default value of 25fps. Use the -r option "
-               "if you want a different framerate.\n");
+
+    if (ost->is_cfr) {
+        if (!fr.num && !ost->max_frame_rate.num) {
+            fr = (AVRational){25, 1};
+            av_log(ost, AV_LOG_WARNING,
+                   "No information "
+                   "about the input framerate is available. Falling "
+                   "back to a default value of 25fps. Use the -r option "
+                   "if you want a different framerate.\n");
+        }
+
+        if (ost->max_frame_rate.num &&
+            (av_q2d(fr) > av_q2d(ost->max_frame_rate) ||
+            !fr.den))
+            fr = ost->max_frame_rate;
     }
 
-    if (ost->max_frame_rate.num &&
-        (av_q2d(fr) > av_q2d(ost->max_frame_rate) ||
-        !fr.den))
-        fr = ost->max_frame_rate;
-
+    if (fr.num > 0) {
     if (enc->codec->supported_framerates && !ost->force_fps) {
         int idx = av_find_nearest_q_idx(fr, enc->codec->supported_framerates);
         fr = enc->codec->supported_framerates[idx];
@@ -253,6 +257,7 @@ static int enc_choose_timebase(OutputStream *ost, AVFrame *frame)
     if (enc->codec_id == AV_CODEC_ID_MPEG4) {
         av_reduce(&fr.num, &fr.den,
                   fr.num, fr.den, 65535);
+    }
     }
 
     if (av_q2d(fr) > 1e3 && ost->vsync_method != VSYNC_PASSTHROUGH &&
