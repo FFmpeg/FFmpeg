@@ -69,14 +69,10 @@ typedef struct ShowCWTContext {
     char *rate_str;
     AVRational auto_frame_rate;
     AVRational frame_rate;
-    AVTXContext **fft;
-    AVTXContext **ifft;
-    av_tx_fn tx_fn;
-    av_tx_fn itx_fn;
-    int fft_in_size;
-    int fft_out_size;
-    int ifft_in_size;
-    int ifft_out_size;
+    AVTXContext **fft, **ifft;
+    av_tx_fn tx_fn, itx_fn;
+    int fft_in_size, fft_out_size;
+    int ifft_in_size, ifft_out_size;
     int pos;
     int64_t in_pts;
     int64_t old_pts;
@@ -84,8 +80,7 @@ typedef struct ShowCWTContext {
     float *frequency_band;
     AVFrame *kernel;
     unsigned *index;
-    int *kernel_start;
-    int *kernel_stop;
+    int *kernel_start, *kernel_stop;
     AVFrame *cache;
     AVFrame *outpicref;
     AVFrame *fft_in;
@@ -105,19 +100,14 @@ typedef struct ShowCWTContext {
     int slide;
     int new_frame;
     int direction;
-    int hop_size;
-    int hop_index;
-    int ihop_size;
-    int ihop_index;
-    int input_padding_size;
-    int input_sample_count;
-    int output_padding_size;
-    int output_sample_count;
+    int hop_size, ihop_size;
+    int hop_index, ihop_index;
+    int input_padding_size, output_padding_size;
+    int input_sample_count, output_sample_count;
     int frequency_band_count;
     float logarithmic_basis;
     int frequency_scale;
-    float minimum_frequency;
-    float maximum_frequency;
+    float minimum_frequency, maximum_frequency;
     float deviation;
     float bar_ratio;
     int bar_size;
@@ -585,9 +575,9 @@ static int run_channel_cwt(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     ShowCWTContext *s = ctx->priv;
     const int ch = *(int *)arg;
     AVComplexFloat *dst = (AVComplexFloat *)s->fft_out->extended_data[ch];
-    const int output_sample_count = s->output_sample_count;
+    const int output_padding_size = s->output_padding_size;
     const int ihop_size = s->ihop_size;
-    const int ioffset = (s->output_padding_size - ihop_size) >> 1;
+    const int ioffset = (output_padding_size - ihop_size) >> 1;
     const int count = s->frequency_band_count;
     const int start = (count * jobnr) / nb_jobs;
     const int end = (count * (jobnr+1)) / nb_jobs;
@@ -611,7 +601,7 @@ static int run_channel_cwt(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
         s->fdsp->vector_fmul((float *)dstx, (const float *)srcx,
                              (const float *)kernelx, FFALIGN(kernel_range * 2, 16));
 
-        memset(isrc, 0, sizeof(*isrc) * output_sample_count);
+        memset(isrc, 0, sizeof(*isrc) * output_padding_size);
         for (int i = 0; i < kernel_range; i++) {
             const unsigned n = index[i + kernel_start];
 
@@ -627,9 +617,10 @@ static int run_channel_cwt(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     return 0;
 }
 
-static void compute_kernel(AVFilterContext *ctx)
+static int compute_kernel(AVFilterContext *ctx)
 {
     ShowCWTContext *s = ctx->priv;
+    const float correction = s->input_padding_size / (float)s->input_sample_count;
     const int size = s->input_sample_count;
     const float scale_factor = 1.f/(float)size;
     const int output_sample_count = s->output_sample_count;
@@ -637,17 +628,18 @@ static void compute_kernel(AVFilterContext *ctx)
     int *kernel_start = s->kernel_start;
     int *kernel_stop = s->kernel_stop;
     unsigned *index = s->index;
+    int kernel_min = INT_MAX;
+    int kernel_max = 0;
 
     for (int y = 0; y < fsize; y++) {
         AVComplexFloat *kernel = (AVComplexFloat *)s->kernel->extended_data[y];
-        float frequency = s->frequency_band[y*2];
+        float frequency = s->frequency_band[y*2] * correction;
         float deviation = 1.f / (s->frequency_band[y*2+1] *
-                                 output_sample_count);
+                                 output_sample_count * correction);
 
         for (int n = 0; n < size; n++) {
             float ff, f = fabsf(n-frequency);
 
-            f = size - fabsf(f - size);
             ff = expf(-f*f*deviation) * scale_factor;
             kernel[n].re = ff;
             kernel[n].im = ff;
@@ -655,21 +647,33 @@ static void compute_kernel(AVFilterContext *ctx)
 
         for (int n = 0; n < size; n++) {
             if (kernel[n].re != 0.f) {
+                if (kernel[n].re > FLT_MIN)
+                    av_log(ctx, AV_LOG_DEBUG, "out of range kernel\n");
                 kernel_start[y] = n;
+                kernel_min = FFMIN(kernel_start[y], kernel_min);
                 break;
             }
         }
 
         for (int n = 0; n < size; n++) {
             if (kernel[size - n - 1].re != 0.f) {
+                if (kernel[size - n - 1].re > FLT_MIN)
+                    av_log(ctx, AV_LOG_DEBUG, "out of range kernel\n");
                 kernel_stop[y] = size - n - 1;
+                kernel_max = FFMAX(kernel_stop[y], kernel_max);
                 break;
             }
         }
     }
 
     for (int n = 0; n < size; n++)
-        index[n] = n % output_sample_count;
+        index[n] = n % s->output_padding_size;
+
+    av_log(ctx, AV_LOG_DEBUG, "kernel_min: %d\n", kernel_min);
+    av_log(ctx, AV_LOG_DEBUG, "kernel_max: %d\n", kernel_max);
+    av_log(ctx, AV_LOG_DEBUG, "kernel_range: %d\n", kernel_max - kernel_min);
+
+    return kernel_max - kernel_min;
 }
 
 static int config_output(AVFilterLink *outlink)
@@ -708,9 +712,12 @@ static int config_output(AVFilterLink *outlink)
     s->nb_consumed_samples = 65536;
 
     s->input_sample_count = s->nb_consumed_samples;
-    s->hop_size = s->nb_consumed_samples >> 1;
-    s->input_padding_size = 65536;
-    s->output_padding_size = FFMAX(16, av_rescale(s->input_padding_size, s->pps, inlink->sample_rate));
+    s->input_padding_size = 1 << (32 - ff_clz(s->input_sample_count));
+    s->output_sample_count = FFMAX(1, av_rescale(s->input_sample_count, s->pps, inlink->sample_rate));
+    s->output_padding_size = 1 << (32 - ff_clz(s->output_sample_count));
+
+    s->hop_size = s->input_padding_size >> 1;
+    s->ihop_size = s->output_padding_size >> 1;
 
     outlink->w = s->w;
     outlink->h = s->h;
@@ -719,11 +726,8 @@ static int config_output(AVFilterLink *outlink)
     s->fft_in_size  = FFALIGN(s->input_padding_size, av_cpu_max_align());
     s->fft_out_size = FFALIGN(s->input_padding_size, av_cpu_max_align());
 
-    s->output_sample_count = s->output_padding_size;
-
     s->ifft_in_size = FFALIGN(s->output_padding_size, av_cpu_max_align());
     s->ifft_out_size = FFALIGN(s->output_padding_size, av_cpu_max_align());
-    s->ihop_size = s->output_padding_size >> 1;
 
     s->fft = av_calloc(s->nb_threads, sizeof(*s->fft));
     if (!s->fft)
@@ -821,7 +825,7 @@ static int config_output(AVFilterLink *outlink)
 
     s->outpicref->color_range = AVCOL_RANGE_JPEG;
 
-    factor = s->nb_consumed_samples / (float)inlink->sample_rate;
+    factor = s->input_sample_count / (float)inlink->sample_rate;
     minimum_frequency *= factor;
     maximum_frequency *= factor;
 
@@ -861,7 +865,9 @@ static int config_output(AVFilterLink *outlink)
                    minimum_frequency, s->frequency_scale, s->deviation);
 
     av_log(ctx, AV_LOG_DEBUG, "input_sample_count: %d\n", s->input_sample_count);
+    av_log(ctx, AV_LOG_DEBUG, "input_padding_size: %d\n", s->input_padding_size);
     av_log(ctx, AV_LOG_DEBUG, "output_sample_count: %d\n", s->output_sample_count);
+    av_log(ctx, AV_LOG_DEBUG, "output_padding_size: %d\n", s->output_padding_size);
 
     switch (s->direction) {
     case DIRECTION_LR:
@@ -1042,7 +1048,7 @@ static int output_frame(AVFilterContext *ctx)
     if (s->slide != SLIDE_FRAME || s->new_frame == 1) {
         int64_t pts_offset = s->new_frame ? 0LL : av_rescale(s->ihop_index, s->hop_size, s->ihop_size);
 
-        pts_offset = av_rescale_q(pts_offset - 16384LL, av_make_q(1, inlink->sample_rate), inlink->time_base);
+        pts_offset = av_rescale_q(pts_offset - s->input_sample_count/2, av_make_q(1, inlink->sample_rate), inlink->time_base);
         s->outpicref->pts = av_rescale_q(s->in_pts + pts_offset, inlink->time_base, outlink->time_base);
         s->outpicref->duration = 1;
     }
