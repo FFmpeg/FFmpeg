@@ -190,6 +190,93 @@ static int set_encoder_id(OutputFile *of, OutputStream *ost)
     return 0;
 }
 
+static int enc_choose_timebase(OutputStream *ost, AVFrame *frame)
+{
+    const OutputFile *of = output_files[ost->file_index];
+    AVCodecContext  *enc = ost->enc_ctx;
+    AVRational        tb = (AVRational){ 0, 0 };
+    AVRational fr;
+    FrameData *fd;
+
+    if (ost->type == AVMEDIA_TYPE_SUBTITLE) {
+        if (ost->enc_timebase.num)
+            av_log(ost, AV_LOG_WARNING,
+                   "-enc_time_base not supported for subtitles, ignoring\n");
+        enc->time_base = AV_TIME_BASE_Q;
+        return 0;
+    }
+
+    fd = frame_data(frame);
+
+    // apply -enc_time_base
+    if (ost->enc_timebase.num == ENC_TIME_BASE_DEMUX &&
+        (fd->dec.tb.num <= 0 || fd->dec.tb.den <= 0)) {
+        av_log(ost, AV_LOG_ERROR,
+               "Demuxing timebase not available - cannot use it for encoding\n");
+        return AVERROR(EINVAL);
+    }
+
+    switch (ost->enc_timebase.num) {
+    case 0:                                            break;
+    case ENC_TIME_BASE_DEMUX:  tb = fd->dec.tb;        break;
+    case ENC_TIME_BASE_FILTER: tb = frame->time_base;  break;
+    default:                   tb = ost->enc_timebase; break;
+    }
+
+    if (ost->type == AVMEDIA_TYPE_AUDIO) {
+        enc->time_base = tb.num ? tb : (AVRational){ 1, frame->sample_rate };
+        return 0;
+    }
+
+        fr = ost->frame_rate;
+        if (!fr.num)
+            fr = fd->frame_rate_filter;
+        if (!fr.num && !ost->max_frame_rate.num) {
+            fr = (AVRational){25, 1};
+            av_log(ost, AV_LOG_WARNING,
+                   "No information "
+                   "about the input framerate is available. Falling "
+                   "back to a default value of 25fps. Use the -r option "
+                   "if you want a different framerate.\n");
+        }
+
+        if (ost->max_frame_rate.num &&
+            (av_q2d(fr) > av_q2d(ost->max_frame_rate) ||
+            !fr.den))
+            fr = ost->max_frame_rate;
+
+        if (enc->codec->supported_framerates && !ost->force_fps) {
+            int idx = av_find_nearest_q_idx(fr, enc->codec->supported_framerates);
+            fr = enc->codec->supported_framerates[idx];
+        }
+        // reduce frame rate for mpeg4 to be within the spec limits
+        if (enc->codec_id == AV_CODEC_ID_MPEG4) {
+            av_reduce(&fr.num, &fr.den,
+                      fr.num, fr.den, 65535);
+        }
+
+        if (av_q2d(fr) > 1e3 && ost->vsync_method != VSYNC_PASSTHROUGH &&
+            (ost->vsync_method == VSYNC_CFR || ost->vsync_method == VSYNC_VSCFR ||
+            (ost->vsync_method == VSYNC_AUTO && !(of->format->flags & AVFMT_VARIABLE_FPS)))){
+            av_log(ost, AV_LOG_WARNING, "Frame rate very high for a muxer not efficiently supporting it.\n"
+                                        "Please consider specifying a lower framerate, a different muxer or "
+                                        "setting vsync/fps_mode to vfr\n");
+        }
+
+        enc->framerate = fr;
+
+        ost->st->avg_frame_rate = fr;
+
+    if (!(tb.num > 0 && tb.den > 0))
+        tb = av_inv_q(fr);
+    if (!(tb.num > 0 && tb.den > 0))
+        tb = frame->time_base;
+
+    enc->time_base = tb;
+
+    return 0;
+}
+
 int enc_open(OutputStream *ost, AVFrame *frame)
 {
     InputStream *ist = ost->ist;
@@ -221,6 +308,12 @@ int enc_open(OutputStream *ost, AVFrame *frame)
         dec_ctx = ist->dec_ctx;
     }
 
+    ret = enc_choose_timebase(ost, frame);
+    if (ret < 0) {
+        av_log(ost, AV_LOG_ERROR, "Could not choose a time base for encoding\n");
+        return AVERROR(EINVAL);
+    }
+
     switch (enc_ctx->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
         enc_ctx->sample_fmt     = frame->format;
@@ -234,65 +327,9 @@ int enc_open(OutputStream *ost, AVFrame *frame)
         else
             enc_ctx->bits_per_raw_sample = FFMIN(fd->bits_per_raw_sample,
                                                  av_get_bytes_per_sample(enc_ctx->sample_fmt) << 3);
-
-        enc_ctx->time_base = ost->enc_timebase.num > 0 ? ost->enc_timebase :
-                             av_make_q(1, enc_ctx->sample_rate);
         break;
 
     case AVMEDIA_TYPE_VIDEO: {
-        AVRational fr = ost->frame_rate;
-
-        if (!fr.num)
-            fr = fd->frame_rate_filter;
-        if (!fr.num && !ost->max_frame_rate.num) {
-            fr = (AVRational){25, 1};
-            av_log(ost, AV_LOG_WARNING,
-                   "No information "
-                   "about the input framerate is available. Falling "
-                   "back to a default value of 25fps. Use the -r option "
-                   "if you want a different framerate.\n");
-        }
-
-        if (ost->max_frame_rate.num &&
-            (av_q2d(fr) > av_q2d(ost->max_frame_rate) ||
-            !fr.den))
-            fr = ost->max_frame_rate;
-
-        if (enc->supported_framerates && !ost->force_fps) {
-            int idx = av_find_nearest_q_idx(fr, enc->supported_framerates);
-            fr = enc->supported_framerates[idx];
-        }
-        // reduce frame rate for mpeg4 to be within the spec limits
-        if (enc_ctx->codec_id == AV_CODEC_ID_MPEG4) {
-            av_reduce(&fr.num, &fr.den,
-                      fr.num, fr.den, 65535);
-        }
-
-        if (ost->enc_timebase.num == ENC_TIME_BASE_DEMUX) {
-            if (fd->dec.tb.num <= 0 || fd->dec.tb.den <= 0) {
-                av_log(ost, AV_LOG_ERROR,
-                       "Demuxing timebase not available - cannot use it for encoding\n");
-                return AVERROR(EINVAL);
-            }
-
-            enc_ctx->time_base = fd->dec.tb;
-        } else if (ost->enc_timebase.num == ENC_TIME_BASE_FILTER) {
-            enc_ctx->time_base = frame->time_base;
-        } else {
-            enc_ctx->time_base = ost->enc_timebase.num > 0 ? ost->enc_timebase :
-                                 av_inv_q(fr);
-        }
-
-        if (!(enc_ctx->time_base.num && enc_ctx->time_base.den))
-            enc_ctx->time_base = frame->time_base;
-        if (   av_q2d(enc_ctx->time_base) < 0.001 && ost->vsync_method != VSYNC_PASSTHROUGH
-           && (ost->vsync_method == VSYNC_CFR || ost->vsync_method == VSYNC_VSCFR ||
-               (ost->vsync_method == VSYNC_AUTO && !(of->format->flags & AVFMT_VARIABLE_FPS)))){
-            av_log(ost, AV_LOG_WARNING, "Frame rate very high for a muxer not efficiently supporting it.\n"
-                                        "Please consider specifying a lower framerate, a different muxer or "
-                                        "setting vsync/fps_mode to vfr\n");
-        }
-
         enc_ctx->width  = frame->width;
         enc_ctx->height = frame->height;
         enc_ctx->sample_aspect_ratio = ost->st->sample_aspect_ratio =
@@ -313,10 +350,6 @@ int enc_open(OutputStream *ost, AVFrame *frame)
         enc_ctx->color_trc              = frame->color_trc;
         enc_ctx->colorspace             = frame->colorspace;
         enc_ctx->chroma_sample_location = frame->chroma_location;
-
-        enc_ctx->framerate = fr;
-
-        ost->st->avg_frame_rate = fr;
 
         // Field order: autodetection
         if (enc_ctx->flags & (AV_CODEC_FLAG_INTERLACED_DCT | AV_CODEC_FLAG_INTERLACED_ME) &&
@@ -344,7 +377,6 @@ int enc_open(OutputStream *ost, AVFrame *frame)
         break;
         }
     case AVMEDIA_TYPE_SUBTITLE:
-        enc_ctx->time_base = AV_TIME_BASE_Q;
         if (!enc_ctx->width) {
             enc_ctx->width     = ost->ist->par->width;
             enc_ctx->height    = ost->ist->par->height;
