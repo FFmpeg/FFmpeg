@@ -1805,8 +1805,11 @@ int reap_filters(FilterGraph *fg, int flush)
             if (!fgp->is_meta)
                 fd->bits_per_raw_sample = 0;
 
-            if (ost->type == AVMEDIA_TYPE_VIDEO)
-                fd->frame_rate_filter = av_buffersink_get_frame_rate(filter);
+            if (ost->type == AVMEDIA_TYPE_VIDEO) {
+                AVRational fr = av_buffersink_get_frame_rate(filter);
+                if (fr.num > 0 && fr.den > 0)
+                    fd->frame_rate_filter = fr;
+            }
 
             ret = enc_frame(ost, filtered_frame);
             av_frame_unref(filtered_frame);
