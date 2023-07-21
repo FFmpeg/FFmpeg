@@ -228,44 +228,44 @@ static int enc_choose_timebase(OutputStream *ost, AVFrame *frame)
         return 0;
     }
 
-        fr = ost->frame_rate;
-        if (!fr.num)
-            fr = fd->frame_rate_filter;
-        if (!fr.num && !ost->max_frame_rate.num) {
-            fr = (AVRational){25, 1};
-            av_log(ost, AV_LOG_WARNING,
-                   "No information "
-                   "about the input framerate is available. Falling "
-                   "back to a default value of 25fps. Use the -r option "
-                   "if you want a different framerate.\n");
-        }
+    fr = ost->frame_rate;
+    if (!fr.num)
+        fr = fd->frame_rate_filter;
+    if (!fr.num && !ost->max_frame_rate.num) {
+        fr = (AVRational){25, 1};
+        av_log(ost, AV_LOG_WARNING,
+               "No information "
+               "about the input framerate is available. Falling "
+               "back to a default value of 25fps. Use the -r option "
+               "if you want a different framerate.\n");
+    }
 
-        if (ost->max_frame_rate.num &&
-            (av_q2d(fr) > av_q2d(ost->max_frame_rate) ||
-            !fr.den))
-            fr = ost->max_frame_rate;
+    if (ost->max_frame_rate.num &&
+        (av_q2d(fr) > av_q2d(ost->max_frame_rate) ||
+        !fr.den))
+        fr = ost->max_frame_rate;
 
-        if (enc->codec->supported_framerates && !ost->force_fps) {
-            int idx = av_find_nearest_q_idx(fr, enc->codec->supported_framerates);
-            fr = enc->codec->supported_framerates[idx];
-        }
-        // reduce frame rate for mpeg4 to be within the spec limits
-        if (enc->codec_id == AV_CODEC_ID_MPEG4) {
-            av_reduce(&fr.num, &fr.den,
-                      fr.num, fr.den, 65535);
-        }
+    if (enc->codec->supported_framerates && !ost->force_fps) {
+        int idx = av_find_nearest_q_idx(fr, enc->codec->supported_framerates);
+        fr = enc->codec->supported_framerates[idx];
+    }
+    // reduce frame rate for mpeg4 to be within the spec limits
+    if (enc->codec_id == AV_CODEC_ID_MPEG4) {
+        av_reduce(&fr.num, &fr.den,
+                  fr.num, fr.den, 65535);
+    }
 
-        if (av_q2d(fr) > 1e3 && ost->vsync_method != VSYNC_PASSTHROUGH &&
-            (ost->vsync_method == VSYNC_CFR || ost->vsync_method == VSYNC_VSCFR ||
-            (ost->vsync_method == VSYNC_AUTO && !(of->format->flags & AVFMT_VARIABLE_FPS)))){
-            av_log(ost, AV_LOG_WARNING, "Frame rate very high for a muxer not efficiently supporting it.\n"
-                                        "Please consider specifying a lower framerate, a different muxer or "
-                                        "setting vsync/fps_mode to vfr\n");
-        }
+    if (av_q2d(fr) > 1e3 && ost->vsync_method != VSYNC_PASSTHROUGH &&
+        (ost->vsync_method == VSYNC_CFR || ost->vsync_method == VSYNC_VSCFR ||
+        (ost->vsync_method == VSYNC_AUTO && !(of->format->flags & AVFMT_VARIABLE_FPS)))){
+        av_log(ost, AV_LOG_WARNING, "Frame rate very high for a muxer not efficiently supporting it.\n"
+                                    "Please consider specifying a lower framerate, a different muxer or "
+                                    "setting vsync/fps_mode to vfr\n");
+    }
 
-        enc->framerate = fr;
+    enc->framerate = fr;
 
-        ost->st->avg_frame_rate = fr;
+    ost->st->avg_frame_rate = fr;
 
     if (!(tb.num > 0 && tb.den > 0))
         tb = av_inv_q(fr);
