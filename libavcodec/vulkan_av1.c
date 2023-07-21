@@ -484,8 +484,6 @@ static int vk_av1_start_frame(AVCodecContext          *avctx,
         ap->av1_frame_header.film_grain.ar_coeffs_cr_plus_128[24] = film_grain->ar_coeffs_cr_plus_128[24];
     }
 
-    av_log(avctx, AV_LOG_DEBUG, "Created frame parameters");
-
     /* Workaround for a spec issue. */
     ap->dec = dec;
 
