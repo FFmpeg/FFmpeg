@@ -249,15 +249,15 @@ static int enc_choose_timebase(OutputStream *ost, AVFrame *frame)
     }
 
     if (fr.num > 0) {
-    if (enc->codec->supported_framerates && !ost->force_fps) {
-        int idx = av_find_nearest_q_idx(fr, enc->codec->supported_framerates);
-        fr = enc->codec->supported_framerates[idx];
-    }
-    // reduce frame rate for mpeg4 to be within the spec limits
-    if (enc->codec_id == AV_CODEC_ID_MPEG4) {
-        av_reduce(&fr.num, &fr.den,
-                  fr.num, fr.den, 65535);
-    }
+        if (enc->codec->supported_framerates && !ost->force_fps) {
+            int idx = av_find_nearest_q_idx(fr, enc->codec->supported_framerates);
+            fr = enc->codec->supported_framerates[idx];
+        }
+        // reduce frame rate for mpeg4 to be within the spec limits
+        if (enc->codec_id == AV_CODEC_ID_MPEG4) {
+            av_reduce(&fr.num, &fr.den,
+                      fr.num, fr.den, 65535);
+        }
     }
 
     if (av_q2d(fr) > 1e3 && ost->vsync_method != VSYNC_PASSTHROUGH &&
