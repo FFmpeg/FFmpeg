@@ -1817,8 +1817,12 @@ static int fg_output_step(OutputFilterPriv *ofp, int flush)
 
     if (ost->type == AVMEDIA_TYPE_VIDEO) {
         AVRational fr = av_buffersink_get_frame_rate(filter);
-        if (fr.num > 0 && fr.den > 0)
+        if (fr.num > 0 && fr.den > 0) {
             fd->frame_rate_filter = fr;
+
+            if (!frame->duration)
+                frame->duration = av_rescale_q(1, av_inv_q(fr), frame->time_base);
+        }
     }
 
     ret = enc_frame(ost, frame);
