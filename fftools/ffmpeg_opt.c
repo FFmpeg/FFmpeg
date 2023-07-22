@@ -372,9 +372,6 @@ static int opt_map(void *optctx, const char *opt, const char *arg)
     StreamMap *m = NULL;
     int i, negative = 0, file_idx, disabled = 0;
     int ret;
-#if FFMPEG_OPT_MAP_SYNC
-    char *sync;
-#endif
     char *map, *p;
     char *allow_unused;
 
@@ -387,10 +384,14 @@ static int opt_map(void *optctx, const char *opt, const char *arg)
         return AVERROR(ENOMEM);
 
 #if FFMPEG_OPT_MAP_SYNC
-    /* parse sync stream first, just pick first matching stream */
-    if (sync = strchr(map, ',')) {
-        *sync = 0;
-        av_log(NULL, AV_LOG_WARNING, "Specifying a sync stream is deprecated and has no effect\n");
+    {
+        /* parse sync stream first, just pick first matching stream */
+        char *sync = strchr(map, ',');
+
+        if (sync) {
+            *sync = 0;
+            av_log(NULL, AV_LOG_WARNING, "Specifying a sync stream is deprecated and has no effect\n");
+        }
     }
 #endif
 
