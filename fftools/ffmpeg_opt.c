@@ -401,13 +401,14 @@ static int opt_map(void *optctx, const char *opt, const char *arg)
 
         ret = GROW_ARRAY(o->stream_maps, o->nb_stream_maps);
         if (ret < 0)
-            return ret;
+            goto fail;
 
         m = &o->stream_maps[o->nb_stream_maps - 1];
         m->linklabel = av_get_token(&c, "]");
         if (!m->linklabel) {
             av_log(NULL, AV_LOG_ERROR, "Invalid output link label: %s.\n", map);
-            return AVERROR(EINVAL);
+            ret = AVERROR(EINVAL);
+            goto fail;
         }
     } else {
         if (allow_unused = strchr(map, '?'))
@@ -415,7 +416,8 @@ static int opt_map(void *optctx, const char *opt, const char *arg)
         file_idx = strtol(map, &p, 0);
         if (file_idx >= nb_input_files || file_idx < 0) {
             av_log(NULL, AV_LOG_FATAL, "Invalid input file index: %d.\n", file_idx);
-            return AVERROR(EINVAL);
+            ret = AVERROR(EINVAL);
+            goto fail;
         }
         if (negative)
             /* disable some already defined maps */
@@ -438,7 +440,7 @@ static int opt_map(void *optctx, const char *opt, const char *arg)
                 }
                 ret = GROW_ARRAY(o->stream_maps, o->nb_stream_maps);
                 if (ret < 0)
-                    return ret;
+                    goto fail;
 
                 m = &o->stream_maps[o->nb_stream_maps - 1];
 
@@ -453,16 +455,19 @@ static int opt_map(void *optctx, const char *opt, const char *arg)
         } else if (disabled) {
             av_log(NULL, AV_LOG_FATAL, "Stream map '%s' matches disabled streams.\n"
                                        "To ignore this, add a trailing '?' to the map.\n", arg);
-            return AVERROR(EINVAL);
+            ret = AVERROR(EINVAL);
+            goto fail;
         } else {
             av_log(NULL, AV_LOG_FATAL, "Stream map '%s' matches no streams.\n"
                                        "To ignore this, add a trailing '?' to the map.\n", arg);
-            return AVERROR(EINVAL);
+            ret = AVERROR(EINVAL);
+            goto fail;
         }
     }
-
+    ret = 0;
+fail:
     av_freep(&map);
-    return 0;
+    return ret;
 }
 
 static int opt_attach(void *optctx, const char *opt, const char *arg)
