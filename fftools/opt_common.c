@@ -1165,6 +1165,7 @@ int init_report(const char *env, FILE **file)
                 av_log(NULL, AV_LOG_FATAL, "Invalid report file level\n");
                 av_free(key);
                 av_free(val);
+                av_free(filename_template);
                 return AVERROR(EINVAL);
             }
             envlevel = 1;
