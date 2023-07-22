@@ -133,8 +133,8 @@ static const AVOption showcwt_options[] = {
     {  "sqrt",    "sqrt",             0,                       AV_OPT_TYPE_CONST,{.i64=FSCALE_SQRT},   0, 0, FLAGS, "scale" },
     {  "cbrt",    "cbrt",             0,                       AV_OPT_TYPE_CONST,{.i64=FSCALE_CBRT},   0, 0, FLAGS, "scale" },
     {  "qdrt",    "qdrt",             0,                       AV_OPT_TYPE_CONST,{.i64=FSCALE_QDRT},   0, 0, FLAGS, "scale" },
-    { "min",  "set minimum frequency", OFFSET(minimum_frequency), AV_OPT_TYPE_FLOAT, {.dbl = 20.}, 1, 2000, FLAGS },
-    { "max",  "set maximum frequency", OFFSET(maximum_frequency), AV_OPT_TYPE_FLOAT, {.dbl = 20000.}, 0, 192000, FLAGS },
+    { "min",  "set minimum frequency", OFFSET(minimum_frequency), AV_OPT_TYPE_FLOAT, {.dbl = 20.},    1, 192000, FLAGS },
+    { "max",  "set maximum frequency", OFFSET(maximum_frequency), AV_OPT_TYPE_FLOAT, {.dbl = 20000.}, 1, 192000, FLAGS },
     { "logb", "set logarithmic basis", OFFSET(logarithmic_basis), AV_OPT_TYPE_FLOAT, {.dbl = 0.0001}, 0, 1, FLAGS },
     { "deviation", "set frequency deviation", OFFSET(deviation), AV_OPT_TYPE_FLOAT, {.dbl = 1.}, 0, 10, FLAGS },
     { "pps",  "set pixels per second", OFFSET(pps), AV_OPT_TYPE_INT, {.i64 = 64}, 1, 1024, FLAGS },
@@ -685,6 +685,12 @@ static int config_output(AVFilterLink *outlink)
     float minimum_frequency = s->minimum_frequency;
     float scale = 1.f, factor;
     int ret;
+
+    if (minimum_frequency >= maximum_frequency) {
+        av_log(ctx, AV_LOG_ERROR, "min frequency (%f) >= (%f) max frequency\n",
+               minimum_frequency, maximum_frequency);
+        return AVERROR(EINVAL);
+    }
 
     uninit(ctx);
 
