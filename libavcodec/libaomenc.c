@@ -1299,7 +1299,7 @@ static int aom_encode(AVCodecContext *avctx, AVPacket *pkt,
             duration = frame->duration;
         else if (avctx->framerate.num > 0 && avctx->framerate.den > 0)
             duration = av_rescale_q(1, av_inv_q(avctx->framerate), avctx->time_base);
-        else
+        else {
 FF_DISABLE_DEPRECATION_WARNINGS
             duration =
 #if FF_API_TICKS_PER_FRAME
@@ -1307,6 +1307,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
 #endif
                 1;
 FF_ENABLE_DEPRECATION_WARNINGS
+        }
 
         switch (frame->color_range) {
         case AVCOL_RANGE_MPEG:
