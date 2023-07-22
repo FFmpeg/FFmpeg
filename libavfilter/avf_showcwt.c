@@ -709,7 +709,7 @@ static int config_output(AVFilterLink *outlink)
     s->nb_channels = inlink->ch_layout.nb_channels;
     s->old_pts = AV_NOPTS_VALUE;
     s->eof_pts = AV_NOPTS_VALUE;
-    s->nb_consumed_samples = 65536;
+    s->nb_consumed_samples = FFMIN(65536, inlink->sample_rate);
 
     s->input_sample_count = s->nb_consumed_samples;
     s->input_padding_size = 1 << (32 - ff_clz(s->input_sample_count));
