@@ -1746,66 +1746,66 @@ static int fg_output_step(OutputFilterPriv *ofp, int flush)
     FilterGraphPriv    *fgp = fgp_from_fg(ofp->ofilter.graph);
     OutputStream       *ost = ofp->ofilter.ost;
     AVFrame *filtered_frame = fgp->frame;
-        AVFilterContext *filter = ofp->filter;
-            FrameData *fd;
+    AVFilterContext *filter = ofp->filter;
+    FrameData *fd;
     int ret;
 
-            ret = av_buffersink_get_frame_flags(filter, filtered_frame,
-                                               AV_BUFFERSINK_FLAG_NO_REQUEST);
-            if (ret < 0) {
-                if (ret != AVERROR(EAGAIN) && ret != AVERROR_EOF) {
-                    av_log(fgp, AV_LOG_WARNING,
-                           "Error in av_buffersink_get_frame_flags(): %s\n", av_err2str(ret));
-                } else if (flush && ret == AVERROR_EOF && ofp->got_frame &&
-                           av_buffersink_get_type(filter) == AVMEDIA_TYPE_VIDEO) {
-                    ret = enc_frame(ost, NULL);
-                    if (ret < 0)
-                        return ret;
-                }
-
-                return 1;
-            }
-            if (ost->finished) {
-                av_frame_unref(filtered_frame);
-                return 0;
-            }
-
-            if (filtered_frame->pts != AV_NOPTS_VALUE) {
-                AVRational tb = av_buffersink_get_time_base(filter);
-                ost->filter->last_pts = av_rescale_q(filtered_frame->pts, tb,
-                                                     AV_TIME_BASE_Q);
-                filtered_frame->time_base = tb;
-
-                if (debug_ts)
-                    av_log(fgp, AV_LOG_INFO, "filter_raw -> pts:%s pts_time:%s time_base:%d/%d\n",
-                           av_ts2str(filtered_frame->pts),
-                           av_ts2timestr(filtered_frame->pts, &tb),
-                           tb.num, tb.den);
-            }
-
-            fd = frame_data(filtered_frame);
-            if (!fd) {
-                av_frame_unref(filtered_frame);
-                return AVERROR(ENOMEM);
-            }
-
-            // only use bits_per_raw_sample passed through from the decoder
-            // if the filtergraph did not touch the frame data
-            if (!fgp->is_meta)
-                fd->bits_per_raw_sample = 0;
-
-            if (ost->type == AVMEDIA_TYPE_VIDEO) {
-                AVRational fr = av_buffersink_get_frame_rate(filter);
-                if (fr.num > 0 && fr.den > 0)
-                    fd->frame_rate_filter = fr;
-            }
-
-            ret = enc_frame(ost, filtered_frame);
-            av_frame_unref(filtered_frame);
+    ret = av_buffersink_get_frame_flags(filter, filtered_frame,
+                                       AV_BUFFERSINK_FLAG_NO_REQUEST);
+    if (ret < 0) {
+        if (ret != AVERROR(EAGAIN) && ret != AVERROR_EOF) {
+            av_log(fgp, AV_LOG_WARNING,
+                   "Error in av_buffersink_get_frame_flags(): %s\n", av_err2str(ret));
+        } else if (flush && ret == AVERROR_EOF && ofp->got_frame &&
+                   av_buffersink_get_type(filter) == AVMEDIA_TYPE_VIDEO) {
+            ret = enc_frame(ost, NULL);
             if (ret < 0)
                 return ret;
+        }
 
-            ofp->got_frame = 1;
+        return 1;
+    }
+    if (ost->finished) {
+        av_frame_unref(filtered_frame);
+        return 0;
+    }
+
+    if (filtered_frame->pts != AV_NOPTS_VALUE) {
+        AVRational tb = av_buffersink_get_time_base(filter);
+        ost->filter->last_pts = av_rescale_q(filtered_frame->pts, tb,
+                                             AV_TIME_BASE_Q);
+        filtered_frame->time_base = tb;
+
+        if (debug_ts)
+            av_log(fgp, AV_LOG_INFO, "filter_raw -> pts:%s pts_time:%s time_base:%d/%d\n",
+                   av_ts2str(filtered_frame->pts),
+                   av_ts2timestr(filtered_frame->pts, &tb),
+                   tb.num, tb.den);
+    }
+
+    fd = frame_data(filtered_frame);
+    if (!fd) {
+        av_frame_unref(filtered_frame);
+        return AVERROR(ENOMEM);
+    }
+
+    // only use bits_per_raw_sample passed through from the decoder
+    // if the filtergraph did not touch the frame data
+    if (!fgp->is_meta)
+        fd->bits_per_raw_sample = 0;
+
+    if (ost->type == AVMEDIA_TYPE_VIDEO) {
+        AVRational fr = av_buffersink_get_frame_rate(filter);
+        if (fr.num > 0 && fr.den > 0)
+            fd->frame_rate_filter = fr;
+    }
+
+    ret = enc_frame(ost, filtered_frame);
+    av_frame_unref(filtered_frame);
+    if (ret < 0)
+        return ret;
+
+    ofp->got_frame = 1;
 
     return 0;
 }
