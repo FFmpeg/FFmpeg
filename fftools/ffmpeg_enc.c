@@ -1036,6 +1036,30 @@ finish:
             e->frames_prev_hist,
             sizeof(e->frames_prev_hist[0]) * (FF_ARRAY_ELEMS(e->frames_prev_hist) - 1));
     e->frames_prev_hist[0] = *nb_frames_prev;
+
+    if (*nb_frames_prev == 0 && ost->last_dropped) {
+        ost->nb_frames_drop++;
+        av_log(ost, AV_LOG_VERBOSE,
+               "*** dropping frame %"PRId64" at ts %"PRId64"\n",
+               e->vsync_frame_number, e->last_frame->pts);
+    }
+    if (*nb_frames > (*nb_frames_prev && ost->last_dropped) + (*nb_frames > *nb_frames_prev)) {
+        if (*nb_frames > dts_error_threshold * 30) {
+            av_log(ost, AV_LOG_ERROR, "%"PRId64" frame duplication too large, skipping\n", *nb_frames - 1);
+            ost->nb_frames_drop++;
+            *nb_frames = 0;
+            return;
+        }
+        ost->nb_frames_dup += *nb_frames - (*nb_frames_prev && ost->last_dropped) - (*nb_frames > *nb_frames_prev);
+        av_log(ost, AV_LOG_VERBOSE, "*** %"PRId64" dup!\n", *nb_frames - 1);
+        if (ost->nb_frames_dup > e->dup_warning) {
+            av_log(ost, AV_LOG_WARNING, "More than %"PRIu64" frames duplicated\n", e->dup_warning);
+            e->dup_warning *= 10;
+        }
+    }
+
+    ost->last_dropped = *nb_frames == *nb_frames_prev && frame;
+    ost->kf.dropped_keyframe = ost->last_dropped && frame && (frame->flags & AV_FRAME_FLAG_KEY);
 }
 
 static enum AVPictureType forced_kf_apply(void *logctx, KeyframeForceCtx *kf,
@@ -1100,28 +1124,6 @@ static int do_video_out(OutputFile *of, OutputStream *ost, AVFrame *frame)
 
     video_sync_process(of, ost, frame,
                        &nb_frames, &nb_frames_prev);
-
-    if (nb_frames_prev == 0 && ost->last_dropped) {
-        ost->nb_frames_drop++;
-        av_log(ost, AV_LOG_VERBOSE,
-               "*** dropping frame %"PRId64" at ts %"PRId64"\n",
-               e->vsync_frame_number, e->last_frame->pts);
-    }
-    if (nb_frames > (nb_frames_prev && ost->last_dropped) + (nb_frames > nb_frames_prev)) {
-        if (nb_frames > dts_error_threshold * 30) {
-            av_log(ost, AV_LOG_ERROR, "%"PRId64" frame duplication too large, skipping\n", nb_frames - 1);
-            ost->nb_frames_drop++;
-            return 0;
-        }
-        ost->nb_frames_dup += nb_frames - (nb_frames_prev && ost->last_dropped) - (nb_frames > nb_frames_prev);
-        av_log(ost, AV_LOG_VERBOSE, "*** %"PRId64" dup!\n", nb_frames - 1);
-        if (ost->nb_frames_dup > e->dup_warning) {
-            av_log(ost, AV_LOG_WARNING, "More than %"PRIu64" frames duplicated\n", e->dup_warning);
-            e->dup_warning *= 10;
-        }
-    }
-    ost->last_dropped = nb_frames == nb_frames_prev && frame;
-    ost->kf.dropped_keyframe = ost->last_dropped && frame && (frame->flags & AV_FRAME_FLAG_KEY);
 
     /* duplicates frame if needed */
     for (i = 0; i < nb_frames; i++) {
