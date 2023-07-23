@@ -577,7 +577,7 @@ static int run_channel_cwt(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
 {
     ShowCWTContext *s = ctx->priv;
     const int ch = *(int *)arg;
-    AVComplexFloat *dst = (AVComplexFloat *)s->fft_out->extended_data[ch];
+    const AVComplexFloat *fft_out = (const AVComplexFloat *)s->fft_out->extended_data[ch];
     const int output_padding_size = s->output_padding_size;
     const int ihop_size = s->ihop_size;
     const int ioffset = (output_padding_size - ihop_size) >> 1;
@@ -597,7 +597,7 @@ static int run_channel_cwt(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
         const int kernel_stop = s->kernel_stop[y];
         const int kernel_range = kernel_stop - kernel_start;
 
-        memcpy(srcx, dst + kernel_start, sizeof(*dst) * kernel_range);
+        memcpy(srcx, fft_out + kernel_start, sizeof(*fft_out) * kernel_range);
 
         s->fdsp->vector_fmul((float *)dstx, (const float *)srcx,
                              (const float *)kernel, FFALIGN(kernel_range * 2, 16));
