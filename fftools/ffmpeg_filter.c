@@ -1745,13 +1745,13 @@ static int fg_output_step(OutputFilterPriv *ofp, int flush)
 {
     FilterGraphPriv    *fgp = fgp_from_fg(ofp->ofilter.graph);
     OutputStream       *ost = ofp->ofilter.ost;
-    AVFrame *filtered_frame = fgp->frame;
+    AVFrame          *frame = fgp->frame;
     AVFilterContext *filter = ofp->filter;
     FrameData *fd;
     int ret;
 
-    ret = av_buffersink_get_frame_flags(filter, filtered_frame,
-                                       AV_BUFFERSINK_FLAG_NO_REQUEST);
+    ret = av_buffersink_get_frame_flags(filter, frame,
+                                        AV_BUFFERSINK_FLAG_NO_REQUEST);
     if (ret < 0) {
         if (ret != AVERROR(EAGAIN) && ret != AVERROR_EOF) {
             av_log(fgp, AV_LOG_WARNING,
@@ -1766,26 +1766,23 @@ static int fg_output_step(OutputFilterPriv *ofp, int flush)
         return 1;
     }
     if (ost->finished) {
-        av_frame_unref(filtered_frame);
+        av_frame_unref(frame);
         return 0;
     }
 
-    if (filtered_frame->pts != AV_NOPTS_VALUE) {
+    if (frame->pts != AV_NOPTS_VALUE) {
         AVRational tb = av_buffersink_get_time_base(filter);
-        ost->filter->last_pts = av_rescale_q(filtered_frame->pts, tb,
-                                             AV_TIME_BASE_Q);
-        filtered_frame->time_base = tb;
+        ost->filter->last_pts = av_rescale_q(frame->pts, tb, AV_TIME_BASE_Q);
+        frame->time_base = tb;
 
         if (debug_ts)
             av_log(fgp, AV_LOG_INFO, "filter_raw -> pts:%s pts_time:%s time_base:%d/%d\n",
-                   av_ts2str(filtered_frame->pts),
-                   av_ts2timestr(filtered_frame->pts, &tb),
-                   tb.num, tb.den);
+                   av_ts2str(frame->pts), av_ts2timestr(frame->pts, &tb), tb.num, tb.den);
     }
 
-    fd = frame_data(filtered_frame);
+    fd = frame_data(frame);
     if (!fd) {
-        av_frame_unref(filtered_frame);
+        av_frame_unref(frame);
         return AVERROR(ENOMEM);
     }
 
@@ -1800,8 +1797,8 @@ static int fg_output_step(OutputFilterPriv *ofp, int flush)
             fd->frame_rate_filter = fr;
     }
 
-    ret = enc_frame(ost, filtered_frame);
-    av_frame_unref(filtered_frame);
+    ret = enc_frame(ost, frame);
+    av_frame_unref(frame);
     if (ret < 0)
         return ret;
 
