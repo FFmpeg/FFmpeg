@@ -104,14 +104,25 @@ FF_DISABLE_DEPRECATION_WARNINGS
             ret = AVERROR_INVALIDDATA;
             goto fail2;
         }
-        avctx->channels = val;
+        av_channel_layout_uninit(&avctx->ch_layout);
+        avctx->ch_layout.nb_channels = val;
+        avctx->ch_layout.order = AV_CHANNEL_ORDER_UNSPEC;
         size -= 4;
     }
     if (flags & AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_LAYOUT) {
         if (size < 8)
             goto fail;
-        avctx->channel_layout = bytestream_get_le64(&data);
+        av_channel_layout_uninit(&avctx->ch_layout);
+        ret = av_channel_layout_from_mask(&avctx->ch_layout, bytestream_get_le64(&data));
+        if (ret < 0)
+            goto fail2;
         size -= 8;
+    }
+    if (flags & (AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_COUNT |
+                 AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_LAYOUT)) {
+        avctx->channels = avctx->ch_layout.nb_channels;
+        avctx->channel_layout = (avctx->ch_layout.order == AV_CHANNEL_ORDER_NATIVE) ?
+                                avctx->ch_layout.u.mask : 0;
     }
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
