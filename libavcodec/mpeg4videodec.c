@@ -295,7 +295,7 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
             int hsub = i ? s->chroma_x_shift : 0;
             int lowres = s->avctx->lowres;
             int step = 1 << lowres;
-            dest_pcm[i] += (linesize[i] / 2) * ((16 >> vsub) - 1);
+            dest_pcm[i] += (linesize[i] / 2) * ((16 >> vsub + lowres) - 1);
             for (int h = (16 >> (vsub + lowres)) - 1; h >= 0; h--){
                 for (int w = (16 >> (hsub + lowres)) - 1, idx = 0; w >= 0; w--, idx += step)
                     dest_pcm[i][w] = src[idx];
