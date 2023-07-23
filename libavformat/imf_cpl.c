@@ -182,6 +182,10 @@ static int fill_content_title(xmlNodePtr cpl_element, FFIMFCPL *cpl)
     cpl->content_title_utf8 = xmlNodeListGetString(cpl_element->doc,
                                                    element->xmlChildrenNode,
                                                    1);
+    if (!cpl->content_title_utf8)
+        cpl->content_title_utf8 = xmlStrdup("");
+    if (!cpl->content_title_utf8)
+        return AVERROR(ENOMEM);
 
     return 0;
 }
