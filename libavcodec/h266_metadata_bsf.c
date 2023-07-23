@@ -43,7 +43,7 @@ static int h266_metadata_update_fragment(AVBSFContext *bsf, AVPacket *pkt,
     int err, i;
 
     // If an AUD is present, it must be the first NAL unit.
-    if (pu->units[0].type == VVC_AUD_NUT) {
+    if (pu->nb_units && pu->units[0].type == VVC_AUD_NUT) {
         if (ctx->aud == BSF_ELEMENT_REMOVE)
             ff_cbs_delete_unit(pu, 0);
     } else if ( pkt && ctx->aud == BSF_ELEMENT_INSERT) {
