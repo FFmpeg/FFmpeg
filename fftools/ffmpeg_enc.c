@@ -953,12 +953,12 @@ early_exit:
  * should this (and possibly previous) frame be repeated in order to conform to
  * desired target framerate (if any).
  */
-static void video_sync_process(OutputFile *of, OutputStream *ost,
-                               AVFrame *frame, double duration,
+static void video_sync_process(OutputFile *of, OutputStream *ost, AVFrame *frame,
                                int64_t *nb_frames, int64_t *nb_frames_prev)
 {
     Encoder *e = ost->enc;
-    double delta0, delta, sync_ipts;
+    AVCodecContext *enc = ost->enc_ctx;
+    double delta0, delta, sync_ipts, duration;
 
     if (!frame) {
         *nb_frames_prev = *nb_frames = mid_pred(e->frames_prev_hist[0],
@@ -966,6 +966,8 @@ static void video_sync_process(OutputFile *of, OutputStream *ost,
                                                 e->frames_prev_hist[2]);
         goto finish;
     }
+
+    duration = frame->duration * av_q2d(frame->time_base) / av_q2d(enc->time_base);
 
     sync_ipts = adjust_frame_pts_to_encoder_tb(of, ost, frame);
     /* delta0 is the "drift" between the input frame and
@@ -1095,12 +1097,8 @@ static int do_video_out(OutputFile *of, OutputStream *ost, AVFrame *frame)
     Encoder *e = ost->enc;
     AVCodecContext *enc = ost->enc_ctx;
     int64_t nb_frames, nb_frames_prev, i;
-    double duration = 0;
 
-    if (frame)
-        duration = frame->duration * av_q2d(frame->time_base) / av_q2d(enc->time_base);
-
-    video_sync_process(of, ost, frame, duration,
+    video_sync_process(of, ost, frame,
                        &nb_frames, &nb_frames_prev);
 
     if (nb_frames_prev == 0 && ost->last_dropped) {
