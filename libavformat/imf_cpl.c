@@ -75,6 +75,8 @@ int ff_imf_xml_read_uuid(xmlNodePtr element, AVUUID uuid)
     int ret = 0;
 
     xmlChar *element_text = xmlNodeListGetString(element->doc, element->xmlChildrenNode, 1);
+    if (!element_text)
+        return AVERROR_INVALIDDATA;
     ret = av_uuid_urn_parse(element_text, uuid);
     if (ret) {
         av_log(NULL, AV_LOG_ERROR, "Invalid UUID\n");
@@ -90,7 +92,7 @@ int ff_imf_xml_read_rational(xmlNodePtr element, AVRational *rational)
     int ret = 0;
 
     xmlChar *element_text = xmlNodeListGetString(element->doc, element->xmlChildrenNode, 1);
-    if (sscanf(element_text, "%i %i", &rational->num, &rational->den) != 2) {
+    if (element_text == NULL || sscanf(element_text, "%i %i", &rational->num, &rational->den) != 2) {
         av_log(NULL, AV_LOG_ERROR, "Invalid rational number\n");
         ret = AVERROR_INVALIDDATA;
     }
@@ -104,7 +106,7 @@ int ff_imf_xml_read_uint32(xmlNodePtr element, uint32_t *number)
     int ret = 0;
 
     xmlChar *element_text = xmlNodeListGetString(element->doc, element->xmlChildrenNode, 1);
-    if (sscanf(element_text, "%" PRIu32, number) != 1) {
+    if (element_text == NULL || sscanf(element_text, "%" PRIu32, number) != 1) {
         av_log(NULL, AV_LOG_ERROR, "Invalid unsigned 32-bit integer");
         ret = AVERROR_INVALIDDATA;
     }
@@ -260,6 +262,8 @@ static int fill_timecode(xmlNodePtr cpl_element, FFIMFCPL *cpl)
     }
 
     tc_str = xmlNodeListGetString(element->doc, element->xmlChildrenNode, 1);
+    if (!tc_str)
+        return AVERROR_INVALIDDATA;
     ret = parse_cpl_tc_type(tc_str, comps);
     xmlFree(tc_str);
     if (ret)
