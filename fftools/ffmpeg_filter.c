@@ -1741,25 +1741,14 @@ int filtergraph_is_simple(const FilterGraph *fg)
     return fgp->is_simple;
 }
 
-int reap_filters(FilterGraph *fg, int flush)
+static int fg_output_step(OutputFilterPriv *ofp, int flush)
 {
-    FilterGraphPriv    *fgp = fgp_from_fg(fg);
+    FilterGraphPriv    *fgp = fgp_from_fg(ofp->ofilter.graph);
+    OutputStream       *ost = ofp->ofilter.ost;
     AVFrame *filtered_frame = fgp->frame;
-
-    if (!fg->graph)
-        return 0;
-
-    /* Reap all buffers present in the buffer sinks */
-    for (int i = 0; i < fg->nb_outputs; i++) {
-        OutputFilter   *ofilter = fg->outputs[i];
-        OutputStream       *ost = ofilter->ost;
-        OutputFilterPriv   *ofp = ofp_from_ofilter(ofilter);
         AVFilterContext *filter = ofp->filter;
-
-        int ret = 0;
-
-        while (1) {
             FrameData *fd;
+    int ret;
 
             ret = av_buffersink_get_frame_flags(filter, filtered_frame,
                                                AV_BUFFERSINK_FLAG_NO_REQUEST);
@@ -1774,11 +1763,11 @@ int reap_filters(FilterGraph *fg, int flush)
                         return ret;
                 }
 
-                break;
+                return 1;
             }
             if (ost->finished) {
                 av_frame_unref(filtered_frame);
-                continue;
+                return 0;
             }
 
             if (filtered_frame->pts != AV_NOPTS_VALUE) {
@@ -1817,6 +1806,24 @@ int reap_filters(FilterGraph *fg, int flush)
                 return ret;
 
             ofp->got_frame = 1;
+
+    return 0;
+}
+
+int reap_filters(FilterGraph *fg, int flush)
+{
+    if (!fg->graph)
+        return 0;
+
+    /* Reap all buffers present in the buffer sinks */
+    for (int i = 0; i < fg->nb_outputs; i++) {
+        OutputFilterPriv *ofp = ofp_from_ofilter(fg->outputs[i]);
+        int ret = 0;
+
+        while (!ret) {
+            ret = fg_output_step(ofp, flush);
+            if (ret < 0)
+                return ret;
         }
     }
 
