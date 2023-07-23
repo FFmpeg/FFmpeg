@@ -1453,7 +1453,7 @@ static const AVOption libplacebo_options[] = {
     { "custom_shader_bin", "Custom user shader as binary (mpv .hook format)", OFFSET(shader_bin), AV_OPT_TYPE_BINARY, .flags = STATIC },
 
     /* Performance/quality tradeoff options */
-    { "skip_aa", "Skip anti-aliasing", OFFSET(skip_aa), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 0, DYNAMIC },
+    { "skip_aa", "Skip anti-aliasing", OFFSET(skip_aa), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DYNAMIC },
     { "polar_cutoff", "Polar LUT cutoff", OFFSET(polar_cutoff), AV_OPT_TYPE_FLOAT, {.dbl = 0}, 0.0, 1.0, DYNAMIC },
     { "disable_linear", "Disable linear scaling", OFFSET(disable_linear), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DYNAMIC },
     { "disable_builtin", "Disable built-in scalers", OFFSET(disable_builtin), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DYNAMIC },
