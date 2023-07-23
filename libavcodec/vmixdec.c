@@ -115,6 +115,8 @@ static int decode_dcac(AVCodecContext *avctx,
             if (dc_run > 0) {
                 dc_run--;
             } else {
+                if (get_bits_left(dc_gb) < 1)
+                    return AVERROR_INVALIDDATA;
                 dc_v = get_se_golomb_vmix(dc_gb);
                 dc += (unsigned)dc_v;
                 if (!dc_v)
@@ -127,6 +129,8 @@ static int decode_dcac(AVCodecContext *avctx,
                     continue;
                 }
 
+                if (get_bits_left(ac_gb) < 1)
+                    return AVERROR_INVALIDDATA;
                 ac_v = get_se_golomb_vmix(ac_gb);
                 i = scan[n];
                 block[i] = ((unsigned)ac_v * factors[i]) >> 4;
