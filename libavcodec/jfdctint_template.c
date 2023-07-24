@@ -60,7 +60,7 @@
  */
 
 #include "libavutil/common.h"
-#include "dct.h"
+#include "fdctdsp.h"
 
 #include "bit_depth_template.c"
 

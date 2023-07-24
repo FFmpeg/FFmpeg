@@ -33,7 +33,6 @@
 #include "asv.h"
 #include "avcodec.h"
 #include "codec_internal.h"
-#include "dct.h"
 #include "encode.h"
 #include "fdctdsp.h"
 #include "mpeg12data.h"

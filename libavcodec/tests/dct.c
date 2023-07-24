@@ -43,6 +43,7 @@
 #include "libavutil/time.h"
 
 #include "libavcodec/dct.h"
+#include "libavcodec/fdctdsp.h"
 #include "libavcodec/idctdsp.h"
 #include "libavcodec/simple_idct.h"
 #include "libavcodec/xvididct.h"

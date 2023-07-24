@@ -43,7 +43,6 @@
 #include "libavutil/opt.h"
 #include "libavutil/thread.h"
 #include "avcodec.h"
-#include "dct.h"
 #include "encode.h"
 #include "idctdsp.h"
 #include "mpeg12codecs.h"
