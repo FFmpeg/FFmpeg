@@ -302,6 +302,9 @@ typedef struct OutputFilter {
 
     /* pts of the last frame received from this filter, in AV_TIME_BASE_Q */
     int64_t last_pts;
+
+    uint64_t nb_frames_dup;
+    uint64_t nb_frames_drop;
 } OutputFilter;
 
 typedef struct FilterGraph {
@@ -535,10 +538,6 @@ typedef struct OutputStream {
 
     Encoder *enc;
     AVCodecContext *enc_ctx;
-
-    uint64_t nb_frames_dup;
-    uint64_t nb_frames_drop;
-    int64_t last_dropped;
 
     /* video only */
     AVRational frame_rate;
