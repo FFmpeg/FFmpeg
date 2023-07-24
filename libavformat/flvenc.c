@@ -863,6 +863,9 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     else
         flags_size = 1;
 
+    if (par->codec_id == AV_CODEC_ID_HEVC && pkt->pts != pkt->dts)
+        flags_size += 3;
+
     if (par->codec_id == AV_CODEC_ID_AAC || par->codec_id == AV_CODEC_ID_H264
             || par->codec_id == AV_CODEC_ID_MPEG4 || par->codec_id == AV_CODEC_ID_HEVC
             || par->codec_id == AV_CODEC_ID_AV1 || par->codec_id == AV_CODEC_ID_VP9) {
@@ -998,8 +1001,11 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     } else {
         av_assert1(flags>=0);
         if (par->codec_id == AV_CODEC_ID_HEVC) {
-            avio_w8(pb, FLV_IS_EX_HEADER | PacketTypeCodedFramesX | frametype); // ExVideoTagHeader mode with PacketTypeCodedFramesX
+            int pkttype = (pkt->pts != pkt->dts) ? PacketTypeCodedFrames : PacketTypeCodedFramesX;
+            avio_w8(pb, FLV_IS_EX_HEADER | pkttype | frametype); // ExVideoTagHeader mode with PacketTypeCodedFrames(X)
             avio_write(pb, "hvc1", 4);
+            if (pkttype == PacketTypeCodedFrames)
+                avio_wb24(pb, pkt->pts - pkt->dts);
         } else if (par->codec_id == AV_CODEC_ID_AV1 || par->codec_id == AV_CODEC_ID_VP9) {
             avio_w8(pb, FLV_IS_EX_HEADER | PacketTypeCodedFrames | frametype);
             avio_write(pb, par->codec_id == AV_CODEC_ID_AV1 ? "av01" : "vp09", 4);
