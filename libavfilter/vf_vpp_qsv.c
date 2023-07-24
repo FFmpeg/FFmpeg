@@ -582,6 +582,11 @@ static int activate(AVFilterContext *ctx)
             if (in->pts != AV_NOPTS_VALUE)
                 in->pts = av_rescale_q(in->pts, inlink->time_base, outlink->time_base);
 
+            if (outlink->frame_rate.num && outlink->frame_rate.den)
+                in->duration = av_rescale_q(1, av_inv_q(outlink->frame_rate), outlink->time_base);
+            else
+                in->duration = 0;
+
             ret = ff_filter_frame(outlink, in);
             if (ret < 0)
                 return ret;
