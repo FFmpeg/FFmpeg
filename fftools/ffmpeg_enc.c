@@ -905,16 +905,12 @@ static int do_audio_out(OutputFile *of, OutputStream *ost,
     return (ret < 0 && ret != AVERROR_EOF) ? ret : 0;
 }
 
-static double adjust_frame_pts_to_encoder_tb(OutputFile *of, OutputStream *ost,
-                                             AVFrame *frame)
+static double adjust_frame_pts_to_encoder_tb(AVFrame *frame, AVRational tb_dst,
+                                             int64_t start_time)
 {
     double float_pts = AV_NOPTS_VALUE; // this is identical to frame.pts but with higher precision
-    const int64_t start_time = (of->start_time == AV_NOPTS_VALUE) ?
-                               0 : of->start_time;
 
-    AVCodecContext *const enc = ost->enc_ctx;
-
-    AVRational        tb = enc->time_base;
+    AVRational        tb = tb_dst;
     AVRational filter_tb = frame->time_base;
     const int extra_bits = av_clip(29 - av_log2(tb.den), 0, 16);
 
@@ -931,19 +927,17 @@ static double adjust_frame_pts_to_encoder_tb(OutputFile *of, OutputStream *ost,
     if (float_pts != llrint(float_pts))
         float_pts += FFSIGN(float_pts) * 1.0 / (1<<17);
 
-    frame->pts = av_rescale_q(frame->pts, filter_tb, enc->time_base) -
-                 av_rescale_q(start_time, AV_TIME_BASE_Q, enc->time_base);
-    frame->time_base = enc->time_base;
+    frame->pts = av_rescale_q(frame->pts, filter_tb, tb_dst) -
+                 av_rescale_q(start_time, AV_TIME_BASE_Q, tb_dst);
+    frame->time_base = tb_dst;
 
 early_exit:
 
     if (debug_ts) {
         av_log(NULL, AV_LOG_INFO, "filter -> pts:%s pts_time:%s exact:%f time_base:%d/%d\n",
                frame ? av_ts2str(frame->pts) : "NULL",
-               (enc && frame) ? av_ts2timestr(frame->pts, &enc->time_base) : "NULL",
-               float_pts,
-               enc ? enc->time_base.num : -1,
-               enc ? enc->time_base.den : -1);
+               av_ts2timestr(frame->pts, &tb_dst),
+               float_pts, tb_dst.num, tb_dst.den);
     }
 
     return float_pts;
@@ -969,7 +963,8 @@ static void video_sync_process(OutputFile *of, OutputStream *ost, AVFrame *frame
 
     duration = frame->duration * av_q2d(frame->time_base) / av_q2d(enc->time_base);
 
-    sync_ipts = adjust_frame_pts_to_encoder_tb(of, ost, frame);
+    sync_ipts = adjust_frame_pts_to_encoder_tb(frame, enc->time_base,
+                                               of->start_time == AV_NOPTS_VALUE ? 0 : of->start_time);
     /* delta0 is the "drift" between the input frame and
      * where it would fall in the output. */
     delta0 = sync_ipts - e->next_pts;
