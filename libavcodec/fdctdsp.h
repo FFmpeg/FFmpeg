@@ -21,6 +21,8 @@
 
 #include <stdint.h>
 
+#include "libavutil/attributes_internal.h"
+
 struct AVCodecContext;
 
 typedef struct FDCTDSPContext {
@@ -28,6 +30,7 @@ typedef struct FDCTDSPContext {
     void (*fdct248)(int16_t *block /* align 16 */);
 } FDCTDSPContext;
 
+FF_VISIBILITY_PUSH_HIDDEN
 void ff_fdctdsp_init(FDCTDSPContext *c, struct AVCodecContext *avctx);
 void ff_fdctdsp_init_ppc(FDCTDSPContext *c, struct AVCodecContext *avctx,
                          unsigned high_bit_depth);
@@ -40,5 +43,6 @@ void ff_jpeg_fdct_islow_8(int16_t *data);
 void ff_jpeg_fdct_islow_10(int16_t *data);
 void ff_fdct248_islow_8(int16_t *data);
 void ff_fdct248_islow_10(int16_t *data);
+FF_VISIBILITY_POP_HIDDEN
 
 #endif /* AVCODEC_FDCTDSP_H */
