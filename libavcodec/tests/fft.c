@@ -18,6 +18,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/internal.h"
+
+FF_DISABLE_DEPRECATION_WARNINGS
+
 /**
  * @file
  * FFT and MDCT tests.
@@ -675,3 +679,5 @@ cleanup:
 
     return !!err;
 }
+
+FF_ENABLE_DEPRECATION_WARNINGS

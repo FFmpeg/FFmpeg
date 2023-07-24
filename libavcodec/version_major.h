@@ -50,6 +50,8 @@
 #define FF_API_TICKS_PER_FRAME     (LIBAVCODEC_VERSION_MAJOR < 61)
 #define FF_API_DROPCHANGED         (LIBAVCODEC_VERSION_MAJOR < 61)
 
+#define FF_API_AVFFT               (LIBAVCODEC_VERSION_MAJOR < 62)
+
 // reminder to remove CrystalHD decoders on next major bump
 #define FF_CODEC_CRYSTAL_HD        (LIBAVCODEC_VERSION_MAJOR < 61)
 
