@@ -1902,7 +1902,7 @@ static int qsv_map_to(AVHWFramesContext *dst_ctx,
         case AV_PIX_FMT_VAAPI:
         {
             mfxHDLPair *pair = (mfxHDLPair*)hwctx->surfaces[i].Data.MemId;
-            if (*(VASurfaceID*)pair->first == (VASurfaceID)src->data[3]) {
+            if (*(VASurfaceID*)pair->first == (VASurfaceID)(uintptr_t)src->data[3]) {
                 index = i;
                 break;
             }
