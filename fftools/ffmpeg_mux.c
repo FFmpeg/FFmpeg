@@ -340,15 +340,12 @@ int of_output_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
     if (pkt && pkt->dts != AV_NOPTS_VALUE)
         ost->last_mux_dts = av_rescale_q(pkt->dts, pkt->time_base, AV_TIME_BASE_Q);
 
-    /* rescale timestamps to the muxing timebase */
-    if (pkt) {
-        av_packet_rescale_ts(pkt, pkt->time_base, ost->mux_timebase);
-        pkt->time_base = ost->mux_timebase;
-    }
-
     /* apply the output bitstream filters */
     if (ms->bsf_ctx) {
         int bsf_eof = 0;
+
+        if (pkt)
+            av_packet_rescale_ts(pkt, pkt->time_base, ms->bsf_ctx->time_base_in);
 
         ret = av_bsf_send_packet(ms->bsf_ctx, pkt);
         if (ret < 0) {
@@ -366,6 +363,9 @@ int of_output_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
                 err_msg = "applying bitstream filters to a packet";
                 goto fail;
             }
+
+            if (!bsf_eof)
+                ms->bsf_pkt->time_base = ms->bsf_ctx->time_base_out;
 
             ret = submit_packet(mux, bsf_eof ? NULL : ms->bsf_pkt, ost);
             if (ret < 0)
