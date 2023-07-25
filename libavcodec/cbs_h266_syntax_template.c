@@ -1140,6 +1140,8 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
         if (current->sps_num_subpics_minus1 > 0) {
             int wlen = av_ceil_log2(tmp_width_val);
             int hlen = av_ceil_log2(tmp_height_val);
+            infer(sps_subpic_ctu_top_left_x[0], 0);
+            infer(sps_subpic_ctu_top_left_y[0], 0);
             if (current->sps_pic_width_max_in_luma_samples > ctb_size_y)
                 ubs(wlen, sps_subpic_width_minus1[0], 1, 0);
             else
@@ -1147,7 +1149,7 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
             if (current->sps_pic_height_max_in_luma_samples > ctb_size_y)
                 ubs(hlen, sps_subpic_height_minus1[0], 1, 0);
             else
-                infer(sps_subpic_height_minus1[0], tmp_height_val);
+                infer(sps_subpic_height_minus1[0], tmp_height_val - 1);
             if (!current->sps_independent_subpics_flag) {
                 flags(sps_subpic_treated_as_pic_flag[0], 1, 0);
                 flags(sps_loop_filter_across_subpic_enabled_flag[0], 1, 0);
@@ -1187,6 +1189,12 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
                 } else {
                     int num_subpic_cols = tmp_width_val /
                                      (current->sps_subpic_width_minus1[0] + 1);
+                    if (tmp_width_val % (current->sps_subpic_width_minus1[0] + 1) ||
+                        tmp_height_val % (current->sps_subpic_width_minus1[0] + 1) ||
+                        current->sps_num_subpics_minus1 !=
+                        (num_subpic_cols * tmp_height_val /
+                         (current->sps_subpic_height_minus1[0] + 1) - 1))
+                        return AVERROR_INVALIDDATA;
                     infer(sps_subpic_ctu_top_left_x[i],
                           (i % num_subpic_cols) *
                           (current->sps_subpic_width_minus1[0] + 1));
