@@ -1090,8 +1090,6 @@ static int streamcopy_init(const Muxer *mux, OutputStream *ost)
         }
     }
 
-    ost->mux_timebase = ist->st->time_base;
-
 fail:
     avcodec_free_context(&codec_ctx);
     av_dict_free(&codec_opts);

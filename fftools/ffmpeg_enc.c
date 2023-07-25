@@ -463,8 +463,6 @@ int enc_open(OutputStream *ost, AVFrame *frame)
     if (ost->st->time_base.num <= 0 || ost->st->time_base.den <= 0)
         ost->st->time_base = av_add_q(ost->enc_ctx->time_base, (AVRational){0, 1});
 
-    ost->mux_timebase = enc_ctx->time_base;
-
     ret = of_stream_init(of, ost);
     if (ret < 0)
         return ret;

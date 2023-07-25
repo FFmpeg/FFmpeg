@@ -75,7 +75,7 @@ typedef struct MuxStream {
     int64_t    stream_duration;
     AVRational stream_duration_tb;
 
-    // audio streamcopy - state for av_rescale_delta()
+    // state for av_rescale_delta() call for audio in write_packet()
     int64_t ts_rescale_delta_last;
 
     // combined size of all the packets sent to the muxer

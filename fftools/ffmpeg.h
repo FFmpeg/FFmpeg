@@ -523,8 +523,6 @@ typedef struct OutputStream {
     /* dts of the last packet sent to the muxing queue, in AV_TIME_BASE_Q */
     int64_t last_mux_dts;
 
-    // the timebase of the packets sent to the muxer
-    AVRational mux_timebase;
     AVRational enc_timebase;
 
     Encoder *enc;

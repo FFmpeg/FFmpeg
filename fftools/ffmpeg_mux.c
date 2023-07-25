@@ -76,7 +76,23 @@ static int write_packet(Muxer *mux, OutputStream *ost, AVPacket *pkt)
     if (ost->type == AVMEDIA_TYPE_VIDEO && ost->vsync_method == VSYNC_DROP)
         pkt->pts = pkt->dts = AV_NOPTS_VALUE;
 
-    av_packet_rescale_ts(pkt, pkt->time_base, ost->st->time_base);
+    // rescale timestamps to the stream timebase
+    if (ost->type == AVMEDIA_TYPE_AUDIO && !ost->enc) {
+        // use av_rescale_delta() for streamcopying audio, to preserve
+        // accuracy with coarse input timebases
+        int duration = av_get_audio_frame_duration2(ost->st->codecpar, pkt->size);
+
+        if (!duration)
+            duration = ost->st->codecpar->frame_size;
+
+        pkt->dts = av_rescale_delta(pkt->time_base, pkt->dts,
+                                    (AVRational){1, ost->st->codecpar->sample_rate}, duration,
+                                    &ms->ts_rescale_delta_last, ost->st->time_base);
+        pkt->pts = pkt->dts;
+
+        pkt->duration = av_rescale_q(pkt->duration, pkt->time_base, ost->st->time_base);
+    } else
+        av_packet_rescale_ts(pkt, pkt->time_base, ost->st->time_base);
     pkt->time_base = ost->st->time_base;
 
     if (!(s->oformat->flags & AVFMT_NOTIMESTAMPS)) {
@@ -392,7 +408,7 @@ int of_streamcopy(OutputStream *ost, const AVPacket *pkt, int64_t dts)
     OutputFile *of = output_files[ost->file_index];
     MuxStream  *ms = ms_from_ost(ost);
     int64_t start_time = (of->start_time == AV_NOPTS_VALUE) ? 0 : of->start_time;
-    int64_t ost_tb_start_time = av_rescale_q(start_time, AV_TIME_BASE_Q, ost->mux_timebase);
+    int64_t ts_offset;
     AVPacket *opkt = ms->pkt;
     int ret;
 
@@ -425,27 +441,17 @@ int of_streamcopy(OutputStream *ost, const AVPacket *pkt, int64_t dts)
     if (ret < 0)
         return ret;
 
-    opkt->time_base = ost->mux_timebase;
+    ts_offset = av_rescale_q(start_time, AV_TIME_BASE_Q, opkt->time_base);
 
     if (pkt->pts != AV_NOPTS_VALUE)
-        opkt->pts = av_rescale_q(pkt->pts, pkt->time_base, opkt->time_base) - ost_tb_start_time;
+        opkt->pts -= ts_offset;
 
     if (pkt->dts == AV_NOPTS_VALUE) {
         opkt->dts = av_rescale_q(dts, AV_TIME_BASE_Q, opkt->time_base);
     } else if (ost->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-        int duration = av_get_audio_frame_duration2(ost->par_in, pkt->size);
-        if(!duration)
-            duration = ost->par_in->frame_size;
-        opkt->dts = av_rescale_delta(pkt->time_base, pkt->dts,
-                                    (AVRational){1, ost->par_in->sample_rate}, duration,
-                                    &ms->ts_rescale_delta_last, opkt->time_base);
-        /* dts will be set immediately afterwards to what pts is now */
-        opkt->pts = opkt->dts - ost_tb_start_time;
-    } else
-        opkt->dts = av_rescale_q(pkt->dts, pkt->time_base, opkt->time_base);
-    opkt->dts -= ost_tb_start_time;
-
-    opkt->duration = av_rescale_q(pkt->duration, pkt->time_base, opkt->time_base);
+        opkt->pts = opkt->dts - ts_offset;
+    }
+    opkt->dts -= ts_offset;
 
     {
         int ret = trigger_fix_sub_duration_heartbeat(ost, pkt);
@@ -510,10 +516,6 @@ static int thread_start(Muxer *mux)
         OutputStream *ost = mux->of.streams[i];
         MuxStream     *ms = ms_from_ost(ost);
         AVPacket *pkt;
-
-        /* try to improve muxing time_base (only possible if nothing has been written yet) */
-        if (!av_fifo_can_read(ms->muxing_queue))
-            ost->mux_timebase = ost->st->time_base;
 
         while (av_fifo_read(ms->muxing_queue, &pkt, 1) >= 0) {
             ret = thread_submit_packet(mux, ost, pkt);
