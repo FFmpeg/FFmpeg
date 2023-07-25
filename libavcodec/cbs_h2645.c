@@ -695,7 +695,7 @@ static int cbs_h2645_split_fragment(CodedBitstreamContext *ctx,
             int nal_unit_type = bytestream2_get_byte(&gbc) & 0x1f;
             unsigned int num_nalus = 1;
             if(nal_unit_type != VVC_DCI_NUT && nal_unit_type != VVC_OPI_NUT)
-                num_nalus = bytestream2_get_be16u(&gbc);
+                num_nalus = bytestream2_get_be16(&gbc);
 
             start = bytestream2_tell(&gbc);
             for(i = 0; i < num_nalus; i++) {
