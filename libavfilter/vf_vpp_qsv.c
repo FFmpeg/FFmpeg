@@ -31,6 +31,7 @@
 #include "libavutil/hwcontext_qsv.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/mastering_display_metadata.h"
 
 #include "formats.h"
 #include "internal.h"
@@ -63,6 +64,9 @@ typedef struct VPPContext{
     mfxExtVideoSignalInfo invsi_conf;
     /** Video signal info attached on the output frame */
     mfxExtVideoSignalInfo outvsi_conf;
+    /** HDR parameters attached on the input frame */
+    mfxExtMasteringDisplayColourVolume mdcv_conf;
+    mfxExtContentLightLevelInfo clli_conf;
 #endif
 
     /**
@@ -118,6 +122,7 @@ typedef struct VPPContext{
 
     int has_passthrough;        /* apply pass through mode if possible */
     int field_rate;             /* Generate output at frame rate or field rate for deinterlace mode, 0: frame, 1: field */
+    int tonemap;                /* 1: perform tonemapping if the input has HDR metadata, 0: always disable tonemapping */
 } VPPContext;
 
 static const char *const var_names[] = {
@@ -389,6 +394,10 @@ static int vpp_set_frame_ext_params(AVFilterContext *ctx, const AVFrame *in, AVF
     VPPContext *vpp = ctx->priv;
     QSVVPPContext *qsvvpp = &vpp->qsv;
     mfxExtVideoSignalInfo invsi_conf, outvsi_conf;
+    mfxExtMasteringDisplayColourVolume mdcv_conf;
+    mfxExtContentLightLevelInfo clli_conf;
+    AVFrameSideData *sd;
+    int tm = 0;
 
     fp->num_ext_buf = 0;
 
@@ -404,6 +413,73 @@ static int vpp_set_frame_ext_params(AVFilterContext *ctx, const AVFrame *in, AVF
     invsi_conf.TransferCharacteristics  = (in->color_trc == AVCOL_TRC_UNSPECIFIED) ? AVCOL_TRC_BT709 : in->color_trc;
     invsi_conf.MatrixCoefficients       = (in->colorspace == AVCOL_SPC_UNSPECIFIED) ? AVCOL_SPC_BT709 : in->colorspace;
     invsi_conf.ColourDescriptionPresent = 1;
+
+    memset(&mdcv_conf, 0, sizeof(mfxExtMasteringDisplayColourVolume));
+    sd = av_frame_get_side_data(in, AV_FRAME_DATA_MASTERING_DISPLAY_METADATA);
+    if (vpp->tonemap && sd) {
+        AVMasteringDisplayMetadata *mdm = (AVMasteringDisplayMetadata *)sd->data;
+
+        if (mdm->has_primaries && mdm->has_luminance) {
+            const int mapping[3] = {1, 2, 0};
+            const int chroma_den = 50000;
+            const int luma_den   = 10000;
+            int i;
+
+            mdcv_conf.Header.BufferId         = MFX_EXTBUFF_MASTERING_DISPLAY_COLOUR_VOLUME_IN;
+            mdcv_conf.Header.BufferSz         = sizeof(mfxExtMasteringDisplayColourVolume);
+
+            for (i = 0; i < 3; i++) {
+                const int j = mapping[i];
+
+                mdcv_conf.DisplayPrimariesX[i] =
+                    FFMIN(lrint(chroma_den *
+                                av_q2d(mdm->display_primaries[j][0])),
+                          chroma_den);
+                mdcv_conf.DisplayPrimariesY[i] =
+                    FFMIN(lrint(chroma_den *
+                                av_q2d(mdm->display_primaries[j][1])),
+                          chroma_den);
+            }
+
+            mdcv_conf.WhitePointX =
+                FFMIN(lrint(chroma_den * av_q2d(mdm->white_point[0])),
+                      chroma_den);
+            mdcv_conf.WhitePointY =
+                FFMIN(lrint(chroma_den * av_q2d(mdm->white_point[1])),
+                      chroma_den);
+
+            /* MaxDisplayMasteringLuminance is in the unit of 1 nits however
+             * MinDisplayMasteringLuminance is in the unit of 0.0001 nits
+             */
+            mdcv_conf.MaxDisplayMasteringLuminance =
+                lrint(av_q2d(mdm->max_luminance));
+            mdcv_conf.MinDisplayMasteringLuminance =
+                lrint(luma_den * av_q2d(mdm->min_luminance));
+            tm = 1;
+        }
+    }
+
+    memset(&clli_conf, 0, sizeof(mfxExtContentLightLevelInfo));
+    sd = av_frame_get_side_data(in, AV_FRAME_DATA_CONTENT_LIGHT_LEVEL);
+    if (vpp->tonemap && sd) {
+        AVContentLightMetadata *clm = (AVContentLightMetadata *)sd->data;
+
+        clli_conf.Header.BufferId         = MFX_EXTBUFF_CONTENT_LIGHT_LEVEL_INFO;
+        clli_conf.Header.BufferSz         = sizeof(mfxExtContentLightLevelInfo);
+        clli_conf.MaxContentLightLevel    = FFMIN(clm->MaxCLL,  65535);
+        clli_conf.MaxPicAverageLightLevel = FFMIN(clm->MaxFALL, 65535);
+        tm = 1;
+    }
+
+    if (tm) {
+        av_frame_remove_side_data(out, AV_FRAME_DATA_CONTENT_LIGHT_LEVEL);
+        av_frame_remove_side_data(out, AV_FRAME_DATA_MASTERING_DISPLAY_METADATA);
+
+        out->color_primaries = AVCOL_PRI_BT709;
+        out->color_trc = AVCOL_TRC_BT709;
+        out->colorspace = AVCOL_SPC_BT709;
+        out->color_range = AVCOL_RANGE_MPEG;
+    }
 
     if (vpp->color_range != AVCOL_RANGE_UNSPECIFIED)
         out->color_range = vpp->color_range;
@@ -424,6 +500,8 @@ static int vpp_set_frame_ext_params(AVFilterContext *ctx, const AVFrame *in, AVF
     outvsi_conf.ColourDescriptionPresent = 1;
 
     if (memcmp(&vpp->invsi_conf, &invsi_conf, sizeof(mfxExtVideoSignalInfo)) ||
+        memcmp(&vpp->mdcv_conf, &mdcv_conf, sizeof(mfxExtMasteringDisplayColourVolume)) ||
+        memcmp(&vpp->clli_conf, &clli_conf, sizeof(mfxExtContentLightLevelInfo)) ||
         memcmp(&vpp->outvsi_conf, &outvsi_conf, sizeof(mfxExtVideoSignalInfo))) {
         vpp->invsi_conf                 = invsi_conf;
         fp->ext_buf[fp->num_ext_buf++]  = (mfxExtBuffer*)&vpp->invsi_conf;
@@ -431,6 +509,13 @@ static int vpp_set_frame_ext_params(AVFilterContext *ctx, const AVFrame *in, AVF
         vpp->outvsi_conf                = outvsi_conf;
         fp->ext_buf[fp->num_ext_buf++]  = (mfxExtBuffer*)&vpp->outvsi_conf;
 
+        vpp->mdcv_conf                     = mdcv_conf;
+        if (mdcv_conf.Header.BufferId)
+            fp->ext_buf[fp->num_ext_buf++] = (mfxExtBuffer*)&vpp->mdcv_conf;
+
+        vpp->clli_conf                     = clli_conf;
+        if (clli_conf.Header.BufferId)
+            fp->ext_buf[fp->num_ext_buf++] = (mfxExtBuffer*)&vpp->clli_conf;
     }
 #endif
 
@@ -622,6 +707,7 @@ static int config_output(AVFilterLink *outlink)
         vpp->color_primaries != AVCOL_PRI_UNSPECIFIED ||
         vpp->color_transfer != AVCOL_TRC_UNSPECIFIED ||
         vpp->color_matrix != AVCOL_SPC_UNSPECIFIED ||
+        vpp->tonemap ||
         !vpp->has_passthrough)
         return ff_qsvvpp_init(ctx, &param);
     else {
@@ -833,6 +919,8 @@ static const AVOption vpp_options[] = {
       OFFSET(color_primaries_str), AV_OPT_TYPE_STRING, { .str = NULL }, .flags = FLAGS },
     { "out_color_transfer", "Output color transfer characteristics",
       OFFSET(color_transfer_str),  AV_OPT_TYPE_STRING, { .str = NULL }, .flags = FLAGS },
+
+    {"tonemap", "Perform tonemapping (0=disable tonemapping, 1=perform tonemapping if the input has HDR metadata)", OFFSET(tonemap), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 1, .flags = FLAGS},
 
     { NULL }
 };
