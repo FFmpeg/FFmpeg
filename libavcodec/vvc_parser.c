@@ -225,10 +225,10 @@ static void get_slice_poc(VVCParserContext *s, int *poc,
         } else {
             if ((poc_lsb < prev_poc_lsb) && ((prev_poc_lsb - poc_lsb) >=
                 (max_poc_lsb / 2)))
-                poc_msb = prev_poc_msb + max_poc_lsb;
+                poc_msb = prev_poc_msb + (unsigned)max_poc_lsb;
             else if ((poc_lsb > prev_poc_lsb) && ((poc_lsb - prev_poc_lsb) >
                      (max_poc_lsb / 2)))
-                poc_msb = prev_poc_msb - max_poc_lsb;
+                poc_msb = prev_poc_msb - (unsigned)max_poc_lsb;
             else
                 poc_msb = prev_poc_msb;
         }
