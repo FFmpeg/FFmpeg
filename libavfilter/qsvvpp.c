@@ -736,6 +736,11 @@ static int init_vpp_session(AVFilterContext *avctx, QSVVPPContext *s)
     return 0;
 }
 
+static int set_frame_ext_params_null(AVFilterContext *ctx, const AVFrame *in, AVFrame *out, QSVVPPFrameParam *fp)
+{
+    return 0;
+}
+
 int ff_qsvvpp_init(AVFilterContext *avctx, QSVVPPParam *param)
 {
     int i;
@@ -746,6 +751,10 @@ int ff_qsvvpp_init(AVFilterContext *avctx, QSVVPPParam *param)
     if (!s->filter_frame)
         s->filter_frame = ff_filter_frame;
     s->out_sw_format = param->out_sw_format;
+
+    s->set_frame_ext_params = param->set_frame_ext_params;
+    if (!s->set_frame_ext_params)
+        s->set_frame_ext_params = set_frame_ext_params_null;
 
     /* create the vpp session */
     ret = init_vpp_session(avctx, s);
@@ -873,27 +882,53 @@ failed:
 static int qsvvpp_init_vpp_session(AVFilterContext *avctx, QSVVPPContext *s, const QSVFrame *in, QSVFrame *out)
 {
     int ret;
+    mfxExtBuffer *ext_param[QSVVPP_MAX_FRAME_EXTBUFS];
+    QSVVPPFrameParam fp = { 0, ext_param };
 
-    if (s->vpp_initted)
-        return 0;
+    ret = s->set_frame_ext_params(avctx, in->frame, out->frame, &fp);
+    if (ret)
+        return ret;
 
-    s->vpp_param.vpp.In.PicStruct = in->surface.Info.PicStruct;
-    s->vpp_param.vpp.Out.PicStruct = out->surface.Info.PicStruct;
+    if (fp.num_ext_buf) {
+        av_freep(&s->ext_buffers);
+        s->nb_ext_buffers = s->nb_seq_buffers + fp.num_ext_buf;
 
-    /* Query VPP params again, including params for frame */
-    ret = MFXVideoVPP_Query(s->session, &s->vpp_param, &s->vpp_param);
-    if (ret < 0)
-        return ff_qsvvpp_print_error(avctx, ret, "Error querying VPP params");
-    else if (ret > 0)
-        ff_qsvvpp_print_warning(avctx, ret, "Warning When querying VPP params");
+        s->ext_buffers = av_calloc(s->nb_ext_buffers, sizeof(*s->ext_buffers));
+        if (!s->ext_buffers)
+            return AVERROR(ENOMEM);
 
-    ret = MFXVideoVPP_Init(s->session, &s->vpp_param);
-    if (ret < 0)
-        return ff_qsvvpp_print_error(avctx, ret, "Failed to create a qsvvpp");
-    else if (ret > 0)
-        ff_qsvvpp_print_warning(avctx, ret, "Warning When creating qsvvpp");
+        memcpy(&s->ext_buffers[0], s->seq_buffers, s->nb_seq_buffers * sizeof(*s->seq_buffers));
+        memcpy(&s->ext_buffers[s->nb_seq_buffers], fp.ext_buf, fp.num_ext_buf * sizeof(*fp.ext_buf));
+        s->vpp_param.ExtParam    = s->ext_buffers;
+        s->vpp_param.NumExtParam = s->nb_ext_buffers;
+    }
 
-    s->vpp_initted = 1;
+    if (!s->vpp_initted) {
+        s->vpp_param.vpp.In.PicStruct = in->surface.Info.PicStruct;
+        s->vpp_param.vpp.Out.PicStruct = out->surface.Info.PicStruct;
+
+        /* Query VPP params again, including params for frame */
+        ret = MFXVideoVPP_Query(s->session, &s->vpp_param, &s->vpp_param);
+        if (ret < 0)
+            return ff_qsvvpp_print_error(avctx, ret, "Error querying VPP params");
+        else if (ret > 0)
+            ff_qsvvpp_print_warning(avctx, ret, "Warning When querying VPP params");
+
+        ret = MFXVideoVPP_Init(s->session, &s->vpp_param);
+        if (ret < 0)
+            return ff_qsvvpp_print_error(avctx, ret, "Failed to create a qsvvpp");
+        else if (ret > 0)
+            ff_qsvvpp_print_warning(avctx, ret, "Warning When creating qsvvpp");
+
+        s->vpp_initted = 1;
+    } else if (fp.num_ext_buf) {
+        ret = MFXVideoVPP_Reset(s->session, &s->vpp_param);
+        if (ret < 0) {
+            ret = ff_qsvvpp_print_error(avctx, ret, "Failed to reset session for qsvvpp");
+            return ret;
+        } else if (ret > 0)
+            ff_qsvvpp_print_warning(avctx, ret, "Warning When resetting session for qsvvpp");
+    }
 
     return 0;
 }
