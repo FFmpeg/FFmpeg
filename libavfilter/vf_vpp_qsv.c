@@ -61,6 +61,8 @@ typedef struct VPPContext{
 #if QSV_ONEVPL
     /** Video signal info attached on the input frame */
     mfxExtVideoSignalInfo invsi_conf;
+    /** Video signal info attached on the output frame */
+    mfxExtVideoSignalInfo outvsi_conf;
 #endif
 
     /**
@@ -103,6 +105,16 @@ typedef struct VPPContext{
     char *cx, *cy, *cw, *ch;
     char *ow, *oh;
     char *output_format_str;
+
+    /** The color properties for output */
+    char *color_primaries_str;
+    char *color_transfer_str;
+    char *color_matrix_str;
+
+    int color_range;
+    enum AVColorPrimaries color_primaries;
+    enum AVColorTransferCharacteristic color_transfer;
+    enum AVColorSpace color_matrix;
 
     int has_passthrough;        /* apply pass through mode if possible */
     int field_rate;             /* Generate output at frame rate or field rate for deinterlace mode, 0: frame, 1: field */
@@ -231,6 +243,11 @@ static av_cold int vpp_preinit(AVFilterContext *ctx)
     vpp->contrast = 1.0;
     vpp->transpose = -1;
 
+    vpp->color_range = AVCOL_RANGE_UNSPECIFIED;
+    vpp->color_primaries = AVCOL_PRI_UNSPECIFIED;
+    vpp->color_transfer = AVCOL_TRC_UNSPECIFIED;
+    vpp->color_matrix = AVCOL_SPC_UNSPECIFIED;
+
     vpp->has_passthrough = 1;
 
     return 0;
@@ -250,6 +267,24 @@ static av_cold int vpp_init(AVFilterContext *ctx)
         }
     }
 
+#define STRING_OPTION(var_name, func_name, default_value) do {          \
+        if (vpp->var_name ## _str) {                                    \
+            int var = av_ ## func_name ## _from_name(vpp->var_name ## _str); \
+            if (var < 0) {                                              \
+                av_log(ctx, AV_LOG_ERROR, "Invalid %s.\n", #var_name);  \
+                return AVERROR(EINVAL);                                 \
+            }                                                           \
+            vpp->var_name = var;                                        \
+        } else {                                                        \
+            vpp->var_name = default_value;                              \
+        }                                                               \
+    } while (0)
+
+    STRING_OPTION(color_primaries, color_primaries, AVCOL_PRI_UNSPECIFIED);
+    STRING_OPTION(color_transfer,  color_transfer,  AVCOL_TRC_UNSPECIFIED);
+    STRING_OPTION(color_matrix,    color_space,     AVCOL_SPC_UNSPECIFIED);
+
+#undef STRING_OPTION
     return 0;
 }
 
@@ -353,11 +388,11 @@ static int vpp_set_frame_ext_params(AVFilterContext *ctx, const AVFrame *in, AVF
 #if QSV_ONEVPL
     VPPContext *vpp = ctx->priv;
     QSVVPPContext *qsvvpp = &vpp->qsv;
-    mfxExtVideoSignalInfo invsi_conf;
+    mfxExtVideoSignalInfo invsi_conf, outvsi_conf;
 
     fp->num_ext_buf = 0;
 
-    if (!in ||
+    if (!in || !out ||
         !QSV_RUNTIME_VERSION_ATLEAST(qsvvpp->ver, 2, 0))
         return 0;
 
@@ -370,9 +405,32 @@ static int vpp_set_frame_ext_params(AVFilterContext *ctx, const AVFrame *in, AVF
     invsi_conf.MatrixCoefficients       = (in->colorspace == AVCOL_SPC_UNSPECIFIED) ? AVCOL_SPC_BT709 : in->colorspace;
     invsi_conf.ColourDescriptionPresent = 1;
 
-    if (memcmp(&vpp->invsi_conf, &invsi_conf, sizeof(mfxExtVideoSignalInfo))) {
+    if (vpp->color_range != AVCOL_RANGE_UNSPECIFIED)
+        out->color_range = vpp->color_range;
+    if (vpp->color_primaries != AVCOL_PRI_UNSPECIFIED)
+        out->color_primaries = vpp->color_primaries;
+    if (vpp->color_transfer != AVCOL_TRC_UNSPECIFIED)
+        out->color_trc = vpp->color_transfer;
+    if (vpp->color_matrix != AVCOL_SPC_UNSPECIFIED)
+        out->colorspace = vpp->color_matrix;
+
+    memset(&outvsi_conf, 0, sizeof(mfxExtVideoSignalInfo));
+    outvsi_conf.Header.BufferId          = MFX_EXTBUFF_VIDEO_SIGNAL_INFO_OUT;
+    outvsi_conf.Header.BufferSz          = sizeof(mfxExtVideoSignalInfo);
+    outvsi_conf.VideoFullRange           = (out->color_range == AVCOL_RANGE_JPEG);
+    outvsi_conf.ColourPrimaries          = (out->color_primaries == AVCOL_PRI_UNSPECIFIED) ? AVCOL_PRI_BT709 : out->color_primaries;
+    outvsi_conf.TransferCharacteristics  = (out->color_trc == AVCOL_TRC_UNSPECIFIED) ? AVCOL_TRC_BT709 : out->color_trc;
+    outvsi_conf.MatrixCoefficients       = (out->colorspace == AVCOL_SPC_UNSPECIFIED) ? AVCOL_SPC_BT709 : out->colorspace;
+    outvsi_conf.ColourDescriptionPresent = 1;
+
+    if (memcmp(&vpp->invsi_conf, &invsi_conf, sizeof(mfxExtVideoSignalInfo)) ||
+        memcmp(&vpp->outvsi_conf, &outvsi_conf, sizeof(mfxExtVideoSignalInfo))) {
         vpp->invsi_conf                 = invsi_conf;
         fp->ext_buf[fp->num_ext_buf++]  = (mfxExtBuffer*)&vpp->invsi_conf;
+
+        vpp->outvsi_conf                = outvsi_conf;
+        fp->ext_buf[fp->num_ext_buf++]  = (mfxExtBuffer*)&vpp->outvsi_conf;
+
     }
 #endif
 
@@ -560,6 +618,10 @@ static int config_output(AVFilterLink *outlink)
     if (vpp->use_frc || vpp->use_crop || vpp->deinterlace || vpp->denoise ||
         vpp->detail || vpp->procamp || vpp->rotate || vpp->hflip ||
         inlink->w != outlink->w || inlink->h != outlink->h || in_format != vpp->out_format ||
+        vpp->color_range != AVCOL_RANGE_UNSPECIFIED ||
+        vpp->color_primaries != AVCOL_PRI_UNSPECIFIED ||
+        vpp->color_transfer != AVCOL_TRC_UNSPECIFIED ||
+        vpp->color_matrix != AVCOL_SPC_UNSPECIFIED ||
         !vpp->has_passthrough)
         return ff_qsvvpp_init(ctx, &param);
     else {
@@ -749,6 +811,28 @@ static const AVOption vpp_options[] = {
       0, AV_OPT_TYPE_CONST, { .i64 = 0 }, 0, 0, FLAGS, "rate" },
     { "field", "Output at field rate (one frame of output for each field)",
       0, AV_OPT_TYPE_CONST, { .i64 = 1 }, 0, 0, FLAGS, "rate" },
+
+    { "out_range", "Output color range",
+      OFFSET(color_range), AV_OPT_TYPE_INT, { .i64 = AVCOL_RANGE_UNSPECIFIED },
+      AVCOL_RANGE_UNSPECIFIED, AVCOL_RANGE_JPEG, FLAGS, "range" },
+    { "full",    "Full range",
+      0, AV_OPT_TYPE_CONST, { .i64 = AVCOL_RANGE_JPEG }, 0, 0, FLAGS, "range" },
+    { "limited", "Limited range",
+      0, AV_OPT_TYPE_CONST, { .i64 = AVCOL_RANGE_MPEG }, 0, 0, FLAGS, "range" },
+    { "jpeg",    "Full range",
+      0, AV_OPT_TYPE_CONST, { .i64 = AVCOL_RANGE_JPEG }, 0, 0, FLAGS, "range" },
+    { "mpeg",    "Limited range",
+      0, AV_OPT_TYPE_CONST, { .i64 = AVCOL_RANGE_MPEG }, 0, 0, FLAGS, "range" },
+    { "tv",      "Limited range",
+      0, AV_OPT_TYPE_CONST, { .i64 = AVCOL_RANGE_MPEG }, 0, 0, FLAGS, "range" },
+    { "pc",      "Full range",
+      0, AV_OPT_TYPE_CONST, { .i64 = AVCOL_RANGE_JPEG }, 0, 0, FLAGS, "range" },
+    { "out_color_matrix", "Output color matrix coefficient set",
+      OFFSET(color_matrix_str), AV_OPT_TYPE_STRING, { .str = NULL }, .flags = FLAGS },
+    { "out_color_primaries", "Output color primaries",
+      OFFSET(color_primaries_str), AV_OPT_TYPE_STRING, { .str = NULL }, .flags = FLAGS },
+    { "out_color_transfer", "Output color transfer characteristics",
+      OFFSET(color_transfer_str),  AV_OPT_TYPE_STRING, { .str = NULL }, .flags = FLAGS },
 
     { NULL }
 };
