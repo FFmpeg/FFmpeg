@@ -58,6 +58,10 @@ typedef struct VPPContext{
     mfxExtVPPRotation rotation_conf;
     mfxExtVPPMirroring mirroring_conf;
     mfxExtVPPScaling scale_conf;
+#if QSV_ONEVPL
+    /** Video signal info attached on the input frame */
+    mfxExtVideoSignalInfo invsi_conf;
+#endif
 
     /**
      * New dimensions. Special values are:
@@ -344,6 +348,37 @@ static mfxStatus get_mfx_version(const AVFilterContext *ctx, mfxVersion *mfx_ver
     return MFXQueryVersion(device_hwctx->session, mfx_version);
 }
 
+static int vpp_set_frame_ext_params(AVFilterContext *ctx, const AVFrame *in, AVFrame *out,  QSVVPPFrameParam *fp)
+{
+#if QSV_ONEVPL
+    VPPContext *vpp = ctx->priv;
+    QSVVPPContext *qsvvpp = &vpp->qsv;
+    mfxExtVideoSignalInfo invsi_conf;
+
+    fp->num_ext_buf = 0;
+
+    if (!in ||
+        !QSV_RUNTIME_VERSION_ATLEAST(qsvvpp->ver, 2, 0))
+        return 0;
+
+    memset(&invsi_conf, 0, sizeof(mfxExtVideoSignalInfo));
+    invsi_conf.Header.BufferId          = MFX_EXTBUFF_VIDEO_SIGNAL_INFO_IN;
+    invsi_conf.Header.BufferSz          = sizeof(mfxExtVideoSignalInfo);
+    invsi_conf.VideoFullRange           = (in->color_range == AVCOL_RANGE_JPEG);
+    invsi_conf.ColourPrimaries          = (in->color_primaries == AVCOL_PRI_UNSPECIFIED) ? AVCOL_PRI_BT709 : in->color_primaries;
+    invsi_conf.TransferCharacteristics  = (in->color_trc == AVCOL_TRC_UNSPECIFIED) ? AVCOL_TRC_BT709 : in->color_trc;
+    invsi_conf.MatrixCoefficients       = (in->colorspace == AVCOL_SPC_UNSPECIFIED) ? AVCOL_SPC_BT709 : in->colorspace;
+    invsi_conf.ColourDescriptionPresent = 1;
+
+    if (memcmp(&vpp->invsi_conf, &invsi_conf, sizeof(mfxExtVideoSignalInfo))) {
+        vpp->invsi_conf                 = invsi_conf;
+        fp->ext_buf[fp->num_ext_buf++]  = (mfxExtBuffer*)&vpp->invsi_conf;
+    }
+#endif
+
+    return 0;
+}
+
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
@@ -361,6 +396,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->time_base  = av_inv_q(vpp->framerate);
 
     param.filter_frame  = NULL;
+    param.set_frame_ext_params = vpp_set_frame_ext_params;
     param.num_ext_buf   = 0;
     param.ext_buf       = ext_buf;
 
