@@ -126,7 +126,7 @@ enum {
 
     EVC_MAX_NUM_REF_PICS = 21,
 
-    EVC_MAX_NUM_RPLS = 32,
+    EVC_MAX_NUM_RPLS = 64,
 
     // A.4.1: pic_width_in_luma_samples and pic_height_in_luma_samples are
     // constrained to be not greater than sqrt(MaxLumaPs * 8).  Hence height/

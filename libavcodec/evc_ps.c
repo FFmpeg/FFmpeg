@@ -243,11 +243,20 @@ int ff_evc_parse_sps(GetBitContext *gb, EVCParamSets *ps)
         sps->rpl1_same_as_rpl0_flag = get_bits1(gb);
         sps->num_ref_pic_list_in_sps[0] = get_ue_golomb(gb);
 
+        if ((unsigned)sps->num_ref_pic_list_in_sps[0] >= EVC_MAX_NUM_RPLS) {
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
+        }
+
         for (int i = 0; i < sps->num_ref_pic_list_in_sps[0]; ++i)
             ref_pic_list_struct(gb, &sps->rpls[0][i]);
 
         if (!sps->rpl1_same_as_rpl0_flag) {
             sps->num_ref_pic_list_in_sps[1] = get_ue_golomb(gb);
+            if ((unsigned)sps->num_ref_pic_list_in_sps[1] >= EVC_MAX_NUM_RPLS) {
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
+            }
             for (int i = 0; i < sps->num_ref_pic_list_in_sps[1]; ++i)
                 ref_pic_list_struct(gb, &sps->rpls[1][i]);
         }
