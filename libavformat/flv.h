@@ -48,7 +48,7 @@
 #define FLV_AUDIO_CODECID_MASK    0xf0
 
 #define FLV_VIDEO_CODECID_MASK    0x0f
-#define FLV_VIDEO_FRAMETYPE_MASK  0xf0
+#define FLV_VIDEO_FRAMETYPE_MASK  0x70
 
 #define AMF_END_OF_OBJECT         0x09
 
