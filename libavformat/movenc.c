@@ -1225,6 +1225,7 @@ static int mov_write_pcmc_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *tra
 {
     int64_t pos = avio_tell(pb);
     int format_flags;
+    int sample_size;
 
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "pcmC");
@@ -1237,7 +1238,11 @@ static int mov_write_pcmc_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *tra
                     track->par->codec_id == AV_CODEC_ID_PCM_S24LE ||
                     track->par->codec_id == AV_CODEC_ID_PCM_S32LE);
     avio_w8(pb, format_flags);
-    avio_w8(pb, track->par->bits_per_raw_sample);
+    sample_size = track->par->bits_per_raw_sample;
+    if (!sample_size)
+        sample_size = av_get_exact_bits_per_sample(track->par->codec_id);
+    av_assert0(sample_size);
+    avio_w8(pb, sample_size);
 
     return update_size(pb, pos);
 }
