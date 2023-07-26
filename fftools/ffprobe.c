@@ -4113,7 +4113,7 @@ int main(int argc, char **argv)
     show_banner(argc, argv, options);
     ret = parse_options(NULL, argc, argv, options, opt_input_file);
     if (ret < 0) {
-        ret = AVERROR_EXIT ? 0 : ret;
+        ret = (ret == AVERROR_EXIT) ? 0 : ret;
         goto end;
     }
 
