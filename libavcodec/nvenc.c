@@ -1166,8 +1166,13 @@ static av_cold int nvenc_setup_h264_config(AVCodecContext *avctx)
         || vui->videoFormat != 5
         || vui->videoFullRangeFlag != 0);
 
-    h264->sliceMode = 3;
-    h264->sliceModeData = avctx->slices > 0 ? avctx->slices : 1;
+    if (ctx->max_slice_size > 0) {
+        h264->sliceMode = 1;
+        h264->sliceModeData = ctx->max_slice_size;
+    } else {
+        h264->sliceMode = 3;
+        h264->sliceModeData = avctx->slices > 0 ? avctx->slices : 1;
+    }
 
     if (ctx->intra_refresh) {
         h264->enableIntraRefresh = 1;
@@ -1287,8 +1292,13 @@ static av_cold int nvenc_setup_hevc_config(AVCodecContext *avctx)
         || vui->videoFormat != 5
         || vui->videoFullRangeFlag != 0);
 
-    hevc->sliceMode = 3;
-    hevc->sliceModeData = avctx->slices > 0 ? avctx->slices : 1;
+    if (ctx->max_slice_size > 0) {
+        hevc->sliceMode = 1;
+        hevc->sliceModeData = ctx->max_slice_size;
+    } else {
+        hevc->sliceMode = 3;
+        hevc->sliceModeData = avctx->slices > 0 ? avctx->slices : 1;
+    }
 
     if (ctx->intra_refresh) {
         hevc->enableIntraRefresh = 1;

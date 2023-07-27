@@ -262,6 +262,7 @@ typedef struct NvencContext
     int udu_sei;
     int timing_info;
     int highbitdepth;
+    int max_slice_size;
 } NvencContext;
 
 int ff_nvenc_encode_init(AVCodecContext *avctx);

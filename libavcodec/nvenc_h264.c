@@ -206,6 +206,8 @@ static const AVOption options[] = {
                                                             OFFSET(intra_refresh),AV_OPT_TYPE_BOOL,  { .i64 = 0 }, 0, 1, VE },
     { "single-slice-intra-refresh", "Use single slice intra refresh",
                                                             OFFSET(single_slice_intra_refresh), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
+    { "max_slice_size", "Maximum encoded slice size in bytes",
+                                                            OFFSET(max_slice_size), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
     { "constrained-encoding", "Enable constrainedFrame encoding where each slice in the constrained picture is independent of other slices",
                                                             OFFSET(constrained_encoding), AV_OPT_TYPE_BOOL,  { .i64 = 0 }, 0, 1, VE },
     { NULL }
