@@ -790,7 +790,7 @@ function func_tr_32x4_\name
         add             x3, x11, #(32 + 3 * 64)
         scale_store     \shift
 
-        br               x10
+        ret             x10
 endfunc
 .endm
 
