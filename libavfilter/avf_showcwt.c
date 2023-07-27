@@ -578,6 +578,8 @@ static int run_channel_cwt(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     ShowCWTContext *s = ctx->priv;
     const int ch = *(int *)arg;
     const AVComplexFloat *fft_out = (const AVComplexFloat *)s->fft_out->extended_data[ch];
+    AVComplexFloat *isrc = (AVComplexFloat *)s->ifft_in->extended_data[jobnr];
+    AVComplexFloat *idst = (AVComplexFloat *)s->ifft_out->extended_data[jobnr];
     const int output_padding_size = s->output_padding_size;
     const int ihop_size = s->ihop_size;
     const int ioffset = (output_padding_size - ihop_size) >> 1;
@@ -586,8 +588,6 @@ static int run_channel_cwt(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     const int end = (count * (jobnr+1)) / nb_jobs;
 
     for (int y = start; y < end; y++) {
-        AVComplexFloat *isrc = (AVComplexFloat *)s->ifft_in->extended_data[y];
-        AVComplexFloat *idst = (AVComplexFloat *)s->ifft_out->extended_data[y];
         AVComplexFloat *chout = ((AVComplexFloat *)s->ch_out->extended_data[ch]) + y * ihop_size;
         AVComplexFloat *dstx = (AVComplexFloat *)s->dst_x->extended_data[jobnr];
         AVComplexFloat *srcx = (AVComplexFloat *)s->src_x->extended_data[jobnr];
@@ -803,14 +803,14 @@ static int config_output(AVFilterLink *outlink)
 
     s->ifft_in->format     = inlink->format;
     s->ifft_in->nb_samples = s->ifft_in_size * 2;
-    s->ifft_in->ch_layout.nb_channels = s->frequency_band_count;
+    s->ifft_in->ch_layout.nb_channels = s->nb_threads;
     ret = av_frame_get_buffer(s->ifft_in, 0);
     if (ret < 0)
         return ret;
 
     s->ifft_out->format     = inlink->format;
     s->ifft_out->nb_samples = s->ifft_out_size * 2;
-    s->ifft_out->ch_layout.nb_channels = s->frequency_band_count;
+    s->ifft_out->ch_layout.nb_channels = s->nb_threads;
     ret = av_frame_get_buffer(s->ifft_out, 0);
     if (ret < 0)
         return ret;
