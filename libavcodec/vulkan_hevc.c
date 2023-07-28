@@ -17,6 +17,7 @@
  */
 
 #include "hevcdec.h"
+#include "hevc_data.h"
 #include "hevc_ps.h"
 
 #include "vulkan_decode.h"
@@ -205,6 +206,43 @@ static StdVideoH265LevelIdc convert_to_vk_level_idc(int level_idc)
     }
 }
 
+static void copy_scaling_list(const ScalingList *sl, StdVideoH265ScalingLists *vksl)
+{
+    for (int i = 0; i < STD_VIDEO_H265_SCALING_LIST_4X4_NUM_LISTS; i++) {
+        for (int j = 0; j < STD_VIDEO_H265_SCALING_LIST_4X4_NUM_ELEMENTS; j++) {
+            uint8_t pos = 4 * ff_hevc_diag_scan4x4_y[j] + ff_hevc_diag_scan4x4_x[j];
+            vksl->ScalingList4x4[i][j] = sl->sl[0][i][pos];
+        }
+    }
+
+    for (int i = 0; i < STD_VIDEO_H265_SCALING_LIST_8X8_NUM_LISTS; i++) {
+        for (int j = 0; j < STD_VIDEO_H265_SCALING_LIST_8X8_NUM_ELEMENTS; j++) {
+            uint8_t pos = 8 * ff_hevc_diag_scan8x8_y[j] + ff_hevc_diag_scan8x8_x[j];
+            vksl->ScalingList8x8[i][j] = sl->sl[1][i][pos];
+        }
+    }
+
+    for (int i = 0; i < STD_VIDEO_H265_SCALING_LIST_16X16_NUM_LISTS; i++) {
+        for (int j = 0; j < STD_VIDEO_H265_SCALING_LIST_16X16_NUM_ELEMENTS; j++) {
+            uint8_t pos = 8 * ff_hevc_diag_scan8x8_y[j] + ff_hevc_diag_scan8x8_x[j];
+            vksl->ScalingList16x16[i][j] = sl->sl[2][i][pos];
+        }
+    }
+
+    for (int i = 0; i < STD_VIDEO_H265_SCALING_LIST_32X32_NUM_LISTS; i++) {
+        for (int j = 0; j < STD_VIDEO_H265_SCALING_LIST_32X32_NUM_ELEMENTS; j++) {
+            uint8_t pos = 8 * ff_hevc_diag_scan8x8_y[j] + ff_hevc_diag_scan8x8_x[j];
+            vksl->ScalingList32x32[i][j] = sl->sl[3][i * 3][pos];
+        }
+    }
+
+    memcpy(vksl->ScalingListDCCoef16x16, sl->sl_dc[0],
+           STD_VIDEO_H265_SCALING_LIST_16X16_NUM_LISTS * sizeof(*vksl->ScalingListDCCoef16x16));
+
+    for (int i = 0; i <  STD_VIDEO_H265_SCALING_LIST_32X32_NUM_LISTS; i++)
+        vksl->ScalingListDCCoef32x32[i] = sl->sl_dc[1][i * 3];
+}
+
 static void set_sps(const HEVCSPS *sps, int sps_idx,
                     StdVideoH265ScalingLists *vksps_scaling,
                     StdVideoH265HrdParameters *vksps_vui_header,
@@ -218,27 +256,7 @@ static void set_sps(const HEVCSPS *sps, int sps_idx,
                     StdVideoH265ShortTermRefPicSet *str,
                     StdVideoH265LongTermRefPicsSps *ltr)
 {
-    for (int i = 0; i < STD_VIDEO_H265_SCALING_LIST_4X4_NUM_LISTS; i++)
-        memcpy(vksps_scaling->ScalingList4x4[i], sps->scaling_list.sl[0][i],
-               STD_VIDEO_H265_SCALING_LIST_4X4_NUM_ELEMENTS * sizeof(**vksps_scaling->ScalingList4x4));
-
-    for (int i = 0; i < STD_VIDEO_H265_SCALING_LIST_8X8_NUM_LISTS; i++)
-        memcpy(vksps_scaling->ScalingList8x8[i], sps->scaling_list.sl[1][i],
-               STD_VIDEO_H265_SCALING_LIST_8X8_NUM_ELEMENTS * sizeof(**vksps_scaling->ScalingList8x8));
-
-    for (int i = 0; i < STD_VIDEO_H265_SCALING_LIST_16X16_NUM_LISTS; i++)
-        memcpy(vksps_scaling->ScalingList16x16[i], sps->scaling_list.sl[2][i],
-               STD_VIDEO_H265_SCALING_LIST_16X16_NUM_ELEMENTS * sizeof(**vksps_scaling->ScalingList16x16));
-
-    for (int i = 0; i < STD_VIDEO_H265_SCALING_LIST_32X32_NUM_LISTS; i++)
-        memcpy(vksps_scaling->ScalingList32x32[i], sps->scaling_list.sl[3][i * 3],
-               STD_VIDEO_H265_SCALING_LIST_32X32_NUM_ELEMENTS * sizeof(**vksps_scaling->ScalingList32x32));
-
-    memcpy(vksps_scaling->ScalingListDCCoef16x16, sps->scaling_list.sl_dc[0],
-           STD_VIDEO_H265_SCALING_LIST_16X16_NUM_LISTS * sizeof(*vksps_scaling->ScalingListDCCoef16x16));
-
-    for (int i = 0; i <  STD_VIDEO_H265_SCALING_LIST_32X32_NUM_LISTS; i++)
-        vksps_scaling->ScalingListDCCoef32x32[i] = sps->scaling_list.sl_dc[1][i * 3];
+    copy_scaling_list(&sps->scaling_list, vksps_scaling);
 
     *vksps_vui_header = (StdVideoH265HrdParameters) {
         .flags = (StdVideoH265HrdFlags) {
@@ -464,27 +482,7 @@ static void set_pps(const HEVCPPS *pps, const HEVCSPS *sps,
                     StdVideoH265PictureParameterSet *vkpps,
                     StdVideoH265PredictorPaletteEntries *pal)
 {
-    for (int i = 0; i < STD_VIDEO_H265_SCALING_LIST_4X4_NUM_LISTS; i++)
-        memcpy(vkpps_scaling->ScalingList4x4[i], pps->scaling_list.sl[0][i],
-               STD_VIDEO_H265_SCALING_LIST_4X4_NUM_ELEMENTS * sizeof(**vkpps_scaling->ScalingList4x4));
-
-    for (int i = 0; i < STD_VIDEO_H265_SCALING_LIST_8X8_NUM_LISTS; i++)
-        memcpy(vkpps_scaling->ScalingList8x8[i], pps->scaling_list.sl[1][i],
-               STD_VIDEO_H265_SCALING_LIST_8X8_NUM_ELEMENTS * sizeof(**vkpps_scaling->ScalingList8x8));
-
-    for (int i = 0; i < STD_VIDEO_H265_SCALING_LIST_16X16_NUM_LISTS; i++)
-        memcpy(vkpps_scaling->ScalingList16x16[i], pps->scaling_list.sl[2][i],
-               STD_VIDEO_H265_SCALING_LIST_16X16_NUM_ELEMENTS * sizeof(**vkpps_scaling->ScalingList16x16));
-
-    for (int i = 0; i < STD_VIDEO_H265_SCALING_LIST_32X32_NUM_LISTS; i++)
-        memcpy(vkpps_scaling->ScalingList32x32[i], pps->scaling_list.sl[3][i * 3],
-               STD_VIDEO_H265_SCALING_LIST_32X32_NUM_ELEMENTS * sizeof(**vkpps_scaling->ScalingList32x32));
-
-    memcpy(vkpps_scaling->ScalingListDCCoef16x16, pps->scaling_list.sl_dc[0],
-           STD_VIDEO_H265_SCALING_LIST_16X16_NUM_LISTS * sizeof(*vkpps_scaling->ScalingListDCCoef16x16));
-
-    for (int i = 0; i <  STD_VIDEO_H265_SCALING_LIST_32X32_NUM_LISTS; i++)
-        vkpps_scaling->ScalingListDCCoef32x32[i] = sps->scaling_list.sl_dc[1][i * 3];
+    copy_scaling_list(&pps->scaling_list, vkpps_scaling);
 
     *vkpps = (StdVideoH265PictureParameterSet) {
         .flags = (StdVideoH265PpsFlags) {
