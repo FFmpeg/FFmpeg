@@ -583,6 +583,7 @@ static int run_channel_cwt(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     AVComplexFloat *isrc = (AVComplexFloat *)s->ifft_in->extended_data[jobnr];
     AVComplexFloat *idst = (AVComplexFloat *)s->ifft_out->extended_data[jobnr];
     const int output_padding_size = s->output_padding_size;
+    const float scale = 1.f / s->input_padding_size;
     const int ihop_size = s->ihop_size;
     const int count = s->frequency_band_count;
     const int start = (count * jobnr) / nb_jobs;
@@ -601,6 +602,7 @@ static int run_channel_cwt(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
 
         memcpy(srcx, fft_out + kernel_start, sizeof(*fft_out) * kernel_range);
 
+        s->fdsp->vector_fmul_scalar((float *)srcx, (const float *)srcx, scale, FFALIGN(kernel_range * 2, 4));
         s->fdsp->vector_fmul((float *)dstx, (const float *)srcx,
                              (const float *)kernel, FFALIGN(kernel_range * 2, 16));
 
@@ -630,7 +632,6 @@ static int compute_kernel(AVFilterContext *ctx)
     ShowCWTContext *s = ctx->priv;
     const float correction = s->input_padding_size / (float)s->input_sample_count;
     const int size = s->input_sample_count;
-    const float scale_factor = 1.f/(float)size;
     const int output_sample_count = s->output_sample_count;
     const int fsize = s->frequency_band_count;
     int *kernel_start = s->kernel_start;
@@ -655,7 +656,7 @@ static int compute_kernel(AVFilterContext *ctx)
         for (int n = 0; n < size; n++) {
             float ff, f = fabsf(n-frequency);
 
-            ff = expf(-f*f*deviation) * scale_factor;
+            ff = expf(-f*f*deviation);
             tkernel[n] = ff;
         }
 
