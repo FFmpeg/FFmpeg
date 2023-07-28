@@ -280,9 +280,7 @@ static void frequency_band(float *frequency_band,
 
 static float remap_log(float value, float log_factor)
 {
-    float sign = (0 < value) - (value < 0);
-
-    value = logf(value * sign) * log_factor;
+    value = logf(value) * log_factor;
 
     return 1.f - av_clipf(value, 0.f, 1.f);
 }
