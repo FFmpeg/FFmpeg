@@ -636,6 +636,7 @@ static int compute_kernel(AVFilterContext *ctx)
     const int fsize = s->frequency_band_count;
     int *kernel_start = s->kernel_start;
     int *kernel_stop = s->kernel_stop;
+    const int hsize = size >> 1;
     unsigned *index = s->index;
     int kernel_min = INT_MAX;
     int kernel_max = 0, ret = 0;
@@ -656,6 +657,7 @@ static int compute_kernel(AVFilterContext *ctx)
         for (int n = 0; n < size; n++) {
             float ff, f = n-frequency;
 
+            f = hsize - fabsf(f - hsize);
             ff = expf(-f*f*deviation);
             tkernel[n] = ff;
         }
