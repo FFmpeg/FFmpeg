@@ -631,7 +631,7 @@ static int compute_kernel(AVFilterContext *ctx)
 {
     ShowCWTContext *s = ctx->priv;
     const float correction = s->input_padding_size / (float)s->input_sample_count;
-    const int size = s->input_sample_count;
+    const int size = s->input_padding_size;
     const int output_sample_count = s->output_sample_count;
     const int fsize = s->frequency_band_count;
     int *kernel_start = s->kernel_start;
