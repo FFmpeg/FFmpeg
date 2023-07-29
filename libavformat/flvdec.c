@@ -304,30 +304,18 @@ static void flv_set_audio_codec(AVFormatContext *s, AVStream *astream,
     }
 }
 
-static int flv_same_video_codec(AVFormatContext *s, AVCodecParameters *vpar, int flags)
+static int flv_same_video_codec(AVCodecParameters *vpar, uint32_t flv_codecid)
 {
-    int flv_codecid = flags & FLV_VIDEO_CODECID_MASK;
-    FLVContext *flv = s->priv_data;
-
     if (!vpar->codec_id && !vpar->codec_tag)
         return 1;
 
-    if (flv->exheader) {
-        uint8_t *codec_id_str = (uint8_t *)s->pb->buf_ptr;
-        uint32_t codec_id = codec_id_str[3] | codec_id_str[2] << 8 | codec_id_str[1] << 16 | codec_id_str[0] << 24;
-        switch(codec_id) {
-            case MKBETAG('h', 'v', 'c', '1'):
-                return vpar->codec_id == AV_CODEC_ID_HEVC;
-            case MKBETAG('a', 'v', '0', '1'):
-                return vpar->codec_id == AV_CODEC_ID_AV1;
-            case MKBETAG('v', 'p', '0', '9'):
-                return vpar->codec_id == AV_CODEC_ID_VP9;
-            default:
-                break;
-        }
-    }
-
     switch (flv_codecid) {
+    case MKBETAG('h', 'v', 'c', '1'):
+        return vpar->codec_id == AV_CODEC_ID_HEVC;
+    case MKBETAG('a', 'v', '0', '1'):
+        return vpar->codec_id == AV_CODEC_ID_AV1;
+    case MKBETAG('v', 'p', '0', '9'):
+        return vpar->codec_id == AV_CODEC_ID_VP9;
     case FLV_CODECID_H263:
         return vpar->codec_id == AV_CODEC_ID_FLV1;
     case FLV_CODECID_SCREEN:
@@ -346,36 +334,26 @@ static int flv_same_video_codec(AVFormatContext *s, AVCodecParameters *vpar, int
 }
 
 static int flv_set_video_codec(AVFormatContext *s, AVStream *vstream,
-                               int flv_codecid, int read)
+                               uint32_t flv_codecid, int read)
 {
     FFStream *const vstreami = ffstream(vstream);
-    FLVContext *flv = s->priv_data;
     int ret = 0;
     AVCodecParameters *par = vstream->codecpar;
     enum AVCodecID old_codec_id = vstream->codecpar->codec_id;
-    flv_codecid &= FLV_VIDEO_CODECID_MASK;
 
-    if (flv->exheader) {
-        uint32_t codec_id = avio_rb32(s->pb);
-
-        switch(codec_id) {
-            case MKBETAG('h', 'v', 'c', '1'):
-                par->codec_id = AV_CODEC_ID_HEVC;
-                vstreami->need_parsing = AVSTREAM_PARSE_HEADERS;
-                return 4;
-            case MKBETAG('a', 'v', '0', '1'):
-                par->codec_id = AV_CODEC_ID_AV1;
-                vstreami->need_parsing = AVSTREAM_PARSE_HEADERS;
-                return 4;
-            case MKBETAG('v', 'p', '0', '9'):
-                par->codec_id = AV_CODEC_ID_VP9;
-                vstreami->need_parsing = AVSTREAM_PARSE_HEADERS;
-                return 4;
-            default:
-                break;
-        }
-    }
     switch (flv_codecid) {
+    case MKBETAG('h', 'v', 'c', '1'):
+        par->codec_id = AV_CODEC_ID_HEVC;
+        vstreami->need_parsing = AVSTREAM_PARSE_HEADERS;
+        break;
+    case MKBETAG('a', 'v', '0', '1'):
+        par->codec_id = AV_CODEC_ID_AV1;
+        vstreami->need_parsing = AVSTREAM_PARSE_HEADERS;
+        break;
+    case MKBETAG('v', 'p', '0', '9'):
+        par->codec_id = AV_CODEC_ID_VP9;
+        vstreami->need_parsing = AVSTREAM_PARSE_HEADERS;
+        break;
     case FLV_CODECID_H263:
         par->codec_id = AV_CODEC_ID_FLV1;
         break;
@@ -1065,6 +1043,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     AVStream *st    = NULL;
     int last = -1;
     int orig_size;
+    uint32_t video_codec_id = 0;
 
 retry:
     /* pkt size is repeated at end. skip it */
@@ -1111,12 +1090,17 @@ retry:
     } else if (type == FLV_TAG_TYPE_VIDEO) {
         stream_type = FLV_STREAM_TYPE_VIDEO;
         flags    = avio_r8(s->pb);
+        video_codec_id = flags & FLV_VIDEO_CODECID_MASK;
         /*
          * Reference Enhancing FLV 2023-03-v1.0.0-B.8
          * https://github.com/veovera/enhanced-rtmp/blob/main/enhanced-rtmp-v1.pdf
          * */
         flv->exheader = (flags >> 7) & 1;
         size--;
+        if (flv->exheader) {
+            video_codec_id = avio_rb32(s->pb);
+            size -= 4;
+        }
         if ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_VIDEO_INFO_CMD)
             goto skip;
     } else if (type == FLV_TAG_TYPE_META) {
@@ -1174,7 +1158,7 @@ skip:
                 break;
         } else if (stream_type == FLV_STREAM_TYPE_VIDEO) {
             if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
-                (s->video_codec_id || flv_same_video_codec(s, st->codecpar, flags)))
+                (s->video_codec_id || flv_same_video_codec(st->codecpar, video_codec_id)))
                 break;
         } else if (stream_type == FLV_STREAM_TYPE_SUBTITLE) {
             if (st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE)
@@ -1275,7 +1259,7 @@ retry_duration:
             avcodec_parameters_free(&par);
         }
     } else if (stream_type == FLV_STREAM_TYPE_VIDEO) {
-        int ret = flv_set_video_codec(s, st, flags, 1);
+        int ret = flv_set_video_codec(s, st, video_codec_id, 1);
         if (ret < 0)
             return ret;
         size -= ret;
