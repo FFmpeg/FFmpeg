@@ -583,7 +583,8 @@ static int run_channel_cwt(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     AVComplexFloat *isrc = (AVComplexFloat *)s->ifft_in->extended_data[jobnr];
     AVComplexFloat *idst = (AVComplexFloat *)s->ifft_out->extended_data[jobnr];
     const int output_padding_size = s->output_padding_size;
-    const float scale = 1.f / s->input_padding_size;
+    const int input_padding_size = s->input_padding_size;
+    const float scale = 1.f / input_padding_size;
     const int ihop_size = s->ihop_size;
     const int count = s->frequency_band_count;
     const int start = (count * jobnr) / nb_jobs;
@@ -599,19 +600,36 @@ static int run_channel_cwt(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
         const int kernel_start = s->kernel_start[y];
         const int kernel_stop = s->kernel_stop[y];
         const int kernel_range = kernel_stop - kernel_start + 1;
+        int offset;
 
-        memcpy(srcx, fft_out + kernel_start, sizeof(*fft_out) * kernel_range);
+        if (kernel_start >= 0) {
+            offset = 0;
+            memcpy(srcx, fft_out + kernel_start, sizeof(*fft_out) * kernel_range);
+        } else {
+            offset = -kernel_start;
+            memcpy(srcx+offset, fft_out, sizeof(*fft_out) * (kernel_range-offset));
+            memcpy(srcx, fft_out+input_padding_size-offset, sizeof(*fft_out)*offset);
+        }
 
         s->fdsp->vector_fmul_scalar((float *)srcx, (const float *)srcx, scale, FFALIGN(kernel_range * 2, 4));
         s->fdsp->vector_fmul((float *)dstx, (const float *)srcx,
                              (const float *)kernel, FFALIGN(kernel_range * 2, 16));
 
         memset(isrc, 0, sizeof(*isrc) * output_padding_size);
-        for (int i = 0; i < kernel_range; i++) {
-            const unsigned n = index[i + kernel_start];
+        if (offset == 0) {
+            for (int i = 0; i < kernel_range; i++) {
+                const unsigned n = index[i + kernel_start];
 
-            isrc[n].re += dstx[i].re;
-            isrc[n].im += dstx[i].im;
+                isrc[n].re += dstx[i].re;
+                isrc[n].im += dstx[i].im;
+            }
+        } else {
+            for (int i = 0; i < kernel_range; i++) {
+                const unsigned n = (i-kernel_start) & (output_padding_size-1);
+
+                isrc[n].re += dstx[i].re;
+                isrc[n].im += dstx[i].im;
+            }
         }
 
         s->itx_fn(s->ifft[jobnr], idst, isrc, sizeof(*isrc));
@@ -636,7 +654,6 @@ static int compute_kernel(AVFilterContext *ctx)
     const int fsize = s->frequency_band_count;
     int *kernel_start = s->kernel_start;
     int *kernel_stop = s->kernel_stop;
-    const int hsize = size >> 1;
     unsigned *index = s->index;
     int kernel_min = INT_MAX;
     int kernel_max = 0, ret = 0;
@@ -649,17 +666,17 @@ static int compute_kernel(AVFilterContext *ctx)
     for (int y = 0; y < fsize; y++) {
         AVComplexFloat *kernel = s->kernel[y];
         int start = 0, stop = 0;
-        float frequency = s->frequency_band[y*2] * correction;
-        float deviation = 1.f / (s->frequency_band[y*2+1] *
-                                 output_sample_count * correction);
+        const float frequency = s->frequency_band[y*2] * correction;
+        const float deviation = 1.f / (s->frequency_band[y*2+1] *
+                                       output_sample_count * correction);
+        const int range = 8.f*M_PI*sqrtf(1.f/deviation);
 
         memset(tkernel, 0, size * sizeof(*tkernel));
-        for (int n = 0; n < size; n++) {
+        for (int n = -range; n < size-range; n++) {
             float ff, f = n+0.5f-frequency;
 
-            f = hsize - fabsf(f - hsize);
             ff = expf(-f*f*deviation);
-            tkernel[n] = ff;
+            tkernel[n+range] = ff;
         }
 
         for (int n = 0; n < size; n++) {
@@ -682,8 +699,8 @@ static int compute_kernel(AVFilterContext *ctx)
             }
         }
 
-        kernel_start[y] = start;
-        kernel_stop[y] = stop;
+        kernel_start[y] = start - range;
+        kernel_stop[y] = stop - range;
 
         kernel = av_calloc(FFALIGN(stop - start + 1, 16), sizeof(*kernel));
         if (!kernel) {
