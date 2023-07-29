@@ -478,7 +478,9 @@ static int ff_request_frame_to_filter(AVFilterLink *link)
 static const char *const var_names[] = {
     "t",
     "n",
+#if FF_API_FRAME_PKT
     "pos",
+#endif
     "w",
     "h",
     NULL
