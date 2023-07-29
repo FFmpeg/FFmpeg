@@ -655,7 +655,7 @@ static int compute_kernel(AVFilterContext *ctx)
 
         memset(tkernel, 0, size * sizeof(*tkernel));
         for (int n = 0; n < size; n++) {
-            float ff, f = n-frequency;
+            float ff, f = n+0.5f-frequency;
 
             f = hsize - fabsf(f - hsize);
             ff = expf(-f*f*deviation);
