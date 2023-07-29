@@ -540,14 +540,19 @@ static QSVFrame *query_frame(QSVVPPContext *s, AVFilterLink *outlink, const AVFr
         mfxExtBuffer *extbuf = s->vpp_param.ExtParam[i];
 
         if (extbuf->BufferId == MFX_EXTBUFF_VPP_DEINTERLACING) {
+#if FF_API_INTERLACED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
             out_frame->frame->interlaced_frame = 0;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+            out_frame->frame->flags &= ~AV_FRAME_FLAG_INTERLACED;
             break;
         }
     }
 
     out_frame->surface.Info.PicStruct =
-        !out_frame->frame->interlaced_frame ? MFX_PICSTRUCT_PROGRESSIVE :
-        (out_frame->frame->top_field_first ? MFX_PICSTRUCT_FIELD_TFF :
+        !(out_frame->frame->flags & AV_FRAME_FLAG_INTERLACED) ? MFX_PICSTRUCT_PROGRESSIVE :
+        ((out_frame->frame->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST) ? MFX_PICSTRUCT_FIELD_TFF :
          MFX_PICSTRUCT_FIELD_BFF);
 
     return out_frame;
