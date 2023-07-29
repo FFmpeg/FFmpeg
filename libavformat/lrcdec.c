@@ -170,10 +170,11 @@ static int lrc_read_header(AVFormatContext *s)
     av_bprint_init(&line, 0, AV_BPRINT_SIZE_UNLIMITED);
 
     while(!avio_feof(s->pb)) {
-        int64_t pos = read_line(&line, s->pb);
+        int64_t header_offset, pos = read_line(&line, s->pb);
+
         if (!av_bprint_is_complete(&line))
             goto err_nomem_out;
-        int64_t header_offset = find_header(line.str);
+        header_offset = find_header(line.str);
         if(header_offset >= 0) {
             char *comma_offset = strchr(line.str, ':');
             if(comma_offset) {
