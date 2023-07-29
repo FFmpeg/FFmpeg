@@ -201,6 +201,17 @@ void avfilter_link_free(AVFilterLink **link)
     av_freep(link);
 }
 
+static void update_link_current_pts(AVFilterLink *link, int64_t pts)
+{
+    if (pts == AV_NOPTS_VALUE)
+        return;
+    link->current_pts = pts;
+    link->current_pts_us = av_rescale_q(pts, link->time_base, AV_TIME_BASE_Q);
+    /* TODO use duration */
+    if (link->graph && link->age_index >= 0)
+        ff_avfilter_graph_update_heap(link->graph, link);
+}
+
 void ff_filter_set_ready(AVFilterContext *filter, unsigned priority)
 {
     filter->ready = FFMAX(filter->ready, priority);
@@ -232,13 +243,17 @@ void ff_avfilter_link_set_in_status(AVFilterLink *link, int status, int64_t pts)
     ff_filter_set_ready(link->dst, 200);
 }
 
-void ff_avfilter_link_set_out_status(AVFilterLink *link, int status, int64_t pts)
+/**
+ * Set the status field of a link from the destination filter.
+ * The pts should probably be left unset (AV_NOPTS_VALUE).
+ */
+static void link_set_out_status(AVFilterLink *link, int status, int64_t pts)
 {
     av_assert0(!link->frame_wanted_out);
     av_assert0(!link->status_out);
     link->status_out = status;
     if (pts != AV_NOPTS_VALUE)
-        ff_update_link_current_pts(link, pts);
+        update_link_current_pts(link, pts);
     filter_unblock(link->dst);
     ff_filter_set_ready(link->src, 200);
 }
@@ -428,7 +443,7 @@ int ff_request_frame(AVFilterLink *link)
             /* Acknowledge status change. Filters using ff_request_frame() will
                handle the change automatically. Filters can also check the
                status directly but none do yet. */
-            ff_avfilter_link_set_out_status(link, link->status_in, link->status_in_pts);
+            link_set_out_status(link, link->status_in, link->status_in_pts);
             return link->status_out;
         }
     }
@@ -535,17 +550,6 @@ static int set_enable_expr(AVFilterContext *ctx, const char *expr)
     av_free(ctx->enable_str);
     ctx->enable_str = expr_dup;
     return 0;
-}
-
-void ff_update_link_current_pts(AVFilterLink *link, int64_t pts)
-{
-    if (pts == AV_NOPTS_VALUE)
-        return;
-    link->current_pts = pts;
-    link->current_pts_us = av_rescale_q(pts, link->time_base, AV_TIME_BASE_Q);
-    /* TODO use duration */
-    if (link->graph && link->age_index >= 0)
-        ff_avfilter_graph_update_heap(link->graph, link);
 }
 
 int avfilter_process_command(AVFilterContext *filter, const char *cmd, const char *arg, char *res, int res_len, int flags)
@@ -1117,7 +1121,7 @@ static int ff_filter_frame_to_filter(AVFilterLink *link)
     link->frame_count_out--;
     ret = ff_filter_frame_framed(link, frame);
     if (ret < 0 && ret != link->status_out) {
-        ff_avfilter_link_set_out_status(link, ret, AV_NOPTS_VALUE);
+        link_set_out_status(link, ret, AV_NOPTS_VALUE);
     } else {
         /* Run once again, to see if several frames were available, or if
            the input status has also changed, or any other reason. */
@@ -1147,7 +1151,7 @@ static int forward_status_change(AVFilterContext *filter, AVFilterLink *in)
             if (!progress) {
                 /* Every output already closed: input no longer interesting
                    (example: overlay in shortest mode, other input closed). */
-                ff_avfilter_link_set_out_status(in, in->status_in, in->status_in_pts);
+                link_set_out_status(in, in->status_in, in->status_in_pts);
                 return 0;
             }
             progress = 0;
@@ -1249,7 +1253,7 @@ static int ff_filter_activate_default(AVFilterContext *filter)
      change is considered having already happened.
 
      It is set by the destination filter using
-     ff_avfilter_link_set_out_status().
+     link_set_out_status().
 
    Filters are activated according to the ready field, set using the
    ff_filter_set_ready(). Eventually, a priority queue will be used.
@@ -1339,7 +1343,7 @@ int ff_inlink_acknowledge_status(AVFilterLink *link, int *rstatus, int64_t *rpts
     if (!link->status_in)
         return *rstatus = 0;
     *rstatus = link->status_out = link->status_in;
-    ff_update_link_current_pts(link, link->status_in_pts);
+    update_link_current_pts(link, link->status_in_pts);
     *rpts = link->current_pts;
     return 1;
 }
@@ -1368,7 +1372,7 @@ int ff_inlink_check_available_samples(AVFilterLink *link, unsigned min)
 
 static void consume_update(AVFilterLink *link, const AVFrame *frame)
 {
-    ff_update_link_current_pts(link, frame->pts);
+    update_link_current_pts(link, frame->pts);
     ff_inlink_process_commands(link, frame);
     link->dst->is_disabled = !ff_inlink_evaluate_timeline_at_frame(link, frame);
     link->frame_count_out++;
@@ -1512,7 +1516,7 @@ void ff_inlink_set_status(AVFilterLink *link, int status)
         return;
     link->frame_wanted_out = 0;
     link->frame_blocked_in = 0;
-    ff_avfilter_link_set_out_status(link, status, AV_NOPTS_VALUE);
+    link_set_out_status(link, status, AV_NOPTS_VALUE);
     while (ff_framequeue_queued_frames(&link->fifo)) {
            AVFrame *frame = ff_framequeue_take(&link->fifo);
            av_frame_free(&frame);

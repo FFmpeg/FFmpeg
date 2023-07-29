@@ -243,8 +243,6 @@ av_warn_unused_result
 int ff_parse_channel_layout(AVChannelLayout *ret, int *nret, const char *arg,
                             void *log_ctx);
 
-void ff_update_link_current_pts(AVFilterLink *link, int64_t pts);
-
 /**
  * Set the status field of a link from the source filter.
  * The pts should reflect the timestamp of the status change,
@@ -253,12 +251,6 @@ void ff_update_link_current_pts(AVFilterLink *link, int64_t pts);
  * end time of the last frame.
  */
 void ff_avfilter_link_set_in_status(AVFilterLink *link, int status, int64_t pts);
-
-/**
- * Set the status field of a link from the destination filter.
- * The pts should probably be left unset (AV_NOPTS_VALUE).
- */
-void ff_avfilter_link_set_out_status(AVFilterLink *link, int status, int64_t pts);
 
 #define D2TS(d)      (isnan(d) ? AV_NOPTS_VALUE : (int64_t)(d))
 #define TS2D(ts)     ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts))
