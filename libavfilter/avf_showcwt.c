@@ -655,8 +655,8 @@ static int compute_kernel(AVFilterContext *ctx)
     int *kernel_start = s->kernel_start;
     int *kernel_stop = s->kernel_stop;
     unsigned *index = s->index;
-    int kernel_min = INT_MAX;
-    int kernel_max = 0, ret = 0;
+    int range_min = INT_MAX;
+    int range_max = 0, ret = 0;
     float *tkernel;
 
     tkernel = av_malloc_array(size, sizeof(*tkernel));
@@ -670,48 +670,51 @@ static int compute_kernel(AVFilterContext *ctx)
         const float deviation = 1.f / (s->frequency_band[y*2+1] *
                                        output_sample_count * correction);
         const int range = 8.f*M_PI*sqrtf(1.f/deviation);
+        const int a = floorf(frequency-range);
+        const int b = ceilf(frequency+range);
 
         memset(tkernel, 0, size * sizeof(*tkernel));
-        for (int n = -range; n < size-range; n++) {
+        for (int n = a; n < b; n++) {
             float ff, f = n+0.5f-frequency;
 
             ff = expf(-f*f*deviation);
             tkernel[n+range] = ff;
         }
 
-        for (int n = 0; n < size; n++) {
-            if (tkernel[n] != 0.f) {
-                if (tkernel[n] > FLT_MIN)
+        for (int n = a; n < b; n++) {
+            if (tkernel[n+range] != 0.f) {
+                if (tkernel[n+range] > FLT_MIN)
                     av_log(ctx, AV_LOG_DEBUG, "out of range kernel\n");
                 start = n;
-                kernel_min = FFMIN(start, kernel_min);
                 break;
             }
         }
 
-        for (int n = 0; n < size; n++) {
-            if (tkernel[size - n - 1] != 0.f) {
-                if (tkernel[size - n - 1] > FLT_MIN)
+        for (int n = b; n >= a; n--) {
+            if (tkernel[n+range] != 0.f) {
+                if (tkernel[n+range] > FLT_MIN)
                     av_log(ctx, AV_LOG_DEBUG, "out of range kernel\n");
-                stop = size - n - 1;
-                kernel_max = FFMAX(stop, kernel_max);
+                stop = n;
                 break;
             }
         }
 
-        kernel_start[y] = start - range;
-        kernel_stop[y] = stop - range;
+        kernel_start[y] = start;
+        kernel_stop[y] = stop;
 
-        kernel = av_calloc(FFALIGN(stop - start + 1, 16), sizeof(*kernel));
+        kernel = av_calloc(FFALIGN(stop - start + 1+range, 16), sizeof(*kernel));
         if (!kernel) {
             ret = AVERROR(ENOMEM);
             break;
         }
 
-        for (int n = start; n <= stop; n++) {
-            kernel[n - start].re = tkernel[n];
-            kernel[n - start].im = tkernel[n];
+        for (int n = 0; n <= stop - start; n++) {
+            kernel[n].re = tkernel[n+range+start];
+            kernel[n].im = tkernel[n+range+start];
         }
+
+        range_min = FFMIN(range_min, stop+1-start);
+        range_max = FFMAX(range_max, stop+1-start);
 
         s->kernel[y] = kernel;
     }
@@ -719,9 +722,8 @@ static int compute_kernel(AVFilterContext *ctx)
     for (int n = 0; n < size; n++)
         index[n] = n % s->output_padding_size;
 
-    av_log(ctx, AV_LOG_DEBUG, "kernel_min: %d\n", kernel_min);
-    av_log(ctx, AV_LOG_DEBUG, "kernel_max: %d\n", kernel_max);
-    av_log(ctx, AV_LOG_DEBUG, "kernel_range: %d\n", kernel_max - kernel_min);
+    av_log(ctx, AV_LOG_DEBUG, "range_min: %d\n", range_min);
+    av_log(ctx, AV_LOG_DEBUG, "range_max: %d\n", range_max);
 
     av_freep(&tkernel);
 
