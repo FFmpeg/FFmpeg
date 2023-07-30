@@ -37,7 +37,7 @@
 
 enum FrequencyScale {
     FSCALE_LINEAR,
-    FSCALE_LOG2,
+    FSCALE_LOG,
     FSCALE_BARK,
     FSCALE_MEL,
     FSCALE_ERBS,
@@ -136,7 +136,7 @@ static const AVOption showcwt_options[] = {
     { "r",    "set video rate",  OFFSET(rate_str), AV_OPT_TYPE_STRING, {.str = "25"}, 0, 0, FLAGS },
     { "scale", "set frequency scale", OFFSET(frequency_scale), AV_OPT_TYPE_INT,  {.i64=0}, 0, NB_FSCALE-1, FLAGS, "scale" },
     {  "linear",  "linear",           0,                       AV_OPT_TYPE_CONST,{.i64=FSCALE_LINEAR}, 0, 0, FLAGS, "scale" },
-    {  "log2",    "logarithmic",      0,                       AV_OPT_TYPE_CONST,{.i64=FSCALE_LOG2},   0, 0, FLAGS, "scale" },
+    {  "log",     "logarithmic",      0,                       AV_OPT_TYPE_CONST,{.i64=FSCALE_LOG},    0, 0, FLAGS, "scale" },
     {  "bark",    "bark",             0,                       AV_OPT_TYPE_CONST,{.i64=FSCALE_BARK},   0, 0, FLAGS, "scale" },
     {  "mel",     "mel",              0,                       AV_OPT_TYPE_CONST,{.i64=FSCALE_MEL},    0, 0, FLAGS, "scale" },
     {  "erbs",    "erbs",             0,                       AV_OPT_TYPE_CONST,{.i64=FSCALE_ERBS},   0, 0, FLAGS, "scale" },
@@ -259,7 +259,7 @@ static void frequency_band(float *frequency_band,
         float frequency_derivative = frequency_range / frequency_band_count;
 
         switch (frequency_scale) {
-        case FSCALE_LOG2:
+        case FSCALE_LOG:
             frequency = powf(2.f, frequency);
             frequency_derivative *= logf(2.f) * frequency;
             break;
@@ -919,7 +919,7 @@ static int config_output(AVFilterLink *outlink)
     maximum_frequency *= factor;
 
     switch (s->frequency_scale) {
-    case FSCALE_LOG2:
+    case FSCALE_LOG:
         minimum_frequency = logf(minimum_frequency) / logf(2.f);
         maximum_frequency = logf(maximum_frequency) / logf(2.f);
         break;
