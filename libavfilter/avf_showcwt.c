@@ -152,7 +152,7 @@ static const AVOption showcwt_options[] = {
     { "min",  "set minimum frequency", OFFSET(minimum_frequency), AV_OPT_TYPE_FLOAT, {.dbl = 20.},    1, 192000, FLAGS },
     { "max",  "set maximum frequency", OFFSET(maximum_frequency), AV_OPT_TYPE_FLOAT, {.dbl = 20000.}, 1, 192000, FLAGS },
     { "logb", "set logarithmic basis", OFFSET(logarithmic_basis), AV_OPT_TYPE_FLOAT, {.dbl = 0.0001}, 0, 1, FLAGS },
-    { "deviation", "set frequency deviation", OFFSET(deviation), AV_OPT_TYPE_FLOAT, {.dbl = 1.}, 0, 10, FLAGS },
+    { "deviation", "set frequency deviation", OFFSET(deviation), AV_OPT_TYPE_FLOAT, {.dbl = 1.}, 0, 100, FLAGS },
     { "pps",  "set pixels per second", OFFSET(pps), AV_OPT_TYPE_INT, {.i64 = 64}, 1, 1024, FLAGS },
     { "mode", "set output mode", OFFSET(mode), AV_OPT_TYPE_INT,  {.i64=0}, 0, 4, FLAGS, "mode" },
     {  "magnitude", "magnitude",         0, AV_OPT_TYPE_CONST,{.i64=0}, 0, 0, FLAGS, "mode" },
@@ -701,13 +701,13 @@ static int compute_kernel(AVFilterContext *ctx)
 
     for (int y = 0; y < fsize; y++) {
         AVComplexFloat *kernel = s->kernel[y];
-        int start = 0, stop = 0;
+        int start = INT_MIN, stop = INT_MAX;
         const float frequency = s->frequency_band[y*2] * correction;
         const float deviation = 1.f / (s->frequency_band[y*2+1] *
                                        output_sample_count * correction);
-        const int range = 8.f*M_PI*sqrtf(1.f/deviation);
-        const int a = floorf(frequency-range);
-        const int b = ceilf(frequency+range);
+        const int a = FFMAX(frequency-12.f*sqrtf(1.f/deviation)-0.5f, -size);
+        const int b = FFMIN(frequency+12.f*sqrtf(1.f/deviation)-0.5f, size+a);
+        const int range = -a;
 
         memset(tkernel, 0, size * sizeof(*tkernel));
         for (int n = a; n < b; n++) {
@@ -720,7 +720,7 @@ static int compute_kernel(AVFilterContext *ctx)
         for (int n = a; n < b; n++) {
             if (tkernel[n+range] != 0.f) {
                 if (tkernel[n+range] > FLT_MIN)
-                    av_log(ctx, AV_LOG_DEBUG, "out of range kernel\n");
+                    av_log(ctx, AV_LOG_DEBUG, "out of range kernel %g\n", tkernel[n+range]);
                 start = n;
                 break;
             }
@@ -729,16 +729,21 @@ static int compute_kernel(AVFilterContext *ctx)
         for (int n = b; n >= a; n--) {
             if (tkernel[n+range] != 0.f) {
                 if (tkernel[n+range] > FLT_MIN)
-                    av_log(ctx, AV_LOG_DEBUG, "out of range kernel\n");
+                    av_log(ctx, AV_LOG_DEBUG, "out of range kernel %g\n", tkernel[n+range]);
                 stop = n;
                 break;
             }
         }
 
+        if (start == INT_MIN || stop == INT_MAX) {
+            ret = AVERROR(EINVAL);
+            break;
+        }
+
         kernel_start[y] = start;
         kernel_stop[y] = stop;
 
-        kernel = av_calloc(FFALIGN(stop - start + 1+range, 16), sizeof(*kernel));
+        kernel = av_calloc(FFALIGN(stop-start+1, 16), sizeof(*kernel));
         if (!kernel) {
             ret = AVERROR(ENOMEM);
             break;
