@@ -30793,6 +30793,18 @@ Set the frequency scale used. Allowed values are:
 @end table
 Default value is @code{linear}.
 
+@item iscale
+Set the intensity scale used. Allowed values are:
+
+@table @option
+@item linear
+@item log
+@item sqrt
+@item cbrt
+@item qdrt
+@end table
+Default value is @code{log}.
+
 @item min
 Set the minimum frequency that will be used in output.
 Default is @code{20} Hz.

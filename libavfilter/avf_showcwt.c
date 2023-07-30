@@ -47,6 +47,15 @@ enum FrequencyScale {
     NB_FSCALE
 };
 
+enum IntensityScale {
+    ISCALE_LOG,
+    ISCALE_LINEAR,
+    ISCALE_SQRT,
+    ISCALE_CBRT,
+    ISCALE_QDRT,
+    NB_ISCALE
+};
+
 enum DirectionMode {
     DIRECTION_LR,
     DIRECTION_RL,
@@ -106,6 +115,7 @@ typedef struct ShowCWTContext {
     int input_sample_count, output_sample_count;
     int frequency_band_count;
     float logarithmic_basis;
+    int intensity_scale;
     int frequency_scale;
     float minimum_frequency, maximum_frequency;
     float deviation;
@@ -133,6 +143,12 @@ static const AVOption showcwt_options[] = {
     {  "sqrt",    "sqrt",             0,                       AV_OPT_TYPE_CONST,{.i64=FSCALE_SQRT},   0, 0, FLAGS, "scale" },
     {  "cbrt",    "cbrt",             0,                       AV_OPT_TYPE_CONST,{.i64=FSCALE_CBRT},   0, 0, FLAGS, "scale" },
     {  "qdrt",    "qdrt",             0,                       AV_OPT_TYPE_CONST,{.i64=FSCALE_QDRT},   0, 0, FLAGS, "scale" },
+    { "iscale", "set intensity scale", OFFSET(intensity_scale),AV_OPT_TYPE_INT,  {.i64=0},   0, NB_ISCALE-1, FLAGS, "iscale" },
+    {  "linear",  "linear",           0,                       AV_OPT_TYPE_CONST,{.i64=ISCALE_LINEAR}, 0, 0, FLAGS, "iscale" },
+    {  "log",     "logarithmic",      0,                       AV_OPT_TYPE_CONST,{.i64=ISCALE_LOG},    0, 0, FLAGS, "iscale" },
+    {  "sqrt",    "sqrt",             0,                       AV_OPT_TYPE_CONST,{.i64=ISCALE_SQRT},   0, 0, FLAGS, "iscale" },
+    {  "cbrt",    "cbrt",             0,                       AV_OPT_TYPE_CONST,{.i64=ISCALE_CBRT},   0, 0, FLAGS, "iscale" },
+    {  "qdrt",    "qdrt",             0,                       AV_OPT_TYPE_CONST,{.i64=ISCALE_QDRT},   0, 0, FLAGS, "iscale" },
     { "min",  "set minimum frequency", OFFSET(minimum_frequency), AV_OPT_TYPE_FLOAT, {.dbl = 20.},    1, 192000, FLAGS },
     { "max",  "set maximum frequency", OFFSET(maximum_frequency), AV_OPT_TYPE_FLOAT, {.dbl = 20000.}, 1, 192000, FLAGS },
     { "logb", "set logarithmic basis", OFFSET(logarithmic_basis), AV_OPT_TYPE_FLOAT, {.dbl = 0.0001}, 0, 1, FLAGS },
@@ -278,11 +294,31 @@ static void frequency_band(float *frequency_band,
     }
 }
 
-static float remap_log(float value, float log_factor)
+static float remap_log(float value, int iscale, float log_factor)
 {
-    value = logf(value) * log_factor;
+    float ret;
 
-    return 1.f - av_clipf(value, 0.f, 1.f);
+    switch (iscale) {
+    case ISCALE_LINEAR:
+        ret = value * 20.f*expf(log_factor);
+        break;
+    case ISCALE_LOG:
+        value = logf(value) * log_factor;
+
+        ret = 1.f - av_clipf(value, 0.f, 1.f);
+        break;
+    case ISCALE_SQRT:
+        ret = sqrtf(value * 20.f*expf(log_factor));
+        break;
+    case ISCALE_CBRT:
+        ret = cbrtf(value * 20.f*expf(log_factor));
+        break;
+    case ISCALE_QDRT:
+        ret = powf(value * 20.f*expf(log_factor), 0.25f);
+        break;
+    }
+
+    return ret;
 }
 
 static int run_channel_cwt_prepare(AVFilterContext *ctx, void *arg, int jobnr, int ch)
@@ -403,6 +439,7 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const int start = (count * jobnr) / nb_jobs;
     const int end = (count * (jobnr+1)) / nb_jobs;
     const int nb_channels = s->nb_channels;
+    const int iscale = s->intensity_scale;
     const int ihop_index = s->ihop_index;
     const int ihop_size = s->ihop_size;
     const float rotation = s->rotation;
@@ -479,9 +516,9 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
                 u = hypotf(src[0].re, src[0].im);
                 v = hypotf(src2[0].re, src2[0].im);
 
-                z  = remap_log(z, log_factor);
-                u  = remap_log(u, log_factor);
-                v  = remap_log(v, log_factor);
+                z  = remap_log(z, iscale, log_factor);
+                u  = remap_log(u, iscale, log_factor);
+                v  = remap_log(v, iscale, log_factor);
 
                 Y  = z;
                 U  = sinf((v - u) * M_PI_2);
@@ -515,7 +552,7 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
                     float z;
 
                     z = hypotf(srcn[0].re, srcn[0].im);
-                    z = remap_log(z, log_factor);
+                    z = remap_log(z, iscale, log_factor);
 
                     Y += z * yf;
                     U += z * yf * sinf(2.f * M_PI * (ch * yf + rotation));
@@ -534,7 +571,7 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             break;
         case 2:
             Y = hypotf(src[0].re, src[0].im);
-            Y = remap_log(Y, log_factor);
+            Y = remap_log(Y, iscale, log_factor);
             U = atan2f(src[0].im, src[0].re);
             U = 0.5f + 0.5f * U * Y / M_PI;
             V = 1.f - U;
@@ -559,7 +596,7 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             break;
         case 0:
             Y = hypotf(src[0].re, src[0].im);
-            Y = remap_log(Y, log_factor);
+            Y = remap_log(Y, iscale, log_factor);
 
             dstY[0] = av_clip_uint8(lrintf(Y * 255.f));
             if (dstA)
