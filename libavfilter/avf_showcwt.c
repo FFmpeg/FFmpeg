@@ -402,6 +402,7 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const int count = s->frequency_band_count;
     const int start = (count * jobnr) / nb_jobs;
     const int end = (count * (jobnr+1)) / nb_jobs;
+    const int nb_channels = s->nb_channels;
     const int ihop_index = s->ihop_index;
     const int ihop_size = s->ihop_size;
     const float rotation = s->rotation;
@@ -414,8 +415,8 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     float Y, U, V;
 
     for (int y = start; y < end; y++) {
-        const AVComplexFloat *src = ((const AVComplexFloat *)s->ch_out->extended_data[0]) +
-                                                    y * ihop_size + ihop_index;
+        const AVComplexFloat *src = ((const AVComplexFloat *)s->ch_out->extended_data[y]) +
+                                                    0 * ihop_size + ihop_index;
 
         switch (direction) {
         case DIRECTION_LR:
@@ -471,8 +472,7 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
         switch (mode) {
         case 4:
             {
-                const AVComplexFloat *src2 = ((const AVComplexFloat *)s->ch_out->extended_data[FFMIN(1, s->nb_channels - 1)]) +
-                                               y * ihop_size + ihop_index;
+                const AVComplexFloat *src2 = (nb_channels > 1) ? src + ihop_size: src;
                 float z, u, v;
 
                 z = hypotf(src[0].re + src2[0].re, src[0].im + src2[0].im);
@@ -511,11 +511,10 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
                 Y = 0.f;
                 U = V = 0.5f;
                 for (int ch = 0; ch < nb_channels; ch++) {
-                    const AVComplexFloat *src = ((const AVComplexFloat *)s->ch_out->extended_data[ch]) +
-                                                    y * ihop_size + ihop_index;
+                    const AVComplexFloat *srcn = src + ihop_size * ch;
                     float z;
 
-                    z = hypotf(src[0].re, src[0].im);
+                    z = hypotf(srcn[0].re, srcn[0].im);
                     z = remap_log(z, log_factor);
 
                     Y += z * yf;
@@ -591,7 +590,7 @@ static int run_channel_cwt(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     const int end = (count * (jobnr+1)) / nb_jobs;
 
     for (int y = start; y < end; y++) {
-        AVComplexFloat *chout = ((AVComplexFloat *)s->ch_out->extended_data[ch]) + y * ihop_size;
+        AVComplexFloat *chout = ((AVComplexFloat *)s->ch_out->extended_data[y]) + ch * ihop_size;
         AVComplexFloat *over = ((AVComplexFloat *)s->over->extended_data[ch]) + y * ihop_size;
         AVComplexFloat *dstx = (AVComplexFloat *)s->dst_x->extended_data[jobnr];
         AVComplexFloat *srcx = (AVComplexFloat *)s->src_x->extended_data[jobnr];
@@ -720,7 +719,7 @@ static int compute_kernel(AVFilterContext *ctx)
     }
 
     for (int n = 0; n < size; n++)
-        index[n] = n % s->output_padding_size;
+        index[n] = n & (s->output_padding_size - 1);
 
     av_log(ctx, AV_LOG_DEBUG, "range_min: %d\n", range_min);
     av_log(ctx, AV_LOG_DEBUG, "range_max: %d\n", range_max);
@@ -818,11 +817,11 @@ static int config_output(AVFilterLink *outlink)
     s->src_x = av_frame_alloc();
     s->kernel = av_calloc(s->frequency_band_count, sizeof(*s->kernel));
     s->cache = ff_get_audio_buffer(inlink, s->hop_size);
-    s->ch_out = ff_get_audio_buffer(inlink, s->frequency_band_count * 2 * s->ihop_size);
     s->over = ff_get_audio_buffer(inlink, s->frequency_band_count * 2 * s->ihop_size);
     s->bh_out = ff_get_audio_buffer(inlink, s->frequency_band_count);
     s->ifft_in = av_frame_alloc();
     s->ifft_out = av_frame_alloc();
+    s->ch_out = av_frame_alloc();
     s->index = av_calloc(s->input_padding_size, sizeof(*s->index));
     s->kernel_start = av_calloc(s->frequency_band_count, sizeof(*s->kernel_start));
     s->kernel_stop = av_calloc(s->frequency_band_count, sizeof(*s->kernel_stop));
@@ -830,6 +829,13 @@ static int config_output(AVFilterLink *outlink)
         !s->ifft_in || !s->ifft_out || !s->kernel_start || !s->kernel_stop || !s->ch_out ||
         !s->frequency_band || !s->cache || !s->index || !s->bh_out || !s->kernel)
         return AVERROR(ENOMEM);
+
+    s->ch_out->format     = inlink->format;
+    s->ch_out->nb_samples = 2 * s->ihop_size * inlink->ch_layout.nb_channels;
+    s->ch_out->ch_layout.nb_channels = s->frequency_band_count;
+    ret = av_frame_get_buffer(s->ch_out, 0);
+    if (ret < 0)
+        return ret;
 
     s->ifft_in->format     = inlink->format;
     s->ifft_in->nb_samples = s->ifft_in_size * 2;
