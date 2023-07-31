@@ -2929,8 +2929,10 @@ static int read_interval_packets(WriterContext *w, InputFile *ifile,
                 FrameData *fd;
 
                 pkt->opaque_ref = av_buffer_allocz(sizeof(*fd));
-                if (!pkt->opaque_ref)
-                    return AVERROR(ENOMEM);
+                if (!pkt->opaque_ref) {
+                    ret = AVERROR(ENOMEM);
+                    goto end;
+                }
                 fd = (FrameData*)pkt->opaque_ref->data;
                 fd->pkt_pos  = pkt->pos;
                 fd->pkt_size = pkt->size;
