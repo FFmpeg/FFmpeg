@@ -105,8 +105,7 @@ int ff_hls_senc_parse_audio_setup_info(AVStream *st, HLSAudioSetupInfo *info)
 
         ret = avpriv_ac3_parse_header(&ac3hdr, info->setup_data, info->setup_data_length);
         if (ret < 0) {
-            if (ret != AVERROR(ENOMEM))
-                av_free(ac3hdr);
+            av_free(ac3hdr);
             return ret;
         }
 
@@ -317,8 +316,7 @@ static int get_next_ac3_eac3_sync_frame(CodecParserContext *ctx, AudioFrame *fra
 
     ret = avpriv_ac3_parse_header(&hdr, frame->data, ctx->buf_end - frame->data);
     if (ret < 0) {
-        if (ret != AVERROR(ENOMEM))
-            av_free(hdr);
+        av_free(hdr);
         return ret;
     }
 
