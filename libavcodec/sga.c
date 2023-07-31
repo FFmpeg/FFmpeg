@@ -127,19 +127,18 @@ static int decode_index_palmap(SGAVideoContext *s, AVFrame *frame)
 
 static int decode_index_tilemap(SGAVideoContext *s, AVFrame *frame)
 {
-    GetByteContext *gb = &s->gb;
-    GetBitContext pm;
+    GetByteContext *gb = &s->gb, gb2;
 
     bytestream2_seek(gb, s->tilemapdata_offset, SEEK_SET);
     if (bytestream2_get_bytes_left(gb) < s->tilemapdata_size)
         return AVERROR_INVALIDDATA;
 
-    init_get_bits8(&pm, gb->buffer, s->tilemapdata_size);
+    gb2 = *gb;
 
     for (int y = 0; y < s->tiles_h; y++) {
         for (int x = 0; x < s->tiles_w; x++) {
             uint8_t tile[64];
-            int tilemap = get_bits(&pm, 16);
+            int tilemap = bytestream2_get_be16u(&gb2);
             int flip_x = (tilemap >> 11) & 1;
             int flip_y = (tilemap >> 12) & 1;
             int tindex = av_clip((tilemap & 511) - 1, 0, s->nb_tiles - 1);
