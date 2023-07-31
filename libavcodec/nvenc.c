@@ -2249,7 +2249,7 @@ static int nvenc_store_frame_data(AVCodecContext *avctx, NV_ENC_PIC_PARAMS *pic_
     // in case the encoder got reconfigured, there might be leftovers
     av_buffer_unref(&frame_data->frame_opaque_ref);
 
-    if (frame && frame->opaque_ref && avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE) {
+    if (frame->opaque_ref && avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE) {
         frame_data->frame_opaque_ref = av_buffer_ref(frame->opaque_ref);
         if (!frame_data->frame_opaque_ref)
             return AVERROR(ENOMEM);
