@@ -692,14 +692,13 @@ int show_codecs(void *optctx, const char *opt, const char *arg)
         if (strstr(desc->name, "_deprecated"))
             continue;
 
-        printf(" ");
-        printf(avcodec_find_decoder(desc->id) ? "D" : ".");
-        printf(avcodec_find_encoder(desc->id) ? "E" : ".");
-
-        printf("%c", get_media_type_char(desc->type));
-        printf((desc->props & AV_CODEC_PROP_INTRA_ONLY) ? "I" : ".");
-        printf((desc->props & AV_CODEC_PROP_LOSSY)      ? "L" : ".");
-        printf((desc->props & AV_CODEC_PROP_LOSSLESS)   ? "S" : ".");
+        printf(" %c%c%c%c%c%c",
+               avcodec_find_decoder(desc->id) ? 'D' : '.',
+               avcodec_find_encoder(desc->id) ? 'E' : '.',
+               get_media_type_char(desc->type),
+               (desc->props & AV_CODEC_PROP_INTRA_ONLY) ? 'I' : '.',
+               (desc->props & AV_CODEC_PROP_LOSSY)      ? 'L' : '.',
+               (desc->props & AV_CODEC_PROP_LOSSLESS)   ? 'S' : '.');
 
         printf(" %-20s %s", desc->name, desc->long_name ? desc->long_name : "");
 
@@ -747,12 +746,13 @@ static void print_codecs(int encoder)
         void *iter = NULL;
 
         while ((codec = next_codec_for_id(desc->id, &iter, encoder))) {
-            printf(" %c", get_media_type_char(desc->type));
-            printf((codec->capabilities & AV_CODEC_CAP_FRAME_THREADS) ? "F" : ".");
-            printf((codec->capabilities & AV_CODEC_CAP_SLICE_THREADS) ? "S" : ".");
-            printf((codec->capabilities & AV_CODEC_CAP_EXPERIMENTAL)  ? "X" : ".");
-            printf((codec->capabilities & AV_CODEC_CAP_DRAW_HORIZ_BAND)?"B" : ".");
-            printf((codec->capabilities & AV_CODEC_CAP_DR1)           ? "D" : ".");
+            printf(" %c%c%c%c%c%c",
+                   get_media_type_char(desc->type),
+                   (codec->capabilities & AV_CODEC_CAP_FRAME_THREADS)   ? 'F' : '.',
+                   (codec->capabilities & AV_CODEC_CAP_SLICE_THREADS)   ? 'S' : '.',
+                   (codec->capabilities & AV_CODEC_CAP_EXPERIMENTAL)    ? 'X' : '.',
+                   (codec->capabilities & AV_CODEC_CAP_DRAW_HORIZ_BAND) ? 'B' : '.',
+                   (codec->capabilities & AV_CODEC_CAP_DR1)             ? 'D' : '.');
 
             printf(" %-20s %s", codec->name, codec->long_name ? codec->long_name : "");
             if (strcmp(codec->name, desc->name))
