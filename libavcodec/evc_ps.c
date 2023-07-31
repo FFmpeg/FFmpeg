@@ -24,10 +24,14 @@
 #define EXTENDED_SAR 255
 
 // @see ISO_IEC_23094-1 (7.3.7 Reference picture list structure syntax)
-static int ref_pic_list_struct(GetBitContext *gb, RefPicListStruct *rpl)
+static int ref_pic_list_struct(EVCParserSPS *sps, GetBitContext *gb, RefPicListStruct *rpl)
 {
     uint32_t delta_poc_st, strp_entry_sign_flag = 0;
     rpl->ref_pic_num = get_ue_golomb_long(gb);
+
+    if ((unsigned)rpl->ref_pic_num  > sps->sps_max_dec_pic_buffering_minus1)
+        return AVERROR_INVALIDDATA;
+
     if (rpl->ref_pic_num > 0) {
         delta_poc_st = get_ue_golomb_long(gb);
 
@@ -239,6 +243,8 @@ int ff_evc_parse_sps(GetBitContext *gb, EVCParamSets *ps)
         sps->max_num_tid0_ref_pics = get_ue_golomb_31(gb);
     else {
         sps->sps_max_dec_pic_buffering_minus1 = get_ue_golomb_long(gb);
+        if ((unsigned)sps->sps_max_dec_pic_buffering_minus1 > 16 - 1)
+            return AVERROR_INVALIDDATA;
         sps->long_term_ref_pic_flag = get_bits1(gb);
         sps->rpl1_same_as_rpl0_flag = get_bits1(gb);
         sps->num_ref_pic_list_in_sps[0] = get_ue_golomb(gb);
@@ -248,8 +254,11 @@ int ff_evc_parse_sps(GetBitContext *gb, EVCParamSets *ps)
             goto fail;
         }
 
-        for (int i = 0; i < sps->num_ref_pic_list_in_sps[0]; ++i)
-            ref_pic_list_struct(gb, &sps->rpls[0][i]);
+        for (int i = 0; i < sps->num_ref_pic_list_in_sps[0]; ++i) {
+            ret = ref_pic_list_struct(sps, gb, &sps->rpls[0][i]);
+            if (ret < 0)
+                goto fail;
+        }
 
         if (!sps->rpl1_same_as_rpl0_flag) {
             sps->num_ref_pic_list_in_sps[1] = get_ue_golomb(gb);
@@ -257,8 +266,11 @@ int ff_evc_parse_sps(GetBitContext *gb, EVCParamSets *ps)
                 ret = AVERROR_INVALIDDATA;
                 goto fail;
             }
-            for (int i = 0; i < sps->num_ref_pic_list_in_sps[1]; ++i)
-                ref_pic_list_struct(gb, &sps->rpls[1][i]);
+            for (int i = 0; i < sps->num_ref_pic_list_in_sps[1]; ++i) {
+                ret = ref_pic_list_struct(sps, gb, &sps->rpls[1][i]);
+                if (ret < 0)
+                    goto fail;
+            }
         }
     }
 
