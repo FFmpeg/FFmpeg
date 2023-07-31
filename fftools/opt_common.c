@@ -615,10 +615,10 @@ static void print_codecs_for_id(enum AVCodecID id, int encoder)
     void *iter = NULL;
     const AVCodec *codec;
 
-    printf(" (%s: ", encoder ? "encoders" : "decoders");
+    printf(" (%s:", encoder ? "encoders" : "decoders");
 
     while ((codec = next_codec_for_id(id, &iter, encoder)))
-        printf("%s ", codec->name);
+        printf(" %s", codec->name);
 
     printf(")");
 }
