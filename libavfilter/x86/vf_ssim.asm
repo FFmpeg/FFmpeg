@@ -228,25 +228,22 @@ cglobal ssim_end_line, 3, 3, 7, sum0, sum1, w
 
     ; subpd the ones we added too much
     test              wd, wd
-    jz .end
+    jz               .end
     add               wd, 4
-    test              wd, 3
-    jz .skip3
-    test              wd, 2
-    jz .skip2
-    test              wd, 1
-    jz .skip1
-.skip3:
+    cmp               wd, 1
+    jz               .skip3
+    cmp               wd, 2
+    jz               .skip2
+.skip1:               ; 3 valid => skip 1 invalid
     psrldq            m5, 8
     subpd             m6, m5
-    jmp .end
-.skip2:
-    psrldq            m5, 8
+    jmp              .end
+.skip2:               ; 2 valid => skip 2 invalid
     subpd             m6, m5
+    jmp              .end
+.skip3:               ; 1 valid => skip 3 invalid
+    psrldq            m3, 8
     subpd             m0, m3
-    jmp .end
-.skip1:
-    psrldq            m3, 16
     subpd             m6, m5
 
 .end:
