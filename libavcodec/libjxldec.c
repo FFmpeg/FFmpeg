@@ -298,7 +298,7 @@ static int libjxl_color_encoding_event(AVCodecContext *avctx, AVFrame *frame)
     }
 
     avctx->color_range = frame->color_range = AVCOL_RANGE_JPEG;
-    if (ctx->jxl_pixfmt.num_channels >= 3)
+    if (ctx->basic_info.num_color_channels > 1)
         avctx->colorspace = AVCOL_SPC_RGB;
     avctx->color_primaries = AVCOL_PRI_UNSPECIFIED;
     avctx->color_trc = AVCOL_TRC_UNSPECIFIED;
@@ -334,7 +334,7 @@ static int libjxl_color_encoding_event(AVCodecContext *avctx, AVFrame *frame)
         }
         /* all colors will be in-gamut so we want accurate colors */
         jxl_color.rendering_intent = JXL_RENDERING_INTENT_RELATIVE;
-        jxl_color.color_space = avctx->colorspace == AVCOL_SPC_RGB ? JXL_COLOR_SPACE_RGB : JXL_COLOR_SPACE_GRAY;
+        jxl_color.color_space = ctx->basic_info.num_color_channels > 1 ? JXL_COLOR_SPACE_RGB : JXL_COLOR_SPACE_GRAY;
         jret = JxlDecoderSetPreferredColorProfile(ctx->decoder, &jxl_color);
         if (jret != JXL_DEC_SUCCESS) {
             av_log(avctx, AV_LOG_WARNING, "Unable to set fallback color encoding\n");
