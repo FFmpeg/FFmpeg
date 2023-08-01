@@ -100,7 +100,7 @@ fate-hls-fmp4: CMD = framecrc -auto_conversion_filters -flags +bitexact -i $(TAR
 tests/data/hls_fmp4_ac3.m3u8: TAG = GEN
 tests/data/hls_fmp4_ac3.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
-	-stream_loop 4 -i $(SAMPLES)/ac3/monsters_inc_5.1_448_small.ac3 -c copy -map 0 \
+	-stream_loop 4 -i $(TARGET_SAMPLES)/ac3/monsters_inc_5.1_448_small.ac3 -c copy -map 0 \
 	-hls_segment_type fmp4 -hls_fmp4_init_filename now_ac3.mp4 -hls_list_size 0 \
 	-hls_time 2 -hls_segment_filename "$(TARGET_PATH)/tests/data/hls_fmp4_ac3_%d.m4s" \
 	$(TARGET_PATH)/tests/data/hls_fmp4_ac3.m3u8 2>/dev/null
