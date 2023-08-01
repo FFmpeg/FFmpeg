@@ -30783,7 +30783,7 @@ Set the frequency scale used. Allowed values are:
 
 @table @option
 @item linear
-@item log2
+@item log
 @item bark
 @item mel
 @item erbs
