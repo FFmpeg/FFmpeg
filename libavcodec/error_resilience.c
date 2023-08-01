@@ -804,7 +804,7 @@ void ff_er_frame_start(ERContext *s)
 
 static int er_supported(ERContext *s)
 {
-    if(s->avctx->hwaccel && s->avctx->hwaccel->decode_slice           ||
+    if (s->avctx->hwaccel ||
        !s->cur_pic.f                                                  ||
        s->cur_pic.field_picture
     )
@@ -828,7 +828,7 @@ void ff_er_add_slice(ERContext *s, int startx, int starty,
     const int end_xy   = s->mb_index2xy[end_i];
     int mask           = -1;
 
-    if (s->avctx->hwaccel && s->avctx->hwaccel->decode_slice)
+    if (s->avctx->hwaccel)
         return;
 
     if (start_i > end_i || start_xy > end_xy) {

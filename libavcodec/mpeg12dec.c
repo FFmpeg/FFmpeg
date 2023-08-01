@@ -1750,7 +1750,7 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
         return AVERROR_INVALIDDATA;
     }
 
-    if (avctx->hwaccel && avctx->hwaccel->decode_slice) {
+    if (avctx->hwaccel) {
         const uint8_t *buf_end, *buf_start = *buf - 4; /* include start_code */
         int start_code = -1;
         buf_end = avpriv_find_start_code(buf_start + 2, *buf + buf_size, &start_code);
