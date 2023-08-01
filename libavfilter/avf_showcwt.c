@@ -119,6 +119,7 @@ typedef struct ShowCWTContext {
     int intensity_scale;
     int frequency_scale;
     float minimum_frequency, maximum_frequency;
+    float minimum_intensity, maximum_intensity;
     float deviation;
     float bar_ratio;
     int bar_size;
@@ -152,6 +153,8 @@ static const AVOption showcwt_options[] = {
     {  "qdrt",    "qdrt",             0,                       AV_OPT_TYPE_CONST,{.i64=ISCALE_QDRT},   0, 0, FLAGS, "iscale" },
     { "min",  "set minimum frequency", OFFSET(minimum_frequency), AV_OPT_TYPE_FLOAT, {.dbl = 20.},    1, 192000, FLAGS },
     { "max",  "set maximum frequency", OFFSET(maximum_frequency), AV_OPT_TYPE_FLOAT, {.dbl = 20000.}, 1, 192000, FLAGS },
+    { "imin", "set minimum intensity", OFFSET(minimum_intensity), AV_OPT_TYPE_FLOAT, {.dbl = 0.}, 0, 1, FLAGS },
+    { "imax", "set maximum intensity", OFFSET(maximum_intensity), AV_OPT_TYPE_FLOAT, {.dbl = 1.}, 0, 1, FLAGS },
     { "logb", "set logarithmic basis", OFFSET(logarithmic_basis), AV_OPT_TYPE_FLOAT, {.dbl = 0.0001}, 0, 1, FLAGS },
     { "deviation", "set frequency deviation", OFFSET(deviation), AV_OPT_TYPE_FLOAT, {.dbl = 1.}, 0, 100, FLAGS },
     { "pps",  "set pixels per second", OFFSET(pps), AV_OPT_TYPE_INT, {.i64 = 64}, 1, 1024, FLAGS },
@@ -295,31 +298,37 @@ static void frequency_band(float *frequency_band,
     }
 }
 
-static float remap_log(float value, int iscale, float log_factor)
+static float remap_log(ShowCWTContext *s, float value, int iscale, float log_factor)
 {
+    const float max = s->maximum_intensity;
+    const float min = s->minimum_intensity;
     float ret;
+
+    value += min;
 
     switch (iscale) {
     case ISCALE_LINEAR:
-        ret = value * 20.f*expf(log_factor);
+        ret = max - expf(value / log_factor);
         break;
     case ISCALE_LOG:
         value = logf(value) * log_factor;
-
-        ret = 1.f - av_clipf(value, 0.f, 1.f);
+        ret = max - av_clipf(value, 0.f, 1.f);
         break;
     case ISCALE_SQRT:
-        ret = sqrtf(value * 20.f*expf(log_factor));
+        value = max - expf(value / log_factor);
+        ret = sqrtf(value);
         break;
     case ISCALE_CBRT:
-        ret = cbrtf(value * 20.f*expf(log_factor));
+        value = max - expf(value / log_factor);
+        ret = cbrtf(value);
         break;
     case ISCALE_QDRT:
-        ret = powf(value * 20.f*expf(log_factor), 0.25f);
+        value = max - expf(value / log_factor);
+        ret = powf(value, 0.25f);
         break;
     }
 
-    return ret;
+    return av_clipf(ret, 0.f, 1.f);
 }
 
 static int run_channel_cwt_prepare(AVFilterContext *ctx, void *arg, int jobnr, int ch)
@@ -517,9 +526,9 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
                 u = hypotf(src[0].re, src[0].im);
                 v = hypotf(src2[0].re, src2[0].im);
 
-                z  = remap_log(z, iscale, log_factor);
-                u  = remap_log(u, iscale, log_factor);
-                v  = remap_log(v, iscale, log_factor);
+                z  = remap_log(s, z, iscale, log_factor);
+                u  = remap_log(s, u, iscale, log_factor);
+                v  = remap_log(s, v, iscale, log_factor);
 
                 Y  = z;
                 U  = sinf((v - u) * M_PI_2);
@@ -553,7 +562,7 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
                     float z;
 
                     z = hypotf(srcn[0].re, srcn[0].im);
-                    z = remap_log(z, iscale, log_factor);
+                    z = remap_log(s, z, iscale, log_factor);
 
                     Y += z * yf;
                     U += z * yf * sinf(2.f * M_PI * (ch * yf + rotation));
@@ -572,7 +581,7 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             break;
         case 2:
             Y = hypotf(src[0].re, src[0].im);
-            Y = remap_log(Y, iscale, log_factor);
+            Y = remap_log(s, Y, iscale, log_factor);
             U = atan2f(src[0].im, src[0].re);
             U = 0.5f + 0.5f * U * Y / M_PI;
             V = 1.f - U;
@@ -597,7 +606,7 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             break;
         case 0:
             Y = hypotf(src[0].re, src[0].im);
-            Y = remap_log(Y, iscale, log_factor);
+            Y = remap_log(s, Y, iscale, log_factor);
 
             dstY[0] = av_clip_uint8(lrintf(Y * 255.f));
             if (dstA)
