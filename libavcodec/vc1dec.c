@@ -34,6 +34,7 @@
 #include "decode.h"
 #include "get_bits.h"
 #include "h263dec.h"
+#include "hwaccel_internal.h"
 #include "hwconfig.h"
 #include "mpeg_er.h"
 #include "mpegvideo.h"
@@ -1096,19 +1097,26 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
     }
 
     if (avctx->hwaccel) {
+        const FFHWAccel *hwaccel = ffhwaccel(avctx->hwaccel);
         s->mb_y = 0;
         if (v->field_mode && buf_start_second_field) {
             // decode first field
             s->picture_structure = PICT_BOTTOM_FIELD - v->tff;
-            if ((ret = avctx->hwaccel->start_frame(avctx, buf_start, buf_start_second_field - buf_start)) < 0)
+            ret = hwaccel->start_frame(avctx, buf_start,
+                                       buf_start_second_field - buf_start);
+            if (ret < 0)
                 goto err;
 
             if (n_slices1 == -1) {
                 // no slices, decode the field as-is
-                if ((ret = avctx->hwaccel->decode_slice(avctx, buf_start, buf_start_second_field - buf_start)) < 0)
+                ret = hwaccel->decode_slice(avctx, buf_start,
+                                            buf_start_second_field - buf_start);
+                if (ret < 0)
                     goto err;
             } else {
-                if ((ret = avctx->hwaccel->decode_slice(avctx, buf_start, slices[0].rawbuf - buf_start)) < 0)
+                ret = hwaccel->decode_slice(avctx, buf_start,
+                                            slices[0].rawbuf - buf_start);
+                if (ret < 0)
                     goto err;
 
                 for (i = 0 ; i < n_slices1 + 1; i++) {
@@ -1126,12 +1134,14 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
                         }
                     }
 
-                    if ((ret = avctx->hwaccel->decode_slice(avctx, slices[i].rawbuf, slices[i].raw_size)) < 0)
+                    ret = hwaccel->decode_slice(avctx, slices[i].rawbuf,
+                                                       slices[i].raw_size);
+                    if (ret < 0)
                         goto err;
                 }
             }
 
-            if ((ret = avctx->hwaccel->end_frame(avctx)) < 0)
+            if ((ret = hwaccel->end_frame(avctx)) < 0)
                 goto err;
 
             // decode second field
@@ -1147,15 +1157,21 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
             }
             v->s.current_picture_ptr->f->pict_type = v->s.pict_type;
 
-            if ((ret = avctx->hwaccel->start_frame(avctx, buf_start_second_field, (buf + buf_size) - buf_start_second_field)) < 0)
+            ret = hwaccel->start_frame(avctx, buf_start_second_field,
+                                       (buf + buf_size) - buf_start_second_field);
+            if (ret < 0)
                 goto err;
 
             if (n_slices - n_slices1 == 2) {
                 // no slices, decode the field as-is
-                if ((ret = avctx->hwaccel->decode_slice(avctx, buf_start_second_field, (buf + buf_size) - buf_start_second_field)) < 0)
+                ret = hwaccel->decode_slice(avctx, buf_start_second_field,
+                                            (buf + buf_size) - buf_start_second_field);
+                if (ret < 0)
                     goto err;
             } else {
-                if ((ret = avctx->hwaccel->decode_slice(avctx, buf_start_second_field, slices[n_slices1 + 2].rawbuf - buf_start_second_field)) < 0)
+                ret = hwaccel->decode_slice(avctx, buf_start_second_field,
+                                            slices[n_slices1 + 2].rawbuf - buf_start_second_field);
+                if (ret < 0)
                     goto err;
 
                 for (i = n_slices1 + 2; i < n_slices; i++) {
@@ -1173,25 +1189,33 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
                         }
                     }
 
-                    if ((ret = avctx->hwaccel->decode_slice(avctx, slices[i].rawbuf, slices[i].raw_size)) < 0)
+                    ret = hwaccel->decode_slice(avctx, slices[i].rawbuf,
+                                                slices[i].raw_size);
+                    if (ret < 0)
                         goto err;
                 }
             }
 
-            if ((ret = avctx->hwaccel->end_frame(avctx)) < 0)
+            if ((ret = hwaccel->end_frame(avctx)) < 0)
                 goto err;
         } else {
             s->picture_structure = PICT_FRAME;
-            if ((ret = avctx->hwaccel->start_frame(avctx, buf_start, (buf + buf_size) - buf_start)) < 0)
+            ret = hwaccel->start_frame(avctx, buf_start,
+                                       (buf + buf_size) - buf_start);
+            if (ret < 0)
                 goto err;
 
             if (n_slices == 0) {
                 // no slices, decode the frame as-is
-                if ((ret = avctx->hwaccel->decode_slice(avctx, buf_start, (buf + buf_size) - buf_start)) < 0)
+                ret = hwaccel->decode_slice(avctx, buf_start,
+                                            (buf + buf_size) - buf_start);
+                if (ret < 0)
                     goto err;
             } else {
                 // decode the frame part as the first slice
-                if ((ret = avctx->hwaccel->decode_slice(avctx, buf_start, slices[0].rawbuf - buf_start)) < 0)
+                ret = hwaccel->decode_slice(avctx, buf_start,
+                                            slices[0].rawbuf - buf_start);
+                if (ret < 0)
                     goto err;
 
                 // and process the slices as additional slices afterwards
@@ -1210,11 +1234,13 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
                         }
                     }
 
-                    if ((ret = avctx->hwaccel->decode_slice(avctx, slices[i].rawbuf, slices[i].raw_size)) < 0)
+                    ret = hwaccel->decode_slice(avctx, slices[i].rawbuf,
+                                                       slices[i].raw_size);
+                    if (ret < 0)
                         goto err;
                 }
             }
-            if ((ret = avctx->hwaccel->end_frame(avctx)) < 0)
+            if ((ret = hwaccel->end_frame(avctx)) < 0)
                 goto err;
         }
     } else {

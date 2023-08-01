@@ -433,11 +433,11 @@ static int vaapi_av1_decode_slice(AVCodecContext *avctx,
     return 0;
 }
 
-const AVHWAccel ff_av1_vaapi_hwaccel = {
-    .name                 = "av1_vaapi",
-    .type                 = AVMEDIA_TYPE_VIDEO,
-    .id                   = AV_CODEC_ID_AV1,
-    .pix_fmt              = AV_PIX_FMT_VAAPI,
+const FFHWAccel ff_av1_vaapi_hwaccel = {
+    .p.name               = "av1_vaapi",
+    .p.type               = AVMEDIA_TYPE_VIDEO,
+    .p.id                 = AV_CODEC_ID_AV1,
+    .p.pix_fmt            = AV_PIX_FMT_VAAPI,
     .start_frame          = vaapi_av1_start_frame,
     .end_frame            = vaapi_av1_end_frame,
     .decode_slice         = vaapi_av1_decode_slice,

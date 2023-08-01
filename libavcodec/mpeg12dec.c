@@ -42,6 +42,7 @@
 #include "codec_internal.h"
 #include "decode.h"
 #include "error_resilience.h"
+#include "hwaccel_internal.h"
 #include "hwconfig.h"
 #include "idctdsp.h"
 #include "internal.h"
@@ -1656,7 +1657,7 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
         }
 
         if (s->avctx->hwaccel) {
-            if ((ret = s->avctx->hwaccel->end_frame(s->avctx)) < 0) {
+            if ((ret = FF_HW_SIMPLE_CALL(s->avctx, end_frame)) < 0) {
                 av_log(avctx, AV_LOG_ERROR,
                        "hardware accelerator failed to decode first field\n");
                 return ret;
@@ -1672,7 +1673,7 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
     }
 
     if (avctx->hwaccel) {
-        if ((ret = avctx->hwaccel->start_frame(avctx, buf, buf_size)) < 0)
+        if ((ret = FF_HW_CALL(avctx, start_frame, buf, buf_size)) < 0)
             return ret;
     }
 
@@ -1757,7 +1758,7 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
         if (buf_end < *buf + buf_size)
             buf_end -= 4;
         s->mb_y = mb_y;
-        if (avctx->hwaccel->decode_slice(avctx, buf_start, buf_end - buf_start) < 0)
+        if (FF_HW_CALL(avctx, decode_slice, buf_start, buf_end - buf_start) < 0)
             return DECODE_SLICE_ERROR;
         *buf = buf_end;
         return DECODE_SLICE_OK;
@@ -2026,7 +2027,7 @@ static int slice_end(AVCodecContext *avctx, AVFrame *pict)
         return 0;
 
     if (s->avctx->hwaccel) {
-        int ret = s->avctx->hwaccel->end_frame(s->avctx);
+        int ret = FF_HW_SIMPLE_CALL(s->avctx, end_frame);
         if (ret < 0) {
             av_log(avctx, AV_LOG_ERROR,
                    "hardware accelerator failed to decode picture\n");

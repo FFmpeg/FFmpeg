@@ -23,6 +23,7 @@
 #include "config_components.h"
 
 #include "avcodec.h"
+#include "hwaccel_internal.h"
 #include "internal.h"
 #include "mpegvideo.h"
 #include "nvdec.h"
@@ -99,11 +100,11 @@ static int nvdec_mpeg12_frame_params(AVCodecContext *avctx,
 }
 
 #if CONFIG_MPEG2_NVDEC_HWACCEL
-const AVHWAccel ff_mpeg2_nvdec_hwaccel = {
-    .name                 = "mpeg2_nvdec",
-    .type                 = AVMEDIA_TYPE_VIDEO,
-    .id                   = AV_CODEC_ID_MPEG2VIDEO,
-    .pix_fmt              = AV_PIX_FMT_CUDA,
+const FFHWAccel ff_mpeg2_nvdec_hwaccel = {
+    .p.name               = "mpeg2_nvdec",
+    .p.type               = AVMEDIA_TYPE_VIDEO,
+    .p.id                 = AV_CODEC_ID_MPEG2VIDEO,
+    .p.pix_fmt            = AV_PIX_FMT_CUDA,
     .start_frame          = nvdec_mpeg12_start_frame,
     .end_frame            = ff_nvdec_simple_end_frame,
     .decode_slice         = ff_nvdec_simple_decode_slice,
@@ -115,11 +116,11 @@ const AVHWAccel ff_mpeg2_nvdec_hwaccel = {
 #endif
 
 #if CONFIG_MPEG1_NVDEC_HWACCEL
-const AVHWAccel ff_mpeg1_nvdec_hwaccel = {
-    .name                 = "mpeg1_nvdec",
-    .type                 = AVMEDIA_TYPE_VIDEO,
-    .id                   = AV_CODEC_ID_MPEG1VIDEO,
-    .pix_fmt              = AV_PIX_FMT_CUDA,
+const FFHWAccel ff_mpeg1_nvdec_hwaccel = {
+    .p.name               = "mpeg1_nvdec",
+    .p.type               = AVMEDIA_TYPE_VIDEO,
+    .p.id                 = AV_CODEC_ID_MPEG1VIDEO,
+    .p.pix_fmt            = AV_PIX_FMT_CUDA,
     .start_frame          = nvdec_mpeg12_start_frame,
     .end_frame            = ff_nvdec_simple_end_frame,
     .decode_slice         = ff_nvdec_simple_decode_slice,

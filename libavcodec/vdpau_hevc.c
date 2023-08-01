@@ -540,11 +540,11 @@ static int vdpau_hevc_init(AVCodecContext *avctx)
     return ff_vdpau_common_init(avctx, profile, level);
 }
 
-const AVHWAccel ff_hevc_vdpau_hwaccel = {
-    .name           = "hevc_vdpau",
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_HEVC,
-    .pix_fmt        = AV_PIX_FMT_VDPAU,
+const FFHWAccel ff_hevc_vdpau_hwaccel = {
+    .p.name         = "hevc_vdpau",
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_HEVC,
+    .p.pix_fmt      = AV_PIX_FMT_VDPAU,
     .start_frame    = vdpau_hevc_start_frame,
     .end_frame      = vdpau_hevc_end_frame,
     .decode_slice   = vdpau_hevc_decode_slice,

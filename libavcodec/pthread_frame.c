@@ -151,7 +151,7 @@ typedef struct FrameThreadContext {
 
 static int hwaccel_serial(const AVCodecContext *avctx)
 {
-    return avctx->hwaccel && !(avctx->hwaccel->caps_internal & HWACCEL_CAP_THREAD_SAFE);
+    return avctx->hwaccel && !(ffhwaccel(avctx->hwaccel)->caps_internal & HWACCEL_CAP_THREAD_SAFE);
 }
 
 static void async_lock(FrameThreadContext *fctx)
@@ -246,7 +246,7 @@ static attribute_align_arg void *frame_worker_thread(void *arg)
             pthread_mutex_unlock(&p->parent->hwaccel_mutex);
         }
         av_assert0(!avctx->hwaccel ||
-                   (avctx->hwaccel->caps_internal & HWACCEL_CAP_THREAD_SAFE));
+                   (ffhwaccel(avctx->hwaccel)->caps_internal & HWACCEL_CAP_THREAD_SAFE));
 
         if (p->async_serializing) {
             p->async_serializing = 0;
@@ -368,12 +368,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
         // propagate hwaccel state for threadsafe hwaccels
         if (p_src->hwaccel_threadsafe) {
+            const FFHWAccel *hwaccel = ffhwaccel(src->hwaccel);
             if (!dst->hwaccel) {
-                if (src->hwaccel->priv_data_size) {
-                    av_assert0(src->hwaccel->update_thread_context);
+                if (hwaccel->priv_data_size) {
+                    av_assert0(hwaccel->update_thread_context);
 
                     dst->internal->hwaccel_priv_data =
-                            av_mallocz(src->hwaccel->priv_data_size);
+                            av_mallocz(hwaccel->priv_data_size);
                     if (!dst->internal->hwaccel_priv_data)
                         return AVERROR(ENOMEM);
                 }
@@ -381,8 +382,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
             }
             av_assert0(dst->hwaccel == src->hwaccel);
 
-            if (src->hwaccel->update_thread_context) {
-                err = src->hwaccel->update_thread_context(dst, src);
+            if (hwaccel->update_thread_context) {
+                err = hwaccel->update_thread_context(dst, src);
                 if (err < 0) {
                     av_log(dst, AV_LOG_ERROR, "Error propagating hwaccel state\n");
                     ff_hwaccel_uninit(dst);
@@ -658,7 +659,7 @@ void ff_thread_finish_setup(AVCodecContext *avctx) {
     if (!(avctx->active_thread_type&FF_THREAD_FRAME)) return;
 
     p->hwaccel_threadsafe = avctx->hwaccel &&
-                            (avctx->hwaccel->caps_internal & HWACCEL_CAP_THREAD_SAFE);
+                            (ffhwaccel(avctx->hwaccel)->caps_internal & HWACCEL_CAP_THREAD_SAFE);
 
     if (hwaccel_serial(avctx) && !p->hwaccel_serializing) {
         pthread_mutex_lock(&p->parent->hwaccel_mutex);
@@ -667,7 +668,7 @@ void ff_thread_finish_setup(AVCodecContext *avctx) {
 
     /* this assumes that no hwaccel calls happen before ff_thread_finish_setup() */
     if (avctx->hwaccel &&
-        !(avctx->hwaccel->caps_internal & HWACCEL_CAP_ASYNC_SAFE)) {
+        !(ffhwaccel(avctx->hwaccel)->caps_internal & HWACCEL_CAP_ASYNC_SAFE)) {
         p->async_serializing = 1;
 
         async_lock(p->parent);

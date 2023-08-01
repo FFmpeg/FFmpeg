@@ -32,7 +32,7 @@ typedef struct AVCodecHWConfigInternal {
      * If this configuration uses a hwaccel, a pointer to it.
      * If not, NULL.
      */
-    const AVHWAccel *hwaccel;
+    const struct FFHWAccel *hwaccel;
 } AVCodecHWConfigInternal;
 
 void ff_hwaccel_uninit(AVCodecContext *avctx);

@@ -46,6 +46,7 @@
 #include "bsf.h"
 #include "codec_internal.h"
 #include "decode.h"
+#include "hwaccel_internal.h"
 #include "hwconfig.h"
 #include "internal.h"
 #include "packet_internal.h"
@@ -1159,7 +1160,7 @@ int avcodec_get_hw_frames_parameters(AVCodecContext *avctx,
 {
     AVBufferRef *frames_ref = NULL;
     const AVCodecHWConfigInternal *hw_config;
-    const AVHWAccel *hwa;
+    const FFHWAccel *hwa;
     int i, ret;
 
     for (i = 0;; i++) {
@@ -1211,14 +1212,14 @@ int avcodec_get_hw_frames_parameters(AVCodecContext *avctx,
 }
 
 static int hwaccel_init(AVCodecContext *avctx,
-                        const AVHWAccel *hwaccel)
+                        const FFHWAccel *hwaccel)
 {
     int err;
 
-    if (hwaccel->capabilities & AV_HWACCEL_CODEC_CAP_EXPERIMENTAL &&
+    if (hwaccel->p.capabilities & AV_HWACCEL_CODEC_CAP_EXPERIMENTAL &&
         avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
         av_log(avctx, AV_LOG_WARNING, "Ignoring experimental hwaccel: %s\n",
-               hwaccel->name);
+               hwaccel->p.name);
         return AVERROR_PATCHWELCOME;
     }
 
@@ -1229,13 +1230,13 @@ static int hwaccel_init(AVCodecContext *avctx,
             return AVERROR(ENOMEM);
     }
 
-    avctx->hwaccel = hwaccel;
+    avctx->hwaccel = &hwaccel->p;
     if (hwaccel->init) {
         err = hwaccel->init(avctx);
         if (err < 0) {
             av_log(avctx, AV_LOG_ERROR, "Failed setup for format %s: "
                    "hwaccel initialisation returned error.\n",
-                   av_get_pix_fmt_name(hwaccel->pix_fmt));
+                   av_get_pix_fmt_name(hwaccel->p.pix_fmt));
             av_freep(&avctx->internal->hwaccel_priv_data);
             avctx->hwaccel = NULL;
             return err;
@@ -1247,8 +1248,8 @@ static int hwaccel_init(AVCodecContext *avctx,
 
 void ff_hwaccel_uninit(AVCodecContext *avctx)
 {
-    if (avctx->hwaccel && avctx->hwaccel->uninit)
-        avctx->hwaccel->uninit(avctx);
+    if (FF_HW_HAS_CB(avctx, uninit))
+        FF_HW_SIMPLE_CALL(avctx, uninit);
 
     av_freep(&avctx->internal->hwaccel_priv_data);
 
@@ -1569,7 +1570,7 @@ int ff_attach_decode_data(AVFrame *frame)
 
 int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags)
 {
-    const AVHWAccel *hwaccel = avctx->hwaccel;
+    const FFHWAccel *hwaccel = ffhwaccel(avctx->hwaccel);
     int override_dimensions = 1;
     int ret;
 
@@ -1791,7 +1792,7 @@ int ff_copy_palette(void *dst, const AVPacket *src, void *logctx)
 int ff_hwaccel_frame_priv_alloc(AVCodecContext *avctx, void **hwaccel_picture_private,
                                 AVBufferRef **hwaccel_priv_buf)
 {
-    const AVHWAccel *hwaccel = avctx->hwaccel;
+    const FFHWAccel *hwaccel = ffhwaccel(avctx->hwaccel);
     AVBufferRef *ref;
     AVHWFramesContext *frames_ctx;
     uint8_t *data;

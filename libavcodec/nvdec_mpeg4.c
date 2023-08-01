@@ -26,6 +26,7 @@
 #include "mpeg4videodefs.h"
 #include "nvdec.h"
 #include "decode.h"
+#include "hwaccel_internal.h"
 
 static int nvdec_mpeg4_start_frame(AVCodecContext *avctx, const uint8_t *buffer, uint32_t size)
 {
@@ -109,11 +110,11 @@ static int nvdec_mpeg4_frame_params(AVCodecContext *avctx,
     return ff_nvdec_frame_params(avctx, hw_frames_ctx, 2, 0);
 }
 
-const AVHWAccel ff_mpeg4_nvdec_hwaccel = {
-    .name                 = "mpeg4_nvdec",
-    .type                 = AVMEDIA_TYPE_VIDEO,
-    .id                   = AV_CODEC_ID_MPEG4,
-    .pix_fmt              = AV_PIX_FMT_CUDA,
+const FFHWAccel ff_mpeg4_nvdec_hwaccel = {
+    .p.name               = "mpeg4_nvdec",
+    .p.type               = AVMEDIA_TYPE_VIDEO,
+    .p.id                 = AV_CODEC_ID_MPEG4,
+    .p.pix_fmt            = AV_PIX_FMT_CUDA,
     .start_frame          = nvdec_mpeg4_start_frame,
     .end_frame            = ff_nvdec_simple_end_frame,
     .decode_slice         = nvdec_mpeg4_decode_slice,

@@ -222,11 +222,11 @@ static int vdpau_vp9_init(AVCodecContext *avctx)
     return ff_vdpau_common_init(avctx, profile, level);
 }
 
-const AVHWAccel ff_vp9_vdpau_hwaccel = {
-    .name           = "vp9_vdpau",
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_VP9,
-    .pix_fmt        = AV_PIX_FMT_VDPAU,
+const FFHWAccel ff_vp9_vdpau_hwaccel = {
+    .p.name         = "vp9_vdpau",
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_VP9,
+    .p.pix_fmt      = AV_PIX_FMT_VDPAU,
     .start_frame    = vdpau_vp9_start_frame,
     .end_frame      = vdpau_vp9_end_frame,
     .decode_slice   = vdpau_vp9_decode_slice,

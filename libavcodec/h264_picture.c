@@ -29,6 +29,7 @@
 #include "error_resilience.h"
 #include "avcodec.h"
 #include "h264dec.h"
+#include "hwaccel_internal.h"
 #include "mpegutils.h"
 #include "thread.h"
 #include "threadframe.h"
@@ -233,7 +234,7 @@ int ff_h264_field_end(H264Context *h, H264SliceContext *sl, int in_setup)
     }
 
     if (avctx->hwaccel) {
-        err = avctx->hwaccel->end_frame(avctx);
+        err = FF_HW_SIMPLE_CALL(avctx, end_frame);
         if (err < 0)
             av_log(avctx, AV_LOG_ERROR,
                    "hardware accelerator failed to decode picture\n");

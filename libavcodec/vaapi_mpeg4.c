@@ -180,11 +180,11 @@ static int vaapi_mpeg4_decode_slice(AVCodecContext *avctx, const uint8_t *buffer
 }
 
 #if CONFIG_MPEG4_VAAPI_HWACCEL
-const AVHWAccel ff_mpeg4_vaapi_hwaccel = {
-    .name                 = "mpeg4_vaapi",
-    .type                 = AVMEDIA_TYPE_VIDEO,
-    .id                   = AV_CODEC_ID_MPEG4,
-    .pix_fmt              = AV_PIX_FMT_VAAPI,
+const FFHWAccel ff_mpeg4_vaapi_hwaccel = {
+    .p.name               = "mpeg4_vaapi",
+    .p.type               = AVMEDIA_TYPE_VIDEO,
+    .p.id                 = AV_CODEC_ID_MPEG4,
+    .p.pix_fmt            = AV_PIX_FMT_VAAPI,
     .start_frame          = &vaapi_mpeg4_start_frame,
     .end_frame            = &vaapi_mpeg4_end_frame,
     .decode_slice         = &vaapi_mpeg4_decode_slice,
@@ -198,11 +198,11 @@ const AVHWAccel ff_mpeg4_vaapi_hwaccel = {
 #endif
 
 #if CONFIG_H263_VAAPI_HWACCEL
-const AVHWAccel ff_h263_vaapi_hwaccel = {
-    .name                 = "h263_vaapi",
-    .type                 = AVMEDIA_TYPE_VIDEO,
-    .id                   = AV_CODEC_ID_H263,
-    .pix_fmt              = AV_PIX_FMT_VAAPI,
+const FFHWAccel ff_h263_vaapi_hwaccel = {
+    .p.name               = "h263_vaapi",
+    .p.type               = AVMEDIA_TYPE_VIDEO,
+    .p.id                 = AV_CODEC_ID_H263,
+    .p.pix_fmt            = AV_PIX_FMT_VAAPI,
     .start_frame          = &vaapi_mpeg4_start_frame,
     .end_frame            = &vaapi_mpeg4_end_frame,
     .decode_slice         = &vaapi_mpeg4_decode_slice,

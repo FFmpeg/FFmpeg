@@ -36,6 +36,7 @@
 #include "flvdec.h"
 #include "h263.h"
 #include "h263dec.h"
+#include "hwaccel_internal.h"
 #include "hwconfig.h"
 #include "mpeg_er.h"
 #include "mpeg4video.h"
@@ -190,7 +191,7 @@ static int decode_slice(MpegEncContext *s)
 
     if (s->avctx->hwaccel) {
         const uint8_t *start = s->gb.buffer + get_bits_count(&s->gb) / 8;
-        ret = s->avctx->hwaccel->decode_slice(s->avctx, start, s->gb.buffer_end - start);
+        ret = FF_HW_CALL(s->avctx, decode_slice, start, s->gb.buffer_end - start);
         // ensure we exit decode loop
         s->mb_y = s->mb_height;
         return ret;
@@ -568,8 +569,8 @@ retry:
         ff_thread_finish_setup(avctx);
 
     if (avctx->hwaccel) {
-        ret = avctx->hwaccel->start_frame(avctx, s->gb.buffer,
-                                          s->gb.buffer_end - s->gb.buffer);
+        ret = FF_HW_CALL(avctx, start_frame,
+                         s->gb.buffer, s->gb.buffer_end - s->gb.buffer);
         if (ret < 0 )
             return ret;
     }
@@ -624,7 +625,7 @@ frame_end:
         ff_er_frame_end(&s->er);
 
     if (avctx->hwaccel) {
-        ret = avctx->hwaccel->end_frame(avctx);
+        ret = FF_HW_SIMPLE_CALL(avctx, end_frame);
         if (ret < 0)
             return ret;
     }

@@ -952,11 +952,11 @@ static void vk_hevc_free_frame_priv(void *_hwctx, uint8_t *data)
     av_free(hp);
 }
 
-const AVHWAccel ff_hevc_vulkan_hwaccel = {
-    .name                  = "hevc_vulkan",
-    .type                  = AVMEDIA_TYPE_VIDEO,
-    .id                    = AV_CODEC_ID_HEVC,
-    .pix_fmt               = AV_PIX_FMT_VULKAN,
+const FFHWAccel ff_hevc_vulkan_hwaccel = {
+    .p.name                = "hevc_vulkan",
+    .p.type                = AVMEDIA_TYPE_VIDEO,
+    .p.id                  = AV_CODEC_ID_HEVC,
+    .p.pix_fmt             = AV_PIX_FMT_VULKAN,
     .start_frame           = &vk_hevc_start_frame,
     .decode_slice          = &vk_hevc_decode_slice,
     .end_frame             = &vk_hevc_end_frame,

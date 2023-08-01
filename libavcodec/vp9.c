@@ -27,6 +27,7 @@
 #include "codec_internal.h"
 #include "decode.h"
 #include "get_bits.h"
+#include "hwaccel_internal.h"
 #include "hwconfig.h"
 #include "profiles.h"
 #include "thread.h"
@@ -1635,13 +1636,14 @@ static int vp9_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     }
 
     if (avctx->hwaccel) {
-        ret = avctx->hwaccel->start_frame(avctx, NULL, 0);
+        const FFHWAccel *hwaccel = ffhwaccel(avctx->hwaccel);
+        ret = hwaccel->start_frame(avctx, NULL, 0);
         if (ret < 0)
             return ret;
-        ret = avctx->hwaccel->decode_slice(avctx, pkt->data, pkt->size);
+        ret = hwaccel->decode_slice(avctx, pkt->data, pkt->size);
         if (ret < 0)
             return ret;
-        ret = avctx->hwaccel->end_frame(avctx);
+        ret = hwaccel->end_frame(avctx);
         if (ret < 0)
             return ret;
         goto finish;
@@ -1798,8 +1800,8 @@ static void vp9_decode_flush(AVCodecContext *avctx)
     for (i = 0; i < 8; i++)
         ff_thread_release_ext_buffer(avctx, &s->s.refs[i]);
 
-    if (avctx->hwaccel && avctx->hwaccel->flush)
-        avctx->hwaccel->flush(avctx);
+    if (FF_HW_HAS_CB(avctx, flush))
+        FF_HW_SIMPLE_CALL(avctx, flush);
 }
 
 static av_cold int vp9_decode_init(AVCodecContext *avctx)

@@ -28,6 +28,7 @@
 #include "decode.h"
 #include "internal.h"
 #include "h264dec.h"
+#include "hwaccel_internal.h"
 
 static void dpb_add(const H264Context *h, CUVIDH264DPBENTRY *dst, const H264Picture *src,
                     int frame_idx)
@@ -169,11 +170,11 @@ static int nvdec_h264_frame_params(AVCodecContext *avctx,
     return ff_nvdec_frame_params(avctx, hw_frames_ctx, sps->ref_frame_count + sps->num_reorder_frames, 0);
 }
 
-const AVHWAccel ff_h264_nvdec_hwaccel = {
-    .name                 = "h264_nvdec",
-    .type                 = AVMEDIA_TYPE_VIDEO,
-    .id                   = AV_CODEC_ID_H264,
-    .pix_fmt              = AV_PIX_FMT_CUDA,
+const FFHWAccel ff_h264_nvdec_hwaccel = {
+    .p.name               = "h264_nvdec",
+    .p.type               = AVMEDIA_TYPE_VIDEO,
+    .p.id                 = AV_CODEC_ID_H264,
+    .p.pix_fmt            = AV_PIX_FMT_CUDA,
     .start_frame          = nvdec_h264_start_frame,
     .end_frame            = ff_nvdec_end_frame,
     .decode_slice         = nvdec_h264_decode_slice,

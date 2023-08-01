@@ -27,6 +27,7 @@
 
 #include "avcodec.h"
 #include "decode.h"
+#include "hwaccel_internal.h"
 #include "internal.h"
 #include "mpegvideodec.h"
 #include "vc1.h"
@@ -324,8 +325,8 @@ static int ff_vdpau_common_reinit(AVCodecContext *avctx)
         avctx->coded_height == vdctx->height && (!hwctx || !hwctx->reset))
         return 0;
 
-    avctx->hwaccel->uninit(avctx);
-    return avctx->hwaccel->init(avctx);
+    FF_HW_SIMPLE_CALL(avctx, uninit);
+    return FF_HW_SIMPLE_CALL(avctx, init);
 }
 
 int ff_vdpau_common_start_frame(struct vdpau_picture_context *pic_ctx,

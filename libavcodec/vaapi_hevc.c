@@ -654,11 +654,11 @@ end:
         return VAProfileNone;
 }
 
-const AVHWAccel ff_hevc_vaapi_hwaccel = {
-    .name                 = "hevc_vaapi",
-    .type                 = AVMEDIA_TYPE_VIDEO,
-    .id                   = AV_CODEC_ID_HEVC,
-    .pix_fmt              = AV_PIX_FMT_VAAPI,
+const FFHWAccel ff_hevc_vaapi_hwaccel = {
+    .p.name               = "hevc_vaapi",
+    .p.type               = AVMEDIA_TYPE_VIDEO,
+    .p.id                 = AV_CODEC_ID_HEVC,
+    .p.pix_fmt            = AV_PIX_FMT_VAAPI,
     .start_frame          = vaapi_hevc_start_frame,
     .end_frame            = vaapi_hevc_end_frame,
     .decode_slice         = vaapi_hevc_decode_slice,

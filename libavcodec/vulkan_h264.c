@@ -558,11 +558,11 @@ static void vk_h264_free_frame_priv(void *_hwctx, uint8_t *data)
     av_free(hp);
 }
 
-const AVHWAccel ff_h264_vulkan_hwaccel = {
-    .name                  = "h264_vulkan",
-    .type                  = AVMEDIA_TYPE_VIDEO,
-    .id                    = AV_CODEC_ID_H264,
-    .pix_fmt               = AV_PIX_FMT_VULKAN,
+const FFHWAccel ff_h264_vulkan_hwaccel = {
+    .p.name                = "h264_vulkan",
+    .p.type                = AVMEDIA_TYPE_VIDEO,
+    .p.id                  = AV_CODEC_ID_H264,
+    .p.pix_fmt             = AV_PIX_FMT_VULKAN,
     .start_frame           = &vk_h264_start_frame,
     .decode_slice          = &vk_h264_decode_slice,
     .end_frame             = &vk_h264_end_frame,

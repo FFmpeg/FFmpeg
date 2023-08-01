@@ -106,11 +106,11 @@ static int vdpau_mpeg1_init(AVCodecContext *avctx)
                                 VDP_DECODER_LEVEL_MPEG1_NA);
 }
 
-const AVHWAccel ff_mpeg1_vdpau_hwaccel = {
-    .name           = "mpeg1_vdpau",
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MPEG1VIDEO,
-    .pix_fmt        = AV_PIX_FMT_VDPAU,
+const FFHWAccel ff_mpeg1_vdpau_hwaccel = {
+    .p.name         = "mpeg1_vdpau",
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_MPEG1VIDEO,
+    .p.pix_fmt      = AV_PIX_FMT_VDPAU,
     .start_frame    = vdpau_mpeg_start_frame,
     .end_frame      = ff_vdpau_mpeg_end_frame,
     .decode_slice   = vdpau_mpeg_decode_slice,
@@ -141,11 +141,11 @@ static int vdpau_mpeg2_init(AVCodecContext *avctx)
     return ff_vdpau_common_init(avctx, profile, VDP_DECODER_LEVEL_MPEG2_HL);
 }
 
-const AVHWAccel ff_mpeg2_vdpau_hwaccel = {
-    .name           = "mpeg2_vdpau",
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MPEG2VIDEO,
-    .pix_fmt        = AV_PIX_FMT_VDPAU,
+const FFHWAccel ff_mpeg2_vdpau_hwaccel = {
+    .p.name         = "mpeg2_vdpau",
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_MPEG2VIDEO,
+    .p.pix_fmt      = AV_PIX_FMT_VDPAU,
     .start_frame    = vdpau_mpeg_start_frame,
     .end_frame      = ff_vdpau_mpeg_end_frame,
     .decode_slice   = vdpau_mpeg_decode_slice,

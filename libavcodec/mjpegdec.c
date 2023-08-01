@@ -41,6 +41,7 @@
 #include "codec_internal.h"
 #include "copy_block.h"
 #include "decode.h"
+#include "hwaccel_internal.h"
 #include "hwconfig.h"
 #include "idctdsp.h"
 #include "internal.h"
@@ -796,13 +797,14 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
     }
 
     if (s->avctx->hwaccel) {
+        const FFHWAccel *hwaccel = ffhwaccel(s->avctx->hwaccel);
         s->hwaccel_picture_private =
-            av_mallocz(s->avctx->hwaccel->frame_priv_data_size);
+            av_mallocz(hwaccel->frame_priv_data_size);
         if (!s->hwaccel_picture_private)
             return AVERROR(ENOMEM);
 
-        ret = s->avctx->hwaccel->start_frame(s->avctx, s->raw_image_buffer,
-                                             s->raw_image_buffer_size);
+        ret = hwaccel->start_frame(s->avctx, s->raw_image_buffer,
+                                   s->raw_image_buffer_size);
         if (ret < 0)
             return ret;
     }
@@ -1774,9 +1776,9 @@ next_field:
         av_assert0(bytes_to_start >= 0 &&
                    s->raw_scan_buffer_size >= bytes_to_start);
 
-        ret = s->avctx->hwaccel->decode_slice(s->avctx,
-                                              s->raw_scan_buffer      + bytes_to_start,
-                                              s->raw_scan_buffer_size - bytes_to_start);
+        ret = FF_HW_CALL(s->avctx, decode_slice,
+                         s->raw_scan_buffer      + bytes_to_start,
+                         s->raw_scan_buffer_size - bytes_to_start);
         if (ret < 0)
             return ret;
 
@@ -2547,7 +2549,7 @@ eoi_parser:
                 goto the_end_no_picture;
             }
             if (s->avctx->hwaccel) {
-                ret = s->avctx->hwaccel->end_frame(s->avctx);
+                ret = FF_HW_SIMPLE_CALL(s->avctx, end_frame);
                 if (ret < 0)
                     return ret;
 

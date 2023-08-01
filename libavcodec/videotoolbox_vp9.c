@@ -31,6 +31,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/pixdesc.h"
 #include "decode.h"
+#include "hwaccel_internal.h"
 #include "internal.h"
 #include "vp9shared.h"
 
@@ -125,11 +126,11 @@ static int videotoolbox_vp9_end_frame(AVCodecContext *avctx)
     return ff_videotoolbox_common_end_frame(avctx, frame);
 }
 
-const AVHWAccel ff_vp9_videotoolbox_hwaccel = {
-    .name           = "vp9_videotoolbox",
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_VP9,
-    .pix_fmt        = AV_PIX_FMT_VIDEOTOOLBOX,
+const FFHWAccel ff_vp9_videotoolbox_hwaccel = {
+    .p.name         = "vp9_videotoolbox",
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_VP9,
+    .p.pix_fmt      = AV_PIX_FMT_VIDEOTOOLBOX,
     .alloc_frame    = ff_videotoolbox_alloc_frame,
     .start_frame    = videotoolbox_vp9_start_frame,
     .decode_slice   = videotoolbox_vp9_decode_slice,

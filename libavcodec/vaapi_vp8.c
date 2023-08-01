@@ -220,11 +220,11 @@ fail:
     return err;
 }
 
-const AVHWAccel ff_vp8_vaapi_hwaccel = {
-    .name                 = "vp8_vaapi",
-    .type                 = AVMEDIA_TYPE_VIDEO,
-    .id                   = AV_CODEC_ID_VP8,
-    .pix_fmt              = AV_PIX_FMT_VAAPI,
+const FFHWAccel ff_vp8_vaapi_hwaccel = {
+    .p.name               = "vp8_vaapi",
+    .p.type               = AVMEDIA_TYPE_VIDEO,
+    .p.id                 = AV_CODEC_ID_VP8,
+    .p.pix_fmt            = AV_PIX_FMT_VAAPI,
     .start_frame          = &vaapi_vp8_start_frame,
     .end_frame            = &vaapi_vp8_end_frame,
     .decode_slice         = &vaapi_vp8_decode_slice,

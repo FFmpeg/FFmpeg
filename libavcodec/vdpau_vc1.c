@@ -138,11 +138,11 @@ static int vdpau_vc1_init(AVCodecContext *avctx)
 }
 
 #if CONFIG_WMV3_VDPAU_HWACCEL
-const AVHWAccel ff_wmv3_vdpau_hwaccel = {
-    .name           = "wm3_vdpau",
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_WMV3,
-    .pix_fmt        = AV_PIX_FMT_VDPAU,
+const FFHWAccel ff_wmv3_vdpau_hwaccel = {
+    .p.name         = "wm3_vdpau",
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_WMV3,
+    .p.pix_fmt      = AV_PIX_FMT_VDPAU,
     .start_frame    = vdpau_vc1_start_frame,
     .end_frame      = ff_vdpau_mpeg_end_frame,
     .decode_slice   = vdpau_vc1_decode_slice,
@@ -155,11 +155,11 @@ const AVHWAccel ff_wmv3_vdpau_hwaccel = {
 };
 #endif
 
-const AVHWAccel ff_vc1_vdpau_hwaccel = {
-    .name           = "vc1_vdpau",
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_VC1,
-    .pix_fmt        = AV_PIX_FMT_VDPAU,
+const FFHWAccel ff_vc1_vdpau_hwaccel = {
+    .p.name         = "vc1_vdpau",
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_VC1,
+    .p.pix_fmt      = AV_PIX_FMT_VDPAU,
     .start_frame    = vdpau_vc1_start_frame,
     .end_frame      = ff_vdpau_mpeg_end_frame,
     .decode_slice   = vdpau_vc1_decode_slice,

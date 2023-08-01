@@ -29,6 +29,7 @@
 #include "internal.h"
 #include "hevcdec.h"
 #include "hevc_data.h"
+#include "hwaccel_internal.h"
 
 static void dpb_add(CUVIDHEVCPICPARAMS *pp, int idx, const HEVCFrame *src)
 {
@@ -308,11 +309,11 @@ static int nvdec_hevc_decode_init(AVCodecContext *avctx) {
     return ff_nvdec_decode_init(avctx);
 }
 
-const AVHWAccel ff_hevc_nvdec_hwaccel = {
-    .name                 = "hevc_nvdec",
-    .type                 = AVMEDIA_TYPE_VIDEO,
-    .id                   = AV_CODEC_ID_HEVC,
-    .pix_fmt              = AV_PIX_FMT_CUDA,
+const FFHWAccel ff_hevc_nvdec_hwaccel = {
+    .p.name               = "hevc_nvdec",
+    .p.type               = AVMEDIA_TYPE_VIDEO,
+    .p.id                 = AV_CODEC_ID_HEVC,
+    .p.pix_fmt            = AV_PIX_FMT_CUDA,
     .start_frame          = nvdec_hevc_start_frame,
     .end_frame            = ff_nvdec_end_frame,
     .decode_slice         = nvdec_hevc_decode_slice,

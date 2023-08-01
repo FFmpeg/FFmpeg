@@ -25,6 +25,7 @@
 #include "libavutil/log.h"
 
 #include "dxva2_internal.h"
+#include "hwaccel_internal.h"
 #include "mpegutils.h"
 #include "mpegvideodec.h"
 
@@ -316,11 +317,11 @@ static int dxva2_mpeg2_end_frame(AVCodecContext *avctx)
 }
 
 #if CONFIG_MPEG2_DXVA2_HWACCEL
-const AVHWAccel ff_mpeg2_dxva2_hwaccel = {
-    .name           = "mpeg2_dxva2",
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MPEG2VIDEO,
-    .pix_fmt        = AV_PIX_FMT_DXVA2_VLD,
+const FFHWAccel ff_mpeg2_dxva2_hwaccel = {
+    .p.name         = "mpeg2_dxva2",
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_MPEG2VIDEO,
+    .p.pix_fmt      = AV_PIX_FMT_DXVA2_VLD,
     .init           = ff_dxva2_decode_init,
     .uninit         = ff_dxva2_decode_uninit,
     .start_frame    = dxva2_mpeg2_start_frame,
@@ -333,11 +334,11 @@ const AVHWAccel ff_mpeg2_dxva2_hwaccel = {
 #endif
 
 #if CONFIG_MPEG2_D3D11VA_HWACCEL
-const AVHWAccel ff_mpeg2_d3d11va_hwaccel = {
-    .name           = "mpeg2_d3d11va",
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MPEG2VIDEO,
-    .pix_fmt        = AV_PIX_FMT_D3D11VA_VLD,
+const FFHWAccel ff_mpeg2_d3d11va_hwaccel = {
+    .p.name         = "mpeg2_d3d11va",
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_MPEG2VIDEO,
+    .p.pix_fmt      = AV_PIX_FMT_D3D11VA_VLD,
     .init           = ff_dxva2_decode_init,
     .uninit         = ff_dxva2_decode_uninit,
     .start_frame    = dxva2_mpeg2_start_frame,
@@ -350,11 +351,11 @@ const AVHWAccel ff_mpeg2_d3d11va_hwaccel = {
 #endif
 
 #if CONFIG_MPEG2_D3D11VA2_HWACCEL
-const AVHWAccel ff_mpeg2_d3d11va2_hwaccel = {
-    .name           = "mpeg2_d3d11va2",
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MPEG2VIDEO,
-    .pix_fmt        = AV_PIX_FMT_D3D11,
+const FFHWAccel ff_mpeg2_d3d11va2_hwaccel = {
+    .p.name         = "mpeg2_d3d11va2",
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_MPEG2VIDEO,
+    .p.pix_fmt      = AV_PIX_FMT_D3D11,
     .init           = ff_dxva2_decode_init,
     .uninit         = ff_dxva2_decode_uninit,
     .start_frame    = dxva2_mpeg2_start_frame,

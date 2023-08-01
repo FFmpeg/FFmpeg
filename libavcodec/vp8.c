@@ -31,6 +31,7 @@
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "decode.h"
+#include "hwaccel_internal.h"
 #include "hwconfig.h"
 #include "mathops.h"
 #include "thread.h"
@@ -166,8 +167,8 @@ static void vp8_decode_flush_impl(AVCodecContext *avctx, int free_mem)
     if (free_mem)
         free_buffers(s);
 
-    if (avctx->hwaccel && avctx->hwaccel->flush)
-        avctx->hwaccel->flush(avctx);
+    if (FF_HW_HAS_CB(avctx, flush))
+        FF_HW_SIMPLE_CALL(avctx, flush);
 }
 
 static void vp8_decode_flush(AVCodecContext *avctx)
@@ -2764,15 +2765,16 @@ int vp78_decode_frame(AVCodecContext *avctx, AVFrame *rframe, int *got_frame,
         ff_thread_finish_setup(avctx);
 
     if (avctx->hwaccel) {
-        ret = avctx->hwaccel->start_frame(avctx, avpkt->data, avpkt->size);
+        const FFHWAccel *hwaccel = ffhwaccel(avctx->hwaccel);
+        ret = hwaccel->start_frame(avctx, avpkt->data, avpkt->size);
         if (ret < 0)
             goto err;
 
-        ret = avctx->hwaccel->decode_slice(avctx, avpkt->data, avpkt->size);
+        ret = hwaccel->decode_slice(avctx, avpkt->data, avpkt->size);
         if (ret < 0)
             goto err;
 
-        ret = avctx->hwaccel->end_frame(avctx);
+        ret = hwaccel->end_frame(avctx);
         if (ret < 0)
             goto err;
 

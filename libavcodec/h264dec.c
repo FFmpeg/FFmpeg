@@ -45,6 +45,7 @@
 #include "h264data.h"
 #include "h264_ps.h"
 #include "golomb.h"
+#include "hwaccel_internal.h"
 #include "hwconfig.h"
 #include "mpegutils.h"
 #include "profiles.h"
@@ -485,8 +486,8 @@ static void h264_decode_flush(AVCodecContext *avctx)
     ff_h264_free_tables(h);
     h->context_initialized = 0;
 
-    if (avctx->hwaccel && avctx->hwaccel->flush)
-        avctx->hwaccel->flush(avctx);
+    if (FF_HW_HAS_CB(avctx, flush))
+        FF_HW_SIMPLE_CALL(avctx, flush);
 }
 
 static int get_last_needed_nal(H264Context *h)
@@ -652,14 +653,14 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
                 }
 
                 if (h->avctx->hwaccel &&
-                    (ret = h->avctx->hwaccel->start_frame(h->avctx, buf, buf_size)) < 0)
+                    (ret = FF_HW_CALL(h->avctx, start_frame, buf, buf_size)) < 0)
                     goto end;
             }
 
             max_slice_ctx = avctx->hwaccel ? 1 : h->nb_slice_ctx;
             if (h->nb_slice_ctx_queued == max_slice_ctx) {
                 if (h->avctx->hwaccel) {
-                    ret = avctx->hwaccel->decode_slice(avctx, nal->raw_data, nal->raw_size);
+                    ret = FF_HW_CALL(avctx, decode_slice, nal->raw_data, nal->raw_size);
                     h->nb_slice_ctx_queued = 0;
                 } else
                     ret = ff_h264_execute_decode_slices(h);
@@ -686,11 +687,9 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
             break;
         case H264_NAL_SPS: {
             GetBitContext tmp_gb = nal->gb;
-            if (avctx->hwaccel && avctx->hwaccel->decode_params) {
-                ret = avctx->hwaccel->decode_params(avctx,
-                                                    nal->type,
-                                                    nal->raw_data,
-                                                    nal->raw_size);
+            if (FF_HW_HAS_CB(avctx, decode_params)) {
+                ret = FF_HW_CALL(avctx, decode_params,
+                                 nal->type, nal->raw_data, nal->raw_size);
                 if (ret < 0)
                     goto end;
             }
@@ -705,11 +704,9 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
             break;
         }
         case H264_NAL_PPS:
-            if (avctx->hwaccel && avctx->hwaccel->decode_params) {
-                ret = avctx->hwaccel->decode_params(avctx,
-                                                    nal->type,
-                                                    nal->raw_data,
-                                                    nal->raw_size);
+            if (FF_HW_HAS_CB(avctx, decode_params)) {
+                ret = FF_HW_CALL(avctx, decode_params,
+                                 nal->type, nal->raw_data, nal->raw_size);
                 if (ret < 0)
                     goto end;
             }

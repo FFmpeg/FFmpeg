@@ -46,6 +46,7 @@
 #include "hevc_data.h"
 #include "hevc_parse.h"
 #include "hevcdec.h"
+#include "hwaccel_internal.h"
 #include "hwconfig.h"
 #include "internal.h"
 #include "profiles.h"
@@ -2948,11 +2949,9 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
 
     switch (s->nal_unit_type) {
     case HEVC_NAL_VPS:
-        if (s->avctx->hwaccel && s->avctx->hwaccel->decode_params) {
-            ret = s->avctx->hwaccel->decode_params(s->avctx,
-                                                   nal->type,
-                                                   nal->raw_data,
-                                                   nal->raw_size);
+        if (FF_HW_HAS_CB(s->avctx, decode_params)) {
+            ret = FF_HW_CALL(s->avctx, decode_params,
+                             nal->type, nal->raw_data, nal->raw_size);
             if (ret < 0)
                 goto fail;
         }
@@ -2961,11 +2960,9 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
             goto fail;
         break;
     case HEVC_NAL_SPS:
-        if (s->avctx->hwaccel && s->avctx->hwaccel->decode_params) {
-            ret = s->avctx->hwaccel->decode_params(s->avctx,
-                                                   nal->type,
-                                                   nal->raw_data,
-                                                   nal->raw_size);
+        if (FF_HW_HAS_CB(s->avctx, decode_params)) {
+            ret = FF_HW_CALL(s->avctx, decode_params,
+                             nal->type, nal->raw_data, nal->raw_size);
             if (ret < 0)
                 goto fail;
         }
@@ -2975,11 +2972,9 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
             goto fail;
         break;
     case HEVC_NAL_PPS:
-        if (s->avctx->hwaccel && s->avctx->hwaccel->decode_params) {
-            ret = s->avctx->hwaccel->decode_params(s->avctx,
-                                                   nal->type,
-                                                   nal->raw_data,
-                                                   nal->raw_size);
+        if (FF_HW_HAS_CB(s->avctx, decode_params)) {
+            ret = FF_HW_CALL(s->avctx, decode_params,
+                             nal->type, nal->raw_data, nal->raw_size);
             if (ret < 0)
                 goto fail;
         }
@@ -2989,11 +2984,9 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
         break;
     case HEVC_NAL_SEI_PREFIX:
     case HEVC_NAL_SEI_SUFFIX:
-        if (s->avctx->hwaccel && s->avctx->hwaccel->decode_params) {
-            ret = s->avctx->hwaccel->decode_params(s->avctx,
-                                                   nal->type,
-                                                   nal->raw_data,
-                                                   nal->raw_size);
+        if (FF_HW_HAS_CB(s->avctx, decode_params)) {
+            ret = FF_HW_CALL(s->avctx, decode_params,
+                             nal->type, nal->raw_data, nal->raw_size);
             if (ret < 0)
                 goto fail;
         }
@@ -3079,13 +3072,13 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
         }
 
         if (s->sh.first_slice_in_pic_flag && s->avctx->hwaccel) {
-            ret = s->avctx->hwaccel->start_frame(s->avctx, NULL, 0);
+            ret = FF_HW_CALL(s->avctx, start_frame, NULL, 0);
             if (ret < 0)
                 goto fail;
         }
 
         if (s->avctx->hwaccel) {
-            ret = s->avctx->hwaccel->decode_slice(s->avctx, nal->raw_data, nal->raw_size);
+            ret = FF_HW_CALL(s->avctx, decode_slice, nal->raw_data, nal->raw_size);
             if (ret < 0)
                 goto fail;
         } else {
@@ -3353,7 +3346,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
         return ret;
 
     if (avctx->hwaccel) {
-        if (s->ref && (ret = avctx->hwaccel->end_frame(avctx)) < 0) {
+        if (s->ref && (ret = FF_HW_SIMPLE_CALL(avctx, end_frame)) < 0) {
             av_log(avctx, AV_LOG_ERROR,
                    "hardware accelerator failed to decode picture\n");
             ff_hevc_unref_frame(s, s->ref, ~0);
@@ -3669,8 +3662,8 @@ static void hevc_decode_flush(AVCodecContext *avctx)
     s->max_ra = INT_MAX;
     s->eos = 1;
 
-    if (avctx->hwaccel && avctx->hwaccel->flush)
-        avctx->hwaccel->flush(avctx);
+    if (FF_HW_HAS_CB(avctx, flush))
+        FF_HW_SIMPLE_CALL(avctx, flush);
 }
 
 #define OFFSET(x) offsetof(HEVCContext, x)

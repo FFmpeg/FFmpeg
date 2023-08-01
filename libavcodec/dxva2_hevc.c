@@ -27,6 +27,7 @@
 #include "dxva2_internal.h"
 #include "hevc_data.h"
 #include "hevcdec.h"
+#include "hwaccel_internal.h"
 
 #define MAX_SLICES 256
 
@@ -420,11 +421,11 @@ static int dxva2_hevc_end_frame(AVCodecContext *avctx)
 }
 
 #if CONFIG_HEVC_DXVA2_HWACCEL
-const AVHWAccel ff_hevc_dxva2_hwaccel = {
-    .name           = "hevc_dxva2",
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_HEVC,
-    .pix_fmt        = AV_PIX_FMT_DXVA2_VLD,
+const FFHWAccel ff_hevc_dxva2_hwaccel = {
+    .p.name         = "hevc_dxva2",
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_HEVC,
+    .p.pix_fmt      = AV_PIX_FMT_DXVA2_VLD,
     .init           = ff_dxva2_decode_init,
     .uninit         = ff_dxva2_decode_uninit,
     .start_frame    = dxva2_hevc_start_frame,
@@ -437,11 +438,11 @@ const AVHWAccel ff_hevc_dxva2_hwaccel = {
 #endif
 
 #if CONFIG_HEVC_D3D11VA_HWACCEL
-const AVHWAccel ff_hevc_d3d11va_hwaccel = {
-    .name           = "hevc_d3d11va",
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_HEVC,
-    .pix_fmt        = AV_PIX_FMT_D3D11VA_VLD,
+const FFHWAccel ff_hevc_d3d11va_hwaccel = {
+    .p.name         = "hevc_d3d11va",
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_HEVC,
+    .p.pix_fmt      = AV_PIX_FMT_D3D11VA_VLD,
     .init           = ff_dxva2_decode_init,
     .uninit         = ff_dxva2_decode_uninit,
     .start_frame    = dxva2_hevc_start_frame,
@@ -454,11 +455,11 @@ const AVHWAccel ff_hevc_d3d11va_hwaccel = {
 #endif
 
 #if CONFIG_HEVC_D3D11VA2_HWACCEL
-const AVHWAccel ff_hevc_d3d11va2_hwaccel = {
-    .name           = "hevc_d3d11va2",
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_HEVC,
-    .pix_fmt        = AV_PIX_FMT_D3D11,
+const FFHWAccel ff_hevc_d3d11va2_hwaccel = {
+    .p.name         = "hevc_d3d11va2",
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_HEVC,
+    .p.pix_fmt      = AV_PIX_FMT_D3D11,
     .init           = ff_dxva2_decode_init,
     .uninit         = ff_dxva2_decode_uninit,
     .start_frame    = dxva2_hevc_start_frame,

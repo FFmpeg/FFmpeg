@@ -353,11 +353,11 @@ static int vdpau_av1_init(AVCodecContext *avctx)
     return ff_vdpau_common_init(avctx, profile, level);
 }
 
-const AVHWAccel ff_av1_vdpau_hwaccel = {
-    .name           = "av1_vdpau",
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_AV1,
-    .pix_fmt        = AV_PIX_FMT_VDPAU,
+const FFHWAccel ff_av1_vdpau_hwaccel = {
+    .p.name         = "av1_vdpau",
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_AV1,
+    .p.pix_fmt      = AV_PIX_FMT_VDPAU,
     .start_frame    = vdpau_av1_start_frame,
     .end_frame      = vdpau_av1_end_frame,
     .decode_slice   = vdpau_av1_decode_slice,

@@ -172,11 +172,11 @@ static int vaapi_mpeg2_decode_slice(AVCodecContext *avctx, const uint8_t *buffer
     return 0;
 }
 
-const AVHWAccel ff_mpeg2_vaapi_hwaccel = {
-    .name                 = "mpeg2_vaapi",
-    .type                 = AVMEDIA_TYPE_VIDEO,
-    .id                   = AV_CODEC_ID_MPEG2VIDEO,
-    .pix_fmt              = AV_PIX_FMT_VAAPI,
+const FFHWAccel ff_mpeg2_vaapi_hwaccel = {
+    .p.name               = "mpeg2_vaapi",
+    .p.type               = AVMEDIA_TYPE_VIDEO,
+    .p.id                 = AV_CODEC_ID_MPEG2VIDEO,
+    .p.pix_fmt            = AV_PIX_FMT_VAAPI,
     .start_frame          = &vaapi_mpeg2_start_frame,
     .end_frame            = &vaapi_mpeg2_end_frame,
     .decode_slice         = &vaapi_mpeg2_decode_slice,
