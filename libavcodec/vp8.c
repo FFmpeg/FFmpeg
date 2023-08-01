@@ -104,23 +104,21 @@ static int vp8_alloc_frame(VP8Context *s, VP8Frame *f, int ref)
     if ((ret = ff_thread_get_ext_buffer(s->avctx, &f->tf,
                                         ref ? AV_GET_BUFFER_FLAG_REF : 0)) < 0)
         return ret;
-    if (!(f->seg_map = av_buffer_allocz(s->mb_width * s->mb_height)))
+    if (!(f->seg_map = av_buffer_allocz(s->mb_width * s->mb_height))) {
+        ret = AVERROR(ENOMEM);
         goto fail;
-    if (s->avctx->hwaccel) {
-        const AVHWAccel *hwaccel = s->avctx->hwaccel;
-        if (hwaccel->frame_priv_data_size) {
-            f->hwaccel_priv_buf = ff_hwaccel_frame_priv_alloc(s->avctx, hwaccel);
-            if (!f->hwaccel_priv_buf)
-                goto fail;
-            f->hwaccel_picture_private = f->hwaccel_priv_buf->data;
-        }
     }
+    ret = ff_hwaccel_frame_priv_alloc(s->avctx, &f->hwaccel_picture_private,
+                                      &f->hwaccel_priv_buf);
+    if (ret < 0)
+        goto fail;
+
     return 0;
 
 fail:
     av_buffer_unref(&f->seg_map);
     ff_thread_release_ext_buffer(s->avctx, &f->tf);
-    return AVERROR(ENOMEM);
+    return ret;
 }
 
 static void vp8_release_frame(VP8Context *s, VP8Frame *f)

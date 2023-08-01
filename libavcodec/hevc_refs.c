@@ -118,16 +118,10 @@ static HEVCFrame *alloc_frame(HEVCContext *s)
             (s->sei.picture_timing.picture_struct == AV_PICTURE_STRUCTURE_BOTTOM_FIELD))
             frame->frame->flags |= AV_FRAME_FLAG_INTERLACED;
 
-        if (s->avctx->hwaccel) {
-            const AVHWAccel *hwaccel = s->avctx->hwaccel;
-            av_assert0(!frame->hwaccel_picture_private);
-            if (hwaccel->frame_priv_data_size) {
-                frame->hwaccel_priv_buf = ff_hwaccel_frame_priv_alloc(s->avctx, hwaccel);
-                if (!frame->hwaccel_priv_buf)
-                    goto fail;
-                frame->hwaccel_picture_private = frame->hwaccel_priv_buf->data;
-            }
-        }
+        ret = ff_hwaccel_frame_priv_alloc(s->avctx, &frame->hwaccel_picture_private,
+                                          &frame->hwaccel_priv_buf);
+        if (ret < 0)
+            goto fail;
 
         return frame;
 fail:

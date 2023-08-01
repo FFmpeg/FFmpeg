@@ -205,16 +205,11 @@ static int alloc_picture(H264Context *h, H264Picture *pic)
             goto fail;
     }
 
-    if (h->avctx->hwaccel) {
-        const AVHWAccel *hwaccel = h->avctx->hwaccel;
-        av_assert0(!pic->hwaccel_picture_private);
-        if (hwaccel->frame_priv_data_size) {
-            pic->hwaccel_priv_buf = ff_hwaccel_frame_priv_alloc(h->avctx, hwaccel);
-            if (!pic->hwaccel_priv_buf)
-                return AVERROR(ENOMEM);
-            pic->hwaccel_picture_private = pic->hwaccel_priv_buf->data;
-        }
-    }
+    ret = ff_hwaccel_frame_priv_alloc(h->avctx, &pic->hwaccel_picture_private,
+                                      &pic->hwaccel_priv_buf);
+    if (ret < 0)
+        goto fail;
+
     if (CONFIG_GRAY && !h->avctx->hwaccel && h->flags & AV_CODEC_FLAG_GRAY && pic->f->data[2]) {
         int h_chroma_shift, v_chroma_shift;
         av_pix_fmt_get_chroma_sub_sample(pic->f->format,

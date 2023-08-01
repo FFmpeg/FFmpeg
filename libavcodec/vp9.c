@@ -119,12 +119,14 @@ static int vp9_frame_alloc(AVCodecContext *avctx, VP9Frame *f)
         s->frame_extradata_pool = av_buffer_pool_init(sz * (1 + sizeof(VP9mvrefPair)), NULL);
         if (!s->frame_extradata_pool) {
             s->frame_extradata_pool_size = 0;
+            ret = AVERROR(ENOMEM);
             goto fail;
         }
         s->frame_extradata_pool_size = sz;
     }
     f->extradata = av_buffer_pool_get(s->frame_extradata_pool);
     if (!f->extradata) {
+        ret = AVERROR(ENOMEM);
         goto fail;
     }
     memset(f->extradata->data, 0, f->extradata->size);
@@ -132,22 +134,16 @@ static int vp9_frame_alloc(AVCodecContext *avctx, VP9Frame *f)
     f->segmentation_map = f->extradata->data;
     f->mv = (VP9mvrefPair *) (f->extradata->data + sz);
 
-    if (avctx->hwaccel) {
-        const AVHWAccel *hwaccel = avctx->hwaccel;
-        av_assert0(!f->hwaccel_picture_private);
-        if (hwaccel->frame_priv_data_size) {
-            f->hwaccel_priv_buf = ff_hwaccel_frame_priv_alloc(avctx, hwaccel);
-            if (!f->hwaccel_priv_buf)
-                goto fail;
-            f->hwaccel_picture_private = f->hwaccel_priv_buf->data;
-        }
-    }
+    ret = ff_hwaccel_frame_priv_alloc(avctx, &f->hwaccel_picture_private,
+                                      &f->hwaccel_priv_buf);
+    if (ret < 0)
+        goto fail;
 
     return 0;
 
 fail:
     vp9_frame_unref(avctx, f);
-    return AVERROR(ENOMEM);
+    return ret;
 }
 
 static int vp9_frame_ref(AVCodecContext *avctx, VP9Frame *dst, VP9Frame *src)

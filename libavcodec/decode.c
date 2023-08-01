@@ -1788,24 +1788,36 @@ int ff_copy_palette(void *dst, const AVPacket *src, void *logctx)
     return 0;
 }
 
-AVBufferRef *ff_hwaccel_frame_priv_alloc(AVCodecContext *avctx,
-                                         const AVHWAccel *hwaccel)
+int ff_hwaccel_frame_priv_alloc(AVCodecContext *avctx, void **hwaccel_picture_private,
+                                AVBufferRef **hwaccel_priv_buf)
 {
+    const AVHWAccel *hwaccel = avctx->hwaccel;
     AVBufferRef *ref;
-    AVHWFramesContext *frames_ctx = (AVHWFramesContext *)avctx->hw_frames_ctx->data;
-    uint8_t *data = av_mallocz(hwaccel->frame_priv_data_size);
+    AVHWFramesContext *frames_ctx;
+    uint8_t *data;
+
+    if (!hwaccel || !hwaccel->frame_priv_data_size)
+        return 0;
+
+    av_assert0(!*hwaccel_picture_private);
+    data       = av_mallocz(hwaccel->frame_priv_data_size);
     if (!data)
-        return NULL;
+        return AVERROR(ENOMEM);
+
+    frames_ctx = (AVHWFramesContext *)avctx->hw_frames_ctx->data;
 
     ref = av_buffer_create(data, hwaccel->frame_priv_data_size,
                            hwaccel->free_frame_priv,
                            frames_ctx->device_ctx, 0);
     if (!ref) {
         av_free(data);
-        return NULL;
+        return AVERROR(ENOMEM);
     }
 
-    return ref;
+    *hwaccel_priv_buf        = ref;
+    *hwaccel_picture_private = ref->data;
+
+    return 0;
 }
 
 void ff_decode_flush_buffers(AVCodecContext *avctx)

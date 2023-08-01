@@ -907,17 +907,11 @@ static int av1_frame_alloc(AVCodecContext *avctx, AV1Frame *f)
         break;
     }
 
-    if (avctx->hwaccel) {
-        const AVHWAccel *hwaccel = avctx->hwaccel;
-        if (hwaccel->frame_priv_data_size) {
-            f->hwaccel_priv_buf = ff_hwaccel_frame_priv_alloc(avctx, hwaccel);
-            if (!f->hwaccel_priv_buf) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
-            f->hwaccel_picture_private = f->hwaccel_priv_buf->data;
-        }
-    }
+    ret = ff_hwaccel_frame_priv_alloc(avctx, &f->hwaccel_picture_private,
+                                      &f->hwaccel_priv_buf);
+    if (ret < 0)
+        goto fail;
+
     return 0;
 
 fail:
