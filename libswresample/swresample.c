@@ -196,11 +196,11 @@ av_cold int swr_init(struct SwrContext *s){
 
     clear_context(s);
 
-    if(s-> in_sample_fmt >= AV_SAMPLE_FMT_NB){
+    if((unsigned) s-> in_sample_fmt >= AV_SAMPLE_FMT_NB){
         av_log(s, AV_LOG_ERROR, "Requested input sample format %d is invalid\n", s->in_sample_fmt);
         return AVERROR(EINVAL);
     }
-    if(s->out_sample_fmt >= AV_SAMPLE_FMT_NB){
+    if((unsigned) s->out_sample_fmt >= AV_SAMPLE_FMT_NB){
         av_log(s, AV_LOG_ERROR, "Requested output sample format %d is invalid\n", s->out_sample_fmt);
         return AVERROR(EINVAL);
     }
