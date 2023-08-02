@@ -31,7 +31,11 @@
  * @author Jordi Ortiz
  */
 
-#include "avcodec.h"
+#include <stddef.h>
+#include <stdint.h>
+
+#include "libavutil/pixfmt.h"
+#include "libavutil/rational.h"
 
 /**
  * The spec limits the number of wavelet decompositions to 4 for both
