@@ -144,36 +144,20 @@ static void jpeg2000_init_mel_decoder(MelDecoderState *mel_state)
 static int jpeg2000_bitbuf_refill_backwards(StateVars *buffer, const uint8_t *array)
 {
     uint64_t tmp = 0;
-    int32_t position = buffer->pos;
+    int32_t position = buffer->pos - 4;
     uint32_t new_bits = 32;
 
     if (buffer->bits_left >= 32)
         return 0; // enough data, no need to pull in more bits
 
     /**
-     * We are reading bytes from end to start and need to handle being close to
-     * the end. Subtracting by 4 means we will read some of the bytes of the MEL
-     * byte stream since the MEL byte stream ends at the start of the VLC byte
-     * stream. This is okay as they are masked away since we check for cases
-     * where that occurs (when the position is less than 4).
-     */
-    position -= 4;
-
-    tmp = AV_RB32(&array[position + 1]);
-
-    if (buffer->pos < 4){
-        /* mask un-needed bits if we are close to input end */
-        uint64_t mask = (1ull << (buffer->pos + 1) * 8) - 1;
-        tmp &= mask;
-    }
-
-    /**
      *  Unstuff bits. Load a temporary byte, which precedes the position we
      *  currently at, to ensure that we can also un-stuff if the stuffed bit is
      *  the bottom most bits.
      */
-    tmp <<= 8;
-    tmp |= array[buffer->pos + 1];
+
+    for(int i = FFMAX(0, position + 1); i <= buffer->pos + 1; i++)
+        tmp = 256*tmp + array[i];
 
     if ((tmp & 0x7FFF000000) > 0x7F8F000000) {
         tmp &= 0x7FFFFFFFFF;
