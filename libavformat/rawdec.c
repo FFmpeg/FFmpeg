@@ -27,8 +27,6 @@
 #include "rawdec.h"
 #include "libavutil/opt.h"
 
-#include "libavcodec/avcodec.h"
-
 #define RAW_PACKET_SIZE 1024
 
 int ff_raw_read_partial_packet(AVFormatContext *s, AVPacket *pkt)
