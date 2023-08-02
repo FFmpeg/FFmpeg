@@ -20,15 +20,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/get_bits.h"
-#include "libavcodec/golomb.h"
-#include "libavcodec/internal.h"
 #include "libavcodec/evc.h"
 #include "libavcodec/bsf.h"
 
 #include "libavutil/opt.h"
 
-#include "rawdec.h"
 #include "avformat.h"
 #include "avio_internal.h"
 #include "evc.h"
