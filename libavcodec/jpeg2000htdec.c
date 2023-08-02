@@ -1174,8 +1174,8 @@ ff_jpeg2000_decode_htj2k(const Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c
     int ret;
 
     /* Temporary buffers */
-    int32_t *sample_buf;
-    uint8_t *block_states;
+    int32_t *sample_buf = NULL;
+    uint8_t *block_states = NULL;
 
     int32_t n, val;             // Post-processing
 
