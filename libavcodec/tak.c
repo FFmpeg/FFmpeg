@@ -144,11 +144,11 @@ int avpriv_tak_parse_streaminfo(TAKStreamInfo *s, const uint8_t *buf, int size)
     return tak_parse_streaminfo(s, &gb);
 }
 
-int ff_tak_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
+int ff_tak_decode_frame_header(void *logctx, GetBitContext *gb,
                                TAKStreamInfo *ti, int log_level_offset)
 {
     if (get_bits(gb, TAK_FRAME_HEADER_SYNC_ID_BITS) != TAK_FRAME_HEADER_SYNC_ID) {
-        av_log(avctx, AV_LOG_ERROR + log_level_offset, "missing sync id\n");
+        av_log(logctx, AV_LOG_ERROR + log_level_offset, "missing sync id\n");
         return AVERROR_INVALIDDATA;
     }
 
