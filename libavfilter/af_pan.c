@@ -419,13 +419,6 @@ static const AVFilterPad pan_inputs[] = {
     },
 };
 
-static const AVFilterPad pan_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 const AVFilter ff_af_pan = {
     .name          = "pan",
     .description   = NULL_IF_CONFIG_SMALL("Remix channels with coefficients (panning)."),
@@ -434,6 +427,6 @@ const AVFilter ff_af_pan = {
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(pan_inputs),
-    FILTER_OUTPUTS(pan_outputs),
+    FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_QUERY_FUNC(query_formats),
 };

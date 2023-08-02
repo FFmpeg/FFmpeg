@@ -28,6 +28,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/timestamp.h"
 #include "libavutil/xga_font_data.h"
+#include "audio.h"
 #include "avfilter.h"
 #include "filters.h"
 #include "formats.h"
@@ -602,13 +603,6 @@ const AVFilter ff_vf_graphmonitor = {
 
 #if CONFIG_AGRAPHMONITOR_FILTER
 
-static const AVFilterPad agraphmonitor_inputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 static const AVFilterPad agraphmonitor_outputs[] = {
     {
         .name         = "default",
@@ -625,7 +619,7 @@ const AVFilter ff_avf_agraphmonitor = {
     .init          = init,
     .uninit        = uninit,
     .activate      = activate,
-    FILTER_INPUTS(agraphmonitor_inputs),
+    FILTER_INPUTS(ff_audio_default_filterpad),
     FILTER_OUTPUTS(agraphmonitor_outputs),
     FILTER_QUERY_FUNC(query_formats),
     .process_command = ff_filter_process_command,

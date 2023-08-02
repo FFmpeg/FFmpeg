@@ -153,13 +153,6 @@ const AVFilter ff_vf_split = {
     .flags       = AVFILTER_FLAG_DYNAMIC_OUTPUTS | AVFILTER_FLAG_METADATA_ONLY,
 };
 
-static const AVFilterPad avfilter_af_asplit_inputs[] = {
-    {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 const AVFilter ff_af_asplit = {
     .name        = "asplit",
     .description = NULL_IF_CONFIG_SMALL("Pass on the audio input to N audio outputs."),
@@ -167,7 +160,7 @@ const AVFilter ff_af_asplit = {
     .priv_size   = sizeof(SplitContext),
     .init        = split_init,
     .activate    = activate,
-    FILTER_INPUTS(avfilter_af_asplit_inputs),
+    FILTER_INPUTS(ff_audio_default_filterpad),
     .outputs     = NULL,
     .flags       = AVFILTER_FLAG_DYNAMIC_OUTPUTS | AVFILTER_FLAG_METADATA_ONLY,
 };

@@ -361,13 +361,6 @@ static const AVFilterPad avfilter_af_aemphasis_inputs[] = {
     },
 };
 
-static const AVFilterPad avfilter_af_aemphasis_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 const AVFilter ff_af_aemphasis = {
     .name          = "aemphasis",
     .description   = NULL_IF_CONFIG_SMALL("Audio emphasis."),
@@ -375,7 +368,7 @@ const AVFilter ff_af_aemphasis = {
     .priv_class    = &aemphasis_class,
     .uninit        = uninit,
     FILTER_INPUTS(avfilter_af_aemphasis_inputs),
-    FILTER_OUTPUTS(avfilter_af_aemphasis_outputs),
+    FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_SINGLE_SAMPLEFMT(AV_SAMPLE_FMT_DBLP),
     .process_command = process_command,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |

@@ -439,20 +439,13 @@ static const AVFilterPad inputs[] = {
     },
 };
 
-static const AVFilterPad outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 const AVFilter ff_af_afftfilt = {
     .name            = "afftfilt",
     .description     = NULL_IF_CONFIG_SMALL("Apply arbitrary expressions to samples in frequency domain."),
     .priv_size       = sizeof(AFFTFiltContext),
     .priv_class      = &afftfilt_class,
     FILTER_INPUTS(inputs),
-    FILTER_OUTPUTS(outputs),
+    FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_SINGLE_SAMPLEFMT(AV_SAMPLE_FMT_FLTP),
     .activate        = activate,
     .uninit          = uninit,

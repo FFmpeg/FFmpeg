@@ -377,13 +377,6 @@ static const AVFilterPad ainputs[] = {
     },
 };
 
-static const AVFilterPad aoutputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 const AVFilter ff_af_ametadata = {
     .name          = "ametadata",
     .description   = NULL_IF_CONFIG_SMALL("Manipulate audio frame metadata."),
@@ -392,7 +385,7 @@ const AVFilter ff_af_ametadata = {
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(ainputs),
-    FILTER_OUTPUTS(aoutputs),
+    FILTER_OUTPUTS(ff_audio_default_filterpad),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
                      AVFILTER_FLAG_METADATA_ONLY,
 };

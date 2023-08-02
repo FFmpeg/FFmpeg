@@ -207,13 +207,6 @@ static const AVFilterPad rubberband_inputs[] = {
     },
 };
 
-static const AVFilterPad rubberband_outputs[] = {
-    {
-        .name          = "default",
-        .type          = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 const AVFilter ff_af_rubberband = {
     .name          = "rubberband",
     .description   = NULL_IF_CONFIG_SMALL("Apply time-stretching and pitch-shifting."),
@@ -222,7 +215,7 @@ const AVFilter ff_af_rubberband = {
     .uninit        = uninit,
     .activate      = activate,
     FILTER_INPUTS(rubberband_inputs),
-    FILTER_OUTPUTS(rubberband_outputs),
+    FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_SINGLE_SAMPLEFMT(AV_SAMPLE_FMT_FLTP),
     .process_command = process_command,
 };

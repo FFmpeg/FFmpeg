@@ -195,13 +195,6 @@ static const AVFilterPad flanger_inputs[] = {
     },
 };
 
-static const AVFilterPad flanger_outputs[] = {
-    {
-        .name          = "default",
-        .type          = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 const AVFilter ff_af_flanger = {
     .name          = "flanger",
     .description   = NULL_IF_CONFIG_SMALL("Apply a flanging effect to the audio."),
@@ -210,6 +203,6 @@ const AVFilter ff_af_flanger = {
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(flanger_inputs),
-    FILTER_OUTPUTS(flanger_outputs),
+    FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_SINGLE_SAMPLEFMT(AV_SAMPLE_FMT_DBLP),
 };

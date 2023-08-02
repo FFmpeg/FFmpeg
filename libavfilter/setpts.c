@@ -366,13 +366,6 @@ static const AVFilterPad asetpts_inputs[] = {
     },
 };
 
-static const AVFilterPad asetpts_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 const AVFilter ff_af_asetpts = {
     .name            = "asetpts",
     .description     = NULL_IF_CONFIG_SMALL("Set PTS for the output audio frame."),
@@ -384,6 +377,6 @@ const AVFilter ff_af_asetpts = {
     .priv_class      = &asetpts_class,
     .flags           = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(asetpts_inputs),
-    FILTER_OUTPUTS(asetpts_outputs),
+    FILTER_OUTPUTS(ff_audio_default_filterpad),
 };
 #endif /* CONFIG_ASETPTS_FILTER */

@@ -590,13 +590,6 @@ static const AVFilterPad inputs[] = {
     },
 };
 
-static const AVFilterPad outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 const AVFilter ff_af_speechnorm = {
     .name            = "speechnorm",
     .description     = NULL_IF_CONFIG_SMALL("Speech Normalizer."),
@@ -605,7 +598,7 @@ const AVFilter ff_af_speechnorm = {
     .activate        = activate,
     .uninit          = uninit,
     FILTER_INPUTS(inputs),
-    FILTER_OUTPUTS(outputs),
+    FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_DBLP),
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .process_command = process_command,

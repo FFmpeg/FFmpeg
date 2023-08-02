@@ -26,6 +26,7 @@
 #include "libavutil/eval.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/time.h"
+#include "audio.h"
 #include "avfilter.h"
 #include "filters.h"
 #include "internal.h"
@@ -1591,13 +1592,6 @@ static int activate(AVFilterContext *ctx)
     return FFERROR_NOT_READY;
 }
 
-static const AVFilterPad showcqt_inputs[] = {
-    {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 static const AVFilterPad showcqt_outputs[] = {
     {
         .name          = "default",
@@ -1613,7 +1607,7 @@ const AVFilter ff_avf_showcqt = {
     .activate      = activate,
     .uninit        = uninit,
     .priv_size     = sizeof(ShowCQTContext),
-    FILTER_INPUTS(showcqt_inputs),
+    FILTER_INPUTS(ff_audio_default_filterpad),
     FILTER_OUTPUTS(showcqt_outputs),
     FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &showcqt_class,

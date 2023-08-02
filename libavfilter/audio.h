@@ -25,6 +25,12 @@
 #include "avfilter.h"
 #include "internal.h"
 
+/**
+ * An AVFilterPad array whose only entry has name "default"
+ * and is of type AVMEDIA_TYPE_AUDIO.
+ */
+extern const AVFilterPad ff_audio_default_filterpad[1];
+
 /** default handler for get_audio_buffer() for audio inputs */
 AVFrame *ff_default_get_audio_buffer(AVFilterLink *link, int nb_samples);
 

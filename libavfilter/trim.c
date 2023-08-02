@@ -398,13 +398,6 @@ static const AVFilterPad atrim_inputs[] = {
     },
 };
 
-static const AVFilterPad atrim_outputs[] = {
-    {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 const AVFilter ff_af_atrim = {
     .name        = "atrim",
     .description = NULL_IF_CONFIG_SMALL("Pick one continuous section from the input, drop the rest."),
@@ -414,6 +407,6 @@ const AVFilter ff_af_atrim = {
     .priv_class  = &atrim_class,
     .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(atrim_inputs),
-    FILTER_OUTPUTS(atrim_outputs),
+    FILTER_OUTPUTS(ff_audio_default_filterpad),
 };
 #endif // CONFIG_ATRIM_FILTER

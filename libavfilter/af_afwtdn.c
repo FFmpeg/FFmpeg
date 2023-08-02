@@ -1290,13 +1290,6 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
     return 0;
 }
 
-static const AVFilterPad inputs[] = {
-    {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 static const AVFilterPad outputs[] = {
     {
         .name          = "default",
@@ -1312,7 +1305,7 @@ const AVFilter ff_af_afwtdn = {
     .priv_class      = &afwtdn_class,
     .activate        = activate,
     .uninit          = uninit,
-    FILTER_INPUTS(inputs),
+    FILTER_INPUTS(ff_audio_default_filterpad),
     FILTER_OUTPUTS(outputs),
     FILTER_SINGLE_SAMPLEFMT(AV_SAMPLE_FMT_DBLP),
     .process_command = process_command,

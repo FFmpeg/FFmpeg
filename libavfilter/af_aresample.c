@@ -357,13 +357,6 @@ static const AVClass aresample_class = {
     .child_next       = resample_child_next,
 };
 
-static const AVFilterPad aresample_inputs[] = {
-    {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 static const AVFilterPad aresample_outputs[] = {
     {
         .name          = "default",
@@ -380,7 +373,7 @@ const AVFilter ff_af_aresample = {
     .uninit        = uninit,
     .priv_size     = sizeof(AResampleContext),
     .priv_class    = &aresample_class,
-    FILTER_INPUTS(aresample_inputs),
+    FILTER_INPUTS(ff_audio_default_filterpad),
     FILTER_OUTPUTS(aresample_outputs),
     FILTER_QUERY_FUNC(query_formats),
 };

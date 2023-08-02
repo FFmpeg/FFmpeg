@@ -794,13 +794,6 @@ static int activate(AVFilterContext *ctx)
     return FFERROR_NOT_READY;
 }
 
-static const AVFilterPad showwaves_inputs[] = {
-    {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 static const AVFilterPad showwaves_outputs[] = {
     {
         .name          = "default",
@@ -815,7 +808,7 @@ const AVFilter ff_avf_showwaves = {
     .init          = init,
     .uninit        = uninit,
     .priv_size     = sizeof(ShowWavesContext),
-    FILTER_INPUTS(showwaves_inputs),
+    FILTER_INPUTS(ff_audio_default_filterpad),
     .activate      = activate,
     FILTER_OUTPUTS(showwaves_outputs),
     FILTER_QUERY_FUNC(query_formats),

@@ -125,13 +125,6 @@ static const AVFilterPad aperms_inputs[] = {
     },
 };
 
-static const AVFilterPad aperms_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 const AVFilter ff_af_aperms = {
     .name        = "aperms",
     .description = NULL_IF_CONFIG_SMALL("Set permissions for the output audio frame."),
@@ -139,7 +132,7 @@ const AVFilter ff_af_aperms = {
     .init        = init,
     .priv_size   = sizeof(PermsContext),
     FILTER_INPUTS(aperms_inputs),
-    FILTER_OUTPUTS(aperms_outputs),
+    FILTER_OUTPUTS(ff_audio_default_filterpad),
     .flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
                    AVFILTER_FLAG_METADATA_ONLY,
     .process_command = ff_filter_process_command,

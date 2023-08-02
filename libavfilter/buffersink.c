@@ -396,13 +396,6 @@ const AVFilter ff_vsink_buffer = {
     FILTER_QUERY_FUNC(vsink_query_formats),
 };
 
-static const AVFilterPad avfilter_asink_abuffer_inputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 const AVFilter ff_asink_abuffer = {
     .name          = "abuffersink",
     .description   = NULL_IF_CONFIG_SMALL("Buffer audio frames, and make them available to the end of the filter graph."),
@@ -410,7 +403,7 @@ const AVFilter ff_asink_abuffer = {
     .priv_size     = sizeof(BufferSinkContext),
     .init          = common_init,
     .activate      = activate,
-    FILTER_INPUTS(avfilter_asink_abuffer_inputs),
+    FILTER_INPUTS(ff_audio_default_filterpad),
     .outputs       = NULL,
     FILTER_QUERY_FUNC(asink_query_formats),
 };

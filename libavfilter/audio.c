@@ -29,6 +29,13 @@
 #include "framepool.h"
 #include "internal.h"
 
+const AVFilterPad ff_audio_default_filterpad[1] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_AUDIO,
+    }
+};
+
 AVFrame *ff_null_get_audio_buffer(AVFilterLink *link, int nb_samples)
 {
     return ff_get_audio_buffer(link->dst->outputs[0], nb_samples);

@@ -1086,13 +1086,6 @@ static const AVFilterPad inputs[] = {
     },
 };
 
-static const AVFilterPad outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 const AVFilter ff_af_sofalizer = {
     .name          = "sofalizer",
     .description   = NULL_IF_CONFIG_SMALL("SOFAlizer (Spatially Oriented Format for Acoustics)."),
@@ -1102,7 +1095,7 @@ const AVFilter ff_af_sofalizer = {
     .activate      = activate,
     .uninit        = uninit,
     FILTER_INPUTS(inputs),
-    FILTER_OUTPUTS(outputs),
+    FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

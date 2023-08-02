@@ -366,13 +366,6 @@ static const AVFilterPad inputs[] = {
     },
 };
 
-static const AVFilterPad outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 const AVFilter ff_af_afreqshift = {
     .name            = "afreqshift",
     .description     = NULL_IF_CONFIG_SMALL("Apply frequency shifting to input audio."),
@@ -380,7 +373,7 @@ const AVFilter ff_af_afreqshift = {
     .priv_class      = &afreqshift_class,
     .uninit          = uninit,
     FILTER_INPUTS(inputs),
-    FILTER_OUTPUTS(outputs),
+    FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_SAMPLEFMTS_ARRAY(sample_fmts),
     .process_command = ff_filter_process_command,
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
@@ -403,7 +396,7 @@ const AVFilter ff_af_aphaseshift = {
     .priv_class      = &aphaseshift_class,
     .uninit          = uninit,
     FILTER_INPUTS(inputs),
-    FILTER_OUTPUTS(outputs),
+    FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_SAMPLEFMTS_ARRAY(sample_fmts),
     .process_command = ff_filter_process_command,
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |

@@ -1763,13 +1763,6 @@ static const AVFilterPad avfilter_af_hdcd_inputs[] = {
     },
 };
 
-static const AVFilterPad avfilter_af_hdcd_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 const AVFilter ff_af_hdcd = {
     .name          = "hdcd",
     .description   = NULL_IF_CONFIG_SMALL("Apply High Definition Compatible Digital (HDCD) decoding."),
@@ -1778,6 +1771,6 @@ const AVFilter ff_af_hdcd = {
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(avfilter_af_hdcd_inputs),
-    FILTER_OUTPUTS(avfilter_af_hdcd_outputs),
+    FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_QUERY_FUNC(query_formats),
 };

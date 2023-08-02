@@ -122,13 +122,6 @@ static const AVFilterPad dcshift_inputs[] = {
     },
 };
 
-static const AVFilterPad dcshift_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 const AVFilter ff_af_dcshift = {
     .name           = "dcshift",
     .description    = NULL_IF_CONFIG_SMALL("Apply a DC shift to the audio."),
@@ -136,7 +129,7 @@ const AVFilter ff_af_dcshift = {
     .priv_class     = &dcshift_class,
     .init           = init,
     FILTER_INPUTS(dcshift_inputs),
-    FILTER_OUTPUTS(dcshift_outputs),
+    FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_SINGLE_SAMPLEFMT(AV_SAMPLE_FMT_S32P),
     .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

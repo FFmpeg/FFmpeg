@@ -926,13 +926,6 @@ static const AVFilterPad avfilter_af_loudnorm_inputs[] = {
     },
 };
 
-static const AVFilterPad avfilter_af_loudnorm_outputs[] = {
-    {
-        .name          = "default",
-        .type          = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 const AVFilter ff_af_loudnorm = {
     .name          = "loudnorm",
     .description   = NULL_IF_CONFIG_SMALL("EBU R128 loudness normalization"),
@@ -942,6 +935,6 @@ const AVFilter ff_af_loudnorm = {
     .activate      = activate,
     .uninit        = uninit,
     FILTER_INPUTS(avfilter_af_loudnorm_inputs),
-    FILTER_OUTPUTS(avfilter_af_loudnorm_outputs),
+    FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_QUERY_FUNC(query_formats),
 };

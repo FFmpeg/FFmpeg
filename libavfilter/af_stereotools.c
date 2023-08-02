@@ -365,13 +365,6 @@ static const AVFilterPad inputs[] = {
     },
 };
 
-static const AVFilterPad outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 const AVFilter ff_af_stereotools = {
     .name           = "stereotools",
     .description    = NULL_IF_CONFIG_SMALL("Apply various stereo tools."),
@@ -379,7 +372,7 @@ const AVFilter ff_af_stereotools = {
     .priv_class     = &stereotools_class,
     .uninit         = uninit,
     FILTER_INPUTS(inputs),
-    FILTER_OUTPUTS(outputs),
+    FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_QUERY_FUNC(query_formats),
     .process_command = process_command,
     .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,

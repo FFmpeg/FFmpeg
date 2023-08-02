@@ -22,6 +22,7 @@
 
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
+#include "audio.h"
 #include "avfilter.h"
 #include "internal.h"
 #include <float.h>
@@ -114,13 +115,6 @@ static const AVFilterPad arealtime_inputs[] = {
     },
 };
 
-static const AVFilterPad arealtime_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 const AVFilter ff_af_arealtime = {
     .name        = "arealtime",
     .description = NULL_IF_CONFIG_SMALL("Slow down filtering to match realtime."),
@@ -128,7 +122,7 @@ const AVFilter ff_af_arealtime = {
     .priv_size   = sizeof(RealtimeContext),
     .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(arealtime_inputs),
-    FILTER_OUTPUTS(arealtime_outputs),
+    FILTER_OUTPUTS(ff_audio_default_filterpad),
     .process_command = ff_filter_process_command,
 };
 #endif /* CONFIG_AREALTIME_FILTER */

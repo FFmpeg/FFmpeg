@@ -20,6 +20,7 @@
 
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
+#include "audio.h"
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
@@ -131,20 +132,13 @@ static const AVFilterPad abench_inputs[] = {
     },
 };
 
-static const AVFilterPad abench_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 const AVFilter ff_af_abench = {
     .name          = "abench",
     .description   = NULL_IF_CONFIG_SMALL("Benchmark part of a filtergraph."),
     .priv_size     = sizeof(BenchContext),
     .init          = init,
     FILTER_INPUTS(abench_inputs),
-    FILTER_OUTPUTS(abench_outputs),
+    FILTER_OUTPUTS(ff_audio_default_filterpad),
     .priv_class    = &abench_class,
     .flags         = AVFILTER_FLAG_METADATA_ONLY,
 };

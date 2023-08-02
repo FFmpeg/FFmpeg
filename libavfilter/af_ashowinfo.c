@@ -253,13 +253,6 @@ static const AVFilterPad inputs[] = {
     },
 };
 
-static const AVFilterPad outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 const AVFilter ff_af_ashowinfo = {
     .name        = "ashowinfo",
     .description = NULL_IF_CONFIG_SMALL("Show textual information for each audio frame."),
@@ -267,5 +260,5 @@ const AVFilter ff_af_ashowinfo = {
     .uninit      = uninit,
     .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(inputs),
-    FILTER_OUTPUTS(outputs),
+    FILTER_OUTPUTS(ff_audio_default_filterpad),
 };

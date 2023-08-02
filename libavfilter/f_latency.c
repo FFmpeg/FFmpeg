@@ -21,6 +21,7 @@
 #include "config_components.h"
 
 #include "libavutil/opt.h"
+#include "audio.h"
 #include "avfilter.h"
 #include "filters.h"
 #include "formats.h"
@@ -130,20 +131,6 @@ const AVFilter ff_vf_latency = {
 
 #if CONFIG_ALATENCY_FILTER
 
-static const AVFilterPad alatency_inputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
-static const AVFilterPad alatency_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 const AVFilter ff_af_alatency = {
     .name          = "alatency",
     .description   = NULL_IF_CONFIG_SMALL("Report audio filtering latency."),
@@ -152,7 +139,7 @@ const AVFilter ff_af_alatency = {
     .uninit        = uninit,
     .activate      = activate,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
-    FILTER_INPUTS(alatency_inputs),
-    FILTER_OUTPUTS(alatency_outputs),
+    FILTER_INPUTS(ff_audio_default_filterpad),
+    FILTER_OUTPUTS(ff_audio_default_filterpad),
 };
 #endif // CONFIG_ALATENCY_FILTER

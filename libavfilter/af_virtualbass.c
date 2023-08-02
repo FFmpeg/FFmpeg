@@ -163,20 +163,13 @@ static const AVFilterPad inputs[] = {
     },
 };
 
-static const AVFilterPad outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 const AVFilter ff_af_virtualbass = {
     .name            = "virtualbass",
     .description     = NULL_IF_CONFIG_SMALL("Audio Virtual Bass."),
     .priv_size       = sizeof(AudioVirtualBassContext),
     .priv_class      = &virtualbass_class,
     FILTER_INPUTS(inputs),
-    FILTER_OUTPUTS(outputs),
+    FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_QUERY_FUNC(query_formats),
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .process_command = ff_filter_process_command,

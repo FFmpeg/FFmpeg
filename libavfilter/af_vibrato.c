@@ -158,13 +158,6 @@ static const AVFilterPad avfilter_af_vibrato_inputs[] = {
     },
 };
 
-static const AVFilterPad avfilter_af_vibrato_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 const AVFilter ff_af_vibrato = {
     .name          = "vibrato",
     .description   = NULL_IF_CONFIG_SMALL("Apply vibrato effect."),
@@ -172,7 +165,7 @@ const AVFilter ff_af_vibrato = {
     .priv_class    = &vibrato_class,
     .uninit        = uninit,
     FILTER_INPUTS(avfilter_af_vibrato_inputs),
-    FILTER_OUTPUTS(avfilter_af_vibrato_outputs),
+    FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_SINGLE_SAMPLEFMT(AV_SAMPLE_FMT_DBLP),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

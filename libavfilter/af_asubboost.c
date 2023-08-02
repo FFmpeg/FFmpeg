@@ -237,13 +237,6 @@ static const AVFilterPad inputs[] = {
     },
 };
 
-static const AVFilterPad outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 const AVFilter ff_af_asubboost = {
     .name           = "asubboost",
     .description    = NULL_IF_CONFIG_SMALL("Boost subwoofer frequencies."),
@@ -251,7 +244,7 @@ const AVFilter ff_af_asubboost = {
     .priv_class     = &asubboost_class,
     .uninit         = uninit,
     FILTER_INPUTS(inputs),
-    FILTER_OUTPUTS(outputs),
+    FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_SINGLE_SAMPLEFMT(AV_SAMPLE_FMT_DBLP),
     .process_command = process_command,
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |

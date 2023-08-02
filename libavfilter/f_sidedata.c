@@ -27,6 +27,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/frame.h"
 #include "libavutil/opt.h"
+#include "audio.h"
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
@@ -134,13 +135,6 @@ static const AVFilterPad ainputs[] = {
     },
 };
 
-static const AVFilterPad aoutputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 const AVFilter ff_af_asidedata = {
     .name          = "asidedata",
     .description   = NULL_IF_CONFIG_SMALL("Manipulate audio frame side data."),
@@ -148,7 +142,7 @@ const AVFilter ff_af_asidedata = {
     .priv_class    = &asidedata_class,
     .init          = init,
     FILTER_INPUTS(ainputs),
-    FILTER_OUTPUTS(aoutputs),
+    FILTER_OUTPUTS(ff_audio_default_filterpad),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
                      AVFILTER_FLAG_METADATA_ONLY,
 };

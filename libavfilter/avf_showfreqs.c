@@ -547,13 +547,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_frame_free(&s->window);
 }
 
-static const AVFilterPad showfreqs_inputs[] = {
-    {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 static const AVFilterPad showfreqs_outputs[] = {
     {
         .name          = "default",
@@ -568,7 +561,7 @@ const AVFilter ff_avf_showfreqs = {
     .uninit        = uninit,
     .priv_size     = sizeof(ShowFreqsContext),
     .activate      = activate,
-    FILTER_INPUTS(showfreqs_inputs),
+    FILTER_INPUTS(ff_audio_default_filterpad),
     FILTER_OUTPUTS(showfreqs_outputs),
     FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &showfreqs_class,

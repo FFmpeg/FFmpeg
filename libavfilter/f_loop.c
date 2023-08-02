@@ -300,13 +300,6 @@ static const AVFilterPad ainputs[] = {
     },
 };
 
-static const AVFilterPad aoutputs[] = {
-    {
-        .name          = "default",
-        .type          = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 const AVFilter ff_af_aloop = {
     .name          = "aloop",
     .description   = NULL_IF_CONFIG_SMALL("Loop audio samples."),
@@ -315,7 +308,7 @@ const AVFilter ff_af_aloop = {
     .activate      = aactivate,
     .uninit        = auninit,
     FILTER_INPUTS(ainputs),
-    FILTER_OUTPUTS(aoutputs),
+    FILTER_OUTPUTS(ff_audio_default_filterpad),
 };
 #endif /* CONFIG_ALOOP_FILTER */
 

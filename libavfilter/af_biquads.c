@@ -1431,13 +1431,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_channel_layout_uninit(&s->ch_layout);
 }
 
-static const AVFilterPad inputs[] = {
-    {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 static const AVFilterPad outputs[] = {
     {
         .name         = "default",
@@ -1467,7 +1460,7 @@ const AVFilter ff_af_##name_ = {                         \
     .init          = name_##_init,                       \
     .activate      = activate,                           \
     .uninit        = uninit,                             \
-    FILTER_INPUTS(inputs),                               \
+    FILTER_INPUTS(ff_audio_default_filterpad),           \
     FILTER_OUTPUTS(outputs),                             \
     FILTER_QUERY_FUNC(query_formats),                    \
     .process_command = process_command,                  \

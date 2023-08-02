@@ -315,13 +315,6 @@ static int spatial_activate(AVFilterContext *ctx)
     return FFERROR_NOT_READY;
 }
 
-static const AVFilterPad showspatial_inputs[] = {
-    {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 static const AVFilterPad showspatial_outputs[] = {
     {
         .name          = "default",
@@ -335,7 +328,7 @@ const AVFilter ff_avf_showspatial = {
     .description   = NULL_IF_CONFIG_SMALL("Convert input audio to a spatial video output."),
     .uninit        = uninit,
     .priv_size     = sizeof(ShowSpatialContext),
-    FILTER_INPUTS(showspatial_inputs),
+    FILTER_INPUTS(ff_audio_default_filterpad),
     FILTER_OUTPUTS(showspatial_outputs),
     FILTER_QUERY_FUNC(query_formats),
     .activate      = spatial_activate,

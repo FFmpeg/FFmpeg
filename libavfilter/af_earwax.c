@@ -222,19 +222,12 @@ static const AVFilterPad earwax_inputs[] = {
     },
 };
 
-static const AVFilterPad earwax_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 const AVFilter ff_af_earwax = {
     .name           = "earwax",
     .description    = NULL_IF_CONFIG_SMALL("Widen the stereo image."),
     .priv_size      = sizeof(EarwaxContext),
     .uninit         = uninit,
     FILTER_INPUTS(earwax_inputs),
-    FILTER_OUTPUTS(earwax_outputs),
+    FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_QUERY_FUNC(query_formats),
 };

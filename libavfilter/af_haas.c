@@ -206,13 +206,6 @@ static const AVFilterPad inputs[] = {
     },
 };
 
-static const AVFilterPad outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 const AVFilter ff_af_haas = {
     .name           = "haas",
     .description    = NULL_IF_CONFIG_SMALL("Apply Haas Stereo Enhancer."),
@@ -220,6 +213,6 @@ const AVFilter ff_af_haas = {
     .priv_class     = &haas_class,
     .uninit         = uninit,
     FILTER_INPUTS(inputs),
-    FILTER_OUTPUTS(outputs),
+    FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_QUERY_FUNC(query_formats),
 };

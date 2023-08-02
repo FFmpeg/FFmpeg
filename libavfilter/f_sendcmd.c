@@ -631,13 +631,6 @@ static const AVFilterPad asendcmd_inputs[] = {
     },
 };
 
-static const AVFilterPad asendcmd_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 const AVFilter ff_af_asendcmd = {
     .name        = "asendcmd",
     .description = NULL_IF_CONFIG_SMALL("Send commands to filters."),
@@ -647,7 +640,7 @@ const AVFilter ff_af_asendcmd = {
     .priv_size   = sizeof(SendCmdContext),
     .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(asendcmd_inputs),
-    FILTER_OUTPUTS(asendcmd_outputs),
+    FILTER_OUTPUTS(ff_audio_default_filterpad),
 };
 
 #endif

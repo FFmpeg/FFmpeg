@@ -187,13 +187,6 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-static const AVFilterPad apad_inputs[] = {
-    {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 static const AVFilterPad apad_outputs[] = {
     {
         .name          = "default",
@@ -208,7 +201,7 @@ const AVFilter ff_af_apad = {
     .init          = init,
     .activate      = activate,
     .priv_size     = sizeof(APadContext),
-    FILTER_INPUTS(apad_inputs),
+    FILTER_INPUTS(ff_audio_default_filterpad),
     FILTER_OUTPUTS(apad_outputs),
     .priv_class    = &apad_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,

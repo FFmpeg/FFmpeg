@@ -122,13 +122,6 @@ static const AVFilterPad volumedetect_inputs[] = {
     },
 };
 
-static const AVFilterPad volumedetect_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 const AVFilter ff_af_volumedetect = {
     .name          = "volumedetect",
     .description   = NULL_IF_CONFIG_SMALL("Detect audio volume."),
@@ -136,6 +129,6 @@ const AVFilter ff_af_volumedetect = {
     .uninit        = uninit,
     .flags         = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(volumedetect_inputs),
-    FILTER_OUTPUTS(volumedetect_outputs),
+    FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_SAMPLEFMTS(AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S16P),
 };
