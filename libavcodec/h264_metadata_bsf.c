@@ -26,10 +26,11 @@
 #include "cbs.h"
 #include "cbs_bsf.h"
 #include "cbs_h264.h"
+#include "cbs_sei.h"
 #include "h264.h"
 #include "h264_levels.h"
-#include "h264_sei.h"
 #include "h2645data.h"
+#include "sei.h"
 
 enum {
     FLIP_HORIZONTAL = 1,
