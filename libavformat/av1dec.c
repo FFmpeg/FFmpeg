@@ -23,7 +23,6 @@
 
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
-#include "libavcodec/avcodec.h"
 #include "libavcodec/av1_parse.h"
 #include "libavcodec/bsf.h"
 #include "avformat.h"
