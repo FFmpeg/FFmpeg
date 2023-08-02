@@ -118,7 +118,7 @@ static void svq1_write_header(SVQ1EncContext *s, PutBitContext *pb, int frame_ty
         /* output 5 unknown bits (2 + 2 + 1) */
         put_bits(pb, 5, 2); /* 2 needed by quicktime decoder */
 
-        i = ff_match_2uint16((void*)ff_svq1_frame_size_table,
+        i = ff_match_2uint16(ff_svq1_frame_size_table,
                              FF_ARRAY_ELEMS(ff_svq1_frame_size_table),
                              s->frame_width, s->frame_height);
         put_bits(pb, 3, i);
