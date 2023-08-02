@@ -421,8 +421,6 @@ typedef struct RcOverride{
  */
 #define AV_GET_ENCODE_BUFFER_FLAG_REF (1 << 0)
 
-struct AVCodecInternal;
-
 /**
  * main external API structure.
  * New fields can be added to the end with minor version bumps.
