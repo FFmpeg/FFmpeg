@@ -157,8 +157,6 @@ int ff_match_2uint16(const uint16_t (*tab)[2], int size, int a, int b);
 
 unsigned int ff_toupper4(unsigned int x);
 
-void ff_color_frame(AVFrame *frame, const int color[4]);
-
 /**
  * 2^(x) for integer x
  * @return correctly rounded float
