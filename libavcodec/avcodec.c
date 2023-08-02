@@ -44,6 +44,13 @@
 #include "internal.h"
 #include "thread.h"
 
+/**
+ * Maximum size in bytes of extradata.
+ * This value was chosen such that every bit of the buffer is
+ * addressable by a 32-bit signed integer as used by get_bits.
+ */
+#define FF_MAX_EXTRADATA_SIZE ((1 << 28) - AV_INPUT_BUFFER_PADDING_SIZE)
+
 int avcodec_default_execute(AVCodecContext *c, int (*func)(AVCodecContext *c2, void *arg2), void *arg, int *ret, int count, int size)
 {
     size_t i;
