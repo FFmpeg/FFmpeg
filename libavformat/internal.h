@@ -23,7 +23,6 @@
 
 #include <stdint.h>
 
-#include "libavcodec/codec_desc.h"
 #include "libavcodec/packet_internal.h"
 
 #include "avformat.h"
@@ -410,7 +409,7 @@ typedef struct FFStream {
     int64_t first_dts;
     int64_t cur_dts;
 
-    const AVCodecDescriptor *codec_desc;
+    const struct AVCodecDescriptor *codec_desc;
 } FFStream;
 
 static av_always_inline FFStream *ffstream(AVStream *st)
