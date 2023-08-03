@@ -21,12 +21,10 @@
 #include <float.h>
 
 #include "libavutil/avassert.h"
-#include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "avfilter.h"
 #include "audio.h"
 #include "filters.h"
-#include "formats.h"
 
 enum WaveletTypes {
     SYM2,

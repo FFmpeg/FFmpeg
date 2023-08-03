@@ -25,7 +25,6 @@
 
 #include <float.h>
 #include <stdio.h>
-#include <string.h>
 
 #include "libavutil/csp.h"
 #include "libavutil/imgutils.h"
@@ -36,7 +35,6 @@
 
 #include "avfilter.h"
 #include "colorspace.h"
-#include "formats.h"
 #include "internal.h"
 #include "video.h"
 

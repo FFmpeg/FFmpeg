@@ -20,13 +20,10 @@
 
 #include <math.h>
 #include "libavutil/eval.h"
-#include "libavutil/imgutils.h"
-#include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
 #include "libavutil/video_enc_params.h"
 
 #include "avfilter.h"
-#include "formats.h"
 #include "internal.h"
 #include "video.h"
 

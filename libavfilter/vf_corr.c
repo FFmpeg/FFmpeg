@@ -26,10 +26,8 @@
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "drawutils.h"
-#include "formats.h"
 #include "framesync.h"
 #include "internal.h"
-#include "video.h"
 
 typedef struct CorrContext {
     const AVClass *class;

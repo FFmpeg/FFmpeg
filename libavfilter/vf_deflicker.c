@@ -27,7 +27,6 @@
 #define FF_BUFQUEUE_SIZE 129
 #include "bufferqueue.h"
 
-#include "formats.h"
 #include "internal.h"
 #include "video.h"
 

@@ -30,7 +30,6 @@
 #include "audio.h"
 #include "filters.h"
 #include "internal.h"
-#include "formats.h"
 
 typedef struct ASNSContext {
     const AVClass *class;

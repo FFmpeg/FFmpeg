@@ -28,7 +28,6 @@
 #include "libavutil/opt.h"
 #include "libavutil/timestamp.h"
 #include "audio.h"
-#include "formats.h"
 #include "avfilter.h"
 #include "internal.h"
 

@@ -26,7 +26,6 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/qsort.h"
 #include "avfilter.h"
-#include "formats.h"
 #include "internal.h"
 #include "removegrain.h"
 #include "video.h"

@@ -50,9 +50,7 @@
 
 #include "avfilter.h"
 #include "drawutils.h"
-#include "formats.h"
 #include "internal.h"
-#include "video.h"
 #include "framesync.h"
 
 #define RIGHT   0

@@ -30,12 +30,10 @@
 
 #include <float.h>
 #include "avfilter.h"
-#include "formats.h"
 #include "internal.h"
 #include "video.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
-#include "libavutil/avstring.h"
 
 #define NS(n) ((n) < 0 ? (int)((n)*65536.0-0.5+DBL_EPSILON) : (int)((n)*65536.0+0.5))
 #define CB(n) av_clip_uint8(n)

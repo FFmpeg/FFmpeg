@@ -34,7 +34,6 @@
 #include "bufferqueue.h"
 
 #include "atadenoise.h"
-#include "formats.h"
 #include "internal.h"
 #include "video.h"
 

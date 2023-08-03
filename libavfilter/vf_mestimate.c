@@ -21,12 +21,9 @@
 #include "motion_estimation.h"
 #include "libavcodec/mathops.h"
 #include "libavutil/common.h"
-#include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
-#include "libavutil/pixdesc.h"
 #include "libavutil/motion_vector.h"
 #include "avfilter.h"
-#include "formats.h"
 #include "internal.h"
 #include "video.h"
 

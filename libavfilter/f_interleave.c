@@ -30,7 +30,6 @@
 #include "libavutil/opt.h"
 
 #include "avfilter.h"
-#include "formats.h"
 #include "filters.h"
 #include "internal.h"
 #include "audio.h"

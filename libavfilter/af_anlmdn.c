@@ -21,11 +21,9 @@
 #include <float.h>
 
 #include "libavutil/avassert.h"
-#include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "avfilter.h"
 #include "audio.h"
-#include "formats.h"
 #include "filters.h"
 
 #include "af_anlmdndsp.h"

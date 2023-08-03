@@ -23,7 +23,6 @@
 #include "libavutil/opt.h"
 #include "avfilter.h"
 #include "audio.h"
-#include "formats.h"
 
 typedef struct AudioContrastContext {
     const AVClass *class;

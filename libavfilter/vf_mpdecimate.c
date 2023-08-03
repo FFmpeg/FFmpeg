@@ -30,7 +30,6 @@
 #include "libavutil/timestamp.h"
 #include "avfilter.h"
 #include "internal.h"
-#include "formats.h"
 #include "video.h"
 
 typedef struct DecimateContext {

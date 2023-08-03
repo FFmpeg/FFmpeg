@@ -18,12 +18,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/imgutils.h"
 #include "libavutil/eval.h"
 #include "libavutil/opt.h"
+#include "libavutil/pixdesc.h"
 #include "libavutil/pixfmt.h"
 #include "avfilter.h"
-#include "formats.h"
 #include "internal.h"
 #include "filters.h"
 #include "video.h"

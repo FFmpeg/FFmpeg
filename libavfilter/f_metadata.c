@@ -36,7 +36,6 @@
 #include "libavformat/avio.h"
 #include "avfilter.h"
 #include "audio.h"
-#include "formats.h"
 #include "internal.h"
 #include "video.h"
 

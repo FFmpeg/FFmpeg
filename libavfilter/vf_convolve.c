@@ -22,16 +22,13 @@
 
 #include <float.h>
 
-#include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/tx.h"
 
 #include "avfilter.h"
-#include "formats.h"
 #include "framesync.h"
 #include "internal.h"
-#include "video.h"
 
 #define MAX_THREADS 16
 

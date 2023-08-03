@@ -28,12 +28,9 @@
 #include <float.h>
 #include <math.h>
 
-#include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
-#include "libswscale/swscale.h"
 #include "avfilter.h"
 #include "filters.h"
-#include "formats.h"
 #include "internal.h"
 #include "video.h"
 

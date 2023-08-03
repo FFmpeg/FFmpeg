@@ -21,7 +21,6 @@
 #include "libavutil/opt.h"
 #include "avfilter.h"
 #include "audio.h"
-#include "formats.h"
 
 typedef struct ASubBoostContext {
     const AVClass *class;

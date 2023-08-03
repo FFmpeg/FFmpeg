@@ -20,11 +20,8 @@
 
 #include "config_components.h"
 
-#include "libavutil/opt.h"
 #include "avfilter.h"
-#include "formats.h"
 #include "internal.h"
-#include "video.h"
 
 #define DEFAULT_LENGTH 300
 

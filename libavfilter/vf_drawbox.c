@@ -36,7 +36,6 @@
 #include "libavutil/detection_bbox.h"
 #include "avfilter.h"
 #include "drawutils.h"
-#include "formats.h"
 #include "internal.h"
 #include "video.h"
 

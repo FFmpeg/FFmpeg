@@ -31,7 +31,6 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
-#include "formats.h"
 #include "gblur.h"
 #include "internal.h"
 #include "vf_gblur_init.h"

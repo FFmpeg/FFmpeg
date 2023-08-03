@@ -26,7 +26,6 @@
 #include "libavutil/tx.h"
 #include "avfilter.h"
 #include "audio.h"
-#include "formats.h"
 #include "filters.h"
 
 #define C       (M_LN10 * 0.1)

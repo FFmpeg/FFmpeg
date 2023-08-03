@@ -22,7 +22,6 @@
 #include "libavutil/opt.h"
 #include "avfilter.h"
 #include "audio.h"
-#include "formats.h"
 
 typedef struct CrystalizerContext {
     const AVClass *class;

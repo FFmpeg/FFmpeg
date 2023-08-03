@@ -19,12 +19,10 @@
  */
 
 #include "libavutil/colorspace.h"
-#include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
 #include "avfilter.h"
 #include "drawutils.h"
-#include "formats.h"
 #include "framesync.h"
 #include "internal.h"
 #include "opencl.h"

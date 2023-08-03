@@ -24,13 +24,11 @@
  */
 
 #include "avfilter.h"
-#include "formats.h"
 #include "video.h"
 #include "internal.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
-#include "libavutil/parseutils.h"
 #include "libavutil/lfg.h"
 #include "libavutil/random_seed.h"
 #include <float.h>

@@ -32,7 +32,6 @@
 #include "libavcodec/mathops.h" // for mid_pred(), which is a macro so no link dependency
 #include "avfilter.h"
 #include "drawutils.h"
-#include "formats.h"
 #include "internal.h"
 #include "video.h"
 

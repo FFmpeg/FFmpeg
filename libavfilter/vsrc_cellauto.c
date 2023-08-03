@@ -29,12 +29,10 @@
 #include "libavutil/internal.h"
 #include "libavutil/lfg.h"
 #include "libavutil/opt.h"
-#include "libavutil/parseutils.h"
 #include "libavutil/random_seed.h"
 #include "libavutil/avstring.h"
 #include "avfilter.h"
 #include "internal.h"
-#include "formats.h"
 #include "video.h"
 
 typedef struct CellAutoContext {

@@ -19,12 +19,10 @@
  */
 
 #include "libavutil/opt.h"
-#include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/pixdesc.h"
 #include "avfilter.h"
-#include "formats.h"
 #include "internal.h"
-#include "video.h"
 
 typedef struct ChromakeyContext {
     const AVClass *class;

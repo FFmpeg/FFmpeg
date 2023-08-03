@@ -43,7 +43,6 @@
 #include "audio.h"
 #include "avfilter.h"
 #include "filters.h"
-#include "formats.h"
 #include "internal.h"
 
 #define INPUT_ON       1    /**< input is active */
