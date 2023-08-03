@@ -749,13 +749,6 @@ static const AVFilterPad pullup_inputs[] = {
     },
 };
 
-static const AVFilterPad pullup_outputs[] = {
-    {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_pullup = {
     .name          = "pullup",
     .description   = NULL_IF_CONFIG_SMALL("Pullup from field sequence to frames."),
@@ -763,6 +756,6 @@ const AVFilter ff_vf_pullup = {
     .priv_class    = &pullup_class,
     .uninit        = uninit,
     FILTER_INPUTS(pullup_inputs),
-    FILTER_OUTPUTS(pullup_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
 };

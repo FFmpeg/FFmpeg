@@ -289,13 +289,6 @@ static const AVFilterPad inputs[] = {
     },
 };
 
-static const AVFilterPad outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 AVFILTER_DEFINE_CLASS(chromanr);
 
 const AVFilter ff_vf_chromanr = {
@@ -303,7 +296,7 @@ const AVFilter ff_vf_chromanr = {
     .description   = NULL_IF_CONFIG_SMALL("Reduce chrominance noise."),
     .priv_size     = sizeof(ChromaNRContext),
     .priv_class    = &chromanr_class,
-    FILTER_OUTPUTS(outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_INPUTS(inputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,

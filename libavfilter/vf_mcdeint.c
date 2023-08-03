@@ -301,20 +301,13 @@ static const AVFilterPad mcdeint_inputs[] = {
     },
 };
 
-static const AVFilterPad mcdeint_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_mcdeint = {
     .name          = "mcdeint",
     .description   = NULL_IF_CONFIG_SMALL("Apply motion compensating deinterlacing."),
     .priv_size     = sizeof(MCDeintContext),
     .uninit        = uninit,
     FILTER_INPUTS(mcdeint_inputs),
-    FILTER_OUTPUTS(mcdeint_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_YUV420P),
     .priv_class    = &mcdeint_class,
 };

@@ -35,6 +35,7 @@
 #include "libavutil/qsort.h"
 #include "internal.h"
 #include "edge_common.h"
+#include "video.h"
 
 static int comp(const float *a,const float *b)
 {
@@ -356,13 +357,6 @@ static const AVFilterPad blurdetect_inputs[] = {
     },
 };
 
-static const AVFilterPad blurdetect_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_blurdetect = {
     .name          = "blurdetect",
     .description   = NULL_IF_CONFIG_SMALL("Blurdetect filter."),
@@ -371,7 +365,7 @@ const AVFilter ff_vf_blurdetect = {
     .uninit        = blurdetect_uninit,
     FILTER_PIXFMTS_ARRAY(pix_fmts),
     FILTER_INPUTS(blurdetect_inputs),
-    FILTER_OUTPUTS(blurdetect_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     .priv_class    = &blurdetect_class,
     .flags         = AVFILTER_FLAG_METADATA_ONLY,
 };

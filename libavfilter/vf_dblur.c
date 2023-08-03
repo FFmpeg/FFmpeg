@@ -299,13 +299,6 @@ static const AVFilterPad dblur_inputs[] = {
     },
 };
 
-static const AVFilterPad dblur_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_dblur = {
     .name          = "dblur",
     .description   = NULL_IF_CONFIG_SMALL("Apply Directional Blur filter."),
@@ -313,7 +306,7 @@ const AVFilter ff_vf_dblur = {
     .priv_class    = &dblur_class,
     .uninit        = uninit,
     FILTER_INPUTS(dblur_inputs),
-    FILTER_OUTPUTS(dblur_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .process_command = ff_filter_process_command,

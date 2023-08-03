@@ -26,6 +26,7 @@
 #include "filters.h"
 #include "dnn_filter_common.h"
 #include "internal.h"
+#include "video.h"
 #include "libavutil/time.h"
 #include "libavutil/avstring.h"
 #include "libavutil/detection_bbox.h"
@@ -435,28 +436,14 @@ static av_cold void dnn_detect_uninit(AVFilterContext *context)
     free_detect_labels(ctx);
 }
 
-static const AVFilterPad dnn_detect_inputs[] = {
-    {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
-static const AVFilterPad dnn_detect_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_dnn_detect = {
     .name          = "dnn_detect",
     .description   = NULL_IF_CONFIG_SMALL("Apply DNN detect filter to the input."),
     .priv_size     = sizeof(DnnDetectContext),
     .init          = dnn_detect_init,
     .uninit        = dnn_detect_uninit,
-    FILTER_INPUTS(dnn_detect_inputs),
-    FILTER_OUTPUTS(dnn_detect_outputs),
+    FILTER_INPUTS(ff_video_default_filterpad),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
     .priv_class    = &dnn_detect_class,
     .activate      = dnn_detect_activate,

@@ -176,20 +176,13 @@ static const AVFilterPad avfilter_vf_fieldorder_inputs[] = {
     },
 };
 
-static const AVFilterPad avfilter_vf_fieldorder_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_fieldorder = {
     .name          = "fieldorder",
     .description   = NULL_IF_CONFIG_SMALL("Set the field order."),
     .priv_size     = sizeof(FieldOrderContext),
     .priv_class    = &fieldorder_class,
     FILTER_INPUTS(avfilter_vf_fieldorder_inputs),
-    FILTER_OUTPUTS(avfilter_vf_fieldorder_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

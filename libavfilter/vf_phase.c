@@ -218,13 +218,6 @@ static const AVFilterPad phase_inputs[] = {
     },
 };
 
-static const AVFilterPad phase_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_phase = {
     .name          = "phase",
     .description   = NULL_IF_CONFIG_SMALL("Phase shift fields."),
@@ -232,7 +225,7 @@ const AVFilter ff_vf_phase = {
     .priv_class    = &phase_class,
     .uninit        = uninit,
     FILTER_INPUTS(phase_inputs),
-    FILTER_OUTPUTS(phase_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .process_command = ff_filter_process_command,

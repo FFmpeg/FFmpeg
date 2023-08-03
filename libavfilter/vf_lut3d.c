@@ -1301,13 +1301,6 @@ static const AVFilterPad lut3d_inputs[] = {
     },
 };
 
-static const AVFilterPad lut3d_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_lut3d = {
     .name          = "lut3d",
     .description   = NULL_IF_CONFIG_SMALL("Adjust colors using a 3D LUT."),
@@ -1315,7 +1308,7 @@ const AVFilter ff_vf_lut3d = {
     .init          = lut3d_init,
     .uninit        = lut3d_uninit,
     FILTER_INPUTS(lut3d_inputs),
-    FILTER_OUTPUTS(lut3d_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
     .priv_class    = &lut3d_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
@@ -2232,20 +2225,13 @@ static const AVFilterPad lut1d_inputs[] = {
     },
 };
 
-static const AVFilterPad lut1d_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_lut1d = {
     .name          = "lut1d",
     .description   = NULL_IF_CONFIG_SMALL("Adjust colors using a 1D LUT."),
     .priv_size     = sizeof(LUT1DContext),
     .init          = lut1d_init,
     FILTER_INPUTS(lut1d_inputs),
-    FILTER_OUTPUTS(lut1d_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
     .priv_class    = &lut1d_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,

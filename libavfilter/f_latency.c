@@ -26,6 +26,7 @@
 #include "filters.h"
 #include "formats.h"
 #include "internal.h"
+#include "video.h"
 
 typedef struct LatencyContext {
     int64_t min_latency;
@@ -100,20 +101,6 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 #if CONFIG_LATENCY_FILTER
 
-static const AVFilterPad latency_inputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
-static const AVFilterPad latency_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_latency = {
     .name          = "latency",
     .description   = NULL_IF_CONFIG_SMALL("Report video filtering latency."),
@@ -123,8 +110,8 @@ const AVFilter ff_vf_latency = {
     .activate      = activate,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
                      AVFILTER_FLAG_METADATA_ONLY,
-    FILTER_INPUTS(latency_inputs),
-    FILTER_OUTPUTS(latency_outputs),
+    FILTER_INPUTS(ff_video_default_filterpad),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
 };
 
 #endif // CONFIG_LATENCY_FILTER

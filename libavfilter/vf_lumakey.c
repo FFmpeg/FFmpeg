@@ -173,13 +173,6 @@ static const AVFilterPad lumakey_inputs[] = {
     },
 };
 
-static const AVFilterPad lumakey_outputs[] = {
-    {
-        .name          = "default",
-        .type          = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 #define OFFSET(x) offsetof(LumakeyContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
@@ -198,7 +191,7 @@ const AVFilter ff_vf_lumakey = {
     .priv_size     = sizeof(LumakeyContext),
     .priv_class    = &lumakey_class,
     FILTER_INPUTS(lumakey_inputs),
-    FILTER_OUTPUTS(lumakey_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pixel_fmts),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,

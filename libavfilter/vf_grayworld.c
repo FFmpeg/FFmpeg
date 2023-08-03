@@ -308,20 +308,13 @@ static const AVFilterPad grayworld_inputs[] = {
     }
 };
 
-static const AVFilterPad grayworld_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    }
-};
-
 const AVFilter ff_vf_grayworld = {
     .name          = "grayworld",
     .description   = NULL_IF_CONFIG_SMALL("Adjust white balance using LAB gray world algorithm"),
     .priv_size     = sizeof(GrayWorldContext),
     .priv_class    = &grayworld_class,
     FILTER_INPUTS(grayworld_inputs),
-    FILTER_OUTPUTS(grayworld_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS(AV_PIX_FMT_GBRPF32, AV_PIX_FMT_GBRAPF32),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .uninit        = uninit,

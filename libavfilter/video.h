@@ -22,6 +22,13 @@
 #define AVFILTER_VIDEO_H
 
 #include "avfilter.h"
+#include "internal.h"
+
+/**
+ * An AVFilterPad array whose only entry has name "default"
+ * and is of type AVMEDIA_TYPE_VIDEO.
+ */
+extern const AVFilterPad ff_video_default_filterpad[1];
 
 AVFrame *ff_default_get_video_buffer(AVFilterLink *link, int w, int h);
 AVFrame *ff_default_get_video_buffer2(AVFilterLink *link, int w, int h, int align);

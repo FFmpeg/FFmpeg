@@ -1005,13 +1005,6 @@ static const AVFilterPad curves_inputs[] = {
     },
 };
 
-static const AVFilterPad curves_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_curves = {
     .name          = "curves",
     .description   = NULL_IF_CONFIG_SMALL("Adjust components curves."),
@@ -1019,7 +1012,7 @@ const AVFilter ff_vf_curves = {
     .init          = curves_init,
     .uninit        = curves_uninit,
     FILTER_INPUTS(curves_inputs),
-    FILTER_OUTPUTS(curves_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS(AV_PIX_FMT_RGB24,  AV_PIX_FMT_BGR24,
                    AV_PIX_FMT_RGBA,   AV_PIX_FMT_BGRA,
                    AV_PIX_FMT_ARGB,   AV_PIX_FMT_ABGR,

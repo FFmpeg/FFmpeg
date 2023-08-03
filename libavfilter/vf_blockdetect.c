@@ -32,6 +32,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "internal.h"
+#include "video.h"
 
 typedef struct BLKContext {
     const AVClass *class;
@@ -272,13 +273,6 @@ static const AVFilterPad blockdetect_inputs[] = {
     },
 };
 
-static const AVFilterPad blockdetect_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_blockdetect = {
     .name          = "blockdetect",
     .description   = NULL_IF_CONFIG_SMALL("Blockdetect filter."),
@@ -286,7 +280,7 @@ const AVFilter ff_vf_blockdetect = {
     .uninit        = blockdetect_uninit,
     FILTER_PIXFMTS_ARRAY(pix_fmts),
     FILTER_INPUTS(blockdetect_inputs),
-    FILTER_OUTPUTS(blockdetect_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     .priv_class    = &blockdetect_class,
     .flags         = AVFILTER_FLAG_METADATA_ONLY,
 };

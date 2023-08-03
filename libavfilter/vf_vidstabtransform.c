@@ -283,13 +283,6 @@ static const AVFilterPad avfilter_vf_vidstabtransform_inputs[] = {
     },
 };
 
-static const AVFilterPad avfilter_vf_vidstabtransform_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_vidstabtransform = {
     .name          = "vidstabtransform",
     .description   = NULL_IF_CONFIG_SMALL("Transform the frames, "
@@ -299,7 +292,7 @@ const AVFilter ff_vf_vidstabtransform = {
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(avfilter_vf_vidstabtransform_inputs),
-    FILTER_OUTPUTS(avfilter_vf_vidstabtransform_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(ff_vidstab_pix_fmts),
     .priv_class    = &vidstabtransform_class,
 };

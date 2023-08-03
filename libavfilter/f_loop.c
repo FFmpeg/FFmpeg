@@ -470,20 +470,6 @@ static const AVOption loop_options[] = {
 
 AVFILTER_DEFINE_CLASS(loop);
 
-static const AVFilterPad inputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
-static const AVFilterPad outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_loop = {
     .name        = "loop",
     .description = NULL_IF_CONFIG_SMALL("Loop video frames."),
@@ -492,7 +478,7 @@ const AVFilter ff_vf_loop = {
     .init        = init,
     .uninit      = uninit,
     .activate    = activate,
-    FILTER_INPUTS(inputs),
-    FILTER_OUTPUTS(outputs),
+    FILTER_INPUTS(ff_video_default_filterpad),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
 };
 #endif /* CONFIG_LOOP_FILTER */

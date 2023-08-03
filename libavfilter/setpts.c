@@ -326,13 +326,6 @@ static const AVFilterPad avfilter_vf_setpts_inputs[] = {
     },
 };
 
-static const AVFilterPad avfilter_vf_setpts_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_setpts = {
     .name            = "setpts",
     .description     = NULL_IF_CONFIG_SMALL("Set PTS for the output video frame."),
@@ -346,7 +339,7 @@ const AVFilter ff_vf_setpts = {
     .priv_class = &setpts_class,
 
     FILTER_INPUTS(avfilter_vf_setpts_inputs),
-    FILTER_OUTPUTS(avfilter_vf_setpts_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
 };
 #endif /* CONFIG_SETPTS_FILTER */
 

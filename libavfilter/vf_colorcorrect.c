@@ -510,13 +510,6 @@ static const AVFilterPad colorcorrect_inputs[] = {
     },
 };
 
-static const AVFilterPad colorcorrect_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 #define OFFSET(x) offsetof(ColorCorrectContext, x)
 #define VF AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
@@ -543,7 +536,7 @@ const AVFilter ff_vf_colorcorrect = {
     .priv_class    = &colorcorrect_class,
     .uninit        = uninit,
     FILTER_INPUTS(colorcorrect_inputs),
-    FILTER_OUTPUTS(colorcorrect_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pixel_fmts),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,

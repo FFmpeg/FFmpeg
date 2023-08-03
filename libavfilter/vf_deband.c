@@ -458,13 +458,6 @@ static const AVFilterPad avfilter_vf_deband_inputs[] = {
     },
 };
 
-static const AVFilterPad avfilter_vf_deband_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_deband = {
     .name          = "deband",
     .description   = NULL_IF_CONFIG_SMALL("Debands video."),
@@ -472,7 +465,7 @@ const AVFilter ff_vf_deband = {
     .priv_class    = &deband_class,
     .uninit        = uninit,
     FILTER_INPUTS(avfilter_vf_deband_inputs),
-    FILTER_OUTPUTS(avfilter_vf_deband_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,

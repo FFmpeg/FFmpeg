@@ -539,20 +539,13 @@ static const AVFilterPad readeia608_inputs[] = {
     },
 };
 
-static const AVFilterPad readeia608_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_readeia608 = {
     .name          = "readeia608",
     .description   = NULL_IF_CONFIG_SMALL("Read EIA-608 Closed Caption codes from input video and write them to frame metadata."),
     .priv_size     = sizeof(ReadEIA608Context),
     .priv_class    = &readeia608_class,
     FILTER_INPUTS(readeia608_inputs),
-    FILTER_OUTPUTS(readeia608_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pixel_fmts),
     .uninit        = uninit,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |

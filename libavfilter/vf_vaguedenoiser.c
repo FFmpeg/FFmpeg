@@ -594,13 +594,6 @@ static const AVFilterPad vaguedenoiser_inputs[] = {
 };
 
 
-static const AVFilterPad vaguedenoiser_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO
-    },
-};
-
 const AVFilter ff_vf_vaguedenoiser = {
     .name          = "vaguedenoiser",
     .description   = NULL_IF_CONFIG_SMALL("Apply a Wavelet based Denoiser."),
@@ -609,7 +602,7 @@ const AVFilter ff_vf_vaguedenoiser = {
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(vaguedenoiser_inputs),
-    FILTER_OUTPUTS(vaguedenoiser_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

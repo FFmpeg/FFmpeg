@@ -169,13 +169,6 @@ static const AVFilterPad inputs[] = {
     },
 };
 
-static const AVFilterPad outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_setparams = {
     .name        = "setparams",
     .description = NULL_IF_CONFIG_SMALL("Force field, or color property for the output video frame."),
@@ -183,7 +176,7 @@ const AVFilter ff_vf_setparams = {
     .priv_class  = &setparams_class,
     .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(inputs),
-    FILTER_OUTPUTS(outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
 };
 
 #if CONFIG_SETRANGE_FILTER
@@ -223,7 +216,7 @@ const AVFilter ff_vf_setrange = {
     .priv_class  = &setrange_class,
     .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(inputs),
-    FILTER_OUTPUTS(outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
 };
 #endif /* CONFIG_SETRANGE_FILTER */
 
@@ -258,6 +251,6 @@ const AVFilter ff_vf_setfield = {
     .priv_class  = &setfield_class,
     .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(inputs),
-    FILTER_OUTPUTS(outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
 };
 #endif /* CONFIG_SETFIELD_FILTER */

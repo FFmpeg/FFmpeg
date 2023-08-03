@@ -26,6 +26,7 @@
 #include "libavutil/opt.h"
 #include "filters.h"
 #include "internal.h"
+#include "video.h"
 
 #include "lavfutils.h"
 
@@ -232,13 +233,6 @@ static const AVFilterPad cover_rect_inputs[] = {
     },
 };
 
-static const AVFilterPad cover_rect_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_cover_rect = {
     .name            = "cover_rect",
     .description     = NULL_IF_CONFIG_SMALL("Find and cover a user specified object."),
@@ -246,7 +240,7 @@ const AVFilter ff_vf_cover_rect = {
     .init            = init,
     .uninit          = uninit,
     FILTER_INPUTS(cover_rect_inputs),
-    FILTER_OUTPUTS(cover_rect_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS(AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVJ420P),
     .priv_class      = &cover_rect_class,
 };

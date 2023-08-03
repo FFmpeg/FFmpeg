@@ -225,13 +225,6 @@ static const AVFilterPad tpad_inputs[] = {
     },
 };
 
-static const AVFilterPad tpad_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_tpad = {
     .name          = "tpad",
     .description   = NULL_IF_CONFIG_SMALL("Temporarily pad video frames."),
@@ -240,6 +233,6 @@ const AVFilter ff_vf_tpad = {
     .activate      = activate,
     .uninit        = uninit,
     FILTER_INPUTS(tpad_inputs),
-    FILTER_OUTPUTS(tpad_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_QUERY_FUNC(query_formats),
 };

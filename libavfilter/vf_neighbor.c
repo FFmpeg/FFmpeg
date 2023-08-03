@@ -341,13 +341,6 @@ static const AVFilterPad neighbor_inputs[] = {
     },
 };
 
-static const AVFilterPad neighbor_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 #define OFFSET(x) offsetof(NContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
@@ -358,7 +351,7 @@ const AVFilter ff_vf_##name_ = {                                   \
     .priv_class    = &priv_class_##_class,                   \
     .priv_size     = sizeof(NContext),                       \
     FILTER_INPUTS(neighbor_inputs),                          \
-    FILTER_OUTPUTS(neighbor_outputs),                        \
+    FILTER_OUTPUTS(ff_video_default_filterpad),              \
     FILTER_PIXFMTS_ARRAY(pix_fmts),                          \
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC| \
                      AVFILTER_FLAG_SLICE_THREADS,            \

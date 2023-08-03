@@ -495,13 +495,6 @@ static const AVFilterPad perspective_inputs[] = {
     },
 };
 
-static const AVFilterPad perspective_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_perspective = {
     .name          = "perspective",
     .description   = NULL_IF_CONFIG_SMALL("Correct the perspective of video."),
@@ -509,7 +502,7 @@ const AVFilter ff_vf_perspective = {
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(perspective_inputs),
-    FILTER_OUTPUTS(perspective_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
     .priv_class    = &perspective_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,

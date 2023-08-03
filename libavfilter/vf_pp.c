@@ -175,13 +175,6 @@ static const AVFilterPad pp_inputs[] = {
     },
 };
 
-static const AVFilterPad pp_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_pp = {
     .name            = "pp",
     .description     = NULL_IF_CONFIG_SMALL("Filter video using libpostproc."),
@@ -189,7 +182,7 @@ const AVFilter ff_vf_pp = {
     .init            = pp_init,
     .uninit          = pp_uninit,
     FILTER_INPUTS(pp_inputs),
-    FILTER_OUTPUTS(pp_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
     .process_command = pp_process_command,
     .priv_class      = &pp_class,

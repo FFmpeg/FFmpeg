@@ -29,6 +29,7 @@
 #include "avfilter.h"
 #include "filters.h"
 #include "scene_sad.h"
+#include "video.h"
 
 typedef struct SCDetContext {
     const AVClass *class;
@@ -193,13 +194,6 @@ static const AVFilterPad scdet_inputs[] = {
     },
 };
 
-static const AVFilterPad scdet_outputs[] = {
-    {
-        .name          = "default",
-        .type          = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_scdet = {
     .name          = "scdet",
     .description   = NULL_IF_CONFIG_SMALL("Detect video scene change"),
@@ -208,7 +202,7 @@ const AVFilter ff_vf_scdet = {
     .uninit        = uninit,
     .flags         = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(scdet_inputs),
-    FILTER_OUTPUTS(scdet_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
     .activate      = activate,
 };

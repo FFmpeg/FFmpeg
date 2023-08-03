@@ -146,13 +146,6 @@ static const AVFilterPad shuffleframes_inputs[] = {
     },
 };
 
-static const AVFilterPad shuffleframes_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_shuffleframes = {
     .name          = "shuffleframes",
     .description   = NULL_IF_CONFIG_SMALL("Shuffle video frames."),
@@ -161,6 +154,6 @@ const AVFilter ff_vf_shuffleframes = {
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(shuffleframes_inputs),
-    FILTER_OUTPUTS(shuffleframes_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

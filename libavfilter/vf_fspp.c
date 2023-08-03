@@ -652,20 +652,13 @@ static const AVFilterPad fspp_inputs[] = {
     },
 };
 
-static const AVFilterPad fspp_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_fspp = {
     .name            = "fspp",
     .description     = NULL_IF_CONFIG_SMALL("Apply Fast Simple Post-processing filter."),
     .priv_size       = sizeof(FSPPContext),
     .uninit          = uninit,
     FILTER_INPUTS(fspp_inputs),
-    FILTER_OUTPUTS(fspp_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
     .priv_class      = &fspp_class,
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,

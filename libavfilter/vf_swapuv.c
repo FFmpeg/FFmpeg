@@ -101,20 +101,13 @@ static const AVFilterPad swapuv_inputs[] = {
     },
 };
 
-static const AVFilterPad swapuv_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_swapuv = {
     .name          = "swapuv",
     .description   = NULL_IF_CONFIG_SMALL("Swap U and V components."),
     .priv_size     = sizeof(SwapUVContext),
     .priv_class    = &swapuv_class,
     FILTER_INPUTS(swapuv_inputs),
-    FILTER_OUTPUTS(swapuv_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

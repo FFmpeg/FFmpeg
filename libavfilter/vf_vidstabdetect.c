@@ -29,6 +29,7 @@
 #include "avfilter.h"
 #include "filters.h"
 #include "internal.h"
+#include "video.h"
 
 #include "vidstabutils.h"
 
@@ -188,13 +189,6 @@ static const AVFilterPad avfilter_vf_vidstabdetect_inputs[] = {
     },
 };
 
-static const AVFilterPad avfilter_vf_vidstabdetect_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_vidstabdetect = {
     .name          = "vidstabdetect",
     .description   = NULL_IF_CONFIG_SMALL("Extract relative transformations, "
@@ -205,7 +199,7 @@ const AVFilter ff_vf_vidstabdetect = {
     .uninit        = uninit,
     .flags         = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(avfilter_vf_vidstabdetect_inputs),
-    FILTER_OUTPUTS(avfilter_vf_vidstabdetect_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(ff_vidstab_pix_fmts),
     .priv_class    = &vidstabdetect_class,
 };

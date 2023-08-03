@@ -728,20 +728,13 @@ static const AVFilterPad pixscope_inputs[] = {
     },
 };
 
-static const AVFilterPad pixscope_outputs[] = {
-    {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_pixscope = {
     .name          = "pixscope",
     .description   = NULL_IF_CONFIG_SMALL("Pixel data analysis."),
     .priv_size     = sizeof(PixscopeContext),
     .priv_class    = &pixscope_class,
     FILTER_INPUTS(pixscope_inputs),
-    FILTER_OUTPUTS(pixscope_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .process_command = pixscope_process_command,
@@ -1132,13 +1125,6 @@ static const AVFilterPad oscilloscope_inputs[] = {
     },
 };
 
-static const AVFilterPad oscilloscope_outputs[] = {
-    {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_oscilloscope = {
     .name          = "oscilloscope",
     .description   = NULL_IF_CONFIG_SMALL("2D Video Oscilloscope."),
@@ -1146,7 +1132,7 @@ const AVFilter ff_vf_oscilloscope = {
     .priv_class    = &oscilloscope_class,
     .uninit        = oscilloscope_uninit,
     FILTER_INPUTS(oscilloscope_inputs),
-    FILTER_OUTPUTS(oscilloscope_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .process_command = oscilloscope_process_command,

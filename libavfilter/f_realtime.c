@@ -25,6 +25,7 @@
 #include "audio.h"
 #include "avfilter.h"
 #include "internal.h"
+#include "video.h"
 #include <float.h>
 
 typedef struct RealtimeContext {
@@ -86,13 +87,6 @@ static const AVFilterPad avfilter_vf_realtime_inputs[] = {
     },
 };
 
-static const AVFilterPad avfilter_vf_realtime_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_realtime = {
     .name        = "realtime",
     .description = NULL_IF_CONFIG_SMALL("Slow down filtering to match realtime."),
@@ -100,7 +94,7 @@ const AVFilter ff_vf_realtime = {
     .priv_class  = &realtime_class,
     .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(avfilter_vf_realtime_inputs),
-    FILTER_OUTPUTS(avfilter_vf_realtime_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     .process_command = ff_filter_process_command,
 };
 #endif /* CONFIG_REALTIME_FILTER */

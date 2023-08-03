@@ -135,19 +135,12 @@ static const AVFilterPad avfilter_vf_vflip_inputs[] = {
     },
 };
 
-static const AVFilterPad avfilter_vf_vflip_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_vflip = {
     .name        = "vflip",
     .description = NULL_IF_CONFIG_SMALL("Flip the input video vertically."),
     .priv_size   = sizeof(FlipContext),
     .priv_class  = &vflip_class,
     FILTER_INPUTS(avfilter_vf_vflip_inputs),
-    FILTER_OUTPUTS(avfilter_vf_vflip_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     .flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

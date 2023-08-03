@@ -38,6 +38,7 @@
 #include "buffersink.h"
 #include "filters.h"
 #include "internal.h"
+#include "video.h"
 
 typedef struct BufferSinkContext {
     const AVClass *class;
@@ -377,13 +378,6 @@ static const AVOption abuffersink_options[] = {
 AVFILTER_DEFINE_CLASS(buffersink);
 AVFILTER_DEFINE_CLASS(abuffersink);
 
-static const AVFilterPad avfilter_vsink_buffer_inputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vsink_buffer = {
     .name          = "buffersink",
     .description   = NULL_IF_CONFIG_SMALL("Buffer video frames, and make them available to the end of the filter graph."),
@@ -391,7 +385,7 @@ const AVFilter ff_vsink_buffer = {
     .priv_class    = &buffersink_class,
     .init          = common_init,
     .activate      = activate,
-    FILTER_INPUTS(avfilter_vsink_buffer_inputs),
+    FILTER_INPUTS(ff_video_default_filterpad),
     .outputs       = NULL,
     FILTER_QUERY_FUNC(vsink_query_formats),
 };

@@ -315,13 +315,6 @@ static const AVFilterPad gblur_inputs[] = {
     },
 };
 
-static const AVFilterPad gblur_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_gblur = {
     .name          = "gblur",
     .description   = NULL_IF_CONFIG_SMALL("Apply Gaussian Blur filter."),
@@ -329,7 +322,7 @@ const AVFilter ff_vf_gblur = {
     .priv_class    = &gblur_class,
     .uninit        = uninit,
     FILTER_INPUTS(gblur_inputs),
-    FILTER_OUTPUTS(gblur_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,

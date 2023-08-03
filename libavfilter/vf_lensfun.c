@@ -522,13 +522,6 @@ static const AVFilterPad lensfun_inputs[] = {
     },
 };
 
-static const AVFilterPad lensfun_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_lensfun = {
     .name          = "lensfun",
     .description   = NULL_IF_CONFIG_SMALL("Apply correction to an image based on info derived from the lensfun database."),
@@ -536,7 +529,7 @@ const AVFilter ff_vf_lensfun = {
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(lensfun_inputs),
-    FILTER_OUTPUTS(lensfun_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_RGB24),
     .priv_class    = &lensfun_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,

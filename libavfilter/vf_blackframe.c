@@ -115,13 +115,6 @@ static const AVFilterPad avfilter_vf_blackframe_inputs[] = {
     },
 };
 
-static const AVFilterPad avfilter_vf_blackframe_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO
-    },
-};
-
 const AVFilter ff_vf_blackframe = {
     .name          = "blackframe",
     .description   = NULL_IF_CONFIG_SMALL("Detect frames that are (almost) black."),
@@ -129,6 +122,6 @@ const AVFilter ff_vf_blackframe = {
     .priv_class    = &blackframe_class,
     .flags         = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(avfilter_vf_blackframe_inputs),
-    FILTER_OUTPUTS(avfilter_vf_blackframe_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
 };

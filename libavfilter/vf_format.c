@@ -154,13 +154,6 @@ static const AVFilterPad avfilter_vf_format_inputs[] = {
     },
 };
 
-static const AVFilterPad avfilter_vf_format_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO
-    },
-};
-
 const AVFilter ff_vf_format = {
     .name          = "format",
     .description   = NULL_IF_CONFIG_SMALL("Convert the input video to one of the specified pixel formats."),
@@ -174,7 +167,7 @@ const AVFilter ff_vf_format = {
     .flags         = AVFILTER_FLAG_METADATA_ONLY,
 
     FILTER_INPUTS(avfilter_vf_format_inputs),
-    FILTER_OUTPUTS(avfilter_vf_format_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
 
     FILTER_QUERY_FUNC(query_formats),
 };
@@ -187,13 +180,6 @@ static const AVFilterPad avfilter_vf_noformat_inputs[] = {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
         .get_buffer.video = ff_null_get_video_buffer,
-    },
-};
-
-static const AVFilterPad avfilter_vf_noformat_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO
     },
 };
 
@@ -210,7 +196,7 @@ const AVFilter ff_vf_noformat = {
     .flags         = AVFILTER_FLAG_METADATA_ONLY,
 
     FILTER_INPUTS(avfilter_vf_noformat_inputs),
-    FILTER_OUTPUTS(avfilter_vf_noformat_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
 
     FILTER_QUERY_FUNC(query_formats),
 };

@@ -314,13 +314,6 @@ static const AVFilterPad eq_inputs[] = {
     },
 };
 
-static const AVFilterPad eq_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 #define OFFSET(x) offsetof(EQContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 #define TFLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
@@ -355,7 +348,7 @@ const AVFilter ff_vf_eq = {
     .priv_size       = sizeof(EQContext),
     .priv_class      = &eq_class,
     FILTER_INPUTS(eq_inputs),
-    FILTER_OUTPUTS(eq_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pixel_fmts_eq),
     .process_command = process_command,
     .init            = initialize,

@@ -24,6 +24,7 @@
 #include "avfilter.h"
 #include "formats.h"
 #include "filters.h"
+#include "video.h"
 
 typedef struct UntileContext {
     const AVClass *class;
@@ -162,13 +163,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_frame_free(&s->frame);
 }
 
-static const AVFilterPad untile_inputs[] = {
-    {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 static const AVFilterPad untile_outputs[] = {
     {
         .name          = "default",
@@ -184,7 +178,7 @@ const AVFilter ff_vf_untile = {
     .uninit        = uninit,
     .activate      = activate,
     .priv_size     = sizeof(UntileContext),
-    FILTER_INPUTS(untile_inputs),
+    FILTER_INPUTS(ff_video_default_filterpad),
     FILTER_OUTPUTS(untile_outputs),
     FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &untile_class,

@@ -404,13 +404,6 @@ static const AVFilterPad inputs[] = {
     },
 };
 
-static const AVFilterPad outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_metadata = {
     .name        = "metadata",
     .description = NULL_IF_CONFIG_SMALL("Manipulate video frame metadata."),
@@ -419,7 +412,7 @@ const AVFilter ff_vf_metadata = {
     .init        = init,
     .uninit      = uninit,
     FILTER_INPUTS(inputs),
-    FILTER_OUTPUTS(outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     .flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
                    AVFILTER_FLAG_METADATA_ONLY,
 };

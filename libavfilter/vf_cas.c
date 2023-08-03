@@ -255,13 +255,6 @@ static const AVFilterPad cas_inputs[] = {
     },
 };
 
-static const AVFilterPad cas_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 #define OFFSET(x) offsetof(CASContext, x)
 #define VF AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
@@ -279,7 +272,7 @@ const AVFilter ff_vf_cas = {
     .priv_size     = sizeof(CASContext),
     .priv_class    = &cas_class,
     FILTER_INPUTS(cas_inputs),
-    FILTER_OUTPUTS(cas_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pixel_fmts),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,

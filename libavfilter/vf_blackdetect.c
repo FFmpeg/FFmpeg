@@ -30,6 +30,7 @@
 #include "libavutil/timestamp.h"
 #include "avfilter.h"
 #include "internal.h"
+#include "video.h"
 
 typedef struct BlackDetectContext {
     const AVClass *class;
@@ -241,19 +242,12 @@ static const AVFilterPad blackdetect_inputs[] = {
     },
 };
 
-static const AVFilterPad blackdetect_outputs[] = {
-    {
-        .name          = "default",
-        .type          = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_blackdetect = {
     .name          = "blackdetect",
     .description   = NULL_IF_CONFIG_SMALL("Detect video intervals that are (almost) black."),
     .priv_size     = sizeof(BlackDetectContext),
     FILTER_INPUTS(blackdetect_inputs),
-    FILTER_OUTPUTS(blackdetect_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
     .uninit        = uninit,
     .priv_class    = &blackdetect_class,

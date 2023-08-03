@@ -593,20 +593,13 @@ static const AVFilterPad fftfilt_inputs[] = {
     },
 };
 
-static const AVFilterPad fftfilt_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_fftfilt = {
     .name            = "fftfilt",
     .description     = NULL_IF_CONFIG_SMALL("Apply arbitrary expressions to pixels in frequency domain."),
     .priv_size       = sizeof(FFTFILTContext),
     .priv_class      = &fftfilt_class,
     FILTER_INPUTS(fftfilt_inputs),
-    FILTER_OUTPUTS(fftfilt_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pixel_fmts_fftfilt),
     .init            = initialize,
     .uninit          = uninit,

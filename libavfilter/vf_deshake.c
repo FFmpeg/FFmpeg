@@ -535,13 +535,6 @@ static const AVFilterPad deshake_inputs[] = {
     },
 };
 
-static const AVFilterPad deshake_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_deshake = {
     .name          = "deshake",
     .description   = NULL_IF_CONFIG_SMALL("Stabilize shaky video."),
@@ -549,7 +542,7 @@ const AVFilter ff_vf_deshake = {
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(deshake_inputs),
-    FILTER_OUTPUTS(deshake_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
     .priv_class    = &deshake_class,
 };

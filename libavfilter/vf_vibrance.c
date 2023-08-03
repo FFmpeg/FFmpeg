@@ -416,13 +416,6 @@ static const AVFilterPad vibrance_inputs[] = {
     },
 };
 
-static const AVFilterPad vibrance_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 #define OFFSET(x) offsetof(VibranceContext, x)
 #define VF AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
@@ -446,7 +439,7 @@ const AVFilter ff_vf_vibrance = {
     .priv_size     = sizeof(VibranceContext),
     .priv_class    = &vibrance_class,
     FILTER_INPUTS(vibrance_inputs),
-    FILTER_OUTPUTS(vibrance_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pixel_fmts),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,

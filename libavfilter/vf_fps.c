@@ -37,6 +37,7 @@
 #include "ccfifo.h"
 #include "filters.h"
 #include "internal.h"
+#include "video.h"
 
 enum EOFAction {
     EOF_ACTION_ROUND,
@@ -376,13 +377,6 @@ static int activate(AVFilterContext *ctx)
     return FFERROR_NOT_READY;
 }
 
-static const AVFilterPad avfilter_vf_fps_inputs[] = {
-    {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 static const AVFilterPad avfilter_vf_fps_outputs[] = {
     {
         .name          = "default",
@@ -400,6 +394,6 @@ const AVFilter ff_vf_fps = {
     .priv_class  = &fps_class,
     .activate    = activate,
     .flags       = AVFILTER_FLAG_METADATA_ONLY,
-    FILTER_INPUTS(avfilter_vf_fps_inputs),
+    FILTER_INPUTS(ff_video_default_filterpad),
     FILTER_OUTPUTS(avfilter_vf_fps_outputs),
 };

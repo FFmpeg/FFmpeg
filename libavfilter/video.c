@@ -33,6 +33,13 @@
 #include "internal.h"
 #include "video.h"
 
+const AVFilterPad ff_video_default_filterpad[1] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    }
+};
+
 AVFrame *ff_null_get_video_buffer(AVFilterLink *link, int w, int h)
 {
     return ff_get_video_buffer(link->dst->outputs[0], w, h);

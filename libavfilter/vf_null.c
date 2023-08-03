@@ -26,24 +26,10 @@
 #include "internal.h"
 #include "video.h"
 
-static const AVFilterPad avfilter_vf_null_inputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
-static const AVFilterPad avfilter_vf_null_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_null = {
     .name        = "null",
     .description = NULL_IF_CONFIG_SMALL("Pass the source unchanged to the output."),
     .flags       = AVFILTER_FLAG_METADATA_ONLY,
-    FILTER_INPUTS(avfilter_vf_null_inputs),
-    FILTER_OUTPUTS(avfilter_vf_null_outputs),
+    FILTER_INPUTS(ff_video_default_filterpad),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
 };

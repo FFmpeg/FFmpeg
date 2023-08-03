@@ -547,20 +547,13 @@ static const AVFilterPad uspp_inputs[] = {
     },
 };
 
-static const AVFilterPad uspp_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_uspp = {
     .name            = "uspp",
     .description     = NULL_IF_CONFIG_SMALL("Apply Ultra Simple / Slow Post-processing filter."),
     .priv_size       = sizeof(USPPContext),
     .uninit          = uninit,
     FILTER_INPUTS(uspp_inputs),
-    FILTER_OUTPUTS(uspp_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
     .priv_class      = &uspp_class,
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,

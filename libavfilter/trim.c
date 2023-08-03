@@ -32,6 +32,7 @@
 #include "avfilter.h"
 #include "internal.h"
 #include "filters.h"
+#include "video.h"
 
 typedef struct TrimContext {
     const AVClass *class;
@@ -356,13 +357,6 @@ static const AVFilterPad trim_inputs[] = {
     },
 };
 
-static const AVFilterPad trim_outputs[] = {
-    {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_trim = {
     .name        = "trim",
     .description = NULL_IF_CONFIG_SMALL("Pick one continuous section from the input, drop the rest."),
@@ -371,7 +365,7 @@ const AVFilter ff_vf_trim = {
     .priv_size   = sizeof(TrimContext),
     .priv_class  = &trim_class,
     FILTER_INPUTS(trim_inputs),
-    FILTER_OUTPUTS(trim_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
 };
 #endif // CONFIG_TRIM_FILTER
 

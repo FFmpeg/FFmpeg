@@ -29,6 +29,7 @@
 #include "avfilter.h"
 #include "filters.h"
 #include "scene_sad.h"
+#include "video.h"
 
 typedef struct FreezeDetectContext {
     const AVClass *class;
@@ -204,13 +205,6 @@ static const AVFilterPad freezedetect_inputs[] = {
     },
 };
 
-static const AVFilterPad freezedetect_outputs[] = {
-    {
-        .name          = "default",
-        .type          = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_freezedetect = {
     .name          = "freezedetect",
     .description   = NULL_IF_CONFIG_SMALL("Detects frozen video input."),
@@ -219,7 +213,7 @@ const AVFilter ff_vf_freezedetect = {
     .uninit        = uninit,
     .flags         = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(freezedetect_inputs),
-    FILTER_OUTPUTS(freezedetect_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
     .activate      = activate,
 };

@@ -719,13 +719,6 @@ static const AVFilterPad colorconstancy_inputs[] = {
     },
 };
 
-static const AVFilterPad colorconstancy_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 #if CONFIG_GREYEDGE_FILTER
 
 static const AVOption greyedge_options[] = {
@@ -744,7 +737,7 @@ const AVFilter ff_vf_greyedge = {
     .priv_class    = &greyedge_class,
     .uninit        = uninit,
     FILTER_INPUTS(colorconstancy_inputs),
-    FILTER_OUTPUTS(colorconstancy_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     // TODO: support more formats
     // FIXME: error when saving to .jpg
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_GBRP),

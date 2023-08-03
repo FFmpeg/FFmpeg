@@ -65,18 +65,11 @@ static const AVFilterPad avfilter_vf_copy_inputs[] = {
     },
 };
 
-static const AVFilterPad avfilter_vf_copy_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 const AVFilter ff_vf_copy = {
     .name        = "copy",
     .description = NULL_IF_CONFIG_SMALL("Copy the input video unchanged to the output."),
     .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(avfilter_vf_copy_inputs),
-    FILTER_OUTPUTS(avfilter_vf_copy_outputs),
+    FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_QUERY_FUNC(query_formats),
 };

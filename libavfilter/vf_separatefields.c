@@ -22,6 +22,7 @@
 #include "avfilter.h"
 #include "filters.h"
 #include "internal.h"
+#include "video.h"
 
 typedef struct SeparateFieldsContext {
     int nb_planes;
@@ -161,13 +162,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_frame_free(&s->second);
 }
 
-static const AVFilterPad separatefields_inputs[] = {
-    {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
 static const AVFilterPad separatefields_outputs[] = {
     {
         .name          = "default",
@@ -182,6 +176,6 @@ const AVFilter ff_vf_separatefields = {
     .priv_size   = sizeof(SeparateFieldsContext),
     .activate    = activate,
     .uninit      = uninit,
-    FILTER_INPUTS(separatefields_inputs),
+    FILTER_INPUTS(ff_video_default_filterpad),
     FILTER_OUTPUTS(separatefields_outputs),
 };
