@@ -28,8 +28,6 @@
  * J. van de Weijer, Th. Gevers, A. Gijsenij "Edge-Based Color Constancy".
  */
 
-#include "config_components.h"
-
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
@@ -719,8 +717,6 @@ static const AVFilterPad colorconstancy_inputs[] = {
     },
 };
 
-#if CONFIG_GREYEDGE_FILTER
-
 static const AVOption greyedge_options[] = {
     { "difford",  "set differentiation order", OFFSET(difford),  AV_OPT_TYPE_INT,    {.i64=1}, 0,   2,      FLAGS },
     { "minknorm", "set Minkowski norm",        OFFSET(minknorm), AV_OPT_TYPE_INT,    {.i64=1}, 0,   20,     FLAGS },
@@ -743,5 +739,3 @@ const AVFilter ff_vf_greyedge = {
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_GBRP),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };
-
-#endif /* CONFIG_GREY_EDGE_FILTER */
