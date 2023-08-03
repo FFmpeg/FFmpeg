@@ -149,6 +149,16 @@ enum AVTXFlags {
      * Ignored for all transforms but inverse MDCTs.
      */
     AV_TX_FULL_IMDCT = 1ULL << 2,
+
+    /**
+     * Perform a real to half-complex RDFT.
+     * Only the real, or imaginary coefficients will
+     * be output, depending on the flag used. Only available for forward RDFTs.
+     * Output array must have enough space to hold N complex values
+     * (regular size for a real to complex transform).
+     */
+    AV_TX_REAL_TO_REAL      = 1ULL << 3,
+    AV_TX_REAL_TO_IMAGINARY = 1ULL << 4,
 };
 
 /**

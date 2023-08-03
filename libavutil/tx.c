@@ -437,7 +437,9 @@ int ff_tx_decompose_length(int dst[TX_MAX_DECOMPOSITIONS], enum AVTXType type,
 
             /* Check direction for non-orthogonal codelets */
             if (((cd->flags & FF_TX_FORWARD_ONLY) && inv) ||
-                ((cd->flags & (FF_TX_INVERSE_ONLY | AV_TX_FULL_IMDCT)) && !inv))
+                ((cd->flags & (FF_TX_INVERSE_ONLY | AV_TX_FULL_IMDCT)) && !inv) ||
+                ((cd->flags & (FF_TX_FORWARD_ONLY | AV_TX_REAL_TO_REAL)) && inv) ||
+                ((cd->flags & (FF_TX_FORWARD_ONLY | AV_TX_REAL_TO_IMAGINARY)) && inv))
                 continue;
 
             /* Check if the CPU supports the required ISA */
@@ -560,6 +562,10 @@ static void print_flags(AVBPrint *bp, uint64_t f)
         av_bprintf(bp, "%spreshuf", prev > 1 ? sep : "");
     if ((f & AV_TX_FULL_IMDCT) && ++prev)
         av_bprintf(bp, "%simdct_full", prev > 1 ? sep : "");
+    if ((f & AV_TX_REAL_TO_REAL) && ++prev)
+        av_bprintf(bp, "%sreal_to_real", prev > 1 ? sep : "");
+    if ((f & AV_TX_REAL_TO_IMAGINARY) && ++prev)
+        av_bprintf(bp, "%sreal_to_imaginary", prev > 1 ? sep : "");
     if ((f & FF_TX_ASM_CALL) && ++prev)
         av_bprintf(bp, "%sasm_call", prev > 1 ? sep : "");
     av_bprintf(bp, "]");
@@ -717,7 +723,11 @@ av_cold int ff_tx_init_subtx(AVTXContext *s, enum AVTXType type,
     uint64_t req_flags = flags;
 
     /* Flags the codelet may require to be present */
-    uint64_t inv_req_mask = AV_TX_FULL_IMDCT | FF_TX_PRESHUFFLE | FF_TX_ASM_CALL;
+    uint64_t inv_req_mask = AV_TX_FULL_IMDCT |
+                            AV_TX_REAL_TO_REAL |
+                            AV_TX_REAL_TO_IMAGINARY |
+                            FF_TX_PRESHUFFLE |
+                            FF_TX_ASM_CALL;
 
     /* Unaligned codelets are compatible with the aligned flag */
     if (req_flags & FF_TX_ALIGNED)
@@ -742,7 +752,9 @@ av_cold int ff_tx_init_subtx(AVTXContext *s, enum AVTXType type,
 
             /* Check direction for non-orthogonal codelets */
             if (((cd->flags & FF_TX_FORWARD_ONLY) && inv) ||
-                ((cd->flags & (FF_TX_INVERSE_ONLY | AV_TX_FULL_IMDCT)) && !inv))
+                ((cd->flags & (FF_TX_INVERSE_ONLY | AV_TX_FULL_IMDCT)) && !inv) ||
+                ((cd->flags & (FF_TX_FORWARD_ONLY | AV_TX_REAL_TO_REAL)) && inv) ||
+                ((cd->flags & (FF_TX_FORWARD_ONLY | AV_TX_REAL_TO_IMAGINARY)) && inv))
                 continue;
 
             /* Check if the requested flags match from both sides */
