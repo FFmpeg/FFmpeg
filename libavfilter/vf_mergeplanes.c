@@ -26,6 +26,7 @@
 #include "avfilter.h"
 #include "internal.h"
 #include "framesync.h"
+#include "video.h"
 
 typedef struct Mapping {
     int input;

@@ -32,6 +32,7 @@
 #include "dnn_filter_common.h"
 #include "formats.h"
 #include "internal.h"
+#include "video.h"
 #include "libswscale/swscale.h"
 #include "libavutil/time.h"
 

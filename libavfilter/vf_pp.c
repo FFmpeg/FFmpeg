@@ -29,6 +29,7 @@
 
 #include "internal.h"
 #include "qp_table.h"
+#include "video.h"
 
 #include "libpostproc/postprocess.h"
 

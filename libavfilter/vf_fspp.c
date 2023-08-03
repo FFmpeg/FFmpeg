@@ -42,6 +42,7 @@
 #include "internal.h"
 #include "qp_table.h"
 #include "vf_fspp.h"
+#include "video.h"
 
 #define OFFSET(x) offsetof(FSPPContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM

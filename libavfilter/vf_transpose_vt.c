@@ -26,6 +26,7 @@
 #include "libavutil/pixdesc.h"
 #include "internal.h"
 #include "transpose.h"
+#include "video.h"
 
 typedef struct TransposeVtContext {
     AVClass *class;

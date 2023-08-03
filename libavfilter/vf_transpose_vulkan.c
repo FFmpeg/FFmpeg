@@ -25,6 +25,7 @@
 #include "vulkan_spirv.h"
 #include "internal.h"
 #include "transpose.h"
+#include "video.h"
 
 typedef struct TransposeVulkanContext {
     FFVulkanContext vkctx;

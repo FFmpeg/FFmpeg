@@ -32,6 +32,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "internal.h"
+#include "video.h"
 
 #define MAX_NB_THREADS 32
 #define NB_PLANES 4

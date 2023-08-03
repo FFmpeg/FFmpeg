@@ -26,6 +26,7 @@
 #include "internal.h"
 #include "filters.h"
 #include "colorspace.h"
+#include "video.h"
 
 enum TestSrcVulkanMode {
     TESTSRC_COLOR,

@@ -29,6 +29,7 @@
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "internal.h"
+#include "video.h"
 
 enum FilterMode {
     MODE_NONE,

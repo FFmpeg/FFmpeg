@@ -24,6 +24,7 @@
 #include "libavutil/parseutils.h"
 #include "internal.h"
 #include "filters.h"
+#include "video.h"
 #include "vulkan_filter.h"
 #include "scale_eval.h"
 

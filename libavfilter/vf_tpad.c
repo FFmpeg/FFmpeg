@@ -26,6 +26,7 @@
 #include "internal.h"
 #include "formats.h"
 #include "drawutils.h"
+#include "video.h"
 
 enum PadMode {
     MODE_ADD = 0,

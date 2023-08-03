@@ -34,6 +34,7 @@
 #include "framesync.h"
 #include "internal.h"
 #include "palette.h"
+#include "video.h"
 
 enum dithering_mode {
     DITHERING_NONE,

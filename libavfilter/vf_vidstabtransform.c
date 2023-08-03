@@ -28,6 +28,7 @@
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "internal.h"
+#include "video.h"
 
 #include "vidstabutils.h"
 

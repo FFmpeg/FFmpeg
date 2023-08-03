@@ -23,6 +23,7 @@
 #include "vulkan_filter.h"
 #include "vulkan_spirv.h"
 #include "internal.h"
+#include "video.h"
 
 #define TYPE_NAME  "vec4"
 #define TYPE_ELEMS 4

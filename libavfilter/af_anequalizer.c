@@ -27,6 +27,7 @@
 #include "avfilter.h"
 #include "internal.h"
 #include "audio.h"
+#include "video.h"
 
 #define FILTER_ORDER 4
 

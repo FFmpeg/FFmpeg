@@ -24,6 +24,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/tx.h"
 #include "internal.h"
+#include "video.h"
 #include "window_func.h"
 
 #define MAX_BLOCK 256

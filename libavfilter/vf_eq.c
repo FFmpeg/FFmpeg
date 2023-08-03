@@ -27,12 +27,13 @@
  * very simple video equalizer
  */
 
-#include "libavfilter/internal.h"
 #include "libavutil/common.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+#include "internal.h"
 #include "vf_eq.h"
+#include "video.h"
 
 static void create_lut(EQParameters *param)
 {

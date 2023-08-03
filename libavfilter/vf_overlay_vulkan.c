@@ -24,6 +24,7 @@
 #include "vulkan_spirv.h"
 #include "internal.h"
 #include "framesync.h"
+#include "video.h"
 
 typedef struct OverlayVulkanContext {
     FFVulkanContext vkctx;

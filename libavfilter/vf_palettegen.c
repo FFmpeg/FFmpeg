@@ -31,6 +31,7 @@
 #include "avfilter.h"
 #include "internal.h"
 #include "palette.h"
+#include "video.h"
 
 /* Reference a color and how much it's used */
 struct color_ref {

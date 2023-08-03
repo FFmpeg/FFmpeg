@@ -24,6 +24,7 @@
 #include "vulkan_filter.h"
 #include "vulkan_spirv.h"
 #include "internal.h"
+#include "video.h"
 
 #define CGS 32
 #define GBLUR_MAX_KERNEL_SIZE 127

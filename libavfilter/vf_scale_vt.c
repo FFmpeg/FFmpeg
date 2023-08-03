@@ -26,6 +26,7 @@
 #include "libavutil/pixdesc.h"
 #include "internal.h"
 #include "scale_eval.h"
+#include "video.h"
 
 typedef struct ScaleVtContext {
     AVClass *class;

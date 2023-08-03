@@ -28,6 +28,7 @@
 #include "internal.h"
 #include "framesync.h"
 #include "blend.h"
+#include "video.h"
 
 #define IN_TOP    0
 #define IN_BOTTOM 1

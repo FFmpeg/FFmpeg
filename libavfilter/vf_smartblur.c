@@ -32,6 +32,7 @@
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
+#include "video.h"
 
 #define RADIUS_MIN 0.1
 #define RADIUS_MAX 5.0

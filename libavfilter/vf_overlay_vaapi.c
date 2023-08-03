@@ -27,6 +27,7 @@
 #include "formats.h"
 #include "internal.h"
 #include "vaapi_vpp.h"
+#include "video.h"
 #include "libavutil/eval.h"
 
 enum var_name {

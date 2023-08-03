@@ -43,6 +43,7 @@
 #include "formats.h"
 #include "framepool.h"
 #include "internal.h"
+#include "video.h"
 
 static void tlog_ref(void *ctx, AVFrame *ref, int end)
 {

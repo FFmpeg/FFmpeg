@@ -23,6 +23,7 @@
 #include "vulkan_filter.h"
 #include "vulkan_spirv.h"
 #include "internal.h"
+#include "video.h"
 
 typedef struct ChromaticAberrationVulkanContext {
     FFVulkanContext vkctx;

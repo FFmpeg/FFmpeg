@@ -31,6 +31,7 @@
 #include "libavutil/imgutils.h"
 #include "avfilter.h"
 #include "internal.h"
+#include "video.h"
 
 typedef struct YAEPContext {
     const AVClass *class;

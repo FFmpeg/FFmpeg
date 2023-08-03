@@ -45,6 +45,7 @@
 #include "internal.h"
 #include "af_afir.h"
 #include "af_afirdsp.h"
+#include "video.h"
 
 static void drawtext(AVFrame *pic, int x, int y, const char *txt, uint32_t color)
 {

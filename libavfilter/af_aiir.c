@@ -27,6 +27,7 @@
 #include "audio.h"
 #include "avfilter.h"
 #include "internal.h"
+#include "video.h"
 
 typedef struct ThreadData {
     AVFrame *in, *out;

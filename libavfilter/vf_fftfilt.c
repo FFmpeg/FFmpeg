@@ -24,7 +24,8 @@
  * FFT domain filtering.
  */
 
-#include "libavfilter/internal.h"
+#include "internal.h"
+#include "video.h"
 #include "libavutil/common.h"
 #include "libavutil/cpu.h"
 #include "libavutil/imgutils.h"

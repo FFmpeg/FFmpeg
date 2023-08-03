@@ -30,6 +30,7 @@
 #include "dnn_filter_common.h"
 #include "formats.h"
 #include "internal.h"
+#include "video.h"
 
 typedef struct DRContext {
     const AVClass *class;

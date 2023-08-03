@@ -23,6 +23,7 @@
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "internal.h"
+#include "video.h"
 
 typedef struct WeaveContext {
     const AVClass *class;

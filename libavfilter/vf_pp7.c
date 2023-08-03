@@ -34,6 +34,7 @@
 #include "internal.h"
 #include "qp_table.h"
 #include "vf_pp7.h"
+#include "video.h"
 
 enum mode {
     MODE_HARD,

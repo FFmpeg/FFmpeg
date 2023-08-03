@@ -55,6 +55,7 @@
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
+#include "video.h"
 
 enum MCDeintMode {
     MODE_FAST = 0,

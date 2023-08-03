@@ -25,6 +25,7 @@
 #include "formats.h"
 #include "internal.h"
 #include "vaapi_vpp.h"
+#include "video.h"
 
 typedef struct HDRVAAPIContext {
     VAAPIVPPContext vpp_ctx; // must be the first field

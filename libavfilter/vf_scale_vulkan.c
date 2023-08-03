@@ -25,6 +25,7 @@
 #include "scale_eval.h"
 #include "internal.h"
 #include "colorspace.h"
+#include "video.h"
 
 enum ScalerFunc {
     F_BILINEAR = 0,

@@ -32,6 +32,7 @@
 #include "internal.h"
 #include "lavfutils.h"
 #include "lswsutils.h"
+#include "video.h"
 
 #if CONFIG_LIBFREETYPE
 #include <ft2build.h>

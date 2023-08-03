@@ -37,6 +37,7 @@
 #include "internal.h"
 #include "qp_table.h"
 #include "avfilter.h"
+#include "video.h"
 
 #define MAX_LEVEL 8 /* quality levels */
 #define BLOCK 16

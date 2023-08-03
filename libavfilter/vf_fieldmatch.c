@@ -39,6 +39,7 @@
 #include "avfilter.h"
 #include "filters.h"
 #include "internal.h"
+#include "video.h"
 
 #define INPUT_MAIN     0
 #define INPUT_CLEANSRC 1
