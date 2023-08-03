@@ -26,7 +26,6 @@
 
 #include "libavutil/internal.h"
 #include "avfilter.h"
-#include "formats.h"
 #include "framequeue.h"
 
 typedef struct AVFilterCommand {

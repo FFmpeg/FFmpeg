@@ -31,6 +31,7 @@
 #include "libavutil/qsort.h"
 #include "avfilter.h"
 #include "filters.h"
+#include "formats.h"
 #include "framesync.h"
 #include "internal.h"
 #include "palette.h"

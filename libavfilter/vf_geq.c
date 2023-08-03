@@ -31,6 +31,7 @@
 #include "libavutil/eval.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+#include "formats.h"
 #include "internal.h"
 #include "video.h"
 

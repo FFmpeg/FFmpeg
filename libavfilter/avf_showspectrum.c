@@ -40,6 +40,7 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/xga_font_data.h"
 #include "audio.h"
+#include "formats.h"
 #include "video.h"
 #include "avfilter.h"
 #include "filters.h"

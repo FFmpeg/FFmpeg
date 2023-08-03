@@ -37,6 +37,7 @@
 #include "avfilter.h"
 #include "buffersink.h"
 #include "filters.h"
+#include "formats.h"
 #include "internal.h"
 #include "video.h"
 

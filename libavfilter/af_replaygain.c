@@ -30,6 +30,7 @@
 #include "libavutil/opt.h"
 #include "audio.h"
 #include "avfilter.h"
+#include "formats.h"
 #include "internal.h"
 
 #define HISTOGRAM_SLOTS 12000

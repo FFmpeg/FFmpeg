@@ -30,6 +30,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "audio.h"
+#include "formats.h"
 #include "video.h"
 #include "avfilter.h"
 #include "filters.h"

@@ -25,6 +25,7 @@
 #include "audio.h"
 #include "avfilter.h"
 #include "filters.h"
+#include "formats.h"
 #include "internal.h"
 
 typedef struct AFDelaySrcContext {
