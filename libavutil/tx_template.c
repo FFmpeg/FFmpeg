@@ -2004,6 +2004,107 @@ static const FFTXCodelet TX_NAME(ff_tx_dctIII_def) = {
     .prio       = FF_TX_PRIO_BASE,
 };
 
+static av_cold int TX_NAME(ff_tx_dcstI_init)(AVTXContext *s,
+                                             const FFTXCodelet *cd,
+                                             uint64_t flags,
+                                             FFTXCodeletOptions *opts,
+                                             int len, int inv,
+                                             const void *scale)
+{
+    int ret;
+    SCALE_TYPE rsc = *((SCALE_TYPE *)scale);
+
+    if (inv) {
+        len *= 2;
+        s->len *= 2;
+        rsc *= 0.5;
+    }
+
+    /* We want a half-complex RDFT */
+    flags |= cd->type == TX_TYPE(DCT_I) ? AV_TX_REAL_TO_REAL :
+                                          AV_TX_REAL_TO_IMAGINARY;
+
+    if ((ret = ff_tx_init_subtx(s, TX_TYPE(RDFT), flags, NULL,
+                                (len - 1 + 2*(cd->type == TX_TYPE(DST_I)))*2,
+                                0, &rsc)))
+        return ret;
+
+    s->tmp = av_mallocz((len + 1)*2*sizeof(TXSample));
+    if (!s->tmp)
+        return AVERROR(ENOMEM);
+
+    return 0;
+}
+
+static void TX_NAME(ff_tx_dctI)(AVTXContext *s, void *_dst,
+                                void *_src, ptrdiff_t stride)
+{
+    TXSample *dst = _dst;
+    TXSample *src = _src;
+    const int len = s->len - 1;
+    TXSample *tmp = (TXSample *)s->tmp;
+
+    stride /= sizeof(TXSample);
+
+    for (int i = 0; i < len; i++)
+        tmp[i] = tmp[2*len - i] = src[i * stride];
+
+    tmp[len] = src[len * stride]; /* Middle */
+
+    s->fn[0](&s->sub[0], dst, tmp, sizeof(TXSample));
+}
+
+static void TX_NAME(ff_tx_dstI)(AVTXContext *s, void *_dst,
+                                void *_src, ptrdiff_t stride)
+{
+    TXSample *dst = _dst;
+    TXSample *src = _src;
+    const int len = s->len + 1;
+    TXSample *tmp = (void *)s->tmp;
+
+    stride /= sizeof(TXSample);
+
+    tmp[0] = 0;
+
+    for (int i = 1; i < len; i++) {
+        TXSample a = src[(i - 1) * stride];
+        tmp[i] = -a;
+        tmp[2*len - i] = a;
+    }
+
+    tmp[len] = 0; /* i == n, Nyquist */
+
+    s->fn[0](&s->sub[0], dst, tmp, sizeof(float));
+}
+
+static const FFTXCodelet TX_NAME(ff_tx_dctI_def) = {
+    .name       = TX_NAME_STR("dctI"),
+    .function   = TX_NAME(ff_tx_dctI),
+    .type       = TX_TYPE(DCT_I),
+    .flags      = AV_TX_UNALIGNED | AV_TX_INPLACE | FF_TX_OUT_OF_PLACE,
+    .factors    = { 2, TX_FACTOR_ANY },
+    .nb_factors = 2,
+    .min_len    = 2,
+    .max_len    = TX_LEN_UNLIMITED,
+    .init       = TX_NAME(ff_tx_dcstI_init),
+    .cpu_flags  = FF_TX_CPU_FLAGS_ALL,
+    .prio       = FF_TX_PRIO_BASE,
+};
+
+static const FFTXCodelet TX_NAME(ff_tx_dstI_def) = {
+    .name       = TX_NAME_STR("dstI"),
+    .function   = TX_NAME(ff_tx_dstI),
+    .type       = TX_TYPE(DST_I),
+    .flags      = AV_TX_UNALIGNED | AV_TX_INPLACE | FF_TX_OUT_OF_PLACE,
+    .factors    = { 2, TX_FACTOR_ANY },
+    .nb_factors = 2,
+    .min_len    = 2,
+    .max_len    = TX_LEN_UNLIMITED,
+    .init       = TX_NAME(ff_tx_dcstI_init),
+    .cpu_flags  = FF_TX_CPU_FLAGS_ALL,
+    .prio       = FF_TX_PRIO_BASE,
+};
+
 int TX_TAB(ff_tx_mdct_gen_exp)(AVTXContext *s, int *pre_tab)
 {
     int off = 0;
@@ -2101,6 +2202,8 @@ const FFTXCodelet * const TX_NAME(ff_tx_codelet_list)[] = {
     &TX_NAME(ff_tx_rdft_c2r_def),
     &TX_NAME(ff_tx_dctII_def),
     &TX_NAME(ff_tx_dctIII_def),
+    &TX_NAME(ff_tx_dctI_def),
+    &TX_NAME(ff_tx_dstI_def),
 
     NULL,
 };
