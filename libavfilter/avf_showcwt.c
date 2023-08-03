@@ -250,13 +250,15 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static void frequency_band(float *frequency_band, float factor,
-                           int frequency_band_count,
-                           float frequency_range,
-                           float frequency_offset,
-                           int frequency_scale, float deviation)
+static float frequency_band(float *frequency_band,
+                            int frequency_band_count,
+                            float frequency_range,
+                            float frequency_offset,
+                            int frequency_scale, float deviation)
 {
-    deviation *= sqrtf(1.f / (4.f * M_PI)); // Heisenberg Gabor Limit
+    float ret = 0.f;
+
+    deviation = sqrtf(deviation / (4.f * M_PI)); // Heisenberg Gabor Limit
     for (int y = 0; y < frequency_band_count; y++) {
         float frequency = frequency_range * (1.f - (float)y / frequency_band_count) + frequency_offset;
         float frequency_derivative = frequency_range / frequency_band_count;
@@ -292,9 +294,13 @@ static void frequency_band(float *frequency_band, float factor,
             break;
         }
 
-        frequency_band[y*2  ] = frequency * factor;
-        frequency_band[y*2+1] = frequency_derivative * deviation * factor;
+        frequency_band[y*2  ] = frequency;
+        frequency_band[y*2+1] = frequency_derivative * deviation;
+
+        ret = 1.f / (frequency_derivative * deviation);
     }
+
+    return ret;
 }
 
 static float remap_log(ShowCWTContext *s, float value, int iscale, float log_factor)
@@ -812,11 +818,52 @@ static int config_output(AVFilterLink *outlink)
         break;
     }
 
+    switch (s->frequency_scale) {
+    case FSCALE_LOG:
+        minimum_frequency = logf(minimum_frequency) / logf(2.f);
+        maximum_frequency = logf(maximum_frequency) / logf(2.f);
+        break;
+    case FSCALE_BARK:
+        minimum_frequency = 6.f * asinhf(minimum_frequency / 600.f);
+        maximum_frequency = 6.f * asinhf(maximum_frequency / 600.f);
+        break;
+    case FSCALE_MEL:
+        minimum_frequency = 2595.f * log10f(1.f + minimum_frequency / 700.f);
+        maximum_frequency = 2595.f * log10f(1.f + maximum_frequency / 700.f);
+        break;
+    case FSCALE_ERBS:
+        minimum_frequency = 11.17268f * logf(1.f + (46.06538f * minimum_frequency) / (minimum_frequency + 14678.49f));
+        maximum_frequency = 11.17268f * logf(1.f + (46.06538f * maximum_frequency) / (maximum_frequency + 14678.49f));
+        break;
+    case FSCALE_SQRT:
+        minimum_frequency = sqrtf(minimum_frequency);
+        maximum_frequency = sqrtf(maximum_frequency);
+        break;
+    case FSCALE_CBRT:
+        minimum_frequency = cbrtf(minimum_frequency);
+        maximum_frequency = cbrtf(maximum_frequency);
+        break;
+    case FSCALE_QDRT:
+        minimum_frequency = powf(minimum_frequency, 0.25f);
+        maximum_frequency = powf(maximum_frequency, 0.25f);
+        break;
+    }
+
+    s->frequency_band = av_calloc(s->frequency_band_count,
+                                  sizeof(*s->frequency_band) * 2);
+    if (!s->frequency_band)
+        return AVERROR(ENOMEM);
+
+    s->nb_consumed_samples = inlink->sample_rate *
+                             frequency_band(s->frequency_band,
+                                            s->frequency_band_count, maximum_frequency - minimum_frequency,
+                                            minimum_frequency, s->frequency_scale, s->deviation);
+    s->nb_consumed_samples = FFMIN(s->nb_consumed_samples, 65536);
+
     s->nb_threads = FFMIN(s->frequency_band_count, ff_filter_get_nb_threads(ctx));
     s->nb_channels = inlink->ch_layout.nb_channels;
     s->old_pts = AV_NOPTS_VALUE;
     s->eof_pts = AV_NOPTS_VALUE;
-    s->nb_consumed_samples = FFMIN(inlink->sample_rate, 65536);
 
     s->input_sample_count = 1 << (32 - ff_clz(s->nb_consumed_samples));
     s->input_padding_size = 1 << (32 - ff_clz(s->input_sample_count));
@@ -853,8 +900,6 @@ static int config_output(AVFilterLink *outlink)
             return ret;
     }
 
-    s->frequency_band = av_calloc(s->frequency_band_count,
-                                  sizeof(*s->frequency_band) * 2);
     s->outpicref = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     s->fft_in = ff_get_audio_buffer(inlink, s->fft_size * 2);
     s->fft_out = ff_get_audio_buffer(inlink, s->fft_size * 2);
@@ -872,7 +917,7 @@ static int config_output(AVFilterLink *outlink)
     s->kernel_stop = av_calloc(s->frequency_band_count, sizeof(*s->kernel_stop));
     if (!s->outpicref || !s->fft_in || !s->fft_out || !s->src_x || !s->dst_x || !s->over ||
         !s->ifft_in || !s->ifft_out || !s->kernel_start || !s->kernel_stop || !s->ch_out ||
-        !s->frequency_band || !s->cache || !s->index || !s->bh_out || !s->kernel)
+        !s->cache || !s->index || !s->bh_out || !s->kernel)
         return AVERROR(ENOMEM);
 
     s->ch_out->format     = inlink->format;
@@ -923,43 +968,13 @@ static int config_output(AVFilterLink *outlink)
     s->outpicref->color_range = AVCOL_RANGE_JPEG;
 
     factor = s->input_padding_size / (float)inlink->sample_rate;
-
-    switch (s->frequency_scale) {
-    case FSCALE_LOG:
-        minimum_frequency = logf(minimum_frequency) / logf(2.f);
-        maximum_frequency = logf(maximum_frequency) / logf(2.f);
-        break;
-    case FSCALE_BARK:
-        minimum_frequency = 6.f * asinhf(minimum_frequency / 600.f);
-        maximum_frequency = 6.f * asinhf(maximum_frequency / 600.f);
-        break;
-    case FSCALE_MEL:
-        minimum_frequency = 2595.f * log10f(1.f + minimum_frequency / 700.f);
-        maximum_frequency = 2595.f * log10f(1.f + maximum_frequency / 700.f);
-        break;
-    case FSCALE_ERBS:
-        minimum_frequency = 11.17268f * logf(1.f + (46.06538f * minimum_frequency) / (minimum_frequency + 14678.49f));
-        maximum_frequency = 11.17268f * logf(1.f + (46.06538f * maximum_frequency) / (maximum_frequency + 14678.49f));
-        break;
-    case FSCALE_SQRT:
-        minimum_frequency = sqrtf(minimum_frequency);
-        maximum_frequency = sqrtf(maximum_frequency);
-        break;
-    case FSCALE_CBRT:
-        minimum_frequency = cbrtf(minimum_frequency);
-        maximum_frequency = cbrtf(maximum_frequency);
-        break;
-    case FSCALE_QDRT:
-        minimum_frequency = powf(minimum_frequency, 0.25f);
-        maximum_frequency = powf(maximum_frequency, 0.25f);
-        break;
+    for (int n = 0; n < s->frequency_band_count; n++) {
+        s->frequency_band[2*n  ] *= factor;
+        s->frequency_band[2*n+1] *= factor;
     }
 
-    frequency_band(s->frequency_band, factor,
-                   s->frequency_band_count, maximum_frequency - minimum_frequency,
-                   minimum_frequency, s->frequency_scale, s->deviation);
-
     av_log(ctx, AV_LOG_DEBUG, "factor: %f\n", factor);
+    av_log(ctx, AV_LOG_DEBUG, "nb_consumed_samples: %d\n", s->nb_consumed_samples);
     av_log(ctx, AV_LOG_DEBUG, "hop_size: %d\n", s->hop_size);
     av_log(ctx, AV_LOG_DEBUG, "ihop_size: %d\n", s->ihop_size);
     av_log(ctx, AV_LOG_DEBUG, "input_sample_count: %d\n", s->input_sample_count);
