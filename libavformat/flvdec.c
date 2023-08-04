@@ -80,7 +80,6 @@ typedef struct FLVContext {
     int64_t time_offset;
     int64_t time_pos;
 
-    uint8_t exheader;
 } FLVContext;
 
 /* AMF date type */
@@ -813,7 +812,6 @@ static int flv_read_header(AVFormatContext *s)
     s->start_time = 0;
     flv->sum_flv_tag_size = 0;
     flv->last_keyframe_stream_index = -1;
-    flv->exheader = 0;
 
     return 0;
 }
@@ -1043,6 +1041,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     AVStream *st    = NULL;
     int last = -1;
     int orig_size;
+    int enhanced_flv = 0;
     uint32_t video_codec_id = 0;
 
 retry:
@@ -1095,9 +1094,9 @@ retry:
          * Reference Enhancing FLV 2023-03-v1.0.0-B.8
          * https://github.com/veovera/enhanced-rtmp/blob/main/enhanced-rtmp-v1.pdf
          * */
-        flv->exheader = (flags >> 7) & 1;
+        enhanced_flv = (flags >> 7) & 1;
         size--;
-        if (flv->exheader) {
+        if (enhanced_flv) {
             video_codec_id = avio_rb32(s->pb);
             size -= 4;
         }
@@ -1276,7 +1275,7 @@ retry_duration:
         st->codecpar->codec_id == AV_CODEC_ID_AV1 ||
         st->codecpar->codec_id == AV_CODEC_ID_VP9) {
         int type = 0;
-        if (flv->exheader && stream_type == FLV_STREAM_TYPE_VIDEO) {
+        if (enhanced_flv && stream_type == FLV_STREAM_TYPE_VIDEO) {
             type = flags & 0x0F;
         } else {
             type = avio_r8(s->pb);
