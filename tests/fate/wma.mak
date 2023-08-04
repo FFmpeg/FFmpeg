@@ -20,17 +20,20 @@ fate-wmapro: $(FATE_WMAPRO-yes)
 
 FATE_WMAVOICE-$(call DEMDEC, ASF, WMAVOICE) += fate-wmavoice-7k
 fate-wmavoice-7k: CMD = pcm -i $(TARGET_SAMPLES)/wmavoice/streaming_CBR-7K.wma
-fate-wmavoice-7k: REF = $(SAMPLES)/wmavoice/streaming_CBR-7K.pcm
+fate-wmavoice-7k: REF = $(SAMPLES)/wmavoice/streaming_CBR-7K_ref.pcm
+fate-wmavoice-7k: CMP_TARGET = 1368.61
 fate-wmavoice-7k: FUZZ = 3
 
 FATE_WMAVOICE-$(call DEMDEC, ASF, WMAVOICE) += fate-wmavoice-11k
 fate-wmavoice-11k: CMD = pcm -i $(TARGET_SAMPLES)/wmavoice/streaming_CBR-11K.wma
-fate-wmavoice-11k: REF = $(SAMPLES)/wmavoice/streaming_CBR-11K.pcm
+fate-wmavoice-11k: REF = $(SAMPLES)/wmavoice/streaming_CBR-11K_ref.pcm
+fate-wmavoice-11k: CMP_TARGET = 965.24
 fate-wmavoice-11k: FUZZ = 3
 
 FATE_WMAVOICE-$(call DEMDEC, ASF, WMAVOICE) += fate-wmavoice-19k
 fate-wmavoice-19k: CMD = pcm -i $(TARGET_SAMPLES)/wmavoice/streaming_CBR-19K.wma
-fate-wmavoice-19k: REF = $(SAMPLES)/wmavoice/streaming_CBR-19K.pcm
+fate-wmavoice-19k: REF = $(SAMPLES)/wmavoice/streaming_CBR-19K_ref.pcm
+fate-wmavoice-19k: CMP_TARGET = 689.33
 fate-wmavoice-19k: FUZZ = 3
 
 $(FATE_WMAVOICE-yes): CMP = stddev

@@ -42,8 +42,6 @@
 #include "acelp_vectors.h"
 #include "acelp_filters.h"
 #include "lsp.h"
-#include "dct.h"
-#include "rdft.h"
 #include "sinewin.h"
 
 #define MAX_BLOCKS           8   ///< maximum number of blocks per frame
@@ -266,8 +264,8 @@ typedef struct WMAVoiceContext {
      */
     AVTXContext *rdft, *irdft;    ///< contexts for FFT-calculation in the
     av_tx_fn rdft_fn, irdft_fn;   ///< postfilter (for denoise filter)
-    DCTContext dct, dst;          ///< contexts for phase shift (in Hilbert
-                                  ///< transform, part of postfilter)
+    AVTXContext *dct, *dst;       ///< contexts for phase shift (in Hilbert
+    av_tx_fn dct_fn, dst_fn;      ///< transform, part of postfilter)
     float sin[511], cos[511];     ///< 8-bit cosine/sine windows over [-pi,pi]
                                   ///< range
     float postfilter_agc;         ///< gain control memory, used in
@@ -391,15 +389,21 @@ static av_cold int wmavoice_decode_init(AVCodecContext *ctx)
     if (s->do_apf) {
         float scale = 1.0f;
 
-        if ((ret = ff_dct_init (&s->dct,   6,    DCT_I)) < 0 ||
-            (ret = ff_dct_init (&s->dst,   6,    DST_I)) < 0)
-            return ret;
-
         ret = av_tx_init(&s->rdft, &s->rdft_fn, AV_TX_FLOAT_RDFT, 0, 1 << 7, &scale, 0);
         if (ret < 0)
             return ret;
 
         ret = av_tx_init(&s->irdft, &s->irdft_fn, AV_TX_FLOAT_RDFT, 1, 1 << 7, &scale, 0);
+        if (ret < 0)
+            return ret;
+
+        scale = 1.0 / (1 << 6);
+        ret = av_tx_init(&s->dct, &s->dct_fn, AV_TX_FLOAT_DCT_I, 0, 1 << 6, &scale, 0);
+        if (ret < 0)
+            return ret;
+
+        scale = 1.0 / (1 << 6);
+        ret = av_tx_init(&s->dst, &s->dst_fn, AV_TX_FLOAT_DST_I, 0, 1 << 6, &scale, 0);
         if (ret < 0)
             return ret;
 
@@ -612,6 +616,7 @@ static void calc_input_response(WMAVoiceContext *s, float *lpcs_src,
     float irange, angle_mul, gain_mul, range, sq;
     LOCAL_ALIGNED_32(float, coeffs, [0x82]);
     LOCAL_ALIGNED_32(float, lpcs, [0x82]);
+    LOCAL_ALIGNED_32(float, lpcs_dct, [0x82]);
     int n, idx;
 
     memcpy(coeffs, coeffs_dst, 0x82*sizeof(float));
@@ -662,8 +667,8 @@ static void calc_input_response(WMAVoiceContext *s, float *lpcs_src,
      * is a sine input) by doing a phase shift (in theory, H(sin())=cos()).
      * Hilbert_Transform(RDFT(x)) = Laplace_Transform(x), which calculates the
      * "moment" of the LPCs in this filter. */
-    s->dct.dct_calc(&s->dct, lpcs);
-    s->dst.dct_calc(&s->dst, lpcs);
+    s->dct_fn(s->dct, lpcs_dct, lpcs, sizeof(float));
+    s->dst_fn(s->dst, lpcs, lpcs_dct, sizeof(float));
 
     /* Split out the coefficient indexes into phase/magnitude pairs */
     idx = 255 + av_clip(lpcs[64],               -255, 255);
@@ -2003,8 +2008,8 @@ static av_cold int wmavoice_decode_end(AVCodecContext *ctx)
     if (s->do_apf) {
         av_tx_uninit(&s->rdft);
         av_tx_uninit(&s->irdft);
-        ff_dct_end(&s->dct);
-        ff_dct_end(&s->dst);
+        av_tx_uninit(&s->dct);
+        av_tx_uninit(&s->dst);
     }
 
     return 0;
