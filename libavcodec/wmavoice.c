@@ -31,6 +31,7 @@
 #include "libavutil/float_dsp.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/thread.h"
+#include "libavutil/tx.h"
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "decode.h"
@@ -263,8 +264,8 @@ typedef struct WMAVoiceContext {
      * smoothing and so on, and context variables for FFT/iFFT.
      * @{
      */
-    RDFTContext rdft, irdft;      ///< contexts for FFT-calculation in the
-                                  ///< postfilter (for denoise filter)
+    AVTXContext *rdft, *irdft;    ///< contexts for FFT-calculation in the
+    av_tx_fn rdft_fn, irdft_fn;   ///< postfilter (for denoise filter)
     DCTContext dct, dst;          ///< contexts for phase shift (in Hilbert
                                   ///< transform, part of postfilter)
     float sin[511], cos[511];     ///< 8-bit cosine/sine windows over [-pi,pi]
@@ -277,9 +278,9 @@ typedef struct WMAVoiceContext {
                                   ///< by postfilter
     float denoise_filter_cache[MAX_FRAMESIZE];
     int   denoise_filter_cache_size; ///< samples in #denoise_filter_cache
-    DECLARE_ALIGNED(32, float, tilted_lpcs_pf)[0x80];
+    DECLARE_ALIGNED(32, float, tilted_lpcs_pf)[0x82];
                                   ///< aligned buffer for LPC tilting
-    DECLARE_ALIGNED(32, float, denoise_coeffs_pf)[0x80];
+    DECLARE_ALIGNED(32, float, denoise_coeffs_pf)[0x82];
                                   ///< aligned buffer for denoise coefficients
     DECLARE_ALIGNED(32, float, synth_filter_out_buf)[0x80 + MAX_LSPS_ALIGN16];
                                   ///< aligned buffer for postfilter speech
@@ -388,10 +389,18 @@ static av_cold int wmavoice_decode_init(AVCodecContext *ctx)
     s->spillover_bitsize = 3 + av_ceil_log2(ctx->block_align);
     s->do_apf            =    flags & 0x1;
     if (s->do_apf) {
-        if ((ret = ff_rdft_init(&s->rdft,  7,  DFT_R2C)) < 0 ||
-            (ret = ff_rdft_init(&s->irdft, 7, IDFT_C2R)) < 0 ||
-            (ret = ff_dct_init (&s->dct,   6,    DCT_I)) < 0 ||
+        float scale = 1.0f;
+
+        if ((ret = ff_dct_init (&s->dct,   6,    DCT_I)) < 0 ||
             (ret = ff_dct_init (&s->dst,   6,    DST_I)) < 0)
+            return ret;
+
+        ret = av_tx_init(&s->rdft, &s->rdft_fn, AV_TX_FLOAT_RDFT, 0, 1 << 7, &scale, 0);
+        if (ret < 0)
+            return ret;
+
+        ret = av_tx_init(&s->irdft, &s->irdft_fn, AV_TX_FLOAT_RDFT, 1, 1 << 7, &scale, 0);
+        if (ret < 0)
             return ret;
 
         ff_sine_window_init(s->cos, 256);
@@ -596,20 +605,24 @@ static float tilt_factor(const float *lpcs, int n_lpcs)
 /**
  * Derive denoise filter coefficients (in real domain) from the LPCs.
  */
-static void calc_input_response(WMAVoiceContext *s, float *lpcs,
-                                int fcb_type, float *coeffs, int remainder)
+static void calc_input_response(WMAVoiceContext *s, float *lpcs_src,
+                                int fcb_type, float *coeffs_dst, int remainder)
 {
     float last_coeff, min = 15.0, max = -15.0;
     float irange, angle_mul, gain_mul, range, sq;
+    LOCAL_ALIGNED_32(float, coeffs, [0x82]);
+    LOCAL_ALIGNED_32(float, lpcs, [0x82]);
     int n, idx;
 
+    memcpy(coeffs, coeffs_dst, 0x82*sizeof(float));
+
     /* Create frequency power spectrum of speech input (i.e. RDFT of LPCs) */
-    s->rdft.rdft_calc(&s->rdft, lpcs);
+    s->rdft_fn(s->rdft, lpcs, lpcs_src, sizeof(float));
 #define log_range(var, assign) do { \
         float tmp = log10f(assign);  var = tmp; \
         max       = FFMAX(max, tmp); min = FFMIN(min, tmp); \
     } while (0)
-    log_range(last_coeff,  lpcs[1]         * lpcs[1]);
+    log_range(last_coeff,  lpcs[64]         * lpcs[64]);
     for (n = 1; n < 64; n++)
         log_range(lpcs[n], lpcs[n * 2]     * lpcs[n * 2] +
                            lpcs[n * 2 + 1] * lpcs[n * 2 + 1]);
@@ -668,25 +681,25 @@ static void calc_input_response(WMAVoiceContext *s, float *lpcs,
         coeffs[n * 2 + 1] = coeffs[n] * s->sin[idx];
         coeffs[n * 2]     = coeffs[n] * s->cos[idx];
     }
-    coeffs[1] = last_coeff;
+    coeffs[64] = last_coeff;
 
     /* move into real domain */
-    s->irdft.rdft_calc(&s->irdft, coeffs);
+    s->irdft_fn(s->irdft, coeffs_dst, coeffs, sizeof(AVComplexFloat));
 
     /* tilt correction and normalize scale */
-    memset(&coeffs[remainder], 0, sizeof(coeffs[0]) * (128 - remainder));
+    memset(&coeffs_dst[remainder], 0, sizeof(coeffs_dst[0]) * (128 - remainder));
     if (s->denoise_tilt_corr) {
         float tilt_mem = 0;
 
-        coeffs[remainder - 1] = 0;
+        coeffs_dst[remainder - 1] = 0;
         ff_tilt_compensation(&tilt_mem,
-                             -1.8 * tilt_factor(coeffs, remainder - 1),
-                             coeffs, remainder);
+                             -1.8 * tilt_factor(coeffs_dst, remainder - 1),
+                             coeffs_dst, remainder);
     }
-    sq = (1.0 / 64.0) * sqrtf(1 / avpriv_scalarproduct_float_c(coeffs, coeffs,
+    sq = (1.0 / 64.0) * sqrtf(1 / avpriv_scalarproduct_float_c(coeffs_dst, coeffs_dst,
                                                                remainder));
     for (n = 0; n < remainder; n++)
-        coeffs[n] *= sq;
+        coeffs_dst[n] *= sq;
 }
 
 /**
@@ -722,6 +735,8 @@ static void wiener_denoise(WMAVoiceContext *s, int fcb_type,
     int remainder, lim, n;
 
     if (fcb_type != FCB_TYPE_SILENCE) {
+        LOCAL_ALIGNED_32(float, coeffs_f, [0x82]);
+        LOCAL_ALIGNED_32(float, synth_f, [0x82]);
         float *tilted_lpcs = s->tilted_lpcs_pf,
               *coeffs = s->denoise_coeffs_pf, tilt_mem = 0;
 
@@ -742,16 +757,16 @@ static void wiener_denoise(WMAVoiceContext *s, int fcb_type,
         /* apply coefficients (in frequency spectrum domain), i.e. complex
          * number multiplication */
         memset(&synth_pf[size], 0, sizeof(synth_pf[0]) * (128 - size));
-        s->rdft.rdft_calc(&s->rdft, synth_pf);
-        s->rdft.rdft_calc(&s->rdft, coeffs);
-        synth_pf[0] *= coeffs[0];
-        synth_pf[1] *= coeffs[1];
-        for (n = 1; n < 64; n++) {
-            float v1 = synth_pf[n * 2], v2 = synth_pf[n * 2 + 1];
-            synth_pf[n * 2]     = v1 * coeffs[n * 2] - v2 * coeffs[n * 2 + 1];
-            synth_pf[n * 2 + 1] = v2 * coeffs[n * 2] + v1 * coeffs[n * 2 + 1];
+        s->rdft_fn(s->rdft, synth_f, synth_pf, sizeof(float));
+        s->rdft_fn(s->rdft, coeffs_f, coeffs, sizeof(float));
+        synth_f[0] *= coeffs_f[0];
+        synth_f[1] *= coeffs_f[1];
+        for (n = 1; n <= 64; n++) {
+            float v1 = synth_f[n * 2], v2 = synth_f[n * 2 + 1];
+            synth_f[n * 2]     = v1 * coeffs_f[n * 2] - v2 * coeffs_f[n * 2 + 1];
+            synth_f[n * 2 + 1] = v2 * coeffs_f[n * 2] + v1 * coeffs_f[n * 2 + 1];
         }
-        s->irdft.rdft_calc(&s->irdft, synth_pf);
+        s->irdft_fn(s->irdft, synth_pf, synth_f, sizeof(AVComplexFloat));
     }
 
     /* merge filter output with the history of previous runs */
@@ -1986,8 +2001,8 @@ static av_cold int wmavoice_decode_end(AVCodecContext *ctx)
     WMAVoiceContext *s = ctx->priv_data;
 
     if (s->do_apf) {
-        ff_rdft_end(&s->rdft);
-        ff_rdft_end(&s->irdft);
+        av_tx_uninit(&s->rdft);
+        av_tx_uninit(&s->irdft);
         ff_dct_end(&s->dct);
         ff_dct_end(&s->dst);
     }
