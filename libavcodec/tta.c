@@ -342,7 +342,7 @@ static int tta_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             if (s->channels > 1) {
                 int32_t *r = p - 1;
                 for (*p += *r / 2; r > (int32_t*)p - s->channels; r--)
-                    *r = *(r + 1) - *r;
+                    *r = *(r + 1) - (unsigned)*r;
             }
             cur_chan = 0;
             i++;
