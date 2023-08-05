@@ -700,7 +700,7 @@ static int on2avc_reconstruct_channel_ext(On2AVCContext *c, AVFrame *dst, int of
             break;
         case WINDOW_TYPE_EXT5:
             c->wtf(c, buf, in, 512);
-            c->mdct_half_fn(c->mdct, buf + 512, in + 512, sizeof(float));
+            c->mdct_half_fn(c->mdct_half, buf + 512, in + 512, sizeof(float));
             for (i = 0; i < 256; i++) {
                 FFSWAP(float, buf[i + 512], buf[1023 - i]);
             }
