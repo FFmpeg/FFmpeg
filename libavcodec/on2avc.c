@@ -51,9 +51,9 @@ typedef struct On2AVCContext {
     AVCodecContext *avctx;
     AVFloatDSPContext *fdsp;
     AVTXContext *mdct, *mdct_half, *mdct_small;
-    AVTXContext *fft128, *fft256, *fft512, *fft1024;
+    AVTXContext *fft64, *fft128, *fft256, *fft512;
     av_tx_fn mdct_fn, mdct_half_fn, mdct_small_fn;
-    av_tx_fn fft128_fn, fft256_fn, fft512_fn, fft1024_fn;
+    av_tx_fn fft64_fn, fft128_fn, fft256_fn, fft512_fn;
     void (*wtf)(struct On2AVCContext *ctx, float *out, float *in, int size);
 
     int is_av500;
@@ -475,16 +475,16 @@ static void wtf_end_512(On2AVCContext *c, float *out, float *src,
     zero_head_and_tail(tmp1 + 256, 128, 13, 7);
     zero_head_and_tail(tmp1 + 384, 128, 15, 5);
 
-    c->fft128_fn(c->fft128, src +   0, tmp1 +   0, sizeof(float));
-    c->fft128_fn(c->fft128, src + 128, tmp1 + 128, sizeof(float));
-    c->fft128_fn(c->fft128, src + 256, tmp1 + 256, sizeof(float));
-    c->fft128_fn(c->fft128, src + 384, tmp1 + 384, sizeof(float));
+    c->fft64_fn(c->fft64, src +   0, tmp1 +   0, sizeof(float));
+    c->fft64_fn(c->fft64, src + 128, tmp1 + 128, sizeof(float));
+    c->fft64_fn(c->fft64, src + 256, tmp1 + 256, sizeof(float));
+    c->fft64_fn(c->fft64, src + 384, tmp1 + 384, sizeof(float));
 
     combine_fft(src, src + 128, src + 256, src + 384, tmp1,
                 ff_on2avc_ctab_1, ff_on2avc_ctab_2,
                 ff_on2avc_ctab_3, ff_on2avc_ctab_4, 512, 2);
 
-    c->fft512_fn(c->fft512, src, tmp1, sizeof(float));
+    c->fft256_fn(c->fft256, src, tmp1, sizeof(float));
 
     pretwiddle(&tmp0[  0], src, 512, 84, 4, 16, 4, ff_on2avc_tabs_20_84_1);
     pretwiddle(&tmp0[128], src, 512, 84, 4, 16, 4, ff_on2avc_tabs_20_84_2);
@@ -503,16 +503,16 @@ static void wtf_end_1024(On2AVCContext *c, float *out, float *src,
     zero_head_and_tail(tmp1 + 512, 256, 13, 7);
     zero_head_and_tail(tmp1 + 768, 256, 15, 5);
 
-    c->fft256_fn(c->fft256, src +   0, tmp1 +   0, sizeof(float));
-    c->fft256_fn(c->fft256, src + 256, tmp1 + 256, sizeof(float));
-    c->fft256_fn(c->fft256, src + 512, tmp1 + 512, sizeof(float));
-    c->fft256_fn(c->fft256, src + 768, tmp1 + 768, sizeof(float));
+    c->fft128_fn(c->fft128, src +   0, tmp1 +   0, sizeof(float));
+    c->fft128_fn(c->fft128, src + 256, tmp1 + 256, sizeof(float));
+    c->fft128_fn(c->fft128, src + 512, tmp1 + 512, sizeof(float));
+    c->fft128_fn(c->fft128, src + 768, tmp1 + 768, sizeof(float));
 
     combine_fft(src, src + 256, src + 512, src + 768, tmp1,
                 ff_on2avc_ctab_1, ff_on2avc_ctab_2,
                 ff_on2avc_ctab_3, ff_on2avc_ctab_4, 1024, 1);
 
-    c->fft1024_fn(c->fft1024, src, tmp1, sizeof(float));
+    c->fft512_fn(c->fft512, src, tmp1, sizeof(float));
 
     pretwiddle(&tmp0[  0], src, 1024, 84, 4, 16, 4, ff_on2avc_tabs_20_84_1);
     pretwiddle(&tmp0[256], src, 1024, 84, 4, 16, 4, ff_on2avc_tabs_20_84_2);
@@ -956,13 +956,13 @@ static av_cold int on2avc_decode_init(AVCodecContext *avctx)
     if ((ret = av_tx_init(&c->mdct_small, &c->mdct_small_fn, AV_TX_FLOAT_MDCT, 1, 128, &scale, 0)) < 0)
         return ret;
 
-    if ((ret = av_tx_init(&c->fft1024, &c->fft1024_fn, AV_TX_FLOAT_FFT, 1, 1024, NULL, 0)) < 0)
-        return ret;
     if ((ret = av_tx_init(&c->fft512, &c->fft512_fn, AV_TX_FLOAT_FFT, 1, 512, NULL, 0)) < 0)
         return ret;
-    if ((ret = av_tx_init(&c->fft256, &c->fft256_fn, AV_TX_FLOAT_FFT, 0, 256, NULL, 0)) < 0)
+    if ((ret = av_tx_init(&c->fft256, &c->fft256_fn, AV_TX_FLOAT_FFT, 1, 256, NULL, 0)) < 0)
         return ret;
     if ((ret = av_tx_init(&c->fft128, &c->fft128_fn, AV_TX_FLOAT_FFT, 0, 128, NULL, 0)) < 0)
+        return ret;
+    if ((ret = av_tx_init(&c->fft64, &c->fft64_fn, AV_TX_FLOAT_FFT, 0, 64, NULL, 0)) < 0)
         return ret;
 
     c->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
@@ -998,10 +998,10 @@ static av_cold int on2avc_decode_close(AVCodecContext *avctx)
     av_tx_uninit(&c->mdct);
     av_tx_uninit(&c->mdct_half);
     av_tx_uninit(&c->mdct_small);
+    av_tx_uninit(&c->fft64);
     av_tx_uninit(&c->fft128);
     av_tx_uninit(&c->fft256);
     av_tx_uninit(&c->fft512);
-    av_tx_uninit(&c->fft1024);
 
     av_freep(&c->fdsp);
 
