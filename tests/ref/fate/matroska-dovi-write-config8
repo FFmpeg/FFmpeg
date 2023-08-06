@@ -1,5 +1,5 @@
-09ff3c0a038eec0cdf4773929b24f41a *tests/data/fate/matroska-dovi-write-config8.matroska
-3600606 tests/data/fate/matroska-dovi-write-config8.matroska
+80d2b23a6f27ab28b02a907b37b9649c *tests/data/fate/matroska-dovi-write-config8.matroska
+3600620 tests/data/fate/matroska-dovi-write-config8.matroska
 #extradata 0:      551, 0xa18acf66
 #extradata 1:        2, 0x00340022
 #tb 0: 1/1000
@@ -45,6 +45,15 @@
 1,        372,        372,       23,      479, 0x44dce967
 1,        395,        395,       23,      439, 0x7d85e4c9
 [STREAM]
+[SIDE_DATA]
+side_data_type=Display Matrix
+displaymatrix=
+00000000:            0       65536           0
+00000001:       -65536           0           0
+00000002:            0           0  1073741824
+
+rotation=-90
+[/SIDE_DATA]
 [SIDE_DATA]
 side_data_type=DOVI configuration record
 dv_version_major=1

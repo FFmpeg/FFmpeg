@@ -1403,24 +1403,74 @@ static void mkv_write_video_color(EbmlWriter *writer, const AVStream *st,
 }
 
 #define MAX_VIDEO_PROJECTION_ELEMS 6
-static void mkv_write_video_projection(AVFormatContext *s, EbmlWriter *writer,
-                                       const AVStream *st, uint8_t private[])
+static void mkv_handle_rotation(void *logctx, const AVStream *st,
+                                double *yaw, double *roll)
+{
+    const int32_t *matrix =
+        (const int32_t*)av_stream_get_side_data(st, AV_PKT_DATA_DISPLAYMATRIX, NULL);
+
+    if (!matrix)
+        return;
+
+    /* Check whether this is an affine transformation */
+    if (matrix[2] || matrix[5])
+        goto ignore;
+
+    /* This together with the checks below test whether
+     * the upper-left 2x2 matrix is nonsingular. */
+    if (!matrix[0] && !matrix[1])
+        goto ignore;
+
+    /* We ignore the translation part of the matrix (matrix[6] and matrix[7])
+     * as well as any scaling, i.e. we only look at the upper left 2x2 matrix.
+     * We only accept matrices that are an exact multiple of an orthogonal one.
+     * Apart from the multiple, every such matrix can be obtained by
+     * potentially flipping in the x-direction (corresponding to yaw = 180)
+     * followed by a rotation of (say) an angle phi in the counterclockwise
+     * direction. The upper-left 2x2 matrix then looks like this:
+     *         | (+/-)cos(phi) (-/+)sin(phi) |
+     * scale * |                             |
+     *         |      sin(phi)      cos(phi) |
+     * The first set of signs in the first row apply in case of no flipping,
+     * the second set applies in case of flipping. */
+
+    /* The casts to int64_t are needed because -INT32_MIN doesn't fit
+     * in an int32_t. */
+    if (matrix[0] == matrix[4] && -(int64_t)matrix[1] == matrix[3]) {
+        /* No flipping case */
+        *yaw = 0;
+    } else if (-(int64_t)matrix[0] == matrix[4] && matrix[1] == matrix[3]) {
+        /* Horizontal flip */
+        *yaw = 180;
+    } else {
+ignore:
+        av_log(logctx, AV_LOG_INFO, "Ignoring display matrix indicating "
+               "non-orthogonal transformation.\n");
+        return;
+    }
+    *roll = 180 / M_PI * atan2(matrix[3], matrix[4]);
+
+    /* We do not write a ProjectionType element indicating "rectangular",
+     * because this is the default value. */
+}
+
+static int mkv_handle_spherical(void *logctx, EbmlWriter *writer,
+                                const AVStream *st, uint8_t private[],
+                                double *yaw, double *pitch, double *roll)
 {
     const AVSphericalMapping *spherical =
         (const AVSphericalMapping *)av_stream_get_side_data(st, AV_PKT_DATA_SPHERICAL,
                                                             NULL);
 
     if (!spherical)
-        return;
+        return 0;
 
     if (spherical->projection != AV_SPHERICAL_EQUIRECTANGULAR      &&
         spherical->projection != AV_SPHERICAL_EQUIRECTANGULAR_TILE &&
         spherical->projection != AV_SPHERICAL_CUBEMAP) {
-        av_log(s, AV_LOG_WARNING, "Unknown projection type\n");
-        return;
+        av_log(logctx, AV_LOG_WARNING, "Unknown projection type\n");
+        return 0;
     }
-
-    ebml_writer_open_master(writer, MATROSKA_ID_VIDEOPROJECTION);
 
     switch (spherical->projection) {
     case AV_SPHERICAL_EQUIRECTANGULAR:
@@ -1455,17 +1505,33 @@ static void mkv_write_video_projection(AVFormatContext *s, EbmlWriter *writer,
         av_assert0(0);
     }
 
-    if (spherical->yaw)
-        ebml_writer_add_float(writer, MATROSKA_ID_VIDEOPROJECTIONPOSEYAW,
-                              (double) spherical->yaw   / (1 << 16));
-    if (spherical->pitch)
-        ebml_writer_add_float(writer, MATROSKA_ID_VIDEOPROJECTIONPOSEPITCH,
-                       (double) spherical->pitch / (1 << 16));
-    if (spherical->roll)
-        ebml_writer_add_float(writer, MATROSKA_ID_VIDEOPROJECTIONPOSEROLL,
-                       (double) spherical->roll  / (1 << 16));
+    *yaw   = (double) spherical->yaw   / (1 << 16);
+    *pitch = (double) spherical->pitch / (1 << 16);
+    *roll  = (double) spherical->roll  / (1 << 16);
 
-    ebml_writer_close_master(writer);
+    return 1; /* Projection included */
+}
+
+static void mkv_write_video_projection(void *logctx, EbmlWriter *wr,
+                                       const AVStream *st, uint8_t private[])
+{
+    double yaw = 0, pitch = 0, roll = 0;
+    int ret;
+
+    ebml_writer_open_master(wr, MATROSKA_ID_VIDEOPROJECTION);
+
+    ret = mkv_handle_spherical(logctx, wr, st, private, &yaw, &pitch, &roll);
+    if (!ret)
+        mkv_handle_rotation(logctx, st, &yaw, &roll);
+
+    if (yaw)
+        ebml_writer_add_float(wr, MATROSKA_ID_VIDEOPROJECTIONPOSEYAW, yaw);
+    if (pitch)
+        ebml_writer_add_float(wr, MATROSKA_ID_VIDEOPROJECTIONPOSEPITCH, pitch);
+    if (roll)
+        ebml_writer_add_float(wr, MATROSKA_ID_VIDEOPROJECTIONPOSEROLL, roll);
+
+    ebml_writer_close_or_discard_master(wr);
 }
 
 #define MAX_FIELD_ORDER_ELEMS 2
