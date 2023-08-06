@@ -108,7 +108,9 @@ int av_channel_name(char *buf, size_t buf_size, enum AVChannel channel_id)
     av_bprint_init_for_buffer(&bp, buf, buf_size);
     av_channel_name_bprint(&bp, channel_id);
 
-    return bp.len;
+    if (bp.len >= INT_MAX)
+        return AVERROR(ERANGE);
+    return bp.len + 1;
 }
 
 void av_channel_description_bprint(AVBPrint *bp, enum AVChannel channel_id)
@@ -135,7 +137,9 @@ int av_channel_description(char *buf, size_t buf_size, enum AVChannel channel_id
     av_bprint_init_for_buffer(&bp, buf, buf_size);
     av_channel_description_bprint(&bp, channel_id);
 
-    return bp.len;
+    if (bp.len >= INT_MAX)
+        return AVERROR(ERANGE);
+    return bp.len + 1;
 }
 
 enum AVChannel av_channel_from_string(const char *str)
@@ -789,7 +793,9 @@ int av_channel_layout_describe(const AVChannelLayout *channel_layout,
     if (ret < 0)
         return ret;
 
-    return bp.len;
+    if (bp.len >= INT_MAX)
+        return AVERROR(ERANGE);
+    return bp.len + 1;
 }
 
 enum AVChannel
