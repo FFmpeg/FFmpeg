@@ -720,10 +720,10 @@ int ff_amf_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
         if (!avpkt->data && !avpkt->buf) {
             res_query = ctx->encoder->pVtbl->QueryOutput(ctx->encoder, &data);
             if (data) {
-                query_output_data_flag = 1;
                 // copy data to packet
                 AMFBuffer *buffer;
                 AMFGuid guid = IID_AMFBuffer();
+                query_output_data_flag = 1;
                 data->pVtbl->QueryInterface(data, &guid, (void**)&buffer); // query for buffer interface
                 ret = amf_copy_buffer(avctx, avpkt, buffer);
 
