@@ -18,7 +18,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/channel_layout.c"
+#include <inttypes.h>
+#include <stdio.h>
+#include <string.h>
+
+#include "libavutil/bprint.h"
+#include "libavutil/channel_layout.h"
+#include "libavutil/internal.h"
 #include "libavutil/mem.h"
 
 #define BPRINT_ARGS1(bp, ...)     (bp), __VA_ARGS__
