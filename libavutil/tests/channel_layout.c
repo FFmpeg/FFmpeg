@@ -150,7 +150,7 @@ static void channel_layout_from_string(AVChannelLayout *layout,
 int main(void)
 {
     const AVChannelLayout *playout;
-    AVChannelLayout layout = { 0 };
+    AVChannelLayout layout = { 0 }, layout2 = { 0 };
     AVBPrint bp;
     void *iter = NULL;
     uint64_t mask;
@@ -324,6 +324,15 @@ int main(void)
     CHANNEL_LAYOUT_FROM_STRING("FR+FL@Foo+USR63@Foo");
     printf("With \"FR+FL@Foo+USR63@Foo\": %33s\n", bp.str);
 
+    ret = av_channel_layout_copy(&layout2, &layout);
+    if (ret < 0) {
+        printf("Copying channel layout \"FR+FL@Foo+USR63@Foo\" failed; "
+               "ret %d\n", ret);
+    }
+    ret = av_channel_layout_compare(&layout, &layout2);
+    if (ret)
+        printf("Channel layout and its copy compare unequal; ret: %d\n", ret);
+
     printf("\nTesting av_channel_layout_index_from_string\n");
     CHANNEL_LAYOUT_INDEX_FROM_STRING("FR");
     printf("On \"FR+FL@Foo+USR63@Foo\" layout with \"FR\": %18d\n", ret);
@@ -425,6 +434,7 @@ int main(void)
     printf("On \"ambisonic 2+stereo\" layout with AV_CH_LAYOUT_QUAD:    0x%"PRIx64"\n", mask);
 
     av_channel_layout_uninit(&layout);
+    av_channel_layout_uninit(&layout2);
     av_bprint_finalize(&bp, NULL);
 
     return 0;
