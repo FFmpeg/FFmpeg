@@ -3426,15 +3426,11 @@ static const AVCodecTag additional_audio_tags[] = {
     { AV_CODEC_ID_QDMC,      0xFFFFFFFF },
     { AV_CODEC_ID_QDM2,      0xFFFFFFFF },
     { AV_CODEC_ID_RA_144,    0xFFFFFFFF },
-    { AV_CODEC_ID_RA_288,    0xFFFFFFFF },
-    { AV_CODEC_ID_COOK,      0xFFFFFFFF },
     { AV_CODEC_ID_TRUEHD,    0xFFFFFFFF },
     { AV_CODEC_ID_NONE,      0xFFFFFFFF }
 };
 
 static const AVCodecTag additional_video_tags[] = {
-    { AV_CODEC_ID_RV10,      0xFFFFFFFF },
-    { AV_CODEC_ID_RV20,      0xFFFFFFFF },
     { AV_CODEC_ID_RV30,      0xFFFFFFFF },
     { AV_CODEC_ID_NONE,      0xFFFFFFFF }
 };
