@@ -31,6 +31,12 @@ fate-matroska-zlib-decompression: CMD = framecrc -i $(TARGET_SAMPLES)/mkv/subtit
 FATE_MATROSKA-$(CONFIG_MATROSKA_DEMUXER) += fate-matroska-lzo-decompression
 fate-matroska-lzo-decompression: CMD = framecrc -i $(TARGET_SAMPLES)/mkv/lzo.mka -c copy
 
+# This tests that the ALAC extradata is correctly transformed upon remuxing.
+# It also tests setting the AV_DISPOSITION_COMMENT disposition as well as
+# writing creation_time metadata.
+FATE_MATROSKA_FFMPEG_FFPROBE-$(call REMUX, MATROSKA) += fate-matroska-alac-remux
+fate-matroska-alac-remux: CMD = transcode mov $(TARGET_SAMPLES)/lossless-audio/inside.m4a matroska "-map 0:a -c copy -metadata creation_time=2009-01-25T16:08:26.000000Z -disposition +comment" "-c copy" "-show_entries format_tags:stream_disposition"
+
 # This tests that the matroska demuxer correctly propagates
 # the channel layout contained in vorbis comments in the CodecPrivate
 # of flac tracks. It also tests header removal compression.
