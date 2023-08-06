@@ -2709,8 +2709,8 @@ static int mkv_write_block(void *logctx, MatroskaMuxContext *mkv,
     size_t side_data_size;
     uint64_t additional_id;
     unsigned track_number = track->track_num;
+    EBML_WRITER(12);
     int ret;
-    EBML_WRITER(13);
 
     mkv->cur_block.track  = track;
     mkv->cur_block.pkt    = pkt;
