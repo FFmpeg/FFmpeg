@@ -144,6 +144,9 @@ void av_bprint_init(AVBPrint *buf, unsigned size_init, unsigned size_max);
  * Init a print buffer using a pre-existing buffer.
  *
  * The buffer will not be reallocated.
+ * In case size equals zero, the AVBPrint will be initialized to use
+ * the internal buffer as if using AV_BPRINT_SIZE_COUNT_ONLY with
+ * av_bprint_init().
  *
  * @param buf     buffer structure to init
  * @param buffer  byte buffer to use for the string data

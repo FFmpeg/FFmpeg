@@ -84,6 +84,11 @@ void av_bprint_init(AVBPrint *buf, unsigned size_init, unsigned size_max)
 
 void av_bprint_init_for_buffer(AVBPrint *buf, char *buffer, unsigned size)
 {
+    if (size == 0) {
+        av_bprint_init(buf, 0, AV_BPRINT_SIZE_COUNT_ONLY);
+        return;
+    }
+
     buf->str      = buffer;
     buf->len      = 0;
     buf->size     = size;
