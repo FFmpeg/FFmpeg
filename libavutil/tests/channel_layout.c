@@ -19,32 +19,104 @@
  */
 
 #include "libavutil/channel_layout.c"
+#include "libavutil/mem.h"
+
+#define BPRINT_ARGS1(bp, ...)     (bp), __VA_ARGS__
+#define BPRINT_ARGS0(bp, ...)     __VA_ARGS__, (bp)
+#define ORD_ARGS1(str, size, ...) (str), (size), __VA_ARGS__
+#define ORD_ARGS0(str, size, ...) __VA_ARGS__, (str), (size)
+
+// This macro presumes the AVBPrint to have been cleared before usage.
+#define CMP_BPRINT_AND_NONBPRINT(bp, func_name, ARG_ORDER, ...) do {       \
+    char *str;                                                             \
+    int size;                                                              \
+    func_name ## _bprint(BPRINT_ARGS ## ARG_ORDER((bp), __VA_ARGS__));     \
+    if (strlen((bp)->str) != (bp)->len) {                                  \
+        printf("strlen of AVBPrint-string returned by "#func_name"_bprint" \
+               " differs from AVBPrint.len: %"SIZE_SPECIFIER" vs. %u\n",   \
+               strlen((bp)->str), (bp)->len);                              \
+        break;                                                             \
+    }                                                                      \
+    size = func_name(ORD_ARGS ## ARG_ORDER(NULL, 0, __VA_ARGS__));         \
+    if (size <= 0) {                                                       \
+        printf(#func_name " returned %d\n", size);                         \
+        break;                                                             \
+    }                                                                      \
+    if ((bp)->len != size - 1) {                                           \
+        printf("Return value %d of " #func_name " inconsistent with length"\
+               " %u obtained from corresponding bprint version\n",         \
+               size, (bp)->len);                                           \
+        break;                                                             \
+    }                                                                      \
+    str = av_malloc(size);                                                 \
+    if (!str) {                                                            \
+        printf("string of size %d could not be allocated.\n", size);       \
+        break;                                                             \
+    }                                                                      \
+    size = func_name(ORD_ARGS ## ARG_ORDER(str, size, __VA_ARGS__));       \
+    if (size <= 0 || (bp)->len != size - 1) {                              \
+        printf("Return value %d of " #func_name " inconsistent with length"\
+               " %d obtained in first pass.\n", size, (bp)->len);          \
+        av_free(str);                                                      \
+        break;                                                             \
+    }                                                                      \
+    if (strcmp(str, (bp)->str)) {                                          \
+        printf("Ordinary and _bprint versions of "#func_name" disagree: "  \
+               "'%s' vs. '%s'\n", str, (bp)->str);                         \
+        av_free(str);                                                      \
+        break;                                                             \
+    }                                                                      \
+    av_free(str);                                                          \
+    } while (0)
+
+
+static void channel_name(AVBPrint *bp, enum AVChannel channel)
+{
+    av_bprint_clear(bp);
+    CMP_BPRINT_AND_NONBPRINT(bp, av_channel_name, 1, channel);
+}
+
+static void channel_description(AVBPrint *bp, enum AVChannel channel)
+{
+    av_bprint_clear(bp);
+    CMP_BPRINT_AND_NONBPRINT(bp, av_channel_description, 1, channel);
+}
+
+static void channel_layout_from_mask(AVChannelLayout *layout,
+                                     AVBPrint *bp, uint64_t channel_layout)
+{
+    av_channel_layout_uninit(layout);
+    av_bprint_clear(bp);
+    if (!av_channel_layout_from_mask(layout, channel_layout) &&
+         av_channel_layout_check(layout))
+        CMP_BPRINT_AND_NONBPRINT(bp, av_channel_layout_describe, 0, layout);
+    else
+        av_bprintf(bp, "fail");
+}
+
+static void channel_layout_from_string(AVChannelLayout *layout,
+                                       AVBPrint *bp, const char *channel_layout)
+{
+    av_channel_layout_uninit(layout);
+    av_bprint_clear(bp);
+    if (!av_channel_layout_from_string(layout, channel_layout) &&
+         av_channel_layout_check(layout))
+        CMP_BPRINT_AND_NONBPRINT(bp, av_channel_layout_describe, 0, layout);
+    else
+        av_bprintf(bp, "fail");
+}
 
 #define CHANNEL_NAME(x)                                                    \
-    av_bprint_clear(&bp);                                                  \
-    av_channel_name_bprint(&bp, x);
+    channel_name(&bp, (x));
 
 #define CHANNEL_DESCRIPTION(x)                                             \
-    av_bprint_clear(&bp);                                                  \
-    av_channel_description_bprint(&bp, x);
+    channel_description(&bp, (x));
 
 #define CHANNEL_LAYOUT_FROM_MASK(x)                                        \
-    av_channel_layout_uninit(&layout);                                     \
-    av_bprint_clear(&bp);                                                  \
-    if (!av_channel_layout_from_mask(&layout, x) &&                        \
-         av_channel_layout_check(&layout))                                 \
-        av_channel_layout_describe_bprint(&layout, &bp);                   \
-    else                                                                   \
-        av_bprintf(&bp, "fail");
+    channel_layout_from_mask(&layout, &bp, (x));
 
 #define CHANNEL_LAYOUT_FROM_STRING(x)                                      \
-    av_channel_layout_uninit(&layout);                                     \
-    av_bprint_clear(&bp);                                                  \
-    if (!av_channel_layout_from_string(&layout, x) &&                      \
-         av_channel_layout_check(&layout))                                 \
-        av_channel_layout_describe_bprint(&layout, &bp);                   \
-    else                                                                   \
-        av_bprintf(&bp, "fail");
+    channel_layout_from_string(&layout, &bp, (x));
 
 #define CHANNEL_LAYOUT_CHANNEL_FROM_INDEX(x)                               \
     ret = av_channel_layout_channel_from_index(&layout, x);                \
