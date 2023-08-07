@@ -34,6 +34,9 @@ typedef struct AVTXWrapper {
     ptrdiff_t stride;
     int len;
     int inv;
+
+    float *tmp;
+    int out_of_place;
 } AVTXWrapper;
 
 /* FFT */
@@ -179,29 +182,66 @@ av_cold void av_rdft_end(RDFTContext *s)
     }
 }
 
-#if CONFIG_DCT
-
 DCTContext *av_dct_init(int nbits, enum DCTTransformType inverse)
 {
-    DCTContext *s = av_malloc(sizeof(*s));
+    int ret;
+    const float scale_map[] = {
+        [DCT_II] = 0.5f,
+        [DCT_III] = 1.0f / (1 << nbits),
+        [DCT_I] = 0.5f,
+        [DST_I] = 2.0f,
+    };
+    static const enum AVTXType type_map[] = {
+        [DCT_II] = AV_TX_FLOAT_DCT,
+        [DCT_III] = AV_TX_FLOAT_DCT,
+        [DCT_I] = AV_TX_FLOAT_DCT_I,
+        [DST_I] = AV_TX_FLOAT_DST_I,
+    };
 
-    if (s && ff_dct_init(s, nbits, inverse))
-        av_freep(&s);
+    AVTXWrapper *s = av_malloc(sizeof(*s));
+    if (!s)
+        return NULL;
 
-    return s;
+    s->len = (1 << nbits);
+    s->out_of_place = (inverse == DCT_I) || (inverse == DST_I);
+
+    ret = av_tx_init(&s->ctx, &s->fn, type_map[inverse],
+                     (inverse == DCT_III), 1 << (nbits - (inverse == DCT_III)),
+                     &scale_map[inverse], s->out_of_place ? 0 : AV_TX_INPLACE);
+    if (ret < 0) {
+        av_free(s);
+        return NULL;
+    }
+
+    if (s->out_of_place) {
+        s->tmp = av_malloc((1 << (nbits + 1))*sizeof(float));
+        if (!s->tmp) {
+            av_tx_uninit(&s->ctx);
+            av_free(s);
+            return NULL;
+        }
+    }
+
+    return (DCTContext *)s;
 }
 
 void av_dct_calc(DCTContext *s, FFTSample *data)
 {
-    s->dct_calc(s, data);
+    AVTXWrapper *w = (AVTXWrapper *)s;
+    if (w->out_of_place) {
+        memcpy(w->tmp, data, w->len*sizeof(float));
+        w->fn(w->ctx, (void *)data, w->tmp, sizeof(float));
+    } else {
+        w->fn(w->ctx, data, (void *)data, sizeof(float));
+    }
 }
 
 av_cold void av_dct_end(DCTContext *s)
 {
     if (s) {
-        ff_dct_end(s);
-        av_free(s);
+        AVTXWrapper *w = (AVTXWrapper *)s;
+        av_tx_uninit(&w->ctx);
+        av_free(w->tmp);
+        av_free(w);
     }
 }
-
-#endif /* CONFIG_DCT */
