@@ -298,7 +298,7 @@ static int decode_2slp(AVCodecContext *avctx,
             return AVERROR_EOF;
         case 8:
             s->nb_samples = get_urice(gb, 8);
-            if (s->nb_samples > 570) {
+            if (s->nb_samples > 570U) {
                 s->nb_samples = 570;
                 return AVERROR_INVALIDDATA;
             }
