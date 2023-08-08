@@ -1679,7 +1679,7 @@ static void mkv_write_blockadditionmapping(AVFormatContext *s, MatroskaMuxContex
         // We can't know at this point if there will be a block with BlockAdditions, so
         // we either write the default value here, or a void element. Either of them will
         // be overwritten when finishing the track.
-        put_ebml_uint(mkv->track.bc, MATROSKA_ID_TRACKMAXBLKADDID, 0);
+        put_ebml_uint(pb, MATROSKA_ID_TRACKMAXBLKADDID, 0);
         // Similarly, reserve space for an eventual HDR10+ ITU T.35 metadata BlockAdditionMapping.
         put_ebml_void(pb, 3 /* BlockAdditionMapping */
                         + 4 /* BlockAddIDValue */
