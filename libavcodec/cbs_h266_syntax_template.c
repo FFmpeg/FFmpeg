@@ -3226,17 +3226,16 @@ static int FUNC(slice_header) (CodedBitstreamContext *ctx, RWContext *rw,
             } else {
                 infer(sh_collocated_ref_idx, 0);
             }
-            if (!pps->pps_wp_info_in_ph_flag &&
-                ((pps->pps_weighted_pred_flag &&
-                  current->sh_slice_type == VVC_SLICE_TYPE_P) ||
-                 (pps->pps_weighted_bipred_flag &&
-                  current->sh_slice_type == VVC_SLICE_TYPE_B))) {
-                CHECK(FUNC(pred_weight_table) (ctx, rw, sps, pps, ref_pic_lists,
-                                               current->num_ref_idx_active,
-                                               &current->sh_pred_weight_table));
-            }
         }
-
+        if (!pps->pps_wp_info_in_ph_flag &&
+            ((pps->pps_weighted_pred_flag &&
+            current->sh_slice_type == VVC_SLICE_TYPE_P) ||
+            (pps->pps_weighted_bipred_flag &&
+            current->sh_slice_type == VVC_SLICE_TYPE_B))) {
+            CHECK(FUNC(pred_weight_table) (ctx, rw, sps, pps, ref_pic_lists,
+                                           current->num_ref_idx_active,
+                                           &current->sh_pred_weight_table));
+        }
     }
     qp_bd_offset = 6 * sps->sps_bitdepth_minus8;
     if (!pps->pps_qp_delta_info_in_ph_flag)
