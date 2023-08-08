@@ -828,6 +828,9 @@ typedef struct  H266RawSliceHeader {
     uint8_t  sh_entry_offset_len_minus1;
     uint32_t sh_entry_point_offset_minus1[VVC_MAX_ENTRY_POINTS];
 
+    // derived values
+    uint32_t num_entry_points;              ///< NumEntryPoints
+
 } H266RawSliceHeader;
 
 typedef struct H266RawSlice {

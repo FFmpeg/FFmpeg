@@ -3374,8 +3374,9 @@ static int FUNC(slice_header) (CodedBitstreamContext *ctx, RWContext *rw,
         for (i = 0; i < current->sh_slice_header_extension_length; i++)
             us(8, sh_slice_header_extension_data_byte[i], 0x00, 0xff, 1, i);
     }
+
+    current->num_entry_points = 0;
     if (sps->sps_entry_point_offsets_present_flag) {
-        int num_entry_points = 0;
         uint8_t entropy_sync = sps->sps_entropy_coding_sync_enabled_flag;
         int height;
         if (pps->pps_rect_slice_flag) {
@@ -3392,7 +3393,7 @@ static int FUNC(slice_header) (CodedBitstreamContext *ctx, RWContext *rw,
             else
                 height = pps->pps_slice_height_in_tiles_minus1[slice_idx] + 1;
 
-            num_entry_points = width_in_tiles * height;
+            current->num_entry_points = width_in_tiles * height;
         } else {
             int tile_idx;
             int tile_y;
@@ -3402,18 +3403,18 @@ static int FUNC(slice_header) (CodedBitstreamContext *ctx, RWContext *rw,
                  current->sh_num_tiles_in_slice_minus1; tile_idx++) {
                 tile_y = tile_idx / pps->num_tile_rows;
                 height = pps->row_height_val[tile_y];
-                num_entry_points += (entropy_sync ? height : 1);
+                current->num_entry_points += (entropy_sync ? height : 1);
             }
         }
-        num_entry_points--;
-        if (num_entry_points > VVC_MAX_ENTRY_POINTS) {
+        current->num_entry_points--;
+        if (current->num_entry_points > VVC_MAX_ENTRY_POINTS) {
             av_log(ctx->log_ctx, AV_LOG_ERROR, "Too many entry points: "
-                   "%" PRIu16 ".\n", num_entry_points);
+                   "%" PRIu16 ".\n", current->num_entry_points);
             return AVERROR_PATCHWELCOME;
         }
-        if (num_entry_points > 0) {
+        if (current->num_entry_points > 0) {
             ue(sh_entry_offset_len_minus1, 0, 31);
-            for (i = 0; i < num_entry_points; i++) {
+            for (i = 0; i < current->num_entry_points; i++) {
                 ubs(current->sh_entry_offset_len_minus1 + 1,
                     sh_entry_point_offset_minus1[i], 1, i);
             }
