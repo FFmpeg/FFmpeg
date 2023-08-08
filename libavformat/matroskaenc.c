@@ -1831,7 +1831,7 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
 
     if (IS_WEBM(mkv)) {
         const char *codec_id;
-        if (par->codec_type != AVMEDIA_TYPE_SUBTITLE) {
+        if (par->codec_id != AV_CODEC_ID_WEBVTT) {
             for (j = 0; ff_webm_codec_tags[j].id != AV_CODEC_ID_NONE; j++) {
                 if (ff_webm_codec_tags[j].id == par->codec_id) {
                     codec_id = ff_webm_codec_tags[j].str;
@@ -1839,7 +1839,7 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
                     break;
                 }
             }
-        } else if (par->codec_id == AV_CODEC_ID_WEBVTT) {
+        } else {
             if (st->disposition & AV_DISPOSITION_CAPTIONS) {
                 codec_id = "D_WEBVTT/CAPTIONS";
                 native_id = MATROSKA_TRACK_TYPE_SUBTITLE;
