@@ -2709,7 +2709,8 @@ static int mkv_write_block(void *logctx, MatroskaMuxContext *mkv,
                            int keyframe, int64_t ts, uint64_t duration,
                            int force_blockgroup, int64_t relative_packet_pos)
 {
-    uint8_t *side_data, *buf = NULL;
+    uint8_t t35_buf[6 + AV_HDR_PLUS_MAX_PAYLOAD_SIZE];
+    uint8_t *side_data;
     size_t side_data_size;
     uint64_t additional_id;
     unsigned track_number = track->track_num;
@@ -2765,17 +2766,8 @@ static int mkv_write_block(void *logctx, MatroskaMuxContext *mkv,
                                         AV_PKT_DATA_DYNAMIC_HDR10_PLUS,
                                         &side_data_size);
     if (side_data && side_data_size) {
-        uint8_t *payload;
-        size_t payload_size, buf_size;
-        ret = av_dynamic_hdr_plus_to_t35((AVDynamicHDRPlus *)side_data, NULL,
-                                         &payload_size);
-        if (ret < 0)
-            return ret;
-
-        buf_size = payload_size + 6;
-        buf = payload = av_malloc(buf_size);
-        if (!buf)
-            return AVERROR(ENOMEM);
+        uint8_t *payload = t35_buf;
+        size_t payload_size = sizeof(t35_buf) - 6;
 
         bytestream_put_byte(&payload, 0xB5); // country_code
         bytestream_put_be16(&payload, 0x3C); // provider_code
@@ -2785,9 +2777,9 @@ static int mkv_write_block(void *logctx, MatroskaMuxContext *mkv,
         ret = av_dynamic_hdr_plus_to_t35((AVDynamicHDRPlus *)side_data, &payload,
                                          &payload_size);
         if (ret < 0)
-            goto fail;
+            return ret;
 
-        mkv_write_blockadditional(&writer, buf, buf_size,
+        mkv_write_blockadditional(&writer, t35_buf, payload_size + 6,
                                   MATROSKA_BLOCK_ADD_ID_ITU_T_T35);
         track->max_blockaddid = FFMAX(track->max_blockaddid,
                                       MATROSKA_BLOCK_ADD_ID_ITU_T_T35);
@@ -2807,11 +2799,7 @@ static int mkv_write_block(void *logctx, MatroskaMuxContext *mkv,
         ebml_writer_add_sint(&writer, MATROSKA_ID_BLOCKREFERENCE,
                              track->last_timestamp - ts);
 
-    ret = ebml_writer_write(&writer, pb);
-fail:
-    av_free(buf);
-
-    return ret;
+    return ebml_writer_write(&writer, pb);
 }
 
 static int mkv_end_cluster(AVFormatContext *s)
