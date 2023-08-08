@@ -1668,7 +1668,8 @@ static int mkv_write_stereo_mode(AVFormatContext *s, EbmlWriter *writer,
 }
 
 static void mkv_write_blockadditionmapping(AVFormatContext *s, const MatroskaMuxContext *mkv,
-                                           AVIOContext *pb, mkv_track *track, const AVStream *st)
+                                           const AVCodecParameters *par, AVIOContext *pb,
+                                           mkv_track *track, const AVStream *st)
 {
 #if CONFIG_MATROSKA_MUXER
     const AVDOVIDecoderConfigurationRecord *dovi;
@@ -1679,10 +1680,12 @@ static void mkv_write_blockadditionmapping(AVFormatContext *s, const MatroskaMux
         // we either write the default value here, or a void element. Either of them will
         // be overwritten when finishing the track.
         put_ebml_uint(pb, MATROSKA_ID_TRACKMAXBLKADDID, 0);
+        if (par->codec_type == AVMEDIA_TYPE_VIDEO) {
         // Similarly, reserve space for an eventual HDR10+ ITU T.35 metadata BlockAdditionMapping.
         put_ebml_void(pb, 3 /* BlockAdditionMapping */
                         + 4 /* BlockAddIDValue */
                         + 4 /* BlockAddIDType */);
+        }
     }
 
     dovi = (const AVDOVIDecoderConfigurationRecord *)
@@ -2010,7 +2013,7 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
     }
 
     if (!IS_WEBM(mkv))
-        mkv_write_blockadditionmapping(s, mkv, pb, track, st);
+        mkv_write_blockadditionmapping(s, mkv, par, pb, track, st);
 
     if (!IS_WEBM(mkv) || par->codec_id != AV_CODEC_ID_WEBVTT) {
         uint8_t *codecpriv;
@@ -2763,6 +2766,7 @@ static int mkv_write_block(void *logctx, MatroskaMuxContext *mkv,
         track->max_blockaddid = FFMAX(track->max_blockaddid, additional_id);
     }
 
+    if (par->codec_type == AVMEDIA_TYPE_VIDEO) {
     side_data = av_packet_get_side_data(pkt,
                                         AV_PKT_DATA_DYNAMIC_HDR10_PLUS,
                                         &side_data_size);
@@ -2784,6 +2788,7 @@ static int mkv_write_block(void *logctx, MatroskaMuxContext *mkv,
                                   MATROSKA_BLOCK_ADD_ID_ITU_T_T35);
         track->max_blockaddid = FFMAX(track->max_blockaddid,
                                       MATROSKA_BLOCK_ADD_ID_ITU_T_T35);
+    }
     }
 
     ebml_writer_close_or_discard_master(&writer);
