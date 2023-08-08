@@ -3151,17 +3151,21 @@ static int FUNC(slice_header) (CodedBitstreamContext *ctx, RWContext *rw,
         infer(sh_alf_enabled_flag, 0);
     }
 
-    if (ph->ph_lmcs_enabled_flag &&
-        !current->sh_picture_header_in_slice_header_flag)
-        flag(sh_lmcs_used_flag);
-    else
-        infer(sh_lmcs_used_flag, 0);
+    if (current->sh_picture_header_in_slice_header_flag) {
+        infer(sh_lmcs_used_flag, ph->ph_lmcs_enabled_flag);
+        infer(sh_explicit_scaling_list_used_flag,
+            ph->ph_explicit_scaling_list_enabled_flag);
+    } else {
+        if (ph->ph_lmcs_enabled_flag)
+            flag(sh_lmcs_used_flag);
+        else
+            infer(sh_lmcs_used_flag, 0);
 
-    if (ph->ph_explicit_scaling_list_enabled_flag &&
-        !current->sh_picture_header_in_slice_header_flag)
-        flag(sh_explicit_scaling_list_used_flag);
-    else
-        infer(sh_explicit_scaling_list_used_flag, 0);
+        if (ph->ph_explicit_scaling_list_enabled_flag)
+            flag(sh_explicit_scaling_list_used_flag);
+        else
+            infer(sh_explicit_scaling_list_used_flag, 0);
+    }
 
     if (!pps->pps_rpl_info_in_ph_flag &&
         ((nal_unit_type != VVC_IDR_W_RADL &&
