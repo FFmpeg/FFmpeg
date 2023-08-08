@@ -1667,12 +1667,11 @@ static int mkv_write_stereo_mode(AVFormatContext *s, EbmlWriter *writer,
     return 0;
 }
 
-static void mkv_write_blockadditionmapping(AVFormatContext *s, MatroskaMuxContext *mkv,
-                                           AVIOContext *pb, mkv_track *track, AVStream *st)
+static void mkv_write_blockadditionmapping(AVFormatContext *s, const MatroskaMuxContext *mkv,
+                                           AVIOContext *pb, mkv_track *track, const AVStream *st)
 {
 #if CONFIG_MATROSKA_MUXER
-    AVDOVIDecoderConfigurationRecord *dovi = (AVDOVIDecoderConfigurationRecord *)
-                                             av_stream_get_side_data(st, AV_PKT_DATA_DOVI_CONF, NULL);
+    const AVDOVIDecoderConfigurationRecord *dovi;
 
     if (IS_SEEKABLE(s->pb, mkv)) {
         track->blockadditionmapping_offset = avio_tell(pb);
@@ -1686,6 +1685,8 @@ static void mkv_write_blockadditionmapping(AVFormatContext *s, MatroskaMuxContex
                         + 4 /* BlockAddIDType */);
     }
 
+    dovi = (const AVDOVIDecoderConfigurationRecord *)
+           av_stream_get_side_data(st, AV_PKT_DATA_DOVI_CONF, NULL);
     if (dovi && dovi->dv_profile <= 10) {
         ebml_master mapping;
         uint8_t buf[ISOM_DVCC_DVVC_SIZE];
