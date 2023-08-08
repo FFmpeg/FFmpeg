@@ -1984,6 +1984,7 @@ static int FUNC(pps) (CodedBitstreamContext *ctx, RWContext *rw,
                         0, current->row_height_val[tile_y] - 1, 1, i);
                     if (current->pps_num_exp_slices_in_tile[i] == 0) {
                         num_slices_in_tile = 1;
+                        current->slice_height_in_ctus[i] = current->row_height_val[tile_y];
                         slice_top_left_ctu_x[i] = ctu_x;
                         slice_top_left_ctu_y[i] = ctu_y;
                     } else {
