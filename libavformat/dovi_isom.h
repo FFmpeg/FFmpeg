@@ -28,8 +28,9 @@
 
 #define ISOM_DVCC_DVVC_SIZE 24
 
-int ff_isom_parse_dvcc_dvvc(AVFormatContext *s, AVStream *st, const uint8_t *buf_ptr, uint64_t size);
-void ff_isom_put_dvcc_dvvc(AVFormatContext *s, uint8_t out[ISOM_DVCC_DVVC_SIZE],
-                           AVDOVIDecoderConfigurationRecord *dovi);
+int ff_isom_parse_dvcc_dvvc(void *logctx, AVStream *st,
+                            const uint8_t *buf_ptr, uint64_t size);
+void ff_isom_put_dvcc_dvvc(void *logctx, uint8_t out[ISOM_DVCC_DVVC_SIZE],
+                           const AVDOVIDecoderConfigurationRecord *dovi);
 
 #endif /* AVFORMAT_DOVI_ISOM_H */
