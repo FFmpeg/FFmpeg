@@ -2654,11 +2654,43 @@ static int matroska_parse_tracks(AVFormatContext *s)
         }
         sti = ffstream(st);
 
+        if (track->flag_default)
+            st->disposition |= AV_DISPOSITION_DEFAULT;
+        if (track->flag_forced)
+            st->disposition |= AV_DISPOSITION_FORCED;
+        if (track->flag_comment)
+            st->disposition |= AV_DISPOSITION_COMMENT;
+        if (track->flag_hearingimpaired)
+            st->disposition |= AV_DISPOSITION_HEARING_IMPAIRED;
+        if (track->flag_visualimpaired)
+            st->disposition |= AV_DISPOSITION_VISUAL_IMPAIRED;
+        if (track->flag_original.count > 0)
+            st->disposition |= track->flag_original.el.u ? AV_DISPOSITION_ORIGINAL
+                                                         : AV_DISPOSITION_DUB;
+
         if (key_id_base64) {
             /* export encryption key id as base64 metadata tag */
             av_dict_set(&st->metadata, "enc_key_id", key_id_base64,
                         AV_DICT_DONT_STRDUP_VAL);
         }
+
+        if (strcmp(track->language, "und"))
+            av_dict_set(&st->metadata, "language", track->language, 0);
+        av_dict_set(&st->metadata, "title", track->name, 0);
+
+        if (track->time_scale < 0.01) {
+            av_log(matroska->ctx, AV_LOG_WARNING,
+                   "Track TimestampScale too small %f, assuming 1.0.\n",
+                   track->time_scale);
+            track->time_scale = 1.0;
+        }
+        avpriv_set_pts_info(st, 64, matroska->time_scale * track->time_scale,
+                            1000 * 1000 * 1000);    /* 64 bit pts in ns */
+
+        /* convert the delay from ns to the track timebase */
+        track->codec_delay_in_track_tb = av_rescale_q(track->codec_delay,
+                                                      (AVRational){ 1, 1000000000 },
+                                                      st->time_base);
 
         if (!strcmp(track->codec_id, "V_MS/VFW/FOURCC") &&
              track->codec_priv.size >= 40               &&
@@ -2923,39 +2955,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
             av_log(matroska->ctx, AV_LOG_INFO,
                    "Unknown/unsupported AVCodecID %s.\n", track->codec_id);
 
-        if (track->time_scale < 0.01) {
-            av_log(matroska->ctx, AV_LOG_WARNING,
-                   "Track TimestampScale too small %f, assuming 1.0.\n",
-                   track->time_scale);
-            track->time_scale = 1.0;
-        }
-        avpriv_set_pts_info(st, 64, matroska->time_scale * track->time_scale,
-                            1000 * 1000 * 1000);    /* 64 bit pts in ns */
-
-        /* convert the delay from ns to the track timebase */
-        track->codec_delay_in_track_tb = av_rescale_q(track->codec_delay,
-                                          (AVRational){ 1, 1000000000 },
-                                          st->time_base);
-
         st->codecpar->codec_id = codec_id;
-
-        if (strcmp(track->language, "und"))
-            av_dict_set(&st->metadata, "language", track->language, 0);
-        av_dict_set(&st->metadata, "title", track->name, 0);
-
-        if (track->flag_default)
-            st->disposition |= AV_DISPOSITION_DEFAULT;
-        if (track->flag_forced)
-            st->disposition |= AV_DISPOSITION_FORCED;
-        if (track->flag_comment)
-            st->disposition |= AV_DISPOSITION_COMMENT;
-        if (track->flag_hearingimpaired)
-            st->disposition |= AV_DISPOSITION_HEARING_IMPAIRED;
-        if (track->flag_visualimpaired)
-            st->disposition |= AV_DISPOSITION_VISUAL_IMPAIRED;
-        if (track->flag_original.count > 0)
-            st->disposition |= track->flag_original.el.u ? AV_DISPOSITION_ORIGINAL
-                                                         : AV_DISPOSITION_DUB;
 
         if (!st->codecpar->extradata) {
             if (extradata) {
