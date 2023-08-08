@@ -666,6 +666,9 @@ typedef struct H266RawPredWeightTable {
     int8_t   luma_offset_l1[15];
     int8_t   delta_chroma_weight_l1[15][2];
     int16_t  delta_chroma_offset_l1[15][2];
+
+    uint8_t num_weights_l0;         ///< NumWeightsL0
+    uint8_t num_weights_l1;         ///< NumWeightsL1
 } H266RawPredWeightTable;
 
 typedef struct  H266RawPictureHeader {

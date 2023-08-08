@@ -2507,7 +2507,6 @@ static int FUNC(pred_weight_table) (CodedBitstreamContext *ctx, RWContext *rw,
                                     H266RawPredWeightTable *current)
 {
     int err, i, j;
-    uint8_t num_weights_l0, num_weights_l1;
     ue(luma_log2_weight_denom, 0, 7);
     if (sps->sps_chroma_format_idc != 0) {
         se(delta_chroma_log2_weight_denom,
@@ -2516,21 +2515,21 @@ static int FUNC(pred_weight_table) (CodedBitstreamContext *ctx, RWContext *rw,
     } else {
         infer(delta_chroma_log2_weight_denom, 0);
     }
-    if (pps->pps_wp_info_in_ph_flag)
+    if (pps->pps_wp_info_in_ph_flag) {
         ue(num_l0_weights, 0,
            FFMIN(15, ref_lists->rpl_ref_list[0].num_ref_entries));
-    else
-        infer(num_l0_weights, 0);
-    num_weights_l0 = pps->pps_wp_info_in_ph_flag ?
-        current->num_l0_weights : num_ref_idx_active[0];
-    for (i = 0; i < num_weights_l0; i++) {
+        infer(num_weights_l0, current->num_l0_weights);
+    } else {
+        infer(num_weights_l0, num_ref_idx_active[0]);
+    }
+    for (i = 0; i < current->num_weights_l0; i++) {
         flags(luma_weight_l0_flag[i], 1, i);
     }
     if (sps->sps_chroma_format_idc != 0) {
-        for (i = 0; i < num_weights_l0; i++)
+        for (i = 0; i < current->num_weights_l0; i++)
             flags(chroma_weight_l0_flag[i], 1, i);
     }
-    for (i = 0; i < num_weights_l0; i++) {
+    for (i = 0; i < current->num_weights_l0; i++) {
         if (current->luma_weight_l0_flag[i]) {
             ses(delta_luma_weight_l0[i], -128, 127, 1, i);
             ses(luma_offset_l0[i], -128, 127, 1, i);
@@ -2546,28 +2545,26 @@ static int FUNC(pred_weight_table) (CodedBitstreamContext *ctx, RWContext *rw,
         }
     }
 
-    if (pps->pps_weighted_bipred_flag && pps->pps_wp_info_in_ph_flag &&
+    if (pps->pps_weighted_bipred_flag &&
         ref_lists->rpl_ref_list[1].num_ref_entries > 0) {
-        ue(num_l1_weights, 0,
-           FFMIN(15, ref_lists->rpl_ref_list[1].num_ref_entries));
-    }
-    if (!pps->pps_weighted_bipred_flag ||
-        (pps->pps_wp_info_in_ph_flag &&
-         ref_lists->rpl_ref_list[1].num_ref_entries == 0)) {
-        num_weights_l1 = 0;
-    } else if (pps->pps_wp_info_in_ph_flag) {
-        num_weights_l1 = current->num_l1_weights;
+        if (pps->pps_wp_info_in_ph_flag) {
+            ue(num_l1_weights, 0,
+               FFMIN(15, ref_lists->rpl_ref_list[1].num_ref_entries));
+            infer(num_weights_l1, current->num_l1_weights);
+        } else {
+            infer(num_weights_l1, num_ref_idx_active[1]);
+        }
     } else {
-        num_weights_l1 = num_ref_idx_active[1];
+        infer(num_weights_l1, 0);
     }
 
-    for (i = 0; i < num_weights_l1; i++)
+    for (i = 0; i < current->num_weights_l1; i++)
         flags(luma_weight_l1_flag[i], 1, i);
     if (sps->sps_chroma_format_idc != 0) {
-        for (i = 0; i < num_weights_l1; i++)
+        for (i = 0; i < current->num_weights_l1; i++)
             flags(chroma_weight_l1_flag[i], 1, i);
     }
-    for (i = 0; i < num_weights_l1; i++) {
+    for (i = 0; i < current->num_weights_l1; i++) {
         if (current->luma_weight_l1_flag[i]) {
             ses(delta_luma_weight_l1[i], -128, 127, 1, i);
             ses(luma_offset_l1[i], -128, 127, 1, i);
