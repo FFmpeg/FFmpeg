@@ -3200,7 +3200,9 @@ after_cues:
 
     if (mkv->track.bc) {
         // write Tracks master
-        if (!IS_WEBM(mkv))
+        if (!IS_WEBM(mkv)) {
+            AVIOContext *track_bc = mkv->track.bc;
+
             for (unsigned i = 0; i < s->nb_streams; i++) {
                 const mkv_track *track = &mkv->tracks[i];
 
@@ -3210,16 +3212,20 @@ after_cues:
                 // We reserved a single byte to write this value.
                 av_assert0(track->max_blockaddid <= 0xFF);
 
-                avio_seek(mkv->track.bc, track->blockadditionmapping_offset, SEEK_SET);
+                avio_seek(track_bc, track->blockadditionmapping_offset, SEEK_SET);
 
-                put_ebml_uint(mkv->track.bc, MATROSKA_ID_TRACKMAXBLKADDID, track->max_blockaddid);
+                put_ebml_uint(track_bc, MATROSKA_ID_TRACKMAXBLKADDID,
+                              track->max_blockaddid);
                 if (track->max_blockaddid == MATROSKA_BLOCK_ADD_ID_ITU_T_T35) {
-                    ebml_master mapping_master = start_ebml_master(mkv->track.bc, MATROSKA_ID_TRACKBLKADDMAPPING, 8);
-                    put_ebml_uint(mkv->track.bc, MATROSKA_ID_BLKADDIDTYPE, MATROSKA_BLOCK_ADD_ID_TYPE_ITU_T_T35);
-                    put_ebml_uint(mkv->track.bc, MATROSKA_ID_BLKADDIDVALUE, MATROSKA_BLOCK_ADD_ID_ITU_T_T35);
-                    end_ebml_master(mkv->track.bc, mapping_master);
+                    ebml_master mapping_master = start_ebml_master(track_bc, MATROSKA_ID_TRACKBLKADDMAPPING, 8);
+                    put_ebml_uint(track_bc, MATROSKA_ID_BLKADDIDTYPE,
+                                  MATROSKA_BLOCK_ADD_ID_TYPE_ITU_T_T35);
+                    put_ebml_uint(track_bc, MATROSKA_ID_BLKADDIDVALUE,
+                                  MATROSKA_BLOCK_ADD_ID_ITU_T_T35);
+                    end_ebml_master(track_bc, mapping_master);
                 }
             }
+        }
 
         avio_seek(pb, mkv->track.pos, SEEK_SET);
         ret = end_ebml_master_crc32(pb, &mkv->track.bc, mkv,
