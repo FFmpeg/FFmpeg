@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include "libavutil/bprint.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
@@ -859,37 +860,20 @@ fail:
     return r;
 }
 
-static int read_whole_file(AVIOContext *io, int max_size, char **rbuf)
+static int read_whole_file(AVIOContext *io, int max_size, AVBPrint *rbuf)
 {
-    char *buf = NULL;
-    int size = 0, bufsize = 0, r;
-
-    while (1) {
-        if (bufsize - size < 1024) {
-            bufsize = FFMIN(FFMAX(2 * bufsize, 8192), max_size);
-            if (bufsize - size < 2) {
-                size = AVERROR(EFBIG);
-                goto fail;
-            }
-            buf = av_realloc_f(buf, bufsize, 1);
-            if (!buf) {
-                size = AVERROR(ENOMEM);
-                goto fail;
-            }
-        }
-        r = avio_read(io, buf, bufsize - size - 1);
-        if (r == AVERROR_EOF)
-            break;
-        if (r < 0)
-            goto fail;
-        size += r;
-    }
-    buf[size] = 0;
-    *rbuf = buf;
-    return size;
-fail:
-    av_free(buf);
-    return size;
+    int ret = avio_read_to_bprint(io, rbuf, max_size);
+    if (ret < 0)
+        return ret;
+    if (!av_bprint_is_complete(rbuf))
+        return AVERROR(ENOMEM);
+    /* Check if we have read the whole file. AVIOContext.eof_reached is only
+     * set after a read failed due to EOF, so this check is incorrect in case
+     * max_size equals the actual file size, but checking for that would
+     * require attempting to read beyond max_size. */
+    if (!io->eof_reached)
+        return AVERROR(EFBIG);
+    return 0;
 }
 
 static int expand_timestamps(void *log, struct sbg_script *s)
@@ -1407,19 +1391,21 @@ static av_cold int sbg_read_probe(const AVProbeData *p)
 static av_cold int sbg_read_header(AVFormatContext *avf)
 {
     struct sbg_demuxer *sbg = avf->priv_data;
+    AVBPrint bprint;
     int r;
-    char *buf = NULL;
     struct sbg_script script = { 0 };
     AVStream *st;
     FFStream *sti;
     struct ws_intervals inter = { 0 };
 
-    r = read_whole_file(avf->pb, sbg->max_file_size, &buf);
+    av_bprint_init(&bprint, 0, sbg->max_file_size + 1U);
+    r = read_whole_file(avf->pb, sbg->max_file_size, &bprint);
     if (r < 0)
-        goto fail;
-    r = parse_script(avf, buf, r, &script);
+        goto fail2;
+
+    r = parse_script(avf, bprint.str, bprint.len, &script);
     if (r < 0)
-        goto fail;
+        goto fail2;
     if (!sbg->sample_rate)
         sbg->sample_rate = script.sample_rate;
     else
@@ -1431,8 +1417,8 @@ static av_cold int sbg_read_header(AVFormatContext *avf)
                "-m is ignored and mix channels will be silent.\n");
     r = expand_script(avf, &script);
     if (r < 0)
-        goto fail;
-    av_freep(&buf);
+        goto fail2;
+    av_bprint_finalize(&bprint, NULL);
     r = generate_intervals(avf, &script, sbg->sample_rate, &inter);
     if (r < 0)
         goto fail;
@@ -1467,10 +1453,11 @@ static av_cold int sbg_read_header(AVFormatContext *avf)
     free_script(&script);
     return 0;
 
+fail2:
+    av_bprint_finalize(&bprint, NULL);
 fail:
     av_free(inter.inter);
     free_script(&script);
-    av_free(buf);
     return r;
 }
 
