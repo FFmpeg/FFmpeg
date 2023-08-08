@@ -1681,10 +1681,11 @@ static void mkv_write_blockadditionmapping(AVFormatContext *s, const MatroskaMux
         // be overwritten when finishing the track.
         put_ebml_uint(pb, MATROSKA_ID_TRACKMAXBLKADDID, 0);
         if (par->codec_type == AVMEDIA_TYPE_VIDEO) {
-        // Similarly, reserve space for an eventual HDR10+ ITU T.35 metadata BlockAdditionMapping.
-        put_ebml_void(pb, 3 /* BlockAdditionMapping */
-                        + 4 /* BlockAddIDValue */
-                        + 4 /* BlockAddIDType */);
+            // Similarly, reserve space for an eventual
+            // HDR10+ ITU T.35 metadata BlockAdditionMapping.
+            put_ebml_void(pb, 3 /* BlockAdditionMapping */
+                            + 4 /* BlockAddIDValue */
+                            + 4 /* BlockAddIDType */);
         }
     }
 
@@ -2767,28 +2768,28 @@ static int mkv_write_block(void *logctx, MatroskaMuxContext *mkv,
     }
 
     if (par->codec_type == AVMEDIA_TYPE_VIDEO) {
-    side_data = av_packet_get_side_data(pkt,
-                                        AV_PKT_DATA_DYNAMIC_HDR10_PLUS,
-                                        &side_data_size);
-    if (side_data && side_data_size) {
-        uint8_t *payload = t35_buf;
-        size_t payload_size = sizeof(t35_buf) - 6;
+        side_data = av_packet_get_side_data(pkt,
+                                            AV_PKT_DATA_DYNAMIC_HDR10_PLUS,
+                                            &side_data_size);
+        if (side_data && side_data_size) {
+            uint8_t *payload = t35_buf;
+            size_t payload_size = sizeof(t35_buf) - 6;
 
-        bytestream_put_byte(&payload, 0xB5); // country_code
-        bytestream_put_be16(&payload, 0x3C); // provider_code
-        bytestream_put_be16(&payload, 0x01); // provider_oriented_code
-        bytestream_put_byte(&payload, 0x04); // application_identifier
+            bytestream_put_byte(&payload, 0xB5); // country_code
+            bytestream_put_be16(&payload, 0x3C); // provider_code
+            bytestream_put_be16(&payload, 0x01); // provider_oriented_code
+            bytestream_put_byte(&payload, 0x04); // application_identifier
 
-        ret = av_dynamic_hdr_plus_to_t35((AVDynamicHDRPlus *)side_data, &payload,
-                                         &payload_size);
-        if (ret < 0)
-            return ret;
+            ret = av_dynamic_hdr_plus_to_t35((AVDynamicHDRPlus *)side_data, &payload,
+                                            &payload_size);
+            if (ret < 0)
+                return ret;
 
-        mkv_write_blockadditional(&writer, t35_buf, payload_size + 6,
-                                  MATROSKA_BLOCK_ADD_ID_ITU_T_T35);
-        track->max_blockaddid = FFMAX(track->max_blockaddid,
+            mkv_write_blockadditional(&writer, t35_buf, payload_size + 6,
                                       MATROSKA_BLOCK_ADD_ID_ITU_T_T35);
-    }
+            track->max_blockaddid = FFMAX(track->max_blockaddid,
+                                          MATROSKA_BLOCK_ADD_ID_ITU_T_T35);
+        }
     }
 
     ebml_writer_close_or_discard_master(&writer);
