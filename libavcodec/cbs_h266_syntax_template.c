@@ -3191,39 +3191,38 @@ static int FUNC(slice_header) (CodedBitstreamContext *ctx, RWContext *rw,
     } else {
         infer(sh_num_ref_idx_active_override_flag, 1);
     }
+
+    for (i = 0; i < 2; i++) {
+        if (current->sh_slice_type == VVC_SLICE_TYPE_B ||
+            (current->sh_slice_type == VVC_SLICE_TYPE_P && i == 0)) {
+            if (current->sh_num_ref_idx_active_override_flag) {
+                current->num_ref_idx_active[i] = current->sh_num_ref_idx_active_minus1[i] + 1;
+            } else {
+                current->num_ref_idx_active[i] =
+                    FFMIN(ref_pic_lists->rpl_ref_list[i].num_ref_entries,
+                        pps->pps_num_ref_idx_default_active_minus1[i] + 1);
+            }
+        } else {
+            current->num_ref_idx_active[i] = 0;
+        }
+    }
+
     if (current->sh_slice_type != VVC_SLICE_TYPE_I) {
         if (pps->pps_cabac_init_present_flag)
             flag(sh_cabac_init_flag);
         else
             infer(sh_cabac_init_flag, 0);
         if (ph->ph_temporal_mvp_enabled_flag && !pps->pps_rpl_info_in_ph_flag) {
-            uint8_t num_ref_idx_active[2];
-            for (i = 0; i < 2; i++) {
-                if (current->sh_slice_type == VVC_SLICE_TYPE_B ||
-                    (current->sh_slice_type == VVC_SLICE_TYPE_P && i == 0)) {
-                    if (current->sh_num_ref_idx_active_override_flag) {
-                        num_ref_idx_active[i] =
-                            current->sh_num_ref_idx_active_minus1[i] + 1;
-                    } else {
-                        num_ref_idx_active[i] =
-                            FFMIN(ref_pic_lists->rpl_ref_list[i].num_ref_entries,
-                                  pps->pps_num_ref_idx_default_active_minus1[i] + 1);
-                    }
-                } else {
-                    num_ref_idx_active[i] = 0;
-                }
-            }
-
             if (current->sh_slice_type == VVC_SLICE_TYPE_B)
                 flag(sh_collocated_from_l0_flag);
             else
                 infer(sh_collocated_from_l0_flag, 1);
             if ((current->sh_collocated_from_l0_flag &&
-                 num_ref_idx_active[0] > 1) ||
+                 current->num_ref_idx_active[0] > 1) ||
                 (!current->sh_collocated_from_l0_flag &&
-                 num_ref_idx_active[1] > 1)) {
+                 current->num_ref_idx_active[1] > 1)) {
                 unsigned int idx = current->sh_collocated_from_l0_flag ? 0 : 1;
-                ue(sh_collocated_ref_idx, 0, num_ref_idx_active[idx] - 1);
+                ue(sh_collocated_ref_idx, 0, current->num_ref_idx_active[idx] - 1);
             } else {
                 infer(sh_collocated_ref_idx, 0);
             }
@@ -3233,7 +3232,7 @@ static int FUNC(slice_header) (CodedBitstreamContext *ctx, RWContext *rw,
                  (pps->pps_weighted_bipred_flag &&
                   current->sh_slice_type == VVC_SLICE_TYPE_B))) {
                 CHECK(FUNC(pred_weight_table) (ctx, rw, sps, pps, ref_pic_lists,
-                                               num_ref_idx_active,
+                                               current->num_ref_idx_active,
                                                &current->sh_pred_weight_table));
             }
         }

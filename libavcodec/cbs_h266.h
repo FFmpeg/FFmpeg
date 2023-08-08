@@ -833,6 +833,7 @@ typedef struct  H266RawSliceHeader {
 
     // derived values
     uint32_t num_entry_points;              ///< NumEntryPoints
+    uint8_t  num_ref_idx_active[2];         ///< NumRefIdxActive[]
 
 } H266RawSliceHeader;
 
