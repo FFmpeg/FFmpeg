@@ -2938,20 +2938,14 @@ static int FUNC(picture_header) (CodedBitstreamContext *ctx, RWContext *rw,
         infer(ph_sao_chroma_enabled_flag, 0);
     }
 
-    if (pps->pps_dbf_info_in_ph_flag) {
+    if (pps->pps_dbf_info_in_ph_flag)
         flag(ph_deblocking_params_present_flag);
-        if (current->ph_deblocking_params_present_flag) {
-            if (!pps->pps_deblocking_filter_disabled_flag) {
-                flag(ph_deblocking_filter_disabled_flag);
-            } else {
-                if (pps->pps_deblocking_filter_disabled_flag &&
-                    current->ph_deblocking_params_present_flag) {
-                    infer(ph_deblocking_filter_disabled_flag, 0);
-                } else {
-                    infer(ph_deblocking_filter_disabled_flag,
-                          pps->pps_deblocking_filter_disabled_flag);
-                }
-            }
+    else
+        infer(ph_deblocking_params_present_flag, 0);
+
+    if (current->ph_deblocking_params_present_flag) {
+        if (!pps->pps_deblocking_filter_disabled_flag) {
+            flag(ph_deblocking_filter_disabled_flag);
             if (!current->ph_deblocking_filter_disabled_flag) {
                 se(ph_luma_beta_offset_div2, -12, 12);
                 se(ph_luma_tc_offset_div2, -12, 12);
@@ -2970,25 +2964,19 @@ static int FUNC(picture_header) (CodedBitstreamContext *ctx, RWContext *rw,
                     infer(ph_cr_tc_offset_div2,
                           current->ph_luma_tc_offset_div2);
                 }
-            } else {
-                infer(ph_luma_beta_offset_div2, pps->pps_luma_beta_offset_div2);
-                infer(ph_luma_tc_offset_div2, pps->pps_luma_tc_offset_div2);
-                if (pps->pps_chroma_tool_offsets_present_flag) {
-                    infer(ph_cb_beta_offset_div2, pps->pps_cb_beta_offset_div2);
-                    infer(ph_cb_tc_offset_div2, pps->pps_cb_tc_offset_div2);
-                    infer(ph_cr_beta_offset_div2, pps->pps_cr_beta_offset_div2);
-                    infer(ph_cr_tc_offset_div2, pps->pps_cr_tc_offset_div2);
-                } else {
-                    infer(ph_cb_beta_offset_div2,
-                          current->ph_luma_beta_offset_div2);
-                    infer(ph_cb_tc_offset_div2,
-                          current->ph_luma_tc_offset_div2);
-                    infer(ph_cr_beta_offset_div2,
-                          current->ph_luma_beta_offset_div2);
-                    infer(ph_cr_tc_offset_div2,
-                          current->ph_luma_tc_offset_div2);
-                }
             }
+        } else {
+            infer(ph_deblocking_filter_disabled_flag, 0);
+        }
+    } else {
+        infer(ph_deblocking_filter_disabled_flag, pps->pps_deblocking_filter_disabled_flag);
+        if (!current->ph_deblocking_filter_disabled_flag) {
+            infer(ph_luma_beta_offset_div2, pps->pps_luma_beta_offset_div2);
+            infer(ph_luma_tc_offset_div2, pps->pps_luma_tc_offset_div2);
+            infer(ph_cb_beta_offset_div2, pps->pps_cb_beta_offset_div2);
+            infer(ph_cb_tc_offset_div2, pps->pps_cb_tc_offset_div2);
+            infer(ph_cr_beta_offset_div2, pps->pps_cr_beta_offset_div2);
+            infer(ph_cr_tc_offset_div2, pps->pps_cr_tc_offset_div2);
         }
     }
 
@@ -3321,9 +3309,7 @@ static int FUNC(slice_header) (CodedBitstreamContext *ctx, RWContext *rw,
         if (!pps->pps_deblocking_filter_disabled_flag)
             flag(sh_deblocking_filter_disabled_flag);
         else
-            infer(sh_deblocking_filter_disabled_flag,
-                  !(pps->pps_deblocking_filter_disabled_flag &&
-                    current->sh_deblocking_params_present_flag));
+            infer(sh_deblocking_filter_disabled_flag, 0);
         if (!current->sh_deblocking_filter_disabled_flag) {
             se(sh_luma_beta_offset_div2, -12, 12);
             se(sh_luma_tc_offset_div2, -12, 12);
@@ -3340,22 +3326,16 @@ static int FUNC(slice_header) (CodedBitstreamContext *ctx, RWContext *rw,
                       current->sh_luma_beta_offset_div2);
                 infer(sh_cr_tc_offset_div2, current->sh_luma_tc_offset_div2);
             }
-        } else {
+        }
+    } else {
+        infer(sh_deblocking_filter_disabled_flag, ph->ph_deblocking_filter_disabled_flag);
+        if (!current->sh_deblocking_filter_disabled_flag) {
             infer(sh_luma_beta_offset_div2, ph->ph_luma_beta_offset_div2);
             infer(sh_luma_tc_offset_div2, ph->ph_luma_tc_offset_div2);
-            if (pps->pps_chroma_tool_offsets_present_flag) {
-                infer(sh_cb_beta_offset_div2, ph->ph_cb_beta_offset_div2);
-                infer(sh_cb_tc_offset_div2, ph->ph_cb_tc_offset_div2);
-                infer(sh_cr_beta_offset_div2, ph->ph_cr_beta_offset_div2);
-                infer(sh_cr_tc_offset_div2, ph->ph_cr_beta_offset_div2);
-            } else {
-                infer(sh_cb_beta_offset_div2,
-                      current->sh_luma_beta_offset_div2);
-                infer(sh_cb_tc_offset_div2, current->sh_luma_tc_offset_div2);
-                infer(sh_cr_beta_offset_div2,
-                      current->sh_luma_beta_offset_div2);
-                infer(sh_cr_tc_offset_div2, current->sh_luma_tc_offset_div2);
-            }
+            infer(sh_cb_beta_offset_div2, ph->ph_cb_beta_offset_div2);
+            infer(sh_cb_tc_offset_div2, ph->ph_cb_tc_offset_div2);
+            infer(sh_cr_beta_offset_div2, ph->ph_cr_beta_offset_div2);
+            infer(sh_cr_tc_offset_div2, ph->ph_cr_tc_offset_div2);
         }
     }
 
