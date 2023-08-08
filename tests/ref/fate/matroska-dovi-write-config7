@@ -1,5 +1,5 @@
-82581e39700ff479516c33402e8b1d5d *tests/data/fate/matroska-dovi-write-config7.matroska
-72702 tests/data/fate/matroska-dovi-write-config7.matroska
+7adef53df9e14358e0b99f8a829e2d97 *tests/data/fate/matroska-dovi-write-config7.matroska
+72700 tests/data/fate/matroska-dovi-write-config7.matroska
 #extradata 0:      116, 0x2b8d1669
 #extradata 1:      116, 0x2b8d1669
 #tb 0: 1/1000

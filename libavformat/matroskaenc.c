@@ -264,8 +264,12 @@ typedef struct MatroskaMuxContext {
 /** 4 * (1-byte EBML ID, 1-byte EBML size, 8-byte uint max) */
 #define MAX_CUETRACKPOS_SIZE 40
 
-/** 2 + 1 Simpletag header, 2 + 1 + 8 Name "DURATION", 23B for TagString */
-#define DURATION_SIMPLETAG_SIZE (2 + 1 + (2 + 1 + 8) + 23)
+/** DURATION_STRING_LENGTH must be <= 112 or the containing
+ * simpletag will need more than one byte for its length field. */
+#define DURATION_STRING_LENGTH 19
+
+/** 2 + 1 Simpletag header, 2 + 1 + 8 Name "DURATION", rest for TagString */
+#define DURATION_SIMPLETAG_SIZE (2 + 1 + (2 + 1 + 8) + (2 + 1 + DURATION_STRING_LENGTH))
 
 /** Seek preroll value for opus */
 #define OPUS_SEEK_PREROLL 80000000
@@ -3239,7 +3243,7 @@ after_cues:
 
             if (track->duration_offset > 0) {
                 double duration_sec = track->duration * av_q2d(st->time_base);
-                char duration_string[20] = "";
+                char duration_string[DURATION_STRING_LENGTH + 1] = "";
                 ebml_master simpletag;
 
                 av_log(s, AV_LOG_DEBUG, "stream %d end duration = %" PRIu64 "\n", i,
@@ -3250,11 +3254,12 @@ after_cues:
                                               2 + 1 + 8 + 23);
                 put_ebml_string(tags_bc, MATROSKA_ID_TAGNAME, "DURATION");
 
-                snprintf(duration_string, 20, "%02d:%02d:%012.9f",
+                snprintf(duration_string, sizeof(duration_string), "%02d:%02d:%012.9f",
                          (int) duration_sec / 3600, ((int) duration_sec / 60) % 60,
                          fmod(duration_sec, 60));
 
-                put_ebml_binary(tags_bc, MATROSKA_ID_TAGSTRING, duration_string, 20);
+                put_ebml_binary(tags_bc, MATROSKA_ID_TAGSTRING,
+                                duration_string, DURATION_STRING_LENGTH);
                 end_ebml_master(tags_bc, simpletag);
             }
         }

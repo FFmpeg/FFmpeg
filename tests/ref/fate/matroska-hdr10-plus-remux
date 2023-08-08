@@ -1,5 +1,5 @@
-0f941512f69b1cc0ac27f3375e56a0cc *tests/data/fate/matroska-hdr10-plus-remux.matroska
-13892 tests/data/fate/matroska-hdr10-plus-remux.matroska
+299d8f8b5174f9a8747304056d742501 *tests/data/fate/matroska-hdr10-plus-remux.matroska
+13891 tests/data/fate/matroska-hdr10-plus-remux.matroska
 #tb 0: 1/1000
 #media_type 0: video
 #codec_id 0: vp9
@@ -16,7 +16,7 @@ dts_time=0.000000
 duration=40
 duration_time=0.040000
 size=13350
-pos=436
+pos=435
 flags=K__
 [SIDE_DATA]
 side_data_type=HDR10+ Dynamic Metadata (SMPTE 2094-40)

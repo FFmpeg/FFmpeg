@@ -1,5 +1,5 @@
-fbf3091fdf05b2856c578e7c948d68c3 *tests/data/fate/webm-av1-extradata-update.webm
-23048 tests/data/fate/webm-av1-extradata-update.webm
+dc7593b977b092e522018de7e0d12681 *tests/data/fate/webm-av1-extradata-update.webm
+23047 tests/data/fate/webm-av1-extradata-update.webm
 #extradata 0:       35, 0x527207cd
 #tb 0: 1/1000
 #media_type 0: video

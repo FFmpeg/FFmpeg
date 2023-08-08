@@ -1,5 +1,5 @@
-74a5ed3f0b14112322c8bf3e94d6e98b *tests/data/fate/matroska-move-cues-to-front.matroska
-23210297 tests/data/fate/matroska-move-cues-to-front.matroska
+4ca0bdb5636523c3e43b9dbf692ae21c *tests/data/fate/matroska-move-cues-to-front.matroska
+23210293 tests/data/fate/matroska-move-cues-to-front.matroska
 #tb 0: 1/1000
 #media_type 0: audio
 #codec_id 0: pcm_s24be
