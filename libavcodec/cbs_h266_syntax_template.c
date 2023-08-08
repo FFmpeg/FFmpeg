@@ -3111,44 +3111,57 @@ static int FUNC(slice_header) (CodedBitstreamContext *ctx, RWContext *rw,
     if (nal_unit_type == VVC_IDR_W_RADL || nal_unit_type == VVC_IDR_N_LP ||
         nal_unit_type == VVC_CRA_NUT || nal_unit_type == VVC_GDR_NUT)
         flag(sh_no_output_of_prior_pics_flag);
-    if (sps->sps_alf_enabled_flag && !pps->pps_alf_info_in_ph_flag) {
-        flag(sh_alf_enabled_flag);
-        if (current->sh_alf_enabled_flag) {
-            ub(3, sh_num_alf_aps_ids_luma);
-            for (i = 0; i < current->sh_num_alf_aps_ids_luma; i++)
-                ubs(3, sh_alf_aps_id_luma[i], 1, i);
-            if (sps->sps_chroma_format_idc != 0) {
-                flag(sh_alf_cb_enabled_flag);
-                flag(sh_alf_cr_enabled_flag);
-            } else {
+
+    if (sps->sps_alf_enabled_flag) {
+        if (!pps->pps_alf_info_in_ph_flag) {
+            flag(sh_alf_enabled_flag);
+            if (current->sh_alf_enabled_flag) {
+                ub(3, sh_num_alf_aps_ids_luma);
+                for (i = 0; i < current->sh_num_alf_aps_ids_luma; i++)
+                    ubs(3, sh_alf_aps_id_luma[i], 1, i);
+
+                if (sps->sps_chroma_format_idc != 0) {
+                    flag(sh_alf_cb_enabled_flag);
+                    flag(sh_alf_cr_enabled_flag);
+                }
+                if (current->sh_alf_cb_enabled_flag ||
+                    current->sh_alf_cr_enabled_flag) {
+                    ub(3, sh_alf_aps_id_chroma);
+                }
+
+                if (sps->sps_ccalf_enabled_flag) {
+                    flag(sh_alf_cc_cb_enabled_flag);
+                    if (current->sh_alf_cc_cb_enabled_flag)
+                        ub(3, sh_alf_cc_cb_aps_id);
+
+                    flag(sh_alf_cc_cr_enabled_flag);
+                    if (current->sh_alf_cc_cr_enabled_flag)
+                        ub(3, sh_alf_cc_cr_aps_id);
+                }
+            }
+        } else {
+            infer(sh_alf_enabled_flag, ph->ph_alf_enabled_flag);
+            if (current->sh_alf_enabled_flag) {
+                infer(sh_num_alf_aps_ids_luma, ph->ph_num_alf_aps_ids_luma);
+                for (i = 0; i < current->sh_num_alf_aps_ids_luma; i++)
+                    infer(sh_alf_aps_id_luma[i], ph->ph_alf_aps_id_luma[i]);
+
                 infer(sh_alf_cb_enabled_flag, ph->ph_alf_cb_enabled_flag);
                 infer(sh_alf_cr_enabled_flag, ph->ph_alf_cr_enabled_flag);
-            }
-            if (current->sh_alf_cb_enabled_flag ||
-                current->sh_alf_cr_enabled_flag)
-                ub(3, sh_alf_aps_id_chroma);
-            else
-                infer(sh_alf_aps_id_chroma, ph->ph_alf_aps_id_chroma);
-            if (sps->sps_ccalf_enabled_flag) {
-                flag(sh_alf_cc_cb_enabled_flag);
-                if (current->sh_alf_cc_cb_enabled_flag)
-                    ub(3, sh_alf_cc_cb_aps_id);
-                else
-                    infer(sh_alf_cc_cb_aps_id, ph->ph_alf_cc_cb_aps_id);
-                flag(sh_alf_cc_cr_enabled_flag);
-                if (current->sh_alf_cc_cr_enabled_flag)
-                    ub(3, sh_alf_cc_cr_aps_id);
-                else
-                    infer(sh_alf_cc_cr_aps_id, ph->ph_alf_cc_cr_aps_id);
-            } else {
-                infer(sh_alf_cc_cb_enabled_flag, ph->ph_alf_cc_cb_enabled_flag);
-                infer(sh_alf_cc_cr_enabled_flag, ph->ph_alf_cc_cr_enabled_flag);
-                infer(sh_alf_cc_cb_aps_id, ph->ph_alf_cc_cb_aps_id);
-                infer(sh_alf_cc_cr_aps_id, ph->ph_alf_cc_cr_aps_id);
+                if (current->sh_alf_cb_enabled_flag ||current->sh_alf_cr_enabled_flag)
+                    infer(sh_alf_aps_id_chroma, ph->ph_alf_aps_id_chroma);
+
+                if (sps->sps_ccalf_enabled_flag) {
+                    infer(sh_alf_cc_cb_enabled_flag, ph->ph_alf_cc_cb_enabled_flag);
+                    if (current->sh_alf_cc_cb_enabled_flag)
+                        infer(sh_alf_cc_cb_aps_id, ph->ph_alf_cc_cb_aps_id);
+
+                    infer(sh_alf_cc_cr_enabled_flag, ph->ph_alf_cc_cr_enabled_flag);
+                    if (current->sh_alf_cc_cr_enabled_flag)
+                        infer(sh_alf_cc_cr_aps_id, ph->ph_alf_cc_cr_aps_id);
+                }
             }
         }
-    } else {
-        infer(sh_alf_enabled_flag, 0);
     }
 
     if (current->sh_picture_header_in_slice_header_flag) {
