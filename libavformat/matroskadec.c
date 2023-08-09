@@ -3036,15 +3036,14 @@ static int matroska_parse_tracks(AVFormatContext *s)
 
             track->codec_priv.size = 0;
         }
-        track->codec_priv.size -= extradata_offset;
 
         if (par->codec_id == AV_CODEC_ID_NONE)
             av_log(matroska->ctx, AV_LOG_INFO,
                    "Unknown/unsupported AVCodecID %s.\n", track->codec_id);
 
-        if (!par->extradata && track->codec_priv.size > 0) {
+        if (!par->extradata && track->codec_priv.size > extradata_offset) {
             const uint8_t *src = track->codec_priv.data + extradata_offset;
-            unsigned extra_size = track->codec_priv.size;
+            unsigned extra_size = track->codec_priv.size - extradata_offset;
             ret = ff_alloc_extradata(par, extra_size);
             if (ret < 0)
                 return ret;
