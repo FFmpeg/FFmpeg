@@ -2501,9 +2501,241 @@ static int get_qt_codec(MatroskaTrack *track, uint32_t *fourcc, enum AVCodecID *
     return 0;
 }
 
+/* An enum with potential return values of the functions for parsing a track.
+ * Apart from that all these functions can also indicate ordinary errors via
+ * negative return values. */
+enum {
+    SKIP_TRACK = 1,
+};
+
 #define AAC_MAX_EXTRADATA_SIZE     5
 #define TTA_EXTRADATA_SIZE        22
 #define WAVPACK_EXTRADATA_SIZE     2
+/* Performs the codec-specific part of parsing an audio track. */
+static int mka_parse_audio_codec(MatroskaTrack *track, AVCodecParameters *par,
+                                 const MatroskaDemuxContext *matroska,
+                                 AVFormatContext *s, int *extradata_offset)
+{
+        uint8_t extradata[FFMAX3(AAC_MAX_EXTRADATA_SIZE,
+                                 TTA_EXTRADATA_SIZE,
+                                 WAVPACK_EXTRADATA_SIZE)];
+        int extradata_size = 0; // > 0 means that the extradata buffer is used
+        int ret;
+
+        if (!strcmp(track->codec_id, "A_MS/ACM") &&
+                   track->codec_priv.size >= 14         &&
+                   track->codec_priv.data) {
+        FFIOContext b;
+            int ret;
+            ffio_init_context(&b, track->codec_priv.data,
+                              track->codec_priv.size,
+                              0, NULL, NULL, NULL, NULL);
+            ret = ff_get_wav_header(s, &b.pub, par,
+                                    track->codec_priv.size, 0);
+            if (ret < 0)
+                return ret;
+            *extradata_offset = FFMIN(track->codec_priv.size, 18);
+            return 0;
+        } else if (!strcmp(track->codec_id, "A_QUICKTIME")
+                   /* Normally 36, but allow noncompliant private data */
+                   && (track->codec_priv.size >= 32)
+                   && (track->codec_priv.data)) {
+            enum AVCodecID codec_id;
+            uint32_t fourcc;
+            uint16_t sample_size;
+            int ret = get_qt_codec(track, &fourcc, &codec_id);
+            if (ret < 0)
+                return ret;
+            sample_size = AV_RB16(track->codec_priv.data + 26);
+            if (fourcc == 0) {
+                if (sample_size == 8) {
+                    fourcc = MKTAG('r','a','w',' ');
+                    codec_id = ff_codec_get_id(ff_codec_movaudio_tags, fourcc);
+                } else if (sample_size == 16) {
+                    fourcc = MKTAG('t','w','o','s');
+                    codec_id = ff_codec_get_id(ff_codec_movaudio_tags, fourcc);
+                }
+            }
+            if ((fourcc == MKTAG('t','w','o','s') ||
+                    fourcc == MKTAG('s','o','w','t')) &&
+                    sample_size == 8)
+                codec_id = AV_CODEC_ID_PCM_S8;
+            par->codec_id  = codec_id;
+            par->codec_tag = fourcc;
+            return 0;
+        }
+
+    switch (par->codec_id) {
+    case AV_CODEC_ID_PCM_S16BE:
+            switch (track->audio.bitdepth) {
+            case  8:
+                par->codec_id = AV_CODEC_ID_PCM_U8;
+                break;
+            case 24:
+                par->codec_id = AV_CODEC_ID_PCM_S24BE;
+                break;
+            case 32:
+                par->codec_id = AV_CODEC_ID_PCM_S32BE;
+                break;
+            }
+        break;
+    case AV_CODEC_ID_PCM_S16LE:
+            switch (track->audio.bitdepth) {
+            case  8:
+                par->codec_id = AV_CODEC_ID_PCM_U8;
+                break;
+            case 24:
+                par->codec_id = AV_CODEC_ID_PCM_S24LE;
+                break;
+            case 32:
+                par->codec_id = AV_CODEC_ID_PCM_S32LE;
+                break;
+            }
+        break;
+    case AV_CODEC_ID_PCM_F32LE:
+        if (track->audio.bitdepth == 64)
+            par->codec_id = AV_CODEC_ID_PCM_F64LE;
+        break;
+    case AV_CODEC_ID_AAC:
+        if (!track->codec_priv.size) {
+            int profile = matroska_aac_profile(track->codec_id);
+            int sri     = matroska_aac_sri(track->audio.samplerate);
+
+            extradata[0] = (profile << 3) | ((sri & 0x0E) >> 1);
+            extradata[1] = ((sri & 0x01) << 7) | (track->audio.channels << 3);
+            if (strstr(track->codec_id, "SBR")) {
+                sri            = matroska_aac_sri(track->audio.out_samplerate);
+                extradata[2]   = 0x56;
+                extradata[3]   = 0xE5;
+                extradata[4]   = 0x80 | (sri << 3);
+                extradata_size = 5;
+            } else
+                extradata_size = 2;
+        }
+        break;
+    case AV_CODEC_ID_ALAC:
+        if (track->codec_priv.size && track->codec_priv.size < INT_MAX - 12 - AV_INPUT_BUFFER_PADDING_SIZE) {
+            /* Only ALAC's magic cookie is stored in Matroska's track headers.
+             * Create the "atom size", "tag", and "tag version" fields the
+             * decoder expects manually. */
+            ret = ff_alloc_extradata(par, 12 + track->codec_priv.size);
+            if (ret < 0)
+                return ret;
+            AV_WB32(par->extradata, par->extradata_size);
+            AV_WB32(&par->extradata[4], MKBETAG('a', 'l', 'a', 'c'));
+            AV_WB32(&par->extradata[8], 0);
+            memcpy(&par->extradata[12], track->codec_priv.data,
+                   track->codec_priv.size);
+        }
+        break;
+    case AV_CODEC_ID_TTA:
+    {
+            uint8_t *ptr;
+            if (track->audio.channels > UINT16_MAX ||
+                track->audio.bitdepth > UINT16_MAX) {
+                av_log(matroska->ctx, AV_LOG_WARNING,
+                       "Too large audio channel number %"PRIu64
+                       " or bitdepth %"PRIu64". Skipping track.\n",
+                       track->audio.channels, track->audio.bitdepth);
+                if (matroska->ctx->error_recognition & AV_EF_EXPLODE)
+                    return AVERROR_INVALIDDATA;
+                else
+                    return SKIP_TRACK;
+            }
+            if (track->audio.out_samplerate < 0 || track->audio.out_samplerate > INT_MAX)
+                return AVERROR_INVALIDDATA;
+            extradata_size = TTA_EXTRADATA_SIZE;
+            ptr = extradata;
+            bytestream_put_be32(&ptr, AV_RB32("TTA1"));
+            bytestream_put_le16(&ptr, 1);
+            bytestream_put_le16(&ptr, track->audio.channels);
+            bytestream_put_le16(&ptr, track->audio.bitdepth);
+            bytestream_put_le32(&ptr, track->audio.out_samplerate);
+            bytestream_put_le32(&ptr, av_rescale(matroska->duration * matroska->time_scale,
+                                                 track->audio.out_samplerate,
+                                                 AV_TIME_BASE * 1000));
+        break;
+    }
+    case AV_CODEC_ID_RA_144:
+            track->audio.out_samplerate = 8000;
+            track->audio.channels       = 1;
+        break;
+    case AV_CODEC_ID_RA_288:
+    case AV_CODEC_ID_COOK:
+    case AV_CODEC_ID_ATRAC3:
+    case AV_CODEC_ID_SIPR:
+    {
+            const uint8_t *ptr = track->codec_priv.data;
+            int flavor;
+
+        if (!track->codec_priv.size)
+            break;
+
+            if (track->codec_priv.size < 46)
+                return AVERROR_INVALIDDATA;
+            ptr += 22;
+            flavor                       = bytestream_get_be16(&ptr);
+            track->audio.coded_framesize = bytestream_get_be32(&ptr);
+            ptr += 12;
+            track->audio.sub_packet_h    = bytestream_get_be16(&ptr);
+            track->audio.frame_size      = bytestream_get_be16(&ptr);
+            track->audio.sub_packet_size = bytestream_get_be16(&ptr);
+            if (track->audio.coded_framesize <= 0 ||
+                track->audio.sub_packet_h    <= 0 ||
+                track->audio.frame_size      <= 0)
+                return AVERROR_INVALIDDATA;
+
+            if (par->codec_id == AV_CODEC_ID_RA_288) {
+                if (track->audio.sub_packet_h & 1 || 2 * track->audio.frame_size
+                    != (int64_t)track->audio.sub_packet_h * track->audio.coded_framesize)
+                    return AVERROR_INVALIDDATA;
+                par->block_align = track->audio.coded_framesize;
+                track->codec_priv.size = 0;
+            } else {
+                if (par->codec_id == AV_CODEC_ID_SIPR) {
+                    static const int sipr_bit_rate[4] = { 6504, 8496, 5000, 16000 };
+                    if (flavor > 3)
+                        return AVERROR_INVALIDDATA;
+                    track->audio.sub_packet_size = ff_sipr_subpk_size[flavor];
+                    par->bit_rate          = sipr_bit_rate[flavor];
+                } else if (track->audio.sub_packet_size <= 0 ||
+                           track->audio.frame_size % track->audio.sub_packet_size)
+                    return AVERROR_INVALIDDATA;
+                par->block_align = track->audio.sub_packet_size;
+                *extradata_offset = 78;
+            }
+            track->audio.buf = av_malloc_array(track->audio.sub_packet_h,
+                                               track->audio.frame_size);
+            if (!track->audio.buf)
+                return AVERROR(ENOMEM);
+        break;
+    }
+    case AV_CODEC_ID_FLAC:
+        if (track->codec_priv.size) {
+            ret = matroska_parse_flac(s, track, extradata_offset);
+            if (ret < 0)
+                return ret;
+        }
+        break;
+    case AV_CODEC_ID_WAVPACK:
+        if (track->codec_priv.size < 2) {
+            av_log(matroska->ctx, AV_LOG_INFO, "Assuming WavPack version 4.10 "
+                   "in absence of valid CodecPrivate.\n");
+            extradata_size = WAVPACK_EXTRADATA_SIZE;
+            AV_WL16(extradata, 0x410);
+        }
+        break;
+    }
+
+    if (extradata_size > 0) {
+        ret = ff_alloc_extradata(par, extradata_size);
+        if (ret < 0)
+            return ret;
+        memcpy(par->extradata, extradata, extradata_size);
+    }
+
+    return 0;
+}
 
 static int matroska_parse_tracks(AVFormatContext *s)
 {
@@ -2518,10 +2750,6 @@ static int matroska_parse_tracks(AVFormatContext *s)
         EbmlList *encodings_list = &track->encodings;
         MatroskaTrackEncoding *encodings = encodings_list->elem;
         AVCodecParameters *par;
-        uint8_t extradata[FFMAX3(AAC_MAX_EXTRADATA_SIZE,
-                                 TTA_EXTRADATA_SIZE,
-                                 WAVPACK_EXTRADATA_SIZE)];
-        int extradata_size = 0; // > 0 means that the extradata buffer is used
         int extradata_offset = 0;
         uint32_t fourcc = 0;
         FFIOContext b;
@@ -2702,6 +2930,14 @@ static int matroska_parse_tracks(AVFormatContext *s)
                                                       (AVRational){ 1, 1000000000 },
                                                       st->time_base);
 
+        if (track->type == MATROSKA_TRACK_TYPE_AUDIO) {
+            ret = mka_parse_audio_codec(track, par, matroska,
+                                        s, &extradata_offset);
+            if (ret < 0)
+                return ret;
+            if (ret == SKIP_TRACK)
+                continue;
+        } else
         if (!strcmp(track->codec_id, "V_MS/VFW/FOURCC") &&
              track->codec_priv.size >= 40               &&
             track->codec_priv.data) {
@@ -2714,43 +2950,6 @@ static int matroska_parse_tracks(AVFormatContext *s)
                 par->codec_id   = ff_codec_get_id(ff_codec_movvideo_tags,
                                                   par->codec_tag);
             extradata_offset    = 40;
-        } else if (!strcmp(track->codec_id, "A_MS/ACM") &&
-                   track->codec_priv.size >= 14         &&
-                   track->codec_priv.data) {
-            int ret;
-            ffio_init_context(&b, track->codec_priv.data,
-                              track->codec_priv.size,
-                              0, NULL, NULL, NULL, NULL);
-            ret = ff_get_wav_header(s, &b.pub, par,
-                                    track->codec_priv.size, 0);
-            if (ret < 0)
-                return ret;
-            extradata_offset = FFMIN(track->codec_priv.size, 18);
-        } else if (!strcmp(track->codec_id, "A_QUICKTIME")
-                   /* Normally 36, but allow noncompliant private data */
-                   && (track->codec_priv.size >= 32)
-                   && (track->codec_priv.data)) {
-            uint32_t fourcc;
-            uint16_t sample_size;
-            int ret = get_qt_codec(track, &fourcc, &codec_id);
-            if (ret < 0)
-                return ret;
-            sample_size = AV_RB16(track->codec_priv.data + 26);
-            if (fourcc == 0) {
-                if (sample_size == 8) {
-                    fourcc = MKTAG('r','a','w',' ');
-                    codec_id = ff_codec_get_id(ff_codec_movaudio_tags, fourcc);
-                } else if (sample_size == 16) {
-                    fourcc = MKTAG('t','w','o','s');
-                    codec_id = ff_codec_get_id(ff_codec_movaudio_tags, fourcc);
-                }
-            }
-            if ((fourcc == MKTAG('t','w','o','s') ||
-                    fourcc == MKTAG('s','o','w','t')) &&
-                    sample_size == 8)
-                codec_id = AV_CODEC_ID_PCM_S8;
-            par->codec_id  = codec_id;
-            par->codec_tag = fourcc;
         } else if (!strcmp(track->codec_id, "V_QUICKTIME") &&
                    (track->codec_priv.size >= 21)          &&
                    (track->codec_priv.data)) {
@@ -2778,146 +2977,11 @@ static int matroska_parse_tracks(AVFormatContext *s)
                 par->bits_per_coded_sample = bit_depth;
             }
             par->codec_tag = fourcc;
-        } else if (codec_id == AV_CODEC_ID_PCM_S16BE) {
-            switch (track->audio.bitdepth) {
-            case  8:
-                par->codec_id = AV_CODEC_ID_PCM_U8;
-                break;
-            case 24:
-                par->codec_id = AV_CODEC_ID_PCM_S24BE;
-                break;
-            case 32:
-                par->codec_id = AV_CODEC_ID_PCM_S32BE;
-                break;
-            }
-        } else if (codec_id == AV_CODEC_ID_PCM_S16LE) {
-            switch (track->audio.bitdepth) {
-            case  8:
-                par->codec_id = AV_CODEC_ID_PCM_U8;
-                break;
-            case 24:
-                par->codec_id = AV_CODEC_ID_PCM_S24LE;
-                break;
-            case 32:
-                par->codec_id = AV_CODEC_ID_PCM_S32LE;
-                break;
-            }
-        } else if (codec_id == AV_CODEC_ID_PCM_F32LE &&
-                   track->audio.bitdepth == 64) {
-            par->codec_id = AV_CODEC_ID_PCM_F64LE;
-        } else if (codec_id == AV_CODEC_ID_AAC && !track->codec_priv.size) {
-            int profile = matroska_aac_profile(track->codec_id);
-            int sri     = matroska_aac_sri(track->audio.samplerate);
-
-            extradata[0] = (profile << 3) | ((sri & 0x0E) >> 1);
-            extradata[1] = ((sri & 0x01) << 7) | (track->audio.channels << 3);
-            if (strstr(track->codec_id, "SBR")) {
-                sri            = matroska_aac_sri(track->audio.out_samplerate);
-                extradata[2]   = 0x56;
-                extradata[3]   = 0xE5;
-                extradata[4]   = 0x80 | (sri << 3);
-                extradata_size = 5;
-            } else
-                extradata_size = 2;
-        } else if (codec_id == AV_CODEC_ID_ALAC && track->codec_priv.size && track->codec_priv.size < INT_MAX - 12 - AV_INPUT_BUFFER_PADDING_SIZE) {
-            /* Only ALAC's magic cookie is stored in Matroska's track headers.
-             * Create the "atom size", "tag", and "tag version" fields the
-             * decoder expects manually. */
-            ret = ff_alloc_extradata(par, 12 + track->codec_priv.size);
-            if (ret < 0)
-                return ret;
-            AV_WB32(par->extradata, par->extradata_size);
-            AV_WB32(&par->extradata[4], MKBETAG('a', 'l', 'a', 'c'));
-            AV_WB32(&par->extradata[8], 0);
-            memcpy(&par->extradata[12], track->codec_priv.data,
-                   track->codec_priv.size);
-        } else if (codec_id == AV_CODEC_ID_TTA) {
-            uint8_t *ptr;
-            if (track->audio.channels > UINT16_MAX ||
-                track->audio.bitdepth > UINT16_MAX) {
-                av_log(matroska->ctx, AV_LOG_WARNING,
-                       "Too large audio channel number %"PRIu64
-                       " or bitdepth %"PRIu64". Skipping track.\n",
-                       track->audio.channels, track->audio.bitdepth);
-                if (matroska->ctx->error_recognition & AV_EF_EXPLODE)
-                    return AVERROR_INVALIDDATA;
-                else
-                    continue;
-            }
-            if (track->audio.out_samplerate < 0 || track->audio.out_samplerate > INT_MAX)
-                return AVERROR_INVALIDDATA;
-            extradata_size = TTA_EXTRADATA_SIZE;
-            ptr = extradata;
-            bytestream_put_be32(&ptr, AV_RB32("TTA1"));
-            bytestream_put_le16(&ptr, 1);
-            bytestream_put_le16(&ptr, track->audio.channels);
-            bytestream_put_le16(&ptr, track->audio.bitdepth);
-            bytestream_put_le32(&ptr, track->audio.out_samplerate);
-            bytestream_put_le32(&ptr, av_rescale(matroska->duration * matroska->time_scale,
-                                                 track->audio.out_samplerate,
-                                                 AV_TIME_BASE * 1000));
         } else if (codec_id == AV_CODEC_ID_RV10 ||
                    codec_id == AV_CODEC_ID_RV20 ||
                    codec_id == AV_CODEC_ID_RV30 ||
                    codec_id == AV_CODEC_ID_RV40) {
             extradata_offset = 26;
-        } else if (codec_id == AV_CODEC_ID_RA_144) {
-            track->audio.out_samplerate = 8000;
-            track->audio.channels       = 1;
-        } else if ((codec_id == AV_CODEC_ID_RA_288 ||
-                    codec_id == AV_CODEC_ID_COOK   ||
-                    codec_id == AV_CODEC_ID_ATRAC3 ||
-                    codec_id == AV_CODEC_ID_SIPR)
-                      && track->codec_priv.data) {
-            const uint8_t *ptr = track->codec_priv.data;
-            int flavor;
-
-            if (track->codec_priv.size < 46)
-                return AVERROR_INVALIDDATA;
-            ptr += 22;
-            flavor                       = bytestream_get_be16(&ptr);
-            track->audio.coded_framesize = bytestream_get_be32(&ptr);
-            ptr += 12;
-            track->audio.sub_packet_h    = bytestream_get_be16(&ptr);
-            track->audio.frame_size      = bytestream_get_be16(&ptr);
-            track->audio.sub_packet_size = bytestream_get_be16(&ptr);
-            if (track->audio.coded_framesize <= 0 ||
-                track->audio.sub_packet_h    <= 0 ||
-                track->audio.frame_size      <= 0)
-                return AVERROR_INVALIDDATA;
-
-            if (codec_id == AV_CODEC_ID_RA_288) {
-                if (track->audio.sub_packet_h & 1 || 2 * track->audio.frame_size
-                    != (int64_t)track->audio.sub_packet_h * track->audio.coded_framesize)
-                    return AVERROR_INVALIDDATA;
-                par->block_align = track->audio.coded_framesize;
-                track->codec_priv.size = 0;
-            } else {
-                if (codec_id == AV_CODEC_ID_SIPR) {
-                    static const int sipr_bit_rate[4] = { 6504, 8496, 5000, 16000 };
-                    if (flavor > 3)
-                        return AVERROR_INVALIDDATA;
-                    track->audio.sub_packet_size = ff_sipr_subpk_size[flavor];
-                    par->bit_rate          = sipr_bit_rate[flavor];
-                } else if (track->audio.sub_packet_size <= 0 ||
-                           track->audio.frame_size % track->audio.sub_packet_size)
-                    return AVERROR_INVALIDDATA;
-                par->block_align = track->audio.sub_packet_size;
-                extradata_offset       = 78;
-            }
-            track->audio.buf = av_malloc_array(track->audio.sub_packet_h,
-                                               track->audio.frame_size);
-            if (!track->audio.buf)
-                return AVERROR(ENOMEM);
-        } else if (codec_id == AV_CODEC_ID_FLAC && track->codec_priv.size) {
-            ret = matroska_parse_flac(s, track, &extradata_offset);
-            if (ret < 0)
-                return ret;
-        } else if (codec_id == AV_CODEC_ID_WAVPACK && track->codec_priv.size < 2) {
-            av_log(matroska->ctx, AV_LOG_INFO, "Assuming WavPack version 4.10 "
-                   "in absence of valid CodecPrivate.\n");
-            extradata_size = WAVPACK_EXTRADATA_SIZE;
-            AV_WL16(extradata, 0x410);
         } else if (codec_id == AV_CODEC_ID_PRORES && track->codec_priv.size == 4) {
             par->codec_tag = AV_RL32(track->codec_priv.data);
         } else if (codec_id == AV_CODEC_ID_VP9) {
@@ -2960,11 +3024,9 @@ static int matroska_parse_tracks(AVFormatContext *s)
             av_log(matroska->ctx, AV_LOG_INFO,
                    "Unknown/unsupported AVCodecID %s.\n", track->codec_id);
 
-        if (!par->extradata && (extradata_size > 0 || track->codec_priv.size > 0)) {
-            const uint8_t *src = extradata_size > 0 ? extradata :
-                                     track->codec_priv.data + extradata_offset;
-            unsigned extra_size = extradata_size > 0 ? extradata_size :
-                                                       track->codec_priv.size;
+        if (!par->extradata && track->codec_priv.size > 0) {
+            const uint8_t *src = track->codec_priv.data + extradata_offset;
+            unsigned extra_size = track->codec_priv.size;
             ret = ff_alloc_extradata(par, extra_size);
             if (ret < 0)
                 return ret;
