@@ -2817,7 +2817,6 @@ static int matroska_parse_tracks(AVFormatContext *s)
         MatroskaTrackEncoding *encodings = encodings_list->elem;
         AVCodecParameters *par;
         int extradata_offset = 0;
-        uint32_t fourcc = 0;
         AVStream *st;
         FFStream *sti;
         char* key_id_base64 = NULL;
@@ -2867,8 +2866,6 @@ static int matroska_parse_tracks(AVFormatContext *s)
                 track->video.display_width = track->video.pixel_width;
             if (track->video.display_height == -1)
                 track->video.display_height = track->video.pixel_height;
-            if (track->video.color_space.size == 4)
-                fourcc = AV_RL32(track->video.color_space.data);
         } else if (track->type == MATROSKA_TRACK_TYPE_AUDIO) {
             if (!track->audio.out_samplerate)
                 track->audio.out_samplerate = track->audio.samplerate;
@@ -2955,7 +2952,6 @@ static int matroska_parse_tracks(AVFormatContext *s)
         par = st->codecpar;
 
         par->codec_id  = codec_id;
-        par->codec_tag = fourcc;
 
         if (track->flag_default)
             st->disposition |= AV_DISPOSITION_DEFAULT;
@@ -3003,6 +2999,9 @@ static int matroska_parse_tracks(AVFormatContext *s)
             if (ret == SKIP_TRACK)
                 continue;
         } else if (track->type == MATROSKA_TRACK_TYPE_VIDEO) {
+            if (track->video.color_space.size == 4)
+                par->codec_tag = AV_RL32(track->video.color_space.data);
+
             ret = mkv_parse_video_codec(track, par, matroska,
                                         &extradata_offset);
             if (ret < 0)
