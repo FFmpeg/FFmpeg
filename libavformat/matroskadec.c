@@ -2523,8 +2523,7 @@ static int mka_parse_audio_codec(MatroskaTrack *track, AVCodecParameters *par,
         int ret;
 
         if (!strcmp(track->codec_id, "A_MS/ACM") &&
-                   track->codec_priv.size >= 14         &&
-                   track->codec_priv.data) {
+            track->codec_priv.size >= 14) {
         FFIOContext b;
             int ret;
             ffio_init_context(&b, track->codec_priv.data,
@@ -2538,8 +2537,7 @@ static int mka_parse_audio_codec(MatroskaTrack *track, AVCodecParameters *par,
             return 0;
         } else if (!strcmp(track->codec_id, "A_QUICKTIME")
                    /* Normally 36, but allow noncompliant private data */
-                   && (track->codec_priv.size >= 32)
-                   && (track->codec_priv.data)) {
+                   && track->codec_priv.size >= 32) {
             enum AVCodecID codec_id;
             uint32_t fourcc;
             uint16_t sample_size;
@@ -2939,8 +2937,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
                 continue;
         } else
         if (!strcmp(track->codec_id, "V_MS/VFW/FOURCC") &&
-             track->codec_priv.size >= 40               &&
-            track->codec_priv.data) {
+            track->codec_priv.size >= 40) {
             track->ms_compat    = 1;
             par->bits_per_coded_sample = AV_RL16(track->codec_priv.data + 14);
             par->codec_tag      = AV_RL32(track->codec_priv.data + 16);
@@ -2951,8 +2948,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
                                                   par->codec_tag);
             extradata_offset    = 40;
         } else if (!strcmp(track->codec_id, "V_QUICKTIME") &&
-                   (track->codec_priv.size >= 21)          &&
-                   (track->codec_priv.data)) {
+                   track->codec_priv.size >= 21) {
             uint32_t fourcc;
             int ret = get_qt_codec(track, &fourcc, &codec_id);
             if (ret < 0)
