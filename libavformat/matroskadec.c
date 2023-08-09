@@ -3097,7 +3097,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
 
             /* export alpha mode flag as metadata tag  */
             if (track->video.alpha_mode)
-                av_dict_set(&st->metadata, "alpha_mode", "1", 0);
+                av_dict_set_int(&st->metadata, "alpha_mode", 1, 0);
 
             /* if we have virtual track, mark the real tracks */
             for (j=0; j < track->operation.combine_planes.nb_elem; j++) {
