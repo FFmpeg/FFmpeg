@@ -67,7 +67,8 @@ void ff_put_bmp_header(AVIOContext *pb, AVCodecParameters *par, int for_asf, int
 int ff_put_wav_header(AVFormatContext *s, AVIOContext *pb, AVCodecParameters *par, int flags);
 
 enum AVCodecID ff_wav_codec_get_id(unsigned int tag, int bps);
-int ff_get_wav_header(AVFormatContext *s, AVIOContext *pb, AVCodecParameters *par, int size, int big_endian);
+int ff_get_wav_header(void *logctx, AVIOContext *pb, AVCodecParameters *par,
+                      int size, int big_endian);
 
 extern const AVCodecTag ff_codec_bmp_tags[]; // exposed through avformat_get_riff_video_tags()
 extern const AVCodecTag ff_codec_wav_tags[];
