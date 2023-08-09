@@ -2528,7 +2528,6 @@ static int matroska_parse_tracks(AVFormatContext *s)
         AVStream *st;
         FFStream *sti;
         char* key_id_base64 = NULL;
-        int bit_depth = -1;
 
         /* Apply some sanity checks. */
         if (track->type != MATROSKA_TRACK_TYPE_VIDEO &&
@@ -2662,6 +2661,9 @@ static int matroska_parse_tracks(AVFormatContext *s)
         sti = ffstream(st);
         par = st->codecpar;
 
+        par->codec_id  = codec_id;
+        par->codec_tag = fourcc;
+
         if (track->flag_default)
             st->disposition |= AV_DISPOSITION_DEFAULT;
         if (track->flag_forced)
@@ -2704,13 +2706,13 @@ static int matroska_parse_tracks(AVFormatContext *s)
              track->codec_priv.size >= 40               &&
             track->codec_priv.data) {
             track->ms_compat    = 1;
-            bit_depth           = AV_RL16(track->codec_priv.data + 14);
-            fourcc              = AV_RL32(track->codec_priv.data + 16);
-            codec_id            = ff_codec_get_id(ff_codec_bmp_tags,
-                                                  fourcc);
-            if (!codec_id)
-                codec_id        = ff_codec_get_id(ff_codec_movvideo_tags,
-                                                  fourcc);
+            par->bits_per_coded_sample = AV_RL16(track->codec_priv.data + 14);
+            par->codec_tag      = AV_RL32(track->codec_priv.data + 16);
+            par->codec_id       = ff_codec_get_id(ff_codec_bmp_tags,
+                                                  par->codec_tag);
+            if (!par->codec_id)
+                par->codec_id   = ff_codec_get_id(ff_codec_movvideo_tags,
+                                                  par->codec_tag);
             extradata_offset    = 40;
         } else if (!strcmp(track->codec_id, "A_MS/ACM") &&
                    track->codec_priv.size >= 14         &&
@@ -2723,13 +2725,12 @@ static int matroska_parse_tracks(AVFormatContext *s)
                                     track->codec_priv.size, 0);
             if (ret < 0)
                 return ret;
-            codec_id         = par->codec_id;
-            fourcc           = par->codec_tag;
             extradata_offset = FFMIN(track->codec_priv.size, 18);
         } else if (!strcmp(track->codec_id, "A_QUICKTIME")
                    /* Normally 36, but allow noncompliant private data */
                    && (track->codec_priv.size >= 32)
                    && (track->codec_priv.data)) {
+            uint32_t fourcc;
             uint16_t sample_size;
             int ret = get_qt_codec(track, &fourcc, &codec_id);
             if (ret < 0)
@@ -2748,9 +2749,12 @@ static int matroska_parse_tracks(AVFormatContext *s)
                     fourcc == MKTAG('s','o','w','t')) &&
                     sample_size == 8)
                 codec_id = AV_CODEC_ID_PCM_S8;
+            par->codec_id  = codec_id;
+            par->codec_tag = fourcc;
         } else if (!strcmp(track->codec_id, "V_QUICKTIME") &&
                    (track->codec_priv.size >= 21)          &&
                    (track->codec_priv.data)) {
+            uint32_t fourcc;
             int ret = get_qt_codec(track, &fourcc, &codec_id);
             if (ret < 0)
                 return ret;
@@ -2758,11 +2762,12 @@ static int matroska_parse_tracks(AVFormatContext *s)
                 fourcc = MKTAG('S','V','Q','3');
                 codec_id = ff_codec_get_id(ff_codec_movvideo_tags, fourcc);
             }
+            par->codec_id = codec_id;
             if (codec_id == AV_CODEC_ID_NONE)
                 av_log(matroska->ctx, AV_LOG_ERROR,
                        "mov FourCC not found %s.\n", av_fourcc2str(fourcc));
             if (track->codec_priv.size >= 86) {
-                bit_depth = AV_RB16(track->codec_priv.data + 82);
+                unsigned bit_depth = AV_RB16(track->codec_priv.data + 82);
                 ffio_init_context(&b, track->codec_priv.data,
                                   track->codec_priv.size,
                                   0, NULL, NULL, NULL, NULL);
@@ -2770,34 +2775,36 @@ static int matroska_parse_tracks(AVFormatContext *s)
                     bit_depth &= 0x1F;
                     track->has_palette = 1;
                 }
+                par->bits_per_coded_sample = bit_depth;
             }
+            par->codec_tag = fourcc;
         } else if (codec_id == AV_CODEC_ID_PCM_S16BE) {
             switch (track->audio.bitdepth) {
             case  8:
-                codec_id = AV_CODEC_ID_PCM_U8;
+                par->codec_id = AV_CODEC_ID_PCM_U8;
                 break;
             case 24:
-                codec_id = AV_CODEC_ID_PCM_S24BE;
+                par->codec_id = AV_CODEC_ID_PCM_S24BE;
                 break;
             case 32:
-                codec_id = AV_CODEC_ID_PCM_S32BE;
+                par->codec_id = AV_CODEC_ID_PCM_S32BE;
                 break;
             }
         } else if (codec_id == AV_CODEC_ID_PCM_S16LE) {
             switch (track->audio.bitdepth) {
             case  8:
-                codec_id = AV_CODEC_ID_PCM_U8;
+                par->codec_id = AV_CODEC_ID_PCM_U8;
                 break;
             case 24:
-                codec_id = AV_CODEC_ID_PCM_S24LE;
+                par->codec_id = AV_CODEC_ID_PCM_S24LE;
                 break;
             case 32:
-                codec_id = AV_CODEC_ID_PCM_S32LE;
+                par->codec_id = AV_CODEC_ID_PCM_S32LE;
                 break;
             }
         } else if (codec_id == AV_CODEC_ID_PCM_F32LE &&
                    track->audio.bitdepth == 64) {
-            codec_id = AV_CODEC_ID_PCM_F64LE;
+            par->codec_id = AV_CODEC_ID_PCM_F64LE;
         } else if (codec_id == AV_CODEC_ID_AAC && !track->codec_priv.size) {
             int profile = matroska_aac_profile(track->codec_id);
             int sri     = matroska_aac_sri(track->audio.samplerate);
@@ -2912,7 +2919,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
             extradata_size = WAVPACK_EXTRADATA_SIZE;
             AV_WL16(extradata, 0x410);
         } else if (codec_id == AV_CODEC_ID_PRORES && track->codec_priv.size == 4) {
-            fourcc = AV_RL32(track->codec_priv.data);
+            par->codec_tag = AV_RL32(track->codec_priv.data);
         } else if (codec_id == AV_CODEC_ID_VP9) {
             /* we don't need any value stored in CodecPrivate.
                make sure that it's not exported as extradata. */
@@ -2949,11 +2956,9 @@ static int matroska_parse_tracks(AVFormatContext *s)
         }
         track->codec_priv.size -= extradata_offset;
 
-        if (codec_id == AV_CODEC_ID_NONE)
+        if (par->codec_id == AV_CODEC_ID_NONE)
             av_log(matroska->ctx, AV_LOG_INFO,
                    "Unknown/unsupported AVCodecID %s.\n", track->codec_id);
-
-        par->codec_id = codec_id;
 
         if (!par->extradata && (extradata_size > 0 || track->codec_priv.size > 0)) {
             const uint8_t *src = extradata_size > 0 ? extradata :
@@ -2972,9 +2977,6 @@ static int matroska_parse_tracks(AVFormatContext *s)
             int display_height_mul = 1;
 
             par->codec_type = AVMEDIA_TYPE_VIDEO;
-            par->codec_tag  = fourcc;
-            if (bit_depth >= 0)
-                par->bits_per_coded_sample = bit_depth;
             par->width      = track->video.pixel_width;
             par->height     = track->video.pixel_height;
 
@@ -3049,7 +3051,6 @@ static int matroska_parse_tracks(AVFormatContext *s)
                 return ret;
         } else if (track->type == MATROSKA_TRACK_TYPE_AUDIO) {
             par->codec_type  = AVMEDIA_TYPE_AUDIO;
-            par->codec_tag   = fourcc;
             par->sample_rate = track->audio.out_samplerate;
             // channel layout may be already set by codec private checks above
             if (!av_channel_layout_check(&par->ch_layout)) {
@@ -3075,7 +3076,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
                                                  (AVRational){1, 1000000000},
                                                  (AVRational){1, par->sample_rate});
             }
-        } else if (codec_id == AV_CODEC_ID_WEBVTT) {
+        } else if (par->codec_id == AV_CODEC_ID_WEBVTT) {
             par->codec_type = AVMEDIA_TYPE_SUBTITLE;
 
             if (!strcmp(track->codec_id, "D_WEBVTT/CAPTIONS")) {
