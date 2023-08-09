@@ -2739,48 +2739,48 @@ static int mkv_parse_video_codec(MatroskaTrack *track, AVCodecParameters *par,
                                  const MatroskaDemuxContext *matroska,
                                  int *extradata_offset)
 {
-        if (!strcmp(track->codec_id, "V_MS/VFW/FOURCC") &&
-            track->codec_priv.size >= 40) {
-            track->ms_compat    = 1;
-            par->bits_per_coded_sample = AV_RL16(track->codec_priv.data + 14);
-            par->codec_tag      = AV_RL32(track->codec_priv.data + 16);
-            par->codec_id       = ff_codec_get_id(ff_codec_bmp_tags,
-                                                  par->codec_tag);
-            if (!par->codec_id)
-                par->codec_id   = ff_codec_get_id(ff_codec_movvideo_tags,
-                                                  par->codec_tag);
-            *extradata_offset   = 40;
-            return 0;
-        } else if (!strcmp(track->codec_id, "V_QUICKTIME") &&
-                   track->codec_priv.size >= 21) {
-            enum AVCodecID codec_id;
-            uint32_t fourcc;
-            int ret = get_qt_codec(track, &fourcc, &codec_id);
-            if (ret < 0)
-                return ret;
-            if (codec_id == AV_CODEC_ID_NONE && AV_RL32(track->codec_priv.data+4) == AV_RL32("SMI ")) {
-                fourcc = MKTAG('S','V','Q','3');
-                codec_id = ff_codec_get_id(ff_codec_movvideo_tags, fourcc);
-            }
-            par->codec_id = codec_id;
-            if (codec_id == AV_CODEC_ID_NONE)
-                av_log(matroska->ctx, AV_LOG_ERROR,
-                       "mov FourCC not found %s.\n", av_fourcc2str(fourcc));
-            if (track->codec_priv.size >= 86) {
-        FFIOContext b;
-                unsigned bit_depth = AV_RB16(track->codec_priv.data + 82);
-                ffio_init_context(&b, track->codec_priv.data,
-                                  track->codec_priv.size,
-                                  0, NULL, NULL, NULL, NULL);
-                if (ff_get_qtpalette(codec_id, &b.pub, track->palette)) {
-                    bit_depth &= 0x1F;
-                    track->has_palette = 1;
-                }
-                par->bits_per_coded_sample = bit_depth;
-            }
-            par->codec_tag = fourcc;
-            return 0;
+    if (!strcmp(track->codec_id, "V_MS/VFW/FOURCC") &&
+        track->codec_priv.size >= 40) {
+        track->ms_compat    = 1;
+        par->bits_per_coded_sample = AV_RL16(track->codec_priv.data + 14);
+        par->codec_tag      = AV_RL32(track->codec_priv.data + 16);
+        par->codec_id       = ff_codec_get_id(ff_codec_bmp_tags,
+                                              par->codec_tag);
+        if (!par->codec_id)
+            par->codec_id   = ff_codec_get_id(ff_codec_movvideo_tags,
+                                              par->codec_tag);
+        *extradata_offset   = 40;
+        return 0;
+    } else if (!strcmp(track->codec_id, "V_QUICKTIME") &&
+                track->codec_priv.size >= 21) {
+        enum AVCodecID codec_id;
+        uint32_t fourcc;
+        int ret = get_qt_codec(track, &fourcc, &codec_id);
+        if (ret < 0)
+            return ret;
+        if (codec_id == AV_CODEC_ID_NONE && AV_RL32(track->codec_priv.data+4) == AV_RL32("SMI ")) {
+            fourcc   = MKTAG('S','V','Q','3');
+            codec_id = ff_codec_get_id(ff_codec_movvideo_tags, fourcc);
         }
+        par->codec_id = codec_id;
+        if (codec_id == AV_CODEC_ID_NONE)
+            av_log(matroska->ctx, AV_LOG_ERROR,
+                   "mov FourCC not found %s.\n", av_fourcc2str(fourcc));
+        if (track->codec_priv.size >= 86) {
+            FFIOContext b;
+            unsigned bit_depth = AV_RB16(track->codec_priv.data + 82);
+            ffio_init_context(&b, track->codec_priv.data,
+                              track->codec_priv.size,
+                              0, NULL, NULL, NULL, NULL);
+            if (ff_get_qtpalette(codec_id, &b.pub, track->palette)) {
+                bit_depth         &= 0x1F;
+                track->has_palette = 1;
+            }
+            par->bits_per_coded_sample = bit_depth;
+        }
+        par->codec_tag = fourcc;
+        return 0;
+    }
 
     switch (par->codec_id) {
     case AV_CODEC_ID_RV10:
@@ -2794,9 +2794,9 @@ static int mkv_parse_video_codec(MatroskaTrack *track, AVCodecParameters *par,
             par->codec_tag = AV_RL32(track->codec_priv.data);
         break;
     case AV_CODEC_ID_VP9:
-            /* we don't need any value stored in CodecPrivate.
-               make sure that it's not exported as extradata. */
-            track->codec_priv.size = 0;
+        /* we don't need any value stored in CodecPrivate.
+         * make sure that it's not exported as extradata. */
+        track->codec_priv.size = 0;
         break;
     }
 
