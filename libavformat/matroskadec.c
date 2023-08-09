@@ -2516,79 +2516,78 @@ static int mka_parse_audio_codec(MatroskaTrack *track, AVCodecParameters *par,
                                  const MatroskaDemuxContext *matroska,
                                  AVFormatContext *s, int *extradata_offset)
 {
-        uint8_t extradata[FFMAX3(AAC_MAX_EXTRADATA_SIZE,
-                                 TTA_EXTRADATA_SIZE,
-                                 WAVPACK_EXTRADATA_SIZE)];
-        int extradata_size = 0; // > 0 means that the extradata buffer is used
-        int ret;
+    uint8_t extradata[FFMAX3(AAC_MAX_EXTRADATA_SIZE,
+                             TTA_EXTRADATA_SIZE,
+                             WAVPACK_EXTRADATA_SIZE)];
+    int extradata_size = 0; // > 0 means that the extradata buffer is used
+    int ret;
 
-        if (!strcmp(track->codec_id, "A_MS/ACM") &&
-            track->codec_priv.size >= 14) {
+    if (!strcmp(track->codec_id, "A_MS/ACM") &&
+        track->codec_priv.size >= 14) {
         FFIOContext b;
-            int ret;
-            ffio_init_context(&b, track->codec_priv.data,
-                              track->codec_priv.size,
-                              0, NULL, NULL, NULL, NULL);
-            ret = ff_get_wav_header(s, &b.pub, par,
-                                    track->codec_priv.size, 0);
-            if (ret < 0)
-                return ret;
-            *extradata_offset = FFMIN(track->codec_priv.size, 18);
-            return 0;
-        } else if (!strcmp(track->codec_id, "A_QUICKTIME")
-                   /* Normally 36, but allow noncompliant private data */
-                   && track->codec_priv.size >= 32) {
-            enum AVCodecID codec_id;
-            uint32_t fourcc;
-            uint16_t sample_size;
-            int ret = get_qt_codec(track, &fourcc, &codec_id);
-            if (ret < 0)
-                return ret;
-            sample_size = AV_RB16(track->codec_priv.data + 26);
-            if (fourcc == 0) {
-                if (sample_size == 8) {
-                    fourcc = MKTAG('r','a','w',' ');
-                    codec_id = ff_codec_get_id(ff_codec_movaudio_tags, fourcc);
-                } else if (sample_size == 16) {
-                    fourcc = MKTAG('t','w','o','s');
-                    codec_id = ff_codec_get_id(ff_codec_movaudio_tags, fourcc);
-                }
+        ffio_init_context(&b, track->codec_priv.data,
+                            track->codec_priv.size,
+                            0, NULL, NULL, NULL, NULL);
+        ret = ff_get_wav_header(s, &b.pub, par,
+                                track->codec_priv.size, 0);
+        if (ret < 0)
+            return ret;
+        *extradata_offset = FFMIN(track->codec_priv.size, 18);
+        return 0;
+    } else if (!strcmp(track->codec_id, "A_QUICKTIME") &&
+               /* Normally 36, but allow noncompliant private data */
+               track->codec_priv.size >= 32) {
+        enum AVCodecID codec_id;
+        uint32_t fourcc;
+        uint16_t sample_size;
+
+        ret = get_qt_codec(track, &fourcc, &codec_id);
+        if (ret < 0)
+            return ret;
+        sample_size = AV_RB16(track->codec_priv.data + 26);
+        if (fourcc == 0) {
+            if (sample_size == 8) {
+                fourcc = MKTAG('r','a','w',' ');
+                codec_id = ff_codec_get_id(ff_codec_movaudio_tags, fourcc);
+            } else if (sample_size == 16) {
+                fourcc = MKTAG('t','w','o','s');
+                codec_id = ff_codec_get_id(ff_codec_movaudio_tags, fourcc);
             }
-            if ((fourcc == MKTAG('t','w','o','s') ||
-                    fourcc == MKTAG('s','o','w','t')) &&
-                    sample_size == 8)
-                codec_id = AV_CODEC_ID_PCM_S8;
-            par->codec_id  = codec_id;
-            par->codec_tag = fourcc;
-            return 0;
         }
+        if ((fourcc == MKTAG('t','w','o','s') ||
+             fourcc == MKTAG('s','o','w','t')) && sample_size == 8)
+            codec_id = AV_CODEC_ID_PCM_S8;
+        par->codec_id  = codec_id;
+        par->codec_tag = fourcc;
+        return 0;
+    }
 
     switch (par->codec_id) {
     case AV_CODEC_ID_PCM_S16BE:
-            switch (track->audio.bitdepth) {
-            case  8:
-                par->codec_id = AV_CODEC_ID_PCM_U8;
-                break;
-            case 24:
-                par->codec_id = AV_CODEC_ID_PCM_S24BE;
-                break;
-            case 32:
-                par->codec_id = AV_CODEC_ID_PCM_S32BE;
-                break;
-            }
+        switch (track->audio.bitdepth) {
+        case  8:
+            par->codec_id = AV_CODEC_ID_PCM_U8;
+            break;
+        case 24:
+            par->codec_id = AV_CODEC_ID_PCM_S24BE;
+            break;
+        case 32:
+            par->codec_id = AV_CODEC_ID_PCM_S32BE;
+            break;
+        }
         break;
     case AV_CODEC_ID_PCM_S16LE:
-            switch (track->audio.bitdepth) {
-            case  8:
-                par->codec_id = AV_CODEC_ID_PCM_U8;
-                break;
-            case 24:
-                par->codec_id = AV_CODEC_ID_PCM_S24LE;
-                break;
-            case 32:
-                par->codec_id = AV_CODEC_ID_PCM_S32LE;
-                break;
-            }
+        switch (track->audio.bitdepth) {
+        case  8:
+            par->codec_id = AV_CODEC_ID_PCM_U8;
+            break;
+        case 24:
+            par->codec_id = AV_CODEC_ID_PCM_S24LE;
+            break;
+        case 32:
+            par->codec_id = AV_CODEC_ID_PCM_S32LE;
+            break;
+        }
         break;
     case AV_CODEC_ID_PCM_F32LE:
         if (track->audio.bitdepth == 64)
@@ -2628,84 +2627,84 @@ static int mka_parse_audio_codec(MatroskaTrack *track, AVCodecParameters *par,
         break;
     case AV_CODEC_ID_TTA:
     {
-            uint8_t *ptr;
-            if (track->audio.channels > UINT16_MAX ||
-                track->audio.bitdepth > UINT16_MAX) {
-                av_log(matroska->ctx, AV_LOG_WARNING,
-                       "Too large audio channel number %"PRIu64
-                       " or bitdepth %"PRIu64". Skipping track.\n",
-                       track->audio.channels, track->audio.bitdepth);
-                if (matroska->ctx->error_recognition & AV_EF_EXPLODE)
-                    return AVERROR_INVALIDDATA;
-                else
-                    return SKIP_TRACK;
-            }
-            if (track->audio.out_samplerate < 0 || track->audio.out_samplerate > INT_MAX)
+        uint8_t *ptr;
+        if (track->audio.channels > UINT16_MAX ||
+            track->audio.bitdepth > UINT16_MAX) {
+            av_log(matroska->ctx, AV_LOG_WARNING,
+                   "Too large audio channel number %"PRIu64
+                   " or bitdepth %"PRIu64". Skipping track.\n",
+                   track->audio.channels, track->audio.bitdepth);
+            if (matroska->ctx->error_recognition & AV_EF_EXPLODE)
                 return AVERROR_INVALIDDATA;
-            extradata_size = TTA_EXTRADATA_SIZE;
-            ptr = extradata;
-            bytestream_put_be32(&ptr, AV_RB32("TTA1"));
-            bytestream_put_le16(&ptr, 1);
-            bytestream_put_le16(&ptr, track->audio.channels);
-            bytestream_put_le16(&ptr, track->audio.bitdepth);
-            bytestream_put_le32(&ptr, track->audio.out_samplerate);
-            bytestream_put_le32(&ptr, av_rescale(matroska->duration * matroska->time_scale,
-                                                 track->audio.out_samplerate,
-                                                 AV_TIME_BASE * 1000));
+            else
+                return SKIP_TRACK;
+        }
+        if (track->audio.out_samplerate < 0 || track->audio.out_samplerate > INT_MAX)
+            return AVERROR_INVALIDDATA;
+        extradata_size = TTA_EXTRADATA_SIZE;
+        ptr = extradata;
+        bytestream_put_be32(&ptr, AV_RB32("TTA1"));
+        bytestream_put_le16(&ptr, 1);
+        bytestream_put_le16(&ptr, track->audio.channels);
+        bytestream_put_le16(&ptr, track->audio.bitdepth);
+        bytestream_put_le32(&ptr, track->audio.out_samplerate);
+        bytestream_put_le32(&ptr, av_rescale(matroska->duration * matroska->time_scale,
+                                             track->audio.out_samplerate,
+                                             AV_TIME_BASE * 1000));
         break;
     }
     case AV_CODEC_ID_RA_144:
-            track->audio.out_samplerate = 8000;
-            track->audio.channels       = 1;
+        track->audio.out_samplerate = 8000;
+        track->audio.channels       = 1;
         break;
     case AV_CODEC_ID_RA_288:
     case AV_CODEC_ID_COOK:
     case AV_CODEC_ID_ATRAC3:
     case AV_CODEC_ID_SIPR:
     {
-            const uint8_t *ptr = track->codec_priv.data;
-            int flavor;
+        const uint8_t *ptr = track->codec_priv.data;
+        int flavor;
 
         if (!track->codec_priv.size)
             break;
 
-            if (track->codec_priv.size < 46)
-                return AVERROR_INVALIDDATA;
-            ptr += 22;
-            flavor                       = bytestream_get_be16(&ptr);
-            track->audio.coded_framesize = bytestream_get_be32(&ptr);
-            ptr += 12;
-            track->audio.sub_packet_h    = bytestream_get_be16(&ptr);
-            track->audio.frame_size      = bytestream_get_be16(&ptr);
-            track->audio.sub_packet_size = bytestream_get_be16(&ptr);
-            if (track->audio.coded_framesize <= 0 ||
-                track->audio.sub_packet_h    <= 0 ||
-                track->audio.frame_size      <= 0)
-                return AVERROR_INVALIDDATA;
+        if (track->codec_priv.size < 46)
+            return AVERROR_INVALIDDATA;
+        ptr += 22;
+        flavor                       = bytestream_get_be16(&ptr);
+        track->audio.coded_framesize = bytestream_get_be32(&ptr);
+        ptr += 12;
+        track->audio.sub_packet_h    = bytestream_get_be16(&ptr);
+        track->audio.frame_size      = bytestream_get_be16(&ptr);
+        track->audio.sub_packet_size = bytestream_get_be16(&ptr);
+        if (track->audio.coded_framesize <= 0 ||
+            track->audio.sub_packet_h    <= 0 ||
+            track->audio.frame_size      <= 0)
+            return AVERROR_INVALIDDATA;
 
-            if (par->codec_id == AV_CODEC_ID_RA_288) {
-                if (track->audio.sub_packet_h & 1 || 2 * track->audio.frame_size
-                    != (int64_t)track->audio.sub_packet_h * track->audio.coded_framesize)
+        if (par->codec_id == AV_CODEC_ID_RA_288) {
+            if (track->audio.sub_packet_h & 1 || 2 * track->audio.frame_size
+                != (int64_t)track->audio.sub_packet_h * track->audio.coded_framesize)
+                return AVERROR_INVALIDDATA;
+            par->block_align = track->audio.coded_framesize;
+            track->codec_priv.size = 0;
+        } else {
+            if (par->codec_id == AV_CODEC_ID_SIPR) {
+                static const int sipr_bit_rate[4] = { 6504, 8496, 5000, 16000 };
+                if (flavor > 3)
                     return AVERROR_INVALIDDATA;
-                par->block_align = track->audio.coded_framesize;
-                track->codec_priv.size = 0;
-            } else {
-                if (par->codec_id == AV_CODEC_ID_SIPR) {
-                    static const int sipr_bit_rate[4] = { 6504, 8496, 5000, 16000 };
-                    if (flavor > 3)
-                        return AVERROR_INVALIDDATA;
-                    track->audio.sub_packet_size = ff_sipr_subpk_size[flavor];
-                    par->bit_rate          = sipr_bit_rate[flavor];
-                } else if (track->audio.sub_packet_size <= 0 ||
-                           track->audio.frame_size % track->audio.sub_packet_size)
-                    return AVERROR_INVALIDDATA;
-                par->block_align = track->audio.sub_packet_size;
-                *extradata_offset = 78;
-            }
-            track->audio.buf = av_malloc_array(track->audio.sub_packet_h,
-                                               track->audio.frame_size);
-            if (!track->audio.buf)
-                return AVERROR(ENOMEM);
+                track->audio.sub_packet_size = ff_sipr_subpk_size[flavor];
+                par->bit_rate          = sipr_bit_rate[flavor];
+            } else if (track->audio.sub_packet_size <= 0 ||
+                        track->audio.frame_size % track->audio.sub_packet_size)
+                return AVERROR_INVALIDDATA;
+            par->block_align  = track->audio.sub_packet_size;
+            *extradata_offset = 78;
+        }
+        track->audio.buf = av_malloc_array(track->audio.sub_packet_h,
+                                            track->audio.frame_size);
+        if (!track->audio.buf)
+            return AVERROR(ENOMEM);
         break;
     }
     case AV_CODEC_ID_FLAC:
