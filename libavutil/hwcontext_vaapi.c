@@ -1048,6 +1048,9 @@ static const struct {
 #if defined(VA_FOURCC_Y412) && defined(DRM_FORMAT_XVYU12_16161616)
     DRM_MAP(Y412, 1, DRM_FORMAT_XVYU12_16161616),
 #endif
+#if defined(VA_FOURCC_X2R10G10B10) && defined(DRM_FORMAT_XRGB2101010)
+    DRM_MAP(X2R10G10B10, 1, DRM_FORMAT_XRGB2101010),
+#endif
 };
 #undef DRM_MAP
 
