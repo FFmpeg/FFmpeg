@@ -387,7 +387,6 @@ extern const CodecTags ff_mkv_codec_tags[];
 extern const CodecTags ff_webm_codec_tags[];
 extern const AVMetadataConv ff_mkv_metadata_conv[];
 extern const char * const ff_matroska_video_stereo_mode[MATROSKA_VIDEO_STEREOMODE_TYPE_NB];
-extern const char * const ff_matroska_video_stereo_plane[MATROSKA_VIDEO_STEREO_PLANE_COUNT];
 
 /* AVStream Metadata tag keys for WebM Dash Manifest */
 #define INITIALIZATION_RANGE "webm_dash_manifest_initialization_range"

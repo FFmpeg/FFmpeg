@@ -824,6 +824,12 @@ static const CodecMime mkv_mime_tags[] = {
     {""                           , AV_CODEC_ID_NONE}
 };
 
+static const char * const matroska_video_stereo_plane[MATROSKA_VIDEO_STEREO_PLANE_COUNT] = {
+    "left",
+    "right",
+    "background",
+};
+
 static const char *const matroska_doctypes[] = { "matroska", "webm" };
 
 /*
@@ -2991,7 +2997,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
                 if (planes[j].type >= MATROSKA_VIDEO_STEREO_PLANE_COUNT)
                     continue;
                 snprintf(buf, sizeof(buf), "%s_%d",
-                         ff_matroska_video_stereo_plane[planes[j].type], i);
+                         matroska_video_stereo_plane[planes[j].type], i);
                 for (k=0; k < matroska->tracks.nb_elem; k++)
                     if (planes[j].uid == tracks[k].uid && tracks[k].stream) {
                         av_dict_set(&tracks[k].stream->metadata,
