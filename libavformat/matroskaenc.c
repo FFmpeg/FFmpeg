@@ -1592,7 +1592,7 @@ static int mkv_write_stereo_mode(AVFormatContext *s, EbmlWriter *writer,
     // convert metadata into proper side data and add it to the stream
     if ((tag = av_dict_get(st->metadata, "stereo_mode", NULL, 0)) ||
         (tag = av_dict_get( s->metadata, "stereo_mode", NULL, 0))) {
-        int stereo_mode = atoi(tag->value);
+        long stereo_mode = strtol(tag->value, NULL, 0);
 
         for (int i = 0; i < MATROSKA_VIDEO_STEREOMODE_TYPE_NB; i++)
             if (!strcmp(tag->value, ff_matroska_video_stereo_mode[i])){
@@ -1600,7 +1600,7 @@ static int mkv_write_stereo_mode(AVFormatContext *s, EbmlWriter *writer,
                 break;
             }
 
-        if (stereo_mode < MATROSKA_VIDEO_STEREOMODE_TYPE_NB &&
+        if ((unsigned long)stereo_mode < MATROSKA_VIDEO_STEREOMODE_TYPE_NB &&
             stereo_mode != 10 && stereo_mode != 12) {
             int ret = ff_mkv_stereo3d_conv(st, stereo_mode);
             if (ret < 0)
@@ -1748,11 +1748,10 @@ static int mkv_write_track_video(AVFormatContext *s, MatroskaMuxContext *mkv,
     if (ret < 0)
         return ret;
 
-    if (((tag = av_dict_get(st->metadata, "alpha_mode", NULL, 0)) && atoi(tag->value)) ||
-        ((tag = av_dict_get( s->metadata, "alpha_mode", NULL, 0)) && atoi(tag->value)) ||
-        (par->format == AV_PIX_FMT_YUVA420P)) {
+    if (par->format == AV_PIX_FMT_YUVA420P ||
+        ((tag = av_dict_get(st->metadata, "alpha_mode", NULL, 0)) ||
+         (tag = av_dict_get( s->metadata, "alpha_mode", NULL, 0))) && strtol(tag->value, NULL, 0))
         ebml_writer_add_uint(&writer, MATROSKA_ID_VIDEOALPHAMODE, 1);
-    }
 
     // write DisplayWidth and DisplayHeight, they contain the size of
     // a single source view and/or the display aspect ratio
