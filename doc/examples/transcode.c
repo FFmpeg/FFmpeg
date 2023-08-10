@@ -585,11 +585,38 @@ int main(int argc, char **argv)
         av_packet_unref(packet);
     }
 
-    /* flush filters and encoders */
+    /* flush decoders, filters and encoders */
     for (i = 0; i < ifmt_ctx->nb_streams; i++) {
-        /* flush filter */
+        StreamContext *stream;
+
         if (!filter_ctx[i].filter_graph)
             continue;
+
+        stream = &stream_ctx[i];
+
+        av_log(NULL, AV_LOG_INFO, "Flushing stream %u decoder\n", i);
+
+        /* flush decoder */
+        ret = avcodec_send_packet(stream->dec_ctx, NULL);
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Flushing decoding failed\n");
+            goto end;
+        }
+
+        while (ret >= 0) {
+            ret = avcodec_receive_frame(stream->dec_ctx, stream->dec_frame);
+            if (ret == AVERROR_EOF)
+                break;
+            else if (ret < 0)
+                goto end;
+
+            stream->dec_frame->pts = stream->dec_frame->best_effort_timestamp;
+            ret = filter_encode_write_frame(stream->dec_frame, i);
+            if (ret < 0)
+                goto end;
+        }
+
+        /* flush filter */
         ret = filter_encode_write_frame(NULL, i);
         if (ret < 0) {
             av_log(NULL, AV_LOG_ERROR, "Flushing filter failed\n");
