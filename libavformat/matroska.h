@@ -23,7 +23,6 @@
 #define AVFORMAT_MATROSKA_H
 
 #include "libavcodec/codec_id.h"
-#include "avformat.h"
 #include "metadata.h"
 
 /* EBML version supported */
@@ -436,8 +435,6 @@ extern const char * const ff_matroska_video_stereo_mode[MATROSKA_VIDEO_STEREOMOD
 #define CUE_TIMESTAMPS "webm_dash_manifest_cue_timestamps"
 #define TRACK_NUMBER "webm_dash_manifest_track_number"
 #define CODEC_PRIVATE_SIZE "webm_dash_manifest_codec_priv_size"
-
-int ff_mkv_stereo3d_conv(AVStream *st, MatroskaVideoStereoModeType stereo_mode);
 
 #define DVCC_DVVC_BLOCK_TYPE_NAME "Dolby Vision configuration"
 
