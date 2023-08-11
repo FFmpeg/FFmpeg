@@ -1583,6 +1583,7 @@ static int mkv_write_stereo_mode(AVFormatContext *s, EbmlWriter *writer,
                                  const AVStream *st, int is_webm,
                                  int *h_width, int *h_height)
 {
+    const char *error_message_addendum = "";
     const AVDictionaryEntry *tag;
     MatroskaVideoStereoModeType format = MATROSKA_VIDEO_STEREOMODE_TYPE_NB;
 
@@ -1656,6 +1657,7 @@ static int mkv_write_stereo_mode(AVFormatContext *s, EbmlWriter *writer,
 
     // if webm, do not write unsupported modes
     if (is_webm && !(webm_bitfield >> format)) {
+        error_message_addendum = " for WebM";
         goto fail;
     }
 
@@ -1668,7 +1670,8 @@ static int mkv_write_stereo_mode(AVFormatContext *s, EbmlWriter *writer,
     return 0;
 fail:
     av_log(s, AV_LOG_ERROR,
-            "The specified stereo mode is not valid.\n");
+            "The specified stereo mode is not valid%s.\n",
+            error_message_addendum);
     return AVERROR(EINVAL);
 }
 
