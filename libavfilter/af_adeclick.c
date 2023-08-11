@@ -734,9 +734,10 @@ static av_cold void uninit(AVFilterContext *ctx)
     AudioDeclickContext *s = ctx->priv;
     int i;
 
-    av_log(ctx, AV_LOG_INFO, "Detected %s in %"PRId64" of %"PRId64" samples (%g%%).\n",
-           s->is_declip ? "clips" : "clicks", s->detected_errors,
-           s->nb_samples, 100. * s->detected_errors / s->nb_samples);
+    if (s->nb_samples > 0)
+        av_log(ctx, AV_LOG_INFO, "Detected %s in %"PRId64" of %"PRId64" samples (%g%%).\n",
+               s->is_declip ? "clips" : "clicks", s->detected_errors,
+               s->nb_samples, 100. * s->detected_errors / s->nb_samples);
 
     av_audio_fifo_free(s->fifo);
     av_audio_fifo_free(s->efifo);
