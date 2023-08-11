@@ -30,6 +30,7 @@
 #include "config_components.h"
 
 #include "libavutil/bprint.h"
+#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
 #include "avio_internal.h"
@@ -63,11 +64,15 @@ static const AVCodecTag *const au_codec_tags[] = { codec_au_tags, NULL };
 
 static int au_probe(const AVProbeData *p)
 {
-    if (p->buf[0] == '.' && p->buf[1] == 's' &&
-        p->buf[2] == 'n' && p->buf[3] == 'd')
-        return AVPROBE_SCORE_MAX;
-    else
+    if (p->buf_size < 24 ||
+        AV_RL32(p->buf) != MKTAG('.', 's', 'n', 'd') ||
+        AV_RN32(p->buf+4)  == 0 ||
+        AV_RN32(p->buf+8)  == 0 ||
+        AV_RN32(p->buf+12) == 0 ||
+        AV_RN32(p->buf+16) == 0 ||
+        AV_RN32(p->buf+20) == 0)
         return 0;
+    return AVPROBE_SCORE_MAX;
 }
 
 static int au_read_annotation(AVFormatContext *s, int size)
