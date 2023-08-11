@@ -1,0 +1,193 @@
+1f074fcfb6f64ade0ad4b01f9e910515 *tests/data/fate/matroska-stereo_mode.matroska
+1470758 tests/data/fate/matroska-stereo_mode.matroska
+#extradata 0:     3510, 0x560c3919
+#extradata 1:     3510, 0x560c3919
+#extradata 2:     3510, 0x560c3919
+#extradata 3:     3510, 0x560c3919
+#extradata 4:     3510, 0x560c3919
+#extradata 5:     3510, 0x560c3919
+#extradata 6:     3510, 0x560c3919
+#tb 0: 1/1000
+#media_type 0: video
+#codec_id 0: theora
+#dimensions 0: 512x512
+#sar 0: 0/1
+#tb 1: 1/1000
+#media_type 1: video
+#codec_id 1: theora
+#dimensions 1: 512x512
+#sar 1: 1/1
+#tb 2: 1/1000
+#media_type 2: video
+#codec_id 2: theora
+#dimensions 2: 512x512
+#sar 2: 1/1
+#tb 3: 1/1000
+#media_type 3: video
+#codec_id 3: theora
+#dimensions 3: 512x512
+#sar 3: 3/1
+#tb 4: 1/1000
+#media_type 4: video
+#codec_id 4: theora
+#dimensions 4: 512x512
+#sar 4: 455/256
+#tb 5: 1/1000
+#media_type 5: video
+#codec_id 5: theora
+#dimensions 5: 512x512
+#sar 5: 16/9
+#tb 6: 1/1000
+#media_type 6: video
+#codec_id 6: theora
+#dimensions 6: 512x512
+#sar 6: 2/1
+0,          0,          0,     1000,   206173, 0x95af7455
+1,          0,          0,     1000,   206173, 0x95af7455, S=1,       12
+2,          0,          0,     1000,   206173, 0x95af7455, S=1,       12
+3,          0,          0,     1000,   206173, 0x95af7455, S=1,       12
+4,          0,          0,     1000,   206173, 0x95af7455, S=1,       12
+5,          0,          0,     1000,   206173, 0x95af7455
+6,          0,          0,     1000,   206173, 0x95af7455
+0,       1000,       1000,     1000,       36, 0x34891010, F=0x0
+1,       1000,       1000,     1000,       36, 0x34891010, F=0x0
+2,       1000,       1000,     1000,       36, 0x34891010, F=0x0
+3,       1000,       1000,     1000,       36, 0x34891010, F=0x0
+4,       1000,       1000,     1000,       36, 0x34891010, F=0x0
+5,       1000,       1000,     1000,       36, 0x34891010, F=0x0
+6,       1000,       1000,     1000,       36, 0x34891010, F=0x0
+0,       2000,       2000,     1000,        9, 0x17e5047e, F=0x0
+1,       2000,       2000,     1000,        9, 0x17e5047e, F=0x0
+2,       2000,       2000,     1000,        9, 0x17e5047e, F=0x0
+3,       2000,       2000,     1000,        9, 0x17e5047e, F=0x0
+4,       2000,       2000,     1000,        9, 0x17e5047e, F=0x0
+5,       2000,       2000,     1000,        9, 0x17e5047e, F=0x0
+6,       2000,       2000,     1000,        9, 0x17e5047e, F=0x0
+0,       3000,       3000,     1000,        9, 0x17e5047e, F=0x0
+1,       3000,       3000,     1000,        9, 0x17e5047e, F=0x0
+2,       3000,       3000,     1000,        9, 0x17e5047e, F=0x0
+3,       3000,       3000,     1000,        9, 0x17e5047e, F=0x0
+4,       3000,       3000,     1000,        9, 0x17e5047e, F=0x0
+5,       3000,       3000,     1000,        9, 0x17e5047e, F=0x0
+6,       3000,       3000,     1000,        9, 0x17e5047e, F=0x0
+0,       4000,       4000,     1000,        9, 0x17e5047e, F=0x0
+1,       4000,       4000,     1000,        9, 0x17e5047e, F=0x0
+2,       4000,       4000,     1000,        9, 0x17e5047e, F=0x0
+3,       4000,       4000,     1000,        9, 0x17e5047e, F=0x0
+4,       4000,       4000,     1000,        9, 0x17e5047e, F=0x0
+5,       4000,       4000,     1000,        9, 0x17e5047e, F=0x0
+6,       4000,       4000,     1000,        9, 0x17e5047e, F=0x0
+0,       5000,       5000,     1000,        9, 0x17e5047e, F=0x0
+1,       5000,       5000,     1000,        9, 0x17e5047e, F=0x0
+2,       5000,       5000,     1000,        9, 0x17e5047e, F=0x0
+3,       5000,       5000,     1000,        9, 0x17e5047e, F=0x0
+4,       5000,       5000,     1000,        9, 0x17e5047e, F=0x0
+5,       5000,       5000,     1000,        9, 0x17e5047e, F=0x0
+6,       5000,       5000,     1000,        9, 0x17e5047e, F=0x0
+0,       6000,       6000,     1000,        9, 0x17e5047e, F=0x0
+1,       6000,       6000,     1000,        9, 0x17e5047e, F=0x0
+2,       6000,       6000,     1000,        9, 0x17e5047e, F=0x0
+3,       6000,       6000,     1000,        9, 0x17e5047e, F=0x0
+4,       6000,       6000,     1000,        9, 0x17e5047e, F=0x0
+5,       6000,       6000,     1000,        9, 0x17e5047e, F=0x0
+6,       6000,       6000,     1000,        9, 0x17e5047e, F=0x0
+0,       7000,       7000,     1000,        9, 0x17e5047e, F=0x0
+1,       7000,       7000,     1000,        9, 0x17e5047e, F=0x0
+2,       7000,       7000,     1000,        9, 0x17e5047e, F=0x0
+3,       7000,       7000,     1000,        9, 0x17e5047e, F=0x0
+4,       7000,       7000,     1000,        9, 0x17e5047e, F=0x0
+5,       7000,       7000,     1000,        9, 0x17e5047e, F=0x0
+6,       7000,       7000,     1000,        9, 0x17e5047e, F=0x0
+0,       8000,       8000,     1000,        9, 0x17e5047e, F=0x0
+1,       8000,       8000,     1000,        9, 0x17e5047e, F=0x0
+2,       8000,       8000,     1000,        9, 0x17e5047e, F=0x0
+3,       8000,       8000,     1000,        9, 0x17e5047e, F=0x0
+4,       8000,       8000,     1000,        9, 0x17e5047e, F=0x0
+5,       8000,       8000,     1000,        9, 0x17e5047e, F=0x0
+6,       8000,       8000,     1000,        9, 0x17e5047e, F=0x0
+0,       9000,       9000,     1000,        9, 0x17e5047e, F=0x0
+1,       9000,       9000,     1000,        9, 0x17e5047e, F=0x0
+2,       9000,       9000,     1000,        9, 0x17e5047e, F=0x0
+3,       9000,       9000,     1000,        9, 0x17e5047e, F=0x0
+4,       9000,       9000,     1000,        9, 0x17e5047e, F=0x0
+5,       9000,       9000,     1000,        9, 0x17e5047e, F=0x0
+6,       9000,       9000,     1000,        9, 0x17e5047e, F=0x0
+[STREAM]
+DISPOSITION:default=0
+DISPOSITION:dub=0
+DISPOSITION:original=0
+TAG:language=ger
+TAG:DURATION=00:00:10.000000000
+[/STREAM]
+[STREAM]
+DISPOSITION:default=0
+DISPOSITION:dub=0
+DISPOSITION:original=0
+TAG:language=ger-at
+TAG:stereo_mode=left_right
+TAG:DESCRIPTION-ger=Deutsch
+TAG:DESCRIPTION-fre=Français
+TAG:DURATION=00:00:10.000000000
+[SIDE_DATA]
+side_data_type=Stereo 3D
+type=side by side
+inverted=0
+[/SIDE_DATA]
+[/STREAM]
+[STREAM]
+DISPOSITION:default=0
+DISPOSITION:dub=0
+DISPOSITION:original=0
+TAG:language=eng
+TAG:stereo_mode=bottom_top
+TAG:DESCRIPTION-ger=Deutsch
+TAG:DESCRIPTION-fre=Français
+TAG:DURATION=00:00:10.000000000
+[SIDE_DATA]
+side_data_type=Stereo 3D
+type=top and bottom
+inverted=1
+[/SIDE_DATA]
+[/STREAM]
+[STREAM]
+DISPOSITION:default=1
+DISPOSITION:dub=0
+DISPOSITION:original=0
+TAG:language=deu-at
+TAG:stereo_mode=row_interleaved_rl
+TAG:DURATION=00:00:10.000000000
+[SIDE_DATA]
+side_data_type=Stereo 3D
+type=interleaved lines
+inverted=1
+[/SIDE_DATA]
+[/STREAM]
+[STREAM]
+DISPOSITION:default=0
+DISPOSITION:dub=0
+DISPOSITION:original=0
+TAG:language=fre
+TAG:stereo_mode=col_interleaved_rl
+TAG:DESCRIPTION-DEU-AT=Österreichisch
+TAG:DURATION=00:00:10.000000000
+[SIDE_DATA]
+side_data_type=Stereo 3D
+type=interleaved columns
+inverted=1
+[/SIDE_DATA]
+[/STREAM]
+[STREAM]
+DISPOSITION:default=1
+DISPOSITION:dub=0
+DISPOSITION:original=0
+TAG:language=fra
+TAG:DURATION=00:00:10.000000000
+[/STREAM]
+[STREAM]
+DISPOSITION:default=0
+DISPOSITION:dub=0
+DISPOSITION:original=0
+TAG:language=de
+TAG:DESCRIPTION-ger=Deutsch
+TAG:DURATION=00:00:10.000000000
+[/STREAM]

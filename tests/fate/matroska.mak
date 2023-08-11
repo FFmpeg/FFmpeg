@@ -215,6 +215,29 @@ fate-matroska-dvbsub-remux: CMD = transcode mpegts $(TARGET_SAMPLES)/sub/dvbsubt
 FATE_MATROSKA_FFPROBE-$(call ALLYES, MATROSKA_DEMUXER) += fate-matroska-spherical-mono
 fate-matroska-spherical-mono: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream_side_data_list -select_streams v -v 0 $(TARGET_SAMPLES)/mkv/spherical.mkv
 
+# This test tests the handling of AVStereo3D information, in particular
+# the ability to set it via metadata in the muxer (the file itself is
+# actually an ordinary file with a single view). It also tests
+# correctly writing the display dimensions in the presence of stereo metadata.
+# The test also covers reformatting Theora extradata as well as testing
+# default_mode infer in the presence of tracks already marked as default.
+# It furthermore tests tag languages as well as stream languages,
+# in particular in their various forms (e.g. de vs deu vs ger for German)
+# and also the language-country code form.
+FATE_MATROSKA_FFMPEG_FFPROBE-$(call REMUX, MATROSKA, OGG_DEMUXER THEORA_DECODER) += fate-matroska-stereo_mode
+fate-matroska-stereo_mode: CMD = transcode ogg $(TARGET_SAMPLES)/vp3/offset_test.ogv matroska \
+    "-c copy -write_crc32 0 -default_mode infer \
+     -map 0 -disposition:s:0 +original+dub -metadata:s:0 language=ger \
+     -map 0 -metadata:s:1 stereo_mode=left_right -metadata:s:1 language=ger-at -metadata:s:1 description-ger=Deutsch -metadata:s:1 description-fre=Français \
+     -map 0 -metadata:s:2 stereo_mode=bottom_top -metadata:s:2 language=eng -metadata:s:2 description-de=Deutsch -metadata:s:2 description-fra=Français \
+     -map 0 -metadata:s:3 stereo_mode=row_interleaved_rl -sar:3 3:1 -disposition:3 +default -metadata:s:3 language=deu-at \
+     -map 0 -metadata:s:4 stereo_mode=col_interleaved_rl -sar:4 16:9 -metadata:s:4 language=fre -metadata:s:4 description-deu-at=Österreichisch \
+     -map 0 -metadata:s:5 stereo_mode=anaglyph_cyan_red -sar:5 16:9 -disposition:5 +default -metadata:s:5 language=fra \
+     -map 0 -metadata:s:6 stereo_mode=12 -sar:6 2:1 -metadata:s:6 language=de -metadata:s:6 description-deu=Deutsch" \
+    "-map 0 -c copy" \
+    "-show_entries stream_disposition=default,original,dub:stream_tags:stream_side_data_list"
+
+
 # The following test tests the various flavours of WebVTT in WebM.
 # It also tests that dispositions not supported by WebM are not written
 # (and therefore lost). It moreover tests that the muxer writes CuePoints
