@@ -20,6 +20,7 @@
 
 #include "libavutil/audio_fifo.h"
 #include "libavutil/opt.h"
+#include "libavutil/tx.h"
 #include "avfilter.h"
 #include "audio.h"
 #include "filters.h"
@@ -131,9 +132,66 @@ static int config_input(AVFilterLink *inlink)
     s->window_func_lut = av_calloc(s->window_size, sizeof(*s->window_func_lut));
     if (!s->window_func_lut)
         return AVERROR(ENOMEM);
-    for (i = 0; i < s->window_size; i++)
-        s->window_func_lut[i] = sin(M_PI * i / s->window_size) *
-                                (1. - (s->overlap / 100.)) * M_PI_2;
+
+    {
+        double *tx_in[2], *tx_out[2];
+        AVTXContext *tx, *itx;
+        av_tx_fn tx_fn, itx_fn;
+        int ret, tx_size;
+        double scale;
+
+        tx_size = 1 << (32 - ff_clz(s->window_size));
+
+        scale = 1.0;
+        ret = av_tx_init(&tx, &tx_fn, AV_TX_DOUBLE_RDFT, 0, tx_size, &scale, 0);
+        if (ret < 0)
+            return ret;
+
+        scale = 1.0 / tx_size;
+        ret = av_tx_init(&itx, &itx_fn, AV_TX_DOUBLE_RDFT, 1, tx_size, &scale, 0);
+        if (ret < 0)
+            return ret;
+
+        tx_in[0]  = av_calloc(tx_size + 2, sizeof(*tx_in[0]));
+        tx_in[1]  = av_calloc(tx_size + 2, sizeof(*tx_in[1]));
+        tx_out[0] = av_calloc(tx_size + 2, sizeof(*tx_out[0]));
+        tx_out[1] = av_calloc(tx_size + 2, sizeof(*tx_out[1]));
+        if (!tx_in[0] || !tx_in[1] || !tx_out[0] || !tx_out[1])
+            return AVERROR(ENOMEM);
+
+        for (int n = 0; n < s->window_size - s->hop_size; n++)
+            tx_in[0][n] = 1.0;
+
+        for (int n = 0; n < s->hop_size; n++)
+            tx_in[1][n] = 1.0;
+
+        tx_fn(tx, tx_out[0], tx_in[0], sizeof(double));
+        tx_fn(tx, tx_out[1], tx_in[1], sizeof(double));
+
+        for (int n = 0; n <= tx_size/2; n++) {
+            double re0 = tx_out[0][2*n];
+            double im0 = tx_out[0][2*n+1];
+            double re1 = tx_out[1][2*n];
+            double im1 = tx_out[1][2*n+1];
+
+            tx_in[0][2*n]   = re0 * re1 - im0 * im1;
+            tx_in[0][2*n+1] = re0 * im1 + re1 * im0;
+        }
+
+        itx_fn(itx, tx_out[0], tx_in[0], sizeof(AVComplexDouble));
+
+        scale = 1.0 / (s->window_size - s->hop_size);
+        for (int n = 0; n < s->window_size; n++)
+            s->window_func_lut[n] = tx_out[0][n] * scale;
+
+        av_tx_uninit(&tx);
+        av_tx_uninit(&itx);
+
+        av_freep(&tx_in[0]);
+        av_freep(&tx_in[1]);
+        av_freep(&tx_out[0]);
+        av_freep(&tx_out[1]);
+    }
 
     av_frame_free(&s->in);
     av_frame_free(&s->out);
