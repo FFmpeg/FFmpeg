@@ -386,6 +386,43 @@ typedef struct CodecTags{
 extern const CodecTags ff_mkv_codec_tags[];
 extern const CodecTags ff_webm_codec_tags[];
 extern const AVMetadataConv ff_mkv_metadata_conv[];
+
+/* The following macro contains all the information about which
+ * MATROSKA_VIDEO_STEREOMODE_TYPE_* correspond to which AVStereo3D
+ * structures and also the relevant horizontal/vertical divisors
+ * as well as WebM compatibility.
+ *
+ * MAP and MKV_ONLY are macros to be provided by the user.
+ * MAP(MatroskaVideoStereoModeType, AVStereo3DType, AV_STEREO3D_FLAG_*,
+ *     HALF_WIDTH, HALF_HEIGHT, WebM-compatibility)
+ * is for the stereo modes that have a Stereo3D counterpart.
+ * MKV_ONLY(MatroskaVideoStereoModeType, HALF_WIDTH, HALF_HEIGHT, WebM)
+ * is for those that don't have a Stereo3D counterpart.
+ * */
+#define STEREOMODE_STEREO3D_MAPPING(MAP, MKV_ONLY)                                            \
+    MAP(MATROSKA_VIDEO_STEREOMODE_TYPE_MONO, AV_STEREO3D_2D, 0, 0, 0, 1)                      \
+    MAP(MATROSKA_VIDEO_STEREOMODE_TYPE_LEFT_RIGHT, AV_STEREO3D_SIDEBYSIDE, 0, 1, 0, 1)        \
+    MAP(MATROSKA_VIDEO_STEREOMODE_TYPE_BOTTOM_TOP, AV_STEREO3D_TOPBOTTOM,                     \
+        AV_STEREO3D_FLAG_INVERT, 0, 1, 1)                                                     \
+    MAP(MATROSKA_VIDEO_STEREOMODE_TYPE_TOP_BOTTOM, AV_STEREO3D_TOPBOTTOM,  0, 0, 1, 1)        \
+    MAP(MATROSKA_VIDEO_STEREOMODE_TYPE_CHECKERBOARD_RL, AV_STEREO3D_CHECKERBOARD,             \
+        AV_STEREO3D_FLAG_INVERT, 0, 0, 0)                                                     \
+    MAP(MATROSKA_VIDEO_STEREOMODE_TYPE_CHECKERBOARD_LR, AV_STEREO3D_CHECKERBOARD, 0, 0, 0, 0) \
+    MAP(MATROSKA_VIDEO_STEREOMODE_TYPE_ROW_INTERLEAVED_RL, AV_STEREO3D_LINES,                 \
+        AV_STEREO3D_FLAG_INVERT, 0, 1, 0)                                                     \
+    MAP(MATROSKA_VIDEO_STEREOMODE_TYPE_ROW_INTERLEAVED_LR, AV_STEREO3D_LINES, 0, 0, 1, 0)     \
+    MAP(MATROSKA_VIDEO_STEREOMODE_TYPE_COL_INTERLEAVED_RL, AV_STEREO3D_COLUMNS,               \
+        AV_STEREO3D_FLAG_INVERT, 1, 0, 0)                                                     \
+    MAP(MATROSKA_VIDEO_STEREOMODE_TYPE_COL_INTERLEAVED_LR, AV_STEREO3D_COLUMNS, 0, 1, 0, 0)   \
+    MKV_ONLY(MATROSKA_VIDEO_STEREOMODE_TYPE_ANAGLYPH_CYAN_RED, 0, 0, 0)                       \
+    MAP(MATROSKA_VIDEO_STEREOMODE_TYPE_RIGHT_LEFT, AV_STEREO3D_SIDEBYSIDE,                    \
+        AV_STEREO3D_FLAG_INVERT, 1, 0, 1)                                                     \
+    MKV_ONLY(MATROSKA_VIDEO_STEREOMODE_TYPE_ANAGLYPH_GREEN_MAG, 0, 0, 0)                      \
+    MAP(MATROSKA_VIDEO_STEREOMODE_TYPE_BOTH_EYES_BLOCK_LR, AV_STEREO3D_FRAMESEQUENCE,         \
+        0, 0, 0, 0)                                                                           \
+    MAP(MATROSKA_VIDEO_STEREOMODE_TYPE_BOTH_EYES_BLOCK_RL, AV_STEREO3D_FRAMESEQUENCE,         \
+        AV_STEREO3D_FLAG_INVERT, 0, 0, 0)
+
 extern const char * const ff_matroska_video_stereo_mode[MATROSKA_VIDEO_STEREOMODE_TYPE_NB];
 
 /* AVStream Metadata tag keys for WebM Dash Manifest */
