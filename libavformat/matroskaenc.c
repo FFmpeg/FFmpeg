@@ -1580,95 +1580,96 @@ static void mkv_write_field_order(EbmlWriter *writer, int is_webm,
 
 #define MAX_STEREO_MODE_ELEMS 1
 static int mkv_write_stereo_mode(AVFormatContext *s, EbmlWriter *writer,
-                                 AVStream *st, int is_webm,
+                                 const AVStream *st, int is_webm,
                                  int *h_width, int *h_height)
 {
     const AVDictionaryEntry *tag;
     MatroskaVideoStereoModeType format = MATROSKA_VIDEO_STEREOMODE_TYPE_NB;
-    const AVStereo3D *stereo;
+
+    /* The following macros create bitfields where the ith bit
+     * indicates whether the MatroskaVideoStereoModeType with that value
+     * uses double width/height or is WebM compatible. */
+#define FLAG(STEREOMODETYPE, BOOL) | (BOOL) << (STEREOMODETYPE)
+#define WDIV1(STEREOMODETYPE, STEREO3DTYPE, FLAGS, WDIV, HDIV, WEBM) \
+    FLAG(STEREOMODETYPE, WDIV)
+#define WDIV2(STEREOMODETYPE, WDIV, HDIV, WEBM) \
+    FLAG(STEREOMODETYPE, WDIV)
+    // The zero in the following line consumes the first '|'.
+    const unsigned width_bitfield = 0 STEREOMODE_STEREO3D_MAPPING(WDIV1, WDIV2);
+
+#define HDIV1(STEREOMODETYPE, STEREO3DTYPE, FLAGS, WDIV, HDIV, WEBM) \
+    FLAG(STEREOMODETYPE, HDIV)
+#define HDIV2(STEREOMODETYPE, WDIV, HDIV, WEBM) \
+    FLAG(STEREOMODETYPE, HDIV)
+    const unsigned height_bitfield = 0 STEREOMODE_STEREO3D_MAPPING(HDIV1, HDIV2);
+
+#define WEBM1(STEREOMODETYPE, STEREO3DTYPE, FLAGS, WDIV, HDIV, WEBM) \
+    FLAG(STEREOMODETYPE, WEBM)
+#define WEBM2(STEREOMODETYPE, WDIV, HDIV, WEBM) \
+    FLAG(STEREOMODETYPE, WEBM)
+    const unsigned webm_bitfield = 0 STEREOMODE_STEREO3D_MAPPING(WEBM1, WEBM2);
 
     *h_width = 1;
     *h_height = 1;
-    // convert metadata into proper side data and add it to the stream
+
     if ((tag = av_dict_get(st->metadata, "stereo_mode", NULL, 0)) ||
         (tag = av_dict_get( s->metadata, "stereo_mode", NULL, 0))) {
-        long stereo_mode = strtol(tag->value, NULL, 0);
 
         for (int i = 0; i < MATROSKA_VIDEO_STEREOMODE_TYPE_NB; i++)
             if (!strcmp(tag->value, ff_matroska_video_stereo_mode[i])){
-                stereo_mode = i;
+                format = i;
                 break;
             }
-
-        if ((unsigned long)stereo_mode < MATROSKA_VIDEO_STEREOMODE_TYPE_NB &&
-            stereo_mode != 10 && stereo_mode != 12) {
-            int ret = ff_mkv_stereo3d_conv(st, stereo_mode);
-            if (ret < 0)
-                return ret;
+        if (format == MATROSKA_VIDEO_STEREOMODE_TYPE_NB) {
+            long stereo_mode = strtol(tag->value, NULL, 0);
+            if ((unsigned long)stereo_mode >= MATROSKA_VIDEO_STEREOMODE_TYPE_NB)
+                goto fail;
+            format = stereo_mode;
         }
-    }
+    } else {
+        const AVStereo3D *stereo;
+        /* The following macro presumes all MATROSKA_VIDEO_STEREOMODE_TYPE_*
+         * values to be in the range 0..254. */
+#define STEREOMODE(STEREOMODETYPE, STEREO3DTYPE, FLAGS, WDIV, HDIV, WEBM) \
+    [(STEREO3DTYPE)][!!((FLAGS) & AV_STEREO3D_FLAG_INVERT)] = (STEREOMODETYPE) + 1,
+#define IGNORE(STEREOMODETYPE, WDIV, HDIV, WEBM)
+        static const unsigned char conversion_table[][2] = {
+            STEREOMODE_STEREO3D_MAPPING(STEREOMODE, IGNORE)
+        };
+        int fmt;
 
-    stereo = (const AVStereo3D*)av_stream_get_side_data(st, AV_PKT_DATA_STEREO3D,
-                                                        NULL);
-    if (stereo) {
-        switch (stereo->type) {
-        case AV_STEREO3D_2D:
-            format = MATROSKA_VIDEO_STEREOMODE_TYPE_MONO;
-            break;
-        case AV_STEREO3D_SIDEBYSIDE:
-            format = (stereo->flags & AV_STEREO3D_FLAG_INVERT)
-                     ? MATROSKA_VIDEO_STEREOMODE_TYPE_RIGHT_LEFT
-                     : MATROSKA_VIDEO_STEREOMODE_TYPE_LEFT_RIGHT;
-            *h_width = 2;
-            break;
-        case AV_STEREO3D_TOPBOTTOM:
-            format = MATROSKA_VIDEO_STEREOMODE_TYPE_TOP_BOTTOM;
-            if (stereo->flags & AV_STEREO3D_FLAG_INVERT)
-                format--;
-            *h_height = 2;
-            break;
-        case AV_STEREO3D_CHECKERBOARD:
-            format = MATROSKA_VIDEO_STEREOMODE_TYPE_CHECKERBOARD_LR;
-            if (stereo->flags & AV_STEREO3D_FLAG_INVERT)
-                format--;
-            break;
-        case AV_STEREO3D_LINES:
-            format = MATROSKA_VIDEO_STEREOMODE_TYPE_ROW_INTERLEAVED_LR;
-            if (stereo->flags & AV_STEREO3D_FLAG_INVERT)
-                format--;
-            *h_height = 2;
-            break;
-        case AV_STEREO3D_COLUMNS:
-            format = MATROSKA_VIDEO_STEREOMODE_TYPE_COL_INTERLEAVED_LR;
-            if (stereo->flags & AV_STEREO3D_FLAG_INVERT)
-                format--;
-            *h_width = 2;
-            break;
-        case AV_STEREO3D_FRAMESEQUENCE:
-            format = MATROSKA_VIDEO_STEREOMODE_TYPE_BOTH_EYES_BLOCK_LR;
-            if (stereo->flags & AV_STEREO3D_FLAG_INVERT)
-                format++;
-            break;
-        }
-    }
+        stereo = (const AVStereo3D*)av_stream_get_side_data(st, AV_PKT_DATA_STEREO3D,
+                                                            NULL);
+        if (!stereo)
+            return 0;
 
-    if (format == MATROSKA_VIDEO_STEREOMODE_TYPE_NB)
-        return 0;
+        /* A garbage AVStereo3D or something with no Matroska analogon. */
+        if ((unsigned)stereo->type >= FF_ARRAY_ELEMS(conversion_table))
+            return 0;
+
+        fmt = conversion_table[stereo->type][!!(stereo->flags & AV_STEREO3D_FLAG_INVERT)];
+        /* Format with no Matroska analogon; ignore it */
+        if (!fmt)
+            return 0;
+        format = fmt - 1;
+    }
 
     // if webm, do not write unsupported modes
-    if ((is_webm &&
-        format > MATROSKA_VIDEO_STEREOMODE_TYPE_TOP_BOTTOM &&
-        format != MATROSKA_VIDEO_STEREOMODE_TYPE_RIGHT_LEFT)
-        || format >= MATROSKA_VIDEO_STEREOMODE_TYPE_NB) {
-        av_log(s, AV_LOG_ERROR,
-               "The specified stereo mode is not valid.\n");
-        return AVERROR(EINVAL);
+    if (is_webm && !(webm_bitfield >> format)) {
+        goto fail;
     }
+
+    *h_width  = 1 << ((width_bitfield  >> format) & 1);
+    *h_height = 1 << ((height_bitfield >> format) & 1);
 
     // write StereoMode if format is valid
     ebml_writer_add_uint(writer, MATROSKA_ID_VIDEOSTEREOMODE, format);
 
     return 0;
+fail:
+    av_log(s, AV_LOG_ERROR,
+            "The specified stereo mode is not valid.\n");
+    return AVERROR(EINVAL);
 }
 
 static void mkv_write_blockadditionmapping(AVFormatContext *s, const MatroskaMuxContext *mkv,
@@ -1723,7 +1724,7 @@ static void mkv_write_blockadditionmapping(AVFormatContext *s, const MatroskaMux
 }
 
 static int mkv_write_track_video(AVFormatContext *s, MatroskaMuxContext *mkv,
-                                 AVStream *st, const AVCodecParameters *par,
+                                 const AVStream *st, const AVCodecParameters *par,
                                  AVIOContext *pb)
 {
     const AVDictionaryEntry *tag;
