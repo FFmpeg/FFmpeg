@@ -3038,7 +3038,8 @@ static int matroska_parse_tracks(AVFormatContext *s)
             }
             // add stream level stereo3d side data if it is a supported format
             if (track->video.stereo_mode < MATROSKA_VIDEO_STEREOMODE_TYPE_NB &&
-                track->video.stereo_mode != 10 && track->video.stereo_mode != 12) {
+                track->video.stereo_mode != MATROSKA_VIDEO_STEREOMODE_TYPE_ANAGLYPH_CYAN_RED &&
+                track->video.stereo_mode != MATROSKA_VIDEO_STEREOMODE_TYPE_ANAGLYPH_GREEN_MAG) {
                 int ret = mkv_stereo3d_conv(st, track->video.stereo_mode);
                 if (ret < 0)
                     return ret;
