@@ -90,9 +90,13 @@ int ff_vk_load_props(FFVulkanContext *s)
     s->hprops = (VkPhysicalDeviceExternalMemoryHostPropertiesEXT) {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT,
     };
+    s->coop_matrix_props = (VkPhysicalDeviceCooperativeMatrixPropertiesKHR) {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_PROPERTIES_KHR,
+        .pNext = &s->hprops,
+    };
     s->subgroup_props = (VkPhysicalDeviceSubgroupSizeControlProperties) {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES,
-        .pNext = &s->hprops,
+        .pNext = &s->coop_matrix_props,
     };
     s->desc_buf_props = (VkPhysicalDeviceDescriptorBufferPropertiesEXT) {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_PROPERTIES_EXT,
@@ -160,6 +164,25 @@ int ff_vk_load_props(FFVulkanContext *s)
     }
 
     vk->GetPhysicalDeviceQueueFamilyProperties2(s->hwctx->phys_dev, &s->tot_nb_qfs, s->qf_props);
+
+    if (vk->GetPhysicalDeviceCooperativeMatrixPropertiesKHR) {
+        vk->GetPhysicalDeviceCooperativeMatrixPropertiesKHR(s->hwctx->phys_dev,
+                                                            &s->coop_mat_props_nb, NULL);
+
+        if (s->coop_mat_props_nb) {
+            s->coop_mat_props = av_malloc_array(s->coop_mat_props_nb,
+                                                sizeof(VkCooperativeMatrixPropertiesKHR));
+            for (int i = 0; i < s->coop_mat_props_nb; i++) {
+                s->coop_mat_props[i] = (VkCooperativeMatrixPropertiesKHR) {
+                    .sType = VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_KHR,
+                };
+            }
+
+            vk->GetPhysicalDeviceCooperativeMatrixPropertiesKHR(s->hwctx->phys_dev,
+                                                                &s->coop_mat_props_nb,
+                                                                s->coop_mat_props);
+        }
+    }
 
     return 0;
 }

@@ -236,10 +236,14 @@ typedef struct FFVulkanContext {
     VkPhysicalDeviceExternalMemoryHostPropertiesEXT hprops;
     VkPhysicalDeviceDescriptorBufferPropertiesEXT desc_buf_props;
     VkPhysicalDeviceSubgroupSizeControlProperties subgroup_props;
+    VkPhysicalDeviceCooperativeMatrixPropertiesKHR coop_matrix_props;
     VkQueueFamilyQueryResultStatusPropertiesKHR *query_props;
     VkQueueFamilyVideoPropertiesKHR *video_props;
     VkQueueFamilyProperties2 *qf_props;
     int tot_nb_qfs;
+
+    VkCooperativeMatrixPropertiesKHR *coop_mat_props;
+    uint32_t coop_mat_props_nb;
 
     VkPhysicalDeviceShaderAtomicFloatFeaturesEXT atomic_float_feats;
     VkPhysicalDeviceVulkan12Features feats_12;

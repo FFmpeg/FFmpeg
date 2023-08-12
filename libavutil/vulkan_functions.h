@@ -45,6 +45,7 @@ typedef enum FFVulkanExtensions {
     FF_VK_EXT_VIDEO_DECODE_H265      = 1ULL << 13, /* VK_EXT_video_decode_h265 */
     FF_VK_EXT_VIDEO_DECODE_AV1       = 1ULL << 14, /* VK_MESA_video_decode_av1 */
     FF_VK_EXT_ATOMIC_FLOAT           = 1ULL << 15, /* VK_EXT_shader_atomic_float */
+    FF_VK_EXT_COOP_MATRIX            = 1ULL << 16, /* VK_KHR_cooperative_matrix */
 
     FF_VK_EXT_NO_FLAG                = 1ULL << 31,
 } FFVulkanExtensions;
@@ -80,6 +81,7 @@ typedef enum FFVulkanExtensions {
     MACRO(1, 0, FF_VK_EXT_NO_FLAG,              GetPhysicalDeviceImageFormatProperties2) \
     MACRO(1, 0, FF_VK_EXT_NO_FLAG,              GetPhysicalDeviceQueueFamilyProperties)  \
     MACRO(1, 0, FF_VK_EXT_NO_FLAG,              GetPhysicalDeviceQueueFamilyProperties2) \
+    MACRO(1, 0, FF_VK_EXT_COOP_MATRIX,          GetPhysicalDeviceCooperativeMatrixPropertiesKHR) \
                                                                                          \
     /* Command pool */                                                                   \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CreateCommandPool)                       \

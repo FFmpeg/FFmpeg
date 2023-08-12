@@ -99,6 +99,7 @@ typedef struct VulkanDevicePriv {
     VkPhysicalDeviceVulkan13Features device_features_1_3;
     VkPhysicalDeviceDescriptorBufferFeaturesEXT desc_buf_features;
     VkPhysicalDeviceShaderAtomicFloatFeaturesEXT atomic_float_features;
+    VkPhysicalDeviceCooperativeMatrixFeaturesKHR coop_matrix_features;
 
     /* Queues */
     pthread_mutex_t **qf_mutex;
@@ -405,6 +406,7 @@ static const VulkanOptExtension optional_device_exts[] = {
     { VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME,                FF_VK_EXT_DESCRIPTOR_BUFFER,     },
     { VK_EXT_PHYSICAL_DEVICE_DRM_EXTENSION_NAME,              FF_VK_EXT_DEVICE_DRM             },
     { VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME,              FF_VK_EXT_ATOMIC_FLOAT           },
+    { VK_KHR_COOPERATIVE_MATRIX_EXTENSION_NAME,               FF_VK_EXT_COOP_MATRIX            },
 
     /* Imports/exports */
     { VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME,               FF_VK_EXT_EXTERNAL_FD_MEMORY     },
@@ -1202,9 +1204,13 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     VkPhysicalDeviceTimelineSemaphoreFeatures timeline_features = {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES,
     };
+    VkPhysicalDeviceCooperativeMatrixFeaturesKHR coop_matrix_features = {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_KHR,
+        .pNext = &timeline_features,
+    };
     VkPhysicalDeviceShaderAtomicFloatFeaturesEXT atomic_float_features = {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT,
-        .pNext = &timeline_features,
+        .pNext = &coop_matrix_features,
     };
     VkPhysicalDeviceDescriptorBufferFeaturesEXT desc_buf_features = {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT,
@@ -1242,7 +1248,9 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     p->desc_buf_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT;
     p->desc_buf_features.pNext = &p->atomic_float_features;
     p->atomic_float_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT;
-    p->atomic_float_features.pNext = NULL;
+    p->atomic_float_features.pNext = &p->coop_matrix_features;
+    p->coop_matrix_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_KHR;
+    p->coop_matrix_features.pNext = NULL;
 
     ctx->free = vulkan_device_free;
 
@@ -1303,6 +1311,8 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
 
     p->atomic_float_features.shaderBufferFloat32Atomics = atomic_float_features.shaderBufferFloat32Atomics;
     p->atomic_float_features.shaderBufferFloat32AtomicAdd = atomic_float_features.shaderBufferFloat32AtomicAdd;
+
+    p->coop_matrix_features.cooperativeMatrix = coop_matrix_features.cooperativeMatrix;
 
     dev_info.pNext = &hwctx->device_features;
 
