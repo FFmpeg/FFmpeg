@@ -120,14 +120,10 @@ static int config_input(AVFilterLink *inlink)
     int i;
 
     s->pts = AV_NOPTS_VALUE;
-    s->window_size = inlink->sample_rate * s->w / 1000.;
-    if (s->window_size < 100)
-        return AVERROR(EINVAL);
+    s->window_size = FFMAX(100, inlink->sample_rate * s->w / 1000.);
     s->ar_order = FFMAX(s->window_size * s->ar / 100., 1);
     s->nb_burst_samples = s->window_size * s->burst / 1000.;
-    s->hop_size = s->window_size * (1. - (s->overlap / 100.));
-    if (s->hop_size < 1)
-        return AVERROR(EINVAL);
+    s->hop_size = FFMAX(1, s->window_size * (1. - (s->overlap / 100.)));
 
     s->window_func_lut = av_calloc(s->window_size, sizeof(*s->window_func_lut));
     if (!s->window_func_lut)
