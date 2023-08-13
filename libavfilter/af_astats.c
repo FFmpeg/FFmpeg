@@ -409,9 +409,9 @@ static inline void update_stat(AudioStatsContext *s, ChannelStats *p, double d, 
     }
     p->nb_samples++;
 
+    noise_floor = calc_noise_floor(p->sorted_samples, nd, drop,
+                                   s->tc_samples, &p->sorted_front, &p->sorted_back);
     if (p->nb_samples >= s->tc_samples) {
-        noise_floor = calc_noise_floor(p->sorted_samples, nd, drop,
-                                       s->tc_samples, &p->sorted_front, &p->sorted_back);
         if (isnan(p->noise_floor)) {
             p->noise_floor = noise_floor;
             p->noise_floor_count = 1;
