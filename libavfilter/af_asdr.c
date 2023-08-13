@@ -27,7 +27,6 @@
 
 typedef struct AudioSDRContext {
     int channels;
-    int64_t pts;
     double *sum_u;
     double *sum_uv;
 
@@ -66,8 +65,7 @@ static int activate(AVFilterContext *ctx)
 {
     AudioSDRContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-    int ret, status;
-    int available;
+    int ret, status, available;
     int64_t pts;
 
     FF_FILTER_FORWARD_STATUS_BACK_ALL(outlink, ctx);
@@ -78,9 +76,10 @@ static int activate(AVFilterContext *ctx)
 
         for (int i = 0; i < 2; i++) {
             ret = ff_inlink_consume_samples(ctx->inputs[i], available, available, &s->cache[i]);
-            if (ret > 0) {
-                if (s->pts == AV_NOPTS_VALUE)
-                    s->pts = s->cache[i]->pts;
+            if (ret < 0) {
+                av_frame_free(&s->cache[0]);
+                av_frame_free(&s->cache[1]);
+                return ret;
             }
         }
 
@@ -90,10 +89,6 @@ static int activate(AVFilterContext *ctx)
 
         av_frame_free(&s->cache[1]);
         out = s->cache[0];
-        out->nb_samples = available;
-        out->pts = av_rescale_q(s->pts, av_make_q(1, outlink->sample_rate), outlink->time_base);
-        out->duration = av_rescale_q(out->nb_samples, av_make_q(1, outlink->sample_rate), outlink->time_base);
-        s->pts += available;
         s->cache[0] = NULL;
 
         return ff_filter_frame(outlink, out);
@@ -101,7 +96,7 @@ static int activate(AVFilterContext *ctx)
 
     for (int i = 0; i < 2; i++) {
         if (ff_inlink_acknowledge_status(ctx->inputs[i], &status, &pts)) {
-            ff_outlink_set_status(outlink, status, s->pts);
+            ff_outlink_set_status(outlink, status, pts);
             return 0;
         }
     }
@@ -123,8 +118,6 @@ static int config_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = ctx->inputs[0];
     AudioSDRContext *s = ctx->priv;
-
-    s->pts = AV_NOPTS_VALUE;
 
     s->channels = inlink->ch_layout.nb_channels;
 
