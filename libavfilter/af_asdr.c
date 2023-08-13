@@ -27,13 +27,18 @@
 #include "filters.h"
 #include "internal.h"
 
+typedef struct ChanStats {
+    double u;
+    double v;
+    double uv;
+} ChanStats;
+
 typedef struct AudioSDRContext {
     int channels;
     uint64_t nb_samples;
     double max;
-    double *sum_u;
-    double *sum_v;
-    double *sum_uv;
+
+    ChanStats *chs;
 
     AVFrame *cache[2];
 
@@ -52,6 +57,7 @@ static int sdr_##name(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)\
     const int nb_samples = u->nb_samples;                                     \
                                                                               \
     for (int ch = start; ch < end; ch++) {                                    \
+        ChanStats *chs = &s->chs[ch];                                         \
         const type *const us = (type *)u->extended_data[ch];                  \
         const type *const vs = (type *)v->extended_data[ch];                  \
         double sum_uv = 0.;                                                   \
@@ -62,8 +68,8 @@ static int sdr_##name(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)\
             sum_uv += (us[n] - vs[n]) * (us[n] - vs[n]);                      \
         }                                                                     \
                                                                               \
-        s->sum_uv[ch] += sum_uv;                                              \
-        s->sum_u[ch]  += sum_u;                                               \
+        chs->uv += sum_uv;                                                    \
+        chs->u  += sum_u;                                                     \
     }                                                                         \
                                                                               \
     return 0;                                                                 \
@@ -84,6 +90,7 @@ static int sisdr_##name(AVFilterContext *ctx, void *arg,int jobnr,int nb_jobs)\
     const int nb_samples = u->nb_samples;                                     \
                                                                               \
     for (int ch = start; ch < end; ch++) {                                    \
+        ChanStats *chs = &s->chs[ch];                                         \
         const type *const us = (type *)u->extended_data[ch];                  \
         const type *const vs = (type *)v->extended_data[ch];                  \
         double sum_uv = 0.;                                                   \
@@ -96,9 +103,9 @@ static int sisdr_##name(AVFilterContext *ctx, void *arg,int jobnr,int nb_jobs)\
             sum_uv += us[n] * vs[n];                                          \
         }                                                                     \
                                                                               \
-        s->sum_uv[ch] += sum_uv;                                              \
-        s->sum_u[ch]  += sum_u;                                               \
-        s->sum_v[ch]  += sum_v;                                               \
+        chs->uv += sum_uv;                                                    \
+        chs->u  += sum_u;                                                     \
+        chs->v  += sum_v;                                                     \
     }                                                                         \
                                                                               \
     return 0;                                                                 \
@@ -119,6 +126,7 @@ static int psnr_##name(AVFilterContext *ctx, void *arg, int jobnr,int nb_jobs)\
     const int nb_samples = u->nb_samples;                                     \
                                                                               \
     for (int ch = start; ch < end; ch++) {                                    \
+        ChanStats *chs = &s->chs[ch];                                         \
         const type *const us = (type *)u->extended_data[ch];                  \
         const type *const vs = (type *)v->extended_data[ch];                  \
         double sum_uv = 0.;                                                   \
@@ -126,7 +134,7 @@ static int psnr_##name(AVFilterContext *ctx, void *arg, int jobnr,int nb_jobs)\
         for (int n = 0; n < nb_samples; n++)                                  \
             sum_uv += (us[n] - vs[n]) * (us[n] - vs[n]);                      \
                                                                               \
-        s->sum_uv[ch] += sum_uv;                                              \
+        chs->uv += sum_uv;                                                    \
     }                                                                         \
                                                                               \
     return 0;                                                                 \
@@ -204,10 +212,8 @@ static int config_output(AVFilterLink *outlink)
         s->filter = inlink->format == AV_SAMPLE_FMT_FLTP ? psnr_fltp : psnr_dblp;
     s->max = inlink->format == AV_SAMPLE_FMT_FLTP ? FLT_MAX : DBL_MAX;
 
-    s->sum_u  = av_calloc(outlink->ch_layout.nb_channels, sizeof(*s->sum_u));
-    s->sum_v  = av_calloc(outlink->ch_layout.nb_channels, sizeof(*s->sum_v));
-    s->sum_uv = av_calloc(outlink->ch_layout.nb_channels, sizeof(*s->sum_uv));
-    if (!s->sum_u || !s->sum_uv || !s->sum_v)
+    s->chs  = av_calloc(outlink->ch_layout.nb_channels, sizeof(*s->chs));
+    if (!s->chs)
         return AVERROR(ENOMEM);
 
     return 0;
@@ -219,17 +225,17 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     if (!strcmp(ctx->filter->name, "asdr")) {
         for (int ch = 0; ch < s->channels; ch++)
-            av_log(ctx, AV_LOG_INFO, "SDR ch%d: %g dB\n", ch, 20. * log10(s->sum_u[ch] / s->sum_uv[ch]));
+            av_log(ctx, AV_LOG_INFO, "SDR ch%d: %g dB\n", ch, 20. * log10(s->chs[ch].u / s->chs[ch].uv));
     } else if (!strcmp(ctx->filter->name, "asisdr")) {
         for (int ch = 0; ch < s->channels; ch++) {
-            double scale = s->sum_uv[ch] / s->sum_v[ch];
-            double sisdr = s->sum_u[ch] / (s->sum_u[ch] + scale*scale*s->sum_v[ch] - 2.0*scale*s->sum_uv[ch]);
+            double scale = s->chs[ch].uv / s->chs[ch].v;
+            double sisdr = s->chs[ch].u / fmax(0., s->chs[ch].u + scale*scale*s->chs[ch].v - 2.0*scale*s->chs[ch].uv);
 
             av_log(ctx, AV_LOG_INFO, "SI-SDR ch%d: %g dB\n", ch, 10. * log10(sisdr));
         }
     } else {
         for (int ch = 0; ch < s->channels; ch++) {
-            double psnr = s->sum_uv[ch] > 0.0 ? 2.0 * log(s->max) - log(s->nb_samples / s->sum_uv[ch]) : INFINITY;
+            double psnr = s->chs[ch].uv > 0.0 ? 2.0 * log(s->max) - log(s->nb_samples / s->chs[ch].uv) : INFINITY;
 
             av_log(ctx, AV_LOG_INFO, "PSNR ch%d: %g dB\n", ch, psnr);
         }
@@ -238,9 +244,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_frame_free(&s->cache[0]);
     av_frame_free(&s->cache[1]);
 
-    av_freep(&s->sum_u);
-    av_freep(&s->sum_v);
-    av_freep(&s->sum_uv);
+    av_freep(&s->chs);
 }
 
 static const AVFilterPad inputs[] = {
