@@ -360,6 +360,11 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
         }
     }
 
+    if(ctx->cuparseinfo.ulMaxNumDecodeSurfaces != cuinfo.ulNumDecodeSurfaces) {
+        ctx->cuparseinfo.ulMaxNumDecodeSurfaces = cuinfo.ulNumDecodeSurfaces;
+        return cuinfo.ulNumDecodeSurfaces;
+    }
+
     return 1;
 }
 
@@ -1022,7 +1027,7 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
         goto error;
     }
 
-    ctx->cuparseinfo.ulMaxNumDecodeSurfaces = ctx->nb_surfaces;
+    ctx->cuparseinfo.ulMaxNumDecodeSurfaces = 1;
     ctx->cuparseinfo.ulMaxDisplayDelay = (avctx->flags & AV_CODEC_FLAG_LOW_DELAY) ? 0 : CUVID_MAX_DISPLAY_DELAY;
     ctx->cuparseinfo.pUserData = avctx;
     ctx->cuparseinfo.pfnSequenceCallback = cuvid_handle_video_sequence;
