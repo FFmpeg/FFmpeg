@@ -84,6 +84,7 @@ OBJS-$(CONFIG_APAD_FILTER)                   += af_apad.o
 OBJS-$(CONFIG_APERMS_FILTER)                 += f_perms.o
 OBJS-$(CONFIG_APHASER_FILTER)                += af_aphaser.o generate_wave_table.o
 OBJS-$(CONFIG_APHASESHIFT_FILTER)            += af_afreqshift.o
+OBJS-$(CONFIG_APSNR_FILTER)                  += af_asdr.o
 OBJS-$(CONFIG_APSYCLIP_FILTER)               += af_apsyclip.o
 OBJS-$(CONFIG_APULSATOR_FILTER)              += af_apulsator.o
 OBJS-$(CONFIG_AREALTIME_FILTER)              += f_realtime.o
