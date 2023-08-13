@@ -225,11 +225,11 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     if (!strcmp(ctx->filter->name, "asdr")) {
         for (int ch = 0; ch < s->channels; ch++)
-            av_log(ctx, AV_LOG_INFO, "SDR ch%d: %g dB\n", ch, 20. * log10(s->chs[ch].u / s->chs[ch].uv));
+            av_log(ctx, AV_LOG_INFO, "SDR ch%d: %g dB\n", ch, 10. * log10(s->chs[ch].u / s->chs[ch].uv));
     } else if (!strcmp(ctx->filter->name, "asisdr")) {
         for (int ch = 0; ch < s->channels; ch++) {
             double scale = s->chs[ch].uv / s->chs[ch].v;
-            double sisdr = s->chs[ch].u / fmax(0., s->chs[ch].u + scale*scale*s->chs[ch].v - 2.0*scale*s->chs[ch].uv);
+            double sisdr = scale * scale * s->chs[ch].v / fmax(0., s->chs[ch].u + scale*scale*s->chs[ch].v - 2.0*scale*s->chs[ch].uv);
 
             av_log(ctx, AV_LOG_INFO, "SI-SDR ch%d: %g dB\n", ch, 10. * log10(sisdr));
         }
