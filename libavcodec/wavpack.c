@@ -96,12 +96,10 @@ typedef struct WavpackFrameContext {
     uint8_t *value_lookup[MAX_HISTORY_BINS];
 } WavpackFrameContext;
 
-#define WV_MAX_FRAME_DECODERS 14
-
 typedef struct WavpackContext {
     AVCodecContext *avctx;
 
-    WavpackFrameContext *fdec[WV_MAX_FRAME_DECODERS];
+    WavpackFrameContext **fdec;
     int fdec_num;
 
     int block;
@@ -971,7 +969,8 @@ static inline int wv_unpack_mono(WavpackFrameContext *s, GetBitContext *gb,
 
 static av_cold int wv_alloc_frame_context(WavpackContext *c)
 {
-    if (c->fdec_num == WV_MAX_FRAME_DECODERS)
+    c->fdec = av_realloc_f(c->fdec, c->fdec_num + 1, sizeof(*c->fdec));
+    if (!c->fdec)
         return -1;
 
     c->fdec[c->fdec_num] = av_mallocz(sizeof(**c->fdec));
@@ -1064,6 +1063,7 @@ static av_cold int wavpack_decode_end(AVCodecContext *avctx)
 
     for (int i = 0; i < s->fdec_num; i++)
         av_freep(&s->fdec[i]);
+    av_freep(&s->fdec);
     s->fdec_num = 0;
 
     ff_thread_release_ext_buffer(avctx, &s->curr_frame);
@@ -1415,18 +1415,12 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
                 size = bytestream2_get_byte(&gb);
                 chan  |= (bytestream2_get_byte(&gb) & 0xF) << 8;
                 chan  += 1;
-                if (avctx->ch_layout.nb_channels != chan)
-                    av_log(avctx, AV_LOG_WARNING, "%i channels signalled"
-                           " instead of %i.\n", chan, avctx->ch_layout.nb_channels);
                 chmask = bytestream2_get_le24(&gb);
                 break;
             case 5:
                 size = bytestream2_get_byte(&gb);
                 chan  |= (bytestream2_get_byte(&gb) & 0xF) << 8;
                 chan  += 1;
-                if (avctx->ch_layout.nb_channels != chan)
-                    av_log(avctx, AV_LOG_WARNING, "%i channels signalled"
-                           " instead of %i.\n", chan, avctx->ch_layout.nb_channels);
                 chmask = bytestream2_get_le32(&gb);
                 break;
             default:
@@ -1519,11 +1513,7 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
                     return AVERROR_INVALIDDATA;
                 }
             } else {
-                ret = av_channel_layout_copy(&new_ch_layout, &avctx->ch_layout);
-                if (ret < 0) {
-                    av_log(avctx, AV_LOG_ERROR, "Error copying channel layout\n");
-                    return ret;
-                }
+                av_channel_layout_default(&new_ch_layout, chan);
             }
         } else {
             av_channel_layout_default(&new_ch_layout, s->stereo + 1);
