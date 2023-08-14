@@ -5666,6 +5666,7 @@ case $target_os in
         fi
         ! enabled small && test_cmd $windres --version && enable gnu_windres
         enabled x86_32 && check_ldflags -Wl,--large-address-aware
+        add_cppflags -DWIN32_LEAN_AND_MEAN
         shlibdir_default="$bindir_default"
         SLIBPREF=""
         SLIBSUF=".dll"
@@ -5716,6 +5717,7 @@ case $target_os in
         fi
         ! enabled small && test_cmd $windres --version && enable gnu_windres
         enabled x86_32 && check_ldflags -LARGEADDRESSAWARE
+        add_cppflags -DWIN32_LEAN_AND_MEAN
         shlibdir_default="$bindir_default"
         SLIBPREF=""
         SLIBSUF=".dll"
@@ -5745,6 +5747,7 @@ case $target_os in
         enabled x86_64 && objformat="win64" || objformat="win32"
         enable dos_paths
         ! enabled small && test_cmd $windres --version && enable gnu_windres
+        add_cppflags -DWIN32_LEAN_AND_MEAN
         add_cppflags -D_POSIX_C_SOURCE=200112 -D_XOPEN_SOURCE=600
         ;;
     *-dos|freedos|opendos)

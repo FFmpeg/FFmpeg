@@ -35,7 +35,6 @@
  * As most functions here are used without checking return values,
  * only implement return values as necessary. */
 
-#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <process.h>
 #include <time.h>
