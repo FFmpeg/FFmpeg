@@ -28,6 +28,7 @@ version <next>:
 - scale_vt filter for videotoolbox
 - transpose_vt filter for videotoolbox
 - support for the P_SKIP hinting to speed up libx264 encoding
+- Support HEVC,VP9,AV1 codec in enhanced flv format
 
 version 6.0:
 - Radiance HDR image support
