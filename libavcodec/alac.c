@@ -169,7 +169,7 @@ static int rice_decompress(ALACContext *alac, int32_t *output_buffer,
 
 static inline int sign_only(int v)
 {
-    return v ? FFSIGN(v) : 0;
+    return FFDIFFSIGN(v, 0);
 }
 
 static void lpc_prediction(int32_t *error_buffer, uint32_t *buffer_out,
