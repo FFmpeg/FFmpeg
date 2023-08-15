@@ -39,9 +39,13 @@
 
 static int sox_probe(const AVProbeData *p)
 {
-    if (AV_RL32(p->buf) == SOX_TAG || AV_RB32(p->buf) == SOX_TAG)
-        return AVPROBE_SCORE_MAX;
-    return 0;
+    if (AV_RL32(p->buf) != SOX_TAG && AV_RB32(p->buf) != SOX_TAG)
+        return 0;
+    if (AV_RN32(p->buf+4) == 0)
+        return 0;
+    if (AV_RN32(p->buf+24) == 0)
+        return 0;
+    return AVPROBE_SCORE_MAX;
 }
 
 static int sox_read_header(AVFormatContext *s)
