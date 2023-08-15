@@ -563,7 +563,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
             sei->payloads[0].payload_size = sei_size;
             sei->payloads[0].payload      = sei_data;
-            sei->payloads[0].payload_type = 4;
+            sei->payloads[0].payload_type = SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35;
             sei->num_payloads = 1;
         }
     }
