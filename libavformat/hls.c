@@ -2506,6 +2506,9 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
         /* Flush the packet queue of the subdemuxer. */
         ff_read_frame_flush(pls->ctx);
 
+        /* Reset the init segment so it's re-fetched and served appropiately */
+        pls->cur_init_section = NULL;
+
         pls->seek_timestamp = seek_timestamp;
         pls->seek_flags = flags;
 
