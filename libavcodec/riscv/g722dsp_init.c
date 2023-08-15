@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Peter Meerwald <pmeerw@pmeerw.net>
+ * Copyright © 2023 Rémi Denis-Courmont.
  *
  * This file is part of FFmpeg.
  *
@@ -18,18 +18,23 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_G722DSP_H
-#define AVCODEC_G722DSP_H
+#include "config.h"
 
 #include <stdint.h>
 
-typedef struct G722DSPContext {
-    void (*apply_qmf)(const int16_t *prev_samples, int xout[2]);
-} G722DSPContext;
+#include "libavutil/attributes.h"
+#include "libavutil/cpu.h"
+#include "libavutil/riscv/cpu.h"
+#include "libavcodec/g722dsp.h"
 
-void ff_g722dsp_init(G722DSPContext *c);
-void ff_g722dsp_init_arm(G722DSPContext *c);
-void ff_g722dsp_init_riscv(G722DSPContext *c);
-void ff_g722dsp_init_x86(G722DSPContext *c);
+extern void ff_g722_apply_qmf_rvv(const int16_t *prev_samples, int xout[2]);
 
-#endif /* AVCODEC_G722DSP_H */
+av_cold void ff_g722dsp_init_riscv(G722DSPContext *dsp)
+{
+#if HAVE_RVV
+    int flags = av_get_cpu_flags();
+
+    if ((flags & AV_CPU_FLAG_RVV_I32) && ff_get_rv_vlenb() >= 16)
+        dsp->apply_qmf = ff_g722_apply_qmf_rvv;
+#endif
+}
