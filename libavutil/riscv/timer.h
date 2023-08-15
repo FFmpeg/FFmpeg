@@ -24,21 +24,21 @@
 #if HAVE_INLINE_ASM
 #include <stdint.h>
 
-static inline uint64_t rdcycle64(void)
+static inline uint64_t ff_read_time(void)
 {
 #if (__riscv_xlen >= 64)
     uintptr_t cycles;
 
-    __asm__ volatile ("rdcycle %0" : "=r"(cycles));
+    __asm__ volatile ("rdtime  %0" : "=r" (cycles));
 
 #else
     uint64_t cycles;
     uint32_t hi, lo, check;
 
     __asm__ volatile (
-        "1: rdcycleh %0\n"
-        "   rdcycle  %1\n"
-        "   rdcycleh %2\n"
+        "1: rdtimeh %0\n"
+        "   rdtime  %1\n"
+        "   rdtimeh %2\n"
         "   bne %0, %2, 1b\n" : "=r" (hi), "=r" (lo), "=r" (check));
 
     cycles = (((uint64_t)hi) << 32) | lo;
@@ -47,7 +47,7 @@ static inline uint64_t rdcycle64(void)
     return cycles;
 }
 
-#define AV_READ_TIME rdcycle64
+#define AV_READ_TIME ff_read_time
 
 #endif
 #endif /* AVUTIL_RISCV_TIMER_H */
