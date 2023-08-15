@@ -32,6 +32,289 @@ const epel_filters, align=4
         .byte -2, 10, 58, -2
 endconst
 
+const epel_filters_abs, align=4
+        .byte  0,  0,  0,  0
+        .byte  2, 58, 10,  2
+        .byte  4, 54, 16,  2
+        .byte  6, 46, 28,  4
+        .byte  4, 36, 36,  4
+        .byte  4, 28, 46,  6
+        .byte  2, 16, 54,  4
+        .byte  2, 10, 58,  2
+endconst
+
+
+.macro load_epel_filterb freg, xreg
+        movrel          \xreg, epel_filters_abs
+        add             \xreg, \xreg, \freg, lsl #2
+        ld4r            {v0.16b, v1.16b, v2.16b, v3.16b}, [\xreg] // filter
+.endm
+
+.macro calc_epelb dst, src0, src1, src2, src3
+        umull           \dst\().8h, \src1\().8b, v1.8b
+        umlsl           \dst\().8h, \src0\().8b, v0.8b
+        umlal           \dst\().8h, \src2\().8b, v2.8b
+        umlsl           \dst\().8h, \src3\().8b, v3.8b
+.endm
+
+.macro calc_epelb2 dst, src0, src1, src2, src3
+        umull2          \dst\().8h, \src1\().16b, v1.16b
+        umlsl2          \dst\().8h, \src0\().16b, v0.16b
+        umlal2          \dst\().8h, \src2\().16b, v2.16b
+        umlsl2          \dst\().8h, \src3\().16b, v3.16b
+.endm
+
+.macro calc_all4
+        calc            v16, v17, v18, v19
+        b.eq            2f
+        calc            v17, v18, v19, v16
+        b.eq            2f
+        calc            v18, v19, v16, v17
+        b.eq            2f
+        calc            v19, v16, v17, v18
+        b.ne            1b
+.endm
+
+.macro calc_all8
+        calc            v16, v17, v18, v19, v20, v21, v22, v23
+        b.eq            2f
+        calc            v18, v19, v20, v21, v22, v23, v16, v17
+        b.eq            2f
+        calc            v20, v21, v22, v23, v16, v17, v18, v19
+        b.eq            2f
+        calc            v22, v23, v16, v17, v18, v19, v20, v21
+        b.ne            1b
+.endm
+
+.macro calc_all12
+        calc            v16, v17, v18, v19, v20, v21, v22, v23, v24, v25, v26, v27
+        b.eq            2f
+        calc            v19, v20, v21, v22, v23, v24, v25, v26, v27, v16, v17, v18
+        b.eq            2f
+        calc            v22, v23, v24, v25, v26, v27, v16, v17, v18, v19, v20, v21
+        b.eq            2f
+        calc            v25, v26, v27, v16, v17, v18, v19, v20, v21, v22, v23, v24
+        b.ne            1b
+.endm
+
+.macro calc_all16
+        calc            v16, v17, v18, v19, v20, v21, v22, v23, v24, v25, v26, v27, v28, v29, v30, v31
+        b.eq            2f
+        calc            v20, v21, v22, v23, v24, v25, v26, v27, v28, v29, v30, v31, v16, v17, v18, v19
+        b.eq            2f
+        calc            v24, v25, v26, v27, v28, v29, v30, v31, v16, v17, v18, v19, v20, v21, v22, v23
+        b.eq            2f
+        calc            v28, v29, v30, v31, v16, v17, v18, v19, v20, v21, v22, v23, v24, v25, v26, v27
+        b.ne            1b
+.endm
+
+function ff_hevc_put_hevc_epel_uni_v4_8_neon, export=1
+        load_epel_filterb x6, x5
+        sub             x2, x2, x3
+        ld1             {v16.s}[0], [x2], x3
+        ld1             {v17.s}[0], [x2], x3
+        ld1             {v18.s}[0], [x2], x3
+.macro calc src0, src1, src2, src3
+        ld1             {\src3\().s}[0], [x2], x3
+        calc_epelb      v4, \src0, \src1, \src2, \src3
+        sqrshrun        v4.8b, v4.8h, #6
+        subs            w4, w4, #1
+        st1             {v4.s}[0], [x0], x1
+.endm
+1:      calc_all4
+.purgem calc
+2:      ret
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_v6_8_neon, export=1
+        load_epel_filterb x6, x5
+        sub             x2, x2, x3
+        sub             x1, x1, #4
+        ld1             {v16.8b}, [x2], x3
+        ld1             {v17.8b}, [x2], x3
+        ld1             {v18.8b}, [x2], x3
+.macro calc src0, src1, src2, src3
+        ld1             {\src3\().8b}, [x2], x3
+        calc_epelb      v4, \src0, \src1, \src2, \src3
+        sqrshrun        v4.8b, v4.8h, #6
+        st1             {v4.s}[0], [x0], #4
+        subs            w4, w4, #1
+        st1             {v4.h}[2], [x0], x1
+.endm
+1:      calc_all4
+.purgem calc
+2:      ret
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_v8_8_neon, export=1
+        load_epel_filterb x6, x5
+        sub             x2, x2, x3
+        ld1             {v16.8b}, [x2], x3
+        ld1             {v17.8b}, [x2], x3
+        ld1             {v18.8b}, [x2], x3
+.macro calc src0, src1, src2, src3
+        ld1             {\src3\().8b}, [x2], x3
+        calc_epelb      v4, \src0, \src1, \src2, \src3
+        sqrshrun        v4.8b,  v4.8h, #6
+        subs            w4, w4, #1
+        st1             {v4.8b}, [x0], x1
+.endm
+1:      calc_all4
+.purgem calc
+2:      ret
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_v12_8_neon, export=1
+        load_epel_filterb x6, x5
+        sub             x2, x2, x3
+        sub             x1, x1, #8
+        ld1             {v16.16b}, [x2], x3
+        ld1             {v17.16b}, [x2], x3
+        ld1             {v18.16b}, [x2], x3
+.macro calc src0, src1, src2, src3
+        ld1             {\src3\().16b}, [x2], x3
+        calc_epelb      v4, \src0, \src1, \src2, \src3
+        calc_epelb2     v5, \src0, \src1, \src2, \src3
+        sqrshrun        v4.8b,  v4.8h, #6
+        sqrshrun2       v4.16b,  v5.8h, #6
+        subs            w4, w4, #1
+        st1             {v4.8b}, [x0], #8
+        st1             {v4.s}[2], [x0], x1
+.endm
+1:      calc_all4
+.purgem calc
+2:      ret
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_v16_8_neon, export=1
+        load_epel_filterb x6, x5
+        sub             x2, x2, x3
+        ld1             {v16.16b}, [x2], x3
+        ld1             {v17.16b}, [x2], x3
+        ld1             {v18.16b}, [x2], x3
+.macro calc src0, src1, src2, src3
+        ld1             {\src3\().16b}, [x2], x3
+        calc_epelb      v4, \src0, \src1, \src2, \src3
+        calc_epelb2     v5, \src0, \src1, \src2, \src3
+        sqrshrun        v4.8b,  v4.8h, #6
+        sqrshrun2       v4.16b,  v5.8h, #6
+        subs            w4, w4, #1
+        st1             {v4.16b}, [x0], x1
+.endm
+1:      calc_all4
+.purgem calc
+2:      ret
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_v24_8_neon, export=1
+        load_epel_filterb x6, x5
+        sub             x2, x2, x3
+        ld1             {v16.8b, v17.8b, v18.8b}, [x2], x3
+        ld1             {v19.8b, v20.8b, v21.8b}, [x2], x3
+        ld1             {v22.8b, v23.8b, v24.8b}, [x2], x3
+.macro calc src0, src1, src2, src3, src4, src5, src6, src7, src8, src9, src10, src11
+        ld1             {\src9\().8b, \src10\().8b, \src11\().8b}, [x2], x3
+        calc_epelb      v4, \src0, \src3, \src6, \src9
+        calc_epelb      v5, \src1, \src4, \src7, \src10
+        calc_epelb      v6, \src2, \src5, \src8, \src11
+        sqrshrun        v4.8b,  v4.8h, #6
+        sqrshrun        v5.8b,  v5.8h, #6
+        sqrshrun        v6.8b,  v6.8h, #6
+        subs            w4, w4, #1
+        st1             {v4.8b-v6.8b}, [x0], x1
+.endm
+1:      calc_all12
+.purgem calc
+2:      ret
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_v32_8_neon, export=1
+        load_epel_filterb x6, x5
+        sub             x2, x2, x3
+        ld1             {v16.16b, v17.16b}, [x2], x3
+        ld1             {v18.16b, v19.16b}, [x2], x3
+        ld1             {v20.16b, v21.16b}, [x2], x3
+.macro calc src0, src1, src2, src3, src4, src5, src6, src7
+        ld1             {\src6\().16b, \src7\().16b}, [x2], x3
+        calc_epelb      v4, \src0, \src2, \src4, \src6
+        calc_epelb2     v5, \src0, \src2, \src4, \src6
+        calc_epelb      v6, \src1, \src3, \src5, \src7
+        calc_epelb2     v7, \src1, \src3, \src5, \src7
+        sqrshrun        v4.8b,  v4.8h, #6
+        sqrshrun2       v4.16b, v5.8h, #6
+        sqrshrun        v5.8b,  v6.8h, #6
+        sqrshrun2       v5.16b, v7.8h, #6
+        subs            w4, w4, #1
+        st1             {v4.16b, v5.16b}, [x0], x1
+.endm
+1:      calc_all8
+.purgem calc
+2:      ret
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_v48_8_neon, export=1
+        load_epel_filterb x6, x5
+        sub             x2, x2, x3
+        ld1             {v16.16b, v17.16b, v18.16b}, [x2], x3
+        ld1             {v19.16b, v20.16b, v21.16b}, [x2], x3
+        ld1             {v22.16b, v23.16b, v24.16b}, [x2], x3
+.macro calc src0, src1, src2, src3, src4, src5, src6, src7, src8, src9, src10, src11
+        ld1             {\src9\().16b, \src10\().16b, \src11\().16b}, [x2], x3
+        calc_epelb      v4,  \src0, \src3, \src6, \src9
+        calc_epelb2     v5,  \src0, \src3, \src6, \src9
+        calc_epelb      v6,  \src1, \src4, \src7, \src10
+        calc_epelb2     v7,  \src1, \src4, \src7, \src10
+        calc_epelb      v28, \src2, \src5, \src8, \src11
+        calc_epelb2     v29, \src2, \src5, \src8, \src11
+        sqrshrun        v4.8b,  v4.8h, #6
+        sqrshrun2       v4.16b, v5.8h, #6
+        sqrshrun        v5.8b,  v6.8h, #6
+        sqrshrun2       v5.16b, v7.8h, #6
+        sqrshrun        v6.8b,  v28.8h, #6
+        sqrshrun2       v6.16b, v29.8h, #6
+        subs            w4, w4, #1
+        st1             {v4.16b, v5.16b, v6.16b}, [x0], x1
+.endm
+1:      calc_all12
+.purgem calc
+2:      ret
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_v64_8_neon, export=1
+        load_epel_filterb x6, x5
+        sub             sp, sp, #32
+        st1             {v8.8b-v11.8b}, [sp]
+        sub             x2, x2, x3
+        ld1             {v16.16b, v17.16b, v18.16b, v19.16b}, [x2], x3
+        ld1             {v20.16b, v21.16b, v22.16b, v23.16b}, [x2], x3
+        ld1             {v24.16b, v25.16b, v26.16b, v27.16b}, [x2], x3
+.macro calc src0, src1, src2, src3, src4, src5, src6, src7, src8, src9, src10, src11, src12, src13, src14, src15
+        ld1             {\src12\().16b, \src13\().16b, \src14\().16b, \src15\().16b}, [x2], x3
+        calc_epelb      v10, \src3, \src7, \src11, \src15
+        calc_epelb2     v11, \src3, \src7, \src11, \src15
+        calc_epelb      v4,  \src0, \src4, \src8,  \src12
+        calc_epelb2     v5,  \src0, \src4, \src8,  \src12
+        calc_epelb      v6,  \src1, \src5, \src9,  \src13
+        calc_epelb2     v7,  \src1, \src5, \src9,  \src13
+        calc_epelb      v8,  \src2, \src6, \src10, \src14
+        calc_epelb2     v9,  \src2, \src6, \src10, \src14
+        sqrshrun        v4.8b,  v4.8h, #6
+        sqrshrun2       v4.16b, v5.8h, #6
+        sqrshrun        v5.8b,  v6.8h, #6
+        sqrshrun2       v5.16b, v7.8h, #6
+        sqrshrun        v6.8b,  v8.8h, #6
+        sqrshrun2       v6.16b, v9.8h, #6
+        sqrshrun        v7.8b,  v10.8h, #6
+        sqrshrun2       v7.16b, v11.8h, #6
+        subs            w4, w4, #1
+        st1             {v4.16b, v5.16b, v6.16b, v7.16b}, [x0], x1
+.endm
+1:      calc_all16
+.purgem calc
+2:      ld1             {v8.8b-v11.8b}, [sp], #32
+        ret
+endfunc
+
 #if HAVE_I8MM
 
 .macro EPEL_H_HEADER
