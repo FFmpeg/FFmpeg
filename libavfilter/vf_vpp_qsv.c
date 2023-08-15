@@ -536,7 +536,10 @@ static int config_output(AVFilterLink *outlink)
     outlink->w          = vpp->out_width;
     outlink->h          = vpp->out_height;
     outlink->frame_rate = vpp->framerate;
-    outlink->time_base  = av_inv_q(vpp->framerate);
+    if (vpp->framerate.num == 0 || vpp->framerate.den == 0)
+        outlink->time_base = inlink->time_base;
+    else
+        outlink->time_base = av_inv_q(vpp->framerate);
 
     param.filter_frame  = NULL;
     param.set_frame_ext_params = vpp_set_frame_ext_params;
