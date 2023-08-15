@@ -48,6 +48,7 @@ static inline uint64_t ff_read_time(void)
 }
 
 #define AV_READ_TIME ff_read_time
+#define FF_TIMER_UNITS "ticks"
 
 #endif
 #endif /* AVUTIL_RISCV_TIMER_H */
