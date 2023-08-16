@@ -121,6 +121,8 @@ av_cold void ff_flacdsp_init(FLACDSPContext *c, enum AVSampleFormat fmt, int cha
 
 #if ARCH_ARM
     ff_flacdsp_init_arm(c, fmt, channels);
+#elif ARCH_RISCV
+    ff_flacdsp_init_riscv(c, fmt, channels);
 #elif ARCH_X86
     ff_flacdsp_init_x86(c, fmt, channels);
 #endif
