@@ -2088,6 +2088,8 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *picture,
 
     if (s->apply_trc_type != AVCOL_TRC_UNSPECIFIED)
         avctx->color_trc = s->apply_trc_type;
+    else if (s->gamma > 0.9999f && s->gamma < 1.0001f)
+        avctx->color_trc = AVCOL_TRC_LINEAR;
 
     switch (s->compression) {
     case EXR_RAW:
