@@ -1131,7 +1131,7 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
     else if ((s->frame_flags & 0x03) <= 1)
         sample_fmt = AV_SAMPLE_FMT_S16P;
     else
-        sample_fmt          = AV_SAMPLE_FMT_S32P;
+        sample_fmt = AV_SAMPLE_FMT_S32P;
 
     if (wc->ch_offset && avctx->sample_fmt != sample_fmt)
         return AVERROR_INVALIDDATA;
