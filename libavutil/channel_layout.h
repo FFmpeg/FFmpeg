@@ -358,8 +358,16 @@ typedef struct AVChannelLayout {
     void *opaque;
 } AVChannelLayout;
 
+/**
+ * Macro to define native channel layouts
+ *
+ * @note This doesn't use designated initializers for compatibility with C++ 17 and older.
+ */
 #define AV_CHANNEL_LAYOUT_MASK(nb, m) \
-    { .order = AV_CHANNEL_ORDER_NATIVE, .nb_channels = (nb), .u = { .mask = (m) }}
+    { /* .order */ AV_CHANNEL_ORDER_NATIVE, \
+      /* .nb_channels */  (nb), \
+      /* .u.mask */ { m }, \
+      /* .opaque */ NULL }
 
 /**
  * @name Common pre-defined channel layouts
@@ -396,8 +404,12 @@ typedef struct AVChannelLayout {
 #define AV_CHANNEL_LAYOUT_HEXADECAGONAL     AV_CHANNEL_LAYOUT_MASK(16, AV_CH_LAYOUT_HEXADECAGONAL)
 #define AV_CHANNEL_LAYOUT_STEREO_DOWNMIX    AV_CHANNEL_LAYOUT_MASK(2,  AV_CH_LAYOUT_STEREO_DOWNMIX)
 #define AV_CHANNEL_LAYOUT_22POINT2          AV_CHANNEL_LAYOUT_MASK(24, AV_CH_LAYOUT_22POINT2)
+
 #define AV_CHANNEL_LAYOUT_AMBISONIC_FIRST_ORDER \
-    { .order = AV_CHANNEL_ORDER_AMBISONIC, .nb_channels = 4, .u = { .mask = 0 }}
+    { /* .order */ AV_CHANNEL_ORDER_AMBISONIC, \
+      /* .nb_channels */ 4, \
+      /* .u.mask */ { 0 }, \
+      /* .opaque */ NULL }
 /** @} */
 
 struct AVBPrint;
