@@ -42,6 +42,25 @@ static inline AVFrame *pl_get_mapped_avframe(const struct pl_frame *frame)
 }
 #endif
 
+#if PL_API_VER >= 309
+#include <libplacebo/options.h>
+#else
+typedef struct pl_options_t {
+    // Backwards compatibility shim of this struct
+    struct pl_render_params params;
+    struct pl_deband_params deband_params;
+    struct pl_sigmoid_params sigmoid_params;
+    struct pl_color_adjustment color_adjustment;
+    struct pl_peak_detect_params peak_detect_params;
+    struct pl_color_map_params color_map_params;
+    struct pl_dither_params dither_params;
+    struct pl_cone_params cone_params;
+} *pl_options;
+
+#define pl_options_alloc(log) av_mallocz(sizeof(struct pl_options_t))
+#define pl_options_free(ptr)  av_freep(ptr)
+#endif
+
 enum {
     TONE_MAP_AUTO,
     TONE_MAP_CLIP,
@@ -175,7 +194,7 @@ typedef struct LibplaceboContext {
     int color_trc;
 
     /* pl_render_params */
-    struct pl_render_params params;
+    pl_options opts;
     char *upscaler;
     char *downscaler;
     char *frame_mixer;
@@ -190,7 +209,6 @@ typedef struct LibplaceboContext {
     int disable_fbos;
 
     /* pl_deband_params */
-    struct pl_deband_params deband_params;
     int deband;
     int deband_iterations;
     float deband_threshold;
@@ -198,7 +216,6 @@ typedef struct LibplaceboContext {
     float deband_grain;
 
     /* pl_color_adjustment */
-    struct pl_color_adjustment color_adjustment;
     float brightness;
     float contrast;
     float saturation;
@@ -206,7 +223,6 @@ typedef struct LibplaceboContext {
     float gamma;
 
     /* pl_peak_detect_params */
-    struct pl_peak_detect_params peak_detect_params;
     int peakdetect;
     float smoothing;
     float min_peak;
@@ -215,7 +231,6 @@ typedef struct LibplaceboContext {
     float percentile;
 
     /* pl_color_map_params */
-    struct pl_color_map_params color_map_params;
     int gamut_mode;
     int tonemapping;
     float tonemapping_param;
@@ -239,13 +254,11 @@ typedef struct LibplaceboContext {
 #endif
 
     /* pl_dither_params */
-    struct pl_dither_params dither_params;
     int dithering;
     int dither_lut_size;
     int dither_temporal;
 
     /* pl_cone_params */
-    struct pl_cone_params cone_params;
     int cones;
     float cone_str;
 
@@ -363,6 +376,7 @@ static int update_settings(AVFilterContext *ctx)
 {
     int err = 0;
     LibplaceboContext *s = ctx->priv;
+    pl_options opts = s->opts;
     int gamut_mode = s->gamut_mode;
     uint8_t color_rgba[4];
 
@@ -394,14 +408,16 @@ static int update_settings(AVFilterContext *ctx)
 
     RET(av_parse_color(color_rgba, s->fillcolor, -1, s));
 
-    s->deband_params = *pl_deband_params(
+    opts->deband_params = *pl_deband_params(
         .iterations = s->deband_iterations,
         .threshold = s->deband_threshold,
         .radius = s->deband_radius,
         .grain = s->deband_grain,
     );
 
-    s->color_adjustment = (struct pl_color_adjustment) {
+    opts->sigmoid_params = pl_sigmoid_default_params;
+
+    opts->color_adjustment = (struct pl_color_adjustment) {
         .brightness = s->brightness,
         .contrast = s->contrast,
         .saturation = s->saturation,
@@ -409,7 +425,7 @@ static int update_settings(AVFilterContext *ctx)
         .gamma = s->gamma,
     };
 
-    s->peak_detect_params = *pl_peak_detect_params(
+    opts->peak_detect_params = *pl_peak_detect_params(
         .smoothing_period = s->smoothing,
         .minimum_peak = s->min_peak,
         .scene_threshold_low = s->scene_low,
@@ -422,7 +438,7 @@ static int update_settings(AVFilterContext *ctx)
 #endif
     );
 
-    s->color_map_params = *pl_color_map_params(
+    opts->color_map_params = *pl_color_map_params(
 #if FF_API_LIBPLACEBO_OPTS
 # if PL_API_VER >= 269
         .hybrid_mix = hybrid_mix,
@@ -441,20 +457,20 @@ static int update_settings(AVFilterContext *ctx)
 #endif
     );
 
-    set_gamut_mode(&s->color_map_params, gamut_mode);
+    set_gamut_mode(&opts->color_map_params, gamut_mode);
 
-    s->dither_params = *pl_dither_params(
+    opts->dither_params = *pl_dither_params(
         .method = s->dithering,
         .lut_size = s->dither_lut_size,
         .temporal = s->dither_temporal,
     );
 
-    s->cone_params = *pl_cone_params(
+    opts->cone_params = *pl_cone_params(
         .cones = s->cones,
         .strength = s->cone_str,
     );
 
-    s->params = *pl_render_params(
+    opts->params = *pl_render_params(
         .lut_entries = s->lut_entries,
         .antiringing_strength = s->antiringing,
         .background_transparency = 1.0f - (float) color_rgba[3] / UINT8_MAX,
@@ -467,13 +483,13 @@ static int update_settings(AVFilterContext *ctx)
         .corner_rounding = s->corner_rounding,
 #endif
 
-        .deband_params = s->deband ? &s->deband_params : NULL,
-        .sigmoid_params = s->sigmoid ? &pl_sigmoid_default_params : NULL,
-        .color_adjustment = &s->color_adjustment,
-        .peak_detect_params = s->peakdetect ? &s->peak_detect_params : NULL,
-        .color_map_params = &s->color_map_params,
-        .dither_params = s->dithering >= 0 ? &s->dither_params : NULL,
-        .cone_params = s->cones ? &s->cone_params : NULL,
+        .deband_params = s->deband ? &opts->deband_params : NULL,
+        .sigmoid_params = s->sigmoid ? &opts->sigmoid_params : NULL,
+        .color_adjustment = &opts->color_adjustment,
+        .peak_detect_params = s->peakdetect ? &opts->peak_detect_params : NULL,
+        .color_map_params = &opts->color_map_params,
+        .dither_params = s->dithering >= 0 ? &opts->dither_params : NULL,
+        .cone_params = s->cones ? &opts->cone_params : NULL,
 
         .hooks = s->hooks,
         .num_hooks = s->num_hooks,
@@ -486,9 +502,9 @@ static int update_settings(AVFilterContext *ctx)
         .disable_fbos = s->disable_fbos,
     );
 
-    RET(find_scaler(ctx, &s->params.upscaler, s->upscaler, 0));
-    RET(find_scaler(ctx, &s->params.downscaler, s->downscaler, 0));
-    RET(find_scaler(ctx, &s->params.frame_mixer, s->frame_mixer, 1));
+    RET(find_scaler(ctx, &opts->params.upscaler, s->upscaler, 0));
+    RET(find_scaler(ctx, &opts->params.downscaler, s->downscaler, 0));
+    RET(find_scaler(ctx, &opts->params.frame_mixer, s->frame_mixer, 1));
     return 0;
 
 fail:
@@ -527,6 +543,12 @@ static int libplacebo_init(AVFilterContext *avctx)
 
     if (!s->log)
         return AVERROR(ENOMEM);
+
+    s->opts = pl_options_alloc(s->log);
+    if (!s->opts) {
+        libplacebo_uninit(avctx);
+        return AVERROR(ENOMEM);
+    }
 
     if (s->out_format_string) {
         s->out_format = av_get_pix_fmt(s->out_format_string);
@@ -712,6 +734,8 @@ static void libplacebo_uninit(AVFilterContext *avctx)
             input_uninit(&s->inputs[i]);
         av_freep(&s->inputs);
     }
+
+    pl_options_free(&s->opts);
     pl_vulkan_destroy(&s->vulkan);
     pl_log_destroy(&s->log);
     ff_vk_uninit(&s->vkctx);
@@ -818,6 +842,7 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
 {
     int err = 0, ok, changed_csp;
     LibplaceboContext *s = ctx->priv;
+    pl_options opts = s->opts;
     AVFilterLink *outlink = ctx->outputs[0];
     const AVPixFmtDescriptor *outdesc = av_pix_fmt_desc_get(outlink->format);
     struct pl_frame target;
@@ -901,18 +926,18 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
     }
 
     /* Draw first frame opaque, others with blending */
-    s->params.skip_target_clearing = false;
-    s->params.blend_params = NULL;
+    opts->params.skip_target_clearing = false;
+    opts->params.blend_params = NULL;
     for (int i = 0; i < s->nb_inputs; i++) {
         LibplaceboInput *in = &s->inputs[i];
         int high_fps = av_cmp_q(in->link->frame_rate, outlink->frame_rate) >= 0;
         if (in->qstatus != PL_QUEUE_OK)
             continue;
-        s->params.skip_caching_single_frame = high_fps;
+        opts->params.skip_caching_single_frame = high_fps;
         update_crops(ctx, in, &target, out->pts * av_q2d(outlink->time_base));
-        pl_render_image_mix(in->renderer, &in->mix, &target, &s->params);
-        s->params.skip_target_clearing = true;
-        s->params.blend_params = &pl_alpha_overlay;
+        pl_render_image_mix(in->renderer, &in->mix, &target, &opts->params);
+        opts->params.skip_target_clearing = true;
+        opts->params.blend_params = &pl_alpha_overlay;
     }
 
     if (outdesc->flags & AV_PIX_FMT_FLAG_HWACCEL) {
@@ -1057,7 +1082,7 @@ static int libplacebo_activate(AVFilterContext *ctx)
 
             in->qstatus = pl_queue_update(in->queue, &in->mix, pl_queue_params(
                 .pts            = out_pts * av_q2d(outlink->time_base),
-                .radius         = pl_frame_mix_radius(&s->params),
+                .radius         = pl_frame_mix_radius(&s->opts->params),
                 .vsync_duration = av_q2d(av_inv_q(outlink->frame_rate)),
             ));
 
