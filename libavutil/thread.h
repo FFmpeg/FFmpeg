@@ -163,6 +163,15 @@ static inline int strict_pthread_once(pthread_once_t *once_control, void (*init_
 #define ff_mutex_unlock  pthread_mutex_unlock
 #define ff_mutex_destroy pthread_mutex_destroy
 
+#define AVCond pthread_cond_t
+
+#define ff_cond_init      pthread_cond_init
+#define ff_cond_destroy   pthread_cond_destroy
+#define ff_cond_signal    pthread_cond_signal
+#define ff_cond_broadcast pthread_cond_broadcast
+#define ff_cond_wait      pthread_cond_wait
+#define ff_cond_timedwait pthread_cond_timedwait
+
 #define AVOnce pthread_once_t
 #define AV_ONCE_INIT PTHREAD_ONCE_INIT
 
@@ -177,6 +186,16 @@ static inline int ff_mutex_init(AVMutex *mutex, const void *attr){ return 0; }
 static inline int ff_mutex_lock(AVMutex *mutex){ return 0; }
 static inline int ff_mutex_unlock(AVMutex *mutex){ return 0; }
 static inline int ff_mutex_destroy(AVMutex *mutex){ return 0; }
+
+#define AVCond char
+
+static inline int ff_cond_init(AVCond *cond, const void *attr){ return 0; }
+static inline int ff_cond_destroy(AVCond *cond){ return 0; }
+static inline int ff_cond_signal(AVCond *cond){ return 0; }
+static inline int ff_cond_broadcast(AVCond *cond){ return 0; }
+static inline int ff_cond_wait(AVCond *cond, AVMutex *mutex){ return 0; }
+static inline int ff_cond_timedwait(AVCond *cond, AVMutex *mutex,
+                                    const void *abstime){ return 0; }
 
 #define AVOnce char
 #define AV_ONCE_INIT 0
