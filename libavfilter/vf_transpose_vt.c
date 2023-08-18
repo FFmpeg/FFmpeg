@@ -69,11 +69,12 @@ static int transpose_vt_filter_frame(AVFilterLink *link, AVFrame *in)
     AVFilterLink *outlink = ctx->outputs[0];
     CVPixelBufferRef src;
     CVPixelBufferRef dst;
+    AVFrame *out;
 
     if (s->passthrough)
         return ff_filter_frame(outlink, in);
 
-    AVFrame *out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
         ret = AVERROR(ENOMEM);
         goto fail;
