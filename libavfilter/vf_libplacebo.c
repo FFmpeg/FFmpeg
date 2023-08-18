@@ -192,6 +192,7 @@ typedef struct LibplaceboContext {
     int color_range;
     int color_primaries;
     int color_trc;
+    AVDictionary *extra_opts;
 
     /* pl_render_params */
     pl_options opts;
@@ -376,6 +377,7 @@ static int update_settings(AVFilterContext *ctx)
 {
     int err = 0;
     LibplaceboContext *s = ctx->priv;
+    AVDictionaryEntry *e = NULL;
     pl_options opts = s->opts;
     int gamut_mode = s->gamut_mode;
     uint8_t color_rgba[4];
@@ -505,6 +507,16 @@ static int update_settings(AVFilterContext *ctx)
     RET(find_scaler(ctx, &opts->params.upscaler, s->upscaler, 0));
     RET(find_scaler(ctx, &opts->params.downscaler, s->downscaler, 0));
     RET(find_scaler(ctx, &opts->params.frame_mixer, s->frame_mixer, 1));
+
+#if PL_API_VER >= 309
+    while ((e = av_dict_get(s->extra_opts, "", e, AV_DICT_IGNORE_SUFFIX))) {
+        if (!pl_options_set_str(s->opts, e->key, e->value)) {
+            err = AVERROR(EINVAL);
+            goto fail;
+        }
+    }
+#endif
+
     return 0;
 
 fail:
@@ -1322,6 +1334,7 @@ static const AVOption libplacebo_options[] = {
     { "pad_crop_ratio", "ratio between padding and cropping when normalizing SAR (0=pad, 1=crop)", OFFSET(pad_crop_ratio), AV_OPT_TYPE_FLOAT, {.dbl=0.0}, 0.0, 1.0, DYNAMIC },
     { "fillcolor", "Background fill color", OFFSET(fillcolor), AV_OPT_TYPE_STRING, {.str = "black"}, .flags = DYNAMIC },
     { "corner_rounding", "Corner rounding radius", OFFSET(corner_rounding), AV_OPT_TYPE_FLOAT, {.dbl = 0.0}, 0.0, 1.0, .flags = DYNAMIC },
+    { "extra_opts", "Pass extra libplacebo-specific options using a :-separated list of key=value pairs", OFFSET(extra_opts), AV_OPT_TYPE_DICT, .flags = DYNAMIC },
 
     {"colorspace", "select colorspace", OFFSET(colorspace), AV_OPT_TYPE_INT, {.i64=-1}, -1, AVCOL_SPC_NB-1, DYNAMIC, "colorspace"},
     {"auto", "keep the same colorspace",  0, AV_OPT_TYPE_CONST, {.i64=-1},                          INT_MIN, INT_MAX, STATIC, "colorspace"},

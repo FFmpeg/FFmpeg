@@ -16320,6 +16320,16 @@ Render frames with rounded corners. The value, given as a float ranging from
 square to fully circular. In other words, it gives the radius divided by half
 the smaller side length. Defaults to @code{0.0}.
 
+@item extra_opts
+Pass extra libplacebo internal configuration options. These can be specified
+as a list of @var{key}=@var{value} pairs separated by ':'. The following example
+shows how to configure a custom filter kernel ("EWA LanczosSharp") and use it
+to double the input image resolution:
+
+@example
+-vf "libplacebo=w=iw*2:h=ih*2:extra_opts='upscaler=custom\:upscaler_preset=ewa_lanczos\:upscaler_blur=0.9812505644269356'"
+@end example
+
 @item colorspace
 @item color_primaries
 @item color_trc
