@@ -2224,6 +2224,7 @@ ARCH_EXT_LIST_PPC="
     ldbrx
     power8
     ppc4xx
+    vec_xl
     vsx
 "
 
@@ -2777,6 +2778,7 @@ altivec_deps="ppc"
 dcbzl_deps="ppc"
 ldbrx_deps="ppc"
 ppc4xx_deps="ppc"
+vec_xl_deps="altivec"
 vsx_deps="altivec"
 power8_deps="vsx"
 
@@ -6421,6 +6423,11 @@ elif enabled ppc; then
         check_cpp_condition power8 "altivec.h" "defined(_ARCH_PWR8)"
     fi
 
+    if enabled altivec && disabled vsx; then
+        check_cc vec_xl altivec.h "const unsigned char *y1i = { 0 };
+                                   vector unsigned char y0 = vec_xl(0, y1i);"
+    fi
+
 elif enabled riscv; then
 
     enabled rv && check_inline_asm rv '".option arch, +zbb\nrev8 t0, t1"'
@@ -7991,6 +7998,7 @@ if enabled ppc; then
     echo "POWER8 enabled            ${power8-no}"
     echo "PPC 4xx optimizations     ${ppc4xx-no}"
     echo "dcbzl available           ${dcbzl-no}"
+    echo "vec_xl available          ${vec_xl-no}"
 fi
 if enabled loongarch; then
     echo "LSX enabled               ${lsx-no}"
