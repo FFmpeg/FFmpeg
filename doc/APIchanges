@@ -5,9 +5,6 @@ API changes, most recent first:
 2023-08-18 - xxxxxxxxxx - lavu 58.17.100 - channel_layout.h
   All AV_CHANNEL_LAYOUT_* macros are now compatible with C++ 17 and older.
 
-2023-08-08 - xxxxxxxxxx - lavc 60.23.100 - libx264.c
-  Add mb_info option.
-
 2023-08-08 - xxxxxxxxxx - lavu 58.15.100 - video_hint.h
   Add AVVideoHint API.
 
