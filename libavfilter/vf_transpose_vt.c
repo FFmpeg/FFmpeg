@@ -102,6 +102,39 @@ fail:
     return ret;
 }
 
+static int transpose_vt_recreate_hw_ctx(AVFilterLink *outlink)
+{
+    AVFilterContext *avctx = outlink->src;
+    AVFilterLink *inlink = outlink->src->inputs[0];
+    AVHWFramesContext *hw_frame_ctx_in;
+    AVHWFramesContext *hw_frame_ctx_out;
+    int err;
+
+    av_buffer_unref(&outlink->hw_frames_ctx);
+
+    hw_frame_ctx_in = (AVHWFramesContext *)inlink->hw_frames_ctx->data;
+    outlink->hw_frames_ctx = av_hwframe_ctx_alloc(hw_frame_ctx_in->device_ref);
+    hw_frame_ctx_out = (AVHWFramesContext *)outlink->hw_frames_ctx->data;
+    hw_frame_ctx_out->format = AV_PIX_FMT_VIDEOTOOLBOX;
+    hw_frame_ctx_out->sw_format = hw_frame_ctx_in->sw_format;
+    hw_frame_ctx_out->width = outlink->w;
+    hw_frame_ctx_out->height = outlink->h;
+
+    err = ff_filter_init_hw_frames(avctx, outlink, 1);
+    if (err < 0)
+        return err;
+
+    err = av_hwframe_ctx_init(outlink->hw_frames_ctx);
+    if (err < 0) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Failed to init videotoolbox frame context, %s\n",
+               av_err2str(err));
+        return err;
+    }
+
+    return 0;
+}
+
 static int transpose_vt_config_output(AVFilterLink *outlink)
 {
     int err;
@@ -112,6 +145,9 @@ static int transpose_vt_config_output(AVFilterLink *outlink)
     CFBooleanRef vflip = kCFBooleanFalse;
     CFBooleanRef hflip = kCFBooleanFalse;
     int swap_w_h = 0;
+
+    av_buffer_unref(&outlink->hw_frames_ctx);
+    outlink->hw_frames_ctx = av_buffer_ref(inlink->hw_frames_ctx);
 
     if ((inlink->w >= inlink->h && s->passthrough == TRANSPOSE_PT_TYPE_LANDSCAPE) ||
         (inlink->w <= inlink->h && s->passthrough == TRANSPOSE_PT_TYPE_PORTRAIT)) {
@@ -175,12 +211,12 @@ static int transpose_vt_config_output(AVFilterLink *outlink)
         return AVERROR_EXTERNAL;
     }
 
-    if (swap_w_h) {
-        outlink->w = inlink->h;
-        outlink->h = inlink->w;
-    }
+    if (!swap_w_h)
+        return 0;
 
-    return 0;
+    outlink->w = inlink->h;
+    outlink->h = inlink->w;
+    return transpose_vt_recreate_hw_ctx(outlink);
 }
 
 #define OFFSET(x) offsetof(TransposeVtContext, x)
@@ -244,4 +280,5 @@ const AVFilter ff_vf_transpose_vt = {
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_VIDEOTOOLBOX),
     .priv_class     = &transpose_vt_class,
     .flags          = AVFILTER_FLAG_HWDEVICE,
+    .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
