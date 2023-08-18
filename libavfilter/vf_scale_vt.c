@@ -177,6 +177,8 @@ static int scale_vt_config_output(AVFilterLink *outlink)
     AVFilterContext *avctx = outlink->src;
     ScaleVtContext *s  = avctx->priv;
     AVFilterLink *inlink = outlink->src->inputs[0];
+    AVHWFramesContext *hw_frame_ctx_in;
+    AVHWFramesContext *hw_frame_ctx_out;
 
     err = ff_scale_eval_dimensions(s, s->w_expr, s->h_expr, inlink, outlink,
                                    &s->output_width,
@@ -192,6 +194,28 @@ static int scale_vt_config_output(AVFilterLink *outlink)
         outlink->sample_aspect_ratio = av_mul_q(r, inlink->sample_aspect_ratio);
     } else {
         outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
+    }
+
+    hw_frame_ctx_in = (AVHWFramesContext *)inlink->hw_frames_ctx->data;
+
+    av_buffer_unref(&outlink->hw_frames_ctx);
+    outlink->hw_frames_ctx = av_hwframe_ctx_alloc(hw_frame_ctx_in->device_ref);
+    hw_frame_ctx_out = (AVHWFramesContext *)outlink->hw_frames_ctx->data;
+    hw_frame_ctx_out->format = AV_PIX_FMT_VIDEOTOOLBOX;
+    hw_frame_ctx_out->sw_format = hw_frame_ctx_in->sw_format;
+    hw_frame_ctx_out->width = outlink->w;
+    hw_frame_ctx_out->height = outlink->h;
+
+    err = ff_filter_init_hw_frames(avctx, outlink, 1);
+    if (err < 0)
+        return err;
+
+    err = av_hwframe_ctx_init(outlink->hw_frames_ctx);
+    if (err < 0) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Failed to init videotoolbox frame context, %s\n",
+               av_err2str(err));
+        return err;
     }
 
     return 0;
@@ -242,4 +266,5 @@ const AVFilter ff_vf_scale_vt = {
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_VIDEOTOOLBOX),
     .priv_class     = &scale_vt_class,
     .flags          = AVFILTER_FLAG_HWDEVICE,
+    .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
