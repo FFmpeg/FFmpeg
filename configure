@@ -6488,7 +6488,7 @@ done
 check_lib advapi32 "windows.h"            RegCloseKey          -ladvapi32
 check_lib bcrypt   "windows.h bcrypt.h"   BCryptGenRandom      -lbcrypt &&
     check_cpp_condition bcrypt bcrypt.h "defined BCRYPT_RNG_ALGORITHM"
-check_lib ole32    "windows.h"            CoTaskMemFree        -lole32
+check_lib ole32    "windows.h objbase.h"  CoTaskMemFree        -lole32
 check_lib shell32  "windows.h shellapi.h" CommandLineToArgvW   -lshell32
 check_lib psapi    "windows.h psapi.h"    GetProcessMemoryInfo -lpsapi
 
