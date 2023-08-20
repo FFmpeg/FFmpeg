@@ -2179,7 +2179,8 @@ static AVBufferRef *vulkan_pool_alloc(void *opaque, size_t size)
     }
 
     err = create_frame(hwfc, &f, hwctx->tiling, hwctx->usage, hwctx->img_flags,
-                       hwctx->nb_layers, eiinfo.handleTypes ? &eiinfo : NULL);
+                       hwctx->nb_layers,
+                       eiinfo.handleTypes ? &eiinfo : hwctx->create_pnext);
     if (err)
         return NULL;
 
