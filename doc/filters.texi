@@ -1459,6 +1459,14 @@ select logistic sigmoid
 select sine cardinal function
 @item isinc
 select inverted sine cardinal function
+@item quat
+select quartic
+@item quatr
+select quartic root
+@item qsin2
+select squared quarter of sine wave
+@item hsin2
+select squared half of sine wave
 @item nofade
 no fade applied
 @end table
