@@ -213,17 +213,17 @@ static const char transition_circleclose[] = {
 };
 
 static const char* transitions_map[NB_TRANSITIONS] = {
-    [FADE]      = transition_fade,
-    [WIPELEFT]  = transition_wipeleft,
-    [WIPERIGHT] = transition_wiperight,
-    [WIPEUP]    = transition_wipeup,
-    [WIPEDOWN]  = transition_wipedown,
-    [SLIDEDOWN] = transition_slidedown,
-    [SLIDEUP]   = transition_slideup,
-    [SLIDELEFT] = transition_slideleft,
-    [SLIDERIGHT]= transition_slideright,
-    [CIRCLEOPEN]= transition_circleopen,
-    [CIRCLECLOSE]=transition_circleclose,
+    [FADE]          = transition_fade,
+    [WIPELEFT]      = transition_wipeleft,
+    [WIPERIGHT]     = transition_wiperight,
+    [WIPEUP]        = transition_wipeup,
+    [WIPEDOWN]      = transition_wipedown,
+    [SLIDEDOWN]     = transition_slidedown,
+    [SLIDEUP]       = transition_slideup,
+    [SLIDELEFT]     = transition_slideleft,
+    [SLIDERIGHT]    = transition_slideright,
+    [CIRCLEOPEN]    = transition_circleopen,
+    [CIRCLECLOSE]   = transition_circleclose,
 };
 
 static av_cold int init_vulkan(AVFilterContext *avctx)
@@ -565,17 +565,17 @@ static AVFrame *get_video_buffer(AVFilterLink *inlink, int w, int h)
 
 static const AVOption xfade_vulkan_options[] = {
     { "transition", "set cross fade transition", OFFSET(transition), AV_OPT_TYPE_INT, {.i64=FADE}, 0, NB_TRANSITIONS-1, FLAGS, "transition" },
-        { "fade",      "fade transition", 0, AV_OPT_TYPE_CONST, {.i64=FADE}, 0, 0, FLAGS, "transition" },
-        { "wipeleft",  "wipe left transition", 0, AV_OPT_TYPE_CONST, {.i64=WIPELEFT}, 0, 0, FLAGS, "transition" },
+        { "fade", "fade transition", 0, AV_OPT_TYPE_CONST, {.i64=FADE}, 0, 0, FLAGS, "transition" },
+        { "wipeleft", "wipe left transition", 0, AV_OPT_TYPE_CONST, {.i64=WIPELEFT}, 0, 0, FLAGS, "transition" },
         { "wiperight", "wipe right transition", 0, AV_OPT_TYPE_CONST, {.i64=WIPERIGHT}, 0, 0, FLAGS, "transition" },
-        { "wipeup",    "wipe up transition", 0, AV_OPT_TYPE_CONST, {.i64=WIPEUP}, 0, 0, FLAGS, "transition" },
-        { "wipedown",  "wipe down transition", 0, AV_OPT_TYPE_CONST, {.i64=WIPEDOWN}, 0, 0, FLAGS, "transition" },
+        { "wipeup", "wipe up transition", 0, AV_OPT_TYPE_CONST, {.i64=WIPEUP}, 0, 0, FLAGS, "transition" },
+        { "wipedown", "wipe down transition", 0, AV_OPT_TYPE_CONST, {.i64=WIPEDOWN}, 0, 0, FLAGS, "transition" },
         { "slidedown", "slide down transition", 0, AV_OPT_TYPE_CONST, {.i64=SLIDEDOWN}, 0, 0, FLAGS, "transition" },
-        { "slideup",   "slide up transition", 0, AV_OPT_TYPE_CONST, {.i64=SLIDEUP}, 0, 0, FLAGS, "transition" },
+        { "slideup", "slide up transition", 0, AV_OPT_TYPE_CONST, {.i64=SLIDEUP}, 0, 0, FLAGS, "transition" },
         { "slideleft", "slide left transition", 0, AV_OPT_TYPE_CONST, {.i64=SLIDELEFT}, 0, 0, FLAGS, "transition" },
-        { "slideright","slide right transition", 0, AV_OPT_TYPE_CONST, {.i64=SLIDERIGHT}, 0, 0, FLAGS, "transition" },
-        { "circleopen","circleopen transition", 0, AV_OPT_TYPE_CONST, {.i64=CIRCLEOPEN}, 0, 0, FLAGS, "transition" },
-        { "circleclose","circleclose transition", 0, AV_OPT_TYPE_CONST, {.i64=CIRCLECLOSE}, 0, 0, FLAGS, "transition" },
+        { "slideright", "slide right transition", 0, AV_OPT_TYPE_CONST, {.i64=SLIDERIGHT}, 0, 0, FLAGS, "transition" },
+        { "circleopen", "circleopen transition", 0, AV_OPT_TYPE_CONST, {.i64=CIRCLEOPEN}, 0, 0, FLAGS, "transition" },
+        { "circleclose", "circleclose transition", 0, AV_OPT_TYPE_CONST, {.i64=CIRCLECLOSE}, 0, 0, FLAGS, "transition" },
     { "duration", "set cross fade duration", OFFSET(duration), AV_OPT_TYPE_DURATION, {.i64=1000000}, 0, 60000000, FLAGS },
     { "offset",   "set cross fade start relative to first input stream", OFFSET(offset), AV_OPT_TYPE_DURATION, {.i64=0}, INT64_MIN, INT64_MAX, FLAGS },
     { NULL }
