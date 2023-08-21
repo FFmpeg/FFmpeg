@@ -81,6 +81,10 @@ enum XFadeTransitions {
     CIRCLECLOSE,
     DISSOLVE,
     PIXELIZE,
+    WIPETL,
+    WIPETR,
+    WIPEBL,
+    WIPEBR,
     NB_TRANSITIONS,
 };
 
@@ -246,6 +250,54 @@ static const char transition_pixelize[] = {
     C(0, }                                                                                    )
 };
 
+static const char transition_wipetl[] = {
+    C(0, void transition(int idx, ivec2 pos, float progress)                                  )
+    C(0, {                                                                                    )
+    C(1,     ivec2 size = imageSize(output_images[idx]);                                      )
+    C(1,     float zw = size.x * (1.0 - progress);                                            )
+    C(1,     float zh = size.y * (1.0 - progress);                                            )
+    C(1,     vec4 a = texture(a_images[idx], pos);                                            )
+    C(1,     vec4 b = texture(b_images[idx], pos);                                            )
+    C(1,     imageStore(output_images[idx], pos, (pos.y <= zh && pos.x <= zw) ? a : b);       )
+    C(0, }                                                                                    )
+};
+
+static const char transition_wipetr[] = {
+    C(0, void transition(int idx, ivec2 pos, float progress)                                  )
+    C(0, {                                                                                    )
+    C(1,     ivec2 size = imageSize(output_images[idx]);                                      )
+    C(1,     float zw = size.x * (progress);                                                  )
+    C(1,     float zh = size.y * (1.0 - progress);                                            )
+    C(1,     vec4 a = texture(a_images[idx], pos);                                            )
+    C(1,     vec4 b = texture(b_images[idx], pos);                                            )
+    C(1,     imageStore(output_images[idx], pos, (pos.y <= zh && pos.x > zw) ? a : b);        )
+    C(0, }                                                                                    )
+};
+
+static const char transition_wipebl[] = {
+    C(0, void transition(int idx, ivec2 pos, float progress)                                  )
+    C(0, {                                                                                    )
+    C(1,     ivec2 size = imageSize(output_images[idx]);                                      )
+    C(1,     float zw = size.x * (1.0 - progress);                                            )
+    C(1,     float zh = size.y * (progress);                                                  )
+    C(1,     vec4 a = texture(a_images[idx], pos);                                            )
+    C(1,     vec4 b = texture(b_images[idx], pos);                                            )
+    C(1,     imageStore(output_images[idx], pos, (pos.y > zh && pos.x <= zw) ? a : b);        )
+    C(0, }                                                                                    )
+};
+
+static const char transition_wipebr[] = {
+    C(0, void transition(int idx, ivec2 pos, float progress)                                  )
+    C(0, {                                                                                    )
+    C(1,     ivec2 size = imageSize(output_images[idx]);                                      )
+    C(1,     float zw = size.x * (progress);                                                  )
+    C(1,     float zh = size.y * (progress);                                                  )
+    C(1,     vec4 a = texture(a_images[idx], pos);                                            )
+    C(1,     vec4 b = texture(b_images[idx], pos);                                            )
+    C(1,     imageStore(output_images[idx], pos, (pos.y > zh && pos.x > zw) ? a : b);         )
+    C(0, }                                                                                    )
+};
+
 static const char* transitions_map[NB_TRANSITIONS] = {
     [FADE]          = transition_fade,
     [WIPELEFT]      = transition_wipeleft,
@@ -260,6 +312,10 @@ static const char* transitions_map[NB_TRANSITIONS] = {
     [CIRCLECLOSE]   = transition_circleclose,
     [DISSOLVE]      = transition_dissolve,
     [PIXELIZE]      = transition_pixelize,
+    [WIPETL]        = transition_wipetl,
+    [WIPETR]        = transition_wipetr,
+    [WIPEBL]        = transition_wipebl,
+    [WIPEBR]        = transition_wipebr,
 };
 
 static av_cold int init_vulkan(AVFilterContext *avctx)
@@ -614,6 +670,10 @@ static const AVOption xfade_vulkan_options[] = {
         { "circleclose", "circleclose transition", 0, AV_OPT_TYPE_CONST, {.i64=CIRCLECLOSE}, 0, 0, FLAGS, "transition" },
         { "dissolve", "dissolve transition", 0, AV_OPT_TYPE_CONST, {.i64=DISSOLVE}, 0, 0, FLAGS, "transition" },
         { "pixelize", "pixelize transition", 0, AV_OPT_TYPE_CONST, {.i64=PIXELIZE}, 0, 0, FLAGS, "transition" },
+        { "wipetl", "wipe top left transition", 0, AV_OPT_TYPE_CONST, {.i64=WIPETL}, 0, 0, FLAGS, "transition" },
+        { "wipetr", "wipe top right transition", 0, AV_OPT_TYPE_CONST, {.i64=WIPETR}, 0, 0, FLAGS, "transition" },
+        { "wipebl", "wipe bottom left transition", 0, AV_OPT_TYPE_CONST, {.i64=WIPEBL}, 0, 0, FLAGS, "transition" },
+        { "wipebr", "wipe bottom right transition", 0, AV_OPT_TYPE_CONST, {.i64=WIPEBR}, 0, 0, FLAGS, "transition" },
     { "duration", "set cross fade duration", OFFSET(duration), AV_OPT_TYPE_DURATION, {.i64=1000000}, 0, 60000000, FLAGS },
     { "offset",   "set cross fade start relative to first input stream", OFFSET(offset), AV_OPT_TYPE_DURATION, {.i64=0}, INT64_MIN, INT64_MAX, FLAGS },
     { NULL }
