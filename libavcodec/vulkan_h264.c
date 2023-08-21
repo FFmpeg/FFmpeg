@@ -145,12 +145,13 @@ static void set_sps(const SPS *sps,
     };
 
     for (int i = 0; i < STD_VIDEO_H264_SCALING_LIST_4X4_NUM_LISTS; i++)
-        memcpy(vksps_scaling->ScalingList4x4[i], sps->scaling_matrix4[i],
-               STD_VIDEO_H264_SCALING_LIST_4X4_NUM_ELEMENTS * sizeof(**sps->scaling_matrix4));
+        for (int j = 0; j < STD_VIDEO_H264_SCALING_LIST_4X4_NUM_ELEMENTS; j++)
+            vksps_scaling->ScalingList4x4[i][j] = sps->scaling_matrix4[i][ff_zigzag_scan[j]];
 
     for (int i = 0; i < STD_VIDEO_H264_SCALING_LIST_8X8_NUM_LISTS; i++)
-        memcpy(vksps_scaling->ScalingList8x8[i], sps->scaling_matrix8[h264_scaling_list8_order[i]],
-               STD_VIDEO_H264_SCALING_LIST_8X8_NUM_ELEMENTS * sizeof(**sps->scaling_matrix8));
+        for (int j = 0; j < STD_VIDEO_H264_SCALING_LIST_8X8_NUM_ELEMENTS; j++)
+            vksps_scaling->ScalingList8x8[i][j] =
+                sps->scaling_matrix8[h264_scaling_list8_order[i]][ff_zigzag_direct[j]];
 
     *vksps_vui_header = (StdVideoH264HrdParameters) {
         .cpb_cnt_minus1 = sps->cpb_cnt - 1,
@@ -250,12 +251,13 @@ static void set_pps(const PPS *pps, const SPS *sps,
     };
 
     for (int i = 0; i < STD_VIDEO_H264_SCALING_LIST_4X4_NUM_LISTS; i++)
-        memcpy(vkpps_scaling->ScalingList4x4[i], pps->scaling_matrix4[i],
-               STD_VIDEO_H264_SCALING_LIST_4X4_NUM_ELEMENTS * sizeof(**pps->scaling_matrix4));
+        for (int j = 0; j < STD_VIDEO_H264_SCALING_LIST_4X4_NUM_ELEMENTS; j++)
+            vkpps_scaling->ScalingList4x4[i][j] = pps->scaling_matrix4[i][ff_zigzag_scan[j]];
 
     for (int i = 0; i < STD_VIDEO_H264_SCALING_LIST_8X8_NUM_LISTS; i++)
-        memcpy(vkpps_scaling->ScalingList8x8[i], pps->scaling_matrix8[h264_scaling_list8_order[i]],
-               STD_VIDEO_H264_SCALING_LIST_8X8_NUM_ELEMENTS * sizeof(**pps->scaling_matrix8));
+        for (int j = 0; j < STD_VIDEO_H264_SCALING_LIST_8X8_NUM_ELEMENTS; j++)
+            vkpps_scaling->ScalingList8x8[i][j] =
+                pps->scaling_matrix8[h264_scaling_list8_order[i]][ff_zigzag_direct[j]];
 
     *vkpps = (StdVideoH264PictureParameterSet) {
         .seq_parameter_set_id = pps->sps_id,
