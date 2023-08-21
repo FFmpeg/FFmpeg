@@ -80,6 +80,7 @@ enum XFadeTransitions {
     CIRCLEOPEN,
     CIRCLECLOSE,
     DISSOLVE,
+    PIXELIZE,
     NB_TRANSITIONS,
 };
 
@@ -230,6 +231,21 @@ static const char transition_dissolve[] = {
     C(0, }                                                                     )
 };
 
+static const char transition_pixelize[] = {
+    C(0, void transition(int idx, ivec2 pos, float progress)                                  )
+    C(0, {                                                                                    )
+    C(1,     ivec2 size = imageSize(output_images[idx]);                                      )
+    C(1,     float d = min(progress, 1.0 - progress);                                         )
+    C(1,     float dist = ceil(d * 50.0) / 50.0;                                              )
+    C(1,     float sq = 2.0 * dist * min(size.x, size.y) / 20.0;                              )
+    C(1,     float sx = dist > 0.0 ? min((floor(pos.x / sq) + 0.5) * sq, size.x - 1) : pos.x; )
+    C(1,     float sy = dist > 0.0 ? min((floor(pos.y / sq) + 0.5) * sq, size.y - 1) : pos.y; )
+    C(1,     vec4 a = texture(a_images[idx], vec2(sx, sy));                                   )
+    C(1,     vec4 b = texture(b_images[idx], vec2(sx, sy));                                   )
+    C(1,     imageStore(output_images[idx], pos, mix(a, b, progress));                        )
+    C(0, }                                                                                    )
+};
+
 static const char* transitions_map[NB_TRANSITIONS] = {
     [FADE]          = transition_fade,
     [WIPELEFT]      = transition_wipeleft,
@@ -243,6 +259,7 @@ static const char* transitions_map[NB_TRANSITIONS] = {
     [CIRCLEOPEN]    = transition_circleopen,
     [CIRCLECLOSE]   = transition_circleclose,
     [DISSOLVE]      = transition_dissolve,
+    [PIXELIZE]      = transition_pixelize,
 };
 
 static av_cold int init_vulkan(AVFilterContext *avctx)
@@ -596,6 +613,7 @@ static const AVOption xfade_vulkan_options[] = {
         { "circleopen", "circleopen transition", 0, AV_OPT_TYPE_CONST, {.i64=CIRCLEOPEN}, 0, 0, FLAGS, "transition" },
         { "circleclose", "circleclose transition", 0, AV_OPT_TYPE_CONST, {.i64=CIRCLECLOSE}, 0, 0, FLAGS, "transition" },
         { "dissolve", "dissolve transition", 0, AV_OPT_TYPE_CONST, {.i64=DISSOLVE}, 0, 0, FLAGS, "transition" },
+        { "pixelize", "pixelize transition", 0, AV_OPT_TYPE_CONST, {.i64=PIXELIZE}, 0, 0, FLAGS, "transition" },
     { "duration", "set cross fade duration", OFFSET(duration), AV_OPT_TYPE_DURATION, {.i64=1000000}, 0, 60000000, FLAGS },
     { "offset",   "set cross fade start relative to first input stream", OFFSET(offset), AV_OPT_TYPE_DURATION, {.i64=0}, INT64_MIN, INT64_MAX, FLAGS },
     { NULL }
