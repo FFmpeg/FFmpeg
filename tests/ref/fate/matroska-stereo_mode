@@ -1,5 +1,5 @@
-1f074fcfb6f64ade0ad4b01f9e910515 *tests/data/fate/matroska-stereo_mode.matroska
-1470758 tests/data/fate/matroska-stereo_mode.matroska
+41cc6b0d334ac0465988579b99b78002 *tests/data/fate/matroska-stereo_mode.matroska
+1470756 tests/data/fate/matroska-stereo_mode.matroska
 #extradata 0:     3510, 0x560c3919
 #extradata 1:     3510, 0x560c3919
 #extradata 2:     3510, 0x560c3919
@@ -126,7 +126,7 @@ DISPOSITION:original=0
 TAG:language=ger-at
 TAG:stereo_mode=left_right
 TAG:DESCRIPTION-ger=Deutsch
-TAG:DESCRIPTION-fre=Français
+TAG:DESCRIPTION-fre=Francais
 TAG:DURATION=00:00:10.000000000
 [SIDE_DATA]
 side_data_type=Stereo 3D
@@ -141,7 +141,7 @@ DISPOSITION:original=0
 TAG:language=eng
 TAG:stereo_mode=bottom_top
 TAG:DESCRIPTION-ger=Deutsch
-TAG:DESCRIPTION-fre=Français
+TAG:DESCRIPTION-fre=Francais
 TAG:DURATION=00:00:10.000000000
 [SIDE_DATA]
 side_data_type=Stereo 3D
@@ -168,7 +168,7 @@ DISPOSITION:dub=0
 DISPOSITION:original=0
 TAG:language=fre
 TAG:stereo_mode=col_interleaved_rl
-TAG:DESCRIPTION-DEU-AT=Österreichisch
+TAG:DESCRIPTION-DEU-AT=Oesterreichisch
 TAG:DURATION=00:00:10.000000000
 [SIDE_DATA]
 side_data_type=Stereo 3D

@@ -228,10 +228,10 @@ FATE_MATROSKA_FFMPEG_FFPROBE-$(call REMUX, MATROSKA, OGG_DEMUXER THEORA_DECODER)
 fate-matroska-stereo_mode: CMD = transcode ogg $(TARGET_SAMPLES)/vp3/offset_test.ogv matroska \
     "-c copy -write_crc32 0 -default_mode infer \
      -map 0 -disposition:s:0 +original+dub -metadata:s:0 language=ger \
-     -map 0 -metadata:s:1 stereo_mode=left_right -metadata:s:1 language=ger-at -metadata:s:1 description-ger=Deutsch -metadata:s:1 description-fre=Français \
-     -map 0 -metadata:s:2 stereo_mode=bottom_top -metadata:s:2 language=eng -metadata:s:2 description-de=Deutsch -metadata:s:2 description-fra=Français \
+     -map 0 -metadata:s:1 stereo_mode=left_right -metadata:s:1 language=ger-at -metadata:s:1 description-ger=Deutsch -metadata:s:1 description-fre=Francais \
+     -map 0 -metadata:s:2 stereo_mode=bottom_top -metadata:s:2 language=eng -metadata:s:2 description-de=Deutsch -metadata:s:2 description-fra=Francais \
      -map 0 -metadata:s:3 stereo_mode=row_interleaved_rl -sar:3 3:1 -disposition:3 +default -metadata:s:3 language=deu-at \
-     -map 0 -metadata:s:4 stereo_mode=col_interleaved_rl -sar:4 16:9 -metadata:s:4 language=fre -metadata:s:4 description-deu-at=Österreichisch \
+     -map 0 -metadata:s:4 stereo_mode=col_interleaved_rl -sar:4 16:9 -metadata:s:4 language=fre -metadata:s:4 description-deu-at=Oesterreichisch \
      -map 0 -metadata:s:5 stereo_mode=anaglyph_cyan_red -sar:5 16:9 -disposition:5 +default -metadata:s:5 language=fra \
      -map 0 -metadata:s:6 stereo_mode=12 -sar:6 2:1 -metadata:s:6 language=de -metadata:s:6 description-deu=Deutsch" \
     "-map 0 -c copy" \
