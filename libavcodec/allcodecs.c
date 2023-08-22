@@ -849,6 +849,7 @@ extern const FFCodec ff_h264_vaapi_encoder;
 extern const FFCodec ff_h264_videotoolbox_encoder;
 extern const FFCodec ff_hevc_amf_encoder;
 extern const FFCodec ff_hevc_cuvid_decoder;
+extern const FFCodec ff_hevc_d3d12va_encoder;
 extern const FFCodec ff_hevc_mediacodec_decoder;
 extern const FFCodec ff_hevc_mediacodec_encoder;
 extern const FFCodec ff_hevc_mf_encoder;

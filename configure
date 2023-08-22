@@ -2547,6 +2547,7 @@ CONFIG_EXTRA="
     cbs_mpeg2
     cbs_vp8
     cbs_vp9
+    d3d12va_encode
     deflate_wrapper
     dirac_parse
     dnn
@@ -3283,6 +3284,7 @@ wmv3_vaapi_hwaccel_select="vc1_vaapi_hwaccel"
 wmv3_vdpau_hwaccel_select="vc1_vdpau_hwaccel"
 
 # hardware-accelerated codecs
+d3d12va_encode_deps="d3d12va ID3D12VideoEncoder d3d12_encoder_feature"
 mediafoundation_deps="mftransform_h MFCreateAlignedMemoryBuffer"
 omx_deps="libdl pthreads"
 omx_rpi_select="omx"
@@ -3350,6 +3352,7 @@ h264_v4l2m2m_encoder_deps="v4l2_m2m h264_v4l2_m2m"
 hevc_amf_encoder_deps="amf"
 hevc_cuvid_decoder_deps="cuvid"
 hevc_cuvid_decoder_select="hevc_mp4toannexb_bsf"
+hevc_d3d12va_encoder_select="cbs_h265 d3d12va_encode"
 hevc_mediacodec_decoder_deps="mediacodec"
 hevc_mediacodec_decoder_select="hevc_mp4toannexb_bsf hevc_parser"
 hevc_mediacodec_encoder_deps="mediacodec"
@@ -6692,6 +6695,9 @@ check_type "windows.h d3d11.h" "ID3D11VideoDecoder"
 check_type "windows.h d3d11.h" "ID3D11VideoContext"
 check_type "windows.h d3d12.h" "ID3D12Device"
 check_type "windows.h d3d12video.h" "ID3D12VideoDecoder"
+check_type "windows.h d3d12video.h" "ID3D12VideoEncoder"
+test_code cc "windows.h d3d12video.h" "D3D12_FEATURE_VIDEO feature = D3D12_FEATURE_VIDEO_ENCODER_CODEC" && \
+test_code cc "windows.h d3d12video.h" "D3D12_FEATURE_DATA_VIDEO_ENCODER_RESOURCE_REQUIREMENTS req" && enable d3d12_encoder_feature
 check_type "windows.h" "DPI_AWARENESS_CONTEXT" -D_WIN32_WINNT=0x0A00
 check_type "d3d9.h dxva2api.h" DXVA2_ConfigPictureDecode -D_WIN32_WINNT=0x0602
 check_func_headers mfapi.h MFCreateAlignedMemoryBuffer -lmfplat
