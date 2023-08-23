@@ -682,7 +682,7 @@ static VkResult vulkan_setup_profile(AVCodecContext *avctx,
     VkVideoProfileListInfoKHR *profile_list = &prof->profile_list;
 
     VkVideoDecodeH264ProfileInfoKHR *h264_profile = &prof->h264_profile;
-    VkVideoDecodeH264ProfileInfoKHR *h265_profile = &prof->h265_profile;
+    VkVideoDecodeH265ProfileInfoKHR *h265_profile = &prof->h265_profile;
     VkVideoDecodeAV1ProfileInfoMESA *av1_profile  = &prof->av1_profile;
 
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->sw_pix_fmt);
