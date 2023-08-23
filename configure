@@ -6358,15 +6358,25 @@ if enabled float16; then
 fi
 
 case "$custom_allocator" in
+    "")
+    ;;
     jemalloc)
-        # jemalloc by default does not use a prefix
-        require libjemalloc jemalloc/jemalloc.h malloc -ljemalloc
+        test -n "$malloc_prefix" ||
+            malloc_prefix=$($pkg_config --variable=jemalloc_prefix $pkg_config_flags jemalloc 2>/dev/null)
+        require_pkg_config custom_allocator jemalloc jemalloc/jemalloc.h ${malloc_prefix}malloc
     ;;
     tcmalloc)
-        require_pkg_config libtcmalloc libtcmalloc gperftools/tcmalloc.h tc_malloc
+        require_pkg_config custom_allocator libtcmalloc gperftools/tcmalloc.h tc_malloc
         malloc_prefix=tc_
     ;;
+    *)
+        require_pkg_config custom_allocator "$custom_allocator" stdlib.h malloc
+    ;;
 esac
+
+if test -n "$custom_allocator"; then
+    add_extralibs "$custom_allocator_extralibs"
+fi
 
 check_func_headers malloc.h _aligned_malloc     && enable aligned_malloc
 check_func  ${malloc_prefix}memalign            && enable memalign
