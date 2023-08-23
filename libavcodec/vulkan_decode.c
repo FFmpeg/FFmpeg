@@ -863,6 +863,9 @@ static int vulkan_decode_get_profile(AVCodecContext *avctx, AVBufferRef *frames_
            caps->maxDpbSlots);
     av_log(avctx, AV_LOG_VERBOSE, "    Maximum active references: %u\n",
            caps->maxActiveReferencePictures);
+    av_log(avctx, AV_LOG_VERBOSE, "    Codec header name: '%s' (driver), '%s' (compiled)\n",
+           caps->stdHeaderVersion.extensionName,
+           dec_ext[avctx->codec_id]->extensionName);
     av_log(avctx, AV_LOG_VERBOSE, "    Codec header version: %i.%i.%i (driver), %i.%i.%i (compiled)\n",
            CODEC_VER(caps->stdHeaderVersion.specVersion),
            CODEC_VER(dec_ext[avctx->codec_id]->specVersion));
