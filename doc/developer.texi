@@ -425,7 +425,7 @@ number remains unchanged.
 @subsection Adding new interfaces
 Any new public identifiers in installed headers are considered new API - this
 includes new functions, structs, macros, enum values, typedefs, new fields in
-existing functions, new installed headers, etc. Consider the following
+existing structs, new installed headers, etc. Consider the following
 guidelines when adding new APIs.
 
 @subsubheading Motivation
