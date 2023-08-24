@@ -134,8 +134,8 @@ static void check_sao_edge(HEVCDSPContext *h, int bit_depth)
                     if (memcmp(dst0 + j*stride, dst1 + j*stride, w*SIZEOF_PIXEL))
                         fail();
                 }
+                bench_new(dst1, src1 + offset, stride, offset_val, eo, block_size, block_size);
             }
-            bench_new(dst1, src1 + offset, stride, offset_val, eo, block_size, block_size);
         }
     }
 }
