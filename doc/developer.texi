@@ -340,13 +340,24 @@ missing samples or an implementation with a small subset of features.
 Always check the mailing list for any reviewers with issues and test
 FATE before you push.
 
-@subheading Keep the main commit message short with an extended description below.
-The commit message should have a short first line in the form of
-a @samp{topic: short description} as a header, separated by a newline
-from the body consisting of an explanation of why the change is necessary.
-If the commit fixes a known bug on the bug tracker, the commit message
-should include its bug ID. Referring to the issue on the bug tracker does
-not exempt you from writing an excerpt of the bug in the commit message.
+@subheading Commit messages
+Commit messages are highly important tools for informing other developers on
+what a given change does and why. Every commit must always have a properly
+filled out commit message with the following format:
+@example
+area changed: short 1 line description
+
+details describing what and why and giving references.
+@end example
+
+If the commit addresses a known bug on our bug tracker or other external issue
+(e.g. CVE), the commit message should include the relevant bug ID(s) or other
+external identifiers. Note that this should be done in addition to a proper
+explanation and not instead of it. Comments such as "fixed!" or "Changed it."
+are not acceptable.
+
+When applying patches that have been discussed at length on the mailing list,
+reference the thread in the commit message.
 
 @subheading Testing must be adequate but not excessive.
 If it works for you, others, and passes FATE then it should be OK to commit
@@ -379,27 +390,11 @@ NOTE: If you had to put if()@{ .. @} over a large (> 5 lines) chunk of code,
 then either do NOT change the indentation of the inner part within (do not
 move it to the right)! or do so in a separate commit
 
-@subheading Commit messages should always be filled out properly.
-Always fill out the commit log message. Describe in a few lines what you
-changed and why. You can refer to mailing list postings if you fix a
-particular bug. Comments such as "fixed!" or "Changed it." are unacceptable.
-Recommended format:
-
-@example
-area changed: Short 1 line description
-
-details describing what and why and giving references.
-@end example
-
 @subheading Credit the author of the patch.
 Make sure the author of the commit is set correctly. (see git commit --author)
 If you apply a patch, send an
 answer to ffmpeg-devel (or wherever you got the patch from) saying that
 you applied the patch.
-
-@subheading Complex patches should refer to discussion surrounding them.
-When applying patches that have been discussed (at length) on the mailing
-list, reference the thread in the log message.
 
 @subheading Always wait long enough before pushing changes
 Do NOT commit to code actively maintained by others without permission.
