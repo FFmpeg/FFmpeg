@@ -275,16 +275,48 @@ symbols. If in doubt, just avoid names starting with @code{_} altogether.
 
 @itemize @bullet
 @item
-fprintf and printf are forbidden in libavformat and libavcodec,
-please use av_log() instead.
-
-@item
 Casts should be used only when necessary. Unneeded parentheses
 should also be avoided if they don't make the code easier to understand.
 @end itemize
 
 @anchor{Development Policy}
 @chapter Development Policy
+
+@section Code behaviour
+
+@subheading Correctness
+The code must be valid. It must not crash, abort, access invalid pointers, leak
+memory, cause data races or signed integer overflow, or otherwise cause
+undefined behaviour. Error codes should be checked and, when applicable,
+forwarded to the caller.
+
+@subheading Thread- and library-safety
+Our libraries may be called by multiple independent callers in the same process.
+These calls may happen from any number of threads and the different call sites
+may not be aware of each other - e.g. a user program may be calling our
+libraries directly, and use one or more libraries that also call our libraries.
+The code must behave correctly under such conditions.
+
+@subheading Robustness
+The code must treat as untrusted any bytestream received from a caller or read
+from a file, network, etc. It must not misbehave when arbitrary data is sent to
+it - typically it should print an error message and return
+@code{AVERROR_INVALIDDATA} on encountering invalid input data.
+
+@subheading Memory allocation
+The code must use the @code{av_malloc()} family of functions from
+@file{libavutil/mem.h} to perform all memory allocation, except in special cases
+(e.g. when interacting with an external library that requires a specific
+allocator to be used).
+
+All allocations should be checked and @code{AVERROR(ENOMEM)} returned on
+failure. A common mistake is that error paths leak memory - make sure that does
+not happen.
+
+@subheading stdio
+Our libraries must not access the stdio streams stdin/stdout/stderr directly
+(e.g. via @code{printf()} family of functions), as that is not library-safe. For
+logging, use @code{av_log()}.
 
 @section Patches/Committing
 @subheading Licenses for patches must be compatible with FFmpeg.
@@ -394,11 +426,6 @@ Thus the remaining warnings can either be bugs or correct code.
 If it is a bug, the bug has to be fixed. If it is not, the code should
 be changed to not generate a warning unless that causes a slowdown
 or obfuscates the code.
-
-@subheading Check untrusted input properly.
-Never write to unallocated memory, never write over the end of arrays,
-always check values read from some untrusted source before using them
-as array index or other risky things.
 
 @section Library public interfaces
 Every library in FFmpeg provides a set of public APIs in its installed headers,
@@ -810,11 +837,6 @@ an explanation why to your patchset, its ok to not test if theres a reason.
 
 @item
 If you added YASM code please check that things still work with --disable-yasm.
-
-@item
-Make sure you check the return values of function and return appropriate
-error codes. Especially memory allocation functions like @code{av_malloc()}
-are notoriously left unchecked, which is a serious problem.
 
 @item
 Test your code with valgrind and or Address Sanitizer to ensure it's free
