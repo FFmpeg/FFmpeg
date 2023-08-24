@@ -1625,13 +1625,24 @@ static int ape_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     s->samples -= blockstodecode;
 
     if (avctx->err_recognition & AV_EF_CRCCHECK &&
-        s->fileversion >= 3900 && s->bps < 24) {
+        s->fileversion >= 3900) {
         uint32_t crc = s->CRC_state;
         const AVCRC *crc_tab = av_crc_get_table(AV_CRC_32_IEEE_LE);
+        int stride = s->bps == 24 ? 4 : (s->bps>>3);
+        int offset = s->bps == 24;
+        int bytes  = s->bps >> 3;
+
         for (i = 0; i < blockstodecode; i++) {
             for (ch = 0; ch < s->channels; ch++) {
-                uint8_t *smp = frame->data[ch] + (i*(s->bps >> 3));
-                crc = av_crc(crc_tab, crc, smp, s->bps >> 3);
+#if HAVE_BIGENDIAN
+                uint8_t *smp_native = frame->data[ch] + i*stride;
+                uint8_t smp[4];
+                for(int j = 0; j<stride; j++)
+                    smp[j] = smp_native[stride-j-1];
+#else
+                uint8_t *smp = frame->data[ch] + i*stride;
+#endif
+                crc = av_crc(crc_tab, crc, smp+offset, bytes);
             }
         }
 
