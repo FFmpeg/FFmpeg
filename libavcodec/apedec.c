@@ -145,8 +145,6 @@ typedef struct APEPredictor64 {
     uint64_t coeffsA[2][4];  ///< adaption coefficients
     uint64_t coeffsB[2][5];  ///< adaption coefficients
     int64_t historybuffer[HISTORY_SIZE + PREDICTOR_SIZE];
-
-    unsigned int sample_pos;
 } APEPredictor64;
 
 /** Decoder context */
@@ -860,8 +858,6 @@ static void init_predictor_decoder(APEContext *ctx)
     p64->lastA[0]   = p64->lastA[1]   = 0;
 
     p->sample_pos = 0;
-
-    p64->sample_pos = 0;
 }
 
 /** Get inverse sign of integer (-1 for positive, 1 for negative and 0 for zero) */
