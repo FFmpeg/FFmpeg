@@ -1184,7 +1184,8 @@ static void predictor_decode_mono_3930(APEContext *ctx, int count)
 static av_always_inline int predictor_update_filter(APEPredictor64 *p,
                                                     const int decoded, const int filter,
                                                     const int delayA,  const int delayB,
-                                                    const int adaptA,  const int adaptB)
+                                                    const int adaptA,  const int adaptB,
+                                                    int compression_level)
 {
     int64_t predictionA, predictionB;
     int32_t sign;
@@ -1212,7 +1213,13 @@ static av_always_inline int predictor_update_filter(APEPredictor64 *p,
                   p->buf[delayB - 3] * p->coeffsB[filter][3] +
                   p->buf[delayB - 4] * p->coeffsB[filter][4];
 
-    p->lastA[filter] = decoded + ((int64_t)((uint64_t)predictionA + (predictionB >> 1)) >> 10);
+    if (compression_level < COMPRESSION_LEVEL_INSANE) {
+        predictionA = (int32_t)predictionA;
+        predictionB = (int32_t)predictionB;
+        p->lastA[filter] = decoded + ((int32_t)(predictionA + (predictionB >> 1)) >> 10);
+    } else {
+        p->lastA[filter] = decoded + ((int64_t)((uint64_t)predictionA + (predictionB >> 1)) >> 10);
+    }
     p->filterA[filter] = p->lastA[filter] + ((int64_t)(p->filterA[filter] * 31ULL) >> 5);
 
     sign = APESIGN(decoded);
@@ -1240,10 +1247,12 @@ static void predictor_decode_stereo_3950(APEContext *ctx, int count)
     while (count--) {
         /* Predictor Y */
         *decoded0 = predictor_update_filter(p, *decoded0, 0, YDELAYA, YDELAYB,
-                                            YADAPTCOEFFSA, YADAPTCOEFFSB);
+                                            YADAPTCOEFFSA, YADAPTCOEFFSB,
+                                            ctx->compression_level);
         decoded0++;
         *decoded1 = predictor_update_filter(p, *decoded1, 1, XDELAYA, XDELAYB,
-                                            XADAPTCOEFFSA, XADAPTCOEFFSB);
+                                            XADAPTCOEFFSA, XADAPTCOEFFSB,
+                                            ctx->compression_level);
         decoded1++;
 
         /* Combined */
