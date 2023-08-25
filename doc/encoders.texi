@@ -2421,6 +2421,10 @@ To get a more accurate and extensive documentation of the libx264
 options, invoke the command @command{x264 --fullhelp} or consult
 the libx264 documentation.
 
+In the list below, note that the @command{x264} option name is shown
+in parentheses after the libavcodec corresponding name, in case there
+is a direct mapping.
+
 @table @option
 @item b (@emph{bitrate})
 Set bitrate in bits/s. Note that FFmpeg's @option{b} option is
@@ -2428,17 +2432,19 @@ expressed in bits/s, while @command{x264}'s @option{bitrate} is in
 kilobits/s.
 
 @item bf (@emph{bframes})
+Number of B-frames between I and P-frames
 
 @item g (@emph{keyint})
+Maximum GOP size
 
 @item qmin (@emph{qpmin})
-Minimum quantizer scale.
+Minimum quantizer scale
 
 @item qmax (@emph{qpmax})
-Maximum quantizer scale.
+Maximum quantizer scale
 
 @item qdiff (@emph{qpstep})
-Maximum difference between quantizer scales.
+Maximum difference between quantizer scales
 
 @item qblur (@emph{qblur})
 Quantizer curve blur
@@ -2447,7 +2453,7 @@ Quantizer curve blur
 Quantizer curve compression factor
 
 @item refs (@emph{ref})
-Number of reference frames each P-frame can use. The range is from @var{0-16}.
+Number of reference frames each P-frame can use. The range is @var{0-16}.
 
 @item level (@emph{level})
 Set the @code{x264_param_t.i_level_idc} value in case the value is
@@ -2469,7 +2475,8 @@ Sets the threshold for the scene change detection.
 @item trellis (@emph{trellis})
 Performs Trellis quantization to increase efficiency. Enabled by default.
 
-@item nr  (@emph{nr})
+@item nr (@emph{nr})
+Noise reduction
 
 @item me_range (@emph{merange})
 Maximum range of the motion search in pixels.
@@ -2550,6 +2557,7 @@ open GOP by setting it to @code{-cgop}. The result is similar to
 the behavior of @command{x264}'s @option{--open-gop} option.
 
 @item rc_init_occupancy (@emph{vbv-init})
+Initial VBV buffer occupancy
 
 @item preset (@emph{preset})
 Set the encoding preset.
@@ -2595,7 +2603,7 @@ Set AQ strength, reduce blocking and blurring in flat and textured areas.
 Use psychovisual optimizations when set to 1. When set to 0, it has the
 same effect as @command{x264}'s @option{--no-psy} option.
 
-@item psy-rd  (@emph{psy-rd})
+@item psy-rd (@emph{psy-rd})
 Set strength of psychovisual optimization, in
 @var{psy-rd}:@var{psy-trellis} format.
 
@@ -2627,7 +2635,7 @@ to 1.
 
 @item avcintra-class (@emph{class})
 Configure the encoder to generate AVC-Intra.
-Valid values are 50,100 and 200
+Valid values are 50, 100 and 200
 
 @item bluray-compat (@emph{bluray-compat})
 Configure the encoder to be compatible with the bluray standard.
@@ -2678,8 +2686,8 @@ Set loop filter parameters, in @var{alpha}:@var{beta} form.
 Set fluctuations reduction in QP (before curve compression).
 
 @item partitions (@emph{partitions})
-Set partitions to consider as a comma-separated list of. Possible
-values in the list:
+Set partitions to consider as a comma-separated list of values.
+Possible values in the list:
 
 @table @samp
 @item p8x8
@@ -2735,18 +2743,31 @@ Variable bit rate.
 Constant bit rate (not allowed in MP4 container).
 @end table
 
-@item x264opts (N.A.)
-Set any x264 option, see @command{x264 --fullhelp} for a list.
+@item x264opts @var{opts}
+@item x264-params @var{opts}
+Override the x264 configuration using a :-separated list of key=value
+options.
 
-Argument is a list of @var{key}=@var{value} couples separated by
-":". In @var{filter} and @var{psy-rd} options that use ":" as a separator
-themselves, use "," instead. They accept it as well since long ago but this
-is kept undocumented for some reason.
+The argument for both options is a list of @var{key}=@var{value}
+couples separated by ":". With @option{x264opts} the value can be
+omitted, and the value @code{1} is assumed in that case.
+
+For @var{filter} and @var{psy-rd} options values that use ":" as a
+separator themselves, use "," instead. They accept it as well since
+long ago but this is kept undocumented for some reason.
+
+For example, the options might be provided as:
+@example
+level=30:bframes=0:weightp=0:cabac=0:ref=1:vbv-maxrate=768:vbv-bufsize=2000:analyse=all:me=umh:no-fast-pskip=1:subq=6:8x8dct=0:trellis=0
+@end example
 
 For example to specify libx264 encoding options with @command{ffmpeg}:
 @example
 ffmpeg -i foo.mpg -c:v libx264 -x264opts keyint=123:min-keyint=20 -an out.mkv
 @end example
+
+To get the complete list of the libx264 options, invoke the command
+@command{x264 --fullhelp} or consult the libx264 documentation.
 
 @item a53cc @var{boolean}
 Import closed captions (which must be ATSC compatible format) into output.
@@ -2758,20 +2779,6 @@ Import user data unregistered SEI if available into output. Default is 0 (off).
 @item mb_info @var{boolean}
 Set mb_info data through AVFrameSideData, only useful when used from the
 API. Default is 0 (off).
-
-@item x264-params (N.A.)
-Override the x264 configuration using a :-separated list of key=value
-parameters.
-
-This option is functionally the same as the @option{x264opts}, but is
-duplicated for compatibility with the Libav fork.
-
-For example to specify libx264 encoding options with @command{ffmpeg}:
-@example
-ffmpeg -i INPUT -c:v libx264 -x264-params level=30:bframes=0:weightp=0:\
-cabac=0:ref=1:vbv-maxrate=768:vbv-bufsize=2000:analyse=all:me=umh:\
-no-fast-pskip=1:subq=6:8x8dct=0:trellis=0 OUTPUT
-@end example
 @end table
 
 Encoding ffpresets for common usages are provided so they can be used with the
