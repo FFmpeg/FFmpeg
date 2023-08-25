@@ -76,7 +76,7 @@ typedef struct ChannelStats {
     double diff1_sum;
     double diff1_sum_x2;
     double abs_peak;
-    uint64_t mask, imask;
+    uint64_t mask[4];
     uint64_t min_count, max_count;
     uint64_t abs_peak_count;
     uint64_t noise_floor_count;
@@ -88,6 +88,7 @@ typedef struct ChannelStats {
     double *win_samples;
     double *sorted_samples;
     uint64_t ehistogram[HISTOGRAM_SIZE];
+    int64_t lasti;
     int sorted_front;
     int sorted_back;
     int win_pos;
@@ -178,8 +179,10 @@ static void reset_stats(AudioStatsContext *s)
         p->max_runs = 0;
         p->diff1_sum = 0;
         p->diff1_sum_x2 = 0;
-        p->mask = 0;
-        p->imask = 0xFFFFFFFFFFFFFFFF;
+        p->mask[0] = 0;
+        p->mask[1] = 0;
+        p->mask[2] =~0;
+        p->mask[3] = 0;
         p->min_count = 0;
         p->max_count = 0;
         p->abs_peak_count = 0;
@@ -239,20 +242,28 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-static void bit_depth(AudioStatsContext *s, uint64_t mask, uint64_t imask, AVRational *depth)
+static void bit_depth(AudioStatsContext *s, const uint64_t *const mask, uint8_t *depth)
 {
     unsigned result = s->maxbitdepth;
+    uint64_t amask = mask[1] & (~mask[2]);
 
-    mask = mask & (~imask);
+    depth[0] = 0;
+    for (int i = 0; i < result; i++)
+        depth[0] += !!(mask[0] & (1ULL << i));
 
-    for (; result && !(mask & 1); --result, mask >>= 1);
+    depth[1] = 0;
+    for (int i = 0; i < result; i++)
+        depth[1] += !!(mask[1] & (1ULL << i));
 
-    depth->den = result;
-    depth->num = 0;
+    depth[2] = result;
+    for (int i = 0; i < result && !(amask & 1); i++) {
+        depth[2]--;
+        amask >>= 1;
+    }
 
-    for (; result; --result, mask >>= 1)
-        if (mask & 1)
-            depth->num++;
+    depth[3] = 0;
+    for (int i = 0; i < result; i++)
+        depth[3] += !!(mask[3] & (1ULL << i));
 }
 
 static double calc_entropy(AudioStatsContext *s, ChannelStats *p)
@@ -389,9 +400,13 @@ static inline void update_stat(AudioStatsContext *s, ChannelStats *p, double d, 
         p->diff1_sum += fabs(d - p->last);
         p->diff1_sum_x2 += (d - p->last) * (d - p->last);
     }
+    p->mask[0] |= (i < 0) ? -i : i;
+    p->mask[1] |= i;
+    p->mask[2] &= i;
+    if (!isnan(p->last))
+        p->mask[3] |= i ^ p->lasti;
+    p->lasti = i;
     p->last = d;
-    p->mask |= i;
-    p->imask &= i;
 
     drop = p->win_samples[p->win_pos];
     p->win_samples[p->win_pos] = nd;
@@ -462,7 +477,7 @@ static void set_meta(AVDictionary **metadata, int chan, const char *key,
 
 static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
 {
-    uint64_t mask = 0, imask = 0xFFFFFFFFFFFFFFFF, min_count = 0, max_count = 0, nb_samples = 0, noise_floor_count = 0;
+    uint64_t mask[4], min_count = 0, max_count = 0, nb_samples = 0, noise_floor_count = 0;
     uint64_t nb_nans = 0, nb_infs = 0, nb_denormals = 0;
     uint64_t abs_peak_count = 0;
     double min_runs = 0, max_runs = 0,
@@ -476,8 +491,13 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
            entropy = 0,
            min_sigma_x2 = DBL_MAX,
            max_sigma_x2 =-DBL_MAX;
-    AVRational depth;
+    uint8_t depth[4];
     int c;
+
+    mask[0] = 0;
+    mask[1] = 0;
+    mask[2] =~0;
+    mask[3] = 0;
 
     for (c = 0; c < s->nb_channels; c++) {
         ChannelStats *p = &s->chstats[c];
@@ -505,8 +525,10 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
         abs_peak_count += p->abs_peak_count;
         min_runs += p->min_runs;
         max_runs += p->max_runs;
-        mask |= p->mask;
-        imask &= p->imask;
+        mask[0] |= p->mask[0];
+        mask[1] |= p->mask[1];
+        mask[2] &= p->mask[2];
+        mask[3] |= p->mask[3];
         nb_samples += p->nb_samples;
         nb_nans += p->nb_nans;
         nb_infs += p->nb_infs;
@@ -551,9 +573,11 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
         if (s->measure_perchannel & MEASURE_ENTROPY)
             set_meta(metadata, c + 1, "Entropy", "%f", p->entropy);
         if (s->measure_perchannel & MEASURE_BIT_DEPTH) {
-            bit_depth(s, p->mask, p->imask, &depth);
-            set_meta(metadata, c + 1, "Bit_depth", "%f", depth.num);
-            set_meta(metadata, c + 1, "Bit_depth2", "%f", depth.den);
+            bit_depth(s, p->mask, depth);
+            set_meta(metadata, c + 1, "Bit_depth", "%f", depth[0]);
+            set_meta(metadata, c + 1, "Bit_depth2", "%f", depth[1]);
+            set_meta(metadata, c + 1, "Bit_depth3", "%f", depth[2]);
+            set_meta(metadata, c + 1, "Bit_depth4", "%f", depth[3]);
         }
         if (s->measure_perchannel & MEASURE_DYNAMIC_RANGE)
             set_meta(metadata, c + 1, "Dynamic_range", "%f", LINEAR_TO_DB(2 * FFMAX(FFABS(p->min), FFABS(p->max))/ p->min_non_zero));
@@ -604,9 +628,11 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
     if (s->measure_overall & MEASURE_ENTROPY)
         set_meta(metadata, 0, "Overall.Entropy", "%f", entropy / (double)s->nb_channels);
     if (s->measure_overall & MEASURE_BIT_DEPTH) {
-        bit_depth(s, mask, imask, &depth);
-        set_meta(metadata, 0, "Overall.Bit_depth", "%f", depth.num);
-        set_meta(metadata, 0, "Overall.Bit_depth2", "%f", depth.den);
+        bit_depth(s, mask, depth);
+        set_meta(metadata, 0, "Overall.Bit_depth", "%f", depth[0]);
+        set_meta(metadata, 0, "Overall.Bit_depth2", "%f", depth[1]);
+        set_meta(metadata, 0, "Overall.Bit_depth3", "%f", depth[2]);
+        set_meta(metadata, 0, "Overall.Bit_depth4", "%f", depth[3]);
     }
     if (s->measure_overall & MEASURE_NUMBER_OF_SAMPLES)
         set_meta(metadata, 0, "Overall.Number_of_samples", "%f", nb_samples / s->nb_channels);
@@ -724,7 +750,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 static void print_stats(AVFilterContext *ctx)
 {
     AudioStatsContext *s = ctx->priv;
-    uint64_t mask = 0, imask = 0xFFFFFFFFFFFFFFFF, min_count = 0, max_count = 0, nb_samples = 0, noise_floor_count = 0;
+    uint64_t mask[4], min_count = 0, max_count = 0, nb_samples = 0, noise_floor_count = 0;
     uint64_t nb_nans = 0, nb_infs = 0, nb_denormals = 0, abs_peak_count = 0;
     double min_runs = 0, max_runs = 0,
            min = DBL_MAX, max =-DBL_MAX, min_diff = DBL_MAX, max_diff = 0,
@@ -737,8 +763,13 @@ static void print_stats(AVFilterContext *ctx)
            entropy = 0,
            min_sigma_x2 = DBL_MAX,
            max_sigma_x2 =-DBL_MAX;
-    AVRational depth;
+    uint8_t depth[4];
     int c;
+
+    mask[0] = 0;
+    mask[1] = 0;
+    mask[2] =~0;
+    mask[3] = 0;
 
     for (c = 0; c < s->nb_channels; c++) {
         ChannelStats *p = &s->chstats[c];
@@ -769,8 +800,10 @@ static void print_stats(AVFilterContext *ctx)
         noise_floor_count += p->noise_floor_count;
         min_runs += p->min_runs;
         max_runs += p->max_runs;
-        mask |= p->mask;
-        imask &= p->imask;
+        mask[0] |= p->mask[0];
+        mask[1] |= p->mask[1];
+        mask[2] &= p->mask[2];
+        mask[3] |= p->mask[3];
         nb_samples += p->nb_samples;
         nb_nans += p->nb_nans;
         nb_infs += p->nb_infs;
@@ -818,8 +851,8 @@ static void print_stats(AVFilterContext *ctx)
         if (s->measure_perchannel & MEASURE_ENTROPY)
             av_log(ctx, AV_LOG_INFO, "Entropy: %f\n", p->entropy);
         if (s->measure_perchannel & MEASURE_BIT_DEPTH) {
-            bit_depth(s, p->mask, p->imask, &depth);
-            av_log(ctx, AV_LOG_INFO, "Bit depth: %u/%u\n", depth.num, depth.den);
+            bit_depth(s, p->mask, depth);
+            av_log(ctx, AV_LOG_INFO, "Bit depth: %u/%u/%u/%u\n", depth[0], depth[1], depth[2], depth[3]);
         }
         if (s->measure_perchannel & MEASURE_DYNAMIC_RANGE)
             av_log(ctx, AV_LOG_INFO, "Dynamic range: %f\n", LINEAR_TO_DB(2 * FFMAX(FFABS(p->min), FFABS(p->max))/ p->min_non_zero));
@@ -876,8 +909,8 @@ static void print_stats(AVFilterContext *ctx)
     if (s->measure_overall & MEASURE_ENTROPY)
         av_log(ctx, AV_LOG_INFO, "Entropy: %f\n", entropy / (double)s->nb_channels);
     if (s->measure_overall & MEASURE_BIT_DEPTH) {
-        bit_depth(s, mask, imask, &depth);
-        av_log(ctx, AV_LOG_INFO, "Bit depth: %u/%u\n", depth.num, depth.den);
+        bit_depth(s, mask, depth);
+        av_log(ctx, AV_LOG_INFO, "Bit depth: %u/%u/%u/%u\n", depth[0], depth[1], depth[2], depth[3]);
     }
     if (s->measure_overall & MEASURE_NUMBER_OF_SAMPLES)
         av_log(ctx, AV_LOG_INFO, "Number of samples: %"PRId64"\n", nb_samples / s->nb_channels);
