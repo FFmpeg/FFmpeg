@@ -1190,7 +1190,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
 
     x4->params.analyse.b_mb_info = x4->mb_info;
-    x4->params.analyse.b_fast_pskip = 1;
 
     // update AVCodecContext with x264 parameters
     avctx->has_b_frames = x4->params.i_bframe ?
