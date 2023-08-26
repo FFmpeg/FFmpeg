@@ -977,14 +977,17 @@ Favor improved speech intelligibility.
 @item audio
 Favor faithfulness to the input (the default).
 @item lowdelay
-Restrict to only the lowest delay modes.
+Restrict to only the lowest delay modes by disabling voice-optimized
+modes.
 @end table
 
 @item cutoff (N.A.)
 Set cutoff bandwidth in Hz. The argument must be exactly one of the
 following: 4000, 6000, 8000, 12000, or 20000, corresponding to
 narrowband, mediumband, wideband, super wideband, and fullband
-respectively. The default is 0 (cutoff disabled).
+respectively. The default is 0 (cutoff disabled). Note that libopus
+forces a wideband cutoff for bitrates < 15 kbps, unless CELT-only
+(@option{application} set to @samp{lowdelay}) mode is used.
 
 @item mapping_family (@emph{mapping_family})
 Set channel mapping family to be used by the encoder. The default value of -1
