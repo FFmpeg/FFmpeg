@@ -171,6 +171,9 @@ typedef struct APEContext {
     int32_t *decoded_buffer;
     int decoded_size;
     int32_t *decoded[MAX_CHANNELS];          ///< decoded data for each channel
+    int32_t *interim_buffer;
+    int interim_size;
+    int32_t *interim[MAX_CHANNELS];          ///< decoded data for each channel
     int blocks_per_loop;                     ///< maximum number of samples to decode for each call
 
     int16_t* filterbuf[APE_FILTER_LEVELS];   ///< filter memory
@@ -187,6 +190,7 @@ typedef struct APEContext {
     const uint8_t *ptr;                      ///< current position in frame data
 
     int error;
+    int interim_mode;
 
     void (*entropy_decode_mono)(struct APEContext *ctx, int blockstodecode);
     void (*entropy_decode_stereo)(struct APEContext *ctx, int blockstodecode);
@@ -223,6 +227,7 @@ static av_cold int ape_decode_close(AVCodecContext *avctx)
         av_freep(&s->filterbuf[i]);
 
     av_freep(&s->decoded_buffer);
+    av_freep(&s->interim_buffer);
     av_freep(&s->data);
     s->decoded_size = s->data_size = 0;
 
@@ -248,12 +253,15 @@ static av_cold int ape_decode_init(AVCodecContext *avctx)
     switch (s->bps) {
     case 8:
         avctx->sample_fmt = AV_SAMPLE_FMT_U8P;
+        s->interim_mode = 0;
         break;
     case 16:
         avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
+        s->interim_mode = 0;
         break;
     case 24:
         avctx->sample_fmt = AV_SAMPLE_FMT_S32P;
+        s->interim_mode = -1;
         break;
     default:
         avpriv_request_sample(avctx,
@@ -1181,7 +1189,7 @@ static av_always_inline int predictor_update_filter(APEPredictor64 *p,
                                                     const int decoded, const int filter,
                                                     const int delayA,  const int delayB,
                                                     const int adaptA,  const int adaptB,
-                                                    int compression_level)
+                                                    int interim_mode)
 {
     int64_t predictionA, predictionB;
     int32_t sign;
@@ -1209,7 +1217,7 @@ static av_always_inline int predictor_update_filter(APEPredictor64 *p,
                   p->buf[delayB - 3] * p->coeffsB[filter][3] +
                   p->buf[delayB - 4] * p->coeffsB[filter][4];
 
-    if (compression_level < COMPRESSION_LEVEL_INSANE) {
+    if (interim_mode < 1) {
         predictionA = (int32_t)predictionA;
         predictionB = (int32_t)predictionB;
         p->lastA[filter] = decoded + ((int32_t)(predictionA + (predictionB >> 1)) >> 10);
@@ -1234,32 +1242,73 @@ static av_always_inline int predictor_update_filter(APEPredictor64 *p,
 
 static void predictor_decode_stereo_3950(APEContext *ctx, int count)
 {
-    APEPredictor64 *p = &ctx->predictor64;
-    int32_t *decoded0 = ctx->decoded[0];
-    int32_t *decoded1 = ctx->decoded[1];
+    APEPredictor64 *p_default = &ctx->predictor64;
+    APEPredictor64 p_interim;
+    int lcount = count;
+    int num_passes = 1;
 
     ape_apply_filters(ctx, ctx->decoded[0], ctx->decoded[1], count);
+    if (ctx->interim_mode == -1) {
+        p_interim = *p_default;
+        num_passes ++;
+        memcpy(ctx->interim[0], ctx->decoded[0], sizeof(*ctx->interim[0])*count);
+        memcpy(ctx->interim[1], ctx->decoded[1], sizeof(*ctx->interim[1])*count);
+    }
 
-    while (count--) {
-        /* Predictor Y */
-        *decoded0 = predictor_update_filter(p, *decoded0, 0, YDELAYA, YDELAYB,
-                                            YADAPTCOEFFSA, YADAPTCOEFFSB,
-                                            ctx->compression_level);
-        decoded0++;
-        *decoded1 = predictor_update_filter(p, *decoded1, 1, XDELAYA, XDELAYB,
-                                            XADAPTCOEFFSA, XADAPTCOEFFSB,
-                                            ctx->compression_level);
-        decoded1++;
+    for (int pass = 0; pass < num_passes; pass++) {
+        int32_t *decoded0, *decoded1;
+        int interim_mode = ctx->interim_mode > 0 || pass;
+        APEPredictor64 *p;
 
-        /* Combined */
-        p->buf++;
-
-        /* Have we filled the history buffer? */
-        if (p->buf == p->historybuffer + HISTORY_SIZE) {
-            memmove(p->historybuffer, p->buf,
-                    PREDICTOR_SIZE * sizeof(*p->historybuffer));
-            p->buf = p->historybuffer;
+        if (pass) {
+            p        = &p_interim;
+            decoded0 = ctx->interim[0];
+            decoded1 = ctx->interim[1];
+        } else {
+            p        = p_default;
+            decoded0 = ctx->decoded[0];
+            decoded1 = ctx->decoded[1];
         }
+        p->buf = p->historybuffer;
+
+        count = lcount;
+        while (count--) {
+            /* Predictor Y */
+            int32_t a0 = predictor_update_filter(p, *decoded0, 0, YDELAYA, YDELAYB,
+                                                YADAPTCOEFFSA, YADAPTCOEFFSB,
+                                                interim_mode);
+            int32_t a1 = predictor_update_filter(p, *decoded1, 1, XDELAYA, XDELAYB,
+                                                XADAPTCOEFFSA, XADAPTCOEFFSB,
+                                                interim_mode);
+            *decoded0++ = a0;
+            *decoded1++ = a1;
+            if (num_passes > 1) {
+                int32_t left  = a1 - (unsigned)(a0 / 2);
+                int32_t right = left + a0;
+
+                if (FFMAX(FFABS(left), FFABS(right)) > (1<<23)) {
+                    ctx->interim_mode = !interim_mode;
+                    av_log(ctx->avctx, AV_LOG_VERBOSE, "Interim mode: %d\n", ctx->interim_mode);
+                    break;
+                }
+            }
+
+            /* Combined */
+            p->buf++;
+
+            /* Have we filled the history buffer? */
+            if (p->buf == p->historybuffer + HISTORY_SIZE) {
+                memmove(p->historybuffer, p->buf,
+                        PREDICTOR_SIZE * sizeof(*p->historybuffer));
+                p->buf = p->historybuffer;
+            }
+        }
+    }
+    if (num_passes > 1 && ctx->interim_mode > 0) {
+        memcpy(ctx->decoded[0], ctx->interim[0], sizeof(*ctx->interim[0])*lcount);
+        memcpy(ctx->decoded[1], ctx->interim[1], sizeof(*ctx->interim[1])*lcount);
+        *p_default = p_interim;
+        p_default->buf = p_default->historybuffer;
     }
 }
 
@@ -1589,6 +1638,19 @@ static int ape_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     memset(s->decoded_buffer, 0, decoded_buffer_size);
     s->decoded[0] = s->decoded_buffer;
     s->decoded[1] = s->decoded_buffer + FFALIGN(blockstodecode, 8);
+
+    if (s->interim_mode < 0) {
+        av_fast_malloc(&s->interim_buffer, &s->interim_size, decoded_buffer_size);
+        if (!s->interim_buffer)
+            return AVERROR(ENOMEM);
+        memset(s->interim_buffer, 0, decoded_buffer_size);
+        s->interim[0] = s->interim_buffer;
+        s->interim[1] = s->interim_buffer + FFALIGN(blockstodecode, 8);
+    } else {
+        av_freep(&s->interim_buffer);
+        s->interim_size = 0;
+        memset(s->interim, 0, sizeof(s->interim));
+    }
 
     s->error=0;
 
