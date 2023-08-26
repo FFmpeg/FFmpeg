@@ -189,8 +189,6 @@ static av_cold int init_filter(AVFilterContext *ctx, enum TestSrcVulkanMode mode
 
     s->initialized = 1;
 
-    return 0;
-
 fail:
     if (spv_opaque)
         spv->free_shader(spv, &spv_opaque);
