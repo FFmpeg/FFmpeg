@@ -2446,6 +2446,20 @@ Quantizer curve compression factor
 @item refs (@emph{ref})
 Number of reference frames each P-frame can use. The range is from @var{0-16}.
 
+@item level (@emph{level})
+Set the @code{x264_param_t.i_level_idc} value in case the value is
+positive, it is ignored otherwise.
+
+This value can be set using the @code{AVCodecContext} API (e.g. by
+setting the @code{AVCodecContext} value directly), and is specified as
+an integer mapped on a corresponding level (e.g. the value 31 maps
+to H.264 level IDC "3.1", as defined in the @code{x264_levels}
+table). It is ignored when set to a non positive value.
+
+Alternatively it can be set as a private option, overriding the value
+set in @code{AVCodecContext}, and in this case must be specified as
+the level IDC identifier (e.g. "3.1"), as defined by H.264 Annex A.
+
 @item sc_threshold (@emph{scenecut})
 Sets the threshold for the scene change detection.
 
