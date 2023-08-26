@@ -2976,27 +2976,24 @@ Place global headers in extradata instead of every keyframe.
 
 @item trellis
 
-@item me_method
-Set motion estimation method. Possible values in decreasing order of
+@item me_quality
+Set motion estimation quality level. Possible values in decreasing order of
 speed and increasing order of quality:
 
 @table @samp
-@item zero
+@item 0
 Use no motion estimation (default).
 
-@item phods
-@item x1
-@item log
+@item 1, 2
 Enable advanced diamond zonal search for 16x16 blocks and half-pixel
-refinement for 16x16 blocks. @samp{x1} and @samp{log} are aliases for
-@samp{phods}.
+refinement for 16x16 blocks.
 
-@item epzs
+@item 3, 4
 Enable all of the things described above, plus advanced diamond zonal
-search for 8x8 blocks, half-pixel refinement for 8x8 blocks, and motion
-estimation on chroma planes.
+search for 8x8 blocks and half-pixel refinement for 8x8 blocks, also
+enable motion estimation on chroma planes for P and B-frames.
 
-@item full
+@item 5, 6
 Enable all of the things described above, plus extended 16x16 and 8x8
 blocks search.
 @end table
