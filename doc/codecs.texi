@@ -697,10 +697,13 @@ profiles are documented in the relevant encoder documentation.
 
 @item level @var{integer} (@emph{encoding,audio,video})
 
+Set the encoder level. This level depends on the specific codec, and
+might correspond to the profile level. It is set by default to
+@samp{unknown}.
+
 Possible values:
 @table @samp
 @item unknown
-
 @end table
 
 @item lowres @var{integer} (@emph{decoding,audio,video})

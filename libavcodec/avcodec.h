@@ -1730,8 +1730,10 @@ typedef struct AVCodecContext {
 #endif
 
     /**
-     * level
-     * - encoding: Set by user.
+     * Encoding level descriptor.
+     * - encoding: Set by user, corresponds to a specific level defined by the
+     *   codec, usually corresponding to the profile level, if not specified it
+     *   is set to FF_LEVEL_UNKNOWN.
      * - decoding: Set by libavcodec.
      * See AV_LEVEL_* in defs.h.
      */
