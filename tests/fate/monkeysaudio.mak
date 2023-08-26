@@ -16,5 +16,8 @@ $(foreach N,$(APE_VERSIONS),$(eval $(call FATE_APE_SUITE,$(N))))
 FATE_APE += fate-lossless-monkeysaudio-399
 fate-lossless-monkeysaudio-399: CMD = md5 -i $(TARGET_SAMPLES)/lossless-audio/luckynight-partial.ape -f s16le -af aresample
 
+FATE_APE += fate-lossless-monkeysaudio-legacy
+fate-lossless-monkeysaudio-legacy: CMD = md5 -i $(TARGET_SAMPLES)/lossless-audio/NoLegacy-cut.ape -f s32le -af aresample
+
 FATE_SAMPLES_AVCONV-$(call DEMDEC, APE, APE) += $(FATE_APE)
 fate-lossless-monkeysaudio: $(FATE_APE)
