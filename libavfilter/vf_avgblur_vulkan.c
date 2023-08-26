@@ -153,8 +153,6 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
     s->opts.filter_norm[2] = s->opts.filter_norm[0];
     s->opts.filter_norm[3] = s->opts.filter_norm[0];
 
-    return 0;
-
 fail:
     if (spv_opaque)
         spv->free_shader(spv, &spv_opaque);
