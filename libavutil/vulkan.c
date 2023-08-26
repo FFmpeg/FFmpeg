@@ -1884,6 +1884,7 @@ void ff_vk_pipeline_free(FFVulkanContext *s, FFVulkanPipeline *pl)
 
     av_freep(&pl->desc_set);
     av_freep(&pl->desc_bind);
+    av_freep(&pl->bound_buffer_indices);
     av_freep(&pl->push_consts);
     pl->push_consts_num = 0;
 }
