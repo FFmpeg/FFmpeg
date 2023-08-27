@@ -83,6 +83,21 @@ void av_frame_side_data_free(AVFrameSideData ***sd, int *nb_sd)
     wipe_side_data(sd, nb_sd);
 }
 
+static void remove_side_data(AVFrameSideData ***sd, int *nb_side_data,
+                             const enum AVFrameSideDataType type)
+{
+    for (int i = *nb_side_data - 1; i >= 0; i--) {
+        AVFrameSideData *entry = ((*sd)[i]);
+        if (entry->type != type)
+            continue;
+
+        free_side_data(&entry);
+
+        ((*sd)[i]) = ((*sd)[*nb_side_data - 1]);
+        (*nb_side_data)--;
+    }
+}
+
 AVFrame *av_frame_alloc(void)
 {
     AVFrame *frame = av_malloc(sizeof(*frame));
@@ -801,14 +816,7 @@ int av_frame_copy(AVFrame *dst, const AVFrame *src)
 
 void av_frame_remove_side_data(AVFrame *frame, enum AVFrameSideDataType type)
 {
-    for (int i = frame->nb_side_data - 1; i >= 0; i--) {
-        AVFrameSideData *sd = frame->side_data[i];
-        if (sd->type == type) {
-            free_side_data(&frame->side_data[i]);
-            frame->side_data[i] = frame->side_data[frame->nb_side_data - 1];
-            frame->nb_side_data--;
-        }
-    }
+    remove_side_data(&frame->side_data, &frame->nb_side_data, type);
 }
 
 const char *av_frame_side_data_name(enum AVFrameSideDataType type)
