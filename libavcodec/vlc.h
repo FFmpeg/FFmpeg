@@ -21,6 +21,8 @@
 
 #include <stdint.h>
 
+#define VLC_MULTI_MAX_SYMBOLS 6
+
 // When changing this, be sure to also update tableprint_vlc.h accordingly.
 typedef int16_t VLCBaseType;
 
@@ -33,6 +35,17 @@ typedef struct VLC {
     VLCElem *table;
     int table_size, table_allocated;
 } VLC;
+
+typedef struct VLC_MULTI_ELEM {
+    uint8_t val[VLC_MULTI_MAX_SYMBOLS];
+    int8_t len; // -31,32
+    uint8_t num;
+} VLC_MULTI_ELEM;
+
+typedef struct VLC_MULTI {
+    VLC_MULTI_ELEM *table;
+    int table_size, table_allocated;
+} VLC_MULTI;
 
 typedef struct RL_VLC_ELEM {
     int16_t level;
@@ -89,6 +102,46 @@ int ff_init_vlc_from_lengths(VLC *vlc, int nb_bits, int nb_codes,
                              const void *symbols, int symbols_wrap, int symbols_size,
                              int offset, int flags, void *logctx);
 
+/**
+ * Build VLC decoding tables suitable for use with get_vlc_multi()
+ *
+ * This function takes lengths and symbols and calculates the codes from them.
+ * For this the input lengths and symbols have to be sorted according to "left
+ * nodes in the corresponding tree first".
+ *
+ * @param[in,out] vlc      The VLC to be initialized; table and table_allocated
+ *                         must have been set when initializing a static VLC,
+ *                         otherwise this will be treated as uninitialized.
+ * @param[in,out] multi    The VLC_MULTI to be initialized; table and table_allocated
+ *                         must have been set when initializing a static VLC,
+ *                         otherwise this will be treated as uninitialized.
+ * @param[in] nb_bits      The number of bits to use for the VLC table;
+ *                         higher values take up more memory and cache, but
+ *                         allow to read codes with fewer reads.
+ * @param[in] nb_elems     The max possible number of elements.
+ * @param[in] nb_codes     The number of provided length and (if supplied) symbol
+ *                         entries.
+ * @param[in] lens         The lengths of the codes. Entries > 0 correspond to
+ *                         valid codes; entries == 0 will be skipped and entries
+ *                         with len < 0 indicate that the tree is incomplete and
+ *                         has an open end of length -len at this position.
+ * @param[in] lens_wrap    Stride (in bytes) of the lengths.
+ * @param[in] symbols      The symbols, i.e. what is returned from get_vlc2()
+ *                         when the corresponding code is encountered.
+ *                         May be NULL, then 0, 1, 2, 3, 4,... will be used.
+ * @param[in] symbols_wrap Stride (in bytes) of the symbols.
+ * @param[in] symbols_size Size of the symbols. 1 and 2 are supported.
+ * @param[in] offset       An offset to apply to all the valid symbols.
+ * @param[in] flags        A combination of the INIT_VLC_* flags; notice that
+ *                         INIT_VLC_INPUT_LE is pointless and ignored.
+ */
+int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int nb_elems,
+                                   int nb_codes, const int8_t *lens, int lens_wrap,
+                                   const void *symbols, int symbols_wrap, int symbols_size,
+                                   int offset, int flags, void *logctx);
+
+
+void ff_free_vlc_multi(VLC_MULTI *vlc);
 void ff_free_vlc(VLC *vlc);
 
 /* If INIT_VLC_INPUT_LE is set, the LSB bit of the codes used to

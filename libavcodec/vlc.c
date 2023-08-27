@@ -30,6 +30,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/error.h"
 #include "libavutil/internal.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
 #include "libavutil/macros.h"
 #include "libavutil/mem.h"
@@ -370,6 +371,142 @@ fail:
     if (buf != localbuf)
         av_free(buf);
     return AVERROR_INVALIDDATA;
+}
+
+static void add_level(VLC_MULTI_ELEM *table, const int nb_elems,
+                      const int num, const int numbits,
+                      const VLCcode *buf,
+                      uint32_t curcode, int curlen,
+                      int curlimit, int curlevel,
+                      const int minlen, const int max,
+                      unsigned* levelcnt, VLC_MULTI_ELEM *info)
+{
+    if (nb_elems > 256 && curlevel > 2)
+        return; // No room
+    for (int i = num-1; i > max; i--) {
+        for (int j = 0; j < 2; j++) {
+            int newlimit, sym;
+            int t = j ? i-1 : i;
+            int l = buf[t].bits;
+            uint32_t code;
+
+            sym = buf[t].symbol;
+            if (l > curlimit)
+                return;
+            code = curcode + (buf[t].code >> curlen);
+            newlimit = curlimit - l;
+            l  += curlen;
+            if (nb_elems>256) AV_WN16(info->val+2*curlevel, sym);
+            else info->val[curlevel] = sym&0xFF;
+
+            if (curlevel) { // let's not add single entries
+                uint32_t val = code >> (32 - numbits);
+                uint32_t  nb = val + (1U << (numbits - l));
+                info->len = l;
+                info->num = curlevel+1;
+                for (; val < nb; val++)
+                    AV_COPY64(table+val, info);
+                levelcnt[curlevel-1]++;
+            }
+
+            if (curlevel+1 < VLC_MULTI_MAX_SYMBOLS && newlimit >= minlen) {
+                add_level(table, nb_elems, num, numbits, buf,
+                          code, l, newlimit, curlevel+1,
+                          minlen, max, levelcnt, info);
+            }
+        }
+    }
+}
+
+static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+                         const int nb_elems, const int nb_codes, const int numbits,
+                         VLCcode *buf, void *logctx)
+{
+    int minbits, maxbits, max = nb_codes-1;
+    unsigned count[VLC_MULTI_MAX_SYMBOLS-1] = { 0, };
+    VLC_MULTI_ELEM info = { { 0, }, 0, };
+
+    minbits = buf[nb_codes-1].bits;
+    maxbits = FFMIN(buf[0].bits, numbits);
+
+    while (max >= nb_codes/2) {
+        if (buf[max].bits+minbits > maxbits)
+            break;
+        max--;
+    }
+
+    for (int j = 0; j < 1<<numbits; j++) {
+        table[j].len = single->table[j].len;
+        table[j].num = single->table[j].len > 0 ? 1 : 0;
+        AV_WN16(table[j].val, single->table[j].sym);
+    }
+
+    add_level(table, nb_elems, nb_codes, numbits, buf,
+              0, 0, numbits, 0, minbits, max, count, &info);
+
+    av_log(NULL, AV_LOG_DEBUG, "Joint: %d/%d/%d/%d/%d codes min=%ubits max=%u\n",
+           count[0], count[1], count[2], count[3], count[4], minbits, max);
+
+    return 0;
+}
+
+int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int nb_elems,
+                                   int nb_codes, const int8_t *lens, int lens_wrap,
+                                   const void *symbols, int symbols_wrap, int symbols_size,
+                                   int offset, int flags, void *logctx)
+{
+    VLCcode localbuf[LOCALBUF_ELEMS], *buf = localbuf;
+    uint64_t code;
+    int ret, j, len_max = FFMIN(32, 3 * nb_bits);
+
+    ret = vlc_common_init(vlc, nb_bits, nb_codes, &buf, flags);
+    if (ret < 0)
+        return ret;
+
+    multi->table = av_malloc(sizeof(*multi->table) << nb_bits);
+    if (!multi->table)
+        return AVERROR(ENOMEM);
+
+    j = code = 0;
+    for (int i = 0; i < nb_codes; i++, lens += lens_wrap) {
+        int len = *lens;
+        if (len > 0) {
+            unsigned sym;
+
+            buf[j].bits = len;
+            if (symbols)
+                GET_DATA(sym, symbols, i, symbols_wrap, symbols_size)
+            else
+                sym = i;
+            buf[j].symbol = sym + offset;
+            buf[j++].code = code;
+        } else if (len <  0) {
+            len = -len;
+        } else
+            continue;
+        if (len > len_max || code & ((1U << (32 - len)) - 1)) {
+            av_log(logctx, AV_LOG_ERROR, "Invalid VLC (length %u)\n", len);
+            goto fail;
+        }
+        code += 1U << (32 - len);
+        if (code > UINT32_MAX + 1ULL) {
+            av_log(logctx, AV_LOG_ERROR, "Overdetermined VLC tree\n");
+            goto fail;
+        }
+    }
+    ret = vlc_common_end(vlc, nb_bits, j, buf, flags, localbuf);
+    if (ret < 0)
+        goto fail;
+    return vlc_multi_gen(multi->table, vlc, nb_elems, j, nb_bits, buf, logctx);
+fail:
+    if (buf != localbuf)
+        av_free(buf);
+    return AVERROR_INVALIDDATA;
+}
+
+void ff_free_vlc_multi(VLC_MULTI *vlc)
+{
+    av_freep(&vlc->table);
 }
 
 void ff_free_vlc(VLC *vlc)

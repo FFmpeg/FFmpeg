@@ -520,6 +520,35 @@ static inline int BS_FUNC(read_vlc)(BSCTX *bc, const VLCElem *table,
     return code;
 }
 
+static inline int BS_FUNC(read_vlc_multi)(BSCTX *bc, uint8_t *dst,
+                                          const VLC_MULTI_ELEM *const Jtable,
+                                          const VLCElem *const table,
+                                          const int bits, const int max_depth)
+{
+    unsigned idx = BS_FUNC(peek)(bc, bits);
+    int ret, nb_bits, code, n = Jtable[idx].len;
+    if (Jtable[idx].num) {
+        AV_COPY64U(dst, Jtable[idx].val);
+        ret = Jtable[idx].num;
+    } else {
+        code = table[idx].sym;
+        n = table[idx].len;
+        if (max_depth > 1 && n < 0) {
+            BS_FUNC(priv_skip_remaining)(bc, bits);
+            code = BS_FUNC(priv_set_idx)(bc, code, &n, &nb_bits, table);
+            if (max_depth > 2 && n < 0) {
+                BS_FUNC(priv_skip_remaining)(bc, nb_bits);
+                code = BS_FUNC(priv_set_idx)(bc, code, &n, &nb_bits, table);
+            }
+        }
+        AV_WN16(dst, code);
+        ret = n > 0;
+    }
+    BS_FUNC(priv_skip_remaining)(bc, n);
+
+    return ret;
+}
+
 #undef BSCTX
 #undef BS_FUNC
 #undef BS_JOIN3

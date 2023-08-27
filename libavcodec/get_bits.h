@@ -93,6 +93,7 @@ typedef BitstreamContext GetBitContext;
 #define init_get_bits8      bits_init8
 #define align_get_bits      bits_align
 #define get_vlc2            bits_read_vlc
+#define get_vlc_multi       bits_read_vlc_multi
 
 #define init_get_bits8_le(s, buffer, byte_size) bits_init8_le((BitstreamContextLE*)s, buffer, byte_size)
 #define get_bits_le(s, n)                       bits_read_le((BitstreamContextLE*)s, n)
@@ -641,6 +642,15 @@ static av_always_inline int get_vlc2(GetBitContext *s, const VLCElem *table,
     CLOSE_READER(re, s);
 
     return code;
+}
+
+static inline int get_vlc_multi(GetBitContext *s, uint8_t *dst,
+                                const VLC_MULTI_ELEM *const Jtable,
+                                const VLCElem *const table,
+                                const int bits, const int max_depth)
+{
+    dst[0] = get_vlc2(s, table, bits, max_depth);
+    return 1;
 }
 
 static inline int decode012(GetBitContext *gb)
