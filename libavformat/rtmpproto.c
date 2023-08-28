@@ -127,6 +127,7 @@ typedef struct RTMPContext {
     int           nb_streamid;                ///< The next stream id to return on createStream calls
     double        duration;                   ///< Duration of the stream in seconds as returned by the server (only valid if non-zero)
     int           tcp_nodelay;                ///< Use TCP_NODELAY to disable Nagle's algorithm if set to 1
+    char          *enhanced_codecs;           ///< codec list in enhanced rtmp
     char          username[50];
     char          password[50];
     char          auth_params[500];
@@ -335,6 +336,38 @@ static int gen_connect(URLContext *s, RTMPContext *rt)
     ff_amf_write_object_start(&p);
     ff_amf_write_field_name(&p, "app");
     ff_amf_write_string2(&p, rt->app, rt->auth_params);
+
+    if (rt->enhanced_codecs) {
+        uint32_t list_len = 0;
+        char *fourcc_data = rt->enhanced_codecs;
+        int fourcc_str_len = strlen(fourcc_data);
+
+        // check the string, fourcc + ',' + ...  + end fourcc correct length should be (4+1)*n+4
+        if ((fourcc_str_len + 1) % 5 != 0) {
+            av_log(s, AV_LOG_ERROR, "Malformed rtmp_enhanched_codecs, "
+                   "should be of the form hvc1[,av01][,vp09][,...]\n");
+            return AVERROR(EINVAL);
+        }
+
+        list_len = (fourcc_str_len + 1) / 5;
+        ff_amf_write_field_name(&p, "fourCcList");
+        ff_amf_write_array_start(&p, list_len);
+
+        while(fourcc_data - rt->enhanced_codecs < fourcc_str_len) {
+            unsigned char fourcc[5];
+            if (!strncmp(fourcc_data, "hvc1", 4) ||
+                !strncmp(fourcc_data, "av01", 4) ||
+                !strncmp(fourcc_data, "vp09", 4)) {
+                    av_strlcpy(fourcc, fourcc_data, sizeof(fourcc));
+                    ff_amf_write_string(&p, fourcc);
+            } else {
+                    av_log(s, AV_LOG_ERROR, "Unsupported codec fourcc, %.*s\n", 4, fourcc_data);
+                    return AVERROR_PATCHWELCOME;
+            }
+
+            fourcc_data += 5;
+        }
+    }
 
     if (!rt->is_input) {
         ff_amf_write_field_name(&p, "type");
@@ -3104,6 +3137,7 @@ static const AVOption rtmp_options[] = {
     {"rtmp_conn", "Append arbitrary AMF data to the Connect message", OFFSET(conn), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
     {"rtmp_flashver", "Version of the Flash plugin used to run the SWF player.", OFFSET(flashver), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
     {"rtmp_flush_interval", "Number of packets flushed in the same request (RTMPT only).", OFFSET(flush_interval), AV_OPT_TYPE_INT, {.i64 = 10}, 0, INT_MAX, ENC},
+    {"rtmp_enhanced_codecs", "Specify the codec(s) to use in an enhanced rtmp live stream", OFFSET(enhanced_codecs), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, ENC},
     {"rtmp_live", "Specify that the media is a live stream.", OFFSET(live), AV_OPT_TYPE_INT, {.i64 = -2}, INT_MIN, INT_MAX, DEC, "rtmp_live"},
     {"any", "both", 0, AV_OPT_TYPE_CONST, {.i64 = -2}, 0, 0, DEC, "rtmp_live"},
     {"live", "live stream", 0, AV_OPT_TYPE_CONST, {.i64 = -1}, 0, 0, DEC, "rtmp_live"},

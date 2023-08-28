@@ -896,6 +896,13 @@ be named, by prefixing the type with 'N' and specifying the name before
 the value (i.e. @code{NB:myFlag:1}). This option may be used multiple
 times to construct arbitrary AMF sequences.
 
+@item rtmp_enhanced_codecs
+Specify the list of codecs the client advertises to support in an
+enhanced RTMP stream. This option should be set to a comma separated
+list of fourcc values, like @code{hvc1,av01,vp09} for multiple codecs
+or @code{hvc1} for only one codec. The specified list will be presented
+in the "fourCcLive" property of the Connect Command Message.
+
 @item rtmp_flashver
 Version of the Flash plugin used to run the SWF player. The default
 is LNX 9,0,124,2. (When publishing, the default is FMLE/3.0 (compatible;
