@@ -165,7 +165,7 @@ int ff_vk_load_props(FFVulkanContext *s)
 
     vk->GetPhysicalDeviceQueueFamilyProperties2(s->hwctx->phys_dev, &s->tot_nb_qfs, s->qf_props);
 
-    if (vk->GetPhysicalDeviceCooperativeMatrixPropertiesKHR) {
+    if (s->extensions & FF_VK_EXT_COOP_MATRIX) {
         vk->GetPhysicalDeviceCooperativeMatrixPropertiesKHR(s->hwctx->phys_dev,
                                                             &s->coop_mat_props_nb, NULL);
 
