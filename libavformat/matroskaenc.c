@@ -3027,7 +3027,7 @@ static int mkv_write_packet(AVFormatContext *s, const AVPacket *pkt)
         }
     }
 
-    if (!mkv->cluster_pos)
+    if (mkv->cluster_pos == -1)
         avio_write_marker(s->pb,
                           av_rescale_q(pkt->dts, s->streams[pkt->stream_index]->time_base, AV_TIME_BASE_Q),
                           keyframe && (mkv->have_video ? codec_type == AVMEDIA_TYPE_VIDEO : 1) ? AVIO_DATA_MARKER_SYNC_POINT : AVIO_DATA_MARKER_BOUNDARY_POINT);
