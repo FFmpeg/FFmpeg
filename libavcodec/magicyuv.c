@@ -34,6 +34,8 @@
 #include "lossless_videodsp.h"
 #include "thread.h"
 
+#define VLC_BITS 12
+
 typedef struct Slice {
     uint32_t start;
     uint32_t size;
@@ -67,13 +69,14 @@ typedef struct MagicYUVContext {
     Slice            *slices[4];      // slice bitstream positions for each plane
     unsigned int      slices_size[4]; // slice sizes for each plane
     VLC               vlc[4];         // VLC for each plane
+    VLC_MULTI         multi[4];       // Buffer for joint VLC data
     int (*magy_decode_slice)(AVCodecContext *avctx, void *tdata,
                              int j, int threadnr);
     LLVidDSPContext   llviddsp;
 } MagicYUVContext;
 
 static int huff_build(const uint8_t len[], uint16_t codes_pos[33],
-                      VLC *vlc, int nb_elems, void *logctx)
+                      VLC *vlc, VLC_MULTI *multi, int nb_elems, void *logctx)
 {
     HuffEntry he[4096];
 
@@ -84,7 +87,8 @@ static int huff_build(const uint8_t len[], uint16_t codes_pos[33],
         he[--codes_pos[len[i]]] = (HuffEntry){ len[i], i };
 
     ff_free_vlc(vlc);
-    return ff_init_vlc_from_lengths(vlc, FFMIN(he[0].len, 12), nb_elems,
+    ff_free_vlc_multi(multi);
+    return ff_init_vlc_multi_from_lengths(vlc, multi, FFMIN(he[0].len, VLC_BITS), nb_elems, nb_elems,
                                     &he[0].len, sizeof(he[0]),
                                     &he[0].sym, sizeof(he[0]), sizeof(he[0].sym),
                                     0, 0, logctx);
@@ -111,6 +115,22 @@ static void magicyuv_median_pred16(uint16_t *dst, const uint16_t *src1,
     *left_top = lt;
 }
 
+#define READ_PLANE(dst, plane, b, c) \
+{ \
+    x = 0; \
+    for (; CACHED_BITSTREAM_READER && x < width-c && get_bits_left(&gb) > 0;) {\
+        ret = get_vlc_multi(&gb, (uint8_t *)dst + x * b, multi, \
+                            vlc, vlc_bits, 3); \
+        if (ret > 0) \
+            x += ret; \
+        if (ret <= 0) \
+            return AVERROR_INVALIDDATA; \
+    } \
+    for (; x < width && get_bits_left(&gb) > 0; x++) \
+        dst[x] = get_vlc2(&gb, vlc, vlc_bits, 3); \
+    dst += stride; \
+}
+
 static int magy_decode_slice10(AVCodecContext *avctx, void *tdata,
                                int j, int threadnr)
 {
@@ -130,6 +150,9 @@ static int magy_decode_slice10(AVCodecContext *avctx, void *tdata,
         int sheight = AV_CEIL_RSHIFT(s->slice_height, s->vshift[i]);
         ptrdiff_t fake_stride = (p->linesize[i] / 2) * (1 + interlaced);
         ptrdiff_t stride = p->linesize[i] / 2;
+        const VLC_MULTI_ELEM *const multi = s->multi[i].table;
+        const VLCElem *const vlc = s->vlc[i].table;
+        const int vlc_bits = s->vlc[i].bits;
         int flags, pred;
         int ret = init_get_bits8(&gb, s->buf + s->slices[i][j].start,
                                  s->slices[i][j].size);
@@ -151,20 +174,8 @@ static int magy_decode_slice10(AVCodecContext *avctx, void *tdata,
                 dst += stride;
             }
         } else {
-            for (k = 0; k < height; k++) {
-                for (x = 0; x < width; x++) {
-                    int pix;
-                    if (get_bits_left(&gb) <= 0)
-                        return AVERROR_INVALIDDATA;
-
-                    pix = get_vlc2(&gb, s->vlc[i].table, s->vlc[i].bits, 3);
-                    if (pix < 0)
-                        return AVERROR_INVALIDDATA;
-
-                    dst[x] = pix;
-                }
-                dst += stride;
-            }
+            for (k = 0; k < height; k++)
+                READ_PLANE(dst, i, 2, 3)
         }
 
         switch (pred) {
@@ -261,6 +272,9 @@ static int magy_decode_slice(AVCodecContext *avctx, void *tdata,
         ptrdiff_t fake_stride = p->linesize[i] * (1 + interlaced);
         ptrdiff_t stride = p->linesize[i];
         const uint8_t *slice = s->buf + s->slices[i][j].start;
+        const VLC_MULTI_ELEM *const multi = s->multi[i].table;
+        const VLCElem *const vlc = s->vlc[i].table;
+        const int vlc_bits = s->vlc[i].bits;
         int flags, pred;
 
         flags = bytestream_get_byte(&slice);
@@ -280,20 +294,8 @@ static int magy_decode_slice(AVCodecContext *avctx, void *tdata,
             if (ret < 0)
                 return ret;
 
-            for (k = 0; k < height; k++) {
-                for (x = 0; x < width; x++) {
-                    int pix;
-                    if (get_bits_left(&gb) <= 0)
-                        return AVERROR_INVALIDDATA;
-
-                    pix = get_vlc2(&gb, s->vlc[i].table, s->vlc[i].bits, 3);
-                    if (pix < 0)
-                        return AVERROR_INVALIDDATA;
-
-                    dst[x] = pix;
-                }
-                dst += stride;
-            }
+            for (k = 0; k < height; k++)
+                READ_PLANE(dst, i, 1, 5)
         }
 
         switch (pred) {
@@ -407,7 +409,7 @@ static int build_huffman(AVCodecContext *avctx, const uint8_t *table,
 
         if (j == max) {
             j = 0;
-            if (huff_build(len, length_count, &s->vlc[i], max, avctx)) {
+            if (huff_build(len, length_count, &s->vlc[i], &s->multi[i], max, avctx)) {
                 av_log(avctx, AV_LOG_ERROR, "Cannot build Huffman codes\n");
                 return AVERROR_INVALIDDATA;
             }
@@ -687,6 +689,7 @@ static av_cold int magy_decode_end(AVCodecContext *avctx)
         av_freep(&s->slices[i]);
         s->slices_size[i] = 0;
         ff_free_vlc(&s->vlc[i]);
+        ff_free_vlc_multi(&s->multi[i]);
     }
 
     return 0;
