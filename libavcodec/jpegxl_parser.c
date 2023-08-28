@@ -49,7 +49,7 @@
 #define clog1p(x) (ff_log2(x) + !!(x))
 #define unpack_signed(x) (((x) & 1 ? -(x)-1 : (x))/2)
 #define div_ceil(x, y) (((x) - 1) / (y) + 1)
-#define vlm(a,b) (VLCElem){.sym = (a), .len = (b)}
+#define vlm(a,b) {.sym = (a), .len = (b)}
 
 typedef struct JXLHybridUintConf {
     int split_exponent;
