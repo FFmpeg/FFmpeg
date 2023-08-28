@@ -577,7 +577,7 @@ static void handle_klv(AVFormatContext *avctx, decklink_ctx *ctx, IDeckLinkVideo
 class decklink_input_callback : public IDeckLinkInputCallback
 {
 public:
-        decklink_input_callback(AVFormatContext *_avctx);
+        explicit decklink_input_callback(AVFormatContext *_avctx);
         ~decklink_input_callback();
 
         virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, LPVOID *ppv) { return E_NOINTERFACE; }
