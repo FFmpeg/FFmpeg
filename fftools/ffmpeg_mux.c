@@ -115,7 +115,7 @@ static int write_packet(Muxer *mux, OutputStream *ost, AVPacket *pkt)
                 int loglevel = max - pkt->dts > 2 || ost->type == AVMEDIA_TYPE_VIDEO ? AV_LOG_WARNING : AV_LOG_DEBUG;
                 if (exit_on_error)
                     loglevel = AV_LOG_ERROR;
-                av_log(s, loglevel, "Non-monotonous DTS in output stream "
+                av_log(s, loglevel, "Non-monotonic DTS in output stream "
                        "%d:%d; previous: %"PRId64", current: %"PRId64"; ",
                        ost->file_index, ost->st->index, ms->last_mux_dts, pkt->dts);
                 if (exit_on_error) {
