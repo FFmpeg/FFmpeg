@@ -31,6 +31,7 @@ HEADERS = adler32.h                                                     \
           encryption_info.h                                             \
           error.h                                                       \
           eval.h                                                        \
+          executor.h                                                    \
           fifo.h                                                        \
           file.h                                                        \
           frame.h                                                       \
@@ -127,6 +128,7 @@ OBJS = adler32.o                                                        \
        encryption_info.o                                                \
        error.o                                                          \
        eval.o                                                           \
+       executor.o                                                       \
        fifo.o                                                           \
        file.o                                                           \
        file_open.o                                                      \

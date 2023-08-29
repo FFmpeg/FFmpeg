@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2023-02-09
 
 API changes, most recent first:
 
+2023-09-02 - xxxxxxxxxx - lavu 58.19.100 - executor.h
+  Add AVExecutor API
+
 2023-09-xx - xxxxxxxxxx - lavc 60.25.100 - avfft.h
   The entire header will be deprecated and removed in two major bumps.
   For a replacement to av_dct, av_rdft, av_fft and av_mdct, use
