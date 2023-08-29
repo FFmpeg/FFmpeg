@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2023-02-09
 
 API changes, most recent first:
 
+2023-09-xx - xxxxxxxxxx - lavf 60 - avformat.h
+  Deprecate AVFMT_FLAG_SHORTEST without replacement.
+
 2023-09-07 - xxxxxxxxxx - lavu 58.24.100 - imgutils.h
   Add av_image_copy2(), a wrapper around the av_image_copy()
   to overcome limitations of automatic conversions.

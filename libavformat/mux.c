@@ -992,6 +992,7 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *pkt,
         }
     }
 
+#if FF_API_LAVF_SHORTEST
     if (si->packet_buffer.head &&
         eof &&
         (s->flags & AVFMT_FLAG_SHORTEST) &&
@@ -1027,6 +1028,7 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *pkt,
             flush = 0;
         }
     }
+#endif
 
     if (stream_count && flush) {
         PacketListEntry *pktl = si->packet_buffer.head;

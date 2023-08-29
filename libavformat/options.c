@@ -190,7 +190,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
         return NULL;
     }
 
+#if FF_API_LAVF_SHORTEST
     si->shortest_end = AV_NOPTS_VALUE;
+#endif
 
     return s;
 }

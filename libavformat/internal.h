@@ -151,10 +151,12 @@ typedef struct FFFormatContext {
 
     int avoid_negative_ts_use_pts;
 
+#if FF_API_LAVF_SHORTEST
     /**
      * Timestamp of the end of the shortest stream.
      */
     int64_t shortest_end;
+#endif
 
     /**
      * Whether or not avformat_init_output has already been called
