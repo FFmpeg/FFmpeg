@@ -949,6 +949,10 @@ static int rka_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         }
     }
 
+    if (frame->nb_samples < s->frame_samples &&
+        frame->nb_samples > s->last_nb_samples)
+        frame->nb_samples = s->last_nb_samples;
+
     *got_frame_ptr = 1;
 
     return avpkt->size;
