@@ -294,7 +294,6 @@ static double get_scene_score(AVFilterContext *ctx, AVFrame *frame)
             count += select->width[plane] * select->height[plane];
         }
 
-        emms_c();
         mafd = (double)sad / count / (1ULL << (select->bitdepth - 8));
         diff = fabs(mafd - select->prev_mafd);
         ret  = av_clipf(FFMIN(mafd, diff) / 100., 0, 1);

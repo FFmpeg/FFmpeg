@@ -131,7 +131,6 @@ static int is_frozen(FreezeDetectContext *s, AVFrame *reference, AVFrame *frame)
             count += s->width[plane] * s->height[plane];
         }
     }
-    emms_c();
     mafd = (double)sad / count / (1ULL << s->bitdepth);
     return (mafd <= s->noise);
 }

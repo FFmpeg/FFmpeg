@@ -825,7 +825,6 @@ static int detect_scene_change(AVFilterContext *ctx)
         double ret = 0, mafd, diff;
         uint64_t sad;
         mi_ctx->sad(p1, linesize1, p2, linesize2, input->w, input->h, &sad);
-        emms_c();
         mafd = (double) sad * 100.0 / (input->h * input->w) / (1 << mi_ctx->bitdepth);
         diff = fabs(mafd - mi_ctx->prev_mafd);
         ret  = av_clipf(FFMIN(mafd, diff), 0, 100.0);
