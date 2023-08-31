@@ -1633,9 +1633,9 @@ static int mkv_write_stereo_mode(AVFormatContext *s, EbmlWriter *writer,
          * values to be in the range 0..254. */
 #define STEREOMODE(STEREOMODETYPE, STEREO3DTYPE, FLAGS, WDIV, HDIV, WEBM) \
     [(STEREO3DTYPE)][!!((FLAGS) & AV_STEREO3D_FLAG_INVERT)] = (STEREOMODETYPE) + 1,
-#define IGNORE(STEREOMODETYPE, WDIV, HDIV, WEBM)
+#define NOTHING(STEREOMODETYPE, WDIV, HDIV, WEBM)
         static const unsigned char conversion_table[][2] = {
-            STEREOMODE_STEREO3D_MAPPING(STEREOMODE, IGNORE)
+            STEREOMODE_STEREO3D_MAPPING(STEREOMODE, NOTHING)
         };
         int fmt;
 

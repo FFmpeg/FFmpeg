@@ -2171,8 +2171,8 @@ static int mkv_stereo3d_conv(AVStream *st, MatroskaVideoStereoModeType stereo_mo
     } stereo_mode_conv [] = {
 #define STEREO_MODE_CONV(STEREOMODETYPE, STEREO3DTYPE, FLAGS, WDIV, HDIV, WEBM) \
     [(STEREOMODETYPE)] = { .type = (STEREO3DTYPE), .flags = (FLAGS) },
-#define IGNORE(STEREOMODETYPE, WDIV, HDIV, WEBM)
-        STEREOMODE_STEREO3D_MAPPING(STEREO_MODE_CONV, IGNORE)
+#define NOTHING(STEREOMODETYPE, WDIV, HDIV, WEBM)
+        STEREOMODE_STEREO3D_MAPPING(STEREO_MODE_CONV, NOTHING)
     };
     AVStereo3D *stereo;
     int ret;
