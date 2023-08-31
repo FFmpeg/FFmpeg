@@ -36,6 +36,7 @@
 #include "avio_internal.h"
 #include "internal.h"
 #include "img2.h"
+#include "os_support.h"
 #include "libavcodec/jpegxl_parse.h"
 #include "libavcodec/mjpeg.h"
 #include "libavcodec/vbn.h"
