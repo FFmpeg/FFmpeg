@@ -598,7 +598,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     } else if (s->type == FREQUENCY_DOMAIN) {
         ff_filter_execute(ctx, sofalizer_fast_convolute, &td, NULL, 2);
     }
-    emms_c();
 
     /* display error message if clipping occurred */
     if (n_clippings[0] + n_clippings[1] > 0) {
