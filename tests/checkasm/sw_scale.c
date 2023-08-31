@@ -110,9 +110,9 @@ static void check_yuv2yuv1(int accurate)
     const int OFFSET_SIZES = sizeof(offsets)/sizeof(offsets[0]);
     const char *accurate_str = (accurate) ? "accurate" : "approximate";
 
-    declare_func_emms(AV_CPU_FLAG_MMX, void,
-                      const int16_t *src, uint8_t *dest,
-                      int dstW, const uint8_t *dither, int offset);
+    declare_func(void,
+                 const int16_t *src, uint8_t *dest,
+                 int dstW, const uint8_t *dither, int offset);
 
     LOCAL_ALIGNED_16(int16_t, src_pixels, [LARGEST_INPUT_SIZE]);
     LOCAL_ALIGNED_16(uint8_t, dst0, [LARGEST_INPUT_SIZE]);
@@ -288,9 +288,9 @@ static void check_hscale(void)
 
     // The dst parameter here is either int16_t or int32_t but we use void* to
     // just cover both cases.
-    declare_func_emms(AV_CPU_FLAG_MMX, void, void *c, void *dst, int dstW,
-                      const uint8_t *src, const int16_t *filter,
-                      const int32_t *filterPos, int filterSize);
+    declare_func(void, void *c, void *dst, int dstW,
+                 const uint8_t *src, const int16_t *filter,
+                 const int32_t *filterPos, int filterSize);
 
     ctx = sws_alloc_context();
     if (sws_init_context(ctx, NULL, NULL) < 0)
