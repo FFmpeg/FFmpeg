@@ -37,6 +37,7 @@
 
 #include "libavutil/cpu.h"
 #include "libavutil/common.h"
+#include "libavutil/emms.h"
 #include "libavutil/internal.h"
 #include "libavutil/lfg.h"
 #include "libavutil/mem_internal.h"

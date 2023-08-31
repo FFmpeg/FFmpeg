@@ -31,6 +31,7 @@
  */
 
 #include "libavutil/channel_layout.h"
+#include "libavutil/emms.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "codec_internal.h"

@@ -21,6 +21,7 @@
 #include <stdint.h>
 
 #include "libavutil/common.h"
+#include "libavutil/emms.h"
 #include "libavutil/frame.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/motion_vector.h"

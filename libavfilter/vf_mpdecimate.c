@@ -24,6 +24,7 @@
  * Rich Felker.
  */
 
+#include "libavutil/emms.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/pixelutils.h"

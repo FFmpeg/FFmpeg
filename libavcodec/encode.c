@@ -21,6 +21,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/emms.h"
 #include "libavutil/frame.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"

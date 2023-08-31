@@ -32,6 +32,7 @@
  * Dither it back to 8bit.
  */
 
+#include "libavutil/emms.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/common.h"
 #include "libavutil/mem_internal.h"

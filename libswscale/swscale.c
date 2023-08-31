@@ -26,6 +26,7 @@
 #include "libavutil/bswap.h"
 #include "libavutil/common.h"
 #include "libavutil/cpu.h"
+#include "libavutil/emms.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/pixdesc.h"

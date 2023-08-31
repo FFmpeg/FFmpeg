@@ -21,6 +21,7 @@
  */
 
 #include "libavutil/attributes.h"
+#include "libavutil/emms.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/mem_internal.h"

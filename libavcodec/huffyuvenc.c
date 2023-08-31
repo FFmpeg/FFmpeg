@@ -39,6 +39,7 @@
 #include "huffyuvencdsp.h"
 #include "lossless_videoencdsp.h"
 #include "put_bits.h"
+#include "libavutil/emms.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 

@@ -35,6 +35,7 @@
  * project, and ported by Arwa Arif for FFmpeg.
  */
 
+#include "libavutil/emms.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/opt.h"

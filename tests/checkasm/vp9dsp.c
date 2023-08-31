@@ -24,6 +24,7 @@
 #include "libavcodec/vp9data.h"
 #include "libavcodec/vp9.h"
 #include "libavutil/common.h"
+#include "libavutil/emms.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"

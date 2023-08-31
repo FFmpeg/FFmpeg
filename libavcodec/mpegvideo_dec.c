@@ -25,6 +25,7 @@
 #include "config_components.h"
 
 #include "libavutil/avassert.h"
+#include "libavutil/emms.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/video_enc_params.h"

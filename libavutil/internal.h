@@ -43,14 +43,6 @@
 #include "macros.h"
 #include "pixfmt.h"
 
-#if ARCH_X86
-#   include "x86/emms.h"
-#endif
-
-#ifndef emms_c
-#   define emms_c() do {} while(0)
-#endif
-
 #ifndef attribute_align_arg
 #if ARCH_X86_32 && AV_GCC_VERSION_AT_LEAST(4,2)
 #    define attribute_align_arg __attribute__((force_align_arg_pointer))

@@ -33,6 +33,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/crc.h"
+#include "libavutil/emms.h"
 #include "libavutil/internal.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/opt.h"

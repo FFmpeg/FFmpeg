@@ -35,6 +35,7 @@
 #include <stddef.h>
 #include <string.h>
 
+#include "libavutil/emms.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mem_internal.h"
 

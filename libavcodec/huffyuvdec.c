@@ -42,6 +42,7 @@
 #include "huffyuvdsp.h"
 #include "lossless_videodsp.h"
 #include "thread.h"
+#include "libavutil/emms.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
 

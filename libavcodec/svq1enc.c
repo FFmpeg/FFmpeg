@@ -26,6 +26,7 @@
  *   http://www.pcisys.net/~melanson/codecs/
  */
 
+#include "libavutil/emms.h"
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "encode.h"

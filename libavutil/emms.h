@@ -16,11 +16,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVUTIL_X86_EMMS_H
-#define AVUTIL_X86_EMMS_H
+#ifndef AVUTIL_EMMS_H
+#define AVUTIL_EMMS_H
 
 #include "config.h"
 #include "libavutil/attributes.h"
+
+#if ARCH_X86
 
 void avpriv_emms_asm(void);
 
@@ -55,4 +57,10 @@ static av_always_inline void emms_c(void)
 #   define emms_c avpriv_emms_asm
 #endif /* HAVE_MMX_INLINE */
 
-#endif /* AVUTIL_X86_EMMS_H */
+#endif /* ARCH_X86 */
+
+#ifndef emms_c
+#   define emms_c() do {} while(0)
+#endif
+
+#endif /* AVUTIL_EMMS_H */

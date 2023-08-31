@@ -26,6 +26,7 @@
  */
 
 #include "libavutil/avassert.h"
+#include "libavutil/emms.h"
 #include "error_resilience.h"
 #include "avcodec.h"
 #include "h264dec.h"

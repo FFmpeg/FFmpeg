@@ -26,6 +26,7 @@
  */
 
 #include "libavutil/attributes.h"
+#include "libavutil/emms.h"
 #include "libavutil/internal.h"
 
 #include "avcodec.h"

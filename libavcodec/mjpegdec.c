@@ -33,6 +33,7 @@
 #include "config_components.h"
 
 #include "libavutil/display.h"
+#include "libavutil/emms.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/avassert.h"
 #include "libavutil/opt.h"

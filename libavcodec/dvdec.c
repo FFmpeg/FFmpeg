@@ -36,6 +36,7 @@
  */
 
 #include "libavutil/avassert.h"
+#include "libavutil/emms.h"
 #include "libavutil/internal.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/thread.h"

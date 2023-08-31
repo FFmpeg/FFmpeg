@@ -35,6 +35,7 @@
 
 #include <stdint.h>
 
+#include "libavutil/emms.h"
 #include "libavutil/internal.h"
 #include "libavutil/intmath.h"
 #include "libavutil/mathematics.h"

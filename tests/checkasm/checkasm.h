@@ -37,6 +37,7 @@
 
 #include "libavutil/avstring.h"
 #include "libavutil/cpu.h"
+#include "libavutil/emms.h"
 #include "libavutil/internal.h"
 #include "libavutil/lfg.h"
 #include "libavutil/timer.h"
