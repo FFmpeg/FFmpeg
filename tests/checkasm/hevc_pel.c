@@ -79,8 +79,8 @@ static void checkasm_check_hevc_qpel(void)
 
     HEVCDSPContext h;
     int size, bit_depth, i, j, row;
-    declare_func_emms(AV_CPU_FLAG_MMX | AV_CPU_FLAG_MMXEXT, void, int16_t *dst, uint8_t *src, ptrdiff_t srcstride,
-                                                                  int height, intptr_t mx, intptr_t my, int width);
+    declare_func(void, int16_t *dst, uint8_t *src, ptrdiff_t srcstride,
+                 int height, intptr_t mx, intptr_t my, int width);
 
     for (bit_depth = 8; bit_depth <= 12; bit_depth++) {
         ff_hevc_dsp_init(&h, bit_depth);
@@ -123,8 +123,8 @@ static void checkasm_check_hevc_qpel_uni(void)
 
     HEVCDSPContext h;
     int size, bit_depth, i, j;
-    declare_func_emms(AV_CPU_FLAG_MMX | AV_CPU_FLAG_MMXEXT, void, uint8_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
-                                                                  int height, intptr_t mx, intptr_t my, int width);
+    declare_func(void, uint8_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
+                 int height, intptr_t mx, intptr_t my, int width);
 
     for (bit_depth = 8; bit_depth <= 12; bit_depth++) {
         ff_hevc_dsp_init(&h, bit_depth);
@@ -165,8 +165,8 @@ static void checkasm_check_hevc_qpel_uni_w(void)
     HEVCDSPContext h;
     int size, bit_depth, i, j;
     const int *denom, *wx, *ox;
-    declare_func_emms(AV_CPU_FLAG_MMX | AV_CPU_FLAG_MMXEXT, void, uint8_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
-                                                                  int height, int denom, int wx, int ox, intptr_t mx, intptr_t my, int width);
+    declare_func(void, uint8_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
+                 int height, int denom, int wx, int ox, intptr_t mx, intptr_t my, int width);
 
     for (bit_depth = 8; bit_depth <= 12; bit_depth++) {
         ff_hevc_dsp_init(&h, bit_depth);
@@ -214,9 +214,9 @@ static void checkasm_check_hevc_qpel_bi(void)
 
     HEVCDSPContext h;
     int size, bit_depth, i, j;
-    declare_func_emms(AV_CPU_FLAG_MMX | AV_CPU_FLAG_MMXEXT, void, uint8_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
-                                                                  int16_t *src2,
-                                                                  int height, intptr_t mx, intptr_t my, int width);
+    declare_func(void, uint8_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
+                 int16_t *src2,
+                 int height, intptr_t mx, intptr_t my, int width);
 
     for (bit_depth = 8; bit_depth <= 12; bit_depth++) {
         ff_hevc_dsp_init(&h, bit_depth);
@@ -259,10 +259,10 @@ static void checkasm_check_hevc_qpel_bi_w(void)
     HEVCDSPContext h;
     int size, bit_depth, i, j;
     const int *denom, *wx, *ox;
-    declare_func_emms(AV_CPU_FLAG_MMX | AV_CPU_FLAG_MMXEXT, void, uint8_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
-                                                                  int16_t *src2,
-                                                                  int height, int denom, int wx0, int wx1,
-                                                                  int ox0, int ox1, intptr_t mx, intptr_t my, int width);
+    declare_func(void, uint8_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
+                 int16_t *src2,
+                 int height, int denom, int wx0, int wx1,
+                 int ox0, int ox1, intptr_t mx, intptr_t my, int width);
 
     for (bit_depth = 8; bit_depth <= 12; bit_depth++) {
         ff_hevc_dsp_init(&h, bit_depth);
@@ -311,8 +311,8 @@ static void checkasm_check_hevc_epel(void)
 
     HEVCDSPContext h;
     int size, bit_depth, i, j, row;
-    declare_func_emms(AV_CPU_FLAG_MMX | AV_CPU_FLAG_MMXEXT, void, int16_t *dst, uint8_t *src, ptrdiff_t srcstride,
-                                                                  int height, intptr_t mx, intptr_t my, int width);
+    declare_func(void, int16_t *dst, uint8_t *src, ptrdiff_t srcstride,
+                 int height, intptr_t mx, intptr_t my, int width);
 
     for (bit_depth = 8; bit_depth <= 12; bit_depth++) {
         ff_hevc_dsp_init(&h, bit_depth);
@@ -355,8 +355,8 @@ static void checkasm_check_hevc_epel_uni(void)
 
     HEVCDSPContext h;
     int size, bit_depth, i, j;
-    declare_func_emms(AV_CPU_FLAG_MMX | AV_CPU_FLAG_MMXEXT, void, uint8_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
-                                                                  int height, intptr_t mx, intptr_t my, int width);
+    declare_func(void, uint8_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
+                 int height, intptr_t mx, intptr_t my, int width);
 
     for (bit_depth = 8; bit_depth <= 12; bit_depth++) {
         ff_hevc_dsp_init(&h, bit_depth);
@@ -397,8 +397,8 @@ static void checkasm_check_hevc_epel_uni_w(void)
     HEVCDSPContext h;
     int size, bit_depth, i, j;
     const int *denom, *wx, *ox;
-    declare_func_emms(AV_CPU_FLAG_MMX | AV_CPU_FLAG_MMXEXT, void, uint8_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
-                                                                  int height, int denom, int wx, int ox, intptr_t mx, intptr_t my, int width);
+    declare_func(void, uint8_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
+                 int height, int denom, int wx, int ox, intptr_t mx, intptr_t my, int width);
 
     for (bit_depth = 8; bit_depth <= 12; bit_depth++) {
         ff_hevc_dsp_init(&h, bit_depth);
@@ -446,9 +446,9 @@ static void checkasm_check_hevc_epel_bi(void)
 
     HEVCDSPContext h;
     int size, bit_depth, i, j;
-    declare_func_emms(AV_CPU_FLAG_MMX | AV_CPU_FLAG_MMXEXT, void, uint8_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
-                                                                  int16_t *src2,
-                                                                  int height, intptr_t mx, intptr_t my, int width);
+    declare_func(void, uint8_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
+                 int16_t *src2,
+                 int height, intptr_t mx, intptr_t my, int width);
 
     for (bit_depth = 8; bit_depth <= 12; bit_depth++) {
         ff_hevc_dsp_init(&h, bit_depth);
@@ -491,10 +491,10 @@ static void checkasm_check_hevc_epel_bi_w(void)
     HEVCDSPContext h;
     int size, bit_depth, i, j;
     const int *denom, *wx, *ox;
-    declare_func_emms(AV_CPU_FLAG_MMX | AV_CPU_FLAG_MMXEXT, void, uint8_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
-                                                                  int16_t *src2,
-                                                                  int height, int denom, int wx0, int wx1,
-                                                                  int ox0, int ox1, intptr_t mx, intptr_t my, int width);
+    declare_func(void, uint8_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride,
+                 int16_t *src2,
+                 int height, int denom, int wx0, int wx1,
+                 int ox0, int ox1, intptr_t mx, intptr_t my, int width);
 
     for (bit_depth = 8; bit_depth <= 12; bit_depth++) {
         ff_hevc_dsp_init(&h, bit_depth);

@@ -91,7 +91,7 @@ static void check_transform_luma(HEVCDSPContext *h, int bit_depth)
 
     int block_size = 4;
     int size = block_size * block_size;
-    declare_func_emms(AV_CPU_FLAG_MMXEXT, void, int16_t *coeffs);
+    declare_func(void, int16_t *coeffs);
 
     randomize_buffers(coeffs0, size);
     memcpy(coeffs1, coeffs0, sizeof(*coeffs0) * size);

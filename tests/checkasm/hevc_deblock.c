@@ -55,7 +55,7 @@ static void check_deblock_chroma(HEVCDSPContext *h, int bit_depth)
     LOCAL_ALIGNED_32(uint8_t, buf0, [BUF_SIZE]);
     LOCAL_ALIGNED_32(uint8_t, buf1, [BUF_SIZE]);
 
-    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *pix, ptrdiff_t stride, int32_t *tc, uint8_t *no_p, uint8_t *no_q);
+    declare_func(void, uint8_t *pix, ptrdiff_t stride, int32_t *tc, uint8_t *no_p, uint8_t *no_q);
 
     if (check_func(h->hevc_h_loop_filter_chroma, "hevc_h_loop_filter_chroma%d", bit_depth)) {
         for (int i = 0; i < 4; i++) {
