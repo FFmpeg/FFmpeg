@@ -359,7 +359,6 @@ static int headphone_frame(HeadphoneContext *s, AVFrame *in, AVFilterLink *outli
     } else {
         ff_filter_execute(ctx, headphone_fast_convolute, &td, NULL, 2);
     }
-    emms_c();
 
     if (n_clippings[0] + n_clippings[1] > 0) {
         av_log(ctx, AV_LOG_WARNING, "%d of %d samples clipped. Please reduce gain.\n",
