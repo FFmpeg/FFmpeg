@@ -2578,6 +2578,87 @@ static void show_subtitle(WriterContext *w, AVSubtitle *sub, AVStream *stream,
     fflush(stdout);
 }
 
+static void print_frame_side_data(WriterContext *w,
+                                  const AVFrame *frame,
+                                  const AVStream *stream)
+{
+    writer_print_section_header(w, SECTION_ID_FRAME_SIDE_DATA_LIST);
+
+    for (int i = 0; i < frame->nb_side_data; i++) {
+        const AVFrameSideData *sd = frame->side_data[i];
+        const char *name;
+
+        writer_print_section_header(w, SECTION_ID_FRAME_SIDE_DATA);
+        name = av_frame_side_data_name(sd->type);
+        print_str("side_data_type", name ? name : "unknown");
+        if (sd->type == AV_FRAME_DATA_DISPLAYMATRIX && sd->size >= 9*4) {
+            double rotation = av_display_rotation_get((int32_t *)sd->data);
+            if (isnan(rotation))
+                rotation = 0;
+            writer_print_integers(w, "displaymatrix", sd->data, 9, " %11d", 3, 4, 1);
+            print_int("rotation", rotation);
+        } else if (sd->type == AV_FRAME_DATA_AFD && sd->size > 0) {
+            print_int("active_format", *sd->data);
+        } else if (sd->type == AV_FRAME_DATA_GOP_TIMECODE && sd->size >= 8) {
+            char tcbuf[AV_TIMECODE_STR_SIZE];
+            av_timecode_make_mpeg_tc_string(tcbuf, *(int64_t *)(sd->data));
+            print_str("timecode", tcbuf);
+        } else if (sd->type == AV_FRAME_DATA_S12M_TIMECODE && sd->size == 16) {
+            uint32_t *tc = (uint32_t*)sd->data;
+            int m = FFMIN(tc[0],3);
+            writer_print_section_header(w, SECTION_ID_FRAME_SIDE_DATA_TIMECODE_LIST);
+            for (int j = 1; j <= m ; j++) {
+                char tcbuf[AV_TIMECODE_STR_SIZE];
+                av_timecode_make_smpte_tc_string2(tcbuf, stream->avg_frame_rate, tc[j], 0, 0);
+                writer_print_section_header(w, SECTION_ID_FRAME_SIDE_DATA_TIMECODE);
+                print_str("value", tcbuf);
+                writer_print_section_footer(w);
+            }
+            writer_print_section_footer(w);
+        } else if (sd->type == AV_FRAME_DATA_MASTERING_DISPLAY_METADATA) {
+            AVMasteringDisplayMetadata *metadata = (AVMasteringDisplayMetadata *)sd->data;
+
+            if (metadata->has_primaries) {
+                print_q("red_x", metadata->display_primaries[0][0], '/');
+                print_q("red_y", metadata->display_primaries[0][1], '/');
+                print_q("green_x", metadata->display_primaries[1][0], '/');
+                print_q("green_y", metadata->display_primaries[1][1], '/');
+                print_q("blue_x", metadata->display_primaries[2][0], '/');
+                print_q("blue_y", metadata->display_primaries[2][1], '/');
+
+                print_q("white_point_x", metadata->white_point[0], '/');
+                print_q("white_point_y", metadata->white_point[1], '/');
+            }
+
+            if (metadata->has_luminance) {
+                print_q("min_luminance", metadata->min_luminance, '/');
+                print_q("max_luminance", metadata->max_luminance, '/');
+            }
+        } else if (sd->type == AV_FRAME_DATA_DYNAMIC_HDR_PLUS) {
+            AVDynamicHDRPlus *metadata = (AVDynamicHDRPlus *)sd->data;
+            print_dynamic_hdr10_plus(w, metadata);
+        } else if (sd->type == AV_FRAME_DATA_CONTENT_LIGHT_LEVEL) {
+            AVContentLightMetadata *metadata = (AVContentLightMetadata *)sd->data;
+            print_int("max_content", metadata->MaxCLL);
+            print_int("max_average", metadata->MaxFALL);
+        } else if (sd->type == AV_FRAME_DATA_ICC_PROFILE) {
+            const AVDictionaryEntry *tag = av_dict_get(sd->metadata, "name", NULL, AV_DICT_MATCH_CASE);
+            if (tag)
+                print_str(tag->key, tag->value);
+            print_int("size", sd->size);
+        } else if (sd->type == AV_FRAME_DATA_DOVI_METADATA) {
+            print_dovi_metadata(w, (const AVDOVIMetadata *)sd->data);
+        } else if (sd->type == AV_FRAME_DATA_DYNAMIC_HDR_VIVID) {
+            AVDynamicHDRVivid *metadata = (AVDynamicHDRVivid *)sd->data;
+            print_dynamic_hdr_vivid(w, metadata);
+        } else if (sd->type == AV_FRAME_DATA_AMBIENT_VIEWING_ENVIRONMENT) {
+            print_ambient_viewing_environment(w, (const AVAmbientViewingEnvironment *)sd->data);
+        }
+        writer_print_section_footer(w);
+    }
+    writer_print_section_footer(w);
+}
+
 static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
                        AVFormatContext *fmt_ctx)
 {
@@ -2585,7 +2666,6 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
     AVBPrint pbuf;
     char val_str[128];
     const char *s;
-    int i;
 
     av_bprint_init(&pbuf, 1, AV_BPRINT_SIZE_UNLIMITED);
 
@@ -2669,83 +2749,8 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
         show_tags(w, frame->metadata, SECTION_ID_FRAME_TAGS);
     if (do_show_log)
         show_log(w, SECTION_ID_FRAME_LOGS, SECTION_ID_FRAME_LOG, do_show_log);
-    if (frame->nb_side_data) {
-        writer_print_section_header(w, SECTION_ID_FRAME_SIDE_DATA_LIST);
-        for (i = 0; i < frame->nb_side_data; i++) {
-            AVFrameSideData *sd = frame->side_data[i];
-            const char *name;
-
-            writer_print_section_header(w, SECTION_ID_FRAME_SIDE_DATA);
-            name = av_frame_side_data_name(sd->type);
-            print_str("side_data_type", name ? name : "unknown");
-            if (sd->type == AV_FRAME_DATA_DISPLAYMATRIX && sd->size >= 9*4) {
-                double rotation = av_display_rotation_get((int32_t *)sd->data);
-                if (isnan(rotation))
-                    rotation = 0;
-                writer_print_integers(w, "displaymatrix", sd->data, 9, " %11d", 3, 4, 1);
-                print_int("rotation", rotation);
-            } else if (sd->type == AV_FRAME_DATA_AFD && sd->size > 0) {
-                print_int("active_format", *sd->data);
-            } else if (sd->type == AV_FRAME_DATA_GOP_TIMECODE && sd->size >= 8) {
-                char tcbuf[AV_TIMECODE_STR_SIZE];
-                av_timecode_make_mpeg_tc_string(tcbuf, *(int64_t *)(sd->data));
-                print_str("timecode", tcbuf);
-            } else if (sd->type == AV_FRAME_DATA_S12M_TIMECODE && sd->size == 16) {
-                uint32_t *tc = (uint32_t*)sd->data;
-                int m = FFMIN(tc[0],3);
-                writer_print_section_header(w, SECTION_ID_FRAME_SIDE_DATA_TIMECODE_LIST);
-                for (int j = 1; j <= m ; j++) {
-                    char tcbuf[AV_TIMECODE_STR_SIZE];
-                    av_timecode_make_smpte_tc_string2(tcbuf, stream->avg_frame_rate, tc[j], 0, 0);
-                    writer_print_section_header(w, SECTION_ID_FRAME_SIDE_DATA_TIMECODE);
-                    print_str("value", tcbuf);
-                    writer_print_section_footer(w);
-                }
-                writer_print_section_footer(w);
-            } else if (sd->type == AV_FRAME_DATA_MASTERING_DISPLAY_METADATA) {
-                AVMasteringDisplayMetadata *metadata = (AVMasteringDisplayMetadata *)sd->data;
-
-                if (metadata->has_primaries) {
-                    print_q("red_x", metadata->display_primaries[0][0], '/');
-                    print_q("red_y", metadata->display_primaries[0][1], '/');
-                    print_q("green_x", metadata->display_primaries[1][0], '/');
-                    print_q("green_y", metadata->display_primaries[1][1], '/');
-                    print_q("blue_x", metadata->display_primaries[2][0], '/');
-                    print_q("blue_y", metadata->display_primaries[2][1], '/');
-
-                    print_q("white_point_x", metadata->white_point[0], '/');
-                    print_q("white_point_y", metadata->white_point[1], '/');
-                }
-
-                if (metadata->has_luminance) {
-                    print_q("min_luminance", metadata->min_luminance, '/');
-                    print_q("max_luminance", metadata->max_luminance, '/');
-                }
-            } else if (sd->type == AV_FRAME_DATA_DYNAMIC_HDR_PLUS) {
-                AVDynamicHDRPlus *metadata = (AVDynamicHDRPlus *)sd->data;
-                print_dynamic_hdr10_plus(w, metadata);
-            } else if (sd->type == AV_FRAME_DATA_CONTENT_LIGHT_LEVEL) {
-                AVContentLightMetadata *metadata = (AVContentLightMetadata *)sd->data;
-                print_int("max_content", metadata->MaxCLL);
-                print_int("max_average", metadata->MaxFALL);
-            } else if (sd->type == AV_FRAME_DATA_ICC_PROFILE) {
-                const AVDictionaryEntry *tag = av_dict_get(sd->metadata, "name", NULL, AV_DICT_MATCH_CASE);
-                if (tag)
-                    print_str(tag->key, tag->value);
-                print_int("size", sd->size);
-            } else if (sd->type == AV_FRAME_DATA_DOVI_METADATA) {
-                print_dovi_metadata(w, (const AVDOVIMetadata *)sd->data);
-            } else if (sd->type == AV_FRAME_DATA_DYNAMIC_HDR_VIVID) {
-                AVDynamicHDRVivid *metadata = (AVDynamicHDRVivid *)sd->data;
-                print_dynamic_hdr_vivid(w, metadata);
-            } else if (sd->type == AV_FRAME_DATA_AMBIENT_VIEWING_ENVIRONMENT) {
-                print_ambient_viewing_environment(
-                    w, (const AVAmbientViewingEnvironment *)sd->data);
-            }
-            writer_print_section_footer(w);
-        }
-        writer_print_section_footer(w);
-    }
+    if (frame->nb_side_data)
+        print_frame_side_data(w, frame, stream);
 
     writer_print_section_footer(w);
 
