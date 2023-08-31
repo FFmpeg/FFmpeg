@@ -400,7 +400,7 @@ static int create_filtergraph(AVFilterContext *ctx,
     ColorSpaceContext *s = ctx->priv;
     const AVPixFmtDescriptor *in_desc  = av_pix_fmt_desc_get(in->format);
     const AVPixFmtDescriptor *out_desc = av_pix_fmt_desc_get(out->format);
-    int emms = 0, m, n, o, res, fmt_identical, redo_yuv2rgb = 0, redo_rgb2yuv = 0;
+    int m, n, o, res, fmt_identical, redo_yuv2rgb = 0, redo_rgb2yuv = 0;
 
 #define supported_depth(d) ((d) == 8 || (d) == 10 || (d) == 12)
 #define supported_subsampling(lcw, lch) \
@@ -494,7 +494,6 @@ static int create_filtergraph(AVFilterContext *ctx,
                         s->lrgb2lrgb_coeffs[m][n][o] = s->lrgb2lrgb_coeffs[m][n][0];
                 }
 
-            emms = 1;
         }
     }
 
@@ -542,7 +541,6 @@ static int create_filtergraph(AVFilterContext *ctx,
         res = fill_gamma_table(s);
         if (res < 0)
             return res;
-        emms = 1;
     }
 
     if (!s->in_lumacoef) {
@@ -625,7 +623,6 @@ static int create_filtergraph(AVFilterContext *ctx,
             av_assert2(s->yuv2rgb_coeffs[0][0][0] == s->yuv2rgb_coeffs[2][0][0]);
             s->yuv2rgb = s->dsp.yuv2rgb[(in_desc->comp[0].depth - 8) >> 1]
                                        [in_desc->log2_chroma_h + in_desc->log2_chroma_w];
-            emms = 1;
         }
 
         if (redo_rgb2yuv) {
@@ -656,7 +653,6 @@ static int create_filtergraph(AVFilterContext *ctx,
                                        [out_desc->log2_chroma_h + out_desc->log2_chroma_w];
             s->rgb2yuv_fsb = s->dsp.rgb2yuv_fsb[(out_desc->comp[0].depth - 8) >> 1]
                                        [out_desc->log2_chroma_h + out_desc->log2_chroma_w];
-            emms = 1;
         }
 
         if (s->yuv2yuv_fastmode && (redo_yuv2rgb || redo_rgb2yuv)) {
@@ -682,9 +678,6 @@ static int create_filtergraph(AVFilterContext *ctx,
                                        [in_desc->log2_chroma_h + in_desc->log2_chroma_w];
         }
     }
-
-    if (emms)
-        emms_c();
 
     return 0;
 }
