@@ -319,8 +319,6 @@ static void filter(AVFilterContext *ctx, AVFrame *dstpic,
     if (yadif->current_field == YADIF_FIELD_END) {
         yadif->current_field = YADIF_FIELD_NORMAL;
     }
-
-    emms_c();
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
