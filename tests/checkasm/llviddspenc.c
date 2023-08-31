@@ -81,8 +81,8 @@ static void check_sub_left_pred(LLVidEncDSPContext *c)
     LOCAL_ALIGNED_32(uint8_t, src0, [MAX_STRIDE * MAX_HEIGHT]);
     LOCAL_ALIGNED_32(uint8_t, src1, [MAX_STRIDE * MAX_HEIGHT]);
 
-    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst, const uint8_t *src,
-                      ptrdiff_t stride, ptrdiff_t width, int height);
+    declare_func(void, uint8_t *dst, const uint8_t *src,
+                 ptrdiff_t stride, ptrdiff_t width, int height);
 
     memset(dst0, 0, MAX_STRIDE * MAX_HEIGHT);
     memset(dst1, 0, MAX_STRIDE * MAX_HEIGHT);
