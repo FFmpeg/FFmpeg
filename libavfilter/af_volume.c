@@ -447,8 +447,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
     }
 
-    emms_c();
-
     if (buf != out_buf)
         av_frame_free(&buf);
 
