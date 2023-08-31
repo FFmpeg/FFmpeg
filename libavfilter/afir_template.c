@@ -318,7 +318,6 @@ static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int ioffs
 #else
             s->fdsp->vector_dmul_scalar(src + input_offset, in, dry_gain, FFALIGN(nb_samples, 8));
 #endif
-            emms_c();
         } else {
             ftype *src2 = src + input_offset;
             for (int n = 0; n < nb_samples; n++)
@@ -385,7 +384,6 @@ static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int ioffs
 #else
         s->fdsp->vector_dmul_scalar(ptr, ptr, wet_gain, FFALIGN(nb_samples, 8));
 #endif
-        emms_c();
     } else {
         for (int n = 0; n < nb_samples; n++)
             ptr[n] *= wet_gain;
