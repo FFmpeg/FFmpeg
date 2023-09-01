@@ -266,7 +266,9 @@ transcode(){
     additional_input=$7
     final_decode=$8
     enc_opt_in=$9
+    final_encode_muxer="${10}"
     test -z "$additional_input" || additional_input="$DEC_OPTS $additional_input"
+    test -z "$final_encode_muxer" && final_encode_muxer="framecrc"
     encfile="${outdir}/${test}.${enc_fmt}"
     test $keep -ge 1 || cleanfiles="$cleanfiles $encfile"
     tsrcfile=$(target_path $srcfile)
@@ -276,7 +278,7 @@ transcode(){
     do_md5sum $encfile
     echo $(wc -c $encfile)
     ffmpeg $DEC_OPTS $final_decode -i $tencfile $ENC_OPTS $FLAGS $final_encode \
-        -f framecrc - || return
+        -f $final_encode_muxer - || return
     test -z "$ffprobe_opts" || \
         run ffprobe${PROGSUF}${EXECSUF} -bitexact $ffprobe_opts $tencfile || return
 }
