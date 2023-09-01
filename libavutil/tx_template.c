@@ -1648,7 +1648,7 @@ static av_cold int TX_NAME(ff_tx_rdft_init)(AVTXContext *s,
     tab = ((TXSample *)s->exp) + len4 + 8;
 
     for (int i = 0; i < len4; i++)
-        *tab++ = RESCALE(cos(((float)len/4.0 - (float)i + 0)*f) * (inv ? +1.0 : -1.0));
+        *tab++ = RESCALE(cos(((len - i*4)/4.0)*f)) * (inv ? 1 : -1);
 
     return 0;
 }
