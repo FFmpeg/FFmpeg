@@ -1260,7 +1260,7 @@ typedef struct AVCodecContext {
     /**
      * decoder bitstream buffer size
      * - encoding: Set by user.
-     * - decoding: unused
+     * - decoding: May be set by libavcodec.
      */
     int rc_buffer_size;
 
