@@ -2974,6 +2974,23 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             ret = add_coded_side_data(st, sti->avctx);
             if (ret < 0)
                 goto find_stream_info_err;
+
+            if (sti->avctx->rc_buffer_size > 0 || sti->avctx->rc_max_rate > 0 ||
+                sti->avctx->rc_min_rate) {
+                size_t cpb_size;
+                AVCPBProperties *props = av_cpb_properties_alloc(&cpb_size);
+                if (props) {
+                    if (sti->avctx->rc_buffer_size > 0)
+                        props->buffer_size = sti->avctx->rc_buffer_size;
+                    if (sti->avctx->rc_min_rate > 0)
+                        props->min_bitrate = sti->avctx->rc_min_rate;
+                    if (sti->avctx->rc_max_rate > 0)
+                        props->max_bitrate = sti->avctx->rc_max_rate;
+                    if (av_stream_add_side_data(st, AV_PKT_DATA_CPB_PROPERTIES,
+                                                (uint8_t *)props, cpb_size))
+                        av_free(props);
+                }
+            }
         }
 
         sti->avctx_inited = 0;
