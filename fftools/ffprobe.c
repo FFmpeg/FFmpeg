@@ -221,13 +221,26 @@ struct section {
 #define SECTION_FLAG_IS_ARRAY        2 ///< the section contains an array of elements of the same type
 #define SECTION_FLAG_HAS_VARIABLE_FIELDS 4 ///< the section may contain a variable number of fields with variable keys.
                                            ///  For these sections the element_name field is mandatory.
+#define SECTION_FLAG_HAS_TYPE        8 ///< the section contains a type to distinguish multiple nested elements
+
     int flags;
     const SectionID children_ids[SECTION_MAX_NB_CHILDREN+1]; ///< list of children section IDS, terminated by -1
     const char *element_name; ///< name of the contained element, if provided
     const char *unique_name;  ///< unique section name, in case the name is ambiguous
     AVDictionary *entries_to_show;
+    const char *(* get_type)(void *data); ///< function returning a type if defined, must be defined when SECTION_FLAG_HAS_TYPE is defined
     int show_all_entries;
 };
+
+static const char *get_packet_side_data_type(void *data) {
+    const AVPacketSideData *sd = (const AVPacketSideData *)data;
+    return av_x_if_null(av_packet_side_data_name(sd->type), "unknown");
+}
+
+static const char *get_frame_side_data_type(void *data) {
+    const AVFrameSideData *sd = (const AVFrameSideData *)data;
+    return av_x_if_null(av_frame_side_data_name(sd->type), "unknown");
+}
 
 static struct section sections[] = {
     [SECTION_ID_CHAPTERS] =           { SECTION_ID_CHAPTERS, "chapters", SECTION_FLAG_IS_ARRAY, { SECTION_ID_CHAPTER, -1 } },
@@ -240,7 +253,7 @@ static struct section sections[] = {
     [SECTION_ID_FRAME] =              { SECTION_ID_FRAME, "frame", 0, { SECTION_ID_FRAME_TAGS, SECTION_ID_FRAME_SIDE_DATA_LIST, SECTION_ID_FRAME_LOGS, -1 } },
     [SECTION_ID_FRAME_TAGS] =         { SECTION_ID_FRAME_TAGS, "tags", SECTION_FLAG_HAS_VARIABLE_FIELDS, { -1 }, .element_name = "tag", .unique_name = "frame_tags" },
     [SECTION_ID_FRAME_SIDE_DATA_LIST] ={ SECTION_ID_FRAME_SIDE_DATA_LIST, "side_data_list", SECTION_FLAG_IS_ARRAY, { SECTION_ID_FRAME_SIDE_DATA, -1 }, .element_name = "side_data", .unique_name = "frame_side_data_list" },
-    [SECTION_ID_FRAME_SIDE_DATA] =     { SECTION_ID_FRAME_SIDE_DATA, "side_data", 0, { SECTION_ID_FRAME_SIDE_DATA_TIMECODE_LIST, SECTION_ID_FRAME_SIDE_DATA_COMPONENT_LIST, -1 }, .unique_name = "frame_side_data" },
+    [SECTION_ID_FRAME_SIDE_DATA] =     { SECTION_ID_FRAME_SIDE_DATA, "side_data", SECTION_FLAG_HAS_VARIABLE_FIELDS|SECTION_FLAG_HAS_TYPE, { SECTION_ID_FRAME_SIDE_DATA_TIMECODE_LIST, SECTION_ID_FRAME_SIDE_DATA_COMPONENT_LIST, -1 }, .unique_name = "frame_side_data", .get_type = get_frame_side_data_type },
     [SECTION_ID_FRAME_SIDE_DATA_TIMECODE_LIST] =  { SECTION_ID_FRAME_SIDE_DATA_TIMECODE_LIST, "timecodes", SECTION_FLAG_IS_ARRAY, { SECTION_ID_FRAME_SIDE_DATA_TIMECODE, -1 } },
     [SECTION_ID_FRAME_SIDE_DATA_TIMECODE] =       { SECTION_ID_FRAME_SIDE_DATA_TIMECODE, "timecode", 0, { -1 } },
     [SECTION_ID_FRAME_SIDE_DATA_COMPONENT_LIST] = { SECTION_ID_FRAME_SIDE_DATA_COMPONENT_LIST, "components", SECTION_FLAG_IS_ARRAY, { SECTION_ID_FRAME_SIDE_DATA_COMPONENT, -1 } },
@@ -256,7 +269,7 @@ static struct section sections[] = {
     [SECTION_ID_PACKET] =             { SECTION_ID_PACKET, "packet", 0, { SECTION_ID_PACKET_TAGS, SECTION_ID_PACKET_SIDE_DATA_LIST, -1 } },
     [SECTION_ID_PACKET_TAGS] =        { SECTION_ID_PACKET_TAGS, "tags", SECTION_FLAG_HAS_VARIABLE_FIELDS, { -1 }, .element_name = "tag", .unique_name = "packet_tags" },
     [SECTION_ID_PACKET_SIDE_DATA_LIST] ={ SECTION_ID_PACKET_SIDE_DATA_LIST, "side_data_list", SECTION_FLAG_IS_ARRAY, { SECTION_ID_PACKET_SIDE_DATA, -1 }, .element_name = "side_data", .unique_name = "packet_side_data_list" },
-    [SECTION_ID_PACKET_SIDE_DATA] =     { SECTION_ID_PACKET_SIDE_DATA, "side_data", 0, { -1 }, .unique_name = "packet_side_data" },
+    [SECTION_ID_PACKET_SIDE_DATA] =     { SECTION_ID_PACKET_SIDE_DATA, "side_data", SECTION_FLAG_HAS_VARIABLE_FIELDS|SECTION_FLAG_HAS_TYPE, { -1 }, .unique_name = "packet_side_data", .get_type = get_packet_side_data_type },
     [SECTION_ID_PIXEL_FORMATS] =      { SECTION_ID_PIXEL_FORMATS, "pixel_formats", SECTION_FLAG_IS_ARRAY, { SECTION_ID_PIXEL_FORMAT, -1 } },
     [SECTION_ID_PIXEL_FORMAT] =       { SECTION_ID_PIXEL_FORMAT, "pixel_format", 0, { SECTION_ID_PIXEL_FORMAT_FLAGS, SECTION_ID_PIXEL_FORMAT_COMPONENTS, -1 } },
     [SECTION_ID_PIXEL_FORMAT_FLAGS] = { SECTION_ID_PIXEL_FORMAT_FLAGS, "flags", 0, { -1 }, .unique_name = "pixel_format_flags" },
@@ -279,7 +292,7 @@ static struct section sections[] = {
     [SECTION_ID_STREAM_DISPOSITION] = { SECTION_ID_STREAM_DISPOSITION, "disposition", 0, { -1 }, .unique_name = "stream_disposition" },
     [SECTION_ID_STREAM_TAGS] =        { SECTION_ID_STREAM_TAGS, "tags", SECTION_FLAG_HAS_VARIABLE_FIELDS, { -1 }, .element_name = "tag", .unique_name = "stream_tags" },
     [SECTION_ID_STREAM_SIDE_DATA_LIST] ={ SECTION_ID_STREAM_SIDE_DATA_LIST, "side_data_list", SECTION_FLAG_IS_ARRAY, { SECTION_ID_STREAM_SIDE_DATA, -1 }, .element_name = "side_data", .unique_name = "stream_side_data_list" },
-    [SECTION_ID_STREAM_SIDE_DATA] =     { SECTION_ID_STREAM_SIDE_DATA, "side_data", 0, { -1 }, .unique_name = "stream_side_data" },
+    [SECTION_ID_STREAM_SIDE_DATA] =     { SECTION_ID_STREAM_SIDE_DATA, "side_data", SECTION_FLAG_HAS_TYPE|SECTION_FLAG_HAS_VARIABLE_FIELDS, { -1 }, .unique_name = "stream_side_data", .get_type = get_packet_side_data_type },
     [SECTION_ID_SUBTITLE] =           { SECTION_ID_SUBTITLE, "subtitle", 0, { -1 } },
 };
 
@@ -461,7 +474,7 @@ typedef struct Writer {
     int  (*init)  (WriterContext *wctx);
     void (*uninit)(WriterContext *wctx);
 
-    void (*print_section_header)(WriterContext *wctx);
+    void (*print_section_header)(WriterContext *wctx, void *data);
     void (*print_section_footer)(WriterContext *wctx);
     void (*print_integer)       (WriterContext *wctx, const char *, long long int);
     void (*print_rational)      (WriterContext *wctx, AVRational *q, char *sep);
@@ -715,6 +728,7 @@ fail:
 }
 
 static inline void writer_print_section_header(WriterContext *wctx,
+                                               void *data,
                                                int section_id)
 {
     int parent_section_id;
@@ -735,7 +749,7 @@ static inline void writer_print_section_header(WriterContext *wctx,
     }
 
     if (wctx->writer->print_section_header)
-        wctx->writer->print_section_header(wctx);
+        wctx->writer->print_section_header(wctx, data);
 }
 
 static inline void writer_print_section_footer(WriterContext *wctx)
@@ -1042,7 +1056,7 @@ static inline char *upcase_string(char *dst, size_t dst_size, const char *src)
     return dst;
 }
 
-static void default_print_section_header(WriterContext *wctx)
+static void default_print_section_header(WriterContext *wctx, void *data)
 {
     DefaultContext *def = wctx->priv;
     char buf[32];
@@ -1212,7 +1226,7 @@ static av_cold int compact_init(WriterContext *wctx)
     return 0;
 }
 
-static void compact_print_section_header(WriterContext *wctx)
+static void compact_print_section_header(WriterContext *wctx, void *data)
 {
     CompactContext *compact = wctx->priv;
     const struct section *section = wctx->section[wctx->level];
@@ -1222,19 +1236,39 @@ static void compact_print_section_header(WriterContext *wctx)
     compact->has_nested_elems[wctx->level] = 0;
 
     av_bprint_clear(&wctx->section_pbuf[wctx->level]);
-    if (!(section->flags & SECTION_FLAG_IS_ARRAY) && parent_section &&
-        !(parent_section->flags & (SECTION_FLAG_IS_WRAPPER|SECTION_FLAG_IS_ARRAY))) {
+    if (parent_section &&
+        (section->flags & SECTION_FLAG_HAS_TYPE ||
+         (!(section->flags & SECTION_FLAG_IS_ARRAY) &&
+          !(parent_section->flags & (SECTION_FLAG_IS_WRAPPER|SECTION_FLAG_IS_ARRAY))))) {
+
+        /* define a prefix for elements not contained in an array or
+           in a wrapper, or for array elements with a type */
+        const char *element_name = (char *)av_x_if_null(section->element_name, section->name);
+        AVBPrint *section_pbuf = &wctx->section_pbuf[wctx->level];
+
         compact->nested_section[wctx->level] = 1;
         compact->has_nested_elems[wctx->level-1] = 1;
-        av_bprintf(&wctx->section_pbuf[wctx->level], "%s%s:",
-                   wctx->section_pbuf[wctx->level-1].str,
-                   (char *)av_x_if_null(section->element_name, section->name));
+
+        av_bprintf(section_pbuf, "%s%s",
+                   wctx->section_pbuf[wctx->level-1].str, element_name);
+
+        if (section->flags & SECTION_FLAG_HAS_TYPE) {
+            // add /TYPE to prefix
+            av_bprint_chars(section_pbuf, '/', 1);
+
+            // normalize section type, replace special characters and lower case
+            for (const char *p = section->get_type(data); *p; p++) {
+                char c =
+                    (*p >= '0' && *p <= '9') ||
+                    (*p >= 'a' && *p <= 'z') ||
+                    (*p >= 'A' && *p <= 'Z') ? av_tolower(*p) : '_';
+                av_bprint_chars(section_pbuf, c, 1);
+            }
+        }
+        av_bprint_chars(section_pbuf, ':', 1);
+
         wctx->nb_item[wctx->level] = wctx->nb_item[wctx->level-1];
     } else {
-        if (parent_section && compact->has_nested_elems[wctx->level-1] &&
-            (section->flags & SECTION_FLAG_IS_ARRAY)) {
-            compact->terminate_line[wctx->level-1] = 0;
-        }
         if (parent_section && !(parent_section->flags & (SECTION_FLAG_IS_WRAPPER|SECTION_FLAG_IS_ARRAY)) &&
             wctx->level && wctx->nb_item[wctx->level-1])
             writer_w8(wctx, compact->item_sep);
@@ -1389,7 +1423,7 @@ static const char *flat_escape_value_str(AVBPrint *dst, const char *src)
     return dst->str;
 }
 
-static void flat_print_section_header(WriterContext *wctx)
+static void flat_print_section_header(WriterContext *wctx, void *data)
 {
     FlatContext *flat = wctx->priv;
     AVBPrint *buf = &wctx->section_pbuf[wctx->level];
@@ -1489,7 +1523,7 @@ static char *ini_escape_str(AVBPrint *dst, const char *src)
     return dst->str;
 }
 
-static void ini_print_section_header(WriterContext *wctx)
+static void ini_print_section_header(WriterContext *wctx, void *data)
 {
     INIContext *ini = wctx->priv;
     AVBPrint *buf = &wctx->section_pbuf[wctx->level];
@@ -1600,7 +1634,7 @@ static const char *json_escape_str(AVBPrint *dst, const char *src, void *log_ctx
 
 #define JSON_INDENT() writer_printf(wctx, "%*c", json->indent_level * 4, ' ')
 
-static void json_print_section_header(WriterContext *wctx)
+static void json_print_section_header(WriterContext *wctx, void *data)
 {
     JSONContext *json = wctx->priv;
     AVBPrint buf;
@@ -1761,7 +1795,7 @@ static av_cold int xml_init(WriterContext *wctx)
 
 #define XML_INDENT() writer_printf(wctx, "%*c", xml->indent_level * 4, ' ')
 
-static void xml_print_section_header(WriterContext *wctx)
+static void xml_print_section_header(WriterContext *wctx, void *data)
 {
     XMLContext *xml = wctx->priv;
     const struct section *section = wctx->section[wctx->level];
@@ -1921,7 +1955,8 @@ static void writer_register_all(void)
     writer_print_string(w, k, value_string(val_str, sizeof(val_str), uv), 0); \
 } while (0)
 
-#define print_section_header(s) writer_print_section_header(w, s)
+#define print_section_header(s) writer_print_section_header(w, NULL, s)
+#define print_section_header_data(s, d) writer_print_section_header(w, d, s)
 #define print_section_footer(s) writer_print_section_footer(w, s)
 
 #define REALLOCZ_ARRAY_STREAM(ptr, cur_n, new_n)                        \
@@ -1939,7 +1974,7 @@ static inline int show_tags(WriterContext *w, AVDictionary *tags, int section_id
 
     if (!tags)
         return 0;
-    writer_print_section_header(w, section_id);
+    writer_print_section_header(w, NULL, section_id);
 
     while ((tag = av_dict_iterate(tags, tag))) {
         if ((ret = print_str_validate(tag->key, tag->value)) < 0)
@@ -2005,18 +2040,18 @@ static void print_dovi_metadata(WriterContext *w, const AVDOVIMetadata *dovi)
         print_int("num_x_partitions",          mapping->num_x_partitions);
         print_int("num_y_partitions",          mapping->num_y_partitions);
 
-        writer_print_section_header(w, SECTION_ID_FRAME_SIDE_DATA_COMPONENT_LIST);
+        writer_print_section_header(w, NULL, SECTION_ID_FRAME_SIDE_DATA_COMPONENT_LIST);
 
         for (int c = 0; c < 3; c++) {
             const AVDOVIReshapingCurve *curve = &mapping->curves[c];
-            writer_print_section_header(w, SECTION_ID_FRAME_SIDE_DATA_COMPONENT);
+            writer_print_section_header(w, NULL, SECTION_ID_FRAME_SIDE_DATA_COMPONENT);
 
             print_list_fmt("pivots", "%"PRIu16, curve->num_pivots, 1, curve->pivots[idx]);
 
-            writer_print_section_header(w, SECTION_ID_FRAME_SIDE_DATA_PIECE_LIST);
+            writer_print_section_header(w, NULL, SECTION_ID_FRAME_SIDE_DATA_PIECE_LIST);
             for (int i = 0; i < curve->num_pivots - 1; i++) {
 
-                writer_print_section_header(w, SECTION_ID_FRAME_SIDE_DATA_PIECE);
+                writer_print_section_header(w, NULL, SECTION_ID_FRAME_SIDE_DATA_PIECE);
                 print_int("mapping_idc", curve->mapping_idc[i]);
                 switch (curve->mapping_idc[i]) {
                 case AV_DOVI_MAPPING_POLYNOMIAL:
@@ -2286,12 +2321,12 @@ static void print_pkt_side_data(WriterContext *w,
 {
     int i;
 
-    writer_print_section_header(w, id_data_list);
+    writer_print_section_header(w, NULL, id_data_list);
     for (i = 0; i < nb_side_data; i++) {
         const AVPacketSideData *sd = &side_data[i];
         const char *name = av_packet_side_data_name(sd->type);
 
-        writer_print_section_header(w, id_data);
+        writer_print_section_header(w, (void *)sd, id_data);
         print_str("side_data_type", name ? name : "unknown");
         if (sd->type == AV_PKT_DATA_DISPLAYMATRIX && sd->size >= 9*4) {
             double rotation = av_display_rotation_get((int32_t *)sd->data);
@@ -2474,11 +2509,11 @@ static int show_log(WriterContext *w, int section_ids, int section_id, int log_l
         pthread_mutex_unlock(&log_mutex);
         return 0;
     }
-    writer_print_section_header(w, section_ids);
+    writer_print_section_header(w, NULL, section_ids);
 
     for (i=0; i<log_buffer_size; i++) {
         if (log_buffer[i].log_level <= log_level) {
-            writer_print_section_header(w, section_id);
+            writer_print_section_header(w, NULL, section_id);
             print_str("context", log_buffer[i].context_name);
             print_int("level", log_buffer[i].log_level);
             print_int("category", log_buffer[i].category);
@@ -2510,7 +2545,7 @@ static void show_packet(WriterContext *w, InputFile *ifile, AVPacket *pkt, int p
 
     av_bprint_init(&pbuf, 1, AV_BPRINT_SIZE_UNLIMITED);
 
-    writer_print_section_header(w, SECTION_ID_PACKET);
+    writer_print_section_header(w, NULL, SECTION_ID_PACKET);
 
     s = av_get_media_type_string(st->codecpar->codec_type);
     if (s) print_str    ("codec_type", s);
@@ -2562,7 +2597,7 @@ static void show_subtitle(WriterContext *w, AVSubtitle *sub, AVStream *stream,
 
     av_bprint_init(&pbuf, 1, AV_BPRINT_SIZE_UNLIMITED);
 
-    writer_print_section_header(w, SECTION_ID_SUBTITLE);
+    writer_print_section_header(w, NULL, SECTION_ID_SUBTITLE);
 
     print_str ("media_type",         "subtitle");
     print_ts  ("pts",                 sub->pts);
@@ -2582,13 +2617,13 @@ static void print_frame_side_data(WriterContext *w,
                                   const AVFrame *frame,
                                   const AVStream *stream)
 {
-    writer_print_section_header(w, SECTION_ID_FRAME_SIDE_DATA_LIST);
+    writer_print_section_header(w, NULL, SECTION_ID_FRAME_SIDE_DATA_LIST);
 
     for (int i = 0; i < frame->nb_side_data; i++) {
         const AVFrameSideData *sd = frame->side_data[i];
         const char *name;
 
-        writer_print_section_header(w, SECTION_ID_FRAME_SIDE_DATA);
+        writer_print_section_header(w, (void *)sd, SECTION_ID_FRAME_SIDE_DATA);
         name = av_frame_side_data_name(sd->type);
         print_str("side_data_type", name ? name : "unknown");
         if (sd->type == AV_FRAME_DATA_DISPLAYMATRIX && sd->size >= 9*4) {
@@ -2606,11 +2641,11 @@ static void print_frame_side_data(WriterContext *w,
         } else if (sd->type == AV_FRAME_DATA_S12M_TIMECODE && sd->size == 16) {
             uint32_t *tc = (uint32_t*)sd->data;
             int m = FFMIN(tc[0],3);
-            writer_print_section_header(w, SECTION_ID_FRAME_SIDE_DATA_TIMECODE_LIST);
+            writer_print_section_header(w, NULL, SECTION_ID_FRAME_SIDE_DATA_TIMECODE_LIST);
             for (int j = 1; j <= m ; j++) {
                 char tcbuf[AV_TIMECODE_STR_SIZE];
                 av_timecode_make_smpte_tc_string2(tcbuf, stream->avg_frame_rate, tc[j], 0, 0);
-                writer_print_section_header(w, SECTION_ID_FRAME_SIDE_DATA_TIMECODE);
+                writer_print_section_header(w, NULL, SECTION_ID_FRAME_SIDE_DATA_TIMECODE);
                 print_str("value", tcbuf);
                 writer_print_section_footer(w);
             }
@@ -2669,7 +2704,7 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
 
     av_bprint_init(&pbuf, 1, AV_BPRINT_SIZE_UNLIMITED);
 
-    writer_print_section_header(w, SECTION_ID_FRAME);
+    writer_print_section_header(w, NULL, SECTION_ID_FRAME);
 
     s = av_get_media_type_string(stream->codecpar->codec_type);
     if (s) print_str    ("media_type", s);
@@ -3003,7 +3038,7 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
 
     av_bprint_init(&pbuf, 1, AV_BPRINT_SIZE_UNLIMITED);
 
-    writer_print_section_header(w, in_program ? SECTION_ID_PROGRAM_STREAM : SECTION_ID_STREAM);
+    writer_print_section_header(w, NULL, in_program ? SECTION_ID_PROGRAM_STREAM : SECTION_ID_STREAM);
 
     print_int("index", stream->index);
 
@@ -3169,7 +3204,7 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
     } while (0)
 
     if (do_show_stream_disposition) {
-        writer_print_section_header(w, in_program ? SECTION_ID_PROGRAM_STREAM_DISPOSITION : SECTION_ID_STREAM_DISPOSITION);
+        writer_print_section_header(w, NULL, in_program ? SECTION_ID_PROGRAM_STREAM_DISPOSITION : SECTION_ID_STREAM_DISPOSITION);
         PRINT_DISPOSITION(DEFAULT,          "default");
         PRINT_DISPOSITION(DUB,              "dub");
         PRINT_DISPOSITION(ORIGINAL,         "original");
@@ -3211,7 +3246,7 @@ static int show_streams(WriterContext *w, InputFile *ifile)
     AVFormatContext *fmt_ctx = ifile->fmt_ctx;
     int i, ret = 0;
 
-    writer_print_section_header(w, SECTION_ID_STREAMS);
+    writer_print_section_header(w, NULL, SECTION_ID_STREAMS);
     for (i = 0; i < ifile->nb_streams; i++)
         if (selected_streams[i]) {
             ret = show_stream(w, fmt_ctx, i, &ifile->streams[i], 0);
@@ -3228,7 +3263,7 @@ static int show_program(WriterContext *w, InputFile *ifile, AVProgram *program)
     AVFormatContext *fmt_ctx = ifile->fmt_ctx;
     int i, ret = 0;
 
-    writer_print_section_header(w, SECTION_ID_PROGRAM);
+    writer_print_section_header(w, NULL, SECTION_ID_PROGRAM);
     print_int("program_id", program->id);
     print_int("program_num", program->program_num);
     print_int("nb_streams", program->nb_stream_indexes);
@@ -3239,7 +3274,7 @@ static int show_program(WriterContext *w, InputFile *ifile, AVProgram *program)
     if (ret < 0)
         goto end;
 
-    writer_print_section_header(w, SECTION_ID_PROGRAM_STREAMS);
+    writer_print_section_header(w, NULL, SECTION_ID_PROGRAM_STREAMS);
     for (i = 0; i < program->nb_stream_indexes; i++) {
         if (selected_streams[program->stream_index[i]]) {
             ret = show_stream(w, fmt_ctx, program->stream_index[i], &ifile->streams[program->stream_index[i]], 1);
@@ -3259,7 +3294,7 @@ static int show_programs(WriterContext *w, InputFile *ifile)
     AVFormatContext *fmt_ctx = ifile->fmt_ctx;
     int i, ret = 0;
 
-    writer_print_section_header(w, SECTION_ID_PROGRAMS);
+    writer_print_section_header(w, NULL, SECTION_ID_PROGRAMS);
     for (i = 0; i < fmt_ctx->nb_programs; i++) {
         AVProgram *program = fmt_ctx->programs[i];
         if (!program)
@@ -3277,11 +3312,11 @@ static int show_chapters(WriterContext *w, InputFile *ifile)
     AVFormatContext *fmt_ctx = ifile->fmt_ctx;
     int i, ret = 0;
 
-    writer_print_section_header(w, SECTION_ID_CHAPTERS);
+    writer_print_section_header(w, NULL, SECTION_ID_CHAPTERS);
     for (i = 0; i < fmt_ctx->nb_chapters; i++) {
         AVChapter *chapter = fmt_ctx->chapters[i];
 
-        writer_print_section_header(w, SECTION_ID_CHAPTER);
+        writer_print_section_header(w, NULL, SECTION_ID_CHAPTER);
         print_int("id", chapter->id);
         print_q  ("time_base", chapter->time_base, '/');
         print_int("start", chapter->start);
@@ -3304,7 +3339,7 @@ static int show_format(WriterContext *w, InputFile *ifile)
     int64_t size = fmt_ctx->pb ? avio_size(fmt_ctx->pb) : -1;
     int ret = 0;
 
-    writer_print_section_header(w, SECTION_ID_FORMAT);
+    writer_print_section_header(w, NULL, SECTION_ID_FORMAT);
     print_str_validate("filename", fmt_ctx->url);
     print_int("nb_streams",       fmt_ctx->nb_streams);
     print_int("nb_programs",      fmt_ctx->nb_programs);
@@ -3330,7 +3365,7 @@ static int show_format(WriterContext *w, InputFile *ifile)
 
 static void show_error(WriterContext *w, int err)
 {
-    writer_print_section_header(w, SECTION_ID_ERROR);
+    writer_print_section_header(w, NULL, SECTION_ID_ERROR);
     print_int("code", err);
     print_str("string", av_err2str(err));
     writer_print_section_footer(w);
@@ -3521,7 +3556,7 @@ static int probe_file(WriterContext *wctx, const char *filename,
         else // (!do_show_packets && do_show_frames)
             section_id = SECTION_ID_FRAMES;
         if (do_show_frames || do_show_packets)
-            writer_print_section_header(wctx, section_id);
+            writer_print_section_header(wctx, NULL, section_id);
         ret = read_packets(wctx, &ifile);
         if (do_show_frames || do_show_packets)
             writer_print_section_footer(wctx);
@@ -3568,7 +3603,7 @@ static void ffprobe_show_program_version(WriterContext *w)
     AVBPrint pbuf;
     av_bprint_init(&pbuf, 1, AV_BPRINT_SIZE_UNLIMITED);
 
-    writer_print_section_header(w, SECTION_ID_PROGRAM_VERSION);
+    writer_print_section_header(w, NULL, SECTION_ID_PROGRAM_VERSION);
     print_str("version", FFMPEG_VERSION);
     print_fmt("copyright", "Copyright (c) %d-%d the FFmpeg developers",
               program_birth_year, CONFIG_THIS_YEAR);
@@ -3583,7 +3618,7 @@ static void ffprobe_show_program_version(WriterContext *w)
     do {                                                                \
         if (CONFIG_##LIBNAME) {                                         \
             unsigned int version = libname##_version();                 \
-            writer_print_section_header(w, SECTION_ID_LIBRARY_VERSION); \
+            writer_print_section_header(w, NULL, SECTION_ID_LIBRARY_VERSION); \
             print_str("name",    "lib" #libname);                       \
             print_int("major",   LIB##LIBNAME##_VERSION_MAJOR);         \
             print_int("minor",   LIB##LIBNAME##_VERSION_MINOR);         \
@@ -3596,7 +3631,7 @@ static void ffprobe_show_program_version(WriterContext *w)
 
 static void ffprobe_show_library_versions(WriterContext *w)
 {
-    writer_print_section_header(w, SECTION_ID_LIBRARY_VERSIONS);
+    writer_print_section_header(w, NULL, SECTION_ID_LIBRARY_VERSIONS);
     SHOW_LIB_VERSION(avutil,     AVUTIL);
     SHOW_LIB_VERSION(avcodec,    AVCODEC);
     SHOW_LIB_VERSION(avformat,   AVFORMAT);
@@ -3618,9 +3653,9 @@ static void ffprobe_show_pixel_formats(WriterContext *w)
     const AVPixFmtDescriptor *pixdesc = NULL;
     int i, n;
 
-    writer_print_section_header(w, SECTION_ID_PIXEL_FORMATS);
+    writer_print_section_header(w, NULL, SECTION_ID_PIXEL_FORMATS);
     while (pixdesc = av_pix_fmt_desc_next(pixdesc)) {
-        writer_print_section_header(w, SECTION_ID_PIXEL_FORMAT);
+        writer_print_section_header(w, NULL, SECTION_ID_PIXEL_FORMAT);
         print_str("name", pixdesc->name);
         print_int("nb_components", pixdesc->nb_components);
         if ((pixdesc->nb_components >= 3) && !(pixdesc->flags & AV_PIX_FMT_FLAG_RGB)) {
@@ -3634,7 +3669,7 @@ static void ffprobe_show_pixel_formats(WriterContext *w)
         if (n) print_int    ("bits_per_pixel", n);
         else   print_str_opt("bits_per_pixel", "N/A");
         if (do_show_pixel_format_flags) {
-            writer_print_section_header(w, SECTION_ID_PIXEL_FORMAT_FLAGS);
+            writer_print_section_header(w, NULL, SECTION_ID_PIXEL_FORMAT_FLAGS);
             PRINT_PIX_FMT_FLAG(BE,        "big_endian");
             PRINT_PIX_FMT_FLAG(PAL,       "palette");
             PRINT_PIX_FMT_FLAG(BITSTREAM, "bitstream");
@@ -3645,9 +3680,9 @@ static void ffprobe_show_pixel_formats(WriterContext *w)
             writer_print_section_footer(w);
         }
         if (do_show_pixel_format_components && (pixdesc->nb_components > 0)) {
-            writer_print_section_header(w, SECTION_ID_PIXEL_FORMAT_COMPONENTS);
+            writer_print_section_header(w, NULL, SECTION_ID_PIXEL_FORMAT_COMPONENTS);
             for (i = 0; i < pixdesc->nb_components; i++) {
-                writer_print_section_header(w, SECTION_ID_PIXEL_FORMAT_COMPONENT);
+                writer_print_section_header(w, NULL, SECTION_ID_PIXEL_FORMAT_COMPONENT);
                 print_int("index", i + 1);
                 print_int("bit_depth", pixdesc->comp[i].depth);
                 writer_print_section_footer(w);
@@ -3975,10 +4010,11 @@ static void print_section(SectionID id, int level)
 {
     const SectionID *pid;
     const struct section *section = &sections[id];
-    printf("%c%c%c",
+    printf("%c%c%c%c",
            section->flags & SECTION_FLAG_IS_WRAPPER           ? 'W' : '.',
            section->flags & SECTION_FLAG_IS_ARRAY             ? 'A' : '.',
-           section->flags & SECTION_FLAG_HAS_VARIABLE_FIELDS  ? 'V' : '.');
+           section->flags & SECTION_FLAG_HAS_VARIABLE_FIELDS  ? 'V' : '.',
+           section->flags & SECTION_FLAG_HAS_TYPE             ? 'T' : '.');
     printf("%*c  %s", level * 4, ' ', section->name);
     if (section->unique_name)
         printf("/%s", section->unique_name);
@@ -3991,11 +4027,12 @@ static void print_section(SectionID id, int level)
 static int opt_sections(void *optctx, const char *opt, const char *arg)
 {
     printf("Sections:\n"
-           "W.. = Section is a wrapper (contains other sections, no local entries)\n"
-           ".A. = Section contains an array of elements of the same type\n"
-           "..V = Section may contain a variable number of fields with variable keys\n"
+           "W... = Section is a wrapper (contains other sections, no local entries)\n"
+           ".A.. = Section contains an array of elements of the same type\n"
+           "..V. = Section may contain a variable number of fields with variable keys\n"
+           "...T = Section contain a unique type\n"
            "FLAGS NAME/UNIQUE_NAME\n"
-           "---\n");
+           "----\n");
     print_section(SECTION_ID_ROOT, 0);
     return 0;
 }
@@ -4201,7 +4238,7 @@ int main(int argc, char **argv)
         if (w == &xml_writer)
             wctx->string_validation_utf8_flags |= AV_UTF8_FLAG_EXCLUDE_XML_INVALID_CONTROL_CODES;
 
-        writer_print_section_header(wctx, SECTION_ID_ROOT);
+        writer_print_section_header(wctx, NULL, SECTION_ID_ROOT);
 
         if (do_show_program_version)
             ffprobe_show_program_version(wctx);

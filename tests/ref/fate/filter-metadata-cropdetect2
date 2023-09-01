@@ -1,8 +1,5 @@
 pts=0|
-
-
 pts=512|
-
 pts=1024|tag:lavfi.cropdetect.y=22|tag:lavfi.cropdetect.x1=21|tag:lavfi.cropdetect.x2=1221|tag:lavfi.cropdetect.y1=15|tag:lavfi.cropdetect.y2=1116|tag:lavfi.cropdetect.w=1200|tag:lavfi.cropdetect.h=1088|tag:lavfi.cropdetect.x=22|tag:lavfi.cropdetect.limit=0.094118|
 pts=1536|tag:lavfi.cropdetect.y=22|tag:lavfi.cropdetect.x1=21|tag:lavfi.cropdetect.x2=1257|tag:lavfi.cropdetect.y1=15|tag:lavfi.cropdetect.y2=1116|tag:lavfi.cropdetect.w=1232|tag:lavfi.cropdetect.h=1088|tag:lavfi.cropdetect.x=24|tag:lavfi.cropdetect.limit=0.094118|
 pts=2048|tag:lavfi.cropdetect.y=22|tag:lavfi.cropdetect.x1=21|tag:lavfi.cropdetect.x2=1221|tag:lavfi.cropdetect.y1=15|tag:lavfi.cropdetect.y2=1116|tag:lavfi.cropdetect.w=1200|tag:lavfi.cropdetect.h=1088|tag:lavfi.cropdetect.x=22|tag:lavfi.cropdetect.limit=0.094118|

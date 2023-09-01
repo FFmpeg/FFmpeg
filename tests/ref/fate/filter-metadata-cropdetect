@@ -1,5 +1,4 @@
 pts=0|
-
 pts=400
 pts=800|tag:lavfi.cropdetect.y=68|tag:lavfi.cropdetect.x1=0|tag:lavfi.cropdetect.x2=719|tag:lavfi.cropdetect.y1=61|tag:lavfi.cropdetect.y2=424|tag:lavfi.cropdetect.w=720|tag:lavfi.cropdetect.h=352|tag:lavfi.cropdetect.x=0|tag:lavfi.cropdetect.limit=0.094118
 pts=1200|tag:lavfi.cropdetect.y=68|tag:lavfi.cropdetect.x1=0|tag:lavfi.cropdetect.x2=719|tag:lavfi.cropdetect.y1=61|tag:lavfi.cropdetect.y2=424|tag:lavfi.cropdetect.w=720|tag:lavfi.cropdetect.h=352|tag:lavfi.cropdetect.x=0|tag:lavfi.cropdetect.limit=0.094118
