@@ -1613,6 +1613,7 @@ static av_cold int TX_NAME(ff_tx_rdft_init)(AVTXContext *s,
     int ret;
     double f, m;
     TXSample *tab;
+    uint64_t r2r = flags & AV_TX_REAL_TO_REAL;
     int len4 = FFALIGN(len, 4) / 4;
 
     s->scale_d = *((SCALE_TYPE *)scale);
@@ -1638,7 +1639,10 @@ static av_cold int TX_NAME(ff_tx_rdft_init)(AVTXContext *s,
     *tab++ = RESCALE(-m);
 
     *tab++ = RESCALE( (0.5 - 0.0) * m);
-    *tab++ = RESCALE( (0.0 - 0.5) * m);
+    if (r2r)
+        *tab++ = 1 / s->scale_f;
+    else
+        *tab++ = RESCALE( (0.0 - 0.5) * m);
     *tab++ = RESCALE( (0.5 - inv) * m);
     *tab++ = RESCALE(-(0.5 - inv) * m);
 
@@ -1804,7 +1808,7 @@ static void TX_NAME(ff_tx_rdft_ ##n)(AVTXContext *s, void *_dst,               \
     if (mode == AV_TX_REAL_TO_REAL) {                                          \
         out[len2] = tmp_dc;                                                    \
         if (mod2)                                                              \
-            out[len4 + 1] = tmp_mid;                                           \
+            out[len4 + 1] = tmp_mid * fact[5];                                 \
     } else if (mod2) {                                                         \
         out[len4] = tmp_mid;                                                   \
     }                                                                          \
