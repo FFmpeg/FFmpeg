@@ -37,74 +37,74 @@ num_x_partitions=1
 num_y_partitions=1
 [COMPONENT]
 pivots=63 132 362 618 874 911 927 935 942
-[SECTION]
+[PIECE]
 mapping_idc=0
 mapping_idc_name=polynomial
 poly_order=2
 poly_coef=-409680 16721463 -20276640
-[/SECTION]
-[SECTION]
+[/PIECE]
+[PIECE]
 mapping_idc=0
 mapping_idc_name=polynomial
 poly_order=2
 poly_coef=-119056 13575212 -12867889
-[/SECTION]
-[SECTION]
+[/PIECE]
+[PIECE]
 mapping_idc=0
 mapping_idc_name=polynomial
 poly_order=2
 poly_coef=1317527 5338528 -948122
-[/SECTION]
-[SECTION]
+[/PIECE]
+[PIECE]
 mapping_idc=0
 mapping_idc_name=polynomial
 poly_order=2
 poly_coef=2119979 2065496 2288524
-[/SECTION]
-[SECTION]
+[/PIECE]
+[PIECE]
 mapping_idc=0
 mapping_idc_name=polynomial
 poly_order=2
 poly_coef=7982780 -11367226 9973944
-[/SECTION]
-[SECTION]
+[/PIECE]
+[PIECE]
 mapping_idc=0
 mapping_idc_name=polynomial
 poly_order=2
 poly_coef=53792084 -114243184 67724328
-[/SECTION]
-[SECTION]
+[/PIECE]
+[PIECE]
 mapping_idc=0
 mapping_idc_name=polynomial
 poly_order=2
 poly_coef=112973872 -244837568 139764480
-[/SECTION]
-[SECTION]
+[/PIECE]
+[PIECE]
 mapping_idc=0
 mapping_idc_name=polynomial
 poly_order=2
 poly_coef=236828416 -518849056 291306944
-[/SECTION]
+[/PIECE]
 [/COMPONENT]
 [COMPONENT]
 pivots=0 1023
-[SECTION]
+[PIECE]
 mapping_idc=1
 mapping_idc_name=mmr
 mmr_order=3
 mmr_constant=-4200453
 mmr_coef=9094176 31944476 739652 -27103344 -3431599 -11015088 22758042 -2028643 -30021218 -906885 26272992 7291404 16488745 -78087176 -1487777 12496543 762460 -4281948 -5768035 -7843163 103636960
-[/SECTION]
+[/PIECE]
 [/COMPONENT]
 [COMPONENT]
 pivots=0 1023
-[SECTION]
+[PIECE]
 mapping_idc=1
 mapping_idc_name=mmr
 mmr_order=3
 mmr_constant=-10387889
 mmr_coef=29604202 3214133 46206184 -8564340 -53383996 1628407 5426045 -21634202 -5251953 -50812292 19221972 76726656 -425892 -35041240 5917361 2863974 25030554 -14404292 -41230120 1229046 53575140
-[/SECTION]
+[/PIECE]
 [/COMPONENT]
 dm_metadata_id=0
 scene_refresh_flag=1
@@ -160,74 +160,74 @@ num_x_partitions=1
 num_y_partitions=1
 [COMPONENT]
 pivots=63 132 362 618 874 911 927 935 942
-[SECTION]
+[PIECE]
 mapping_idc=0
 mapping_idc_name=polynomial
 poly_order=2
 poly_coef=-409680 16721463 -20276640
-[/SECTION]
-[SECTION]
+[/PIECE]
+[PIECE]
 mapping_idc=0
 mapping_idc_name=polynomial
 poly_order=2
 poly_coef=-119056 13575212 -12867889
-[/SECTION]
-[SECTION]
+[/PIECE]
+[PIECE]
 mapping_idc=0
 mapping_idc_name=polynomial
 poly_order=2
 poly_coef=1317527 5338528 -948122
-[/SECTION]
-[SECTION]
+[/PIECE]
+[PIECE]
 mapping_idc=0
 mapping_idc_name=polynomial
 poly_order=2
 poly_coef=2119979 2065496 2288524
-[/SECTION]
-[SECTION]
+[/PIECE]
+[PIECE]
 mapping_idc=0
 mapping_idc_name=polynomial
 poly_order=2
 poly_coef=7982780 -11367226 9973944
-[/SECTION]
-[SECTION]
+[/PIECE]
+[PIECE]
 mapping_idc=0
 mapping_idc_name=polynomial
 poly_order=2
 poly_coef=53792084 -114243184 67724328
-[/SECTION]
-[SECTION]
+[/PIECE]
+[PIECE]
 mapping_idc=0
 mapping_idc_name=polynomial
 poly_order=2
 poly_coef=112973872 -244837568 139764480
-[/SECTION]
-[SECTION]
+[/PIECE]
+[PIECE]
 mapping_idc=0
 mapping_idc_name=polynomial
 poly_order=2
 poly_coef=236828416 -518849056 291306944
-[/SECTION]
+[/PIECE]
 [/COMPONENT]
 [COMPONENT]
 pivots=0 1023
-[SECTION]
+[PIECE]
 mapping_idc=1
 mapping_idc_name=mmr
 mmr_order=3
 mmr_constant=-4200453
 mmr_coef=9094176 31944476 739652 -27103344 -3431599 -11015088 22758042 -2028643 -30021218 -906885 26272992 7291404 16488745 -78087176 -1487777 12496543 762460 -4281948 -5768035 -7843163 103636960
-[/SECTION]
+[/PIECE]
 [/COMPONENT]
 [COMPONENT]
 pivots=0 1023
-[SECTION]
+[PIECE]
 mapping_idc=1
 mapping_idc_name=mmr
 mmr_order=3
 mmr_constant=-10387889
 mmr_coef=29604202 3214133 46206184 -8564340 -53383996 1628407 5426045 -21634202 -5251953 -50812292 19221972 76726656 -425892 -35041240 5917361 2863974 25030554 -14404292 -41230120 1229046 53575140
-[/SECTION]
+[/PIECE]
 [/COMPONENT]
 dm_metadata_id=0
 scene_refresh_flag=1
