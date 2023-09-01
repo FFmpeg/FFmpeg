@@ -1248,7 +1248,8 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
         if (ret < 0)
             return ret;
 
-        if (avctx->codec_id == AV_CODEC_ID_MPEG2VIDEO && s->bit_rate) {
+        if (avctx->codec_id == AV_CODEC_ID_MPEG2VIDEO && s->bit_rate &&
+            (s->bit_rate != 0x3FFFF*400)) {
             avctx->rc_max_rate = s->bit_rate;
         } else if (avctx->codec_id == AV_CODEC_ID_MPEG1VIDEO && s->bit_rate &&
                    (s->bit_rate != 0x3FFFF*400 || s->vbv_delay != 0xFFFF)) {
@@ -1371,7 +1372,6 @@ static void mpeg_decode_sequence_extension(Mpeg1Context *s1)
     MpegEncContext *s = &s1->mpeg_enc_ctx;
     int horiz_size_ext, vert_size_ext;
     int bit_rate_ext;
-    AVCPBProperties *cpb_props;
 
     skip_bits(&s->gb, 1); /* profile and level esc*/
     s->avctx->profile       = get_bits(&s->gb, 3);
@@ -1402,12 +1402,6 @@ static void mpeg_decode_sequence_extension(Mpeg1Context *s1)
 
     ff_dlog(s->avctx, "sequence extension\n");
     s->codec_id = s->avctx->codec_id = AV_CODEC_ID_MPEG2VIDEO;
-
-    if (cpb_props = ff_add_cpb_side_data(s->avctx)) {
-        cpb_props->buffer_size = s->avctx->rc_buffer_size;
-        if (s->bit_rate != 0x3FFFF*400)
-            cpb_props->max_bitrate = s->bit_rate;
-    }
 
     if (s->avctx->debug & FF_DEBUG_PICT_INFO)
         av_log(s->avctx, AV_LOG_DEBUG,

@@ -233,7 +233,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (set_dim_ret < 0)
         av_log(avctx, AV_LOG_ERROR, "Failed to set dimensions\n");
 
-    if (avctx->codec_id == AV_CODEC_ID_MPEG2VIDEO && bit_rate) {
+    if (avctx->codec_id == AV_CODEC_ID_MPEG2VIDEO && bit_rate && bit_rate != 0x3FFFF) {
         avctx->rc_max_rate = 400LL*bit_rate;
     }
     if (bit_rate &&
