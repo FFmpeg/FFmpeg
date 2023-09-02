@@ -225,6 +225,7 @@ static int fill_model_input_ov(OVModel *ov_model, OVRequestItem *request)
         status = ov_port_get_element_type(ov_model->input_port, &precision);
         if (status != OK) {
             av_log(ctx, AV_LOG_ERROR, "Failed to get input port data type.\n");
+            ov_shape_free(&input_shape);
             return ov2_map_error(status, NULL);
         }
     } else {
@@ -236,8 +237,10 @@ static int fill_model_input_ov(OVModel *ov_model, OVRequestItem *request)
     input.channels = dims[1];
     input.dt = precision_to_datatype(precision);
     input.data = av_malloc(input.height * input.width * input.channels * get_datatype_size(input.dt));
-    if (!input.data)
+    if (!input.data) {
+        ov_shape_free(&input_shape);
         return AVERROR(ENOMEM);
+    }
     input_data_ptr = input.data;
 #else
     status = ie_infer_request_get_blob(request->infer_request, task->input_name, &input_blob);
@@ -300,6 +303,7 @@ static int fill_model_input_ov(OVModel *ov_model, OVRequestItem *request)
         }
 #if HAVE_OPENVINO2
         status = ov_tensor_create_from_host_ptr(precision, input_shape, input.data, &tensor);
+        ov_shape_free(&input_shape);
         if (status != OK) {
             av_log(ctx, AV_LOG_ERROR, "Failed to create tensor from host prt.\n");
             return ov2_map_error(status, NULL);
@@ -362,12 +366,14 @@ static void infer_completion_callback(void *args)
     status = ov_port_get_element_type(ov_model->output_port, &precision);
     if (status != OK) {
         av_log(ctx, AV_LOG_ERROR, "Failed to get output port data type.\n");
+        ov_shape_free(&output_shape);
         return;
     }
     output.channels = dims[1];
     output.height   = dims[2];
     output.width    = dims[3];
     av_assert0(request->lltask_count <= dims[0]);
+    ov_shape_free(&output_shape);
 #else
     IEStatusCode status;
     dimensions_t dims;
