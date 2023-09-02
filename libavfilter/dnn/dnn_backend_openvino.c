@@ -1090,37 +1090,37 @@ static int get_output_ov(void *model, const char *input_name, int input_width, i
             status = ov_partial_shape_create(4, dims, &partial_shape);
             if (status != OK) {
                 av_log(ctx, AV_LOG_ERROR, "Failed create partial shape.\n");
-                goto err;
+                return ov2_map_error(status, NULL);
             }
             status = ov_const_port_get_shape(ov_model->input_port, &input_shape);
             input_shape.dims[2] = input_height;
             input_shape.dims[3] = input_width;
             if (status != OK) {
                 av_log(ctx, AV_LOG_ERROR, "Failed create shape for model input resize.\n");
-                goto err;
+                return ov2_map_error(status, NULL);
             }
 
             status = ov_shape_to_partial_shape(input_shape, &partial_shape);
             if (status != OK) {
                 av_log(ctx, AV_LOG_ERROR, "Failed create partial shape for model input resize.\n");
-                goto err;
+                return ov2_map_error(status, NULL);
             }
 
             status = ov_model_reshape_single_input(ov_model->ov_model, partial_shape);
             if (status != OK) {
                 av_log(ctx, AV_LOG_ERROR, "Failed to reszie model input.\n");
-                goto err;
+                return ov2_map_error(status, NULL);
             }
         } else {
             avpriv_report_missing_feature(ctx, "Do not support dynamic model.");
-            goto err;
+            return AVERROR(ENOTSUP);
         }
     }
 
     status = ov_model_const_output_by_name(ov_model->ov_model, output_name, &ov_model->output_port);
     if (status != OK) {
         av_log(ctx, AV_LOG_ERROR, "Failed to get output port.\n");
-        goto err;
+        return ov2_map_error(status, NULL);
     }
     if (!ov_model->compiled_model) {
 #else
