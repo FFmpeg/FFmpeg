@@ -24,7 +24,6 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "attributes.h"
-#include "version.h"
 
 /**
  * @addtogroup lavu_string

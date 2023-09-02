@@ -32,7 +32,6 @@
 #include "bprint.h"
 #include "error.h"
 #include "macros.h"
-#include "version.h"
 
 int av_strstart(const char *str, const char *pfx, const char **ptr)
 {

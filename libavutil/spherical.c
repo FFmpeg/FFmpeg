@@ -19,6 +19,7 @@
  */
 
 #include "avstring.h"
+#include "macros.h"
 #include "mem.h"
 #include "spherical.h"
 
