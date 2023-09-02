@@ -68,12 +68,12 @@ typedef struct OVModel{
     ie_core_t *core;
     ie_network_t *network;
     ie_executable_network_t *exe_network;
+    const char *all_input_names;
+    const char *all_output_names;
 #endif
     SafeQueue *request_queue;   // holds OVRequestItem
     Queue *task_queue;          // holds TaskItem
     Queue *lltask_queue;     // holds LastLevelTaskItem
-    const char *all_input_names;
-    const char *all_output_names;
 } OVModel;
 
 // one request for one call to openvino
@@ -508,7 +508,10 @@ static void dnn_free_model_ov(DNNModel **model)
             ie_network_free(&ov_model->network);
         if (ov_model->core)
             ie_core_free(&ov_model->core);
+        av_free(ov_model->all_output_names);
+        av_free(ov_model->all_input_names);
 #endif
+        av_opt_free(&ov_model->ctx);
         av_freep(&ov_model);
         av_freep(model);
     }
@@ -1255,6 +1258,7 @@ static DNNModel *dnn_load_model_ov(const char *model_filename, DNNFunctionType f
             goto err;
         }
         APPEND_STRING(ov_model->all_input_names, node_name)
+        ie_network_name_free(&node_name);
     }
     status = ie_network_get_outputs_number(ov_model->network, &node_count);
     if (status != OK) {
@@ -1268,6 +1272,7 @@ static DNNModel *dnn_load_model_ov(const char *model_filename, DNNFunctionType f
             goto err;
         }
         APPEND_STRING(ov_model->all_output_names, node_name)
+        ie_network_name_free(&node_name);
     }
 #endif
 
