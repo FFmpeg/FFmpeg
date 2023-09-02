@@ -16,7 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "stdint.h"
+#include <stdint.h>
 
 // cat 1 and 2 are defined in vp8data.h
 static const uint8_t vp8_dct_cat3_prob[] = {
