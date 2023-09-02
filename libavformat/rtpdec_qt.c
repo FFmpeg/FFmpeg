@@ -85,7 +85,7 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
     ret = init_get_bits(&gb, buf, len << 3);
     if (ret < 0)
         return ret;
-    ffio_init_context(&pb0, (uint8_t*)buf, len, 0, NULL, NULL, NULL, NULL);
+    ffio_init_read_context(&pb0, buf, len);
 
     if (len < 4)
         return AVERROR_INVALIDDATA;

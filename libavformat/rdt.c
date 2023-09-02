@@ -152,8 +152,7 @@ rdt_load_mdpr (PayloadContext *rdt, AVStream *st, int rule_nr)
      */
     if (!rdt->mlti_data)
         return -1;
-    ffio_init_context(&pb0, rdt->mlti_data, rdt->mlti_data_size, 0,
-                  NULL, NULL, NULL, NULL);
+    ffio_init_read_context(&pb0, rdt->mlti_data, rdt->mlti_data_size);
     tag = avio_rl32(pb);
     if (tag == MKTAG('M', 'L', 'T', 'I')) {
         int num, chunk_nr;
@@ -302,7 +301,7 @@ rdt_parse_packet (AVFormatContext *ctx, PayloadContext *rdt, AVStream *st,
         FFIOContext pb;
         int pos, rmflags;
 
-        ffio_init_context(&pb, (uint8_t *)buf, len, 0, NULL, NULL, NULL, NULL);
+        ffio_init_read_context(&pb, buf, len);
         rmflags = (flags & RTP_FLAG_KEY) ? 2 : 0;
         res = ff_rm_parse_packet(rdt->rmctx, &pb.pub, st, rdt->rmst[st->index],
                                  len, pkt, &seq, rmflags, *timestamp);

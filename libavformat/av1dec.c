@@ -167,8 +167,7 @@ static int annexb_probe(const AVProbeData *p)
     int seq = 0;
     int ret, type, cnt = 0;
 
-    ffio_init_context(&ctx, p->buf, p->buf_size, 0,
-                      NULL, NULL, NULL, NULL);
+    ffio_init_read_context(&ctx, p->buf, p->buf_size);
 
     ret = leb(pb, &temporal_unit_size, 1);
     if (ret < 0)

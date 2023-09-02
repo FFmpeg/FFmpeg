@@ -68,7 +68,7 @@ void ff_text_init_avio(void *s, FFTextReader *r, AVIOContext *pb);
  * @param buf buffer to read from (referenced as long as FFTextReader is in use)
  * @param size size of buf
  */
-void ff_text_init_buf(FFTextReader *r, void *buf, size_t size);
+void ff_text_init_buf(FFTextReader *r, const void *buf, size_t size);
 
 /**
  * Return the byte position of the next byte returned by ff_text_r8(). For

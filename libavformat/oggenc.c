@@ -292,7 +292,7 @@ static uint8_t *ogg_write_vorbiscomment(int64_t offset, int bitexact,
     if (!p)
         return NULL;
 
-    ffio_init_context(&pb, p + offset, size - offset, 1, NULL, NULL, NULL, NULL);
+    ffio_init_write_context(&pb, p + offset, size - offset);
     ff_vorbiscomment_write(&pb.pub, *m, vendor, chapters, nb_chapters);
     if (framing_bit)
         avio_w8(&pb.pub, 1);

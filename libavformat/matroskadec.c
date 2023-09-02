@@ -2599,9 +2599,8 @@ static int mka_parse_audio_codec(MatroskaTrack *track, AVCodecParameters *par,
     if (!strcmp(track->codec_id, "A_MS/ACM") &&
         track->codec_priv.size >= 14) {
         FFIOContext b;
-        ffio_init_context(&b, track->codec_priv.data,
-                            track->codec_priv.size,
-                            0, NULL, NULL, NULL, NULL);
+        ffio_init_read_context(&b, track->codec_priv.data,
+                               track->codec_priv.size);
         ret = ff_get_wav_header(s, &b.pub, par,
                                 track->codec_priv.size, 0);
         if (ret < 0)
@@ -2887,9 +2886,8 @@ static int mkv_parse_video_codec(MatroskaTrack *track, AVCodecParameters *par,
         if (track->codec_priv.size >= 86) {
             FFIOContext b;
             unsigned bit_depth = AV_RB16(track->codec_priv.data + 82);
-            ffio_init_context(&b, track->codec_priv.data,
-                              track->codec_priv.size,
-                              0, NULL, NULL, NULL, NULL);
+            ffio_init_read_context(&b, track->codec_priv.data,
+                                   track->codec_priv.size);
             if (ff_get_qtpalette(codec_id, &b.pub, track->palette)) {
                 bit_depth         &= 0x1F;
                 track->has_palette = 1;
@@ -4057,7 +4055,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf
 
     av_assert1(buf);
 
-    ffio_init_context(&pb, data, size, 0, NULL, NULL, NULL, NULL);
+    ffio_init_read_context(&pb, data, size);
 
     if ((n = ebml_read_num(matroska, &pb.pub, 8, &num, 1)) < 0)
         return n;

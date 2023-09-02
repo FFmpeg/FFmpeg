@@ -2610,7 +2610,7 @@ static int rtp_read_header(AVFormatContext *s)
         goto fail_nobuf;
     avcodec_parameters_free(&par);
 
-    ffio_init_context(&pb, sdp.str, sdp.len, 0, NULL, NULL, NULL, NULL);
+    ffio_init_read_context(&pb, sdp.str, sdp.len);
     s->pb = &pb.pub;
 
     /* if sdp_read_header() fails then following ff_network_close() cancels out */

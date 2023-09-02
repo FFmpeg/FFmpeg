@@ -127,6 +127,16 @@ void ffio_init_context(FFIOContext *ctx,
     ctx->short_seek_get      = NULL;
 }
 
+void ffio_init_read_context(FFIOContext *s, const uint8_t *buffer, int buffer_size)
+{
+    ffio_init_context(s, (unsigned char*)buffer, buffer_size, 0, NULL, NULL, NULL, NULL);
+}
+
+void ffio_init_write_context(FFIOContext *s, uint8_t *buffer, int buffer_size)
+{
+    ffio_init_context(s, buffer, buffer_size, 1, NULL, NULL, NULL, NULL);
+}
+
 AVIOContext *avio_alloc_context(
                   unsigned char *buffer,
                   int buffer_size,

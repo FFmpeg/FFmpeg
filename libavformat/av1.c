@@ -107,7 +107,7 @@ int ff_av1_filter_obus_buf(const uint8_t *in, uint8_t **out,
     if (!buf)
         return AVERROR(ENOMEM);
 
-    ffio_init_context(&pb, buf, len, 1, NULL, NULL, NULL, NULL);
+    ffio_init_write_context(&pb, buf, len);
 
     ret = av1_filter_obus(&pb.pub, in, *size, NULL);
     av_assert1(ret == len);

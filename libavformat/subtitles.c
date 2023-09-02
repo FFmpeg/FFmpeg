@@ -49,9 +49,9 @@ void ff_text_init_avio(void *s, FFTextReader *r, AVIOContext *pb)
                "UTF16 is automatically converted to UTF8, do not specify a character encoding\n");
 }
 
-void ff_text_init_buf(FFTextReader *r, void *buf, size_t size)
+void ff_text_init_buf(FFTextReader *r, const void *buf, size_t size)
 {
-    ffio_init_context(&r->buf_pb, buf, size, 0, NULL, NULL, NULL, NULL);
+    ffio_init_read_context(&r->buf_pb, buf, size);
     ff_text_init_avio(NULL, r, &r->buf_pb.pub);
 }
 

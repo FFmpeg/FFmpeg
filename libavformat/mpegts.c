@@ -1471,8 +1471,7 @@ static int init_MP4DescrParseContext(MP4DescrParseContext *d, AVFormatContext *s
     if (size > (1 << 30))
         return AVERROR_INVALIDDATA;
 
-    ffio_init_context(&d->pb, (unsigned char *)buf, size,
-                      0, NULL, NULL, NULL, NULL);
+    ffio_init_read_context(&d->pb, buf, size);
 
     d->s               = s;
     d->level           = 0;
@@ -1743,9 +1742,8 @@ static void m4sl_cb(MpegTSFilter *filter, const uint8_t *section,
 
             pes->sl = mp4_descr[i].sl;
 
-            ffio_init_context(&pb, mp4_descr[i].dec_config_descr,
-                              mp4_descr[i].dec_config_descr_len, 0,
-                              NULL, NULL, NULL, NULL);
+            ffio_init_read_context(&pb, mp4_descr[i].dec_config_descr,
+                                   mp4_descr[i].dec_config_descr_len);
             ff_mp4_read_dec_config_descr(s, st, &pb.pub);
             if (st->codecpar->codec_id == AV_CODEC_ID_AAC &&
                 st->codecpar->extradata_size > 0)
@@ -1853,9 +1851,8 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
             if (mp4_descr[i].dec_config_descr_len &&
                 mp4_descr[i].es_id == desc_es_id) {
                 FFIOContext pb;
-                ffio_init_context(&pb, mp4_descr[i].dec_config_descr,
-                                  mp4_descr[i].dec_config_descr_len, 0,
-                                  NULL, NULL, NULL, NULL);
+                ffio_init_read_context(&pb, mp4_descr[i].dec_config_descr,
+                                       mp4_descr[i].dec_config_descr_len);
                 ff_mp4_read_dec_config_descr(fc, st, &pb.pub);
                 if (st->codecpar->codec_id == AV_CODEC_ID_AAC &&
                     st->codecpar->extradata_size > 0) {
@@ -1875,9 +1872,8 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
              sti->request_probe > 0) &&
             mp4_descr->dec_config_descr_len && mp4_descr->es_id == pid) {
             FFIOContext pb;
-            ffio_init_context(&pb, mp4_descr->dec_config_descr,
-                              mp4_descr->dec_config_descr_len, 0,
-                              NULL, NULL, NULL, NULL);
+            ffio_init_read_context(&pb, mp4_descr->dec_config_descr,
+                                   mp4_descr->dec_config_descr_len);
             ff_mp4_read_dec_config_descr(fc, st, &pb.pub);
             if (st->codecpar->codec_id == AV_CODEC_ID_AAC &&
                 st->codecpar->extradata_size > 0) {

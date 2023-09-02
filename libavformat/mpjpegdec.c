@@ -120,7 +120,7 @@ static int mpjpeg_read_probe(const AVProbeData *p)
     if (p->buf_size < 2 || p->buf[0] != '-' || p->buf[1] != '-')
         return 0;
 
-    ffio_init_context(&pb, p->buf, p->buf_size, 0, NULL, NULL, NULL, NULL);
+    ffio_init_read_context(&pb, p->buf, p->buf_size);
 
     ret = (parse_multipart_header(&pb.pub, &size, "--", NULL) >= 0) ? AVPROBE_SCORE_MAX : 0;
 

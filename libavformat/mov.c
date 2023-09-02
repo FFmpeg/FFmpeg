@@ -5727,7 +5727,7 @@ static int mov_read_cmov(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     ret = AVERROR_INVALIDDATA;
     if (uncompress (moov_data, (uLongf *) &moov_len, (const Bytef *)cmov_data, cmov_len) != Z_OK)
         goto free_and_return;
-    ffio_init_context(&ctx, moov_data, moov_len, 0, NULL, NULL, NULL, NULL);
+    ffio_init_read_context(&ctx, moov_data, moov_len);
     ctx.pub.seekable = AVIO_SEEKABLE_NORMAL;
     atom.type = MKTAG('m','o','o','v');
     atom.size = moov_len;

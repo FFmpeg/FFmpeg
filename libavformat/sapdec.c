@@ -148,8 +148,7 @@ static int sap_read_header(AVFormatContext *s)
     }
 
     av_log(s, AV_LOG_VERBOSE, "SDP:\n%s\n", sap->sdp);
-    ffio_init_context(&sap->sdp_pb, sap->sdp, strlen(sap->sdp), 0, NULL, NULL,
-                  NULL, NULL);
+    ffio_init_read_context(&sap->sdp_pb, sap->sdp, strlen(sap->sdp));
 
     infmt = av_find_input_format("sdp");
     if (!infmt)

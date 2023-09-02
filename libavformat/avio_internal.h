@@ -93,6 +93,15 @@ void ffio_init_context(FFIOContext *s,
                   int (*write_packet)(void *opaque, uint8_t *buf, int buf_size),
                   int64_t (*seek)(void *opaque, int64_t offset, int whence));
 
+/**
+ * Wrap a buffer in an AVIOContext for reading.
+ */
+void ffio_init_read_context(FFIOContext *s, const uint8_t *buffer, int buffer_size);
+
+/**
+ * Wrap a buffer in an AVIOContext for writing.
+ */
+void ffio_init_write_context(FFIOContext *s, uint8_t *buffer, int buffer_size);
 
 /**
  * Read size bytes from AVIOContext, returning a pointer.
