@@ -152,7 +152,7 @@ typedef struct FFOpenGLFunctions {
 {\
     GLenum err_code; \
     if ((err_code = glGetError()) != GL_NO_ERROR) { \
-        av_log(ctx, AV_LOG_ERROR, "OpenGL error occurred in '%s', line %d: %d\n", __FUNCTION__, __LINE__, err_code); \
+        av_log(ctx, AV_LOG_ERROR, "OpenGL error occurred in '%s', line %d: %d\n", __func__, __LINE__, err_code); \
         goto fail; \
     } \
 }\

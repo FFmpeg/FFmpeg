@@ -2533,7 +2533,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             if (codec && !avctx->codec)
                 if (avcodec_open2(avctx, codec, options ? &options[i] : &thread_opt) < 0)
                     av_log(ic, AV_LOG_WARNING,
-                           "Failed to open codec in %s\n",__FUNCTION__);
+                           "Failed to open codec in %s\n", __func__);
         }
         if (!options)
             av_dict_free(&thread_opt);
@@ -2790,7 +2790,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                         av_dict_set(&opts, "codec_whitelist", ic->codec_whitelist, 0);
                     if (avcodec_open2(avctx, codec, (options && stream_index < orig_nb_streams) ? &options[stream_index] : &opts) < 0)
                         av_log(ic, AV_LOG_WARNING,
-                               "Failed to open codec in %s\n",__FUNCTION__);
+                               "Failed to open codec in %s\n", __func__);
                     av_dict_free(&opts);
                 }
             }

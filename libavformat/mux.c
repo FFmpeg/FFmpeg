@@ -1120,7 +1120,7 @@ static int write_packet_common(AVFormatContext *s, AVStream *st, AVPacket *pkt, 
     int ret;
 
     if (s->debug & FF_FDEBUG_TS)
-        av_log(s, AV_LOG_DEBUG, "%s size:%d dts:%s pts:%s\n", __FUNCTION__,
+        av_log(s, AV_LOG_DEBUG, "%s size:%d dts:%s pts:%s\n", __func__,
                pkt->size, av_ts2str(pkt->dts), av_ts2str(pkt->pts));
 
     guess_pkt_duration(s, st, pkt);
