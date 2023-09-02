@@ -463,58 +463,61 @@ static void infer_completion_callback(void *args)
 
 static void dnn_free_model_ov(DNNModel **model)
 {
-    if (*model){
-        OVModel *ov_model = (*model)->model;
-        while (ff_safe_queue_size(ov_model->request_queue) != 0) {
-            OVRequestItem *item = ff_safe_queue_pop_front(ov_model->request_queue);
-            if (item && item->infer_request) {
-#if HAVE_OPENVINO2
-                ov_infer_request_free(item->infer_request);
-#else
-                ie_infer_request_free(&item->infer_request);
-#endif
-            }
-            av_freep(&item->lltasks);
-            av_freep(&item);
-        }
-        ff_safe_queue_destroy(ov_model->request_queue);
+    OVModel *ov_model;
 
-        while (ff_queue_size(ov_model->lltask_queue) != 0) {
-            LastLevelTaskItem *item = ff_queue_pop_front(ov_model->lltask_queue);
-            av_freep(&item);
-        }
-        ff_queue_destroy(ov_model->lltask_queue);
+    if (!model || !*model)
+        return;
 
-        while (ff_queue_size(ov_model->task_queue) != 0) {
-            TaskItem *item = ff_queue_pop_front(ov_model->task_queue);
-            av_frame_free(&item->in_frame);
-            av_frame_free(&item->out_frame);
-            av_freep(&item);
-        }
-        ff_queue_destroy(ov_model->task_queue);
+    ov_model = (*model)->model;
+    while (ff_safe_queue_size(ov_model->request_queue) != 0) {
+        OVRequestItem *item = ff_safe_queue_pop_front(ov_model->request_queue);
+        if (item && item->infer_request) {
 #if HAVE_OPENVINO2
-        if (ov_model->preprocess)
-            ov_preprocess_prepostprocessor_free(ov_model->preprocess);
-        if (ov_model->compiled_model)
-            ov_compiled_model_free(ov_model->compiled_model);
-        if (ov_model->ov_model)
-            ov_model_free(ov_model->ov_model);
-        if (ov_model->core)
-            ov_core_free(ov_model->core);
+            ov_infer_request_free(item->infer_request);
 #else
-        if (ov_model->exe_network)
-            ie_exec_network_free(&ov_model->exe_network);
-        if (ov_model->network)
-            ie_network_free(&ov_model->network);
-        if (ov_model->core)
-            ie_core_free(&ov_model->core);
-        av_free(ov_model->all_output_names);
-        av_free(ov_model->all_input_names);
+            ie_infer_request_free(&item->infer_request);
 #endif
-        av_opt_free(&ov_model->ctx);
-        av_freep(&ov_model);
-        av_freep(model);
+        }
+        av_freep(&item->lltasks);
+        av_freep(&item);
     }
+    ff_safe_queue_destroy(ov_model->request_queue);
+
+    while (ff_queue_size(ov_model->lltask_queue) != 0) {
+        LastLevelTaskItem *item = ff_queue_pop_front(ov_model->lltask_queue);
+        av_freep(&item);
+    }
+    ff_queue_destroy(ov_model->lltask_queue);
+
+    while (ff_queue_size(ov_model->task_queue) != 0) {
+        TaskItem *item = ff_queue_pop_front(ov_model->task_queue);
+        av_frame_free(&item->in_frame);
+        av_frame_free(&item->out_frame);
+        av_freep(&item);
+    }
+    ff_queue_destroy(ov_model->task_queue);
+#if HAVE_OPENVINO2
+    if (ov_model->preprocess)
+        ov_preprocess_prepostprocessor_free(ov_model->preprocess);
+    if (ov_model->compiled_model)
+        ov_compiled_model_free(ov_model->compiled_model);
+    if (ov_model->ov_model)
+        ov_model_free(ov_model->ov_model);
+    if (ov_model->core)
+        ov_core_free(ov_model->core);
+#else
+    if (ov_model->exe_network)
+        ie_exec_network_free(&ov_model->exe_network);
+    if (ov_model->network)
+        ie_network_free(&ov_model->network);
+    if (ov_model->core)
+        ie_core_free(&ov_model->core);
+    av_free(ov_model->all_output_names);
+    av_free(ov_model->all_input_names);
+#endif
+    av_opt_free(&ov_model->ctx);
+    av_freep(&ov_model);
+    av_freep(model);
 }
 
 
