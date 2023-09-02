@@ -337,13 +337,13 @@ static int vdpau_av1_init(AVCodecContext *avctx)
     uint32_t level = avctx->level;
 
     switch (avctx->profile) {
-    case FF_PROFILE_AV1_MAIN:
+    case AV_PROFILE_AV1_MAIN:
         profile = VDP_DECODER_PROFILE_AV1_MAIN;
         break;
-    case FF_PROFILE_AV1_HIGH:
+    case AV_PROFILE_AV1_HIGH:
         profile = VDP_DECODER_PROFILE_AV1_HIGH;
         break;
-    case FF_PROFILE_AV1_PROFESSIONAL:
+    case AV_PROFILE_AV1_PROFESSIONAL:
         profile = VDP_DECODER_PROFILE_AV1_PROFESSIONAL;
         break;
     default:

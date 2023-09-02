@@ -39,7 +39,7 @@
 #include "libavutil/time.h"
 #include "libavutil/time_internal.h"
 
-#include "libavcodec/avcodec.h"
+#include "libavcodec/defs.h"
 
 #include "avformat.h"
 #include "avio_internal.h"
@@ -369,12 +369,12 @@ static void write_codec_attr(AVStream *st, VariantStream *vs)
         }
     } else if (st->codecpar->codec_id == AV_CODEC_ID_HEVC) {
         uint8_t *data = st->codecpar->extradata;
-        int profile = FF_PROFILE_UNKNOWN;
-        int level = FF_LEVEL_UNKNOWN;
+        int profile = AV_PROFILE_UNKNOWN;
+        int level = AV_LEVEL_UNKNOWN;
 
-        if (st->codecpar->profile != FF_PROFILE_UNKNOWN)
+        if (st->codecpar->profile != AV_PROFILE_UNKNOWN)
             profile = st->codecpar->profile;
-        if (st->codecpar->level != FF_LEVEL_UNKNOWN)
+        if (st->codecpar->level != AV_LEVEL_UNKNOWN)
             level = st->codecpar->level;
 
         /* check the boundary of data which from current position is small than extradata_size */
@@ -407,8 +407,8 @@ static void write_codec_attr(AVStream *st, VariantStream *vs)
             data++;
         }
         if (st->codecpar->codec_tag == MKTAG('h','v','c','1') &&
-            profile != FF_PROFILE_UNKNOWN &&
-            level != FF_LEVEL_UNKNOWN) {
+            profile != AV_PROFILE_UNKNOWN &&
+            level != AV_LEVEL_UNKNOWN) {
             snprintf(attr, sizeof(attr), "%s.%d.4.L%d.B01", av_fourcc2str(st->codecpar->codec_tag), profile, level);
         } else
             goto fail;

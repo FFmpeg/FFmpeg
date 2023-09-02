@@ -346,7 +346,7 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
 
     ptl->general_lower_bit_rate_constraint_flag = 1;
 
-    if (avctx->level != FF_LEVEL_UNKNOWN) {
+    if (avctx->level != AV_LEVEL_UNKNOWN) {
         ptl->general_level_idc = avctx->level;
     } else {
         const H265LevelDescriptor *level;
@@ -1290,22 +1290,22 @@ static av_cold int vaapi_encode_h265_configure(AVCodecContext *avctx)
 }
 
 static const VAAPIEncodeProfile vaapi_encode_h265_profiles[] = {
-    { FF_PROFILE_HEVC_MAIN,     8, 3, 1, 1, VAProfileHEVCMain       },
-    { FF_PROFILE_HEVC_REXT,     8, 3, 1, 1, VAProfileHEVCMain       },
+    { AV_PROFILE_HEVC_MAIN,     8, 3, 1, 1, VAProfileHEVCMain       },
+    { AV_PROFILE_HEVC_REXT,     8, 3, 1, 1, VAProfileHEVCMain       },
 #if VA_CHECK_VERSION(0, 37, 0)
-    { FF_PROFILE_HEVC_MAIN_10, 10, 3, 1, 1, VAProfileHEVCMain10     },
-    { FF_PROFILE_HEVC_REXT,    10, 3, 1, 1, VAProfileHEVCMain10     },
+    { AV_PROFILE_HEVC_MAIN_10, 10, 3, 1, 1, VAProfileHEVCMain10     },
+    { AV_PROFILE_HEVC_REXT,    10, 3, 1, 1, VAProfileHEVCMain10     },
 #endif
 #if VA_CHECK_VERSION(1, 2, 0)
-    { FF_PROFILE_HEVC_REXT,    12, 3, 1, 1, VAProfileHEVCMain12 },
-    { FF_PROFILE_HEVC_REXT,     8, 3, 1, 0, VAProfileHEVCMain422_10 },
-    { FF_PROFILE_HEVC_REXT,    10, 3, 1, 0, VAProfileHEVCMain422_10 },
-    { FF_PROFILE_HEVC_REXT,    12, 3, 1, 0, VAProfileHEVCMain422_12 },
-    { FF_PROFILE_HEVC_REXT,     8, 3, 0, 0, VAProfileHEVCMain444 },
-    { FF_PROFILE_HEVC_REXT,    10, 3, 0, 0, VAProfileHEVCMain444_10 },
-    { FF_PROFILE_HEVC_REXT,    12, 3, 0, 0, VAProfileHEVCMain444_12 },
+    { AV_PROFILE_HEVC_REXT,    12, 3, 1, 1, VAProfileHEVCMain12 },
+    { AV_PROFILE_HEVC_REXT,     8, 3, 1, 0, VAProfileHEVCMain422_10 },
+    { AV_PROFILE_HEVC_REXT,    10, 3, 1, 0, VAProfileHEVCMain422_10 },
+    { AV_PROFILE_HEVC_REXT,    12, 3, 1, 0, VAProfileHEVCMain422_12 },
+    { AV_PROFILE_HEVC_REXT,     8, 3, 0, 0, VAProfileHEVCMain444 },
+    { AV_PROFILE_HEVC_REXT,    10, 3, 0, 0, VAProfileHEVCMain444_10 },
+    { AV_PROFILE_HEVC_REXT,    12, 3, 0, 0, VAProfileHEVCMain444_12 },
 #endif
-    { FF_PROFILE_UNKNOWN }
+    { AV_PROFILE_UNKNOWN }
 };
 
 static const VAAPIEncodeType vaapi_encode_type_h265 = {
@@ -1348,12 +1348,12 @@ static av_cold int vaapi_encode_h265_init(AVCodecContext *avctx)
 
     ctx->codec = &vaapi_encode_type_h265;
 
-    if (avctx->profile == FF_PROFILE_UNKNOWN)
+    if (avctx->profile == AV_PROFILE_UNKNOWN)
         avctx->profile = priv->profile;
-    if (avctx->level == FF_LEVEL_UNKNOWN)
+    if (avctx->level == AV_LEVEL_UNKNOWN)
         avctx->level = priv->level;
 
-    if (avctx->level != FF_LEVEL_UNKNOWN && avctx->level & ~0xff) {
+    if (avctx->level != AV_LEVEL_UNKNOWN && avctx->level & ~0xff) {
         av_log(avctx, AV_LOG_ERROR, "Invalid level %d: must fit "
                "in 8-bit unsigned integer.\n", avctx->level);
         return AVERROR(EINVAL);
@@ -1395,13 +1395,13 @@ static const AVOption vaapi_encode_h265_options[] = {
 
     { "profile", "Set profile (general_profile_idc)",
       OFFSET(profile), AV_OPT_TYPE_INT,
-      { .i64 = FF_PROFILE_UNKNOWN }, FF_PROFILE_UNKNOWN, 0xff, FLAGS, "profile" },
+      { .i64 = AV_PROFILE_UNKNOWN }, AV_PROFILE_UNKNOWN, 0xff, FLAGS, "profile" },
 
 #define PROFILE(name, value)  name, NULL, 0, AV_OPT_TYPE_CONST, \
       { .i64 = value }, 0, 0, FLAGS, "profile"
-    { PROFILE("main",               FF_PROFILE_HEVC_MAIN) },
-    { PROFILE("main10",             FF_PROFILE_HEVC_MAIN_10) },
-    { PROFILE("rext",               FF_PROFILE_HEVC_REXT) },
+    { PROFILE("main",               AV_PROFILE_HEVC_MAIN) },
+    { PROFILE("main10",             AV_PROFILE_HEVC_MAIN_10) },
+    { PROFILE("rext",               AV_PROFILE_HEVC_REXT) },
 #undef PROFILE
 
     { "tier", "Set tier (general_tier_flag)",
@@ -1414,7 +1414,7 @@ static const AVOption vaapi_encode_h265_options[] = {
 
     { "level", "Set level (general_level_idc)",
       OFFSET(level), AV_OPT_TYPE_INT,
-      { .i64 = FF_LEVEL_UNKNOWN }, FF_LEVEL_UNKNOWN, 0xff, FLAGS, "level" },
+      { .i64 = AV_LEVEL_UNKNOWN }, AV_LEVEL_UNKNOWN, 0xff, FLAGS, "level" },
 
 #define LEVEL(name, value) name, NULL, 0, AV_OPT_TYPE_CONST, \
       { .i64 = value }, 0, 0, FLAGS, "level"

@@ -1414,7 +1414,7 @@ static av_cold int vaapi_encode_profile_entrypoint(AVCodecContext *avctx)
 
     av_assert0(ctx->codec->profiles);
     for (i = 0; (ctx->codec->profiles[i].av_profile !=
-                 FF_PROFILE_UNKNOWN); i++) {
+                 AV_PROFILE_UNKNOWN); i++) {
         profile = &ctx->codec->profiles[i];
         if (depth               != profile->depth ||
             desc->nb_components != profile->nb_components)
@@ -1424,7 +1424,7 @@ static av_cold int vaapi_encode_profile_entrypoint(AVCodecContext *avctx)
              desc->log2_chroma_h != profile->log2_chroma_h))
             continue;
         if (avctx->profile != profile->av_profile &&
-            avctx->profile != FF_PROFILE_UNKNOWN)
+            avctx->profile != AV_PROFILE_UNKNOWN)
             continue;
 
 #if VA_CHECK_VERSION(1, 0, 0)

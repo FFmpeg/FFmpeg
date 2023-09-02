@@ -434,10 +434,10 @@ const char *avcodec_get_name(enum AVCodecID id)
 const char *av_get_profile_name(const AVCodec *codec, int profile)
 {
     const AVProfile *p;
-    if (profile == FF_PROFILE_UNKNOWN || !codec->profiles)
+    if (profile == AV_PROFILE_UNKNOWN || !codec->profiles)
         return NULL;
 
-    for (p = codec->profiles; p->profile != FF_PROFILE_UNKNOWN; p++)
+    for (p = codec->profiles; p->profile != AV_PROFILE_UNKNOWN; p++)
         if (p->profile == profile)
             return p->name;
 
@@ -449,10 +449,10 @@ const char *avcodec_profile_name(enum AVCodecID codec_id, int profile)
     const AVCodecDescriptor *desc = avcodec_descriptor_get(codec_id);
     const AVProfile *p;
 
-    if (profile == FF_PROFILE_UNKNOWN || !desc || !desc->profiles)
+    if (profile == AV_PROFILE_UNKNOWN || !desc || !desc->profiles)
         return NULL;
 
-    for (p = desc->profiles; p->profile != FF_PROFILE_UNKNOWN; p++)
+    for (p = desc->profiles; p->profile != AV_PROFILE_UNKNOWN; p++)
         if (p->profile == profile)
             return p->name;
 

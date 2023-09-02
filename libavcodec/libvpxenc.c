@@ -1145,7 +1145,7 @@ static av_cold int vpx_init(AVCodecContext *avctx,
     /* 0-3: For non-zero values the encoder increasingly optimizes for reduced
        complexity playback on low powered devices at the expense of encode
        quality. */
-    if (avctx->profile != FF_PROFILE_UNKNOWN)
+    if (avctx->profile != AV_PROFILE_UNKNOWN)
         enccfg.g_profile = avctx->profile;
 
     enccfg.g_error_resilient = ctx->error_resilient || ctx->flags & VP8F_ERROR_RESILIENT;

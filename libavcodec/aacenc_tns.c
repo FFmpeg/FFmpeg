@@ -167,7 +167,7 @@ void ff_aac_search_for_tns(AACEncContext *s, SingleChannelElement *sce)
     const int c_bits = is8 ? TNS_Q_BITS_IS8 == 4 : TNS_Q_BITS == 4;
     const int sfb_start = av_clip(tns_min_sfb[is8][s->samplerate_index], 0, mmm);
     const int sfb_end   = av_clip(sce->ics.num_swb, 0, mmm);
-    const int order = is8 ? 7 : s->profile == FF_PROFILE_AAC_LOW ? 12 : TNS_MAX_ORDER;
+    const int order = is8 ? 7 : s->profile == AV_PROFILE_AAC_LOW ? 12 : TNS_MAX_ORDER;
     const int slant = sce->ics.window_sequence[0] == LONG_STOP_SEQUENCE  ? 1 :
                       sce->ics.window_sequence[0] == LONG_START_SEQUENCE ? 0 : 2;
     const int sfb_len = sfb_end - sfb_start;

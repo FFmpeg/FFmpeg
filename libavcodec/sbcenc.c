@@ -199,7 +199,7 @@ static int sbc_encode_init(AVCodecContext *avctx)
     SBCEncContext *sbc = avctx->priv_data;
     struct sbc_frame *frame = &sbc->frame;
 
-    if (avctx->profile == FF_PROFILE_SBC_MSBC)
+    if (avctx->profile == AV_PROFILE_SBC_MSBC)
         sbc->msbc = 1;
 
     if (sbc->msbc) {
@@ -333,7 +333,7 @@ static const AVOption options[] = {
       OFFSET(max_delay), AV_OPT_TYPE_DURATION, {.i64 = 13000}, 1000,13000, AE },
     { "msbc",      "use mSBC mode (wideband speech mono SBC)",
       OFFSET(msbc),      AV_OPT_TYPE_BOOL,     {.i64 = 0},        0,    1, AE },
-    FF_AVCTX_PROFILE_OPTION("msbc", NULL, AUDIO, FF_PROFILE_SBC_MSBC)
+    FF_AVCTX_PROFILE_OPTION("msbc", NULL, AUDIO, AV_PROFILE_SBC_MSBC)
     { NULL },
 };
 

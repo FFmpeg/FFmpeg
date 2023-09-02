@@ -82,7 +82,7 @@ static int FUNC(color_config)(CodedBitstreamContext *ctx, RWContext *rw,
 
     flag(high_bitdepth);
 
-    if (seq_profile == FF_PROFILE_AV1_PROFESSIONAL &&
+    if (seq_profile == AV_PROFILE_AV1_PROFESSIONAL &&
         current->high_bitdepth) {
         flag(twelve_bit);
         priv->bit_depth = current->twelve_bit ? 12 : 10;
@@ -90,7 +90,7 @@ static int FUNC(color_config)(CodedBitstreamContext *ctx, RWContext *rw,
         priv->bit_depth = current->high_bitdepth ? 10 : 8;
     }
 
-    if (seq_profile == FF_PROFILE_AV1_HIGH)
+    if (seq_profile == AV_PROFILE_AV1_HIGH)
         infer(mono_chrome, 0);
     else
         flag(mono_chrome);
@@ -126,10 +126,10 @@ static int FUNC(color_config)(CodedBitstreamContext *ctx, RWContext *rw,
     } else {
         flag(color_range);
 
-        if (seq_profile == FF_PROFILE_AV1_MAIN) {
+        if (seq_profile == AV_PROFILE_AV1_MAIN) {
             infer(subsampling_x, 1);
             infer(subsampling_y, 1);
-        } else if (seq_profile == FF_PROFILE_AV1_HIGH) {
+        } else if (seq_profile == AV_PROFILE_AV1_HIGH) {
             infer(subsampling_x, 0);
             infer(subsampling_y, 0);
         } else {
@@ -190,8 +190,8 @@ static int FUNC(sequence_header_obu)(CodedBitstreamContext *ctx, RWContext *rw,
 
     HEADER("Sequence Header");
 
-    fc(3, seq_profile, FF_PROFILE_AV1_MAIN,
-                       FF_PROFILE_AV1_PROFESSIONAL);
+    fc(3, seq_profile, AV_PROFILE_AV1_MAIN,
+                       AV_PROFILE_AV1_PROFESSIONAL);
     flag(still_picture);
     flag(reduced_still_picture_header);
 

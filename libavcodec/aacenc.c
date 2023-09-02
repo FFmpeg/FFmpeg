@@ -1307,13 +1307,13 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
                                      avctx->bit_rate);
 
     /* Profile and option setting */
-    avctx->profile = avctx->profile == FF_PROFILE_UNKNOWN ? FF_PROFILE_AAC_LOW :
+    avctx->profile = avctx->profile == AV_PROFILE_UNKNOWN ? AV_PROFILE_AAC_LOW :
                      avctx->profile;
     for (i = 0; i < FF_ARRAY_ELEMS(aacenc_profiles); i++)
         if (avctx->profile == aacenc_profiles[i])
             break;
-    if (avctx->profile == FF_PROFILE_MPEG2_AAC_LOW) {
-        avctx->profile = FF_PROFILE_AAC_LOW;
+    if (avctx->profile == AV_PROFILE_MPEG2_AAC_LOW) {
+        avctx->profile = AV_PROFILE_AAC_LOW;
         ERROR_IF(s->options.pred,
                  "Main prediction unavailable in the \"mpeg2_aac_low\" profile\n");
         ERROR_IF(s->options.ltp,
@@ -1321,22 +1321,22 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         WARN_IF(s->options.pns,
                 "PNS unavailable in the \"mpeg2_aac_low\" profile, turning off\n");
         s->options.pns = 0;
-    } else if (avctx->profile == FF_PROFILE_AAC_LTP) {
+    } else if (avctx->profile == AV_PROFILE_AAC_LTP) {
         s->options.ltp = 1;
         ERROR_IF(s->options.pred,
                  "Main prediction unavailable in the \"aac_ltp\" profile\n");
-    } else if (avctx->profile == FF_PROFILE_AAC_MAIN) {
+    } else if (avctx->profile == AV_PROFILE_AAC_MAIN) {
         s->options.pred = 1;
         ERROR_IF(s->options.ltp,
                  "LTP prediction unavailable in the \"aac_main\" profile\n");
     } else if (s->options.ltp) {
-        avctx->profile = FF_PROFILE_AAC_LTP;
+        avctx->profile = AV_PROFILE_AAC_LTP;
         WARN_IF(1,
                 "Chainging profile to \"aac_ltp\"\n");
         ERROR_IF(s->options.pred,
                  "Main prediction unavailable in the \"aac_ltp\" profile\n");
     } else if (s->options.pred) {
-        avctx->profile = FF_PROFILE_AAC_MAIN;
+        avctx->profile = AV_PROFILE_AAC_MAIN;
         WARN_IF(1,
                 "Chainging profile to \"aac_main\"\n");
         ERROR_IF(s->options.ltp,

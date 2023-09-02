@@ -128,10 +128,10 @@ static int vdpau_mpeg2_init(AVCodecContext *avctx)
     VdpDecoderProfile profile;
 
     switch (avctx->profile) {
-    case FF_PROFILE_MPEG2_MAIN:
+    case AV_PROFILE_MPEG2_MAIN:
         profile = VDP_DECODER_PROFILE_MPEG2_MAIN;
         break;
-    case FF_PROFILE_MPEG2_SIMPLE:
+    case AV_PROFILE_MPEG2_SIMPLE:
         profile = VDP_DECODER_PROFILE_MPEG2_SIMPLE;
         break;
     default:

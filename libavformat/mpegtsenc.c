@@ -28,8 +28,8 @@
 #include "libavutil/opt.h"
 
 #include "libavcodec/ac3_parser_internal.h"
-#include "libavcodec/avcodec.h"
 #include "libavcodec/bytestream.h"
+#include "libavcodec/defs.h"
 #include "libavcodec/h264.h"
 #include "libavcodec/startcode.h"
 
@@ -300,11 +300,11 @@ static int put_arib_caption_descriptor(AVFormatContext *s, uint8_t **q_ptr,
     uint8_t *q = *q_ptr;
 
     switch (codecpar->profile) {
-    case FF_PROFILE_ARIB_PROFILE_A:
+    case AV_PROFILE_ARIB_PROFILE_A:
         stream_identifier = 0x30;
         data_component_id = 0x0008;
         break;
-    case FF_PROFILE_ARIB_PROFILE_C:
+    case AV_PROFILE_ARIB_PROFILE_C:
         stream_identifier = 0x87;
         data_component_id = 0x0012;
         break;
@@ -431,7 +431,7 @@ static int get_dvb_stream_type(AVFormatContext *s, AVStream *st)
         stream_type = STREAM_TYPE_PRIVATE_DATA;
         break;
     case AV_CODEC_ID_SMPTE_KLV:
-        if (st->codecpar->profile == FF_PROFILE_KLVA_SYNC) {
+        if (st->codecpar->profile == AV_PROFILE_KLVA_SYNC) {
             stream_type = STREAM_TYPE_METADATA;
         } else {
             stream_type = STREAM_TYPE_PRIVATE_DATA;

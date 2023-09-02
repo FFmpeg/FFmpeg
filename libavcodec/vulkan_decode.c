@@ -696,8 +696,8 @@ static VkResult vulkan_setup_profile(AVCodecContext *avctx,
 
         /* Vulkan transmits all the constrant_set flags, rather than wanting them
          * merged in the profile IDC */
-        h264_profile->stdProfileIdc = cur_profile & ~(FF_PROFILE_H264_CONSTRAINED |
-                                                      FF_PROFILE_H264_INTRA);
+        h264_profile->stdProfileIdc = cur_profile & ~(AV_PROFILE_H264_CONSTRAINED |
+                                                      AV_PROFILE_H264_INTRA);
 
         h264_profile->pictureLayout = avctx->field_order == AV_FIELD_UNKNOWN ||
                                       avctx->field_order == AV_FIELD_PROGRESSIVE ?
@@ -789,8 +789,8 @@ static int vulkan_decode_get_profile(AVCodecContext *avctx, AVBufferRef *frames_
     }
 
     cur_profile = avctx->profile;
-    base_profile = avctx->codec_id == AV_CODEC_ID_H264 ? FF_PROFILE_H264_CONSTRAINED_BASELINE :
-                   avctx->codec_id == AV_CODEC_ID_H265 ? FF_PROFILE_HEVC_MAIN :
+    base_profile = avctx->codec_id == AV_CODEC_ID_H264 ? AV_PROFILE_H264_CONSTRAINED_BASELINE :
+                   avctx->codec_id == AV_CODEC_ID_H265 ? AV_PROFILE_HEVC_MAIN :
                    avctx->codec_id == AV_CODEC_ID_AV1  ? STD_VIDEO_AV1_MESA_PROFILE_MAIN :
                    0;
 

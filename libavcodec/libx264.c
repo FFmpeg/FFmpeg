@@ -1048,22 +1048,22 @@ static av_cold int X264_init(AVCodecContext *avctx)
     /* Allow specifying the x264 profile through AVCodecContext. */
     if (!x4->profile)
         switch (avctx->profile) {
-        case FF_PROFILE_H264_BASELINE:
+        case AV_PROFILE_H264_BASELINE:
             x4->profile = "baseline";
             break;
-        case FF_PROFILE_H264_HIGH:
+        case AV_PROFILE_H264_HIGH:
             x4->profile = "high";
             break;
-        case FF_PROFILE_H264_HIGH_10:
+        case AV_PROFILE_H264_HIGH_10:
             x4->profile = "high10";
             break;
-        case FF_PROFILE_H264_HIGH_422:
+        case AV_PROFILE_H264_HIGH_422:
             x4->profile = "high422";
             break;
-        case FF_PROFILE_H264_HIGH_444:
+        case AV_PROFILE_H264_HIGH_444:
             x4->profile = "high444";
             break;
-        case FF_PROFILE_H264_MAIN:
+        case AV_PROFILE_H264_MAIN:
             x4->profile = "main";
             break;
         default:

@@ -134,7 +134,7 @@ typedef struct VAAPIEncodePicture {
 } VAAPIEncodePicture;
 
 typedef struct VAAPIEncodeProfile {
-    // lavc profile value (FF_PROFILE_*).
+    // lavc profile value (AV_PROFILE_*).
     int       av_profile;
     // Supported bit depth.
     int       depth;
@@ -384,7 +384,7 @@ enum {
 
 typedef struct VAAPIEncodeType {
     // List of supported profiles and corresponding VAAPI profiles.
-    // (Must end with FF_PROFILE_UNKNOWN.)
+    // (Must end with AV_PROFILE_UNKNOWN.)
     const VAAPIEncodeProfile *profiles;
 
     // Codec feature flags.

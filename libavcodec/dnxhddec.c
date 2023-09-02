@@ -160,17 +160,17 @@ static int dnxhd_get_profile(int cid)
 {
     switch(cid) {
     case 1270:
-        return FF_PROFILE_DNXHR_444;
+        return AV_PROFILE_DNXHR_444;
     case 1271:
-        return FF_PROFILE_DNXHR_HQX;
+        return AV_PROFILE_DNXHR_HQX;
     case 1272:
-        return FF_PROFILE_DNXHR_HQ;
+        return AV_PROFILE_DNXHR_HQ;
     case 1273:
-        return FF_PROFILE_DNXHR_SQ;
+        return AV_PROFILE_DNXHR_SQ;
     case 1274:
-        return FF_PROFILE_DNXHR_LB;
+        return AV_PROFILE_DNXHR_LB;
     }
-    return FF_PROFILE_DNXHD;
+    return AV_PROFILE_DNXHD;
 }
 
 static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
@@ -262,7 +262,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
         ctx->decode_dct_block = dnxhd_decode_dct_block_12;
         ctx->pix_fmt = AV_PIX_FMT_YUV422P12;
     } else if (bitdepth == 10) {
-        if (ctx->avctx->profile == FF_PROFILE_DNXHR_HQX)
+        if (ctx->avctx->profile == AV_PROFILE_DNXHR_HQX)
             ctx->decode_dct_block = dnxhd_decode_dct_block_10_444;
         else
             ctx->decode_dct_block = dnxhd_decode_dct_block_10;

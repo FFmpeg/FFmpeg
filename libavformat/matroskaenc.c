@@ -59,9 +59,9 @@
 #include "libavutil/stereo3d.h"
 
 #include "libavcodec/av1.h"
-#include "libavcodec/avcodec.h"
 #include "libavcodec/bytestream.h"
 #include "libavcodec/codec_desc.h"
+#include "libavcodec/defs.h"
 #include "libavcodec/xiph.h"
 #include "libavcodec/mpeg4audio.h"
 
@@ -1154,11 +1154,11 @@ static int mkv_assemble_native_codecprivate(AVFormatContext *s, AVIOContext *dyn
     case AV_CODEC_ID_ARIB_CAPTION: {
         unsigned stream_identifier, data_component_id;
         switch (par->profile) {
-        case FF_PROFILE_ARIB_PROFILE_A:
+        case AV_PROFILE_ARIB_PROFILE_A:
             stream_identifier = 0x30;
             data_component_id = 0x0008;
             break;
-        case FF_PROFILE_ARIB_PROFILE_C:
+        case AV_PROFILE_ARIB_PROFILE_C:
             stream_identifier = 0x87;
             data_component_id = 0x0012;
             break;

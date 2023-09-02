@@ -452,7 +452,7 @@ static int aribcaption_trans_bitmap_subtitle(ARIBCaptionContext *ctx)
             goto fail;
         }
 
-        if (ctx->avctx->profile == FF_PROFILE_ARIB_PROFILE_C) {
+        if (ctx->avctx->profile == AV_PROFILE_ARIB_PROFILE_C) {
             /* ARIB TR-B14 version 3.8 Fascicle 1-(2/2) Volume 3 [Section 4] */
             /* No position information is provided for profile C */
             rect->x = (ctx->frame_width - rect->w) / 2;
@@ -594,7 +594,7 @@ static int aribcaption_trans_ass_subtitle(ARIBCaptionContext *ctx)
 
     /* ARIB TR-B14 version 3.8 Fascicle 1-(2/2) Volume 3 [Section 4] */
     /* No position information is provided for profile C */
-    if (ctx->avctx->profile == FF_PROFILE_ARIB_PROFILE_C)
+    if (ctx->avctx->profile == AV_PROFILE_ARIB_PROFILE_C)
         single_rect = true;
 
     sub->format = 1; /* text */
@@ -606,7 +606,7 @@ static int aribcaption_trans_ass_subtitle(ARIBCaptionContext *ctx)
 
     av_bprint_init(&buf, ARIBC_BPRINT_SIZE_INIT, ARIBC_BPRINT_SIZE_MAX);
 
-    if (single_rect && ctx->avctx->profile != FF_PROFILE_ARIB_PROFILE_C) {
+    if (single_rect && ctx->avctx->profile != AV_PROFILE_ARIB_PROFILE_C) {
         int x, y, rx, ry;
         x = ctx->plane_width;
         y = ctx->plane_height;
@@ -660,7 +660,7 @@ static int aribcaption_trans_ass_subtitle(ARIBCaptionContext *ctx)
         for (int j = 0; j < region->char_count; j++) {
             aribcc_caption_char_t *ch = &region->chars[j];
 
-            if (ctx->avctx->profile != FF_PROFILE_ARIB_PROFILE_C) {
+            if (ctx->avctx->profile != AV_PROFILE_ARIB_PROFILE_C) {
                 if (ch->char_horizontal_spacing != char_horizontal_spacing) {
                     av_bprintf(&buf, "{\\fsp%d}", (region->is_ruby) ?
                                      ch->char_horizontal_spacing / 2 :
@@ -960,14 +960,14 @@ static int aribcaption_init(AVCodecContext *avctx)
     ctx->avctx = avctx;
 
     switch (avctx->profile) {
-    case FF_PROFILE_ARIB_PROFILE_A:
+    case AV_PROFILE_ARIB_PROFILE_A:
         profile = ARIBCC_PROFILE_A;
         /* assume 960x540 at initial state */
         ctx->plane_width = 960;
         ctx->plane_height = 540;
         ctx->font_size = 36;
         break;
-    case FF_PROFILE_ARIB_PROFILE_C:
+    case AV_PROFILE_ARIB_PROFILE_C:
         profile = ARIBCC_PROFILE_C;
         ctx->plane_width = 320;
         ctx->plane_height = 180;

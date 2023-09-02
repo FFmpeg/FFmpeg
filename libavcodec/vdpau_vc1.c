@@ -121,13 +121,13 @@ static int vdpau_vc1_init(AVCodecContext *avctx)
     VdpDecoderProfile profile;
 
     switch (avctx->profile) {
-    case FF_PROFILE_VC1_SIMPLE:
+    case AV_PROFILE_VC1_SIMPLE:
         profile = VDP_DECODER_PROFILE_VC1_SIMPLE;
         break;
-    case FF_PROFILE_VC1_MAIN:
+    case AV_PROFILE_VC1_MAIN:
         profile = VDP_DECODER_PROFILE_VC1_MAIN;
         break;
-    case FF_PROFILE_VC1_ADVANCED:
+    case AV_PROFILE_VC1_ADVANCED:
         profile = VDP_DECODER_PROFILE_VC1_ADVANCED;
         break;
     default:

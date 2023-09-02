@@ -127,26 +127,26 @@ static int set_pix_fmt(AVCodecContext *avctx, struct vpx_image *img,
     switch (img->fmt) {
     case VPX_IMG_FMT_I420:
         if (avctx->codec_id == AV_CODEC_ID_VP9)
-            avctx->profile = FF_PROFILE_VP9_0;
+            avctx->profile = AV_PROFILE_VP9_0;
         avctx->pix_fmt =
             has_alpha_channel ? AV_PIX_FMT_YUVA420P : AV_PIX_FMT_YUV420P;
         return 0;
 #if CONFIG_LIBVPX_VP9_DECODER
     case VPX_IMG_FMT_I422:
-        avctx->profile = FF_PROFILE_VP9_1;
+        avctx->profile = AV_PROFILE_VP9_1;
         avctx->pix_fmt = AV_PIX_FMT_YUV422P;
         return 0;
     case VPX_IMG_FMT_I440:
-        avctx->profile = FF_PROFILE_VP9_1;
+        avctx->profile = AV_PROFILE_VP9_1;
         avctx->pix_fmt = AV_PIX_FMT_YUV440P;
         return 0;
     case VPX_IMG_FMT_I444:
-        avctx->profile = FF_PROFILE_VP9_1;
+        avctx->profile = AV_PROFILE_VP9_1;
         avctx->pix_fmt = avctx->colorspace == AVCOL_SPC_RGB ?
                          AV_PIX_FMT_GBRP : AV_PIX_FMT_YUV444P;
         return 0;
     case VPX_IMG_FMT_I42016:
-        avctx->profile = FF_PROFILE_VP9_2;
+        avctx->profile = AV_PROFILE_VP9_2;
         if (img->bit_depth == 10) {
             avctx->pix_fmt = AV_PIX_FMT_YUV420P10;
             return 0;
@@ -157,7 +157,7 @@ static int set_pix_fmt(AVCodecContext *avctx, struct vpx_image *img,
             return AVERROR_INVALIDDATA;
         }
     case VPX_IMG_FMT_I42216:
-        avctx->profile = FF_PROFILE_VP9_3;
+        avctx->profile = AV_PROFILE_VP9_3;
         if (img->bit_depth == 10) {
             avctx->pix_fmt = AV_PIX_FMT_YUV422P10;
             return 0;
@@ -168,7 +168,7 @@ static int set_pix_fmt(AVCodecContext *avctx, struct vpx_image *img,
             return AVERROR_INVALIDDATA;
         }
     case VPX_IMG_FMT_I44016:
-        avctx->profile = FF_PROFILE_VP9_3;
+        avctx->profile = AV_PROFILE_VP9_3;
         if (img->bit_depth == 10) {
             avctx->pix_fmt = AV_PIX_FMT_YUV440P10;
             return 0;
@@ -179,7 +179,7 @@ static int set_pix_fmt(AVCodecContext *avctx, struct vpx_image *img,
             return AVERROR_INVALIDDATA;
         }
     case VPX_IMG_FMT_I44416:
-        avctx->profile = FF_PROFILE_VP9_3;
+        avctx->profile = AV_PROFILE_VP9_3;
         if (img->bit_depth == 10) {
             avctx->pix_fmt = avctx->colorspace == AVCOL_SPC_RGB ?
                              AV_PIX_FMT_GBRP10 : AV_PIX_FMT_YUV444P10;

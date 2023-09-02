@@ -52,6 +52,7 @@
 #include "libavutil/mastering_display_metadata.h"
 #include "libavutil/mathematics.h"
 #include "libavcodec/bytestream.h"
+#include "libavcodec/defs.h"
 #include "libavcodec/internal.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/dict_internal.h"
@@ -1403,8 +1404,8 @@ static int mxf_read_generic_descriptor(void *arg, AVIOContext *pb, int tag, int 
         }
         if (IS_KLV_KEY(uid, mxf_jp2k_rsiz)) {
             uint32_t rsiz = avio_rb16(pb);
-            if (rsiz == FF_PROFILE_JPEG2000_DCINEMA_2K ||
-                rsiz == FF_PROFILE_JPEG2000_DCINEMA_4K)
+            if (rsiz == AV_PROFILE_JPEG2000_DCINEMA_2K ||
+                rsiz == AV_PROFILE_JPEG2000_DCINEMA_4K)
                 descriptor->pix_fmt = AV_PIX_FMT_XYZ12;
         }
         if (IS_KLV_KEY(uid, mxf_mastering_display_prefix)) {

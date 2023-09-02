@@ -916,7 +916,7 @@ static void mpeg4_encode_visual_object_header(MpegEncContext *s)
     int profile_and_level_indication;
     int vo_ver_id;
 
-    if (s->avctx->profile != FF_PROFILE_UNKNOWN) {
+    if (s->avctx->profile != AV_PROFILE_UNKNOWN) {
         profile_and_level_indication = s->avctx->profile << 4;
     } else if (s->max_b_frames || s->quarter_sample) {
         profile_and_level_indication = 0xF0;  // adv simple
@@ -924,7 +924,7 @@ static void mpeg4_encode_visual_object_header(MpegEncContext *s)
         profile_and_level_indication = 0x00;  // simple
     }
 
-    if (s->avctx->level != FF_LEVEL_UNKNOWN)
+    if (s->avctx->level != AV_LEVEL_UNKNOWN)
         profile_and_level_indication |= s->avctx->level;
     else
         profile_and_level_indication |= 1;   // level 1

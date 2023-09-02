@@ -1744,7 +1744,7 @@ int ff_dca_lbr_filter_frame(DCALbrDecoder *s, AVFrame *frame)
     avctx->sample_rate = s->sample_rate;
     avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
     avctx->bits_per_raw_sample = 0;
-    avctx->profile = FF_PROFILE_DTS_EXPRESS;
+    avctx->profile = AV_PROFILE_DTS_EXPRESS;
     avctx->bit_rate = s->bit_rate_scaled;
 
     if (s->flags & LBR_FLAG_LFE_PRESENT) {

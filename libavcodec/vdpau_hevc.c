@@ -519,16 +519,16 @@ static int vdpau_hevc_init(AVCodecContext *avctx)
     int ret;
 
     switch (avctx->profile) {
-    case FF_PROFILE_HEVC_MAIN:
+    case AV_PROFILE_HEVC_MAIN:
         profile = VDP_DECODER_PROFILE_HEVC_MAIN;
         break;
-    case FF_PROFILE_HEVC_MAIN_10:
+    case AV_PROFILE_HEVC_MAIN_10:
         profile = VDP_DECODER_PROFILE_HEVC_MAIN_10;
         break;
-    case FF_PROFILE_HEVC_MAIN_STILL_PICTURE:
+    case AV_PROFILE_HEVC_MAIN_STILL_PICTURE:
         profile = VDP_DECODER_PROFILE_HEVC_MAIN_STILL;
         break;
-    case FF_PROFILE_HEVC_REXT:
+    case AV_PROFILE_HEVC_REXT:
         ret = vdpau_hevc_parse_rext_profile(avctx, &profile);
         if (ret)
             return AVERROR(ENOTSUP);

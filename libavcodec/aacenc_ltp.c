@@ -37,7 +37,7 @@ void ff_aac_encode_ltp_info(AACEncContext *s, SingleChannelElement *sce,
 {
     int i;
     IndividualChannelStream *ics = &sce->ics;
-    if (s->profile != FF_PROFILE_AAC_LTP || !ics->predictor_present)
+    if (s->profile != AV_PROFILE_AAC_LTP || !ics->predictor_present)
         return;
     if (common_window)
         put_bits(&s->pb, 1, 0);
@@ -119,7 +119,7 @@ void ff_aac_update_ltp(AACEncContext *s, SingleChannelElement *sce)
     float *pred_signal = &sce->ltp_state[0];
     const float *samples = &s->planar_samples[s->cur_channel][1024];
 
-    if (s->profile != FF_PROFILE_AAC_LTP)
+    if (s->profile != AV_PROFILE_AAC_LTP)
         return;
 
     /* Calculate lag */

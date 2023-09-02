@@ -2486,9 +2486,9 @@ redo_for_pal8:
         case SOF0:
         case SOF1:
             if (start_code == SOF0)
-                s->avctx->profile = FF_PROFILE_MJPEG_HUFFMAN_BASELINE_DCT;
+                s->avctx->profile = AV_PROFILE_MJPEG_HUFFMAN_BASELINE_DCT;
             else
-                s->avctx->profile = FF_PROFILE_MJPEG_HUFFMAN_EXTENDED_SEQUENTIAL_DCT;
+                s->avctx->profile = AV_PROFILE_MJPEG_HUFFMAN_EXTENDED_SEQUENTIAL_DCT;
             s->lossless    = 0;
             s->ls          = 0;
             s->progressive = 0;
@@ -2496,7 +2496,7 @@ redo_for_pal8:
                 goto fail;
             break;
         case SOF2:
-            s->avctx->profile = FF_PROFILE_MJPEG_HUFFMAN_PROGRESSIVE_DCT;
+            s->avctx->profile = AV_PROFILE_MJPEG_HUFFMAN_PROGRESSIVE_DCT;
             s->lossless    = 0;
             s->ls          = 0;
             s->progressive = 1;
@@ -2504,7 +2504,7 @@ redo_for_pal8:
                 goto fail;
             break;
         case SOF3:
-            s->avctx->profile     = FF_PROFILE_MJPEG_HUFFMAN_LOSSLESS;
+            s->avctx->profile     = AV_PROFILE_MJPEG_HUFFMAN_LOSSLESS;
             s->avctx->properties |= FF_CODEC_PROPERTY_LOSSLESS;
             s->lossless    = 1;
             s->ls          = 0;
@@ -2513,7 +2513,7 @@ redo_for_pal8:
                 goto fail;
             break;
         case SOF48:
-            s->avctx->profile     = FF_PROFILE_MJPEG_JPEG_LS;
+            s->avctx->profile     = AV_PROFILE_MJPEG_JPEG_LS;
             s->avctx->properties |= FF_CODEC_PROPERTY_LOSSLESS;
             s->lossless    = 1;
             s->ls          = 1;

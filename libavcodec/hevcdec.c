@@ -3082,7 +3082,7 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
             if (ret < 0)
                 goto fail;
         } else {
-            if (s->avctx->profile == FF_PROFILE_HEVC_SCC) {
+            if (s->avctx->profile == AV_PROFILE_HEVC_SCC) {
                 av_log(s->avctx, AV_LOG_ERROR,
                        "SCC profile is not yet implemented in hevc native decoder.\n");
                 ret = AVERROR_PATCHWELCOME;

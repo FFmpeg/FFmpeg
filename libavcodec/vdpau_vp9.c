@@ -203,16 +203,16 @@ static int vdpau_vp9_init(AVCodecContext *avctx)
     uint32_t level = avctx->level;
 
     switch (avctx->profile) {
-    case FF_PROFILE_VP9_0:
+    case AV_PROFILE_VP9_0:
         profile = VDP_DECODER_PROFILE_VP9_PROFILE_0;
         break;
-    case FF_PROFILE_VP9_1:
+    case AV_PROFILE_VP9_1:
         profile = VDP_DECODER_PROFILE_VP9_PROFILE_1;
         break;
-    case FF_PROFILE_VP9_2:
+    case AV_PROFILE_VP9_2:
         profile = VDP_DECODER_PROFILE_VP9_PROFILE_2;
         break;
-    case FF_PROFILE_VP9_3:
+    case AV_PROFILE_VP9_3:
         profile = VDP_DECODER_PROFILE_VP9_PROFILE_3;
         break;
     default:

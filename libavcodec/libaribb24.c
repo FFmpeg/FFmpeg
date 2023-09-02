@@ -49,13 +49,13 @@ static unsigned int get_profile_font_size(AVCodecContext *avctx)
     Libaribb24Context *b24 = avctx->priv_data;
     int profile = avctx->profile;
 
-    if (profile == FF_PROFILE_UNKNOWN)
+    if (profile == AV_PROFILE_UNKNOWN)
         profile = b24->default_profile;
 
     switch (profile) {
-    case FF_PROFILE_ARIB_PROFILE_A:
+    case AV_PROFILE_ARIB_PROFILE_A:
         return 36;
-    case FF_PROFILE_ARIB_PROFILE_C:
+    case AV_PROFILE_ARIB_PROFILE_C:
         return 18;
     default:
         return 0;
@@ -75,15 +75,15 @@ static int libaribb24_generate_ass_header(AVCodecContext *avctx)
     unsigned int font_size = 0;
     int profile = avctx->profile;
 
-    if (profile == FF_PROFILE_UNKNOWN)
+    if (profile == AV_PROFILE_UNKNOWN)
         profile = b24->default_profile;
 
     switch (profile) {
-    case FF_PROFILE_ARIB_PROFILE_A:
+    case AV_PROFILE_ARIB_PROFILE_A:
         plane_width = 960;
         plane_height = 540;
         break;
-    case FF_PROFILE_ARIB_PROFILE_C:
+    case AV_PROFILE_ARIB_PROFILE_C:
         plane_width = 320;
         plane_height = 180;
         break;
@@ -172,14 +172,14 @@ static int libaribb24_init(AVCodecContext *avctx)
         goto init_fail;
     }
 
-    if (profile == FF_PROFILE_UNKNOWN)
+    if (profile == AV_PROFILE_UNKNOWN)
         profile = b24->default_profile;
 
     switch (profile) {
-    case FF_PROFILE_ARIB_PROFILE_A:
+    case AV_PROFILE_ARIB_PROFILE_A:
         arib_dec_init = arib_initialize_decoder_a_profile;
         break;
-    case FF_PROFILE_ARIB_PROFILE_C:
+    case AV_PROFILE_ARIB_PROFILE_C:
         arib_dec_init = arib_initialize_decoder_c_profile;
         break;
     default:
@@ -390,9 +390,9 @@ static const AVOption options[] = {
     { "aribb24-skip-ruby-text", "skip ruby text blocks during decoding",
       OFFSET(aribb24_skip_ruby), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, SD },
     { "default_profile", "default profile to use if not specified in the stream parameters",
-      OFFSET(default_profile), AV_OPT_TYPE_INT, { .i64 = FF_PROFILE_UNKNOWN }, FF_PROFILE_UNKNOWN, FF_PROFILE_ARIB_PROFILE_C, SD, "profile" },
-        {"a", "Profile A", 0, AV_OPT_TYPE_CONST, {.i64 = FF_PROFILE_ARIB_PROFILE_A}, INT_MIN, INT_MAX, SD, "profile"},
-        {"c", "Profile C", 0, AV_OPT_TYPE_CONST, {.i64 = FF_PROFILE_ARIB_PROFILE_C}, INT_MIN, INT_MAX, SD, "profile"},
+      OFFSET(default_profile), AV_OPT_TYPE_INT, { .i64 = AV_PROFILE_UNKNOWN }, AV_PROFILE_UNKNOWN, AV_PROFILE_ARIB_PROFILE_C, SD, "profile" },
+        {"a", "Profile A", 0, AV_OPT_TYPE_CONST, {.i64 = AV_PROFILE_ARIB_PROFILE_A}, INT_MIN, INT_MAX, SD, "profile"},
+        {"c", "Profile C", 0, AV_OPT_TYPE_CONST, {.i64 = AV_PROFILE_ARIB_PROFILE_C}, INT_MIN, INT_MAX, SD, "profile"},
     { NULL }
 };
 

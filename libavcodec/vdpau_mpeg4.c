@@ -95,13 +95,13 @@ static int vdpau_mpeg4_init(AVCodecContext *avctx)
     VdpDecoderProfile profile;
 
     switch (avctx->profile) {
-    case FF_PROFILE_MPEG4_SIMPLE:
+    case AV_PROFILE_MPEG4_SIMPLE:
         profile = VDP_DECODER_PROFILE_MPEG4_PART2_SP;
         break;
     // As any ASP decoder must be able to decode SP, this
     // should be a safe fallback if profile is unknown/unspecified.
-    case FF_PROFILE_UNKNOWN:
-    case FF_PROFILE_MPEG4_ADVANCED_SIMPLE:
+    case AV_PROFILE_UNKNOWN:
+    case AV_PROFILE_MPEG4_ADVANCED_SIMPLE:
         profile = VDP_DECODER_PROFILE_MPEG4_PART2_ASP;
         break;
     default:

@@ -179,7 +179,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     AACENC_InfoStruct info = { 0 };
     CHANNEL_MODE mode;
     AACENC_ERROR err;
-    int aot = FF_PROFILE_AAC_LOW + 1;
+    int aot = AV_PROFILE_AAC_LOW + 1;
     int sce = 0, cpe = 0;
 
     if ((err = aacEncOpen(&s->handle, 0, avctx->ch_layout.nb_channels)) != AACENC_OK) {
@@ -188,7 +188,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         goto error;
     }
 
-    if (avctx->profile != FF_PROFILE_UNKNOWN)
+    if (avctx->profile != AV_PROFILE_UNKNOWN)
         aot = avctx->profile + 1;
 
     if ((err = aacEncoder_SetParam(s->handle, AACENC_AOT, aot)) != AACENC_OK) {
@@ -197,7 +197,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         goto error;
     }
 
-    if (aot == FF_PROFILE_AAC_ELD + 1 && s->eld_sbr) {
+    if (aot == AV_PROFILE_AAC_ELD + 1 && s->eld_sbr) {
         if ((err = aacEncoder_SetParam(s->handle, AACENC_SBR_MODE,
                                        1)) != AACENC_OK) {
             av_log(avctx, AV_LOG_ERROR, "Unable to enable SBR for ELD: %s\n",
@@ -227,7 +227,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     case 2:
 #if FDKENC_VER_AT_LEAST(4, 0) // 4.0.0
       // (profile + 1) to map from profile range to AOT range
-      if (aot == FF_PROFILE_AAC_ELD + 1 && s->eld_v2) {
+      if (aot == AV_PROFILE_AAC_ELD + 1 && s->eld_v2) {
           if ((err = aacEncoder_SetParam(s->handle, AACENC_CHANNELMODE,
                                          128)) != AACENC_OK) {
               av_log(avctx, AV_LOG_ERROR, "Unable to enable ELDv2: %s\n",
@@ -310,14 +310,14 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         }
     } else {
         if (avctx->bit_rate <= 0) {
-            if (avctx->profile == FF_PROFILE_AAC_HE_V2) {
+            if (avctx->profile == AV_PROFILE_AAC_HE_V2) {
                 sce = 1;
                 cpe = 0;
             }
             avctx->bit_rate = (96*sce + 128*cpe) * avctx->sample_rate / 44;
-            if (avctx->profile == FF_PROFILE_AAC_HE ||
-                avctx->profile == FF_PROFILE_AAC_HE_V2 ||
-                avctx->profile == FF_PROFILE_MPEG2_AAC_HE ||
+            if (avctx->profile == AV_PROFILE_AAC_HE ||
+                avctx->profile == AV_PROFILE_AAC_HE_V2 ||
+                avctx->profile == AV_PROFILE_MPEG2_AAC_HE ||
                 s->eld_sbr)
                 avctx->bit_rate /= 2;
         }
@@ -544,12 +544,12 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 }
 
 static const AVProfile profiles[] = {
-    { FF_PROFILE_AAC_LOW,   "LC"       },
-    { FF_PROFILE_AAC_HE,    "HE-AAC"   },
-    { FF_PROFILE_AAC_HE_V2, "HE-AACv2" },
-    { FF_PROFILE_AAC_LD,    "LD"       },
-    { FF_PROFILE_AAC_ELD,   "ELD"      },
-    { FF_PROFILE_UNKNOWN },
+    { AV_PROFILE_AAC_LOW,   "LC"       },
+    { AV_PROFILE_AAC_HE,    "HE-AAC"   },
+    { AV_PROFILE_AAC_HE_V2, "HE-AACv2" },
+    { AV_PROFILE_AAC_LD,    "LD"       },
+    { AV_PROFILE_AAC_ELD,   "ELD"      },
+    { AV_PROFILE_UNKNOWN },
 };
 
 static const FFCodecDefault aac_encode_defaults[] = {

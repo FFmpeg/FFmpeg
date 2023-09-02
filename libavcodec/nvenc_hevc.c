@@ -57,7 +57,7 @@ static const AVOption options[] = {
     { "ull",         "Ultra low latency",                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_TUNING_INFO_ULTRA_LOW_LATENCY },        0, 0, VE, "tune" },
     { "lossless",    "Lossless",                            0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_TUNING_INFO_LOSSLESS },                 0, 0, VE, "tune" },
 #endif
-    { "profile",      "Set the encoding profile",           OFFSET(profile),      AV_OPT_TYPE_INT,   { .i64 = NV_ENC_HEVC_PROFILE_MAIN }, NV_ENC_HEVC_PROFILE_MAIN, FF_PROFILE_HEVC_REXT, VE, "profile" },
+    { "profile",      "Set the encoding profile",           OFFSET(profile),      AV_OPT_TYPE_INT,   { .i64 = NV_ENC_HEVC_PROFILE_MAIN }, NV_ENC_HEVC_PROFILE_MAIN, AV_PROFILE_HEVC_REXT, VE, "profile" },
     { "main",         "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_HEVC_PROFILE_MAIN },    0, 0, VE, "profile" },
     { "main10",       "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_HEVC_PROFILE_MAIN_10 }, 0, 0, VE, "profile" },
     { "rext",         "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_HEVC_PROFILE_REXT },    0, 0, VE, "profile" },

@@ -236,10 +236,10 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
     }
 #endif
 
-    if (avctx->profile != FF_PROFILE_UNKNOWN)
+    if (avctx->profile != AV_PROFILE_UNKNOWN)
         param->profile = avctx->profile;
 
-    if (avctx->level != FF_LEVEL_UNKNOWN)
+    if (avctx->level != AV_LEVEL_UNKNOWN)
         param->level = avctx->level;
 
     // gop_size == 1 case is handled when encoding each frame by setting
@@ -310,12 +310,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
 
     if ((param->encoder_color_format == EB_YUV422 || param->encoder_bit_depth > 10)
-         && param->profile != FF_PROFILE_AV1_PROFESSIONAL ) {
+         && param->profile != AV_PROFILE_AV1_PROFESSIONAL ) {
         av_log(avctx, AV_LOG_WARNING, "Forcing Professional profile\n");
-        param->profile = FF_PROFILE_AV1_PROFESSIONAL;
-    } else if (param->encoder_color_format == EB_YUV444 && param->profile != FF_PROFILE_AV1_HIGH) {
+        param->profile = AV_PROFILE_AV1_PROFESSIONAL;
+    } else if (param->encoder_color_format == EB_YUV444 && param->profile != AV_PROFILE_AV1_HIGH) {
         av_log(avctx, AV_LOG_WARNING, "Forcing High profile\n");
-        param->profile = FF_PROFILE_AV1_HIGH;
+        param->profile = AV_PROFILE_AV1_HIGH;
     }
 
     avctx->bit_rate       = param->rate_control_mode > 0 ?

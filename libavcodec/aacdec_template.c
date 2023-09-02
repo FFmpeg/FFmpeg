@@ -2486,12 +2486,12 @@ static int decode_extension_payload(AACContext *ac, GetBitContext *gb, int cnt,
                    ac->avctx->ch_layout.nb_channels == 1) {
             ac->oc[1].m4ac.sbr = 1;
             ac->oc[1].m4ac.ps = 1;
-            ac->avctx->profile = FF_PROFILE_AAC_HE_V2;
+            ac->avctx->profile = AV_PROFILE_AAC_HE_V2;
             output_configure(ac, ac->oc[1].layout_map, ac->oc[1].layout_map_tags,
                              ac->oc[1].status, 1);
         } else {
             ac->oc[1].m4ac.sbr = 1;
-            ac->avctx->profile = FF_PROFILE_AAC_HE;
+            ac->avctx->profile = AV_PROFILE_AAC_HE;
         }
         res = AAC_RENAME(ff_decode_sbr_extension)(ac, &che->sbr, gb, crc_flag, cnt, elem_type);
         if (ac->oc[1].m4ac.ps == 1 && !ac->warned_he_aac_mono) {
@@ -3080,7 +3080,7 @@ static int aac_decode_er_frame(AVCodecContext *avctx, void *data,
     if ((err = frame_configure_elements(avctx)) < 0)
         return err;
 
-    // The FF_PROFILE_AAC_* defines are all object_type - 1
+    // The AV_PROFILE_AAC_* defines are all object_type - 1
     // This may lead to an undefined profile being signaled
     ac->avctx->profile = aot - 1;
 
@@ -3163,7 +3163,7 @@ static int aac_decode_frame_int(AVCodecContext *avctx, AVFrame *frame,
     if ((err = frame_configure_elements(avctx)) < 0)
         goto fail;
 
-    // The FF_PROFILE_AAC_* defines are all object_type - 1
+    // The AV_PROFILE_AAC_* defines are all object_type - 1
     // This may lead to an undefined profile being signaled
     ac->avctx->profile = ac->oc[1].m4ac.object_type - 1;
 

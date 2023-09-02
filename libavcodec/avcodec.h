@@ -1587,8 +1587,12 @@ typedef struct AVCodecContext {
      * profile
      * - encoding: Set by user.
      * - decoding: Set by libavcodec.
+     * See the AV_PROFILE_* defines in defs.h.
      */
      int profile;
+#if FF_API_FF_PROFILE_LEVEL
+    /** @deprecated The following defines are deprecated; use AV_PROFILE_*
+     * in defs.h instead. */
 #define FF_PROFILE_UNKNOWN -99
 #define FF_PROFILE_RESERVED -100
 
@@ -1719,14 +1723,20 @@ typedef struct AVCodecContext {
 
 #define FF_PROFILE_EVC_BASELINE             0
 #define FF_PROFILE_EVC_MAIN                 1
+#endif
 
     /**
      * level
      * - encoding: Set by user.
      * - decoding: Set by libavcodec.
+     * See AV_LEVEL_* in defs.h.
      */
      int level;
+#if FF_API_FF_PROFILE_LEVEL
+    /** @deprecated The following define is deprecated; use AV_LEVEL_UNKOWN
+     * in defs.h instead. */
 #define FF_LEVEL_UNKNOWN -99
+#endif
 
     /**
      * Skip loop filtering for selected frames.

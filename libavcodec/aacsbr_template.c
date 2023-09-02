@@ -973,7 +973,7 @@ static void read_sbr_extension(AACContext *ac, SpectralBandReplication *sbr,
             *num_bits_left = 0;
         } else {
             *num_bits_left -= ff_ps_read_data(ac->avctx, gb, &sbr->ps.common, *num_bits_left);
-            ac->avctx->profile = FF_PROFILE_AAC_HE_V2;
+            ac->avctx->profile = AV_PROFILE_AAC_HE_V2;
             // ensure the warning is not printed if PS extension is present
             ac->warned_he_aac_mono = 1;
         }

@@ -180,7 +180,7 @@ static av_cold int vaapi_encode_vp8_configure(AVCodecContext *avctx)
 
 static const VAAPIEncodeProfile vaapi_encode_vp8_profiles[] = {
     { 0 /* VP8 has no profiles */, 8, 3, 1, 1, VAProfileVP8Version0_3 },
-    { FF_PROFILE_UNKNOWN }
+    { AV_PROFILE_UNKNOWN }
 };
 
 static const VAAPIEncodeType vaapi_encode_type_vp8 = {

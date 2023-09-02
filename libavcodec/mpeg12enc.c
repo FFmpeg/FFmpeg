@@ -203,23 +203,23 @@ static av_cold int encode_init(AVCodecContext *avctx)
         }
     }
 
-    if (avctx->profile == FF_PROFILE_UNKNOWN) {
-        if (avctx->level != FF_LEVEL_UNKNOWN) {
+    if (avctx->profile == AV_PROFILE_UNKNOWN) {
+        if (avctx->level != AV_LEVEL_UNKNOWN) {
             av_log(avctx, AV_LOG_ERROR, "Set profile and level\n");
             return AVERROR(EINVAL);
         }
         /* Main or 4:2:2 */
-        avctx->profile = avctx->pix_fmt == AV_PIX_FMT_YUV420P ? FF_PROFILE_MPEG2_MAIN
-                                                              : FF_PROFILE_MPEG2_422;
+        avctx->profile = avctx->pix_fmt == AV_PIX_FMT_YUV420P ? AV_PROFILE_MPEG2_MAIN
+                                                              : AV_PROFILE_MPEG2_422;
     }
-    if (avctx->level == FF_LEVEL_UNKNOWN) {
-        if (avctx->profile == FF_PROFILE_MPEG2_422) {   /* 4:2:2 */
+    if (avctx->level == AV_LEVEL_UNKNOWN) {
+        if (avctx->profile == AV_PROFILE_MPEG2_422) {   /* 4:2:2 */
             if (avctx->width <= 720 && avctx->height <= 608)
                 avctx->level = 5;                   /* Main */
             else
                 avctx->level = 2;                   /* High */
         } else {
-            if (avctx->profile != FF_PROFILE_MPEG2_HIGH &&
+            if (avctx->profile != AV_PROFILE_MPEG2_HIGH &&
                 avctx->pix_fmt != AV_PIX_FMT_YUV420P) {
                 av_log(avctx, AV_LOG_ERROR,
                        "Only High(1) and 4:2:2(0) profiles support 4:2:2 color sampling\n");
@@ -366,7 +366,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
         put_header(s, EXT_START_CODE);
         put_bits(&s->pb, 4, 1);                 // seq ext
 
-        put_bits(&s->pb, 1, s->avctx->profile == FF_PROFILE_MPEG2_422); // escx 1 for 4:2:2 profile
+        put_bits(&s->pb, 1, s->avctx->profile == AV_PROFILE_MPEG2_422); // escx 1 for 4:2:2 profile
 
         put_bits(&s->pb, 3, s->avctx->profile); // profile
         put_bits(&s->pb, 4, s->avctx->level);   // level

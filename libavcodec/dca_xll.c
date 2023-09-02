@@ -1446,11 +1446,11 @@ int ff_dca_xll_filter_frame(DCAXllDecoder *s, AVFrame *frame)
     }
 
     if (s->x_imax_syncword_present) {
-        avctx->profile = FF_PROFILE_DTS_HD_MA_X_IMAX;
+        avctx->profile = AV_PROFILE_DTS_HD_MA_X_IMAX;
     } else if (s->x_syncword_present) {
-        avctx->profile = FF_PROFILE_DTS_HD_MA_X;
+        avctx->profile = AV_PROFILE_DTS_HD_MA_X;
     } else {
-        avctx->profile = FF_PROFILE_DTS_HD_MA;
+        avctx->profile = AV_PROFILE_DTS_HD_MA;
     }
 
     avctx->bits_per_raw_sample = p->storage_bit_res;

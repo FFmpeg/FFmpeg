@@ -60,17 +60,17 @@ static UInt32 ffat_get_format_id(enum AVCodecID codec, int profile)
     switch (codec) {
     case AV_CODEC_ID_AAC:
         switch (profile) {
-        case FF_PROFILE_AAC_LOW:
+        case AV_PROFILE_AAC_LOW:
         default:
             return kAudioFormatMPEG4AAC;
-        case FF_PROFILE_AAC_HE:
+        case AV_PROFILE_AAC_HE:
             return kAudioFormatMPEG4AAC_HE;
-        case FF_PROFILE_AAC_HE_V2:
+        case AV_PROFILE_AAC_HE_V2:
             return kAudioFormatMPEG4AAC_HE_V2;
-        case FF_PROFILE_AAC_LD:
+        case AV_PROFILE_AAC_LD:
             return kAudioFormatMPEG4AAC_LD;
 #if MAC_OS_X_VERSION_MIN_REQUIRED >= 1060
-        case FF_PROFILE_AAC_ELD:
+        case AV_PROFILE_AAC_ELD:
             return kAudioFormatMPEG4AAC_ELD;
 #endif
         }
@@ -586,12 +586,12 @@ static av_cold int ffat_close_encoder(AVCodecContext *avctx)
 }
 
 static const AVProfile aac_profiles[] = {
-    { FF_PROFILE_AAC_LOW,   "LC"       },
-    { FF_PROFILE_AAC_HE,    "HE-AAC"   },
-    { FF_PROFILE_AAC_HE_V2, "HE-AACv2" },
-    { FF_PROFILE_AAC_LD,    "LD"       },
-    { FF_PROFILE_AAC_ELD,   "ELD"      },
-    { FF_PROFILE_UNKNOWN },
+    { AV_PROFILE_AAC_LOW,   "LC"       },
+    { AV_PROFILE_AAC_HE,    "HE-AAC"   },
+    { AV_PROFILE_AAC_HE_V2, "HE-AACv2" },
+    { AV_PROFILE_AAC_LD,    "LD"       },
+    { AV_PROFILE_AAC_ELD,   "ELD"      },
+    { AV_PROFILE_UNKNOWN },
 };
 
 #define AE AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM

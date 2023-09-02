@@ -451,16 +451,16 @@ static int set_pix_fmt(AVCodecContext *avctx, aom_codec_caps_t codec_caps,
         enccfg->monochrome = 1;
         /* Fall-through */
     case AV_PIX_FMT_YUV420P:
-        enccfg->g_profile = FF_PROFILE_AV1_MAIN;
+        enccfg->g_profile = AV_PROFILE_AV1_MAIN;
         *img_fmt = AOM_IMG_FMT_I420;
         return 0;
     case AV_PIX_FMT_YUV422P:
-        enccfg->g_profile = FF_PROFILE_AV1_PROFESSIONAL;
+        enccfg->g_profile = AV_PROFILE_AV1_PROFESSIONAL;
         *img_fmt = AOM_IMG_FMT_I422;
         return 0;
     case AV_PIX_FMT_YUV444P:
     case AV_PIX_FMT_GBRP:
-        enccfg->g_profile = FF_PROFILE_AV1_HIGH;
+        enccfg->g_profile = AV_PROFILE_AV1_HIGH;
         *img_fmt = AOM_IMG_FMT_I444;
         return 0;
     case AV_PIX_FMT_GRAY10:
@@ -471,7 +471,7 @@ static int set_pix_fmt(AVCodecContext *avctx, aom_codec_caps_t codec_caps,
     case AV_PIX_FMT_YUV420P12:
         if (codec_caps & AOM_CODEC_CAP_HIGHBITDEPTH) {
             enccfg->g_profile =
-                enccfg->g_bit_depth == 10 ? FF_PROFILE_AV1_MAIN : FF_PROFILE_AV1_PROFESSIONAL;
+                enccfg->g_bit_depth == 10 ? AV_PROFILE_AV1_MAIN : AV_PROFILE_AV1_PROFESSIONAL;
             *img_fmt = AOM_IMG_FMT_I42016;
             *flags |= AOM_CODEC_USE_HIGHBITDEPTH;
             return 0;
@@ -480,7 +480,7 @@ static int set_pix_fmt(AVCodecContext *avctx, aom_codec_caps_t codec_caps,
     case AV_PIX_FMT_YUV422P10:
     case AV_PIX_FMT_YUV422P12:
         if (codec_caps & AOM_CODEC_CAP_HIGHBITDEPTH) {
-            enccfg->g_profile = FF_PROFILE_AV1_PROFESSIONAL;
+            enccfg->g_profile = AV_PROFILE_AV1_PROFESSIONAL;
             *img_fmt = AOM_IMG_FMT_I42216;
             *flags |= AOM_CODEC_USE_HIGHBITDEPTH;
             return 0;
@@ -492,7 +492,7 @@ static int set_pix_fmt(AVCodecContext *avctx, aom_codec_caps_t codec_caps,
     case AV_PIX_FMT_GBRP12:
         if (codec_caps & AOM_CODEC_CAP_HIGHBITDEPTH) {
             enccfg->g_profile =
-                enccfg->g_bit_depth == 10 ? FF_PROFILE_AV1_HIGH : FF_PROFILE_AV1_PROFESSIONAL;
+                enccfg->g_bit_depth == 10 ? AV_PROFILE_AV1_HIGH : AV_PROFILE_AV1_PROFESSIONAL;
             *img_fmt = AOM_IMG_FMT_I44416;
             *flags |= AOM_CODEC_USE_HIGHBITDEPTH;
             return 0;
@@ -842,7 +842,7 @@ static av_cold int aom_init(AVCodecContext *avctx,
     /* 0-3: For non-zero values the encoder increasingly optimizes for reduced
      * complexity playback on low powered devices at the expense of encode
      * quality. */
-    if (avctx->profile != FF_PROFILE_UNKNOWN)
+    if (avctx->profile != AV_PROFILE_UNKNOWN)
         enccfg.g_profile = avctx->profile;
 
     enccfg.g_error_resilient = ctx->error_resilient;

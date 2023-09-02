@@ -1219,19 +1219,19 @@ static av_cold int nvenc_setup_h264_config(AVCodecContext *avctx)
         switch(ctx->profile) {
         case NV_ENC_H264_PROFILE_BASELINE:
             cc->profileGUID = NV_ENC_H264_PROFILE_BASELINE_GUID;
-            avctx->profile = FF_PROFILE_H264_BASELINE;
+            avctx->profile = AV_PROFILE_H264_BASELINE;
             break;
         case NV_ENC_H264_PROFILE_MAIN:
             cc->profileGUID = NV_ENC_H264_PROFILE_MAIN_GUID;
-            avctx->profile = FF_PROFILE_H264_MAIN;
+            avctx->profile = AV_PROFILE_H264_MAIN;
             break;
         case NV_ENC_H264_PROFILE_HIGH:
             cc->profileGUID = NV_ENC_H264_PROFILE_HIGH_GUID;
-            avctx->profile = FF_PROFILE_H264_HIGH;
+            avctx->profile = AV_PROFILE_H264_HIGH;
             break;
         case NV_ENC_H264_PROFILE_HIGH_444P:
             cc->profileGUID = NV_ENC_H264_PROFILE_HIGH_444_GUID;
-            avctx->profile = FF_PROFILE_H264_HIGH_444_PREDICTIVE;
+            avctx->profile = AV_PROFILE_H264_HIGH_444_PREDICTIVE;
             break;
         }
     }
@@ -1239,10 +1239,10 @@ static av_cold int nvenc_setup_h264_config(AVCodecContext *avctx)
     // force setting profile as high444p if input is AV_PIX_FMT_YUV444P
     if (IS_YUV444(ctx->data_pix_fmt)) {
         cc->profileGUID = NV_ENC_H264_PROFILE_HIGH_444_GUID;
-        avctx->profile = FF_PROFILE_H264_HIGH_444_PREDICTIVE;
+        avctx->profile = AV_PROFILE_H264_HIGH_444_PREDICTIVE;
     }
 
-    h264->chromaFormatIDC = avctx->profile == FF_PROFILE_H264_HIGH_444_PREDICTIVE ? 3 : 1;
+    h264->chromaFormatIDC = avctx->profile == AV_PROFILE_H264_HIGH_444_PREDICTIVE ? 3 : 1;
 
     h264->level = ctx->level;
 
@@ -1335,28 +1335,28 @@ static av_cold int nvenc_setup_hevc_config(AVCodecContext *avctx)
     switch (ctx->profile) {
     case NV_ENC_HEVC_PROFILE_MAIN:
         cc->profileGUID = NV_ENC_HEVC_PROFILE_MAIN_GUID;
-        avctx->profile  = FF_PROFILE_HEVC_MAIN;
+        avctx->profile  = AV_PROFILE_HEVC_MAIN;
         break;
     case NV_ENC_HEVC_PROFILE_MAIN_10:
         cc->profileGUID = NV_ENC_HEVC_PROFILE_MAIN10_GUID;
-        avctx->profile  = FF_PROFILE_HEVC_MAIN_10;
+        avctx->profile  = AV_PROFILE_HEVC_MAIN_10;
         break;
     case NV_ENC_HEVC_PROFILE_REXT:
         cc->profileGUID = NV_ENC_HEVC_PROFILE_FREXT_GUID;
-        avctx->profile  = FF_PROFILE_HEVC_REXT;
+        avctx->profile  = AV_PROFILE_HEVC_REXT;
         break;
     }
 
     // force setting profile as main10 if input is 10 bit
     if (IS_10BIT(ctx->data_pix_fmt)) {
         cc->profileGUID = NV_ENC_HEVC_PROFILE_MAIN10_GUID;
-        avctx->profile = FF_PROFILE_HEVC_MAIN_10;
+        avctx->profile = AV_PROFILE_HEVC_MAIN_10;
     }
 
     // force setting profile as rext if input is yuv444
     if (IS_YUV444(ctx->data_pix_fmt)) {
         cc->profileGUID = NV_ENC_HEVC_PROFILE_FREXT_GUID;
-        avctx->profile = FF_PROFILE_HEVC_REXT;
+        avctx->profile = AV_PROFILE_HEVC_REXT;
     }
 
     hevc->chromaFormatIDC = IS_YUV444(ctx->data_pix_fmt) ? 3 : 1;
@@ -1407,7 +1407,7 @@ static av_cold int nvenc_setup_av1_config(AVCodecContext *avctx)
         return AVERROR(ENOTSUP);
     } else {
         cc->profileGUID = NV_ENC_AV1_PROFILE_MAIN_GUID;
-        avctx->profile  = FF_PROFILE_AV1_MAIN;
+        avctx->profile  = AV_PROFILE_AV1_MAIN;
     }
 
     if (ctx->dpb_size >= 0) {

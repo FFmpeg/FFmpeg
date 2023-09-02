@@ -227,8 +227,8 @@ static int vaapi_hevc_start_frame(AVCodecContext          *avctx,
     }
 
 #if VA_CHECK_VERSION(1, 2, 0)
-    if (avctx->profile == FF_PROFILE_HEVC_REXT ||
-        avctx->profile == FF_PROFILE_HEVC_SCC) {
+    if (avctx->profile == AV_PROFILE_HEVC_REXT ||
+        avctx->profile == AV_PROFILE_HEVC_SCC) {
         pic->pic_param.rext = (VAPictureParameterBufferHEVCRext) {
             .range_extension_pic_fields.bits  = {
                 .transform_skip_rotation_enabled_flag       = sps->transform_skip_rotation_enabled_flag,
@@ -262,7 +262,7 @@ static int vaapi_hevc_start_frame(AVCodecContext          *avctx,
                        sps->sps_num_palette_predictor_initializers :
                        0);
 
-    if (avctx->profile == FF_PROFILE_HEVC_SCC) {
+    if (avctx->profile == AV_PROFILE_HEVC_SCC) {
         pic->pic_param.scc = (VAPictureParameterBufferHEVCScc) {
             .screen_content_pic_fields.bits = {
                 .pps_curr_pic_ref_enabled_flag              = pps->pps_curr_pic_ref_enabled_flag,
@@ -294,7 +294,7 @@ static int vaapi_hevc_start_frame(AVCodecContext          *avctx,
     }
 
 #endif
-    pic_param_size = avctx->profile >= FF_PROFILE_HEVC_REXT ?
+    pic_param_size = avctx->profile >= AV_PROFILE_HEVC_REXT ?
                             sizeof(pic->pic_param) : sizeof(VAPictureParameterBufferHEVC);
 
     err = ff_vaapi_decode_make_param_buffer(avctx, &pic->pic,
@@ -347,7 +347,7 @@ static int vaapi_hevc_end_frame(AVCodecContext *avctx)
     VASliceParameterBufferHEVC *last_slice_param = (VASliceParameterBufferHEVC *)&pic->last_slice_param;
     int ret;
 
-    int slice_param_size = avctx->profile >= FF_PROFILE_HEVC_REXT ?
+    int slice_param_size = avctx->profile >= AV_PROFILE_HEVC_REXT ?
                             sizeof(pic->last_slice_param) : sizeof(VASliceParameterBufferHEVC);
 
     if (pic->last_size) {
@@ -377,10 +377,10 @@ static void fill_pred_weight_table(AVCodecContext *avctx,
 {
     int i;
 #if VA_CHECK_VERSION(1, 2, 0)
-    int is_rext = avctx->profile >= FF_PROFILE_HEVC_REXT;
+    int is_rext = avctx->profile >= AV_PROFILE_HEVC_REXT;
 #else
     int is_rext = 0;
-    if (avctx->profile >= FF_PROFILE_HEVC_REXT)
+    if (avctx->profile >= AV_PROFILE_HEVC_REXT)
         av_log(avctx, AV_LOG_WARNING, "Please consider to update to VAAPI 1.2.0 "
                "or above, which can support REXT related setting correctly.\n");
 #endif
@@ -461,7 +461,7 @@ static int vaapi_hevc_decode_slice(AVCodecContext *avctx,
     VAAPIDecodePictureHEVC *pic = h->ref->hwaccel_picture_private;
     VASliceParameterBufferHEVC *last_slice_param = (VASliceParameterBufferHEVC *)&pic->last_slice_param;
 
-    int slice_param_size = avctx->profile >= FF_PROFILE_HEVC_REXT ?
+    int slice_param_size = avctx->profile >= AV_PROFILE_HEVC_REXT ?
                             sizeof(pic->last_slice_param) : sizeof(VASliceParameterBufferHEVC);
 
     int nb_list = (sh->slice_type == HEVC_SLICE_B) ?
@@ -526,7 +526,7 @@ static int vaapi_hevc_decode_slice(AVCodecContext *avctx,
     fill_pred_weight_table(avctx, h, sh, last_slice_param);
 
 #if VA_CHECK_VERSION(1, 2, 0)
-    if (avctx->profile >= FF_PROFILE_HEVC_REXT) {
+    if (avctx->profile >= AV_PROFILE_HEVC_REXT) {
         pic->last_slice_param.rext = (VASliceParameterBufferHEVCRext) {
             .slice_ext_flags.bits = {
                 .cu_chroma_qp_offset_enabled_flag = sh->cu_chroma_qp_offset_enabled_flag,

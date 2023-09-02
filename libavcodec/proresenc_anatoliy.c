@@ -41,13 +41,13 @@
 #define DEFAULT_SLICE_MB_WIDTH 8
 
 static const AVProfile profiles[] = {
-    { FF_PROFILE_PRORES_PROXY,    "apco"},
-    { FF_PROFILE_PRORES_LT,       "apcs"},
-    { FF_PROFILE_PRORES_STANDARD, "apcn"},
-    { FF_PROFILE_PRORES_HQ,       "apch"},
-    { FF_PROFILE_PRORES_4444,     "ap4h"},
-    { FF_PROFILE_PRORES_XQ,       "ap4x"},
-    { FF_PROFILE_UNKNOWN }
+    { AV_PROFILE_PRORES_PROXY,    "apco"},
+    { AV_PROFILE_PRORES_LT,       "apcs"},
+    { AV_PROFILE_PRORES_STANDARD, "apcn"},
+    { AV_PROFILE_PRORES_HQ,       "apch"},
+    { AV_PROFILE_PRORES_4444,     "ap4h"},
+    { AV_PROFILE_PRORES_XQ,       "ap4x"},
+    { AV_PROFILE_UNKNOWN }
 };
 
 static const int qp_start_table[] = {  8, 3, 2, 1, 1, 1};
@@ -771,7 +771,7 @@ static int prores_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     bytestream_put_be16(&buf, avctx->width);
     bytestream_put_be16(&buf, avctx->height);
     frame_flags = 0x82; /* 422 not interlaced */
-    if (avctx->profile >= FF_PROFILE_PRORES_4444) /* 4444 or 4444 Xq */
+    if (avctx->profile >= AV_PROFILE_PRORES_4444) /* 4444 or 4444 Xq */
         frame_flags |= 0x40; /* 444 chroma */
     if (ctx->is_interlaced) {
         if ((pict->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST) || !(pict->flags & AV_FRAME_FLAG_INTERLACED)) {
@@ -795,7 +795,7 @@ static int prores_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                                       pict->color_trc, valid_trc, 0);
     *buf++ = int_from_list_or_default(avctx, "frame colorspace",
                                       pict->colorspace, valid_colorspace, 0);
-    if (avctx->profile >= FF_PROFILE_PRORES_4444) {
+    if (avctx->profile >= AV_PROFILE_PRORES_4444) {
         if (avctx->pix_fmt == AV_PIX_FMT_YUV444P10) {
             *buf++ = 0xA0;/* src b64a and no alpha */
         } else {
@@ -871,40 +871,40 @@ static av_cold int prores_encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    if (avctx->profile == FF_PROFILE_UNKNOWN) {
+    if (avctx->profile == AV_PROFILE_UNKNOWN) {
         if (avctx->pix_fmt == AV_PIX_FMT_YUV422P10) {
-            avctx->profile = FF_PROFILE_PRORES_STANDARD;
+            avctx->profile = AV_PROFILE_PRORES_STANDARD;
             av_log(avctx, AV_LOG_INFO,
                 "encoding with ProRes standard (apcn) profile\n");
         } else if (avctx->pix_fmt == AV_PIX_FMT_YUV444P10) {
-            avctx->profile = FF_PROFILE_PRORES_4444;
+            avctx->profile = AV_PROFILE_PRORES_4444;
             av_log(avctx, AV_LOG_INFO,
                    "encoding with ProRes 4444 (ap4h) profile\n");
         } else if (avctx->pix_fmt == AV_PIX_FMT_YUVA444P10) {
-            avctx->profile = FF_PROFILE_PRORES_4444;
+            avctx->profile = AV_PROFILE_PRORES_4444;
             av_log(avctx, AV_LOG_INFO,
                    "encoding with ProRes 4444+ (ap4h) profile\n");
         }
-    } else if (avctx->profile < FF_PROFILE_PRORES_PROXY
-            || avctx->profile > FF_PROFILE_PRORES_XQ) {
+    } else if (avctx->profile < AV_PROFILE_PRORES_PROXY
+            || avctx->profile > AV_PROFILE_PRORES_XQ) {
         av_log(
                 avctx,
                 AV_LOG_ERROR,
                 "unknown profile %d, use [0 - apco, 1 - apcs, 2 - apcn (default), 3 - apch, 4 - ap4h, 5 - ap4x]\n",
                 avctx->profile);
         return AVERROR(EINVAL);
-    } else if ((avctx->pix_fmt == AV_PIX_FMT_YUV422P10) && (avctx->profile > FF_PROFILE_PRORES_HQ)){
+    } else if ((avctx->pix_fmt == AV_PIX_FMT_YUV422P10) && (avctx->profile > AV_PROFILE_PRORES_HQ)){
         av_log(avctx, AV_LOG_ERROR,
                "encoding with ProRes 444/Xq (ap4h/ap4x) profile, need YUV444P10 input\n");
         return AVERROR(EINVAL);
     }  else if ((avctx->pix_fmt == AV_PIX_FMT_YUV444P10 || avctx->pix_fmt == AV_PIX_FMT_YUVA444P10)
-                && (avctx->profile < FF_PROFILE_PRORES_4444)){
+                && (avctx->profile < AV_PROFILE_PRORES_4444)){
         av_log(avctx, AV_LOG_ERROR,
                "encoding with ProRes Proxy/LT/422/422 HQ (apco, apcs, apcn, ap4h) profile, need YUV422P10 input\n");
         return AVERROR(EINVAL);
     }
 
-    if (avctx->profile < FF_PROFILE_PRORES_4444) { /* 422 versions */
+    if (avctx->profile < AV_PROFILE_PRORES_4444) { /* 422 versions */
         ctx->is_422 = 1;
         if ((avctx->height & 0xf) || (avctx->width & 0xf)) {
             ctx->fill_y = av_malloc(4 * (DEFAULT_SLICE_MB_WIDTH << 8));

@@ -312,8 +312,8 @@ static int get_siz(Jpeg2000DecoderContext *s)
     if (ret < 0)
         return ret;
 
-    if (s->avctx->profile == FF_PROFILE_JPEG2000_DCINEMA_2K ||
-        s->avctx->profile == FF_PROFILE_JPEG2000_DCINEMA_4K) {
+    if (s->avctx->profile == AV_PROFILE_JPEG2000_DCINEMA_2K ||
+        s->avctx->profile == AV_PROFILE_JPEG2000_DCINEMA_4K) {
         possible_fmts = xyz_pix_fmts;
         possible_fmts_nb = FF_ARRAY_ELEMS(xyz_pix_fmts);
     } else {

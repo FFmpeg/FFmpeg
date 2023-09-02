@@ -60,7 +60,7 @@ typedef struct AVCodecDescriptor {
     const char *const *mime_types;
     /**
      * If non-NULL, an array of profiles recognized for this codec.
-     * Terminated with FF_PROFILE_UNKNOWN.
+     * Terminated with AV_PROFILE_UNKNOWN.
      */
     const struct AVProfile *profiles;
 } AVCodecDescriptor;

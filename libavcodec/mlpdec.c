@@ -398,7 +398,7 @@ static int read_major_sync(MLPDecodeContext *m, GetBitContext *gb)
      */
     if (m->avctx->codec_id == AV_CODEC_ID_TRUEHD
             && m->num_substreams == 4 && m->substream_info >> 7 == 1) {
-        m->avctx->profile     = FF_PROFILE_TRUEHD_ATMOS;
+        m->avctx->profile     = AV_PROFILE_TRUEHD_ATMOS;
     }
 
     /* limit to decoding 3 substreams, as the 4th is used by Dolby Atmos for non-audio data */

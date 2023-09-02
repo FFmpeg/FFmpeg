@@ -141,27 +141,27 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     switch (avctx->codec_tag) {
     case MKTAG('a','p','c','o'):
-        avctx->profile = FF_PROFILE_PRORES_PROXY;
+        avctx->profile = AV_PROFILE_PRORES_PROXY;
         break;
     case MKTAG('a','p','c','s'):
-        avctx->profile = FF_PROFILE_PRORES_LT;
+        avctx->profile = AV_PROFILE_PRORES_LT;
         break;
     case MKTAG('a','p','c','n'):
-        avctx->profile = FF_PROFILE_PRORES_STANDARD;
+        avctx->profile = AV_PROFILE_PRORES_STANDARD;
         break;
     case MKTAG('a','p','c','h'):
-        avctx->profile = FF_PROFILE_PRORES_HQ;
+        avctx->profile = AV_PROFILE_PRORES_HQ;
         break;
     case MKTAG('a','p','4','h'):
-        avctx->profile = FF_PROFILE_PRORES_4444;
+        avctx->profile = AV_PROFILE_PRORES_4444;
         avctx->bits_per_raw_sample = 12;
         break;
     case MKTAG('a','p','4','x'):
-        avctx->profile = FF_PROFILE_PRORES_XQ;
+        avctx->profile = AV_PROFILE_PRORES_XQ;
         avctx->bits_per_raw_sample = 12;
         break;
     default:
-        avctx->profile = FF_PROFILE_UNKNOWN;
+        avctx->profile = AV_PROFILE_UNKNOWN;
         av_log(avctx, AV_LOG_WARNING, "Unknown prores profile %d\n", avctx->codec_tag);
     }
 

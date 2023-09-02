@@ -322,15 +322,15 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
 
     sps->profile_idc = avctx->profile & 0xff;
 
-    if (avctx->profile == FF_PROFILE_H264_CONSTRAINED_BASELINE ||
-        avctx->profile == FF_PROFILE_H264_MAIN)
+    if (avctx->profile == AV_PROFILE_H264_CONSTRAINED_BASELINE ||
+        avctx->profile == AV_PROFILE_H264_MAIN)
         sps->constraint_set1_flag = 1;
 
-    if (avctx->profile == FF_PROFILE_H264_HIGH || avctx->profile == FF_PROFILE_H264_HIGH_10)
+    if (avctx->profile == AV_PROFILE_H264_HIGH || avctx->profile == AV_PROFILE_H264_HIGH_10)
         sps->constraint_set3_flag = ctx->gop_size == 1;
 
-    if (avctx->profile == FF_PROFILE_H264_MAIN ||
-        avctx->profile == FF_PROFILE_H264_HIGH || avctx->profile == FF_PROFILE_H264_HIGH_10) {
+    if (avctx->profile == AV_PROFILE_H264_MAIN ||
+        avctx->profile == AV_PROFILE_H264_HIGH || avctx->profile == AV_PROFILE_H264_HIGH_10) {
         sps->constraint_set4_flag = 1;
         sps->constraint_set5_flag = ctx->b_per_p == 0;
     }
@@ -340,7 +340,7 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
     else
         priv->dpb_frames = 1 + ctx->max_b_depth;
 
-    if (avctx->level != FF_LEVEL_UNKNOWN) {
+    if (avctx->level != AV_LEVEL_UNKNOWN) {
         sps->level_idc = avctx->level;
     } else {
         const H264LevelDescriptor *level;
@@ -512,9 +512,9 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
     pps->seq_parameter_set_id = 0;
 
     pps->entropy_coding_mode_flag =
-        !(sps->profile_idc == FF_PROFILE_H264_BASELINE ||
-          sps->profile_idc == FF_PROFILE_H264_EXTENDED ||
-          sps->profile_idc == FF_PROFILE_H264_CAVLC_444);
+        !(sps->profile_idc == AV_PROFILE_H264_BASELINE ||
+          sps->profile_idc == AV_PROFILE_H264_EXTENDED ||
+          sps->profile_idc == AV_PROFILE_H264_CAVLC_444);
     if (!priv->coder && pps->entropy_coding_mode_flag)
         pps->entropy_coding_mode_flag = 0;
 
@@ -523,9 +523,9 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
 
     pps->pic_init_qp_minus26 = priv->fixed_qp_idr - 26;
 
-    if (sps->profile_idc == FF_PROFILE_H264_BASELINE ||
-        sps->profile_idc == FF_PROFILE_H264_EXTENDED ||
-        sps->profile_idc == FF_PROFILE_H264_MAIN) {
+    if (sps->profile_idc == AV_PROFILE_H264_BASELINE ||
+        sps->profile_idc == AV_PROFILE_H264_EXTENDED ||
+        sps->profile_idc == AV_PROFILE_H264_MAIN) {
         pps->more_rbsp_data = 0;
     } else {
         pps->more_rbsp_data = 1;
@@ -1159,13 +1159,13 @@ static av_cold int vaapi_encode_h264_configure(AVCodecContext *avctx)
 
 static const VAAPIEncodeProfile vaapi_encode_h264_profiles[] = {
 #if VA_CHECK_VERSION(1, 18, 0)
-    { FF_PROFILE_H264_HIGH_10, 10, 3, 1, 1, VAProfileH264High10 },
+    { AV_PROFILE_H264_HIGH_10, 10, 3, 1, 1, VAProfileH264High10 },
 #endif
-    { FF_PROFILE_H264_HIGH, 8, 3, 1, 1, VAProfileH264High },
-    { FF_PROFILE_H264_MAIN, 8, 3, 1, 1, VAProfileH264Main },
-    { FF_PROFILE_H264_CONSTRAINED_BASELINE,
+    { AV_PROFILE_H264_HIGH, 8, 3, 1, 1, VAProfileH264High },
+    { AV_PROFILE_H264_MAIN, 8, 3, 1, 1, VAProfileH264Main },
+    { AV_PROFILE_H264_CONSTRAINED_BASELINE,
                             8, 3, 1, 1, VAProfileH264ConstrainedBaseline },
-    { FF_PROFILE_UNKNOWN }
+    { AV_PROFILE_UNKNOWN }
 };
 
 static const VAAPIEncodeType vaapi_encode_type_h264 = {
@@ -1207,40 +1207,40 @@ static av_cold int vaapi_encode_h264_init(AVCodecContext *avctx)
 
     ctx->codec = &vaapi_encode_type_h264;
 
-    if (avctx->profile == FF_PROFILE_UNKNOWN)
+    if (avctx->profile == AV_PROFILE_UNKNOWN)
         avctx->profile = priv->profile;
-    if (avctx->level == FF_LEVEL_UNKNOWN)
+    if (avctx->level == AV_LEVEL_UNKNOWN)
         avctx->level = priv->level;
     if (avctx->compression_level == FF_COMPRESSION_DEFAULT)
         avctx->compression_level = priv->quality;
 
     // Reject unsupported profiles.
     switch (avctx->profile) {
-    case FF_PROFILE_H264_BASELINE:
+    case AV_PROFILE_H264_BASELINE:
         av_log(avctx, AV_LOG_WARNING, "H.264 baseline profile is not "
                "supported, using constrained baseline profile instead.\n");
-        avctx->profile = FF_PROFILE_H264_CONSTRAINED_BASELINE;
+        avctx->profile = AV_PROFILE_H264_CONSTRAINED_BASELINE;
         break;
-    case FF_PROFILE_H264_EXTENDED:
+    case AV_PROFILE_H264_EXTENDED:
         av_log(avctx, AV_LOG_ERROR, "H.264 extended profile "
                "is not supported.\n");
         return AVERROR_PATCHWELCOME;
-    case FF_PROFILE_H264_HIGH_10_INTRA:
+    case AV_PROFILE_H264_HIGH_10_INTRA:
         av_log(avctx, AV_LOG_ERROR, "H.264 high 10 intra profile "
                "is not supported.\n");
         return AVERROR_PATCHWELCOME;
-    case FF_PROFILE_H264_HIGH_422:
-    case FF_PROFILE_H264_HIGH_422_INTRA:
-    case FF_PROFILE_H264_HIGH_444:
-    case FF_PROFILE_H264_HIGH_444_PREDICTIVE:
-    case FF_PROFILE_H264_HIGH_444_INTRA:
-    case FF_PROFILE_H264_CAVLC_444:
+    case AV_PROFILE_H264_HIGH_422:
+    case AV_PROFILE_H264_HIGH_422_INTRA:
+    case AV_PROFILE_H264_HIGH_444:
+    case AV_PROFILE_H264_HIGH_444_PREDICTIVE:
+    case AV_PROFILE_H264_HIGH_444_INTRA:
+    case AV_PROFILE_H264_CAVLC_444:
         av_log(avctx, AV_LOG_ERROR, "H.264 non-4:2:0 profiles "
                "are not supported.\n");
         return AVERROR_PATCHWELCOME;
     }
 
-    if (avctx->level != FF_LEVEL_UNKNOWN && avctx->level & ~0xff) {
+    if (avctx->level != AV_LEVEL_UNKNOWN && avctx->level & ~0xff) {
         av_log(avctx, AV_LOG_ERROR, "Invalid level %d: must fit "
                "in 8-bit unsigned integer.\n", avctx->level);
         return AVERROR(EINVAL);
@@ -1313,19 +1313,19 @@ static const AVOption vaapi_encode_h264_options[] = {
 
     { "profile", "Set profile (profile_idc and constraint_set*_flag)",
       OFFSET(profile), AV_OPT_TYPE_INT,
-      { .i64 = FF_PROFILE_UNKNOWN }, FF_PROFILE_UNKNOWN, 0xffff, FLAGS, "profile" },
+      { .i64 = AV_PROFILE_UNKNOWN }, AV_PROFILE_UNKNOWN, 0xffff, FLAGS, "profile" },
 
 #define PROFILE(name, value)  name, NULL, 0, AV_OPT_TYPE_CONST, \
       { .i64 = value }, 0, 0, FLAGS, "profile"
-    { PROFILE("constrained_baseline", FF_PROFILE_H264_CONSTRAINED_BASELINE) },
-    { PROFILE("main",                 FF_PROFILE_H264_MAIN) },
-    { PROFILE("high",                 FF_PROFILE_H264_HIGH) },
-    { PROFILE("high10",               FF_PROFILE_H264_HIGH_10) },
+    { PROFILE("constrained_baseline", AV_PROFILE_H264_CONSTRAINED_BASELINE) },
+    { PROFILE("main",                 AV_PROFILE_H264_MAIN) },
+    { PROFILE("high",                 AV_PROFILE_H264_HIGH) },
+    { PROFILE("high10",               AV_PROFILE_H264_HIGH_10) },
 #undef PROFILE
 
     { "level", "Set level (level_idc)",
       OFFSET(level), AV_OPT_TYPE_INT,
-      { .i64 = FF_LEVEL_UNKNOWN }, FF_LEVEL_UNKNOWN, 0xff, FLAGS, "level" },
+      { .i64 = AV_LEVEL_UNKNOWN }, AV_LEVEL_UNKNOWN, 0xff, FLAGS, "level" },
 
 #define LEVEL(name, value) name, NULL, 0, AV_OPT_TYPE_CONST, \
       { .i64 = value }, 0, 0, FLAGS, "level"

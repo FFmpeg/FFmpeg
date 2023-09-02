@@ -365,82 +365,82 @@ int ff_AMediaCodecProfile_getProfileFromAVCodecContext(AVCodecContext *avctx)
 
     if (avctx->codec_id == AV_CODEC_ID_H264) {
         switch(avctx->profile) {
-        case FF_PROFILE_H264_BASELINE:
+        case AV_PROFILE_H264_BASELINE:
             return AVCProfileBaseline;
-        case FF_PROFILE_H264_CONSTRAINED_BASELINE:
+        case AV_PROFILE_H264_CONSTRAINED_BASELINE:
             return AVCProfileConstrainedBaseline;
-        case FF_PROFILE_H264_MAIN:
+        case AV_PROFILE_H264_MAIN:
             return AVCProfileMain;
             break;
-        case FF_PROFILE_H264_EXTENDED:
+        case AV_PROFILE_H264_EXTENDED:
             return AVCProfileExtended;
-        case FF_PROFILE_H264_HIGH:
+        case AV_PROFILE_H264_HIGH:
             return AVCProfileHigh;
-        case FF_PROFILE_H264_HIGH_10:
-        case FF_PROFILE_H264_HIGH_10_INTRA:
+        case AV_PROFILE_H264_HIGH_10:
+        case AV_PROFILE_H264_HIGH_10_INTRA:
             return AVCProfileHigh10;
-        case FF_PROFILE_H264_HIGH_422:
-        case FF_PROFILE_H264_HIGH_422_INTRA:
+        case AV_PROFILE_H264_HIGH_422:
+        case AV_PROFILE_H264_HIGH_422_INTRA:
             return AVCProfileHigh422;
-        case FF_PROFILE_H264_HIGH_444:
-        case FF_PROFILE_H264_HIGH_444_INTRA:
-        case FF_PROFILE_H264_HIGH_444_PREDICTIVE:
+        case AV_PROFILE_H264_HIGH_444:
+        case AV_PROFILE_H264_HIGH_444_INTRA:
+        case AV_PROFILE_H264_HIGH_444_PREDICTIVE:
             return AVCProfileHigh444;
         }
     } else if (avctx->codec_id == AV_CODEC_ID_HEVC) {
         switch (avctx->profile) {
-        case FF_PROFILE_HEVC_MAIN:
+        case AV_PROFILE_HEVC_MAIN:
             return HEVCProfileMain;
-        case FF_PROFILE_HEVC_MAIN_STILL_PICTURE:
+        case AV_PROFILE_HEVC_MAIN_STILL_PICTURE:
             return HEVCProfileMainStill;
-        case FF_PROFILE_HEVC_MAIN_10:
+        case AV_PROFILE_HEVC_MAIN_10:
             return HEVCProfileMain10;
         }
     } else if (avctx->codec_id == AV_CODEC_ID_VP9) {
         switch (avctx->profile) {
-        case FF_PROFILE_VP9_0:
+        case AV_PROFILE_VP9_0:
             return VP9Profile0;
-        case FF_PROFILE_VP9_1:
+        case AV_PROFILE_VP9_1:
             return VP9Profile1;
-        case FF_PROFILE_VP9_2:
+        case AV_PROFILE_VP9_2:
             return VP9Profile2;
-         case FF_PROFILE_VP9_3:
+         case AV_PROFILE_VP9_3:
             return VP9Profile3;
         }
     } else if(avctx->codec_id == AV_CODEC_ID_MPEG4) {
         switch (avctx->profile)
         {
-        case FF_PROFILE_MPEG4_SIMPLE:
+        case AV_PROFILE_MPEG4_SIMPLE:
             return MPEG4ProfileSimple;
-        case FF_PROFILE_MPEG4_SIMPLE_SCALABLE:
+        case AV_PROFILE_MPEG4_SIMPLE_SCALABLE:
             return MPEG4ProfileSimpleScalable;
-        case FF_PROFILE_MPEG4_CORE:
+        case AV_PROFILE_MPEG4_CORE:
             return MPEG4ProfileCore;
-        case FF_PROFILE_MPEG4_MAIN:
+        case AV_PROFILE_MPEG4_MAIN:
             return MPEG4ProfileMain;
-        case FF_PROFILE_MPEG4_N_BIT:
+        case AV_PROFILE_MPEG4_N_BIT:
             return MPEG4ProfileNbit;
-        case FF_PROFILE_MPEG4_SCALABLE_TEXTURE:
+        case AV_PROFILE_MPEG4_SCALABLE_TEXTURE:
             return MPEG4ProfileScalableTexture;
-        case FF_PROFILE_MPEG4_SIMPLE_FACE_ANIMATION:
+        case AV_PROFILE_MPEG4_SIMPLE_FACE_ANIMATION:
             return MPEG4ProfileSimpleFBA;
-        case FF_PROFILE_MPEG4_BASIC_ANIMATED_TEXTURE:
+        case AV_PROFILE_MPEG4_BASIC_ANIMATED_TEXTURE:
             return MPEG4ProfileBasicAnimated;
-        case FF_PROFILE_MPEG4_HYBRID:
+        case AV_PROFILE_MPEG4_HYBRID:
             return MPEG4ProfileHybrid;
-        case FF_PROFILE_MPEG4_ADVANCED_REAL_TIME:
+        case AV_PROFILE_MPEG4_ADVANCED_REAL_TIME:
             return MPEG4ProfileAdvancedRealTime;
-        case FF_PROFILE_MPEG4_CORE_SCALABLE:
+        case AV_PROFILE_MPEG4_CORE_SCALABLE:
             return MPEG4ProfileCoreScalable;
-        case FF_PROFILE_MPEG4_ADVANCED_CODING:
+        case AV_PROFILE_MPEG4_ADVANCED_CODING:
             return MPEG4ProfileAdvancedCoding;
-        case FF_PROFILE_MPEG4_ADVANCED_CORE:
+        case AV_PROFILE_MPEG4_ADVANCED_CORE:
             return MPEG4ProfileAdvancedCore;
-        case FF_PROFILE_MPEG4_ADVANCED_SCALABLE_TEXTURE:
+        case AV_PROFILE_MPEG4_ADVANCED_SCALABLE_TEXTURE:
             return MPEG4ProfileAdvancedScalable;
-        case FF_PROFILE_MPEG4_ADVANCED_SIMPLE:
+        case AV_PROFILE_MPEG4_ADVANCED_SIMPLE:
             return MPEG4ProfileAdvancedSimple;
-        case FF_PROFILE_MPEG4_SIMPLE_STUDIO:
+        case AV_PROFILE_MPEG4_SIMPLE_STUDIO:
             // Studio profiles are not supported by mediacodec.
         default:
             break;
@@ -448,10 +448,10 @@ int ff_AMediaCodecProfile_getProfileFromAVCodecContext(AVCodecContext *avctx)
     } else if(avctx->codec_id == AV_CODEC_ID_AV1) {
         switch (avctx->profile)
         {
-        case FF_PROFILE_AV1_MAIN:
+        case AV_PROFILE_AV1_MAIN:
             return AV1ProfileMain8;
-        case FF_PROFILE_AV1_HIGH:
-        case FF_PROFILE_AV1_PROFESSIONAL:
+        case AV_PROFILE_AV1_HIGH:
+        case AV_PROFILE_AV1_PROFESSIONAL:
         default:
             break;
         }

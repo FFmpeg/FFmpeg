@@ -480,15 +480,15 @@ static av_cold int vaapi_encode_mjpeg_configure(AVCodecContext *avctx)
 }
 
 static const VAAPIEncodeProfile vaapi_encode_mjpeg_profiles[] = {
-    { FF_PROFILE_MJPEG_HUFFMAN_BASELINE_DCT,
+    { AV_PROFILE_MJPEG_HUFFMAN_BASELINE_DCT,
             8, 1, 0, 0, VAProfileJPEGBaseline },
-    { FF_PROFILE_MJPEG_HUFFMAN_BASELINE_DCT,
+    { AV_PROFILE_MJPEG_HUFFMAN_BASELINE_DCT,
             8, 3, 1, 1, VAProfileJPEGBaseline },
-    { FF_PROFILE_MJPEG_HUFFMAN_BASELINE_DCT,
+    { AV_PROFILE_MJPEG_HUFFMAN_BASELINE_DCT,
             8, 3, 1, 0, VAProfileJPEGBaseline },
-    { FF_PROFILE_MJPEG_HUFFMAN_BASELINE_DCT,
+    { AV_PROFILE_MJPEG_HUFFMAN_BASELINE_DCT,
             8, 3, 0, 0, VAProfileJPEGBaseline },
-    { FF_PROFILE_UNKNOWN }
+    { AV_PROFILE_UNKNOWN }
 };
 
 static const VAAPIEncodeType vaapi_encode_type_mjpeg = {

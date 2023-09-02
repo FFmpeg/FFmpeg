@@ -184,7 +184,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     AMF_ASSIGN_PROPERTY_RATE(res, ctx->encoder, AMF_VIDEO_ENCODER_HEVC_FRAMERATE, framerate);
 
     switch (avctx->profile) {
-    case FF_PROFILE_HEVC_MAIN:
+    case AV_PROFILE_HEVC_MAIN:
         profile = AMF_VIDEO_ENCODER_HEVC_PROFILE_MAIN;
         break;
     default:
@@ -198,7 +198,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_HEVC_TIER, ctx->tier);
 
     profile_level = avctx->level;
-    if (profile_level == FF_LEVEL_UNKNOWN) {
+    if (profile_level == AV_LEVEL_UNKNOWN) {
         profile_level = ctx->level;
     }
     if (profile_level != 0) {

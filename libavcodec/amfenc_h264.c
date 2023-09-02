@@ -223,19 +223,19 @@ FF_ENABLE_DEPRECATION_WARNINGS
     AMF_ASSIGN_PROPERTY_RATE(res, ctx->encoder, AMF_VIDEO_ENCODER_FRAMERATE, framerate);
 
     switch (avctx->profile) {
-    case FF_PROFILE_H264_BASELINE:
+    case AV_PROFILE_H264_BASELINE:
         profile = AMF_VIDEO_ENCODER_PROFILE_BASELINE;
         break;
-    case FF_PROFILE_H264_MAIN:
+    case AV_PROFILE_H264_MAIN:
         profile = AMF_VIDEO_ENCODER_PROFILE_MAIN;
         break;
-    case FF_PROFILE_H264_HIGH:
+    case AV_PROFILE_H264_HIGH:
         profile = AMF_VIDEO_ENCODER_PROFILE_HIGH;
         break;
-    case FF_PROFILE_H264_CONSTRAINED_BASELINE:
+    case AV_PROFILE_H264_CONSTRAINED_BASELINE:
         profile = AMF_VIDEO_ENCODER_PROFILE_CONSTRAINED_BASELINE;
         break;
-    case (FF_PROFILE_H264_HIGH | FF_PROFILE_H264_CONSTRAINED):
+    case (AV_PROFILE_H264_HIGH | AV_PROFILE_H264_CONSTRAINED):
         profile = AMF_VIDEO_ENCODER_PROFILE_CONSTRAINED_HIGH;
         break;
     }
@@ -246,7 +246,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_PROFILE, profile);
 
     profile_level = avctx->level;
-    if (profile_level == FF_LEVEL_UNKNOWN) {
+    if (profile_level == AV_LEVEL_UNKNOWN) {
         profile_level = ctx->level;
     }
     if (profile_level != 0) {

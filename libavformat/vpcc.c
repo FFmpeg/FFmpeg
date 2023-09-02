@@ -21,7 +21,7 @@
 
 #include "libavutil/pixdesc.h"
 #include "libavutil/pixfmt.h"
-#include "libavcodec/avcodec.h"
+#include "libavcodec/defs.h"
 #include "libavcodec/get_bits.h"
 #include "vpcc.h"
 
@@ -155,7 +155,7 @@ int ff_isom_get_vpcc_features(AVFormatContext *s, AVCodecParameters *par,
                               AVRational *frame_rate, VPCC *vpcc)
 {
     int profile = par->profile;
-    int level = par->level == FF_LEVEL_UNKNOWN ?
+    int level = par->level == AV_LEVEL_UNKNOWN ?
         get_vp9_level(par, frame_rate) : par->level;
     int bit_depth = get_bit_depth(s, par->format);
     int vpx_chroma_subsampling =
@@ -166,7 +166,7 @@ int ff_isom_get_vpcc_features(AVFormatContext *s, AVCodecParameters *par,
     if (bit_depth < 0 || vpx_chroma_subsampling < 0)
         return AVERROR_INVALIDDATA;
 
-    if (len && (profile == FF_PROFILE_UNKNOWN || !bit_depth)) {
+    if (len && (profile == AV_PROFILE_UNKNOWN || !bit_depth)) {
         GetBitContext gb;
 
         int ret = init_get_bits8(&gb, data, len);
@@ -176,16 +176,16 @@ int ff_isom_get_vpcc_features(AVFormatContext *s, AVCodecParameters *par,
         parse_bitstream(&gb, &profile, &bit_depth);
     }
 
-    if (profile == FF_PROFILE_UNKNOWN && bit_depth) {
+    if (profile == AV_PROFILE_UNKNOWN && bit_depth) {
         if (vpx_chroma_subsampling == VPX_SUBSAMPLING_420_VERTICAL ||
             vpx_chroma_subsampling == VPX_SUBSAMPLING_420_COLLOCATED_WITH_LUMA) {
-            profile = (bit_depth == 8) ? FF_PROFILE_VP9_0 : FF_PROFILE_VP9_2;
+            profile = (bit_depth == 8) ? AV_PROFILE_VP9_0 : AV_PROFILE_VP9_2;
         } else {
-            profile = (bit_depth == 8) ? FF_PROFILE_VP9_1 : FF_PROFILE_VP9_3;
+            profile = (bit_depth == 8) ? AV_PROFILE_VP9_1 : AV_PROFILE_VP9_3;
         }
     }
 
-    if (profile == FF_PROFILE_UNKNOWN || !bit_depth)
+    if (profile == AV_PROFILE_UNKNOWN || !bit_depth)
         av_log(s, AV_LOG_WARNING, "VP9 profile and/or bit depth not set or could not be derived\n");
 
     vpcc->profile            = profile;

@@ -23,7 +23,7 @@
 #include "libavutil/mem.h"
 #include "libavcodec/av1.h"
 #include "libavcodec/av1_parse.h"
-#include "libavcodec/avcodec.h"
+#include "libavcodec/defs.h"
 #include "libavcodec/put_bits.h"
 #include "av1.h"
 #include "avio.h"
@@ -141,12 +141,12 @@ static int parse_color_config(AV1SequenceParameters *seq_params, GetBitContext *
 {
     int twelve_bit = 0;
     int high_bitdepth = get_bits1(gb);
-    if (seq_params->profile == FF_PROFILE_AV1_PROFESSIONAL && high_bitdepth)
+    if (seq_params->profile == AV_PROFILE_AV1_PROFESSIONAL && high_bitdepth)
         twelve_bit = get_bits1(gb);
 
     seq_params->bitdepth = 8 + (high_bitdepth * 2) + (twelve_bit * 2);
 
-    if (seq_params->profile == FF_PROFILE_AV1_HIGH)
+    if (seq_params->profile == AV_PROFILE_AV1_HIGH)
         seq_params->monochrome = 0;
     else
         seq_params->monochrome = get_bits1(gb);
@@ -176,10 +176,10 @@ static int parse_color_config(AV1SequenceParameters *seq_params, GetBitContext *
     } else {
         seq_params->color_range = get_bits1(gb);
 
-        if (seq_params->profile == FF_PROFILE_AV1_MAIN) {
+        if (seq_params->profile == AV_PROFILE_AV1_MAIN) {
             seq_params->chroma_subsampling_x = 1;
             seq_params->chroma_subsampling_y = 1;
-        } else if (seq_params->profile == FF_PROFILE_AV1_HIGH) {
+        } else if (seq_params->profile == AV_PROFILE_AV1_HIGH) {
             seq_params->chroma_subsampling_x = 0;
             seq_params->chroma_subsampling_y = 0;
         } else {

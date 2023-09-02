@@ -34,6 +34,7 @@
 #include "libavutil/dovi_meta.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/bytestream.h"
+#include "libavcodec/defs.h"
 #include "libavcodec/get_bits.h"
 #include "libavcodec/opus.h"
 #include "avformat.h"
@@ -2147,7 +2148,7 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
             // Component tag limits are documented in TR-B14, fascicle 2,
             // Vol. 3, Section 2, 4.2.8.1
             int actual_component_tag = sti->stream_identifier - 1;
-            int picked_profile = FF_PROFILE_UNKNOWN;
+            int picked_profile = AV_PROFILE_UNKNOWN;
             int data_component_id = get16(pp, desc_end);
             if (data_component_id < 0)
                 return AVERROR_INVALIDDATA;
@@ -2158,21 +2159,21 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
                 // non-mobile captioning service ("profile A").
                 if (actual_component_tag >= 0x30 &&
                     actual_component_tag <= 0x37) {
-                    picked_profile = FF_PROFILE_ARIB_PROFILE_A;
+                    picked_profile = AV_PROFILE_ARIB_PROFILE_A;
                 }
                 break;
             case 0x0012:
                 // component tag 0x87 signifies a mobile/partial reception
                 // (1seg) captioning service ("profile C").
                 if (actual_component_tag == 0x87) {
-                    picked_profile = FF_PROFILE_ARIB_PROFILE_C;
+                    picked_profile = AV_PROFILE_ARIB_PROFILE_C;
                 }
                 break;
             default:
                 break;
             }
 
-            if (picked_profile == FF_PROFILE_UNKNOWN)
+            if (picked_profile == AV_PROFILE_UNKNOWN)
                 break;
 
             st->codecpar->codec_type = AVMEDIA_TYPE_SUBTITLE;

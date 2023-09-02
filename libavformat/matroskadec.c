@@ -51,8 +51,8 @@
 #include "libavutil/time_internal.h"
 #include "libavutil/spherical.h"
 
-#include "libavcodec/avcodec.h"
 #include "libavcodec/bytestream.h"
+#include "libavcodec/defs.h"
 #include "libavcodec/flac.h"
 #include "libavcodec/mpeg4audio.h"
 #include "libavcodec/packet_internal.h"
@@ -3037,21 +3037,21 @@ static int mkv_parse_subtitle_codec(MatroskaTrack *track, AVStream *st,
                 // [0x30..0x37] are component tags utilized for
                 // non-mobile captioning service ("profile A").
                 if (component_tag >= 0x30 && component_tag <= 0x37) {
-                    par->profile = FF_PROFILE_ARIB_PROFILE_A;
+                    par->profile = AV_PROFILE_ARIB_PROFILE_A;
                 }
                 break;
             case 0x0012:
                 // component tag 0x87 signifies a mobile/partial reception
                 // (1seg) captioning service ("profile C").
                 if (component_tag == 0x87) {
-                    par->profile = FF_PROFILE_ARIB_PROFILE_C;
+                    par->profile = AV_PROFILE_ARIB_PROFILE_C;
                 }
                 break;
             default:
                 break;
             }
 
-            if (par->profile == FF_PROFILE_UNKNOWN)
+            if (par->profile == AV_PROFILE_UNKNOWN)
                 av_log(matroska->ctx, AV_LOG_WARNING,
                        "Unknown ARIB caption profile utilized: %02x / %04x\n",
                        component_tag, data_component_id);

@@ -3020,7 +3020,7 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
     if (!do_bitexact && (profile = avcodec_profile_name(par->codec_id, par->profile)))
         print_str("profile", profile);
     else {
-        if (par->profile != FF_PROFILE_UNKNOWN) {
+        if (par->profile != AV_PROFILE_UNKNOWN) {
             char profile_num[12];
             snprintf(profile_num, sizeof(profile_num), "%d", par->profile);
             print_str("profile", profile_num);

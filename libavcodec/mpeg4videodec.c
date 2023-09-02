@@ -2564,10 +2564,10 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
      */
     if (ctx->vo_type == CORE_STUDIO_VO_TYPE ||
         ctx->vo_type == SIMPLE_STUDIO_VO_TYPE) {
-        if (s->avctx->profile != FF_PROFILE_UNKNOWN && s->avctx->profile != FF_PROFILE_MPEG4_SIMPLE_STUDIO)
+        if (s->avctx->profile != AV_PROFILE_UNKNOWN && s->avctx->profile != AV_PROFILE_MPEG4_SIMPLE_STUDIO)
             return AVERROR_INVALIDDATA;
         s->studio_profile = 1;
-        s->avctx->profile = FF_PROFILE_MPEG4_SIMPLE_STUDIO;
+        s->avctx->profile = AV_PROFILE_MPEG4_SIMPLE_STUDIO;
         return decode_studio_vol_header(ctx, gb);
     } else if (s->studio_profile) {
         return AVERROR_PATCHWELCOME;
@@ -3605,7 +3605,7 @@ int ff_mpeg4_decode_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb,
         } else if (startcode == VOS_STARTCODE) {
             int profile, level;
             mpeg4_decode_profile_level(s, gb, &profile, &level);
-            if (profile == FF_PROFILE_MPEG4_SIMPLE_STUDIO &&
+            if (profile == AV_PROFILE_MPEG4_SIMPLE_STUDIO &&
                 (level > 0 && level < 9)) {
                 s->studio_profile = 1;
                 next_start_code_studio(gb);
