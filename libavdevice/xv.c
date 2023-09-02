@@ -32,6 +32,7 @@
 #include <X11/extensions/Xvlib.h>
 #include <sys/shm.h>
 
+#include "libavutil/frame.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/imgutils.h"

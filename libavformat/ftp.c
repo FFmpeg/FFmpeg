@@ -19,6 +19,7 @@
  */
 
 #include <string.h>
+#include <time.h>
 
 #include "libavutil/avstring.h"
 #include "libavutil/internal.h"

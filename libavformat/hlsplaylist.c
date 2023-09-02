@@ -22,6 +22,7 @@
 
 #include "config.h"
 #include <stdint.h>
+#include <time.h>
 
 #include "libavutil/time_internal.h"
 

@@ -566,8 +566,8 @@ void ff_parse_key_value(const char *str, ff_parse_key_val_cb callback_get_buf,
 
 enum AVCodecID ff_guess_image2_codec(const char *filename);
 
-const AVCodec *ff_find_decoder(AVFormatContext *s, const AVStream *st,
-                               enum AVCodecID codec_id);
+const struct AVCodec *ff_find_decoder(AVFormatContext *s, const AVStream *st,
+                                      enum AVCodecID codec_id);
 
 /**
  * Set the time base and wrapping info for a given stream. This will be used

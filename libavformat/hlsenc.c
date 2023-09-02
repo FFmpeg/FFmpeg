@@ -23,6 +23,7 @@
 #include "config.h"
 #include "config_components.h"
 #include <stdint.h>
+#include <time.h>
 #if HAVE_UNISTD_H
 #include <unistd.h>
 #endif

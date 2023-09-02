@@ -32,6 +32,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <time.h>
 
 #include "libavutil/avstring.h"
 #include "libavutil/dict.h"

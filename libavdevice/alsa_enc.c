@@ -39,6 +39,7 @@
 
 #include <alsa/asoundlib.h>
 
+#include "libavutil/frame.h"
 #include "libavutil/internal.h"
 #include "libavutil/time.h"
 

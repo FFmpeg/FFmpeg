@@ -96,7 +96,7 @@ typedef struct FFOutputFormat {
      * by setting the pointer to NULL.
      */
     int (*write_uncoded_frame)(AVFormatContext *, int stream_index,
-                               AVFrame **frame, unsigned flags);
+                               struct AVFrame **frame, unsigned flags);
     /**
      * Returns device list with it properties.
      * @see avdevice_list_devices() for more details.
