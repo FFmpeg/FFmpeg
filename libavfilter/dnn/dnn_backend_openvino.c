@@ -503,6 +503,10 @@ static void dnn_free_model_ov(DNNModel **model)
     }
     ff_queue_destroy(ov_model->task_queue);
 #if HAVE_OPENVINO2
+    if (ov_model->input_port)
+        ov_output_const_port_free(ov_model->input_port);
+    if (ov_model->output_port)
+        ov_output_const_port_free(ov_model->output_port);
     if (ov_model->preprocess)
         ov_preprocess_prepostprocessor_free(ov_model->preprocess);
     if (ov_model->compiled_model)
