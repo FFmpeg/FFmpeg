@@ -210,7 +210,10 @@ static int fill_model_input_ov(OVModel *ov_model, OVRequestItem *request)
 
 #if HAVE_OPENVINO2
     if (!ov_model_is_dynamic(ov_model->ov_model)) {
-        ov_output_const_port_free(ov_model->input_port);
+        if (ov_model->input_port) {
+            ov_output_const_port_free(ov_model->input_port);
+            ov_model->input_port = NULL;
+        }
         status = ov_model_const_input_by_name(ov_model->ov_model, task->input_name, &ov_model->input_port);
         if (status != OK) {
             av_log(ctx, AV_LOG_ERROR, "Failed to get input port shape.\n");
@@ -621,8 +624,10 @@ static int init_model_ov(OVModel *ov_model, const char *input_name, const char *
     ov_model_free(tmp_ov_model);
 
     //update output_port
-    if (ov_model->output_port)
+    if (ov_model->output_port) {
         ov_output_const_port_free(ov_model->output_port);
+        ov_model->output_port = NULL;
+    }
     status = ov_model_const_output_by_name(ov_model->ov_model, output_name, &ov_model->output_port);
     if (status != OK) {
         av_log(ctx, AV_LOG_ERROR, "Failed to get output port.\n");
