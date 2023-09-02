@@ -1213,6 +1213,7 @@ static DNNModel *dnn_load_model_ov(const char *model_filename, DNNFunctionType f
     if (status != OK) {
         goto err;
     }
+    ov_model->core = core;
 
     status = ov_core_read_model(core, model_filename, NULL, &ovmodel);
     if (status != OK) {
@@ -1228,7 +1229,6 @@ static DNNModel *dnn_load_model_ov(const char *model_filename, DNNFunctionType f
         goto err;
     }
     ov_model->ov_model = ovmodel;
-    ov_model->core     = core;
 #else
     ov_model->all_input_names = NULL;
     ov_model->all_output_names = NULL;
