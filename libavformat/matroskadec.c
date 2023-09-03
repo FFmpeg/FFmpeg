@@ -2029,6 +2029,80 @@ static void matroska_parse_cues(MatroskaDemuxContext *matroska) {
     matroska_add_index_entries(matroska);
 }
 
+static int matroska_parse_content_encodings(MatroskaTrackEncoding *encodings,
+                                            unsigned nb_encodings,
+                                            MatroskaTrack *track,
+                                            char **key_id_base64, void *logctx)
+{
+    if (nb_encodings > 1) {
+        av_log(logctx, AV_LOG_ERROR,
+                "Multiple combined encodings not supported");
+        return 0;
+    }
+    if (!nb_encodings)
+        return 0;
+    if (encodings->type) {
+        if (encodings->encryption.key_id.size > 0) {
+            /* Save the encryption key id to be stored later
+             * as a metadata tag. */
+            const int b64_size = AV_BASE64_SIZE(encodings->encryption.key_id.size);
+            *key_id_base64 = av_malloc(b64_size);
+            if (!*key_id_base64)
+                return AVERROR(ENOMEM);
+
+            av_base64_encode(*key_id_base64, b64_size,
+                             encodings->encryption.key_id.data,
+                             encodings->encryption.key_id.size);
+        } else {
+            encodings->scope = 0;
+            av_log(logctx, AV_LOG_ERROR, "Unsupported encoding type");
+        }
+    } else if (
+#if CONFIG_ZLIB
+            encodings->compression.algo != MATROSKA_TRACK_ENCODING_COMP_ZLIB  &&
+#endif
+#if CONFIG_BZLIB
+            encodings->compression.algo != MATROSKA_TRACK_ENCODING_COMP_BZLIB &&
+#endif
+            encodings->compression.algo != MATROSKA_TRACK_ENCODING_COMP_LZO   &&
+            encodings->compression.algo != MATROSKA_TRACK_ENCODING_COMP_HEADERSTRIP) {
+        encodings->scope = 0;
+        av_log(logctx, AV_LOG_ERROR, "Unsupported encoding type");
+    } else if (track->codec_priv.size && encodings[0].scope & 2) {
+        uint8_t *codec_priv = track->codec_priv.data;
+        int ret = matroska_decode_buffer(&track->codec_priv.data,
+                                         &track->codec_priv.size,
+                                         track);
+        if (ret < 0) {
+            track->codec_priv.data = NULL;
+            track->codec_priv.size = 0;
+            av_log(logctx, AV_LOG_ERROR,
+                   "Failed to decode codec private data\n");
+        }
+
+        if (codec_priv != track->codec_priv.data) {
+            av_buffer_unref(&track->codec_priv.buf);
+            if (track->codec_priv.data) {
+                track->codec_priv.buf = av_buffer_create(track->codec_priv.data,
+                                                         track->codec_priv.size + AV_INPUT_BUFFER_PADDING_SIZE,
+                                                         NULL, NULL, 0);
+                if (!track->codec_priv.buf) {
+                    av_freep(&track->codec_priv.data);
+                    track->codec_priv.size = 0;
+                    return AVERROR(ENOMEM);
+                }
+            }
+        }
+    }
+    track->needs_decoding = !encodings->type &&
+                            encodings->scope & 1 &&
+                            (encodings->compression.algo !=
+                                MATROSKA_TRACK_ENCODING_COMP_HEADERSTRIP ||
+                             encodings->compression.settings.size);
+
+    return 0;
+}
+
 static int matroska_aac_profile(char *codec_id)
 {
     static const char *const aac_profiles[] = { "MAIN", "LC", "SSR" };
@@ -3008,8 +3082,6 @@ static int matroska_parse_tracks(AVFormatContext *s)
     for (i = 0; i < matroska->tracks.nb_elem; i++) {
         MatroskaTrack *track = &tracks[i];
         enum AVCodecID codec_id = AV_CODEC_ID_NONE;
-        EbmlList *encodings_list = &track->encodings;
-        MatroskaTrackEncoding *encodings = encodings_list->elem;
         AVCodecParameters *par;
         MatroskaTrackType type;
         int extradata_offset = 0;
@@ -3065,71 +3137,11 @@ static int matroska_parse_tracks(AVFormatContext *s)
             if (!track->audio.out_samplerate)
                 track->audio.out_samplerate = track->audio.samplerate;
         }
-        if (encodings_list->nb_elem > 1) {
-            av_log(matroska->ctx, AV_LOG_ERROR,
-                   "Multiple combined encodings not supported");
-        } else if (encodings_list->nb_elem == 1) {
-            if (encodings[0].type) {
-                if (encodings[0].encryption.key_id.size > 0) {
-                    /* Save the encryption key id to be stored later as a
-                       metadata tag. */
-                    const int b64_size = AV_BASE64_SIZE(encodings[0].encryption.key_id.size);
-                    key_id_base64 = av_malloc(b64_size);
-                    if (key_id_base64 == NULL)
-                        return AVERROR(ENOMEM);
-
-                    av_base64_encode(key_id_base64, b64_size,
-                                     encodings[0].encryption.key_id.data,
-                                     encodings[0].encryption.key_id.size);
-                } else {
-                    encodings[0].scope = 0;
-                    av_log(matroska->ctx, AV_LOG_ERROR,
-                           "Unsupported encoding type");
-                }
-            } else if (
-#if CONFIG_ZLIB
-                 encodings[0].compression.algo != MATROSKA_TRACK_ENCODING_COMP_ZLIB  &&
-#endif
-#if CONFIG_BZLIB
-                 encodings[0].compression.algo != MATROSKA_TRACK_ENCODING_COMP_BZLIB &&
-#endif
-                 encodings[0].compression.algo != MATROSKA_TRACK_ENCODING_COMP_LZO   &&
-                 encodings[0].compression.algo != MATROSKA_TRACK_ENCODING_COMP_HEADERSTRIP) {
-                encodings[0].scope = 0;
-                av_log(matroska->ctx, AV_LOG_ERROR,
-                       "Unsupported encoding type");
-            } else if (track->codec_priv.size && encodings[0].scope & 2) {
-                uint8_t *codec_priv = track->codec_priv.data;
-                int ret = matroska_decode_buffer(&track->codec_priv.data,
-                                                 &track->codec_priv.size,
-                                                 track);
-                if (ret < 0) {
-                    track->codec_priv.data = NULL;
-                    track->codec_priv.size = 0;
-                    av_log(matroska->ctx, AV_LOG_ERROR,
-                           "Failed to decode codec private data\n");
-                }
-
-                if (codec_priv != track->codec_priv.data) {
-                    av_buffer_unref(&track->codec_priv.buf);
-                    if (track->codec_priv.data) {
-                        track->codec_priv.buf = av_buffer_create(track->codec_priv.data,
-                                                                 track->codec_priv.size + AV_INPUT_BUFFER_PADDING_SIZE,
-                                                                 NULL, NULL, 0);
-                        if (!track->codec_priv.buf) {
-                            av_freep(&track->codec_priv.data);
-                            track->codec_priv.size = 0;
-                            return AVERROR(ENOMEM);
-                        }
-                    }
-                }
-            }
-        }
-        track->needs_decoding = encodings && !encodings[0].type &&
-                                encodings[0].scope & 1          &&
-                                (encodings[0].compression.algo !=
-                                   MATROSKA_TRACK_ENCODING_COMP_HEADERSTRIP ||
-                                 encodings[0].compression.settings.size);
+        ret = matroska_parse_content_encodings(track->encodings.elem,
+                                               track->encodings.nb_elem,
+                                               track, &key_id_base64, matroska->ctx);
+        if (ret < 0)
+            return ret;
 
         for (j = 0; ff_mkv_codec_tags[j].id != AV_CODEC_ID_NONE; j++) {
             if (av_strstart(track->codec_id, ff_mkv_codec_tags[j].str, NULL)) {
