@@ -515,6 +515,10 @@ static int update_settings(AVFilterContext *ctx)
             goto fail;
         }
     }
+#else
+    (void) e;
+    if (av_dict_count(s->extra_opts) > 0)
+        av_log(s, AV_LOG_WARNING, "extra_opts requires libplacebo >= 6.309!\n");
 #endif
 
     return 0;
