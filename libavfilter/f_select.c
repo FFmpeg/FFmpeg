@@ -82,7 +82,9 @@ static const char *const var_names[] = {
     "prev_selected_n",   ///< number of the last selected frame
 
     "key",               ///< tell if the frame is a key frame
+#if FF_API_FRAME_PKT
     "pos",               ///< original position in the file of the frame
+#endif
 
     "scene",
 
