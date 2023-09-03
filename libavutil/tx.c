@@ -578,12 +578,18 @@ static void print_type(AVBPrint *bp, enum AVTXType type)
                type == AV_TX_FLOAT_FFT   ? "fft_float"   :
                type == AV_TX_FLOAT_MDCT  ? "mdct_float"  :
                type == AV_TX_FLOAT_RDFT  ? "rdft_float"  :
+               type == AV_TX_FLOAT_DCT_I ? "dctI_float"  :
+               type == AV_TX_FLOAT_DST_I ? "dstI_float"  :
                type == AV_TX_DOUBLE_FFT  ? "fft_double"  :
                type == AV_TX_DOUBLE_MDCT ? "mdct_double" :
                type == AV_TX_DOUBLE_RDFT ? "rdft_double" :
+               type == AV_TX_DOUBLE_DCT_I ? "dctI_double" :
+               type == AV_TX_DOUBLE_DST_I ? "dstI_double" :
                type == AV_TX_INT32_FFT   ? "fft_int32"   :
                type == AV_TX_INT32_MDCT  ? "mdct_int32"  :
                type == AV_TX_INT32_RDFT  ? "rdft_int32"  :
+               type == AV_TX_INT32_DCT_I ? "dctI_int32" :
+               type == AV_TX_INT32_DST_I ? "dstI_int32" :
                "unknown");
 }
 
