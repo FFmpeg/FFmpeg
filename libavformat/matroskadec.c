@@ -2734,6 +2734,50 @@ static int mka_parse_audio_codec(MatroskaTrack *track, AVCodecParameters *par,
     return 0;
 }
 
+/* Performs the generic part of parsing an audio track. */
+static int mka_parse_audio(MatroskaTrack *track, AVStream *st,
+                           AVCodecParameters *par,
+                           const MatroskaDemuxContext *matroska,
+                           AVFormatContext *s, int *extradata_offset)
+{
+    FFStream *const sti = ffstream(st);
+    int ret;
+
+    ret = mka_parse_audio_codec(track, par, matroska,
+                                s, extradata_offset);
+    if (ret)
+        return ret;
+
+            par->codec_type  = AVMEDIA_TYPE_AUDIO;
+            par->sample_rate = track->audio.out_samplerate;
+            // channel layout may be already set by codec private checks above
+            if (!av_channel_layout_check(&par->ch_layout)) {
+                par->ch_layout.order = AV_CHANNEL_ORDER_UNSPEC;
+                par->ch_layout.nb_channels = track->audio.channels;
+            }
+            if (!par->bits_per_coded_sample)
+                par->bits_per_coded_sample = track->audio.bitdepth;
+            if (par->codec_id == AV_CODEC_ID_MP3 ||
+                par->codec_id == AV_CODEC_ID_MLP ||
+                par->codec_id == AV_CODEC_ID_TRUEHD)
+                sti->need_parsing = AVSTREAM_PARSE_FULL;
+            else if (par->codec_id != AV_CODEC_ID_AAC)
+                sti->need_parsing = AVSTREAM_PARSE_HEADERS;
+            if (track->codec_delay > 0) {
+                par->initial_padding = av_rescale_q(track->codec_delay,
+                                                    (AVRational){1, 1000000000},
+                                                    (AVRational){1, par->codec_id == AV_CODEC_ID_OPUS ?
+                                                                    48000 : par->sample_rate});
+            }
+            if (track->seek_preroll > 0) {
+                par->seek_preroll = av_rescale_q(track->seek_preroll,
+                                                 (AVRational){1, 1000000000},
+                                                 (AVRational){1, par->sample_rate});
+            }
+
+    return 0;
+}
+
 /* Performs the codec-specific part of parsing a video track. */
 static int mkv_parse_video_codec(MatroskaTrack *track, AVCodecParameters *par,
                                  const MatroskaDemuxContext *matroska,
@@ -2959,7 +3003,6 @@ static int matroska_parse_tracks(AVFormatContext *s)
         AVCodecParameters *par;
         int extradata_offset = 0;
         AVStream *st;
-        FFStream *sti;
         char* key_id_base64 = NULL;
 
         /* Apply some sanity checks. */
@@ -3089,7 +3132,6 @@ static int matroska_parse_tracks(AVFormatContext *s)
             av_free(key_id_base64);
             return AVERROR(ENOMEM);
         }
-        sti = ffstream(st);
         par = st->codecpar;
 
         par->codec_id  = codec_id;
@@ -3133,8 +3175,8 @@ static int matroska_parse_tracks(AVFormatContext *s)
                                                       st->time_base);
 
         if (track->type == MATROSKA_TRACK_TYPE_AUDIO) {
-            ret = mka_parse_audio_codec(track, par, matroska,
-                                        s, &extradata_offset);
+            ret = mka_parse_audio(track, st, par, matroska,
+                                  s, &extradata_offset);
             if (ret < 0)
                 return ret;
             if (ret == SKIP_TRACK)
@@ -3162,34 +3204,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
             memcpy(par->extradata, src, extra_size);
         }
 
-        if (track->type == MATROSKA_TRACK_TYPE_AUDIO) {
-            par->codec_type  = AVMEDIA_TYPE_AUDIO;
-            par->sample_rate = track->audio.out_samplerate;
-            // channel layout may be already set by codec private checks above
-            if (!av_channel_layout_check(&par->ch_layout)) {
-                par->ch_layout.order = AV_CHANNEL_ORDER_UNSPEC;
-                par->ch_layout.nb_channels = track->audio.channels;
-            }
-            if (!par->bits_per_coded_sample)
-                par->bits_per_coded_sample = track->audio.bitdepth;
-            if (par->codec_id == AV_CODEC_ID_MP3 ||
-                par->codec_id == AV_CODEC_ID_MLP ||
-                par->codec_id == AV_CODEC_ID_TRUEHD)
-                sti->need_parsing = AVSTREAM_PARSE_FULL;
-            else if (par->codec_id != AV_CODEC_ID_AAC)
-                sti->need_parsing = AVSTREAM_PARSE_HEADERS;
-            if (track->codec_delay > 0) {
-                par->initial_padding = av_rescale_q(track->codec_delay,
-                                                    (AVRational){1, 1000000000},
-                                                    (AVRational){1, par->codec_id == AV_CODEC_ID_OPUS ?
-                                                                    48000 : par->sample_rate});
-            }
-            if (track->seek_preroll > 0) {
-                par->seek_preroll = av_rescale_q(track->seek_preroll,
-                                                 (AVRational){1, 1000000000},
-                                                 (AVRational){1, par->sample_rate});
-            }
-        } else if (par->codec_id == AV_CODEC_ID_WEBVTT) {
+        if (par->codec_id == AV_CODEC_ID_WEBVTT) {
             par->codec_type = AVMEDIA_TYPE_SUBTITLE;
 
             if (!strcmp(track->codec_id, "D_WEBVTT/CAPTIONS")) {
