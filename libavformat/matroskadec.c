@@ -2111,7 +2111,7 @@ static int matroska_parse_flac(AVFormatContext *s,
     return 0;
 }
 
-static int mkv_field_order(MatroskaDemuxContext *matroska, uint64_t field_order)
+static int mkv_field_order(const MatroskaDemuxContext *matroska, uint64_t field_order)
 {
     int minor, micro, bttb = 0;
 
@@ -2803,6 +2803,105 @@ static int mkv_parse_video_codec(MatroskaTrack *track, AVCodecParameters *par,
     return 0;
 }
 
+/* Performs the generic part of parsing a video track. */
+static int mkv_parse_video(MatroskaTrack *track, AVStream *st,
+                           AVCodecParameters *par,
+                           const MatroskaDemuxContext *matroska,
+                           int *extradata_offset)
+{
+    FFStream *const sti = ffstream(st);
+            MatroskaTrackPlane *planes = track->operation.combine_planes.elem;
+            int display_width_mul  = 1;
+            int display_height_mul = 1;
+    int ret;
+
+            if (track->video.color_space.size == 4)
+                par->codec_tag = AV_RL32(track->video.color_space.data);
+
+            ret = mkv_parse_video_codec(track, par, matroska,
+                                        extradata_offset);
+            if (ret < 0)
+                return ret;
+
+
+            par->codec_type = AVMEDIA_TYPE_VIDEO;
+            par->width      = track->video.pixel_width;
+            par->height     = track->video.pixel_height;
+
+            if (track->video.interlaced == MATROSKA_VIDEO_INTERLACE_FLAG_INTERLACED)
+                par->field_order = mkv_field_order(matroska, track->video.field_order);
+            else if (track->video.interlaced == MATROSKA_VIDEO_INTERLACE_FLAG_PROGRESSIVE)
+                par->field_order = AV_FIELD_PROGRESSIVE;
+
+            if (track->video.stereo_mode && track->video.stereo_mode < MATROSKA_VIDEO_STEREOMODE_TYPE_NB)
+                mkv_stereo_mode_display_mul(track->video.stereo_mode, &display_width_mul, &display_height_mul);
+
+            if (track->video.display_unit < MATROSKA_VIDEO_DISPLAYUNIT_UNKNOWN) {
+                if (track->video.display_width && track->video.display_height &&
+                    par->height  < INT64_MAX / track->video.display_width  / display_width_mul &&
+                    par->width   < INT64_MAX / track->video.display_height / display_height_mul)
+                    av_reduce(&st->sample_aspect_ratio.num,
+                              &st->sample_aspect_ratio.den,
+                              par->height * track->video.display_width  * display_width_mul,
+                              par->width  * track->video.display_height * display_height_mul,
+                              INT_MAX);
+            }
+            if (par->codec_id != AV_CODEC_ID_HEVC)
+                sti->need_parsing = AVSTREAM_PARSE_HEADERS;
+
+            if (track->default_duration) {
+                int div = track->default_duration <= INT64_MAX ? 1 : 2;
+                av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
+                          1000000000 / div, track->default_duration / div, 30000);
+#if FF_API_R_FRAME_RATE
+                if (   st->avg_frame_rate.num < st->avg_frame_rate.den * 1000LL
+                    && st->avg_frame_rate.num > st->avg_frame_rate.den * 5LL)
+                    st->r_frame_rate = st->avg_frame_rate;
+#endif
+            }
+
+            /* export stereo mode flag as metadata tag */
+            if (track->video.stereo_mode && track->video.stereo_mode < MATROSKA_VIDEO_STEREOMODE_TYPE_NB)
+                av_dict_set(&st->metadata, "stereo_mode", ff_matroska_video_stereo_mode[track->video.stereo_mode], 0);
+
+            /* export alpha mode flag as metadata tag  */
+            if (track->video.alpha_mode)
+                av_dict_set_int(&st->metadata, "alpha_mode", 1, 0);
+
+            /* if we have virtual track, mark the real tracks */
+            for (int j = 0; j < track->operation.combine_planes.nb_elem; j++) {
+                MatroskaTrack *tracks = matroska->tracks.elem;
+                char buf[32];
+                if (planes[j].type >= MATROSKA_VIDEO_STEREO_PLANE_COUNT)
+                    continue;
+                snprintf(buf, sizeof(buf), "%s_%d",
+                         matroska_video_stereo_plane[planes[j].type], st->index);
+                for (int k = 0; k < matroska->tracks.nb_elem; k++)
+                    if (planes[j].uid == tracks[k].uid && tracks[k].stream) {
+                        av_dict_set(&tracks[k].stream->metadata,
+                                    "stereo_mode", buf, 0);
+                        break;
+                    }
+            }
+            // add stream level stereo3d side data if it is a supported format
+            if (track->video.stereo_mode < MATROSKA_VIDEO_STEREOMODE_TYPE_NB &&
+                track->video.stereo_mode != MATROSKA_VIDEO_STEREOMODE_TYPE_ANAGLYPH_CYAN_RED &&
+                track->video.stereo_mode != MATROSKA_VIDEO_STEREOMODE_TYPE_ANAGLYPH_GREEN_MAG) {
+                int ret = mkv_stereo3d_conv(st, track->video.stereo_mode);
+                if (ret < 0)
+                    return ret;
+            }
+
+            ret = mkv_parse_video_color(st, track);
+            if (ret < 0)
+                return ret;
+            ret = mkv_parse_video_projection(st, track, matroska->ctx);
+            if (ret < 0)
+                return ret;
+
+    return 0;
+}
+
 /* Performs the codec-specific part of parsing a subtitle track. */
 static int mkv_parse_subtitle_codec(MatroskaTrack *track, AVCodecParameters *par,
                                     const MatroskaDemuxContext *matroska)
@@ -2850,7 +2949,6 @@ static int matroska_parse_tracks(AVFormatContext *s)
     MatroskaDemuxContext *matroska = s->priv_data;
     MatroskaTrack *tracks = matroska->tracks.elem;
     int i, j, ret;
-    int k;
 
     for (i = 0; i < matroska->tracks.nb_elem; i++) {
         MatroskaTrack *track = &tracks[i];
@@ -3041,11 +3139,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
             if (ret == SKIP_TRACK)
                 continue;
         } else if (track->type == MATROSKA_TRACK_TYPE_VIDEO) {
-            if (track->video.color_space.size == 4)
-                par->codec_tag = AV_RL32(track->video.color_space.data);
-
-            ret = mkv_parse_video_codec(track, par, matroska,
-                                        &extradata_offset);
+            ret = mkv_parse_video(track, st, par, matroska, &extradata_offset);
             if (ret < 0)
                 return ret;
         } else if (track->type == MATROSKA_TRACK_TYPE_SUBTITLE) {
@@ -3067,85 +3161,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
             memcpy(par->extradata, src, extra_size);
         }
 
-        if (track->type == MATROSKA_TRACK_TYPE_VIDEO) {
-            MatroskaTrackPlane *planes = track->operation.combine_planes.elem;
-            int display_width_mul  = 1;
-            int display_height_mul = 1;
-
-            par->codec_type = AVMEDIA_TYPE_VIDEO;
-            par->width      = track->video.pixel_width;
-            par->height     = track->video.pixel_height;
-
-            if (track->video.interlaced == MATROSKA_VIDEO_INTERLACE_FLAG_INTERLACED)
-                par->field_order = mkv_field_order(matroska, track->video.field_order);
-            else if (track->video.interlaced == MATROSKA_VIDEO_INTERLACE_FLAG_PROGRESSIVE)
-                par->field_order = AV_FIELD_PROGRESSIVE;
-
-            if (track->video.stereo_mode && track->video.stereo_mode < MATROSKA_VIDEO_STEREOMODE_TYPE_NB)
-                mkv_stereo_mode_display_mul(track->video.stereo_mode, &display_width_mul, &display_height_mul);
-
-            if (track->video.display_unit < MATROSKA_VIDEO_DISPLAYUNIT_UNKNOWN) {
-                if (track->video.display_width && track->video.display_height &&
-                    par->height  < INT64_MAX / track->video.display_width  / display_width_mul &&
-                    par->width   < INT64_MAX / track->video.display_height / display_height_mul)
-                    av_reduce(&st->sample_aspect_ratio.num,
-                              &st->sample_aspect_ratio.den,
-                              par->height * track->video.display_width  * display_width_mul,
-                              par->width  * track->video.display_height * display_height_mul,
-                              INT_MAX);
-            }
-            if (par->codec_id != AV_CODEC_ID_HEVC)
-                sti->need_parsing = AVSTREAM_PARSE_HEADERS;
-
-            if (track->default_duration) {
-                int div = track->default_duration <= INT64_MAX ? 1 : 2;
-                av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
-                          1000000000 / div, track->default_duration / div, 30000);
-#if FF_API_R_FRAME_RATE
-                if (   st->avg_frame_rate.num < st->avg_frame_rate.den * 1000LL
-                    && st->avg_frame_rate.num > st->avg_frame_rate.den * 5LL)
-                    st->r_frame_rate = st->avg_frame_rate;
-#endif
-            }
-
-            /* export stereo mode flag as metadata tag */
-            if (track->video.stereo_mode && track->video.stereo_mode < MATROSKA_VIDEO_STEREOMODE_TYPE_NB)
-                av_dict_set(&st->metadata, "stereo_mode", ff_matroska_video_stereo_mode[track->video.stereo_mode], 0);
-
-            /* export alpha mode flag as metadata tag  */
-            if (track->video.alpha_mode)
-                av_dict_set_int(&st->metadata, "alpha_mode", 1, 0);
-
-            /* if we have virtual track, mark the real tracks */
-            for (j=0; j < track->operation.combine_planes.nb_elem; j++) {
-                char buf[32];
-                if (planes[j].type >= MATROSKA_VIDEO_STEREO_PLANE_COUNT)
-                    continue;
-                snprintf(buf, sizeof(buf), "%s_%d",
-                         matroska_video_stereo_plane[planes[j].type], i);
-                for (k=0; k < matroska->tracks.nb_elem; k++)
-                    if (planes[j].uid == tracks[k].uid && tracks[k].stream) {
-                        av_dict_set(&tracks[k].stream->metadata,
-                                    "stereo_mode", buf, 0);
-                        break;
-                    }
-            }
-            // add stream level stereo3d side data if it is a supported format
-            if (track->video.stereo_mode < MATROSKA_VIDEO_STEREOMODE_TYPE_NB &&
-                track->video.stereo_mode != MATROSKA_VIDEO_STEREOMODE_TYPE_ANAGLYPH_CYAN_RED &&
-                track->video.stereo_mode != MATROSKA_VIDEO_STEREOMODE_TYPE_ANAGLYPH_GREEN_MAG) {
-                int ret = mkv_stereo3d_conv(st, track->video.stereo_mode);
-                if (ret < 0)
-                    return ret;
-            }
-
-            ret = mkv_parse_video_color(st, track);
-            if (ret < 0)
-                return ret;
-            ret = mkv_parse_video_projection(st, track, matroska->ctx);
-            if (ret < 0)
-                return ret;
-        } else if (track->type == MATROSKA_TRACK_TYPE_AUDIO) {
+        if (track->type == MATROSKA_TRACK_TYPE_AUDIO) {
             par->codec_type  = AVMEDIA_TYPE_AUDIO;
             par->sample_rate = track->audio.out_samplerate;
             // channel layout may be already set by codec private checks above
