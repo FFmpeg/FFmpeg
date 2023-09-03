@@ -208,6 +208,8 @@ int ff_isom_write_vpcc(AVFormatContext *s, AVIOContext *pb,
     if (ret < 0)
         return ret;
 
+    avio_w8(pb, 1); /* version */
+    avio_wb24(pb, 0); /* flags */
     avio_w8(pb, vpcc.profile);
     avio_w8(pb, vpcc.level);
     avio_w8(pb, (vpcc.bitdepth << 4) | (vpcc.chroma_subsampling << 1) | vpcc.full_range_flag);
