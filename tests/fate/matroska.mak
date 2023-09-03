@@ -90,6 +90,16 @@ FATE_MATROSKA-$(call TRANSCODE, PCM_S24BE PCM_S24LE, MATROSKA, WAV_DEMUXER) \
                 += fate-matroska-move-cues-to-front
 fate-matroska-move-cues-to-front: CMD = transcode wav $(TARGET_SAMPLES)/audio-reference/divertimenti_2ch_96kHz_s24.wav matroska "-map 0 -map 0 -c:a:0 pcm_s24be -c:a:1 copy -cluster_time_limit 5 -cues_to_front yes -metadata_header_padding 7840 -write_crc32 0" "-map 0 -c copy -t 0.1"
 
+# This test covers the case in which a displaymatrix is not a rotation
+# and is therefore ignored by the muxer, i.e. the ffprobe output of
+# side data should be empty.
+FATE_MATROSKA_FFMPEG_FFPROBE-$(call REMUX, MATROSKA, MOV_DEMUXER H264_PARSER H264_DECODER) \
+                               += fate-matroska-non-rotation-displaymatrix
+fate-matroska-non-rotation-displaymatrix: CMD = transcode mov $(TARGET_SAMPLES)/mov/displaymatrix.mov matroska \
+    "-c copy -frames:v 5" \
+    "-c copy" \
+    "-show_entries stream_side_data_list"
+
 # This tests DOVI (reading from MP4 and Matroska and writing to Matroska)
 # as well as writing the Cues at the front (by shifting data) if
 # the initially reserved amount of space turns out to be insufficient.

@@ -1,0 +1,15 @@
+3d9eac5b7551c5d644443a70451c809c *tests/data/fate/matroska-non-rotation-displaymatrix.matroska
+7860 tests/data/fate/matroska-non-rotation-displaymatrix.matroska
+#extradata 0:       34, 0xc1d10b51
+#tb 0: 1/1000
+#media_type 0: video
+#codec_id 0: h264
+#dimensions 0: 160x240
+#sar 0: 1/2
+0,        -33,          0,       33,     4133, 0xc48cf152
+0,          0,         60,       33,     1077, 0x15a71a8a, F=0x0
+0,         27,         27,       33,      355, 0x1ee8b91a, F=0x0
+0,         60,        127,       33,     1110, 0x4e1a2b12, F=0x0
+0,         94,         94,       33,      430, 0x8724d62c, F=0x0
+[STREAM]
+[/STREAM]
