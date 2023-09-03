@@ -2803,6 +2803,48 @@ static int mkv_parse_video_codec(MatroskaTrack *track, AVCodecParameters *par,
     return 0;
 }
 
+/* Performs the codec-specific part of parsing a subtitle track. */
+static int mkv_parse_subtitle_codec(MatroskaTrack *track, AVCodecParameters *par,
+                                    const MatroskaDemuxContext *matroska)
+{
+    switch (par->codec_id) {
+    case AV_CODEC_ID_ARIB_CAPTION:
+        if (track->codec_priv.size == 3) {
+            int component_tag = track->codec_priv.data[0];
+            int data_component_id = AV_RB16(track->codec_priv.data + 1);
+
+            switch (data_component_id) {
+            case 0x0008:
+                // [0x30..0x37] are component tags utilized for
+                // non-mobile captioning service ("profile A").
+                if (component_tag >= 0x30 && component_tag <= 0x37) {
+                    par->profile = FF_PROFILE_ARIB_PROFILE_A;
+                }
+                break;
+            case 0x0012:
+                // component tag 0x87 signifies a mobile/partial reception
+                // (1seg) captioning service ("profile C").
+                if (component_tag == 0x87) {
+                    par->profile = FF_PROFILE_ARIB_PROFILE_C;
+                }
+                break;
+            default:
+                break;
+            }
+
+            if (par->profile == FF_PROFILE_UNKNOWN)
+                av_log(matroska->ctx, AV_LOG_WARNING,
+                       "Unknown ARIB caption profile utilized: %02x / %04x\n",
+                       component_tag, data_component_id);
+
+            track->codec_priv.size = 0;
+        }
+        break;
+    }
+
+    return 0;
+}
+
 static int matroska_parse_tracks(AVFormatContext *s)
 {
     MatroskaDemuxContext *matroska = s->priv_data;
@@ -3006,35 +3048,10 @@ static int matroska_parse_tracks(AVFormatContext *s)
                                         &extradata_offset);
             if (ret < 0)
                 return ret;
-        } else if (codec_id == AV_CODEC_ID_ARIB_CAPTION && track->codec_priv.size == 3) {
-            int component_tag = track->codec_priv.data[0];
-            int data_component_id = AV_RB16(track->codec_priv.data + 1);
-
-            switch (data_component_id) {
-            case 0x0008:
-                // [0x30..0x37] are component tags utilized for
-                // non-mobile captioning service ("profile A").
-                if (component_tag >= 0x30 && component_tag <= 0x37) {
-                    par->profile = FF_PROFILE_ARIB_PROFILE_A;
-                }
-                break;
-            case 0x0012:
-                // component tag 0x87 signifies a mobile/partial reception
-                // (1seg) captioning service ("profile C").
-                if (component_tag == 0x87) {
-                    par->profile = FF_PROFILE_ARIB_PROFILE_C;
-                }
-                break;
-            default:
-                break;
-            }
-
-            if (par->profile == FF_PROFILE_UNKNOWN)
-                av_log(matroska->ctx, AV_LOG_WARNING,
-                       "Unknown ARIB caption profile utilized: %02x / %04x\n",
-                       component_tag, data_component_id);
-
-            track->codec_priv.size = 0;
+        } else if (track->type == MATROSKA_TRACK_TYPE_SUBTITLE) {
+            ret = mkv_parse_subtitle_codec(track, par, matroska);
+            if (ret < 0)
+                return ret;
         }
 
         if (par->codec_id == AV_CODEC_ID_NONE)
