@@ -1110,6 +1110,34 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
         return AVERROR_EXTERNAL;
     }
 
+    // Dump the init encoder
+    {
+        CFStringRef encoderID = NULL;
+        status = VTSessionCopyProperty(vtctx->session,
+                                       kVTCompressionPropertyKey_EncoderID,
+                                       kCFAllocatorDefault,
+                                       &encoderID);
+        if (status == noErr) {
+            CFIndex length   = CFStringGetLength(encoderID);
+            CFIndex max_size = CFStringGetMaximumSizeForEncoding(length, kCFStringEncodingUTF8);
+            char *name       = av_malloc(max_size);
+            if (!name) {
+                CFRelease(encoderID);
+                return AVERROR(ENOMEM);
+            }
+
+            CFStringGetCString(encoderID,
+                               name,
+                               max_size,
+                               kCFStringEncodingUTF8);
+            av_log(avctx, AV_LOG_DEBUG, "Init the encoder: %s\n", name);
+
+            av_freep(&name);
+        }
+        if (encoderID != NULL)
+            CFRelease(encoderID);
+    }
+
     if (avctx->flags & AV_CODEC_FLAG_QSCALE && !vtenc_qscale_enabled()) {
         av_log(avctx, AV_LOG_ERROR, "Error: -q:v qscale not available for encoder. Use -b:v bitrate instead.\n");
         return AVERROR_EXTERNAL;
