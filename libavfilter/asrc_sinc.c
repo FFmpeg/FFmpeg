@@ -202,7 +202,7 @@ static float safe_log(float x)
 static int fir_to_phase(SincContext *s, float **h, int *len, int *post_len, float phase)
 {
     float *pi_wraps, *work, phase1 = (phase > 50.f ? 100.f - phase : phase) / 50.f;
-    int i, work_len, begin, end, imp_peak = 0, peak = 0;
+    int i, work_len, begin, end, imp_peak = 0, peak = 0, ret;
     float imp_sum = 0, peak_imp_sum = 0, scale = 1.f;
     float prev_angle2 = 0, cum_2pi = 0, prev_angle1 = 0, cum_1pi = 0;
 
@@ -218,12 +218,12 @@ static int fir_to_phase(SincContext *s, float **h, int *len, int *post_len, floa
 
     av_tx_uninit(&s->tx);
     av_tx_uninit(&s->itx);
-    av_tx_init(&s->tx,  &s->tx_fn,  AV_TX_FLOAT_RDFT, 0, work_len, &scale, AV_TX_INPLACE);
-    av_tx_init(&s->itx, &s->itx_fn, AV_TX_FLOAT_RDFT, 1, work_len, &scale, AV_TX_INPLACE);
-    if (!s->tx || !s->itx) {
-        av_free(work);
-        return AVERROR(ENOMEM);
-    }
+    ret = av_tx_init(&s->tx,  &s->tx_fn,  AV_TX_FLOAT_RDFT, 0, work_len, &scale, AV_TX_INPLACE);
+    if (ret < 0)
+        goto fail;
+    ret = av_tx_init(&s->itx, &s->itx_fn, AV_TX_FLOAT_RDFT, 1, work_len, &scale, AV_TX_INPLACE);
+    if (ret < 0)
+        goto fail;
 
     s->tx_fn(s->tx, work, work, sizeof(float));   /* Cepstral: */
 
@@ -315,9 +315,10 @@ static int fir_to_phase(SincContext *s, float **h, int *len, int *post_len, floa
            work_len, pi_wraps[work_len >> 1] / M_PI, peak, peak_imp_sum, imp_peak,
            work[imp_peak], *len, *post_len, 100.f - 100.f * *post_len / (*len - 1));
 
+fail:
     av_free(work);
 
-    return 0;
+    return ret;
 }
 
 static int config_output(AVFilterLink *outlink)
