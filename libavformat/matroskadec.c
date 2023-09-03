@@ -2948,7 +2948,8 @@ static int mkv_parse_video(MatroskaTrack *track, AVStream *st,
 }
 
 /* Performs the codec-specific part of parsing a subtitle track. */
-static int mkv_parse_subtitle_codec(MatroskaTrack *track, AVCodecParameters *par,
+static int mkv_parse_subtitle_codec(MatroskaTrack *track, AVStream *st,
+                                    AVCodecParameters *par,
                                     const MatroskaDemuxContext *matroska)
 {
     switch (par->codec_id) {
@@ -2984,6 +2985,15 @@ static int mkv_parse_subtitle_codec(MatroskaTrack *track, AVCodecParameters *par
             track->codec_priv.size = 0;
         }
         break;
+    case AV_CODEC_ID_WEBVTT:
+        if (!strcmp(track->codec_id, "D_WEBVTT/CAPTIONS")) {
+            st->disposition |= AV_DISPOSITION_CAPTIONS;
+        } else if (!strcmp(track->codec_id, "D_WEBVTT/DESCRIPTIONS")) {
+            st->disposition |= AV_DISPOSITION_DESCRIPTIONS;
+        } else if (!strcmp(track->codec_id, "D_WEBVTT/METADATA")) {
+            st->disposition |= AV_DISPOSITION_METADATA;
+        }
+        break;
     }
 
     return 0;
@@ -3001,6 +3011,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
         EbmlList *encodings_list = &track->encodings;
         MatroskaTrackEncoding *encodings = encodings_list->elem;
         AVCodecParameters *par;
+        MatroskaTrackType type;
         int extradata_offset = 0;
         AVStream *st;
         char* key_id_base64 = NULL;
@@ -3174,21 +3185,32 @@ static int matroska_parse_tracks(AVFormatContext *s)
                                                       (AVRational){ 1, 1000000000 },
                                                       st->time_base);
 
-        if (track->type == MATROSKA_TRACK_TYPE_AUDIO) {
+        type = track->type;
+        if (par->codec_id == AV_CODEC_ID_WEBVTT)
+            type = MATROSKA_TRACK_TYPE_SUBTITLE;
+        switch (type) {
+        case MATROSKA_TRACK_TYPE_AUDIO:
             ret = mka_parse_audio(track, st, par, matroska,
                                   s, &extradata_offset);
             if (ret < 0)
                 return ret;
             if (ret == SKIP_TRACK)
                 continue;
-        } else if (track->type == MATROSKA_TRACK_TYPE_VIDEO) {
+            break;
+        case MATROSKA_TRACK_TYPE_VIDEO:
             ret = mkv_parse_video(track, st, par, matroska, &extradata_offset);
             if (ret < 0)
                 return ret;
-        } else if (track->type == MATROSKA_TRACK_TYPE_SUBTITLE) {
-            ret = mkv_parse_subtitle_codec(track, par, matroska);
+            break;
+        case MATROSKA_TRACK_TYPE_SUBTITLE:
+            ret = mkv_parse_subtitle_codec(track, st, par, matroska);
             if (ret < 0)
                 return ret;
+            par->codec_type = AVMEDIA_TYPE_SUBTITLE;
+
+            if (track->flag_textdescriptions)
+                st->disposition |= AV_DISPOSITION_DESCRIPTIONS;
+            break;
         }
 
         if (par->codec_id == AV_CODEC_ID_NONE)
@@ -3202,23 +3224,6 @@ static int matroska_parse_tracks(AVFormatContext *s)
             if (ret < 0)
                 return ret;
             memcpy(par->extradata, src, extra_size);
-        }
-
-        if (par->codec_id == AV_CODEC_ID_WEBVTT) {
-            par->codec_type = AVMEDIA_TYPE_SUBTITLE;
-
-            if (!strcmp(track->codec_id, "D_WEBVTT/CAPTIONS")) {
-                st->disposition |= AV_DISPOSITION_CAPTIONS;
-            } else if (!strcmp(track->codec_id, "D_WEBVTT/DESCRIPTIONS")) {
-                st->disposition |= AV_DISPOSITION_DESCRIPTIONS;
-            } else if (!strcmp(track->codec_id, "D_WEBVTT/METADATA")) {
-                st->disposition |= AV_DISPOSITION_METADATA;
-            }
-        } else if (track->type == MATROSKA_TRACK_TYPE_SUBTITLE) {
-            par->codec_type = AVMEDIA_TYPE_SUBTITLE;
-
-            if (track->flag_textdescriptions)
-                st->disposition |= AV_DISPOSITION_DESCRIPTIONS;
         }
 
         ret = mkv_parse_block_addition_mappings(s, st, track);
