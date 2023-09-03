@@ -2748,32 +2748,32 @@ static int mka_parse_audio(MatroskaTrack *track, AVStream *st,
     if (ret)
         return ret;
 
-            par->codec_type  = AVMEDIA_TYPE_AUDIO;
-            par->sample_rate = track->audio.out_samplerate;
-            // channel layout may be already set by codec private checks above
-            if (!av_channel_layout_check(&par->ch_layout)) {
-                par->ch_layout.order = AV_CHANNEL_ORDER_UNSPEC;
-                par->ch_layout.nb_channels = track->audio.channels;
-            }
-            if (!par->bits_per_coded_sample)
-                par->bits_per_coded_sample = track->audio.bitdepth;
-            if (par->codec_id == AV_CODEC_ID_MP3 ||
-                par->codec_id == AV_CODEC_ID_MLP ||
-                par->codec_id == AV_CODEC_ID_TRUEHD)
-                sti->need_parsing = AVSTREAM_PARSE_FULL;
-            else if (par->codec_id != AV_CODEC_ID_AAC)
-                sti->need_parsing = AVSTREAM_PARSE_HEADERS;
-            if (track->codec_delay > 0) {
-                par->initial_padding = av_rescale_q(track->codec_delay,
-                                                    (AVRational){1, 1000000000},
-                                                    (AVRational){1, par->codec_id == AV_CODEC_ID_OPUS ?
-                                                                    48000 : par->sample_rate});
-            }
-            if (track->seek_preroll > 0) {
-                par->seek_preroll = av_rescale_q(track->seek_preroll,
-                                                 (AVRational){1, 1000000000},
-                                                 (AVRational){1, par->sample_rate});
-            }
+    par->codec_type  = AVMEDIA_TYPE_AUDIO;
+    par->sample_rate = track->audio.out_samplerate;
+    // channel layout may be already set by codec private checks above
+    if (!av_channel_layout_check(&par->ch_layout)) {
+        par->ch_layout.order = AV_CHANNEL_ORDER_UNSPEC;
+        par->ch_layout.nb_channels = track->audio.channels;
+    }
+    if (!par->bits_per_coded_sample)
+        par->bits_per_coded_sample = track->audio.bitdepth;
+    if (par->codec_id == AV_CODEC_ID_MP3 ||
+        par->codec_id == AV_CODEC_ID_MLP ||
+        par->codec_id == AV_CODEC_ID_TRUEHD)
+        sti->need_parsing = AVSTREAM_PARSE_FULL;
+    else if (par->codec_id != AV_CODEC_ID_AAC)
+        sti->need_parsing = AVSTREAM_PARSE_HEADERS;
+    if (track->codec_delay > 0) {
+        par->initial_padding = av_rescale_q(track->codec_delay,
+                                            (AVRational){1, 1000000000},
+                                            (AVRational){1, par->codec_id == AV_CODEC_ID_OPUS ?
+                                                            48000 : par->sample_rate});
+    }
+    if (track->seek_preroll > 0) {
+        par->seek_preroll = av_rescale_q(track->seek_preroll,
+                                         (AVRational){1, 1000000000},
+                                         (AVRational){1, par->sample_rate});
+    }
 
     return 0;
 }
