@@ -52,7 +52,7 @@ typedef struct OSQContext {
 
     int decorrelate;
     int frame_samples;
-    int64_t nb_samples;
+    uint64_t nb_samples;
 
     int32_t *decode_buffer[2];
 
