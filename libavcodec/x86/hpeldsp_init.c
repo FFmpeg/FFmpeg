@@ -22,8 +22,6 @@
  * MMX optimization by Nick Kurshev <nickols_k@mail.ru>
  */
 
-#include "config_components.h"
-
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86/cpu.h"
@@ -47,10 +45,16 @@ void ff_avg_pixels16_y2_sse2(uint8_t *block, const uint8_t *pixels,
                              ptrdiff_t line_size, int h);
 void ff_put_no_rnd_pixels8_x2_mmxext(uint8_t *block, const uint8_t *pixels,
                                      ptrdiff_t line_size, int h);
+void ff_put_no_rnd_pixels8_x2_exact_mmxext(uint8_t *block,
+                                           const uint8_t *pixels,
+                                           ptrdiff_t line_size, int h);
 void ff_put_pixels8_y2_mmxext(uint8_t *block, const uint8_t *pixels,
                               ptrdiff_t line_size, int h);
 void ff_put_no_rnd_pixels8_y2_mmxext(uint8_t *block, const uint8_t *pixels,
                                      ptrdiff_t line_size, int h);
+void ff_put_no_rnd_pixels8_y2_exact_mmxext(uint8_t *block,
+                                           const uint8_t *pixels,
+                                           ptrdiff_t line_size, int h);
 void ff_avg_pixels8_x2_mmxext(uint8_t *block, const uint8_t *pixels,
                               ptrdiff_t line_size, int h);
 void ff_avg_pixels8_y2_mmxext(uint8_t *block, const uint8_t *pixels,
@@ -183,6 +187,9 @@ static void hpeldsp_init_mmxext(HpelDSPContext *c, int flags)
     c->avg_pixels_tab[1][2] = ff_avg_pixels8_y2_mmxext;
     c->avg_pixels_tab[1][3] = ff_avg_pixels8_xy2_mmxext;
 
+    c->put_no_rnd_pixels_tab[1][1] = ff_put_no_rnd_pixels8_x2_exact_mmxext;
+    c->put_no_rnd_pixels_tab[1][2] = ff_put_no_rnd_pixels8_y2_exact_mmxext;
+
     if (!(flags & AV_CODEC_FLAG_BITEXACT)) {
         c->put_no_rnd_pixels_tab[0][1] = put_no_rnd_pixels16_x2_mmxext;
         c->put_no_rnd_pixels_tab[0][2] = put_no_rnd_pixels16_y2_mmxext;
@@ -235,7 +242,4 @@ av_cold void ff_hpeldsp_init_x86(HpelDSPContext *c, int flags)
 
     if (EXTERNAL_SSSE3(cpu_flags))
         hpeldsp_init_ssse3(c, flags);
-
-    if (CONFIG_VP3_DECODER)
-        ff_hpeldsp_vp3_init_x86(c, cpu_flags, flags);
 }
