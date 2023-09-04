@@ -232,7 +232,7 @@ fate-time_base: CMD = md5 -i $(TARGET_SAMPLES)/mpeg2/dvd_single_frame.vob -an -s
 FATE_SAMPLES_FFMPEG-yes += $(FATE_TIME_BASE-yes)
 
 # test -r used as an input option
-fate-ffmpeg-input-r: CMD = framecrc -r 27 -idct simple -i $(TARGET_SAMPLES)/mpeg2/sony-ct3.bs
+fate-ffmpeg-input-r: CMD = framecrc -r 27 -idct simple -bitexact -i $(TARGET_SAMPLES)/mpeg2/sony-ct3.bs
 FATE_SAMPLES_FFMPEG-$(call FRAMECRC, MPEGVIDEO, MPEG2VIDEO) += fate-ffmpeg-input-r
 
 # file with completely undecodable TTA audio stream
