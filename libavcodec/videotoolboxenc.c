@@ -232,6 +232,7 @@ typedef struct VTEncContext {
     AVClass *class;
     enum AVCodecID codec_id;
     VTCompressionSessionRef session;
+    CFDictionaryRef supported_props;
     CFStringRef ycbcr_matrix;
     CFStringRef color_primaries;
     CFStringRef transfer_function;
@@ -319,6 +320,34 @@ static void set_async_error(VTEncContext *vtctx, int err)
 static void clear_frame_queue(VTEncContext *vtctx)
 {
     set_async_error(vtctx, 0);
+}
+
+static void vtenc_reset(VTEncContext *vtctx)
+{
+    if (vtctx->session) {
+        CFRelease(vtctx->session);
+        vtctx->session = NULL;
+    }
+
+    if (vtctx->supported_props) {
+        CFRelease(vtctx->supported_props);
+        vtctx->supported_props = NULL;
+    }
+
+    if (vtctx->color_primaries) {
+        CFRelease(vtctx->color_primaries);
+        vtctx->color_primaries = NULL;
+    }
+
+    if (vtctx->transfer_function) {
+        CFRelease(vtctx->transfer_function);
+        vtctx->transfer_function = NULL;
+    }
+
+    if (vtctx->ycbcr_matrix) {
+        CFRelease(vtctx->ycbcr_matrix);
+        vtctx->ycbcr_matrix = NULL;
+    }
 }
 
 static int vtenc_q_pop(VTEncContext *vtctx, bool wait, CMSampleBufferRef *buf, ExtraSEI **sei)
@@ -1110,6 +1139,22 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
         return AVERROR_EXTERNAL;
     }
 
+#if defined (MAC_OS_X_VERSION_10_13) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_13)
+    if (__builtin_available(macOS 10.13, *)) {
+        status = VTCopySupportedPropertyDictionaryForEncoder(avctx->width,
+                                                             avctx->height,
+                                                             codec_type,
+                                                             enc_info,
+                                                             NULL,
+                                                             &vtctx->supported_props);
+
+        if (status != noErr) {
+            av_log(avctx, AV_LOG_ERROR,"Error retrieving the supported property dictionary err=%"PRId64"\n", (int64_t)status);
+            return AVERROR_EXTERNAL;
+        }
+    }
+#endif
+
     // Dump the init encoder
     {
         CFStringRef encoderID = NULL;
@@ -1662,7 +1707,6 @@ static av_cold int vtenc_init(AVCodecContext *avctx)
     // It can happen when user set avctx->profile directly.
     if (vtctx->profile == AV_PROFILE_UNKNOWN)
         vtctx->profile = avctx->profile;
-    vtctx->session = NULL;
     status = vtenc_configure_encoder(avctx);
     if (status) return status;
 
@@ -2431,8 +2475,8 @@ static int create_cv_pixel_buffer(AVCodecContext   *avctx,
 
         vtstatus = VTCompressionSessionPrepareToEncodeFrames(vtctx->session);
         if (vtstatus == kVTInvalidSessionErr) {
-            CFRelease(vtctx->session);
-            vtctx->session = NULL;
+            vtenc_reset(vtctx);
+
             status = vtenc_configure_encoder(avctx);
             if (status == 0)
                 pix_buf_pool = VTCompressionSessionGetPixelBufferPool(vtctx->session);
@@ -2688,10 +2732,7 @@ static int vtenc_populate_extradata(AVCodecContext   *avctx,
 
 pe_cleanup:
     CVPixelBufferRelease(pix_buf);
-    if(vtctx->session)
-        CFRelease(vtctx->session);
-
-    vtctx->session = NULL;
+    vtenc_reset(vtctx);
     vtctx->frame_ct_out = 0;
 
     av_assert0(status != 0 || (avctx->extradata && avctx->extradata_size > 0));
@@ -2714,23 +2755,8 @@ static av_cold int vtenc_close(AVCodecContext *avctx)
     clear_frame_queue(vtctx);
     pthread_cond_destroy(&vtctx->cv_sample_sent);
     pthread_mutex_destroy(&vtctx->lock);
-    CFRelease(vtctx->session);
-    vtctx->session = NULL;
 
-    if (vtctx->color_primaries) {
-        CFRelease(vtctx->color_primaries);
-        vtctx->color_primaries = NULL;
-    }
-
-    if (vtctx->transfer_function) {
-        CFRelease(vtctx->transfer_function);
-        vtctx->transfer_function = NULL;
-    }
-
-    if (vtctx->ycbcr_matrix) {
-        CFRelease(vtctx->ycbcr_matrix);
-        vtctx->ycbcr_matrix = NULL;
-    }
+    vtenc_reset(vtctx);
 
     return 0;
 }
