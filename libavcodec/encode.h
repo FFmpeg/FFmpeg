@@ -74,6 +74,11 @@ int ff_encode_encode_cb(AVCodecContext *avctx, AVPacket *avpkt,
                         AVFrame *frame, int *got_packet);
 
 /**
+ * Add a CPB properties side data to an encoding context.
+ */
+AVCPBProperties *ff_encode_add_cpb_side_data(AVCodecContext *avctx);
+
+/**
  * Rescale from sample rate to AVCodecContext.time_base.
  */
 static av_always_inline int64_t ff_samples_to_time_base(const AVCodecContext *avctx,

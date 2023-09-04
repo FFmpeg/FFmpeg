@@ -325,7 +325,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                             FFMAX(avctx->bit_rate, avctx->rc_max_rate) / 1000LL;
 
     if (avctx->bit_rate || avctx->rc_max_rate || avctx->rc_buffer_size) {
-        AVCPBProperties *cpb_props = ff_add_cpb_side_data(avctx);
+        AVCPBProperties *cpb_props = ff_encode_add_cpb_side_data(avctx);
         if (!cpb_props)
             return AVERROR(ENOMEM);
 
