@@ -103,9 +103,7 @@ static av_cold int osq_init(AVCodecContext *avctx)
     case  8: avctx->sample_fmt = AV_SAMPLE_FMT_U8P; break;
     case 16: avctx->sample_fmt = AV_SAMPLE_FMT_S16P; break;
     case 20:
-    case 24:
-    case 28:
-    case 32: s->factor = 1 << (32 - avctx->extradata[2]);
+    case 24: s->factor = 256;
              avctx->sample_fmt = AV_SAMPLE_FMT_S32P; break;
     default: return AVERROR_INVALIDDATA;
     }
