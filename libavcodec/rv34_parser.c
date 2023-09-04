@@ -24,11 +24,10 @@
  * RV30/40 parser
  */
 
-#include "parser.h"
+#include "avcodec.h"
 #include "libavutil/intreadwrite.h"
 
 typedef struct RV34ParseContext {
-    ParseContext pc;
     int64_t key_dts;
     int key_pts;
 } RV34ParseContext;
