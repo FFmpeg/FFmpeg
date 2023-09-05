@@ -148,7 +148,7 @@ static int decode_dcac(AVCodecContext *avctx,
                     ac_run = get_ue_golomb_long(ac_gb);
             }
 
-            block[0] = (dc << lshift) + add;
+            block[0] = ((unsigned)dc << lshift) + (unsigned)add;
             s->idsp.idct_put(dst + x, linesize, block);
         }
 
