@@ -1196,6 +1196,7 @@ static int transcode(int *err_rate_exceeded)
         if (ret == AVERROR(EAGAIN)) {
             reset_eagain();
             av_usleep(10000);
+            ret = 0;
             continue;
         } else if (ret < 0) {
             av_log(NULL, AV_LOG_VERBOSE, "No more output streams to write to, finishing.\n");
