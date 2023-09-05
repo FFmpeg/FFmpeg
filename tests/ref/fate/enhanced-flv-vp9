@@ -1,0 +1,18 @@
+f5cd49123111202ff220850e60f17ac4 *tests/data/fate/enhanced-flv-vp9.flv
+9388 tests/data/fate/enhanced-flv-vp9.flv
+#extradata 0:       12, 0x03bc009d
+#tb 0: 1/1000
+#media_type 0: video
+#codec_id 0: vp9
+#dimensions 0: 352x288
+#sar 0: 0/1
+0,          0,          0,       33,     3964, 0x8ff9b15f
+0,         33,         33,       33,      373, 0x985fb479, F=0x0
+0,         67,         67,       33,      375, 0x2813bc1b, F=0x0
+0,        100,        100,       33,      261, 0x69557ae9, F=0x0
+0,        133,        133,       33,      527, 0xb4a7fe75, F=0x0
+0,        167,        167,       33,      608, 0x80a8212a, F=0x0
+0,        200,        200,       33,     1551, 0x28f2f1f9, F=0x0
+0,        233,        233,       33,      520, 0xbec201ee, F=0x0
+0,        267,        267,       33,      426, 0xf9e0d260, F=0x0
+0,        300,        300,       33,      384, 0xcbd8b904, F=0x0
