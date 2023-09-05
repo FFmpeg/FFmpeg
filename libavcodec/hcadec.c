@@ -101,24 +101,19 @@ static inline unsigned ceil2(unsigned a, unsigned b)
     return (b > 0) ? (a / b + ((a % b) ? 1 : 0)) : 0;
 }
 
-static av_cold int decode_init(AVCodecContext *avctx)
+static int init_hca(AVCodecContext *avctx, const uint8_t *extradata,
+                    const int extradata_size)
 {
     HCAContext *c = avctx->priv_data;
     GetByteContext gb0, *const gb = &gb0;
     int8_t r[16] = { 0 };
-    float scale = 1.f / 8.f;
     unsigned b, chunk;
     int version, ret;
 
-    avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
-    c->crc_table = av_crc_get_table(AV_CRC_16_ANSI);
-
-    if (avctx->ch_layout.nb_channels <= 0 || avctx->ch_layout.nb_channels > 16)
-        return AVERROR(EINVAL);
-
-    if (avctx->extradata_size < 36)
+    if (extradata_size < 36)
         return AVERROR_INVALIDDATA;
-    bytestream2_init(gb, avctx->extradata, avctx->extradata_size);
+
+    bytestream2_init(gb, extradata, extradata_size);
 
     bytestream2_skipu(gb, 4);
     version = bytestream2_get_be16(gb);
@@ -160,7 +155,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     if (c->total_band_count > FF_ARRAY_ELEMS(c->ch->imdct_in))
         return AVERROR_INVALIDDATA;
-
 
     while (bytestream2_get_bytes_left(gb) >= 4) {
         chunk = bytestream2_get_be32u(gb);
@@ -243,11 +237,36 @@ static av_cold int decode_init(AVCodecContext *avctx)
             return AVERROR_INVALIDDATA;
     }
 
+    return 0;
+}
+
+static av_cold int decode_init(AVCodecContext *avctx)
+{
+    HCAContext *c = avctx->priv_data;
+    float scale = 1.f / 8.f;
+    int ret;
+
+    avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
+    c->crc_table = av_crc_get_table(AV_CRC_16_ANSI);
+
+    if (avctx->ch_layout.nb_channels <= 0 || avctx->ch_layout.nb_channels > 16)
+        return AVERROR(EINVAL);
+
     c->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
     if (!c->fdsp)
         return AVERROR(ENOMEM);
 
-    return av_tx_init(&c->tx_ctx, &c->tx_fn, AV_TX_FLOAT_MDCT, 1, 128, &scale, 0);
+    ret = av_tx_init(&c->tx_ctx, &c->tx_fn, AV_TX_FLOAT_MDCT, 1, 128, &scale, 0);
+    if (ret < 0)
+        return ret;
+
+    if (avctx->extradata_size != 0 && avctx->extradata_size < 36)
+        return AVERROR_INVALIDDATA;
+
+    if (!avctx->extradata_size)
+        return 0;
+
+    return init_hca(avctx, avctx->extradata, avctx->extradata_size);
 }
 
 static void run_imdct(HCAContext *c, ChannelContext *ch, int index, float *out)
@@ -385,16 +404,34 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
                         int *got_frame_ptr, AVPacket *avpkt)
 {
     HCAContext *c = avctx->priv_data;
-    int ch, ret, packed_noise_level;
+    int ch, offset = 0, ret, packed_noise_level;
     GetBitContext gb0, *const gb = &gb0;
     float **samples;
 
+    if (avpkt->size <= 8)
+        return AVERROR_INVALIDDATA;
+
+    if (AV_RN16(avpkt->data) != 0xFFFF) {
+        if (AV_RL32(avpkt->data) != MKTAG('H','C','A',0)) {
+            return AVERROR_INVALIDDATA;
+        } else if (AV_RB16(avpkt->data + 6) <= avpkt->size) {
+            ret = init_hca(avctx, avpkt->data, AV_RB16(avpkt->data + 6));
+            if (ret < 0)
+                return ret;
+            offset = AV_RB16(avpkt->data + 6);
+            if (offset == avpkt->size)
+                return avpkt->size;
+        } else {
+            return AVERROR_INVALIDDATA;
+        }
+    }
+
     if (avctx->err_recognition & AV_EF_CRCCHECK) {
-        if (av_crc(c->crc_table, 0, avpkt->data, avpkt->size))
+        if (av_crc(c->crc_table, 0, avpkt->data + offset, avpkt->size - offset))
             return AVERROR_INVALIDDATA;
     }
 
-    if ((ret = init_get_bits8(gb, avpkt->data, avpkt->size)) < 0)
+    if ((ret = init_get_bits8(gb, avpkt->data + offset, avpkt->size - offset)) < 0)
         return ret;
 
     if (get_bits(gb, 16) != 0xFFFF)
