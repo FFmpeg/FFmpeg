@@ -31,6 +31,7 @@ version <next>:
 - Support HEVC,VP9,AV1 codec in enhanced flv format
 - apsnr and asisdr audio filters
 - OSQ demuxer and decoder
+- Support HEVC,VP9,AV1 codec fourcclist in enhanced rtmp protocol
 
 
 version 6.0:
