@@ -70,7 +70,7 @@ static int adx_decode_header(AVCodecContext *avctx, const uint8_t *buf,
 
     /* channels */
     channels = buf[7];
-    if (channels <= 0 || channels > 2)
+    if (channels <= 0 || channels > MAX_CHANNELS)
         return AVERROR_INVALIDDATA;
 
     if (avctx->ch_layout.nb_channels != channels) {

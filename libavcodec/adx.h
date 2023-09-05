@@ -35,9 +35,11 @@ typedef struct ADXChannelState {
     int s1,s2;
 } ADXChannelState;
 
+#define MAX_CHANNELS 6
+
 typedef struct ADXContext {
     int channels;
-    ADXChannelState prev[2];
+    ADXChannelState prev[MAX_CHANNELS];
     int header_parsed;
     int eof;
     int cutoff;
