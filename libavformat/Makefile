@@ -588,6 +588,7 @@ OBJS-$(CONFIG_TTY_DEMUXER)               += tty.o sauce.o
 OBJS-$(CONFIG_TY_DEMUXER)                += ty.o
 OBJS-$(CONFIG_TXD_DEMUXER)               += txd.o
 OBJS-$(CONFIG_UNCODEDFRAMECRC_MUXER)     += uncodedframecrcenc.o framehash.o
+OBJS-$(CONFIG_USM_DEMUXER)               += usmdec.o
 OBJS-$(CONFIG_V210_DEMUXER)              += rawvideodec.o
 OBJS-$(CONFIG_V210X_DEMUXER)             += rawvideodec.o
 OBJS-$(CONFIG_VAG_DEMUXER)               += vag.o

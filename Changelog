@@ -32,6 +32,7 @@ version <next>:
 - apsnr and asisdr audio filters
 - OSQ demuxer and decoder
 - Support HEVC,VP9,AV1 codec fourcclist in enhanced rtmp protocol
+- CRI USM demuxer
 
 
 version 6.0:
