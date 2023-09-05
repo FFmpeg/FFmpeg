@@ -13,6 +13,9 @@ fate-lossless-shorten: CMD = md5 -i $(TARGET_SAMPLES)/lossless-audio/luckynight-
 FATE_SAMPLES_LOSSLESS_AUDIO-$(call DEMDEC, RKA, RKA) += fate-lossless-rka
 fate-lossless-rka: CMD = md5 -i $(TARGET_SAMPLES)/lossless-audio/luckynight-partial.rka -f s16le -af aresample
 
+FATE_SAMPLES_LOSSLESS_AUDIO-$(call DEMDEC, OSQ, OSQ) += fate-lossless-osq
+fate-lossless-osq: CMD = md5 -i $(TARGET_SAMPLES)/lossless-audio/luckynight-partial.osq -f s16le -af aresample
+
 FATE_SAMPLES_LOSSLESS_AUDIO-$(call DEMDEC, TAK, TAK) += fate-lossless-tak
 fate-lossless-tak: CMD = crc -i $(TARGET_SAMPLES)/lossless-audio/luckynight-partial.tak -af aresample
 
