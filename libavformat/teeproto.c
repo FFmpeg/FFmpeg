@@ -20,7 +20,6 @@
  */
 
 #include "libavutil/avstring.h"
-#include "libavutil/opt.h"
 #include "avformat.h"
 #include "avio_internal.h"
 #include "tee_common.h"
@@ -30,21 +29,9 @@ typedef struct ChildContext {
 } ChildContext;
 
 typedef struct TeeContext {
-    const AVClass *class;
     int child_count;
     ChildContext *child;
 } TeeContext;
-
-static const AVOption tee_options[] = {
-    { NULL }
-};
-
-static const AVClass tee_class = {
-    .class_name = "tee",
-    .item_name  = av_default_item_name,
-    .option     = tee_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
 
 static const char *const child_delim = "|";
 
@@ -154,6 +141,5 @@ const URLProtocol ff_tee_protocol = {
     .url_write           = tee_write,
     .url_close           = tee_close,
     .priv_data_size      = sizeof(TeeContext),
-    .priv_data_class     = &tee_class,
     .default_whitelist   = "crypto,file,http,https,httpproxy,rtmp,tcp,tls"
 };
