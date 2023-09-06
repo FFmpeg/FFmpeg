@@ -233,19 +233,20 @@ static void horizontal_frame_pack(AVFilterLink *outlink,
         }
     } else {
         for (i = 0; i < 2; i++) {
+            const AVFrame *const input_view = s->input_views[i];
             const int psize = 1 + (s->depth > 8);
             uint8_t *dst[4];
-            int sub_w = psize * s->input_views[i]->width >> s->pix_desc->log2_chroma_w;
+            int sub_w = psize * input_view->width >> s->pix_desc->log2_chroma_w;
 
-            dst[0] = out->data[0] + i * s->input_views[i]->width * psize;
+            dst[0] = out->data[0] + i * input_view->width * psize;
             dst[1] = out->data[1] + i * sub_w;
             dst[2] = out->data[2] + i * sub_w;
 
             av_image_copy2(dst, out->linesize,
-                           s->input_views[i]->data, s->input_views[i]->linesize,
-                           s->input_views[i]->format,
-                           s->input_views[i]->width,
-                           s->input_views[i]->height);
+                           input_view->data, input_view->linesize,
+                           input_view->format,
+                           input_view->width,
+                           input_view->height);
         }
     }
 }
@@ -259,12 +260,13 @@ static void vertical_frame_pack(AVFilterLink *outlink,
     int i;
 
     for (i = 0; i < 2; i++) {
+        const AVFrame *const input_view = s->input_views[i];
         uint8_t *dst[4];
         int linesizes[4];
-        int sub_h = s->input_views[i]->height >> s->pix_desc->log2_chroma_h;
+        int sub_h = input_view->height >> s->pix_desc->log2_chroma_h;
 
         dst[0] = out->data[0] + i * out->linesize[0] *
-                 (interleaved + s->input_views[i]->height * (1 - interleaved));
+                 (interleaved + input_view->height * (1 - interleaved));
         dst[1] = out->data[1] + i * out->linesize[1] *
                  (interleaved + sub_h * (1 - interleaved));
         dst[2] = out->data[2] + i * out->linesize[2] *
@@ -278,10 +280,10 @@ static void vertical_frame_pack(AVFilterLink *outlink,
                        interleaved * out->linesize[2];
 
         av_image_copy2(dst, linesizes,
-                       s->input_views[i]->data, s->input_views[i]->linesize,
-                       s->input_views[i]->format,
-                       s->input_views[i]->width,
-                       s->input_views[i]->height);
+                       input_view->data, input_view->linesize,
+                       input_view->format,
+                       input_view->width,
+                       input_view->height);
     }
 }
 
