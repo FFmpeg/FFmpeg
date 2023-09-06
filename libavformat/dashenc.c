@@ -207,14 +207,14 @@ typedef struct DASHContext {
 
 static const struct codec_string {
     enum AVCodecID id;
-    const char *str;
+    const char str[8];
 } codecs[] = {
     { AV_CODEC_ID_VP8, "vp8" },
     { AV_CODEC_ID_VP9, "vp9" },
     { AV_CODEC_ID_VORBIS, "vorbis" },
     { AV_CODEC_ID_OPUS, "opus" },
     { AV_CODEC_ID_FLAC, "flac" },
-    { AV_CODEC_ID_NONE, NULL }
+    { AV_CODEC_ID_NONE }
 };
 
 static int dashenc_io_open(AVFormatContext *s, AVIOContext **pb, char *filename,
