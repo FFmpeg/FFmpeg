@@ -802,7 +802,7 @@ static int rpza_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 {
     RpzaContext *s = avctx->priv_data;
     uint8_t *buf;
-    int ret = ff_alloc_packet(avctx, pkt, 4LL + 6LL * avctx->height * avctx->width);
+    int ret = ff_alloc_packet(avctx, pkt, 4LL + 6LL * FFMAX(avctx->height, 4) * FFMAX(avctx->width, 4));
 
     if (ret < 0)
         return ret;
