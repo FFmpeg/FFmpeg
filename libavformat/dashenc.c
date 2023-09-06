@@ -206,7 +206,7 @@ typedef struct DASHContext {
 } DASHContext;
 
 static struct codec_string {
-    int id;
+    enum AVCodecID id;
     const char *str;
 } codecs[] = {
     { AV_CODEC_ID_VP8, "vp8" },
@@ -214,7 +214,7 @@ static struct codec_string {
     { AV_CODEC_ID_VORBIS, "vorbis" },
     { AV_CODEC_ID_OPUS, "opus" },
     { AV_CODEC_ID_FLAC, "flac" },
-    { 0, NULL }
+    { AV_CODEC_ID_NONE, NULL }
 };
 
 static struct format_string {
@@ -360,7 +360,7 @@ static void set_codec_str(AVFormatContext *s, AVCodecParameters *par,
     int i;
 
     // common Webm codecs are not part of RFC 6381
-    for (i = 0; codecs[i].id; i++)
+    for (i = 0; codecs[i].id != AV_CODEC_ID_NONE; i++)
         if (codecs[i].id == par->codec_id) {
             if (codecs[i].id == AV_CODEC_ID_VP9) {
                 set_vp9_codec_str(s, par, frame_rate, str, size);
