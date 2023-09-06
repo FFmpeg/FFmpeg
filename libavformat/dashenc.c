@@ -205,7 +205,7 @@ typedef struct DASHContext {
     int64_t update_period;
 } DASHContext;
 
-static struct codec_string {
+static const struct codec_string {
     enum AVCodecID id;
     const char *str;
 } codecs[] = {
@@ -217,7 +217,7 @@ static struct codec_string {
     { AV_CODEC_ID_NONE, NULL }
 };
 
-static struct format_string {
+static const struct format_string {
     SegmentType segment_type;
     const char *str;
 } formats[] = {
