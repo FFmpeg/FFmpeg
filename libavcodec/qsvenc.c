@@ -35,6 +35,7 @@
 #include "libavutil/imgutils.h"
 
 #include "avcodec.h"
+#include "encode.h"
 #include "internal.h"
 #include "packet_internal.h"
 #include "qsv.h"
