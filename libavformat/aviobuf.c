@@ -976,9 +976,7 @@ int ffio_fdopen(AVIOContext **s, URLContext *h)
         return AVERROR(ENOMEM);
 
     *s = avio_alloc_context(buffer, buffer_size, h->flags & AVIO_FLAG_WRITE, h,
-                            (int (*)(void *, uint8_t *, int))  ffurl_read,
-                            (int (*)(void *, uint8_t *, int))  ffurl_write,
-                            (int64_t (*)(void *, int64_t, int))ffurl_seek);
+                            ffurl_read2, ffurl_write2, ffurl_seek2);
     if (!*s) {
         av_freep(&buffer);
         return AVERROR(ENOMEM);
@@ -1006,7 +1004,7 @@ int ffio_fdopen(AVIOContext **s, URLContext *h)
         if (h->prot->url_read_seek)
             (*s)->seekable |= AVIO_SEEKABLE_TIME;
     }
-    ((FFIOContext*)(*s))->short_seek_get = (int (*)(void *))ffurl_get_short_seek;
+    ((FFIOContext*)(*s))->short_seek_get = ffurl_get_short_seek;
     (*s)->av_class = &ff_avio_class;
     return 0;
 }

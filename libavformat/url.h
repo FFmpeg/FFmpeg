@@ -170,6 +170,7 @@ int ffurl_accept(URLContext *s, URLContext **c);
  */
 int ffurl_handshake(URLContext *c);
 
+int ffurl_read2(void *urlcontext, uint8_t *buf, int size);
 /**
  * Read up to size bytes from the resource accessed by h, and store
  * the read bytes in buf.
@@ -179,7 +180,10 @@ int ffurl_handshake(URLContext *c);
  * indicates that it is not possible to read more from the accessed
  * resource (except if the value of the size argument is also zero).
  */
-int ffurl_read(URLContext *h, unsigned char *buf, int size);
+static inline int ffurl_read(URLContext *h, uint8_t *buf, int size)
+{
+    return ffurl_read2(h, buf, size);
+}
 
 /**
  * Read as many bytes as possible (up to size), calling the
@@ -190,14 +194,19 @@ int ffurl_read(URLContext *h, unsigned char *buf, int size);
  */
 int ffurl_read_complete(URLContext *h, unsigned char *buf, int size);
 
+int ffurl_write2(void *urlcontext, uint8_t *buf, int size);
 /**
  * Write size bytes from buf to the resource accessed by h.
  *
  * @return the number of bytes actually written, or a negative value
  * corresponding to an AVERROR code in case of failure
  */
-int ffurl_write(URLContext *h, const unsigned char *buf, int size);
+static inline int ffurl_write(URLContext *h, const uint8_t *buf, int size)
+{
+    return ffurl_write2(h, (uint8_t*)buf, size);
+}
 
+int64_t ffurl_seek2(void *urlcontext, int64_t pos, int whence);
 /**
  * Change the position that will be used by the next read/write
  * operation on the resource accessed by h.
@@ -212,7 +221,10 @@ int ffurl_write(URLContext *h, const unsigned char *buf, int size);
  * the beginning of the file. You can use this feature together with
  * SEEK_CUR to read the current file position.
  */
-int64_t ffurl_seek(URLContext *h, int64_t pos, int whence);
+static inline int64_t ffurl_seek(URLContext *h, int64_t pos, int whence)
+{
+    return ffurl_seek2(h, pos, whence);
+}
 
 /**
  * Close the resource accessed by the URLContext h, and free the
@@ -251,7 +263,7 @@ int ffurl_get_multi_file_handle(URLContext *h, int **handles, int *numhandles);
  *
  * @return threshold (>0) on success or <=0 on error.
  */
-int ffurl_get_short_seek(URLContext *h);
+int ffurl_get_short_seek(void *urlcontext);
 
 /**
  * Signal the URLContext that we are done reading or writing the stream.
