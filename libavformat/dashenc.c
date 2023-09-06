@@ -1292,7 +1292,7 @@ static int write_manifest(AVFormatContext *s, int final)
                 if (os->segment_type != SEGMENT_TYPE_MP4)
                     continue;
                 get_hls_playlist_name(playlist_file, sizeof(playlist_file), NULL, i);
-                ff_hls_write_audio_rendition(c->m3u8_out, (char *)audio_group,
+                ff_hls_write_audio_rendition(c->m3u8_out, audio_group,
                                              playlist_file, NULL, i, is_default);
                 max_audio_bitrate = FFMAX(st->codecpar->bit_rate +
                                           os->muxer_overhead, max_audio_bitrate);
@@ -1309,7 +1309,7 @@ static int write_manifest(AVFormatContext *s, int final)
                 char codec_str[128];
                 AVStream *st = s->streams[i];
                 OutputStream *os = &c->streams[i];
-                char *agroup = NULL;
+                const char *agroup = NULL;
                 int stream_bitrate = os->muxer_overhead;
                 if (os->bit_rate > 0)
                     stream_bitrate += os->bit_rate;
@@ -1323,7 +1323,7 @@ static int write_manifest(AVFormatContext *s, int final)
                     continue;
                 av_strlcpy(codec_str, os->codec_str, sizeof(codec_str));
                 if (max_audio_bitrate) {
-                    agroup = (char *)audio_group;
+                    agroup = audio_group;
                     stream_bitrate += max_audio_bitrate;
                     av_strlcat(codec_str, ",", sizeof(codec_str));
                     av_strlcat(codec_str, audio_codec_str, sizeof(codec_str));
