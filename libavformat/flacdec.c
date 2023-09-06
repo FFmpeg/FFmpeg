@@ -46,11 +46,16 @@ static void reset_index_position(int64_t metadata_head_size, AVStream *st)
         sti->index_entries[i].pos += metadata_head_size;
 }
 
+static const uint16_t sr_table[16] = {
+    0, 1764, 3528, 3840, 160, 320, 441, 480, 640, 882, 960, 1920, 0, 0, 0, 0
+};
+
 static int flac_read_header(AVFormatContext *s)
 {
     int ret, metadata_last=0, metadata_type, metadata_size, found_streaminfo=0;
     uint8_t header[4];
     uint8_t *buffer=NULL;
+    uint32_t marker;
     FLACDecContext *flac = s->priv_data;
     AVStream *st = avformat_new_stream(s, NULL);
     if (!st)
@@ -61,7 +66,11 @@ static int flac_read_header(AVFormatContext *s)
     /* the parameters will be extracted from the compressed bitstream */
 
     /* if fLaC marker is not found, assume there is no header */
-    if (avio_rl32(s->pb) != MKTAG('f','L','a','C')) {
+    marker = avio_rl32(s->pb);
+    if (marker != MKTAG('f','L','a','C')) {
+        const int sample_rate = 50 * sr_table[(marker >> 16) & 0xF];
+        if (sample_rate)
+            avpriv_set_pts_info(st, 64, 1, sample_rate);
         avio_seek(s->pb, -4, SEEK_CUR);
         return 0;
     }
