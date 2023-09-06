@@ -452,8 +452,8 @@ static int d3d11va_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
 
         fill_texture_ptrs(map_data, map_linesize, ctx, &desc, &map);
 
-        av_image_copy(dst->data, dst->linesize, (const uint8_t **)map_data, map_linesize,
-                      ctx->sw_format, w, h);
+        av_image_copy2(dst->data, dst->linesize, map_data, map_linesize,
+                       ctx->sw_format, w, h);
 
         ID3D11DeviceContext_Unmap(device_hwctx->device_context, staging, 0);
     } else {
@@ -464,8 +464,8 @@ static int d3d11va_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
 
         fill_texture_ptrs(map_data, map_linesize, ctx, &desc, &map);
 
-        av_image_copy(map_data, map_linesize, (const uint8_t **)src->data, src->linesize,
-                      ctx->sw_format, w, h);
+        av_image_copy2(map_data, map_linesize, src->data, src->linesize,
+                       ctx->sw_format, w, h);
 
         ID3D11DeviceContext_Unmap(device_hwctx->device_context, staging, 0);
 

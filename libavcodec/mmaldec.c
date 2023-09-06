@@ -648,8 +648,8 @@ static int ffmal_copy_frame(AVCodecContext *avctx,  AVFrame *frame,
         av_image_fill_arrays(src, linesize,
                              buffer->data + buffer->type->video.offset[0],
                              avctx->pix_fmt, w, h, 1);
-        av_image_copy(frame->data, frame->linesize, (const uint8_t **)src, linesize,
-                      avctx->pix_fmt, avctx->width, avctx->height);
+        av_image_copy2(frame->data, frame->linesize, src, linesize,
+                       avctx->pix_fmt, avctx->width, avctx->height);
     }
 
     frame->sample_aspect_ratio = avctx->sample_aspect_ratio;

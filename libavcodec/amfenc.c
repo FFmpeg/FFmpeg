@@ -430,9 +430,9 @@ static int amf_copy_surface(AVCodecContext *avctx, const AVFrame *frame,
         dst_data[i] = plane->pVtbl->GetNative(plane);
         dst_linesize[i] = plane->pVtbl->GetHPitch(plane);
     }
-    av_image_copy(dst_data, dst_linesize,
-        (const uint8_t**)frame->data, frame->linesize, frame->format,
-        avctx->width, avctx->height);
+    av_image_copy2(dst_data, dst_linesize,
+                   frame->data, frame->linesize, frame->format,
+                   avctx->width, avctx->height);
 
     return 0;
 }

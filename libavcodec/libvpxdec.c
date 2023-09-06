@@ -329,8 +329,8 @@ static int vpx_decode(AVCodecContext *avctx, AVFrame *picture,
         } else {
             if ((ret = ff_get_buffer(avctx, picture, 0)) < 0)
                 return ret;
-            av_image_copy(picture->data, picture->linesize, (const uint8_t**)planes,
-                          linesizes, avctx->pix_fmt, img->d_w, img->d_h);
+            av_image_copy2(picture->data, picture->linesize, planes,
+                           linesizes, avctx->pix_fmt, img->d_w, img->d_h);
         }
         *got_frame           = 1;
     }

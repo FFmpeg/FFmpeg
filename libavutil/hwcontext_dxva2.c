@@ -356,8 +356,8 @@ static int dxva2_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
     if (ret < 0)
         goto fail;
 
-    av_image_copy(map->data, map->linesize, (const uint8_t **)src->data, src->linesize,
-                  ctx->sw_format, src->width, src->height);
+    av_image_copy2(map->data, map->linesize, src->data, src->linesize,
+                   ctx->sw_format, src->width, src->height);
 
 fail:
     av_frame_free(&map);

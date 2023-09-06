@@ -78,9 +78,9 @@ static int output_video_frame(AVFrame *frame)
 
     /* copy decoded frame to destination buffer:
      * this is required since rawvideo expects non aligned data */
-    av_image_copy(video_dst_data, video_dst_linesize,
-                  (const uint8_t **)(frame->data), frame->linesize,
-                  pix_fmt, width, height);
+    av_image_copy2(video_dst_data, video_dst_linesize,
+                   frame->data, frame->linesize,
+                   pix_fmt, width, height);
 
     /* write to rawvideo file */
     fwrite(video_dst_data[0], 1, video_dst_bufsize, video_dst_file);

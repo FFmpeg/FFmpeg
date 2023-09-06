@@ -221,9 +221,9 @@ static int libkvazaar_encode(AVCodecContext *avctx,
               frame->width / 2,
               0
             };
-            av_image_copy(dst, dst_linesizes,
-                          (const uint8_t **)frame->data, frame->linesize,
-                          frame->format, frame->width, frame->height);
+            av_image_copy2(dst, dst_linesizes,
+                           frame->data, frame->linesize,
+                           frame->format, frame->width, frame->height);
         }
 
         input_pic->pts = frame->pts;

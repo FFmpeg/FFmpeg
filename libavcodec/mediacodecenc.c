@@ -428,9 +428,6 @@ static void copy_frame_to_buffer(AVCodecContext *avctx, const AVFrame *frame, ui
     MediaCodecEncContext *s = avctx->priv_data;
     uint8_t *dst_data[4] = {};
     int dst_linesize[4] = {};
-    const uint8_t *src_data[4] = {
-            frame->data[0], frame->data[1], frame->data[2], frame->data[3]
-    };
 
     if (avctx->pix_fmt == AV_PIX_FMT_YUV420P) {
         dst_data[0] = dst;
@@ -449,8 +446,8 @@ static void copy_frame_to_buffer(AVCodecContext *avctx, const AVFrame *frame, ui
         av_assert0(0);
     }
 
-    av_image_copy(dst_data, dst_linesize, src_data, frame->linesize,
-                  avctx->pix_fmt, avctx->width, avctx->height);
+    av_image_copy2(dst_data, dst_linesize, frame->data, frame->linesize,
+                   avctx->pix_fmt, avctx->width, avctx->height);
 }
 
 static int mediacodec_send(AVCodecContext *avctx,

@@ -666,9 +666,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         goto end;
     }
 
-    av_image_copy(b->planes, s->planewidth,
-                  (const uint8_t**)in->data, in->linesize,
-                  inlink->format, inlink->w, inlink->h);
+    av_image_copy2(b->planes, s->planewidth,
+                   in->data, in->linesize,
+                   inlink->format, inlink->w, inlink->h);
 
     p = (in->flags & AV_FRAME_FLAG_INTERLACED) ?
         !(in->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST) : 0;
@@ -714,9 +714,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
     av_frame_copy_props(out, in);
 
-    av_image_copy(out->data, out->linesize,
-                  (const uint8_t**)f->buffer->planes, s->planewidth,
-                  inlink->format, inlink->w, inlink->h);
+    av_image_copy2(out->data, out->linesize,
+                   f->buffer->planes, s->planewidth,
+                   inlink->format, inlink->w, inlink->h);
 
     ret = ff_filter_frame(outlink, out);
     pullup_release_frame(f);

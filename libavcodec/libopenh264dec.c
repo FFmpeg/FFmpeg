@@ -141,7 +141,8 @@ static int svc_decode_frame(AVCodecContext *avctx, AVFrame *avframe,
     linesize[0] = info.UsrData.sSystemBuffer.iStride[0];
     linesize[1] = linesize[2] = info.UsrData.sSystemBuffer.iStride[1];
     linesize[3] = 0;
-    av_image_copy(avframe->data, avframe->linesize, (const uint8_t **) ptrs, linesize, avctx->pix_fmt, avctx->width, avctx->height);
+    av_image_copy2(avframe->data, avframe->linesize, ptrs, linesize,
+                   avctx->pix_fmt, avctx->width, avctx->height);
 
     avframe->pts     = info.uiOutYuvTimeStamp;
     avframe->pkt_dts = AV_NOPTS_VALUE;

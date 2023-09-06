@@ -117,7 +117,8 @@ int ff_load_image(uint8_t *data[4], int linesize[4],
         goto end;
     ret = 0;
 
-    av_image_copy(data, linesize, (const uint8_t **)frame->data, frame->linesize, *pix_fmt, *w, *h);
+    av_image_copy2(data, linesize, frame->data, frame->linesize,
+                   *pix_fmt, *w, *h);
 
 end:
     avcodec_free_context(&codec_ctx);

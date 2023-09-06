@@ -175,6 +175,22 @@ void av_image_copy(uint8_t * const dst_data[4], const int dst_linesizes[4],
                    enum AVPixelFormat pix_fmt, int width, int height);
 
 /**
+ * Wrapper around av_image_copy() to workaround the limitation
+ * that the conversion from uint8_t * const * to const uint8_t * const *
+ * is not performed automatically in C.
+ * @see av_image_copy()
+ */
+static inline
+void av_image_copy2(uint8_t * const dst_data[4], const int dst_linesizes[4],
+                    uint8_t * const src_data[4], const int src_linesizes[4],
+                    enum AVPixelFormat pix_fmt, int width, int height)
+{
+    av_image_copy(dst_data, dst_linesizes,
+                  (const uint8_t * const *)src_data, src_linesizes,
+                  pix_fmt, width, height);
+}
+
+/**
  * Copy image data located in uncacheable (e.g. GPU mapped) memory. Where
  * available, this function will use special functionality for reading from such
  * memory, which may result in greatly improved performance compared to plain

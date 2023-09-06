@@ -833,7 +833,6 @@ AVFrameSideData *av_frame_get_side_data(const AVFrame *frame,
 
 static int frame_copy_video(AVFrame *dst, const AVFrame *src)
 {
-    const uint8_t *src_data[4];
     int planes;
 
     if (dst->width  < src->width ||
@@ -848,10 +847,9 @@ static int frame_copy_video(AVFrame *dst, const AVFrame *src)
         if (!dst->data[i] || !src->data[i])
             return AVERROR(EINVAL);
 
-    memcpy(src_data, src->data, sizeof(src_data));
-    av_image_copy(dst->data, dst->linesize,
-                  src_data, src->linesize,
-                  dst->format, src->width, src->height);
+    av_image_copy2(dst->data, dst->linesize,
+                   src->data, src->linesize,
+                   dst->format, src->width, src->height);
 
     return 0;
 }

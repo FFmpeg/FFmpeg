@@ -89,9 +89,9 @@ static void fixstride(AVFilterLink *link, AVFrame *f)
     if(!dst)
         return;
     av_frame_copy_props(dst, f);
-    av_image_copy(dst->data, dst->linesize,
-                  (const uint8_t **)f->data, f->linesize,
-                  dst->format, dst->width, dst->height);
+    av_image_copy2(dst->data, dst->linesize,
+                   f->data, f->linesize,
+                   dst->format, dst->width, dst->height);
     av_frame_unref(f);
     av_frame_move_ref(f, dst);
     av_frame_free(&dst);

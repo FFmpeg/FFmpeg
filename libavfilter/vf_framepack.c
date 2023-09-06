@@ -234,22 +234,18 @@ static void horizontal_frame_pack(AVFilterLink *outlink,
     } else {
         for (i = 0; i < 2; i++) {
             const int psize = 1 + (s->depth > 8);
-            const uint8_t *src[4];
             uint8_t *dst[4];
             int sub_w = psize * s->input_views[i]->width >> s->pix_desc->log2_chroma_w;
-
-            src[0] = s->input_views[i]->data[0];
-            src[1] = s->input_views[i]->data[1];
-            src[2] = s->input_views[i]->data[2];
 
             dst[0] = out->data[0] + i * s->input_views[i]->width * psize;
             dst[1] = out->data[1] + i * sub_w;
             dst[2] = out->data[2] + i * sub_w;
 
-            av_image_copy(dst, out->linesize, src, s->input_views[i]->linesize,
-                          s->input_views[i]->format,
-                          s->input_views[i]->width,
-                          s->input_views[i]->height);
+            av_image_copy2(dst, out->linesize,
+                           s->input_views[i]->data, s->input_views[i]->linesize,
+                           s->input_views[i]->format,
+                           s->input_views[i]->width,
+                           s->input_views[i]->height);
         }
     }
 }
@@ -263,14 +259,9 @@ static void vertical_frame_pack(AVFilterLink *outlink,
     int i;
 
     for (i = 0; i < 2; i++) {
-        const uint8_t *src[4];
         uint8_t *dst[4];
         int linesizes[4];
         int sub_h = s->input_views[i]->height >> s->pix_desc->log2_chroma_h;
-
-        src[0] = s->input_views[i]->data[0];
-        src[1] = s->input_views[i]->data[1];
-        src[2] = s->input_views[i]->data[2];
 
         dst[0] = out->data[0] + i * out->linesize[0] *
                  (interleaved + s->input_views[i]->height * (1 - interleaved));
@@ -286,10 +277,11 @@ static void vertical_frame_pack(AVFilterLink *outlink,
         linesizes[2] = out->linesize[2] +
                        interleaved * out->linesize[2];
 
-        av_image_copy(dst, linesizes, src, s->input_views[i]->linesize,
-                      s->input_views[i]->format,
-                      s->input_views[i]->width,
-                      s->input_views[i]->height);
+        av_image_copy2(dst, linesizes,
+                       s->input_views[i]->data, s->input_views[i]->linesize,
+                       s->input_views[i]->format,
+                       s->input_views[i]->width,
+                       s->input_views[i]->height);
     }
 }
 

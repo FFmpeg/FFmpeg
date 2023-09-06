@@ -793,7 +793,8 @@ static int omx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             need_copy = 1;
         }
         if (need_copy)
-            av_image_copy(dst, linesize, (const uint8_t**) frame->data, frame->linesize, avctx->pix_fmt, avctx->width, avctx->height);
+            av_image_copy2(dst, linesize, frame->data, frame->linesize,
+                           avctx->pix_fmt, avctx->width, avctx->height);
         buffer->nFlags = OMX_BUFFERFLAG_ENDOFFRAME;
         buffer->nOffset = 0;
         // Convert the timestamps to microseconds; some encoders can ignore
