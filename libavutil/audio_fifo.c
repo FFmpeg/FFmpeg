@@ -116,7 +116,7 @@ int av_audio_fifo_realloc(AVAudioFifo *af, int nb_samples)
     return 0;
 }
 
-int av_audio_fifo_write(AVAudioFifo *af, void **data, int nb_samples)
+int av_audio_fifo_write(AVAudioFifo *af, void * const *data, int nb_samples)
 {
     int i, ret, size;
 
@@ -142,12 +142,13 @@ int av_audio_fifo_write(AVAudioFifo *af, void **data, int nb_samples)
     return nb_samples;
 }
 
-int av_audio_fifo_peek(AVAudioFifo *af, void **data, int nb_samples)
+int av_audio_fifo_peek(const AVAudioFifo *af, void * const *data, int nb_samples)
 {
     return av_audio_fifo_peek_at(af, data, nb_samples, 0);
 }
 
-int av_audio_fifo_peek_at(AVAudioFifo *af, void **data, int nb_samples, int offset)
+int av_audio_fifo_peek_at(const AVAudioFifo *af, void * const *data,
+                          int nb_samples, int offset)
 {
     int i, ret, size;
 
@@ -171,7 +172,7 @@ int av_audio_fifo_peek_at(AVAudioFifo *af, void **data, int nb_samples, int offs
     return nb_samples;
 }
 
-int av_audio_fifo_read(AVAudioFifo *af, void **data, int nb_samples)
+int av_audio_fifo_read(AVAudioFifo *af, void * const *data, int nb_samples)
 {
     int i, size;
 
