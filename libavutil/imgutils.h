@@ -170,8 +170,8 @@ void av_image_copy_plane_uc_from(uint8_t       *dst, ptrdiff_t dst_linesize,
  * @param width         width of the image in pixels
  * @param height        height of the image in pixels
  */
-void av_image_copy(uint8_t *dst_data[4], int dst_linesizes[4],
-                   const uint8_t *src_data[4], const int src_linesizes[4],
+void av_image_copy(uint8_t * const dst_data[4], const int dst_linesizes[4],
+                   const uint8_t * const src_data[4], const int src_linesizes[4],
                    enum AVPixelFormat pix_fmt, int width, int height);
 
 /**
@@ -188,8 +188,8 @@ void av_image_copy(uint8_t *dst_data[4], int dst_linesizes[4],
  * @note On x86, the linesizes currently need to be aligned to the cacheline
  *       size (i.e. 64) to get improved performance.
  */
-void av_image_copy_uc_from(uint8_t *dst_data[4],       const ptrdiff_t dst_linesizes[4],
-                           const uint8_t *src_data[4], const ptrdiff_t src_linesizes[4],
+void av_image_copy_uc_from(uint8_t * const dst_data[4],       const ptrdiff_t dst_linesizes[4],
+                           const uint8_t * const src_data[4], const ptrdiff_t src_linesizes[4],
                            enum AVPixelFormat pix_fmt, int width, int height);
 
 /**
@@ -319,7 +319,7 @@ int av_image_check_sar(unsigned int w, unsigned int h, AVRational sar);
  * @param height        the height of the image in pixels
  * @return 0 if the image data was cleared, a negative AVERROR code otherwise
  */
-int av_image_fill_black(uint8_t *dst_data[4], const ptrdiff_t dst_linesize[4],
+int av_image_fill_black(uint8_t * const dst_data[4], const ptrdiff_t dst_linesize[4],
                         enum AVPixelFormat pix_fmt, enum AVColorRange range,
                         int width, int height);
 

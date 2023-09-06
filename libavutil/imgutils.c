@@ -378,8 +378,8 @@ void av_image_copy_plane(uint8_t       *dst, int dst_linesize,
     image_copy_plane(dst, dst_linesize, src, src_linesize, bytewidth, height);
 }
 
-static void image_copy(uint8_t *dst_data[4], const ptrdiff_t dst_linesizes[4],
-                       const uint8_t *src_data[4], const ptrdiff_t src_linesizes[4],
+static void image_copy(uint8_t *const dst_data[4], const ptrdiff_t dst_linesizes[4],
+                       const uint8_t *const src_data[4], const ptrdiff_t src_linesizes[4],
                        enum AVPixelFormat pix_fmt, int width, int height,
                        void (*copy_plane)(uint8_t *, ptrdiff_t, const uint8_t *,
                                           ptrdiff_t, ptrdiff_t, int))
@@ -419,8 +419,8 @@ static void image_copy(uint8_t *dst_data[4], const ptrdiff_t dst_linesizes[4],
     }
 }
 
-void av_image_copy(uint8_t *dst_data[4], int dst_linesizes[4],
-                   const uint8_t *src_data[4], const int src_linesizes[4],
+void av_image_copy(uint8_t *const dst_data[4], const int dst_linesizes[4],
+                   const uint8_t * const src_data[4], const int src_linesizes[4],
                    enum AVPixelFormat pix_fmt, int width, int height)
 {
     ptrdiff_t dst_linesizes1[4], src_linesizes1[4];
@@ -435,8 +435,8 @@ void av_image_copy(uint8_t *dst_data[4], int dst_linesizes[4],
                width, height, image_copy_plane);
 }
 
-void av_image_copy_uc_from(uint8_t *dst_data[4], const ptrdiff_t dst_linesizes[4],
-                           const uint8_t *src_data[4], const ptrdiff_t src_linesizes[4],
+void av_image_copy_uc_from(uint8_t * const dst_data[4], const ptrdiff_t dst_linesizes[4],
+                           const uint8_t * const src_data[4], const ptrdiff_t src_linesizes[4],
                            enum AVPixelFormat pix_fmt, int width, int height)
 {
     image_copy(dst_data, dst_linesizes, src_data, src_linesizes, pix_fmt,
@@ -579,7 +579,7 @@ static void memset_bytes(uint8_t *dst, size_t dst_size, uint8_t *clear,
 // if it's a subsampled packed format).
 #define MAX_BLOCK_SIZE 32
 
-int av_image_fill_black(uint8_t *dst_data[4], const ptrdiff_t dst_linesize[4],
+int av_image_fill_black(uint8_t * const dst_data[4], const ptrdiff_t dst_linesize[4],
                         enum AVPixelFormat pix_fmt, enum AVColorRange range,
                         int width, int height)
 {
