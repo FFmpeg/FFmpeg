@@ -20,7 +20,6 @@
 
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
-#include "avformat.h"
 #include "url.h"
 
 typedef struct SubfileContext {

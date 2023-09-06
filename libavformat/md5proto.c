@@ -23,7 +23,6 @@
 #include "libavutil/md5.h"
 #include "libavutil/mem.h"
 #include "libavutil/error.h"
-#include "avformat.h"
 #include "avio.h"
 #include "internal.h"
 #include "url.h"

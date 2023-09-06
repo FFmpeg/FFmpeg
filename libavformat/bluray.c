@@ -23,7 +23,6 @@
 #include <libbluray/bluray.h>
 
 #include "libavutil/avstring.h"
-#include "libavformat/avformat.h"
 #include "libavformat/url.h"
 #include "libavutil/opt.h"
 

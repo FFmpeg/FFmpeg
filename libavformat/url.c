@@ -19,16 +19,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <string.h>
 
-#include "avformat.h"
-#include "internal.h"
 #include "config.h"
+#include "avio.h"
 #include "url.h"
 #if CONFIG_NETWORK
 #include "network.h"
 #endif
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/error.h"
+#include "libavutil/mem.h"
 
 /**
  * @file

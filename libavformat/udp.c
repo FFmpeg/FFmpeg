@@ -28,12 +28,10 @@
 #define _BSD_SOURCE     /* Needed for using struct ip_mreq with recent glibc */
 
 #include "avformat.h"
-#include "avio_internal.h"
 #include "libavutil/avassert.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/fifo.h"
 #include "libavutil/intreadwrite.h"
-#include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "libavutil/log.h"
 #include "libavutil/time.h"

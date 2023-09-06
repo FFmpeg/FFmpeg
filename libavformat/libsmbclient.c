@@ -21,8 +21,6 @@
 #include <libsmbclient.h>
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
-#include "avformat.h"
-#include "internal.h"
 #include "url.h"
 
 typedef struct {

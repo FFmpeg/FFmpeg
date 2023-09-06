@@ -28,7 +28,6 @@
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "avformat.h"
-#include "avio_internal.h"
 #include "rtp.h"
 #include "rtpproto.h"
 #include "url.h"
