@@ -200,7 +200,7 @@ int av_fifo_read_to_cb(AVFifo *f, AVFifoCB write_cb,
  *
  * @return a non-negative number on success, a negative error code on failure
  */
-int av_fifo_peek(AVFifo *f, void *buf, size_t nb_elems, size_t offset);
+int av_fifo_peek(const AVFifo *f, void *buf, size_t nb_elems, size_t offset);
 
 /**
  * Feed data from a FIFO into a user-provided callback.
@@ -217,7 +217,7 @@ int av_fifo_peek(AVFifo *f, void *buf, size_t nb_elems, size_t offset);
  *
  * @return a non-negative number on success, a negative error code on failure
  */
-int av_fifo_peek_to_cb(AVFifo *f, AVFifoCB write_cb, void *opaque,
+int av_fifo_peek_to_cb(const AVFifo *f, AVFifoCB write_cb, void *opaque,
                        size_t *nb_elems, size_t offset);
 
 /**

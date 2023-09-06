@@ -252,12 +252,12 @@ int av_fifo_read_to_cb(AVFifo *f, AVFifoCB write_cb,
     return ret;
 }
 
-int av_fifo_peek(AVFifo *f, void *buf, size_t nb_elems, size_t offset)
+int av_fifo_peek(const AVFifo *f, void *buf, size_t nb_elems, size_t offset)
 {
     return fifo_peek_common(f, buf, &nb_elems, offset, NULL, NULL);
 }
 
-int av_fifo_peek_to_cb(AVFifo *f, AVFifoCB write_cb, void *opaque,
+int av_fifo_peek_to_cb(const AVFifo *f, AVFifoCB write_cb, void *opaque,
                        size_t *nb_elems, size_t offset)
 {
     return fifo_peek_common(f, NULL, nb_elems, offset, write_cb, opaque);
