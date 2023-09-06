@@ -29,10 +29,10 @@ static int yuv4_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 {
     uint8_t *dst;
     const uint8_t *y, *u, *v;
-    int i, j, ret;
+    int ret;
 
-    ret = ff_get_encode_buffer(avctx, pkt, 6 * (avctx->width  + 1 >> 1)
-                                             * (avctx->height + 1 >> 1), 0);
+    ret = ff_get_encode_buffer(avctx, pkt, 6 * ((avctx->width  + 1) / 2)
+                                             * ((avctx->height + 1) / 2), 0);
     if (ret < 0)
         return ret;
     dst = pkt->data;
@@ -41,8 +41,8 @@ static int yuv4_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     u = pic->data[1];
     v = pic->data[2];
 
-    for (i = 0; i < avctx->height + 1 >> 1; i++) {
-        for (j = 0; j < avctx->width + 1 >> 1; j++) {
+    for (int i = 0; i < avctx->height / 2; i++) {
+        for (int j = 0; j < (avctx->width + 1) / 2; j++) {
             *dst++ = u[j] ^ 0x80;
             *dst++ = v[j] ^ 0x80;
             *dst++ = y[                   2 * j    ];
@@ -53,6 +53,17 @@ static int yuv4_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         y += 2 * pic->linesize[0];
         u +=     pic->linesize[1];
         v +=     pic->linesize[2];
+    }
+
+    if (avctx->height & 1) {
+        for (int j = 0; j < (avctx->width + 1) / 2; j++) {
+            *dst++ = u[j] ^ 0x80;
+            *dst++ = v[j] ^ 0x80;
+            *dst++ = y[2 * j    ];
+            *dst++ = y[2 * j + 1];
+            *dst++ = y[2 * j    ];
+            *dst++ = y[2 * j + 1];
+        }
     }
 
     *got_packet = 1;
