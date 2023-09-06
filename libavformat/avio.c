@@ -348,10 +348,9 @@ fail:
 }
 
 static inline int retry_transfer_wrapper(URLContext *h, uint8_t *buf,
+                                         const uint8_t *cbuf,
                                          int size, int size_min,
-                                         int (*transfer_func)(URLContext *h,
-                                                              uint8_t *buf,
-                                                              int size))
+                                         int read)
 {
     int ret, len;
     int fast_retries = 5;
@@ -361,7 +360,8 @@ static inline int retry_transfer_wrapper(URLContext *h, uint8_t *buf,
     while (len < size_min) {
         if (ff_check_interrupt(&h->interrupt_callback))
             return AVERROR_EXIT;
-        ret = transfer_func(h, buf + len, size - len);
+        ret = read ? h->prot->url_read (h, buf + len, size - len):
+                     h->prot->url_write(h, cbuf + len, size - len);
         if (ret == AVERROR(EINTR))
             continue;
         if (h->flags & AVIO_FLAG_NONBLOCK)
@@ -398,14 +398,14 @@ int ffurl_read2(void *urlcontext, uint8_t *buf, int size)
 
     if (!(h->flags & AVIO_FLAG_READ))
         return AVERROR(EIO);
-    return retry_transfer_wrapper(h, buf, size, 1, h->prot->url_read);
+    return retry_transfer_wrapper(h, buf, NULL, size, 1, 1);
 }
 
 int ffurl_read_complete(URLContext *h, unsigned char *buf, int size)
 {
     if (!(h->flags & AVIO_FLAG_READ))
         return AVERROR(EIO);
-    return retry_transfer_wrapper(h, buf, size, size, h->prot->url_read);
+    return retry_transfer_wrapper(h, buf, NULL, size, size, 1);
 }
 
 #if FF_API_AVIO_WRITE_NONCONST
@@ -422,9 +422,7 @@ int ffurl_write2(void *urlcontext, const uint8_t *buf, int size)
     if (h->max_packet_size && size > h->max_packet_size)
         return AVERROR(EIO);
 
-    return retry_transfer_wrapper(h, (unsigned char *)buf, size, size,
-                                  (int (*)(struct URLContext *, uint8_t *, int))
-                                  h->prot->url_write);
+    return retry_transfer_wrapper(h, NULL, buf, size, size, 0);
 }
 
 int64_t ffurl_seek2(void *urlcontext, int64_t pos, int whence)
