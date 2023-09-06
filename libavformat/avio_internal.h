@@ -89,7 +89,11 @@ void ffio_init_context(FFIOContext *s,
                   int write_flag,
                   void *opaque,
                   int (*read_packet)(void *opaque, uint8_t *buf, int buf_size),
+#if FF_API_AVIO_WRITE_NONCONST
                   int (*write_packet)(void *opaque, uint8_t *buf, int buf_size),
+#else
+                  int (*write_packet)(void *opaque, const uint8_t *buf, int buf_size),
+#endif
                   int64_t (*seek)(void *opaque, int64_t offset, int whence));
 
 /**
