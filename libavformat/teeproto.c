@@ -25,7 +25,6 @@
 #include "libavutil/dict.h"
 #include "libavutil/error.h"
 #include "libavutil/mem.h"
-#include "avio.h"
 #include "tee_common.h"
 #include "url.h"
 
@@ -77,9 +76,6 @@ static int tee_open(URLContext *h, const char *filename, int flags)
     int ret, i;
 
     av_strstart(filename, "tee:", &filename);
-
-    if (flags & AVIO_FLAG_READ)
-        return AVERROR(ENOSYS);
 
     while (*filename) {
         char *child_string = av_get_token(&filename, child_delim);
