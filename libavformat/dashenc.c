@@ -217,16 +217,6 @@ static const struct codec_string {
     { AV_CODEC_ID_NONE, NULL }
 };
 
-static const struct format_string {
-    SegmentType segment_type;
-    const char *str;
-} formats[] = {
-    { SEGMENT_TYPE_AUTO, "auto" },
-    { SEGMENT_TYPE_MP4, "mp4" },
-    { SEGMENT_TYPE_WEBM, "webm" },
-    { 0, NULL }
-};
-
 static int dashenc_io_open(AVFormatContext *s, AVIOContext **pb, char *filename,
                            AVDictionary **options) {
     DASHContext *c = s->priv_data;
@@ -265,11 +255,12 @@ static void dashenc_io_close(AVFormatContext *s, AVIOContext **pb, char *filenam
     }
 }
 
-static const char *get_format_str(SegmentType segment_type) {
-    int i;
-    for (i = 0; i < SEGMENT_TYPE_NB; i++)
-        if (formats[i].segment_type == segment_type)
-            return formats[i].str;
+static const char *get_format_str(SegmentType segment_type)
+{
+    switch (segment_type) {
+    case SEGMENT_TYPE_MP4:  return "mp4";
+    case SEGMENT_TYPE_WEBM: return "webm";
+    }
     return NULL;
 }
 
