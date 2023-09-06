@@ -755,7 +755,6 @@ static int set_context_with_sequence(AVCodecContext *avctx,
         if (ret < 0)
             return ret;
     }
-    avctx->sample_aspect_ratio = (AVRational) { 1, 1 };
 
     if (seq->timing_info_present_flag)
         avctx->framerate = ff_av1_framerate(1LL + seq->timing_info.num_ticks_per_picture_minus_1,

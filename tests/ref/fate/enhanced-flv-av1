@@ -3,7 +3,7 @@
 #media_type 0: video
 #codec_id 0: av1
 #dimensions 0: 320x176
-#sar 0: 1/1
+#sar 0: 0/1
 0,          0,          0,       41,     4718, 0xc4d912ec
 0,         42,         42,       41,     5109, 0xc065dd7d, F=0x0
 0,         83,         83,       41,      192, 0x160c5335, F=0x0
