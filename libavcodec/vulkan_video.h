@@ -71,6 +71,13 @@ VkVideoChromaSubsamplingFlagBitsKHR ff_vk_subsampling_from_av_desc(const AVPixFm
  */
 VkVideoComponentBitDepthFlagBitsKHR ff_vk_depth_from_av_depth(int depth);
 
+
+/**
+ * Convert level from Vulkan to AV.
+ */
+int ff_vk_h264_level_to_av(StdVideoH264LevelIdc level);
+int ff_vk_h265_level_to_av(StdVideoH265LevelIdc level);
+
 typedef struct FFVkVideoBuffer {
     FFVkBuffer buf;
     uint8_t *mem;

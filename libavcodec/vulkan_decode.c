@@ -837,8 +837,8 @@ static int vulkan_decode_get_profile(AVCodecContext *avctx, AVBufferRef *frames_
         return AVERROR_EXTERNAL;
     }
 
-    max_level = avctx->codec_id == AV_CODEC_ID_H264 ? h264_caps.maxLevelIdc :
-                avctx->codec_id == AV_CODEC_ID_H265 ? h265_caps.maxLevelIdc :
+    max_level = avctx->codec_id == AV_CODEC_ID_H264 ? ff_vk_h264_level_to_av(h264_caps.maxLevelIdc) :
+                avctx->codec_id == AV_CODEC_ID_H265 ? ff_vk_h265_level_to_av(h265_caps.maxLevelIdc) :
                 avctx->codec_id == AV_CODEC_ID_AV1  ? av1_caps.maxLevelIdc  :
                 0;
 
