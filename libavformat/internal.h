@@ -418,7 +418,7 @@ static av_always_inline FFStream *ffstream(AVStream *st)
 
 static av_always_inline const FFStream *cffstream(const AVStream *st)
 {
-    return (FFStream*)st;
+    return (const FFStream*)st;
 }
 
 #ifdef __GNUC__
