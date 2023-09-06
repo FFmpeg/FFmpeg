@@ -23,6 +23,7 @@
 #include "avio_internal.h"
 #include "rtpenc_chain.h"
 #include "rtp.h"
+#include "url.h"
 #include "libavutil/opt.h"
 
 int ff_rtp_chain_mux_open(AVFormatContext **out, AVFormatContext *s,

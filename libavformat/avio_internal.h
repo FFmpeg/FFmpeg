@@ -20,7 +20,6 @@
 #define AVFORMAT_AVIO_INTERNAL_H
 
 #include "avio.h"
-#include "url.h"
 
 #include "libavutil/log.h"
 
@@ -195,6 +194,14 @@ unsigned long ff_crcA001_update(unsigned long checksum, const uint8_t *buf,
 int ffio_open_dyn_packet_buf(AVIOContext **s, int max_packet_size);
 
 /**
+ * Return the URLContext associated with the AVIOContext
+ *
+ * @param s IO context
+ * @return pointer to URLContext or NULL.
+ */
+struct URLContext *ffio_geturlcontext(AVIOContext *s);
+
+/**
  * Create and initialize a AVIOContext for accessing the
  * resource referenced by the URLContext h.
  * @note When the URLContext h has been opened in read+write mode, the
@@ -205,15 +212,7 @@ int ffio_open_dyn_packet_buf(AVIOContext **s, int max_packet_size);
  * @return >= 0 in case of success, a negative value corresponding to an
  * AVERROR code in case of failure
  */
-int ffio_fdopen(AVIOContext **s, URLContext *h);
-
-/**
- * Return the URLContext associated with the AVIOContext
- *
- * @param s IO context
- * @return pointer to URLContext or NULL.
- */
-URLContext *ffio_geturlcontext(AVIOContext *s);
+int ffio_fdopen(AVIOContext **s, struct URLContext *h);
 
 
 /**

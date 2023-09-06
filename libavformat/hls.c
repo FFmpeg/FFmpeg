@@ -43,6 +43,7 @@
 #include "internal.h"
 #include "avio_internal.h"
 #include "id3v2.h"
+#include "url.h"
 
 #include "hls_sample_encryption.h"
 
