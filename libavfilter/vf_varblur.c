@@ -45,7 +45,7 @@ typedef struct VarBlurContext {
     void (*compute_sat)(const uint8_t *ssrc,
                         int linesize,
                         int w, int h,
-                        const uint8_t *dstp,
+                        uint8_t *dstp,
                         int dst_linesize);
 
     int (*blur_plane)(AVFilterContext *ctx,
@@ -98,7 +98,7 @@ static const enum AVPixelFormat pix_fmts[] = {
 static void compute_sat##depth(const uint8_t *ssrc,  \
                                int linesize,         \
                                int w, int h,         \
-                               const uint8_t *dstp,  \
+                               uint8_t *dstp,        \
                                int dst_linesize)     \
 {                                                    \
     const type *src = (const type *)ssrc;            \
