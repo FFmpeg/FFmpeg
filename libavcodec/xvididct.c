@@ -114,7 +114,7 @@ static int idct_row(short *in, const int *const tab, int rnd)
         in[5] = a1;
         in[6] = a1;
     } else {
-        const int k  = c4 * in[0] + rnd;
+        const unsigned int k  = c4 * in[0] + rnd;
         const unsigned int a0 = k + c2 * in[2] + c4 * in[4] + c6 * in[6];
         const unsigned int a1 = k + c6 * in[2] - c4 * in[4] - c2 * in[6];
         const unsigned int a2 = k - c6 * in[2] - c4 * in[4] + c2 * in[6];
