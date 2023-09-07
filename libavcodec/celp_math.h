@@ -78,7 +78,7 @@ int64_t ff_dot_product(const int16_t *a, const int16_t *b, int length);
  *
  * @return value << offset, if offset>=0; value >> -offset - otherwise
  */
-static inline int bidir_sal(int value, int offset)
+static inline unsigned bidir_sal(unsigned value, int offset)
 {
     if(offset < 0) return value >> -offset;
     else           return value <<  offset;
