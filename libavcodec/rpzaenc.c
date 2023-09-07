@@ -30,6 +30,7 @@
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "encode.h"
+#include "mathops.h"
 #include "put_bits.h"
 
 typedef struct RpzaContext {
@@ -65,7 +66,7 @@ typedef struct rgb {
 #define SQR(x) ((x) * (x))
 
 /* 15 bit components */
-#define GET_CHAN(color, chan) (((color) >> ((chan) * 5) & 0x1F) * 8)
+#define GET_CHAN(color, chan) (((color) >> ((chan) * 5) & 0x1F))
 #define R(color) GET_CHAN(color, RED)
 #define G(color) GET_CHAN(color, GREEN)
 #define B(color) GET_CHAN(color, BLUE)
@@ -141,9 +142,9 @@ static uint16_t rgb24_to_rgb555(const uint8_t *rgb24)
     uint16_t rgb555 = 0;
     uint32_t r, g, b;
 
-    r = rgb24[0] >> 3;
-    g = rgb24[1] >> 3;
-    b = rgb24[2] >> 3;
+    r = rgb24[0];
+    g = rgb24[1];
+    b = rgb24[2];
 
     rgb555 |= (r << 10);
     rgb555 |= (g << 5);
@@ -185,7 +186,7 @@ static int max_component_diff(const uint16_t *colorA, const uint16_t *colorB)
     if (diff > max) {
         max = diff;
     }
-    return max * 8;
+    return max;
 }
 
 /*
@@ -266,9 +267,9 @@ static int compare_blocks(const uint16_t *block1, const uint16_t *block2,
  */
 static int leastsquares(const uint16_t *block_ptr, const BlockInfo *bi,
                         channel_offset xchannel, channel_offset ychannel,
-                        double *slope, double *y_intercept, double *correlation_coef)
+                        int *slope, int *y_intercept, int *correlation_coef)
 {
-    double sumx = 0, sumy = 0, sumx2 = 0, sumy2 = 0, sumxy = 0,
+    int sumx = 0, sumy = 0, sumx2 = 0, sumy2 = 0, sumxy = 0,
            sumx_sq = 0, sumy_sq = 0, tmp, tmp2;
     int i, j, count;
     uint8_t x, y;
@@ -305,10 +306,10 @@ static int leastsquares(const uint16_t *block_ptr, const BlockInfo *bi,
 
     tmp2 = count * sumy2 - sumy_sq;
     if (tmp2 == 0) {
-        *correlation_coef = 0.0;
+        *correlation_coef = 0;
     } else {
         *correlation_coef = (count * sumxy - sumx * sumy) /
-            sqrt(tmp * tmp2);
+            ff_sqrt((unsigned)tmp * tmp2);
     }
 
     return 0; // success
@@ -332,18 +333,18 @@ static int calc_lsq_max_fit_error(const uint16_t *block_ptr, const BlockInfo *bi
             y = GET_CHAN(block_ptr[j], ychannel);
 
             /* calculate x_inc as the 4-color index (0..3) */
-            x_inc = floor( (x - min) * 3.0 / (max - min) + 0.5);
+            x_inc = (x - min) * 3 / (max - min) + 1;
             x_inc = FFMAX(FFMIN(3, x_inc), 0);
 
             /* calculate lin_y corresponding to x_inc */
-            lin_y = (int)(tmp_min + (tmp_max - tmp_min) * x_inc / 3.0 + 0.5);
+            lin_y = tmp_min + (tmp_max - tmp_min) * x_inc / 3 + 1;
 
             err = FFABS(lin_y - y);
             if (err > max_err)
                 max_err = err;
 
             /* calculate lin_x corresponding to x_inc */
-            lin_x = (int)(min + (max - min) * x_inc / 3.0 + 0.5);
+            lin_x = min + (max - min) * x_inc / 3 + 1;
 
             err = FFABS(lin_x - x);
             if (err > max_err)
@@ -577,7 +578,7 @@ static void rpza_encode_stream(RpzaContext *s, const AVFrame *pict)
     uint8_t avg_color[3];
     int pixel_count;
     uint8_t min_color[3], max_color[3];
-    double slope, y_intercept, correlation_coef;
+    int slope, y_intercept, correlation_coef;
     const uint16_t *src_pixels = (const uint16_t *)pict->data[0];
     uint16_t *prev_pixels = (uint16_t *)s->prev_frame->data[0];
 
@@ -730,8 +731,8 @@ post_skip :
                     min_color[i] = GET_CHAN(src_pixels[block_offset], i);
                     max_color[i] = GET_CHAN(src_pixels[block_offset], i);
                 } else {
-                    tmp_min = (int)(0.5 + min * slope + y_intercept);
-                    tmp_max = (int)(0.5 + max * slope + y_intercept);
+                    tmp_min = 1 + min * slope + y_intercept;
+                    tmp_max = 1 + max * slope + y_intercept;
 
                     av_assert0(tmp_min <= tmp_max);
                     // clamp min and max color values
