@@ -210,9 +210,8 @@ static int cmv_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         cmv_decode_intra(s, frame, buf+2, buf_end);
     }
 
-    av_frame_unref(s->last2_frame);
-    av_frame_move_ref(s->last2_frame, s->last_frame);
-    if ((ret = av_frame_ref(s->last_frame, frame)) < 0)
+    FFSWAP(AVFrame*, s->last2_frame, s->last_frame);
+    if ((ret = av_frame_replace(s->last_frame, frame)) < 0)
         return ret;
 
     *got_frame = 1;

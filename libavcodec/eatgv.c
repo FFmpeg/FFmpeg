@@ -338,8 +338,7 @@ static int tgv_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         }
     }
 
-    av_frame_unref(s->last_frame);
-    if ((ret = av_frame_ref(s->last_frame, frame)) < 0)
+    if ((ret = av_frame_replace(s->last_frame, frame)) < 0)
         return ret;
 
     *got_frame = 1;

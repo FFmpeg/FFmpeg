@@ -102,8 +102,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
         dst += frame->linesize[0];
     }
 
-    av_frame_unref(s->previous_frame);
-    if ((ret = av_frame_ref(s->previous_frame, frame)) < 0)
+    if ((ret = av_frame_replace(s->previous_frame, frame)) < 0)
         return ret;
 
     if (avpkt->flags & AV_PKT_FLAG_KEY) {

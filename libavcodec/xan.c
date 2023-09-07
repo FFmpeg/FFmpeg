@@ -622,8 +622,7 @@ static int xan_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     if (xan_wc3_decode_frame(s, frame) < 0)
         return AVERROR_INVALIDDATA;
 
-    av_frame_unref(s->last_frame);
-    if ((ret = av_frame_ref(s->last_frame, frame)) < 0)
+    if ((ret = av_frame_replace(s->last_frame, frame)) < 0)
         return ret;
 
     *got_frame = 1;

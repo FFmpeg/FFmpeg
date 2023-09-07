@@ -1996,8 +1996,7 @@ static int submit_frame(QSVEncContext *q, const AVFrame *frame,
                 return ret;
             }
         } else {
-            av_frame_unref(qf->frame);
-            ret = av_frame_ref(qf->frame, frame);
+            ret = av_frame_replace(qf->frame, frame);
             if (ret < 0)
                 return ret;
         }

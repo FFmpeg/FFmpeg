@@ -1059,8 +1059,7 @@ static int encode_apng(AVCodecContext *avctx, AVPacket *pkt,
             }
         }
 
-        av_frame_unref(s->last_frame);
-        ret = av_frame_ref(s->last_frame, pict);
+        ret = av_frame_replace(s->last_frame, pict);
         if (ret < 0)
             return ret;
 

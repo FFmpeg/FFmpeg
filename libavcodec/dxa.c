@@ -317,8 +317,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         return AVERROR_INVALIDDATA;
     }
 
-    av_frame_unref(c->prev);
-    if ((ret = av_frame_ref(c->prev, frame)) < 0)
+    if ((ret = av_frame_replace(c->prev, frame)) < 0)
         return ret;
 
     *got_frame = 1;

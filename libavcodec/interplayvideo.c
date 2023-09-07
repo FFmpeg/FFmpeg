@@ -1340,9 +1340,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
     *got_frame = send_buffer;
 
     /* shuffle frames */
-    av_frame_unref(s->second_last_frame);
     FFSWAP(AVFrame*, s->second_last_frame, s->last_frame);
-    if ((ret = av_frame_ref(s->last_frame, frame)) < 0)
+    if ((ret = av_frame_replace(s->last_frame, frame)) < 0)
         return ret;
 
     /* report that the buffer was completely consumed */

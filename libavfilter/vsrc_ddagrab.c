@@ -1076,8 +1076,7 @@ static int ddagrab_request_frame(AVFilterLink *outlink)
         goto fail;
     }
 
-    av_frame_unref(dda->last_frame);
-    ret = av_frame_ref(dda->last_frame, frame);
+    ret = av_frame_replace(dda->last_frame, frame);
     if (ret < 0)
         return ret;
 

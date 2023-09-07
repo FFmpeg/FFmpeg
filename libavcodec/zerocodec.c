@@ -93,8 +93,7 @@ static int zerocodec_decode_frame(AVCodecContext *avctx, AVFrame *pic,
         dst  -= pic->linesize[0];
     }
 
-    av_frame_unref(zc->previous_frame);
-    if ((ret = av_frame_ref(zc->previous_frame, pic)) < 0)
+    if ((ret = av_frame_replace(zc->previous_frame, pic)) < 0)
         return ret;
 
     *got_frame = 1;

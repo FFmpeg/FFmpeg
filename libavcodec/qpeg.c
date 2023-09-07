@@ -307,8 +307,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     memcpy(p->data[1], a->pal, AVPALETTE_SIZE);
 
-    av_frame_unref(ref);
-    if ((ret = av_frame_ref(ref, p)) < 0)
+    if ((ret = av_frame_replace(ref, p)) < 0)
         return ret;
 
     if (intra)

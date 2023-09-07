@@ -344,8 +344,7 @@ static int cdg_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                 return ret;
 
             cdg_scroll(cc, cdg_data, frame, inst == CDG_INST_SCROLL_COPY);
-            av_frame_unref(cc->frame);
-            ret = av_frame_ref(cc->frame, frame);
+            ret = av_frame_replace(cc->frame, frame);
             if (ret < 0)
                 return ret;
             break;

@@ -764,8 +764,7 @@ static int svq1_decode_frame(AVCodecContext *avctx, AVFrame *cur,
     }
 
     if (!s->nonref) {
-        av_frame_unref(s->prev);
-        result = av_frame_ref(s->prev, cur);
+        result = av_frame_replace(s->prev, cur);
         if (result < 0)
             return result;
     }

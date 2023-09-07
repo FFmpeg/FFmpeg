@@ -127,8 +127,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
     frame->pict_type = (frame->flags & AV_FRAME_FLAG_KEY) ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
 
-    av_frame_unref(s->prev_frame);
-    if ((ret = av_frame_ref(s->prev_frame, frame)) < 0)
+    if ((ret = av_frame_replace(s->prev_frame, frame)) < 0)
         return ret;
 
     *got_frame = 1;

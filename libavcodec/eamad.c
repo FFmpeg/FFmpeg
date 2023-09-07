@@ -317,8 +317,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     *got_frame = 1;
 
     if (chunk_type != MADe_TAG) {
-        av_frame_unref(s->last_frame);
-        if ((ret = av_frame_ref(s->last_frame, frame)) < 0)
+        if ((ret = av_frame_replace(s->last_frame, frame)) < 0)
             return ret;
     }
 

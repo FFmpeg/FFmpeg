@@ -483,8 +483,7 @@ static OSStatus ffat_encode_callback(AudioConverterRef converter, UInt32 *nb_pac
     if (*nb_packets > frame->nb_samples)
         *nb_packets = frame->nb_samples;
 
-    av_frame_unref(at->encoding_frame);
-    ret = av_frame_ref(at->encoding_frame, frame);
+    ret = av_frame_replace(at->encoding_frame, frame);
     if (ret < 0) {
         *nb_packets = 0;
         return ret;

@@ -362,8 +362,7 @@ static int escape124_decode_frame(AVCodecContext *avctx, AVFrame *frame,
            "Escape sizes: %i, %i, %i\n",
            frame_size, buf_size, get_bits_count(&gb) / 8);
 
-    av_frame_unref(s->frame);
-    if ((ret = av_frame_ref(s->frame, frame)) < 0)
+    if ((ret = av_frame_replace(s->frame, frame)) < 0)
         return ret;
 
     *got_frame = 1;

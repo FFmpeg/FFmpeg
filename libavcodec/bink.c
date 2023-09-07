@@ -1300,8 +1300,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     emms_c();
 
     if (c->version > 'b') {
-        av_frame_unref(c->last);
-        if ((ret = av_frame_ref(c->last, frame)) < 0)
+        if ((ret = av_frame_replace(c->last, frame)) < 0)
             return ret;
     }
 

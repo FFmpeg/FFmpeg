@@ -566,8 +566,7 @@ static int smc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     // write chunk length
     AV_WB24(pkt->data + 1, pkt->size);
 
-    av_frame_unref(s->prev_frame);
-    ret = av_frame_ref(s->prev_frame, frame);
+    ret = av_frame_replace(s->prev_frame, frame);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "cannot add reference\n");
         return ret;

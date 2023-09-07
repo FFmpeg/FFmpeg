@@ -819,8 +819,7 @@ int av_hwframe_map(AVFrame *dst, const AVFrame *src, int flags)
                 return AVERROR(EINVAL);
             }
             hwmap = (HWMapDescriptor*)src->buf[0]->data;
-            av_frame_unref(dst);
-            return av_frame_ref(dst, hwmap->source);
+            return av_frame_replace(dst, hwmap->source);
         }
     }
 
@@ -950,6 +949,5 @@ fail:
 int ff_hwframe_map_replace(AVFrame *dst, const AVFrame *src)
 {
     HWMapDescriptor *hwmap = (HWMapDescriptor*)dst->buf[0]->data;
-    av_frame_unref(hwmap->source);
-    return av_frame_ref(hwmap->source, src);
+    return av_frame_replace(hwmap->source, src);
 }

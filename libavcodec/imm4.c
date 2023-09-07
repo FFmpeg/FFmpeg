@@ -453,8 +453,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
         if (ret < 0)
             return ret;
 
-        av_frame_unref(s->prev_frame);
-        if ((ret = av_frame_ref(s->prev_frame, frame)) < 0)
+        if ((ret = av_frame_replace(s->prev_frame, frame)) < 0)
             return ret;
     } else {
         if (!s->prev_frame->data[0]) {

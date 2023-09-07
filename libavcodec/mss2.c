@@ -797,8 +797,7 @@ static int mss2_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         av_log(avctx, AV_LOG_WARNING, "buffer not fully consumed\n");
 
     if (c->mvX < 0 || c->mvY < 0) {
-        av_frame_unref(ctx->last_pic);
-        ret = av_frame_ref(ctx->last_pic, frame);
+        ret = av_frame_replace(ctx->last_pic, frame);
         if (ret < 0)
             return ret;
     }
