@@ -301,8 +301,8 @@ static int compute_vif2(AVFilterContext *ctx,
     float *main_sq_filt = data_buf[11];
     float *ref_main_filt = data_buf[12];
 
-    float *curr_ref_scale = (float *)ref;
-    float *curr_main_scale = (float *)main;
+    const float *curr_ref_scale  = ref;
+    const float *curr_main_scale = main;
     int curr_ref_stride = ref_stride;
     int curr_main_stride = main_stride;
 
