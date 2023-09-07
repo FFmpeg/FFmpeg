@@ -230,17 +230,14 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     }
 
-    if (!(copy = av_frame_alloc()))
-        return AVERROR(ENOMEM);
-
     if (refcounted && !(flags & AV_BUFFERSRC_FLAG_KEEP_REF)) {
+        if (!(copy = av_frame_alloc()))
+            return AVERROR(ENOMEM);
         av_frame_move_ref(copy, frame);
     } else {
-        ret = av_frame_ref(copy, frame);
-        if (ret < 0) {
-            av_frame_free(&copy);
-            return ret;
-        }
+        copy = av_frame_clone(frame);
+        if (!copy)
+            return AVERROR(ENOMEM);
     }
 
 #if FF_API_PKT_DURATION
