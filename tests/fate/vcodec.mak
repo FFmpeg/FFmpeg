@@ -396,6 +396,10 @@ fate-vsynth%-roqvideo:           ENCOPTS = -frames 5
 fate-vsynth%-roqvideo:           RAWDECOPTS = -r 30
 fate-vsynth%-roqvideo:           FMT     = roq
 
+FATE_VCODEC_SCALE-$(call ENCDEC, RPZA, MOV) += rpza
+fate-vsynth%-rpza:               CODEC   = rpza
+fate-vsynth%-rpza:               FMT     = mov
+
 FATE_VCODEC-$(call ENCDEC, RV10, RM)    += rv10
 fate-vsynth%-rv10:               ENCOPTS = -qscale 10
 fate-vsynth%-rv10:               FMT     = rm

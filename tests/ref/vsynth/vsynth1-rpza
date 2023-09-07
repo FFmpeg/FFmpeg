@@ -1,0 +1,4 @@
+e4e9660c4a13709b277aac42419b9a23 *tests/data/fate/vsynth1-rpza.mov
+10138529 tests/data/fate/vsynth1-rpza.mov
+99bece160cfb0da47f446b60d42fa3ae *tests/data/fate/vsynth1-rpza.out.rawvideo
+stddev:    4.06 PSNR: 35.94 MAXDIFF:   47 bytes:  7603200/  7603200
