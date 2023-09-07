@@ -985,7 +985,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    c->buffer = av_calloc(avctx->width, c->pro?2:1);
+    c->buffer = av_calloc(avctx->width + 8, c->pro?2:1);
     if (!c->buffer)
         return AVERROR(ENOMEM);
 
