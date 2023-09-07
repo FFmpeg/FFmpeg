@@ -944,7 +944,7 @@ static int choose_output(OutputStream **post)
                    INT64_MIN : ost->last_mux_dts;
         }
 
-        if (!ost->initialized && !ost->inputs_done && !ost->finished) {
+        if (!ost->initialized && !ost->finished) {
             ost_min = ost;
             break;
         }

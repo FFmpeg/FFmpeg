@@ -2081,11 +2081,11 @@ int fg_transcode_step(FilterGraph *graph, InputStream **best_ist)
             }
         }
 
-        // graph not configured, but all inputs are either initialized or EOF
-        for (int i = 0; i < graph->nb_outputs; i++)
-            graph->outputs[i]->ost->inputs_done = 1;
-
-        return 0;
+        // This state - graph is not configured, but all inputs are either
+        // initialized or EOF - should be unreachable because sending EOF to a
+        // filter without even a fallback format should fail
+        av_assert0(0);
+        return AVERROR_BUG;
     }
 
     *best_ist = NULL;

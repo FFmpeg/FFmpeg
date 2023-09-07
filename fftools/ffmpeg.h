@@ -583,8 +583,6 @@ typedef struct OutputStream {
     // parameters are set in the AVStream.
     int initialized;
 
-    int inputs_done;
-
     const char *attachment_filename;
 
     int keep_pix_fmt;
