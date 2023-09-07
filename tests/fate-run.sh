@@ -275,15 +275,16 @@ transcode(){
 stream_remux(){
     src_fmt=$1
     srcfile=$2
-    enc_fmt=$3
-    stream_maps=$4
-    final_decode=$5
-    ffprobe_opts=$6
+    src_opts=$3
+    enc_fmt=$4
+    stream_maps=$5
+    final_decode=$6
+    ffprobe_opts=$7
     encfile="${outdir}/${test}.${enc_fmt}"
     test $keep -ge 1 || cleanfiles="$cleanfiles $encfile"
     tsrcfile=$(target_path $srcfile)
     tencfile=$(target_path $encfile)
-    ffmpeg -f $src_fmt -i $tsrcfile $stream_maps -codec copy $FLAGS \
+    ffmpeg -f $src_fmt $src_opts -i $tsrcfile $stream_maps -codec copy $FLAGS \
         -f $enc_fmt -y $tencfile || return
     ffmpeg $DEC_OPTS -i $tencfile $ENC_OPTS $FLAGS $final_decode \
         -f framecrc - || return

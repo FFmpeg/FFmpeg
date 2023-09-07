@@ -440,20 +440,11 @@ static int get_tiles_info(AVCodecContext *avctx, const AV1RawTileGroup *tile_gro
 
 }
 
-static int get_pixel_format(AVCodecContext *avctx)
+static enum AVPixelFormat get_sw_pixel_format(AVCodecContext *avctx,
+                                              const AV1RawSequenceHeader *seq)
 {
-    AV1DecContext *s = avctx->priv_data;
-    const AV1RawSequenceHeader *seq = s->raw_seq;
     uint8_t bit_depth;
-    int ret;
     enum AVPixelFormat pix_fmt = AV_PIX_FMT_NONE;
-#define HWACCEL_MAX (CONFIG_AV1_DXVA2_HWACCEL + \
-                     CONFIG_AV1_D3D11VA_HWACCEL * 2 + \
-                     CONFIG_AV1_NVDEC_HWACCEL + \
-                     CONFIG_AV1_VAAPI_HWACCEL + \
-                     CONFIG_AV1_VDPAU_HWACCEL + \
-                     CONFIG_AV1_VULKAN_HWACCEL)
-    enum AVPixelFormat pix_fmts[HWACCEL_MAX + 2], *fmtp = pix_fmts;
 
     if (seq->seq_profile == 2 && seq->color_config.high_bitdepth)
         bit_depth = seq->color_config.twelve_bit ? 12 : 10;
@@ -509,8 +500,22 @@ static int get_pixel_format(AVCodecContext *avctx)
             av_log(avctx, AV_LOG_WARNING, "Unknown AV1 pixel format.\n");
     }
 
-    av_log(avctx, AV_LOG_DEBUG, "AV1 decode get format: %s.\n",
-           av_get_pix_fmt_name(pix_fmt));
+    return pix_fmt;
+}
+
+static int get_pixel_format(AVCodecContext *avctx)
+{
+    AV1DecContext *s = avctx->priv_data;
+    const AV1RawSequenceHeader *seq = s->raw_seq;
+    int ret;
+    enum AVPixelFormat pix_fmt = get_sw_pixel_format(avctx, seq);
+#define HWACCEL_MAX (CONFIG_AV1_DXVA2_HWACCEL + \
+                     CONFIG_AV1_D3D11VA_HWACCEL * 2 + \
+                     CONFIG_AV1_NVDEC_HWACCEL + \
+                     CONFIG_AV1_VAAPI_HWACCEL + \
+                     CONFIG_AV1_VDPAU_HWACCEL + \
+                     CONFIG_AV1_VULKAN_HWACCEL)
+    enum AVPixelFormat pix_fmts[HWACCEL_MAX + 2], *fmtp = pix_fmts;
 
     if (pix_fmt == AV_PIX_FMT_NONE)
         return -1;
@@ -609,8 +614,6 @@ static int get_pixel_format(AVCodecContext *avctx)
     *fmtp = AV_PIX_FMT_NONE;
 
     ret = ff_thread_get_format(avctx, pix_fmts);
-    if (ret < 0)
-        return ret;
 
     /**
      * check if the HW accel is inited correctly. If not, return un-implemented.
@@ -620,11 +623,15 @@ static int get_pixel_format(AVCodecContext *avctx)
     if (!avctx->hwaccel) {
         av_log(avctx, AV_LOG_ERROR, "Your platform doesn't support"
                " hardware accelerated AV1 decoding.\n");
+        avctx->pix_fmt = AV_PIX_FMT_NONE;
         return AVERROR(ENOSYS);
     }
 
     s->pix_fmt = pix_fmt;
     avctx->pix_fmt = ret;
+
+    av_log(avctx, AV_LOG_DEBUG, "AV1 decode get format: %s.\n",
+           av_get_pix_fmt_name(avctx->pix_fmt));
 
     return 0;
 }
@@ -864,6 +871,8 @@ static av_cold int av1_decode_init(AVCodecContext *avctx)
             av_log(avctx, AV_LOG_WARNING, "Failed to set decoder context.\n");
             goto end;
         }
+
+        avctx->pix_fmt = get_sw_pixel_format(avctx, seq);
 
         end:
         ff_cbs_fragment_reset(&s->current_obu);
@@ -1518,7 +1527,7 @@ const FFCodec ff_av1_decoder = {
     .init                  = av1_decode_init,
     .close                 = av1_decode_free,
     FF_CODEC_RECEIVE_FRAME_CB(av1_receive_frame),
-    .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_AVOID_PROBING,
+    .p.capabilities        = AV_CODEC_CAP_DR1,
     .caps_internal         = FF_CODEC_CAP_INIT_CLEANUP,
     .flush                 = av1_decode_flush,
     .p.profiles            = NULL_IF_CONFIG_SMALL(ff_av1_profiles),
