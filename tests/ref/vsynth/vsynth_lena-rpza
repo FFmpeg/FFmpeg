@@ -1,0 +1,4 @@
+c9850c9f02376ccad32188ec3fd0109d *tests/data/fate/vsynth_lena-rpza.mov
+8795888 tests/data/fate/vsynth_lena-rpza.mov
+94ab32b81b82e1f24a7aeb4435668f84 *tests/data/fate/vsynth_lena-rpza.out.rawvideo
+stddev:    2.47 PSNR: 40.25 MAXDIFF:   17 bytes:  7603200/  7603200
