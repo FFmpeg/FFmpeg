@@ -327,7 +327,7 @@ static void haldclutsrc_fill_picture(AVFilterContext *ctx, AVFrame *frame)
     float scale;
     const int w = frame->width;
     const int h = frame->height;
-    const uint8_t *data = frame->data[0];
+    uint8_t *data = frame->data[0];
     const int linesize  = frame->linesize[0];
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
     const int depth = desc->comp[0].depth;
