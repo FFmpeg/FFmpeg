@@ -583,7 +583,7 @@ static int smc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 static int smc_encode_end(AVCodecContext *avctx)
 {
-    SMCContext *s = (SMCContext *)avctx->priv_data;
+    SMCContext *s = avctx->priv_data;
 
     av_frame_free(&s->prev_frame);
 
