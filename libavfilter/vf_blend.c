@@ -133,8 +133,8 @@ static void blend_expr_## name(const uint8_t *_top, ptrdiff_t top_linesize,     
                                ptrdiff_t width, ptrdiff_t height,              \
                                FilterParams *param, double *values, int starty) \
 {                                                                              \
-    const type *top = (type*)_top;                                             \
-    const type *bottom = (type*)_bottom;                                       \
+    const type *top = (const type*)_top;                                       \
+    const type *bottom = (const type*)_bottom;                                 \
     type *dst = (type*)_dst;                                                   \
     AVExpr *e = param->e;                                                      \
     int y, x;                                                                  \
