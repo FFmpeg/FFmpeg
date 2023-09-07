@@ -68,7 +68,7 @@ int ff_log2_q15(uint32_t value);
  *
  * @return value << offset, if offset>=0; value >> -offset - otherwise
  */
-static inline int bidir_sal(int value, int offset)
+static inline unsigned bidir_sal(unsigned value, int offset)
 {
     if(offset < 0) return value >> -offset;
     else           return value <<  offset;
