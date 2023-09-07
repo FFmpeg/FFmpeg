@@ -337,7 +337,7 @@ static void av_always_inline dng_blit(TiffContext *s, uint8_t *dst, int dst_stri
            (split vertically in the middle). */
         for (line = 0; line < height / 2; line++) {
             uint16_t *dst_u16 = (uint16_t *)dst;
-            uint16_t *src_u16 = (uint16_t *)src;
+            const uint16_t *src_u16 = (const uint16_t *)src;
 
             /* Blit first half of input row row to initial row of output */
             for (col = 0; col < width; col++)
@@ -360,7 +360,7 @@ static void av_always_inline dng_blit(TiffContext *s, uint8_t *dst, int dst_stri
         if (is_u16) {
             for (line = 0; line < height; line++) {
                 uint16_t *dst_u16 = (uint16_t *)dst;
-                uint16_t *src_u16 = (uint16_t *)src;
+                const uint16_t *src_u16 = (const uint16_t *)src;
 
                 for (col = 0; col < width; col++)
                     *dst_u16++ = dng_process_color16(*src_u16++, s->dng_lut,
@@ -570,7 +570,7 @@ static int tiff_uncompress_lzma(uint8_t *dst, uint64_t *len, const uint8_t *src,
     lzma_stream stream = LZMA_STREAM_INIT;
     lzma_ret ret;
 
-    stream.next_in   = (uint8_t *)src;
+    stream.next_in   = src;
     stream.avail_in  = size;
     stream.next_out  = dst;
     stream.avail_out = *len;
