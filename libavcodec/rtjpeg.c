@@ -167,7 +167,7 @@ void ff_rtjpeg_decode_init(RTJpegContext *c, int width, int height,
     c->h = height;
 }
 
-void ff_rtjpeg_init(RTJpegContext *c, AVCodecContext *avctx)
+void ff_rtjpeg_init(RTJpegContext *c, struct AVCodecContext *avctx)
 {
     int i;
 

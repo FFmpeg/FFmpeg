@@ -22,6 +22,7 @@
 
 #include "checkasm.h"
 
+#include "libavcodec/avcodec.h"
 #include "libavcodec/idctdsp.h"
 
 #include "libavutil/common.h"
