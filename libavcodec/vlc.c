@@ -247,29 +247,6 @@ static int vlc_common_end(VLC *vlc, int nb_bits, int nb_codes, VLCcode *codes,
     return 0;
 }
 
-/* Build VLC decoding tables suitable for use with get_vlc().
-
-   'nb_bits' sets the decoding table size (2^nb_bits) entries. The
-   bigger it is, the faster is the decoding. But it should not be too
-   big to save memory and L1 cache. '9' is a good compromise.
-
-   'nb_codes' : number of vlcs codes
-
-   'bits' : table which gives the size (in bits) of each vlc code.
-
-   'codes' : table which gives the bit pattern of of each vlc code.
-
-   'symbols' : table which gives the values to be returned from get_vlc().
-
-   'xxx_wrap' : give the number of bytes between each entry of the
-   'bits' or 'codes' tables.
-
-   'xxx_size' : gives the number of bytes of each entry of the 'bits'
-   or 'codes' tables. Currently 1,2 and 4 are supported.
-
-   'wrap' and 'size' make it possible to use any memory configuration and types
-   (byte/word/long) to store the 'bits', 'codes', and 'symbols' tables.
-*/
 int ff_init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
                        const void *bits, int bits_wrap, int bits_size,
                        const void *codes, int codes_wrap, int codes_size,

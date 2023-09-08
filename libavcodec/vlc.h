@@ -62,6 +62,35 @@ typedef struct RL_VLC_ELEM {
                        codes, codes_wrap, codes_size,   \
                        NULL, 0, 0, flags)
 
+/**
+ * Build VLC decoding tables suitable for use with get_vlc2().
+ *
+ * @param[in,out] vlc      The VLC to be initialized; table and table_allocated
+ *                         must have been set when initializing a static VLC,
+ *                         otherwise this will be treated as uninitialized.
+ * @param[in] nb_bits      The number of bits to use for the VLC table;
+ *                         higher values take up more memory and cache, but
+ *                         allow to read codes with fewer reads.
+ *                         Corresponds to the `bits` parameter of get_vlc2().
+ * @param[in] nb_codes     The number of provided bits, codes and (if supplied)
+ *                         symbol entries.
+ * @param[in] bits         The lengths (in bits) of the codes. Entries > 0
+ *                         correspond to valid codes; entries == 0 will be skipped.
+ * @param[in] bits_wrap    Stride (in bytes) of the bits table.
+ * @param[in] codes_size   Size of the bits. 1, 2 and 4 are supported.
+ * @param[in] codes        Table which gives the bit pattern of of each vlc code.
+ * @param[in] codes_wrap   Stride (in bytes) of the codes table.
+ * @param[in] codes_size   Size of the codes. 1, 2 and 4 are supported.
+ * @param[in] symbols      The symbols, i.e. what is returned from get_vlc2()
+ *                         when the corresponding code is encountered.
+ *                         May be NULL, then 0, 1, 2, 3, 4,... will be used.
+ * @param[in] symbols_wrap Stride (in bytes) of the symbols table.
+ * @param[in] symbols_size Size of the symbols. 1 and 2 are supported.
+ * @param[in] flags        A combination of the INIT_VLC_* flags.
+ *
+ * 'wrap' and 'size' make it possible to use any memory configuration and types
+ * (byte/word/int) to store the 'bits', 'codes', and 'symbols' tables.
+ */
 int ff_init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
                        const void *bits, int bits_wrap, int bits_size,
                        const void *codes, int codes_wrap, int codes_size,
