@@ -51,7 +51,6 @@ hiegrep2 '\b_[a-zA-Z0-9_]{1,}' '__(asm|attribute)([^a-zA-Z0-9]|$)' 'reserved ide
 hiegrep '//[-/<\* ]*$'    'empty comment' $*
 hiegrep '/\*[-<\* ]*\*/'  'empty comment' $*
 hiegrep '(static|inline|const) *\1[^_a-zA-Z]'  'duplicate word' $*
-hiegrep 'INIT_VLC_USE_STATIC' 'forbidden ancient vlc type' $*
 hiegrep '=[-+\*\&] ' 'looks like compound assignment' $*
 hiegrep2 '/\*\* *[a-zA-Z0-9].*' '\*/' 'Inconsistently formatted doxygen comment' $*
 hiegrep '; */\*\*[^<]' 'Misformatted doxygen comment' $*
