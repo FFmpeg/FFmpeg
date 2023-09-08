@@ -491,7 +491,7 @@ static inline int BS_FUNC(priv_set_idx)(BSCTX *bc, int code, int *n,
 /**
  * Parse a vlc code.
  * @param bits is the number of bits which will be read at once, must be
- *             identical to nb_bits in init_vlc()
+ *             identical to nb_bits in vlc_init()
  * @param max_depth is the number of times bits bits must be read to completely
  *                  read the longest vlc code
  *                  = (max_vlc_length + bits - 1) / bits

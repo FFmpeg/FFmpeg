@@ -38,20 +38,20 @@ VLC ff_msmp4_dc_chroma_vlc[2];
 
 static av_cold void msmp4_vc1_vlcs_init(void)
 {
-    INIT_VLC_STATIC(&ff_msmp4_dc_luma_vlc[0], MSMP4_DC_VLC_BITS, 120,
+    VLC_INIT_STATIC(&ff_msmp4_dc_luma_vlc[0], MSMP4_DC_VLC_BITS, 120,
                     &ff_table0_dc_lum[0][1], 8, 4,
                     &ff_table0_dc_lum[0][0], 8, 4, 1158);
-    INIT_VLC_STATIC(&ff_msmp4_dc_chroma_vlc[0], MSMP4_DC_VLC_BITS, 120,
+    VLC_INIT_STATIC(&ff_msmp4_dc_chroma_vlc[0], MSMP4_DC_VLC_BITS, 120,
                     &ff_table0_dc_chroma[0][1], 8, 4,
                     &ff_table0_dc_chroma[0][0], 8, 4, 1118);
-    INIT_VLC_STATIC(&ff_msmp4_dc_luma_vlc[1], MSMP4_DC_VLC_BITS, 120,
+    VLC_INIT_STATIC(&ff_msmp4_dc_luma_vlc[1], MSMP4_DC_VLC_BITS, 120,
                     &ff_table1_dc_lum[0][1], 8, 4,
                     &ff_table1_dc_lum[0][0], 8, 4, 1476);
-    INIT_VLC_STATIC(&ff_msmp4_dc_chroma_vlc[1], MSMP4_DC_VLC_BITS, 120,
+    VLC_INIT_STATIC(&ff_msmp4_dc_chroma_vlc[1], MSMP4_DC_VLC_BITS, 120,
                     &ff_table1_dc_chroma[0][1], 8, 4,
                     &ff_table1_dc_chroma[0][0], 8, 4, 1216);
 
-    INIT_VLC_STATIC(&ff_msmp4_mb_i_vlc, MSMP4_MB_INTRA_VLC_BITS, 64,
+    VLC_INIT_STATIC(&ff_msmp4_mb_i_vlc, MSMP4_MB_INTRA_VLC_BITS, 64,
                     &ff_msmp4_mb_i_table[0][1], 4, 2,
                     &ff_msmp4_mb_i_table[0][0], 4, 2, 536);
 }

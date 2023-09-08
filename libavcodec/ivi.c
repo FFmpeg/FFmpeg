@@ -154,8 +154,8 @@ static int ivi_create_huff_from_desc(const IVIHuffDesc *cb, VLC *vlc, int flag)
     }//for i
 
     /* number of codewords = pos */
-    return init_vlc(vlc, IVI_VLC_BITS, pos, bits, 1, 1, codewords, 2, 2,
-                    (flag ? INIT_VLC_USE_NEW_STATIC : 0) | INIT_VLC_OUTPUT_LE);
+    return vlc_init(vlc, IVI_VLC_BITS, pos, bits, 1, 1, codewords, 2, 2,
+                    (flag ? VLC_INIT_USE_STATIC : 0) | VLC_INIT_OUTPUT_LE);
 }
 
 static av_cold void ivi_init_static_vlc(void)
@@ -237,7 +237,7 @@ int ff_ivi_dec_huff_desc(GetBitContext *gb, int desc_coded, int which_tab,
             ivi_huff_desc_copy(&huff_tab->cust_desc, &new_huff);
 
             if (huff_tab->cust_tab.table)
-                ff_free_vlc(&huff_tab->cust_tab);
+                ff_vlc_free(&huff_tab->cust_tab);
             result = ivi_create_huff_from_desc(&huff_tab->cust_desc,
                     &huff_tab->cust_tab, 0);
             if (result) {
@@ -277,7 +277,7 @@ static av_cold void ivi_free_buffers(IVIPlaneDesc *planes)
                 av_freep(&band->bufs[3]);
 
                 if (band->blk_vlc.cust_tab.table)
-                    ff_free_vlc(&band->blk_vlc.cust_tab);
+                    ff_vlc_free(&band->blk_vlc.cust_tab);
                 for (t = 0; t < band->num_tiles; t++)
                     av_freep(&band->tiles[t].mbs);
                 av_freep(&band->tiles);
@@ -1215,10 +1215,10 @@ av_cold int ff_ivi_decode_close(AVCodecContext *avctx)
     ivi_free_buffers(&ctx->planes[0]);
 
     if (ctx->mb_vlc.cust_tab.table)
-        ff_free_vlc(&ctx->mb_vlc.cust_tab);
+        ff_vlc_free(&ctx->mb_vlc.cust_tab);
 
     if (ctx->blk_vlc.cust_tab.table)
-        ff_free_vlc(&ctx->blk_vlc.cust_tab);
+        ff_vlc_free(&ctx->blk_vlc.cust_tab);
 
     av_frame_free(&ctx->p_frame);
 

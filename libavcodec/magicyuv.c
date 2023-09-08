@@ -86,9 +86,9 @@ static int huff_build(const uint8_t len[], uint16_t codes_pos[33],
     for (unsigned i = nb_elems; i-- > 0;)
         he[--codes_pos[len[i]]] = (HuffEntry){ len[i], i };
 
-    ff_free_vlc(vlc);
-    ff_free_vlc_multi(multi);
-    return ff_init_vlc_multi_from_lengths(vlc, multi, FFMIN(he[0].len, VLC_BITS), nb_elems, nb_elems,
+    ff_vlc_free(vlc);
+    ff_vlc_free_multi(multi);
+    return ff_vlc_init_multi_from_lengths(vlc, multi, FFMIN(he[0].len, VLC_BITS), nb_elems, nb_elems,
                                     &he[0].len, sizeof(he[0]),
                                     &he[0].sym, sizeof(he[0]), sizeof(he[0].sym),
                                     0, 0, logctx);
@@ -688,8 +688,8 @@ static av_cold int magy_decode_end(AVCodecContext *avctx)
     for (i = 0; i < FF_ARRAY_ELEMS(s->slices); i++) {
         av_freep(&s->slices[i]);
         s->slices_size[i] = 0;
-        ff_free_vlc(&s->vlc[i]);
-        ff_free_vlc_multi(&s->multi[i]);
+        ff_vlc_free(&s->vlc[i]);
+        ff_vlc_free_multi(&s->multi[i]);
     }
 
     return 0;

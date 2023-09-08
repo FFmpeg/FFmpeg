@@ -863,10 +863,10 @@ static av_cold void atrac3_init_static_data(void)
     for (i = 0; i < 7; i++) {
         spectral_coeff_tab[i].table           = table;
         spectral_coeff_tab[i].table_allocated = 256;
-        ff_init_vlc_from_lengths(&spectral_coeff_tab[i], ATRAC3_VLC_BITS, huff_tab_sizes[i],
+        ff_vlc_init_from_lengths(&spectral_coeff_tab[i], ATRAC3_VLC_BITS, huff_tab_sizes[i],
                                  &hufftabs[0][1], 2,
                                  &hufftabs[0][0], 2, 1,
-                                 -31, INIT_VLC_USE_NEW_STATIC, NULL);
+                                 -31, VLC_INIT_USE_STATIC, NULL);
         hufftabs += huff_tab_sizes[i];
         table += 256;
     }

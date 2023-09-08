@@ -796,9 +796,9 @@ av_cold void ff_dca_init_vlcs(void)
     do {                                                                    \
         vlc.table           = &dca_table[offset];                           \
         vlc.table_allocated = FF_ARRAY_ELEMS(dca_table) - offset;           \
-        ff_init_vlc_from_lengths(&vlc, nb_bits, nb_codes, &src_table[0][1], 2, \
+        ff_vlc_init_from_lengths(&vlc, nb_bits, nb_codes, &src_table[0][1], 2, \
                                  &src_table[0][0], 2, 1, entry_offset,      \
-                                 INIT_VLC_STATIC_OVERLONG, NULL);           \
+                                 VLC_INIT_STATIC_OVERLONG, NULL);           \
         offset += vlc.table_size;                                           \
         src_table += nb_codes;                                              \
     } while (0)
@@ -822,9 +822,9 @@ av_cold void ff_dca_init_vlcs(void)
     do {                                                                \
         vlc.table           = &dca_table[offset];                       \
         vlc.table_allocated = FF_ARRAY_ELEMS(dca_table) - offset;       \
-        ff_init_vlc_from_lengths(&vlc, nb_bits, nb_codes, &src_table[0][1], 2, \
+        ff_vlc_init_from_lengths(&vlc, nb_bits, nb_codes, &src_table[0][1], 2, \
                                  &src_table[0][0], 2, 1, entry_offset,  \
-                                 INIT_VLC_STATIC_OVERLONG | INIT_VLC_LE,\
+                                 VLC_INIT_STATIC_OVERLONG | VLC_INIT_LE,\
                                  NULL);                                 \
         offset += vlc.table_size;                                       \
         src_table += nb_codes;                                          \

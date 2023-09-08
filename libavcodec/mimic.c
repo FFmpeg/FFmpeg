@@ -120,7 +120,7 @@ static av_cold int mimic_decode_end(AVCodecContext *avctx)
 
 static av_cold void mimic_init_static(void)
 {
-    INIT_VLC_STATIC_FROM_LENGTHS(&block_vlc, MIMIC_VLC_BITS, FF_ARRAY_ELEMS(huffbits),
+    VLC_INIT_STATIC_FROM_LENGTHS(&block_vlc, MIMIC_VLC_BITS, FF_ARRAY_ELEMS(huffbits),
                                  huffbits, 1, huffsyms, 1, 1, 0, 0, 4368);
 }
 

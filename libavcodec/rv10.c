@@ -334,8 +334,8 @@ static av_cold void rv10_build_vlc(VLC *vlc, const uint16_t len_count[15],
         for (unsigned tmp = nb_lens + len_count[i]; nb_lens < tmp; nb_lens++)
             lens[nb_lens] = i + 2;
     av_assert1(nb_lens == nb_syms);
-    ff_init_vlc_from_lengths(vlc, DC_VLC_BITS, nb_lens, lens, 1,
-                             syms, 2, 2, 0, INIT_VLC_STATIC_OVERLONG, NULL);
+    ff_vlc_init_from_lengths(vlc, DC_VLC_BITS, nb_lens, lens, 1,
+                             syms, 2, 2, 0, VLC_INIT_STATIC_OVERLONG, NULL);
 }
 
 static av_cold void rv10_init_static(void)

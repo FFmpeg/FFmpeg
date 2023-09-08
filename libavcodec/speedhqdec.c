@@ -506,7 +506,7 @@ static av_cold void compute_alpha_vlcs(void)
 
     av_assert0(entry == FF_ARRAY_ELEMS(run_code));
 
-    INIT_LE_VLC_SPARSE_STATIC(&dc_alpha_run_vlc_le, ALPHA_VLC_BITS,
+    VLC_INIT_LE_SPARSE_STATIC(&dc_alpha_run_vlc_le, ALPHA_VLC_BITS,
                               FF_ARRAY_ELEMS(run_code),
                               run_bits, 1, 1,
                               run_code, 2, 2,
@@ -546,7 +546,7 @@ static av_cold void compute_alpha_vlcs(void)
 
     av_assert0(entry == FF_ARRAY_ELEMS(level_code));
 
-    INIT_LE_VLC_SPARSE_STATIC(&dc_alpha_level_vlc_le, ALPHA_VLC_BITS,
+    VLC_INIT_LE_SPARSE_STATIC(&dc_alpha_level_vlc_le, ALPHA_VLC_BITS,
                               FF_ARRAY_ELEMS(level_code),
                               level_bits, 1, 1,
                               level_code, 2, 2,
@@ -556,18 +556,18 @@ static av_cold void compute_alpha_vlcs(void)
 static av_cold void speedhq_static_init(void)
 {
     /* Exactly the same as MPEG-2, except for a little-endian reader. */
-    INIT_CUSTOM_VLC_STATIC(&dc_lum_vlc_le, DC_VLC_BITS, 12,
+    VLC_INIT_CUSTOM_STATIC(&dc_lum_vlc_le, DC_VLC_BITS, 12,
                            ff_mpeg12_vlc_dc_lum_bits, 1, 1,
                            ff_mpeg12_vlc_dc_lum_code, 2, 2,
-                           INIT_VLC_OUTPUT_LE, 512);
-    INIT_CUSTOM_VLC_STATIC(&dc_chroma_vlc_le, DC_VLC_BITS, 12,
+                           VLC_INIT_OUTPUT_LE, 512);
+    VLC_INIT_CUSTOM_STATIC(&dc_chroma_vlc_le, DC_VLC_BITS, 12,
                            ff_mpeg12_vlc_dc_chroma_bits, 1, 1,
                            ff_mpeg12_vlc_dc_chroma_code, 2, 2,
-                           INIT_VLC_OUTPUT_LE, 514);
+                           VLC_INIT_OUTPUT_LE, 514);
 
     ff_init_2d_vlc_rl(ff_speedhq_vlc_table, speedhq_rl_vlc, ff_speedhq_run,
                       ff_speedhq_level, SPEEDHQ_RL_NB_ELEMS,
-                      FF_ARRAY_ELEMS(speedhq_rl_vlc), INIT_VLC_LE);
+                      FF_ARRAY_ELEMS(speedhq_rl_vlc), VLC_INIT_LE);
 
     compute_alpha_vlcs();
 }

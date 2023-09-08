@@ -320,7 +320,7 @@ static av_cold void wmavoice_init_static_data(void)
         14, 14, 14, 14
     };
 
-    INIT_VLC_STATIC_FROM_LENGTHS(&frame_type_vlc, VLC_NBITS,
+    VLC_INIT_STATIC_FROM_LENGTHS(&frame_type_vlc, VLC_NBITS,
                                  FF_ARRAY_ELEMS(bits), bits,
                                  1, NULL, 0, 0, 0, 0, 132);
 }

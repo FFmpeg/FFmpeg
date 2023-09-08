@@ -193,8 +193,8 @@ static int generate_joint_tables(HYuvDecContext *s)
                         i++;
                 }
             }
-            ff_free_vlc(&s->vlc[4 + p]);
-            if ((ret = ff_init_vlc_sparse(&s->vlc[4 + p], VLC_BITS, i, len, 1, 1,
+            ff_vlc_free(&s->vlc[4 + p]);
+            if ((ret = ff_vlc_init_sparse(&s->vlc[4 + p], VLC_BITS, i, len, 1, 1,
                                           bits, 2, 2, symbols, 2, 2, 0)) < 0)
                 goto out;
         }
@@ -237,8 +237,8 @@ static int generate_joint_tables(HYuvDecContext *s)
                 }
             }
         }
-        ff_free_vlc(&s->vlc[4]);
-        if ((ret = init_vlc(&s->vlc[4], VLC_BITS, i, len, 1, 1,
+        ff_vlc_free(&s->vlc[4]);
+        if ((ret = vlc_init(&s->vlc[4], VLC_BITS, i, len, 1, 1,
                             bits, 2, 2, 0)) < 0)
             goto out;
     }
@@ -265,8 +265,8 @@ static int read_huffman_tables(HYuvDecContext *s, const uint8_t *src, int length
             return ret;
         if ((ret = ff_huffyuv_generate_bits_table(s->bits[i], s->len[i], s->vlc_n)) < 0)
             return ret;
-        ff_free_vlc(&s->vlc[i]);
-        if ((ret = init_vlc(&s->vlc[i], VLC_BITS, s->vlc_n, s->len[i], 1, 1,
+        ff_vlc_free(&s->vlc[i]);
+        if ((ret = vlc_init(&s->vlc[i], VLC_BITS, s->vlc_n, s->len[i], 1, 1,
                            s->bits[i], 4, 4, 0)) < 0)
             return ret;
     }
@@ -305,8 +305,8 @@ static int read_old_huffman_tables(HYuvDecContext *s)
     memcpy(s->len[2], s->len[1], 256 * sizeof(uint8_t));
 
     for (i = 0; i < 4; i++) {
-        ff_free_vlc(&s->vlc[i]);
-        if ((ret = init_vlc(&s->vlc[i], VLC_BITS, 256, s->len[i], 1, 1,
+        ff_vlc_free(&s->vlc[i]);
+        if ((ret = vlc_init(&s->vlc[i], VLC_BITS, 256, s->len[i], 1, 1,
                             s->bits[i], 4, 4, 0)) < 0)
             return ret;
     }
@@ -326,7 +326,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
     av_freep(&s->bitstream_buffer);
 
     for (i = 0; i < 8; i++)
-        ff_free_vlc(&s->vlc[i]);
+        ff_vlc_free(&s->vlc[i]);
 
     return 0;
 }

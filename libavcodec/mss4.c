@@ -115,9 +115,9 @@ static av_cold void mss4_init_vlc(VLC *vlc, unsigned *offset,
 
     vlc->table           = &vlc_buf[*offset];
     vlc->table_allocated = FF_ARRAY_ELEMS(vlc_buf) - *offset;
-    ff_init_vlc_from_lengths(vlc, FFMIN(bits[idx - 1], 9), idx,
+    ff_vlc_init_from_lengths(vlc, FFMIN(bits[idx - 1], 9), idx,
                              bits, 1, syms, 1, 1,
-                             0, INIT_VLC_STATIC_OVERLONG, NULL);
+                             0, VLC_INIT_STATIC_OVERLONG, NULL);
     *offset += vlc->table_size;
 }
 

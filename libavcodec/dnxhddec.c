@@ -130,19 +130,19 @@ static int dnxhd_init_vlc(DNXHDContext *ctx, uint32_t cid, int bitdepth)
         ctx->cid_table = cid_table;
         av_log(ctx->avctx, AV_LOG_VERBOSE, "Profile cid %"PRIu32".\n", cid);
 
-        ff_free_vlc(&ctx->ac_vlc);
-        ff_free_vlc(&ctx->dc_vlc);
-        ff_free_vlc(&ctx->run_vlc);
+        ff_vlc_free(&ctx->ac_vlc);
+        ff_vlc_free(&ctx->dc_vlc);
+        ff_vlc_free(&ctx->run_vlc);
 
-        if ((ret = init_vlc(&ctx->ac_vlc, DNXHD_VLC_BITS, 257,
+        if ((ret = vlc_init(&ctx->ac_vlc, DNXHD_VLC_BITS, 257,
                  ctx->cid_table->ac_bits, 1, 1,
                  ctx->cid_table->ac_codes, 2, 2, 0)) < 0)
             goto out;
-        if ((ret = init_vlc(&ctx->dc_vlc, DNXHD_DC_VLC_BITS, bitdepth > 8 ? 14 : 12,
+        if ((ret = vlc_init(&ctx->dc_vlc, DNXHD_DC_VLC_BITS, bitdepth > 8 ? 14 : 12,
                  ctx->cid_table->dc_bits, 1, 1,
                  ctx->cid_table->dc_codes, 1, 1, 0)) < 0)
             goto out;
-        if ((ret = init_vlc(&ctx->run_vlc, DNXHD_VLC_BITS, 62,
+        if ((ret = vlc_init(&ctx->run_vlc, DNXHD_VLC_BITS, 62,
                  ctx->cid_table->run_bits, 1, 1,
                  ctx->cid_table->run_codes, 2, 2, 0)) < 0)
             goto out;
@@ -152,7 +152,7 @@ static int dnxhd_init_vlc(DNXHDContext *ctx, uint32_t cid, int bitdepth)
     ret = 0;
 out:
     if (ret < 0)
-        av_log(ctx->avctx, AV_LOG_ERROR, "init_vlc failed\n");
+        av_log(ctx->avctx, AV_LOG_ERROR, "vlc_init failed\n");
     return ret;
 }
 
@@ -716,9 +716,9 @@ static av_cold int dnxhd_decode_close(AVCodecContext *avctx)
 {
     DNXHDContext *ctx = avctx->priv_data;
 
-    ff_free_vlc(&ctx->ac_vlc);
-    ff_free_vlc(&ctx->dc_vlc);
-    ff_free_vlc(&ctx->run_vlc);
+    ff_vlc_free(&ctx->ac_vlc);
+    ff_vlc_free(&ctx->dc_vlc);
+    ff_vlc_free(&ctx->run_vlc);
 
     av_freep(&ctx->rows);
 

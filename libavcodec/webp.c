@@ -233,7 +233,7 @@ static void image_ctx_free(ImageContext *img)
     if (img->huffman_groups) {
         for (i = 0; i < img->nb_huffman_groups; i++) {
             for (j = 0; j < HUFFMAN_CODES_PER_META_CODE; j++)
-                ff_free_vlc(&img->huffman_groups[i * HUFFMAN_CODES_PER_META_CODE + j].vlc);
+                ff_vlc_free(&img->huffman_groups[i * HUFFMAN_CODES_PER_META_CODE + j].vlc);
         }
         av_free(img->huffman_groups);
     }
@@ -300,9 +300,9 @@ static int huff_reader_build_canonical(HuffReader *r, const uint8_t *code_length
         return AVERROR_INVALIDDATA;
     }
 
-    ret = init_vlc(&r->vlc, 8, alphabet_size,
+    ret = vlc_init(&r->vlc, 8, alphabet_size,
                    code_lengths, sizeof(*code_lengths), sizeof(*code_lengths),
-                   codes, sizeof(*codes), sizeof(*codes), INIT_VLC_OUTPUT_LE);
+                   codes, sizeof(*codes), sizeof(*codes), VLC_INIT_OUTPUT_LE);
     if (ret < 0) {
         av_free(codes);
         return ret;
@@ -415,7 +415,7 @@ static int read_huffman_code_normal(WebPContext *s, HuffReader *hc,
     ret = huff_reader_build_canonical(hc, code_lengths, alphabet_size);
 
 finish:
-    ff_free_vlc(&code_len_hc.vlc);
+    ff_vlc_free(&code_len_hc.vlc);
     av_free(code_lengths);
     return ret;
 }

@@ -376,8 +376,8 @@ static av_cold int hq_hqa_decode_close(AVCodecContext *avctx)
 {
     HQContext *ctx = avctx->priv_data;
 
-    ff_free_vlc(&ctx->hq_ac_vlc);
-    ff_free_vlc(&ctx->hqa_cbp_vlc);
+    ff_vlc_free(&ctx->hq_ac_vlc);
+    ff_vlc_free(&ctx->hqa_cbp_vlc);
 
     return 0;
 }

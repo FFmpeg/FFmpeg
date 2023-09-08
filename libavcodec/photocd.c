@@ -210,8 +210,8 @@ static av_noinline int read_hufftable(AVCodecContext *avctx, VLC *vlc)
         s->syms[j]  = sym;
     }
 
-    ff_free_vlc(vlc);
-    ret = ff_init_vlc_sparse(vlc, 12, count,
+    ff_vlc_free(vlc);
+    ret = ff_vlc_init_sparse(vlc, 12, count,
                              s->bits,  sizeof(*s->bits),  sizeof(*s->bits),
                              s->codes, sizeof(*s->codes), sizeof(*s->codes),
                              s->syms,  sizeof(*s->syms),  sizeof(*s->syms), 0);
@@ -438,7 +438,7 @@ static av_cold int photocd_decode_close(AVCodecContext *avctx)
     PhotoCDContext *s = avctx->priv_data;
 
     for (int i = 0; i < 3; i++)
-        ff_free_vlc(&s->vlc[i]);
+        ff_vlc_free(&s->vlc[i]);
 
     return 0;
 }

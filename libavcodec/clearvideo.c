@@ -637,8 +637,8 @@ static av_cold void build_vlc(VLC *vlc, const uint8_t counts[16],
     }
     vlc->table           = &vlc_buf[*offset];
     vlc->table_allocated = FF_ARRAY_ELEMS(vlc_buf) - *offset;
-    ff_init_vlc_from_lengths(vlc, CLV_VLC_BITS, num, lens, 1,
-                             *syms, 2, 2, 0, INIT_VLC_STATIC_OVERLONG, NULL);
+    ff_vlc_init_from_lengths(vlc, CLV_VLC_BITS, num, lens, 1,
+                             *syms, 2, 2, 0, VLC_INIT_STATIC_OVERLONG, NULL);
     *syms += num;
     *offset += vlc->table_size;
 }
@@ -647,10 +647,10 @@ static av_cold void clv_init_static(void)
 {
     const uint16_t *mv_syms = clv_mv_syms, *bias_syms = clv_bias_syms;
 
-    INIT_VLC_STATIC_FROM_LENGTHS(&dc_vlc, CLV_VLC_BITS, NUM_DC_CODES,
+    VLC_INIT_STATIC_FROM_LENGTHS(&dc_vlc, CLV_VLC_BITS, NUM_DC_CODES,
                                  clv_dc_lens, 1,
                                  clv_dc_syms, 1, 1, -63, 0, 1104);
-    INIT_VLC_STATIC_FROM_LENGTHS(&ac_vlc, CLV_VLC_BITS, NUM_AC_CODES,
+    VLC_INIT_STATIC_FROM_LENGTHS(&ac_vlc, CLV_VLC_BITS, NUM_AC_CODES,
                                  clv_ac_bits, 1,
                                  clv_ac_syms, 2, 2, 0, 0, 554);
     for (unsigned i = 0, j = 0, k = 0, offset = 0;; i++) {
@@ -663,10 +663,10 @@ static av_cold void clv_init_static(void)
         if (0x1B7 & (1 << i)) {
             lev[i].flags_cb.table           = &vlc_buf[offset];
             lev[i].flags_cb.table_allocated = FF_ARRAY_ELEMS(vlc_buf) - offset;
-            ff_init_vlc_from_lengths(&lev[i].flags_cb, CLV_VLC_BITS, 16,
+            ff_vlc_init_from_lengths(&lev[i].flags_cb, CLV_VLC_BITS, 16,
                                      clv_flags_bits[j], 1,
                                      clv_flags_syms[j], 1, 1,
-                                     0, INIT_VLC_STATIC_OVERLONG, NULL);
+                                     0, VLC_INIT_STATIC_OVERLONG, NULL);
             offset += lev[i].flags_cb.table_size;
 
             build_vlc(&lev[i + 1].bias_cb, clv_bias_len_counts[j],

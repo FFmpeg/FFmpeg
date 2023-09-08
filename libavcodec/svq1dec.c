@@ -777,11 +777,11 @@ static int svq1_decode_frame(AVCodecContext *avctx, AVFrame *cur,
 
 static av_cold void svq1_static_init(void)
 {
-    INIT_VLC_STATIC(&svq1_block_type, SVQ1_BLOCK_TYPE_VLC_BITS, 4,
+    VLC_INIT_STATIC(&svq1_block_type, SVQ1_BLOCK_TYPE_VLC_BITS, 4,
                     &ff_svq1_block_type_vlc[0][1], 2, 1,
                     &ff_svq1_block_type_vlc[0][0], 2, 1, 8);
 
-    INIT_VLC_STATIC(&svq1_motion_component, 7, 33,
+    VLC_INIT_STATIC(&svq1_motion_component, 7, 33,
                     &ff_mvtab[0][1], 2, 1,
                     &ff_mvtab[0][0], 2, 1, 176);
 
@@ -792,24 +792,24 @@ static av_cold void svq1_static_init(void)
         svq1_intra_multistage[i].table           = &table[offset];
         svq1_intra_multistage[i].table_allocated = sizes[0][i];
         offset                                  += sizes[0][i];
-        init_vlc(&svq1_intra_multistage[i], 3, 8,
+        vlc_init(&svq1_intra_multistage[i], 3, 8,
                  &ff_svq1_intra_multistage_vlc[i][0][1], 2, 1,
                  &ff_svq1_intra_multistage_vlc[i][0][0], 2, 1,
-                 INIT_VLC_USE_NEW_STATIC);
+                 VLC_INIT_USE_STATIC);
         svq1_inter_multistage[i].table           = &table[offset];
         svq1_inter_multistage[i].table_allocated = sizes[1][i];
         offset                                  += sizes[1][i];
-        init_vlc(&svq1_inter_multistage[i], 3, 8,
+        vlc_init(&svq1_inter_multistage[i], 3, 8,
                  &ff_svq1_inter_multistage_vlc[i][0][1], 2, 1,
                  &ff_svq1_inter_multistage_vlc[i][0][0], 2, 1,
-                 INIT_VLC_USE_NEW_STATIC);
+                 VLC_INIT_USE_STATIC);
     }
 
-    INIT_VLC_STATIC(&svq1_intra_mean, 8, 256,
+    VLC_INIT_STATIC(&svq1_intra_mean, 8, 256,
                     &ff_svq1_intra_mean_vlc[0][1], 4, 2,
                     &ff_svq1_intra_mean_vlc[0][0], 4, 2, 632);
 
-    INIT_VLC_STATIC(&svq1_inter_mean, 9, 512,
+    VLC_INIT_STATIC(&svq1_inter_mean, 9, 512,
                     &ff_svq1_inter_mean_vlc[0][1], 4, 2,
                     &ff_svq1_inter_mean_vlc[0][0], 4, 2, 1434);
 }

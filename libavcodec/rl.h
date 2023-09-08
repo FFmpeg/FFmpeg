@@ -80,7 +80,7 @@ void ff_rl_init(RLTable *rl, uint8_t static_store[2][2*MAX_RUN + MAX_LEVEL + 3])
  */
 void ff_rl_init_vlc(RLTable *rl, unsigned static_size);
 
-#define INIT_VLC_RL(rl, static_size)\
+#define VLC_INIT_RL(rl, static_size)\
 {\
     static RL_VLC_ELEM rl_vlc_table[32][static_size];\
 \

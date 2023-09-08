@@ -150,7 +150,7 @@ static av_cold int cfhd_init_vlc(CFHD_RL_VLC_ELEM out[], unsigned out_size,
         }
     }
 
-    ret = ff_init_vlc_from_lengths(&vlc, VLC_BITS, j,
+    ret = ff_vlc_init_from_lengths(&vlc, VLC_BITS, j,
                                    &tmp[0].len, sizeof(tmp[0]),
                                    NULL, 0, 0, 0, 0, logctx);
     if (ret < 0)
@@ -173,7 +173,7 @@ static av_cold int cfhd_init_vlc(CFHD_RL_VLC_ELEM out[], unsigned out_size,
         out[i].level = level;
         out[i].run   = run;
     }
-    ff_free_vlc(&vlc);
+    ff_vlc_free(&vlc);
 
     return 0;
 }

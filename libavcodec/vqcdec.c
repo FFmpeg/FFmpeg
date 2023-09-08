@@ -53,7 +53,7 @@ static VLC vector_vlc;
 
 static av_cold void vqc_init_static_data(void)
 {
-    INIT_VLC_STATIC_FROM_LENGTHS(&vector_vlc, VECTOR_VLC_BITS, FF_ARRAY_ELEMS(vector_nbits),
+    VLC_INIT_STATIC_FROM_LENGTHS(&vector_vlc, VECTOR_VLC_BITS, FF_ARRAY_ELEMS(vector_nbits),
                              vector_nbits, 1,
                              vector_symbols, 1, 1,
                              0, 0, 1 << VECTOR_VLC_BITS);

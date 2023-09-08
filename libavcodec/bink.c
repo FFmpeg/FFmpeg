@@ -1318,9 +1318,9 @@ static av_cold void bink_init_vlcs(void)
         bink_trees[i].table           = table + offset;
         bink_trees[i].table_allocated = 1 << maxbits;
         offset                       += bink_trees[i].table_allocated;
-        init_vlc(&bink_trees[i], maxbits, 16,
+        vlc_init(&bink_trees[i], maxbits, 16,
                  bink_tree_lens[i], 1, 1,
-                 bink_tree_bits[i], 1, 1, INIT_VLC_USE_NEW_STATIC | INIT_VLC_LE);
+                 bink_tree_bits[i], 1, 1, VLC_INIT_USE_STATIC | VLC_INIT_LE);
     }
 }
 

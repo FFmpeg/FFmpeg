@@ -279,11 +279,11 @@ static VLC mv_vlc[2][16];
 
 static av_cold void mobiclip_init_static(void)
 {
-    INIT_VLC_STATIC_FROM_LENGTHS(&rl_vlc[0], MOBI_RL_VLC_BITS, 104,
+    VLC_INIT_STATIC_FROM_LENGTHS(&rl_vlc[0], MOBI_RL_VLC_BITS, 104,
                                  bits0, sizeof(*bits0),
                                  syms0, sizeof(*syms0), sizeof(*syms0),
                                  0, 0, 1 << MOBI_RL_VLC_BITS);
-    INIT_VLC_STATIC_FROM_LENGTHS(&rl_vlc[1], MOBI_RL_VLC_BITS, 104,
+    VLC_INIT_STATIC_FROM_LENGTHS(&rl_vlc[1], MOBI_RL_VLC_BITS, 104,
                                  bits0, sizeof(*bits0),
                                  syms1, sizeof(*syms1), sizeof(*syms1),
                                  0, 0, 1 << MOBI_RL_VLC_BITS);
@@ -292,10 +292,10 @@ static av_cold void mobiclip_init_static(void)
         for (int j = 0; j < 16; j++) {
             mv_vlc[i][j].table           = &vlc_buf[(16 * i + j) << MOBI_MV_VLC_BITS];
             mv_vlc[i][j].table_allocated = 1 << MOBI_MV_VLC_BITS;
-            ff_init_vlc_from_lengths(&mv_vlc[i][j], MOBI_MV_VLC_BITS, mv_len[j],
+            ff_vlc_init_from_lengths(&mv_vlc[i][j], MOBI_MV_VLC_BITS, mv_len[j],
                                      mv_bits[i][j], sizeof(*mv_bits[i][j]),
                                      mv_syms[i][j], sizeof(*mv_syms[i][j]), sizeof(*mv_syms[i][j]),
-                                     0, INIT_VLC_USE_NEW_STATIC, NULL);
+                                     0, VLC_INIT_USE_STATIC, NULL);
         }
     }
 }

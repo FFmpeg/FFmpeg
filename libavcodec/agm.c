@@ -1015,12 +1015,12 @@ static int build_huff(const uint8_t *bitlen, VLC *vlc)
         }
     }
 
-    ff_free_vlc(vlc);
-    return ff_init_vlc_sparse(vlc, 13, nb_codes,
+    ff_vlc_free(vlc);
+    return ff_vlc_init_sparse(vlc, 13, nb_codes,
                               bits, 1, 1,
                               codes, 4, 4,
                               symbols, 1, 1,
-                              INIT_VLC_LE);
+                              VLC_INIT_LE);
 }
 
 static int decode_huffman2(AVCodecContext *avctx, int header, int size)
@@ -1255,7 +1255,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
 {
     AGMContext *s = avctx->priv_data;
 
-    ff_free_vlc(&s->vlc);
+    ff_vlc_free(&s->vlc);
     av_frame_free(&s->prev_frame);
     av_freep(&s->mvectors);
     s->mvectors_size = 0;

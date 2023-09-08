@@ -849,9 +849,9 @@ static av_cold void atrac9_init_vlc(VLC *vlc, int nb_bits, int nb_codes,
 
     vlc->table           = &vlc_buf[*buf_offset];
     vlc->table_allocated = FF_ARRAY_ELEMS(vlc_buf) - *buf_offset;
-    ff_init_vlc_from_lengths(vlc, nb_bits, nb_codes,
+    ff_vlc_init_from_lengths(vlc, nb_bits, nb_codes,
                              &(*tab)[0][1], 2, &(*tab)[0][0], 2, 1,
-                             offset, INIT_VLC_STATIC_OVERLONG, NULL);
+                             offset, VLC_INIT_STATIC_OVERLONG, NULL);
     *buf_offset += vlc->table_size;
     *tab        += nb_codes;
 }

@@ -198,7 +198,7 @@ static int tm2_build_huff_table(TM2Context *ctx, TM2Codes *code)
 
     /* convert codes to vlc_table */
     if (res >= 0) {
-        res = ff_init_vlc_from_lengths(&code->vlc, huff.max_bits, huff.max_num,
+        res = ff_vlc_init_from_lengths(&code->vlc, huff.max_bits, huff.max_num,
                                        huff.lens, sizeof(huff.lens[0]),
                                        NULL, 0, 0, 0, 0, ctx->avctx);
         if (res < 0)
@@ -223,7 +223,7 @@ static void tm2_free_codes(TM2Codes *code)
 {
     av_free(code->recode);
     if (code->vlc.table)
-        ff_free_vlc(&code->vlc);
+        ff_vlc_free(&code->vlc);
 }
 
 static inline int tm2_get_token(GetBitContext *gb, TM2Codes *code)

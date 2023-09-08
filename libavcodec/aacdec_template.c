@@ -1133,14 +1133,14 @@ static av_cold void aac_static_table_init(void)
     for (unsigned i = 0, offset = 0; i < 11; i++) {
         vlc_spectral[i].table           = &vlc_buf[offset];
         vlc_spectral[i].table_allocated = FF_ARRAY_ELEMS(vlc_buf) - offset;
-        ff_init_vlc_sparse(&vlc_spectral[i], 8, ff_aac_spectral_sizes[i],
+        ff_vlc_init_sparse(&vlc_spectral[i], 8, ff_aac_spectral_sizes[i],
                            ff_aac_spectral_bits[i],       sizeof(ff_aac_spectral_bits[i][0]),
                                                           sizeof(ff_aac_spectral_bits[i][0]),
                            ff_aac_spectral_codes[i],      sizeof(ff_aac_spectral_codes[i][0]),
                                                           sizeof(ff_aac_spectral_codes[i][0]),
                            ff_aac_codebook_vector_idx[i], sizeof(ff_aac_codebook_vector_idx[i][0]),
                                                           sizeof(ff_aac_codebook_vector_idx[i][0]),
-                 INIT_VLC_STATIC_OVERLONG);
+                 VLC_INIT_STATIC_OVERLONG);
         offset += vlc_spectral[i].table_size;
     }
 
@@ -1148,7 +1148,7 @@ static av_cold void aac_static_table_init(void)
 
     ff_aac_tableinit();
 
-    INIT_VLC_STATIC(&vlc_scalefactors, 7,
+    VLC_INIT_STATIC(&vlc_scalefactors, 7,
                     FF_ARRAY_ELEMS(ff_aac_scalefactor_code),
                     ff_aac_scalefactor_bits,
                     sizeof(ff_aac_scalefactor_bits[0]),

@@ -82,7 +82,7 @@ static int build_huff(UtvideoContext *c, const uint8_t *src, VLC *vlc,
         he[--codes_count[bits[i]]] = (HuffEntry) { bits[i], i };
 
 #define VLC_BITS 11
-    return ff_init_vlc_multi_from_lengths(vlc, multi, VLC_BITS, nb_elems, codes_count[0],
+    return ff_vlc_init_multi_from_lengths(vlc, multi, VLC_BITS, nb_elems, codes_count[0],
                                     &he[0].len, sizeof(*he),
                                     &he[0].sym, sizeof(*he), 2, 0, 0, c->avctx);
 }
@@ -188,13 +188,13 @@ static int decode_plane10(UtvideoContext *c, int plane_no,
                    "%d bits left after decoding slice\n", get_bits_left(&gb));
     }
 
-    ff_free_vlc(&vlc);
-    ff_free_vlc_multi(&multi);
+    ff_vlc_free(&vlc);
+    ff_vlc_free_multi(&multi);
 
     return 0;
 fail:
-    ff_free_vlc(&vlc);
-    ff_free_vlc_multi(&multi);
+    ff_vlc_free(&vlc);
+    ff_vlc_free_multi(&multi);
     return AVERROR_INVALIDDATA;
 }
 
@@ -333,13 +333,13 @@ static int decode_plane(UtvideoContext *c, int plane_no,
                    "%d bits left after decoding slice\n", get_bits_left(&gb));
     }
 
-    ff_free_vlc(&vlc);
-    ff_free_vlc_multi(&multi);
+    ff_vlc_free(&vlc);
+    ff_vlc_free_multi(&multi);
 
     return 0;
 fail:
-    ff_free_vlc(&vlc);
-    ff_free_vlc_multi(&multi);
+    ff_vlc_free(&vlc);
+    ff_vlc_free_multi(&multi);
     return AVERROR_INVALIDDATA;
 }
 

@@ -320,25 +320,25 @@ static av_cold int get_rate(AVCodecContext *avctx)
 
 static av_cold void decode_init_static(void)
 {
-    INIT_VLC_STATIC_FROM_LENGTHS(&sf_vlc, SCALEVLCBITS, HUFF_SCALE_SIZE,
+    VLC_INIT_STATIC_FROM_LENGTHS(&sf_vlc, SCALEVLCBITS, HUFF_SCALE_SIZE,
                                  &scale_table[0][1], 2,
                                  &scale_table[0][0], 2, 1, -60, 0, 616);
-    INIT_VLC_STATIC_FROM_LENGTHS(&sf_rl_vlc, VLCBITS, HUFF_SCALE_RL_SIZE,
+    VLC_INIT_STATIC_FROM_LENGTHS(&sf_rl_vlc, VLCBITS, HUFF_SCALE_RL_SIZE,
                                  &scale_rl_table[0][1], 2,
                                  &scale_rl_table[0][0], 2, 1, 0, 0, 1406);
-    INIT_VLC_STATIC_FROM_LENGTHS(&coef_vlc[0], VLCBITS, HUFF_COEF0_SIZE,
+    VLC_INIT_STATIC_FROM_LENGTHS(&coef_vlc[0], VLCBITS, HUFF_COEF0_SIZE,
                                  coef0_lens, 1,
                                  coef0_syms, 2, 2, 0, 0, 2108);
-    INIT_VLC_STATIC_FROM_LENGTHS(&coef_vlc[1], VLCBITS, HUFF_COEF1_SIZE,
+    VLC_INIT_STATIC_FROM_LENGTHS(&coef_vlc[1], VLCBITS, HUFF_COEF1_SIZE,
                                  &coef1_table[0][1], 2,
                                  &coef1_table[0][0], 2, 1, 0, 0, 3912);
-    INIT_VLC_STATIC_FROM_LENGTHS(&vec4_vlc, VLCBITS, HUFF_VEC4_SIZE,
+    VLC_INIT_STATIC_FROM_LENGTHS(&vec4_vlc, VLCBITS, HUFF_VEC4_SIZE,
                                  vec4_lens, 1,
                                  vec4_syms, 2, 2, -1, 0, 604);
-    INIT_VLC_STATIC_FROM_LENGTHS(&vec2_vlc, VLCBITS, HUFF_VEC2_SIZE,
+    VLC_INIT_STATIC_FROM_LENGTHS(&vec2_vlc, VLCBITS, HUFF_VEC2_SIZE,
                                  &vec2_table[0][1], 2,
                                  &vec2_table[0][0], 2, 1, -1, 0, 562);
-    INIT_VLC_STATIC_FROM_LENGTHS(&vec1_vlc, VLCBITS, HUFF_VEC1_SIZE,
+    VLC_INIT_STATIC_FROM_LENGTHS(&vec1_vlc, VLCBITS, HUFF_VEC1_SIZE,
                                  &vec1_table[0][1], 2,
                                  &vec1_table[0][0], 2, 1, 0, 0, 562);
 

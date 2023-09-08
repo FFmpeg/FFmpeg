@@ -290,7 +290,7 @@ err:
 }
 
 #define PS_INIT_VLC_STATIC(num, nb_bits, size)                          \
-    INIT_VLC_STATIC(&vlc_ps[num], nb_bits, ps_tmp[num].table_size / ps_tmp[num].elem_size,    \
+    VLC_INIT_STATIC(&vlc_ps[num], nb_bits, ps_tmp[num].table_size / ps_tmp[num].elem_size,    \
                     ps_tmp[num].ps_bits, 1, 1,                                          \
                     ps_tmp[num].ps_codes, ps_tmp[num].elem_size, ps_tmp[num].elem_size, \
                     size);

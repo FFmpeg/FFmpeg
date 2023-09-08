@@ -474,7 +474,7 @@ static void dist_bundle_close(JXLDistributionBundle *bundle)
 {
     if (bundle->use_prefix_code && bundle->dists)
         for (int i = 0; i < bundle->num_clusters; i++)
-            ff_free_vlc(&bundle->dists[i].vlc);
+            ff_vlc_free(&bundle->dists[i].vlc);
     av_freep(&bundle->dists);
     av_freep(&bundle->cluster_map);
 }
@@ -668,8 +668,8 @@ static int read_simple_vlc_prefix(GetBitContext *gb, JXLEntropyDecoder *dec, JXL
         return AVERROR_BUG;
     }
 
-    return ff_init_vlc_from_lengths(&dist->vlc, bits, nsym, lens, 1, symbols,
-                                    2, 2, 0, INIT_VLC_LE, dec->logctx);
+    return ff_vlc_init_from_lengths(&dist->vlc, bits, nsym, lens, 1, symbols,
+                                    2, 2, 0, VLC_INIT_LE, dec->logctx);
 }
 
 static int read_vlc_prefix(GetBitContext *gb, JXLEntropyDecoder *dec, JXLSymbolDistribution *dist)
@@ -724,8 +724,8 @@ static int read_vlc_prefix(GetBitContext *gb, JXLEntropyDecoder *dec, JXLSymbolD
         level1_syms[idx] = i;
     }
 
-    ret = ff_init_vlc_from_lengths(&level1_vlc, 5, 18, level1_lens_s, 1, level1_syms, 2, 2,
-        0, INIT_VLC_LE, dec->logctx);
+    ret = ff_vlc_init_from_lengths(&level1_vlc, 5, 18, level1_lens_s, 1, level1_syms, 2, 2,
+        0, VLC_INIT_LE, dec->logctx);
     if (ret < 0)
         goto end;
 
@@ -789,12 +789,12 @@ static int read_vlc_prefix(GetBitContext *gb, JXLEntropyDecoder *dec, JXLSymbolD
         level2_syms[idx] = i;
     }
 
-    ret = ff_init_vlc_from_lengths(&dist->vlc, 15, dist->alphabet_size, level2_lens_s,
-                                    1, level2_syms, 2, 2, 0, INIT_VLC_LE, dec->logctx);
+    ret = ff_vlc_init_from_lengths(&dist->vlc, 15, dist->alphabet_size, level2_lens_s,
+                                    1, level2_syms, 2, 2, 0, VLC_INIT_LE, dec->logctx);
 
 end:
     av_freep(&buf);
-    ff_free_vlc(&level1_vlc);
+    ff_vlc_free(&level1_vlc);
 
     return ret;
 }

@@ -279,7 +279,7 @@ static int vp6_build_huff_tree(VP56Context *s, uint8_t coeff_model[],
         nodes[map[2*i+1]].count = b + !b;
     }
 
-    ff_free_vlc(vlc);
+    ff_vlc_free(vlc);
     /* then build the huffman tree according to probabilities */
     return ff_huff_build_tree(s->avctx, vlc, size, FF_HUFFMAN_BITS,
                               nodes, vp6_huff_cmp,
@@ -708,11 +708,11 @@ static av_cold void vp6_decode_free_context(VP56Context *s)
     ff_vp56_free_context(s);
 
     for (pt=0; pt<2; pt++) {
-        ff_free_vlc(&s->dccv_vlc[pt]);
-        ff_free_vlc(&s->runv_vlc[pt]);
+        ff_vlc_free(&s->dccv_vlc[pt]);
+        ff_vlc_free(&s->runv_vlc[pt]);
         for (ct=0; ct<3; ct++)
             for (cg=0; cg<6; cg++)
-                ff_free_vlc(&s->ract_vlc[pt][ct][cg]);
+                ff_vlc_free(&s->ract_vlc[pt][ct][cg]);
     }
 }
 

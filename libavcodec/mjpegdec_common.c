@@ -52,6 +52,6 @@ int ff_mjpeg_build_vlc(VLC *vlc, const uint8_t *bits_table,
             huff_sym[i] = 16 * 256;
     }
 
-    return ff_init_vlc_from_lengths(vlc, 9, nb_codes, huff_size, 1,
+    return ff_vlc_init_from_lengths(vlc, 9, nb_codes, huff_size, 1,
                                     huff_sym, 2, 2, 0, 0, logctx);
 }

@@ -87,7 +87,7 @@ static int build_vlc(AVCodecContext *avctx, VLC *vlc, const uint32_t *table)
     uint8_t xlat[256];
     int cur_node, i, j, pos = 0;
 
-    ff_free_vlc(vlc);
+    ff_vlc_free(vlc);
 
     for (i = 0; i < 256; i++) {
         nodes[i].count = table[i];
@@ -142,7 +142,7 @@ static int build_vlc(AVCodecContext *avctx, VLC *vlc, const uint32_t *table)
 
     get_tree_codes(bits, lens, xlat, nodes, cur_node - 1, 0, 0, &pos);
 
-    return ff_init_vlc_sparse(vlc, YLC_VLC_BITS, pos, lens, 2, 2,
+    return ff_vlc_init_sparse(vlc, YLC_VLC_BITS, pos, lens, 2, 2,
                               bits, 4, 4, xlat, 1, 1, 0);
 }
 
@@ -438,7 +438,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
     YLCContext *s = avctx->priv_data;
 
     for (int i = 0; i < FF_ARRAY_ELEMS(s->vlc); i++)
-        ff_free_vlc(&s->vlc[i]);
+        ff_vlc_free(&s->vlc[i]);
     av_freep(&s->buffer);
     s->buffer_size = 0;
 

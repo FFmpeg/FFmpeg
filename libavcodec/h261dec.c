@@ -64,16 +64,16 @@ typedef struct H261DecContext {
 
 static av_cold void h261_decode_init_static(void)
 {
-    INIT_VLC_STATIC(&h261_mba_vlc, H261_MBA_VLC_BITS, 35,
+    VLC_INIT_STATIC(&h261_mba_vlc, H261_MBA_VLC_BITS, 35,
                     ff_h261_mba_bits, 1, 1,
                     ff_h261_mba_code, 1, 1, 540);
-    INIT_VLC_STATIC(&h261_mtype_vlc, H261_MTYPE_VLC_BITS, 10,
+    VLC_INIT_STATIC(&h261_mtype_vlc, H261_MTYPE_VLC_BITS, 10,
                     ff_h261_mtype_bits, 1, 1,
                     ff_h261_mtype_code, 1, 1, 80);
-    INIT_VLC_STATIC(&h261_mv_vlc, H261_MV_VLC_BITS, 17,
+    VLC_INIT_STATIC(&h261_mv_vlc, H261_MV_VLC_BITS, 17,
                     &ff_h261_mv_tab[0][1], 2, 1,
                     &ff_h261_mv_tab[0][0], 2, 1, 144);
-    INIT_VLC_STATIC(&h261_cbp_vlc, H261_CBP_VLC_BITS, 63,
+    VLC_INIT_STATIC(&h261_cbp_vlc, H261_CBP_VLC_BITS, 63,
                     &ff_h261_cbp_tab[0][1], 2, 1,
                     &ff_h261_cbp_tab[0][0], 2, 1, 512);
     INIT_FIRST_VLC_RL(ff_h261_rl_tcoeff, 552);

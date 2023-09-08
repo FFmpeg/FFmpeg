@@ -220,10 +220,10 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
             goto error;
         skip_bits1(gb);
         if (h.current > 1) {
-            err = ff_init_vlc_from_lengths(&vlc[i], SMKTREE_BITS, h.current,
+            err = ff_vlc_init_from_lengths(&vlc[i], SMKTREE_BITS, h.current,
                                            &h.entries[0].length, sizeof(*h.entries),
                                            &h.entries[0].value,  sizeof(*h.entries), 1,
-                                           0, INIT_VLC_OUTPUT_LE, smk->avctx);
+                                           0, VLC_INIT_OUTPUT_LE, smk->avctx);
             if (err < 0) {
                 av_log(smk->avctx, AV_LOG_ERROR, "Cannot build VLC table\n");
                 goto error;
@@ -264,7 +264,7 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
     err = 0;
 error:
     for (int i = 0; i < 2; i++) {
-        ff_free_vlc(&vlc[i]);
+        ff_vlc_free(&vlc[i]);
     }
 
     return err;
@@ -659,10 +659,10 @@ static int smka_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             goto error;
         skip_bits1(&gb);
         if (h.current > 1) {
-            ret = ff_init_vlc_from_lengths(&vlc[i], SMKTREE_BITS, h.current,
+            ret = ff_vlc_init_from_lengths(&vlc[i], SMKTREE_BITS, h.current,
                                            &h.entries[0].length, sizeof(*h.entries),
                                            &h.entries[0].value,  sizeof(*h.entries), 1,
-                                           0, INIT_VLC_OUTPUT_LE, avctx);
+                                           0, VLC_INIT_OUTPUT_LE, avctx);
             if (ret < 0) {
                 av_log(avctx, AV_LOG_ERROR, "Cannot build VLC table\n");
                 goto error;
@@ -740,7 +740,7 @@ static int smka_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
 error:
     for(i = 0; i < 4; i++) {
-        ff_free_vlc(&vlc[i]);
+        ff_vlc_free(&vlc[i]);
     }
 
     return ret;

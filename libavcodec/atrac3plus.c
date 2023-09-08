@@ -66,8 +66,8 @@ static av_cold void build_canonical_huff(const uint8_t *cb, const uint8_t **xlat
     out_vlc->table = &tables_data[*tab_offset];
     out_vlc->table_allocated = 1 << max_len;
 
-    ff_init_vlc_from_lengths(out_vlc, max_len, index, bits, 1,
-                             *xlat, 1, 1, 0, INIT_VLC_USE_NEW_STATIC, NULL);
+    ff_vlc_init_from_lengths(out_vlc, max_len, index, bits, 1,
+                             *xlat, 1, 1, 0, VLC_INIT_USE_STATIC, NULL);
 
     *tab_offset += 1 << max_len;
     *xlat       += index;

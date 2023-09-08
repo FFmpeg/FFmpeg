@@ -103,8 +103,8 @@ static av_cold void build_vlc(VLC *vlc, unsigned *buf_offset,
         for (unsigned tmp = num + codes_counts[i - 1]; num < tmp; num++)
             len[num] = i;
 
-    ff_init_vlc_from_lengths(vlc, FFMIN(len[0], 9), num, len, 1,
-                             *syms, 1, 1, offset, INIT_VLC_STATIC_OVERLONG, NULL);
+    ff_vlc_init_from_lengths(vlc, FFMIN(len[0], 9), num, len, 1,
+                             *syms, 1, 1, offset, VLC_INIT_STATIC_OVERLONG, NULL);
     *buf_offset += vlc->table_size;
     *syms       += num;
 }

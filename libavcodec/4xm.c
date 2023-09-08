@@ -257,10 +257,10 @@ static av_cold void init_vlcs(void)
         for (j = 0; j < 4; j++) {
             block_type_vlc[i][j].table           = table[i][j];
             block_type_vlc[i][j].table_allocated = 32;
-            init_vlc(&block_type_vlc[i][j], BLOCK_TYPE_VLC_BITS, 7,
+            vlc_init(&block_type_vlc[i][j], BLOCK_TYPE_VLC_BITS, 7,
                      &block_type_tab[i][j][0][1], 2, 1,
                      &block_type_tab[i][j][0][0], 2, 1,
-                     INIT_VLC_USE_NEW_STATIC);
+                     VLC_INIT_USE_STATIC);
         }
     }
 }
@@ -706,8 +706,8 @@ static const uint8_t *read_huffman_tables(FourXContext *f,
         len_tab[j]  = len;
     }
 
-    ff_free_vlc(&f->pre_vlc);
-    if (init_vlc(&f->pre_vlc, ACDC_VLC_BITS, 257, len_tab, 1, 1,
+    ff_vlc_free(&f->pre_vlc);
+    if (vlc_init(&f->pre_vlc, ACDC_VLC_BITS, 257, len_tab, 1, 1,
                  bits_tab, 4, 4, 0))
         return NULL;
 
@@ -985,7 +985,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
         av_freep(&f->cfrm[i].data);
         f->cfrm[i].allocated_size = 0;
     }
-    ff_free_vlc(&f->pre_vlc);
+    ff_vlc_free(&f->pre_vlc);
 
     return 0;
 }

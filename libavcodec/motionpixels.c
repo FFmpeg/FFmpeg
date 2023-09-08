@@ -328,7 +328,7 @@ static int mp_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     if (mp->codes_count > 1) {
         /* The entries of the mp->codes array are sorted from right to left
          * in the Huffman tree, hence -(int)sizeof(HuffCode). */
-        ret = ff_init_vlc_from_lengths(&mp->vlc, mp->max_codes_bits, mp->codes_count,
+        ret = ff_vlc_init_from_lengths(&mp->vlc, mp->max_codes_bits, mp->codes_count,
                                        &mp->codes[mp->codes_count - 1].size,  -(int)sizeof(HuffCode),
                                        &mp->codes[mp->codes_count - 1].delta, -(int)sizeof(HuffCode), 1,
                                        0, 0, avctx);
@@ -336,7 +336,7 @@ static int mp_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
             goto end;
     }
     mp_decode_frame_helper(mp, &gb);
-    ff_free_vlc(&mp->vlc);
+    ff_vlc_free(&mp->vlc);
 
 end:
     if ((ret = av_frame_ref(rframe, mp->frame)) < 0)

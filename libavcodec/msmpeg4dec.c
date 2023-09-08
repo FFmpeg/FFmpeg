@@ -301,33 +301,33 @@ static av_cold void msmpeg4_decode_init_static(void)
     INIT_FIRST_VLC_RL(ff_rl_table[0], 642);
     INIT_FIRST_VLC_RL(ff_rl_table[1], 1104);
     INIT_FIRST_VLC_RL(ff_rl_table[2], 554);
-    INIT_VLC_RL(ff_rl_table[3], 940);
-    INIT_VLC_RL(ff_rl_table[4], 962);
+    VLC_INIT_RL(ff_rl_table[3], 940);
+    VLC_INIT_RL(ff_rl_table[4], 962);
     /* ff_rl_table[5] coincides with ff_h263_rl_inter which has just been
      * initialized in ff_h263_decode_init() earlier. So just copy the VLCs. */
     av_assert1(ff_h263_rl_inter.rl_vlc[0]);
     memcpy(ff_rl_table[5].rl_vlc, ff_h263_rl_inter.rl_vlc, sizeof(ff_rl_table[5].rl_vlc));
 
     mv = &ff_mv_tables[0];
-    INIT_VLC_STATIC(&mv->vlc, MV_VLC_BITS, MSMPEG4_MV_TABLES_NB_ELEMS + 1,
+    VLC_INIT_STATIC(&mv->vlc, MV_VLC_BITS, MSMPEG4_MV_TABLES_NB_ELEMS + 1,
                     mv->table_mv_bits, 1, 1,
                     mv->table_mv_code, 2, 2, 3714);
     mv = &ff_mv_tables[1];
-    INIT_VLC_STATIC(&mv->vlc, MV_VLC_BITS, MSMPEG4_MV_TABLES_NB_ELEMS + 1,
+    VLC_INIT_STATIC(&mv->vlc, MV_VLC_BITS, MSMPEG4_MV_TABLES_NB_ELEMS + 1,
                     mv->table_mv_bits, 1, 1,
                     mv->table_mv_code, 2, 2, 2694);
 
-    INIT_VLC_STATIC(&v2_dc_lum_vlc, MSMP4_DC_VLC_BITS, 512,
+    VLC_INIT_STATIC(&v2_dc_lum_vlc, MSMP4_DC_VLC_BITS, 512,
                     &ff_v2_dc_lum_table[0][1], 8, 4,
                     &ff_v2_dc_lum_table[0][0], 8, 4, 1472);
-    INIT_VLC_STATIC(&v2_dc_chroma_vlc, MSMP4_DC_VLC_BITS, 512,
+    VLC_INIT_STATIC(&v2_dc_chroma_vlc, MSMP4_DC_VLC_BITS, 512,
                     &ff_v2_dc_chroma_table[0][1], 8, 4,
                     &ff_v2_dc_chroma_table[0][0], 8, 4, 1506);
 
-    INIT_VLC_STATIC(&v2_intra_cbpc_vlc, V2_INTRA_CBPC_VLC_BITS, 4,
+    VLC_INIT_STATIC(&v2_intra_cbpc_vlc, V2_INTRA_CBPC_VLC_BITS, 4,
                     &ff_v2_intra_cbpc[0][1], 2, 1,
                     &ff_v2_intra_cbpc[0][0], 2, 1, 8);
-    INIT_VLC_STATIC(&v2_mb_type_vlc, V2_MB_TYPE_VLC_BITS, 8,
+    VLC_INIT_STATIC(&v2_mb_type_vlc, V2_MB_TYPE_VLC_BITS, 8,
                     &ff_v2_mb_type[0][1], 2, 1,
                     &ff_v2_mb_type[0][0], 2, 1, 128);
 
@@ -335,14 +335,14 @@ static av_cold void msmpeg4_decode_init_static(void)
         static VLCElem vlc_buf[1636 + 2648 + 1532 + 2488];
         ff_mb_non_intra_vlc[i].table           = &vlc_buf[offset];
         ff_mb_non_intra_vlc[i].table_allocated = FF_ARRAY_ELEMS(vlc_buf) - offset;
-        init_vlc(&ff_mb_non_intra_vlc[i], MB_NON_INTRA_VLC_BITS, 128,
+        vlc_init(&ff_mb_non_intra_vlc[i], MB_NON_INTRA_VLC_BITS, 128,
                  &ff_wmv2_inter_table[i][0][1], 8, 4,
                  &ff_wmv2_inter_table[i][0][0], 8, 4,
-                 INIT_VLC_STATIC_OVERLONG);
+                 VLC_INIT_STATIC_OVERLONG);
         offset += ff_mb_non_intra_vlc[i].table_size;
     }
 
-    INIT_VLC_STATIC(&ff_inter_intra_vlc, INTER_INTRA_VLC_BITS, 4,
+    VLC_INIT_STATIC(&ff_inter_intra_vlc, INTER_INTRA_VLC_BITS, 4,
                     &ff_table_inter_intra[0][1], 2, 1,
                     &ff_table_inter_intra[0][0], 2, 1, 8);
     ff_msmp4_vc1_vlcs_init_once();

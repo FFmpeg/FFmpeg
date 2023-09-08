@@ -404,8 +404,8 @@ static int huf_build_dec_table(const EXRContext *s,
     td->he[j].code = td->freq[iM] >> 6;
     j++;
 
-    ff_free_vlc(&td->vlc);
-    return ff_init_vlc_sparse(&td->vlc, 12, j,
+    ff_vlc_free(&td->vlc);
+    return ff_vlc_init_sparse(&td->vlc, 12, j,
                               &td->he[0].len, sizeof(td->he[0]), sizeof(td->he[0].len),
                               &td->he[0].code, sizeof(td->he[0]), sizeof(td->he[0].code),
                               &td->he[0].sym, sizeof(td->he[0]), sizeof(td->he[0].sym), 0);
@@ -2284,7 +2284,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
         av_freep(&td->dc_data);
         av_freep(&td->rle_data);
         av_freep(&td->rle_raw_data);
-        ff_free_vlc(&td->vlc);
+        ff_vlc_free(&td->vlc);
     }
 
     av_freep(&s->thread_data);

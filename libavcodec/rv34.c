@@ -113,10 +113,10 @@ static void rv34_gen_vlc(const uint8_t *bits, int size, VLC *vlc, const uint8_t 
 
     vlc->table           = &table_data[*offset];
     vlc->table_allocated = FF_ARRAY_ELEMS(table_data) - *offset;
-    ff_init_vlc_sparse(vlc, FFMIN(maxbits, 9), size,
+    ff_vlc_init_sparse(vlc, FFMIN(maxbits, 9), size,
                        bits, 1, 1,
                        cw,    2, 2,
-                       syms, !!syms, !!syms, INIT_VLC_STATIC_OVERLONG);
+                       syms, !!syms, !!syms, VLC_INIT_STATIC_OVERLONG);
     *offset += vlc->table_size;
 }
 

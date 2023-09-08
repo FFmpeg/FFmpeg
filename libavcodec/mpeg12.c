@@ -72,7 +72,7 @@ av_cold void ff_init_2d_vlc_rl(const uint16_t table_vlc[][2], RL_VLC_ELEM rl_vlc
     VLCElem table[680] = { 0 };
     VLC vlc = { .table = table, .table_allocated = static_size };
     av_assert0(static_size <= FF_ARRAY_ELEMS(table));
-    init_vlc(&vlc, TEX_VLC_BITS, n + 2, &table_vlc[0][1], 4, 2, &table_vlc[0][0], 4, 2, INIT_VLC_USE_NEW_STATIC | flags);
+    vlc_init(&vlc, TEX_VLC_BITS, n + 2, &table_vlc[0][1], 4, 2, &table_vlc[0][0], 4, 2, VLC_INIT_USE_STATIC | flags);
 
     for (i = 0; i < vlc.table_size; i++) {
         int code = vlc.table[i].sym;
@@ -130,26 +130,26 @@ RL_VLC_ELEM ff_mpeg2_rl_vlc[674];
 
 static av_cold void mpeg12_init_vlcs(void)
 {
-    INIT_VLC_STATIC(&ff_dc_lum_vlc, DC_VLC_BITS, 12,
+    VLC_INIT_STATIC(&ff_dc_lum_vlc, DC_VLC_BITS, 12,
                     ff_mpeg12_vlc_dc_lum_bits, 1, 1,
                     ff_mpeg12_vlc_dc_lum_code, 2, 2, 512);
-    INIT_VLC_STATIC(&ff_dc_chroma_vlc,  DC_VLC_BITS, 12,
+    VLC_INIT_STATIC(&ff_dc_chroma_vlc,  DC_VLC_BITS, 12,
                     ff_mpeg12_vlc_dc_chroma_bits, 1, 1,
                     ff_mpeg12_vlc_dc_chroma_code, 2, 2, 514);
-    INIT_VLC_STATIC(&ff_mv_vlc, MV_VLC_BITS, 17,
+    VLC_INIT_STATIC(&ff_mv_vlc, MV_VLC_BITS, 17,
                     &ff_mpeg12_mbMotionVectorTable[0][1], 2, 1,
                     &ff_mpeg12_mbMotionVectorTable[0][0], 2, 1, 266);
-    INIT_VLC_STATIC(&ff_mbincr_vlc, MBINCR_VLC_BITS, 36,
+    VLC_INIT_STATIC(&ff_mbincr_vlc, MBINCR_VLC_BITS, 36,
                     &ff_mpeg12_mbAddrIncrTable[0][1], 2, 1,
                     &ff_mpeg12_mbAddrIncrTable[0][0], 2, 1, 538);
-    INIT_VLC_STATIC(&ff_mb_pat_vlc, MB_PAT_VLC_BITS, 64,
+    VLC_INIT_STATIC(&ff_mb_pat_vlc, MB_PAT_VLC_BITS, 64,
                     &ff_mpeg12_mbPatTable[0][1], 2, 1,
                     &ff_mpeg12_mbPatTable[0][0], 2, 1, 512);
 
-    INIT_VLC_STATIC(&ff_mb_ptype_vlc, MB_PTYPE_VLC_BITS, 7,
+    VLC_INIT_STATIC(&ff_mb_ptype_vlc, MB_PTYPE_VLC_BITS, 7,
                     &table_mb_ptype[0][1], 2, 1,
                     &table_mb_ptype[0][0], 2, 1, 64);
-    INIT_VLC_STATIC(&ff_mb_btype_vlc, MB_BTYPE_VLC_BITS, 11,
+    VLC_INIT_STATIC(&ff_mb_btype_vlc, MB_BTYPE_VLC_BITS, 11,
                     &table_mb_btype[0][1], 2, 1,
                     &table_mb_btype[0][0], 2, 1, 64);
 

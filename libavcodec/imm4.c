@@ -473,18 +473,18 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
 static av_cold void imm4_init_static_data(void)
 {
-    INIT_VLC_STATIC_FROM_LENGTHS(&cbplo_tab, CBPLO_VLC_BITS, FF_ARRAY_ELEMS(cbplo),
+    VLC_INIT_STATIC_FROM_LENGTHS(&cbplo_tab, CBPLO_VLC_BITS, FF_ARRAY_ELEMS(cbplo),
                                  &cbplo[0][1], 2, &cbplo[0][0], 2, 1,
                                  0, 0, 1 << CBPLO_VLC_BITS);
 
-    INIT_VLC_SPARSE_STATIC(&cbphi_tab, CBPHI_VLC_BITS, FF_ARRAY_ELEMS(cbphi_bits),
+    VLC_INIT_SPARSE_STATIC(&cbphi_tab, CBPHI_VLC_BITS, FF_ARRAY_ELEMS(cbphi_bits),
                            cbphi_bits, 1, 1, cbphi_codes, 1, 1, NULL, 0, 0, 64);
 
-    INIT_VLC_STATIC_FROM_LENGTHS(&blktype_tab, BLKTYPE_VLC_BITS, FF_ARRAY_ELEMS(blktype),
+    VLC_INIT_STATIC_FROM_LENGTHS(&blktype_tab, BLKTYPE_VLC_BITS, FF_ARRAY_ELEMS(blktype),
                                  &blktype[0][1], 2, &blktype[0][0], 2, 1,
                                  0, 0, 1 << BLKTYPE_VLC_BITS);
 
-    INIT_VLC_STATIC_FROM_LENGTHS(&block_tab, BLOCK_VLC_BITS, FF_ARRAY_ELEMS(block_bits),
+    VLC_INIT_STATIC_FROM_LENGTHS(&block_tab, BLOCK_VLC_BITS, FF_ARRAY_ELEMS(block_bits),
                                  block_bits, 1, block_symbols, 2, 2,
                                  0, 0, 1 << BLOCK_VLC_BITS);
 }

@@ -428,9 +428,9 @@ static av_cold void mpegaudiodec_common_init_static(void)
 
         ff_huff_vlc[++i].table         = huff_vlc_tables + offset;
         ff_huff_vlc[i].table_allocated = FF_ARRAY_ELEMS(huff_vlc_tables) - offset;
-        ff_init_vlc_from_lengths(&ff_huff_vlc[i], 7, j,
+        ff_vlc_init_from_lengths(&ff_huff_vlc[i], 7, j,
                                  huff_lens, 1, tmp_symbols, 2, 2,
-                                 0, INIT_VLC_STATIC_OVERLONG, NULL);
+                                 0, VLC_INIT_STATIC_OVERLONG, NULL);
         offset    += ff_huff_vlc[i].table_size;
         huff_lens += j;
         huff_sym  += j;
@@ -443,9 +443,9 @@ static av_cold void mpegaudiodec_common_init_static(void)
         ff_huff_quad_vlc[i].table = huff_quad_vlc_tables + offset;
         ff_huff_quad_vlc[i].table_allocated = 1 << bits;
         offset                             += 1 << bits;
-        init_vlc(&ff_huff_quad_vlc[i], bits, 16,
+        vlc_init(&ff_huff_quad_vlc[i], bits, 16,
                  mpa_quad_bits[i], 1, 1, mpa_quad_codes[i], 1, 1,
-                 INIT_VLC_USE_NEW_STATIC);
+                 VLC_INIT_USE_STATIC);
     }
     av_assert0(offset == FF_ARRAY_ELEMS(huff_quad_vlc_tables));
 

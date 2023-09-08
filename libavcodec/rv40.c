@@ -53,9 +53,9 @@ static av_cold void rv40_init_table(VLC *vlc, unsigned *offset, int nb_bits,
     vlc->table_allocated = 1 << nb_bits;
     *offset             += 1 << nb_bits;
 
-    ff_init_vlc_from_lengths(vlc, nb_bits, nb_codes,
+    ff_vlc_init_from_lengths(vlc, nb_bits, nb_codes,
                              &tab[0][1], 2, &tab[0][0], 2, 1,
-                             0, INIT_VLC_USE_NEW_STATIC, NULL);
+                             0, VLC_INIT_USE_STATIC, NULL);
 }
 
 /**
@@ -87,9 +87,9 @@ static av_cold void rv40_init_tables(void)
         }
         aic_mode2_vlc[i].table           = &aic_mode2_table[offset];
         aic_mode2_vlc[i].table_allocated = FF_ARRAY_ELEMS(aic_mode2_table) - offset;
-        ff_init_vlc_from_lengths(&aic_mode2_vlc[i], AIC_MODE2_BITS, AIC_MODE2_SIZE,
+        ff_vlc_init_from_lengths(&aic_mode2_vlc[i], AIC_MODE2_BITS, AIC_MODE2_SIZE,
                                  aic_mode2_vlc_bits[i], 1,
-                                 syms, 2, 2, 0, INIT_VLC_STATIC_OVERLONG, NULL);
+                                 syms, 2, 2, 0, VLC_INIT_STATIC_OVERLONG, NULL);
         offset += aic_mode2_vlc[i].table_size;
     }
     for(i = 0; i < NUM_PTYPE_VLCS; i++){

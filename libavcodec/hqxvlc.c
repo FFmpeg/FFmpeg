@@ -2140,7 +2140,7 @@ const HQXAC ff_hqx_ac[NUM_HQX_AC] = {
 
 #define INIT_DC_TABLE(idx, name)                                              \
     do {                                                                      \
-        ret = init_vlc(&ctx->dc_vlc[idx], HQX_DC_VLC_BITS,                    \
+        ret = vlc_init(&ctx->dc_vlc[idx], HQX_DC_VLC_BITS,                    \
                        FF_ARRAY_ELEMS(name ## _vlc_lens),                     \
                        name ## _vlc_lens, 1, 1,                               \
                        name ## _vlc_bits, 2, 2, 0);                           \
@@ -2150,7 +2150,7 @@ const HQXAC ff_hqx_ac[NUM_HQX_AC] = {
 
 av_cold int ff_hqx_init_vlcs(HQXContext *ctx)
 {
-    int ret = init_vlc(&ctx->cbp_vlc, HQX_CBP_VLC_BITS, FF_ARRAY_ELEMS(cbp_vlc_lens),
+    int ret = vlc_init(&ctx->cbp_vlc, HQX_CBP_VLC_BITS, FF_ARRAY_ELEMS(cbp_vlc_lens),
                        cbp_vlc_lens, 1, 1, cbp_vlc_bits, 1, 1, 0);
     if (ret < 0)
         return ret;

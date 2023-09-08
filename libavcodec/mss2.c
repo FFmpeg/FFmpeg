@@ -324,7 +324,7 @@ static int decode_rle(GetBitContext *gb, uint8_t *pal_dst, ptrdiff_t pal_stride,
     if (next_code != 1 << current_length)
         return AVERROR_INVALIDDATA;
 
-    if ((i = init_vlc(&vlc, 9, alphabet_size, bits, 1, 1, codes, 4, 4, 0)) < 0)
+    if ((i = vlc_init(&vlc, 9, alphabet_size, bits, 1, 1, codes, 4, 4, 0)) < 0)
         return i;
 
     /* frame decode */
@@ -371,7 +371,7 @@ static int decode_rle(GetBitContext *gb, uint8_t *pal_dst, ptrdiff_t pal_stride,
         prev_avail = 1;
     } while (--h);
 
-    ff_free_vlc(&vlc);
+    ff_vlc_free(&vlc);
     return 0;
 }
 

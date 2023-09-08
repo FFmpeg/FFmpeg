@@ -56,8 +56,8 @@ static av_cold void x8_init_vlc(VLC *vlc, int nb_bits, int nb_codes,
 
     vlc->table           = &vlc_buf[*offset];
     vlc->table_allocated = VLC_BUFFER_SIZE - *offset;
-    ff_init_vlc_from_lengths(vlc, nb_bits, nb_codes, &table[0][1], 2,
-                             &table[0][0], 2, 1, 0, INIT_VLC_STATIC_OVERLONG, NULL);
+    ff_vlc_init_from_lengths(vlc, nb_bits, nb_codes, &table[0][1], 2,
+                             &table[0][0], 2, 1, 0, VLC_INIT_STATIC_OVERLONG, NULL);
     *offset += vlc->table_size;
 }
 

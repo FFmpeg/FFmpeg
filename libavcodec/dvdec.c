@@ -175,9 +175,9 @@ static av_cold void dv_init_static(void)
 
     /* NOTE: as a trick, we use the fact the no codes are unused
      * to accelerate the parsing of partial codes */
-    ff_init_vlc_from_lengths(&dv_vlc, TEX_VLC_BITS, j,
+    ff_vlc_init_from_lengths(&dv_vlc, TEX_VLC_BITS, j,
                              &tmp[0].len, sizeof(tmp[0]),
-                             NULL, 0, 0, 0, INIT_VLC_USE_NEW_STATIC, NULL);
+                             NULL, 0, 0, 0, VLC_INIT_USE_STATIC, NULL);
     av_assert1(dv_vlc.table_size == 1664);
 
     for (int i = 0; i < dv_vlc.table_size; i++) {
