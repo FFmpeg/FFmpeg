@@ -172,7 +172,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     }
 
     ff_blockdsp_init(&ctx->bdsp);
-    ret = ff_proresdsp_init(&ctx->prodsp, avctx);
+    ret = ff_proresdsp_init(&ctx->prodsp, avctx->bits_per_raw_sample);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Fail to init proresdsp for bits per raw sample %d\n", avctx->bits_per_raw_sample);
         return ret;

@@ -76,12 +76,12 @@ static void prores_idct_put_12_c(uint16_t *out, ptrdiff_t linesize, int16_t *blo
     put_pixels_12(out, linesize >> 1, block);
 }
 
-av_cold int ff_proresdsp_init(ProresDSPContext *dsp, AVCodecContext *avctx)
+av_cold int ff_proresdsp_init(ProresDSPContext *dsp, int bits_per_raw_sample)
 {
-    if (avctx->bits_per_raw_sample == 10) {
+    if (bits_per_raw_sample == 10) {
         dsp->idct_put = prores_idct_put_10_c;
         dsp->idct_permutation_type = FF_IDCT_PERM_NONE;
-    } else if (avctx->bits_per_raw_sample == 12) {
+    } else if (bits_per_raw_sample == 12) {
         dsp->idct_put = prores_idct_put_12_c;
         dsp->idct_permutation_type = FF_IDCT_PERM_NONE;
     } else {
@@ -89,7 +89,7 @@ av_cold int ff_proresdsp_init(ProresDSPContext *dsp, AVCodecContext *avctx)
     }
 
 #if ARCH_X86
-    ff_proresdsp_init_x86(dsp, avctx);
+    ff_proresdsp_init_x86(dsp, bits_per_raw_sample);
 #endif
 
     ff_init_scantable_permutation(dsp->idct_permutation,
