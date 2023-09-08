@@ -28,6 +28,8 @@
 #include "get_bits.h"
 #include "hca_data.h"
 
+#define MAX_CHANNELS 16
+
 typedef struct ChannelContext {
     float    base[128];
     DECLARE_ALIGNED(32, float, imdct_in)[128];
@@ -44,7 +46,7 @@ typedef struct ChannelContext {
 typedef struct HCAContext {
     const AVCRC *crc_table;
 
-    ChannelContext ch[16];
+    ChannelContext ch[MAX_CHANNELS];
 
     uint8_t ath[128];
 
@@ -249,7 +251,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
     c->crc_table = av_crc_get_table(AV_CRC_16_ANSI);
 
-    if (avctx->ch_layout.nb_channels <= 0 || avctx->ch_layout.nb_channels > 16)
+    if (avctx->ch_layout.nb_channels <= 0 || avctx->ch_layout.nb_channels > FF_ARRAY_ELEMS(c->ch))
         return AVERROR(EINVAL);
 
     c->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
