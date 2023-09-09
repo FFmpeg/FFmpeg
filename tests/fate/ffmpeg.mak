@@ -48,6 +48,26 @@ fate-force_key_frames: CMD = enc_dec \
   avi "-c mpeg4 -g 240 -qscale 10 -force_key_frames 0.5,0:00:01.5" \
   framecrc "" "-skip_frame nokey"
 
+# test -force_key_frames source with and without framerate conversion
+# * we don't care about the actual video content, so replace it with
+#   a 2x2 black square to speed up encoding
+# * force mpeg2video to only emit keyframes when explicitly requested
+fate-force_key_frames-source: CMD = framecrc -i $(TARGET_SAMPLES)/h264/intra_refresh.h264 \
+  -vf crop=2:2,drawbox=color=black:t=fill    \
+  -c:v mpeg2video -g 400 -sc_threshold 99999 \
+  -force_key_frames source
+fate-force_key_frames-source-drop: CMD = framecrc -i $(TARGET_SAMPLES)/h264/intra_refresh.h264 \
+  -vf crop=2:2,drawbox=color=black:t=fill    \
+  -c:v mpeg2video -g 400 -sc_threshold 99999 \
+  -force_key_frames source -r 1
+fate-force_key_frames-source-dup: CMD = framecrc -i $(TARGET_SAMPLES)/h264/intra_refresh.h264 \
+  -vf crop=2:2,drawbox=color=black:t=fill    \
+  -c:v mpeg2video -g 400 -sc_threshold 99999 \
+  -force_key_frames source -r 39 -force_fps -strict experimental
+
+FATE_SAMPLES_FFMPEG-$(call ENCDEC, MPEG2VIDEO H264, FRAMECRC H264, CROP_FILTER DRAWBOX_FILTER) += \
+    fate-force_key_frames-source fate-force_key_frames-source-drop fate-force_key_frames-source-dup
+
 # Tests that the video is properly autorotated using the contained
 # display matrix and that the generated file does not contain
 # a display matrix any more.
