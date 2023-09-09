@@ -1054,7 +1054,7 @@ finish:
     }
 
     ost->last_dropped = *nb_frames == *nb_frames_prev && frame;
-    ost->kf.dropped_keyframe = ost->last_dropped && frame && (frame->flags & AV_FRAME_FLAG_KEY);
+    ost->kf.dropped_keyframe |= ost->last_dropped && (frame->flags & AV_FRAME_FLAG_KEY);
 }
 
 static enum AVPictureType forced_kf_apply(void *logctx, KeyframeForceCtx *kf,
@@ -1097,8 +1097,9 @@ static enum AVPictureType forced_kf_apply(void *logctx, KeyframeForceCtx *kf,
                (in_picture->flags & AV_FRAME_FLAG_KEY) && !dup_idx) {
             goto force_keyframe;
     } else if (kf->type == KF_FORCE_SOURCE_NO_DROP && !dup_idx) {
+        int dropped_keyframe = kf->dropped_keyframe;
         kf->dropped_keyframe = 0;
-        if ((in_picture->flags & AV_FRAME_FLAG_KEY) || kf->dropped_keyframe)
+        if ((in_picture->flags & AV_FRAME_FLAG_KEY) || dropped_keyframe)
             goto force_keyframe;
     }
 
