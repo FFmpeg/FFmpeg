@@ -58,6 +58,7 @@
 #define FFMPEG_OPT_ADRIFT_THRESHOLD 1
 #define FFMPEG_OPT_ENC_TIME_BASE_NUM 1
 #define FFMPEG_OPT_TOP 1
+#define FFMPEG_OPT_FORCE_KF_SOURCE_NO_DROP 1
 
 enum VideoSyncMethod {
     VSYNC_AUTO = -1,
@@ -484,7 +485,9 @@ typedef enum {
 
 enum {
     KF_FORCE_SOURCE         = 1,
+#if FFMPEG_OPT_FORCE_KF_SOURCE_NO_DROP
     KF_FORCE_SOURCE_NO_DROP = 2,
+#endif
 };
 
 typedef struct KeyframeForceCtx {

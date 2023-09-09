@@ -1060,7 +1060,6 @@ Deprecated see -bsf
 @item -force_key_frames[:@var{stream_specifier}] @var{time}[,@var{time}...] (@emph{output,per-stream})
 @item -force_key_frames[:@var{stream_specifier}] expr:@var{expr} (@emph{output,per-stream})
 @item -force_key_frames[:@var{stream_specifier}] source (@emph{output,per-stream})
-@item -force_key_frames[:@var{stream_specifier}] source_no_drop (@emph{output,per-stream})
 
 @var{force_key_frames} can take arguments of the following form:
 
@@ -1120,10 +1119,6 @@ starting from second 13:
 
 @item source
 If the argument is @code{source}, ffmpeg will force a key frame if
-the current frame being encoded is marked as a key frame in its source.
-
-@item source_no_drop
-If the argument is @code{source_no_drop}, ffmpeg will force a key frame if
 the current frame being encoded is marked as a key frame in its source.
 In cases where this particular source frame has to be dropped,
 enforce the next available frame to become a key frame instead.
