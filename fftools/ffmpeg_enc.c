@@ -41,17 +41,23 @@
 
 #include "libavformat/avformat.h"
 
-struct Encoder {
-    /* predicted pts of the next frame to be encoded */
-    int64_t next_pts;
-
+typedef struct FPSConvContext {
     AVFrame *last_frame;
     /* number of frames emitted by the video-encoding sync code */
-    int64_t vsync_frame_number;
+    int64_t frame_number;
     /* history of nb_frames_prev, i.e. the number of times the
      * previous frame was duplicated by vsync code in recent
      * do_video_out() calls */
     int64_t frames_prev_hist[3];
+
+    uint64_t dup_warning;
+} FPSConvContext;
+
+struct Encoder {
+    /* predicted pts of the next frame to be encoded */
+    int64_t next_pts;
+
+    FPSConvContext fps;
 
     AVFrame *sq_frame;
 
@@ -64,8 +70,6 @@ struct Encoder {
     // number of packets received from the encoder
     uint64_t packets_encoded;
 
-    uint64_t dup_warning;
-
     int opened;
 };
 
@@ -76,7 +80,7 @@ void enc_free(Encoder **penc)
     if (!enc)
         return;
 
-    av_frame_free(&enc->last_frame);
+    av_frame_free(&enc->fps.last_frame);
     av_frame_free(&enc->sq_frame);
 
     av_packet_free(&enc->pkt);
@@ -95,16 +99,16 @@ int enc_alloc(Encoder **penc, const AVCodec *codec)
         return AVERROR(ENOMEM);
 
     if (codec->type == AVMEDIA_TYPE_VIDEO) {
-        enc->last_frame = av_frame_alloc();
-        if (!enc->last_frame)
+        enc->fps.last_frame = av_frame_alloc();
+        if (!enc->fps.last_frame)
             goto fail;
+
+        enc->fps.dup_warning = 1000;
     }
 
     enc->pkt = av_packet_alloc();
     if (!enc->pkt)
         goto fail;
-
-    enc->dup_warning = 1000;
 
     *penc = enc;
 
@@ -954,13 +958,14 @@ static void video_sync_process(OutputFile *of, OutputStream *ost, AVFrame *frame
                                int64_t *nb_frames, int64_t *nb_frames_prev)
 {
     Encoder *e = ost->enc;
+    FPSConvContext *fps = &e->fps;
     AVCodecContext *enc = ost->enc_ctx;
     double delta0, delta, sync_ipts, duration;
 
     if (!frame) {
-        *nb_frames_prev = *nb_frames = mid_pred(e->frames_prev_hist[0],
-                                                e->frames_prev_hist[1],
-                                                e->frames_prev_hist[2]);
+        *nb_frames_prev = *nb_frames = mid_pred(fps->frames_prev_hist[0],
+                                                fps->frames_prev_hist[1],
+                                                fps->frames_prev_hist[2]);
         goto finish;
     }
 
@@ -994,7 +999,7 @@ static void video_sync_process(OutputFile *of, OutputStream *ost, AVFrame *frame
 
     switch (ost->vsync_method) {
     case VSYNC_VSCFR:
-        if (e->vsync_frame_number == 0 && delta0 >= 0.5) {
+        if (fps->frame_number == 0 && delta0 >= 0.5) {
             av_log(ost, AV_LOG_DEBUG, "Not duplicating %d initial frames\n", (int)lrintf(delta0));
             delta = duration;
             delta0 = 0;
@@ -1002,7 +1007,7 @@ static void video_sync_process(OutputFile *of, OutputStream *ost, AVFrame *frame
         }
     case VSYNC_CFR:
         // FIXME set to 0.5 after we fix some dts/pts bugs like in avidec.c
-        if (frame_drop_threshold && delta < frame_drop_threshold && e->vsync_frame_number) {
+        if (frame_drop_threshold && delta < frame_drop_threshold && fps->frame_number) {
             *nb_frames = 0;
         } else if (delta < -1.1)
             *nb_frames = 0;
@@ -1030,16 +1035,16 @@ static void video_sync_process(OutputFile *of, OutputStream *ost, AVFrame *frame
     }
 
 finish:
-    memmove(e->frames_prev_hist + 1,
-            e->frames_prev_hist,
-            sizeof(e->frames_prev_hist[0]) * (FF_ARRAY_ELEMS(e->frames_prev_hist) - 1));
-    e->frames_prev_hist[0] = *nb_frames_prev;
+    memmove(fps->frames_prev_hist + 1,
+            fps->frames_prev_hist,
+            sizeof(fps->frames_prev_hist[0]) * (FF_ARRAY_ELEMS(fps->frames_prev_hist) - 1));
+    fps->frames_prev_hist[0] = *nb_frames_prev;
 
     if (*nb_frames_prev == 0 && ost->last_dropped) {
         ost->nb_frames_drop++;
         av_log(ost, AV_LOG_VERBOSE,
                "*** dropping frame %"PRId64" at ts %"PRId64"\n",
-               e->vsync_frame_number, e->last_frame->pts);
+               fps->frame_number, fps->last_frame->pts);
     }
     if (*nb_frames > (*nb_frames_prev && ost->last_dropped) + (*nb_frames > *nb_frames_prev)) {
         if (*nb_frames > dts_error_threshold * 30) {
@@ -1050,9 +1055,9 @@ finish:
         }
         ost->nb_frames_dup += *nb_frames - (*nb_frames_prev && ost->last_dropped) - (*nb_frames > *nb_frames_prev);
         av_log(ost, AV_LOG_VERBOSE, "*** %"PRId64" dup!\n", *nb_frames - 1);
-        if (ost->nb_frames_dup > e->dup_warning) {
-            av_log(ost, AV_LOG_WARNING, "More than %"PRIu64" frames duplicated\n", e->dup_warning);
-            e->dup_warning *= 10;
+        if (ost->nb_frames_dup > fps->dup_warning) {
+            av_log(ost, AV_LOG_WARNING, "More than %"PRIu64" frames duplicated\n", fps->dup_warning);
+            fps->dup_warning *= 10;
         }
     }
 
@@ -1125,8 +1130,8 @@ static int do_video_out(OutputFile *of, OutputStream *ost, AVFrame *frame)
     for (i = 0; i < nb_frames; i++) {
         AVFrame *in_picture;
 
-        if (i < nb_frames_prev && e->last_frame->buf[0]) {
-            in_picture = e->last_frame;
+        if (i < nb_frames_prev && e->fps.last_frame->buf[0]) {
+            in_picture = e->fps.last_frame;
         } else
             in_picture = frame;
 
@@ -1155,12 +1160,12 @@ static int do_video_out(OutputFile *of, OutputStream *ost, AVFrame *frame)
             return ret;
 
         e->next_pts++;
-        e->vsync_frame_number++;
+        e->fps.frame_number++;
     }
 
-    av_frame_unref(e->last_frame);
+    av_frame_unref(e->fps.last_frame);
     if (frame)
-        av_frame_move_ref(e->last_frame, frame);
+        av_frame_move_ref(e->fps.last_frame, frame);
 
     return 0;
 }
