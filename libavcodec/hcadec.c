@@ -31,7 +31,8 @@
 #define MAX_CHANNELS 16
 
 typedef struct ChannelContext {
-    float    base[128];
+    DECLARE_ALIGNED(32, float, base)[128];
+    DECLARE_ALIGNED(32, float, factors)[128];
     DECLARE_ALIGNED(32, float, imdct_in)[128];
     DECLARE_ALIGNED(32, float, imdct_out)[128];
     DECLARE_ALIGNED(32, float, imdct_prev)[128];
@@ -294,8 +295,8 @@ static void apply_intensity_stereo(HCAContext *s, ChannelContext *ch1, ChannelCo
         return;
 
     for (int i = 0; i < band_count; i++) {
-        *(c2++)  = *c1 * ratio_r;
-        *(c1++) *= ratio_l;
+        c2[i]  = c1[i] * ratio_r;
+        c1[i] *= ratio_l;
     }
 }
 
@@ -320,6 +321,10 @@ static void reconstruct_hfr(HCAContext *s, ChannelContext *ch,
 static void dequantize_coefficients(HCAContext *c, ChannelContext *ch,
                                     GetBitContext *gb)
 {
+    const float *base = ch->base;
+    float *factors = ch->factors;
+    float *out = ch->imdct_in;
+
     for (int i = 0; i < ch->count; i++) {
         unsigned scale = ch->scale[i];
         int nb_bits = max_bits_table[scale];
@@ -336,10 +341,11 @@ static void dequantize_coefficients(HCAContext *c, ChannelContext *ch,
             skip_bits_long(gb, quant_spectrum_bits[value] - nb_bits);
             factor = quant_spectrum_value[value];
         }
-        ch->imdct_in[i] = factor * ch->base[i];
+        factors[i] = factor;
     }
 
-    memset(ch->imdct_in + ch->count, 0,  sizeof(ch->imdct_in) - ch->count * sizeof(ch->imdct_in[0]));
+    memset(factors + ch->count, 0, 512 - ch->count * sizeof(*factors));
+    c->fdsp->vector_fmul(out, factors, base, 128);
 }
 
 static void unpack(HCAContext *c, ChannelContext *ch,
