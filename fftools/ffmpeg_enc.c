@@ -749,6 +749,9 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
 
         if (frame->sample_aspect_ratio.num && !ost->frame_aspect_ratio.num)
             enc->sample_aspect_ratio = frame->sample_aspect_ratio;
+    } else if (ost->last_dropped) {
+        ost->nb_frames_drop++;
+        ost->last_dropped = 0;
     }
 
     update_benchmark(NULL);

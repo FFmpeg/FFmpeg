@@ -566,9 +566,6 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
                     pts -= copy_ts_first_pts;
             }
         }
-
-        if (is_last_report)
-            nb_frames_drop += ost->last_dropped;
     }
 
     us    = FFABS64U(pts) % AV_TIME_BASE;
