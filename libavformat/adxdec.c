@@ -57,11 +57,6 @@ static int adx_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (avio_feof(s->pb))
         return AVERROR_EOF;
 
-    if (par->ch_layout.nb_channels <= 0) {
-        av_log(s, AV_LOG_ERROR, "invalid number of channels %d\n", par->ch_layout.nb_channels);
-        return AVERROR_INVALIDDATA;
-    }
-
     size = BLOCK_SIZE * par->ch_layout.nb_channels;
 
     pkt->pos = avio_tell(s->pb);
