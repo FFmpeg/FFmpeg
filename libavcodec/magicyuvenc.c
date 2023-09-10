@@ -415,7 +415,7 @@ static int encode_table(AVCodecContext *avctx,
     return 0;
 }
 
-static int encode_plane_slice(const uint8_t *src, uint8_t *dst, int dst_size,
+static int encode_plane_slice(const uint8_t *src, uint8_t *dst, unsigned dst_size,
                               int width, int height, HuffEntry *he, int prediction)
 {
     PutBitContext pb;
@@ -453,17 +453,14 @@ static int encode_slice(AVCodecContext *avctx, void *tdata,
     const int slice_height = s->slice_height;
     const int last_height = FFMIN(slice_height, avctx->height - n * slice_height);
     const int height = (n < (s->nb_slices - 1)) ? slice_height : last_height;
-    PutByteContext pb;
 
     for (int i = 0; i < s->planes; i++) {
         Slice *sl = &s->slices[n * s->planes + i];
 
-        bytestream2_init_writer(&pb, sl->bitslice, s->bitslice_size);
-
         sl->size =
             encode_plane_slice(sl->slice,
                                sl->bitslice,
-                               bytestream2_get_bytes_left_p(&pb),
+                               s->bitslice_size,
                                AV_CEIL_RSHIFT(avctx->width, s->hshift[i]),
                                AV_CEIL_RSHIFT(height, s->vshift[i]),
                                s->he[i], s->frame_pred);
