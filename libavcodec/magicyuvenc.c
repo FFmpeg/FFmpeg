@@ -196,12 +196,6 @@ static av_cold int magy_encode_init(AVCodecContext *avctx)
         s->format = 0x6b;
         break;
     }
-    if (s->correlate) {
-        s->decorrelate_buf[0] = av_calloc(2U * avctx->height, FFALIGN(avctx->width, av_cpu_max_align()));
-        if (!s->decorrelate_buf[0])
-            return AVERROR(ENOMEM);
-        s->decorrelate_buf[1] = s->decorrelate_buf[0] + avctx->height * FFALIGN(avctx->width, av_cpu_max_align());
-    }
 
     ff_llvidencdsp_init(&s->llvidencdsp);
 
@@ -215,6 +209,13 @@ static av_cold int magy_encode_init(AVCodecContext *avctx)
     s->slices = av_calloc(s->nb_slices * s->planes, sizeof(*s->slices));
     if (!s->slices)
         return AVERROR(ENOMEM);
+
+    if (s->correlate) {
+        s->decorrelate_buf[0] = av_calloc(2U * (s->nb_slices * s->slice_height), FFALIGN(avctx->width, av_cpu_max_align()));
+        if (!s->decorrelate_buf[0])
+            return AVERROR(ENOMEM);
+        s->decorrelate_buf[1] = s->decorrelate_buf[0] + (s->nb_slices * s->slice_height) * FFALIGN(avctx->width, av_cpu_max_align());
+    }
 
     s->bitslice_size = avctx->width * (s->slice_height + 2) + AV_INPUT_BUFFER_PADDING_SIZE;
     for (int n = 0; n < s->nb_slices; n++) {
@@ -375,7 +376,7 @@ static int count_plane_slice(AVCodecContext *avctx, int n, int plane)
     const uint8_t *dst = sl->slice;
     PTable *counts = sl->counts;
 
-    memset(counts, 0, sizeof(*counts) * 256);
+    memset(counts, 0, sizeof(sl->counts));
 
     count_usage(dst, AV_CEIL_RSHIFT(avctx->width, s->hshift[plane]),
                 AV_CEIL_RSHIFT(s->slice_height, s->vshift[plane]), counts);
