@@ -922,7 +922,7 @@ static enum AVPixelFormat get_pixel_format(H264Context *h, int force_callback)
     for (int i = 0; pix_fmts[i] != AV_PIX_FMT_NONE; i++)
         if (pix_fmts[i] == h->avctx->pix_fmt && !force_callback)
             return pix_fmts[i];
-    return ff_thread_get_format(h->avctx, pix_fmts);
+    return ff_get_format(h->avctx, pix_fmts);
 }
 
 /* export coded and cropped frame dimensions to AVCodecContext */

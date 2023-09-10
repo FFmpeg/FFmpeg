@@ -62,8 +62,6 @@ int ff_thread_decode_frame(AVCodecContext *avctx, AVFrame *picture,
  */
 void ff_thread_finish_setup(AVCodecContext *avctx);
 
-#define ff_thread_get_format ff_get_format
-
 /**
  * Wrapper around get_buffer() for frame-multithreaded codecs.
  * Call this function instead of ff_get_buffer(f).

@@ -278,7 +278,7 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
         *fmtp++ = ctx->pix_fmt;
         *fmtp = AV_PIX_FMT_NONE;
 
-        if ((ret = ff_thread_get_format(avctx, pix_fmts)) < 0)
+        if ((ret = ff_get_format(avctx, pix_fmts)) < 0)
             return ret;
 
         avctx->pix_fmt = ret;

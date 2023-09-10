@@ -1168,7 +1168,7 @@ static enum AVPixelFormat mpeg_get_pixelformat(AVCodecContext *avctx)
     else
         pix_fmts = mpeg12_pixfmt_list_444;
 
-    return ff_thread_get_format(avctx, pix_fmts);
+    return ff_get_format(avctx, pix_fmts);
 }
 
 /* Call this function when we know all parameters.

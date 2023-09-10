@@ -613,7 +613,7 @@ static int get_pixel_format(AVCodecContext *avctx)
     *fmtp++ = pix_fmt;
     *fmtp = AV_PIX_FMT_NONE;
 
-    ret = ff_thread_get_format(avctx, pix_fmts);
+    ret = ff_get_format(avctx, pix_fmts);
 
     /**
      * check if the HW accel is inited correctly. If not, return un-implemented.

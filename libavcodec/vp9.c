@@ -250,7 +250,7 @@ static int update_size(AVCodecContext *avctx, int w, int h)
         *fmtp++ = s->pix_fmt;
         *fmtp = AV_PIX_FMT_NONE;
 
-        ret = ff_thread_get_format(avctx, pix_fmts);
+        ret = ff_get_format(avctx, pix_fmts);
         if (ret < 0)
             return ret;
 
