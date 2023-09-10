@@ -56,7 +56,6 @@ typedef struct PTable {
 typedef struct MagicYUVContext {
     const AVClass       *class;
     int                  frame_pred;
-    PutBitContext        pb;
     int                  planes;
     uint8_t              format;
     int                  slice_height;
@@ -64,12 +63,12 @@ typedef struct MagicYUVContext {
     int                  correlate;
     int                  hshift[4];
     int                  vshift[4];
+    unsigned             bitslice_size;
+    unsigned             tables_size;
     uint8_t            **slices;
     uint8_t            **bitslices;
-    unsigned             bitslice_size;
     unsigned            *slice_pos;
     unsigned            *slice_size;
-    unsigned             tables_size;
     PTable              *counts;
     uint8_t             *decorrelate_buf[2];
     HuffEntry            he[4][256];
@@ -528,6 +527,7 @@ static int magy_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                              const AVFrame *frame, int *got_packet)
 {
     MagicYUVContext *s = avctx->priv_data;
+    PutBitContext pbit;
     PutByteContext pb;
     const int width = avctx->width, height = avctx->height;
     const int slice_height = s->slice_height;
@@ -572,12 +572,12 @@ static int magy_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     avctx->execute2(avctx, predict_slice, (void *)frame, NULL, s->nb_slices);
 
-    init_put_bits(&s->pb, pkt->data + bytestream2_tell_p(&pb), bytestream2_get_bytes_left_p(&pb));
+    init_put_bits(&pbit, pkt->data + bytestream2_tell_p(&pb), bytestream2_get_bytes_left_p(&pb));
 
     for (int i = 0; i < s->planes; i++)
-        encode_table(avctx, &s->pb, s->he[i], i);
+        encode_table(avctx, &pbit, s->he[i], i);
 
-    s->tables_size = put_bytes_count(&s->pb, 1);
+    s->tables_size = put_bytes_count(&pbit, 1);
     bytestream2_skip_p(&pb, s->tables_size);
 
     avctx->execute2(avctx, encode_slice, NULL, NULL, s->nb_slices);
