@@ -760,8 +760,8 @@ static int pxr24_uncompress(const EXRContext *s, const uint8_t *src,
 
 static void unpack_14(const uint8_t b[14], uint16_t s[16])
 {
-    unsigned short shift = (b[ 2] >> 2) & 15;
-    unsigned short bias = (0x20 << shift);
+    uint16_t shift = (b[ 2] >> 2) & 15;
+    uint16_t bias = (0x20 << shift);
     int i;
 
     s[ 0] = (b[0] << 8) | b[1];
@@ -1870,7 +1870,7 @@ static int decode_header(EXRContext *s, AVFrame *frame)
             continue;
         } else if ((var_size = check_header_variable(s, "tiles",
                                                      "tiledesc", 22)) >= 0) {
-            char tileLevel;
+            uint8_t tileLevel;
 
             if (!s->is_tile)
                 av_log(s->avctx, AV_LOG_WARNING,
