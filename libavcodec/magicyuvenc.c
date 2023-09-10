@@ -217,12 +217,12 @@ static av_cold int magy_encode_init(AVCodecContext *avctx)
         s->decorrelate_buf[1] = s->decorrelate_buf[0] + (s->nb_slices * s->slice_height) * FFALIGN(avctx->width, av_cpu_max_align());
     }
 
-    s->bitslice_size = avctx->width * (s->slice_height + 2) + AV_INPUT_BUFFER_PADDING_SIZE;
+    s->bitslice_size = avctx->width * s->slice_height + 2;
     for (int n = 0; n < s->nb_slices; n++) {
         for (int i = 0; i < s->planes; i++) {
             Slice *sl = &s->slices[n * s->planes + i];
 
-            sl->bitslice = av_malloc(s->bitslice_size);
+            sl->bitslice = av_malloc(s->bitslice_size + AV_INPUT_BUFFER_PADDING_SIZE);
             sl->slice = av_malloc(avctx->width * (s->slice_height + 2) +
                                                      AV_INPUT_BUFFER_PADDING_SIZE);
             if (!sl->slice || !sl->bitslice) {
@@ -416,11 +416,28 @@ static int encode_table(AVCodecContext *avctx,
     return 0;
 }
 
+static int encode_plane_slice_raw(const uint8_t *src, uint8_t *dst, unsigned dst_size,
+                                  int width, int height, int prediction)
+{
+    unsigned count = width * height;
+
+    dst[0] = 1;
+    dst[1] = prediction;
+
+    memcpy(dst + 2, src, count);
+    count += 2;
+    AV_WN32(dst + count, 0);
+    if (count & 3)
+        count += 4 - (count & 3);
+
+    return count;
+}
+
 static int encode_plane_slice(const uint8_t *src, uint8_t *dst, unsigned dst_size,
                               int width, int height, HuffEntry *he, int prediction)
 {
+    const uint8_t *osrc = src;
     PutBitContext pb;
-    int i, j;
     int count;
 
     init_put_bits(&pb, dst, dst_size);
@@ -428,10 +445,13 @@ static int encode_plane_slice(const uint8_t *src, uint8_t *dst, unsigned dst_siz
     put_bits(&pb, 8, 0);
     put_bits(&pb, 8, prediction);
 
-    for (j = 0; j < height; j++) {
-        for (i = 0; i < width; i++) {
+    for (int j = 0; j < height; j++) {
+        for (int i = 0; i < width; i++) {
             const int idx = src[i];
-            put_bits(&pb, he[idx].len, he[idx].code);
+            const int len = he[idx].len;
+            if (put_bits_left(&pb) < len + 32)
+                return encode_plane_slice_raw(osrc, dst, dst_size, width, height, prediction);
+            put_bits(&pb, len, he[idx].code);
         }
 
         src += width;
