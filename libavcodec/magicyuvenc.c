@@ -413,7 +413,7 @@ static int encode_table(AVCodecContext *avctx,
     return 0;
 }
 
-static int encode_plane_slice(uint8_t *src, uint8_t *dst, int dst_size,
+static int encode_plane_slice(const uint8_t *src, uint8_t *dst, int dst_size,
                               int width, int height, HuffEntry *he, int prediction)
 {
     PutBitContext pb;
