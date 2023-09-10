@@ -215,7 +215,7 @@ static av_cold int magy_encode_init(AVCodecContext *avctx)
     s->slices = av_calloc(s->nb_slices * s->planes, sizeof(*s->slices));
     s->bitslices = av_calloc(s->nb_slices * s->planes, sizeof(*s->bitslices));
     s->counts = av_calloc(s->nb_slices * s->planes * 256, sizeof(*s->counts));
-    if (!s->slices || !s->slice_pos || !s->counts || !s->slice_size)
+    if (!s->slices || !s->slice_pos || !s->counts || !s->slice_size || !s->bitslices)
         return AVERROR(ENOMEM);
 
     s->bitslice_size = avctx->width * (s->slice_height + 2) + AV_INPUT_BUFFER_PADDING_SIZE;
