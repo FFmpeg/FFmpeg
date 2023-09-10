@@ -26,21 +26,17 @@
  *   http://www.pcisys.net/~melanson/codecs/
  *
  * Supports: PAL8 (RGB 8bpp, paletted)
- *         : BGR24 (RGB 24bpp) (can also output it as RGB32)
- *         : RGB32 (RGB 32bpp, 4th plane is alpha)
+ *         : GBRP (RGB 24bpp)
+ *         : GBRAP (RGB 32bpp, 4th plane is alpha)
  */
 
 #include <string.h>
 
-#include "libavutil/bswap.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/internal.h"
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "decode.h"
-
-
-static const enum AVPixelFormat pixfmt_rgb24[] = {
-    AV_PIX_FMT_BGR24, AV_PIX_FMT_0RGB32, AV_PIX_FMT_NONE };
 
 typedef struct EightBpsContext {
     AVCodecContext *avctx;
@@ -61,9 +57,8 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     unsigned int dlen, p, row;
     const uint8_t *lp, *dp, *ep;
     uint8_t count;
-    unsigned int px_inc;
-    unsigned int planes     = c->planes;
-    uint8_t *planemap = c->planemap;
+    const uint8_t *planemap = c->planemap;
+    unsigned int planes = c->planes;
     int ret;
 
     if (buf_size < planes * height * 2)
@@ -77,19 +72,18 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     /* Set data pointer after line lengths */
     dp = encoded + planes * (height << 1);
 
-    px_inc = planes + (avctx->pix_fmt == AV_PIX_FMT_0RGB32);
-
     for (p = 0; p < planes; p++) {
+        const int pi = planemap[p];
         /* Lines length pointer for this plane */
         lp = encoded + p * (height << 1);
 
         /* Decode a plane */
         for (row = 0; row < height; row++) {
-            pixptr = frame->data[0] + row * frame->linesize[0] + planemap[p];
-            pixptr_end = pixptr + frame->linesize[0];
+            pixptr = frame->data[pi] + row * frame->linesize[pi];
+            pixptr_end = pixptr + frame->linesize[pi];
             if (ep - lp < row * 2 + 2)
                 return AVERROR_INVALIDDATA;
-            dlen = av_be2ne16(*(const uint16_t *)(lp + row * 2));
+            dlen = AV_RB16(lp + row * 2);
             /* Decode a row of this plane */
             while (dlen > 0) {
                 if (ep - dp <= 1)
@@ -97,22 +91,19 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
                 if ((count = *dp++) <= 127) {
                     count++;
                     dlen -= count + 1;
-                    if (pixptr_end - pixptr < count * px_inc)
+                    if (pixptr_end - pixptr < count)
                         break;
                     if (ep - dp < count)
                         return AVERROR_INVALIDDATA;
-                    while (count--) {
-                        *pixptr = *dp++;
-                        pixptr += px_inc;
-                    }
+                    memcpy(pixptr, dp, count);
+                    pixptr += count;
+                    dp += count;
                 } else {
                     count = 257 - count;
-                    if (pixptr_end - pixptr < count * px_inc)
+                    if (pixptr_end - pixptr < count)
                         break;
-                    while (count--) {
-                        *pixptr = *dp;
-                        pixptr += px_inc;
-                    }
+                    memset(pixptr, dp[0], count);
+                    pixptr += count;
                     dp++;
                     dlen -= 2;
                 }
@@ -150,16 +141,15 @@ static av_cold int decode_init(AVCodecContext *avctx)
         c->planemap[0] = 0; // 1st plane is palette indexes
         break;
     case 24:
-        avctx->pix_fmt = ff_get_format(avctx, pixfmt_rgb24);
+        avctx->pix_fmt = AV_PIX_FMT_GBRP;
         c->planes      = 3;
         c->planemap[0] = 2; // 1st plane is red
-        c->planemap[1] = 1; // 2nd plane is green
-        c->planemap[2] = 0; // 3rd plane is blue
+        c->planemap[1] = 0; // 2nd plane is green
+        c->planemap[2] = 1; // 3rd plane is blue
         break;
     case 32:
-        avctx->pix_fmt = AV_PIX_FMT_RGB32;
+        avctx->pix_fmt = AV_PIX_FMT_GBRAP;
         c->planes      = 4;
-        /* handle planemap setup later for decoding rgb24 data as rbg32 */
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Error: Unsupported color depth: %u.\n",
@@ -167,11 +157,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    if (avctx->pix_fmt == AV_PIX_FMT_RGB32) {
-        c->planemap[0] = HAVE_BIGENDIAN ? 1 : 2; // 1st plane is red
-        c->planemap[1] = HAVE_BIGENDIAN ? 2 : 1; // 2nd plane is green
-        c->planemap[2] = HAVE_BIGENDIAN ? 3 : 0; // 3rd plane is blue
-        c->planemap[3] = HAVE_BIGENDIAN ? 0 : 3; // 4th plane is alpha
+    if (avctx->pix_fmt == AV_PIX_FMT_GBRAP) {
+        c->planemap[0] = 2; // 1st plane is red
+        c->planemap[1] = 0; // 2nd plane is green
+        c->planemap[2] = 1; // 3rd plane is blue
+        c->planemap[3] = 3; // 4th plane is alpha
     }
     return 0;
 }
