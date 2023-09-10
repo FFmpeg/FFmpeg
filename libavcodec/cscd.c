@@ -70,6 +70,9 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     int buf_size = avpkt->size;
     CamStudioContext *c = avctx->priv_data;
     int ret;
+    int bpp = avctx->bits_per_coded_sample / 8;
+    int bugdelta = FFALIGN(avctx->width * bpp, 4)       * avctx->height
+                 -        (avctx->width     & ~3) * bpp * avctx->height;
 
     if (buf_size < 2) {
         av_log(avctx, AV_LOG_ERROR, "coded frame too small\n");
@@ -83,9 +86,6 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     switch ((buf[0] >> 1) & 7) {
     case 0: { // lzo compression
         int outlen = c->decomp_size, inlen = buf_size - 2;
-        int bpp = avctx->bits_per_coded_sample / 8;
-        int bugdelta = FFALIGN(avctx->width * bpp, 4)       * avctx->height
-                     -        (avctx->width     & ~3) * bpp * avctx->height;
         if (av_lzo1x_decode(c->decomp_buf, &outlen, &buf[2], &inlen) || (outlen && outlen != bugdelta)) {
             av_log(avctx, AV_LOG_ERROR, "error during lzo decompression\n");
             return AVERROR_INVALIDDATA;
@@ -95,7 +95,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     case 1: { // zlib compression
 #if CONFIG_ZLIB
         unsigned long dlen = c->decomp_size;
-        if (uncompress(c->decomp_buf, &dlen, &buf[2], buf_size - 2) != Z_OK || dlen != c->decomp_size) {
+        if (uncompress(c->decomp_buf, &dlen, &buf[2], buf_size - 2) != Z_OK || (dlen != c->decomp_size && dlen != c->decomp_size - bugdelta)) {
             av_log(avctx, AV_LOG_ERROR, "error during zlib decompression\n");
             return AVERROR_INVALIDDATA;
         }
