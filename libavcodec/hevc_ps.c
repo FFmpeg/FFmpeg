@@ -406,8 +406,6 @@ static int decode_hrd(GetBitContext *gb, int common_inf_present,
     for (int i = 0; i < max_sublayers; i++) {
         hdr->flags.fixed_pic_rate_general_flag = get_bits1(gb);
 
-        hdr->cpb_cnt_minus1[i] = 1;
-
         if (!hdr->flags.fixed_pic_rate_general_flag)
             hdr->flags.fixed_pic_rate_within_cvs_flag = get_bits1(gb);
 
@@ -426,11 +424,11 @@ static int decode_hrd(GetBitContext *gb, int common_inf_present,
         }
 
         if (hdr->flags.nal_hrd_parameters_present_flag)
-            decode_sublayer_hrd(gb, hdr->cpb_cnt_minus1[i], &hdr->nal_params[i],
+            decode_sublayer_hrd(gb, hdr->cpb_cnt_minus1[i]+1, &hdr->nal_params[i],
                                 hdr->flags.sub_pic_hrd_params_present_flag);
 
         if (hdr->flags.vcl_hrd_parameters_present_flag)
-            decode_sublayer_hrd(gb, hdr->cpb_cnt_minus1[i], &hdr->vcl_params[i],
+            decode_sublayer_hrd(gb, hdr->cpb_cnt_minus1[i]+1, &hdr->vcl_params[i],
                                 hdr->flags.sub_pic_hrd_params_present_flag);
     }
 
