@@ -152,6 +152,8 @@ static int jpegxl_anim_read_packet(AVFormatContext *s, AVPacket *pkt)
     size = avio_size(pb);
     if (size < 0)
         return size;
+    if (size > INT_MAX)
+        return AVERROR(EDOM);
     if (size == 0)
         size = 4096;
 
