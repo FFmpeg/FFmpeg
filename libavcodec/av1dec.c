@@ -453,7 +453,7 @@ static enum AVPixelFormat get_sw_pixel_format(void *logctx,
     else {
         av_log(logctx, AV_LOG_ERROR,
                "Unknown AV1 profile %d.\n", seq->seq_profile);
-        return -1;
+        return AV_PIX_FMT_NONE;
     }
 
     if (!seq->color_config.mono_chrome) {
