@@ -67,3 +67,30 @@ INIT_XMM sse3
 FCMUL_ADD
 INIT_YMM avx
 FCMUL_ADD
+
+%if HAVE_FMA3_EXTERNAL
+INIT_YMM fma3
+cglobal fcmul_add, 4,4,4, sum, t, c, len
+    shl       lend, 3
+    add         tq, lenq
+    add         cq, lenq
+    add       sumq, lenq
+    neg       lenq
+.loop:
+    movaps    m0, [tq + lenq]
+    movaps    m1, [cq + lenq]
+    vpermilps m3, m0, 177
+    vpermilps m2, m1, 160
+    vpermilps m1, m1, 245
+    mulps     m1, m1, m3
+    vfmaddsub132ps m0, m1, m2
+    addps     m0, m0, [sumq + lenq]
+    movaps    [sumq + lenq], m0
+    add       lenq, mmsize
+    jl .loop
+    movss xm0, [tq + lenq]
+    mulss xm0, [cq + lenq]
+    addss xm0, [sumq + lenq]
+    movss [sumq + lenq], xm0
+    RET
+%endif
