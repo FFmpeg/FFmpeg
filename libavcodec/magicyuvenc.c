@@ -495,7 +495,7 @@ static int predict_slice(AVCodecContext *avctx, void *tdata,
         b = frame->data[1] + n * slice_height * frame->linesize[1];
         r = frame->data[2] + n * slice_height * frame->linesize[2];
 
-        for (int i = 0; i < slice_height; i++) {
+        for (int i = 0; i < height; i++) {
             s->llvidencdsp.diff_bytes(decorrelated[0], b, g, width);
             s->llvidencdsp.diff_bytes(decorrelated[1], r, g, width);
             g += frame->linesize[0];
