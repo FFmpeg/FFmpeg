@@ -209,6 +209,7 @@ static av_cold int magy_encode_init(AVCodecContext *avctx)
     s->nb_slices = FFMIN(s->nb_slices, avctx->height >> s->vshift[1]);
     s->nb_slices = FFMAX(1, s->nb_slices);
     s->slice_height = FFALIGN((avctx->height + s->nb_slices - 1) / s->nb_slices, 1 << s->vshift[1]);
+    s->nb_slices = (avctx->height + s->slice_height - 1) / s->slice_height;
     s->slice_pos = av_calloc(s->nb_slices * s->planes, sizeof(*s->slice_pos));
     s->slice_size = av_calloc(s->nb_slices * s->planes, sizeof(*s->slice_size));
     s->slices = av_calloc(s->nb_slices * s->planes, sizeof(*s->slices));
