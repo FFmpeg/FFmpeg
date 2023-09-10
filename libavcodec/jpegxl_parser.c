@@ -1326,7 +1326,7 @@ static int skip_boxes(JXLParseContext *ctx, const uint8_t *buf, int buf_size)
         if (!size)
             return AVERROR_INVALIDDATA;
         /* invalid ISOBMFF size */
-        if (size <= head_size + 4)
+        if (size <= head_size + 4 || size > INT_MAX - ctx->skip)
             return AVERROR_INVALIDDATA;
 
         ctx->skip += size;
