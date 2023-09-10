@@ -409,7 +409,8 @@ static int decode_hrd(GetBitContext *gb, int common_inf_present,
         if (!hdr->flags.fixed_pic_rate_general_flag)
             hdr->flags.fixed_pic_rate_within_cvs_flag = get_bits1(gb);
 
-        if (hdr->flags.fixed_pic_rate_within_cvs_flag)
+        if (hdr->flags.fixed_pic_rate_within_cvs_flag ||
+            hdr->flags.fixed_pic_rate_general_flag)
             hdr->elemental_duration_in_tc_minus1[i] = get_ue_golomb_long(gb);
         else
             hdr->flags.low_delay_hrd_flag = get_bits1(gb);
