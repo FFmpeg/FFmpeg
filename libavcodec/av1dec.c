@@ -440,7 +440,7 @@ static int get_tiles_info(AVCodecContext *avctx, const AV1RawTileGroup *tile_gro
 
 }
 
-static enum AVPixelFormat get_sw_pixel_format(AVCodecContext *avctx,
+static enum AVPixelFormat get_sw_pixel_format(void *logctx,
                                               const AV1RawSequenceHeader *seq)
 {
     uint8_t bit_depth;
@@ -451,7 +451,7 @@ static enum AVPixelFormat get_sw_pixel_format(AVCodecContext *avctx,
     else if (seq->seq_profile <= 2)
         bit_depth = seq->color_config.high_bitdepth ? 10 : 8;
     else {
-        av_log(avctx, AV_LOG_ERROR,
+        av_log(logctx, AV_LOG_ERROR,
                "Unknown AV1 profile %d.\n", seq->seq_profile);
         return -1;
     }
@@ -467,7 +467,7 @@ static enum AVPixelFormat get_sw_pixel_format(AVCodecContext *avctx,
             else if (bit_depth == 12)
                 pix_fmt = AV_PIX_FMT_YUV444P12;
             else
-                av_log(avctx, AV_LOG_WARNING, "Unknown AV1 pixel format.\n");
+                av_log(logctx, AV_LOG_WARNING, "Unknown AV1 pixel format.\n");
         } else if (seq->color_config.subsampling_x == 1 &&
                    seq->color_config.subsampling_y == 0) {
             if (bit_depth == 8)
@@ -477,7 +477,7 @@ static enum AVPixelFormat get_sw_pixel_format(AVCodecContext *avctx,
             else if (bit_depth == 12)
                 pix_fmt = AV_PIX_FMT_YUV422P12;
             else
-                av_log(avctx, AV_LOG_WARNING, "Unknown AV1 pixel format.\n");
+                av_log(logctx, AV_LOG_WARNING, "Unknown AV1 pixel format.\n");
         } else if (seq->color_config.subsampling_x == 1 &&
                    seq->color_config.subsampling_y == 1) {
             if (bit_depth == 8)
@@ -487,7 +487,7 @@ static enum AVPixelFormat get_sw_pixel_format(AVCodecContext *avctx,
             else if (bit_depth == 12)
                 pix_fmt = AV_PIX_FMT_YUV420P12;
             else
-                av_log(avctx, AV_LOG_WARNING, "Unknown AV1 pixel format.\n");
+                av_log(logctx, AV_LOG_WARNING, "Unknown AV1 pixel format.\n");
         }
     } else {
         if (bit_depth == 8)
@@ -497,7 +497,7 @@ static enum AVPixelFormat get_sw_pixel_format(AVCodecContext *avctx,
         else if (bit_depth == 12)
             pix_fmt = AV_PIX_FMT_GRAY12;
         else
-            av_log(avctx, AV_LOG_WARNING, "Unknown AV1 pixel format.\n");
+            av_log(logctx, AV_LOG_WARNING, "Unknown AV1 pixel format.\n");
     }
 
     return pix_fmt;
