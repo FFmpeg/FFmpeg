@@ -49,7 +49,8 @@ typedef struct VMIXContext {
     int16_t factors[64];
     uint8_t scan[64];
 
-    SliceContext slices[255];
+    SliceContext *slices;
+    unsigned int slices_size;
 
     IDCTDSPContext idsp;
 } VMIXContext;
@@ -225,9 +226,10 @@ static int decode_frame(AVCodecContext *avctx,
     for (int n = 0; n < 64; n++)
         s->factors[n] = quant[n] * quality[q];
 
-    s->nb_slices = avpkt->data[2];
-    if (!s->nb_slices || s->nb_slices > (avctx->height + 15) / 16)
-        return AVERROR_INVALIDDATA;
+    s->nb_slices = (avctx->height + 15) / 16;
+    av_fast_mallocz(&s->slices, &s->slices_size, s->nb_slices * sizeof(*s->slices));
+    if (!s->slices)
+        return AVERROR(ENOMEM);
 
     for (int n = 0; n < s->nb_slices; n++) {
         unsigned slice_size;
@@ -279,6 +281,13 @@ static int decode_frame(AVCodecContext *avctx,
     return avpkt->size;
 }
 
+static av_cold int decode_end(AVCodecContext *avctx)
+{
+    VMIXContext *s = avctx->priv_data;
+    av_freep(&s->slices);
+    return 0;
+}
+
 const FFCodec ff_vmix_decoder = {
     .p.name           = "vmix",
     CODEC_LONG_NAME("vMix Video"),
@@ -286,6 +295,7 @@ const FFCodec ff_vmix_decoder = {
     .p.id             = AV_CODEC_ID_VMIX,
     .priv_data_size   = sizeof(VMIXContext),
     .init             = decode_init,
+    .close            = decode_end,
     FF_CODEC_DECODE_CB(decode_frame),
     .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS |
                         AV_CODEC_CAP_SLICE_THREADS,
