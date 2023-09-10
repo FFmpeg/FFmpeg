@@ -53,6 +53,14 @@ typedef struct PTable {
     int64_t prob;   ///< number of occurences of this value in input
 } PTable;
 
+typedef struct Slice {
+    unsigned pos;
+    unsigned size;
+    uint8_t *slice;
+    uint8_t *bitslice;
+    PTable counts[256];
+} Slice;
+
 typedef struct MagicYUVContext {
     const AVClass       *class;
     int                  frame_pred;
@@ -64,13 +72,8 @@ typedef struct MagicYUVContext {
     int                  hshift[4];
     int                  vshift[4];
     unsigned             bitslice_size;
-    unsigned             tables_size;
-    uint8_t            **slices;
-    uint8_t            **bitslices;
-    unsigned            *slice_pos;
-    unsigned            *slice_size;
-    PTable              *counts;
     uint8_t             *decorrelate_buf[2];
+    Slice               *slices;
     HuffEntry            he[4][256];
     LLVidEncDSPContext   llvidencdsp;
     void (*predict)(struct MagicYUVContext *s, const uint8_t *src, uint8_t *dst,
@@ -209,21 +212,19 @@ static av_cold int magy_encode_init(AVCodecContext *avctx)
     s->nb_slices = FFMAX(1, s->nb_slices);
     s->slice_height = FFALIGN((avctx->height + s->nb_slices - 1) / s->nb_slices, 1 << s->vshift[1]);
     s->nb_slices = (avctx->height + s->slice_height - 1) / s->slice_height;
-    s->slice_pos = av_calloc(s->nb_slices * s->planes, sizeof(*s->slice_pos));
-    s->slice_size = av_calloc(s->nb_slices * s->planes, sizeof(*s->slice_size));
     s->slices = av_calloc(s->nb_slices * s->planes, sizeof(*s->slices));
-    s->bitslices = av_calloc(s->nb_slices * s->planes, sizeof(*s->bitslices));
-    s->counts = av_calloc(s->nb_slices * s->planes * 256, sizeof(*s->counts));
-    if (!s->slices || !s->slice_pos || !s->counts || !s->slice_size || !s->bitslices)
+    if (!s->slices)
         return AVERROR(ENOMEM);
 
     s->bitslice_size = avctx->width * (s->slice_height + 2) + AV_INPUT_BUFFER_PADDING_SIZE;
     for (int n = 0; n < s->nb_slices; n++) {
         for (int i = 0; i < s->planes; i++) {
-            s->bitslices[n * s->planes + i] = av_malloc(s->bitslice_size);
-            s->slices[n * s->planes + i] = av_malloc(avctx->width * (s->slice_height + 2) +
+            Slice *sl = &s->slices[n * s->planes + i];
+
+            sl->bitslice = av_malloc(s->bitslice_size);
+            sl->slice = av_malloc(avctx->width * (s->slice_height + 2) +
                                                      AV_INPUT_BUFFER_PADDING_SIZE);
-            if (!s->slices[n * s->planes + i] || !s->bitslices[n * s->planes + i]) {
+            if (!sl->slice || !sl->bitslice) {
                 av_log(avctx, AV_LOG_ERROR, "Cannot allocate temporary buffer.\n");
                 return AVERROR(ENOMEM);
             }
@@ -370,8 +371,9 @@ static void magy_huffman_compute_bits(PTable *prob_table, HuffEntry *distincts,
 static int count_plane_slice(AVCodecContext *avctx, int n, int plane)
 {
     MagicYUVContext *s = avctx->priv_data;
-    const uint8_t *dst = s->slices[n * s->planes + plane];
-    PTable *counts = s->counts + 256 * (n * s->planes + plane);
+    Slice *sl = &s->slices[n * s->planes + plane];
+    const uint8_t *dst = sl->slice;
+    PTable *counts = sl->counts;
 
     memset(counts, 0, sizeof(*counts) * 256);
 
@@ -389,7 +391,8 @@ static int encode_table(AVCodecContext *avctx,
     uint16_t codes_counts[33] = { 0 };
 
     for (int n = 0; n < s->nb_slices; n++) {
-        PTable *slice_counts = s->counts + 256 * (n * s->planes + plane);
+        Slice *sl = &s->slices[n * s->planes + plane];
+        PTable *slice_counts = sl->counts;
 
         for (int i = 0; i < 256; i++)
             counts[i].prob = slice_counts[i].prob;
@@ -453,12 +456,13 @@ static int encode_slice(AVCodecContext *avctx, void *tdata,
     PutByteContext pb;
 
     for (int i = 0; i < s->planes; i++) {
-        bytestream2_init_writer(&pb, s->bitslices[n + s->planes + i],
-                                s->bitslice_size);
+        Slice *sl = &s->slices[n * s->planes + i];
 
-        s->slice_size[n * s->planes + i] =
-            encode_plane_slice(s->slices[n * s->planes + i],
-                               s->bitslices[n * s->planes + i],
+        bytestream2_init_writer(&pb, sl->bitslice, s->bitslice_size);
+
+        sl->size =
+            encode_plane_slice(sl->slice,
+                               sl->bitslice,
                                bytestream2_get_bytes_left_p(&pb),
                                AV_CEIL_RSHIFT(avctx->width, s->hshift[i]),
                                AV_CEIL_RSHIFT(height, s->vshift[i]),
@@ -504,13 +508,17 @@ static int predict_slice(AVCodecContext *avctx, void *tdata,
         }
 
         for (int i = 0; i < s->planes; i++) {
-            s->predict(s, data[i], s->slices[n * s->planes + i], linesize[i],
+            Slice *sl = &s->slices[n * s->planes + i];
+
+            s->predict(s, data[i], sl->slice, linesize[i],
                        frame->width, height);
         }
     } else {
         for (int i = 0; i < s->planes; i++) {
+            Slice *sl = &s->slices[n * s->planes + i];
+
             s->predict(s, frame->data[i] + n * (slice_height >> s->vshift[i]) * frame->linesize[i],
-                       s->slices[n * s->planes + i],
+                       sl->slice,
                        frame->linesize[i],
                        AV_CEIL_RSHIFT(frame->width, s->hshift[i]),
                        AV_CEIL_RSHIFT(height, s->vshift[i]));
@@ -527,10 +535,11 @@ static int magy_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                              const AVFrame *frame, int *got_packet)
 {
     MagicYUVContext *s = avctx->priv_data;
-    PutBitContext pbit;
-    PutByteContext pb;
     const int width = avctx->width, height = avctx->height;
     const int slice_height = s->slice_height;
+    unsigned tables_size;
+    PutBitContext pbit;
+    PutByteContext pb;
     int pos, ret = 0;
 
     ret = ff_alloc_packet(avctx, pkt, (256 + 4 * s->nb_slices + width * height) *
@@ -577,26 +586,30 @@ static int magy_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     for (int i = 0; i < s->planes; i++)
         encode_table(avctx, &pbit, s->he[i], i);
 
-    s->tables_size = put_bytes_count(&pbit, 1);
-    bytestream2_skip_p(&pb, s->tables_size);
+    tables_size = put_bytes_count(&pbit, 1);
+    bytestream2_skip_p(&pb, tables_size);
 
     avctx->execute2(avctx, encode_slice, NULL, NULL, s->nb_slices);
 
     for (int n = 0; n < s->nb_slices; n++) {
         for (int i = 0; i < s->planes; i++) {
-            s->slice_pos[n * s->planes + i] = bytestream2_tell_p(&pb);
+            Slice *sl = &s->slices[n * s->planes + i];
 
-            bytestream2_put_buffer(&pb, s->bitslices[n * s->planes + i],
-                                   s->slice_size[n * s->planes + i]);
+            sl->pos = bytestream2_tell_p(&pb);
+
+            bytestream2_put_buffer(&pb, sl->bitslice, sl->size);
         }
     }
 
     pos = bytestream2_tell_p(&pb);
     bytestream2_seek_p(&pb, 32, SEEK_SET);
-    bytestream2_put_le32(&pb, s->slice_pos[0] - 32);
+    bytestream2_put_le32(&pb, s->slices[0].pos - 32);
     for (int i = 0; i < s->planes; i++) {
-        for (int n = 0; n < s->nb_slices; n++)
-           bytestream2_put_le32(&pb, s->slice_pos[n * s->planes + i] - 32);
+        for (int n = 0; n < s->nb_slices; n++) {
+            Slice *sl = &s->slices[n * s->planes + i];
+
+            bytestream2_put_le32(&pb, sl->pos - 32);
+        }
     }
     bytestream2_seek_p(&pb, pos, SEEK_SET);
 
@@ -611,15 +624,13 @@ static av_cold int magy_encode_close(AVCodecContext *avctx)
 {
     MagicYUVContext *s = avctx->priv_data;
 
-    av_freep(&s->slice_pos);
-    av_freep(&s->slice_size);
-    for (int i = 0; i < s->planes * s->nb_slices && s->slices; i++)
-        av_freep(&s->slices[i]);
-    for (int i = 0; i < s->planes * s->nb_slices && s->bitslices; i++)
-        av_freep(&s->bitslices[i]);
-    av_freep(&s->counts);
+    for (int i = 0; i < s->planes * s->nb_slices && s->slices; i++) {
+        Slice *sl = &s->slices[i];
+
+        av_freep(&sl->slice);
+        av_freep(&sl->bitslice);
+    }
     av_freep(&s->slices);
-    av_freep(&s->bitslices);
     av_freep(&s->decorrelate_buf);
 
     return 0;
