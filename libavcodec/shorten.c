@@ -280,7 +280,7 @@ static int decode_wave_header(AVCodecContext *avctx, const uint8_t *header,
                               int header_size)
 {
     int len, bps;
-    short wave_format;
+    uint16_t wave_format;
     GetByteContext gb;
 
     bytestream2_init(&gb, header, header_size);
