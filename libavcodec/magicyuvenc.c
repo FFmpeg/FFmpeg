@@ -194,10 +194,10 @@ static av_cold int magy_encode_init(AVCodecContext *avctx)
         break;
     }
     if (s->correlate) {
-        s->decorrelate_buf[0] = av_calloc(2U * avctx->height, FFALIGN(avctx->width, 16));
+        s->decorrelate_buf[0] = av_calloc(2U * avctx->height, FFALIGN(avctx->width, av_cpu_max_align()));
         if (!s->decorrelate_buf[0])
             return AVERROR(ENOMEM);
-        s->decorrelate_buf[1] = s->decorrelate_buf[0] + avctx->height * FFALIGN(avctx->width, 16);
+        s->decorrelate_buf[1] = s->decorrelate_buf[0] + avctx->height * FFALIGN(avctx->width, av_cpu_max_align());
     }
 
     ff_llvidencdsp_init(&s->llvidencdsp);
@@ -471,7 +471,7 @@ static int encode_slice(AVCodecContext *avctx, void *tdata,
 static int predict_slice(AVCodecContext *avctx, void *tdata,
                          int n, int threadnr)
 {
-    const int aligned_width = FFALIGN(avctx->width, 16);
+    const int aligned_width = FFALIGN(avctx->width, av_cpu_max_align());
     MagicYUVContext *s = avctx->priv_data;
     const int slice_height = s->slice_height;
     const int last_height = FFMIN(slice_height, avctx->height - n * slice_height);
@@ -484,7 +484,7 @@ static int predict_slice(AVCodecContext *avctx, void *tdata,
                                      s->decorrelate_buf[1] + n * slice_height * aligned_width };
         const int decorrelate_linesize = aligned_width;
         const uint8_t *const data[4] = { decorrelated[0], frame->data[0] + n * slice_height * frame->linesize[0],
-                                         decorrelated[1], frame->data[3] + n * slice_height * frame->linesize[3] };
+                                         decorrelated[1], s->planes == 4 ? frame->data[3] + n * slice_height * frame->linesize[3] : NULL };
         const uint8_t *r, *g, *b;
         const int linesize[4]  = { decorrelate_linesize, frame->linesize[0],
                                    decorrelate_linesize, frame->linesize[3] };
