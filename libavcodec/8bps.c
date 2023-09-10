@@ -45,8 +45,8 @@ static const enum AVPixelFormat pixfmt_rgb24[] = {
 typedef struct EightBpsContext {
     AVCodecContext *avctx;
 
-    unsigned char planes;
-    unsigned char planemap[4];
+    uint8_t planes;
+    uint8_t planemap[4];
 } EightBpsContext;
 
 static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
@@ -55,15 +55,15 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     EightBpsContext * const c = avctx->priv_data;
-    const unsigned char *encoded = buf;
-    unsigned char *pixptr, *pixptr_end;
+    const uint8_t *encoded = buf;
+    uint8_t *pixptr, *pixptr_end;
     unsigned int height = avctx->height; // Real image height
     unsigned int dlen, p, row;
-    const unsigned char *lp, *dp, *ep;
-    unsigned char count;
+    const uint8_t *lp, *dp, *ep;
+    uint8_t count;
     unsigned int px_inc;
     unsigned int planes     = c->planes;
-    unsigned char *planemap = c->planemap;
+    uint8_t *planemap = c->planemap;
     int ret;
 
     if (buf_size < planes * height * 2)
@@ -89,7 +89,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
             pixptr_end = pixptr + frame->linesize[0];
             if (ep - lp < row * 2 + 2)
                 return AVERROR_INVALIDDATA;
-            dlen = av_be2ne16(*(const unsigned short *)(lp + row * 2));
+            dlen = av_be2ne16(*(const uint16_t *)(lp + row * 2));
             /* Decode a row of this plane */
             while (dlen > 0) {
                 if (ep - dp <= 1)
