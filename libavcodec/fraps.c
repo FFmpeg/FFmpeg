@@ -56,7 +56,6 @@ typedef struct FrapsContext {
     int tmpbuf_size;
 } FrapsContext;
 
-
 /**
  * initializes decoder
  * @param avctx codec context
@@ -323,7 +322,6 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *f,
     return buf_size;
 }
 
-
 /**
  * closes decoder
  * @param avctx codec context
@@ -331,12 +329,11 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *f,
  */
 static av_cold int decode_end(AVCodecContext *avctx)
 {
-    FrapsContext *s = (FrapsContext*)avctx->priv_data;
+    FrapsContext *s = avctx->priv_data;
 
     av_freep(&s->tmpbuf);
     return 0;
 }
-
 
 const FFCodec ff_fraps_decoder = {
     .p.name         = "fraps",
