@@ -138,15 +138,19 @@ static int cbs_av1_read_leb128(CodedBitstreamContext *ctx, GetBitContext *gbc,
     return 0;
 }
 
+/** Minimum byte length will be used to indicate the len128 of value if byte_len is 0. */
 static int cbs_av1_write_leb128(CodedBitstreamContext *ctx, PutBitContext *pbc,
-                                const char *name, uint64_t value)
+                                const char *name, uint64_t value, uint8_t byte_len)
 {
     int len, i;
     uint8_t byte;
 
     CBS_TRACE_WRITE_START();
 
-    len = (av_log2(value) + 7) / 7;
+    if (byte_len)
+        av_assert0(byte_len >= (av_log2(value) + 7) / 7);
+
+    len = byte_len ? byte_len : (av_log2(value) + 7) / 7;
 
     for (i = 0; i < len; i++) {
         if (put_bits_left(pbc) < 8)
@@ -618,7 +622,7 @@ static size_t cbs_av1_get_payload_bytes_left(GetBitContext *gbc)
     } while (0)
 
 #define leb128(name) do { \
-        CHECK(cbs_av1_write_leb128(ctx, rw, #name, current->name)); \
+        CHECK(cbs_av1_write_leb128(ctx, rw, #name, current->name, 0)); \
     } while (0)
 
 #define infer(name, value) do { \
@@ -1002,9 +1006,14 @@ static int cbs_av1_write_obu(CodedBitstreamContext *ctx,
 
     if (obu->header.obu_has_size_field) {
         pbc_tmp = *pbc;
-        // Add space for the size field to fill later.
-        put_bits32(pbc, 0);
-        put_bits32(pbc, 0);
+        if (obu->obu_size_byte_len) {
+            for (int i = 0; i < obu->obu_size_byte_len; i++)
+                put_bits(pbc, 8, 0);
+        } else {
+            // Add space for the size field to fill later.
+            put_bits32(pbc, 0);
+            put_bits32(pbc, 0);
+        }
     }
 
     td = NULL;
@@ -1124,7 +1133,7 @@ static int cbs_av1_write_obu(CodedBitstreamContext *ctx,
     end_pos   /= 8;
 
     *pbc = pbc_tmp;
-    err = cbs_av1_write_leb128(ctx, pbc, "obu_size", obu->obu_size);
+    err = cbs_av1_write_leb128(ctx, pbc, "obu_size", obu->obu_size, obu->obu_size_byte_len);
     if (err < 0)
         goto error;
 
@@ -1141,8 +1150,11 @@ static int cbs_av1_write_obu(CodedBitstreamContext *ctx,
     }
 
     if (obu->obu_size > 0) {
-        memmove(pbc->buf + data_pos,
-                pbc->buf + start_pos, header_size);
+        if (!obu->obu_size_byte_len) {
+            obu->obu_size_byte_len = start_pos - data_pos;
+            memmove(pbc->buf + data_pos,
+                    pbc->buf + start_pos, header_size);
+        }
         skip_put_bytes(pbc, header_size);
 
         if (td) {

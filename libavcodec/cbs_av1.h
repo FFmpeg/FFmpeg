@@ -401,6 +401,7 @@ typedef struct AV1RawOBU {
     AV1RawOBUHeader header;
 
     size_t obu_size;
+    uint8_t obu_size_byte_len;
 
     union {
         AV1RawSequenceHeader sequence_header;
