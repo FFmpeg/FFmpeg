@@ -49,10 +49,10 @@ static void tlog_ref(void *ctx, AVFrame *ref, int end)
 {
 #ifdef TRACE
     ff_tlog(ctx,
-            "ref[%p buf:%p data:%p linesize[%d, %d, %d, %d] pts:%"PRId64" pos:%"PRId64,
+            "ref[%p buf:%p data:%p linesize[%d, %d, %d, %d] pts:%"PRId64,
             ref, ref->buf, ref->data[0],
             ref->linesize[0], ref->linesize[1], ref->linesize[2], ref->linesize[3],
-            ref->pts, ref->pkt_pos);
+            ref->pts);
 
     if (ref->width) {
         ff_tlog(ctx, " a:%d/%d s:%dx%d i:%c iskey:%d type:%c",
