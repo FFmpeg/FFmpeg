@@ -147,12 +147,12 @@ static int libaribb24_init(AVCodecContext *avctx)
 {
     Libaribb24Context *b24 = avctx->priv_data;
     void(* arib_dec_init)(arib_decoder_t* decoder) = NULL;
-    int ret_code = AVERROR_EXTERNAL;
+    int ret;
     int profile = avctx->profile;
 
     if (!(b24->lib_instance = arib_instance_new(avctx))) {
         av_log(avctx, AV_LOG_ERROR, "Failed to initialize libaribb24!\n");
-        goto init_fail;
+        return AVERROR_EXTERNAL;
     }
 
     if (b24->aribb24_base_path) {
@@ -165,11 +165,11 @@ static int libaribb24_init(AVCodecContext *avctx)
 
     if (!(b24->parser = arib_get_parser(b24->lib_instance))) {
         av_log(avctx, AV_LOG_ERROR, "Failed to initialize libaribb24 PES parser!\n");
-        goto init_fail;
+        return AVERROR_EXTERNAL;
     }
     if (!(b24->decoder = arib_get_decoder(b24->lib_instance))) {
         av_log(avctx, AV_LOG_ERROR, "Failed to initialize libaribb24 decoder!\n");
-        goto init_fail;
+        return AVERROR_EXTERNAL;
     }
 
     if (profile == AV_PROFILE_UNKNOWN)
@@ -184,27 +184,16 @@ static int libaribb24_init(AVCodecContext *avctx)
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unknown or unsupported profile set!\n");
-        ret_code = AVERROR(EINVAL);
-        goto init_fail;
+        return AVERROR(EINVAL);
     }
 
     arib_dec_init(b24->decoder);
 
-    if (libaribb24_generate_ass_header(avctx) < 0) {
-        ret_code = AVERROR(ENOMEM);
-        goto init_fail;
-    }
+    ret = libaribb24_generate_ass_header(avctx);
+    if (ret < 0)
+        return ret;
 
     return 0;
-
-init_fail:
-    if (b24->decoder)
-        arib_finalize_decoder(b24->decoder);
-
-    if (b24->lib_instance)
-        arib_instance_destroy(b24->lib_instance);
-
-    return ret_code;
 }
 
 static int libaribb24_close(AVCodecContext *avctx)
@@ -410,7 +399,7 @@ const FFCodec ff_libaribb24_decoder = {
     .p.id           = AV_CODEC_ID_ARIB_CAPTION,
     .p.priv_class   = &aribb24_class,
     .p.wrapper_name = "libaribb24",
-    .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_NOT_INIT_THREADSAFE,
     .priv_data_size = sizeof(Libaribb24Context),
     .init      = libaribb24_init,
     .close     = libaribb24_close,
