@@ -650,6 +650,41 @@ fail_at_end:
     return err;
 }
 
+static int vaapi_encode_set_output_property(AVCodecContext *avctx,
+                                            VAAPIEncodePicture *pic,
+                                            AVPacket *pkt)
+{
+    VAAPIEncodeContext *ctx = avctx->priv_data;
+
+    if (pic->type == PICTURE_TYPE_IDR)
+        pkt->flags |= AV_PKT_FLAG_KEY;
+
+    pkt->pts = pic->pts;
+    pkt->duration = pic->duration;
+
+    // for no-delay encoders this is handled in generic codec
+    if (avctx->codec->capabilities & AV_CODEC_CAP_DELAY &&
+        avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE) {
+        pkt->opaque     = pic->opaque;
+        pkt->opaque_ref = pic->opaque_ref;
+        pic->opaque_ref = NULL;
+    }
+
+    if (ctx->output_delay == 0) {
+        pkt->dts = pkt->pts;
+    } else if (pic->encode_order < ctx->decode_delay) {
+        if (ctx->ts_ring[pic->encode_order] < INT64_MIN + ctx->dts_pts_diff)
+            pkt->dts = INT64_MIN;
+        else
+            pkt->dts = ctx->ts_ring[pic->encode_order] - ctx->dts_pts_diff;
+    } else {
+        pkt->dts = ctx->ts_ring[(pic->encode_order - ctx->decode_delay) %
+                                (3 * ctx->output_delay + ctx->async_depth)];
+    }
+
+    return 0;
+}
+
 static int vaapi_encode_output(AVCodecContext *avctx,
                                VAAPIEncodePicture *pic, AVPacket *pkt)
 {
@@ -691,26 +726,12 @@ static int vaapi_encode_output(AVCodecContext *avctx,
         ptr += buf->size;
     }
 
-    if (pic->type == PICTURE_TYPE_IDR)
-        pkt->flags |= AV_PKT_FLAG_KEY;
-
-    pkt->pts = pic->pts;
-    pkt->duration = pic->duration;
-
     vas = vaUnmapBuffer(ctx->hwctx->display, pic->output_buffer);
     if (vas != VA_STATUS_SUCCESS) {
         av_log(avctx, AV_LOG_ERROR, "Failed to unmap output buffers: "
                "%d (%s).\n", vas, vaErrorStr(vas));
         err = AVERROR(EIO);
         goto fail;
-    }
-
-    // for no-delay encoders this is handled in generic codec
-    if (avctx->codec->capabilities & AV_CODEC_CAP_DELAY &&
-        avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE) {
-        pkt->opaque     = pic->opaque;
-        pkt->opaque_ref = pic->opaque_ref;
-        pic->opaque_ref = NULL;
     }
 
     av_buffer_unref(&pic->output_buffer_ref);
@@ -1273,19 +1294,9 @@ int ff_vaapi_encode_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
         return err;
     }
 
-    if (ctx->output_delay == 0) {
-        pkt->dts = pkt->pts;
-    } else if (pic->encode_order < ctx->decode_delay) {
-        if (ctx->ts_ring[pic->encode_order] < INT64_MIN + ctx->dts_pts_diff)
-            pkt->dts = INT64_MIN;
-        else
-            pkt->dts = ctx->ts_ring[pic->encode_order] - ctx->dts_pts_diff;
-    } else {
-        pkt->dts = ctx->ts_ring[(pic->encode_order - ctx->decode_delay) %
-                                (3 * ctx->output_delay + ctx->async_depth)];
-    }
-    av_log(avctx, AV_LOG_DEBUG, "Output packet: pts %"PRId64" dts %"PRId64".\n",
-           pkt->pts, pkt->dts);
+    vaapi_encode_set_output_property(avctx, pic, pkt);
+    av_log(avctx, AV_LOG_DEBUG, "Output packet: pts %"PRId64", dts %"PRId64", "
+           "size %d bytes.\n", pkt->pts, pkt->dts, pkt->size);
 
     ctx->output_order = pic->encode_order;
     vaapi_encode_clear_old(avctx);
