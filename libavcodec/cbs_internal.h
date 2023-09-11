@@ -157,10 +157,6 @@ typedef struct CodedBitstreamType {
 void ff_cbs_trace_header(CodedBitstreamContext *ctx,
                          const char *name);
 
-void ff_cbs_trace_syntax_element(CodedBitstreamContext *ctx, int position,
-                                 const char *name, const int *subscripts,
-                                 const char *bitstring, int64_t value);
-
 
 // Helper functions for read/write of common bitstream elements, including
 // generation of trace output. The simple functions are equivalent to
@@ -205,6 +201,87 @@ int ff_cbs_write_signed(CodedBitstreamContext *ctx, PutBitContext *pbc,
 // The smallest signed value representable in N bits, suitable for use as
 // range_min in the above functions.
 #define MIN_INT_BITS(length) (-(INT64_C(1) << ((length) - 1)))
+
+
+// Start of a syntax element during read tracing.
+#define CBS_TRACE_READ_START() \
+    GetBitContext trace_start; \
+    do { \
+        if (ctx->trace_enable) \
+            trace_start = *gbc; \
+    } while (0)
+
+// End of a syntax element for tracing, make callback.
+#define CBS_TRACE_READ_END() \
+    do { \
+        if (ctx->trace_enable) { \
+            int start_position = get_bits_count(&trace_start); \
+            int end_position   = get_bits_count(gbc); \
+            av_assert0(start_position <= end_position); \
+            ctx->trace_read_callback(ctx->trace_context, &trace_start, \
+                                     end_position - start_position, \
+                                     name, subscripts, value); \
+        } \
+    } while (0)
+
+// End of a syntax element with no subscript entries.
+#define CBS_TRACE_READ_END_NO_SUBSCRIPTS() \
+    do { \
+        const int *subscripts = NULL; \
+        CBS_TRACE_READ_END(); \
+    } while (0)
+
+// End of a syntax element which is made up of subelements which
+// are aleady traced, so we are only showing the value.
+#define CBS_TRACE_READ_END_VALUE_ONLY() \
+    do { \
+        if (ctx->trace_enable) { \
+            ctx->trace_read_callback(ctx->trace_context, &trace_start, 0, \
+                                     name, subscripts, value); \
+        } \
+    } while (0)
+
+// Start of a syntax element during write tracing.
+#define CBS_TRACE_WRITE_START() \
+    int start_position; \
+    do { \
+        if (ctx->trace_enable) \
+            start_position = put_bits_count(pbc);; \
+    } while (0)
+
+// End of a syntax element for tracing, make callback.
+#define CBS_TRACE_WRITE_END() \
+    do { \
+        if (ctx->trace_enable) { \
+            int end_position   = put_bits_count(pbc); \
+            av_assert0(start_position <= end_position); \
+            ctx->trace_write_callback(ctx->trace_context, pbc, \
+                                      end_position - start_position, \
+                                      name, subscripts, value); \
+        } \
+    } while (0)
+
+// End of a syntax element with no subscript entries.
+#define CBS_TRACE_WRITE_END_NO_SUBSCRIPTS() \
+    do { \
+        const int *subscripts = NULL; \
+        CBS_TRACE_WRITE_END(); \
+    } while (0)
+
+// End of a syntax element which is made up of subelements which are
+// aleady traced, so we are only showing the value.  This forges a
+// PutBitContext to point to the position of the start of the syntax
+// element, but the other state doesn't matter because length is zero.
+#define CBS_TRACE_WRITE_END_VALUE_ONLY() \
+    do { \
+        if (ctx->trace_enable) { \
+            PutBitContext tmp; \
+            init_put_bits(&tmp, pbc->buf, start_position); \
+            skip_put_bits(&tmp, start_position); \
+            ctx->trace_write_callback(ctx->trace_context, &tmp, 0, \
+                                      name, subscripts, value); \
+        } \
+    } while (0)
 
 #define TYPE_LIST(...) { __VA_ARGS__ }
 #define CBS_UNIT_TYPE_POD(type_, structure) { \

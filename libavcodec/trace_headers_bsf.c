@@ -44,6 +44,8 @@ static int trace_headers_init(AVBSFContext *bsf)
 
     ctx->cbc->trace_enable = 1;
     ctx->cbc->trace_level  = AV_LOG_INFO;
+    ctx->cbc->trace_context = ctx->cbc;
+    ctx->cbc->trace_read_callback = ff_cbs_trace_read_log;
 
     if (bsf->par_in->extradata) {
         CodedBitstreamFragment *frag = &ctx->fragment;

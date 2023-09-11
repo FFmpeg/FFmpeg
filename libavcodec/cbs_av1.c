@@ -31,10 +31,8 @@ static int cbs_av1_read_uvlc(CodedBitstreamContext *ctx, GetBitContext *gbc,
                              uint32_t range_min, uint32_t range_max)
 {
     uint32_t zeroes, bits_value, value;
-    int position;
 
-    if (ctx->trace_enable)
-        position = get_bits_count(gbc);
+    CBS_TRACE_READ_START();
 
     zeroes = 0;
     while (1) {
@@ -50,6 +48,9 @@ static int cbs_av1_read_uvlc(CodedBitstreamContext *ctx, GetBitContext *gbc,
     }
 
     if (zeroes >= 32) {
+        // Note that the spec allows an arbitrarily large number of
+        // zero bits followed by a one bit in this case, but the
+        // libaom implementation does not support it.
         value = MAX_UINT_BITS(32);
     } else {
         if (get_bits_left(gbc) < zeroes) {
@@ -62,36 +63,7 @@ static int cbs_av1_read_uvlc(CodedBitstreamContext *ctx, GetBitContext *gbc,
         value = bits_value + (UINT32_C(1) << zeroes) - 1;
     }
 
-    if (ctx->trace_enable) {
-        char bits[65];
-        int i, j, k;
-
-        if (zeroes >= 32) {
-            while (zeroes > 32) {
-                k = FFMIN(zeroes - 32, 32);
-                for (i = 0; i < k; i++)
-                    bits[i] = '0';
-                bits[i] = 0;
-                ff_cbs_trace_syntax_element(ctx, position, name,
-                                            NULL, bits, 0);
-                zeroes -= k;
-                position += k;
-            }
-        }
-
-        for (i = 0; i < zeroes; i++)
-            bits[i] = '0';
-        bits[i++] = '1';
-
-        if (zeroes < 32) {
-            for (j = 0; j < zeroes; j++)
-                bits[i++] = (bits_value >> (zeroes - j - 1) & 1) ? '1' : '0';
-        }
-
-        bits[i] = 0;
-        ff_cbs_trace_syntax_element(ctx, position, name,
-                                    NULL, bits, value);
-    }
+    CBS_TRACE_READ_END_NO_SUBSCRIPTS();
 
     if (value < range_min || value > range_max) {
         av_log(ctx->log_ctx, AV_LOG_ERROR, "%s out of range: "
@@ -109,7 +81,9 @@ static int cbs_av1_write_uvlc(CodedBitstreamContext *ctx, PutBitContext *pbc,
                               uint32_t range_min, uint32_t range_max)
 {
     uint32_t v;
-    int position, zeroes;
+    int zeroes;
+
+    CBS_TRACE_WRITE_START();
 
     if (value < range_min || value > range_max) {
         av_log(ctx->log_ctx, AV_LOG_ERROR, "%s out of range: "
@@ -118,28 +92,17 @@ static int cbs_av1_write_uvlc(CodedBitstreamContext *ctx, PutBitContext *pbc,
         return AVERROR_INVALIDDATA;
     }
 
-    if (ctx->trace_enable)
-        position = put_bits_count(pbc);
-
     zeroes = av_log2(value + 1);
     v = value - (1U << zeroes) + 1;
+
+    if (put_bits_left(pbc) < 2 * zeroes + 1)
+        return AVERROR(ENOSPC);
+
     put_bits(pbc, zeroes, 0);
     put_bits(pbc, 1, 1);
     put_bits(pbc, zeroes, v);
 
-    if (ctx->trace_enable) {
-        char bits[65];
-        int i, j;
-        i = 0;
-        for (j = 0; j < zeroes; j++)
-            bits[i++] = '0';
-        bits[i++] = '1';
-        for (j = 0; j < zeroes; j++)
-            bits[i++] = (v >> (zeroes - j - 1) & 1) ? '1' : '0';
-        bits[i++] = 0;
-        ff_cbs_trace_syntax_element(ctx, position, name, NULL,
-                                    bits, value);
-    }
+    CBS_TRACE_WRITE_END_NO_SUBSCRIPTS();
 
     return 0;
 }
@@ -148,20 +111,19 @@ static int cbs_av1_read_leb128(CodedBitstreamContext *ctx, GetBitContext *gbc,
                                const char *name, uint64_t *write_to)
 {
     uint64_t value;
-    int position, err, i;
+    uint32_t byte;
+    int i;
 
-    if (ctx->trace_enable)
-        position = get_bits_count(gbc);
+    CBS_TRACE_READ_START();
 
     value = 0;
     for (i = 0; i < 8; i++) {
-        int subscript[2] = { 1, i };
-        uint32_t byte;
-        err = ff_cbs_read_unsigned(ctx, gbc, 8, "leb128_byte[i]", subscript,
-                                   &byte, 0x00, 0xff);
-        if (err < 0)
-            return err;
-
+        if (get_bits_left(gbc) < 8) {
+            av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid leb128 at "
+                   "%s: bitstream ended.\n", name);
+            return AVERROR_INVALIDDATA;
+        }
+        byte = get_bits(gbc, 8);
         value |= (uint64_t)(byte & 0x7f) << (i * 7);
         if (!(byte & 0x80))
             break;
@@ -170,8 +132,7 @@ static int cbs_av1_read_leb128(CodedBitstreamContext *ctx, GetBitContext *gbc,
     if (value > UINT32_MAX)
         return AVERROR_INVALIDDATA;
 
-    if (ctx->trace_enable)
-        ff_cbs_trace_syntax_element(ctx, position, name, NULL, "", value);
+    CBS_TRACE_READ_END_NO_SUBSCRIPTS();
 
     *write_to = value;
     return 0;
@@ -180,29 +141,25 @@ static int cbs_av1_read_leb128(CodedBitstreamContext *ctx, GetBitContext *gbc,
 static int cbs_av1_write_leb128(CodedBitstreamContext *ctx, PutBitContext *pbc,
                                 const char *name, uint64_t value)
 {
-    int position, err, len, i;
+    int len, i;
     uint8_t byte;
+
+    CBS_TRACE_WRITE_START();
 
     len = (av_log2(value) + 7) / 7;
 
-    if (ctx->trace_enable)
-        position = put_bits_count(pbc);
-
     for (i = 0; i < len; i++) {
-        int subscript[2] = { 1, i };
+        if (put_bits_left(pbc) < 8)
+            return AVERROR(ENOSPC);
 
         byte = value >> (7 * i) & 0x7f;
         if (i < len - 1)
             byte |= 0x80;
 
-        err = ff_cbs_write_unsigned(ctx, pbc, 8, "leb128_byte[i]", subscript,
-                                    byte, 0x00, 0xff);
-        if (err < 0)
-            return err;
+        put_bits(pbc, 8, byte);
     }
 
-    if (ctx->trace_enable)
-        ff_cbs_trace_syntax_element(ctx, position, name, NULL, "", value);
+    CBS_TRACE_WRITE_END_NO_SUBSCRIPTS();
 
     return 0;
 }
@@ -212,12 +169,11 @@ static int cbs_av1_read_ns(CodedBitstreamContext *ctx, GetBitContext *gbc,
                            const int *subscripts, uint32_t *write_to)
 {
     uint32_t m, v, extra_bit, value;
-    int position, w;
+    int w;
+
+    CBS_TRACE_READ_START();
 
     av_assert0(n > 0);
-
-    if (ctx->trace_enable)
-        position = get_bits_count(gbc);
 
     w = av_log2(n) + 1;
     m = (1 << w) - n;
@@ -240,18 +196,7 @@ static int cbs_av1_read_ns(CodedBitstreamContext *ctx, GetBitContext *gbc,
         value = (v << 1) - m + extra_bit;
     }
 
-    if (ctx->trace_enable) {
-        char bits[33];
-        int i;
-        for (i = 0; i < w - 1; i++)
-            bits[i] = (v >> i & 1) ? '1' : '0';
-        if (v >= m)
-            bits[i++] = extra_bit ? '1' : '0';
-        bits[i] = 0;
-
-        ff_cbs_trace_syntax_element(ctx, position,
-                                    name, subscripts, bits, value);
-    }
+    CBS_TRACE_READ_END();
 
     *write_to = value;
     return 0;
@@ -262,7 +207,8 @@ static int cbs_av1_write_ns(CodedBitstreamContext *ctx, PutBitContext *pbc,
                             const int *subscripts, uint32_t value)
 {
     uint32_t w, m, v, extra_bit;
-    int position;
+
+    CBS_TRACE_WRITE_START();
 
     if (value > n) {
         av_log(ctx->log_ctx, AV_LOG_ERROR, "%s out of range: "
@@ -270,9 +216,6 @@ static int cbs_av1_write_ns(CodedBitstreamContext *ctx, PutBitContext *pbc,
                name, value, n);
         return AVERROR_INVALIDDATA;
     }
-
-    if (ctx->trace_enable)
-        position = put_bits_count(pbc);
 
     w = av_log2(n) + 1;
     m = (1 << w) - n;
@@ -290,18 +233,7 @@ static int cbs_av1_write_ns(CodedBitstreamContext *ctx, PutBitContext *pbc,
         put_bits(pbc, 1, extra_bit);
     }
 
-    if (ctx->trace_enable) {
-        char bits[33];
-        int i;
-        for (i = 0; i < w - 1; i++)
-            bits[i] = (v >> i & 1) ? '1' : '0';
-        if (value >= m)
-            bits[i++] = extra_bit ? '1' : '0';
-        bits[i] = 0;
-
-        ff_cbs_trace_syntax_element(ctx, position,
-                                    name, subscripts, bits, value);
-    }
+    CBS_TRACE_WRITE_END();
 
     return 0;
 }
@@ -311,33 +243,24 @@ static int cbs_av1_read_increment(CodedBitstreamContext *ctx, GetBitContext *gbc
                                   const char *name, uint32_t *write_to)
 {
     uint32_t value;
-    int position, i;
-    char bits[33];
 
-    av_assert0(range_min <= range_max && range_max - range_min < sizeof(bits) - 1);
-    if (ctx->trace_enable)
-        position = get_bits_count(gbc);
+    CBS_TRACE_READ_START();
 
-    for (i = 0, value = range_min; value < range_max;) {
+    av_assert0(range_min <= range_max && range_max - range_min < 32);
+
+    for (value = range_min; value < range_max;) {
         if (get_bits_left(gbc) < 1) {
             av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid increment value at "
                    "%s: bitstream ended.\n", name);
             return AVERROR_INVALIDDATA;
         }
-        if (get_bits1(gbc)) {
-            bits[i++] = '1';
+        if (get_bits1(gbc))
             ++value;
-        } else {
-            bits[i++] = '0';
+        else
             break;
-        }
     }
 
-    if (ctx->trace_enable) {
-        bits[i] = 0;
-        ff_cbs_trace_syntax_element(ctx, position,
-                                    name, NULL, bits, value);
-    }
+    CBS_TRACE_READ_END_NO_SUBSCRIPTS();
 
     *write_to = value;
     return 0;
@@ -348,6 +271,8 @@ static int cbs_av1_write_increment(CodedBitstreamContext *ctx, PutBitContext *pb
                                    const char *name, uint32_t value)
 {
     int len;
+
+    CBS_TRACE_WRITE_START();
 
     av_assert0(range_min <= range_max && range_max - range_min < 32);
     if (value < range_min || value > range_max) {
@@ -364,22 +289,10 @@ static int cbs_av1_write_increment(CodedBitstreamContext *ctx, PutBitContext *pb
     if (put_bits_left(pbc) < len)
         return AVERROR(ENOSPC);
 
-    if (ctx->trace_enable) {
-        char bits[33];
-        int i;
-        for (i = 0; i < len; i++) {
-            if (range_min + i == value)
-                bits[i] = '0';
-            else
-                bits[i] = '1';
-        }
-        bits[i] = 0;
-        ff_cbs_trace_syntax_element(ctx, put_bits_count(pbc),
-                                    name, NULL, bits, value);
-    }
-
     if (len > 0)
         put_bits(pbc, len, (1 << len) - 1 - (value != range_max));
+
+    CBS_TRACE_WRITE_END_NO_SUBSCRIPTS();
 
     return 0;
 }
@@ -388,12 +301,10 @@ static int cbs_av1_read_subexp(CodedBitstreamContext *ctx, GetBitContext *gbc,
                                uint32_t range_max, const char *name,
                                const int *subscripts, uint32_t *write_to)
 {
-    uint32_t value;
-    int position, err;
-    uint32_t max_len, len, range_offset, range_bits;
+    uint32_t value, max_len, len, range_offset, range_bits;
+    int err;
 
-    if (ctx->trace_enable)
-        position = get_bits_count(gbc);
+    CBS_TRACE_READ_START();
 
     av_assert0(range_max > 0);
     max_len = av_log2(range_max - 1) - 3;
@@ -425,9 +336,7 @@ static int cbs_av1_read_subexp(CodedBitstreamContext *ctx, GetBitContext *gbc,
     }
     value += range_offset;
 
-    if (ctx->trace_enable)
-        ff_cbs_trace_syntax_element(ctx, position,
-                                    name, subscripts, "", value);
+    CBS_TRACE_READ_END_VALUE_ONLY();
 
     *write_to = value;
     return err;
@@ -437,8 +346,10 @@ static int cbs_av1_write_subexp(CodedBitstreamContext *ctx, PutBitContext *pbc,
                                 uint32_t range_max, const char *name,
                                 const int *subscripts, uint32_t value)
 {
-    int position, err;
+    int err;
     uint32_t max_len, len, range_offset, range_bits;
+
+    CBS_TRACE_WRITE_START();
 
     if (value > range_max) {
         av_log(ctx->log_ctx, AV_LOG_ERROR, "%s out of range: "
@@ -446,9 +357,6 @@ static int cbs_av1_write_subexp(CodedBitstreamContext *ctx, PutBitContext *pbc,
                name, value, range_max);
         return AVERROR_INVALIDDATA;
     }
-
-    if (ctx->trace_enable)
-        position = put_bits_count(pbc);
 
     av_assert0(range_max > 0);
     max_len = av_log2(range_max - 1) - 3;
@@ -489,9 +397,7 @@ static int cbs_av1_write_subexp(CodedBitstreamContext *ctx, PutBitContext *pbc,
             return err;
     }
 
-    if (ctx->trace_enable)
-        ff_cbs_trace_syntax_element(ctx, position,
-                                    name, subscripts, "", value);
+    CBS_TRACE_WRITE_END_VALUE_ONLY();
 
     return err;
 }

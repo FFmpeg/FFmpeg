@@ -123,6 +123,11 @@ int ff_cbs_bsf_generic_init(AVBSFContext *bsf, const CBSBSFType *type)
     if (err < 0)
         return err;
 
+    ctx->output->trace_enable = 1;
+    ctx->output->trace_level  = AV_LOG_TRACE;
+    ctx->output->trace_context = ctx->output;
+    ctx->output->trace_write_callback = ff_cbs_trace_write_log;
+
     if (bsf->par_in->extradata) {
         err = ff_cbs_read_extradata(ctx->input, frag, bsf->par_in);
         if (err < 0) {
