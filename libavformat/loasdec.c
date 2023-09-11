@@ -74,7 +74,7 @@ static int loas_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codecpar->codec_id = s->iformat->raw_codec_id;
+    st->codecpar->codec_id   = AV_CODEC_ID_AAC_LATM;
     ffstream(st)->need_parsing = AVSTREAM_PARSE_FULL_RAW;
 
     //LCM of all possible AAC sample rates

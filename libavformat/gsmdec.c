@@ -78,7 +78,7 @@ static int gsm_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
-    st->codecpar->codec_id    = s->iformat->raw_codec_id;
+    st->codecpar->codec_id    = AV_CODEC_ID_GSM;
     st->codecpar->ch_layout   = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
     st->codecpar->sample_rate = c->sample_rate;
     st->codecpar->bit_rate    = GSM_BLOCK_SIZE * 8 * c->sample_rate / GSM_BLOCK_SAMPLES;

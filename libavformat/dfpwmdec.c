@@ -50,7 +50,7 @@ static int dfpwm_read_header(AVFormatContext *s)
     par = st->codecpar;
 
     par->codec_type  = AVMEDIA_TYPE_AUDIO;
-    par->codec_id    = s->iformat->raw_codec_id;
+    par->codec_id    = AV_CODEC_ID_DFPWM;
     par->sample_rate = s1->sample_rate;
 #if FF_API_OLD_CHANNEL_LAYOUT
     if (s1->ch_layout.nb_channels) {
