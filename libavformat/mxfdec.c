@@ -1544,11 +1544,11 @@ static int mxf_read_tagged_value(void *arg, AVIOContext *pb, int tag, int size, 
  * Match an uid independently of the version byte and up to len common bytes
  * Returns: boolean
  */
-static int mxf_match_uid(const UID key, const UID uid, int len)
+static int mxf_match_uid(const UID key, const uint8_t uid_prefix[], int len)
 {
     int i;
     for (i = 0; i < len; i++) {
-        if (i != 7 && key[i] != uid[i])
+        if (i != 7 && key[i] != uid_prefix[i])
             return 0;
     }
     return 1;
