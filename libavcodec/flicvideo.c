@@ -79,7 +79,7 @@ typedef struct FlicDecodeContext {
 static av_cold int flic_decode_init(AVCodecContext *avctx)
 {
     FlicDecodeContext *s = avctx->priv_data;
-    unsigned char *fli_header = (unsigned char *)avctx->extradata;
+    uint8_t *fli_header = avctx->extradata;
     int depth;
 
     if (avctx->extradata_size != 0 &&
