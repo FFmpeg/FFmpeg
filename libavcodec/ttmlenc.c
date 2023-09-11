@@ -45,7 +45,7 @@ typedef struct {
 static void ttml_text_cb(void *priv, const char *text, int len)
 {
     TTMLContext *s = priv;
-    AVBPrint cur_line = { 0 };
+    AVBPrint cur_line;
     AVBPrint *buffer = &s->buffer;
 
     av_bprint_init(&cur_line, len, AV_BPRINT_SIZE_UNLIMITED);

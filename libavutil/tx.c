@@ -595,7 +595,7 @@ static void print_type(AVBPrint *bp, enum AVTXType type)
 
 static void print_cd_info(const FFTXCodelet *cd, int prio, int len, int print_prio)
 {
-    AVBPrint bp = { 0 };
+    AVBPrint bp;
     av_bprint_init(&bp, 0, AV_BPRINT_SIZE_AUTOMATIC);
 
     av_bprintf(&bp, "%s - type: ", cd->name);
@@ -718,7 +718,7 @@ av_cold int ff_tx_init_subtx(AVTXContext *s, enum AVTXType type,
     int codelet_list_idx = codelet_list_num;
     int nb_cd_matches = 0;
 #if !CONFIG_SMALL
-    AVBPrint bp = { 0 };
+    AVBPrint bp;
 #endif
 
     /* We still accept functions marked with SLOW, even if the CPU is

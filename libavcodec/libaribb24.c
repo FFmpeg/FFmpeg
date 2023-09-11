@@ -227,7 +227,7 @@ static int libaribb24_handle_regions(AVCodecContext *avctx, AVSubtitle *sub)
     Libaribb24Context *b24 = avctx->priv_data;
     const arib_buf_region_t *region = arib_decoder_get_regions(b24->decoder);
     unsigned int profile_font_size = get_profile_font_size(avctx);
-    AVBPrint buf = { 0 };
+    AVBPrint buf;
     int ret = 0;
 
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
