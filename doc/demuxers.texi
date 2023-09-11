@@ -779,6 +779,13 @@ cast to int32 are used to adjust onward dts.
 
 Unit is the track time scale. Range is 0 to UINT_MAX. Default is @code{UINT_MAX - 48000*10} which allows upto
 a 10 second dts correction for 48 kHz audio streams while accommodating 99.9% of @code{uint32} range.
+
+@item interleaved_read
+Interleave packets from multiple tracks at demuxer level. For badly interleaved files, this prevents playback issues
+caused by large gaps between packets in different tracks, as MOV/MP4 do not have packet placement requirements.
+However, this can cause excessive seeking on very badly interleaved files, due to seeking between tracks, so disabling
+it may prevent I/O issues, at the expense of playback.
+
 @end table
 
 @subsection Audible AAX

@@ -327,6 +327,7 @@ typedef struct MOVContext {
         int64_t extent_offset;
     } *avif_info;
     int avif_info_size;
+    int interleaved_read;
 } MOVContext;
 
 int ff_mp4_read_descr_len(AVIOContext *pb);
