@@ -1030,7 +1030,7 @@ URLContext* ffio_geturlcontext(AVIOContext *s)
     if (!s)
         return NULL;
 
-    if (s->opaque && s->read_packet == (int (*)(void *, uint8_t *, int))ffurl_read)
+    if (s->opaque && s->read_packet == ffurl_read2)
         return s->opaque;
     else
         return NULL;
