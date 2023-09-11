@@ -1028,9 +1028,9 @@ static int FUNC(read_tx_mode)(CodedBitstreamContext *ctx, RWContext *rw,
     int err;
 
     if (priv->coded_lossless)
-        infer(tx_mode, 0);
+        infer(tx_mode, AV1_ONLY_4X4);
     else
-        increment(tx_mode, 1, 2);
+        increment(tx_mode, AV1_TX_MODE_LARGEST, AV1_TX_MODE_SELECT);
 
     return 0;
 }

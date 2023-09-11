@@ -175,6 +175,13 @@ enum {
     AV1_RESTORE_SWITCHABLE = 3,
 };
 
+// TX mode (section 6.8.21)
+enum {
+    AV1_ONLY_4X4        = 0,
+    AV1_TX_MODE_LARGEST = 1,
+    AV1_TX_MODE_SELECT  = 2,
+};
+
 // Sequence Headers are actually unbounded because one can use
 // an arbitrary number of leading zeroes when encoding via uvlc.
 // The following estimate is based around using the lowest number
