@@ -133,6 +133,17 @@ typedef struct VAAPIEncodePicture {
 
     int          nb_slices;
     VAAPIEncodeSlice *slices;
+
+    /**
+     * indicate if current frame is an independent frame that the coded data
+     * can be pushed to downstream directly. Coded of non-independent frame
+     * data will be concatenated into next independent frame.
+     */
+    int non_independent_frame;
+    /** Tail data of current pic, used only for repeat header of AV1. */
+    char tail_data[MAX_PARAM_BUFFER_SIZE];
+    /** Byte length of tail_data. */
+    size_t tail_size;
 } VAAPIEncodePicture;
 
 typedef struct VAAPIEncodeProfile {
@@ -367,6 +378,16 @@ typedef struct VAAPIEncodeContext {
     AVFifo          *encode_fifo;
     // Max number of frame buffered in encoder.
     int             async_depth;
+
+    /** Head data for current output pkt, used only for AV1. */
+    //void  *header_data;
+    //size_t header_data_size;
+
+    /** Buffered coded data of a pic if it is an non-independent frame. */
+    AVBufferRef     *coded_buffer_ref;
+
+    /** Tail data of a pic, now only used for av1 repeat frame header. */
+    AVPacket        *tail_pkt;
 } VAAPIEncodeContext;
 
 enum {
@@ -383,6 +404,9 @@ enum {
     // Codec supports non-IDR key pictures (that is, key pictures do
     // not necessarily empty the DPB).
     FLAG_NON_IDR_KEY_PICTURES  = 1 << 5,
+    // Codec output packet without timestamp delay, which means the
+    // output packet has same PTS and DTS.
+    FLAG_TIMESTAMP_NO_DELAY    = 1 << 6,
 };
 
 typedef struct VAAPIEncodeType {

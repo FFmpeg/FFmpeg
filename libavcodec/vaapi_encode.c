@@ -683,6 +683,11 @@ static int vaapi_encode_set_output_property(AVCodecContext *avctx,
         pic->opaque_ref = NULL;
     }
 
+    if (ctx->codec->flags & FLAG_TIMESTAMP_NO_DELAY) {
+        pkt->dts = pkt->pts;
+        return 0;
+    }
+
     if (ctx->output_delay == 0) {
         pkt->dts = pkt->pts;
     } else if (pic->encode_order < ctx->decode_delay) {
@@ -698,65 +703,160 @@ static int vaapi_encode_set_output_property(AVCodecContext *avctx,
     return 0;
 }
 
-static int vaapi_encode_output(AVCodecContext *avctx,
-                               VAAPIEncodePicture *pic, AVPacket *pkt)
+static int vaapi_encode_get_coded_buffer_size(AVCodecContext *avctx, VABufferID buf_id)
+{
+    VAAPIEncodeContext *ctx = avctx->priv_data;
+    VACodedBufferSegment *buf_list, *buf;
+    int size = 0;
+    VAStatus vas;
+    int err;
+
+    vas = vaMapBuffer(ctx->hwctx->display, buf_id,
+                      (void**)&buf_list);
+    if (vas != VA_STATUS_SUCCESS) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to map output buffers: "
+               "%d (%s).\n", vas, vaErrorStr(vas));
+        err = AVERROR(EIO);
+        return err;
+    }
+
+    for (buf = buf_list; buf; buf = buf->next)
+        size += buf->size;
+
+    vas = vaUnmapBuffer(ctx->hwctx->display, buf_id);
+    if (vas != VA_STATUS_SUCCESS) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to unmap output buffers: "
+               "%d (%s).\n", vas, vaErrorStr(vas));
+        err = AVERROR(EIO);
+        return err;
+    }
+
+    return size;
+}
+
+static int vaapi_encode_get_coded_buffer_data(AVCodecContext *avctx,
+                                              VABufferID buf_id, uint8_t **dst)
 {
     VAAPIEncodeContext *ctx = avctx->priv_data;
     VACodedBufferSegment *buf_list, *buf;
     VAStatus vas;
+    int err;
+
+    vas = vaMapBuffer(ctx->hwctx->display, buf_id,
+                      (void**)&buf_list);
+    if (vas != VA_STATUS_SUCCESS) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to map output buffers: "
+               "%d (%s).\n", vas, vaErrorStr(vas));
+        err = AVERROR(EIO);
+        return err;
+    }
+
+    for (buf = buf_list; buf; buf = buf->next) {
+        av_log(avctx, AV_LOG_DEBUG, "Output buffer: %u bytes "
+               "(status %08x).\n", buf->size, buf->status);
+
+        memcpy(*dst, buf->buf, buf->size);
+        *dst += buf->size;
+    }
+
+    vas = vaUnmapBuffer(ctx->hwctx->display, buf_id);
+    if (vas != VA_STATUS_SUCCESS) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to unmap output buffers: "
+               "%d (%s).\n", vas, vaErrorStr(vas));
+        err = AVERROR(EIO);
+        return err;
+    }
+
+    return 0;
+}
+
+static int vaapi_encode_get_coded_data(AVCodecContext *avctx,
+                                       VAAPIEncodePicture *pic, AVPacket *pkt)
+{
+    VAAPIEncodeContext *ctx = avctx->priv_data;
+    VABufferID output_buffer_prev;
     int total_size = 0;
     uint8_t *ptr;
+    int ret;
+
+    if (ctx->coded_buffer_ref) {
+        output_buffer_prev = (VABufferID)(uintptr_t)ctx->coded_buffer_ref->data;
+        ret = vaapi_encode_get_coded_buffer_size(avctx, output_buffer_prev);
+        if (ret < 0)
+            goto end;
+        total_size += ret;
+    }
+
+    ret = vaapi_encode_get_coded_buffer_size(avctx, pic->output_buffer);
+    if (ret < 0)
+        goto end;
+    total_size += ret;
+
+    ret = ff_get_encode_buffer(avctx, pkt, total_size, 0);
+    if (ret < 0)
+        goto end;
+    ptr = pkt->data;
+
+    if (ctx->coded_buffer_ref) {
+        ret = vaapi_encode_get_coded_buffer_data(avctx, output_buffer_prev, &ptr);
+        if (ret < 0)
+            goto end;
+    }
+
+    ret = vaapi_encode_get_coded_buffer_data(avctx, pic->output_buffer, &ptr);
+    if (ret < 0)
+        goto end;
+
+end:
+    if (ctx->coded_buffer_ref) {
+        av_buffer_unref(&ctx->coded_buffer_ref);
+    }
+    av_buffer_unref(&pic->output_buffer_ref);
+    pic->output_buffer = VA_INVALID_ID;
+
+    return ret;
+}
+
+static int vaapi_encode_output(AVCodecContext *avctx,
+                               VAAPIEncodePicture *pic, AVPacket *pkt)
+{
+    VAAPIEncodeContext *ctx = avctx->priv_data;
+    AVPacket *pkt_ptr = pkt;
     int err;
 
     err = vaapi_encode_wait(avctx, pic);
     if (err < 0)
         return err;
 
-    buf_list = NULL;
-    vas = vaMapBuffer(ctx->hwctx->display, pic->output_buffer,
-                      (void**)&buf_list);
-    if (vas != VA_STATUS_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to map output buffers: "
-               "%d (%s).\n", vas, vaErrorStr(vas));
-        err = AVERROR(EIO);
-        goto fail;
+    if (pic->non_independent_frame) {
+        av_assert0(!ctx->coded_buffer_ref);
+        ctx->coded_buffer_ref = av_buffer_ref(pic->output_buffer_ref);
+
+        if (pic->tail_size) {
+            if (ctx->tail_pkt->size) {
+                err = AVERROR(AVERROR_BUG);
+                goto end;
+            }
+
+            err = ff_get_encode_buffer(avctx, ctx->tail_pkt, pic->tail_size, 0);
+            if (err < 0)
+                goto end;
+
+            memcpy(ctx->tail_pkt->data, pic->tail_data, pic->tail_size);
+            pkt_ptr = ctx->tail_pkt;
+        }
+    } else {
+        err = vaapi_encode_get_coded_data(avctx, pic, pkt);
+        if (err < 0)
+            goto end;
     }
-
-    for (buf = buf_list; buf; buf = buf->next)
-        total_size += buf->size;
-
-    err = ff_get_encode_buffer(avctx, pkt, total_size, 0);
-    ptr = pkt->data;
-
-    if (err < 0)
-        goto fail_mapped;
-
-    for (buf = buf_list; buf; buf = buf->next) {
-        av_log(avctx, AV_LOG_DEBUG, "Output buffer: %u bytes "
-               "(status %08x).\n", buf->size, buf->status);
-
-        memcpy(ptr, buf->buf, buf->size);
-        ptr += buf->size;
-    }
-
-    vas = vaUnmapBuffer(ctx->hwctx->display, pic->output_buffer);
-    if (vas != VA_STATUS_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to unmap output buffers: "
-               "%d (%s).\n", vas, vaErrorStr(vas));
-        err = AVERROR(EIO);
-        goto fail;
-    }
-
-    av_buffer_unref(&pic->output_buffer_ref);
-    pic->output_buffer = VA_INVALID_ID;
 
     av_log(avctx, AV_LOG_DEBUG, "Output read for pic %"PRId64"/%"PRId64".\n",
            pic->display_order, pic->encode_order);
-    return 0;
 
-fail_mapped:
-    vaUnmapBuffer(ctx->hwctx->display, pic->output_buffer);
-fail:
+    vaapi_encode_set_output_property(avctx, pic, pkt_ptr);
+
+end:
     av_buffer_unref(&pic->output_buffer_ref);
     pic->output_buffer = VA_INVALID_ID;
     return err;
@@ -1128,9 +1228,19 @@ static int vaapi_encode_pick_next(AVCodecContext *avctx,
 
     vaapi_encode_add_ref(avctx, pic, pic, 0, 1, 0);
     if (pic->type != PICTURE_TYPE_IDR) {
-        vaapi_encode_add_ref(avctx, pic, start,
-                             pic->type == PICTURE_TYPE_P,
-                             b_counter > 0, 0);
+        // TODO: apply both previous and forward multi reference for all vaapi encoders.
+        // And L0/L1 reference frame number can be set dynamically through query
+        // VAConfigAttribEncMaxRefFrames attribute.
+        if (avctx->codec_id == AV_CODEC_ID_AV1) {
+            for (i = 0; i < ctx->nb_next_prev; i++)
+                vaapi_encode_add_ref(avctx, pic, ctx->next_prev[i],
+                                     pic->type == PICTURE_TYPE_P,
+                                     b_counter > 0, 0);
+        } else
+            vaapi_encode_add_ref(avctx, pic, start,
+                                 pic->type == PICTURE_TYPE_P,
+                                 b_counter > 0, 0);
+
         vaapi_encode_add_ref(avctx, pic, ctx->next_prev[ctx->nb_next_prev - 1], 0, 0, 1);
     }
 
@@ -1292,6 +1402,19 @@ int ff_vaapi_encode_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
     AVFrame *frame = ctx->frame;
     int err;
 
+start:
+    /** if no B frame before repeat P frame, sent repeat P frame out. */
+    if (ctx->tail_pkt->size) {
+        for (VAAPIEncodePicture *tmp = ctx->pic_start; tmp; tmp = tmp->next) {
+            if (tmp->type == PICTURE_TYPE_B && tmp->pts < ctx->tail_pkt->pts)
+                break;
+            else if (!tmp->next) {
+                av_packet_move_ref(pkt, ctx->tail_pkt);
+                goto end;
+            }
+        }
+    }
+
     err = ff_encode_get_frame(avctx, frame);
     if (err < 0 && err != AVERROR_EOF)
         return err;
@@ -1356,16 +1479,20 @@ int ff_vaapi_encode_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
         return err;
     }
 
-    vaapi_encode_set_output_property(avctx, pic, pkt);
-    av_log(avctx, AV_LOG_DEBUG, "Output packet: pts %"PRId64", dts %"PRId64", "
-           "size %d bytes.\n", pkt->pts, pkt->dts, pkt->size);
-
     ctx->output_order = pic->encode_order;
     vaapi_encode_clear_old(avctx);
 
+    /** loop to get an available pkt in encoder flushing. */
+    if (ctx->end_of_stream && !pkt->size)
+        goto start;
+
+end:
+    if (pkt->size)
+        av_log(avctx, AV_LOG_DEBUG, "Output packet: pts %"PRId64", dts %"PRId64", "
+               "size %d bytes.\n", pkt->pts, pkt->dts, pkt->size);
+
     return 0;
 }
-
 
 static av_cold void vaapi_encode_add_global_param(AVCodecContext *avctx, int type,
                                                   void *buffer, size_t size)
@@ -2667,6 +2794,12 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
     ctx->device = (AVHWDeviceContext*)ctx->device_ref->data;
     ctx->hwctx = ctx->device->hwctx;
 
+    ctx->tail_pkt = av_packet_alloc();
+    if (!ctx->tail_pkt) {
+        err = AVERROR(ENOMEM);
+        goto fail;
+    }
+
     err = vaapi_encode_profile_entrypoint(avctx);
     if (err < 0)
         goto fail;
@@ -2859,6 +2992,7 @@ av_cold int ff_vaapi_encode_close(AVCodecContext *avctx)
     }
 
     av_frame_free(&ctx->frame);
+    av_packet_free(&ctx->tail_pkt);
 
     av_freep(&ctx->codec_sequence_params);
     av_freep(&ctx->codec_picture_params);

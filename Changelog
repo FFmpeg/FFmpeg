@@ -34,6 +34,7 @@ version <next>:
 - Support HEVC,VP9,AV1 codec fourcclist in enhanced rtmp protocol
 - CRI USM demuxer
 - ffmpeg CLI '-top' option deprecated in favor of the setfield filter
+- VAAPI AV1 encoder
 
 
 version 6.0:
