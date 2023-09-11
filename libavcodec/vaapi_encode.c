@@ -276,21 +276,34 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
     av_log(avctx, AV_LOG_DEBUG, "Issuing encode for pic %"PRId64"/%"PRId64" "
            "as type %s.\n", pic->display_order, pic->encode_order,
            picture_type_name[pic->type]);
-    if (pic->nb_refs == 0) {
+    if (pic->nb_refs[0] == 0 && pic->nb_refs[1] == 0) {
         av_log(avctx, AV_LOG_DEBUG, "No reference pictures.\n");
     } else {
-        av_log(avctx, AV_LOG_DEBUG, "Refers to:");
-        for (i = 0; i < pic->nb_refs; i++) {
+        av_log(avctx, AV_LOG_DEBUG, "L0 refers to");
+        for (i = 0; i < pic->nb_refs[0]; i++) {
             av_log(avctx, AV_LOG_DEBUG, " %"PRId64"/%"PRId64,
-                   pic->refs[i]->display_order, pic->refs[i]->encode_order);
+                   pic->refs[0][i]->display_order, pic->refs[0][i]->encode_order);
         }
         av_log(avctx, AV_LOG_DEBUG, ".\n");
+
+        if (pic->nb_refs[1]) {
+            av_log(avctx, AV_LOG_DEBUG, "L1 refers to");
+            for (i = 0; i < pic->nb_refs[1]; i++) {
+                av_log(avctx, AV_LOG_DEBUG, " %"PRId64"/%"PRId64,
+                       pic->refs[1][i]->display_order, pic->refs[1][i]->encode_order);
+            }
+            av_log(avctx, AV_LOG_DEBUG, ".\n");
+        }
     }
 
     av_assert0(!pic->encode_issued);
-    for (i = 0; i < pic->nb_refs; i++) {
-        av_assert0(pic->refs[i]);
-        av_assert0(pic->refs[i]->encode_issued);
+    for (i = 0; i < pic->nb_refs[0]; i++) {
+        av_assert0(pic->refs[0][i]);
+        av_assert0(pic->refs[0][i]->encode_issued);
+    }
+    for (i = 0; i < pic->nb_refs[1]; i++) {
+        av_assert0(pic->refs[1][i]);
+        av_assert0(pic->refs[1][i]->encode_issued);
     }
 
     av_log(avctx, AV_LOG_DEBUG, "Input surface is %#x.\n", pic->input_surface);
@@ -832,8 +845,12 @@ static void vaapi_encode_add_ref(AVCodecContext *avctx,
 
     if (is_ref) {
         av_assert0(pic != target);
-        av_assert0(pic->nb_refs < MAX_PICTURE_REFERENCES);
-        pic->refs[pic->nb_refs++] = target;
+        av_assert0(pic->nb_refs[0] < MAX_PICTURE_REFERENCES &&
+                   pic->nb_refs[1] < MAX_PICTURE_REFERENCES);
+        if (target->display_order < pic->display_order)
+            pic->refs[0][pic->nb_refs[0]++] = target;
+        else
+            pic->refs[1][pic->nb_refs[1]++] = target;
         ++refs;
     }
 
@@ -862,10 +879,16 @@ static void vaapi_encode_remove_refs(AVCodecContext *avctx,
     if (pic->ref_removed[level])
         return;
 
-    for (i = 0; i < pic->nb_refs; i++) {
-        av_assert0(pic->refs[i]);
-        --pic->refs[i]->ref_count[level];
-        av_assert0(pic->refs[i]->ref_count[level] >= 0);
+    for (i = 0; i < pic->nb_refs[0]; i++) {
+        av_assert0(pic->refs[0][i]);
+        --pic->refs[0][i]->ref_count[level];
+        av_assert0(pic->refs[0][i]->ref_count[level] >= 0);
+    }
+
+    for (i = 0; i < pic->nb_refs[1]; i++) {
+        av_assert0(pic->refs[1][i]);
+        --pic->refs[1][i]->ref_count[level];
+        av_assert0(pic->refs[1][i]->ref_count[level] >= 0);
     }
 
     for (i = 0; i < pic->nb_dpb_pics; i++) {
@@ -910,7 +933,7 @@ static void vaapi_encode_set_b_pictures(AVCodecContext *avctx,
             vaapi_encode_add_ref(avctx, pic, end,   1, 1, 0);
             vaapi_encode_add_ref(avctx, pic, prev,  0, 0, 1);
 
-            for (ref = end->refs[1]; ref; ref = ref->refs[1])
+            for (ref = end->refs[1][0]; ref; ref = ref->refs[1][0])
                 vaapi_encode_add_ref(avctx, pic, ref, 0, 1, 0);
         }
         *last = prev;
@@ -933,7 +956,7 @@ static void vaapi_encode_set_b_pictures(AVCodecContext *avctx,
         vaapi_encode_add_ref(avctx, pic, end,   1, 1, 0);
         vaapi_encode_add_ref(avctx, pic, prev,  0, 0, 1);
 
-        for (ref = end->refs[1]; ref; ref = ref->refs[1])
+        for (ref = end->refs[1][0]; ref; ref = ref->refs[1][0])
             vaapi_encode_add_ref(avctx, pic, ref, 0, 1, 0);
 
         if (i > 1)
@@ -947,11 +970,44 @@ static void vaapi_encode_set_b_pictures(AVCodecContext *avctx,
     }
 }
 
+static void vaapi_encode_add_next_prev(AVCodecContext *avctx,
+                                       VAAPIEncodePicture *pic)
+{
+    VAAPIEncodeContext *ctx = avctx->priv_data;
+    int i;
+
+    if (!pic)
+        return;
+
+    if (pic->type == PICTURE_TYPE_IDR) {
+        for (i = 0; i < ctx->nb_next_prev; i++) {
+            --ctx->next_prev[i]->ref_count[0];
+            ctx->next_prev[i] = NULL;
+        }
+        ctx->next_prev[0] = pic;
+        ++pic->ref_count[0];
+        ctx->nb_next_prev = 1;
+
+        return;
+    }
+
+    if (ctx->nb_next_prev < MAX_PICTURE_REFERENCES) {
+        ctx->next_prev[ctx->nb_next_prev++] = pic;
+        ++pic->ref_count[0];
+    } else {
+        --ctx->next_prev[0]->ref_count[0];
+        for (i = 0; i < MAX_PICTURE_REFERENCES - 1; i++)
+            ctx->next_prev[i] = ctx->next_prev[i + 1];
+        ctx->next_prev[i] = pic;
+        ++pic->ref_count[0];
+    }
+}
+
 static int vaapi_encode_pick_next(AVCodecContext *avctx,
                                   VAAPIEncodePicture **pic_out)
 {
     VAAPIEncodeContext *ctx = avctx->priv_data;
-    VAAPIEncodePicture *pic = NULL, *next, *start;
+    VAAPIEncodePicture *pic = NULL, *prev = NULL, *next, *start;
     int i, b_counter, closed_gop_end;
 
     // If there are any B-frames already queued, the next one to encode
@@ -962,11 +1018,18 @@ static int vaapi_encode_pick_next(AVCodecContext *avctx,
             continue;
         if (pic->type != PICTURE_TYPE_B)
             continue;
-        for (i = 0; i < pic->nb_refs; i++) {
-            if (!pic->refs[i]->encode_issued)
+        for (i = 0; i < pic->nb_refs[0]; i++) {
+            if (!pic->refs[0][i]->encode_issued)
                 break;
         }
-        if (i == pic->nb_refs)
+        if (i != pic->nb_refs[0])
+            continue;
+
+        for (i = 0; i < pic->nb_refs[1]; i++) {
+            if (!pic->refs[1][i]->encode_issued)
+                break;
+        }
+        if (i == pic->nb_refs[1])
             break;
     }
 
@@ -1068,18 +1131,17 @@ static int vaapi_encode_pick_next(AVCodecContext *avctx,
         vaapi_encode_add_ref(avctx, pic, start,
                              pic->type == PICTURE_TYPE_P,
                              b_counter > 0, 0);
-        vaapi_encode_add_ref(avctx, pic, ctx->next_prev, 0, 0, 1);
+        vaapi_encode_add_ref(avctx, pic, ctx->next_prev[ctx->nb_next_prev - 1], 0, 0, 1);
     }
-    if (ctx->next_prev)
-        --ctx->next_prev->ref_count[0];
 
     if (b_counter > 0) {
         vaapi_encode_set_b_pictures(avctx, start, pic, pic, 1,
-                                    &ctx->next_prev);
+                                    &prev);
     } else {
-        ctx->next_prev = pic;
+        prev = pic;
     }
-    ++ctx->next_prev->ref_count[0];
+    vaapi_encode_add_next_prev(avctx, prev);
+
     return 0;
 }
 

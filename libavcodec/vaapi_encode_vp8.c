@@ -86,7 +86,7 @@ static int vaapi_encode_vp8_init_picture_params(AVCodecContext *avctx,
     switch (pic->type) {
     case PICTURE_TYPE_IDR:
     case PICTURE_TYPE_I:
-        av_assert0(pic->nb_refs == 0);
+        av_assert0(pic->nb_refs[0] == 0 && pic->nb_refs[1] == 0);
         vpic->ref_flags.bits.force_kf = 1;
         vpic->ref_last_frame =
         vpic->ref_gf_frame   =
@@ -94,14 +94,14 @@ static int vaapi_encode_vp8_init_picture_params(AVCodecContext *avctx,
             VA_INVALID_SURFACE;
         break;
     case PICTURE_TYPE_P:
-        av_assert0(pic->nb_refs == 1);
+        av_assert0(!pic->nb_refs[1]);
         vpic->ref_flags.bits.no_ref_last = 0;
         vpic->ref_flags.bits.no_ref_gf   = 1;
         vpic->ref_flags.bits.no_ref_arf  = 1;
         vpic->ref_last_frame =
         vpic->ref_gf_frame   =
         vpic->ref_arf_frame  =
-            pic->refs[0]->recon_surface;
+            pic->refs[0][0]->recon_surface;
         break;
     default:
         av_assert0(0 && "invalid picture type");

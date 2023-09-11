@@ -458,12 +458,12 @@ static int vaapi_encode_mpeg2_init_picture_params(AVCodecContext *avctx,
         break;
     case PICTURE_TYPE_P:
         vpic->picture_type = VAEncPictureTypePredictive;
-        vpic->forward_reference_picture = pic->refs[0]->recon_surface;
+        vpic->forward_reference_picture = pic->refs[0][0]->recon_surface;
         break;
     case PICTURE_TYPE_B:
         vpic->picture_type = VAEncPictureTypeBidirectional;
-        vpic->forward_reference_picture  = pic->refs[0]->recon_surface;
-        vpic->backward_reference_picture = pic->refs[1]->recon_surface;
+        vpic->forward_reference_picture  = pic->refs[0][0]->recon_surface;
+        vpic->backward_reference_picture = pic->refs[1][0]->recon_surface;
         break;
     default:
         av_assert0(0 && "invalid picture type");

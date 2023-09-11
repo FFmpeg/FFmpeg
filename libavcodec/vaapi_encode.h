@@ -49,6 +49,7 @@ enum {
     // A.4.1: table A.6 allows at most 20 tile columns for any level.
     MAX_TILE_COLS          = 20,
     MAX_ASYNC_DEPTH        = 64,
+    MAX_REFERENCE_LIST_NUM = 2,
 };
 
 extern const AVCodecHWConfigInternal *const ff_vaapi_encode_hw_configs[];
@@ -116,10 +117,11 @@ typedef struct VAAPIEncodePicture {
     // but not if it isn't.
     int                     nb_dpb_pics;
     struct VAAPIEncodePicture *dpb[MAX_DPB_SIZE];
-    // The reference pictures used in decoding this picture.  If they are
-    // used by later pictures they will also appear in the DPB.
-    int                     nb_refs;
-    struct VAAPIEncodePicture *refs[MAX_PICTURE_REFERENCES];
+    // The reference pictures used in decoding this picture. If they are
+    // used by later pictures they will also appear in the DPB. ref[0][] for
+    // previous reference frames. ref[1][] for future reference frames.
+    int                     nb_refs[MAX_REFERENCE_LIST_NUM];
+    struct VAAPIEncodePicture *refs[MAX_REFERENCE_LIST_NUM][MAX_PICTURE_REFERENCES];
     // The previous reference picture in encode order.  Must be in at least
     // one of the reference list and DPB list.
     struct VAAPIEncodePicture *prev;
@@ -290,8 +292,9 @@ typedef struct VAAPIEncodeContext {
     // Current encoding window, in display (input) order.
     VAAPIEncodePicture *pic_start, *pic_end;
     // The next picture to use as the previous reference picture in
-    // encoding order.
-    VAAPIEncodePicture *next_prev;
+    // encoding order. Order from small to large in encoding order.
+    VAAPIEncodePicture *next_prev[MAX_PICTURE_REFERENCES];
+    int                 nb_next_prev;
 
     // Next input order index (display order).
     int64_t         input_order;
