@@ -45,10 +45,12 @@ av_cold int ff_init_scantable_permutation_x86(uint8_t *idct_permutation,
     int i;
 
     switch (perm_type) {
+#if ARCH_X86_32
     case FF_IDCT_PERM_SIMPLE:
         for (i = 0; i < 64; i++)
             idct_permutation[i] = simple_mmx_permutation[i];
         return 1;
+#endif
     case FF_IDCT_PERM_SSE2:
         for (i = 0; i < 64; i++)
             idct_permutation[i] = (i & 0x38) | idct_sse2_row_perm[i & 7];
