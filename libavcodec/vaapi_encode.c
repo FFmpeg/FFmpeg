@@ -1205,7 +1205,7 @@ fail:
 int ff_vaapi_encode_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
 {
     VAAPIEncodeContext *ctx = avctx->priv_data;
-    VAAPIEncodePicture *pic;
+    VAAPIEncodePicture *pic = NULL;
     AVFrame *frame = ctx->frame;
     int err;
 
@@ -1228,8 +1228,6 @@ int ff_vaapi_encode_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
     }
 
     if (ctx->has_sync_buffer_func) {
-        pic = NULL;
-
         if (av_fifo_can_write(ctx->encode_fifo)) {
             err = vaapi_encode_pick_next(avctx, &pic);
             if (!err) {
@@ -1255,7 +1253,6 @@ int ff_vaapi_encode_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
         av_fifo_read(ctx->encode_fifo, &pic, 1);
         ctx->encode_order = pic->encode_order + 1;
     } else {
-        pic = NULL;
         err = vaapi_encode_pick_next(avctx, &pic);
         if (err < 0)
             return err;
