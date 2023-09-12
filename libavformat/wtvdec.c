@@ -43,7 +43,7 @@
     "%08"PRIx32"-%04"PRIx16"-%04"PRIx16"-%02x%02x%02x%02x%02x%02x%02x%02x"
 #define ARG_PRETTY_GUID(g) \
     AV_RL32(g),AV_RL16(g+4),AV_RL16(g+6),g[8],g[9],g[10],g[11],g[12],g[13],g[14],g[15]
-#define LEN_PRETTY_GUID 34
+#define LEN_PRETTY_GUID 35
 
 /*
  * File system routines
