@@ -1348,7 +1348,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
         if (   !v->field_mode
             && avctx->codec_id != AV_CODEC_ID_WMV3IMAGE
             && avctx->codec_id != AV_CODEC_ID_VC1IMAGE)
-            ff_er_frame_end(&s->er);
+            ff_er_frame_end(&s->er, NULL);
     }
 
     ff_mpv_frame_end(s);

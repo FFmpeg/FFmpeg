@@ -1560,7 +1560,7 @@ static int finish_frame(AVCodecContext *avctx, AVFrame *pict)
     MpegEncContext *s = &r->s;
     int got_picture = 0, ret;
 
-    ff_er_frame_end(&s->er);
+    ff_er_frame_end(&s->er, NULL);
     ff_mpv_frame_end(s);
     s->mb_num_left = 0;
 
@@ -1655,7 +1655,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx, AVFrame *pict,
             av_log(avctx, AV_LOG_ERROR, "New frame but still %d MB left.\n",
                    s->mb_num_left);
             if (!s->context_reinit)
-                ff_er_frame_end(&s->er);
+                ff_er_frame_end(&s->er, NULL);
             ff_mpv_frame_end(s);
         }
 
@@ -1790,7 +1790,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx, AVFrame *pict,
             av_log(avctx, AV_LOG_INFO, "marking unfished frame as finished\n");
             /* always mark the current frame as finished, frame-mt supports
              * only complete frames */
-            ff_er_frame_end(&s->er);
+            ff_er_frame_end(&s->er, NULL);
             ff_mpv_frame_end(s);
             s->mb_num_left = 0;
             ff_thread_report_progress(&s->current_picture_ptr->tf, INT_MAX, 0);

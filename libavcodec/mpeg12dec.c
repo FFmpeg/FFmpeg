@@ -2033,7 +2033,7 @@ static int slice_end(AVCodecContext *avctx, AVFrame *pict)
     if (/* s->mb_y << field_pic == s->mb_height && */ !s->first_field && !s1->first_slice) {
         /* end of image */
 
-        ff_er_frame_end(&s->er);
+        ff_er_frame_end(&s->er, NULL);
 
         ff_mpv_frame_end(s);
 

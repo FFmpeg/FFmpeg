@@ -889,7 +889,7 @@ void ff_er_add_slice(ERContext *s, int startx, int starty,
     }
 }
 
-void ff_er_frame_end(ERContext *s)
+void ff_er_frame_end(ERContext *s, int *decode_error_flags)
 {
     int *linesize = NULL;
     int i, mb_x, mb_y, error, error_type, dc_error, mv_error, ac_error;
@@ -1114,7 +1114,10 @@ void ff_er_frame_end(ERContext *s)
     av_log(s->avctx, AV_LOG_INFO, "concealing %d DC, %d AC, %d MV errors in %c frame\n",
            dc_error, ac_error, mv_error, av_get_picture_type_char(s->cur_pic.f->pict_type));
 
-    s->cur_pic.f->decode_error_flags |= FF_DECODE_ERROR_CONCEALMENT_ACTIVE;
+    if (decode_error_flags)
+        *decode_error_flags |= FF_DECODE_ERROR_CONCEALMENT_ACTIVE;
+    else
+        s->cur_pic.f->decode_error_flags |= FF_DECODE_ERROR_CONCEALMENT_ACTIVE;
 
     is_intra_likely = is_intra_more_likely(s);
 

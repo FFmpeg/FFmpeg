@@ -477,7 +477,7 @@ static int rv10_decode_packet(AVCodecContext *avctx, const uint8_t *buf,
     if ((s->mb_x == 0 && s->mb_y == 0) || !s->current_picture_ptr) {
         // FIXME write parser so we always have complete frames?
         if (s->current_picture_ptr) {
-            ff_er_frame_end(&s->er);
+            ff_er_frame_end(&s->er, NULL);
             ff_mpv_frame_end(s);
             s->mb_x = s->mb_y = s->resync_mb_x = s->resync_mb_y = 0;
         }
@@ -649,7 +649,7 @@ static int rv10_decode_frame(AVCodecContext *avctx, AVFrame *pict,
     }
 
     if (s->current_picture_ptr && s->mb_y >= s->mb_height) {
-        ff_er_frame_end(&s->er);
+        ff_er_frame_end(&s->er, NULL);
         ff_mpv_frame_end(s);
 
         if (s->pict_type == AV_PICTURE_TYPE_B || s->low_delay) {

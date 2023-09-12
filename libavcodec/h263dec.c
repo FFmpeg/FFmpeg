@@ -622,7 +622,7 @@ retry:
     av_assert1(s->bitstream_buffer_size == 0);
 frame_end:
     if (!s->studio_profile)
-        ff_er_frame_end(&s->er);
+        ff_er_frame_end(&s->er, NULL);
 
     if (avctx->hwaccel) {
         ret = FF_HW_SIMPLE_CALL(avctx, end_frame);
