@@ -539,7 +539,7 @@ static void parse_legacy_attrib(AVFormatContext *s, AVIOContext *pb)
         ff_get_guid(pb, &guid);
         type   = avio_rl32(pb);
         length = avio_rl32(pb);
-        if (!length)
+        if (length <= 0)
             break;
         if (ff_guidcmp(&guid, ff_metadata_guid)) {
             av_log(s, AV_LOG_WARNING, "unknown guid "FF_PRI_GUID", expected metadata_guid; "
