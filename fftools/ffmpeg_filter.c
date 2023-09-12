@@ -2157,17 +2157,17 @@ static int fg_output_step(OutputFilterPriv *ofp, int flush)
 
     ret = av_buffersink_get_frame_flags(filter, frame,
                                         AV_BUFFERSINK_FLAG_NO_REQUEST);
-    if (ret < 0) {
-        if (ret != AVERROR(EAGAIN) && ret != AVERROR_EOF) {
-            av_log(fgp, AV_LOG_WARNING,
-                   "Error in av_buffersink_get_frame_flags(): %s\n", av_err2str(ret));
-        } else if (flush && ret == AVERROR_EOF && ofp->got_frame &&
-                   av_buffersink_get_type(filter) == AVMEDIA_TYPE_VIDEO) {
-            ret = fg_output_frame(ofp, NULL);
-            return (ret < 0) ? ret : 1;
-        }
-
+    if (flush && ret == AVERROR_EOF && ofp->got_frame &&
+        ost->type == AVMEDIA_TYPE_VIDEO) {
+        ret = fg_output_frame(ofp, NULL);
+        return (ret < 0) ? ret : 1;
+    } else if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
         return 1;
+    } else if (ret < 0) {
+        av_log(fgp, AV_LOG_WARNING,
+               "Error in retrieving a frame from the filtergraph: %s\n",
+               av_err2str(ret));
+        return ret;
     }
     if (ost->finished) {
         av_frame_unref(frame);
