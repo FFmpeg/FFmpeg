@@ -331,6 +331,23 @@ static int cbs_h2645_read_more_rbsp_data(GetBitContext *gbc)
 #define bit_position(rw)   (get_bits_count(rw))
 #define byte_alignment(rw) (get_bits_count(rw) % 8)
 
+/* The CBS SEI code uses the refstruct API for the allocation
+ * of its child buffers. */
+#define allocate(name, size) do { \
+        name  = ff_refstruct_allocz(size + \
+                                        AV_INPUT_BUFFER_PADDING_SIZE); \
+        if (!name) \
+            return AVERROR(ENOMEM); \
+    } while (0)
+
+#define FUNC(name) FUNC_SEI(name)
+#include "cbs_sei_syntax_template.c"
+#undef FUNC
+
+#undef allocate
+
+/* The other code uses the refstruct API for the allocation
+ * of its child buffers. */
 #define allocate(name, size) do { \
         name ## _ref = av_buffer_allocz(size + \
                                         AV_INPUT_BUFFER_PADDING_SIZE); \
@@ -338,10 +355,6 @@ static int cbs_h2645_read_more_rbsp_data(GetBitContext *gbc)
             return AVERROR(ENOMEM); \
         name = name ## _ref->data; \
     } while (0)
-
-#define FUNC(name) FUNC_SEI(name)
-#include "cbs_sei_syntax_template.c"
-#undef FUNC
 
 #define FUNC(name) FUNC_H264(name)
 #include "cbs_h264_syntax_template.c"

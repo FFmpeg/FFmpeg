@@ -234,7 +234,12 @@ static int FUNC(message)(CodedBitstreamContext *ctx, RWContext *rw,
     } else {
         uint8_t *data;
 
+#ifdef READ
+        allocate(current->payload_ref, current->payload_size);
+        current->payload = current->payload_ref;
+#else
         allocate(current->payload, current->payload_size);
+#endif
         data = current->payload;
 
         for (i = 0; i < current->payload_size; i++)

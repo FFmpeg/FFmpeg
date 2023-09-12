@@ -22,8 +22,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "libavutil/buffer.h"
-
 #include "cbs.h"
 #include "sei.h"
 
@@ -35,15 +33,13 @@ typedef struct SEIRawFillerPayload {
 typedef struct SEIRawUserDataRegistered {
     uint8_t      itu_t_t35_country_code;
     uint8_t      itu_t_t35_country_code_extension_byte;
-    uint8_t     *data;
-    AVBufferRef *data_ref;
+    uint8_t     *data; ///< RefStruct reference
     size_t       data_length;
 } SEIRawUserDataRegistered;
 
 typedef struct SEIRawUserDataUnregistered {
     uint8_t      uuid_iso_iec_11578[16];
-    uint8_t     *data;
-    AVBufferRef *data_ref;
+    uint8_t     *data; ///< RefStruct reference
     size_t       data_length;
 } SEIRawUserDataUnregistered;
 
@@ -75,9 +71,8 @@ typedef struct SEIRawMessage {
     uint32_t     payload_type;
     uint32_t     payload_size;
     void        *payload;
-    AVBufferRef *payload_ref;
-    uint8_t     *extension_data;
-    AVBufferRef *extension_data_ref;
+    void        *payload_ref;    ///< RefStruct reference
+    uint8_t     *extension_data; ///< RefStruct reference
     size_t       extension_bit_length;
 } SEIRawMessage;
 
@@ -174,15 +169,16 @@ void ff_cbs_sei_free_message_list(SEIRawMessageList *list);
  * Will add to an existing SEI NAL unit, or create a new one for the
  * message if there is no suitable existing one.
  *
- * Takes a new reference to payload_buf, if set.  If payload_buf is
- * NULL then the new message will not be reference counted.
+ * If set, payload_ref must be a RefStruct reference backing payload_data.
+ * This function creates a new reference to payload_ref in this case.
+ * If payload_ref is NULL, the new message will not be reference counted.
  */
 int ff_cbs_sei_add_message(CodedBitstreamContext *ctx,
                            CodedBitstreamFragment *au,
                            int prefix,
                            uint32_t     payload_type,
                            void        *payload_data,
-                           AVBufferRef *payload_buf);
+                           void        *payload_ref);
 
 /**
  * Iterate over messages with the given payload type in an access unit.

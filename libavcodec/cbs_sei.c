@@ -22,25 +22,25 @@
 #include "cbs_h265.h"
 #include "cbs_h266.h"
 #include "cbs_sei.h"
+#include "refstruct.h"
 
-static void cbs_free_user_data_registered(void *opaque, uint8_t *data)
+static void cbs_free_user_data_registered(FFRefStructOpaque unused, void *obj)
 {
-    SEIRawUserDataRegistered *udr = (SEIRawUserDataRegistered*)data;
-    av_buffer_unref(&udr->data_ref);
-    av_free(udr);
+    SEIRawUserDataRegistered *udr = obj;
+    ff_refstruct_unref(&udr->data);
 }
 
-static void cbs_free_user_data_unregistered(void *opaque, uint8_t *data)
+static void cbs_free_user_data_unregistered(FFRefStructOpaque unused, void *obj)
 {
-    SEIRawUserDataUnregistered *udu = (SEIRawUserDataUnregistered*)data;
-    av_buffer_unref(&udu->data_ref);
-    av_free(udu);
+    SEIRawUserDataUnregistered *udu = obj;
+    ff_refstruct_unref(&udu->data);
 }
 
 int ff_cbs_sei_alloc_message_payload(SEIRawMessage *message,
                                      const SEIMessageTypeDescriptor *desc)
 {
-    void (*free_func)(void*, uint8_t*);
+    void (*free_func)(FFRefStructOpaque, void*);
+    unsigned flags = 0;
 
     av_assert0(message->payload     == NULL &&
                message->payload_ref == NULL);
@@ -50,24 +50,16 @@ int ff_cbs_sei_alloc_message_payload(SEIRawMessage *message,
         free_func = &cbs_free_user_data_registered;
     else if (desc->type == SEI_TYPE_USER_DATA_UNREGISTERED)
         free_func = &cbs_free_user_data_unregistered;
-    else
+    else {
         free_func = NULL;
+        flags = FF_REFSTRUCT_FLAG_NO_ZEROING;
+    }
 
-    if (free_func) {
-        message->payload = av_mallocz(desc->size);
-        if (!message->payload)
-            return AVERROR(ENOMEM);
-        message->payload_ref =
-            av_buffer_create(message->payload, desc->size,
-                             free_func, NULL, 0);
-    } else {
-        message->payload_ref = av_buffer_alloc(desc->size);
-    }
-    if (!message->payload_ref) {
-        av_freep(&message->payload);
+    message->payload_ref = ff_refstruct_alloc_ext(desc->size, flags,
+                                                  NULL, free_func);
+    if (!message->payload_ref)
         return AVERROR(ENOMEM);
-    }
-    message->payload = message->payload_ref->data;
+    message->payload = message->payload_ref;
 
     return 0;
 }
@@ -101,8 +93,8 @@ void ff_cbs_sei_free_message_list(SEIRawMessageList *list)
 {
     for (int i = 0; i < list->nb_messages; i++) {
         SEIRawMessage *message = &list->messages[i];
-        av_buffer_unref(&message->payload_ref);
-        av_buffer_unref(&message->extension_data_ref);
+        ff_refstruct_unref(&message->payload_ref);
+        ff_refstruct_unref(&message->extension_data);
     }
     av_free(list->messages);
 }
@@ -278,13 +270,12 @@ int ff_cbs_sei_add_message(CodedBitstreamContext *ctx,
                            int prefix,
                            uint32_t     payload_type,
                            void        *payload_data,
-                           AVBufferRef *payload_buf)
+                           void        *payload_ref)
 {
     const SEIMessageTypeDescriptor *desc;
     CodedBitstreamUnit *unit;
     SEIRawMessageList *list;
     SEIRawMessage *message;
-    AVBufferRef *payload_ref;
     int err;
 
     desc = ff_cbs_sei_find_type(ctx, payload_type);
@@ -306,12 +297,10 @@ int ff_cbs_sei_add_message(CodedBitstreamContext *ctx,
     if (err < 0)
         return err;
 
-    if (payload_buf) {
-        payload_ref = av_buffer_ref(payload_buf);
-        if (!payload_ref)
-            return AVERROR(ENOMEM);
-    } else {
-        payload_ref = NULL;
+    if (payload_ref) {
+        /* The following just increments payload_ref's refcount,
+         * so that payload_ref is now owned by us. */
+        payload_ref = ff_refstruct_ref(payload_ref);
     }
 
     message = &list->messages[list->nb_messages - 1];
@@ -364,8 +353,8 @@ static void cbs_sei_delete_message(SEIRawMessageList *list,
     av_assert0(0 <= position && position < list->nb_messages);
 
     message = &list->messages[position];
-    av_buffer_unref(&message->payload_ref);
-    av_buffer_unref(&message->extension_data_ref);
+    ff_refstruct_unref(&message->payload_ref);
+    ff_refstruct_unref(&message->extension_data);
 
     --list->nb_messages;
 
