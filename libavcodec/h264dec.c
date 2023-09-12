@@ -307,6 +307,12 @@ static int h264_init_context(AVCodecContext *avctx, H264Context *h)
 
     ff_h264_sei_uninit(&h->sei);
 
+    if (avctx->active_thread_type & FF_THREAD_FRAME) {
+        h->decode_error_flags_pool = av_buffer_pool_init(sizeof(atomic_int), NULL);
+        if (!h->decode_error_flags_pool)
+            return AVERROR(ENOMEM);
+    }
+
     h->nb_slice_ctx = (avctx->active_thread_type & FF_THREAD_SLICE) ? avctx->thread_count : 1;
     h->slice_ctx = av_calloc(h->nb_slice_ctx, sizeof(*h->slice_ctx));
     if (!h->slice_ctx) {
@@ -352,6 +358,8 @@ static av_cold int h264_decode_end(AVCodecContext *avctx)
     memset(h->delayed_pic, 0, sizeof(h->delayed_pic));
 
     h->cur_pic_ptr = NULL;
+
+    av_buffer_pool_uninit(&h->decode_error_flags_pool);
 
     av_freep(&h->slice_ctx);
     h->nb_slice_ctx = 0;
@@ -739,7 +747,16 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
 
     // set decode_error_flags to allow users to detect concealed decoding errors
     if ((ret < 0 || h->er.error_occurred) && h->cur_pic_ptr) {
-        h->cur_pic_ptr->f->decode_error_flags |= FF_DECODE_ERROR_DECODE_SLICES;
+        if (h->cur_pic_ptr->decode_error_flags) {
+            /* Frame-threading in use */
+            atomic_int *decode_error = (atomic_int*)h->cur_pic_ptr->decode_error_flags->data;
+            /* Using atomics here is not supposed to provide syncronisation;
+             * they are merely used to allow to set decode_error from both
+             * decoding threads in case of coded slices. */
+            atomic_fetch_or_explicit(decode_error, FF_DECODE_ERROR_DECODE_SLICES,
+                                     memory_order_relaxed);
+        } else
+            h->cur_pic_ptr->f->decode_error_flags |= FF_DECODE_ERROR_DECODE_SLICES;
     }
 
     ret = 0;
@@ -762,6 +779,7 @@ end:
 
         H264SliceContext *sl = h->slice_ctx;
         int use_last_pic = h->last_pic_for_ec.f->buf[0] && !sl->ref_count[0];
+        int decode_error_flags = 0;
 
         ff_h264_set_erpic(&h->er.cur_pic, h->cur_pic_ptr);
 
@@ -779,7 +797,15 @@ end:
         if (sl->ref_count[1])
             ff_h264_set_erpic(&h->er.next_pic, sl->ref_list[1][0].parent);
 
-        ff_er_frame_end(&h->er, NULL);
+        ff_er_frame_end(&h->er, &decode_error_flags);
+        if (decode_error_flags) {
+            if (h->cur_pic_ptr->decode_error_flags) {
+                atomic_int *decode_error = (atomic_int*)h->cur_pic_ptr->decode_error_flags->data;
+                atomic_fetch_or_explicit(decode_error, decode_error_flags,
+                                         memory_order_relaxed);
+            } else
+                h->cur_pic_ptr->f->decode_error_flags |= decode_error_flags;
+        }
         if (use_last_pic)
             memset(&sl->ref_list[0][0], 0, sizeof(sl->ref_list[0][0]));
     }
@@ -850,6 +876,14 @@ static int output_frame(H264Context *h, AVFrame *dst, H264Picture *srcp)
 
     if (srcp->needs_fg && (ret = av_frame_copy_props(dst, srcp->f)) < 0)
         return ret;
+
+    if (srcp->decode_error_flags) {
+        atomic_int *decode_error = (atomic_int*)srcp->decode_error_flags->data;
+        /* The following is not supposed to provide synchronisation at all:
+         * given that srcp has already finished decoding, decode_error
+         * has already been set to its final value. */
+        dst->decode_error_flags |= atomic_load_explicit(decode_error, memory_order_relaxed);
+    }
 
     av_dict_set(&dst->metadata, "stereo_mode", ff_h264_sei_stereo_mode(&h->sei.common.frame_packing), 0);
 

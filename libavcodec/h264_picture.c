@@ -54,6 +54,7 @@ void ff_h264_unref_picture(H264Context *h, H264Picture *pic)
         av_buffer_unref(&pic->motion_val_buf[i]);
         av_buffer_unref(&pic->ref_index_buf[i]);
     }
+    av_buffer_unref(&pic->decode_error_flags);
 
     memset((uint8_t*)pic + off, 0, sizeof(*pic) - off);
 }
@@ -136,6 +137,10 @@ int ff_h264_ref_picture(H264Context *h, H264Picture *dst, H264Picture *src)
         dst->hwaccel_picture_private = dst->hwaccel_priv_buf->data;
     }
 
+    ret = av_buffer_replace(&dst->decode_error_flags, src->decode_error_flags);
+    if (ret < 0)
+        goto fail;
+
     h264_copy_picture_params(dst, src);
 
     return 0;
@@ -185,6 +190,10 @@ int ff_h264_replace_picture(H264Context *h, H264Picture *dst, const H264Picture 
         goto fail;
 
     dst->hwaccel_picture_private = src->hwaccel_picture_private;
+
+    ret = av_buffer_replace(&dst->decode_error_flags, src->decode_error_flags);
+    if (ret < 0)
+        goto fail;
 
     h264_copy_picture_params(dst, src);
 

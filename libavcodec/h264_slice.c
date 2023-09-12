@@ -210,6 +210,13 @@ static int alloc_picture(H264Context *h, H264Picture *pic)
     if (ret < 0)
         goto fail;
 
+    if (h->decode_error_flags_pool) {
+        pic->decode_error_flags = av_buffer_pool_get(h->decode_error_flags_pool);
+        if (!pic->decode_error_flags)
+            goto fail;
+        atomic_init((atomic_int*)pic->decode_error_flags->data, 0);
+    }
+
     if (CONFIG_GRAY && !h->avctx->hwaccel && h->flags & AV_CODEC_FLAG_GRAY && pic->f->data[2]) {
         int h_chroma_shift, v_chroma_shift;
         av_pix_fmt_get_chroma_sub_sample(pic->f->format,

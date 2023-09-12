@@ -152,6 +152,9 @@ typedef struct H264Picture {
 
     int mb_width, mb_height;
     int mb_stride;
+
+    /* data points to an atomic_int */
+    AVBufferRef *decode_error_flags;
 } H264Picture;
 
 typedef struct H264Ref {
@@ -549,6 +552,7 @@ typedef struct H264Context {
     AVBufferPool *mb_type_pool;
     AVBufferPool *motion_val_pool;
     AVBufferPool *ref_index_pool;
+    AVBufferPool *decode_error_flags_pool;
     int ref2frm[MAX_SLICES][2][64];     ///< reference to frame number lists, used in the loop filter, the first 2 are for -2,-1
 } H264Context;
 
