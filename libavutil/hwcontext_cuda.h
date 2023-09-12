@@ -63,6 +63,11 @@ typedef struct AVCUDADeviceContext {
 #define AV_CUDA_USE_PRIMARY_CONTEXT (1 << 0)
 
 /**
+ * Use current device context instead of creating a new one.
+ */
+#define AV_CUDA_USE_CURRENT_CONTEXT (1 << 1)
+
+/**
  * @}
  */
 

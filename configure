@@ -6577,10 +6577,11 @@ fi
 
 if ! disabled ffnvcodec; then
     ffnv_hdr_list="ffnvcodec/nvEncodeAPI.h ffnvcodec/dynlink_cuda.h ffnvcodec/dynlink_cuviddec.h ffnvcodec/dynlink_nvcuvid.h"
-    check_pkg_config ffnvcodec "ffnvcodec >= 12.0.16.0" "$ffnv_hdr_list" "" || \
-      check_pkg_config ffnvcodec "ffnvcodec >= 11.1.5.2 ffnvcodec < 12.0" "$ffnv_hdr_list" "" || \
-      check_pkg_config ffnvcodec "ffnvcodec >= 11.0.10.2 ffnvcodec < 11.1" "$ffnv_hdr_list" "" || \
-      check_pkg_config ffnvcodec "ffnvcodec >= 8.1.24.14 ffnvcodec < 8.2" "$ffnv_hdr_list" ""
+    check_pkg_config ffnvcodec "ffnvcodec >= 12.1.14.0" "$ffnv_hdr_list" "" || \
+      check_pkg_config ffnvcodec "ffnvcodec >= 12.0.16.1 ffnvcodec < 12.1" "$ffnv_hdr_list" "" || \
+      check_pkg_config ffnvcodec "ffnvcodec >= 11.1.5.3 ffnvcodec < 12.0" "$ffnv_hdr_list" "" || \
+      check_pkg_config ffnvcodec "ffnvcodec >= 11.0.10.3 ffnvcodec < 11.1" "$ffnv_hdr_list" "" || \
+      check_pkg_config ffnvcodec "ffnvcodec >= 8.1.24.15 ffnvcodec < 8.2" "$ffnv_hdr_list" ""
 fi
 
 if enabled_all libglslang libshaderc; then

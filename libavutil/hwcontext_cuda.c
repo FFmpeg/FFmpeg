@@ -361,6 +361,11 @@ static int cuda_context_init(AVHWDeviceContext *device_ctx, int flags) {
                                                     hwctx->internal->cuda_device));
         if (ret < 0)
             return ret;
+    } else if (flags & AV_CUDA_USE_CURRENT_CONTEXT) {
+        ret = CHECK_CU(cu->cuCtxGetCurrent(&hwctx->cuda_ctx));
+        if (ret < 0)
+            return ret;
+        av_log(device_ctx, AV_LOG_INFO, "Using current CUDA context.\n");
     } else {
         ret = CHECK_CU(cu->cuCtxCreate(&hwctx->cuda_ctx, desired_flags,
                                        hwctx->internal->cuda_device));
@@ -382,13 +387,34 @@ static int cuda_flags_from_opts(AVHWDeviceContext *device_ctx,
                                 AVDictionary *opts, int *flags)
 {
     AVDictionaryEntry *primary_ctx_opt = av_dict_get(opts, "primary_ctx", NULL, 0);
+    AVDictionaryEntry *current_ctx_opt = av_dict_get(opts, "current_ctx", NULL, 0);
 
-    if (primary_ctx_opt && strtol(primary_ctx_opt->value, NULL, 10)) {
+    int use_primary_ctx = 0, use_current_ctx = 0;
+    if (primary_ctx_opt)
+        use_primary_ctx = strtol(primary_ctx_opt->value, NULL, 10);
+
+    if (current_ctx_opt)
+        use_current_ctx = strtol(current_ctx_opt->value, NULL, 10);
+
+    if (use_primary_ctx && use_current_ctx) {
+        av_log(device_ctx, AV_LOG_ERROR, "Requested both primary and current CUDA context simultaneously.\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (primary_ctx_opt && use_primary_ctx) {
         av_log(device_ctx, AV_LOG_VERBOSE, "Using CUDA primary device context\n");
         *flags |= AV_CUDA_USE_PRIMARY_CONTEXT;
     } else if (primary_ctx_opt) {
         av_log(device_ctx, AV_LOG_VERBOSE, "Disabling use of CUDA primary device context\n");
         *flags &= ~AV_CUDA_USE_PRIMARY_CONTEXT;
+    }
+
+    if (current_ctx_opt && use_current_ctx) {
+        av_log(device_ctx, AV_LOG_VERBOSE, "Using CUDA current device context\n");
+        *flags |= AV_CUDA_USE_CURRENT_CONTEXT;
+    } else if (current_ctx_opt) {
+        av_log(device_ctx, AV_LOG_VERBOSE, "Disabling use of CUDA current device context\n");
+        *flags &= ~AV_CUDA_USE_CURRENT_CONTEXT;
     }
 
     return 0;
