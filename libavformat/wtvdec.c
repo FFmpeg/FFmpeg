@@ -468,7 +468,7 @@ static void get_tag(AVFormatContext *s, AVIOContext *pb, const char *key, int ty
         return;
     }
 
-    buf_size = FFMAX(2*length, LEN_PRETTY_GUID) + 1;
+    buf_size = FFMIN(FFMAX(2U * length, LEN_PRETTY_GUID) + 1, INT_MAX);
     buf = av_malloc(buf_size);
     if (!buf)
         return;
