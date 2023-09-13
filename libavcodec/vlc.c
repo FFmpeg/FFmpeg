@@ -471,10 +471,13 @@ int ff_vlc_init_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int 
             goto fail;
         }
     }
-    ret = vlc_common_end(vlc, nb_bits, j, buf, flags, localbuf);
+    ret = vlc_common_end(vlc, nb_bits, j, buf, flags, buf);
     if (ret < 0)
         goto fail;
-    return vlc_multi_gen(multi->table, vlc, nb_elems, j, nb_bits, buf, logctx);
+    ret = vlc_multi_gen(multi->table, vlc, nb_elems, j, nb_bits, buf, logctx);
+    if (buf != localbuf)
+        av_free(buf);
+    return ret;
 fail:
     if (buf != localbuf)
         av_free(buf);
