@@ -2856,8 +2856,8 @@ static void imdct_and_windowing_eld(AACContext *ac, SingleChannelElement *sce)
         ac->mdct512_fn(ac->mdct512, buf, in, sizeof(INTFLOAT));
 
     for (i = 0; i < n; i+=2) {
-        buf[i + 0] = -(int)(USE_FIXED + 1U)*buf[i + 0];
-        buf[i + 1] =  (int)(USE_FIXED + 1U)*buf[i + 1];
+        buf[i + 0] = -(UINTFLOAT)(USE_FIXED + 1)*buf[i + 0];
+        buf[i + 1] =  (UINTFLOAT)(USE_FIXED + 1)*buf[i + 1];
     }
     // Like with the regular IMDCT at this point we still have the middle half
     // of a transform but with even symmetry on the left and odd symmetry on
