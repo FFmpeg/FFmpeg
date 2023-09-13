@@ -317,10 +317,8 @@ static int vpx_decode(AVCodecContext *avctx, AVFrame *picture,
                 return AVERROR(ENOMEM);
             if (ctx->has_alpha_channel) {
                 picture->buf[1] = av_buffer_ref(img_alpha->fb_priv);
-                if (!picture->buf[1]) {
-                    av_frame_unref(picture);
+                if (!picture->buf[1])
                     return AVERROR(ENOMEM);
-                }
             }
             for (int i = 0; i < 4; i++) {
                 picture->data[i] = planes[i];
