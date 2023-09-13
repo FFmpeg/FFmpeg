@@ -84,12 +84,9 @@ static av_cold int libssh_authentication(LIBSSHContext *libssh, const char *user
 
     if (auth_methods & SSH_AUTH_METHOD_PUBLICKEY) {
         if (libssh->priv_key) {
-            ssh_string pub_key;
-            ssh_private_key priv_key;
-            int type;
-            if (!ssh_try_publickey_from_file(libssh->session, libssh->priv_key, &pub_key, &type)) {
-                priv_key = privatekey_from_file(libssh->session, libssh->priv_key, type, password);
-                if (ssh_userauth_pubkey(libssh->session, NULL, pub_key, priv_key) == SSH_AUTH_SUCCESS) {
+            ssh_key priv_key;
+            if (ssh_pki_import_privkey_file(libssh->priv_key, password, NULL, NULL, &priv_key) == SSH_OK) {
+                if (ssh_userauth_publickey(libssh->session, NULL, priv_key) == SSH_AUTH_SUCCESS) {
                     av_log(libssh, AV_LOG_DEBUG, "Authentication successful with selected private key.\n");
                     authorized = 1;
                 }
@@ -97,7 +94,7 @@ static av_cold int libssh_authentication(LIBSSHContext *libssh, const char *user
                 av_log(libssh, AV_LOG_DEBUG, "Invalid key is provided.\n");
                 return AVERROR(EACCES);
             }
-        } else if (ssh_userauth_autopubkey(libssh->session, password) == SSH_AUTH_SUCCESS) {
+        } else if (ssh_userauth_publickey_auto(libssh->session, NULL, password) == SSH_AUTH_SUCCESS) {
             av_log(libssh, AV_LOG_DEBUG, "Authentication successful with auto selected key.\n");
             authorized = 1;
         }
