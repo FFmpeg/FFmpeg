@@ -637,7 +637,7 @@ static int vk_hevc_create_params(AVCodecContext *avctx, AVBufferRef **buf)
     int err;
     const HEVCContext *h = avctx->priv_data;
     FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
-    FFVulkanDecodeShared *ctx = (FFVulkanDecodeShared *)dec->shared_ref->data;
+    FFVulkanDecodeShared *ctx = dec->shared_ctx;
 
     VkVideoDecodeH265SessionParametersAddInfoKHR h265_params_info = {
         .sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_SESSION_PARAMETERS_ADD_INFO_KHR,

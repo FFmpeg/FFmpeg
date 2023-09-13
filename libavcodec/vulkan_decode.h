@@ -54,7 +54,7 @@ typedef struct FFVulkanDecodeShared {
 } FFVulkanDecodeShared;
 
 typedef struct FFVulkanDecodeContext {
-    AVBufferRef *shared_ref;
+    FFVulkanDecodeShared *shared_ctx;
     AVBufferRef *session_params;
     FFVkExecPool exec_pool;
 

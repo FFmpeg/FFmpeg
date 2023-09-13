@@ -106,7 +106,7 @@ static int vk_av1_create_params(AVCodecContext *avctx, AVBufferRef **buf)
 {
     const AV1DecContext *s = avctx->priv_data;
     FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
-    FFVulkanDecodeShared *ctx = (FFVulkanDecodeShared *)dec->shared_ref->data;
+    FFVulkanDecodeShared *ctx = dec->shared_ctx;
 
     const AV1RawSequenceHeader *seq = s->raw_seq;
 

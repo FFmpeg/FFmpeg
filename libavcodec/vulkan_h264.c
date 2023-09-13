@@ -287,7 +287,7 @@ static int vk_h264_create_params(AVCodecContext *avctx, AVBufferRef **buf)
 {
     int err;
     FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
-    FFVulkanDecodeShared *ctx = (FFVulkanDecodeShared *)dec->shared_ref->data;
+    FFVulkanDecodeShared *ctx = dec->shared_ctx;
     const H264Context *h = avctx->priv_data;
 
     /* SPS */
