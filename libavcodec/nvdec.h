@@ -46,7 +46,7 @@ typedef struct NVDECFrame {
     unsigned int ref_idx;
     AVBufferRef *idx_ref;
     AVBufferRef *ref_idx_ref;
-    AVBufferRef *decoder_ref;
+    struct NVDECDecoder  *decoder; ///< RefStruct reference
 } NVDECFrame;
 
 typedef struct NVDECContext {
@@ -54,7 +54,7 @@ typedef struct NVDECContext {
 
     AVBufferPool *decoder_pool;
 
-    AVBufferRef  *decoder_ref;
+    struct NVDECDecoder  *decoder; ///< RefStruct reference
 
     uint8_t      *bitstream;
     int           bitstream_len;

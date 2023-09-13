@@ -35,6 +35,7 @@
 #include "decode.h"
 #include "nvdec.h"
 #include "internal.h"
+#include "refstruct.h"
 
 #if !NVDECAPI_CHECK_VERSION(9, 0)
 #define cudaVideoSurfaceFormat_YUV444 2
@@ -161,9 +162,9 @@ static int nvdec_test_capabilities(NVDECDecoder *decoder,
     return 0;
 }
 
-static void nvdec_decoder_free(void *opaque, uint8_t *data)
+static void nvdec_decoder_free(FFRefStructOpaque unused, void *obj)
 {
-    NVDECDecoder *decoder = (NVDECDecoder*)data;
+    NVDECDecoder *decoder = obj;
 
     if (decoder->decoder) {
         void *logctx = decoder->hw_device_ref->data;
@@ -177,32 +178,23 @@ static void nvdec_decoder_free(void *opaque, uint8_t *data)
     av_buffer_unref(&decoder->hw_device_ref);
 
     cuvid_free_functions(&decoder->cvdl);
-
-    av_freep(&decoder);
 }
 
-static int nvdec_decoder_create(AVBufferRef **out, AVBufferRef *hw_device_ref,
+static int nvdec_decoder_create(NVDECDecoder **out, AVBufferRef *hw_device_ref,
                                 CUVIDDECODECREATEINFO *params, void *logctx)
 {
     AVHWDeviceContext  *hw_device_ctx = (AVHWDeviceContext*)hw_device_ref->data;
     AVCUDADeviceContext *device_hwctx = hw_device_ctx->hwctx;
 
-    AVBufferRef *decoder_ref;
     NVDECDecoder *decoder;
 
     CUcontext dummy;
     int ret;
 
-    decoder = av_mallocz(sizeof(*decoder));
+    decoder = ff_refstruct_alloc_ext(sizeof(*decoder), 0,
+                                     NULL, nvdec_decoder_free);
     if (!decoder)
         return AVERROR(ENOMEM);
-
-    decoder_ref = av_buffer_create((uint8_t*)decoder, sizeof(*decoder),
-                                   nvdec_decoder_free, NULL, AV_BUFFER_FLAG_READONLY);
-    if (!decoder_ref) {
-        av_freep(&decoder);
-        return AVERROR(ENOMEM);
-    }
 
     decoder->hw_device_ref = av_buffer_ref(hw_device_ref);
     if (!decoder->hw_device_ref) {
@@ -237,11 +229,11 @@ static int nvdec_decoder_create(AVBufferRef **out, AVBufferRef *hw_device_ref,
         goto fail;
     }
 
-    *out = decoder_ref;
+    *out = decoder;
 
     return 0;
 fail:
-    av_buffer_unref(&decoder_ref);
+    ff_refstruct_unref(&decoder);
     return ret;
 }
 
@@ -275,7 +267,7 @@ int ff_nvdec_decode_uninit(AVCodecContext *avctx)
     ctx->nb_slices               = 0;
     ctx->slice_offsets_allocated = 0;
 
-    av_buffer_unref(&ctx->decoder_ref);
+    ff_refstruct_unref(&ctx->decoder);
     av_buffer_pool_uninit(&ctx->decoder_pool);
 
     return 0;
@@ -408,7 +400,7 @@ int ff_nvdec_decode_init(AVCodecContext *avctx)
     params.ulNumDecodeSurfaces = frames_ctx->initial_pool_size;
     params.ulNumOutputSurfaces = unsafe_output ? frames_ctx->initial_pool_size : 1;
 
-    ret = nvdec_decoder_create(&ctx->decoder_ref, frames_ctx->device_ref, &params, avctx);
+    ret = nvdec_decoder_create(&ctx->decoder, frames_ctx->device_ref, &params, avctx);
     if (ret < 0) {
         if (params.ulNumDecodeSurfaces > 32) {
             av_log(avctx, AV_LOG_WARNING, "Using more than 32 (%d) decode surfaces might cause nvdec to fail.\n",
@@ -420,7 +412,7 @@ int ff_nvdec_decode_init(AVCodecContext *avctx)
         return ret;
     }
 
-    decoder = (NVDECDecoder*)ctx->decoder_ref->data;
+    decoder = ctx->decoder;
     decoder->unsafe_output = unsafe_output;
     decoder->real_hw_frames_ref = real_hw_frames_ref;
     real_hw_frames_ref = NULL;
@@ -453,8 +445,8 @@ static void nvdec_fdd_priv_free(void *priv)
         return;
 
     av_buffer_unref(&cf->idx_ref);
-    av_buffer_unref(&cf->decoder_ref);
     av_buffer_unref(&cf->ref_idx_ref);
+    ff_refstruct_unref(&cf->decoder);
 
     av_freep(&priv);
 }
@@ -462,7 +454,7 @@ static void nvdec_fdd_priv_free(void *priv)
 static void nvdec_unmap_mapped_frame(void *opaque, uint8_t *data)
 {
     NVDECFrame *unmap_data = (NVDECFrame*)data;
-    NVDECDecoder *decoder = (NVDECDecoder*)unmap_data->decoder_ref->data;
+    NVDECDecoder *decoder = unmap_data->decoder;
     void *logctx = decoder->hw_device_ref->data;
     CUdeviceptr devptr = (CUdeviceptr)opaque;
     int ret;
@@ -478,8 +470,8 @@ static void nvdec_unmap_mapped_frame(void *opaque, uint8_t *data)
 
 finish:
     av_buffer_unref(&unmap_data->idx_ref);
-    av_buffer_unref(&unmap_data->decoder_ref);
     av_buffer_unref(&unmap_data->ref_idx_ref);
+    ff_refstruct_unref(&unmap_data->decoder);
     av_free(unmap_data);
 }
 
@@ -487,7 +479,7 @@ static int nvdec_retrieve_data(void *logctx, AVFrame *frame)
 {
     FrameDecodeData  *fdd = (FrameDecodeData*)frame->private_ref->data;
     NVDECFrame        *cf = (NVDECFrame*)fdd->hwaccel_priv;
-    NVDECDecoder *decoder = (NVDECDecoder*)cf->decoder_ref->data;
+    NVDECDecoder *decoder = cf->decoder;
 
     AVHWFramesContext *hwctx = (AVHWFramesContext *)frame->hw_frames_ctx->data;
 
@@ -534,11 +526,11 @@ static int nvdec_retrieve_data(void *logctx, AVFrame *frame)
         goto copy_fail;
 
     unmap_data->idx = cf->idx;
-    if (!(unmap_data->idx_ref     = av_buffer_ref(cf->idx_ref)) ||
-        !(unmap_data->decoder_ref = av_buffer_ref(cf->decoder_ref))) {
+    if (!(unmap_data->idx_ref     = av_buffer_ref(cf->idx_ref))) {
         ret = AVERROR(ENOMEM);
         goto copy_fail;
     }
+    unmap_data->decoder = ff_refstruct_ref(cf->decoder);
 
     av_pix_fmt_get_chroma_sub_sample(hwctx->sw_format, &shift_h, &shift_v);
     for (i = 0; frame->linesize[i]; i++) {
@@ -583,11 +575,7 @@ int ff_nvdec_start_frame(AVCodecContext *avctx, AVFrame *frame)
     if (!cf)
         return AVERROR(ENOMEM);
 
-    cf->decoder_ref = av_buffer_ref(ctx->decoder_ref);
-    if (!cf->decoder_ref) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
+    cf->decoder = ff_refstruct_ref(ctx->decoder);
 
     cf->idx_ref = av_buffer_pool_get(ctx->decoder_pool);
     if (!cf->idx_ref) {
@@ -645,7 +633,7 @@ fail:
 int ff_nvdec_end_frame(AVCodecContext *avctx)
 {
     NVDECContext     *ctx = avctx->internal->hwaccel_priv_data;
-    NVDECDecoder *decoder = (NVDECDecoder*)ctx->decoder_ref->data;
+    NVDECDecoder *decoder = ctx->decoder;
     void *logctx          = avctx;
     CUVIDPICPARAMS    *pp = &ctx->pic_params;
 
