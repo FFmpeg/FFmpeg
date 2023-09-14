@@ -1278,6 +1278,9 @@ static void do_video_out(OutputFile *of,
             av_log(NULL, AV_LOG_DEBUG, "Forced keyframe at time %f\n", pts_time);
         }
 
+        if (ost->top_field_first >= 0)
+            in_picture->top_field_first = !!ost->top_field_first;
+
         ret = encode_frame(of, ost, in_picture);
         if (ret < 0)
             exit_program(1);
