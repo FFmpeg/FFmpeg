@@ -1104,7 +1104,7 @@ int ff_vk_decode_uninit(AVCodecContext *avctx)
     /* Wait on and free execution pool */
     ff_vk_exec_pool_free(&ctx->s, &dec->exec_pool);
 
-    av_buffer_pool_uninit(&dec->tmp_pool);
+    av_freep(&dec->hevc_headers);
     av_buffer_unref(&dec->session_params);
     av_buffer_unref(&dec->shared_ref);
     av_freep(&dec->slice_off);

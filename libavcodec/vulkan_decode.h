@@ -64,8 +64,8 @@ typedef struct FFVulkanDecodeContext {
     uint32_t frame_id_alloc_mask; /* For AV1 only */
 
     /* Thread-local state below */
-    AVBufferPool *tmp_pool; /* Pool for temporary data, if needed (HEVC) */
-    size_t tmp_pool_ele_size;
+    struct HEVCHeaderSet *hevc_headers;
+    size_t hevc_headers_size;
 
     uint32_t                       *slice_off;
     unsigned int                    slice_off_max;
