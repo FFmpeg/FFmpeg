@@ -2407,31 +2407,7 @@ static int vulkan_transfer_get_formats(AVHWFramesContext *hwfc,
 #if CONFIG_LIBDRM
 static void vulkan_unmap_from_drm(AVHWFramesContext *hwfc, HWMapDescriptor *hwmap)
 {
-    AVVkFrame *f = hwmap->priv;
-    AVVulkanDeviceContext *hwctx = hwfc->device_ctx->hwctx;
-    VulkanDevicePriv *p = hwfc->device_ctx->internal->priv;
-    FFVulkanFunctions *vk = &p->vkctx.vkfn;
-    const int nb_images = ff_vk_count_images(f);
-
-    VkSemaphoreWaitInfo wait_info = {
-        .sType          = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
-        .flags          = 0x0,
-        .pSemaphores    = f->sem,
-        .pValues        = f->sem_value,
-        .semaphoreCount = nb_images,
-    };
-
-    vk->WaitSemaphores(hwctx->act_dev, &wait_info, UINT64_MAX);
-
-    vulkan_free_internal(f);
-
-    for (int i = 0; i < nb_images; i++) {
-        vk->DestroyImage(hwctx->act_dev,     f->img[i], hwctx->alloc);
-        vk->FreeMemory(hwctx->act_dev,       f->mem[i], hwctx->alloc);
-        vk->DestroySemaphore(hwctx->act_dev, f->sem[i], hwctx->alloc);
-    }
-
-    av_free(f);
+    vulkan_frame_free(hwfc, hwmap->priv);
 }
 
 static const struct {
