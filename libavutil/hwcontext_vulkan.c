@@ -3065,7 +3065,6 @@ static int vulkan_transfer_data_from_cuda(AVHWFramesContext *hwfc,
 fail:
     CHECK_CU(cu->cuCtxPopCurrent(&dummy));
     vulkan_free_internal(dst_f);
-    dst_f->internal = NULL;
     av_buffer_unref(&dst->buf[0]);
     return err;
 }
@@ -3642,7 +3641,6 @@ static int vulkan_transfer_data_to_cuda(AVHWFramesContext *hwfc, AVFrame *dst,
 fail:
     CHECK_CU(cu->cuCtxPopCurrent(&dummy));
     vulkan_free_internal(dst_f);
-    dst_f->internal = NULL;
     av_buffer_unref(&dst->buf[0]);
     return err;
 }
