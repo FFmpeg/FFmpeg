@@ -37,6 +37,7 @@
 #include "mpegvideo.h"
 #include "mpegvideodec.h"
 #include "mpeg4videodec.h"
+#include "thread.h"
 #include "threadframe.h"
 #include "wmv2dec.h"
 

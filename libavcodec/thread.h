@@ -52,6 +52,8 @@ void ff_thread_flush(AVCodecContext *avctx);
 int ff_thread_decode_frame(AVCodecContext *avctx, AVFrame *picture,
                            int *got_picture_ptr, AVPacket *avpkt);
 
+int ff_thread_can_start_frame(AVCodecContext *avctx);
+
 /**
  * If the codec defines update_thread_context(), call this
  * when they are ready for the next thread to start decoding
