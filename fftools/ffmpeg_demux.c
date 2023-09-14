@@ -1226,8 +1226,10 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
             }
         }
 
+#if FFMPEG_OPT_TOP
         ist->top_field_first = -1;
         MATCH_PER_STREAM_OPT(top_field_first, i, ist->top_field_first, ic, st);
+#endif
 
         ist->framerate_guessed = av_guess_frame_rate(ic, st, NULL);
 

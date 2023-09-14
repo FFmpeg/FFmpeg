@@ -357,9 +357,17 @@ int enc_open(OutputStream *ost, AVFrame *frame)
         enc_ctx->chroma_sample_location = frame->chroma_location;
 
         if (enc_ctx->flags & (AV_CODEC_FLAG_INTERLACED_DCT | AV_CODEC_FLAG_INTERLACED_ME) ||
-            (frame->flags & AV_FRAME_FLAG_INTERLACED) || ost->top_field_first >= 0) {
-            int top_field_first = ost->top_field_first >= 0 ?
-                ost->top_field_first : !!(frame->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST);
+            (frame->flags & AV_FRAME_FLAG_INTERLACED)
+#if FFMPEG_OPT_TOP
+            || ost->top_field_first >= 0
+#endif
+            ) {
+            int top_field_first =
+#if FFMPEG_OPT_TOP
+                ost->top_field_first >= 0 ?
+                ost->top_field_first :
+#endif
+                !!(frame->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST);
 
             if (enc->id == AV_CODEC_ID_MJPEG)
                 enc_ctx->field_order = top_field_first ? AV_FIELD_TT : AV_FIELD_BB;
@@ -1156,10 +1164,12 @@ static int do_video_out(OutputFile *of, OutputStream *ost, AVFrame *frame)
         in_picture->quality = enc->global_quality;
         in_picture->pict_type = forced_kf_apply(ost, &ost->kf, enc->time_base, in_picture, i);
 
+#if FFMPEG_OPT_TOP
         if (ost->top_field_first >= 0) {
             in_picture->flags &= ~AV_FRAME_FLAG_TOP_FIELD_FIRST;
             in_picture->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST * (!!ost->top_field_first);
         }
+#endif
 
         ret = submit_encode_frame(of, ost, in_picture);
         if (ret == AVERROR_EOF)

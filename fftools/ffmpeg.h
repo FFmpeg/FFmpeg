@@ -57,6 +57,7 @@
 #define FFMPEG_OPT_QPHIST 1
 #define FFMPEG_OPT_ADRIFT_THRESHOLD 1
 #define FFMPEG_OPT_ENC_TIME_BASE_NUM 1
+#define FFMPEG_OPT_TOP 1
 
 enum VideoSyncMethod {
     VSYNC_AUTO = -1,
@@ -218,8 +219,10 @@ typedef struct OptionsContext {
     int        nb_inter_matrices;
     SpecifierOpt *chroma_intra_matrices;
     int        nb_chroma_intra_matrices;
+#if FFMPEG_OPT_TOP
     SpecifierOpt *top_field_first;
     int        nb_top_field_first;
+#endif
     SpecifierOpt *metadata_map;
     int        nb_metadata_map;
     SpecifierOpt *presets;
@@ -344,7 +347,9 @@ typedef struct InputStream {
 
     AVDictionary *decoder_opts;
     AVRational framerate;               /* framerate forced with -r */
+#if FFMPEG_OPT_TOP
     int top_field_first;
+#endif
 
     int autorotate;
 
@@ -538,7 +543,9 @@ typedef struct OutputStream {
     enum VideoSyncMethod vsync_method;
     int is_cfr;
     int force_fps;
+#if FFMPEG_OPT_TOP
     int top_field_first;
+#endif
 #if FFMPEG_ROTATION_METADATA
     int rotate_overridden;
 #endif
@@ -931,7 +938,9 @@ static inline int err_merge(int err0, int err1)
 extern const char * const opt_name_codec_names[];
 extern const char * const opt_name_codec_tags[];
 extern const char * const opt_name_frame_rates[];
+#if FFMPEG_OPT_TOP
 extern const char * const opt_name_top_field_first[];
+#endif
 
 static inline void pkt_move(void *dst, void *src)
 {

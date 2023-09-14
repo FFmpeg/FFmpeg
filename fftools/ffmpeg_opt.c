@@ -56,7 +56,9 @@
 const char *const opt_name_codec_names[]                      = {"c", "codec", "acodec", "vcodec", "scodec", "dcodec", NULL};
 const char *const opt_name_frame_rates[]                      = {"r", NULL};
 const char *const opt_name_codec_tags[]                       = {"tag", "atag", "vtag", "stag", NULL};
+#if FFMPEG_OPT_TOP
 const char *const opt_name_top_field_first[]                  = {"top", NULL};
+#endif
 
 HWDevice *filter_hw_device;
 
@@ -1695,9 +1697,11 @@ const OptionDef options[] = {
     { "chroma_intra_matrix", OPT_VIDEO | HAS_ARG | OPT_EXPERT  | OPT_STRING | OPT_SPEC |
                       OPT_OUTPUT,                                                { .off = OFFSET(chroma_intra_matrices) },
         "specify intra matrix coeffs", "matrix" },
+#if FFMPEG_OPT_TOP
     { "top",          OPT_VIDEO | HAS_ARG | OPT_EXPERT  | OPT_INT| OPT_SPEC |
                       OPT_INPUT | OPT_OUTPUT,                                    { .off = OFFSET(top_field_first) },
-        "top=1/bottom=0/auto=-1 field first", "" },
+        "deprecated, use the setfield video filter", "" },
+#endif
     { "vtag",         OPT_VIDEO | HAS_ARG | OPT_EXPERT  | OPT_PERFILE |
                       OPT_INPUT | OPT_OUTPUT,                                    { .func_arg = opt_old2new },
         "force video tag/fourcc", "fourcc/tag" },

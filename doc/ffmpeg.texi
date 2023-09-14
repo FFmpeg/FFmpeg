@@ -1052,8 +1052,6 @@ Dump video coding statistics to @var{file}. See the
 Specify which version of the vstats format to use. Default is @code{2}. See the
 @ref{vstats_file_format,,vstats file format} section for the format description.
 
-@item -top[:@var{stream_specifier}] @var{n} (@emph{output,per-stream})
-top=1/bottom=0/auto=-1 field first
 @item -vtag @var{fourcc/tag} (@emph{output})
 Force video tag/fourcc. This is an alias for @code{-tag:v}.
 @item -vbsf @var{bitstream_filter}
