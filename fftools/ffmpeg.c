@@ -1337,6 +1337,9 @@ static void do_video_out(OutputFile *of,
         in_picture->quality = enc->global_quality;
         in_picture->pict_type = forced_kf_apply(ost, &ost->kf, enc->time_base, in_picture, i);
 
+        if (ost->top_field_first >= 0)
+            in_picture->top_field_first = !!ost->top_field_first;
+
         ret = submit_encode_frame(of, ost, in_picture);
         if (ret == AVERROR_EOF)
             break;
