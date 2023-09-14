@@ -2056,6 +2056,14 @@ static void render_slice(Vp3DecodeContext *s, int slice)
 {
     int16_t *block = s->block;
     int motion_x = 0xdeadbeef, motion_y = 0xdeadbeef;
+    /* When decoding keyframes, the earlier frames may not be available,
+     * so to avoid using undefined pointer arithmetic on them we just
+     * use the current frame instead. Nothing is ever read from these
+     * frames in case of a keyframe. */
+    const AVFrame *last_frame   = s->last_frame.f->data[0]   ?
+                                      s->last_frame.f   : s->current_frame.f;
+    const AVFrame *golden_frame = s->golden_frame.f->data[0] ?
+                                      s->golden_frame.f : s->current_frame.f;
     int motion_halfpel_index;
     int first_pixel;
 
@@ -2065,9 +2073,9 @@ static void render_slice(Vp3DecodeContext *s, int slice)
     for (int plane = 0; plane < 3; plane++) {
         uint8_t *output_plane = s->current_frame.f->data[plane] +
                                 s->data_offset[plane];
-        const uint8_t *last_plane = s->last_frame.f->data[plane] +
+        const uint8_t *last_plane = last_frame->data[plane] +
                               s->data_offset[plane];
-        const uint8_t *golden_plane = s->golden_frame.f->data[plane] +
+        const uint8_t *golden_plane = golden_frame->data[plane] +
                                 s->data_offset[plane];
         ptrdiff_t stride = s->current_frame.f->linesize[plane];
         int plane_width  = s->width  >> (plane && s->chroma_x_shift);
