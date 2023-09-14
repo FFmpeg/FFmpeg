@@ -817,7 +817,7 @@ int dec_packet(InputStream *ist, const AVPacket *pkt, int no_eof);
 int enc_alloc(Encoder **penc, const AVCodec *codec);
 void enc_free(Encoder **penc);
 
-int enc_open(OutputStream *ost, AVFrame *frame);
+int enc_open(OutputStream *ost, const AVFrame *frame);
 int enc_subtitle(OutputFile *of, OutputStream *ost, const AVSubtitle *sub);
 int enc_frame(OutputStream *ost, AVFrame *frame);
 int enc_flush(void);

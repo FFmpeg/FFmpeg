@@ -165,7 +165,7 @@ static int set_encoder_id(OutputFile *of, OutputStream *ost)
     return 0;
 }
 
-int enc_open(OutputStream *ost, AVFrame *frame)
+int enc_open(OutputStream *ost, const AVFrame *frame)
 {
     InputStream *ist = ost->ist;
     Encoder              *e = ost->enc;
@@ -183,9 +183,8 @@ int enc_open(OutputStream *ost, AVFrame *frame)
     av_assert0(frame || (enc->type != AVMEDIA_TYPE_VIDEO && enc->type != AVMEDIA_TYPE_AUDIO));
 
     if (frame) {
-        fd = frame_data(frame);
-        if (!fd)
-            return AVERROR(ENOMEM);
+        av_assert0(frame->opaque_ref);
+        fd = (FrameData*)frame->opaque_ref->data;
     }
 
     ret = set_encoder_id(output_files[ost->file_index], ost);
