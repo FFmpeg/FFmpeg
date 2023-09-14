@@ -156,9 +156,10 @@ int ff_vk_get_decode_buffer(FFVulkanDecodeContext *ctx, AVBufferRef **buf,
                             void *create_pNext, size_t size);
 
 /**
- * Free VkVideoSessionParametersKHR.
+ * Create VkVideoSessionParametersKHR wrapped in an AVBufferRef.
  */
-void ff_vk_decode_free_params(void *opaque, uint8_t *data);
+int ff_vk_decode_create_params(AVBufferRef **par_ref, void *logctx, FFVulkanDecodeShared *ctx,
+                               const VkVideoSessionParametersCreateInfoKHR *session_params_create);
 
 /**
  * Flush decoder.

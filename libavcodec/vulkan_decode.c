@@ -1057,7 +1057,7 @@ int ff_vk_frame_params(AVCodecContext *avctx, AVBufferRef *hw_frames_ctx)
     return err;
 }
 
-void ff_vk_decode_free_params(void *opaque, uint8_t *data)
+static void vk_decode_free_params(void *opaque, uint8_t *data)
 {
     FFVulkanDecodeShared *ctx = opaque;
     FFVulkanFunctions *vk = &ctx->s.vkfn;
@@ -1065,6 +1065,35 @@ void ff_vk_decode_free_params(void *opaque, uint8_t *data)
     vk->DestroyVideoSessionParametersKHR(ctx->s.hwctx->act_dev, *par,
                                          ctx->s.hwctx->alloc);
     av_free(par);
+}
+
+int ff_vk_decode_create_params(AVBufferRef **par_ref, void *logctx, FFVulkanDecodeShared *ctx,
+                               const VkVideoSessionParametersCreateInfoKHR *session_params_create)
+{
+    VkVideoSessionParametersKHR *par = av_malloc(sizeof(*par));
+    const FFVulkanFunctions *vk = &ctx->s.vkfn;
+    VkResult ret;
+
+    if (!par)
+        return AVERROR(ENOMEM);
+
+    /* Create session parameters */
+    ret = vk->CreateVideoSessionParametersKHR(ctx->s.hwctx->act_dev, session_params_create,
+                                              ctx->s.hwctx->alloc, par);
+    if (ret != VK_SUCCESS) {
+        av_log(logctx, AV_LOG_ERROR, "Unable to create Vulkan video session parameters: %s!\n",
+               ff_vk_ret2str(ret));
+        av_free(par);
+        return AVERROR_EXTERNAL;
+    }
+    *par_ref = av_buffer_create((uint8_t *)par, sizeof(*par),
+                                vk_decode_free_params, ctx, 0);
+    if (!*par_ref) {
+        vk_decode_free_params(ctx, (uint8_t *)par);
+        return AVERROR(ENOMEM);
+    }
+
+    return 0;
 }
 
 int ff_vk_decode_uninit(AVCodecContext *avctx)

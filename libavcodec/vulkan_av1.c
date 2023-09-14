@@ -104,12 +104,9 @@ static int vk_av1_fill_pict(AVCodecContext *avctx, const AV1Frame **ref_src,
 
 static int vk_av1_create_params(AVCodecContext *avctx, AVBufferRef **buf)
 {
-    VkResult ret;
-
     const AV1DecContext *s = avctx->priv_data;
     FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
     FFVulkanDecodeShared *ctx = (FFVulkanDecodeShared *)dec->shared_ref->data;
-    FFVulkanFunctions *vk = &ctx->s.vkfn;
 
     const AV1RawSequenceHeader *seq = s->raw_seq;
 
@@ -118,10 +115,7 @@ static int vk_av1_create_params(AVCodecContext *avctx, AVBufferRef **buf)
     VkVideoDecodeAV1SessionParametersCreateInfoMESA av1_params;
     VkVideoSessionParametersCreateInfoKHR session_params_create;
 
-    AVBufferRef *tmp;
-    VkVideoSessionParametersKHR *par = av_malloc(sizeof(*par));
-    if (!par)
-        return AVERROR(ENOMEM);
+    int err;
 
     av1_sequence_header = (StdVideoAV1MESASequenceHeader) {
         .flags = (StdVideoAV1MESASequenceHeaderFlags) {
@@ -189,25 +183,11 @@ static int vk_av1_create_params(AVCodecContext *avctx, AVBufferRef **buf)
         .videoSessionParametersTemplate = NULL,
     };
 
-    /* Create session parameters */
-    ret = vk->CreateVideoSessionParametersKHR(ctx->s.hwctx->act_dev, &session_params_create,
-                                              ctx->s.hwctx->alloc, par);
-    if (ret != VK_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Unable to create Vulkan video session parameters: %s!\n",
-               ff_vk_ret2str(ret));
-        return AVERROR_EXTERNAL;
-    }
-
-    tmp = av_buffer_create((uint8_t *)par, sizeof(*par), ff_vk_decode_free_params,
-                           ctx, 0);
-    if (!tmp) {
-        ff_vk_decode_free_params(ctx, (uint8_t *)par);
-        return AVERROR(ENOMEM);
-    }
+    err = ff_vk_decode_create_params(buf, avctx, ctx, &session_params_create);
+    if (err < 0)
+        return err;
 
     av_log(avctx, AV_LOG_DEBUG, "Created frame parameters\n");
-
-    *buf = tmp;
 
     return 0;
 }

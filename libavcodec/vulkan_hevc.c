@@ -650,11 +650,9 @@ static void set_vps(const HEVCVPS *vps,
 static int vk_hevc_create_params(AVCodecContext *avctx, AVBufferRef **buf)
 {
     int err;
-    VkResult ret;
     const HEVCContext *h = avctx->priv_data;
     FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
     FFVulkanDecodeShared *ctx = (FFVulkanDecodeShared *)dec->shared_ref->data;
-    FFVulkanFunctions *vk = &ctx->s.vkfn;
 
     VkVideoDecodeH265SessionParametersAddInfoKHR h265_params_info = {
         .sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_SESSION_PARAMETERS_ADD_INFO_KHR,
@@ -676,11 +674,6 @@ static int vk_hevc_create_params(AVCodecContext *avctx, AVBufferRef **buf)
     int nb_vps = 0;
     AVBufferRef *data_set;
     HEVCHeaderSet *hdr;
-
-    AVBufferRef *tmp;
-    VkVideoSessionParametersKHR *par = av_malloc(sizeof(*par));
-    if (!par)
-        return AVERROR(ENOMEM);
 
     for (int i = 0; h->ps.vps_list[i]; i++)
         nb_vps++;
@@ -725,28 +718,14 @@ static int vk_hevc_create_params(AVCodecContext *avctx, AVBufferRef **buf)
     h265_params.maxStdPPSCount = h265_params_info.stdPPSCount;
     h265_params.maxStdVPSCount = h265_params_info.stdVPSCount;
 
-    /* Create session parameters */
-    ret = vk->CreateVideoSessionParametersKHR(ctx->s.hwctx->act_dev, &session_params_create,
-                                              ctx->s.hwctx->alloc, par);
+    err = ff_vk_decode_create_params(buf, avctx, ctx, &session_params_create);
     av_buffer_unref(&data_set);
-    if (ret != VK_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Unable to create Vulkan video session parameters: %s!\n",
-               ff_vk_ret2str(ret));
-        return AVERROR_EXTERNAL;
-    }
-
-    tmp = av_buffer_create((uint8_t *)par, sizeof(*par), ff_vk_decode_free_params,
-                           ctx, 0);
-    if (!tmp) {
-        ff_vk_decode_free_params(ctx, (uint8_t *)par);
-        return AVERROR(ENOMEM);
-    }
+    if (err < 0)
+        return err;
 
     av_log(avctx, AV_LOG_DEBUG, "Created frame parameters: %i SPS %i PPS %i VPS\n",
            h265_params_info.stdSPSCount, h265_params_info.stdPPSCount,
            h265_params_info.stdVPSCount);
-
-    *buf = tmp;
 
     return 0;
 }
