@@ -222,8 +222,8 @@ static av_always_inline void NAME(TXComplex *out, TXComplex *in,    \
     BF(t[3].im, t[2].re, in[2].re, in[3].re);                       \
     BF(t[3].re, t[2].im, in[2].im, in[3].im);                       \
                                                                     \
-    out[D0*stride].re = dc.re + t[0].re + t[2].re;                  \
-    out[D0*stride].im = dc.im + t[0].im + t[2].im;                  \
+    out[D0*stride].re = dc.re + (TXUSample)t[0].re + t[2].re;        \
+    out[D0*stride].im = dc.im + (TXUSample)t[0].im + t[2].im;        \
                                                                     \
     SMUL(t[4].re, t[0].re, tab[0], tab[2], t[2].re, t[0].re);       \
     SMUL(t[4].im, t[0].im, tab[0], tab[2], t[2].im, t[0].im);       \
@@ -235,14 +235,14 @@ static av_always_inline void NAME(TXComplex *out, TXComplex *in,    \
     BF(z0[2].re, z0[1].re, t[4].re, t[5].re);                       \
     BF(z0[2].im, z0[1].im, t[4].im, t[5].im);                       \
                                                                     \
-    out[D1*stride].re = dc.re + z0[3].re;                           \
-    out[D1*stride].im = dc.im + z0[0].im;                           \
-    out[D2*stride].re = dc.re + z0[2].re;                           \
-    out[D2*stride].im = dc.im + z0[1].im;                           \
-    out[D3*stride].re = dc.re + z0[1].re;                           \
-    out[D3*stride].im = dc.im + z0[2].im;                           \
-    out[D4*stride].re = dc.re + z0[0].re;                           \
-    out[D4*stride].im = dc.im + z0[3].im;                           \
+    out[D1*stride].re = dc.re + (TXUSample)z0[3].re;                 \
+    out[D1*stride].im = dc.im + (TXUSample)z0[0].im;                 \
+    out[D2*stride].re = dc.re + (TXUSample)z0[2].re;                 \
+    out[D2*stride].im = dc.im + (TXUSample)z0[1].im;                 \
+    out[D3*stride].re = dc.re + (TXUSample)z0[1].re;                 \
+    out[D3*stride].im = dc.im + (TXUSample)z0[2].im;                 \
+    out[D4*stride].re = dc.re + (TXUSample)z0[0].re;                 \
+    out[D4*stride].im = dc.im + (TXUSample)z0[3].im;                 \
 }
 
 DECL_FFT5(fft5,     0,  1,  2,  3,  4)
