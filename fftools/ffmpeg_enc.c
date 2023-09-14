@@ -1156,6 +1156,11 @@ static int do_video_out(OutputFile *of, OutputStream *ost, AVFrame *frame)
         in_picture->quality = enc->global_quality;
         in_picture->pict_type = forced_kf_apply(ost, &ost->kf, enc->time_base, in_picture, i);
 
+        if (ost->top_field_first >= 0) {
+            in_picture->flags &= ~AV_FRAME_FLAG_TOP_FIELD_FIRST;
+            in_picture->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST * (!!ost->top_field_first);
+        }
+
         ret = submit_encode_frame(of, ost, in_picture);
         if (ret == AVERROR_EOF)
             break;
