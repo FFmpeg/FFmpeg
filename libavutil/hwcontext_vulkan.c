@@ -1786,9 +1786,10 @@ static void vulkan_frame_free(AVHWFramesContext *hwfc, AVVkFrame *f)
     int nb_images = ff_vk_count_images(f);
 
     VkSemaphoreWaitInfo sem_wait = {
-        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
-        .pSemaphores = f->sem,
-        .pValues = f->sem_value,
+        .sType          = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
+        .flags          = 0x0,
+        .pSemaphores    = f->sem,
+        .pValues        = f->sem_value,
         .semaphoreCount = nb_images,
     };
 
