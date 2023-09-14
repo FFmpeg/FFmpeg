@@ -1778,10 +1778,8 @@ static void vulkan_free_internal(AVVkFrame *f)
     av_freep(&f->internal);
 }
 
-static void vulkan_frame_free(void *opaque, uint8_t *data)
+static void vulkan_frame_free(AVHWFramesContext *hwfc, AVVkFrame *f)
 {
-    AVVkFrame *f = (AVVkFrame *)data;
-    AVHWFramesContext *hwfc = opaque;
     AVVulkanDeviceContext *hwctx = hwfc->device_ctx->hwctx;
     VulkanDevicePriv *p = hwfc->device_ctx->internal->priv;
     FFVulkanFunctions *vk = &p->vkctx.vkfn;
@@ -1805,6 +1803,11 @@ static void vulkan_frame_free(void *opaque, uint8_t *data)
     }
 
     av_free(f);
+}
+
+static void vulkan_frame_free_cb(void *opaque, uint8_t *data)
+{
+    vulkan_frame_free(opaque, (AVVkFrame*)data);
 }
 
 static int alloc_bind_mem(AVHWFramesContext *hwfc, AVVkFrame *f,
@@ -2087,7 +2090,7 @@ static int create_frame(AVHWFramesContext *hwfc, AVVkFrame **frame,
     return 0;
 
 fail:
-    vulkan_frame_free(hwfc, (uint8_t *)f);
+    vulkan_frame_free(hwfc, f);
     return err;
 }
 
@@ -2209,14 +2212,14 @@ static AVBufferRef *vulkan_pool_alloc(void *opaque, size_t size)
         goto fail;
 
     avbuf = av_buffer_create((uint8_t *)f, sizeof(AVVkFrame),
-                             vulkan_frame_free, hwfc, 0);
+                             vulkan_frame_free_cb, hwfc, 0);
     if (!avbuf)
         goto fail;
 
     return avbuf;
 
 fail:
-    vulkan_frame_free(hwfc, (uint8_t *)f);
+    vulkan_frame_free(hwfc, f);
     return NULL;
 }
 
@@ -2357,7 +2360,7 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
     if (err)
         return err;
 
-    vulkan_frame_free(hwfc, (uint8_t *)f);
+    vulkan_frame_free(hwfc, f);
 
     /* If user did not specify a pool, hwfc->pool will be set to the internal one
      * in hwcontext.c just after this gets called */
@@ -2766,7 +2769,7 @@ static int vulkan_map_from_drm(AVHWFramesContext *hwfc, AVFrame *dst,
     return 0;
 
 fail:
-    vulkan_frame_free(hwfc->device_ctx->hwctx, (uint8_t *)f);
+    vulkan_frame_free(hwfc->device_ctx->hwctx, f);
     dst->data[0] = NULL;
     return err;
 }
