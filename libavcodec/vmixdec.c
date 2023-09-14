@@ -23,7 +23,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "libavutil/avassert.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem_internal.h"
 
@@ -45,6 +44,7 @@ typedef struct SliceContext {
 
 typedef struct VMIXContext {
     int nb_slices;
+    int lshift;
 
     int16_t factors[64];
     uint8_t scan[64];
@@ -55,9 +55,22 @@ typedef struct VMIXContext {
     IDCTDSPContext idsp;
 } VMIXContext;
 
-static const uint8_t quality[25] = {
-     1,  2,  3,  4,  5,  6,  7,  8, 10, 12, 14, 16,
-    18, 20, 22, 24, 28, 32, 36, 40, 44, 48, 52, 56, 64,
+static const uint8_t quality[256] = {
+     1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
+     1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
+     1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
+     1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
+     1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1, 64, 56, 52, 48, 44,
+    12, 36, 32, 28, 24, 22, 20, 18, 16, 14, 12, 10,  8,  7,  6,  5,
+     4,  3,  2,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
+     1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
+     1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
+     1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
+     1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
+     1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
+     1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
+     1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
+     1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
 };
 
 static const uint8_t quant[64] = {
@@ -108,6 +121,7 @@ static int decode_dcac(AVCodecContext *avctx,
     const uint8_t *scan = s->scan;
     const int add = plane ? 0 : 1024;
     int i, dc_v = 0, ac_v = 0, dc = 0;
+    const int lshift = s->lshift;
 
     for (int y = 0; y < 2; y++) {
         for (int x = 0; x < width; x += 8) {
@@ -139,7 +153,7 @@ static int decode_dcac(AVCodecContext *avctx,
                     ac_run = get_ue_golomb_long(ac_gb);
             }
 
-            block[0] = dc + add;
+            block[0] = (dc << lshift) + add;
             s->idsp.idct_put(dst + x, linesize, block);
         }
 
@@ -213,18 +227,22 @@ static int decode_frame(AVCodecContext *avctx,
                         AVPacket *avpkt)
 {
     VMIXContext *s = avctx->priv_data;
-    unsigned offset = 3, q;
+    unsigned offset, q;
     int ret;
 
     if (avpkt->size <= 7)
         return AVERROR_INVALIDDATA;
 
-    if (avpkt->data[0] != 0x01)
+    s->lshift = 0;
+    offset = 2 + avpkt->data[0];
+    if (offset == 5)
+        s->lshift = avpkt->data[1];
+    else if (offset != 3)
         return AVERROR_INVALIDDATA;
 
-    q = av_clip(99 - av_clip(avpkt->data[1], 0, 99), 0, FF_ARRAY_ELEMS(quality) - 1);
+    q = quality[avpkt->data[offset - 2]];
     for (int n = 0; n < 64; n++)
-        s->factors[n] = quant[n] * quality[q];
+        s->factors[n] = quant[n] * q;
 
     s->nb_slices = (avctx->height + 15) / 16;
     av_fast_mallocz(&s->slices, &s->slices_size, s->nb_slices * sizeof(*s->slices));
