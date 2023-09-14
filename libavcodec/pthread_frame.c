@@ -55,16 +55,6 @@ enum {
     STATE_INPUT_READY,
     ///< Set before the codec has called ff_thread_finish_setup().
     STATE_SETTING_UP,
-    /**
-     * Set when the codec calls get_buffer().
-     * State is returned to STATE_SETTING_UP afterwards.
-     */
-    STATE_GET_BUFFER,
-     /**
-      * Set when the codec calls get_format().
-      * State is returned to STATE_SETTING_UP afterwards.
-      */
-    STATE_GET_FORMAT,
     ///< Set after the codec has called ff_thread_finish_setup().
     STATE_SETUP_FINISHED,
 };
