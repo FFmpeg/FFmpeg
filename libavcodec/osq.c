@@ -356,7 +356,7 @@ static int osq_decode_block(AVCodecContext *avctx, AVFrame *frame)
     const int nb_channels = avctx->ch_layout.nb_channels;
     const int nb_samples = frame->nb_samples;
     OSQContext *s = avctx->priv_data;
-    const int factor = s->factor;
+    const unsigned factor = s->factor;
     int ret, decorrelate, downsample;
     GetBitContext *gb = &s->gb;
 
