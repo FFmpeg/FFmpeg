@@ -644,9 +644,11 @@ void ff_thread_await_progress(const ThreadFrame *f, int n, int field)
 }
 
 void ff_thread_finish_setup(AVCodecContext *avctx) {
-    PerThreadContext *p = avctx->internal->thread_ctx;
+    PerThreadContext *p;
 
     if (!(avctx->active_thread_type&FF_THREAD_FRAME)) return;
+
+    p = avctx->internal->thread_ctx;
 
     p->hwaccel_threadsafe = avctx->hwaccel &&
                             (ffhwaccel(avctx->hwaccel)->caps_internal & HWACCEL_CAP_THREAD_SAFE);
@@ -956,11 +958,12 @@ void ff_thread_flush(AVCodecContext *avctx)
 
 int ff_thread_can_start_frame(AVCodecContext *avctx)
 {
-    PerThreadContext *p = avctx->internal->thread_ctx;
-
-    if ((avctx->active_thread_type&FF_THREAD_FRAME) && atomic_load(&p->state) != STATE_SETTING_UP &&
+    if ((avctx->active_thread_type & FF_THREAD_FRAME) &&
         ffcodec(avctx->codec)->update_thread_context) {
-        return 0;
+        PerThreadContext *p = avctx->internal->thread_ctx;
+
+        if (atomic_load(&p->state) != STATE_SETTING_UP)
+            return 0;
     }
 
     return 1;
