@@ -1954,7 +1954,7 @@ static void await_reference_row(Vp3DecodeContext *s, const Vp3Fragment *fragment
  * @return non-zero if temp (edge_emu_buffer) was populated
  */
 static int vp4_mc_loop_filter(Vp3DecodeContext *s, int plane, int motion_x, int motion_y, int bx, int by,
-                              const uint8_t *motion_source, int stride,
+                              const uint8_t *motion_source, ptrdiff_t stride,
                               int src_x, int src_y, uint8_t *temp)
 {
     int motion_shift = plane ? 4 : 2;
