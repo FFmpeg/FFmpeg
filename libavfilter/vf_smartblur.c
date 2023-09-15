@@ -136,7 +136,7 @@ static int alloc_sws_context(FilterParam *f, int width, int height, unsigned int
     vec->coeff[vec->length / 2] += 1.0 - f->strength;
     sws_filter.lumH = sws_filter.lumV = vec;
     sws_filter.chrH = sws_filter.chrV = NULL;
-    f->filter_context = sws_getCachedContext(NULL,
+    f->filter_context = sws_getCachedContext(f->filter_context,
                                              width, height, AV_PIX_FMT_GRAY8,
                                              width, height, AV_PIX_FMT_GRAY8,
                                              flags, &sws_filter, NULL, NULL);
