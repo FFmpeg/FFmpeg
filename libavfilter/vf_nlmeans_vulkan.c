@@ -538,28 +538,29 @@ static av_cold int init_denoise_pipeline(FFVulkanContext *vkctx, FFVkExecPool *e
     GLSLC(0, {                                                                );
     GLSLC(1,     ivec2 size;                                                  );
     GLSLC(1,     const ivec2 pos = ivec2(gl_GlobalInvocationID.xy);           );
+    GLSLC(1,     const uint plane = uint(gl_WorkGroupID.z);                   );
     GLSLC(0,                                                                  );
     GLSLC(1,     float w_sum;                                                 );
     GLSLC(1,     float sum;                                                   );
     GLSLC(1,     vec4 src;                                                    );
     GLSLC(1,     vec4 r;                                                      );
     GLSLC(0,                                                                  );
-
-    for (int i = 0; i < planes; i++) {
-        GLSLF(1, src = texture(input_img[%i], pos);                         ,i);
-        for (int c = 0; c < desc->nb_components; c++) {
-            if (desc->comp[c].plane == i) {
-                int off = desc->comp[c].offset / (FFALIGN(desc->comp[c].depth, 8)/8);
-                GLSLF(1, w_sum = weights_%i[pos.y*ws_stride[%i] + pos.x];               ,c, c);
-                GLSLF(1, sum = sums_%i[pos.y*ws_stride[%i] + pos.x];                    ,c, c);
-                GLSLF(1, r[%i] = (sum + src[%i]*255) / (1.0 + w_sum) / 255;         ,off, off);
-                GLSLC(0,                                                                     );
-            }
-        }
-        GLSLF(1, imageStore(output_img[%i], pos, r);                        ,i);
-        GLSLC(0,                                                              );
+    GLSLC(1,     size = imageSize(output_img[plane]);                         );
+    GLSLC(1,     if (!IS_WITHIN(pos, size))                                   );
+    GLSLC(2,         return;                                                  );
+    GLSLC(0,                                                                  );
+    GLSLC(1,     src = texture(input_img[plane], pos);                        );
+    GLSLC(0,                                                                  );
+    for (int c = 0; c < desc->nb_components; c++) {
+        int off = desc->comp[c].offset / (FFALIGN(desc->comp[c].depth, 8)/8);
+        GLSLF(1, if (plane == %i) {                                              ,desc->comp[c].plane);
+        GLSLF(2,     w_sum = weights_%i[pos.y*ws_stride[%i] + pos.x];                           ,c, c);
+        GLSLF(2,     sum = sums_%i[pos.y*ws_stride[%i] + pos.x];                                ,c, c);
+        GLSLF(2,     r[%i] = (sum + src[%i]*255) / (1.0 + w_sum) / 255;                     ,off, off);
+        GLSLC(1, }                                                                                   );
+        GLSLC(0,                                                                                     );
     }
-
+    GLSLC(1, imageStore(output_img[plane], pos, r);                           );
     GLSLC(0, }                                                                );
 
     RET(spv->compile_shader(spv, vkctx, shd, &spv_data, &spv_len, "main", &spv_opaque));
@@ -716,7 +717,7 @@ static int denoise_pass(NLMeansVulkanContext *s, FFVkExecContext *exec,
     vk->CmdDispatch(exec->buf,
                     FFALIGN(vkctx->output_width,  s->pl_denoise.wg_size[0])/s->pl_denoise.wg_size[0],
                     FFALIGN(vkctx->output_height, s->pl_denoise.wg_size[1])/s->pl_denoise.wg_size[1],
-                    1);
+                    av_pix_fmt_count_planes(s->vkctx.output_format));
 
     return 0;
 }
