@@ -176,6 +176,7 @@ int ff_vk_decode_prepare_frame(FFVulkanDecodeContext *dec, AVFrame *pic,
 {
     int err;
     FFVulkanDecodeShared *ctx = (FFVulkanDecodeShared *)dec->shared_ref->data;
+    FFVulkanFunctions *vk = &ctx->s.vkfn;
 
     vkpic->slices_size = 0;
 
@@ -188,6 +189,9 @@ int ff_vk_decode_prepare_frame(FFVulkanDecodeContext *dec, AVFrame *pic,
     vkpic->img_view_ref  = NULL;
     vkpic->img_view_out  = NULL;
     vkpic->img_view_dest = NULL;
+
+    vkpic->destroy_image_view = vk->DestroyImageView;
+    vkpic->wait_semaphores = vk->WaitSemaphores;
 
     if (dec->layered_dpb && alloc_dpb) {
         vkpic->img_view_ref = ctx->layered_view;
@@ -554,9 +558,6 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
 void ff_vk_decode_free_frame(AVHWDeviceContext *dev_ctx, FFVulkanDecodePicture *vp)
 {
     AVVulkanDeviceContext *hwctx = dev_ctx->hwctx;
-    PFN_vkGetDeviceProcAddr device_proc_addr;
-    PFN_vkWaitSemaphores wait_semaphores;
-    PFN_vkDestroyImageView destroy_image_view;
 
     VkSemaphoreWaitInfo sem_wait = (VkSemaphoreWaitInfo) {
         .sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
@@ -565,27 +566,22 @@ void ff_vk_decode_free_frame(AVHWDeviceContext *dev_ctx, FFVulkanDecodePicture *
         .semaphoreCount = 1,
     };
 
-    /* Guaranteed to exist */
-    device_proc_addr = (PFN_vkGetDeviceProcAddr)hwctx->get_proc_addr(hwctx->inst, "vkGetDeviceProcAddr");
-    destroy_image_view = (PFN_vkDestroyImageView)device_proc_addr(hwctx->act_dev, "vkDestroyImageView");
-    wait_semaphores = (PFN_vkWaitSemaphores)device_proc_addr(hwctx->act_dev, "vkWaitSemaphores");
-
     /* We do not have to lock the frame here because we're not interested
      * in the actual current semaphore value, but only that it's later than
      * the time we submitted the image for decoding. */
     if (vp->sem)
-        wait_semaphores(hwctx->act_dev, &sem_wait, UINT64_MAX);
+        vp->wait_semaphores(hwctx->act_dev, &sem_wait, UINT64_MAX);
 
     /* Free slices data */
     av_buffer_unref(&vp->slices_buf);
 
     /* Destroy image view (out) */
     if (vp->img_view_out && vp->img_view_out != vp->img_view_dest)
-        destroy_image_view(hwctx->act_dev, vp->img_view_out, hwctx->alloc);
+        vp->destroy_image_view(hwctx->act_dev, vp->img_view_out, hwctx->alloc);
 
     /* Destroy image view (ref, unlayered) */
     if (vp->img_view_dest)
-        destroy_image_view(hwctx->act_dev, vp->img_view_dest, hwctx->alloc);
+        vp->destroy_image_view(hwctx->act_dev, vp->img_view_dest, hwctx->alloc);
 
     av_frame_free(&vp->dpb_frame);
 }
