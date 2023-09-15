@@ -100,7 +100,7 @@ static void insert_horizontal_pass(FFVkSPIRVShader *shd, int nb_rows, int first,
                                 gl_SemanticsMakeAvailable |
                                 gl_SemanticsMakeVisible);                     );
     }
-    GLSLC(1, for (y = 0; y < height[0]; y++) {                                );
+    GLSLF(1, for (y = 0; y < height[%i]; y++) {                               ,plane);
     GLSLC(2,     offset = uint64_t(int_stride)*y*T_ALIGN;                     );
     GLSLC(2,     dst = DataBuffer(uint64_t(integral_data) + offset);          );
     GLSLC(0,                                                                  );
@@ -127,7 +127,7 @@ static void insert_vertical_pass(FFVkSPIRVShader *shd, int nb_rows, int first, i
                                 gl_SemanticsMakeAvailable |
                                 gl_SemanticsMakeVisible);                     );
     }
-    GLSLC(1, for (x = 0; x < width[0]; x++) {                                 );
+    GLSLF(1, for (x = 0; x < width[%i]; x++) {                                ,plane);
     GLSLC(2,     dst = DataBuffer(uint64_t(integral_data) + x*T_ALIGN);       );
 
     for (int r = 0; r < nb_rows; r++) {
@@ -156,13 +156,13 @@ static void insert_weights_pass(FFVkSPIRVShader *shd, int nb_rows, int vert,
                             gl_SemanticsMakeVisible);                         );
     GLSLC(1, barrier();                                                       );
     if (!vert) {
-        GLSLC(1, for (y = 0; y < height[0]; y++) {                            );
+        GLSLF(1, for (y = 0; y < height[%i]; y++) {                           ,plane);
         GLSLF(2,     if (gl_GlobalInvocationID.x*%i >= width[%i])             ,nb_rows, plane);
         GLSLC(3,         break;                                               );
         GLSLF(2,     for (r = 0; r < %i; r++) {                       ,nb_rows);
         GLSLF(3,         x = int(gl_GlobalInvocationID.x) * %i + r;   ,nb_rows);
     } else {
-        GLSLC(1, for (x = 0; x < width[0]; x++) {                             );
+        GLSLF(1, for (x = 0; x < width[%i]; x++) {                            ,plane);
         GLSLF(2,     if (gl_GlobalInvocationID.x*%i >= height[%i])            ,nb_rows, plane);
         GLSLC(3,         break;                                               );
         GLSLF(2,     for (r = 0; r < %i; r++) {                       ,nb_rows);
