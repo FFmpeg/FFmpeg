@@ -24,7 +24,7 @@
 #define EXTENDED_SAR 255
 
 // @see ISO_IEC_23094-1 (7.3.7 Reference picture list structure syntax)
-static int ref_pic_list_struct(EVCParserSPS *sps, GetBitContext *gb, RefPicListStruct *rpl)
+static int ref_pic_list_struct(const EVCParserSPS *sps, GetBitContext *gb, RefPicListStruct *rpl)
 {
     uint32_t delta_poc_st, strp_entry_sign_flag = 0;
     rpl->ref_pic_num = get_ue_golomb_long(gb);
