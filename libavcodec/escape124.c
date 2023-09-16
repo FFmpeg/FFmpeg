@@ -239,7 +239,7 @@ static int escape124_decode_frame(AVCodecContext *avctx,
         if ((ret = av_frame_ref(frame, s->frame)) < 0)
             return ret;
 
-        return frame_size;
+        return 0;
     }
 
     for (i = 0; i < 3; i++) {
@@ -368,7 +368,7 @@ static int escape124_decode_frame(AVCodecContext *avctx,
 
     *got_frame = 1;
 
-    return frame_size;
+    return 0;
 }
 
 
