@@ -217,11 +217,10 @@ static int dcadec_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         if (asset && (asset->extension_mask & DCA_EXSS_XLL)) {
             if ((ret = ff_dca_xll_parse(&s->xll, input, asset)) < 0) {
                 // Conceal XLL synchronization error
-                if (ret == AVERROR(EAGAIN)
-                    && (prev_packet & DCA_PACKET_XLL)
-                    && (s->packet & DCA_PACKET_CORE))
-                    s->packet |= DCA_PACKET_XLL | DCA_PACKET_RECOVERY;
-                else if (ret == AVERROR(ENOMEM) || (avctx->err_recognition & AV_EF_EXPLODE))
+                if (ret == AVERROR(EAGAIN)) {
+                    if ((prev_packet & DCA_PACKET_XLL) && (s->packet & DCA_PACKET_CORE))
+                        s->packet |= DCA_PACKET_XLL | DCA_PACKET_RECOVERY;
+                } else if (ret == AVERROR(ENOMEM) || (avctx->err_recognition & AV_EF_EXPLODE))
                     return ret;
             } else {
                 s->packet |= DCA_PACKET_XLL;
