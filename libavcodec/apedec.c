@@ -1220,7 +1220,7 @@ static av_always_inline int predictor_update_filter(APEPredictor64 *p,
     if (interim_mode < 1) {
         predictionA = (int32_t)predictionA;
         predictionB = (int32_t)predictionB;
-        p->lastA[filter] = decoded + ((int32_t)(predictionA + (predictionB >> 1)) >> 10);
+        p->lastA[filter] = (int32_t)(decoded + (unsigned)((int32_t)(predictionA + (predictionB >> 1)) >> 10));
     } else {
         p->lastA[filter] = decoded + ((int64_t)((uint64_t)predictionA + (predictionB >> 1)) >> 10);
     }
