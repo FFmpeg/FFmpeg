@@ -55,7 +55,6 @@ DEFINE_OFFSET_ARRAY(VP9Context, vp9_context, pthread_init_cnt,
 
 static int vp9_alloc_entries(AVCodecContext *avctx, int n) {
     VP9Context *s = avctx->priv_data;
-    int i;
 
     if (avctx->active_thread_type & FF_THREAD_SLICE)  {
         if (s->entries)
@@ -64,9 +63,6 @@ static int vp9_alloc_entries(AVCodecContext *avctx, int n) {
         s->entries = av_malloc_array(n, sizeof(atomic_int));
         if (!s->entries)
             return AVERROR(ENOMEM);
-
-        for (i  = 0; i < n; i++)
-            atomic_init(&s->entries[i], 0);
     }
     return 0;
 }
@@ -1661,7 +1657,7 @@ static int vp9_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 #if HAVE_THREADS
     if (avctx->active_thread_type & FF_THREAD_SLICE) {
         for (i = 0; i < s->sb_rows; i++)
-            atomic_store(&s->entries[i], 0);
+            atomic_init(&s->entries[i], 0);
     }
 #endif
 
