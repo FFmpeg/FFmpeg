@@ -147,11 +147,11 @@ fail:
     return ret;
 }
 
-static void vp9_frame_ref(VP9Frame *dst, const VP9Frame *src)
+static void vp9_frame_replace(VP9Frame *dst, const VP9Frame *src)
 {
-    ff_progress_frame_ref(&dst->tf, &src->tf);
+    ff_progress_frame_replace(&dst->tf, &src->tf);
 
-    dst->extradata = ff_refstruct_ref(src->extradata);
+    ff_refstruct_replace(&dst->extradata, src->extradata);
 
     dst->segmentation_map = src->segmentation_map;
     dst->mv = src->mv;
@@ -159,13 +159,6 @@ static void vp9_frame_ref(VP9Frame *dst, const VP9Frame *src)
 
     ff_refstruct_replace(&dst->hwaccel_picture_private,
                           src->hwaccel_picture_private);
-}
-
-static void vp9_frame_replace(VP9Frame *dst, const VP9Frame *src)
-{
-    vp9_frame_unref(dst);
-    if (src && src->tf.f)
-        vp9_frame_ref(dst, src);
 }
 
 static int update_size(AVCodecContext *avctx, int w, int h)
@@ -1584,7 +1577,8 @@ static int vp9_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     data += ret;
     size -= ret;
 
-    src = !s->s.h.keyframe && !s->s.h.intraonly && !s->s.h.errorres ? &s->s.frames[CUR_FRAME] : NULL;
+    src = !s->s.h.keyframe && !s->s.h.intraonly && !s->s.h.errorres ?
+              &s->s.frames[CUR_FRAME] : &s->s.frames[BLANK_FRAME];
     if (!retain_segmap_ref || s->s.h.keyframe || s->s.h.intraonly)
         vp9_frame_replace(&s->s.frames[REF_FRAME_SEGMAP], src);
     vp9_frame_replace(&s->s.frames[REF_FRAME_MVPAIR], src);

@@ -168,7 +168,8 @@ typedef struct VP9SharedContext {
 #define CUR_FRAME 0
 #define REF_FRAME_MVPAIR 1
 #define REF_FRAME_SEGMAP 2
-    VP9Frame frames[3];
+#define BLANK_FRAME 3
+    VP9Frame frames[4];
 } VP9SharedContext;
 
 #endif /* AVCODEC_VP9SHARED_H */
