@@ -34,8 +34,8 @@
 #include "libavutil/log.h"
 #include "ffjni.h"
 
-void *java_vm;
-pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+static void *java_vm;
+static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 int av_jni_set_java_vm(void *vm, void *log_ctx)
 {
