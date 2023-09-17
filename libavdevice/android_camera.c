@@ -25,6 +25,7 @@
 #include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <unistd.h>
 
 #include <camera/NdkCameraDevice.h>
 #include <camera/NdkCameraManager.h>
