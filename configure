@@ -5445,19 +5445,17 @@ elif enabled x86; then
             cpuflags="-march=$cpu"
             disable i686
         ;;
-        # targets that do support nopl and conditional mov (cmov)
-        i686|pentiumpro|pentium[23]|pentium-m|athlon|athlon-tbird|athlon-4|athlon-[mx]p|athlon64*|k8*|opteron*|athlon-fx\
-        |core*|atom|bonnell|nehalem|westmere|silvermont|sandybridge|ivybridge|haswell|broadwell|skylake*|knl\
-        |amdfam10|barcelona|b[dt]ver*|znver*)
-            cpuflags="-march=$cpu"
-            enable i686
-            enable fast_cmov
-        ;;
         # targets that do support conditional mov but on which it's slow
         pentium4|pentium4m|prescott|nocona)
             cpuflags="-march=$cpu"
             enable i686
             disable fast_cmov
+        ;;
+        # everything else should support nopl and conditional mov (cmov)
+        *)
+            cpuflags="-march=$cpu"
+            enable i686
+            enable fast_cmov
         ;;
     esac
 
