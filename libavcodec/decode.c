@@ -457,6 +457,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (ret == AVERROR(EAGAIN))
         av_frame_unref(frame);
 
+    // FF_CODEC_CB_TYPE_DECODE decoders must not return AVERROR EAGAIN
+    // code later will add AVERROR(EAGAIN) to a pointer
+    av_assert0(consumed != AVERROR(EAGAIN));
     if (consumed < 0)
         ret = consumed;
     if (consumed >= 0 && avctx->codec->type == AVMEDIA_TYPE_VIDEO)
