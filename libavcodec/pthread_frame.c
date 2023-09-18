@@ -426,22 +426,6 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-#if FF_API_SLICE_OFFSET
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (src->slice_count && src->slice_offset) {
-        if (dst->slice_count < src->slice_count) {
-            int err = av_reallocp_array(&dst->slice_offset, src->slice_count,
-                                        sizeof(*dst->slice_offset));
-            if (err < 0)
-                return err;
-        }
-        memcpy(dst->slice_offset, src->slice_offset,
-               src->slice_count * sizeof(*dst->slice_offset));
-    }
-    dst->slice_count = src->slice_count;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     av_packet_unref(dst->internal->last_pkt_props);
     err = av_packet_copy_props(dst->internal->last_pkt_props, src->internal->last_pkt_props);
     if (err < 0)
@@ -755,12 +739,6 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
                     av_opt_free(ctx->priv_data);
                 av_freep(&ctx->priv_data);
             }
-
-#if FF_API_SLICE_OFFSET
-FF_DISABLE_DEPRECATION_WARNINGS
-            av_freep(&ctx->slice_offset);
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
             av_buffer_unref(&ctx->internal->pool);
             av_packet_free(&ctx->internal->last_pkt_props);
