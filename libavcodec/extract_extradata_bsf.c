@@ -58,16 +58,45 @@ static int val_in_array(const int *arr, int len, int val)
     return 0;
 }
 
-static int extract_extradata_av1(AVBSFContext *ctx, AVPacket *pkt,
-                                 uint8_t **data, int *size)
+static int metadata_is_global(const AV1OBU *obu)
+{
+    static const int metadata_obu_types[] = {
+        AV1_METADATA_TYPE_HDR_CLL, AV1_METADATA_TYPE_HDR_MDCV,
+    };
+    GetBitContext gb;
+    int metadata_type;
+
+    if (init_get_bits(&gb, obu->data, obu->size_bits) < 0)
+        return 0;
+
+    metadata_type = leb128(&gb);
+
+    return val_in_array(metadata_obu_types, FF_ARRAY_ELEMS(metadata_obu_types),
+                        metadata_type);
+}
+
+static int obu_is_global(const AV1OBU *obu)
 {
     static const int extradata_obu_types[] = {
         AV1_OBU_SEQUENCE_HEADER, AV1_OBU_METADATA,
     };
+
+    if (!val_in_array(extradata_obu_types, FF_ARRAY_ELEMS(extradata_obu_types),
+                      obu->type))
+        return 0;
+    if (obu->type != AV1_OBU_METADATA)
+        return 1;
+
+    return metadata_is_global(obu);
+}
+
+static int extract_extradata_av1(AVBSFContext *ctx, AVPacket *pkt,
+                                 uint8_t **data, int *size)
+{
+
     ExtractExtradataContext *s = ctx->priv_data;
 
     int extradata_size = 0, filtered_size = 0;
-    int nb_extradata_obu_types = FF_ARRAY_ELEMS(extradata_obu_types);
     int i, has_seq = 0, ret = 0;
 
     ret = ff_av1_packet_split(&s->av1_pkt, pkt->data, pkt->size, ctx);
@@ -76,7 +105,7 @@ static int extract_extradata_av1(AVBSFContext *ctx, AVPacket *pkt,
 
     for (i = 0; i < s->av1_pkt.nb_obus; i++) {
         AV1OBU *obu = &s->av1_pkt.obus[i];
-        if (val_in_array(extradata_obu_types, nb_extradata_obu_types, obu->type)) {
+        if (obu_is_global(obu)) {
             extradata_size += obu->raw_size;
             if (obu->type == AV1_OBU_SEQUENCE_HEADER)
                 has_seq = 1;
@@ -113,8 +142,7 @@ static int extract_extradata_av1(AVBSFContext *ctx, AVPacket *pkt,
 
         for (i = 0; i < s->av1_pkt.nb_obus; i++) {
             AV1OBU *obu = &s->av1_pkt.obus[i];
-            if (val_in_array(extradata_obu_types, nb_extradata_obu_types,
-                             obu->type)) {
+            if (obu_is_global(obu)) {
                 bytestream2_put_bufferu(&pb_extradata, obu->raw_data, obu->raw_size);
             } else if (s->remove) {
                 bytestream2_put_bufferu(&pb_filtered_data, obu->raw_data, obu->raw_size);
