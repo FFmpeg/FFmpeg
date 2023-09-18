@@ -706,10 +706,10 @@ static void decorrelate_33bps(int ch_mode, int32_t **decoded, int64_t *decoded_3
     int i;
     if (ch_mode == FLAC_CHMODE_LEFT_SIDE ) {
         for (i = 0; i < len; i++)
-           decoded[1][i] = decoded[0][i] - decoded_33bps[i];
+           decoded[1][i] = decoded[0][i] - (uint64_t)decoded_33bps[i];
     } else if (ch_mode == FLAC_CHMODE_RIGHT_SIDE ) {
         for (i = 0; i < len; i++)
-           decoded[0][i] = decoded[1][i] + decoded_33bps[i];
+           decoded[0][i] = decoded[1][i] + (uint64_t)decoded_33bps[i];
     } else if (ch_mode == FLAC_CHMODE_MID_SIDE ) {
         for (i = 0; i < len; i++) {
             uint64_t a = decoded[0][i];
