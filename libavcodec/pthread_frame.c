@@ -265,7 +265,7 @@ static attribute_align_arg void *frame_worker_thread(void *arg)
  * @param for_user 0 if the destination is a codec thread, 1 if the destination is the user's thread
  * @return 0 on success, negative error code on failure
  */
-static int update_context_from_thread(AVCodecContext *dst, AVCodecContext *src, int for_user)
+static int update_context_from_thread(AVCodecContext *dst, const AVCodecContext *src, int for_user)
 {
     const FFCodec *const codec = ffcodec(dst->codec);
     int err = 0;
@@ -394,7 +394,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
  * @param src The source context.
  * @return 0 on success, negative error code on failure
  */
-static int update_context_from_user(AVCodecContext *dst, AVCodecContext *src)
+static int update_context_from_user(AVCodecContext *dst, const AVCodecContext *src)
 {
     int err;
 
