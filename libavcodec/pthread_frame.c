@@ -991,14 +991,12 @@ int ff_thread_get_ext_buffer(AVCodecContext *avctx, ThreadFrame *f, int flags)
     if (!(avctx->active_thread_type & FF_THREAD_FRAME))
         return ff_get_buffer(avctx, f->f, flags);
 
-    if (ffcodec(avctx->codec)->caps_internal & FF_CODEC_CAP_ALLOCATE_PROGRESS) {
-        f->progress = ff_refstruct_allocz(sizeof(*f->progress));
-        if (!f->progress)
-            return AVERROR(ENOMEM);
+    f->progress = ff_refstruct_allocz(sizeof(*f->progress));
+    if (!f->progress)
+        return AVERROR(ENOMEM);
 
-        atomic_init(&f->progress->progress[0], -1);
-        atomic_init(&f->progress->progress[1], -1);
-    }
+    atomic_init(&f->progress->progress[0], -1);
+    atomic_init(&f->progress->progress[1], -1);
 
     ret = ff_thread_get_buffer(avctx, f->f, flags);
     if (ret)

@@ -36,9 +36,9 @@ Frame threading -
 * Codecs similar to ffv1, whose streams don't reset across frames,
   will not work because their bitstreams cannot be decoded in parallel.
 
-* The contents of buffers must not be read before ff_thread_await_progress()
+* The contents of buffers must not be read before ff_progress_frame_await()
   has been called on them. reget_buffer() and buffer age optimizations no longer work.
-* The contents of buffers must not be written to after ff_thread_report_progress()
+* The contents of buffers must not be written to after ff_progress_frame_report()
   has been called on them. This includes draw_edges().
 
 Porting codecs to frame threading
@@ -53,14 +53,13 @@ thread.
 Add AV_CODEC_CAP_FRAME_THREADS to the codec capabilities. There will be very little
 speed gain at this point but it should work.
 
-If there are inter-frame dependencies, so the codec calls
-ff_thread_report/await_progress(), set FF_CODEC_CAP_ALLOCATE_PROGRESS in
-FFCodec.caps_internal and use ff_thread_get_buffer() to allocate frames.
-Otherwise decode directly into the user-supplied frames.
+Use ff_thread_get_buffer() (or ff_progress_frame_get_buffer()
+in case you have inter-frame dependencies and use the ProgressFrame API)
+to allocate frame buffers.
 
-Call ff_thread_report_progress() after some part of the current picture has decoded.
+Call ff_progress_frame_report() after some part of the current picture has decoded.
 A good place to put this is where draw_horiz_band() is called - add this if it isn't
 called anywhere, as it's useful too and the implementation is trivial when you're
 doing this. Note that draw_edges() needs to be called before reporting progress.
 
-Before accessing a reference frame or its MVs, call ff_thread_await_progress().
+Before accessing a reference frame or its MVs, call ff_progress_frame_await().

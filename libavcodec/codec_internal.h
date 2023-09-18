@@ -65,12 +65,7 @@
 /**
  * The decoder might make use of the ProgressFrame API.
  */
-#define FF_CODEC_CAP_USES_PROGRESSFRAMES    (1 << 11)
-/*
- * The codec supports frame threading and has inter-frame dependencies, so it
- * uses ff_thread_report/await_progress().
- */
-#define FF_CODEC_CAP_ALLOCATE_PROGRESS      (1 << 6)
+#define FF_CODEC_CAP_USES_PROGRESSFRAMES    (1 << 6)
 /**
  * Codec handles avctx->thread_count == 0 (auto) internally.
  */

@@ -1129,6 +1129,5 @@ const FFCodec ff_ffv1_decoder = {
     UPDATE_THREAD_CONTEXT(update_thread_context),
     .p.capabilities = AV_CODEC_CAP_DR1 |
                       AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_SLICE_THREADS,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP |
-                      FF_CODEC_CAP_ALLOCATE_PROGRESS,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };

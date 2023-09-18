@@ -1164,7 +1164,7 @@ const FFCodec ff_h264_decoder = {
                                NULL
                            },
     .caps_internal         = FF_CODEC_CAP_EXPORTS_CROPPING |
-                             FF_CODEC_CAP_ALLOCATE_PROGRESS | FF_CODEC_CAP_INIT_CLEANUP,
+                             FF_CODEC_CAP_INIT_CLEANUP,
     .flush                 = h264_decode_flush,
     UPDATE_THREAD_CONTEXT(ff_h264_update_thread_context),
     UPDATE_THREAD_CONTEXT_FOR_USER(ff_h264_update_thread_context_for_user),

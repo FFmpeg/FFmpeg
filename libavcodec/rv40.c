@@ -582,5 +582,4 @@ const FFCodec ff_rv40_decoder = {
                              AV_CODEC_CAP_FRAME_THREADS,
     .flush                 = ff_mpeg_flush,
     UPDATE_THREAD_CONTEXT(ff_rv34_decode_update_thread_context),
-    .caps_internal         = FF_CODEC_CAP_ALLOCATE_PROGRESS,
 };
