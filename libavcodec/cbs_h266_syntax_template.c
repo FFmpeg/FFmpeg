@@ -891,6 +891,8 @@ static int FUNC(vps) (CodedBitstreamContext *ctx, RWContext *rw,
                     }
                 }
             }
+            if (!num_output_layers_in_ols[i])
+                return AVERROR_INVALIDDATA;
         }
         for (i = 1; i < total_num_olss; i++) {
             int num_layers_in_ols = 0;
