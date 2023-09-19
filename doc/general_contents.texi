@@ -343,6 +343,14 @@ libxavs2 is under the GNU Public License Version 2 or later
 details), you must upgrade FFmpeg's license to GPL in order to use it.
 @end float
 
+@section eXtra-fast Essential Video Encoder (XEVE)
+
+FFmpeg can make use of the XEVE library for EVC video encoding.
+
+Go to @url{https://github.com/mpeg5/xeve} and follow the instructions for
+installing the XEVE library. Then pass @code{--enable-libxeve} to configure to
+enable it.
+
 @section ZVBI
 
 ZVBI is a VBI decoding library which can be used by FFmpeg to decode DVB
@@ -598,6 +606,7 @@ library:
 @item raw DTS                   @tab X @tab X
 @item raw DTS-HD                @tab   @tab X
 @item raw E-AC-3                @tab X @tab X
+@item raw EVC                   @tab X @tab
 @item raw FLAC                  @tab X @tab X
 @item raw GSM                   @tab   @tab X
 @item raw H.261                 @tab X @tab X
@@ -944,6 +953,8 @@ following image formats are supported:
 @item Electronic Arts TQI video  @tab     @tab  X
 @item Escape 124             @tab     @tab  X
 @item Escape 130             @tab     @tab  X
+@item EVC / MPEG-5 Part 1    @tab  E  @tab
+    @tab encoding supported through external library libxeve
 @item FFmpeg video codec #1  @tab  X  @tab  X
     @tab lossless codec (fourcc: FFV1)
 @item Flash Screen Video v1  @tab  X  @tab  X
