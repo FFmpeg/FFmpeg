@@ -1012,10 +1012,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    c->buffer = av_calloc(avctx->width + 8, c->pro?2:1);
-    if (!c->buffer)
-        return AVERROR(ENOMEM);
-
     av_pix_fmt_get_chroma_sub_sample(avctx->pix_fmt, &h_shift, &v_shift);
     if ((avctx->width  & ((1<<h_shift)-1)) ||
         (avctx->height & ((1<<v_shift)-1))) {
@@ -1062,6 +1058,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
                avctx->extradata_size);
         return AVERROR_INVALIDDATA;
     }
+
+    c->buffer = av_calloc(avctx->width + 8, c->pro?2:1);
+    if (!c->buffer)
+        return AVERROR(ENOMEM);
 
     return 0;
 }
