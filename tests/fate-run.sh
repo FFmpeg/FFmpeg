@@ -37,7 +37,7 @@ case $threads in
     random*)
         threads_max=${threads#random}
         [ -z "$threads_max" ] && threads_max=16
-        threads=$(awk "BEGIN { print 1+int(rand() * $threads_max) }" < /dev/null)
+        threads=$(awk "BEGIN { srand(); print 1+int(rand() * $threads_max) }" < /dev/null)
         ;;
 esac
 
