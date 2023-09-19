@@ -130,6 +130,30 @@ Set amount of frame threads to use during decoding. The default value is 0 (auto
 
 @end table
 
+@section libxevd
+
+eXtra-fast Essential Video Decoder (XEVD) MPEG-5 EVC decoder wrapper.
+
+This decoder requires the presence of the libxevd headers and library
+during configuration. You need to explicitly configure the build with
+@option{--enable-libxevd}.
+
+The xevd project website is at @url{https://github.com/mpeg5/xevd}.
+
+@subsection Options
+
+The following options are supported by the libxevd wrapper.
+The xevd-equivalent options or values are listed in parentheses for easy migration.
+
+To get a more accurate and extensive documentation of the libxevd options,
+invoke the command  @code{xevd_app --help} or consult the libxevd documentation.
+
+@table @option
+@item threads (@emph{threads})
+Force to use a specific number of threads
+
+@end table
+
 @section QSV Decoders
 
 The family of Intel QuickSync Video decoders (VC1, MPEG-2, H.264, HEVC,
