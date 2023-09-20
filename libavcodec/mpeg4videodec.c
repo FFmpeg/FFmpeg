@@ -961,7 +961,7 @@ static int mpeg4_decode_partition_a(Mpeg4DecContext *ctx)
                     if (show_bits(&s->gb, 19) == DC_MARKER)
                         return mb_num - 1;
 
-                    cbpc = get_vlc2(&s->gb, ff_h263_intra_MCBPC_vlc.table, INTRA_MCBPC_VLC_BITS, 2);
+                    cbpc = get_vlc2(&s->gb, ff_h263_intra_MCBPC_vlc, INTRA_MCBPC_VLC_BITS, 2);
                     if (cbpc < 0) {
                         av_log(s->avctx, AV_LOG_ERROR,
                                "mcbpc corrupted at %d %d\n", s->mb_x, s->mb_y);
@@ -1033,7 +1033,7 @@ try_again:
                     continue;
                 }
 
-                cbpc = get_vlc2(&s->gb, ff_h263_inter_MCBPC_vlc.table, INTER_MCBPC_VLC_BITS, 2);
+                cbpc = get_vlc2(&s->gb, ff_h263_inter_MCBPC_vlc, INTER_MCBPC_VLC_BITS, 2);
                 if (cbpc < 0) {
                     av_log(s->avctx, AV_LOG_ERROR,
                            "mcbpc corrupted at %d %d\n", s->mb_x, s->mb_y);
@@ -1148,7 +1148,7 @@ static int mpeg4_decode_partition_b(MpegEncContext *s, int mb_count)
 
             if (s->pict_type == AV_PICTURE_TYPE_I) {
                 int ac_pred = get_bits1(&s->gb);
-                int cbpy    = get_vlc2(&s->gb, ff_h263_cbpy_vlc.table, CBPY_VLC_BITS, 1);
+                int cbpy    = get_vlc2(&s->gb, ff_h263_cbpy_vlc, CBPY_VLC_BITS, 1);
                 if (cbpy < 0) {
                     av_log(s->avctx, AV_LOG_ERROR,
                            "cbpy corrupted at %d %d\n", s->mb_x, s->mb_y);
@@ -1162,7 +1162,7 @@ static int mpeg4_decode_partition_b(MpegEncContext *s, int mb_count)
                     int i;
                     int dir     = 0;
                     int ac_pred = get_bits1(&s->gb);
-                    int cbpy    = get_vlc2(&s->gb, ff_h263_cbpy_vlc.table, CBPY_VLC_BITS, 1);
+                    int cbpy    = get_vlc2(&s->gb, ff_h263_cbpy_vlc, CBPY_VLC_BITS, 1);
 
                     if (cbpy < 0) {
                         av_log(s->avctx, AV_LOG_ERROR,
@@ -1194,7 +1194,7 @@ static int mpeg4_decode_partition_b(MpegEncContext *s, int mb_count)
                     s->current_picture.qscale_table[xy] = s->qscale;
                     s->cbp_table[xy]                    = 0;
                 } else {
-                    int cbpy = get_vlc2(&s->gb, ff_h263_cbpy_vlc.table, CBPY_VLC_BITS, 1);
+                    int cbpy = get_vlc2(&s->gb, ff_h263_cbpy_vlc, CBPY_VLC_BITS, 1);
 
                     if (cbpy < 0) {
                         av_log(s->avctx, AV_LOG_ERROR,
@@ -1690,7 +1690,7 @@ static int mpeg4_decode_mb(MpegEncContext *s, int16_t block[6][64])
                 }
                 goto end;
             }
-            cbpc = get_vlc2(&s->gb, ff_h263_inter_MCBPC_vlc.table, INTER_MCBPC_VLC_BITS, 2);
+            cbpc = get_vlc2(&s->gb, ff_h263_inter_MCBPC_vlc, INTER_MCBPC_VLC_BITS, 2);
             if (cbpc < 0) {
                 av_log(s->avctx, AV_LOG_ERROR,
                        "mcbpc damaged at %d %d\n", s->mb_x, s->mb_y);
@@ -1709,7 +1709,7 @@ static int mpeg4_decode_mb(MpegEncContext *s, int16_t block[6][64])
             s->mcsel = get_bits1(&s->gb);
         else
             s->mcsel = 0;
-        cbpy = get_vlc2(&s->gb, ff_h263_cbpy_vlc.table, CBPY_VLC_BITS, 1) ^ 0x0F;
+        cbpy = get_vlc2(&s->gb, ff_h263_cbpy_vlc, CBPY_VLC_BITS, 1) ^ 0x0F;
         if (cbpy < 0) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "P cbpy damaged at %d %d\n", s->mb_x, s->mb_y);
@@ -1952,7 +1952,7 @@ static int mpeg4_decode_mb(MpegEncContext *s, int16_t block[6][64])
         int use_intra_dc_vlc;
 
         do {
-            cbpc = get_vlc2(&s->gb, ff_h263_intra_MCBPC_vlc.table, INTRA_MCBPC_VLC_BITS, 2);
+            cbpc = get_vlc2(&s->gb, ff_h263_intra_MCBPC_vlc, INTRA_MCBPC_VLC_BITS, 2);
             if (cbpc < 0) {
                 av_log(s->avctx, AV_LOG_ERROR,
                        "I cbpc damaged at %d %d\n", s->mb_x, s->mb_y);
@@ -1970,7 +1970,7 @@ intra:
         else
             s->current_picture.mb_type[xy] = MB_TYPE_INTRA;
 
-        cbpy = get_vlc2(&s->gb, ff_h263_cbpy_vlc.table, CBPY_VLC_BITS, 1);
+        cbpy = get_vlc2(&s->gb, ff_h263_cbpy_vlc, CBPY_VLC_BITS, 1);
         if (cbpy < 0) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "I cbpy damaged at %d %d\n", s->mb_x, s->mb_y);
