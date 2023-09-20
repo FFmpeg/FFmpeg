@@ -45,11 +45,11 @@
 #define ASV1_LEVEL_VLC_BITS  4
 #define ASV2_LEVEL_VLC_BITS 10
 
-static VLC ccp_vlc;
-static VLC level_vlc;
-static VLC dc_ccp_vlc;
-static VLC ac_ccp_vlc;
-static VLC asv2_level_vlc;
+static VLCElem ccp_vlc[32];
+static VLCElem level_vlc[16];
+static VLCElem dc_ccp_vlc[16];
+static VLCElem ac_ccp_vlc[64];
+static VLCElem asv2_level_vlc[1024];
 
 typedef struct ASVDecContext {
     ASVCommonContext c;
@@ -67,26 +67,26 @@ typedef struct ASVDecContext {
 
 static av_cold void init_vlcs(void)
 {
-    VLC_INIT_STATIC(&ccp_vlc, CCP_VLC_BITS, 17,
-                    &ff_asv_ccp_tab[0][1], 2, 1,
-                    &ff_asv_ccp_tab[0][0], 2, 1, 32);
-    VLC_INIT_LE_STATIC(&dc_ccp_vlc, DC_CCP_VLC_BITS, 8,
-                       &ff_asv_dc_ccp_tab[0][1], 2, 1,
-                       &ff_asv_dc_ccp_tab[0][0], 2, 1, 16);
-    VLC_INIT_LE_STATIC(&ac_ccp_vlc, AC_CCP_VLC_BITS, 16,
-                       &ff_asv_ac_ccp_tab[0][1], 2, 1,
-                       &ff_asv_ac_ccp_tab[0][0], 2, 1, 64);
-    VLC_INIT_STATIC(&level_vlc, ASV1_LEVEL_VLC_BITS, 7,
-                    &ff_asv_level_tab[0][1], 2, 1,
-                    &ff_asv_level_tab[0][0], 2, 1, 16);
-    VLC_INIT_LE_STATIC(&asv2_level_vlc, ASV2_LEVEL_VLC_BITS, 63,
-                       &ff_asv2_level_tab[0][1], 4, 2,
-                       &ff_asv2_level_tab[0][0], 4, 2, 1024);
+    VLC_INIT_STATIC_TABLE(ccp_vlc, CCP_VLC_BITS, 17,
+                          &ff_asv_ccp_tab[0][1], 2, 1,
+                          &ff_asv_ccp_tab[0][0], 2, 1, 0);
+    VLC_INIT_STATIC_TABLE(dc_ccp_vlc, DC_CCP_VLC_BITS, 8,
+                          &ff_asv_dc_ccp_tab[0][1], 2, 1,
+                          &ff_asv_dc_ccp_tab[0][0], 2, 1, VLC_INIT_LE);
+    VLC_INIT_STATIC_TABLE(ac_ccp_vlc, AC_CCP_VLC_BITS, 16,
+                          &ff_asv_ac_ccp_tab[0][1], 2, 1,
+                          &ff_asv_ac_ccp_tab[0][0], 2, 1, VLC_INIT_LE);
+    VLC_INIT_STATIC_TABLE(level_vlc, ASV1_LEVEL_VLC_BITS, 7,
+                          &ff_asv_level_tab[0][1], 2, 1,
+                          &ff_asv_level_tab[0][0], 2, 1, 0);
+    VLC_INIT_STATIC_TABLE(asv2_level_vlc, ASV2_LEVEL_VLC_BITS, 63,
+                          &ff_asv2_level_tab[0][1], 4, 2,
+                          &ff_asv2_level_tab[0][0], 4, 2, VLC_INIT_LE);
 }
 
 static inline int asv1_get_level(GetBitContext *gb)
 {
-    int code = get_vlc2(gb, level_vlc.table, ASV1_LEVEL_VLC_BITS, 1);
+    int code = get_vlc2(gb, level_vlc, ASV1_LEVEL_VLC_BITS, 1);
 
     if (code == 3)
         return get_sbits(gb, 8);
@@ -115,7 +115,7 @@ static inline int asv2_get_vlc2(GetBitContext *gb, const VLCElem *table, int bit
 
 static inline int asv2_get_level(GetBitContext *gb)
 {
-    int code = asv2_get_vlc2(gb, asv2_level_vlc.table, ASV2_LEVEL_VLC_BITS);
+    int code = asv2_get_vlc2(gb, asv2_level_vlc, ASV2_LEVEL_VLC_BITS);
 
     if (code == 31)
         return (int8_t) get_bits_le(gb, 8);
@@ -130,7 +130,7 @@ static inline int asv1_decode_block(ASVDecContext *a, int16_t block[64])
     block[0] = 8 * get_bits(&a->gb, 8);
 
     for (i = 0; i < 11; i++) {
-        const int ccp = get_vlc2(&a->gb, ccp_vlc.table, CCP_VLC_BITS, 1);
+        const int ccp = get_vlc2(&a->gb, ccp_vlc, CCP_VLC_BITS, 1);
 
         if (ccp) {
             if (ccp == 16)
@@ -162,7 +162,7 @@ static inline int asv2_decode_block(ASVDecContext *a, int16_t block[64])
 
     block[0] = 8 * get_bits_le(&a->gb, 8);
 
-    ccp = asv2_get_vlc2(&a->gb, dc_ccp_vlc.table, DC_CCP_VLC_BITS);
+    ccp = asv2_get_vlc2(&a->gb, dc_ccp_vlc, DC_CCP_VLC_BITS);
     if (ccp) {
         if (ccp & 4)
             block[a->permutated_scantable[1]] = (asv2_get_level(&a->gb) * a->intra_matrix[1]) >> 4;
@@ -173,7 +173,7 @@ static inline int asv2_decode_block(ASVDecContext *a, int16_t block[64])
     }
 
     for (i = 1; i < count + 1; i++) {
-        const int ccp = asv2_get_vlc2(&a->gb, ac_ccp_vlc.table, AC_CCP_VLC_BITS);
+        const int ccp = asv2_get_vlc2(&a->gb, ac_ccp_vlc, AC_CCP_VLC_BITS);
 
         if (ccp) {
             if (ccp & 8)
