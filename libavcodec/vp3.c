@@ -38,6 +38,7 @@
 #include "libavutil/emms.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mem_internal.h"
+#include "libavutil/thread.h"
 
 #include "avcodec.h"
 #include "codec_internal.h"
@@ -157,6 +158,18 @@ static const uint8_t vp4_pred_block_type_map[8] = {
     [MODE_GOLDEN_MV]        = VP4_DC_GOLDEN,
     [MODE_INTER_FOURMV]     = VP4_DC_INTER,
 };
+
+static VLCElem superblock_run_length_vlc[88]; /* version <  2 */
+static VLCElem fragment_run_length_vlc[56];   /* version <  2 */
+static VLCElem motion_vector_vlc[112];        /* version <  2 */
+
+// The VP4 tables reuse this vlc.
+static VLCElem mode_code_vlc[18 + 2084 * CONFIG_VP4_DECODER];
+
+#if CONFIG_VP4_DECODER
+static const VLCElem *vp4_mv_vlc_table[2][7]; /* version >= 2 */
+static const VLCElem *block_pattern_vlc[2];   /* version >= 2 */
+#endif
 
 typedef struct {
     int dc;
@@ -280,13 +293,6 @@ typedef struct Vp3DecodeContext {
        the others are four groups of 16 VLCs each for ac coefficients. */
     VLC coeff_vlc[5 * 16];
 
-    VLC superblock_run_length_vlc; /* version < 2 */
-    VLC fragment_run_length_vlc; /* version < 2 */
-    VLC block_pattern_vlc[2]; /* version >= 2*/
-    VLC mode_code_vlc;
-    VLC motion_vector_vlc; /* version < 2 */
-    VLC vp4_mv_vlc[2][7]; /* version >=2 */
-
     /* these arrays need to be on 16-byte boundaries since SSE2 operations
      * index into them */
     DECLARE_ALIGNED(16, int16_t, qmat)[3][2][3][64];     ///< qmat[qpi][is_inter][plane]
@@ -362,17 +368,6 @@ static av_cold int vp3_decode_end(AVCodecContext *avctx)
     for (int i = 0; i < FF_ARRAY_ELEMS(s->coeff_vlc); i++)
         ff_vlc_free(&s->coeff_vlc[i]);
 
-    ff_vlc_free(&s->superblock_run_length_vlc);
-    ff_vlc_free(&s->fragment_run_length_vlc);
-    ff_vlc_free(&s->mode_code_vlc);
-    ff_vlc_free(&s->motion_vector_vlc);
-
-    for (int j = 0; j < 2; j++)
-        for (int i = 0; i < 7; i++)
-            ff_vlc_free(&s->vp4_mv_vlc[j][i]);
-
-    for (int i = 0; i < 2; i++)
-        ff_vlc_free(&s->block_pattern_vlc[i]);
     return 0;
 }
 
@@ -493,7 +488,7 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
             else
                 bit ^= 1;
 
-            current_run = get_vlc2(gb, s->superblock_run_length_vlc.table,
+            current_run = get_vlc2(gb, superblock_run_length_vlc,
                                    SUPERBLOCK_VLC_BITS, 2);
             if (current_run == 34)
                 current_run += get_bits(gb, 12);
@@ -527,7 +522,7 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
                 else
                     bit ^= 1;
 
-                current_run = get_vlc2(gb, s->superblock_run_length_vlc.table,
+                current_run = get_vlc2(gb, superblock_run_length_vlc,
                                        SUPERBLOCK_VLC_BITS, 2);
                 if (current_run == 34)
                     current_run += get_bits(gb, 12);
@@ -607,7 +602,7 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
                              * that cares about the fragment coding runs */
                             if (current_run-- == 0) {
                                 bit        ^= 1;
-                                current_run = get_vlc2(gb, s->fragment_run_length_vlc.table, 5, 2);
+                                current_run = get_vlc2(gb, fragment_run_length_vlc, 5, 2);
                             }
                             coded = bit;
                         }
@@ -684,9 +679,9 @@ static int vp4_get_mb_count(Vp3DecodeContext *s, GetBitContext *gb)
     return v;
 }
 
-static int vp4_get_block_pattern(Vp3DecodeContext *s, GetBitContext *gb, int *next_block_pattern_table)
+static int vp4_get_block_pattern(GetBitContext *gb, int *next_block_pattern_table)
 {
-    int v = get_vlc2(gb, s->block_pattern_vlc[*next_block_pattern_table].table, 3, 2);
+    int v = get_vlc2(gb, block_pattern_vlc[*next_block_pattern_table], 3, 2);
     *next_block_pattern_table = vp4_block_pattern_table_selector[v];
     return v + 1;
 }
@@ -758,7 +753,7 @@ static int vp4_unpack_macroblocks(Vp3DecodeContext *s, GetBitContext *gb)
                     if (mb_coded == SB_FULLY_CODED)
                         pattern = 0xF;
                     else if (mb_coded == SB_PARTIALLY_CODED)
-                        pattern = vp4_get_block_pattern(s, gb, &next_block_pattern_table);
+                        pattern = vp4_get_block_pattern(gb, &next_block_pattern_table);
                     else
                         pattern = 0;
 
@@ -845,7 +840,7 @@ static int unpack_modes(Vp3DecodeContext *s, GetBitContext *gb)
                     if (scheme == 7)
                         coding_mode = get_bits(gb, 3);
                     else
-                        coding_mode = alphabet[get_vlc2(gb, s->mode_code_vlc.table, 3, 3)];
+                        coding_mode = alphabet[get_vlc2(gb, mode_code_vlc, 3, 3)];
 
                     s->macroblock_coding[current_macroblock] = coding_mode;
                     for (k = 0; k < 4; k++) {
@@ -886,11 +881,15 @@ static int unpack_modes(Vp3DecodeContext *s, GetBitContext *gb)
     return 0;
 }
 
-static int vp4_get_mv(Vp3DecodeContext *s, GetBitContext *gb, int axis, int last_motion)
+static int vp4_get_mv(GetBitContext *gb, int axis, int last_motion)
 {
-    int v = get_vlc2(gb, s->vp4_mv_vlc[axis][vp4_mv_table_selector[FFABS(last_motion)]].table,
+#if CONFIG_VP4_DECODER
+    int v = get_vlc2(gb, vp4_mv_vlc_table[axis][vp4_mv_table_selector[FFABS(last_motion)]],
                      VP4_MV_VLC_BITS, 2);
     return last_motion < 0 ? -v : v;
+#else
+    return 0;
+#endif
 }
 
 /*
@@ -938,23 +937,23 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                 switch (s->macroblock_coding[current_macroblock]) {
                 case MODE_GOLDEN_MV:
                     if (coding_mode == 2) { /* VP4 */
-                        last_gold_motion_x = motion_x[0] = vp4_get_mv(s, gb, 0, last_gold_motion_x);
-                        last_gold_motion_y = motion_y[0] = vp4_get_mv(s, gb, 1, last_gold_motion_y);
+                        last_gold_motion_x = motion_x[0] = vp4_get_mv(gb, 0, last_gold_motion_x);
+                        last_gold_motion_y = motion_y[0] = vp4_get_mv(gb, 1, last_gold_motion_y);
                         break;
                     } /* otherwise fall through */
                 case MODE_INTER_PLUS_MV:
                     /* all 6 fragments use the same motion vector */
                     if (coding_mode == 0) {
-                        motion_x[0] = get_vlc2(gb, s->motion_vector_vlc.table,
+                        motion_x[0] = get_vlc2(gb, motion_vector_vlc,
                                                VP3_MV_VLC_BITS, 2);
-                        motion_y[0] = get_vlc2(gb, s->motion_vector_vlc.table,
+                        motion_y[0] = get_vlc2(gb, motion_vector_vlc,
                                                VP3_MV_VLC_BITS, 2);
                     } else if (coding_mode == 1) {
                         motion_x[0] = fixed_motion_vector_table[get_bits(gb, 6)];
                         motion_y[0] = fixed_motion_vector_table[get_bits(gb, 6)];
                     } else { /* VP4 */
-                        motion_x[0] = vp4_get_mv(s, gb, 0, last_motion_x);
-                        motion_y[0] = vp4_get_mv(s, gb, 1, last_motion_y);
+                        motion_x[0] = vp4_get_mv(gb, 0, last_motion_x);
+                        motion_y[0] = vp4_get_mv(gb, 1, last_motion_y);
                     }
 
                     /* vector maintenance, only on MODE_INTER_PLUS_MV */
@@ -977,16 +976,16 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                         current_fragment = BLOCK_Y * s->fragment_width[0] + BLOCK_X;
                         if (s->all_fragments[current_fragment].coding_method != MODE_COPY) {
                             if (coding_mode == 0) {
-                                motion_x[k] = get_vlc2(gb, s->motion_vector_vlc.table,
+                                motion_x[k] = get_vlc2(gb, motion_vector_vlc,
                                                        VP3_MV_VLC_BITS, 2);
-                                motion_y[k] = get_vlc2(gb, s->motion_vector_vlc.table,
+                                motion_y[k] = get_vlc2(gb, motion_vector_vlc,
                                                        VP3_MV_VLC_BITS, 2);
                             } else if (coding_mode == 1) {
                                 motion_x[k] = fixed_motion_vector_table[get_bits(gb, 6)];
                                 motion_y[k] = fixed_motion_vector_table[get_bits(gb, 6)];
                             } else { /* VP4 */
-                                motion_x[k] = vp4_get_mv(s, gb, 0, prior_last_motion_x);
-                                motion_y[k] = vp4_get_mv(s, gb, 1, prior_last_motion_y);
+                                motion_x[k] = vp4_get_mv(gb, 0, prior_last_motion_x);
+                                motion_y[k] = vp4_get_mv(gb, 1, prior_last_motion_y);
                             }
                             last_motion_x = motion_x[k];
                             last_motion_y = motion_y[k];
@@ -1111,7 +1110,7 @@ static int unpack_block_qpis(Vp3DecodeContext *s, GetBitContext *gb)
             else
                 bit ^= 1;
 
-            run_length = get_vlc2(gb, s->superblock_run_length_vlc.table,
+            run_length = get_vlc2(gb, superblock_run_length_vlc,
                                   SUPERBLOCK_VLC_BITS, 2);
             if (run_length == 34)
                 run_length += get_bits(gb, 12);
@@ -2258,6 +2257,48 @@ static void render_slice(Vp3DecodeContext *s, int slice)
                                  s->height - 16));
 }
 
+static av_cold void init_tables_once(void)
+{
+    VLCInitState state = VLC_INIT_STATE(mode_code_vlc);
+
+    VLC_INIT_STATIC_TABLE_FROM_LENGTHS(superblock_run_length_vlc,
+                                       SUPERBLOCK_VLC_BITS, 34,
+                                       superblock_run_length_vlc_lens, 1,
+                                       NULL, 0, 0, 1, 0);
+
+    VLC_INIT_STATIC_TABLE_FROM_LENGTHS(fragment_run_length_vlc, 5, 30,
+                                       fragment_run_length_vlc_len, 1,
+                                       NULL, 0, 0, 0, 0);
+
+    VLC_INIT_STATIC_TABLE_FROM_LENGTHS(motion_vector_vlc, VP3_MV_VLC_BITS, 63,
+                                       &motion_vector_vlc_table[0][1], 2,
+                                       &motion_vector_vlc_table[0][0], 2, 1,
+                                       -31, 0);
+
+    ff_vlc_init_tables_from_lengths(&state, 3, 8,
+                                    mode_code_vlc_len, 1,
+                                    NULL, 0, 0, 0, 0);
+
+#if CONFIG_VP4_DECODER
+    for (int j = 0; j < 2; j++)
+        for (int i = 0; i < 7; i++) {
+            vp4_mv_vlc_table[j][i] =
+                ff_vlc_init_tables_from_lengths(&state, VP4_MV_VLC_BITS, 63,
+                                                &vp4_mv_vlc[j][i][0][1], 2,
+                                                &vp4_mv_vlc[j][i][0][0], 2, 1,
+                                                -31, 0);
+        }
+
+    /* version >= 2 */
+    for (int i = 0; i < 2; i++) {
+        block_pattern_vlc[i] =
+            ff_vlc_init_tables(&state, 3, 14,
+                               &vp4_block_pattern_vlc[i][0][1], 2, 1,
+                               &vp4_block_pattern_vlc[i][0][0], 2, 1, 0);
+    }
+#endif
+}
+
 /// Allocate tables for per-frame data in Vp3DecodeContext
 static av_cold int allocate_tables(AVCodecContext *avctx)
 {
@@ -2316,6 +2357,7 @@ static av_cold int init_frames(Vp3DecodeContext *s)
 
 static av_cold int vp3_decode_init(AVCodecContext *avctx)
 {
+    static AVOnce init_static_once = AV_ONCE_INIT;
     Vp3DecodeContext *s = avctx->priv_data;
     int ret;
     int c_width;
@@ -2445,49 +2487,7 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
         }
     }
 
-    ret = ff_vlc_init_from_lengths(&s->superblock_run_length_vlc, SUPERBLOCK_VLC_BITS, 34,
-                                   superblock_run_length_vlc_lens, 1,
-                                   NULL, 0, 0, 1, 0, avctx);
-    if (ret < 0)
-        return ret;
-
-    ret = ff_vlc_init_from_lengths(&s->fragment_run_length_vlc, 5, 30,
-                                   fragment_run_length_vlc_len, 1,
-                                   NULL, 0, 0, 0, 0, avctx);
-    if (ret < 0)
-        return ret;
-
-    ret = ff_vlc_init_from_lengths(&s->mode_code_vlc, 3, 8,
-                                   mode_code_vlc_len, 1,
-                                   NULL, 0, 0, 0, 0, avctx);
-    if (ret < 0)
-        return ret;
-
-    ret = ff_vlc_init_from_lengths(&s->motion_vector_vlc, VP3_MV_VLC_BITS, 63,
-                                   &motion_vector_vlc_table[0][1], 2,
-                                   &motion_vector_vlc_table[0][0], 2, 1,
-                                   -31, 0, avctx);
-    if (ret < 0)
-        return ret;
-
-#if CONFIG_VP4_DECODER
-    for (int j = 0; j < 2; j++)
-        for (int i = 0; i < 7; i++) {
-            ret = ff_vlc_init_from_lengths(&s->vp4_mv_vlc[j][i], VP4_MV_VLC_BITS, 63,
-                                           &vp4_mv_vlc[j][i][0][1], 2,
-                                           &vp4_mv_vlc[j][i][0][0], 2, 1, -31,
-                                           0, avctx);
-            if (ret < 0)
-                return ret;
-        }
-
-    /* version >= 2 */
-    for (int i = 0; i < 2; i++)
-        if ((ret = vlc_init(&s->block_pattern_vlc[i], 3, 14,
-                            &vp4_block_pattern_vlc[i][0][1], 2, 1,
-                            &vp4_block_pattern_vlc[i][0][0], 2, 1, 0)) < 0)
-            return ret;
-#endif
+    ff_thread_once(&init_static_once, init_tables_once);
 
     return allocate_tables(avctx);
 }
