@@ -45,49 +45,43 @@
 #define AC_VLC_MTD MAX_TABLE_DEPTH(AC_VLC_BITS, MAX_AC_VLC_BITS)
 #define OR_VLC_MTD MAX_TABLE_DEPTH(OR_VLC_BITS, MAX_OR_VLC_BITS)
 
-static VLC j_ac_vlc[2][2][8];  // [quant < 13], [intra / inter], [select]
-static VLC j_dc_vlc[2][8];     // [quant], [select]
-static VLC j_orient_vlc[2][4]; // [quant], [select]
+static const VLCElem *j_ac_vlc[2][2][8];  // [quant < 13], [intra / inter], [select]
+static const VLCElem *j_dc_vlc[2][8];     // [quant], [select]
+static const VLCElem *j_orient_vlc[2][4]; // [quant], [select]
 
-static av_cold void x8_init_vlc(VLC *vlc, int nb_bits, int nb_codes,
-                                int *offset, const uint8_t table[][2])
+static av_cold const VLCElem *x8_init_vlc(VLCInitState *state, int nb_bits,
+                                          int nb_codes, const uint8_t table[][2])
 {
-    static VLCElem vlc_buf[VLC_BUFFER_SIZE];
-
-    vlc->table           = &vlc_buf[*offset];
-    vlc->table_allocated = VLC_BUFFER_SIZE - *offset;
-    ff_vlc_init_from_lengths(vlc, nb_bits, nb_codes, &table[0][1], 2,
-                             &table[0][0], 2, 1, 0, VLC_INIT_STATIC_OVERLONG, NULL);
-    *offset += vlc->table_size;
+    return ff_vlc_init_tables_from_lengths(state, nb_bits, nb_codes, &table[0][1], 2,
+                                           &table[0][0], 2, 1, 0, 0);
 }
 
 static av_cold void x8_vlc_init(void)
 {
+    static VLCElem vlc_buf[VLC_BUFFER_SIZE];
+    VLCInitState state = VLC_INIT_STATE(vlc_buf);
     int i;
-    int offset = 0;
 
 // set ac tables
     for (int i = 0; i < 2; i++)
         for (int j = 0; j < 2; j++)
             for (int k = 0; k < 8; k++)
-                x8_init_vlc(&j_ac_vlc[i][j][k], AC_VLC_BITS, 77,
-                            &offset, x8_ac_quant_table[i][j][k]);
+                j_ac_vlc[i][j][k] = x8_init_vlc(&state, AC_VLC_BITS, 77,
+                                                x8_ac_quant_table[i][j][k]);
 
 // set dc tables
     for (int i = 0; i < 2; i++)
         for (int j = 0; j < 8; j++)
-            x8_init_vlc(&j_dc_vlc[i][j], DC_VLC_BITS, 34, &offset,
-                        x8_dc_quant_table[i][j]);
+            j_dc_vlc[i][j] = x8_init_vlc(&state, DC_VLC_BITS, 34,
+                                         x8_dc_quant_table[i][j]);
 
 // set orient tables
     for (i = 0; i < 2; i++)
-        x8_init_vlc(&j_orient_vlc[0][i], OR_VLC_BITS, 12,
-                    &offset, x8_orient_highquant_table[i]);
+        j_orient_vlc[0][i] = x8_init_vlc(&state, OR_VLC_BITS, 12,
+                                         x8_orient_highquant_table[i]);
     for (i = 0; i < 4; i++)
-        x8_init_vlc(&j_orient_vlc[1][i], OR_VLC_BITS, 12,
-                    &offset, x8_orient_lowquant_table[i]);
-
-    av_assert2(offset == VLC_BUFFER_SIZE);
+        j_orient_vlc[1][i] = x8_init_vlc(&state, OR_VLC_BITS, 12,
+                                         x8_orient_lowquant_table[i]);
 }
 
 static void x8_reset_vlc_tables(IntraX8Context *w)
@@ -108,7 +102,7 @@ static inline void x8_select_ac_table(IntraX8Context *const w, int mode)
 
     table_index       = get_bits(w->gb, 3);
     // 2 modes use same tables
-    w->j_ac_vlc_table[mode] = j_ac_vlc[w->quant < 13][mode >> 1][table_index].table;
+    w->j_ac_vlc_table[mode] = j_ac_vlc[w->quant < 13][mode >> 1][table_index];
     av_assert2(j_ac_vlc[mode]);
 }
 
@@ -116,7 +110,7 @@ static inline int x8_get_orient_vlc(IntraX8Context *w)
 {
     if (!w->j_orient_vlc_table) {
         int table_index = get_bits(w->gb, 1 + (w->quant < 13));
-        w->j_orient_vlc_table = j_orient_vlc[w->quant < 13][table_index].table;
+        w->j_orient_vlc_table = j_orient_vlc[w->quant < 13][table_index];
     }
 
     return get_vlc2(w->gb, w->j_orient_vlc_table, OR_VLC_BITS, OR_VLC_MTD);
@@ -258,7 +252,7 @@ static int x8_get_dc_rlf(IntraX8Context *const w, const int mode,
     if (!w->j_dc_vlc_table[mode]) {
         int table_index = get_bits(w->gb, 3);
         // 4 modes, same table
-        w->j_dc_vlc_table[mode] = j_dc_vlc[w->quant < 13][table_index].table;
+        w->j_dc_vlc_table[mode] = j_dc_vlc[w->quant < 13][table_index];
     }
 
     i = get_vlc2(w->gb, w->j_dc_vlc_table[mode], DC_VLC_BITS, DC_VLC_MTD);
