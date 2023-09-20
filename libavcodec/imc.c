@@ -106,7 +106,7 @@ typedef struct IMCContext {
     AVCodecContext *avctx;
 } IMCContext;
 
-static VLC huffman_vlc[4][4];
+static const VLCElem *huffman_vlc[4][4];
 
 #define IMC_VLC_BITS 9
 #define VLC_TABLES_SIZE 9512
@@ -171,16 +171,15 @@ static av_cold void iac_generate_tabs(IMCContext *q, int sampling_rate)
 
 static av_cold void imc_init_static(void)
 {
+    VLCInitState state = VLC_INIT_STATE(vlc_tables);
     /* initialize the VLC tables */
-    for (int i = 0, offset = 0; i < 4 ; i++) {
+    for (int i = 0; i < 4 ; i++) {
         for (int j = 0; j < 4; j++) {
-            huffman_vlc[i][j].table           = &vlc_tables[offset];
-            huffman_vlc[i][j].table_allocated = VLC_TABLES_SIZE - offset;
-            ff_vlc_init_from_lengths(&huffman_vlc[i][j], IMC_VLC_BITS, imc_huffman_sizes[i],
-                                     imc_huffman_lens[i][j], 1,
-                                     imc_huffman_syms[i][j], 1, 1,
-                                     0, VLC_INIT_STATIC_OVERLONG, NULL);
-            offset += huffman_vlc[i][j].table_size;
+            huffman_vlc[i][j] =
+                ff_vlc_init_tables_from_lengths(&state, IMC_VLC_BITS, imc_huffman_sizes[i],
+                                                imc_huffman_lens[i][j], 1,
+                                                imc_huffman_syms[i][j], 1, 1,
+                                                0, 0);
         }
     }
 }
@@ -311,16 +310,11 @@ static void imc_read_level_coeffs(IMCContext *q, int stream_format_code,
                                   int *levlCoeffs)
 {
     int i;
-    VLC *hufftab[4];
     int start = 0;
     const uint8_t *cb_sel;
-    int s;
+    int s = stream_format_code >> 1;
+    const VLCElem * const *const hufftab = huffman_vlc[s];
 
-    s = stream_format_code >> 1;
-    hufftab[0] = &huffman_vlc[s][0];
-    hufftab[1] = &huffman_vlc[s][1];
-    hufftab[2] = &huffman_vlc[s][2];
-    hufftab[3] = &huffman_vlc[s][3];
     cb_sel = imc_cb_select[s];
 
     if (stream_format_code & 4)
@@ -328,7 +322,7 @@ static void imc_read_level_coeffs(IMCContext *q, int stream_format_code,
     if (start)
         levlCoeffs[0] = get_bits(&q->gb, 7);
     for (i = start; i < BANDS; i++) {
-        levlCoeffs[i] = get_vlc2(&q->gb, hufftab[cb_sel[i]]->table,
+        levlCoeffs[i] = get_vlc2(&q->gb, hufftab[cb_sel[i]],
                                  IMC_VLC_BITS, 2);
         if (levlCoeffs[i] == 17)
             levlCoeffs[i] += get_bits(&q->gb, 4);
