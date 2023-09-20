@@ -111,7 +111,7 @@ static av_cold int wavarc_init(AVCodecContext *avctx)
     }
 
     s->max_framesize = s->nb_samples * 16;
-    s->bitstream = av_calloc(s->max_framesize, sizeof(*s->bitstream));
+    s->bitstream = av_calloc(s->max_framesize + AV_INPUT_BUFFER_PADDING_SIZE, sizeof(*s->bitstream));
     if (!s->bitstream)
         return AVERROR(ENOMEM);
 
