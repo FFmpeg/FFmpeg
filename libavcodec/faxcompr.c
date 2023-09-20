@@ -95,28 +95,24 @@ static const uint8_t ccitt_group3_2d_lens[11] = {
     4, 3, 7, 6, 3, 1, 3, 6, 7, 7, 9
 };
 
-static VLC ccitt_vlc[2], ccitt_group3_2d_vlc;
+// Also contains the other VLC tables pointed to by ccitt_vlc
+static VLCElem ccitt_group3_2d_vlc[512 + 528 + 648];
+static const VLCElem *ccitt_vlc[2];
 
 static av_cold void ccitt_unpack_init(void)
 {
-    static VLCElem code_table1[528];
-    static VLCElem code_table2[648];
+    VLCInitState state = VLC_INIT_STATE(ccitt_group3_2d_vlc);
     int i;
 
-    ccitt_vlc[0].table = code_table1;
-    ccitt_vlc[0].table_allocated = 528;
-    ccitt_vlc[1].table = code_table2;
-    ccitt_vlc[1].table_allocated = 648;
+    ff_vlc_init_tables(&state, 9, 11,
+                       ccitt_group3_2d_lens, 1, 1,
+                       ccitt_group3_2d_bits, 1, 1, 0);
     for (i = 0; i < 2; i++) {
-        ff_vlc_init_sparse(&ccitt_vlc[i], 9, CCITT_SYMS,
-                           ccitt_codes_lens[i], 1, 1,
-                           ccitt_codes_bits[i], 1, 1,
-                           ccitt_syms, 2, 2,
-                           VLC_INIT_USE_STATIC);
+        ccitt_vlc[i] = ff_vlc_init_tables_sparse(&state, 9, CCITT_SYMS,
+                                                 ccitt_codes_lens[i], 1, 1,
+                                                 ccitt_codes_bits[i], 1, 1,
+                                                 ccitt_syms, 2, 2, 0);
     }
-    VLC_INIT_STATIC(&ccitt_group3_2d_vlc, 9, 11,
-                    ccitt_group3_2d_lens, 1, 1,
-                    ccitt_group3_2d_bits, 1, 1, 512);
 }
 
 av_cold void ff_ccitt_unpack_init(void)
@@ -213,7 +209,7 @@ static int decode_group3_1d_line(AVCodecContext *avctx, GetBitContext *gb,
     for (;;) {
         if (get_bits_left(gb) <= 0)
             return AVERROR_INVALIDDATA;
-        t    = get_vlc2(gb, ccitt_vlc[mode].table, 9, 2);
+        t    = get_vlc2(gb, ccitt_vlc[mode], 9, 2);
         run += t;
         if (t < 64) {
             *runs++ = run;
@@ -261,7 +257,7 @@ static int decode_group3_2d_line(AVCodecContext *avctx, GetBitContext *gb,
         int cmode;
         if (get_bits_left(gb) <= 0)
             return AVERROR_INVALIDDATA;
-        cmode = get_vlc2(gb, ccitt_group3_2d_vlc.table, 9, 1);
+        cmode = get_vlc2(gb, ccitt_group3_2d_vlc, 9, 1);
         if (cmode == -1) {
             av_log(avctx, AV_LOG_ERROR, "Incorrect mode VLC\n");
             return AVERROR_INVALIDDATA;
@@ -285,7 +281,7 @@ static int decode_group3_2d_line(AVCodecContext *avctx, GetBitContext *gb,
                 for (;;) {
                     if (get_bits_left(gb) <= 0)
                         return AVERROR_INVALIDDATA;
-                    t = get_vlc2(gb, ccitt_vlc[mode].table, 9, 2);
+                    t = get_vlc2(gb, ccitt_vlc[mode], 9, 2);
                     if (t == -1) {
                         av_log(avctx, AV_LOG_ERROR, "Incorrect code\n");
                         return AVERROR_INVALIDDATA;
