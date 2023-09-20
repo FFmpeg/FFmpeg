@@ -61,6 +61,14 @@ typedef struct OSQContext {
     int pkt_offset;
 } OSQContext;
 
+static void osq_flush(AVCodecContext *avctx)
+{
+    OSQContext *s = avctx->priv_data;
+
+    s->bitstream_size = 0;
+    s->pkt_offset = 0;
+}
+
 static av_cold int osq_close(AVCodecContext *avctx)
 {
     OSQContext *s = avctx->priv_data;
@@ -478,4 +486,5 @@ const FFCodec ff_osq_decoder = {
                                                         AV_SAMPLE_FMT_S16P,
                                                         AV_SAMPLE_FMT_S32P,
                                                         AV_SAMPLE_FMT_NONE },
+    .flush            = osq_flush,
 };
