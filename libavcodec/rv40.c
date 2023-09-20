@@ -40,22 +40,16 @@
 #include "rv40vlc2.h"
 #include "rv40data.h"
 
-static VLC aic_top_vlc;
-static VLC aic_mode1_vlc[AIC_MODE1_NUM], aic_mode2_vlc[AIC_MODE2_NUM];
-static VLC ptype_vlc[NUM_PTYPE_VLCS], btype_vlc[NUM_BTYPE_VLCS];
+static VLCElem aic_top_vlc[23590];
+static const VLCElem *aic_mode1_vlc[AIC_MODE1_NUM], *aic_mode2_vlc[AIC_MODE2_NUM];
+static const VLCElem *ptype_vlc[NUM_PTYPE_VLCS],    *btype_vlc[NUM_BTYPE_VLCS];
 
-static av_cold void rv40_init_table(VLC *vlc, unsigned *offset, int nb_bits,
-                                    int nb_codes, const uint8_t (*tab)[2])
+static av_cold const VLCElem *rv40_init_table(VLCInitState *state, int nb_bits,
+                                              int nb_codes, const uint8_t (*tab)[2])
 {
-    static VLCElem vlc_buf[11776];
-
-    vlc->table           = &vlc_buf[*offset];
-    vlc->table_allocated = 1 << nb_bits;
-    *offset             += 1 << nb_bits;
-
-    ff_vlc_init_from_lengths(vlc, nb_bits, nb_codes,
-                             &tab[0][1], 2, &tab[0][0], 2, 1,
-                             0, VLC_INIT_USE_STATIC, NULL);
+    return ff_vlc_init_tables_from_lengths(state, nb_bits, nb_codes,
+                                           &tab[0][1], 2, &tab[0][0], 2, 1,
+                                           0, 0);
 }
 
 /**
@@ -63,18 +57,19 @@ static av_cold void rv40_init_table(VLC *vlc, unsigned *offset, int nb_bits,
  */
 static av_cold void rv40_init_tables(void)
 {
-    int i, offset = 0;
-    static VLCElem aic_mode2_table[11814];
+    VLCInitState state = VLC_INIT_STATE(aic_top_vlc);
+    int i;
 
-    rv40_init_table(&aic_top_vlc, &offset, AIC_TOP_BITS, AIC_TOP_SIZE,
+    rv40_init_table(&state, AIC_TOP_BITS, AIC_TOP_SIZE,
                     rv40_aic_top_vlc_tab);
     for(i = 0; i < AIC_MODE1_NUM; i++){
         // Every tenth VLC table is empty
         if((i % 10) == 9) continue;
-        rv40_init_table(&aic_mode1_vlc[i], &offset, AIC_MODE1_BITS,
-                        AIC_MODE1_SIZE, aic_mode1_vlc_tabs[i]);
+        aic_mode1_vlc[i] =
+            rv40_init_table(&state, AIC_MODE1_BITS,
+                            AIC_MODE1_SIZE, aic_mode1_vlc_tabs[i]);
     }
-    for (unsigned i = 0, offset = 0; i < AIC_MODE2_NUM; i++){
+    for (unsigned i = 0; i < AIC_MODE2_NUM; i++){
         uint16_t syms[AIC_MODE2_SIZE];
 
         for (int j = 0; j < AIC_MODE2_SIZE; j++) {
@@ -85,20 +80,20 @@ static av_cold void rv40_init_tables(void)
             else
                 syms[j] = first | (second << 8);
         }
-        aic_mode2_vlc[i].table           = &aic_mode2_table[offset];
-        aic_mode2_vlc[i].table_allocated = FF_ARRAY_ELEMS(aic_mode2_table) - offset;
-        ff_vlc_init_from_lengths(&aic_mode2_vlc[i], AIC_MODE2_BITS, AIC_MODE2_SIZE,
-                                 aic_mode2_vlc_bits[i], 1,
-                                 syms, 2, 2, 0, VLC_INIT_STATIC_OVERLONG, NULL);
-        offset += aic_mode2_vlc[i].table_size;
+        aic_mode2_vlc[i] =
+            ff_vlc_init_tables_from_lengths(&state, AIC_MODE2_BITS, AIC_MODE2_SIZE,
+                                            aic_mode2_vlc_bits[i], 1,
+                                            syms, 2, 2, 0, 0);
     }
     for(i = 0; i < NUM_PTYPE_VLCS; i++){
-        rv40_init_table(&ptype_vlc[i], &offset, PTYPE_VLC_BITS, PTYPE_VLC_SIZE,
-                        ptype_vlc_tabs[i]);
+        ptype_vlc[i] =
+            rv40_init_table(&state, PTYPE_VLC_BITS, PTYPE_VLC_SIZE,
+                            ptype_vlc_tabs[i]);
     }
     for(i = 0; i < NUM_BTYPE_VLCS; i++){
-        rv40_init_table(&btype_vlc[i], &offset, BTYPE_VLC_BITS, BTYPE_VLC_SIZE,
-                        btype_vlc_tabs[i]);
+        btype_vlc[i] =
+            rv40_init_table(&state, BTYPE_VLC_BITS, BTYPE_VLC_SIZE,
+                            btype_vlc_tabs[i]);
     }
 }
 
@@ -178,7 +173,7 @@ static int rv40_decode_intra_types(RV34DecContext *r, GetBitContext *gb, int8_t 
 
     for(i = 0; i < 4; i++, dst += r->intra_types_stride){
         if(!i && s->first_slice_line){
-            pattern = get_vlc2(gb, aic_top_vlc.table, AIC_TOP_BITS, 1);
+            pattern = get_vlc2(gb, aic_top_vlc, AIC_TOP_BITS, 1);
             dst[0] = (pattern >> 2) & 2;
             dst[1] = (pattern >> 1) & 2;
             dst[2] =  pattern       & 2;
@@ -201,12 +196,12 @@ static int rv40_decode_intra_types(RV34DecContext *r, GetBitContext *gb, int8_t 
                 if(pattern == rv40_aic_table_index[k])
                     break;
             if(j < 3 && k < MODE2_PATTERNS_NUM){ //pattern is found, decoding 2 coefficients
-                AV_WN16(ptr, get_vlc2(gb, aic_mode2_vlc[k].table, AIC_MODE2_BITS, 2));
+                AV_WN16(ptr, get_vlc2(gb, aic_mode2_vlc[k], AIC_MODE2_BITS, 2));
                 ptr += 2;
                 j++;
             }else{
                 if(B != -1 && C != -1)
-                    v = get_vlc2(gb, aic_mode1_vlc[B + C*10].table, AIC_MODE1_BITS, 1);
+                    v = get_vlc2(gb, aic_mode1_vlc[B + C*10], AIC_MODE1_BITS, 1);
                 else{ // tricky decoding
                     v = 0;
                     switch(C){
@@ -270,17 +265,17 @@ static int rv40_decode_mb_info(RV34DecContext *r)
 
     if(s->pict_type == AV_PICTURE_TYPE_P){
         prev_type = block_num_to_ptype_vlc_num[prev_type];
-        q = get_vlc2(gb, ptype_vlc[prev_type].table, PTYPE_VLC_BITS, 1);
+        q = get_vlc2(gb, ptype_vlc[prev_type], PTYPE_VLC_BITS, 1);
         if(q < PBTYPE_ESCAPE)
             return q;
-        q = get_vlc2(gb, ptype_vlc[prev_type].table, PTYPE_VLC_BITS, 1);
+        q = get_vlc2(gb, ptype_vlc[prev_type], PTYPE_VLC_BITS, 1);
         av_log(s->avctx, AV_LOG_ERROR, "Dquant for P-frame\n");
     }else{
         prev_type = block_num_to_btype_vlc_num[prev_type];
-        q = get_vlc2(gb, btype_vlc[prev_type].table, BTYPE_VLC_BITS, 1);
+        q = get_vlc2(gb, btype_vlc[prev_type], BTYPE_VLC_BITS, 1);
         if(q < PBTYPE_ESCAPE)
             return q;
-        q = get_vlc2(gb, btype_vlc[prev_type].table, BTYPE_VLC_BITS, 1);
+        q = get_vlc2(gb, btype_vlc[prev_type], BTYPE_VLC_BITS, 1);
         av_log(s->avctx, AV_LOG_ERROR, "Dquant for B-frame\n");
     }
     return 0;
