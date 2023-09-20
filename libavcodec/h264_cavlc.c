@@ -419,20 +419,13 @@ static int decode_residual(const H264Context *h, H264SliceContext *sl,
         else
             coeff_token = get_vlc2(gb, chroma422_dc_coeff_token_vlc_table,
                                    CHROMA422_DC_COEFF_TOKEN_VLC_BITS, 1);
-        total_coeff= coeff_token>>2;
     }else{
-        if(n >= LUMA_DC_BLOCK_INDEX){
-            total_coeff= pred_non_zero_count(h, sl, (n - LUMA_DC_BLOCK_INDEX)*16);
-            coeff_token = get_vlc2(gb, coeff_token_vlc[total_coeff],
-                                   COEFF_TOKEN_VLC_BITS, 2);
-            total_coeff= coeff_token>>2;
-        }else{
-            total_coeff= pred_non_zero_count(h, sl, n);
-            coeff_token = get_vlc2(gb, coeff_token_vlc[total_coeff],
-                                   COEFF_TOKEN_VLC_BITS, 2);
-            total_coeff= coeff_token>>2;
-        }
+        total_coeff = pred_non_zero_count(h, sl, n >= LUMA_DC_BLOCK_INDEX ?
+                                                 (n - LUMA_DC_BLOCK_INDEX) * 16 : n);
+        coeff_token = get_vlc2(gb, coeff_token_vlc[total_coeff],
+                               COEFF_TOKEN_VLC_BITS, 2);
     }
+    total_coeff = coeff_token >> 2;
     sl->non_zero_count_cache[scan8[n]] = total_coeff;
 
     //FIXME set last_non_zero?
