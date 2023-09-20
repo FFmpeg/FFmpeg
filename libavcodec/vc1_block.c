@@ -592,13 +592,8 @@ static int vc1_decode_i_block(VC1Context *v, int16_t block[64], int n,
     int dcdiff, scale;
 
     /* Get DC differential */
-    if (n < 4) {
-        dcdiff = get_vlc2(&s->gb, ff_msmp4_dc_luma_vlc[s->dc_table_index].table,
-                          MSMP4_DC_VLC_BITS, 3);
-    } else {
-        dcdiff = get_vlc2(&s->gb, ff_msmp4_dc_chroma_vlc[s->dc_table_index].table,
-                          MSMP4_DC_VLC_BITS, 3);
-    }
+    dcdiff = get_vlc2(&s->gb, ff_msmp4_dc_vlc[s->dc_table_index][n >= 4],
+                      MSMP4_DC_VLC_BITS, 3);
     if (dcdiff) {
         const int m = (v->pq == 1 || v->pq == 2) ? 3 - v->pq : 0;
         if (dcdiff == 119 /* ESC index value */) {
@@ -738,13 +733,8 @@ static int vc1_decode_i_block_adv(VC1Context *v, int16_t block[64], int n,
     int quant = FFABS(mquant);
 
     /* Get DC differential */
-    if (n < 4) {
-        dcdiff = get_vlc2(&s->gb, ff_msmp4_dc_luma_vlc[s->dc_table_index].table,
-                          MSMP4_DC_VLC_BITS, 3);
-    } else {
-        dcdiff = get_vlc2(&s->gb, ff_msmp4_dc_chroma_vlc[s->dc_table_index].table,
-                          MSMP4_DC_VLC_BITS, 3);
-    }
+    dcdiff = get_vlc2(&s->gb, ff_msmp4_dc_vlc[s->dc_table_index][n >= 4],
+                      MSMP4_DC_VLC_BITS, 3);
     if (dcdiff) {
         const int m = (quant == 1 || quant == 2) ? 3 - quant : 0;
         if (dcdiff == 119 /* ESC index value */) {
@@ -940,13 +930,8 @@ static int vc1_decode_intra_block(VC1Context *v, int16_t block[64], int n,
     s->c_dc_scale = s->c_dc_scale_table[quant];
 
     /* Get DC differential */
-    if (n < 4) {
-        dcdiff = get_vlc2(&s->gb, ff_msmp4_dc_luma_vlc[s->dc_table_index].table,
-                          MSMP4_DC_VLC_BITS, 3);
-    } else {
-        dcdiff = get_vlc2(&s->gb, ff_msmp4_dc_chroma_vlc[s->dc_table_index].table,
-                          MSMP4_DC_VLC_BITS, 3);
-    }
+    dcdiff = get_vlc2(&s->gb, ff_msmp4_dc_vlc[s->dc_table_index][n >= 4],
+                      MSMP4_DC_VLC_BITS, 3);
     if (dcdiff) {
         const int m = (quant == 1 || quant == 2) ? 3 - quant : 0;
         if (dcdiff == 119 /* ESC index value */) {
@@ -2591,7 +2576,7 @@ static void vc1_decode_i_blocks(VC1Context *v)
             }
 
             // do actual MB decoding and displaying
-            cbp = get_vlc2(&v->s.gb, ff_msmp4_mb_i_vlc.table,
+            cbp = get_vlc2(&v->s.gb, ff_msmp4_mb_i_vlc,
                            MSMP4_MB_INTRA_VLC_BITS, 2);
             v->s.ac_pred = get_bits1(&v->s.gb);
 
@@ -2727,7 +2712,7 @@ static int vc1_decode_i_blocks_adv(VC1Context *v)
                 return 0;
             }
 
-            cbp = get_vlc2(&v->s.gb, ff_msmp4_mb_i_vlc.table,
+            cbp = get_vlc2(&v->s.gb, ff_msmp4_mb_i_vlc,
                            MSMP4_MB_INTRA_VLC_BITS, 2);
             if (v->acpred_is_raw)
                 v->s.ac_pred = get_bits1(&v->s.gb);

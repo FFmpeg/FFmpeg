@@ -477,7 +477,7 @@ static int wmv2_decode_mb(MpegEncContext *s, int16_t block[6][64])
         s->mb_intra = 1;
         if (get_bits_left(&s->gb) <= 0)
             return AVERROR_INVALIDDATA;
-        code = get_vlc2(&s->gb, ff_msmp4_mb_i_vlc.table,
+        code = get_vlc2(&s->gb, ff_msmp4_mb_i_vlc,
                         MSMP4_MB_INTRA_VLC_BITS, 2);
         /* predict coded block pattern */
         cbp = 0;

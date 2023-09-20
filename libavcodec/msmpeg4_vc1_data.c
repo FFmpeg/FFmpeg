@@ -32,28 +32,25 @@
 #include "libavutil/attributes.h"
 #include "libavutil/thread.h"
 
-VLC ff_msmp4_mb_i_vlc;
-VLC ff_msmp4_dc_luma_vlc[2];
-VLC ff_msmp4_dc_chroma_vlc[2];
+VLCElem ff_msmp4_mb_i_vlc[536];
+const VLCElem *ff_msmp4_dc_vlc[2][2];
 
 static av_cold void msmp4_vc1_vlcs_init(void)
 {
-    VLC_INIT_STATIC(&ff_msmp4_dc_luma_vlc[0], MSMP4_DC_VLC_BITS, 120,
-                    &ff_table0_dc_lum[0][1], 8, 4,
-                    &ff_table0_dc_lum[0][0], 8, 4, 1158);
-    VLC_INIT_STATIC(&ff_msmp4_dc_chroma_vlc[0], MSMP4_DC_VLC_BITS, 120,
-                    &ff_table0_dc_chroma[0][1], 8, 4,
-                    &ff_table0_dc_chroma[0][0], 8, 4, 1118);
-    VLC_INIT_STATIC(&ff_msmp4_dc_luma_vlc[1], MSMP4_DC_VLC_BITS, 120,
-                    &ff_table1_dc_lum[0][1], 8, 4,
-                    &ff_table1_dc_lum[0][0], 8, 4, 1476);
-    VLC_INIT_STATIC(&ff_msmp4_dc_chroma_vlc[1], MSMP4_DC_VLC_BITS, 120,
-                    &ff_table1_dc_chroma[0][1], 8, 4,
-                    &ff_table1_dc_chroma[0][0], 8, 4, 1216);
+    static VLCElem vlc_buf[1158 + 1118 + 1476 + 1216];
+    VLCInitState state = VLC_INIT_STATE(vlc_buf);
 
-    VLC_INIT_STATIC(&ff_msmp4_mb_i_vlc, MSMP4_MB_INTRA_VLC_BITS, 64,
-                    &ff_msmp4_mb_i_table[0][1], 4, 2,
-                    &ff_msmp4_mb_i_table[0][0], 4, 2, 536);
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 2; j++) {
+            ff_msmp4_dc_vlc[i][j] =
+                ff_vlc_init_tables(&state, MSMP4_DC_VLC_BITS, 120,
+                                   &ff_msmp4_dc_tables[i][j][0][1], 8, 4,
+                                   &ff_msmp4_dc_tables[i][j][0][0], 8, 4, 0);
+        }
+    }
+    VLC_INIT_STATIC_TABLE(ff_msmp4_mb_i_vlc, MSMP4_MB_INTRA_VLC_BITS, 64,
+                          &ff_msmp4_mb_i_table[0][1], 4, 2,
+                          &ff_msmp4_mb_i_table[0][0], 4, 2, 0);
 }
 
 av_cold void ff_msmp4_vc1_vlcs_init_once(void)
@@ -82,9 +79,11 @@ const uint16_t ff_msmp4_mb_i_table[64][2] = {
     {  0xd, 8 }, { 0x713, 13 }, { 0x1da, 10 }, { 0x169, 10 },
 };
 
-/* dc table 0 */
 
-const uint32_t ff_table0_dc_lum[120][2] = {
+const uint32_t ff_msmp4_dc_tables[2][2][120][2] = {
+{
+    /* dc table 0 */
+    {
     {     0x1,  1 }, {     0x1,  2 }, {     0x1,  4 }, {     0x1,  5 },
     {     0x5,  5 }, {     0x7,  5 }, {     0x8,  6 }, {     0xc,  6 },
     {     0x0,  7 }, {     0x2,  7 }, {    0x12,  7 }, {    0x1a,  7 },
@@ -115,9 +114,8 @@ const uint32_t ff_table0_dc_lum[120][2] = {
     { 0x60784, 24 }, { 0x60785, 24 }, { 0x60786, 24 }, { 0x60787, 24 },
     { 0x60788, 24 }, { 0x60789, 24 }, { 0x6078a, 24 }, { 0x6078b, 24 },
     { 0x6078c, 24 }, { 0x6078d, 24 }, { 0x6078e, 24 }, { 0x6078f, 24 },
-};
-
-const uint32_t ff_table0_dc_chroma[120][2] = {
+    },
+    {
     {      0x0,  2 }, {      0x1,  2 }, {      0x5,  3 }, {      0x9,  4 },
     {      0xd,  4 }, {     0x11,  5 }, {     0x1d,  5 }, {     0x1f,  5 },
     {     0x21,  6 }, {     0x31,  6 }, {     0x38,  6 }, {     0x33,  6 },
@@ -148,11 +146,11 @@ const uint32_t ff_table0_dc_chroma[120][2] = {
     { 0x608884, 23 }, { 0x608885, 23 }, { 0x608886, 23 }, { 0x608887, 23 },
     { 0x608888, 23 }, { 0x608889, 23 }, { 0x60888a, 23 }, { 0x60888b, 23 },
     { 0x60888c, 23 }, { 0x60888d, 23 }, { 0x60888e, 23 }, { 0x60888f, 23 },
-};
-
-/* dc table 1 */
-
-const uint32_t ff_table1_dc_lum[120][2] = {
+    }
+},
+{
+    /* dc table 1 */
+    {
     {      0x2,  2 }, {      0x3,  2 }, {      0x3,  3 }, {      0x2,  4 },
     {      0x5,  4 }, {      0x1,  5 }, {      0x3,  5 }, {      0x8,  5 },
     {      0x0,  6 }, {      0x5,  6 }, {      0xd,  6 }, {      0xf,  6 },
@@ -183,9 +181,8 @@ const uint32_t ff_table1_dc_lum[120][2] = {
     { 0x1e695c, 26 }, { 0x1e695d, 26 }, { 0x1e695e, 26 }, { 0x1e695f, 26 },
     { 0x1e6960, 26 }, { 0x1e6961, 26 }, { 0x1e6962, 26 }, { 0x1e6963, 26 },
     { 0x1e6964, 26 }, { 0x1e6965, 26 }, { 0x1e6966, 26 }, { 0x1e6967, 26 },
-};
-
-const uint32_t ff_table1_dc_chroma[120][2] = {
+    },
+    {
     {       0x0,  2 }, {       0x1,  2 }, {       0x4,  3 }, {       0x7,  3 },
     {       0xb,  4 }, {       0xd,  4 }, {      0x15,  5 }, {      0x28,  6 },
     {      0x30,  6 }, {      0x32,  6 }, {      0x52,  7 }, {      0x62,  7 },
@@ -216,6 +213,8 @@ const uint32_t ff_table1_dc_chroma[120][2] = {
     { 0x18f6484, 25 }, { 0x18f6485, 25 }, { 0x18f6486, 25 }, { 0x18f6487, 25 },
     { 0x18f6488, 25 }, { 0x18f6489, 25 }, { 0x18f648a, 25 }, { 0x18f648b, 25 },
     { 0x18f648c, 25 }, { 0x18f648d, 25 }, { 0x18f648e, 25 }, { 0x18f648f, 25 },
+    }
+}
 };
 
 const uint8_t ff_wmv1_scantable[WMV1_SCANTABLE_COUNT][64] = {

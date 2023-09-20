@@ -34,10 +34,9 @@ FF_VISIBILITY_PUSH_HIDDEN
 void ff_msmp4_vc1_vlcs_init_once(void);
 
 #define MSMP4_MB_INTRA_VLC_BITS 9
-extern VLC ff_msmp4_mb_i_vlc;
+extern VLCElem ff_msmp4_mb_i_vlc[];
 #define MSMP4_DC_VLC_BITS 9
-extern VLC ff_msmp4_dc_luma_vlc[2];
-extern VLC ff_msmp4_dc_chroma_vlc[2];
+extern const VLCElem *ff_msmp4_dc_vlc[2 /* dc_table_index */][2 /* 0: luma, 1: chroma */];
 
 /* intra picture macroblock coded block pattern */
 extern const uint16_t ff_msmp4_mb_i_table[64][2];
@@ -46,10 +45,7 @@ extern const uint16_t ff_msmp4_mb_i_table[64][2];
 
 extern const uint8_t ff_wmv1_scantable[WMV1_SCANTABLE_COUNT][64];
 
-extern const uint32_t ff_table0_dc_lum[120][2];
-extern const uint32_t ff_table1_dc_lum[120][2];
-extern const uint32_t ff_table0_dc_chroma[120][2];
-extern const uint32_t ff_table1_dc_chroma[120][2];
+extern const uint32_t ff_msmp4_dc_tables[2 /* dc_table_index */][2 /* 0: luma, 1: chroma */][120][2];
 FF_VISIBILITY_POP_HIDDEN
 
 #endif /* AVCODEC_MSMPEG4_VC1_DATA_H */

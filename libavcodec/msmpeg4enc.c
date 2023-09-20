@@ -544,19 +544,8 @@ static void msmpeg4_encode_dc(MpegEncContext * s, int level, int n, int *dir_ptr
         if (code > DC_MAX)
             code = DC_MAX;
 
-        if (s->dc_table_index == 0) {
-            if (n < 4) {
-                put_bits(&s->pb, ff_table0_dc_lum[code][1], ff_table0_dc_lum[code][0]);
-            } else {
-                put_bits(&s->pb, ff_table0_dc_chroma[code][1], ff_table0_dc_chroma[code][0]);
-            }
-        } else {
-            if (n < 4) {
-                put_bits(&s->pb, ff_table1_dc_lum[code][1], ff_table1_dc_lum[code][0]);
-            } else {
-                put_bits(&s->pb, ff_table1_dc_chroma[code][1], ff_table1_dc_chroma[code][0]);
-            }
-        }
+        put_bits(&s->pb, ff_msmp4_dc_tables[s->dc_table_index][n >= 4][code][1],
+                         ff_msmp4_dc_tables[s->dc_table_index][n >= 4][code][0]);
 
         if (code == DC_MAX)
             put_bits(&s->pb, 8, level);

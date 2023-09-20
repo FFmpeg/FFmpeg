@@ -237,7 +237,7 @@ static int msmpeg4v34_decode_mb(MpegEncContext *s, int16_t block[6][64])
         cbp = code & 0x3f;
     } else {
         s->mb_intra = 1;
-        code = get_vlc2(&s->gb, ff_msmp4_mb_i_vlc.table, MSMP4_MB_INTRA_VLC_BITS, 2);
+        code = get_vlc2(&s->gb, ff_msmp4_mb_i_vlc, MSMP4_MB_INTRA_VLC_BITS, 2);
         /* predict coded block pattern */
         cbp = 0;
         for(i=0;i<6;i++) {
@@ -582,14 +582,9 @@ static int msmpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr)
             return -1;
         }
         level-=256;
-    }else{  //FIXME optimize use unified tables & index
-        if (n < 4) {
-            level = get_vlc2(&s->gb, ff_msmp4_dc_luma_vlc[s->dc_table_index].table,
-                             MSMP4_DC_VLC_BITS, 3);
-        } else {
-            level = get_vlc2(&s->gb, ff_msmp4_dc_chroma_vlc[s->dc_table_index].table,
-                             MSMP4_DC_VLC_BITS, 3);
-        }
+    } else {
+        level = get_vlc2(&s->gb, ff_msmp4_dc_vlc[s->dc_table_index][n >= 4],
+                         MSMP4_DC_VLC_BITS, 3);
 
         if (level == DC_MAX) {
             level = get_bits(&s->gb, 8);
