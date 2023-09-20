@@ -40,33 +40,34 @@
 #include "mpc.h"
 #include "mpc7data.h"
 
-static VLC scfi_vlc, dscf_vlc, hdr_vlc, quant_vlc[MPC7_QUANT_VLC_TABLES][2];
+static VLCElem scfi_vlc[1 << MPC7_SCFI_BITS];
+static VLCElem dscf_vlc[1 << MPC7_DSCF_BITS];
+static VLCElem hdr_vlc [1 << MPC7_HDR_BITS];
+static const VLCElem *quant_vlc[MPC7_QUANT_VLC_TABLES][2];
 
 static av_cold void mpc7_init_static(void)
 {
     static VLCElem quant_tables[7224];
+    VLCInitState state = VLC_INIT_STATE(quant_tables);
     const uint8_t *raw_quant_table = mpc7_quant_vlcs;
 
-    VLC_INIT_STATIC_FROM_LENGTHS(&scfi_vlc, MPC7_SCFI_BITS, MPC7_SCFI_SIZE,
-                                 &mpc7_scfi[1], 2,
-                                 &mpc7_scfi[0], 2, 1, 0, 0, 1 << MPC7_SCFI_BITS);
-    VLC_INIT_STATIC_FROM_LENGTHS(&dscf_vlc, MPC7_DSCF_BITS, MPC7_DSCF_SIZE,
-                                 &mpc7_dscf[1], 2,
-                                 &mpc7_dscf[0], 2, 1, -7, 0, 1 << MPC7_DSCF_BITS);
-    VLC_INIT_STATIC_FROM_LENGTHS(&hdr_vlc, MPC7_HDR_BITS, MPC7_HDR_SIZE,
-                                 &mpc7_hdr[1], 2,
-                                 &mpc7_hdr[0], 2, 1, -5, 0, 1 << MPC7_HDR_BITS);
-    for (unsigned i = 0, offset = 0; i < MPC7_QUANT_VLC_TABLES; i++){
+    VLC_INIT_STATIC_TABLE_FROM_LENGTHS(scfi_vlc, MPC7_SCFI_BITS, MPC7_SCFI_SIZE,
+                                       &mpc7_scfi[1], 2,
+                                       &mpc7_scfi[0], 2, 1, 0, 0);
+    VLC_INIT_STATIC_TABLE_FROM_LENGTHS(dscf_vlc, MPC7_DSCF_BITS, MPC7_DSCF_SIZE,
+                                       &mpc7_dscf[1], 2,
+                                       &mpc7_dscf[0], 2, 1, -7, 0);
+    VLC_INIT_STATIC_TABLE_FROM_LENGTHS(hdr_vlc, MPC7_HDR_BITS, MPC7_HDR_SIZE,
+                                       &mpc7_hdr[1], 2,
+                                       &mpc7_hdr[0], 2, 1, -5, 0);
+    for (int i = 0; i < MPC7_QUANT_VLC_TABLES; i++) {
         for (int j = 0; j < 2; j++) {
-            quant_vlc[i][j].table           = &quant_tables[offset];
-            quant_vlc[i][j].table_allocated = FF_ARRAY_ELEMS(quant_tables) - offset;
-            ff_vlc_init_from_lengths(&quant_vlc[i][j], 9, mpc7_quant_vlc_sizes[i],
-                                     &raw_quant_table[1], 2,
-                                     &raw_quant_table[0], 2, 1,
-                                     mpc7_quant_vlc_off[i],
-                                     VLC_INIT_STATIC_OVERLONG, NULL);
+            quant_vlc[i][j] =
+                ff_vlc_init_tables_from_lengths(&state, 9, mpc7_quant_vlc_sizes[i],
+                                                &raw_quant_table[1], 2,
+                                                &raw_quant_table[0], 2, 1,
+                                                mpc7_quant_vlc_off[i], 0);
             raw_quant_table += 2 * mpc7_quant_vlc_sizes[i];
-            offset          += quant_vlc[i][j].table_size;
         }
     }
     ff_mpa_synth_init_fixed();
@@ -134,7 +135,7 @@ static inline void idx_to_quant(MPCContext *c, GetBitContext *gb, int idx, int *
     case 1:
         i1 = get_bits1(gb);
         for(i = 0; i < SAMPLES_PER_BAND/3; i++){
-            t = get_vlc2(gb, quant_vlc[0][i1].table, 9, 2);
+            t = get_vlc2(gb, quant_vlc[0][i1], 9, 2);
             *dst++ = mpc7_idx30[t];
             *dst++ = mpc7_idx31[t];
             *dst++ = mpc7_idx32[t];
@@ -143,7 +144,7 @@ static inline void idx_to_quant(MPCContext *c, GetBitContext *gb, int idx, int *
     case 2:
         i1 = get_bits1(gb);
         for(i = 0; i < SAMPLES_PER_BAND/2; i++){
-            t = get_vlc2(gb, quant_vlc[1][i1].table, 9, 2);
+            t = get_vlc2(gb, quant_vlc[1][i1], 9, 2);
             *dst++ = mpc7_idx50[t];
             *dst++ = mpc7_idx51[t];
         }
@@ -151,7 +152,7 @@ static inline void idx_to_quant(MPCContext *c, GetBitContext *gb, int idx, int *
     case  3: case  4: case  5: case  6: case  7:
         i1 = get_bits1(gb);
         for(i = 0; i < SAMPLES_PER_BAND; i++)
-            *dst++ = get_vlc2(gb, quant_vlc[idx-1][i1].table, 9, 2);
+            *dst++ = get_vlc2(gb, quant_vlc[idx-1][i1], 9, 2);
         break;
     case  8: case  9: case 10: case 11: case 12:
     case 13: case 14: case 15: case 16: case 17:
@@ -166,7 +167,7 @@ static inline void idx_to_quant(MPCContext *c, GetBitContext *gb, int idx, int *
 
 static int get_scale_idx(GetBitContext *gb, int ref)
 {
-    int t = get_vlc2(gb, dscf_vlc.table, MPC7_DSCF_BITS, 1);
+    int t = get_vlc2(gb, dscf_vlc, MPC7_DSCF_BITS, 1);
     if (t == 8)
         return get_bits(gb, 6);
     return ref + t;
@@ -220,7 +221,7 @@ static int mpc7_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     /* read subband indexes */
     for(i = 0; i <= c->maxbands; i++){
         for(ch = 0; ch < 2; ch++){
-            int t = i ? get_vlc2(&gb, hdr_vlc.table, MPC7_HDR_BITS, 1) : 4;
+            int t = i ? get_vlc2(&gb, hdr_vlc, MPC7_HDR_BITS, 1) : 4;
             if(t == 4) bands[i].res[ch] = get_bits(&gb, 4);
             else bands[i].res[ch] = bands[i-1].res[ch] + t;
             if (bands[i].res[ch] < -1 || bands[i].res[ch] > 17) {
@@ -237,7 +238,8 @@ static int mpc7_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     /* get scale indexes coding method */
     for(i = 0; i <= mb; i++)
         for(ch = 0; ch < 2; ch++)
-            if(bands[i].res[ch]) bands[i].scfi[ch] = get_vlc2(&gb, scfi_vlc.table, MPC7_SCFI_BITS, 1);
+            if (bands[i].res[ch])
+                bands[i].scfi[ch] = get_vlc2(&gb, scfi_vlc, MPC7_SCFI_BITS, 1);
     /* get scale indexes */
     for(i = 0; i <= mb; i++){
         for(ch = 0; ch < 2; ch++){
