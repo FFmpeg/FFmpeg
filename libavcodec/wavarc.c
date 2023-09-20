@@ -539,6 +539,8 @@ static int decode_5elp(AVCodecContext *avctx,
         if (block_type >= 0 && block_type <= 7) {
             k = 1 + (avctx->sample_fmt == AV_SAMPLE_FMT_S16P);
             k = get_urice(gb, k) + 1;
+            if (k >= 32)
+                return AVERROR_INVALIDDATA;
         }
 
         if (block_type <=  2 || block_type ==  6 || block_type == 13 ||
