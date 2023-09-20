@@ -164,7 +164,7 @@ static VLCElem fragment_run_length_vlc[56];   /* version <  2 */
 static VLCElem motion_vector_vlc[112];        /* version <  2 */
 
 // The VP4 tables reuse this vlc.
-static VLCElem mode_code_vlc[18 + 2084 * CONFIG_VP4_DECODER];
+static VLCElem mode_code_vlc[24 + 2108 * CONFIG_VP4_DECODER];
 
 #if CONFIG_VP4_DECODER
 static const VLCElem *vp4_mv_vlc_table[2][7]; /* version >= 2 */
@@ -681,7 +681,7 @@ static int vp4_get_mb_count(Vp3DecodeContext *s, GetBitContext *gb)
 
 static int vp4_get_block_pattern(GetBitContext *gb, int *next_block_pattern_table)
 {
-    int v = get_vlc2(gb, block_pattern_vlc[*next_block_pattern_table], 3, 2);
+    int v = get_vlc2(gb, block_pattern_vlc[*next_block_pattern_table], 5, 1);
     *next_block_pattern_table = vp4_block_pattern_table_selector[v];
     return v + 1;
 }
@@ -840,7 +840,7 @@ static int unpack_modes(Vp3DecodeContext *s, GetBitContext *gb)
                     if (scheme == 7)
                         coding_mode = get_bits(gb, 3);
                     else
-                        coding_mode = alphabet[get_vlc2(gb, mode_code_vlc, 3, 3)];
+                        coding_mode = alphabet[get_vlc2(gb, mode_code_vlc, 4, 2)];
 
                     s->macroblock_coding[current_macroblock] = coding_mode;
                     for (k = 0; k < 4; k++) {
@@ -2275,7 +2275,7 @@ static av_cold void init_tables_once(void)
                                        &motion_vector_vlc_table[0][0], 2, 1,
                                        -31, 0);
 
-    ff_vlc_init_tables_from_lengths(&state, 3, 8,
+    ff_vlc_init_tables_from_lengths(&state, 4, 8,
                                     mode_code_vlc_len, 1,
                                     NULL, 0, 0, 0, 0);
 
@@ -2292,7 +2292,7 @@ static av_cold void init_tables_once(void)
     /* version >= 2 */
     for (int i = 0; i < 2; i++) {
         block_pattern_vlc[i] =
-            ff_vlc_init_tables(&state, 3, 14,
+            ff_vlc_init_tables(&state, 5, 14,
                                &vp4_block_pattern_vlc[i][0][1], 2, 1,
                                &vp4_block_pattern_vlc[i][0][0], 2, 1, 0);
     }
