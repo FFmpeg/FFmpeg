@@ -481,6 +481,7 @@ int ff_vlc_init_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int 
 fail:
     if (buf != localbuf)
         av_free(buf);
+    ff_vlc_free_multi(multi);
     return AVERROR_INVALIDDATA;
 }
 
