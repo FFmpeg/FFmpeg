@@ -246,7 +246,8 @@ static int8_t cavlc_level_tab[7][1<<LEVEL_TAB_BITS][2];
 #define RUN_VLC_BITS                   3
 #define RUN7_VLC_BITS                  6
 
-static const VLCElem *coeff_token_vlc[4];
+/// 17 pointers to only four different VLCs
+static const VLCElem *coeff_token_vlc[17];
 
 static VLCElem chroma_dc_coeff_token_vlc_table[256];
 
@@ -313,6 +314,7 @@ static av_cold void init_cavlc_level_tab(void){
 
 av_cold void ff_h264_decode_init_vlc(void)
 {
+    const VLCElem *coeff_token_vlc_original[4];
     VLCInitState state = VLC_INIT_STATE(run7_vlc_table);
 
     VLC_INIT_STATIC_TABLE(chroma_dc_coeff_token_vlc_table,
@@ -336,10 +338,16 @@ av_cold void ff_h264_decode_init_vlc(void)
     }
 
     for (int i = 0; i < 4; i++) {
-        coeff_token_vlc[i] =
+        coeff_token_vlc_original[i] =
             ff_vlc_init_tables(&state, COEFF_TOKEN_VLC_BITS, 4*17,
                                &coeff_token_len [i][0], 1, 1,
                                &coeff_token_bits[i][0], 1, 1, 0);
+    }
+    for (int i = 0; i < FF_ARRAY_ELEMS(coeff_token_vlc); i++) {
+        static const uint8_t coeff_token_table_index[17] = {
+            0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3
+        };
+        coeff_token_vlc[i] = coeff_token_vlc_original[coeff_token_table_index[i]];
     }
 
     for (int i = 0; i < 3; i++) {
@@ -399,7 +407,6 @@ static int decode_residual(const H264Context *h, H264SliceContext *sl,
                            const uint8_t *scantable, const uint32_t *qmul,
                            int max_coeff)
 {
-    static const int coeff_token_table_index[17]= {0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3};
     int level[16];
     int zeros_left, coeff_token, total_coeff, i, trailing_ones, run_before;
 
@@ -416,12 +423,12 @@ static int decode_residual(const H264Context *h, H264SliceContext *sl,
     }else{
         if(n >= LUMA_DC_BLOCK_INDEX){
             total_coeff= pred_non_zero_count(h, sl, (n - LUMA_DC_BLOCK_INDEX)*16);
-            coeff_token = get_vlc2(gb, coeff_token_vlc[coeff_token_table_index[total_coeff]],
+            coeff_token = get_vlc2(gb, coeff_token_vlc[total_coeff],
                                    COEFF_TOKEN_VLC_BITS, 2);
             total_coeff= coeff_token>>2;
         }else{
             total_coeff= pred_non_zero_count(h, sl, n);
-            coeff_token = get_vlc2(gb, coeff_token_vlc[coeff_token_table_index[total_coeff]],
+            coeff_token = get_vlc2(gb, coeff_token_vlc[total_coeff],
                                    COEFF_TOKEN_VLC_BITS, 2);
             total_coeff= coeff_token>>2;
         }
