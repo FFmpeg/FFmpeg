@@ -44,10 +44,10 @@
 #define MBA_STUFFING 33
 #define MBA_STARTCODE 34
 
-static VLC h261_mba_vlc;
-static VLC h261_mtype_vlc;
-static VLC h261_mv_vlc;
-static VLC h261_cbp_vlc;
+static VLCElem h261_mba_vlc[540];
+static VLCElem h261_mtype_vlc[80];
+static VLCElem h261_mv_vlc[144];
+static VLCElem h261_cbp_vlc[512];
 
 typedef struct H261DecContext {
     MpegEncContext s;
@@ -64,18 +64,18 @@ typedef struct H261DecContext {
 
 static av_cold void h261_decode_init_static(void)
 {
-    VLC_INIT_STATIC(&h261_mba_vlc, H261_MBA_VLC_BITS, 35,
-                    ff_h261_mba_bits, 1, 1,
-                    ff_h261_mba_code, 1, 1, 540);
-    VLC_INIT_STATIC(&h261_mtype_vlc, H261_MTYPE_VLC_BITS, 10,
-                    ff_h261_mtype_bits, 1, 1,
-                    ff_h261_mtype_code, 1, 1, 80);
-    VLC_INIT_STATIC(&h261_mv_vlc, H261_MV_VLC_BITS, 17,
-                    &ff_h261_mv_tab[0][1], 2, 1,
-                    &ff_h261_mv_tab[0][0], 2, 1, 144);
-    VLC_INIT_STATIC(&h261_cbp_vlc, H261_CBP_VLC_BITS, 63,
-                    &ff_h261_cbp_tab[0][1], 2, 1,
-                    &ff_h261_cbp_tab[0][0], 2, 1, 512);
+    VLC_INIT_STATIC_TABLE(h261_mba_vlc, H261_MBA_VLC_BITS, 35,
+                          ff_h261_mba_bits, 1, 1,
+                          ff_h261_mba_code, 1, 1, 0);
+    VLC_INIT_STATIC_TABLE(h261_mtype_vlc, H261_MTYPE_VLC_BITS, 10,
+                          ff_h261_mtype_bits, 1, 1,
+                          ff_h261_mtype_code, 1, 1, 0);
+    VLC_INIT_STATIC_TABLE(h261_mv_vlc, H261_MV_VLC_BITS, 17,
+                          &ff_h261_mv_tab[0][1], 2, 1,
+                          &ff_h261_mv_tab[0][0], 2, 1, 0);
+    VLC_INIT_STATIC_TABLE(h261_cbp_vlc, H261_CBP_VLC_BITS, 63,
+                          &ff_h261_cbp_tab[0][1], 2, 1,
+                          &ff_h261_cbp_tab[0][0], 2, 1, 0);
     INIT_FIRST_VLC_RL(ff_h261_rl_tcoeff, 552);
 }
 
@@ -253,7 +253,7 @@ static const int mvmap[17] = {
 
 static int decode_mv_component(GetBitContext *gb, int v)
 {
-    int mv_diff = get_vlc2(gb, h261_mv_vlc.table, H261_MV_VLC_BITS, 2);
+    int mv_diff = get_vlc2(gb, h261_mv_vlc, H261_MV_VLC_BITS, 2);
 
     /* check if mv_diff is valid */
     if (mv_diff < 0)
@@ -378,7 +378,7 @@ static int h261_decode_mb(H261DecContext *h)
     cbp = 63;
     // Read mba
     do {
-        h->mba_diff = get_vlc2(&s->gb, h261_mba_vlc.table,
+        h->mba_diff = get_vlc2(&s->gb, h261_mba_vlc,
                                H261_MBA_VLC_BITS, 2);
 
         /* Check for slice end */
@@ -409,7 +409,7 @@ static int h261_decode_mb(H261DecContext *h)
     h261_init_dest(s);
 
     // Read mtype
-    com->mtype = get_vlc2(&s->gb, h261_mtype_vlc.table, H261_MTYPE_VLC_BITS, 2);
+    com->mtype = get_vlc2(&s->gb, h261_mtype_vlc, H261_MTYPE_VLC_BITS, 2);
     if (com->mtype < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid mtype index %d\n",
                com->mtype);
@@ -449,7 +449,7 @@ static int h261_decode_mb(H261DecContext *h)
 
     // Read cbp
     if (HAS_CBP(com->mtype))
-        cbp = get_vlc2(&s->gb, h261_cbp_vlc.table, H261_CBP_VLC_BITS, 1) + 1;
+        cbp = get_vlc2(&s->gb, h261_cbp_vlc, H261_CBP_VLC_BITS, 1) + 1;
 
     if (s->mb_intra) {
         s->current_picture.mb_type[xy] = MB_TYPE_INTRA;
