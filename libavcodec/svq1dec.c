@@ -45,12 +45,12 @@
 #include "svq1.h"
 
 #define SVQ1_BLOCK_TYPE_VLC_BITS 3
-static VLC svq1_block_type;
-static VLC svq1_motion_component;
-static VLC svq1_intra_multistage[6];
-static VLC svq1_inter_multistage[6];
-static VLC svq1_intra_mean;
-static VLC svq1_inter_mean;
+static VLCElem svq1_block_type[8];
+static VLCElem svq1_motion_component[176];
+static const VLCElem *svq1_intra_multistage[6];
+static const VLCElem *svq1_inter_multistage[6];
+static VLCElem svq1_intra_mean[632];
+static VLCElem svq1_inter_mean[1434];
 
 /* motion vector (prediction) */
 typedef struct svq1_pmv_s {
@@ -190,7 +190,7 @@ static int svq1_decode_block_intra(GetBitContext *bitbuf, uint8_t *pixels,
         height = 1 << ((3 + level) / 2);
 
         /* get number of stages (-1 skips vector, 0 for mean only) */
-        stages = get_vlc2(bitbuf, svq1_intra_multistage[level].table, 3, 3) - 1;
+        stages = get_vlc2(bitbuf, svq1_intra_multistage[level], 3, 3) - 1;
 
         if (stages == -1) {
             for (y = 0; y < height; y++)
@@ -206,7 +206,7 @@ static int svq1_decode_block_intra(GetBitContext *bitbuf, uint8_t *pixels,
         }
         av_assert0(stages >= 0);
 
-        mean = get_vlc2(bitbuf, svq1_intra_mean.table, 8, 3);
+        mean = get_vlc2(bitbuf, svq1_intra_mean, 8, 3);
 
         if (stages == 0) {
             for (y = 0; y < height; y++)
@@ -257,7 +257,7 @@ static int svq1_decode_block_non_intra(GetBitContext *bitbuf, uint8_t *pixels,
         height = 1 << ((3 + level) / 2);
 
         /* get number of stages (-1 skips vector, 0 for mean only) */
-        stages = get_vlc2(bitbuf, svq1_inter_multistage[level].table, 3, 2) - 1;
+        stages = get_vlc2(bitbuf, svq1_inter_multistage[level], 3, 2) - 1;
 
         if (stages == -1)
             continue;           /* skip vector */
@@ -270,7 +270,7 @@ static int svq1_decode_block_non_intra(GetBitContext *bitbuf, uint8_t *pixels,
         }
         av_assert0(stages >= 0);
 
-        mean = get_vlc2(bitbuf, svq1_inter_mean.table, 9, 3) - 256;
+        mean = get_vlc2(bitbuf, svq1_inter_mean, 9, 3) - 256;
 
         if (buggy) {
             if (mean == -128)
@@ -307,7 +307,7 @@ static int svq1_decode_motion_vector(GetBitContext *bitbuf, svq1_pmv *mv,
 
     for (i = 0; i < 2; i++) {
         /* get motion code */
-        diff = get_vlc2(bitbuf, svq1_motion_component.table, 7, 2);
+        diff = get_vlc2(bitbuf, svq1_motion_component, 7, 2);
         if (diff < 0)
             return AVERROR_INVALIDDATA;
         else if (diff) {
@@ -472,7 +472,7 @@ static int svq1_decode_delta_block(AVCodecContext *avctx, HpelDSPContext *hdsp,
     int result = 0;
 
     /* get block type */
-    block_type = get_vlc2(bitbuf, svq1_block_type.table,
+    block_type = get_vlc2(bitbuf, svq1_block_type,
                           SVQ1_BLOCK_TYPE_VLC_BITS, 1);
 
     /* reset motion vectors */
@@ -779,41 +779,35 @@ static int svq1_decode_frame(AVCodecContext *avctx, AVFrame *cur,
 
 static av_cold void svq1_static_init(void)
 {
-    VLC_INIT_STATIC(&svq1_block_type, SVQ1_BLOCK_TYPE_VLC_BITS, 4,
-                    &ff_svq1_block_type_vlc[0][1], 2, 1,
-                    &ff_svq1_block_type_vlc[0][0], 2, 1, 8);
+    static VLCElem table[168];
+    VLCInitState state = VLC_INIT_STATE(table);
 
-    VLC_INIT_STATIC(&svq1_motion_component, 7, 33,
-                    &ff_mvtab[0][1], 2, 1,
-                    &ff_mvtab[0][0], 2, 1, 176);
+    VLC_INIT_STATIC_TABLE(svq1_block_type, SVQ1_BLOCK_TYPE_VLC_BITS, 4,
+                          &ff_svq1_block_type_vlc[0][1], 2, 1,
+                          &ff_svq1_block_type_vlc[0][0], 2, 1, 0);
 
-    for (int i = 0, offset = 0; i < 6; i++) {
-        static const uint8_t sizes[2][6] = { { 14, 10, 14, 18, 16, 18 },
-                                             { 10, 10, 14, 14, 14, 16 } };
-        static VLCElem table[168];
-        svq1_intra_multistage[i].table           = &table[offset];
-        svq1_intra_multistage[i].table_allocated = sizes[0][i];
-        offset                                  += sizes[0][i];
-        vlc_init(&svq1_intra_multistage[i], 3, 8,
-                 &ff_svq1_intra_multistage_vlc[i][0][1], 2, 1,
-                 &ff_svq1_intra_multistage_vlc[i][0][0], 2, 1,
-                 VLC_INIT_USE_STATIC);
-        svq1_inter_multistage[i].table           = &table[offset];
-        svq1_inter_multistage[i].table_allocated = sizes[1][i];
-        offset                                  += sizes[1][i];
-        vlc_init(&svq1_inter_multistage[i], 3, 8,
-                 &ff_svq1_inter_multistage_vlc[i][0][1], 2, 1,
-                 &ff_svq1_inter_multistage_vlc[i][0][0], 2, 1,
-                 VLC_INIT_USE_STATIC);
+    VLC_INIT_STATIC_TABLE(svq1_motion_component, 7, 33,
+                          &ff_mvtab[0][1], 2, 1,
+                          &ff_mvtab[0][0], 2, 1, 0);
+
+    for (int i = 0; i < 6; i++) {
+        svq1_intra_multistage[i] =
+            ff_vlc_init_tables(&state, 3, 8,
+                               &ff_svq1_intra_multistage_vlc[i][0][1], 2, 1,
+                               &ff_svq1_intra_multistage_vlc[i][0][0], 2, 1, 0);
+        svq1_inter_multistage[i] =
+            ff_vlc_init_tables(&state, 3, 8,
+                               &ff_svq1_inter_multistage_vlc[i][0][1], 2, 1,
+                               &ff_svq1_inter_multistage_vlc[i][0][0], 2, 1, 0);
     }
 
-    VLC_INIT_STATIC(&svq1_intra_mean, 8, 256,
-                    &ff_svq1_intra_mean_vlc[0][1], 4, 2,
-                    &ff_svq1_intra_mean_vlc[0][0], 4, 2, 632);
+    VLC_INIT_STATIC_TABLE(svq1_intra_mean, 8, 256,
+                          &ff_svq1_intra_mean_vlc[0][1], 4, 2,
+                          &ff_svq1_intra_mean_vlc[0][0], 4, 2, 0);
 
-    VLC_INIT_STATIC(&svq1_inter_mean, 9, 512,
-                    &ff_svq1_inter_mean_vlc[0][1], 4, 2,
-                    &ff_svq1_inter_mean_vlc[0][0], 4, 2, 1434);
+    VLC_INIT_STATIC_TABLE(svq1_inter_mean, 9, 512,
+                          &ff_svq1_inter_mean_vlc[0][1], 4, 2,
+                          &ff_svq1_inter_mean_vlc[0][0], 4, 2, 0);
 }
 
 static av_cold int svq1_decode_init(AVCodecContext *avctx)
