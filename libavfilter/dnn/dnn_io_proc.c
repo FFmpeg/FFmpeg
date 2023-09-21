@@ -27,6 +27,12 @@
 int ff_proc_from_dnn_to_frame(AVFrame *frame, DNNData *output, void *log_ctx)
 {
     struct SwsContext *sws_ctx;
+    int ret = 0;
+    int linesize[4] = { 0 };
+    void **dst_data = NULL;
+    void *middle_data = NULL;
+    uint8_t *planar_data[4] = { 0 };
+    int plane_size = frame->width * frame->height * sizeof(uint8_t);
     int bytewidth = av_image_get_linesize(frame->format, frame->width, 0);
     if (bytewidth < 0) {
         return AVERROR(EINVAL);
@@ -34,6 +40,17 @@ int ff_proc_from_dnn_to_frame(AVFrame *frame, DNNData *output, void *log_ctx)
     if (output->dt != DNN_FLOAT) {
         avpriv_report_missing_feature(log_ctx, "data type rather than DNN_FLOAT");
         return AVERROR(ENOSYS);
+    }
+    dst_data = (void **)frame->data;
+    linesize[0] = frame->linesize[0];
+    if (output->layout == DL_NCHW) {
+        middle_data = av_malloc(plane_size * output->channels);
+        if (!middle_data) {
+            ret = AVERROR(ENOMEM);
+            goto err;
+        }
+        dst_data = &middle_data;
+        linesize[0] = frame->width * 3;
     }
 
     switch (frame->format) {
@@ -51,18 +68,52 @@ int ff_proc_from_dnn_to_frame(AVFrame *frame, DNNData *output, void *log_ctx)
                 "fmt:%s s:%dx%d -> fmt:%s s:%dx%d\n",
                 av_get_pix_fmt_name(AV_PIX_FMT_GRAYF32), frame->width * 3, frame->height,
                 av_get_pix_fmt_name(AV_PIX_FMT_GRAY8),   frame->width * 3, frame->height);
-            return AVERROR(EINVAL);
+            ret = AVERROR(EINVAL);
+            goto err;
         }
         sws_scale(sws_ctx, (const uint8_t *[4]){(const uint8_t *)output->data, 0, 0, 0},
                            (const int[4]){frame->width * 3 * sizeof(float), 0, 0, 0}, 0, frame->height,
-                           (uint8_t * const*)frame->data, frame->linesize);
+                           (uint8_t * const*)dst_data, linesize);
         sws_freeContext(sws_ctx);
-        return 0;
+        // convert data from planar to packed
+        if (output->layout == DL_NCHW) {
+            sws_ctx = sws_getContext(frame->width,
+                                     frame->height,
+                                     AV_PIX_FMT_GBRP,
+                                     frame->width,
+                                     frame->height,
+                                     frame->format,
+                                     0, NULL, NULL, NULL);
+            if (!sws_ctx) {
+                av_log(log_ctx, AV_LOG_ERROR, "Impossible to create scale context for the conversion "
+                       "fmt:%s s:%dx%d -> fmt:%s s:%dx%d\n",
+                       av_get_pix_fmt_name(AV_PIX_FMT_GBRP), frame->width, frame->height,
+                       av_get_pix_fmt_name(frame->format),frame->width, frame->height);
+                ret = AVERROR(EINVAL);
+                goto err;
+            }
+            if (frame->format == AV_PIX_FMT_RGB24) {
+                planar_data[0] = (uint8_t *)middle_data + plane_size;
+                planar_data[1] = (uint8_t *)middle_data + plane_size * 2;
+                planar_data[2] = (uint8_t *)middle_data;
+            } else if (frame->format == AV_PIX_FMT_BGR24) {
+                planar_data[0] = (uint8_t *)middle_data + plane_size;
+                planar_data[1] = (uint8_t *)middle_data;
+                planar_data[2] = (uint8_t *)middle_data + plane_size * 2;
+            }
+            sws_scale(sws_ctx, (const uint8_t * const *)planar_data,
+                      (const int [4]){frame->width * sizeof(uint8_t),
+                                      frame->width * sizeof(uint8_t),
+                                      frame->width * sizeof(uint8_t), 0},
+                      0, frame->height, frame->data, frame->linesize);
+            sws_freeContext(sws_ctx);
+        }
+        break;
     case AV_PIX_FMT_GRAYF32:
         av_image_copy_plane(frame->data[0], frame->linesize[0],
                             output->data, bytewidth,
                             bytewidth, frame->height);
-        return 0;
+        break;
     case AV_PIX_FMT_YUV420P:
     case AV_PIX_FMT_YUV422P:
     case AV_PIX_FMT_YUV444P:
@@ -82,24 +133,34 @@ int ff_proc_from_dnn_to_frame(AVFrame *frame, DNNData *output, void *log_ctx)
                 "fmt:%s s:%dx%d -> fmt:%s s:%dx%d\n",
                 av_get_pix_fmt_name(AV_PIX_FMT_GRAYF32), frame->width, frame->height,
                 av_get_pix_fmt_name(AV_PIX_FMT_GRAY8),   frame->width, frame->height);
-            return AVERROR(EINVAL);
+            ret = AVERROR(EINVAL);
+            goto err;
         }
         sws_scale(sws_ctx, (const uint8_t *[4]){(const uint8_t *)output->data, 0, 0, 0},
                            (const int[4]){frame->width * sizeof(float), 0, 0, 0}, 0, frame->height,
                            (uint8_t * const*)frame->data, frame->linesize);
         sws_freeContext(sws_ctx);
-        return 0;
+        break;
     default:
         avpriv_report_missing_feature(log_ctx, "%s", av_get_pix_fmt_name(frame->format));
-        return AVERROR(ENOSYS);
+        ret = AVERROR(ENOSYS);
+        goto err;
     }
 
-    return 0;
+err:
+    av_free(middle_data);
+    return ret;
 }
 
 int ff_proc_from_frame_to_dnn(AVFrame *frame, DNNData *input, void *log_ctx)
 {
     struct SwsContext *sws_ctx;
+    int ret = 0;
+    int linesize[4] = { 0 };
+    void **src_data = NULL;
+    void *middle_data = NULL;
+    uint8_t *planar_data[4] = { 0 };
+    int plane_size = frame->width * frame->height * sizeof(uint8_t);
     int bytewidth = av_image_get_linesize(frame->format, frame->width, 0);
     if (bytewidth < 0) {
         return AVERROR(EINVAL);
@@ -109,9 +170,54 @@ int ff_proc_from_frame_to_dnn(AVFrame *frame, DNNData *input, void *log_ctx)
         return AVERROR(ENOSYS);
     }
 
+    src_data = (void **)frame->data;
+    linesize[0] = frame->linesize[0];
+    if (input->layout == DL_NCHW) {
+        middle_data = av_malloc(plane_size * input->channels);
+        if (!middle_data) {
+            ret = AVERROR(ENOMEM);
+            goto err;
+        }
+        src_data = &middle_data;
+        linesize[0] = frame->width * 3;
+    }
+
     switch (frame->format) {
     case AV_PIX_FMT_RGB24:
     case AV_PIX_FMT_BGR24:
+        // convert data from planar to packed
+        if (input->layout == DL_NCHW) {
+            sws_ctx = sws_getContext(frame->width,
+                                     frame->height,
+                                     frame->format,
+                                     frame->width,
+                                     frame->height,
+                                     AV_PIX_FMT_GBRP,
+                                     0, NULL, NULL, NULL);
+            if (!sws_ctx) {
+                av_log(log_ctx, AV_LOG_ERROR, "Impossible to create scale context for the conversion "
+                       "fmt:%s s:%dx%d -> fmt:%s s:%dx%d\n",
+                       av_get_pix_fmt_name(frame->format), frame->width, frame->height,
+                       av_get_pix_fmt_name(AV_PIX_FMT_GBRP),frame->width, frame->height);
+                ret = AVERROR(EINVAL);
+                goto err;
+            }
+            if (frame->format == AV_PIX_FMT_RGB24) {
+                planar_data[0] = (uint8_t *)middle_data + plane_size;
+                planar_data[1] = (uint8_t *)middle_data + plane_size * 2;
+                planar_data[2] = (uint8_t *)middle_data;
+            } else if (frame->format == AV_PIX_FMT_BGR24) {
+                planar_data[0] = (uint8_t *)middle_data + plane_size;
+                planar_data[1] = (uint8_t *)middle_data;
+                planar_data[2] = (uint8_t *)middle_data + plane_size * 2;
+            }
+            sws_scale(sws_ctx, (const uint8_t * const *)frame->data,
+                      frame->linesize, 0, frame->height, planar_data,
+                      (const int [4]){frame->width * sizeof(uint8_t),
+                                      frame->width * sizeof(uint8_t),
+                                      frame->width * sizeof(uint8_t), 0});
+            sws_freeContext(sws_ctx);
+        }
         sws_ctx = sws_getContext(frame->width * 3,
                                  frame->height,
                                  AV_PIX_FMT_GRAY8,
@@ -124,10 +230,11 @@ int ff_proc_from_frame_to_dnn(AVFrame *frame, DNNData *input, void *log_ctx)
                 "fmt:%s s:%dx%d -> fmt:%s s:%dx%d\n",
                 av_get_pix_fmt_name(AV_PIX_FMT_GRAY8),  frame->width * 3, frame->height,
                 av_get_pix_fmt_name(AV_PIX_FMT_GRAYF32),frame->width * 3, frame->height);
-            return AVERROR(EINVAL);
+            ret = AVERROR(EINVAL);
+            goto err;
         }
-        sws_scale(sws_ctx, (const uint8_t **)frame->data,
-                           frame->linesize, 0, frame->height,
+        sws_scale(sws_ctx, (const uint8_t **)src_data,
+                           linesize, 0, frame->height,
                            (uint8_t * const [4]){input->data, 0, 0, 0},
                            (const int [4]){frame->width * 3 * sizeof(float), 0, 0, 0});
         sws_freeContext(sws_ctx);
@@ -156,7 +263,8 @@ int ff_proc_from_frame_to_dnn(AVFrame *frame, DNNData *input, void *log_ctx)
                 "fmt:%s s:%dx%d -> fmt:%s s:%dx%d\n",
                 av_get_pix_fmt_name(AV_PIX_FMT_GRAY8),  frame->width, frame->height,
                 av_get_pix_fmt_name(AV_PIX_FMT_GRAYF32),frame->width, frame->height);
-            return AVERROR(EINVAL);
+            ret = AVERROR(EINVAL);
+            goto err;
         }
         sws_scale(sws_ctx, (const uint8_t **)frame->data,
                            frame->linesize, 0, frame->height,
@@ -166,10 +274,12 @@ int ff_proc_from_frame_to_dnn(AVFrame *frame, DNNData *input, void *log_ctx)
         break;
     default:
         avpriv_report_missing_feature(log_ctx, "%s", av_get_pix_fmt_name(frame->format));
-        return AVERROR(ENOSYS);
+        ret = AVERROR(ENOSYS);
+        goto err;
     }
-
-    return 0;
+err:
+    av_free(middle_data);
+    return ret;
 }
 
 static enum AVPixelFormat get_pixel_format(DNNData *data)
@@ -204,6 +314,11 @@ int ff_frame_to_dnn_classify(AVFrame *frame, DNNData *input, uint32_t bbox_index
     const AVDetectionBBox *bbox;
     AVFrameSideData *sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DETECTION_BBOXES);
     av_assert0(sd);
+
+    if (input->layout == DL_NCHW) {
+        av_log(log_ctx, AV_LOG_ERROR, "dnn_classify input data doesn't support layout: NCHW\n");
+        return AVERROR(ENOSYS);
+    }
 
     header = (const AVDetectionBBoxHeader *)sd->data;
     bbox = av_get_detection_bbox(header, bbox_index);
@@ -257,6 +372,12 @@ int ff_frame_to_dnn_detect(AVFrame *frame, DNNData *input, void *log_ctx)
     int linesizes[4];
     int ret = 0;
     enum AVPixelFormat fmt = get_pixel_format(input);
+
+    if (input->layout == DL_NCHW) {
+        av_log(log_ctx, AV_LOG_ERROR, "dnn_detect input data doesn't support layout: NCHW\n");
+        return AVERROR(ENOSYS);
+    }
+
     sws_ctx = sws_getContext(frame->width, frame->height, frame->format,
                              input->width, input->height, fmt,
                              SWS_FAST_BILINEAR, NULL, NULL, NULL);

@@ -45,6 +45,7 @@ typedef struct OVOptions{
     uint8_t async;
     int batch_size;
     int input_resizable;
+    DNNLayout layout;
 } OVOptions;
 
 typedef struct OVContext {
@@ -100,6 +101,10 @@ static const AVOption dnn_openvino_options[] = {
     DNN_BACKEND_COMMON_OPTIONS
     { "batch_size",  "batch size per request", OFFSET(options.batch_size),  AV_OPT_TYPE_INT,    { .i64 = 1 },     1, 1000, FLAGS},
     { "input_resizable", "can input be resizable or not", OFFSET(options.input_resizable), AV_OPT_TYPE_BOOL,   { .i64 = 0 },     0, 1, FLAGS },
+    { "layout", "input layout of model", OFFSET(options.layout), AV_OPT_TYPE_INT, { .i64 = DL_NONE}, DL_NONE, DL_NHWC, FLAGS, "layout" },
+        { "none",  "none", 0, AV_OPT_TYPE_CONST, { .i64 = DL_NONE }, 0, 0, FLAGS, "layout"},
+        { "nchw",  "nchw", 0, AV_OPT_TYPE_CONST, { .i64 = DL_NCHW }, 0, 0, FLAGS, "layout"},
+        { "nhwc",  "nhwc", 0, AV_OPT_TYPE_CONST, { .i64 = DL_NHWC }, 0, 0, FLAGS, "layout"},
     { NULL }
 };
 
@@ -235,9 +240,9 @@ static int fill_model_input_ov(OVModel *ov_model, OVRequestItem *request)
         avpriv_report_missing_feature(ctx, "Do not support dynamic model.");
         return AVERROR(ENOSYS);
     }
-    input.height = dims[2];
-    input.width = dims[3];
-    input.channels = dims[1];
+    input.height = dims[1];
+    input.width = dims[2];
+    input.channels = dims[3];
     input.dt = precision_to_datatype(precision);
     input.data = av_malloc(input.height * input.width * input.channels * get_datatype_size(input.dt));
     if (!input.data) {
@@ -412,6 +417,7 @@ static void infer_completion_callback(void *args)
     av_assert0(request->lltask_count <= dims.dims[0]);
 #endif
     output.dt       = precision_to_datatype(precision);
+    output.layout   = ctx->options.layout;
 
     av_assert0(request->lltask_count >= 1);
     for (int i = 0; i < request->lltask_count; ++i) {
@@ -540,11 +546,14 @@ static int init_model_ov(OVModel *ov_model, const char *input_name, const char *
     OVContext *ctx = &ov_model->ctx;
 #if HAVE_OPENVINO2
     ov_status_e status;
-    ov_preprocess_input_tensor_info_t* input_tensor_info;
-    ov_preprocess_output_tensor_info_t* output_tensor_info;
+    ov_preprocess_input_tensor_info_t* input_tensor_info = NULL;
+    ov_preprocess_output_tensor_info_t* output_tensor_info = NULL;
+    ov_preprocess_input_model_info_t* input_model_info = NULL;
     ov_model_t *tmp_ov_model;
     ov_layout_t* NHWC_layout = NULL;
+    ov_layout_t* NCHW_layout = NULL;
     const char* NHWC_desc = "NHWC";
+    const char* NCHW_desc = "NCHW";
     const char* device = ctx->options.device_type;
 #else
     IEStatusCode status;
@@ -589,6 +598,7 @@ static int init_model_ov(OVModel *ov_model, const char *input_name, const char *
 
     //set input layout
     status = ov_layout_create(NHWC_desc, &NHWC_layout);
+    status |= ov_layout_create(NCHW_desc, &NCHW_layout);
     if (status != OK) {
         av_log(ctx, AV_LOG_ERROR, "Failed to create layout for input.\n");
         ret = ov2_map_error(status, NULL);
@@ -598,6 +608,22 @@ static int init_model_ov(OVModel *ov_model, const char *input_name, const char *
     status = ov_preprocess_input_tensor_info_set_layout(input_tensor_info, NHWC_layout);
     if (status != OK) {
         av_log(ctx, AV_LOG_ERROR, "Failed to set input tensor layout\n");
+        ret = ov2_map_error(status, NULL);
+        goto err;
+    }
+
+    status = ov_preprocess_input_info_get_model_info(ov_model->input_info, &input_model_info);
+    if (status != OK) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to get input model info\n");
+        ret = ov2_map_error(status, NULL);
+        goto err;
+    }
+    if (ctx->options.layout == DL_NCHW)
+        status = ov_preprocess_input_model_info_set_layout(input_model_info, NCHW_layout);
+    else if (ctx->options.layout == DL_NHWC)
+        status = ov_preprocess_input_model_info_set_layout(input_model_info, NHWC_layout);
+    if (status != OK) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to get set input model layout\n");
         ret = ov2_map_error(status, NULL);
         goto err;
     }
@@ -639,6 +665,9 @@ static int init_model_ov(OVModel *ov_model, const char *input_name, const char *
         ret = ov2_map_error(status, NULL);
         goto err;
     }
+    ov_preprocess_input_model_info_free(input_model_info);
+    ov_layout_free(NCHW_layout);
+    ov_layout_free(NHWC_layout);
 #else
     if (ctx->options.batch_size > 1) {
         input_shapes_t input_shapes;
@@ -783,6 +812,14 @@ static int init_model_ov(OVModel *ov_model, const char *input_name, const char *
     return 0;
 
 err:
+#if HAVE_OPENVINO2
+    if (NCHW_layout)
+        ov_layout_free(NCHW_layout);
+    if (NHWC_layout)
+        ov_layout_free(NHWC_layout);
+    if (input_model_info)
+        ov_preprocess_input_model_info_free(input_model_info);
+#endif
     dnn_free_model_ov(&ov_model->model);
     return ret;
 }

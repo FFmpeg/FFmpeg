@@ -56,12 +56,19 @@ typedef enum {
     DFT_ANALYTICS_CLASSIFY, // classify for each bounding box
 }DNNFunctionType;
 
+typedef enum {
+    DL_NONE,
+    DL_NCHW,
+    DL_NHWC,
+} DNNLayout;
+
 typedef struct DNNData{
     void *data;
     int width, height, channels;
     // dt and order together decide the color format
     DNNDataType dt;
     DNNColorOrder order;
+    DNNLayout layout;
 } DNNData;
 
 typedef struct DNNExecBaseParams {
