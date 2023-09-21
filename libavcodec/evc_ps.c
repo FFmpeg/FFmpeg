@@ -255,8 +255,10 @@ int ff_evc_parse_sps(GetBitContext *gb, EVCParamSets *ps)
         sps->max_num_tid0_ref_pics = get_ue_golomb_31(gb);
     else {
         sps->sps_max_dec_pic_buffering_minus1 = get_ue_golomb_long(gb);
-        if ((unsigned)sps->sps_max_dec_pic_buffering_minus1 > 16 - 1)
-            return AVERROR_INVALIDDATA;
+        if ((unsigned)sps->sps_max_dec_pic_buffering_minus1 > 16 - 1) {
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
+        }
         sps->long_term_ref_pic_flag = get_bits1(gb);
         sps->rpl1_same_as_rpl0_flag = get_bits1(gb);
         sps->num_ref_pic_list_in_sps[0] = get_ue_golomb(gb);
