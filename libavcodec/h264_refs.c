@@ -48,7 +48,7 @@ static void pic_as_field(H264Ref *pic, const int parity)
     pic->poc = pic->parent->field_poc[parity == PICT_BOTTOM_FIELD];
 }
 
-static void ref_from_h264pic(H264Ref *dst, H264Picture *src)
+static void ref_from_h264pic(H264Ref *dst, const H264Picture *src)
 {
     memcpy(dst->data,     src->f->data,     sizeof(dst->data));
     memcpy(dst->linesize, src->f->linesize, sizeof(dst->linesize));
@@ -58,7 +58,8 @@ static void ref_from_h264pic(H264Ref *dst, H264Picture *src)
     dst->parent = src;
 }
 
-static int split_field_copy(H264Ref *dest, H264Picture *src, int parity, int id_add)
+static int split_field_copy(H264Ref *dest, const H264Picture *src,
+                            int parity, int id_add)
 {
     int match = !!(src->reference & parity);
 
@@ -275,7 +276,7 @@ static void h264_fill_mbaff_ref_list(H264SliceContext *sl)
     int list, i, j;
     for (list = 0; list < sl->list_count; list++) {
         for (i = 0; i < sl->ref_count[list]; i++) {
-            H264Ref *frame = &sl->ref_list[list][i];
+            const H264Ref *frame = &sl->ref_list[list][i];
             H264Ref *field = &sl->ref_list[list][16 + 2 * i];
 
             field[0] = *frame;

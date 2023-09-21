@@ -66,7 +66,7 @@ static void h264_er_decode_mb(void *opaque, int ref, int mv_dir, int mv_type,
                               int (*mv)[2][4][2],
                               int mb_x, int mb_y, int mb_intra, int mb_skipped)
 {
-    H264Context *h = opaque;
+    const H264Context *h = opaque;
     H264SliceContext *sl = &h->slice_ctx[0];
 
     sl->mb_x = mb_x;
@@ -832,7 +832,7 @@ static int get_consumed_bytes(int pos, int buf_size)
     return pos;
 }
 
-static int h264_export_enc_params(AVFrame *f, H264Picture *p)
+static int h264_export_enc_params(AVFrame *f, const H264Picture *p)
 {
     AVVideoEncParams *par;
     unsigned int nb_mb = p->mb_height * p->mb_width;

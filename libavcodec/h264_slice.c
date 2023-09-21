@@ -266,7 +266,7 @@ fail:
     return (ret < 0) ? ret : AVERROR(ENOMEM);
 }
 
-static int find_unused_picture(H264Context *h)
+static int find_unused_picture(const H264Context *h)
 {
     int i;
 
@@ -285,9 +285,8 @@ static int find_unused_picture(H264Context *h)
       (pic) < (old_ctx)->DPB + H264_MAX_PICTURE_COUNT) ?          \
      &(new_ctx)->DPB[(pic) - (old_ctx)->DPB] : NULL)
 
-static void copy_picture_range(H264Picture **to, H264Picture **from, int count,
-                               H264Context *new_base,
-                               H264Context *old_base)
+static void copy_picture_range(H264Picture **to, H264Picture *const *from, int count,
+                               H264Context *new_base, const H264Context *old_base)
 {
     int i;
 
@@ -583,8 +582,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
 }
 
 static av_always_inline void backup_mb_border(const H264Context *h, H264SliceContext *sl,
-                                              uint8_t *src_y,
-                                              uint8_t *src_cb, uint8_t *src_cr,
+                                              const uint8_t *src_y,
+                                              const uint8_t *src_cb, const uint8_t *src_cr,
                                               int linesize, int uvlinesize,
                                               int simple)
 {
@@ -1185,7 +1184,7 @@ static int h264_export_frame_props(H264Context *h)
     }
 
     if (sps->pic_struct_present_flag && h->sei.picture_timing.present) {
-        H264SEIPictureTiming *pt = &h->sei.picture_timing;
+        const H264SEIPictureTiming *pt = &h->sei.picture_timing;
         switch (pt->pic_struct) {
         case H264_SEI_PIC_STRUCT_FRAME:
             break;
@@ -1983,7 +1982,7 @@ static int h264_slice_init(H264Context *h, H264SliceContext *sl,
             if (j < sl->list_count && i < sl->ref_count[j] &&
                 sl->ref_list[j][i].parent->f->buf[0]) {
                 int k;
-                AVBuffer *buf = sl->ref_list[j][i].parent->f->buf[0]->buffer;
+                const AVBuffer *buf = sl->ref_list[j][i].parent->f->buf[0]->buffer;
                 for (k = 0; k < h->short_ref_count; k++)
                     if (h->short_ref[k]->f->buf[0]->buffer == buf) {
                         id_list[i] = k;
@@ -2178,9 +2177,9 @@ int ff_h264_get_slice_type(const H264SliceContext *sl)
 static av_always_inline void fill_filter_caches_inter(const H264Context *h,
                                                       H264SliceContext *sl,
                                                       int mb_type, int top_xy,
-                                                      int left_xy[LEFT_MBS],
+                                                      const int left_xy[LEFT_MBS],
                                                       int top_type,
-                                                      int left_type[LEFT_MBS],
+                                                      const int left_type[LEFT_MBS],
                                                       int mb_xy, int list)
 {
     int b_stride = h->b_stride;
@@ -2237,7 +2236,7 @@ static av_always_inline void fill_filter_caches_inter(const H264Context *h,
     }
 
     {
-        int8_t *ref = &h->cur_pic.ref_index[list][4 * mb_xy];
+        const int8_t *ref = &h->cur_pic.ref_index[list][4 * mb_xy];
         const int *ref2frm = &h->ref2frm[sl->slice_num & (MAX_SLICES - 1)][list][(MB_MBAFF(sl) ? 20 : 2)];
         uint32_t ref01 = (pack16to32(ref2frm[ref[0]], ref2frm[ref[1]]) & 0x00FF00FF) * 0x0101;
         uint32_t ref23 = (pack16to32(ref2frm[ref[2]], ref2frm[ref[3]]) & 0x00FF00FF) * 0x0101;
@@ -2264,7 +2263,7 @@ static int fill_filter_caches(const H264Context *h, H264SliceContext *sl, int mb
     const int mb_xy = sl->mb_xy;
     int top_xy, left_xy[LEFT_MBS];
     int top_type, left_type[LEFT_MBS];
-    uint8_t *nnz;
+    const uint8_t *nnz;
     uint8_t *nnz_cache;
 
     top_xy = mb_xy - (h->mb_stride << MB_FIELD(sl));

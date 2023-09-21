@@ -94,7 +94,7 @@ static void h264_copy_picture_params(H264Picture *dst, const H264Picture *src)
     dst->needs_fg      = src->needs_fg;
 }
 
-int ff_h264_ref_picture(H264Context *h, H264Picture *dst, H264Picture *src)
+int ff_h264_ref_picture(H264Context *h, H264Picture *dst, const H264Picture *src)
 {
     int ret, i;
 
@@ -194,7 +194,7 @@ fail:
     return ret;
 }
 
-void ff_h264_set_erpic(ERPicture *dst, H264Picture *src)
+void ff_h264_set_erpic(ERPicture *dst, const H264Picture *src)
 {
 #if CONFIG_ERROR_RESILIENCE
     int i;
@@ -240,7 +240,7 @@ int ff_h264_field_end(H264Context *h, H264SliceContext *sl, int in_setup)
             av_log(avctx, AV_LOG_ERROR,
                    "hardware accelerator failed to decode picture\n");
     } else if (!in_setup && cur->needs_fg && (!FIELD_PICTURE(h) || !h->first_field)) {
-        AVFrameSideData *sd = av_frame_get_side_data(cur->f, AV_FRAME_DATA_FILM_GRAIN_PARAMS);
+        const AVFrameSideData *sd = av_frame_get_side_data(cur->f, AV_FRAME_DATA_FILM_GRAIN_PARAMS);
 
         err = AVERROR_INVALIDDATA;
         if (sd) // a decoding error may have happened before the side data could be allocated
