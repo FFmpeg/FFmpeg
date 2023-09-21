@@ -622,7 +622,7 @@ err:
 }
 
 static int fill_model_input_tf(TFModel *tf_model, TFRequestItem *request) {
-    DNNData input;
+    DNNData input = { 0 };
     LastLevelTaskItem *lltask;
     TaskItem *task;
     TFInferRequest *infer_request = NULL;
@@ -724,7 +724,7 @@ static void infer_completion_callback(void *args) {
     TFModel *tf_model = task->model;
     TFContext *ctx = &tf_model->ctx;
 
-    outputs = av_malloc_array(task->nb_output, sizeof(*outputs));
+    outputs = av_calloc(task->nb_output, sizeof(*outputs));
     if (!outputs) {
         av_log(ctx, AV_LOG_ERROR, "Failed to allocate memory for *outputs\n");
         goto err;
