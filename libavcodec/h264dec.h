@@ -43,6 +43,7 @@
 #include "h264qpel.h"
 #include "h274.h"
 #include "mpegutils.h"
+#include "threadframe.h"
 #include "videodsp.h"
 
 #define H264_MAX_PICTURE_COUNT 36
