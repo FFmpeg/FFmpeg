@@ -46,6 +46,8 @@ typedef struct OVOptions{
     int batch_size;
     int input_resizable;
     DNNLayout layout;
+    float scale;
+    float mean;
 } OVOptions;
 
 typedef struct OVContext {
@@ -105,6 +107,8 @@ static const AVOption dnn_openvino_options[] = {
         { "none",  "none", 0, AV_OPT_TYPE_CONST, { .i64 = DL_NONE }, 0, 0, FLAGS, "layout"},
         { "nchw",  "nchw", 0, AV_OPT_TYPE_CONST, { .i64 = DL_NCHW }, 0, 0, FLAGS, "layout"},
         { "nhwc",  "nhwc", 0, AV_OPT_TYPE_CONST, { .i64 = DL_NHWC }, 0, 0, FLAGS, "layout"},
+    { "scale", "Add scale preprocess operation. Divide each element of input by specified value.", OFFSET(options.scale), AV_OPT_TYPE_FLOAT, { .dbl = 0 }, INT_MIN, INT_MAX, FLAGS},
+    { "mean",  "Add mean preprocess operation. Subtract specified value from each element of input.", OFFSET(options.mean),  AV_OPT_TYPE_FLOAT, { .dbl = 0 }, INT_MIN, INT_MAX, FLAGS},
     { NULL }
 };
 
@@ -209,6 +213,7 @@ static int fill_model_input_ov(OVModel *ov_model, OVRequestItem *request)
     ie_blob_t *input_blob = NULL;
 #endif
 
+    memset(&input, 0, sizeof(input));
     lltask = ff_queue_peek_front(ov_model->lltask_queue);
     av_assert0(lltask);
     task = lltask->task;
@@ -280,6 +285,9 @@ static int fill_model_input_ov(OVModel *ov_model, OVRequestItem *request)
     // all models in openvino open model zoo use BGR as input,
     // change to be an option when necessary.
     input.order = DCO_BGR;
+    // We use preprocess_steps to scale input data, so disable scale and mean here.
+    input.scale = 1;
+    input.mean = 0;
 
     for (int i = 0; i < ctx->options.batch_size; ++i) {
         lltask = ff_queue_pop_front(ov_model->lltask_queue);
@@ -350,6 +358,7 @@ static void infer_completion_callback(void *args)
     ov_shape_t output_shape = {0};
     ov_element_type_e precision;
 
+    memset(&output, 0, sizeof(output));
     status = ov_infer_request_get_output_tensor_by_index(request->infer_request, 0, &output_tensor);
     if (status != OK) {
         av_log(ctx, AV_LOG_ERROR,
@@ -418,6 +427,8 @@ static void infer_completion_callback(void *args)
 #endif
     output.dt       = precision_to_datatype(precision);
     output.layout   = ctx->options.layout;
+    output.scale    = ctx->options.scale;
+    output.mean     = ctx->options.mean;
 
     av_assert0(request->lltask_count >= 1);
     for (int i = 0; i < request->lltask_count; ++i) {
@@ -561,7 +572,9 @@ static int init_model_ov(OVModel *ov_model, const char *input_name, const char *
     ie_config_t config = {NULL, NULL, NULL};
     char *all_dev_names = NULL;
 #endif
-
+    // We scale pixel by default when do frame processing.
+    if (fabsf(ctx->options.scale) < 1e-6f)
+        ctx->options.scale = ov_model->model->func_type == DFT_PROCESS_FRAME ? 255 : 1;
     // batch size
     if (ctx->options.batch_size <= 0) {
         ctx->options.batch_size = 1;
@@ -628,14 +641,36 @@ static int init_model_ov(OVModel *ov_model, const char *input_name, const char *
         goto err;
     }
 
+    status = ov_preprocess_input_tensor_info_set_element_type(input_tensor_info, U8);
     if (ov_model->model->func_type != DFT_PROCESS_FRAME)
-        //set precision only for detect and classify
-        status = ov_preprocess_input_tensor_info_set_element_type(input_tensor_info, U8);
-    status |= ov_preprocess_output_set_element_type(output_tensor_info, F32);
+        status |= ov_preprocess_output_set_element_type(output_tensor_info, F32);
+    else if (fabsf(ctx->options.scale - 1) > 1e-6f || fabsf(ctx->options.mean) > 1e-6f)
+        status |= ov_preprocess_output_set_element_type(output_tensor_info, F32);
+    else
+        status |= ov_preprocess_output_set_element_type(output_tensor_info, U8);
     if (status != OK) {
         av_log(ctx, AV_LOG_ERROR, "Failed to set input/output element type\n");
         ret = ov2_map_error(status, NULL);
         goto err;
+    }
+    // set preprocess steps.
+    if (fabsf(ctx->options.scale - 1) > 1e-6f || fabsf(ctx->options.mean) > 1e-6f) {
+        ov_preprocess_preprocess_steps_t* input_process_steps = NULL;
+        status = ov_preprocess_input_info_get_preprocess_steps(ov_model->input_info, &input_process_steps);
+        if (status != OK) {
+            av_log(ctx, AV_LOG_ERROR, "Failed to get preprocess steps\n");
+            ret = ov2_map_error(status, NULL);
+            goto err;
+        }
+        status = ov_preprocess_preprocess_steps_convert_element_type(input_process_steps, F32);
+        status |= ov_preprocess_preprocess_steps_mean(input_process_steps, ctx->options.mean);
+        status |= ov_preprocess_preprocess_steps_scale(input_process_steps, ctx->options.scale);
+        if (status != OK) {
+            av_log(ctx, AV_LOG_ERROR, "Failed to set preprocess steps\n");
+            ret = ov2_map_error(status, NULL);
+            goto err;
+        }
+        ov_preprocess_preprocess_steps_free(input_process_steps);
     }
 
     //update model

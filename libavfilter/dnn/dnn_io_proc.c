@@ -24,6 +24,20 @@
 #include "libavutil/avassert.h"
 #include "libavutil/detection_bbox.h"
 
+static int get_datatype_size(DNNDataType dt)
+{
+    switch (dt)
+    {
+    case DNN_FLOAT:
+        return sizeof(float);
+    case DNN_UINT8:
+        return sizeof(uint8_t);
+    default:
+        av_assert0(!"not supported yet.");
+        return 1;
+    }
+}
+
 int ff_proc_from_dnn_to_frame(AVFrame *frame, DNNData *output, void *log_ctx)
 {
     struct SwsContext *sws_ctx;
@@ -33,14 +47,26 @@ int ff_proc_from_dnn_to_frame(AVFrame *frame, DNNData *output, void *log_ctx)
     void *middle_data = NULL;
     uint8_t *planar_data[4] = { 0 };
     int plane_size = frame->width * frame->height * sizeof(uint8_t);
+    enum AVPixelFormat src_fmt = AV_PIX_FMT_NONE;
+    int src_datatype_size = get_datatype_size(output->dt);
+
     int bytewidth = av_image_get_linesize(frame->format, frame->width, 0);
     if (bytewidth < 0) {
         return AVERROR(EINVAL);
     }
-    if (output->dt != DNN_FLOAT) {
-        avpriv_report_missing_feature(log_ctx, "data type rather than DNN_FLOAT");
+    /* scale == 1 and mean == 0 and dt == UINT8: passthrough */
+    if (fabsf(output->scale - 1) < 1e-6f && fabsf(output->mean) < 1e-6 && output->dt == DNN_UINT8)
+        src_fmt = AV_PIX_FMT_GRAY8;
+    /* (scale == 255 or scale == 0) and mean == 0 and dt == FLOAT: normalization */
+    else if ((fabsf(output->scale - 255) < 1e-6f || fabsf(output->scale) < 1e-6f) &&
+             fabsf(output->mean) < 1e-6 && output->dt == DNN_FLOAT)
+        src_fmt = AV_PIX_FMT_GRAYF32;
+    else {
+        av_log(log_ctx, AV_LOG_ERROR, "dnn_process output data doesn't type: UINT8 "
+                                      "scale: %f, mean: %f\n", output->scale, output->mean);
         return AVERROR(ENOSYS);
     }
+
     dst_data = (void **)frame->data;
     linesize[0] = frame->linesize[0];
     if (output->layout == DL_NCHW) {
@@ -58,7 +84,7 @@ int ff_proc_from_dnn_to_frame(AVFrame *frame, DNNData *output, void *log_ctx)
     case AV_PIX_FMT_BGR24:
         sws_ctx = sws_getContext(frame->width * 3,
                                  frame->height,
-                                 AV_PIX_FMT_GRAYF32,
+                                 src_fmt,
                                  frame->width * 3,
                                  frame->height,
                                  AV_PIX_FMT_GRAY8,
@@ -66,13 +92,13 @@ int ff_proc_from_dnn_to_frame(AVFrame *frame, DNNData *output, void *log_ctx)
         if (!sws_ctx) {
             av_log(log_ctx, AV_LOG_ERROR, "Impossible to create scale context for the conversion "
                 "fmt:%s s:%dx%d -> fmt:%s s:%dx%d\n",
-                av_get_pix_fmt_name(AV_PIX_FMT_GRAYF32), frame->width * 3, frame->height,
+                av_get_pix_fmt_name(src_fmt), frame->width * 3, frame->height,
                 av_get_pix_fmt_name(AV_PIX_FMT_GRAY8),   frame->width * 3, frame->height);
             ret = AVERROR(EINVAL);
             goto err;
         }
         sws_scale(sws_ctx, (const uint8_t *[4]){(const uint8_t *)output->data, 0, 0, 0},
-                           (const int[4]){frame->width * 3 * sizeof(float), 0, 0, 0}, 0, frame->height,
+                           (const int[4]){frame->width * 3 * src_datatype_size, 0, 0, 0}, 0, frame->height,
                            (uint8_t * const*)dst_data, linesize);
         sws_freeContext(sws_ctx);
         // convert data from planar to packed
@@ -131,13 +157,13 @@ int ff_proc_from_dnn_to_frame(AVFrame *frame, DNNData *output, void *log_ctx)
         if (!sws_ctx) {
             av_log(log_ctx, AV_LOG_ERROR, "Impossible to create scale context for the conversion "
                 "fmt:%s s:%dx%d -> fmt:%s s:%dx%d\n",
-                av_get_pix_fmt_name(AV_PIX_FMT_GRAYF32), frame->width, frame->height,
+                av_get_pix_fmt_name(src_fmt), frame->width, frame->height,
                 av_get_pix_fmt_name(AV_PIX_FMT_GRAY8),   frame->width, frame->height);
             ret = AVERROR(EINVAL);
             goto err;
         }
         sws_scale(sws_ctx, (const uint8_t *[4]){(const uint8_t *)output->data, 0, 0, 0},
-                           (const int[4]){frame->width * sizeof(float), 0, 0, 0}, 0, frame->height,
+                           (const int[4]){frame->width * src_datatype_size, 0, 0, 0}, 0, frame->height,
                            (uint8_t * const*)frame->data, frame->linesize);
         sws_freeContext(sws_ctx);
         break;
@@ -161,12 +187,22 @@ int ff_proc_from_frame_to_dnn(AVFrame *frame, DNNData *input, void *log_ctx)
     void *middle_data = NULL;
     uint8_t *planar_data[4] = { 0 };
     int plane_size = frame->width * frame->height * sizeof(uint8_t);
+    enum AVPixelFormat dst_fmt = AV_PIX_FMT_NONE;
+    int dst_datatype_size = get_datatype_size(input->dt);
     int bytewidth = av_image_get_linesize(frame->format, frame->width, 0);
     if (bytewidth < 0) {
         return AVERROR(EINVAL);
     }
-    if (input->dt != DNN_FLOAT) {
-        avpriv_report_missing_feature(log_ctx, "data type rather than DNN_FLOAT");
+    /* scale == 1 and mean == 0 and dt == UINT8: passthrough */
+    if (fabsf(input->scale - 1) < 1e-6f && fabsf(input->mean) < 1e-6 && input->dt == DNN_UINT8)
+        dst_fmt = AV_PIX_FMT_GRAY8;
+    /* (scale == 255 or scale == 0) and mean == 0 and dt == FLOAT: normalization */
+    else if ((fabsf(input->scale - 255) < 1e-6f || fabsf(input->scale) < 1e-6f) &&
+             fabsf(input->mean) < 1e-6 && input->dt == DNN_FLOAT)
+        dst_fmt = AV_PIX_FMT_GRAYF32;
+    else {
+        av_log(log_ctx, AV_LOG_ERROR, "dnn_process input data doesn't support type: UINT8 "
+                                      "scale: %f, mean: %f\n", input->scale, input->mean);
         return AVERROR(ENOSYS);
     }
 
@@ -223,20 +259,20 @@ int ff_proc_from_frame_to_dnn(AVFrame *frame, DNNData *input, void *log_ctx)
                                  AV_PIX_FMT_GRAY8,
                                  frame->width * 3,
                                  frame->height,
-                                 AV_PIX_FMT_GRAYF32,
+                                 dst_fmt,
                                  0, NULL, NULL, NULL);
         if (!sws_ctx) {
             av_log(log_ctx, AV_LOG_ERROR, "Impossible to create scale context for the conversion "
                 "fmt:%s s:%dx%d -> fmt:%s s:%dx%d\n",
                 av_get_pix_fmt_name(AV_PIX_FMT_GRAY8),  frame->width * 3, frame->height,
-                av_get_pix_fmt_name(AV_PIX_FMT_GRAYF32),frame->width * 3, frame->height);
+                av_get_pix_fmt_name(dst_fmt),frame->width * 3, frame->height);
             ret = AVERROR(EINVAL);
             goto err;
         }
         sws_scale(sws_ctx, (const uint8_t **)src_data,
                            linesize, 0, frame->height,
                            (uint8_t * const [4]){input->data, 0, 0, 0},
-                           (const int [4]){frame->width * 3 * sizeof(float), 0, 0, 0});
+                           (const int [4]){frame->width * 3 * dst_datatype_size, 0, 0, 0});
         sws_freeContext(sws_ctx);
         break;
     case AV_PIX_FMT_GRAYF32:
@@ -256,20 +292,20 @@ int ff_proc_from_frame_to_dnn(AVFrame *frame, DNNData *input, void *log_ctx)
                                  AV_PIX_FMT_GRAY8,
                                  frame->width,
                                  frame->height,
-                                 AV_PIX_FMT_GRAYF32,
+                                 dst_fmt,
                                  0, NULL, NULL, NULL);
         if (!sws_ctx) {
             av_log(log_ctx, AV_LOG_ERROR, "Impossible to create scale context for the conversion "
                 "fmt:%s s:%dx%d -> fmt:%s s:%dx%d\n",
                 av_get_pix_fmt_name(AV_PIX_FMT_GRAY8),  frame->width, frame->height,
-                av_get_pix_fmt_name(AV_PIX_FMT_GRAYF32),frame->width, frame->height);
+                av_get_pix_fmt_name(dst_fmt),frame->width, frame->height);
             ret = AVERROR(EINVAL);
             goto err;
         }
         sws_scale(sws_ctx, (const uint8_t **)frame->data,
                            frame->linesize, 0, frame->height,
                            (uint8_t * const [4]){input->data, 0, 0, 0},
-                           (const int [4]){frame->width * sizeof(float), 0, 0, 0});
+                           (const int [4]){frame->width * dst_datatype_size, 0, 0, 0});
         sws_freeContext(sws_ctx);
         break;
     default:
@@ -314,6 +350,14 @@ int ff_frame_to_dnn_classify(AVFrame *frame, DNNData *input, uint32_t bbox_index
     const AVDetectionBBox *bbox;
     AVFrameSideData *sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DETECTION_BBOXES);
     av_assert0(sd);
+
+    /* (scale != 1 and scale != 0) or mean != 0 */
+    if ((fabsf(input->scale - 1) > 1e-6f && fabsf(input->scale) > 1e-6f) ||
+        fabsf(input->mean) > 1e-6f) {
+        av_log(log_ctx, AV_LOG_ERROR, "dnn_classify input data doesn't support "
+                                      "scale: %f, mean: %f\n", input->scale, input->mean);
+        return AVERROR(ENOSYS);
+    }
 
     if (input->layout == DL_NCHW) {
         av_log(log_ctx, AV_LOG_ERROR, "dnn_classify input data doesn't support layout: NCHW\n");
@@ -372,6 +416,14 @@ int ff_frame_to_dnn_detect(AVFrame *frame, DNNData *input, void *log_ctx)
     int linesizes[4];
     int ret = 0;
     enum AVPixelFormat fmt = get_pixel_format(input);
+
+    /* (scale != 1 and scale != 0) or mean != 0 */
+    if ((fabsf(input->scale - 1) > 1e-6f && fabsf(input->scale) > 1e-6f) ||
+        fabsf(input->mean) > 1e-6f) {
+        av_log(log_ctx, AV_LOG_ERROR, "dnn_detect input data doesn't support "
+                                      "scale: %f, mean: %f\n", input->scale, input->mean);
+        return AVERROR(ENOSYS);
+    }
 
     if (input->layout == DL_NCHW) {
         av_log(log_ctx, AV_LOG_ERROR, "dnn_detect input data doesn't support layout: NCHW\n");

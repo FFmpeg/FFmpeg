@@ -69,6 +69,8 @@ typedef struct DNNData{
     DNNDataType dt;
     DNNColorOrder order;
     DNNLayout layout;
+    float scale;
+    float mean;
 } DNNData;
 
 typedef struct DNNExecBaseParams {
