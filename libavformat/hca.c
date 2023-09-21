@@ -19,18 +19,28 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/opt.h"
 #include "libavutil/intreadwrite.h"
 #include "libavcodec/bytestream.h"
 
 #include "avformat.h"
 #include "internal.h"
 
+#define HCA_MASK 0x7f7f7f7f
+
+typedef struct HCADemuxContext {
+    AVClass *class;
+    int64_t keyl;
+    int64_t keyh;
+    int subkey;
+} HCADemuxContext;
+
 static int hca_probe(const AVProbeData *p)
 {
-    if (AV_RL32(p->buf) != MKTAG('H', 'C', 'A', 0))
+    if ((AV_RL32(p->buf) & HCA_MASK) != MKTAG('H', 'C', 'A', 0))
         return 0;
 
-    if (AV_RL32(p->buf + 8) != MKTAG('f', 'm', 't', 0))
+    if ((AV_RL32(p->buf + 8) & HCA_MASK) != MKTAG('f', 'm', 't', 0))
         return 0;
 
     return AVPROBE_SCORE_MAX / 3;
@@ -38,6 +48,7 @@ static int hca_probe(const AVProbeData *p)
 
 static int hca_read_header(AVFormatContext *s)
 {
+    HCADemuxContext *hca = s->priv_data;
     AVCodecParameters *par;
     GetByteContext gb;
     AVIOContext *pb = s->pb;
@@ -60,20 +71,23 @@ static int hca_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     par = st->codecpar;
-    ret = ff_alloc_extradata(par, data_offset);
+    ret = ff_alloc_extradata(par, data_offset + 10);
     if (ret < 0)
         return ret;
 
-    ret = avio_read(pb, par->extradata + 8, par->extradata_size - 8);
-    if (ret < par->extradata_size - 8)
+    ret = avio_read(pb, par->extradata + 8, par->extradata_size - 8 - 10);
+    if (ret < par->extradata_size - 8 - 10)
         return AVERROR(EIO);
     AV_WL32(par->extradata, MKTAG('H', 'C', 'A', 0));
     AV_WB16(par->extradata + 4, version);
     AV_WB16(par->extradata + 6, data_offset);
+    AV_WB32(par->extradata + par->extradata_size - 10, hca->keyh);
+    AV_WB32(par->extradata + par->extradata_size -  6, hca->keyl);
+    AV_WB16(par->extradata + par->extradata_size -  2, hca->subkey);
 
     bytestream2_init(&gb, par->extradata + 8, par->extradata_size - 8);
 
-    if (bytestream2_get_le32(&gb) != MKTAG('f', 'm', 't', 0))
+    if ((bytestream2_get_le32(&gb) & HCA_MASK) != MKTAG('f', 'm', 't', 0))
         return AVERROR_INVALIDDATA;
 
     par->codec_type  = AVMEDIA_TYPE_AUDIO;
@@ -83,7 +97,7 @@ static int hca_read_header(AVFormatContext *s)
     par->sample_rate = bytestream2_get_be24(&gb);
     block_count      = bytestream2_get_be32(&gb);
     bytestream2_skip(&gb, 4);
-    chunk = bytestream2_get_le32(&gb);
+    chunk = bytestream2_get_le32(&gb) & HCA_MASK;
     if (chunk == MKTAG('c', 'o', 'm', 'p')) {
         block_size = bytestream2_get_be16(&gb);
     } else if (chunk == MKTAG('d', 'e', 'c', 0)) {
@@ -113,9 +127,32 @@ static int hca_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
+#define OFFSET(x) offsetof(HCADemuxContext, x)
+static const AVOption hca_options[] = {
+    { "hca_lowkey",
+        "Low key used for handling CRI HCA files", OFFSET(keyl),
+        AV_OPT_TYPE_INT64, {.i64=0}, .min = 0, .max = UINT32_MAX, .flags = AV_OPT_FLAG_DECODING_PARAM, },
+    { "hca_highkey",
+        "High key used for handling CRI HCA files", OFFSET(keyh),
+        AV_OPT_TYPE_INT64, {.i64=0}, .min = 0, .max = UINT32_MAX, .flags = AV_OPT_FLAG_DECODING_PARAM, },
+    { "hca_subkey",
+        "Subkey used for handling CRI HCA files", OFFSET(subkey),
+        AV_OPT_TYPE_INT, {.i64=0}, .min = 0, .max = UINT16_MAX, .flags = AV_OPT_FLAG_DECODING_PARAM },
+    { NULL },
+};
+
+static const AVClass hca_class = {
+    .class_name = "hca",
+    .item_name  = av_default_item_name,
+    .option     = hca_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 const AVInputFormat ff_hca_demuxer = {
     .name           = "hca",
     .long_name      = NULL_IF_CONFIG_SMALL("CRI HCA"),
+    .priv_class     = &hca_class,
+    .priv_data_size = sizeof(HCADemuxContext),
     .read_probe     = hca_probe,
     .read_header    = hca_read_header,
     .read_packet    = hca_read_packet,
