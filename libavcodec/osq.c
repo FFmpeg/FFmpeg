@@ -411,8 +411,10 @@ static int osq_receive_frame(AVCodecContext *avctx, AVFrame *frame)
             ret = ff_decode_get_packet(avctx, s->pkt);
             if (ret == AVERROR_EOF && s->bitstream_size > 0)
                 break;
-            if (ret < 0)
+            if (ret == AVERROR_EOF || ret == AVERROR(EAGAIN))
                 return ret;
+            if (ret < 0)
+                goto fail;
         }
 
         size = FFMIN(s->pkt->size - s->pkt_offset, s->max_framesize - s->bitstream_size);
