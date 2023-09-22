@@ -167,7 +167,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     LclDecContext * const c = avctx->priv_data;
-    unsigned int pixel_ptr;
+    ptrdiff_t pixel_ptr;
     int row, col;
     unsigned char *encoded = avpkt->data, *outptr;
     uint8_t *y_out, *u_out, *v_out;
