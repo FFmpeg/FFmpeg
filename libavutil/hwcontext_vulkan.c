@@ -27,10 +27,10 @@
 #include "compat/w32dlfcn.h"
 #else
 #include <dlfcn.h>
+#include <unistd.h>
 #endif
 
 #include "thread.h"
-#include <unistd.h>
 
 #include "config.h"
 #include "pixdesc.h"
