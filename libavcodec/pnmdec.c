@@ -137,7 +137,7 @@ static int pnm_decode_frame(AVCodecContext *avctx, AVFrame *p,
         if(s->type < 4 || (is_mono && s->type==7)){
             for (i=0; i<avctx->height; i++) {
                 PutBitContext pb;
-                init_put_bits(&pb, ptr, linesize);
+                init_put_bits(&pb, ptr, FFABS(linesize));
                 for(j=0; j<avctx->width * components; j++){
                     unsigned int c=0;
                     unsigned v=0;
