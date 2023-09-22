@@ -49,10 +49,9 @@ typedef struct ExtractExtradataContext {
     int remove;
 } ExtractExtradataContext;
 
-static int val_in_array(const int *arr, int len, int val)
+static int val_in_array(const int *arr, size_t len, int val)
 {
-    int i;
-    for (i = 0; i < len; i++)
+    for (size_t i = 0; i < len; i++)
         if (arr[i] == val)
             return 1;
     return 0;
@@ -177,7 +176,7 @@ static int extract_extradata_h2645(AVBSFContext *ctx, AVPacket *pkt,
 
     int extradata_size = 0, filtered_size = 0;
     const int *extradata_nal_types;
-    int nb_extradata_nal_types;
+    size_t nb_extradata_nal_types;
     int i, has_sps = 0, has_vps = 0, ret = 0;
 
     if (ctx->par_in->codec_id == AV_CODEC_ID_VVC) {
