@@ -59,7 +59,7 @@ typedef struct GifState {
     /* depending on disposal method we store either part of the image
      * drawn on the canvas or background color that
      * should be used upon disposal */
-    uint32_t * stored_img;
+    uint8_t *stored_img;
     int stored_img_size;
     int stored_bg_color;
 
@@ -86,52 +86,55 @@ static void gif_read_palette(GifState *s, uint32_t *pal, int nb)
 
 static void gif_fill(AVFrame *picture, uint32_t color)
 {
-    uint32_t *p = (uint32_t *)picture->data[0];
-    uint32_t *p_end = p + (picture->linesize[0] / sizeof(uint32_t)) * picture->height;
+    const ptrdiff_t linesize = picture->linesize[0];
+    uint8_t *py = picture->data[0];
+    const int w = picture->width;
+    const int h = picture->height;
 
-    for (; p < p_end; p++)
-        *p = color;
+    for (int y = 0; y < h; y++) {
+        uint32_t *px = (uint32_t *)py;
+        for (int x = 0; x < w; x++)
+            px[x] = color;
+        py += linesize;
+    }
 }
 
 static void gif_fill_rect(AVFrame *picture, uint32_t color, int l, int t, int w, int h)
 {
-    const int linesize = picture->linesize[0] / sizeof(uint32_t);
-    const uint32_t *py = (uint32_t *)picture->data[0] + t * linesize;
-    const uint32_t *pr, *pb = py + h * linesize;
-    uint32_t *px;
+    const ptrdiff_t linesize = picture->linesize[0];
+    uint8_t *py = picture->data[0] + t * linesize;
 
-    for (; py < pb; py += linesize) {
-        px = (uint32_t *)py + l;
-        pr = px + w;
-
-        for (; px < pr; px++)
-            *px = color;
+    for (int y = 0; y < h; y++) {
+        uint32_t *px = ((uint32_t *)py) + l;
+        for (int x = 0; x < w; x++)
+            px[x] = color;
+        py += linesize;
     }
 }
 
-static void gif_copy_img_rect(const uint32_t *src, uint32_t *dst,
-                              int linesize, int l, int t, int w, int h)
+static void gif_copy_img_rect(const uint8_t *src, uint8_t *dst,
+                              ptrdiff_t src_linesize,
+                              ptrdiff_t dst_linesize,
+                              int l, int t, int w, int h)
 {
-    const int y_start = t * linesize;
-    const uint32_t *src_px,
-                   *src_py = src + y_start,
-                   *dst_py = dst + y_start;
-    const uint32_t *src_pb = src_py + h * linesize;
-    uint32_t *dst_px;
+    const uint8_t *src_py = src;
+    uint8_t *dst_py = dst;
 
-    for (; src_py < src_pb; src_py += linesize, dst_py += linesize) {
-        src_px = src_py + l;
-        dst_px = (uint32_t *)dst_py + l;
-
-        memcpy(dst_px, src_px, w * sizeof(uint32_t));
+    src_py += t * src_linesize;
+    dst_py += t * dst_linesize;
+    for (int y = 0; y < h; y++) {
+        memcpy(dst_py + l * 4, src_py + l * 4, w * 4);
+        src_py += src_linesize;
+        dst_py += dst_linesize;
     }
 }
 
 static int gif_read_image(GifState *s, AVFrame *frame)
 {
     int left, top, width, height, bits_per_pixel, code_size, flags, pw;
-    int is_interleaved, has_local_palette, y, pass, y1, linesize, pal_size, lzwed_len;
+    int is_interleaved, has_local_palette, y, pass, y1, pal_size, lzwed_len;
     uint32_t *ptr, *pal, *px, *pr, *ptr1;
+    ptrdiff_t linesize;
     int ret;
     uint8_t *idx;
 
@@ -214,8 +217,8 @@ static int gif_read_image(GifState *s, AVFrame *frame)
     if (s->gce_prev_disposal == GCE_DISPOSAL_BACKGROUND) {
         gif_fill_rect(frame, s->stored_bg_color, s->gce_l, s->gce_t, s->gce_w, s->gce_h);
     } else if (s->gce_prev_disposal == GCE_DISPOSAL_RESTORE) {
-        gif_copy_img_rect(s->stored_img, (uint32_t *)frame->data[0],
-            frame->linesize[0] / sizeof(uint32_t), s->gce_l, s->gce_t, s->gce_w, s->gce_h);
+        gif_copy_img_rect(s->stored_img, frame->data[0],
+            FFABS(frame->linesize[0]), frame->linesize[0], s->gce_l, s->gce_t, s->gce_w, s->gce_h);
     }
 
     s->gce_prev_disposal = s->gce_disposal;
@@ -230,12 +233,12 @@ static int gif_read_image(GifState *s, AVFrame *frame)
             else
                 s->stored_bg_color = s->bg_color;
         } else if (s->gce_disposal == GCE_DISPOSAL_RESTORE) {
-            av_fast_malloc(&s->stored_img, &s->stored_img_size, frame->linesize[0] * frame->height);
+            av_fast_malloc(&s->stored_img, &s->stored_img_size, FFABS(frame->linesize[0]) * frame->height);
             if (!s->stored_img)
                 return AVERROR(ENOMEM);
 
-            gif_copy_img_rect((uint32_t *)frame->data[0], s->stored_img,
-                frame->linesize[0] / sizeof(uint32_t), left, top, pw, height);
+            gif_copy_img_rect(frame->data[0], s->stored_img,
+                frame->linesize[0], FFABS(frame->linesize[0]), left, top, pw, height);
         }
     }
 
@@ -252,8 +255,8 @@ static int gif_read_image(GifState *s, AVFrame *frame)
     }
 
     /* read all the image */
-    linesize = frame->linesize[0] / sizeof(uint32_t);
-    ptr1 = (uint32_t *)frame->data[0] + top * linesize + left;
+    linesize = frame->linesize[0];
+    ptr1 = (uint32_t *)(frame->data[0] + top * linesize) + left;
     ptr = ptr1;
     pass = 0;
     y1 = 0;
@@ -278,24 +281,24 @@ static int gif_read_image(GifState *s, AVFrame *frame)
             case 0:
             case 1:
                 y1 += 8;
-                ptr += linesize * 8;
+                ptr += linesize * 2;
                 break;
             case 2:
                 y1 += 4;
-                ptr += linesize * 4;
+                ptr += linesize * 1;
                 break;
             case 3:
                 y1 += 2;
-                ptr += linesize * 2;
+                ptr += linesize / 2;
                 break;
             }
             while (y1 >= height) {
                 y1  = 4 >> pass;
-                ptr = ptr1 + linesize * y1;
+                ptr = ptr1 + linesize / 4 * y1;
                 pass++;
             }
         } else {
-            ptr += linesize;
+            ptr += linesize / 4;
         }
     }
 
