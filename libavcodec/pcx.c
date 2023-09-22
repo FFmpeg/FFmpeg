@@ -75,9 +75,10 @@ static int pcx_decode_frame(AVCodecContext *avctx, AVFrame *p,
     GetByteContext gb;
     int compressed, xmin, ymin, xmax, ymax;
     int ret;
-    unsigned int w, h, bits_per_pixel, bytes_per_line, nplanes, stride, y, x,
+    unsigned int w, h, bits_per_pixel, bytes_per_line, nplanes, y, x,
                  bytes_per_scanline;
     uint8_t *ptr, *scanline;
+    ptrdiff_t stride;
 
     if (avpkt->size < PCX_HEADER_SIZE) {
         av_log(avctx, AV_LOG_ERROR, "Packet too small\n");
