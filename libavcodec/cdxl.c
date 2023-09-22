@@ -125,9 +125,10 @@ static void chunky2chunky(CDXLVideoContext *c, int linesize, uint8_t *out)
     }
 }
 
-static void import_format(CDXLVideoContext *c, int linesize, uint8_t *out)
+static void import_format(CDXLVideoContext *c, ptrdiff_t linesize, uint8_t *out)
 {
-    memset(out, 0, linesize * c->avctx->height);
+    for (int y = 0; y < c->avctx->height; y++)
+        memset(out + y * linesize, 0, c->avctx->width);
 
     switch (c->format) {
     case BIT_PLANAR:
