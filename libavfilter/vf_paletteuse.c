@@ -845,7 +845,7 @@ static void load_palette(PaletteUseContext *s, const AVFrame *palette_frame)
 {
     int i, x, y;
     const uint32_t *p = (const uint32_t *)palette_frame->data[0];
-    const int p_linesize = palette_frame->linesize[0] >> 2;
+    const ptrdiff_t p_linesize = palette_frame->linesize[0] >> 2;
 
     s->transparency_index = -1;
 

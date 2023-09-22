@@ -96,9 +96,9 @@ static int colorcontrast_slice8(AVFilterContext *ctx, void *arg, int jobnr, int 
     const int height = frame->height;
     const int slice_start = (height * jobnr) / nb_jobs;
     const int slice_end = (height * (jobnr + 1)) / nb_jobs;
-    const int glinesize = frame->linesize[0];
-    const int blinesize = frame->linesize[1];
-    const int rlinesize = frame->linesize[2];
+    const ptrdiff_t glinesize = frame->linesize[0];
+    const ptrdiff_t blinesize = frame->linesize[1];
+    const ptrdiff_t rlinesize = frame->linesize[2];
     uint8_t *gptr = frame->data[0] + slice_start * glinesize;
     uint8_t *bptr = frame->data[1] + slice_start * blinesize;
     uint8_t *rptr = frame->data[2] + slice_start * rlinesize;
@@ -150,9 +150,9 @@ static int colorcontrast_slice16(AVFilterContext *ctx, void *arg, int jobnr, int
     const int height = frame->height;
     const int slice_start = (height * jobnr) / nb_jobs;
     const int slice_end = (height * (jobnr + 1)) / nb_jobs;
-    const int glinesize = frame->linesize[0] / 2;
-    const int blinesize = frame->linesize[1] / 2;
-    const int rlinesize = frame->linesize[2] / 2;
+    const ptrdiff_t glinesize = frame->linesize[0] / 2;
+    const ptrdiff_t blinesize = frame->linesize[1] / 2;
+    const ptrdiff_t rlinesize = frame->linesize[2] / 2;
     uint16_t *gptr = (uint16_t *)frame->data[0] + slice_start * glinesize;
     uint16_t *bptr = (uint16_t *)frame->data[1] + slice_start * blinesize;
     uint16_t *rptr = (uint16_t *)frame->data[2] + slice_start * rlinesize;
@@ -203,7 +203,7 @@ static int colorcontrast_slice8p(AVFilterContext *ctx, void *arg, int jobnr, int
     const int height = frame->height;
     const int slice_start = (height * jobnr) / nb_jobs;
     const int slice_end = (height * (jobnr + 1)) / nb_jobs;
-    const int linesize = frame->linesize[0];
+    const ptrdiff_t linesize = frame->linesize[0];
     const uint8_t roffset = s->rgba_map[R];
     const uint8_t goffset = s->rgba_map[G];
     const uint8_t boffset = s->rgba_map[B];
@@ -255,7 +255,7 @@ static int colorcontrast_slice16p(AVFilterContext *ctx, void *arg, int jobnr, in
     const int height = frame->height;
     const int slice_start = (height * jobnr) / nb_jobs;
     const int slice_end = (height * (jobnr + 1)) / nb_jobs;
-    const int linesize = frame->linesize[0] / 2;
+    const ptrdiff_t linesize = frame->linesize[0] / 2;
     const uint8_t roffset = s->rgba_map[R];
     const uint8_t goffset = s->rgba_map[G];
     const uint8_t boffset = s->rgba_map[B];

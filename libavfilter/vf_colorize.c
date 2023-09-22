@@ -52,7 +52,7 @@ static int colorizey_slice8(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
     const int height = s->planeheight[0];
     const int slice_start = (height * jobnr) / nb_jobs;
     const int slice_end = (height * (jobnr + 1)) / nb_jobs;
-    const int ylinesize = frame->linesize[0];
+    const ptrdiff_t ylinesize = frame->linesize[0];
     uint8_t *yptr = frame->data[0] + slice_start * ylinesize;
     const int yv = s->c[0];
     const float mix = s->mix;
@@ -75,7 +75,7 @@ static int colorizey_slice16(AVFilterContext *ctx, void *arg, int jobnr, int nb_
     const int height = s->planeheight[0];
     const int slice_start = (height * jobnr) / nb_jobs;
     const int slice_end = (height * (jobnr + 1)) / nb_jobs;
-    const int ylinesize = frame->linesize[0] / 2;
+    const ptrdiff_t ylinesize = frame->linesize[0] / 2;
     uint16_t *yptr = (uint16_t *)frame->data[0] + slice_start * ylinesize;
     const int yv = s->c[0];
     const float mix = s->mix;
@@ -98,8 +98,8 @@ static int colorize_slice8(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     const int height = s->planeheight[1];
     const int slice_start = (height * jobnr) / nb_jobs;
     const int slice_end = (height * (jobnr + 1)) / nb_jobs;
-    const int ulinesize = frame->linesize[1];
-    const int vlinesize = frame->linesize[2];
+    const ptrdiff_t ulinesize = frame->linesize[1];
+    const ptrdiff_t vlinesize = frame->linesize[2];
     uint8_t *uptr = frame->data[1] + slice_start * ulinesize;
     uint8_t *vptr = frame->data[2] + slice_start * vlinesize;
     const int u = s->c[1];
@@ -126,8 +126,8 @@ static int colorize_slice16(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
     const int height = s->planeheight[1];
     const int slice_start = (height * jobnr) / nb_jobs;
     const int slice_end = (height * (jobnr + 1)) / nb_jobs;
-    const int ulinesize = frame->linesize[1] / 2;
-    const int vlinesize = frame->linesize[2] / 2;
+    const ptrdiff_t ulinesize = frame->linesize[1] / 2;
+    const ptrdiff_t vlinesize = frame->linesize[2] / 2;
     uint16_t *uptr = (uint16_t *)frame->data[1] + slice_start * ulinesize;
     uint16_t *vptr = (uint16_t *)frame->data[2] + slice_start * vlinesize;
     const int u = s->c[1];

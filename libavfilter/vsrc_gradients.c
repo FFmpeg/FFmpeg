@@ -248,7 +248,7 @@ static int draw_gradients_slice(AVFilterContext *ctx, void *arg, int job, int nb
     const int height = frame->height;
     const int start = (height *  job   ) / nb_jobs;
     const int end   = (height * (job+1)) / nb_jobs;
-    const int linesize = frame->linesize[0] / 4;
+    const ptrdiff_t linesize = frame->linesize[0] / 4;
     uint32_t *dst = (uint32_t *)frame->data[0] + start * linesize;
     const int type = s->type;
 
@@ -272,7 +272,7 @@ static int draw_gradients_slice16(AVFilterContext *ctx, void *arg, int job, int 
     const int height = frame->height;
     const int start = (height *  job   ) / nb_jobs;
     const int end   = (height * (job+1)) / nb_jobs;
-    const int linesize = frame->linesize[0] / 8;
+    const ptrdiff_t linesize = frame->linesize[0] / 8;
     uint64_t *dst = (uint64_t *)frame->data[0] + start * linesize;
     const int type = s->type;
 
@@ -296,10 +296,10 @@ static int draw_gradients_slice32_planar(AVFilterContext *ctx, void *arg, int jo
     const int height = frame->height;
     const int start = (height *  job   ) / nb_jobs;
     const int end   = (height * (job+1)) / nb_jobs;
-    const int linesize_g = frame->linesize[0] / 4;
-    const int linesize_b = frame->linesize[1] / 4;
-    const int linesize_r = frame->linesize[2] / 4;
-    const int linesize_a = frame->linesize[3] / 4;
+    const ptrdiff_t linesize_g = frame->linesize[0] / 4;
+    const ptrdiff_t linesize_b = frame->linesize[1] / 4;
+    const ptrdiff_t linesize_r = frame->linesize[2] / 4;
+    const ptrdiff_t linesize_a = frame->linesize[3] / 4;
     float *dst_g = (float *)frame->data[0] + start * linesize_g;
     float *dst_b = (float *)frame->data[1] + start * linesize_b;
     float *dst_r = (float *)frame->data[2] + start * linesize_r;

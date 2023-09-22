@@ -111,7 +111,7 @@ static int clip_line(int *sx, int *sy, int *ex, int *ey, int maxx)
  * @param color color of the arrow
  */
 static void draw_line(uint8_t *buf, int sx, int sy, int ex, int ey,
-                      int w, int h, int stride, int color)
+                      int w, int h, ptrdiff_t stride, int color)
 {
     int x, y, fr, f;
 
@@ -169,7 +169,7 @@ static void draw_line(uint8_t *buf, int sx, int sy, int ex, int ey,
  * @param color color of the arrow
  */
 static void draw_arrow(uint8_t *buf, int sx, int sy, int ex,
-                       int ey, int w, int h, int stride, int color, int tail, int direction)
+                       int ey, int w, int h, ptrdiff_t stride, int color, int tail, int direction)
 {
     int dx,dy;
 
@@ -206,7 +206,7 @@ static void draw_arrow(uint8_t *buf, int sx, int sy, int ex,
     draw_line(buf, sx, sy, ex, ey, w, h, stride, color);
 }
 
-static void draw_block_rectangle(uint8_t *buf, int sx, int sy, int w, int h, int stride, int color)
+static void draw_block_rectangle(uint8_t *buf, int sx, int sy, int w, int h, ptrdiff_t stride, int color)
 {
     for (int x = sx; x < sx + w; x++)
         buf[x] = color;
@@ -244,8 +244,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             const int h = AV_CEIL_RSHIFT(frame->height, s->vsub);
             uint8_t *pu = frame->data[1];
             uint8_t *pv = frame->data[2];
-            const int lzu = frame->linesize[1];
-            const int lzv = frame->linesize[2];
+            const ptrdiff_t lzu = frame->linesize[1];
+            const ptrdiff_t lzv = frame->linesize[2];
 
             for (y = 0; y < h; y++) {
                 for (x = 0; x < w; x++) {
@@ -263,7 +263,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         AVFrameSideData *sd = av_frame_get_side_data(frame, AV_FRAME_DATA_VIDEO_ENC_PARAMS);
         if (sd) {
             AVVideoEncParams *par = (AVVideoEncParams*)sd->data;
-            const int stride = frame->linesize[0];
+            const ptrdiff_t stride = frame->linesize[0];
 
             if (par->nb_blocks) {
                 for (int block_idx = 0; block_idx < par->nb_blocks; block_idx++) {

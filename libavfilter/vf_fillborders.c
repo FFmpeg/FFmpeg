@@ -82,7 +82,7 @@ static void smear_borders8(FillBordersContext *s, AVFrame *frame)
 
     for (p = 0; p < s->nb_planes; p++) {
         uint8_t *ptr = frame->data[p];
-        int linesize = frame->linesize[p];
+        ptrdiff_t linesize = frame->linesize[p];
 
         for (y = s->borders[p].top; y < s->planeheight[p] - s->borders[p].bottom; y++) {
             memset(ptr + y * linesize,
@@ -112,7 +112,7 @@ static void smear_borders16(FillBordersContext *s, AVFrame *frame)
 
     for (p = 0; p < s->nb_planes; p++) {
         uint16_t *ptr = (uint16_t *)frame->data[p];
-        int linesize = frame->linesize[p] / 2;
+        ptrdiff_t linesize = frame->linesize[p] / 2;
 
         for (y = s->borders[p].top; y < s->planeheight[p] - s->borders[p].bottom; y++) {
             for (x = 0; x < s->borders[p].left; x++) {
@@ -144,7 +144,7 @@ static void mirror_borders8(FillBordersContext *s, AVFrame *frame)
 
     for (p = 0; p < s->nb_planes; p++) {
         uint8_t *ptr = frame->data[p];
-        int linesize = frame->linesize[p];
+        ptrdiff_t linesize = frame->linesize[p];
 
         for (y = s->borders[p].top; y < s->planeheight[p] - s->borders[p].bottom; y++) {
             for (x = 0; x < s->borders[p].left; x++) {
@@ -177,7 +177,7 @@ static void mirror_borders16(FillBordersContext *s, AVFrame *frame)
 
     for (p = 0; p < s->nb_planes; p++) {
         uint16_t *ptr = (uint16_t *)frame->data[p];
-        int linesize = frame->linesize[p] / 2;
+        ptrdiff_t linesize = frame->linesize[p] / 2;
 
         for (y = s->borders[p].top; y < s->planeheight[p] - s->borders[p].bottom; y++) {
             for (x = 0; x < s->borders[p].left; x++) {
@@ -211,7 +211,7 @@ static void fixed_borders8(FillBordersContext *s, AVFrame *frame)
     for (p = 0; p < s->nb_planes; p++) {
         uint8_t *ptr = frame->data[p];
         uint8_t fill = s->fill[p];
-        int linesize = frame->linesize[p];
+        ptrdiff_t linesize = frame->linesize[p];
 
         for (y = s->borders[p].top; y < s->planeheight[p] - s->borders[p].bottom; y++) {
             memset(ptr + y * linesize, fill, s->borders[p].left);
@@ -236,7 +236,7 @@ static void fixed_borders16(FillBordersContext *s, AVFrame *frame)
     for (p = 0; p < s->nb_planes; p++) {
         uint16_t *ptr = (uint16_t *)frame->data[p];
         uint16_t fill = s->fill[p] << (s->depth - 8);
-        int linesize = frame->linesize[p] / 2;
+        ptrdiff_t linesize = frame->linesize[p] / 2;
 
         for (y = s->borders[p].top; y < s->planeheight[p] - s->borders[p].bottom; y++) {
             for (x = 0; x < s->borders[p].left; x++) {
@@ -268,7 +268,7 @@ static void reflect_borders8(FillBordersContext *s, AVFrame *frame)
 
     for (p = 0; p < s->nb_planes; p++) {
         uint8_t *ptr = frame->data[p];
-        int linesize = frame->linesize[p];
+        ptrdiff_t linesize = frame->linesize[p];
 
         for (y = s->borders[p].top; y < s->planeheight[p] - s->borders[p].bottom; y++) {
             for (x = 0; x < s->borders[p].left; x++) {
@@ -301,7 +301,7 @@ static void reflect_borders16(FillBordersContext *s, AVFrame *frame)
 
     for (p = 0; p < s->nb_planes; p++) {
         uint16_t *ptr = (uint16_t *)frame->data[p];
-        int linesize = frame->linesize[p] / 2;
+        ptrdiff_t linesize = frame->linesize[p] / 2;
 
         for (y = s->borders[p].top; y < s->planeheight[p] - s->borders[p].bottom; y++) {
             for (x = 0; x < s->borders[p].left; x++) {
@@ -334,7 +334,7 @@ static void wrap_borders8(FillBordersContext *s, AVFrame *frame)
 
     for (p = 0; p < s->nb_planes; p++) {
         uint8_t *ptr = frame->data[p];
-        int linesize = frame->linesize[p];
+        ptrdiff_t linesize = frame->linesize[p];
 
         for (y = s->borders[p].top; y < s->planeheight[p] - s->borders[p].bottom; y++) {
             for (x = 0; x < s->borders[p].left; x++) {
@@ -367,7 +367,7 @@ static void wrap_borders16(FillBordersContext *s, AVFrame *frame)
 
     for (p = 0; p < s->nb_planes; p++) {
         uint16_t *ptr = (uint16_t *)frame->data[p];
-        int linesize = frame->linesize[p] / 2;
+        ptrdiff_t linesize = frame->linesize[p] / 2;
 
         for (y = s->borders[p].top; y < s->planeheight[p] - s->borders[p].bottom; y++) {
             for (x = 0; x < s->borders[p].left; x++) {
@@ -411,7 +411,7 @@ static void fade_borders8(FillBordersContext *s, AVFrame *frame)
     for (p = 0; p < s->nb_planes; p++) {
         uint8_t *ptr = frame->data[p];
         const uint8_t fill = s->fill[p];
-        const int linesize = frame->linesize[p];
+        const ptrdiff_t linesize = frame->linesize[p];
         const int start_left = s->borders[p].left;
         const int start_right = s->planewidth[p] - s->borders[p].right;
         const int start_top = s->borders[p].top;
@@ -453,7 +453,7 @@ static void fade_borders16(FillBordersContext *s, AVFrame *frame)
     for (p = 0; p < s->nb_planes; p++) {
         uint16_t *ptr = (uint16_t *)frame->data[p];
         const uint16_t fill = s->fill[p] << (depth - 8);
-        const int linesize = frame->linesize[p] / 2;
+        const ptrdiff_t linesize = frame->linesize[p] / 2;
         const int start_left = s->borders[p].left;
         const int start_right = s->planewidth[p] - s->borders[p].right;
         const int start_top = s->borders[p].top;
@@ -491,7 +491,7 @@ static void margins_borders8(FillBordersContext *s, AVFrame *frame)
 {
     for (int p = 0; p < s->nb_planes; p++) {
         uint8_t *ptr = (uint8_t *)frame->data[p];
-        const int linesize = frame->linesize[p];
+        const ptrdiff_t linesize = frame->linesize[p];
         const int left = s->borders[p].left;
         const int right = s->borders[p].right;
         const int top = s->borders[p].top;
@@ -536,7 +536,7 @@ static void margins_borders16(FillBordersContext *s, AVFrame *frame)
 {
     for (int p = 0; p < s->nb_planes; p++) {
         uint16_t *ptr = (uint16_t *)frame->data[p];
-        const int linesize = frame->linesize[p] / 2;
+        const ptrdiff_t linesize = frame->linesize[p] / 2;
         const int left = s->borders[p].left;
         const int right = s->borders[p].right;
         const int top = s->borders[p].top;

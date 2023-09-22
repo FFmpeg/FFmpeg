@@ -328,7 +328,7 @@ static void haldclutsrc_fill_picture(AVFilterContext *ctx, AVFrame *frame)
     const int w = frame->width;
     const int h = frame->height;
     uint8_t *data = frame->data[0];
-    const int linesize  = frame->linesize[0];
+    const ptrdiff_t linesize  = frame->linesize[0];
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
     const int depth = desc->comp[0].depth;
     const int planar = desc->flags & AV_PIX_FMT_FLAG_PLANAR;
@@ -510,7 +510,7 @@ AVFILTER_DEFINE_CLASS(testsrc);
  * @param w width  of the rectangle to draw, expressed as a number of segment_width units
  * @param h height of the rectangle to draw, expressed as a number of segment_width units
  */
-static void draw_rectangle(unsigned val, uint8_t *dst, int dst_linesize, int segment_width,
+static void draw_rectangle(unsigned val, uint8_t *dst, ptrdiff_t dst_linesize, int segment_width,
                            int x, int y, int w, int h)
 {
     int i;
@@ -525,7 +525,7 @@ static void draw_rectangle(unsigned val, uint8_t *dst, int dst_linesize, int seg
     }
 }
 
-static void draw_digit(int digit, uint8_t *dst, int dst_linesize,
+static void draw_digit(int digit, uint8_t *dst, ptrdiff_t dst_linesize,
                        int segment_width)
 {
 #define TOP_HBAR        1
@@ -1004,7 +1004,7 @@ static void rgbtest_put_pixel(uint8_t *dstp[4], int dst_linesizep[4],
                               uint8_t rgba_map[4])
 {
     uint8_t *dst = dstp[0];
-    int dst_linesize = dst_linesizep[0];
+    ptrdiff_t dst_linesize = dst_linesizep[0];
     uint32_t v;
     uint8_t *p;
     uint16_t *p16;
@@ -1031,7 +1031,7 @@ static void rgbtest_put_pixel(uint8_t *dstp[4], int dst_linesizep[4],
         AV_WL32(p, v);
         break;
     case AV_PIX_FMT_GBRP:
-        p = dstp[0] + x + y * dst_linesizep[0];
+        p = dstp[0] + x + y * dst_linesize;
         p[0] = g;
         p = dstp[1] + x + y * dst_linesizep[1];
         p[0] = b;
@@ -1160,9 +1160,9 @@ static void yuvtest_fill_picture8(AVFilterContext *ctx, AVFrame *frame)
     uint8_t *ydst = frame->data[0];
     uint8_t *udst = frame->data[1];
     uint8_t *vdst = frame->data[2];
-    int ylinesize = frame->linesize[0];
-    int ulinesize = frame->linesize[1];
-    int vlinesize = frame->linesize[2];
+    ptrdiff_t ylinesize = frame->linesize[0];
+    ptrdiff_t ulinesize = frame->linesize[1];
+    ptrdiff_t vlinesize = frame->linesize[2];
 
     for (y = 0; y < h; y++) {
         for (x = 0; x < w; x++) {
@@ -1217,9 +1217,9 @@ static void yuvtest_fill_picture16(AVFilterContext *ctx, AVFrame *frame)
     uint16_t *ydst = (uint16_t *)frame->data[0];
     uint16_t *udst = (uint16_t *)frame->data[1];
     uint16_t *vdst = (uint16_t *)frame->data[2];
-    int ylinesize = frame->linesize[0] / 2;
-    int ulinesize = frame->linesize[1] / 2;
-    int vlinesize = frame->linesize[2] / 2;
+    ptrdiff_t ylinesize = frame->linesize[0] / 2;
+    ptrdiff_t ulinesize = frame->linesize[1] / 2;
+    ptrdiff_t vlinesize = frame->linesize[2] / 2;
 
     for (y = 0; y < h; y++) {
         for (x = 0; x < w; x++) {
@@ -1394,7 +1394,7 @@ static void draw_bar(TestSourceContext *test, const uint8_t color[4],
 
     for (plane = 0; frame->data[plane]; plane++) {
         const int c = color[plane];
-        const int linesize = frame->linesize[plane];
+        const ptrdiff_t linesize = frame->linesize[plane];
         int i, px, py, pw, ph;
 
         if (plane == 1 || plane == 2) {
@@ -1702,9 +1702,9 @@ AVFILTER_DEFINE_CLASS_EXT(allyuv_allrgb, "allyuv/allrgb",
 
 static void allyuv_fill_picture(AVFilterContext *ctx, AVFrame *frame)
 {
-    const int ys = frame->linesize[0];
-    const int us = frame->linesize[1];
-    const int vs = frame->linesize[2];
+    const ptrdiff_t ys = frame->linesize[0];
+    const ptrdiff_t us = frame->linesize[1];
+    const ptrdiff_t vs = frame->linesize[2];
     int x, y, j;
 
     for (y = 0; y < 4096; y++) {
@@ -1763,7 +1763,7 @@ const AVFilter ff_vsrc_allyuv = {
 static void allrgb_fill_picture(AVFilterContext *ctx, AVFrame *frame)
 {
     unsigned x, y;
-    const int linesize = frame->linesize[0];
+    const ptrdiff_t linesize = frame->linesize[0];
     uint8_t *line = frame->data[0];
 
     for (y = 0; y < 4096; y++) {
@@ -2102,9 +2102,9 @@ static int zoneplate_fill_slice_##name(AVFilterContext *ctx,       \
     const int nkt2t = kt2 * t * t, nktt = kt * t;                  \
     const int start = (h *  job   ) / nb_jobs;                     \
     const int end   = (h * (job+1)) / nb_jobs;                     \
-    const int ylinesize = frame->linesize[0] / sizeof(type);       \
-    const int ulinesize = frame->linesize[1] / sizeof(type);       \
-    const int vlinesize = frame->linesize[2] / sizeof(type);       \
+    const ptrdiff_t ylinesize = frame->linesize[0] / sizeof(type); \
+    const ptrdiff_t ulinesize = frame->linesize[1] / sizeof(type); \
+    const ptrdiff_t vlinesize = frame->linesize[2] / sizeof(type); \
     const int xreset = -(w / 2) - test->xo;                        \
     const int yreset = -(h / 2) - test->yo + start;                \
     const int kU = test->kU, kV = test->kV;                        \

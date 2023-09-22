@@ -1321,7 +1321,7 @@ const AVFilter ff_vf_lut3d = {
 static void update_clut_packed(LUT3DContext *lut3d, const AVFrame *frame)
 {
     const uint8_t *data = frame->data[0];
-    const int linesize  = frame->linesize[0];
+    const ptrdiff_t linesize  = frame->linesize[0];
     const int w = lut3d->clut_width;
     const int step = lut3d->clut_step;
     const uint8_t *rgba_map = lut3d->clut_rgba_map;
@@ -1360,9 +1360,9 @@ static void update_clut_planar(LUT3DContext *lut3d, const AVFrame *frame)
     const uint8_t *datag = frame->data[0];
     const uint8_t *datab = frame->data[1];
     const uint8_t *datar = frame->data[2];
-    const int glinesize  = frame->linesize[0];
-    const int blinesize  = frame->linesize[1];
-    const int rlinesize  = frame->linesize[2];
+    const ptrdiff_t glinesize  = frame->linesize[0];
+    const ptrdiff_t blinesize  = frame->linesize[1];
+    const ptrdiff_t rlinesize  = frame->linesize[2];
     const int w = lut3d->clut_width;
     const int level = lut3d->lutsize;
     const int level2 = lut3d->lutsize2;
@@ -1407,9 +1407,9 @@ static void update_clut_float(LUT3DContext *lut3d, const AVFrame *frame)
     const uint8_t *datag = frame->data[0];
     const uint8_t *datab = frame->data[1];
     const uint8_t *datar = frame->data[2];
-    const int glinesize  = frame->linesize[0];
-    const int blinesize  = frame->linesize[1];
-    const int rlinesize  = frame->linesize[2];
+    const ptrdiff_t glinesize  = frame->linesize[0];
+    const ptrdiff_t blinesize  = frame->linesize[1];
+    const ptrdiff_t rlinesize  = frame->linesize[2];
     const int w = lut3d->clut_width;
     const int level = lut3d->lutsize;
     const int level2 = lut3d->lutsize2;
