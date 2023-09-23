@@ -190,6 +190,7 @@ typedef struct HuffTable {
 } HuffTable;
 
 typedef struct CoeffVLCs {
+    const VLCElem *vlc_tabs[80];
     VLC vlcs[80];
 } CoeffVLCs;
 
@@ -1181,7 +1182,7 @@ static inline int get_coeff(GetBitContext *gb, int token, int16_t *coeff)
  * be passed into the next call to this same function.
  */
 static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
-                       const VLC *table, int coeff_index,
+                       const VLCElem *vlc_table, int coeff_index,
                        int plane,
                        int eob_run)
 {
@@ -1197,7 +1198,6 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
     /* local references to structure members to avoid repeated dereferences */
     const int *coded_fragment_list = s->coded_fragment_list[plane];
     Vp3Fragment *all_fragments = s->all_fragments;
-    const VLCElem *vlc_table = table->table;
 
     if (num_coeffs < 0) {
         av_log(s->avctx, AV_LOG_ERROR,
@@ -1303,14 +1303,13 @@ static void reverse_dc_prediction(Vp3DecodeContext *s,
  */
 static int unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
 {
-    const VLC *coeff_vlc = s->coeff_vlc->vlcs;
+    const VLCElem *const *coeff_vlc = s->coeff_vlc->vlc_tabs;
     int dc_y_table;
     int dc_c_table;
     int ac_y_table;
     int ac_c_table;
     int residual_eob_run = 0;
-    const VLC *y_tables[64];
-    const VLC *c_tables[64];
+    const VLCElem *y_tables[64], *c_tables[64];
 
     s->dct_tokens[0][0] = s->dct_tokens_base;
 
@@ -1322,7 +1321,7 @@ static int unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
     dc_c_table = get_bits(gb, 4);
 
     /* unpack the Y plane DC coefficients */
-    residual_eob_run = unpack_vlcs(s, gb, &coeff_vlc[dc_y_table], 0,
+    residual_eob_run = unpack_vlcs(s, gb, coeff_vlc[dc_y_table], 0,
                                    0, residual_eob_run);
     if (residual_eob_run < 0)
         return residual_eob_run;
@@ -1333,11 +1332,11 @@ static int unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
     reverse_dc_prediction(s, 0, s->fragment_width[0], s->fragment_height[0]);
 
     /* unpack the C plane DC coefficients */
-    residual_eob_run = unpack_vlcs(s, gb, &coeff_vlc[dc_c_table], 0,
+    residual_eob_run = unpack_vlcs(s, gb, coeff_vlc[dc_c_table], 0,
                                    1, residual_eob_run);
     if (residual_eob_run < 0)
         return residual_eob_run;
-    residual_eob_run = unpack_vlcs(s, gb, &coeff_vlc[dc_c_table], 0,
+    residual_eob_run = unpack_vlcs(s, gb, coeff_vlc[dc_c_table], 0,
                                    2, residual_eob_run);
     if (residual_eob_run < 0)
         return residual_eob_run;
@@ -1359,23 +1358,23 @@ static int unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
     /* build tables of AC VLC tables */
     for (int i = 1; i <= 5; i++) {
         /* AC VLC table group 1 */
-        y_tables[i] = &coeff_vlc[ac_y_table + 16];
-        c_tables[i] = &coeff_vlc[ac_c_table + 16];
+        y_tables[i] = coeff_vlc[ac_y_table + 16];
+        c_tables[i] = coeff_vlc[ac_c_table + 16];
     }
     for (int i = 6; i <= 14; i++) {
         /* AC VLC table group 2 */
-        y_tables[i] = &coeff_vlc[ac_y_table + 32];
-        c_tables[i] = &coeff_vlc[ac_c_table + 32];
+        y_tables[i] = coeff_vlc[ac_y_table + 32];
+        c_tables[i] = coeff_vlc[ac_c_table + 32];
     }
     for (int i = 15; i <= 27; i++) {
         /* AC VLC table group 3 */
-        y_tables[i] = &coeff_vlc[ac_y_table + 48];
-        c_tables[i] = &coeff_vlc[ac_c_table + 48];
+        y_tables[i] = coeff_vlc[ac_y_table + 48];
+        c_tables[i] = coeff_vlc[ac_c_table + 48];
     }
     for (int i = 28; i <= 63; i++) {
         /* AC VLC table group 4 */
-        y_tables[i] = &coeff_vlc[ac_y_table + 64];
-        c_tables[i] = &coeff_vlc[ac_c_table + 64];
+        y_tables[i] = coeff_vlc[ac_y_table + 64];
+        c_tables[i] = coeff_vlc[ac_c_table + 64];
     }
 
     /* decode all AC coefficients */
@@ -1406,7 +1405,7 @@ static int unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
  * @return < 0 on error
  */
 static int vp4_unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
-                           const VLC *vlc_tables[64],
+                           const VLCElem *const vlc_tables[64],
                        int plane, int eob_tracker[64], int fragment)
 {
     int token;
@@ -1419,7 +1418,7 @@ static int vp4_unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
         if (get_bits_left(gb) < 1)
             return AVERROR_INVALIDDATA;
 
-        token = get_vlc2(gb, vlc_tables[coeff_i]->table, 11, 3);
+        token = get_vlc2(gb, vlc_tables[coeff_i], 11, 3);
 
         /* use the token to get a zero run, a coefficient, and an eob run */
         if ((unsigned) token <= 6U) {
@@ -1526,12 +1525,12 @@ static void vp4_set_tokens_base(Vp3DecodeContext *s)
 
 static int vp4_unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
 {
-    const VLC *coeff_vlc = s->coeff_vlc->vlcs;
+    const VLCElem *const *coeff_vlc = s->coeff_vlc->vlc_tabs;
     int dc_y_table;
     int dc_c_table;
     int ac_y_table;
     int ac_c_table;
-    const VLC *tables[2][64];
+    const VLCElem *tables[2][64];
     int eob_tracker[64];
     VP4Predictor dc_pred[6][6];
     int last_dc[NB_VP4_DC_TYPES];
@@ -1549,27 +1548,27 @@ static int vp4_unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
     /* build tables of DC/AC VLC tables */
 
     /* DC table group */
-    tables[0][0] = &coeff_vlc[dc_y_table];
-    tables[1][0] = &coeff_vlc[dc_c_table];
+    tables[0][0] = coeff_vlc[dc_y_table];
+    tables[1][0] = coeff_vlc[dc_c_table];
     for (int i = 1; i <= 5; i++) {
         /* AC VLC table group 1 */
-        tables[0][i] = &coeff_vlc[ac_y_table + 16];
-        tables[1][i] = &coeff_vlc[ac_c_table + 16];
+        tables[0][i] = coeff_vlc[ac_y_table + 16];
+        tables[1][i] = coeff_vlc[ac_c_table + 16];
     }
     for (int i = 6; i <= 14; i++) {
         /* AC VLC table group 2 */
-        tables[0][i] = &coeff_vlc[ac_y_table + 32];
-        tables[1][i] = &coeff_vlc[ac_c_table + 32];
+        tables[0][i] = coeff_vlc[ac_y_table + 32];
+        tables[1][i] = coeff_vlc[ac_c_table + 32];
     }
     for (int i = 15; i <= 27; i++) {
         /* AC VLC table group 3 */
-        tables[0][i] = &coeff_vlc[ac_y_table + 48];
-        tables[1][i] = &coeff_vlc[ac_c_table + 48];
+        tables[0][i] = coeff_vlc[ac_y_table + 48];
+        tables[1][i] = coeff_vlc[ac_c_table + 48];
     }
     for (int i = 28; i <= 63; i++) {
         /* AC VLC table group 4 */
-        tables[0][i] = &coeff_vlc[ac_y_table + 64];
-        tables[1][i] = &coeff_vlc[ac_c_table + 64];
+        tables[0][i] = coeff_vlc[ac_y_table + 64];
+        tables[1][i] = coeff_vlc[ac_c_table + 64];
     }
 
     vp4_set_tokens_base(s);
@@ -2501,6 +2500,7 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
                                            0, 0, avctx);
             if (ret < 0)
                 return ret;
+            vlcs->vlc_tabs[i] = vlcs->vlcs[i].table;
         }
     } else {
         for (int i = 0; i < FF_ARRAY_ELEMS(vlcs->vlcs); i++) {
@@ -2512,6 +2512,7 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
                                            0, 0, avctx);
             if (ret < 0)
                 return ret;
+            vlcs->vlc_tabs[i] = vlcs->vlcs[i].table;
         }
     }
     }
