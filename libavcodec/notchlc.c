@@ -76,12 +76,13 @@ static int lz4_decompress(AVCodecContext *avctx,
                           GetByteContext *gb,
                           PutByteContext *pb)
 {
-    unsigned reference_pos, match_length, delta, pos = 0;
+    unsigned reference_pos, delta, pos = 0;
     uint8_t history[64 * 1024];
+    int match_length;
 
     while (bytestream2_get_bytes_left(gb) > 0) {
         uint8_t token = bytestream2_get_byte(gb);
-        unsigned num_literals = token >> 4;
+        int num_literals = token >> 4;
 
         if (num_literals == 15) {
             unsigned char current;
