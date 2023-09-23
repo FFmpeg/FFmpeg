@@ -282,7 +282,7 @@ static int svq1_decode_block_non_intra(GetBitContext *bitbuf, uint8_t *pixels,
         SVQ1_CALC_CODEBOOK_ENTRIES(ff_svq1_inter_codebooks);
 
         for (y = 0; y < height; y++) {
-            for (x = 0; x < width / 4; x++, codebook++) {
+            for (x = 0; x < width / 4; x++) {
                 n3 = dst[x];
                 /* add mean value to vector */
                 n1 = n4 + ((n3 & 0xFF00FF00) >> 8);
@@ -290,6 +290,8 @@ static int svq1_decode_block_non_intra(GetBitContext *bitbuf, uint8_t *pixels,
                 SVQ1_ADD_CODEBOOK()
                 /* store result */
                 dst[x] = n1 << 8 | n2;
+                if (codebook != NULL)
+                    codebook++;
             }
             dst += pitch / 4;
         }
