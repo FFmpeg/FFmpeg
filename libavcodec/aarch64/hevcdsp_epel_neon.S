@@ -64,6 +64,29 @@ endconst
         umlsl2          \dst\().8h, \src3\().16b, v3.16b
 .endm
 
+.macro load_epel_filterh freg, xreg
+        movrel          \xreg, epel_filters
+        add             \xreg, \xreg, \freg, lsl #2
+        ld1             {v0.8b}, [\xreg]
+        sxtl            v0.8h, v0.8b
+.endm
+
+.macro calc_epelh dst, src0, src1, src2, src3
+        smull           \dst\().4s, \src0\().4h, v0.h[0]
+        smlal           \dst\().4s, \src1\().4h, v0.h[1]
+        smlal           \dst\().4s, \src2\().4h, v0.h[2]
+        smlal           \dst\().4s, \src3\().4h, v0.h[3]
+        sqshrn          \dst\().4h, \dst\().4s, #6
+.endm
+
+.macro calc_epelh2 dst, tmp, src0, src1, src2, src3
+        smull2          \tmp\().4s, \src0\().8h, v0.h[0]
+        smlal2          \tmp\().4s, \src1\().8h, v0.h[1]
+        smlal2          \tmp\().4s, \src2\().8h, v0.h[2]
+        smlal2          \tmp\().4s, \src3\().8h, v0.h[3]
+        sqshrn2         \dst\().8h, \tmp\().4s, #6
+.endm
+
 .macro calc_all4
         calc            v16, v17, v18, v19
         b.eq            2f
@@ -1101,28 +1124,7 @@ endfunc
         sqxtn2          v6.8h, v31.4s
 .endm
 
-.macro calc_epelh dst, src0, src1, src2, src3
-        smull           \dst\().4s, \src0\().4h, v0.h[0]
-        smlal           \dst\().4s, \src1\().4h, v0.h[1]
-        smlal           \dst\().4s, \src2\().4h, v0.h[2]
-        smlal           \dst\().4s, \src3\().4h, v0.h[3]
-        sqshrn          \dst\().4h, \dst\().4s, #6
-.endm
 
-.macro calc_epelh2 dst, tmp, src0, src1, src2, src3
-        smull2          \tmp\().4s, \src0\().8h, v0.h[0]
-        smlal2          \tmp\().4s, \src1\().8h, v0.h[1]
-        smlal2          \tmp\().4s, \src2\().8h, v0.h[2]
-        smlal2          \tmp\().4s, \src3\().8h, v0.h[3]
-        sqshrn2         \dst\().8h, \tmp\().4s, #6
-.endm
-
-.macro load_epel_filterh freg, xreg
-        movrel          \xreg, epel_filters
-        add             \xreg, \xreg, \freg, lsl #2
-        ld1             {v0.8b}, [\xreg]
-        sxtl            v0.8h, v0.8b
-.endm
 
 function ff_hevc_put_hevc_epel_uni_w_hv4_8_neon_i8mm, export=1
         epel_uni_w_hv_start
