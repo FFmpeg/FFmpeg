@@ -522,6 +522,7 @@ extern const FFCodec ff_paf_audio_decoder;
 extern const FFCodec ff_qcelp_decoder;
 extern const FFCodec ff_qdm2_decoder;
 extern const FFCodec ff_qdmc_decoder;
+extern const FFCodec ff_qoa_decoder;
 extern const FFCodec ff_ra_144_encoder;
 extern const FFCodec ff_ra_144_decoder;
 extern const FFCodec ff_ra_288_decoder;

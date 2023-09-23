@@ -5,6 +5,7 @@ version <next>:
 - LEAD MCMP decoder
 - EVC decoding using external library libxevd
 - EVC encoding using external library libxeve
+- QOA decoder
 
 version 6.1:
 - libaribcaption decoder
