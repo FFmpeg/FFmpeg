@@ -484,6 +484,7 @@ OBJS-$(CONFIG_PP_BNK_DEMUXER)            += pp_bnk.o
 OBJS-$(CONFIG_PVA_DEMUXER)               += pva.o
 OBJS-$(CONFIG_PVF_DEMUXER)               += pvfdec.o pcm.o
 OBJS-$(CONFIG_QCP_DEMUXER)               += qcp.o
+OBJS-$(CONFIG_QOA_DEMUXER)               += qoadec.o
 OBJS-$(CONFIG_R3D_DEMUXER)               += r3d.o
 OBJS-$(CONFIG_RAWVIDEO_DEMUXER)          += rawvideodec.o
 OBJS-$(CONFIG_RAWVIDEO_MUXER)            += rawenc.o
