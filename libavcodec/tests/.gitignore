@@ -2,6 +2,8 @@
 /avcodec
 /avfft
 /avpacket
+/bitstream_be
+/bitstream_le
 /cabac
 /celp_math
 /codec_desc
