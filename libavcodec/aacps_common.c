@@ -21,7 +21,6 @@
 
 #include <stdint.h>
 #include "libavutil/common.h"
-#include "libavutil/thread.h"
 #include "aacps.h"
 #include "get_bits.h"
 #include "aacpsdata.c"
@@ -298,7 +297,7 @@ err:
 #define PS_VLC_ROW(name) \
     { name ## _codes, name ## _bits, sizeof(name ## _codes), sizeof(name ## _codes[0]) }
 
-static av_cold void ps_init_common(void)
+av_cold void ff_ps_init_common(void)
 {
     // Syntax initialization
     static const struct {
@@ -327,10 +326,4 @@ static av_cold void ps_init_common(void)
     PS_INIT_VLC_STATIC(7, 5,   32);
     PS_INIT_VLC_STATIC(8, 5,   32);
     PS_INIT_VLC_STATIC(9, 5,   32);
-}
-
-av_cold void ff_ps_init_common(void)
-{
-    static AVOnce init_static_once = AV_ONCE_INIT;
-    ff_thread_once(&init_static_once, ps_init_common);
 }

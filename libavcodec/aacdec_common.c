@@ -27,6 +27,7 @@
 
 #include "aac.h"
 #include "aacdectab.h"
+#include "aacps.h"
 #include "aactab.h"
 #include "vlc.h"
 
@@ -312,6 +313,8 @@ static av_cold void aacdec_common_init(void)
                                             sbr_vlc_offsets[i], 0);
         tab += sbr_huffman_nb_codes[i];
     }
+
+    ff_ps_init_common();
 }
 
 av_cold void ff_aacdec_common_init_once(void)
