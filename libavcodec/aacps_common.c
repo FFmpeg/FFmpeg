@@ -67,14 +67,14 @@ static VLC vlc_ps[10];
  * Inter-channel Phase Difference/Overall Phase Difference parameters from the \
  * bitstream. \
  * \
- * @param avctx contains the current codec context \
+ * @param logctx a context for logging \
  * @param gb    pointer to the input bitstream \
  * @param ps    pointer to the Parametric Stereo context \
  * @param PAR   pointer to the parameter to be read \
  * @param e     envelope to decode \
  * @param dt    1: time delta-coded, 0: frequency delta-coded \
  */ \
-static int read_ ## PAR ## _data(AVCodecContext *avctx, GetBitContext *gb, PSCommonContext *ps, \
+static int read_ ## PAR ## _data(void *logctx, GetBitContext *gb, PSCommonContext *ps, \
                         int8_t (*PAR)[PS_MAX_NR_IIDICC], int table_idx, int e, int dt) \
 { \
     int b, num = ps->nr_ ## PAR ## _par; \
@@ -101,7 +101,7 @@ static int read_ ## PAR ## _data(AVCodecContext *avctx, GetBitContext *gb, PSCom
     } \
     return 0; \
 err: \
-    av_log(avctx, AV_LOG_ERROR, "illegal "#PAR"\n"); \
+    av_log(logctx, AV_LOG_ERROR, "illegal "#PAR"\n"); \
     return AVERROR_INVALIDDATA; \
 }
 
@@ -131,7 +131,7 @@ static int ps_read_extension_data(GetBitContext *gb, PSCommonContext *ps,
     return get_bits_count(gb) - count;
 }
 
-int ff_ps_read_data(AVCodecContext *avctx, GetBitContext *gb_host,
+int ff_ps_read_data(void *logctx, GetBitContext *gb_host,
                     PSCommonContext *ps, int bits_left)
 {
     int e;
@@ -146,7 +146,7 @@ int ff_ps_read_data(AVCodecContext *avctx, GetBitContext *gb_host,
         if (ps->enable_iid) {
             int iid_mode = get_bits(gb, 3);
             if (iid_mode > 5) {
-                av_log(avctx, AV_LOG_ERROR, "iid_mode %d is reserved.\n",
+                av_log(logctx, AV_LOG_ERROR, "iid_mode %d is reserved.\n",
                        iid_mode);
                 goto err;
             }
@@ -158,7 +158,7 @@ int ff_ps_read_data(AVCodecContext *avctx, GetBitContext *gb_host,
         if (ps->enable_icc) {
             ps->icc_mode = get_bits(gb, 3);
             if (ps->icc_mode > 5) {
-                av_log(avctx, AV_LOG_ERROR, "icc_mode %d is reserved.\n",
+                av_log(logctx, AV_LOG_ERROR, "icc_mode %d is reserved.\n",
                        ps->icc_mode);
                 goto err;
             }
@@ -176,7 +176,7 @@ int ff_ps_read_data(AVCodecContext *avctx, GetBitContext *gb_host,
         for (e = 1; e <= ps->num_env; e++) {
             ps->border_position[e] = get_bits(gb, 5);
             if (ps->border_position[e] < ps->border_position[e-1]) {
-                av_log(avctx, AV_LOG_ERROR, "border_position non monotone.\n");
+                av_log(logctx, AV_LOG_ERROR, "border_position non monotone.\n");
                 goto err;
             }
         }
@@ -187,7 +187,7 @@ int ff_ps_read_data(AVCodecContext *avctx, GetBitContext *gb_host,
     if (ps->enable_iid) {
         for (e = 0; e < ps->num_env; e++) {
             int dt = get_bits1(gb);
-            if (read_iid_data(avctx, gb, ps, ps->iid_par, huff_iid[2*dt+ps->iid_quant], e, dt))
+            if (read_iid_data(logctx, gb, ps, ps->iid_par, huff_iid[2*dt+ps->iid_quant], e, dt))
                 goto err;
         }
     } else
@@ -196,7 +196,7 @@ int ff_ps_read_data(AVCodecContext *avctx, GetBitContext *gb_host,
     if (ps->enable_icc)
         for (e = 0; e < ps->num_env; e++) {
             int dt = get_bits1(gb);
-            if (read_icc_data(avctx, gb, ps, ps->icc_par, dt ? huff_icc_dt : huff_icc_df, e, dt))
+            if (read_icc_data(logctx, gb, ps, ps->icc_par, dt ? huff_icc_dt : huff_icc_df, e, dt))
                 goto err;
         }
     else
@@ -213,7 +213,7 @@ int ff_ps_read_data(AVCodecContext *avctx, GetBitContext *gb_host,
             cnt -= 2 + ps_read_extension_data(gb, ps, ps_extension_id);
         }
         if (cnt < 0) {
-            av_log(avctx, AV_LOG_ERROR, "ps extension overflow %d\n", cnt);
+            av_log(logctx, AV_LOG_ERROR, "ps extension overflow %d\n", cnt);
             goto err;
         }
         skip_bits(gb, cnt);
@@ -241,7 +241,7 @@ int ff_ps_read_data(AVCodecContext *avctx, GetBitContext *gb_host,
         if (ps->enable_iid){
             for (b = 0; b < ps->nr_iid_par; b++) {
                 if (FFABS(ps->iid_par[ps->num_env][b]) > 7 + 8 * ps->iid_quant) {
-                    av_log(avctx, AV_LOG_ERROR, "iid_par invalid\n");
+                    av_log(logctx, AV_LOG_ERROR, "iid_par invalid\n");
                     goto err;
                 }
             }
@@ -249,7 +249,7 @@ int ff_ps_read_data(AVCodecContext *avctx, GetBitContext *gb_host,
         if (ps->enable_icc){
             for (b = 0; b < ps->nr_iid_par; b++) {
                 if (ps->icc_par[ps->num_env][b] > 7U) {
-                    av_log(avctx, AV_LOG_ERROR, "icc_par invalid\n");
+                    av_log(logctx, AV_LOG_ERROR, "icc_par invalid\n");
                     goto err;
                 }
             }
@@ -278,7 +278,7 @@ int ff_ps_read_data(AVCodecContext *avctx, GetBitContext *gb_host,
         skip_bits_long(gb_host, bits_consumed);
         return bits_consumed;
     }
-    av_log(avctx, AV_LOG_ERROR, "Expected to read %d PS bits actually read %d.\n", bits_left, bits_consumed);
+    av_log(logctx, AV_LOG_ERROR, "Expected to read %d PS bits actually read %d.\n", bits_left, bits_consumed);
 err:
     ps->start = 0;
     skip_bits_long(gb_host, bits_left);
