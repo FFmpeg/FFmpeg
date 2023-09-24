@@ -92,7 +92,7 @@ typedef struct RV34DecContext{
     const uint8_t *luma_dc_quant_i;///< luma subblock DC quantizer for intraframes
     const uint8_t *luma_dc_quant_p;///< luma subblock DC quantizer for interframes
 
-    RV34VLC *cur_vlcs;       ///< VLC set used for current frame decoding
+    const RV34VLC *cur_vlcs; ///< VLC set used for current frame decoding
     H264PredContext h;       ///< functions for 4x4 and 16x16 intra block prediction
     SliceInfo si;            ///< current slice information
 

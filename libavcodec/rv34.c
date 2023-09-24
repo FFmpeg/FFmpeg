@@ -186,7 +186,7 @@ static av_cold void rv34_init_tables(void)
 /**
  * Decode coded block pattern.
  */
-static int rv34_decode_cbp(GetBitContext *gb, RV34VLC *vlc, int table)
+static int rv34_decode_cbp(GetBitContext *gb, const RV34VLC *vlc, int table)
 {
     int pattern, code, cbp=0;
     int ones;
@@ -289,7 +289,8 @@ static inline void decode_subblock3(int16_t *dst, int code, GetBitContext *gb,
  *  o--o
  */
 
-static int rv34_decode_block(int16_t *dst, GetBitContext *gb, RV34VLC *rvlc, int fc, int sc, int q_dc, int q_ac1, int q_ac2)
+static int rv34_decode_block(int16_t *dst, GetBitContext *gb, const RV34VLC *rvlc,
+                             int fc, int sc, int q_dc, int q_ac1, int q_ac2)
 {
     int code, pattern, has_ac = 1;
 
