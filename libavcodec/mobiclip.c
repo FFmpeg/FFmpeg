@@ -274,28 +274,26 @@ typedef struct MobiClipContext {
     BswapDSPContext bdsp;
 } MobiClipContext;
 
-static VLC rl_vlc[2];
-static VLC mv_vlc[2][16];
+static const VLCElem *rl_vlc[2];
+static const VLCElem *mv_vlc[2][16];
 
 static av_cold void mobiclip_init_static(void)
 {
-    VLC_INIT_STATIC_FROM_LENGTHS(&rl_vlc[0], MOBI_RL_VLC_BITS, 104,
-                                 bits0, sizeof(*bits0),
-                                 syms0, sizeof(*syms0), sizeof(*syms0),
-                                 0, 0, 1 << MOBI_RL_VLC_BITS);
-    VLC_INIT_STATIC_FROM_LENGTHS(&rl_vlc[1], MOBI_RL_VLC_BITS, 104,
-                                 bits0, sizeof(*bits0),
-                                 syms1, sizeof(*syms1), sizeof(*syms1),
-                                 0, 0, 1 << MOBI_RL_VLC_BITS);
+    static VLCElem vlc_buf[(2 << MOBI_RL_VLC_BITS) + (2 * 16 << MOBI_MV_VLC_BITS)];
+    VLCInitState state =VLC_INIT_STATE(vlc_buf);
+
     for (int i = 0; i < 2; i++) {
-        static VLCElem vlc_buf[2 * 16 << MOBI_MV_VLC_BITS];
+        rl_vlc[i] =
+            ff_vlc_init_tables_from_lengths(&state, MOBI_RL_VLC_BITS, 104,
+                                            bits0, sizeof(*bits0),
+                                            i ? syms1 : syms0, sizeof(*syms0), sizeof(*syms0),
+                                            0, 0);
         for (int j = 0; j < 16; j++) {
-            mv_vlc[i][j].table           = &vlc_buf[(16 * i + j) << MOBI_MV_VLC_BITS];
-            mv_vlc[i][j].table_allocated = 1 << MOBI_MV_VLC_BITS;
-            ff_vlc_init_from_lengths(&mv_vlc[i][j], MOBI_MV_VLC_BITS, mv_len[j],
-                                     mv_bits[i][j], sizeof(*mv_bits[i][j]),
-                                     mv_syms[i][j], sizeof(*mv_syms[i][j]), sizeof(*mv_syms[i][j]),
-                                     0, VLC_INIT_USE_STATIC, NULL);
+            mv_vlc[i][j] =
+                ff_vlc_init_tables_from_lengths(&state, MOBI_MV_VLC_BITS, mv_len[j],
+                                                mv_bits[i][j], sizeof(*mv_bits[i][j]),
+                                                mv_syms[i][j], sizeof(*mv_syms[i][j]), sizeof(*mv_syms[i][j]),
+                                                0, 0);
         }
     }
 }
@@ -410,8 +408,7 @@ static void read_run_encoding(AVCodecContext *avctx,
 {
     MobiClipContext *s = avctx->priv_data;
     GetBitContext *gb = &s->gb;
-    int n = get_vlc2(gb, rl_vlc[s->dct_tab_idx].table,
-                     MOBI_RL_VLC_BITS, 1);
+    int n = get_vlc2(gb, rl_vlc[s->dct_tab_idx], MOBI_RL_VLC_BITS, 1);
 
     *last = (n >> 11) == 1;
     *run  = (n >> 5) & 0x3F;
@@ -1195,8 +1192,7 @@ static int predict_motion(AVCodecContext *avctx,
         for (int i = 0; i < 2; i++) {
             int ret, idx2;
 
-            idx2 = get_vlc2(gb, mv_vlc[s->moflex][tidx].table,
-                            MOBI_MV_VLC_BITS, 1);
+            idx2 = get_vlc2(gb, mv_vlc[s->moflex][tidx], MOBI_MV_VLC_BITS, 1);
 
             ret = predict_motion(avctx, width, height, idx2,
                                  offsetm, offsetx + i * adjx, offsety + i * adjy);
@@ -1272,8 +1268,7 @@ static int mobiclip_decode(AVCodecContext *avctx, AVFrame *rframe,
                 motion[x / 16 + 2].x = 0;
                 motion[x / 16 + 2].y = 0;
 
-                idx = get_vlc2(gb, mv_vlc[s->moflex][0].table,
-                                   MOBI_MV_VLC_BITS, 1);
+                idx = get_vlc2(gb, mv_vlc[s->moflex][0], MOBI_MV_VLC_BITS, 1);
 
                 if (idx == 6 || idx == 7) {
                     ret = decode_macroblock(avctx, frame, x, y, idx == 7);
