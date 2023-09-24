@@ -30,7 +30,16 @@
 
 #include <stdint.h>
 
+#include "vlc.h"
+
+#include "libavutil/attributes_internal.h"
 #include "libavutil/channel_layout.h"
+
+FF_VISIBILITY_PUSH_HIDDEN
+void ff_aacdec_common_init_once(void);
+
+extern VLC ff_vlc_scalefactors;
+extern VLC ff_vlc_spectral[11];
 
 extern const int8_t ff_tags_per_config[16];
 
@@ -43,5 +52,6 @@ extern const uint64_t ff_aac_channel_layout[];
 #endif
 
 extern const AVChannelLayout ff_aac_ch_layout[];
+FF_VISIBILITY_POP_HIDDEN
 
 #endif /* AVCODEC_AACDECTAB_H */

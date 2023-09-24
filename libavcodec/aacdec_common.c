@@ -27,6 +27,11 @@
 
 #include "aac.h"
 #include "aacdectab.h"
+#include "aactab.h"
+#include "vlc.h"
+
+#include "libavutil/attributes.h"
+#include "libavutil/thread.h"
 
 const int8_t ff_tags_per_config[16] = { 0, 1, 1, 2, 3, 3, 4, 5, 0, 0, 0, 5, 5, 16, 5, 0 };
 
@@ -117,3 +122,41 @@ const AVChannelLayout ff_aac_ch_layout[] = {
     AV_CHANNEL_LAYOUT_7POINT1_TOP_BACK,
     { 0 },
 };
+
+VLC ff_vlc_scalefactors;
+VLC ff_vlc_spectral[11];
+
+static av_cold void aacdec_common_init(void)
+{
+    static VLCElem vlc_buf[304 + 270 + 550 + 300 + 328 +
+                           294 + 306 + 268 + 510 + 366 + 462];
+    for (unsigned i = 0, offset = 0; i < 11; i++) {
+        ff_vlc_spectral[i].table           = &vlc_buf[offset];
+        ff_vlc_spectral[i].table_allocated = FF_ARRAY_ELEMS(vlc_buf) - offset;
+        ff_vlc_init_sparse(&ff_vlc_spectral[i], 8, ff_aac_spectral_sizes[i],
+                           ff_aac_spectral_bits[i],       sizeof(ff_aac_spectral_bits[i][0]),
+                                                          sizeof(ff_aac_spectral_bits[i][0]),
+                           ff_aac_spectral_codes[i],      sizeof(ff_aac_spectral_codes[i][0]),
+                                                          sizeof(ff_aac_spectral_codes[i][0]),
+                           ff_aac_codebook_vector_idx[i], sizeof(ff_aac_codebook_vector_idx[i][0]),
+                                                          sizeof(ff_aac_codebook_vector_idx[i][0]),
+                 VLC_INIT_STATIC_OVERLONG);
+        offset += ff_vlc_spectral[i].table_size;
+    }
+
+    VLC_INIT_STATIC(&ff_vlc_scalefactors, 7,
+                    FF_ARRAY_ELEMS(ff_aac_scalefactor_code),
+                    ff_aac_scalefactor_bits,
+                    sizeof(ff_aac_scalefactor_bits[0]),
+                    sizeof(ff_aac_scalefactor_bits[0]),
+                    ff_aac_scalefactor_code,
+                    sizeof(ff_aac_scalefactor_code[0]),
+                    sizeof(ff_aac_scalefactor_code[0]),
+                    352);
+}
+
+av_cold void ff_aacdec_common_init_once(void)
+{
+    static AVOnce init_static_once = AV_ONCE_INIT;
+    ff_thread_once(&init_static_once, aacdec_common_init);
+}
