@@ -108,16 +108,16 @@ static const uint8_t block_bits[] = {
      6,  5,  5,  5,  4,  2,  3,  4,  4,
 };
 
-static VLC cbplo_tab;
-static VLC cbphi_tab;
-static VLC blktype_tab;
-static VLC block_tab;
+static VLCElem cbplo_tab[1 << CBPLO_VLC_BITS];
+static VLCElem cbphi_tab[1 << CBPHI_VLC_BITS];
+static VLCElem blktype_tab[1 << BLKTYPE_VLC_BITS];
+static VLCElem block_tab[1 << BLOCK_VLC_BITS];
 
 static int get_cbphi(GetBitContext *gb, int x)
 {
     int value;
 
-    value = get_vlc2(gb, cbphi_tab.table, CBPHI_VLC_BITS, 1);
+    value = get_vlc2(gb, cbphi_tab, CBPHI_VLC_BITS, 1);
     if (value < 0)
         return AVERROR_INVALIDDATA;
 
@@ -134,7 +134,7 @@ static int decode_block(AVCodecContext *avctx, GetBitContext *gb,
     for (i = !flag; i < 64; i++) {
         int value;
 
-        value = get_vlc2(gb, block_tab.table, BLOCK_VLC_BITS, 1);
+        value = get_vlc2(gb, block_tab, BLOCK_VLC_BITS, 1);
         if (value < 0)
             return AVERROR_INVALIDDATA;
         if (value == 0) {
@@ -221,7 +221,7 @@ static int decode_intra(AVCodecContext *avctx, GetBitContext *gb, AVFrame *frame
         for (x = 0; x < avctx->width; x += 16) {
             unsigned flag, cbphi, cbplo;
 
-            cbplo = get_vlc2(gb, cbplo_tab.table, CBPLO_VLC_BITS, 1);
+            cbplo = get_vlc2(gb, cbplo_tab, CBPLO_VLC_BITS, 1);
             flag = get_bits1(gb);
 
             cbphi = get_cbphi(gb, 1);
@@ -287,7 +287,7 @@ static int decode_inter(AVCodecContext *avctx, GetBitContext *gb,
                 continue;
             }
 
-            value = get_vlc2(gb, blktype_tab.table, BLKTYPE_VLC_BITS, 1);
+            value = get_vlc2(gb, blktype_tab, BLKTYPE_VLC_BITS, 1);
             if (value < 0)
                 return AVERROR_INVALIDDATA;
 
@@ -473,20 +473,20 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
 static av_cold void imm4_init_static_data(void)
 {
-    VLC_INIT_STATIC_FROM_LENGTHS(&cbplo_tab, CBPLO_VLC_BITS, FF_ARRAY_ELEMS(cbplo),
-                                 &cbplo[0][1], 2, &cbplo[0][0], 2, 1,
-                                 0, 0, 1 << CBPLO_VLC_BITS);
+    VLC_INIT_STATIC_TABLE_FROM_LENGTHS(cbplo_tab, CBPLO_VLC_BITS, FF_ARRAY_ELEMS(cbplo),
+                                       &cbplo[0][1], 2, &cbplo[0][0], 2, 1,
+                                       0, 0);
 
-    VLC_INIT_SPARSE_STATIC(&cbphi_tab, CBPHI_VLC_BITS, FF_ARRAY_ELEMS(cbphi_bits),
-                           cbphi_bits, 1, 1, cbphi_codes, 1, 1, NULL, 0, 0, 64);
+    VLC_INIT_STATIC_TABLE(cbphi_tab, CBPHI_VLC_BITS, FF_ARRAY_ELEMS(cbphi_bits),
+                          cbphi_bits, 1, 1, cbphi_codes, 1, 1, 0);
 
-    VLC_INIT_STATIC_FROM_LENGTHS(&blktype_tab, BLKTYPE_VLC_BITS, FF_ARRAY_ELEMS(blktype),
-                                 &blktype[0][1], 2, &blktype[0][0], 2, 1,
-                                 0, 0, 1 << BLKTYPE_VLC_BITS);
+    VLC_INIT_STATIC_TABLE_FROM_LENGTHS(blktype_tab, BLKTYPE_VLC_BITS, FF_ARRAY_ELEMS(blktype),
+                                       &blktype[0][1], 2, &blktype[0][0], 2, 1,
+                                       0, 0);
 
-    VLC_INIT_STATIC_FROM_LENGTHS(&block_tab, BLOCK_VLC_BITS, FF_ARRAY_ELEMS(block_bits),
-                                 block_bits, 1, block_symbols, 2, 2,
-                                 0, 0, 1 << BLOCK_VLC_BITS);
+    VLC_INIT_STATIC_TABLE_FROM_LENGTHS(block_tab, BLOCK_VLC_BITS, FF_ARRAY_ELEMS(block_bits),
+                                       block_bits, 1, block_symbols, 2, 2,
+                                       0, 0);
 }
 
 static av_cold int decode_init(AVCodecContext *avctx)
