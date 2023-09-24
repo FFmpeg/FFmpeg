@@ -283,10 +283,10 @@ static int assign_channels(struct elem_to_channel e2c_vec[MAX_ELEM_ID], uint8_t 
 
     if (pos == AAC_CHANNEL_LFE) {
         while (nb_channels) {
-            if (aac_channel_map[layer][pos - 1][j] == AV_CHAN_NONE)
+            if (ff_aac_channel_map[layer][pos - 1][j] == AV_CHAN_NONE)
                 return -1;
             e2c_vec[i] = (struct elem_to_channel) {
-                .av_position  = 1ULL << aac_channel_map[layer][pos - 1][j],
+                .av_position  = 1ULL << ff_aac_channel_map[layer][pos - 1][j],
                 .syn_ele      = layout_map[i][0],
                 .elem_id      = layout_map[i][1],
                 .aac_position = pos
@@ -302,12 +302,12 @@ static int assign_channels(struct elem_to_channel e2c_vec[MAX_ELEM_ID], uint8_t 
     }
 
     while (nb_channels & 1) {
-        if (aac_channel_map[layer][pos - 1][0] == AV_CHAN_NONE)
+        if (ff_aac_channel_map[layer][pos - 1][0] == AV_CHAN_NONE)
             return -1;
-        if (aac_channel_map[layer][pos - 1][0] == AV_CHAN_UNUSED)
+        if (ff_aac_channel_map[layer][pos - 1][0] == AV_CHAN_UNUSED)
             break;
         e2c_vec[i] = (struct elem_to_channel) {
-            .av_position  = 1ULL << aac_channel_map[layer][pos - 1][0],
+            .av_position  = 1ULL << ff_aac_channel_map[layer][pos - 1][0],
             .syn_ele      = layout_map[i][0],
             .elem_id      = layout_map[i][1],
             .aac_position = pos
@@ -319,21 +319,21 @@ static int assign_channels(struct elem_to_channel e2c_vec[MAX_ELEM_ID], uint8_t 
 
     j = (pos != AAC_CHANNEL_SIDE) && nb_channels <= 3 ? 3 : 1;
     while (nb_channels >= 2) {
-        if (aac_channel_map[layer][pos - 1][j]   == AV_CHAN_NONE ||
-            aac_channel_map[layer][pos - 1][j+1] == AV_CHAN_NONE)
+        if (ff_aac_channel_map[layer][pos - 1][j]   == AV_CHAN_NONE ||
+            ff_aac_channel_map[layer][pos - 1][j+1] == AV_CHAN_NONE)
             return -1;
         i += assign_pair(e2c_vec, layout_map, i,
-                         1ULL << aac_channel_map[layer][pos - 1][j],
-                         1ULL << aac_channel_map[layer][pos - 1][j+1],
+                         1ULL << ff_aac_channel_map[layer][pos - 1][j],
+                         1ULL << ff_aac_channel_map[layer][pos - 1][j+1],
                          pos, layout);
         j += 2;
         nb_channels -= 2;
     }
     while (nb_channels & 1) {
-        if (aac_channel_map[layer][pos - 1][5] == AV_CHAN_NONE)
+        if (ff_aac_channel_map[layer][pos - 1][5] == AV_CHAN_NONE)
             return -1;
         e2c_vec[i] = (struct elem_to_channel) {
-            .av_position  = 1ULL << aac_channel_map[layer][pos - 1][5],
+            .av_position  = 1ULL << ff_aac_channel_map[layer][pos - 1][5],
             .syn_ele      = layout_map[i][0],
             .elem_id      = layout_map[i][1],
             .aac_position = pos
@@ -552,8 +552,8 @@ static int set_default_channel_config(AACContext *ac, AVCodecContext *avctx,
                channel_config);
         return AVERROR_INVALIDDATA;
     }
-    *tags = tags_per_config[channel_config];
-    memcpy(layout_map, aac_channel_layout_map[channel_config - 1],
+    *tags = ff_tags_per_config[channel_config];
+    memcpy(layout_map, ff_aac_channel_layout_map[channel_config - 1],
            *tags * sizeof(*layout_map));
 
     /*
@@ -661,7 +661,7 @@ static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
          * SCE[0] CPE[0] CPE[1] LFE[0].
          * If we seem to have encountered such a stream, transfer
          * the LFE[0] element to the SCE[1]'s mapping */
-        if (ac->tags_mapped == tags_per_config[ac->oc[1].m4ac.chan_config] - 1 && (type == TYPE_LFE || type == TYPE_SCE)) {
+        if (ac->tags_mapped == ff_tags_per_config[ac->oc[1].m4ac.chan_config] - 1 && (type == TYPE_LFE || type == TYPE_SCE)) {
             if (!ac->warned_remapping_once && (type != TYPE_LFE || elem_id != 0)) {
                 av_log(ac->avctx, AV_LOG_WARNING,
                    "This stream seems to incorrectly report its last channel as %s[%d], mapping to LFE[0]\n",
@@ -683,7 +683,7 @@ static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
          * SCE[0] CPE[0] SCE[1].
          * If we seem to have encountered such a stream, transfer
          * the SCE[1] element to the LFE[0]'s mapping */
-        if (ac->tags_mapped == tags_per_config[ac->oc[1].m4ac.chan_config] - 1 && (type == TYPE_LFE || type == TYPE_SCE)) {
+        if (ac->tags_mapped == ff_tags_per_config[ac->oc[1].m4ac.chan_config] - 1 && (type == TYPE_LFE || type == TYPE_SCE)) {
             if (!ac->warned_remapping_once && (type != TYPE_SCE || elem_id != 1)) {
                 av_log(ac->avctx, AV_LOG_WARNING,
                    "This stream seems to incorrectly report its last channel as %s[%d], mapping to SCE[1]\n",
@@ -3091,9 +3091,9 @@ static int aac_decode_er_frame(AVCodecContext *avctx, void *data,
                               chan_config);
         return AVERROR_INVALIDDATA;
     }
-    for (i = 0; i < tags_per_config[chan_config]; i++) {
-        const int elem_type = aac_channel_layout_map[chan_config-1][i][0];
-        const int elem_id   = aac_channel_layout_map[chan_config-1][i][1];
+    for (i = 0; i < ff_tags_per_config[chan_config]; i++) {
+        const int elem_type = ff_aac_channel_layout_map[chan_config-1][i][0];
+        const int elem_id   = ff_aac_channel_layout_map[chan_config-1][i][1];
         if (!(che=get_che(ac, elem_type, elem_id))) {
             av_log(ac->avctx, AV_LOG_ERROR,
                    "channel element %d.%d is not allocated\n",
