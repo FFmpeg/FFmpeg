@@ -66,9 +66,6 @@ enum {
     EXTENSION_ID_PS = 2,
 };
 
-static const int8_t vlc_sbr_lav[10] =
-    { 60, 60, 24, 24, 31, 31, 12, 12, 31, 12 };
-
 /** Initialize SBR. */
 void AAC_RENAME(ff_aac_sbr_init)(void);
 /** Initialize one SBR context. */

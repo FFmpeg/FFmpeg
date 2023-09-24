@@ -269,6 +269,10 @@ static const uint8_t sbr_huffman_nb_codes[] = {
     121, 121, 49, 49, 63, 63, 25, 25, 63, 25
 };
 
+static const int8_t sbr_vlc_offsets[10] = {
+    -60, -60, -24, -24, -31, -31, -12, -12, -31, -12
+};
+
 const VLCElem *ff_aac_sbr_vlc[10];
 
 static av_cold void aacdec_common_init(void)
@@ -305,7 +309,7 @@ static av_cold void aacdec_common_init(void)
             ff_vlc_init_tables_from_lengths(&state, 9, sbr_huffman_nb_codes[i],
                                             &tab[0][1], 2,
                                             &tab[0][0], 2, 1,
-                                            0, 0);
+                                            sbr_vlc_offsets[i], 0);
         tab += sbr_huffman_nb_codes[i];
     }
 }
