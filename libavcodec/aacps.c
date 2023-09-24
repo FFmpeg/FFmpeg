@@ -26,7 +26,6 @@
 #include "libavutil/common.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/mem_internal.h"
-#include "avcodec.h"
 #include "aacps.h"
 #if USE_FIXED
 #include "aacps_fixed_tablegen.h"
@@ -717,7 +716,7 @@ static void stereo_processing(PSContext *ps, INTFLOAT (*l)[32][2], INTFLOAT (*r)
     }
 }
 
-int AAC_RENAME(ff_ps_apply)(AVCodecContext *avctx, PSContext *ps, INTFLOAT L[2][38][64], INTFLOAT R[2][38][64], int top)
+int AAC_RENAME(ff_ps_apply)(PSContext *ps, INTFLOAT L[2][38][64], INTFLOAT R[2][38][64], int top)
 {
     INTFLOAT (*Lbuf)[32][2] = ps->Lbuf;
     INTFLOAT (*Rbuf)[32][2] = ps->Rbuf;

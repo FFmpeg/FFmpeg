@@ -1569,7 +1569,7 @@ void AAC_RENAME(ff_sbr_apply)(AACContext *ac, SpectralBandReplication *sbr, int 
 
     if (ac->oc[1].m4ac.ps == 1) {
         if (sbr->ps.common.start) {
-            AAC_RENAME(ff_ps_apply)(ac->avctx, &sbr->ps, sbr->X[0], sbr->X[1], sbr->kx[1] + sbr->m[1]);
+            AAC_RENAME(ff_ps_apply)(&sbr->ps, sbr->X[0], sbr->X[1], sbr->kx[1] + sbr->m[1]);
         } else {
             memcpy(sbr->X[1], sbr->X[0], sizeof(sbr->X[0]));
         }
