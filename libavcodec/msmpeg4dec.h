@@ -28,8 +28,8 @@
 #define INTER_INTRA_VLC_BITS 3
 #define MB_NON_INTRA_VLC_BITS 9
 
-extern VLC ff_mb_non_intra_vlc[4];
-extern VLC ff_inter_intra_vlc;
+extern const VLCElem *ff_mb_non_intra_vlc[4];
+extern VLCElem ff_inter_intra_vlc[8];
 
 int ff_msmpeg4_decode_init(AVCodecContext *avctx);
 int ff_msmpeg4_decode_picture_header(MpegEncContext *s);

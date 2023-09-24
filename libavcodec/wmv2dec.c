@@ -468,7 +468,7 @@ static int wmv2_decode_mb(MpegEncContext *s, int16_t block[6][64])
         if (get_bits_left(&s->gb) <= 0)
             return AVERROR_INVALIDDATA;
 
-        code = get_vlc2(&s->gb, ff_mb_non_intra_vlc[w->cbp_table_index].table,
+        code = get_vlc2(&s->gb, ff_mb_non_intra_vlc[w->cbp_table_index],
                         MB_NON_INTRA_VLC_BITS, 3);
         s->mb_intra = (~code & 0x40) >> 6;
 
@@ -534,7 +534,7 @@ static int wmv2_decode_mb(MpegEncContext *s, int16_t block[6][64])
                 show_bits(&s->gb, 24));
         s->ac_pred = get_bits1(&s->gb);
         if (s->inter_intra_pred) {
-            s->h263_aic_dir = get_vlc2(&s->gb, ff_inter_intra_vlc.table,
+            s->h263_aic_dir = get_vlc2(&s->gb, ff_inter_intra_vlc,
                                        INTER_INTRA_VLC_BITS, 1);
             ff_dlog(s->avctx, "%d%d %d %d/",
                     s->ac_pred, s->h263_aic_dir, s->mb_x, s->mb_y);

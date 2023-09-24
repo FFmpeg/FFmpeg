@@ -44,7 +44,7 @@ typedef struct MVTable {
     const uint8_t *table_mvx;
     const uint8_t *table_mvy;
     uint16_t *table_mv_index; /* encoding: convert mv to index in table_mv */
-    VLC vlc;                /* decoding: vlc */
+    const VLCElem *vlc;       /* decoding: vlc */
 } MVTable;
 
 FF_VISIBILITY_PUSH_HIDDEN
