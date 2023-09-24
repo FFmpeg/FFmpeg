@@ -54,7 +54,7 @@ static int decode_rtv1(GetByteContext *gb, uint8_t *dst, ptrdiff_t linesize,
                 int a, b;
 
                 if (bytestream2_get_bytes_left(gb) < 4)
-                    break;
+                    return AVERROR_INVALIDDATA;
 
                 a = bytestream2_get_le16u(gb);
                 b = bytestream2_get_le16u(gb);
@@ -77,7 +77,7 @@ static int decode_rtv1(GetByteContext *gb, uint8_t *dst, ptrdiff_t linesize,
                     dxt1_block(dst + x, linesize, block);
                 } else {
                     if (bytestream2_get_bytes_left(gb) < 12 * 4)
-                        break;
+                        return AVERROR_INVALIDDATA;
 
                     for (int by = 0; by < 4; by++) {
                         for (int bx = 0; bx < 4; bx++)
@@ -126,7 +126,9 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
     dst = p->data[0] + p->linesize[0] * (avctx->coded_height - 1);
     linesize = -p->linesize[0];
 
-    decode_rtv1(&gb, dst, linesize, width, height, flags, dsp->dxt1_block);
+    ret = decode_rtv1(&gb, dst, linesize, width, height, flags, dsp->dxt1_block);
+    if (ret < 0)
+        return ret;
 
     p->pict_type = AV_PICTURE_TYPE_I;
     p->flags |= AV_FRAME_FLAG_KEY;
