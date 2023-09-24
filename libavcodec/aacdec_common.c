@@ -128,8 +128,8 @@ const VLCElem *ff_vlc_spectral[11];
 
 /// Huffman tables for SBR
 
+static const uint8_t sbr_huffman_tab[][2] = {
     /* t_huffman_env_1_5dB - 121 entries */
-static const uint8_t t_huffman_env_1_5dB_tab[][2] = {
     {  60,   2 }, {  59,   2 }, {  61,   3 }, {  58,   3 }, {  62,   4 },
     {  57,   4 }, {  63,   5 }, {  56,   5 }, {  64,   6 }, {  55,   6 },
     {  65,   7 }, {  54,   7 }, {  66,   8 }, {  53,   8 }, {  67,   9 },
@@ -155,10 +155,7 @@ static const uint8_t t_huffman_env_1_5dB_tab[][2] = {
     { 110,  19 }, { 111,  19 }, { 112,  19 }, { 113,  19 }, { 114,  19 },
     { 115,  19 }, { 116,  19 }, { 117,  19 }, { 118,  19 }, { 119,  19 },
     { 120,  19 },
-};
-
     /* f_huffman_env_1_5dB - 121 entries */
-static const uint8_t f_huffman_env_1_5dB_tab[][2] = {
     {  60,   2 }, {  59,   2 }, {  61,   3 }, {  58,   3 }, {  57,   4 },
     {  62,   4 }, {  56,   5 }, {  63,   5 }, {  55,   6 }, {  64,   6 },
     {  54,   7 }, {  65,   8 }, {  53,   8 }, {  66,   8 }, {  52,   9 },
@@ -184,10 +181,7 @@ static const uint8_t f_huffman_env_1_5dB_tab[][2] = {
     { 110,  20 }, { 111,  20 }, { 112,  20 }, { 113,  20 }, { 114,  20 },
     { 115,  20 }, { 116,  20 }, { 117,  20 }, { 118,  20 }, { 119,  20 },
     { 120,  20 },
-};
-
     /* t_huffman_env_bal_1_5dB - 49 entries */
-static const uint8_t t_huffman_env_bal_1_5dB_tab[][2] = {
     {  24,   1 }, {  25,   2 }, {  23,   3 }, {  26,   4 }, {  22,   5 },
     {  27,   6 }, {  21,   7 }, {  28,   8 }, {  20,   9 }, {  19,  11 },
     {  29,  11 }, {  18,  12 }, {  30,  12 }, {  31,  15 }, {  17,  16 },
@@ -198,10 +192,7 @@ static const uint8_t t_huffman_env_bal_1_5dB_tab[][2] = {
     {  35,  16 }, {  36,  16 }, {  37,  16 }, {  38,  16 }, {  39,  17 },
     {  40,  17 }, {  41,  17 }, {  42,  17 }, {  43,  17 }, {  44,  17 },
     {  45,  17 }, {  46,  17 }, {  47,  17 }, {  48,  17 },
-};
-
     /* f_huffman_env_bal_1_5dB - 49 entries */
-static const uint8_t f_huffman_env_bal_1_5dB_tab[][2] = {
     {  24,   1 }, {  23,   2 }, {  25,   3 }, {  22,   4 }, {  26,   5 },
     {  27,   6 }, {  21,   7 }, {  20,   8 }, {  28,   9 }, {  19,  11 },
     {  29,  11 }, {  18,  11 }, {  30,  12 }, {  17,  14 }, {  31,  15 },
@@ -212,10 +203,7 @@ static const uint8_t f_huffman_env_bal_1_5dB_tab[][2] = {
     {  35,  18 }, {  36,  18 }, {  37,  18 }, {  38,  18 }, {  39,  18 },
     {  40,  18 }, {  41,  18 }, {  42,  18 }, {  43,  18 }, {  44,  18 },
     {  45,  18 }, {  46,  18 }, {  47,  19 }, {  48,  19 },
-};
-
     /* t_huffman_env_3_0dB - 63 entries */
-static const uint8_t t_huffman_env_3_0dB_tab[][2] = {
     {  31,   1 }, {  30,   2 }, {  32,   3 }, {  29,   4 }, {  33,   5 },
     {  28,   6 }, {  34,   7 }, {  27,   8 }, {  35,   9 }, {  26,  11 },
     {  36,  11 }, {  25,  12 }, {  24,  13 }, {  37,  13 }, {  23,  14 },
@@ -229,10 +217,7 @@ static const uint8_t t_huffman_env_3_0dB_tab[][2] = {
     {  50,  19 }, {  51,  19 }, {  52,  19 }, {  53,  19 }, {  54,  19 },
     {  55,  19 }, {  56,  19 }, {  57,  19 }, {  58,  19 }, {  59,  19 },
     {  60,  19 }, {  61,  19 }, {  62,  19 },
-};
-
     /* f_huffman_env_3_0dB - 63 entries */
-static const uint8_t f_huffman_env_3_0dB_tab[][2] = {
     {  31,   1 }, {  30,   2 }, {  32,   3 }, {  29,   4 }, {  33,   5 },
     {  28,   6 }, {  34,   8 }, {  27,   8 }, {  35,   9 }, {  26,   9 },
     {  36,  10 }, {  25,  10 }, {  37,  11 }, {  24,  11 }, {  38,  12 },
@@ -246,28 +231,19 @@ static const uint8_t f_huffman_env_3_0dB_tab[][2] = {
     {   3,  20 }, {   4,  20 }, {   5,  20 }, {   6,  20 }, {  14,  20 },
     {  50,  20 }, {  54,  20 }, {  57,  20 }, {  58,  20 }, {  59,  20 },
     {  60,  20 }, {  61,  20 }, {  62,  20 },
-};
-
     /* t_huffman_env_bal_3_0dB - 25 entries */
-static const uint8_t t_huffman_env_bal_3_0dB_tab[][2] = {
     {  12,   1 }, {  13,   2 }, {  11,   3 }, {  10,   4 }, {  14,   5 },
     {  15,   6 }, {   9,   7 }, {   8,   8 }, {  16,   9 }, {   7,  12 },
     {   0,  13 }, {   1,  13 }, {   2,  13 }, {   3,  13 }, {   4,  13 },
     {   5,  13 }, {   6,  13 }, {  17,  13 }, {  18,  13 }, {  19,  13 },
     {  20,  13 }, {  21,  13 }, {  22,  13 }, {  23,  14 }, {  24,  14 },
-};
-
     /* f_huffman_env_bal_3_0dB - 25 entries */
-static const uint8_t f_huffman_env_bal_3_0dB_tab[][2] = {
     {  12,   1 }, {  11,   2 }, {  13,   3 }, {  10,   4 }, {  14,   5 },
     {  15,   6 }, {   9,   7 }, {   8,   8 }, {  16,   9 }, {   7,  11 },
     {  17,  12 }, {  18,  13 }, {   0,  13 }, {   1,  13 }, {   2,  13 },
     {   3,  13 }, {   4,  13 }, {   5,  14 }, {   6,  14 }, {  19,  14 },
     {  20,  14 }, {  21,  14 }, {  22,  14 }, {  23,  14 }, {  24,  14 },
-};
-
     /* t_huffman_noise_3_0dB - 63 entries */
-static const uint8_t t_huffman_noise_3_0dB_tab[][2] = {
     {  31,   1 }, {  32,   2 }, {  30,   3 }, {  29,   4 }, {  33,   5 },
     {  28,   6 }, {  34,   8 }, {  27,   8 }, {  35,  10 }, {  26,  11 },
     {  36,  13 }, {  42,  13 }, {   0,  13 }, {   1,  13 }, {   2,  13 },
@@ -281,10 +257,7 @@ static const uint8_t t_huffman_noise_3_0dB_tab[][2] = {
     {  50,  13 }, {  51,  13 }, {  52,  13 }, {  53,  13 }, {  54,  13 },
     {  55,  13 }, {  56,  13 }, {  57,  13 }, {  58,  13 }, {  59,  13 },
     {  60,  13 }, {  61,  14 }, {  62,  14 },
-};
-
     /* t_huffman_noise_bal_3_0dB - 25 entries */
-static const uint8_t t_huffman_noise_bal_3_0dB_tab[][2] = {
     {  12,   1 }, {  11,   2 }, {  13,   3 }, {  10,   5 }, {  14,   6 },
     {   0,   8 }, {   1,   8 }, {   2,   8 }, {   3,   8 }, {   4,   8 },
     {   5,   8 }, {   6,   8 }, {   7,   8 }, {   8,   8 }, {   9,   8 },
@@ -292,33 +265,20 @@ static const uint8_t t_huffman_noise_bal_3_0dB_tab[][2] = {
     {  20,   8 }, {  21,   8 }, {  22,   8 }, {  23,   8 }, {  24,   8 },
 };
 
+static const uint8_t sbr_huffman_nb_codes[] = {
+    121, 121, 49, 49, 63, 63, 25, 25, 63, 25
+};
+
 const VLCElem *ff_aac_sbr_vlc[10];
 
 static av_cold void aacdec_common_init(void)
 {
-#define SBR_VLC_ROW(name) \
-    { name ## _tab, FF_ARRAY_ELEMS(name ## _tab) }
-    static const struct {
-        const uint8_t (*sbr_tab)[2];
-        const unsigned int table_size;
-    } sbr_tmp[] = {
-        SBR_VLC_ROW(t_huffman_env_1_5dB),
-        SBR_VLC_ROW(f_huffman_env_1_5dB),
-        SBR_VLC_ROW(t_huffman_env_bal_1_5dB),
-        SBR_VLC_ROW(f_huffman_env_bal_1_5dB),
-        SBR_VLC_ROW(t_huffman_env_3_0dB),
-        SBR_VLC_ROW(f_huffman_env_3_0dB),
-        SBR_VLC_ROW(t_huffman_env_bal_3_0dB),
-        SBR_VLC_ROW(f_huffman_env_bal_3_0dB),
-        SBR_VLC_ROW(t_huffman_noise_3_0dB),
-        SBR_VLC_ROW(t_huffman_noise_bal_3_0dB),
-    };
-
     static VLCElem vlc_buf[(304 + 270 + 550 + 300 + 328 +
                             294 + 306 + 268 + 510 + 366 + 462) +
                            (1098 + 1092 + 768 + 1026 + 1058 +
                             1052 +  544 + 544 +  592 + 512)];
     VLCInitState state = VLC_INIT_STATE(vlc_buf);
+    const uint8_t (*tab)[2] = sbr_huffman_tab;
 
     for (unsigned i = 0; i < 11; i++) {
 #define TAB_WRAP_SIZE(name) name[i], sizeof(name[i][0]), sizeof(name[i][0])
@@ -342,10 +302,11 @@ static av_cold void aacdec_common_init(void)
     // SBR VLC table initialization
     for (int i = 0; i < FF_ARRAY_ELEMS(ff_aac_sbr_vlc); i++) {
         ff_aac_sbr_vlc[i] =
-            ff_vlc_init_tables_from_lengths(&state, 9, sbr_tmp[i].table_size,
-                                            &sbr_tmp[i].sbr_tab[0][1], 2,
-                                            &sbr_tmp[i].sbr_tab[0][0], 2, 1,
+            ff_vlc_init_tables_from_lengths(&state, 9, sbr_huffman_nb_codes[i],
+                                            &tab[0][1], 2,
+                                            &tab[0][0], 2, 1,
                                             0, 0);
+        tab += sbr_huffman_nb_codes[i];
     }
 }
 
