@@ -352,15 +352,16 @@ static const uint8_t t_huffman_noise_bal_3_0dB_codes[25] = {
     0xff,
 };
 
-VLC ff_aac_sbr_vlc[10];
+const VLCElem *ff_aac_sbr_vlc[10];
 
 static av_cold void aacdec_common_init(void)
 {
-#define SBR_INIT_VLC_STATIC(num, size) \
-    VLC_INIT_STATIC(&ff_aac_sbr_vlc[num], 9, sbr_tmp[num].table_size / sbr_tmp[num].elem_size,     \
+#define SBR_INIT_VLC_STATIC(num) \
+    ff_aac_sbr_vlc[num] = \
+        ff_vlc_init_tables_sparse(&state, 9, sbr_tmp[num].table_size / sbr_tmp[num].elem_size,     \
                     sbr_tmp[num].sbr_bits ,                      1,                      1, \
                     sbr_tmp[num].sbr_codes, sbr_tmp[num].elem_size, sbr_tmp[num].elem_size, \
-                    size)
+                    NULL, 0, 0, 0)
 #define SBR_VLC_ROW(name) \
     { name ## _codes, name ## _bits, sizeof(name ## _codes), sizeof(name ## _codes[0]) }
     static const struct {
@@ -379,8 +380,10 @@ static av_cold void aacdec_common_init(void)
         SBR_VLC_ROW(t_huffman_noise_bal_3_0dB),
     };
 
-    static VLCElem vlc_buf[304 + 270 + 550 + 300 + 328 +
-                           294 + 306 + 268 + 510 + 366 + 462];
+    static VLCElem vlc_buf[(304 + 270 + 550 + 300 + 328 +
+                            294 + 306 + 268 + 510 + 366 + 462) +
+                           (1098 + 1092 + 768 + 1026 + 1058 +
+                            1052 +  544 + 544 +  592 + 512)];
     VLCInitState state = VLC_INIT_STATE(vlc_buf);
 
     for (unsigned i = 0; i < 11; i++) {
@@ -403,16 +406,16 @@ static av_cold void aacdec_common_init(void)
                           sizeof(ff_aac_scalefactor_code[0]), 0);
 
     // SBR VLC table initialization
-    SBR_INIT_VLC_STATIC(0, 1098);
-    SBR_INIT_VLC_STATIC(1, 1092);
-    SBR_INIT_VLC_STATIC(2, 768);
-    SBR_INIT_VLC_STATIC(3, 1026);
-    SBR_INIT_VLC_STATIC(4, 1058);
-    SBR_INIT_VLC_STATIC(5, 1052);
-    SBR_INIT_VLC_STATIC(6, 544);
-    SBR_INIT_VLC_STATIC(7, 544);
-    SBR_INIT_VLC_STATIC(8, 592);
-    SBR_INIT_VLC_STATIC(9, 512);
+    SBR_INIT_VLC_STATIC(0);
+    SBR_INIT_VLC_STATIC(1);
+    SBR_INIT_VLC_STATIC(2);
+    SBR_INIT_VLC_STATIC(3);
+    SBR_INIT_VLC_STATIC(4);
+    SBR_INIT_VLC_STATIC(5);
+    SBR_INIT_VLC_STATIC(6);
+    SBR_INIT_VLC_STATIC(7);
+    SBR_INIT_VLC_STATIC(8);
+    SBR_INIT_VLC_STATIC(9);
 }
 
 av_cold void ff_aacdec_common_init_once(void)

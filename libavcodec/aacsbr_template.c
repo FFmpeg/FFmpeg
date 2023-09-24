@@ -811,29 +811,29 @@ static int read_sbr_envelope(AACContext *ac, SpectralBandReplication *sbr, GetBi
     if (sbr->bs_coupling && ch) {
         if (ch_data->bs_amp_res) {
             bits   = 5;
-            t_huff = ff_aac_sbr_vlc[T_HUFFMAN_ENV_BAL_3_0DB].table;
+            t_huff = ff_aac_sbr_vlc[T_HUFFMAN_ENV_BAL_3_0DB];
             t_lav  = vlc_sbr_lav[T_HUFFMAN_ENV_BAL_3_0DB];
-            f_huff = ff_aac_sbr_vlc[F_HUFFMAN_ENV_BAL_3_0DB].table;
+            f_huff = ff_aac_sbr_vlc[F_HUFFMAN_ENV_BAL_3_0DB];
             f_lav  = vlc_sbr_lav[F_HUFFMAN_ENV_BAL_3_0DB];
         } else {
             bits   = 6;
-            t_huff = ff_aac_sbr_vlc[T_HUFFMAN_ENV_BAL_1_5DB].table;
+            t_huff = ff_aac_sbr_vlc[T_HUFFMAN_ENV_BAL_1_5DB];
             t_lav  = vlc_sbr_lav[T_HUFFMAN_ENV_BAL_1_5DB];
-            f_huff = ff_aac_sbr_vlc[F_HUFFMAN_ENV_BAL_1_5DB].table;
+            f_huff = ff_aac_sbr_vlc[F_HUFFMAN_ENV_BAL_1_5DB];
             f_lav  = vlc_sbr_lav[F_HUFFMAN_ENV_BAL_1_5DB];
         }
     } else {
         if (ch_data->bs_amp_res) {
             bits   = 6;
-            t_huff = ff_aac_sbr_vlc[T_HUFFMAN_ENV_3_0DB].table;
+            t_huff = ff_aac_sbr_vlc[T_HUFFMAN_ENV_3_0DB];
             t_lav  = vlc_sbr_lav[T_HUFFMAN_ENV_3_0DB];
-            f_huff = ff_aac_sbr_vlc[F_HUFFMAN_ENV_3_0DB].table;
+            f_huff = ff_aac_sbr_vlc[F_HUFFMAN_ENV_3_0DB];
             f_lav  = vlc_sbr_lav[F_HUFFMAN_ENV_3_0DB];
         } else {
             bits   = 7;
-            t_huff = ff_aac_sbr_vlc[T_HUFFMAN_ENV_1_5DB].table;
+            t_huff = ff_aac_sbr_vlc[T_HUFFMAN_ENV_1_5DB];
             t_lav  = vlc_sbr_lav[T_HUFFMAN_ENV_1_5DB];
-            f_huff = ff_aac_sbr_vlc[F_HUFFMAN_ENV_1_5DB].table;
+            f_huff = ff_aac_sbr_vlc[F_HUFFMAN_ENV_1_5DB];
             f_lav  = vlc_sbr_lav[F_HUFFMAN_ENV_1_5DB];
         }
     }
@@ -896,14 +896,14 @@ static int read_sbr_noise(AACContext *ac, SpectralBandReplication *sbr, GetBitCo
     int delta = (ch == 1 && sbr->bs_coupling == 1) + 1;
 
     if (sbr->bs_coupling && ch) {
-        t_huff = ff_aac_sbr_vlc[T_HUFFMAN_NOISE_BAL_3_0DB].table;
+        t_huff = ff_aac_sbr_vlc[T_HUFFMAN_NOISE_BAL_3_0DB];
         t_lav  = vlc_sbr_lav[T_HUFFMAN_NOISE_BAL_3_0DB];
-        f_huff = ff_aac_sbr_vlc[F_HUFFMAN_ENV_BAL_3_0DB].table;
+        f_huff = ff_aac_sbr_vlc[F_HUFFMAN_ENV_BAL_3_0DB];
         f_lav  = vlc_sbr_lav[F_HUFFMAN_ENV_BAL_3_0DB];
     } else {
-        t_huff = ff_aac_sbr_vlc[T_HUFFMAN_NOISE_3_0DB].table;
+        t_huff = ff_aac_sbr_vlc[T_HUFFMAN_NOISE_3_0DB];
         t_lav  = vlc_sbr_lav[T_HUFFMAN_NOISE_3_0DB];
-        f_huff = ff_aac_sbr_vlc[F_HUFFMAN_ENV_3_0DB].table;
+        f_huff = ff_aac_sbr_vlc[F_HUFFMAN_ENV_3_0DB];
         f_lav  = vlc_sbr_lav[F_HUFFMAN_ENV_3_0DB];
     }
 
