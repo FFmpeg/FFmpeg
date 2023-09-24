@@ -71,10 +71,10 @@ static const uint8_t unscaled_quant_matrix[64] = {
     27, 29, 35, 38, 46, 56, 69, 83
 };
 
-static VLC dc_lum_vlc_le;
-static VLC dc_chroma_vlc_le;
-static VLC dc_alpha_run_vlc_le;
-static VLC dc_alpha_level_vlc_le;
+static VLCElem dc_lum_vlc_le[512];
+static VLCElem dc_chroma_vlc_le[514];
+static VLCElem dc_alpha_run_vlc_le[160];
+static VLCElem dc_alpha_level_vlc_le[288];
 
 static RL_VLC_ELEM speedhq_rl_vlc[674];
 
@@ -83,9 +83,9 @@ static inline int decode_dc_le(GetBitContext *gb, int component)
     int code, diff;
 
     if (component == 0 || component == 3) {
-        code = get_vlc2(gb, dc_lum_vlc_le.table, DC_VLC_BITS, 2);
+        code = get_vlc2(gb, dc_lum_vlc_le, DC_VLC_BITS, 2);
     } else {
-        code = get_vlc2(gb, dc_chroma_vlc_le.table, DC_VLC_BITS, 2);
+        code = get_vlc2(gb, dc_chroma_vlc_le, DC_VLC_BITS, 2);
     }
     if (!code) {
         diff = 0;
@@ -109,7 +109,7 @@ static inline int decode_alpha_block(const SHQContext *s, GetBitContext *gb, uin
             int run, level;
 
             UPDATE_CACHE_LE(re, gb);
-            GET_VLC(run, re, gb, dc_alpha_run_vlc_le.table, ALPHA_VLC_BITS, 2);
+            GET_VLC(run, re, gb, dc_alpha_run_vlc_le, ALPHA_VLC_BITS, 2);
 
             if (run < 0) break;
             i += run;
@@ -117,7 +117,7 @@ static inline int decode_alpha_block(const SHQContext *s, GetBitContext *gb, uin
                 return AVERROR_INVALIDDATA;
 
             UPDATE_CACHE_LE(re, gb);
-            GET_VLC(level, re, gb, dc_alpha_level_vlc_le.table, ALPHA_VLC_BITS, 2);
+            GET_VLC(level, re, gb, dc_alpha_level_vlc_le, ALPHA_VLC_BITS, 2);
             block[i++] = level;
         }
 
@@ -506,11 +506,11 @@ static av_cold void compute_alpha_vlcs(void)
 
     av_assert0(entry == FF_ARRAY_ELEMS(run_code));
 
-    VLC_INIT_LE_SPARSE_STATIC(&dc_alpha_run_vlc_le, ALPHA_VLC_BITS,
-                              FF_ARRAY_ELEMS(run_code),
-                              run_bits, 1, 1,
-                              run_code, 2, 2,
-                              run_symbols, 2, 2, 160);
+    VLC_INIT_STATIC_SPARSE_TABLE(dc_alpha_run_vlc_le, ALPHA_VLC_BITS,
+                                 FF_ARRAY_ELEMS(run_code),
+                                 run_bits, 1, 1,
+                                 run_code, 2, 2,
+                                 run_symbols, 2, 2, VLC_INIT_LE);
 
     /* Initialize VLC for alpha level. */
     entry = 0;
@@ -546,24 +546,24 @@ static av_cold void compute_alpha_vlcs(void)
 
     av_assert0(entry == FF_ARRAY_ELEMS(level_code));
 
-    VLC_INIT_LE_SPARSE_STATIC(&dc_alpha_level_vlc_le, ALPHA_VLC_BITS,
-                              FF_ARRAY_ELEMS(level_code),
-                              level_bits, 1, 1,
-                              level_code, 2, 2,
-                              level_symbols, 2, 2, 288);
+    VLC_INIT_STATIC_SPARSE_TABLE(dc_alpha_level_vlc_le, ALPHA_VLC_BITS,
+                                 FF_ARRAY_ELEMS(level_code),
+                                 level_bits, 1, 1,
+                                 level_code, 2, 2,
+                                 level_symbols, 2, 2, VLC_INIT_LE);
 }
 
 static av_cold void speedhq_static_init(void)
 {
     /* Exactly the same as MPEG-2, except for a little-endian reader. */
-    VLC_INIT_CUSTOM_STATIC(&dc_lum_vlc_le, DC_VLC_BITS, 12,
-                           ff_mpeg12_vlc_dc_lum_bits, 1, 1,
-                           ff_mpeg12_vlc_dc_lum_code, 2, 2,
-                           VLC_INIT_OUTPUT_LE, 512);
-    VLC_INIT_CUSTOM_STATIC(&dc_chroma_vlc_le, DC_VLC_BITS, 12,
-                           ff_mpeg12_vlc_dc_chroma_bits, 1, 1,
-                           ff_mpeg12_vlc_dc_chroma_code, 2, 2,
-                           VLC_INIT_OUTPUT_LE, 514);
+    VLC_INIT_STATIC_TABLE(dc_lum_vlc_le, DC_VLC_BITS, 12,
+                          ff_mpeg12_vlc_dc_lum_bits, 1, 1,
+                          ff_mpeg12_vlc_dc_lum_code, 2, 2,
+                          VLC_INIT_OUTPUT_LE);
+    VLC_INIT_STATIC_TABLE(dc_chroma_vlc_le, DC_VLC_BITS, 12,
+                          ff_mpeg12_vlc_dc_chroma_bits, 1, 1,
+                          ff_mpeg12_vlc_dc_chroma_code, 2, 2,
+                          VLC_INIT_OUTPUT_LE);
 
     ff_init_2d_vlc_rl(ff_speedhq_vlc_table, speedhq_rl_vlc, ff_speedhq_run,
                       ff_speedhq_level, SPEEDHQ_RL_NB_ELEMS,
