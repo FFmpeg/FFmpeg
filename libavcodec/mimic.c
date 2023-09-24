@@ -67,7 +67,7 @@ typedef struct MimicContext {
     int             next_prev_index;
 } MimicContext;
 
-static VLC block_vlc;
+static VLCElem block_vlc[4368];
 
 static const uint8_t huffsyms[] = {
     0x10, 0x20, 0x30, 0x00, 0x11, 0x40, 0x50, 0x12, 0x13, 0x21, 0x31, 0x60,
@@ -120,8 +120,9 @@ static av_cold int mimic_decode_end(AVCodecContext *avctx)
 
 static av_cold void mimic_init_static(void)
 {
-    VLC_INIT_STATIC_FROM_LENGTHS(&block_vlc, MIMIC_VLC_BITS, FF_ARRAY_ELEMS(huffbits),
-                                 huffbits, 1, huffsyms, 1, 1, 0, 0, 4368);
+    VLC_INIT_STATIC_TABLE_FROM_LENGTHS(block_vlc, MIMIC_VLC_BITS,
+                                       FF_ARRAY_ELEMS(huffbits),
+                                       huffbits, 1, huffsyms, 1, 1, 0, 0);
 }
 
 static av_cold int mimic_decode_init(AVCodecContext *avctx)
@@ -226,7 +227,7 @@ static int vlc_decode_block(MimicContext *ctx, int num_coeffs, int qscale)
         int value;
         int coeff;
 
-        vlc = get_vlc2(&ctx->gb, block_vlc.table, MIMIC_VLC_BITS, 3);
+        vlc = get_vlc2(&ctx->gb, block_vlc, MIMIC_VLC_BITS, 3);
         if (!vlc) /* end-of-block code */
             return 0;
         if (vlc == -1)
