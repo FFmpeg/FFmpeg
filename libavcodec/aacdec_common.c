@@ -128,245 +128,179 @@ const VLCElem *ff_vlc_spectral[11];
 
 /// Huffman tables for SBR
 
-static const uint8_t t_huffman_env_1_5dB_bits[121] = {
-    18, 18, 18, 18, 18, 18, 19, 19,
-    19, 19, 19, 19, 19, 19, 19, 19,
-    19, 19, 19, 19, 19, 19, 19, 19,
-    19, 19, 19, 19, 19, 19, 19, 19,
-    19, 19, 17, 18, 16, 17, 18, 17,
-    16, 16, 16, 16, 15, 14, 14, 13,
-    13, 12, 11, 10,  9,  8,  7,  6,
-     5,  4,  3,  2,  2,  3,  4,  5,
-     6,  7,  8,  9, 10, 12, 13, 14,
-    14, 15, 16, 17, 16, 19, 19, 19,
-    19, 19, 19, 19, 19, 19, 19, 19,
-    19, 19, 19, 19, 19, 19, 19, 19,
-    19, 19, 19, 19, 19, 19, 19, 19,
-    19, 19, 19, 19, 19, 19, 19, 19,
-    19, 19, 19, 19, 19, 19, 19, 19,
-    19,
+    /* t_huffman_env_1_5dB - 121 entries */
+static const uint8_t t_huffman_env_1_5dB_tab[][2] = {
+    {  60,   2 }, {  59,   2 }, {  61,   3 }, {  58,   3 }, {  62,   4 },
+    {  57,   4 }, {  63,   5 }, {  56,   5 }, {  64,   6 }, {  55,   6 },
+    {  65,   7 }, {  54,   7 }, {  66,   8 }, {  53,   8 }, {  67,   9 },
+    {  52,   9 }, {  51,  10 }, {  68,  10 }, {  50,  11 }, {  69,  12 },
+    {  49,  12 }, {  70,  13 }, {  48,  13 }, {  47,  13 }, {  71,  14 },
+    {  46,  14 }, {  72,  14 }, {  45,  14 }, {  44,  15 }, {  73,  15 },
+    {  41,  16 }, {  42,  16 }, {  43,  16 }, {  74,  16 }, {  36,  16 },
+    {  40,  16 }, {  76,  16 }, {  34,  17 }, {  39,  17 }, {  75,  17 },
+    {  37,  17 }, {  35,  18 }, {  38,  18 }, {   0,  18 }, {   1,  18 },
+    {   2,  18 }, {   3,  18 }, {   4,  18 }, {   5,  18 }, {   6,  19 },
+    {   7,  19 }, {   8,  19 }, {   9,  19 }, {  10,  19 }, {  11,  19 },
+    {  12,  19 }, {  13,  19 }, {  14,  19 }, {  15,  19 }, {  16,  19 },
+    {  17,  19 }, {  18,  19 }, {  19,  19 }, {  20,  19 }, {  21,  19 },
+    {  22,  19 }, {  23,  19 }, {  24,  19 }, {  25,  19 }, {  26,  19 },
+    {  27,  19 }, {  28,  19 }, {  29,  19 }, {  30,  19 }, {  31,  19 },
+    {  32,  19 }, {  33,  19 }, {  77,  19 }, {  78,  19 }, {  79,  19 },
+    {  80,  19 }, {  81,  19 }, {  82,  19 }, {  83,  19 }, {  84,  19 },
+    {  85,  19 }, {  86,  19 }, {  87,  19 }, {  88,  19 }, {  89,  19 },
+    {  90,  19 }, {  91,  19 }, {  92,  19 }, {  93,  19 }, {  94,  19 },
+    {  95,  19 }, {  96,  19 }, {  97,  19 }, {  98,  19 }, {  99,  19 },
+    { 100,  19 }, { 101,  19 }, { 102,  19 }, { 103,  19 }, { 104,  19 },
+    { 105,  19 }, { 106,  19 }, { 107,  19 }, { 108,  19 }, { 109,  19 },
+    { 110,  19 }, { 111,  19 }, { 112,  19 }, { 113,  19 }, { 114,  19 },
+    { 115,  19 }, { 116,  19 }, { 117,  19 }, { 118,  19 }, { 119,  19 },
+    { 120,  19 },
 };
 
-static const uint32_t t_huffman_env_1_5dB_codes[121] = {
-    0x3ffd6, 0x3ffd7, 0x3ffd8, 0x3ffd9, 0x3ffda, 0x3ffdb, 0x7ffb8, 0x7ffb9,
-    0x7ffba, 0x7ffbb, 0x7ffbc, 0x7ffbd, 0x7ffbe, 0x7ffbf, 0x7ffc0, 0x7ffc1,
-    0x7ffc2, 0x7ffc3, 0x7ffc4, 0x7ffc5, 0x7ffc6, 0x7ffc7, 0x7ffc8, 0x7ffc9,
-    0x7ffca, 0x7ffcb, 0x7ffcc, 0x7ffcd, 0x7ffce, 0x7ffcf, 0x7ffd0, 0x7ffd1,
-    0x7ffd2, 0x7ffd3, 0x1ffe6, 0x3ffd4, 0x0fff0, 0x1ffe9, 0x3ffd5, 0x1ffe7,
-    0x0fff1, 0x0ffec, 0x0ffed, 0x0ffee, 0x07ff4, 0x03ff9, 0x03ff7, 0x01ffa,
-    0x01ff9, 0x00ffb, 0x007fc, 0x003fc, 0x001fd, 0x000fd, 0x0007d, 0x0003d,
-    0x0001d, 0x0000d, 0x00005, 0x00001, 0x00000, 0x00004, 0x0000c, 0x0001c,
-    0x0003c, 0x0007c, 0x000fc, 0x001fc, 0x003fd, 0x00ffa, 0x01ff8, 0x03ff6,
-    0x03ff8, 0x07ff5, 0x0ffef, 0x1ffe8, 0x0fff2, 0x7ffd4, 0x7ffd5, 0x7ffd6,
-    0x7ffd7, 0x7ffd8, 0x7ffd9, 0x7ffda, 0x7ffdb, 0x7ffdc, 0x7ffdd, 0x7ffde,
-    0x7ffdf, 0x7ffe0, 0x7ffe1, 0x7ffe2, 0x7ffe3, 0x7ffe4, 0x7ffe5, 0x7ffe6,
-    0x7ffe7, 0x7ffe8, 0x7ffe9, 0x7ffea, 0x7ffeb, 0x7ffec, 0x7ffed, 0x7ffee,
-    0x7ffef, 0x7fff0, 0x7fff1, 0x7fff2, 0x7fff3, 0x7fff4, 0x7fff5, 0x7fff6,
-    0x7fff7, 0x7fff8, 0x7fff9, 0x7fffa, 0x7fffb, 0x7fffc, 0x7fffd, 0x7fffe,
-    0x7ffff,
+    /* f_huffman_env_1_5dB - 121 entries */
+static const uint8_t f_huffman_env_1_5dB_tab[][2] = {
+    {  60,   2 }, {  59,   2 }, {  61,   3 }, {  58,   3 }, {  57,   4 },
+    {  62,   4 }, {  56,   5 }, {  63,   5 }, {  55,   6 }, {  64,   6 },
+    {  54,   7 }, {  65,   8 }, {  53,   8 }, {  66,   8 }, {  52,   9 },
+    {  67,   9 }, {  51,   9 }, {  68,  10 }, {  50,  10 }, {  69,  11 },
+    {  49,  11 }, {  70,  11 }, {  71,  11 }, {  48,  12 }, {  72,  12 },
+    {  47,  12 }, {  73,  12 }, {  74,  13 }, {  46,  13 }, {  45,  13 },
+    {  75,  13 }, {  76,  14 }, {  77,  14 }, {  44,  14 }, {  43,  15 },
+    {  42,  15 }, {  41,  16 }, {  78,  16 }, {  79,  16 }, {  40,  16 },
+    {  39,  16 }, {  80,  17 }, {  81,  17 }, {  36,  17 }, {  37,  17 },
+    {  38,  17 }, {  34,  17 }, {  32,  18 }, {  82,  18 }, {  83,  18 },
+    {  85,  18 }, {  19,  18 }, {  35,  18 }, {  86,  18 }, {  87,  18 },
+    {  30,  18 }, {  33,  18 }, {  84,  18 }, {  88,  18 }, { 104,  18 },
+    {   9,  19 }, {  14,  19 }, {  16,  19 }, {  17,  19 }, {  23,  19 },
+    {  27,  19 }, {  29,  19 }, {  31,  19 }, {  90,  19 }, {  97,  19 },
+    { 102,  19 }, { 107,  19 }, { 108,  19 }, {   0,  19 }, {   1,  19 },
+    {   2,  20 }, {   3,  20 }, {   4,  20 }, {   5,  20 }, {   6,  20 },
+    {   7,  20 }, {   8,  20 }, {  10,  20 }, {  11,  20 }, {  12,  20 },
+    {  13,  20 }, {  15,  20 }, {  18,  20 }, {  20,  20 }, {  21,  20 },
+    {  22,  20 }, {  24,  20 }, {  25,  20 }, {  26,  20 }, {  28,  20 },
+    {  89,  20 }, {  91,  20 }, {  92,  20 }, {  93,  20 }, {  94,  20 },
+    {  95,  20 }, {  96,  20 }, {  98,  20 }, {  99,  20 }, { 100,  20 },
+    { 101,  20 }, { 103,  20 }, { 105,  20 }, { 106,  20 }, { 109,  20 },
+    { 110,  20 }, { 111,  20 }, { 112,  20 }, { 113,  20 }, { 114,  20 },
+    { 115,  20 }, { 116,  20 }, { 117,  20 }, { 118,  20 }, { 119,  20 },
+    { 120,  20 },
 };
 
-static const uint8_t f_huffman_env_1_5dB_bits[121] = {
-    19, 19, 20, 20, 20, 20, 20, 20,
-    20, 19, 20, 20, 20, 20, 19, 20,
-    19, 19, 20, 18, 20, 20, 20, 19,
-    20, 20, 20, 19, 20, 19, 18, 19,
-    18, 18, 17, 18, 17, 17, 17, 16,
-    16, 16, 15, 15, 14, 13, 13, 12,
-    12, 11, 10,  9,  9,  8,  7,  6,
-     5,  4,  3,  2,  2,  3,  4,  5,
-     6,  8,  8,  9, 10, 11, 11, 11,
-    12, 12, 13, 13, 14, 14, 16, 16,
-    17, 17, 18, 18, 18, 18, 18, 18,
-    18, 20, 19, 20, 20, 20, 20, 20,
-    20, 19, 20, 20, 20, 20, 19, 20,
-    18, 20, 20, 19, 19, 20, 20, 20,
-    20, 20, 20, 20, 20, 20, 20, 20,
-    20,
+    /* t_huffman_env_bal_1_5dB - 49 entries */
+static const uint8_t t_huffman_env_bal_1_5dB_tab[][2] = {
+    {  24,   1 }, {  25,   2 }, {  23,   3 }, {  26,   4 }, {  22,   5 },
+    {  27,   6 }, {  21,   7 }, {  28,   8 }, {  20,   9 }, {  19,  11 },
+    {  29,  11 }, {  18,  12 }, {  30,  12 }, {  31,  15 }, {  17,  16 },
+    {  32,  16 }, {   0,  16 }, {   1,  16 }, {   2,  16 }, {   3,  16 },
+    {   4,  16 }, {   5,  16 }, {   6,  16 }, {   7,  16 }, {   8,  16 },
+    {   9,  16 }, {  10,  16 }, {  11,  16 }, {  12,  16 }, {  13,  16 },
+    {  14,  16 }, {  15,  16 }, {  16,  16 }, {  33,  16 }, {  34,  16 },
+    {  35,  16 }, {  36,  16 }, {  37,  16 }, {  38,  16 }, {  39,  17 },
+    {  40,  17 }, {  41,  17 }, {  42,  17 }, {  43,  17 }, {  44,  17 },
+    {  45,  17 }, {  46,  17 }, {  47,  17 }, {  48,  17 },
 };
 
-static const uint32_t f_huffman_env_1_5dB_codes[121] = {
-    0x7ffe7, 0x7ffe8, 0xfffd2, 0xfffd3, 0xfffd4, 0xfffd5, 0xfffd6, 0xfffd7,
-    0xfffd8, 0x7ffda, 0xfffd9, 0xfffda, 0xfffdb, 0xfffdc, 0x7ffdb, 0xfffdd,
-    0x7ffdc, 0x7ffdd, 0xfffde, 0x3ffe4, 0xfffdf, 0xfffe0, 0xfffe1, 0x7ffde,
-    0xfffe2, 0xfffe3, 0xfffe4, 0x7ffdf, 0xfffe5, 0x7ffe0, 0x3ffe8, 0x7ffe1,
-    0x3ffe0, 0x3ffe9, 0x1ffef, 0x3ffe5, 0x1ffec, 0x1ffed, 0x1ffee, 0x0fff4,
-    0x0fff3, 0x0fff0, 0x07ff7, 0x07ff6, 0x03ffa, 0x01ffa, 0x01ff9, 0x00ffa,
-    0x00ff8, 0x007f9, 0x003fb, 0x001fc, 0x001fa, 0x000fb, 0x0007c, 0x0003c,
-    0x0001c, 0x0000c, 0x00005, 0x00001, 0x00000, 0x00004, 0x0000d, 0x0001d,
-    0x0003d, 0x000fa, 0x000fc, 0x001fb, 0x003fa, 0x007f8, 0x007fa, 0x007fb,
-    0x00ff9, 0x00ffb, 0x01ff8, 0x01ffb, 0x03ff8, 0x03ff9, 0x0fff1, 0x0fff2,
-    0x1ffea, 0x1ffeb, 0x3ffe1, 0x3ffe2, 0x3ffea, 0x3ffe3, 0x3ffe6, 0x3ffe7,
-    0x3ffeb, 0xfffe6, 0x7ffe2, 0xfffe7, 0xfffe8, 0xfffe9, 0xfffea, 0xfffeb,
-    0xfffec, 0x7ffe3, 0xfffed, 0xfffee, 0xfffef, 0xffff0, 0x7ffe4, 0xffff1,
-    0x3ffec, 0xffff2, 0xffff3, 0x7ffe5, 0x7ffe6, 0xffff4, 0xffff5, 0xffff6,
-    0xffff7, 0xffff8, 0xffff9, 0xffffa, 0xffffb, 0xffffc, 0xffffd, 0xffffe,
-    0xfffff,
+    /* f_huffman_env_bal_1_5dB - 49 entries */
+static const uint8_t f_huffman_env_bal_1_5dB_tab[][2] = {
+    {  24,   1 }, {  23,   2 }, {  25,   3 }, {  22,   4 }, {  26,   5 },
+    {  27,   6 }, {  21,   7 }, {  20,   8 }, {  28,   9 }, {  19,  11 },
+    {  29,  11 }, {  18,  11 }, {  30,  12 }, {  17,  14 }, {  31,  15 },
+    {  32,  16 }, {  15,  16 }, {  16,  17 }, {   0,  18 }, {   1,  18 },
+    {   2,  18 }, {   3,  18 }, {   4,  18 }, {   5,  18 }, {   6,  18 },
+    {   7,  18 }, {   8,  18 }, {   9,  18 }, {  10,  18 }, {  11,  18 },
+    {  12,  18 }, {  13,  18 }, {  14,  18 }, {  33,  18 }, {  34,  18 },
+    {  35,  18 }, {  36,  18 }, {  37,  18 }, {  38,  18 }, {  39,  18 },
+    {  40,  18 }, {  41,  18 }, {  42,  18 }, {  43,  18 }, {  44,  18 },
+    {  45,  18 }, {  46,  18 }, {  47,  19 }, {  48,  19 },
 };
 
-static const uint8_t t_huffman_env_bal_1_5dB_bits[49] = {
-    16, 16, 16, 16, 16, 16, 16, 16,
-    16, 16, 16, 16, 16, 16, 16, 16,
-    16, 16, 12, 11,  9,  7,  5,  3,
-     1,  2,  4,  6,  8, 11, 12, 15,
-    16, 16, 16, 16, 16, 16, 16, 17,
-    17, 17, 17, 17, 17, 17, 17, 17,
-    17,
+    /* t_huffman_env_3_0dB - 63 entries */
+static const uint8_t t_huffman_env_3_0dB_tab[][2] = {
+    {  31,   1 }, {  30,   2 }, {  32,   3 }, {  29,   4 }, {  33,   5 },
+    {  28,   6 }, {  34,   7 }, {  27,   8 }, {  35,   9 }, {  26,  11 },
+    {  36,  11 }, {  25,  12 }, {  24,  13 }, {  37,  13 }, {  23,  14 },
+    {  38,  14 }, {  22,  14 }, {  21,  14 }, {  39,  14 }, {  40,  15 },
+    {  41,  16 }, {  18,  16 }, {  20,  16 }, {  19,  16 }, {  17,  17 },
+    {  42,  17 }, {  43,  18 }, {   0,  18 }, {   1,  18 }, {   2,  19 },
+    {   3,  19 }, {   4,  19 }, {   5,  19 }, {   6,  19 }, {   7,  19 },
+    {   8,  19 }, {   9,  19 }, {  10,  19 }, {  11,  19 }, {  12,  19 },
+    {  13,  19 }, {  14,  19 }, {  15,  19 }, {  16,  19 }, {  44,  19 },
+    {  45,  19 }, {  46,  19 }, {  47,  19 }, {  48,  19 }, {  49,  19 },
+    {  50,  19 }, {  51,  19 }, {  52,  19 }, {  53,  19 }, {  54,  19 },
+    {  55,  19 }, {  56,  19 }, {  57,  19 }, {  58,  19 }, {  59,  19 },
+    {  60,  19 }, {  61,  19 }, {  62,  19 },
 };
 
-static const uint32_t t_huffman_env_bal_1_5dB_codes[49] = {
-    0x0ffe4, 0x0ffe5, 0x0ffe6, 0x0ffe7, 0x0ffe8, 0x0ffe9, 0x0ffea, 0x0ffeb,
-    0x0ffec, 0x0ffed, 0x0ffee, 0x0ffef, 0x0fff0, 0x0fff1, 0x0fff2, 0x0fff3,
-    0x0fff4, 0x0ffe2, 0x00ffc, 0x007fc, 0x001fe, 0x0007e, 0x0001e, 0x00006,
-    0x00000, 0x00002, 0x0000e, 0x0003e, 0x000fe, 0x007fd, 0x00ffd, 0x07ff0,
-    0x0ffe3, 0x0fff5, 0x0fff6, 0x0fff7, 0x0fff8, 0x0fff9, 0x0fffa, 0x1fff6,
-    0x1fff7, 0x1fff8, 0x1fff9, 0x1fffa, 0x1fffb, 0x1fffc, 0x1fffd, 0x1fffe,
-    0x1ffff,
+    /* f_huffman_env_3_0dB - 63 entries */
+static const uint8_t f_huffman_env_3_0dB_tab[][2] = {
+    {  31,   1 }, {  30,   2 }, {  32,   3 }, {  29,   4 }, {  33,   5 },
+    {  28,   6 }, {  34,   8 }, {  27,   8 }, {  35,   9 }, {  26,   9 },
+    {  36,  10 }, {  25,  10 }, {  37,  11 }, {  24,  11 }, {  38,  12 },
+    {  23,  12 }, {  39,  13 }, {  40,  14 }, {  22,  14 }, {  21,  15 },
+    {  41,  15 }, {  42,  15 }, {  20,  16 }, {  19,  16 }, {  43,  16 },
+    {  44,  16 }, {  18,  17 }, {  16,  17 }, {  45,  17 }, {  46,  17 },
+    {  17,  18 }, {  49,  18 }, {  13,  18 }, {   7,  18 }, {  12,  18 },
+    {  47,  18 }, {  48,  18 }, {   9,  19 }, {  10,  19 }, {  15,  19 },
+    {  51,  19 }, {  52,  19 }, {  53,  19 }, {  56,  19 }, {   8,  19 },
+    {  11,  19 }, {  55,  19 }, {   0,  20 }, {   1,  20 }, {   2,  20 },
+    {   3,  20 }, {   4,  20 }, {   5,  20 }, {   6,  20 }, {  14,  20 },
+    {  50,  20 }, {  54,  20 }, {  57,  20 }, {  58,  20 }, {  59,  20 },
+    {  60,  20 }, {  61,  20 }, {  62,  20 },
 };
 
-static const uint8_t f_huffman_env_bal_1_5dB_bits[49] = {
-    18, 18, 18, 18, 18, 18, 18, 18,
-    18, 18, 18, 18, 18, 18, 18, 16,
-    17, 14, 11, 11,  8,  7,  4,  2,
-     1,  3,  5,  6,  9, 11, 12, 15,
-    16, 18, 18, 18, 18, 18, 18, 18,
-    18, 18, 18, 18, 18, 18, 18, 19,
-    19,
+    /* t_huffman_env_bal_3_0dB - 25 entries */
+static const uint8_t t_huffman_env_bal_3_0dB_tab[][2] = {
+    {  12,   1 }, {  13,   2 }, {  11,   3 }, {  10,   4 }, {  14,   5 },
+    {  15,   6 }, {   9,   7 }, {   8,   8 }, {  16,   9 }, {   7,  12 },
+    {   0,  13 }, {   1,  13 }, {   2,  13 }, {   3,  13 }, {   4,  13 },
+    {   5,  13 }, {   6,  13 }, {  17,  13 }, {  18,  13 }, {  19,  13 },
+    {  20,  13 }, {  21,  13 }, {  22,  13 }, {  23,  14 }, {  24,  14 },
 };
 
-static const uint32_t f_huffman_env_bal_1_5dB_codes[49] = {
-    0x3ffe2, 0x3ffe3, 0x3ffe4, 0x3ffe5, 0x3ffe6, 0x3ffe7, 0x3ffe8, 0x3ffe9,
-    0x3ffea, 0x3ffeb, 0x3ffec, 0x3ffed, 0x3ffee, 0x3ffef, 0x3fff0, 0x0fff7,
-    0x1fff0, 0x03ffc, 0x007fe, 0x007fc, 0x000fe, 0x0007e, 0x0000e, 0x00002,
-    0x00000, 0x00006, 0x0001e, 0x0003e, 0x001fe, 0x007fd, 0x00ffe, 0x07ffa,
-    0x0fff6, 0x3fff1, 0x3fff2, 0x3fff3, 0x3fff4, 0x3fff5, 0x3fff6, 0x3fff7,
-    0x3fff8, 0x3fff9, 0x3fffa, 0x3fffb, 0x3fffc, 0x3fffd, 0x3fffe, 0x7fffe,
-    0x7ffff,
+    /* f_huffman_env_bal_3_0dB - 25 entries */
+static const uint8_t f_huffman_env_bal_3_0dB_tab[][2] = {
+    {  12,   1 }, {  11,   2 }, {  13,   3 }, {  10,   4 }, {  14,   5 },
+    {  15,   6 }, {   9,   7 }, {   8,   8 }, {  16,   9 }, {   7,  11 },
+    {  17,  12 }, {  18,  13 }, {   0,  13 }, {   1,  13 }, {   2,  13 },
+    {   3,  13 }, {   4,  13 }, {   5,  14 }, {   6,  14 }, {  19,  14 },
+    {  20,  14 }, {  21,  14 }, {  22,  14 }, {  23,  14 }, {  24,  14 },
 };
 
-static const uint8_t t_huffman_env_3_0dB_bits[63] = {
-    18, 18, 19, 19, 19, 19, 19, 19,
-    19, 19, 19, 19, 19, 19, 19, 19,
-    19, 17, 16, 16, 16, 14, 14, 14,
-    13, 12, 11,  8,  6,  4,  2,  1,
-     3,  5,  7,  9, 11, 13, 14, 14,
-    15, 16, 17, 18, 19, 19, 19, 19,
-    19, 19, 19, 19, 19, 19, 19, 19,
-    19, 19, 19, 19, 19, 19, 19,
+    /* t_huffman_noise_3_0dB - 63 entries */
+static const uint8_t t_huffman_noise_3_0dB_tab[][2] = {
+    {  31,   1 }, {  32,   2 }, {  30,   3 }, {  29,   4 }, {  33,   5 },
+    {  28,   6 }, {  34,   8 }, {  27,   8 }, {  35,  10 }, {  26,  11 },
+    {  36,  13 }, {  42,  13 }, {   0,  13 }, {   1,  13 }, {   2,  13 },
+    {   3,  13 }, {   4,  13 }, {   5,  13 }, {   6,  13 }, {   7,  13 },
+    {   8,  13 }, {   9,  13 }, {  10,  13 }, {  11,  13 }, {  12,  13 },
+    {  13,  13 }, {  14,  13 }, {  15,  13 }, {  16,  13 }, {  17,  13 },
+    {  18,  13 }, {  19,  13 }, {  20,  13 }, {  21,  13 }, {  22,  13 },
+    {  23,  13 }, {  24,  13 }, {  25,  13 }, {  37,  13 }, {  38,  13 },
+    {  39,  13 }, {  40,  13 }, {  41,  13 }, {  43,  13 }, {  44,  13 },
+    {  45,  13 }, {  46,  13 }, {  47,  13 }, {  48,  13 }, {  49,  13 },
+    {  50,  13 }, {  51,  13 }, {  52,  13 }, {  53,  13 }, {  54,  13 },
+    {  55,  13 }, {  56,  13 }, {  57,  13 }, {  58,  13 }, {  59,  13 },
+    {  60,  13 }, {  61,  14 }, {  62,  14 },
 };
 
-static const uint32_t t_huffman_env_3_0dB_codes[63] = {
-    0x3ffed, 0x3ffee, 0x7ffde, 0x7ffdf, 0x7ffe0, 0x7ffe1, 0x7ffe2, 0x7ffe3,
-    0x7ffe4, 0x7ffe5, 0x7ffe6, 0x7ffe7, 0x7ffe8, 0x7ffe9, 0x7ffea, 0x7ffeb,
-    0x7ffec, 0x1fff4, 0x0fff7, 0x0fff9, 0x0fff8, 0x03ffb, 0x03ffa, 0x03ff8,
-    0x01ffa, 0x00ffc, 0x007fc, 0x000fe, 0x0003e, 0x0000e, 0x00002, 0x00000,
-    0x00006, 0x0001e, 0x0007e, 0x001fe, 0x007fd, 0x01ffb, 0x03ff9, 0x03ffc,
-    0x07ffa, 0x0fff6, 0x1fff5, 0x3ffec, 0x7ffed, 0x7ffee, 0x7ffef, 0x7fff0,
-    0x7fff1, 0x7fff2, 0x7fff3, 0x7fff4, 0x7fff5, 0x7fff6, 0x7fff7, 0x7fff8,
-    0x7fff9, 0x7fffa, 0x7fffb, 0x7fffc, 0x7fffd, 0x7fffe, 0x7ffff,
-};
-
-static const uint8_t f_huffman_env_3_0dB_bits[63] = {
-    20, 20, 20, 20, 20, 20, 20, 18,
-    19, 19, 19, 19, 18, 18, 20, 19,
-    17, 18, 17, 16, 16, 15, 14, 12,
-    11, 10,  9,  8,  6,  4,  2,  1,
-     3,  5,  8,  9, 10, 11, 12, 13,
-    14, 15, 15, 16, 16, 17, 17, 18,
-    18, 18, 20, 19, 19, 19, 20, 19,
-    19, 20, 20, 20, 20, 20, 20,
-};
-
-static const uint32_t f_huffman_env_3_0dB_codes[63] = {
-    0xffff0, 0xffff1, 0xffff2, 0xffff3, 0xffff4, 0xffff5, 0xffff6, 0x3fff3,
-    0x7fff5, 0x7ffee, 0x7ffef, 0x7fff6, 0x3fff4, 0x3fff2, 0xffff7, 0x7fff0,
-    0x1fff5, 0x3fff0, 0x1fff4, 0x0fff7, 0x0fff6, 0x07ff8, 0x03ffb, 0x00ffd,
-    0x007fd, 0x003fd, 0x001fd, 0x000fd, 0x0003e, 0x0000e, 0x00002, 0x00000,
-    0x00006, 0x0001e, 0x000fc, 0x001fc, 0x003fc, 0x007fc, 0x00ffc, 0x01ffc,
-    0x03ffa, 0x07ff9, 0x07ffa, 0x0fff8, 0x0fff9, 0x1fff6, 0x1fff7, 0x3fff5,
-    0x3fff6, 0x3fff1, 0xffff8, 0x7fff1, 0x7fff2, 0x7fff3, 0xffff9, 0x7fff7,
-    0x7fff4, 0xffffa, 0xffffb, 0xffffc, 0xffffd, 0xffffe, 0xfffff,
-};
-
-static const uint8_t t_huffman_env_bal_3_0dB_bits[25] = {
-    13, 13, 13, 13, 13, 13, 13, 12,
-     8,  7,  4,  3,  1,  2,  5,  6,
-     9, 13, 13, 13, 13, 13, 13, 14,
-    14,
-};
-
-static const uint16_t t_huffman_env_bal_3_0dB_codes[25] = {
-    0x1ff2, 0x1ff3, 0x1ff4, 0x1ff5, 0x1ff6, 0x1ff7, 0x1ff8, 0x0ff8,
-    0x00fe, 0x007e, 0x000e, 0x0006, 0x0000, 0x0002, 0x001e, 0x003e,
-    0x01fe, 0x1ff9, 0x1ffa, 0x1ffb, 0x1ffc, 0x1ffd, 0x1ffe, 0x3ffe,
-    0x3fff,
-};
-
-static const uint8_t f_huffman_env_bal_3_0dB_bits[25] = {
-    13, 13, 13, 13, 13, 14, 14, 11,
-     8,  7,  4,  2,  1,  3,  5,  6,
-     9, 12, 13, 14, 14, 14, 14, 14,
-    14,
-};
-
-static const uint16_t f_huffman_env_bal_3_0dB_codes[25] = {
-    0x1ff7, 0x1ff8, 0x1ff9, 0x1ffa, 0x1ffb, 0x3ff8, 0x3ff9, 0x07fc,
-    0x00fe, 0x007e, 0x000e, 0x0002, 0x0000, 0x0006, 0x001e, 0x003e,
-    0x01fe, 0x0ffa, 0x1ff6, 0x3ffa, 0x3ffb, 0x3ffc, 0x3ffd, 0x3ffe,
-    0x3fff,
-};
-
-static const uint8_t t_huffman_noise_3_0dB_bits[63] = {
-    13, 13, 13, 13, 13, 13, 13, 13,
-    13, 13, 13, 13, 13, 13, 13, 13,
-    13, 13, 13, 13, 13, 13, 13, 13,
-    13, 13, 11,  8,  6,  4,  3,  1,
-     2,  5,  8, 10, 13, 13, 13, 13,
-    13, 13, 13, 13, 13, 13, 13, 13,
-    13, 13, 13, 13, 13, 13, 13, 13,
-    13, 13, 13, 13, 13, 14, 14,
-};
-
-static const uint16_t t_huffman_noise_3_0dB_codes[63] = {
-    0x1fce, 0x1fcf, 0x1fd0, 0x1fd1, 0x1fd2, 0x1fd3, 0x1fd4, 0x1fd5,
-    0x1fd6, 0x1fd7, 0x1fd8, 0x1fd9, 0x1fda, 0x1fdb, 0x1fdc, 0x1fdd,
-    0x1fde, 0x1fdf, 0x1fe0, 0x1fe1, 0x1fe2, 0x1fe3, 0x1fe4, 0x1fe5,
-    0x1fe6, 0x1fe7, 0x07f2, 0x00fd, 0x003e, 0x000e, 0x0006, 0x0000,
-    0x0002, 0x001e, 0x00fc, 0x03f8, 0x1fcc, 0x1fe8, 0x1fe9, 0x1fea,
-    0x1feb, 0x1fec, 0x1fcd, 0x1fed, 0x1fee, 0x1fef, 0x1ff0, 0x1ff1,
-    0x1ff2, 0x1ff3, 0x1ff4, 0x1ff5, 0x1ff6, 0x1ff7, 0x1ff8, 0x1ff9,
-    0x1ffa, 0x1ffb, 0x1ffc, 0x1ffd, 0x1ffe, 0x3ffe, 0x3fff,
-};
-
-static const uint8_t t_huffman_noise_bal_3_0dB_bits[25] = {
-    8, 8, 8, 8, 8, 8, 8, 8,
-    8, 8, 5, 2, 1, 3, 6, 8,
-    8, 8, 8, 8, 8, 8, 8, 8,
-    8,
-};
-
-static const uint8_t t_huffman_noise_bal_3_0dB_codes[25] = {
-    0xec, 0xed, 0xee, 0xef, 0xf0, 0xf1, 0xf2, 0xf3,
-    0xf4, 0xf5, 0x1c, 0x02, 0x00, 0x06, 0x3a, 0xf6,
-    0xf7, 0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd, 0xfe,
-    0xff,
+    /* t_huffman_noise_bal_3_0dB - 25 entries */
+static const uint8_t t_huffman_noise_bal_3_0dB_tab[][2] = {
+    {  12,   1 }, {  11,   2 }, {  13,   3 }, {  10,   5 }, {  14,   6 },
+    {   0,   8 }, {   1,   8 }, {   2,   8 }, {   3,   8 }, {   4,   8 },
+    {   5,   8 }, {   6,   8 }, {   7,   8 }, {   8,   8 }, {   9,   8 },
+    {  15,   8 }, {  16,   8 }, {  17,   8 }, {  18,   8 }, {  19,   8 },
+    {  20,   8 }, {  21,   8 }, {  22,   8 }, {  23,   8 }, {  24,   8 },
 };
 
 const VLCElem *ff_aac_sbr_vlc[10];
 
 static av_cold void aacdec_common_init(void)
 {
-#define SBR_INIT_VLC_STATIC(num) \
-    ff_aac_sbr_vlc[num] = \
-        ff_vlc_init_tables_sparse(&state, 9, sbr_tmp[num].table_size / sbr_tmp[num].elem_size,     \
-                    sbr_tmp[num].sbr_bits ,                      1,                      1, \
-                    sbr_tmp[num].sbr_codes, sbr_tmp[num].elem_size, sbr_tmp[num].elem_size, \
-                    NULL, 0, 0, 0)
 #define SBR_VLC_ROW(name) \
-    { name ## _codes, name ## _bits, sizeof(name ## _codes), sizeof(name ## _codes[0]) }
+    { name ## _tab, FF_ARRAY_ELEMS(name ## _tab) }
     static const struct {
-        const void *sbr_codes, *sbr_bits;
-        const unsigned int table_size, elem_size;
+        const uint8_t (*sbr_tab)[2];
+        const unsigned int table_size;
     } sbr_tmp[] = {
         SBR_VLC_ROW(t_huffman_env_1_5dB),
         SBR_VLC_ROW(f_huffman_env_1_5dB),
@@ -406,16 +340,13 @@ static av_cold void aacdec_common_init(void)
                           sizeof(ff_aac_scalefactor_code[0]), 0);
 
     // SBR VLC table initialization
-    SBR_INIT_VLC_STATIC(0);
-    SBR_INIT_VLC_STATIC(1);
-    SBR_INIT_VLC_STATIC(2);
-    SBR_INIT_VLC_STATIC(3);
-    SBR_INIT_VLC_STATIC(4);
-    SBR_INIT_VLC_STATIC(5);
-    SBR_INIT_VLC_STATIC(6);
-    SBR_INIT_VLC_STATIC(7);
-    SBR_INIT_VLC_STATIC(8);
-    SBR_INIT_VLC_STATIC(9);
+    for (int i = 0; i < FF_ARRAY_ELEMS(ff_aac_sbr_vlc); i++) {
+        ff_aac_sbr_vlc[i] =
+            ff_vlc_init_tables_from_lengths(&state, 9, sbr_tmp[i].table_size,
+                                            &sbr_tmp[i].sbr_tab[0][1], 2,
+                                            &sbr_tmp[i].sbr_tab[0][0], 2, 1,
+                                            0, 0);
+    }
 }
 
 av_cold void ff_aacdec_common_init_once(void)
