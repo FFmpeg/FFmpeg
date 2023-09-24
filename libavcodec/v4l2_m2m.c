@@ -255,7 +255,6 @@ static void v4l2_m2m_destroy_context(void *opaque, uint8_t *context)
 
     if (s->fd >= 0)
         close(s->fd);
-    av_frame_unref(s->frame);
     av_frame_free(&s->frame);
     av_packet_unref(&s->buf_pkt);
 
