@@ -463,8 +463,8 @@ static int rkmpp_retrieve_frame(AVCodecContext *avctx, AVFrame *frame)
 
             frame->hw_frames_ctx = av_buffer_ref(decoder->frames_ref);
             if (!frame->hw_frames_ctx) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
+                av_frame_unref(frame);
+                return AVERROR(ENOMEM);
             }
 
             return 0;
