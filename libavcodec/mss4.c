@@ -156,9 +156,10 @@ static av_always_inline int get_coeff_bits(GetBitContext *gb, int nbits)
     return val;
 }
 
-static inline int get_coeff(GetBitContext *gb, VLC *vlc)
+static inline int get_coeff(GetBitContext *gb, const VLC *vlc,
+                            int nb_bits, int max_depth)
 {
-    int val = get_vlc2(gb, vlc->table, vlc->bits, 2);
+    int val = get_vlc2(gb, vlc->table, nb_bits, max_depth);
 
     return get_coeff_bits(gb, val);
 }
@@ -171,7 +172,7 @@ static int mss4_decode_dct(GetBitContext *gb, VLC *dc_vlc, VLC *ac_vlc,
 
     memset(block, 0, sizeof(*block) * 64);
 
-    dc = get_coeff(gb, dc_vlc);
+    dc = get_coeff(gb, dc_vlc, dc_vlc->bits, 2);
     // DC prediction is the same as in MSS3
     if (by) {
         if (bx) {
@@ -337,7 +338,7 @@ static int mss4_decode_image_block(MSS4Context *ctx, GetBitContext *gb,
     for (i = 0; i < 3; i++) {
         vec_len[i] = vec_len_syms[!!i][get_unary(gb, 0, 3)];
         for (j = 0; j < vec_len[i]; j++) {
-            vec[i][j]  = get_coeff(gb, &vec_entry_vlc[!!i]);
+            vec[i][j]  = get_coeff(gb, &vec_entry_vlc[!!i], 5, 1);
             vec[i][j] += ctx->prev_vec[i][j];
             ctx->prev_vec[i][j] = vec[i][j];
         }
