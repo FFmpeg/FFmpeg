@@ -30,7 +30,7 @@
 #define AVCODEC_AACSBR_H
 
 #include "get_bits.h"
-#include "aac.h"
+#include "aac_defines.h"
 #include "sbr.h"
 
 #define ENVELOPE_ADJUSTMENT_OFFSET 2
@@ -68,15 +68,6 @@ enum {
 
 static const int8_t vlc_sbr_lav[10] =
     { 60, 60, 24, 24, 31, 31, 12, 12, 31, 12 };
-
-#define SBR_INIT_VLC_STATIC(num, size) \
-    VLC_INIT_STATIC(&vlc_sbr[num], 9, sbr_tmp[num].table_size / sbr_tmp[num].elem_size,     \
-                    sbr_tmp[num].sbr_bits ,                      1,                      1, \
-                    sbr_tmp[num].sbr_codes, sbr_tmp[num].elem_size, sbr_tmp[num].elem_size, \
-                    size)
-
-#define SBR_VLC_ROW(name) \
-    { name ## _codes, name ## _bits, sizeof(name ## _codes), sizeof(name ## _codes[0]) }
 
 /** Initialize SBR. */
 void AAC_RENAME(ff_aac_sbr_init)(void);

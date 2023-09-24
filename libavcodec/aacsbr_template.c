@@ -32,6 +32,7 @@
  * @author Zoran Basaric ( zoran.basaric@imgtec.com )
  */
 
+#include "aacdectab.h"
 #include "libavutil/qsort.h"
 
 static av_cold void aacsbr_tableinit(void)
@@ -44,34 +45,6 @@ static av_cold void aacsbr_tableinit(void)
 
 av_cold void AAC_RENAME(ff_aac_sbr_init)(void)
 {
-    static const struct {
-        const void *sbr_codes, *sbr_bits;
-        const unsigned int table_size, elem_size;
-    } sbr_tmp[] = {
-        SBR_VLC_ROW(t_huffman_env_1_5dB),
-        SBR_VLC_ROW(f_huffman_env_1_5dB),
-        SBR_VLC_ROW(t_huffman_env_bal_1_5dB),
-        SBR_VLC_ROW(f_huffman_env_bal_1_5dB),
-        SBR_VLC_ROW(t_huffman_env_3_0dB),
-        SBR_VLC_ROW(f_huffman_env_3_0dB),
-        SBR_VLC_ROW(t_huffman_env_bal_3_0dB),
-        SBR_VLC_ROW(f_huffman_env_bal_3_0dB),
-        SBR_VLC_ROW(t_huffman_noise_3_0dB),
-        SBR_VLC_ROW(t_huffman_noise_bal_3_0dB),
-    };
-
-    // SBR VLC table initialization
-    SBR_INIT_VLC_STATIC(0, 1098);
-    SBR_INIT_VLC_STATIC(1, 1092);
-    SBR_INIT_VLC_STATIC(2, 768);
-    SBR_INIT_VLC_STATIC(3, 1026);
-    SBR_INIT_VLC_STATIC(4, 1058);
-    SBR_INIT_VLC_STATIC(5, 1052);
-    SBR_INIT_VLC_STATIC(6, 544);
-    SBR_INIT_VLC_STATIC(7, 544);
-    SBR_INIT_VLC_STATIC(8, 592);
-    SBR_INIT_VLC_STATIC(9, 512);
-
     aacsbr_tableinit();
 
     AAC_RENAME(ff_ps_init)();
@@ -838,29 +811,29 @@ static int read_sbr_envelope(AACContext *ac, SpectralBandReplication *sbr, GetBi
     if (sbr->bs_coupling && ch) {
         if (ch_data->bs_amp_res) {
             bits   = 5;
-            t_huff = vlc_sbr[T_HUFFMAN_ENV_BAL_3_0DB].table;
+            t_huff = ff_aac_sbr_vlc[T_HUFFMAN_ENV_BAL_3_0DB].table;
             t_lav  = vlc_sbr_lav[T_HUFFMAN_ENV_BAL_3_0DB];
-            f_huff = vlc_sbr[F_HUFFMAN_ENV_BAL_3_0DB].table;
+            f_huff = ff_aac_sbr_vlc[F_HUFFMAN_ENV_BAL_3_0DB].table;
             f_lav  = vlc_sbr_lav[F_HUFFMAN_ENV_BAL_3_0DB];
         } else {
             bits   = 6;
-            t_huff = vlc_sbr[T_HUFFMAN_ENV_BAL_1_5DB].table;
+            t_huff = ff_aac_sbr_vlc[T_HUFFMAN_ENV_BAL_1_5DB].table;
             t_lav  = vlc_sbr_lav[T_HUFFMAN_ENV_BAL_1_5DB];
-            f_huff = vlc_sbr[F_HUFFMAN_ENV_BAL_1_5DB].table;
+            f_huff = ff_aac_sbr_vlc[F_HUFFMAN_ENV_BAL_1_5DB].table;
             f_lav  = vlc_sbr_lav[F_HUFFMAN_ENV_BAL_1_5DB];
         }
     } else {
         if (ch_data->bs_amp_res) {
             bits   = 6;
-            t_huff = vlc_sbr[T_HUFFMAN_ENV_3_0DB].table;
+            t_huff = ff_aac_sbr_vlc[T_HUFFMAN_ENV_3_0DB].table;
             t_lav  = vlc_sbr_lav[T_HUFFMAN_ENV_3_0DB];
-            f_huff = vlc_sbr[F_HUFFMAN_ENV_3_0DB].table;
+            f_huff = ff_aac_sbr_vlc[F_HUFFMAN_ENV_3_0DB].table;
             f_lav  = vlc_sbr_lav[F_HUFFMAN_ENV_3_0DB];
         } else {
             bits   = 7;
-            t_huff = vlc_sbr[T_HUFFMAN_ENV_1_5DB].table;
+            t_huff = ff_aac_sbr_vlc[T_HUFFMAN_ENV_1_5DB].table;
             t_lav  = vlc_sbr_lav[T_HUFFMAN_ENV_1_5DB];
-            f_huff = vlc_sbr[F_HUFFMAN_ENV_1_5DB].table;
+            f_huff = ff_aac_sbr_vlc[F_HUFFMAN_ENV_1_5DB].table;
             f_lav  = vlc_sbr_lav[F_HUFFMAN_ENV_1_5DB];
         }
     }
@@ -923,14 +896,14 @@ static int read_sbr_noise(AACContext *ac, SpectralBandReplication *sbr, GetBitCo
     int delta = (ch == 1 && sbr->bs_coupling == 1) + 1;
 
     if (sbr->bs_coupling && ch) {
-        t_huff = vlc_sbr[T_HUFFMAN_NOISE_BAL_3_0DB].table;
+        t_huff = ff_aac_sbr_vlc[T_HUFFMAN_NOISE_BAL_3_0DB].table;
         t_lav  = vlc_sbr_lav[T_HUFFMAN_NOISE_BAL_3_0DB];
-        f_huff = vlc_sbr[F_HUFFMAN_ENV_BAL_3_0DB].table;
+        f_huff = ff_aac_sbr_vlc[F_HUFFMAN_ENV_BAL_3_0DB].table;
         f_lav  = vlc_sbr_lav[F_HUFFMAN_ENV_BAL_3_0DB];
     } else {
-        t_huff = vlc_sbr[T_HUFFMAN_NOISE_3_0DB].table;
+        t_huff = ff_aac_sbr_vlc[T_HUFFMAN_NOISE_3_0DB].table;
         t_lav  = vlc_sbr_lav[T_HUFFMAN_NOISE_3_0DB];
-        f_huff = vlc_sbr[F_HUFFMAN_ENV_3_0DB].table;
+        f_huff = ff_aac_sbr_vlc[F_HUFFMAN_ENV_3_0DB].table;
         f_lav  = vlc_sbr_lav[F_HUFFMAN_ENV_3_0DB];
     }
 

@@ -47,7 +47,6 @@
 #include "mips/aacsbr_mips.h"
 #endif /* ARCH_MIPS */
 
-static VLC vlc_sbr[10];
 static void aacsbr_func_ptr_init(AACSBRContext *c);
 
 static void make_bands(int16_t* bands, int start, int stop, int num_bands)

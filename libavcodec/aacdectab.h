@@ -38,6 +38,8 @@
 FF_VISIBILITY_PUSH_HIDDEN
 void ff_aacdec_common_init_once(void);
 
+extern VLC ff_aac_sbr_vlc[10];
+
 extern VLCElem ff_vlc_scalefactors[];
 extern const VLCElem *ff_vlc_spectral[11];
 
