@@ -301,12 +301,10 @@ static int rkmpp_send_packet(AVCodecContext *avctx, const AVPacket *avpkt)
 static void rkmpp_release_frame(void *opaque, uint8_t *data)
 {
     AVDRMFrameDescriptor *desc = (AVDRMFrameDescriptor *)data;
-    AVBufferRef *framecontextref = (AVBufferRef *)opaque;
-    RKMPPFrameContext *framecontext = (RKMPPFrameContext *)framecontextref->data;
+    RKMPPFrameContext *framecontext = opaque;
 
     mpp_frame_deinit(&framecontext->frame);
     ff_refstruct_unref(&framecontext->decoder_ref);
-    av_buffer_unref(&framecontextref);
 
     av_free(desc);
 }
@@ -315,12 +313,9 @@ static int rkmpp_retrieve_frame(AVCodecContext *avctx, AVFrame *frame)
 {
     RKMPPDecodeContext *rk_context = avctx->priv_data;
     RKMPPDecoder *decoder = rk_context->decoder;
-    RKMPPFrameContext *framecontext = NULL;
-    AVBufferRef *framecontextref = NULL;
     int ret;
     MppFrame mppframe = NULL;
     MppBuffer buffer = NULL;
-    AVDRMFrameDescriptor *desc = NULL;
     AVDRMLayerDescriptor *layer = NULL;
     int mode;
     MppFrameFormat mppformat;
@@ -409,11 +404,21 @@ static int rkmpp_retrieve_frame(AVCodecContext *avctx, AVFrame *frame)
         // now setup the frame buffer info
         buffer = mpp_frame_get_buffer(mppframe);
         if (buffer) {
-            desc = av_mallocz(sizeof(AVDRMFrameDescriptor));
-            if (!desc) {
+            RKMPPFrameContext *framecontext;
+            AVDRMFrameDescriptor *desc;
+            // We allocate the descriptor in buf[0] jointly with a structure
+            // that will allow to hold additional information
+            // for properly releasing MPP frames and decoder.
+            struct {
+                AVDRMFrameDescriptor desc;
+                RKMPPFrameContext framecontext;
+            } *combined_desc = av_mallocz(sizeof(*combined_desc));
+            if (!combined_desc) {
                 ret = AVERROR(ENOMEM);
                 goto fail;
             }
+            desc         = &combined_desc->desc;
+            framecontext = &combined_desc->framecontext;
 
             desc->nb_objects = 1;
             desc->objects[0].fd = mpp_buffer_get_fd(buffer);
@@ -432,23 +437,15 @@ static int rkmpp_retrieve_frame(AVCodecContext *avctx, AVFrame *frame)
             layer->planes[1].offset = layer->planes[0].pitch * mpp_frame_get_ver_stride(mppframe);
             layer->planes[1].pitch = layer->planes[0].pitch;
 
-            // we also allocate a struct in buf[0] that will allow to hold additionnal information
-            // for releasing properly MPP frames and decoder
-            framecontextref = av_buffer_allocz(sizeof(*framecontext));
-            if (!framecontextref) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
-
             // MPP decoder needs to be closed only when all frames have been released.
-            framecontext = (RKMPPFrameContext *)framecontextref->data;
             framecontext->frame = mppframe;
 
             frame->data[0]  = (uint8_t *)desc;
             frame->buf[0]   = av_buffer_create((uint8_t *)desc, sizeof(*desc), rkmpp_release_frame,
-                                               framecontextref, AV_BUFFER_FLAG_READONLY);
+                                               framecontext, AV_BUFFER_FLAG_READONLY);
 
             if (!frame->buf[0]) {
+                av_free(combined_desc);
                 ret = AVERROR(ENOMEM);
                 goto fail;
             }
@@ -476,12 +473,6 @@ static int rkmpp_retrieve_frame(AVCodecContext *avctx, AVFrame *frame)
 fail:
     if (mppframe)
         mpp_frame_deinit(&mppframe);
-
-    if (framecontextref)
-        av_buffer_unref(&framecontextref);
-
-    if (desc)
-        av_free(desc);
 
     return ret;
 }
