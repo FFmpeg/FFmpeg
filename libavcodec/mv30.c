@@ -59,7 +59,7 @@ typedef struct MV30Context {
     AVFrame *prev_frame;
 } MV30Context;
 
-static VLC cbp_tab;
+static VLCElem cbp_tab[1 << CBP_VLC_BITS];
 
 static const uint8_t luma_tab[] = {
     12, 12, 15, 19, 25, 34, 40, 48,
@@ -379,7 +379,7 @@ static int decode_coeffs(GetBitContext *gb, int16_t *coeffs, int nb_codes)
     memset(coeffs, 0, nb_codes * sizeof(*coeffs));
 
     for (int i = 0; i < nb_codes;) {
-        int value = get_vlc2(gb, cbp_tab.table, CBP_VLC_BITS, 1);
+        int value = get_vlc2(gb, cbp_tab, CBP_VLC_BITS, 1);
 
         if (value > 0) {
             int x = get_bits(gb, value);
@@ -657,8 +657,9 @@ static const uint8_t cbp_bits[] = {
 
 static av_cold void init_static_data(void)
 {
-    VLC_INIT_STATIC_FROM_LENGTHS(&cbp_tab, CBP_VLC_BITS, FF_ARRAY_ELEMS(cbp_bits),
-                                 cbp_bits, 1, NULL, 0, 0, 0, 0, 1 << CBP_VLC_BITS);
+    VLC_INIT_STATIC_TABLE_FROM_LENGTHS(cbp_tab, CBP_VLC_BITS,
+                                       FF_ARRAY_ELEMS(cbp_bits),
+                                       cbp_bits, 1, NULL, 0, 0, 0, 0);
 }
 
 static av_cold int decode_init(AVCodecContext *avctx)
