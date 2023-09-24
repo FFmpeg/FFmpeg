@@ -49,14 +49,15 @@ static const int8_t vector_symbols[] = {
     2, 3, 4, SIGNED_8BIT, -2, -3, -4, SIGNED_6BIT
 };
 
-static VLC vector_vlc;
+static VLCElem vector_vlc[1 << VECTOR_VLC_BITS];
 
 static av_cold void vqc_init_static_data(void)
 {
-    VLC_INIT_STATIC_FROM_LENGTHS(&vector_vlc, VECTOR_VLC_BITS, FF_ARRAY_ELEMS(vector_nbits),
-                             vector_nbits, 1,
-                             vector_symbols, 1, 1,
-                             0, 0, 1 << VECTOR_VLC_BITS);
+    VLC_INIT_STATIC_TABLE_FROM_LENGTHS(vector_vlc, VECTOR_VLC_BITS,
+                                       FF_ARRAY_ELEMS(vector_nbits),
+                                       vector_nbits, 1,
+                                       vector_symbols, 1, 1,
+                                       0, 0);
 }
 
 typedef struct VqcContext {
@@ -171,7 +172,7 @@ static int decode_vectors(VqcContext * s, const uint8_t * buf, int size, int wid
                 continue;
             }
 
-            symbol = get_vlc2(&gb, vector_vlc.table, VECTOR_VLC_BITS, 1);
+            symbol = get_vlc2(&gb, vector_vlc, VECTOR_VLC_BITS, 1);
             switch(symbol) {
             case SKIP_3: dst += 3; break;
             case SKIP_4: dst += 4; break;
