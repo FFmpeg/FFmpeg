@@ -27,14 +27,14 @@
  * @author Maxim Gavrilov ( maxim.gavrilov gmail com )
  */
 
-#include "config.h"
+#include <stddef.h>
+#include <stdint.h>
+
 #include "config_components.h"
+#include "libavutil/attributes.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/thread.h"
-#include "aac.h"
 #include "aactab.h"
-
-#include <stdint.h>
 
 #if CONFIG_AAC_ENCODER || CONFIG_AAC_DECODER
 #include "kbdwin.h"

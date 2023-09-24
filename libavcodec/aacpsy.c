@@ -28,7 +28,7 @@
 #include "libavutil/ffmath.h"
 
 #include "avcodec.h"
-#include "aactab.h"
+#include "aac.h"
 #include "psymodel.h"
 
 /***********************************
