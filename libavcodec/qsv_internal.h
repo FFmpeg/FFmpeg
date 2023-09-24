@@ -115,11 +115,12 @@ typedef struct QSVFramesContext {
     AVBufferRef *hw_frames_ctx;
     void *logctx;
 
-    /* The memory ids for the external frames.
-     * Refcounted, since we need one reference owned by the QSVFramesContext
-     * (i.e. by the encoder/decoder) and another one given to the MFX session
-     * from the frame allocator. */
-    AVBufferRef *mids_buf;
+    /**
+     * The memory ids for the external frames.
+     * Refcounted (via the RefStruct API), since we need one reference
+     * owned by the QSVFramesContext (i.e. by the encoder/decoder) and
+     * another one given to the MFX session from the frame allocator.
+     */
     QSVMid *mids;
     int  nb_mids;
 } QSVFramesContext;
