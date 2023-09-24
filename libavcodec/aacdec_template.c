@@ -1497,7 +1497,7 @@ static int decode_scalefactors(AACContext *ac, INTFLOAT sf[120], GetBitContext *
             } else if ((band_type[idx] == INTENSITY_BT) ||
                        (band_type[idx] == INTENSITY_BT2)) {
                 for (; i < run_end; i++, idx++) {
-                    offset[2] += get_vlc2(gb, ff_vlc_scalefactors.table, 7, 3) - SCALE_DIFF_ZERO;
+                    offset[2] += get_vlc2(gb, ff_vlc_scalefactors, 7, 3) - SCALE_DIFF_ZERO;
                     clipped_offset = av_clip(offset[2], -155, 100);
                     if (offset[2] != clipped_offset) {
                         avpriv_request_sample(ac->avctx,
@@ -1516,7 +1516,7 @@ static int decode_scalefactors(AACContext *ac, INTFLOAT sf[120], GetBitContext *
                     if (noise_flag-- > 0)
                         offset[1] += get_bits(gb, NOISE_PRE_BITS) - NOISE_PRE;
                     else
-                        offset[1] += get_vlc2(gb, ff_vlc_scalefactors.table, 7, 3) - SCALE_DIFF_ZERO;
+                        offset[1] += get_vlc2(gb, ff_vlc_scalefactors, 7, 3) - SCALE_DIFF_ZERO;
                     clipped_offset = av_clip(offset[1], -100, 155);
                     if (offset[1] != clipped_offset) {
                         avpriv_request_sample(ac->avctx,
@@ -1532,7 +1532,7 @@ static int decode_scalefactors(AACContext *ac, INTFLOAT sf[120], GetBitContext *
                 }
             } else {
                 for (; i < run_end; i++, idx++) {
-                    offset[0] += get_vlc2(gb, ff_vlc_scalefactors.table, 7, 3) - SCALE_DIFF_ZERO;
+                    offset[0] += get_vlc2(gb, ff_vlc_scalefactors, 7, 3) - SCALE_DIFF_ZERO;
                     if (offset[0] > 255U) {
                         av_log(ac->avctx, AV_LOG_ERROR,
                                "Scalefactor (%d) out of range.\n", offset[0]);
@@ -1705,7 +1705,7 @@ static int decode_spectrum_and_dequant(AACContext *ac, INTFLOAT coef[1024],
 #if !USE_FIXED
                 const float *vq = ff_aac_codebook_vector_vals[cbt_m1];
 #endif /* !USE_FIXED */
-                const VLCElem *vlc_tab = ff_vlc_spectral[cbt_m1].table;
+                const VLCElem *vlc_tab = ff_vlc_spectral[cbt_m1];
                 OPEN_READER(re, gb);
 
                 switch (cbt_m1 >> 1) {
@@ -2279,7 +2279,7 @@ static int decode_cce(AACContext *ac, GetBitContext *gb, ChannelElement *che)
         INTFLOAT gain_cache = FIXR10(1.);
         if (c) {
             cge = coup->coupling_point == AFTER_IMDCT ? 1 : get_bits1(gb);
-            gain = cge ? get_vlc2(gb, ff_vlc_scalefactors.table, 7, 3) - 60: 0;
+            gain = cge ? get_vlc2(gb, ff_vlc_scalefactors, 7, 3) - 60: 0;
             gain_cache = GET_GAIN(scale, gain);
 #if USE_FIXED
             if ((abs(gain_cache)-1024) >> 3 > 30)
@@ -2293,7 +2293,7 @@ static int decode_cce(AACContext *ac, GetBitContext *gb, ChannelElement *che)
                 for (sfb = 0; sfb < sce->ics.max_sfb; sfb++, idx++) {
                     if (sce->band_type[idx] != ZERO_BT) {
                         if (!cge) {
-                            int t = get_vlc2(gb, ff_vlc_scalefactors.table, 7, 3) - 60;
+                            int t = get_vlc2(gb, ff_vlc_scalefactors, 7, 3) - 60;
                             if (t) {
                                 int s = 1;
                                 t = gain += t;
