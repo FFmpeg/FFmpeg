@@ -1210,9 +1210,6 @@ static av_cold int dsp_init(AVCodecContext *avctx, AACEncContext *s)
     if (!s->fdsp)
         return AVERROR(ENOMEM);
 
-    // window init
-    ff_aac_float_common_init();
-
     if ((ret = av_tx_init(&s->mdct1024, &s->mdct1024_fn, AV_TX_FLOAT_MDCT, 0,
                           1024, &scale, 0)) < 0)
         return ret;
@@ -1359,6 +1356,9 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     if (s->channels > 3)
         s->options.mid_side = 0;
 
+    // Initialize static tables
+    ff_aac_float_common_init();
+
     if ((ret = dsp_init(avctx, s)) < 0)
         return ret;
 
@@ -1393,7 +1393,6 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
 #endif
 
     ff_af_queue_init(avctx, &s->afq);
-    ff_aac_tableinit();
 
     return 0;
 }

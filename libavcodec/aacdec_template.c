@@ -1128,7 +1128,6 @@ static av_cold void aac_static_table_init(void)
     AAC_RENAME(ff_aac_sbr_init)();
 
     ff_aacdec_common_init_once();
-    ff_aac_tableinit();
 
     // window initialization
     AAC_RENAME(avpriv_kbd_window_init)(AAC_RENAME(aac_kbd_long_960), 4.0, 960);

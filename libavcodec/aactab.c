@@ -36,18 +36,64 @@
 
 #include <stdint.h>
 
-float ff_aac_pow2sf_tab[428];
-float ff_aac_pow34sf_tab[428];
-
 #if CONFIG_AAC_ENCODER || CONFIG_AAC_DECODER
 #include "kbdwin.h"
 #include "sinewin.h"
 
+float ff_aac_pow2sf_tab[428];
+float ff_aac_pow34sf_tab[428];
+
 DECLARE_ALIGNED(32, float,  ff_aac_kbd_long_1024)[1024];
 DECLARE_ALIGNED(32, float,  ff_aac_kbd_short_128)[128];
 
+static av_cold void aac_tableinit(void)
+{
+    /* 2^(i/16) for 0 <= i <= 15 */
+    static const float exp2_lut[] = {
+        1.00000000000000000000,
+        1.04427378242741384032,
+        1.09050773266525765921,
+        1.13878863475669165370,
+        1.18920711500272106672,
+        1.24185781207348404859,
+        1.29683955465100966593,
+        1.35425554693689272830,
+        1.41421356237309504880,
+        1.47682614593949931139,
+        1.54221082540794082361,
+        1.61049033194925430818,
+        1.68179283050742908606,
+        1.75625216037329948311,
+        1.83400808640934246349,
+        1.91520656139714729387,
+    };
+    float t1 = 8.8817841970012523233890533447265625e-16; // 2^(-50)
+    float t2 = 3.63797880709171295166015625e-12; // 2^(-38)
+    int t1_inc_cur, t2_inc_cur;
+    int t1_inc_prev = 0;
+    int t2_inc_prev = 8;
+
+    for (int i = 0; i < 428; i++) {
+        t1_inc_cur = 4 * (i % 4);
+        t2_inc_cur = (8 + 3*i) % 16;
+        if (t1_inc_cur < t1_inc_prev)
+            t1 *= 2;
+        if (t2_inc_cur < t2_inc_prev)
+            t2 *= 2;
+        // A much more efficient and accurate way of doing:
+        // ff_aac_pow2sf_tab[i]  = pow(2, (i - POW_SF2_ZERO) / 4.0);
+        // ff_aac_pow34sf_tab[i] = pow(ff_aac_pow2sf_tab[i], 3.0/4.0);
+        ff_aac_pow2sf_tab[i]  = t1 * exp2_lut[t1_inc_cur];
+        ff_aac_pow34sf_tab[i] = t2 * exp2_lut[t2_inc_cur];
+        t1_inc_prev = t1_inc_cur;
+        t2_inc_prev = t2_inc_cur;
+    }
+}
+
 static av_cold void aac_float_common_init(void)
 {
+    aac_tableinit();
+
     avpriv_kbd_window_init(ff_aac_kbd_long_1024, 4.0, 1024);
     avpriv_kbd_window_init(ff_aac_kbd_short_128, 6.0, 128);
     ff_init_ff_sine_windows(10);
@@ -3299,53 +3345,3 @@ const DECLARE_ALIGNED(32, int, ff_aac_eld_window_480_fixed)[1800] = {
     0xffecff1c, 0xffed391e, 0xffed740c, 0xffedafb1,
     0xffedebe1, 0xffee287d, 0xffee654e, 0xffeea23f,
 };
-
-static void aac_tableinit(void)
-{
-    /* 2^(i/16) for 0 <= i <= 15 */
-    static const float exp2_lut[] = {
-        1.00000000000000000000,
-        1.04427378242741384032,
-        1.09050773266525765921,
-        1.13878863475669165370,
-        1.18920711500272106672,
-        1.24185781207348404859,
-        1.29683955465100966593,
-        1.35425554693689272830,
-        1.41421356237309504880,
-        1.47682614593949931139,
-        1.54221082540794082361,
-        1.61049033194925430818,
-        1.68179283050742908606,
-        1.75625216037329948311,
-        1.83400808640934246349,
-        1.91520656139714729387,
-    };
-    float t1 = 8.8817841970012523233890533447265625e-16; // 2^(-50)
-    float t2 = 3.63797880709171295166015625e-12; // 2^(-38)
-    int t1_inc_cur, t2_inc_cur;
-    int t1_inc_prev = 0;
-    int t2_inc_prev = 8;
-
-    for (int i = 0; i < 428; i++) {
-        t1_inc_cur = 4 * (i % 4);
-        t2_inc_cur = (8 + 3*i) % 16;
-        if (t1_inc_cur < t1_inc_prev)
-            t1 *= 2;
-        if (t2_inc_cur < t2_inc_prev)
-            t2 *= 2;
-        // A much more efficient and accurate way of doing:
-        // ff_aac_pow2sf_tab[i]  = pow(2, (i - POW_SF2_ZERO) / 4.0);
-        // ff_aac_pow34sf_tab[i] = pow(ff_aac_pow2sf_tab[i], 3.0/4.0);
-        ff_aac_pow2sf_tab[i]  = t1 * exp2_lut[t1_inc_cur];
-        ff_aac_pow34sf_tab[i] = t2 * exp2_lut[t2_inc_cur];
-        t1_inc_prev = t1_inc_cur;
-        t2_inc_prev = t2_inc_cur;
-    }
-}
-
-void ff_aac_tableinit(void)
-{
-    static AVOnce init_static_once = AV_ONCE_INIT;
-    ff_thread_once(&init_static_once, aac_tableinit);
-}
