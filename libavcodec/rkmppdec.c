@@ -450,6 +450,10 @@ static int rkmpp_retrieve_frame(AVCodecContext *avctx, AVFrame *frame)
             // MPP decoder needs to be closed only when all frames have been released.
             framecontext = (RKMPPFrameContext *)framecontextref->data;
             framecontext->decoder_ref = av_buffer_ref(rk_context->decoder_ref);
+            if (!framecontext->decoder_ref) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
             framecontext->frame = mppframe;
 
             frame->data[0]  = (uint8_t *)desc;
