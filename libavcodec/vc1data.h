@@ -56,42 +56,42 @@ extern const uint8_t ff_vc1_mbmode_intfrp[2][15][4];
  */
 //@{
 #define VC1_IMODE_VLC_BITS 4
-extern VLC ff_vc1_imode_vlc;
+extern VLCElem ff_vc1_imode_vlc[1 << VC1_IMODE_VLC_BITS];
 #define VC1_NORM2_VLC_BITS 3
-extern VLC ff_vc1_norm2_vlc;
+extern VLCElem ff_vc1_norm2_vlc[1 << VC1_NORM2_VLC_BITS];
 #define VC1_NORM6_VLC_BITS 9
-extern VLC ff_vc1_norm6_vlc;
+extern VLCElem ff_vc1_norm6_vlc[556];
 /* Could be optimized, one table only needs 8 bits */
 #define VC1_TTMB_VLC_BITS 9 //12
-extern VLC ff_vc1_ttmb_vlc[3];
+extern const VLCElem *ff_vc1_ttmb_vlc[3];
 #define VC1_MV_DIFF_VLC_BITS 9 //15
-extern VLC ff_vc1_mv_diff_vlc[4];
+extern const VLCElem *ff_vc1_mv_diff_vlc[4];
 #define VC1_CBPCY_P_VLC_BITS 9 //14
-extern VLC ff_vc1_cbpcy_p_vlc[4];
+extern const VLCElem *ff_vc1_cbpcy_p_vlc[4];
 #define VC1_ICBPCY_VLC_BITS 9
-extern VLC ff_vc1_icbpcy_vlc[8];
+extern const VLCElem *ff_vc1_icbpcy_vlc[8];
 #define VC1_4MV_BLOCK_PATTERN_VLC_BITS 6
-extern VLC ff_vc1_4mv_block_pattern_vlc[4];
+extern const VLCElem *ff_vc1_4mv_block_pattern_vlc[4];
 #define VC1_2MV_BLOCK_PATTERN_VLC_BITS 3
-extern VLC ff_vc1_2mv_block_pattern_vlc[4];
+extern const VLCElem *ff_vc1_2mv_block_pattern_vlc[4];
 #define VC1_TTBLK_VLC_BITS 5
-extern VLC ff_vc1_ttblk_vlc[3];
+extern const VLCElem *ff_vc1_ttblk_vlc[3];
 #define VC1_SUBBLKPAT_VLC_BITS 6
-extern VLC ff_vc1_subblkpat_vlc[3];
+extern const VLCElem *ff_vc1_subblkpat_vlc[3];
 #define VC1_INTFR_4MV_MBMODE_VLC_BITS 9
-extern VLC ff_vc1_intfr_4mv_mbmode_vlc[4];
+extern const VLCElem *ff_vc1_intfr_4mv_mbmode_vlc[4];
 #define VC1_INTFR_NON4MV_MBMODE_VLC_BITS 6
-extern VLC ff_vc1_intfr_non4mv_mbmode_vlc[4];
+extern const VLCElem *ff_vc1_intfr_non4mv_mbmode_vlc[4];
 #define VC1_IF_MMV_MBMODE_VLC_BITS 5
-extern VLC ff_vc1_if_mmv_mbmode_vlc[8];
+extern const VLCElem *ff_vc1_if_mmv_mbmode_vlc[8];
 #define VC1_IF_1MV_MBMODE_VLC_BITS 5
-extern VLC ff_vc1_if_1mv_mbmode_vlc[8];
+extern const VLCElem *ff_vc1_if_1mv_mbmode_vlc[8];
 #define VC1_1REF_MVDATA_VLC_BITS 9
-extern VLC ff_vc1_1ref_mvdata_vlc[4];
+extern const VLCElem *ff_vc1_1ref_mvdata_vlc[4];
 #define VC1_2REF_MVDATA_VLC_BITS 9
-extern VLC ff_vc1_2ref_mvdata_vlc[8];
+extern const VLCElem *ff_vc1_2ref_mvdata_vlc[8];
 
-extern VLC ff_vc1_ac_coeff_table[8];
+extern const VLCElem *ff_vc1_ac_coeff_table[8];
 
 #define VC1_IF_MBMODE_VLC_BITS 5    // as a placeholder for VC1_IF_MMV_MBMODE_VLC_BITS
                                     // or VC1_IF_1MV_MBMODE_VLC_BITS since they are the same

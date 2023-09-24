@@ -102,26 +102,26 @@ const uint8_t ff_vc1_pquant_table[3][32] = {
  *  @todo TODO move this into the context
  */
 //@{
-VLC ff_vc1_imode_vlc;
-VLC ff_vc1_norm2_vlc;
-VLC ff_vc1_norm6_vlc;
+VLCElem ff_vc1_imode_vlc[1 << VC1_IMODE_VLC_BITS];
+VLCElem ff_vc1_norm2_vlc[1 << VC1_NORM2_VLC_BITS];
+VLCElem ff_vc1_norm6_vlc[556];
 /* Could be optimized, one table only needs 8 bits */
-VLC ff_vc1_ttmb_vlc[3];
-VLC ff_vc1_mv_diff_vlc[4];
-VLC ff_vc1_cbpcy_p_vlc[4];
-VLC ff_vc1_icbpcy_vlc[8];
-VLC ff_vc1_4mv_block_pattern_vlc[4];
-VLC ff_vc1_2mv_block_pattern_vlc[4];
-VLC ff_vc1_ttblk_vlc[3];
-VLC ff_vc1_subblkpat_vlc[3];
-VLC ff_vc1_intfr_4mv_mbmode_vlc[4];
-VLC ff_vc1_intfr_non4mv_mbmode_vlc[4];
-VLC ff_vc1_if_mmv_mbmode_vlc[8];
-VLC ff_vc1_if_1mv_mbmode_vlc[8];
-VLC ff_vc1_1ref_mvdata_vlc[4];
-VLC ff_vc1_2ref_mvdata_vlc[8];
+const VLCElem *ff_vc1_ttmb_vlc[3];
+const VLCElem *ff_vc1_mv_diff_vlc[4];
+const VLCElem *ff_vc1_cbpcy_p_vlc[4];
+const VLCElem *ff_vc1_icbpcy_vlc[8];
+const VLCElem *ff_vc1_4mv_block_pattern_vlc[4];
+const VLCElem *ff_vc1_2mv_block_pattern_vlc[4];
+const VLCElem *ff_vc1_ttblk_vlc[3];
+const VLCElem *ff_vc1_subblkpat_vlc[3];
+const VLCElem *ff_vc1_intfr_4mv_mbmode_vlc[4];
+const VLCElem *ff_vc1_intfr_non4mv_mbmode_vlc[4];
+const VLCElem *ff_vc1_if_mmv_mbmode_vlc[8];
+const VLCElem *ff_vc1_if_1mv_mbmode_vlc[8];
+const VLCElem *ff_vc1_1ref_mvdata_vlc[4];
+const VLCElem *ff_vc1_2ref_mvdata_vlc[8];
 
-VLC ff_vc1_ac_coeff_table[8];
+const VLCElem *ff_vc1_ac_coeff_table[8];
 
 //@}
 
