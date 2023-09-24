@@ -42,12 +42,12 @@ typedef struct Ir2Context{
 } Ir2Context;
 
 #define CODE_VLC_BITS 14
-static VLC ir2_vlc;
+static VLCElem ir2_vlc[1 << CODE_VLC_BITS];
 
 /* Indeo 2 codes are in range 0x01..0x7F and 0x81..0x90 */
 static inline int ir2_get_code(GetBitContext *gb)
 {
-    return get_vlc2(gb, ir2_vlc.table, CODE_VLC_BITS, 1);
+    return get_vlc2(gb, ir2_vlc, CODE_VLC_BITS, 1);
 }
 
 static int ir2_decode_plane(Ir2Context *ctx, int width, int height, uint8_t *dst,
@@ -226,9 +226,9 @@ static int ir2_decode_frame(AVCodecContext *avctx, AVFrame *picture,
 
 static av_cold void ir2_init_static(void)
 {
-    VLC_INIT_STATIC_FROM_LENGTHS(&ir2_vlc, CODE_VLC_BITS, IR2_CODES,
-                                 &ir2_tab[0][1], 2, &ir2_tab[0][0], 2, 1,
-                                 0, VLC_INIT_OUTPUT_LE, 1 << CODE_VLC_BITS);
+    VLC_INIT_STATIC_TABLE_FROM_LENGTHS(ir2_vlc, CODE_VLC_BITS, IR2_CODES,
+                                       &ir2_tab[0][1], 2, &ir2_tab[0][0], 2, 1,
+                                       0, VLC_INIT_OUTPUT_LE);
 }
 
 static av_cold int ir2_decode_init(AVCodecContext *avctx)
