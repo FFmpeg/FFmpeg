@@ -27,6 +27,8 @@
 
 struct AVDeviceInfoList;
 
+#define FF_FMT_ALLOW_FLUSH                    (1 << 1)
+
 typedef struct FFOutputFormat {
     /**
      * The public AVOutputFormat. See avformat.h for it.
@@ -38,13 +40,13 @@ typedef struct FFOutputFormat {
     int priv_data_size;
 
     /**
-     * Internal flags. See FF_FMT_FLAG_* in internal.h.
+     * Internal flags. See FF_FMT_* in internal.h and mux.h.
      */
     int flags_internal;
 
     int (*write_header)(AVFormatContext *);
     /**
-     * Write a packet. If AVFMT_ALLOW_FLUSH is set in flags,
+     * Write a packet. If FF_FMT_ALLOW_FLUSH is set in flags_internal,
      * pkt can be NULL in order to flush data buffered in the muxer.
      * When flushing, return 0 if there still is more data to flush,
      * or 1 if everything was flushed and there is no more buffered

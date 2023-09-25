@@ -715,11 +715,16 @@ const FFOutputFormat ff_fifo_muxer = {
     .p.name         = "fifo",
     .p.long_name    = NULL_IF_CONFIG_SMALL("FIFO queue pseudo-muxer"),
     .p.priv_class   = &fifo_muxer_class,
+#if FF_API_ALLOW_FLUSH
     .p.flags        = AVFMT_NOFILE | AVFMT_ALLOW_FLUSH | AVFMT_TS_NEGATIVE,
+#else
+    .p.flags        = AVFMT_NOFILE | AVFMT_TS_NEGATIVE,
+#endif
     .priv_data_size = sizeof(FifoContext),
     .init           = fifo_init,
     .write_header   = fifo_write_header,
     .write_packet   = fifo_write_packet,
     .write_trailer  = fifo_write_trailer,
     .deinit         = fifo_deinit,
+    .flags_internal = FF_FMT_ALLOW_FLUSH,
 };

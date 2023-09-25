@@ -1206,7 +1206,13 @@ int av_write_frame(AVFormatContext *s, AVPacket *in)
     int ret;
 
     if (!in) {
+#if FF_API_ALLOW_FLUSH || LIBAVFORMAT_VERSION_MAJOR >= 61
+        // Hint: The pulse audio output device has this set,
+        // so we can't switch the check to FF_FMT_ALLOW_FLUSH immediately.
         if (s->oformat->flags & AVFMT_ALLOW_FLUSH) {
+#else
+        if (ffofmt(s->oformat)->flags_internal & FF_FMT_ALLOW_FLUSH) {
+#endif
             ret = ffofmt(s->oformat)->write_packet(s, NULL);
             flush_if_needed(s);
             if (ret >= 0 && s->pb && s->pb->error < 0)
